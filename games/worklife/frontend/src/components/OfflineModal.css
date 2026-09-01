@@ -1,0 +1,108 @@
+/* 离线收益结算弹窗 —— 深蓝灰 + 青/金光效 */
+.offline-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 10, 18, 0.72);
+  backdrop-filter: blur(5px);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: off-fade 0.2s ease;
+}
+
+@keyframes off-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.offline-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 26px 26px;
+  text-align: center;
+  background: linear-gradient(165deg, #1d273b, #131a28);
+  border: 1px solid rgba(78, 163, 216, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: off-pop 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes off-pop {
+  from { transform: translateY(16px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.offline-glow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(78, 163, 216, 0.35), transparent 70%);
+  pointer-events: none;
+}
+
+.offline-icon {
+  font-size: 52px;
+  position: relative;
+  filter: drop-shadow(0 0 12px rgba(232, 184, 96, 0.5));
+}
+
+.offline-title {
+  margin: 10px 0 4px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #f3e6c8;
+  letter-spacing: 1px;
+}
+
+.offline-sub {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: #aebacb;
+}
+
+.offline-rewards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(232, 184, 96, 0.25);
+  border-radius: 12px;
+}
+
+.offline-reward-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: #d8e0ea;
+  line-height: 1.5;
+}
+.offline-reward-dot { color: #e8b860; flex-shrink: 0; }
+
+.offline-empty {
+  font-size: 13px;
+  color: #8794a6;
+  padding: 16px 0 22px;
+}
+
+.offline-confirm {
+  width: 100%;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1b2436;
+  background: linear-gradient(135deg, #e8b860, #f0c878);
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(232, 184, 96, 0.4);
+  transition: transform 0.12s;
+}
+.offline-confirm:hover { transform: translateY(-1px); }

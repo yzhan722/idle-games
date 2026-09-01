@@ -6,64 +6,6 @@
 - **认证方式**: Bearer Token (JWT)
 - **Content-Type**: `application/json`
 
-## 房屋升级
-
-`POST /houses/upgrade` 接受 `{ roomId: string, expectedRevision?: number }`。旧客户端只传 `roomId` 仍可使用；显式版本必须是非负整数。
-
-服务端先在隔离快照结算离线进度，再按当前房屋等级检查成本并升级，一次提交完整结果。业务拒绝、模拟异常和版本冲突不会保存部分结算或部分扣费。多个不同升级请求按实际等级计算连续成本。
-
-成功返回原有 `ok`、`level`、`cost`、`house` 字段，并增加 `stateRevision`。显式版本过期或竞争达到内部重算上限时返回 `409 { error: "state_version_conflict", message, stateRevision }`，客户端刷新状态后重新确认。内部仅在未提交的版本冲突后重读并重算，最多重试两次。
-
-本接口尚无持久 operationId 收据。响应丢失时仍须读取状态确认结果，不能自动重发升级请求。
-
-## 系统资源写接口（商店 / 消耗品 / 签到）
-
-`POST /systems/shop/buy` 接受 `{ itemId: string, qty: number, expectedRevision?: number }`；`POST /systems/shop/sell` 接受 `{ itemId: string, qty: number, expectedRevision?: number }`；`POST /systems/consume` 接受 `{ itemId: string, expectedRevision?: number }`；`POST /systems/checkin` 接受 `{ expectedRevision?: number }`。旧客户端不传 `expectedRevision` 仍可使用；显式版本必须是非负整数。
-
-服务端先在隔离快照结算离线进度，再执行业务操作并一次提交完整结果。业务拒绝、模拟异常和版本冲突不会保存部分结算或部分扣费；并发购买按提交顺序分别扣费。
-
-成功响应在原字段基础上增加 `stateRevision`。显式版本过期或竞争达到内部重算上限时返回 `409 { error: "state_version_conflict", message, stateRevision }`，客户端刷新状态后重试。业务拒绝返回 `400 { error }`，`error` 为原有中文原因文案。
-
-## 任务 / 成就 / 赏金 / 转生写接口
-
-以下接口走同一资源命令边界，语义与上面一致：隔离快照结算 → 业务校验 → 一次提交；全部接受可选 `expectedRevision`，成功响应增加 `stateRevision`，冲突返回 `409 state_version_conflict`。
-
-- `POST /tasks/claim` `{ taskId, expectedRevision? }`；`POST /tasks/reroll` `{ taskId, expectedRevision? }`；`POST /tasks/delete` `{ taskId, expectedRevision? }`；`POST /tasks/block` `{ skillId, blocked, expectedRevision? }`；`POST /tasks/shop/buy` `{ itemId, expectedRevision? }`；`POST /tasks/gift/claim` `{ expectedRevision? }` —— 并发领奖/礼物/宝箱购买不会重复发放；重选与刷新按序收取当日递增费用。
-- `POST /progression/achievements/claim` `{ achievementId, expectedRevision? }`；`POST /progression/daily/claim` `{ questId, expectedRevision? }` —— 同一奖励只发一次。
-- `POST /progression2/bounties/accept|claim|reroll` 与 `POST /progression2/prestige` 接受 `{ expectedRevision? }`（accept/claim 另带 `bountyId`）—— 并发接取只标一次，刷新受每日上限约束，转生只结算一次。
-
-业务拒绝返回原有 `400 { error }`（任务接口另带 `message`/`cost`）。GET 查询接口未改动，仍受既有结算与保存的版本保护。
-
-## 战斗 / 强化写接口
-
-同一资源命令边界，接受可选 `expectedRevision`，冲突返回 `409 state_version_conflict`：
-
-- `POST /combat/hp/start` `{ monsterId, expectedRevision? }` —— 已在战斗中的拒绝保持原有 `409 { error: "already_in_combat" }`，未知怪物 `400 unknown_monster`。
-- `POST /combat/hp/skill` `{ skillId, expectedRevision? }`；`POST /combat/hp/abilities` `{ slots, expectedRevision? }`；`POST /combat/hp/learn` `{ itemId, expectedRevision? }`（响应增加 `learnResult`）；`POST /combat/hp/build` `{ id, expectedRevision? }`；`POST /combat/hp/loadout` `{ food?, drink?, autoRepeat?, expectedRevision? }`；`POST /combat/hp/flee` `{ expectedRevision? }` —— 返回提交后的完整玩家状态（含 `stateRevision` 字段）。
-- `POST /enhancement/run/start` `{ itemId, targetLevel, useProtection?, expectedRevision? }`；`POST /enhancement/run/stop` `{ expectedRevision? }` —— 同上；业务拒绝保持 `400 { error, message }`。
-- `POST /enhancement/enhance`、`/enhancement/request-service`、`/enhancement/respond-service` 走独立存储方法（后者为跨玩家服务单），不属于此边界；`trading`、`party`、`skills/unlock` 同。
-
-## 幂等键（operationId）
-
-所有命令边界写接口额外接受可选 `operationId`（字符串，≤128 字符，客户端按「一次逻辑操作」生成，如 uuid）：
-
-- 同一 `(用户, operationId)` 已提交后再次到达：不再执行业务变更，直接返回首次提交时记录的结果（HTTP 重试 / 双击 / 断线重发安全）。
-- 同一 `operationId` 携带不同的业务参数：返回 `409 { error: "operation_id_mismatch" }`，状态不变。
-- 业务拒绝不写收据——同一个 key 在参数修正后（或状态变化后）可以安全重试。
-- 参数哈希只覆盖解析后的业务字段；`expectedRevision`、`operationId` 本身与 zod 剥离的多余字段不参与哈希。
-
-PostgreSQL 下收据存于 `player_command_receipts` 并与玩家状态写在同一事务提交（跨实例恰好一次）；内存实现随持久化快照落盘。
-
-## 行动线写接口
-
-同一资源命令边界，全部接受可选 `expectedRevision`，返回提交后的玩家状态（含 `stateRevision`）：
-
-- `POST /actions/start` `{ actionId, quantity?, expectedRevision? }` —— **现在会先把正在进行的动作结算到当前时刻**，再切换动作；旧行为是直接覆盖导致已完成周期的产出被吞。`skill_level_required` / `unknown_action` 保持 `400`。
-- `POST /actions/stop` `{ expectedRevision? }` —— 结算后停止并原子接上下一个排队动作。
-- `POST /actions/queue` `{ actionId, quantity?, expectedRevision? }`；`DELETE /actions/queue/:id`；`POST /actions/queue/clear|move` `{ expectedRevision? }` —— 队列写同样先结算再修改（保证顺序与上限判定基于最新状态）。
-- `POST /combat/start` `{ stageId, expectedRevision? }` —— 同 `actions/start` 的先结算语义。
-- `POST /player/class` `{ classId, expectedRevision? }`；`POST /player/offline-report/ack` `{ expectedRevision? }`（响应 `{ ok: true, stateRevision }`）。
-
 ## 认证 API
 
 ### 游客登录
@@ -72,29 +14,17 @@ POST /auth/guest
 Content-Type: application/json
 
 {
-  "deviceId": "optional-hint-not-a-credential",
-  "resumeToken": "optional-resume-token"
+  "deviceId": "optional-device-id"
 }
 ```
-
-没有 `resumeToken` 时总是创建新游客，相同 `deviceId` 不能取回已有存档。`resumeToken` 无效时返回 `401 invalid_guest_resume_token`，不会新建账号。有效凭证返回原用户。响应里的 `resumeToken` 只在本次响应出现，数据库只存它的 SHA-256。
 
 **响应**:
 ```json
 {
   "userId": "uuid",
-  "token": "jwt-token",
-  "resumeToken": "base64url-at-least-32-bytes"
+  "token": "jwt-token"
 }
 ```
-
-### 为已有游客领取恢复凭证
-```http
-POST /auth/guest/resume-token
-Authorization: Bearer {token}
-```
-
-需要当前游客的有效 JWT。没有 JWT 返回 401。已绑定外部身份的账号返回 403 `guest_resume_unavailable`。成功时轮换恢复凭证，不改变金币或物品。此路径不是公开路由。
 
 ### 绑定Google账号
 ```http
@@ -329,70 +259,59 @@ Authorization: Bearer {token}
 
 ## 交易系统 API
 
-### 获取订单簿
+### 获取交易列表
 ```http
-GET /trading/orders/:itemId
+GET /trading/listings?search=wood&filters={}
 Authorization: Bearer {token}
 ```
 
 **响应**:
 ```json
-{
-  "orders": [
-    {
-      "id": "order-uuid",
-      "userId": "seller-uuid",
-      "itemId": "wood_1",
-      "quantity": 100,
-      "price": 10,
-      "type": "sell",
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    }
-  ]
-}
+[
+  {
+    "id": "listing-uuid",
+    "sellerId": "seller-uuid",
+    "itemId": "wood_1",
+    "quantity": 100,
+    "pricePerUnit": 10,
+    "listedAt": "2024-01-01T00:00:00.000Z",
+    "expiresAt": "2024-01-02T00:00:00.000Z",
+    "status": "active"
+  }
+]
 ```
 
-### 创建订单（type: sell 挂单 / buy 收购）
+### 上架物品
 ```http
-POST /trading/orders
+POST /trading/list
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
   "itemId": "wood_1",
   "quantity": 100,
-  "price": 10,
-  "type": "sell",
-  "operationId": "op-uuid"
+  "pricePerUnit": 10,
+  "duration": 24
 }
 ```
 
-### 成交订单
+### 购买物品
 ```http
-POST /trading/buy
+POST /trading/purchase
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "orderId": "order-uuid",
-  "quantity": 10,
-  "operationId": "op-uuid"
+  "listingId": "listing-uuid",
+  "quantity": 10
 }
 ```
 
-### 撤销订单
-```http
-DELETE /trading/orders/:orderId
-Authorization: Bearer {token}
-```
-
-### 我的订单 / 市场概览 / 价格历史
-```http
-GET /trading/my-orders
-GET /trading/summary
-GET /trading/price-history/:itemId
-GET /trading/price-trend/:itemId
-Authorization: Bearer {token}
+**响应**:
+```json
+{
+  "success": true
+}
 ```
 
 ## 组队系统 API

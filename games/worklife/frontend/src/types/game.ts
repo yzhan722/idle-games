@@ -1,30 +1,11 @@
 // 游戏类型定义
 
 export interface PlayerState {
-  progression?: {
-    schemaVersion: 1;
-    completedMilestones: Record<string, { completedAt: string; source: 'event' | 'migration' }>;
-    completedChapters: Record<string, { completedAt: string; source: 'event' | 'migration' }>;
-  };
   contentVersion: string;
   lastSimulatedAt: string;
   activeClassId: string;
-  mode: "idle" | "life_action" | "enhancing";
-  /** MWI: enhancing is a timed action — attempts run until the target level or the materials run out. */
-  enhanceRun?: {
-    itemId: string;
-    targetLevel: number;
-    useProtection: boolean;
-    intervalMs: number;
-    nextAttemptAt: number;
-    startedAt: number;
-    attempts: number;
-    successes: number;
-    failures: number;
-    xpGained: number;
-    outcome?: { reason: "reached" | "materials" | "stopped" | "max" | "no_protection"; level: number; at: number };
-  };
-  lifeActionState?: { actionId: string; startedAt: string; quantity?: number; remaining?: number; effectiveDurationMs?: number };
+  mode: "idle" | "life_action" | "combat_farm";
+  lifeActionState?: { actionId: string; startedAt: string; quantity?: number; remaining?: number };
   combatFarmState?: { stageId: string; startedAt: string; seed: string };
   combatLevel: number;
   combatXp: number;
@@ -36,10 +17,8 @@ export interface PlayerState {
     chest?: string;
     legs?: string;
     feet?: string;
-    hands?: string;
     accessory1?: string;
     accessory2?: string;
-    tool?: string;
     enhancementLevels: Record<string, number>;
     durability: Record<string, number>;
     maxDurability: Record<string, number>;
@@ -48,137 +27,8 @@ export interface PlayerState {
   logs: Array<{ ts: string; text: string }>;
   tradingState: TradingState;
   partyState?: PartyState;
-  activePartyActivity?: {
-    partyId: string;
-    type: string;
-    stageId?: string;
-    startedAt: string;
-    endsAt?: string;
-    raidBossId?: string;
-    raidBossName?: string;
-  } | null;
   activityQueue: ActivityQueueItem[];
-  /** Derived by GET /player/state: MWI task badge. */
-  taskSummary?: { total: number; ready: number; giftReady: boolean };
-  stats?: {
-    totalKills: number;
-    totalBossKills?: number;
-    totalDeaths?: number;
-    killsByMonster?: Record<string, number>;
-    totalGathered?: number;
-    totalActions?: number;
-    actionsById?: Record<string, number>;
-  };
-  hpCombat?: {
-    monsterId: string;
-    monsterName: string;
-    playerHp: number;
-    playerMaxHp: number;
-    enemyHp: number;
-    enemyMaxHp: number;
-    playerIntervalMs: number;
-    enemyIntervalMs: number;
-    playerCooldownMs: number;
-    enemyCooldownMs: number;
-    heavyChopReadyAt: number;
-    guardActive: boolean;
-    wrathActive: boolean;
-    log: string[];
-    outcome?: "win" | "loss";
-    drops?: Array<{ itemId: string; name: string; qty: number }>;
-    consumed?: Array<{ itemId: string; name: string; qty: number }>;
-    foodReadyAt?: number[];
-    mpReadyAt?: number[];
-    nextFightAt?: number;
-    streak?: number;
-    deaths?: number;
-    /** Consecutive defeats; at 3 the server switches auto-repeat off by itself. */
-    lossStreak?: number;
-    startedAt?: number;
-    /** MWI battle statistics for the current auto-repeat run. */
-    runStats?: { startedAt: number; kills: number; xp: number; gold: number; loot: Record<string, number> };
-    enrageStacks?: number;
-    playerMp?: number;
-    playerMaxMp?: number;
-    abilityReadyAt?: Record<string, number>;
-    braceUntil?: number;
-    braceMult?: number;
-    xpGained?: Record<string, number>;
-    abilityXpGained?: Record<string, number>;
-    abilityLevelUps?: Array<{ id: string; name: string; level: number }>;
-  };
-  activeBuffs?: Array<{
-    id: string;
-    name: string;
-    sourceItemId: string;
-    expiresAt: string;
-    multipliers?: Record<string, number>;
-    stats?: Record<string, number>;
-  }>;
-  chapter1Build?: "sharpened_edge" | "thick_bark";
-  /** 玩家偏好/角色档案（建角屏写入；老存档可能整体缺失） */
-  settings?: {
-    soundEnabled?: boolean;
-    animationsEnabled?: boolean;
-    compactMode?: boolean;
-    notificationsEnabled?: boolean;
-    playerName?: string;
-    avatar?: string;
-    gender?: 'male' | 'female' | 'animal' | 'secret';
-    characterCreated?: boolean;
-    tutorialDone?: boolean;
-  };
-  /** Persistent combat HP — survives between fights, regenerates out of combat (60s → full). */
-  combatHp?: number;
-  /** Wall-clock ms when combatHp was last written (regen accrues from here). */
-  combatHpAt?: number;
-  /** MWI combat skills (server-derived 战斗等级 lives in combatLevel). */
-  combatSkills?: Record<CombatSkillId, { level: number; xp: number }>;
-  abilities?: Record<string, { level: number; xp: number }>;
-  abilityLoadout?: AbilitySlot[];
-  combatLoadout?: {
-    food: Array<{ itemId: string; triggerMissingHp: number }>;
-    drink: Array<{ itemId: string; triggerMissingMp?: number }>;
-    mp?: Array<{ itemId: string; triggerMissingMp: number }>;
-    autoRepeat?: boolean;
-  };
 }
-
-export type CombatSkillId = "stamina" | "intelligence" | "attack" | "defense" | "melee" | "ranged" | "magic";
-
-export type AbilityTrigger =
-  | { type: "always" }
-  | { type: "enemy_hp_below"; pct: number }
-  | { type: "self_hp_below"; pct: number }
-  | { type: "ally_hp_below"; pct: number }
-  | { type: "enemies_at_least"; pct: number }
-  | { type: "enemy_guard" };
-
-export type AbilitySlot = { abilityId: string; trigger: AbilityTrigger };
-
-/** Ability definition as served by GET /content (mirrors backend/src/abilities.ts). */
-export type AbilityDef = {
-  id: string;
-  name: string;
-  blurb: string;
-  cooldownMs: number;
-  mpCost: number;
-  damageMult?: number;
-  targetCount?: number;
-  healPct?: number;
-  isPartyHeal?: boolean;
-  guardMult?: number;
-  durationMs?: number;
-  tauntDurationMs?: number;
-  auraAtkPct?: number;
-  auraCritPct?: number;
-  auraDurationMs?: number;
-  mpRestore?: number;
-  breaksGuard?: boolean;
-  bookItemId?: string;
-  defaultTrigger: AbilityTrigger;
-  levelStep: number;
-};
 
 export interface SkillState {
   level: number;
@@ -203,11 +53,10 @@ export interface PartyState {
   joinedAt: string;
 }
 
-/** 行动队列条目：当前动作结束后按顺序自动接上；quantity 缺省 = 无限 */
 export interface ActivityQueueItem {
-  id: string;
   actionId: string;
-  quantity?: number;
+  priority: number;
+  estimatedDuration: number;
 }
 
 export interface ContentPack {

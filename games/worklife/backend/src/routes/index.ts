@@ -1,5 +1,6 @@
 export { authRoutes } from "./auth";
 export { playerRoutes } from "./player";
+export { skillsRoutes } from "./skills";
 export { enhancementRoutes } from "./enhancement";
 export { tradingRoutes } from "./trading";
 export { partyRoutes } from "./party";
@@ -7,6 +8,3 @@ export { equipmentRoutes } from "./equipment";
 export { progressionRoutes } from "./progression";
 export { progression2Routes } from "./progression2";
 export { systemsRoutes } from "./systems";
-export { combatHpRoutes } from "./combat_hp";
-export { tasksRoutes } from "./tasks";
-export { housesRoutes } from "./houses";

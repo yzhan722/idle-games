@@ -8,7 +8,7 @@ import type {
   PlayerStats,
   DailyQuestState
 } from "./types";
-import { ensurePlayerExtensions, grantProfessionXp } from "./storage";
+import { ensurePlayerExtensions } from "./storage";
 import { todayLocal } from "./time";
 
 // ============ 成就定义 ============
@@ -156,7 +156,7 @@ type DailyTemplate = {
   reward: { gold: number; xp?: number };
 };
 
-export const DAILY_TEMPLATES: DailyTemplate[] = [
+const DAILY_TEMPLATES: DailyTemplate[] = [
   { id: "dq_gather_30", name: "今日采集", description: "今日采集 30 次", icon: "🌿", metric: "totalGathered", target: 30, reward: { gold: 200 } },
   { id: "dq_gather_60", name: "勤采不辍", description: "今日采集 60 次", icon: "🍃", metric: "totalGathered", target: 60, reward: { gold: 400 } },
   { id: "dq_craft_15", name: "今日制作", description: "今日制作 15 件", icon: "🔧", metric: "totalCrafted", target: 15, reward: { gold: 250 } },
@@ -197,16 +197,7 @@ export function ensureDailyQuests(player: EnhancedPlayerState): DailyQuestState 
   const today = todayUTC();
 
   if (!player.dailyQuests || player.dailyQuests.date !== today) {
-    // 按玩家阶段过滤模板：第一章通关总收入约 250 金，"消费 2000 金"这类任务要等玩家真有那个量级
-    const earned = (stats.totalGoldEarned as number) || 0;
-    const kills = (stats.totalKills as number) || 0;
-    const eligible = DAILY_TEMPLATES.filter((t) => {
-      if (t.metric === "totalGoldSpent") return earned >= t.target * 2;
-      if (t.metric === "totalKills" && t.target >= 40) return kills >= 20;
-      if (t.target >= 100) return kills >= 10 || earned >= 1000;
-      return true;
-    });
-    const picks = pickRandom(eligible.length >= 3 ? eligible : DAILY_TEMPLATES, 3);
+    const picks = pickRandom(DAILY_TEMPLATES, 3);
     player.dailyQuests = {
       date: today,
       quests: picks.map((t) => ({
@@ -255,11 +246,5 @@ export function claimDailyQuest(
     player.inventory.gold = (player.inventory.gold || 0) + gold;
     stats.totalGoldEarned += gold;
   }
-  const xp = quest.reward.xp || 0;
-  if (xp > 0) {
-    const skillKey = `skill_${player.activeClassId || "woodcutter"}`;
-    grantProfessionXp(player, skillKey, xp);
-  }
-  syncAchievements(player);
-  return { ok: true, goldGained: gold, xpGained: xp };
+  return { ok: true, goldGained: gold, xpGained: quest.reward.xp || 0 };
 }

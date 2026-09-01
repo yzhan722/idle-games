@@ -1,10 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
-import type { EnhancedContentPack, EnhancedPlayerState } from "../types";
-import { useCombatConsumable } from "../hp_combat";
-import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from "../player_commands";
+import type { EnhancedContentPack } from "../types";
 import {
+  consumeItem,
   getBuffEffects,
   pruneExpiredBuffs,
   getCheckInInfo,
@@ -12,24 +11,8 @@ import {
   getShopStock,
   buyFromShop,
   sellToShop,
-  sellPrice,
-  alchemyCoinify
+  sellPrice
 } from "../systems";
-
-const revisionField = {
-  expectedRevision: z.number().int().nonnegative().optional(),
-  operationId: z.string().min(1).max(128).optional(),
-};
-
-function replyCommandError(error: unknown, reply: FastifyReply) {
-  if (error instanceof PlayerCommandRejected) {
-    return reply.status(400).send({ error: error.code });
-  }
-  if (error instanceof PlayerCommandConflict) {
-    return reply.status(409).send({ error: "state_version_conflict", message: "状态已更新，请刷新后重试", stateRevision: error.stateRevision });
-  }
-  throw error;
-}
 
 export async function systemsRoutes(
   app: FastifyInstance,
@@ -45,19 +28,17 @@ export async function systemsRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const now = new Date();
     const state = await storage.getOrCreatePlayerState(userId, ver);
-    const next = await storage.simulateToNow({ userId, state, now, contentPack });
-    const beforeLen = next.activeBuffs?.length || 0;
+    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
+    const now = new Date();
     pruneExpiredBuffs(next, now);
-    const saved = (next.activeBuffs?.length || 0) !== beforeLen ? await storage.savePlayerState(userId, next) : next;
+    await storage.savePlayerState(userId, next);
     return reply.send({
-      buffs: (saved.activeBuffs || []).map((b) => ({
+      buffs: (next.activeBuffs || []).map((b) => ({
         ...b,
         remainingSec: Math.max(0, Math.floor((Date.parse(b.expiresAt) - now.getTime()) / 1000))
       })),
-      effects: getBuffEffects(saved, now),
-      stateRevision: saved.stateRevision
+      effects: getBuffEffects(next, now)
     });
   });
 
@@ -66,33 +47,22 @@ export async function systemsRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ itemId: z.string().min(1), ...revisionField }).strict().parse((req.body ?? {}) as unknown);
-    const now = new Date();
-    try {
-      const outcome = await storage.executePlayerCommand({
-        userId, contentPack, now, expectedRevision: body.expectedRevision,
-        operationId: body.operationId, operationPayload: operationPayload(body),
-        apply(state) {
-          const result = useCombatConsumable(state as EnhancedPlayerState, contentPack, body.itemId, now);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || "consume_rejected");
-          return result;
-        },
-      });
-      return reply.send({
-        ok: true,
-        itemName: outcome.result.itemName,
-        healed: outcome.result.healed,
-        buff: outcome.result.buff,
-        inventory: outcome.state.inventory,
-        activeBuffs: outcome.state.activeBuffs || [],
-        hpCombat: outcome.state.hpCombat,
-        combatHp: outcome.state.combatHp,
-        combatHpAt: outcome.state.combatHpAt,
-        stateRevision: outcome.state.stateRevision
-      });
-    } catch (error) {
-      return replyCommandError(error, reply);
-    }
+    const body = z.object({ itemId: z.string().min(1) }).parse((req.body ?? {}) as unknown);
+    const state = await storage.getOrCreatePlayerState(userId, ver);
+    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
+
+    const result = consumeItem(next, contentPack, body.itemId, new Date());
+    if (!result.ok) return reply.status(400).send({ error: result.reason });
+
+    await storage.savePlayerState(userId, next);
+    return reply.send({
+      ok: true,
+      itemName: result.itemName,
+      healed: result.healed,
+      buff: result.buff,
+      inventory: next.inventory,
+      activeBuffs: next.activeBuffs || []
+    });
   });
 
   /* ----------------------- 每日签到 ----------------------- */
@@ -112,31 +82,21 @@ export async function systemsRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ ...revisionField }).strict().parse((req.body ?? {}) as unknown);
-    const now = new Date();
-    try {
-      const outcome = await storage.executePlayerCommand({
-        userId, contentPack, now, expectedRevision: body.expectedRevision,
-        operationId: body.operationId, operationPayload: operationPayload(body),
-        apply(state) {
-          const result = doCheckIn(state, now);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || "checkin_rejected");
-          return result;
-        },
-      });
-      return reply.send({
-        ok: true,
-        reward: outcome.result.reward,
-        streak: outcome.result.streak,
-        totalDays: outcome.result.totalDays,
-        cycleDay: outcome.result.cycleDay,
-        gold: outcome.state.inventory.gold || 0,
-        inventory: outcome.state.inventory,
-        stateRevision: outcome.state.stateRevision
-      });
-    } catch (error) {
-      return replyCommandError(error, reply);
-    }
+    const state = await storage.getOrCreatePlayerState(userId, ver);
+    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
+    const result = doCheckIn(next, new Date());
+    if (!result.ok) return reply.status(400).send({ error: result.reason });
+
+    await storage.savePlayerState(userId, next);
+    return reply.send({
+      ok: true,
+      reward: result.reward,
+      streak: result.streak,
+      totalDays: result.totalDays,
+      cycleDay: result.cycleDay,
+      gold: next.inventory.gold || 0,
+      inventory: next.inventory
+    });
   });
 
   /* ----------------------- 商店 ----------------------- */
@@ -147,11 +107,9 @@ export async function systemsRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const state = await storage.getOrCreatePlayerState(userId, ver);
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
     return reply.send({
       stock: getShopStock(contentPack),
-      gold: next.inventory.gold || 0,
-      stateRevision: next.stateRevision
+      gold: state.inventory.gold || 0
     });
   });
 
@@ -161,22 +119,16 @@ export async function systemsRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const body = z
-      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(9999), ...revisionField })
-      .strict()      .parse((req.body ?? {}) as unknown);
-    try {
-      const outcome = await storage.executePlayerCommand({
-        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
-        operationId: body.operationId, operationPayload: operationPayload(body),
-        apply(state) {
-          const result = buyFromShop(state, contentPack, body.itemId, body.qty);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || "buy_rejected");
-          return result;
-        },
-      });
-      return reply.send({ ...outcome.result, inventory: outcome.state.inventory, stateRevision: outcome.state.stateRevision });
-    } catch (error) {
-      return replyCommandError(error, reply);
-    }
+      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(9999) })
+      .parse((req.body ?? {}) as unknown);
+    const state = await storage.getOrCreatePlayerState(userId, ver);
+    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
+
+    const result = buyFromShop(next, contentPack, body.itemId, body.qty);
+    if (!result.ok) return reply.status(400).send({ error: result.reason });
+
+    await storage.savePlayerState(userId, next);
+    return reply.send({ ...result, inventory: next.inventory });
   });
 
   // 出售
@@ -185,22 +137,16 @@ export async function systemsRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const body = z
-      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(99999), ...revisionField })
-      .strict()      .parse((req.body ?? {}) as unknown);
-    try {
-      const outcome = await storage.executePlayerCommand({
-        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
-        operationId: body.operationId, operationPayload: operationPayload(body),
-        apply(state) {
-          const result = sellToShop(state, contentPack, body.itemId, body.qty);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || "sell_rejected");
-          return result;
-        },
-      });
-      return reply.send({ ...outcome.result, inventory: outcome.state.inventory, stateRevision: outcome.state.stateRevision });
-    } catch (error) {
-      return replyCommandError(error, reply);
-    }
+      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(99999) })
+      .parse((req.body ?? {}) as unknown);
+    const state = await storage.getOrCreatePlayerState(userId, ver);
+    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
+
+    const result = sellToShop(next, contentPack, body.itemId, body.qty);
+    if (!result.ok) return reply.status(400).send({ error: result.reason });
+
+    await storage.savePlayerState(userId, next);
+    return reply.send({ ...result, inventory: next.inventory });
   });
 
   // 估价：返回背包内可出售物品的单价（用于前端展示卖价）
@@ -216,40 +162,5 @@ export async function systemsRoutes(
       if (def) prices[itemId] = sellPrice(def);
     }
     return reply.send({ prices });
-  });
-
-  // 炼金分支：点石成金（Coinify）
-  app.post("/systems/alchemy/coinify", async (req: FastifyRequest, reply: FastifyReply) => {
-    const userId = (req as any).userId as string;
-    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-
-    const body = z
-      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(99999), ...revisionField })
-      .strict()
-      .parse((req.body ?? {}) as unknown);
-    try {
-      const outcome = await storage.executePlayerCommand({
-        userId,
-        contentPack,
-        now: new Date(),
-        expectedRevision: body.expectedRevision,
-        operationId: body.operationId,
-        operationPayload: operationPayload(body),
-        apply(state) {
-          const result = alchemyCoinify(state, contentPack, body.itemId, body.qty);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || "coinify_rejected");
-          return result;
-        },
-      });
-      return reply.send({
-        ...outcome.result,
-        gold: outcome.state.inventory.gold || 0,
-        inventory: outcome.state.inventory,
-        skills: outcome.state.skills,
-        stateRevision: outcome.state.stateRevision,
-      });
-    } catch (error) {
-      return replyCommandError(error, reply);
-    }
   });
 }

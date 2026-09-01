@@ -11,6 +11,7 @@ interface GameContextType {
   refreshPlayerState: () => Promise<void>
   startLifeAction: (actionId: string, quantity?: number) => Promise<PlayerState | undefined>
   stopAction: () => Promise<void>
+  startCombatFarm: (stageId: string) => Promise<void>
   clearError: () => void
 }
 
@@ -23,8 +24,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null)
   const refreshTimerRef = useRef<number | null>(null)
   const refreshInFlightRef = useRef(false)
-  const refreshQueuedRef = useRef(false)
-  const mutationSeqRef = useRef(0)
 
   const clearError = useCallback(() => setError(null), [])
 
@@ -37,29 +36,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const refreshPlayerState = useCallback(async () => {
-    if (!user) return
-    // 在途刷新期间收到的新刷新请求不能丢——否则写操作后的那次刷新会被跳过，
-    // 在途请求落地的是写前旧状态，UI 会"复活"已被写操作关闭的界面（如选刀弹窗），
-    // 直到下一个轮询周期才自愈。改为排队：在途落地后再补一次真实拉取。
-    if (refreshInFlightRef.current) {
-      refreshQueuedRef.current = true
-      return
-    }
+    if (!user || refreshInFlightRef.current) return
     refreshInFlightRef.current = true
-
+    
     try {
-      do {
-        refreshQueuedRef.current = false
-        const seqBefore = mutationSeqRef.current
-        setError(null)
-        logger.debug('Refreshing player state...')
-        const response = await apiClient.get('/player/state')
-        if (mutationSeqRef.current !== seqBefore) {
-          refreshQueuedRef.current = true
-          continue
-        }
-        commitPlayerState(response)
-      } while (refreshQueuedRef.current)
+      setError(null)
+      logger.debug('Refreshing player state...')
+      const response = await apiClient.get('/player/state')
+      commitPlayerState(response)
     } catch (err) {
       logger.error('Failed to fetch player state:', err)
       const error = err instanceof Error ? err : new Error('获取玩家状态失败')
@@ -74,9 +58,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     try {
       setError(null)
-      mutationSeqRef.current += 1
       const response = await apiClient.post('/actions/start', { actionId, quantity })
-      mutationSeqRef.current += 1
       commitPlayerState(response)
       return response
     } catch (err) {
@@ -92,9 +74,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     
     try {
       setError(null)
-      mutationSeqRef.current += 1
       const response = await apiClient.post('/actions/stop', {})
-      mutationSeqRef.current += 1
       commitPlayerState(response)
     } catch (err) {
       logger.error('Failed to stop action:', err)
@@ -103,6 +83,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
       throw error
     }
   }, [user, commitPlayerState])
+
+  const startCombatFarm = useCallback(async (stageId: string) => {
+    if (!user) return
+    
+    try {
+      setError(null)
+      const response = await apiClient.post('/combat/start', { stageId })
+      setPlayerState(response)
+    } catch (err) {
+      logger.error('Failed to start combat farm:', err)
+      const error = err instanceof Error ? err : new Error('开始战斗失败')
+      setError(error)
+      throw error
+    }
+  }, [user])
 
   useEffect(() => {
     logger.debug('User changed:', user?.id)
@@ -166,8 +161,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     refreshPlayerState,
     startLifeAction,
     stopAction,
+    startCombatFarm,
     clearError
-  }), [playerState, loading, error, refreshPlayerState, startLifeAction, stopAction, clearError]);
+  }), [playerState, loading, error, refreshPlayerState, startLifeAction, stopAction, startCombatFarm, clearError]);
 
   return (
     <GameContext.Provider value={value}>

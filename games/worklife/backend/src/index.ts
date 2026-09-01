@@ -1,4 +1,3 @@
-import "./loadEnv";
 import Fastify, { FastifyInstance, FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
@@ -12,6 +11,7 @@ import type { EnhancedContentPack } from "./types";
 import {
   authRoutes,
   playerRoutes,
+  skillsRoutes,
   enhancementRoutes,
   tradingRoutes,
   partyRoutes,
@@ -19,33 +19,13 @@ import {
   progressionRoutes,
   progression2Routes,
   systemsRoutes,
-  combatHpRoutes,
-  tasksRoutes,
-  housesRoutes,
 } from "./routes";
-import { socketFromWsConnection } from "./ws_socket";
-import { isPublicApiPath, isRateLimitExempt } from "./http_public_path";
-import { mapThrownError } from "./http_errors";
-import { encounterStages } from "./gameplay_encounters";
-import { abilityCatalog } from "./abilities";
-import { COMBAT_SKILL_IDS, COMBAT_SKILL_NAMES, COMBAT_SKILL_BLURBS, defaultCombatSkills, ensureCombatSkills } from "./combat_skills";
-import { ensureProgression } from "./progression_state";
-import { applyE2eFastContent } from "./e2e_fast";
-import { assertRuntimePolicy } from "./runtime_policy";
-
-assertRuntimePolicy({
-  NODE_ENV: process.env.NODE_ENV,
-  E2E_SEED: process.env.E2E_SEED,
-  E2E_FAST: process.env.E2E_FAST,
-});
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   DATABASE_URL: z.string().optional(),
-  // 战斗轮询是 1 req/s（60/min），加面板操作一个正常玩家轻松破 100。
-  // 默认 300/min 仍挡脚本，配合按用户计数不至于把同 IP 的多个玩家一起掐死。
-  RATE_LIMIT_MAX: z.coerce.number().default(300),
+  RATE_LIMIT_MAX: z.coerce.number().default(100),
   RATE_LIMIT_WINDOW: z.coerce.number().default(60000),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   CORS_ORIGIN: z.string().optional(),
@@ -57,22 +37,15 @@ if (process.env.NODE_ENV !== "production" && !process.env.JWT_SECRET) {
 }
 
 const env = envSchema.parse(process.env);
-const contentPack = applyE2eFastContent(
-  JSON.parse(JSON.stringify(enhancedContentPack)) as EnhancedContentPack
-);
+const contentPack = enhancedContentPack as EnhancedContentPack;
 
-async function requireAuth(app: FastifyInstance, storage: { getUser(id: string): Promise<{ authVersion?: number } | null> }, req: FastifyRequest) {
+async function requireAuth(app: FastifyInstance, req: FastifyRequest) {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) {
     throw new Error("Unauthorized");
   }
   const token = auth.slice("Bearer ".length);
-  const payload = app.jwt.verify<{ sub: string; av?: number }>(token);
-  // av 与用户当前版本不符 → 登出/绑定后签发的旧 token 一律拒绝（服务端吊销）
-  const user = await storage.getUser(payload.sub);
-  if (!user || payload.av !== (user.authVersion ?? 1)) {
-    throw new Error("Unauthorized");
-  }
+  const payload = app.jwt.verify<{ sub: string }>(token);
   (req as any).userId = payload.sub;
 }
 
@@ -96,11 +69,33 @@ async function main() {
 
   // 全局错误处理：把校验错误转成 400，其余异常返回安全的 500（不泄露堆栈）
   app.setErrorHandler((error, req, reply) => {
-    const mapped = mapThrownError(error);
-    if (mapped.status >= 500) {
-      req.log.error(error);
+    // Zod 校验错误（请求参数非法）
+    if (error instanceof z.ZodError) {
+      return reply.status(400).send({
+        error: "invalid_request",
+        message: "请求参数不合法",
+        details: error.errors.map((e) => ({ path: e.path.join("."), message: e.message })),
+      });
     }
-    return reply.status(mapped.status).send(mapped.body);
+    // Fastify 内置校验错误
+    if ((error as any).validation) {
+      return reply.status(400).send({ error: "invalid_request", message: "请求参数不合法" });
+    }
+    // 业务层抛出的已知错误（约定以 code 形式抛出）
+    const msg = String((error as any)?.message || "");
+    if (msg === "state_not_found") {
+      return reply.status(404).send({ error: "state_not_found", message: "玩家状态不存在，请重新进入游戏" });
+    }
+    if (msg === "state_version_conflict") {
+      // 并发写冲突：客户端应丢弃本地缓存并以最新状态重试
+      return reply.status(409).send({ error: "state_version_conflict", message: "状态已被其他请求更新，请重试" });
+    }
+    if (msg === "Unauthorized") {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    // 其余未知错误：记录日志，返回通用 500
+    req.log.error(error);
+    return reply.status(500).send({ error: "internal_error", message: "服务器内部错误，请稍后重试" });
   });
 
   // CORS 配置：
@@ -130,22 +125,11 @@ async function main() {
     credentials: true,
   });
 
-  // 全局限流：防刷。登录用户按 userId 计数（同 IP 多人不互相挤占），
-  // 未登录流量按 IP。/health 等公开探活路由不限流。
+  // 全局限流：防止接口被刷（按 IP 计数）。/health 等公开探活路由不限流。
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
-    allowList: (req) => isRateLimitExempt(req.url),
-    keyGenerator: (req) => {
-      const auth = req.headers.authorization;
-      if (auth?.startsWith("Bearer ")) {
-        try {
-          const payload = app.jwt.verify<{ sub: string }>(auth.slice("Bearer ".length));
-          if (payload.sub) return `u:${payload.sub}`;
-        } catch { /* 无效 token 按 IP 计数 */ }
-      }
-      return `ip:${req.ip}`;
-    },
+    allowList: (req) => req.url.startsWith("/health"),
     errorResponseBuilder: () => ({
       error: "rate_limited",
       message: "请求过于频繁，请稍后重试",
@@ -168,12 +152,7 @@ async function main() {
       db: { connected: dbHealth.ok, latencyMs: dbHealth.latencyMs },
     });
   });
-  app.get("/content", async () => ({
-    ...contentPack,
-    encounterStages: encounterStages(contentPack as never),
-    abilities: abilityCatalog(),
-    combatSkills: COMBAT_SKILL_IDS.map((id) => ({ id, name: COMBAT_SKILL_NAMES[id], blurb: COMBAT_SKILL_BLURBS[id] })),
-  }));
+  app.get("/content", async () => contentPack);
 
   // 认证路由（不需要 token）
   await authRoutes(app, storage);
@@ -181,11 +160,13 @@ async function main() {
   // 需要认证的路由 - 添加 preHandler
   // 用精确路径匹配（剥离 query 后比对 pathname），避免 startsWith 前缀匹配
   // 导致 /auth/guest-xxx 之类的路径被误判为公开而绕过鉴权（越权风险）。
+  const publicPaths = new Set(["/health", "/content", "/auth/guest", "/ws"]);
   app.addHook("preHandler", async (req, reply) => {
-    const isPublic = isPublicApiPath(req.url);
+    const pathname = (req.url.split("?", 1)[0] || "/").replace(/\/+$/, "") || "/";
+    const isPublic = publicPaths.has(pathname);
     if (!isPublic) {
       try {
-        await requireAuth(app, storage, req);
+        await requireAuth(app, req);
       } catch {
         return reply.status(401).send({ error: "Unauthorized" });
       }
@@ -194,6 +175,7 @@ async function main() {
 
   // 注册功能路由
   await playerRoutes(app, storage, contentPack);
+  await skillsRoutes(app, storage, contentPack);
   await enhancementRoutes(app, storage, contentPack);
   await tradingRoutes(app, storage, contentPack);
   await partyRoutes(app, storage, contentPack);
@@ -201,140 +183,66 @@ async function main() {
   await progressionRoutes(app, storage, contentPack);
   await progression2Routes(app, storage, contentPack);
   await systemsRoutes(app, storage, contentPack);
-  await combatHpRoutes(app, storage, contentPack);
-  await tasksRoutes(app, storage, contentPack);
-  await housesRoutes(app, storage, contentPack);
 
   // 物品列表 API
   app.get("/items/all", async () => {
     const items = (contentPack as any).items || [];
     return {
       materials: items.filter((item: any) => item.type === "material"),
-      weapons: items.filter((item: any) => item.type === "weapon" || item.type === "offhand" || item.type === "shield" || item.type === "tool" || Boolean(item.toolFor)),
-      armor: items.filter((item: any) => item.type === "armor" || item.type === "accessory"),
-      consumables: items.filter((item: any) => item.type === "consumable" || item.type === "food" || item.type === "book"),
+      weapons: items.filter((item: any) => item.type === "weapon" || item.type === "offhand"),
+      armor: items.filter((item: any) => item.type === "armor"),
+      consumables: items.filter((item: any) => item.type === "consumable" || item.type === "food"),
       all: items,
     };
   });
 
-  if (process.env.E2E_SEED === "1") {
-    app.post("/e2e/seed", async (req, reply) => {
-      const userId = (req as any).userId as string;
-      if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-      const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-      const sceneBody = (req.body || {}) as { scene?: string; level?: number };
-      if (sceneBody.scene === "combat-levels") {
-        // Skip the combat grind only: every combat skill to `level`, nothing else touched, so a spec can walk the real
-        // craft / equip / goal flow and still win its fights (forest crab is level 9, the boss level 10).
-        const level = Math.min(60, Math.max(1, Math.floor(Number(sceneBody.level) || 16)));
-        (state as any).combatSkills = defaultCombatSkills(level);
-        ensureCombatSkills(state as any);
-        (state as any).combatHp = undefined;
-        state.combatHpAt = undefined;
-        const saved = await storage.savePlayerState(userId, state);
-        return reply.send({ ok: true, inventory: saved.inventory });
-      }
-      state.inventory.wood_1 = Math.max(state.inventory.wood_1 || 0, 20);
-      state.inventory.lumber_1 = Math.max(state.inventory.lumber_1 || 0, 10);
-      state.inventory.weapon_wooden_sword = Math.max(state.inventory.weapon_wooden_sword || 0, 1);
-      state.inventory.armor_wood_chest = Math.max(state.inventory.armor_wood_chest || 0, 1);
-      state.inventory.gold = Math.max(state.inventory.gold || 0, 100);
-      if (!state.equipment) {
-        (state as any).equipment = { enhancementLevels: {}, durability: {}, maxDurability: {} };
-      }
-      (state.equipment as any).main_hand = "weapon_wooden_sword";
-      (state.equipment as any).chest = "armor_wood_chest";
-      const body = (req.body || {}) as { scene?: string };
-      if (body.scene === "chapter-complete") {
-        state.chapter1Build = state.chapter1Build || "thick_bark";
-        const stats = (state.stats ?? {}) as NonNullable<typeof state.stats>;
-        state.stats = stats;
-        stats.totalKills = Math.max(stats.totalKills || 0, 4);
-        stats.totalBossKills = Math.max(stats.totalBossKills || 0, 1);
-        stats.killsByMonster = {
-          ...(stats.killsByMonster || {}),
-          slime: Math.max(stats.killsByMonster?.slime || 0, 1),
-          crab: Math.max(stats.killsByMonster?.crab || 0, 1),
-          monkey: Math.max(stats.killsByMonster?.monkey || 0, 1),
-          forest_boss: Math.max(stats.killsByMonster?.forest_boss || 0, 1),
-        };
-      }
-      ensureProgression(state, new Date());
-      const saved = await storage.savePlayerState(userId, state);
-      return reply.send({ ok: true, inventory: saved.inventory });
-    });
-  }
 
-
-  // WebSocket 路由（@fastify/websocket v11 第一个参数就是 ws socket）
-  // 认证走首条消息 {type:"auth",token} —— 浏览器 WS 不能设自定义头，
-  // token 放 query 会进 nginx/access log（凭据泄漏面）。
+  // WebSocket 路由
   app.get("/ws", { websocket: true }, (connection: any, req: FastifyRequest) => {
-    const socket = socketFromWsConnection(connection);
-    if (!socket) return;
+    const url = new URL(req.url ?? "", "http://localhost");
+    const token = url.searchParams.get("token") ?? "";
 
     let userId: string | null = null;
-    let authed = false;
-    // 5 秒内未完成认证即断开，防无认证连接白挂
-    const authDeadline = setTimeout(() => {
-      if (!authed) socket.close();
-    }, 5_000);
-    authDeadline.unref?.();
+    try {
+      const payload = app.jwt.verify<{ sub: string }>(token);
+      userId = payload.sub;
+    } catch {
+      connection.socket.close();
+      return;
+    }
 
-    // 聊天发言限频：每用户 6 条 / 3s，滑动窗口
-    const chatWindow = { count: 0, resetAt: 0 };
-    const chatRateOk = () => {
-      const now = Date.now();
-      if (now >= chatWindow.resetAt) { chatWindow.count = 0; chatWindow.resetAt = now + 3_000; }
-      return ++chatWindow.count <= 6;
-    };
+    if (!userId) {
+      connection.socket.close();
+      return;
+    }
 
-    socket.on("message", (data: any) => {
-      if (!authed) {
-        void (async () => {
-          try {
-            const msg = JSON.parse(data.toString());
-            if (msg?.type === "auth" && typeof msg.token === "string") {
-              const payload = app.jwt.verify<{ sub: string; av?: number }>(msg.token);
-              if (payload.sub) {
-                const user = await storage.getUser(payload.sub);
-                if (user && payload.av === (user.authVersion ?? 1)) {
-                  userId = payload.sub;
-                  authed = true;
-                  clearTimeout(authDeadline);
-                  storage.wsConnect(userId, { socket });
-                  socket.send(JSON.stringify({ type: "auth:ok" }));
-                  return;
-                }
-              }
-            }
-          } catch { /* fallthrough */ }
-          socket.close();
-        })();
-        return;
-      }
-      // 认证后：chat:send 走限频，其余消息直通
-      let type: string | undefined;
-      try { type = JSON.parse(data.toString())?.type; } catch { /* 交给下游丢弃 */ }
-      if (type === "chat:send" && !chatRateOk()) {
-        socket.send(JSON.stringify({
-          type: "chat:error",
-          channel: "world",
-          message: "发言太频繁，请稍后再试",
-        }));
-        return;
-      }
+    storage.wsConnect(userId, connection);
+
+    connection.socket.on("message", (data: any) => {
       storage.wsMessage(userId!, data.toString());
     });
 
-    socket.on("close", () => {
-      clearTimeout(authDeadline);
-      if (userId) storage.wsDisconnect(userId);
+    connection.socket.on("close", () => {
+      storage.wsDisconnect(userId!);
     });
   });
 
   await app.listen({ port: env.PORT, host: "0.0.0.0" });
   console.log(`🚀 Server running on port ${env.PORT}`);
+
+  // ===== 定时任务：过期挂单清理（每 5 分钟执行一次） =====
+  const CLEANUP_INTERVAL = 5 * 60 * 1000;
+  const cleanupTimer = setInterval(async () => {
+    try {
+      const count = await storage.cleanupExpiredListings();
+      if (count > 0) {
+        app.log.info(`[cron] Cleaned up ${count} expired market listings.`);
+      }
+    } catch (err) {
+      app.log.error({ err }, "[cron] Failed to cleanup expired listings");
+    }
+  }, CLEANUP_INTERVAL);
+  cleanupTimer.unref(); // 不阻止进程退出
 
   // ===== Graceful Shutdown =====
   const SHUTDOWN_TIMEOUT = 15_000; // 15 秒强制退出超时
@@ -353,6 +261,9 @@ async function main() {
     forceTimer.unref();
 
     try {
+      // 停止定时任务
+      clearInterval(cleanupTimer);
+
       // 关闭 Fastify（停止接受新连接，等待已有请求完成）
       await app.close();
       console.log("✅ HTTP server closed.");

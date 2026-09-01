@@ -13,9 +13,7 @@ import type {
   ActiveBuff,
   CheckInState
 } from "./types";
-import { appendLog, getBuffEffects, getXpForLevel, pruneExpiredBuffs } from "./storage";
-import { EQUIP_SLOT_KEYS } from "./equipment_equip";
-import { syncAchievements } from "./progression";
+import { appendLog, getBuffEffects, pruneExpiredBuffs } from "./storage";
 import { todayLocal as todayLocalImpl, dayDiff } from "./time";
 
 // 重新导出供路由层使用
@@ -75,19 +73,16 @@ export function consumeItem(
   player.inventory[itemId] = have - 1;
   if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
 
-  // 即时恢复（HP/MP）
+  // 即时恢复（HP/MP）——仅记录日志，HP/MP 在战斗为收益式简化模型中并非硬约束
   const healed: { hp?: number; mp?: number } = {};
-  if (typeof effect.hp === "number") {
-    healed.hp = player.activeClassId === "chef" && effect.hp > 0 ? Math.round(effect.hp * 1.2) : effect.hp;
-  }
+  if (typeof effect.hp === "number") healed.hp = effect.hp;
   if (typeof effect.mp === "number") healed.mp = effect.mp;
 
   // Buff 效果
   let appliedBuff: ActiveBuff | undefined;
   if (effect.buff && typeof effect.buff === "object") {
     const bdef = effect.buff as AnyItem;
-    const rawDurationSec: number = Number(bdef.durationSec) || 0;
-    const durationSec: number = player.activeClassId === "alchemist" ? Math.round(rawDurationSec * 1.25) : rawDurationSec;
+    const durationSec: number = Number(bdef.durationSec) || 0;
     const expiresAt = new Date(now.getTime() + durationSec * 1000).toISOString();
     const buff: ActiveBuff = {
       id: String(bdef.id || itemId),
@@ -98,13 +93,14 @@ export function consumeItem(
       stats: bdef.stats
     };
     if (!player.activeBuffs) player.activeBuffs = [];
-    // 同 id 叠时间：剩余时间 + 新一份时长（此前取较晚过期时间，
-    // 等于第二份白吃）。效果数值不叠层，时长可续。
+    // 同 id 刷新（取较晚过期时间）
     const idx = player.activeBuffs.findIndex((b) => b.id === buff.id);
     if (idx >= 0) {
       const existing = player.activeBuffs[idx];
-      const base = Math.max(Date.parse(existing.expiresAt), now.getTime());
-      buff.expiresAt = new Date(base + durationSec * 1000).toISOString();
+      buff.expiresAt =
+        Date.parse(existing.expiresAt) > Date.parse(buff.expiresAt)
+          ? existing.expiresAt
+          : buff.expiresAt;
       player.activeBuffs[idx] = buff;
     } else {
       player.activeBuffs.push(buff);
@@ -211,7 +207,6 @@ export function doCheckIn(player: EnhancedPlayerState, now: Date = new Date()): 
   if (player.stats) player.stats.totalGoldEarned += reward.gold;
 
   player.checkIn = st;
-  syncAchievements(player);
   const itemText = Object.entries(reward.items).map(([k, v]) => `${k} x${v}`).join("、");
   appendLog(player, `每日签到成功（连续${st.streak}天）：获得金币 ${reward.gold}${itemText ? "、" + itemText : ""}`);
 
@@ -268,34 +263,27 @@ export function buyPrice(def: AnyItem): number {
 /**
  * 商店在售商品列表（NPC 提供的基础补给）。
  * 仅出售基础材料/食物/药水，避免破坏高阶装备的产出循环。
- *
- * 不卖第一章的产出链本身（wood_1 / lumber_1）：8 金一块木板会让"升到 3 级做木甲"的教学被
- * 48 金绕过；也不卖 crystal_1（史莱姆的稀有掉落，商店有货就不稀有了）。
- * 商店出售基础 HP 药水、MP 药水与全套战斗状态药剂（狂战、铁壁、奥术涌流、守护战意等），方便战斗补给。
  */
 export const SHOP_STOCK_IDS = [
+  "wood_1",
   "ore_1",
   "fiber_1",
+  "lumber_1",
   "ingot_1",
+  "crystal_1",
   "wood_2",
   "ore_2",
   "fiber_2",
   "food_simple",
   "drink_basic",
   "potion_hp_t1",
-  "potion_hp_t2",
-  "potion_hp_t3",
-  "potion_hp_t4",
   "potion_mp_t1",
-  "potion_mp_t2",
-  "potion_mp_t3",
-  "potion_mp_t4",
   "food_hearty_stew",
   "food_master_feast",
-  "potion_iron_skin",
-  "potion_arcane_surge",
-  "potion_guardian_elixir",
+  "potion_craft_focus",
   "potion_battle_fury",
+  "potion_fortune",
+  "potion_scholar",
   "elixir_legend",
   "fiber_3",
   "lumber_2",
@@ -329,7 +317,7 @@ export function buyFromShop(
   qty: number
 ): TradeResult {
   if (!SHOP_STOCK_IDS.includes(itemId)) return { ok: false, reason: "商店未出售该物品" };
-  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "数量无效" };
+  if (!Number.isFinite(qty) || qty < 1) return { ok: false, reason: "数量无效" };
   const def = findItem(contentPack, itemId);
   if (!def) return { ok: false, reason: "物品不存在" };
 
@@ -340,8 +328,7 @@ export function buyFromShop(
 
   player.inventory["gold"] = gold - total;
   player.inventory[itemId] = (player.inventory[itemId] || 0) + qty;
-  if (player.stats) { player.stats.totalGoldSpent += total; player.stats.totalTrades = (player.stats.totalTrades || 0) + 1; }
-  syncAchievements(player);
+  if (player.stats) player.stats.totalGoldSpent += total;
   appendLog(player, `从商店购买 ${def.name} x${qty}，花费金币 ${total}`);
 
   return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };
@@ -355,134 +342,19 @@ export function sellToShop(
   qty: number
 ): TradeResult {
   if (itemId === "gold") return { ok: false, reason: "金币不可出售" };
-  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "数量无效" };
+  if (!Number.isFinite(qty) || qty < 1) return { ok: false, reason: "数量无效" };
   const def = findItem(contentPack, itemId);
   if (!def) return { ok: false, reason: "物品不存在" };
   const have = player.inventory[itemId] || 0;
   if (have < qty) return { ok: false, reason: "库存不足" };
-  // 装备槽存的是物品 id 引用：仅当剩余库存少于当前已穿戴份数时阻止出售（允许卖掉多余闲置副本）。
-  const eq = player.equipment as Record<string, unknown> | undefined;
-  const equippedCopies = eq
-    ? EQUIP_SLOT_KEYS.filter((slot) => eq[slot] === itemId).length
-    : 0;
-  if (equippedCopies > 0 && have - qty < equippedCopies) {
-    return { ok: false, reason: "装备中的物品不能出售" };
-  }
 
   const unit = sellPrice(def);
   const total = unit * qty;
   player.inventory[itemId] = have - qty;
   if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
   player.inventory["gold"] = (player.inventory["gold"] || 0) + total;
-  if (player.stats) { player.stats.totalGoldEarned += total; player.stats.totalTrades = (player.stats.totalTrades || 0) + 1; }
-  syncAchievements(player);
+  if (player.stats) player.stats.totalGoldEarned += total;
   appendLog(player, `向商店出售 ${def.name} x${qty}，获得金币 ${total}`);
 
   return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };
 }
-
-/* ----------------------------- 炼金分支：点石成金 (Coinify) ----------------------------- */
-
-export type CoinifyResult =
-  | {
-      ok: true;
-      itemId: string;
-      itemName: string;
-      qty: number;
-      goldGained: number;
-      xpGained: number;
-      critCount: number;
-      multiplier: number;
-      alchemyLevel: number;
-      leveledTo?: number;
-    }
-  | { ok: false; reason: string };
-
-/**
- * 银河奶牛式炼金分支「点石成金（Coinify）」：
- * 将背包中的闲置材料、怪物掉落或多余装备直接通过炼金阵点化为高额金币，并获得炼金术经验。
- * - 基础转化倍率：商店基础价值的 135% + 每级炼金等级 +1.5%（炼金术师职业额外 +15%）
- * - 炼金暴击率：15% + min(20%, 炼金等级 * 0.2%)，暴击时该件点化金币翻倍（2.0x）
- */
-export function alchemyCoinify(
-  player: EnhancedPlayerState,
-  contentPack: EnhancedContentPack,
-  itemId: string,
-  qty: number,
-  rng: () => number = Math.random
-): CoinifyResult {
-  if (itemId === "gold") return { ok: false, reason: "金币不可点化" };
-  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "点化数量无效" };
-  const def = findItem(contentPack, itemId);
-  if (!def) return { ok: false, reason: "物品不存在" };
-  const have = player.inventory[itemId] || 0;
-  if (have < qty) return { ok: false, reason: "库存不足" };
-
-  const eq = player.equipment as Record<string, unknown> | undefined;
-  const equippedCopies = eq ? EQUIP_SLOT_KEYS.filter((slot) => eq[slot] === itemId).length : 0;
-  if (equippedCopies > 0 && have - qty < equippedCopies) {
-    return { ok: false, reason: "穿戴中的装备不可点化" };
-  }
-
-  if (!player.skills) player.skills = {} as any;
-  if (!player.skills.skill_alchemy) {
-    player.skills.skill_alchemy = { level: 1, xp: 0, unlockedRecipes: [], enhancementLevel: 0 };
-  }
-  const alch = player.skills.skill_alchemy;
-  const alchLv = Math.max(1, alch.level || 1);
-  const classBonus = player.activeClassId === "alchemist" ? 0.15 : 0;
-  const multiplier = Math.round((0.85 + Math.min(1.15, (alchLv - 1) * 0.012) + classBonus) * 100) / 100;
-  const critChance = Math.min(0.35, 0.15 + alchLv * 0.002);
-
-  const unitBase = Math.max(2, basePrice(def));
-  const unitCoinify = Math.max(2, Math.round(unitBase * multiplier));
-  let critCount = 0;
-  let goldGained = 0;
-  for (let i = 0; i < qty; i++) {
-    if (rng() < critChance) {
-      critCount += 1;
-      goldGained += unitCoinify * 2;
-    } else {
-      goldGained += unitCoinify;
-    }
-  }
-
-  player.inventory[itemId] = have - qty;
-  if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
-  player.inventory.gold = (player.inventory.gold || 0) + goldGained;
-
-  const tier = Math.max(1, Number(def.tier) || 1);
-  const xpGained = Math.max(4, Math.round(tier * 6)) * qty;
-  alch.xp = (alch.xp || 0) + xpGained;
-  let leveledTo: number | undefined;
-  while (alch.xp >= getXpForLevel(alch.level)) {
-    alch.xp -= getXpForLevel(alch.level);
-    alch.level += 1;
-    leveledTo = alch.level;
-  }
-
-  if (player.stats) {
-    player.stats.totalGoldEarned = (player.stats.totalGoldEarned || 0) + goldGained;
-    player.stats.totalActions = (player.stats.totalActions || 0) + qty;
-  }
-  syncAchievements(player);
-  const critNote = critCount > 0 ? `（触发 ${critCount} 次点金暴击！）` : "";
-  appendLog(
-    player,
-    `✨ 点石成金：转化 ${def.name} ×${qty}，获得 ${goldGained} 金币、+${xpGained} 炼金经验${critNote}${leveledTo ? `，炼金升至 Lv.${leveledTo}！` : ""}`
-  );
-
-  return {
-    ok: true,
-    itemId,
-    itemName: String(def.name || itemId),
-    qty,
-    goldGained,
-    xpGained,
-    critCount,
-    multiplier,
-    alchemyLevel: alch.level,
-    leveledTo,
-  };
-}
-

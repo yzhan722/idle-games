@@ -1,26 +1,9 @@
 // API 客户端 - 增强版，带重试和错误处理
 
-import { InFlightMap, writeDedupeKey } from './requestGuard';
-
 interface ApiError extends Error {
   status?: number;
   code?: string;
 }
-
-export type ActionPreview = {
-  actionId: string;
-  name: string;
-  skillId: string;
-  requiredLevel: number;
-  skillLevel: number;
-  baseDurationMs: number;
-  effectiveDurationMs: number;
-  speedPct: number;
-  speedSources: Array<{ label: string; pct: number }>;
-  efficiencyPct: number;
-  efficiencySources: Array<{ label: string; pct: number }>;
-  xpPerAction: number;
-};
 
 interface RetryConfig {
   maxRetries: number;
@@ -40,8 +23,9 @@ class ApiClient {
   private retryConfig: RetryConfig;
   private readonly cache = new Map<string, { expiresAt: number; value: any }>();
   private readonly inFlight = new Map<string, Promise<any>>();
-  private readonly writeInFlight = new InFlightMap<any>();
-  private cacheEpoch = 0;
+  // 写操作（POST/PUT/DELETE）去重：防止快速双击连发多个相同写请求。
+  // key = method:endpoint:body，value = 正在进行中的 Promise。
+  private readonly writeInFlight = new Map<string, Promise<any>>();
   // 401（鉴权失效）回调，由 AuthContext 注册以触发自动登出
   private onUnauthorized: (() => void) | null = null;
 
@@ -52,10 +36,8 @@ class ApiClient {
 
   setToken(token: string) {
     this.token = token;
-    this.cacheEpoch += 1;
     this.cache.clear();
     this.inFlight.clear();
-    this.writeInFlight.clear();
   }
 
   getToken(): string {
@@ -67,11 +49,9 @@ class ApiClient {
     this.onUnauthorized = handler;
   }
 
-  /** 清空所有 GET 缓存与在途去重（写操作成功后调用，避免读到过期数据） */
+  /** 清空所有 GET 缓存（写操作成功后调用，避免读到过期数据） */
   clearCache() {
-    this.cacheEpoch += 1;
     this.cache.clear();
-    this.inFlight.clear();
   }
 
   private async sleep(ms: number): Promise<void> {
@@ -103,20 +83,17 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const method = (options.method || 'GET').toUpperCase();
-    const canRetry = method === 'GET' || method === 'HEAD';
     const cacheKey = this.getCacheKey(endpoint, { ...options, method });
 
-    if (method === 'GET' && retryCount === 0 && !endpoint.startsWith('/player/state')) {
+    if (method === 'GET') {
       const cached = this.getCachedResponse<T>(cacheKey);
       if (cached !== null) return cached;
       const inflight = this.inFlight.get(cacheKey);
       if (inflight) return inflight as Promise<T>;
     }
 
-    // Only declare a JSON body when there is one: Fastify rejects an empty body that claims
-    // application/json (DELETE / bodiless POST would 400).
     const headers: Record<string, string> = {
-      ...(options.body !== undefined && options.body !== null ? { 'Content-Type': 'application/json' } : {}),
+      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
 
@@ -124,7 +101,6 @@ class ApiClient {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
-    const reqEpoch = this.cacheEpoch;
     const execute = async (): Promise<T> => {
       try {
         const response = await fetch(url, { ...options, headers });
@@ -144,14 +120,14 @@ class ApiClient {
             }
             throw authErr;
           }
-          // 仅安全读取可以自动重试；写操作结果不确定时不得重放。
-          if (canRetry && response.status === 409 && retryCount < this.retryConfig.maxRetries) {
-            this.clearCache();
+          // 状态版本冲突（并发写）：清掉本地缓存后短暂退避重试，对用户透明
+          if (response.status === 409 && retryCount < this.retryConfig.maxRetries) {
+            this.cache.clear();
             await this.sleep(150 * (retryCount + 1));
             return this.request(endpoint, options, retryCount + 1);
           }
           if (
-            canRetry && this.retryConfig.retryOn.includes(response.status) &&
+            this.retryConfig.retryOn.includes(response.status) &&
             retryCount < this.retryConfig.maxRetries
           ) {
             await this.sleep(this.retryConfig.retryDelay * (retryCount + 1));
@@ -169,19 +145,16 @@ class ApiClient {
         }
 
         const data = await response.json();
-        if (method === 'GET' && !endpoint.startsWith('/player/state')) {
-          if (this.cacheEpoch === reqEpoch) {
-            this.setCachedResponse(cacheKey, data, 5000);
-          }
-        } else if (method !== 'GET') {
-          // 写操作（POST/PUT/DELETE）成功后使 GET 缓存与在途去重失效，
-          // 否则紧随其后的 GET 会命中写前发出的在途请求，读到旧数据
-          this.clearCache();
+        if (method === 'GET') {
+          this.setCachedResponse(cacheKey, data, 5000);
+        } else {
+          // 写操作（POST/PUT/DELETE）成功后使 GET 缓存失效，确保后续读取拿到最新状态
+          this.cache.clear();
         }
         return data;
       } catch (error) {
         if (
-          canRetry && error instanceof TypeError &&
+          error instanceof TypeError &&
           error.message === 'Failed to fetch' &&
           retryCount < this.retryConfig.maxRetries
         ) {
@@ -189,27 +162,31 @@ class ApiClient {
           return this.request(endpoint, options, retryCount + 1);
         }
         throw error;
+      } finally {
+        if (method === 'GET') {
+          this.inFlight.delete(cacheKey);
+        }
       }
     };
 
     if (method === 'GET') {
-      const pending = execute().finally(() => {
-        // 只注销自己——写操作清空 inFlight 后注册的新请求，不能被旧请求的 finally 误删
-        if (this.inFlight.get(cacheKey) === pending) {
-          this.inFlight.delete(cacheKey);
-        }
-      });
-      if (retryCount === 0) this.inFlight.set(cacheKey, pending);
+      const pending = execute();
+      this.inFlight.set(cacheKey, pending);
       return pending;
     }
 
-    // 合并同一时间的相同写请求；这不是服务端持久化幂等保证。
+    // 写操作去重：同 endpoint + 相同 body 的 POST/PUT/DELETE 如果还在 in-flight，
+    // 复用同一 Promise。避免快速双击/重复提交发出多条相同写请求。
     const bodyStr = options.body ? String(options.body) : '';
-    const writeKey = writeDedupeKey(method, endpoint, bodyStr);
-    if (retryCount === 0) {
-      return this.writeInFlight.run(writeKey, () => execute());
-    }
-    return execute();
+    const writeKey = `${method}:${endpoint}:${bodyStr}`;
+    const existingWrite = this.writeInFlight.get(writeKey);
+    if (existingWrite) return existingWrite;
+
+    const writePending = execute().finally(() => {
+      this.writeInFlight.delete(writeKey);
+    });
+    this.writeInFlight.set(writeKey, writePending);
+    return writePending;
   }
 
   async get<T = any>(endpoint: string): Promise<T> {
@@ -238,72 +215,51 @@ class ApiClient {
   async getEquipmentStats() { return this.get('/equipment/stats'); }
   async getSetBonuses() { return this.get('/equipment/set-bonuses'); }
   async getDurability(itemId: string) { return this.get(`/equipment/durability/${itemId}`); }
-  async equipItem(slot: string, itemId: string) {
-    return this.post('/equipment/equip', { slot, itemId });
-  }
-  async unequipItem(slot: string) {
-    return this.post('/equipment/unequip', { slot });
-  }
-  async setActiveClass(classId: string) {
-    return this.post('/player/class', { classId });
-  }
   async repairEquipment(itemId: string, repairType: 'full' | 'partial' = 'full', targetDurability?: number) {
     return this.post('/equipment/repair', { itemId, repairType, targetDurability });
   }
 
   // 强化相关API
-  async enhanceEquipment(itemId: string, targetLevel: number, serviceProviderId?: string, protectionItemId?: string) {
-    return this.post('/enhancement/enhance', { itemId, targetLevel, serviceProviderId, protectionItemId });
+  async enhanceEquipment(itemId: string, targetLevel: number, serviceProviderId?: string) {
+    return this.post('/enhancement/enhance', { itemId, targetLevel, serviceProviderId });
   }
   async getEnhancementInfo(itemId: string) { return this.get(`/enhancement/info/${itemId}`); }
-  /** MWI: enhancing as a timed action with a target level. */
-  async startEnhanceRun(itemId: string, targetLevel: number, useProtection: boolean) {
-    return this.post('/enhancement/run/start', { itemId, targetLevel, useProtection });
-  }
-  async stopEnhanceRun() { return this.post('/enhancement/run/stop', {}); }
   async getEnhancementProviders(itemType: string) { return this.get(`/enhancement/providers/${itemType}`); }
-  async requestEnhancementService(providerId: string, itemId: string, targetLevel: number, message?: string) {
-    return this.post('/enhancement/request-service', { providerId, itemId, targetLevel, message, operationId: crypto.randomUUID() });
-  }
-  async respondEnhancementService(requestId: string, accepted: boolean, message?: string) {
-    return this.post('/enhancement/respond-service', { requestId, accepted, message, operationId: crypto.randomUUID() });
-  }
-  async getMyEnhancementRequests() { return this.get('/enhancement/my-requests'); }
-  async getReceivedEnhancementRequests() { return this.get('/enhancement/received-requests'); }
 
   // 交易相关API
+  async getMarketListings(query?: string, filters?: any) {
+    const params = new URLSearchParams();
+    if (query) params.append('search', query);
+    if (filters) params.append('filters', JSON.stringify(filters));
+    return this.get(`/trading/listings?${params}`);
+  }
+  async listItemForSale(itemId: string, quantity: number, pricePerUnit: number, duration?: number) {
+    return this.post('/trading/list', { itemId, quantity, pricePerUnit, duration });
+  }
+  async purchaseItem(listingId: string, quantity: number) {
+    return this.post('/trading/purchase', { listingId, quantity });
+  }
   async getPriceHistory(itemId: string, days: number = 7) {
     return this.get(`/trading/price-history/${itemId}?days=${days}`);
   }
   async getPriceTrend(itemId: string) { return this.get(`/trading/price-trend/${itemId}`); }
 
+
+  // 技能树相关API
+  async getSkillTree(professionId: string) { return this.get(`/skills/tree/${professionId}`); }
+  async getSkillProgress(professionId: string) { return this.get(`/skills/progress/${professionId}`); }
+  async unlockSkillNode(professionId: string, nodeId: string) {
+    return this.post('/skills/unlock', { professionId, nodeId });
+  }
+
   // 组队相关API
-  async createParty(name?: string) { return this.post('/party/create', name ? { name } : {}); }
+  async createParty(name?: string) { return this.post('/party/create', { name }); }
   async joinParty(partyId: string) { return this.post('/party/join', { partyId }); }
-  async setPartyReady(partyId: string, ready: boolean = true) { return this.post('/party/ready', { partyId, ready }); }
-  async recruitPartyBot(partyId: string) { return this.post('/party/recruit-bot', { partyId }); }
   async leaveParty(partyId: string) { return this.post('/party/leave', { partyId }); }
-  async getMyParty() { return this.get('/party/mine'); }
-  async listParties(limit?: number) { return this.get(`/party/list${limit ? `?limit=${limit}` : ''}`); }
-  async inviteToParty(partyId: string, targetUserId: string) {
-    return this.post('/party/invite', { partyId, targetUserId });
-  }
-  async acceptPartyInvite(partyId: string) { return this.post('/party/invite/accept', { partyId }); }
-  async declinePartyInvite(partyId: string) { return this.post('/party/invite/decline', { partyId }); }
-  async kickPartyMember(partyId: string, memberId: string) {
-    return this.post('/party/kick', { partyId, memberId });
-  }
-  async transferPartyLeadership(partyId: string, memberId: string) {
-    return this.post('/party/transfer-leadership', { partyId, memberId });
-  }
-  async startPartyActivity(partyId: string, activityType: 'combat' | 'group_craft' | 'raid' = 'raid', stageId?: string, durationMinutes?: number) {
-    return this.post('/party/start-activity', { partyId, activityType, stageId, durationMinutes });
-  }
-  async partyWaveClear(partyId: string, stageId: string, wave: number, abilityCasts?: Record<string, number>) {
-    return this.post('/party/wave-clear', { partyId, stageId, wave, ...(abilityCasts ? { abilityCasts } : {}) });
+  async startPartyActivity(partyId: string, activityType: 'combat' | 'group_craft', stageId?: string) {
+    return this.post('/party/start-activity', { partyId, activityType, stageId });
   }
   async completePartyActivity(partyId: string) { return this.post('/party/complete-activity', { partyId }); }
-  async cancelPartyActivity(partyId: string) { return this.post('/party/cancel-activity', { partyId }); }
 
   // 内容包相关API
   async getContentPack() { return this.get('/content'); }
@@ -333,28 +289,13 @@ class ApiClient {
     return this.post('/progression/daily/claim', { questId });
   }
   async getSettings() { return this.get('/progression/settings'); }
-  /** 给当前账号（游客/Google）补绑用户名+密码，之后可用账号登录 */
-  async bindPassword(username: string, password: string) {
-    return this.post('/auth/bind/password', { username, password });
-  }
   async updateSettings(settings: Partial<{
     soundEnabled: boolean;
     animationsEnabled: boolean;
     compactMode: boolean;
     notificationsEnabled: boolean;
-    playerName: string | null;
-    avatar: string | null;
-    gender: 'male' | 'female' | 'animal' | 'secret' | null;
-    characterCreated: boolean;
-    tutorialDone: boolean;
   }>) {
     return this.post('/progression/settings', settings);
-  }
-  async exportEncryptedSave() {
-    return this.get('/progression/save/export');
-  }
-  async importEncryptedSave(saveCode: string) {
-    return this.post('/progression/save/import', { saveCode });
   }
 
   // 游戏系统：消耗品/Buff / 签到 / 商店
@@ -366,7 +307,6 @@ class ApiClient {
   async getSellPrices() { return this.get('/systems/shop/sell-prices'); }
   async shopBuy(itemId: string, qty: number) { return this.post('/systems/shop/buy', { itemId, qty }); }
   async shopSell(itemId: string, qty: number) { return this.post('/systems/shop/sell', { itemId, qty }); }
-  async alchemyCoinify(itemId: string, qty: number) { return this.post('/systems/alchemy/coinify', { itemId, qty }); }
 
   // 进阶系统：声望 / 赏金契约 / 转生
   async getReputation() { return this.get('/progression2/reputation'); }
@@ -376,72 +316,6 @@ class ApiClient {
   async rerollBounties() { return this.post('/progression2/bounties/reroll', {}); }
   async getPrestige() { return this.get('/progression2/prestige'); }
   async doPrestige() { return this.post('/progression2/prestige', {}); }
-
-  async startHpCombat(monsterId: string) {
-    return this.post('/combat/hp/start', { monsterId, autoRepeat: true });
-  }
-  async useHeavyChop() {
-    return this.post('/combat/hp/skill', { skillId: 'heavy_chop' });
-  }
-  /** Manual cast of any learned ability (server enforces cooldown / mana). */
-  async castAbility(abilityId: string) {
-    return this.post('/combat/hp/skill', { skillId: abilityId });
-  }
-  /** Ability priority list with triggers (MWI 技能槽). */
-  async setAbilityLoadout(slots: Array<{ abilityId: string; trigger?: { type: string; pct?: number } }>) {
-    return this.post('/combat/hp/abilities', { slots });
-  }
-  /** Read a skill book from the inventory. */
-  async learnBook(itemId: string) {
-    return this.post('/combat/hp/learn', { itemId });
-  }
-
-  /** MWI market overview: best ask / bid per item. */
-  async getMarketSummary() { return this.get('/trading/summary'); }
-
-  // MWI 任务板
-  async getTasks() { return this.get('/tasks'); }
-  async claimTask(taskId: string) { return this.post('/tasks/claim', { taskId }); }
-  async rerollTask(taskId: string) { return this.post('/tasks/reroll', { taskId }); }
-  async deleteTask(taskId: string) { return this.post('/tasks/delete', { taskId }); }
-  async setTaskBlock(skillId: string, blocked: boolean) { return this.post('/tasks/block', { skillId, blocked }); }
-  async buyTaskShop(itemId: string) { return this.post('/tasks/shop/buy', { itemId }); }
-  async claimTaskGift() { return this.post('/tasks/gift/claim', {}); }
-
-  // MWI 房屋
-  async getHouses() { return this.get('/houses'); }
-  async upgradeRoom(roomId: string) { return this.post('/houses/upgrade', { roomId }); }
-  // 动作面板：服务端真值的速度/效率/每小时收益
-  async getActionPreview(actionId: string) {
-    return this.request<ActionPreview>(`/actions/preview/${encodeURIComponent(actionId)}`, { method: 'GET' });
-  }
-  // 行动队列
-  async queueAction(actionId: string, quantity?: number) {
-    return this.post('/actions/queue', quantity ? { actionId, quantity } : { actionId });
-  }
-  async removeQueuedAction(id: string) {
-    return this.delete(`/actions/queue/${encodeURIComponent(id)}`);
-  }
-  async clearActionQueue() {
-    return this.post('/actions/queue/clear', {});
-  }
-  async moveQueuedAction(id: string, direction: 'up' | 'down') {
-    return this.post('/actions/queue/move', { id, direction });
-  }
-  async chooseChapterBuild(id: 'sharpened_edge' | 'thick_bark') {
-    return this.post('/combat/hp/build', { id });
-  }
-  async setCombatLoadout(loadout: {
-    food?: Array<{ itemId: string; triggerMissingHp?: number }>;
-    drink?: Array<{ itemId: string; triggerMissingMp?: number }>;
-    mp?: Array<{ itemId: string; triggerMissingMp?: number }>;
-    autoRepeat?: boolean;
-  }) {
-    return this.post('/combat/hp/loadout', loadout);
-  }
-  async fleeHpCombat() {
-    return this.post('/combat/hp/flee', {});
-  }
 }
 
 // baseURL 解析优先级：
@@ -451,4 +325,3 @@ const API_BASE_URL =
   (import.meta.env.VITE_API_URL && String(import.meta.env.VITE_API_URL).replace(/\/$/, '')) || '/api';
 
 export const apiClient = new ApiClient(API_BASE_URL);
-

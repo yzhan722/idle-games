@@ -19,15 +19,6 @@ export const itemNameMap: Record<string, string> = {
   'lumber_5': '珍贵木板',
   'lumber_6': '传说木板',
   'lumber_7': '神话木板',
-
-  'weapon_wooden_sword': '木头短剑',
-  'weapon_wooden_bow': '木质长弓',
-  'weapon_iron_sword': '铁剑',
-  'weapon_steel_axe': '钢斧',
-  'armor_wood_chest': '木制胸甲',
-  'armor_wood_legs': '木制护腿',
-  'armor_wood_boots': '木制靴子',
-  'armor_wood_gloves': '木制手套',
   
   // 矿石系列
   'ore_1': '铜矿石',
@@ -93,18 +84,11 @@ export const itemNameMap: Record<string, string> = {
 // 技能名称映射表
 export const skillNameMap: Record<string, string> = {
   'skill_woodcutter': '伐木技艺',
-  'skill_blacksmith': '挖矿技艺',
+  'skill_blacksmith': '锻造技艺', 
   'skill_farmer': '农牧技艺',
-  'skill_chef': '钓鱼技艺',
-  'skill_tailor': '采集技艺',
-  'skill_alchemist': '采晶技艺',
-  'skill_woodworking': '木工技艺',
-  'skill_smithing': '锻造技艺',
-  'skill_husbandry': '畜牧技艺',
-  'skill_cooking': '烹饪技艺',
-  'skill_tailoring': '缝纫技艺',
-  'skill_alchemy': '炼金技艺',
-  'skill_enhancing': '强化'
+  'skill_chef': '烹饪技艺',
+  'skill_tailor': '裁缝技艺',
+  'skill_alchemist': '炼金技艺'
 }
 
 // 职业名称映射表
@@ -117,22 +101,9 @@ export const professionNameMap: Record<string, string> = {
   'alchemist': '炼金术师'
 }
 
-// 运行时注册表：内容包加载后把所有物品名灌进来。内容包是唯一真源，上面的静态表只做兜底
-// （静态表里有些名字已经和内容包不一致，例如 wood_1 在内容包里叫“平平无奇原木”）。
-const packItemNames = new Map<string, string>()
-
-export function registerItemNames(items: Array<{ id: string; name?: string }> | undefined | null) {
-  if (!Array.isArray(items)) return
-  for (const item of items) {
-    if (item && typeof item.id === 'string' && typeof item.name === 'string' && item.name) {
-      packItemNames.set(item.id, item.name)
-    }
-  }
-}
-
 // 获取物品中文名称
 export function getItemName(itemId: string): string {
-  return packItemNames.get(itemId) || itemNameMap[itemId] || itemId
+  return itemNameMap[itemId] || itemId
 }
 
 // 获取技能中文名称

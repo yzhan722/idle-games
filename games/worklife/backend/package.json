@@ -7,15 +7,14 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "test": "node --import tsx --test src/*.test.ts",
-    "test:integration": "node --import tsx scripts/smoke-api.ts"
+    "test": "tsx --test src/**/*.test.ts",
+    "test:integration": "tsx scripts/smoke-api.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.0",
-    "@fastify/jwt": "^10.2.3",
+    "@fastify/jwt": "^9.0.0",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/websocket": "^11.0.0",
-    "dotenv": "^17.4.2",
     "fastify": "^5.0.0",
     "pg": "^8.13.0",
     "ws": "^8.18.0",

@@ -1,9 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const webPort = Number(process.env.WORKLIFE_WEB_PORT || 3000)
-const apiTarget = process.env.WORKLIFE_API_TARGET || 'http://localhost:3001'
-
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -19,18 +16,14 @@ export default defineConfig({
     }
   },
   server: {
-    port: webPort,
+    port: 3000,
     host: '0.0.0.0', // 监听所有网络接口
     strictPort: false,
     proxy: {
       '/api': {
-        target: apiTarget,
+        target: 'http://localhost:3001',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/ws': {
-        target: apiTarget.replace(/^http/, 'ws'),
-        ws: true
       }
     },
     hmr: {

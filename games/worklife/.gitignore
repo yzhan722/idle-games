@@ -14,13 +14,6 @@ build/
 .env.local
 .env.*.local
 
-# Local file-backed saves (dev memory store)
-backend/data/
-e2e/.tmp*
-test-results/
-playwright-report/
-playwright/.cache/
-
 # IDE
 .vscode/
 .idea/
@@ -71,6 +64,3 @@ ngrok
 *.tar.gz
 *.rar
 
-e2e/.shots/
-.shots*/
-backups/

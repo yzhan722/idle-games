@@ -6,10 +6,10 @@ import React from 'react'
  * 用法： <CardArt kind="tree" id="poplar" fallback="🌱" />
  *
  * 设计语言：圆角徽章底盘 + 内发光 + 顶部高光，营造轻量 3D 质感；
- * 配色贴合黄昏工坊：墨底 + 琥珀金 + 苔绿。
+ * 配色贴合游戏深蓝灰 + 青(#4ea3d8) + 琥珀金(#e8b860) 主题。
  */
 
-export type CardArtKind = 'tree' | 'monster' | 'craft' | 'character' | 'item' | 'equipment' | 'materials'
+export type CardArtKind = 'tree' | 'monster' | 'craft' | 'character'
 
 interface CardArtProps {
   kind: CardArtKind
@@ -24,8 +24,8 @@ const VIEW = 120
 
 function Plate({
   children,
-  glow = '#d49a48',
-  rim = '#4a3828',
+  glow = '#4ea3d8',
+  rim = '#2a3a4d',
 }: {
   children: React.ReactNode
   glow?: string
@@ -42,8 +42,8 @@ function Plate({
     >
       <defs>
         <radialGradient id={`bg-${gid}`} cx="50%" cy="38%" r="70%">
-          <stop offset="0%" stopColor="#2a2119" />
-          <stop offset="100%" stopColor="#16110d" />
+          <stop offset="0%" stopColor="#1b2531" />
+          <stop offset="100%" stopColor="#0b0f15" />
         </radialGradient>
         <linearGradient id={`hl-${gid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(255,255,255,.16)" />
@@ -222,7 +222,7 @@ function MonsterArt({
 }) {
   const gid = React.useId()
   const glow = boss ? '#e8b860' : body
-  const rim = boss ? '#5a4420' : '#4a3828'
+  const rim = boss ? '#5a4420' : '#2a3a4d'
   const eyeY = shape === 'tall' ? 50 : 56
   return (
     <Plate glow={glow} rim={rim}>
@@ -300,14 +300,14 @@ function MonsterArt({
   )
 }
 
-/* 合成物 / 物品徽章：道具风格(木板/武器/锭/防具/药水/书籍/饰品等) */
+/* 合成物：道具风格(木板/武器/锭等) */
 function CraftArt({
   variant,
   main,
   main2,
   accent = '#e8b860',
 }: {
-  variant: 'plank' | 'log' | 'sword' | 'ingot' | 'gem' | 'tool' | 'armor' | 'shield' | 'potion' | 'book' | 'ring' | 'food'
+  variant: 'plank' | 'log' | 'sword' | 'ingot' | 'gem' | 'tool'
   main: string
   main2: string
   accent?: string
@@ -365,62 +365,6 @@ function CraftArt({
           <path d="M40,46 q20,-12 40,0 l-6,10 q-14,-8 -28,0 z" fill={`url(#mn-${gid})`} />
         </>
       )}
-      {variant === 'armor' && (
-        <>
-          <path
-            d="M42,34 l10,-4 q8,8 16,0 l10,4 l8,16 l-10,6 l-4,-8 l0,40 l-24,0 l0,-40 l-4,8 l-10,-6 z"
-            fill={`url(#mn-${gid})`}
-            stroke={accent}
-            strokeWidth="2"
-          />
-          <line x1="60" y1="36" x2="60" y2="86" stroke={accent} strokeWidth="1.6" opacity="0.55" />
-        </>
-      )}
-      {variant === 'shield' && (
-        <>
-          <path
-            d="M36,34 l48,0 l0,24 q0,24 -24,34 q-24,-10 -24,-34 z"
-            fill={`url(#mn-${gid})`}
-            stroke={accent}
-            strokeWidth="2.5"
-          />
-          <circle cx="60" cy="56" r="7" fill={accent} />
-        </>
-      )}
-      {variant === 'potion' && (
-        <>
-          <rect x="53" y="28" width="14" height="8" rx="2" fill="#b89060" />
-          <rect x="51" y="34" width="18" height="5" rx="2" fill="#d8dde2" />
-          <path
-            d="M54,39 l0,10 l-16,24 q-4,15 12,17 l20,0 q16,-2 12,-17 l-16,-24 l0,-10 z"
-            fill={`url(#mn-${gid})`}
-            stroke="#e8f4ff"
-            strokeWidth="1.8"
-          />
-          <ellipse cx="54" cy="68" rx="5" ry="9" fill="#fff" opacity="0.28" transform="rotate(-18 54 68)" />
-        </>
-      )}
-      {variant === 'book' && (
-        <>
-          <rect x="34" y="30" width="52" height="62" rx="6" fill={`url(#mn-${gid})`} stroke={accent} strokeWidth="2.2" />
-          <rect x="38" y="34" width="6" height="54" fill={main2} opacity="0.6" />
-          <polygon points="62,46 65,54 74,54 67,59 70,68 62,62 54,68 57,59 50,54 59,54" fill={accent} />
-        </>
-      )}
-      {variant === 'ring' && (
-        <>
-          <circle cx="60" cy="64" r="20" fill="none" stroke={accent} strokeWidth="7" />
-          <polygon points="60,30 70,42 60,50 50,42" fill={`url(#mn-${gid})`} stroke="#fff" strokeWidth="1.2" />
-        </>
-      )}
-      {variant === 'food' && (
-        <>
-          <path d="M30,62 q0,24 30,24 q30,0 30,-24 z" fill="#8a5a36" stroke={accent} strokeWidth="2" />
-          <ellipse cx="60" cy="62" rx="28" ry="9" fill={`url(#mn-${gid})`} />
-          <circle cx="52" cy="60" r="4" fill={accent} />
-          <circle cx="66" cy="63" r="3.5" fill="#7fbf6a" />
-        </>
-      )}
     </Plate>
   )
 }
@@ -438,12 +382,12 @@ function CharacterArt({
   cloth: string
   cloth2: string
   hair?: string
-  prop?: 'hammer' | 'axe' | 'hoe' | 'spoon' | 'needle' | 'flask'
+  prop?: 'hammer' | 'hoe' | 'spoon' | 'needle' | 'flask'
   propColor?: string
 }) {
   const gid = React.useId()
   return (
-    <Plate glow={cloth} rim="#4a3828">
+    <Plate glow={cloth} rim="#2a3a4d">
       <defs>
         <linearGradient id={`cl-${gid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={cloth} />
@@ -468,12 +412,6 @@ function CharacterArt({
       <path d="M56,58 q4,4 8,0" stroke="#b5605a" strokeWidth="1.6" fill="none" strokeLinecap="round" />
 
       {/* 职业道具 */}
-      {prop === 'axe' && (
-        <g transform="rotate(-25 86 80)">
-          <rect x="84" y="62" width="5" height="32" rx="2" fill="#7a5230" />
-          <path d="M78,64 l22,0 l-4,14 l-14,0 z" fill={propColor} />
-        </g>
-      )}
       {prop === 'hammer' && (
         <g transform="rotate(20 86 78)">
           <rect x="83" y="70" width="5" height="28" rx="2" fill="#7a5230" />
@@ -557,12 +495,12 @@ const CRAFT_MAP: Record<string, React.ReactNode> = {
 }
 
 const CHARACTER_MAP: Record<string, React.ReactNode> = {
-  woodcutter: <CharacterArt cloth="#6fae6a" cloth2="#3f7a3a" hair="#5a3a1a" prop="axe" propColor="#cfd6dc" />,
+  woodcutter: <CharacterArt cloth="#6fae6a" cloth2="#3f7a3a" hair="#5a3a1a" prop="hammer" propColor="#9aa3ab" />,
   blacksmith: <CharacterArt cloth="#8a6240" cloth2="#5a3a22" hair="#2a2018" prop="hammer" propColor="#cfd6dc" />,
   farmer: <CharacterArt cloth="#c7a85a" cloth2="#8a7030" hair="#4a3418" prop="hoe" propColor="#9aa3ab" />,
   chef: <CharacterArt cloth="#e0e4e8" cloth2="#aab0b6" hair="#3a2a1a" prop="spoon" propColor="#cfcfcf" />,
   tailor: <CharacterArt cloth="#9a6fc0" cloth2="#5f3f8a" hair="#3a2a3a" prop="needle" propColor="#e8b860" />,
-  alchemist: <CharacterArt cloth="#7a9e5c" cloth2="#5f8146" hair="#2a2119" prop="flask" propColor="#c4b09a" />,
+  alchemist: <CharacterArt cloth="#4ea3d8" cloth2="#2a6f9e" hair="#2a3340" prop="flask" propColor="#7fe0a0" />,
 }
 
 /* 关键词兜底：根据 id 推断造型族类（覆盖采集点/矿石/作物等共用 tree-card 的条目） */
@@ -577,49 +515,7 @@ function inferTree(id: string): React.ReactNode | null {
   return null
 }
 
-function inferItemBadge(id: string): React.ReactNode {
-  // Tier color palette based on item suffix or material keyword
-  let main = '#cfd6dc'
-  let main2 = '#7a8692'
-  let accent = '#e8b860'
-  if (/(_t5|_7|divine|genesis|chaos|god|dragon|holy|sacred)/.test(id)) {
-    main = '#ffd86b'
-    main2 = '#b87a1e'
-    accent = '#fff3c4'
-  } else if (/(_t4|_6|abyss|void|shadow|demon|adamantite|star)/.test(id)) {
-    main = '#b98ae8'
-    main2 = '#623896'
-    accent = '#f0d8ff'
-  } else if (/(_t3|_5|volcano|magma|flame|fire|inferno|mithril|platinum|gold|rosewood)/.test(id)) {
-    main = '#f28a48'
-    main2 = '#9e3818'
-    accent = '#ffe0b0'
-  } else if (/(_t2|_3|_4|frost|ice|snow|crystal|silver|lake|silk)/.test(id)) {
-    main = '#74c7e8'
-    main2 = '#2f7296'
-    accent = '#d8f4ff'
-  } else if (/wood|lumber|forest|herb|leaf|farmer/.test(id)) {
-    main = '#92cf6a'
-    main2 = '#4a802c'
-    accent = '#e2ffc8'
-  }
-
-  if (/^book_/.test(id)) return <CraftArt variant="book" main={main} main2={main2} accent={accent} />
-  if (/^(potion|elixir|drink)_/.test(id)) return <CraftArt variant="potion" main={main} main2={main2} accent={accent} />
-  if (/^(food|dish|soup|meat|fish|bread|meal)_/.test(id)) return <CraftArt variant="food" main={main} main2={main2} accent={accent} />
-  if (/^(shield|offhand)_/.test(id)) return <CraftArt variant="shield" main={main} main2={main2} accent={accent} />
-  if (/^(ring|amulet|pendant|charm|accessory|crown)_/.test(id)) return <CraftArt variant="ring" main={main} main2={main2} accent={accent} />
-  if (/^armor_/.test(id)) return <CraftArt variant="armor" main={main} main2={main2} accent={accent} />
-  if (/^(weapon|sword|blade|dagger)_/.test(id)) return <CraftArt variant="sword" main={main} main2={main2} accent={accent} />
-  if (/^(tool)_/.test(id) || /(axe|hammer|hoe|sickle|scissors|pan|spatula)/.test(id))
-    return <CraftArt variant="tool" main={main} main2={main2} accent={accent} />
-  if (/^(ingot)_/.test(id)) return <CraftArt variant="ingot" main={main} main2={main2} accent={accent} />
-  if (/^(wood)_/.test(id)) return <CraftArt variant="log" main="#b98a55" main2="#7a5430" accent={accent} />
-  if (/^(lumber)_/.test(id)) return <CraftArt variant="plank" main="#c79a5a" main2="#8a6230" accent={accent} />
-  return <CraftArt variant="gem" main={main} main2={main2} accent={accent} />
-}
-
-const MAPS: Partial<Record<CardArtKind, Record<string, React.ReactNode>>> = {
+const MAPS: Record<CardArtKind, Record<string, React.ReactNode>> = {
   tree: TREE_MAP,
   monster: MONSTER_MAP,
   craft: CRAFT_MAP,
@@ -630,8 +526,12 @@ export default function CardArt({ kind, id, fallback, className }: CardArtProps)
   let art: React.ReactNode = MAPS[kind]?.[id]
 
   if (!art && kind === 'tree') art = inferTree(id) ?? undefined
-  if (!art && (kind === 'craft' || kind === 'item' || kind === 'equipment' || kind === 'materials')) {
-    art = inferItemBadge(id)
+  if (!art && kind === 'craft') {
+    if (/sword|axe|dagger|blade|weapon/.test(id)) art = CRAFT_MAP.sword
+    else if (/plank|board|wood/.test(id)) art = CRAFT_MAP.plank
+    else if (/ingot|bar|metal/.test(id)) art = CRAFT_MAP.ingot
+    else if (/armor|shield|equip|helmet|plate/.test(id)) art = CRAFT_MAP.tool
+    else art = CRAFT_MAP.plank
   }
   if (!art && kind === 'monster') {
     if (/boss/.test(id))

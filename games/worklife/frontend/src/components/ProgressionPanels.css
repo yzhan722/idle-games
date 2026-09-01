@@ -1,4 +1,4 @@
-/* 进度系统面板（成就/每日任务/统计/设置）—— 深蓝灰 + 青 var(--brand) + 琥珀金 #e8b860 */
+/* 进度系统面板（成就/每日任务/统计/设置）—— 深蓝灰 + 青 #4ea3d8 + 琥珀金 #e8b860 */
 
 .prog-overlay {
   position: fixed;
@@ -24,8 +24,8 @@
   max-height: 86vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(160deg, var(--bg-elevated), var(--bg-surface));
-  border: 1px solid rgba(212, 154, 72, 0.28);
+  background: linear-gradient(160deg, #1b2436, #131a28);
+  border: 1px solid rgba(78, 163, 216, 0.28);
   border-radius: 16px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
   overflow: hidden;
@@ -42,8 +42,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(212, 154, 72, 0.18);
-  background: linear-gradient(180deg, rgba(212, 154, 72, 0.08), transparent);
+  border-bottom: 1px solid rgba(78, 163, 216, 0.18);
+  background: linear-gradient(180deg, rgba(78, 163, 216, 0.08), transparent);
 }
 
 .prog-title {
@@ -89,7 +89,7 @@
   padding: 2px 10px;
   font-size: 12px;
   font-weight: 700;
-  color: #2a1d10;
+  color: #1b2436;
   background: #e8b860;
   border-radius: 10px;
 }
@@ -111,10 +111,10 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.prog-filter-btn:hover { border-color: rgba(212, 154, 72, 0.5); color: #e8eef4; }
+.prog-filter-btn:hover { border-color: rgba(78, 163, 216, 0.5); color: #e8eef4; }
 .prog-filter-btn.active {
-  background: rgba(212, 154, 72, 0.2);
-  border-color: var(--brand);
+  background: rgba(78, 163, 216, 0.2);
+  border-color: #4ea3d8;
   color: #fff;
 }
 
@@ -190,7 +190,7 @@
 }
 .ach-progressbar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--brand), #6fd0e8);
+  background: linear-gradient(90deg, #4ea3d8, #6fd0e8);
   border-radius: 4px;
   transition: width 0.4s ease;
 }
@@ -209,7 +209,7 @@
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 700;
-  color: #2a1d10;
+  color: #1b2436;
   background: linear-gradient(135deg, #e8b860, #f0c878);
   border: none;
   border-radius: 9px;
@@ -241,7 +241,7 @@
 .daily-progress-tag {
   font-size: 13px;
   font-weight: 700;
-  color: var(--brand);
+  color: #4ea3d8;
   flex-shrink: 0;
 }
 
@@ -253,8 +253,8 @@
   padding: 16px 18px;
   margin-bottom: 16px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(212, 154, 72, 0.16), rgba(212, 154, 72, 0.04));
-  border: 1px solid rgba(212, 154, 72, 0.3);
+  background: linear-gradient(135deg, rgba(78, 163, 216, 0.16), rgba(78, 163, 216, 0.04));
+  border: 1px solid rgba(78, 163, 216, 0.3);
 }
 .stat-highlight-icon { font-size: 32px; }
 .stat-highlight-label { font-size: 13px; color: #aebacb; }
@@ -306,7 +306,7 @@
   transition: background 0.2s;
   flex-shrink: 0;
 }
-.settings-toggle.on { background: var(--brand); }
+.settings-toggle.on { background: #4ea3d8; }
 .settings-toggle.off { background: rgba(255, 255, 255, 0.14); }
 .settings-toggle-knob {
   position: absolute;
@@ -328,13 +328,13 @@
   font-size: 14px;
   font-weight: 600;
   color: #e8eef4;
-  background: rgba(212, 154, 72, 0.14);
-  border: 1px solid rgba(212, 154, 72, 0.4);
+  background: rgba(78, 163, 216, 0.14);
+  border: 1px solid rgba(78, 163, 216, 0.4);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s;
 }
-.settings-export-btn:hover { background: rgba(212, 154, 72, 0.25); }
+.settings-export-btn:hover { background: rgba(78, 163, 216, 0.25); }
 
 /* 顶栏入口按钮 */
 .prog-entry-group {
@@ -358,9 +358,9 @@
   transition: all 0.15s;
 }
 .prog-entry-btn:hover {
-  border-color: rgba(212, 154, 72, 0.6);
+  border-color: rgba(78, 163, 216, 0.6);
   color: #fff;
-  background: rgba(212, 154, 72, 0.15);
+  background: rgba(78, 163, 216, 0.15);
 }
 .prog-entry-btn .prog-entry-icon { font-size: 16px; }
 .prog-entry-dot {
@@ -372,7 +372,7 @@
   padding: 0 4px;
   font-size: 10px;
   font-weight: 700;
-  color: #2a1d10;
+  color: #1b2436;
   background: #e8b860;
   border-radius: 8px;
   display: flex;
@@ -384,45 +384,4 @@
 body.no-animations * {
   animation: none !important;
   transition: none !important;
-}
-
-/* 设置-绑定账号 */
-.settings-bind { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); }
-.settings-bind-form { display: flex; flex-direction: column; gap: 8px; }
-.settings-bind-form .input { width: 100%; box-sizing: border-box; }
-
-/* 设置-加密存档导出与导入 */
-.settings-save-section {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.settings-save-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.settings-save-code-box .input {
-  width: 100%;
-  box-sizing: border-box;
-  font-family: monospace;
-  font-size: 12px;
-}
-.settings-import-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.settings-import-row .input {
-  flex: 1;
-  min-width: 0;
-  box-sizing: border-box;
-}
-.settings-import-submit {
-  width: auto;
-  flex-shrink: 0;
-  padding: 10px 16px;
 }

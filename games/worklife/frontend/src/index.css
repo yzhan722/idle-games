@@ -1,57 +1,61 @@
 /* ============================================================
    WorkLife 全局样式 - 统一设计系统
-   风格：黄昏工坊放置 RPG（墨底 + 暖纸 + 琥珀）
+   风格：现代 MMO 放置（参考 Milky Way Idle）深蓝灰 + 青蓝主调
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* ============================================================
    1. 设计令牌（Design Tokens）
    ============================================================ */
 :root {
-  /* —— 黄昏工坊：墨底、暖纸、琥珀价值、苔绿采集 —— */
-  --bg-base: #16110d;
-  --bg-surface: #211a14;
-  --bg-surface-2: #2a2119;
-  --bg-elevated: #33281e;
-  --bg-glass: rgba(255, 236, 210, 0.04);
-  --bg-hover: rgba(212, 154, 72, 0.10);
+  /* —— 背景层次（深蓝灰，冷调科技感）—— */
+  --bg-base: #0e1116;          /* 最底层背景 */
+  --bg-surface: #161b22;       /* 卡片 / 面板背景 */
+  --bg-surface-2: #1d242e;     /* 次级面板 / 悬浮项 */
+  --bg-elevated: #232c38;      /* 提升层（弹窗、下拉） */
+  --bg-glass: rgba(255, 255, 255, 0.035);
+  --bg-hover: rgba(120, 180, 230, 0.08);
 
-  --text-primary: #f3e6d4;
-  --text-secondary: #c4b09a;
-  --text-muted: #a8917a; /* ≥4.5:1 on bg-base/bg-surface-2/bg-elevated（WCAG AA） */
-  --text-accent: #e2b36a;
+  /* —— 文字 —— */
+  --text-primary: #e8edf3;
+  --text-secondary: #a3afbe;
+  --text-muted: #6b7686;
+  --text-accent: #62b6e8;      /* 青蓝强调 */
 
-  --brand: #d49a48;
-  --brand-strong: #b87c2e;
-  --brand-bright: #e8bc72;
-  --gold: #e2b36a;
-  --green: #7a9e5c;
-  --green-strong: #5f8146;
-  --blue: #6a8f9e;
-  --red: #c45c45;
-  --red-strong: #a34430;
-  --purple: #9a7a6a;
-  --orange: #d4894a;
+  /* —— 品牌 / 强调色（青蓝为主交互色，琴金为价值色）—— */
+  --brand: #4ea3d8;            /* 青蓝主色 */
+  --brand-strong: #3b87bd;
+  --brand-bright: #6dc0f0;
+  --gold: #e8b860;             /* 琴金色（金币 / 经验 / 价值） */
+  --green: #5bbf73;            /* 成功 / 采集 / 进行中 */
+  --green-strong: #45a05c;
+  --blue: #4ea3d8;
+  --red: #e0614e;
+  --red-strong: #c54734;
+  --purple: #9d83d8;
+  --orange: #e89752;
 
-  --grad-brand: linear-gradient(135deg, #e2b36a 0%, #b87c2e 100%);
-  --grad-gold: linear-gradient(135deg, #f0c878 0%, #c48a32 100%);
-  --grad-green: linear-gradient(135deg, #8aaf68 0%, #5f8146 100%);
-  --grad-blue: linear-gradient(135deg, #7a9eae 0%, #4e7380 100%);
-  --grad-red: linear-gradient(135deg, #d07058 0%, #a34430 100%);
-  --grad-purple: linear-gradient(135deg, #b09080 0%, #7a5e50 100%);
-  --grad-header: linear-gradient(120deg, #e8bc72 0%, #d49a48 55%, #8a5a28 100%);
+  /* —— 渐变 —— */
+  --grad-brand: linear-gradient(135deg, #57acdf 0%, #3a7fb8 100%);
+  --grad-gold: linear-gradient(135deg, #f0c878 0%, #d89f3e 100%);
+  --grad-green: linear-gradient(135deg, #62c97c 0%, #45a05c 100%);
+  --grad-blue: linear-gradient(135deg, #57acdf 0%, #3a7fb8 100%);
+  --grad-red: linear-gradient(135deg, #e8705d 0%, #c54734 100%);
+  --grad-purple: linear-gradient(135deg, #a78ce0 0%, #7d5fc4 100%);
+  --grad-header: linear-gradient(120deg, #6dc0f0 0%, #4ea3d8 45%, #9d83d8 100%);
 
-  --border: rgba(232, 196, 150, 0.12);
-  --border-strong: rgba(232, 196, 150, 0.22);
-  --border-brand: rgba(212, 154, 72, 0.55);
+  /* —— 边框 —— */
+  --border: rgba(140, 175, 210, 0.12);
+  --border-strong: rgba(140, 175, 210, 0.22);
+  --border-brand: rgba(78, 163, 216, 0.55);
 
   /* —— 阴影 —— */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55);
   --shadow-xl: 0 22px 56px rgba(0, 0, 0, 0.62);
-  --glow-brand: 0 0 18px rgba(212, 154, 72, 0.28);
-  --glow-gold: 0 0 18px rgba(226, 179, 106, 0.28);
+  --glow-brand: 0 0 22px rgba(78, 163, 216, 0.40);
+  --glow-gold: 0 0 22px rgba(232, 184, 96, 0.32);
 
   /* —— 圆角 —— */
   --radius-sm: 6px;
@@ -76,8 +80,8 @@
   --t-slow: 0.5s var(--ease);
 
   /* —— 字体 —— */
-  --font-display: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
-  --font-body: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Sora', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'Roboto', sans-serif;
   font-family: var(--font-body);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -128,13 +132,15 @@ body {
   overflow-x: hidden;
 }
 
+/* 柔和的氛围光背景（冷调星空感） */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(circle at 12% 88%, rgba(122, 158, 92, 0.08) 0%, transparent 42%),
-    radial-gradient(circle at 88% 12%, rgba(212, 154, 72, 0.07) 0%, transparent 44%);
+    radial-gradient(circle at 15% 80%, rgba(78, 163, 216, 0.10) 0%, transparent 46%),
+    radial-gradient(circle at 85% 18%, rgba(157, 131, 216, 0.08) 0%, transparent 46%),
+    radial-gradient(circle at 50% 50%, rgba(232, 184, 96, 0.035) 0%, transparent 52%);
   pointer-events: none;
   z-index: -1;
 }
