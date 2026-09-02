@@ -3691,7 +3691,7 @@
       "duration": 14000,
       "xp": 25,
       "requirements": {
-        "skillLevel": 12
+        "skillLevel": 7
       },
       "consumes": [
         {
@@ -3714,7 +3714,7 @@
       "duration": 12000,
       "xp": 20,
       "requirements": {
-        "skillLevel": 10
+        "skillLevel": 7
       },
       "consumes": [
         {
@@ -3737,7 +3737,7 @@
       "duration": 8000,
       "xp": 15,
       "requirements": {
-        "skillLevel": 8
+        "skillLevel": 6
       },
       "consumes": [
         {
@@ -3888,7 +3888,7 @@
       "id": "act_combat_slime",
       "name": "战斗：果冻史莱姆",
       "skillId": "skill_combat",
-      "duration": 5000,
+      "duration": 12000,
       "xp": 10,
       "requirements": {
         "skillLevel": 1
@@ -3910,7 +3910,7 @@
       "id": "act_combat_caterpillar",
       "name": "战斗：瞌睡毛毛虫",
       "skillId": "skill_combat",
-      "duration": 6000,
+      "duration": 13000,
       "xp": 12,
       "requirements": {
         "skillLevel": 2
@@ -3932,7 +3932,7 @@
       "id": "act_combat_monkey",
       "name": "战斗：捣蛋小猴",
       "skillId": "skill_combat",
-      "duration": 7000,
+      "duration": 14000,
       "xp": 14,
       "requirements": {
         "skillLevel": 3
@@ -3949,7 +3949,7 @@
       "id": "act_combat_mushroom",
       "name": "战斗：生气蘑菇精",
       "skillId": "skill_combat",
-      "duration": 8000,
+      "duration": 15000,
       "xp": 16,
       "requirements": {
         "skillLevel": 4
@@ -3971,7 +3971,7 @@
       "id": "act_combat_bee",
       "name": "战斗：路痴小蜜蜂",
       "skillId": "skill_combat",
-      "duration": 9000,
+      "duration": 16000,
       "xp": 18,
       "requirements": {
         "skillLevel": 5
@@ -3993,7 +3993,7 @@
       "id": "act_combat_crab",
       "name": "战斗：铁壳寄居蟹",
       "skillId": "skill_combat",
-      "duration": 10000,
+      "duration": 17000,
       "xp": 20,
       "requirements": {
         "skillLevel": 6
@@ -11668,7 +11668,7 @@
       "id": "slime",
       "name": "果冻史莱姆",
       "level": 1,
-      "hp": 30,
+      "hp": 100,
       "atk": 8,
       "def": 5,
       "xp": 10,
@@ -11678,7 +11678,7 @@
       "id": "caterpillar",
       "name": "瞌睡毛毛虫",
       "level": 2,
-      "hp": 45,
+      "hp": 125,
       "atk": 10,
       "def": 6,
       "xp": 12,
@@ -11688,7 +11688,7 @@
       "id": "monkey",
       "name": "捣蛋小猴",
       "level": 3,
-      "hp": 60,
+      "hp": 150,
       "atk": 12,
       "def": 7,
       "xp": 14,
@@ -11698,7 +11698,7 @@
       "id": "mushroom",
       "name": "生气蘑菇精",
       "level": 4,
-      "hp": 75,
+      "hp": 180,
       "atk": 14,
       "def": 8,
       "xp": 16,
@@ -11708,7 +11708,7 @@
       "id": "bee",
       "name": "路痴小蜜蜂",
       "level": 5,
-      "hp": 90,
+      "hp": 210,
       "atk": 16,
       "def": 9,
       "xp": 18,
@@ -11718,7 +11718,7 @@
       "id": "crab",
       "name": "铁壳寄居蟹",
       "level": 6,
-      "hp": 105,
+      "hp": 250,
       "atk": 18,
       "def": 12,
       "xp": 20,

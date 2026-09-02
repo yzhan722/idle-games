@@ -26,9 +26,9 @@
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.2px;
-  color: #e8eef4;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.97), rgba(20, 28, 42, 0.97));
-  border: 1px solid rgba(78, 163, 216, 0.35);
+  color: var(--text-primary);
+  background: linear-gradient(135deg, rgba(51, 40, 30, 0.97), rgba(33, 26, 20, 0.97));
+  border: 1px solid rgba(212, 154, 72, 0.35);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(6px);
   animation: toast-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
@@ -54,7 +54,7 @@
   border-left: 4px solid #d8694e;
 }
 .toast-info {
-  border-left: 4px solid #4ea3d8;
+  border-left: 4px solid var(--brand);
 }
 .toast-reward {
   border-left: 4px solid #e8b860;

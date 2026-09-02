@@ -22,6 +22,13 @@ import type {
   EquipmentSetBonus,
 } from "./types";
 import type { Storage, TradingOrder } from "./storage";
+import {
+  addMembership,
+  membershipKeyForSend,
+  membershipKeys,
+  payloadChannel,
+} from "./chat_channels";
+import { socketFromWsConnection } from "./ws_socket";
 import { 
   appendLog, 
   defaultEnhancedPlayerState, 
@@ -938,6 +945,22 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       });
     },
 
+    async getPartyForUser({ userId }) {
+      const st = await getOrCreatePlayerState(userId, "unknown");
+      const partyId = st.partyState?.partyId;
+      if (!partyId) return null;
+      const result = await pool.query("SELECT * FROM parties WHERE id = $1", [partyId]);
+      const row = result.rows[0];
+      if (!row) return null;
+      return {
+        id: row.id,
+        leaderId: row.leader_id,
+        members: row.members,
+        createdAt: row.created_at.toISOString(),
+        currentActivity: row.current_activity,
+      } as Party;
+    },
+
     // ========== 装备耐久度 ==========
     async getDurabilityInfo({ userId, itemId }) {
       const st = await getOrCreatePlayerState(userId, "unknown");
@@ -1126,16 +1149,21 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
     // ========== WebSocket ==========
     wsConnect(userId, connection) {
-      const c: WsConn = { socket: connection.socket, channels: new Set(["world"]) };
+      const c: WsConn = { socket: socketFromWsConnection(connection), channels: new Set<string>() };
       wsConnections.set(userId, c);
-      const set = channelMembers.get("world") ?? new Set<string>();
-      set.add(userId);
-      channelMembers.set("world", set);
+      addMembership(channelMembers, c.channels, userId, "world");
       try {
-        if (c.socket && typeof c.socket.send === 'function') {
+        if (c.socket && typeof c.socket.send === "function") {
           c.socket.send(JSON.stringify({ type: "chat:system", channel: "world", ts: nowIso(), text: "connected" }));
         }
       } catch {}
+      void getOrCreatePlayerState(userId, "unknown").then((st) => {
+        const keys = membershipKeys({
+          classId: st.activeClassId,
+          partyId: st.partyState?.partyId,
+        });
+        for (const key of keys) addMembership(channelMembers, c.channels, userId, key);
+      }).catch(() => {});
     },
 
     wsDisconnect(userId) {
@@ -1155,7 +1183,24 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         const channel = typeof parsed.channel === "string" ? parsed.channel : "world";
         const content = typeof parsed.content === "string" ? parsed.content.slice(0, 300) : "";
         if (!content) return;
-        broadcast(channel, { type: "chat:message", channel, sender: userId, ts: nowIso(), content });
+        void (async () => {
+          const st = await getOrCreatePlayerState(userId, "unknown");
+          const memberKey = membershipKeyForSend(channel, {
+            classId: st.activeClassId,
+            partyId: st.partyState?.partyId,
+          });
+          if (!memberKey) return;
+          const c = wsConnections.get(userId);
+          if (c) addMembership(channelMembers, c.channels, userId, memberKey);
+          broadcast(memberKey, {
+            type: "chat:message",
+            channel: payloadChannel(channel),
+            sender: userId,
+            senderProfession: st.activeClassId,
+            ts: nowIso(),
+            content,
+          });
+        })().catch(() => {});
       }
     },
 

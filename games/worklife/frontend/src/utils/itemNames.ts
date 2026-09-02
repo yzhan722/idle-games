@@ -19,6 +19,15 @@ export const itemNameMap: Record<string, string> = {
   'lumber_5': '珍贵木板',
   'lumber_6': '传说木板',
   'lumber_7': '神话木板',
+
+  'weapon_wooden_sword': '木头短剑',
+  'weapon_wooden_bow': '木质长弓',
+  'weapon_iron_sword': '铁剑',
+  'weapon_steel_axe': '钢斧',
+  'armor_wood_chest': '木制胸甲',
+  'armor_wood_legs': '木制护腿',
+  'armor_wood_boots': '木制靴子',
+  'armor_wood_gloves': '木制手套',
   
   // 矿石系列
   'ore_1': '铜矿石',

@@ -3,6 +3,12 @@ import { useGame } from '../contexts/GameContext'
 import { useAuth } from '../hooks/useAuth'
 import { EnhancementPanel } from './EnhancementPanel'
 import { SkillTreePanel } from './SkillTreePanel'
+import { PartyPanel } from './PartyPanel'
+import { GameChatPanel } from './GameChatPanel'
+import { GameActionNav } from './GameActionNav'
+import { GameHeader } from './GameHeader'
+import { PlayerRightPanel } from './PlayerRightPanel'
+import { playCombatHit, playCombatWin } from '../utils/combatAudio'
 import { apiClient } from '../services/api'
 import { chatWs, ChatMsg } from '../services/websocket'
 import { logger } from '../utils/logger'
@@ -15,13 +21,14 @@ import { OfflineModal, OfflineSummary } from './OfflineModal'
 import { useToast } from './Toast'
 import './NewGameInterface.css'
 
-type ActiveTab = 'logging' | 'woodworking' | 'mining' | 'smithing' | 'farming' | 'husbandry' | 'fishing' | 'cooking' | 'gathering' | 'tailoring' | 'crystal_mining' | 'alchemy' | 'adventure' | 'enhance' | 'skills' | 'trading'
+type ActiveTab = 'logging' | 'woodworking' | 'mining' | 'smithing' | 'farming' | 'husbandry' | 'fishing' | 'cooking' | 'gathering' | 'tailoring' | 'crystal_mining' | 'alchemy' | 'adventure' | 'enhance' | 'skills' | 'trading' | 'party'
 
 // 当前活动状态
 interface CurrentActivity {
   name: string
   output: string
   duration: number // 秒
+  mark?: string
 }
 
 // 卡片素材已改用纯 SVG 矢量组件 CardArt（见 ./CardArt.tsx），不再依赖位图路径。
@@ -29,12 +36,12 @@ interface CurrentActivity {
 // 怪物数据 - 按地图分组
 const monstersByMap: Record<string, any[]> = {
   forest: [
-    { id: 'slime', name: '果冻史莱姆', icon: '🟢', desc: '半透明生物，头顶一朵小花，性格温和', level: 1, xp: 10, gold: '10', rare: '微光水晶', rareChance: 0.5, hp: 30, atk: 8, def: 5, map: 'forest' },
-    { id: 'caterpillar', name: '瞌睡毛毛虫', icon: '🐛', desc: '总是在打瞌睡的毛毛虫，动作缓慢', level: 2, xp: 12, gold: '12', rare: '棉花', rareChance: 0.5, hp: 45, atk: 10, def: 6, map: 'forest' },
-    { id: 'monkey', name: '捣蛋小猴', icon: '🐵', desc: '喜欢恶作剧的小猴子，行动敏捷', level: 3, xp: 14, gold: '14', rare: '水果', rareChance: 0, hp: 60, atk: 12, def: 7, map: 'forest' },
-    { id: 'mushroom', name: '生气蘑菇怪', icon: '🍄', desc: '看起来很生气的蘑菇，会释放孢子', level: 4, xp: 16, gold: '16', rare: '辉光水晶', rareChance: 0.3, hp: 75, atk: 14, def: 8, map: 'forest' },
-    { id: 'bee', name: '路痴小蜜蜂', icon: '🐝', desc: '经常迷路的小蜜蜂，但很勤劳', level: 5, xp: 18, gold: '18', rare: '微光水晶', rareChance: 0.5, hp: 90, atk: 16, def: 9, map: 'forest' },
-    { id: 'crab', name: '铁壳寄居蟹', icon: '🦀', desc: '壳特别坚硬的寄居蟹，防御力很高', level: 6, xp: 20, gold: '20', rare: '铜矿石', rareChance: 0.5, hp: 105, atk: 18, def: 12, map: 'forest' },
+    { id: 'slime', name: '果冻史莱姆', icon: '🟢', desc: '半透明生物，头顶一朵小花，性格温和', level: 1, xp: 10, gold: '10', rare: '微光水晶', rareChance: 0.5, hp: 100, atk: 8, def: 5, map: 'forest' },
+    { id: 'caterpillar', name: '瞌睡毛毛虫', icon: '🐛', desc: '总是在打瞌睡的毛毛虫，动作缓慢', level: 2, xp: 12, gold: '12', rare: '棉花', rareChance: 0.5, hp: 125, atk: 10, def: 6, map: 'forest' },
+    { id: 'monkey', name: '捣蛋小猴', icon: '🐵', desc: '喜欢恶作剧的小猴子，行动敏捷', level: 3, xp: 14, gold: '14', rare: '水果', rareChance: 0, hp: 150, atk: 12, def: 7, map: 'forest' },
+    { id: 'mushroom', name: '生气蘑菇怪', icon: '🍄', desc: '看起来很生气的蘑菇，会释放孢子', level: 4, xp: 16, gold: '16', rare: '辉光水晶', rareChance: 0.3, hp: 180, atk: 14, def: 8, map: 'forest' },
+    { id: 'bee', name: '路痴小蜜蜂', icon: '🐝', desc: '经常迷路的小蜜蜂，但很勤劳', level: 5, xp: 18, gold: '18', rare: '微光水晶', rareChance: 0.5, hp: 210, atk: 16, def: 9, map: 'forest' },
+    { id: 'crab', name: '铁壳寄居蟹', icon: '🦀', desc: '壳特别坚硬的寄居蟹，防御力很高', level: 6, xp: 20, gold: '20', rare: '铜矿石', rareChance: 0.5, hp: 250, atk: 18, def: 12, map: 'forest' },
     { id: 'forest_boss', name: '森林管家(BOSS)', icon: '🦌', desc: '守护森林的强大存在，拥有古老的智慧', level: 10, xp: 100, gold: '200', rare: '创世水晶', rareChance: 0.1, hp: 500, atk: 80, def: 50, isBoss: true, map: 'forest' },
   ],
   mine: [
@@ -234,6 +241,30 @@ const crystalSpots = [
 // (legacy hard-coded craftItems removed — recipes now come from the content pack)
 
 // 装备槽位
+function activityMarkFromAction(actionId: string): string {
+  const id = actionId.toLowerCase()
+  if (id.includes("combat")) return "战"
+  if (id.includes("craft") || id.includes("cook") || id.includes("smith") || id.includes("tailor") || id.includes("alch")) return "制"
+  if (id.includes("chop") || id.includes("logging")) return "伐"
+  if (id.includes("crystal")) return "晶"
+  if (id.includes("mine")) return "矿"
+  if (id.includes("farm") || id.includes("plant") || id.includes("crop")) return "农"
+  if (id.includes("fish")) return "渔"
+  if (id.includes("gather")) return "采"
+  return "工"
+}
+
+const UI_SLOT_TO_EQ: Record<string, "main_hand" | "off_hand" | "head" | "chest" | "legs" | "feet" | "accessory1" | "accessory2"> = {
+  mainhand: "main_hand",
+  offhand: "off_hand",
+  head: "head",
+  chest: "chest",
+  legs: "legs",
+  feet: "feet",
+  accessory1: "accessory1",
+  accessory2: "accessory2",
+}
+
 const equipSlots = {
   left: [
     { id: 'mainhand', name: '主手', icon: '⚔️', type: 'weapon' },
@@ -346,9 +377,10 @@ export default function NewGameInterface() {
             .join('，')
           return `完成 ${e.cycles} 次「${name}」，获得 ${rewardText}`
         })
+      } else if (playerState.mode === 'life_action') {
+        lines = ['离开时仍有正在进行的打工，进度会继续结算']
       } else {
-        // 解析失败时回退到原始最近一行
-        lines = offlineLogs.slice(-1)
+        lines = []
       }
       setOfflineSummary({ durationText, lines })
     }
@@ -392,6 +424,25 @@ export default function NewGameInterface() {
   const [tradingOrdersLoading, setTradingOrdersLoading] = useState(false)
   const [currentProfession, setCurrentProfession] = useState<'woodcutter' | 'blacksmith' | 'farmer' | 'chef' | 'tailor' | 'alchemist'>('woodcutter')
   const [showProfessionModal, setShowProfessionModal] = useState(false)
+  const classHydratedRef = useRef(false)
+
+  useEffect(() => {
+    if (!showProfessionModal) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowProfessionModal(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showProfessionModal])
+
+  useEffect(() => {
+    const id = playerState?.activeClassId
+    if (!id || classHydratedRef.current) return
+    if (['woodcutter', 'blacksmith', 'farmer', 'chef', 'tailor', 'alchemist'].includes(id)) {
+      setCurrentProfession(id as typeof currentProfession)
+      classHydratedRef.current = true
+    }
+  }, [playerState?.activeClassId])
   
   // 内容包状态 - 从后端API加载
   const [contentPack, setContentPack] = useState<any>(null)
@@ -406,9 +457,7 @@ export default function NewGameInterface() {
   const [chatInput, setChatInput] = useState('')
   const [chatChannel, setChatChannel] = useState<'world' | 'profession' | 'party'>('world')
   // 窄屏（≤768px）下聊天默认收起，避免底部抽屉遮挡主内容
-  const [isChatExpanded, setIsChatExpanded] = useState(
-    () => typeof window === 'undefined' || window.innerWidth > 768
-  )
+  const [isChatExpanded, setIsChatExpanded] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({
     world: 0,
@@ -447,7 +496,7 @@ export default function NewGameInterface() {
   
   // 右侧边栏状态
   const [rightPanelView, setRightPanelView] = useState<'character' | 'inventory'>('character')
-  const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(true)
+  const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false)
   const [selectedEquipSlot, setSelectedEquipSlot] = useState<string | null>(null)
   const [showEquipSelector, setShowEquipSelector] = useState(false)
   
@@ -619,24 +668,72 @@ export default function NewGameInterface() {
   }
   
   // 装备物品
-  const equipItem = (_itemId: string) => {
-    setShowEquipSelector(false)
-    setSelectedEquipSlot(null)
+  const equipItem = async (itemId: string) => {
+    if (!selectedEquipSlot) return
+    try {
+      apiClient.clearCache()
+      await apiClient.equipItem(UI_SLOT_TO_EQ[selectedEquipSlot], itemId)
+      await refreshPlayerState()
+      toast.success('已装备')
+    } catch (e: any) {
+      toast.error(e?.message || '装备失败')
+    } finally {
+      setShowEquipSelector(false)
+      setSelectedEquipSlot(null)
+    }
+  }
+
+  const unequipSlot = async (slotId: string) => {
+    try {
+      apiClient.clearCache()
+      await apiClient.unequipItem(UI_SLOT_TO_EQ[slotId])
+      await refreshPlayerState()
+    } catch (e: any) {
+      toast.error(e?.message || '卸下失败')
+    }
   }
   
   // 计算装备属性加成
   const calculateEquipmentBonus = () => {
-    return {
-      atk: 0,
-      def: 0,
-      hp: 0,
-      mp: 0
+    const bonus = { atk: 0, def: 0, hp: 0, mp: 0 }
+    const eq = playerState?.equipment as Record<string, unknown> | undefined
+    if (!eq || !contentPack?.items) return bonus
+    for (const [slot, itemId] of Object.entries(eq)) {
+      if (typeof itemId !== 'string') continue
+      if (slot === 'enhancementLevels' || slot === 'durability' || slot === 'maxDurability') continue
+      const item = contentPack.items.find((i: any) => i.id === itemId)
+      if (!item) continue
+      if (item.atk) bonus.atk += Number(item.atk) || 0
+      if (item.def) bonus.def += Number(item.def) || 0
+      if (item.hp) bonus.hp += Number(item.hp) || 0
+      if (item.mp) bonus.mp += Number(item.mp) || 0
     }
+    return bonus
   }
   
+  const getEquippedItemId = (uiSlot: string): string | undefined => {
+    const key = UI_SLOT_TO_EQ[uiSlot]
+    const val = (playerState?.equipment as any)?.[key]
+    return typeof val === 'string' && val ? val : undefined
+  }
+
   // 获取可装备的物品列表（根据槽位类型过滤）
-  const getEquippableItems = (_slotId: string) => {
-    return []
+  const getEquippableItems = (slotId: string) => {
+    if (!playerState?.inventory || !contentPack?.items) return []
+    const matches = (item: any) => {
+      if (slotId === 'mainhand') return item.type === 'weapon'
+      if (slotId === 'offhand') return item.type === 'offhand' || item.type === 'shield' || String(item.id).includes('shield')
+      if (slotId === 'accessory1' || slotId === 'accessory2') return item.type === 'accessory' || item.slot === 'accessory'
+      const want = slotId === 'head' ? 'head' : slotId
+      return item.slot === want || (item.type === 'armor' && item.slot === want)
+    }
+    return Object.entries(playerState.inventory)
+      .filter(([id, count]) => id !== 'gold' && (count || 0) > 0)
+      .map(([id, count]) => {
+        const item = contentPack.items.find((i: any) => i.id === id)
+        return item ? { ...item, count } : null
+      })
+      .filter((item): item is any => !!item && matches(item))
   }
   
   // 筛选和排序背包物品
@@ -706,12 +803,16 @@ export default function NewGameInterface() {
     if (!contentPack || !contentPack.actions) return []
     
     const professionSkillId = `skill_${currentProfession}`
+    const unlocked = playerState?.skills?.[professionSkillId]?.unlockedRecipes || []
+    const armorCraftUnlocked = unlocked.includes('woodcutter_armor_crafting')
+    const ARMOR_ACTIONS = new Set(['act_craft_wood_chest', 'act_craft_wood_legs', 'act_craft_wood_boots', 'act_craft_wood_gloves'])
     
     // 过滤出当前职业的制作配方（有consumes的就是制作配方）
     const recipes = contentPack.actions.filter((action: any) => 
       action.skillId === professionSkillId && 
       action.consumes && 
-      action.consumes.length > 0
+      action.consumes.length > 0 &&
+      (!ARMOR_ACTIONS.has(action.id) || armorCraftUnlocked)
     )
     
     // 按类别分类
@@ -942,7 +1043,8 @@ export default function NewGameInterface() {
         const activityInfo: CurrentActivity = {
           name: action.name,
           output: action.yields[0].itemId ? getItemNameById(action.yields[0].itemId) : '未知',
-          duration: Math.floor(action.duration / 1000) // 转换为秒
+          duration: Math.floor(action.duration / 1000), // 转换为秒
+          mark: activityMarkFromAction(actionId),
         };
         
         setCurrentActivity(activityInfo);
@@ -1254,7 +1356,7 @@ export default function NewGameInterface() {
         
         const playerLevel = playerState.combatLevel || 1;
         const playerMaxHp = 50 + (playerLevel - 1) * 10;
-        const enemyMaxHp = 30 + (battleState.monster.level - 1) * 15;
+        const enemyMaxHp = battleState.monster.hp || (30 + (battleState.monster.level - 1) * 15);
 
         requestAnimationFrame(() => {
           setBattleState(prev => {
@@ -1318,8 +1420,9 @@ export default function NewGameInterface() {
     if (battleState.playerHp <= 0 || battleState.enemyHp <= 0) return;
 
     const playerLevel = playerState.combatLevel || 1;
-    const playerAtk = 5 + (playerLevel - 1) * 1;
-    const playerDef = 0; // 防御力不受等级影响，只能通过装备提升
+    const gear = calculateEquipmentBonus();
+    const playerAtk = 5 + (playerLevel - 1) * 1 + gear.atk;
+    const playerDef = gear.def;
     const enemyAtk = battleState.monster.atk || (12 + (battleState.monster.level - 1) * 4);
     const enemyDef = battleState.monster.def || (8 + (battleState.monster.level - 1) * 3);
 
@@ -1369,6 +1472,7 @@ export default function NewGameInterface() {
           const floatId = Date.now() + Math.random();
           setDamageFloats(f => [...f, { id: floatId, target: 'enemy', damage: finalDamage, isCrit }]);
           setHitShake(s => ({ ...s, enemy: true }));
+          playCombatHit(isCrit);
           setTimeout(() => {
             setDamageFloats(f => f.filter(d => d.id !== floatId));
             setHitShake(s => ({ ...s, enemy: false }));
@@ -1381,6 +1485,7 @@ export default function NewGameInterface() {
             newState.isActive = false;
             // 触发胜利特效
             setShowVictoryFx(true);
+            playCombatWin();
             setTimeout(() => setShowVictoryFx(false), 2500);
             
             const actionDuration = Math.max(5000, prev.monster.level * 1000);
@@ -1453,7 +1558,7 @@ export default function NewGameInterface() {
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [battleState?.isActive, battleState?.isPlayerDead, battleState?.playerHp, battleState?.enemyHp, playerState?.combatLevel]);
+  }, [battleState?.isActive, battleState?.isPlayerDead, battleState?.playerHp, battleState?.enemyHp, playerState?.combatLevel, playerState?.equipment]);
 
   if (loading || !playerState) {
     return (
@@ -1468,13 +1573,14 @@ export default function NewGameInterface() {
 
   // 根据当前职业动态生成标签（移除角色和背包，它们现在在右侧边栏）
   const tabs = [
-    { id: getCurrentProfession().gatherTab, name: getCurrentProfession().gatherName, icon: '🌲' },
-    { id: getCurrentProfession().craftTab, name: getCurrentProfession().craftName, icon: '🔨' },
-    { id: 'adventure' as const, name: '冒险', icon: '⚔️' },
-    { id: 'enhance' as const, name: '强化', icon: '✨' },
-    { id: 'skills' as const, name: '技能树', icon: '🌳' },
-    { id: 'trading' as const, name: '交易', icon: '💰' },
-  ]
+    { id: getCurrentProfession().gatherTab, name: getCurrentProfession().gatherName },
+    { id: getCurrentProfession().craftTab, name: getCurrentProfession().craftName },
+    { id: 'adventure' as const, name: '冒险' },
+    { id: 'enhance' as const, name: '强化' },
+    { id: 'skills' as const, name: '技能' },
+    { id: 'trading' as const, name: '交易' },
+    { id: 'party' as const, name: '组队' },
+  ].map((tab) => ({ ...tab, icon: tab.name.charAt(0) }))
 
   // 获取品质名称
   const getTierName = (tier: number): string => {
@@ -1644,344 +1750,64 @@ export default function NewGameInterface() {
 
   return (
     <div className="game-container">
-      {/* 顶部栏 - 只保留Logo 和活动状态 */}
-      <header className="game-header">
-        <div className="header-left">
-          <div className="game-logo">
-            <div className="logo-icon">🎮</div>
-            <div className="logo-text">
-              <span className="logo-title">异世界の</span>
-              <span className="logo-subtitle">打工生活</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="header-center">
-          {/* 活动状态 - 移到中间 */}
-          {((currentActivity && playerState.mode === 'life_action') || (battleState?.isActive)) && (
-            <div className={`activity-status-center${cycleCompleteFlash ? ' cycle-complete' : ''}`}>
-              <div className="activity-icon-animated">
-                {battleState ? '⚔️' : 
-                 activeTab === 'logging' ? '🪓' :
-                 activeTab === 'mining' ? '⛏️' :
-                 activeTab === 'farming' ? '🌾' :
-                 activeTab === 'fishing' ? '🎣' :
-                 activeTab === 'gathering' ? '🧺' :
-                 activeTab === 'crystal_mining' ? '💎' : '⚙️'}
-              </div>
-              {/* 进度环 */}
-              {currentActivity && !battleState && (
-                <div className="activity-progress-ring">
-                  <svg viewBox="0 0 36 36" className="progress-ring-svg">
-                    <path
-                      className="progress-ring-bg"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                    <path
-                      className="progress-ring-fill"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      style={{ strokeDasharray: `${progress}, 100` }}
-                    />
-                  </svg>
-                  <span className="progress-ring-text">{progress}%</span>
-                </div>
-              )}
-              <div className="activity-details">
-                <div className="activity-name">
-                  {battleState ? `战斗: ${battleState.monster.name}` :
-                   currentActivity ? currentActivity.name : ''}
-                </div>
-                <div className="activity-countdown">
-                  {battleState ? '自动战斗中...' :
-                   currentActivity ? `${Math.ceil((currentActivity.duration * (100 - progress)) / 100)}/${currentActivity.duration}秒` : ''}
-                </div>
-              </div>
-              {currentActivity && !battleState && (
-                <button 
-                  className="stop-activity-btn-center"
-                  onClick={async () => {
-                    try {
-                      logger.debug('🛑 停止采集活动');
-                      // 设置停止标记
-                      isStoppingRef.current = true;
-                      // 先清除前端状态
-                      setCurrentActivity(null);
-                      setProgress(0);
-                      // 再调用后端API
-                      await stopAction();
-                      logger.debug('✅ 采集活动已停止');
-                      // 延迟清除标记，确保后端状态已更新
-                      setTimeout(() => {
-                        isStoppingRef.current = false;
-                      }, 1000);
-                    } catch (error) {
-                      logger.error('停止活动失败:', error);
-                      // 即使失败也保持前端状态清除
-                      isStoppingRef.current = false;
-                    }
-                  }}
-                  title="停止采集"
-                >
-                  ⏹️ 停止
-                </button>
-              )}
-              {battleState && battleState.isActive && (
-                <button 
-                  className="stop-activity-btn-center"
-                  onClick={stopBattle}
-                  title="停止战斗"
-                >
-                  ⏹️ 停止
-                </button>
-              )}
-            </div>
-          )}
-          
-          {/* 奖励通知 */}
-          {rewardNotification.show && (
-            <div className="reward-notification" key={rewardNotification.key}>
-              <div className="reward-item">
-                <span className="reward-icon">⭐</span>
-                <span className="reward-text">+{rewardNotification.xp} XP</span>
-              </div>
-              <div className="reward-item">
-                <span className="reward-icon">💰</span>
-                <span className="reward-text">+{rewardNotification.gold} 金币</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="header-right">
-          <div className="prog-entry-group">
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('daily')}
-              title="每日任务"
-            >
-              <span className="prog-entry-icon">📅</span>
-              <span>任务</span>
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('achievements')}
-              title="成就"
-            >
-              <span className="prog-entry-icon">🏆</span>
-              <span>成就</span>
-              {claimableCount > 0 && (
-                <span className="prog-entry-dot">{claimableCount}</span>
-              )}
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('stats')}
-              title="生涯统计"
-            >
-              <span className="prog-entry-icon">📊</span>
-              <span>统计</span>
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('checkin')}
-              title="每日签到"
-            >
-              <span className="prog-entry-icon">🎁</span>
-              <span>签到</span>
-              {checkInAvailable && (
-                <span className="prog-entry-dot">!</span>
-              )}
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('buffs')}
-              title="增益 / 消耗品"
-            >
-              <span className="prog-entry-icon">🧪</span>
-              <span>增益</span>
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('shop')}
-              title="商店"
-            >
-              <span className="prog-entry-icon">🏪</span>
-              <span>商店</span>
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('reputation')}
-              title="声望"
-            >
-              <span className="prog-entry-icon">🏛️</span>
-              <span>声望</span>
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('bounties')}
-              title="赏金契约"
-            >
-              <span className="prog-entry-icon">📜</span>
-              <span>契约</span>
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('prestige')}
-              title="转生"
-            >
-              <span className="prog-entry-icon">♻️</span>
-              <span>转生</span>
-            </button>
-            <button
-              className="prog-entry-btn"
-              onClick={() => setProgPanel('settings')}
-              title="设置"
-            >
-              <span className="prog-entry-icon">⚙️</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <GameHeader
+        playerMode={playerState.mode}
+        currentActivity={currentActivity}
+        battleActive={!!battleState?.isActive}
+        battleMonsterName={battleState?.monster?.name}
+        cycleCompleteFlash={cycleCompleteFlash}
+        activeTab={activeTab}
+        progress={progress}
+        onStopActivity={async () => {
+          try {
+            logger.debug('🛑 停止采集活动');
+            isStoppingRef.current = true;
+            setCurrentActivity(null);
+            setProgress(0);
+            await stopAction();
+            logger.debug('✅ 采集活动已停止');
+            setTimeout(() => {
+              isStoppingRef.current = false;
+            }, 1000);
+          } catch (error) {
+            logger.error('停止活动失败:', error);
+            isStoppingRef.current = false;
+          }
+        }}
+        onStopBattle={stopBattle}
+        rewardNotification={rewardNotification}
+        onOpenProg={(id) => setProgPanel(id)}
+        claimableCount={claimableCount}
+        checkInAvailable={checkInAvailable}
+        gold={playerState.inventory.gold || 0}
+      />
 
       {/* 主内容区域 */}
       <div className="game-main-layout">
-        {/* 左侧垂直技能导航栏（Milky Way 风格） */}
-        <nav className="game-tabs">
-          <div className="game-tabs-label">行动</div>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              <span className="tab-name">{tab.name}</span>
-            </button>
-          ))}
-        </nav>
+        <GameActionNav
+          tabs={tabs}
+          activeTab={activeTab}
+          onSelect={(id) => setActiveTab(id as ActiveTab)}
+        />
 
-        {/* 聊天面板 */}
-        <aside className={`chat-panel ${isChatExpanded ? 'expanded' : 'collapsed'}`}>
-          <div className="chat-header">
-            <span className="chat-title">💬 聊天</span>
-            <button 
-              className="chat-toggle"
-              onClick={() => setIsChatExpanded(!isChatExpanded)}
-              title={isChatExpanded ? '收起' : '展开'}
-            >
-              {isChatExpanded ? '◀' : '▶'}
-            </button>
-          </div>
-          
-          {isChatExpanded && (
-            <>
-              {/* 频道切换 */}
-              <div className="chat-channels">
-                <button 
-                  className={`channel-btn ${chatChannel === 'world' ? 'active' : ''}`}
-                  onClick={() => switchChannel('world')}
-                >
-                  🌍 世界
-                  {unreadCounts.world > 0 && (
-                    <span className="unread-badge">{unreadCounts.world}</span>
-                  )}
-                </button>
-                <button 
-                  className={`channel-btn ${chatChannel === 'profession' ? 'active' : ''}`}
-                  onClick={() => switchChannel('profession')}
-                >
-                  {getCurrentProfession().icon} 职业
-                  {unreadCounts.profession > 0 && (
-                    <span className="unread-badge">{unreadCounts.profession}</span>
-                  )}
-                </button>
-                <button 
-                  className={`channel-btn ${chatChannel === 'party' ? 'active' : ''}`}
-                  onClick={() => switchChannel('party')}
-                >
-                  👥 队伍
-                  {unreadCounts.party > 0 && (
-                    <span className="unread-badge">{unreadCounts.party}</span>
-                  )}
-                </button>
-              </div>
-              
-              {/* 消息列表 */}
-              <div className="chat-messages">
-                {wsStatus !== 'connected' && (
-                  <div className="chat-status">
-                    <span className={`status-dot ${wsStatus}`}></span>
-                    {wsStatus === 'connecting' ? '连接中...' : '已断开，尝试重连中...'}
-                  </div>
-                )}
-                {chatMessages.filter(msg => msg.channel === chatChannel).length === 0 ? (
-                  <div className="chat-empty">
-                    <p>暂无消息</p>
-                    <p className="chat-hint">在下方输入框发送消息开始聊天</p>
-                  </div>
-                ) : (
-                  chatMessages
-                    .filter(msg => msg.channel === chatChannel)
-                    .map(msg => (
-                      <div key={msg.id} className={`chat-message ${msg.isSelf ? 'own-message' : ''} ${msg.type === 'system' ? 'system-message' : ''} ${msg.type === 'error' ? 'error-message' : ''}`}>
-                        <div className="message-header">
-                          <span className="message-sender">{msg.sender.length > 10 ? msg.sender.slice(0, 8) + '…' : msg.sender}</span>
-                          <span className="message-time">
-                            {new Date(msg.ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <span className="message-text">{msg.content}</span>
-                      </div>
-                    ))
-                )}
-              </div>
-              
-              {/* 表情选择器 */}
-              {showEmojiPicker && (
-                <div className="emoji-picker">
-                  <div className="emoji-grid">
-                    {['😀', '😂', '😊', '😍', '🤔', '😎', '👍', '👏', '🎉', '❤️', '🔥', '⭐', '💪', '🙏', '👋', '😭'].map(emoji => (
-                      <button
-                        key={emoji}
-                        className="emoji-btn"
-                        onClick={() => insertEmoji(emoji)}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* 输入区 */}
-              <div className="chat-input-area">
-                <button 
-                  className="emoji-toggle-btn"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  title="表情"
-                >
-                  😀
-                </button>
-                <input
-                  type="text"
-                  className="chat-input"
-                  placeholder={`发送到${chatChannel === 'world' ? '世界' : chatChannel === 'profession' ? '职业' : '队伍'}频道...`}
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={handleChatKeyPress}
-                  maxLength={200}
-                />
-                <button 
-                  className="chat-send-btn"
-                  onClick={sendChatMessage}
-                  disabled={!chatInput.trim()}
-                >
-                  发送
-                </button>
-              </div>
-            </>
-          )}
-        </aside>
+        <GameChatPanel
+          expanded={isChatExpanded}
+          onToggle={() => setIsChatExpanded(!isChatExpanded)}
+          channel={chatChannel}
+          onSwitchChannel={switchChannel}
+          unread={unreadCounts}
+          professionIcon={getCurrentProfession().icon}
+          wsStatus={wsStatus}
+          messages={chatMessages}
+          input={chatInput}
+          onInput={setChatInput}
+          onSend={sendChatMessage}
+          onKeyPress={handleChatKeyPress}
+          showEmojiPicker={showEmojiPicker}
+          onToggleEmoji={() => setShowEmojiPicker(!showEmojiPicker)}
+          onInsertEmoji={insertEmoji}
+        />
+
         
         {/* 游戏内容 */}
         <main className="game-content">
@@ -1990,9 +1816,56 @@ export default function NewGameInterface() {
           <div className="adventure-layout">
             <div className="page-header">
               <h2 className="section-title">冒险</h2>
-              <div className="page-info">
-                <p>与各种怪物战斗，获得珍贵的材料和经验</p>
-              </div>
+              {!playerState.equipment?.main_hand && (
+                <div className="page-info">
+                  <p>
+                    还没装备武器。去木工做一把短剑，再点右侧装备栏穿上。
+                    <button
+                      type="button"
+                      className="header-menu-btn"
+                      style={{ marginLeft: 8 }}
+                      onClick={() => {
+                        setCurrentProfession('woodcutter');
+                        setActiveTab('woodworking');
+                        setCraftCategory('weapons');
+                        setIsRightPanelExpanded(true);
+                        void apiClient.setActiveClass('woodcutter').catch(() => undefined);
+                      }}
+                    >
+                      去做武器
+                    </button>
+                  </p>
+                </div>
+              )}
+              {!!playerState.equipment?.main_hand && !playerState.equipment?.chest && (
+                <div className="page-info">
+                  <p>
+                    {playerState.skills?.skill_woodcutter?.unlockedRecipes?.includes('woodcutter_armor_crafting')
+                      ? '武器有了，上衣还空着。去木工做木制胸甲，再点右侧穿上。'
+                      : '武器有了。先在技能树解锁「木制装备制作」，再去做胸甲。'}
+                    <button
+                      type="button"
+                      className="header-menu-btn"
+                      style={{ marginLeft: 8 }}
+                      onClick={() => {
+                        setCurrentProfession('woodcutter');
+                        void apiClient.setActiveClass('woodcutter').catch(() => undefined);
+                        if (playerState.skills?.skill_woodcutter?.unlockedRecipes?.includes('woodcutter_armor_crafting')) {
+                          setActiveTab('woodworking');
+                          setCraftCategory('equipment');
+                          setIsRightPanelExpanded(true);
+                        } else {
+                          setActiveTab('skills');
+                        }
+                      }}
+                    >
+                      {playerState.skills?.skill_woodcutter?.unlockedRecipes?.includes('woodcutter_armor_crafting')
+                        ? '去做护甲'
+                        : '去解锁'}
+                    </button>
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* 战斗状态时显示战斗界面 */}
@@ -2001,7 +1874,7 @@ export default function NewGameInterface() {
                 <div className="battle-status-panel-center">
                   <div className="battle-header">
                     <div className="battle-title-section">
-                      <h3>🗡️ 战斗状态</h3>
+                      <h3>战斗</h3>
                       <div className="battle-stats-compact">
                         <span className="battle-count">第{battleState.battleCount}场</span>
                         <span className="battle-separator">|</span>
@@ -2161,15 +2034,15 @@ export default function NewGameInterface() {
                   <div className="battle-controls-center">
                     {!battleState.isActive && battleState.enemyHp <= 0 && battleState.playerHp > 0 && !battleState.isPlayerDead && (
                       <div className="auto-continue-info">
-                        <div className="victory-text">🎉 战斗胜利!</div>
+                        <div className="victory-text">战斗胜利</div>
                         <div className="victory-rewards">
-                          <span className="reward-item">⭐ +{battleState.monster.xp} 经验</span>
-                          <span className="reward-item">💰 +{battleState.monster.gold} 金币</span>
+                          <span className="reward-item">+{battleState.monster.xp} 经验</span>
+                          <span className="reward-item">+{battleState.monster.gold} 金币</span>
                         </div>
                         <div className="auto-text">
                           {battleState.battleLog[battleState.battleLog.length - 1]?.includes('等待奖励结算') ? 
                             '正在结算奖励...' : 
-                            `3秒后自动开始第${battleState.battleCount + 1}场战斗...`
+                            `${Math.round((contentPack?.actions?.find((a: any) => a.id === `act_combat_${battleState.monster.id}`)?.duration ?? 5000) / 1000)}秒后自动开始第${battleState.battleCount + 1}场战斗...`
                           }
                         </div>
                         <button className="btn-stop-large" onClick={stopBattle}>
@@ -2226,7 +2099,7 @@ export default function NewGameInterface() {
               /* 非战斗状态显示怪物选择 */
               <div className="adventure-content">
                 <div className="map-sidebar">
-                  <h3>探索区域</h3>
+                  <h3>区域</h3>
                   {maps.map((map) => (
                     <button
                       key={map.id}
@@ -2309,19 +2182,19 @@ export default function NewGameInterface() {
                   className={`category-btn ${craftCategory === 'materials' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('materials')}
                 >
-                  📦 材料
+                  材料
                 </button>
                 <button 
                   className={`category-btn ${craftCategory === 'weapons' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('weapons')}
                 >
-                  ⚔️ 武器
+                  武器
                 </button>
                 <button 
                   className={`category-btn ${craftCategory === 'equipment' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('equipment')}
                 >
-                  🛡️ 装备
+                  装备
                 </button>
               </div>
               
@@ -2414,19 +2287,19 @@ export default function NewGameInterface() {
                   className={`category-btn ${craftCategory === 'materials' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('materials')}
                 >
-                  📦 材料
+                  材料
                 </button>
                 <button 
                   className={`category-btn ${craftCategory === 'weapons' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('weapons')}
                 >
-                  ⚔️ 武器
+                  武器
                 </button>
                 <button 
                   className={`category-btn ${craftCategory === 'equipment' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('equipment')}
                 >
-                  🛡️ 装备
+                  装备
                 </button>
               </div>
               
@@ -2489,7 +2362,7 @@ export default function NewGameInterface() {
                   className={`category-btn ${craftCategory === 'materials' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('materials')}
                 >
-                  📦 材料
+                  材料
                 </button>
                 <button 
                   className={`category-btn ${craftCategory === 'food' ? 'active' : ''}`}
@@ -2627,13 +2500,13 @@ export default function NewGameInterface() {
                   className={`category-btn ${craftCategory === 'materials' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('materials')}
                 >
-                  📦 材料
+                  材料
                 </button>
                 <button 
                   className={`category-btn ${craftCategory === 'equipment' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('equipment')}
                 >
-                  🛡️ 装备
+                  装备
                 </button>
               </div>
               
@@ -2702,7 +2575,7 @@ export default function NewGameInterface() {
                   className={`category-btn ${craftCategory === 'materials' ? 'active' : ''}`}
                   onClick={() => setCraftCategory('materials')}
                 >
-                  📦 材料
+                  材料
                 </button>
               </div>
               
@@ -2862,6 +2735,8 @@ export default function NewGameInterface() {
           />
         )}
 
+        {activeTab === 'party' && <PartyPanel />}
+
         {/* 技能树页面 */}
         {activeTab === 'skills' && (
           <SkillTreePanel 
@@ -2892,7 +2767,7 @@ export default function NewGameInterface() {
                 <div className="trading-categories">
                   {/* 材料分类 */}
                   <div className="category-section">
-                    <h3 className="category-title">📦 材料</h3>
+                    <h3 className="category-title">材料</h3>
                     <div className="trading-item-grid">
                       {allItems.materials && allItems.materials.length > 0 ? (
                         allItems.materials.map((item: any) => (
@@ -2916,7 +2791,7 @@ export default function NewGameInterface() {
                   
                   {/* 武器分类 */}
                   <div className="category-section">
-                    <h3 className="category-title">⚔️ 武器</h3>
+                    <h3 className="category-title">武器</h3>
                     <div className="trading-item-grid">
                       {allItems.weapons && allItems.weapons.length > 0 ? (
                         allItems.weapons.map((item: any) => (
@@ -2940,7 +2815,7 @@ export default function NewGameInterface() {
                   
                   {/* 装备分类 */}
                   <div className="category-section">
-                    <h3 className="category-title">🛡️ 装备</h3>
+                    <h3 className="category-title">装备</h3>
                     <div className="trading-item-grid">
                       {allItems.armor && allItems.armor.length > 0 ? (
                         allItems.armor.map((item: any) => (
@@ -2964,7 +2839,7 @@ export default function NewGameInterface() {
                   
                   {/* 消耗品分类 */}
                   <div className="category-section">
-                    <h3 className="category-title">🍖 消耗品</h3>
+                    <h3 className="category-title">消耗品</h3>
                     <div className="trading-item-grid">
                       {allItems.consumables && allItems.consumables.length > 0 ? (
                         allItems.consumables.map((item: any) => (
@@ -3109,355 +2984,41 @@ export default function NewGameInterface() {
         )}
       </main>
       
-      {/* 右侧边栏 - 状态、装备和背包 */}
-      <aside className={`right-panel ${isRightPanelExpanded ? 'expanded' : 'collapsed'}`}>
-        {/* 收缩按钮 - 放在最顶端 */}
-        <button 
-          className="right-panel-toggle-top"
-          onClick={() => setIsRightPanelExpanded(!isRightPanelExpanded)}
-          title={isRightPanelExpanded ? '收起' : '展开'}
-        >
-          {isRightPanelExpanded ? '▶' : '◀'}
-        </button>
-        
-        {/* 状态信息区域 */}
-        {isRightPanelExpanded && (
-          <div className="right-panel-status">
-            <div className="status-player-info">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <span className="status-player-name">{playerName}</span>
-                <button 
-                  className="btn-switch-compact" 
-                  onClick={() => setShowProfessionModal(true)}
-                  title="切换职业"
-                >
-                  切换
-                </button>
-              </div>
-              <span className="status-player-class">{getCurrentProfession().icon} {getCurrentProfession().name}</span>
-            </div>
-            
-            <div className="status-stats" key={forceUpdate}>
-              <div className="status-stat-item">
-                <span className="status-stat-label">职业</span>
-                <span className="status-stat-value">Lv.{getCurrentSkill().level}</span>
-              </div>
-              <div className="status-stat-item">
-                <span className="status-stat-label">战斗</span>
-                <span className="status-stat-value">Lv.{playerState.combatLevel || 1}</span>
-              </div>
-              <div className="status-stat-item">
-                <span className="status-stat-label">金币</span>
-                <span className="status-stat-value gold">{playerState.inventory.gold || 0}</span>
-              </div>
-            </div>
-            
-            {/* 经验进度条 */}
-            <div className="status-xp-bars">
-              <div className="status-xp-bar">
-                <div className="xp-header">
-                  <span className="status-xp-label">
-                    {getCurrentProfession().icon} 职业经验
-                  </span>
-                  <span className="xp-percentage">
-                    {Math.round(((getCurrentSkill().xp || 0) / getXpForLevel(getCurrentSkill().level + 1)) * 100)}%
-                  </span>
-                </div>
-                <div className="status-xp-progress">
-                  <div 
-                    className="status-xp-fill profession"
-                    style={{ 
-                      width: `${Math.min(100, ((getCurrentSkill().xp || 0) / getXpForLevel(getCurrentSkill().level + 1)) * 100)}%` 
-                    }}
-                  >
-                    <div className="xp-shine"></div>
-                  </div>
-                </div>
-                <div className="xp-footer">
-                  <span className="status-xp-text">
-                    {getCurrentSkill().xp || 0} / {getXpForLevel(getCurrentSkill().level + 1)}
-                  </span>
-                  <span className="xp-remaining">
-                    还需 {getXpForLevel(getCurrentSkill().level + 1) - (getCurrentSkill().xp || 0)}
-                  </span>
-                </div>
-              </div>
-              <div className="status-xp-bar">
-                <div className="xp-header">
-                  <span className="status-xp-label">
-                    ⚔️ 战斗经验
-                  </span>
-                  <span className="xp-percentage">
-                    {Math.round(((playerState.combatXp || 0) / getXpForLevel((playerState.combatLevel || 1) + 1)) * 100)}%
-                  </span>
-                </div>
-                <div className="status-xp-progress">
-                  <div 
-                    className="status-xp-fill combat"
-                    style={{ 
-                      width: `${Math.min(100, ((playerState.combatXp || 0) / getXpForLevel((playerState.combatLevel || 1) + 1)) * 100)}%` 
-                    }}
-                  >
-                    <div className="xp-shine"></div>
-                  </div>
-                </div>
-                <div className="xp-footer">
-                  <span className="status-xp-text">
-                    {playerState.combatXp || 0} / {getXpForLevel((playerState.combatLevel || 1) + 1)}
-                  </span>
-                  <span className="xp-remaining">
-                    还需 {getXpForLevel((playerState.combatLevel || 1) + 1) - (playerState.combatXp || 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {isRightPanelExpanded && (
-          <div className="right-panel-header">
-            <div className="right-panel-tabs">
-              <button 
-                className={`right-tab ${rightPanelView === 'character' ? 'active' : ''}`}
-                onClick={() => setRightPanelView('character')}
-              >
-                ⚔️ 装备
-              </button>
-              <button 
-                className={`right-tab ${rightPanelView === 'inventory' ? 'active' : ''}`}
-                onClick={() => setRightPanelView('inventory')}
-              >
-                🎒 背包
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {isRightPanelExpanded && (
-          <div className="right-panel-content">
-            {/* 装备面板 */}
-            {rightPanelView === 'character' && (
-              <div className="equipment-panel">
-                {/* 装备纸娃娃布局 */}
-                <div className="equipment-paperdoll">
-                  <div className="paperdoll-left">
-                    {equipSlots.left.map((slot) => (
-                      <div 
-                        key={slot.id} 
-                        className="equipment-slot-item"
-                        onClick={() => openEquipSelector(slot.id)}
-                      >
-                        <div className="equipment-slot-box">
-                          <span className="slot-icon">{slot.icon}</span>
-                          <div className="slot-hover-hint">点击装备</div>
-                        </div>
-                        <span className="equipment-slot-name">{slot.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="paperdoll-center">
-                    <div className="character-avatar-display">
-                      <div className="avatar-glow"></div>
-                      <span className="avatar-emoji">🧙</span>
-                      <span className="avatar-level">Lv.{playerState.combatLevel || 1}</span>
-                    </div>
-                  </div>
-                  <div className="paperdoll-right">
-                    {equipSlots.right.map((slot) => (
-                      <div 
-                        key={slot.id} 
-                        className="equipment-slot-item"
-                        onClick={() => openEquipSelector(slot.id)}
-                      >
-                        <div className="equipment-slot-box">
-                          <span className="slot-icon">{slot.icon}</span>
-                          <div className="slot-hover-hint">点击装备</div>
-                        </div>
-                        <span className="equipment-slot-name">{slot.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* 属性面板 - 带图标和数值条 */}
-                <div className="character-attributes">
-                  <h4>⚡ 战斗属性</h4>
-                  <div className="attribute-row">
-                    <span className="attribute-label"><span className="attr-icon">❤️</span>生命值</span>
-                    <div className="attribute-bar-container">
-                      <div className="attribute-bar hp-attr-bar" style={{ width: `${Math.min(100, ((50 + ((playerState.combatLevel || 1) - 1) * 10) / 200) * 100)}%` }}></div>
-                    </div>
-                    <span className="attribute-value">
-                      {50 + ((playerState.combatLevel || 1) - 1) * 10}
-                      {calculateEquipmentBonus().hp > 0 && (
-                        <span className="bonus-value"> +{calculateEquipmentBonus().hp}</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="attribute-row">
-                    <span className="attribute-label"><span className="attr-icon">💧</span>魔力值</span>
-                    <div className="attribute-bar-container">
-                      <div className="attribute-bar mp-attr-bar" style={{ width: `${Math.min(100, ((50 + ((playerState.combatLevel || 1) - 1) * 10) / 200) * 100)}%` }}></div>
-                    </div>
-                    <span className="attribute-value">
-                      {50 + ((playerState.combatLevel || 1) - 1) * 10}
-                      {calculateEquipmentBonus().mp > 0 && (
-                        <span className="bonus-value"> +{calculateEquipmentBonus().mp}</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="attribute-row">
-                    <span className="attribute-label"><span className="attr-icon">⚔️</span>攻击力</span>
-                    <div className="attribute-bar-container">
-                      <div className="attribute-bar atk-attr-bar" style={{ width: `${Math.min(100, ((5 + ((playerState.combatLevel || 1) - 1) * 1) / 50) * 100)}%` }}></div>
-                    </div>
-                    <span className="attribute-value">
-                      {5 + ((playerState.combatLevel || 1) - 1) * 1}
-                      {calculateEquipmentBonus().atk > 0 && (
-                        <span className="bonus-value"> +{calculateEquipmentBonus().atk}</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="attribute-row">
-                    <span className="attribute-label"><span className="attr-icon">🛡️</span>防御力</span>
-                    <div className="attribute-bar-container">
-                      <div className="attribute-bar def-attr-bar" style={{ width: `${Math.min(100, (calculateEquipmentBonus().def / 30) * 100)}%` }}></div>
-                    </div>
-                    <span className="attribute-value">
-                      0
-                      {calculateEquipmentBonus().def > 0 && (
-                        <span className="bonus-value"> +{calculateEquipmentBonus().def}</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* 装备提示 */}
-                <div className="equipment-tips">
-                  <div className="tip-item">
-                    <span className="tip-icon">💡</span>
-                    <span className="tip-text">点击装备槽快速装备物品</span>
-                  </div>
-                  <div className="tip-item">
-                    <span className="tip-icon">🔄</span>
-                    <span className="tip-text">右键点击可卸下装备</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* 背包面板 */}
-            {rightPanelView === 'inventory' && (
-              <div className="inventory-panel">
-                {/* 背包头部 */}
-                <div className="inventory-header-compact">
-                  <div className="inventory-info">
-                    <span>💰 {playerState.inventory.gold || 0}</span>
-                    <span>📦 {getFilteredInventoryItems().length} / {Object.keys(playerState.inventory).filter(key => key !== 'gold' && (playerState.inventory[key] || 0) > 0).length} 种</span>
-                  </div>
-                  <button 
-                    className="btn-organize"
-                    onClick={organizeInventory}
-                    title="整理背包"
-                  >
-                    🔄
-                  </button>
-                </div>
-                
-                {/* 搜索框 */}
-                <div className="inventory-search">
-                  <input
-                    type="text"
-                    className="search-input"
-                    placeholder="搜索物品..."
-                    value={inventorySearch}
-                    onChange={(e) => setInventorySearch(e.target.value)}
-                  />
-                  {inventorySearch && (
-                    <button 
-                      className="btn-clear-search"
-                      onClick={() => setInventorySearch('')}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-                
-                {/* 分类筛选 */}
-                <div className="inventory-filters">
-                  <button 
-                    className={`filter-btn ${inventoryFilter === 'all' ? 'active' : ''}`}
-                    onClick={() => setInventoryFilter('all')}
-                  >
-                    全部
-                  </button>
-                  <button 
-                    className={`filter-btn ${inventoryFilter === 'material' ? 'active' : ''}`}
-                    onClick={() => setInventoryFilter('material')}
-                  >
-                    📦 材料
-                  </button>
-                  <button 
-                    className={`filter-btn ${inventoryFilter === 'weapon' ? 'active' : ''}`}
-                    onClick={() => setInventoryFilter('weapon')}
-                  >
-                    ⚔️ 武器
-                  </button>
-                  <button 
-                    className={`filter-btn ${inventoryFilter === 'consumable' ? 'active' : ''}`}
-                    onClick={() => setInventoryFilter('consumable')}
-                  >
-                    🍖 消耗
-                  </button>
-                </div>
-                
-                {/* 排序选项 */}
-                <div className="inventory-sort">
-                  <span className="sort-label">排序:</span>
-                  <select 
-                    className="sort-select"
-                    value={inventorySortBy}
-                    onChange={(e) => setInventorySortBy(e.target.value as any)}
-                  >
-                    <option value="default">默认</option>
-                    <option value="name">名称</option>
-                    <option value="tier">品质</option>
-                    <option value="count">数量</option>
-                  </select>
-                </div>
-                
-                {/* 物品网格 */}
-                <div className="inventory-grid-compact">
-                  {getFilteredInventoryItems().length === 0 ? (
-                    <div className="inventory-empty">
-                      <div className="empty-icon">📭</div>
-                      <p>没有找到物品</p>
-                    </div>
-                  ) : (
-                    getFilteredInventoryItems().map((item) => (
-                      <div 
-                        key={item.itemId} 
-                        className="inventory-item-compact" 
-                        data-tier={item.tier}
-                        onClick={() => {
-                          setSelectedItem({ ...item, id: item.itemId });
-                          setModalType('item');
-                        }}
-                        title={item.name}
-                      >
-                        <div className="item-icon-compact">
-                          {getItemIcon(item.itemId)}
-                        </div>
-                        <div className="item-count-compact">x{item.count}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </aside>
+      <PlayerRightPanel
+        expanded={isRightPanelExpanded}
+        onToggle={() => setIsRightPanelExpanded(!isRightPanelExpanded)}
+        playerName={playerName}
+        onOpenProfessionModal={() => setShowProfessionModal(true)}
+        profession={getCurrentProfession()}
+        professionSkill={getCurrentSkill()}
+        combatLevel={playerState.combatLevel || 1}
+        combatXp={playerState.combatXp || 0}
+        gold={playerState.inventory.gold || 0}
+        forceUpdate={forceUpdate}
+        getXpForLevel={getXpForLevel}
+        view={rightPanelView}
+        onView={setRightPanelView}
+        equipSlots={equipSlots}
+        onOpenEquipSelector={openEquipSelector}
+        onUnequipSlot={unequipSlot}
+        getEquippedItemId={getEquippedItemId}
+        getItemNameById={getItemNameById}
+        equipmentBonus={calculateEquipmentBonus()}
+        inventoryKindCount={Object.keys(playerState.inventory).filter(key => key !== 'gold' && (playerState.inventory[key] || 0) > 0).length}
+        inventoryItems={getFilteredInventoryItems()}
+        onOrganize={organizeInventory}
+        inventorySearch={inventorySearch}
+        onSearch={setInventorySearch}
+        inventoryFilter={inventoryFilter}
+        onFilter={setInventoryFilter}
+        inventorySortBy={inventorySortBy}
+        onSort={(value) => setInventorySortBy(value as any)}
+        getItemIcon={getItemIcon}
+        onSelectInventoryItem={(item) => {
+          setSelectedItem({ ...item, id: item.itemId });
+          setModalType('item');
+        }}
+      />
       </div>
 
       {/* 装备选择器弹窗 */}
@@ -3496,6 +3057,14 @@ export default function NewGameInterface() {
             </div>
             
             <div className="modal-actions">
+              {getEquippedItemId(selectedEquipSlot) && (
+                <button
+                  className="btn-secondary"
+                  onClick={() => { void unequipSlot(selectedEquipSlot); setShowEquipSelector(false); setSelectedEquipSlot(null); }}
+                >
+                  卸下
+                </button>
+              )}
               <button 
                 className="btn-secondary"
                 onClick={() => { setShowEquipSelector(false); setSelectedEquipSlot(null); }}
@@ -3569,9 +3138,10 @@ export default function NewGameInterface() {
                       onClick={() => {
                         if (hasLevel) {
                           startAction(selectedItem.actionId, {
-                            name: '砍伐',
+                            name: selectedItem.name || '采集',
                             output: selectedItem.output,
-                            duration: selectedItem.time
+                            duration: selectedItem.time,
+                            mark: activityMarkFromAction(selectedItem.actionId || 'chop'),
                           });
                         }
                       }}
@@ -3718,9 +3288,10 @@ export default function NewGameInterface() {
                           if (canCraft) {
                             // selectedItem.id 已是完整配方 ID（如 act_craft_lumber_t1），不要再加前缀
                             startAction(selectedItem.id, {
-                              name: `制作 ×${craftQuantity}`,
+                              name: selectedItem.name || `制作 ×${craftQuantity}`,
                               output: selectedItem.output,
-                              duration: selectedItem.time * craftQuantity
+                              duration: selectedItem.time * craftQuantity,
+                              mark: '制',
                             }, craftQuantity);
                             setCraftQuantity(1); // 重置数量
                           }
@@ -3983,8 +3554,13 @@ export default function NewGameInterface() {
       {showProfessionModal && (
         <div className="modal-overlay" onClick={() => setShowProfessionModal(false)}>
           <div className="modal-content profession-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">选择职业</h3>
-            <p className="modal-subtitle">切换后将自动跳转到对应的采集页面</p>
+            <div className="modal-header-with-favorite">
+              <h3 className="modal-title">选择职业</h3>
+              <button className="prog-close" type="button" onClick={() => setShowProfessionModal(false)} aria-label="关闭">
+                关闭
+              </button>
+            </div>
+            <p className="modal-subtitle">点当前职业可关闭；点其他职业会跳到对应采集页</p>
             
             <div className="profession-grid">
               {Object.values(professions).map((prof) => {
@@ -3998,11 +3574,16 @@ export default function NewGameInterface() {
                     key={prof.id}
                     className={`profession-card ${isCurrent ? 'current' : ''}`}
                     onClick={() => {
-                      if (!isCurrent) {
-                        setCurrentProfession(prof.id as any);
-                        setActiveTab(prof.gatherTab);
+                      if (isCurrent) {
                         setShowProfessionModal(false);
+                        return;
                       }
+                      setCurrentProfession(prof.id as any);
+                      setActiveTab(prof.gatherTab);
+                      setShowProfessionModal(false);
+                      void apiClient.setActiveClass(prof.id).catch((e: any) => {
+                        toast.error(e?.message || '切换职业失败');
+                      });
                     }}
                   >
                     {isCurrent && <div className="current-badge">当前</div>}
@@ -4032,10 +3613,7 @@ export default function NewGameInterface() {
             </div>
             
             <div className="profession-tips">
-              <div className="tip-icon">💡</div>
-              <div className="tip-text">
-                点击职业卡片即可切换，切换后会自动跳转到该职业的采集页面
-              </div>
+              <div className="tip-text">点当前职业关闭，点其他职业切换并进入采集页</div>
             </div>
           </div>
         </div>

@@ -71,4 +71,55 @@ export async function equipmentRoutes(
       return reply.status(500).send({ error: "获取套装效果失败" });
     }
   });
+
+  const SLOT_KEYS = [
+    "main_hand",
+    "off_hand",
+    "head",
+    "chest",
+    "legs",
+    "feet",
+    "accessory1",
+    "accessory2",
+  ] as const;
+
+  app.post("/equipment/equip", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const body = z.object({
+      slot: z.enum(SLOT_KEYS),
+      itemId: z.string().min(1),
+    }).parse((req.body ?? {}) as unknown);
+
+    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    const qty = Number((state.inventory as any)?.[body.itemId] || 0);
+    if (qty <= 0) return reply.status(400).send({ error: "item_not_owned", message: "背包中没有这件物品" });
+
+    const item = contentPack.items.find((i: any) => i.id === body.itemId);
+    if (!item) return reply.status(400).send({ error: "unknown_item", message: "未知物品" });
+
+    if (!state.equipment) {
+      (state as any).equipment = { enhancementLevels: {}, durability: {}, maxDurability: {} };
+    }
+    (state.equipment as any)[body.slot] = body.itemId;
+    const saved = await storage.savePlayerState(userId, state);
+    return reply.send(saved);
+  });
+
+  app.post("/equipment/unequip", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const body = z.object({
+      slot: z.enum(SLOT_KEYS),
+    }).parse((req.body ?? {}) as unknown);
+
+    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    if (state.equipment) {
+      delete (state.equipment as any)[body.slot];
+    }
+    const saved = await storage.savePlayerState(userId, state);
+    return reply.send(saved);
+  });
 }

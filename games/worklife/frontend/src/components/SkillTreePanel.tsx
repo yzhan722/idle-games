@@ -74,17 +74,22 @@ export function SkillTreePanel({ playerState: _playerState, onRefresh, currentPr
   }
 
   const currentProfessionInfo = professionNames[currentProfession] || { name: '未知职业', icon: '❓' }
+  const skillNodes = [...(skillTree?.skillNodes || [])].sort((a: any, b: any) => {
+    const rank = (n: any) => {
+      if (isNodeUnlocked(n.id)) return 1
+      if (canUnlockNode(n)) return 0
+      return 2
+    }
+    return rank(a) - rank(b)
+  })
+  const unlockableCount = skillNodes.filter((n: any) => canUnlockNode(n)).length
 
   return (
     <div className="skill-tree-panel">
       <div className="skill-tree-header">
-        <h2>
-          <span className="profession-icon">{currentProfessionInfo.icon}</span>
-          {currentProfessionInfo.name} - 技能树
-        </h2>
+        <h2>{currentProfessionInfo.name}技能树</h2>
       </div>
 
-      {/* 技能进度 */}
       {skillProgress && (
         <div className="skill-progress">
           <div className="progress-info">
@@ -95,10 +100,19 @@ export function SkillTreePanel({ playerState: _playerState, onRefresh, currentPr
         </div>
       )}
 
-      {/* 技能树 */}
+      {unlockableCount > 0 && (
+        <div className="page-info">
+          <p>
+            有 {unlockableCount} 个节点可以解锁
+            {!isNodeUnlocked('woodcutter_armor_crafting') ? '。先解锁「木制装备制作」才能做胸甲' : ''}
+            。
+          </p>
+        </div>
+      )}
+
       {skillTree && (
         <div className="skill-nodes">
-          {skillTree.skillNodes?.map((node: any) => {
+          {skillNodes.map((node: any) => {
             const unlocked = isNodeUnlocked(node.id)
             const canUnlock = canUnlockNode(node)
             

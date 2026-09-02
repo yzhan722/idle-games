@@ -38,6 +38,16 @@ import {
   calculateEnhancementSuccess,
   calculateEnhancementCost
 } from "./storage";
+import fs from "fs";
+import path from "path";
+import {
+  addMembership,
+  membershipKeyForSend,
+  membershipKeys,
+  payloadChannel,
+} from "./chat_channels";
+import { buildSnapshot, parseSnapshot } from "./memory_snapshot";
+import { socketFromWsConnection } from "./ws_socket";
 
 // 使用简单的WebSocket接口定义
 interface WebSocketLike {
@@ -48,7 +58,7 @@ interface WebSocketLike {
 
 type WsConn = { socket: any; channels: Set<string> };
 
-export function createMemoryStorage(): Storage {
+export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
   const users = new Map<string, UserRecord>();
   const usersByDevice = new Map<string, string>();
   const usersByGoogle = new Map<string, string>();
@@ -73,6 +83,45 @@ export function createMemoryStorage(): Storage {
 
   const ws = new Map<string, WsConn>();
   const channelMembers = new Map<string, Set<string>>();
+
+  function loadPersist() {
+    if (!opts?.persistPath) return;
+    try {
+      const raw = fs.readFileSync(opts.persistPath, "utf8");
+      const snap = parseSnapshot(JSON.parse(raw));
+      for (const u of snap.users) {
+        users.set(u.id, u);
+        if (u.guestDeviceId) usersByDevice.set(u.guestDeviceId, u.id);
+        if (u.googleSub) usersByGoogle.set(u.googleSub, u.id);
+      }
+      for (const [id, st] of snap.states) states.set(id, st);
+      for (const p of snap.parties) parties.set(p.id, p);
+    } catch {
+      // Missing or unreadable save file: start empty.
+    }
+  }
+
+  let persistTimer: ReturnType<typeof setTimeout> | null = null;
+  function flushPersist() {
+    if (!opts?.persistPath) return;
+    fs.mkdirSync(path.dirname(opts.persistPath), { recursive: true });
+    const snap = buildSnapshot({
+      users: users.values(),
+      states: states.entries(),
+      parties: parties.values(),
+    });
+    fs.writeFileSync(opts.persistPath, JSON.stringify(snap));
+  }
+  function schedulePersist() {
+    if (!opts?.persistPath) return;
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      persistTimer = null;
+      flushPersist();
+    }, 50);
+  }
+
+  loadPersist();
 
   function nowIso() {
     return new Date().toISOString();
@@ -249,7 +298,13 @@ export function createMemoryStorage(): Storage {
 
   return {
     async init() {},
-    async close() {},
+    async close() {
+      if (persistTimer) {
+        clearTimeout(persistTimer);
+        persistTimer = null;
+      }
+      flushPersist();
+    },
     async healthCheck() { return { ok: true, latencyMs: 0 }; },
     async cleanupExpiredListings() { return 0; },
 
@@ -261,6 +316,7 @@ export function createMemoryStorage(): Storage {
       const rec: UserRecord = { id, guestDeviceId: deviceId, googleSub: null, createdAt: nowIso() };
       users.set(id, rec);
       usersByDevice.set(deviceId, id);
+      schedulePersist();
       return rec;
     },
 
@@ -283,6 +339,7 @@ export function createMemoryStorage(): Storage {
 
       const state = defaultEnhancedPlayerState(contentVersion);
       states.set(userId, state);
+      schedulePersist();
       return state;
     },
 
@@ -295,12 +352,14 @@ export function createMemoryStorage(): Storage {
       const result = simulateToNow({ state, now, contentPack });
       const next = { ...result.state as EnhancedPlayerState, inventory: normalizeInv(result.state.inventory) };
       states.set(userId, next);
+      schedulePersist();
       return next;
     },
 
     async savePlayerState(userId: string, state: EnhancedPlayerState) {
       const next = { ...state, inventory: normalizeInv(state.inventory) };
       states.set(userId, next);
+      schedulePersist();
       return next;
     },
 
@@ -343,6 +402,7 @@ export function createMemoryStorage(): Storage {
         ...(normalizedQty !== undefined ? { quantity: normalizedQty, remaining: normalizedQty } : {}),
       };
       appendLog(st, normalizedQty !== undefined ? `开始工作：${actionId} ×${normalizedQty}` : `开始工作：${actionId}`);
+      schedulePersist();
       return st;
     },
 
@@ -352,6 +412,7 @@ export function createMemoryStorage(): Storage {
       st.mode = "combat_farm";
       st.combatFarmState = { stageId, startedAt: now.toISOString(), seed: pickSeed() };
       appendLog(st, `开始刷关：${stageId}`);
+      schedulePersist();
       return st;
     },
 
@@ -944,6 +1005,7 @@ export function createMemoryStorage(): Storage {
           joinedAt: new Date().toISOString()
         };
         appendLog(st, `创建队伍：${party.id}`);
+        schedulePersist();
       }
 
       return party;
@@ -977,6 +1039,7 @@ export function createMemoryStorage(): Storage {
           joinedAt: new Date().toISOString()
         };
         appendLog(st, `加入队伍：${partyId}`);
+        schedulePersist();
       }
 
       return updatedParty;
@@ -1113,7 +1176,7 @@ export function createMemoryStorage(): Storage {
             appendLog(memberState, "队伍已解散");
           }
         }
-        
+        schedulePersist();
         return { success: true, message: "队伍已解散" };
       }
 
@@ -1125,11 +1188,16 @@ export function createMemoryStorage(): Storage {
         memberState.partyState = undefined;
         appendLog(memberState, "已离开队伍");
       }
-
+      schedulePersist();
       return { success: true };
     },
 
-    // 新增：技能树和进度系统
+    async getPartyForUser({ userId }: { userId: string }): Promise<Party | null> {
+      const st = states.get(userId);
+      const partyId = st?.partyState?.partyId;
+      if (!partyId) return null;
+      return parties.get(partyId) ?? null;
+    },
     async getSkillTree({ professionId, contentPack }: {
       professionId: string;
       contentPack: EnhancedContentPack;
@@ -1271,19 +1339,23 @@ export function createMemoryStorage(): Storage {
     },
 
     wsConnect(userId: string, connection: any) {
-      const c: WsConn = { socket: connection.socket, channels: new Set(["world"]) };
+      const st = states.get(userId);
+      const keys = membershipKeys({
+        classId: st?.activeClassId,
+        partyId: st?.partyState?.partyId,
+      });
+      const c: WsConn = { socket: socketFromWsConnection(connection), channels: new Set<string>() };
       ws.set(userId, c);
-
-      const set = channelMembers.get("world") ?? new Set<string>();
-      set.add(userId);
-      channelMembers.set("world", set);
+      for (const key of keys) {
+        addMembership(channelMembers, c.channels, userId, key);
+      }
 
       try {
-        if (c.socket && typeof c.socket.send === 'function') {
+        if (c.socket && typeof c.socket.send === "function") {
           c.socket.send(JSON.stringify({ type: "chat:system", channel: "world", ts: nowIso(), text: "connected" }));
         }
       } catch (error) {
-        console.error('WebSocket send error:', error);
+        console.error("WebSocket send error:", error);
       }
     },
 
@@ -1372,10 +1444,31 @@ export function createMemoryStorage(): Storage {
           return;
         }
 
-        // 处理公共频道
-        broadcast(channel, {
+        // 处理公共频道：按职业/队伍分桶，payload 仍用 UI 频道名
+        const memberKey = membershipKeyForSend(channel, {
+          classId: senderProfession,
+          partyId: userState?.partyState?.partyId,
+        });
+        if (!memberKey) {
+          const senderConn = ws.get(userId);
+          if (senderConn?.socket) {
+            try {
+              senderConn.socket.send(JSON.stringify({
+                type: "chat:error",
+                message: channel === "party" ? "未加入队伍" : "无法加入该频道",
+                ts: nowIso(),
+              }));
+            } catch {}
+          }
+          return;
+        }
+        if (!channelMembers.get(memberKey)?.has(userId)) {
+          const senderConn = ws.get(userId);
+          if (senderConn) addMembership(channelMembers, senderConn.channels, userId, memberKey);
+        }
+        broadcast(memberKey, {
           type: "chat:message",
-          channel,
+          channel: payloadChannel(channel),
           sender: userId,
           senderProfession,
           ts: nowIso(),

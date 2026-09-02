@@ -215,6 +215,15 @@ class ApiClient {
   async getEquipmentStats() { return this.get('/equipment/stats'); }
   async getSetBonuses() { return this.get('/equipment/set-bonuses'); }
   async getDurability(itemId: string) { return this.get(`/equipment/durability/${itemId}`); }
+  async equipItem(slot: string, itemId: string) {
+    return this.post('/equipment/equip', { slot, itemId });
+  }
+  async unequipItem(slot: string) {
+    return this.post('/equipment/unequip', { slot });
+  }
+  async setActiveClass(classId: string) {
+    return this.post('/player/class', { classId });
+  }
   async repairEquipment(itemId: string, repairType: 'full' | 'partial' = 'full', targetDurability?: number) {
     return this.post('/equipment/repair', { itemId, repairType, targetDurability });
   }
@@ -256,6 +265,7 @@ class ApiClient {
   async createParty(name?: string) { return this.post('/party/create', { name }); }
   async joinParty(partyId: string) { return this.post('/party/join', { partyId }); }
   async leaveParty(partyId: string) { return this.post('/party/leave', { partyId }); }
+  async getMyParty() { return this.get('/party/mine'); }
   async startPartyActivity(partyId: string, activityType: 'combat' | 'group_craft', stageId?: string) {
     return this.post('/party/start-activity', { partyId, activityType, stageId });
   }

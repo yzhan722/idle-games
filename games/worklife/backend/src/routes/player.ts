@@ -80,4 +80,22 @@ export async function playerRoutes(
     const result = await storage.startCombatFarm({ userId, stageId: body.stageId, now: new Date() });
     return reply.send(result);
   });
+
+  const CLASS_IDS = ["woodcutter", "blacksmith", "farmer", "chef", "tailor", "alchemist"] as const;
+
+  app.post("/player/class", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const body = z.object({
+      classId: z.enum(CLASS_IDS),
+    }).parse((req.body ?? {}) as unknown);
+
+    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    state.activeClassId = body.classId;
+    const saved = await storage.savePlayerState(userId, state);
+    return reply.send(saved);
+  });
 }

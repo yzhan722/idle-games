@@ -7,23 +7,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false)
   const [deviceId, setDeviceId] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
-  const [typedText, setTypedText] = useState('')
+  const typedText = '多职业放置 RPG'
   const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  // 打字机效果
-  useEffect(() => {
-    const fullText = '多职业放置 RPG 系统'
-    let index = 0
-    const timer = setInterval(() => {
-      if (index <= fullText.length) {
-        setTypedText(fullText.slice(0, index))
-        index++
-      } else {
-        clearInterval(timer)
-      }
-    }, 80)
-    return () => clearInterval(timer)
-  }, [])
 
   // 粒子动画背景
   useEffect(() => {
@@ -45,19 +30,18 @@ export default function LoginScreen() {
     resize()
     window.addEventListener('resize', resize)
 
-    const colors = ['rgba(212, 165, 116,', 'rgba(155, 127, 212,', 'rgba(255, 209, 102,', 'rgba(100, 200, 255,']
-    
-    // 初始化粒子
-    for (let i = 0; i < 60; i++) {
+    const colors = ["rgba(212, 154, 72,", "rgba(232, 196, 150,", "rgba(122, 158, 92,"];
+
+    for (let i = 0; i < 18; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        size: Math.random() * 2.5 + 0.5,
-        alpha: Math.random() * 0.6 + 0.2,
-        color: colors[Math.floor(Math.random() * colors.length)]
-      })
+        vx: (Math.random() - 0.5) * 0.18,
+        vy: (Math.random() - 0.5) * 0.18,
+        size: Math.random() * 1.6 + 0.4,
+        alpha: Math.random() * 0.22 + 0.08,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      });
     }
 
     const draw = () => {
@@ -76,30 +60,7 @@ export default function LoginScreen() {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
         ctx.fillStyle = `${p.color}${p.alpha})`
         ctx.fill()
-
-        // 辉光效果
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2)
-        ctx.fillStyle = `${p.color}${p.alpha * 0.3})`
-        ctx.fill()
       })
-
-      // 绘制连线（距离近的粒子之间）
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x
-          const dy = particles[i].y - particles[j].y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < 120) {
-            ctx.beginPath()
-            ctx.moveTo(particles[i].x, particles[i].y)
-            ctx.lineTo(particles[j].x, particles[j].y)
-            ctx.strokeStyle = `rgba(212, 165, 116, ${0.1 * (1 - dist / 120)})`
-            ctx.lineWidth = 0.5
-            ctx.stroke()
-          }
-        }
-      }
 
       animId = requestAnimationFrame(draw)
     }
@@ -136,84 +97,43 @@ export default function LoginScreen() {
       </div>
 
       <div className="login-card">
-        {/* 头部 */}
         <div className="login-head">
-          <div className="login-logo">W</div>
-          <h1 className="login-title">WorkLife</h1>
-          <p className="login-subtitle">
-            {typedText}
-            <span className="typewriter-cursor">|</span>
-          </p>
-          <div className="login-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
+          <p className="login-kicker">异世界の</p>
+          <h1 className="login-title">打工生活</h1>
+          <p className="login-subtitle">{typedText}</p>
         </div>
 
-        {/* 表单 */}
         <div className="login-field">
-          <label className="login-label">
-            <span>🔑</span>
+          <label className="login-label" htmlFor="device-id">
             设备 ID（可选）
           </label>
           <input
+            id="device-id"
             type="text"
             className="input"
-            placeholder="留空自动生成唯一 ID"
+            placeholder="留空则生成本机存档"
             value={deviceId}
             onChange={(e) => setDeviceId(e.target.value)}
           />
-          <div className="login-hint">
-            <span>💡</span>
-            使用相同设备 ID 可以恢复之前的游戏进度
-          </div>
+          <p className="login-hint">同一设备 ID 可找回进度</p>
         </div>
 
-        <button
-          className="btn btn-primary login-btn"
-          onClick={handleLogin}
-          disabled={loading}
-        >
+        <button className="btn btn-primary login-btn" onClick={handleLogin} disabled={loading}>
           {loading ? (
             <>
               <div className="loading-spinner"></div>
-              <span>登录中...</span>
+              <span>进入中...</span>
             </>
           ) : (
-            <>
-              <span>🚀</span>
-              <span>开始游戏</span>
-            </>
+            <span>开始打工</span>
           )}
         </button>
 
         {errorMsg && (
           <div className="login-error" role="alert">
-            <span>⚠️</span> {errorMsg}
+            {errorMsg}
           </div>
         )}
-
-        {/* 底部功能展示 */}
-        <div className="login-features">
-          <div className="login-feature">
-            <div className="login-feature__icon">⚒️</div>
-            <div className="login-feature__label">装备强化</div>
-          </div>
-          <div className="login-feature">
-            <div className="login-feature__icon">🏪</div>
-            <div className="login-feature__label">交易行</div>
-          </div>
-          <div className="login-feature">
-            <div className="login-feature__icon">👥</div>
-            <div className="login-feature__label">组队系统</div>
-          </div>
-        </div>
-
-        <div className="login-foot">
-          <p><span>✨</span>多职业放置 RPG 系统演示版</p>
-          <p><span>🎮</span>包含装备强化、交易行、组队等功能</p>
-        </div>
       </div>
     </div>
   )

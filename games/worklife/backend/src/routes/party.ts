@@ -87,4 +87,11 @@ export async function partyRoutes(
       return reply.status(400).send({ error: error instanceof Error ? error.message : "离开队伍失败" });
     }
   });
+
+  app.get("/party/mine", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    const party = await storage.getPartyForUser({ userId });
+    return reply.send({ party });
+  });
 }

@@ -6,7 +6,7 @@ import React from 'react'
  * 用法： <CardArt kind="tree" id="poplar" fallback="🌱" />
  *
  * 设计语言：圆角徽章底盘 + 内发光 + 顶部高光，营造轻量 3D 质感；
- * 配色贴合游戏深蓝灰 + 青(#4ea3d8) + 琥珀金(#e8b860) 主题。
+ * 配色贴合黄昏工坊：墨底 + 琥珀金 + 苔绿。
  */
 
 export type CardArtKind = 'tree' | 'monster' | 'craft' | 'character'
@@ -24,8 +24,8 @@ const VIEW = 120
 
 function Plate({
   children,
-  glow = '#4ea3d8',
-  rim = '#2a3a4d',
+  glow = '#d49a48',
+  rim = '#4a3828',
 }: {
   children: React.ReactNode
   glow?: string
@@ -42,8 +42,8 @@ function Plate({
     >
       <defs>
         <radialGradient id={`bg-${gid}`} cx="50%" cy="38%" r="70%">
-          <stop offset="0%" stopColor="#1b2531" />
-          <stop offset="100%" stopColor="#0b0f15" />
+          <stop offset="0%" stopColor="#2a2119" />
+          <stop offset="100%" stopColor="#16110d" />
         </radialGradient>
         <linearGradient id={`hl-${gid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(255,255,255,.16)" />
@@ -222,7 +222,7 @@ function MonsterArt({
 }) {
   const gid = React.useId()
   const glow = boss ? '#e8b860' : body
-  const rim = boss ? '#5a4420' : '#2a3a4d'
+  const rim = boss ? '#5a4420' : '#4a3828'
   const eyeY = shape === 'tall' ? 50 : 56
   return (
     <Plate glow={glow} rim={rim}>
@@ -382,12 +382,12 @@ function CharacterArt({
   cloth: string
   cloth2: string
   hair?: string
-  prop?: 'hammer' | 'hoe' | 'spoon' | 'needle' | 'flask'
+  prop?: 'hammer' | 'axe' | 'hoe' | 'spoon' | 'needle' | 'flask'
   propColor?: string
 }) {
   const gid = React.useId()
   return (
-    <Plate glow={cloth} rim="#2a3a4d">
+    <Plate glow={cloth} rim="#4a3828">
       <defs>
         <linearGradient id={`cl-${gid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={cloth} />
@@ -412,6 +412,12 @@ function CharacterArt({
       <path d="M56,58 q4,4 8,0" stroke="#b5605a" strokeWidth="1.6" fill="none" strokeLinecap="round" />
 
       {/* 职业道具 */}
+      {prop === 'axe' && (
+        <g transform="rotate(-25 86 80)">
+          <rect x="84" y="62" width="5" height="32" rx="2" fill="#7a5230" />
+          <path d="M78,64 l22,0 l-4,14 l-14,0 z" fill={propColor} />
+        </g>
+      )}
       {prop === 'hammer' && (
         <g transform="rotate(20 86 78)">
           <rect x="83" y="70" width="5" height="28" rx="2" fill="#7a5230" />
@@ -495,12 +501,12 @@ const CRAFT_MAP: Record<string, React.ReactNode> = {
 }
 
 const CHARACTER_MAP: Record<string, React.ReactNode> = {
-  woodcutter: <CharacterArt cloth="#6fae6a" cloth2="#3f7a3a" hair="#5a3a1a" prop="hammer" propColor="#9aa3ab" />,
+  woodcutter: <CharacterArt cloth="#6fae6a" cloth2="#3f7a3a" hair="#5a3a1a" prop="axe" propColor="#cfd6dc" />,
   blacksmith: <CharacterArt cloth="#8a6240" cloth2="#5a3a22" hair="#2a2018" prop="hammer" propColor="#cfd6dc" />,
   farmer: <CharacterArt cloth="#c7a85a" cloth2="#8a7030" hair="#4a3418" prop="hoe" propColor="#9aa3ab" />,
   chef: <CharacterArt cloth="#e0e4e8" cloth2="#aab0b6" hair="#3a2a1a" prop="spoon" propColor="#cfcfcf" />,
   tailor: <CharacterArt cloth="#9a6fc0" cloth2="#5f3f8a" hair="#3a2a3a" prop="needle" propColor="#e8b860" />,
-  alchemist: <CharacterArt cloth="#4ea3d8" cloth2="#2a6f9e" hair="#2a3340" prop="flask" propColor="#7fe0a0" />,
+  alchemist: <CharacterArt cloth="#7a9e5c" cloth2="#5f8146" hair="#2a2119" prop="flask" propColor="#c4b09a" />,
 }
 
 /* 关键词兜底：根据 id 推断造型族类（覆盖采集点/矿石/作物等共用 tree-card 的条目） */

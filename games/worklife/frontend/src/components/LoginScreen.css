@@ -29,15 +29,14 @@
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(212, 165, 116, 0.12) 0%, transparent 55%),
-    linear-gradient(160deg, rgba(155, 127, 212, 0.06) 0%, transparent 40%);
+    radial-gradient(ellipse at 50% 0%, rgba(212, 154, 72, 0.08) 0%, transparent 50%);
 }
 .login-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.45;
-  animation: float 7s var(--ease) infinite;
+  filter: blur(80px);
+  opacity: 0.22;
+  animation: float 10s var(--ease) infinite;
 }
 .login-orb--brand {
   width: 240px; height: 240px;
@@ -47,7 +46,7 @@
 .login-orb--purple {
   width: 300px; height: 300px;
   bottom: 6%; right: 10%;
-  background: radial-gradient(circle, rgba(155, 127, 212, 0.45), transparent 70%);
+  background: radial-gradient(circle, rgba(122, 158, 92, 0.40), transparent 70%);
   animation-delay: 1.5s;
 }
 .login-orb--gold {
@@ -62,14 +61,13 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 420px;
-  background: linear-gradient(180deg, rgba(40, 43, 49, 0.92) 0%, rgba(28, 30, 35, 0.95) 100%);
+  max-width: 400px;
+  background: var(--bg-surface);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-xl);
+  border-radius: 6px;
   padding: var(--space-8) var(--space-6);
-  box-shadow: var(--shadow-xl);
-  backdrop-filter: blur(16px);
-  animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: var(--shadow-lg);
+  animation: cardEntrance 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
 
@@ -117,30 +115,19 @@
   text-align: center;
   margin-bottom: var(--space-8);
 }
-.login-logo {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto var(--space-4);
-  border-radius: var(--radius-xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34px;
-  font-weight: 800;
-  color: #2a1d10;
-  background: var(--grad-brand);
-  box-shadow: var(--shadow-lg), var(--glow-brand);
+.login-kicker {
+  margin: 0 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
 }
 .login-title {
-  font-size: 34px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
   margin: 0 0 var(--space-2);
-  letter-spacing: 0.5px;
-  background: var(--grad-header);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--brand); /* 不支持 background-clip 时的回退 */
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
 }
 .login-subtitle {
   color: var(--text-secondary);
@@ -191,15 +178,8 @@
 }
 .login-hint {
   margin-top: var(--space-2);
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  background: rgba(212, 165, 116, 0.08);
-  border: 1px solid rgba(212, 165, 116, 0.20);
   font-size: 12px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  color: var(--text-muted);
 }
 
 .login-btn {

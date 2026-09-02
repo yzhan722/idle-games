@@ -14,6 +14,9 @@ build/
 .env.local
 .env.*.local
 
+# Local file-backed saves (dev memory store)
+backend/data/
+
 # IDE
 .vscode/
 .idea/

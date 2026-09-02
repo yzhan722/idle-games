@@ -17,6 +17,7 @@ import type {
   EnhancementProvider
 } from "./types";
 import { randomUUID } from "crypto";
+import path from "path";
 import { createPgStorage } from "./storage_pg";
 import { createMemoryStorage } from "./storage_memory";
 // 声望/转生：永久被动加成与全局倍率，接入离线结算 simulateToNow。
@@ -142,6 +143,7 @@ export interface Storage {
     userId: string;
     partyId: string;
   }): Promise<{ success: boolean; message?: string }>;
+  getPartyForUser(params: { userId: string }): Promise<Party | null>;
   
   // 新增：装备耐久度方法
   getDurabilityInfo(params: {
@@ -232,8 +234,13 @@ export async function createStorage(opts: { databaseUrl?: string }): Promise<Sto
         "DATABASE_URL 未配置：生产环境必须使用持久化数据库存储，拒绝以内存存储启动。"
       );
     }
-    console.warn("[storage] 未配置 DATABASE_URL，使用内存存储（仅限开发环境，重启后数据丢失）。");
-    return createMemoryStorage();
+    const persistPath =
+      process.env.MEMORY_STORE_PATH ||
+      path.join(__dirname, "..", "data", "worklife-memory.json");
+    console.warn(
+      `[storage] 未配置 DATABASE_URL，使用文件持久化内存存储：${persistPath}`
+    );
+    return createMemoryStorage({ persistPath });
   }
 
   try {

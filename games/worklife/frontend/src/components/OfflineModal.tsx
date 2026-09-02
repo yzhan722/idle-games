@@ -16,7 +16,7 @@ export function OfflineModal({
     <div className="offline-overlay" onClick={onClose}>
       <div className="offline-modal" onClick={(e) => e.stopPropagation()}>
         <div className="offline-glow" />
-        <div className="offline-icon">🌙</div>
+        <div className="offline-icon">工</div>
         <h2 className="offline-title">欢迎回来！</h2>
         <p className="offline-sub">你离开了 {summary.durationText}</p>
 
@@ -30,11 +30,11 @@ export function OfflineModal({
             ))}
           </div>
         ) : (
-          <div className="offline-empty">离线期间没有进行中的活动</div>
+          <div className="offline-empty">这段时间没有可展示的离线收益</div>
         )}
 
         <button className="offline-confirm" onClick={onClose}>
-          收下奖励
+          {summary.lines.length > 0 ? '收下奖励' : '继续打工'}
         </button>
       </div>
     </div>

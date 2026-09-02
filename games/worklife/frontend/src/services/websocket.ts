@@ -112,11 +112,8 @@ class ChatWebSocket {
       // 生产环境或自定义后端地址
       const apiUrl = String(import.meta.env.VITE_API_URL).replace(/^http/, 'ws').replace(/\/$/, '')
       wsUrl = `${apiUrl}/ws?token=${encodeURIComponent(this.token)}`
-    } else if (import.meta.env.DEV) {
-      // 开发环境直连后端
-      wsUrl = `${protocol}//${window.location.hostname}:3001/ws?token=${encodeURIComponent(this.token)}`
     } else {
-      // 生产部署同域 (nginx /ws -> backend)
+      // 开发走 Vite 代理 /ws；生产同域 nginx /ws
       wsUrl = `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(this.token)}`
     }
 

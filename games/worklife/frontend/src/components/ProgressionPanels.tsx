@@ -228,7 +228,10 @@ export function DailyQuestsPanel({ onClose, onGoldChange }: { onClose: () => voi
         <div className="prog-empty">暂无任务</div>
       ) : (
         <div className="daily-list">
-          {quests.map((q) => {
+          {[...quests].sort((a, b) => {
+            const rank = (q: DailyQuestView) => (q.claimed ? 2 : q.completed ? 0 : 1);
+            return rank(a) - rank(b);
+          }).map((q) => {
             const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
             return (
               <div key={q.id} className={`daily-card ${q.completed ? 'completed' : ''} ${q.claimed ? 'claimed' : ''}`}>

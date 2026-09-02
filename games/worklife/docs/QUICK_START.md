@@ -92,8 +92,9 @@ cloudflared tunnel list
    - 后端：3001
 
 2. **数据库**
-   - 默认使用内存数据库
-   - 生产环境需配置 PostgreSQL
+- 默认使用内存数据库
+  - 开发模式会把进度写到 `backend/data/worklife-memory.json`，重启后游客档还在
+  - 生产环境需配置 PostgreSQL
 
 3. **环境变量**
    - 复制 `.env.example` 为 `.env`

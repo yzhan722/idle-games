@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../services/api'
 import { logger } from '../utils/logger'
+import { getItemName } from '../utils/itemNames'
+
+const SLOT_LABEL: Record<string, string> = {
+  main_hand: '主手',
+  off_hand: '副手',
+  head: '帽子',
+  chest: '上衣',
+  legs: '裤子',
+  feet: '鞋子',
+  accessory1: '饰品',
+  accessory2: '饰品',
+}
 
 interface EnhancementPanelProps {
   playerState: any
@@ -28,7 +40,7 @@ export function EnhancementPanel({ playerState, onRefresh }: EnhancementPanelPro
           slot,
           itemId,
           currentLevel,
-          name: itemId.replace(/_/g, ' ')
+          name: getItemName(itemId)
         })
       }
     })
@@ -99,7 +111,7 @@ export function EnhancementPanel({ playerState, onRefresh }: EnhancementPanelPro
                   onClick={() => setSelectedItem(item.itemId)}
                 >
                   <div className="item-name">{item.name}</div>
-                  <div className="item-slot">{item.slot}</div>
+                  <div className="item-slot">{SLOT_LABEL[item.slot] || item.slot}</div>
                   <div className="item-level">+{item.currentLevel}</div>
                 </div>
               ))}
@@ -133,7 +145,7 @@ export function EnhancementPanel({ playerState, onRefresh }: EnhancementPanelPro
                   <div className="materials-list">
                     {Object.entries(enhancementInfo.nextLevelCost).map(([itemId, qty]: [string, any]) => (
                       <div key={itemId} className="material-item">
-                        <span>{itemId}</span>
+                        <span>{getItemName(itemId)}</span>
                         <span>x{qty}</span>
                       </div>
                     ))}

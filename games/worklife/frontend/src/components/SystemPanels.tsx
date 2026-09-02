@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { apiClient } from '../services/api';
 import { useToast } from './Toast';
+import { getItemName } from '../utils/itemNames';
 import './ProgressionPanels.css';
 import './SystemPanels.css';
 
@@ -505,7 +506,7 @@ export function CheckInModal({
                   <div className="checkin-reward-gold">💰{r.gold}</div>
                   <div className="checkin-reward-items">
                     {Object.entries(r.items).map(([k, v]) => (
-                      <span key={k} className="checkin-item">{k}×{v}</span>
+                      <span key={k} className="checkin-item">{getItemName(k)}×{v}</span>
                     ))}
                   </div>
                   {claimed && <div className="checkin-check">✓</div>}

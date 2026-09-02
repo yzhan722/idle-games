@@ -1,3 +1,4 @@
+import "./loadEnv";
 import Fastify, { FastifyInstance, FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
@@ -20,6 +21,7 @@ import {
   progression2Routes,
   systemsRoutes,
 } from "./routes";
+import { socketFromWsConnection } from "./ws_socket";
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
@@ -197,8 +199,9 @@ async function main() {
   });
 
 
-  // WebSocket 路由
+  // WebSocket 路由（@fastify/websocket v11 第一个参数就是 ws socket）
   app.get("/ws", { websocket: true }, (connection: any, req: FastifyRequest) => {
+    const socket = socketFromWsConnection(connection);
     const url = new URL(req.url ?? "", "http://localhost");
     const token = url.searchParams.get("token") ?? "";
 
@@ -207,22 +210,22 @@ async function main() {
       const payload = app.jwt.verify<{ sub: string }>(token);
       userId = payload.sub;
     } catch {
-      connection.socket.close();
+      socket?.close();
       return;
     }
 
-    if (!userId) {
-      connection.socket.close();
+    if (!userId || !socket) {
+      socket?.close();
       return;
     }
 
-    storage.wsConnect(userId, connection);
+    storage.wsConnect(userId, { socket });
 
-    connection.socket.on("message", (data: any) => {
+    socket.on("message", (data: any) => {
       storage.wsMessage(userId!, data.toString());
     });
 
-    connection.socket.on("close", () => {
+    socket.on("close", () => {
       storage.wsDisconnect(userId!);
     });
   });
