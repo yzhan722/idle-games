@@ -39,10 +39,15 @@ import {
   calculateTradingFee,
   getXpForLevel,
 } from "./storage";
+import { enhancementRequestUserColumn } from "./sql_identifiers";
 import { randomUUID } from "crypto";
 
 export async function createPgStorage(databaseUrl: string): Promise<Storage> {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    max: 10,
+    idleTimeoutMillis: 30_000,
+  });
 
   // WebSocket 连接管理（内存中）
   type WsConn = { socket: any; channels: Set<string> };
@@ -367,6 +372,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         if (q > 0) normalizedQty = Math.min(q, 5000);
       }
       st.mode = "life_action";
+      st.lastSimulatedAt = now.toISOString();
       st.lifeActionState = {
         actionId,
         startedAt: now.toISOString(),
@@ -646,7 +652,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     },
 
     async getEnhancementServiceRequests({ userId, type }) {
-      const col = type === 'requester' ? 'requester_id' : 'provider_id';
+      const col = enhancementRequestUserColumn(type);
       const result = await pool.query(
         `SELECT * FROM enhancement_requests WHERE ${col} = $1 ORDER BY created_at DESC`,
         [userId]

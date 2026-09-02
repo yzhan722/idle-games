@@ -427,13 +427,18 @@ export default function NewGameInterface() {
   const classHydratedRef = useRef(false)
 
   useEffect(() => {
-    if (!showProfessionModal) return
+    if (!showProfessionModal && !(selectedItem && modalType)) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowProfessionModal(false)
+      if (e.key !== 'Escape') return
+      if (showProfessionModal) setShowProfessionModal(false)
+      if (selectedItem && modalType) {
+        setSelectedItem(null)
+        setModalType(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [showProfessionModal])
+  }, [showProfessionModal, selectedItem, modalType])
 
   useEffect(() => {
     const id = playerState?.activeClassId
@@ -499,6 +504,17 @@ export default function NewGameInterface() {
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false)
   const [selectedEquipSlot, setSelectedEquipSlot] = useState<string | null>(null)
   const [showEquipSelector, setShowEquipSelector] = useState(false)
+
+  useEffect(() => {
+    if (!showEquipSelector) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setShowEquipSelector(false)
+      setSelectedEquipSlot(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showEquipSelector])
   
   // 背包筛选和搜索状态
   const [inventoryFilter, setInventoryFilter] = useState<'all' | 'material' | 'weapon' | 'armor' | 'consumable'>('all')
@@ -2237,6 +2253,12 @@ export default function NewGameInterface() {
                   <div className="empty-icon">☆</div>
                   <p>还没有收藏的配方</p>
                   <p className="hint-text">点击配方详情中的星星收藏</p>
+                </div>
+              )}
+              {!contentPackLoading && !showFavoritesOnly && getCraftRecipesFromContentPack(craftCategory).length === 0 && (
+                <div className="no-favorites">
+                  <p>暂无可用配方</p>
+                  <p className="hint-text">内容包加载失败，或当前职业没有该分类配方</p>
                 </div>
               )}
             </div>

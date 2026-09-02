@@ -54,8 +54,11 @@ export function PlayerRightPanel(props: Props) {
     <aside className={`right-panel ${props.expanded ? "expanded" : "collapsed"}`}>
       <button
         className="right-panel-toggle-top"
+        type="button"
         onClick={props.onToggle}
-        title={props.expanded ? "收起" : "展开"}
+        title={props.expanded ? "收起角色面板" : "展开角色面板"}
+        aria-label={props.expanded ? "收起角色面板" : "展开角色面板"}
+        aria-expanded={props.expanded}
       >
         {props.expanded ? "▶" : "◀"}
       </button>

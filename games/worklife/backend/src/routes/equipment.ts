@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
+import { EQUIP_SLOT_KEYS, canEquipItem } from "../equipment_equip";
 
 export async function equipmentRoutes(
   app: FastifyInstance, 
@@ -17,8 +18,8 @@ export async function equipmentRoutes(
     try {
       const info = await storage.getDurabilityInfo({ userId, itemId });
       return reply.send(info);
-    } catch (error) {
-      return reply.status(404).send({ error: error instanceof Error ? error.message : "获取耐久度信息失败" });
+    } catch {
+      return reply.status(404).send({ error: "not_found", message: "获取耐久度信息失败" });
     }
   });
 
@@ -42,8 +43,8 @@ export async function equipmentRoutes(
         }
       });
       return reply.send(result);
-    } catch (error) {
-      return reply.status(400).send({ error: error instanceof Error ? error.message : "修复装备失败" });
+    } catch {
+      return reply.status(400).send({ error: "repair_failed", message: "修复装备失败" });
     }
   });
 
@@ -55,7 +56,8 @@ export async function equipmentRoutes(
       const stats = await storage.getEquipmentStats({ userId, contentPack });
       return reply.send(stats);
     } catch (error) {
-      return reply.status(500).send({ error: "获取装备属性失败" });
+      req.log.error(error);
+      return reply.status(500).send({ error: "internal_error", message: "服务器内部错误，请稍后重试" });
     }
   });
 
@@ -68,36 +70,28 @@ export async function equipmentRoutes(
       const bonuses = await storage.getActiveSetBonuses({ userId, contentPack });
       return reply.send(bonuses);
     } catch (error) {
-      return reply.status(500).send({ error: "获取套装效果失败" });
+      req.log.error(error);
+      return reply.status(500).send({ error: "internal_error", message: "服务器内部错误，请稍后重试" });
     }
   });
-
-  const SLOT_KEYS = [
-    "main_hand",
-    "off_hand",
-    "head",
-    "chest",
-    "legs",
-    "feet",
-    "accessory1",
-    "accessory2",
-  ] as const;
 
   app.post("/equipment/equip", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const body = z.object({
-      slot: z.enum(SLOT_KEYS),
+      slot: z.enum(EQUIP_SLOT_KEYS),
       itemId: z.string().min(1),
     }).parse((req.body ?? {}) as unknown);
 
     const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    const qty = Number((state.inventory as any)?.[body.itemId] || 0);
-    if (qty <= 0) return reply.status(400).send({ error: "item_not_owned", message: "背包中没有这件物品" });
-
-    const item = contentPack.items.find((i: any) => i.id === body.itemId);
-    if (!item) return reply.status(400).send({ error: "unknown_item", message: "未知物品" });
+    const check = canEquipItem(
+      state.inventory as Record<string, number>,
+      body.slot,
+      body.itemId,
+      contentPack.items as Array<{ id: string; type?: string; slot?: string }>
+    );
+    if (!check.ok) return reply.status(400).send({ error: check.error, message: check.message });
 
     if (!state.equipment) {
       (state as any).equipment = { enhancementLevels: {}, durability: {}, maxDurability: {} };
@@ -112,7 +106,7 @@ export async function equipmentRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const body = z.object({
-      slot: z.enum(SLOT_KEYS),
+      slot: z.enum(EQUIP_SLOT_KEYS),
     }).parse((req.body ?? {}) as unknown);
 
     const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");

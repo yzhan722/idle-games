@@ -396,6 +396,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         if (q > 0) normalizedQty = Math.min(q, 5000);
       }
       st.mode = "life_action";
+      st.lastSimulatedAt = now.toISOString();
       st.lifeActionState = {
         actionId,
         startedAt: now.toISOString(),
@@ -1912,15 +1913,16 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const state = states.get(userId);
       if (!state) throw new Error('玩家状态不存在');
 
-      // 退还物品或金币
+      // 先摘除订单再退款，避免并发 cancel 双倍退还。
+      const removed = tradingOrders.delete(orderId);
+      if (!removed) throw new Error('订单不存在');
+
       if (order.type === 'sell') {
         state.inventory[order.itemId] = (state.inventory[order.itemId] || 0) + order.quantity;
       } else if (order.type === 'buy') {
         const totalCost = order.quantity * order.price;
         state.inventory.gold = (state.inventory.gold || 0) + totalCost;
       }
-
-      tradingOrders.delete(orderId);
     },
 
     getMyTradingOrders: async ({ userId }) => {

@@ -11,6 +11,10 @@ export function GameActionNav(props: {
       {props.tabs.map((tab) => (
         <button
           key={tab.id}
+          type="button"
+          title={tab.name}
+          aria-label={tab.name}
+          aria-current={props.activeTab === tab.id ? "page" : undefined}
           onClick={() => props.onSelect(tab.id)}
           className={`tab-btn ${props.activeTab === tab.id ? "active" : ""}`}
         >

@@ -1,5 +1,7 @@
 // API 客户端 - 增强版，带重试和错误处理
 
+import { InFlightMap, writeDedupeKey } from './requestGuard';
+
 interface ApiError extends Error {
   status?: number;
   code?: string;
@@ -23,9 +25,7 @@ class ApiClient {
   private retryConfig: RetryConfig;
   private readonly cache = new Map<string, { expiresAt: number; value: any }>();
   private readonly inFlight = new Map<string, Promise<any>>();
-  // 写操作（POST/PUT/DELETE）去重：防止快速双击连发多个相同写请求。
-  // key = method:endpoint:body，value = 正在进行中的 Promise。
-  private readonly writeInFlight = new Map<string, Promise<any>>();
+  private readonly writeInFlight = new InFlightMap<any>();
   // 401（鉴权失效）回调，由 AuthContext 注册以触发自动登出
   private onUnauthorized: (() => void) | null = null;
 
@@ -38,6 +38,7 @@ class ApiClient {
     this.token = token;
     this.cache.clear();
     this.inFlight.clear();
+    this.writeInFlight.clear();
   }
 
   getToken(): string {
@@ -85,7 +86,7 @@ class ApiClient {
     const method = (options.method || 'GET').toUpperCase();
     const cacheKey = this.getCacheKey(endpoint, { ...options, method });
 
-    if (method === 'GET') {
+    if (method === 'GET' && retryCount === 0) {
       const cached = this.getCachedResponse<T>(cacheKey);
       if (cached !== null) return cached;
       const inflight = this.inFlight.get(cacheKey);
@@ -171,22 +172,17 @@ class ApiClient {
 
     if (method === 'GET') {
       const pending = execute();
-      this.inFlight.set(cacheKey, pending);
+      if (retryCount === 0) this.inFlight.set(cacheKey, pending);
       return pending;
     }
 
-    // 写操作去重：同 endpoint + 相同 body 的 POST/PUT/DELETE 如果还在 in-flight，
-    // 复用同一 Promise。避免快速双击/重复提交发出多条相同写请求。
+    // 写去重只包住第一次发出；409/5xx 重试必须绕过去重，否则会等自己死锁。
     const bodyStr = options.body ? String(options.body) : '';
-    const writeKey = `${method}:${endpoint}:${bodyStr}`;
-    const existingWrite = this.writeInFlight.get(writeKey);
-    if (existingWrite) return existingWrite;
-
-    const writePending = execute().finally(() => {
-      this.writeInFlight.delete(writeKey);
-    });
-    this.writeInFlight.set(writeKey, writePending);
-    return writePending;
+    const writeKey = writeDedupeKey(method, endpoint, bodyStr);
+    if (retryCount === 0) {
+      return this.writeInFlight.run(writeKey, () => execute());
+    }
+    return execute();
   }
 
   async get<T = any>(endpoint: string): Promise<T> {

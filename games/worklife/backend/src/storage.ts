@@ -619,37 +619,32 @@ export function simulateToNow(input: {
   const next = { ...input.state } as EnhancedPlayerState;
   const lastSimulated = new Date(next.lastSimulatedAt);
   const timeDiff = input.now.getTime() - lastSimulated.getTime();
-  
-  next.lastSimulatedAt = input.now.toISOString();
 
   // 确保统计字段存在（向后兼容旧存档）
   ensurePlayerExtensions(next);
   const stats = next.stats!;
+
+  // 防作弊：检查时间是否倒退
+  if (timeDiff < 0) {
+    appendLog(next, `检测到时间异常，已重置`);
+    next.lastSimulatedAt = input.now.toISOString();
+    return { state: next };
+  }
+
+  // 小于 1 秒的轮询不得把 lastSimulatedAt 推到“现在”，否则长制作会被拆碎后永远完不成。
+  if (timeDiff < 1000) {
+    return { state: next };
+  }
+
+  let advanceClock = true;
 
   // 清理过期 Buff 并汇总当前增益效果（用于离线/挂机结算）
   const buffEff = getBuffEffects(next, input.now);
   pruneExpiredBuffs(next, input.now);
   // 离线收益上限：从 8 小时提升至 24 小时，覆盖“睡一觉/上一天班”的真实离线场景
   const maxOfflineTime = 24 * 60 * 60 * 1000; // 24小时
-  // 累计在线/挂机时长（按实际经过时间，封顶离线上限防作弊）
-  if (timeDiff > 0) {
-    stats.playtimeSeconds += Math.floor(Math.min(timeDiff, maxOfflineTime) / 1000);
-  }
-  
-  // 防作弊：超过离线上限的时间不计入收益
   if (timeDiff > maxOfflineTime) {
     appendLog(next, `离线时间过长，只计算最近24小时的收益`);
-  }
-  
-  // 防作弊：检查时间是否倒退
-  if (timeDiff < 0) {
-    appendLog(next, `检测到时间异常，已重置`);
-    return { state: next };
-  }
-  
-  // 如果时间差小于1秒，不进行离线计算
-  if (timeDiff < 1000) {
-    return { state: next };
   }
   
   // 限制实际计算的时间差
@@ -697,6 +692,9 @@ export function simulateToNow(input: {
       const effectiveDuration = Math.max(1, action.duration / (speedMul || 1));
       // 计算可以完成多少次动作
       const completedCycles = Math.floor(actionDuration / effectiveDuration);
+      if (completedCycles === 0) {
+        advanceClock = false;
+      }
       
       if (completedCycles > 0) {
         // 限制离线进度，最多8小时的收益
@@ -925,6 +923,14 @@ export function simulateToNow(input: {
   // 统计：刷新历史最高战斗等级
   if ((next.combatLevel || 1) > stats.highestCombatLevel) {
     stats.highestCombatLevel = next.combatLevel || 1;
+  }
+
+  if (next.mode !== "life_action" || !next.lifeActionState) {
+    advanceClock = true;
+  }
+  if (advanceClock) {
+    next.lastSimulatedAt = input.now.toISOString();
+    stats.playtimeSeconds += Math.floor(Math.min(timeDiff, maxOfflineTime) / 1000);
   }
   
   return { state: next };

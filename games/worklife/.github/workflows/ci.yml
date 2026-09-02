@@ -1,0 +1,43 @@
+name: RC quality gate
+
+on:
+  push:
+    branches: [feat/progress-hardening]
+  pull_request:
+
+jobs:
+  backend-and-frontend:
+    name: backend tests + frontend build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install workspaces
+        run: npm ci
+      - name: Backend build
+        run: npm run build --workspace backend
+      - name: Backend tests
+        run: npm test --workspace backend
+      - name: Frontend build
+        run: npm run build --workspace frontend
+
+  e2e:
+    name: playwright e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install workspaces
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E
+        run: npm run test:e2e

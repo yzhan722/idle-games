@@ -22,6 +22,8 @@ import {
   systemsRoutes,
 } from "./routes";
 import { socketFromWsConnection } from "./ws_socket";
+import { isPublicApiPath, isRateLimitExempt } from "./http_public_path";
+import { mapThrownError } from "./http_errors";
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
@@ -71,33 +73,11 @@ async function main() {
 
   // 全局错误处理：把校验错误转成 400，其余异常返回安全的 500（不泄露堆栈）
   app.setErrorHandler((error, req, reply) => {
-    // Zod 校验错误（请求参数非法）
-    if (error instanceof z.ZodError) {
-      return reply.status(400).send({
-        error: "invalid_request",
-        message: "请求参数不合法",
-        details: error.errors.map((e) => ({ path: e.path.join("."), message: e.message })),
-      });
+    const mapped = mapThrownError(error);
+    if (mapped.status >= 500) {
+      req.log.error(error);
     }
-    // Fastify 内置校验错误
-    if ((error as any).validation) {
-      return reply.status(400).send({ error: "invalid_request", message: "请求参数不合法" });
-    }
-    // 业务层抛出的已知错误（约定以 code 形式抛出）
-    const msg = String((error as any)?.message || "");
-    if (msg === "state_not_found") {
-      return reply.status(404).send({ error: "state_not_found", message: "玩家状态不存在，请重新进入游戏" });
-    }
-    if (msg === "state_version_conflict") {
-      // 并发写冲突：客户端应丢弃本地缓存并以最新状态重试
-      return reply.status(409).send({ error: "state_version_conflict", message: "状态已被其他请求更新，请重试" });
-    }
-    if (msg === "Unauthorized") {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-    // 其余未知错误：记录日志，返回通用 500
-    req.log.error(error);
-    return reply.status(500).send({ error: "internal_error", message: "服务器内部错误，请稍后重试" });
+    return reply.status(mapped.status).send(mapped.body);
   });
 
   // CORS 配置：
@@ -131,7 +111,7 @@ async function main() {
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
-    allowList: (req) => req.url.startsWith("/health"),
+    allowList: (req) => isRateLimitExempt(req.url),
     errorResponseBuilder: () => ({
       error: "rate_limited",
       message: "请求过于频繁，请稍后重试",
@@ -162,10 +142,8 @@ async function main() {
   // 需要认证的路由 - 添加 preHandler
   // 用精确路径匹配（剥离 query 后比对 pathname），避免 startsWith 前缀匹配
   // 导致 /auth/guest-xxx 之类的路径被误判为公开而绕过鉴权（越权风险）。
-  const publicPaths = new Set(["/health", "/content", "/auth/guest", "/ws"]);
   app.addHook("preHandler", async (req, reply) => {
-    const pathname = (req.url.split("?", 1)[0] || "/").replace(/\/+$/, "") || "/";
-    const isPublic = publicPaths.has(pathname);
+    const isPublic = isPublicApiPath(req.url);
     if (!isPublic) {
       try {
         await requireAuth(app, req);
@@ -197,6 +175,21 @@ async function main() {
       all: items,
     };
   });
+
+  if (process.env.E2E_SEED === "1") {
+    app.post("/e2e/seed", async (req, reply) => {
+      const userId = (req as any).userId as string;
+      if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+      const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+      state.inventory.wood_1 = Math.max(state.inventory.wood_1 || 0, 20);
+      state.inventory.lumber_1 = Math.max(state.inventory.lumber_1 || 0, 10);
+      state.inventory.weapon_wooden_sword = Math.max(state.inventory.weapon_wooden_sword || 0, 1);
+      state.inventory.armor_wood_chest = Math.max(state.inventory.armor_wood_chest || 0, 1);
+      state.inventory.gold = Math.max(state.inventory.gold || 0, 100);
+      const saved = await storage.savePlayerState(userId, state);
+      return reply.send({ ok: true, inventory: saved.inventory });
+    });
+  }
 
 
   // WebSocket 路由（@fastify/websocket v11 第一个参数就是 ws socket）

@@ -27,7 +27,14 @@ export function GameChatPanel(props: Props) {
     <aside className={`chat-panel ${props.expanded ? "expanded" : "collapsed"}`}>
       <div className="chat-header">
         <span className="chat-title">聊天</span>
-        <button className="chat-toggle" onClick={props.onToggle} title={props.expanded ? "收起" : "展开"}>
+        <button
+          className="chat-toggle"
+          type="button"
+          onClick={props.onToggle}
+          title={props.expanded ? "收起聊天" : "展开聊天"}
+          aria-label={props.expanded ? "收起聊天" : "展开聊天"}
+          aria-expanded={props.expanded}
+        >
           {props.expanded ? "◀" : "▶"}
         </button>
       </div>

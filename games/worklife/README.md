@@ -104,6 +104,17 @@ worklife/
 
 ## 🔧 开发脚本
 
+根目录（需已 `npm install`）：
+
+```bash
+npm test              # 后端单元/回归测试
+npm run test:e2e      # Playwright E2E（自启 3100/3101，不占用 3000/3001）
+npm run verify        # backend build + backend tests + frontend build + E2E
+```
+
+CI：push/PR 到工作分支时跑 `.github/workflows/ci.yml`。
+
+
 ### Windows (PowerShell)
 ```powershell
 # 启动所有服务
