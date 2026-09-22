@@ -1,3 +1,5 @@
+import { T1Art, T1ItemIcon } from "./T1Art";
+
 type EquipSlot = { id: string; name: string; icon: string; type: string };
 
 type InvItem = {
@@ -9,7 +11,7 @@ type InvItem = {
 
 type ProfessionInfo = { icon: string; name: string };
 type SkillInfo = { level: number; xp: number };
-type EqBonus = { atk: number; def: number; hp: number; mp: number };
+type CombatSheet = { hp: number; atk: number; def: number };
 
 type Props = {
   expanded: boolean;
@@ -26,11 +28,14 @@ type Props = {
   view: "character" | "inventory";
   onView: (view: "character" | "inventory") => void;
   equipSlots: { left: EquipSlot[]; right: EquipSlot[] };
+  /** Shown under the paperdoll when later-chapter slots are hidden. */
+  lockedSlotsHint?: string;
   onOpenEquipSelector: (slotId: string) => void;
   onUnequipSlot: (slotId: string) => void;
   getEquippedItemId: (slotId: string) => string | undefined;
   getItemNameById: (itemId: string) => string;
-  equipmentBonus: EqBonus;
+  combatSheet: CombatSheet;
+  allowProfessionSwitch?: boolean;
   inventoryKindCount: number;
   inventoryItems: InvItem[];
   onOrganize: () => void;
@@ -45,10 +50,14 @@ type Props = {
 };
 
 export function PlayerRightPanel(props: Props) {
-  const professionNeed = props.getXpForLevel(props.professionSkill.level + 1);
-  const combatNeed = props.getXpForLevel(props.combatLevel + 1);
-  const professionPct = Math.min(100, ((props.professionSkill.xp || 0) / professionNeed) * 100);
-  const combatPct = Math.min(100, ((props.combatXp || 0) / combatNeed) * 100);
+  // 服务端在 xp >= need(当前等级) 时升级，所以这里传当前等级，不是 +1
+  const professionNeed = props.getXpForLevel(props.professionSkill.level);
+  const combatNeed = props.getXpForLevel(props.combatLevel || 1);
+  const pct = (xp: number, need: number) => (Number.isFinite(need) && need > 0 ? Math.min(100, (xp / need) * 100) : 100);
+  const professionPct = pct(props.professionSkill.xp || 0, professionNeed);
+  const combatPct = pct(props.combatXp || 0, combatNeed);
+  const fmtNeed = (need: number) => (Number.isFinite(need) ? String(need) : "MAX");
+  const fmtRemaining = (xp: number, need: number) => (Number.isFinite(need) ? `还需 ${Math.max(0, need - xp)}` : "已满级");
 
   return (
     <aside className={`right-panel ${props.expanded ? "expanded" : "collapsed"}`}>
@@ -68,9 +77,11 @@ export function PlayerRightPanel(props: Props) {
           <div className="status-player-info">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
               <span className="status-player-name">{props.playerName}</span>
-              <button className="btn-switch-compact" onClick={props.onOpenProfessionModal} title="切换职业">
-                切换
-              </button>
+              {props.allowProfessionSwitch !== false && (
+                <button className="btn-switch-compact" onClick={props.onOpenProfessionModal} title="切换职业">
+                  切换
+                </button>
+              )}
             </div>
             <span className="status-player-class">
               {props.profession.icon} {props.profession.name}
@@ -105,9 +116,9 @@ export function PlayerRightPanel(props: Props) {
               </div>
               <div className="xp-footer">
                 <span className="status-xp-text">
-                  {props.professionSkill.xp || 0} / {professionNeed}
+                  {props.professionSkill.xp || 0} / {fmtNeed(professionNeed)}
                 </span>
-                <span className="xp-remaining">还需 {professionNeed - (props.professionSkill.xp || 0)}</span>
+                <span className="xp-remaining">{fmtRemaining(props.professionSkill.xp || 0, professionNeed)}</span>
               </div>
             </div>
             <div className="status-xp-bar">
@@ -122,9 +133,9 @@ export function PlayerRightPanel(props: Props) {
               </div>
               <div className="xp-footer">
                 <span className="status-xp-text">
-                  {props.combatXp || 0} / {combatNeed}
+                  {props.combatXp || 0} / {fmtNeed(combatNeed)}
                 </span>
-                <span className="xp-remaining">还需 {combatNeed - (props.combatXp || 0)}</span>
+                <span className="xp-remaining">{fmtRemaining(props.combatXp || 0, combatNeed)}</span>
               </div>
             </div>
           </div>
@@ -162,7 +173,11 @@ export function PlayerRightPanel(props: Props) {
                     return (
                     <div key={slot.id} className="equipment-slot-item" onClick={() => props.onOpenEquipSelector(slot.id)}>
                       <div className={`equipment-slot-box${equippedId ? " filled" : ""}`}>
-                        <span className="slot-icon">{equippedName ? equippedName.charAt(0) : slot.name.charAt(0)}</span>
+                        {equippedId ? (
+                          <T1ItemIcon itemId={equippedId} fallback={equippedName.charAt(0)} alt="" />
+                        ) : (
+                          <span className="slot-icon">{slot.name.charAt(0)}</span>
+                        )}
                         <div className="slot-hover-hint">{equippedName || "空"}</div>
                       </div>
                       <span className="equipment-slot-name">{slot.name}</span>
@@ -173,7 +188,7 @@ export function PlayerRightPanel(props: Props) {
                 <div className="paperdoll-center">
                   <div className="character-avatar-display">
                     <div className="avatar-glow"></div>
-                    <span className="avatar-emoji">🧙</span>
+                    <T1Art kind="character" id="woodcutter" alt="伐木工" />
                     <span className="avatar-level">Lv.{props.combatLevel || 1}</span>
                   </div>
                 </div>
@@ -184,7 +199,11 @@ export function PlayerRightPanel(props: Props) {
                     return (
                     <div key={slot.id} className="equipment-slot-item" onClick={() => props.onOpenEquipSelector(slot.id)}>
                       <div className={`equipment-slot-box${equippedId ? " filled" : ""}`}>
-                        <span className="slot-icon">{equippedName ? equippedName.charAt(0) : slot.name.charAt(0)}</span>
+                        {equippedId ? (
+                          <T1ItemIcon itemId={equippedId} fallback={equippedName.charAt(0)} alt="" />
+                        ) : (
+                          <span className="slot-icon">{slot.name.charAt(0)}</span>
+                        )}
                         <div className="slot-hover-hint">{equippedName || "空"}</div>
                       </div>
                       <span className="equipment-slot-name">{slot.name}</span>
@@ -193,68 +212,21 @@ export function PlayerRightPanel(props: Props) {
                   })}
                 </div>
               </div>
+              {props.lockedSlotsHint && <p className="locked-slots-hint">{props.lockedSlotsHint}</p>}
 
               <div className="character-attributes">
                 <h4>战斗属性</h4>
                 <div className="attribute-row">
-                  <span className="attribute-label">
-                    <span className="attr-icon">❤️</span>生命值
-                  </span>
-                  <div className="attribute-bar-container">
-                    <div
-                      className="attribute-bar hp-attr-bar"
-                      style={{ width: `${Math.min(100, ((50 + ((props.combatLevel || 1) - 1) * 10) / 200) * 100)}%` }}
-                    ></div>
-                  </div>
-                  <span className="attribute-value">
-                    {50 + ((props.combatLevel || 1) - 1) * 10}
-                    {props.equipmentBonus.hp > 0 && <span className="bonus-value"> +{props.equipmentBonus.hp}</span>}
-                  </span>
+                  <span className="attribute-label">生命</span>
+                  <span className="attribute-value">{props.combatSheet.hp}</span>
                 </div>
                 <div className="attribute-row">
-                  <span className="attribute-label">
-                    <span className="attr-icon">💧</span>魔力值
-                  </span>
-                  <div className="attribute-bar-container">
-                    <div
-                      className="attribute-bar mp-attr-bar"
-                      style={{ width: `${Math.min(100, ((50 + ((props.combatLevel || 1) - 1) * 10) / 200) * 100)}%` }}
-                    ></div>
-                  </div>
-                  <span className="attribute-value">
-                    {50 + ((props.combatLevel || 1) - 1) * 10}
-                    {props.equipmentBonus.mp > 0 && <span className="bonus-value"> +{props.equipmentBonus.mp}</span>}
-                  </span>
+                  <span className="attribute-label">攻击</span>
+                  <span className="attribute-value">{props.combatSheet.atk}</span>
                 </div>
                 <div className="attribute-row">
-                  <span className="attribute-label">
-                    <span className="attr-icon">⚔️</span>攻击力
-                  </span>
-                  <div className="attribute-bar-container">
-                    <div
-                      className="attribute-bar atk-attr-bar"
-                      style={{ width: `${Math.min(100, ((5 + ((props.combatLevel || 1) - 1) * 1) / 50) * 100)}%` }}
-                    ></div>
-                  </div>
-                  <span className="attribute-value">
-                    {5 + ((props.combatLevel || 1) - 1) * 1}
-                    {props.equipmentBonus.atk > 0 && <span className="bonus-value"> +{props.equipmentBonus.atk}</span>}
-                  </span>
-                </div>
-                <div className="attribute-row">
-                  <span className="attribute-label">
-                    <span className="attr-icon">🛡️</span>防御力
-                  </span>
-                  <div className="attribute-bar-container">
-                    <div
-                      className="attribute-bar def-attr-bar"
-                      style={{ width: `${Math.min(100, (props.equipmentBonus.def / 30) * 100)}%` }}
-                    ></div>
-                  </div>
-                  <span className="attribute-value">
-                    0
-                    {props.equipmentBonus.def > 0 && <span className="bonus-value"> +{props.equipmentBonus.def}</span>}
-                  </span>
+                  <span className="attribute-label">防御</span>
+                  <span className="attribute-value">{props.combatSheet.def}</span>
                 </div>
               </div>
 
@@ -271,8 +243,10 @@ export function PlayerRightPanel(props: Props) {
               <div className="inventory-header-compact">
                 <div className="inventory-info">
                   <span>💰 {props.gold || 0}</span>
-                  <span>
-                    📦 {props.inventoryItems.length} / {props.inventoryKindCount} 种
+                  <span title="背包没有格数上限；这里是当前筛选下的物品种类数">
+                    📦 {props.inventoryItems.length === props.inventoryKindCount
+                      ? `${props.inventoryKindCount} 种物品`
+                      : `${props.inventoryItems.length} / ${props.inventoryKindCount} 种`}
                   </span>
                 </div>
                 <button className="btn-organize" onClick={props.onOrganize} title="整理背包">
@@ -351,7 +325,9 @@ export function PlayerRightPanel(props: Props) {
                       onClick={() => props.onSelectInventoryItem(item)}
                       title={item.name}
                     >
-                      <div className="item-icon-compact">{(item.name || "物").charAt(0)}</div>
+                      <div className="item-icon-compact">
+                        <T1ItemIcon itemId={item.itemId} fallback={(item.name || "物").charAt(0)} alt="" />
+                      </div>
                       <div className="item-count-compact">x{item.count}</div>
                     </div>
                   ))

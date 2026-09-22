@@ -36,6 +36,7 @@ describe("economy loops", () => {
     const sellerState = await storage.getOrCreatePlayerState(seller.id, "1.0.0");
     const buyerState = await storage.getOrCreatePlayerState(buyer.id, "1.0.0");
     sellerState.inventory.wood_1 = 2;
+    sellerState.inventory.gold = 20;
     buyerState.inventory.gold = 20;
     await storage.savePlayerState(seller.id, sellerState);
     await storage.savePlayerState(buyer.id, buyerState);
@@ -56,8 +57,8 @@ describe("economy loops", () => {
     const sellerAfter = await storage.getOrCreatePlayerState(seller.id, "1.0.0");
     const buyerAfter = await storage.getOrCreatePlayerState(buyer.id, "1.0.0");
     assert.equal(sellerAfter.inventory.wood_1, 1);
-    assert.ok((sellerAfter.inventory.gold || 0) >= 25);
-    assert.equal(buyerAfter.inventory.wood_1, 5);
+    assert.equal(sellerAfter.inventory.gold, 25);
+    assert.equal(buyerAfter.inventory.wood_1, 1);
     assert.ok((buyerAfter.inventory.gold || 0) < 20);
     await storage.close();
   });

@@ -623,6 +623,91 @@
       "value": 25
     },
     {
+      "id": "charm_stamina",
+      "name": "训练护符·耐力",
+      "type": "accessory",
+      "slot": "accessory",
+      "tier": 2,
+      "focusSkill": "stamina",
+      "description": "佩戴后，每次击杀 70% 的战斗经验全部给耐力（30% 仍归武器主修）。任务商店出售。",
+      "value": 800
+    },
+    {
+      "id": "charm_intelligence",
+      "name": "训练护符·智力",
+      "type": "accessory",
+      "slot": "accessory",
+      "tier": 2,
+      "focusSkill": "intelligence",
+      "description": "佩戴后，每次击杀 70% 的战斗经验全部给智力（30% 仍归武器主修）。任务商店出售。",
+      "value": 800
+    },
+    {
+      "id": "charm_attack",
+      "name": "训练护符·攻击",
+      "type": "accessory",
+      "slot": "accessory",
+      "tier": 2,
+      "focusSkill": "attack",
+      "description": "佩戴后，每次击杀 70% 的战斗经验全部给攻击（30% 仍归武器主修）。任务商店出售。",
+      "value": 800
+    },
+    {
+      "id": "charm_defense",
+      "name": "训练护符·防御",
+      "type": "accessory",
+      "slot": "accessory",
+      "tier": 2,
+      "focusSkill": "defense",
+      "description": "佩戴后，每次击杀 70% 的战斗经验全部给防御（30% 仍归武器主修）。任务商店出售。",
+      "value": 800
+    },
+    {
+      "id": "tool_enhancer_t1",
+      "name": "初级强化器",
+      "type": "material",
+      "tier": 1,
+      "description": "装在工具槽的强化工具：强化成功率 +0.6%（按强化等级放大）。",
+      "value": 180,
+      "toolFor": "skill_enhancing",
+      "enhanceSuccess": 0.006
+    },
+    {
+      "id": "mirror_protection",
+      "name": "保护镜",
+      "type": "material",
+      "tier": 3,
+      "description": "强化保护道具。每次尝试消耗 1 面；如果失败，装备只降低 1 级，而不是重置为 +0。",
+      "value": 500
+    },
+    {
+      "id": "book_smash",
+      "name": "技能书：猛击",
+      "type": "book",
+      "tier": 1,
+      "abilityId": "smash",
+      "description": "读后学会「猛击」：1.6 倍伤害，5 秒冷却，消耗 4 魔力。重复阅读可获得技能经验。",
+      "value": 60
+    },
+    {
+      "id": "book_minor_heal",
+      "name": "技能书：小治疗",
+      "type": "book",
+      "tier": 1,
+      "abilityId": "minor_heal",
+      "description": "读后学会「小治疗」：恢复 25% 最大生命，15 秒冷却，消耗 8 魔力。重复阅读可获得技能经验。",
+      "value": 60
+    },
+    {
+      "id": "book_brace",
+      "name": "技能书：坚守",
+      "type": "book",
+      "tier": 1,
+      "abilityId": "brace",
+      "description": "读后学会「坚守」：6 秒内受到的伤害 -35%，12 秒冷却，消耗 6 魔力。重复阅读可获得技能经验。",
+      "value": 60
+    },
+    {
       "id": "poison_sac",
       "name": "毒囊",
       "type": "material",
@@ -720,7 +805,9 @@
       "atk": 10,
       "profession": "woodcutter",
       "description": "伐木工的基础武器，也是工作工具",
-      "value": 64
+      "value": 64,
+      "toolFor": "skill_woodcutter",
+      "toolSpeed": 0.1
     },
     {
       "id": "weapon_logging_axe_t2",
@@ -730,7 +817,9 @@
       "atk": 20,
       "profession": "woodcutter",
       "description": "更锋利的伐木斧",
-      "value": 163
+      "value": 163,
+      "toolFor": "skill_woodcutter",
+      "toolSpeed": 0.2
     },
     {
       "id": "weapon_logging_axe_t3",
@@ -740,7 +829,9 @@
       "atk": 35,
       "profession": "woodcutter",
       "description": "精钢打造的伐木斧",
-      "value": 424
+      "value": 424,
+      "toolFor": "skill_woodcutter",
+      "toolSpeed": 0.3
     },
     {
       "id": "weapon_logging_axe_t4",
@@ -750,7 +841,9 @@
       "atk": 55,
       "profession": "woodcutter",
       "description": "蕴含魔力的伐木斧",
-      "value": 1089
+      "value": 1089,
+      "toolFor": "skill_woodcutter",
+      "toolSpeed": 0.4
     },
     {
       "id": "weapon_forge_hammer_t1",
@@ -760,7 +853,9 @@
       "atk": 8,
       "profession": "blacksmith",
       "description": "铁匠的锻造锤，也是战斗武器",
-      "value": 59
+      "value": 59,
+      "toolFor": "skill_blacksmith",
+      "toolSpeed": 0.1
     },
     {
       "id": "weapon_forge_hammer_t2",
@@ -770,7 +865,9 @@
       "atk": 18,
       "profession": "blacksmith",
       "description": "沉重的锻造锤",
-      "value": 154
+      "value": 154,
+      "toolFor": "skill_blacksmith",
+      "toolSpeed": 0.2
     },
     {
       "id": "weapon_forge_hammer_t3",
@@ -780,7 +877,9 @@
       "atk": 32,
       "profession": "blacksmith",
       "description": "坚固的战斗锤",
-      "value": 400
+      "value": 400,
+      "toolFor": "skill_blacksmith",
+      "toolSpeed": 0.3
     },
     {
       "id": "weapon_forge_hammer_t4",
@@ -790,7 +889,9 @@
       "atk": 50,
       "profession": "blacksmith",
       "description": "传说中的神锤",
-      "value": 1013
+      "value": 1013,
+      "toolFor": "skill_blacksmith",
+      "toolSpeed": 0.4
     },
     {
       "id": "weapon_shield_t1",
@@ -830,7 +931,9 @@
       "atk": 7,
       "profession": "farmer",
       "description": "农夫的锄头，可以战斗",
-      "value": 57
+      "value": 57,
+      "toolFor": "skill_farmer",
+      "toolSpeed": 0.1
     },
     {
       "id": "weapon_hoe_t2",
@@ -840,7 +943,9 @@
       "atk": 16,
       "profession": "farmer",
       "description": "坚固的锄头",
-      "value": 145
+      "value": 145,
+      "toolFor": "skill_farmer",
+      "toolSpeed": 0.2
     },
     {
       "id": "weapon_hoe_t3",
@@ -850,7 +955,9 @@
       "atk": 28,
       "profession": "farmer",
       "description": "精制锄头",
-      "value": 367
+      "value": 367,
+      "toolFor": "skill_farmer",
+      "toolSpeed": 0.3
     },
     {
       "id": "weapon_sickle_t1",
@@ -860,7 +967,9 @@
       "atk": 5,
       "profession": "farmer",
       "description": "收割用的镰刀",
-      "value": 46
+      "value": 46,
+      "toolFor": "skill_farmer",
+      "toolSpeed": 0.1
     },
     {
       "id": "weapon_sickle_t2",
@@ -870,7 +979,9 @@
       "atk": 12,
       "profession": "farmer",
       "description": "锋利的镰刀",
-      "value": 111
+      "value": 111,
+      "toolFor": "skill_farmer",
+      "toolSpeed": 0.2
     },
     {
       "id": "weapon_sickle_t3",
@@ -880,7 +991,9 @@
       "atk": 22,
       "profession": "farmer",
       "description": "削铁如泥的镰刀",
-      "value": 278
+      "value": 278,
+      "toolFor": "skill_farmer",
+      "toolSpeed": 0.3
     },
     {
       "id": "weapon_frying_pan_t1",
@@ -890,7 +1003,9 @@
       "atk": 6,
       "profession": "chef",
       "description": "厨师的平底锅，意外的好用",
-      "value": 54
+      "value": 54,
+      "toolFor": "skill_chef",
+      "toolSpeed": 0.1
     },
     {
       "id": "weapon_frying_pan_t2",
@@ -900,7 +1015,9 @@
       "atk": 14,
       "profession": "chef",
       "description": "加厚的平底锅",
-      "value": 136
+      "value": 136,
+      "toolFor": "skill_chef",
+      "toolSpeed": 0.2
     },
     {
       "id": "weapon_frying_pan_t3",
@@ -910,7 +1027,9 @@
       "atk": 26,
       "profession": "chef",
       "description": "传说中的神锅",
-      "value": 350
+      "value": 350,
+      "toolFor": "skill_chef",
+      "toolSpeed": 0.3
     },
     {
       "id": "weapon_spatula_t1",
@@ -920,7 +1039,9 @@
       "atk": 4,
       "profession": "chef",
       "description": "烹饪用的锅铲",
-      "value": 43
+      "value": 43,
+      "toolFor": "skill_chef",
+      "toolSpeed": 0.1
     },
     {
       "id": "weapon_spatula_t2",
@@ -930,7 +1051,9 @@
       "atk": 10,
       "profession": "chef",
       "description": "坚固的锅铲",
-      "value": 104
+      "value": 104,
+      "toolFor": "skill_chef",
+      "toolSpeed": 0.2
     },
     {
       "id": "weapon_spatula_t3",
@@ -940,7 +1063,9 @@
       "atk": 18,
       "profession": "chef",
       "description": "魔法锅铲",
-      "value": 249
+      "value": 249,
+      "toolFor": "skill_chef",
+      "toolSpeed": 0.3
     },
     {
       "id": "weapon_scissors_t1",
@@ -950,7 +1075,9 @@
       "atk": 12,
       "profession": "tailor",
       "description": "裁缝的剪刀，锋利无比",
-      "value": 69
+      "value": 69,
+      "toolFor": "skill_tailor",
+      "toolSpeed": 0.1
     },
     {
       "id": "weapon_scissors_t2",
@@ -960,7 +1087,9 @@
       "atk": 24,
       "profession": "tailor",
       "description": "精钢剪刀",
-      "value": 181
+      "value": 181,
+      "toolFor": "skill_tailor",
+      "toolSpeed": 0.2
     },
     {
       "id": "weapon_scissors_t3",
@@ -970,7 +1099,9 @@
       "atk": 40,
       "profession": "tailor",
       "description": "削铁如泥的神剪",
-      "value": 465
+      "value": 465,
+      "toolFor": "skill_tailor",
+      "toolSpeed": 0.3
     },
     {
       "id": "weapon_scissors_t4",
@@ -980,7 +1111,9 @@
       "atk": 60,
       "profession": "tailor",
       "description": "可以剪断空间的剪刀",
-      "value": 1165
+      "value": 1165,
+      "toolFor": "skill_tailor",
+      "toolSpeed": 0.4
     },
     {
       "id": "weapon_alchemy_bottle_t1",
@@ -990,7 +1123,9 @@
       "mag": 8,
       "profession": "alchemist",
       "description": "装满魔法药剂的瓶子",
-      "value": 35
+      "value": 35,
+      "toolFor": "skill_alchemist",
+      "toolSpeed": 0.1
     },
     {
       "id": "weapon_alchemy_bottle_t2",
@@ -1000,7 +1135,9 @@
       "mag": 18,
       "profession": "alchemist",
       "description": "水晶制成的炼金瓶",
-      "value": 65
+      "value": 65,
+      "toolFor": "skill_alchemist",
+      "toolSpeed": 0.2
     },
     {
       "id": "weapon_alchemy_bottle_t3",
@@ -1010,7 +1147,9 @@
       "mag": 32,
       "profession": "alchemist",
       "description": "蕴含强大魔力",
-      "value": 120
+      "value": 120,
+      "toolFor": "skill_alchemist",
+      "toolSpeed": 0.3
     },
     {
       "id": "weapon_staff_t1",
@@ -3297,6 +3436,29 @@
       },
       "description": "以龙渊神鱼烹制，恢复3500点生命值。",
       "value": 3430
+    },
+    {
+      "id": "accessory_pouch_small",
+      "name": "小布袋",
+      "type": "accessory",
+      "tier": 1,
+      "slot": "accessory",
+      "foodSlots": 1,
+      "drinkSlots": 1,
+      "description": "缝在腰间的小布袋。战斗时多带一份食物和一瓶饮品（+1 食物槽、+1 饮品槽）。",
+      "value": 40
+    },
+    {
+      "id": "accessory_pouch_medium",
+      "name": "皮革腰包",
+      "type": "accessory",
+      "tier": 2,
+      "slot": "accessory",
+      "foodSlots": 1,
+      "drinkSlots": 1,
+      "def": 2,
+      "description": "结实的皮革腰包，+1 食物槽、+1 饮品槽，防御 +2。",
+      "value": 160
     }
   ],
   "actions": [
@@ -3691,7 +3853,7 @@
       "duration": 14000,
       "xp": 25,
       "requirements": {
-        "skillLevel": 7
+        "skillLevel": 3
       },
       "consumes": [
         {
@@ -4385,6 +4547,33 @@
       "yields": [
         {
           "itemId": "weapon_forge_hammer_t1",
+          "qty": 1,
+          "chance": 1
+        }
+      ]
+    },
+    {
+      "id": "act_forge_enhancer_t1",
+      "name": "锻造初级强化器",
+      "skillId": "skill_blacksmith",
+      "duration": 15000,
+      "xp": 24,
+      "requirements": {
+        "skillLevel": 6
+      },
+      "consumes": [
+        {
+          "itemId": "ingot_1",
+          "qty": 3
+        },
+        {
+          "itemId": "crystal_1",
+          "qty": 1
+        }
+      ],
+      "yields": [
+        {
+          "itemId": "tool_enhancer_t1",
           "qty": 1,
           "chance": 1
         }
@@ -11659,6 +11848,60 @@
           "chance": 1
         }
       ]
+    },
+    {
+      "id": "act_craft_pouch_small",
+      "name": "缝制小布袋",
+      "skillId": "skill_tailor",
+      "duration": 12000,
+      "xp": 24,
+      "requirements": {
+        "skillLevel": 3
+      },
+      "consumes": [
+        {
+          "itemId": "yarn_1",
+          "qty": 3
+        },
+        {
+          "itemId": "fiber_1",
+          "qty": 4
+        }
+      ],
+      "yields": [
+        {
+          "itemId": "accessory_pouch_small",
+          "qty": 1,
+          "chance": 1
+        }
+      ]
+    },
+    {
+      "id": "act_craft_pouch_medium",
+      "name": "缝制皮革腰包",
+      "skillId": "skill_tailor",
+      "duration": 18000,
+      "xp": 60,
+      "requirements": {
+        "skillLevel": 15
+      },
+      "consumes": [
+        {
+          "itemId": "yarn_2",
+          "qty": 4
+        },
+        {
+          "itemId": "fiber_2",
+          "qty": 6
+        }
+      ],
+      "yields": [
+        {
+          "itemId": "accessory_pouch_medium",
+          "qty": 1,
+          "chance": 1
+        }
+      ]
     }
   ],
   "recipes": [],
@@ -11668,11 +11911,23 @@
       "id": "slime",
       "name": "果冻史莱姆",
       "level": 1,
-      "hp": 100,
-      "atk": 8,
-      "def": 5,
+      "hp": 80,
+      "atk": 3,
+      "def": 4,
       "xp": 10,
-      "gold": 10
+      "gold": 10,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🟢",
+      "desc": "半透明生物，头顶一朵小花，性格温和",
+      "rare": "微光水晶",
+      "rareChance": 0.5,
+      "drops": [
+        { "itemId": "book_smash", "chance": 0.08 }
+      ],
+      "isBoss": false
     },
     {
       "id": "caterpillar",
@@ -11682,17 +11937,38 @@
       "atk": 10,
       "def": 6,
       "xp": 12,
-      "gold": 12
+      "gold": 12,
+      "archetype": "slow",
+      "attackIntervalMs": 3400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 0.85,
+      "icon": "🐛",
+      "desc": "总是在打瞌睡的毛毛虫，动作缓慢",
+      "rare": "棉花",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "monkey",
       "name": "捣蛋小猴",
       "level": 3,
-      "hp": 150,
-      "atk": 12,
-      "def": 7,
+      "hp": 60,
+      "atk": 3,
+      "def": 3,
       "xp": 14,
-      "gold": 14
+      "gold": 14,
+      "archetype": "fast",
+      "attackIntervalMs": 1600,
+      "incomingDamageMult": 1.1,
+      "outgoingDamageMult": 1,
+      "icon": "🐵",
+      "desc": "喜欢恶作剧的小猴子，行动敏捷",
+      "rare": "水果",
+      "rareChance": 0,
+      "drops": [
+        { "itemId": "book_minor_heal", "chance": 0.08 }
+      ],
+      "isBoss": false
     },
     {
       "id": "mushroom",
@@ -11702,7 +11978,16 @@
       "atk": 14,
       "def": 8,
       "xp": 16,
-      "gold": 16
+      "gold": 16,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🍄",
+      "desc": "看起来很生气的蘑菇，会释放孢子",
+      "rare": "辉光水晶",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "bee",
@@ -11712,27 +11997,68 @@
       "atk": 16,
       "def": 9,
       "xp": 18,
-      "gold": 18
+      "gold": 18,
+      "archetype": "fast",
+      "attackIntervalMs": 1700,
+      "incomingDamageMult": 1.1,
+      "outgoingDamageMult": 1,
+      "icon": "🐝",
+      "desc": "经常迷路的小蜜蜂，但很勤劳",
+      "rare": "微光水晶",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "crab",
       "name": "铁壳寄居蟹",
       "level": 6,
-      "hp": 250,
-      "atk": 18,
-      "def": 12,
+      "hp": 110,
+      "atk": 2,
+      "def": 10,
       "xp": 20,
-      "gold": 20
+      "gold": 20,
+      "archetype": "tank",
+      "attackIntervalMs": 3200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 0.9,
+      "icon": "🦀",
+      "desc": "壳特别坚硬的寄居蟹，防御力很高",
+      "rare": "铜矿石",
+      "rareChance": 0.5,
+      "drops": [
+        { "itemId": "book_brace", "chance": 0.08 }
+      ],
+      "isBoss": false
     },
     {
       "id": "forest_boss",
       "name": "森林管家(BOSS)",
       "level": 10,
-      "hp": 500,
-      "atk": 80,
-      "def": 50,
+      "hp": 220,
+      "atk": 8,
+      "def": 8,
       "xp": 100,
-      "gold": 200
+      "gold": 200,
+      "archetype": "boss",
+      "attackIntervalMs": 3500,
+      "incomingDamageMult": 0.85,
+      "outgoingDamageMult": 1,
+      "mechanics": [
+        "guard_60",
+        "nature_wrath_30"
+      ],
+      "icon": "🦌",
+      "desc": "守护森林的强大存在，拥有古老的智慧",
+      "rare": "创世水晶",
+      "rareChance": 0.1,
+      "drops": [
+        {
+          "itemId": "mirror_protection",
+          "chance": 0.05,
+          "qty": 1
+        }
+      ],
+      "isBoss": true
     },
     {
       "id": "rock_golem",
@@ -11742,7 +12068,16 @@
       "atk": 20,
       "def": 14,
       "xp": 22,
-      "gold": 22
+      "gold": 22,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🗿",
+      "desc": "由矿石碎片组成的生物，移动时发出叮当声",
+      "rare": "铁矿石",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "crystal_bat",
@@ -11752,7 +12087,16 @@
       "atk": 22,
       "def": 15,
       "xp": 24,
-      "gold": 24
+      "gold": 24,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🦇",
+      "desc": "翅膀闪烁着水晶光芒的蝙蝠",
+      "rare": "辉光水晶",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "ore_rat",
@@ -11762,7 +12106,16 @@
       "atk": 24,
       "def": 16,
       "xp": 26,
-      "gold": 26
+      "gold": 26,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐀",
+      "desc": "喜欢啃食矿石的大老鼠，牙齿特别锋利",
+      "rare": "银矿石",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "magma_worm",
@@ -11772,7 +12125,16 @@
       "atk": 26,
       "def": 17,
       "xp": 28,
-      "gold": 28
+      "gold": 28,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🪱",
+      "desc": "生活在地底深处的虫子，身体滚烫",
+      "rare": "耀光水晶",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "iron_spider",
@@ -11782,7 +12144,16 @@
       "atk": 28,
       "def": 18,
       "xp": 30,
-      "gold": 30
+      "gold": 30,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🕷️",
+      "desc": "外壳坚硬如铁的蜘蛛，八条腿力大无穷",
+      "rare": "金矿石",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "gem_thief",
@@ -11792,17 +12163,35 @@
       "atk": 30,
       "def": 20,
       "xp": 32,
-      "gold": 32
+      "gold": 32,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🦎",
+      "desc": "专门偷宝石的狡猾生物，动作敏捷",
+      "rare": "白金矿石",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "mine_boss",
       "name": "矿山霸主(BOSS)",
       "level": 20,
-      "hp": 1000,
-      "atk": 160,
-      "def": 100,
+      "hp": 500,
+      "atk": 42,
+      "def": 30,
       "xp": 200,
-      "gold": 400
+      "gold": 400,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐉",
+      "desc": "统治整个矿山的强大存在，全身覆盖着珍贵矿石",
+      "rare": "秘银矿石",
+      "rareChance": 0.1,
+      "isBoss": true
     },
     {
       "id": "poison_frog",
@@ -11812,7 +12201,16 @@
       "atk": 32,
       "def": 22,
       "xp": 34,
-      "gold": 34
+      "gold": 34,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐸",
+      "desc": "会喷射毒雾的青蛙，皮肤五颜六色",
+      "rare": "毒囊",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "swamp_zombie",
@@ -11822,7 +12220,16 @@
       "atk": 34,
       "def": 23,
       "xp": 36,
-      "gold": 36
+      "gold": 36,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🧟",
+      "desc": "从沼泽中爬出的僵尸，动作迟缓但力量惊人",
+      "rare": "腐烂之心",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "mud_elemental",
@@ -11832,7 +12239,16 @@
       "atk": 36,
       "def": 24,
       "xp": 38,
-      "gold": 38
+      "gold": 38,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "💩",
+      "desc": "由沼泽泥浆凝聚而成的元素生物",
+      "rare": "元素核心",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "vine_snake",
@@ -11842,7 +12258,16 @@
       "atk": 38,
       "def": 25,
       "xp": 40,
-      "gold": 40
+      "gold": 40,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐍",
+      "desc": "伪装成藤蔓的毒蛇，擅长偷袭",
+      "rare": "蛇毒",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "ghost_light",
@@ -11852,7 +12277,16 @@
       "atk": 40,
       "def": 26,
       "xp": 42,
-      "gold": 42
+      "gold": 42,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👻",
+      "desc": "漂浮在沼泽上的神秘鬼火，会迷惑旅人",
+      "rare": "幽灵精华",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "swamp_troll",
@@ -11862,87 +12296,168 @@
       "atk": 42,
       "def": 28,
       "xp": 44,
-      "gold": 44
+      "gold": 44,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👹",
+      "desc": "身材高大的巨魔，力大无穷但头脑简单",
+      "rare": "巨魔之力",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "swamp_boss",
       "name": "沼泽之王(BOSS)",
       "level": 30,
-      "hp": 1500,
-      "atk": 240,
-      "def": 150,
+      "hp": 800,
+      "atk": 62,
+      "def": 45,
       "xp": 300,
-      "gold": 600
+      "gold": 600,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐊",
+      "desc": "沼泽深处的恐怖存在，掌控着整片沼泽的生死",
+      "rare": "沼泽王冠",
+      "rareChance": 0.2,
+      "isBoss": true
     },
     {
       "id": "snow_wolf",
       "name": "冰原雪狼",
       "level": 31,
-      "hp": 1103,
-      "atk": 169,
-      "def": 110,
+      "hp": 360,
+      "atk": 52,
+      "def": 33,
       "xp": 84,
-      "gold": 78
+      "gold": 78,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐺",
+      "desc": "在暴风雪中穿行的雪狼，毛皮厚实、爪牙锋利",
+      "rare": "snow_pelt",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "frost_imp",
       "name": "霜冻小妖",
       "level": 33,
-      "hp": 1180,
-      "atk": 180,
-      "def": 117,
+      "hp": 390,
+      "atk": 56,
+      "def": 35,
       "xp": 89,
-      "gold": 83
+      "gold": 83,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🧊",
+      "desc": "会施放冰冻法术的淘气小妖，行踪飘忽",
+      "rare": "frost_shard",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "ice_golem",
       "name": "寒冰傀儡",
       "level": 35,
-      "hp": 1257,
-      "atk": 190,
-      "def": 124,
+      "hp": 420,
+      "atk": 60,
+      "def": 37,
       "xp": 94,
-      "gold": 87
+      "gold": 87,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🗿",
+      "desc": "由万年寒冰凝聚而成的傀儡，防御惊人",
+      "rare": "frost_shard",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "snow_harpy",
       "name": "雪羽鹰身女妖",
       "level": 37,
-      "hp": 1336,
-      "atk": 200,
-      "def": 131,
+      "hp": 450,
+      "atk": 64,
+      "def": 39,
       "xp": 99,
-      "gold": 91
+      "gold": 91,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🦅",
+      "desc": "盘旋在雪峰间的女妖，振翅可掀起暴风雪",
+      "rare": "snow_pelt",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "frozen_knight",
       "name": "冰封骑士",
       "level": 39,
-      "hp": 1415,
-      "atk": 211,
-      "def": 138,
+      "hp": 480,
+      "atk": 68,
+      "def": 41,
       "xp": 104,
-      "gold": 96
+      "gold": 96,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "⚔️",
+      "desc": "被永冻封印的古代骑士，剑意森寒",
+      "rare": "glacier_core",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "yeti",
       "name": "暴雪雪人",
       "level": 42,
-      "hp": 1534,
-      "atk": 226,
-      "def": 148,
+      "hp": 525,
+      "atk": 74,
+      "def": 44,
       "xp": 111,
-      "gold": 102
+      "gold": 102,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🦣",
+      "desc": "盘踞雪山深处的巨型雪人，力大无穷",
+      "rare": "glacier_core",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "snow_boss",
       "name": "霜冠雪魔(BOSS)",
       "level": 45,
-      "hp": 10758,
-      "atk": 436,
-      "def": 269,
+      "hp": 1400,
+      "atk": 95,
+      "def": 65,
       "xp": 1062,
-      "gold": 981
+      "gold": 981,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "❄️",
+      "desc": "统御整座雪山的远古霜魔，所到之处万物冰封",
+      "rare": "frost_crown",
+      "rareChance": 0.15,
+      "isBoss": true
     },
     {
       "id": "lava_slug",
@@ -11952,7 +12467,16 @@
       "atk": 247,
       "def": 161,
       "xp": 120,
-      "gold": 111
+      "gold": 111,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐌",
+      "desc": "在岩浆中缓慢爬行的软体生物，体表滚烫",
+      "rare": "magma_essence",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "fire_bat",
@@ -11962,7 +12486,16 @@
       "atk": 258,
       "def": 168,
       "xp": 125,
-      "gold": 116
+      "gold": 116,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🦇",
+      "desc": "翅膀燃着火焰的蝙蝠，俯冲时拖出火光",
+      "rare": "magma_essence",
+      "rareChance": 0.5,
+      "isBoss": false
     },
     {
       "id": "cinder_hound",
@@ -11972,7 +12505,16 @@
       "atk": 268,
       "def": 175,
       "xp": 130,
-      "gold": 120
+      "gold": 120,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐕",
+      "desc": "由余烬凝成的猎犬，奔跑时火星四溅",
+      "rare": "obsidian_chunk",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "magma_titan",
@@ -11982,7 +12524,16 @@
       "atk": 278,
       "def": 182,
       "xp": 135,
-      "gold": 124
+      "gold": 124,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌋",
+      "desc": "从熔岩中崛起的巨人，每一步都震得大地颤抖",
+      "rare": "obsidian_chunk",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "flame_wraith",
@@ -11992,7 +12543,16 @@
       "atk": 294,
       "def": 192,
       "xp": 142,
-      "gold": 131
+      "gold": 131,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👻",
+      "desc": "葬身火海者的怨念所化，缠绕着不灭之火",
+      "rare": "flame_core",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "inferno_drake",
@@ -12002,7 +12562,16 @@
       "atk": 310,
       "def": 202,
       "xp": 149,
-      "gold": 138
+      "gold": 138,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐉",
+      "desc": "盘踞火山口的火龙，吐息可融化钢铁",
+      "rare": "flame_core",
+      "rareChance": 0.25,
+      "isBoss": false
     },
     {
       "id": "volcano_boss",
@@ -12012,7 +12581,16 @@
       "atk": 576,
       "def": 355,
       "xp": 1386,
-      "gold": 1278
+      "gold": 1278,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🔥",
+      "desc": "熔岩深渊的统治者，传说其苏醒之日山河尽燃",
+      "rare": "demon_horn",
+      "rareChance": 0.15,
+      "isBoss": true
     },
     {
       "id": "shadow_crawler",
@@ -12022,7 +12600,16 @@
       "atk": 325,
       "def": 212,
       "xp": 156,
-      "gold": 144
+      "gold": 144,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🕷️",
+      "desc": "在幽影深渊蠕动的暗影生物，潜伏于黑暗之中",
+      "rare": "暗影之丝",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "void_specter",
@@ -12032,7 +12619,16 @@
       "atk": 336,
       "def": 219,
       "xp": 161,
-      "gold": 149
+      "gold": 149,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👻",
+      "desc": "从虚空缝隙渗出的幽魂，触碰即蚀骨",
+      "rare": "暗影之丝",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "dread_knight",
@@ -12042,7 +12638,16 @@
       "atk": 346,
       "def": 226,
       "xp": 166,
-      "gold": 153
+      "gold": 153,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "⚔️",
+      "desc": "被虚空腐蚀的堕落骑士，散发令人窒息的恐惧",
+      "rare": "虚空裂片",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "abyss_maw",
@@ -12052,7 +12657,16 @@
       "atk": 362,
       "def": 236,
       "xp": 173,
-      "gold": 160
+      "gold": 160,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🕳️",
+      "desc": "深渊本身张开的巨口，吞噬一切靠近之物",
+      "rare": "虚空裂片",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "nightmare_weaver",
@@ -12062,7 +12676,16 @@
       "atk": 377,
       "def": 246,
       "xp": 180,
-      "gold": 166
+      "gold": 166,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🕸️",
+      "desc": "编织噩梦的恐怖存在，让人深陷幻境",
+      "rare": "深渊之核",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "void_behemoth",
@@ -12072,7 +12695,16 @@
       "atk": 393,
       "def": 257,
       "xp": 188,
-      "gold": 173
+      "gold": 173,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🦖",
+      "desc": "体型庞大的虚空巨兽，每一步都撕裂空间",
+      "rare": "深渊之核",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "abyss_boss",
@@ -12082,7 +12714,16 @@
       "atk": 716,
       "def": 442,
       "xp": 1710,
-      "gold": 1575
+      "gold": 1575,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌑",
+      "desc": "幽影深渊的至高统治者，凝视它会坠入永夜",
+      "rare": "虚空王冠",
+      "rareChance": 0.15,
+      "isBoss": true
     },
     {
       "id": "light_sprite",
@@ -12092,7 +12733,16 @@
       "atk": 403,
       "def": 263,
       "xp": 192,
-      "gold": 177
+      "gold": 177,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🧚",
+      "desc": "苍穹天界的圣洁精灵，散发柔和的光辉",
+      "rare": "天界羽翼",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "sky_guardian",
@@ -12102,7 +12752,16 @@
       "atk": 414,
       "def": 270,
       "xp": 197,
-      "gold": 182
+      "gold": 182,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🛡️",
+      "desc": "镇守天界之门的守卫，盔甲闪耀圣辉",
+      "rare": "天界羽翼",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "radiant_griffin",
@@ -12112,7 +12771,16 @@
       "atk": 424,
       "def": 277,
       "xp": 202,
-      "gold": 186
+      "gold": 186,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🦅",
+      "desc": "翱翔天界的狮鹫，羽翼洒落金色光芒",
+      "rare": "圣辉金",
+      "rareChance": 0.35,
+      "isBoss": false
     },
     {
       "id": "seraph_sentinel",
@@ -12122,7 +12790,16 @@
       "atk": 440,
       "def": 287,
       "xp": 209,
-      "gold": 193
+      "gold": 193,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "😇",
+      "desc": "六翼炽天使形态的哨兵，圣光灼目",
+      "rare": "圣辉金",
+      "rareChance": 0.35,
+      "isBoss": false
     },
     {
       "id": "divine_colossus",
@@ -12132,7 +12809,16 @@
       "atk": 455,
       "def": 297,
       "xp": 216,
-      "gold": 199
+      "gold": 199,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🗿",
+      "desc": "由天界圣石铸成的巨像，守护着神域",
+      "rare": "天使之泪",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "archon",
@@ -12142,7 +12828,16 @@
       "atk": 471,
       "def": 308,
       "xp": 224,
-      "gold": 206
+      "gold": 206,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👼",
+      "desc": "掌管天界秩序的执政天神，威严不可侵犯",
+      "rare": "天使之泪",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "celestial_boss",
@@ -12152,7 +12847,16 @@
       "atk": 857,
       "def": 529,
       "xp": 2034,
-      "gold": 1872
+      "gold": 1872,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🪽",
+      "desc": "坠入黑暗的天使，光明与堕落在其身上交织",
+      "rare": "堕落光环",
+      "rareChance": 0.15,
+      "isBoss": true
     },
     {
       "id": "chrono_phantom",
@@ -12162,7 +12866,16 @@
       "atk": 481,
       "def": 314,
       "xp": 228,
-      "gold": 210
+      "gold": 210,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "⏳",
+      "desc": "游离于时间之外的幻影，时隐时现",
+      "rare": "时之尘",
+      "rareChance": 0.35,
+      "isBoss": false
     },
     {
       "id": "paradox_beast",
@@ -12172,7 +12885,16 @@
       "atk": 492,
       "def": 321,
       "xp": 233,
-      "gold": 215
+      "gold": 215,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌀",
+      "desc": "由时空悖论诞生的怪物，存在本身即矛盾",
+      "rare": "时之尘",
+      "rareChance": 0.35,
+      "isBoss": false
     },
     {
       "id": "rift_stalker",
@@ -12182,7 +12904,16 @@
       "atk": 502,
       "def": 328,
       "xp": 238,
-      "gold": 219
+      "gold": 219,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👁️",
+      "desc": "穿梭于时空裂隙的潜行者，难以捉摸",
+      "rare": "裂境结晶",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "temporal_wyrm",
@@ -12192,7 +12923,16 @@
       "atk": 518,
       "def": 338,
       "xp": 245,
-      "gold": 226
+      "gold": 226,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐉",
+      "desc": "盘踞时空乱流的巨龙，吐息可逆转时光",
+      "rare": "裂境结晶",
+      "rareChance": 0.3,
+      "isBoss": false
     },
     {
       "id": "void_emperor",
@@ -12202,7 +12942,16 @@
       "atk": 533,
       "def": 348,
       "xp": 252,
-      "gold": 232
+      "gold": 232,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👑",
+      "desc": "统御无数虚空的帝王，力量近乎神祇",
+      "rare": "时空精华",
+      "rareChance": 0.25,
+      "isBoss": false
     },
     {
       "id": "reality_render",
@@ -12212,7 +12961,16 @@
       "atk": 549,
       "def": 359,
       "xp": 260,
-      "gold": 239
+      "gold": 239,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "💥",
+      "desc": "能撕裂现实本身的存在，所到之处世界崩坏",
+      "rare": "时空精华",
+      "rareChance": 0.25,
+      "isBoss": false
     },
     {
       "id": "rift_boss",
@@ -12222,7 +12980,16 @@
       "atk": 997,
       "def": 615,
       "xp": 2358,
-      "gold": 2169
+      "gold": 2169,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌌",
+      "desc": "掌控过去与未来的终极主宰，世界的终焉与起源",
+      "rare": "主宰之心",
+      "rareChance": 0.15,
+      "isBoss": true
     },
     {
       "id": "hellhound",
@@ -12232,7 +12999,16 @@
       "atk": 559,
       "def": 365,
       "xp": 264,
-      "gold": 243
+      "gold": 243,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐕",
+      "desc": "守卫炼狱之门的三头地狱犬，吐息焚尽一切",
+      "rare": "炼狱余烬",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "flame_imp",
@@ -12242,7 +13018,16 @@
       "atk": 570,
       "def": 372,
       "xp": 269,
-      "gold": 248
+      "gold": 248,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👺",
+      "desc": "成群结队的烈焰小鬼，狡诈而凶残",
+      "rare": "炼狱余烬",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "soul_reaper",
@@ -12252,7 +13037,16 @@
       "atk": 580,
       "def": 379,
       "xp": 274,
-      "gold": 252
+      "gold": 252,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "💀",
+      "desc": "收割亡魂的死神仆从，镰刀勾魂",
+      "rare": "堕魂结晶",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "lava_titan",
@@ -12262,7 +13056,16 @@
       "atk": 590,
       "def": 386,
       "xp": 279,
-      "gold": 256
+      "gold": 256,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌋",
+      "desc": "由熔岩凝聚的巨人，每步震碎大地",
+      "rare": "堕魂结晶",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "infernal_dragon",
@@ -12272,7 +13075,16 @@
       "atk": 601,
       "def": 393,
       "xp": 284,
-      "gold": 261
+      "gold": 261,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🐲",
+      "desc": "盘踞炼狱核心的火龙，焰息可熔金",
+      "rare": "炼狱之核",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "doom_bringer",
@@ -12282,7 +13094,16 @@
       "atk": 611,
       "def": 399,
       "xp": 288,
-      "gold": 265
+      "gold": 265,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "☄️",
+      "desc": "宣告末日降临的使者，所至之处生灵涂炭",
+      "rare": "炼狱之核",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "archfiend",
@@ -12292,7 +13113,16 @@
       "atk": 622,
       "def": 406,
       "xp": 293,
-      "gold": 270
+      "gold": 270,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "😈",
+      "desc": "统领恶魔军团的深渊魔将，杀气滔天",
+      "rare": "炼狱之核",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "hell_sovereign",
@@ -12302,7 +13132,16 @@
       "atk": 627,
       "def": 410,
       "xp": 296,
-      "gold": 272
+      "gold": 272,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👹",
+      "desc": "统御一方炼狱的亲王，威压令人窒息",
+      "rare": "魔神王冠",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "inferno_boss",
@@ -12312,7 +13151,16 @@
       "atk": 1138,
       "def": 702,
       "xp": 2682,
-      "gold": 2466
+      "gold": 2466,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🔥",
+      "desc": "永劫炼狱的至高魔神，号令亿万恶魔",
+      "rare": "魔神王冠",
+      "rareChance": 0.4,
+      "isBoss": true
     },
     {
       "id": "star_seraph",
@@ -12322,7 +13170,16 @@
       "atk": 637,
       "def": 416,
       "xp": 300,
-      "gold": 276
+      "gold": 276,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌟",
+      "desc": "降临人间的星辰炽天使，圣光普照",
+      "rare": "创世之光",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "cosmic_guardian",
@@ -12332,7 +13189,16 @@
       "atk": 648,
       "def": 423,
       "xp": 305,
-      "gold": 281
+      "gold": 281,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🛡️",
+      "desc": "守护寰宇秩序的守护者，坚不可摧",
+      "rare": "创世之光",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "light_avatar",
@@ -12342,7 +13208,16 @@
       "atk": 658,
       "def": 430,
       "xp": 310,
-      "gold": 285
+      "gold": 285,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "✨",
+      "desc": "圣光凝聚的化身，净化一切邪祟",
+      "rare": "神性精华",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "creation_golem",
@@ -12352,7 +13227,16 @@
       "atk": 668,
       "def": 437,
       "xp": 315,
-      "gold": 289
+      "gold": 289,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🗿",
+      "desc": "由创世之力塑造的魔像，守护神域",
+      "rare": "神性精华",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "divine_phoenix",
@@ -12362,7 +13246,16 @@
       "atk": 679,
       "def": 444,
       "xp": 320,
-      "gold": 294
+      "gold": 294,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🦅",
+      "desc": "浴火重生的神圣不死鸟，永恒不灭",
+      "rare": "创世之种",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "astral_judge",
@@ -12372,7 +13265,16 @@
       "atk": 689,
       "def": 450,
       "xp": 324,
-      "gold": 298
+      "gold": 298,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "⚖️",
+      "desc": "裁决众生命运的星界审判者，公正威严",
+      "rare": "创世之种",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "demigod",
@@ -12382,7 +13284,16 @@
       "atk": 700,
       "def": 457,
       "xp": 329,
-      "gold": 303
+      "gold": 303,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🧎",
+      "desc": "触及神之领域的半神祭司，神通广大",
+      "rare": "创世之种",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "genesis_herald",
@@ -12392,7 +13303,16 @@
       "atk": 705,
       "def": 461,
       "xp": 332,
-      "gold": 305
+      "gold": 305,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "📯",
+      "desc": "预言创世降临的先知，洞悉天机",
+      "rare": "神之心脏",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "genesis_boss",
@@ -12402,7 +13322,16 @@
       "atk": 1278,
       "def": 789,
       "xp": 3006,
-      "gold": 2763
+      "gold": 2763,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌅",
+      "desc": "开天辟地的创世之神，万物的起源",
+      "rare": "神之心脏",
+      "rareChance": 0.4,
+      "isBoss": true
     },
     {
       "id": "void_devourer",
@@ -12412,7 +13341,16 @@
       "atk": 715,
       "def": 467,
       "xp": 336,
-      "gold": 309
+      "gold": 309,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🕳️",
+      "desc": "吞噬一切的虚空巨兽，连光都无法逃脱",
+      "rare": "终焉碎片",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "entropy_beast",
@@ -12422,7 +13360,16 @@
       "atk": 726,
       "def": 474,
       "xp": 341,
-      "gold": 314
+      "gold": 314,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌀",
+      "desc": "携带熵增之力的怪物，所触皆腐朽",
+      "rare": "终焉碎片",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "reality_eater",
@@ -12432,7 +13379,16 @@
       "atk": 736,
       "def": 481,
       "xp": 346,
-      "gold": 318
+      "gold": 318,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👄",
+      "desc": "啖食现实本身的存在，世界为之崩坏",
+      "rare": "永恒结晶",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "dimension_lord",
@@ -12442,7 +13398,16 @@
       "atk": 746,
       "def": 488,
       "xp": 351,
-      "gold": 322
+      "gold": 322,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌌",
+      "desc": "统御无数维度的领主，操纵空间法则",
+      "rare": "永恒结晶",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "cosmic_horror",
@@ -12452,7 +13417,16 @@
       "atk": 757,
       "def": 495,
       "xp": 356,
-      "gold": 327
+      "gold": 327,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "👁️",
+      "desc": "凝视即陷疯狂的寰宇恐惧，超越认知",
+      "rare": "寰宇精华",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "world_ender",
@@ -12462,7 +13436,16 @@
       "atk": 767,
       "def": 501,
       "xp": 360,
-      "gold": 331
+      "gold": 331,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "💥",
+      "desc": "终结一个世界的存在，灭世于弹指",
+      "rare": "寰宇精华",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "paradox_god",
@@ -12472,7 +13455,16 @@
       "atk": 778,
       "def": 508,
       "xp": 365,
-      "gold": 336
+      "gold": 336,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "♾️",
+      "desc": "由悖论诞生的神祇，存在本身即矛盾",
+      "rare": "寰宇精华",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "omega_herald",
@@ -12482,7 +13474,16 @@
       "atk": 783,
       "def": 512,
       "xp": 368,
-      "gold": 338
+      "gold": 338,
+      "archetype": "ordinary",
+      "attackIntervalMs": 2400,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "📢",
+      "desc": "宣告万界终焉的传令者，丧钟敲响",
+      "rare": "万界之心",
+      "rareChance": 0.4,
+      "isBoss": false
     },
     {
       "id": "omega_boss",
@@ -12492,7 +13493,16 @@
       "atk": 1418,
       "def": 876,
       "xp": 3330,
-      "gold": 3060
+      "gold": 3060,
+      "archetype": "boss",
+      "attackIntervalMs": 2200,
+      "incomingDamageMult": 1,
+      "outgoingDamageMult": 1,
+      "icon": "🌑",
+      "desc": "掌控所有世界命运的终极存在，世界的终结与起源",
+      "rare": "万界之心",
+      "rareChance": 0.4,
+      "isBoss": true
     }
   ],
   "stages": [
@@ -12684,7 +13694,7 @@
           "name": "木制装备制作",
           "description": "学习制作木制装备",
           "requirements": {
-            "level": 6,
+            "level": 3,
             "prerequisites": []
           },
           "unlocks": {
@@ -13895,8 +14905,8 @@
           "quantity": 100
         }
       ],
-      "successRate": 0.8,
-      "maxLevel": 10
+      "successRate": 0.5,
+      "maxLevel": 20
     },
     {
       "itemType": "all_metal_equipment",
@@ -13912,8 +14922,8 @@
           "quantity": 150
         }
       ],
-      "successRate": 0.75,
-      "maxLevel": 10
+      "successRate": 0.5,
+      "maxLevel": 20
     },
     {
       "itemType": "cloth_and_leather_equipment",
@@ -13929,8 +14939,8 @@
           "quantity": 120
         }
       ],
-      "successRate": 0.8,
-      "maxLevel": 10
+      "successRate": 0.5,
+      "maxLevel": 20
     }
   ],
   "equipmentSets": [

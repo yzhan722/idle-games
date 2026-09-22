@@ -7,6 +7,25 @@ interface ApiError extends Error {
   code?: string;
 }
 
+export type ActionPreview = {
+  actionId: string;
+  name: string;
+  skillId: string;
+  requiredLevel: number;
+  skillLevel: number;
+  baseDurationMs: number;
+  effectiveDurationMs: number;
+  speedPct: number;
+  speedSources: Array<{ label: string; pct: number }>;
+  efficiencyPct: number;
+  efficiencySources: Array<{ label: string; pct: number }>;
+  xpPerAction: number;
+  actionsPerHour: number;
+  xpPerHour: number;
+  outputsPerHour: Array<{ itemId: string; name: string; qty: number; chance: number }>;
+  inputsPerHour: Array<{ itemId: string; name: string; qty: number }>;
+};
+
 interface RetryConfig {
   maxRetries: number;
   retryDelay: number;
@@ -86,15 +105,17 @@ class ApiClient {
     const method = (options.method || 'GET').toUpperCase();
     const cacheKey = this.getCacheKey(endpoint, { ...options, method });
 
-    if (method === 'GET' && retryCount === 0) {
+    if (method === 'GET' && retryCount === 0 && !endpoint.startsWith('/player/state')) {
       const cached = this.getCachedResponse<T>(cacheKey);
       if (cached !== null) return cached;
       const inflight = this.inFlight.get(cacheKey);
       if (inflight) return inflight as Promise<T>;
     }
 
+    // Only declare a JSON body when there is one: Fastify rejects an empty body that claims
+    // application/json (DELETE / bodiless POST would 400).
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...(options.body !== undefined && options.body !== null ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers as Record<string, string>),
     };
 
@@ -146,9 +167,9 @@ class ApiClient {
         }
 
         const data = await response.json();
-        if (method === 'GET') {
+        if (method === 'GET' && !endpoint.startsWith('/player/state')) {
           this.setCachedResponse(cacheKey, data, 5000);
-        } else {
+        } else if (method !== 'GET') {
           // 写操作（POST/PUT/DELETE）成功后使 GET 缓存失效，确保后续读取拿到最新状态
           this.cache.clear();
         }
@@ -225,10 +246,15 @@ class ApiClient {
   }
 
   // 强化相关API
-  async enhanceEquipment(itemId: string, targetLevel: number, serviceProviderId?: string) {
-    return this.post('/enhancement/enhance', { itemId, targetLevel, serviceProviderId });
+  async enhanceEquipment(itemId: string, targetLevel: number, serviceProviderId?: string, protectionItemId?: string) {
+    return this.post('/enhancement/enhance', { itemId, targetLevel, serviceProviderId, protectionItemId });
   }
   async getEnhancementInfo(itemId: string) { return this.get(`/enhancement/info/${itemId}`); }
+  /** MWI: enhancing as a timed action with a target level. */
+  async startEnhanceRun(itemId: string, targetLevel: number, useProtection: boolean) {
+    return this.post('/enhancement/run/start', { itemId, targetLevel, useProtection });
+  }
+  async stopEnhanceRun() { return this.post('/enhancement/run/stop', {}); }
   async getEnhancementProviders(itemType: string) { return this.get(`/enhancement/providers/${itemType}`); }
 
   // 交易相关API
@@ -322,6 +348,70 @@ class ApiClient {
   async rerollBounties() { return this.post('/progression2/bounties/reroll', {}); }
   async getPrestige() { return this.get('/progression2/prestige'); }
   async doPrestige() { return this.post('/progression2/prestige', {}); }
+
+  async startHpCombat(monsterId: string) {
+    return this.post('/combat/hp/start', { monsterId });
+  }
+  async useHeavyChop() {
+    return this.post('/combat/hp/skill', { skillId: 'heavy_chop' });
+  }
+  /** Manual cast of any learned ability (server enforces cooldown / mana). */
+  async castAbility(abilityId: string) {
+    return this.post('/combat/hp/skill', { skillId: abilityId });
+  }
+  /** Ability priority list with triggers (MWI 技能槽). */
+  async setAbilityLoadout(slots: Array<{ abilityId: string; trigger?: { type: string; pct?: number } }>) {
+    return this.post('/combat/hp/abilities', { slots });
+  }
+  /** Read a skill book from the inventory. */
+  async learnBook(itemId: string) {
+    return this.post('/combat/hp/learn', { itemId });
+  }
+
+  /** MWI market overview: best ask / bid per item. */
+  async getMarketSummary() { return this.get('/trading/summary'); }
+
+  // MWI 任务板
+  async getTasks() { return this.get('/tasks'); }
+  async claimTask(taskId: string) { return this.post('/tasks/claim', { taskId }); }
+  async rerollTask(taskId: string) { return this.post('/tasks/reroll', { taskId }); }
+  async deleteTask(taskId: string) { return this.post('/tasks/delete', { taskId }); }
+  async setTaskBlock(skillId: string, blocked: boolean) { return this.post('/tasks/block', { skillId, blocked }); }
+  async buyTaskShop(itemId: string) { return this.post('/tasks/shop/buy', { itemId }); }
+  async claimTaskGift() { return this.post('/tasks/gift/claim', {}); }
+
+  // MWI 房屋
+  async getHouses() { return this.get('/houses'); }
+  async upgradeRoom(roomId: string) { return this.post('/houses/upgrade', { roomId }); }
+  async ackOfflineReport() {
+    return this.post('/player/offline-report/ack', {});
+  }
+  // 动作面板：服务端真值的速度/效率/每小时收益
+  async getActionPreview(actionId: string) {
+    return this.request<ActionPreview>(`/actions/preview/${encodeURIComponent(actionId)}`, { method: 'GET' });
+  }
+  // 行动队列
+  async queueAction(actionId: string, quantity?: number) {
+    return this.post('/actions/queue', quantity ? { actionId, quantity } : { actionId });
+  }
+  async removeQueuedAction(id: string) {
+    return this.delete(`/actions/queue/${encodeURIComponent(id)}`);
+  }
+  async clearActionQueue() {
+    return this.post('/actions/queue/clear', {});
+  }
+  async moveQueuedAction(id: string, direction: 'up' | 'down') {
+    return this.post('/actions/queue/move', { id, direction });
+  }
+  async chooseChapterBuild(id: 'sharpened_edge' | 'thick_bark') {
+    return this.post('/combat/hp/build', { id });
+  }
+  async setCombatLoadout(loadout: { food?: Array<{ itemId: string; triggerMissingHp?: number }>; drink?: Array<{ itemId: string }>; autoRepeat?: boolean }) {
+    return this.post('/combat/hp/loadout', loadout);
+  }
+  async fleeHpCombat() {
+    return this.post('/combat/hp/flee', {});
+  }
 }
 
 // baseURL 解析优先级：

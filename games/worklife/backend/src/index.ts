@@ -20,10 +20,17 @@ import {
   progressionRoutes,
   progression2Routes,
   systemsRoutes,
+  combatHpRoutes,
+  tasksRoutes,
+  housesRoutes,
 } from "./routes";
 import { socketFromWsConnection } from "./ws_socket";
 import { isPublicApiPath, isRateLimitExempt } from "./http_public_path";
 import { mapThrownError } from "./http_errors";
+import { encounterStages } from "./gameplay_encounters";
+import { abilityCatalog } from "./abilities";
+import { COMBAT_SKILL_IDS, COMBAT_SKILL_NAMES, COMBAT_SKILL_BLURBS } from "./combat_skills";
+import { applyE2eFastContent } from "./e2e_fast";
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
@@ -41,7 +48,9 @@ if (process.env.NODE_ENV !== "production" && !process.env.JWT_SECRET) {
 }
 
 const env = envSchema.parse(process.env);
-const contentPack = enhancedContentPack as EnhancedContentPack;
+const contentPack = applyE2eFastContent(
+  JSON.parse(JSON.stringify(enhancedContentPack)) as EnhancedContentPack
+);
 
 async function requireAuth(app: FastifyInstance, req: FastifyRequest) {
   const auth = req.headers.authorization;
@@ -134,7 +143,12 @@ async function main() {
       db: { connected: dbHealth.ok, latencyMs: dbHealth.latencyMs },
     });
   });
-  app.get("/content", async () => contentPack);
+  app.get("/content", async () => ({
+    ...contentPack,
+    encounterStages: encounterStages(contentPack as never),
+    abilities: abilityCatalog(),
+    combatSkills: COMBAT_SKILL_IDS.map((id) => ({ id, name: COMBAT_SKILL_NAMES[id], blurb: COMBAT_SKILL_BLURBS[id] })),
+  }));
 
   // 认证路由（不需要 token）
   await authRoutes(app, storage);
@@ -163,6 +177,9 @@ async function main() {
   await progressionRoutes(app, storage, contentPack);
   await progression2Routes(app, storage, contentPack);
   await systemsRoutes(app, storage, contentPack);
+  await combatHpRoutes(app, storage, contentPack);
+  await tasksRoutes(app, storage, contentPack);
+  await housesRoutes(app, storage, contentPack);
 
   // 物品列表 API
   app.get("/items/all", async () => {
@@ -186,6 +203,26 @@ async function main() {
       state.inventory.weapon_wooden_sword = Math.max(state.inventory.weapon_wooden_sword || 0, 1);
       state.inventory.armor_wood_chest = Math.max(state.inventory.armor_wood_chest || 0, 1);
       state.inventory.gold = Math.max(state.inventory.gold || 0, 100);
+      if (!state.equipment) {
+        (state as any).equipment = { enhancementLevels: {}, durability: {}, maxDurability: {} };
+      }
+      (state.equipment as any).main_hand = "weapon_wooden_sword";
+      (state.equipment as any).chest = "armor_wood_chest";
+      const body = (req.body || {}) as { scene?: string };
+      if (body.scene === "chapter-complete") {
+        state.chapter1Build = state.chapter1Build || "thick_bark";
+        const stats = (state.stats ?? {}) as NonNullable<typeof state.stats>;
+        state.stats = stats;
+        stats.totalKills = Math.max(stats.totalKills || 0, 4);
+        stats.totalBossKills = Math.max(stats.totalBossKills || 0, 1);
+        stats.killsByMonster = {
+          ...(stats.killsByMonster || {}),
+          slime: Math.max(stats.killsByMonster?.slime || 0, 1),
+          crab: Math.max(stats.killsByMonster?.crab || 0, 1),
+          monkey: Math.max(stats.killsByMonster?.monkey || 0, 1),
+          forest_boss: Math.max(stats.killsByMonster?.forest_boss || 0, 1),
+        };
+      }
       const saved = await storage.savePlayerState(userId, state);
       return reply.send({ ok: true, inventory: saved.inventory });
     });

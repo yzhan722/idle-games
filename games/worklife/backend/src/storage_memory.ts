@@ -35,8 +35,7 @@ import {
   createParty,
   getXpForLevel,
   addPartyMember,
-  calculateEnhancementSuccess,
-  calculateEnhancementCost
+  summarizeOrders
 } from "./storage";
 import fs from "fs";
 import path from "path";
@@ -48,6 +47,20 @@ import {
 } from "./chat_channels";
 import { buildSnapshot, parseSnapshot } from "./memory_snapshot";
 import { socketFromWsConnection } from "./ws_socket";
+import {
+  MAX_ENHANCEMENT_LEVEL,
+  PROTECTION_MIRROR_ID,
+  enhancementBonusPct,
+  enhancementMaterials,
+  enhancementSlotMultiplier,
+  enhancementStatMultiplier,
+  enhancementSuccessBreakdown,
+  ensureEnhancingSkill,
+  equippedEnhanceToolBonus,
+  itemLevelForEnhancement,
+  ownsEnhanceableItem,
+  performEnhancementAttempt,
+} from "./enhancement_math";
 
 // 使用简单的WebSocket接口定义
 interface WebSocketLike {
@@ -417,44 +430,22 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       return st;
     },
 
-    // 新增：装备强化功能
-    async enhanceEquipment({ userId, request, contentPack }: {
+    // MWI 装备强化：+20 表、非线性属性、失败归零、保护镜降一级、独立强化技能。
+    async enhanceEquipment({ userId, request, contentPack, rng }: {
       userId: string;
       request: EnhancementRequest;
       contentPack: EnhancedContentPack;
+      rng?: () => number;
     }): Promise<EnhancementResult> {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
 
-      // 检查物品是否在装备栏中
-      const isEquipped = st.equipment.main_hand === request.itemId || st.equipment.off_hand === request.itemId;
-      const isInInventory = (st.inventory[request.itemId] || 0) > 0;
-      
-      if (!isEquipped && !isInInventory) {
-        return {
-          success: false,
-          newLevel: 0,
-          consumedMaterials: {},
-          failureReason: "物品不存在"
-        };
-      }
-
       const currentLevel = st.equipment.enhancementLevels[request.itemId] || 0;
-      
-      // 检查是否只能升级一级
-      if (request.targetLevel !== currentLevel + 1) {
-        return {
-          success: false,
-          newLevel: currentLevel,
-          consumedMaterials: {},
-          failureReason: "只能逐级强化"
-        };
-      }
-
       const item = contentPack.items.find((i: any) => i.id === request.itemId) as any;
       if (!item) {
         return {
           success: false,
+          previousLevel: currentLevel,
           newLevel: currentLevel,
           consumedMaterials: {},
           failureReason: "未知物品"
@@ -463,74 +454,46 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
 
       const ruleMatch = findEnhancementRuleForItem(item, contentPack);
       const enhancementRule = ruleMatch?.rule ?? null;
-      const requiredProfession = ruleMatch?.requiredProfession ?? null;
-
-      if (!enhancementRule || !requiredProfession) {
+      if (!enhancementRule) {
         return {
           success: false,
+          previousLevel: currentLevel,
           newLevel: currentLevel,
           consumedMaterials: {},
           failureReason: "该物品无法强化"
         };
       }
 
-      // 检查等级上限
-      if (request.targetLevel > enhancementRule.maxLevel) {
-        return {
-          success: false,
-          newLevel: currentLevel,
-          consumedMaterials: {},
-          failureReason: `强化等级不能超过 +${enhancementRule.maxLevel}`
-        };
+      const result = performEnhancementAttempt({
+        player: st,
+        item,
+        rule: enhancementRule,
+        request,
+        pack: contentPack,
+        rng,
+        xpForLevel: getXpForLevel,
+      });
+
+      // Validation failures consume nothing and do not count as attempts.
+      if (Object.keys(result.consumedMaterials).length === 0) return result;
+
+      if (result.success) {
+        appendLog(
+          st,
+          `装备强化成功：${item.name} +${result.previousLevel} → +${result.newLevel}（强化经验 +${result.xpGained}）`
+        );
+      } else {
+        appendLog(st, `${item.name}${result.failureReason}（强化经验 +${result.xpGained}）`);
+      }
+      for (const level of result.levelUps || []) {
+        appendLog(st, `强化技能升级到 ${level} 级！`);
       }
 
-      // 检查职业要求（如果有服务提供者则跳过）
-      if (!request.serviceProviderId) {
-        const playerSkill = st.skills[`skill_${requiredProfession}`];
-        if (!playerSkill || !hasEnhancementSkill(playerSkill.unlockedRecipes, requiredProfession, enhancementRule.itemType)) {
-          return {
-            success: false,
-            newLevel: currentLevel,
-            consumedMaterials: {},
-            failureReason: `需要 ${requiredProfession} 职业的强化技能`
-          };
-        }
-      }
-
-      // 计算材料需求（基于强化规则和目标等级）
-      const materials: Record<string, number> = {};
-      for (const material of enhancementRule.materials) {
-        materials[material.itemId] = material.quantity * request.targetLevel;
-      }
-
-      // 检查材料是否足够
-      for (const [itemId, required] of Object.entries(materials)) {
-        const available = st.inventory[itemId] || 0;
-        if (available < required) {
-          return {
-            success: false,
-            newLevel: currentLevel,
-            consumedMaterials: {},
-            failureReason: `材料不足：${itemId} (需要 ${required}, 拥有 ${available})`
-          };
-        }
-      }
-
-      // 计算成功率（基于强化规则和等级）
-      const baseSuccessRate = enhancementRule.successRate;
-      const levelPenalty = Math.pow(0.95, request.targetLevel - 1); // 等级越高成功率越低
-      const finalSuccessRate = Math.max(0.1, baseSuccessRate * levelPenalty);
-      
-      const success = Math.random() < finalSuccessRate;
-
-      // 消耗材料
-      for (const [itemId, required] of Object.entries(materials)) {
-        st.inventory[itemId] = (st.inventory[itemId] || 0) - required;
-      }
-
-      // 如果有服务提供者，支付服务费
+      // If another player provided the service, pay the service fee after a real attempt.
       if (request.serviceProviderId) {
-        const goldMaterial = enhancementRule.materials.find((m: { itemId: string }) => m.itemId === "gold");
+        const goldMaterial = enhancementRule.materials.find(
+          (m: { itemId: string }) => m.itemId === "gold"
+        );
         const serviceFee = Math.floor((goldMaterial?.quantity || 100) * 0.5);
         const providerState = states.get(request.serviceProviderId);
         if (providerState) {
@@ -538,37 +501,8 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
           appendLog(providerState, `提供强化服务获得 ${serviceFee} 金币`);
         }
       }
-
-      if (success) {
-        st.equipment.enhancementLevels[request.itemId] = request.targetLevel;
-        appendLog(st, `装备强化成功：${item.name} -> +${request.targetLevel}`);
-        
-        // 计算属性加成
-        const bonusStats: Record<string, number> = {};
-        if (item.type === "weapon" || item.id?.includes("weapon")) {
-          bonusStats.atk = request.targetLevel * 5;
-        } else if (item.type === "armor" || item.name?.includes("装备")) {
-          bonusStats.def = request.targetLevel * 3;
-        } else if (item.id?.includes("staff")) {
-          bonusStats.mag = request.targetLevel * 4;
-        }
-        
-        return {
-          success: true,
-          newLevel: request.targetLevel,
-          consumedMaterials: materials,
-          bonusStats
-        };
-      } else {
-        appendLog(st, `装备强化失败：${item.name} (成功率: ${Math.round(finalSuccessRate * 100)}%)`);
-        
-        return {
-          success: false,
-          newLevel: currentLevel,
-          consumedMaterials: materials,
-          failureReason: `强化失败 (成功率: ${Math.round(finalSuccessRate * 100)}%)`
-        };
-      }
+      schedulePersist();
+      return result;
     },
 
     // 新增：获取装备强化信息
@@ -588,42 +522,81 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const ruleMatch = findEnhancementRuleForItem(item, contentPack);
       const enhancementRule = ruleMatch?.rule ?? null;
       const requiredProfession = ruleMatch?.requiredProfession ?? null;
+      const skill = ensureEnhancingSkill(st);
+      const itemLevel = itemLevelForEnhancement(item, contentPack);
 
-      if (!enhancementRule || !requiredProfession) {
+      if (!enhancementRule) {
         return {
           currentLevel,
           maxLevel: 0,
           nextLevelCost: {},
           successRate: 0,
+          baseSuccessRate: 0,
+          levelModifier: 0,
+          overLevelBonus: 0,
+          toolBonus: 0,
+          currentStatBonusPct: 0,
+          nextStatBonusPct: 0,
+          slotMultiplier: enhancementSlotMultiplier(item),
+          itemLevel,
+          enhancingLevel: skill.level,
+          enhancingXp: skill.xp,
           canEnhance: false,
-          requiredProfession: undefined
+          canAfford: false,
+          isOwned: ownsEnhanceableItem(st, itemId),
+          requiredProfession: undefined,
+          protection: {
+            itemId: PROTECTION_MIRROR_ID,
+            available: st.inventory[PROTECTION_MIRROR_ID] || 0,
+            failWithout: "失败后重置为 +0",
+            failWith: "消耗 1 面保护镜；失败只降低 1 级",
+          },
         };
       }
 
-      // 计算下一级的材料需求
       const nextLevel = currentLevel + 1;
-      const nextLevelCost: Record<string, number> = {};
-      for (const material of enhancementRule.materials) {
-        nextLevelCost[material.itemId] = material.quantity * nextLevel;
-      }
-
-      // 计算成功率
-      const baseSuccessRate = enhancementRule.successRate;
-      const levelPenalty = Math.pow(0.95, nextLevel - 1);
-      const successRate = Math.max(0.1, baseSuccessRate * levelPenalty);
-
-      // 检查是否可以强化
-      const playerSkill = st.skills[`skill_${requiredProfession}`];
-      const hasSkill = playerSkill && hasEnhancementSkill(playerSkill.unlockedRecipes, requiredProfession, enhancementRule.itemType);
-      const canEnhance = currentLevel < enhancementRule.maxLevel && hasSkill;
+      const maxLevel = Math.min(
+        MAX_ENHANCEMENT_LEVEL,
+        Number(enhancementRule.maxLevel || MAX_ENHANCEMENT_LEVEL)
+      );
+      const nextLevelCost =
+        nextLevel <= maxLevel
+          ? enhancementMaterials(enhancementRule, nextLevel)
+          : {};
+      const rates = enhancementSuccessBreakdown(nextLevel, skill.level, itemLevel, equippedEnhanceToolBonus(st, contentPack));
+      const isOwned = ownsEnhanceableItem(st, itemId);
+      const canAfford = Object.entries(nextLevelCost).every(
+        ([id, qty]) => (st.inventory[id] || 0) >= qty
+      );
 
       return {
         currentLevel,
-        maxLevel: enhancementRule.maxLevel,
+        maxLevel,
         nextLevelCost,
-        successRate: Math.round(successRate * 100) / 100,
-        canEnhance,
-        requiredProfession: requiredProfession || undefined
+        successRate: rates.finalRate,
+        baseSuccessRate: rates.baseRate,
+        levelModifier: rates.levelModifier,
+        overLevelBonus: rates.overLevelBonus,
+        toolBonus: rates.toolBonus,
+        currentStatBonusPct:
+          enhancementBonusPct(currentLevel) * enhancementSlotMultiplier(item),
+        nextStatBonusPct:
+          enhancementBonusPct(Math.min(nextLevel, maxLevel)) *
+          enhancementSlotMultiplier(item),
+        slotMultiplier: enhancementSlotMultiplier(item),
+        itemLevel,
+        enhancingLevel: skill.level,
+        enhancingXp: skill.xp,
+        canEnhance: isOwned && currentLevel < maxLevel,
+        canAfford,
+        isOwned,
+        requiredProfession: requiredProfession || undefined,
+        protection: {
+          itemId: PROTECTION_MIRROR_ID,
+          available: st.inventory[PROTECTION_MIRROR_ID] || 0,
+          failWithout: "失败后重置为 +0",
+          failWith: "消耗 1 面保护镜；失败只降低 1 级",
+        },
       };
     },
 
@@ -1714,7 +1687,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       // 计算基础属性
       for (const [slot, itemId] of Object.entries(st.equipment)) {
         if (!itemId || typeof itemId !== 'string') continue;
-        if (slot === 'enhancementLevels' || slot === 'durability' || slot === 'maxDurability') continue;
+        if (slot === 'enhancementLevels' || slot === 'durability' || slot === 'maxDurability' || slot === 'tool') continue;
 
         const item = contentPack.items.find((i: any) => i.id === itemId) as any;
         if (!item) continue;
@@ -1729,9 +1702,10 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         // 强化属性
         const enhancementLevel = st.equipment.enhancementLevels[itemId] || 0;
         if (enhancementLevel > 0) {
-          if (item.atk) enhancementStats.atk = (enhancementStats.atk || 0) + (item.atk * enhancementLevel * 0.1);
-          if (item.def) enhancementStats.def = (enhancementStats.def || 0) + (item.def * enhancementLevel * 0.1);
-          if (item.mag) enhancementStats.mag = (enhancementStats.mag || 0) + (item.mag * enhancementLevel * 0.1);
+          const bonus = enhancementStatMultiplier(enhancementLevel, item) - 1;
+          if (item.atk) enhancementStats.atk = (enhancementStats.atk || 0) + item.atk * bonus;
+          if (item.def) enhancementStats.def = (enhancementStats.def || 0) + item.def * bonus;
+          if (item.mag) enhancementStats.mag = (enhancementStats.mag || 0) + item.mag * bonus;
         }
       }
 
@@ -1829,6 +1803,8 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         username: users.get(order.userId)?.guestDeviceId?.slice(0, 8) || '未知用户'
       }));
     },
+
+    getMarketSummary: async () => summarizeOrders(tradingOrders.values()),
 
     createTradingOrder: async ({ userId, itemId, quantity, price, type }) => {
       const state = states.get(userId);

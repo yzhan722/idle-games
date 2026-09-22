@@ -1,5 +1,7 @@
 import type { KeyboardEvent } from "react";
 import type { ChatMsg } from "../services/websocket";
+import { T1Art } from "./T1Art";
+import "./T1UiIcons.css";
 
 type ChatChannel = "world" | "profession" | "party";
 
@@ -25,6 +27,17 @@ export function GameChatPanel(props: Props) {
   const visible = props.messages.filter((msg) => msg.channel === props.channel);
   return (
     <aside className={`chat-panel ${props.expanded ? "expanded" : "collapsed"}`}>
+      {!props.expanded && (
+        <button
+          className="chat-fab"
+          type="button"
+          onClick={props.onToggle}
+          title="展开聊天"
+          aria-label="展开聊天"
+        >
+          <T1Art kind="ui" id="chat" fallback="聊" alt="" />
+        </button>
+      )}
       <div className="chat-header">
         <span className="chat-title">聊天</span>
         <button

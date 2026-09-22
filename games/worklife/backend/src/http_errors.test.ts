@@ -26,6 +26,18 @@ describe("500 error sanitization", () => {
   it("keeps known client errors as 4xx", () => {
     assert.equal(mapThrownError(new Error("Unauthorized")).status, 401);
     assert.equal(mapThrownError(new Error("state_version_conflict")).status, 409);
+    // Fastify content-type / body errors carry a 4xx statusCode and stay 4xx (a bodiless DELETE
+    // declaring application/json used to surface as 500).
+    const emptyBody = mapThrownError({ code: "FST_ERR_CTP_EMPTY_JSON_BODY", statusCode: 400, message: "Body cannot be empty" });
+    assert.equal(emptyBody.status, 400);
+    assert.equal(emptyBody.body.error, "invalid_request");
+    assert.equal(JSON.stringify(emptyBody.body).includes("Body cannot"), false);
+    const limited = mapThrownError({ error: "rate_limited", message: "internal plugin text" });
+    assert.equal(limited.status, 429);
+    assert.deepEqual(limited.body, {
+      error: "rate_limited",
+      message: "请求过于频繁，请稍后重试",
+    });
     const zod = z.object({ a: z.string() }).safeParse({ a: 1 });
     assert.equal(zod.success, false);
     if (!zod.success) {

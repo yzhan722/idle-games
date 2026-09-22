@@ -464,7 +464,7 @@ export function CheckInModal({
     try {
       const res: any = await apiClient.doCheckIn();
       const itemText = Object.entries(res.reward.items || {})
-        .map(([k, v]) => `${k}×${v}`)
+        .map(([k, v]) => `${getItemName(k)}×${v}`)
         .join('、');
       toast.reward(`签到成功（连续${res.streak}天）+${res.reward.gold}金币${itemText ? '、' + itemText : ''}`);
       onChange?.();

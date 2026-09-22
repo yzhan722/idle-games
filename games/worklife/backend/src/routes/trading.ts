@@ -79,6 +79,17 @@ export async function tradingRoutes(
     }
   });
 
+  // MWI market overview: best ask / bid per item so the grid can show live prices, not only shop value.
+  app.get("/trading/summary", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    try {
+      return reply.send(await storage.getMarketSummary());
+    } catch {
+      return reply.status(500).send({ error: "Failed to fetch market summary" });
+    }
+  });
+
   app.get("/trading/orders/:itemId", async (req: FastifyRequest<{ Params: { itemId: string } }>, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) {

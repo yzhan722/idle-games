@@ -97,7 +97,8 @@ export const skillNameMap: Record<string, string> = {
   'skill_farmer': '农牧技艺',
   'skill_chef': '烹饪技艺',
   'skill_tailor': '裁缝技艺',
-  'skill_alchemist': '炼金技艺'
+  'skill_alchemist': '炼金技艺',
+  'skill_enhancing': '强化'
 }
 
 // 职业名称映射表
@@ -110,9 +111,22 @@ export const professionNameMap: Record<string, string> = {
   'alchemist': '炼金术师'
 }
 
+// 运行时注册表：内容包加载后把所有物品名灌进来。内容包是唯一真源，上面的静态表只做兜底
+// （静态表里有些名字已经和内容包不一致，例如 wood_1 在内容包里叫“平平无奇原木”）。
+const packItemNames = new Map<string, string>()
+
+export function registerItemNames(items: Array<{ id: string; name?: string }> | undefined | null) {
+  if (!Array.isArray(items)) return
+  for (const item of items) {
+    if (item && typeof item.id === 'string' && typeof item.name === 'string' && item.name) {
+      packItemNames.set(item.id, item.name)
+    }
+  }
+}
+
 // 获取物品中文名称
 export function getItemName(itemId: string): string {
-  return itemNameMap[itemId] || itemId
+  return packItemNames.get(itemId) || itemNameMap[itemId] || itemId
 }
 
 // 获取技能中文名称

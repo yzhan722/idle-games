@@ -373,7 +373,7 @@ export function doPrestige(
     player.skills[k].xp = 0;
   }
   // 背包重置（保留启动金币），装备卸下
-  player.inventory = { gold: 100, wood_1: 4, lumber_1: 3 };
+  player.inventory = { gold: 100 };
   player.equipment = { enhancementLevels: {}, durability: {}, maxDurability: {} };
   player.activeBuffs = [];
   player.mode = "idle";

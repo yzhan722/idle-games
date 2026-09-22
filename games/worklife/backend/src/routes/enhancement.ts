@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
+import { startEnhanceRun, stopEnhanceRun } from "../enhancement_run";
 
 export async function enhancementRoutes(
   app: FastifyInstance, 
@@ -17,7 +18,8 @@ export async function enhancementRoutes(
     const body = z.object({
       itemId: z.string().min(1).max(100),
       targetLevel: z.number().int().min(1).max(20),
-      serviceProviderId: z.string().uuid().optional()
+      serviceProviderId: z.string().uuid().optional(),
+      protectionItemId: z.literal("mirror_protection").optional(),
     }).parse((req.body ?? {}) as unknown);
 
     try {
@@ -27,7 +29,8 @@ export async function enhancementRoutes(
           itemId: body.itemId,
           targetLevel: body.targetLevel,
           materials: {},
-          serviceProviderId: body.serviceProviderId
+          serviceProviderId: body.serviceProviderId,
+          protectionItemId: body.protectionItemId,
         },
         contentPack
       });
@@ -36,6 +39,35 @@ export async function enhancementRoutes(
     } catch (error) {
       return reply.status(500).send({ error: "装备强化失败" });
     }
+  });
+
+  // MWI: enhancing as a timed action. Start with a target level; the simulator settles attempts.
+  app.post("/enhancement/run/start", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    const body = z.object({
+      itemId: z.string().min(1).max(100),
+      targetLevel: z.number().int().min(1).max(20),
+      useProtection: z.boolean().optional(),
+    }).parse((req.body ?? {}) as unknown);
+    const now = new Date();
+    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    const next = await storage.simulateToNow({ userId, state, now, contentPack });
+    const res = startEnhanceRun(next, contentPack, body, now);
+    if (!res.ok) return reply.status(400).send({ error: res.error, message: res.message });
+    const saved = await storage.savePlayerState(userId, next);
+    return reply.send(saved);
+  });
+
+  app.post("/enhancement/run/stop", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    const now = new Date();
+    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    const next = await storage.simulateToNow({ userId, state, now, contentPack });
+    stopEnhanceRun(next, now);
+    const saved = await storage.savePlayerState(userId, next);
+    return reply.send(saved);
   });
 
   app.get("/enhancement/info/:itemId", async (req: FastifyRequest<{ Params: { itemId: string } }>, reply: FastifyReply) => {

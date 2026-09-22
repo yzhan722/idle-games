@@ -92,6 +92,53 @@
   padding: 16px 0 22px;
 }
 
+/* structured report */
+.offline-modal { max-height: 88vh; overflow-y: auto; }
+.offline-cap { display: block; font-size: 12px; color: #8794a6; margin-top: 2px; }
+.offline-section {
+  text-align: left;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(232, 184, 96, 0.2);
+  border-radius: 12px;
+}
+.offline-section h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #e8b860;
+}
+.offline-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.offline-list li { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #d8e0ea; }
+.offline-list strong { color: #f3e6c8; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.offline-levelup { font-style: normal; color: #8fd39a; margin-left: 6px; }
+.offline-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.offline-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 6px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px; color: #d8e0ea;
+}
+.offline-item strong { color: #f3e6c8; }
+.offline-item.gold { border-color: rgba(232, 184, 96, 0.45); }
+.offline-item-icon { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; }
+.offline-item-icon .t1-art-item, .offline-item-icon .t1-art-missing { width: 22px; height: 22px; font-size: 16px; }
+.offline-status {
+  margin: 4px 0 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: left;
+  color: #aebacb;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+}
+.offline-status.running { color: #8fd39a; border-color: rgba(110, 197, 122, 0.4); }
+.offline-status.stopped { color: #e6b07a; border-color: rgba(230, 154, 76, 0.4); }
+.offline-status small { display: block; margin-top: 4px; color: #8794a6; }
+
 .offline-confirm {
   width: 100%;
   padding: 13px;

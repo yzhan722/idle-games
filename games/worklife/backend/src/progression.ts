@@ -197,7 +197,16 @@ export function ensureDailyQuests(player: EnhancedPlayerState): DailyQuestState 
   const today = todayUTC();
 
   if (!player.dailyQuests || player.dailyQuests.date !== today) {
-    const picks = pickRandom(DAILY_TEMPLATES, 3);
+    // 按玩家阶段过滤模板：第一章通关总收入约 250 金，"消费 2000 金"这类任务要等玩家真有那个量级
+    const earned = (stats.totalGoldEarned as number) || 0;
+    const kills = (stats.totalKills as number) || 0;
+    const eligible = DAILY_TEMPLATES.filter((t) => {
+      if (t.metric === "totalGoldSpent") return earned >= t.target * 2;
+      if (t.metric === "totalKills" && t.target >= 40) return kills >= 20;
+      if (t.target >= 100) return kills >= 10 || earned >= 1000;
+      return true;
+    });
+    const picks = pickRandom(eligible.length >= 3 ? eligible : DAILY_TEMPLATES, 3);
     player.dailyQuests = {
       date: today,
       quests: picks.map((t) => ({

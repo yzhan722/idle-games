@@ -5,8 +5,12 @@ export const EQUIP_SLOT_KEYS = [
   "chest",
   "legs",
   "feet",
+  /** Gloves: the pack ships 14 `slot: "hands"` pieces (MWI has a hands slot too). */
+  "hands",
   "accessory1",
   "accessory2",
+  /** MWI-style tool slot: speeds up one profession's actions, never counts in combat. */
+  "tool",
 ] as const;
 
 export type EquipSlot = (typeof EQUIP_SLOT_KEYS)[number];
@@ -15,6 +19,8 @@ export type EquipItemDef = {
   id: string;
   type?: string;
   slot?: string;
+  toolFor?: string;
+  toolSpeed?: number;
 };
 
 export type EquipResult =
@@ -22,6 +28,10 @@ export type EquipResult =
   | { ok: false; error: string; message: string };
 
 function slotMatchesItem(slot: EquipSlot, item: EquipItemDef): boolean {
+  // Tools can go in the tool slot; a tool that is also a weapon may still be wielded normally.
+  if (slot === "tool") return typeof item.toolFor === "string" && item.toolFor.length > 0;
+  // Pack accessories say slot: "accessory"; either accessory slot takes them.
+  if (item.slot === "accessory" || item.type === "accessory") return slot === "accessory1" || slot === "accessory2";
   if (typeof item.slot === "string" && item.slot.length > 0) {
     return item.slot === slot;
   }

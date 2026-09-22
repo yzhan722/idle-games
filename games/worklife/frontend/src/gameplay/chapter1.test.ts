@@ -1,0 +1,66 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { nextChapter1Goal } from "./chapter1";
+
+describe("chapter 1 next goal", () => {
+  it("starts with chop, then board, sword, equip, slime", () => {
+    assert.equal(nextChapter1Goal({ inventory: {} }).id, "chop");
+    assert.equal(nextChapter1Goal({ inventory: { wood_1: 2 } }).id, "board");
+    assert.equal(nextChapter1Goal({ inventory: { wood_1: 0, lumber_1: 3 } }).id, "sword");
+    assert.equal(
+      nextChapter1Goal({ inventory: { weapon_wooden_sword: 1 }, equipment: {} }).id,
+      "equip_sword"
+    );
+    assert.equal(
+      nextChapter1Goal({
+        inventory: { weapon_wooden_sword: 1 },
+        equipment: { main_hand: "weapon_wooden_sword" },
+        stats: { totalKills: 0 },
+      }).id,
+      "first_kill"
+    );
+  });
+
+  it("asks for a build after the first kill, then three archetypes, then chest, then boss", () => {
+    const base = {
+      inventory: { weapon_wooden_sword: 1, armor_wood_chest: 0 },
+      equipment: { main_hand: "weapon_wooden_sword" as const },
+      stats: { totalKills: 1, killsByMonster: { slime: 1 } },
+    };
+    assert.equal(nextChapter1Goal(base).id, "build");
+    assert.equal(nextChapter1Goal({ ...base, chapter1Build: "thick_bark" }).id, "archetypes");
+    assert.equal(
+      nextChapter1Goal({
+        ...base,
+        chapter1Build: "thick_bark",
+        stats: { totalKills: 4, killsByMonster: { slime: 1, crab: 1, monkey: 1 } },
+      }).id,
+      "chest"
+    );
+    assert.equal(
+      nextChapter1Goal({
+        inventory: { weapon_wooden_sword: 1, armor_wood_chest: 1 },
+        equipment: { main_hand: "weapon_wooden_sword", chest: "armor_wood_chest" },
+        chapter1Build: "thick_bark",
+        stats: {
+          totalKills: 5,
+          killsByMonster: { slime: 1, crab: 1, monkey: 1 },
+        },
+      }).id,
+      "boss"
+    );
+    assert.equal(
+      nextChapter1Goal({
+        inventory: { weapon_wooden_sword: 1, armor_wood_chest: 1 },
+        equipment: { main_hand: "weapon_wooden_sword", chest: "armor_wood_chest" },
+        chapter1Build: "thick_bark",
+        stats: {
+          totalKills: 6,
+          totalBossKills: 1,
+          killsByMonster: { slime: 1, crab: 1, monkey: 1, forest_boss: 1 },
+        },
+      }).id,
+      "complete"
+    );
+  });
+});

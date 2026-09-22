@@ -13,8 +13,10 @@ import type {
   TradingMessage,
   EnhancementRequest,
   EnhancementResult,
+  EnhancementInfo,
   EnhancementServiceRequest,
-  EnhancementProvider
+  EnhancementProvider,
+  PlayerStats
 } from "./types";
 import { randomUUID } from "crypto";
 import path from "path";
@@ -24,6 +26,7 @@ import { createMemoryStorage } from "./storage_memory";
 // 注：progression2 也会从本模块导入 appendLog/ensurePlayerExtensions，
 // 二者均仅在函数体内（运行时）相互引用，故此循环依赖在求值期是安全的。
 import { getReputationBonuses, getPrestigeMultiplier } from "./progression2";
+import { enhancementStatMultiplier } from "./enhancement_math";
 
 // 存储接口类型定义
 export interface Storage {
@@ -65,20 +68,15 @@ export interface Storage {
     userId: string;
     request: EnhancementRequest;
     contentPack: EnhancedContentPack;
+    /** Test-only deterministic roll; API callers omit it. */
+    rng?: () => number;
   }): Promise<EnhancementResult>;
   
   getEnhancementInfo(params: {
     userId: string;
     itemId: string;
     contentPack: EnhancedContentPack;
-  }): Promise<{
-    currentLevel: number;
-    maxLevel: number;
-    nextLevelCost: Record<string, number>;
-    successRate: number;
-    canEnhance: boolean;
-    requiredProfession?: string;
-  }>;
+  }): Promise<EnhancementInfo>;
   
   getEnhancementProviders(params: {
     itemType: string;
@@ -196,6 +194,8 @@ export interface Storage {
   
   // 交易系统方法
   getTradingOrders(params: { itemId: string }): Promise<TradingOrder[]>;
+  /** MWI market overview: best ask / bid and depth for every item with open orders. */
+  getMarketSummary(): Promise<Record<string, MarketQuote>>;
   createTradingOrder(params: {
     userId: string;
     itemId: string;
@@ -222,6 +222,31 @@ export interface TradingOrder {
   type: 'sell' | 'buy';
   createdAt: string;
   username?: string;
+}
+
+/** Best prices for one item: lowest ask (someone selling) and highest bid (someone buying). */
+export interface MarketQuote {
+  ask?: number;
+  askQty: number;
+  bid?: number;
+  bidQty: number;
+}
+
+/** Fold an order list into per-item quotes (shared by the memory store and tests). */
+export function summarizeOrders(orders: Iterable<Pick<TradingOrder, "itemId" | "type" | "price" | "quantity">>): Record<string, MarketQuote> {
+  const out: Record<string, MarketQuote> = {};
+  for (const o of orders) {
+    if (o.quantity <= 0) continue;
+    const q = (out[o.itemId] ||= { askQty: 0, bidQty: 0 });
+    if (o.type === "sell") {
+      q.askQty += o.quantity;
+      if (q.ask === undefined || o.price < q.ask) q.ask = o.price;
+    } else {
+      q.bidQty += o.quantity;
+      if (q.bid === undefined || o.price > q.bid) q.bid = o.price;
+    }
+  }
+  return out;
 }
 
 export async function createStorage(opts: { databaseUrl?: string }): Promise<Storage> {
@@ -281,9 +306,8 @@ export function defaultEnhancedPlayerState(contentVersion: string): EnhancedPlay
     lastSimulatedAt: now,
     activeClassId: "woodcutter",
     mode: "idle",
-    // 新手启动礼包：给少量金币 + 刚好够做第一把木剑的材料(lumber_1 ×3)，
-    // 让玩家进游戏就能立刻产出第一件装备并体验商店，加快首次正反馈。
-    inventory: { gold: 50, wood_1: 4, lumber_1: 3 },
+    // 新手从零开始：第一根木头必须自己砍。金币从战斗/目标来，不预置木板跳过伐木循环。
+    inventory: { gold: 0 },
     combatLevel: 1, // 战斗等级初始为1
     combatXp: 0, // 战斗经验初始为0
     equipment: {
@@ -296,7 +320,7 @@ export function defaultEnhancedPlayerState(contentVersion: string): EnhancedPlay
       skill_woodcutter: {
         level: 1,
         xp: 0,
-        unlockedRecipes: ["woodcutter_basic_cutting"],
+        unlockedRecipes: ["woodcutter_basic_cutting", "woodcutter_armor_crafting"],
         enhancementLevel: 0
       },
       skill_blacksmith: {
@@ -327,6 +351,13 @@ export function defaultEnhancedPlayerState(contentVersion: string): EnhancedPlay
         level: 1,
         xp: 0,
         unlockedRecipes: ["alchemist_basic_brewing"],
+        enhancementLevel: 0
+      },
+      // MWI: Enhancing is its own non-combat skill, not a profession unlock.
+      skill_enhancing: {
+        level: 1,
+        xp: 0,
+        unlockedRecipes: [],
         enhancementLevel: 0
       }
     },
@@ -392,6 +423,13 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
   }
   if (!player.achievements) player.achievements = {};
   if (!player.settings) player.settings = defaultPlayerSettings();
+  const { ensureEnhancingSkill } = require("./enhancement_math") as typeof import("./enhancement_math");
+  ensureEnhancingSkill(player);
+  // MWI combat skills / abilities (lazy require: these modules import helpers from this file).
+  const { ensureCombatSkills } = require("./combat_skills") as typeof import("./combat_skills");
+  const { ensureAbilities } = require("./abilities") as typeof import("./abilities");
+  ensureCombatSkills(player);
+  ensureAbilities(player);
   return player;
 }
 
@@ -539,12 +577,14 @@ export function getEquippedCombatStats(
   const findItem = (id: string) => items.find((i: any) => i.id === id);
   for (const [slot, itemId] of Object.entries(eq)) {
     if (!itemId || typeof itemId !== "string") continue;
-    if (slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability") continue;
+    if (slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability" || slot === "tool") continue;
     const item = findItem(itemId);
     if (!item) continue;
     const enhLevel = (eq.enhancementLevels && eq.enhancementLevels[itemId]) || 0;
-    const mult = 1 + enhLevel * 0.1; // 强化每级 +10%
+    const mult = enhancementStatMultiplier(enhLevel, item);
     if (item.atk) atk += item.atk * mult;
+    // 法杖类以 mag 记伤害；MWI 里魔法伤害与物理伤害同一条路径
+    if (item.mag) atk += item.mag * mult;
     if (item.def) def += item.def * mult;
   }
   // 套装加成
@@ -611,10 +651,207 @@ export type SimulateResult = {
   state: PlayerState | EnhancedPlayerState;
 };
 
+export type ActionRates = {
+  isCombatAct: boolean;
+  hasConsumesAct: boolean;
+  /** Multiplier applied to base duration (1.25 = 25% faster). */
+  speedMul: number;
+  effectiveDurationMs: number;
+  /** MWI-style efficiency: chance/count of free instant repeats per completed cycle, in percent. */
+  efficiencyPct: number;
+  /** Where the bonuses come from, for the action panel. */
+  speedSources: Array<{ label: string; pct: number }>;
+  efficiencySources: Array<{ label: string; pct: number }>;
+  xpMul: number;
+  goldMul: number;
+  defGoldMul: number;
+  setBuffs: ReturnType<typeof getEquippedProductionBuffs>;
+  repBuffs: ReturnType<typeof getReputationBonuses>;
+  prestigeMul: number;
+};
+
+/** Sum of an equipment stat (e.g. `efficiency`, `gatherSpeed`) across equipped items, with enhancement. */
+function equippedStatSum(player: EnhancedPlayerState, pack: EnhancedContentPack, stat: string): number {
+  const eq = player.equipment as any;
+  if (!eq) return 0;
+  const items: any[] = (pack as any)?.items || [];
+  let total = 0;
+  for (const [slot, itemId] of Object.entries(eq)) {
+    if (!itemId || typeof itemId !== "string") continue;
+    if (slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability" || slot === "tool") continue;
+    const item = items.find((i: any) => i.id === itemId);
+    const v = Number(item?.[stat] ?? item?.stats?.[stat] ?? 0);
+    if (!v) continue;
+    const enh = (eq.enhancementLevels && eq.enhancementLevels[itemId]) || 0;
+    total += v * enhancementStatMultiplier(enh, item);
+  }
+  return total;
+}
+
+/**
+ * Everything that changes how fast / how often an action completes for this player, in one place.
+ * Used by the simulator and by GET /actions/preview so the panel and the server never disagree.
+ *
+ * Speed follows the existing multiplicative buff/set/reputation model. Efficiency follows MWI:
+ * +1% per skill level above the action's requirement, plus equipment `efficiency`, plus a buff
+ * `efficiency` percentage if present; guaranteed repeats = floor(eff/100), remainder is a chance.
+ * Efficiency never applies to combat actions.
+ */
+export function getActionRates(
+  player: EnhancedPlayerState,
+  pack: EnhancedContentPack,
+  action: any,
+  now: Date
+): ActionRates {
+  const buffEff = getBuffEffects(player, now);
+  const isCombatAct = typeof action.id === "string" && action.id.startsWith("act_combat_");
+  const hasConsumesAct = Array.isArray(action.consumes) && action.consumes.length > 0;
+  const equipStats = isCombatAct ? getEquippedCombatStats(player, pack) : { atk: 0, def: 0 };
+  // ATK→战斗加速：每点 ATK +0.5% 速度，最高 +200%（3 倍速）；DEF→战斗金币 +0.4%/点，最高 +150%
+  const atkSpeedMul = isCombatAct ? Math.min(3, 1 + equipStats.atk * 0.005) : 1;
+  const defGoldMul = isCombatAct ? Math.min(2.5, 1 + equipStats.def * 0.004) : 1;
+  const setBuffs = getEquippedProductionBuffs(player, pack);
+  const repBuffs = getReputationBonuses(player);
+  const prestigeMul = getPrestigeMultiplier(player);
+  const lane = isCombatAct ? "combatSpeed" : hasConsumesAct ? "craftSpeed" : "gatherSpeed";
+  const buffSpeed = (buffEff as any)[lane] as number;
+  const setSpeed = (setBuffs as any)[lane] as number;
+  const repSpeed = (repBuffs as any)[lane] as number;
+  // MWI tool speed: the equipped tool speeds up its own profession's skilling actions (not combat).
+  const toolId = (player.equipment as any)?.tool as string | undefined;
+  const toolDef = toolId ? ((pack as any).items as any[]).find((i) => i.id === toolId) : undefined;
+  const toolApplies = !!toolDef && !isCombatAct && toolDef.toolFor === action.skillId && Number(toolDef.toolSpeed) > 0;
+  const toolEnh = toolApplies ? Number((player.equipment as any)?.enhancementLevels?.[toolId!] || 0) : 0;
+  const toolSpeedMul = toolApplies
+    ? 1 + Number(toolDef.toolSpeed) * enhancementStatMultiplier(toolEnh, toolDef)
+    : 1;
+  const speedMul = buffSpeed * atkSpeedMul * setSpeed * repSpeed * toolSpeedMul;
+  const effectiveDurationMs = Math.max(1, Number(action.duration || 0) / (speedMul || 1));
+
+  const speedSources: Array<{ label: string; pct: number }> = [];
+  const pushPct = (arr: typeof speedSources, label: string, mul: number) => {
+    const pct = Math.round((mul - 1) * 1000) / 10;
+    if (Math.abs(pct) >= 0.05) arr.push({ label, pct });
+  };
+  if (toolApplies) pushPct(speedSources, `工具 · ${toolDef.name}`, toolSpeedMul);
+  pushPct(speedSources, "增益", buffSpeed);
+  pushPct(speedSources, "套装", setSpeed);
+  pushPct(speedSources, "声望", repSpeed);
+  if (isCombatAct) pushPct(speedSources, "攻击力", atkSpeedMul);
+
+  const { houseLevelForSkill, roomForSkill, HOUSE_EFFICIENCY_PER_LEVEL, HOUSE_XP_PER_LEVEL } =
+    require("./houses") as typeof import("./houses");
+  const houseLevel = isCombatAct ? 0 : houseLevelForSkill(player, action.skillId);
+  const houseRoomName = roomForSkill(action.skillId)?.name || "";
+
+  const efficiencySources: Array<{ label: string; pct: number }> = [];
+  let efficiencyPct = 0;
+  if (!isCombatAct) {
+    const reqLevel = Number(action.requirements?.skillLevel || 1);
+    const skillLevel = Number(player.skills?.[action.skillId]?.level || 1);
+    const levelBonus = Math.max(0, skillLevel - reqLevel);
+    if (levelBonus > 0) efficiencySources.push({ label: `等级高出 ${levelBonus} 级`, pct: levelBonus });
+    const gearEff = equippedStatSum(player, pack, "efficiency");
+    if (gearEff > 0) efficiencySources.push({ label: "装备", pct: Math.round(gearEff * 10) / 10 });
+    const buffEffPct = Number((buffEff as any).efficiency || 0);
+    if (buffEffPct > 0) efficiencySources.push({ label: "增益", pct: buffEffPct });
+    if (houseLevel > 0) efficiencySources.push({ label: `房屋 · ${houseRoomName}`, pct: houseLevel * HOUSE_EFFICIENCY_PER_LEVEL });
+    efficiencyPct = efficiencySources.reduce((s, x) => s + x.pct, 0);
+  }
+
+  // MWI house: the skill's room adds +1% XP per level (combat XP goes through hp_combat instead).
+  const houseXpMul = !isCombatAct && houseLevel > 0 ? 1 + houseLevel * HOUSE_XP_PER_LEVEL : 1;
+  const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul;
+  // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成
+  const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul;
+  return { isCombatAct, hasConsumesAct, speedMul, effectiveDurationMs, efficiencyPct, speedSources, efficiencySources, xpMul, goldMul, defGoldMul, setBuffs, repBuffs, prestigeMul };
+}
+
+/**
+ * MWI Rare Find: a multiplier on the base chance of any sub-100% yield / rare drop.
+ * Sources add together (equipment `rareFind` percent, buff `rareFind`), then apply as ×(1 + total/100).
+ * A 0.5% base drop with +10% rare find becomes 0.55%, never 10.5%.
+ */
+export function getRareFindMultiplier(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date = new Date()): number {
+  const gear = equippedStatSum(player, pack, "rareFind");
+  const buffs = getBuffEffects(player, now) as unknown as { rareFind?: number };
+  // MWI house: 训练场 adds +1% rare find per level.
+  const { houseLevelForSkill, HOUSE_RARE_FIND_PER_LEVEL } = require("./houses") as typeof import("./houses");
+  const house = houseLevelForSkill(player, "skill_combat") * HOUSE_RARE_FIND_PER_LEVEL;
+  const total = gear + Number(buffs.rareFind || 0) + house;
+  return Math.max(0, 1 + total / 100);
+}
+
+/** Free repeats granted by efficiency for one completed time-cycle. */
+export function efficiencyRepeats(efficiencyPct: number, rng: () => number = Math.random): number {
+  if (!(efficiencyPct > 0)) return 0;
+  const guaranteed = Math.floor(efficiencyPct / 100);
+  const chance = (efficiencyPct % 100) / 100;
+  return guaranteed + (rng() < chance ? 1 : 0);
+}
+
+export const ACTION_QUEUE_MAX = 5;
+
+/**
+ * Why a queued action cannot start right now (undefined = it can).
+ * Shared by the queue API (to reject early) and by the simulator (to skip while offline).
+ */
+export function queuedActionBlocker(
+  state: EnhancedPlayerState,
+  pack: EnhancedContentPack,
+  actionId: string
+): string | undefined {
+  const action = (pack.actions as any[]).find((a) => a.id === actionId) as any;
+  if (!action) return "unknown_action";
+  if (typeof action.id === "string" && action.id.startsWith("act_combat_")) return "combat_not_queueable";
+  const reqLevel = action.requirements?.skillLevel || 1;
+  if (reqLevel > 1 && (state.skills[action.skillId]?.level || 0) < reqLevel) return `skill_level_required:${reqLevel}`;
+  if (Array.isArray(action.consumes)) {
+    for (const c of action.consumes) {
+      if ((state.inventory[c.itemId] || 0) < c.qty) return `missing_material:${c.itemId}`;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Pop queue items until one can start; start it at `at` (the exact moment the previous action ended).
+ * Items that cannot start (materials gone, level too low) are dropped with a log line, like MWI.
+ */
+export function startNextQueuedAction(
+  state: EnhancedPlayerState,
+  pack: EnhancedContentPack,
+  at: Date
+): boolean {
+  if (!Array.isArray(state.activityQueue)) state.activityQueue = [];
+  while (state.activityQueue.length > 0) {
+    const item = state.activityQueue.shift()!;
+    const action = (pack.actions as any[]).find((a) => a.id === item.actionId) as any;
+    const blocker = queuedActionBlocker(state, pack, item.actionId);
+    if (blocker) {
+      const why = blocker.startsWith("missing_material") ? "材料不足" : blocker.startsWith("skill_level") ? "等级不足" : "无法开始";
+      appendLog(state, `队列跳过：${action?.name || item.actionId}（${why}）`);
+      continue;
+    }
+    const qty = typeof item.quantity === "number" && item.quantity > 0 ? Math.min(Math.floor(item.quantity), 5000) : undefined;
+    state.mode = "life_action";
+    state.lifeActionState = {
+      actionId: item.actionId,
+      startedAt: at.toISOString(),
+      ...(qty !== undefined ? { quantity: qty, remaining: qty } : {}),
+    };
+    appendLog(state, qty !== undefined ? `队列：开始 ${action.name} ×${qty}` : `队列：开始 ${action.name}`);
+    return true;
+  }
+  return false;
+}
+
 export function simulateToNow(input: { 
   state: PlayerState | EnhancedPlayerState; 
   now: Date; 
-  contentPack: ContentPack | EnhancedContentPack 
+  contentPack: ContentPack | EnhancedContentPack;
+  /** Injectable for deterministic tests (efficiency repeats, chance yields). */
+  rng?: () => number;
 }): SimulateResult {
   const next = { ...input.state } as EnhancedPlayerState;
   const lastSimulated = new Date(next.lastSimulatedAt);
@@ -631,15 +868,32 @@ export function simulateToNow(input: {
     return { state: next };
   }
 
-  // 小于 1 秒的轮询不得把 lastSimulatedAt 推到“现在”，否则长制作会被拆碎后永远完不成。
-  if (timeDiff < 1000) {
+  // MWI 任务板：按冷却发任务，离线期间也会填满空槽
+  {
+    const { ensureTasks } = require("./tasks") as typeof import("./tasks");
+    ensureTasks(next, input.contentPack as EnhancedContentPack, input.now, input.rng);
+  }
+
+  // Tick a running fight, or a finished one that auto-repeat is about to restart.
+  const hpc = next.hpCombat;
+  const awaitingRepeat = !!(hpc && hpc.outcome === "win" && next.combatLoadout?.autoRepeat && hpc.nextFightAt);
+  if (hpc && (!hpc.outcome || awaitingRepeat) && timeDiff > 0) {
+    const { tickHpCombat } = require("./hp_combat") as typeof import("./hp_combat");
+    tickHpCombat(next, input.contentPack as EnhancedContentPack, input.now, timeDiff, input.rng);
+  }
+
+  // 进度以 lifeActionState.startedAt 为锚，所以任意频率的轮询都不会丢进度；这里只挡住
+  // 极高频的重复请求。HP 战斗必须吃掉亚秒 tick，否则 250ms 轮询打不出伤害。
+  if (timeDiff < 100) {
+    if (next.hpCombat) {
+      next.lastSimulatedAt = input.now.toISOString();
+    }
     return { state: next };
   }
 
   let advanceClock = true;
 
   // 清理过期 Buff 并汇总当前增益效果（用于离线/挂机结算）
-  const buffEff = getBuffEffects(next, input.now);
   pruneExpiredBuffs(next, input.now);
   // 离线收益上限：从 8 小时提升至 24 小时，覆盖“睡一觉/上一天班”的真实离线场景
   const maxOfflineTime = 24 * 60 * 60 * 1000; // 24小时
@@ -650,51 +904,34 @@ export function simulateToNow(input: {
   // 限制实际计算的时间差
   const effectiveTimeDiff = Math.min(timeDiff, maxOfflineTime);
   
+  // 队列推进时记录当前动作精确结束的时刻，让离线时间窗剩余部分继续给下一个动作
+  let finishedAt: Date | null = null;
+
+  // MWI 强化计时动作：结算到 now（受 24h 离线上限约束）的每一次尝试
+  if (next.enhanceRun && !next.enhanceRun.outcome) {
+    const { tickEnhanceRun } = require("./enhancement_run") as typeof import("./enhancement_run");
+    const untilMs = Math.min(input.now.getTime(), lastSimulated.getTime() + maxOfflineTime);
+    const ended = tickEnhanceRun(next, input.contentPack as EnhancedContentPack, untilMs, input.rng);
+    if (ended) finishedAt = ended;
+  }
+
   // 处理职业活动的离线进度
   if (next.mode === 'life_action' && next.lifeActionState) {
     const actionStartTime = new Date(next.lifeActionState.startedAt);
-    const actionDuration = effectiveTimeDiff;
+    // 以 startedAt（当前这一轮的真实开始时刻）为锚计算进度，而不是上次结算时刻：
+    // 否则每次轮询完成一轮后，剩下的零头都会被丢掉，5 秒的动作在 1 秒轮询下会变成 5~6 秒。
+    const sinceCycleStart = Math.max(0, input.now.getTime() - actionStartTime.getTime());
+    const actionDuration = Math.min(sinceCycleStart, maxOfflineTime);
     
     // 查找动作定义
     const contentPack = input.contentPack as EnhancedContentPack;
     const action = contentPack.actions.find((a: any) => a.id === next.lifeActionState!.actionId) as any;
     
     if (action && action.duration) {
-      // 根据动作类型选择对应的 Buff 速度倍率，缩短有效时长（速度越快，单次耗时越短）
-      const isCombatAct = typeof action.id === "string" && action.id.startsWith("act_combat_");
-      const hasConsumesAct = Array.isArray(action.consumes) && action.consumes.length > 0;
-      // 装备属性参与战斗：ATK 提升战斗速度、DEF 提升战斗金币收益，让装备不再是死属性。
-      const equipStats = isCombatAct
-        ? getEquippedCombatStats(next, contentPack)
-        : { atk: 0, def: 0 };
-      // ATK→战斗加速：每点 ATK +0.5% 速度，最高 +200%（3 倍速）；与战斗速度 Buff 叠乘。
-      const atkSpeedMul = isCombatAct ? Math.min(3, 1 + equipStats.atk * 0.005) : 1;
-      // DEF→战斗金币加成：每点 DEF +0.4% 金币，最高 +150%。
-      const defGoldMul = isCombatAct ? Math.min(2.5, 1 + equipStats.def * 0.004) : 1;
-      // 套装生产型增益：让集齐整套装备对采集/制作/战斗速度、经验、金币产生真实加成。
-      const setBuffs = getEquippedProductionBuffs(next, contentPack);
-      // 声望永久被动加成（累计声望等级提供的全局增益）。
-      const repBuffs = getReputationBonuses(next);
-      // 转生全局倍率（作用于金币与经验，体现“重开换永久强度”）。
-      const prestigeMul = getPrestigeMultiplier(next);
-      const setSpeedMul =
-        (isCombatAct
-          ? setBuffs.combatSpeed * repBuffs.combatSpeed
-          : hasConsumesAct
-          ? setBuffs.craftSpeed * repBuffs.craftSpeed
-          : setBuffs.gatherSpeed * repBuffs.gatherSpeed);
-      const speedMul =
-        (isCombatAct
-          ? buffEff.combatSpeed
-          : hasConsumesAct
-          ? buffEff.craftSpeed
-          : buffEff.gatherSpeed) * atkSpeedMul * setSpeedMul;
-      const effectiveDuration = Math.max(1, action.duration / (speedMul || 1));
+      const rates = getActionRates(next, contentPack, action, input.now);
+      const effectiveDuration = rates.effectiveDurationMs;
       // 计算可以完成多少次动作
       const completedCycles = Math.floor(actionDuration / effectiveDuration);
-      if (completedCycles === 0) {
-        advanceClock = false;
-      }
       
       if (completedCycles > 0) {
         // 限制离线进度，最多8小时的收益
@@ -720,8 +957,16 @@ export function simulateToNow(input: {
         const totalRewards: Record<string, number> = {};
         // 实际完成的次数（可能因材料不足或剩余次数限制而提前结束）
         let actuallyCompleted = 0;
+        // 消耗掉的时间周期数：效率触发的免费重复不占时间，所以要和完成次数分开记
+        let timeCyclesUsed = 0;
+        let bonusCompletions = 0;
+        const rng = input.rng || Math.random;
         
-        for (let i = 0; i < safeCycles; i++) {
+        const rareFindMul = getRareFindMultiplier(next, contentPack, input.now);
+        cycles: while (timeCyclesUsed < safeCycles) {
+          timeCyclesUsed += 1;
+          const repeats = 1 + efficiencyRepeats(rates.efficiencyPct, rng);
+          for (let r = 0; r < repeats; r++) {
           // 检查材料需求
           let canComplete = true;
           if (action.consumes && Array.isArray(action.consumes)) {
@@ -734,8 +979,9 @@ export function simulateToNow(input: {
             }
           }
           
-          if (!canComplete) break;
+          if (!canComplete) break cycles;
           actuallyCompleted += 1;
+          if (r > 0) bonusCompletions += 1;
           
           // 消耗材料
           if (action.consumes && Array.isArray(action.consumes)) {
@@ -748,6 +994,9 @@ export function simulateToNow(input: {
           const isCombat = typeof action.id === 'string' && action.id.startsWith('act_combat_');
           const hasConsumes = Array.isArray(action.consumes) && action.consumes.length > 0;
           stats.totalActions += 1;
+          // Per-action tally: MWI-style tasks ("砍伐小白杨 ×120") read their progress from here.
+          if (!stats.actionsById) stats.actionsById = {};
+          stats.actionsById[action.id] = (stats.actionsById[action.id] || 0) + 1;
           if (isCombat) {
             stats.totalKills += 1;
             const monId: string | undefined = action.monsterId || action.targetId;
@@ -770,19 +1019,13 @@ export function simulateToNow(input: {
               const currentTotal = totalRewards[yield_.itemId] || 0;
               if (currentTotal >= MAX_ITEM_OUTPUT) continue;
               
-              const chance = yield_.chance || 1.0;
-              if (Math.random() <= chance) {
+              const baseChance = yield_.chance || 1.0;
+              const chance = baseChance < 1 ? Math.min(1, baseChance * rareFindMul) : 1;
+              if (rng() <= chance) {
                 // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成
                 const baseQty =
                   yield_.itemId === 'gold'
-                    ? Math.round(
-                        yield_.qty *
-                          (buffEff.goldGain || 1) *
-                          defGoldMul *
-                          setBuffs.goldGain *
-                          repBuffs.goldGain *
-                          prestigeMul
-                      )
+                    ? Math.round(yield_.qty * rates.goldMul)
                     : yield_.qty;
                 const addAmount = Math.min(baseQty, MAX_ITEM_OUTPUT - currentTotal);
                 const currentAmount = next.inventory[yield_.itemId] || 0;
@@ -802,7 +1045,7 @@ export function simulateToNow(input: {
           // 给予经验（受 xpGain Buff 影响，并叠加套装/声望经验增益与转生全局倍率）
           if (action.xp && action.skillId) {
             const gainedXp = Math.round(
-              action.xp * (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul
+              action.xp * rates.xpMul
             );
             // 统计：累计经验
             stats.totalXpEarned += gainedXp;
@@ -810,26 +1053,10 @@ export function simulateToNow(input: {
             const isCombatAction = action.id.startsWith('act_combat_');
             
             if (isCombatAction) {
-              // 战斗动作增加战斗经验
-              if (!next.combatXp) next.combatXp = 0;
-              if (!next.combatLevel) next.combatLevel = 1;
-              
-              next.combatXp += gainedXp;
-              
-              // 检查战斗等级升级
-              let levelUpXp = getXpForLevel(next.combatLevel);
-              while (next.combatXp >= levelUpXp && next.combatLevel < 200) {
-                next.combatLevel += 1;
-                next.combatXp -= levelUpXp;
-                appendLog(next, `战斗等级升级到 ${next.combatLevel} 级！`);
-                levelUpXp = getXpForLevel(next.combatLevel);
-              }
-              
-              // 如果达到满级，保留多余经验但不再升级
-              if (next.combatLevel >= 200) {
-                next.combatLevel = 200;
-                appendLog(next, `战斗等级已达到满级 200 级！`);
-              }
+              // 战斗动作：按 MWI 30/70 规则分给五条战斗技能，战斗等级由其推导
+              const { grantCombatXp } = require("./combat_skills") as typeof import("./combat_skills");
+              grantCombatXp(next, gainedXp, input.contentPack);
+              next.combatXp = (next.combatXp || 0) + gainedXp;
             } else {
               // 非战斗动作增加职业经验
               const playerSkill = next.skills[action.skillId];
@@ -853,6 +1080,9 @@ export function simulateToNow(input: {
               }
             }
           }
+          // 批量：完成次数达到剩余次数就停，哪怕这一周期的效率重复还没用完
+          if (requestedRemaining !== undefined && actuallyCompleted >= requestedRemaining) break cycles;
+          }
         }
         
         // 记录收益
@@ -860,7 +1090,8 @@ export function simulateToNow(input: {
           const rewardText = Object.entries(totalRewards)
             .map(([itemId, qty]) => `${itemId} x${qty}`)
             .join(', ');
-          appendLog(next, `完成 ${actuallyCompleted} 次 ${action.name}，获得：${rewardText}`);
+          const bonusText = bonusCompletions > 0 ? `（效率额外 ${bonusCompletions} 次）` : '';
+          appendLog(next, `完成 ${actuallyCompleted} 次 ${action.name}${bonusText}，获得：${rewardText}`);
         }
 
         // 批量制作：扣减剩余次数
@@ -888,21 +1119,34 @@ export function simulateToNow(input: {
             }
             next.mode = 'idle';
             next.lifeActionState = undefined;
+            finishedAt = new Date(actionStartTime.getTime() + timeCyclesUsed * effectiveDuration);
+          }
+        } else if (action.consumes && Array.isArray(action.consumes)) {
+          // 无限制作：下一轮材料不够就停下（银河奶牛的做法），让队列能接上下一个动作，
+          // 也避免顶栏一直转却什么都不产出
+          let materialsExhausted = false;
+          for (const consume of action.consumes) {
+            if ((next.inventory[consume.itemId] || 0) < consume.qty) {
+              materialsExhausted = true;
+              break;
+            }
+          }
+          if (materialsExhausted) {
+            appendLog(next, `材料不足，已停止：${action.name}`);
+            next.mode = 'idle';
+            next.lifeActionState = undefined;
+            finishedAt = new Date(actionStartTime.getTime() + timeCyclesUsed * effectiveDuration);
           }
         }
 
-        // 更新动作开始时间（若动作仍在进行）
+        // 更新动作开始时间（若动作仍在进行）：把没走完的零头留给下一轮
         if (next.lifeActionState) {
-          const remainingTime = actionDuration % effectiveDuration;
+          const remainingTime = actionDuration - timeCyclesUsed * effectiveDuration;
           next.lifeActionState.startedAt = new Date(input.now.getTime() - remainingTime).toISOString();
         }
       } else {
-        // 一次都没完成：若是材料不足导致的批量制作，也应停止，避免卡在 life_action 模式
-        if (
-          typeof next.lifeActionState.remaining === 'number' &&
-          action.consumes &&
-          Array.isArray(action.consumes)
-        ) {
+        // 一次都没完成：若是材料不足导致的制作，也应停止，避免卡在 life_action 模式
+        if (action.consumes && Array.isArray(action.consumes)) {
           let materialsExhausted = false;
           for (const consume of action.consumes) {
             if ((next.inventory[consume.itemId] || 0) < consume.qty) {
@@ -914,9 +1158,21 @@ export function simulateToNow(input: {
             appendLog(next, `材料不足，无法制作：${action.name}`);
             next.mode = 'idle';
             next.lifeActionState = undefined;
+            finishedAt = actionStartTime;
           }
         }
       }
+    }
+  }
+
+  // 行动队列：当前动作结束后，立刻从结束时刻接上下一个动作，并把时间窗剩余部分继续结算
+  if (next.mode !== 'life_action' && finishedAt && Array.isArray(next.activityQueue) && next.activityQueue.length > 0) {
+    const startAt: Date = finishedAt;
+    if (startNextQueuedAction(next, input.contentPack as EnhancedContentPack, startAt)) {
+      next.lastSimulatedAt = startAt.toISOString();
+      addPlaytime(stats, startAt.getTime() - lastSimulated.getTime());
+      if ((next.combatLevel || 1) > stats.highestCombatLevel) stats.highestCombatLevel = next.combatLevel || 1;
+      return simulateToNow({ state: next, now: input.now, contentPack: input.contentPack, rng: input.rng });
     }
   }
 
@@ -930,10 +1186,17 @@ export function simulateToNow(input: {
   }
   if (advanceClock) {
     next.lastSimulatedAt = input.now.toISOString();
-    stats.playtimeSeconds += Math.floor(Math.min(timeDiff, maxOfflineTime) / 1000);
+    addPlaytime(stats, Math.min(timeDiff, maxOfflineTime));
   }
   
   return { state: next };
+}
+
+/** Accumulate playtime in ms so sub-second polls do not floor away to nothing. */
+function addPlaytime(stats: PlayerStats, ms: number) {
+  const total = Math.max(0, ms) + (stats.playtimeCarryMs || 0);
+  stats.playtimeSeconds += Math.floor(total / 1000);
+  stats.playtimeCarryMs = total % 1000;
 }
 
 // 交易行相关工具函数
@@ -1001,36 +1264,3 @@ export function addPartyMember(party: Party, userId: string, role: string = 'mem
   };
 }
 
-// 装备强化相关工具函数
-export function calculateEnhancementSuccess(
-  currentLevel: number,
-  targetLevel: number,
-  baseSuccessRate: number = 0.8
-): number {
-  // 等级越高，成功率越低
-  const levelPenalty = Math.pow(0.9, targetLevel - currentLevel);
-  return Math.max(0.1, baseSuccessRate * levelPenalty);
-}
-
-export function calculateEnhancementCost(
-  itemType: string,
-  currentLevel: number,
-  targetLevel: number
-): Record<string, number> {
-  // 基础材料需求，根据物品类型和等级计算
-  const baseCost = Math.pow(2, targetLevel - currentLevel);
-  
-  // 根据物品类型确定所需材料
-  const materialMap: Record<string, string> = {
-    'weapon': 'ingot_1',
-    'armor': 'ingot_1',
-    'tool': 'lumber_1',
-    'accessory': 'crystal_1'
-  };
-  
-  const materialId = materialMap[itemType] || 'crystal_1';
-  return {
-    [materialId]: baseCost,
-    gold: baseCost * 100
-  };
-}

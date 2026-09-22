@@ -89,7 +89,7 @@ export async function equipmentRoutes(
       state.inventory as Record<string, number>,
       body.slot,
       body.itemId,
-      contentPack.items as Array<{ id: string; type?: string; slot?: string }>
+      contentPack.items as Array<{ id: string; type?: string; slot?: string; toolFor?: string }>
     );
     if (!check.ok) return reply.status(400).send({ error: check.error, message: check.message });
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { apiClient } from '../services/api';
+import { apiClient } from '../services/api'
+import { setGameSoundEnabled } from '../gameplay/sound';
 import { useToast } from './Toast';
 import './ProgressionPanels.css';
 
@@ -380,6 +381,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     setSettings(next);
     try {
       await apiClient.updateSettings({ [key]: next[key] });
+      if (key === "soundEnabled") setGameSoundEnabled(next.soundEnabled);
       document.body.classList.toggle('compact-mode', next.compactMode);
       document.body.classList.toggle('no-animations', !next.animationsEnabled);
     } catch (e) {

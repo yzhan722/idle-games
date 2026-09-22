@@ -1,12 +1,13 @@
 /* 全局 Toast 通知 —— 深蓝灰主题，青色/琥珀金点缀 */
+/* 放在底部：顶部中央是活动状态栏（进度环 + 停止），toast 不能压在上面 */
 .toast-container {
   position: fixed;
-  top: 18px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 10px;
   pointer-events: none;
   width: max-content;
@@ -66,7 +67,7 @@
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(-14px) scale(0.96);
+    transform: translateY(14px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -74,7 +75,11 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  /* 底部导航 56px + 聊天 FAB 区域之上 */
+  .toast-container {
+    bottom: 124px;
+  }
   .toast-item {
     min-width: 180px;
     font-size: 13px;

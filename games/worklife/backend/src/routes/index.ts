@@ -8,3 +8,6 @@ export { equipmentRoutes } from "./equipment";
 export { progressionRoutes } from "./progression";
 export { progression2Routes } from "./progression2";
 export { systemsRoutes } from "./systems";
+export { combatHpRoutes } from "./combat_hp";
+export { tasksRoutes } from "./tasks";
+export { housesRoutes } from "./houses";

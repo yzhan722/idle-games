@@ -101,6 +101,9 @@ export default function LoginScreen() {
           <p className="login-kicker">异世界の</p>
           <h1 className="login-title">打工生活</h1>
           <p className="login-subtitle">{typedText}</p>
+          <p className="login-tagline">
+            穿越到异世界，没有金手指，只有一把斧头和一片林子。先砍一棵树，把今天的工钱挣出来。
+          </p>
         </div>
 
         <div className="login-field">

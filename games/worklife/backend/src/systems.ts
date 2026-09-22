@@ -263,21 +263,20 @@ export function buyPrice(def: AnyItem): number {
 /**
  * 商店在售商品列表（NPC 提供的基础补给）。
  * 仅出售基础材料/食物/药水，避免破坏高阶装备的产出循环。
+ *
+ * 不卖第一章的产出链本身（wood_1 / lumber_1）：8 金一块木板会让"升到 3 级做木甲"的教学被
+ * 48 金绕过；也不卖 crystal_1（史莱姆的稀有掉落，商店有货就不稀有了）。HP/MP 药水在
+ * 服务端 HP 战斗里没有使用入口且战斗间自动回满，先不上架，避免卖没用的东西。
  */
 export const SHOP_STOCK_IDS = [
-  "wood_1",
   "ore_1",
   "fiber_1",
-  "lumber_1",
   "ingot_1",
-  "crystal_1",
   "wood_2",
   "ore_2",
   "fiber_2",
   "food_simple",
   "drink_basic",
-  "potion_hp_t1",
-  "potion_mp_t1",
   "food_hearty_stew",
   "food_master_feast",
   "potion_craft_focus",

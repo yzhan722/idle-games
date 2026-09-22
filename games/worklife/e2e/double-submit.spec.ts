@@ -1,9 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { guestLogin } from "./helpers";
+import { guestLogin, seedT1 } from "./helpers";
 
 test("E2E-04 double click on craft start hits the backend once", async ({ page }) => {
   await guestLogin(page, `e2e-dbl-${Date.now()}`);
-  await page.getByRole("button", { name: "木工" }).click();
+  await seedT1(page);
+  await page.reload();
+  await page.getByRole("button", { name: "制作" }).click();
   await page.getByText("制作标准木板").first().click();
 
   const starts: string[] = [];

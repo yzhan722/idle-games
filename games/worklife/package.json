@@ -9,10 +9,13 @@
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
     "build": "npm run build --workspace backend && npm run build --workspace frontend",
-    "test": "npm test --workspace backend",
+    "test": "npm test --workspace backend && npx tsx --test frontend/src/gameplay/chapter1.test.ts frontend/src/gameplay/ia.test.ts frontend/src/gameplay/combatSheet.test.ts frontend/src/gameplay/enhancement.test.ts frontend/src/gameplay/craftPreview.test.ts frontend/src/gameplay/encounterLabels.test.ts frontend/src/gameplay/t1Art.test.ts frontend/src/gameplay/sound.test.ts frontend/src/gameplay/skillNav.test.ts frontend/src/gameplay/skillActions.test.ts frontend/src/gameplay/artContract.test.ts frontend/src/gameplay/t1Resolve.test.ts scripts/art-image-meta.test.ts scripts/xp-parity.test.ts scripts/fight-preview-parity.test.ts",
     "test:integration": "npm run test:integration --workspace backend",
     "test:e2e": "playwright test",
-    "verify": "npm run build --workspace backend && npm test --workspace backend && npm run build --workspace frontend && playwright test"
+    "simulate:first-hour": "tsx scripts/simulate-first-hour.ts",
+    "verify:art": "tsx scripts/verify-art.ts",
+    "capture:art": "tsx scripts/capture-art.ts",
+    "verify": "npm run verify:art && npm run build --workspace backend && npm test --workspace backend && npx tsx --test frontend/src/gameplay/chapter1.test.ts frontend/src/gameplay/ia.test.ts frontend/src/gameplay/combatSheet.test.ts frontend/src/gameplay/enhancement.test.ts frontend/src/gameplay/craftPreview.test.ts frontend/src/gameplay/encounterLabels.test.ts frontend/src/gameplay/t1Art.test.ts frontend/src/gameplay/sound.test.ts frontend/src/gameplay/skillNav.test.ts frontend/src/gameplay/skillActions.test.ts frontend/src/gameplay/artContract.test.ts frontend/src/gameplay/t1Resolve.test.ts scripts/art-image-meta.test.ts scripts/xp-parity.test.ts scripts/fight-preview-parity.test.ts && npm run build --workspace frontend && playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1"
