@@ -95,3 +95,25 @@ describe("offline report", () => {
     await storage.close();
   });
 });
+
+
+it('uses counters even when the bounded log has rotated completely', async () => {
+  const { defaultEnhancedPlayerState } = await import('./storage');
+  const state = defaultEnhancedPlayerState(pack.version);
+  state.logs = Array.from({length:200}, (_,i) => ({ at:T0.toISOString(), text:`old ${i}` }));
+  const before = snapshotForReport(state);
+  state.stats!.actionsById = { act_chop_wood_t1: 300 };
+  state.logs = Array.from({length:200}, (_,i) => ({ at:T0.toISOString(), text:`new ${i}` }));
+  const report = buildOfflineReport(before, state, pack, T0, new Date(+T0 + 3600_000));
+  assert.deepEqual(report.actions.find(a => a.name === '砍伐小白杨'), {name:'砍伐小白杨', count:300});
+});
+
+it('does not count combat level thresholds twice in cumulative combat XP', async () => {
+  const { defaultEnhancedPlayerState } = await import('./storage');
+  const state = defaultEnhancedPlayerState(pack.version);
+  state.combatXp = 90; state.combatLevel = 1;
+  const before = snapshotForReport(state);
+  state.combatXp = 110; state.combatLevel = 2;
+  const report = buildOfflineReport(before, state, pack, T0, new Date(+T0 + 3600_000));
+  assert.equal(report.skills.find(s => s.skillId === 'combat')?.xp, 20);
+});

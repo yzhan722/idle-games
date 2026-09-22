@@ -31,6 +31,13 @@ import { encounterStages } from "./gameplay_encounters";
 import { abilityCatalog } from "./abilities";
 import { COMBAT_SKILL_IDS, COMBAT_SKILL_NAMES, COMBAT_SKILL_BLURBS } from "./combat_skills";
 import { applyE2eFastContent } from "./e2e_fast";
+import { assertRuntimePolicy } from "./runtime_policy";
+
+assertRuntimePolicy({
+  NODE_ENV: process.env.NODE_ENV,
+  E2E_SEED: process.env.E2E_SEED,
+  E2E_FAST: process.env.E2E_FAST,
+});
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3001),

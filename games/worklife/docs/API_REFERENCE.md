@@ -14,17 +14,29 @@ POST /auth/guest
 Content-Type: application/json
 
 {
-  "deviceId": "optional-device-id"
+  "deviceId": "optional-hint-not-a-credential",
+  "resumeToken": "optional-resume-token"
 }
 ```
+
+没有 `resumeToken` 时总是创建新游客，相同 `deviceId` 不能取回已有存档。`resumeToken` 无效时返回 `401 invalid_guest_resume_token`，不会新建账号。有效凭证返回原用户。响应里的 `resumeToken` 只在本次响应出现，数据库只存它的 SHA-256。
 
 **响应**:
 ```json
 {
   "userId": "uuid",
-  "token": "jwt-token"
+  "token": "jwt-token",
+  "resumeToken": "base64url-at-least-32-bytes"
 }
 ```
+
+### 为已有游客领取恢复凭证
+```http
+POST /auth/guest/resume-token
+Authorization: Bearer {token}
+```
+
+需要当前游客的有效 JWT。没有 JWT 返回 401。已绑定外部身份的账号返回 403 `guest_resume_unavailable`。成功时轮换恢复凭证，不改变金币或物品。此路径不是公开路由。
 
 ### 绑定Google账号
 ```http

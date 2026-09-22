@@ -9,7 +9,7 @@ export type OfflineReport = {
   from: string;
   to: string;
   durationMs: number;
-  /** Actions completed while away, from the settle logs ("完成 N 次 X"). */
+  /** Actions completed while away, from durable cumulative counters. */
   actions: Array<{ name: string; count: number }>;
   /** Net positive inventory deltas (gold excluded). */
   items: Array<{ itemId: string; qty: number }>;
@@ -30,6 +30,8 @@ export type SettleSnapshot = {
   combatXp: number;
   killsByMonster: Record<string, number>;
   logCount: number;
+  actionsById: Record<string, number>;
+  enhancement?: { startedAt: number; attempts: number };
   mode: string;
   actionId?: string;
 };
@@ -44,6 +46,8 @@ export function snapshotForReport(state: EnhancedPlayerState): SettleSnapshot {
     combatXp: Number(state.combatXp || 0),
     killsByMonster: { ...((state.stats?.killsByMonster as Record<string, number>) || {}) },
     logCount: (state.logs || []).length,
+    actionsById: { ...state.stats?.actionsById },
+    enhancement: state.enhanceRun ? { startedAt: state.enhanceRun.startedAt, attempts: state.enhanceRun.attempts } : undefined,
     mode: state.mode,
     actionId: state.lifeActionState?.actionId,
   };
@@ -75,7 +79,7 @@ export function buildOfflineReport(
     const gained = totalXp(Number((v as any).level || 1), Number((v as any).xp || 0)) - totalXp(b.level, b.xp);
     if (gained > 0) skills.push({ skillId: k, xp: gained, fromLevel: b.level, toLevel: Number((v as any).level || 1) });
   }
-  const combatGained = totalXp(Number(after.combatLevel || 1), Number(after.combatXp || 0)) - totalXp(before.combatLevel, before.combatXp);
+  const combatGained = Number(after.combatXp || 0) - before.combatXp;
   if (combatGained > 0) skills.push({ skillId: "combat", xp: combatGained, fromLevel: before.combatLevel, toLevel: Number(after.combatLevel || 1) });
 
   const kills: OfflineReport["kills"] = [];
@@ -85,13 +89,16 @@ export function buildOfflineReport(
   }
 
   // Actions: aggregate "完成 N 次 X" lines appended during the settle.
-  const newLogs = (after.logs || []).slice(before.logCount).map((l) => l.text);
+  const newLogs = (after.logs || []).slice((after.logs || []).length < 200 ? before.logCount : 0).map((l) => l.text);
   const byAction = new Map<string, number>();
   let stopped: string | undefined;
   for (const text of newLogs) {
-    const m = text.match(/完成\s*(\d+)\s*次\s*(.+?)(（效率额外.*?）)?，获得/);
-    if (m) byAction.set(m[2], (byAction.get(m[2]) || 0) + (parseInt(m[1], 10) || 0));
+
     if (/材料不足|批量制作完成|队列跳过|保护镜用完|已到强化上限|达到目标 \+\d+，强化结束/.test(text)) stopped = text;
+  }
+  for (const [id, count] of Object.entries(after.stats?.actionsById || {})) {
+    const delta = count - (before.actionsById[id] || 0);
+    if (delta > 0) byAction.set((pack.actions as any[]).find(a => a.id === id)?.name || id, delta);
   }
   const actions = [...byAction.entries()].map(([name, count]) => ({ name, count }));
   if (kills.length) {
@@ -101,7 +108,7 @@ export function buildOfflineReport(
   // MWI timed enhancing: attempts that landed while away, as one aggregated action line.
   const run = after.enhanceRun;
   if (run && (run.outcome ? run.outcome.at : Number.MAX_SAFE_INTEGER) > from.getTime()) {
-    const attemptsAway = newLogs.filter((t) => /^强化成功：|强化失败：|重置为 \+0|降到 \+\d+/.test(t)).length;
+    const attemptsAway = run.attempts - (before.enhancement?.startedAt === run.startedAt ? before.enhancement.attempts : 0);
     if (attemptsAway > 0) {
       const itemName = (pack.items as any[]).find((i) => i.id === run.itemId)?.name || run.itemId;
       const level = Number(after.equipment?.enhancementLevels?.[run.itemId] || 0);
@@ -139,3 +146,4 @@ export function buildOfflineReport(
 export function reportHasContent(r: OfflineReport): boolean {
   return r.actions.length > 0 || r.items.length > 0 || r.gold !== 0 || r.skills.length > 0 || !!r.stopped;
 }
+

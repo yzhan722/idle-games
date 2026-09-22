@@ -3,6 +3,16 @@ import { describe, it } from "node:test";
 import { nextChapter1Goal } from "./chapter1";
 
 describe("chapter 1 next goal", () => {
+  it("keeps a forest veteran complete after selling starter gear and changing weapons", () => {
+    assert.equal(nextChapter1Goal({ inventory: {}, equipment: { main_hand: "weapon_frost_blade" },
+      stats: { killsByMonster: { forest_boss: 1 } } }).id, "complete");
+  });
+  it("does not count a different boss as completing the forest", () => {
+    const state = { inventory: { weapon_wooden_sword: 1, armor_wood_chest: 1 },
+      equipment: { main_hand: "weapon_wooden_sword", chest: "armor_wood_chest" }, chapter1Build: "thick_bark",
+      stats: { totalKills: 4, totalBossKills: 1, killsByMonster: { slime: 1, crab: 1, monkey: 1, mine_boss: 1 } } };
+    assert.equal(nextChapter1Goal(state).id, "boss");
+  });
   it("starts with chop, then board, sword, equip, slime", () => {
     assert.equal(nextChapter1Goal({ inventory: {} }).id, "chop");
     assert.equal(nextChapter1Goal({ inventory: { wood_1: 2 } }).id, "board");

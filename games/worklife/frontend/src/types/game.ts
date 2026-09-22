@@ -1,6 +1,11 @@
 // 游戏类型定义
 
 export interface PlayerState {
+  progression?: {
+    schemaVersion: 1;
+    completedMilestones: Record<string, { completedAt: string; source: 'event' | 'migration' }>;
+    completedChapters: Record<string, { completedAt: string; source: 'event' | 'migration' }>;
+  };
   contentVersion: string;
   lastSimulatedAt: string;
   activeClassId: string;

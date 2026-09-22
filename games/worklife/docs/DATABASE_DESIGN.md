@@ -36,7 +36,8 @@ CREATE TABLE users (
 
 **字段说明**:
 - `id`: 用户唯一标识符
-- `guest_device_id`: 游客设备ID（游客登录）
+- `guest_device_id`: 服务端生成的游客行标识。客户端传来的 deviceId 不能用它认领存档。
+- `guest_resume_token_hash`: 游客恢复凭证的 SHA-256 十六进制摘要，可空、唯一。明文不入库。已有行保持 NULL。重复执行 `ADD COLUMN IF NOT EXISTS` 不改玩家资产。
 - `google_sub`: Google账户标识（Google登录）
 - `is_banned`: 封禁状态
 - `ban_reason`: 封禁原因

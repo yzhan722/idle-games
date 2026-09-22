@@ -6,6 +6,7 @@ export type ChapterGoal = {
 };
 
 type State = {
+  progression?: { completedMilestones: Record<string, unknown>; completedChapters: Record<string, unknown> };
   inventory?: Record<string, number>;
   equipment?: { main_hand?: string; chest?: string };
   chapter1Build?: string;
@@ -27,18 +28,22 @@ export const CHAPTER1_OBJECTIVES = [
 ] as const;
 
 export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
+  const achieved = state?.progression?.completedMilestones || {};
+  if (state?.progression?.completedChapters.forest || (state?.stats?.killsByMonster?.forest_boss || 0) > 0) {
+    return { id: 'complete', title: '第一章完成', detail: '森林、矿山、沼泽和雪山已开放。选择下一件装备或生产目标，按自己的节奏继续。', tab: 'adventure' };
+  }
   const inv = state?.inventory || {};
   const eq = state?.equipment || {};
   const kills = state?.stats?.killsByMonster || {};
   const totalKills = state?.stats?.totalKills || 0;
-  const bossKills = (kills.forest_boss || 0) > 0 || (state?.stats?.totalBossKills || 0) > 0;
+  const bossKills = (kills.forest_boss || 0) > 0;
   const wood = inv.wood_1 || 0;
   const lumber = inv.lumber_1 || 0;
   const sword = inv.weapon_wooden_sword || 0;
   const chest = inv.armor_wood_chest || 0;
   const wc = state?.skills?.skill_woodcutter?.level || 1;
 
-  if (wood < 1 && lumber < 1 && sword < 1) {
+  if (!achieved.chop && !achieved.board && !achieved.sword && wood < 1 && lumber < 1 && sword < 1) {
     return {
       id: "chop",
       title: "砍第一棵小白杨",
@@ -46,7 +51,7 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       tab: "logging",
     };
   }
-  if (lumber < 1 && sword < 1) {
+  if (!achieved.board && !achieved.sword && lumber < 1 && sword < 1) {
     return {
       id: "board",
       title: "锯出第一块木板",
@@ -54,7 +59,7 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       tab: "woodworking",
     };
   }
-  if (sword < 1) {
+  if (!achieved.sword && sword < 1) {
     return {
       id: "sword",
       title: "做出木头短剑",
@@ -62,7 +67,7 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       tab: "woodworking",
     };
   }
-  if (eq.main_hand !== "weapon_wooden_sword") {
+  if (!achieved.equip_sword && !eq.main_hand) {
     return {
       id: "equip_sword",
       title: "穿上木头短剑",
@@ -70,7 +75,7 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       tab: "character",
     };
   }
-  if (totalKills < 1) {
+  if (!achieved.first_kill && totalKills < 1) {
     return {
       id: "first_kill",
       title: "击败一只果冻史莱姆",
@@ -78,7 +83,7 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       tab: "adventure",
     };
   }
-  if (!state?.chapter1Build) {
+  if (!achieved.build && !state?.chapter1Build) {
     return {
       id: "build",
       title: "选择开刃或厚树皮",
@@ -88,7 +93,7 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
   }
   const archetypes =
     (kills.slime || 0) > 0 && (kills.crab || 0) > 0 && (kills.monkey || 0) > 0;
-  if (!archetypes) {
+  if (!achieved.archetypes && !archetypes) {
     return {
       id: "archetypes",
       title: "见识三种森林怪物",
@@ -96,7 +101,7 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       tab: "adventure",
     };
   }
-  if (chest < 1 || eq.chest !== "armor_wood_chest") {
+  if (!achieved.chest && (chest < 1 || !eq.chest)) {
     return {
       id: "chest",
       title: wc < 3 ? "把伐木升到 3 级并做木甲" : "穿上木制胸甲",

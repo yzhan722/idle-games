@@ -1,3 +1,4 @@
+import { ensureProgression } from '../progression_state';
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
@@ -110,6 +111,7 @@ export async function equipmentRoutes(
     }).parse((req.body ?? {}) as unknown);
 
     const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    ensureProgression(state, new Date());
     if (state.equipment) {
       delete (state.equipment as any)[body.slot];
     }
@@ -117,3 +119,4 @@ export async function equipmentRoutes(
     return reply.send(saved);
   });
 }
+

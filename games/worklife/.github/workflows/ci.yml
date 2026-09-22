@@ -2,8 +2,9 @@ name: RC quality gate
 
 on:
   push:
-    branches: [feat/progress-hardening]
+    branches: [feat/progress-hardening, feat/vertical-slice-art-t1, feat/playability-optimization]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   backend-and-frontend:
@@ -22,8 +23,38 @@ jobs:
         run: npm run build --workspace backend
       - name: Backend tests
         run: npm test --workspace backend
+      - name: Frontend logic and shared rules
+        run: npm run test:frontend
+      - name: Art contracts
+        run: npm run verify:art
       - name: Frontend build
         run: npm run build --workspace frontend
+
+  postgres:
+    name: PostgreSQL concurrency contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: worklife_test
+          POSTGRES_PASSWORD: worklife_test
+          POSTGRES_DB: worklife_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U worklife_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://worklife_test:worklife_test@127.0.0.1:5432/worklife_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run test:pg
 
   e2e:
     name: playwright e2e

@@ -1,3 +1,4 @@
+import { ensureProgression } from './progression_state';
 import type { 
   ContentPack, 
   PlayerState, 
@@ -29,7 +30,7 @@ import {
   defaultEnhancedPlayerState,
   normalizeInv, 
   pickSeed, 
-  simulateToNow,
+  settleToNowSync,
   createMarketListing,
   calculateTradingFee,
   createParty,
@@ -75,6 +76,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
   const users = new Map<string, UserRecord>();
   const usersByDevice = new Map<string, string>();
   const usersByGoogle = new Map<string, string>();
+  const usersByResumeHash = new Map<string, string>();
   const states = new Map<string, EnhancedPlayerState>();
   const tradingOrders = new Map<string, TradingOrder>();
 
@@ -106,6 +108,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         users.set(u.id, u);
         if (u.guestDeviceId) usersByDevice.set(u.guestDeviceId, u.id);
         if (u.googleSub) usersByGoogle.set(u.googleSub, u.id);
+        if (u.guestResumeTokenHash) usersByResumeHash.set(u.guestResumeTokenHash, u.id);
       }
       for (const [id, st] of snap.states) states.set(id, st);
       for (const p of snap.parties) parties.set(p.id, p);
@@ -333,6 +336,39 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       return rec;
     },
 
+    async createGuestUser() {
+      const id = crypto.randomUUID();
+      const rec: UserRecord = {
+        id,
+        guestDeviceId: `guest_${id}`,
+        googleSub: null,
+        guestResumeTokenHash: null,
+        createdAt: nowIso(),
+      };
+      users.set(id, rec);
+      if (rec.guestDeviceId) usersByDevice.set(rec.guestDeviceId, id);
+      schedulePersist();
+      return rec;
+    },
+
+    async getUser(userId: string) {
+      return users.get(userId) ?? null;
+    },
+
+    async setGuestResumeTokenHash(userId: string, hash: string) {
+      const user = users.get(userId);
+      if (!user) throw new Error("user_not_found");
+      if (user.guestResumeTokenHash) usersByResumeHash.delete(user.guestResumeTokenHash);
+      user.guestResumeTokenHash = hash;
+      usersByResumeHash.set(hash, userId);
+      schedulePersist();
+    },
+
+    async findUserByResumeTokenHash(hash: string) {
+      const id = usersByResumeHash.get(hash);
+      return id ? users.get(id) ?? null : null;
+    },
+
     async bindGoogle(userId: string, googleSub: string) {
       const other = usersByGoogle.get(googleSub);
       if (other && other !== userId) {
@@ -362,7 +398,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       now: Date; 
       contentPack: EnhancedContentPack 
     }) {
-      const result = simulateToNow({ state, now, contentPack });
+      const result = settleToNowSync({ state, now, contentPack });
       const next = { ...result.state as EnhancedPlayerState, inventory: normalizeInv(result.state.inventory) };
       states.set(userId, next);
       schedulePersist();
@@ -371,6 +407,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
 
     async savePlayerState(userId: string, state: EnhancedPlayerState) {
       const next = { ...state, inventory: normalizeInv(state.inventory) };
+      ensureProgression(next, new Date());
       states.set(userId, next);
       schedulePersist();
       return next;
@@ -1916,3 +1953,4 @@ function safeJson(text: string): any | null {
     return null;
   }
 }
+

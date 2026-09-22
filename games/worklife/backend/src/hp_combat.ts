@@ -414,17 +414,17 @@ export function tickHpCombat(
   now: Date,
   elapsedMs: number,
   rng: () => number = Math.random
-): void {
-  if (!player.hpCombat || elapsedMs <= 0) return;
+): number {
+  if (!player.hpCombat || elapsedMs <= 0) return now.getTime();
   let windowStart = now.getTime() - elapsedMs;
   for (let fights = 0; fights < MAX_AUTO_FIGHTS_PER_TICK; fights++) {
     const enc = player.hpCombat;
-    if (!enc) return;
+    if (!enc) return now.getTime();
     if (enc.outcome) {
       // Auto-repeat: a finished fight restarts against the same monster once the intermission
       // (win) or the respawn timer (loss) has passed.
       const canRepeat = player.combatLoadout?.autoRepeat && enc.nextFightAt && now.getTime() >= enc.nextFightAt;
-      if (!canRepeat) return;
+      if (!canRepeat) return now.getTime();
       const startAt = new Date(enc.nextFightAt!);
       const streak = enc.outcome === "win" ? (enc.streak || 0) + 1 : 0;
       const deaths = (enc.deaths || 0) + (enc.outcome === "loss" ? 1 : 0);
@@ -433,9 +433,10 @@ export function tickHpCombat(
       windowStart = startAt.getTime();
       continue;
     }
-    tickOneFight(player, pack, enc, windowStart, now, rng);
-    if (!enc.outcome) return; // still fighting: window exhausted
+    windowStart = tickOneFight(player, pack, enc, windowStart, now, rng);
+    if (windowStart >= now.getTime()) return now.getTime();
   }
+  return windowStart;
 }
 
 function tickOneFight(
@@ -445,7 +446,7 @@ function tickOneFight(
   windowStartMs: number,
   now: Date,
   rng: () => number
-): void {
+): number {
   const monster = monsterById(pack, enc.monsterId);
   maybePhases(enc, monster);
 
@@ -521,9 +522,10 @@ function tickOneFight(
       enc.nextFightAt = simMs + RESPAWN_MS;
       pushLog(enc, `你被击败了。${Math.round(RESPAWN_MS / 1000)} 秒后重生并继续连续战斗（在配置里可以关掉）。`);
     } else {
-      pushLog(enc, "你被击败了。装备更好的木甲，或选择厚树皮再来。");
+      pushLog(enc, "你被击败了。检查装备、技能触发和补给，再选择适合的对手。");
     }
   }
+  return simMs;
 }
 
 /**

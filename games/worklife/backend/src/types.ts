@@ -145,6 +145,8 @@ export type AbilitySlot = { abilityId: string; trigger: AbilityTrigger };
 
 // 增强的玩家状态结构
 export type EnhancedPlayerState = PlayerState & {
+  /** Database CAS revision; must survive state copies. Never accepted from client commands. */
+  stateRevision?: number;
   // 战斗等级系统（独立于职业）
   combatLevel: number;
   combatXp: number;
@@ -207,6 +209,8 @@ export type EnhancedPlayerState = PlayerState & {
   offlineReport?: import("./offline_report").OfflineReport;
 
   hpCombat?: HpCombatState;
+  progression?: import('./progression_state').ProgressionState;
+  settlement?: { processedUntil: string; targetUntil: string; requestedUntil: string; complete: boolean; cappedByOfflineLimit: boolean };
   chapter1Build?: "sharpened_edge" | "thick_bark";
 
   /** MWI combat skills; `combatLevel` is derived from these (see combat_skills.ts). */
@@ -477,6 +481,8 @@ export type UserRecord = {
   guestDeviceId: string | null;
   googleSub: string | null;
   createdAt: string;
+  /** SHA-256 hex of the guest resume token. Never the token itself. */
+  guestResumeTokenHash?: string | null;
 };
 
 // 交易行系统类型

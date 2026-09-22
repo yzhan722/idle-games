@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
-import { ACTION_QUEUE_MAX, getActionRates, queuedActionBlocker, startNextQueuedAction, type Storage } from "../storage";
+import { ACTION_QUEUE_MAX, getActionRates, getRareFindMultiplier, yieldChance, queuedActionBlocker, startNextQueuedAction, type Storage } from "../storage";
 import type { EnhancedContentPack, EnhancedPlayerState } from "../types";
 import { OFFLINE_REPORT_MIN_MS, buildOfflineReport, reportHasContent, snapshotForReport } from "../offline_report";
 import { taskSummary } from "../tasks";
@@ -117,6 +117,7 @@ export async function playerRoutes(
       contentPack,
     })) as EnhancedPlayerState;
     const rates = getActionRates(state, contentPack, action, now);
+    const rareFindMultiplier = getRareFindMultiplier(state, contentPack, now);
     const perCycleCompletions = 1 + rates.efficiencyPct / 100; // expected value
     const cyclesPerHour = 3_600_000 / rates.effectiveDurationMs;
     const actionsPerHour = cyclesPerHour * perCycleCompletions;
@@ -142,8 +143,8 @@ export async function playerRoutes(
       outputsPerHour: (Array.isArray(action.yields) ? action.yields : []).map((y: any) => ({
         itemId: y.itemId,
         name: nameOf(y.itemId),
-        qty: Math.round(actionsPerHour * Number(y.qty || 1) * Number(y.chance ?? 1) * (y.itemId === "gold" ? rates.goldMul : 1) * 10) / 10,
-        chance: Number(y.chance ?? 1),
+        qty: Math.round(actionsPerHour * Number(y.qty || 1) * yieldChance(y.chance, rareFindMultiplier) * (y.itemId === "gold" ? rates.goldMul : 1) * 10) / 10,
+        chance: yieldChance(y.chance, rareFindMultiplier),
       })),
       inputsPerHour: (Array.isArray(action.consumes) ? action.consumes : []).map((c: any) => ({
         itemId: c.itemId,
@@ -250,3 +251,4 @@ export async function playerRoutes(
     return reply.send(saved);
   });
 }
+

@@ -1,3 +1,4 @@
+import { ensureProgression } from './progression_state';
 import { Pool } from "pg";
 import {
   findEnhancementRuleForItem,
@@ -34,7 +35,7 @@ import {
   defaultEnhancedPlayerState, 
   normalizeInv, 
   pickSeed, 
-  simulateToNow,
+  settleToNow,
   createMarketListing,
   calculateTradingFee,
   getXpForLevel,
@@ -98,9 +99,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     return next;
   }
 
-  // 2) 跨进程乐观锁：记录每次读到的行版本号，写入时做 CAS（version 比对）。
-  //    用 WeakMap 关联 state 对象与其版本，避免污染 state_json。
-  const stateVersions = new WeakMap<object, number>();
+  // 跨进程乐观锁：版本随状态复制传播，缺失版本的写入必须拒绝。
 
   // ========== 初始化 ==========
   async function init() {
@@ -113,6 +112,12 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
+    await pool.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS guest_resume_token_hash TEXT"
+    );
+    await pool.query(
+      "CREATE UNIQUE INDEX IF NOT EXISTS users_guest_resume_token_hash_key ON users (guest_resume_token_hash)"
+    );
     await pool.query(`
       CREATE TABLE IF NOT EXISTS player_states (
         user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -204,27 +209,71 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
   }
 
   // ========== 用户管理 ==========
+  function mapUser(r: {
+    id: string;
+    guest_device_id: string | null;
+    google_sub: string | null;
+    created_at: Date;
+    guest_resume_token_hash?: string | null;
+  }): UserRecord {
+    return {
+      id: r.id,
+      guestDeviceId: r.guest_device_id,
+      googleSub: r.google_sub,
+      createdAt: r.created_at.toISOString(),
+      guestResumeTokenHash: r.guest_resume_token_hash ?? null,
+    };
+  }
+
   async function findOrCreateGuestUser(deviceId: string): Promise<UserRecord> {
     const existing = await pool.query(
-      "SELECT id, guest_device_id, google_sub, created_at FROM users WHERE guest_device_id = $1",
+      "SELECT id, guest_device_id, google_sub, created_at, guest_resume_token_hash FROM users WHERE guest_device_id = $1",
       [deviceId]
     );
-    if (existing.rows[0]) {
-      const r = existing.rows[0];
-      return { id: r.id, guestDeviceId: r.guest_device_id, googleSub: r.google_sub, createdAt: r.created_at.toISOString() };
-    }
+    if (existing.rows[0]) return mapUser(existing.rows[0]);
     const created = await pool.query(
-      "INSERT INTO users (id, guest_device_id) VALUES (gen_random_uuid(), $1) RETURNING id, guest_device_id, google_sub, created_at",
+      "INSERT INTO users (id, guest_device_id) VALUES (gen_random_uuid(), $1) RETURNING id, guest_device_id, google_sub, created_at, guest_resume_token_hash",
       [deviceId]
     );
     if (!created.rows[0]) {
       // 并发插入，重新查询
-      const again = await pool.query("SELECT id, guest_device_id, google_sub, created_at FROM users WHERE guest_device_id = $1", [deviceId]);
-      const r = again.rows[0];
-      return { id: r.id, guestDeviceId: r.guest_device_id, googleSub: r.google_sub, createdAt: r.created_at.toISOString() };
+      const again = await pool.query("SELECT id, guest_device_id, google_sub, created_at, guest_resume_token_hash FROM users WHERE guest_device_id = $1", [deviceId]);
+      return mapUser(again.rows[0]);
     }
-    const r = created.rows[0];
-    return { id: r.id, guestDeviceId: r.guest_device_id, googleSub: r.google_sub, createdAt: r.created_at.toISOString() };
+    return mapUser(created.rows[0]);
+  }
+
+  async function createGuestUser(): Promise<UserRecord> {
+    const id = randomUUID();
+    const created = await pool.query(
+      "INSERT INTO users (id, guest_device_id) VALUES ($1, $2) RETURNING id, guest_device_id, google_sub, created_at, guest_resume_token_hash",
+      [id, `guest_${id}`]
+    );
+    return mapUser(created.rows[0]);
+  }
+
+  async function getUser(userId: string): Promise<UserRecord | null> {
+    const found = await pool.query(
+      "SELECT id, guest_device_id, google_sub, created_at, guest_resume_token_hash FROM users WHERE id = $1",
+      [userId]
+    );
+    return found.rows[0] ? mapUser(found.rows[0]) : null;
+  }
+
+  async function setGuestResumeTokenHash(userId: string, hash: string): Promise<void> {
+    const updated = await pool.query(
+      "UPDATE users SET guest_resume_token_hash = $2 WHERE id = $1",
+      [userId, hash]
+    );
+    if (updated.rowCount !== 1) throw new Error("user_not_found");
+  }
+
+  async function findUserByResumeTokenHash(hash: string): Promise<UserRecord | null> {
+    const found = await pool.query(
+      "SELECT id, guest_device_id, google_sub, created_at, guest_resume_token_hash FROM users WHERE guest_resume_token_hash = $1",
+      [hash]
+    );
+    return found.rows[0] ? mapUser(found.rows[0]) : null;
   }
 
   // ========== 玩家状态 ==========
@@ -233,7 +282,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     if (existing.rows[0]) {
       const state = existing.rows[0].state_json as EnhancedPlayerState;
       // 记录读到的版本号，供 persistState 做乐观锁 CAS
-      stateVersions.set(state as unknown as object, Number(existing.rows[0].version) || 0);
+      state.stateRevision = Number(existing.rows[0].version);
       return state;
     }
     const state = defaultEnhancedPlayerState(contentVersion);
@@ -241,30 +290,22 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       "INSERT INTO player_states (user_id, content_version, state_json, version) VALUES ($1, $2, $3, 0)",
       [userId, contentVersion, JSON.stringify(state)]
     );
-    stateVersions.set(state as unknown as object, 0);
+    state.stateRevision = 0;
     return state;
   }
 
   async function persistState(userId: string, state: EnhancedPlayerState) {
-    const expectedVersion = stateVersions.get(state as unknown as object);
-    if (typeof expectedVersion === "number") {
-      // 乐观锁：仅当库中版本与读取时一致才写入；版本号 +1。
-      const res = await pool.query(
-        "UPDATE player_states SET content_version = $2, state_json = $3, version = version + 1, updated_at = now() WHERE user_id = $1 AND version = $4",
-        [userId, state.contentVersion, JSON.stringify(state), expectedVersion]
-      );
-      if (res.rowCount === 0) {
-        // 版本不匹配：说明有并发写入抢先一步，拒绝覆盖以避免丢更新。
-        throw new Error("state_version_conflict");
-      }
-      stateVersions.set(state as unknown as object, expectedVersion + 1);
-      return;
+    const expectedVersion = state.stateRevision;
+    if (!Number.isSafeInteger(expectedVersion) || expectedVersion! < 0) {
+      throw new Error("state_version_conflict");
     }
-    // 没有记录到读取版本（理论上不应发生）：退化为无条件写入并自增版本。
-    await pool.query(
-      "UPDATE player_states SET content_version = $2, state_json = $3, version = version + 1, updated_at = now() WHERE user_id = $1",
-      [userId, state.contentVersion, JSON.stringify(state)]
+    const nextRevision = expectedVersion! + 1;
+    const res = await pool.query(
+      "UPDATE player_states SET content_version = $2, state_json = $3, version = version + 1, updated_at = now() WHERE user_id = $1 AND version = $4",
+      [userId, state.contentVersion, JSON.stringify({ ...state, stateRevision: nextRevision }), expectedVersion]
     );
+    if (res.rowCount !== 1) throw new Error("state_version_conflict");
+    state.stateRevision = nextRevision;
   }
 
   // ========== 事务辅助 ==========
@@ -286,13 +327,13 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
   }
 
   // 在事务内以行锁（FOR UPDATE）读取玩家状态，避免并发读-改-写交错。
-  // 注意：事务内的写入不走 WeakMap+CAS，而是依赖行锁串行化，保证强一致。
+  // 注意：事务内的写入不走 CAS，而是依赖行锁串行化，保证强一致。
   async function txLoadStateForUpdate(
     client: import("pg").PoolClient,
     userId: string
   ): Promise<{ state: EnhancedPlayerState; contentVersion: string }> {
     const res = await client.query(
-      "SELECT content_version, state_json FROM player_states WHERE user_id = $1 FOR UPDATE",
+      "SELECT content_version, state_json, version FROM player_states WHERE user_id = $1 FOR UPDATE",
       [userId]
     );
     if (!res.rows[0]) {
@@ -303,17 +344,17 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       );
       // 重新锁定刚插入的行
       await client.query("SELECT 1 FROM player_states WHERE user_id = $1 FOR UPDATE", [userId]);
+      state.stateRevision = 0;
       return { state, contentVersion: "unknown" };
     }
     return {
-      state: res.rows[0].state_json as EnhancedPlayerState,
+      state: { ...res.rows[0].state_json, stateRevision: Number(res.rows[0].version) } as EnhancedPlayerState,
       contentVersion: res.rows[0].content_version as string,
     };
   }
 
   // 在事务内写回玩家状态并自增 version。
-  // 同时使内存中可能持有的 WeakMap 版本号失效（删除映射），避免该用户后续
-  // 走 persistState 时用过期版本做 CAS 误判冲突。
+  // 行锁保护事务，返回的状态继续携带最新版本。
   async function txPersistState(
     client: import("pg").PoolClient,
     userId: string,
@@ -322,15 +363,19 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
   ): Promise<void> {
     await client.query(
       "UPDATE player_states SET content_version = $2, state_json = $3, version = version + 1, updated_at = now() WHERE user_id = $1",
-      [userId, contentVersion, JSON.stringify(state)]
+      [userId, contentVersion, JSON.stringify({ ...state, stateRevision: state.stateRevision! + 1 })]
     );
-    stateVersions.delete(state as unknown as object);
+    state.stateRevision = state.stateRevision! + 1;
   }
 
   // ========== 返回 Storage 实现 ==========
   const storage: Storage = {
     init,
     findOrCreateGuestUser,
+    createGuestUser,
+    getUser,
+    setGuestResumeTokenHash,
+    findUserByResumeTokenHash,
 
     async bindGoogle(userId: string, googleSub: string) {
       const existing = await pool.query("SELECT id FROM users WHERE google_sub = $1 AND id <> $2", [googleSub, userId]);
@@ -342,7 +387,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
     async simulateToNow({ userId, state, now, contentPack }) {
       return withUserLock(userId, async () => {
-        const result = simulateToNow({ state, now, contentPack });
+        const result = await settleToNow({ state, now, contentPack });
         const next = { ...result.state as EnhancedPlayerState, inventory: normalizeInv(result.state.inventory) };
         await persistState(userId, next);
         return next;
@@ -352,6 +397,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     async savePlayerState(userId: string, state: EnhancedPlayerState) {
       return withUserLock(userId, async () => {
         const next = { ...state, inventory: normalizeInv(state.inventory) };
+      ensureProgression(next, new Date());
         await persistState(userId, next);
         return next;
       });
@@ -1422,3 +1468,4 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
   };
   return storage;
 }
+

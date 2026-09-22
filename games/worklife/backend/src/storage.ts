@@ -27,6 +27,7 @@ import { createMemoryStorage } from "./storage_memory";
 // 二者均仅在函数体内（运行时）相互引用，故此循环依赖在求值期是安全的。
 import { getReputationBonuses, getPrestigeMultiplier } from "./progression2";
 import { enhancementStatMultiplier } from "./enhancement_math";
+import { ensureProgression } from './progression_state';
 
 // 存储接口类型定义
 export interface Storage {
@@ -34,7 +35,13 @@ export interface Storage {
   close(): Promise<void>;
   healthCheck(): Promise<{ ok: boolean; latencyMs: number }>;
   cleanupExpiredListings(): Promise<number>;
+  /** Internal fixture key. Not a public recovery credential. */
   findOrCreateGuestUser(deviceId: string): Promise<UserRecord>;
+  /** Always a new guest. Client deviceId must not select this row. */
+  createGuestUser(): Promise<UserRecord>;
+  getUser(userId: string): Promise<UserRecord | null>;
+  setGuestResumeTokenHash(userId: string, hash: string): Promise<void>;
+  findUserByResumeTokenHash(hash: string): Promise<UserRecord | null>;
   bindGoogle(userId: string, googleSub: string): Promise<void>;
   getOrCreatePlayerState(userId: string, contentVersion: string): Promise<EnhancedPlayerState>;
   simulateToNow(params: { 
@@ -782,6 +789,13 @@ export function getRareFindMultiplier(player: EnhancedPlayerState, pack: Enhance
   return Math.max(0, 1 + total / 100);
 }
 
+/** The same probability contract is used by settlement and the action preview. */
+export function yieldChance(base: number | undefined, rareFindMultiplier: number): number {
+  const chance = base ?? 1;
+  if (!Number.isFinite(chance) || chance <= 0) return 0;
+  return chance >= 1 ? 1 : Math.min(1, Math.max(0, chance * rareFindMultiplier));
+}
+
 /** Free repeats granted by efficiency for one completed time-cycle. */
 export function efficiencyRepeats(efficiencyPct: number, rng: () => number = Math.random): number {
   if (!(efficiencyPct > 0)) return 0;
@@ -846,19 +860,88 @@ export function startNextQueuedAction(
   return false;
 }
 
-export function simulateToNow(input: { 
+type SimulationInput = {
   state: PlayerState | EnhancedPlayerState; 
   now: Date; 
   contentPack: ContentPack | EnhancedContentPack;
   /** Injectable for deterministic tests (efficiency repeats, chance yields). */
   rng?: () => number;
-}): SimulateResult {
+};
+
+/** Bounded chunks preserve their unprocessed time; callers choose scheduling by storage contract. */
+function* settlementChunks(input: SimulationInput): Generator<SimulateResult> {
+  let state = structuredClone(input.state);
+  for (;;) {
+    const previousTime = Date.parse(state.lastSimulatedAt);
+    const result = simulateToNow({ ...input, state });
+    state = result.state;
+    yield result;
+    if ((state as EnhancedPlayerState).settlement?.complete !== false) return;
+    if (Date.parse(state.lastSimulatedAt) <= previousTime) throw new Error('settlement_no_progress');
+  }
+}
+
+/** PostgreSQL detects writes accepted during a scheduling yield with its revision CAS. */
+export async function settleToNow(input: SimulationInput): Promise<SimulateResult> {
+  let result!: SimulateResult;
+  for (result of settlementChunks(input)) {
+    if ((result.state as EnhancedPlayerState).settlement?.complete === false) {
+      await new Promise<void>(resolve => setImmediate(resolve));
+    }
+  }
+  return result;
+}
+
+/** Memory writes have no database CAS: drain and publish without an event-loop yield. */
+export function settleToNowSync(input: SimulationInput): SimulateResult {
+  let result!: SimulateResult;
+  for (result of settlementChunks(input)) { /* consume every bounded chunk */ }
+  return result;
+}
+
+export function simulateToNow(input: SimulationInput): SimulateResult {
+  const previous = (input.state as EnhancedPlayerState).settlement;
+  const last = Date.parse(input.state.lastSimulatedAt);
+  if (!Number.isFinite(last) || !Number.isFinite(+input.now)) throw new Error('invalid_simulation_time');
+  if (+input.now < last) return { state: input.state };
+  const pending = previous && !previous.complete;
+  const target = pending ? Date.parse(previous.targetUntil) : Math.min(+input.now, last + 24 * 3600_000);
+  const requested = pending ? previous.requestedUntil : input.now.toISOString();
+  const result = simulateWindow({ ...input, now: new Date(target) });
+  const state = result.state as EnhancedPlayerState;
+  const complete = Date.parse(state.lastSimulatedAt) >= target;
+  state.settlement = { processedUntil: state.lastSimulatedAt, targetUntil: new Date(target).toISOString(),
+    requestedUntil: requested, complete, cappedByOfflineLimit: target < Date.parse(requested) };
+  if (complete && state.settlement.cappedByOfflineLimit) {
+    const delta = Date.parse(requested) - target;
+    state.lastSimulatedAt = requested;
+    // Drop only time outside the explicit offline cap, including the action's old time anchor.
+    if (state.lifeActionState) {
+      state.lifeActionState.startedAt = new Date(Date.parse(state.lifeActionState.startedAt) + delta).toISOString();
+    }
+    const combat = state.hpCombat;
+    if (combat) {
+      for (const key of ['startedAt', 'nextFightAt', 'heavyChopReadyAt', 'braceUntil'] as const) {
+        if (typeof combat[key] === 'number') combat[key] = combat[key]! + delta;
+      }
+      if (combat.foodReadyAt) combat.foodReadyAt = combat.foodReadyAt.map(t => t + delta);
+      if (combat.abilityReadyAt) for (const key of Object.keys(combat.abilityReadyAt)) combat.abilityReadyAt[key] += delta;
+    }
+    if (state.enhanceRun && !state.enhanceRun.outcome) state.enhanceRun.nextAttemptAt += delta;
+    pruneExpiredBuffs(state, new Date(requested));
+    appendLog(state, '离线收益已按24小时上限结算。');
+  }
+  return result;
+}
+
+function simulateWindow(input: SimulationInput): SimulateResult {
   const next = { ...input.state } as EnhancedPlayerState;
   const lastSimulated = new Date(next.lastSimulatedAt);
   const timeDiff = input.now.getTime() - lastSimulated.getTime();
 
   // 确保统计字段存在（向后兼容旧存档）
   ensurePlayerExtensions(next);
+  ensureProgression(next, input.now);
   const stats = next.stats!;
 
   // 防作弊：检查时间是否倒退
@@ -876,15 +959,21 @@ export function simulateToNow(input: {
 
   // Tick a running fight, or a finished one that auto-repeat is about to restart.
   const hpc = next.hpCombat;
-  const awaitingRepeat = !!(hpc && hpc.outcome === "win" && next.combatLoadout?.autoRepeat && hpc.nextFightAt);
+  const awaitingRepeat = !!(hpc && hpc.outcome && next.combatLoadout?.autoRepeat && hpc.nextFightAt);
   if (hpc && (!hpc.outcome || awaitingRepeat) && timeDiff > 0) {
     const { tickHpCombat } = require("./hp_combat") as typeof import("./hp_combat");
-    tickHpCombat(next, input.contentPack as EnhancedContentPack, input.now, timeDiff, input.rng);
+    const processed = tickHpCombat(next, input.contentPack as EnhancedContentPack, input.now, timeDiff, input.rng);
+    if (processed < +input.now) {
+      next.lastSimulatedAt = new Date(processed).toISOString();
+      addPlaytime(stats, Math.max(0, processed - +lastSimulated));
+      ensureProgression(next, new Date(processed));
+      return { state: next };
+    }
   }
 
   // 进度以 lifeActionState.startedAt 为锚，所以任意频率的轮询都不会丢进度；这里只挡住
   // 极高频的重复请求。HP 战斗必须吃掉亚秒 tick，否则 250ms 轮询打不出伤害。
-  if (timeDiff < 100) {
+  if (timeDiff <= 0) {
     if (next.hpCombat) {
       next.lastSimulatedAt = input.now.toISOString();
     }
@@ -1019,9 +1108,8 @@ export function simulateToNow(input: {
               const currentTotal = totalRewards[yield_.itemId] || 0;
               if (currentTotal >= MAX_ITEM_OUTPUT) continue;
               
-              const baseChance = yield_.chance || 1.0;
-              const chance = baseChance < 1 ? Math.min(1, baseChance * rareFindMul) : 1;
-              if (rng() <= chance) {
+              const chance = yieldChance(yield_.chance, rareFindMul);
+              if (rng() < chance) {
                 // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成
                 const baseQty =
                   yield_.itemId === 'gold'
@@ -1172,7 +1260,7 @@ export function simulateToNow(input: {
       next.lastSimulatedAt = startAt.toISOString();
       addPlaytime(stats, startAt.getTime() - lastSimulated.getTime());
       if ((next.combatLevel || 1) > stats.highestCombatLevel) stats.highestCombatLevel = next.combatLevel || 1;
-      return simulateToNow({ state: next, now: input.now, contentPack: input.contentPack, rng: input.rng });
+      return simulateWindow({ state: next, now: input.now, contentPack: input.contentPack, rng: input.rng });
     }
   }
 
@@ -1189,6 +1277,7 @@ export function simulateToNow(input: {
     addPlaytime(stats, Math.min(timeDiff, maxOfflineTime));
   }
   
+  ensureProgression(next, input.now);
   return { state: next };
 }
 
@@ -1263,4 +1352,3 @@ export function addPartyMember(party: Party, userId: string, role: string = 'mem
     ]
   };
 }
-

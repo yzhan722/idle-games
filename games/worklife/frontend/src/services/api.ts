@@ -103,6 +103,7 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const method = (options.method || 'GET').toUpperCase();
+    const canRetry = method === 'GET' || method === 'HEAD';
     const cacheKey = this.getCacheKey(endpoint, { ...options, method });
 
     if (method === 'GET' && retryCount === 0 && !endpoint.startsWith('/player/state')) {
@@ -142,14 +143,14 @@ class ApiClient {
             }
             throw authErr;
           }
-          // 状态版本冲突（并发写）：清掉本地缓存后短暂退避重试，对用户透明
-          if (response.status === 409 && retryCount < this.retryConfig.maxRetries) {
+          // 仅安全读取可以自动重试；写操作结果不确定时不得重放。
+          if (canRetry && response.status === 409 && retryCount < this.retryConfig.maxRetries) {
             this.cache.clear();
             await this.sleep(150 * (retryCount + 1));
             return this.request(endpoint, options, retryCount + 1);
           }
           if (
-            this.retryConfig.retryOn.includes(response.status) &&
+            canRetry && this.retryConfig.retryOn.includes(response.status) &&
             retryCount < this.retryConfig.maxRetries
           ) {
             await this.sleep(this.retryConfig.retryDelay * (retryCount + 1));
@@ -176,7 +177,7 @@ class ApiClient {
         return data;
       } catch (error) {
         if (
-          error instanceof TypeError &&
+          canRetry && error instanceof TypeError &&
           error.message === 'Failed to fetch' &&
           retryCount < this.retryConfig.maxRetries
         ) {
@@ -197,7 +198,7 @@ class ApiClient {
       return pending;
     }
 
-    // 写去重只包住第一次发出；409/5xx 重试必须绕过去重，否则会等自己死锁。
+    // 合并同一时间的相同写请求；这不是服务端持久化幂等保证。
     const bodyStr = options.body ? String(options.body) : '';
     const writeKey = writeDedupeKey(method, endpoint, bodyStr);
     if (retryCount === 0) {
@@ -421,3 +422,4 @@ const API_BASE_URL =
   (import.meta.env.VITE_API_URL && String(import.meta.env.VITE_API_URL).replace(/\/$/, '')) || '/api';
 
 export const apiClient = new ApiClient(API_BASE_URL);
+
