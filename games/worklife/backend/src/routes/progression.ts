@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
+import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
 import {
   ACHIEVEMENTS,
   syncAchievements,
@@ -10,6 +11,21 @@ import {
   dailyProgress,
   claimDailyQuest
 } from "../progression";
+
+const revisionField = {
+  expectedRevision: z.number().int().nonnegative().optional(),
+  operationId: z.string().min(1).max(128).optional(),
+};
+
+function replyCommandError(error: unknown, reply: FastifyReply) {
+  if (error instanceof PlayerCommandRejected) {
+    return reply.status(400).send({ error: error.code });
+  }
+  if (error instanceof PlayerCommandConflict) {
+    return reply.status(409).send({ error: 'state_version_conflict', message: '状态已更新，请刷新后重试', stateRevision: error.stateRevision });
+  }
+  throw error;
+}
 
 export async function progressionRoutes(
   app: FastifyInstance,
@@ -61,21 +77,27 @@ export async function progressionRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ achievementId: z.string().min(1) }).parse((req.body ?? {}) as unknown);
-    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-    syncAchievements(next);
-
-    const result = claimAchievement(next, body.achievementId);
-    if (!result.ok) {
-      return reply.status(400).send({ error: result.reason });
+    const body = z.object({ achievementId: z.string().min(1), ...revisionField }).parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          syncAchievements(state);
+          const result = claimAchievement(state, body.achievementId);
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'claim_rejected');
+          return result;
+        },
+      });
+      return reply.send({
+        ok: true,
+        goldGained: outcome.result.goldGained || 0,
+        gold: outcome.state.inventory.gold || 0,
+        stateRevision: outcome.state.stateRevision
+      });
+    } catch (error) {
+      return replyCommandError(error, reply);
     }
-    await storage.savePlayerState(userId, next);
-    return reply.send({
-      ok: true,
-      goldGained: result.goldGained || 0,
-      gold: next.inventory.gold || 0
-    });
   });
 
   // 每日任务列表
@@ -101,20 +123,26 @@ export async function progressionRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ questId: z.string().min(1) }).parse((req.body ?? {}) as unknown);
-    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-
-    const result = claimDailyQuest(next, body.questId);
-    if (!result.ok) {
-      return reply.status(400).send({ error: result.reason });
+    const body = z.object({ questId: z.string().min(1), ...revisionField }).parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const result = claimDailyQuest(state, body.questId);
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'claim_rejected');
+          return result;
+        },
+      });
+      return reply.send({
+        ok: true,
+        goldGained: outcome.result.goldGained || 0,
+        gold: outcome.state.inventory.gold || 0,
+        stateRevision: outcome.state.stateRevision
+      });
+    } catch (error) {
+      return replyCommandError(error, reply);
     }
-    await storage.savePlayerState(userId, next);
-    return reply.send({
-      ok: true,
-      goldGained: result.goldGained || 0,
-      gold: next.inventory.gold || 0
-    });
   });
 
   // 玩家设置：读取

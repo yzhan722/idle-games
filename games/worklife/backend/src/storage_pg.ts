@@ -1,4 +1,5 @@
 import { ensureProgression } from './progression_state';
+import { applyPlayerCommand, commandOperationHash, commandRevision, PlayerCommandConflict, PlayerCommandOperationMismatch, type PlayerCommand, type PlayerCommandReceipt } from './player_commands';
 import { Pool } from "pg";
 import {
   findEnhancementRuleForItem,
@@ -39,6 +40,8 @@ import {
   createMarketListing,
   calculateTradingFee,
   getXpForLevel,
+  startLifeActionNow,
+  startCombatFarmNow,
 } from "./storage";
 import { enhancementRequestUserColumn } from "./sql_identifiers";
 import { randomUUID } from "crypto";
@@ -206,6 +209,34 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         created_at TIMESTAMPTZ DEFAULT now()
       )
     `);
+    // 命令幂等收据：与玩家状态写在同一事务提交，保证跨实例的"恰好一次"
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS player_command_receipts (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        operation_id TEXT NOT NULL,
+        request_hash TEXT NOT NULL,
+        result JSONB NOT NULL,
+        state_revision BIGINT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, operation_id)
+      )
+    `);
+  }
+
+  async function getCommandReceipt(userId: string, operationId: string): Promise<PlayerCommandReceipt | undefined> {
+    const { rows } = await pool.query(
+      'SELECT operation_id, request_hash, result, state_revision, created_at FROM player_command_receipts WHERE user_id = $1 AND operation_id = $2',
+      [userId, operationId]
+    );
+    const r = rows[0];
+    if (!r) return undefined;
+    return {
+      operationId: r.operation_id,
+      requestHash: r.request_hash,
+      result: r.result,
+      stateRevision: Number(r.state_revision),
+      createdAt: (r.created_at as Date).toISOString(),
+    };
   }
 
   // ========== 用户管理 ==========
@@ -287,11 +318,11 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     }
     const state = defaultEnhancedPlayerState(contentVersion);
     await pool.query(
-      "INSERT INTO player_states (user_id, content_version, state_json, version) VALUES ($1, $2, $3, 0)",
+      "INSERT INTO player_states (user_id, content_version, state_json, version) VALUES ($1, $2, $3, 0) ON CONFLICT (user_id) DO NOTHING",
       [userId, contentVersion, JSON.stringify(state)]
     );
-    state.stateRevision = 0;
-    return state;
+    // Another instance may have created or advanced this player's state while we inserted.
+    return getOrCreatePlayerState(userId, contentVersion);
   }
 
   async function persistState(userId: string, state: EnhancedPlayerState) {
@@ -394,6 +425,50 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       });
     },
 
+    async executePlayerCommand<T>(command: PlayerCommand<T>) {
+      return withUserLock(command.userId, async () => {
+        for (let attempt = 0; ; attempt++) {
+          const snapshot = await getOrCreatePlayerState(command.userId, command.contentPack.version);
+          let requestHash: string | undefined;
+          if (command.operationId) {
+            requestHash = commandOperationHash(command.userId, command.operationId, command.operationPayload);
+            // A committed receipt replays its stored result instead of re-applying the op.
+            const receipt = await getCommandReceipt(command.userId, command.operationId);
+            if (receipt) {
+              if (receipt.requestHash !== requestHash) throw new PlayerCommandOperationMismatch();
+              return { state: snapshot, result: receipt.result as T, deduplicated: true };
+            }
+          }
+          const revision = commandRevision(snapshot, command.expectedRevision);
+          // Expensive simulation runs outside the short database transaction and can yield.
+          const settled = await settleToNow({ state: snapshot, now: command.now, contentPack: command.contentPack });
+          const outcome = applyPlayerCommand(settled.state as EnhancedPlayerState, command.apply);
+          outcome.state.inventory = normalizeInv(outcome.state.inventory);
+          ensureProgression(outcome.state, command.now);
+          try {
+            await withTransaction(async client => {
+              const current = await txLoadStateForUpdate(client, command.userId);
+              const currentRevision = commandRevision(current.state);
+              if (currentRevision !== revision) throw new PlayerCommandConflict(currentRevision);
+              outcome.state.stateRevision = revision;
+              await txPersistState(client, command.userId, outcome.state, outcome.state.contentVersion);
+              if (command.operationId && requestHash) {
+                const inserted = await client.query(
+                  'INSERT INTO player_command_receipts (user_id, operation_id, request_hash, result, state_revision) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (user_id, operation_id) DO NOTHING',
+                  [command.userId, command.operationId, requestHash, JSON.stringify(outcome.result ?? null), revision]
+                );
+                if (inserted.rowCount === 0) throw new PlayerCommandConflict(currentRevision);
+              }
+            });
+            return outcome;
+          } catch (error) {
+            // Retry only an uncommitted, pure command after rereading its authoritative snapshot.
+            if (!(error instanceof PlayerCommandConflict) || command.expectedRevision !== undefined || attempt >= 2) throw error;
+          }
+        }
+      });
+    },
+
     async savePlayerState(userId: string, state: EnhancedPlayerState) {
       return withUserLock(userId, async () => {
         const next = { ...state, inventory: normalizeInv(state.inventory) };
@@ -406,39 +481,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     async startLifeAction({ userId, actionId, quantity, now, contentPack }) {
       return withUserLock(userId, async () => {
       const st = await getOrCreatePlayerState(userId, "unknown");
-
-      // 校验动作存在性与技能等级要求（防止越级刷取高阶产出，关键反作弊点）
-      if (contentPack && Array.isArray(contentPack.actions)) {
-        const action = contentPack.actions.find((a: any) => a.id === actionId) as any;
-        if (!action) {
-          throw new Error("unknown_action");
-        }
-        const reqLevel = action.requirements?.skillLevel || 1;
-        if (reqLevel > 1) {
-          const isCombatAct = typeof action.id === "string" && action.id.startsWith("act_combat_");
-          const currentLevel = isCombatAct
-            ? (st.combatLevel || 1)
-            : (st.skills[action.skillId]?.level || 0);
-          if (currentLevel < reqLevel) {
-            throw new Error(`skill_level_required:${reqLevel}`);
-          }
-        }
-      }
-
-      // 规整批量制作数量：仅取正整数，最大 5000，缺省/非法时按不限次处理（undefined）
-      let normalizedQty: number | undefined = undefined;
-      if (typeof quantity === "number" && Number.isFinite(quantity)) {
-        const q = Math.floor(quantity);
-        if (q > 0) normalizedQty = Math.min(q, 5000);
-      }
-      st.mode = "life_action";
-      st.lastSimulatedAt = now.toISOString();
-      st.lifeActionState = {
-        actionId,
-        startedAt: now.toISOString(),
-        ...(normalizedQty !== undefined ? { quantity: normalizedQty, remaining: normalizedQty } : {}),
-      };
-      appendLog(st, normalizedQty !== undefined ? `开始工作：${actionId} ×${normalizedQty}` : `开始工作：${actionId}`);
+      startLifeActionNow(st, contentPack, actionId, quantity, now);
       await persistState(userId, st);
       return st;
       });
@@ -447,9 +490,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     async startCombatFarm({ userId, stageId, now }) {
       return withUserLock(userId, async () => {
         const st = await getOrCreatePlayerState(userId, "unknown");
-        st.mode = "combat_farm";
-        st.combatFarmState = { stageId, startedAt: now.toISOString(), seed: pickSeed() };
-        appendLog(st, `开始刷关：${stageId}`);
+        startCombatFarmNow(st, stageId, now);
         await persistState(userId, st);
         return st;
       });
@@ -1468,4 +1509,3 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
   };
   return storage;
 }
-

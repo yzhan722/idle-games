@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
+import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
 import {
   consumeItem,
   getBuffEffects,
@@ -13,6 +14,21 @@ import {
   sellToShop,
   sellPrice
 } from "../systems";
+
+const revisionField = {
+  expectedRevision: z.number().int().nonnegative().optional(),
+  operationId: z.string().min(1).max(128).optional(),
+};
+
+function replyCommandError(error: unknown, reply: FastifyReply) {
+  if (error instanceof PlayerCommandRejected) {
+    return reply.status(400).send({ error: error.code });
+  }
+  if (error instanceof PlayerCommandConflict) {
+    return reply.status(409).send({ error: 'state_version_conflict', message: '状态已更新，请刷新后重试', stateRevision: error.stateRevision });
+  }
+  throw error;
+}
 
 export async function systemsRoutes(
   app: FastifyInstance,
@@ -47,22 +63,30 @@ export async function systemsRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ itemId: z.string().min(1) }).parse((req.body ?? {}) as unknown);
-    const state = await storage.getOrCreatePlayerState(userId, ver);
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-
-    const result = consumeItem(next, contentPack, body.itemId, new Date());
-    if (!result.ok) return reply.status(400).send({ error: result.reason });
-
-    await storage.savePlayerState(userId, next);
-    return reply.send({
-      ok: true,
-      itemName: result.itemName,
-      healed: result.healed,
-      buff: result.buff,
-      inventory: next.inventory,
-      activeBuffs: next.activeBuffs || []
-    });
+    const body = z.object({ itemId: z.string().min(1), ...revisionField }).parse((req.body ?? {}) as unknown);
+    const now = new Date();
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const result = consumeItem(state, contentPack, body.itemId, now);
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'consume_rejected');
+          return result;
+        },
+      });
+      return reply.send({
+        ok: true,
+        itemName: outcome.result.itemName,
+        healed: outcome.result.healed,
+        buff: outcome.result.buff,
+        inventory: outcome.state.inventory,
+        activeBuffs: outcome.state.activeBuffs || [],
+        stateRevision: outcome.state.stateRevision
+      });
+    } catch (error) {
+      return replyCommandError(error, reply);
+    }
   });
 
   /* ----------------------- 每日签到 ----------------------- */
@@ -82,21 +106,31 @@ export async function systemsRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const state = await storage.getOrCreatePlayerState(userId, ver);
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-    const result = doCheckIn(next, new Date());
-    if (!result.ok) return reply.status(400).send({ error: result.reason });
-
-    await storage.savePlayerState(userId, next);
-    return reply.send({
-      ok: true,
-      reward: result.reward,
-      streak: result.streak,
-      totalDays: result.totalDays,
-      cycleDay: result.cycleDay,
-      gold: next.inventory.gold || 0,
-      inventory: next.inventory
-    });
+    const body = z.object({ ...revisionField }).parse((req.body ?? {}) as unknown);
+    const now = new Date();
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const result = doCheckIn(state, now);
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'checkin_rejected');
+          return result;
+        },
+      });
+      return reply.send({
+        ok: true,
+        reward: outcome.result.reward,
+        streak: outcome.result.streak,
+        totalDays: outcome.result.totalDays,
+        cycleDay: outcome.result.cycleDay,
+        gold: outcome.state.inventory.gold || 0,
+        inventory: outcome.state.inventory,
+        stateRevision: outcome.state.stateRevision
+      });
+    } catch (error) {
+      return replyCommandError(error, reply);
+    }
   });
 
   /* ----------------------- 商店 ----------------------- */
@@ -119,16 +153,22 @@ export async function systemsRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const body = z
-      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(9999) })
+      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(9999), ...revisionField })
       .parse((req.body ?? {}) as unknown);
-    const state = await storage.getOrCreatePlayerState(userId, ver);
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-
-    const result = buyFromShop(next, contentPack, body.itemId, body.qty);
-    if (!result.ok) return reply.status(400).send({ error: result.reason });
-
-    await storage.savePlayerState(userId, next);
-    return reply.send({ ...result, inventory: next.inventory });
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const result = buyFromShop(state, contentPack, body.itemId, body.qty);
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'buy_rejected');
+          return result;
+        },
+      });
+      return reply.send({ ...outcome.result, inventory: outcome.state.inventory, stateRevision: outcome.state.stateRevision });
+    } catch (error) {
+      return replyCommandError(error, reply);
+    }
   });
 
   // 出售
@@ -137,16 +177,22 @@ export async function systemsRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const body = z
-      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(99999) })
+      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(99999), ...revisionField })
       .parse((req.body ?? {}) as unknown);
-    const state = await storage.getOrCreatePlayerState(userId, ver);
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-
-    const result = sellToShop(next, contentPack, body.itemId, body.qty);
-    if (!result.ok) return reply.status(400).send({ error: result.reason });
-
-    await storage.savePlayerState(userId, next);
-    return reply.send({ ...result, inventory: next.inventory });
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const result = sellToShop(state, contentPack, body.itemId, body.qty);
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'sell_rejected');
+          return result;
+        },
+      });
+      return reply.send({ ...outcome.result, inventory: outcome.state.inventory, stateRevision: outcome.state.stateRevision });
+    } catch (error) {
+      return replyCommandError(error, reply);
+    }
   });
 
   // 估价：返回背包内可出售物品的单价（用于前端展示卖价）

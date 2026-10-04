@@ -22,6 +22,7 @@ import { randomUUID } from "crypto";
 import path from "path";
 import { createPgStorage } from "./storage_pg";
 import { createMemoryStorage } from "./storage_memory";
+import type { PlayerCommand, PlayerCommandResult } from './player_commands';
 // 声望/转生：永久被动加成与全局倍率，接入离线结算 simulateToNow。
 // 注：progression2 也会从本模块导入 appendLog/ensurePlayerExtensions，
 // 二者均仅在函数体内（运行时）相互引用，故此循环依赖在求值期是安全的。
@@ -52,6 +53,7 @@ export interface Storage {
   }): Promise<EnhancedPlayerState>;
   // 直接持久化玩家状态（成就/每日任务/设置等领奖与更新后调用）
   savePlayerState(userId: string, state: EnhancedPlayerState): Promise<EnhancedPlayerState>;
+  executePlayerCommand<T>(command: PlayerCommand<T>): Promise<PlayerCommandResult<T>>;
   startLifeAction(params: { userId: string; actionId: string; quantity?: number; now: Date; contentPack?: EnhancedContentPack }): Promise<EnhancedPlayerState>;
   startCombatFarm(params: { userId: string; stageId: string; now: Date }): Promise<EnhancedPlayerState>;
   
@@ -826,6 +828,56 @@ export function queuedActionBlocker(
     }
   }
   return undefined;
+}
+
+/**
+ * Pure start for a life action: validates existence and skill level (anti-cheat), then switches
+ * mode. Throws Error("unknown_action") / Error("skill_level_required:<n>") for callers to map.
+ * Callers settle first — starting this on an un-settled state discards the pending cycles.
+ */
+export function startLifeActionNow(
+  state: EnhancedPlayerState,
+  pack: EnhancedContentPack | undefined,
+  actionId: string,
+  quantity: number | undefined,
+  now: Date
+): void {
+  if (Array.isArray(pack?.actions)) {
+    const action = (pack.actions as any[]).find((a) => a.id === actionId) as any;
+    if (!action) throw new Error("unknown_action");
+    // 非战斗动作按 skillId 校验对应职业技能等级；战斗动作按战斗等级校验
+    const reqLevel = action.requirements?.skillLevel || 1;
+    if (reqLevel > 1) {
+      const isCombatAct = typeof action.id === "string" && action.id.startsWith("act_combat_");
+      const currentLevel = isCombatAct
+        ? (state.combatLevel || 1)
+        : (state.skills[action.skillId]?.level || 0);
+      if (currentLevel < reqLevel) {
+        throw new Error(`skill_level_required:${reqLevel}`);
+      }
+    }
+  }
+  // 规整批量制作数量：仅取正整数，最大 5000，缺省/非法时按不限次处理（undefined）
+  let normalizedQty: number | undefined = undefined;
+  if (typeof quantity === "number" && Number.isFinite(quantity)) {
+    const q = Math.floor(quantity);
+    if (q > 0) normalizedQty = Math.min(q, 5000);
+  }
+  state.mode = "life_action";
+  state.lastSimulatedAt = now.toISOString();
+  state.lifeActionState = {
+    actionId,
+    startedAt: now.toISOString(),
+    ...(normalizedQty !== undefined ? { quantity: normalizedQty, remaining: normalizedQty } : {}),
+  };
+  appendLog(state, normalizedQty !== undefined ? `开始工作：${actionId} ×${normalizedQty}` : `开始工作：${actionId}`);
+}
+
+/** Pure start for a combat farm run. Callers settle first. */
+export function startCombatFarmNow(state: EnhancedPlayerState, stageId: string, now: Date): void {
+  state.mode = "combat_farm";
+  state.combatFarmState = { stageId, startedAt: now.toISOString(), seed: pickSeed() };
+  appendLog(state, `开始刷关：${stageId}`);
 }
 
 /**

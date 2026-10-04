@@ -88,8 +88,8 @@ test('memory settlement cannot overwrite a command accepted while it is catching
     await storage.getOrCreatePlayerState(user.id, pack.version);
     const state = fighter('slime');
     state.combatLoadout = { food: [], drink: [], autoRepeat: true };
-    await storage.savePlayerState(user.id, state);
-    const pending = storage.simulateToNow({userId:user.id,state,now:new Date(+t0 + 8*3600_000),contentPack:pack});
+    const saved = await storage.savePlayerState(user.id, state);
+    const pending = storage.simulateToNow({userId:user.id,state:saved,now:new Date(+t0 + 8*3600_000),contentPack:pack});
     const current = await storage.getOrCreatePlayerState(user.id, pack.version);
     current.inventory.wood_1 = 123;
     await storage.savePlayerState(user.id, current);

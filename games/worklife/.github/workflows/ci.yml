@@ -2,7 +2,7 @@ name: RC quality gate
 
 on:
   push:
-    branches: [feat/progress-hardening, feat/vertical-slice-art-t1, feat/playability-optimization]
+    branches: [main, devops]
   pull_request:
   workflow_dispatch:
 

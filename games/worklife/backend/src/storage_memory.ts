@@ -1,4 +1,5 @@
 import { ensureProgression } from './progression_state';
+import { applyPlayerCommand, commandOperationHash, commandRevision, PlayerCommandConflict, PlayerCommandOperationMismatch, type PlayerCommand, type PlayerCommandReceipt } from './player_commands';
 import type { 
   ContentPack, 
   PlayerState, 
@@ -36,7 +37,9 @@ import {
   createParty,
   getXpForLevel,
   addPartyMember,
-  summarizeOrders
+  summarizeOrders,
+  startLifeActionNow,
+  startCombatFarmNow
 } from "./storage";
 import fs from "fs";
 import path from "path";
@@ -86,6 +89,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
   const priceHistory = new Map<string, Map<string, import("./types").PriceHistory>>(); // itemId -> date -> PriceHistory
   const parties = new Map<string, Party>();
   const partyMembers = new Map<string, PartyMember[]>(); // partyId -> members
+  const commandReceipts = new Map<string, Map<string, PlayerCommandReceipt>>(); // userId -> operationId -> receipt
   const enhancementServiceRequests = new Map<string, EnhancementServiceRequest>();
   const enhancementServiceStats = new Map<string, { completed: number; totalRating: number; ratingCount: number }>();
   
@@ -112,6 +116,9 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       }
       for (const [id, st] of snap.states) states.set(id, st);
       for (const p of snap.parties) parties.set(p.id, p);
+      for (const [userId, list] of snap.commandReceipts ?? []) {
+        commandReceipts.set(userId, new Map(list.map(r => [r.operationId, r])));
+      }
     } catch {
       // Missing or unreadable save file: start empty.
     }
@@ -125,6 +132,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       users: users.values(),
       states: states.entries(),
       parties: parties.values(),
+      commandReceipts: [...commandReceipts.entries()].map(([userId, m]) => [userId, [...m.values()]] as [string, PlayerCommandReceipt[]]),
     });
     fs.writeFileSync(opts.persistPath, JSON.stringify(snap));
   }
@@ -141,6 +149,12 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
 
   function nowIso() {
     return new Date().toISOString();
+  }
+
+  function currentRevision(userId: string, snapshot: EnhancedPlayerState): number {
+    const revision = commandRevision(states.get(userId) ?? snapshot);
+    if (commandRevision(snapshot) !== revision) throw new PlayerCommandConflict(revision);
+    return revision;
   }
 
   // 防作弊：检查操作频率
@@ -387,6 +401,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (existing) return existing;
 
       const state = defaultEnhancedPlayerState(contentVersion);
+      state.stateRevision = 0;
       states.set(userId, state);
       schedulePersist();
       return state;
@@ -398,16 +413,55 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       now: Date; 
       contentPack: EnhancedContentPack 
     }) {
+      const revision = currentRevision(userId, state);
       const result = settleToNowSync({ state, now, contentPack });
       const next = { ...result.state as EnhancedPlayerState, inventory: normalizeInv(result.state.inventory) };
+      next.stateRevision = revision + 1;
       states.set(userId, next);
       schedulePersist();
       return next;
     },
 
+    async executePlayerCommand<T>(command: PlayerCommand<T>) {
+      const current = states.get(command.userId) ?? defaultEnhancedPlayerState(command.contentPack.version);
+      let requestHash: string | undefined;
+      if (command.operationId) {
+        requestHash = commandOperationHash(command.userId, command.operationId, command.operationPayload);
+        const existing = commandReceipts.get(command.userId)?.get(command.operationId);
+        if (existing) {
+          if (existing.requestHash !== requestHash) throw new PlayerCommandOperationMismatch();
+          // The op already committed once: replay its recorded result against the current state.
+          return { state: current, result: existing.result as T, deduplicated: true };
+        }
+      }
+      const revision = commandRevision(current, command.expectedRevision);
+      // No event-loop yield between snapshot and publication: memory commands are atomic.
+      const settled = settleToNowSync({ state: current, now: command.now, contentPack: command.contentPack });
+      const outcome = applyPlayerCommand(settled.state as EnhancedPlayerState, command.apply);
+      outcome.state.inventory = normalizeInv(outcome.state.inventory);
+      ensureProgression(outcome.state, command.now);
+      outcome.state.stateRevision = revision + 1;
+      states.set(command.userId, outcome.state);
+      if (command.operationId && requestHash) {
+        let receipts = commandReceipts.get(command.userId);
+        if (!receipts) commandReceipts.set(command.userId, receipts = new Map());
+        receipts.set(command.operationId, {
+          operationId: command.operationId,
+          requestHash,
+          result: outcome.result,
+          stateRevision: outcome.state.stateRevision,
+          createdAt: nowIso(),
+        });
+      }
+      schedulePersist();
+      return outcome;
+    },
+
     async savePlayerState(userId: string, state: EnhancedPlayerState) {
+      const revision = currentRevision(userId, state);
       const next = { ...state, inventory: normalizeInv(state.inventory) };
       ensureProgression(next, new Date());
+      next.stateRevision = revision + 1;
       states.set(userId, next);
       schedulePersist();
       return next;
@@ -417,42 +471,9 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
 
-      // 校验动作存在性与技能等级要求（防止越级刷取高阶产出，关键反作弊点）
-      const pack = contentPack;
-      if (pack && Array.isArray(pack.actions)) {
-        const action = pack.actions.find((a: any) => a.id === actionId) as any;
-        if (!action) {
-          throw new Error("unknown_action");
-        }
-        // 非战斗动作按 skillId 校验对应职业技能等级；战斗动作按战斗等级校验
-        const reqLevel = action.requirements?.skillLevel || 1;
-        if (reqLevel > 1) {
-          const isCombatAct = typeof action.id === "string" && action.id.startsWith("act_combat_");
-          const currentLevel = isCombatAct
-            ? (st.combatLevel || 1)
-            : (st.skills[action.skillId]?.level || 0);
-          if (currentLevel < reqLevel) {
-            throw new Error(`skill_level_required:${reqLevel}`);
-          }
-        }
-      }
-
       // 直接使用前端传来的 actionId，不再做硬编码映射
       // 前端应该发送正确的 actionId（如 act_chop_wood_t1, act_combat_slime 等）
-      // 规整批量制作数量：仅取正整数，最大 5000，缺省/非法时按不限次处理（undefined）
-      let normalizedQty: number | undefined = undefined;
-      if (typeof quantity === "number" && Number.isFinite(quantity)) {
-        const q = Math.floor(quantity);
-        if (q > 0) normalizedQty = Math.min(q, 5000);
-      }
-      st.mode = "life_action";
-      st.lastSimulatedAt = now.toISOString();
-      st.lifeActionState = {
-        actionId,
-        startedAt: now.toISOString(),
-        ...(normalizedQty !== undefined ? { quantity: normalizedQty, remaining: normalizedQty } : {}),
-      };
-      appendLog(st, normalizedQty !== undefined ? `开始工作：${actionId} ×${normalizedQty}` : `开始工作：${actionId}`);
+      startLifeActionNow(st, contentPack as EnhancedContentPack, actionId, quantity, now);
       schedulePersist();
       return st;
     },
@@ -460,9 +481,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
     async startCombatFarm({ userId, stageId, now }: { userId: string; stageId: string; now: Date }) {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
-      st.mode = "combat_farm";
-      st.combatFarmState = { stageId, startedAt: now.toISOString(), seed: pickSeed() };
-      appendLog(st, `开始刷关：${stageId}`);
+      startCombatFarmNow(st, stageId, now);
       schedulePersist();
       return st;
     },
@@ -1953,4 +1972,3 @@ function safeJson(text: string): any | null {
     return null;
   }
 }
-

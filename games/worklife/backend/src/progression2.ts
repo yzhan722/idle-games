@@ -16,6 +16,7 @@ import type {
   PlayerStats
 } from "./types";
 import { ensurePlayerExtensions, appendLog } from "./storage";
+import { defaultCombatSkills } from "./combat_skills";
 import { todayLocal } from "./time";
 
 /* ============================ 声望系统 ============================ */
@@ -365,9 +366,11 @@ export function doPrestige(
   player.prestige!.points += gained;
   player.prestige!.lastPrestigeAt = new Date().toISOString();
 
-  // 重置进度
+  // 重置进度（含派生 combatLevel 的战斗技能，否则下次 ensureCombatSkills 会把等级推导回来，
+  // 转生等于没有重置并可被无限重复刷取转生点）
   player.combatLevel = 1;
   player.combatXp = 0;
+  player.combatSkills = defaultCombatSkills(1);
   for (const k of Object.keys(player.skills || {})) {
     player.skills[k].level = 1;
     player.skills[k].xp = 0;

@@ -52,6 +52,9 @@ export function mapThrownError(error: unknown): SafeHttpError {
   if (msg === "state_version_conflict") {
     return { status: 409, body: { error: "state_version_conflict", message: "状态已被其他请求更新，请重试" } };
   }
+  if (msg === "operation_id_mismatch") {
+    return { status: 409, body: { error: "operation_id_mismatch", message: "该操作标识已用于不同的请求参数" } };
+  }
   if (msg === "Unauthorized") {
     return { status: 401, body: { error: "Unauthorized" } };
   }

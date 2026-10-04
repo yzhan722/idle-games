@@ -2,7 +2,24 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
+import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
 import { startEnhanceRun, stopEnhanceRun } from "../enhancement_run";
+
+const revisionSchema = {
+  expectedRevision: z.number().int().nonnegative().optional(),
+  operationId: z.string().min(1).max(128).optional(),
+};
+
+const commandFail = (reply: FastifyReply, error: unknown) => {
+  if (error instanceof PlayerCommandRejected) {
+    const details = error.details as { message?: string } | undefined;
+    return reply.status(400).send({ error: error.code, message: details?.message ?? error.code });
+  }
+  if (error instanceof PlayerCommandConflict) {
+    return reply.status(409).send({ error: 'state_version_conflict', message: '状态已更新，请刷新后重试', stateRevision: error.stateRevision });
+  }
+  throw error;
+};
 
 export async function enhancementRoutes(
   app: FastifyInstance, 
@@ -49,25 +66,43 @@ export async function enhancementRoutes(
       itemId: z.string().min(1).max(100),
       targetLevel: z.number().int().min(1).max(20),
       useProtection: z.boolean().optional(),
+      ...revisionSchema,
     }).parse((req.body ?? {}) as unknown);
     const now = new Date();
-    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    const next = await storage.simulateToNow({ userId, state, now, contentPack });
-    const res = startEnhanceRun(next, contentPack, body, now);
-    if (!res.ok) return reply.status(400).send({ error: res.error, message: res.message });
-    const saved = await storage.savePlayerState(userId, next);
-    return reply.send(saved);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const res = startEnhanceRun(state, contentPack, body, now);
+          if (!res.ok) throw new PlayerCommandRejected(res.error || 'enhance_rejected', { message: res.message });
+          return res;
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error);
+    }
   });
 
   app.post("/enhancement/run/stop", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
     const now = new Date();
-    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    const next = await storage.simulateToNow({ userId, state, now, contentPack });
-    stopEnhanceRun(next, now);
-    const saved = await storage.savePlayerState(userId, next);
-    return reply.send(saved);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          stopEnhanceRun(state, now);
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error);
+    }
   });
 
   app.get("/enhancement/info/:itemId", async (req: FastifyRequest<{ Params: { itemId: string } }>, reply: FastifyReply) => {

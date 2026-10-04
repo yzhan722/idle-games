@@ -1,10 +1,24 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
-import { ACTION_QUEUE_MAX, getActionRates, getRareFindMultiplier, yieldChance, queuedActionBlocker, startNextQueuedAction, type Storage } from "../storage";
+import { ACTION_QUEUE_MAX, getActionRates, getRareFindMultiplier, yieldChance, queuedActionBlocker, startNextQueuedAction, startLifeActionNow, startCombatFarmNow, type Storage } from "../storage";
 import type { EnhancedContentPack, EnhancedPlayerState } from "../types";
+import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
 import { OFFLINE_REPORT_MIN_MS, buildOfflineReport, reportHasContent, snapshotForReport } from "../offline_report";
 import { taskSummary } from "../tasks";
+
+const revisionSchema = {
+  expectedRevision: z.number().int().nonnegative().optional(),
+  operationId: z.string().min(1).max(128).optional(),
+};
+
+const commandFail = (reply: FastifyReply, error: unknown, rejected: (code: string, reply: FastifyReply) => unknown) => {
+  if (error instanceof PlayerCommandRejected) return rejected(error.code, reply);
+  if (error instanceof PlayerCommandConflict) {
+    return reply.status(409).send({ error: 'state_version_conflict', message: '状态已更新，请刷新后重试', stateRevision: error.stateRevision });
+  }
+  throw error;
+};
 
 export async function playerRoutes(
   app: FastifyInstance, 
@@ -40,12 +54,20 @@ export async function playerRoutes(
   app.post("/player/offline-report/ack", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const state = (await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0")) as EnhancedPlayerState;
-    if (state.offlineReport) {
-      state.offlineReport = undefined;
-      await storage.savePlayerState(userId, state);
+    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          (state as EnhancedPlayerState).offlineReport = undefined;
+          return { ok: true as const };
+        },
+      });
+      return reply.send({ ok: true, stateRevision: outcome.state.stateRevision });
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
     }
-    return reply.send({ ok: true });
   });
 
   app.post("/actions/start", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -53,26 +75,37 @@ export async function playerRoutes(
     if (!userId) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    
+
     const body = z
       .object({
         actionId: z.string().min(1),
         quantity: z.number().int().positive().max(5000).optional(),
+        ...revisionSchema,
       })
       .parse((req.body ?? {}) as unknown);
+    const now = new Date();
     try {
-      const result = await storage.startLifeAction({ userId, actionId: body.actionId, quantity: body.quantity, now: new Date(), contentPack });
-      return reply.send(result);
-    } catch (err: any) {
-      const msg = String(err?.message || "");
-      if (msg.startsWith("skill_level_required:")) {
-        const need = msg.split(":")[1];
-        return reply.status(400).send({ error: "skill_level_required", message: `技能等级不足，需要 ${need} 级` });
-      }
-      if (msg === "unknown_action") {
-        return reply.status(400).send({ error: "unknown_action", message: "未知的动作" });
-      }
-      throw err;
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          try {
+            startLifeActionNow(state, contentPack, body.actionId, body.quantity, now);
+          } catch (err) {
+            throw new PlayerCommandRejected(String((err as Error)?.message || 'unknown_action'));
+          }
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => {
+        if (code.startsWith('skill_level_required:')) {
+          const need = code.split(':')[1];
+          return r.status(400).send({ error: 'skill_level_required', message: `技能等级不足，需要 ${need} 级` });
+        }
+        return r.status(400).send({ error: code, message: code === 'unknown_action' ? '未知的动作' : code });
+      });
     }
   });
 
@@ -82,24 +115,26 @@ export async function playerRoutes(
       return reply.status(401).send({ error: "Unauthorized" });
     }
 
+    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
     const now = new Date();
-    // 先结算到现在，避免"停止"吞掉刚好完成的那一轮
-    const settled = await storage.simulateToNow({ userId, state: await storage.getOrCreatePlayerState(userId, "unknown"), now, contentPack });
-    const playerState = settled as EnhancedPlayerState;
-    playerState.mode = "idle";
-    playerState.lifeActionState = undefined;
-    playerState.combatFarmState = undefined;
-    // 停掉当前动作后，队列里还有的话直接接上（清空队列请用 /actions/queue/clear）
-    startNextQueuedAction(playerState, contentPack, now);
-    
-    const finalState = await storage.simulateToNow({
-      userId,
-      state: playerState,
-      now,
-      contentPack
-    });
-    
-    return reply.send(finalState);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          // 命令入口已结算到现在，不会吞掉刚好完成的那一轮
+          state.mode = "idle";
+          state.lifeActionState = undefined;
+          state.combatFarmState = undefined;
+          // 停掉当前动作后，队列里还有的话直接接上（清空队列请用 /actions/queue/clear）
+          startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+    }
   });
 
   // ---- 动作面板：服务端真值的速度/效率/每小时收益（银河奶牛的 Actions/hr、XP/hr）----
@@ -159,67 +194,106 @@ export async function playerRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     const body = z
-      .object({ actionId: z.string().min(1), quantity: z.number().int().positive().max(5000).optional() })
+      .object({ actionId: z.string().min(1), quantity: z.number().int().positive().max(5000).optional(), ...revisionSchema })
       .parse((req.body ?? {}) as unknown);
     const now = new Date();
-    const state = (await storage.simulateToNow({
-      userId,
-      state: await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0"),
-      now,
-      contentPack,
-    })) as EnhancedPlayerState;
-    const action = (contentPack.actions as any[]).find((a) => a.id === body.actionId);
-    if (!action) return reply.status(400).send({ error: "unknown_action", message: "未知的动作" });
-    if (String(action.id).startsWith("act_combat_")) return reply.status(400).send({ error: "combat_not_queueable", message: "战斗不能加入队列" });
-    if (!Array.isArray(state.activityQueue)) state.activityQueue = [];
-    if (state.activityQueue.length >= ACTION_QUEUE_MAX) {
-      return reply.status(400).send({ error: "queue_full", message: `队列最多 ${ACTION_QUEUE_MAX} 项` });
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const action = (contentPack.actions as any[]).find((a) => a.id === body.actionId);
+          if (!action) throw new PlayerCommandRejected('unknown_action');
+          if (String(action.id).startsWith('act_combat_')) throw new PlayerCommandRejected('combat_not_queueable');
+          if (!Array.isArray(state.activityQueue)) state.activityQueue = [];
+          if (state.activityQueue.length >= ACTION_QUEUE_MAX) {
+            throw new PlayerCommandRejected('queue_full');
+          }
+          // 等级不够的动作现在就拒绝；材料不够的允许排队（前面的动作可能会把材料做出来）
+          const blocker = queuedActionBlocker(state, contentPack, body.actionId);
+          if (blocker && blocker.startsWith('skill_level_required')) {
+            throw new PlayerCommandRejected(blocker);
+          }
+          state.activityQueue.push({ id: randomUUID(), actionId: body.actionId, ...(body.quantity ? { quantity: body.quantity } : {}) });
+          // 空闲时排队等于立刻开始
+          if (state.mode !== 'life_action') startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => {
+        if (code === 'unknown_action') return r.status(400).send({ error: code, message: '未知的动作' });
+        if (code === 'combat_not_queueable') return r.status(400).send({ error: code, message: '战斗不能加入队列' });
+        if (code === 'queue_full') return r.status(400).send({ error: code, message: `队列最多 ${ACTION_QUEUE_MAX} 项` });
+        if (code.startsWith('skill_level_required')) {
+          return r.status(400).send({ error: 'skill_level_required', message: `技能等级不足，需要 ${code.split(':')[1]} 级` });
+        }
+        return r.status(400).send({ error: code });
+      });
     }
-    // 等级不够的动作现在就拒绝；材料不够的允许排队（前面的动作可能会把材料做出来）
-    const blocker = queuedActionBlocker(state, contentPack, body.actionId);
-    if (blocker && blocker.startsWith("skill_level_required")) {
-      return reply.status(400).send({ error: "skill_level_required", message: `技能等级不足，需要 ${blocker.split(":")[1]} 级` });
-    }
-    state.activityQueue.push({ id: randomUUID(), actionId: body.actionId, ...(body.quantity ? { quantity: body.quantity } : {}) });
-    // 空闲时排队等于立刻开始
-    if (state.mode !== "life_action") startNextQueuedAction(state, contentPack, now);
-    const saved = await storage.savePlayerState(userId, state);
-    return reply.send(saved);
   });
 
   app.delete("/actions/queue/:id", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     const { id } = z.object({ id: z.string().min(1) }).parse(req.params as unknown);
-    const state = (await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0")) as EnhancedPlayerState;
-    state.activityQueue = (state.activityQueue || []).filter((q) => q.id !== id);
-    const saved = await storage.savePlayerState(userId, state);
-    return reply.send(saved);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(),
+        apply(state) {
+          state.activityQueue = (state.activityQueue || []).filter((q) => q.id !== id);
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+    }
   });
 
   app.post("/actions/queue/clear", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const state = (await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0")) as EnhancedPlayerState;
-    state.activityQueue = [];
-    const saved = await storage.savePlayerState(userId, state);
-    return reply.send(saved);
+    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          state.activityQueue = [];
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+    }
   });
 
   app.post("/actions/queue/move", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ id: z.string().min(1), direction: z.enum(["up", "down"]) }).parse((req.body ?? {}) as unknown);
-    const state = (await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0")) as EnhancedPlayerState;
-    const q = state.activityQueue || [];
-    const i = q.findIndex((x) => x.id === body.id);
-    const j = body.direction === "up" ? i - 1 : i + 1;
-    if (i >= 0 && j >= 0 && j < q.length) {
-      [q[i], q[j]] = [q[j], q[i]];
+    const body = z.object({ id: z.string().min(1), direction: z.enum(["up", "down"]), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const q = state.activityQueue || [];
+          const i = q.findIndex((x) => x.id === body.id);
+          const j = body.direction === "up" ? i - 1 : i + 1;
+          if (i >= 0 && j >= 0 && j < q.length) {
+            [q[i], q[j]] = [q[j], q[i]];
+          }
+          state.activityQueue = q;
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
     }
-    state.activityQueue = q;
-    const saved = await storage.savePlayerState(userId, state);
-    return reply.send(saved);
   });
 
   app.post("/combat/start", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -227,10 +301,22 @@ export async function playerRoutes(
     if (!userId) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    
-    const body = z.object({ stageId: z.string().min(1) }).parse((req.body ?? {}) as unknown);
-    const result = await storage.startCombatFarm({ userId, stageId: body.stageId, now: new Date() });
-    return reply.send(result);
+
+    const body = z.object({ stageId: z.string().min(1), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const now = new Date();
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          startCombatFarmNow(state, body.stageId, now);
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+    }
   });
 
   const CLASS_IDS = ["woodcutter", "blacksmith", "farmer", "chef", "tailor", "alchemist"] as const;
@@ -243,12 +329,22 @@ export async function playerRoutes(
 
     const body = z.object({
       classId: z.enum(CLASS_IDS),
+      ...revisionSchema,
     }).parse((req.body ?? {}) as unknown);
 
-    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    state.activeClassId = body.classId;
-    const saved = await storage.savePlayerState(userId, state);
-    return reply.send(saved);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          state.activeClassId = body.classId;
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+    }
   });
 }
 
