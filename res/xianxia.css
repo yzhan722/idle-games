@@ -1,0 +1,1168 @@
+/**
+ * 凡人修仙传 · 放置 — full reskin for the xianxia mod.
+ * Loaded after res/default.css (see index.html), so equal-specificity rules win.
+ * Ink-dark mountains, jade and gold, KaiTi headers.
+ *
+ * LAYOUT NOTE: #gamePageContainer must stay position:static — the original
+ * layout depends on #game resolving top/bottom against the viewport.
+ */
+
+/* ============================================================
+   Palette & type
+   ============================================================ */
+:root {
+	--page-background-color: #0a0f16;
+	--text-color: #d7dde6;
+	--xx-ink0: #070b11;
+	--xx-ink1: #0d141d;
+	--xx-ink2: #131c28;
+	--xx-ink3: #1a2433;
+	--xx-jade: #4fd1a5;
+	--xx-jade-dim: rgba(79, 209, 165, .35);
+	--xx-jade-faint: rgba(79, 209, 165, .14);
+	--xx-gold: #d4b06a;
+	--xx-gold-hi: #eed39a;
+	--xx-paper: #e8dfc8;
+	--xx-mute: #8fa0b5;
+	--xx-red: #b8452e;
+	--xx-line: rgba(212, 176, 106, .18);
+	--xx-serif: "KaiTi", "STKaiti", "楷体", "STSong", serif;
+	--xx-sans: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+}
+
+html, body {
+	background-color: var(--xx-ink0);
+	color: var(--text-color);
+	font-family: var(--xx-sans);
+	font-size: 14px;
+}
+
+/* drifting mist + moon glow, pure CSS */
+body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 0;
+	background:
+		radial-gradient(900px 480px at 82% -8%, rgba(212, 176, 106, .10), transparent 60%),
+		radial-gradient(1100px 700px at 12% 110%, rgba(79, 209, 165, .07), transparent 60%),
+		linear-gradient(180deg, var(--xx-ink0), #0c1220 55%, #0a0f16);
+}
+body::after {
+	content: "";
+	position: fixed;
+	inset: -20%;
+	pointer-events: none;
+	z-index: 0;
+	background:
+		radial-gradient(38% 26% at 20% 40%, rgba(120, 160, 190, .05), transparent 70%),
+		radial-gradient(30% 22% at 75% 65%, rgba(212, 176, 106, .045), transparent 70%);
+	animation: xxMist 90s linear infinite alternate;
+}
+@keyframes xxMist {
+	from { transform: translate3d(-3%, -2%, 0); }
+	to   { transform: translate3d(3%, 2%, 0); }
+}
+
+/* keep it STATIC — #game resolves top/bottom against the viewport */
+#gamePageContainer {
+	position: static;
+	width: 100%;
+	min-width: 0;
+	height: 100vh;
+	overflow: hidden;
+}
+
+a, .link {
+	color: var(--xx-gold);
+	text-decoration: none;
+}
+a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,176,106,.45); }
+
+/* ============================================================
+   Top bar — brand seal + quiet links
+   ============================================================ */
+#topBar {
+	position: absolute;
+	z-index: 5;
+	top: 0; left: 0;
+	height: 44px;
+	width: 100%;
+	min-width: 0 !important;
+	align-items: center;
+	border-bottom: 1px solid var(--xx-line);
+	background: linear-gradient(180deg, rgba(19,28,40,.96), rgba(10,15,22,.92));
+	box-shadow: 0 1px 14px rgba(0,0,0,.55);
+	backdrop-filter: blur(4px);
+}
+
+.gameTitle {
+	font-family: var(--xx-serif);
+	font-size: 21px;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+}
+.gameTitle::before {
+	content: "仙";
+	display: inline-block;
+	margin: 0 8px 0 6px;
+	padding: 1px 5px;
+	font-size: 15px;
+	line-height: 1.25;
+	color: #fff;
+	background: var(--xx-red);
+	border-radius: 3px;
+	vertical-align: 2px;
+	box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset;
+}
+#motd { color: var(--xx-mute); font-style: italic; }
+#topBar a { font-size: 12.5px; }
+.links-block a { margin: 0 1px; }
+
+#headerLinks, #devPanel { display: inline-flex; align-items: center; gap: 6px; }
+#devPanel a, #headerToolbar a { color: var(--xx-mute); }
+#devPanel a:hover, #headerToolbar a:hover { color: var(--xx-jade); }
+
+/* ============================================================
+   Layout — resources on top, nav rail left, content, log right
+   ============================================================ */
+#game {
+	position: absolute;
+	z-index: 1;
+	top: 44px;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	min-width: 0;
+	display: grid;
+	grid-template-columns: 150px minmax(460px, 1fr) 320px;
+	grid-template-rows: auto minmax(0, 1fr);
+	grid-template-areas:
+		"res  res  res"
+		"nav  main log";
+}
+
+/* resource strip */
+#leftColumn {
+	grid-area: res;
+	width: auto;
+	max-width: none;
+	min-width: 0;
+	height: auto;
+	min-height: 0;
+	max-height: 118px;
+	padding: 6px 10px;
+	margin-top: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	border-bottom: 1px solid var(--xx-line);
+	background: rgba(13, 20, 29, .72);
+}
+
+/* default.css renders .res-table as a table — force it to a wrapping
+   chip flow so resources spread horizontally across the strip */
+#leftColumn .res-table {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+	width: auto;
+	max-width: none;
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+/* resource chips — one flat pill per resource, no nested boxes */
+#leftColumn .res-row {
+	display: inline-flex !important;
+	align-items: baseline;
+	gap: 6px;
+	white-space: nowrap;
+	padding: 3px 11px;
+	margin: 2px 6px 2px 0;
+	min-height: 24px;
+	background: rgba(26, 36, 51, .55);
+	border: 1px solid rgba(120, 130, 145, .26);
+	border-radius: 8px;
+	font-size: 12.5px;
+}
+#leftColumn .res-cell {
+	display: inline;
+	border: none !important;
+	background: transparent !important;
+	padding: 0;
+	margin: 0;
+	width: auto !important;
+	max-width: none !important;
+	min-width: 0;
+	overflow: visible;
+	text-overflow: clip;
+}
+#leftColumn .res-cell.resource-name {
+	color: #93a4b8;
+	font-size: 12px;
+	letter-spacing: 1px;
+}
+#leftColumn .res-cell.resAmount {
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+#leftColumn .res-cell.maxRes {
+	color: var(--xx-mute);
+	font-size: 12px;
+}
+#leftColumn .res-cell.resPerTick {
+	color: var(--xx-jade);
+	font-size: 12px;
+}
+#leftColumn .res-cell.positive-weather { color: #6fc3df; font-size: 11px; }
+#leftColumn .res-cell.negative-weather { color: #d98a76; font-size: 11px; }
+#leftColumn .res-cell.resLimitNotice { color: var(--xx-gold); }
+#leftColumn .res-cell.resLimitWarn { color: #e0604a; opacity: 1; }
+#leftColumn .res-row.hidden .res-cell.resource-name { color: rgba(147,164,184,.5); }
+
+/* collapse / edit toggles at strip edges — quiet ghost buttons */
+#leftColumn .res-toolbar { display: inline-block; margin: 2px 8px 2px 0; vertical-align: middle; }
+#leftColumn .res-toolbar a, #leftColumn .link.collapse {
+	display: inline-block;
+	padding: 3px 8px;
+	margin: 0 4px 0 0;
+	border: 1px solid rgba(120,130,145,.28);
+	border-radius: 5px;
+	color: var(--xx-mute);
+	font-size: 10px;
+	line-height: 1.2;
+	vertical-align: middle;
+}
+#leftColumn .res-toolbar a:hover, #leftColumn .link.collapse:hover {
+	color: var(--xx-jade);
+	border-color: var(--xx-jade-dim);
+}
+#leftColumn .res-toolbar .link.toggled { color: var(--xx-gold-hi); }
+#leftColumn .res-toolbar .svg-icon { width: 10px; height: 10px; display: block; margin: 1px auto; }
+#leftColumn .res-toggle-hidden { margin: 0; font-size: 11px; color: var(--xx-mute); }
+#leftColumn .res-toggle-hidden input { vertical-align: -1px; }
+
+.res-toolbar a, .link.collapse {
+	display: inline-block;
+	padding: 2px 8px;
+	margin: 0 4px 0 0;
+	border: 1px solid var(--xx-line);
+	border-radius: 4px;
+	color: var(--xx-mute);
+	font-size: 12px;
+}
+.sidebar-section { display: inline-block; }
+.pin-link {
+	display: inline-flex;
+	margin: 3px 6px 3px 0;
+	padding: 4px 10px;
+	border: 1px dashed var(--xx-jade-dim);
+	border-radius: 6px;
+	color: var(--xx-jade);
+}
+.pin-link a { color: var(--xx-jade); }
+
+/* mid column dissolves; its children join the grid */
+#midColumn { display: contents; }
+#gameContainerId { display: contents; border: none !important; }
+
+/* stray static children of #gameContainerId (the "Oops!" fallback) */
+#gameContainerId > span, #gameContainerId > #gameContainerHelp {
+	display: none;
+}
+
+/* the "?" tooltip icon — float it over the top-right of the main pane */
+#midColumnViewport {
+	position: absolute;
+	top: 8px;
+	right: 14px;
+	z-index: 4;
+	float: none !important;
+	padding: 0 !important;
+}
+
+/* vertical tab rail */
+.tabsContainer {
+	grid-area: nav;
+	position: static !important;		/* default.css sets position:absolute */
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 12px 8px;
+	margin-top: 0;
+	text-align: left;
+	border-right: 1px solid var(--xx-line);
+	background: rgba(11, 16, 24, .6);
+	overflow-y: auto;
+}
+.tabsContainer span { display: none; }		/* "|" separators */
+#game .tabsContainer .tab,
+body.scheme_default .tabsContainer a.tab {
+	display: block;
+	padding: 9px 12px;
+	border-left: 3px solid transparent;
+	border-radius: 0 6px 6px 0;
+	font-family: var(--xx-serif);
+	font-size: 16px;
+	letter-spacing: 3px;
+	color: var(--xx-mute) !important;
+}
+#game .tabsContainer .tab:hover {
+	color: var(--xx-paper) !important;
+	background: rgba(79, 209, 165, .07);
+}
+#game .tabsContainer .tab.activeTab,
+body.scheme_default .tabsContainer a.tab.activeTab {
+	color: var(--xx-gold-hi) !important;
+	border-left-color: var(--xx-jade);
+	background: linear-gradient(90deg, var(--xx-jade-faint), transparent 80%);
+	text-shadow: 0 0 10px rgba(212, 176, 106, .35);
+}
+
+body.scheme_default .upgrade-available { color: var(--xx-jade); }
+
+/* main content pane */
+.tabInner {
+	grid-area: main;
+	min-height: 0;
+	margin: 0;
+	padding: 14px 18px;
+	border: none;
+	overflow-y: auto;
+	overflow-x: hidden;
+	background: rgba(13, 20, 29, .5);
+}
+.tabInner table.table { width: 100%; }
+
+/* log rail */
+#rightColumn {
+	grid-area: log;
+	position: relative;
+	top: 0;
+	width: auto;
+	min-width: 0;
+	max-width: none;
+	height: auto;
+	min-height: 0;
+	padding: 10px 10px 0;
+	margin-top: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	border-left: 1px solid var(--xx-line);
+	background: rgba(11, 16, 24, .6);
+}
+#rightColumn .right-tab {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+#gameLog {
+	flex: 1;
+	min-height: 0 !important;
+	height: auto !important;
+	overflow-y: auto;
+	padding-top: 8px;
+}
+#gameLog div { padding: 1px 4px; line-height: 1.55; }
+
+#calendarDiv, #calendarSign {
+	font-family: var(--xx-serif);
+	font-size: 15px;
+	letter-spacing: 2px;
+	color: var(--xx-gold);
+}
+#observeButton a, .right-tab-header a {
+	display: inline-block;
+	padding: 2px 9px;
+	margin: 4px 4px 4px 0;
+	border: 1px solid var(--xx-line);
+	border-radius: 4px;
+	color: var(--xx-mute);
+	font-size: 12px;
+}
+.right-tab-header a.active { color: var(--xx-gold-hi); border-color: var(--xx-gold); }
+
+#toggleCenter { display: none; }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn {
+	position: relative;
+	display: inline-block;
+	margin: 4px 6px 4px 0;
+	padding: 8px 14px;
+	border: 1px solid rgba(79, 209, 165, .32);
+	border-radius: 6px;
+	background: linear-gradient(180deg, rgba(32, 44, 60, .92), rgba(19, 28, 40, .92));
+	color: var(--xx-paper);
+	cursor: pointer;
+	transition: border-color .15s, box-shadow .15s, transform .05s;
+	user-select: none;
+}
+.btn:hover {
+	border-color: var(--xx-gold);
+	box-shadow: 0 0 10px rgba(212, 176, 106, .25), 0 0 2px rgba(79,209,165,.4) inset;
+}
+.btn:active { transform: translateY(1px); }
+.btn.disabled {
+	opacity: .42;
+	cursor: default;
+	border-color: rgba(120, 130, 145, .25);
+}
+.btn.disabled:hover { box-shadow: none; border-color: rgba(120,130,145,.25); }
+.btn.modern {
+	font-family: var(--xx-sans);
+	border-radius: 999px;
+	padding: 0;
+	width: 264px;
+	border-color: rgba(79, 209, 165, .32);
+	background: linear-gradient(180deg, rgba(32, 44, 60, .92), rgba(19, 28, 40, .92));
+}
+.btn.modern:hover {
+	border-color: var(--xx-gold);
+	background: linear-gradient(180deg, rgba(38, 52, 70, .95), rgba(22, 33, 46, .95));
+	box-shadow: 0 0 10px rgba(212, 176, 106, .25);
+}
+.btn.modern.disabled { border-color: rgba(120, 130, 145, .25); }
+.btn.modern.disabled:hover { border-color: rgba(120,130,145,.25); background: inherit; }
+.modern .btnContent { padding: 10px 0 10px 12px; color: var(--xx-paper); }
+.btn.modern a {
+	color: var(--xx-jade);
+	background-color: rgba(79, 209, 165, .08);
+	border-left: 1px solid var(--xx-jade-dim);
+	padding: 10px 6px 10px 6px !important;
+	margin: -10px 0;
+	min-width: 20px;
+}
+.btn.modern a.enabled { color: var(--xx-gold-hi); font-weight: bold; }
+.btnTitle { font-size: 13.5px; }
+
+/* ============================================================
+   Panels, dialogs, tooltip
+   ============================================================ */
+.dialog, #optionsDiv, #creditsDiv {
+	background: rgba(16, 23, 33, .97) !important;
+	border: 1px solid var(--xx-gold) !important;
+	border-radius: 10px;
+	box-shadow: 0 12px 50px rgba(0,0,0,.6);
+	color: var(--text-color);
+	padding: 18px;
+	z-index: 50;
+	max-width: 94vw;
+	box-sizing: border-box;
+}
+#tooltip {
+	background: rgba(10, 15, 22, .97) !important;
+	border: 1px solid var(--xx-jade-dim) !important;
+	border-radius: 6px;
+	box-shadow: 0 8px 30px rgba(0,0,0,.55);
+	color: #dfe6ee;
+	padding: 8px 10px;
+}
+.button_tooltip .noRes, .limited { color: #e0604a; }
+
+select, input[type="text"], textarea {
+	background: var(--xx-ink2);
+	color: var(--text-color);
+	border: 1px solid rgba(120, 130, 145, .4);
+	border-radius: 5px;
+	padding: 3px 6px;
+}
+input[type="checkbox"] { accent-color: var(--xx-jade); }
+
+progress, #loadingProgressBar {
+	appearance: none;
+	height: 8px;
+	border-radius: 999px;
+	background: var(--xx-ink2);
+}
+progress::-webkit-progress-bar, #loadingProgressBar::-webkit-progress-bar {
+	background: var(--xx-ink2); border-radius: 999px;
+}
+progress::-webkit-progress-value, #loadingProgressBar::-webkit-progress-value {
+	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold));
+	border-radius: 999px;
+}
+progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
+	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold));
+	border-radius: 999px;
+}
+
+/* loading screen — stays under the taller top bar */
+#loadingContainer { top: 44px; }
+#loadingContainer .content {
+	font-family: var(--xx-serif);
+}
+#loadingContainer .content::before {
+	content: "凡人修仙传 · 放置";
+	display: block;
+	font-size: 34px;
+	letter-spacing: 8px;
+	color: var(--xx-gold-hi);
+	margin-bottom: 22px;
+	text-shadow: 0 0 24px rgba(212, 176, 106, .3);
+}
+
+/* scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(79, 209, 165, .28); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(212, 176, 106, .45); }
+* { scrollbar-width: thin; scrollbar-color: rgba(79,209,165,.3) transparent; }
+
+/* ============================================================
+   Small polish
+   ============================================================ */
+.console-intro {
+	font-family: var(--xx-serif);
+	font-size: 15px !important;
+	letter-spacing: 1px;
+	color: var(--xx-paper);
+}
+.cultivationHeader {
+	font-family: var(--xx-serif);
+	font-size: 17px;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+	background: rgba(26, 36, 51, .5);
+	border: 1px solid var(--xx-line);
+	border-radius: 8px;
+	padding: 12px 16px;
+	margin-bottom: 4px;
+}
+.xx-hd-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.xx-realm-big { font-size: 24px; letter-spacing: 4px; }
+.xx-hd-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.xx-hd-extra { margin-top: 6px; font-size: 13px; color: var(--xx-jade); letter-spacing: 1px; }
+.xx-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 13px;
+	letter-spacing: 1px;
+	background: rgba(13, 20, 29, .8);
+	border: 1px solid rgba(120, 130, 145, .3);
+	color: var(--xx-mute);
+}
+.xx-chip.xx-bonus { color: var(--xx-gold-hi); border-color: var(--xx-line); }
+.xx-chip.xx-secl { color: #b58ae0; border-color: rgba(181, 138, 224, .4); }
+.xx-root-wei  { color: #9aa4b0; }
+.xx-root-san  { color: var(--xx-jade); }
+.xx-root-zhen { color: #6fc3df; }
+.xx-root-yi   { color: #b58ae0; }
+.xx-root-tian { color: var(--xx-gold-hi); border-color: rgba(212,176,106,.5); }
+.xx-demon { color: #d98a76; }
+.xx-life-low { color: #d9a066; border-color: rgba(217, 160, 102, .45); }
+.xx-life-crit { color: #e0604a; border-color: rgba(224, 96, 74, .55); }
+.xx-demonbar {
+	display: inline-block;
+	width: 56px; height: 6px;
+	border-radius: 999px;
+	background: rgba(96, 34, 26, .6);
+	overflow: hidden;
+	vertical-align: middle;
+}
+.xx-demonbar i {
+	display: block; height: 100%;
+	background: linear-gradient(90deg, #7a3b2c, #e0604a);
+	border-radius: 999px;
+}
+.xx-daotitle { color: var(--xx-paper); border-color: var(--xx-jade-dim); }
+.xx-hd-fates { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.xx-fate-lbl { font-size: 12px; color: var(--xx-mute); letter-spacing: 3px; }
+.xx-fate { color: var(--xx-gold-hi); border-color: rgba(212, 176, 106, .4); cursor: help; }
+.xx-art { color: #9ecbff; border-color: rgba(158, 203, 255, .4); cursor: help; }
+
+/* 道途指引 — onboarding checklist */
+.xxGuide {
+	font-family: var(--xx-serif);
+	font-size: 13px;
+	letter-spacing: 1px;
+	color: var(--xx-paper);
+	background: rgba(20, 30, 24, .55);
+	border: 1px dashed var(--xx-jade-dim);
+	border-radius: 8px;
+	padding: 8px 14px;
+	margin: 4px 0;
+}
+.xx-guide-hd {
+	font-size: 12px;
+	letter-spacing: 3px;
+	color: var(--xx-jade);
+	margin-bottom: 4px;
+}
+.xx-guide-step { padding: 2px 0 2px 2px; color: var(--xx-paper); }
+.xx-guide-step::before { content: "▸ "; color: var(--xx-jade); }
+.xx-guide-nav {
+	color: var(--xx-jade);
+	cursor: pointer;
+	font-size: 12px;
+	margin-left: 4px;
+	white-space: nowrap;
+	display: inline-block;
+	padding: 4px 6px;
+	margin-top: -3px;
+	margin-bottom: -3px;
+	border-radius: 4px;
+	min-height: 24px;
+	box-sizing: border-box;
+	line-height: 16px;
+}
+.xx-guide-nav:hover { text-decoration: underline; }
+.xx-guide-prog { font-size: 12px; color: var(--xx-mute); margin-left: 4px; }
+.xx-guide-more { font-size: 12px; color: var(--xx-mute); padding-top: 3px; }
+
+.cultivationSection {
+	font-family: var(--xx-serif);
+	font-size: 14px;
+	letter-spacing: 4px;
+	color: var(--xx-mute);
+	border-bottom: 1px solid var(--xx-line);
+	margin: 16px 0 8px;
+	padding-bottom: 4px;
+}
+
+.xxStageGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 6px;
+	margin-bottom: 8px;
+}
+@media (max-width: 1100px) {
+	.xxStageGrid { grid-template-columns: minmax(0, 1fr); }
+}
+.tabInner.Cultivation .xxStageGrid .btn.modern {
+	width: auto;
+	max-width: none;
+	margin: 0;
+}
+
+/* button state marks */
+.xx-done { color: var(--xx-jade); letter-spacing: 1px; }
+.xx-chance { font-size: 12px; }
+.xx-c-hi  { color: var(--xx-jade); }
+.xx-c-mid { color: var(--xx-gold); }
+.xx-c-lo  { color: #e0604a; }
+
+/* action buttons — compact utility pills, distinct from stage buttons */
+.xxActionRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 4px 0 10px;
+}
+.tabInner.Cultivation .btn.modern.xxAction {
+	display: inline-flex;
+	align-items: center;
+	width: auto;
+	max-width: 220px;
+	min-height: 32px;
+	margin: 0;
+	padding: 5px 14px;
+	border-style: dashed;
+	border-color: var(--xx-jade-dim);
+}
+.tabInner.Cultivation .btn.modern.xxAction .btnTitle {
+	font-size: 13.5px;
+	color: var(--xx-jade);
+}
+/* shared cooldown — blocked pills dim; the active seclusion pill burns gold */
+.tabInner.Cultivation .btn.modern.xxAction.xxBlocked {
+	opacity: .4;
+	border-style: solid;
+	border-color: var(--xx-line);
+	cursor: default;
+}
+.tabInner.Cultivation .btn.modern.xxAction.xxBlocked .btnTitle { color: var(--xx-ink-dim, #8a97a5); }
+.tabInner.Cultivation .btn.modern.xxAction.xxSecluded {
+	border-style: solid;
+	border-color: var(--xx-gold);
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 14px rgba(212,175,55,.22);
+}
+.tabInner.Cultivation .btn.modern.xxAction.xxSecluded .btnTitle { color: var(--xx-gold-hi); }
+
+/* shared 调息 bar — one breath for wander/seclude/rift/greater-rift */
+.xxCdWrap { padding: 0 0 12px; }
+.xxCdLabel {
+	font-size: 12px;
+	letter-spacing: 2px;
+	color: var(--xx-jade);
+	margin-bottom: 4px;
+}
+.xxCdBar {
+	height: 6px;
+	border: 1px solid var(--xx-line);
+	border-radius: 4px;
+	background: rgba(10, 16, 24, .6);
+	overflow: hidden;
+}
+.xxCdFill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--xx-jade-dim), var(--xx-gold));
+	transition: width .2s linear;
+}
+
+/* 上古秘境 panel — floor ladder, key count, last outcome */
+.xxRiftPanel {
+	margin: 0 0 14px;
+	padding: 12px 14px 10px;
+	border: 1px solid var(--xx-line);
+	border-radius: 10px;
+	background:
+		radial-gradient(120% 140% at 50% -20%, rgba(212, 175, 55, .10), transparent 60%),
+		radial-gradient(80% 100% at 90% 110%, rgba(120, 80, 200, .10), transparent 55%),
+		rgba(12, 18, 28, .72);
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 6px 24px rgba(0,0,0,.35);
+}
+.xxRiftHead {
+	font-family: var(--xx-serif);
+	font-size: 14.5px;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+}
+.xxRiftLadder {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+	padding: 10px 0 6px;
+}
+.xxFloor {
+	min-width: 30px;
+	height: 30px;
+	line-height: 30px;
+	text-align: center;
+	font-size: 11.5px;
+	border-radius: 6px;
+	border: 1px solid var(--xx-line);
+	color: #5b6b7d;
+	background: rgba(8, 12, 18, .6);
+}
+.xxFloor.lit {
+	color: #1a1408;
+	font-weight: 700;
+	border-color: var(--xx-gold);
+	background: linear-gradient(180deg, #e8c86a, #b8912f);
+	box-shadow: 0 0 10px rgba(212,175,55,.35), inset 0 1px 0 rgba(255,255,255,.4);
+}
+.xxFloor.next {
+	color: var(--xx-gold-hi);
+	border-color: var(--xx-gold);
+	animation: xxFloorPulse 1.6s ease-in-out infinite;
+}
+@keyframes xxFloorPulse {
+	0%, 100% { box-shadow: 0 0 4px rgba(212,175,55,.15); }
+	50% { box-shadow: 0 0 16px rgba(212,175,55,.55); }
+}
+.xxRiftFoot {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	font-size: 12.5px;
+}
+.xxRiftKeys { color: var(--xx-gold); letter-spacing: 1px; }
+.xxRiftHint { color: #5b6b7d; font-size: 11.5px; }
+.xxRiftResult {
+	margin-top: 8px;
+	padding: 7px 10px;
+	border-radius: 6px;
+	font-size: 13px;
+	letter-spacing: .5px;
+	animation: xxResultIn .5s ease-out;
+}
+.xxRiftResult.ok {
+	color: var(--xx-gold-hi);
+	background: rgba(212, 175, 55, .10);
+	border-left: 3px solid var(--xx-gold);
+}
+.xxRiftResult.fail {
+	color: #e08a7a;
+	background: rgba(200, 80, 60, .10);
+	border-left: 3px solid #c0503c;
+}
+@keyframes xxResultIn {
+	from { opacity: 0; transform: translateY(-6px); }
+	to { opacity: 1; transform: none; }
+}
+
+/* fate choice dialog */
+.xxFateOverlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(5, 9, 13, .72);
+	z-index: 100;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.xxFateCard {
+	position: static;
+	width: 520px;
+	max-width: 92vw;
+	margin: 0;
+	transform: none;
+	background: #101a26;
+	border: 1px solid var(--xx-line);
+	border-radius: 10px;
+	padding: 22px 24px;
+	box-shadow: 0 12px 60px rgba(0,0,0,.6);
+}
+.xxFateTitle {
+	font-family: var(--xx-serif);
+	font-size: 20px;
+	letter-spacing: 3px;
+	color: var(--xx-gold-hi);
+	margin-bottom: 10px;
+}
+.xxFateStory {
+	font-size: 14px;
+	line-height: 1.7;
+	color: var(--xx-paper);
+	margin-bottom: 16px;
+}
+.btn.modern.xxFateBtn {
+	width: 100%;
+	max-width: none;
+	border-radius: 8px;
+	margin-top: 8px;
+}
+.btn.modern.xxFateBtn .btnTitle { text-align: left; }
+.xxFateHint { font-size: 12px; color: var(--xx-jade); font-weight: normal; }
+
+/* 坐化卡——寿尽 modal,比仙缘卡更暗沉 */
+.xxDeathCard { border-color: rgba(224, 96, 74, .4); }
+.xxDeathCard .xxFateTitle { color: #c8b8a8; }
+
+/* log message palette */
+.msg.type_notice   { color: var(--xx-jade); }
+.msg.type_important { color: var(--xx-gold-hi); }
+.msg.type_alert    { color: #e0604a; }
+.msg.type_urgent   { color: #b58ae0; }
+
+hr { border: none; border-top: 1px solid var(--xx-line); }
+.svg-icon { filter: drop-shadow(0 0 2px rgba(79,209,165,.3)); }
+
+#footerLinks { display: none; }
+.kgnet-login-link-container, .kgnet-login-link { display: none !important; }
+
+/* realm ladder fills the pane */
+.tabInner.Cultivation .btn.modern {
+	display: block;
+	width: 100%;
+	max-width: 560px;
+}
+.tabInner.Cultivation .btn.modern .btnContent { padding: 12px 16px; }
+
+/* faint dao seal watermark over the content pane */
+.tabInner { position: relative; }
+.tabInner::after {
+	content: "道";
+	position: absolute;
+	right: 24px;
+	bottom: 24px;
+	font-family: var(--xx-serif);
+	font-size: 170px;
+	line-height: 1;
+	color: rgba(212, 176, 106, .045);
+	pointer-events: none;
+	z-index: 0;
+}
+
+/* group separators and craft-table hover */
+.bldGroupContainer { border-top: 1px solid var(--xx-line); }
+table.craftTable tr:hover td { background-color: rgba(79, 209, 165, .12); }
+
+/* header text inside content */
+.panel-title, .bldTopContainer > a, .bldTopContainer > span {
+	color: var(--xx-mute);
+}
+
+@media (max-width: 1100px) {
+	#game { grid-template-columns: 120px minmax(340px, 1fr) 260px; }
+}
+
+/* ---- narrow: log rail folds into a bottom strip ---- */
+@media (max-width: 860px) {
+	#game {
+		grid-template-columns: 92px minmax(0, 1fr);
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		grid-template-areas:
+			"res res"
+			"nav main"
+			"log log";
+	}
+	#leftColumn { max-height: 80px; }
+	#rightColumn {
+		max-height: 140px;
+		border-left: none;
+		border-top: 1px solid var(--xx-line);
+	}
+	#game .tabsContainer .tab {
+		font-size: 14px;
+		letter-spacing: 1px;
+		padding: 8px 9px;
+	}
+	.tabInner { padding: 10px 12px; }
+	#midColumnViewport { right: 10px; top: 6px; }
+
+	/* dialogs: kill the 600px + negative-margin centering */
+	.dialog {
+		left: 50% !important;
+		margin-left: 0 !important;
+		margin-top: 0 !important;
+		transform: translate(-50%, -50%);
+	}
+	/* the fate card already centers itself via the flex overlay — undo that shift */
+	.xxFateCard { transform: none; }
+	.help, .credits {
+		width: auto;
+		max-width: 92vw;
+	}
+	.credits { height: auto; max-height: 80vh; }
+}
+
+/* ---- phones: single column, tabs become a horizontal strip ---- */
+@media (max-width: 640px) {
+	#gamePageContainer { height: 100dvh; }	/* mobile browser chrome safe */
+
+	#topBar { height: 38px; padding: 0 4px; flex-wrap: nowrap; box-sizing: border-box; }
+	.gameTitle { font-size: 16px; letter-spacing: 1px; }
+	.gameTitle::before { font-size: 12px; margin-right: 4px; }
+	#topBar .links-block a, #topBar a { font-size: 12px; }
+	#game { top: 38px; }
+
+	/* keep 保存|选项|转世 on the bar: hide HUD icons + motd on phones */
+	#headerToolbar, #motd, #autosaveTooltip { display: none !important; }
+	#headerLinks { display: none !important; }
+	#topBar .links-block { flex: 0 0 auto; margin-left: auto; }
+
+	#game {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: auto auto minmax(0, 1fr) auto;
+		grid-template-areas:
+			"res"
+			"nav"
+			"main"
+			"log";
+	}
+
+	/* tab rail -> horizontal scrollable strip */
+	.tabsContainer {
+		flex-direction: row;
+		align-items: center;
+		gap: 2px;
+		padding: 4px 6px;
+		border-right: none;
+		border-bottom: 1px solid var(--xx-line);
+		overflow-x: auto;
+		overflow-y: hidden;
+		-webkit-overflow-scrolling: touch;
+	}
+	#game .tabsContainer .tab {
+		flex: 0 0 auto;
+		padding: 6px 12px 7px;
+		border-left: none;
+		border-bottom: 3px solid transparent;
+		border-radius: 6px 6px 0 0;
+		font-size: 14px;
+		letter-spacing: 1px;
+		white-space: nowrap;
+	}
+	#game .tabsContainer .tab.activeTab {
+		border-left-color: transparent;
+		border-bottom-color: var(--xx-jade);
+		background: rgba(79, 209, 165, .1);
+	}
+
+	#leftColumn { max-height: 96px; padding: 4px 8px; }
+	#leftColumn .res-table { gap: 3px; }
+	.res-row { margin: 2px 3px 2px 0; padding: 3px 8px; font-size: 12px; }
+
+	#rightColumn {
+		max-height: 130px;
+		border-left: none;
+		border-top: 1px solid var(--xx-line);
+	}
+	#gameLog { font-size: 12px; }
+
+	/* fat-finger targets */
+	.tabInner { padding: 8px 10px; }
+	.btn.modern { width: 100%; max-width: none; }
+	.btn.modern .btnContent { padding: 12px; }
+	/* 4 action pills share a 2×2 grid — the 上古秘境 label is long, let it wrap */
+	.tabInner.Cultivation .btn.modern.xxAction { width: auto; max-width: none; flex: 1 1 46%; }
+	.cultivationHeader { padding: 10px 12px; }
+	.xxFateCard { padding: 16px 14px; }
+	.xxActionRow { gap: 5px; }
+	.xx-realm-big { font-size: 19px; }
+
+	#tooltip { max-width: 86vw; }
+	#midColumnViewport { right: 8px; top: 6px; }
+}
+
+/* ============================================================
+   Premium polish — micro-interactions, layered light, quiet motion
+   ============================================================ */
+
+/* crisp type everywhere */
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+/* buttons: hairline top-light at rest, lift + warm glow on hover, sink on press */
+.btn {
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+	transition: border-color .16s, box-shadow .16s, transform .1s, background .16s, opacity .16s;
+}
+.btn:not(.disabled):hover {
+	transform: translateY(-1px);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, .07),
+		0 4px 14px rgba(0, 0, 0, .38),
+		0 0 10px rgba(212, 176, 106, .25);
+}
+.btn:not(.disabled):active { transform: translateY(0); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+.btn:focus-visible { outline: 2px solid var(--xx-jade-dim); outline-offset: 1px; }
+
+/* stage buttons that are done read as carved-in jade, not just colored text */
+.tabInner.Cultivation .xxStageGrid .btn.modern:has(.xx-done) {
+	border-color: var(--xx-jade-dim);
+	background: linear-gradient(180deg, rgba(21, 34, 30, .9), rgba(13, 20, 29, .9));
+}
+
+/* tab rail: soft transitions + a jade seed on the active entry */
+#game .tabsContainer .tab {
+	transition: color .18s, background .18s, border-color .18s, padding-left .18s;
+}
+#game .tabsContainer .tab:hover { padding-left: 15px; }
+#game .tabsContainer .tab.activeTab::before {
+	content: "";
+	display: inline-block;
+	width: 5px; height: 5px;
+	margin: 0 6px 2px 0;
+	border-radius: 999px;
+	background: var(--xx-jade);
+	box-shadow: 0 0 8px var(--xx-jade);
+}
+
+/* resource chips respond to the cursor */
+#leftColumn .res-row { transition: border-color .18s, background .18s, transform .12s; }
+#leftColumn .res-row:hover {
+	border-color: var(--xx-jade-dim);
+	background: rgba(30, 42, 58, .7);
+	transform: translateY(-1px);
+}
+
+/* header card: layered ink, faint gold top-light */
+.cultivationHeader {
+	background: linear-gradient(135deg, rgba(26, 36, 51, .75), rgba(16, 23, 33, .55));
+	box-shadow: inset 0 1px 0 rgba(212, 176, 106, .1), 0 3px 14px rgba(0, 0, 0, .3);
+}
+
+/* guide panel breathes a little jade */
+.xxGuide { box-shadow: inset 0 0 26px rgba(79, 209, 165, .05); }
+
+/* section headers get a small jade seal mark */
+.cultivationSection::before {
+	content: "◈";
+	margin-right: 8px;
+	font-size: 11px;
+	color: var(--xx-jade-dim);
+	vertical-align: 2px;
+}
+
+/* fate & artifact chips lift like seals */
+.xx-chip { transition: border-color .2s, transform .15s, box-shadow .2s; }
+.xx-fate:hover, .xx-art:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.4); }
+
+/* the fate overlay is the game's stage — give it theater */
+.xxFateOverlay { backdrop-filter: blur(3px); }
+.xxFateCard {
+	border-color: var(--xx-gold);
+	box-shadow:
+		0 14px 60px rgba(0, 0, 0, .65),
+		0 0 0 1px rgba(212, 176, 106, .14),
+		0 0 40px rgba(212, 176, 106, .1);
+	animation: xxFateIn .3s cubic-bezier(.2, .9, .3, 1.2);
+}
+@keyframes xxFateIn {
+	from { opacity: 0; transform: translateY(12px) scale(.96); }
+	to   { opacity: 1; transform: none; }
+}
+.xxFateBtn { transition: border-color .15s, transform .12s, box-shadow .15s; }
+.xxFateBtn:hover { transform: translateY(-1px); }
+
+/* progress bars carry their own glow */
+progress::-webkit-progress-value, #loadingProgressBar::-webkit-progress-value {
+	box-shadow: 0 0 8px rgba(79, 209, 165, .5);
+}
+progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
+	box-shadow: 0 0 8px rgba(79, 209, 165, .5);
+}
+
+/* inputs: a jade ring instead of the default outline */
+select:focus, input[type="text"]:focus, textarea:focus {
+	outline: none;
+	border-color: var(--xx-jade);
+	box-shadow: 0 0 0 2px rgba(79, 209, 165, .2);
+}
+
+/* slimmer scrollbar thumb */
+::-webkit-scrollbar-thumb { border: 2px solid transparent; background-clip: padding-box; }
+
+/* links & quiet buttons ease their color */
+a, .link, .pin-link, .res-toolbar a { transition: color .15s, border-color .15s, text-shadow .15s; }
+
+/* visible focus on the non-.btn interactive bits */
+.tabsContainer .tab:focus-visible, .xx-guide-nav:focus-visible {
+	outline: 2px solid var(--xx-jade-dim);
+	outline-offset: 1px;
+	border-radius: 4px;
+}
+
+/* form controls inherit the page type instead of falling back to Arial */
+input, select, textarea, button { font-family: inherit; }
+
+/* upstream shrinks crowded building buttons to 90% via class + an inline style
+   once 10+ are owned — pointless with short Chinese names, and it read as a bug
+   next to full-size neighbours (needs !important to beat the inline style) */
+.btn.small-text { font-size: 100% !important; }
+.btn.small-text span { font-size: 100%; }
+
+/* respect reduced-motion — cover every transition/animation, not just ours */
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after {
+		animation-duration: .01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: .01ms !important;
+	}
+}
+
+/* ---------------- 江湖榜 (jianghu leaderboard) ---------------- */
+.jianghuBoard { margin-bottom: 24px; }
+.jianghuControls { margin: 6px 0 10px; display: flex; align-items: center; gap: 8px; }
+.jianghuControls input[type="text"] {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(200,170,90,0.4);
+    color: inherit;
+    padding: 4px 8px;
+    border-radius: 3px;
+    width: 140px;
+}
+.jianghuTable th {
+    text-align: left;
+    padding: 4px 14px 4px 0;
+    border-bottom: 1px solid rgba(200,170,90,0.35);
+    font-weight: normal;
+    opacity: 0.75;
+}
+.jianghuTable td { padding: 3px 14px 3px 0; }
+.jianghuTable tr.jianghuSelf td {
+    color: #e8c76a;
+    text-shadow: 0 0 8px rgba(232,199,106,0.35);
+}
