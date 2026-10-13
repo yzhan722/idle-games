@@ -25,7 +25,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		type : "common",
 		visible: true,
 		calculatePerTick: true,
-		aiCanDestroy: true
 	},{
 		name : "wood",
 		title: $I("resources.wood.title"),
@@ -33,14 +32,12 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		craftable: true,
 		visible: true,
 		calculatePerTick: true,
-		aiCanDestroy: true,
 	},{
 		name : "minerals",
 		title: $I("resources.minerals.title"),
 		type : "common",
 		visible: true,
 		calculatePerTick:  true,
-		aiCanDestroy: true
 	},{
 		name : "coal",
 		title: $I("resources.coal.title"),
@@ -48,14 +45,12 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: true,
 		color: "gray",
 		calculatePerTick: true,
-		aiCanDestroy: true
 	},{
 		name : "iron",
 		title: $I("resources.iron.title"),
 		type : "common",
 		visible: true,
 		calculatePerTick: true,
-		aiCanDestroy: true,
 		tag: "baseMetal"
 	},{
 		name : "titanium",
@@ -63,7 +58,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		type : "common",
 		visible: true,
 		calculatePerTick: true,
-		aiCanDestroy: true,
 		tag: "baseMetal"
 	},{
 		name : "gold",
@@ -71,7 +65,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		type : "common",
 		visible: true,
 		calculatePerTick: true,
-		aiCanDestroy: true,
 		tag: "baseMetal"
 	},{
 		name : "oil",
@@ -79,7 +72,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		type : "common",
 		visible: true,
 		calculatePerTick: true,
-		aiCanDestroy: true,
 		isNotRefundable: true
 	},{
 		name : "uranium",
@@ -88,7 +80,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: true,
 		color: "#4EA24E",
 		calculatePerTick: true,
-		aiCanDestroy: true,
 		tag: "baseMetal"
 	},{
 		name : "unobtainium",
@@ -98,7 +89,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		display: true,
 		color: "#A00000",
 		calculatePerTick: true,
-		aiCanDestroy: true,
 		tag: "baseMetal"
 	},
 
@@ -157,13 +147,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		color: "#7B4FA6",
 		calculatePerTick: true
 	},{
-		name : "kittens",
-		title: $I("resources.kittens.title"),
-		type : "common",
-		transient: true,
-		visible: false,
-		persists: false
-	},{
 		name : "zebras",
 		title: $I("resources.zebras.title"),
 		type : "common",
@@ -213,7 +196,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: true,
 		persists: false,
 		calculatePerTick: true,
-		aiCanDestroy: true
 	},{
 		name : "ivory",
 		title: $I("resources.ivory.title"),
@@ -222,7 +204,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: true,
 		persists: false,
 		calculatePerTick: true,
-		aiCanDestroy: true
 	},{
 		name : "spice",
 		title: $I("resources.spice.title"),
@@ -231,7 +212,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: true,
 		persists: false,
 		calculatePerTick: true,
-		aiCanDestroy: true
 	},{
 		name : "unicorns",
 		title: $I("resources.unicorns.title"),
@@ -240,7 +220,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: true,
 		persists: false,
 		calculatePerTick: true,
-		aiCanDestroy: true
 	},{
 		name : "alicorn",
 		title: $I("resources.alicorn.title"),
@@ -248,7 +227,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: true,
 		persists: false,
 		calculatePerTick: true,
-		aiCanDestroy: true,
 		calculatePerTickAndDay: true
 	},{
 		name : "necrocorn",
@@ -289,8 +267,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		title: $I("resources.timeCrystal.title"),
 		type : "common",
 		visible: true,
-		color: "#14CD61"/*,
-		aiCanDestroy: true*/
+		color: "#14CD61"/*,*/
 	},{
 		name : "sorrow",
 		title: $I("resources.sorrow.title"),
@@ -311,8 +288,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 			"-webkit-animation": "neon-purple 1.5s ease-in-out infinite alternate",
 			   "-moz-animation": "neon-purple 1.5s ease-in-out infinite alternate",
 			     "-o-animation": "neon-purple 1.5s ease-in-out infinite alternate"
-		}*//*,
-		aiCanDestroy: true*/
+		}*//*,*/
 	},{
 		name : "void",
 		title: $I("resources.void.title"),
@@ -854,6 +830,8 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		var limits = {};
 		for (var i in this.resources) {
 			var res = this.resources[i];
+			//修为不可挂机——离线补发不含修为,修行只能靠在线自悟
+			if (res.name == "xiuwei"){ continue; }
 			if (res.perTickCached && (res.name != "catnip" || res.perTickCached >= 0)) {
 				if (res.maxValue) {
 					limits[res.name] = Math.max(res.value, res.maxValue);
@@ -967,16 +945,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 			maxValue *= 1 + this.game.getEffect("baseMetalMaxRatio");
 		}
 		
-        //policies
-		//technocracy policy bonus
-		if (res.name == "science"){
-			maxValue *= (1 + this.game.getEffect("technocracyScienceCap"));
-		}
-
-        //city on a hill bonus
-        if (res.name == "culture"){
-            maxValue *= (1 + this.game.getEffect("onAHillCultureCap"));
-        }
 		return maxValue;
 	},
 

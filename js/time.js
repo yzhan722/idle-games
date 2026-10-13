@@ -9,6 +9,12 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
     //should not be visible to player other than on time tab
     heat: 0,
     isAccelerated: false,
+    accelMult: 1.5,		//光阴似箭消耗倍率——1.5~10,烧多快就走多快
+    accelPhase: 0,		//额外 updateModel 的相位累加器,任意倍率通用
+
+    //可选倍率档——消耗随档位线性:rate = 2×(mult-1) 时尘/tick
+    //(1.5× 档烧 1/tick,即改动前的速率;10× 档烧 18/tick)
+    ACCEL_STEPS: [1.5, 2, 3, 5, 10],
 
     timestamp: null,    /*please don't move timestamp to resource*/
 
@@ -38,6 +44,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
             heat: this.heat,
             testShatter: this.testShatter, //temporary
             isAccelerated: this.isAccelerated,
+            accelMult: this.accelMult,
             cfu: this.filterMetadata(this.chronoforgeUpgrades, ["name", "val", "on", "heat", "delayTicks", "unlocked", "isAutomationEnabled"]),
             vsu: this.filterMetadata(this.voidspaceUpgrades, ["name", "val", "on"]),
             queueItems: this.queue.queueItems,
@@ -65,6 +72,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         this.heat = saveData["time"].heat || 0;
         this.testShatter = saveData["time"].testShatter || 0; //temporary
         this.isAccelerated = saveData["time"].isAccelerated || false;
+        this.accelMult = saveData["time"].accelMult || 1.5;
 		this.loadMetadata(this.chronoforgeUpgrades, saveData.time.cfu, "chronoforgeUpgrades");
 		this.loadMetadata(this.voidspaceUpgrades, saveData.time.vsu, "voidspaceUpgrades");
 
@@ -132,6 +140,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 
     resetState: function(){
 		this.isAccelerated = false;
+        this.accelPhase = 0;	//accelMult 是偏好,随轮回保留
 
         this.timestamp = Date.now();
         this.flux = 0;
@@ -151,7 +160,8 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 
     update: function(){
         if (this.isAccelerated && this.game.resPool.get("temporalFlux").value > 0){
-            this.game.resPool.addResEvent("temporalFlux", -1);
+            //消耗随倍率线性:1.5× 烧 1/tick,10× 烧 18/tick
+            this.game.resPool.addResEvent("temporalFlux", -2 * (this.accelMult - 1));
         }
         if (!this.game.resPool.get("temporalFlux").value){
             this.isAccelerated = false;
@@ -649,7 +659,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 	effectsBase: {
 		"heatPerTick" : 0.01,
 		"heatMax": 100,
-		"temporalFluxMax": 60 * 10 * 5  //10 minutes (5 == this.game.ticksPerSecond)
+		"temporalFluxMax": 60 * 10 * 5 * 10  //初始储量 ×10——100 分钟时尘
 	},
 
     getCFU: function(id){
@@ -852,12 +862,6 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         var remainingDaysInFirstYearSaved = remainingDaysInFirstYear;
         cal.day = 0;
         cal.season = 0;
-        var aiLevel = this.game.bld.get("aiCore").effects["aiLevel"];
-        var aiApocalypseLevel = 0;
-		if ((aiLevel > 14) && (this.game.science.getPolicy("transkittenism").researched != true) && amt != 1){ //if amt == 1 we just use usual onNewYear calendar function
-			aiApocalypseLevel = aiLevel - 14;
-		}
-        var aiDestructionMod = -Math.min(1, aiApocalypseLevel * 0.01);
         // Space ETA
         var remainingDays = remainingDaysInFirstYear + (amt - 1) * daysPerYear;
         for (var j in game.space.planets) {
@@ -896,45 +900,16 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 
             // ShatterTC gain
             if (shatterTCGain > 0) {
-                if (yearsInCurrentCycle == 1){ //no need to do AI Apocalypse twice
-                    aiApocalypseLevel = 0;
-                }
                 // XXX Partially duplicates resources#fastforward and #enforceLimits, some nice factorization is probably possible
                 var limits = {};
-                var delta = {};
                 for (var j = 0; j < game.resPool.resources.length; j++) {
                     var res = game.resPool.resources[j];
                     var resLimit = Math.max(res.value, res.maxValue || Number.POSITIVE_INFINITY);
-                    var deltaRes = game.resPool.addRes(res, game.getResourcePerTick(res.name, true) * ticksInCurrentCycle * shatterTCGain, false, true);
-                    if (aiApocalypseLevel && res.aiCanDestroy){
-                        delta[res.name] = deltaRes;
-                    }
+                    game.resPool.addRes(res, game.getResourcePerTick(res.name, true) * ticksInCurrentCycle * shatterTCGain, false, true);
                     limits[res.name] = resLimit;
                 }
                 for (var j = 0; j < game.resPool.resources.length; j++) {
                     var res = game.resPool.resources[j];
-                    /*
-                    if resource can be destroyed by ai:
-                        1) and isn't overcapped, and production would cause it to be capped for each year, decrease the cap
-                        2) and doesn't have a cap, it will just decrease the number of resources by decreasing it using power function on starting value and sum of geometric progression for produced value
-                        3) and (last possible option is that it) we can also limit the cap
-                        NOTE: aiDestructionMod is A NEGATIVE VALUE!!!
-                    */
-                    if (aiApocalypseLevel && res.aiCanDestroy){
-                        //console.log(res.name);
-                        var oldVal = res.value - delta[res.name];
-                        delta[res.name]/= yearsInCurrentCycle||1;  
-                        if (resLimit == res.MaxValue && oldVal + delta[res.name] - (oldVal + delta[res.name]) * aiDestructionMod >= resLimit){
-                            resLimit = Math.min(resLimit, res.value) * (1 + aiDestructionMod);
-                        } else if (!res.maxValue){
-                            delta[res.name] = Math.max(delta[res.name], 0);
-                            //using sum of geometrical progression:
-                            var decreaseOfDelta = -delta[res.name] * (1 - Math.abs(Math.pow(aiDestructionMod, yearsInCurrentCycle)))/(Math.abs(1 - aiDestructionMod)||1);
-                            game.resPool.addResEvent(res.name, decreaseOfDelta - oldVal * (1- Math.pow((1 + aiDestructionMod), yearsInCurrentCycle))); //this is no longer broken
-                        } else /*if (resLimit == res.value)*/{
-                            resLimit = Math.min(resLimit, res.value) * Math.pow(1 + aiDestructionMod, yearsInCurrentCycle);
-                        }
-                    }
                     res.value = Math.min(res.value, limits[res.name]);
                 }
                 game.bld.cacheCathPollutionPerTick();
@@ -961,9 +936,6 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
             game.msg($I("time.tc.shatter",[amt]), "", "tcShatter");
         }
 
-		if (aiApocalypseLevel){
-            this.game.msg($I("ai.apocalypse.msg", [aiApocalypseLevel]), "alert", "ai");
-        }
         this.flux += amt - 1 + remainingDaysInFirstYearSaved / daysPerYear;
 
         game.challenges.getChallenge("1000Years").unlocked = true;
@@ -1129,17 +1101,46 @@ dojo.declare("classes.ui.TimeControlWgt", [mixin.IChildrenAware, mixin.IGameAwar
             return tooltip;
         }));
 
+        //速耗倍率选择——×1.5 ~ ×10,烧多快就走多快
+        var tm = this.game.time;
+        var multRow = dojo.create("div", {className: "xxAccelRow"}, div);
+        dojo.create("span", {className: "xxAccelLbl", innerHTML: $I("time.accel.mult")}, multRow);
+        this.multChips = [];
+        tm.ACCEL_STEPS.forEach(function(m){
+            var chip = dojo.create("a", {
+                className: "xxIdChip", href: "#", innerHTML: "×" + m
+            }, multRow);
+            dojo.connect(chip, "onclick", function(e){
+                dojo.stopEvent(e);
+                tm.accelMult = m;
+            });
+            this.multChips.push({m: m, chip: chip});
+        }, this);
 
         var btnsContainer = dojo.create("div", {style:{paddingTop:"20px"}}, div);
         this.inherited(arguments, [btnsContainer]);
     },
 
     update: function() {
+        var tm = this.game.time;
         var temporalFlux = this.game.resPool.get("temporalFlux");
         this.timeSpan.innerHTML = $I("time.flux") + ": " + this.game.getDisplayValueExt(temporalFlux.value) + " / " + temporalFlux.maxValue;
 
-        var remainingTemporalFluxInSeconds = temporalFlux.value / this.game.ticksPerSecond;
-        this.timeSpan.innerHTML += " (" + (remainingTemporalFluxInSeconds < 1 ? "0" + $I("unit.s") : this.game.toDisplaySeconds(remainingTemporalFluxInSeconds)) + " / " + this.game.toDisplaySeconds(temporalFlux.maxValue / this.game.ticksPerSecond) + ")";
+        //剩余秒数按当前倍率的燃速折算
+        var burnPerTick = 2 * (tm.accelMult - 1);
+        var fluxPerSec = burnPerTick * this.game.ticksPerSecond;
+        var remainingTemporalFluxInSeconds = fluxPerSec > 0 ? temporalFlux.value / fluxPerSec : 0;
+        var maxTemporalFluxInSeconds = fluxPerSec > 0 ? temporalFlux.maxValue / fluxPerSec : 0;
+        this.timeSpan.innerHTML += " (" + (remainingTemporalFluxInSeconds < 1 ? "0" + $I("unit.s") : this.game.toDisplaySeconds(remainingTemporalFluxInSeconds)) + " / " + this.game.toDisplaySeconds(maxTemporalFluxInSeconds) + ")";
+        this.timeSpan.innerHTML += "<br>" + $I("time.accel.rate",
+            [tm.accelMult, this.game.getDisplayValueExt(fluxPerSec)]);
+
+        if (this.multChips){
+            for (var i = 0; i < this.multChips.length; i++){
+                var c = this.multChips[i];
+                c.chip.className = "xxIdChip" + (c.m == tm.accelMult ? " xx-sel" : "");
+            }
+        }
 
         if (this.game.workshop.get("chronoforge").researched) {
             this.timeSpan.innerHTML += "<br>" + $I("time.heat") + ": ";
@@ -2090,7 +2091,6 @@ dojo.declare("classes.queue.manager", null,{
         "buildings" : $I("buildings.tabName"),
         "tech" : $I("techs.panel.label"),
         "upgrades" : $I("workshop.upgradePanel.label"),
-        "policies" : $I("policy.panel.label"),
         "religion" : $I("religion.panel.orderOfTheSun.label"),
         "zebraUpgrades" : $I("workshop.zebraUpgradesPanel.label"),
         "spaceMission" : $I("space.ground.control.label"),
@@ -2105,7 +2105,6 @@ dojo.declare("classes.queue.manager", null,{
         "buildings": true, 
         "tech": false,
         "upgrades": false,
-        "policies": false,
         "religion": false,
         "zebraUpgrades": false,
         "spaceMission": false,
@@ -2117,7 +2116,7 @@ dojo.declare("classes.queue.manager", null,{
         },
     queueSources: {},
     queueNonStackable:[
-        "tech", "upgrades", "policies", "zebraUpgrades", "spaceMission"
+        "tech", "upgrades", "zebraUpgrades", "spaceMission"
     ],
     unlockQueueSource: function(source){
         if (this.queueSources[source] === false){
@@ -2126,7 +2125,7 @@ dojo.declare("classes.queue.manager", null,{
         }
     },
     cap: 0,
-    baseCap: 3,
+    baseCap: 5,
 
     constructor: function(game){
         this.game = game;
@@ -2147,7 +2146,7 @@ dojo.declare("classes.queue.manager", null,{
     calculateCap: function(){
         var aiCore = this.game.bld.getBuildingExt("aiCore");
         var capBeforeMultipliers = aiCore.meta.on + this.game.space.getBuilding("entangler").effects["hashRateLevel"] + this.baseCap + this.game.getEffect("queueCap");
-        return Math.floor(capBeforeMultipliers * (1 + this.game.getEffect("queueCapRatio")));
+        return Math.floor(capBeforeMultipliers);
     },
 
     /**
@@ -2478,19 +2477,6 @@ dojo.declare("classes.queue.manager", null,{
                 }
                 return options;
 
-            case "policies":
-                var policies = this.game.science.policies;
-                for (var i in policies){
-                    var policy = policies[i];
-                    if (policy.unlocked && !policy.researched && !policy.blocked){
-                        options.push({
-                            name: policy.name,
-                            label: policy.label
-                        });
-                    }
-                }
-                return options;
-
             case "religion":
                 var religionUpgrades = this.game.religion.religionUpgrades;
                 if (this.game.challenges.getChallenge("atheism").active){
@@ -2550,10 +2536,6 @@ dojo.declare("classes.queue.manager", null,{
             isInQueue: true
         };
         switch (el.type){
-            case "policies":
-                props.controller = new classes.ui.PolicyBtnController(this.game);
-                var model = props.controller.fetchModel(props);
-                break;
             case "tech":
                 props.controller = new com.nuclearunicorn.game.ui.TechButtonController(this.game);
                 var model = props.controller.fetchModel(props);

@@ -161,6 +161,7 @@ dojo.declare("classes.tab.StatsTab", com.nuclearunicorn.game.ui.tab, {
 
     container: null,
     jianghuContainer: null,
+    _built: false,
 
     constructor: function(tabName){
 
@@ -168,6 +169,7 @@ dojo.declare("classes.tab.StatsTab", com.nuclearunicorn.game.ui.tab, {
 
     render: function(content){
         this.container = content;
+        this._built = false;
 
         this.update();
     },
@@ -178,11 +180,8 @@ dojo.declare("classes.tab.StatsTab", com.nuclearunicorn.game.ui.tab, {
         var game = this.game;
         var self = this;
 
-        if (!this.jianghuContainer){
-            this.jianghuContainer = dojo.create("div", {class: "jianghuBoard"}, this.container);
-        }
+        this.jianghuContainer = dojo.create("div", {class: "jianghuBoard"}, this.container);
         var board = this.jianghuContainer;
-        dojo.empty(board);
 
         dojo.create("h1", {innerHTML: $I("stats.jianghu.title")}, board);
 
@@ -237,6 +236,13 @@ dojo.declare("classes.tab.StatsTab", com.nuclearunicorn.game.ui.tab, {
         };
 
         var refresh = function(){
+            //server.json resolves the real kgnetUrl — fetching before it lands
+            //would hit the UNCONFIGURED placeholder
+            var pending = game.server._serverInfoPromise;
+            if (pending && pending.state && pending.state() == "pending"){
+                pending.always(refresh);
+                return;
+            }
             game.server.fetchJianghu()
                 .done(function(resp){ renderRows(resp); })
                 .fail(function(){
@@ -258,46 +264,51 @@ dojo.declare("classes.tab.StatsTab", com.nuclearunicorn.game.ui.tab, {
     },
 
     update: function(){
+        //build the DOM once — rebuilding every tick fired a leaderboard fetch
+        //per tick and made the whole panel strobe. Afterwards we only patch
+        //stat cell text in place.
+        if (!this._built){
+            this._built = true;
+            this.renderJianghu();
 
-        dojo.empty(this.container);
-        this.jianghuContainer = null;
+            for (var idx in this.game.stats.statGroups) {
+                var statGroup = this.game.stats.statGroups[idx];
 
-        this.renderJianghu();
+                dojo.create("h1", {
+                    innerHTML: statGroup.title
+                }, this.container);
 
-        for (var idx in this.game.stats.statGroups) {
-            var statGroup = this.game.stats.statGroups[idx];
+                var stats = statGroup.group;
+                var table = dojo.create("table", {class: "statTable"}, this.container);
 
-            dojo.create("h1", {
-                innerHTML: statGroup.title
-            }, this.container);
+                for (var i in stats) {
+                    var stat = stats[i];
+                    var tr = dojo.create("tr", null, table);
+                    stat._titleCell = dojo.create("td", null, tr);
+                    stat._valueCell = dojo.create("td", null, tr);
+                }
+            }
+        }
 
-            var stats = statGroup.group;
-            var table = dojo.create("table", {class: "statTable"}, this.container);
-
-            for (var i in stats) {
-                var stat = stats[i];
+        for (var g in this.game.stats.statGroups) {
+            var group = this.game.stats.statGroups[g].group;
+            for (var s in group) {
+                var stat = group[s];
 
                 if (stat.calculate) {
                     stat.val = stat.calculate(this.game);
                 }
-
                 if (stat.val != 0) {
                     stat.unlocked = true;
                 }
-
                 if (stat.name == "totalResets") {
                     stat.val++;
                 }
 
-                var tr = dojo.create("tr", null, table);
-                dojo.create("td", {
-                    innerHTML: stat.unlocked ? stat.title : "???"
-                }, tr);
-                dojo.create("td", {
-                    innerHTML: stat.unlocked
-                        ? typeof stat.val == "number" ? this.game.getDisplayValueExt(stat.val) : stat.val
-                        : ""
-                }, tr);
+                stat._titleCell.innerHTML = stat.unlocked ? stat.title : "???";
+                stat._valueCell.innerHTML = stat.unlocked
+                    ? typeof stat.val == "number" ? this.game.getDisplayValueExt(stat.val) : stat.val
+                    : "";
 
                 if (stat.name == "totalResets") {
                     stat.val--;

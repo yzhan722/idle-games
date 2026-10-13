@@ -291,6 +291,12 @@ var Server = dojo.declare("classes.game.Server", null, {
 	motdTitle: null,
 	/** @type {string} */
 	motdContent: null,
+	/**
+	 * KGNet backend origin (the CF worker in worker/), configured via server.json.
+	 * Null until the first refresh() — before that, all XHR targets resolve to localhost:7780 (dev) or stay unreachable (prod), which the client degrades to "offline" gracefully.
+	 * @type {string|null}
+	 */
+	kgnetUrl: null,
 	//<----
 
 	/**
@@ -358,23 +364,29 @@ var Server = dojo.declare("classes.game.Server", null, {
 	},
 
     getServerUrl: function(){
-		if (this.game.isMobile()){
-			return "https://kittensgame.com";
-		}
 		var host = window.location.hostname;
 		var isLocalhost = window.location.protocol == "file:" || host == "localhost" || host == "127.0.0.1";
-        if (isLocalhost && !this.game.isMobile()){
-            //if you are running chilar locally you should know what you are doing
+        if (isLocalhost){
+            //local dev points at the mock backend (tools/mock-kgnet)
             return "http://localhost:7780";
         }
-        return "https://kittensgame.com";
+        //production points at our own worker — never at the upstream kittensgame.com API
+        return this.kgnetUrl || "https://kgnet-xianxia.UNCONFIGURED.workers.dev";
     },
 
 	refresh: function(){
 		var self = this;
 
 		console.log("Loading server settings...");
-		$.ajax({
+		//fetch UID only after server.json resolved — kgnetUrl must be set before
+		//getServerUrl() is consulted, else the first call races and hits the
+		//UNCONFIGURED placeholder
+		var fetchProfile = function(){
+			if (!self.userProfile){
+				self.syncUserProfile();
+			}
+		};
+		this._serverInfoPromise = $.ajax({
 			cache: false,
 			url: "server.json",
 			dataType: "json",
@@ -382,21 +394,21 @@ var Server = dojo.declare("classes.game.Server", null, {
 				self.showMotd = json.showMotd;
 				self.motdTitle = json.motdTitle;
 				self.motdContent = json.motdContent;
+				if (json.kgnetUrl){
+					self.kgnetUrl = String(json.kgnetUrl).replace(/\/+$/, "");
+				}
 			}
 		}).done(function() {
 			if (self.motdContentPrevious != self.motdContent) {
 				self.motdContentPrevious = self.motdContent;
 				self.motdFreshMessage = true;
 			}
+			fetchProfile();
 		}).fail(function(err) {
 			console.log("Unable to parse server.json configuration:", err);
+			fetchProfile();
 		});
 
-		//-- fetch UID from KGNet if HTTP session is established ---
-		if (!this.userProfile){
-			this.syncUserProfile();
-		}
-		
 	},
 
 	/**
@@ -479,9 +491,11 @@ var Server = dojo.declare("classes.game.Server", null, {
 		if (this.game.isReadOnly()){
 			return null;	//previewing a shared save — not our record to post
 		}
+		var idt = this.game.cultivation && this.game.cultivation.identity;
 		return this._xhr("/kgnet/jianghu/submit/", "POST", {
 			guid: this.game.telemetry.guid,
-			name: this.game.telemetry.jianghuName || "",
+			//榜上道号:榜名优先,无名时落本名
+			name: this.game.telemetry.jianghuName || (idt && idt.name) || "",
 			stats: this.getJianghuStats()
 		});
 	},
@@ -890,10 +904,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 				type: "ratio"
 			},
 
-			"catpowerReductionRatio" : {
-				title: $I("effectsMgr.statics.catpowerReductionRatio.title"),
-				type: "ratio"
-			},
 
 			"embassiesPerAmbassadorSlot": {
 				type: "hidden"
@@ -1081,16 +1091,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
                 type: "ratio"
             },
 
-            "hutPriceRatio" : {
-                title: $I("effectsMgr.statics.hutPriceRatio.title"),
-                type: "ratio"
-            },
-
-            "coalSuperRatio" : {
-                title: $I("effectsMgr.statics.coalSuperRatio.title"),
-                type: "ratio"
-            },
-
             "smelterRatio" : {
                 title: $I("effectsMgr.statics.smelterRatio.title"),
                 type: "ratio"
@@ -1138,11 +1138,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 
             "unicornsGlobalRatio" : {
                 title: $I("effectsMgr.statics.unicornsGlobalRatio.title"),
-                type: "ratio"
-            },
-
-            "biofuelRatio" : {
-                title: $I("effectsMgr.statics.biofuelRatio.title"),
                 type: "ratio"
             },
 
@@ -1324,10 +1319,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 			"queueCap": {
 				title: $I("effectsMgr.statics.queueCap"),
 				type: "fixed"
-			},
-			"queueCapRatio": {
-				title: $I("effectsMgr.statics.queueCapRatio"),
-				type: "ratio"
 			},
 			//Spaceports
 			"moonBaseStorageBonus": {
@@ -1551,11 +1542,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 				type: "ratio"
 			},
 
-			"eludiumAutomationBonus": {
-				title: $I("effectsMgr.statics.eludiumAutomationBonus.title"),
-				type: "ratio"
-			},
-
 			"heatMax": {
 				title: $I("effectsMgr.statics.heatMax.title"),
 				type: "ratio"
@@ -1582,159 +1568,24 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 				type: "ratio",
 				calculation: "nonProportional"
 			},
-			//age 1 policy effects
-			"cultureFromManuscripts": {
-				title: $I("effectsMgr.statics.cultureFromManuscripts.title"),
-				type: "ratio"
-			},
-			"manuscriptParchmentCost": {
-				title: $I("effectsMgr.statics.manuscriptCost.title", [$I("resources.parchment.title")]),
-				type: "fixed"
-			},
-			"manuscriptCultureCost": {
-				title: $I("effectsMgr.statics.manuscriptCost.title",[$I("resources.culture.title")]),
-				type: "fixed"
-			},
-			//age 2 policy effects
-			"boostFromLeader": {
-                title: $I("effectsMgr.statics.boostFromLeader.title"),
-                type: "ratio"
-			},
-			//age 3 policy effects
-			"goldCostReduction": {
-                title: $I("effectsMgr.statics.goldCostReduction.title"),
-                type: "ratio"
-			},
-			"factoryCostReduction":{
-                title: $I("effectsMgr.statics.factoryCostReduction.title"),
-                type: "ratio"
-			},
-			"logHouseCostReduction":{
-                title: $I("effectsMgr.statics.logHouseCostReduction.title"), //yes, it is log house!
-                type: "ratio"
-			},
 			"communismProductionBonus":{
                 title: $I("effectsMgr.statics.communismProductionBonus.title"),
                 type: "ratio"
 			},
-			//age 4 policy effects
-			"technocracyScienceCap":{
-                title: $I("effectsMgr.statics.technocracyScienceCap.title"),
-                type: "ratio"
-			},
-			//age 5 policy effects
-			"aiCoreProductivness":{
-                title: $I("effectsMgr.statics.aiCoreProductivity.title"),
-                type: "ratio"
-			},
-			"aiCoreUpgradeBonus":{
-				title: $I("effectsMgr.statics.aiCoreUpgradeBonus.title"),
-				type: "ratio"
-			},
-			"blsProductionBonus":{
-                title: $I("effectsMgr.statics.blsProductionBonus.title"),
-                type: "ratio"
-			},
-			"leviathansEnergyModifier":{
-                title: $I("effectsMgr.statics.leviathansEnergyModifier.title"),
-                type: "ratio"
-			},
-			"holyGenocideBonus":{
-                title: $I("effectsMgr.statics.holyGenocideBonus.title"),
-                type: "ratio"
-			},
-            //foreign policy effects
-            "tradeCatpowerDiscount":{
-                title: $I("effectsMgr.statics.tradeCatpowerDiscount.title"),
-                type: "fixed"
-            },
-            "tradeGoldDiscount":{
-                title: $I("effectsMgr.statics.tradeGoldDiscount.title"),
-                type: "fixed"
-            },
-            "sharedKnowledgeBonus":{
-                title: $I("effectsMgr.statics.sharedKnowledgeBonus.title"),
-                type: "ratio"
-            },
             "culturalExchangeBonus":{
                 title: $I("effectsMgr.statics.culturalExchangeBonus.title"),
                 type: "ratio"
             },
-            "onAHillCultureCap":{
-                title: $I("effectsMgr.statics.onAHillCultureCap.title"),
-                type: "ratio"
-            },
-            "satelliteSynergyBonus":{
-                title: $I("effectsMgr.statics.satelliteSynergyBonus.title"),
-                type: "ratio"
-            },
-			"harborLimitRatioPolicy":{
-				title: $I("effectsMgr.statics.harborLimitRatioPolicy.title"),
-				type: "ratio"
-			},
-			"calcinerSteelRatioBonus":{
-				title: $I("effectsMgr.statics.calcinerSteelRatioBonus.title"),
-				type: "ratio"
-			},
-			"magnetoBoostBonusPolicy":{
-				title: $I("effectsMgr.statics.magnetoBoostBonusPolicy.title"),
-				type: "ratio"
-			},
-			"faithFromManuscripts":{
-				title: $I("effectsMgr.statics.faithFromManuscripts.title"),
-                type: "ratio" 
-			},
-			"quarrySlabCraftBonus":{
-				title: $I("effectsMgr.statics.quarrySlabCraftBonus.title"),
-                type: "ratio" 
-			},
-			"zigguratTempleEffectPolicy":{
-				title: $I("effectsMgr.statics.zigguratTempleEffectPolicy.title"),
-				type: "ratio" 
-			},
-			"refinePolicyRatio":{
-				title: $I("effectsMgr.statics.refinePolicyRatio.title"),
-				type: "ratio"
-			},
-			"biolabEnergyRatio":{
-				title: $I("effectsMgr.statics.biolabEnergyRatio.title"),
-				type: "ratio"
-			},
-			"breweryPolicyManpowerRatio":{
-				title: $I("effectsMgr.statics.breweryPolicyManpowerRatio.title"),
-				type: "ratio"
-			},
-			"biolabBiofuelScienceMaxRatio": {
-				title: $I("effectsMgr.statics.biolabBiofuelScienceMaxRatio.title"),
-				type: "ratio"
-			},
 			"religionUpgradesDiscount":{
 				title: $I("effectsMgr.statics.religionUpgradesDiscount.title"),
 				type: "ratio"
 			},
-			"starchartPolicyRatio":{
-				title: $I("effectsMgr.statics.starchartPolicyRatio.title"),
-				type: "ratio"
-			},
-			"mintIvoryRatio": {
-				title: $I("effectsMgr.statics.mintIvoryRatio.title"),
-				type: "ratio"
-			},
             //philosophy
-			"breweryConsumptionRatio":{
-                title: $I("effectsMgr.statics.breweryConsumptionRatio.title"),
-                type: "ratio"
-			},
             "rationalityBonus":{
                 title: $I("effectsMgr.statics.rationalityBonus.title"),
                 type: "ratio"
             },
 
-			 "mintRatio":{
-                title: $I("effectsMgr.statics.mintRatio.title"),
-                type: "ratio"
-			},
-             //environment policy
             "environmentMineralBonus":{
                 title: $I("effectsMgr.statics.environmentMineralBonus.title"),
                 type: "ratio"
@@ -1743,79 +1594,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 				title: $I("effectsMgr.statics.environmentWoodBonus.title"),
 				type: "ratio"
             },
-            "environmentFactoryCraftBonus":{
-				title: $I("effectsMgr.statics.environmentFactoryCraftBonus.title"),
-				type: "ratio"
-			},
-            "coalPolicyRatio":{
-				title: $I("effectsMgr.statics.coalPolicyRatio.title"),
-				type: "ratio"
-            },
-            "ironPolicyRatio":{
-				title: $I("effectsMgr.statics.ironPolicyRatio.title"),
-				type: "ratio"
-            },
-            "titaniumPolicyRatio":{
-				title: $I("effectsMgr.statics.titaniumPolicyRatio.title"),
-				type: "ratio"
-            },
-            "faithPolicyRatio":{
-				title: $I("effectsMgr.statics.faithPolicyRatio.title"),
-				type: "ratio"
-            },
-            "unobtainiumPolicyRatio":{
-				title: $I("effectsMgr.statics.unobtainiumPolicyRatio.title"),
-				type: "ratio"
-            },
-			"antimatterPolicyRatio":{
-				title: $I("effectsMgr.statics.antimatterPolicyRatio.title"),
-				type: "ratio"
-			},
-            "sciencePolicyRatio":{
-				title: $I("effectsMgr.statics.sciencePolicyRatio.title"),
-				type: "ratio"
-            },
-            "culturePolicyRatio":{
-				title: $I("effectsMgr.statics.culturePolicyRatio.title"),
-				type: "ratio"
-            },
-            "mineralsPolicyRatio":{
-				title: $I("effectsMgr.statics.mineralsPolicyRatio.title"),
-				type: "ratio"
-            },
-			"oilPolicyRatio":{
-				title: $I("effectsMgr.statics.oilPolicyRatio.title"),
-				type: "ratio"
-            },
-            "woodPolicyRatio":{
-				title: $I("effectsMgr.statics.woodPolicyRatio.title"),
-				type: "ratio"
-            },
-            "goldPolicyRatio":{
-				title: $I("effectsMgr.statics.goldPolicyRatio.title"),
-				type: "ratio"
-			},
-			//Necrocorn-related Policy effects
-			"smallDebtPunishmentExemption": {
-				title: $I("effectsMgr.statics.smallDebtPunishmentExemption.title"),
-				type: "fixed"
-			},
-			"repayDebtOnNecrocornGeneration": {
-				title: $I("effectsMgr.statics.repayDebtOnNecrocornGeneration.title"),
-				type: "fixed"
-			},
-			"feedEldersEfficiencyRatio": {
-				title: $I("effectsMgr.statics.feedEldersEfficiencyRatio.title"),
-				type: "ratio"
-			},
-			"necrocornCorruptionInterference": {
-				title: $I("effectsMgr.statics.necrocornCorruptionInterference.title"),
-				type: "ratio"
-			},
-			"pactNecrocornUpfrontCost": {
-				title: $I("effectsMgr.statics.necrocornUpfrontCost.title"),
-				type: "fixed"
-			},
 			//challenges
 			"springCatnipRatio": {
 				title: $I("effectsMgr.statics.springCatnipRatio.title"),
@@ -1869,9 +1647,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 			"steamworksFakeBought":{
 				title: $I("effectsMgr.statics.steamworksFakeBought.title")
 			},
-			"policyFakeBought":{
-				title: $I("effectsMgr.statics.policyFakeBought.title")
-			},
 			"weaponEfficency":{
 				title: $I("effectsMgr.statics.weaponEfficency.title"),
 				type: "ratio"
@@ -1898,10 +1673,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 			},
 			"arrivalSlowdown":{
 				title: $I("effectsMgr.statics.arrivalSlowdown.title"),
-				type: "ratio"
-			},
-			"mausoleumBonus":{
-				title: $I("effectsMgr.statics.mausoleumBonus.title"),
 				type: "ratio"
 			},
 			//pacts
@@ -1983,10 +1754,6 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 			},
 			"cathPollutionPerTickCon":{
 				type: "hidden"
-			},
-			"cathPollutionRatio":{
-				title:  $I("effectsMgr.statics.pollutionRatio.title"),
-				type: "ratio"
 			},
 			"cathPollutionPerTearOvercapped": {
 				type: "hidden"
@@ -2331,7 +2098,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		this.resPool.setVillage(this.village);
 
         var managers = [
-		{ id: "challenges",     class:  "ChallengesManager" }, //challenges must be *before* space for a certain policy to work.
+		{ id: "challenges",     class:  "ChallengesManager" }, //challenges must be *before* space
             { id: "workshop",       class:  "WorkshopManager"   },
             { id: "diplomacy",      class:  "DiplomacyManager"  },
             { id: "bld",            class:  "BuildingsManager"  },
@@ -2466,15 +2233,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		this.timer.addEvent(dojo.hitch(this, function(){
 			this.updateCaches();
 		}), 5);		//once per 5 ticks
-
-		//Update descriptions of some policies where it's a pain to call game.upgrade every time something changes.
-		this.timer.addEvent(dojo.hitch(this, function() {
-			var policies = ["upfrontPayment", "sharkRelationsMerchants"];
-			for (var i = 0; i < policies.length; i++) {
-				var thePolicy = game.science.getPolicy(policies[i]);
-				thePolicy.calculateEffects(thePolicy, this);
-			}
-		}), 25);		//every 5 seconds
 
 		var ONE_MIN = this.ticksPerSecond * 60;
 		this.timer.addEvent(dojo.hitch(this, function(){ this.achievements.update(); }), 50);	//once per 50 ticks, we hardly need this
@@ -3668,6 +3426,11 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		// *CULTIVATION REALM BONUS (xianxia mod)
 		perTick *= 1 + this.getEffect("realmProductionRatio");
 
+		// *SECLUSION MUNDANE PENALTY (xianxia mod) — 闭关锁世,凡产尽歇,修为一途独进
+		if (res.name != "xiuwei"){
+			perTick *= 1 + this.getEffect("seclusionMundaneRatio");
+		}
+
 		// *POLLUTION MODIFIER
 		if (res.name == "catnip"){
 			perTick *= 1 + this.bld.pollutionEffects["catnipPollutionRatio"];
@@ -3739,7 +3502,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		// +POLICY EFFECTS
 
 		//necrocracy global effect
-		perTick *= (1 + (this.resPool.get("sorrow").value * this.getEffect("blsProductionBonus")));
 		//pact Global Production Ratio- effect from pacts per pyramid
 		var pyramidGlobalProductionRatio = this.getEffect("pyramidGlobalProductionRatio");
 		perTick *= 1 + pyramidGlobalProductionRatio;
@@ -3749,8 +3511,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			var pyramidFaithRatio = this.getEffect("pyramidFaithRatio");
 			perTick *= 1 + pyramidFaithRatio;
 		}
-		//policy ratio effects
-		perTick *= (1 + this.getEffect(res.name + "PolicyRatio"));
 
 		if (isNaN(perTick)){
 			return 0;
@@ -3759,7 +3519,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		return perTick;
 	},
 	/**
-	 * Appends the modifiers that apply to every sub-stack (necrocracy, policy,
+	 * Appends the modifiers that apply to every sub-stack (destruction
 	 * destruction) so each nested group totals up the same way the flat maths does.
 	 * @param {ResStack} array - mutated in place
 	 * @param {string} resName
@@ -3767,18 +3527,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	 */
 	addGlobalModToStack: function(array, resName){
 		var game = this;
-		if (game.science.getPolicy("necrocracy").researched){
-			array.push({
-				name: $I("res.stack.necrocracy"),
-				type: "ratio",
-				value: game.getEffect("blsProductionBonus") * game.resPool.get("sorrow").value,
-			});
-		}
-		array.push({
-			name: $I("res.stack.policy"),
-			type: "ratio",
-			value: game.getEffect(resName + "PolicyRatio")
-		});
 		array.push({
 			name: $I("res.stack.destruction"),
 			type: "ratio",
@@ -3984,16 +3732,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		//ParagonSpaceProductionRatio definition 4/4
 		paragonSpaceProductionRatio *= 1 + this.religion.getSolarRevolutionRatio();
 		
-        //policy effects:
-		//necrocracy global effect
-		//TODO: consider moving it to calculateEffects
-        if (this.science.getPolicy("necrocracy").researched){
-            stack.push({
-                name: $I("res.stack.necrocracy"),
-                type: "ratio",
-                value: this.getEffect("blsProductionBonus") * this.resPool.get("sorrow").value,
-            });
-		}
 		var pyramidGlobalProductionRatio = this.getEffect("pyramidGlobalProductionRatio");
 		stack.push({
 			name: $I("res.stack.destruction"),
@@ -4008,13 +3746,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				value: pyramidFaithRatio
 			});
 		}
-		// +*POLICY
-		stack.push({
-			name: $I("res.stack.policy"),
-			type: "ratio",
-			value: this.getEffect(res.name + "PolicyRatio")
-		});
-		
 		// +AUTOMATED PRODUCTION BUILDING
 		stack.push({
 			name: $I("res.stack.convProd"),
@@ -4121,19 +3852,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				type: "fixed",
 				value: -resAmbassadorConsumption
 			});
-		}
-
-		// BIOME EXPLORATION
-		if (res.name == "manpower"){
-			var biome = this.village.getBiome(this.village.map.currentBiome);
-			if (biome){
-				var exploreCost = this.village.map.getExplorationCost();
-				stack.push({
-					name: $I("res.stack.exploration"),
-					type: "fixed",
-					value: -exploreCost
-				});
-			}
 		}
 
 		// TIME extra-compare with this.calcResourcePerTick
@@ -4255,12 +3973,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			});
 		}
 		stack.push({
-			name: $I("res.stack.policy"),
-			type: "ratio",
-			value: this.getEffect(res.name + "PolicyRatio")
-		});
-
-		stack.push({
 			name: $I("res.stack.chronicler"),
 			type: "ratio",
 			value: this.getEffect("pyramidPerYearRatio")
@@ -4282,10 +3994,9 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	 */
 	getResCraftRatio: function(craftedResName) {
 		if (craftedResName == "wood") {
-			var policyRefineRatio = this.getEffect("refinePolicyRatio");
-			var refineRatio =  (policyRefineRatio) + (1 + policyRefineRatio) * this.getEffect("refineRatio");
+			var refineRatio = this.getEffect("refineRatio");
 			return this.ironWill
-				? ((1 + refineRatio) * (1 + this.getEffect("woodRatio") + this.getEffect("woodPolicyRatio") / 3)) - 1
+				? ((1 + refineRatio) * (1 + this.getEffect("woodRatio"))) - 1
 				: refineRatio;
 		}
 
@@ -4324,10 +4035,16 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 
 		this.timer.beforeUpdate();
 
-		//hack hack hack
+		//hack hack hack — 光阴似箭:相位累加器派发额外 updateModel,
+		//0.5 → 每 2 tick 一次(1.5×),9 → 每 tick 九次(10×),任意倍率通用
 		this.updateModel();
-		if (this.time.isAccelerated && this.ticks % 2 == 0){
-			this.updateModel();
+		if (this.time.isAccelerated){
+			var t = this.time;
+			t.accelPhase = (t.accelPhase || 0) + (t.accelMult - 1);
+			while (t.accelPhase >= 1){
+				t.accelPhase -= 1;
+				this.updateModel();
+			}
 		}
 
 		//hack end
@@ -4352,7 +4069,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 
 	/** @returns {number} */
 	timeAccelerationRatio: function() {
-		return this.time.isAccelerated ? 0.5 : 0;
+		return this.time.isAccelerated ? (this.time.accelMult - 1) : 0;
 	},
 
 	/**
@@ -4466,7 +4183,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				return 0;
 			}
 		}
-		return this.getEffect(resName + "Production") * (1 + this.getEffect(resName + "PolicyRatio")) * (1 + this.getEffect("pyramidPerYearRatio"));
+		return this.getEffect(resName + "Production") * (1 + this.getEffect("pyramidPerYearRatio"));
 	},
 	//Returns a negative value if something consumes the resource each tick (such as a Smelter)
 	/**
@@ -5615,10 +5332,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			},
 			science: {
 				hideResearched: this.science.hideResearched,
-				policyToggleResearched: this.science.policyToggleResearched,
-				policyToggleBlocked: this.science.policyToggleBlocked,
-				techs: [],
-				policies: []
+				techs: []
 			},
 			space: {
 				hideResearched: this.space.hideResearched,
@@ -5664,6 +5378,17 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				unlocked: chronophysicsTech.unlocked,
 				researched: chronophysicsTech.researched
 			});
+		}
+
+		//转世只渡一缕魂——道号性别与坐化之数随魂,境界仙缘法宝皆归尘土;
+		//来世出身落地再择(pendingOrigin 触发「转世择身」卡)
+		var prevCult = lsData.cultivation;
+		if (prevCult && prevCult.identity){
+			saveData.cultivation = {
+				identity: {name: prevCult.identity.name, gender: prevCult.identity.gender},
+				sihuaCount: prevCult.sihuaCount || 0,
+				pendingOrigin: true
+			};
 		}
 
 		var preparedSaveData = this._prepareSaveData(saveData);
@@ -5749,7 +5474,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		var getName = function(item){return item.name;};
 		var metaKeys = {
 				tech: this.science.techs.map(getName),
-				policies: this.science.policies.map(getName),
 				perks: this.prestige.perks.map(getName),
 				crafts: this.workshop.crafts.map(getName),
 				upgrades: this.workshop.upgrades.map(getName),
@@ -5767,7 +5491,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			};
 		this.upgrade({ buildings: ["warehouse"], spaceBuilding: ["hydroponics"]});
 		this.upgrade(metaKeys);
-		this.upgrade({policies: ["authocracy"]});
 	},
 
 	/**
@@ -5787,15 +5510,9 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				return this.bld.get(unlockId);
 			case "stages":
 				return this.bld.get(unlockId.bld);
-			//--- Village tab
-
-			case "biomes":
-				return this.village.getBiome(unlockId);
 			//--- Science tab
 			case "tech":
 				return this.science.get(unlockId);
-			case "policies":
-				return this.science.getPolicy(unlockId);
 			case "perks":
 				return this.prestige.getPerk(unlockId);
 			//--- Workshop tab

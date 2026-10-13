@@ -200,7 +200,7 @@ describe("edge — 转世后状态", () => {
 		reachStage(game, "yuanying_0");
 		c.heartDemon = 50; c.secluded = true; c.actionCd = 100;
 		c.pendingTrip = "wander"; c.buffs.juqi = 500;
-		c.age = 500; c.breakMult = 0.5; c.lastBreakTick = 100;
+		c.age = 500; c.breakMult = 0.5; c.lastBreakYear = 100;
 		c.failStreak = 9; c.demonWarned = true;
 		c.craftPill("qingxin");
 		const sihua0 = c.sihuaCount;
@@ -212,7 +212,7 @@ describe("edge — 转世后状态", () => {
 		expect(c.pendingTrip).toBeNull();
 		expect(c.buffs.juqi).toBeUndefined();
 		expect(c.breakMult).toBe(0);
-		expect(c.lastBreakTick).toBeNull();
+		expect(c.lastBreakYear).toBeNull();
 		expect(c.failStreak).toBe(0);
 		expect(c.demonWarned).toBe(false);
 		expect(c.getPill("qingxin").val).toBe(0);

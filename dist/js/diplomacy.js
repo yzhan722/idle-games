@@ -437,7 +437,9 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 	},
 
 	tradeAll: function(race){
-		this.tradeMultiple(race, this.getMaxTradeAmt(race));
+		var amt = this.getMaxTradeAmt(race);
+		if (!amt){ return; }	//家底不足一次贸易——别白跑一趟空商队
+		this.tradeMultiple(race, amt);
 	},
 
 	/**
@@ -491,10 +493,10 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 			if (min > amt[i]) { min = amt[i]; }
 		}
 
-		if (min == Number.MAX_VALUE || min == 0){
-			return;
+		if (min == Number.MAX_VALUE){
+			return 0;
 		}
-		return min;
+		return min;	//min==0 时返回数字 0,而非 undefined——UI 上 xNaN
 	},
 	getMarkerCap: function(){
 		return Math.floor(

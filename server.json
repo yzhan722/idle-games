@@ -1,10 +1,9 @@
 {
   "donateAmt": 0,
 
-  "telemetryUrl": "http://coldseat.me:9091/events/",
-  "telemetryAppId": "KG",
+  "kgnetUrl": "https://kgnet-xianxia.yinosites.com",
 
   "showMotd": true,
-  "motdTitle": "MOTD",
-  "motdContent": "Praise the sun!"
+  "motdTitle": "仙府谕令",
+  "motdContent": "道友别来无恙"
 }

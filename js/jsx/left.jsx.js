@@ -189,11 +189,16 @@ WResourceRow = React.createClass({
             resPercent = game.getDisplayValueExt(Math.round(res.value), false /*prefix*/, false /*perTickHack*/, 1);
         }
 
+        //灵息卡——纵排:名·值·率三层 + 底缘仓位条。仓位近满上色,一眼读势
+        var capPct = res.maxValue ? Math.min(100, res.value / res.maxValue * 100) : 0;
+        var capCls = res.maxValue ?
+            (capPct >= 95 ? " full" : (capPct >= 75 ? " high" : "")) : null;
+
         return $r("div", {role: "row", className: resRowClass}, [
-            this.props.isEditMode ? 
-                $r("div", {className:"res-cell"},
+            this.props.isEditMode ?
+                $r("div", {className:"res-cell res-edit"},
                     $r("input", {
-                        type:"checkbox", 
+                        type:"checkbox",
                         checked: this.getIsVisible(),
                         title: "Toggle " + $I("resources." + res.name + ".title"),
                         onClick: this.toggleView,
@@ -201,24 +206,31 @@ WResourceRow = React.createClass({
                     })
                 ) : null,
 
-            $r("div", {
-                className:"res-cell resource-name", 
-                style:resNameCss,
-                onClick: this.onClickName,
-                title: (res.title || res.name) + " " + resPercent + " " + perTickVal,
-                role: "gridcell",
-                userFocus:"normal",
-                tabIndex: 0,
-            }, 
-                res.title || res.name
-            ),
-            $r("div", {className:"res-cell " + resAmtClassName + specialClass, role: "gridcell"}, game.getDisplayValueExt(res.value)),
-            $r("div", {className:"res-cell maxRes", role: "gridcell"}, 
-                res.maxValue ? "/" + game.getDisplayValueExt(res.maxValue) : ""
-            ),
-            $r("div", {className:"res-cell resPerTick", role: "gridcell", ref:"perTickNode"}, 
+            $r("div", {className:"res-cell res-head", role: "gridcell"}, [
+                $r("span", {
+                    className:"resource-name",
+                    style:resNameCss,
+                    onClick: this.onClickName,
+                    title: (res.title || res.name) + " " + resPercent + " " + perTickVal,
+                    userFocus:"normal",
+                    tabIndex: 0,
+                },
+                    res.title || res.name
+                ),
+                weatherModValue != null && $r("span", {
+                    className:"res-weather" + (weatherModCss ? " " + weatherModCss : "")
+                }, weatherModValue)
+            ]),
+            $r("div", {className:"res-cell res-figure " + resAmtClassName + specialClass, role: "gridcell"}, [
+                $r("span", {className:"res-val"}, game.getDisplayValueExt(res.value)),
+                res.maxValue ? $r("span", {className:"maxRes"},
+                    "/" + game.getDisplayValueExt(res.maxValue)) : null
+            ]),
+            $r("div", {className:"res-cell resPerTick" + (perTick < 0 ? " neg" : ""), role: "gridcell", ref:"perTickNode"},
                 isTimeParadox ? "???" : perTickVal),
-            $r("div", {className:"res-cell" + (weatherModCss ? " " + weatherModCss : ""), role: "gridcell"}, weatherModValue)
+            capCls != null && $r("div", {className:"res-cap" + capCls, role: "presentation"},
+                $r("i", {style:{width: capPct + "%"}})
+            )
         ]);
     },
     onClickName: function(e){
@@ -247,7 +259,7 @@ WResourceRow = React.createClass({
         if (!res.visible && !props.showHiddenResources){
             return false;
         }
-        var hasVisibility = (res.unlocked || (res.name == "kittens" && res.maxValue));
+        var hasVisibility = res.unlocked;
         if (!hasVisibility || (!this.getIsVisible(res) && !props.isEditMode)){
             return false;
         }
@@ -834,10 +846,6 @@ WLeftPanel = React.createClass({
         var game = this.state.game,
             reqRes = game.getRequiredResources(game.selectedBuilding);
 
-        var map = game.village.map;
-        var lastBiomeName = map.lastBiome ? game.village.getBiome(map.lastBiome).title : "";
-        var canExplore = map.lastBiome && !map.currentBiome && map.squad.hp >= map.getMaxHP() && !game.isReadOnly();
-
         var canSacrifice = game.religion.getHasUnlockedUnicornSacrifice() && !game.isReadOnly();
         var maxAvailableSacrifices = game.religion.getAvailableUnicornSacrifices();
 
@@ -864,13 +872,6 @@ WLeftPanel = React.createClass({
             }, 
                 $I("general.food.advisor.text")
             ), 
-            $r("div", {id:"fastExploreContainer", className:"pin-link", style:{
-                display: (canExplore ? "block" : "none")
-            }},
-                $r("a", {href:"#", onClick: this.exploreLast},
-                    $I("left.explore", [lastBiomeName])
-                )
-            ),
             $r("div", {id:"fastSacrificeContainer", className:"pin-link sidebar-section", style: {
                 display: (canSacrifice ? "block" : "none"),
                 visibility: (maxAvailableSacrifices >= 1 ? "visible" : "hidden")
@@ -896,14 +897,6 @@ WLeftPanel = React.createClass({
             !game.isReadOnly() && $r(WPins, {game: game}),
             $r(WCraftTable, {resources: game.resPool.resources, reqRes: reqRes})
         ]);
-    },
-
-    exploreLast: function(event){
-        event.preventDefault();
-        var map = this.state.game.village.map;
-        if (map.lastBiome && map.squad.hp >= map.getMaxHP()) {
-            map.currentBiome = map.lastBiome;
-        }
     },
 
     praiseAll: function(event){

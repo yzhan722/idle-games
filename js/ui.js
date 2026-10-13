@@ -458,6 +458,12 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
             }
         }
 
+        //道途指引——独立常驻槽位(grid-area: guide),钉在主区下沿;
+        //不再嵌进页签内容里挤占模块,全部完成后自隐
+        var cult = game.cultivation;
+        this.guideBox = (cult && cult.renderGuideBox) ? cult.renderGuideBox(container) : null;
+        if (this.guideBox){ cult.updateGuideBox(this.guideBox); }
+
 
 
 		if (!this.calenderDivTooltip){
@@ -624,7 +630,22 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
     //---------------------------------------------------------------
     update: function(){
         //TODO: use ui managers?
+        //入世留名 / 转世择身 — 首个 tick 查一次:无名先报号,转世另择出身
+        if (!this._identityChecked){
+            this._identityChecked = true;
+            var cult = this.game.cultivation;
+            if (cult && cult.showIdentityPrompt && !this.game.isReadOnly()){
+                if (!(cult.identity && cult.identity.name)){
+                    cult.showIdentityPrompt();
+                } else if (cult.pendingOrigin){
+                    cult.showIdentityPrompt(true);
+                }
+            }
+        }
 		this.updateTabs();
+        if (this.guideBox && this.game.cultivation){
+            this.game.cultivation.updateGuideBox(this.guideBox);
+        }
         this.updateFastPraise();
         this.updateCalendar();
         this.updateUndoButton();
@@ -922,6 +943,8 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         $("#save-link").text($I("menu.save"));
         $("#options-link").text($I("menu.options"));
         $("#reset-link").text($I("menu.reset"));
+        $("#help-link").text($I("menu.help"));
+        $("#consoleIntroSub").text($I("console.intro.sub"));
         $("#wipe-link").text($I("menu.wipe"));
         $("#getTheApp-link").text($I("menu.getTheApp"));
 
@@ -959,6 +982,27 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         $("#appText").text($I("ui.option.app.text"));
         $("#appAndroid").text($I("ui.option.app.android"));
         $("#appIOS").text($I("ui.option.app.ios"));
+        this.renderHelp();
+    },
+
+    //《修行指南》 — fills #helpDiv from the section manifest on the cultivation
+    //manager; runs at boot and again on language switch via the caller above
+    renderHelp: function(){
+        var helpContent = dojo.byId("helpContent");
+        var cult = this.game && this.game.cultivation;
+        if (!helpContent || !cult || !cult.getHelpSections){ return; }
+
+        var html = "<div class=\"xx-help-title\">" + $I("help.title") + "</div>" +
+            "<div class=\"xx-help-intro\">" + $I("help.intro") + "</div>";
+        var secs = cult.getHelpSections();
+        for (var i = 0; i < secs.length; i++){
+            html += "<div class=\"xx-help-sec\">" + $I(secs[i].titleKey) + "</div><ul>";
+            for (var j = 0; j < secs[i].bodyKeys.length; j++){
+                html += "<li>" + $I(secs[i].bodyKeys[j]) + "</li>";
+            }
+            html += "</ul>";
+        }
+        helpContent.innerHTML = html;
     },
 
     _createFilter: function(filter, fId, filtersDiv){

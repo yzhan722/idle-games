@@ -241,7 +241,6 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 			"alicornPerTickRatio": 0.1,
 			"tradeKnowledge": 1,
 			"weaponEfficency": 0,
-			"policyFakeBought": 0,
 			"steamworksFakeBought": 0,
 			"tradeKnowledgeRatio": 0
         },
@@ -254,7 +253,6 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
                 self.effects["alicornPerTickRatio"] = 0;
                 self.effects["tradeKnowledge"] = 0;
 				self.effects["weaponEfficency"] = -0.1; //after 10 completions weapons WILL be useles; no LDR >:3
-                self.effects["policyFakeBought"] = 1;
 				self.effects["steamworksFakeBought"] = Math.floor(1.5 * self.on || 1)/ (self.on || 1);
                 self.effects["tradeKnowledgeRatio"] = 0;
 				game.bld.getBuildingExt("steamworks").meta.priceRules = true;
@@ -262,7 +260,6 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 				self.effects["alicornPerTickRatio"] = 0.1;
 				self.effects["tradeKnowledge"] = 1;
                 self.effects["weaponEfficency"] = 0;
-                self.effects["policyFakeBought"] = 0;
 				self.effects["steamworksFakeBought"] = 0;
                 self.effects["tradeKnowledgeRatio"] = self.getTradeBonusEffect(game);
 				game.bld.getBuildingExt("steamworks").meta.priceRules = undefined;
@@ -284,7 +281,7 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 				}
 			}
 
-			return game.science.getPolicy("outerSpaceTreaty").researched;
+			return false;
 		},
 		upgrades: {
 			upgrades: ["compositeBow", "crossbow", "railgun"]
@@ -458,11 +455,6 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 			game.bld.effectsBase["logHouseFakeBought"] = 0;
 			game.bld.effectsBase["mansionFakeBought"] = 0; //in case of some laggy redshift 
 			game.bld.pollutionEffects["pollutionDissipationRatio"] = 1e-7; //putting it back to default at the end of the challenge is enough
-			//policies unlocked ONLY after winning this challenge!
-			//After the challenge is won player gets two options: make terraforming stations stronger; or get usedCryochamber ONCE.
-			//In case of taking the cryochaimber, both policies become not unlocked and extraction policy becomes NOT researched
-			game.science.getPolicy("terraformingInsight").unlocked = true; //policy which helpes to get more paragon this run
-			game.science.getPolicy("cryochamberExtraction").unlocked = true; //single use policy; gets not researched after player gets the bonus
 		}
 	}],
 
