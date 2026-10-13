@@ -10,55 +10,76 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 	baseGoldCost: 15,
 	baseManpowerCost: 50,
 
+	/**
+	 * 坊市定价模型:每个资源的"基础价值" = 参考经济下(各产线约10座)生产1单位所需秒数。
+	 * 直产资源按实测速率;转化品按原料链递归折算;事件/传承资源不参与模型(无价)。
+	 * 定价规则:卖出总值 ≈ 买入总值 × 1.2~1.5,差额是玩家的转换收益;
+	 * 每趟另收 baseGoldCost + baseManpowerCost 的"运力费",是坊市的真实门槛。
+	 * 玄蛇族的灵香定价偏高是有意的——灵香仅游历掉落且是酿坊刚需,溢价值得付。
+	 */
+	resourceValues: {
+		catnip: 0.32, wood: 3.9, minerals: 1.6, coal: 16, science: 3.2,
+		oil: 9.7, iron: 28, gold: 200, titanium: 7300, uranium: 44000,
+		furs: 160, ivory: 200, unicorns: 194, culture: 3.9, faith: 39,
+		spice: 40, manpower: 10, unobtainium: 29, starchart: 20,
+		slab: 400, beam: 680, plate: 3500, steel: 4400, scaffold: 34000,
+		thorium: 11000000
+	},
+
 	cachedAmbassadorEffects: null, //We need to cache this separately from globalEffectsCached because, I dunno, reasons.  ???  I guess there just are problems with how globalEffectsCached is recalculated, & we want these cached effects to update every tick.
 
 	races: [{
+		//灵蜥:灵石 -> 灵木 (800s -> 975s, x1.22)
 		name: "lizards",
 		title: $I("trade.race.lizards"),
 		buys: [
-			{name: "minerals", val: 1000}
+			{name: "minerals", val: 500}
 		],
 		sells:[
-			{name: "wood", value: 300}
+			{name: "wood", value: 250}
 		],
 		collapsed: false,
 		pinned: false
 	},{
+		//蛟族:灵谷 -> 玄铁 (1280s -> 2100s, x1.64) 深海蛟族贩玄铁,把富余灵谷转成瓶颈资源
 		name: "sharks",
 		title: $I("trade.race.sharks"),
 		buys: [
-			{name: "iron", val: 100}
+			{name: "catnip", val: 4000}
 		],
 		sells:[
-			{name: "catnip", value: 20000}
+			{name: "iron", value: 75}
 		],
 		collapsed: false,
 		pinned: false
 	},{
+		//金翅:灵木 -> 玄铁 (1950s -> 2520s, x1.29)
 		name: "griffins",
 		title: $I("trade.race.griffins"),
 		buys: [
 			{name: "wood", val: 500}
 		],
 		sells:[
-			{name: "iron", value: 150}
+			{name: "iron", value: 90}
 		],
 		collapsed: false,
 		pinned: false
 	},{
+		//玄蛇:灵骨 -> 灵石+灵香 (6000s -> 3680s, x0.61) 灵香无产线,溢价值得
 		name: "nagas",
 		title: $I("trade.race.nagas"),
 		hidden: true,
 		buys: [
-			{name: "ivory", val: 500}
+			{name: "ivory", val: 30}
 		],
 		sells:[
-			{name: "minerals", value: 600},
-			{name: "spice", value: 15}
+			{name: "minerals", value: 800},
+			{name: "spice", value: 60}
 		],
 		collapsed: false,
 		pinned: false
 	},{
+		//斑灵马:灵石砖 -> 玄铁+庚金 (20000s -> 26100s, x1.3) 庚金是此行的目的
 		name: "zebras",
 		hidden: true,
 		title: $I("trade.race.zebras"),
@@ -66,20 +87,18 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 			{name: "slab", val: 50}
 		],
 		sells:[
-			{name: "iron", value: 200},
-			{name: "titanium", value: 2}
+			{name: "iron", value: 150},
+			{name: "titanium", value: 3}
 		],
-		 unlocks:{
-			policies:["zebraRelationsAppeasement", "zebraRelationsBellicosity"]
-		 },
 		collapsed: false,
 		pinned: false
 	},{
+		//蛛魔:灵石 -> 玄炭 (3200s -> 4050s, x1.27) 原为50灵木架(1.7M s)换玄炭,荒谬
 		name: "spiders",
 		hidden: true,
 		title: $I("trade.race.spiders"),
 		buys: [
-			{name: "scaffold", val: 50}
+			{name: "minerals", val: 2000}
 		],
 		sells:[
 			{name: "coal", value: 250}
@@ -87,6 +106,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		collapsed: false,
 		pinned: false
 	},{
+		//龙:庚金 -> 雷晶+紫雷晶 (1.83M s -> 1.87M s, x1.02) 深后期平价兑换
 		name: "dragons",
 		hidden: true,
 		title: $I("trade.race.dragons"),
@@ -94,17 +114,18 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 			{name: "titanium", val: 250}
 		],
 		sells:[
-			{name: "uranium", value: 1},
-			{name: "thorium", value: 0.5}
+			{name: "uranium", value: 30},
+			{name: "thorium", value: 0.05}
 		],
 		collapsed: false,
 		pinned: false
 	},{
+		//古魔:虚空仙金 -> 传承级回报(时晶/悲叹/遗宝/泪),不套生产模型
 		name: "leviathans",
 		hidden: true,
 		title: $I("trade.race.leviathans"),
 		buys: [
-			{name: "unobtainium", val: 5000}
+			{name: "unobtainium", val: 2500}
 		],
 		sells:[
 			{name: "starchart", value: 200},
@@ -114,9 +135,6 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 			{name: "temporalFlux", value: 1},
 			{name: "tears", value: 800}
 		],
-		unlocks:{
-			policies:["transkittenism", "necrocracy", "radicalXenophobia"]
-		},
 		collapsed: false,
 		pinned: false
     }],
@@ -221,8 +239,6 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		if (!zebras.unlocked && this.game.resPool.get("ship").value >= 1){
 			zebras.unlocked = true;
 			this.game.workshop.get("caravanserai").unlocked = true;
-            this.game.science.getPolicy("zebraRelationsAppeasement").unlocked = true;
-            this.game.science.getPolicy("zebraRelationsBellicosity").unlocked = true;
 			return zebras;
 		}
 
@@ -338,7 +354,6 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		var tradeRatio =
 			1
 			+ this.game.diplomacy.getTradeRatio()
-			+ this.game.diplomacy.calculateTradeBonusFromPolicies(race.name, this.game)
 			+ this.game.challenges.getChallenge("pacifism").getTradeBonusEffect(this.game);
 		var raceRatio = 1 + race.energy * 0.02;
 
@@ -371,7 +386,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 	},
 
 	getManpowerCost: function() {
-		var manpowerCost = this.baseManpowerCost - this.game.getEffect("tradeCatpowerDiscount");
+		var manpowerCost = this.baseManpowerCost;
 		if (this.game.challenges.isActive("postApocalypse")) {
 			manpowerCost *= 1 + this.game.bld.getPollutionLevel();
 		}
@@ -379,7 +394,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 	},
 
 	getGoldCost: function() {
-		var goldCost = this.baseGoldCost - this.game.getEffect("tradeGoldDiscount");
+		var goldCost = this.baseGoldCost;
 		if (this.game.challenges.isActive("postApocalypse")) {
 			goldCost *= 1 + this.game.bld.getPollutionLevel();
 		}
@@ -422,7 +437,9 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 	},
 
 	tradeAll: function(race){
-		this.tradeMultiple(race, this.getMaxTradeAmt(race));
+		var amt = this.getMaxTradeAmt(race);
+		if (!amt){ return; }	//家底不足一次贸易——别白跑一趟空商队
+		this.tradeMultiple(race, amt);
 	},
 
 	/**
@@ -476,15 +493,14 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 			if (min > amt[i]) { min = amt[i]; }
 		}
 
-		if (min == Number.MAX_VALUE || min == 0){
-			return;
+		if (min == Number.MAX_VALUE){
+			return 0;
 		}
-		return min;
+		return min;	//min==0 时返回数字 0,而非 undefined——UI 上 xNaN
 	},
 	getMarkerCap: function(){
 		return Math.floor(
-			(this.game.religion.getZU("marker").getEffectiveValue(this.game) * 5 + 5) *
-			(1 + this.game.getEffect("leviathansEnergyModifier"))
+			this.game.religion.getZU("marker").getEffectiveValue(this.game) * 5 + 5
 		);
 	},
 	feedElders: function(amtRequested){
@@ -493,7 +509,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		var cleanRequest = Math.max(amtRequested, 1) || 1;
 		var amt = Math.floor(Math.min(cleanRequest, ncorns.value));
 		if (amt > 0) {
-			var efficiency = 1 + this.game.getEffect("feedEldersEfficiencyRatio");
+			var efficiency = 1;
 			elders.energy += amt * efficiency;
 
 			var markerCap = this.game.diplomacy.getMarkerCap();
@@ -541,15 +557,6 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		this.get("leviathans").duration = 10000;
 		this.game.msg("All trade partners are unlocked");
 	},
-	calculateTradeBonusFromPolicies: function(raceName, game){
-		// Apply effects from sharkRelationsMerchants policy.
-		var trades = game.stats.getStatCurrent("totalTrades").val;
-		var merchantBonus = Math.min(Math.round((Math.log10(Math.max(trades, 100)) - 1) * 3) / 100, 0.15);
-		var merchantPolicy = game.science.getPolicy("sharkRelationsMerchants");
-		merchantPolicy.lastCalculatedBonus = merchantBonus;
-
-		return merchantPolicy.researched ? merchantBonus : 0;
-	}
 });
 
 
@@ -965,16 +972,8 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Diplomacy", com.nuclearunicorn.game
 		var self = this;
 
 		//Display current trade bonus (tradeposts + Pacifism Challenge reward)
-		//Also display bonus from Shark Relations: Merchants
 		var div = dojo.create("div", { class: "expandAllBar", style: { float: "left"}}, tabContainer);
 		this.tradeRatioSpan = dojo.create("span", { innerHTML: $I("trade.effectiveness", [this.game.getDisplayValueExt((this.game.diplomacy.getTradeRatio() + this.game.challenges.getChallenge("pacifism").getTradeBonusEffect(this.game))* 100, false, false, 0)]) }, div);
-		var sharkMerchantsPolicy = this.game.science.getPolicy("sharkRelationsMerchants");
-		if (sharkMerchantsPolicy.researched) {
-			dojo.create("br", {}, div);
-			this.sharkMerchantsSpan = dojo.create("span", { innerHTML: $I("trade.effectiveness.sharkRelationsMerchants", [this.game.toDisplayPercentage(sharkMerchantsPolicy.lastCalculatedBonus, 0, false)]) }, div);
-		} else {
-			this.sharkMerchantsSpan = null;
-		}
 
 		// expand all / collapse all panels
 
@@ -995,7 +994,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Diplomacy", com.nuclearunicorn.game
 			if (!race.unlocked) {
 				continue;
 			}
-			var tradeRatio = baseTradeRatio + this.game.diplomacy.calculateTradeBonusFromPolicies(race.name, this.game) + this.game.challenges.getChallenge("pacifism").getTradeBonusEffect(this.game);
+			var tradeRatio = baseTradeRatio + this.game.challenges.getChallenge("pacifism").getTradeBonusEffect(this.game);
 			var racePanel = this.racePanels[i];
 			if (!racePanel) {
 				racePanel = race.name === "leviathans" ? new classes.diplomacy.ui.EldersPanel(race) : new classes.diplomacy.ui.RacePanel(race);
@@ -1142,10 +1141,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Diplomacy", com.nuclearunicorn.game
 		//Woohoo, we now have code duplication, but this is the cleanest way I can think of right now.
 		if (this.tradeRatioSpan) {
 			this.tradeRatioSpan.textContent = $I("trade.effectiveness", [this.game.getDisplayValueExt((this.game.diplomacy.getTradeRatio() + this.game.challenges.getChallenge("pacifism").getTradeBonusEffect(this.game))* 100, false, false, 0)]);
-		}
-		if (this.sharkMerchantsSpan) {
-			var sharkMerchantsPolicy = this.game.science.getPolicy("sharkRelationsMerchants");
-			this.sharkMerchantsSpan.textContent = $I("trade.effectiveness.sharkRelationsMerchants", [this.game.toDisplayPercentage(sharkMerchantsPolicy.lastCalculatedBonus, 0, false)]);
 		}
 
 		for (var i = 0; i < this.racePanels.length; i++){

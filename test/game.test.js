@@ -97,8 +97,8 @@ test("Library stage-0 science trickle survives calculateEffects (感悟涓滴)",
     var lib = game.bld.get("library");
     lib.on = 1; lib.val = 1; lib.stage = 0;
     game.updateCaches();
-    expect(lib.stages[0].effects.sciencePerTickBase).toBeCloseTo(0.035);
-    expect(game.getEffect("sciencePerTickBase")).toBeCloseTo(0.035);
+    expect(lib.stages[0].effects.sciencePerTickBase).toBeCloseTo(0.03);
+    expect(game.getEffect("sciencePerTickBase")).toBeCloseTo(0.03);
     expect(game.calcResourcePerTick("science")).toBeGreaterThan(0);
 });
 
@@ -445,58 +445,13 @@ test("Test NR calls", () => {
 });
 
 //--------------------------------
-//      Map test
+//      Map test — 生态群系引擎已随弟子系统整体移除
 //--------------------------------
-test("Explored biomes should update effects", () => {
-
-    var plainsBiome = game.village.getBiome("plains");
-    plainsBiome.val = 1;
-    plainsBiome.on = 1;
-    game.updateCaches();
-    //expect(game.globalEffectsCached["catnipRatio"]).toBe(0.01);
-    expect(game.getEffect("catnipRatio")).toBe(0.01);
-
-    //buildings effects and biomes should compound and not interfeer with each other
-
-    var forestBiome = game.village.getBiome("forest");
-    forestBiome.val = 10;
-    forestBiome.on = 10;
-    _build("lumberMill", 10);
-    game.updateCaches();
-
-    //expect(game.getEffect("woodRatio")).toBe(0.1);
-});
-
-test("Explored biome should produce rewards", () => {
-    var plainsBiome = game.village.getBiome("plains");
-    plainsBiome.val = 1;
-    
-    //check that obtained random reward is within base value +- width
-    var rewardSpec = plainsBiome.rewards[0];
-
-    var rewards = game.village.map.getBiomeRewards(plainsBiome);
-    var amt = rewards["catnip"];
-
-    /*
-        _fuzzGainedAmount(width) is flaky and somethimes provides values outsie of [-width/2, width/2];
-        This causes tests to be failing with edge cases like
-
-        Expected: >= 181.4943400895315
-        Received:    180.17599538566006
-
-        We will adjust our gaps by 5% to keep sanity check in place
-    */
-    var fuzzBuffer = 0.95;
-    expect(amt).toBeGreaterThanOrEqual(rewardSpec.value * (1 - rewardSpec.width ) * fuzzBuffer);
-    expect(amt).toBeLessThanOrEqual(rewardSpec.value * (1 + rewardSpec.width ) * fuzzBuffer);
-
-    plainsBiome.val = 2;
-    var multiplier = Math.pow(plainsBiome.val, rewardSpec.multiplier | 1.2);
-
-    var rewards = game.village.map.getBiomeRewards(plainsBiome);
-    var amt = rewards["catnip"];
-    expect(amt).toBeGreaterThanOrEqual(rewardSpec.value * (1 - rewardSpec.width ) * multiplier * fuzzBuffer);
-    expect(amt).toBeLessThanOrEqual(rewardSpec.value * (1 + rewardSpec.width ) * multiplier * fuzzBuffer);
+test("Map engine is gone: no biome/fauna APIs remain on the village shell", () => {
+    expect(game.village.getBiome).toBeUndefined();
+    expect(game.village.map).toBeUndefined();
+    expect(game.village.sendHunterSquad).toBeUndefined();
+    expect(game.village.getBiomeLevel).toBeUndefined();
 });
 
 //--------------------------------
@@ -509,7 +464,7 @@ test("Queue should correctly add and remove items", () => {
     let isRemoved;
 
     queue.update();
-    expect(queue.cap).toBe(3);
+    expect(queue.cap).toBe(5);
 
     //simple add and remove operations should work and keep queue clear
     queue.addToQueue("field", "buildings", "N/A");
@@ -533,9 +488,12 @@ test("Queue should correctly add and remove items", () => {
     expect(queue.queueItems.length).toBe(1); 
     expect(queue.queueLength()).toBe(3);
 
-    //can't build over the cap
+    //can't build over the cap — fill the remaining 2 slots, next add is refused
     queue.addToQueue("pasture", "buildings", "N/A");
-    expect(queue.queueItems.length).toBe(1);
+    queue.addToQueue("pasture", "buildings", "N/A");
+    queue.addToQueue("pasture", "buildings", "N/A");
+    expect(queue.queueItems.length).toBe(2);
+    expect(queue.queueLength()).toBe(5);
 
     //ai cores should increase caps
     _build("aiCore", 10);
@@ -543,7 +501,7 @@ test("Queue should correctly add and remove items", () => {
     queue.update();
 
     //multiple entires of the same type should be allowed
-    expect(queue.cap).toBe(13);
+    expect(queue.cap).toBe(15);
     queue.addToQueue("pasture", "buildings", "N/A");
     queue.addToQueue("field", "buildings", "N/A");
     expect(queue.queueItems.length).toBe(3);
@@ -557,17 +515,16 @@ test("Queue should correctly add and remove items", () => {
     expect(queue.queueItems.length).toBe(2);
 
     /**
-     * queue content: 
-      [{ name: 'pasture', type: 'buildings', label: 'N/A' },
-      { name: 'field', type: 'buildings', label: 'N/A' } ]
+     * queue content:
+      [{ name: 'pasture', type: 'buildings', value: 3 },
+      { name: 'field',   type: 'buildings', value: 1 } ]
      */
 
-    //test shift key option
+    //test shift key option — fills remaining cap (15 - 4 = 11)
     queue.addToQueue("field", "buildings", "N/A", { shiftKey: true } /*all available*/);
-    expect(queue.queueLength()).toBe(13);
+    expect(queue.queueLength()).toBe(15);
     expect(queue.queueItems.length).toBe(2);
 
-    //console.error(queue.queueItems);
     expect(queue.queueItems[1].value).toBe(12);
 });
 
@@ -582,19 +539,6 @@ test("Queue should correctly skip one-time purchases if already bought", () => {
     queue.update();
     expect(queue.queueLength()).toBe(0);
     expect(game.resPool.get("science").value).toBe(30); //We didn't spend any science because we skipped the item
-
-    //The queue should skip both researched & blocked policies:
-    game.science.getPolicy("liberty").researched = true;
-    game.science.getPolicy("tradition").blocked = true;
-    game.resPool.get("culture").value = 150; //Enough to purchase either policy.
-    queue.addToQueue("liberty", "policies", "N/A");
-    queue.addToQueue("tradition", "policies", "N/A");
-    expect(queue.queueLength()).toBe(2);
-    queue.update();
-    expect(queue.queueLength()).toBe(1);
-    queue.update();
-    expect(queue.queueLength()).toBe(0);
-    expect(game.resPool.get("culture").value).toBe(150);
 });
 
 //--------------------------------
@@ -767,50 +711,9 @@ test("buyItem internals should work properly for Calendar", () => {
     expect(game.resPool.get("science").value).toBe(70);
 });
 
-test("buyItem internals should work properly for Liberty & Tradition", () => {
-    const controller = new classes.ui.PolicyBtnController(game);
-    let model = controller.fetchModel({ id: "liberty" });
-
-    //Before we get started, this test assumes certain things about Liberty:
-    //We assume it costs 150 culture.
-    //Liberty should be representative of most policies in the game.
-    //Some policies have special conditions under which they're blocked; I won't test those here.
-
-    game.opts.noConfirm = true;
-
-    //Try buying an item, but we have 0 culture so it should fail:
-    controller.updateEnabled(model);
-    var {itemBought, reason} = controller.buyItem(model, null);
-    expect(model.metadata.researched).toBe(false);
-    expect(itemBought).toBe(false);
-    expect(reason).toBe("cannot-afford");
-
-    //Give ourselves plenty of culture & try again; this time it should succeed:
-    game.resPool.get("culture").value = 500;
-    controller.updateEnabled(model);
-    var {itemBought, reason} = controller.buyItem(model, null);
-    expect(model.metadata.researched).toBe(true);
-    expect(itemBought).toBe(true);
-    expect(reason).toBe("paid-for");
-    expect(game.resPool.get("culture").value).toBe(350);
-
-    //Try again; this time it should fail because already bought:
-    controller.updateEnabled(model);
-    var {itemBought, reason} = controller.buyItem(model, null);
-    expect(model.metadata.researched).toBe(true);
-    expect(itemBought).toBe(false);
-    expect(reason).toBe("already-bought");
-    expect(game.resPool.get("culture").value).toBe(350);
-
-    //Now test that Tradition is correctly blocked.
-    model = controller.fetchModel({ id: "tradition" });
-    expect(model.metadata.blocked).toBe(true);
-    controller.updateEnabled(model);
-    var {itemBought, reason} = controller.buyItem(model, null);
-    expect(model.metadata.researched).toBe(false);
-    expect(itemBought).toBe(false);
-    expect(reason).toBe("blocked");
-    expect(game.resPool.get("culture").value).toBe(350);
+test("buyItem internals: removed PolicyBtnController stays gone (policy system deleted)", () => {
+    expect(classes.ui.PolicyBtnController).toBeUndefined();
+    expect(game.science.getPolicy).toBeUndefined();
 });
 
 test("buyItem internals should work properly for Fix Cryochamber", () => {
@@ -1114,17 +1017,16 @@ test("Toggling hodl mode must liquidate b-coin at the pre-switch price", () => {
 //------------------ 弟子系统移除后的架构契约 ------------------
 
 test("Disciple removal: village is a thin map/biome shell", () => {
-    //弟子/职位/领袖 API 已整体移除——村庄壳只剩生态探索与 hadKittenHunters
+    //弟子/职位/生态 API 已整体移除——村庄壳只剩 hadKittenHunters 标记
     expect(game.village.sim.hadKittenHunters).toBe(true);
-    expect(game.village.map).toBeTruthy();
+    expect(game.village.map).toBeUndefined();
     expect(game.village.getKittens).toBeUndefined();
     expect(game.village.leader).toBeUndefined();
 
-    //存档面只剩生态与猎人标记
+    //存档面只剩猎人标记
     const saveData = {};
     game.village.save(saveData);
-    expect(Object.keys(saveData.village).sort()).toEqual(
-        ["biomes", "currentBiome", "hadKittenHunters", "lastBiome", "map"].sort());
+    expect(Object.keys(saveData.village).sort()).toEqual(["hadKittenHunters"]);
 });
 
 test("Disciple removal: Village tab is absent from the tab registry", () => {
@@ -1144,9 +1046,9 @@ test("Disciple removal: buildings produce xiuwei directly without kittens", () =
     game.updateCaches();
     game.calculateAllEffects();
 
-    //增量 = 5 茅庐 × 0.008 xiuweiPerTickBase = 0.04
+    //增量 = 5 茅庐 × 0.005 xiuweiPerTickBase = 0.025
     var xiuweiPerTick = game.getEffect("xiuweiPerTickBase");
-    expect(xiuweiPerTick - baseline).toBeCloseTo(0.04);
+    expect(xiuweiPerTick - baseline).toBeCloseTo(0.025);
 });
 
 test("Disciple removal: village shell survives save/load", () => {
@@ -1155,9 +1057,9 @@ test("Disciple removal: village shell survives save/load", () => {
 
     var loadResult = game.load();
     expect(loadResult).toBe(true);
-    //村庄壳只剩生态探索与猎人标记,不再暴露弟子 API
+    //村庄壳只剩猎人标记,不再暴露弟子/生态 API
     expect(game.village.sim.hadKittenHunters).toBeDefined();
-    expect(game.village.map).toBeTruthy();
+    expect(game.village.map).toBeUndefined();
 
     game.resetState();
 });

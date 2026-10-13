@@ -499,16 +499,6 @@ dojo.declare("com.nuclearunicorn.game.log.Console", null, {
 				title: $I("console.filter.undo"),
 				enabled: true,
 				unlocked: false
-			},
-			"explore": {
-				title: $I("console.filter.explore"),
-				enabled: true,
-				unlocked: false
-			},
-			"combat": {
-				title: $I("console.filter.combat"),
-				enabled: true,
-				unlocked: false
 			}
 		}
 	},
@@ -2384,16 +2374,6 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingStackableBtnController", Buildi
 
 		if (meta.breakIronWill) {
 			this.game.ironWill = false;
-			var liberty = this.game.science.getPolicy("liberty");
-			liberty.calculateEffects(liberty, this.game);
-			var zebraOutpostMeta = this.game.bld.getBuildingExt("zebraOutpost").meta;
-			zebraOutpostMeta.calculateEffects(zebraOutpostMeta, this.game);
-			zebraOutpostMeta.jammed = false;
-			this.game.upgrade({
-				policies: ["sharkRelationsBotanists"],
-				upgrades: ["huntingArmor", "bolas", "compositeBow"]
-			});
-			this.game.diplomacy.onLeavingIW();
 		}
 
 		if (meta.unlocks) {

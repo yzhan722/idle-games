@@ -215,7 +215,7 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 
 	// Conversion constants (null values are calculated in the constructor)
 	ticksPerDay: 10,
-	daysPerSeason: 100,
+	daysPerSeason: 30,	//一载 30×4=120 天——凡人寿元百载,别让一辈子挂一宿
 	seasonsPerYear: null,
 	yearsPerCycle: null,
 	cyclesPerEra: null,
@@ -571,7 +571,6 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 
 			if (this.game.ironWill){
 				mineralsAmt += mineralsAmt * 0.1;	//+10% of minerals for iron will
-				mineralsAmt *= 1 + this.game.getEffect("mineralsPolicyRatio") / 3;
 			}
 			mineralsAmt *= 1 + minerologyBonus;
 			var mineralsGain = this.game.resPool.addResEvent("minerals", mineralsAmt);
@@ -725,7 +724,6 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 
 		this.adjustCryptoPrice();
 
-		this.game.upgrade({policies: ["authocracy"]}); //policy hack
 	},
 
 	fastForward: function(daysOffset){
@@ -775,7 +773,6 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 
 			if (this.game.ironWill){
 				mineralsAmt += mineralsAmt * 0.1;	//+10% of minerals for iron will
-				mineralsAmt *= 1 + this.game.getEffect("mineralsPolicyRatio") / 3;
 			}
 			mineralsAmt *= 1 + minerologyBonus;
 			this.game.resPool.addResEvent("minerals", numberEvents * mineralsAmt);
@@ -1034,21 +1031,6 @@ if (++this.cycleYear >= this.yearsPerCycle) {
 
 		resPool.addResEvent("temporalFlux", this.game.getResourceOnYearProduction("temporalFlux") * years);
 
-		var aiLevel = this.game.bld.get("aiCore").effects["aiLevel"];
-		if ((aiLevel > 14) && (this.game.science.getPolicy("transkittenism").researched != true)){
-			var aiApocalypseLevel = aiLevel - 14;
-			if (!this.game.getEffect("shatterTCGain")){
-				for (var i in this.game.resPool.resources){
-					var res = this.game.resPool.resources[i];
-					if (res.aiCanDestroy) {
-						resPool.addResEvent(res.name, -res.value * (1 - Math.pow(1 - 0.01 * aiApocalypseLevel, years))); //hopefully this will work close enough
-					}
-				}
-			}
-		}
-
-		this.game.upgrade({policies: ["authocracy", "dragonRelationsAstrologers", "lizardRelationsEcologists"]});
-
 		if (updateUI) {
 			this.game.ui.render();
 		}
@@ -1108,23 +1090,10 @@ if (++this.cycleYear >= this.yearsPerCycle) {
 
 		resPool.addResEvent("temporalFlux", this.game.getResourceOnYearProduction("temporalFlux"));
 
-		var aiLevel = this.game.bld.get("aiCore").effects["aiLevel"];
-		if ((aiLevel > 14) && (this.game.science.getPolicy("transkittenism").researched != true)){
-			var aiApocalypseLevel = aiLevel - 14;
-			this.game.msg($I("ai.apocalypse.msg", [aiApocalypseLevel]), "alert", "ai");
-			for (var i in this.game.resPool.resources){
-				var res = this.game.resPool.resources[i];
-				if (res.aiCanDestroy) {
-					resPool.addResEvent(res.name, -res.value * 0.01 * aiApocalypseLevel);
-				}
-			}
-		}
-
 		if (this.year % 2 == 0) {
 			this.giveAlicornmancyYearlyUnicorns(1, true);
 		}
 
-		this.game.upgrade({policies: ["authocracy", "dragonRelationsAstrologers", "lizardRelationsEcologists"]});
 		
 		if (updateUI) {
 			this.game.ui.render();
@@ -1163,10 +1132,6 @@ if (++this.cycleYear >= this.yearsPerCycle) {
 
 		if (res.name != "catnip") {
 			return mod;
-		}
-
-		if (this.game.science.getPolicy("communism").researched && this.getCurSeason().name == "winter" && this.weather == "cold"){
-			return 0;
 		}
 
 		if (this.weather == "warm"){

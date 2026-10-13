@@ -60,8 +60,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		],
 		unlocks: {
             planet: ["dune"],
-            spaceMission: ["heliosMission"],
-			policies:["technocracy", "theocracy", "expansionism"]
+            spaceMission: ["heliosMission"]
         }
 	},{
 		name: "piscineMission",
@@ -254,14 +253,11 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				"energyConsumption": 0,
 				"energyProduction": 0
 			},
-            unlocks:{
-                policies:["outerSpaceTreaty","militarizeSpace"]
-            },
 			calculateEffects: function(self, game){
 				if (self.val > 0){
 					game.time.queue.unlockQueueSource("spaceBuilding");
 				}
-                var observatoryRatioTemp = 0.05 * (1 + game.getEffect("satelliteSynergyBonus"));
+                var observatoryRatioTemp = 0.05;
 				self.effects = {
 					"observatoryRatio": observatoryRatioTemp,
 					"starchartPerTickBaseSpace": 0.001,
@@ -411,7 +407,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				effects["energyConsumption"] = game.workshop.get("amBases").researched ? 5 : 10;
 
 				if (game.workshop.get("aiBases").researched){
-                    var aiBasesModifier = 1 + game.getEffect("aiCoreUpgradeBonus");
+                    var aiBasesModifier = 1;
 					for (var key in effects){
 						if (key != "energyConsumption" ){
 							effects[key] *= (1 + game.bld.get("aiCore").on * 0.1 * aiBasesModifier);
@@ -856,7 +852,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				unlocked: false,
 				priceRatio: 1.15,
 				prices: [
-					{name: "antimatter", val: 5250 },
+					{name: "antimatter", val: 4000 },
 					{name: "relic", val: 1250 },
 					{name: "eludium", val: 5000 }
 				],
@@ -935,8 +931,8 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				unlocked: false,
 				priceRatio: 1.25,
 				prices: [
-					{name: "uranium", val: 5000000 },
-					{name: "science", val: 25000000 }
+					{name: "uranium", val: 400000 },
+					{name: "science", val: 1500000 }
 				],
 				effects: {
 					"tectonicBonus": 0.05
@@ -1294,7 +1290,7 @@ dojo.declare("com.nuclearunicorn.game.ui.SpaceProgramBtnController", com.nuclear
                 prices[i].val *= (1 - reductionRatio);
 			}
 			if (prices[i].name == "manpower"){
-                var reductionRatio = this.game.getLimitedDR(this.game.getEffect("catpowerReductionRatio"), 0.75);
+                var reductionRatio = 0;
                 prices[i].val *= (1 - reductionRatio);
 			}
 		}

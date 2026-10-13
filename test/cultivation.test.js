@@ -32,7 +32,7 @@ test("Stages are generated from realm defs and lianqi_1 starts researched", () =
     expect(cult.getStage("lianqi_0").researched).toBe(true);
     expect(cult.getStage("lianqi_0").prices.length).toBe(0);	//free onboarding
     expect(cult.getStage("lianqi_1").researched).toBe(false);
-    expect(cult.getStage("dujie_0").chance).toBeCloseTo(0.15);
+    expect(cult.getStage("dujie_0").chance).toBeCloseTo(0.10);
 });
 
 test("Spirit root is rolled on reset and resolves to a known root", () => {
@@ -47,15 +47,19 @@ test("Spirit root is rolled on reset and resolves to a known root", () => {
 //--------------------------------
 //       Fates & choices
 //--------------------------------
-test("Fate without choices fires automatically when its stage is reached", () => {
+test("Fate without choices opens a story card at its stage, applies on close", () => {
     const cult = game.cultivation;
     const bottle = cult.getFate("bottle");
     expect(bottle.researched).toBe(false);
     cult.getStage("lianqi_2").researched = true;
     cult.update();
+    //纯叙事章也走卡面——pending 待阅,点「记下」才落档
+    expect(bottle.pending).toBe(true);
+    expect(bottle.researched).toBe(false);
+    cult.applyFate(bottle, null);
     expect(bottle.researched).toBe(true);
-    //小节点只做剧情——不再发数值奖励
-    expect(Object.keys(bottle.effects).length).toBe(0);
+    //凝露瓶是命定之物——常驻灵香涓滴,不是纯剧情节点
+    expect(bottle.effects.spicePerTickBase).toBeCloseTo(0.02);
 });
 
 test("Fate with choices stays pending until a choice is applied", () => {
@@ -71,18 +75,18 @@ test("Fate with choices stays pending until a choice is applied", () => {
     expect(mojuren.pending).toBe(false);
     expect(mojuren.researched).toBe(true);
     expect(mojuren.choiceKey).toBe("spare");
-    //小节点:数值奖励已移除,只留下残魂常驻的 flag
+    //小节点:数值奖励已移除,只留下残魂常驻的 tale 标记
     expect(Object.keys(mojuren.effects).length).toBe(0);
-    expect(cult.mojurenAlive).toBe(true);
+    expect(cult.tale.mojuren).toBe("spare");
 });
 
 test("Choice branch effects survive a save/load round trip", () => {
     const cult = game.cultivation;
     const xugu = cult.getFate("xugu");
     cult.applyFate(xugu, xugu.choices[0]);	//ally
-    //小节点奖励已移除——分支只剩剧情 flag
+    //小节点奖励已移除——分支只剩 tale 标记
     expect(Object.keys(xugu.effects).length).toBe(0);
-    expect(cult.xuguAlive).toBe(true);
+    expect(cult.tale.xugu).toBe("ally");
 
     const saveData = {};
     cult.save(saveData);
@@ -91,21 +95,22 @@ test("Choice branch effects survive a save/load round trip", () => {
     xugu.effects = {};
     xugu.researched = false;
     xugu.choiceKey = undefined;
-    cult.xuguAlive = false;
+    cult.tale = {};
 
     cult.load(saveData);
     expect(xugu.researched).toBe(true);
     expect(xugu.choiceKey).toBe("ally");
-    expect(Object.keys(xugu.effects).length).toBe(0);	//分支不恢复数值,只留 flag
-    expect(cult.xuguAlive).toBe(true);
+    expect(Object.keys(xugu.effects).length).toBe(0);	//分支不恢复数值,只留 tale 标记
+    expect(cult.tale.xugu).toBe("ally");
 });
 
-test("Chen choice dao trades a heart-demon hit for cultivation focus", () => {
+test("Chen choice dao is a pure story branch — marks the tale, spares the heart", () => {
     const cult = game.cultivation;
     const chen = cult.getFate("chen");
     cult.heartDemon = 10;
-    cult.applyFate(chen, chen.choices[0]);	//dao — demonGain
-    expect(cult.heartDemon).toBeCloseTo(18);
+    cult.applyFate(chen, chen.choices[0]);	//dao — 一心向道,纯叙事分支
+    expect(cult.tale.chen).toBe("dao");
+    expect(cult.heartDemon).toBeCloseTo(10);	//无 demonGain,心魔不动
 });
 
 test("New fates are registered across the empty mid-realm layers", () => {
@@ -128,7 +133,7 @@ test("RMJI story fates fill the remaining free stage slots", () => {
     const cult = game.cultivation;
     const expected = {
         zhangtie: ["lianqi_1", 3], jinguang: ["lianqi_8", 2], tainan: ["zhuji_1", 3],
-        chuansong: ["jiedan_2", 2], xutian: ["lianxu_2", 2], erying: ["heti_2", 3]
+        chuansong: ["jiedan_2", 2], xutian: ["lianxu_2", 3], erying: ["heti_2", 3]
     };
     for (const name in expected){
         const f = cult.getFate(name);
@@ -139,15 +144,16 @@ test("RMJI story fates fill the remaining free stage slots", () => {
     }
 });
 
-test("Erying choice merge stokes the demon, release clears it", () => {
+test("Erying choice merge grants cultivation focus, release clears the demon", () => {
     const cult = game.cultivation;
     const erying = cult.getFate("erying");
     cult.heartDemon = 60;
-    cult.applyFate(erying, erying.choices[0]);	//merge — 夺婴吞魂,心魔滋长
-    expect(cult.heartDemon).toBeCloseTo(70);
+    cult.applyFate(erying, erying.choices[0]);	//merge — 炼化归一,道基大涨
+    expect(cult.heartDemon).toBeCloseTo(60);	//无 demonGain
+    expect(erying.effects.xiuweiRatio).toBeCloseTo(0.1);
 
     cult.applyFate(erying, erying.choices[1]);	//release — demonRelief 40
-    expect(cult.heartDemon).toBeCloseTo(30);
+    expect(cult.heartDemon).toBeCloseTo(20);
 });
 
 //--------------------------------
@@ -212,14 +218,15 @@ test("Demon gate suppresses breakthrough chance and pills relieve it", () => {
     cult.heartDemon = 95;
     expect(cult.isDemonBlocked()).toBe(true);
     const stage = cult.getStage("zhuji_0");
-    //0.85 base - 95*0.004 demon penalty = 0.47; buyItem hard-blocks via isDemonBlocked
-    expect(cult.getBreakChance(stage)).toBeCloseTo(0.47);
+    //0.55 base - 95*0.006 demon penalty clamps to the 0.05 floor;
+    //buyItem additionally hard-blocks via isDemonBlocked
+    expect(cult.getBreakChance(stage)).toBeCloseTo(0.05);
 
     cult.craftPill("qingxin");
     expect(cult.usePill("qingxin")).toBe(true);
-    expect(cult.heartDemon).toBeCloseTo(55);
-    expect(cult.isDemonBlocked()).toBe(false);
-    expect(cult.getBreakChance(stage)).toBeCloseTo(0.85 - 55 * 0.004);
+    expect(cult.heartDemon).toBeCloseTo(80);	//清心丹 -15
+    expect(cult.isDemonBlocked()).toBe(false);	//80 < gate 90
+    expect(cult.getBreakChance(stage)).toBeCloseTo(0.55 - 80 * 0.006);
 });
 
 test("Pills are consumable inventory — craft to stock, use to burn", () => {
@@ -231,9 +238,9 @@ test("Pills are consumable inventory — craft to stock, use to burn", () => {
     cult.craftPill("zhujidan");
     expect(cult.getPill("zhujidan").val).toBe(2);
 
-    //one pill = +0.3, capped — spamming a second pill is refused, not wasted
+    //one pill = breakMult +0.5 (relative boost), capped — second pill refused
     expect(cult.usePill("zhujidan")).toBe(true);
-    expect(cult.breakBoost).toBeCloseTo(0.3);
+    expect(cult.breakMult).toBeCloseTo(0.5);
     expect(cult.usePill("zhujidan")).toBe(false);
     expect(cult.getPill("zhujidan").val).toBe(1);	//second pill stays for the next attempt
 });
@@ -265,8 +272,9 @@ test("Seclusion trades mundane production for cultivation speed", () => {
     const g = game.globalEffectsCached;
     //lianqi_0 contributes +0.015 xiuweiRatio on top of the seclusion bonus
     expect(g.xiuweiRatio).toBeCloseTo(cult.SECLUSION_XIUWEI + cult.stages[0].effects.xiuweiRatio);
-    //lianqi_0 is researched by default and grants +0.03 realmProductionRatio on top of the seclusion penalty
-    expect(g.realmProductionRatio).toBeCloseTo(cult.SECLUSION_MUNDANE + cult.stages[0].effects.realmProductionRatio);
+    //闭关只压凡俗(seclusionMundaneRatio),不伤修为;realmProductionRatio 只剩层位加成
+    expect(g.seclusionMundaneRatio).toBeCloseTo(cult.SECLUSION_MUNDANE);
+    expect(g.realmProductionRatio).toBeCloseTo(cult.stages[0].effects.realmProductionRatio);
     cult.secluded = false;
 });
 
@@ -274,7 +282,7 @@ test("Save/load round trip preserves realm progress and demon state", () => {
     const cult = game.cultivation;
     cult.getStage("lianqi_5").researched = true;
     cult.heartDemon = 33;
-    cult.breakBoost = 0.3;
+    cult.breakMult = 0.3;
     cult.spiritRoot = "tian";
 
     const saveData = {};
@@ -282,13 +290,13 @@ test("Save/load round trip preserves realm progress and demon state", () => {
 
     cult.getStage("lianqi_5").researched = false;
     cult.heartDemon = 0;
-    cult.breakBoost = 0;
+    cult.breakMult = 0;
     cult.spiritRoot = "wei";
 
     cult.load(saveData);
     expect(cult.getStage("lianqi_5").researched).toBe(true);
     expect(cult.heartDemon).toBe(33);
-    expect(cult.breakBoost).toBeCloseTo(0.3);
+    expect(cult.breakMult).toBeCloseTo(0.3);
     expect(cult.spiritRoot).toBe("tian");
 });
 
@@ -407,12 +415,12 @@ test("Every stage grants a flat xiuwei trickle that scales with realm bonus", ()
     const cult = game.cultivation;
     for (const s of cult.stages){
         const def = cult.REALM_DEFS.find(d => d.key == s.realm);
-        expect(s.effects.xiuweiPerTickBase).toBeCloseTo(def.bonus * 2);
+        expect(s.effects.xiuweiPerTickBase).toBeCloseTo(def.bonus);
     }
     //and it actually flows into the shared effect cache
     game.globalEffectsCached = {};
     cult.updateEffectCached();
-    expect(game.globalEffectsCached.xiuweiPerTickBase).toBeCloseTo(0.06);	//lianqi_0
+    expect(game.globalEffectsCached.xiuweiPerTickBase).toBeCloseTo(0.03);	//lianqi_0
 });
 
 test("Sect promotions announce themselves; non-stage purchases never echo breakthrough text", () => {
@@ -551,10 +559,10 @@ test("Stage xiuwei costs stay inside the tuned envelope — no runaway exponent"
     }
     expect(maxJump).toBeLessThanOrEqual(15);
     expect(total).toBeLessThan(2e8);
-    //lianqi must stay cheap: the whole onboarding realm under ~5min of output
+    //lianqi must stay cheap: the whole onboarding realm stays a short-session ramp
     const lianqiTotal = cult.stages.filter(s => s.realm == "lianqi")
         .reduce((t, s) => t + s.prices.reduce((u, p) => u + (p.name == "xiuwei" ? p.val : 0), 0), 0);
-    expect(lianqiTotal).toBeLessThan(1500);
+    expect(lianqiTotal).toBeLessThan(12000);
 });
 
 //--------------------------------
@@ -565,13 +573,13 @@ test("Guide starts pending and completes in order as state advances", () => {
     let guide = cult.getGuideSteps();
     expect(guide.total).toBe(cult.GUIDE_STEPS.length);
     expect(guide.done).toBe(0);
-    expect(guide.pending[0].key).toBe("hut");	//first buildable = first step
+    expect(guide.pending[0].key).toBe("gather");	//first resource action = first step
 
     game.bld.get("hut").val = 1;	//meditation hut built
     game.bld.get("field").val = 1;	//spirit field opened
     cult.getStage("lianqi_1").researched = true;
     guide = cult.getGuideSteps();
-    expect(guide.done).toBe(3);
+    expect(guide.done).toBe(5);	//gather+field+refine+hut+break2
     expect(guide.pending.map(s => s.key)).toEqual(
         expect.arrayContaining(["wander", "seclude", "zhuji", "rift", "grift", "vein", "sect", "artifact", "dacheng"]));
 });
@@ -599,7 +607,7 @@ test("Guide counters tick on wander, seclude and rift", () => {
     cult.rift();
     Math.random.mockRestore();
     expect(cult.stats).toEqual({wander: 1, seclude: 1, rift: 1});
-    expect(cult.getGuideSteps().done).toBe(6);	//kitten+assign+wander+seclude+zhuji+rift
+    expect(cult.getGuideSteps().done).toBe(8);	//gather+field+refine+hut+wander+seclude+zhuji+rift
 });
 
 test("Guide stats and demonWarned survive save/load and reset", () => {

@@ -6,8 +6,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 	game: null,
 
 	hideResearched: false,
-	policyToggleBlocked: false,
-	policyToggleResearched: false,
 
 	//list of technologies
 	techs:[{
@@ -134,7 +132,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			buildings: ["aqueduct"],
 			tech: ["writing"],
-            policies: ["stripMining", "clearCutting", "environmentalism"],
 		}
 	}, {
 		name: "currency",
@@ -144,7 +141,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		prices: [{name : "science", val: 2200}],
 		unlocks: {
 			buildings: ["tradepost"],
-            policies: ["diplomacy", "isolationism"],
 			upgrades: ["goldOre"]
 		}
 	}, {
@@ -156,7 +152,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			buildings: ["amphitheatre"],
 			tech: ["philosophy", "machinery", "steel"],
-			policies: ["liberty", "tradition"],
 			upgrades: ["register"],
 			crafts: ["parchment"]
 		},
@@ -170,7 +165,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			buildings: ["temple"],
 			tech: ["theology"],
-            policies: ["stoicism", "epicurianism"],
 			crafts: ["compedium"]
 		},
 		flavor: $I("science.philosophy.flavor")
@@ -191,7 +185,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		effectDesc: $I("science.steel.effectDesc"),
 		prices: [{name : "science", val: 12000}],
 		unlocks: {
-			upgrades: ["deepMining", "coalFurnace", "combustionEngine",
+			upgrades: ["combustionEngine",
 						"reinforcedWarehouses", "steelAxe", "steelArmor"],
 			crafts: ["steel"]
 		}
@@ -223,7 +217,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			buildings: ["observatory"],
 			tech: ["navigation"],
-			policies: ["knowledgeSharing", "culturalExchange", "bigStickPolicy", "cityOnAHill"]
         }
 	}, {
 		name: "navigation",
@@ -266,7 +259,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		],
 		unlocks: {
 			tech: ["chemistry", "electricity", "metaphysics"],
-			upgrades: ["pneumaticPress", "pyrolysis", "steelSaw"],
+			upgrades: ["pneumaticPress", "steelSaw"],
 			crafts: ["blueprint"]
 		}
 	}, {
@@ -387,7 +380,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 			{name: 	"compedium", val: 1500}
 		],
 		unlocks: {
-			upgrades: ["unicornSelection", "gmo"]
+			upgrades: ["unicornSelection"]
 		},
 		flavor: $I("science.genetics.flavor")
 	}, {
@@ -402,7 +395,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			tech: ["mechanization", "metalurgy", "combustion"],
 			upgrades: ["barges", "advancedAutomation", "logistics"],
-			policies: ["sustainability", "fullIndustrialization"]
 		}
 	}, {
 		name: "mechanization",
@@ -456,7 +448,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		],
 		unlocks: {
 			stages: [{bld:"pasture", stage:1}], 	// Solar Farm
-			policies: ["conservation", "openWoodlands"],
 			upgrades: ["carbonSequestration"]
 		},
 		upgrades:{
@@ -528,7 +519,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		description: $I("science.blackchain.desc"),
 		effectDesc: $I("science.blackchain.effectDesc"),
 		prices: [
-			{name: "science", val: 5000000},
+			{name: "science", val: 1500000},
 			{name: "relic", val: 4096}
 		],
 		unlocks: {
@@ -546,7 +537,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			buildings: ["reactor"],
 			tech: ["nanotechnology", "particlePhysics"],
-			upgrades: ["reactorVessel", "nuclearSmelters"]
+			upgrades: ["reactorVessel"]
 		}
 	}, {
 		name: "rocketry",
@@ -589,8 +580,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
         ],
         unlocks: {
             tech: ["orbitalEngineering" ],
-			upgrades: ["photolithography", "orbitalGeodesy", "uplink", "thinFilm"],
-			policies:["outerSpaceTreaty","militarizeSpace"]
+			upgrades: ["photolithography", "uplink", "thinFilm"],
         },
         flavor: $I("science.sattelites.flavor")
     }, {
@@ -604,7 +594,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		],
 		unlocks: {
 			tech: ["exogeology", "thorium"],
-			upgrades: ["hubbleTelescope", "satelliteRadio", "astrophysicists", "solarSatellites", "spaceEngineers", "starlink"]
+			upgrades: ["satnav", "satelliteRadio", "solarSatellites", "spaceEngineers", "starlink"]
 		}
 	}, {
 		name: "thorium",
@@ -630,7 +620,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		],
 		unlocks: {
 			tech: ["advExogeology"],
-			upgrades: ["unobtainiumReflectors", "unobtainiumHuts", "unobtainiumDrill", "hydroPlantTurbines", "storageBunkers"]
+			upgrades: ["unobtainiumReflectors", "hydroPlantTurbines", "storageBunkers"]
 		}
 	}, {
 		name: "advExogeology",
@@ -642,7 +632,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 			{name: 	"blueprint", val: 350}
 		],
 		unlocks: {
-			upgrades: ["eludiumCracker", "eludiumReflectors", "eludiumHuts", "mWReactor", "freightfulExchange" /*, "eludiumDrill"*/],
+			upgrades: ["eludiumCracker", "eludiumReflectors", "mWReactor", "freightfulExchange" /*, "eludiumDrill"*/],
 			crafts: ["eludium"],
 			stages: [{bld:"warehouse", stage:1}],
 		}
@@ -685,7 +675,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		],
 		unlocks: {
 			tech: ["terraformation"],
-			upgrades: ["amReactors", "amBases", "amDrive", "amFission"]
+			upgrades: ["amReactors", "amBases", "amDrive"]
 		}
 	}, {
 		name: "terraformation",
@@ -717,7 +707,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		description: $I("science.exogeophysics.desc"),
 		effectDesc: $I("science.exogeophysics.effectDesc"),
 		prices: [
-			{name : "science", val: 25000000},
+			{name : "science", val: 1500000},
 			{name : "relic",   val: 500}
 		]
 	},
@@ -842,1255 +832,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		flavor: $I("science.paradoxalKnowledge.flavor")
 	}],
 
-	/**
-	 * If policy is blocked, it means some conflicting policy was researched first
-	 * Once policy is blocked, there is no way to unlock it other than reset
-	 */
-	policies: [
-	{
-		name: "liberty",
-		label: $I("policy.liberty.label"),
-		description: $I("policy.liberty.desc"),
-		prices: [
-			{name : "culture", val: 150}
-		],
-		unlocked: false,
-		blocked: false,
-		blocks:["tradition"],
-		unlocks:{
-			policies: ["authocracy", "republic"]
-		}
-	}, {
-		name: "tradition",
-		label: $I("policy.tradition.label"),
-		description:$I("policy.tradition.desc"),
-		prices: [
-			{name : "culture", val: 150}
-		],
-		effects: {
-			"cultureFromManuscripts": 1,
-			"manuscriptParchmentCost": -5, //visual,
-			"manuscriptCultureCost": -100 //just for the players
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["liberty"],
-		unlocks:{
-			policies: ["authocracy", "monarchy"]
-		}
-	},
-	//----------------	classical age --------------------
-	{
-		name: "monarchy",
-		label: $I("policy.monarchy.label"),
-		description: $I("policy.monarchy.desc"),
-		prices: [
-			{name : "culture", val: 1500}
-		],
-        effects:{
-            "goldRatio" : 0.1
-        },
-		unlocked: false,
-        upgrades:{
-            buildings: ["factory"]
-        },
-		blocked: false,
-		blocks:["authocracy", "republic", "communism"],
-		unlocks:{
-			policies:["liberalism", "fascism"]
-		}
-	}, {
-		name: "authocracy",
-		label: $I("policy.autocracy.label"),
-		description: $I("policy.autocracy.desc"),
-		prices: [
-			{name : "culture", val: 1500}
-		],
-		effects:{
-			"manpowerRatio": 0.05
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["monarchy", "republic", "liberalism"],
-		calculateEffects: function(self, game){
-			for (var i = 0; i < game.bld.buildingGroups.length; i++){
-				if (game.bld.buildingGroups[i].name == "population"){
-					for (var k = 0; k < game.bld.buildingGroups[i].buildings.length; k++){
-						var building = game.bld.getBuildingExt(game.bld.buildingGroups[i].buildings[k]);
-						building.meta.almostLimited = self.researched && game.resPool.isStorageLimited(game.bld.getPrices(building.meta.name, 1));
-					}
-					break;
-				}
-			}
-		},
-		unlocks:{
-			policies:["communism", "fascism", "socialism"]
-		}
-	}, {
-		name: "republic",
-        label: $I("policy.republic.label"),
-        description: $I("policy.republic.desc"),
-		prices: [
-			{name : "culture", val: 1500}
-		],
-		effects:{
-			"tradeRatio":0.05
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["monarchy", "authocracy", "fascism"],
-		unlocks:{
-			policies: ["liberalism", "communism", "socialism"]
-		}
-	},
-	//----------------	meme --------------------
-	{
-		name: "socialism",
-		label: $I("policy.socialism.label"),
-		description: $I("policy.socialism.desc"),
-		prices: [
-			{name : "culture", val: 7500}
-		],
-		unlocked: false,
-		blocked: false,
-		blocks:[],
-		effects: {}, //Empty on purpose; this is a meme policy!
-		calculateEffects: function(self, game) {
-			var effects = {};
-			if (game.science.getPolicy("scientificCommunism").researched) {
-				var SCIENTIFIC_COMMUNISM_RATIO = 1.25;
-				for (var key in effects) {
-					effects[key] *= SCIENTIFIC_COMMUNISM_RATIO;
-				}
-			}
-			self.effects = effects;
-		},
-		unlocks: {
-			policies: ["scientificCommunism"]
-		}
-	},
-	{
-		name: "scientificCommunism",
-		label: $I("policy.scientificCommunism.label"),
-		description: $I("policy.scientificCommunism.desc"),
-		prices: [
-			{name : "culture", val: 8500}
-		],
-		unlocked: false,
-		evaluateLocks: function(game) {
-			//Secret policy that's only available if you never had more than 1 Workshop & never had any Factories.
-			return game.bld.get("workshop").val < 2 && game.bld.get("factory").val < 1 && game.science.getPolicy("socialism").researched;
-		},
-		blocked: false,
-		blocks:[],
-		upgrades: {
-			policies: ["socialism"]
-		},
-	},
-	//----------------	industrial age --------------------
-	{
-		name: "liberalism",
-        label: $I("policy.liberalism.label"),
-        description: $I("policy.liberalism.desc"),
-		prices: [
-			{name : "culture", val: 15000}
-		],
-		effects:{
-			"goldCostReduction": 0.2,
-			"tradeRatio" : 0.05
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["communism", "fascism"],
-		evaluateLocks: function(game){
-			return (game.science.getPolicy("monarchy").researched || game.science.getPolicy("republic").researched)
-			&& game.bld.getBuildingExt("factory").meta.val > 0;
-		}
-	}, {
-		name: "communism",
-        label: $I("policy.communism.label"),
-        description: $I("policy.communism.desc"),
-		prices: [
-			{name : "culture", val: 15000}
-		],
-		effects:{
-			"factoryCostReduction" : 0.3,
-			"coalPolicyRatio": 0.25,
-			"ironPolicyRatio": 0.25,
-			"titaniumPolicyRatio": 0.25
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["liberalism", "fascism"],
-		evaluateLocks: function(game){
-			return (game.science.getPolicy("republic").researched || game.science.getPolicy("authocracy").researched)
-			&& game.bld.getBuildingExt("factory").meta.val > 0;
-		}
-	}, {
-		name: "fascism",
-        label: $I("policy.fascism.label"),
-        description: $I("policy.fascism.desc"),
-		prices: [
-			{name : "culture", val: 15000}
-		],
-		effects:{
-			"logHouseCostReduction" : 0.5
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["liberalism", "communism"],
-		evaluateLocks: function(game){
-			return (game.science.getPolicy("monarchy").researched || game.science.getPolicy("authocracy").researched)
-			&& game.bld.getBuildingExt("factory").meta.val > 0;
-		}
-	},
-	//----------------	information age --------------------
-	{
-		name: "technocracy",
-        label: $I("policy.technocracy.label"),
-        description: $I("policy.technocracy.desc"),
-        prices: [
-			{name : "culture", val: 150000}
-		],
-		effects:{
-			"technocracyScienceCap": 0.2,
-			"antimatterPolicyRatio": 0.0625,
-			"queueCapRatio": 0.2
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["theocracy", "expansionism"]
-	}, {
-		name: "theocracy",
-        label: $I("policy.theocracy.label"),
-        description: $I("policy.theocracy.desc"),
-		prices: [
-			{name : "culture", val: 150000}
-		],
-		effects:{
-			"faithPolicyRatio": 0.2
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["technocracy", "expansionism"]
-	}, {
-		name: "expansionism",
-        label: $I("policy.expansionism.label"),
-        description: $I("policy.expansionism.desc"),
-		prices: [
-			{name : "culture", val: 150000}
-		],
-		effects:{
-			"unobtainiumPolicyRatio": 0.15
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["technocracy", "theocracy"]
-	},
-	//----------------	tier 5 age --------------------
-	{
-		name: "transkittenism",
-        label: $I("policy.transkittenism.label"),
-        description: $I("policy.transkittenism.desc"),
-		prices: [
-			{name : "culture", val: 1500000}
-		],
-		effects:{
-			"aiCoreProductivness" : 1,
-			"aiCoreUpgradeBonus" : 0.1
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["necrocracy", "radicalXenophobia"],
-		upgrades: {
-			buildings:["library"],
-			spaceBuilding: ["moonBase"]
-		},
-	},
-	{
-		name: "necrocracy",
-		label: $I("policy.necrocracy.label"),
-		description:$I("policy.necrocracy.desc"),
-		prices: [
-			{name : "culture", val: 1500000}
-		],
-		effects:{
-			"blsProductionBonus" : 0.001,
-			"leviathansEnergyModifier" : 0.05
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["transkittenism", "radicalXenophobia"]
-	},
-	{
-		name: "radicalXenophobia",
-        label: $I("policy.radicalXenophobia.label"),
-        description: $I("policy.radicalXenophobia.desc"),
-		prices: [
-			{name : "culture", val: 1500000}
-		],
-		effects:{
-			"mausoleumBonus" : 1,
-			"pactsAvailable" : 5
-		},
-		upgrades: {
-			transcendenceUpgrades:["mausoleum"],
-			policies: ["feedingFrenzy"]
-		},
-		calculateEffects: function (self, game){
-			self.effects["pactsAvailable"] = 5;
-			if (game.religion.getPact("fractured").on >= 1 || !game.getFeatureFlag("MAUSOLEUM_PACTS")){
-				self.effects["pactsAvailable"] = 0;
-			}
-			game.updateCaches();
-		},
-		unlocks: {
-			pacts: ["pactOfCleansing", "pactOfDestruction",  "pactOfExtermination", "pactOfPurity", "pactOfChronicler", "pactOfArcane"]
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["transkittenism", "necrocracy"]
-	},
-    //----------------    Foreign Policy --------------------
-    {
-        name: "diplomacy",
-        label: $I("policy.diplomacy.label"),
-        description: $I("policy.diplomacy.desc"),
-        prices: [
-            {name : "culture", val: 1600}
-        ],
-        effects:{
-            "tradeCatpowerDiscount" : 5
-        },
-        unlocked: false,
-        unlocks:{
-			policies: ["knowledgeSharing", "culturalExchange"]
-		},
-        blocked: false,
-        blocks:["isolationism"]
-    }, {
-        name: "isolationism",
-        label: $I("policy.isolationism.label"),
-        description: $I("policy.isolationism.desc"),
-        prices: [
-            {name : "culture", val: 1600}
-        ],
-        effects:{
-            "tradeGoldDiscount" : 1
-        },
-        unlocked: false,
-        unlocks:{
-			policies: ["bigStickPolicy", "cityOnAHill"]
-		},
-        blocked: false,
-        blocks:["diplomacy"]
-    }, {
-        name: "zebraRelationsAppeasement",
-        label: $I("policy.zebraRelationsAppeasement.label"),
-        description: $I("policy.zebraRelationsAppeasement.desc"),
-        prices: [
-            {name : "culture", val: 5000}
-        ],
-        effects:{
-            "goldPolicyRatio" : -0.05,
-            "tradeRatio" : 0.1
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["zebraRelationsBellicosity"]
-    }, {
-        name: "zebraRelationsBellicosity",
-        label: $I("policy.zebraRelationsBellicosity.label"),
-        description: $I("policy.zebraRelationsBellicosity.desc"),
-        prices: [
-            {name : "culture", val: 5000}
-        ],
-        effects:{
-            "tradeRatio" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["zebraRelationsAppeasement"]
-    }, {
-        name: "knowledgeSharing",
-        label: $I("policy.knowledgeSharing.label"),
-        description: $I("policy.knowledgeSharing.desc"),
-        prices: [
-            {name : "culture", val: 4000}
-        ],
-        effects:{
-            "sciencePolicyRatio" : 0.05,
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["culturalExchange"],
-		evaluateLocks: function(game){
-			return game.science.getPolicy("diplomacy").researched && game.science.get("astronomy").researched;
-		}
-    }, {
-        name: "culturalExchange",
-        label: $I("policy.culturalExchange.label"),
-        description: $I("policy.culturalExchange.desc"),
-        prices: [
-            {name : "culture", val: 4000}
-        ],
-        effects:{
-            "culturePolicyRatio" : 0.05,
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["knowledgeSharing"],
-		evaluateLocks: function(game){
-			return game.science.getPolicy("diplomacy").researched && game.science.get("astronomy").researched;
-		}
-    }, {
-        name: "bigStickPolicy",
-        label: $I("policy.bigStickPolicy.label"),
-        description: $I("policy.bigStickPolicy.desc"),
-        prices: [
-            {name : "culture", val: 4000}
-        ],
-        effects:{
-            "tradeRatio" : 0.05,
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["cityOnAHill"],
-		evaluateLocks: function(game){
-			return game.science.getPolicy("isolationism").researched && game.science.get("astronomy").researched && !game.challenges.isActive("pacifism");
-		}
-    }, {
-        name: "cityOnAHill",
-        label: $I("policy.cityOnAHill.label"),
-        description: $I("policy.cityOnAHill.desc"),
-        prices: [
-            {name : "culture", val: 4000}
-        ],
-        effects:{
-            "onAHillCultureCap" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["bigStickPolicy"],
-		evaluateLocks: function(game){
-			return game.science.getPolicy("isolationism").researched && game.science.get("astronomy").researched;
-		}
-    }, {
-        name: "outerSpaceTreaty",
-        label: $I("policy.outerSpaceTreaty.label"),
-        description: $I("policy.outerSpaceTreaty.desc"),
-        prices: [
-            {name : "culture", val: 10000}
-        ],
-        effects:{
-            "tradeRatio" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["militarizeSpace"],
-		evaluateLocks: function(game){
-			return game.space.getBuilding("sattelite").val > 0;
-		}
-    }, {
-        name: "militarizeSpace",
-        label: $I("policy.militarizeSpace.label"),
-        description: $I("policy.militarizeSpace.desc"),
-        prices: [
-			{name : "culture", val: 10000}
-        ],
-        effects:{
-            "satelliteSynergyBonus" : 0.1
-        },
-        unlocked: false,
-		upgrades: {
-			spaceBuilding: ["sattelite"],
-			buildings: ["observatory"]
-		},
-        blocked: false,
-        blocks:["outerSpaceTreaty"],
-		evaluateLocks: function(game){
-			return game.space.getBuilding("sattelite").val > 0 && !game.challenges.isActive("pacifism");
-		}
-    }, {
-		name: "lizardRelationsEcologists",
-        label: $I("policy.lizardRelationsEcologists.label"),
-        description: $I("policy.lizardRelationsEcologists.desc"),
-        prices: [
-            {name : "culture", val: 2100}
-        ],
-        effects:{
-            "cathPollutionRatio" : -0.05,
-			"solarFarmRatio" : 0,
-			"hydroPlantRatio": 0
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["lizardRelationsPriests", "lizardRelationsDiplomats"],
-		upgrades: {
-			buildings: ["magneto"]
-		},
-		/*calculateEffects: function(self,game){
-			var cathPollution = Math.floor(game.bld.cathPollution);
-			if (cathPollution < 0.5e9) {
-				var boostRatio = Math.round(((0.5e9 - cathPollution) * 2 / 0.5e10) * 1e2) / 1e2;
-				self.effects["solarFarmRatio"] = boostRatio;
-				self.effects["hydroPlantRatio"] = boostRatio;
-			} else {
-				self.effects["solarFarmRatio"] = 0;
-				self.effects["hydroPlantRatio"] = 0;
-			}
-			game.upgrade({buildings: ["pasture", "aqueduct"]});
-			
-		},*/
-		evaluateLocks: function(game){
-			return game.science.checkRelation("lizards", 20);
-		}
-	}, {
-		name: "lizardRelationsPriests",
-        label: $I("policy.lizardRelationsPriests.label"),
-        description: $I("policy.lizardRelationsPriests.desc"),
-        prices: [
-            {name : "culture", val: 2100}
-        ],
-        effects:{
-			"cultureFromManuscripts": -0.25,
-			"faithFromManuscripts": 1
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["lizardRelationsEcologists", "lizardRelationsDiplomats"],
-		calculateEffects: function(self,game) {
-			game.science.unlockRelations(); //Hack: Check relations by being upgraded by diplomacy and on load
-		},
-		evaluateLocks: function(game){
-			return game.science.checkRelation("lizards", 20);
-		}
-	}, {
-		name: "lizardRelationsDiplomats",
-        label: $I("policy.lizardRelationsDiplomats.label"),
-        description: $I("policy.lizardRelationsDiplomats.desc"),
-        prices: [
-            {name : "culture", val: 2100}
-        ],
-		effects:{
-			"tradeRatio": 0.05
-		},
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["lizardRelationsEcologists", "lizardRelationsPriests"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("lizards", 20);
-		}
-	}, {
-		name: "sharkRelationsScribes",
-		label: $I("policy.sharkRelationsScribes.label"),
-		description: $I("policy.sharkRelationsScribes.desc"),
-		prices: [
-			{name : "culture", val: 2200}
-		],
-		effects:{
-			"tradeRatio": 0.05
-		},
-		unlocked: false,
-		blocked: false,
-		isRelation: true,
-		blocks: [ "sharkRelationsMerchants", "sharkRelationsBotanists" ],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("sharks", 20);
-		}
-	}, {
-		name: "sharkRelationsMerchants",
-		label: $I("policy.sharkRelationsMerchants.label"),
-		description: $I("policy.sharkRelationsMerchants.desc"),
-		prices: [
-			{name : "culture", val: 2200}
-		],
-		//effects: {}, //See DiplomacyManager#calculateTradeBonusFromPolicies
-		lastCalculatedBonus: -1,
-		unlocked: false,
-		blocked: false,
-		isRelation: true,
-		blocks: ["sharkRelationsScribes", "sharkRelationsBotanists"],
-		calculateEffects: function(self, game) {
-			//The operation of recalculating the bonus isn't that heavy, so force-recalculate whenever we update the description.
-			game.diplomacy.calculateTradeBonusFromPolicies("sharks" /*this argument doesn't actually matter*/, game);
-			self.description = $I("policy.sharkRelationsMerchants.desc") + "<br>" +
-				$I("policy.sharkRelationsMerchants.currentBonus", ["+" + game.toDisplayPercentage(self.lastCalculatedBonus, 0, false) + "%"]);
-		},
-		evaluateLocks: function(game) {
-			return game.science.checkRelation("sharks", 20);
-		}
-	}, {
-		name: "sharkRelationsBotanists",
-        label: $I("policy.sharkRelationsBotanists.label"),
-        description: $I("policy.sharkRelationsBotanists.desc"),
-        prices: [
-            {name : "culture", val: 2200}
-        ],
-        effects:{
-            "refinePolicyRatio" : 0.25,
-			"biolabEnergyRatio" : -0.75,
-			"breweryPolicyManpowerRatio" : 0.01,
-			"biolabBiofuelScienceMaxRatio": 0.02
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["sharkRelationsScribes", "sharkRelationsMerchants"],
-		upgrades: {
-			buildings: ["biolab", "brewery"],
-			
-		},
-		evaluateLocks: function(game){
-			return game.science.checkRelation("sharks", 20);
-		}
-	}, {
-		name: "griffinRelationsMetallurgists",
-        label: $I("policy.griffinRelationsMetallurgists.label"),
-        description: $I("policy.griffinRelationsMetallurgists.desc"),
-        prices: [
-            {name : "culture", val: 16000}
-        ],
-        effects:{
-            "calcinerSteelRatioBonus": 0.15,
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["griffinRelationsMachinists", "griffinRelationsScouts"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("griffins", 20);
-		}
-	}, {
-		name: "griffinRelationsScouts",
-        label: $I("policy.griffinRelationsScouts.label"),
-        description: $I("policy.griffinRelationsScouts.desc"),
-        prices: [
-            {name : "culture", val: 16000}
-        ],
-        effects:{
-            "tradeRatio": 0.05
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["griffinRelationsMachinists", "griffinRelationsMetallurgists"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("griffins", 20);
-		}
-	}, {
-		name: "griffinRelationsMachinists",
-        label: $I("policy.griffinRelationsMachinists.label"),
-        description: $I("policy.griffinRelationsMachinists.desc"),
-        prices: [
-            {name : "culture", val: 16000}
-        ],
-        effects:{
-            "magnetoBoostBonusPolicy" : 0.005
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["griffinRelationsMetallurgists", "griffinRelationsScouts"],
-		upgrades: {
-			buildings: ["steamworks"]
-		},
-		evaluateLocks: function(game){
-			return game.science.checkRelation("griffins", 20);
-		}
-	}, {
-		name: "nagaRelationsMasons",
-        label: $I("policy.nagaRelationsMasons.label"),
-        description: $I("policy.nagaRelationsMasons.desc"),
-        prices: [
-            {name : "culture", val: 8000}
-        ],
-        effects:{
-            "quarrySlabCraftBonus" : 0.025
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-		upgrades: {
-			buildings: ["quarry"]
-		},
-        blocks:["nagaRelationsCultists", "nagaRelationsArchitects"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("nagas", 20);
-		}
-	}, {
-		name: "nagaRelationsCultists",
-        label: $I("policy.nagaRelationsCultists.label"),
-        description: $I("policy.nagaRelationsCultists.desc"),
-        prices: [
-            {name : "culture", val: 8000}
-        ],
-        effects:{
-            "zigguratTempleEffectPolicy" : 0.1
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-		upgrades: {
-			buildings: ["ziggurat"]
-		},
-        blocks:["nagaRelationsMasons", "nagaRelationsArchitects"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("nagas", 20);
-		}
-	}, {
-		name: "nagaRelationsArchitects",
-        label: $I("policy.nagaRelationsArchitects.label"),
-        description: $I("policy.nagaRelationsArchitects.desc"),
-        prices: [
-            {name : "culture", val: 8000}
-        ],
-        effects:{
-            "blueprintCraftRatio" : 0.25
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["nagaRelationsMasons", "nagaRelationsCultists"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("nagas", 20);
-		}
-	}, {
-		name: "spiderRelationsGeologists",
-        label: $I("policy.spiderRelationsGeologists.label"),
-        description: $I("policy.spiderRelationsGeologists.desc"),
-        prices: [
-            {name : "culture", val: 20000}
-        ],
-        effects:{
-			"mineralsPolicyRatio" : 0.1,
-			"coalPolicyRatio" : 0.1,
-			"goldPolicyRatio" : 0.1
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["spiderRelationsChemists", "spiderRelationsPaleontologists"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("spiders", 10);
-		},
-	}, {
-		name: "spiderRelationsChemists",
-        label: $I("policy.spiderRelationsChemists.label"),
-        description: $I("policy.spiderRelationsChemists.desc"),
-        prices: [
-            {name : "culture", val: 20000}
-        ],
-		//Spiders now trade Kerosene
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["spiderRelationsGeologists", "spiderRelationsPaleontologists"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("spiders", 10);
-		},
-		calculateEffects: function(self, game){
-			var spiders = game.diplomacy.get("spiders");
-			for (var i = spiders.sells.length - 1; i >= 0; i--) {
-				if (spiders.sells[i]["name"] == "kerosene"){
-					spiders.sells.splice(i, 1); //Remove kerosene on load
-				}
-			}
-			if (self.researched) {
-				spiders.sells.push({name: "kerosene", value: 5});
-			}
-		}
-	}, {
-		name: "spiderRelationsPaleontologists",
-        label: $I("policy.spiderRelationsPaleontologists.label"),
-        description: $I("policy.spiderRelationsPaleontologists.desc"),
-        prices: [
-            {name : "culture", val: 20000}
-        ],
-        effects:{
-			"mintIvoryRatio" : 0.15,
-			"oilPolicyRatio" : 0.1
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["spiderRelationsChemists", "spiderRelationsGeologists"],
-		evaluateLocks: function(game){
-			return game.science.checkRelation("spiders", 10);
-		}
-	}, {
-		name: "dragonRelationsPhysicists",
-        label: $I("policy.dragonRelationsPhysicists.label"),
-        description: $I("policy.dragonRelationsPhysicists.desc"),
-        prices: [
-            {name : "culture", val: 30000}
-        ],
-		effects:{
-            "reactorEnergyRatio" : 0.25,
-			"harborLimitRatioPolicy": 0.05
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["dragonRelationsAstrologers", "dragonRelationsDynamicists"],
-		upgrades: {
-			buildings: ["harbor"]
-		},
-		evaluateLocks: function(game){
-			return game.science.checkRelation("dragons", 10);
-		}
-	}, {
-		name: "dragonRelationsAstrologers",
-        label: $I("policy.dragonRelationsAstrologers.label"),
-        description: $I("policy.dragonRelationsAstrologers.desc"),
-        prices: [
-            {name : "culture", val: 30000}
-        ],
-		effects:{
-			"starEventChance": 0.004,
-			"starchartPolicyRatio": 0.03
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["dragonRelationsPhysicists", "dragonRelationsDynamicists"],
-		calculateEffects: function(self, game) {
-			var cycle = game.calendar.cycleYear + 1;
-			self.effects["starEventChance"] = cycle * 0.004;
-			self.effects["starchartPolicyRatio"] = cycle * 0.03;
-		},
-		evaluateLocks: function(game){
-			return game.science.checkRelation("dragons", 10);
-		}
-	}, {
-		name: "dragonRelationsDynamicists",
-        label: $I("policy.dragonRelationsDynamicists.label"),
-        description: $I("policy.dragonRelationsDynamicists.desc"),
-        prices: [
-            {name : "culture", val: 30000}
-        ],
-		effects:{
-			"tradeCatpowerDiscount": 5,
-			"catpowerReductionRatio": 0.5,
-        },
-        unlocked: false,
-        blocked: false,
-		isRelation: true,
-        blocks:["dragonRelationsPhysicists", "dragonRelationsAstrologers"],
-		calculateEffects: function(self, game) {
-			
-		},
-		evaluateLocks: function(game){
-			return game.science.checkRelation("dragons", 10);
-		}
-	},
-    //----------------   Philosophy   --------------------
-    {
-        name: "stoicism",
-        label: $I("policy.stoicism.label"),
-        description: $I("policy.stoicism.desc"),
-        prices: [
-            {name : "culture", val: 2500}
-        ],
-        effects:{
-			"breweryConsumptionRatio": -0.25
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["epicurianism"],
-        unlocks:{
-            policies: ["rationality", "mysticism", "rationing", "frugality"]
-        },
-		upgrades: {
-			buildings: ["brewery"]
-		},
-    }, {
-        name: "epicurianism",
-        label: $I("policy.epicurianism.label"),
-        description: $I("policy.epicurianism.desc"),
-        prices: [
-            {name : "culture", val: 2500}
-        ],
-        unlocked: false,
-        blocked: false,
-        blocks:["stoicism"],
-        unlocks:{
-            policies: ["rationality", "mysticism", "carnivale", "extravagance"]
-        }
-	}, {
-        name: "carnivale",
-        label: $I("policy.carnivale.label"),
-        description: $I("policy.carnivale.desc"),
-        prices: [
-            {name : "culture", val: 3500}
-        ],
-        effects:{
-            "cultureRatio" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["extravagance"]
-	}, {
-        name: "extravagance",
-        label: $I("policy.extravagance.label"),
-        description: $I("policy.extravagance.desc"),
-        prices: [
-            {name : "culture", val: 3500}
-        ],
-        unlocked: false,
-        blocked: false,
-        blocks:["carnivale"]
-	}, {
-        name: "rationing",
-        label: $I("policy.rationing.label"),
-        description: $I("policy.rationing.desc"),
-        prices: [
-            {name : "culture", val: 3500}
-        ],
-        unlocked: false,
-        blocked: false,
-        blocks:["frugality"]
-	}, {
-        name: "frugality",
-        label: $I("policy.frugality.label"),
-        description: $I("policy.frugality.desc"),
-        prices: [
-            {name : "culture", val: 3500}
-        ],
-        effects:{
-			"mintRatio" : 0.1
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["rationing"],
-		upgrades: {
-			buildings: ["mint"]
-		},
-	}, {
-        name: "rationality",
-        label: $I("policy.rationality.label"),
-        description: $I("policy.rationality.desc"),
-        prices: [
-            {name : "culture", val: 3000}
-        ],
-        effects:{
-			"sciencePolicyRatio" : 0.05,
-			"ironPolicyRatio": 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["mysticism"]
-    }, {
-        name: "mysticism",
-        label: $I("policy.mysticism.label"),
-        description: $I("policy.mysticism.desc"),
-        prices: [
-            {name : "culture", val: 3000}
-        ],
-        effects:{
-			"culturePolicyRatio" : 0.05,
-			"faithPolicyRatio" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["rationality"]
-    },
-    //----------------   Environmental Policy   --------------------
-    {
-        name: "stripMining",
-        label: $I("policy.stripMining.label"),
-        description: $I("policy.stripMining.desc"),
-        prices: [
-            {name : "science", val: 2000}
-        ],
-        effects:{
-			"mineralsPolicyRatio" : 0.3,
-			"cathPollutionRatio" : 0.05
-        },
-        unlocked: false,
-        unlocks:{
-			policies : ["sustainability", "fullIndustrialization"]
-		},
-        blocked: false,
-        blocks:["clearCutting", "environmentalism"]
-    }, {
-        name: "clearCutting",
-        label: $I("policy.clearCutting.label"),
-        description: $I("policy.clearCutting.desc"),
-        prices: [
-            {name : "science", val: 2000}
-        ],
-        effects:{
-			"woodPolicyRatio" : 0.3,
-			"cathPollutionRatio" : 0.05
-        },
-        unlocked: false,
-        unlocks:{
-			policies : ["sustainability", "fullIndustrialization"]
-		},
-        blocked: false,
-        blocks:["stripMining", "environmentalism"]
-    }, {
-        name: "environmentalism",
-        label: $I("policy.environmentalism.label"),
-        description: $I("policy.environmentalism.desc"),
-        prices: [
-            {name : "culture", val: 2000}
-        ],
-        effects:{
-			"cathPollutionRatio" : -0.05
-        },
-        unlocked: false,
-        unlocks:{
-			policies : ["conservation", "openWoodlands"]
-		},
-        blocked: false,
-        blocks:["stripMining", "clearCutting"]
-    }, {
-        name: "sustainability",
-        label: $I("policy.sustainability.label"),
-        description: $I("policy.sustainability.desc"),
-        prices: [
-            {name : "culture", val: 10000}
-        ],
-        effects:{
-			"cathPollutionRatio" : -0.05
-        },
-        unlocked: false,
-        blocked: false,
-		blocks:["fullIndustrialization"],
-		evaluateLocks: function(game){
-			return (game.science.getPolicy("stripMining").researched || game.science.getPolicy("clearCutting").researched)
-			&& game.science.get("industrialization").researched;
-		}
-    }, {
-        name: "fullIndustrialization",
-        label: $I("policy.fullIndustrialization.label"),
-        description: $I("policy.fullIndustrialization.desc"),
-        prices: [
-            {name : "culture", val: 10000}
-        ],
-		upgrades: {
-			buildings: ["factory"]
-		},
-        effects:{
-            "environmentFactoryCraftBonus" : 0.05,
-			"cathPollutionRatio" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["sustainability"],
-		evaluateLocks: function(game){
-			return (game.science.getPolicy("stripMining").researched || game.science.getPolicy("clearCutting").researched)
-			&& game.science.get("industrialization").researched;
-		}
-    }, {
-        name: "conservation",
-        label: $I("policy.conservation.label"),
-        description: $I("policy.conservation.desc"),
-        prices: [
-            {name : "culture", val: 10000}
-        ],
-        effects:{
-			"cathPollutionRatio" : -0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["openWoodlands"],
-		evaluateLocks: function(game){
-			return game.science.getPolicy("environmentalism").researched && game.science.get("ecology").researched;
-		}
-    }, {
-        name: "openWoodlands",
-        label: $I("policy.openWoodlands.label"),
-        description: $I("policy.openWoodlands.desc"),
-        prices: [
-            {name : "culture", val: 10000}
-        ],
-        effects:{
-            "mineralsPolicyRatio" : 0.125,
-            "woodPolicyRatio" : 0.125,
-			"cathPollutionRatio" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["conservation"],
-		evaluateLocks: function(game){
-			return game.science.getPolicy("environmentalism").researched && game.science.get("ecology").researched;
-		}
-    },
-    /*{
-		//Possible future content: policies specific to the unicorn tears challenge
-		//I'd like to have some method of automatic/afk/offline income for tears
-    },*/
-    {
-        name: "cryochamberExtraction",
-        label: $I("policy.cryochamberExtraction.label"),
-        description: $I("policy.cryochamberExtraction.desc"),
-        prices: [
-            {name : "manpower", val: 10000}
-        ],
-        unlocked: false,
-        blocked: false,
-        blocks:["terraformingInsight"],
-		onResearch: function(game){
-			//single use policy
-			game.time.getVSU("usedCryochambers").val += 1;
-			game.time.getVSU("usedCryochambers").on += 1;
-		}
-    }, {
-        name: "terraformingInsight",
-		label: $I("policy.terraformingInsight.label"),
-        description: $I("policy.terraformingInsight.desc"),
-        prices: [
-            {name : "manpower", val: 10000}
-        ],
-        effects:{
-            "terraformingMaxKittensRatio": 0.1
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["cryochamberExtraction"]
-    }, /*{
-        name: "spaceBasedTerraforming",
-        label: $I("policy.spaceBasedTerraforming.label"),
-        description: $I("policy.spaceBasedTerraforming.desc"),
-        prices: [
-            {name : "culture", val: 45000}
-        ],
-        effects:{
-            "mysticismBonus" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["clearSkies"]
-    }, {
-        name: "clearSkies",
-        label: $I("policy.clearSkies.label"),
-        description: $I("policy.clearSkies.desc"),
-        prices: [
-            {name : "culture", val: 45000}
-        ],
-        effects:{
-            "mysticismBonus" : 0.05
-        },
-        unlocked: false,
-        blocked: false,
-        blocks:["spaceBasedTerraforming"]
-        }*/
-	//---------------- Pact-related Policies --------------------
-	{
-		name: "siphoning",
-		label: $I("policy.siphoning.label"),
-		description: $I("policy.siphoning.desc"),
-		prices: [
-			{name: "necrocorn", val: 1}
-		],
-		effects: {
-			"smallDebtPunishmentExemption": 5,
-			"repayDebtOnNecrocornGeneration": 1
-		},
-		calculateEffects: function(self, game) {
-			if (!game.getFeatureFlag("MAUSOLEUM_PACTS")) {
-				self.unlocked = false;
-				return;
-			}
-		},
-		evaluateLocks: function(game) {
-			return game.getFeatureFlag("MAUSOLEUM_PACTS") && game.religion.getTU("mausoleum").val && game.religion.getZU("marker").val;
-		},
-		unlocked: false,
-		blocked: false,
-		blocks: ["feedingFrenzy", "upfrontPayment"]
-	},
-	{
-		name: "feedingFrenzy",
-		label: $I("policy.feedingFrenzy.label"),
-		description: $I("policy.feedingFrenzy.desc"),
-		prices: [
-			{name: "necrocorn", val: 1}
-		],
-		effects: {
-			"feedEldersEfficiencyRatio": 0, //Feeding Levis gives more energy per unit necrocorn spent
-			"necrocornCorruptionInterference": -0.1 //Reduce necrocorn income
-		},
-		calculateEffects: function(self, game) { //The intent is to call this whenever we gain or lose a Pact.
-			if (!game.getFeatureFlag("MAUSOLEUM_PACTS")) {
-				self.unlocked = false;
-				return;
-			}
-			//  0 unspent Pacts -->   0% bonus
-			// 10 unspent Pacts -->  31% bonus
-			// 25 unspent Pacts -->  62% bonus
-			// 50 unspent Pacts --> 100% bonus
-			//100 unspent Pacts --> 156% bonus
-			self.effects["feedEldersEfficiencyRatio"] = game.getUnlimitedDR(game.getEffect("pactsAvailable"), 50 );
-		},
-		evaluateLocks: function(game) {
-			return game.getFeatureFlag("MAUSOLEUM_PACTS") && game.religion.getTU("mausoleum").val && game.religion.getZU("marker").val;
-		},
-		unlocked: false,
-		blocked: false,
-		blocks:["siphoning", "upfrontPayment"]
-	},
-	{
-		name: "upfrontPayment",
-		label: $I("policy.upfrontPayment.label"),
-		description: $I("policy.upfrontPayment.desc"),
-		prices: [
-			{name: "necrocorn", val: 1}
-		],
-		effects: {
-			"pactNecrocornConsumption": 5e-5, //This should be a 10% reduction to Pact upkeep
-			"pactNecrocornUpfrontCost": 2
-			//(See village.js for how we make debt more punishing.)
-		},
-		calculateEffects: function(self, game) {
-			if (!game.getFeatureFlag("MAUSOLEUM_PACTS")) {
-				self.unlocked = false;
-				return;
-			}
-			this.description = $I("policy.upfrontPayment.desc");
-			//Add a warning to the description
-			if (!self.researched) {
-				if (game.religion.getPact("fractured").on) {
-					this.description += "<br><span class=\"genericWarning\">" + $I("policy.upfrontPayment.fractured") + "</span>";
-				}
-				else if (game.religion.pactsManager.necrocornDeficit) {
-					this.description += "<br><span class=\"genericWarning\">" + $I("policy.upfrontPayment.warning") + "</span>";
-				}
-			}
-
-			if (!self.upgrades) { //This will happen only once.
-				//Set upgrades table to include ALL Pacts in the game.
-				//This way, it'll automatically include new Pacts added by any future updates!
-				self.upgrades = { pacts: game.religion.pactsManager.pacts.map(
-					function(pactMeta) {return pactMeta.name;}
-				)};
-			}
-		},
-		evaluateLocks: function(game) {
-			return game.getFeatureFlag("MAUSOLEUM_PACTS") && game.religion.getTU("mausoleum").val && game.religion.getZU("marker").val;
-		},
-		onResearch: function(game) {
-			//Upon purchasing this policy, the player must immediately pay the upfront cost for all active Pacts.
-			var requiredPayment = this.effects["pactNecrocornUpfrontCost"] * game.religion.pactsManager.countActivePacts();
-			if (requiredPayment > 0) {
-				game.resPool.addResEvent("necrocorn", -requiredPayment);
-				game.msg($I("policy.upfrontPayment.payment.complete", [requiredPayment]));
-			}
-		},
-		upgrades: null, //To be initialized later
-		unlocked: false,
-		blocked: false,
-		blocks:["siphoning", "feedingFrenzy"]
-	}
-],
-
-	metaCache: null,
 	effectsBase: {
 	},
 	constructor: function(game){
@@ -2120,15 +861,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 				return effect;
 			}
 		});
-		this.registerMeta("research", this.policies, {
-			getEffect: function(meta, name){
-				var effect = 0;
-				if (meta.effect){
-					effect = meta.effects[name] || 0;
-				}
-				return effect;
-			}
-		});
 		this.setEffectsCachedExisting();
 	},
 
@@ -2146,25 +878,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		}
 		console.error("Failed to get tech for tech name '" + techName + "'");
 		return null;
-	},
-
-	getPolicy: function(name){
-		return this.getMeta(name, this.policies);
-	},
-
-	checkRelation: function(race, embassyNeeded){
-		var race = this.game.diplomacy.get(race);
-		return race.unlocked;
-	},
-
-	unlockRelations: function(){ //Called on load and every time we buy an embassy to unlock Relations.
-		if (this.game.prestige.getPerk("diplomacy").researched){
-			for (var i = this.policies.length - 1; i >= 0; i--) {
-				if (this.policies[i].isRelation && !this.policies[i].unlocked){
-					this.game.unlock({policies: [this.policies[i].name]});
-				}
-			}
-		}
 	},
 
 	getPrices: function(tech) {
@@ -2220,34 +933,19 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 			tech.unlocked = tech.name == "calendar";
 			tech.researched = false;
 		}
-		for (var i = 0; i < this.policies.length; i++){
-			var policy = this.policies[i];
-			policy.unlocked = false;
-			policy.blocked = false;
-			policy.researched = false;
-		}
-		this.hideResearched = false;
-		this.policyToggleBlocked = false;
-		this.policyToggleResearched = false;
 	},
 
 	save: function(saveData){
 		saveData.science = {
 			hideResearched: this.hideResearched,
-			policyToggleResearched: this.policyToggleResearched,
-			policyToggleBlocked: this.policyToggleBlocked,
 			techs: this.filterMetadata(this.techs, ["name", "unlocked", "researched"]),
-			policies: this.filterMetadata(this.policies, ["name", "unlocked", "blocked", "researched"]),
 		};
 	},
 
 	load: function(saveData){
 		if (saveData.science){
 			this.hideResearched = saveData.science.hideResearched;
-			this.policyToggleResearched = saveData.science.policyToggleResearched;
-			this.policyToggleBlocked = saveData.science.policyToggleBlocked;
 			this.loadMetadata(this.techs, saveData.science.techs, "technologies");
-			this.loadMetadata(this.policies, saveData.science.policies, "policies");
 		}
 	},
 
@@ -2270,15 +968,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 
 			this.game.unlock(tech.unlocks);
 		}
-		//re-unlock policies in case we have modified something
-		for (var i = this.policies.length - 1; i >= 0; i--) {
-			var policy = this.policies[i];
-			if (!policy.researched) {
-				continue;
-			}
-
-			this.game.unlock(policy.unlocks);
-		}
 	},
 
 	unlockAll: function(){
@@ -2288,12 +977,6 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 			tech.unlocked = true;
 			this.game.unlock(tech.unlocks);
 		}
-		for (var i in this.policies) {
-			var policy = this.policies[i];
-			policy.unlocked = true;
-			this.game.unlock(policy.unlocks);
-		}
-
 		this.game.msg("All techs are unlocked!");
 	},
     /*updateEffectCached: function() {
@@ -2330,263 +1013,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 	//}
 });
 
-//-------- Policy ----------
-
-dojo.declare("classes.ui.PolicyBtnController", com.nuclearunicorn.game.ui.BuildingNotStackableBtnController, {
-	defaults: function() {
-		var result = this.inherited("defaults", arguments);
-		result.tooltipName = true;
-		result.simplePrices = false;
-		return result;
-	},
-
-	getMetadata: function(model){
-        if (!model.metaCached){
-            model.metaCached = this.game.science.getPolicy(model.options.id);
-        }
-        return model.metaCached;
-	},
-
-	getName: function(model){
-		var meta = model.metadata;
-		if (meta.blocked){
-			var label = "<div class=\"label\"><span class=\"label-content\">" + meta.label + "</span></div>";	
-			return label + "<div>" + $I("btn.blocked.capital") + "</div>";
-		}
-
-		return this.inherited("getName", arguments);
-	},
-	getPrices: function(model){
-		var meta = model.metadata;
-		var policyFakeBought = this.game.getEffect("policyFakeBought");
-		var prices = [];
-		for (var i = 0; i < meta.prices.length; i++){
-            prices.push({
-				val: meta.prices[i].val * Math.pow(1.25, policyFakeBought),
-				name: meta.prices[i].name
-			});
-		}
-        return prices;
-	},
-	updateVisible: function(model){
-		var meta = model.metadata;
-		model.visible = meta.unlocked;
-		if (meta.researched && this.game.science.policyToggleResearched){
-			model.visible = false;
-		}
-		if (meta.blocked && this.game.science.policyToggleBlocked){
-			model.visible = false;
-		}
-		//uncomment when no longer debugging the code
-		/*
-			if (
-				(meta.researched || meta.locked) && this.game.science.hideResearched
-			){
-				model.visible = false;
-			}
-		*/
-	},
-
-	updateEnabled: function(model){
-		this.inherited(arguments);
-		if (model.metadata.blocked){
-			model.enabled = false;
-		}
-	},
-
-	/**
-	 * This function is to be called when the player (or the queue) tries to buy a policy.
-	 * Determines if a policy has a specific reason why the player cannot buy it at the current time.
-	 * @param model   object   The model representing the policy
-	 * @param game    object   The game object
-	 * @param skipConfirmation   boolean   If true, policies will be bought without asking the player "are you sure?"
-	 * 			If true, this overrides game.opts.noConfirm.
-	 * 			If false, respects game.opts.noConfirm.
-	 * @return An object with one field:
-	 * 	reason	string	If we can't buy it, why not?  If we can buy it, returns
-	 *	      	      	"paid-for" regardless of whether we can actually afford it or not.
-	 */
-	shouldBeBought: function(model, game, skipConfirmation) { //fail checks:
-		if (model.metadata.name == "transkittenism" && this.game.bld.getBuildingExt("aiCore").meta.effects["aiLevel"] >= 15){
-			this.game.msg($I("msg.policy.aiNotMerges"),"alert", "ai");
-			return { reason: "blocked" };
-
-		} else if (model.metadata.name == "upfrontPayment" &&
-			this.game.resPool.get("necrocorn").value < //Check to see if the player can afford the upfront cost for all active Pacts
-				(model.metadata.effects["pactNecrocornUpfrontCost"] * this.game.religion.pactsManager.countActivePacts()) + //requiredPayment
-				this.getPrices(model)[0].val ) { //costOfThisPolicy, which takes into account increase from Pacifism Challenge
-			var requiredPayment = model.metadata.effects["pactNecrocornUpfrontCost"] * this.game.religion.pactsManager.countActivePacts(); //This code duplication makes me frowny
-			this.game.msg($I("msg.policy.cannotPayUpfront", [requiredPayment, this.game.resPool.get("necrocorn").title]), "important");
-			return { reason: "blocked" };
-
-		} else if (model.metadata.blocked != true) {
-             for (var i = 0; i < model.metadata.blocks.length; i++){
-                if (this.game.science.getPolicy(model.metadata.blocks[i]).researched){
-                    model.metadata.blocked = true;
-					return { reason: "blocked" };
-                }
-			}
-			if (game.opts.noConfirm || skipConfirmation) {
-				return { reason: "paid-for" };
-			}
-			return { reason: "require-confirmation" };
-		}
-		//Else, the policy was blocked:
-		return { reason: "blocked" };
-	},
-	buyItem: function(model, event) {
-		var isInDevMode = this.game.devMode;
-		if (model.metadata.researched && !isInDevMode) {
-			return {
-				itemBought: false,
-				reason: "already-bought"
-			};
-		}
-		if (!this.hasResources(model) && !isInDevMode) {
-			return {
-				itemBought: false,
-				reason: "cannot-afford"
-			};
-		}
-		var extendedInfo = this.shouldBeBought(model, this.game, event && event.boughtByQueue /*skipConfirmation*/);
-		
-		if (extendedInfo.reason == 'require-confirmation'){
-			var def = new dojo.Deferred();
-			var self = this;
-			self.game.ui.confirm($I("policy.confirmation.title"), $I("policy.confirmation.title"), function() {
-				self._buyItem_step2(model);
-				def.callback({itemBought: true, reason: "paid-for"});
-			}, function() {
-				def.callback({itemBought: false, reason: "player-denied"});
-			});
-			return {
-				itemBought: false,
-				reason: 'require-confirmation',
-				def: def
-			};
-		} else if (extendedInfo.reason !== "paid-for"){
-			return {
-				itemBought: false,
-				reason: extendedInfo.reason
-			};
-		} else {
-			this._buyItem_step2(model);
-			return {
-				itemBought: true,
-				reason: (this.game.devMode ? "dev-mode" : "paid-for")
-			};
-		}
-	},
-
-	_buyItem_step2: function(model){
-		this.payPrice(model);
-		this.onPurchase(model);
-		var meta = model.metadata;
-		if (meta.calculateEffects){
-			model.metadata.calculateEffects(meta, this.game);
-		}
-		this.game.render();
-	},
-
-	onPurchase: function(model){
-		this.inherited(arguments);
-		var meta = model.metadata;
-			if (meta.blocks){
-				for (var i in meta.blocks){
-					var policy = this.game.science.getPolicy( meta.blocks[i]);
-					policy.blocked = true;
-				}
-			}
-			if (meta.onResearch){
-				meta.onResearch(this.game);
-			}
-		}
-});
-
-dojo.declare("classes.ui.PolicyPanel", com.nuclearunicorn.game.ui.Panel, {
-
-	toggleResearchedSpan: null,
-	toggleBlockedSpan: null,
-
-	render: function(container){
-		var content = this.inherited("render", arguments),
-			self = this;
-		var msgBox = dojo.create("span", { style: { display: "inline-block", marginBottom: "10px", width: "50%"}}, content);
-		msgBox.innerHTML = $I("msg.policy.exclusivity");
-
-		var div = dojo.create("div", { style: { float: "right"}}, content);
-
-		this.toggleResearchedSpan = dojo.create("span", null, div);
-
-		var groupCheckbox = dojo.create("input", {
-            id : "policyToggleResearched",
-            type: "checkbox",
-            checked: this.game.science.policyToggleResearched,
-            style: {
-                //display: hasCivil ? "" : "none"
-            }
-        }, this.toggleResearchedSpan);
-
-        dojo.connect(groupCheckbox, "onclick", this, function(){
-            this.game.science.policyToggleResearched = !this.game.science.policyToggleResearched;
-
-		  this.update(); //Update policy panel UI
-        });
-
-		dojo.create("label", { innerHTML: $I("science.policyToggleResearched.label") + "<br>", for: "policyToggleResearched"}, this.toggleResearchedSpan);
-
-		this.toggleBlockedSpan = dojo.create("span", null, div);
-
-		var groupCheckbox1 = dojo.create("input", {
-            id : "policyToggleBlocked",
-            type: "checkbox",
-            checked: this.game.science.policyToggleBlocked,
-            style: {
-                //display: hasCivil ? "" : "none"
-            }
-        }, this.toggleBlockedSpan);
-
-        dojo.connect(groupCheckbox1, "onclick", this, function(){
-            this.game.science.policyToggleBlocked = !this.game.science.policyToggleBlocked;
-
-		  this.update(); //Update policy panel UI
-        });
-
-        dojo.create("label", { innerHTML: $I("science.policyToggleBlocked.label"), for: "policyToggleBlocked"}, this.toggleBlockedSpan);
-
-
-		var controller = new classes.ui.PolicyBtnController(this.game);
-		dojo.forEach(this.game.science.policies, function(policy, i){
-			var button =
-				new com.nuclearunicorn.game.ui.BuildingResearchBtn({
-					id: policy.name, controller: controller}, self.game);
-			button.render(content);
-			self.addChild(button);
-		});
-
-		dojo.create("div", { style: { clear: "both"}}, content);
-	},
-
-	update: function() {
-		this.inherited(arguments);
-		
-		var allPolicies = this.game.science.policies;
-
-		//Set this entire panel to only be visible if at least 1 policy is unlocked:
-		dojo.style(this.panelDiv, "display", dojo.some(allPolicies, function(policy) {return policy.unlocked;}) ? "block" : "none" );
-
-		//Set the "toggle researched policies" checkbox to only be visible if at least 1 policy would be affected by it:
-		dojo.style(this.toggleResearchedSpan, "display", dojo.some(allPolicies,
-			function(policy) {return policy.researched;}) ? "block" : "none" );
-
-		//Set the "toggle blocked policies" checkbox to only be visible if at least 1 policy would be affected by it:
-		dojo.style(this.toggleBlockedSpan, "display", dojo.some(allPolicies,
-			function(policy) {return policy.blocked;}) ? "block" : "none" );
-	},
-});
-
 dojo.declare("com.nuclearunicorn.game.ui.TechButtonController", com.nuclearunicorn.game.ui.BuildingNotStackableBtnController, {
-
 	defaults: function() {
 		var result = this.inherited("defaults", arguments);
 		result.tooltipName = true;
@@ -2680,13 +1107,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Library", com.nuclearunicorn.game.u
 			btn.render(tr);
 		}
 
-		//-------------- policies ----------------
-
-		this.policyPanel = new classes.ui.PolicyPanel($I("policy.panel.label"), this.game.science);
-		this.policyPanel.game = this.game;
-		// this.policyPanel.policyToggleBlocked = this.game.science.policyToggleBlocked;
-		// this.policyPanel.policyToggleResearched = this.game.science.policyToggleResearched;
-		this.policyPanel.render(tabContainer);
 
 		//------------ metaphysics ----------------
 		this.metaphysicsPanel = null;
@@ -2719,10 +1139,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Library", com.nuclearunicorn.game.u
 		if (this.metaphysicsPanel){
 			this.metaphysicsPanel.update();
 		}
-		if (this.policyPanel){
-			this.policyPanel.update();
-		}
-		//detailedPollutionInfo is temporary tag. Don't replace lines belov with i18n lines!
 		if (this.game.detailedPollutionInfo){
 			if (this.detailedPollutionInfo){
 

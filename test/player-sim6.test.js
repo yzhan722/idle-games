@@ -282,7 +282,7 @@ describe("edge — 转世中道清算", () => {
 	test("breakSurge uses calendar years — stays bounded after ticks reset (reload)", () => {
 		const c = game.cultivation;
 		//模拟刚破境:trueYear 起点
-		c.lastBreakTick = game.calendar.trueYear();
+		c.lastBreakYear = game.calendar.trueYear();
 		const s0 = c.getBreakSurge();
 		expect(s0).toBeCloseTo(c.BREAK_SURGE_MAX, 1);
 		//读档后 game.ticks 归零——余威不得超过上限(旧 bug:负 elapsed → surge 爆表)

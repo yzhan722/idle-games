@@ -151,12 +151,6 @@ dojo.declare("classes.managers.PrestigeManager", com.nuclearunicorn.core.TabMana
 		effects:{
 			"tradeRatio" : 0.1
 		},
-		handler: function(game) { //Called when this is purchased
-			game.science.unlockRelations();
-		},
-		upgrades:{
-			policies: ["lizardRelationsEcologists"]
-		},
 		unlocks: {
 			"perks": ["zebraDiplomacy", "ambassadors"]
 		}

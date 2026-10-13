@@ -415,7 +415,7 @@ describe("deep — 数值健康", () => {
 	test("getBreakSurge decays from MAX to 1 over the window", () => {
 		const c = game.cultivation;
 		expect(c.getBreakSurge()).toBe(1);		//从未破境=1
-		c.lastBreakTick = game.calendar.trueYear();
+		c.lastBreakYear = game.calendar.trueYear();
 		expect(c.getBreakSurge()).toBeCloseTo(c.BREAK_SURGE_MAX, 1);
 		//推进 2 年后(余威按日历纪年计)
 		game.calendar.year += c.BREAK_SURGE_YEARS + 1;

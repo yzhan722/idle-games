@@ -33,16 +33,6 @@
 			});
 		</script>
 
-		<!-- Global site tag (gtag.js) - Google Analytics -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=G-0QBDX221PR"></script>
-		<script>
-			window.dataLayer = window.dataLayer || [];
-			function gtag(){dataLayer.push(arguments);}
-			gtag('js', new Date());
-
-			gtag('config', 'G-0QBDX221PR');
-		</script>
-
 		<script type="text/javascript">
 			var now = Date.now();
 			$("<link />").attr("rel", "stylesheet").attr("type", "text/css").attr("href", "res/default.css?_=" + now).appendTo($("head"));
@@ -117,6 +107,7 @@
 			}
 
 			function loadTheme(themeId, timestamp){
+				if (themeId == "default"){ return; }	//vanilla look — res/default.css already loaded, no file to fetch
 				$("<link />")
 					.attr("rel", "stylesheet")
 					.attr("type", "text/css")
@@ -315,7 +306,7 @@
 
 		</script>
 
-		<title>凡人修仙传·放置 - a Dark Souls of incremental cultivation</title>
+		<title>凡人修仙传·放置</title>
 	</head>
 
 
@@ -343,6 +334,7 @@
 				<div class="links-block" style="padding-top:3px; display:inline-flex;">
 					<a id="save-link" href="#" onclick="gamePage.saveUI();">Save</a> |
 					<a id="options-link" href="#" onclick="$('#optionsDiv').toggle(); gamePage.ui.updateOptions();">Options</a> |
+					<a id="help-link" href="#" onclick="gamePage.ui.renderHelp(); $('#helpDiv').toggle();">Help</a> |
 					<a id="reset-link" href="#" onclick="gamePage.reset();">Reset</a>
 				</div>
 			</div>
@@ -410,6 +402,7 @@
 							<div class="console-intro" style="padding-top: 10px; border-top: 1px solid gray;">
 								你是一个山林小村中的凡人,偶然踏上修仙之路。
 							</div>
+							<div id="consoleIntroSub" class="console-intro-sub"></div>
 
 							<span id="clearLog">
 								<a id="clearLogHref" href="#" onClick="gamePage.clearLog();">Clear log</a>
@@ -417,8 +410,8 @@
 							<span id="logFiltersBlock" style="padding-top: 5px">
 								<a id="logFiltersBlockText" onclick="gamePage.toggleFilters();" href="#">[<span id="filterIcon">+</span>] Log Filters</a>
 							</span>
-							<a id="pauseBtn" style="font-size: 12px;" href="#" title="Pause/unpause the game" onclick="gamePage.togglePause();">pawse</a>
-							<a id="undoBtn" style="font-size: 12px;" href="#" title="Undo the change" onclick="gamePage.undo();">undo</a>
+							<a id="pauseBtn" style="font-size: 12px;" href="#" title="暂停/继续" onclick="gamePage.togglePause();">止息</a>
+							<a id="undoBtn" style="font-size: 12px;" href="#" title="撤销上一步" onclick="gamePage.undo();">悔棋</a>
 
 							<div id="logFilters" style="display:none">
 							</div>
@@ -577,6 +570,11 @@
 				<input id="doImportButton" type="button" value="Import" onclick="gamePage.saveImport(); $('#importDiv').hide();" style="margin-top: 10px;">
 				<input id="cancelButton" type="button" value="Cancel" onclick="$('#importDiv').hide();" style="margin-top: 10px;">
 
+			</div>
+
+			<div id="helpDiv" style="display: none" class="dialog help xxHelp">
+				<a href="#" class="close" onclick="$('#helpDiv').hide();" style="position: absolute; top: 10px; right: 15px;">close</a>
+				<div id="helpContent"></div>
 			</div>
 
 			<div id="appDiv" style="display: none" class="dialog help">

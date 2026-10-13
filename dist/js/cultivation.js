@@ -28,8 +28,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	age: 0,				//此生已活年数——寿元耗尽即坐化转世
 	lifeWarned: null,	//{"60":bool,...} 每世一次性的寿元警告
 	dying: false,		//坐化结算进行中(防重复触发)
+	deathOverlayOpen: false,	//坐化卡面开着——纯运行时态,不入档
 	breakMult: 0,		//one-shot relative chance boost from 筑基丹 (×1.5 while active)
-	lastBreakTick: null,	//game.ticks of the last real breakthrough — 破境余威的起点
+	lastBreakYear: null,	//calendar.trueYear() of the last real breakthrough — 破境余威的起点(随档)
 	secluded: false,
 	actionCd: 0,		//共享调息——游历/闭关/秘境/上古秘境共用一支气脉
 	actionCdMax: 0,		//本次调息总长(渲染进度条用)
@@ -595,6 +596,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	WANDER_CD: 600,			//~2 min at 5 ticks/s
 	RIFT_CD: 300,			//~1 min — tighter loop than 游历, it IS the farming room
+	SECLUDE_CD: 600,		//出关散功与游历同调息——气脉未平复不可径入秘境
 	//历练所得按「下一层破境价」的比例给付——一场机缘是一层天的几分之一,
 	//低境不靠走运连跳数层,高境也不是滴水入海;再乘已破层数的渐衰,
 	//免得渡劫门前一回秘境便抵半层天
@@ -1241,13 +1243,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//破境余威的修为价倍率:刚破境为 BREAK_SURGE_MAX,随游戏时间线性衰减,
 	//BREAK_SURGE_YEARS 年后回落 1。只有真突破(chance<1)触发与承受。
 	getBreakSurge: function(){
-		if (this.lastBreakTick == null){ return 1; }
-		var cal = this.game.calendar;
-		var yearTicks = cal.ticksPerDay * cal.daysPerSeason * cal.seasonsPerYear;
-		var window = yearTicks * this.BREAK_SURGE_YEARS;
-		var elapsed = this.game.ticks - this.lastBreakTick;
-		if (elapsed >= window){ return 1; }
-		return 1 + (this.BREAK_SURGE_MAX - 1) * (1 - elapsed / window);
+		if (this.lastBreakYear == null){ return 1; }
+		//game.ticks 不入档——读档归零会让 elapsed 转负、余威暴胀出上界。
+		//改用持久化的历法纪年,trueYear() 含日/季/年的小数推进。
+		var elapsed = this.game.calendar.trueYear() - this.lastBreakYear;
+		if (elapsed >= this.BREAK_SURGE_YEARS){ return 1; }
+		if (elapsed < 0){ elapsed = 0; }
+		return 1 + (this.BREAK_SURGE_MAX - 1) * (1 - elapsed / this.BREAK_SURGE_YEARS);
 	},
 
 	rollBreakOmen: function(){
@@ -1421,6 +1423,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	showDeathOverlay: function(bonus, karmaText){
 		var self = this;
+		this.deathOverlayOpen = true;
 		var overlay = dojo.create("div", {className: "xxFateOverlay"}, dojo.byId("gamePageContainer"));
 		var card = dojo.create("div", {
 			className: "dialog xxFateCard xxDeathCard",
@@ -1496,6 +1499,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.game.msg($I("cultivation.msg.pill.clean"), "notice");
 			return false;
 		}
+		if (name == "juqi" && this.buffs.juqi > 0){
+			this.game.msg($I("cultivation.msg.pill.maxed"), "notice");
+			return false;	//药力仍在周天运转——再服只会平白化去一颗丹
+		}
 		pill.val--;
 		if (name == "juqi"){
 			this.buffs.juqi = 1500;	//~5 min
@@ -1551,7 +1558,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			return false;
 		}
 		this.secluded = !this.secluded;
-		if (this.secluded){ this.stats.seclude++; }
+		if (this.secluded){
+			this.stats.seclude++;
+		} else {
+			//出关散功——气脉未平复前不可径入秘境,与游历同调息
+			this.setActionCd(this.SECLUDE_CD);
+		}
 		this.game.msg($I(this.secluded ? "cultivation.msg.seclude.on" : "cultivation.msg.seclude.off"), "notice");
 		return true;
 	},
@@ -1757,7 +1769,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			age: this.age,
 			lifeWarned: this.lifeWarned,
 			breakMult: this.breakMult,
-			lastBreakTick: this.lastBreakTick,
+			lastBreakYear: this.lastBreakYear,
 			secluded: this.secluded,
 			actionCd: this.actionCd,
 			actionCdMax: this.actionCdMax,
@@ -1772,6 +1784,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			stats: this.stats,
 			demonWarned: this.demonWarned,
 			sihuaCount: this.sihuaCount,
+			dying: this.dying,
 			failStreakStage: this.failStreakStage,
 			failStreak: this.failStreak,
 			tale: this.tale,
@@ -1827,20 +1840,22 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				}
 			}
 		}
-		if (typeof c.actionCd == "number"){ this.actionCd = c.actionCd; }
+		if (typeof c.actionCd == "number"){ this.actionCd = Math.max(0, c.actionCd); }
 		if (typeof c.actionCdMax == "number"){ this.actionCdMax = c.actionCdMax; }
 		if (c.pendingTrip){ this.pendingTrip = c.pendingTrip; }
 		if (c.lastAction){ this.lastAction = c.lastAction; }
 		if (typeof c.actionSeq == "number"){ this.actionSeq = c.actionSeq; }
-		if (typeof c.riftKeys == "number"){ this.riftKeys = c.riftKeys; }
-		if (typeof c.riftFloor == "number"){ this.riftFloor = c.riftFloor; }
+		if (typeof c.riftKeys == "number"){ this.riftKeys = Math.max(0, c.riftKeys); }
+		if (typeof c.riftFloor == "number"){ this.riftFloor = Math.max(0, c.riftFloor); }
 		if (c.tale){ this.tale = c.tale; }
 		if (c.identity){ this.identity = c.identity; this.applyOrigin(); }
 		if (c.pendingOrigin){ this.pendingOrigin = c.pendingOrigin; }
 		if (c.taleLog){ this.taleLog = c.taleLog; }
-		if (typeof c.heartDemon == "number"){ this.heartDemon = c.heartDemon; }
-		if (typeof c.lastBreakTick == "number"){ this.lastBreakTick = c.lastBreakTick; }
-		if (typeof c.age == "number"){ this.age = c.age; }
+		if (typeof c.heartDemon == "number"){ this.heartDemon = Math.min(100, Math.max(0, c.heartDemon)); }
+		if (typeof c.lastBreakYear == "number"){ this.lastBreakYear = c.lastBreakYear; }
+		if (typeof c.age == "number"){ this.age = Math.max(0, c.age); }
+		if (typeof c.dying == "boolean"){ this.dying = c.dying; }
+		this.deathOverlayOpen = false;	//卡面是 DOM——读档后必须由 update() 重弹
 		if (c.lifeWarned){ this.lifeWarned = c.lifeWarned; }
 		if (typeof c.breakMult == "number"){ this.breakMult = c.breakMult; }
 		if (typeof c.secluded == "boolean"){ this.secluded = c.secluded; }
@@ -1853,8 +1868,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 		}
 		if (typeof c.demonWarned == "boolean"){ this.demonWarned = c.demonWarned; }
-		if (typeof c.sihuaCount == "number"){ this.sihuaCount = c.sihuaCount; }
-		if (typeof c.failStreak == "number"){ this.failStreak = c.failStreak; }
+		if (typeof c.sihuaCount == "number"){ this.sihuaCount = Math.max(0, c.sihuaCount); }
+		if (typeof c.failStreak == "number"){ this.failStreak = Math.max(0, c.failStreak); }
 		if (typeof c.failStreakStage == "string"){ this.failStreakStage = c.failStreakStage; }
 	},
 
@@ -1863,6 +1878,17 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var tab = this.game.getTab("cultivation");
 		if (tab && !tab.visible){
 			tab.visible = true;
+		}
+
+		if (this.dying){
+			//坐化期间万缘停摆;读档回来的档上 dying=true 但卡面已随 DOM 消失,
+			//须重弹一次——否则玩家永困坐化态,连转世都点不到(软锁)。
+			if (!this.deathOverlayOpen){
+				var bonus = this.getCurrentRealmIndex() * this.ASCENSION_KARMA;
+				var karmaText = $I("cultivation.msg.lifespan.karma." + (bonus > 0 ? "gain" : "none"), [bonus]);
+				this.showDeathOverlay(bonus, karmaText);
+			}
+			return;
 		}
 
 		if (this.actionCd > 0){
@@ -2036,14 +2062,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	},
 
 	resetState: function(){
-		//stages & fates persist through reincarnation — this IS the prestige
-		//ladder, but a new body means a new spirit root and a clean mind
+		//转世存档只留魂数据(identity/sihuaCount/pendingOrigin)——境界仙缘
+		//由 _resetInternal 从存档剥离,内存态靠 reload 重建;新世新身,灵根重来
 		this.heartDemon = 0;
 		this.age = 0;			//新世新身,寿数重来
 		this.lifeWarned = {};
 		this.dying = false;
+		this.deathOverlayOpen = false;
 		this.breakMult = 0;
-		this.lastBreakTick = null;	//新世新身,道基余威尽散
+		this.lastBreakYear = null;	//新世新身,道基余威尽散
 		this.secluded = false;
 		this.actionCd = 0;
 		this.actionCdMax = 0;
@@ -2230,12 +2257,13 @@ dojo.declare("classes.ui.RealmBtnController", com.nuclearunicorn.game.ui.Buildin
 			if (cult.game.server){ cult.game.server.submitJianghu(); }	//境界突破即登榜
 			return result;
 		}
-		//breakthrough failed: materials are spent, part of the 修为 returns
+		//breakthrough failed: materials are spent, part of the 修为 returns —
+		//按实付价(model.prices,已含根骨/余威/心魔税叠乘)退还,而非基础价
 		this.payPrice(model);
 		var refundRatio = 0.5 - (omen && omen.failLoss ? omen.failLoss : 0);
-		for (var i = 0; i < meta.prices.length; i++){
-			if (meta.prices[i].name == "xiuwei"){
-				this.game.resPool.addResEvent("xiuwei", meta.prices[i].val * refundRatio);
+		for (var i = 0; i < model.prices.length; i++){
+			if (model.prices[i].name == "xiuwei"){
+				this.game.resPool.addResEvent("xiuwei", model.prices[i].val * refundRatio);
 			}
 		}
 		var add = 12 + Math.random() * 8;
@@ -2265,8 +2293,8 @@ dojo.declare("classes.ui.RealmBtnController", com.nuclearunicorn.game.ui.Buildin
 			return;	//a vein or sect, not a stage
 		}
 		if (meta.chance != null && meta.chance < 1){
-			//大关告破,道基震荡——余威期内再破真关耗修大涨
-			cult.lastBreakTick = cult.game.ticks;
+			//大关告破,道基震荡——余威期内再破真关耗修大涨(以历法纪年锚定,随档)
+			cult.lastBreakYear = cult.game.calendar.trueYear();
 			this.game.msg($I("cultivation.msg.breakthrough.surge"), "notice");
 		}
 		var next = cult.stages[idx + 1];

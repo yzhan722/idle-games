@@ -173,7 +173,7 @@ dojo.declare("classes.managers.SettingsManager", com.nuclearunicorn.core.TabMana
 		isExtra: true
 	}, {
 		name: "hodl", //Periodically fetches the real-world b-coin price through game.server.
-		defaultValue: true,
+		defaultValue: false,
 		label: $I("ui.option.hodl"),
 		tooltip: $I("ui.option.hodl.tip"),
 		isExtra: true,
