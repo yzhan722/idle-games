@@ -489,7 +489,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		defaultUnlockable: true,
 		effects: {
 			"manpowerMax": 75,
-			"manpowerPerTickBase": 0.02,
+			"manpowerPerTickBase": 0.025,
+			"woodPerTickBase": 0.015,
+			"fursPerTickBase": 0.03,
 			"xiuweiPerTickBase": 0.005
 		},
 		breakIronWill: true, //har har har
@@ -507,7 +509,10 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		],
 		priceRatio: 1.15,
 		effects: {
-			"manpowerMax": 50
+			"manpowerMax": 50,
+			"manpowerPerTickBase": 0.03,
+			"fursPerTickBase": 0.04,
+			"xiuweiPerTickBase": 0.02
 		},
 		breakIronWill: true,
 		almostLimited: false,
@@ -523,7 +528,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		],
 		priceRatio: 1.15,
 		effects: {
-			"manpowerMax": 50
+			"manpowerMax": 50,
+			"manpowerPerTickBase": 0.05,
+			"xiuweiPerTickBase": 0.05
 		},
 		breakIronWill: true,
 		almostLimited: false,
@@ -544,7 +551,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 					"scienceRatio": 0,
 					"scienceMax": 0,
 					"cultureMax": 0,
-					"sciencePerTickBase": 0.03
+					"sciencePerTickBase": 0.03,
+					"culturePerTickBase": 0.015
 				},
 				stageUnlocked : true,
 				flavor: $I("buildings.library.flavor")
@@ -560,6 +568,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				effects: {
 					"scienceMaxCompendia": 1000,
 					"cultureMax": 25,
+					"sciencePerTickBase": 0.10,
+					"culturePerTickBase": 0.05,
 					"energyConsumption": 2,
 					//"cathPollutionPerTickProd": 2, maybe in the future?
 				},
@@ -581,9 +591,10 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		calculateEffects: function(self, game){
 			var stageMeta = self.stages[self.stage];
 			var effects = {
-				"scienceRatio": 0.1,
-				"scienceMax": 250,
-				"cultureMax": 10,
+				"scienceRatio": 0.12,
+				"scienceMax": 400,
+				"cultureMax": 20,
+				"culturePerTickBase": 0.015
 			};
 			if (self.stage == 0){
 				effects["sciencePerTickBase"] = 0.03;	//藏经阁涓滴感悟——本表整体覆写 stage.effects,静态声明须在此补回
@@ -593,8 +604,10 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			effects["scienceMax"] *= (1 + game.bld.get("observatory").on * libraryRatio);
 
 			if (self.stage == 1){
+				effects["sciencePerTickBase"] = 0.10;
+				effects["culturePerTickBase"] = 0.05;
 				effects["scienceMaxCompendia"] = 1000;
-				effects["scienceMax"] *= 3;	//250->750 base science boos for data centers
+				effects["scienceMax"] *= 3;	//400->1200 base science boost for data centers
 				effects["cultureMax"] = 250;
 
 				var biolabBonus = game.bld.get("biolab").val * game.getEffect("uplinkDCRatio");
@@ -636,8 +649,11 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		priceRatio: 1.15,
 		effects: {
 			"scienceRatio": 0.2,
-			"scienceMax": 500,
-			"cultureMax": 25,
+			"sciencePerTickBase": 0.06,
+			"culturePerTickBase": 0.025,
+			"xiuweiPerTickBase": 0.015,
+			"scienceMax": 800,
+			"cultureMax": 40,
 			"academyMeteorBonus": 0
 		},
 		calculateEffects: function(self, game){
@@ -669,11 +685,15 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"starEventChance": 0.002,
 			"starAutoSuccessChance": 0.01,
+			"sciencePerTickBase": 0.15,
+			"xiuweiPerTickBase": 0.03
 		},
 		calculateEffects: function(self, game) {
 			var ratio = 1 + game.getEffect("observatoryRatio");
 			self.effects["scienceRatio"] = ratio * 0.25;
-			self.effects["scienceMax"] = ratio * (game.workshop.get("astrolabe").researched ? 1500 : 1000);
+			self.effects["sciencePerTickBase"] = ratio * 0.15;
+			self.effects["xiuweiPerTickBase"] = 0.03;
+			self.effects["scienceMax"] = ratio * (game.workshop.get("astrolabe").researched ? 2000 : 1250);
 		},
 		flavor: $I("buildings.observatory.flavor")
 	},{
@@ -689,6 +709,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		priceRatio: 1.10,
 		effects: {
 			"scienceRatio": 0.35,
+			"sciencePerTickBase": 0.30,
+			"xiuweiPerTickBase": 0.06,
 			"refineRatio": 0.1,
 			"scienceMax": 0,
 			"energyConsumption": 0,
@@ -713,7 +735,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				self.effects["compediumGlobalCraftRatio"] = 0.001;
 			}
 
-			self.effects["scienceMax"] = 1500;
+			self.effects["sciencePerTickBase"] = 0.30;
+			self.effects["xiuweiPerTickBase"] = 0.06;
+			self.effects["scienceMax"] = 2000;
 			if (game.workshop.get("uplink").researched && game.bld.get("library").stage == 1){
 				var datacenterBonus = game.bld.get("library").val * game.getEffect("uplinkLabRatio");
 				self.effects["scienceMax"] *= (1 + datacenterBonus);
@@ -756,12 +780,12 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		calculateEffects: function (self, game){
 			var effects = {
 				"catnipMax": 5000,
-				"woodMax": 200,
-				"mineralsMax": 250,
-				"coalMax": 60,
-				"ironMax": 50,
-				"titaniumMax": 2,
-				"goldMax": 10
+				"woodMax": 300,
+				"mineralsMax": 350,
+				"coalMax": 80,
+				"ironMax": 100,
+				"titaniumMax": 10,
+				"goldMax": 25
 			};
 
 			self.effects = game.resPool.addBarnWarehouseRatio(effects);
@@ -825,12 +849,12 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
             if (self.stage == 0){
                 var effects = {
 					"catnipMax": 0,
-					"woodMax": 150,
-					"mineralsMax": 200,
-					"coalMax": 30,
-					"ironMax": 25,
-					"titaniumMax": 10,
-					"goldMax": 5
+					"woodMax": 250,
+					"mineralsMax": 300,
+					"coalMax": 50,
+					"ironMax": 60,
+					"titaniumMax": 25,
+					"goldMax": 20
 				};
 	
 				if (game.workshop.get("silos").researched){
@@ -910,10 +934,10 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				"catnipMax": 2500,
 				"woodMax": 700,
 				"mineralsMax": 950,
-				"coalMax": 100,
-				"ironMax": 150,
-				"titaniumMax": 50,
-				"goldMax": 25
+				"coalMax": 120,
+				"ironMax": 200,
+				"titaniumMax": 80,
+				"goldMax": 60
 			};
 
 			effects["coalMax"] *= (1 + game.getEffect("harborCoalRatio"));
@@ -957,7 +981,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		calculateEffects: function(self, game){
 			self.effects = {
 				"mineralsRatio": 0.2,
-				"mineralsPerTickBase": 0.04,
+				"mineralsPerTickBase": 0.06,
 				"cathPollutionPerTickProd": 0.08
 			};
 			self.togglable = game.science.get("ecology").researched;
@@ -980,13 +1004,17 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		priceRatio: 1.15,
 		effects: {
 			"mineralsRatio": 0.35,
-			"coalPerTickBase": 0.012,
+			"mineralsPerTickBase": 0.15,
+			"coalPerTickBase": 0.025,
+			"goldPerTickAutoprod": 0.006,
 			"cathPollutionPerTickProd": 0.25,
 		},
 		calculateEffects: function(self, game){
 			var effects = {
 				"mineralsRatio": 0.35,
-				"coalPerTickBase": 0.012,
+				"mineralsPerTickBase": 0.15,
+				"coalPerTickBase": 0.025,
+				"goldPerTickAutoprod": 0.006,
 				"cathPollutionPerTickProd": 0.25,
 			};
 			self.effects = effects;
@@ -1014,10 +1042,10 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		lackResConvert: false,
 		calculateEffects: function(self, game) {
 			var smelterRatio = (1 + game.getEffect("smelterRatio"));
-			self.effects["ironPerTickAutoprod"] = 0.02 * smelterRatio;
+			self.effects["ironPerTickAutoprod"] = 0.03 * smelterRatio;
 
 			if (game.workshop.get("goldOre").researched){
-				self.effects["goldPerTickAutoprod"] = 0.001;
+				self.effects["goldPerTickAutoprod"] = 0.005;
 			} else {
 				self.effects["goldPerTickAutoprod"] = 0;
 			}
@@ -1076,7 +1104,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"mineralsPerTickCon" : -1.5,
 			"coalPerTickCon": 0,
 			"ironPerTickCon" : 0,
-			"titaniumPerTickAutoprod" : 0.0005,
+			"titaniumPerTickAutoprod" : 0.002,
 			"oilPerTickCon" : -0.024,
 			"steelPerTickProd": 0,
 			"energyConsumption" : 1,
@@ -1091,7 +1119,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			self.effects["mineralsPerTickCon"] = -1.5;
 			self.effects["oilPerTickCon"] = -0.024; //base + 0.01
 			var calcinerRatio = game.getEffect("calcinerRatio");
-			self.effects["titaniumPerTickAutoprod"] = 0.0005 * ( 1 + calcinerRatio * 3 );
+			self.effects["titaniumPerTickAutoprod"] = 0.002 * ( 1 + calcinerRatio * 3 );
 
 			self.effectsCalculated["mineralsPerTickCon"] = self.effects["mineralsPerTickCon"];
 			self.effectsCalculated["oilPerTickCon"] = self.effects["oilPerTickCon"];
@@ -1595,7 +1623,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		description: $I("buildings.mint.desc"),
 		prices: [
 			{ name : "minerals", val: 5000 },
-			{ name : "gold", val: 500 },
+			{ name : "gold", val: 150 },
 			{ name : "plate", val: 200 }
 		],
 		priceRatio: 1.15,
@@ -1604,10 +1632,10 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"manpowerPerTickCon" : -0.75,
 			"fursPerTickProd": 0.00875,
 			"ivoryPerTickProd": 0.0021,
-			"goldMax": 100
+			"goldMax": 250
 		},
 		calculateEffects: function (self, game){
-			self.effects["goldMax"] = 100 * (1 + game.getEffect("warehouseRatio"));
+			self.effects["goldMax"] = 250 * (1 + game.getEffect("warehouseRatio"));
 		},
 		lackResConvert: false,
 		action: function(self, game){
@@ -1765,6 +1793,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"culturePerTickBase" : 0,
 			"faithPerTickBase" : 0,
+			"xiuweiPerTickBase" : 0,
 			"cultureMax" : 0,
 			"faithMax" : 0
 		},
@@ -1772,6 +1801,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			var effects = {
 				"culturePerTickBase" : 0,
 				"faithPerTickBase" : 0,
+				"xiuweiPerTickBase" : 0.04,
 				"cultureMax" : 200,
 				"faithMax" : 0
 			};
@@ -1779,11 +1809,12 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				self.description = $I("buildings.chapel.desc.atheism");
 			} else {
 				self.description = $I("buildings.chapel.desc");
-				effects["faithPerTickBase"] = 0.005;
+				effects["faithPerTickBase"] = 0.08;
+				effects["faithMax"] = 800;
 				var frescoes = game.religion.getRU("frescoes");
 				if (frescoes.on) {
 					//The stripe parameter can be tweaked as needed for the sake of balancing.
-					effects["faithMax"] = game.getUnlimitedDR( frescoes.on, 1.65 /*stripe*/ ) * game.resPool.get("karma").value;
+					effects["faithMax"] += game.getUnlimitedDR( frescoes.on, 1.65 /*stripe*/ ) * game.resPool.get("karma").value;
 				}
 			}
 			self.effects = effects;
@@ -1806,6 +1837,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"culturePerTickBase" : 0,
 			"faithPerTickBase" : 0,
+			"xiuweiPerTickBase" : 0,
 			"manpowerMax" : 0,
 			"scienceMax" : 0,
 			"cultureMax" : 0,
@@ -1819,10 +1851,13 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
                     game.time.queue.unlockQueueSource("religion");
                 }
 				var effects = {
+					"culturePerTickBase" : 0.04,
+					"faithPerTickBase" : 0.04,
+					"xiuweiPerTickBase" : 0.025,
 					"manpowerMax" : 0,
 					"scienceMax" : 0,
-					"cultureMax" : 0,
-					"faithMax": 100
+					"cultureMax" : 100,
+					"faithMax": 400
 				};
 
 				var scholastics = game.religion.getRU("scholasticism");
@@ -1842,7 +1877,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 				var basilica = game.religion.getRU("basilica");
 				if (basilica.on){
-					effects["cultureMax"] = 75 + 50 * basilica.on;
+					effects["cultureMax"] = 100 + 75 + 50 * basilica.on;
 				}
 
 				var templars = game.religion.getRU("templars");
@@ -2200,20 +2235,20 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 	effectsBase: {
 		"catnipMax"		: 5000,
-		"woodMax"		: 200,
-		"mineralsMax"	: 250,
-		"coalMax"       : 60,
-		"ironMax"       : 50,
-		"titaniumMax"   : 2,
-		"goldMax"       : 10,
+		"woodMax"		: 300,
+		"mineralsMax"	: 350,
+		"coalMax"       : 80,
+		"ironMax"       : 100,
+		"titaniumMax"   : 10,
+		"goldMax"       : 25,
 		"oilMax"        : 1500,
 		"uraniumMax"	: 250,
-		"unobtainiumMax": 150,
+		"unobtainiumMax": 250,
 		"antimatterMax" : 100,
 		"manpowerMax"	: 100,
-		"scienceMax"    : 250,
+		"scienceMax"    : 400,
 		"cultureMax"	: 100,
-		"faithMax" 		: 100,
+		"faithMax" 		: 250,
 		"hutFakeBought": 0,
 		"logHouseFakeBought": 0,
 		"mansionFakeBought": 0 //these 3 are for Post Apocalypse pollution based housing cost increase — using getEffect instead of special handling
@@ -2362,6 +2397,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 		// reactors
 		autoProdRatio *= 1 + this.game.getEffect("productionRatio");
+
+		// cultivation realm bonus
+		autoProdRatio *= 1 + this.game.getEffect("realmProductionRatio");
 
 		return autoProdRatio;
 		//This function must stay atm for Steel Plants

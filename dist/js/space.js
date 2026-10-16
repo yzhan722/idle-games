@@ -347,7 +347,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			calculateEffects: function(self, game){
 				var effects = {
 					"uraniumPerTickCon": -0.35,
-					"unobtainiumPerTickSpace": 0.007 * (1 + game.getEffect("lunarOutpostRatio"))
+					"unobtainiumPerTickSpace": 0.015 * (1 + game.getEffect("lunarOutpostRatio"))
 				};
 				effects["energyConsumption"] = 5;
 
@@ -356,7 +356,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			lackResConvert: false,
 			action: function(self, game){
 				self.effects["uraniumPerTickCon"] = -0.35;
-				self.effects["unobtainiumPerTickSpace"] = 0.007 * (1 + game.getEffect("lunarOutpostRatio"));
+				self.effects["unobtainiumPerTickSpace"] = 0.015 * (1 + game.getEffect("lunarOutpostRatio"));
 				var amt = game.resPool.getAmtDependsOnStock(
 					[{res: "uranium", amt: -self.effects["uraniumPerTickCon"]}],
 					self.on
@@ -401,7 +401,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 					"ironMax"           : 9000 * spaceportRatio,
 					"titaniumMax"       : 1250 * spaceportRatio,
 					"oilMax"            : 3500 * spaceportRatio,
-					"unobtainiumMax"    : 150 * spaceportRatio,
+					"unobtainiumMax"    : 300 * spaceportRatio,
 					"energyConsumption" : 0
 				};
 				effects["energyConsumption"] = game.workshop.get("amBases").researched ? 5 : 10;
@@ -439,8 +439,8 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
             },
 			calculateEffects: function (self, game){
 				self.effects = {
-					"uraniumPerTickSpace" : 0.3 * (1 + game.getEffect("crackerRatio")),
-					"uraniumMax" : 1750 * (1 + game.getEffect("planetCrackerStorageBonus"))
+					"uraniumPerTickSpace" : 0.5 * (1 + game.getEffect("crackerRatio")),
+					"uraniumMax" : 2500 * (1 + game.getEffect("planetCrackerStorageBonus"))
 				};
 			}
         },{

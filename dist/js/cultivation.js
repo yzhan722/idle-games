@@ -69,9 +69,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	],
 
 	//破境余威——大关刚过,道基震荡未平;震荡期内再冲关,修为消耗大涨,
-	//随后随光阴线性削减,两载复归常价。防止道行一日千里,连破数关。
-	BREAK_SURGE_MAX: 4,		//刚破境时修为价 ×4
-	BREAK_SURGE_YEARS: 2,	//震荡期约两载(游戏年)
+	//随后随光阴线性削减,复归常价。防止道行一日千里,连破数关。
+	BREAK_SURGE_MAX: 2.2,	//刚破境时修为价 ×2.2
+	BREAK_SURGE_YEARS: 1.2,	//震荡期约 1.2 载(游戏年)
 
 	//realm defs; stages are generated from these
 	//战力底数表——index 与 REALM_DEFS 对齐,境内每层再乘 (1+i*0.5)
@@ -83,15 +83,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		//gate — 大境界门槛:首层突破除修为/材料外还需一道大关
 		//  {pill:"x"}      需该丹×1,冲关时消耗(并得丹力加成)
 		//  {riftFloor:N}   需通关上古秘境第N层——历生死之险,道基方凝
-		{key:"lianqi",  layers:10, base:{xiuwei:80},            mul:1.5,  bonus:0.03, chance:1.0,  life:80},
-		{key:"zhuji",   layers:3,  base:{xiuwei:6000, minerals:250},   mul:2.0,  bonus:0.18, chance:0.55, life:200},
-		{key:"jiedan",  layers:3,  base:{xiuwei:30000, gold:400},     mul:2.2,  bonus:0.28, chance:0.45, life:500,  gate:{riftFloor:3}},
-		{key:"yuanying",layers:3,  base:{xiuwei:80000, science:3000}, mul:2.2,  bonus:0.45, chance:0.35, life:1200, gate:{riftFloor:6}},
-		{key:"huashen", layers:3,  base:{xiuwei:250000, faith:5000}, mul:2.2,  bonus:0.7,  chance:0.30, life:3200,  gate:{riftFloor:9}},
-		{key:"lianxu",  layers:3,  base:{xiuwei:800000, unobtainium:120}, mul:2.2, bonus:1.0, chance:0.25, life:8000, gate:{riftFloor:12}},
-		{key:"heti",    layers:3,  base:{xiuwei:2500000, relic:40},   mul:2.2,  bonus:1.5,  chance:0.20, life:20000, gate:{riftFloor:15}},
-		{key:"dacheng", layers:3,  base:{xiuwei:8000000, relic:120, timeCrystal:40}, mul:2.0, bonus:2.2, chance:0.15, life:60000, gate:{riftFloor:20}},
-		{key:"dujie",   layers:1,  base:{xiuwei:50000000, relic:300, timeCrystal:200}, mul:1, bonus:5.0, chance:0.10, life:100000, gate:{riftFloor:25}}
+		{key:"lianqi",  layers:10, base:{xiuwei:35},             mul:1.38, bonus:0.03, chance:1.0,  life:80},
+		{key:"zhuji",   layers:3,  base:{xiuwei:2200, minerals:200},   mul:1.75, bonus:0.15, chance:0.55, life:200},
+		{key:"jiedan",  layers:3,  base:{xiuwei:12000, gold:120},      mul:1.75, bonus:0.30, chance:0.48, life:500,  gate:{riftFloor:3}},
+		{key:"yuanying",layers:3,  base:{xiuwei:52000, science:2500},  mul:1.70, bonus:0.55, chance:0.42, life:1200, gate:{riftFloor:6}},
+		{key:"huashen", layers:3,  base:{xiuwei:210000, faith:2000},   mul:1.68, bonus:1.00, chance:0.36, life:3200, gate:{riftFloor:9}},
+		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50}, mul:1.65, bonus:1.80, chance:0.30, life:8000, gate:{riftFloor:12}},
+		{key:"heti",    layers:3,  base:{xiuwei:2600000, relic:20},    mul:1.60, bonus:3.20, chance:0.25, life:20000, gate:{riftFloor:15}},
+		{key:"dacheng", layers:3,  base:{xiuwei:7200000, relic:50, timeCrystal:15}, mul:1.50, bonus:5.80, chance:0.20, life:60000, gate:{riftFloor:20}},
+		{key:"dujie",   layers:1,  base:{xiuwei:24000000, relic:130, timeCrystal:50}, mul:1, bonus:12.0, chance:0.10, life:100000, gate:{riftFloor:25}}
 	],
 
 	//spiritual roots, rolled per life
@@ -546,48 +546,48 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		label: $I("cultivation.sect.1.label"),
 		description: $I("cultivation.sect.1.desc"),
 		gate: "zhuji_0",
-		prices: [{name:"minerals", val:400}, {name:"xiuwei", val:3000}],
-		effects: {"xiuweiRatio": 0.1},
+		prices: [{name:"minerals", val:350}, {name:"xiuwei", val:2500}],
+		effects: {"xiuweiRatio": 0.12},
 		chance: 1.0, researched: false
 	},{
 		name: "sect2",
 		label: $I("cultivation.sect.2.label"),
 		description: $I("cultivation.sect.2.desc"),
 		gate: "zhuji_2",
-		prices: [{name:"minerals", val:2500}, {name:"xiuwei", val:10000}],
-		effects: {"xiuweiRatio": 0.15, "realmProductionRatio": 0.05},
+		prices: [{name:"minerals", val:900}, {name:"xiuwei", val:8000}],
+		effects: {"xiuweiRatio": 0.18, "realmProductionRatio": 0.06},
 		chance: 1.0, researched: false
 	},{
 		name: "sect3",
 		label: $I("cultivation.sect.3.label"),
 		description: $I("cultivation.sect.3.desc"),
 		gate: "jiedan_0",
-		prices: [{name:"gold", val:800}, {name:"xiuwei", val:20000}],
-		effects: {"xiuweiRatio": 0.25, "realmProductionRatio": 0.08},
+		prices: [{name:"gold", val:200}, {name:"xiuwei", val:15000}],
+		effects: {"xiuweiRatio": 0.28, "realmProductionRatio": 0.10},
 		chance: 1.0, researched: false
 	},{
 		name: "sect4",
 		label: $I("cultivation.sect.4.label"),
 		description: $I("cultivation.sect.4.desc"),
 		gate: "yuanying_0",
-		prices: [{name:"science", val:6000}, {name:"xiuwei", val:60000}],
-		effects: {"xiuweiRatio": 0.4, "realmProductionRatio": 0.12},
+		prices: [{name:"science", val:3500}, {name:"xiuwei", val:45000}],
+		effects: {"xiuweiRatio": 0.45, "realmProductionRatio": 0.15},
 		chance: 1.0, researched: false
 	},{
 		name: "sect5",
 		label: $I("cultivation.sect.5.label"),
 		description: $I("cultivation.sect.5.desc"),
 		gate: "huashen_0",
-		prices: [{name:"faith", val:9000}, {name:"xiuwei", val:200000}],
-		effects: {"xiuweiRatio": 0.6, "realmProductionRatio": 0.15},
+		prices: [{name:"faith", val:3000}, {name:"xiuwei", val:140000}],
+		effects: {"xiuweiRatio": 0.65, "realmProductionRatio": 0.20},
 		chance: 1.0, researched: false
 	},{
 		name: "sect6",
 		label: $I("cultivation.sect.6.label"),
 		description: $I("cultivation.sect.6.desc"),
 		gate: "lianxu_0",
-		prices: [{name:"relic", val:250}, {name:"xiuwei", val:600000}],
-		effects: {"xiuweiRatio": 0.9, "realmProductionRatio": 0.2},
+		prices: [{name:"relic", val:60}, {name:"xiuwei", val:420000}],
+		effects: {"xiuweiRatio": 0.95, "realmProductionRatio": 0.28},
 		chance: 1.0, researched: false
 	}],
 
@@ -601,10 +601,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//低境不靠走运连跳数层,高境也不是滴水入海;再乘已破层数的渐衰,
 	//免得渡劫门前一回秘境便抵半层天
 	WANDER_PAY: 0.08,		//游历机缘(17% 概率)
-	RIFT_PAY: 0.05,			//秘境一行
-	AMBUSH_PAY: 0.04,		//反杀劫修的缴获
-	GRIFT_PAY: 0.3,			//大秘境破关
-	GRIFT_FAIL_PAY: 0.1,	//大秘境败退亦有所得
+	RIFT_PAY: 0.038,		//秘境一行
+	AMBUSH_PAY: 0.035,		//反杀劫修的缴获
+	GRIFT_PAY: 0.22,		//大秘境破关
+	GRIFT_FAIL_PAY: 0.08,	//大秘境败退亦有所得
 	HEART_DEMON_GATE: 90,	//blocked above this
 	SECLUSION_XIUWEI: 0.6,
 	SECLUSION_MUNDANE: -0.9,	//闭门锁世——凡俗产出近乎断绝,唯修为一途
@@ -802,12 +802,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				label: $I("cultivation.vein.label") + "·" + $I("cultivation.tier." + i),
 				description: $I("cultivation.vein.desc." + i),
 				prices: [
-					{name: "minerals", val: this.roundNice(100 * Math.pow(2.3, i))},
-					{name: "xiuwei",   val: this.roundNice(25 * Math.pow(2.0, i))}
+					{name: "minerals", val: this.roundNice(90 * Math.pow(2.05, i))},
+					{name: "xiuwei",   val: this.roundNice(25 * Math.pow(1.95, i))}
 				],
 				effects: {
-					"xiuweiRatio": 0.12,
-					"realmProductionRatio": 0.04
+					"xiuweiRatio": 0.14,
+					"realmProductionRatio": 0.05
 				},
 				chance: 1.0,
 				researched: false
@@ -877,12 +877,20 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	renderGuideBox: function(container){
 		var box = dojo.create("div", { className: "xxGuide" }, container);
 		var game = this.game;
+		var self = this;
 		box.onclick = function(e){
 			var el = e.target;
 			if (!el){ return; }
 			if (el.className == "xx-guide-help"){
 				if (game.ui.renderHelp){ game.ui.renderHelp(); }
 				$("#helpDiv").show();
+				return;
+			}
+			if (el.className == "xx-guide-toggle" || el.className == "xx-guide-hd"){
+				self._guideOpen = !self._guideOpen;
+				dojo.toggleClass(box, "xx-guide-open", !!self._guideOpen);
+				box._xxGuideSig = null;
+				self.updateGuideBox(box);
 				return;
 			}
 			if (el.className == "xx-guide-nav"){
@@ -909,8 +917,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			return;
 		}
 		box.style.display = "";
+		dojo.toggleClass(box, "xx-guide-open", !!this._guideOpen);
 		var show = Math.min(3, guide.pending.length);
-		var sig = guide.done + "|";
+		var sig = guide.done + "|" + (this._guideOpen ? "1|" : "0|");
 		for (var i = 0; i < show; i++){
 			var step = guide.pending[i];
 			sig += step.key;
@@ -924,9 +933,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (sig == box._xxGuideSig){ return; }
 		box._xxGuideSig = sig;
 
+		var toggleTxt = $I(this._guideOpen ? "ui.mobile.guide.collapse" : "ui.mobile.guide.expand");
 		var gh = "<div class=\"xx-guide-hd\">" +
 			$I("cultivation.guide.title", [guide.done, guide.total]) +
-			" <span class=\"xx-guide-help\">" + $I("cultivation.guide.help") + "</span></div>";
+			" <span class=\"xx-guide-toggle\">" + toggleTxt + "</span>" +
+			" <span class=\"xx-guide-help\">" + $I("cultivation.guide.help") + "</span></div>" +
+			"<div class=\"xx-guide-bar\"><i style=\"width:" +
+				Math.round(guide.done / Math.max(1, guide.total) * 100) + "%\"></i></div>";
 		for (var i = 0; i < show; i++){
 			var step = guide.pending[i];
 			gh += "<div class=\"xx-guide-step" + (i == 0 ? " xx-guide-next" : "") + "\">" +
@@ -1048,11 +1061,34 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			role: "dialog",
 			"aria-modal": "true"
 		}, overlay);
+		//章回眉题——这一幕属于哪段境界篇章
+		var arcKey = f.atStage ? String(f.atStage).split("_")[0] : "";
+		if (arcKey && this.hasMsg("cultivation.realm." + arcKey + ".label")){
+			dojo.create("div", {
+				className: "xxFateKicker",
+				innerHTML: $I("cultivation.realm." + arcKey + ".label") + " · " + $I("cultivation.section.fate")
+			}, card);
+		}
 		var titleEl = dojo.create("div", {
 			className: "xxFateTitle",
 			innerHTML: f.label
 		}, card);
 		card.setAttribute("aria-label", titleEl.textContent || f.name);
+		//多幕页码——让玩家知道这一段还有几页
+		var totalPages = (f.pages && f.pages > 1) ? f.pages : 0;
+		var pagerDots = [];
+		if (totalPages){
+			var pager = dojo.create("div", {className: "xxFatePager", "aria-hidden": "true"}, card);
+			for (var d = 0; d < totalPages; d++){
+				pagerDots.push(dojo.create("i", null, pager));
+			}
+		}
+		var markPage = function(p){
+			for (var d = 0; d < pagerDots.length; d++){
+				pagerDots[d].className = d < p ? "on" : "";
+			}
+		};
+		markPage(1);
 		var storyEl = dojo.create("div", {
 			className: "xxFateStory",
 			innerHTML: this.fateText(f, "story")
@@ -1067,6 +1103,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		};
 		var showChoices = function(){
 			btnWrap.innerHTML = "";
+			markPage(totalPages);
 			if (!f.choices){	//无抉择的纯叙事章——一页阅过,记入道途
 				var done = dojo.create("div", {
 					className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0
@@ -1108,6 +1145,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				var key = self.fateKey(f, "story" + page);	//逐幕吃变体,缺幕即收官
 				if (page <= f.pages && key){
 					storyEl.innerHTML = $I(key);
+					markPage(page);
 				} else {
 					showChoices();	//末页之后进抉择/收官
 				}
@@ -1707,6 +1745,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			addRes("xiuwei", amt);
 			var relics = Math.max(1, Math.round(floor * 0.8));
 			addRes("relic", relics);
+			if (floor >= 12){
+				var tc = Math.max(1, Math.round((floor - 10) * 0.8));
+				addRes("timeCrystal", tc);
+			}
 			this.game.msg($I("cultivation.msg.grift.clear", [floor, fmt(amt), relics]), "important");
 			this.setLastAction("ok", $I("cultivation.rift.result.grift.ok", [floor]));
 			//artifact odds climb with depth — the ladder IS the loot table
@@ -1932,7 +1974,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.game.msg($I("cultivation.msg.demon.warn"), "alert");
 		}
 		if (this.heartDemon > 0){
-			var decay = 0.02 * (this.getFate("nangong").researched ? 3 : 1);
+			var decay = 0.03 * (this.getFate("nangong").researched ? 3 : 1);
 			var lamp = this.getArtifact("yanghun");
 			if (lamp && lamp.researched){ decay += 0.02 * lamp.rank; }
 			this.heartDemon = Math.max(0, this.heartDemon - decay);
@@ -2419,36 +2461,55 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 	ascendBtn: null,
 	actionRow: null,
 
+	//「—— 丹药 ——」式的老标题去掉破折号,由样式自绘章节徽记
+	sectionTitle: function(key){
+		return String($I(key)).replace(/^[\s—\-–]+|[\s—\-–]+$/g, "");
+	},
+
 	render: function(tabContainer){
 		this.buttons = [];
+		this.stageBtns = {};
+		this._hdrHtml = null;
+		this._nextStage = null;
 		var cult = this.game.cultivation;
-
-		this.realmInfo = dojo.create("div", {
-			className: "cultivationHeader",
-			style: { padding: "10px 5px" }
-		}, tabContainer);
-		//改命 — 点身份行重开留名卡面
-		this.realmInfo.onclick = function(e){
-			var el = e.target;
-			if (el && el.className == "xx-id-edit"){ cult.showIdentityPrompt(); }
-		};
-
-		//道途指引 — 独立常驻槽位,由 DesktopUI 钉在主区下沿,不占页签内容
 		var self = this;
 
-		//action row: 游历 + 闭关 + 秘境历练 + 上古秘境
+		//① 境界总览——身份/境界/五项道行指标/仙缘法宝收藏
+		this.realmInfo = dojo.create("div", {
+			className: "cultivationHeader"
+		}, tabContainer);
+		//改命 + 移动端点击仙缘/法宝徽章浮窗查看详情
+		this.realmInfo.onclick = function(e){
+			var el = e.target;
+			if (!el){ return; }
+			if (el.className == "xx-id-edit"){
+				cult.showIdentityPrompt();
+				return;
+			}
+			var chip = el.closest ? el.closest(".xx-fate, .xx-art") : null;
+			if (chip && chip.getAttribute("title") && self.game.ui && self.game.ui.notifyLogEvent){
+				self.game.ui._toastReadyAt = 1;
+				self.game.ui._lastToastText = "";
+				self.game.ui.notifyLogEvent({
+					type: "important",
+					text: "【" + (chip.textContent || "").trim() + "】" + chip.getAttribute("title")
+				});
+			}
+		};
+
+		//② 历练四式:游历 + 闭关 + 秘境历练 + 上古秘境——最常点的放最上
 		this.actionRow = dojo.create("div", { className: "xxActionRow" }, tabContainer);
-		this.wanderBtn = this.makeActionBtn(this.actionRow, function(){
+		this.wanderBtn = this.makeActionBtn(this.actionRow, "游", function(){
 			if (cult.wander()){ self.update(); }
 		});
-		this.secludeBtn = this.makeActionBtn(this.actionRow, function(){
+		this.secludeBtn = this.makeActionBtn(this.actionRow, "闭", function(){
 			cult.toggleSeclude();
 			self.update();
 		});
-		this.riftBtn = this.makeActionBtn(this.actionRow, function(){
+		this.riftBtn = this.makeActionBtn(this.actionRow, "秘", function(){
 			if (cult.rift()){ self.update(); }
 		});
-		this.griftBtn = this.makeActionBtn(this.actionRow, function(){
+		this.griftBtn = this.makeActionBtn(this.actionRow, "古", function(){
 			if (cult.greaterRift()){ self.update(); }
 		});
 
@@ -2458,26 +2519,10 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		var cdBar = dojo.create("div", {className: "xxCdBar"}, this.cdWrap);
 		this.cdFill = dojo.create("div", {className: "xxCdFill"}, cdBar);
 
-		//上古秘境面板——层数天梯/密钥/上次战果,秘境系统的门面
-		this.riftPanel = dojo.create("div", {className: "xxRiftPanel", style: {display: "none"}}, tabContainer);
-		this.riftHead = dojo.create("div", {className: "xxRiftHead"}, this.riftPanel);
-		this.riftPower = dojo.create("div", {className: "xxRiftPower"}, this.riftPanel);
-		this.riftLadder = dojo.create("div", {className: "xxRiftLadder"}, this.riftPanel);
-		var riftFoot = dojo.create("div", {className: "xxRiftFoot"}, this.riftPanel);
-		this.riftKeysEl = dojo.create("span", {className: "xxRiftKeys"}, riftFoot);
-		dojo.create("span", {className: "xxRiftHint", innerHTML: $I("cultivation.rift.hint")}, riftFoot);
-		this.riftResult = dojo.create("div", {className: "xxRiftResult", style: {display: "none"}}, this.riftPanel);
-		this._ladderFloor = -1;
-		this._resultSeq = -1;
-
-		//仙途纪事——你走过的路,皆成道途;每个抉择按年岁与境界入册
-		this.chronicleEl = dojo.create("details", {className: "xxChronicle"}, tabContainer);
-		this._chronicleLen = -1;	//rebuild only when the log grows
-
 		var controller = new classes.ui.RealmBtnController(this.game);
 		var pillCtrl = new classes.ui.PillBtnController(this.game);
 
-		//stages grouped by realm, two-column grid per group
+		//③ 破境之路——当前境界各层 + 下一关(下一关由 update 点亮为主按钮)
 		this.realmSections = {};	//realm -> {header, grid, firstStageIdx}
 		var grid = null;
 		for (var i = 0; i < cult.stages.length; i++){
@@ -2496,32 +2541,29 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			btn.updateEnabled();
 			this.addButton(btn);
 			btn.render(grid);
+			this.stageBtns[stage.name] = btn;
 		}
 
-		//sects
-		this.sectHeader = dojo.create("div", {
-			className: "cultivationSection",
-			innerHTML: $I("cultivation.section.sect")
-		}, tabContainer);
-		var sectGrid = dojo.create("div", {className: "xxStageGrid"}, tabContainer);
-		this.sectGrid = sectGrid;
-		for (var i = 0; i < cult.sects.length; i++){
-			var btn = new com.nuclearunicorn.game.ui.BuildingResearchBtn({
-				id: cult.sects[i].name, controller: controller}, this.game);
-			btn.updateVisible();
-			btn.updateEnabled();
-			this.addButton(btn);
-			btn.render(sectGrid);
-		}
+		//④ 上古秘境面板——层数天梯/密钥/上次战果,秘境系统的门面
+		this.riftPanel = dojo.create("div", {className: "xxRiftPanel", style: {display: "none"}}, tabContainer);
+		this.riftHead = dojo.create("div", {className: "xxRiftHead"}, this.riftPanel);
+		this.riftPower = dojo.create("div", {className: "xxRiftPower"}, this.riftPanel);
+		this.riftLadder = dojo.create("div", {className: "xxRiftLadder"}, this.riftPanel);
+		var riftFoot = dojo.create("div", {className: "xxRiftFoot"}, this.riftPanel);
+		this.riftKeysEl = dojo.create("span", {className: "xxRiftKeys"}, riftFoot);
+		dojo.create("span", {className: "xxRiftHint", innerHTML: $I("cultivation.rift.hint")}, riftFoot);
+		this.riftResult = dojo.create("div", {className: "xxRiftResult", style: {display: "none"}}, this.riftPanel);
+		this._ladderFloor = -1;
+		this._resultSeq = -1;
 
-		//pills — 炼制入库,服用消耗;每丹双钮。丹方按进境渐次解锁,
+		//⑤ 丹药 — 炼制入库,服用消耗;每丹双钮。丹方按进境渐次解锁,
 		//整栏在首丹现世前藏起——开局不该看见一串摸不到的方术
 		this.pillHeader = dojo.create("div", {
 			className: "cultivationSection",
-			innerHTML: $I("cultivation.section.pill")
+			innerHTML: this.sectionTitle("cultivation.section.pill")
 		}, tabContainer);
 		var pillCraftCtrl = new classes.ui.PillCraftBtnController(this.game);
-		var pillGrid = dojo.create("div", {className: "xxStageGrid"}, tabContainer);
+		var pillGrid = dojo.create("div", {className: "xxStageGrid xxPillGrid"}, tabContainer);
 		this.pillGrid = pillGrid;
 		for (var i = 0; i < cult.pills.length; i++){
 			var craftBtn = new com.nuclearunicorn.game.ui.BuildingResearchBtn({
@@ -2538,10 +2580,26 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			btn.render(pillGrid);
 		}
 
-		//veins
+		//⑥ 宗门
+		this.sectHeader = dojo.create("div", {
+			className: "cultivationSection",
+			innerHTML: this.sectionTitle("cultivation.section.sect")
+		}, tabContainer);
+		var sectGrid = dojo.create("div", {className: "xxStageGrid"}, tabContainer);
+		this.sectGrid = sectGrid;
+		for (var i = 0; i < cult.sects.length; i++){
+			var btn = new com.nuclearunicorn.game.ui.BuildingResearchBtn({
+				id: cult.sects[i].name, controller: controller}, this.game);
+			btn.updateVisible();
+			btn.updateEnabled();
+			this.addButton(btn);
+			btn.render(sectGrid);
+		}
+
+		//⑦ 灵脉
 		this.veinHeader = dojo.create("div", {
 			className: "cultivationSection",
-			innerHTML: $I("cultivation.section.vein")
+			innerHTML: this.sectionTitle("cultivation.section.vein")
 		}, tabContainer);
 		var veinGrid = dojo.create("div", {className: "xxStageGrid"}, tabContainer);
 		this.veinGrid = veinGrid;
@@ -2554,9 +2612,13 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			btn.render(veinGrid);
 		}
 
-		var ascendRow = dojo.create("div", { style: { padding: "15px 5px" }}, tabContainer);
+		//⑧ 仙途纪事——你走过的路,皆成道途;回看用,沉到页底
+		this.chronicleEl = dojo.create("details", {className: "xxChronicle"}, tabContainer);
+		this._chronicleLen = -1;	//rebuild only when the log grows
+
+		var ascendRow = dojo.create("div", { className: "xxAscendRow" }, tabContainer);
 		this.ascendBtn = dojo.create("div", {
-			className: "btn nosel modern",
+			className: "btn nosel modern xxAscend",
 			style: { display: "none" },
 			title: $I("cultivation.ascend.desc")
 		}, ascendRow);
@@ -2571,10 +2633,14 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		this.update();
 	},
 
-	makeActionBtn: function(container, onClick){
-		var btn = dojo.create("div", { className: "btn nosel modern xxAction" }, container);
+	//历练卡:印章字 + 名称 + 调息遮罩(冷却期内从右向左褪去)
+	makeActionBtn: function(container, glyph, onClick){
+		var btn = dojo.create("div", { className: "btn nosel modern xxAction", tabIndex: 0 }, container);
+		dojo.create("span", { className: "xxActGlyph", innerHTML: glyph, "aria-hidden": "true" }, btn);
 		dojo.create("span", { className: "btnTitle" }, btn);
+		btn._cdMask = dojo.create("i", { className: "xxActCd", "aria-hidden": "true" }, btn);
 		dojo.connect(btn, "onclick", onClick);
+		dojo.connect(btn, "onkeypress", function(e){ if (e.key == "Enter"){ onClick(e); } });
 		return btn;
 	},
 
@@ -2587,9 +2653,12 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 		var realm = cult.getCurrentRealm();
 		var root = cult.getRoot();
+		var lifeMax = cult.getLifespan();
 		var lifeRemain = cult.getLifespanRemaining();
-		var lifeFrac = lifeRemain / cult.getLifespan();
+		var lifeFrac = lifeMax > 0 ? lifeRemain / lifeMax : 0;
 		var lifeCls = lifeFrac <= 0.1 ? " xx-life-crit" : (lifeFrac <= 0.25 ? " xx-life-low" : "");
+		var demon = Math.round(cult.heartDemon);
+		var demonCls = demon >= cult.HEART_DEMON_GATE ? " xx-demon-crit" : (demon >= cult.DEMON_WARN_AT ? " xx-demon-warn" : "");
 
 		var idt = cult.identity;
 		var idLine = "";
@@ -2598,27 +2667,48 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 			idLine = "<div class=\"xx-hd-id\">" +
 				"<span class=\"xx-id-name\">" + escName + "</span>" +
-				" · " + $I("identity.gender." + (idt.gender == "f" ? "f" : "m")) +
-				(cult.getOrigin() ? " · " + cult.getOriginLabel() : "") +
-				" <span class=\"xx-id-edit\">" + $I("identity.edit") + "</span></div>";
+				"<span class=\"xx-id-meta\">" + $I("identity.gender." + (idt.gender == "f" ? "f" : "m")) +
+				(cult.getOrigin() ? " · " + cult.getOriginLabel() : "") + "</span>" +
+				"<span class=\"xx-id-edit\">" + $I("identity.edit") + "</span></div>";
 		}
 
-		var html = idLine +
-			"<div class=\"xx-hd-main\">" +
-				"<span class=\"xx-realm-big\">" + realm.label + "</span>" +
-				"<span class=\"xx-chip xx-bonus\">" + $I("cultivation.header.bonus", [fmt(ratio * 100, false, false, 0)]) + "</span>" +
-				"<span class=\"xx-chip xx-combat\">" + $I("cultivation.header.combat", [fmt(cult.getCombatPower(), false, false, 0)]) + "</span>" +
-				"<span class=\"xx-chip xx-daotitle\">" + cult.getDaoTitle() + "</span>" +
-				(cult.secluded ? "<span class=\"xx-chip xx-secl\">" + $I("cultivation.header.secluded") + "</span>" : "") +
+		var realmLabel = String(realm.label || "");
+		var seal = realmLabel.replace(/<[^>]*>/g, "").charAt(0) || "道";
+		var tile = function(cls, label, value, bar){
+			return "<div class=\"xx-tile " + cls + "\"><span class=\"xx-tile-lbl\">" + label + "</span>" +
+				"<span class=\"xx-tile-val\">" + value + "</span>" +
+				(bar != null ? "<span class=\"xx-tile-bar\"><i style=\"width:" + Math.max(0, Math.min(100, Math.round(bar))) + "%\"></i></span>" : "") +
+				"</div>";
+		};
+
+		var rootKeys = ["wei", "san", "zhen", "yi", "tian"];
+		var rootTier = Math.max(1, rootKeys.indexOf(root.key) + 1);
+		var rootPips = "<span class=\"xx-pips\" aria-hidden=\"true\">";
+		for (var rp = 1; rp <= 5; rp++){
+			rootPips += "<i" + (rp <= rootTier ? " class=\"on\"" : "") + "></i>";
+		}
+		rootPips += "</span>";
+
+		var html = "<div class=\"xx-hero\">" +
+				"<div class=\"xx-hero-seal\" aria-hidden=\"true\">" + seal + "</div>" +
+				"<div class=\"xx-hero-body\">" + idLine +
+					"<div class=\"xx-hd-main\">" +
+						"<span class=\"xx-realm-big\">" + realmLabel + "</span>" +
+						"<span class=\"xx-chip xx-daotitle\">" + cult.getDaoTitle() + "</span>" +
+						(cult.secluded ? "<span class=\"xx-chip xx-secl\">" + $I("cultivation.header.secluded") + "</span>" : "") +
+					"</div>" +
+				"</div>" +
 			"</div>" +
-			"<div class=\"xx-hd-stats\">" +
-				"<span class=\"xx-chip xx-root-" + root.key + "\">" +
-					$I("cultivation.header.root", [cult.getRootLabel()]) + "</span>" +
-				"<span class=\"xx-chip" + lifeCls + "\">" +
-					$I("cultivation.header.lifespan", [fmt(lifeRemain, false, false, 0), fmt(cult.getLifespan(), false, false, 0)]) + "</span>" +
-				"<span class=\"xx-chip xx-demon\">" + $I("cultivation.header.demon", [Math.round(cult.heartDemon)]) +
-					"<span class=\"xx-demonbar\"><i style=\"width:" + Math.round(cult.heartDemon) + "%\"></i></span></span>" +
+			"<div class=\"xx-tiles\">" +
+				tile("xx-bonus", $I("cultivation.tile.bonus"), "+" + fmt(ratio * 100, false, false, 0) + "%") +
+				tile("xx-combat", $I("cultivation.tile.combat"), fmt(cult.getCombatPower(), false, false, 0)) +
+				tile("xx-root xx-root-" + root.key, $I("cultivation.tile.root"), "<span>" + cult.getRootLabel() + "</span>" + rootPips) +
+				tile("xx-life" + lifeCls, $I("cultivation.tile.life"),
+					$I("cultivation.tile.life.val", [fmt(lifeRemain, false, false, 0), fmt(lifeMax, false, false, 0)]),
+					lifeFrac * 100) +
+				tile("xx-demon" + demonCls, $I("cultivation.tile.demon"), demon, demon) +
 			"</div>";
+
 		var extras = [];
 		if (cult.buffs.juqi > 0){
 			extras.push($I("cultivation.header.buff", [$I("cultivation.pill.juqi.label"), Math.ceil(cult.buffs.juqi / 5)]));
@@ -2638,7 +2728,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				Math.round(cult.heartDemon * 0.6), cult.getDemonTax().toFixed(1)]));
 		}
 		if (extras.length){
-			html += "<div class=\"xx-hd-extra\">" + extras.join(" · ") + "</div>";
+			html += "<div class=\"xx-hd-extra\"><span>" + extras.join("</span><span>") + "</span></div>";
 		}
 
 		//fate roster — collected characters & artifacts, story on hover
@@ -2650,7 +2740,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			html += "<div class=\"xx-hd-fates\"><span class=\"xx-fate-lbl\">" +
 				$I("cultivation.section.fate") + "</span>";
 			for (var j = 0; j < owned.length; j++){
-				var story = cult.fateText(owned[j], "story").replace(/"/g, "&quot;");
+				var story = cult.fateText(owned[j], "story").replace(/<[^>]*>/g, "").replace(/"/g, "&quot;");
 				html += "<span class=\"xx-chip xx-fate\" title=\"" + story + "\">" + owned[j].label + "</span>";
 			}
 			html += "</div>";
@@ -2665,26 +2755,48 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			html += "<div class=\"xx-hd-fates\"><span class=\"xx-fate-lbl\">" +
 				$I("cultivation.section.artifact") + "</span>";
 			for (var j = 0; j < arts.length; j++){
-				var desc = ($I("cultivation.artifact." + arts[j].name + ".desc") || "").replace(/"/g, "&quot;");
+				var desc = ($I("cultivation.artifact." + arts[j].name + ".desc") || "").replace(/<[^>]*>/g, "").replace(/"/g, "&quot;");
 				var pips = "";
 				for (var p = 0; p < arts[j].rank; p++){ pips += "◆"; }
 				html += "<span class=\"xx-chip xx-art\" title=\"" + desc + "\">" +
-					arts[j].label + " " + pips + "</span>";
+					arts[j].label + " <b class=\"xx-pips\">" + pips + "</b></span>";
 			}
 			html += "</div>";
 		}
-		this.realmInfo.innerHTML = html;
+		//只在内容真变了才动 DOM——每 tick 整段重写会让悬停提示闪断
+		if (html !== this._hdrHtml){
+			this._hdrHtml = html;
+			this.realmInfo.innerHTML = html;
+		}
 
 		//境界分区:唯现「当前境界」与「即将叩关的下一境界」
 		//——旧境进度自成纪事,不必再占眼帘
+		var hi = cult.getHighestStageIndex();
 		if (this.realmSections){
-			var hi = cult.getHighestStageIndex();
 			var curRealm = (hi >= 0) ? cult.stages[hi].realm : cult.stages[0].realm;
 			for (var key in this.realmSections){
 				var sec = this.realmSections[key];
 				var show = (key == curRealm) || (sec.firstIdx == hi + 1);
 				sec.header.style.display = show ? "" : "none";
 				sec.grid.style.display = show ? "" : "none";
+			}
+		}
+		//下一关——点亮为本页主按钮(整行、金边、蓄力条即修为进度)
+		if (this.stageBtns){
+			var nextStage = cult.stages[hi + 1];
+			var nextName = nextStage ? nextStage.name : null;
+			if (nextName !== this._nextStage){
+				var prevBtn = this._nextStage && this.stageBtns[this._nextStage];
+				if (prevBtn && prevBtn.domNode){
+					dojo.removeClass(prevBtn.domNode, "xx-next-stage");
+					prevBtn.domNode.removeAttribute("data-xx-tag");
+				}
+				var nb = nextName && this.stageBtns[nextName];
+				if (nb && nb.domNode){
+					dojo.addClass(nb.domNode, "xx-next-stage");
+					nb.domNode.setAttribute("data-xx-tag", $I("cultivation.next.tag"));
+				}
+				this._nextStage = nextName;
 			}
 		}
 		if (this.pillHeader){
@@ -2705,6 +2817,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 
 		//共享调息——游历/闭关/秘境/上古秘境同一支气脉,一条进度条说清
 		var burstBlocked = cult.actionCd > 0 || cult.secluded;
+		var cdFrac = (cult.actionCd > 0 && cult.actionCdMax > 0) ? Math.min(1, cult.actionCd / cult.actionCdMax) : 0;
+		var cdPct = Math.round(cdFrac * 100) + "%";
 		if (this.cdWrap){
 			var cdOn = cult.actionCd > 0;
 			this.cdWrap.style.display = cdOn ? "" : "none";
@@ -2712,31 +2826,33 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				this.cdLabel.innerHTML = $I(
 					cult.pendingTrip == "wander" ? "cultivation.action.trip" : "cultivation.action.cd",
 					[Math.ceil(cult.actionCd / 5)]);
-				var frac = cult.actionCdMax > 0 ? cult.actionCd / cult.actionCdMax : 0;
-				this.cdFill.style.width = Math.min(100, Math.round(frac * 100)) + "%";
+				this.cdFill.style.width = cdPct;
 			}
 		}
-		if (this.wanderBtn){
-			this.wanderBtn.querySelector(".btnTitle").innerHTML = $I("cultivation.action.wander");
-			dojo.toggleClass(this.wanderBtn, "xxBlocked", burstBlocked);
-		}
-		if (this.secludeBtn){
-			this.secludeBtn.querySelector(".btnTitle").innerHTML =
-				$I(cult.secluded ? "cultivation.action.seclude.on" : "cultivation.action.seclude");
-			dojo.toggleClass(this.secludeBtn, "xxBlocked", cult.actionCd > 0 && !cult.secluded);
-			dojo.toggleClass(this.secludeBtn, "xxSecluded", cult.secluded);
-		}
+		var setAct = function(btn, label, blocked, masked){
+			if (!btn){ return; }
+			var t = btn.querySelector(".btnTitle");
+			if (t.innerHTML !== label){ t.innerHTML = label; }
+			dojo.toggleClass(btn, "xxBlocked", blocked);
+			if (btn._cdMask){ btn._cdMask.style.width = masked ? cdPct : "0%"; }
+		};
+		setAct(this.wanderBtn, $I("cultivation.action.wander"), burstBlocked, cult.actionCd > 0);
+		setAct(this.secludeBtn,
+			$I(cult.secluded ? "cultivation.action.seclude.on" : "cultivation.action.seclude"),
+			cult.actionCd > 0 && !cult.secluded, cult.actionCd > 0 && !cult.secluded);
+		if (this.secludeBtn){ dojo.toggleClass(this.secludeBtn, "xxSecluded", cult.secluded); }
 		var riftOpen = cult.isRiftUnlocked();
 		if (this.riftBtn){
 			this.riftBtn.style.display = riftOpen ? "" : "none";
-			this.riftBtn.querySelector(".btnTitle").innerHTML = $I("cultivation.action.rift");
-			dojo.toggleClass(this.riftBtn, "xxBlocked", burstBlocked);
+			setAct(this.riftBtn, $I("cultivation.action.rift"), burstBlocked, cult.actionCd > 0);
 		}
 		if (this.griftBtn){
 			this.griftBtn.style.display = riftOpen ? "" : "none";
-			this.griftBtn.querySelector(".btnTitle").innerHTML =
-				$I("cultivation.action.grift", [cult.riftFloor + 1, cult.riftKeys]);
-			dojo.toggleClass(this.griftBtn, "xxBlocked", burstBlocked || cult.riftKeys <= 0);
+			setAct(this.griftBtn, $I("cultivation.action.grift", [cult.riftFloor + 1, cult.riftKeys]),
+				burstBlocked || cult.riftKeys <= 0, cult.actionCd > 0);
+		}
+		if (this.actionRow){
+			dojo.toggleClass(this.actionRow, "xxActionRow4", riftOpen);
 		}
 
 		//上古秘境面板——天梯/密钥/战果
@@ -2745,21 +2861,23 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			if (riftOpen){
 				if (this._ladderFloor !== cult.riftFloor){
 					this._ladderFloor = cult.riftFloor;
-					var F = cult.riftFloor, lo = Math.max(1, F - 10), html = "";
+					var F = cult.riftFloor, lo = Math.max(1, F - 10), lhtml = "";
 					for (var f = lo; f <= F + 1; f++){
 						var cls = f <= F ? "lit" : "next";
-						html += "<span class='xxFloor " + cls + "' title='" +
-							$I("cultivation.rift.floor.tip", [f]) + "'>" + f + "</span>";
+						lhtml += "<span class=\"xxFloor " + cls + "\" title=\"" +
+							String($I("cultivation.rift.floor.tip", [f])).replace(/"/g, "&quot;") + "\">" + f + "</span>";
 					}
-					this.riftLadder.innerHTML = html;
+					this.riftLadder.innerHTML = lhtml;
 					this.riftHead.innerHTML = $I("cultivation.rift.head", [F, F + 1]);
 				}
 				//战力对照——守关妖兽的门槛 vs 汝之道行
 				var pw = cult.floorPower(cult.riftFloor + 1), cp = cult.getCombatPower();
-				this.riftPower.innerHTML = $I("cultivation.rift.power",
+				var powerHtml = $I("cultivation.rift.power",
 					[fmt(pw, false, false, 0), fmt(cp, false, false, 0)]);
+				if (this.riftPower.innerHTML !== powerHtml){ this.riftPower.innerHTML = powerHtml; }
 				dojo.toggleClass(this.riftPower, "xxPowerLow", cp < pw);
-				this.riftKeysEl.innerHTML = $I("cultivation.rift.keys", [cult.riftKeys]);
+				var keysHtml = $I("cultivation.rift.keys", [cult.riftKeys]);
+				if (this.riftKeysEl.innerHTML !== keysHtml){ this.riftKeysEl.innerHTML = keysHtml; }
 				var last = cult.lastAction;
 				this.riftResult.style.display = last ? "" : "none";
 				if (last && this._resultSeq !== last.seq){

@@ -1,7 +1,7 @@
 /**
- * 凡人修仙传 · 放置 — full reskin for the xianxia mod.
+ * 凡人修仙传 · 放置 — full reskin & UX overhaul for the xianxia mod.
  * Loaded after res/default.css (see index.html), so equal-specificity rules win.
- * Ink-dark mountains, jade and gold, KaiTi headers.
+ * Ink-dark mountains, jade and gold, KaiTi headers, tactile card architecture.
  *
  * LAYOUT NOTE: #gamePageContainer must stay position:static — the original
  * layout depends on #game resolving top/bottom against the viewport.
@@ -35,6 +35,8 @@ html, body {
 	color: var(--text-color);
 	font-family: var(--xx-sans);
 	font-size: 14px;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
 }
 
 /* drifting mist + moon glow, pure CSS */
@@ -45,8 +47,8 @@ body::before {
 	pointer-events: none;
 	z-index: 0;
 	background:
-		radial-gradient(900px 480px at 82% -8%, rgba(212, 176, 106, .10), transparent 60%),
-		radial-gradient(1100px 700px at 12% 110%, rgba(79, 209, 165, .07), transparent 60%),
+		radial-gradient(900px 480px at 82% -8%, rgba(212, 176, 106, .11), transparent 60%),
+		radial-gradient(1100px 700px at 12% 110%, rgba(79, 209, 165, .08), transparent 60%),
 		linear-gradient(180deg, var(--xx-ink0), #0c1220 55%, #0a0f16);
 }
 body::after {
@@ -77,6 +79,7 @@ body::after {
 a, .link {
 	color: var(--xx-gold);
 	text-decoration: none;
+	transition: color .15s, border-color .15s, text-shadow .15s, background .15s;
 }
 a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,176,106,.45); }
 
@@ -118,7 +121,21 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 }
 #motd { color: var(--xx-mute); font-style: italic; }
 #topBar a { font-size: 12.5px; }
-.links-block a { margin: 0 1px; }
+#topBar .links-block {
+	align-items: center;
+	gap: 2px;
+	padding-right: 12px;
+}
+#topBar .links-block a {
+	margin: 0 2px;
+	padding: 3px 8px;
+	border-radius: 5px;
+	color: var(--xx-paper);
+}
+#topBar .links-block a:hover {
+	background: rgba(212, 176, 106, .12);
+	color: var(--xx-gold-hi);
+}
 
 #headerLinks, #devPanel { display: inline-flex; align-items: center; gap: 6px; }
 #devPanel a, #headerToolbar a { color: var(--xx-mute); }
@@ -136,7 +153,7 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	width: 100%;
 	min-width: 0;
 	display: grid;
-	grid-template-columns: 150px minmax(460px, 1fr) 320px;
+	grid-template-columns: 156px minmax(460px, 1fr) 320px;
 	grid-template-rows: auto minmax(0, 1fr) auto;
 	grid-template-areas:
 		"res  res   res"
@@ -147,29 +164,47 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 /* resource strip — 灵息卡纵排布局 */
 #leftColumn {
 	grid-area: res;
+	position: relative;
 	width: auto;
 	max-width: none;
 	min-width: 0;
-	height: 132px;          /* 固定高——资源再多也不挤推下方版面 */
-	min-height: 0;
-	max-height: 132px;
-	padding: 4px 10px 6px;
+	height: auto;
+	min-height: 62px;
+	max-height: 124px;
+	padding: 6px 84px 7px 12px;
 	margin-top: 0;
 	overflow-y: auto;
 	overflow-x: hidden;
 	border-bottom: 1px solid var(--xx-line);
-	background: rgba(13, 20, 29, .72);
+	background: linear-gradient(180deg, rgba(13, 20, 29, .86), rgba(10, 15, 22, .74));
 	scrollbar-width: thin;
-	scrollbar-gutter: stable;   /* 滚动条常驻,不出没抢宽度导致整列重排 */
+	scrollbar-gutter: stable;
 }
 
-/* default.css renders .res-table as a table — card grid instead.
-   定宽卡位:列宽永不随卡数变化,每张卡坐标恒定 */
+/* Float the resource collapse/settings toolbar into the top-right corner
+   so it never wastes a full 24px vertical row above the resource cards */
+#leftColumn div:has(> .res-toolbar) {
+	position: absolute;
+	top: 6px;
+	right: 10px;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	gap: 3px;
+}
+/* Hide empty trade-pin collapse link & hidden praise/sacrifice placeholders */
+#fastPraiseContainer[style*="hidden"],
+#fastSacrificeContainer[style*="hidden"],
+#leftColumn div:not(:has(.res-table)):not(:has(.pin-link)) > .left > .link.collapse {
+	display: none !important;
+}
+
+/* default.css renders .res-table as a table — responsive card grid instead */
 #leftColumn .res-table {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, 112px);
+	grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
 	grid-auto-rows: 52px;
-	gap: 5px;
+	gap: 6px;
 	width: auto;
 	max-width: none;
 	border-collapse: collapse;
@@ -182,16 +217,25 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	flex-direction: column;
 	position: relative;
 	white-space: nowrap;
-	padding: 5px 10px 8px;
+	padding: 4px 10px 7px;
 	height: 52px;
+	box-sizing: border-box;
 	overflow: hidden;
-	background: rgba(26, 36, 51, .55);
-	border: 1px solid rgba(120, 130, 145, .26);
+	background: linear-gradient(180deg, rgba(28, 39, 55, .66), rgba(17, 25, 36, .66));
+	border: 1px solid rgba(120, 136, 156, .25);
 	border-radius: 8px;
 	font-size: 12.5px;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+	transition: border-color .18s, background .18s, transform .12s;
+}
+#leftColumn .res-row:hover {
+	border-color: var(--xx-jade-dim);
+	background: linear-gradient(180deg, rgba(34, 48, 66, .78), rgba(20, 30, 44, .78));
+	transform: translateY(-1px);
 }
 #leftColumn .res-cell {
 	display: block;
+	flex-shrink: 0;
 	border: none !important;
 	background: transparent !important;
 	padding: 0;
@@ -201,6 +245,7 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	line-height: 1.15;
 }
 
 /* 层一:名 + 天气徽记 */
@@ -211,9 +256,9 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	gap: 4px;
 }
 #leftColumn .resource-name {
-	color: #93a4b8;
-	font-size: 11.5px;
-	letter-spacing: 1.5px;
+	color: #9fb0c4;
+	font-size: 11px;
+	letter-spacing: 1px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
@@ -225,29 +270,31 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 #leftColumn .res-figure {
 	display: flex !important;
 	align-items: baseline;
-	gap: 3px;
+	gap: 2px;
 	margin-top: 1px;
 }
 #leftColumn .res-figure .res-val,
 #leftColumn .res-figure.resAmount {
 	color: var(--xx-gold-hi);
 	font-weight: 600;
-	font-size: 15.5px;
+	font-size: 14px;
 	font-variant-numeric: tabular-nums;
-	letter-spacing: .5px;
+	letter-spacing: .3px;
 }
 #leftColumn .res-figure.resLimitWarn .res-val { color: var(--xx-gold); }
 #leftColumn .res-figure.resLimitNotice .res-val { color: #e0604a; }
 #leftColumn .res-figure .maxRes {
 	color: var(--xx-mute);
-	font-size: 10.5px;
+	font-size: 10px;
 	font-variant-numeric: tabular-nums;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* 层三:速率 — 玉色正产、赤色负耗、灰无流 */
 #leftColumn .resPerTick {
 	color: var(--xx-jade);
-	font-size: 11.5px;
+	font-size: 10.5px;
 	font-variant-numeric: tabular-nums;
 	margin-top: auto;
 }
@@ -256,7 +303,7 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 /* 底缘仓位条 — 玉→金→赤 */
 #leftColumn .res-cap {
 	position: absolute;
-	left: 8px; right: 8px; bottom: 4px;
+	left: 8px; right: 8px; bottom: 3px;
 	height: 2.5px;
 	border-radius: 2px;
 	background: rgba(120, 130, 145, .18);
@@ -275,40 +322,45 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	box-shadow: 0 0 6px rgba(224, 96, 74, .7);
 }
 
-/* 状态类 */
+/* 状态类 — 修为永远置顶第一张卡,当前高亮资源次之 */
 #leftColumn .res-row.hidden { opacity: .42; }
 #leftColumn .res-row.hidden .resource-name { color: rgba(147,164,184,.5); }
 #leftColumn .res-row.highlited {
+	order: -1;
 	border-color: var(--xx-gold);
-	box-shadow: 0 0 0 1px rgba(212,175,55,.35), 0 0 10px rgba(212,175,55,.12);
+	box-shadow: 0 0 0 1px rgba(212,175,55,.35), 0 0 10px rgba(212,175,55,.15);
 }
 #leftColumn .res-row.resource_xiuwei {
-	border-color: rgba(79, 209, 165, .45);
-	background: rgba(20, 30, 24, .6);
+	order: -2;
+	border-color: rgba(79, 209, 165, .5);
+	background: linear-gradient(180deg, rgba(22, 38, 32, .75), rgba(14, 24, 21, .75));
 }
 #leftColumn .res-edit { position: absolute; top: 3px; right: 6px; z-index: 1; }
 #leftColumn .res-edit input { transform: scale(.8); margin: 0; }
+.xx-res-toggle, .xx-log-toggle, .xx-log-ticker, .xx-guide-toggle { display: none; }
 
 /* collapse / edit toggles at strip edges — quiet ghost buttons */
-#leftColumn .res-toolbar { display: inline-block; margin: 2px 8px 2px 0; vertical-align: middle; }
+#leftColumn .res-toolbar { display: inline-flex; align-items: center; gap: 3px; margin: 0; }
 #leftColumn .res-toolbar a, #leftColumn .link.collapse {
-	display: inline-block;
-	padding: 3px 8px;
-	margin: 0 4px 0 0;
-	border: 1px solid rgba(120,130,145,.28);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 3px 6px;
+	margin: 0;
+	border: 1px solid rgba(120,130,145,.26);
 	border-radius: 5px;
 	color: var(--xx-mute);
+	background: rgba(13, 20, 29, .65);
 	font-size: 10px;
 	line-height: 1.2;
-	vertical-align: middle;
 }
 #leftColumn .res-toolbar a:hover, #leftColumn .link.collapse:hover {
 	color: var(--xx-jade);
 	border-color: var(--xx-jade-dim);
 }
-#leftColumn .res-toolbar .link.toggled { color: var(--xx-gold-hi); }
-#leftColumn .res-toolbar .svg-icon { width: 10px; height: 10px; display: block; margin: 1px auto; }
-#leftColumn .res-toggle-hidden { margin: 0; font-size: 11px; color: var(--xx-mute); }
+#leftColumn .res-toolbar .link.toggled { color: var(--xx-gold-hi); border-color: var(--xx-gold); }
+#leftColumn .res-toolbar .svg-icon { width: 10px; height: 10px; display: block; }
+#leftColumn .res-toggle-hidden { margin: 4px 0 0; font-size: 11px; color: var(--xx-mute); }
 #leftColumn .res-toggle-hidden input { vertical-align: -1px; }
 
 .res-toolbar a, .link.collapse {
@@ -320,7 +372,36 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	color: var(--xx-mute);
 	font-size: 12px;
 }
-.sidebar-section { display: inline-block; }
+.sidebar-section { display: block; margin-top: 6px; }
+#leftColumn .res-row.craft {
+	flex-direction: row !important;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-start;
+	height: auto !important;
+	min-height: 48px;
+	padding: 4px 8px;
+	gap: 2px 5px;
+}
+#leftColumn .res-row.craft .resource-name {
+	font-weight: 600;
+	color: var(--xx-paper);
+}
+#leftColumn .res-row.craft .resource-value {
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	margin-left: auto;
+	width: auto !important;
+}
+#leftColumn .res-row.craft .craft-link {
+	font-size: 10.5px;
+	color: var(--xx-jade);
+	padding: 1px 4px;
+	border-radius: 4px;
+	background: rgba(79, 209, 165, .08);
+	border: 1px solid rgba(79, 209, 165, .22);
+}
 .pin-link {
 	display: inline-flex;
 	margin: 3px 6px 3px 0;
@@ -340,70 +421,161 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	display: none;
 }
 
-/* the "?" tooltip icon — float it over the top-right of the main pane */
+/* hide redundant "?" icon that collided with #leftColumn toolbar */
 #midColumnViewport {
-	position: absolute;
-	top: 8px;
-	right: 14px;
-	z-index: 4;
-	float: none !important;
-	padding: 0 !important;
+	display: none !important;
 }
 
-/* vertical tab rail */
+/* ============================================================
+   Vertical tab rail
+   ============================================================ */
 .tabsContainer {
 	grid-area: nav;
-	position: static !important;		/* default.css sets position:absolute */
+	position: static !important;
 	display: flex;
 	flex-direction: column;
-	gap: 3px;
+	gap: 4px;
 	padding: 12px 8px;
 	margin-top: 0;
 	text-align: left;
 	border-right: 1px solid var(--xx-line);
-	background: rgba(11, 16, 24, .6);
+	background: linear-gradient(180deg, rgba(11, 16, 24, .75), rgba(9, 13, 20, .55));
 	overflow-y: auto;
 }
-.tabsContainer span { display: none; }		/* "|" separators */
+.tabsContainer span { display: none; }
 #game .tabsContainer .tab,
 body.scheme_default .tabsContainer a.tab {
-	display: block;
+	display: flex;
+	align-items: center;
 	padding: 9px 12px;
 	border-left: 3px solid transparent;
-	border-radius: 0 6px 6px 0;
+	border-radius: 0 8px 8px 0;
 	font-family: var(--xx-serif);
 	font-size: 16px;
 	letter-spacing: 3px;
 	color: var(--xx-mute) !important;
+	transition: color .18s, background .18s, border-color .18s, padding-left .18s;
 }
 #game .tabsContainer .tab:hover {
 	color: var(--xx-paper) !important;
 	background: rgba(79, 209, 165, .07);
+	padding-left: 15px;
 }
 #game .tabsContainer .tab.activeTab,
 body.scheme_default .tabsContainer a.tab.activeTab {
 	color: var(--xx-gold-hi) !important;
 	border-left-color: var(--xx-jade);
-	background: linear-gradient(90deg, var(--xx-jade-faint), transparent 80%);
+	background: linear-gradient(90deg, var(--xx-jade-faint), rgba(212, 176, 106, .05) 65%, transparent);
 	text-shadow: 0 0 10px rgba(212, 176, 106, .35);
+}
+#game .tabsContainer .tab.activeTab::before {
+	content: "";
+	display: inline-block;
+	width: 5px; height: 5px;
+	margin: 0 7px 1px 0;
+	border-radius: 999px;
+	background: var(--xx-jade);
+	box-shadow: 0 0 8px var(--xx-jade);
+	flex: 0 0 auto;
 }
 
 body.scheme_default .upgrade-available { color: var(--xx-jade); }
 
-/* main content pane */
+/* ============================================================
+   Main content pane & 2-column building/research tables
+   ============================================================ */
 .tabInner {
 	grid-area: main;
+	position: relative;
 	min-height: 0;
 	margin: 0;
-	padding: 14px 18px;
+	padding: 16px 20px 28px;
 	border: none;
 	overflow-y: auto;
 	overflow-x: hidden;
 	background: rgba(13, 20, 29, .5);
 }
-.tabInner table.table { width: 100%; }
+/* faint dao seal watermark over the content pane */
+.tabInner::after {
+	content: "道";
+	position: absolute;
+	right: 24px;
+	bottom: 24px;
+	font-family: var(--xx-serif);
+	font-size: 170px;
+	line-height: 1;
+	color: rgba(212, 176, 106, .04);
+	pointer-events: none;
+	z-index: 0;
+}
 
-/* log rail */
+/* Segmented filter pills at the top of Bonfire / Buildings */
+.bldTopContainer {
+	padding-bottom: 4px;
+	margin-bottom: 10px;
+	height: auto;
+}
+.bldTopContainer > span { display: none !important; }
+.bldTopContainer > a {
+	display: inline-block;
+	padding: 4px 12px;
+	margin: 0 6px 6px 0;
+	border: 1px solid rgba(120, 136, 156, .28);
+	border-radius: 999px;
+	font-size: 12.5px;
+	letter-spacing: 1px;
+	color: var(--xx-mute);
+	background: rgba(13, 20, 29, .65);
+	transition: all .15s;
+}
+.bldTopContainer > a:hover {
+	color: var(--xx-paper);
+	border-color: var(--xx-jade-dim);
+}
+.bldTopContainer > a.activeTab {
+	color: var(--xx-gold-hi);
+	border-color: var(--xx-gold);
+	background: linear-gradient(180deg, rgba(212, 176, 106, .18), rgba(79, 209, 165, .08));
+	box-shadow: 0 0 12px rgba(212, 176, 106, .18);
+}
+.bldGroupContainer {
+	padding-top: 12px;
+	margin-top: 4px;
+	border-top: 1px solid var(--xx-line);
+	height: auto;
+}
+
+/* Two-column tables across Bonfire, Science, Workshop, Religion, Village */
+.tabInner table.table,
+.tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable),
+.bldGroupContainer > table,
+.panelContainer .container > table {
+	width: 100%;
+	max-width: 760px;
+	border-collapse: separate;
+	border-spacing: 10px 0;
+	margin: 0 -10px;
+}
+.tabInner table.table td,
+.tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable) td,
+.bldGroupContainer > table td,
+.panelContainer .container > table td {
+	width: 50%;
+	vertical-align: top;
+	padding: 0;
+}
+.tabInner table.table td > .btn.modern,
+.tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable) td > .btn.modern,
+.bldGroupContainer > table td > .btn.modern,
+.panelContainer .container > table td > .btn.modern {
+	width: 100%;
+	max-width: none;
+	margin: 0 0 8px 0;
+}
+
+/* ============================================================
+   Right log rail
+   ============================================================ */
 #rightColumn {
 	grid-area: log;
 	position: relative;
@@ -413,13 +585,13 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 	max-width: none;
 	height: auto;
 	min-height: 0;
-	padding: 10px 10px 0;
+	padding: 10px 12px 0;
 	margin-top: 0;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
 	border-left: 1px solid var(--xx-line);
-	background: rgba(11, 16, 24, .6);
+	background: linear-gradient(180deg, rgba(11, 16, 24, .72), rgba(9, 13, 20, .58));
 }
 #rightColumn .right-tab {
 	flex: 1;
@@ -434,29 +606,56 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 	overflow-y: auto;
 	padding-top: 8px;
 }
-#gameLog div { padding: 1px 4px; line-height: 1.55; }
+#gameLog div { padding: 2px 4px; line-height: 1.55; }
 
 #calendarDiv, #calendarSign {
 	font-family: var(--xx-serif);
 	font-size: 15px;
-	letter-spacing: 2px;
+	letter-spacing: 1.5px;
 	color: var(--xx-gold);
+}
+#observeButton {
+	margin-top: 4px;
+	height: auto;
+}
+#observeButton:empty {
+	display: none !important;
 }
 #observeButton a, .right-tab-header a {
 	display: inline-block;
-	padding: 2px 9px;
+	padding: 3px 10px;
 	margin: 4px 4px 4px 0;
 	border: 1px solid var(--xx-line);
-	border-radius: 4px;
+	border-radius: 5px;
 	color: var(--xx-mute);
 	font-size: 12px;
 }
-.right-tab-header a.active { color: var(--xx-gold-hi); border-color: var(--xx-gold); }
+.right-tab-header a.active {
+	color: var(--xx-gold-hi);
+	border-color: var(--xx-gold);
+	background: rgba(212, 176, 106, .1);
+}
+
+/* Log control toolbar pills (Clear / Filters / Pause / Undo) */
+#clearLogHref, #logFiltersBlockText, #pauseBtn, #undoBtn {
+	display: inline-block;
+	padding: 2px 8px;
+	margin: 4px 4px 2px 0;
+	border: 1px solid rgba(120, 136, 156, .25);
+	border-radius: 4px;
+	background: rgba(16, 24, 35, .65);
+	color: var(--xx-mute);
+	font-size: 11.5px !important;
+}
+#clearLogHref:hover, #logFiltersBlockText:hover, #pauseBtn:hover, #undoBtn:hover {
+	color: var(--xx-gold-hi);
+	border-color: var(--xx-gold);
+}
 
 #toggleCenter { display: none; }
 
 /* ============================================================
-   Buttons
+   Architectural Card Buttons + Affordability Progress Bar
    ============================================================ */
 .btn {
 	position: relative;
@@ -464,50 +663,145 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 	margin: 4px 6px 4px 0;
 	padding: 8px 14px;
 	border: 1px solid rgba(79, 209, 165, .32);
-	border-radius: 6px;
+	border-radius: 8px;
 	background: linear-gradient(180deg, rgba(32, 44, 60, .92), rgba(19, 28, 40, .92));
 	color: var(--xx-paper);
 	cursor: pointer;
-	transition: border-color .15s, box-shadow .15s, transform .05s;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+	transition: border-color .16s, box-shadow .16s, transform .1s, background .16s, opacity .16s;
 	user-select: none;
 }
-.btn:hover {
+.btn:not(.disabled):hover {
 	border-color: var(--xx-gold);
-	box-shadow: 0 0 10px rgba(212, 176, 106, .25), 0 0 2px rgba(79,209,165,.4) inset;
+	transform: translateY(-1px);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, .08),
+		0 4px 14px rgba(0, 0, 0, .38),
+		0 0 10px rgba(212, 176, 106, .24);
 }
-.btn:active { transform: translateY(1px); }
+.btn:not(.disabled):active {
+	transform: translateY(0);
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.btn:focus-visible { outline: 2px solid var(--xx-jade-dim); outline-offset: 1px; }
 .btn.disabled {
-	opacity: .42;
+	opacity: .48;
 	cursor: default;
-	border-color: rgba(120, 130, 145, .25);
+	border-color: rgba(120, 130, 145, .24);
 }
-.btn.disabled:hover { box-shadow: none; border-color: rgba(120,130,145,.25); }
+.btn.disabled:hover { box-shadow: none; border-color: rgba(120,130,145,.24); transform: none; }
+
 .btn.modern {
 	font-family: var(--xx-sans);
-	border-radius: 999px;
+	border-radius: 10px;
 	padding: 0;
-	width: 264px;
-	border-color: rgba(79, 209, 165, .32);
-	background: linear-gradient(180deg, rgba(32, 44, 60, .92), rgba(19, 28, 40, .92));
+	width: 100%;
+	max-width: 340px;
+	box-sizing: border-box;
+	overflow: hidden;
+	border-color: rgba(79, 209, 165, .30);
+	background: linear-gradient(180deg, rgba(30, 42, 58, .92), rgba(17, 25, 36, .94));
 }
-.btn.modern:hover {
+.btn.modern:not(.disabled):hover {
 	border-color: var(--xx-gold);
-	background: linear-gradient(180deg, rgba(38, 52, 70, .95), rgba(22, 33, 46, .95));
-	box-shadow: 0 0 10px rgba(212, 176, 106, .25);
+	background: linear-gradient(180deg, rgba(38, 52, 72, .95), rgba(22, 33, 46, .95));
 }
-.btn.modern.disabled { border-color: rgba(120, 130, 145, .25); }
-.btn.modern.disabled:hover { border-color: rgba(120,130,145,.25); background: inherit; }
-.modern .btnContent { padding: 10px 0 10px 12px; color: var(--xx-paper); }
+.btn.modern.disabled { border-color: rgba(120, 130, 145, .22); }
+.btn.modern.disabled:hover { border-color: rgba(120, 130, 145, .22); background: linear-gradient(180deg, rgba(30, 42, 58, .92), rgba(17, 25, 36, .94)); }
+
+/* Ready-to-buy and Cap-limited states */
+.btn.modern.xx-ready:not(.disabled) {
+	border-color: rgba(212, 176, 106, .52);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 0 12px rgba(212, 176, 106, .10);
+}
+.btn.modern.xx-lim.disabled {
+	border-color: rgba(224, 96, 74, .34);
+}
+
+.modern .btnContent {
+	padding: 9px 0 10px 13px;
+	color: var(--xx-paper);
+}
+.btn.bldEnabled.modern div.btnContent {
+	border-color: var(--xx-jade);
+	border-width: 0 0 0 4px;
+}
+.btn.bldlackResConvert.modern div.btnContent {
+	border-color: #e0604a;
+	border-width: 0 0 0 4px;
+}
 .btn.modern a {
 	color: var(--xx-jade);
-	background-color: rgba(79, 209, 165, .08);
-	border-left: 1px solid var(--xx-jade-dim);
-	padding: 10px 6px 10px 6px !important;
-	margin: -10px 0;
-	min-width: 20px;
+	background-color: rgba(79, 209, 165, .07);
+	border-left: 1px solid rgba(79, 209, 165, .24);
+	padding: 18px 8px 18px 8px !important;
+	margin: -9px 0 -22px 0;
+	min-width: 24px;
+	text-align: center;
+}
+.btn.modern a:hover {
+	background-color: rgba(212, 176, 106, .16);
+	color: var(--xx-gold-hi);
 }
 .btn.modern a.enabled { color: var(--xx-gold-hi); font-weight: bold; }
-.btnTitle { font-size: 13.5px; }
+.btnTitle { font-size: 13.5px; letter-spacing: .3px; }
+
+/* Inline price subline inside .btn.modern */
+.xx-cost {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 10px;
+	margin-top: 3px;
+	padding-right: 8px;
+	font-size: 11px;
+	line-height: 1.25;
+	font-variant-numeric: tabular-nums;
+}
+.xx-ci {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 3px;
+}
+.xx-ci i {
+	font-style: normal;
+	color: var(--xx-mute);
+}
+.xx-ci b {
+	font-weight: 600;
+}
+.xx-ci.ok b   { color: var(--xx-jade); }
+.xx-ci.lack b { color: var(--xx-gold); }
+.xx-ci.lim b  { color: #e0604a; }
+
+/* Touch info button — hidden on desktop mouseover, shown on touch/mobile */
+.xx-info-btn {
+	display: none;
+}
+
+/* Bottom affordability progress bar inside .btn.modern */
+.xx-afford {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 3px;
+	background: rgba(8, 12, 18, .75);
+	overflow: hidden;
+	pointer-events: none;
+}
+.xx-afford i {
+	display: block;
+	height: 100%;
+	background: linear-gradient(90deg, rgba(79, 209, 165, .5), var(--xx-jade));
+	transition: width .22s ease-out;
+}
+.btn.modern.xx-ready .xx-afford i {
+	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold-hi));
+	box-shadow: 0 0 8px rgba(212, 176, 106, .45);
+}
+.btn.modern.xx-lim .xx-afford i {
+	background: linear-gradient(90deg, rgba(184, 69, 46, .5), #e0604a);
+}
 
 /* ============================================================
    Panels, dialogs, tooltip
@@ -523,22 +817,42 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 	max-width: 94vw;
 	box-sizing: border-box;
 }
+.dialog input[type="button"] {
+	background: linear-gradient(180deg, rgba(34, 48, 66, .95), rgba(20, 30, 44, .95)) !important;
+	color: var(--xx-gold-hi) !important;
+	border: 1px solid var(--xx-line) !important;
+	border-radius: 6px !important;
+	padding: 6px 16px;
+	margin-right: 6px;
+	font-size: 13px;
+	transition: border-color .15s, box-shadow .15s;
+}
+.dialog input[type="button"]:hover {
+	border-color: var(--xx-gold) !important;
+	box-shadow: 0 0 10px rgba(212, 176, 106, .25) !important;
+}
 #tooltip {
 	background: rgba(10, 15, 22, .97) !important;
 	border: 1px solid var(--xx-jade-dim) !important;
-	border-radius: 6px;
-	box-shadow: 0 8px 30px rgba(0,0,0,.55);
+	border-radius: 8px;
+	box-shadow: 0 10px 32px rgba(0,0,0,.65);
 	color: #dfe6ee;
-	padding: 8px 10px;
+	padding: 9px 12px;
+	z-index: 80;
 }
 .button_tooltip .noRes, .limited { color: #e0604a; }
 
-select, input[type="text"], textarea {
+select, input[type="text"], input[type="number"], textarea {
 	background: var(--xx-ink2);
 	color: var(--text-color);
 	border: 1px solid rgba(120, 130, 145, .4);
 	border-radius: 5px;
-	padding: 3px 6px;
+	padding: 4px 8px;
+}
+select:focus, input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+	outline: none;
+	border-color: var(--xx-jade);
+	box-shadow: 0 0 0 2px rgba(79, 209, 165, .2);
 }
 input[type="checkbox"] { accent-color: var(--xx-jade); }
 
@@ -554,10 +868,12 @@ progress::-webkit-progress-bar, #loadingProgressBar::-webkit-progress-bar {
 progress::-webkit-progress-value, #loadingProgressBar::-webkit-progress-value {
 	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold));
 	border-radius: 999px;
+	box-shadow: 0 0 8px rgba(79, 209, 165, .5);
 }
 progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold));
 	border-radius: 999px;
+	box-shadow: 0 0 8px rgba(79, 209, 165, .5);
 }
 
 /* loading screen — stays under the taller top bar */
@@ -578,12 +894,17 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 /* scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(79, 209, 165, .28); border-radius: 999px; }
+::-webkit-scrollbar-thumb {
+	background: rgba(79, 209, 165, .28);
+	border-radius: 999px;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
 ::-webkit-scrollbar-thumb:hover { background: rgba(212, 176, 106, .45); }
 * { scrollbar-width: thin; scrollbar-color: rgba(79,209,165,.3) transparent; }
 
 /* ============================================================
-   Small polish
+   Cultivation Tab — Hero Banner & 5-Tile Stat Dashboard
    ============================================================ */
 .console-intro {
 	font-family: var(--xx-serif);
@@ -591,64 +912,213 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	letter-spacing: 1px;
 	color: var(--xx-paper);
 }
+.console-intro-sub {
+	font-size: 12px;
+	color: var(--xx-mute, #8a97a5);
+	padding-top: 4px;
+	padding-bottom: 6px;
+}
+
 .cultivationHeader {
 	font-family: var(--xx-serif);
-	font-size: 17px;
-	letter-spacing: 2px;
+	font-size: 16px;
+	letter-spacing: 1.5px;
 	color: var(--xx-gold-hi);
-	background: rgba(26, 36, 51, .5);
-	border: 1px solid var(--xx-line);
-	border-radius: 8px;
-	padding: 12px 16px;
-	margin-bottom: 4px;
+	background:
+		radial-gradient(110% 140% at 0% 0%, rgba(212, 176, 106, .12), transparent 55%),
+		radial-gradient(90% 120% at 100% 100%, rgba(79, 209, 165, .08), transparent 55%),
+		linear-gradient(135deg, rgba(24, 34, 48, .86), rgba(14, 21, 31, .78));
+	border: 1px solid rgba(212, 176, 106, .28);
+	border-radius: 12px;
+	padding: 14px 18px;
+	margin-bottom: 10px;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 6px 20px rgba(0, 0, 0, .35);
 }
-.xx-hd-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.xx-realm-big { font-size: 24px; letter-spacing: 4px; }
-.xx-hd-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.xx-hd-extra { margin-top: 6px; font-size: 13px; color: var(--xx-jade); letter-spacing: 1px; }
+
+.xx-hero {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+.xx-hero-seal {
+	width: 58px;
+	height: 58px;
+	flex: 0 0 58px;
+	border-radius: 14px;
+	border: 1px solid rgba(212, 176, 106, .55);
+	background:
+		radial-gradient(circle at 30% 25%, rgba(212, 176, 106, .25), rgba(18, 27, 39, .92) 70%);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, .18),
+		0 0 18px rgba(212, 176, 106, .18),
+		0 4px 12px rgba(0, 0, 0, .4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: var(--xx-serif);
+	font-size: 30px;
+	color: var(--xx-gold-hi);
+	text-shadow: 0 0 12px rgba(212, 176, 106, .45);
+	user-select: none;
+}
+.xx-hero-body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.xx-hd-id {
+	font-size: 13px;
+	letter-spacing: 1.5px;
+	color: var(--xx-paper);
+	padding-bottom: 3px;
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.xx-hd-id .xx-id-name { color: var(--xx-gold-hi); font-size: 15.5px; font-weight: 600; }
+.xx-hd-id .xx-id-meta { color: var(--xx-mute); font-size: 12.5px; }
+.xx-id-edit {
+	color: var(--xx-jade);
+	cursor: pointer;
+	font-size: 11.5px;
+	letter-spacing: 1px;
+	padding: 1px 7px;
+	border: 1px solid var(--xx-jade-dim);
+	border-radius: 999px;
+	background: rgba(79, 209, 165, .07);
+}
+.xx-id-edit:hover { color: var(--xx-gold-hi); border-color: var(--xx-gold); }
+
+.xx-hd-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.xx-realm-big {
+	font-size: 24px;
+	letter-spacing: 4px;
+	color: var(--xx-gold-hi);
+	text-shadow: 0 0 14px rgba(212, 176, 106, .28);
+}
+
+/* 5-Tile Stat Dashboard inside Cultivation Header */
+.xx-tiles {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+	gap: 8px;
+	margin-top: 12px;
+	font-family: var(--xx-sans);
+	letter-spacing: .5px;
+}
+.xx-tile {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: 8px 11px;
+	border-radius: 8px;
+	background: rgba(9, 14, 21, .68);
+	border: 1px solid rgba(120, 136, 156, .22);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
+}
+.xx-tile-lbl, .xx-tile-k {
+	font-size: 11.5px;
+	letter-spacing: 1.5px;
+	color: var(--xx-mute);
+}
+.xx-tile-val, .xx-tile-v {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--xx-paper);
+	margin-top: 4px;
+	font-variant-numeric: tabular-nums;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+}
+.xx-tile.xx-bonus .xx-tile-val, .xx-tile-bonus .xx-tile-v { color: var(--xx-gold-hi); }
+.xx-tile.xx-combat .xx-tile-val, .xx-tile-combat .xx-tile-v { color: #eab6b6; }
+.xx-tile.xx-root.xx-root-wei .xx-tile-val  { color: #9aa4b0; }
+.xx-tile.xx-root.xx-root-san .xx-tile-val  { color: var(--xx-jade); }
+.xx-tile.xx-root.xx-root-zhen .xx-tile-val { color: #6fc3df; }
+.xx-tile.xx-root.xx-root-yi .xx-tile-val   { color: #b58ae0; }
+.xx-tile.xx-root.xx-root-tian .xx-tile-val { color: var(--xx-gold-hi); }
+
+.xx-pips {
+	display: inline-flex;
+	gap: 3px;
+	align-items: center;
+}
+.xx-pips i {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 999px;
+	background: rgba(120, 136, 156, .25);
+}
+.xx-pips i.on {
+	background: currentColor;
+	box-shadow: 0 0 6px currentColor;
+}
+
+.xx-tile-bar {
+	height: 4px;
+	border-radius: 999px;
+	background: rgba(120, 136, 156, .18);
+	overflow: hidden;
+	margin-top: 6px;
+}
+.xx-tile-bar i {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold));
+	transition: width .3s ease;
+}
+.xx-tile.xx-demon .xx-tile-bar i, .xx-tile-demon .xx-tile-bar i {
+	background: linear-gradient(90deg, #8c4332, #e0604a);
+}
+.xx-tile.xx-life.xx-life-low { border-color: rgba(217, 160, 102, .45); }
+.xx-tile.xx-life.xx-life-low .xx-tile-val { color: #d9a066; }
+.xx-tile.xx-life.xx-life-crit { border-color: rgba(224, 96, 74, .6); }
+.xx-tile.xx-life.xx-life-crit .xx-tile-val { color: #e0604a; }
+
+.xx-hd-extra {
+	margin-top: 8px;
+	font-size: 13px;
+	color: var(--xx-jade);
+	letter-spacing: 1px;
+}
 .xx-chip {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
 	padding: 3px 10px;
 	border-radius: 999px;
-	font-size: 13px;
+	font-size: 12.5px;
 	letter-spacing: 1px;
-	background: rgba(13, 20, 29, .8);
+	background: rgba(10, 15, 22, .8);
 	border: 1px solid rgba(120, 130, 145, .3);
 	color: var(--xx-mute);
+	transition: border-color .2s, transform .15s, box-shadow .2s;
 }
 .xx-chip.xx-bonus { color: var(--xx-gold-hi); border-color: var(--xx-line); }
-.xx-chip.xx-secl { color: #b58ae0; border-color: rgba(181, 138, 224, .4); }
-.xx-root-wei  { color: #9aa4b0; }
-.xx-root-san  { color: var(--xx-jade); }
-.xx-root-zhen { color: #6fc3df; }
-.xx-root-yi   { color: #b58ae0; }
-.xx-root-tian { color: var(--xx-gold-hi); border-color: rgba(212,176,106,.5); }
-.xx-demon { color: #d98a76; }
-.xx-life-low { color: #d9a066; border-color: rgba(217, 160, 102, .45); }
-.xx-life-crit { color: #e0604a; border-color: rgba(224, 96, 74, .55); }
-.xx-demonbar {
-	display: inline-block;
-	width: 56px; height: 6px;
-	border-radius: 999px;
-	background: rgba(96, 34, 26, .6);
-	overflow: hidden;
-	vertical-align: middle;
-}
-.xx-demonbar i {
-	display: block; height: 100%;
-	background: linear-gradient(90deg, #7a3b2c, #e0604a);
-	border-radius: 999px;
-}
+.xx-chip.xx-secl { color: #b58ae0; border-color: rgba(181, 138, 224, .45); }
 .xx-daotitle { color: var(--xx-paper); border-color: var(--xx-jade-dim); }
-.xx-hd-fates { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
-.xx-fate-lbl { font-size: 12px; color: var(--xx-mute); letter-spacing: 3px; }
+.xx-hd-fates {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+	margin-top: 10px;
+	padding-top: 8px;
+	border-top: 1px dashed rgba(212, 176, 106, .16);
+	align-items: center;
+}
+.xx-fate-lbl { font-size: 12px; color: var(--xx-mute); letter-spacing: 2px; }
 .xx-fate { color: var(--xx-gold-hi); border-color: rgba(212, 176, 106, .4); cursor: help; }
 .xx-art { color: #9ecbff; border-color: rgba(158, 203, 255, .4); cursor: help; }
+.xx-fate:hover, .xx-art:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.4); }
 
-/* 道途指引 — 独立常驻槽位:钉在主区下沿的脚条,不占任何页签内容;
-   display:none 时整行塌缩,不占位 */
+/* ============================================================
+   道途指引 — Sticky progression footer bar
+   ============================================================ */
 .xxGuide {
 	grid-area: guide;
 	align-self: stretch;
@@ -656,18 +1126,33 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	font-size: 13px;
 	letter-spacing: 1px;
 	color: var(--xx-paper);
-	background: rgba(20, 30, 24, .55);
-	border-top: 1px dashed var(--xx-jade-dim);
+	background: linear-gradient(180deg, rgba(18, 28, 24, .72), rgba(12, 19, 17, .82));
+	border-top: 1px solid rgba(79, 209, 165, .28);
+	box-shadow: inset 0 0 26px rgba(79, 209, 165, .05);
 	padding: 8px 18px;
 	margin: 0;
 	overflow-y: auto;
-	max-height: 132px;
+	max-height: 126px;
 }
 .xx-guide-hd {
 	font-size: 12px;
-	letter-spacing: 3px;
+	letter-spacing: 2px;
 	color: var(--xx-jade);
 	margin-bottom: 4px;
+}
+.xx-guide-bar {
+	height: 3px;
+	border-radius: 999px;
+	background: rgba(79, 209, 165, .14);
+	margin: 5px 0 6px;
+	overflow: hidden;
+}
+.xx-guide-bar i {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold));
+	transition: width .3s ease;
 }
 .xx-guide-step { padding: 2px 0 2px 2px; color: var(--xx-paper); }
 .xx-guide-step::before { content: "▸ "; color: var(--xx-jade); }
@@ -678,18 +1163,15 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	margin-left: 4px;
 	white-space: nowrap;
 	display: inline-block;
-	padding: 4px 6px;
-	margin-top: -3px;
-	margin-bottom: -3px;
-	border-radius: 4px;
-	min-height: 24px;
-	box-sizing: border-box;
+	padding: 2px 7px;
+	border-radius: 999px;
+	border: 1px solid rgba(79, 209, 165, .25);
+	background: rgba(79, 209, 165, .08);
 	line-height: 16px;
 }
-.xx-guide-nav:hover { text-decoration: underline; }
-.xx-guide-prog { font-size: 12px; color: var(--xx-mute); margin-left: 4px; }
+.xx-guide-nav:hover { color: var(--xx-gold-hi); border-color: var(--xx-gold); }
+.xx-guide-prog { font-size: 12px; color: var(--xx-mute); margin-left: 6px; }
 .xx-guide-more { font-size: 12px; color: var(--xx-mute); padding-top: 3px; }
-/* 当前一步:开荒期最要紧的是「眼下该点哪」,单独点亮 */
 .xx-guide-next { color: var(--xx-gold-hi); }
 .xx-guide-next::before { content: "▶ "; color: var(--xx-gold); }
 .xx-guide-help {
@@ -698,11 +1180,11 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	font-size: 11px;
 	letter-spacing: 1px;
 	float: right;
-	padding: 2px 4px;
+	padding: 1px 6px;
 }
 .xx-guide-help:hover { color: var(--xx-jade); text-decoration: underline; }
 
-/* 《修行指南》弹窗 — structured help doc; scrollable, full-width on mobile */
+/* 《修行指南》弹窗 */
 .xxHelp {
 	max-height: 78vh;
 	height: 78vh;
@@ -744,85 +1226,114 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .xxHelp ul { margin: 4px 0 4px 2px; padding-left: 20px; }
 .xxHelp li { padding: 1px 0; }
 
-/* 开场白下的一句话路标 */
-.console-intro-sub {
-	font-size: 12px;
-	color: var(--xx-mute, #8a97a5);
-	padding-top: 4px;
-	padding-bottom: 6px;
-}
-
+/* ============================================================
+   Cultivation Sections, Action Cards, Breakthrough Grid & Pills
+   ============================================================ */
 .cultivationSection {
 	font-family: var(--xx-serif);
-	font-size: 14px;
-	letter-spacing: 4px;
-	color: var(--xx-mute);
+	font-size: 14.5px;
+	letter-spacing: 3px;
+	color: var(--xx-gold);
 	border-bottom: 1px solid var(--xx-line);
-	margin: 16px 0 8px;
-	padding-bottom: 4px;
+	margin: 16px 0 10px;
+	padding-bottom: 5px;
+}
+.cultivationSection::before {
+	content: "◈";
+	margin-right: 8px;
+	font-size: 11px;
+	color: var(--xx-jade);
+	vertical-align: 1px;
 }
 
-.xxStageGrid {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 6px;
-	margin-bottom: 8px;
-}
-@media (max-width: 1100px) {
-	.xxStageGrid { grid-template-columns: minmax(0, 1fr); }
-}
-.tabInner.Cultivation .xxStageGrid .btn.modern {
-	width: auto;
-	max-width: none;
-	margin: 0;
-}
-
-/* button state marks */
-.xx-done { color: var(--xx-jade); letter-spacing: 1px; }
-.xx-chance { font-size: 12px; }
-.xx-c-hi  { color: var(--xx-jade); }
-.xx-c-mid { color: var(--xx-gold); }
-.xx-c-lo  { color: #e0604a; }
-
-/* action buttons — compact utility pills, distinct from stage buttons */
+/* Action buttons — tactile cards with seal glyph + cooldown sweep */
 .xxActionRow {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-	padding: 4px 0 10px;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+	padding: 2px 0 10px;
+}
+.xxActionRow.xxActionRow4 {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .tabInner.Cultivation .btn.modern.xxAction {
+	position: relative;
+	display: flex;
+	align-items: center;
+	width: 100%;
+	max-width: none;
+	min-height: 44px;
+	margin: 0;
+	padding: 6px 12px;
+	border-radius: 10px;
+	border: 1px solid rgba(79, 209, 165, .38);
+	background: linear-gradient(135deg, rgba(24, 38, 48, .92), rgba(15, 23, 34, .92));
+	overflow: hidden;
+}
+.tabInner.Cultivation .btn.modern.xxAction:not(.xxBlocked):hover {
+	border-color: var(--xx-gold);
+	background: linear-gradient(135deg, rgba(32, 48, 60, .96), rgba(19, 29, 42, .96));
+}
+.tabInner.Cultivation .btn.modern.xxAction .btnContent {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0;
+	width: 100%;
+}
+.xxActGlyph {
+	width: 28px;
+	height: 28px;
+	flex: 0 0 28px;
+	border-radius: 7px;
+	border: 1px solid rgba(79, 209, 165, .4);
+	background: rgba(79, 209, 165, .10);
+	color: var(--xx-jade);
+	font-family: var(--xx-serif);
+	font-size: 15px;
 	display: inline-flex;
 	align-items: center;
-	width: auto;
-	max-width: 220px;
-	min-height: 32px;
-	margin: 0;
-	padding: 5px 14px;
-	border-style: dashed;
-	border-color: var(--xx-jade-dim);
+	justify-content: center;
 }
 .tabInner.Cultivation .btn.modern.xxAction .btnTitle {
 	font-size: 13.5px;
-	color: var(--xx-jade);
+	font-weight: 600;
+	color: var(--xx-paper);
+	letter-spacing: 1px;
 }
-/* shared cooldown — blocked pills dim; the active seclusion pill burns gold */
+.xxActCd {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	width: 0%;
+	background: rgba(6, 10, 16, .62);
+	border-left: 1px solid rgba(212, 176, 106, .45);
+	pointer-events: none;
+	transition: width .2s linear;
+}
 .tabInner.Cultivation .btn.modern.xxAction.xxBlocked {
-	opacity: .4;
-	border-style: solid;
-	border-color: var(--xx-line);
+	opacity: .55;
+	border-color: rgba(120, 136, 156, .25);
 	cursor: default;
 }
-.tabInner.Cultivation .btn.modern.xxAction.xxBlocked .btnTitle { color: var(--xx-ink-dim, #8a97a5); }
+.tabInner.Cultivation .btn.modern.xxAction.xxBlocked .btnTitle { color: var(--xx-mute); }
 .tabInner.Cultivation .btn.modern.xxAction.xxSecluded {
-	border-style: solid;
 	border-color: var(--xx-gold);
-	box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 14px rgba(212,175,55,.22);
+	background: linear-gradient(135deg, rgba(48, 38, 22, .92), rgba(24, 20, 16, .92));
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 16px rgba(212,175,55,.24);
+}
+.tabInner.Cultivation .btn.modern.xxAction.xxSecluded .xxActGlyph {
+	border-color: var(--xx-gold);
+	background: rgba(212, 176, 106, .18);
+	color: var(--xx-gold-hi);
 }
 .tabInner.Cultivation .btn.modern.xxAction.xxSecluded .btnTitle { color: var(--xx-gold-hi); }
 
-/* shared 调息 bar — one breath for wander/seclude/rift/greater-rift */
-.xxCdWrap { padding: 0 0 12px; }
+/* shared 调息 bar */
+.xxCdWrap { padding: 0 0 10px; }
 .xxCdLabel {
 	font-size: 12px;
 	letter-spacing: 2px;
@@ -838,11 +1349,96 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 }
 .xxCdFill {
 	height: 100%;
-	background: linear-gradient(90deg, var(--xx-jade-dim), var(--xx-gold));
+	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold));
 	transition: width .2s linear;
 }
 
-/* 上古秘境 panel — floor ladder, key count, last outcome */
+/* Breakthrough Stage Grid & Pill Grid */
+.xxStageGrid,
+.xxPillGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-bottom: 10px;
+}
+@media (max-width: 1100px) {
+	.xxStageGrid,
+	.xxPillGrid { grid-template-columns: minmax(0, 1fr); }
+}
+.tabInner.Cultivation .btn.modern {
+	display: block;
+	width: 100%;
+	max-width: 560px;
+}
+.tabInner.Cultivation .xxStageGrid .btn.modern,
+.tabInner.Cultivation .xxPillGrid .btn.modern {
+	width: auto;
+	max-width: none;
+	margin: 0;
+}
+.tabInner.Cultivation .btn.modern .btnContent { padding: 11px 15px 12px; }
+
+/* Completed stages read as carved jade */
+.tabInner.Cultivation .xxStageGrid .btn.modern:has(.xx-done) {
+	border-color: rgba(79, 209, 165, .28);
+	background: linear-gradient(180deg, rgba(19, 32, 28, .82), rgba(12, 19, 26, .82));
+	opacity: .72;
+}
+
+/* Spotlight the immediate next breakthrough stage */
+.tabInner.Cultivation .xxStageGrid .btn.modern.xx-next-stage {
+	border-color: rgba(212, 176, 106, .68);
+	background: linear-gradient(180deg, rgba(40, 52, 68, .96), rgba(21, 31, 45, .96));
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, .09),
+		0 0 18px rgba(212, 176, 106, .16);
+	opacity: 1;
+}
+.tabInner.Cultivation .xxStageGrid .btn.modern.xx-next-stage::after {
+	content: attr(data-xx-tag);
+	position: absolute;
+	top: 7px;
+	right: 10px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	font-size: 10.5px;
+	font-weight: 700;
+	letter-spacing: 1px;
+	color: #1a1408;
+	background: linear-gradient(180deg, var(--xx-gold-hi), var(--xx-gold));
+	box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+	pointer-events: none;
+}
+
+/* button state marks */
+.xx-done { color: var(--xx-jade); letter-spacing: 1px; }
+.xx-chance { font-size: 12px; }
+.xx-c-hi  { color: var(--xx-jade); }
+.xx-c-mid { color: var(--xx-gold); }
+.xx-c-lo  { color: #e0604a; }
+
+/* 大关瓶颈 — 境界门槛行 */
+.xxGate {
+	font-size: 0.82em;
+	color: #c9a86a;
+	opacity: 0.9;
+	margin-top: 3px;
+}
+.xxGateOk { color: #8fbc7a; }
+
+/* 战力 — header chip 与秘境门槛对照 */
+.xx-combat { color: #d4a5a5; border-color: rgba(212,165,165,0.35); }
+.xxRiftPower {
+	font-size: 0.85em;
+	color: #b8a88a;
+	margin: 4px 0 2px;
+	letter-spacing: 0.02em;
+}
+.xxRiftPower.xxPowerLow { color: #c96a5a; }
+
+/* ============================================================
+   上古秘境 panel — floor ladder, key count, last outcome
+   ============================================================ */
 .xxRiftPanel {
 	margin: 0 0 14px;
 	padding: 12px 14px 10px;
@@ -924,11 +1520,14 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	to { opacity: 1; transform: none; }
 }
 
-/* fate choice dialog */
+/* ============================================================
+   Fate Choice Modal, Death Modal & Identity Modal
+   ============================================================ */
 .xxFateOverlay {
 	position: fixed;
 	inset: 0;
-	background: rgba(5, 9, 13, .72);
+	background: rgba(5, 9, 13, .76);
+	backdrop-filter: blur(4px);
 	z-index: 100;
 	display: flex;
 	align-items: center;
@@ -936,28 +1535,67 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 }
 .xxFateCard {
 	position: static;
-	width: 520px;
+	width: 540px;
 	max-width: 92vw;
+	max-height: 90vh;
+	overflow-y: auto;
 	margin: 0;
 	transform: none;
-	background: #101a26;
-	border: 1px solid var(--xx-line);
-	border-radius: 10px;
+	background:
+		radial-gradient(120% 100% at 50% 0%, rgba(212, 176, 106, .12), transparent 60%),
+		#101a26;
+	border: 1px solid var(--xx-gold);
+	border-radius: 12px;
 	padding: 22px 24px;
-	box-shadow: 0 12px 60px rgba(0,0,0,.6);
+	box-shadow:
+		0 14px 60px rgba(0, 0, 0, .68),
+		0 0 0 1px rgba(212, 176, 106, .14),
+		0 0 40px rgba(212, 176, 106, .10);
+	animation: xxFateIn .3s cubic-bezier(.2, .9, .3, 1.2);
+}
+@keyframes xxFateIn {
+	from { opacity: 0; transform: translateY(12px) scale(.96); }
+	to   { opacity: 1; transform: none; }
+}
+.xxFateKicker {
+	font-family: var(--xx-serif);
+	font-size: 12px;
+	letter-spacing: 3px;
+	color: var(--xx-jade);
+	margin-bottom: 4px;
 }
 .xxFateTitle {
 	font-family: var(--xx-serif);
-	font-size: 20px;
+	font-size: 21px;
 	letter-spacing: 3px;
 	color: var(--xx-gold-hi);
 	margin-bottom: 10px;
 }
 .xxFateStory {
 	font-size: 14px;
-	line-height: 1.7;
+	line-height: 1.75;
 	color: var(--xx-paper);
 	margin-bottom: 16px;
+}
+.xxFatePager {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	margin: -4px 0 14px;
+}
+.xxFatePager i {
+	display: inline-block;
+	width: 7px;
+	height: 7px;
+	border-radius: 999px;
+	background: rgba(143, 160, 181, .28);
+	transition: width .2s, background .2s;
+}
+.xxFatePager i.on {
+	width: 22px;
+	background: var(--xx-gold);
+	box-shadow: 0 0 8px rgba(212, 176, 106, .45);
 }
 .btn.modern.xxFateBtn {
 	width: 100%;
@@ -968,61 +1606,14 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .btn.modern.xxFateBtn .btnTitle { text-align: left; }
 .xxFateHint { font-size: 12px; color: var(--xx-jade); font-weight: normal; }
 .xxFateNext .btnTitle, .xxFateDone .btnTitle { text-align: center; }
-.xxFateNext { border-style: dashed; opacity: .85; }
+.xxFateNext { border-style: dashed; opacity: .9; }
 
-/* 仙途纪事——你的修仙史,按年岁与境界入册 */
-.xxChronicle {
-	margin-top: 14px;
-	border: 1px solid var(--xx-line);
-	border-radius: 8px;
-	background: linear-gradient(160deg, rgba(212,175,55,.05), rgba(30,45,70,.25));
-	overflow: hidden;
-}
-.xxChronicle > summary {
-	padding: 10px 14px;
-	cursor: pointer;
-	font-family: var(--xx-serif);
-	font-size: 15px;
-	letter-spacing: 2px;
-	color: var(--xx-gold-hi);
-	list-style: none;
-}
-.xxChronicle > summary::-webkit-details-marker { display: none; }
-.xxChronicle > summary::after {
-	content: "▾";
-	float: right;
-	color: var(--xx-mute);
-	transition: transform .2s;
-}
-.xxChronicle:not([open]) > summary::after { transform: rotate(-90deg); }
-.xxChronRow {
-	display: flex;
-	gap: 10px;
-	align-items: baseline;
-	padding: 7px 14px;
-	border-top: 1px solid rgba(212,175,55,.08);
-	font-size: 13px;
-	line-height: 1.6;
-}
-.xxChronAge {
-	flex: 0 0 62px;
-	color: var(--xx-mute);
-	font-variant-numeric: tabular-nums;
-}
-.xxChronRealm {
-	flex: 0 0 84px;
-	color: var(--xx-jade);
-	font-size: 12px;
-}
-.xxChronWhat { color: var(--xx-paper); }
-.xxChronPick { color: var(--xx-gold); }
-
-/* 坐化卡——寿尽 modal,比仙缘卡更暗沉 */
-.xxDeathCard { border-color: rgba(224, 96, 74, .4); }
+/* 坐化卡——寿尽 modal */
+.xxDeathCard { border-color: rgba(224, 96, 74, .45); }
 .xxDeathCard .xxFateTitle { color: #c8b8a8; }
 
-/* 入世留名卡——道号/性别/出身 */
-.xxIdCard { border-color: rgba(212, 175, 55, .45); }
+/* 入世留名卡——道号/性别/出身 (2-column compact origin grid) */
+.xxIdCard { border-color: rgba(212, 175, 55, .5); width: 560px; }
 .xxIdRow {
 	display: flex;
 	align-items: center;
@@ -1069,19 +1660,29 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .xxIdChip.xx-sel {
 	border-color: var(--xx-gold);
 	color: var(--xx-gold-hi);
+	background: rgba(212, 176, 106, .12);
 }
 .xxIdOrigins {
 	display: grid;
-	grid-template-columns: 1fr;
-	gap: 6px;
-	margin: 6px 0 14px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin: 8px 0 14px;
+}
+.xxIdOrigin:last-child:nth-child(odd) {
+	grid-column: span 2;
 }
 .xxIdOrigin {
 	border: 1px dashed var(--xx-jade-dim);
 	border-radius: 8px;
 	cursor: pointer;
-	padding: 7px 12px;
-	line-height: 1.5;
+	padding: 8px 12px;
+	line-height: 1.45;
+	background: rgba(10, 16, 24, .45);
+	transition: border-color .15s, background .15s, transform .12s;
+}
+.xxIdOrigin:hover {
+	border-color: var(--xx-gold);
+	transform: translateY(-1px);
 }
 .xxIdOrigin b {
 	color: var(--xx-paper);
@@ -1096,7 +1697,8 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .xxIdOrigin.xx-sel {
 	border-style: solid;
 	border-color: var(--xx-gold);
-	background: rgba(212, 175, 55, .07);
+	background: rgba(212, 175, 55, .10);
+	box-shadow: 0 0 12px rgba(212, 176, 106, .15);
 }
 .xxIdOrigin.xx-sel b { color: var(--xx-gold-hi); }
 
@@ -1115,28 +1717,122 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	margin-right: 4px;
 }
 
-/* 境界页身份行 */
-.xx-hd-id {
-	font-size: 13px;
-	letter-spacing: 2px;
-	color: var(--xx-paper);
-	padding-bottom: 6px;
+/* ============================================================
+   仙途纪事 — Chronicle Accordion (at bottom of Cultivation tab)
+   ============================================================ */
+.xxChronicle {
+	margin-top: 18px;
+	border: 1px solid var(--xx-line);
+	border-radius: 10px;
+	background: linear-gradient(160deg, rgba(212,175,55,.05), rgba(20,32,48,.35));
+	overflow: hidden;
 }
-.xx-hd-id .xx-id-name { color: var(--xx-gold-hi); font-size: 15px; }
-.xx-id-edit {
-	color: var(--xx-mute);
+.xxChronicle > summary {
+	padding: 10px 14px;
 	cursor: pointer;
-	font-size: 11px;
-	letter-spacing: 1px;
-	margin-left: 6px;
+	font-family: var(--xx-serif);
+	font-size: 15px;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+	list-style: none;
 }
-.xx-id-edit:hover { color: var(--xx-jade); text-decoration: underline; }
+.xxChronicle > summary::-webkit-details-marker { display: none; }
+.xxChronicle > summary::after {
+	content: "▾";
+	float: right;
+	color: var(--xx-mute);
+	transition: transform .2s;
+}
+.xxChronicle:not([open]) > summary::after { transform: rotate(-90deg); }
+.xxChronRow {
+	display: flex;
+	gap: 10px;
+	align-items: baseline;
+	padding: 7px 14px;
+	border-top: 1px solid rgba(212,175,55,.08);
+	font-size: 13px;
+	line-height: 1.6;
+}
+.xxChronAge {
+	flex: 0 0 62px;
+	color: var(--xx-mute);
+	font-variant-numeric: tabular-nums;
+}
+.xxChronRealm {
+	flex: 0 0 84px;
+	color: var(--xx-jade);
+	font-size: 12px;
+}
+.xxChronWhat { color: var(--xx-paper); }
+.xxChronPick { color: var(--xx-gold); }
 
-/* log message palette */
-.msg.type_notice   { color: var(--xx-jade); }
+/* ============================================================
+   Floating Toast Notifications (#xxToasts)
+   ============================================================ */
+.xxToasts {
+	position: fixed;
+	top: 54px;
+	right: 18px;
+	z-index: 90;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-width: 340px;
+	pointer-events: none;
+}
+.xxToast {
+	pointer-events: auto;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 14px;
+	border-radius: 10px;
+	background: linear-gradient(135deg, rgba(24, 36, 52, .96), rgba(12, 18, 28, .96));
+	border: 1px solid var(--xx-gold);
+	box-shadow: 0 10px 28px rgba(0, 0, 0, .55), 0 0 16px rgba(212, 176, 106, .22);
+	color: var(--xx-gold-hi);
+	font-family: var(--xx-serif);
+	font-size: 14px;
+	letter-spacing: 1px;
+	line-height: 1.45;
+	cursor: pointer;
+	animation: xxToastIn .26s cubic-bezier(.2, .9, .3, 1.15);
+	transition: opacity .26s, transform .26s;
+}
+.xxToast.out {
+	opacity: 0;
+	transform: translateX(24px);
+}
+.xxToast::before, .xxToastSeal {
+	content: "仙";
+	flex: 0 0 22px;
+	width: 22px;
+	height: 22px;
+	border-radius: 5px;
+	background: var(--xx-red);
+	color: #fff;
+	font-size: 13px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
+}
+.xxToastTxt {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+@keyframes xxToastIn {
+	from { opacity: 0; transform: translateX(24px) scale(.96); }
+	to   { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   Misc & Leaderboard
+   ============================================================ */
+.msg.type_notice    { color: var(--xx-jade); }
 .msg.type_important { color: var(--xx-gold-hi); }
-.msg.type_alert    { color: #e0604a; }
-.msg.type_urgent   { color: #b58ae0; }
+.msg.type_alert     { color: #e0604a; }
+.msg.type_urgent    { color: #b58ae0; }
 
 hr { border: none; border-top: 1px solid var(--xx-line); }
 .svg-icon { filter: drop-shadow(0 0 2px rgba(79,209,165,.3)); }
@@ -1144,46 +1840,57 @@ hr { border: none; border-top: 1px solid var(--xx-line); }
 #footerLinks { display: none; }
 .kgnet-login-link-container, .kgnet-login-link { display: none !important; }
 
-/* realm ladder fills the pane */
-.tabInner.Cultivation .btn.modern {
-	display: block;
-	width: 100%;
-	max-width: 560px;
-}
-.tabInner.Cultivation .btn.modern .btnContent { padding: 12px 16px; }
-
-/* faint dao seal watermark over the content pane */
-.tabInner { position: relative; }
-.tabInner::after {
-	content: "道";
-	position: absolute;
-	right: 24px;
-	bottom: 24px;
-	font-family: var(--xx-serif);
-	font-size: 170px;
-	line-height: 1;
-	color: rgba(212, 176, 106, .045);
-	pointer-events: none;
-	z-index: 0;
-}
-
-/* group separators and craft-table hover */
-.bldGroupContainer { border-top: 1px solid var(--xx-line); }
 table.craftTable tr:hover td { background-color: rgba(79, 209, 165, .12); }
+.panel-title { color: var(--xx-mute); }
 
-/* header text inside content */
-.panel-title, .bldTopContainer > a, .bldTopContainer > span {
-	color: var(--xx-mute);
+.tabsContainer .tab:focus-visible, .xx-guide-nav:focus-visible {
+	outline: 2px solid var(--xx-jade-dim);
+	outline-offset: 1px;
+	border-radius: 4px;
+}
+input, select, textarea, button { font-family: inherit; }
+
+.btn.small-text { font-size: 100% !important; }
+.btn.small-text span { font-size: 100%; }
+
+/* 江湖榜 (jianghu leaderboard) */
+.jianghuBoard { margin-bottom: 24px; }
+.jianghuControls { margin: 6px 0 10px; display: flex; align-items: center; gap: 8px; }
+.jianghuControls input[type="text"] {
+	background: rgba(255,255,255,0.06);
+	border: 1px solid rgba(200,170,90,0.4);
+	color: inherit;
+	padding: 4px 8px;
+	border-radius: 4px;
+	width: 140px;
+}
+.jianghuTable th {
+	text-align: left;
+	padding: 4px 14px 4px 0;
+	border-bottom: 1px solid rgba(200,170,90,0.35);
+	font-weight: normal;
+	opacity: 0.75;
+}
+.jianghuTable td { padding: 3px 14px 3px 0; }
+.jianghuTable tr.jianghuSelf td {
+	color: #e8c76a;
+	text-shadow: 0 0 8px rgba(232,199,106,0.35);
 }
 
+/* ============================================================
+   Responsive Breakpoints (Tablet & Mobile)
+   ============================================================ */
 @media (max-width: 1100px) {
-	#game { grid-template-columns: 120px minmax(340px, 1fr) 260px; }
+	#game { grid-template-columns: 124px minmax(340px, 1fr) 260px; }
+	.xxActionRow.xxActionRow4 {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 }
 
-/* ---- narrow: log rail folds into a bottom strip ---- */
+/* ---- narrow / tablet: log rail folds into a bottom strip ---- */
 @media (max-width: 860px) {
 	#game {
-		grid-template-columns: 92px minmax(0, 1fr);
+		grid-template-columns: 98px minmax(0, 1fr);
 		grid-template-rows: auto minmax(0, 1fr) auto auto;
 		grid-template-areas:
 			"res   res"
@@ -1191,13 +1898,13 @@ table.craftTable tr:hover td { background-color: rgba(79, 209, 165, .12); }
 			"guide guide"
 			"log   log";
 	}
-	#leftColumn { height: 118px; max-height: 118px; }
+	#leftColumn { max-height: 112px; }
 	#leftColumn .res-table {
-		grid-template-columns: repeat(auto-fill, 92px);
+		grid-template-columns: repeat(auto-fill, minmax(106px, 1fr));
 		grid-auto-rows: 46px;
-		gap: 4px;
+		gap: 5px;
 	}
-	#leftColumn .res-row { height: 46px; padding: 4px 8px 7px; }
+	#leftColumn .res-row { height: 46px; padding: 4px 8px 6px; }
 	#rightColumn {
 		max-height: 140px;
 		border-left: none;
@@ -1208,17 +1915,16 @@ table.craftTable tr:hover td { background-color: rgba(79, 209, 165, .12); }
 		letter-spacing: 1px;
 		padding: 8px 9px;
 	}
-	.tabInner { padding: 10px 12px; }
+	.tabInner { padding: 12px 14px 20px; }
 	#midColumnViewport { right: 10px; top: 6px; }
 
-	/* dialogs: kill the 600px + negative-margin centering */
+	/* dialogs: center via transform */
 	.dialog {
 		left: 50% !important;
 		margin-left: 0 !important;
 		margin-top: 0 !important;
 		transform: translate(-50%, -50%);
 	}
-	/* the fate card already centers itself via the flex overlay — undo that shift */
 	.xxFateCard { transform: none; }
 	.help, .credits {
 		width: auto;
@@ -1227,214 +1933,427 @@ table.craftTable tr:hover td { background-color: rgba(79, 209, 165, .12); }
 	.credits { height: auto; max-height: 80vh; }
 }
 
-/* ---- phones: single column, tabs become a horizontal strip ---- */
+/* ---- phones: dedicated mobile RPG app shell ---- */
 @media (max-width: 640px) {
-	#gamePageContainer { height: 100dvh; }	/* mobile browser chrome safe */
+	#gamePageContainer { height: 100dvh; }
 
-	#topBar { height: 38px; padding: 0 4px; flex-wrap: nowrap; box-sizing: border-box; }
-	.gameTitle { font-size: 16px; letter-spacing: 1px; }
-	.gameTitle::before { font-size: 12px; margin-right: 4px; }
-	#topBar .links-block a, #topBar a { font-size: 12px; }
-	#game { top: 38px; }
+	#topBar {
+		height: 36px;
+		padding: 0 6px;
+		flex-wrap: nowrap;
+		box-sizing: border-box;
+	}
+	.gameTitle { font-size: 15.5px; letter-spacing: 1px; }
+	.gameTitle::before { font-size: 11.5px; margin: 0 5px 0 2px; padding: 1px 4px; }
+	#topBar .links-block a, #topBar a { font-size: 12px; padding: 2px 6px; }
+	#game { top: 36px; }
 
-	/* keep 保存|选项|转世 on the bar: hide HUD icons + motd on phones */
 	#headerToolbar, #motd, #autosaveTooltip { display: none !important; }
 	#headerLinks { display: none !important; }
-	#topBar .links-block { flex: 0 0 auto; margin-left: auto; }
+	#topBar .links-block { flex: 0 0 auto; margin-left: auto; padding-right: 2px; }
 
+	/* App Shell Grid:
+	   1. Top Resource Strip (with 修为 pinned #1 + expand toggle)
+	   2. 1-Line Collapsible Next-Step Guide Banner
+	   3. Main Playable Viewport (~540px+ height!)
+	   4. Live Log Ticker Bar (tap to expand slide-up log drawer)
+	   5. Thumb-Friendly Bottom Navigation Dock */
 	#game {
 		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+		grid-template-rows: auto auto minmax(0, 1fr) auto auto;
 		grid-template-areas:
 			"res"
-			"nav"
 			"guide"
 			"main"
-			"log";
+			"log"
+			"nav";
 	}
 
-	/* tab rail -> horizontal scrollable strip */
+	/* 1. Top Resource Strip — 3×2 cards + [展开灵息 ▾] drawer toggle */
+	#leftColumn {
+		height: auto;
+		min-height: 0;
+		max-height: none;
+		padding: 5px 8px 0;
+		overflow: hidden;
+	}
+	#leftColumn.xx-res-open {
+		max-height: 44dvh;
+		overflow-y: auto;
+	}
+	#leftColumn div:has(> .res-toolbar),
+	#leftColumn:not(.xx-res-open) .sidebar-section {
+		display: none !important;
+	}
+	#leftColumn .res-table {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-auto-rows: 44px;
+		gap: 4px;
+	}
+	#leftColumn:not(.xx-res-open) .res-table {
+		max-height: 92px;
+		overflow: hidden;
+	}
+	#leftColumn .res-row {
+		height: 44px;
+		margin: 0;
+		padding: 3px 7px 5px;
+		font-size: 11px;
+	}
+	#leftColumn .resource-name { font-size: 10.5px; }
+	#leftColumn .res-figure .res-val,
+	#leftColumn .res-figure.resAmount { font-size: 12.5px; }
+	#leftColumn .resPerTick { font-size: 10px; }
+	.xx-res-toggle {
+		display: block;
+		position: sticky;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		margin: 4px -8px 0;
+		padding: 2px 0;
+		text-align: center;
+		font-size: 11px;
+		letter-spacing: 1.5px;
+		color: var(--xx-jade);
+		background: linear-gradient(180deg, rgba(12, 18, 26, .95), rgba(14, 22, 32, .99));
+		border-top: 1px solid rgba(79, 209, 165, .18);
+		z-index: 3;
+	}
+
+	/* 2. Compact 1-Line Collapsible Guide Banner */
+	.xxGuide {
+		padding: 5px 10px 6px;
+		max-height: none;
+		border-top: none;
+		border-bottom: 1px solid rgba(79, 209, 165, .26);
+		background: linear-gradient(90deg, rgba(18, 32, 27, .92), rgba(13, 21, 28, .92));
+	}
+	.xx-guide-hd {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 2px;
+		font-size: 11.5px;
+		cursor: pointer;
+	}
+	.xx-guide-toggle {
+		display: inline-block;
+		padding: 1px 6px;
+		border-radius: 999px;
+		border: 1px solid rgba(79, 209, 165, .3);
+		background: rgba(79, 209, 165, .08);
+		font-size: 10.5px;
+		color: var(--xx-jade);
+	}
+	.xx-guide-help {
+		float: none;
+		margin-left: auto;
+		font-size: 11px;
+	}
+	.xx-guide-bar { margin: 3px 0 4px; height: 2.5px; }
+	.xxGuide:not(.xx-guide-open) .xx-guide-step:not(.xx-guide-next),
+	.xxGuide:not(.xx-guide-open) .xx-guide-more {
+		display: none;
+	}
+	.xx-guide-next {
+		font-size: 12.5px;
+		line-height: 1.35;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.xxGuide.xx-guide-open .xx-guide-next {
+		white-space: normal;
+	}
+
+	/* 3. Main Playable Content Pane */
+	.tabInner {
+		padding: 10px 10px 18px;
+	}
+	.tabInner::after { font-size: 110px; right: 12px; bottom: 12px; }
+
+	/* Compact 2-row filter pills on Bonfire */
+	.bldTopContainer { margin-bottom: 6px; }
+	.bldTopContainer > a {
+		padding: 3px 9px;
+		margin: 0 4px 4px 0;
+		font-size: 11.5px;
+	}
+	.bldGroupContainer { padding-top: 8px; }
+
+	/* Single-column full-width tactile cards with inline costs & left-docked ? info button */
+	.tabInner table.table,
+	.tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable),
+	.bldGroupContainer > table,
+	.panelContainer .container > table {
+		display: block;
+		width: 100% !important;
+		border-spacing: 0;
+		margin: 0;
+	}
+	.tabInner table.table tbody,
+	.tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable) tbody,
+	.bldGroupContainer > table tbody,
+	.panelContainer .container > table tbody {
+		display: block;
+		width: 100%;
+	}
+	.tabInner table.table tr,
+	.tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable) tr,
+	.bldGroupContainer > table tr,
+	.panelContainer .container > table tr {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		gap: 0;
+		margin: 0;
+	}
+	.tabInner table.table td,
+	.tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable) td,
+	.bldGroupContainer > table td,
+	.panelContainer .container > table td {
+		display: block;
+		width: 100% !important;
+		padding: 0;
+	}
+	.btn.modern {
+		width: 100%;
+		max-width: none;
+		margin: 0 0 6px 0;
+		text-align: left;
+	}
+	.btn.modern:not(.xxAction):not(.xxFateBtn) .btnContent {
+		padding: 8px 12px 9px 38px !important;
+		text-align: left;
+	}
+	.btn.modern:not(.xxAction):not(.xxFateBtn) .xx-info-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		position: absolute;
+		left: 9px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 21px;
+		height: 21px;
+		border-radius: 999px;
+		border: 1px solid rgba(79, 209, 165, .32);
+		background: rgba(10, 15, 22, .75);
+		color: var(--xx-jade);
+		font-size: 11px;
+		font-weight: 600;
+		z-index: 3;
+	}
+
+	/* Cultivation Hero Banner & 6-Column 2-Row Stat Dashboard on Mobile */
+	.cultivationHeader {
+		padding: 10px 11px;
+		margin-bottom: 8px;
+		border-radius: 10px;
+	}
+	.xx-hero { gap: 11px; }
+	.xx-hero-seal {
+		width: 44px;
+		height: 44px;
+		flex: 0 0 44px;
+		font-size: 22px;
+		border-radius: 10px;
+	}
+	.xx-hd-id { font-size: 12px; gap: 6px; padding-bottom: 1px; }
+	.xx-hd-id .xx-id-name { font-size: 14px; }
+	.xx-realm-big { font-size: 18px; letter-spacing: 2px; }
+	.xx-tiles {
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		gap: 5px;
+		margin-top: 8px;
+	}
+	.xx-tiles > .xx-tile:nth-child(1),
+	.xx-tiles > .xx-tile:nth-child(2),
+	.xx-tiles > .xx-tile:nth-child(3) {
+		grid-column: span 2;
+	}
+	.xx-tiles > .xx-tile:nth-child(4),
+	.xx-tiles > .xx-tile:nth-child(5) {
+		grid-column: span 3;
+	}
+	.xx-tile { padding: 6px 8px; border-radius: 7px; }
+	.xx-tile-lbl, .xx-tile-k { font-size: 10.5px; letter-spacing: 1px; }
+	.xx-tile-val, .xx-tile-v { font-size: 13px; margin-top: 2px; }
+	.xx-pips i { width: 5px; height: 5px; }
+
+	/* Single-line horizontal touch-scroll strip for Fate & Artifact badges */
+	.xx-hd-fates {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		margin-top: 7px;
+		padding-top: 6px;
+		padding-bottom: 2px;
+	}
+	.xx-hd-fates::-webkit-scrollbar { display: none; }
+	.xx-hd-fates .xx-chip, .xx-hd-fates .xx-fate-lbl {
+		flex: 0 0 auto;
+		white-space: nowrap;
+	}
+
+	/* 2×2 Action Cards on Mobile */
+	.xxActionRow, .xxActionRow.xxActionRow4 {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 6px;
+		padding: 0 0 8px;
+	}
+	.tabInner.Cultivation .btn.modern.xxAction {
+		min-height: 38px;
+		padding: 5px 9px;
+	}
+	.xxActGlyph { width: 24px; height: 24px; flex: 0 0 24px; font-size: 13px; }
+	.tabInner.Cultivation .btn.modern.xxAction .btnTitle { font-size: 12.5px; }
+
+	/* 4. Live Log Ticker Bar + Slide-Up Log Drawer (#rightColumn) */
+	#rightColumn {
+		max-height: 34px;
+		padding: 0 10px;
+		border-left: none;
+		border-top: 1px solid rgba(212, 176, 106, .22);
+		background: rgba(11, 17, 25, .95);
+		transition: max-height .24s ease;
+	}
+	#rightColumn .xx-cal-bar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 34px;
+		flex: 0 0 34px;
+		cursor: pointer;
+	}
+	#calendarDiv, #calendarSign {
+		font-size: 12px;
+		letter-spacing: 1px;
+		white-space: nowrap;
+		flex: 0 0 auto;
+	}
+	.xx-log-ticker {
+		display: block;
+		flex: 1 1 auto;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 11.5px;
+		color: var(--xx-paper);
+		opacity: .9;
+	}
+	.xx-log-ticker.type_important { color: var(--xx-gold-hi); }
+	.xx-log-ticker.type_alert { color: #e0604a; }
+	.xx-log-ticker.type_notice { color: var(--xx-jade); }
+	.xx-log-toggle {
+		display: inline-block;
+		flex: 0 0 auto;
+		padding: 2px 8px;
+		border-radius: 999px;
+		border: 1px solid var(--xx-line);
+		background: rgba(212, 176, 106, .10);
+		color: var(--xx-gold-hi);
+		font-size: 10.5px;
+	}
+	#rightColumn:not(.xx-log-open) .right-tab-header,
+	#rightColumn:not(.xx-log-open) #observeButton,
+	#rightColumn:not(.xx-log-open) .right-tab {
+		display: none !important;
+	}
+	#rightColumn.xx-log-open {
+		max-height: 46dvh;
+		padding: 0 10px 6px;
+		background: rgba(10, 15, 22, .98);
+		box-shadow: 0 -10px 30px rgba(0, 0, 0, .65);
+		z-index: 30;
+	}
+	#rightColumn .console-intro,
+	#rightColumn .console-intro-sub {
+		display: none !important;
+	}
+	#gameLog { font-size: 12px; padding-top: 4px; }
+
+	/* 5. Thumb-Friendly Bottom Navigation Dock (.tabsContainer) */
 	.tabsContainer {
 		flex-direction: row;
-		align-items: center;
+		align-items: stretch;
+		justify-content: space-around;
 		gap: 2px;
-		padding: 4px 6px;
+		height: 46px;
+		padding: 0 4px;
 		border-right: none;
-		border-bottom: 1px solid var(--xx-line);
+		border-bottom: none;
+		border-top: 1px solid rgba(212, 176, 106, .28);
+		background: linear-gradient(180deg, rgba(16, 24, 35, .98), rgba(8, 12, 19, .98));
+		box-shadow: 0 -4px 16px rgba(0, 0, 0, .5);
 		overflow-x: auto;
 		overflow-y: hidden;
 		-webkit-overflow-scrolling: touch;
+		z-index: 25;
 	}
 	#game .tabsContainer .tab {
-		flex: 0 0 auto;
-		padding: 6px 12px 7px;
+		flex: 1 0 auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 10px;
 		border-left: none;
-		border-bottom: 3px solid transparent;
-		border-radius: 6px 6px 0 0;
-		font-size: 14px;
-		letter-spacing: 1px;
+		border-bottom: none;
+		border-top: 3px solid transparent;
+		border-radius: 0;
+		font-size: 14.5px;
+		letter-spacing: 1.5px;
 		white-space: nowrap;
 	}
+	#game .tabsContainer .tab:hover { padding-left: 10px; }
 	#game .tabsContainer .tab.activeTab {
 		border-left-color: transparent;
-		border-bottom-color: var(--xx-jade);
-		background: rgba(79, 209, 165, .1);
+		border-top-color: var(--xx-jade);
+		background: linear-gradient(180deg, rgba(79, 209, 165, .16), transparent 85%);
+	}
+	#game .tabsContainer .tab.activeTab::before {
+		width: 4px;
+		height: 4px;
+		margin: 0 5px 1px 0;
 	}
 
-	#leftColumn { max-height: 96px; padding: 4px 8px; }
-	#leftColumn .res-table { gap: 3px; }
-	.res-row { margin: 2px 3px 2px 0; padding: 3px 8px; font-size: 12px; }
-
-	#rightColumn {
-		max-height: 130px;
-		border-left: none;
-		border-top: 1px solid var(--xx-line);
+	/* Modals & Bottom-Docked Mobile Tooltip */
+	.xxFateCard, .xxIdCard {
+		width: 92vw;
+		padding: 16px 14px;
 	}
-	#gameLog { font-size: 12px; }
+	.xxIdOrigins {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 6px;
+	}
+	.xxIdOrigin { padding: 6px 9px; }
+	.xxIdOrigin b { font-size: 13px; }
+	.xxIdOrigin span { font-size: 11px; }
 
-	/* fat-finger targets */
-	.tabInner { padding: 8px 10px; }
-	.btn.modern { width: 100%; max-width: none; }
-	.btn.modern .btnContent { padding: 12px; }
-	/* 4 action pills share a 2×2 grid — the 上古秘境 label is long, let it wrap */
-	.tabInner.Cultivation .btn.modern.xxAction { width: auto; max-width: none; flex: 1 1 46%; }
-	.cultivationHeader { padding: 10px 12px; }
-	.xxFateCard { padding: 16px 14px; }
-	.xxActionRow { gap: 5px; }
-	.xx-realm-big { font-size: 19px; }
-
-	#tooltip { max-width: 86vw; }
-	#midColumnViewport { right: 8px; top: 6px; }
+	#tooltip, #tooltip.xx-mobile-tip {
+		position: fixed !important;
+		left: 10px !important;
+		right: 10px !important;
+		bottom: 88px !important;
+		top: auto !important;
+		width: auto !important;
+		max-width: none !important;
+		max-height: 52dvh;
+		overflow-y: auto;
+		padding: 12px 14px;
+		border: 1px solid var(--xx-gold) !important;
+		border-radius: 10px;
+		box-shadow: 0 12px 40px rgba(0, 0, 0, .8);
+		pointer-events: auto;
+		z-index: 95;
+	}
+	.xxToasts { top: 44px; right: 10px; left: 10px; max-width: none; }
 }
 
-/* ============================================================
-   Premium polish — micro-interactions, layered light, quiet motion
-   ============================================================ */
-
-/* crisp type everywhere */
-html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-
-/* buttons: hairline top-light at rest, lift + warm glow on hover, sink on press */
-.btn {
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
-	transition: border-color .16s, box-shadow .16s, transform .1s, background .16s, opacity .16s;
-}
-.btn:not(.disabled):hover {
-	transform: translateY(-1px);
-	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, .07),
-		0 4px 14px rgba(0, 0, 0, .38),
-		0 0 10px rgba(212, 176, 106, .25);
-}
-.btn:not(.disabled):active { transform: translateY(0); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
-.btn:focus-visible { outline: 2px solid var(--xx-jade-dim); outline-offset: 1px; }
-
-/* stage buttons that are done read as carved-in jade, not just colored text */
-.tabInner.Cultivation .xxStageGrid .btn.modern:has(.xx-done) {
-	border-color: var(--xx-jade-dim);
-	background: linear-gradient(180deg, rgba(21, 34, 30, .9), rgba(13, 20, 29, .9));
-}
-
-/* tab rail: soft transitions + a jade seed on the active entry */
-#game .tabsContainer .tab {
-	transition: color .18s, background .18s, border-color .18s, padding-left .18s;
-}
-#game .tabsContainer .tab:hover { padding-left: 15px; }
-#game .tabsContainer .tab.activeTab::before {
-	content: "";
-	display: inline-block;
-	width: 5px; height: 5px;
-	margin: 0 6px 2px 0;
-	border-radius: 999px;
-	background: var(--xx-jade);
-	box-shadow: 0 0 8px var(--xx-jade);
-}
-
-/* resource chips respond to the cursor */
-#leftColumn .res-row { transition: border-color .18s, background .18s, transform .12s; }
-#leftColumn .res-row:hover {
-	border-color: var(--xx-jade-dim);
-	background: rgba(30, 42, 58, .7);
-	transform: translateY(-1px);
-}
-
-/* header card: layered ink, faint gold top-light */
-.cultivationHeader {
-	background: linear-gradient(135deg, rgba(26, 36, 51, .75), rgba(16, 23, 33, .55));
-	box-shadow: inset 0 1px 0 rgba(212, 176, 106, .1), 0 3px 14px rgba(0, 0, 0, .3);
-}
-
-/* guide panel breathes a little jade */
-.xxGuide { box-shadow: inset 0 0 26px rgba(79, 209, 165, .05); }
-
-/* section headers get a small jade seal mark */
-.cultivationSection::before {
-	content: "◈";
-	margin-right: 8px;
-	font-size: 11px;
-	color: var(--xx-jade-dim);
-	vertical-align: 2px;
-}
-
-/* fate & artifact chips lift like seals */
-.xx-chip { transition: border-color .2s, transform .15s, box-shadow .2s; }
-.xx-fate:hover, .xx-art:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.4); }
-
-/* the fate overlay is the game's stage — give it theater */
-.xxFateOverlay { backdrop-filter: blur(3px); }
-.xxFateCard {
-	border-color: var(--xx-gold);
-	box-shadow:
-		0 14px 60px rgba(0, 0, 0, .65),
-		0 0 0 1px rgba(212, 176, 106, .14),
-		0 0 40px rgba(212, 176, 106, .1);
-	animation: xxFateIn .3s cubic-bezier(.2, .9, .3, 1.2);
-}
-@keyframes xxFateIn {
-	from { opacity: 0; transform: translateY(12px) scale(.96); }
-	to   { opacity: 1; transform: none; }
-}
-.xxFateBtn { transition: border-color .15s, transform .12s, box-shadow .15s; }
-.xxFateBtn:hover { transform: translateY(-1px); }
-
-/* progress bars carry their own glow */
-progress::-webkit-progress-value, #loadingProgressBar::-webkit-progress-value {
-	box-shadow: 0 0 8px rgba(79, 209, 165, .5);
-}
-progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
-	box-shadow: 0 0 8px rgba(79, 209, 165, .5);
-}
-
-/* inputs: a jade ring instead of the default outline */
-select:focus, input[type="text"]:focus, textarea:focus {
-	outline: none;
-	border-color: var(--xx-jade);
-	box-shadow: 0 0 0 2px rgba(79, 209, 165, .2);
-}
-
-/* slimmer scrollbar thumb */
-::-webkit-scrollbar-thumb { border: 2px solid transparent; background-clip: padding-box; }
-
-/* links & quiet buttons ease their color */
-a, .link, .pin-link, .res-toolbar a { transition: color .15s, border-color .15s, text-shadow .15s; }
-
-/* visible focus on the non-.btn interactive bits */
-.tabsContainer .tab:focus-visible, .xx-guide-nav:focus-visible {
-	outline: 2px solid var(--xx-jade-dim);
-	outline-offset: 1px;
-	border-radius: 4px;
-}
-
-/* form controls inherit the page type instead of falling back to Arial */
-input, select, textarea, button { font-family: inherit; }
-
-/* upstream shrinks crowded building buttons to 90% via class + an inline style
-   once 10+ are owned — pointless with short Chinese names, and it read as a bug
-   next to full-size neighbours (needs !important to beat the inline style) */
-.btn.small-text { font-size: 100% !important; }
-.btn.small-text span { font-size: 100%; }
-
-/* respect reduced-motion — cover every transition/animation, not just ours */
+/* respect reduced-motion */
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after {
 		animation-duration: .01ms !important;
@@ -1442,46 +2361,3 @@ input, select, textarea, button { font-family: inherit; }
 		transition-duration: .01ms !important;
 	}
 }
-
-/* ---------------- 江湖榜 (jianghu leaderboard) ---------------- */
-.jianghuBoard { margin-bottom: 24px; }
-.jianghuControls { margin: 6px 0 10px; display: flex; align-items: center; gap: 8px; }
-.jianghuControls input[type="text"] {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(200,170,90,0.4);
-    color: inherit;
-    padding: 4px 8px;
-    border-radius: 3px;
-    width: 140px;
-}
-.jianghuTable th {
-    text-align: left;
-    padding: 4px 14px 4px 0;
-    border-bottom: 1px solid rgba(200,170,90,0.35);
-    font-weight: normal;
-    opacity: 0.75;
-}
-.jianghuTable td { padding: 3px 14px 3px 0; }
-.jianghuTable tr.jianghuSelf td {
-    color: #e8c76a;
-    text-shadow: 0 0 8px rgba(232,199,106,0.35);
-}
-
-/* 大关瓶颈 — 境界门槛行 */
-.xxGate{
-	font-size: 0.82em;
-	color: #c9a86a;
-	opacity: 0.85;
-	margin-top: 2px;
-}
-.xxGateOk{ color: #8fbc7a; }
-
-/* 战力 — header chip 与秘境门槛对照 */
-.xx-combat{ color: #d4a5a5; border-color: rgba(212,165,165,0.35); }
-.xxRiftPower{
-	font-size: 0.85em;
-	color: #b8a88a;
-	margin: 4px 0 2px;
-	letter-spacing: 0.02em;
-}
-.xxRiftPower.xxPowerLow{ color: #c96a5a; }

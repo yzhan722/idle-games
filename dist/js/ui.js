@@ -937,6 +937,76 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         });
 
         this.updateIndexHTMLLanguage();
+        this._toastReadyAt = Date.now() + 4000;	//boot / offline catch-up messages stay in the log only
+        this.initMobileShell();
+    },
+
+    initMobileShell: function(){
+        if (typeof document == "undefined"){
+            return;
+        }
+        var leftCol = document.getElementById("leftColumn");
+        if (leftCol && !document.getElementById("xxResToggle")){
+            var resBtn = document.createElement("a");
+            resBtn.id = "xxResToggle";
+            resBtn.className = "xx-res-toggle";
+            resBtn.href = "#";
+            resBtn.textContent = $I("ui.mobile.res.expand");
+            resBtn.onclick = function(ev){
+                if (ev){ ev.preventDefault(); ev.stopPropagation(); }
+                var open = !dojo.hasClass(leftCol, "xx-res-open");
+                dojo.toggleClass(leftCol, "xx-res-open", open);
+                resBtn.textContent = $I(open ? "ui.mobile.res.collapse" : "ui.mobile.res.expand");
+            };
+            leftCol.appendChild(resBtn);
+        }
+
+        var rightCol = document.getElementById("rightColumn");
+        var calRow = rightCol && rightCol.firstElementChild;
+        if (calRow && !document.getElementById("xxLogToggle")){
+            calRow.className = "xx-cal-bar";
+            var ticker = document.createElement("span");
+            ticker.id = "xxLogTicker";
+            ticker.className = "xx-log-ticker";
+            var firstMsg = document.querySelector("#gameLog .msg:not(.type_date)") || document.querySelector(".console-intro");
+            if (firstMsg && firstMsg.textContent){
+                ticker.textContent = firstMsg.textContent.replace(/\s+/g, " ").trim();
+            }
+            calRow.appendChild(ticker);
+
+            var logBtn = document.createElement("a");
+            logBtn.id = "xxLogToggle";
+            logBtn.className = "xx-log-toggle";
+            logBtn.href = "#";
+            logBtn.textContent = $I("ui.mobile.log.expand");
+            var toggleLog = function(ev){
+                if (ev && ev.target && ev.target.id == "dev_boostCalendar"){ return; }
+                if (typeof window != "undefined" && window.innerWidth > 640){ return; }
+                if (ev){ ev.preventDefault(); ev.stopPropagation(); }
+                var open = !dojo.hasClass(rightCol, "xx-log-open");
+                dojo.toggleClass(rightCol, "xx-log-open", open);
+                logBtn.textContent = $I(open ? "ui.mobile.log.collapse" : "ui.mobile.log.expand");
+            };
+            calRow.onclick = toggleLog;
+            calRow.appendChild(logBtn);
+        }
+
+        var tip = document.getElementById("tooltip");
+        if (tip && !tip._xxTouchBound){
+            tip._xxTouchBound = true;
+            tip.onclick = function(){
+                dojo.style(tip, "display", "none");
+            };
+            document.addEventListener("click", function(ev){
+                if (typeof window != "undefined" && window.innerWidth <= 860 && tip.style.display != "none"){
+                    var t = ev && ev.target;
+                    if (t && (t.className == "xx-info-btn" || (t.closest && t.closest(".btn.disabled")))){
+                        return;
+                    }
+                    dojo.style(tip, "display", "none");
+                }
+            });
+        }
     },
 
     updateIndexHTMLLanguage: function() {
@@ -974,6 +1044,7 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         $("#exportToSimpleFile").attr("value", $I("ui.option.export.simple.file"));
         $("#exportToFullFile").attr("value", $I("ui.option.export.full.file"));
         $("#exportToText").text($I("ui.option.export.text"));
+        $("#debugExportButton").attr("value", $I("ui.option.export.debug"));
         $("#closeButton").attr("value", $I("ui.option.close.button"));
         $("#importWarning").text($I("ui.option.import.warning"));
         $("#importFromText").text($I("ui.option.import.from.text"));
@@ -1091,8 +1162,64 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         }
     },
 
+    //要事飘签——突破/法宝/秘钥等 important 消息除了进日志,再在屏边浮一张签;
+    //载入后数秒内(离线补算刷屏)、剧情卡面开着时、同句连发时都不浮
     notifyLogEvent: function(logmsg) {
-        // do nothing
+        if (!logmsg || typeof document == "undefined"){
+            return;
+        }
+        var tmp = document.createElement("div");
+        tmp.innerHTML = String(logmsg.text || "");
+        var text = (tmp.textContent || "").replace(/\s+/g, " ").trim();
+        var ticker = document.getElementById("xxLogTicker");
+        if (ticker && text && logmsg.type != "date"){
+            ticker.textContent = text;
+            ticker.className = "xx-log-ticker" + (logmsg.type ? " type_" + logmsg.type : "");
+        }
+        if (logmsg.type != "important" || !text){
+            return;
+        }
+        if (!this._toastReadyAt || Date.now() < this._toastReadyAt){
+            return;
+        }
+        if (this.game && this.game.isReadOnly && this.game.isReadOnly()){
+            return;
+        }
+        if (document.querySelector(".xxFateOverlay")){
+            return;
+        }
+        var host = document.getElementById("xxToasts");
+        if (!host){
+            return;
+        }
+        if (text == this._lastToastText && Date.now() - this._lastToastAt < 3000){
+            return;
+        }
+        this._lastToastText = text;
+        this._lastToastAt = Date.now();
+        if (text.length > 140){
+            text = text.slice(0, 138) + "…";
+        }
+        var toast = document.createElement("div");
+        toast.className = "xxToast";
+        toast.setAttribute("role", "status");
+        toast.title = $I("ui.toast.close");
+        toast.textContent = text;
+        host.appendChild(toast);
+        while (host.children.length > 3){
+            host.removeChild(host.firstChild);
+        }
+        var gone = false;
+        var dismiss = function(){
+            if (gone){ return; }
+            gone = true;
+            toast.className += " out";
+            setTimeout(function(){
+                if (toast.parentNode){ toast.parentNode.removeChild(toast); }
+            }, 350);
+        };
+        toast.onclick = dismiss;
+        setTimeout(dismiss, 4500);
     },
 
     saveExport: function(encodedData, rawData) {

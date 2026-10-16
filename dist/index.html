@@ -545,6 +545,8 @@
 				<input id="exportButton" type="button" value="Export" onclick="gamePage.saveExport();">
 
 				<input id="importButton" type="button" value="Import" onclick="$('#importData').val(''); $('#importDiv').show();" style="margin-top: 10px;">
+
+				<input id="debugExportButton" type="button" value="Debug bundle" onclick="gamePage.exportDebugBundle();" style="margin-top: 10px;">
 				<br>
 			</div>
 
@@ -590,6 +592,8 @@
 				<br>
 				<!--span style="font-size:12px;">(Will open in a new window)</span-->
 			</div>
+
+			<div id="xxToasts" class="xxToasts" aria-live="polite"></div>
 
 			<div id="footerLinks" class="links-block">
 				<a id="wiki" href="https://wiki.kittensgame.com/" target="_blank">wiki</a> |
