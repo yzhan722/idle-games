@@ -25,7 +25,7 @@ const SCENARIOS = { low: 0.3, mid: 1.0, high: 2.0 };
 const FAIL_REFUND = 0.5;         // half xiuwei refunded on failed breakthrough
 const DEMON_PER_FAIL = 16;       // 12 + rand*8 avg
 const DEMON_GATE = 90;
-const DEMON_DECAY = 0.02;        // per tick (0.1/sec)
+const DEMON_DECAY = 0.03;        // per tick (0.15/sec)
 const QINGXIN_RELIEF = 40;
 const TARGET_STAGE_SEC = 15 * 60; // "stuck" = a stage taking >15min
 

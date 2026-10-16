@@ -309,6 +309,7 @@ var Server = dojo.declare("classes.game.Server", null, {
 	/** @type {string} */
 	motdContentPrevious: null,
 	motdFreshMessage: false,
+	_serverInfoPromise: null,
 
 	//chiral stuff
 
@@ -1994,6 +1995,10 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	/** @type {UndoChange} */
     undoChange: null,
 
+    //in-memory ring of recent runtime errors — the debug bundle ships this
+    //with the save so a playtester can hand back "what broke" without a devkit
+    _errLog: null,
+
     //ui communication layer
 	/** @type {any} see js/ui.js */
     ui: null,
@@ -2093,6 +2098,17 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 
 		this.resPool = new classes.managers.ResourceManager(this);
 		this.calendar = new com.nuclearunicorn.game.Calendar(this, dojo.byId("calendarDiv"));
+		this._errLog = [];
+		var self = this;
+		if (!(/** @type {any} */ (window))._xianxiaErrHook){
+			(/** @type {any} */ (window))._xianxiaErrHook = true;
+			window.addEventListener("error", function(ev){
+				self.captureError(ev.error || ev.message, "uncaught");
+			});
+			window.addEventListener("unhandledrejection", function(ev){
+				self.captureError(ev.reason, "promise");
+			});
+		}
 
 		this.village = new classes.managers.VillageManager(this);
 		this.resPool.setVillage(this.village);
@@ -2854,7 +2870,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
         var blob = new Blob([lzdata], {type: "text/plain"});
         $link.attr("href", window.URL.createObjectURL(blob));
 
-        var filename = "Kittens Game";
+        var filename = "xianxia-save";
         if (withFullName) {
             filename += " - Run " + (this.stats.getStat("totalResets").val + 1)
                 + " - " + $I("calendar.year.full", [this.calendar.year, this.calendar.getCurSeasonTitle(), Math.floor(this.calendar.day)]);
@@ -2862,6 +2878,33 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
         $link.attr("download", filename + ".txt");
 
         $link.get(0).dispatchEvent(new MouseEvent("click"));
+	},
+
+	/**
+	 * Diagnostic bundle payload for playtesters: compressed save + recent
+	 * runtime error ring + build/env metadata. Plain JSON, no secrets.
+	 */
+	buildDebugBundle: function() {
+		var data = JSON.stringify(this.save());
+		return {
+			app: "xianxia-game",
+			buildRevision: (this.telemetry && this.telemetry.buildRevision) || 0,
+			exportedAt: new Date().toISOString(),
+			userAgent: (typeof navigator != "undefined") ? navigator.userAgent : "",
+			ticks: this.ticks,
+			errors: this._errLog || [],
+			save: this.compressLZData(data)
+		};
+	},
+
+	exportDebugBundle: function() {
+		var payload = this.buildDebugBundle();
+		var $link = $("#download-link");
+		if (!$link.length){ return payload; }	//headless/test env: return payload instead of downloading
+		var blob = new Blob([JSON.stringify(payload, null, 1)], {type: "application/json"});
+		$link.attr("href", window.URL.createObjectURL(blob));
+		$link.attr("download", "xianxia-debug-" + Date.now() + ".json");
+		$link.get(0).dispatchEvent(new MouseEvent("click"));
 	},
 
     saveImportText: function(lzdata, callback){
@@ -3423,14 +3466,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 
 		perTick *= 1 + paragonProductionRatio;
 
-		// *CULTIVATION REALM BONUS (xianxia mod)
-		perTick *= 1 + this.getEffect("realmProductionRatio");
-
-		// *SECLUSION MUNDANE PENALTY (xianxia mod) — 闭关锁世,凡产尽歇,修为一途独进
-		if (res.name != "xiuwei"){
-			perTick *= 1 + this.getEffect("seclusionMundaneRatio");
-		}
-
 		// *POLLUTION MODIFIER
 		if (res.name == "catnip"){
 			perTick *= 1 + this.bld.pollutionEffects["catnipPollutionRatio"];
@@ -3484,6 +3519,14 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		perTick += (this.getEffect(res.name + "PerTickAutoprodSpace") * spaceRatio) * (1 + (paragonSpaceProductionRatio - 1) * this.getEffect("prodTransferBonus"));
 		// +AUTOMATED PRODUCTION SPACE (NOT FULL BONUS)
 		perTick += this.getEffect(res.name + "PerTickSpace") * spaceRatio;
+
+		// *CULTIVATION REALM BONUS (xianxia mod) — 境界道蕴加持天地万物与百工造化
+		perTick *= 1 + this.getEffect("realmProductionRatio");
+
+		// *SECLUSION MUNDANE PENALTY (xianxia mod) — 闭关锁世,凡产尽歇,修为一途独进
+		if (res.name != "xiuwei"){
+			perTick *= 1 + this.getEffect("seclusionMundaneRatio");
+		}
 
 
 		//CYCLE EFFECTS
@@ -4874,9 +4917,13 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 
 
 	tick: function(){
-		// Even if the game is paused, scheduler should still be able to obtain a focus
-		// to handle cases like save/load/reset
-		this.timer.updateScheduledEvents();
+		try {
+			// Even if the game is paused, scheduler should still be able to obtain a focus
+			// to handle cases like save/load/reset
+			this.timer.updateScheduledEvents();
+		} catch (e) {
+			this.captureError(e, "tick-scheduler");
+		}
 
 		if (this.undoChange) {
 			// "Undo button" countdown should still tick while pawsed
@@ -4888,14 +4935,23 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		}
 		if (this.isPaused) {
 			// Still update UI if the player gathers catnip while pawsed or something
-			this.ui.update();
+			try {
+				this.ui.update();
+			} catch (e) {
+				this.captureError(e, "tick-paused");
+			}
 			return;
 		}
 
 		var timestampStart = Date.now();
 
-		this.update();
-		this.calendar.tick();
+		try {
+			this.update();
+			this.calendar.tick();
+		} catch (e) {
+			//一帧崩了不能打死整个心跳——记进环形日志继续跳,调试包里会带上
+			this.captureError(e, "tick");
+		}
 		this.ticks++;
 
 		var timestampEnd = Date.now();
@@ -4943,6 +4999,37 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		//江湖榜: 每 5 分钟静默上报一次——后端不在线只留一条 console error
 		if (this.ticks % (this.ticksPerSecond * 300) == 0 && this.server){
 			this.server.submitJianghu();
+		}
+	},
+
+	/**
+	 * Ring-buffered runtime error capture. Consecutive identical errors fold
+	 * into a counter so one broken tick can't flood the log. Cap: 50 entries.
+	 * @param {any} e
+	 * @param {string} ctx
+	 */
+	captureError: function(e, ctx){
+		if (!this._errLog){ this._errLog = []; }
+		var entry = {
+			t: new Date().toISOString(),
+			ctx: ctx || "",
+			msg: (e && e.message) ? String(e.message) : String(e),
+			stack: (e && e.stack) ? String(e.stack).slice(0, 2000) : "",
+			ticks: this.ticks,
+			build: (this.telemetry && this.telemetry.buildRevision) || 0
+		};
+		var last = this._errLog[this._errLog.length - 1];
+		if (last && last.msg == entry.msg && last.ctx == entry.ctx){
+			last.count = (last.count || 1) + 1;
+			last.t = entry.t;
+			last.ticks = entry.ticks;
+		} else {
+			entry.count = 1;
+			this._errLog.push(entry);
+			if (this._errLog.length > 50){ this._errLog.shift(); }
+		}
+		if (typeof console != "undefined" && console.error){
+			console.error("[xianxia:" + entry.ctx + "]", e);
 		}
 	},
 

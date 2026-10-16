@@ -1679,6 +1679,117 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 					this.game.clearSelectedObject();
 				}));
 		}
+
+		this.renderAfford();
+	},
+
+	update: function(){
+		this.inherited(arguments);
+		this.updateAfford();
+	},
+
+	onClick: function(event){
+		if (this.model && !this.model.enabled && typeof window != "undefined" && window.innerWidth <= 860){
+			var fn = this.domNode && (/** @type {any} */ (this.domNode))._xxShowTooltip;
+			if (fn){ fn(event); }
+		}
+		this.inherited(arguments);
+	},
+
+	//蓄力条 + 内联价签——按钮底缘一线显示离「买得起」还差多少,
+	//卡面直接列出所需资源与缺口色标,移动端无需悬停即可一眼读全价目
+	renderAfford: function(){
+		var prices = this.model && this.model.prices;
+		if (!this.domNode){
+			return;
+		}
+		if (!this.infoBtn && this.model && (this.model.description || (prices && prices.length))){
+			this.infoBtn = dojo.create("span", {
+				className: "xx-info-btn",
+				innerHTML: "?",
+				title: $I("ui.btn.info")
+			}, this.domNode);
+			var self = this;
+			dojo.connect(this.infoBtn, "onclick", this, function(ev){
+				if (ev){
+					ev.stopPropagation();
+					ev.preventDefault();
+				}
+				var fn = self.domNode && (/** @type {any} */ (self.domNode))._xxShowTooltip;
+				if (fn){ fn(ev); }
+			});
+		}
+		if (this.affordNode || !prices || !prices.length){
+			return;
+		}
+		if (this.buttonContent && !this.costNode){
+			this.costNode = dojo.create("div", {className: "xx-cost"}, this.buttonContent);
+		}
+		this.affordNode = dojo.create("div", {className: "xx-afford", role: "presentation"}, this.domNode);
+		this.affordFill = dojo.create("i", null, this.affordNode);
+		this._affordPct = -1;
+		this._costHtml = "";
+		this.updateAfford();
+	},
+
+	updateAfford: function(){
+		if (!this.affordNode || !this.model){
+			return;
+		}
+		var meta = this.model.metadata;
+		var done = !!(meta && meta.researched === true && typeof meta.val != "number");
+		if (done !== this._affordDone){
+			this._affordDone = done;
+			this.affordNode.style.display = done ? "none" : "";
+			if (this.costNode){
+				this.costNode.style.display = done ? "none" : "";
+			}
+		}
+		if (done){
+			return;
+		}
+		var prices = this.model.prices || [];
+		var frac = 1;
+		var resPool = this.game && this.game.resPool;
+		var costHtml = "";
+		for (var i = 0; resPool && i < prices.length; i++){
+			var p = prices[i];
+			if (!p || !(p.val > 0)){ continue; }
+			var res = resPool.get(p.name);
+			if (res){
+				frac = Math.min(frac, res.value / p.val);
+			}
+			if (i < 4){
+				var ctitle = res ? (res.title || res.name) : p.name;
+				var cval = this.game.getDisplayValueExt(p.val);
+				var ccls = "ok";
+				if (res){
+					if (res.maxValue > 0 && p.val > res.maxValue){ ccls = "lim"; }
+					else if (res.value < p.val){ ccls = "lack"; }
+				}
+				costHtml += "<span class=\"xx-ci " + ccls + "\"><i>" + ctitle + "</i><b>" + cval + "</b></span>";
+			}
+		}
+		if (this.costNode && costHtml !== this._costHtml){
+			this._costHtml = costHtml;
+			this.costNode.innerHTML = costHtml;
+		}
+		var pct = Math.floor(Math.max(0, Math.min(1, frac)) * 100);
+		if (pct !== this._affordPct){
+			this._affordPct = pct;
+			this.affordFill.style.width = pct + "%";
+		}
+		var ready = pct >= 100 && !!this.model.enabled;
+		if (ready !== this._affordReady){
+			this._affordReady = ready;
+			dojo.toggleClass(this.domNode, "xx-ready", ready);
+		}
+		var limited = !!this.model.resourceIsLimited;
+		if (limited !== this._affordLimited){
+			this._affordLimited = limited;
+			dojo.toggleClass(this.affordNode, "xx-lim", limited);
+			dojo.toggleClass(this.domNode, "xx-lim", limited);
+		}
 	},
 
 	getTooltipHTML: function(){
@@ -2775,13 +2886,26 @@ var UIUtils = {
 		var tooltip = dojo.byId("tooltip");
 
 		var showTooltip = function (e) {
-			e.stopPropagation();
+			if (e && e.stopPropagation){
+				e.stopPropagation();
+			}
 			game.tooltipUpdateFunc = function(){
 				tooltip.innerHTML = dojo.hitch(game, htmlProvider)();
 			};
 			game.tooltipUpdateFunc();
 
 			game.tooltipOwnerDomNode = container;
+
+			if (typeof window != "undefined" && window.innerWidth <= 640){
+				dojo.addClass(tooltip, "xx-mobile-tip");
+				dojo.style(tooltip, "top", "");
+				dojo.style(tooltip, "left", "");
+				if (tooltip.innerHTML) {
+					dojo.style(tooltip, "display", "");
+				}
+				return;
+			}
+			dojo.removeClass(tooltip, "xx-mobile-tip");
 
 			var pos = $(container).offset();
 
@@ -2809,6 +2933,10 @@ var UIUtils = {
 				dojo.style(tooltip, "display", "");
 			}
 		};
+
+		if (container){
+			(/** @type {any} */ (container))._xxShowTooltip = showTooltip;
+		}
 
 		dojo.connect(container, "onmouseover", this, showTooltip);
 
