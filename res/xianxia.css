@@ -1442,13 +1442,13 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .xxRiftPanel {
 	margin: 0 0 14px;
 	padding: 12px 14px 10px;
-	border: 1px solid var(--xx-line);
+	border: 1px solid rgba(212, 176, 106, .35);
 	border-radius: 10px;
 	background:
-		radial-gradient(120% 140% at 50% -20%, rgba(212, 175, 55, .10), transparent 60%),
-		radial-gradient(80% 100% at 90% 110%, rgba(120, 80, 200, .10), transparent 55%),
-		rgba(12, 18, 28, .72);
-	box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 6px 24px rgba(0,0,0,.35);
+		linear-gradient(90deg, rgba(10, 15, 24, .90) 0%, rgba(12, 18, 28, .72) 55%, rgba(12, 18, 28, .55) 100%),
+		url("art/fate_rift.jpg") center 38% / cover no-repeat,
+		rgba(12, 18, 28, .85);
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 6px 24px rgba(0,0,0,.42);
 }
 .xxRiftHead {
 	font-family: var(--xx-serif);
@@ -2416,16 +2416,16 @@ input, select, textarea, button { font-family: inherit; }
 
 .xx-hero-portrait {
 	position: relative;
-	width: 78px;
-	height: 78px;
-	flex: 0 0 78px;
+	width: 84px;
+	height: 84px;
+	flex: 0 0 84px;
 	border-radius: 16px;
-	border: 1px solid rgba(212, 176, 106, .62);
+	border: 1px solid rgba(212, 176, 106, .68);
 	background: radial-gradient(circle at 50% 42%, rgba(28, 42, 58, .95), rgba(10, 15, 23, .98));
 	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, .18),
-		0 0 22px rgba(212, 176, 106, .20),
-		0 6px 16px rgba(0, 0, 0, .48);
+		inset 0 1px 0 rgba(255, 255, 255, .20),
+		0 0 24px rgba(212, 176, 106, .24),
+		0 6px 18px rgba(0, 0, 0, .52);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -2515,14 +2515,14 @@ input, select, textarea, button { font-family: inherit; }
 	position: relative;
 	width: 100%;
 	max-width: 760px;
-	height: 76px;
+	height: 86px;
 	margin: 0 0 12px 0;
 	border-radius: 12px;
-	border: 1px solid rgba(212, 176, 106, .30);
+	border: 1px solid rgba(212, 176, 106, .36);
 	background: linear-gradient(135deg, rgba(16, 24, 36, .92), rgba(10, 15, 24, .95));
 	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, .07),
-		0 6px 20px rgba(0, 0, 0, .34);
+		inset 0 1px 0 rgba(255, 255, 255, .09),
+		0 6px 22px rgba(0, 0, 0, .42);
 	overflow: hidden;
 	user-select: none;
 }
@@ -2590,12 +2590,12 @@ input, select, textarea, button { font-family: inherit; }
 /* Fate Choice, Identity & Death Modal Scene Illustrations (.xxFateArt) */
 .xxFateArt {
 	width: 100%;
-	height: 98px;
+	height: 122px;
 	margin: -4px 0 12px 0;
 	border-radius: 9px;
-	border: 1px solid rgba(212, 176, 106, .32);
+	border: 1px solid rgba(212, 176, 106, .38);
 	background: rgba(8, 13, 20, .85);
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 4px 14px rgba(0, 0, 0, .4);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10), 0 4px 16px rgba(0, 0, 0, .45);
 	overflow: hidden;
 }
 .xx-fate-svg {
@@ -2862,10 +2862,12 @@ input, select, textarea, button { font-family: inherit; }
 	margin: 0 0 10px;
 	padding: 8px 12px;
 	border-radius: 9px;
-	border: 1px solid rgba(79, 209, 165, .36);
+	border: 1px solid rgba(79, 209, 165, .42);
 	background:
-		radial-gradient(80% 120% at 0% 50%, rgba(79, 209, 165, .14), transparent 60%),
-		rgba(12, 22, 24, .84);
+		linear-gradient(90deg, rgba(10, 20, 22, .90) 0%, rgba(12, 22, 26, .74) 55%, rgba(12, 22, 26, .58) 100%),
+		url("art/fate_bottle.jpg") center 48% / cover no-repeat,
+		rgba(12, 22, 24, .88);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 4px 14px rgba(0, 0, 0, .35);
 }
 .xxDewInfo {
 	font-family: var(--xx-serif);

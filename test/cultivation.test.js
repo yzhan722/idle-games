@@ -818,15 +818,42 @@ test("gatherCatnip preserves +5 on first click, scales with fields/stage, and tr
     Math.random.mockRestore();
 });
 
-test("XianxiaArt generates SVG illustrations for hero portraits, tab scene banners, fate cards, resources, and buttons", () => {
+test("XianxiaArt generates SVG illustrations with Nano Banana artwork for hero portraits, tab scene banners, fate cards, resources, and buttons", () => {
+    const fs = require("fs");
+    const path = require("path");
+    const expectedArtFiles = [
+        "portrait_qi.jpg",
+        "portrait_core.jpg",
+        "portrait_immortal.jpg",
+        "banner_cultivation.jpg",
+        "banner_bonfire.jpg",
+        "banner_science.jpg",
+        "banner_workshop.jpg",
+        "banner_spacetime.jpg",
+        "fate_bottle.jpg",
+        "fate_rift.jpg"
+    ];
+    for (const fileName of expectedArtFiles) {
+        const resPath = path.join(__dirname, "..", "res", "art", fileName);
+        const distPath = path.join(__dirname, "..", "dist", "res", "art", fileName);
+        expect(fs.existsSync(resPath)).toBe(true);
+        expect(fs.statSync(resPath).size).toBeGreaterThan(10000);
+        expect(fs.existsSync(distPath)).toBe(true);
+    }
+
     const art = classes.ui.XianxiaArt;
     expect(art).toBeDefined();
-    expect(art.heroPortraitSVG("jindan", "丹", "tian", true, 30, true)).toContain("<svg");
-    expect(art.cultivationBgSVG("yuanying")).toContain("<svg");
-    expect(art.tabBannerHTML("Bonfire", game)).toContain("xxSceneBanner");
-    expect(art.tabBannerHTML("Science", game)).toContain("<svg");
-    expect(art.fateArtSVG("zhangtian", null)).toContain("<svg");
-    expect(art.fateArtSVG(null, "samsara")).toContain("<svg");
+    expect(art.heroPortraitSVG("lianqi", "炼", "tian", false, 0, false)).toContain("res/art/portrait_qi.jpg");
+    expect(art.heroPortraitSVG("jiedan", "丹", "tian", true, 30, true)).toContain("res/art/portrait_core.jpg");
+    expect(art.heroPortraitSVG("huashen", "神", "tian", true, 10, true)).toContain("res/art/portrait_immortal.jpg");
+    expect(art.cultivationBgSVG("yuanying")).toContain("res/art/banner_cultivation.jpg");
+    expect(art.tabBannerHTML("Bonfire", game)).toContain("res/art/banner_bonfire.jpg");
+    expect(art.tabBannerHTML("Science", game)).toContain("res/art/banner_science.jpg");
+    expect(art.tabBannerHTML("Workshop", game)).toContain("res/art/banner_workshop.jpg");
+    expect(art.tabBannerHTML("Space", game)).toContain("res/art/banner_spacetime.jpg");
+    expect(art.fateArtSVG("bottle", null)).toContain("res/art/fate_bottle.jpg");
+    expect(art.fateArtSVG("xutian", null)).toContain("res/art/fate_rift.jpg");
+    expect(art.fateArtSVG("death", "samsara")).toContain("res/art/banner_spacetime.jpg");
     expect(art.originIcon("farmer")).toContain("<svg");
     expect(art.actionArt("游")).toContain("<svg");
     expect(art.tileIcon("bonus")).toContain("<svg");
