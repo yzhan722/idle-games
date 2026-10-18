@@ -89,6 +89,19 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 		description: $I("challendge.anarchy.desc"),
 		effectDesc: $I("challendge.anarchy.effect.desc"),
 		defaultUnlocked: true,
+		effects: {
+			"manpowerRatio": 0,
+			"xiuweiRatio": 0
+		},
+		calculateEffects: function(self, game){
+			if (self.active) {
+				self.effects["manpowerRatio"] = -0.5;
+				self.effects["xiuweiRatio"] = -0.25;
+			} else {
+				self.effects["manpowerRatio"] = 0;
+				self.effects["xiuweiRatio"] = 0;
+			}
+		},
 		checkCompletionCondition: function(game){
 			return game.bld.get("aiCore").val > 0;
 		},
@@ -281,7 +294,7 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 				}
 			}
 
-			return false;
+			return game.stats.getStatCurrent("totalTrades").val >= 50 || game.bld.get("tradepost").val >= 25;
 		},
 		upgrades: {
 			upgrades: ["compositeBow", "crossbow", "railgun"]

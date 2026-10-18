@@ -193,6 +193,8 @@ WResourceRow = React.createClass({
         var capPct = res.maxValue ? Math.min(100, res.value / res.maxValue * 100) : 0;
         var capCls = res.maxValue ?
             (capPct >= 95 ? " full" : (capPct >= 75 ? " high" : "")) : null;
+        var resIcoSvg = (typeof classes != "undefined" && classes.ui && classes.ui.XianxiaArt)
+            ? classes.ui.XianxiaArt.resIcon(res.name) : "";
 
         return $r("div", {role: "row", className: resRowClass}, [
             this.props.isEditMode ?
@@ -207,6 +209,11 @@ WResourceRow = React.createClass({
                 ) : null,
 
             $r("div", {className:"res-cell res-head", role: "gridcell"}, [
+                resIcoSvg ? $r("span", {
+                    className: "xx-res-ico",
+                    "aria-hidden": "true",
+                    dangerouslySetInnerHTML: {__html: resIcoSvg}
+                }) : null,
                 $r("span", {
                     className:"resource-name",
                     style:resNameCss,

@@ -25,7 +25,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.agriculture.label"),
 		description: $I("science.agriculture.desc"),
 		effectDesc: $I("science.agriculture.effectDesc"),
-		prices: [{name : "science", val: 100}],
+		prices: [{name : "science", val: 60}],
 		unlocks: {
 			buildings: ["barn"],
 			tech: ["mining", "archery"],
@@ -37,7 +37,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.archery.label"),
 		description: $I("science.archery.desc"),
 		effectDesc: $I("science.archery.effectDesc"),
-		prices: [{name : "science", val: 300}],
+		prices: [{name : "science", val: 180}],
 		unlocks: {
 			buildings: ["zebraOutpost", "zebraWorkshop", "zebraForge"],
 			tech: ["animal"]
@@ -48,7 +48,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.mining.label"),
 		description: $I("science.mining.desc"),
 		effectDesc: $I("science.mining.effectDesc"),
-		prices: [{name : "science", val: 500}],
+		prices: [{name : "science", val: 300}],
 		unlocks: {
 			buildings: ["mine", "workshop"],
 			tech: ["metal"],
@@ -60,7 +60,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.metal.label"),
 		description: $I("science.metal.desc"),
 		effectDesc: $I("science.metal.effectDesc"),
-		prices: [{name : "science", val: 900}],
+		prices: [{name : "science", val: 600}],
 		unlocks: {
 			buildings: ["smelter"],
 			upgrades: ["huntingArmor", "prospecting"]
@@ -71,7 +71,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.animal.label"),
 		description: $I("science.animal.desc"),
 		effectDesc: $I("science.animal.effectDesc"),
-		prices: [{name : "science", val: 500}],	//mostly does nothing, so price is lower
+		prices: [{name : "science", val: 350}],	//mostly does nothing, so price is lower
 		unlocks: {
 			buildings: ["pasture", "unicornPasture"],
 			tech: ["civil", "math", "construction"]
@@ -188,6 +188,9 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 			upgrades: ["combustionEngine",
 						"reinforcedWarehouses", "steelAxe", "steelArmor"],
 			crafts: ["steel"]
+		},
+		upgrades: {
+			buildings: ["mine", "smelter"]
 		}
 	}, {
 		name: "theology",
@@ -620,7 +623,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		],
 		unlocks: {
 			tech: ["advExogeology"],
-			upgrades: ["unobtainiumReflectors", "hydroPlantTurbines", "storageBunkers"]
+			upgrades: ["unobtainiumReflectors", "unobtainiumAxe", "unobtainiumSaw", "hydroPlantTurbines", "storageBunkers"]
 		}
 	}, {
 		name: "advExogeology",

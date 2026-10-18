@@ -1418,7 +1418,8 @@ var ButtonModernController = dojo.declare("com.nuclearunicorn.game.ui.ButtonMode
 		for (var i in model.prices){
 			var price = model.prices[i];
 			if (price.name == "wood") {
-				if (this.game.village.getKittens() == 0) {
+				var kittens = (this.game.village && this.game.village.getKittens) ? this.game.village.getKittens() : 0;
+				if (kittens == 0) {
 					//(We don't want any kittens starving to death.)
 					return true;
 				}
@@ -1460,7 +1461,8 @@ var ButtonModernController = dojo.declare("com.nuclearunicorn.game.ui.ButtonMode
 		if (amt <= 0) {
 			return;
 		}
-		if (res.name == "wood" && game.village.getKittens() > 0 && !craftWood) {
+		var hasKittens = (game.village && game.village.getKittens) ? (game.village.getKittens() > 0) : false;
+		if (res.name == "wood" && hasKittens && !craftWood) {
 			//Don't craft wood if we have kittens, as there's risk of causing starvation
 			return;
 		}
@@ -1702,6 +1704,18 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 		var prices = this.model && this.model.prices;
 		if (!this.domNode){
 			return;
+		}
+		if (!this.artNode && typeof classes != "undefined" && classes.ui && classes.ui.XianxiaArt &&
+			!dojo.hasClass(this.domNode, "xxAction") && !dojo.hasClass(this.domNode, "xxFateBtn")){
+			var artSvg = classes.ui.XianxiaArt.btnIcon(this);
+			if (artSvg){
+				this.artNode = dojo.create("span", {
+					className: "xx-btn-ico",
+					"aria-hidden": "true",
+					innerHTML: artSvg
+				}, this.domNode);
+				dojo.addClass(this.domNode, "xx-has-ico");
+			}
 		}
 		if (!this.infoBtn && this.model && (this.model.description || (prices && prices.length))){
 			this.infoBtn = dojo.create("span", {

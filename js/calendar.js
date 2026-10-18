@@ -339,7 +339,7 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 	},
 
 	cycleEffectsFestival: function(effects) {
-		if (this.game.prestige.getPerk("numeromancy").researched && this.game.calendar.festivalDays){
+		if (this.game.prestige.getPerk("numeromancy").researched){
 			var list_festivalEffects_cycle = this.cycles[this.cycle].festivalEffects;
 
 			for (var effect in effects) {
@@ -392,10 +392,9 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 	 */
 	giveAlicornmancyYearlyUnicorns: function(numTwoYears, message) {
 		var hasAlicornmancy = this.game.prestige.getPerk("alicornmancy").researched;
-		var hasPacifism = this.game.challenges.isActive("pacifism");
 		var hasAnimal = this.game.science.get("animal").researched;
 		var unicorns = this.game.resPool.get("unicorns");
-		if (hasAlicornmancy && hasPacifism && hasAnimal && unicorns.value < 2) {
+		if (hasAlicornmancy && hasAnimal && unicorns.value < 2) {
 			var delta = Math.min(2 - unicorns.value, numTwoYears);
 			this.game.resPool.addResEvent("unicorns", delta);
 			if (message) {
@@ -582,11 +581,15 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 				sciGain = this.game.resPool.addResEvent("science", sciBonus);
 			}
 			var ironGain = 0;
+			var bloodstoneGain = 0;
 			if (this.game.workshop.get("prospecting").researched) {
 				ironGain = this.game.resPool.addResEvent("iron", 5 * (1 + minerologyBonus));
+				if (this.game.science.get("archery").researched) {
+					bloodstoneGain = this.game.resPool.addResEvent("bloodstone", 1 * (1 + this.game.getEffect("bloodstoneRatio")));
+				}
 			}
 
-			if (mineralsGain > 0 || sciGain > 0 || ironGain > 0){
+			if (mineralsGain > 0 || sciGain > 0 || ironGain > 0 || bloodstoneGain > 0){
 				var meteorMsg = $I("calendar.msg.meteor");
 
 				if (mineralsGain > 0){
@@ -598,6 +601,9 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 				if (sciGain > 0) {
 					meteorMsg += ", +" + this.game.getDisplayValueExt(sciGain) + " " + $I("resources.science.title");
 				}
+				if (bloodstoneGain > 0) {
+					meteorMsg += ", +" + this.game.getDisplayValueExt(bloodstoneGain) + " " + $I("resources.bloodstone.title");
+				}
 
 				this.game.msg(meteorMsg + "!", null, "meteor");
 			}
@@ -605,11 +611,16 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 			//TODO: make meteors give titanium on higher levels
 		}
 
-		//------------------------- 0.035% chance of spawning unicorns in pacifism -----------------
+		//------------------------- spawning initial wandering unicorns (< 2) -----------------
+		var animal = this.game.science.get("animal");
+		var unicorns = this.game.resPool.get("unicorns");
 		if (this.game.challenges.isActive("pacifism")){
-			var animal = this.game.science.get("animal");
-			var unicorns = this.game.resPool.get("unicorns");
 			if (this.game.rand(100000) <= 17 * unicornChanceRatio && unicorns.value < 2 && animal.researched){
+				this.game.resPool.addResEvent("unicorns", 1);
+				this.game.msg($I("calendar.msg.unicorn"));
+			}
+		} else if (!this.game.ironWill){
+			if (this.game.rand(100000) <= 350 * unicornChanceRatio && unicorns.value < 2 && animal.researched){
 				this.game.resPool.addResEvent("unicorns", 1);
 				this.game.msg($I("calendar.msg.unicorn"));
 			}
@@ -619,7 +630,6 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 
 		if (this.game.ironWill){
 			var archery = this.game.science.get("archery");
-			var unicorns = this.game.resPool.get("unicorns");
 			if (this.game.rand(100000) <= 17 * unicornChanceRatio && unicorns.value < 2 && archery.researched){
 				this.game.resPool.addResEvent("unicorns", 1);
 				this.game.msg($I("calendar.msg.unicorn"));
@@ -784,6 +794,9 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 
 			if (this.game.workshop.get("prospecting").researched) {
 				this.game.resPool.addResEvent("iron", numberEvents * 5 * (1 + minerologyBonus));
+				if (this.game.science.get("archery").researched) {
+					this.game.resPool.addResEvent("bloodstone", numberEvents * (1 + this.game.getEffect("bloodstoneRatio")));
+				}
 			}
 
 			//TODO: make meteors give titanium on higher levels
@@ -811,12 +824,18 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 				totalNumberOfEvents += numberEvents;
 			}
 		}
-		//------------------------- 0.035% chance of spawning unicorns in Pacifism -----------------
+		//------------------------- spawning initial wandering unicorns (< 2) -----------------
+		var animal = this.game.science.get("animal");
+		var unicorns = this.game.resPool.get("unicorns");
 		if (this.game.challenges.isActive("pacifism")){
-			var animal = this.game.science.get("animal");
-			var unicorns = this.game.resPool.get("unicorns");
 			if (unicorns.value < 2 && animal.researched){
 				numberEvents = Math.round(daysOffset * 17 * unicornChanceRatio / 100000);
+				this.game.resPool.addResEvent("unicorns", numberEvents);
+				totalNumberOfEvents += numberEvents;
+			}
+		} else if (!this.game.ironWill){
+			if (unicorns.value < 2 && animal.researched){
+				numberEvents = Math.min(2 - unicorns.value, Math.round(daysOffset * 350 * unicornChanceRatio / 100000));
 				this.game.resPool.addResEvent("unicorns", numberEvents);
 				totalNumberOfEvents += numberEvents;
 			}

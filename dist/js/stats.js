@@ -126,8 +126,13 @@ dojo.declare("classes.managers.StatsManager", com.nuclearunicorn.core.TabManager
     },
 
     load: function(saveData){
-		this.loadMetadata(this.stats, saveData.stats, "stats");
-		this.loadMetadata(this.statsCurrent, saveData.statsCurrent, "statsCurrent");
+		var liveAll = {}, liveCur = {}, i;
+		for (i = 0; i < this.stats.length; i++){ liveAll[this.stats[i].name] = true; }
+		for (i = 0; i < this.statsCurrent.length; i++){ liveCur[this.statsCurrent[i].name] = true; }
+		var savedAll = (saveData.stats || []).filter(function(s){ return s && liveAll[s.name]; });
+		var savedCur = (saveData.statsCurrent || []).filter(function(s){ return s && liveCur[s.name]; });
+		this.loadMetadata(this.stats, savedAll, "stats");
+		this.loadMetadata(this.statsCurrent, savedCur, "statsCurrent");
     },
 
     getStat: function(name){

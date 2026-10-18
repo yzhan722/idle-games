@@ -761,3 +761,258 @@ test("Break omens respect cond gates and can return null", () => {
     const o = cult.rollBreakOmen();
     expect(o === null || typeof o.key == "string").toBe(true);
 });
+
+test("Early-game guide milestone rewards claim once without skipping steps and survive save/load", () => {
+    const cult = game.cultivation;
+    game.resPool.get("catnip").value = 5;
+    cult.claimGuideRewards();
+    expect(cult.guideClaimed.gather).toBe(true);
+    expect(cult.guideClaimed.field).toBeFalsy();	//must not auto-complete field or refine
+    expect(cult.guideClaimed.refine).toBeFalsy();
+    const xwAfterFirst = game.resPool.get("xiuwei").value;
+    expect(xwAfterFirst).toBeGreaterThan(0);
+
+    //claiming again does not double-grant
+    cult.claimGuideRewards();
+    expect(game.resPool.get("xiuwei").value).toBe(xwAfterFirst);
+
+    const saveData = {};
+    cult.save(saveData);
+    cult.guideClaimed = {};
+    cult.load(saveData);
+    expect(cult.guideClaimed.gather).toBe(true);
+});
+
+test("resolveWander always grants base xiuwei and protects Lianqi players from ambush loss", () => {
+    const cult = game.cultivation;
+    game.resPool.get("minerals").maxValue = 1000;
+    game.resPool.get("minerals").value = 200;
+    const xw0 = game.resPool.get("xiuwei").value;
+    jest.spyOn(Math, "random").mockReturnValue(0.88);	//ambush band (83..92)
+    cult.resolveWander();
+    expect(game.resPool.get("xiuwei").value).toBeGreaterThan(xw0);
+    expect(game.resPool.get("minerals").value).toBe(200);	//no ambush loss in Lianqi
+    Math.random.mockRestore();
+});
+
+test("gatherCatnip preserves +5 on first click, scales with fields/stage, and triggers serendipity", () => {
+    const bld = game.bld;
+    const catnip = game.resPool.get("catnip");
+    const xiuwei = game.resPool.get("xiuwei");
+    catnip.value = 0;
+    xiuwei.value = 0;
+    bld.gatherClicks = 0;
+
+    //1st click: exact +5 catnip, no serendipity
+    bld.gatherCatnip();
+    expect(catnip.value).toBe(5);
+
+    //Subsequent click with fields & stage + serendipity roll for xiuwei
+    bld.getBuildingExt("field").meta.val = 6;	//+3 catnip bonus
+    game.cultivation.stages[1].researched = true;	//stIdx=1 -> +2 catnip bonus
+    jest.spyOn(Math, "random").mockReturnValue(0.20);	//< 0.26 and >= 0.14 -> xiuwei boon
+    bld.gatherCatnip();
+    expect(catnip.value).toBe(5 + 10);	//5 base + 3 field + 2 stage = 10
+    expect(xiuwei.value).toBeGreaterThan(0);
+    bld.getBuildingExt("field").meta.val = 0;
+    Math.random.mockRestore();
+});
+
+test("XianxiaArt generates SVG illustrations for hero portraits, tab scene banners, fate cards, resources, and buttons", () => {
+    const art = classes.ui.XianxiaArt;
+    expect(art).toBeDefined();
+    expect(art.heroPortraitSVG("jindan", "丹", "tian", true, 30, true)).toContain("<svg");
+    expect(art.cultivationBgSVG("yuanying")).toContain("<svg");
+    expect(art.tabBannerHTML("Bonfire", game)).toContain("xxSceneBanner");
+    expect(art.tabBannerHTML("Science", game)).toContain("<svg");
+    expect(art.fateArtSVG("zhangtian", null)).toContain("<svg");
+    expect(art.fateArtSVG(null, "samsara")).toContain("<svg");
+    expect(art.originIcon("farmer")).toContain("<svg");
+    expect(art.actionArt("游")).toContain("<svg");
+    expect(art.tileIcon("bonus")).toContain("<svg");
+    expect(art.resIcon("xiuwei")).toContain("<svg");
+    expect(art.resIcon("catnip")).toContain("<svg");
+    expect(art.btnIcon({model: {metadata: {name: "field"}}})).toContain("<svg");
+});
+
+test("Building and technology names in zh.json use canonical Fanren Xiuxianzhuan terminology", () => {
+    const zh = require("../res/i18n/zh.json");
+    expect(zh["buildings.hut.label"]).toBe("神手竹庐");
+    expect(zh["buildings.logHouse.label"]).toBe("太岳石室");
+    expect(zh["buildings.mansion.label"]).toBe("天星洞府");
+    expect(zh["buildings.biolab.label"]).toBe("百药园");
+    expect(zh["buildings.smelter.label"]).toBe("地火炼器室");
+    expect(zh["buildings.magneto.label"]).toBe("颠倒五行阵");
+    expect(zh["buildings.reactor.label"]).toBe("乾蓝地火阵");
+    expect(zh["buildings.accelerator.label"]).toBe("元磁极光阵");
+    expect(zh["buildings.chronosphere.label"]).toBe("真言轮回盘");
+    expect(zh["science.calendar.label"]).toBe("长春引气诀");
+    expect(zh["science.archery.label"]).toBe("眨眼剑诀");
+    expect(zh["science.mining.label"]).toBe("天眼望气术");
+    expect(zh["science.physics.label"]).toBe("青元剑诀");
+    expect(zh["science.electricity.label"]).toBe("辟邪神雷诀");
+    expect(zh["science.biochemistry.label"]).toBe("三转重元功");
+    expect(zh["science.metalurgy.label"]).toBe("大庚剑阵图");
+    expect(zh["science.electronics.label"]).toBe("大衍神识决");
+    expect(zh["science.particlePhysics.label"]).toBe("元磁神光诀");
+    expect(zh["science.chronophysics.label"]).toBe("真言光阴诀");
+
+    const legacyModernLabels = ["声学", "地质学", "建筑学", "生态学", "超导体", "宙光粒子论", "悖论理论"];
+    for (const k of Object.keys(zh)) {
+        if (k.startsWith("science.") && k.endsWith(".label")) {
+            expect(legacyModernLabels).not.toContain(zh[k]);
+        }
+    }
+
+    // Fine-grained descriptions include both Fanren lore and explicit numerical/mechanical breakdowns
+    expect(zh["buildings.hut.desc"]).toContain("神手谷");
+    expect(zh["buildings.hut.desc"]).toContain("+0.005/跳");
+    expect(zh["buildings.library.desc"]).toContain("+12%");
+    expect(zh["buildings.library.desc"]).toContain("大衍神机阁");
+    expect(zh["buildings.smelter.desc"]).toContain("0.05 灵木");
+    expect(zh["buildings.smelter.desc"]).toContain("0.03 玄铁");
+    expect(zh["science.construction.effectDesc"]).toContain("太岳石室");
+    expect(zh["science.construction.effectDesc"]).toContain("须弥宝库");
+    expect(zh["science.construction.effectDesc"]).toContain("千竹炼木坊");
+    expect(zh["workshop.crafts.alloy.desc"]).toContain("75 百炼钢 + 10 庚金");
+    expect(zh["effectsMgr.statics.libraryRatio.title"]).toBe("藏经阁加成");
+    expect(zh["effectsMgr.statics.lumberMillRatio.title"]).toBe("千竹炼木坊加成");
+    expect(zh["effectsMgr.statics.magnetoBoostRatio.title"]).toBe("大衍机关枢对颠倒五行阵增幅");
+});
+
+//--------------------------------
+//       Directions 1, 2, 3, 5 — Gameplay Expansion
+//--------------------------------
+test("Direction 2: New pills (jiangchen, peiying, biyan) and Bottle Dew catalysis work as designed", () => {
+    const cult = game.cultivation;
+    cult.getStage("jiedan_0").researched = true;
+    cult.getStage("yuanying_0").researched = true;
+    cult.getStage("huashen_0").researched = true;
+
+    // jiangchen: +0.25 breakMult (up to 0.65) and buffs.jiangchen
+    cult.getPill("jiangchen").val = 1;
+    expect(cult.usePill("jiangchen")).toBe(true);
+    expect(cult.breakMult).toBeCloseTo(0.25);
+    expect(cult.buffs.jiangchen).toBe(1500);
+
+    // peiying: clears post-breakthrough turbulence (lastBreakYear) and reduces heartDemon by 30
+    cult.lastBreakYear = 10;
+    cult.heartDemon = 50;
+    cult.getPill("peiying").val = 1;
+    expect(cult.usePill("peiying")).toBe(true);
+    expect(cult.lastBreakYear).toBeNull();
+    expect(cult.heartDemon).toBe(20);
+
+    // biyan: buffs.biyan increases xiuweiRatio, realmProductionRatio, and combatPower
+    const cpBefore = cult.getCombatPower();
+    cult.getPill("biyan").val = 1;
+    expect(cult.usePill("biyan")).toBe(true);
+    expect(cult.buffs.biyan).toBe(1500);
+    expect(cult.getCombatPower()).toBeGreaterThan(cpBefore);
+
+    // Bottle Dew catalysis: consumes 1 dew and grants +2 highest unlocked pill + herbs/spice
+    cult.getFate("bottle").researched = true;
+    cult.bottleDew = 2;
+    const biyanBefore = cult.getPill("biyan").val || 0;
+    expect(cult.catalyzeDew()).toBe(true);
+    expect(cult.bottleDew).toBe(1);
+    expect(cult.getPill("biyan").val).toBe(biyanBefore + 2);
+});
+
+test("Direction 1: Auto-Stewardship unlocks by realm/fate and automatically executes pill/wander/rift/grift", () => {
+    const cult = game.cultivation;
+    expect(cult.isAnyStewardUnlocked()).toBe(false);
+
+    cult.getStage("zhuji_0").researched = true;
+    cult.getStage("jiedan_0").researched = true;
+    cult.getStage("yuanying_0").researched = true;
+    cult.getStage("huashen_0").researched = true;
+    expect(cult.isStewardUnlocked("pill")).toBe(true);
+    expect(cult.isStewardUnlocked("wander")).toBe(true);
+    expect(cult.isStewardUnlocked("rift")).toBe(true);
+    expect(cult.isStewardUnlocked("grift")).toBe(true);
+
+    // Auto-pill when heartDemon >= DEMON_WARN_AT (40)
+    cult.toggleSteward("pill");
+    cult.heartDemon = 45;
+    cult.getPill("qingxin").val = 1;
+    cult.runAutoSteward();
+    expect(cult.heartDemon).toBe(30);
+    expect(cult.getPill("qingxin").val).toBe(0);
+
+    // Auto-wander when actionCd == 0
+    cult.toggleSteward("wander");
+    cult.actionCd = 0;
+    const wanderBefore = cult.stats.wander;
+    cult.runAutoSteward();
+    expect(cult.stats.wander).toBe(wanderBefore + 1);
+});
+
+test("Direction 3: Natal Artifact boosts effects/combatPower by 1.5x/+15% and Greater Rift generates 3-round battle report", () => {
+    const cult = game.cultivation;
+    cult.getStage("zhuji_0").researched = true;
+    const art = cult.getArtifact("xuding");
+    art.researched = true;
+    art.rank = 2;
+    art.effects = {};
+    for (const k in art.baseEffects){ art.effects[k] = art.baseEffects[k] * art.rank; }
+
+    const cpBase = cult.getCombatPower();
+    game.globalEffectsCached = {};
+    cult.updateEffectCached();
+    const xwRatioBase = game.globalEffectsCached.xiuweiRatio;
+
+    expect(cult.setNatalArtifact("xuding")).toBe(true);
+    expect(cult.natalArtifact).toBe("xuding");
+    expect(cult.getCombatPower()).toBeCloseTo(cpBase * 1.15);
+    game.globalEffectsCached = {};
+    cult.updateEffectCached();
+    expect(game.globalEffectsCached.xiuweiRatio).toBeGreaterThan(xwRatioBase);
+
+    // Greater Rift battle report
+    cult.riftKeys = 1;
+    cult.actionCd = 0;
+    cult.greaterRift();
+    expect(cult.lastBattleReport).toBeTruthy();
+    expect(Array.isArray(cult.lastBattleReport.rounds)).toBe(true);
+    expect(cult.lastBattleReport.rounds.length).toBe(3);
+});
+
+test("Direction 5: Reincarnation Legacy scales with past lives and Breakthrough triggers phenomenon & audio", () => {
+    const cult = game.cultivation;
+    cult.sihuaCount = 3;
+    const leg = cult.getLegacyBonus();
+    expect(leg.lives).toBe(3);
+    expect(leg.xiuweiRatio).toBeCloseTo(0.24);
+    expect(leg.combatMult).toBeCloseTo(1.30);
+    expect(leg.chanceBonus).toBeCloseTo(0.06);
+
+    const zhuji = cult.getStage("zhuji_0");
+    cult.triggerBreakPhenomenon(zhuji);
+    expect(cult.lastBreakPhenomenon).toBeTruthy();
+    expect(cult.lastBreakPhenomenon.major).toBe(true);
+
+    // Save/load roundtrip for new state fields
+    const yanghun = cult.getArtifact("yanghun");
+    yanghun.researched = true;
+    yanghun.rank = 1;
+    cult.bottleDew = 3;
+    cult.natalArtifact = "yanghun";
+    cult.soundMuted = true;
+    cult.autoSteward.pill = true;
+    const saveData = {};
+    cult.save(saveData);
+
+    cult.bottleDew = 0;
+    cult.natalArtifact = null;
+    cult.soundMuted = false;
+    cult.autoSteward.pill = false;
+    cult.load(saveData);
+    expect(cult.bottleDew).toBe(3);
+    expect(cult.natalArtifact).toBe("yanghun");
+    expect(cult.soundMuted).toBe(true);
+    expect(cult.autoSteward.pill).toBe(true);
+});
+
+
+

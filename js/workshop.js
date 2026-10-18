@@ -685,10 +685,12 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.bolas.label"),
 		description: $I("workshop.bolas.desc"),
 		effects: {
-			"manpowerMax": 0
+			"fursRatio": 0.25,
+			"manpowerMax": 50
 		},
 		calculateEffects: function(self, game){
-			self.effects["manpowerMax"] = game.ironWill ? 200 : 0;
+			self.effects["fursRatio"] = 0.25;
+			self.effects["manpowerMax"] = game.ironWill ? 200 : 50;
 		},
 		prices:[
 			{ name : "wood", val: 50 },
@@ -701,10 +703,16 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.huntingArmor.label"),
 		description: $I("workshop.huntingArmor.desc"),
 		effects: {
-			"manpowerMax": 0
+			"fursRatio": 0.50,
+			"ivoryRatio": 0.25,
+			"manpowerRatio": 0.15,
+			"manpowerMax": 150
 		},
 		calculateEffects: function(self, game){
-			self.effects["manpowerMax"] = game.ironWill ? 600 : 0;
+			self.effects["fursRatio"] = 0.50;
+			self.effects["ivoryRatio"] = 0.25;
+			self.effects["manpowerRatio"] = 0.15;
+			self.effects["manpowerMax"] = game.ironWill ? 600 : 150;
 		},
 		prices:[
 			{ name : "iron", val: 750 },
@@ -716,6 +724,10 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.steelArmor.label"),
 		description: $I("workshop.steelArmor.desc"),
 		effects: {
+			"fursRatio": 0.50,
+			"ivoryRatio": 0.35,
+			"manpowerRatio": 0.20,
+			"manpowerMax": 250
 		},
 		prices:[
 			{ name : "science", val: 10000 },
@@ -726,6 +738,10 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.alloyArmor.label"),
 		description: $I("workshop.alloyArmor.desc"),
 		effects: {
+			"fursRatio": 0.75,
+			"ivoryRatio": 0.50,
+			"manpowerRatio": 0.30,
+			"manpowerMax": 500
 		},
 		prices:[
 			{ name : "science", val: 50000 },
@@ -736,6 +752,10 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.nanosuits.label"),
 		description: $I("workshop.nanosuits.desc"),
 		effects: {
+			"fursRatio": 1.00,
+			"ivoryRatio": 0.75,
+			"manpowerRatio": 0.50,
+			"manpowerMax": 1000
 		},
 		prices:[
 			{ name : "science", val: 185000 },
@@ -850,6 +870,9 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			{ name : "science",  val: 90000 },
 			{ name : "starchart", val: 500 }
 		],
+		upgrades: {
+			buildings: ["mine"]
+		},
 		flavor: $I("workshop.geodesy.flavor")
 	},{
 		name: "register",
@@ -893,7 +916,10 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			{ name : "titanium", val: 1750 },
 			{ name : "science",  val: 100000 },
 			{ name : "steel", 	 val: 750 }
-		]
+		],
+		upgrades: {
+			buildings: ["mine"]
+		}
 	},
 	//--------------------- coal upgrades ----------------------
 	{
@@ -2154,7 +2180,10 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 				{ name : "bloodstone", val: 1 },
 				{ name : "parchment", val: 3000 },
 				{ name : "science", val: 100 }
-			]
+			],
+			upgrades:{
+				buildings: ["brewery"]
+			}
 		},{
 			name: "zebraTrappers",
 			label: $I("workshop.zebraUpgrade.zebraTrappers.label"),
@@ -2769,15 +2798,6 @@ dojo.declare("com.nuclearunicorn.game.ui.CraftButtonController", com.nuclearunic
 
 		if (craftBonus > 0) {
 			desc += "<br /><br />" + $I("workshop.craftBtn.desc.effectivenessBonus", [this.game.getDisplayValueExt(100 * craftBonus, false, false, 0)]);
-		}
-
-		if (this.game.science.get("mechanization").researched){
-			desc += "<br /><br />" + $I("workshop.craftBtn.desc.tier") + ": " + craft.tier;
-
-			if (craft.progressHandicap != 1) {
-				var difficulty = this.game.getDisplayValueExt((-100 * (1 - 1 / craft.progressHandicap)).toFixed(2), true);
-				desc += "<br />" + $I("workshop.craftBtn.desc.progressHandicap") + ": " + difficulty + "%";
-			}
 		}
 		return desc;
 	},

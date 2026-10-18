@@ -2353,6 +2353,594 @@ input, select, textarea, button { font-family: inherit; }
 	.xxToasts { top: 44px; right: 10px; left: 10px; max-width: none; }
 }
 
+/* ============================================================
+   Ink-Wash & Gold-Leaf Visual Art System (SVG Illustrations)
+   ============================================================ */
+
+/* Keyframe animations for rotating Bagua array, breathing Dantian, and hovering spirit sword */
+@keyframes xxArtSpin {
+	from { transform: rotate(0deg); }
+	to   { transform: rotate(360deg); }
+}
+@keyframes xxArtSpinRev {
+	from { transform: rotate(360deg); }
+	to   { transform: rotate(0deg); }
+}
+@keyframes xxArtPulse {
+	0%, 100% { opacity: .65; transform: scale(.96); }
+	50%      { opacity: 1;   transform: scale(1.06); }
+}
+@keyframes xxArtFloat {
+	0%, 100% { transform: translateY(0); }
+	50%      { transform: translateY(-2.5px); }
+}
+.xx-art-spin {
+	transform-origin: 44px 44px;
+	animation: xxArtSpin 28s linear infinite;
+}
+.xx-art-spin-fast {
+	transform-origin: 44px 44px;
+	animation: xxArtSpinRev 10s linear infinite;
+}
+.xx-art-pulse {
+	transform-origin: 44px 51px;
+	animation: xxArtPulse 3.2s ease-in-out infinite;
+}
+.xx-art-float {
+	animation: xxArtFloat 3.6s ease-in-out infinite;
+}
+
+/* Cultivation Hero Card: Widescreen Ink-Wash Mountain Backdrop + Meditating Cultivator Portrait */
+.cultivationHeader {
+	position: relative;
+	overflow: hidden;
+}
+.xx-hero-bg {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 0;
+	opacity: .88;
+}
+.xx-cult-bg-svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+.cultivationHeader > .xx-hero,
+.cultivationHeader > .xx-tiles,
+.cultivationHeader > .xx-chips {
+	position: relative;
+	z-index: 1;
+}
+
+.xx-hero-portrait {
+	position: relative;
+	width: 78px;
+	height: 78px;
+	flex: 0 0 78px;
+	border-radius: 16px;
+	border: 1px solid rgba(212, 176, 106, .62);
+	background: radial-gradient(circle at 50% 42%, rgba(28, 42, 58, .95), rgba(10, 15, 23, .98));
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, .18),
+		0 0 22px rgba(212, 176, 106, .20),
+		0 6px 16px rgba(0, 0, 0, .48);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: visible;
+	user-select: none;
+}
+.xx-portrait-svg {
+	width: 100%;
+	height: 100%;
+	border-radius: 15px;
+	display: block;
+}
+.xx-hero-seal-badge {
+	position: absolute;
+	right: -5px;
+	bottom: -5px;
+	width: 24px;
+	height: 24px;
+	border-radius: 6px;
+	border: 1px solid rgba(212, 176, 106, .85);
+	background: linear-gradient(145deg, #7d251b, #4c140e);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, .6), 0 0 8px rgba(224, 96, 74, .35);
+	color: #f7e6c4;
+	font-family: var(--xx-serif);
+	font-size: 13px;
+	font-weight: 700;
+	line-height: 22px;
+	text-align: center;
+	letter-spacing: 0;
+	pointer-events: none;
+}
+
+/* 5-Tile Stat Dashboard Mini Icons & Chip Icons */
+.xx-tile-lbl {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+.xx-tile-ico,
+.xx-chip-ico {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	flex: 0 0 14px;
+	vertical-align: -2px;
+}
+.xx-chip-ico {
+	margin-right: 4px;
+}
+.xx-tile-svg {
+	width: 14px;
+	height: 14px;
+	display: block;
+}
+
+/* Action Button Custom SVG Emblem + Watermark Seal */
+.xxActGlyph.xxActArt {
+	width: 32px;
+	height: 32px;
+	flex: 0 0 32px;
+	padding: 2px;
+	border-radius: 8px;
+	background: radial-gradient(circle at 35% 30%, rgba(79, 209, 165, .18), rgba(12, 20, 30, .88));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);
+}
+.xx-act-svg {
+	width: 26px;
+	height: 26px;
+	display: block;
+}
+.xxActWm {
+	position: absolute;
+	right: 8px;
+	bottom: -4px;
+	font-family: var(--xx-serif);
+	font-size: 32px;
+	line-height: 1;
+	color: rgba(212, 176, 106, .08);
+	pointer-events: none;
+	user-select: none;
+}
+
+/* Tab Panorama Scene Header Banner (.xxSceneBanner) */
+.xxSceneBanner {
+	position: relative;
+	width: 100%;
+	max-width: 760px;
+	height: 76px;
+	margin: 0 0 12px 0;
+	border-radius: 12px;
+	border: 1px solid rgba(212, 176, 106, .30);
+	background: linear-gradient(135deg, rgba(16, 24, 36, .92), rgba(10, 15, 24, .95));
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, .07),
+		0 6px 20px rgba(0, 0, 0, .34);
+	overflow: hidden;
+	user-select: none;
+}
+.xxSceneArt {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+.xx-scene-svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+.xxSceneOverlay {
+	position: relative;
+	z-index: 1;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 0 18px;
+	background: linear-gradient(90deg, rgba(8, 13, 20, .80) 0%, rgba(8, 13, 20, .38) 52%, transparent 100%);
+}
+.xxSceneSeal {
+	width: 38px;
+	height: 38px;
+	flex: 0 0 38px;
+	border-radius: 9px;
+	border: 1px solid rgba(212, 176, 106, .62);
+	background: radial-gradient(circle at 30% 25%, rgba(212, 176, 106, .24), rgba(14, 21, 31, .92));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 2px 10px rgba(0, 0, 0, .45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: var(--xx-serif);
+	font-size: 19px;
+	color: var(--xx-gold-hi);
+	text-shadow: 0 0 10px rgba(212, 176, 106, .4);
+}
+.xxSceneText {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.xxSceneTitle {
+	font-family: var(--xx-serif);
+	font-size: 17px;
+	font-weight: 600;
+	letter-spacing: 3px;
+	color: var(--xx-gold-hi);
+	text-shadow: 0 1px 8px rgba(0, 0, 0, .75);
+}
+.xxSceneSub {
+	font-size: 12px;
+	letter-spacing: 1.5px;
+	color: var(--xx-paper);
+	opacity: .86;
+	text-shadow: 0 1px 6px rgba(0, 0, 0, .85);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Fate Choice, Identity & Death Modal Scene Illustrations (.xxFateArt) */
+.xxFateArt {
+	width: 100%;
+	height: 98px;
+	margin: -4px 0 12px 0;
+	border-radius: 9px;
+	border: 1px solid rgba(212, 176, 106, .32);
+	background: rgba(8, 13, 20, .85);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 4px 14px rgba(0, 0, 0, .4);
+	overflow: hidden;
+}
+.xx-fate-svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+/* Identity Modal Origin Cards with Emblem Artwork */
+.xxIdOrigin.xxIdOriginHasArt {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.xxIdOriginIco {
+	width: 34px;
+	height: 34px;
+	flex: 0 0 34px;
+	border-radius: 8px;
+	border: 1px solid rgba(212, 176, 106, .35);
+	background: radial-gradient(circle at 35% 30%, rgba(212, 176, 106, .16), rgba(10, 16, 24, .88));
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px;
+}
+.xxIdOrigin.xx-sel .xxIdOriginIco {
+	border-color: var(--xx-gold);
+	box-shadow: 0 0 10px rgba(212, 176, 106, .28);
+}
+.xx-origin-svg {
+	width: 28px;
+	height: 28px;
+	display: block;
+}
+.xxIdOriginBody {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* Resource Card Custom SVG Icons (.xx-res-ico) */
+.xx-res-ico {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	flex: 0 0 16px;
+	margin-right: 5px;
+	vertical-align: -3px;
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5));
+}
+.xx-res-svg {
+	width: 16px;
+	height: 16px;
+	display: block;
+}
+
+/* Building / Stage / Pill / Tech Button SVG Medallion (.xx-btn-ico) */
+.xx-btn-ico {
+	position: absolute;
+	left: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 26px;
+	height: 26px;
+	border-radius: 7px;
+	border: 1px solid rgba(212, 176, 106, .32);
+	background: radial-gradient(circle at 35% 30%, rgba(212, 176, 106, .14), rgba(10, 16, 25, .86));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 2px 6px rgba(0, 0, 0, .35);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	z-index: 1;
+	transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+.btn.modern.xx-has-ico:not(.disabled):hover .xx-btn-ico {
+	border-color: var(--xx-gold);
+	box-shadow: 0 0 10px rgba(212, 176, 106, .28);
+}
+.btn.modern.xx-has-ico > .btnContent {
+	padding-left: 44px !important;
+}
+.xx-btn-svg {
+	width: 20px;
+	height: 20px;
+	display: block;
+}
+
+@media (max-width: 640px) {
+	.xx-hero-portrait {
+		width: 62px;
+		height: 62px;
+		flex: 0 0 62px;
+	}
+	.xx-hero-seal-badge {
+		width: 20px;
+		height: 20px;
+		font-size: 11px;
+		line-height: 18px;
+	}
+	.xxSceneBanner {
+		height: 60px;
+		margin-bottom: 9px;
+	}
+	.xxSceneOverlay {
+		padding: 0 12px;
+		gap: 9px;
+	}
+	.xxSceneSeal {
+		width: 32px;
+		height: 32px;
+		flex: 0 0 32px;
+		font-size: 16px;
+	}
+	.xxSceneTitle { font-size: 14.5px; letter-spacing: 2px; }
+	.xxSceneSub { font-size: 11px; }
+	.xxFateArt { height: 78px; }
+	.xx-btn-ico {
+		left: 8px;
+		width: 22px;
+		height: 22px;
+	}
+	.xx-btn-svg {
+		width: 17px;
+		height: 17px;
+	}
+	.btn.modern.xx-has-ico > .btnContent {
+		padding-left: 36px !important;
+	}
+}
+
+/* ============================================================
+   Directions 1, 2, 3, 5 — Stewardship, Bottle Dew, Natal Artifact,
+   Battle Chronicle, Reincarnation Legacy & Breakthrough Phenomenon
+   ============================================================ */
+
+/* Sound toggle chip in header */
+.xx-sound-toggle {
+	color: var(--xx-jade);
+	cursor: pointer;
+	font-size: 11.5px;
+	letter-spacing: 1px;
+	padding: 1px 8px;
+	border: 1px solid var(--xx-jade-dim);
+	border-radius: 999px;
+	background: rgba(79, 209, 165, .07);
+	user-select: none;
+	transition: border-color .2s, color .2s, background .2s;
+}
+.xx-sound-toggle:hover {
+	color: var(--xx-gold-hi);
+	border-color: var(--xx-gold);
+	background: rgba(212, 176, 106, .12);
+}
+
+/* Breakthrough Celestial Phenomenon Banner */
+.xx-phenom-banner {
+	margin-top: 10px;
+	padding: 7px 14px;
+	border-radius: 8px;
+	text-align: center;
+	font-family: var(--xx-serif);
+	font-size: 13.5px;
+	letter-spacing: 2px;
+	animation: xxPhenomPulse 1.8s ease-in-out infinite;
+}
+.xx-phenom-banner.major,
+.xx-phenom-banner.xx-phenom-major {
+	color: var(--xx-gold-hi);
+	border: 1px solid rgba(212, 176, 106, .65);
+	background: linear-gradient(90deg, rgba(212, 176, 106, .08), rgba(212, 176, 106, .24), rgba(79, 209, 165, .14));
+	box-shadow: 0 0 18px rgba(212, 176, 106, .25);
+}
+.xx-phenom-banner.minor,
+.xx-phenom-banner.xx-phenom-minor {
+	color: var(--xx-jade);
+	border: 1px solid rgba(79, 209, 165, .45);
+	background: linear-gradient(90deg, rgba(79, 209, 165, .06), rgba(79, 209, 165, .18), rgba(212, 176, 106, .08));
+}
+@keyframes xxPhenomPulse {
+	0%, 100% { box-shadow: 0 0 8px rgba(212, 176, 106, .18); }
+	50%      { box-shadow: 0 0 22px rgba(212, 176, 106, .45); }
+}
+
+/* Natal Artifact (本命法宝) chip highlight */
+.xx-art {
+	cursor: pointer;
+}
+.xx-art.xx-art-natal {
+	color: var(--xx-gold-hi);
+	border-color: var(--xx-gold);
+	background: linear-gradient(135deg, rgba(58, 42, 18, .92), rgba(24, 18, 12, .92));
+	box-shadow: 0 0 12px rgba(212, 176, 106, .35), inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+.xx-natal-tag {
+	color: #f6d57a;
+	font-weight: 700;
+	margin-right: 2px;
+}
+
+/* Auto-Stewardship Bar (洞府器灵托管) */
+.xxStewardBar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 4px 0 12px;
+	padding: 8px 12px;
+	border-radius: 9px;
+	border: 1px solid rgba(79, 209, 165, .28);
+	background: linear-gradient(135deg, rgba(16, 28, 34, .82), rgba(11, 18, 25, .86));
+}
+.xxStewardLbl {
+	font-family: var(--xx-serif);
+	font-size: 12.5px;
+	letter-spacing: 1.5px;
+	color: var(--xx-jade);
+	margin-right: 4px;
+}
+.xxStewardChip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 4px 11px;
+	border-radius: 999px;
+	font-size: 12px;
+	letter-spacing: 1px;
+	cursor: pointer;
+	user-select: none;
+	color: var(--xx-mute);
+	border: 1px solid rgba(120, 136, 156, .32);
+	background: rgba(9, 14, 21, .75);
+	transition: all .18s ease;
+}
+.xxStewardChip:hover {
+	color: var(--xx-paper);
+	border-color: rgba(79, 209, 165, .5);
+}
+.xxStewardChip.on {
+	color: var(--xx-gold-hi);
+	border-color: var(--xx-gold);
+	background: linear-gradient(135deg, rgba(46, 36, 18, .92), rgba(20, 28, 26, .92));
+	box-shadow: 0 0 10px rgba(212, 176, 106, .22);
+}
+.xxStewardDot {
+	width: 7px;
+	height: 7px;
+	border-radius: 999px;
+	background: rgba(120, 136, 156, .45);
+}
+.xxStewardChip.on .xxStewardDot {
+	background: var(--xx-jade);
+	box-shadow: 0 0 6px var(--xx-jade);
+}
+
+/* Heaven-Vial Dew Bar (掌天绿液催熟) */
+.xxDewBar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 0 0 10px;
+	padding: 8px 12px;
+	border-radius: 9px;
+	border: 1px solid rgba(79, 209, 165, .36);
+	background:
+		radial-gradient(80% 120% at 0% 50%, rgba(79, 209, 165, .14), transparent 60%),
+		rgba(12, 22, 24, .84);
+}
+.xxDewInfo {
+	font-family: var(--xx-serif);
+	font-size: 13px;
+	letter-spacing: 1.5px;
+	color: var(--xx-jade);
+}
+.xxDewPips {
+	display: inline-flex;
+	gap: 5px;
+	align-items: center;
+}
+.xxDewPip {
+	width: 9px;
+	height: 9px;
+	border-radius: 999px;
+	border: 1px solid rgba(79, 209, 165, .45);
+	background: rgba(9, 16, 18, .7);
+}
+.xxDewPip.on {
+	background: var(--xx-jade);
+	box-shadow: 0 0 8px rgba(79, 209, 165, .65);
+}
+.xxDewBtn {
+	padding: 4px 12px;
+	border-radius: 999px;
+	font-family: var(--xx-serif);
+	font-size: 12.5px;
+	letter-spacing: 1.5px;
+	cursor: pointer;
+	user-select: none;
+	color: #0e1a16;
+	font-weight: 700;
+	border: 1px solid var(--xx-jade);
+	background: linear-gradient(180deg, #6be3ba, #3aa882);
+	box-shadow: 0 2px 8px rgba(79, 209, 165, .28);
+	transition: transform .15s, opacity .15s;
+}
+.xxDewBtn:hover:not(.disabled) {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(79, 209, 165, .42);
+}
+.xxDewBtn.disabled {
+	opacity: .45;
+	cursor: default;
+	background: rgba(60, 80, 76, .5);
+	color: var(--xx-mute);
+	border-color: rgba(120, 136, 156, .3);
+	box-shadow: none;
+}
+.xxDewDesc {
+	font-size: 11.5px;
+	color: var(--xx-mute);
+	flex: 1 1 220px;
+}
+
+/* Greater Rift 3-Round Battle Chronicle (斗法战报) */
+.xxRiftHeadline {
+	font-weight: 600;
+}
+.xxBattleReport {
+	margin-top: 6px;
+	padding-top: 6px;
+	border-top: 1px dashed rgba(212, 176, 106, .24);
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.xxBattleRound {
+	font-size: 12px;
+	line-height: 1.55;
+	color: var(--xx-paper);
+	opacity: .92;
+}
+
 /* respect reduced-motion */
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after {
@@ -2361,3 +2949,5 @@ input, select, textarea, button { font-family: inherit; }
 		transition-duration: .01ms !important;
 	}
 }
+
+

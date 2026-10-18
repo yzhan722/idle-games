@@ -285,6 +285,11 @@ describe("deep audit — every content entry", () => {
 				if (isNaN(r.value)) bad.push(`post-tick ${r.name}: NaN`);
 				if (isNaN(r.perTickCached)) bad.push(`post-tick ${r.name}: NaN perTick`);
 			}
+			for (const b of g.bld.buildingsData) {
+				for (const [k, v] of Object.entries(b.effects || {})) {
+					if (typeof v === "number" && isNaN(v)) bad.push(`bld.${b.name}.effects.${k}: NaN`);
+				}
+			}
 		} catch (e) { bad.push("FATAL: " + e.message); }
 		expect(bad).toEqual([]);
 	});
@@ -412,5 +417,67 @@ describe("deep audit — every content entry", () => {
 			void blob; void saveData; void save;
 		} catch (e) { bad.push(e.message); }
 		expect(bad).toEqual([]);
+	});
+
+	test("progression & parity regressions: coal unlock, precraft, tooltip stack, upgrades & challenges", () => {
+		const g = game;
+		// 1. steel tech unlocks passive coal on mine & smelter; geodesy adds goldPerTickBase
+		g.bld.get("mine").val = g.bld.get("mine").on = 5;
+		g.bld.get("smelter").val = g.bld.get("smelter").on = 5;
+		g.resPool.get("wood").value = 1000;
+		g.resPool.get("minerals").value = 1000;
+		g.science.get("steel").researched = true;
+		g.workshop.get("geodesy").researched = true;
+		g.calculateAllEffects();
+		g.tick();
+		expect(g.bld.get("mine").effects["coalPerTickBase"]).toBeGreaterThan(0);
+		expect(g.bld.get("mine").effects["goldPerTickBase"]).toBeGreaterThan(0);
+		expect(g.bld.get("smelter").effects["coalPerTickAutoprod"]).toBeGreaterThan(0);
+		expect(g.calcResourcePerTick("coal")).toBeGreaterThan(0);
+
+		// 2. precraft on wood-priced building does not throw when village.getKittens is absent
+		g.resPool.get("catnip").value = 50000;
+		g.resPool.get("wood").value = 0;
+		g.resPool.get("minerals").value = 5000;
+		const ctrl = new classes.ui.btn.BuildingBtnModernController(g);
+		const logHouseModel = ctrl.fetchModel({ key: "logHouse", building: "logHouse" });
+		expect(ctrl.isPrecraftAvailable(logHouseModel)).toBe(true);
+		expect(() => ctrl.precraft(logHouseModel)).not.toThrow();
+
+		// 3. getResourcePerTickStack includes realmProductionRatio and seclusionMundaneRatio
+		g.cultivation.getStage("lianqi_0").researched = true;
+		g.cultivation.secluded = true;
+		g.updateCaches();
+		const stack = g.getResourcePerTickStack("minerals");
+		const flatNames = stack.flat(3).filter(Boolean).map(x => x.name);
+		expect(flatNames).toContain($I("effectsMgr.statics.realmProductionRatio.title"));
+		expect(flatNames).toContain($I("effectsMgr.statics.seclusionMundaneRatio.title"));
+
+		// 4. stainedGlass doubles temple base culture, chapel produces culture, neuralNetworks boosts factory craftRatio
+		const temple = g.bld.get("temple");
+		temple.calculateEffects(temple, g);
+		const baseTempleCulture = temple.effects["culturePerTickBase"];
+		g.religion.getRU("stainedGlass").on = 1;
+		temple.calculateEffects(temple, g);
+		expect(temple.effects["culturePerTickBase"]).toBeCloseTo(baseTempleCulture * 2, 5);
+		const chapel = g.bld.get("chapel");
+		chapel.calculateEffects(chapel, g);
+		expect(chapel.effects["culturePerTickBase"]).toBeGreaterThan(0);
+		const factory = g.bld.get("factory");
+		factory.calculateEffects(factory, g);
+		const baseFactoryCraft = factory.effects["craftRatio"];
+		g.workshop.get("neuralNetworks").researched = true;
+		factory.calculateEffects(factory, g);
+		expect(factory.effects["craftRatio"]).toBeGreaterThan(baseFactoryCraft);
+
+		// 5. pacifism completion condition on reset & anarchy active penalty
+		const pacifism = g.challenges.getChallenge("pacifism");
+		g.bld.get("tradepost").val = 25;
+		expect(pacifism.checkCompletionConditionOnReset(g)).toBe(true);
+		const anarchy = g.challenges.getChallenge("anarchy");
+		anarchy.active = true;
+		anarchy.calculateEffects(anarchy, g);
+		expect(anarchy.effects["manpowerRatio"]).toBeLessThan(0);
+		expect(anarchy.effects["xiuweiRatio"]).toBeLessThan(0);
 	});
 });
