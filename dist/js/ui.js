@@ -452,6 +452,13 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
                     className: "tabInner " + tab.tabId
                 }, container);
 
+                if (tab.tabId != "Cultivation" && typeof classes != "undefined" && classes.ui && classes.ui.XianxiaArt){
+                    var bannerHtml = classes.ui.XianxiaArt.tabBannerHTML(tab.tabId, game);
+                    if (bannerHtml){
+                        dojo.place(bannerHtml, divContainer, "first");
+                    }
+                }
+
                 tab.render(divContainer);
 
                 break;
@@ -551,7 +558,7 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
 					}
 				}
 
-				if (game.prestige.getPerk("numeromancy").researched && this.festivalDays) {
+				if (game.prestige.getPerk("numeromancy").researched) {
 					// Cycle Festival Effects
 					dojo.create("div", {
 						innerHTML: $I("cycle.effects.festival.title"),

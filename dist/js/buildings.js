@@ -354,7 +354,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		],
 		priceRatio: 1.12,
 		effects: {
-			"catnipPerTickBase": 0.4
+			"catnipPerTickBase": 0.65
 		},
 		flavor : $I("buildings.field.flavor"),
 		unlockScheme: {
@@ -490,7 +490,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"manpowerMax": 75,
 			"manpowerPerTickBase": 0.025,
-			"woodPerTickBase": 0.015,
+			"woodPerTickBase": 0.025,
 			"fursPerTickBase": 0.03,
 			"xiuweiPerTickBase": 0.005
 		},
@@ -512,6 +512,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"manpowerMax": 50,
 			"manpowerPerTickBase": 0.03,
 			"fursPerTickBase": 0.04,
+			"ivoryPerTickBase": 0.015,
 			"xiuweiPerTickBase": 0.02
 		},
 		breakIronWill: true,
@@ -545,7 +546,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				description: $I("buildings.library.desc"),
 				unlockRatio: 0.3,
 				prices: [
-					{ name : "wood", val: 25 }
+					{ name : "wood", val: 15 }
 				],
 				effects: {
 					"scienceRatio": 0,
@@ -765,7 +766,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		description: $I("buildings.barn.desc"),
 		unlockRatio: 0.3,
 		prices: [
-			{ name : "wood", val: 50 }
+			{ name : "wood", val: 30 }
 		],
 		priceRatio: 1.75,
 		effects: {
@@ -970,18 +971,25 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		description: $I("buildings.mine.desc"),
 		unlockRatio: 0.15,
 		prices: [
-			{ name : "wood", val: 100 }
+			{ name : "wood", val: 60 }
 		],
 		priceRatio: 1.15,
 		effects: {
 			"mineralsRatio": 0,
 			"mineralsPerTickBase": 0,
+			"coalPerTickBase": 0,
+			"goldPerTickBase": 0,
 			"cathPollutionPerTickProd": 0
 		},
 		calculateEffects: function(self, game){
+			var coalBase = (game.science.get("steel").researched ? 0.005 : 0) +
+				(game.workshop.get("geodesy").researched ? 0.005 : 0) +
+				(game.workshop.get("miningDrill").researched ? 0.005 : 0);
 			self.effects = {
 				"mineralsRatio": 0.2,
-				"mineralsPerTickBase": 0.06,
+				"mineralsPerTickBase": 0.09,
+				"coalPerTickBase": coalBase,
+				"goldPerTickBase": game.workshop.get("geodesy").researched ? 0.0008 : 0,
 				"cathPollutionPerTickProd": 0.08
 			};
 			self.togglable = game.science.get("ecology").researched;
@@ -1028,13 +1036,14 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		description: $I("buildings.smelter.desc"),
 		unlockRatio: 0.15,
 		prices: [
-			{ name : "minerals", val: 200 }
+			{ name : "minerals", val: 140 }
 		],
 		priceRatio: 1.15,
 		effects: {
 			"woodPerTickCon": 0,
 			"mineralsPerTickCon": 0,
 			"ironPerTickAutoprod": 0,
+			"coalPerTickAutoprod": 0,
 			"goldPerTickAutoprod": 0,
 			"cathPollutionPerTickProd": 0.15
 		},
@@ -1043,6 +1052,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		calculateEffects: function(self, game) {
 			var smelterRatio = (1 + game.getEffect("smelterRatio"));
 			self.effects["ironPerTickAutoprod"] = 0.03 * smelterRatio;
+			self.effects["coalPerTickAutoprod"] = game.science.get("steel").researched ? 0.008 * smelterRatio : 0;
 
 			if (game.workshop.get("goldOre").researched){
 				self.effects["goldPerTickAutoprod"] = 0.005;
@@ -1081,6 +1091,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				if (i == "woodPerTickCon" ||
 					i == "mineralsPerTickCon" ||
 					i == "ironPerTickAutoprod" ||
+					i == "coalPerTickAutoprod" ||
 					i == "goldPerTickAutoprod" ) {
 					self.effects[i] = self.effectsCalculated[i] * amt;
 				}
@@ -1463,6 +1474,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			if (game.workshop.get("factoryLogistics").researched){
 				effects["craftRatio"] = 0.06;
 			}
+			if (game.workshop.get("neuralNetworks").researched){
+				effects["craftRatio"] += 0.02;
+			}
 
 			effects["energyConsumption"] = 2;
 			if (game.workshop.get("carbonSequestration").researched){
@@ -1684,15 +1698,19 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"catnipPerTickCon" : -1,
 			"spicePerTickCon" : -0.1,
-			"manpowerRatio" : 0
+			"manpowerRatio" : 0,
+			"xiuweiPerTickBase" : 0
 		},
 		effectsCalculated: {},
 		togglable: true,
 		lackResConvert: false,
 		calculateEffects: function(self, game){
+			var darkBrewBonus = game.workshop.getZebraUpgrade("darkBrew").researched ? 0.02 : 0;
 			self.effects = {
 				"catnipPerTickCon" : -1,
 				"spicePerTickCon" : -0.1,
+				"manpowerRatio" : 0.02 + darkBrewBonus,
+				"xiuweiPerTickBase" : 0.015
 			};
 			self.effectsCalculated = dojo.clone(self.effects);
 		},
@@ -1705,6 +1723,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			self.effects["catnipPerTickCon"] = self.effectsCalculated["catnipPerTickCon"] * amt;
 			self.effects["spicePerTickCon"] = self.effectsCalculated["spicePerTickCon"] * amt;
 			self.effects["manpowerRatio"] = self.effectsCalculated["manpowerRatio"] * amt;
+			self.effects["xiuweiPerTickBase"] = self.effectsCalculated["xiuweiPerTickBase"] * amt;
 			return amt;
 		},
 		flavor: $I("buildings.brewery.flavor"),
@@ -1799,7 +1818,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		},
 		calculateEffects: function(self, game) {
 			var effects = {
-				"culturePerTickBase" : 0,
+				"culturePerTickBase" : 0.05,
 				"faithPerTickBase" : 0,
 				"xiuweiPerTickBase" : 0.04,
 				"cultureMax" : 200,
@@ -1859,6 +1878,11 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 					"cultureMax" : 100,
 					"faithMax": 400
 				};
+
+				var stainedGlass = game.religion.getRU("stainedGlass");
+				if (stainedGlass.on){
+					effects["culturePerTickBase"] += 0.04 * stainedGlass.on;
+				}
 
 				var scholastics = game.religion.getRU("scholasticism");
 				if (scholastics.on){
@@ -2048,13 +2072,18 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		zebraRequired: 5,
 		effects: {
 			"manpowerMax": 5,
-			"zebraPreparations" : 0
+			"zebraPreparations" : 0,
+			"bloodstonePerTickBase" : 0
 		},
 		calculateEffects: function(self, game){
 			if (game.workshop.getZebraUpgrade("darkRevolution").researched){
-				self.effects["zebraPreparations"] = game.ironWill? 1:0.1;
-				self.effects["zebraPreparations"] *= 1 + game.getEffect("preparationRatio");
+				var prepRatio = 1 + game.getEffect("preparationRatio");
+				self.effects["zebraPreparations"] = (game.ironWill? 1:0.1) * prepRatio;
+				self.effects["bloodstonePerTickBase"] = 0.0005 * prepRatio;
 				self.jammed = false;
+			} else {
+				self.effects["zebraPreparations"] = 0;
+				self.effects["bloodstonePerTickBase"] = 0;
 			}
 		},
 		jammed: false,
@@ -2744,6 +2773,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 		this.cathPollution = 0;
 		this.cathPollutionPerTick = 0;
+		if (this.game){
+			this.game.gatherClicks = 0;
+		}
 	},
 	//pollution functions:
 	getCleanEnergy: function(){
@@ -2826,7 +2858,30 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
     },
 
 	gatherCatnip: function(){
-		this.game.resPool.get("catnip").value += 5;
+		this.game.gatherClicks = (this.game.gatherClicks || 0) + 1;
+		var res = this.game.resPool.get("catnip");
+		var fields = this.get("field").val || 0;
+		var cult = this.game.cultivation;
+		var stIdx = cult ? Math.max(0, cult.getHighestStageIndex()) : 0;
+		//首击恒得 5 株灵草(与新手教程及单测对齐);后续连点或辟田破境后随道行渐涨
+		if (res.value === 0 && fields === 0 && stIdx === 0 && this.game.gatherClicks <= 1){
+			res.value += 5;
+			return;
+		}
+		var gain = 5 + Math.min(15, Math.floor(fields * 0.5)) + Math.min(20, stIdx * 2);
+		this.game.resPool.addResEvent("catnip", gain);
+		//山野采药偶触发微末机缘:伴生灵木或吐纳顿悟
+		if (cult && this.game.gatherClicks > 1){
+			var roll = Math.random();
+			if (roll < 0.14){
+				this.game.resPool.addResEvent("wood", 1);
+				this.game.msg($I("buildings.gatherCatnip.boon.wood"), "notice");
+			} else if (roll < 0.26){
+				var xw = 2 + stIdx;
+				this.game.resPool.addResEvent("xiuwei", xw);
+				this.game.msg($I("buildings.gatherCatnip.boon.xiuwei", [xw]), "notice");
+			}
+		}
 	},
 
 	refineCatnip: function() {

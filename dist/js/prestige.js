@@ -266,6 +266,10 @@ dojo.declare("classes.managers.PrestigeManager", com.nuclearunicorn.core.TabMana
 		unlocked: true,
 		defaultUnlocked: true,
 		researched: false,
+		effects: {
+			"cultureRatio": 0.15,
+			"manpowerRatio": 0.10
+		},
 		unlocks: {
 			"perks": ["numerology"]
 		}

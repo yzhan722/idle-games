@@ -1786,6 +1786,14 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 				title: $I("effectsMgr.statics.missingZebraPreparations.title"),
 				type: "fixed",
 				calculation: "nonProportional"
+			},
+			"realmProductionRatio":{
+				title: $I("effectsMgr.statics.realmProductionRatio.title"),
+				type: "ratio"
+			},
+			"seclusionMundaneRatio":{
+				title: $I("effectsMgr.statics.seclusionMundaneRatio.title"),
+				type: "ratio"
 			}
 		}
 	}
@@ -3853,6 +3861,22 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			this.addGlobalModToStack(perTickSpace, resName);
 		//<----
 		stack.push(perTickSpace);
+
+		// *CULTIVATION REALM BONUS (xianxia mod)
+		stack.push({
+			name: $I("effectsMgr.statics.realmProductionRatio.title"),
+			type: "ratio",
+			value: this.getEffect("realmProductionRatio")
+		});
+
+		// *SECLUSION MUNDANE PENALTY (xianxia mod)
+		if (res.name != "xiuwei"){
+			stack.push({
+				name: $I("effectsMgr.statics.seclusionMundaneRatio.title"),
+				type: "ratio",
+				value: this.getEffect("seclusionMundaneRatio")
+			});
+		}
 
 		//CYCLE EFFECT
 		// Can't be displayed because it's space building improvements.

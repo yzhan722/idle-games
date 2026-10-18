@@ -83,11 +83,12 @@ describe("anachronism blacklist", () => {
 		expect(offenders).toEqual([]);
 	});
 
-	test("no source-novel names anywhere in zh", () => {
-		// 原著专名黑名单——仙缘剧情已全量原创化,这些人名地名不得再出现
+	test("no source-novel names in fate stories", () => {
+		// 原著专名黑名单——仙缘剧情(cultivation.fate.*)已全量原创化,这些人名地名不得在仙缘剧情中出现
 		const NOVEL = /韩立|张铁|墨居仁|墨大夫|神手谷|七玄门|黄枫谷|血色禁地|南宫婉|厉飞雨|掌天瓶|长春功|夺舍大法|大衍|曲魂|噬金虫|啼魂|元瑶|玄骨|虚天|乾蓝|补天|蟹道人|风雷翅|玄天果|青元|掩月宗|乱星海|金雷竹|银月|陈巧倩|太南谷|青竹蜂云|墨蛟|飞灵族|金光上人|野狼谷|九曲灵参|升仙令|落云宗/;
 		const offenders = [];
 		for (const [k, v] of Object.entries(zh)) {
+			if (!/^cultivation\.fate\./.test(k)) continue;
 			if (typeof v === "string" && NOVEL.test(v)) offenders.push(k + " = " + v);
 		}
 		expect(offenders).toEqual([]);

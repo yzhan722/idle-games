@@ -12,7 +12,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
     accelMult: 1.5,		//光阴似箭消耗倍率——1.5~10,烧多快就走多快
     accelPhase: 0,		//额外 updateModel 的相位累加器,任意倍率通用
 
-    //可选倍率档——消耗随档位线性:rate = 2×(mult-1) 时尘/tick
+    //可选倍率档——消耗随档位线性:rate = 2×(mult-1) 光阴砂/tick
     //(1.5× 档烧 1/tick,即改动前的速率;10× 档烧 18/tick)
     ACCEL_STEPS: [1.5, 2, 3, 5, 10],
 
@@ -659,7 +659,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 	effectsBase: {
 		"heatPerTick" : 0.01,
 		"heatMax": 100,
-		"temporalFluxMax": 60 * 10 * 5 * 10  //初始储量 ×10——100 分钟时尘
+		"temporalFluxMax": 60 * 10 * 5 * 10  //初始储量 ×10——100 分钟光阴砂
 	},
 
     getCFU: function(id){

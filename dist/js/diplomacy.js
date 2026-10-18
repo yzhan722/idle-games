@@ -79,7 +79,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		collapsed: false,
 		pinned: false
 	},{
-		//斑灵马:灵石砖 -> 玄铁+庚金 (20000s -> 26100s, x1.3) 庚金是此行的目的
+		//云斑驹:玄岩砖 -> 玄铁+庚金 (20000s -> 26100s, x1.3) 庚金是此行的目的
 		name: "zebras",
 		hidden: true,
 		title: $I("trade.race.zebras"),
@@ -93,7 +93,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		collapsed: false,
 		pinned: false
 	},{
-		//蛛魔:灵石 -> 玄炭 (3200s -> 4050s, x1.27) 原为50灵木架(1.7M s)换玄炭,荒谬
+		//蛛魔:灵石 -> 玄炭 (3200s -> 4050s, x1.27) 原为50云梯架(1.7M s)换玄炭,荒谬
 		name: "spiders",
 		hidden: true,
 		title: $I("trade.race.spiders"),
