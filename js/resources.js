@@ -24,27 +24,27 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		title: $I("resources.catnip.title"),
 		type : "common",
 		visible: true,
-		calculatePerTick: true,
+		calculatePerTick: true
 	},{
 		name : "wood",
 		title: $I("resources.wood.title"),
 		type : "common",
 		craftable: true,
 		visible: true,
-		calculatePerTick: true,
+		calculatePerTick: true
 	},{
 		name : "minerals",
 		title: $I("resources.minerals.title"),
 		type : "common",
 		visible: true,
-		calculatePerTick:  true,
+		calculatePerTick: true
 	},{
 		name : "coal",
 		title: $I("resources.coal.title"),
 		type : "common",
 		visible: true,
 		color: "gray",
-		calculatePerTick: true,
+		calculatePerTick: true
 	},{
 		name : "iron",
 		title: $I("resources.iron.title"),
@@ -90,30 +90,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		color: "#A00000",
 		calculatePerTick: true,
 		tag: "baseMetal"
-	},
-
-	//=========================================
-	//			   TRANSIENT
-	//=========================================
-	{
-		name : "antimatter",
-		title: $I("resources.antimatter.title"),
-		type : "common",
-		transient: true,
-		visible: true,
-		color: "#5A0EDE",
-		calculateOnYear: true,
-		isRefundable: function(game) {
-			return game.resPool.energyProd >= game.resPool.energyCons;
-		}
-	},{
-		name : "manpower",
-		title: $I("resources.manpower.title"),
-		type : "common",
-		visible: true,
-		transient: true,		//cant be affected by magneto bonus
-		color: "#DBA901",
-		calculatePerTick: true
 	},{
 		name : "science",
 		title: $I("resources.science.title"),
@@ -147,13 +123,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		color: "#7B4FA6",
 		calculatePerTick: true
 	},{
-		name : "zebras",
-		title: $I("resources.zebras.title"),
-		type : "common",
-		transient: true,
-		visible: true,
-		persists: false
-	},{
 		name : "starchart",
 		title: $I("resources.starchart.title"),
 		type : "common",
@@ -162,86 +131,13 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		color: "#9A2EFE",
 		calculatePerTick: true
 	},{
-		name : "temporalFlux",
-		title: $I("resources.temporalFlux.title"),
-		type : "common",
-		craftable: false,
-		visible: false,
-		persists: true
-	},{
-		name : "gflops",
-		title: $I("resources.gflops.title"),
-		type : "common",
-		transient: true,
-		craftable: false,
-		visible: false,
-		persists: false
-	},{
-		name : "hashrates",
-		title: $I("resources.hashrates.title"),
-		type : "common",
-		transient: true,
-		craftable: false,
-		visible: false,
-		persists: false
-	},
-	//=========================================
-	// 			  luxury resources
-	//=========================================
-	{
-		name : "furs",
-		title: $I("resources.furs.title"),
-		type : "uncommon",
-		transient: true,
-		visible: true,
-		persists: false,
-		calculatePerTick: true,
-	},{
-		name : "ivory",
-		title: $I("resources.ivory.title"),
-		type : "uncommon",
-		transient: true,
-		visible: true,
-		persists: false,
-		calculatePerTick: true,
-	},{
 		name : "spice",
 		title: $I("resources.spice.title"),
 		type : "uncommon",
 		transient: true,
 		visible: true,
 		persists: false,
-		calculatePerTick: true,
-	},{
-		name : "unicorns",
-		title: $I("resources.unicorns.title"),
-		type : "rare",
-		transient: true,
-		visible: true,
-		persists: false,
-		calculatePerTick: true,
-	},{
-		name : "alicorn",
-		title: $I("resources.alicorn.title"),
-		type : "rare",
-		visible: true,
-		persists: false,
-		calculatePerTick: true,
-		calculatePerTickAndDay: true
-	},{
-		name : "necrocorn",
-		title: $I("resources.necrocorn.title"),
-		type : "rare",			//todo: some special FX
-		visible: true,
-		color: "#E00000",
-		persists: false,
-		calculatePerDay: true,
-	},{
-		name : "tears",
-		title: $I("resources.tears.title"),
-		type : "rare",
-		visible: true,
-		persists: false
+		calculatePerTick: true
 	},{
 		name : "karma",
 		title: $I("resources.karma.title"),
@@ -256,25 +152,11 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		color: "#6141CD",
 		persists: true
 	},{
-		name : "burnedParagon",
-		title : $I("resources.burnedParagon.title"),
-		type : "common",
-		visible: true,
-		color: "#493099",
-		persists: true
-	},{
 		name : "timeCrystal",
 		title: $I("resources.timeCrystal.title"),
 		type : "common",
 		visible: true,
-		color: "#14CD61"/*,*/
-	},{
-		name : "sorrow",
-		title: $I("resources.sorrow.title"),
-		type : "common",
-		visible: false,
-		color: "black",
-		persists: true //isn't wiped on game reset
+		color: "#14CD61"
 	},{
 		name : "relic",
 		title: $I("resources.relic.title"),
@@ -282,101 +164,10 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		craftable: false,
 		visible: true,
 		color: "#5A0EDE",
-		calculatePerDay: true,
-		/*style: {
-			         animation : "neon-purple 1.5s ease-in-out infinite alternate",
-			"-webkit-animation": "neon-purple 1.5s ease-in-out infinite alternate",
-			   "-moz-animation": "neon-purple 1.5s ease-in-out infinite alternate",
-			     "-o-animation": "neon-purple 1.5s ease-in-out infinite alternate"
-		}*//*,*/
-	},{
-		name : "void",
-		title: $I("resources.void.title"),
-		type : "exotic",
-		craftable: false,
-		visible: true,
-		color: "#5A0EDE",
-		/*style: {
-			         animation : "neon-purple 1.5s ease-in-out infinite alternate",
-			"-webkit-animation": "neon-purple 1.5s ease-in-out infinite alternate",
-			   "-moz-animation": "neon-purple 1.5s ease-in-out infinite alternate",
-			     "-o-animation": "neon-purple 1.5s ease-in-out infinite alternate"
-		}*/
-	},{
-		name : "elderBox",
-		title: $I("resources.elderBox.title"),
-		description: $I("resources.elderBox.desc"),
-		type : "exotic",
-		craftable: false,
-		visible: true,
-		color: "#FA0EDE",
-		/*style: {
-			         animation : "neon-pink 1.5s ease-in-out infinite alternate",
-			"-webkit-animation": "neon-pink 1.5s ease-in-out infinite alternate",
-			   "-moz-animation": "neon-pink 1.5s ease-in-out infinite alternate",
-			     "-o-animation": "neon-pink 1.5s ease-in-out infinite alternate"
-		},*/
-		persists: true
-	},{
-		name : "wrappingPaper",
-		title: $I("resources.wrappingPaper.title"),
-		type : "exotic",
-		craftable: false,
-		visible: true,
-		color: "#FA0EDE",
-		/*style: {
-			         animation : "neon-pink 1.5s ease-in-out infinite alternate",
-			"-webkit-animation": "neon-pink 1.5s ease-in-out infinite alternate",
-			   "-moz-animation": "neon-pink 1.5s ease-in-out infinite alternate",
-			     "-o-animation": "neon-pink 1.5s ease-in-out infinite alternate"
-		},*/
-		persists: true
-	},{
-		name : "blackcoin",
-		title: $I("resources.blackcoin.title"),
-		type : "exotic",
-		craftable: false,
-		visible: true,
-		color: "gold"
-		/*style: {
-			         animation : "neon-gold 1.5s ease-in-out infinite alternate",
-			"-webkit-animation": "neon-gold 1.5s ease-in-out infinite alternate",
-			   "-moz-animation": "neon-gold 1.5s ease-in-out infinite alternate",
-			     "-o-animation": "neon-gold 1.5s ease-in-out infinite alternate"
-		}*/
-	},
-	{
-		name: "bloodstone",
-		title: $I("resources.bloodstone.title"),
-		type : "exotic",
-		craftable: true,
-		visible: true,
-		color: "red"
-		/*style: {
-			         animation : "neon-red 1.5s ease-in-out infinite alternate",
-			"-webkit-animation": "neon-red 1.5s ease-in-out infinite alternate",
-			   "-moz-animation": "neon-red 1.5s ease-in-out infinite alternate",
-			     "-o-animation": "neon-red 1.5s ease-in-out infinite alternate"
-		}*/
-	},
-	{
-		name: "tMythril",
-		title: $I("resources.tMythril.title"),
-		type : "exotic",
-		transient: true,
-		calculatePerTick: true,
-		craftable: true,
-		visible: true,
-		color: "#00e6b8"
-		/*style: {
-			         animation : "neon-red 1.5s ease-in-out infinite alternate",
-			"-webkit-animation": "neon-red 1.5s ease-in-out infinite alternate",
-			   "-moz-animation": "neon-red 1.5s ease-in-out infinite alternate",
-			     "-o-animation": "neon-red 1.5s ease-in-out infinite alternate"
-		}*/
+		calculatePerDay: true
 	},
 	//=========================================
-	// 				    CRAFT
+	// 			CORE CRAFTS (6)
 	//=========================================
 	{
 		name : "beam",
@@ -390,12 +181,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		type : "common",
 		craftable: true
 	},{
-		name : "plate",
-		title: $I("resources.plate.title"),
-		type : "common",
-		craftable: true,
-		tag: "metallurgist"
-	},{
 		name : "steel",
 		title: $I("resources.steel.title"),
 		type : "common",
@@ -403,19 +188,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: false,
 		color: "gray",
 		calculatePerTick: true,
-		tag: "metallurgist"
-	},{
-		name : "concrate",
-		title: $I("resources.concrate.title"),
-		type : "common",
-		craftable: true,
-		tag: "chemist"
-	},{
-		name : "gear",
-		title: $I("resources.gear.title"),
-		type : "common",
-		craftable: true,
-		color: "gray",
 		tag: "metallurgist"
 	},{
 		name : "alloy",
@@ -434,65 +206,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		color: "darkViolet",
 		tag: "chemist"
 	},{
-		name : "scaffold",
-		title: $I("resources.scaffold.title"),
-		type : "common",
-		craftable: true,
-		color: "#FF7F50"
-	},{
-		name : "ship",
-		title: $I("resources.ship.title"),
-		type : "common",
-		craftable: true,
-		color: "#FF571A"
-	},{
-		name : "tanker",
-		title: $I("resources.tanker.title"),
-		type : "common",
-		craftable: true,
-		color: "#CF4F20"
-	},{
-        name: "kerosene",
-        title: $I("resources.kerosene.title"),
-        type: "common",
-        craftable: true,
-        color: "olive",
-		isNotRefundable: true,
-		tag: "chemist"
-	},{
-        name: "plastic",
-        title: $I("resources.plastic.title"),
-        type: "common",
-        craftable: true,
-        color: "#9B9A5A",
-		tag: "chemist"
-	},{
-        name: "microchip",
-        title: $I("resources.microchip.title"),
-        type: "common",
-        craftable: true,
-        color: "#9B9A5A",
-		tag: "chemist"
-	},{
-		name : "parchment",
-		title: $I("resources.parchment.title"),
-		type : "common",
-		craftable: true,
-		color: "#DF01D7"
-	},{
-		name : "manuscript",
-		title: $I("resources.manuscript.title"),
-		type : "common",
-		craftable: true,
-		color: "#01A9DB",
-		calculatePerTick: true
-	},{
-		name : "compedium",
-		title: $I("resources.compedium.title"),
-		type : "common",
-		craftable: true,
-		color: "#01A9DB"
-	},{
 		name : "blueprint",
 		title: $I("resources.blueprint.title"),
 		type : "common",
@@ -500,24 +213,83 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		visible: true,
 		craftable: true,
 		color: "#01A9DB"
-	},{
-		name : "thorium", //divinite
-		title: $I("resources.thorium.title"),
+	},
+	//=========================================
+	// 		INTERNAL ENGINE COUNTERS (hidden)
+	//=========================================
+	{
+		name : "antimatter",
+		title: $I("resources.antimatter.title"),
 		type : "common",
-		visible: true,
-		craftable: true,
-		color: "#4EA24E",
+		transient: true,
+		visible: false,
+		calculateOnYear: true,
+		isRefundable: function(game) {
+			return game.resPool.energyProd >= game.resPool.energyCons;
+		}
+	},{
+		name : "manpower",
+		title: $I("resources.manpower.title"),
+		type : "common",
+		visible: false,
+		transient: true,
+		calculatePerTick: true
+	},{
+		name : "temporalFlux",
+		title: $I("resources.temporalFlux.title"),
+		type : "common",
+		craftable: false,
+		visible: false,
+		persists: true
+	},{
+		name : "unicorns",
+		title: $I("resources.unicorns.title"),
+		type : "rare",
+		transient: true,
+		visible: false,
+		persists: false,
+		calculatePerTick: true
+	},{
+		name : "alicorn",
+		title: $I("resources.alicorn.title"),
+		type : "rare",
+		visible: false,
+		persists: false,
 		calculatePerTick: true,
-		isNotRefundable: true,
-		tag: "chemist"
+		calculatePerTickAndDay: true
 	},{
-		name : "megalith",
-		title: $I("resources.megalith.title"),
+		name : "necrocorn",
+		title: $I("resources.necrocorn.title"),
+		type : "rare",
+		visible: false,
+		persists: false,
+		calculatePerDay: true
+	},{
+		name : "tears",
+		title: $I("resources.tears.title"),
+		type : "rare",
+		visible: false,
+		persists: false
+	},{
+		name : "sorrow",
+		title: $I("resources.sorrow.title"),
 		type : "common",
-		craftable: true,
-		color: "gray"
-    }
-    ],
+		visible: false,
+		persists: true
+	},{
+		name : "void",
+		title: $I("resources.void.title"),
+		type : "exotic",
+		craftable: false,
+		visible: false
+	},{
+		name : "blackcoin",
+		title: $I("resources.blackcoin.title"),
+		type : "exotic",
+		craftable: false,
+		visible: false
+	}
+	],
 
 	resources: null,
 	village: null,
@@ -554,16 +326,10 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 	},
 
 	get: function(name){
-		var res = this.resourceMap[name];
-		// for (var i = 0; i < this.resources.length; i++){
-		// 	var res = this.resources[i];
-		// 	if (res.name == name){
-		// 		return res;
-		// 	}
-		// }
-
-		//if no resource found, return false
-		return res ? res : false;
+		if (name == "worship" || name == "epiphany" || name == "necrocornDeficit") {
+			return false;
+		}
+		return this.resourceMap[name] || (this.resourceMap[name] = this.createResource(name));
 	},
 
 	//put your custom fake resources there
@@ -609,15 +375,16 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 	createResource: function(name){
 		var res = {
 			name: name,
+			title: name,
 			value: 0,
-
-			//whether resource was marked by user as hidden or visible
-			isHidden: false,
-
-			unlocked: false
+			maxValue: 0,
+			perTickCached: 0,
+			visible: false,
+			isHidden: true,
+			unlocked: false,
+			isRefundable: function() { return true; }
 		};
 		if (name == "wood") {
-			//Wood is displayed as both a normal & a crafted resource.
 			res.isHiddenFromCrafting = false;
 		}
 		return res;
@@ -960,6 +727,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		this.isLocked = false;
 		this.showHiddenResources = false;
 		this.hiddenPseudoResources = [];
+		this.resourceMap = {};
 		for (var i = 0; i < this.resources.length; i++){
 			var res = this.resources[i];
 			res.value = 0;
@@ -971,6 +739,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 			if (res.name == "wood") {
 				res.isHiddenFromCrafting = false;
 			}
+			this.resourceMap[res.name] = res;
 		}
 	},
 
@@ -982,13 +751,10 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 			isLocked: this.isLocked,
 			showHiddenResources: this.showHiddenResources || undefined
 		};
-		//Save flags on which pseudo-resources to hide
-		//But for sanity purposes, only save a pseudo-resource if it actually exists!
 		var pseudoResources = this.getPseudoResources();
 		for (var i = 0; i < pseudoResources.length; i += 1) {
 			var resName = pseudoResources[i].name;
 			if (this.hiddenPseudoResources.includes(resName)) {
-				//We've found a legit pseudo-resource to be marked as hidden
 				if (!saveData.res.hiddenPseudoResources) {
 					saveData.res.hiddenPseudoResources = [];
 				}
@@ -998,7 +764,9 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 	},
 
 	load: function(saveData){
-		this.loadMetadata(this.resources, saveData.resources, "resources");
+		var map = this.resourceMap;
+		var savedRes = (saveData.resources || []).filter(function(r){ return r && map[r.name]; });
+		this.loadMetadata(this.resources, savedRes, "resources");
 
 		if (saveData.res){
 			this.isLocked = Boolean(saveData.res.isLocked);

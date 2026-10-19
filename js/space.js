@@ -52,12 +52,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "duneMission",
 		label: $I("space.duneMission.label"),
 		description: $I("space.duneMission.desc"),
-		prices: [
-			{name: "titanium", val: 7000},
-			{name: "science", val: 175000},
-			{name: "starchart", val: 1000},
-			{name: "kerosene", val: 75}
-		],
+		prices: [{ name: "titanium", val: 7000 }, { name: "science", val: 175000 }, { name: "starchart", val: 1000 }, { name: "oil", val: 3750 }],
 		unlocks: {
             planet: ["dune"],
             spaceMission: ["heliosMission"]
@@ -66,12 +61,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "piscineMission",
 		label: $I("space.piscineMission.label"),
 		description: $I("space.piscineMission.desc"),
-		prices: [
-			{name: "titanium", val: 9000},
-			{name: "science", val: 200000},
-			{name: "starchart", val: 1500},
-			{name: "kerosene", val: 250}
-		],
+		prices: [{ name: "titanium", val: 9000 }, { name: "science", val: 200000 }, { name: "starchart", val: 1500 }, { name: "oil", val: 12500 }],
         unlocks: {
             planet: ["piscine"],
             spaceMission: ["terminusMission"]
@@ -80,12 +70,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "heliosMission",
 		label: $I("space.heliosMission.label"),
 		description: $I("space.heliosMission.desc"),
-		prices: [
-			{name: "titanium", val: 15000},
-			{name: "science", val: 250000},
-			{name: "starchart", val: 3000},
-			{name: "kerosene", val: 1250}
-		],
+		prices: [{ name: "titanium", val: 15000 }, { name: "science", val: 250000 }, { name: "starchart", val: 3000 }, { name: "oil", val: 62500 }],
         unlocks: {
             planet: ["helios"],
             spaceMission: ["yarnMission"]
@@ -94,12 +79,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "terminusMission",
 		label: $I("space.terminusMission.label"),
 		description: $I("space.terminusMission.desc"),
-		prices: [
-			{name: "titanium", val: 12000},
-			{name: "science", val: 225000},
-			{name: "starchart", val: 2500},
-			{name: "kerosene", val: 750}
-		],
+		prices: [{ name: "titanium", val: 12000 }, { name: "science", val: 225000 }, { name: "starchart", val: 2500 }, { name: "oil", val: 37500 }],
         unlocks: {
             planet: ["terminus"],
             spaceMission: ["heliosMission", "kairoMission"]
@@ -108,12 +88,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "kairoMission",
 		label: $I("space.kairoMission.label"),
 		description: $I("space.kairoMission.desc"),
-		prices: [
-			{name: "titanium", 	val: 20000},
-			{name: "science", 	val: 300000},
-			{name: "starchart", val: 5000},
-			{name: "kerosene", 	val: 7500}
-		],
+		prices: [{ name: "titanium", val: 20000 }, { name: "science", val: 300000 }, { name: "starchart", val: 5000 }, { name: "oil", val: 375000 }],
 		unlocks: {
 			planet: ["kairo"],
             spaceMission: ["rorschachMission"]
@@ -122,12 +97,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "rorschachMission",
 		label: $I("space.rorschachMission.label"),
 		description: $I("space.rorschachMission.desc"),
-		prices: [
-			{name: "titanium", 	val: 80000},
-			{name: "science", 	val: 500000},
-			{name: "starchart", val: 15000},
-			{name: "kerosene", 	val: 25000}
-		],
+		prices: [{ name: "titanium", val: 80000 }, { name: "science", val: 500000 }, { name: "starchart", val: 15000 }, { name: "oil", val: 1250000 }],
 		unlocks: {
 			spaceMission: ["centaurusSystemMission"]
 		}
@@ -135,12 +105,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "yarnMission",
 		label: $I("space.yarnMission.label"),
 		description: $I("space.yarnMission.desc"),
-		prices: [
-			{name: "titanium", 	val: 35000},
-			{name: "science", 	val: 350000},
-			{name: "starchart", val: 7500},
-			{name: "kerosene", 	val: 12000}
-		],
+		prices: [{ name: "titanium", val: 35000 }, { name: "science", val: 350000 }, { name: "starchart", val: 7500 }, { name: "oil", val: 600000 }],
 		unlocks: {
 			planet: ["yarn"],
 			spaceMission: ["umbraMission"]
@@ -149,12 +114,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "umbraMission",
 		label: $I("space.umbraMission.label"),
 		description: $I("space.umbraMission.desc"),
-		prices: [
-			{name: "science", 	val: 500000},
-			{name: "starchart", val: 25000},
-			{name: "kerosene", 	val: 25000},
-			{name: "thorium",   val: 15000}
-		],
+		prices: [{ name: "science", val: 500000 }, { name: "starchart", val: 25000 }, { name: "oil", val: 1250000 }, { name: "uranium", val: 75000 }],
 		unlocks: {
 			planet: ["umbra"],
 			spaceMission: ["charonMission"]
@@ -163,12 +123,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "charonMission",
 		label: $I("space.charonMission.label"),
 		description: $I("space.charonMission.desc"),
-		prices: [
-			{name: "science", 	val: 750000},
-			{name: "starchart", val: 75000},
-			{name: "kerosene", 	val: 35000},
-			{name: "thorium",   val: 35000}
-		],
+		prices: [{ name: "science", val: 750000 }, { name: "starchart", val: 75000 }, { name: "oil", val: 1750000 }, { name: "uranium", val: 175000 }],
 		unlocks: {
 			planet: ["charon"]
 		}
@@ -176,13 +131,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "centaurusSystemMission",
 		label: $I("space.centaurusSystemMission.label"),
 		description: $I("space.centaurusSystemMission.desc"),
-		prices: [
-			{name: "titanium", 	val: 40000},
-			{name: "science", 	val: 800000},
-			{name: "starchart", val: 100000},
-			{name: "kerosene", 	val: 50000},
-			{name: "thorium",   val: 50000}
-		],
+		prices: [{ name: "titanium", val: 40000 }, { name: "science", val: 800000 }, { name: "starchart", val: 100000 }, { name: "oil", val: 2500000 }, { name: "uranium", val: 250000 }],
 		unlocks: {
 			challenges: ["energy"],
 			planet: ["centaurusSystem"],
@@ -192,12 +141,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		name: "furthestRingMission",
 		label: $I("space.furthestRingMission.label"),
 		description: $I("space.furthestRingMission.desc"),
-		prices: [
-			{name: "science", 	val: 1250000},
-			{name: "starchart", val: 500000},
-			{name: "kerosene", 	val: 75000},
-			{name: "thorium",   val: 75000}
-		],
+		prices: [{ name: "science", val: 1250000 }, { name: "starchart", val: 500000 }, { name: "oil", val: 3750000 }, { name: "uranium", val: 375000 }],
 		unlocks: {
 			planet: ["furthestRing"]
 		}
@@ -331,14 +275,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			description: $I("space.planet.moon.moonOutpost.desc"),
 			unlocked: false,
 			priceRatio: 1.12,
-			prices: [
-				{name: "oil", val: 55000},
-				{name: "uranium",  val: 500},
-				{name: "science", val: 100000},
-				{name: "starchart", val: 650},
-				{name: "concrate", val: 150},
-				{name: "alloy",    val: 750}
-			],
+			prices: [{ name: "oil", val: 55000 }, { name: "uranium", val: 500 }, { name: "science", val: 100000 }, { name: "starchart", val: 650 }, { name: "slab", val: 4500 }, { name: "alloy", val: 750 }],
 			effects: {
 				"uraniumPerTickCon": 0,
 				"unobtainiumPerTickSpace": 0,
@@ -372,14 +309,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			description: $I("space.planet.moon.moonBase.desc"),
 			unlocked: false,
 			priceRatio: 1.12,
-			prices: [
-				{name: "titanium", 		val: 9500},
-				{name: "oil", 			val: 70000},
-				{name: "unobtainium", 	val: 50},
-				{name: "science", 		val: 100000},
-				{name: "starchart", 	val: 700},
-				{name: "concrate", 		val: 250}
-			],
+			prices: [{ name: "titanium", val: 9500 }, { name: "oil", val: 70000 }, { name: "unobtainium", val: 50 }, { name: "science", val: 100000 }, { name: "starchart", val: 700 }, { name: "slab", val: 7500 }],
 			effects: {
 				"catnipMax"         : 0,
 				"woodMax"           : 0,
@@ -427,12 +357,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
             description: $I("space.planet.dune.planetCracker.desc"),
             unlocked: false,
             priceRatio: 1.18,
-            prices: [
-                {name: "science", val: 125000},
-                {name: "starchart", val: 2500},
-                {name: "alloy",  val: 1750},
-                {name: "kerosene", val: 50}
-            ],
+            prices: [{ name: "science", val: 125000 }, { name: "starchart", val: 2500 }, { name: "alloy", val: 1750 }, { name: "oil", val: 2500 }],
             effects: {
 				"uraniumPerTickSpace" : 0,
 				"uraniumMax" : 0
@@ -449,12 +374,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
             description: $I("space.planet.dune.hydrofracturer.desc"),
             unlocked: false,
             priceRatio: 1.18,
-            prices: [
-                {name: "science", val: 150000},
-                {name: "starchart", val: 750},
-                {name: "alloy",  val: 1025},
-                {name: "kerosene", val: 100}
-            ],
+            prices: [{ name: "science", val: 150000 }, { name: "starchart", val: 750 }, { name: "alloy", val: 1025 }, { name: "oil", val: 5000 }],
             effects: {
 				"oilPerTickAutoprodSpace": 0
             },
@@ -473,12 +393,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			description: $I("space.planet.dune.spiceRefinery.desc"),
 			unlocked: false,
 			priceRatio: 1.15,
-			prices: [
-				{name: "science", val: 75000},
-				{name: "starchart", val: 500},
-				{name: "alloy",  val: 500},
-				{name: "kerosene", val: 125}
-			],
+			prices: [{ name: "science", val: 75000 }, { name: "starchart", val: 500 }, { name: "alloy", val: 500 }, { name: "oil", val: 6250 }],
 			effects: {
 				"spicePerTickAutoprodSpace": 0
 			},
@@ -502,12 +417,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
             description: $I("space.planet.piscine.researchVessel.desc"),
             unlocked: false,
             priceRatio: 1.15,
-            prices: [
-                {name: "titanium", val: 12500},
-                {name: "starchart", val: 100},
-                {name: "alloy",  val: 2500},
-                {name: "kerosene", val: 250}
-            ],
+            prices: [{ name: "titanium", val: 12500 }, { name: "starchart", val: 100 }, { name: "alloy", val: 2500 }, { name: "oil", val: 12500 }],
             effects: {
 				"scienceMax": 0,
 				"starchartPerTickBaseSpace": 0
@@ -528,12 +438,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
             description: $I("space.planet.piscine.orbitalArray.desc"),
             unlocked: false,
             priceRatio: 1.15,
-            prices: [
-                {name: "science", val: 250000},
-				{name: "starchart", val: 2000},
-                {name: "eludium",  val: 100},
-                {name: "kerosene", val: 500}
-            ],
+            prices: [{ name: "science", val: 250000 }, { name: "starchart", val: 2000 }, { name: "eludium", val: 100 }, { name: "oil", val: 25000 }],
             effects: {
 				"spaceRatio": 0,
 				"energyConsumption" : 0
@@ -556,11 +461,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
             description: $I("space.planet.helios.sunlifter.desc"),
             unlocked: false,
             priceRatio: 1.15,
-            prices: [
-                {name: "science", val: 500000},
-                {name: "eludium", val: 225},
-                {name: "kerosene", val: 2500}
-            ],
+            prices: [{ name: "science", val: 500000 }, { name: "eludium", val: 225 }, { name: "oil", val: 125000 }],
             effects: {
 				"antimatterProduction": 0,
 				"energyProduction" : 0
@@ -577,10 +478,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			description: $I("space.planet.helios.containmentChamber.desc"),
 			unlocked: false,
 			priceRatio: 1.125,
-			prices: [
-				{name: "science", val: 500000},
-				{name: "kerosene", val: 2500}
-			],
+			prices: [{ name: "science", val: 500000 }, { name: "oil", val: 125000 }],
 			effects: {
 				"antimatterMax": 0,
 				"energyConsumption": 0
@@ -599,12 +497,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			description: $I("space.planet.helios.heatsink.desc"),
 			unlocked: false,
 			priceRatio: 1.12,
-			prices: [
-				{name: "science", val: 125000},
-				{name: "relic",   val: 1},
-				{name: "kerosene", val: 5000},
-				{name: "thorium", val: 12500 }
-			],
+			prices: [{ name: "science", val: 125000 }, { name: "relic", val: 1 }, { name: "oil", val: 250000 }, { name: "uranium", val: 62500 }],
 			effects: {
 			},
 			calculateEffects: function(self, game){
@@ -618,12 +511,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			description: $I("space.planet.helios.sunforge.desc"),
 			unlocked: false,
 			priceRatio: 1.12,
-			prices: [
-				{name: "antimatter", val: 250},
-				{name: "science", val: 100000},
-				{name: "relic",   val: 1},
-				{name: "kerosene", val: 1250}
-			],
+			prices: [{ name: "antimatter", val: 250 }, { name: "science", val: 100000 }, { name: "relic", val: 1 }, { name: "oil", val: 62500 }],
 			effects: {
 				"baseMetalMaxRatio": 0.01
 			},
@@ -644,12 +532,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
             description: $I("space.planet.terminus.cryostation.desc"),
             unlocked: false,
             priceRatio: 1.12,
-            prices: [
-                {name: "science", val: 200000   },
-                {name: "concrate", val: 1500    },
-                {name: "eludium", val: 25       },
-                {name: "kerosene", val: 500   }
-            ],
+            prices: [{ name: "science", val: 200000 }, { name: "slab", val: 45000 }, { name: "eludium", val: 25 }, { name: "oil", val: 25000 }],
             effects: {
 				"woodMax"       : 0,
 				"mineralsMax"   : 0,
@@ -691,12 +574,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				description: $I("space.planet.kairo.spaceBeacon.desc"),
 				unlocked: false,
 				priceRatio: 1.15,
-				prices: [
-					{name: "antimatter", 	val: 50 },
-					{name: "starchart", 	val: 25000 },
-					{name: "alloy", 		val: 25000 },
-					{name: "kerosene", 		val: 7500   }
-				],
+				prices: [{ name: "antimatter", val: 50 }, { name: "starchart", val: 25000 }, { name: "alloy", val: 25000 }, { name: "oil", val: 375000 }],
 				effects: {
 					"scienceMax": 25000,
 					"starchartPerTickBaseSpace": 0.025,
@@ -735,11 +613,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				description: $I("space.planet.yarn.terraformingStation.desc"),
 				unlocked: false,
 				priceRatio: 1.25,
-				prices: [
-					{name: "uranium", val: 5000  },
-					{name: "antimatter", val: 25  },
-					{name: "kerosene", val: 5000  }
-				],
+				prices: [{ name: "uranium", val: 5000 }, { name: "antimatter", val: 25 }, { name: "oil", val: 250000 }],
 				requiredTech: ["terraformation"],
 				effects: {
 					"xiuweiPerTickBase": 0.01
@@ -758,10 +632,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				description: $I("space.planet.yarn.hydroponics.desc"),
 				unlocked: false,
 				priceRatio: 1.15,
-				prices: [
-					{name: "unobtainium", val: 1 },
-					{name: "kerosene", val: 500 }
-				],
+				prices: [{ name: "unobtainium", val: 1 }, { name: "oil", val: 25000 }],
 				requiredTech: ["hydroponics"],
 				effects: {
 					"catnipRatio": 0.025,
@@ -821,10 +692,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				unlocked: false,
 				requiredTech: false,
 				priceRatio: 1.2,
-				prices: [
-					{name: "titanium", val: 50000 }, // TBD
-					{name: "concrate", val: 5000 }
-				],
+				prices: [{ name: "titanium", val: 50000 }, { name: "slab", val: 150000 }],
 				effects: {} // TBD
 			}, {
 				name: "spaceShuttle",
@@ -911,10 +779,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				description: $I("space.planet.centaurusSystem.tectonic.desc"),
 				unlocked: false,
 				priceRatio: 1.25,
-				prices: [
-					{name: "antimatter", val: 500 },
-					{name: "thorium", val: 75000 }
-				],
+				prices: [{ name: "antimatter", val: 500 }, { name: "uranium", val: 375000 }],
 				requiredTech: ["terraformation"],
 				effects: {
 					"energyProduction": 0

@@ -2808,7 +2808,11 @@ input, select, textarea, button { font-family: inherit; }
 	padding: 8px 12px;
 	border-radius: 9px;
 	border: 1px solid rgba(79, 209, 165, .28);
-	background: linear-gradient(135deg, rgba(16, 28, 34, .82), rgba(11, 18, 25, .86));
+	background:
+		linear-gradient(90deg, rgba(11, 18, 25, .90) 0%, rgba(14, 24, 32, .76) 55%, rgba(12, 20, 28, .62) 100%),
+		url("art/banner_science.jpg") center 40% / cover no-repeat,
+		rgba(11, 18, 25, .88);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 4px 12px rgba(0, 0, 0, .3);
 }
 .xxStewardLbl {
 	font-family: var(--xx-serif);
@@ -2943,6 +2947,20 @@ input, select, textarea, button { font-family: inherit; }
 	opacity: .92;
 }
 
+/* Guide Box & Chronicle Nano Banana Art Backdrops */
+.xxGuide {
+	background:
+		linear-gradient(95deg, rgba(11, 18, 28, .92) 0%, rgba(13, 22, 32, .82) 55%, rgba(11, 18, 28, .66) 100%),
+		url("art/banner_cultivation.jpg") right center / cover no-repeat !important;
+}
+.xxChronicle > summary {
+	background:
+		linear-gradient(90deg, rgba(11, 17, 25, .92) 0%, rgba(14, 22, 32, .78) 60%, rgba(11, 17, 25, .58) 100%),
+		url("art/banner_time.jpg") center 45% / cover no-repeat;
+	border-radius: 7px;
+	padding: 6px 10px;
+}
+
 /* respect reduced-motion */
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after {
@@ -2951,5 +2969,6 @@ input, select, textarea, button { font-family: inherit; }
 		transition-duration: .01ms !important;
 	}
 }
+
 
 

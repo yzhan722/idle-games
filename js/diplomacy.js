@@ -20,10 +20,9 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 	resourceValues: {
 		catnip: 0.32, wood: 3.9, minerals: 1.6, coal: 16, science: 3.2,
 		oil: 9.7, iron: 28, gold: 200, titanium: 7300, uranium: 44000,
-		furs: 160, ivory: 200, unicorns: 194, culture: 3.9, faith: 39,
+		unicorns: 194, culture: 3.9, faith: 39,
 		spice: 40, manpower: 10, unobtainium: 29, starchart: 20,
-		slab: 400, beam: 680, plate: 3500, steel: 4400, scaffold: 34000,
-		thorium: 11000000
+		slab: 400, beam: 680, steel: 4400
 	},
 
 	cachedAmbassadorEffects: null, //We need to cache this separately from globalEffectsCached because, I dunno, reasons.  ???  I guess there just are problems with how globalEffectsCached is recalculated, & we want these cached effects to update every tick.
@@ -65,13 +64,11 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		collapsed: false,
 		pinned: false
 	},{
-		//玄蛇:灵骨 -> 灵石+灵香 (6000s -> 3680s, x0.61) 灵香无产线,溢价值得
+		//玄蛇:文心 -> 灵石+灵香 (3120s -> 3680s, x1.18) 灵香无产线,溢价值得
 		name: "nagas",
 		title: $I("trade.race.nagas"),
 		hidden: true,
-		buys: [
-			{name: "ivory", val: 30}
-		],
+		buys: [{ name: "culture", val: 800 }],
 		sells:[
 			{name: "minerals", value: 800},
 			{name: "spice", value: 60}
@@ -106,17 +103,14 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		collapsed: false,
 		pinned: false
 	},{
-		//龙:庚金 -> 雷晶+紫雷晶 (1.83M s -> 1.87M s, x1.02) 深后期平价兑换
+		//龙:庚金 -> 雷晶 (1.83M s -> 1.54M s, x0.84) 深后期平价兑换
 		name: "dragons",
 		hidden: true,
 		title: $I("trade.race.dragons"),
 		buys: [
 			{name: "titanium", val: 250}
 		],
-		sells:[
-			{name: "uranium", value: 30},
-			{name: "thorium", value: 0.05}
-		],
+		sells:[{ name: "uranium", value: 35 }],
 		collapsed: false,
 		pinned: false
 	},{

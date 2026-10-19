@@ -435,10 +435,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         name: "controlledDelay",
         label: $I("time.cfu.controlledDelay.label"),
         description: $I("time.cfu.controlledDelay.desc") + "<br>" + $I("time.cfu.controlledDelay.desc2"),
-        prices: [
-            { name: "timeCrystal", val: 1 },
-            { name: "gear", val: 10 }
-        ],
+        prices: [{ name: "timeCrystal", val: 1 }, { name: "steel", val: 30 }],
         priceRatio: 1, //Affordable scaling
         limitBuild: 25, //Hard-capped at 5 sec delay.
         calculateEffects: function(self, game) {

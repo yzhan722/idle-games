@@ -53,8 +53,6 @@ dojo.declare("classes.managers.PrestigeManager", com.nuclearunicorn.core.TabMana
 		unlocked: false,
 		researched: false,
 		effects:{
-			"manuscriptGlobalCraftRatio": 0.05,
-			"compediumGlobalCraftRatio": 0.05,
 			"blueprintCraftRatio" : 0.25,
 			"blueprintGlobalCraftRatio": 0.05
 		}

@@ -511,10 +511,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "unicornTomb",
 		label: $I("religion.zu.unicornTomb.label"),
 		description: $I("religion.zu.unicornTomb.desc"),
-		prices: [
-			{ name : "ivory", val: 500 },
-			{ name : "tears", val: 5 }
-		],
+		prices: [{ name: "minerals", val: 500 }, { name: "tears", val: 5 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0.05,
@@ -552,10 +549,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "ivoryTower",
 		label: $I("religion.zu.ivoryTower.label"),
 		description: $I("religion.zu.ivoryTower.desc"),
-		prices: [
-			{ name : "ivory", val: 25000 },
-			{ name : "tears", val: 25 }
-		],
+		prices: [{ name: "minerals", val: 25000 }, { name: "tears", val: 25 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0.1,
@@ -578,10 +572,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "ivoryCitadel",
 		label: $I("religion.zu.ivoryCitadel.label"),
 		description: $I("religion.zu.ivoryCitadel.desc"),
-		prices: [
-			{ name : "ivory", val: 50000 },
-			{ name : "tears", val: 50 }
-		],
+		prices: [{ name: "minerals", val: 50000 }, { name: "tears", val: 50 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0.25,
@@ -607,11 +598,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "skyPalace",
 		label: $I("religion.zu.skyPalace.label"),
 		description: $I("religion.zu.skyPalace.desc"),
-		prices: [
-			{ name : "ivory", val: 125000 },
-			{ name : "tears", val: 500 },
-			{ name : "megalith", val: 5 }
-		],
+		prices: [{ name: "minerals", val: 125000 }, { name: "tears", val: 500 }, { name: "slab", val: 100 }],
 		priceRatio: 1.15,
 		effects: {
 			"goldMaxRatio": 0,
@@ -655,11 +642,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "unicornUtopia",
 		label: $I("religion.zu.unicornUtopia.label"),
 		description: $I("religion.zu.unicornUtopia.desc"),
-		prices: [
-			{ name : "gold", val: 500 },
-			{ name : "ivory", val: 1000000 },
-			{ name : "tears", val: 5000 }
-		],
+		prices: [{ name: "gold", val: 500 }, { name: "minerals", val: 1000000 }, { name: "tears", val: 5000 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0,
@@ -709,11 +692,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 
 		//TODO: make SSPIRE make something really interesting
 		description: $I("religion.zu.sunspire.desc"),
-		prices: [
-			{ name : "gold", val: 1250 },
-			{ name : "ivory", val: 750000 },
-			{ name : "tears", val: 25000 }
-		],
+		prices: [{ name: "gold", val: 1250 }, { name: "minerals", val: 750000 }, { name: "tears", val: 25000 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0,
@@ -754,12 +733,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "marker",
 		label: $I("religion.zu.marker.label"),
 		description: $I("religion.zu.marker.desc"),
-		prices: [
-			{ name : "unobtainium", val: 2500 },
-			{ name : "spice", val: 50000 },
-			{ name : "tears", val: 5000 },
-			{ name : "megalith", val: 750 }
-		],
+		prices: [{ name: "unobtainium", val: 2500 }, { name: "spice", val: 50000 }, { name: "tears", val: 5000 }, { name: "slab", val: 15000 }],
 		priceRatio: 1.15,
 		effects: {
 			"corruptionRatio" : 0.000001
@@ -782,10 +756,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "unicornGraveyard",
 		label: $I("religion.zu.unicornGraveyard.label"),
 		description: $I("religion.zu.unicornGraveyard.desc"),
-		prices: [
-			{ name : "necrocorn", val: 5 },
-			{ name : "megalith", val: 1000 }
-		],
+		prices: [{ name: "necrocorn", val: 5 }, { name: "slab", val: 20000 }],
 		priceRatio: 1.15,
 		effects: {
 			"cultureMaxRatioBonus" : 0.01,
@@ -802,12 +773,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "unicornNecropolis",
 		label: $I("religion.zu.unicornNecropolis.label"),
 		description: $I("religion.zu.unicornNecropolis.desc"),
-		prices: [
-			{ name : "alicorn", val: 100 },
-			{ name : "necrocorn", val: 15 },
-			{ name : "void", val: 5 },
-			{ name : "megalith", val: 2500 }
-		],
+		prices: [{ name: "alicorn", val: 100 }, { name: "necrocorn", val: 15 }, { name: "void", val: 5 }, { name: "slab", val: 50000 }],
 		priceRatio: 1.15,
 		effects: {
 			"corruptionBoostRatio" : 0.10
@@ -817,12 +783,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "blackPyramid",
 		label: $I("religion.zu.blackPyramid.label"),
 		description: $I("religion.zu.blackPyramid.desc"),
-		prices: [
-			{ name : "unobtainium", val: 5000 },
-			{ name : "spice", val: 150000 },
-			{ name : "sorrow", val: 5 },
-			{ name : "megalith", val: 2500 }
-		],
+		prices: [{ name: "unobtainium", val: 5000 }, { name: "spice", val: 150000 }, { name: "sorrow", val: 5 }, { name: "slab", val: 50000 }],
 		priceRatio: 1.15,
 		effectsPreDeficit: {},
 		jammed: false,

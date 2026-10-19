@@ -444,11 +444,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			{
 				label: $I("buildings.hydroplant.label"),
 				description: $I("buildings.hydroplant.desc") ,
-				prices: [
-					{ name : "titanium", val: 2500 },
-					{ name : "concrate", val: 100 },
-					{ name : "gear", val: 5 }
-				],
+				prices: [{ name: "titanium", val: 2500 }, { name: "slab", val: 3000 }, { name: "steel", val: 15 }],
 				priceRatio: 1.15,
 				effects: {
 					"energyProduction" : 5
@@ -491,7 +487,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"manpowerMax": 75,
 			"manpowerPerTickBase": 0.025,
 			"woodPerTickBase": 0.025,
-			"fursPerTickBase": 0.03,
 			"xiuweiPerTickBase": 0.005
 		},
 		breakIronWill: true, //har har har
@@ -511,8 +506,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"manpowerMax": 50,
 			"manpowerPerTickBase": 0.03,
-			"fursPerTickBase": 0.04,
-			"ivoryPerTickBase": 0.015,
 			"xiuweiPerTickBase": 0.02
 		},
 		breakIronWill: true,
@@ -560,11 +553,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			},{
 				label: $I("buildings.dataCenter.label"),
 				description: $I("buildings.dataCenter.desc"),
-				prices: [
-					{ name : "steel", val: 100 },
-					{ name : "concrate", val: 10 },
-					{ name : "microchip", val: 5 },
-				],
+				prices: [{ name: "steel", val: 100 }, { name: "slab", val: 300 }, { name: "gold", val: 250 }],
 				//togglable: true,
 				effects: {
 					"scienceMaxCompendia": 1000,
@@ -673,12 +662,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "observatory",
 		label: $I("buildings.observatory.label"),
 		description: $I("buildings.observatory.desc"),
-		prices: [
-			{ name : "iron", val: 750 },
-			{ name : "science", val: 1000 },
-			{ name : "slab", val: 35 },
-			{ name : "scaffold", val: 50 }
-		],
+		prices: [{ name: "iron", val: 750 }, { name: "science", val: 1000 }, { name: "slab", val: 35 }, { name: "beam", val: 400 }],
 		priceRatio: 1.10,
 		upgrades: {
 			buildings: ["library"]
@@ -701,12 +685,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "biolab",
 		label: $I("buildings.biolab.label"),
 		description: $I("buildings.biolab.desc"),
-		prices: [
-			{ name : "science", val: 1500 },
-			{ name : "slab", val: 100 },
-			{ name: "plastic", val: 15 },
-			{ name : "alloy", val: 25 }
-		],
+		prices: [{ name: "science", val: 1500 }, { name: "slab", val: 100 }, { name: "oil", val: 375 }, { name: "alloy", val: 25 }],
 		priceRatio: 1.10,
 		effects: {
 			"scienceRatio": 0.35,
@@ -715,8 +694,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"refineRatio": 0.1,
 			"scienceMax": 0,
 			"energyConsumption": 0,
-			"compediumCraftRatio": 0,
-			"compediumGlobalCraftRatio": 0
+			"blueprintCraftRatio": 0,
+			"blueprintGlobalCraftRatio": 0
 		},
 		upgrades: {
 			buildings: ["library"]
@@ -732,8 +711,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			}
 
 			if (game.workshop.get("petri").researched){
-				self.effects["compediumCraftRatio"] = 0.01;
-				self.effects["compediumGlobalCraftRatio"] = 0.001;
+				self.effects["blueprintCraftRatio"] = 0.01;
+				self.effects["blueprintGlobalCraftRatio"] = 0.001;
 			}
 
 			self.effects["sciencePerTickBase"] = 0.30;
@@ -822,16 +801,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				label: $I("buildings.spaceport.label"),
 				description: $I("buildings.spaceport.desc"),
 				flavor: $I("buildings.spaceport.flavor"),
-				prices: [
-					{ name: "titanium", val: 10000 },
-					{ name: "eludium", val: 500 },
-					{ name: "kerosene", val: 1000 },
-					{ name: "blueprint", val: 500 },
-					/**
-					* Spaceport uses  a much steper price ratio for starcharts to be a dedicated starchart sinker
-					*/
-					{ name: "starchart", val: 100000, multPriceRatio: 1.35 },
-				],
+				prices: [{ name: "titanium", val: 10000 }, { name: "eludium", val: 500 }, { name: "oil", val: 50000 }, { name: "blueprint", val: 500 }, { name: "starchart", val: 100000, multPriceRatio: 1.35 }],
 				priceRatio: 1.15,
 				effects: {
 					"moonBaseStorageBonus": 0,
@@ -915,11 +885,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "harbor",
 		label: $I("buildings.harbor.label"),
 		description: $I("buildings.harbor.desc"),
-		prices: [
-			{ name : "slab", val: 50 },
-			{ name : "plate", val: 75 },
-			{ name : "scaffold", val: 5 }
-		],
+		prices: [{ name: "slab", val: 50 }, { name: "iron", val: 1500 }, { name: "beam", val: 40 }],
 		priceRatio: 1.15,
 		effects: {
 			"catnipMax": 0,
@@ -1004,11 +970,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.quarry.label"),
 		description: $I("buildings.quarry.desc"),
 		unlockRatio: 0.3,
-		prices: [
-			{ name : "slab", val: 1000 },
-			{ name : "steel", val: 125 },
-			{ name : "scaffold", val: 50 }
-		],
+		prices: [{ name: "slab", val: 1000 }, { name: "steel", val: 125 }, { name: "beam", val: 400 }],
 		priceRatio: 1.15,
 		effects: {
 			"mineralsRatio": 0.35,
@@ -1224,15 +1186,11 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "steamworks",
 		label: $I("buildings.steamworks.label"),
 		description: $I("buildings.steamworks.desc"),
-		prices: [
-			{ name : "steel", val: 65 },
-			{ name : "gear",  val: 20 },
-			{ name : "blueprint",  val: 1 }
-		],
+		prices: [{ name: "steel", val: 125 }, { name: "blueprint", val: 1 }],
 		priceRatio: 1.25,
 		effects: {
 			"coalRatioGlobal" : 0,
-			"manuscriptPerTickProd": 0,
+			"culturePerTickProd": 0,
 			"energyProduction": 1,
 			"magnetoBoostRatio": 0.15,
 			"cathPollutionPerTickProd": 1
@@ -1251,7 +1209,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 					amt *= 4;
 				}
 			}
-			self.effects["manuscriptPerTickProd"] = amt;
+			self.effects["culturePerTickProd"] = amt;
 			self.effects["magnetoBoostRatio"] = 0.15;
 
 			//Update description to explain what automation does:
@@ -1279,7 +1237,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 			var wood = game.resPool.get("wood");
 			var minerals = game.resPool.get("minerals");
-			var iron = game.resPool.get("iron");
 
 			if (wood.maxValue == 0 || minerals.maxValue == 0) {
 				// Hack to prevent factory automation from starting
@@ -1309,9 +1266,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 			var beamCrafter = newCrafter(wood, "beam", true);
 			var slabCrafter = newCrafter(minerals, "slab", true);
-			var plateCrafter = newCrafter(iron, "plate", game.workshop.get("pneumaticPress").researched);
 
-			if (beamCrafter.numberOfCrafts == 0 && slabCrafter.numberOfCrafts == 0 && plateCrafter.numberOfCrafts == 0) {
+			if (beamCrafter.numberOfCrafts == 0 && slabCrafter.numberOfCrafts == 0) {
 				return;
 			}
 
@@ -1325,7 +1281,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 			beamCrafter.craft();
 			slabCrafter.craft();
-			plateCrafter.craft();
 			game.msg($I("bld.msg.automation"), null, "workshopAutomation");
 		},
 		flavor: $I("buildings.steamworks.flavor")
@@ -1333,11 +1288,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "magneto",
 		label: $I("buildings.magneto.label"),
 		description: $I("buildings.magneto.desc"),
-		prices: [
-			{ name : "gear",  val: 5 },
-			{ name : "alloy", val: 10 },
-			{ name : "blueprint",  val: 1 }
-		],
+		prices: [{ name: "steel", val: 15 }, { name: "alloy", val: 10 }, { name: "blueprint", val: 1 }],
 		priceRatio: 1.25,
 		effects: {
 			"oilPerTick" : -0.05,
@@ -1376,11 +1327,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "oilWell",
 		label: $I("buildings.oilWell.label"),
 		description: $I("buildings.oilWell.desc"),
-		prices: [
-			{name : "steel", val: 50},
-			{name : "gear",  val: 25},
-			{name : "scaffold", val: 25}
-		],
+		prices: [{ name: "steel", val: 125 }, { name: "beam", val: 200 }],
 		priceRatio: 1.15,
 		effects: {
 			"oilPerTickBase" : 0.02,
@@ -1449,11 +1396,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "factory",
 		label: $I("buildings.factory.label"),
 		description: $I("buildings.factory.desc"),
-		prices: [
-			{ name : "titanium", val: 2000 },
-			{ name : "plate", val: 2500},
-			{ name : "concrate", val: 15}
-		],
+		prices: [{ name: "titanium", val: 2000 }, { name: "iron", val: 50000 }, { name: "slab", val: 450 }],
 		isAutomationEnabled: null,
 		priceRatio: 1.15,
 		effects: {
@@ -1495,19 +1438,13 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "reactor",
 		label: $I("buildings.reactor.label"),
 		description: $I("buildings.reactor.desc"),
-		prices: [
-			{ name : "titanium",    val: 3500 },
-			{ name : "plate", 		val: 5000},
-			{ name : "concrate",    val: 50},
-			{ name : "blueprint",   val: 25}
-		],
+		prices: [{ name: "titanium", val: 3500 }, { name: "iron", val: 100000 }, { name: "slab", val: 1500 }, { name: "blueprint", val: 25 }],
 		priceRatio: 1.15,
 		upgrades: {
 			buildings: ["harbor"]
 		},
 		effects: {
 			"uraniumPerTick" : -0.001,
-			"thoriumPerTick": 0,
 			"productionRatio": 0.05,
 			"uraniumMax" : 250,
 			"energyProduction" : 10
@@ -1530,8 +1467,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				self.on = 0;
 			}
 
-			var stopAutomation = self.isAutomationEnabled == false || (self.isAutomationEnabled && game.resPool.get("thorium").value <= 0);
-			self.effects["thoriumPerTick"] = stopAutomation ? 0 : game.getEffect("reactorThoriumPerTick");
+			var stopAutomation = self.isAutomationEnabled == false;
 
 			var energyRatio = 1 + game.getEffect("reactorEnergyRatio");
 			if (stopAutomation) {
@@ -1545,11 +1481,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "accelerator",
 		label: $I("buildings.accelerator.label"),
 		description: $I("buildings.accelerator.desc"),
-		prices: [
-			{ name : "titanium",    val: 7500 },
-			{ name : "uranium",   	val: 25   },
-			{ name : "concrate",    val: 125  }
-		],
+		prices: [{ name: "titanium", val: 7500 }, { name: "uranium", val: 25 }, { name: "slab", val: 3750 }],
 		priceRatio: 1.15,
 		effects: {
 			"titaniumPerTickCon" : -0.015,
@@ -1635,17 +1567,13 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "mint",
 		label: $I("buildings.mint.label"),
 		description: $I("buildings.mint.desc"),
-		prices: [
-			{ name : "minerals", val: 5000 },
-			{ name : "gold", val: 150 },
-			{ name : "plate", val: 200 }
-		],
+		prices: [{ name: "minerals", val: 5000 }, { name: "gold", val: 150 }, { name: "iron", val: 4000 }],
 		priceRatio: 1.15,
 		effects: {
 			"goldPerTickCon" : -0.005,
 			"manpowerPerTickCon" : -0.75,
-			"fursPerTickProd": 0.00875,
-			"ivoryPerTickProd": 0.0021,
+			"culturePerTickProd": 0.00875,
+			"mineralsPerTickProd": 0.0021,
 			"goldMax": 250
 		},
 		calculateEffects: function (self, game){
@@ -1664,8 +1592,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			var manpower = game.resPool.get("manpower");
 			var mpratio = (manpower.maxValue * 0.007) / 100;
 
-			self.effects["fursPerTickProd"]  = mpratio * 1.25;	//2
-			self.effects["ivoryPerTickProd"] = mpratio * 0.3;	//1.5
+			self.effects["culturePerTickProd"]  = mpratio * 1.25;	//2
+			self.effects["mineralsPerTickProd"] = mpratio * 0.3;	//1.5
 
 			var amt = game.resPool.getAmtDependsOnStock(
 				[{res: "gold", amt: -self.effects["goldPerTickCon"]},
@@ -1674,8 +1602,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			);
 			self.effects["goldPerTickCon"] *= amt;
 			self.effects["manpowerPerTickCon"] *= amt;
-			self.effects["fursPerTickProd"] *= amt;
-			self.effects["ivoryPerTickProd"] *= amt;
+			self.effects["culturePerTickProd"] *= amt;
+			self.effects["mineralsPerTickProd"] *= amt;
 
 			return amt;
 		},
@@ -1688,12 +1616,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.brewery.label"),
 		description: $I("buildings.brewery.desc"),
 		unlockRatio: 0.2,
-		prices: [
-			{ name : "wood", val: 1000 },
-			{ name : "culture", val: 750 },
-			{ name : "spice", val: 5 },
-			{ name : "parchment", val: 375 }
-		],
+		prices: [{ name: "wood", val: 1000 }, { name: "culture", val: 6380 }, { name: "spice", val: 5 }],
 		priceRatio: 1.5,
 		effects: {
 			"catnipPerTickCon" : -1,
@@ -1728,7 +1651,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		},
 		flavor: $I("buildings.brewery.flavor"),
 		unlocks:{
-			zebraUpgrades: ["darkBrew"]
 		},
 		unlockScheme: {
 			name: "chocolate",
@@ -1746,11 +1668,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			{
 				label: $I("buildings.amphitheatre.label"),
 				description: $I("buildings.amphitheatre.desc"),
-				prices: [
-					{ name : "wood", val: 200 },
-					{ name : "minerals", val: 1200 },
-					{ name : "parchment", val: 3 }
-				],
+				prices: [{ name: "wood", val: 200 }, { name: "minerals", val: 1200 }, { name: "culture", val: 45 }],
 				priceRatio: 1.15,
 				effects: {
 					"culturePerTickBase" : 0.05,
@@ -1803,11 +1721,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "chapel",
 		label: $I("buildings.chapel.label"),
 		description: $I("buildings.chapel.desc"),
-		prices: [
-			{ name : "minerals", val: 2000 },
-			{ name : "culture",  val: 250 },
-			{ name : "parchment", val: 250 }
-		],
+		prices: [{ name: "minerals", val: 2000 }, { name: "culture", val: 4000 }],
 		priceRatio: 1.15,
 		effects: {
 			"culturePerTickBase" : 0,
@@ -1843,12 +1757,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "temple",
 		label: $I("buildings.temple.label"),
 		description: $I("buildings.temple.desc"),
-		prices: [
-			{ name : "gold", val: 50 },
-			{ name : "slab", val: 25 },
-			{ name : "plate", val: 15 },
-			{ name : "manuscript", val: 10 }
-		],
+		prices: [{ name: "gold", val: 50 }, { name: "slab", val: 25 }, { name: "iron", val: 300 }, { name: "culture", val: 800 }],
 		priceRatio: 1.15,
 		upgrades: {
 			buildings: ["ziggurat"]
@@ -1953,11 +1862,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.ziggurat.label"),
 		description: $I("buildings.ziggurat.desc"),
 		unlockRatio: 0.01,
-		prices: [
-			{ name : "scaffold", val: 50 },
-			{ name : "blueprint", val: 1 },
-			{ name : "megalith", val: 50 }
-		],
+		prices: [{ name: "beam", val: 400 }, { name: "blueprint", val: 1 }, { name: "slab", val: 1000 }],
 		priceRatio: 1.25,
 		upgrades: {
 			buildings: ["temple"]
@@ -2013,11 +1918,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.aicore.label"),
 		description: $I("buildings.aicore.desc"),
 		unlockRatio: 0.01,
-		prices: [
-			{ name : "antimatter", val: 125 },
-			{ name : "microchip", 	val: 25 },
-			{ name : "science", 	val: 500000 }
-		],
+		prices: [{ name: "antimatter", val: 125 }, { name: "gold", val: 1250 }, { name: "science", val: 500000 }],
 		priceRatio: 1.15,
 		effects: {
 			"gflopsPerTickBase": 0.02,
@@ -2065,26 +1966,17 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.zebraOutpost.label"),
 		description: $I("buildings.zebraOutpost.desc"),
 		unlockRatio: 0.01,
-		prices: [
-			{ name : "bloodstone", val: 1 }
-		],
+		prices: [{ name: "relic", val: 50 }],
 		priceRatio: 1.35,
 		zebraRequired: 5,
 		effects: {
 			"manpowerMax": 5,
 			"zebraPreparations" : 0,
-			"bloodstonePerTickBase" : 0
+			"relicPerTickBase" : 0
 		},
 		calculateEffects: function(self, game){
-			if (game.workshop.getZebraUpgrade("darkRevolution").researched){
-				var prepRatio = 1 + game.getEffect("preparationRatio");
-				self.effects["zebraPreparations"] = (game.ironWill? 1:0.1) * prepRatio;
-				self.effects["bloodstonePerTickBase"] = 0.0005 * prepRatio;
-				self.jammed = false;
-			} else {
-				self.effects["zebraPreparations"] = 0;
-				self.effects["bloodstonePerTickBase"] = 0;
-			}
+			self.effects["zebraPreparations"] = 0;
+			self.effects["relicPerTickBase"] = 0;
 		},
 		jammed: false,
 		action: function(self, game){
@@ -2104,36 +1996,17 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.zebraWorkshop.label"),
 		description: $I("buildings.zebraWorkshop.desc"),
 		unlockRatio: 0.01,
-		prices: [
-			{ name : "bloodstone", val: 5 }
-		],
+		prices: [{ name: "relic", val: 250 }],
 		unlocks: {
-			zebraUpgrades:["darkRevolution"]
 		},
 		priceRatio: 1.15,
 		zebraRequired: 10,
 		effects: {
-			"bloodstoneRatio": 0,
-			"manpowerMax": 25,
-			//"bloodstoneCraftRatio" : 0.01
+			"relicRatio": 0,
+			"manpowerMax": 25
 		},
 		calculateEffects: function(self, game){
-			var zebraPreparations = 41 + game.getEffect("zebraPreparations");
-			var zebrasMax = game.resPool.get("zebras").maxValue;
-			var difference =  zebrasMax - zebraPreparations * 0.75;
-			if (game.workshop.getZebraUpgrade("bloodstoneInstitute").researched){
-				var unlimited = self.on * (game.ironWill? 1:0.1) * zebrasMax;
-				var limit = zebraPreparations;
-				self.effects["bloodstoneRatio"] = 0.01 * game.getLimitedDR(unlimited, limit) / self.on;
-			}
-			if (difference > 0){
-				self.effects["missingZebraPreparations"] = difference;
-			} else {
-				self.effects["missingZebraPreparations"] = 0;
-			}
-			if (self.val) {
-				game.time.queue.unlockQueueSource("zebraUpgrades");
-			}
+			self.effects["missingZebraPreparations"] = 0;
 		},
 		upgrades: {
 			buildings: ["zebraWorkshop"]
@@ -2143,35 +2016,23 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.zebraForge.label"),
 		description: $I("buildings.zebraForge.desc"),
 		unlockRatio: 0.01,
-		prices: [
-			{ name : "bloodstone", val: 50 }
-		],
+		prices: [{ name: "relic", val: 2500 }],
 		unlocks: {
-			crafts: ["bloodstone", "tMythril"],
-			zebraUpgrades: ["whispers"],
+			crafts: [],
 		},
 		priceRatio: 1.15,
 		zebraRequired: 50,
 		effects: {
-			//"bloodstoneCraftRatio" : 0.02,
-			"tMythrilCraftRatio" : 0.01,
-			"bloodstoneRatio": 0,
+			"alloyCraftRatio" : 0.01,
+			"relicRatio": 0,
 			"manpowerMax": 50,
 			"preparationRatio" : 0
 		},
 		calculateEffects: function(self, game){
-			if (game.workshop.getZebraUpgrade("reforgedOutposts").researched){
-				self.effects["preparationRatio"] = (Math.floor(self.val / 10)) / self.val;
-			} else {
-				self.effects["preparationRatio"] = 0;
-			}
-			if (game.workshop.getZebraUpgrade("rangefinders").researched){
-				self.effects["bloodstoneRatio"] = 0.01;
-			}
+			self.effects["preparationRatio"] = 0;
 			game.upgrade(self.upgrades);
 		},
 		upgrades: {
-			// buildings: ["zebraOutpost", "zebraWorkshop"]
 			buildings: ["zebraOutpost"]
 		}
 	},
@@ -2180,11 +2041,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.stasisPod.label"),
 		description: $I("buildings.stasisPod.desc"),
 		unlockRatio: 0.01,
-		 prices: [
-            { name : "tMythril", val: 1 },
-            { name : "timeCrystal", val: 2 },
-            { name : "void", val: 100 }
-        ],
+		prices: [{ name: "titanium", val: 200 }, { name: "timeCrystal", val: 2 }, { name: "void", val: 100 }],
 		fewZebrasPrices : [
 			{ name : "eludium", val: 100 },
             { name : "timeCrystal", val: 2 },
@@ -2193,7 +2050,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		priceRatio: 1.25,
 		zebraRequired: 1,
 		effects: {
-			"zebrasMax": 1,
+			"manpowerMax": 1,
 		},
 		upgrades: {
 			buildings: ["zebraOutpost"]
@@ -2206,58 +2063,35 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.ivoryTemple.label"),
 		description: $I("buildings.ivoryTemple.desc"),
 		unlockRatio: 0.1,
-		prices: [
-			{ name : "tMythril", val: 1 },
-			{ name : "ivory", val: 100 }
-		],
+		prices: [{ name: "titanium", val: 200 }, { name: "minerals", val: 100 }],
 		priceRatio: 1.15,
-		//zebraRequired: 10,
 		effects: {
-			"ivoryPerTickCon": 0,
+			"mineralsPerTickCon": 0,
 			"mineralsPerTickProd": 0,
 			"titaniumPerTickCon": 0,
 			"alicornPerTickCon": 0,
-			"tMythrilPerTick": 0,
+			"titaniumPerTick": 0,
 			"manpowerMax": 10
 		},
 		lackResConvert: false,
 		togglable: true,
 		calculateEffects: function(self, game){
-			if (game.workshop.getZebraUpgrade("whispers").researched && self.on > 0 && self.isAutomationEnabled == null){
-				self.isAutomationEnabled = true;
-			}
 		},
 		action: function(self, game){
-			if (self.isAutomationEnabled){
-				self.effects = {
-					"ivoryPerTickCon": -200,
-					"mineralsPerTickProd": 2,
-					"titaniumPerTickCon": -2,
-					"alicornPerTickCon": -0.00002,
-					"tMythrilPerTick": 0.00005,
-					"manpowerMax": 10
-				};
-			} else {
-				self.effects = {
-					"ivoryPerTickCon": -100,
-					"mineralsPerTickProd": 1,
-					"titaniumPerTickCon": 0,
-					"alicornPerTickCon": 0,
-					"tMythrilPerTick": 0,
-					"manpowerMax": 10
-				};
-			}
+			self.effects = {
+				"mineralsPerTickCon": -100,
+				"mineralsPerTickProd": 1,
+				"titaniumPerTickCon": 0,
+				"alicornPerTickCon": 0,
+				"titaniumPerTick": 0,
+				"manpowerMax": 10
+			};
 			var amt = game.resPool.getAmtDependsOnStock(
-				[{res: "ivory", amt: -self.effects["ivoryPerTickCon"]},
-				{res: "titanium", amt: -self.effects["titaniumPerTickCon"]},
-				{res: "alicorn", amt: -self.effects["alicornPerTickCon"]}],
+				[{res: "minerals", amt: -self.effects["mineralsPerTickCon"]}],
 				self.on
 			);
-			self.effects["ivoryPerTickCon"] *= amt;
+			self.effects["mineralsPerTickCon"] *= amt;
 			self.effects["mineralsPerTickProd"] *= amt;
-			self.effects["titaniumPerTickCon"] *= amt;
-			self.effects["alicornPerTickCon"] *= amt;
-			self.effects["tMythrilPerTick"] *= amt;
 		}
 	}
 	],
@@ -2970,7 +2804,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 		var wood = game.resPool.get("wood");
 		var minerals = game.resPool.get("minerals");
-		var iron = game.resPool.get("iron");
 
 		if (wood.maxValue == 0 || minerals.maxValue == 0) {
 			// Hack to prevent factory automation from starting
@@ -3011,9 +2844,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 		var beamCrafter = newCrafter(wood, "beam", true);
 		var slabCrafter = newCrafter(minerals, "slab", true);
-		var plateCrafter = newCrafter(iron, "plate", game.workshop.get("pneumaticPress").researched);
 
-		if (beamCrafter.numberOfCrafts == 0 && slabCrafter.numberOfCrafts == 0 && plateCrafter.numberOfCrafts == 0) {
+		if (beamCrafter.numberOfCrafts == 0 && slabCrafter.numberOfCrafts == 0) {
 			return;
 		}
 
@@ -3024,7 +2856,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			return;
 		}
 
-		plateCrafter.craft();
 		slabCrafter.craft();
 		beamCrafter.craft();
 	},
