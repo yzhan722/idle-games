@@ -90,12 +90,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		//gate — 大境界门槛:首层突破除修为/材料外还需一道大关
 		//  {pill:"x"}      需该丹×1,冲关时消耗(并得丹力加成)
 		//  {riftFloor:N}   需通关上古秘境第N层——历生死之险,道基方凝
-		{key:"lianqi",  layers:10, base:{xiuwei:18},             mul:1.32, bonus:0.03, chance:1.0,  life:80},
-		{key:"zhuji",   layers:3,  base:{xiuwei:1500, minerals:150},   mul:1.75, bonus:0.15, chance:0.55, life:200},
-		{key:"jiedan",  layers:3,  base:{xiuwei:12000, gold:120},      mul:1.75, bonus:0.30, chance:0.48, life:500,  gate:{riftFloor:3}},
-		{key:"yuanying",layers:3,  base:{xiuwei:52000, science:2500},  mul:1.70, bonus:0.55, chance:0.42, life:1200, gate:{riftFloor:6}},
-		{key:"huashen", layers:3,  base:{xiuwei:210000, faith:2000},   mul:1.68, bonus:1.00, chance:0.36, life:3200, gate:{riftFloor:9}},
-		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50}, mul:1.65, bonus:1.80, chance:0.30, life:8000, gate:{riftFloor:12}},
+		{key:"lianqi",  layers:10, base:{xiuwei:45},             mul:1.45, bonus:0.03, chance:1.0,  life:80},
+		{key:"zhuji",   layers:3,  base:{xiuwei:3200, minerals:260},   mul:1.70, bonus:0.15, chance:0.55, life:200},
+		{key:"jiedan",  layers:3,  base:{xiuwei:18000, gold:150},      mul:1.68, bonus:0.30, chance:0.48, life:500,  gate:{riftFloor:3}},
+		{key:"yuanying",layers:3,  base:{xiuwei:72000, science:2800},  mul:1.52, bonus:0.65, chance:0.42, life:1200, gate:{riftFloor:6}},
+		{key:"huashen", layers:3,  base:{xiuwei:280000, faith:2200},   mul:1.48, bonus:1.25, chance:0.36, life:3200, gate:{riftFloor:9}},
+		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50}, mul:1.52, bonus:2.10, chance:0.30, life:8000, gate:{riftFloor:12}},
 		{key:"heti",    layers:3,  base:{xiuwei:2600000, relic:20},    mul:1.60, bonus:3.20, chance:0.25, life:20000, gate:{riftFloor:15}},
 		{key:"dacheng", layers:3,  base:{xiuwei:7200000, relic:50, timeCrystal:15}, mul:1.50, bonus:5.80, chance:0.20, life:60000, gate:{riftFloor:20}},
 		{key:"dujie",   layers:1,  base:{xiuwei:24000000, relic:130, timeCrystal:50}, mul:1, bonus:12.0, chance:0.10, life:100000, gate:{riftFloor:25}}
@@ -179,13 +179,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "trace",	//夜探地窖——见过真相的人,日后认得那具铁尸
-			grant: {xiuwei: 22, minerals: 40}
+			grant: {xiuwei: 10, minerals: 30}
 		},{
 			key: "bide",	//隐忍不发
-			grant: {xiuwei: 32}
+			grant: {xiuwei: 15}
 		},{
 			key: "wary",	//将信将疑——对温先生留了心眼
-			grant: {xiuwei: 24, wood: 10}
+			grant: {xiuwei: 12, wood: 8}
 		}]
 	},{
 		name: "bottle",
@@ -193,7 +193,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		researched: false,
 		atStage: "lianqi_2",
 		pages: 2,
-		grant: {spice: 12, xiuwei: 28},		//初得凝露瓶即凝一滴碧露,恰可炼首炉聚气丹
+		grant: {spice: 10, xiuwei: 15},		//初得凝露瓶即凝一滴碧露,恰可炼首炉聚气丹
 		effects: {"spicePerTickBase": 0.02}	//月露凝碧,灵香自生——凝露瓶是命定之物
 	},{
 		name: "feiyu",
@@ -204,13 +204,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "oath",	//义结金兰
-			grant: {xiuwei: 48, wood: 25}
+			grant: {xiuwei: 25, wood: 20}
 		},{
 			key: "name",	//借其名行世——tale.feiyu
-			grant: {xiuwei: 38, minerals: 80}
+			grant: {xiuwei: 20, minerals: 60}
 		},{
 			key: "decline",	//仙凡殊途
-			grant: {xiuwei: 65}
+			grant: {xiuwei: 35}
 		}]
 	},{
 		name: "mojuren",
@@ -221,11 +221,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "kill",	//夺舍反杀——斩断师徒,也斩断后患
-			grant: {xiuwei: 95, spice: 25},
+			grant: {xiuwei: 45, spice: 20},
 			effects: {"xiuweiRatio": 0.05}
 		},{
 			key: "spare",	//擒而不杀——残魂囚于法器,结丹之期他将反扑
-			grant: {xiuwei: 80, minerals: 150, spice: 35}
+			grant: {xiuwei: 40, minerals: 120, spice: 25}
 		}]
 	},{
 		name: "jinguang",
@@ -236,10 +236,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "fight",	//挺身而出——阵前斩之,得登仙令
-			grant: {xiuwei: 150, minerals: 200, spice: 35}
+			grant: {xiuwei: 70, minerals: 160, spice: 30}
 		},{
 			key: "flee",	//携瓶夜遁
-			grant: {xiuwei: 120, spice: 50}
+			grant: {xiuwei: 55, spice: 40}
 		}]
 	},{
 		name: "xuese",
@@ -250,10 +250,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "jiao",	//玄蛟泽援手——初遇冷凝霜(tale.nangong="met")
-			grant: {spice: 300, xiuwei: 240}
+			grant: {spice: 200, xiuwei: 120}
 		},{
 			key: "lurk",	//苟着采药——收获更丰,未识佳人
-			grant: {relic: 8, spice: 600, xiuwei: 180}
+			grant: {relic: 6, spice: 400, xiuwei: 90}
 		}]
 	},{
 		//———— 苍梧山(筑基)————
@@ -262,7 +262,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		researched: false,
 		atStage: "zhuji_0",
 		pages: 2,
-		grant: {minerals: 250, xiuwei: 350},
+		grant: {minerals: 200, xiuwei: 220},
 		effects: {"xiuweiRatio": 0.15},
 		variant: function(c){ return (c.tale.jinguang == "fight") ? "token" : null; }
 	},{
@@ -274,15 +274,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "sword",	//购剑诀残页
-			grant: {xiuwei: 450},
+			grant: {xiuwei: 300},
 			effects: {"xiuweiRatio": 0.06}
 		},{
 			key: "seed",	//收灵药种子——与凝露瓶相合
-			grant: {spice: 150, catnip: 1500},
+			grant: {spice: 120, catnip: 1200},
 			effects: {"spicePerTickBase": 0.03}
 		},{
 			key: "wine",	//沽酒听书——星海传闻入耳
-			grant: {xiuwei: 650, relic: 3}
+			grant: {xiuwei: 420, relic: 3}
 		}]
 	},{
 		name: "fengyun",
@@ -290,7 +290,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		researched: false,
 		atStage: "zhuji_2",
 		pages: 2,
-		grant: {xiuwei: 500},
+		grant: {xiuwei: 350},
 		effects: {}			//dynamic:蜂云剑护体——游历收获×1.5,伏击减半
 	},{
 		//———— 离乱篇(结丹)————
@@ -609,7 +609,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		label: $I("cultivation.sect.3.label"),
 		description: $I("cultivation.sect.3.desc"),
 		gate: "jiedan_0",
-		prices: [{name:"gold", val:200}, {name:"xiuwei", val:15000}],
+		prices: [{name:"gold", val:200}, {name:"xiuwei", val:22000}],
 		effects: {"xiuweiRatio": 0.28, "realmProductionRatio": 0.10},
 		chance: 1.0, researched: false
 	},{
@@ -617,7 +617,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		label: $I("cultivation.sect.4.label"),
 		description: $I("cultivation.sect.4.desc"),
 		gate: "yuanying_0",
-		prices: [{name:"science", val:3500}, {name:"xiuwei", val:45000}],
+		prices: [{name:"science", val:3500}, {name:"xiuwei", val:85000}],
 		effects: {"xiuweiRatio": 0.45, "realmProductionRatio": 0.15},
 		chance: 1.0, researched: false
 	},{
@@ -625,7 +625,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		label: $I("cultivation.sect.5.label"),
 		description: $I("cultivation.sect.5.desc"),
 		gate: "huashen_0",
-		prices: [{name:"faith", val:3000}, {name:"xiuwei", val:140000}],
+		prices: [{name:"faith", val:3000}, {name:"xiuwei", val:300000}],
 		effects: {"xiuweiRatio": 0.65, "realmProductionRatio": 0.20},
 		chance: 1.0, researched: false
 	},{
@@ -633,7 +633,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		label: $I("cultivation.sect.6.label"),
 		description: $I("cultivation.sect.6.desc"),
 		gate: "lianxu_0",
-		prices: [{name:"relic", val:60}, {name:"xiuwei", val:420000}],
+		prices: [{name:"relic", val:60}, {name:"xiuwei", val:880000}],
 		effects: {"xiuweiRatio": 0.95, "realmProductionRatio": 0.28},
 		chance: 1.0, researched: false
 	}],
@@ -647,7 +647,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//历练所得按「下一层破境价」的比例给付——一场机缘是一层天的几分之一,
 	//低境不靠走运连跳数层,高境也不是滴水入海;再乘已破层数的渐衰,
 	//免得渡劫门前一回秘境便抵半层天
-	WANDER_PAY: 0.14,		//游历机缘(基础必得吐纳 + 奇遇大成)
+	WANDER_PAY: 0.09,		//游历机缘(基础必得吐纳 + 奇遇大成)
 	RIFT_PAY: 0.038,		//秘境一行
 	AMBUSH_PAY: 0.035,		//反杀劫修的缴获
 	GRIFT_PAY: 0.22,		//大秘境破关
@@ -702,16 +702,16 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//道途赐福 — 每次达成指引里程碑即赐一笔开荒资粮,串联起前五分钟的正向反馈链。
 	//各阶奖励严格避开后续步骤的完成判定(如 gather/field 不提前给灵木),绝不跳步。
 	GUIDE_REWARDS: {
-		gather:   {catnip: 25, xiuwei: 6},
-		field:    {catnip: 45, xiuwei: 8},
-		refine:   {wood: 2, xiuwei: 10},
-		hut:      {xiuwei: 14, wood: 6},
-		break2:   {xiuwei: 20, minerals: 30},
-		wander:   {xiuwei: 30, spice: 10},
-		seclude:  {xiuwei: 40, minerals: 50},
-		zhuji:    {xiuwei: 300, minerals: 120},
-		rift:     {xiuwei: 400, minerals: 150},
-		grift:    {xiuwei: 600, relic: 5}
+		gather:   {catnip: 20, xiuwei: 3},
+		field:    {catnip: 35, xiuwei: 4},
+		refine:   {wood: 2, xiuwei: 5},
+		hut:      {xiuwei: 8, wood: 4},
+		break2:   {xiuwei: 12, minerals: 25},
+		wander:   {xiuwei: 15, spice: 8},
+		seclude:  {xiuwei: 20, minerals: 40},
+		zhuji:    {xiuwei: 180, minerals: 100},
+		rift:     {xiuwei: 240, minerals: 120},
+		grift:    {xiuwei: 360, relic: 3}
 	},
 
 	claimGuideRewards: function(){
@@ -855,6 +855,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					if (r == 0 && i == 0){ continue; }	//炼气一层 is the free starting stage
 					prices.push({name: res, val: val});
 				}
+				if (r == 0 && i >= 4 && i <= 6){
+					prices.push({name: "wood", val: this.roundNice(25 * Math.pow(1.8, i - 4))});
+				} else if (r == 0 && i >= 7){
+					prices.push({name: "minerals", val: this.roundNice(60 * Math.pow(1.75, i - 7))});
+				}
 				stages.push({
 					name: def.key + "_" + i,
 					realm: def.key,
@@ -890,8 +895,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				label: $I("cultivation.vein.label") + "·" + $I("cultivation.tier." + i),
 				description: $I("cultivation.vein.desc." + i),
 				prices: [
-					{name: "minerals", val: this.roundNice(90 * Math.pow(2.05, i))},
-					{name: "xiuwei",   val: this.roundNice(25 * Math.pow(1.95, i))}
+					{name: "minerals", val: this.roundNice(150 * Math.pow(2.0, i))},
+					{name: "xiuwei",   val: this.roundNice(350 * Math.pow(2.15, i))}
 				],
 				effects: {
 					"xiuweiRatio": 0.14,
@@ -1131,7 +1136,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 		}
 		if (f.name == "bottle"){
-			this.bottleDew = Math.min(5, (this.bottleDew || 0) + 2);
+			this.bottleDew = Math.min(5, (this.bottleDew || 0) + 1);
 		}
 		this.taleLog.push({
 			f: f.name, c: f.choiceKey || null,
@@ -1902,7 +1907,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 
 		//行脚吐纳保底——每次游历归来必有一份修为感悟入账,绝不空手而归
-		var baseXw = Math.max(4, Math.round(this.breakPayout(this.WANDER_PAY * 0.45 * (hasSwords ? 1.5 : 1))));
+		var baseXw = Math.max(2, Math.round(this.breakPayout(this.WANDER_PAY * 0.35 * (hasSwords ? 1.5 : 1))));
 		addRes("xiuwei", baseXw);
 
 		var roll = Math.random() * 100;

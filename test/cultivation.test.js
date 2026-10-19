@@ -1095,5 +1095,59 @@ test("Streamlined resource & crafting system directly removes 24 legacy resource
     }
 });
 
+test("Full-game balance invariants: zero storage cap deadlocks and monotonic cultivation vein/sect/realm curves", () => {
+    const cult = game.cultivation;
+    // 1. Early-to-mid realm curve invariants
+    expect(cult.getStage("lianqi_1").prices[0].val).toBe(65);
+    expect(cult.getStage("lianqi_4").prices.some(p => p.name === "wood" && p.val === 25)).toBe(true);
+    expect(cult.getStage("lianqi_7").prices.some(p => p.name === "minerals" && p.val === 60)).toBe(true);
+    expect(cult.getStage("zhuji_0").prices.find(p => p.name === "xiuwei").val).toBe(3200);
+    expect(cult.getStage("jiedan_0").prices.find(p => p.name === "xiuwei").val).toBe(18000);
+    expect(cult.getStage("yuanying_0").prices.find(p => p.name === "xiuwei").val).toBe(72000);
+    expect(cult.getStage("huashen_0").prices.find(p => p.name === "xiuwei").val).toBe(280000);
 
+    // 2. Veins and sects scale monotonically across realms
+    expect(cult.veins[0].prices.find(p => p.name === "xiuwei").val).toBeGreaterThanOrEqual(700);
+    for (let i = 1; i < cult.veins.length; i++) {
+        const prev = cult.veins[i - 1].prices.find(p => p.name === "xiuwei").val;
+        const curr = cult.veins[i].prices.find(p => p.name === "xiuwei").val;
+        expect(curr).toBeGreaterThan(prev);
+    }
+    for (let i = 1; i < cult.sects.length; i++) {
+        const prev = cult.sects[i - 1].prices.find(p => p.name === "xiuwei").val;
+        const curr = cult.sects[i].prices.find(p => p.name === "xiuwei").val;
+        expect(curr).toBeGreaterThan(prev);
+    }
 
+    // 3. No science tech, workshop upgrade, or space mission/building is cap-locked at 20 of each building
+    for (const b of game.bld.buildingsData) {
+        b.unlocked = true; b.val = 20; b.on = 20;
+        if (b.stages && b.stages.length > 1) b.stage = 1;
+    }
+    for (const u of game.workshop.upgrades) u.researched = true;
+    for (const r of game.religion.religionUpgrades) { r.researched = true; r.val = 10; r.on = 10; }
+    for (const pl of game.space.planets) {
+        pl.reached = true; pl.unlocked = true;
+        for (const sb of (pl.buildings || [])) { sb.unlocked = true; sb.val = 20; sb.on = 20; }
+    }
+    game.updateCaches();
+    game.calculateAllEffects();
+    game.resPool.updateMaxValueAll();
+
+    const checkPricesAgainstCaps = (items) => {
+        for (const it of items) {
+            for (const p of (it.prices || [])) {
+                const res = game.resPool.get(p.name);
+                if (res && res.maxValue > 0) {
+                    expect(p.val).toBeLessThanOrEqual(res.maxValue);
+                }
+            }
+        }
+    };
+    checkPricesAgainstCaps(game.science.techs);
+    checkPricesAgainstCaps(game.workshop.upgrades);
+    checkPricesAgainstCaps(game.space.programs);
+    for (const pl of game.space.planets) {
+        checkPricesAgainstCaps(pl.buildings || []);
+    }
+});

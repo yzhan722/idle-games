@@ -739,7 +739,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.freightfulExchange.desc"),
 		effects: {
 		},
-		prices:[{ name: "science", val: 450000 }, { name: "eludium", val: 100 }, { name: "titanium", val: 1000 }, { name: "alloy", val: 100000 }],
+		prices:[{ name: "science", val: 450000 }, { name: "eludium", val: 100 }, { name: "titanium", val: 1000 }, { name: "alloy", val: 5000 }],
 		upgrades: {
 			buildings: ["warehouse"],
 			stages: [{bld:"warehouse", stage:1}]
@@ -756,7 +756,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.transportSuperposition.desc"),
 		effects: {
 		},
-		prices:[{ name: "science", val: 500000 }, { name: "eludium", val: 1500 }, { name: "uranium", val: 125000 }, { name: "alloy", val: 10000000 }],
+		prices:[{ name: "science", val: 500000 }, { name: "eludium", val: 1500 }, { name: "uranium", val: 40000 }, { name: "alloy", val: 25000 }],
 		upgrades: {
 			buildings: ["warehouse"],
 			stages: [{bld:"warehouse", stage:1}]
@@ -985,7 +985,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 		},
 		prices:[
-			{ name : "oil", 	 val: 50000 },
+			{ name : "oil", 	 val: 25000 },
 			{ name : "uranium",  val: 250 },
 			{ name : "science",  val: 250000 },
 			{ name : "alloy", 	 val: 1250 }
@@ -1176,7 +1176,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 		},
 		prices:[
-			{ name : "titanium", val: 125000 },
+			{ name : "titanium", val: 50000 },
 			{ name : "science",  val: 250000 }
 		],
 		upgrades: {
@@ -1287,7 +1287,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.aiBases.label"),
 		description: $I("workshop.aiBases.desc"),
 		prices:[
-			{ name : "antimatter", val: 4000 },
+			{ name : "antimatter", val: 2500 },
 			{ name : "science", val: 750000 }
 		],
 		upgrades: {
@@ -1352,7 +1352,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			spaceBuilding: ["spaceBeacon"]
 		},
 		prices: [
-			{name: "antimatter", val: 4000},
+			{name: "antimatter", val: 2500},
 			{name: "eludium", val: 100}
 		]
 	},{
@@ -1525,7 +1525,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"manpowerRatio" : 0.15
 		},
-		prices:[{ name: "science", val: 100000 }, { name: "steel", val: 10750 }]
+		prices:[{ name: "science", val: 100000 }, { name: "steel", val: 2500 }]
 	},{
 		name: "enrichedUranium",
 		label: $I("workshop.enrichedUranium.label"),
@@ -1562,7 +1562,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
         effects: {
             "reactorEnergyRatio": 0.25
         },
-        prices:[{ name: "science", val: 400000 }, { name: "uranium", val: 50000 }],
+        prices:[{ name: "science", val: 400000 }, { name: "uranium", val: 15000 }],
         upgrades: {
             buildings: ["reactor"]
         },
@@ -1576,7 +1576,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"uraniumRatio": 0.25
 		},
-		prices:[{ name: "science", val: 500000 }, { name: "uranium", val: 62500 }],
+		prices:[{ name: "science", val: 500000 }, { name: "uranium", val: 25000 }],
 		upgrades: {
 			buildings: ["reactor"]
 		}
@@ -1637,7 +1637,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		name: "thoriumEngine",
 		label: $I("workshop.thoriumEngine.label"),
 		description: $I("workshop.thoriumEngine.desc"),
-		prices:[{ name: "science", val: 400000 }, { name: "steel", val: 120000 }, { name: "alloy", val: 2000 }, { name: "beam", val: 250000 }, { name: "uranium", val: 500000 }],
+		prices:[{ name: "science", val: 400000 }, { name: "steel", val: 25000 }, { name: "alloy", val: 2000 }, { name: "beam", val: 50000 }, { name: "uranium", val: 50000 }],
 		effects: {
 			"routeSpeed" : 50
 		}
@@ -1659,7 +1659,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		name: "longRangeSpaceships",
 		label: $I("workshop.longRangeSpaceships.label"),
 		description: $I("workshop.longRangeSpaceships.desc"),
-		prices:[{ name: "science", val: 440000 }, { name: "steel", val: 270000 }, { name: "alloy", val: 13500 }],
+		prices:[{ name: "science", val: 440000 }, { name: "steel", val: 25000 }, { name: "alloy", val: 3500 }],
 		unlocks: {
 			spaceBuilding: ["spaceShuttle"]
 		},
@@ -1739,7 +1739,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			"temporalFluxProductionChronosphere": 1
         },
         prices:[
-			{ name : "unobtainium", val: 60000 },
+			{ name : "unobtainium", val: 15000 },
 			{ name : "temporalFlux", val: 6500 },
 			{ name : "timeCrystal", val: 25 },
 			{ name : "void", val: 750 }

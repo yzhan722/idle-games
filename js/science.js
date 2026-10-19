@@ -197,7 +197,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.theology.label"),
 		description: $I("science.theology.desc"),
 		effectDesc: $I("science.theology.effectDesc"),
-		prices: [{ name: "science", val: 20000 }, { name: "culture", val: 2800 }],
+		prices: [{ name: "science", val: 15000 }, { name: "culture", val: 600 }],
 		unlocks: {
 			tech: ["astronomy", "cryptotheology"]
 		},
@@ -210,7 +210,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.astronomy.label"),
 		description: $I("science.astronomy.desc"),
 		effectDesc: $I("science.astronomy.effectDesc"),
-		prices: [{ name: "science", val: 28000 }, { name: "culture", val: 5200 }],
+		prices: [{ name: "science", val: 22000 }, { name: "culture", val: 900 }],
 		unlocks: {
 			buildings: ["observatory"],
 			tech: ["navigation"],
@@ -220,7 +220,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.navigation.label"),
 		description: $I("science.navigation.desc"),
 		effectDesc: $I("science.navigation.effectDesc"),
-		prices: [{ name: "science", val: 35000 }, { name: "culture", val: 8000 }],
+		prices: [{ name: "science", val: 35000 }, { name: "culture", val: 1400 }],
 		unlocks: {
 			buildings: ["harbor"],
 			tech: ["physics", "archeology", "architecture"],
@@ -285,7 +285,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.drama.label"),
 		description: $I("science.drama.desc"),
 		effectDesc: $I("science.drama.effectDesc"),
-		prices: [{ name: "science", val: 90000 }, { name: "culture", val: 75000 }],
+		prices: [{ name: "science", val: 90000 }, { name: "culture", val: 2500 }],
 		unlocks: {
 			buildings: ["brewery"]
 		}
