@@ -3589,26 +3589,26 @@ classes.ui.XianxiaArt = {
 
 	PORTRAIT_ART: {
 		lianqi:   "res/art/portrait_qi.jpg",
-		zhuji:    "res/art/portrait_qi.jpg",
+		zhuji:    "res/art/portrait_zhuji.jpg",
 		jiedan:   "res/art/portrait_core.jpg",
-		yuanying: "res/art/portrait_core.jpg",
+		yuanying: "res/art/portrait_yuanying.jpg",
 		huashen:  "res/art/portrait_immortal.jpg",
 		lianxu:   "res/art/portrait_immortal.jpg",
-		heti:     "res/art/portrait_immortal.jpg",
-		dacheng:  "res/art/portrait_immortal.jpg",
-		dujie:    "res/art/portrait_immortal.jpg"
+		heti:     "res/art/portrait_dacheng.jpg",
+		dacheng:  "res/art/portrait_dacheng.jpg",
+		dujie:    "res/art/portrait_dacheng.jpg"
 	},
 
 	SCENE_BANNER_ART: {
 		cave:    "res/art/banner_bonfire.jpg",
 		library: "res/art/banner_science.jpg",
 		furnace: "res/art/banner_workshop.jpg",
-		bazaar:  "res/art/banner_cultivation.jpg",
-		altar:   "res/art/banner_cultivation.jpg",
+		bazaar:  "res/art/banner_trade.jpg",
+		altar:   "res/art/banner_religion.jpg",
 		trib:    "res/art/fate_rift.jpg",
 		cosmos:  "res/art/banner_spacetime.jpg",
-		time:    "res/art/banner_spacetime.jpg",
-		karma:   "res/art/banner_spacetime.jpg"
+		time:    "res/art/banner_time.jpg",
+		karma:   "res/art/banner_time.jpg"
 	},
 
 	// ---------------- 1. 境界盘膝吐纳法相 (Hero Cultivator Portrait) ----------------
@@ -3667,22 +3667,28 @@ classes.ui.XianxiaArt = {
 			"<span class=\"xx-hero-seal-badge\">" + sealChar + "</span>";
 	},
 
-	//境界总览卡右侧水墨洞天画卷底图
+	//境界总览卡右侧水墨洞天画卷底图(随大境界演化画境)
 	cultivationBgSVG: function(realmKey){
 		var pal = this.REALM_PALETTE[realmKey] || this.REALM_PALETTE.lianqi;
+		var bgHref = "res/art/banner_cultivation.jpg";
+		if (realmKey == "huashen" || realmKey == "lianxu"){
+			bgHref = "res/art/banner_spacetime.jpg";
+		} else if (realmKey == "heti" || realmKey == "dacheng" || realmKey == "dujie"){
+			bgHref = "res/art/banner_time.jpg";
+		}
 		return "<svg viewBox=\"0 0 600 180\" preserveAspectRatio=\"xMidYMid slice\" class=\"xx-cult-bg-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
 			"<defs>" +
 				"<linearGradient id=\"xxCultFade\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">" +
 					"<stop offset=\"0%\" stop-color=\"#0b121c\" stop-opacity=\"0.92\"/>" +
-					"<stop offset=\"45%\" stop-color=\"#0b121c\" stop-opacity=\"0.62\"/>" +
-					"<stop offset=\"100%\" stop-color=\"#0b121c\" stop-opacity=\"0.18\"/>" +
+					"<stop offset=\"45%\" stop-color=\"#0b121c\" stop-opacity=\"0.60\"/>" +
+					"<stop offset=\"100%\" stop-color=\"#0b121c\" stop-opacity=\"0.14\"/>" +
 				"</linearGradient>" +
 				"<linearGradient id=\"xxMt1\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">" +
 					"<stop offset=\"0%\" stop-color=\"" + pal.pri + "\" stop-opacity=\"0.18\"/>" +
 					"<stop offset=\"100%\" stop-color=\"#0a0f16\" stop-opacity=\"0\"/>" +
 				"</linearGradient>" +
 			"</defs>" +
-			"<image href=\"res/art/banner_cultivation.jpg\" x=\"0\" y=\"0\" width=\"600\" height=\"180\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.62\"/>" +
+			"<image href=\"" + bgHref + "\" x=\"0\" y=\"0\" width=\"600\" height=\"180\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.68\"/>" +
 			"<rect width=\"600\" height=\"180\" fill=\"url(#xxCultFade)\"/>" +
 			"<circle cx=\"515\" cy=\"42\" r=\"24\" fill=\"" + pal.sec + "\" opacity=\"0.14\"/>" +
 			"<path d=\"M260 180 L345 112 L425 68 L495 122 L555 78 L600 115 L600 180 Z\" fill=\"url(#xxMt1)\"/>" +
@@ -3742,7 +3748,7 @@ classes.ui.XianxiaArt = {
 			"</linearGradient>" +
 		"</defs>" +
 		"<rect width=\"800\" height=\"96\" fill=\"url(#xxScSky)\"/>" +
-		"<image href=\"" + artHref + "\" x=\"0\" y=\"0\" width=\"800\" height=\"96\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.86\"/>" +
+		"<image href=\"" + artHref + "\" x=\"0\" y=\"0\" width=\"800\" height=\"96\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.88\"/>" +
 		"<rect width=\"800\" height=\"96\" fill=\"url(#xxScMask)\"/>";
 
 		if (kind == "cave"){
@@ -3776,14 +3782,14 @@ classes.ui.XianxiaArt = {
 			"</svg>";
 		}
 		if (kind == "bazaar"){
-			//云海仙坊图
+			//云海仙坊图:Nano Banana 四海坊市飞舟原画
 			return "<svg viewBox=\"0 0 800 96\" class=\"xx-scene-svg\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">" +
 				baseDefs +
 				"<path d=\"M520 72 Q555 62 590 72 T660 70\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.1\" opacity=\"0.45\"/>" +
 			"</svg>";
 		}
 		if (kind == "altar"){
-			//九天玄坛图
+			//九天玄坛图:Nano Banana 九天香火玄坛原画
 			return "<svg viewBox=\"0 0 800 96\" class=\"xx-scene-svg\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">" +
 				baseDefs +
 				"<g transform=\"translate(680,48)\" opacity=\"0.45\">" +
@@ -3815,9 +3821,11 @@ classes.ui.XianxiaArt = {
 
 		var fateImg = "res/art/banner_cultivation.jpg";
 		if (scene == "bottle"){ fateImg = "res/art/fate_bottle.jpg"; }
-		else if (scene == "ruin" || scene == "soul" || scene == "beast"){ fateImg = "res/art/fate_rift.jpg"; }
-		else if (scene == "blossom"){ fateImg = "res/art/banner_bonfire.jpg"; }
-		else if (scene == "array" || scene == "samsara"){ fateImg = "res/art/banner_spacetime.jpg"; }
+		else if (scene == "soul"){ fateImg = "res/art/fate_soul.jpg"; }
+		else if (scene == "blossom"){ fateImg = "res/art/fate_companion.jpg"; }
+		else if (scene == "ruin" || scene == "beast"){ fateImg = "res/art/fate_rift.jpg"; }
+		else if (scene == "array"){ fateImg = "res/art/banner_trade.jpg"; }
+		else if (scene == "samsara"){ fateImg = "res/art/banner_time.jpg"; }
 
 		var bg = "<defs>" +
 			"<linearGradient id=\"xxFtSky\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">" +
@@ -3830,7 +3838,7 @@ classes.ui.XianxiaArt = {
 			"</radialGradient>" +
 		"</defs>" +
 		"<rect width=\"480\" height=\"112\" rx=\"8\" fill=\"url(#xxFtSky)\"/>" +
-		"<image href=\"" + fateImg + "\" x=\"0\" y=\"0\" width=\"480\" height=\"112\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.88\"/>" +
+		"<image href=\"" + fateImg + "\" x=\"0\" y=\"0\" width=\"480\" height=\"112\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.90\"/>" +
 		"<rect width=\"480\" height=\"112\" rx=\"8\" fill=\"url(#xxFtVig)\"/>";
 
 		var fg = "";
@@ -3919,7 +3927,6 @@ classes.ui.XianxiaArt = {
 				break;
 			case "iron":
 			case "steel":
-			case "plate":
 			case "alloy":
 				p = "<polygon points=\"3,11 6,5 12,5 14,11\" fill=\"none\" stroke=\"#a8b8c8\" stroke-width=\"1.5\"/><line x1=\"6\" y1=\"8\" x2=\"11\" y2=\"8\" stroke=\"#eed39a\" stroke-width=\"1.3\"/>";
 				break;
@@ -3931,42 +3938,26 @@ classes.ui.XianxiaArt = {
 				p = "<path d=\"M2 9 Q8 14 14 9 L12 13 L4 13 Z\" fill=\"none\" stroke=\"#ffd166\" stroke-width=\"1.6\"/><ellipse cx=\"8\" cy=\"8\" rx=\"3.5\" ry=\"2\" fill=\"#ffd166\"/>";
 				break;
 			case "oil":
-			case "kerosene":
 				p = "<path d=\"M8 2 C12 7 13 10 11 13 A4 4 0 0 1 5 13 C3 10 4 7 8 2 Z\" fill=\"none\" stroke=\"#6fd3ff\" stroke-width=\"1.5\"/>";
 				break;
-			case "manpower":
-				p = "<path d=\"M3 13 L13 3 M9 3 L13 3 L13 7\" fill=\"none\" stroke=\"#ffd166\" stroke-width=\"1.6\" stroke-linecap=\"round\"/><circle cx=\"5\" cy=\"11\" r=\"2\" fill=\"#4fd1a5\"/>";
-				break;
 			case "science":
-			case "manuscript":
-			case "compedium":
 			case "blueprint":
 				p = "<rect x=\"3\" y=\"3\" width=\"3\" height=\"10\" rx=\"1\" fill=\"none\" stroke=\"#6fd3ff\" stroke-width=\"1.4\"/><rect x=\"6.5\" y=\"2\" width=\"3\" height=\"12\" rx=\"1\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.4\"/><rect x=\"10\" y=\"3\" width=\"3\" height=\"10\" rx=\"1\" fill=\"none\" stroke=\"#6fd3ff\" stroke-width=\"1.4\"/>";
 				break;
 			case "culture":
-			case "parchment":
 				p = "<circle cx=\"8\" cy=\"8\" r=\"5.5\" fill=\"none\" stroke=\"#d4a5ff\" stroke-width=\"1.5\"/><rect x=\"6.2\" y=\"6.2\" width=\"3.6\" height=\"3.6\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.2\"/>";
 				break;
 			case "faith":
-			case "tears":
 				p = "<path d=\"M4 10 L12 10 L11 14 L5 14 Z\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.5\"/><path d=\"M6 8 Q6 4 8 3 M10 8 Q10 4 8 2\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.3\" stroke-linecap=\"round\"/>";
 				break;
 			case "spice":
 				p = "<path d=\"M6 3 L10 3 L9 6 C12 8 12 12 10 14 L6 14 C4 12 4 8 7 6 Z\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"10\" r=\"1.6\" fill=\"#eed39a\"/>";
-				break;
-			case "furs":
-			case "ivory":
-			case "unicorns":
-			case "alicorn":
-			case "necrocorn":
-				p = "<path d=\"M4 13 Q6 4 13 3 Q10 9 8 14 Z\" fill=\"none\" stroke=\"#f3c68f\" stroke-width=\"1.5\"/>";
 				break;
 			case "relic":
 			case "timeCrystal":
 			case "unobtainium":
 			case "karma":
 			case "paragon":
-			case "burnedParagon":
 				p = "<polygon points=\"8,1 14,5 14,11 8,15 2,11 2,5\" fill=\"none\" stroke=\"#b98eff\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"8\" r=\"2.2\" fill=\"#eed39a\"/>";
 				break;
 			default:

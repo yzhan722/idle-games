@@ -75,7 +75,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			buildings: ["pasture", "unicornPasture"],
 			tech: ["civil", "math", "construction"]
-			//crafts: ["leather"]
+			//crafts: []
 		}
 	}, {
 		/*==============	NOT USED ANYMORE   ============*/
@@ -153,7 +153,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 			buildings: ["amphitheatre"],
 			tech: ["philosophy", "machinery", "steel"],
 			upgrades: ["register"],
-			crafts: ["parchment"]
+			crafts: []
 		},
 		flavor: $I("science.writing.flavor")
 	}, {
@@ -165,7 +165,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		unlocks: {
 			buildings: ["temple"],
 			tech: ["theology"],
-			crafts: ["compedium"]
+			crafts: []
 		},
 		flavor: $I("science.philosophy.flavor")
 	}, {
@@ -197,10 +197,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.theology.label"),
 		description: $I("science.theology.desc"),
 		effectDesc: $I("science.theology.effectDesc"),
-		prices: [
-			{name : "science", val: 20000},
-			{name: 	"manuscript", val: 35}
-		],
+		prices: [{ name: "science", val: 20000 }, { name: "culture", val: 2800 }],
 		unlocks: {
 			tech: ["astronomy", "cryptotheology"]
 		},
@@ -213,10 +210,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.astronomy.label"),
 		description: $I("science.astronomy.desc"),
 		effectDesc: $I("science.astronomy.effectDesc"),
-		prices: [
-			{name : "science", val: 28000},
-			{name: 	"manuscript", val: 65}
-		],
+		prices: [{ name: "science", val: 28000 }, { name: "culture", val: 5200 }],
 		unlocks: {
 			buildings: ["observatory"],
 			tech: ["navigation"],
@@ -226,26 +220,20 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.navigation.label"),
 		description: $I("science.navigation.desc"),
 		effectDesc: $I("science.navigation.effectDesc"),
-		prices: [
-			{name : "science", val: 35000},
-			{name: 	"manuscript", val: 100}
-		],
+		prices: [{ name: "science", val: 35000 }, { name: "culture", val: 8000 }],
 		unlocks: {
 			buildings: ["harbor"],
 			tech: ["physics", "archeology", "architecture"],
 			upgrades: ["caravanserai", "cargoShips", "astrolabe",
 						"titaniumMirrors", "titaniumAxe"],
-			crafts: ["ship"]
+			crafts: []
 		}
 	}, {
 		name: "architecture",
 		label: $I("science.architecture.label"),
 		description: $I("science.architecture.desc"),
 		effectDesc: $I("science.architecture.effectDesc"),
-		prices: [
-			{name : "science", val: 42000},
-			{name: 	"compedium", val: 10}
-		],
+		prices: [{ name: "science", val: 44000 }],
 		unlocks: {
 			buildings: ["mansion", "mint"],
 			tech: ["acoustics"]
@@ -256,10 +244,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.physics.label"),
 		description: $I("science.physics.desc"),
 		effectDesc: $I("science.physics.effectDesc"),
-		prices: [
-			{name : "science", val: 50000},
-			{name: 	"compedium", val: 35}
-		],
+		prices: [{ name: "science", val: 57000 }],
 		unlocks: {
 			tech: ["chemistry", "electricity", "metaphysics"],
 			upgrades: ["pneumaticPress", "steelSaw"],
@@ -279,10 +264,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.chemistry.label"),
 		description: $I("science.chemistry.desc"),
 		effectDesc: $I("science.chemistry.effectDesc"),
-		prices: [
-			{name : "science", val: 60000},
-			{name: 	"compedium", val: 50}
-		],
+		prices: [{ name: "science", val: 70000 }],
 		unlocks: {
 			buildings: ["calciner", "oilWell"],
 			upgrades: ["alloyAxe", "alloyArmor", "alloyWarehouses", "alloyBarns"],
@@ -293,10 +275,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.acoustics.label"),
 		description: $I("science.acoustics.desc"),
 		effectDesc: $I("science.acoustics.effectDesc"),
-		prices: [
-			{name : "science", val: 60000},
-			{name: 	"compedium", val: 60}
-		],
+		prices: [{ name: "science", val: 72000 }],
 		unlocks: {
 			buildings: ["chapel"],
 			tech: ["drama"]
@@ -306,10 +285,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.drama.label"),
 		description: $I("science.drama.desc"),
 		effectDesc: $I("science.drama.effectDesc"),
-		prices: [
-			{name : "science", val: 90000},
-			{name: 	"parchment", val: 5000}
-		],
+		prices: [{ name: "science", val: 90000 }, { name: "culture", val: 75000 }],
 		unlocks: {
 			buildings: ["brewery"]
 		}
@@ -318,15 +294,11 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.archeology.label"),
 		description: $I("science.archeology.desc"),
 		effectDesc: $I("science.archeology.effectDesc"),
-		prices: [
-			{name : "science", val: 65000},
-			{name: 	"compedium", val: 65}
-		],
+		prices: [{ name: "science", val: 78000 }],
 		unlocks: {
 			buildings: ["quarry"],
 			tech: ["biology"],
-			upgrades:["geodesy"],
-			zebraUpgrades: ["minerologyDepartment"]
+			upgrades:["geodesy"]
 		},
 		flavor: $I("science.archeology.flavor")
 	}, {
@@ -334,10 +306,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.electricity.label"),
 		description: $I("science.electricity.desc"),
 		effectDesc: $I("science.electricity.effectDesc"),
-		prices: [
-			{name : "science", val: 75000},
-			{name: 	"compedium", val: 85}
-		],
+		prices: [{ name: "science", val: 92000 }],
 		unlocks: {
 			buildings: ["magneto"],
 			tech: ["industrialization"]
@@ -348,13 +317,10 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.biology.label"),
 		description: $I("science.biology.desc"),
 		effectDesc: $I("science.biology.effectDesc"),
-		prices: [
-			{name : "science", val: 85000},
-			{name: 	"compedium", val: 100}
-		],
+		prices: [{ name: "science", val: 105000 }],
 		unlocks: {
 			buildings: ["biolab"],
-			crafts: ["plastic"],
+			crafts: [],
 			upgrades: ["petri"],
 			tech: ["biochemistry"]
 		},
@@ -364,10 +330,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.biochemistry.label"),
 		description: $I("science.biochemistry.desc"),
 		effectDesc: $I("science.biochemistry.effectDesc"),
-		prices: [
-			{name : "science", val: 145000},
-			{name: 	"compedium", val: 500}
-		],
+		prices: [{ name: "science", val: 245000 }],
 		unlocks: {
 			tech: ["genetics"],
 			upgrades: ["biofuel"]
@@ -378,10 +341,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		label: $I("science.genetics.label"),
 		description: $I("science.genetics.desc"),
 		effectDesc: $I("science.genetics.effectDesc"),
-		prices: [
-			{name : "science", val: 190000},
-			{name: 	"compedium", val: 1500}
-		],
+		prices: [{ name: "science", val: 490000 }],
 		unlocks: {
 			upgrades: ["unicornSelection"]
 		},
@@ -412,7 +372,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 			buildings: ["factory"],
 			tech: ["electronics"],
 			upgrades: ["pumpjack", "strenghtenBuild"],
-			crafts: ["concrate"]
+			crafts: []
 		}
 	}, {
 		name: "metalurgy",
@@ -472,7 +432,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 				{bld:"amphitheatre", stage:1}	// Broadcast Tower
 			],
 			tech: ["nuclearFission", "rocketry", "robotics"],
-			crafts: ["microchip"],
+			crafts: [],
 			upgrades: ["cadSystems", "refrigeration", "seti", "factoryLogistics", "factoryOptimization", "internet"]
 		}
 	}, {
@@ -488,7 +448,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 			stages: [{bld:"aqueduct", stage:1}], // Hydro Plant
 			tech: ["ai"],
 			upgrades: ["steelPlants", "rotaryKiln", "assistance", "factoryRobotics"],
-			crafts: ["tanker"]
+			crafts: []
 		}
 	}, {
 		name: "ai",
@@ -570,7 +530,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
         ],
         unlocks: {
             upgrades: [ "factoryProcessing" ],
-            crafts: ["kerosene"]
+            crafts: []
         }
     }, {
         name: "sattelites",
@@ -610,7 +570,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		],
 		unlocks: {
 			upgrades: ["thoriumReactors", "thoriumEngine", "qdot"],
-			crafts: ["thorium"]
+			crafts: []
 		}
 	}, {
 		name: "exogeology",

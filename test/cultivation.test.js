@@ -823,15 +823,23 @@ test("XianxiaArt generates SVG illustrations with Nano Banana artwork for hero p
     const path = require("path");
     const expectedArtFiles = [
         "portrait_qi.jpg",
+        "portrait_zhuji.jpg",
         "portrait_core.jpg",
+        "portrait_yuanying.jpg",
         "portrait_immortal.jpg",
+        "portrait_dacheng.jpg",
         "banner_cultivation.jpg",
         "banner_bonfire.jpg",
         "banner_science.jpg",
         "banner_workshop.jpg",
+        "banner_trade.jpg",
+        "banner_religion.jpg",
         "banner_spacetime.jpg",
+        "banner_time.jpg",
         "fate_bottle.jpg",
-        "fate_rift.jpg"
+        "fate_rift.jpg",
+        "fate_companion.jpg",
+        "fate_soul.jpg"
     ];
     for (const fileName of expectedArtFiles) {
         const resPath = path.join(__dirname, "..", "res", "art", fileName);
@@ -844,16 +852,26 @@ test("XianxiaArt generates SVG illustrations with Nano Banana artwork for hero p
     const art = classes.ui.XianxiaArt;
     expect(art).toBeDefined();
     expect(art.heroPortraitSVG("lianqi", "炼", "tian", false, 0, false)).toContain("res/art/portrait_qi.jpg");
+    expect(art.heroPortraitSVG("zhuji", "筑", "tian", false, 0, false)).toContain("res/art/portrait_zhuji.jpg");
     expect(art.heroPortraitSVG("jiedan", "丹", "tian", true, 30, true)).toContain("res/art/portrait_core.jpg");
+    expect(art.heroPortraitSVG("yuanying", "婴", "tian", true, 20, true)).toContain("res/art/portrait_yuanying.jpg");
     expect(art.heroPortraitSVG("huashen", "神", "tian", true, 10, true)).toContain("res/art/portrait_immortal.jpg");
+    expect(art.heroPortraitSVG("dacheng", "乘", "tian", true, 0, true)).toContain("res/art/portrait_dacheng.jpg");
     expect(art.cultivationBgSVG("yuanying")).toContain("res/art/banner_cultivation.jpg");
+    expect(art.cultivationBgSVG("huashen")).toContain("res/art/banner_spacetime.jpg");
+    expect(art.cultivationBgSVG("dacheng")).toContain("res/art/banner_time.jpg");
     expect(art.tabBannerHTML("Bonfire", game)).toContain("res/art/banner_bonfire.jpg");
     expect(art.tabBannerHTML("Science", game)).toContain("res/art/banner_science.jpg");
     expect(art.tabBannerHTML("Workshop", game)).toContain("res/art/banner_workshop.jpg");
+    expect(art.tabBannerHTML("Trade", game)).toContain("res/art/banner_trade.jpg");
+    expect(art.tabBannerHTML("Religion", game)).toContain("res/art/banner_religion.jpg");
     expect(art.tabBannerHTML("Space", game)).toContain("res/art/banner_spacetime.jpg");
+    expect(art.tabBannerHTML("Time", game)).toContain("res/art/banner_time.jpg");
     expect(art.fateArtSVG("bottle", null)).toContain("res/art/fate_bottle.jpg");
     expect(art.fateArtSVG("xutian", null)).toContain("res/art/fate_rift.jpg");
-    expect(art.fateArtSVG("death", "samsara")).toContain("res/art/banner_spacetime.jpg");
+    expect(art.fateArtSVG("nangong", null)).toContain("res/art/fate_companion.jpg");
+    expect(art.fateArtSVG("duoshi", null)).toContain("res/art/fate_soul.jpg");
+    expect(art.fateArtSVG("death", "samsara")).toContain("res/art/banner_time.jpg");
     expect(art.originIcon("farmer")).toContain("<svg");
     expect(art.actionArt("游")).toContain("<svg");
     expect(art.tileIcon("bonus")).toContain("<svg");
@@ -1039,6 +1057,42 @@ test("Direction 5: Reincarnation Legacy scales with past lives and Breakthrough 
     expect(cult.natalArtifact).toBe("yanghun");
     expect(cult.soundMuted).toBe(true);
     expect(cult.autoSteward.pill).toBe(true);
+});
+
+test("Streamlined resource & crafting system directly removes 24 legacy resources and 16 legacy crafts down to 7 core xianxia craftables", () => {
+    const activeCrafts = game.workshop.crafts.map(c => c.name);
+    expect(activeCrafts).toEqual([
+        "wood", "beam", "slab", "steel", "alloy", "eludium", "blueprint"
+    ]);
+    expect(game.workshop.zebraUpgrades.length).toBe(0);
+
+    const visibleMainResources = game.resPool.resources.filter(r => r.visible !== false && !game.resPool.isNormalCraftableResource(r)).map(r => r.name);
+    expect(visibleMainResources.length).toBe(20);
+
+    const deletedResources = [
+        "plate", "scaffold", "gear", "concrate", "megalith",
+        "parchment", "manuscript", "compedium", "kerosene", "plastic",
+        "microchip", "thorium", "ship", "tanker", "bloodstone",
+        "tMythril", "furs", "ivory", "zebras", "elderBox",
+        "wrappingPaper", "burnedParagon", "gflops", "hashrates"
+    ];
+    for (const r of game.resPool.resources) {
+        expect(deletedResources.indexOf(r.name)).toBe(-1);
+    }
+    for (const b of game.bld.buildingsData) {
+        if (b.prices) {
+            for (const p of b.prices) {
+                expect(deletedResources.indexOf(p.name)).toBe(-1);
+            }
+        }
+    }
+    for (const u of game.workshop.upgrades) {
+        if (u.prices) {
+            for (const p of u.prices) {
+                expect(deletedResources.indexOf(p.name)).toBe(-1);
+            }
+        }
+    }
 });
 
 

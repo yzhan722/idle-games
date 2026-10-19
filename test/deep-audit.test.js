@@ -318,7 +318,7 @@ describe("deep audit — every content entry", () => {
 		const g = game;
 		for (const r of g.resPool.resources) r.value = 1e12;
 		const ctrl = new com.nuclearunicorn.game.ui.UpgradeButtonController(g);
-		const zctrl = new com.nuclearunicorn.game.ui.ZebraUpgradeButtonController(g);
+		const zctrl = com.nuclearunicorn.game.ui.ZebraUpgradeButtonController ? new com.nuclearunicorn.game.ui.ZebraUpgradeButtonController(g) : null;
 		for (const u of g.workshop.upgrades) {
 			u.unlocked = true;
 			try {

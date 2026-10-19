@@ -225,12 +225,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"warehouseRatio" : 0.25
 		},
-		prices:[
-			{ name : "science", val: 15000 },
-			{ name : "plate", val: 50 },
-			{ name : "steel", val: 50 },
-			{ name : "scaffold", val: 25 }
-		],
+		prices:[{ name: "science", val: 15000 }, { name: "iron", val: 1000 }, { name: "steel", val: 50 }, { name: "beam", val: 200 }],
 		upgrades: {
 			buildings: ["barn", "warehouse", "harbor", "mint"]
 		},
@@ -244,12 +239,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"barnRatio" : 1
 		},
-		prices:[
-			{ name : "titanium", val: 25 },
-			{ name : "science", val: 60000 },
-			{ name : "steel",    val: 200 },
-			{ name : "scaffold", val: 250 }
-		],
+		prices:[{ name: "titanium", val: 25 }, { name: "science", val: 60000 }, { name: "steel", val: 200 }, { name: "beam", val: 2000 }],
 		upgrades: {
 			buildings: ["barn", "warehouse", "harbor"]
 		}
@@ -260,11 +250,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"barnRatio" : 1
 		},
-		prices:[
-			{ name : "science", val: 75000 },
-			{ name : "plate",    val: 750 },
-			{ name : "alloy", val: 20 }
-		],
+		prices:[{ name: "science", val: 75000 }, { name: "iron", val: 15000 }, { name: "alloy", val: 20 }],
 		upgrades: {
 			buildings: ["barn", "warehouse", "harbor"]
 		}
@@ -275,11 +261,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"barnRatio" : 0.75
 		},
-		prices:[
-			{ name : "titanium",    val: 2000 },
-			{ name : "science", val: 100000 },
-			{ name : "concrate", val: 45 }
-		],
+		prices:[{ name: "titanium", val: 2000 }, { name: "science", val: 100000 }, { name: "slab", val: 1350 }],
 		upgrades: {
 			buildings: ["barn", "warehouse", "harbor"]
 		}
@@ -290,12 +272,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"warehouseRatio" : 0.5
 		},
-		prices:[
-			{ name : "titanium", val: 50 },
-			{ name : "science", val: 70000 },
-			{ name : "steel",    val: 500 },
-			{ name : "scaffold", val: 500 }
-		],
+		prices:[{ name: "titanium", val: 50 }, { name: "science", val: 70000 }, { name: "steel", val: 500 }, { name: "beam", val: 4000 }],
 		upgrades: {
 			buildings: ["barn", "warehouse", "harbor", "mint"]
 		}
@@ -321,11 +298,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"warehouseRatio" : 0.35
 		},
-		prices:[
-			{ name : "titanium", val: 1250 },
-			{ name : "science", val: 100000 },
-			{ name : "concrate", val: 35 }
-		],
+		prices:[{ name: "titanium", val: 1250 }, { name: "science", val: 100000 }, { name: "slab", val: 1050 }],
 		upgrades: {
 			buildings: ["barn", "warehouse", "harbor", "mint"]
 		}
@@ -336,11 +309,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"warehouseRatio" : 0.20
 		},
-		prices:[
-			{ name : "unobtainium", val: 500 },
-			{ name : "science", 	val: 25000 },
-			{ name : "concrate", 	val: 1250 }
-		],
+		prices:[{ name: "unobtainium", val: 500 }, { name: "science", val: 25000 }, { name: "slab", val: 37500 }],
 		upgrades: {
 			buildings: ["barn", "warehouse", "harbor", "mint"]
 		}
@@ -438,11 +407,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.tachyonModerator.label"),
 		description: $I("workshop.tachyonModerator.desc"),
 		flavor: $I("workshop.tachyonModerator.flavor"),
-		prices: [
-			{ name: "science", val: 16000 },
-			{ name: "gear", val: 500 },
-			{ name: "titanium", val: 250 }
-		],
+		prices: [{ name: "science", val: 16000 }, { name: "steel", val: 1500 }, { name: "titanium", val: 250 }],
 		unlocks: {
 			chronoforge: ["controlledDelay"]
 		}
@@ -524,11 +489,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		name: "qdot",
 		label: $I("workshop.qdot.label"),
 		description: $I("workshop.qdot.desc"),
-		prices:[
-			{ name : "science", val: 175000 },
-			{ name : "eludium", val: 200 },
-			{ name : "thorium", val: 1000 }
-		],
+		prices:[{ name: "science", val: 175000 }, { name: "eludium", val: 200 }, { name: "uranium", val: 5000 }],
 		effects: {
 			"solarFarmSeasonRatio" : 1
 		},
@@ -678,18 +639,17 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		],
 		flavor: $I("workshop.railgun.flavor"),
 		unlocks: {
-			zebraUpgrades: ["rangefinders"]
 		}
 	},{
 		name: "bolas",
 		label: $I("workshop.bolas.label"),
 		description: $I("workshop.bolas.desc"),
 		effects: {
-			"fursRatio": 0.25,
+			"cultureRatio": 0.25,
 			"manpowerMax": 50
 		},
 		calculateEffects: function(self, game){
-			self.effects["fursRatio"] = 0.25;
+			self.effects["cultureRatio"] = 0.25;
 			self.effects["manpowerMax"] = game.ironWill ? 200 : 50;
 		},
 		prices:[
@@ -703,14 +663,14 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.huntingArmor.label"),
 		description: $I("workshop.huntingArmor.desc"),
 		effects: {
-			"fursRatio": 0.50,
-			"ivoryRatio": 0.25,
+			"cultureRatio": 0.50,
+			"mineralsRatio": 0.25,
 			"manpowerRatio": 0.15,
 			"manpowerMax": 150
 		},
 		calculateEffects: function(self, game){
-			self.effects["fursRatio"] = 0.50;
-			self.effects["ivoryRatio"] = 0.25;
+			self.effects["cultureRatio"] = 0.50;
+			self.effects["mineralsRatio"] = 0.25;
 			self.effects["manpowerRatio"] = 0.15;
 			self.effects["manpowerMax"] = game.ironWill ? 600 : 150;
 		},
@@ -724,8 +684,8 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.steelArmor.label"),
 		description: $I("workshop.steelArmor.desc"),
 		effects: {
-			"fursRatio": 0.50,
-			"ivoryRatio": 0.35,
+			"cultureRatio": 0.50,
+			"mineralsRatio": 0.35,
 			"manpowerRatio": 0.20,
 			"manpowerMax": 250
 		},
@@ -738,8 +698,8 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.alloyArmor.label"),
 		description: $I("workshop.alloyArmor.desc"),
 		effects: {
-			"fursRatio": 0.75,
-			"ivoryRatio": 0.50,
+			"cultureRatio": 0.75,
+			"mineralsRatio": 0.50,
 			"manpowerRatio": 0.30,
 			"manpowerMax": 500
 		},
@@ -752,8 +712,8 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.nanosuits.label"),
 		description: $I("workshop.nanosuits.desc"),
 		effects: {
-			"fursRatio": 1.00,
-			"ivoryRatio": 0.75,
+			"cultureRatio": 1.00,
+			"mineralsRatio": 0.75,
 			"manpowerRatio": 0.50,
 			"manpowerMax": 1000
 		},
@@ -767,11 +727,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.caravanserai.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "gold", val: 250 },
-			{ name : "science", val: 25000 },
-			{ name : "ivory", val: 10000 }
-		],
+		prices:[{ name: "gold", val: 250 }, { name: "science", val: 25000 }, { name: "minerals", val: 10000 }],
 		upgrades: {
 			buildings: ["tradepost"]
 		},
@@ -783,12 +739,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.freightfulExchange.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "science", val: 450000},
-			{ name : "eludium", val: 100 },
-			{ name : "titanium", val: 1000 },
-			{ name : "tanker", val: 5000 }
-		],
+		prices:[{ name: "science", val: 450000 }, { name: "eludium", val: 100 }, { name: "titanium", val: 1000 }, { name: "alloy", val: 100000 }],
 		upgrades: {
 			buildings: ["warehouse"],
 			stages: [{bld:"warehouse", stage:1}]
@@ -805,12 +756,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.transportSuperposition.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "science", val: 500000},
-			{ name : "eludium", val: 1500 },
-			{ name : "thorium", val: 25000 },
-			{ name : "tanker", val: 500000 },
-		],
+		prices:[{ name: "science", val: 500000 }, { name: "eludium", val: 1500 }, { name: "uranium", val: 125000 }, { name: "alloy", val: 10000000 }],
 		upgrades: {
 			buildings: ["warehouse"],
 			stages: [{bld:"warehouse", stage:1}]
@@ -893,10 +839,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			"barnRatio" : 0.05,
 			"warehouseRatio" : 0.05
 		},
-		prices:[
-			{ name : "science", val: 100000 },
-			{ name : "concrate", val: 50 }
-		],
+		prices:[{ name: "science", val: 100000 }, { name: "slab", val: 1500 }],
 		unlocks: {
 			upgrades: ["concreteWarehouses", "concreteBarns"]
 		},
@@ -957,11 +900,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"calcinerSteelRatio" : 0.1
 		},
-		prices:[
-			{ name : "titanium", val: 3500 },
-			{ name : "science",  val: 140000 },
-			{ name : "gear", 	 val: 750 }
-		],
+		prices:[{ name: "titanium", val: 3500 }, { name: "science", val: 140000 }, { name: "steel", val: 2250 }],
 		unlocks: {
 			upgrades: ["automatedPlants"]
 		}
@@ -997,11 +936,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"calcinerRatio": 0.75
 		},
-		prices:[
-			{ name : "titanium", val: 5000 },
-			{ name : "science",  val: 145000 },
-			{ name : "gear", 	 val: 500 }
-		],
+		prices:[{ name: "titanium", val: 5000 }, { name: "science", val: 145000 }, { name: "steel", val: 1500 }],
 		upgrades: {
 			buildings: ["calciner"]
 		}
@@ -1028,10 +963,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.printingPress.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "science",  val: 7500 },
-			{ name : "gear", 	 val: 45 }
-		],
+		prices:[{ name: "science", val: 7500 }, { name: "steel", val: 135 }],
 		upgrades: {
 			buildings: ["steamworks"]
 		}
@@ -1041,11 +973,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.offsetPress.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "oil", 	 val: 15000 },
-			{ name : "science",  val: 100000 },
-			{ name : "gear", 	 val: 250 }
-		],
+		prices:[{ name: "oil", val: 15000 }, { name: "science", val: 100000 }, { name: "steel", val: 750 }],
 		upgrades: {
 			buildings: ["steamworks"]
 		},
@@ -1130,10 +1058,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.factoryAutomation.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "science",  val: 10000 },
-			{ name : "gear", 	 val: 25 }
-		],
+		prices:[{ name: "science", val: 10000 }, { name: "steel", val: 75 }],
 		flavor: $I("workshop.factoryAutomation.flavor")
 	},{
 		name: "advancedAutomation",
@@ -1141,22 +1066,14 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.advancedAutomation.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "science",  val: 100000 },
-			{ name : "gear", 	 val: 75 },
-			{ name : "blueprint",  val: 25 }
-		]
+		prices:[{ name: "science", val: 100000 }, { name: "steel", val: 225 }, { name: "blueprint", val: 25 }]
 	},{
 		name: "pneumaticPress",
 		label: $I("workshop.pneumaticPress.label"),
 		description: $I("workshop.pneumaticPress.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "science",  val: 20000 },
-			{ name : "gear", 	 val: 30 },
-			{ name : "blueprint",  val: 5 }
-		]
+		prices:[{ name: "science", val: 20000 }, { name: "steel", val: 90 }, { name: "blueprint", val: 5 }]
 	},{
 		name: "combustionEngine",
 		label: $I("workshop.combustionEngine.label"),
@@ -1164,11 +1081,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"coalRatioGlobalReduction" : 0.2
 		},
-		prices:[
-			{ name : "science",  val: 20000 },
-			{ name : "gear", 	 val: 25 },
-			{ name : "blueprint",  val: 5 }
-		],
+		prices:[{ name: "science", val: 20000 }, { name: "steel", val: 75 }, { name: "blueprint", val: 5 }],
 		upgrades: {
 			buildings: ["steamworks"]
 		},
@@ -1180,11 +1093,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"coalRatioGlobalReduction" : 0.2
 		},
-		prices:[
-			{ name : "oil", 	 val: 20000 },
-			{ name : "science",  val: 100000 },
-			{ name : "gear", 	 val: 250 }
-		],
+		prices:[{ name: "oil", val: 20000 }, { name: "science", val: 100000 }, { name: "steel", val: 750 }],
 		upgrades: {
 			buildings: ["steamworks"]
 		}
@@ -1195,11 +1104,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.factoryLogistics.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "titanium", val: 2000 },
-			{ name : "science",  val: 100000 },
-			{ name : "gear", 	 val: 250 }
-		],
+		prices:[{ name: "titanium", val: 2000 }, { name: "science", val: 100000 }, { name: "steel", val: 750 }],
 		upgrades: {
 			buildings: ["factory"]
 		}
@@ -1209,13 +1114,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.carbonSequestration.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "titanium", val: 1250 },
-			{ name : "science",  val: 75000 },
-			{ name : "gear", 	 val: 125 },
-			{ name : "steel", 	 val: 4000 },
-			{ name : "alloy", 	 val: 1000 }
-		],
+		prices:[{ name: "titanium", val: 1250 }, { name: "science", val: 75000 }, { name: "steel", val: 4380 }, { name: "alloy", val: 1000 }],
 		upgrades:{
 			buildings: ["factory"]
 		}
@@ -1226,11 +1125,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"queueCap": 1
 		},
-		prices:[
-			{ name : "titanium", val: 1250 },
-			{ name : "science",  val: 75000 },
-			{ name : "gear", 	 val: 125 }
-		]
+		prices:[{ name: "titanium", val: 1250 }, { name: "science", val: 75000 }, { name: "steel", val: 375 }]
 	},{
 		name: "factoryRobotics",
 		label: $I("workshop.factoryRobotics.label"),
@@ -1238,11 +1133,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"queueCap": 2
 		},
-		prices:[
-			{ name : "titanium", val: 2500 },
-			{ name : "science",  val: 100000 },
-			{ name : "gear", 	 val: 250 }
-		]
+		prices:[{ name: "titanium", val: 2500 }, { name: "science", val: 100000 }, { name: "steel", val: 750 }]
 	},{
 		name: "spaceEngineers",
 		label: $I("workshop.spaceEngineers.label"),
@@ -1484,11 +1375,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"oilWellRatio" : 0.45
 		},
-		prices:[
-			{ name : "titanium", val: 250 },
-			{ name : "science",  val: 100000 },
-			{ name : "gear", 	 val: 125 }
-		],
+		prices:[{ name: "titanium", val: 250 }, { name: "science", val: 100000 }, { name: "steel", val: 375 }],
 		upgrades: {
 			buildings: ["oilWell"]
 		}
@@ -1499,10 +1386,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		description: $I("workshop.petri.desc"),
 		effects: {
 		},
-		prices:[
-			{ name : "plastic", val: 250 },
-			{ name : "science",  val: 65000 }
-		],
+		prices:[{ name: "oil", val: 6250 }, { name: "science", val: 65000 }],
 		upgrades: {
 			buildings: ["biolab"]
 		}
@@ -1595,11 +1479,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"craftRatio" : 0.05
 		},
-		prices:[
-			{ name : "science",  val: 100000 },
-			{ name : "gear", val: 100 },
-			{ name : "scaffold",  val: 1000 }
-		]
+		prices:[{ name: "science", val: 100000 }, { name: "steel", val: 300 }, { name: "beam", val: 8000 }]
 	},{
 		name: "augumentation",
 		label: $I("workshop.augumentation.label"),
@@ -1645,11 +1525,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"manpowerRatio" : 0.15
 		},
-		prices:[
-			{ name : "science", val: 100000 },
-			{ name : "steel", val: 10000 },
-			{ name : "gear", val: 250 }
-		]
+		prices:[{ name: "science", val: 100000 }, { name: "steel", val: 10750 }]
 	},{
 		name: "enrichedUranium",
 		label: $I("workshop.enrichedUranium.label"),
@@ -1684,13 +1560,9 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
         label: $I("workshop.thoriumReactors.label"),
         description: $I("workshop.thoriumReactors.desc"),
         effects: {
-            "reactorThoriumPerTick": -0.05,
             "reactorEnergyRatio": 0.25
         },
-        prices:[
-            { name : "science",  val: 400000 },
-            { name : "thorium",  val: 10000 }
-        ],
+        prices:[{ name: "science", val: 400000 }, { name: "uranium", val: 50000 }],
         upgrades: {
             buildings: ["reactor"]
         },
@@ -1702,12 +1574,9 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.enrichedThorium.label"),
 		description: $I("workshop.enrichedThorium.desc"),
 		effects: {
-			"reactorThoriumPerTick": 0.0125
+			"uraniumRatio": 0.25
 		},
-		prices:[
-			{ name : "science",  val: 500000 },
-			{ name : "thorium",  val: 12500 }
-		],
+		prices:[{ name: "science", val: 500000 }, { name: "uranium", val: 62500 }],
 		upgrades: {
 			buildings: ["reactor"]
 		}
@@ -1768,13 +1637,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		name: "thoriumEngine",
 		label: $I("workshop.thoriumEngine.label"),
 		description: $I("workshop.thoriumEngine.desc"),
-		prices:[
-			{ name : "science",  val: 400000 },
-			{ name : "gear", val: 40000 },
-			{ name : "alloy", val: 2000 },
-			{ name : "ship", val: 10000 },
-			{ name : "thorium", val: 100000 }
-		],
+		prices:[{ name: "science", val: 400000 }, { name: "steel", val: 120000 }, { name: "alloy", val: 2000 }, { name: "beam", val: 250000 }, { name: "uranium", val: 500000 }],
 		effects: {
 			"routeSpeed" : 50
 		}
@@ -1796,12 +1659,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		name: "longRangeSpaceships",
 		label: $I("workshop.longRangeSpaceships.label"),
 		description: $I("workshop.longRangeSpaceships.desc"),
-		prices:[
-			{ name : "science",  val: 440000 },
-			{ name : "gear", val: 90000 },
-			{ name : "alloy", val: 3500 },
-			{ name : "tanker", val: 500 },
-		],
+		prices:[{ name: "science", val: 440000 }, { name: "steel", val: 270000 }, { name: "alloy", val: 13500 }],
 		unlocks: {
 			spaceBuilding: ["spaceShuttle"]
 		},
@@ -1815,11 +1673,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		effects: {
 			"oilWellRatio" : 0.35
 		},
-		prices:[
-			{ name : "titanium", val: 1250 },
-			{ name : "science",  val: 125000 },
-			{ name : "gear", 	 val: 500 }
-		],
+		prices:[{ name: "titanium", val: 1250 }, { name: "science", val: 125000 }, { name: "steel", val: 1500 }],
 		upgrades: {
 			buildings: ["oilWell"]
 		}
@@ -1844,11 +1698,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
         effects: {
             "factoryRefineRatio" : 0.05
         },
-        prices:[
-            { name : "titanium", val: 7500   },
-            { name : "science",  val: 195000 },
-            { name : "concrate", val: 125    }
-        ]
+        prices:[{ name: "titanium", val: 7500 }, { name: "science", val: 195000 }, { name: "slab", val: 3750 }]
     },
     //---------------- Void Space ---------------
     {
@@ -1921,9 +1771,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		name: "wood",
 		label: $I("workshop.crafts.wood.label"),
 		description: $I("workshop.crafts.wood.desc"),
-		prices:[
-			{name: "catnip", val: 100}
-		],
+		prices:[{ name: "catnip", val: 100 }],
 		ignoreBonuses: true,
 		progressHandicap: 1,
 		tier: 1
@@ -1931,364 +1779,47 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		name: "beam",
 		label: $I("workshop.crafts.beam.label"),
 		description: $I("workshop.crafts.beam.desc"),
-		prices:[
-			{name: "wood", val: 175}
-		],
+		prices:[{ name: "wood", val: 175 }],
 		progressHandicap: 1,
 		tier: 1
 	},{
 		name: "slab",
 		label: $I("workshop.crafts.slab.label"),
 		description: $I("workshop.crafts.slab.desc"),
-		prices:[
-			{name: "minerals", val: 250}
-		],
+		prices:[{ name: "minerals", val: 250 }],
 		progressHandicap: 1,
-		tier: 1
-	},{
-		name: "plate",
-		label: $I("workshop.crafts.plate.label"),
-		description: $I("workshop.crafts.plate.desc"),
-		prices:[
-			{name: "iron", val: 125}
-		],
-		progressHandicap: 4,
 		tier: 1
 	},{
 		name: "steel",
 		label: $I("workshop.crafts.steel.label"),
 		description: $I("workshop.crafts.steel.desc"),
-		prices:[
-			{name: "coal", val: 100},
-			{name: "iron", val: 100}
-		],
+		prices:[{ name: "coal", val: 100 }, { name: "iron", val: 100 }],
 		progressHandicap: 4,
 		tier: 2
-	},{
-		name: "concrate",
-		label: $I("workshop.crafts.concrate.label"),
-		description: $I("workshop.crafts.concrate.desc"),
-		prices:[
-			{name: "slab", val: 2500},
-			{name: "steel", val: 25}
-		],
-		progressHandicap: 9,
-		tier: 4
-	},{
-		name: "gear",
-		label: $I("workshop.crafts.gear.label"),
-		description: $I("workshop.crafts.gear.desc"),
-		prices:[
-			{name: "steel", val: 15}
-		],
-		progressHandicap: 5,
-		tier: 3
 	},{
 		name: "alloy",
 		label: $I("workshop.crafts.alloy.label"),
 		description: $I("workshop.crafts.alloy.desc"),
-		prices:[
-			{name: "titanium", val: 10},
-			{name: "steel", val: 75 }
-		],
+		prices:[{ name: "titanium", val: 10 }, { name: "steel", val: 75 }],
 		progressHandicap: 7,
 		tier: 4
 	},{
 		name: "eludium",
 		label: $I("workshop.crafts.eludium.label"),
 		description: $I("workshop.crafts.eludium.desc"),
-		prices:[
-			{name: "unobtainium", val: 1000},
-			{name: "alloy", val: 2500 }
-		],
+		prices:[{ name: "unobtainium", val: 1000 }, { name: "alloy", val: 2500 }],
 		progressHandicap: 300,
 		tier: 5
-	},{
-		name: "scaffold",
-		label: $I("workshop.crafts.scaffold.label"),
-		description: $I("workshop.crafts.scaffold.desc"),
-		prices:[
-			{ name: "beam", val: 50 }
-		],
-		progressHandicap: 2,
-		tier: 2
-	},{
-		name: "ship",
-		label: $I("workshop.crafts.ship.label"),
-		description: $I("workshop.crafts.ship.desc"),
-		prices:[
-			{ name: "starchart", val: 25 },
-			{ name: "plate",    val: 150 },
-			{ name: "scaffold", val: 100 }
-		],
-		upgrades: {
-			buildings: ["harbor"]
-		},
-		progressHandicap: 20,
-		tier: 3
-	},{
-		name: "tanker",
-		label: $I("workshop.crafts.tanker.label"),
-		description: $I("workshop.crafts.tanker.desc"),
-		prices:[
-			{ name: "alloy",    	val: 1250 },
-			{ name: "ship", 		val: 200 },
-			{ name: "blueprint", 	val: 5 }
-		],
-		upgrades: {
-			buildings: ["harbor"]
-		},
-		progressHandicap: 20,
-		tier: 5
-	},{
-        name: "kerosene",
-        label: $I("workshop.crafts.kerosene.label"),
-        description: $I("workshop.crafts.kerosene.desc"),
-        prices:[
-            { name: "oil", val: 7500 }
-        ],
-		progressHandicap: 5,
-		tier: 2
-    },{
-        name: "plastic",
-        label: $I("workshop.crafts.plastic.label"),
-        description: $I("workshop.crafts.plastic.desc"),
-        prices:[
-            { name: "oil", val: 1000 }
-        ],
-		progressHandicap: 5,
-		tier: 2
-    },{
-        name: "microchip",
-        label: $I("workshop.crafts.microchip.label"),
-        description: $I("workshop.crafts.microchip.desc"),
-        prices:[
-            { name: "plastic", val: 50 },
-			{ name: "gold", val: 1000 },
-			{ name: "spice", val: 750 }
-        ],
-		progressHandicap: 20,
-		tier: 3
-    },{
-		name: "parchment",
-		label: $I("workshop.crafts.parchment.label"),
-		description: $I("workshop.crafts.parchment.desc"),
-		prices:[
-			{name: "furs", val: 175}
-		],
-		progressHandicap: 1,
-		tier: 1
-	},{
-		name: "manuscript",
-		label: $I("workshop.crafts.manuscript.label"),
-		description: $I("workshop.crafts.manuscript.desc"),
-		prices:[
-			{name: "culture", val: 400},
-			{name: "parchment", val: 25}
-		],
-		progressHandicap: 2,
-		tier: 2
-	},{
-		name: "compedium",
-		label: $I("workshop.crafts.compedium.label"),
-		description: $I("workshop.crafts.compedium.desc"),
-		prices:[
-			{name: "science", val: 9000},
-			{name: "manuscript", val: 55}
-		],
-		progressHandicap: 5,
-		tier: 3
 	},{
 		name: "blueprint",
 		label: $I("workshop.crafts.blueprint.label"),
 		description: $I("workshop.crafts.blueprint.desc"),
-		prices:[
-			{name: "science", val: 25000},
-			{name: "compedium", val: 25}
-		],
+		prices:[{ name: "science", val: 25000 }, { name: "culture", val: 1000 }],
 		progressHandicap: 10,
 		tier: 3
-	},{
-		name: "thorium",
-		label: $I("workshop.crafts.thorium.label"),
-		description: $I("workshop.crafts.thorium.desc"),
-		prices:[
-			{ name: "uranium", val: 250 }
-		],
-		progressHandicap: 5,
-		tier: 3
-	},{
-		name: "megalith",
-		label: $I("workshop.crafts.megalith.label"),
-		description: $I("workshop.crafts.megalith.desc"),
-		prices:[
-			{ name: "beam", val: 25 },
-			{ name: "slab", val: 50 },
-			{ name: "plate", val: 5 }
-		],
-		progressHandicap: 5,
-		tier: 3
-	},{
-		name: "bloodstone",
-		label: $I("workshop.crafts.bloodstone.label"),
-		description: $I("workshop.crafts.bloodstone.desc"),
-		prices:[
-			{ name: "timeCrystal", val: 5000 },
-			{ name: "relic", val: 10000 }
-		],
-		progressHandicap: 7500,
-		tier: 5
-	},{
-		name: "tMythril",
-		label: $I("workshop.crafts.tMythril.label"),
-		description: $I("workshop.crafts.tMythril.desc"),
-		//label: "T-Mythril",
-		//description: "Some believe this alloy to be alive...",
-		prices:[
-			{ name: "bloodstone", val: 5 },
-			{ name: "ivory", val: 1000 },
-			{ name: "titanium", val: 500 }
-		],
-		progressHandicap: 10000,
-		tier: 7
 	}],
 
-	zebraUpgrades:[
-		{
-			name: "darkRevolution",
-			label: $I("workshop.zebraUpgrade.darkRevolution.label"),
-			description: $I("workshop.zebraUpgrade.darkRevolution.desc"),
-			effects: {
-			},
-			prices:[
-				{ name : "bloodstone", val: 15 },
-				{ name : "science", val: 100 }
-			],
-			upgrades:{
-				buildings: ["zebraOutpost"]
-			},
-			unlocks: {
-				zebraUpgrades: ["zebraTrappers"]
-			}
-		},{
-			name: "darkBrew",
-			label: $I("workshop.zebraUpgrade.darkBrew.label"),
-			description: $I("workshop.zebraUpgrade.darkBrew.desc"),
-			effects: {
-			},
-			prices:[
-				{ name : "bloodstone", val: 1 },
-				{ name : "parchment", val: 3000 },
-				{ name : "science", val: 100 }
-			],
-			upgrades:{
-				buildings: ["brewery"]
-			}
-		},{
-			name: "zebraTrappers",
-			label: $I("workshop.zebraUpgrade.zebraTrappers.label"),
-			description: $I("workshop.zebraUpgrade.zebraTrappers.desc"),
-			effects: {
-				"preparationRatio": 1
-			},
-			prices:[
-				{ name : "science", val: 1000 },
-				{ name : "alloy", val: 100 },
-				{ name : "tMythril", val: 10 }
-			],
-			upgrades:{
-				buildings: ["zebraOutpost"]
-			},
-			unlocks: {
-				zebraUpgrades: ["reforgedOutposts"]
-			}
-		},{
-			name: "reforgedOutposts",
-			label: $I("workshop.zebraUpgrade.reforgedOutposts.label"),
-			description: $I("workshop.zebraUpgrade.reforgedOutposts.desc"),
-			effects: {
-			},
-			prices:[
-				{ name : "science", val: 1500 },
-				{ name : "coal", val: 10000 },
-				{ name : "bloodstone", val: 50 },
-				{ name : "tMythril", val: 10 }
-			],
-			upgrades:{
-				buildings: ["zebraForge"]
-			}
-		},
-		//resources:
-		//tMythril
-		{
-			name: "whispers",
-			label: $I("workshop.zebraUpgrade.whispers.label"),
-			description: $I("workshop.zebraUpgrade.whispers.desc"),
-			effects: {
-			},
-			prices:[
-				{ name : "tMythril", val: 5 }
-			],
-			upgrades:{
-				buildings: ["ivoryTemple"]
-			}
-		},
-		//minerals
-		{
-			name: "minerologyDepartment",
-			label: $I("workshop.zebraUpgrade.minerologyDepartment.label"),
-			description: $I("workshop.zebraUpgrade.minerologyDepartment.desc"),
-			effects: {		
-			},
-			prices:[
-				{name : "science", val: 75000},
-				{name: 	"compedium", val: 75}
-			],
-			upgrades:{
-				buildings: ["academy"]
-			},
-			unlocks: {
-				zebraUpgrades: ["bloodstoneInstitute"]
-			}
-		},
-		//bloodstone
-		{
-			name: "bloodstoneInstitute",
-			label: $I("workshop.zebraUpgrade.bloodstoneInstitute.label"),
-			description: $I("workshop.zebraUpgrade.bloodstoneInstitute.desc"),
-			effects: {		
-			},
-			prices:[
-				{name : "science", val: 85000},
-				{name: 	"blueprint", val: 50},
-				{name : "bloodstone", val: 25},
-				{name: 	"tMythril", val: 10}
-			],
-			upgrades:{
-				buildings: ["zebraWorkshop"]
-			},
-			unlocks: {
-				zebraUpgrades: ["rangefinders"]
-			}
-		},{
-			name: "rangefinders",
-			label: $I("workshop.zebraUpgrade.rangefinders.label"),
-			description: $I("workshop.zebraUpgrade.rangefinders.desc"),
-			effects: {
-			},
-			prices:[
-				{ name : "science", val: 100000 },
-				{ name : "tMythril", val: 50 },
-				{ name : "microchip", val: 25 }
-			],
-			upgrades:{
-				buildings: ["zebraForge"]
-			},
-			evaluateLocks: function(game){
-				return game.workshop.getZebraUpgrade("bloodstoneInstitute").researched && game.workshop.get("railgun").researched;
-			}
-		},
-	],
+	zebraUpgrades:[],
 	effectsBase: {
 		"oilMax" : 0,
 		"scienceMax" : 0,
@@ -2302,7 +1833,6 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		this.game = game;
 		this.metaCache = {};
 		this.registerMeta("research", this.upgrades, null);
-		this.registerMeta("research", this.zebraUpgrades, null);
 		this.setEffectsCachedExisting();
 	},
 
@@ -2332,18 +1862,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 	},
 
 	getZebraUpgrade: function(zebraUpgradeName){
-		var zebraUpgrade = this.metaCache[zebraUpgradeName];
-		if (zebraUpgrade){
-			return zebraUpgrade;
-		}
-		for (var i = this.zebraUpgrades.length - 1; i >= 0; i--) {
-			if (this.zebraUpgrades[i].name === zebraUpgradeName){
-				this.metaCache[zebraUpgrade] = this.zebraUpgrades[i];
-				return this.zebraUpgrades[i];
-			}
-		}
-		console.error("Failed to get upgrade for id '" + zebraUpgradeName + "'");
-		return null;
+		return { name: zebraUpgradeName, researched: false, unlocked: false, effects: {}, prices: [] };
 	},
 
 	resetState: function(){
@@ -2364,33 +1883,15 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 
 		for (i = 0; i < this.crafts.length; i++){
 			var craft = this.crafts[i];
-			if (craft.name == "wood" ||
-				craft.name == "beam" ||
-				craft.name == "slab" ||
-				craft.name == "plate" ||
-				craft.name == "gear" ||
-				craft.name == "scaffold" ||
-				craft.name == "manuscript" ||
-				craft.name == "megalith") {
-				craft.unlocked = true;
-			} else {
-				craft.unlocked = false;
-			}
+			craft.unlocked = (craft.name == "wood" || craft.name == "beam" || craft.name == "slab");
 			craft.value = 0;
 			craft.progress = 0;
 			if (typeof(craft.progressHandicap) == "undefined") {
 				craft.progressHandicap = 1;
 			}
 		}
-		for (var i = 0; i < this.zebraUpgrades.length; i++){
-			var zebraUpgrade = this.zebraUpgrades[i];
-			zebraUpgrade.researched = false;
-			zebraUpgrade.unlocked = false;
-		}
 
-		//ugh
 		this.getCraft("wood").prices = [{name: "catnip", val: 100}];
-
 		this.hideResearched = false;
 	},
 
@@ -2399,7 +1900,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			hideResearched: this.hideResearched,
 			upgrades: this.filterMetadata(this.upgrades, ["name", "unlocked", "researched"]),
 			crafts: this.filterMetadata(this.crafts, ["name", "unlocked", "value", "progress"]),
-			zebraUpgrades: this.filterMetadata(this.zebraUpgrades, ["name", "unlocked", "researched"])
+			zebraUpgrades: []
 		};
 	},
 
@@ -2409,56 +1910,36 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		}
 
 		this.hideResearched = saveData.workshop.hideResearched;
-		//简化后不再存在的升级名直接丢弃,不刷报错
 		var live = {};
 		for (var i = 0; i < this.upgrades.length; i++){ live[this.upgrades[i].name] = true; }
 		var savedUpgrades = (saveData.workshop.upgrades || []).filter(function(u){ return u && live[u.name]; });
 		this.loadMetadata(this.upgrades, savedUpgrades, "upgrades");
-		this.loadMetadata(this.crafts, saveData.workshop.crafts, "crafts");
-		this.loadMetadata(this.zebraUpgrades, saveData.workshop.zebraUpgrades, "zebraUpgrades");
+
+		var liveCrafts = {};
+		for (var j = 0; j < this.crafts.length; j++){ liveCrafts[this.crafts[j].name] = true; }
+		var savedCrafts = (saveData.workshop.crafts || []).filter(function(c){ return c && liveCrafts[c.name]; });
+		this.loadMetadata(this.crafts, savedCrafts, "crafts");
 
 		for (var i = 0; i < this.upgrades.length; i++){
 			var upgrade = this.upgrades[i];
 			if (upgrade.researched){
 				if (upgrade.handler) {
-					upgrade.handler(this.game);	//just in case update workshop upgrade effects
+					upgrade.handler(this.game);
 				}
 				if (upgrade.unlocks) {
 					this.game.unlock(upgrade.unlocks);
 				}
 			}
 		}
-		for (var i = 0; i < this.zebraUpgrades.length; i++){
-			var zebraUpgrade = this.zebraUpgrades[i];
-			if (zebraUpgrade.researched){
-				if (zebraUpgrade.handler) {
-					zebraUpgrade.handler(this.game);	//just in case update workshop upgrade effects
-				}
-				if (zebraUpgrade.unlocks) {
-					this.game.unlock(zebraUpgrade.unlocks);
-				}
-			}
-		}
-
 	},
 
 	getCraftPrice: function(craft) {
-		if (craft.name != "ship") {
-			return craft.prices;
-		}
-
-		//special ship hack
-		var prices = dojo.clone(craft.prices);
-		for (var i = prices.length - 1; i >= 0; i--) {
-			if (prices[i].name == "starchart") {
-				prices[i].val = prices[i].val * (1 - this.game.getLimitedDR(this.game.getEffect("satnavRatio") * this.game.space.getBuilding("sattelite").on, 0.75));
-			}
-		}
-		return prices;
+		return craft.prices;
 	},
 
 	craft: function (res, amt, suppressUndo, forceAll, bypassResourceCheck) {
 		var craft = this.getCraft(res);
+		if (!craft) { return false; }
 		var craftRatio = this.game.getResCraftRatio(res);
 		amt = Math.ceil(amt);
 		var craftAmt = amt * (1 + craftRatio);
@@ -2488,71 +1969,49 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 				var undo = this.game.registerUndoChange();
 				undo.addEvent(this.id,
 				{
-					metaId: res, //Internal ID of the craft recipe & also of the resource that's the product
+					metaId: res,
 					resGainedAmt: actualAmtGained,
 					resSpent: prices
 				}, $I("ui.undo.workshop.craft", [this.game.getDisplayValueExt(actualAmtGained), this.game.resPool.get(res).title]));
-				// (Note: We use res.title instead of craft.label because this way the English version makes consistent grammatical sense.)
 			}
 
             return true;
 		} else if (forceAll) {
-			//console.log("not enough resources for ", prices, ", crafting as much as possible");
 			this.craftAll(res);
 			return true;
 		} else {
-			//console.log("not enough resources for ", prices, ", aborting craft");
 			return false;
 		}
 	},
 
-
-	/**
-	 * This function un-crafts something.  The idea is that the undo system will delegate any crafting-related
-	 * undo commands to this function here.
-	 * If the product of the craft cannot be returned (like, if it's been spent), the undo will fail & nothing will be refunded.
-	 * Otherwise, the player will get a full refund, regaining the resources that were actually spent.
-	 * If, in the intervening time (between crafting & getting a refund), the craft ratio changes,
-	 * 	the refund uses the value that the craft ratio had at the time the original craft was performed.
-	 * 	(No exploit by changing leaders!)
-	 * @param data		object	Contains all pertinent information needed to undo the craft.
-	 * 		metaId: string, name of the resource produced as a result of the craft
-	 * 		resGainedAmt: number, amount of the resource produced as a result of the craft
-	 * 		resSpent: array of objects, names & amounts of resources spent as a part of the craft
-	 * 			Objects have the structure { name: <string>, val: <number> }
-	 */
 	undo: function(data){
 		var resPool = this.game.resPool;
-		//Fail the un-craft if we cannot get the player a full refund:
 		if (resPool.get(data.metaId).value < data.resGainedAmt) {
-			this.game.msg($I("workshop.undo.failure", [resPool.get(data.metaId).title]), "alert", "undo", true /*noBullet*/);
+			this.game.msg($I("workshop.undo.failure", [resPool.get(data.metaId).title]), "alert", "undo", true);
 			return;
 		}
-		//Else, player is eligible for a full refund:
 		resPool.addResEvent(data.metaId, -data.resGainedAmt);
 		data.resSpent.forEach(function(priceLine) {
 			var amt = resPool.addResEvent(priceLine.name, priceLine.val);
 			if (amt) {
-				//amt could be 0 due to a rounding error.  In that case, don't show it.
 				this.game.msg($I("workshop.undo.regain", [this.game.getDisplayValueExt(amt), resPool.get(priceLine.name).title]),
-					null, "undo", true /*noBullet*/);
+					null, "undo", true);
 			}
 		});
 	},
 
-	//returns a total number of resoruces possible to craft for this recipe
 	getCraftAllCount: function(craftName){
 		var recipe = this.getCraft(craftName);
+		if (!recipe) { return 0; }
 		var prices = this.getCraftPrice(recipe);
 		return Math.floor(this._getCraftAllCountInternal(recipe, prices));
 	},
 
 	_getCraftAllCountInternal: function(recipe, prices){
-
 		var minAmt = Number.MAX_VALUE;
 		for (var j = prices.length - 1; j >= 0; j--) {
 			var totalRes = this.game.resPool.get(prices[j].name).value;
-			var allAmt = totalRes / prices[j].val; // we need fraction here, do floor later
+			var allAmt = totalRes / prices[j].val;
 			if (allAmt < minAmt){
 				minAmt = allAmt;
 			}
@@ -2560,13 +2019,12 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		return minAmt;
 	},
 
-	//Crafts maximum possible amount for given recipe name
 	craftAll: function(craftName) {
 		var minAmt = this.getCraftAllCount(craftName);
 		if (0 < minAmt && minAmt < Number.MAX_VALUE) {
 			var craftRatio = this.game.getResCraftRatio(craftName);
 			var res = this.game.resPool.get(craftName);
-			if (this.craft(craftName, minAmt, false /* allow undo */, false /* don't force all */, true /* bypass resource check */)) {
+			if (this.craft(craftName, minAmt, false, false, true)) {
 				this.game.msg( $I("workshop.crafted.msg", [this.game.getDisplayValueExt(minAmt * (1 + craftRatio)), (res.title || craftName)]), null, "craft");
 			}
 		}
@@ -2577,45 +2035,12 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 	},
 
 	fastforward: function(daysOffset) {
-		var times = daysOffset * this.game.calendar.ticksPerDay;
-
-		//-------------	 this is a poor place for this kind of functionality ------------
-		//-------------	todo: move somewhere to bld? ------------------------------------
-
-		this.effectsBase["oilMax"] = Math.floor(this.game.resPool.get("tanker").value * 500);
-
-		var scienceMaxCap = this.game.bld.getEffect("scienceMax");
-		scienceMaxCap += this.game.getEffect("pyramidSpaceCompendiumRatio") * this.game.space.getEffect("scienceMax"); //lets treat trasnfered science max from space same way
-		if (this.game.ironWill) {
-			scienceMaxCap *= 10;
-		}
-		if (this.game.prestige.getPerk("codexLeviathanianus").researched) {
-			var blackLibrary = this.game.religion.getTU("blackLibrary");
-			var ttBoostRatio = 1 + blackLibrary.val * (blackLibrary.effects["compendiaTTBoostRatio"] + this.game.getEffect("blackLibraryBonus"));
-			scienceMaxCap *= 1 + 0.05 * ttBoostRatio * this.game.religion.transcendenceTier;
-		}
-		scienceMaxCap += this.game.bld.getEffect("scienceMaxCompendia");
-		
-		// there is a lot of ongoing discussing about the necessity of compedia unnerf, and the original intention of ch40krun was never to allow it
-		/* // Quadratic increase, so that deep enough run will eventually unnerf the compendia cap
-		var darkFutureRatio = Math.max(this.game.calendar.year / this.game.calendar.darkFutureBeginning, 1);
-		scienceMaxCap *= darkFutureRatio * darkFutureRatio; */
-
-		var compendiaScienceMax = Math.floor(this.game.resPool.get("compedium").value * 10);
-		this.effectsBase["scienceMax"] = Math.min(compendiaScienceMax, scienceMaxCap);
-
-		var cultureBonusRaw = Math.floor(this.game.resPool.get("manuscript").value);
-		this.effectsBase["cultureMax"] = this.game.getUnlimitedDR(cultureBonusRaw, 0.01);
-
-		this.effectsBase["faithMax"] = 0;
-
 		this.updateCraftLimits();
 	},
 
 	updateCraftLimits: function() {
 		for (var i = 0; i < this.crafts.length; i++) {
 			var craft = this.crafts[i];
-			//check and cache if you can't craft even once due to storage limits
 			craft.isLimited = this.game.resPool.isStorageLimited(this.getCraftPrice(craft));
 		}
 	},
@@ -2632,7 +2057,6 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		}
 
 		if (upgrade.upgrades) {
-			// Hack so the new upgrade's effects are counted
 			this.game.upgrade(upgrade.upgrades);
 		}
 	},
@@ -2644,9 +2068,6 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 
 		for (var i in this.crafts){
 			this.crafts[i].unlocked = true;
-		}
-		for (var i in this.zebraUpgrades){
-			this.zebraUpgrades[i].unlocked = true;
 		}
 		this.game.msg($I("workshop.all.upgrades.unlocked"));
 	}
@@ -2676,46 +2097,20 @@ dojo.declare("com.nuclearunicorn.game.ui.UpgradeButtonController", com.nuclearun
 		var prices = this.inherited("getPrices", arguments);
 
 		if (this.game.challenges.isActive("unicornTears")) {
-			//In the Unicorn Tears Challenge, we give each Workshop upgrade a price of unicorns or unicorn tears based on its weight.
-			//The prices scale with how many Challenges we've already completed.
-			var multiplier = this.game.getEffect("workshopTearsPricesChallenge"); //Number in range [0,1)
+			var multiplier = this.game.getEffect("workshopTearsPricesChallenge");
 			if (multiplier > 0) {
-				//We use the weight to separate early-game, mid-game, & late-game upgrades.
 				var weight = this.game.challenges.getChallenge("unicornTears").sumPricesWeighted(prices);
-				//For easy access, here are the weights of a few different upgrades:
-				//Celestial Mechanics - weight 2500
-				//Catnip Enrichment - weight 5000
-				//Gold Ore - weight 10k
-				//Coal Furnace - weight 54k
-				//Deep Mining - weight 51k
-				//Printing Press - weight 76k
-				//Oxidation - weight 1.1M
-				//Carbon Sequestration - weight 1.3M
-				//CAD System - weight 1.4M
-				//Orbital Geodesy - weight 2.2M
-				//Space Manufacturing - weight 28M
-				//Flux Condensator - weight 5G
-				//Thorium Drive - weight 18G
-				//Relic Station - weight 50T
-				if (weight < 1e6) { //Generally early-game upgrades; these require from 1 to 10k unicorns.
+				if (weight < 1e6) {
 					if (weight > 0) {
-						//Early-game upgrades can range wildly, so I chose a mathematical function that puts them closer together.
-						//At a multiplier of 1, f(1000) = 100, f(1 million) = 10k
 						prices.push({ name : "unicorns",
 							val: Math.ceil(Math.pow(weight, 2/3) * multiplier)
 						});
 					}
-				} else if (weight < 1e8) { //Generally mid-game upgrades; these require from 10 to 99k unicorn tears.
-					//Mid-game upgrades have weights much closer together, so I chose a mathematical function that spreads them out a bit.
-					//At a multiplier of 1, f(1 million) = 10, then the output increases by 1 for every 1000 increase in input.
+				} else if (weight < 1e8) {
 					prices.push({ name : "tears",
 						val: Math.ceil((weight-990000) / 1000 * multiplier)
 					});
-				} else { //Generally late-game upgrades; these require 100k or more unicorn tears.
-					//f(100 million) = 100k, f(1 billion) = 200k, increases by another +100k for each order of magnitude increase
-					//I don't expect the player to be able to get more than 200k max unicorns in the Unicorn Tears Challenge.
-					//  So, after repeating the Challenge many times, these upgrades become unobtainable.
-					//  That's fine, since none of these upgrades are necessary for progression.
+				} else {
 					prices.push({ name : "tears",
 						val: Math.ceil((Math.log10(weight)-7) * 100000 * multiplier)
 					});
@@ -2860,45 +2255,6 @@ dojo.declare("com.nuclearunicorn.game.ui.CraftButton", com.nuclearunicorn.game.u
 
 });
 
-dojo.declare("com.nuclearunicorn.game.ui.ZebraUpgradeButtonController", com.nuclearunicorn.game.ui.BuildingNotStackableBtnController, {
-
-	defaults: function() {
-		var result = this.inherited("defaults", arguments);
-		result.tooltipName = true;
-		result.simplePrices = false;
-		return result;
-	},
-
-	getMetadata: function(model){
-        if (!model.metaCached){
-            model.metaCached = this.game.workshop.getZebraUpgrade(model.options.id);
-        }
-        return model.metaCached;
-    },
-
-	getType: function(){
-		return "zebraUpgrades";
-	},
-
-	getPrices: function(model) {
-        return this.inherited("getPrices", arguments);
-    },
-
-	updateVisible: function(model){
-		var upgrade = model.metadata;
-		if (!upgrade.unlocked){
-			model.visible = false;
-		} else {
-			model.visible = true;
-		}
-
-		if (upgrade.researched && this.game.workshop.hideResearched){
-			model.visible = false;
-		}
-	}
-});
-
-
 dojo.declare("com.nuclearunicorn.game.ui.tab.Workshop", com.nuclearunicorn.game.ui.tab, {
 
 	tdTop: null,
@@ -2990,26 +2346,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Workshop", com.nuclearunicorn.game.
 
 			this.craftBtns.push(craftBtn);
 		}
-
-	//---------------------------------------------------------------------
-
-	var zebraUpgradesPanel = new com.nuclearunicorn.game.ui.Panel($I("workshop.zebraUpgradesPanel.label"), this.game.workshop);
-	if (this.game.bld.getBuildingExt("zebraWorkshop").meta.val>0){
-		var content = zebraUpgradesPanel.render(tabContainer);
-
-		for (var i = 0; i < this.game.workshop.zebraUpgrades.length; i++){
-			var zebraUpgrade = this.game.workshop.zebraUpgrades[i];
-
-			var zebraUpgradeButton = this.createZebraUpgradeBtn(zebraUpgrade);
-
-			zebraUpgradeButton.updateEnabled();
-			zebraUpgradeButton.updateVisible();
-
-			this.addButton(zebraUpgradeButton);
-			zebraUpgradeButton.render(content);
-		}
-	}
-		
 
 		//resources go there
 		var td = dojo.create("td", { className: "craftStuffPanel", style: {paddingLeft: "50px"}}, row1);

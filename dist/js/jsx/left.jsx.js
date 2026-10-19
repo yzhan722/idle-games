@@ -541,6 +541,9 @@ WCraftRow = React.createClass({
         props = props || this.props;
 
         var recipe = game.workshop.getCraft(res.name);
+        if (!recipe){
+            return false;
+        }
         var hasVisibility = (res.unlocked && recipe.unlocked);
         if (!hasVisibility || (!this.getIsVisible(res) && !props.isEditMode)){
             return false;
