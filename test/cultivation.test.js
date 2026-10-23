@@ -1512,6 +1512,74 @@ test("Commercial minimalist UI: no mode toggles, no synergy banners, automatic h
     expect(upgModel.visible).toBe(false);
 });
 
+test("Turn-Based Combat System: Lesser Rift 3-wave gauntlet, Greater Rift Boss battles, 4 tactical skills, and monster mechanical traits", () => {
+    const cult = game.cultivation;
+    cult.getStage("zhuji_0").researched = true;
+    cult.actionCd = 0;
+
+    // 1. Entering Lesser Rift initializes an active 3-wave turn-based battle
+    expect(cult.rift()).toBe(true);
+    expect(cult.battle).toBeTruthy();
+    expect(cult.battle.active).toBe(true);
+    expect(cult.battle.mode).toBe("lesser");
+    expect(cult.battle.wave).toBe(1);
+    expect(cult.battle.maxWaves).toBe(3);
+
+    // 2. Test Puppet (铁甲尸傀) heavy armor shield & 青元剑阵 (skill) 2.5x shield shatter + expose backlash
+    cult.battle.enemy = cult.spawnBattleMonster("lesser", 1, ["puppet", "wraith", "bloodcult"]);
+    expect(cult.battle.enemy.key).toBe("puppet");
+    expect(cult.battle.enemy.shield).toBeGreaterThan(0);
+    cult.battle.player.atk = 500; // guarantee shield shatter without instant kill
+    cult.battle.enemy.hp = 2000;
+    cult.battle.enemy.maxHp = 2000;
+    cult.battle.enemy.shield = 300;
+    expect(cult.executeBattleTurn("skill")).toBe(true);
+    expect(cult.battle.enemy.shield).toBe(0);
+    expect(cult.battle.enemy.armorBreak).toBeGreaterThan(0);
+    expect(cult.battle.enemy.expose).toBeGreaterThan(0);
+
+    // 3. Test 玄水灵盾 (guard) triggering 【太极反震】 when monster executes heavy attack (蓄力杀招)
+    cult.battle.enemy.hp = 2000;
+    cult.battle.enemy.intent = "heavy";
+    const enemyHpBeforeCounter = cult.battle.enemy.hp;
+    expect(cult.executeBattleTurn("guard")).toBe(true);
+    expect(cult.battle.enemy.hp).toBeLessThan(enemyHpBeforeCounter);
+    expect(cult.battle.logs[0]).toContain("太极反震");
+
+    // 4. Test 法宝镇压 (ult) cleansing Viper poison (蛇毒) & healing player
+    cult.battle.player.poison = 2;
+    cult.battle.player.chill = 2;
+    cult.battle.player.hp = Math.floor(cult.battle.player.maxHp * 0.5);
+    cult.battle.player.mp = 80;
+    const hpBeforeUlt = cult.battle.player.hp;
+    expect(cult.executeBattleTurn("ult")).toBe(true);
+    expect(cult.battle.player.poison).toBe(0);
+    expect(cult.battle.player.chill).toBe(0);
+    expect(cult.battle.player.hp).toBeGreaterThan(hpBeforeUlt);
+
+    // 5. Auto-resolve completes all 3 waves of Lesser Rift and grants rewards
+    cult.battle.player.atk = 9999;
+    expect(cult.autoResolveBattle()).toBe(true);
+    expect(cult.battle.active).toBe(false);
+    expect(cult.battle.result).toBe("win");
+    expect(cult.battle.loot.relic).toBeGreaterThanOrEqual(1);
+
+    // 6. Greater Rift Turn-Based Boss Battle advances riftFloor on victory
+    cult.actionCd = 0;
+    cult.riftKeys = 2;
+    const floorBefore = cult.riftFloor;
+    expect(cult.startRiftBattle("greater")).toBe(true);
+    expect(cult.battle.active).toBe(true);
+    expect(cult.battle.mode).toBe("greater");
+    expect(cult.battle.floor).toBe(floorBefore + 1);
+    cult.battle.player.atk = 99999;
+    expect(cult.autoResolveBattle()).toBe(true);
+    expect(cult.battle.active).toBe(false);
+    expect(cult.battle.result).toBe("win");
+    expect(cult.riftFloor).toBe(floorBefore + 1);
+});
+
+
 
 
 
