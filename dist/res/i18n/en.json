@@ -2857,5 +2857,6 @@
 	"cultivation.sound.off": "Chime: Off",
 	"cultivation.sound.tip": "Toggle immortal bell, tribulation thunder, and artifact chime sound effects",
 	"cultivation.phenom.major": "✦ Celestial Phenomenon · Auspicious Clouds & Dao Bell ✦",
-	"cultivation.phenom.minor": "✧ Meridians Aligned · Qi Converged ✧"
+	"cultivation.phenom.minor": "✧ Meridians Aligned · Qi Converged ✧",
+	"cultivation.stack.bottleneck": "Realm Bottleneck"
 }

@@ -2651,6 +2651,107 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 	},
 
+	// ---------------- 修为境界隐性伪上限 (Hidden Realm Soft-Cap / Bottleneck Decay) ----------------
+	//每个境界达到当前道途瓶颈阈值后，修为增长速度平滑渐近衰减并无限趋近于 0，但界面绝不向玩家展示上限数值；
+	//一旦突破至下一小层或大境界，瓶颈阈值立即抬升，修为吐纳与历练增速随即恢复如初。
+	getXiuweiSoftCapKnee: function(){
+		var priceMult = (this.getRoot() && this.getRoot().priceMult) || 1;
+		var hi = this.getHighestStageIndex();
+		var nextStage = (hi + 1 < this.stages.length) ? this.stages[hi + 1] : null;
+		if (!nextStage){
+			for (var i = 0; i < this.stages.length; i++){
+				if (!this.stages[i].researched){ nextStage = this.stages[i]; break; }
+			}
+		}
+
+		var nextXw = 0, effectiveNextXw = 0, fallbackXw = 200;
+		for (var s = 0; s < this.stages.length; s++){
+			var st = this.stages[s];
+			for (var p = 0; p < st.prices.length; p++){
+				if (st.prices[p].name === "xiuwei"){
+					fallbackXw = st.prices[p].val * priceMult;
+					break;
+				}
+			}
+		}
+		if (nextStage && nextStage.prices){
+			for (var j = 0; j < nextStage.prices.length; j++){
+				if (nextStage.prices[j].name === "xiuwei"){
+					nextXw = nextStage.prices[j].val * priceMult;
+					var taxMult = (nextStage.chance != null && nextStage.chance < 1) ?
+						(this.getDemonTax() * this.getBreakSurge()) : 1;
+					effectiveNextXw = nextXw * taxMult;
+					break;
+				}
+			}
+		} else {
+			//飞升圆满后锚定末层修为价的 2.5 倍
+			nextXw = fallbackXw * 2.5;
+			effectiveNextXw = nextXw;
+		}
+
+		//兼顾当前已解锁但未参悟的灵脉/宗门修为开销，确保瓶颈阈值从不卡死正常养成项
+		var auxXw = 0;
+		if (this.veins){
+			for (var v = 0; v < this.veins.length; v++){
+				var vn = this.veins[v];
+				if (!vn.researched && this.isVeinUnlocked && this.isVeinUnlocked(vn) && vn.prices){
+					for (var vp = 0; vp < vn.prices.length; vp++){
+						if (vn.prices[vp].name === "xiuwei" && vn.prices[vp].val > auxXw){
+							auxXw = vn.prices[vp].val;
+						}
+					}
+				}
+			}
+		}
+		if (this.sects){
+			for (var sc = 0; sc < this.sects.length; sc++){
+				var se = this.sects[sc];
+				if (!se.researched && this.isSectUnlocked && this.isSectUnlocked(se) && se.prices){
+					for (var sp = 0; sp < se.prices.length; sp++){
+						if (se.prices[sp].name === "xiuwei" && se.prices[sp].val > auxXw){
+							auxXw = se.prices[sp].val;
+						}
+					}
+				}
+			}
+		}
+
+		return Math.max(200, nextXw * 1.35, effectiveNextXw * 1.25, auxXw * 1.15);
+	},
+
+	getXiuweiSoftCapMult: function(customXiuwei){
+		var xw = (typeof customXiuwei === "number" && !isNaN(customXiuwei)) ? customXiuwei :
+			((this.game && this.game.resPool && this.game.resPool.get("xiuwei")) ?
+				(this.game.resPool.get("xiuwei").value || 0) : 0);
+		var knee = this.getXiuweiSoftCapKnee();
+		if (!(knee > 0) || xw <= knee){
+			return 1;
+		}
+		var over = (xw - knee) / knee;
+		//超过当前境界瓶颈阈值后平滑渐近衰减，随超出倍数递增无限趋近于 0 (lim_{over->inf} mult = 0)
+		var u = Math.log1p(over * 3);
+		return 1 / (1 + 1.8 * u + 1.5 * u * u + 1.0 * u * u * u);
+	},
+
+	applyXiuweiSoftCap: function(amt){
+		if (!(amt > 0)){ return 0; }
+		var curXw = (this.game && this.game.resPool && this.game.resPool.get("xiuwei")) ?
+			(this.game.resPool.get("xiuwei").value || 0) : 0;
+		var knee = this.getXiuweiSoftCapKnee();
+		if (!(knee > 0) || (curXw + amt) <= knee){
+			return amt;
+		}
+		var freePart = Math.max(0, knee - curXw);
+		var excess = Math.max(0, amt - freePart);
+		var midXw = Math.max(curXw, knee) + excess * 0.5;
+		var scaled = freePart + excess * this.getXiuweiSoftCapMult(midXw);
+		if (scaled >= 10){
+			return Math.round(scaled);
+		}
+		return Math.max(0.01, Math.round(scaled * 1000) / 1000);
+	},
+
 	//历练所得锚定「下一层破境」的修为价——给付永远贴着道途走:
 	//低境不致以一场走运连跳数层,高境也不至沦为杯水车薪。
 	//已破层数越多给付越衰,渡劫门前一回秘境换不来半层天。
@@ -2721,7 +2822,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 
 		//行脚吐纳保底——每次游历归来必有一份修为感悟入账,绝不空手而归
-		var baseXw = Math.max(2, Math.round(this.breakPayout(this.WANDER_PAY * 0.35 * (hasSwords ? 1.5 : 1))));
+		var baseXw = this.applyXiuweiSoftCap(Math.max(2, Math.round(this.breakPayout(this.WANDER_PAY * 0.35 * (hasSwords ? 1.5 : 1)))));
 		addRes("xiuwei", baseXw);
 
 		var roll = Math.random() * 100;
@@ -2735,7 +2836,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			addRes("wood", this.roundNice(12 * scale));
 			this.game.msg($I("cultivation.msg.wander.spice", [fmt(amt)]), "notice");
 		} else if (roll < 64){
-			var amt = this.breakPayout(this.WANDER_PAY * (hasSwords ? 1.5 : 1));
+			var amt = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY * (hasSwords ? 1.5 : 1)));
 			addRes("xiuwei", amt);
 			this.game.msg($I("cultivation.msg.wander.xiuwei", [fmt(amt + baseXw)]), "notice");
 		} else if (roll < 75){
@@ -2749,7 +2850,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		} else if (roll < 92){
 			//炼气新手保护——凡尘初历不遇劫修,偶得山间灵泉顿悟
 			if (realmIdx === 0){
-				var spXw = this.breakPayout(this.WANDER_PAY);
+				var spXw = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY));
 				addRes("xiuwei", spXw);
 				addRes("wood", 10);
 				this.game.msg($I("cultivation.msg.wander.xiuwei", [fmt(spXw + baseXw)]), "notice");
@@ -2983,7 +3084,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
-		var xwGain = this.breakPayout(this.RIFT_PAY * depthMult);
+		var baseXwGain = this.breakPayout(this.RIFT_PAY * depthMult);
+		var xwGain = this.applyXiuweiSoftCap(baseXwGain);
 		var minGain = 0, relicGain = 0, keyGain = 0, demonDelta = 0, artDropped = false;
 		var note = "";
 
@@ -3010,7 +3112,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				note = "运转清心法诀穿过阴冥鬼雾，修为 +" + fmt(xwGain) + "，心魔净除 8 点";
 			} else {
 				//altar optB: 星辰灌顶
-				xwGain = Math.round(xwGain * 1.5);
+				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * 1.5));
 				demonDelta = -10;
 				relicGain = 1;
 				note = "引动祭坛星辰大阵醍醐灌顶！修为暴涨 +" + fmt(xwGain) + "，上古遗宝 +1，心魔净除 10 点！";
@@ -3019,7 +3121,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			//进取/夺宝路线 (optA)
 			var keyChance = 0.30 + (stance.keyBonus || 0);
 			if (roomKey === "herb"){
-				xwGain = Math.round(xwGain * 1.25);
+				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * 1.25));
 				addRes("catnip", this.roundNice(320 * scale));
 				if (Math.random() < keyChance){ keyGain = 1; }
 				note = "剑斩赤练妖蟒夺取千年血线蛟藤！修为 +" + fmt(xwGain) + (keyGain ? "，斩获妖丹【秘境令】×1！" : "");
@@ -3030,12 +3132,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				}
 				note = "神识推演破开古修禁制！修为 +" + fmt(xwGain) + "，获【上古遗宝】×" + relicGain + (artDropped ? "，更得古宝认主！" : "");
 			} else if (roomKey === "ambush"){
-				xwGain = Math.round(xwGain * 1.2);
+				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * 1.2));
 				if (Math.random() < Math.min(0.75, keyChance + 0.20)){ keyGain = 1; }
 				minGain = this.roundNice(160 * scale);
 				note = "黄雀在后雷霆出手！修为 +" + fmt(xwGain) + (keyGain ? "，夺得【秘境令】×1！" : "，缴获灵石 +" + fmt(minGain));
 			} else if (roomKey === "spring"){
-				xwGain = Math.round(xwGain * (stance.key === "sword" ? 1.55 : 1.35));
+				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * (stance.key === "sword" ? 1.55 : 1.35)));
 				note = "盘膝泉眼鲸吞万年灵乳，周天轰鸣！修为暴涨 +" + fmt(xwGain) + "！";
 			} else if (roomKey === "fog"){
 				if (Math.random() < 0.38 * (stance.artifactMult || 1)){
@@ -3046,7 +3148,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				note = "催动真火炼化阴冥残魂！修为 +" + fmt(xwGain) + (artDropped ? "，霞光中一件秘境古宝破雾而出！" : "，凝得【上古遗宝】×1");
 			} else {
 				//altar optA: 破开虚天古宝匣
-				xwGain = Math.round(xwGain * 1.3);
+				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * 1.3));
 				relicGain = 1 + (stance.relicBonus || 0);
 				if (Math.random() < Math.min(0.80, keyChance + 0.25)){ keyGain = 1; }
 				if (Math.random() < 0.45 * (stance.artifactMult || 1)){
@@ -3089,7 +3191,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (!this.expedition || !this.expedition.active){ return false; }
 		var exp = this.expedition;
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
-		var bonusXw = this.breakPayout(this.RIFT_PAY * 0.35 * exp.step);
+		var bonusXw = this.applyXiuweiSoftCap(this.breakPayout(this.RIFT_PAY * 0.35 * exp.step));
 		this.game.resPool.addResEvent("xiuwei", bonusXw);
 		this.heartDemon = Math.max(0, this.heartDemon - 4);
 		exp.loot.xiuwei += bonusXw;
@@ -3112,7 +3214,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 
-		var amt = this.breakPayout(this.RIFT_PAY);
+		var amt = this.applyXiuweiSoftCap(this.breakPayout(this.RIFT_PAY));
 		addRes("xiuwei", amt);
 		this.game.msg($I("cultivation.msg.rift.xiuwei", [fmt(amt)]), "notice");
 
@@ -3135,7 +3237,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			//劫修伏击——战力足则反杀夺财,不足则受创而心魔入体
 			var ambushPower = this.floorPower(this.riftFloor + 1) * 0.7;
 			if (this.getCombatPower() >= ambushPower){
-				var spoils = this.breakPayout(this.AMBUSH_PAY);
+				var spoils = this.applyXiuweiSoftCap(this.breakPayout(this.AMBUSH_PAY));
 				addRes("xiuwei", spoils);
 				addRes("minerals", this.roundNice(80 * scale));
 				this.game.msg($I("cultivation.msg.rift.ambush.win", [fmt(spoils)]), "notice");
@@ -3221,7 +3323,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 		if (win){
 			this.riftFloor = floor;
-			var amt = this.breakPayout(this.GRIFT_PAY * (gInfo.countered ? 1.25 : 1));
+			var amt = this.applyXiuweiSoftCap(this.breakPayout(this.GRIFT_PAY * (gInfo.countered ? 1.25 : 1)));
 			addRes("xiuwei", amt);
 			var relics = Math.max(1, Math.round(floor * 0.8)) + (gInfo.countered ? 1 : 0);
 			addRes("relic", relics);
@@ -3241,7 +3343,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				this.game.render();
 			}
 		} else {
-			var amt = this.breakPayout(this.GRIFT_FAIL_PAY);
+			var amt = this.applyXiuweiSoftCap(this.breakPayout(this.GRIFT_FAIL_PAY));
 			addRes("xiuwei", amt);
 			var add = 8 + Math.random() * 6;
 			if (this.getFate("tihun").researched){ add *= 0.5; }
@@ -3270,7 +3372,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 
-		var amt = this.breakPayout(this.GRIFT_PAY * 0.85);
+		var amt = this.applyXiuweiSoftCap(this.breakPayout(this.GRIFT_PAY * 0.85));
 		addRes("xiuwei", amt);
 		var relics = Math.max(1, Math.round(floor * 0.7)) + (this.riftStance === "array" ? 1 : 0);
 		addRes("relic", relics);

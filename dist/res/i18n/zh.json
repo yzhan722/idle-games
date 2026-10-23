@@ -2721,5 +2721,6 @@
   "cultivation.sound.off": "道音·静",
   "cultivation.sound.tip": "切换突破仙钟、雷劫与法宝清鸣音效",
   "cultivation.phenom.major": "✦ 天地异象 · 紫气东来 · 大道钟鸣 ✦",
-  "cultivation.phenom.minor": "✧ 周天贯通 · 灵气归元 · 道行精进 ✧"
+  "cultivation.phenom.minor": "✧ 周天贯通 · 灵气归元 · 道行精进 ✧",
+  "cultivation.stack.bottleneck": "境界瓶颈"
 }

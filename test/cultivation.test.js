@@ -1425,4 +1425,62 @@ test("Resource production & storage capacity rebalance: realmStorageRatio, core 
     expect(game.calcResourcePerTick("timeCrystal")).toBeGreaterThan(0);
 });
 
+test("Hidden realm xiuwei soft-cap: untouched below knee, smoothly decays toward zero above knee, and restores on breakthrough without displaying maxValue", () => {
+    const cult = game.cultivation;
+    cult.spiritRoot = "san"; // neutral priceMult = 1.0
+    const xwRes = game.resPool.get("xiuwei");
+    const lib = game.bld.get("library");
+    lib.unlocked = true; lib.val = 5; lib.on = 5;
+    game.updateCaches();
+    game.calculateAllEffects();
+    game.resPool.updateMaxValueAll();
+    game.updateResources();
+
+    // 1. xiuwei.maxValue must remain 0 so the UI never displays a visible cap number
+    expect(xwRes.maxValue).toBe(0);
+
+    // 2. Below current stage knee (lianqi_1 floor knee >= 200), growth speed is 100% (mult = 1.0)
+    const knee0 = cult.getXiuweiSoftCapKnee();
+    expect(knee0).toBeGreaterThanOrEqual(200);
+    xwRes.value = 100;
+    expect(cult.getXiuweiSoftCapMult()).toBe(1);
+    const fullRate = game.calcResourcePerTick("xiuwei");
+    expect(fullRate).toBeGreaterThan(0);
+
+    xwRes.value = knee0;
+    expect(cult.getXiuweiSoftCapMult()).toBe(1);
+    expect(game.calcResourcePerTick("xiuwei")).toBeCloseTo(fullRate, 8);
+
+    // 3. Above knee, growth speed smoothly and strictly monotonically decays toward 0
+    xwRes.value = knee0 * 1.5;
+    const rate15 = game.calcResourcePerTick("xiuwei");
+    expect(rate15).toBeLessThan(fullRate);
+    expect(rate15).toBeGreaterThan(0);
+
+    xwRes.value = knee0 * 3;
+    const rate30 = game.calcResourcePerTick("xiuwei");
+    expect(rate30).toBeLessThan(rate15);
+    expect(rate30).toBeGreaterThan(0);
+
+    xwRes.value = knee0 * 10;
+    const rate100 = game.calcResourcePerTick("xiuwei");
+    expect(rate100).toBeLessThan(rate30);
+    expect(rate100).toBeLessThan(fullRate * 0.03);
+    expect(rate100).toBeGreaterThan(0);
+
+    // Active payouts (applyXiuweiSoftCap) also decay when above the knee
+    expect(cult.applyXiuweiSoftCap(100)).toBeLessThan(10);
+
+    // 4. Breaking through to a higher stage/realm raises the hidden knee and restores 100% speed
+    cult.getStage("zhuji_0").researched = true;
+    const kneeZhuji = cult.getXiuweiSoftCapKnee();
+    expect(kneeZhuji).toBeGreaterThan(xwRes.value);
+    expect(cult.getXiuweiSoftCapMult()).toBe(1);
+    expect(game.calcResourcePerTick("xiuwei")).toBeCloseTo(fullRate, 8);
+    game.calculateAllEffects();
+    expect(game.calcResourcePerTick("xiuwei")).toBeGreaterThan(fullRate);
+    expect(xwRes.maxValue).toBe(0);
+});
+
+
 

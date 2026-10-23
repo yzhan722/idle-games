@@ -543,8 +543,14 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 				}
 			}
 
+			if (res.name == "xiuwei" && res.calculatePerTick) {
+				res.perTickCached = game.fixFloatPointNumber(game.calcResourcePerTick("xiuwei"));
+			}
 			var resPerTick = game.getResourcePerTick(res.name, false);
 			this.addResPerTick(res.name, resPerTick);
+			if (res.name == "xiuwei" && res.calculatePerTick) {
+				res.perTickCached = game.fixFloatPointNumber(game.calcResourcePerTick("xiuwei"));
+			}
 
 		}
 		game.updateKarma();

@@ -3538,6 +3538,8 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		// *SECLUSION MUNDANE PENALTY (xianxia mod) — 闭关锁世,凡产尽歇,修为一途独进
 		if (res.name != "xiuwei"){
 			perTick *= 1 + this.getEffect("seclusionMundaneRatio");
+		} else if (this.cultivation && this.cultivation.getXiuweiSoftCapMult){
+			perTick *= this.cultivation.getXiuweiSoftCapMult();
 		}
 
 
@@ -3880,6 +3882,15 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				type: "ratio",
 				value: this.getEffect("seclusionMundaneRatio")
 			});
+		} else if (this.cultivation && this.cultivation.getXiuweiSoftCapMult){
+			var xwSoftMult = this.cultivation.getXiuweiSoftCapMult();
+			if (xwSoftMult < 1){
+				stack.push({
+					name: $I("cultivation.stack.bottleneck"),
+					type: "ratio",
+					value: xwSoftMult - 1
+				});
+			}
 		}
 
 		//CYCLE EFFECT
