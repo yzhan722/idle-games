@@ -1042,6 +1042,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.bottleDew = 0;
 		this.riftStance = "sword";
 		this.expedition = null;
+		this.battle = null;
 		this.pillToxicity = 0;
 		this.cauldronFire = "gentle";
 		this.alchemyExp = 0;
@@ -3253,7 +3254,778 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		this.startExpedition(amt, resultText);
 		if (roll < 0.3 && this.expedition){ this.expedition.loot.keys += 1; }
+		this.startRiftBattle("lesser", true, amt);
 		this.setLastAction(resultCls, resultText);
+		return true;
+	},
+
+	// ---------------- 秘境 & 上古大秘境 · 回合制斗法系统 ----------------
+
+	COMBAT_SKILLS: [
+		{
+			key: "strike",
+			label: "🗡 御剑斩",
+			cost: 0,
+			gainMp: 25,
+			tag: "回气 +25",
+			desc: "110% 剑气斩击 · 若自身持有护盾则触发【剑盾齐鸣】额外增伤 +35%"
+		},
+		{
+			key: "skill",
+			label: "⚡ 青元剑阵",
+			cost: 35,
+			gainMp: 0,
+			tag: "耗气 35",
+			desc: "175% 剑阵绞杀 · 对敌方护盾造成 2.5 倍破甲伤害，并附加 2 回合【破甲】(易伤 +30%)"
+		},
+		{
+			key: "guard",
+			label: "🛡 玄水灵盾",
+			cost: 0,
+			gainMp: 15,
+			tag: "回气 +15",
+			desc: "凝结 140% 攻击力灵盾并立下【反震剑势】 · 若敌方施展蓄力杀招则触发【太极反震】！"
+		},
+		{
+			key: "ult",
+			label: "✨ 法宝镇压",
+			cost: 55,
+			gainMp: 0,
+			tag: "耗气 55",
+			desc: "催动本命法宝轰出 245% 无视防御与护盾减免的纯阳真伤，恢复 28% 气血并净化全部负面状态"
+		}
+	],
+
+	RIFT_MONSTERS: {
+		viper: {
+			key: "viper",
+			name: "赤练妖蟒",
+			icon: "🐍",
+			tier: "秘境妖兽",
+			traitTitle: "剧毒噬灵",
+			traitDesc: "毒牙噬咬附加2回合【蛇毒】(每回合损血6%并噬减15真元)；惧怕纯阳法宝，受【法宝镇压】伤害+25%",
+			hpMult: 0.90,
+			atkMult: 0.96,
+			defMult: 0.80,
+			startShieldRatio: 0,
+			pattern: ["curse", "strike", "heavy"]
+		},
+		puppet: {
+			key: "puppet",
+			name: "铁甲尸傀",
+			icon: "🛡",
+			tier: "古修机关",
+			traitTitle: "玄铁重甲",
+			traitDesc: "入场自带35%玄铁护盾，有盾时减免35%普通剑伤；护盾被击碎时核心反噬自损10%气血并陷入2回合【破绽】",
+			hpMult: 1.05,
+			atkMult: 0.92,
+			defMult: 1.25,
+			startShieldRatio: 0.35,
+			pattern: ["strike", "guard", "heavy"]
+		},
+		wraith: {
+			key: "wraith",
+			name: "阴冥鬼母",
+			icon: "👻",
+			tier: "幽冥凶魂",
+			traitTitle: "摄魂魔音",
+			traitDesc: "鬼爪攻击无视50%护盾直伤气血并吸取真元；受纯阳【法宝镇压】额外加深35%伤害",
+			hpMult: 0.88,
+			atkMult: 1.04,
+			defMult: 0.75,
+			startShieldRatio: 0.12,
+			pattern: ["curse", "heavy", "strike"]
+		},
+		mantis: {
+			key: "mantis",
+			name: "金背妖螂",
+			icon: "🦗",
+			tier: "嗜血荒兽",
+			traitTitle: "嗜血狂暴",
+			traitDesc: "双镰疾斩连击；气血低于50%时触发【嗜血狂暴】，攻击力暴涨+45%、防御力降低30%",
+			hpMult: 0.92,
+			atkMult: 1.10,
+			defMult: 0.85,
+			startShieldRatio: 0,
+			pattern: ["strike", "heavy", "strike"]
+		},
+		frostwyrm: {
+			key: "frostwyrm",
+			name: "双首寒蛟",
+			icon: "🐉",
+			tier: "寒潭大妖",
+			traitTitle: "极寒龙息",
+			traitDesc: "吐息附加2回合【寒霜】使修士真元获取减半，并可凝结寒冰龙鳞护盾",
+			hpMult: 1.06,
+			atkMult: 1.00,
+			defMult: 1.05,
+			startShieldRatio: 0.20,
+			pattern: ["curse", "guard", "heavy"]
+		},
+		bloodcult: {
+			key: "bloodcult",
+			name: "血禁邪修",
+			icon: "🩸",
+			tier: "守关统领",
+			traitTitle: "化血魔功",
+			traitDesc: "攻击将45%伤害化为自身气血；蓄力【血煞魔雷】若被【玄水灵盾】反震则魔功反噬自损15%气血",
+			hpMult: 1.15,
+			atkMult: 1.08,
+			defMult: 1.00,
+			startShieldRatio: 0.15,
+			pattern: ["heavy", "curse", "strike", "heavy"]
+		}
+	},
+
+	GRIFT_BOSSES: [
+		{
+			maxFloor: 3,
+			key: "mojiaowang",
+			name: "千年墨蛟王",
+			zone: "血色禁地·环形山",
+			icon: "🐉",
+			tier: "镇狱妖王",
+			traitTitle: "毒沼再生 · 墨毒狂澜",
+			traitDesc: "每回合再生5%气血并侵染剧毒；蓄力【墨毒狂澜】若被【玄水灵盾】反震则破防受创+40%",
+			hpMult: 1.05,
+			atkMult: 1.00,
+			defMult: 0.95,
+			startShieldRatio: 0.15,
+			pattern: ["curse", "heavy", "strike", "heavy"]
+		},
+		{
+			maxFloor: 6,
+			key: "jinjia",
+			name: "金甲镇殿傀儡",
+			zone: "虚天内殿·冰火道",
+			icon: "🗿",
+			tier: "太古机关王",
+			traitTitle: "不灭金身 · 元磁极光",
+			traitDesc: "入场自带45%金罡护盾且有盾减伤35%；护盾被【青元剑阵】击碎时陷入【核心过载】受创+50%",
+			hpMult: 1.12,
+			atkMult: 0.98,
+			defMult: 1.25,
+			startShieldRatio: 0.45,
+			pattern: ["guard", "heavy", "strike", "heavy"]
+		},
+		{
+			maxFloor: 9,
+			key: "yinlang",
+			name: "双首银狼王",
+			zone: "昆吾仙山·镇魔渊",
+			icon: "🐺",
+			tier: "天狼妖圣",
+			traitTitle: "月华双生 · 天狼啸月",
+			traitDesc: "双首连击无视35%护盾；半血以下触发【月华狂暴】攻击+40%且每回合恢复4%气血",
+			hpMult: 1.08,
+			atkMult: 1.12,
+			defMult: 0.92,
+			startShieldRatio: 0.20,
+			pattern: ["strike", "heavy", "curse", "heavy"]
+		},
+		{
+			maxFloor: 15,
+			key: "gumo",
+			name: "古魔血影",
+			zone: "坠魔古渊·血焰坛",
+			icon: "👹",
+			tier: "域外古魔",
+			traitTitle: "魔魂夺魄 · 天魔血爆",
+			traitDesc: "攻击汲取45%气血并侵染魔毒；蓄力【天魔血爆】被【玄水灵盾】反震时反噬自身12%气血",
+			hpMult: 1.15,
+			atkMult: 1.14,
+			defMult: 1.05,
+			startShieldRatio: 0.25,
+			pattern: ["curse", "heavy", "strike", "heavy"]
+		},
+		{
+			maxFloor: 999,
+			key: "zhenxian",
+			name: "真仙法则化身",
+			zone: "真仙界缝·混沌墟",
+			icon: "👁",
+			tier: "法则真灵",
+			traitTitle: "万法归墟 · 仙罡天罚",
+			traitDesc: "每回合恢复5%气血并凝结12%仙罡护盾；蓄力【九天仙罚】唯有【玄水灵盾】反震可破",
+			hpMult: 1.22,
+			atkMult: 1.18,
+			defMult: 1.15,
+			startShieldRatio: 0.35,
+			pattern: ["heavy", "guard", "curse", "heavy"]
+		}
+	],
+
+	getMonsterDef: function(key){
+		return this.RIFT_MONSTERS[key] || this.RIFT_MONSTERS.viper;
+	},
+
+	getBossDef: function(floor){
+		var f = Math.max(1, floor || 1);
+		for (var i = 0; i < this.GRIFT_BOSSES.length; i++){
+			if (f <= this.GRIFT_BOSSES[i].maxFloor){
+				return this.GRIFT_BOSSES[i];
+			}
+		}
+		return this.GRIFT_BOSSES[this.GRIFT_BOSSES.length - 1];
+	},
+
+	getNextMonsterWaveKeys: function(seedVal){
+		var s = (seedVal != null) ? seedVal : ((this.stats.rift || 0) + (this.actionSeq || 0) + 1);
+		var w1Pool = ["viper", "puppet", "mantis"];
+		var w2Pool = ["wraith", "frostwyrm", "puppet"];
+		var w3Pool = ["bloodcult", "frostwyrm"];
+		var k1 = w1Pool[s % w1Pool.length];
+		var k2 = w2Pool[(s + 1) % w2Pool.length];
+		if (k2 === k1){ k2 = w2Pool[(s + 2) % w2Pool.length]; }
+		var k3 = w3Pool[s % w3Pool.length];
+		return [k1, k2, k3];
+	},
+
+	describeEnemyIntent: function(enemy){
+		if (!enemy){
+			return {key: "strike", title: "⚔ 凶煞扑击", desc: "蓄势待发", counter: "宜用【御剑斩】抢攻"};
+		}
+		var intent = enemy.intent || "strike";
+		var atk = enemy.atk || 20;
+		if (enemy.enraged){ atk = Math.round(atk * 1.42); }
+		if (intent === "heavy"){
+			var hDmg = Math.round(atk * 1.65);
+			return {
+				key: "heavy",
+				title: "🔥 蓄力杀招",
+				desc: "预计轰出 ~" + hDmg + " 点狂暴重击",
+				counter: "破招：施展【🛡 玄水灵盾】触发太极反震！"
+			};
+		}
+		if (intent === "guard"){
+			var sGain = Math.round((enemy.maxHp || 100) * 0.28);
+			return {
+				key: "guard",
+				title: "🛡 妖罡凝盾",
+				desc: "凝结 ~" + sGain + " 点护盾并反击",
+				counter: "破招：施展【⚡ 青元剑阵】2.5倍破盾碎甲！"
+			};
+		}
+		if (intent === "curse"){
+			var cDmg = Math.round(atk * 0.85);
+			return {
+				key: "curse",
+				title: "☠ 妖术蚀灵",
+				desc: "造成 ~" + cDmg + " 伤害并附加剧毒/寒霜/蚀气",
+				counter: "破招：施展【✨ 法宝镇压】涤荡净化全异常！"
+			};
+		}
+		var sDmg = Math.round(atk * (enemy.key === "mantis" || enemy.key === "yinlang" ? 1.25 : 1.0));
+		return {
+			key: "strike",
+			title: "⚔ 凶煞扑击",
+			desc: "预计造成 ~" + sDmg + " 点扑击伤害",
+			counter: "应对：【🗡 御剑斩】聚气或【⚡ 青元剑阵】压制"
+		};
+	},
+
+	spawnBattleMonster: function(mode, waveOrFloor, waveKeys){
+		var cp = Math.max(10, this.getCombatPower());
+		var def, basePower, hpMult = 2.4, atkMult = 0.60, defMult = 0.16;
+		if (mode === "greater"){
+			var floor = Math.max(1, waveOrFloor || (this.riftFloor + 1));
+			def = this.getBossDef(floor);
+			basePower = Math.max(20, this.floorPower(floor));
+			hpMult = 3.5;
+			atkMult = 0.68;
+			defMult = 0.18;
+		} else {
+			var wave = Math.max(1, Math.min(3, waveOrFloor || 1));
+			var keys = waveKeys || this.getNextMonsterWaveKeys();
+			var mKey = keys[wave - 1] || "viper";
+			def = this.getMonsterDef(mKey);
+			var wScale = wave === 1 ? 0.66 : (wave === 2 ? 0.82 : 0.98);
+			basePower = Math.max(12, cp * wScale);
+		}
+		var maxHp = Math.max(60, Math.round(basePower * hpMult * (def.hpMult || 1)));
+		var atk = Math.max(12, Math.round(basePower * atkMult * (def.atkMult || 1)));
+		var eDef = Math.max(4, Math.round(basePower * defMult * (def.defMult || 1)));
+		var shield = Math.round(maxHp * (def.startShieldRatio || 0));
+		var pattern = def.pattern || ["strike", "heavy"];
+		return {
+			key: def.key,
+			name: def.name,
+			icon: def.icon || "👹",
+			tier: def.tier || "秘境妖兽",
+			traitTitle: def.traitTitle,
+			traitDesc: def.traitDesc,
+			hp: maxHp,
+			maxHp: maxHp,
+			shield: shield,
+			atk: atk,
+			def: eDef,
+			pattern: pattern.slice(),
+			intentIdx: 0,
+			intent: pattern[0],
+			armorBreak: 0,
+			expose: 0,
+			enraged: false,
+			overloaded: false
+		};
+	},
+
+	startRiftBattle: function(mode, fromRift, entryXw){
+		if (!this.isRiftUnlocked()){ return false; }
+		var bMode = (mode === "greater") ? "greater" : "lesser";
+		if (!fromRift){
+			if (!this.canAct()){ return false; }
+			if (bMode === "greater"){
+				if (this.riftKeys <= 0){
+					this.game.msg($I("cultivation.msg.rift.nokey"), "alert");
+					return false;
+				}
+				this.riftKeys--;
+				this.setActionCd(this.RIFT_CD * (this.getFate("fenglei").researched ? 0.5 : 1));
+			} else {
+				return this.rift();
+			}
+		}
+
+		var cp = Math.max(10, this.getCombatPower());
+		var maxHp = Math.max(120, Math.round(cp * 4.5));
+		var atk = Math.max(24, Math.round(cp * 0.92));
+		var pDef = Math.max(8, Math.round(cp * 0.24));
+		var floor = (bMode === "greater") ? (this.riftFloor + 1) : (this.riftFloor || 1);
+		var seed = (this.stats.rift || 1) + (this.actionSeq || 0);
+		var waveKeys = this.getNextMonsterWaveKeys(seed);
+		var enemy = this.spawnBattleMonster(bMode, bMode === "greater" ? floor : 1, waveKeys);
+
+		var nArt = this.natalArtifact ? this.getArtifact(this.natalArtifact) : null;
+		var natalName = (nArt && nArt.researched) ? nArt.label : "青竹蜂云剑";
+
+		var openLog = (bMode === "greater")
+			? "【上古大秘境 · 第 " + floor + " 层】" + enemy.icon + " " + enemy.name + "（特征：" + enemy.traitTitle + "）镇守阵眼，斗法开始！"
+			: "【灵脉秘境 · 第 1/3 波】遭遇 " + enemy.icon + " " + enemy.name + "（特征：" + enemy.traitTitle + "），亮剑迎敌！";
+
+		this.battle = {
+			active: true,
+			result: null,
+			mode: bMode,
+			turn: 1,
+			wave: 1,
+			maxWaves: bMode === "greater" ? 1 : 3,
+			floor: floor,
+			waveKeys: waveKeys,
+			natalName: natalName,
+			player: {
+				hp: maxHp,
+				maxHp: maxHp,
+				mp: 60,
+				maxMp: 100,
+				shield: 0,
+				atk: atk,
+				def: pDef,
+				counterStance: false,
+				poison: 0,
+				chill: 0,
+				weak: 0
+			},
+			enemy: enemy,
+			loot: {
+				xiuwei: Math.round(entryXw || 0),
+				minerals: 0,
+				relic: 0,
+				keys: 0
+			},
+			logs: [openLog]
+		};
+		return true;
+	},
+
+	executeBattleTurn: function(skillKey){
+		if (!this.battle || !this.battle.active){ return false; }
+		var b = this.battle;
+		var p = b.player;
+		var e = b.enemy;
+		if (!p || !e){ return false; }
+
+		var sk = null;
+		for (var i = 0; i < this.COMBAT_SKILLS.length; i++){
+			if (this.COMBAT_SKILLS[i].key === skillKey){ sk = this.COMBAT_SKILLS[i]; break; }
+		}
+		if (!sk){ sk = this.COMBAT_SKILLS[0]; }
+		if (p.mp < sk.cost){
+			sk = this.COMBAT_SKILLS[0]; // 真元不足时自动转为御剑斩
+		}
+
+		p.counterStance = false;
+		var turnNotes = [];
+
+		// 1. 玩家回合初状态结算 (蛇毒)
+		if (p.poison > 0){
+			var pTick = Math.max(2, Math.round(p.maxHp * 0.06));
+			p.hp = Math.max(1, p.hp - pTick);
+			p.mp = Math.max(0, p.mp - 12);
+			p.poison--;
+			turnNotes.push("☠【蛇毒】发作损血 " + pTick + " 并蚀减 12 真元");
+		}
+
+		// 2. 消耗/恢复真元
+		p.mp = Math.max(0, p.mp - sk.cost);
+		if (sk.gainMp > 0){
+			var mpGain = p.chill > 0 ? Math.ceil(sk.gainMp * 0.5) : sk.gainMp;
+			p.mp = Math.min(p.maxMp, p.mp + mpGain);
+		}
+
+		// 3. 玩家施展神通
+		var atkEff = p.atk * (p.weak > 0 ? 0.80 : 1.0);
+		var vulnMult = 1.0 + (e.armorBreak > 0 ? 0.30 : 0) + (e.expose > 0 ? 0.40 : 0) + (e.overloaded ? 0.50 : 0);
+
+		var applyDamageToEnemy = function(rawDmg, shieldBonusMult, ignoreDefAndTrait){
+			var dmg = Math.max(4, Math.round(rawDmg * vulnMult));
+			if (!ignoreDefAndTrait){
+				dmg = Math.max(4, dmg - Math.round(e.def * (e.enraged ? 0.70 : 1.0) * 0.45));
+				if (e.shield > 0 && (e.key === "puppet" || e.key === "jinjia") && sk.key === "strike"){
+					dmg = Math.max(4, Math.round(dmg * 0.65)); // 玄铁重甲 / 不灭金身减伤
+				}
+			}
+			var brokeShield = false;
+			if (e.shield > 0 && !ignoreDefAndTrait){
+				var sMult = shieldBonusMult || 1.0;
+				var effShieldDmg = Math.round(dmg * sMult);
+				if (effShieldDmg >= e.shield){
+					var leftoverRatio = Math.max(0, (effShieldDmg - e.shield) / Math.max(1, effShieldDmg));
+					e.shield = 0;
+					brokeShield = true;
+					dmg = Math.round(dmg * leftoverRatio);
+				} else {
+					e.shield -= effShieldDmg;
+					dmg = 0;
+				}
+			}
+			e.hp = Math.max(0, e.hp - dmg);
+			if (brokeShield && (e.key === "puppet" || e.key === "jinjia")){
+				var crushDmg = Math.max(8, Math.round(e.maxHp * 0.12));
+				e.hp = Math.max(0, e.hp - crushDmg);
+				e.expose = Math.max(e.expose, 2);
+				if (e.key === "jinjia"){ e.overloaded = true; }
+				turnNotes.push("💥 击碎【" + e.traitTitle + "】护盾！核心反噬再创 " + crushDmg + " 并陷入【破绽】！");
+			}
+			return dmg;
+		};
+
+		if (sk.key === "strike"){
+			var hasShieldSyn = p.shield > 0;
+			var strikeRaw = atkEff * (hasShieldSyn ? 1.45 : 1.10);
+			var sDealt = applyDamageToEnemy(strikeRaw, 1.0, false);
+			turnNotes.push("🗡 施展【御剑斩】" + (hasShieldSyn ? "(剑盾齐鸣+35%)" : "") + "斩落 " + sDealt + " 点伤害");
+		} else if (sk.key === "skill"){
+			e.armorBreak = Math.max(e.armorBreak, 2);
+			var skillRaw = atkEff * 1.75;
+			var kDealt = applyDamageToEnemy(skillRaw, 2.5, false);
+			turnNotes.push("⚡ 催动【青元剑阵】绞杀 " + kDealt + " 点伤害，附加2回合【破甲】！");
+		} else if (sk.key === "guard"){
+			var shieldAdd = Math.max(25, Math.round(p.atk * 1.45));
+			p.shield += shieldAdd;
+			p.counterStance = true;
+			turnNotes.push("🛡 祭起【玄水灵盾】凝盾 +" + shieldAdd + "，立下【太极反震】剑势！");
+		} else if (sk.key === "ult"){
+			var traitWeakBonus = (e.key === "viper" ? 1.25 : (e.key === "wraith" ? 1.35 : 1.0));
+			var ultRaw = atkEff * 2.45 * traitWeakBonus;
+			var uDealt = applyDamageToEnemy(ultRaw, 1.0, true);
+			var healAmt = Math.max(18, Math.round(p.maxHp * 0.28));
+			p.hp = Math.min(p.maxHp, p.hp + healAmt);
+			p.poison = 0;
+			p.chill = 0;
+			p.weak = 0;
+			turnNotes.push("✨ 祭出本命【" + (b.natalName || "法宝") + "】镇压轰出 " + uDealt + " 点纯阳真伤，气血 +" + healAmt + " 并涤净全异常！");
+		}
+
+		if (p.chill > 0){ p.chill--; }
+		if (p.weak > 0){ p.weak--; }
+
+		// 检查妖兽是否已被斩杀
+		if (e.hp <= 0){
+			return this.advanceBattleWaveOrWin(turnNotes.join("；"));
+		}
+
+		// 检查妖兽半血狂暴特征 (金背妖螂 / 双首银狼王)
+		if (!e.enraged && (e.key === "mantis" || e.key === "yinlang") && e.hp <= e.maxHp * 0.5){
+			e.enraged = true;
+			turnNotes.push("🔥 " + e.name + "气血过半，触发【" + e.traitTitle + "】攻击暴涨！");
+		}
+
+		// 4. 妖兽回合结算
+		// 妖王再生特征 (千年墨蛟王 / 双首银狼王狂暴 / 真仙法则化身)
+		if (e.key === "mojiaowang" || e.key === "zhenxian" || (e.key === "yinlang" && e.enraged)){
+			var regenRatio = (e.key === "yinlang") ? 0.04 : 0.05;
+			var regenHp = Math.max(5, Math.round(e.maxHp * regenRatio));
+			e.hp = Math.min(e.maxHp, e.hp + regenHp);
+			if (e.key === "zhenxian"){
+				var sRegen = Math.round(e.maxHp * 0.12);
+				e.shield += sRegen;
+				turnNotes.push("👁 【万法归墟】法则流转，恢复 " + regenHp + " 气血并凝盾 +" + sRegen);
+			} else {
+				turnNotes.push("🐉 【" + e.traitTitle + "】再生恢复 " + regenHp + " 气血");
+			}
+		}
+
+		var intent = e.intent || "strike";
+		var eAtk = e.atk * (e.enraged ? 1.42 : 1.0);
+
+		var applyDamageToPlayer = function(rawEnemyDmg, pierceRatio){
+			var incoming = Math.max(4, Math.round(rawEnemyDmg - p.def * 0.45));
+			var pRatio = pierceRatio || 0;
+			var directHpDmg = Math.round(incoming * pRatio);
+			var shieldableDmg = incoming - directHpDmg;
+			if (p.shield > 0 && shieldableDmg > 0){
+				if (p.shield >= shieldableDmg){
+					p.shield -= shieldableDmg;
+					shieldableDmg = 0;
+				} else {
+					shieldableDmg -= p.shield;
+					p.shield = 0;
+				}
+			}
+			var totalHpLost = directHpDmg + shieldableDmg;
+			p.hp = Math.max(0, p.hp - totalHpLost);
+			return totalHpLost;
+		};
+
+		if (intent === "heavy"){
+			if (p.counterStance){
+				// 太极反震破招！
+				var reducedDmg = applyDamageToPlayer(eAtk * 1.65 * 0.25, 0);
+				var counterDmg = Math.max(15, Math.round(p.atk * 1.45 * vulnMult));
+				if (e.key === "bloodcult" || e.key === "gumo"){
+					var backlash = Math.round(e.maxHp * 0.14);
+					counterDmg += backlash;
+				}
+				e.hp = Math.max(0, e.hp - counterDmg);
+				e.expose = Math.max(e.expose, 2);
+				turnNotes.push("☯ 【太极反震】完美格挡" + e.name + "蓄力杀招(仅受 " + reducedDmg + " 伤)，反震回敬 " + counterDmg + " 点重创并打出2回合【破绽】！");
+				if (e.hp <= 0){
+					return this.advanceBattleWaveOrWin(turnNotes.join("；"));
+				}
+			} else {
+				var hLost = applyDamageToPlayer(eAtk * 1.65, (e.key === "wraith" ? 0.50 : (e.key === "yinlang" ? 0.35 : 0)));
+				turnNotes.push("🔥 " + e.name + "轰出【蓄力杀招】造成 " + hLost + " 点气血重创！");
+				if (e.key === "bloodcult" || e.key === "gumo"){
+					var vamp = Math.round(hLost * 0.45);
+					if (vamp > 0){ e.hp = Math.min(e.maxHp, e.hp + vamp); }
+				}
+				if (e.key === "viper" || e.key === "mojiaowang" || e.key === "gumo"){
+					p.poison = Math.max(p.poison, 2);
+				}
+				if (e.key === "frostwyrm"){
+					p.chill = Math.max(p.chill, 2);
+				}
+			}
+		} else if (intent === "guard"){
+			var eShieldAdd = Math.max(20, Math.round(e.maxHp * 0.28));
+			e.shield += eShieldAdd;
+			var gLost = applyDamageToPlayer(eAtk * 0.65, 0);
+			turnNotes.push("🛡 " + e.name + "凝结 " + eShieldAdd + " 点妖罡护盾并反扑造成 " + gLost + " 点伤害");
+		} else if (intent === "curse"){
+			var cLost = applyDamageToPlayer(eAtk * 0.85, (e.key === "wraith" ? 0.50 : 0));
+			if (e.key === "viper" || e.key === "mojiaowang" || e.key === "gumo"){
+				p.poison = Math.max(p.poison, 2);
+				turnNotes.push("☠ " + e.name + "喷吐毒瘴造成 " + cLost + " 伤，附加2回合【蛇毒】！");
+			} else if (e.key === "frostwyrm"){
+				p.chill = Math.max(p.chill, 2);
+				turnNotes.push("❄ " + e.name + "喷吐极寒龙息造成 " + cLost + " 伤，附加2回合【寒霜】(回气减半)！");
+			} else {
+				p.mp = Math.max(0, p.mp - 20);
+				p.weak = Math.max(p.weak, 2);
+				turnNotes.push("👻 " + e.name + "施展摄魂妖术造成 " + cLost + " 伤，吸干 20 真元并附加【虚弱】！");
+			}
+		} else {
+			// strike
+			var isDouble = (e.key === "mantis" || e.key === "yinlang");
+			var pierce = (e.key === "wraith" ? 0.50 : (e.key === "yinlang" ? 0.35 : 0));
+			var stLost = applyDamageToPlayer(eAtk * (isDouble ? 1.25 : 1.0), pierce);
+			if (e.key === "bloodcult" || e.key === "gumo"){
+				var leech = Math.round(stLost * 0.45);
+				if (leech > 0){ e.hp = Math.min(e.maxHp, e.hp + leech); }
+				turnNotes.push("🩸 " + e.name + "施展【化血魔功】斩击 " + stLost + " 伤并吸血 +" + leech);
+			} else if (e.key === "viper"){
+				p.poison = Math.max(p.poison, 2);
+				turnNotes.push("🐍 " + e.name + "毒牙扑击造成 " + stLost + " 伤并附带【蛇毒】");
+			} else {
+				turnNotes.push("⚔ " + e.name + (isDouble ? "双锋连斩" : "凶煞扑击") + "造成 " + stLost + " 点伤害");
+			}
+		}
+
+		if (e.armorBreak > 0){ e.armorBreak--; }
+		if (e.expose > 0){ e.expose--; }
+
+		// 切换妖兽下一回合意图
+		e.intentIdx = ((e.intentIdx || 0) + 1) % e.pattern.length;
+		e.intent = e.pattern[e.intentIdx];
+		b.turn++;
+
+		b.logs.unshift("【第 " + (b.turn - 1) + " 回合】" + turnNotes.join("；"));
+		if (b.logs.length > 5){ b.logs.length = 5; }
+
+		if (p.hp <= 0){
+			return this.resolveBattleDefeat();
+		}
+		return true;
+	},
+
+	advanceBattleWaveOrWin: function(turnSummary){
+		var b = this.battle;
+		if (!b){ return false; }
+		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
+		var fmt = this.game.getDisplayValueExt.bind(this.game);
+		var scale = 1 + this.getCurrentRealmIndex() * 0.8;
+
+		if (b.mode === "lesser"){
+			var waveMult = b.wave === 1 ? 0.35 : (b.wave === 2 ? 0.50 : 0.85);
+			var waveXw = this.applyXiuweiSoftCap(this.breakPayout(this.RIFT_PAY * waveMult));
+			var waveMin = this.roundNice(140 * scale * b.wave);
+			addRes("xiuwei", waveXw);
+			addRes("minerals", waveMin);
+			b.loot.xiuwei += waveXw;
+			b.loot.minerals += waveMin;
+
+			if (b.wave < b.maxWaves){
+				var slainName = b.enemy.name;
+				b.wave++;
+				var healBetween = Math.round(b.player.maxHp * 0.25);
+				b.player.hp = Math.min(b.player.maxHp, b.player.hp + healBetween);
+				b.player.mp = Math.min(b.player.maxMp, b.player.mp + 20);
+				b.enemy = this.spawnBattleMonster("lesser", b.wave, b.waveKeys);
+				b.logs.unshift((turnSummary ? turnSummary + " — " : "") + "✦ 斩杀【" + slainName + "】获修为 +" + fmt(waveXw) + "！气血恢复 +" + healBetween + "，第 " + b.wave + "/3 波【" + b.enemy.icon + " " + b.enemy.name + "】现身！");
+				if (b.logs.length > 5){ b.logs.length = 5; }
+				return true;
+			}
+
+			// 第 3 波统领斩杀 -> 灵脉秘境全通凯旋！
+			var relicGain = 1;
+			addRes("relic", relicGain);
+			b.loot.relic += relicGain;
+			var keyDropped = false;
+			if (Math.random() < 0.45){
+				this.riftKeys++;
+				b.loot.keys += 1;
+				keyDropped = true;
+			}
+			var artDropped = false;
+			if (Math.random() < 0.28){
+				artDropped = this.rollArtifactDrop(scale);
+			}
+			if (this.expedition){
+				this.expedition.active = false;
+				this.expedition.loot.xiuwei = b.loot.xiuwei;
+				this.expedition.loot.relic = b.loot.relic;
+				this.expedition.loot.keys = b.loot.keys;
+			}
+			b.active = false;
+			b.result = "win";
+			var winMsg = "【秘境三波全胜】斩灭守关统领【" + b.enemy.name + "】！累计修为 +" + fmt(b.loot.xiuwei) +
+				"，上古遗宝 +" + b.loot.relic + (keyDropped ? "，夺得【秘境令】×1" : "") + (artDropped ? "，更获秘境古宝认主！" : "！");
+			b.logs.unshift((turnSummary ? turnSummary + " — " : "") + winMsg);
+			this.setLastAction("ok", winMsg);
+			this.game.msg(winMsg, "important");
+			if (artDropped && this.game.render){ this.game.render(); }
+			return true;
+		}
+
+		// 上古大秘境妖王斩杀凯旋！
+		var floor = b.floor || (this.riftFloor + 1);
+		if (floor > this.riftFloor){
+			this.riftFloor = floor;
+		}
+		var gAmt = this.applyXiuweiSoftCap(this.breakPayout(this.GRIFT_PAY * 1.2));
+		var relics = Math.max(1, Math.round(floor * 0.85));
+		addRes("xiuwei", gAmt);
+		addRes("relic", relics);
+		b.loot.xiuwei += gAmt;
+		b.loot.relic += relics;
+		if (floor >= 12){
+			var tc = Math.max(1, Math.round((floor - 10) * 0.8));
+			addRes("timeCrystal", tc);
+		}
+		var floorScale = scale * (1 + floor * 0.25);
+		var artOdds = Math.min(0.65, 0.18 + floor * 0.03);
+		var gArtDropped = false;
+		if (Math.random() < artOdds){
+			gArtDropped = this.rollArtifactDrop(floorScale);
+		}
+		b.active = false;
+		b.result = "win";
+		var gWinMsg = "【上古大秘境破关】成功斩杀第 " + floor + " 层妖王【" + b.enemy.name + "】！修为 +" + fmt(gAmt) +
+			"，上古遗宝 +" + relics + (gArtDropped ? "，更夺得上古法宝！" : "！");
+		b.logs.unshift((turnSummary ? turnSummary + " — " : "") + gWinMsg);
+		this.lastBattleReport = this.buildBattleReport(floor, true, this.getCombatPower(), this.floorPower(floor));
+		this.setLastAction("ok", gWinMsg);
+		this.game.msg(gWinMsg, "important");
+		if (gArtDropped && this.game.render){ this.game.render(); }
+		return true;
+	},
+
+	resolveBattleDefeat: function(){
+		var b = this.battle;
+		if (!b){ return false; }
+		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
+		var fmt = this.game.getDisplayValueExt.bind(this.game);
+		b.active = false;
+		b.result = "lose";
+		if (b.mode === "greater"){
+			var failXw = this.applyXiuweiSoftCap(this.breakPayout(this.GRIFT_FAIL_PAY));
+			addRes("xiuwei", failXw);
+			b.loot.xiuwei += failXw;
+			var addDemon = 6 + Math.random() * 4;
+			if (this.getFate("tihun").researched){ addDemon *= 0.5; }
+			this.heartDemon = Math.min(100, this.heartDemon + addDemon);
+			this.lastBattleReport = this.buildBattleReport(b.floor, false, this.getCombatPower(), this.floorPower(b.floor));
+			var fMsg = "【大秘境受挫】不敌第 " + b.floor + " 层【" + b.enemy.name + "】激发血遁符撤离，保底修为 +" + fmt(failXw) + "，心魔微增。";
+			b.logs.unshift(fMsg);
+			this.setLastAction("fail", fMsg);
+			this.game.msg(fMsg, "alert");
+		} else {
+			if (this.expedition){ this.expedition.active = false; }
+			var lMsg = "【秘境负伤撤离】气血不支激发传送符遁出，已得修为 +" + fmt(b.loot.xiuwei) + " 全数保留。";
+			b.logs.unshift(lMsg);
+			this.setLastAction("fail", lMsg);
+			this.game.msg(lMsg, "alert");
+		}
+		return true;
+	},
+
+	autoResolveBattle: function(){
+		if (!this.battle || !this.battle.active){ return false; }
+		var guardCount = 0;
+		while (this.battle && this.battle.active && guardCount < 35){
+			guardCount++;
+			var p = this.battle.player;
+			var e = this.battle.enemy;
+			var pick = "strike";
+			if (e.intent === "heavy"){
+				pick = "guard";
+			} else if (p.mp >= 55 && (p.hp <= p.maxHp * 0.65 || p.poison > 0 || p.chill > 0 || e.hp <= p.atk * 2.5)){
+				pick = "ult";
+			} else if (p.mp >= 35 && (e.shield > 0 || e.armorBreak <= 0)){
+				pick = "skill";
+			} else {
+				pick = "strike";
+			}
+			this.executeBattleTurn(pick);
+		}
+		return true;
+	},
+
+	fleeBattle: function(){
+		if (!this.battle || !this.battle.active){ return false; }
+		var b = this.battle;
+		var fmt = this.game.getDisplayValueExt.bind(this.game);
+		var bonusXw = this.applyXiuweiSoftCap(this.breakPayout(this.RIFT_PAY * 0.25));
+		this.game.resPool.addResEvent("xiuwei", bonusXw);
+		b.loot.xiuwei += bonusXw;
+		this.heartDemon = Math.max(0, this.heartDemon - 3);
+		b.active = false;
+		b.result = "flee";
+		if (this.expedition){ this.expedition.active = false; }
+		var msg = "【见好就收】催动血遁符携宝安全撤出秘境，额外获修为 +" + fmt(bonusXw) + "，道心澄明（心魔 -3）。";
+		b.logs.unshift(msg);
+		this.setLastAction("ok", msg);
+		this.game.msg(msg, "notice");
 		return true;
 	},
 
@@ -3475,6 +4247,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			lastBattleReport: this.lastBattleReport || null,
 			riftStance: this.riftStance || "sword",
 			expedition: this.expedition || null,
+			battle: this.battle || null,
 			pillToxicity: this.pillToxicity || 0,
 			cauldronFire: this.cauldronFire || "gentle",
 			alchemyExp: this.alchemyExp || 0,
@@ -3588,6 +4361,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		if (c.expedition && typeof c.expedition == "object"){
 			this.expedition = c.expedition;
+		}
+		if (c.battle && typeof c.battle == "object"){
+			this.battle = c.battle;
 		}
 		if (typeof c.pillToxicity == "number"){
 			this.pillToxicity = Math.min(100, Math.max(0, c.pillToxicity));
@@ -3876,6 +4652,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.lastBreakPhenomenon = null;
 		this.riftStance = "sword";
 		this.expedition = null;
+		this.battle = null;
 		this.pillToxicity = 0;
 		this.cauldronFire = "gentle";
 		this.alchemyExp = 0;
@@ -4285,10 +5062,16 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			self.update();
 		});
 		this.riftBtn = this.makeActionBtn(this.actionRow, "秘", function(){
-			if (cult.rift()){ self.update(); }
+			if (cult.rift()){
+				self._riftDeckSig = null;
+				self.update();
+			}
 		});
 		this.griftBtn = this.makeActionBtn(this.actionRow, "古", function(){
-			if (cult.greaterRift()){ self.update(); }
+			if (cult.startRiftBattle("greater")){
+				self._riftDeckSig = null;
+				self.update();
+			}
 		});
 
 		//共享调息条——四行动同一气脉,一眼看清还要静养多久
@@ -4328,6 +5111,42 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		this.riftPanel.onclick = function(e){
 			var t = e.target;
 			if (!t || !t.closest){ return; }
+			var skillEl = t.closest("[data-battle-skill]");
+			if (skillEl){
+				e.preventDefault();
+				if (cult.executeBattleTurn(skillEl.getAttribute("data-battle-skill"))){
+					self._riftDeckSig = null;
+					self.update();
+				}
+				return;
+			}
+			var battleAct = t.closest("[data-battle-act]");
+			if (battleAct){
+				e.preventDefault();
+				var bAct = battleAct.getAttribute("data-battle-act");
+				if (bAct === "auto"){
+					if (cult.autoResolveBattle()){
+						self._riftDeckSig = null;
+						self.update();
+					}
+				} else if (bAct === "flee"){
+					if (cult.fleeBattle()){
+						self._riftDeckSig = null;
+						self.update();
+					}
+				}
+				return;
+			}
+			var startEl = t.closest("[data-battle-start]");
+			if (startEl){
+				e.preventDefault();
+				var sMode = startEl.getAttribute("data-battle-start");
+				if (cult.startRiftBattle(sMode)){
+					self._riftDeckSig = null;
+					self.update();
+				}
+				return;
+			}
 			var stanceEl = t.closest("[data-stance]");
 			if (stanceEl){
 				e.preventDefault();
@@ -4368,7 +5187,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				e.preventDefault();
 				var gAct = griftAct.getAttribute("data-grift-act");
 				if (gAct === "challenge"){
-					if (cult.greaterRift()){
+					if (cult.startRiftBattle("greater")){
 						self._riftDeckSig = null;
 						self.update();
 					}
@@ -4978,118 +5797,227 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			dojo.toggleClass(this.actionRow, "xxActionRow4", riftOpen);
 		}
 
-		//玄天秘境面板——左栏【秘境探幽】+ 右栏【上古秘境】精简双栏
+		//玄天秘境面板——回合制斗法主舞台 & 双秘境备战大厅
 		if (this.riftPanel){
 			this.riftPanel.style.display = riftOpen ? "" : "none";
 			if (riftOpen){
 				var F = cult.riftFloor;
 				var gInfo = cult.getGriftOdds(F + 1);
 				var pw = gInfo.need, cp = gInfo.cp;
-				var exp = cult.expedition;
-				var expSig = exp ? (exp.active ? "1" : "0") + ":" + exp.step + ":" + (exp.nodes ? exp.nodes.join(",") : "") + ":" + (exp.loot ? exp.loot.xiuwei : 0) + ":" + (exp.lastNote || "") : "none";
+				var b = cult.battle;
+				var bActive = !!(b && b.active);
+				var bSig = bActive
+					? ("ACT:" + b.mode + ":" + b.turn + ":" + b.wave + ":" +
+						b.player.hp + ":" + b.player.mp + ":" + b.player.shield + ":" +
+						b.player.poison + ":" + b.player.chill + ":" + b.player.weak + ":" +
+						b.enemy.key + ":" + b.enemy.hp + ":" + b.enemy.shield + ":" + b.enemy.intent + ":" +
+						b.enemy.armorBreak + ":" + b.enemy.expose + ":" + (b.enemy.enraged ? 1 : 0) + ":" +
+						(b.logs && b.logs[0] ? b.logs[0] : ""))
+					: ("IDLE:" + (b && b.result ? b.result + ":" + (b.logs && b.logs[0] ? b.logs[0] : "") : "none"));
 				var deckSig = [
 					F,
 					cult.riftKeys,
 					Math.round(cp),
 					Math.round(pw),
 					burstBlocked ? 1 : 0,
-					expSig
+					bSig
 				].join("|");
 
 				if (this._riftDeckSig !== deckSig){
 					this._riftDeckSig = deckSig;
 
-					var expStep = (exp && exp.step) ? exp.step : 0;
-					var expActive = !!(exp && exp.active);
-					var expBodyHtml = "";
-					if (expActive){
-						var curRoomKey = (exp.nodes && exp.nodes[expStep - 1]) || "herb";
-						var room = cult.EXPEDITION_ROOMS[curRoomKey] || cult.EXPEDITION_ROOMS.herb;
-						expBodyHtml =
-							"<div class=\"xxExpEncounter\">" +
-								"<div class=\"xxExpEncHd\">" +
-									"<span class=\"xxExpStepBadge\">第 " + expStep + " / 3 重</span>" +
-									"<span class=\"xxExpRoomTitle\">" + room.title + "</span>" +
+					if (bActive){
+						var p = b.player;
+						var e = b.enemy;
+						var pHpPct = Math.max(0, Math.min(100, Math.round((p.hp / Math.max(1, p.maxHp)) * 100)));
+						var pMpPct = Math.max(0, Math.min(100, Math.round((p.mp / Math.max(1, p.maxMp)) * 100)));
+						var eHpPct = Math.max(0, Math.min(100, Math.round((e.hp / Math.max(1, e.maxHp)) * 100)));
+						var intentInfo = cult.describeEnemyIntent(e);
+
+						var pStatuses = [];
+						if (p.counterStance){ pStatuses.push("<span class=\"xxStChip buff\">☯ 反震剑势</span>"); }
+						if (p.poison > 0){ pStatuses.push("<span class=\"xxStChip debuff\">☠ 蛇毒(" + p.poison + ")</span>"); }
+						if (p.chill > 0){ pStatuses.push("<span class=\"xxStChip debuff\">❄ 寒霜(" + p.chill + ")</span>"); }
+						if (p.weak > 0){ pStatuses.push("<span class=\"xxStChip debuff\">💫 虚弱(" + p.weak + ")</span>"); }
+						if (!pStatuses.length){ pStatuses.push("<span class=\"xxStChip neutral\">道心澄明</span>"); }
+
+						var eStatuses = [];
+						if (e.enraged){ eStatuses.push("<span class=\"xxStChip rage\">🔥 狂暴(攻+42%)</span>"); }
+						if (e.armorBreak > 0){ eStatuses.push("<span class=\"xxStChip vuln\">💥 破甲+30%(" + e.armorBreak + ")</span>"); }
+						if (e.expose > 0){ eStatuses.push("<span class=\"xxStChip vuln\">⚡ 破绽+40%(" + e.expose + ")</span>"); }
+						if (e.overloaded){ eStatuses.push("<span class=\"xxStChip vuln\">💫 核心过载(+50%)</span>"); }
+
+						var playerName = (cult.identity && cult.identity.name) ? cult.identity.name : "本尊修士";
+						var stageBadge = (b.mode === "greater")
+							? ("上古大秘境 · 第 " + b.floor + " 层守关战")
+							: ("灵脉秘境 · 第 " + b.wave + " / " + b.maxWaves + " 波妖兽");
+
+						// 推荐克制技能高亮
+						var recSkill = "strike";
+						if (e.intent === "heavy"){
+							recSkill = "guard";
+						} else if (p.mp >= 55 && (p.hp <= p.maxHp * 0.65 || p.poison > 0 || p.chill > 0 || e.key === "viper" || e.key === "wraith")){
+							recSkill = "ult";
+						} else if (p.mp >= 35 && (e.shield > 0 || e.armorBreak <= 0)){
+							recSkill = "skill";
+						}
+
+						var skillBtnsHtml = "";
+						for (var si = 0; si < cult.COMBAT_SKILLS.length; si++){
+							var skDef = cult.COMBAT_SKILLS[si];
+							var canCast = p.mp >= skDef.cost;
+							var isRec = (skDef.key === recSkill && canCast);
+							var skLabel = (skDef.key === "ult" && b.natalName) ? ("✨ " + b.natalName) : skDef.label;
+							skillBtnsHtml +=
+								"<a href=\"#!\" class=\"xxSkillBtn " + skDef.key +
+									(canCast ? "" : " disabled") +
+									(isRec ? " rec" : "") +
+									"\" data-battle-skill=\"" + skDef.key + "\">" +
+									"<div class=\"xxSkillHd\">" +
+										"<span class=\"xxSkillName\">" + skLabel + "</span>" +
+										"<span class=\"xxSkillCost " + (skDef.cost > 0 ? "spend" : "gain") + "\">" + skDef.tag + "</span>" +
+									"</div>" +
+									"<div class=\"xxSkillDesc\">" + skDef.desc + "</div>" +
+								"</a>";
+						}
+
+						var logHtml = "";
+						var logsArr = b.logs || [];
+						for (var li = 0; li < Math.min(3, logsArr.length); li++){
+							logHtml += "<div class=\"xxCombatLogLine" + (li === 0 ? " latest" : "") + "\">" + logsArr[li] + "</div>";
+						}
+
+						this.riftDeck.innerHTML =
+							"<div class=\"xxCombatStage\">" +
+								"<div class=\"xxCombatTopBar\">" +
+									"<div class=\"xxCombatMeta\">" +
+										"<span class=\"xxCombatModeTag " + b.mode + "\">" + stageBadge + "</span>" +
+										"<span class=\"xxCombatTurnTag\">第 " + b.turn + " 回合</span>" +
+										"<span class=\"xxCombatLootTag\">已获修为 +" + fmt(b.loot.xiuwei, false, false, 0) +
+											(b.loot.keys ? " · 秘境令 +" + b.loot.keys : "") +
+											(b.loot.relic ? " · 遗宝 +" + b.loot.relic : "") + "</span>" +
+									"</div>" +
+									"<div class=\"xxCombatQuickActions\">" +
+										"<a href=\"#!\" class=\"xxCombatActBtn auto\" data-battle-act=\"auto\">⚡ 自动完战</a>" +
+										"<a href=\"#!\" class=\"xxCombatActBtn flee\" data-battle-act=\"flee\">💨 携宝遁走</a>" +
+									"</div>" +
 								"</div>" +
-								"<div class=\"xxExpRoomDesc\">" + room.desc + "</div>" +
-								"<div class=\"xxExpChoices\">" +
-									"<a href=\"#!\" class=\"xxExpChoiceBtn primary\" data-exp-opt=\"a\">" +
-										"<b>⚔ " + room.optA.label + "</b><span>" + room.optA.sub + "</span>" +
-									"</a>" +
-									"<a href=\"#!\" class=\"xxExpChoiceBtn secondary\" data-exp-opt=\"b\">" +
-										"<b>☯ " + room.optB.label + "</b><span>" + room.optB.sub + "</span>" +
-									"</a>" +
+								"<div class=\"xxFighterArena\">" +
+									"<div class=\"xxFighterCard player\">" +
+										"<div class=\"xxFighterHd\">" +
+											"<div>" +
+												"<span class=\"xxFighterName\">🧘 " + playerName + "</span>" +
+												"<span class=\"xxFighterSub\">" + realmLabel + " · 攻 " + p.atk + " / 防 " + p.def + "</span>" +
+											"</div>" +
+											(p.shield > 0 ? "<span class=\"xxShieldBadge player\">🛡 灵盾 " + p.shield + "</span>" : "") +
+										"</div>" +
+										"<div class=\"xxBarGroup\">" +
+											"<div class=\"xxBarLabel\"><span>气血 HP</span><b>" + p.hp + " / " + p.maxHp + "</b></div>" +
+											"<div class=\"xxHpBar player\"><i style=\"width:" + pHpPct + "%\"></i></div>" +
+										"</div>" +
+										"<div class=\"xxBarGroup\">" +
+											"<div class=\"xxBarLabel\"><span>真元 MP</span><b>" + p.mp + " / " + p.maxMp + "</b></div>" +
+											"<div class=\"xxMpBar\"><i style=\"width:" + pMpPct + "%\"></i></div>" +
+										"</div>" +
+										"<div class=\"xxStatusRow\">" + pStatuses.join("") + "</div>" +
+									"</div>" +
+									"<div class=\"xxArenaVs\">⚔</div>" +
+									"<div class=\"xxFighterCard enemy\">" +
+										"<div class=\"xxFighterHd\">" +
+											"<div>" +
+												"<span class=\"xxFighterName\">" + e.icon + " " + e.name + "</span>" +
+												"<span class=\"xxFighterSub\">" + e.tier + " · 攻 " + e.atk + " / 防 " + e.def + "</span>" +
+											"</div>" +
+											(e.shield > 0 ? "<span class=\"xxShieldBadge enemy\">🛡 护盾 " + e.shield + "</span>" : "") +
+										"</div>" +
+										"<div class=\"xxBarGroup\">" +
+											"<div class=\"xxBarLabel\"><span>妖血 HP</span><b>" + e.hp + " / " + e.maxHp + "</b></div>" +
+											"<div class=\"xxHpBar enemy\"><i style=\"width:" + eHpPct + "%\"></i></div>" +
+										"</div>" +
+										"<div class=\"xxTraitBox\">" +
+											"<span class=\"xxTraitBadge\">特征 · " + e.traitTitle + "</span>" +
+											"<span class=\"xxTraitText\">" + e.traitDesc + "</span>" +
+										"</div>" +
+										(eStatuses.length ? "<div class=\"xxStatusRow\">" + eStatuses.join("") + "</div>" : "") +
+										"<div class=\"xxIntentBox " + intentInfo.key + "\">" +
+											"<div class=\"xxIntentMain\">" +
+												"<span class=\"xxIntentTag\">下回合动作：" + intentInfo.title + "</span>" +
+												"<span class=\"xxIntentDmg\">" + intentInfo.desc + "</span>" +
+											"</div>" +
+											"<div class=\"xxIntentCounter\">" + intentInfo.counter + "</div>" +
+										"</div>" +
+									"</div>" +
 								"</div>" +
-								"<div class=\"xxExpFooterBar\">" +
-									"<span class=\"xxExpBag\">收获：修为 +" + fmt(exp.loot.xiuwei, false, false, 0) +
-										(exp.loot.keys ? " · 秘境令 +" + exp.loot.keys : "") +
-										(exp.loot.relic ? " · 遗宝 +" + exp.loot.relic : "") + "</span>" +
-									"<a href=\"#!\" class=\"xxExpExtractBtn\" data-exp-act=\"extract\">见好就收</a>" +
-								"</div>" +
+								"<div class=\"xxSkillDeck\">" + skillBtnsHtml + "</div>" +
+								"<div class=\"xxCombatFeed\">" + logHtml + "</div>" +
 							"</div>";
 					} else {
-						var lastLootStr = exp && exp.loot
-							? "上轮收获：修为 +" + fmt(exp.loot.xiuwei, false, false, 0) +
-								(exp.loot.keys ? " · 秘境令 +" + exp.loot.keys : "") +
-								(exp.loot.relic ? " · 上古遗宝 +" + exp.loot.relic : "")
-							: "探索秘境禁地，搜寻秘境令、灵草与上古遗宝。";
-						expBodyHtml =
-							"<div class=\"xxExpIdle\">" +
-								"<div class=\"xxExpIdleNote\">" + (exp && exp.lastNote ? exp.lastNote : lastLootStr) + "</div>" +
-								"<a href=\"#!\" class=\"xxRiftMainBtn" + (burstBlocked ? " disabled" : "") + "\" data-exp-act=\"start\">" +
-									(burstBlocked ? "气脉调息中" : "✦ 踏入秘境") +
-								"</a>" +
+						// 备战大厅：左栏【灵脉秘境 · 三波妖兽连战】 + 右栏【上古大秘境 · 守关妖王战】
+						var nextWaveKeys = cult.getNextMonsterWaveKeys();
+						var wavePreviewHtml = "<div class=\"xxWavePreviewList\">";
+						for (var wi = 0; wi < nextWaveKeys.length; wi++){
+							var mDef = cult.getMonsterDef(nextWaveKeys[wi]);
+							wavePreviewHtml +=
+								"<div class=\"xxWavePreviewItem\">" +
+									"<span class=\"xxWaveIdx\">第" + (wi + 1) + "波</span>" +
+									"<span class=\"xxWaveMon\">" + mDef.icon + " " + mDef.name + "</span>" +
+									"<span class=\"xxWaveTrait\" title=\"" + mDef.traitDesc + "\">【" + mDef.traitTitle + "】</span>" +
+								"</div>";
+						}
+						wavePreviewHtml += "</div>";
+
+						var lastBattleNote = (b && b.logs && b.logs[0])
+							? "<div class=\"xxLastBattleBanner " + (b.result || "win") + "\">" + b.logs[0] + "</div>"
+							: "";
+
+						var bossDef = cult.getBossDef(F + 1);
+						var vsRatio = Math.max(8, Math.min(92, Math.round((cp / (cp + pw)) * 100)));
+
+						this.riftDeck.innerHTML =
+							"<div class=\"xxRiftCol xxExpCol\">" +
+								"<div class=\"xxRiftColTitle\"><span>灵脉秘境 · 斩妖连战</span><small>三波回合斗法</small></div>" +
+								wavePreviewHtml +
+								lastBattleNote +
+								"<div class=\"xxExpIdle\">" +
+									"<a href=\"#!\" class=\"xxRiftMainBtn" + (burstBlocked ? " disabled" : "") + "\" data-battle-start=\"lesser\">" +
+										(burstBlocked ? "气脉调息中" : "⚔ 入境斗法 · 三波连战") +
+									"</a>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxRiftCol xxGriftCol\">" +
+								"<div class=\"xxRiftColTitle\"><span>上古大秘境 · " + bossDef.zone + "</span><small>秘境令 ×<b>" + cult.riftKeys + "</b></small></div>" +
+								"<div class=\"xxGriftCard\">" +
+									"<div class=\"xxGriftBossHd\">" +
+										"<div>" +
+											"<span class=\"xxGriftFloorTag\">第 " + (F + 1) + " 层</span>" +
+											"<span class=\"xxGriftBossName\">" + bossDef.icon + " " + bossDef.name + "</span>" +
+										"</div>" +
+										"<span class=\"xxTraitBadge boss\">" + bossDef.traitTitle + "</span>" +
+									"</div>" +
+									"<div class=\"xxBossTraitDesc\">" + bossDef.traitDesc + "</div>" +
+									"<div class=\"xxVsBox\">" +
+										"<div class=\"xxVsLabels\">" +
+											"<span class=\"xxVsMine\">本尊道行 <b>" + fmt(cp, false, false, 0) + "</b></span>" +
+											"<span class=\"xxVsNeed\">妖王战力 <b>" + fmt(pw, false, false, 0) + "</b></span>" +
+										"</div>" +
+										"<div class=\"xxVsBar\"><i style=\"width:" + vsRatio + "%\"></i></div>" +
+									"</div>" +
+									"<div class=\"xxGriftBtnRow\">" +
+										"<a href=\"#!\" class=\"xxRiftMainBtn grift" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-battle-start=\"greater\">" +
+											"⚔ 挑战妖王 · 第 " + (F + 1) + " 层 <span>(秘境令×1)</span>" +
+										"</a>" +
+										(F >= 1 ? (
+											"<a href=\"#!\" class=\"xxRiftSubBtn" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-grift-act=\"sweep\">" +
+												"☯ 扫荡第 " + F + " 层 <span>(100%稳刷)</span>" +
+											"</a>"
+										) : "") +
+									"</div>" +
+								"</div>" +
 							"</div>";
 					}
-
-					var winPct = Math.round(gInfo.chance * 100);
-					var vsRatio = Math.max(8, Math.min(92, Math.round((cp / (cp + pw)) * 100)));
-					var griftHtml =
-						"<div class=\"xxGriftCard\">" +
-							"<div class=\"xxGriftBossHd\">" +
-								"<div>" +
-									"<span class=\"xxGriftFloorTag\">第 " + (F + 1) + " 层</span>" +
-									"<span class=\"xxGriftBossName\">" + gInfo.bossName + "</span>" +
-								"</div>" +
-								"<span class=\"xxGriftOddsBadge " + (winPct >= 75 ? "hi" : (winPct >= 45 ? "mid" : "lo")) + "\">胜率 " + winPct + "%</span>" +
-							"</div>" +
-							"<div class=\"xxVsBox\">" +
-								"<div class=\"xxVsLabels\">" +
-									"<span class=\"xxVsMine\">战力 <b>" + fmt(cp, false, false, 0) + "</b></span>" +
-									"<span class=\"xxVsNeed\">守关 <b>" + fmt(pw, false, false, 0) + "</b></span>" +
-								"</div>" +
-								"<div class=\"xxVsBar\"><i style=\"width:" + vsRatio + "%\"></i></div>" +
-							"</div>" +
-							"<div class=\"xxGriftBtnRow\">" +
-								"<a href=\"#!\" class=\"xxRiftMainBtn grift" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-grift-act=\"challenge\">" +
-									"⚔ 闯关第 " + (F + 1) + " 层 <span>(秘境令×1)</span>" +
-								"</a>" +
-								(F >= 1 ? (
-									"<a href=\"#!\" class=\"xxRiftSubBtn" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-grift-act=\"sweep\">" +
-										"☯ 扫荡第 " + F + " 层 <span>(100%稳刷)</span>" +
-									"</a>"
-								) : "") +
-							"</div>" +
-						"</div>";
-
-					this.riftDeck.innerHTML =
-						"<div class=\"xxRiftCol xxExpCol\">" +
-							"<div class=\"xxRiftColTitle\"><span>灵脉秘境 · 探幽</span><small>三重奇遇</small></div>" +
-							expBodyHtml +
-						"</div>" +
-						"<div class=\"xxRiftCol xxGriftCol\">" +
-							"<div class=\"xxRiftColTitle\"><span>上古秘境 · " + gInfo.zoneName + "</span><small>秘境令 ×<b>" + cult.riftKeys + "</b></small></div>" +
-							griftHtml +
-						"</div>";
 				}
 
-				var last = cult.lastAction;
-				this.riftResult.style.display = last ? "" : "none";
-				if (last && this._resultSeq !== last.seq){
-					this._resultSeq = last.seq;
-					this.riftResult.className = "xxRiftResult " + last.cls;
-					this.riftResult.innerHTML = "<div class=\"xxRiftResSummary\">" + last.text + "</div>";
-				}
+				this.riftResult.style.display = "none";
 			}
 		}
 
