@@ -381,14 +381,14 @@ test("Safe infinity tests", () => {
 
     // -------- basic resources code --------
     const resourceVector = [
-        ["catnip", 1000, 2000, false, 3000],
-        ["catnip", 2000, 4000, false, 5000], // initial cap
+        ["catnip", 500, 1000, false, 1500],
+        ["catnip", 1000, 4000, false, 2000], // initial cap
         ["catnip", 1e308, 4000, false, 1e308],
-        ["catnip", 2000, 1e308, false, 5000],
+        ["catnip", 1000, 1e308, false, 2000],
         ["catnip", 1e308, 1e308, false, 1e308],
         ["catnip", Infinity, 4000, false, Number.MAX_VALUE],
-        ["catnip", 2000, Infinity, false, 5000],
-        ["catnip", 2000, Infinity, true, Number.MAX_VALUE],
+        ["catnip", 1000, Infinity, false, 2000],
+        ["catnip", 1000, Infinity, true, Number.MAX_VALUE],
         ["catnip", 1e308, 1e308, true, Number.MAX_VALUE],
 
         ["beam", 1000, 2000, false, 3000],
@@ -402,9 +402,9 @@ test("Safe infinity tests", () => {
         ["beam", 1e308, 1e308, true, Number.MAX_VALUE],
     ];
     game.updateCaches(); // update resource limits: effectBase -> catnipMax
-    expect(game.getEffect("catnipMax")).toBe(5000);
+    expect(game.getEffect("catnipMax")).toBe(2000);
     game.resPool.update(); // update resource limits: catnipMax -> catnip.maxValue
-    expect(game.resPool.get("catnip").maxValue).toBe(5000);
+    expect(game.resPool.get("catnip").maxValue).toBe(2000);
     for (const [resName,before,add,noLimit,after] of resourceVector) {
         const res = game.resPool.get(resName);
         res.value = before
@@ -416,8 +416,8 @@ test("Safe infinity tests", () => {
 
     // -------- storage limits --------
     const priceVector = [
-        [[{name:"catnip", val:4000}], false],
-        [[{name:"catnip", val:6000}], true],
+        [[{name:"catnip", val:1500}], false],
+        [[{name:"catnip", val:3000}], true],
         [[{name:"catnip", val:Infinity}], true],
         [[{name:"beam", val:6000}], false],
         [[{name:"beam", val:1e308}], false],
@@ -1046,9 +1046,9 @@ test("Disciple removal: buildings produce xiuwei directly without kittens", () =
     game.updateCaches();
     game.calculateAllEffects();
 
-    //增量 = 5 茅庐 × 0.005 xiuweiPerTickBase = 0.025
+    //增量 = 5 茅庐 × 0.025 xiuweiPerTickBase = 0.125
     var xiuweiPerTick = game.getEffect("xiuweiPerTickBase");
-    expect(xiuweiPerTick - baseline).toBeCloseTo(0.025);
+    expect(xiuweiPerTick - baseline).toBeCloseTo(0.125);
 });
 
 test("Disciple removal: village shell survives save/load", () => {

@@ -2180,6 +2180,7 @@
 	"cultivation.ascend.label": "Ascend (reincarnate)",
 	"cultivation.ascend.desc": "Brave the tribulation and ascend — reincarnate, keeping karma and paragon; the spirit root is rerolled.",
 	"effectsMgr.statics.realmProductionRatio.title": "Realm bonus",
+	"effectsMgr.statics.realmStorageRatio.title": "Realm storage bonus",
 	"effectsMgr.statics.xiuweiRatio.title": "Cultivation bonus",
 	"effectsMgr.statics.xiuweiPerTickBase.title": "Cultivation base output",
 	"cultivation.layer.l1": "I",

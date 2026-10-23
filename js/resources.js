@@ -184,7 +184,8 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		type : "common",
 		category: "treasure",
 		visible: true,
-		color: "#26e6a6"
+		color: "#26e6a6",
+		calculatePerTick: true
 	},{
 		name : "relic",
 		title: $I("resources.relic.title"),
@@ -193,7 +194,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		craftable: false,
 		visible: true,
 		color: "#ff80ab",
-		calculatePerDay: true
+		calculatePerTick: true
 	},
 	//=========================================
 	// 			CORE CRAFTS (6)
@@ -746,6 +747,9 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		}
 		if (res.tag == "baseMetal") {
 			maxValue *= 1 + this.game.getEffect("baseMetalMaxRatio");
+		}
+		if (!this.isNormalCraftableResource(res) && res.name != "unicorns" && res.name != "tears" && res.name != "alicorn") {
+			maxValue *= 1 + (this.game.getEffect("realmStorageRatio") || 0);
 		}
 		
 		return maxValue;
