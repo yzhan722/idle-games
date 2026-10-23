@@ -3182,6 +3182,536 @@ input, select, textarea, button { font-family: inherit; }
 	padding: 6px 10px;
 }
 
+/* ============================================================
+   玄天秘境 · 探幽罗盘与虚天破界塔 (Interactive Secret Realm & Greater Rift UI)
+   ============================================================ */
+.xxRiftArena {
+	max-width: 1120px;
+	margin: 4px 0 16px;
+	padding: 14px 16px 12px;
+	border: 1px solid rgba(212, 176, 106, .42);
+	border-radius: 12px;
+	background:
+		linear-gradient(125deg, rgba(9, 14, 22, .94) 0%, rgba(12, 20, 32, .86) 55%, rgba(10, 16, 26, .78) 100%),
+		url("art/fate_rift.jpg") center 35% / cover no-repeat,
+		rgba(11, 17, 26, .92);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 8px 28px rgba(0, 0, 0, .48);
+}
+
+.xxRiftTopRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid rgba(212, 176, 106, .22);
+}
+.xxRiftTitleBlock {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.xxRiftSealBadge {
+	width: 34px;
+	height: 34px;
+	border-radius: 8px;
+	border: 1px solid rgba(212, 176, 106, .65);
+	background: radial-gradient(circle at 30% 25%, rgba(212, 176, 106, .28), rgba(18, 28, 42, .94));
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-family: var(--xx-serif);
+	font-size: 17px;
+	color: var(--xx-gold-hi);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+}
+.xxRiftMainTitle {
+	font-family: var(--xx-serif);
+	font-size: 15.5px;
+	font-weight: 600;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+}
+.xxRiftSubTitle {
+	font-family: var(--xx-sans);
+	font-size: 12px;
+	letter-spacing: .5px;
+	color: var(--xx-mute);
+	margin-top: 2px;
+}
+.xxRiftSubTitle b {
+	color: var(--xx-jade);
+}
+
+/* 三大破阵姿态切换栏 */
+.xxStanceBar {
+	display: inline-flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.xxStanceLbl {
+	font-family: var(--xx-serif);
+	font-size: 12px;
+	letter-spacing: 1.5px;
+	color: var(--xx-mute);
+	margin-right: 2px;
+}
+.xxStanceChip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	border: 1px solid rgba(120, 136, 156, .32);
+	background: rgba(9, 14, 22, .78);
+	color: var(--xx-paper) !important;
+	font-family: var(--xx-sans);
+	font-size: 12px;
+	text-decoration: none !important;
+	transition: all .16s ease;
+}
+.xxStanceChip:hover {
+	border-color: var(--xx-jade);
+	color: var(--xx-gold-hi) !important;
+}
+.xxStanceChip.active {
+	border-color: var(--xx-gold);
+	background: linear-gradient(135deg, rgba(48, 38, 18, .92), rgba(18, 30, 28, .92));
+	color: var(--xx-gold-hi) !important;
+	box-shadow: 0 0 12px rgba(212, 176, 106, .25);
+}
+.xxStanceTag {
+	font-size: 10.5px;
+	padding: 1px 5px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, .06);
+	color: var(--xx-mute);
+}
+.xxStanceChip.counter .xxStanceTag {
+	background: rgba(79, 209, 165, .18);
+	color: var(--xx-jade);
+	font-weight: 600;
+}
+
+/* 双栏主控台: 左(秘境探幽奇遇) + 右(上古大秘境破界塔) */
+.xxRiftDeck {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+	margin-top: 10px;
+}
+.xxRiftCol {
+	display: flex;
+	flex-direction: column;
+	padding: 11px 13px;
+	border-radius: 10px;
+	border: 1px solid rgba(120, 136, 156, .24);
+	background: rgba(8, 13, 21, .78);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+.xxRiftColTitle {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	padding-bottom: 7px;
+	margin-bottom: 8px;
+	border-bottom: 1px dashed rgba(212, 176, 106, .20);
+}
+.xxRiftColTitle span {
+	font-family: var(--xx-serif);
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: 1.5px;
+	color: var(--xx-gold-hi);
+}
+.xxRiftColTitle small {
+	font-size: 11px;
+	color: var(--xx-mute);
+}
+
+/* 4节点探幽地图轨道 */
+.xxExpMap {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 6px;
+	margin-bottom: 9px;
+}
+.xxExpNode {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding: 4px 7px;
+	border-radius: 6px;
+	border: 1px solid rgba(120, 136, 156, .22);
+	background: rgba(12, 19, 29, .75);
+	font-size: 11px;
+	color: var(--xx-mute);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.xxExpDot {
+	width: 7px;
+	height: 7px;
+	flex: 0 0 7px;
+	border-radius: 999px;
+	background: rgba(120, 136, 156, .4);
+}
+.xxExpNode.done {
+	border-color: rgba(79, 209, 165, .38);
+	color: var(--xx-jade);
+}
+.xxExpNode.done .xxExpDot {
+	background: var(--xx-jade);
+}
+.xxExpNode.active {
+	border-color: var(--xx-gold);
+	background: rgba(44, 34, 16, .75);
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+}
+.xxExpNode.active .xxExpDot {
+	background: var(--xx-gold-hi);
+	box-shadow: 0 0 8px var(--xx-gold);
+}
+
+/* 探幽奇遇事件卡 */
+.xxExpEncounter,
+.xxExpIdle {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex: 1 1 auto;
+	justify-content: space-between;
+}
+.xxExpEncHd {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.xxExpStepBadge {
+	padding: 2px 7px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	background: rgba(79, 209, 165, .15);
+	border: 1px solid rgba(79, 209, 165, .42);
+	color: var(--xx-jade);
+}
+.xxExpRoomTitle {
+	font-family: var(--xx-serif);
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: 1px;
+	color: var(--xx-paper);
+}
+.xxExpRoomDesc,
+.xxExpIdleNote {
+	font-size: 12px;
+	line-height: 1.5;
+	color: #cbd5e1;
+	padding: 6px 9px;
+	border-radius: 6px;
+	background: rgba(15, 23, 35, .72);
+	border-left: 2.5px solid var(--xx-jade);
+}
+.xxExpIdleSub {
+	font-size: 11.5px;
+	color: var(--xx-mute);
+}
+.xxExpChoices {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+}
+.xxExpChoiceBtn {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 7px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(79, 209, 165, .36);
+	background: linear-gradient(180deg, rgba(22, 36, 48, .92), rgba(14, 24, 34, .92));
+	text-decoration: none !important;
+	transition: all .15s ease;
+}
+.xxExpChoiceBtn.primary {
+	border-color: rgba(212, 176, 106, .48);
+	background: linear-gradient(180deg, rgba(40, 34, 20, .88), rgba(20, 26, 36, .92));
+}
+.xxExpChoiceBtn:hover {
+	transform: translateY(-1px);
+	border-color: var(--xx-gold);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+}
+.xxExpChoiceBtn b {
+	font-size: 12.5px;
+	color: var(--xx-gold-hi);
+}
+.xxExpChoiceBtn.secondary b {
+	color: var(--xx-jade);
+}
+.xxExpChoiceBtn span {
+	font-size: 11px;
+	color: var(--xx-mute);
+	line-height: 1.3;
+}
+.xxExpFooterBar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding-top: 4px;
+	font-size: 11.5px;
+}
+.xxExpBag {
+	color: var(--xx-gold);
+}
+.xxExpExtractBtn {
+	padding: 2px 8px;
+	border-radius: 999px;
+	border: 1px solid rgba(120, 136, 156, .38);
+	background: rgba(255, 255, 255, .05);
+	color: var(--xx-paper) !important;
+	font-size: 11px;
+	text-decoration: none !important;
+}
+.xxExpExtractBtn:hover {
+	border-color: var(--xx-jade);
+	color: var(--xx-jade) !important;
+}
+
+/* 右栏: 上古大秘境破界塔 */
+.xxGriftCard {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex: 1 1 auto;
+	justify-content: space-between;
+}
+.xxGriftBossHd {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+.xxGriftFloorTag {
+	display: inline-block;
+	padding: 2px 7px;
+	margin-right: 7px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	background: rgba(212, 176, 106, .16);
+	border: 1px solid rgba(212, 176, 106, .45);
+	color: var(--xx-gold-hi);
+}
+.xxGriftBossName {
+	font-family: var(--xx-serif);
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: 1px;
+	color: var(--xx-paper);
+}
+.xxGriftOddsBadge {
+	padding: 2px 9px;
+	border-radius: 999px;
+	font-size: 11.5px;
+	font-weight: 700;
+}
+.xxGriftOddsBadge.hi {
+	background: rgba(79, 209, 165, .18);
+	border: 1px solid rgba(79, 209, 165, .5);
+	color: var(--xx-jade);
+}
+.xxGriftOddsBadge.mid {
+	background: rgba(212, 176, 106, .18);
+	border: 1px solid rgba(212, 176, 106, .5);
+	color: var(--xx-gold-hi);
+}
+.xxGriftOddsBadge.lo {
+	background: rgba(224, 96, 74, .18);
+	border: 1px solid rgba(224, 96, 74, .5);
+	color: #e58a76;
+}
+
+.xxAffixBox {
+	padding: 6px 9px;
+	border-radius: 6px;
+	background: rgba(15, 23, 35, .75);
+	border-left: 2.5px solid var(--xx-gold);
+}
+.xxAffixLine {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 3px;
+}
+.xxAffixTag {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--xx-gold-hi);
+}
+.xxAffixCounter {
+	font-size: 11px;
+	text-decoration: none !important;
+}
+.xxAffixCounter.ok {
+	color: var(--xx-jade);
+}
+.xxAffixCounter.warn {
+	color: #f6c465 !important;
+	border-bottom: 1px dashed rgba(246, 196, 101, .5);
+}
+.xxAffixDesc {
+	font-size: 11.5px;
+	color: var(--xx-mute);
+}
+
+.xxVsBox {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.xxVsLabels {
+	display: flex;
+	justify-content: space-between;
+	font-size: 11.5px;
+	color: var(--xx-mute);
+}
+.xxVsMine b { color: var(--xx-jade); }
+.xxVsNeed b { color: var(--xx-gold-hi); }
+.xxVsBar {
+	height: 6px;
+	border-radius: 999px;
+	background: rgba(224, 96, 74, .28);
+	overflow: hidden;
+}
+.xxVsBar i {
+	display: block;
+	height: 100%;
+	background: linear-gradient(90deg, var(--xx-jade), var(--xx-gold-hi));
+	border-radius: 999px;
+	transition: width .25s ease;
+}
+
+.xxGriftBtnRow {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.xxRiftMainBtn,
+.xxRiftSubBtn {
+	flex: 1 1 180px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 7px 12px;
+	border-radius: 8px;
+	font-family: var(--xx-serif);
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 1px;
+	text-align: center;
+	text-decoration: none !important;
+	border: 1px solid rgba(79, 209, 165, .45);
+	background: linear-gradient(180deg, rgba(24, 52, 46, .92), rgba(14, 32, 28, .92));
+	color: var(--xx-jade) !important;
+	transition: all .15s ease;
+}
+.xxRiftMainBtn.grift {
+	border-color: rgba(212, 176, 106, .55);
+	background: linear-gradient(180deg, rgba(54, 40, 18, .92), rgba(28, 22, 12, .92));
+	color: var(--xx-gold-hi) !important;
+}
+.xxRiftSubBtn {
+	border-color: rgba(111, 211, 255, .42);
+	background: linear-gradient(180deg, rgba(20, 36, 52, .92), rgba(12, 22, 34, .92));
+	color: #9ecbff !important;
+}
+.xxRiftMainBtn span,
+.xxRiftSubBtn span {
+	font-family: var(--xx-sans);
+	font-size: 11px;
+	font-weight: 400;
+	opacity: .85;
+}
+.xxRiftMainBtn:hover:not(.disabled),
+.xxRiftSubBtn:hover:not(.disabled) {
+	transform: translateY(-1px);
+	border-color: var(--xx-gold-hi);
+	box-shadow: 0 4px 14px rgba(0, 0, 0, .4);
+}
+.xxRiftMainBtn.disabled,
+.xxRiftSubBtn.disabled {
+	opacity: .48;
+	cursor: default;
+}
+
+/* 天梯条与六枚玄天古印 */
+.xxLadderLbl {
+	font-family: var(--xx-serif);
+	font-size: 12px;
+	letter-spacing: 1.5px;
+	color: var(--xx-mute);
+	margin-right: 4px;
+	align-self: center;
+}
+.xxRiftSeals {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 0 8px;
+	border-top: 1px dashed rgba(120, 136, 156, .20);
+}
+.xxSealBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	border: 1px solid rgba(120, 136, 156, .24);
+	background: rgba(9, 14, 22, .65);
+	color: var(--xx-mute);
+}
+.xxSealBadge i {
+	font-style: normal;
+}
+.xxSealBadge small {
+	font-size: 10px;
+	opacity: .85;
+}
+.xxSealBadge.lit {
+	border-color: rgba(212, 176, 106, .58);
+	background: linear-gradient(90deg, rgba(46, 36, 16, .88), rgba(22, 32, 28, .88));
+	color: var(--xx-gold-hi);
+	box-shadow: 0 0 10px rgba(212, 176, 106, .18);
+}
+.xxSealBadge.lit i {
+	color: var(--xx-jade);
+}
+
+@media (max-width: 860px) {
+	.xxRiftDeck {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.xxExpMap {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.xxExpChoices {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 /* respect reduced-motion */
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after {
