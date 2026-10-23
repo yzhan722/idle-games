@@ -59,6 +59,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	lastBattleReport: null,	//最近一场上古秘境的三合斗法战报
 	soundMuted: false,		//破境道音与雷劫天音静音开关(跨转生保留)
 	lastBreakPhenomenon: null,	//最近一次破境的天地异象快照
+	riftStance: "sword",	//破阵姿态: sword(青元剑阵) | array(奇门神识) | stealth(敛息灵隐)
+	expedition: null,		//秘境探幽连环奇遇会话: {active,step,maxSteps,nodes,loot,lastNote}
 
 	//突破异象 — 每次冲关掷一次;多数纯叙事,小幅修正当次成败/代价。
 	//w 为百分比权重,合计 82 —— 余下 18% 无异象静默。
@@ -821,6 +823,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.guideClaimed = {};
 		this.autoSteward = {pill: false, wander: false, rift: false, grift: false};
 		this.bottleDew = 0;
+		this.riftStance = "sword";
+		this.expedition = null;
 		this.tale = {};
 		this.taleLog = [];
 		this.stages = this.buildStages();
@@ -1390,6 +1394,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (this.buffs && this.buffs.biyan > 0){ mult *= 1.35; }	//碧焰酒燃灵火 ×1.35
 		var leg = this.getLegacyBonus();
 		if (leg.lives > 0){ mult *= leg.combatMult; }				//前世轮回印记
+		var sealBonus = this.getRiftSealBonuses();
+		if (sealBonus.combatMult > 1){ mult *= sealBonus.combatMult; }	//玄天古印加持
 		var origin = this.getOrigin();
 		if (origin && origin.powerMult){ mult *= origin.powerMult; }	//猎户之后
 		mult *= Math.max(0.3, 1 - this.heartDemon * 0.005);	//心魔蚀骨
@@ -1954,10 +1960,341 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return true;
 	},
 
-	// ---------------- 秘境 (rift runs — Diablo-style farmable instances) ----------------
+	// ---------------- 玄天秘境 · 探幽奇遇与虚天破界塔 ----------------
+
+	//三大破阵姿态:克制不同大秘境法则词缀,并在探幽奇遇中提供差异化专精加成
+	RIFT_STANCES: [
+		{
+			key: "sword",
+			label: "青元剑阵",
+			tag: "强攻破风",
+			desc: "剑气纵横，以力破巧：探幽修为+20%，克制【九天罡风】与【元磁禁空】",
+			xiuweiMult: 1.20,
+			combatMult: 1.15,
+			counters: ["gale", "gravity"]
+		},
+		{
+			key: "array",
+			label: "奇门神识",
+			tag: "推演破禁",
+			desc: "衍神推演，直指阵眼：遗宝与法宝机缘+35%，克制【太古禁制】与【乾蓝冰焰】",
+			artifactMult: 1.35,
+			relicBonus: 1,
+			counters: ["ward", "icefire"]
+		},
+		{
+			key: "stealth",
+			label: "敛息灵隐",
+			tag: "潜行觅宝",
+			desc: "敛气匿踪，全身而退：秘境令机缘提升、心魔反噬减半，克制【阴魔蚀魂】",
+			demonMult: 0.50,
+			keyBonus: 0.15,
+			counters: ["demonfog"]
+		}
+	],
+
+	//五大天地法则词缀:随上古秘境层数轮转,选对破阵姿态即可触发「姿态破法」
+	RIFT_AFFIXES: [
+		{key: "gale",     label: "九天罡风", counter: "sword",   desc: "罡风割裂护体灵光，唯以【青元剑阵】正面斩开风眼方可破局"},
+		{key: "ward",     label: "太古禁制", counter: "array",   desc: "上古连环禁制锁死灵力，需借【奇门神识】推演阵门直取中枢"},
+		{key: "demonfog", label: "阴魔蚀魂", counter: "stealth", desc: "天外魔气侵扰识海，运转【敛息灵隐】固守灵台可免心魔反噬"},
+		{key: "icefire",  label: "乾蓝冰焰", counter: "array",   desc: "极寒冰焰与地火交织，以【奇门神识】引火归元可得额外遗宝"},
+		{key: "gravity",  label: "元磁禁空", counter: "sword",   desc: "元磁神光压制飞遁，凭【青元剑阵】沛然剑意强行破开禁空"}
+	],
+
+	//六枚玄天古印:通关指定大秘境层数永久点亮,加持修为、万产与战力
+	RIFT_SEALS: [
+		{floor: 3,  key: "xuejin",   label: "血禁灵印", desc: "修为吐纳 +15%", xiuweiRatio: 0.15},
+		{floor: 6,  key: "xutian",   label: "虚天丹印", desc: "洞府万产 +15%", realmProductionRatio: 0.15},
+		{floor: 9,  key: "kunwu",    label: "昆吾剑印", desc: "斗法战力 +20%", combatMult: 0.20},
+		{floor: 12, key: "zhuimo",   label: "坠魔元印", desc: "修为吐纳 +30%", xiuweiRatio: 0.30},
+		{floor: 15, key: "xuantian", label: "玄天真印", desc: "万产+30% · 战力+30%", realmProductionRatio: 0.30, combatMult: 0.30},
+		{floor: 20, key: "jiemian",  label: "界面道印", desc: "修为吐纳 +50%", xiuweiRatio: 0.50}
+	],
+
+	//秘境探幽六大奇遇房(前两重随机轮转,第三重必入「核心祭坛·虚天古宝匣」)
+	EXPEDITION_ROOMS: {
+		herb: {
+			key: "herb",
+			title: "千年灵药园",
+			badge: "灵草奇珍",
+			desc: "断崖石壁间奇香扑鼻，数株千年血线蛟藤与紫猴花正值成熟，旁有一条赤练妖蟒盘踞吐信。",
+			optA: {label: "御剑斩蟒 · 强夺仙株", sub: "丰厚修为 + 灵草 · 35%夺得【秘境令】"},
+			optB: {label: "引兽调离 · 稳采灵药", sub: "稳获修为与灵木灵石 · 绝无心魔损伤"}
+		},
+		cave: {
+			key: "cave",
+			title: "古修坐化遗府",
+			badge: "阵法禁制",
+			desc: "幽深石室中央端坐一具金丹古修遗骸，石案上摆放着数枚古朴玉简与贴满符箓的储物袋。",
+			optA: {label: "神识推演 · 破禁取宝", sub: "修为 + 【上古遗宝】 · 奇门姿态收益翻倍"},
+			optB: {label: "礼拜遗骸 · 参悟残篇", sub: "稳增修为 + 悟道典籍 · 净除 5 点心魔"}
+		},
+		ambush: {
+			key: "ambush",
+			title: "血色禁地争锋",
+			badge: "劫修夺宝",
+			desc: "前方山谷剑光闪烁，数名掩月宗与魔道修士正为争夺一枚秘境古令大打出手，双方皆已负伤。",
+			optA: {label: "黄雀在后 · 雷霆夺令", sub: "高概率夺取【秘境令】+ 丰厚修为"},
+			optB: {label: "敛息潜行 · 暗取储物袋", sub: "修为 + 大量灵石 · 敛息姿态额外得秘境令"}
+		},
+		spring: {
+			key: "spring",
+			title: "太古灵眼仙泉",
+			badge: "天地灵乳",
+			desc: "地底灵脉汇聚成一汪乳白万年灵乳，泉眼上方悬浮着半块残缺的上古阵盘，灵气浓郁欲滴。",
+			optA: {label: "盘膝鲸吞 · 万年灵乳", sub: "巨额修为灌顶 · 剑阵姿态额外 +25%"},
+			optB: {label: "拓印阵盘 · 收取阵石", sub: "修为 + 【上古遗宝】 + 灵石"}
+		},
+		fog: {
+			key: "fog",
+			title: "阴冥鬼雾窟",
+			badge: "古宝霞光",
+			desc: "浓郁阴冥鬼雾笼罩洞窟，无数残魂厉魄在雾中嘶嚎，雾气深处隐有一件古宝霞光流转。",
+			optA: {label: "催动真火 · 祭炼古宝", sub: "修为 + 冲击【秘境古宝】机缘"},
+			optB: {label: "运转清心 · 涤荡识海", sub: "修为 + 净除 8 点心魔"}
+		},
+		altar: {
+			key: "altar",
+			title: "核心祭坛 · 虚天古宝匣",
+			badge: "终极秘藏",
+			desc: "踏入秘境最深处的太古祭坛，九根盘龙玉柱环绕着一只铭刻星辰法则的【虚天古宝匣】，宝光冲霄！",
+			optA: {label: "破开宝匣 · 夺取古宝道果", sub: "终极修为 + 必得【上古遗宝】 + 高概率掉令/古宝"},
+			optB: {label: "引动星辰大阵 · 醍醐灌顶", sub: "1.5倍终极修为灌顶 + 净除 10 点心魔"}
+		}
+	},
+
+	getRiftStance: function(){
+		var key = this.riftStance || "sword";
+		for (var i = 0; i < this.RIFT_STANCES.length; i++){
+			if (this.RIFT_STANCES[i].key == key){ return this.RIFT_STANCES[i]; }
+		}
+		return this.RIFT_STANCES[0];
+	},
+
+	setRiftStance: function(key){
+		for (var i = 0; i < this.RIFT_STANCES.length; i++){
+			if (this.RIFT_STANCES[i].key == key){
+				this.riftStance = key;
+				return true;
+			}
+		}
+		return false;
+	},
+
+	getFloorAffix: function(floor){
+		var idx = Math.max(0, (Math.max(1, floor) - 1)) % this.RIFT_AFFIXES.length;
+		return this.RIFT_AFFIXES[idx];
+	},
+
+	getRiftZone: function(floor){
+		var f = Math.max(1, floor);
+		if (f <= 3){ return {name: "血色禁地·环形山", boss: $I("cultivation.grift.boss.1")}; }
+		if (f <= 6){ return {name: "虚天内殿·冰火道", boss: $I("cultivation.grift.boss.2")}; }
+		if (f <= 9){ return {name: "昆吾仙山·镇魔渊", boss: $I("cultivation.grift.boss.3")}; }
+		if (f <= 15){ return {name: "坠魔古渊·血焰坛", boss: $I("cultivation.grift.boss.4")}; }
+		return {name: "真仙界缝·混沌墟", boss: $I("cultivation.grift.boss.5")};
+	},
+
+	getRiftSealBonuses: function(){
+		var xw = 0, prod = 0, combat = 1, unlocked = 0;
+		var F = this.riftFloor || 0;
+		for (var i = 0; i < this.RIFT_SEALS.length; i++){
+			var s = this.RIFT_SEALS[i];
+			if (F >= s.floor){
+				unlocked++;
+				if (s.xiuweiRatio){ xw += s.xiuweiRatio; }
+				if (s.realmProductionRatio){ prod += s.realmProductionRatio; }
+				if (s.combatMult){ combat *= (1 + s.combatMult); }
+			}
+		}
+		return {xiuweiRatio: xw, realmProductionRatio: prod, combatMult: combat, unlocked: unlocked};
+	},
+
+	getGriftOdds: function(floor){
+		var f = floor != null ? floor : (this.riftFloor + 1);
+		var cp = this.getCombatPower();
+		var need = this.floorPower(f);
+		var affix = this.getFloorAffix(f);
+		var stance = this.getRiftStance();
+		var countered = (stance.key === affix.counter);
+		var odds = cp / Math.max(1, need);
+		var baseChance = 0.3 + 0.6 * odds + (countered ? 0.12 : 0);
+		var chance = Math.max(0.05, Math.min(0.95, baseChance));
+		var zone = this.getRiftZone(f);
+		return {
+			floor: f,
+			cp: cp,
+			need: need,
+			affix: affix,
+			stance: stance,
+			countered: countered,
+			chance: chance,
+			zoneName: zone.name,
+			bossName: zone.boss
+		};
+	},
+
+	//开启三层连环秘境探幽——在入境保底之上,提供3层战术奇遇抉择与见好就收机制
+	startExpedition: function(entryXw, entryNote){
+		var pool = ["herb", "cave", "ambush", "spring", "fog"];
+		var seed = (this.stats.rift || 1) + (this.actionSeq || 0);
+		var r1 = pool[seed % pool.length];
+		var r2 = pool[(seed + 2) % pool.length];
+		this.expedition = {
+			active: true,
+			step: 1,
+			maxSteps: 3,
+			nodes: [r1, r2, "altar"],
+			loot: {
+				xiuwei: Math.round(entryXw || 0),
+				minerals: 0,
+				relic: 0,
+				keys: 0
+			},
+			lastNote: entryNote || "已踏入秘境核心外围，神识感应到前方三处机缘之地。"
+		};
+		return this.expedition;
+	},
+
+	chooseExpedition: function(optKey){
+		if (!this.isRiftUnlocked()){ return false; }
+		if (!this.expedition || !this.expedition.active){
+			if (this.canAct()){
+				this.rift();
+			}
+			if (!this.expedition || !this.expedition.active){ return false; }
+		}
+		var exp = this.expedition;
+		var step = exp.step || 1;
+		var roomKey = (exp.nodes && exp.nodes[step - 1]) || "herb";
+		var stance = this.getRiftStance();
+		var scale = 1 + this.getCurrentRealmIndex() * 0.8;
+		var depthMult = step === 1 ? 0.42 : (step === 2 ? 0.62 : 0.95);
+		if (stance.xiuweiMult){ depthMult *= stance.xiuweiMult; }
+
+		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
+		var fmt = this.game.getDisplayValueExt.bind(this.game);
+		var xwGain = this.breakPayout(this.RIFT_PAY * depthMult);
+		var minGain = 0, relicGain = 0, keyGain = 0, demonDelta = 0, artDropped = false;
+		var note = "";
+
+		if (optKey === "b"){
+			//稳健/净心路线
+			if (roomKey === "herb"){
+				minGain = this.roundNice(180 * scale);
+				addRes("wood", this.roundNice(60 * scale));
+				note = "引开赤练妖蟒，稳妥采得千年灵药，修为 +" + fmt(xwGain) + "，灵石 +" + fmt(minGain);
+			} else if (roomKey === "cave"){
+				addRes("science", this.roundNice(150 * scale));
+				demonDelta = -5;
+				note = "礼拜古修遗骸参悟残篇，修为 +" + fmt(xwGain) + "，心魔净除 5 点";
+			} else if (roomKey === "ambush"){
+				minGain = this.roundNice(260 * scale * (stance.key === "stealth" ? 1.6 : 1));
+				if (stance.key === "stealth" && Math.random() < 0.40){ keyGain = 1; }
+				note = "敛息暗取战场储物袋，修为 +" + fmt(xwGain) + "，灵石 +" + fmt(minGain) + (keyGain ? "，顺走【秘境令】×1！" : "");
+			} else if (roomKey === "spring"){
+				relicGain = 1 + (stance.relicBonus || 0);
+				minGain = this.roundNice(150 * scale);
+				note = "拓印太古残阵收取阵石，修为 +" + fmt(xwGain) + "，上古遗宝 +" + relicGain;
+			} else if (roomKey === "fog"){
+				demonDelta = -8;
+				note = "运转清心法诀穿过阴冥鬼雾，修为 +" + fmt(xwGain) + "，心魔净除 8 点";
+			} else {
+				//altar optB: 星辰灌顶
+				xwGain = Math.round(xwGain * 1.5);
+				demonDelta = -10;
+				relicGain = 1;
+				note = "引动祭坛星辰大阵醍醐灌顶！修为暴涨 +" + fmt(xwGain) + "，上古遗宝 +1，心魔净除 10 点！";
+			}
+		} else {
+			//进取/夺宝路线 (optA)
+			var keyChance = 0.30 + (stance.keyBonus || 0);
+			if (roomKey === "herb"){
+				xwGain = Math.round(xwGain * 1.25);
+				addRes("catnip", this.roundNice(320 * scale));
+				if (Math.random() < keyChance){ keyGain = 1; }
+				note = "剑斩赤练妖蟒夺取千年血线蛟藤！修为 +" + fmt(xwGain) + (keyGain ? "，斩获妖丹【秘境令】×1！" : "");
+			} else if (roomKey === "cave"){
+				relicGain = (stance.key === "array" ? 2 : 1);
+				if (Math.random() < 0.25 * (stance.artifactMult || 1)){
+					artDropped = this.rollArtifactDrop(scale);
+				}
+				note = "神识推演破开古修禁制！修为 +" + fmt(xwGain) + "，获【上古遗宝】×" + relicGain + (artDropped ? "，更得古宝认主！" : "");
+			} else if (roomKey === "ambush"){
+				xwGain = Math.round(xwGain * 1.2);
+				if (Math.random() < Math.min(0.75, keyChance + 0.20)){ keyGain = 1; }
+				minGain = this.roundNice(160 * scale);
+				note = "黄雀在后雷霆出手！修为 +" + fmt(xwGain) + (keyGain ? "，夺得【秘境令】×1！" : "，缴获灵石 +" + fmt(minGain));
+			} else if (roomKey === "spring"){
+				xwGain = Math.round(xwGain * (stance.key === "sword" ? 1.55 : 1.35));
+				note = "盘膝泉眼鲸吞万年灵乳，周天轰鸣！修为暴涨 +" + fmt(xwGain) + "！";
+			} else if (roomKey === "fog"){
+				if (Math.random() < 0.38 * (stance.artifactMult || 1)){
+					artDropped = this.rollArtifactDrop(scale);
+				} else {
+					relicGain = 1;
+				}
+				note = "催动真火炼化阴冥残魂！修为 +" + fmt(xwGain) + (artDropped ? "，霞光中一件秘境古宝破雾而出！" : "，凝得【上古遗宝】×1");
+			} else {
+				//altar optA: 破开虚天古宝匣
+				xwGain = Math.round(xwGain * 1.3);
+				relicGain = 1 + (stance.relicBonus || 0);
+				if (Math.random() < Math.min(0.80, keyChance + 0.25)){ keyGain = 1; }
+				if (Math.random() < 0.45 * (stance.artifactMult || 1)){
+					artDropped = this.rollArtifactDrop(scale * 1.2);
+				}
+				note = "破开【虚天古宝匣】宝光冲霄！修为 +" + fmt(xwGain) + "，遗宝 +" + relicGain +
+					(keyGain ? "，秘境令 +1" : "") + (artDropped ? "，更获秘境古宝机缘！" : "！");
+			}
+		}
+
+		addRes("xiuwei", xwGain);
+		if (minGain > 0){ addRes("minerals", minGain); }
+		if (relicGain > 0){ addRes("relic", relicGain); }
+		if (keyGain > 0){ this.riftKeys += keyGain; }
+		if (demonDelta !== 0){
+			this.heartDemon = Math.min(100, Math.max(0, this.heartDemon + demonDelta));
+		}
+
+		exp.loot.xiuwei += xwGain;
+		exp.loot.minerals += minGain;
+		exp.loot.relic += relicGain;
+		exp.loot.keys += keyGain;
+		exp.lastNote = note;
+
+		if (step >= exp.maxSteps){
+			exp.active = false;
+			exp.step = exp.maxSteps;
+			this.setLastAction("ok", note);
+			this.game.msg("【秘境探幽圆满】" + note, "important");
+		} else {
+			exp.step = step + 1;
+			this.setLastAction("ok", note);
+		}
+		if (artDropped && this.game.render){ this.game.render(); }
+		return true;
+	},
+
+	//见好就收·携宝遁出:安全撤离秘境,额外获得一笔敛息撤离修为并平复心魔
+	extractExpedition: function(){
+		if (!this.expedition || !this.expedition.active){ return false; }
+		var exp = this.expedition;
+		var fmt = this.game.getDisplayValueExt.bind(this.game);
+		var bonusXw = this.breakPayout(this.RIFT_PAY * 0.35 * exp.step);
+		this.game.resPool.addResEvent("xiuwei", bonusXw);
+		this.heartDemon = Math.max(0, this.heartDemon - 4);
+		exp.loot.xiuwei += bonusXw;
+		exp.active = false;
+		var msg = "见好就收，激发传送符满载遁出秘境！额外稳固修为 +" + fmt(bonusXw) + "，道心澄明（心魔 -4）。";
+		exp.lastNote = msg;
+		this.setLastAction("ok", msg);
+		this.game.msg("【秘境遁出】" + msg, "notice");
+		return true;
+	},
 
 	//秘境历练 — the "exp room": fast-cooldown run with a guaranteed 修为 payout,
-	//a chance at a 秘境之钥, and a slim artifact drop
+	//a chance at a 秘境之钥, and a slim artifact drop + launches 3-step interactive expedition
 	rift: function(){
 		if (!this.canAct() || !this.isRiftUnlocked()){ return false; }
 		this.stats.rift++;
@@ -1998,11 +2335,14 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			} else {
 				var add = 4 + Math.random() * 4;
 				if (this.getFate("tihun").researched){ add *= 0.5; }
+				if (this.riftStance === "stealth"){ add *= 0.5; }
 				this.heartDemon = Math.min(100, this.heartDemon + add);
 				this.game.msg($I("cultivation.msg.rift.ambush"), "alert");
 				resultCls = "fail"; resultText = $I("cultivation.rift.result.ambush");
 			}
 		}
+		this.startExpedition(amt, resultText);
+		if (roll < 0.3 && this.expedition){ this.expedition.loot.keys += 1; }
 		this.setLastAction(resultCls, resultText);
 		return true;
 	},
@@ -2063,29 +2403,33 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 
-		//战力论成败——守关妖兽的战力门槛 vs 你的道行之数
-		//持平约九成;战力过半方有六成;碾压则十拿九稳
-		var cp = this.getCombatPower();
-		var need = this.floorPower(floor);
-		var odds = cp / need;
-		var chance = Math.max(0.05, Math.min(0.95, 0.3 + 0.6 * odds));
+		//战力论成败——守关妖兽的战力门槛 vs 你的道行之数 + 破阵姿态克制法则词缀
+		var gInfo = this.getGriftOdds(floor);
+		var cp = gInfo.cp;
+		var need = gInfo.need;
+		var chance = gInfo.chance;
 		var floorScale = scale * (1 + floor * 0.25);
 		var win = Math.random() < chance;
 
 		if (win){
 			this.riftFloor = floor;
-			var amt = this.breakPayout(this.GRIFT_PAY);
+			var amt = this.breakPayout(this.GRIFT_PAY * (gInfo.countered ? 1.25 : 1));
 			addRes("xiuwei", amt);
-			var relics = Math.max(1, Math.round(floor * 0.8));
+			var relics = Math.max(1, Math.round(floor * 0.8)) + (gInfo.countered ? 1 : 0);
 			addRes("relic", relics);
 			if (floor >= 12){
 				var tc = Math.max(1, Math.round((floor - 10) * 0.8));
 				addRes("timeCrystal", tc);
 			}
+			if (gInfo.countered && this.riftStance === "stealth"){
+				this.heartDemon = Math.max(0, this.heartDemon - 6);
+			}
 			this.game.msg($I("cultivation.msg.grift.clear", [floor, fmt(amt), relics]), "important");
-			this.setLastAction("ok", $I("cultivation.rift.result.grift.ok", [floor]));
+			this.setLastAction("ok", $I("cultivation.rift.result.grift.ok", [floor]) +
+				(gInfo.countered ? " · ✦姿态破法(" + gInfo.affix.label + ")" : ""));
 			//artifact odds climb with depth — the ladder IS the loot table
-			if (Math.random() < Math.min(0.6, 0.15 + floor * 0.03) && this.rollArtifactDrop(floorScale)){
+			var artOdds = Math.min(0.65, 0.15 + floor * 0.03 + (this.riftStance === "array" ? 0.08 : 0));
+			if (Math.random() < artOdds && this.rollArtifactDrop(floorScale)){
 				this.game.render();
 			}
 		} else {
@@ -2093,11 +2437,48 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			addRes("xiuwei", amt);
 			var add = 8 + Math.random() * 6;
 			if (this.getFate("tihun").researched){ add *= 0.5; }
+			if (this.riftStance === "stealth"){ add *= 0.5; }
 			this.heartDemon = Math.min(100, this.heartDemon + add);
 			this.game.msg($I("cultivation.msg.grift.fail", [floor, fmt(amt)]), "alert");
 			this.setLastAction("fail", $I("cultivation.rift.result.grift.fail", [floor]));
 		}
 		this.lastBattleReport = this.buildBattleReport(floor, win, cp, need);
+		return true;
+	},
+
+	//清剿已破秘境 — 消耗1枚秘境令,稳刷当前已通关的最高层(100%胜率、零心魔风险、刷取遗宝与古宝)
+	sweepRift: function(){
+		if (!this.isRiftUnlocked() || !this.canAct()){ return false; }
+		if (this.riftFloor <= 0){ return false; }
+		if (this.riftKeys <= 0){
+			this.game.msg($I("cultivation.msg.rift.nokey"), "alert");
+			return false;
+		}
+		this.setActionCd(this.RIFT_CD * (this.getFate("fenglei").researched ? 0.5 : 1));
+		this.riftKeys--;
+		var floor = this.riftFloor;
+		var scale = 1 + this.getCurrentRealmIndex() * 0.8;
+		var floorScale = scale * (1 + floor * 0.25);
+		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
+		var fmt = this.game.getDisplayValueExt.bind(this.game);
+
+		var amt = this.breakPayout(this.GRIFT_PAY * 0.85);
+		addRes("xiuwei", amt);
+		var relics = Math.max(1, Math.round(floor * 0.7)) + (this.riftStance === "array" ? 1 : 0);
+		addRes("relic", relics);
+		if (floor >= 12){
+			addRes("timeCrystal", Math.max(1, Math.round((floor - 10) * 0.6)));
+		}
+		var dropped = false;
+		if (Math.random() < Math.min(0.55, 0.14 + floor * 0.025 + (this.riftStance === "array" ? 0.08 : 0))){
+			dropped = this.rollArtifactDrop(floorScale);
+			if (dropped && this.game.render){ this.game.render(); }
+		}
+		var text = "清剿上古秘境第 " + floor + " 层凯旋：修为 +" + fmt(amt) + "，上古遗宝 +" + relics + (dropped ? "，更获古宝机缘！" : "");
+		this.game.msg("【秘境清剿】" + text, "important");
+		this.setLastAction("ok", text);
+		this.lastBattleReport = this.buildBattleReport(floor, true, this.getCombatPower(), this.floorPower(floor));
+		this.lastBattleReport.swept = true;
 		return true;
 	},
 
@@ -2182,6 +2563,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			bottleDew: this.bottleDew || 0,
 			natalArtifact: this.natalArtifact || null,
 			lastBattleReport: this.lastBattleReport || null,
+			riftStance: this.riftStance || "sword",
+			expedition: this.expedition || null,
 			soundMuted: !!this.soundMuted,
 			demonWarned: this.demonWarned,
 			sihuaCount: this.sihuaCount,
@@ -2284,6 +2667,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		if (c.lastBattleReport && typeof c.lastBattleReport == "object"){
 			this.lastBattleReport = c.lastBattleReport;
+		}
+		if (typeof c.riftStance == "string"){
+			this.setRiftStance(c.riftStance);
+		}
+		if (c.expedition && typeof c.expedition == "object"){
+			this.expedition = c.expedition;
 		}
 		if (typeof c.soundMuted == "boolean"){ this.soundMuted = c.soundMuted; }
 		if (typeof c.demonWarned == "boolean"){ this.demonWarned = c.demonWarned; }
@@ -2471,6 +2860,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			add("xiuweiRatio", leg.xiuweiRatio);
 			add("realmProductionRatio", leg.realmProductionRatio);
 		}
+		var sealBonus = this.getRiftSealBonuses();
+		if (sealBonus.xiuweiRatio > 0){
+			add("xiuweiRatio", sealBonus.xiuweiRatio);
+		}
+		if (sealBonus.realmProductionRatio > 0){
+			add("realmProductionRatio", sealBonus.realmProductionRatio);
+		}
 	},
 
 	//天机阁·每日一卦——每跨一年摇一签,纯手气,图个念想
@@ -2529,6 +2925,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.natalArtifact = null;
 		this.lastBattleReport = null;
 		this.lastBreakPhenomenon = null;
+		this.riftStance = "sword";
+		this.expedition = null;
 		this.lastLotYear = this.game.calendar.year;	//转世不立刻抽签,来年再说
 		this.demonWarned = false;
 		this.pendingOrigin = false;	//标记由转世存档带来,不入内存态重置
@@ -2956,6 +3354,78 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		};
 		this._stewardSig = null;
 
+		//②.8 玄天秘境 · 探幽罗盘与虚天破界塔(专属交互式主控台,紧随历练四式下方)
+		this.riftPanel = dojo.create("div", {className: "xxRiftPanel xxRiftArena", style: {display: "none"}}, tabContainer);
+		this.riftHead = dojo.create("div", {className: "xxRiftHead"}, this.riftPanel);
+		this.riftDeck = dojo.create("div", {className: "xxRiftDeck"}, this.riftPanel);
+		this.riftPower = dojo.create("div", {className: "xxRiftPower", style: {display: "none"}}, this.riftPanel);
+		this.riftLadder = dojo.create("div", {className: "xxRiftLadder"}, this.riftPanel);
+		this.riftSealsEl = dojo.create("div", {className: "xxRiftSeals"}, this.riftPanel);
+		var riftFoot = dojo.create("div", {className: "xxRiftFoot"}, this.riftPanel);
+		this.riftKeysEl = dojo.create("span", {className: "xxRiftKeys"}, riftFoot);
+		dojo.create("span", {className: "xxRiftHint", innerHTML: $I("cultivation.rift.hint")}, riftFoot);
+		this.riftResult = dojo.create("div", {className: "xxRiftResult", style: {display: "none"}}, this.riftPanel);
+		this._ladderFloor = -1;
+		this._resultSeq = -1;
+		this._riftDeckSig = null;
+
+		this.riftPanel.onclick = function(e){
+			var t = e.target;
+			if (!t || !t.closest){ return; }
+			var stanceEl = t.closest("[data-stance]");
+			if (stanceEl){
+				e.preventDefault();
+				if (cult.setRiftStance(stanceEl.getAttribute("data-stance"))){
+					self._riftDeckSig = null;
+					self.update();
+				}
+				return;
+			}
+			var expOpt = t.closest("[data-exp-opt]");
+			if (expOpt){
+				e.preventDefault();
+				if (cult.chooseExpedition(expOpt.getAttribute("data-exp-opt"))){
+					self._riftDeckSig = null;
+					self.update();
+				}
+				return;
+			}
+			var expAct = t.closest("[data-exp-act]");
+			if (expAct){
+				e.preventDefault();
+				var act = expAct.getAttribute("data-exp-act");
+				if (act === "extract"){
+					if (cult.extractExpedition()){
+						self._riftDeckSig = null;
+						self.update();
+					}
+				} else if (act === "start"){
+					if (cult.rift()){
+						self._riftDeckSig = null;
+						self.update();
+					}
+				}
+				return;
+			}
+			var griftAct = t.closest("[data-grift-act]");
+			if (griftAct){
+				e.preventDefault();
+				var gAct = griftAct.getAttribute("data-grift-act");
+				if (gAct === "challenge"){
+					if (cult.greaterRift()){
+						self._riftDeckSig = null;
+						self.update();
+					}
+				} else if (gAct === "sweep"){
+					if (cult.sweepRift()){
+						self._riftDeckSig = null;
+						self.update();
+					}
+				}
+				return;
+			}
+		};
+
 		var controller = new classes.ui.RealmBtnController(this.game);
 		var pillCtrl = new classes.ui.PillBtnController(this.game);
 
@@ -2980,18 +3450,6 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			btn.render(grid);
 			this.stageBtns[stage.name] = btn;
 		}
-
-		//④ 上古秘境面板——层数天梯/密钥/上次战果,秘境系统的门面
-		this.riftPanel = dojo.create("div", {className: "xxRiftPanel", style: {display: "none"}}, tabContainer);
-		this.riftHead = dojo.create("div", {className: "xxRiftHead"}, this.riftPanel);
-		this.riftPower = dojo.create("div", {className: "xxRiftPower"}, this.riftPanel);
-		this.riftLadder = dojo.create("div", {className: "xxRiftLadder"}, this.riftPanel);
-		var riftFoot = dojo.create("div", {className: "xxRiftFoot"}, this.riftPanel);
-		this.riftKeysEl = dojo.create("span", {className: "xxRiftKeys"}, riftFoot);
-		dojo.create("span", {className: "xxRiftHint", innerHTML: $I("cultivation.rift.hint")}, riftFoot);
-		this.riftResult = dojo.create("div", {className: "xxRiftResult", style: {display: "none"}}, this.riftPanel);
-		this._ladderFloor = -1;
-		this._resultSeq = -1;
 
 		//⑤ 丹药 — 炼制入库,服用消耗;每丹双钮。丹方按进境渐次解锁,
 		//整栏在首丹现世前藏起——开局不该看见一串摸不到的方术
@@ -3387,29 +3845,199 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			dojo.toggleClass(this.actionRow, "xxActionRow4", riftOpen);
 		}
 
-		//上古秘境面板——天梯/密钥/战果与三合斗法战报
+		//玄天秘境主控台——三大破阵姿态 + 秘境探幽三重奇遇 + 上古大秘境虚天破界塔 + 六枚玄天古印
 		if (this.riftPanel){
 			this.riftPanel.style.display = riftOpen ? "" : "none";
 			if (riftOpen){
-				if (this._ladderFloor !== cult.riftFloor){
-					this._ladderFloor = cult.riftFloor;
-					var F = cult.riftFloor, lo = Math.max(1, F - 10), lhtml = "";
-					for (var f = lo; f <= F + 1; f++){
-						var cls = f <= F ? "lit" : "next";
+				var F = cult.riftFloor;
+				var gInfo = cult.getGriftOdds(F + 1);
+				var pw = gInfo.need, cp = gInfo.cp;
+				var exp = cult.expedition;
+				var expSig = exp ? (exp.active ? "1" : "0") + ":" + exp.step + ":" + (exp.nodes ? exp.nodes.join(",") : "") + ":" + (exp.loot ? exp.loot.xiuwei : 0) + ":" + (exp.lastNote || "") : "none";
+				var deckSig = [
+					F,
+					cult.riftKeys,
+					cult.riftStance,
+					Math.round(cp),
+					Math.round(pw),
+					burstBlocked ? 1 : 0,
+					expSig
+				].join("|");
+
+				if (this._riftDeckSig !== deckSig){
+					this._riftDeckSig = deckSig;
+
+					//1. 顶栏: 秘境古界名称 + 秘境令库存 + 三大破阵姿态切换胶囊
+					var stanceHtml = "<div class=\"xxStanceBar\"><span class=\"xxStanceLbl\">破阵姿态</span>";
+					for (var sti = 0; sti < cult.RIFT_STANCES.length; sti++){
+						var st = cult.RIFT_STANCES[sti];
+						var stOn = (cult.riftStance === st.key);
+						var isCounter = (st.key === gInfo.affix.counter);
+						stanceHtml += "<a href=\"#!\" class=\"xxStanceChip" + (stOn ? " active" : "") + (isCounter ? " counter" : "") +
+							"\" data-stance=\"" + st.key + "\" title=\"" + st.desc + "\">" +
+							"<span class=\"xxStanceName\">" + st.label + "</span>" +
+							"<span class=\"xxStanceTag\">" + (isCounter ? "✦克制词缀" : st.tag) + "</span></a>";
+					}
+					stanceHtml += "</div>";
+
+					this.riftHead.innerHTML =
+						"<div class=\"xxRiftTopRow\">" +
+							"<div class=\"xxRiftTitleBlock\">" +
+								"<span class=\"xxRiftSealBadge\">秘</span>" +
+								"<div>" +
+									"<div class=\"xxRiftMainTitle\">玄天秘境 · 探幽与破界罗盘</div>" +
+									"<div class=\"xxRiftSubTitle\">当前古界：" + gInfo.zoneName + " · 已破第 <b>" + F + "</b> 层 · 秘境令 <b>×" + cult.riftKeys + "</b></div>" +
+								"</div>" +
+							"</div>" +
+							stanceHtml +
+						"</div>";
+
+					//2. 左栏: 【秘境探幽 · 三重连环奇遇】
+					var expStep = (exp && exp.step) ? exp.step : 0;
+					var expActive = !!(exp && exp.active);
+					var mapLabels = ["① 禁地入口", "② 第一重奇遇", "③ 第二重奇遇", "④ 核心古宝匣"];
+					if (exp && exp.nodes && exp.nodes.length >= 3){
+						var r1Obj = cult.EXPEDITION_ROOMS[exp.nodes[0]];
+						var r2Obj = cult.EXPEDITION_ROOMS[exp.nodes[1]];
+						if (r1Obj){ mapLabels[1] = "② " + r1Obj.title; }
+						if (r2Obj){ mapLabels[2] = "③ " + r2Obj.title; }
+					}
+					var mapHtml = "<div class=\"xxExpMap\">";
+					for (var mi = 0; mi < 4; mi++){
+						var mState = "locked";
+						if (mi === 0){ mState = exp ? "done" : "active"; }
+						else if (exp){
+							if (!exp.active || expStep > mi){ mState = "done"; }
+							else if (expStep === mi){ mState = "active"; }
+						}
+						mapHtml += "<div class=\"xxExpNode " + mState + "\"><i class=\"xxExpDot\"></i><span>" + mapLabels[mi] + "</span></div>";
+					}
+					mapHtml += "</div>";
+
+					var expBodyHtml = "";
+					if (expActive){
+						var curRoomKey = (exp.nodes && exp.nodes[expStep - 1]) || "herb";
+						var room = cult.EXPEDITION_ROOMS[curRoomKey] || cult.EXPEDITION_ROOMS.herb;
+						expBodyHtml =
+							"<div class=\"xxExpEncounter\">" +
+								"<div class=\"xxExpEncHd\">" +
+									"<span class=\"xxExpStepBadge\">第 " + expStep + " / 3 重 · " + room.badge + "</span>" +
+									"<span class=\"xxExpRoomTitle\">" + room.title + "</span>" +
+								"</div>" +
+								"<div class=\"xxExpRoomDesc\">" + room.desc + "</div>" +
+								"<div class=\"xxExpChoices\">" +
+									"<a href=\"#!\" class=\"xxExpChoiceBtn primary\" data-exp-opt=\"a\">" +
+										"<b>⚔ " + room.optA.label + "</b><span>" + room.optA.sub + "</span>" +
+									"</a>" +
+									"<a href=\"#!\" class=\"xxExpChoiceBtn secondary\" data-exp-opt=\"b\">" +
+										"<b>☯ " + room.optB.label + "</b><span>" + room.optB.sub + "</span>" +
+									"</a>" +
+								"</div>" +
+								"<div class=\"xxExpFooterBar\">" +
+									"<span class=\"xxExpBag\">储物袋累计：修为 +" + fmt(exp.loot.xiuwei, false, false, 0) +
+										(exp.loot.keys ? " · 秘境令 +" + exp.loot.keys : "") +
+										(exp.loot.relic ? " · 遗宝 +" + exp.loot.relic : "") + "</span>" +
+									"<a href=\"#!\" class=\"xxExpExtractBtn\" data-exp-act=\"extract\">见好就收·携宝遁出 (修为加成 / 心魔-4)</a>" +
+								"</div>" +
+							"</div>";
+					} else {
+						var lastLootStr = exp && exp.loot
+							? "上轮探幽收获：修为 +" + fmt(exp.loot.xiuwei, false, false, 0) +
+								(exp.loot.keys ? " · 秘境令 +" + exp.loot.keys : "") +
+								(exp.loot.relic ? " · 上古遗宝 +" + exp.loot.relic : "")
+							: "踏入外围禁地可历经三重奇遇抉择，搜寻【秘境令】、千年灵药与上古遗宝。";
+						expBodyHtml =
+							"<div class=\"xxExpIdle\">" +
+								"<div class=\"xxExpIdleNote\">" + (exp && exp.lastNote ? exp.lastNote : lastLootStr) + "</div>" +
+								"<div class=\"xxExpIdleSub\">" + lastLootStr + "</div>" +
+								"<a href=\"#!\" class=\"xxRiftMainBtn" + (burstBlocked ? " disabled" : "") + "\" data-exp-act=\"start\">" +
+									(burstBlocked ? "气脉调息中 · 稍候入境" : "✦ 踏入秘境 · 开启三重探幽") +
+								"</a>" +
+							"</div>";
+					}
+
+					//3. 右栏: 【上古大秘境 · 虚天破界塔】
+					var winPct = Math.round(gInfo.chance * 100);
+					var vsRatio = Math.max(8, Math.min(92, Math.round((cp / (cp + pw)) * 100)));
+					var counterStanceObj = cult.RIFT_STANCES[0];
+					for (var csi = 0; csi < cult.RIFT_STANCES.length; csi++){
+						if (cult.RIFT_STANCES[csi].key === gInfo.affix.counter){
+							counterStanceObj = cult.RIFT_STANCES[csi];
+							break;
+						}
+					}
+					var counterBadge = gInfo.countered
+						? "<span class=\"xxAffixCounter ok\">✦ 已由【" + gInfo.stance.label + "】破除此法则（胜算+12% · 奖励+25%）</span>"
+						: "<a href=\"#!\" class=\"xxAffixCounter warn\" data-stance=\"" + counterStanceObj.key + "\">▸ 点击切换【" + counterStanceObj.label + "】可克制此法则 (+12%胜算)</a>";
+
+					var griftHtml =
+						"<div class=\"xxGriftCard\">" +
+							"<div class=\"xxGriftBossHd\">" +
+								"<div>" +
+									"<span class=\"xxGriftFloorTag\">第 " + (F + 1) + " 层镇守</span>" +
+									"<span class=\"xxGriftBossName\">" + gInfo.bossName + "</span>" +
+								"</div>" +
+								"<span class=\"xxGriftOddsBadge " + (winPct >= 75 ? "hi" : (winPct >= 45 ? "mid" : "lo")) + "\">破阵胜算 " + winPct + "%</span>" +
+							"</div>" +
+							"<div class=\"xxAffixBox\">" +
+								"<div class=\"xxAffixLine\"><span class=\"xxAffixTag\">天地法则 · " + gInfo.affix.label + "</span>" + counterBadge + "</div>" +
+								"<div class=\"xxAffixDesc\">" + gInfo.affix.desc + "</div>" +
+							"</div>" +
+							"<div class=\"xxVsBox\">" +
+								"<div class=\"xxVsLabels\">" +
+									"<span class=\"xxVsMine\">吾道战力 <b>" + fmt(cp, false, false, 0) + "</b></span>" +
+									"<span class=\"xxVsNeed\">守关威压 <b>" + fmt(pw, false, false, 0) + "</b></span>" +
+								"</div>" +
+								"<div class=\"xxVsBar\"><i style=\"width:" + vsRatio + "%\"></i></div>" +
+							"</div>" +
+							"<div class=\"xxGriftBtnRow\">" +
+								"<a href=\"#!\" class=\"xxRiftMainBtn grift" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-grift-act=\"challenge\">" +
+									"⚔ 破阵闯关 · 第 " + (F + 1) + " 层 <span>(耗1枚秘境令)</span>" +
+								"</a>" +
+								(F >= 1 ? (
+									"<a href=\"#!\" class=\"xxRiftSubBtn" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-grift-act=\"sweep\" title=\"100%必胜稳刷第 " + F + " 层，无心魔风险，获取修为、上古遗宝与法宝掉落\">" +
+										"☯ 清剿旧境 · 第 " + F + " 层 <span>(100%稳刷遗宝/法宝)</span>" +
+									"</a>"
+								) : "") +
+							"</div>" +
+						"</div>";
+
+					this.riftDeck.innerHTML =
+						"<div class=\"xxRiftCol xxExpCol\">" +
+							"<div class=\"xxRiftColTitle\"><span>秘境探幽 · 连环奇遇</span><small>三重抉择 · 搜寻秘境令与仙草</small></div>" +
+							mapHtml + expBodyHtml +
+						"</div>" +
+						"<div class=\"xxRiftCol xxGriftCol\">" +
+							"<div class=\"xxRiftColTitle\"><span>虚天破界 · 上古大秘境</span><small>法则破阵 · 夺取上古遗宝与本命法宝</small></div>" +
+							griftHtml +
+						"</div>";
+
+					//4. 天梯层数条 + 六枚玄天古印
+					var lo = Math.max(1, F - 8), lhtml = "<span class=\"xxLadderLbl\">破界天梯</span>";
+					for (var f = lo; f <= F + 3; f++){
+						var cls = f <= F ? "lit" : (f === F + 1 ? "next" : "future");
 						lhtml += "<span class=\"xxFloor " + cls + "\" title=\"" +
 							String($I("cultivation.rift.floor.tip", [f])).replace(/"/g, "&quot;") + "\">" + f + "</span>";
 					}
 					this.riftLadder.innerHTML = lhtml;
-					this.riftHead.innerHTML = $I("cultivation.rift.head", [F, F + 1]);
+
+					var sealHtml = "<span class=\"xxLadderLbl\">玄天古印</span>";
+					for (var si2 = 0; si2 < cult.RIFT_SEALS.length; si2++){
+						var sealObj = cult.RIFT_SEALS[si2];
+						var sealLit = (F >= sealObj.floor);
+						sealHtml += "<span class=\"xxSealBadge " + (sealLit ? "lit" : "locked") + "\" title=\"通关上古秘境第 " + sealObj.floor + " 层激活：" + sealObj.desc + "\">" +
+							"<i>" + (sealLit ? "✦" : "○") + "</i>" + sealObj.floor + "层·" + sealObj.label + " <small>(" + sealObj.desc + ")</small></span>";
+					}
+					this.riftSealsEl.innerHTML = sealHtml;
 				}
-				//战力对照——守关妖兽的门槛 vs 汝之道行
-				var pw = cult.floorPower(cult.riftFloor + 1), cp = cult.getCombatPower();
-				var powerHtml = $I("cultivation.rift.power",
-					[fmt(pw, false, false, 0), fmt(cp, false, false, 0)]);
+
+				//保持旧字段兼容测试
+				var powerHtml = $I("cultivation.rift.power", [fmt(pw, false, false, 0), fmt(cp, false, false, 0)]);
 				if (this.riftPower.innerHTML !== powerHtml){ this.riftPower.innerHTML = powerHtml; }
 				dojo.toggleClass(this.riftPower, "xxPowerLow", cp < pw);
 				var keysHtml = $I("cultivation.rift.keys", [cult.riftKeys]);
 				if (this.riftKeysEl.innerHTML !== keysHtml){ this.riftKeysEl.innerHTML = keysHtml; }
+
 				var last = cult.lastAction;
 				this.riftResult.style.display = last ? "" : "none";
 				if (last && this._resultSeq !== last.seq){

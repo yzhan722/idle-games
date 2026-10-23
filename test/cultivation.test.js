@@ -1174,3 +1174,63 @@ test("Redesigned Spiritual Treasury (洞府灵库) categorizes all resources wit
     const craftRes = activeRes.filter(r => r.category === "craft").map(r => r.name);
     expect(craftRes).toEqual(["beam", "slab", "steel", "alloy", "eludium", "blueprint"]);
 });
+
+
+test("Secret Realm 3-step interactive expedition, tactical stances, Greater Rift law affixes, floor sweep, and Ancient Realm Seals", () => {
+    const cult = game.cultivation;
+    cult.getStage("zhuji_0").researched = true;
+    cult.actionCd = 0;
+
+    // 1. Tactical stances & law affix counter mechanics
+    expect(cult.getRiftStance().key).toBe("sword");
+    expect(cult.setRiftStance("array")).toBe(true);
+    expect(cult.riftStance).toBe("array");
+    // Floor 2 affix is "ward" (太古禁制), countered by "array" stance (+12% win chance)
+    const oddsCountered = cult.getGriftOdds(2);
+    expect(oddsCountered.countered).toBe(true);
+    cult.setRiftStance("stealth");
+    const oddsUncountered = cult.getGriftOdds(2);
+    expect(oddsUncountered.countered).toBe(false);
+    expect(oddsCountered.chance).toBeGreaterThan(oddsUncountered.chance);
+
+    // 2. Entering Secret Realm launches a 3-step interactive expedition
+    cult.actionCd = 0;
+    expect(cult.rift()).toBe(true);
+    expect(cult.expedition).toBeTruthy();
+    expect(cult.expedition.active).toBe(true);
+    expect(cult.expedition.step).toBe(1);
+    expect(cult.expedition.maxSteps).toBe(3);
+    expect(cult.expedition.nodes.length).toBe(3);
+    expect(cult.expedition.nodes[2]).toBe("altar");
+
+    // Step 1 -> Step 2 -> Step 3 -> Completion via chooseExpedition
+    expect(cult.chooseExpedition("a")).toBe(true);
+    expect(cult.expedition.step).toBe(2);
+    expect(cult.chooseExpedition("b")).toBe(true);
+    expect(cult.expedition.step).toBe(3);
+    expect(cult.chooseExpedition("b")).toBe(true);
+    expect(cult.expedition.active).toBe(false);
+    expect(cult.expedition.loot.xiuwei).toBeGreaterThan(0);
+
+    // Early safe extraction (见好就收) grants extra xiuwei & reduces heart demon
+    cult.startExpedition();
+    cult.heartDemon = 25;
+    expect(cult.extractExpedition()).toBe(true);
+    expect(cult.expedition.active).toBe(false);
+    expect(cult.heartDemon).toBe(21);
+
+    // 3. Greater Rift safe floor sweep (破界荡魔) & Ancient Realm Seals (玄天古印)
+    cult.actionCd = 0;
+    cult.riftFloor = 6;
+    cult.riftKeys = 2;
+    const relicsBefore = game.resPool.get("relic").value || 0;
+    expect(cult.sweepRift()).toBe(true);
+    expect(cult.riftKeys).toBe(1);
+    expect(game.resPool.get("relic").value).toBeGreaterThan(relicsBefore);
+    expect(cult.lastBattleReport.swept).toBe(true);
+
+    const seals = cult.getRiftSealBonuses();
+    expect(seals.unlocked).toBe(2); // Floors 3 and 6 unlocked
+    expect(seals.xiuweiRatio).toBeCloseTo(0.15);
+    expect(seals.realmProductionRatio).toBeCloseTo(0.15);
+});
