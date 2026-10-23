@@ -3723,3 +3723,526 @@ input, select, textarea, button { font-family: inherit; }
 
 
 
+
+
+/* ============================================================
+   玄天丹鼎 · 三昧控火与丹毒经脉体系 (Interactive Alchemy Cauldron & Pill Box UI)
+   ============================================================ */
+.xxAlchemyArena {
+	max-width: 1120px;
+	margin: 4px 0 18px;
+	padding: 14px 16px 14px;
+	border: 1px solid rgba(212, 176, 106, .42);
+	border-radius: 12px;
+	background:
+		linear-gradient(125deg, rgba(10, 15, 22, .94) 0%, rgba(15, 22, 32, .88) 55%, rgba(12, 18, 28, .82) 100%),
+		url("art/banner_workshop.jpg") center 42% / cover no-repeat,
+		rgba(11, 17, 26, .92);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 8px 28px rgba(0, 0, 0, .48);
+}
+
+.xxAlcTopRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid rgba(212, 176, 106, .22);
+}
+.xxAlcTitleBlock {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.xxAlcSealBadge {
+	width: 34px;
+	height: 34px;
+	border-radius: 8px;
+	border: 1px solid rgba(79, 209, 165, .62);
+	background: radial-gradient(circle at 30% 25%, rgba(79, 209, 165, .28), rgba(14, 24, 34, .94));
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-family: var(--xx-serif);
+	font-size: 17px;
+	color: var(--xx-jade);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+}
+.xxAlcMainTitle {
+	font-family: var(--xx-serif);
+	font-size: 15.5px;
+	font-weight: 600;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+}
+.xxAlcSubTitle {
+	font-family: var(--xx-sans);
+	font-size: 12px;
+	color: var(--xx-mute);
+	margin-top: 2px;
+}
+.xxAlcSubTitle b {
+	color: var(--xx-jade);
+}
+
+/* 三昧控火切换器 */
+.xxFireBar {
+	display: inline-flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.xxFireLbl {
+	font-family: var(--xx-serif);
+	font-size: 12px;
+	letter-spacing: 1.5px;
+	color: var(--xx-mute);
+	margin-right: 2px;
+}
+.xxFireChip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	border: 1px solid rgba(120, 136, 156, .32);
+	background: rgba(9, 14, 22, .78);
+	color: var(--xx-paper) !important;
+	font-family: var(--xx-sans);
+	font-size: 12px;
+	text-decoration: none !important;
+	transition: all .16s ease;
+}
+.xxFireChip:hover {
+	border-color: var(--xx-gold);
+	color: var(--xx-gold-hi) !important;
+}
+.xxFireChip.active.gentle {
+	border-color: var(--xx-jade);
+	background: linear-gradient(135deg, rgba(16, 44, 36, .92), rgba(14, 24, 30, .92));
+	color: var(--xx-jade) !important;
+	box-shadow: 0 0 12px rgba(79, 209, 165, .25);
+}
+.xxFireChip.active.fierce {
+	border-color: #f08c4b;
+	background: linear-gradient(135deg, rgba(58, 28, 16, .92), rgba(28, 18, 20, .92));
+	color: #ffb87a !important;
+	box-shadow: 0 0 12px rgba(240, 140, 75, .28);
+}
+.xxFireChip.active.azure {
+	border-color: #6fd3ff;
+	background: linear-gradient(135deg, rgba(16, 38, 58, .92), rgba(18, 24, 38, .92));
+	color: #9be2ff !important;
+	box-shadow: 0 0 12px rgba(111, 211, 255, .28);
+}
+.xxFireTag {
+	font-size: 10.5px;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, .07);
+	color: var(--xx-mute);
+}
+.xxFireChip.active .xxFireTag {
+	color: var(--xx-paper);
+	background: rgba(255, 255, 255, .14);
+}
+
+/* 中栏双表盘: 经脉丹毒仪 + 周天药力/掌天绿液台 */
+.xxAlcStatusRow {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+	margin-top: 10px;
+}
+.xxAlcMeterCard {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 10px 12px;
+	border-radius: 9px;
+	border: 1px solid rgba(120, 136, 156, .24);
+	background: rgba(8, 13, 21, .80);
+}
+.xxAlcMeterHd {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+.xxAlcMeterTitle {
+	font-family: var(--xx-serif);
+	font-size: 13.5px;
+	font-weight: 600;
+	letter-spacing: 1px;
+	color: var(--xx-gold-hi);
+}
+.xxAlcMeterTitle b {
+	color: var(--xx-paper);
+}
+.xxAlcFireHint {
+	font-size: 11.5px;
+	color: var(--xx-jade);
+}
+
+.xxToxBadge {
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+}
+.xxToxBadge.clean {
+	background: rgba(79, 209, 165, .16);
+	border: 1px solid rgba(79, 209, 165, .45);
+	color: var(--xx-jade);
+}
+.xxToxBadge.warn {
+	background: rgba(212, 176, 106, .18);
+	border: 1px solid rgba(212, 176, 106, .48);
+	color: var(--xx-gold-hi);
+}
+.xxToxBadge.high {
+	background: rgba(240, 140, 75, .20);
+	border: 1px solid rgba(240, 140, 75, .52);
+	color: #ffb074;
+}
+.xxToxBadge.crit {
+	background: rgba(224, 96, 74, .24);
+	border: 1px solid rgba(224, 96, 74, .65);
+	color: #ff8e7a;
+}
+
+.xxToxBarWrap {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.xxToxBar {
+	height: 7px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, .08);
+	overflow: hidden;
+}
+.xxToxBar i {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	transition: width .25s ease;
+}
+.xxToxBar i.clean { background: linear-gradient(90deg, #38b88f, #6ee7b7); }
+.xxToxBar i.warn  { background: linear-gradient(90deg, #6ee7b7, #f59e0b); }
+.xxToxBar i.high  { background: linear-gradient(90deg, #f59e0b, #ea580c); }
+.xxToxBar i.crit  { background: linear-gradient(90deg, #ea580c, #ef4444); }
+
+.xxToxTicks {
+	display: flex;
+	justify-content: space-between;
+	font-size: 10.5px;
+	color: var(--xx-mute);
+}
+.xxToxFoot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.xxToxDesc {
+	font-size: 11.5px;
+	color: #cbd5e1;
+	flex: 1 1 200px;
+	line-height: 1.4;
+}
+.xxToxPurgeBtn,
+.xxAlcDewBtn {
+	padding: 4px 11px;
+	border-radius: 999px;
+	border: 1px solid rgba(79, 209, 165, .48);
+	background: linear-gradient(180deg, rgba(24, 54, 46, .92), rgba(14, 32, 28, .92));
+	color: var(--xx-jade) !important;
+	font-size: 11.5px;
+	font-weight: 600;
+	text-decoration: none !important;
+	white-space: nowrap;
+	transition: all .15s ease;
+}
+.xxToxPurgeBtn:hover:not(.disabled),
+.xxAlcDewBtn:hover:not(.disabled) {
+	border-color: var(--xx-gold);
+	color: var(--xx-gold-hi) !important;
+	transform: translateY(-1px);
+}
+.xxToxPurgeBtn.disabled,
+.xxAlcDewBtn.disabled {
+	opacity: .42;
+	pointer-events: none;
+}
+
+.xxAlcBuffRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	min-height: 24px;
+	align-items: center;
+}
+.xxAlcBuffChip {
+	padding: 2px 9px;
+	border-radius: 999px;
+	font-size: 11.5px;
+	font-weight: 600;
+	background: rgba(79, 209, 165, .15);
+	border: 1px solid rgba(79, 209, 165, .42);
+	color: var(--xx-jade);
+}
+.xxAlcBuffChip.boost {
+	background: rgba(212, 176, 106, .16);
+	border-color: rgba(212, 176, 106, .45);
+	color: var(--xx-gold-hi);
+}
+.xxAlcBuffIdle {
+	font-size: 11.5px;
+	color: var(--xx-mute);
+}
+.xxAlcDewRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding-top: 6px;
+	border-top: 1px dashed rgba(120, 136, 156, .22);
+}
+.xxAlcDewInfo {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1 1 200px;
+}
+.xxAlcDewInfo b {
+	font-size: 12px;
+	color: var(--xx-jade);
+}
+.xxAlcDewInfo span,
+.xxAlcDewRow.locked span {
+	font-size: 11px;
+	color: var(--xx-mute);
+}
+
+.xxAlcNoteBar {
+	margin-top: 9px;
+	padding: 6px 11px;
+	border-radius: 7px;
+	background: rgba(16, 26, 38, .82);
+	border-left: 3px solid var(--xx-gold);
+	font-size: 12px;
+	color: var(--xx-paper);
+}
+.xxAlcNoteBar span {
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+}
+
+/* 六大丹方符箓卡网格 */
+.xxAlcRecipeGrid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+	margin-top: 10px;
+}
+.xxPillCard {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 7px;
+	padding: 10px 12px;
+	border-radius: 9px;
+	border: 1px solid rgba(212, 176, 106, .26);
+	background: linear-gradient(165deg, rgba(14, 21, 32, .90), rgba(9, 14, 22, .92));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+	transition: border-color .16s ease;
+}
+.xxPillCard.cleansing {
+	border-color: rgba(79, 209, 165, .32);
+}
+.xxPillCard:hover {
+	border-color: rgba(212, 176, 106, .52);
+}
+.xxPillCardHd {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+}
+.xxPillTitleWrap {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+.xxPillTierTag {
+	padding: 1px 6px;
+	border-radius: 5px;
+	font-size: 10.5px;
+	font-weight: 600;
+	background: rgba(212, 176, 106, .16);
+	border: 1px solid rgba(212, 176, 106, .38);
+	color: var(--xx-gold-hi);
+}
+.xxPillCard.cleansing .xxPillTierTag {
+	background: rgba(79, 209, 165, .15);
+	border-color: rgba(79, 209, 165, .38);
+	color: var(--xx-jade);
+}
+.xxPillName {
+	font-family: var(--xx-serif);
+	font-size: 14.5px;
+	font-weight: 600;
+	letter-spacing: 1px;
+	color: var(--xx-paper);
+}
+.xxPillStockWrap {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+.xxPillStock {
+	font-size: 11.5px;
+	color: var(--xx-mute);
+}
+.xxPillStock.has {
+	color: var(--xx-gold-hi);
+}
+.xxPillSupStock {
+	padding: 1px 6px;
+	border-radius: 999px;
+	font-size: 10.5px;
+	font-weight: 700;
+	background: rgba(111, 211, 255, .18);
+	border: 1px solid rgba(111, 211, 255, .48);
+	color: #9be2ff;
+}
+
+.xxPillTagRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+.xxPillTag {
+	padding: 1px 6px;
+	border-radius: 4px;
+	font-size: 10.5px;
+}
+.xxPillTag.role {
+	background: rgba(255, 255, 255, .06);
+	color: var(--xx-mute);
+}
+.xxPillTag.tox-add {
+	background: rgba(240, 140, 75, .15);
+	border: 1px solid rgba(240, 140, 75, .36);
+	color: #ffb074;
+}
+.xxPillTag.tox-purge {
+	background: rgba(79, 209, 165, .15);
+	border: 1px solid rgba(79, 209, 165, .40);
+	color: var(--xx-jade);
+}
+.xxPillTag.eff-ok {
+	background: rgba(120, 136, 156, .12);
+	color: #94a3b8;
+}
+.xxPillTag.eff-warn {
+	background: rgba(224, 96, 74, .16);
+	border: 1px solid rgba(224, 96, 74, .42);
+	color: #f29b8c;
+}
+
+.xxPillDesc {
+	font-size: 11.5px;
+	line-height: 1.45;
+	color: #cbd5e1;
+}
+.xxPillCosts {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 5px;
+	font-size: 11px;
+}
+.xxPillCostLbl {
+	color: var(--xx-mute);
+}
+.xxPillCostChip {
+	padding: 1px 6px;
+	border-radius: 4px;
+	background: rgba(15, 23, 35, .85);
+	border: 1px solid rgba(120, 136, 156, .25);
+}
+.xxPillCostChip.ok {
+	color: var(--xx-jade);
+	border-color: rgba(79, 209, 165, .32);
+}
+.xxPillCostChip.lack {
+	color: #e58a76;
+	border-color: rgba(224, 96, 74, .32);
+}
+
+.xxPillBtnRow {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 6px;
+	margin-top: 2px;
+}
+.xxAlcBtn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1px;
+	padding: 6px 8px;
+	border-radius: 7px;
+	text-decoration: none !important;
+	text-align: center;
+	transition: all .15s ease;
+}
+.xxAlcBtn.craft {
+	border: 1px solid rgba(212, 176, 106, .45);
+	background: linear-gradient(180deg, rgba(44, 34, 18, .92), rgba(22, 18, 12, .92));
+}
+.xxAlcBtn.use {
+	border: 1px solid rgba(79, 209, 165, .45);
+	background: linear-gradient(180deg, rgba(16, 40, 36, .92), rgba(10, 24, 22, .92));
+}
+.xxAlcBtn:hover:not(.disabled) {
+	transform: translateY(-1px);
+	border-color: var(--xx-gold-hi);
+	box-shadow: 0 4px 10px rgba(0, 0, 0, .35);
+}
+.xxAlcBtn b {
+	font-size: 12px;
+	color: var(--xx-gold-hi);
+}
+.xxAlcBtn.use b {
+	color: var(--xx-jade);
+}
+.xxAlcBtn span {
+	font-size: 10px;
+	color: var(--xx-mute);
+}
+.xxAlcBtn.disabled {
+	opacity: .42;
+	pointer-events: none;
+}
+
+@media (max-width: 960px) {
+	.xxAlcStatusRow {
+		grid-template-columns: 1fr;
+	}
+	.xxAlcRecipeGrid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+@media (max-width: 600px) {
+	.xxAlcRecipeGrid {
+		grid-template-columns: 1fr;
+	}
+}

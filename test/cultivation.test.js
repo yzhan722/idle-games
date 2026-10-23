@@ -1234,3 +1234,59 @@ test("Secret Realm 3-step interactive expedition, tactical stances, Greater Rift
     expect(seals.xiuweiRatio).toBeCloseTo(0.15);
     expect(seals.realmProductionRatio).toBeCloseTo(0.15);
 });
+
+
+test("Redesigned Alchemy Cauldron: 3 fire modes, Dan Toxicity meridian balance, Supreme Vein Pills, Meridian Detox, and 5-tier Alchemy Mastery", () => {
+    const cult = game.cultivation;
+    cult.getStage("lianqi_2").researched = true;
+    cult.getStage("zhuji_0").researched = true;
+    cult.getStage("jiedan_0").researched = true;
+
+    // 1. Cauldron Fire modes & refinePill (gentle / fierce / azure)
+    expect(cult.getCauldronFire().key).toBe("gentle");
+    expect(cult.setCauldronFire("fierce")).toBe(true);
+    game.resPool.get("catnip").value = 5000;
+    game.resPool.get("spice").value = 500;
+    game.resPool.get("minerals").value = 5000;
+
+    jest.spyOn(Math, "random").mockReturnValue(0.10); // triggers fierce double pill & azure supreme pill
+    expect(cult.refinePill("juqi")).toBe(true);
+    expect(cult.getPill("juqi").val).toBe(2); // fierce fire -> 2 pills from 1 batch!
+
+    expect(cult.setCauldronFire("azure")).toBe(true);
+    expect(cult.refinePill("juqi")).toBe(true);
+    expect(cult.supremePills.juqi).toBe(1); // azure fire -> 1 Supreme Vein Pill (✦丹纹灵丹)!
+    Math.random.mockRestore();
+
+    // 2. Consuming Supreme Vein Pill grants 1.4x duration (2100 ticks) and 50% less toxicity
+    expect(cult.usePill("juqi")).toBe(true);
+    expect(cult.buffs.juqi).toBe(2100);
+    expect(cult.buffs.juqiSupreme).toBe(2100);
+    expect(cult.pillToxicity).toBe(9); // 18 * 0.5 = 9
+
+    // 3. Dan Toxicity (丹毒) accumulation, meridian penalty, hard-block at >=90, and purging
+    cult.pillToxicity = 92;
+    const critTox = cult.getToxicityStatus();
+    expect(critTox.tier).toBe("crit");
+    expect(critTox.blocked).toBe(true);
+    cult.getPill("zhujidan").val = 1;
+    // Offensive pill is blocked when toxicity >= 90
+    expect(cult.usePill("zhujidan")).toBe(false);
+
+    // Cleansing pill (qingxin) is still allowed at >=90 toxicity and purges toxicity!
+    cult.getPill("qingxin").val = 1;
+    expect(cult.usePill("qingxin")).toBe(true);
+    expect(cult.pillToxicity).toBe(74);
+
+    // Active Meridian Detox (周天洗髓 · 运功逼毒) purges toxicity directly
+    expect(cult.purgeToxicity()).toBe(true);
+    expect(cult.pillToxicity).toBeLessThan(74);
+
+    // 4. Realm Tolerance & 5-Tier Alchemy Mastery
+    expect(cult.getPillRealmEfficacy("juqi")).toBeCloseTo(0.65); // Jiedan realm resistance on mundane juqi
+    cult.alchemyExp = 85;
+    const rank5 = cult.getAlchemyRank();
+    expect(rank5.rank).toBe(5);
+    expect(rank5.costMult).toBeCloseTo(0.75);
+    expect(rank5.xiuweiRatio).toBeCloseTo(0.25);
+});

@@ -61,6 +61,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	lastBreakPhenomenon: null,	//最近一次破境的天地异象快照
 	riftStance: "sword",	//破阵姿态: sword(青元剑阵) | array(奇门神识) | stealth(敛息灵隐)
 	expedition: null,		//秘境探幽连环奇遇会话: {active,step,maxSteps,nodes,loot,lastNote}
+	pillToxicity: 0,		//0..100 经脉丹毒淤积——服猛药累积,过高压制吐纳与破境,可借周天洗髓或净心丹祛除
+	cauldronFire: "gentle",	//三昧控火: gentle(文火温养) | fierce(武火催丹) | azure(乾蓝灵火)
+	alchemyExp: 0,			//丹道造诣熟练度——开炉炼丹累积,晋升五阶丹师解锁耗材减免与万产加成
+	supremePills: null,		//{juqi:0,...} ✦丹纹灵丹库存——乾蓝灵火或掌天绿液淬出,药效+40%且丹毒减半
+	pillCraftCount: null,	//{juqi:0,...} 本世各丹开炉计数——用于丹方药材动态温和递进
+	lastAlchemyNote: null,	//玄天丹鼎最近一次开炉/服丹/洗髓纪要
 
 	//突破异象 — 每次冲关掷一次;多数纯叙事,小幅修正当次成败/代价。
 	//w 为百分比权重,合计 82 —— 余下 18% 无异象静默。
@@ -113,12 +119,48 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		{key:"tian", weight:8,  xiuweiMult:2.5,  priceMult:1.0,  combatMult:1.25}
 	],
 
+	//玄天丹鼎 · 三昧控火法门: 决定开炉炼丹的火候特性与服丹丹毒减免
+	CAULDRON_FIRES: [
+		{
+			key: "gentle",
+			label: "☯ 文火温养",
+			tag: "丹毒-30% · 造诣×1.5",
+			desc: "慢火温养百草灵液，药性醇和：开炉获 1.5 倍丹道造诣并顺带化解 4 点丹毒；服丹时产生的丹毒减少 30%。"
+		},
+		{
+			key: "fierce",
+			label: "🔥 武火催丹",
+			tag: "35%~55% 一炉双丹",
+			desc: "引地肺赤炎猛催药力：开炉有 35%（随丹道造诣最高达 55%）概率触发【一炉双丹】，单份药材凝成 2 枚灵丹！"
+		},
+		{
+			key: "azure",
+			label: "💠 乾蓝灵火",
+			tag: "30%~50% 凝出丹纹",
+			desc: "借乾蓝冰焰与青莲地火交融淬髓：开炉有 30%（随丹道造诣最高达 50%）概率凝成【✦丹纹灵丹】，服之药效与时长 +40%、丹毒减半！"
+		}
+	],
+
+	//五阶丹道造诣: 随开炉次数晋升,解锁耗材减免、暴击率、丹毒代谢与常驻修为/万产加成
+	ALCHEMY_RANKS: [
+		{rank: 1, minExp: 0,  title: "一阶 · 凡火学徒", costMult: 1.00, critBonus: 0.00, detoxMult: 1.0, xiuweiRatio: 0,    realmProductionRatio: 0,    desc: "初掌药理，开启玄天丹鼎三昧控火"},
+		{rank: 2, minExp: 6,  title: "二阶 · 控火丹童", costMult: 0.90, critBonus: 0.05, detoxMult: 1.2, xiuweiRatio: 0,    realmProductionRatio: 0,    desc: "开炉耗材 -10% · 双丹/丹纹率 +5% · 丹毒代谢 +20%"},
+		{rank: 3, minExp: 18, title: "三阶 · 灵丹妙手", costMult: 0.85, critBonus: 0.10, detoxMult: 1.5, xiuweiRatio: 0.06, realmProductionRatio: 0,    desc: "耗材 -15% · 双丹/丹纹率 +10% · 丹毒代谢 +50% · 修为吐纳 +6%"},
+		{rank: 4, minExp: 40, title: "四阶 · 金鼎丹王", costMult: 0.80, critBonus: 0.15, detoxMult: 1.8, xiuweiRatio: 0.14, realmProductionRatio: 0.06, desc: "耗材 -20% · 双丹/丹纹率 +15% · 修为吐纳 +14% · 洞府万产 +6%"},
+		{rank: 5, minExp: 80, title: "五阶 · 玄天丹圣", costMult: 0.75, critBonus: 0.20, detoxMult: 2.2, xiuweiRatio: 0.25, realmProductionRatio: 0.12, desc: "耗材 -25% · 双丹/丹纹率 +20% · 修为吐纳 +25% · 洞府万产 +12%"}
+	],
+
 	//pills — 真道具:先炼制入库(val++),再服用消耗(val--)。效果在 usePill()
 	//unlock(c) 决定该丹何时现形——丹方不悟自现,按修行进境渐次解锁
 	pills: [{
 		name: "juqi",
 		label: $I("cultivation.pill.juqi.label"),
 		description: $I("cultivation.pill.juqi.desc"),
+		tier: "一品·吐纳",
+		role: "周天增幅",
+		toxicity: 18,
+		maxRealmIdx: 2,
+		effectSummary: "5分钟内修为吐纳 +65%~100%（结丹后凡丹产生境界抗药性；✦丹纹灵丹无视衰减且持续7分钟）",
 		unlock: function(c){ return c.getStage("lianqi_2").researched; },
 		prices: [{name:"catnip", val:120}, {name:"spice", val:8}],
 		val: 0
@@ -126,6 +168,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		name: "zhujidan",
 		label: $I("cultivation.pill.zhujidan.label"),
 		description: $I("cultivation.pill.zhujidan.desc"),
+		tier: "二品·破障",
+		role: "筑基冲关",
+		toxicity: 26,
+		maxRealmIdx: 2,
+		effectSummary: "下次冲关破境成功率相对提升 +50%（✦丹纹灵丹额外涤除 8 点心魔）",
 		unlock: function(c){ return c.getStage("lianqi_8").researched; },
 		prices: [{name:"minerals", val:200}, {name:"spice", val:25}],
 		val: 0
@@ -133,6 +180,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		name: "qingxin",
 		label: $I("cultivation.pill.qingxin.label"),
 		description: $I("cultivation.pill.qingxin.desc"),
+		tier: "二品·祛毒",
+		role: "涤魔清脉",
+		toxicity: -18,
+		maxRealmIdx: 8,
+		effectSummary: "立消 15 点心魔，并涤荡经脉 18 点丹毒（✦丹纹灵丹消 24 心魔、祛 28 丹毒）",
 		unlock: function(c){ return c.getStage("zhuji_0").researched; },
 		prices: [{name:"spice", val:60}, {name:"minerals", val:400}],
 		val: 0
@@ -140,6 +192,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		name: "jiangchen",
 		label: $I("cultivation.pill.jiangchen.label"),
 		description: $I("cultivation.pill.jiangchen.desc"),
+		tier: "三品·冲关",
+		role: "结丹护道",
+		toxicity: 24,
+		maxRealmIdx: 5,
+		effectSummary: "破境率 +25%（上限+65%），且5分钟内修为吐纳 +35%（✦丹纹灵丹破境+35%且持续7分钟）",
 		unlock: function(c){ return c.getStage("jiedan_0").researched; },
 		prices: [{name:"gold", val:150}, {name:"spice", val:80}],
 		val: 0
@@ -147,6 +204,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		name: "peiying",
 		label: $I("cultivation.pill.peiying.label"),
 		description: $I("cultivation.pill.peiying.desc"),
+		tier: "四品·涤魂",
+		role: "固元净脉",
+		toxicity: -35,
+		maxRealmIdx: 8,
+		effectSummary: "瞬间平息破境余威震荡，净除 30 点心魔与 35 点丹毒（✦丹纹灵丹消 45 心魔、祛 50 丹毒）",
 		unlock: function(c){ return c.getStage("yuanying_0").researched; },
 		prices: [{name:"science", val:3500}, {name:"spice", val:200}],
 		val: 0
@@ -154,6 +216,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		name: "biyan",
 		label: $I("cultivation.pill.biyan.label"),
 		description: $I("cultivation.pill.biyan.desc"),
+		tier: "五品·圣药",
+		role: "青莲万法",
+		toxicity: 22,
+		maxRealmIdx: 8,
+		effectSummary: "5分钟内修为吐纳 +50%、洞府万产 +25%、斗法战力 ×1.35（✦丹纹圣酿持续7分钟且战力 ×1.45）",
 		unlock: function(c){ return c.getStage("huashen_0").researched; },
 		prices: [{name:"faith", val:2500}, {name:"spice", val:400}],
 		val: 0
@@ -825,6 +892,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.bottleDew = 0;
 		this.riftStance = "sword";
 		this.expedition = null;
+		this.pillToxicity = 0;
+		this.cauldronFire = "gentle";
+		this.alchemyExp = 0;
+		this.supremePills = {};
+		this.pillCraftCount = {};
+		this.lastAlchemyNote = null;
 		this.tale = {};
 		this.taleLog = [];
 		this.stages = this.buildStages();
@@ -1391,7 +1464,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var nArt = this.getArtifact(this.natalArtifact);
 			if (nArt && nArt.researched){ mult *= 1.15; }			//本命法宝温养 +15%
 		}
-		if (this.buffs && this.buffs.biyan > 0){ mult *= 1.35; }	//碧焰酒燃灵火 ×1.35
+		if (this.buffs && this.buffs.biyan > 0){
+			mult *= (this.buffs.biyanSupreme > 0 ? 1.45 : 1.35);	//碧焰酒燃灵火 ×1.35 (丹纹 ×1.45)
+		}
 		var leg = this.getLegacyBonus();
 		if (leg.lives > 0){ mult *= leg.combatMult; }				//前世轮回印记
 		var sealBonus = this.getRiftSealBonuses();
@@ -1426,6 +1501,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			c += this.getLegacyBonus().chanceBonus;	//轮回印记前尘悟道
 		}
 		c -= this.heartDemon * 0.006;	//心魔噬心,道念不纯则破境愈艰
+		if (stage.chance != null && stage.chance < 1 && (this.pillToxicity || 0) >= 40){
+			c -= this.getToxicityStatus().breakPenalty;	//丹毒淤脉,真元运转不畅
+		}
 		if (this.failStreakStage == stage.name){
 			c += Math.min(5, this.failStreak) * 0.04;	//屡败屡战
 		}
@@ -1675,7 +1753,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.game.resetAutomatic();
 	},
 
-	// ---------------- pills / seclusion / wander ----------------
+	// ---------------- 玄天丹鼎 · 三昧控火与丹毒经脉体系 ----------------
 
 	getPill: function(name){
 		for (var i = 0; i < this.pills.length; i++){
@@ -1695,10 +1773,238 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return false;
 	},
 
-	//炼制入库 — controller pays the price, this just counts
+	getCauldronFire: function(){
+		var key = this.cauldronFire || "gentle";
+		for (var i = 0; i < this.CAULDRON_FIRES.length; i++){
+			if (this.CAULDRON_FIRES[i].key === key){ return this.CAULDRON_FIRES[i]; }
+		}
+		return this.CAULDRON_FIRES[0];
+	},
+
+	setCauldronFire: function(key){
+		for (var i = 0; i < this.CAULDRON_FIRES.length; i++){
+			if (this.CAULDRON_FIRES[i].key === key){
+				this.cauldronFire = key;
+				return true;
+			}
+		}
+		return false;
+	},
+
+	getAlchemyRank: function(){
+		var exp = Math.max(0, this.alchemyExp || 0);
+		var cur = this.ALCHEMY_RANKS[0];
+		var next = null;
+		for (var i = 0; i < this.ALCHEMY_RANKS.length; i++){
+			if (exp >= this.ALCHEMY_RANKS[i].minExp){
+				cur = this.ALCHEMY_RANKS[i];
+				next = this.ALCHEMY_RANKS[i + 1] || null;
+			}
+		}
+		var pct = 100;
+		if (next){
+			var span = Math.max(1, next.minExp - cur.minExp);
+			pct = Math.min(100, Math.max(0, Math.round(((exp - cur.minExp) / span) * 100)));
+		}
+		return {
+			rank: cur.rank,
+			title: cur.title,
+			desc: cur.desc,
+			exp: exp,
+			nextExp: next ? next.minExp : cur.minExp,
+			pct: pct,
+			costMult: cur.costMult,
+			critBonus: cur.critBonus,
+			detoxMult: cur.detoxMult,
+			xiuweiRatio: cur.xiuweiRatio,
+			realmProductionRatio: cur.realmProductionRatio
+		};
+	},
+
+	//经脉丹毒状态评估: 0..39 澄澈, 40..69 抗药初显, 70..89 丹毒淤塞, >=90 丹毒攻心(禁服猛药)
+	getToxicityStatus: function(){
+		var t = Math.min(100, Math.max(0, Math.round(this.pillToxicity || 0)));
+		if (t >= 90){
+			return {
+				val: t,
+				tier: "crit",
+				label: "丹毒攻心",
+				desc: "经脉丹毒淤满（≥90），强服猛药恐伤道基！增幅与破境丹药已被经脉排斥，吐纳 -35%、破境率 -15%，请速【周天洗髓】或服【清心丹/培婴丹】。",
+				effMult: 0.35,
+				xwPenalty: 0.35,
+				breakPenalty: 0.15,
+				blocked: true
+			};
+		}
+		if (t >= 70){
+			return {
+				val: t,
+				tier: "high",
+				label: "丹毒淤塞",
+				desc: "丹毒侵蚀奇经八脉（70~89）：服丹药效衰减 40%，修为吐纳 -20%，破境率 -8%。宜尽快运功逼毒或服净心丹药。",
+				effMult: 0.60,
+				xwPenalty: 0.20,
+				breakPenalty: 0.08,
+				blocked: false
+			};
+		}
+		if (t >= 40){
+			return {
+				val: t,
+				tier: "warn",
+				label: "抗药初显",
+				desc: "体内残留丹毒渐增（40~69）：产生轻度抗药性，新服丹药药效与时长衰减 20%，修为吐纳 -8%。",
+				effMult: 0.80,
+				xwPenalty: 0.08,
+				breakPenalty: 0.03,
+				blocked: false
+			};
+		}
+		return {
+			val: t,
+			tier: "clean",
+			label: "经脉澄澈",
+			desc: "周天经脉澄澈通透（0~39）：药力 100% 完美化开，无任何丹毒滞涩。",
+			effMult: 1.0,
+			xwPenalty: 0,
+			breakPenalty: 0,
+			blocked: false
+		};
+	},
+
+	//境界抗药性: 低阶聚气丹在高境界会产生抗药衰减(防止结丹/元婴仍靠廉价炼气丹叠满倍率)
+	getPillRealmEfficacy: function(pillName){
+		var rIdx = this.getCurrentRealmIndex();
+		if (pillName === "juqi"){
+			if (rIdx <= 1){ return 1.0; }
+			if (rIdx === 2){ return 0.65; }
+			if (rIdx === 3){ return 0.40; }
+			return 0.25;
+		}
+		if (pillName === "zhujidan"){
+			if (rIdx <= 1){ return 1.0; }
+			if (rIdx === 2){ return 0.70; }
+			return 0.45;
+		}
+		if (pillName === "jiangchen" && rIdx >= 5){
+			return 0.70;
+		}
+		return 1.0;
+	},
+
+	//计算当前开炉炼丹的实际药材耗费(随本世炼制次数温和递增,并受丹道造诣减免)
+	getPillCraftPrices: function(name){
+		var pill = (typeof name === "object") ? name : this.getPill(name);
+		if (!pill || !pill.prices){ return []; }
+		var cnt = (this.pillCraftCount && this.pillCraftCount[pill.name]) || 0;
+		var rankInfo = this.getAlchemyRank();
+		var scale = (1 + Math.min(1.5, cnt * 0.08)) * rankInfo.costMult;
+		var out = [];
+		for (var i = 0; i < pill.prices.length; i++){
+			var p = pill.prices[i];
+			out.push({
+				name: p.name,
+				val: Math.max(1, Math.round(p.val * scale))
+			});
+		}
+		return out;
+	},
+
+	canAffordPill: function(name){
+		var prices = this.getPillCraftPrices(name);
+		if (!prices.length){ return false; }
+		for (var i = 0; i < prices.length; i++){
+			var res = this.game.resPool.get(prices[i].name);
+			if (!res || res.value < prices[i].val){ return false; }
+		}
+		return true;
+	},
+
+	//炼制入库 — 底层入库接口(保持单次 +1 以兼容全部旧单元测试)
 	craftPill: function(name){
 		var pill = this.getPill(name);
-		if (pill){ pill.val = (pill.val || 0) + 1; }
+		if (pill){
+			pill.val = (pill.val || 0) + 1;
+			this.alchemyExp = (this.alchemyExp || 0) + 1;
+		}
+	},
+
+	//玄天丹鼎交互开炉 — 校验药材、扣除耗费、结算三昧控火特效(文火祛毒/武火双丹/乾蓝丹纹)
+	refinePill: function(name){
+		var pill = this.getPill(name);
+		if (!pill || !this.isPillUnlocked(pill)){ return false; }
+		if (!this.canAffordPill(name)){
+			this.game.msg("药材或灵香不足，无法开炉炼制【" + pill.label + "】。", "alert");
+			return false;
+		}
+		var prices = this.getPillCraftPrices(name);
+		for (var i = 0; i < prices.length; i++){
+			this.game.resPool.addResEvent(prices[i].name, -prices[i].val);
+		}
+		if (!this.pillCraftCount){ this.pillCraftCount = {}; }
+		this.pillCraftCount[name] = (this.pillCraftCount[name] || 0) + 1;
+		if (!this.supremePills){ this.supremePills = {}; }
+
+		this.craftPill(name);
+		var fire = this.getCauldronFire();
+		var rankInfo = this.getAlchemyRank();
+		var note = "";
+
+		if (fire.key === "gentle"){
+			//文火温养: 额外丹道造诣 + 顺带平复 4 点经脉丹毒
+			this.alchemyExp = (this.alchemyExp || 0) + 1;
+			var beforeTox = this.pillToxicity || 0;
+			this.pillToxicity = Math.max(0, beforeTox - 4);
+			note = "【文火温养】慢火凝成【" + pill.label + "】×1，丹香涤脉（丹毒 -4，造诣 +2）。";
+		} else if (fire.key === "fierce"){
+			//武火催丹: 35% + 造诣加成 一炉双丹
+			var dblChance = Math.min(0.65, 0.35 + rankInfo.critBonus);
+			if (Math.random() < dblChance){
+				pill.val = (pill.val || 0) + 1;
+				note = "【武火催丹 · 一炉双丹】赤炎轰鸣，单份药材竟一举凝成【" + pill.label + "】×2！";
+				this.game.msg(note, "important");
+			} else {
+				note = "【武火催丹】烈火淬炼，成功出炉【" + pill.label + "】×1。";
+			}
+		} else if (fire.key === "azure"){
+			//乾蓝灵火: 30% + 造诣加成 凝出丹纹灵丹
+			var supChance = Math.min(0.60, 0.30 + rankInfo.critBonus);
+			if (Math.random() < supChance){
+				this.supremePills[name] = (this.supremePills[name] || 0) + 1;
+				note = "【乾蓝灵火 · 丹纹天成】冰焰交融霞光万道，凝出极品【✦丹纹" + pill.label + "】×1（药效+40% · 丹毒减半）！";
+				this.game.msg(note, "important");
+			} else {
+				note = "【乾蓝灵火】冰火淬炼，成功出炉【" + pill.label + "】×1。";
+			}
+		}
+		this.lastAlchemyNote = note;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
+	},
+
+	//周天洗髓 · 运功逼毒 — 主动运转功法逼出经脉淤积的丹毒
+	purgeToxicity: function(){
+		if ((this.pillToxicity || 0) <= 0){
+			this.game.msg("当前周天经脉澄澈，并无丹毒淤积。", "notice");
+			return false;
+		}
+		var catnipRes = this.game.resPool.get("catnip");
+		var cost = 0;
+		if (catnipRes && catnipRes.value >= 40){
+			cost = Math.min(160, Math.max(20, Math.round(catnipRes.value * 0.12)));
+			this.game.resPool.addResEvent("catnip", -cost);
+		}
+		var rankInfo = this.getAlchemyRank();
+		var purgeAmt = Math.round(25 * (rankInfo.detoxMult || 1));
+		var before = Math.round(this.pillToxicity || 0);
+		this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - purgeAmt);
+		this.heartDemon = Math.max(0, this.heartDemon - 3);
+		var after = Math.round(this.pillToxicity);
+		var note = "【周天洗髓】引灵泉运转大周天，逼出体内淤积丹毒 " + (before - after) + " 点（当前丹毒 " + after + "/100），心魔 -3。";
+		this.lastAlchemyNote = note;
+		this.game.msg(note, "notice");
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
 	},
 
 	//服用消耗 — returns false when nothing to consume / nothing to gain,
@@ -1707,11 +2013,21 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (name && typeof name == "object"){ name = name.name; }
 		var pill = this.getPill(name);
 		if (!pill || !pill.val){ return false; }
+
+		var toxStatus = this.getToxicityStatus();
+		var isCleansing = (name === "qingxin" || name === "peiying");
+
+		//丹毒攻心(>=90)时经脉排斥一切增幅与破境猛药,唯有净心祛毒类丹药可服
+		if (!isCleansing && toxStatus.blocked){
+			this.game.msg("【丹毒攻心】经脉丹毒已达 " + toxStatus.val + "/100，强服猛药恐致经脉寸断！请先【周天洗髓】或服用【清心丹/培婴丹】祛毒。", "alert");
+			return false;
+		}
+
 		if (name == "zhujidan" && this.breakMult >= 0.5){
 			this.game.msg($I("cultivation.msg.pill.maxed"), "notice");
 			return false;	//药力已达顶峰——丹药留着下次冲关再用
 		}
-		if (name == "qingxin" && this.heartDemon <= 0){
+		if (name == "qingxin" && this.heartDemon <= 0 && (this.pillToxicity || 0) <= 0){
 			this.game.msg($I("cultivation.msg.pill.clean"), "notice");
 			return false;
 		}
@@ -1723,7 +2039,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.game.msg($I("cultivation.msg.pill.maxed"), "notice");
 			return false;
 		}
-		if (name == "peiying" && this.heartDemon <= 0 && this.getBreakSurge() <= 1){
+		if (name == "peiying" && this.heartDemon <= 0 && this.getBreakSurge() <= 1 && (this.pillToxicity || 0) <= 0){
 			this.game.msg($I("cultivation.msg.pill.clean"), "notice");
 			return false;
 		}
@@ -1731,32 +2047,65 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.game.msg($I("cultivation.msg.pill.maxed"), "notice");
 			return false;
 		}
+
 		pill.val--;
+		var isSupreme = false;
+		if (this.supremePills && this.supremePills[name] > 0){
+			this.supremePills[name]--;
+			isSupreme = true;
+		}
+
+		var durMult = (isSupreme ? 1.4 : 1.0) * toxStatus.effMult;
+		var baseDur = Math.max(300, Math.round(1500 * durMult));
+		var fire = this.getCauldronFire();
+		var toxMult = (fire.key === "gentle" ? 0.70 : 1.0) * (isSupreme ? 0.50 : 1.0);
+
 		if (name == "juqi"){
-			this.buffs.juqi = 1500;	//~5 min
+			this.buffs.juqi = baseDur;	//标准 1500 ticks (~5 min), 丹纹 2100 ticks
+			if (isSupreme){ this.buffs.juqiSupreme = baseDur; }
+			this.pillToxicity = Math.min(100, (this.pillToxicity || 0) + Math.round(18 * toxMult));
 			this.game.msg($I("cultivation.msg.pill.juqi"), "notice");
 		} else if (name == "zhujidan"){
-			this.breakMult = Math.min(0.5, this.breakMult + 0.5);
+			var zjEff = isSupreme ? 1.0 : this.getPillRealmEfficacy("zhujidan");
+			this.breakMult = Math.min(0.5, this.breakMult + 0.5 * zjEff * toxStatus.effMult);
+			if (isSupreme){
+				this.heartDemon = Math.max(0, this.heartDemon - 8);
+			}
+			this.pillToxicity = Math.min(100, (this.pillToxicity || 0) + Math.round(26 * toxMult));
 			this.game.msg($I("cultivation.msg.pill.zhujidan"), "notice");
 		} else if (name == "qingxin"){
-			this.heartDemon = Math.max(0, this.heartDemon - 15);
+			var demonClr = isSupreme ? 24 : 15;
+			var toxClr = isSupreme ? 28 : 18;
+			this.heartDemon = Math.max(0, this.heartDemon - demonClr);
+			this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - toxClr);
 			this.game.msg($I("cultivation.msg.pill.qingxin"), "notice");
 		} else if (name == "jiangchen"){
-			this.breakMult = Math.min(0.65, (this.breakMult || 0) + 0.25);
-			this.buffs.jiangchen = 1500;
+			var jcBoost = (isSupreme ? 0.35 : 0.25) * toxStatus.effMult;
+			this.breakMult = Math.min(0.65, (this.breakMult || 0) + jcBoost);
+			this.buffs.jiangchen = baseDur;
+			this.pillToxicity = Math.min(100, (this.pillToxicity || 0) + Math.round(24 * toxMult));
 			this.game.msg($I("cultivation.msg.pill.jiangchen"), "notice");
 		} else if (name == "peiying"){
+			var pyDemon = isSupreme ? 45 : 30;
+			var pyTox = isSupreme ? 50 : 35;
 			this.lastBreakYear = null;
-			this.heartDemon = Math.max(0, this.heartDemon - 30);
+			this.heartDemon = Math.max(0, this.heartDemon - pyDemon);
+			this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - pyTox);
 			this.game.msg($I("cultivation.msg.pill.peiying"), "notice");
 		} else if (name == "biyan"){
-			this.buffs.biyan = 1500;
+			this.buffs.biyan = baseDur;
+			if (isSupreme){ this.buffs.biyanSupreme = baseDur; }
+			this.pillToxicity = Math.min(100, (this.pillToxicity || 0) + Math.round(22 * toxMult));
 			this.game.msg($I("cultivation.msg.pill.biyan"), "notice");
 		}
+
+		this.lastAlchemyNote = "已服下" + (isSupreme ? "【✦丹纹" + pill.label + "】" : "【" + pill.label + "】") +
+			"，当前经脉丹毒：" + Math.round(this.pillToxicity || 0) + "/100。";
+		if (this.game.updateCaches){ this.game.updateCaches(); }
 		return true;
 	},
 
-	//凝露瓶绿液催熟——耗1滴绿液,凭空催成2枚当前已解锁的最高阶丹药并馈赠灵草灵香
+	//凝露瓶绿液催熟——耗1滴绿液,凭空催成2枚当前已解锁的最高阶丹药(必含1枚✦丹纹灵丹),馈赠灵草灵香并涤荡15点丹毒
 	catalyzeDew: function(targetPillName){
 		if ((this.bottleDew || 0) <= 0){ return false; }
 		var target = targetPillName ? this.getPill(targetPillName) : null;
@@ -1769,10 +2118,16 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		this.bottleDew--;
 		target.val = (target.val || 0) + 2;
+		if (!this.supremePills){ this.supremePills = {}; }
+		this.supremePills[target.name] = (this.supremePills[target.name] || 0) + 1;
+		this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - 15);
+		this.alchemyExp = (this.alchemyExp || 0) + 2;
 		var scale = 1 + this.getCurrentRealmIndex();
 		this.game.resPool.addResEvent("spice", this.roundNice(30 * scale));
 		this.game.resPool.addResEvent("catnip", this.roundNice(200 * scale));
+		this.lastAlchemyNote = "【掌天绿液催熟】造化绿液滴入丹炉，瞬间凝成【" + target.label + "】×2（含✦丹纹极品×1），并涤除 15 点丹毒！";
 		this.game.msg($I("cultivation.msg.dew.catalyze", [target.label]), "important");
+		if (this.game.updateCaches){ this.game.updateCaches(); }
 		return true;
 	},
 
@@ -2565,6 +2920,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			lastBattleReport: this.lastBattleReport || null,
 			riftStance: this.riftStance || "sword",
 			expedition: this.expedition || null,
+			pillToxicity: this.pillToxicity || 0,
+			cauldronFire: this.cauldronFire || "gentle",
+			alchemyExp: this.alchemyExp || 0,
+			supremePills: this.supremePills || {},
+			pillCraftCount: this.pillCraftCount || {},
 			soundMuted: !!this.soundMuted,
 			demonWarned: this.demonWarned,
 			sihuaCount: this.sihuaCount,
@@ -2674,6 +3034,21 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (c.expedition && typeof c.expedition == "object"){
 			this.expedition = c.expedition;
 		}
+		if (typeof c.pillToxicity == "number"){
+			this.pillToxicity = Math.min(100, Math.max(0, c.pillToxicity));
+		}
+		if (typeof c.cauldronFire == "string"){
+			this.setCauldronFire(c.cauldronFire);
+		}
+		if (typeof c.alchemyExp == "number"){
+			this.alchemyExp = Math.max(0, Math.floor(c.alchemyExp));
+		}
+		if (c.supremePills && typeof c.supremePills == "object"){
+			this.supremePills = c.supremePills;
+		}
+		if (c.pillCraftCount && typeof c.pillCraftCount == "object"){
+			this.pillCraftCount = c.pillCraftCount;
+		}
 		if (typeof c.soundMuted == "boolean"){ this.soundMuted = c.soundMuted; }
 		if (typeof c.demonWarned == "boolean"){ this.demonWarned = c.demonWarned; }
 		if (typeof c.sihuaCount == "number"){ this.sihuaCount = Math.max(0, c.sihuaCount); }
@@ -2744,6 +3119,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var lamp = this.getArtifact("yanghun");
 			if (lamp && lamp.researched){ decay += 0.02 * lamp.rank; }
 			this.heartDemon = Math.max(0, this.heartDemon - decay);
+		}
+		if (this.pillToxicity > 0){
+			var toxDecay = 0.02 * (this.getAlchemyRank().detoxMult || 1) * (this.secluded ? 2 : 1);
+			this.pillToxicity = Math.max(0, this.pillToxicity - toxDecay);
 		}
 		//fates fire once when their stage is reached (and any cond passes);
 		//every beat shows as a story card — an open card anywhere in the
@@ -2835,17 +3214,30 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			add("seclusionMundaneRatio", this.SECLUSION_MUNDANE);	//只压凡俗,不伤修为
 		}
 		if (this.buffs.juqi > 0){
-			add("xiuweiRatio", 1.0);
+			var juqiMult = (this.buffs.juqiSupreme > 0) ? 1.35 : this.getPillRealmEfficacy("juqi");
+			add("xiuweiRatio", 1.0 * juqiMult);
 		}
 		if (this.buffs.ziqi > 0){
 			add("xiuweiRatio", 0.5);	//上上签·紫气东来
 		}
 		if (this.buffs.jiangchen > 0){
-			add("xiuweiRatio", 0.35);	//降尘丹周天运转
+			add("xiuweiRatio", 0.35 * this.getPillRealmEfficacy("jiangchen"));	//降尘丹周天运转
 		}
 		if (this.buffs.biyan > 0){
-			add("xiuweiRatio", 0.50);	//碧焰酒青莲灵火
-			add("realmProductionRatio", 0.25);
+			var byMult = (this.buffs.biyanSupreme > 0) ? 1.25 : 1.0;
+			add("xiuweiRatio", 0.50 * byMult);	//碧焰酒青莲灵火
+			add("realmProductionRatio", 0.25 * byMult);
+		}
+		var alcRank = this.getAlchemyRank();
+		if (alcRank.xiuweiRatio > 0){
+			add("xiuweiRatio", alcRank.xiuweiRatio);
+		}
+		if (alcRank.realmProductionRatio > 0){
+			add("realmProductionRatio", alcRank.realmProductionRatio);
+		}
+		var toxSt = this.getToxicityStatus();
+		if (toxSt.xwPenalty > 0){
+			add("xiuweiRatio", -toxSt.xwPenalty);	//经脉丹毒淤塞压制吐纳
 		}
 		if (this.natalArtifact){
 			var nArt = this.getArtifact(this.natalArtifact);
@@ -2927,6 +3319,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.lastBreakPhenomenon = null;
 		this.riftStance = "sword";
 		this.expedition = null;
+		this.pillToxicity = 0;
+		this.cauldronFire = "gentle";
+		this.alchemyExp = 0;
+		this.supremePills = {};
+		this.pillCraftCount = {};
+		this.lastAlchemyNote = null;
 		this.lastLotYear = this.game.calendar.year;	//转世不立刻抽签,来年再说
 		this.demonWarned = false;
 		this.pendingOrigin = false;	//标记由转世存档带来,不入内存态重置
@@ -3451,13 +3849,67 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			this.stageBtns[stage.name] = btn;
 		}
 
-		//⑤ 丹药 — 炼制入库,服用消耗;每丹双钮。丹方按进境渐次解锁,
-		//整栏在首丹现世前藏起——开局不该看见一串摸不到的方术
+		//⑤ 丹药 — 玄天丹鼎 · 三昧控火与丹毒经脉体系(专属交互式炼丹台 + 保留底层按钮供测试兼容)
 		this.pillHeader = dojo.create("div", {
 			className: "cultivationSection",
 			innerHTML: this.sectionTitle("cultivation.section.pill")
 		}, tabContainer);
-		//凝露瓶绿液催丹栏——得凝露瓶后显现,岁首攒露,一键催熟2枚最高阶丹药
+		this.alchemyPanel = dojo.create("div", {className: "xxAlchemyArena", style: {display: "none"}}, tabContainer);
+		this._alcSig = null;
+		this.alchemyPanel.onclick = function(e){
+			var t = e.target;
+			if (!t || !t.closest){ return; }
+			var fireEl = t.closest("[data-fire]");
+			if (fireEl){
+				e.preventDefault();
+				if (cult.setCauldronFire(fireEl.getAttribute("data-fire"))){
+					self._alcSig = null;
+					self.update();
+				}
+				return;
+			}
+			var craftEl = t.closest("[data-alc-craft]");
+			if (craftEl){
+				e.preventDefault();
+				if (cult.refinePill(craftEl.getAttribute("data-alc-craft"))){
+					self._alcSig = null;
+					if (self.game.render){ self.game.render(); }
+					self.update();
+				}
+				return;
+			}
+			var useEl = t.closest("[data-alc-use]");
+			if (useEl){
+				e.preventDefault();
+				if (cult.usePill(useEl.getAttribute("data-alc-use"))){
+					self._alcSig = null;
+					if (self.game.render){ self.game.render(); }
+					self.update();
+				}
+				return;
+			}
+			var actEl = t.closest("[data-alc-act]");
+			if (actEl){
+				e.preventDefault();
+				var act = actEl.getAttribute("data-alc-act");
+				if (act === "purge"){
+					if (cult.purgeToxicity()){
+						self._alcSig = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+				} else if (act === "dew"){
+					if (cult.catalyzeDew()){
+						self._alcSig = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+				}
+				return;
+			}
+		};
+
+		//凝露瓶绿液催丹栏——保留DOM节点兼容,视觉已整合入玄天丹鼎面板
 		this.dewWrap = dojo.create("div", {className: "xxDewBar", style: {display: "none"}}, tabContainer);
 		this.dewLbl = dojo.create("span", {className: "xxDewLbl"}, this.dewWrap);
 		this.dewBtn = dojo.create("a", {
@@ -3474,7 +3926,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			}
 		});
 		var pillCraftCtrl = new classes.ui.PillCraftBtnController(this.game);
-		var pillGrid = dojo.create("div", {className: "xxStageGrid xxPillGrid"}, tabContainer);
+		var pillGrid = dojo.create("div", {className: "xxStageGrid xxPillGrid", style: {display: "none"}}, tabContainer);
 		this.pillGrid = pillGrid;
 		for (var i = 0; i < cult.pills.length; i++){
 			var craftBtn = new com.nuclearunicorn.game.ui.BuildingResearchBtn({
@@ -3672,6 +4124,10 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			extras.push($I("cultivation.header.demonpress", [
 				Math.round(cult.heartDemon * 0.6), cult.getDemonTax().toFixed(1)]));
 		}
+		if ((cult.pillToxicity || 0) >= 20){
+			var txSt = cult.getToxicityStatus();
+			extras.push("丹毒 " + txSt.val + "/100 (" + txSt.label + ")");
+		}
 		if (extras.length){
 			html += "<div class=\"xx-hd-extra\"><span>" + extras.join("</span><span>") + "</span></div>";
 		}
@@ -3754,18 +4210,229 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		if (this.pillHeader){
 			var pillShow = cult.anyPillUnlocked();
 			this.pillHeader.style.display = pillShow ? "" : "none";
-			this.pillGrid.style.display = pillShow ? "" : "none";
+			this.pillGrid.style.display = "none";
+			if (this.alchemyPanel){
+				this.alchemyPanel.style.display = pillShow ? "" : "none";
+				if (pillShow){
+					var rankInfo = cult.getAlchemyRank();
+					var toxInfo = cult.getToxicityStatus();
+					var bottleFate = cult.getFate("bottle");
+					var dewShow = (bottleFate && bottleFate.researched) || (cult.bottleDew || 0) > 0;
+					var dewCnt = cult.bottleDew || 0;
+					var pSigParts = [
+						cult.cauldronFire,
+						rankInfo.exp,
+						toxInfo.val,
+						Math.round(cult.heartDemon || 0),
+						Math.round((cult.breakMult || 0) * 100),
+						cult.getBreakSurge() > 1 ? 1 : 0,
+						Math.ceil((cult.buffs.juqi || 0) / 5),
+						Math.ceil((cult.buffs.jiangchen || 0) / 5),
+						Math.ceil((cult.buffs.biyan || 0) / 5),
+						dewShow ? dewCnt : -1,
+						cult.getCurrentRealmIndex(),
+						cult.lastAlchemyNote || ""
+					];
+					for (var pi = 0; pi < cult.pills.length; pi++){
+						var pObj = cult.pills[pi];
+						var unl = cult.isPillUnlocked(pObj);
+						var supC = (cult.supremePills && cult.supremePills[pObj.name]) || 0;
+						var canAff = unl ? (cult.canAffordPill(pObj.name) ? 1 : 0) : 0;
+						var cntCr = (cult.pillCraftCount && cult.pillCraftCount[pObj.name]) || 0;
+						pSigParts.push(pObj.name + ":" + (unl ? 1 : 0) + ":" + (pObj.val || 0) + ":" + supC + ":" + canAff + ":" + cntCr);
+					}
+					var alcSig = pSigParts.join("|");
+					if (this._alcSig !== alcSig){
+						this._alcSig = alcSig;
+
+						//1. 顶栏: 丹道造诣品阶 + 三昧控火法门切换器
+						var fireBarHtml = "<div class=\"xxFireBar\"><span class=\"xxFireLbl\">丹鼎控火</span>";
+						for (var fi = 0; fi < cult.CAULDRON_FIRES.length; fi++){
+							var fMode = cult.CAULDRON_FIRES[fi];
+							var fOn = (cult.cauldronFire === fMode.key);
+							fireBarHtml += "<a href=\"#!\" class=\"xxFireChip " + fMode.key + (fOn ? " active" : "") +
+								"\" data-fire=\"" + fMode.key + "\" title=\"" + fMode.desc + "\">" +
+								"<span class=\"xxFireName\">" + fMode.label + "</span>" +
+								"<span class=\"xxFireTag\">" + fMode.tag + "</span></a>";
+						}
+						fireBarHtml += "</div>";
+
+						var alcHeadHtml =
+							"<div class=\"xxAlcTopRow\">" +
+								"<div class=\"xxAlcTitleBlock\">" +
+									"<span class=\"xxAlcSealBadge\">鼎</span>" +
+									"<div>" +
+										"<div class=\"xxAlcMainTitle\">玄天丹鼎 · 三昧控火与丹毒经脉体系</div>" +
+										"<div class=\"xxAlcSubTitle\">丹道造诣：<b>" + rankInfo.title + "</b>（熟练度 " + rankInfo.exp + "/" + rankInfo.nextExp + "） · " + rankInfo.desc + "</div>" +
+									"</div>" +
+								"</div>" +
+								fireBarHtml +
+							"</div>";
+
+						//2. 中栏双表盘: 左【经脉丹毒仪 + 周天洗髓】 / 右【周天药力运转 + 掌天绿液催熟】
+						var toxHtml =
+							"<div class=\"xxAlcMeterCard xxToxCard\">" +
+								"<div class=\"xxAlcMeterHd\">" +
+									"<span class=\"xxAlcMeterTitle\">☯ 经脉丹毒淤积 · <b>" + toxInfo.val + " / 100</b></span>" +
+									"<span class=\"xxToxBadge " + toxInfo.tier + "\">" + toxInfo.label + "（药效 " + Math.round(toxInfo.effMult * 100) + "%）</span>" +
+								"</div>" +
+								"<div class=\"xxToxBarWrap\">" +
+									"<div class=\"xxToxBar\"><i class=\"" + toxInfo.tier + "\" style=\"width:" + toxInfo.val + "%\"></i></div>" +
+									"<div class=\"xxToxTicks\"><span>0 澄澈</span><span>40 抗药</span><span>70 淤塞</span><span>90 攻心禁药</span></div>" +
+								"</div>" +
+								"<div class=\"xxToxFoot\">" +
+									"<span class=\"xxToxDesc\">" + toxInfo.desc + "</span>" +
+									"<a href=\"#!\" class=\"xxToxPurgeBtn" + (toxInfo.val <= 0 ? " disabled" : "") + "\" data-alc-act=\"purge\" title=\"消耗少量灵谷运转周天灵泉，立即逼出 25 点丹毒并平复 3 点心魔\">" +
+										"💧 周天洗髓 · 运功逼毒 (-" + Math.round(25 * rankInfo.detoxMult) + "丹毒)" +
+									"</a>" +
+								"</div>" +
+							"</div>";
+
+						var activeBuffs = [];
+						if (cult.buffs.juqi > 0){
+							activeBuffs.push("<span class=\"xxAlcBuffChip on\">" + (cult.buffs.juqiSupreme > 0 ? "✦丹纹聚气丹" : "聚气丹") + " · " + Math.ceil(cult.buffs.juqi / 5) + "s</span>");
+						}
+						if (cult.buffs.jiangchen > 0){
+							activeBuffs.push("<span class=\"xxAlcBuffChip on\">降尘丹 · " + Math.ceil(cult.buffs.jiangchen / 5) + "s</span>");
+						}
+						if (cult.buffs.biyan > 0){
+							activeBuffs.push("<span class=\"xxAlcBuffChip on\">" + (cult.buffs.biyanSupreme > 0 ? "✦丹纹碧焰酒" : "碧焰酒") + " · " + Math.ceil(cult.buffs.biyan / 5) + "s</span>");
+						}
+						if (cult.breakMult > 0){
+							activeBuffs.push("<span class=\"xxAlcBuffChip boost\">破境丹力加成 +" + Math.round(cult.breakMult * 100) + "%（下次冲关生效）</span>");
+						}
+						var buffListHtml = activeBuffs.length
+							? activeBuffs.join("")
+							: "<span class=\"xxAlcBuffIdle\">当前周天经脉平缓，未运转限时灵丹药力</span>";
+
+						var dewBlockHtml = dewShow
+							? "<div class=\"xxAlcDewRow\">" +
+								"<div class=\"xxAlcDewInfo\">" +
+									"<b>🧪 掌天瓶造化绿液：×" + dewCnt + " / 5 滴</b>" +
+									"<span>每逢岁首自动凝聚 1 滴；催熟直得 2 枚最高阶灵丹（必出 1 枚✦丹纹极品）并祛除 15 点丹毒</span>" +
+								"</div>" +
+								"<a href=\"#!\" class=\"xxAlcDewBtn" + (dewCnt <= 0 ? " disabled" : "") + "\" data-alc-act=\"dew\">✦ 绿液催丹 (直成2丹+丹纹)</a>" +
+							"</div>"
+							: "<div class=\"xxAlcDewRow locked\"><span>🧪 掌天瓶造化绿液：踏入炼气三层触发【神秘小瓶】仙缘后开启岁首凝露催丹</span></div>";
+
+						var buffCardHtml =
+							"<div class=\"xxAlcMeterCard xxBuffCard\">" +
+								"<div class=\"xxAlcMeterHd\">" +
+									"<span class=\"xxAlcMeterTitle\">🔥 周天药力运转 & 掌天瓶催丹台</span>" +
+									"<span class=\"xxAlcFireHint\">当前炉火：" + cult.getCauldronFire().label + "</span>" +
+								"</div>" +
+								"<div class=\"xxAlcBuffRow\">" + buffListHtml + "</div>" +
+								dewBlockHtml +
+							"</div>";
+
+						var noteBarHtml = cult.lastAlchemyNote
+							? "<div class=\"xxAlcNoteBar\"><span>✦ 丹鼎纪要：</span>" + cult.lastAlchemyNote + "</div>"
+							: "";
+
+						//3. 六大丹方符箓卡网格
+						var cardsHtml = "<div class=\"xxAlcRecipeGrid\">";
+						for (var ci = 0; ci < cult.pills.length; ci++){
+							var pill = cult.pills[ci];
+							if (!cult.isPillUnlocked(pill)){ continue; }
+							var pVal = pill.val || 0;
+							var supVal = (cult.supremePills && cult.supremePills[pill.name]) || 0;
+							var prices = cult.getPillCraftPrices(pill.name);
+							var canCraft = cult.canAffordPill(pill.name);
+							var rEff = Math.round(cult.getPillRealmEfficacy(pill.name) * 100);
+
+							//判定当前是否可服用及原因提示
+							var canUse = pVal > 0;
+							var useSub = supVal > 0 ? "优先服✦丹纹" : "消耗库存×1";
+							if (pVal <= 0){
+								canUse = false;
+								useSub = "尚无成丹库存";
+							} else if (pill.name !== "qingxin" && pill.name !== "peiying" && toxInfo.blocked){
+								canUse = false;
+								useSub = "丹毒攻心禁服";
+							} else if (pill.name === "zhujidan" && cult.breakMult >= 0.5){
+								canUse = false;
+								useSub = "破境药力已满";
+							} else if (pill.name === "juqi" && cult.buffs.juqi > 0){
+								canUse = false;
+								useSub = "周天药力运转中";
+							} else if (pill.name === "jiangchen" && cult.breakMult >= 0.65 && cult.buffs.jiangchen > 0){
+								canUse = false;
+								useSub = "药力已达顶峰";
+							} else if (pill.name === "biyan" && cult.buffs.biyan > 0){
+								canUse = false;
+								useSub = "灵火药力运转中";
+							} else if (pill.name === "qingxin" && cult.heartDemon <= 0 && (cult.pillToxicity || 0) <= 0){
+								canUse = false;
+								useSub = "心魔丹毒皆净";
+							} else if (pill.name === "peiying" && cult.heartDemon <= 0 && cult.getBreakSurge() <= 1 && (cult.pillToxicity || 0) <= 0){
+								canUse = false;
+								useSub = "道基平稳无需服";
+							}
+
+							var toxBadgeHtml = "";
+							if (pill.toxicity > 0){
+								var effTox = Math.round(pill.toxicity * (cult.cauldronFire === "gentle" ? 0.70 : 1.0));
+								toxBadgeHtml = "<span class=\"xxPillTag tox-add\">丹毒 +" + effTox + "</span>";
+							} else if (pill.toxicity < 0){
+								toxBadgeHtml = "<span class=\"xxPillTag tox-purge\">✦ 祛除丹毒 " + Math.abs(pill.toxicity) + "</span>";
+							}
+							var effBadgeHtml = (rEff < 100)
+								? "<span class=\"xxPillTag eff-warn\" title=\"当前境界较高，低阶凡丹受抗药性影响药效衰减；炼出✦丹纹灵丹可无视衰减\">境界药效 " + rEff + "%</span>"
+								: "<span class=\"xxPillTag eff-ok\">药效圆满 100%</span>";
+
+							var costHtml = "<div class=\"xxPillCosts\"><span class=\"xxPillCostLbl\">丹方药引：</span>";
+							for (var pri = 0; pri < prices.length; pri++){
+								var pr = prices[pri];
+								var rObj = this.game.resPool.get(pr.name);
+								var rTitle = (rObj && rObj.title) || pr.name;
+								var enough = rObj && rObj.value >= pr.val;
+								costHtml += "<span class=\"xxPillCostChip " + (enough ? "ok" : "lack") + "\">" +
+									rTitle + " <b>" + fmt(pr.val, false, false, 0) + "</b></span>";
+							}
+							costHtml += "</div>";
+
+							cardsHtml +=
+								"<div class=\"xxPillCard " + (pill.toxicity < 0 ? "cleansing" : "offensive") + "\">" +
+									"<div class=\"xxPillCardHd\">" +
+										"<div class=\"xxPillTitleWrap\">" +
+											"<span class=\"xxPillTierTag\">" + (pill.tier || "灵丹") + "</span>" +
+											"<span class=\"xxPillName\">" + pill.label + "</span>" +
+										"</div>" +
+										"<div class=\"xxPillStockWrap\">" +
+											"<span class=\"xxPillStock" + (pVal > 0 ? " has" : "") + "\">库存 ×<b>" + pVal + "</b></span>" +
+											(supVal > 0 ? "<span class=\"xxPillSupStock\">✦丹纹 ×<b>" + supVal + "</b></span>" : "") +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxPillTagRow\">" +
+										"<span class=\"xxPillTag role\">" + (pill.role || "辅修") + "</span>" +
+										toxBadgeHtml +
+										effBadgeHtml +
+									"</div>" +
+									"<div class=\"xxPillDesc\">" + (pill.effectSummary || pill.description) + "</div>" +
+									costHtml +
+									"<div class=\"xxPillBtnRow\">" +
+										"<a href=\"#!\" class=\"xxAlcBtn craft" + (canCraft ? "" : " disabled") + "\" data-alc-craft=\"" + pill.name + "\">" +
+											"<b>🔥 开炉炼制</b><span>" + (cult.cauldronFire === "fierce" ? "武火·可出双丹" : (cult.cauldronFire === "azure" ? "乾蓝·可出丹纹" : "文火·温养祛毒")) + "</span>" +
+										"</a>" +
+										"<a href=\"#!\" class=\"xxAlcBtn use" + (canUse ? "" : " disabled") + "\" data-alc-use=\"" + pill.name + "\">" +
+											"<b>💊 服用灵丹</b><span>" + useSub + "</span>" +
+										"</a>" +
+									"</div>" +
+								"</div>";
+						}
+						cardsHtml += "</div>";
+
+						this.alchemyPanel.innerHTML =
+							alcHeadHtml +
+							"<div class=\"xxAlcStatusRow\">" + toxHtml + buffCardHtml + "</div>" +
+							noteBarHtml +
+							cardsHtml;
+					}
+				}
+			}
 		}
 		if (this.dewWrap){
-			var bottleFate = cult.getFate("bottle");
-			var dewShow = (bottleFate && bottleFate.researched) || (cult.bottleDew || 0) > 0;
-			this.dewWrap.style.display = dewShow ? "" : "none";
-			if (dewShow){
-				var dewCnt = cult.bottleDew || 0;
-				var dewTxt = $I("cultivation.dew.title", [dewCnt]);
-				if (this.dewLbl.innerHTML !== dewTxt){ this.dewLbl.innerHTML = dewTxt; }
-				dojo.toggleClass(this.dewBtn, "xxDisabled", dewCnt <= 0);
-			}
+			this.dewWrap.style.display = "none";
 		}
 		if (this.veinHeader){
 			var veinShow = cult.getStage("zhuji_0").researched;
