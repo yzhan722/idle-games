@@ -1006,12 +1006,8 @@ dojo.declare("com.nuclearunicorn.game.ui.TechButtonController", com.nuclearunico
 		if (this.game && this.game.cultivation && meta && meta.name && !meta.researched){
 			var cult = this.game.cultivation;
 			var gate = cult.getItemRealmGate("tech", meta.name);
-			if (gate){
-				if (!cult.isItemRealmUnlocked("tech", meta.name)){
-					name += " <span class=\"xxRealmGateBadge locked\">🔒 需突破【" + gate.title + "】</span>";
-				} else {
-					name += " <span class=\"xxRealmGateBadge ok\">【" + gate.shortTitle + "境】</span>";
-				}
+			if (gate && !cult.isItemRealmUnlocked("tech", meta.name)){
+				name += " <span class=\"xxRealmGateBadge locked\">🔒 " + gate.title + "</span>";
 			}
 		}
 		return name;
@@ -1038,7 +1034,7 @@ dojo.declare("com.nuclearunicorn.game.ui.TechButtonController", com.nuclearunico
 			}
 		}
 
-		if (meta.researched && this.game.science.hideResearched){
+		if (meta.researched){
 			model.visible = false;
 		}
 	}
@@ -1051,37 +1047,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Library", com.nuclearunicorn.game.u
 	render: function(tabContainer){
 
 		this.buttons = [];
-
-		if (this.game && this.game.cultivation){
-			this.synergyNode = dojo.create("div", {
-				className: "xxSynergyMount",
-				innerHTML: this.game.cultivation.renderRealmSynergyBanner("Science")
-			}, tabContainer);
-			this._synHtml = this.synergyNode.innerHTML;
-		}
-
-		var hasCivil = this.game.science.get("civil");
-
-		//--------------------------------------------------------------------
-		var div = dojo.create("div", { style: { float: "right"}}, tabContainer);
-		var groupCheckbox = dojo.create("input", {
-			id : "toggleResearched",
-			type: "checkbox",
-			checked: this.game.science.hideResearched,
-			style: {
-				display: hasCivil ? "" : "none"
-			}
-		}, div);
-
-		dojo.connect(groupCheckbox, "onclick", this, function(){
-			this.game.science.hideResearched = !this.game.science.hideResearched;
-
-			dojo.empty(tabContainer);
-			this.render(tabContainer);
-		});
-
-		dojo.create("label", { innerHTML: $I("science.toggleResearched.label"), for: "toggleResearched"}, div);
-		//---------------------------------------------------------------------
 
 		var table = dojo.create("table", { className: "table", style:{
 			width: "100%"
@@ -1140,14 +1105,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Library", com.nuclearunicorn.game.u
 
 	update: function(){
 		this.inherited(arguments);
-
-		if (this.synergyNode && this.game && this.game.cultivation){
-			var synHtml = this.game.cultivation.renderRealmSynergyBanner("Science");
-			if (synHtml !== this._synHtml){
-				this._synHtml = synHtml;
-				this.synergyNode.innerHTML = synHtml;
-			}
-		}
 
 		if (this.metaphysicsPanel){
 			this.metaphysicsPanel.update();

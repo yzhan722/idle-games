@@ -125,8 +125,6 @@ WResourceRow = React.createClass({
             (capPct >= 95 ? " full" : (capPct >= 75 ? " high" : "")) : null;
         var resIcoSvg = (typeof classes != "undefined" && classes.ui && classes.ui.XianxiaArt)
             ? classes.ui.XianxiaArt.resIcon(res.name) : "";
-        var realmInfo = (game.cultivation && game.cultivation.getResourceRealmInfo)
-            ? game.cultivation.getResourceRealmInfo(res.name) : null;
 
         // Inline contextual actions:
         // 1) wood (灵木): compact single-pill inline refine from catnip so row never overflows
@@ -180,16 +178,12 @@ WResourceRow = React.createClass({
                     className:"resource-name",
                     style:resNameCss,
                     onClick: this.onClickName,
-                    title: (res.title || res.name) + (realmInfo ? "（" + realmInfo.title + "唯一核心灵材）" : "") + " " + resPercent + " " + perTickVal,
+                    title: (res.title || res.name) + " " + resPercent + " " + perTickVal,
                     userFocus:"normal",
                     tabIndex: 0,
                 },
                     res.title || res.name
                 ),
-                realmInfo != null && $r("span", {
-                    className: "xx-res-realm-tag",
-                    title: realmInfo.title + "唯一核心灵材：" + realmInfo.desc
-                }, realmInfo.badge),
                 weatherModValue != null && $r("span", {
                     className:"res-weather" + (weatherModCss ? " " + weatherModCss : "")
                 }, weatherModValue),
@@ -597,37 +591,26 @@ WResourceTable = React.createClass({
     getInitialState: function(){
         return {
             isEditMode: false,
-            isCollapsed: false,
-            collapsedCats: {}
+            isCollapsed: false
         };
     },
 
-    toggleCategory: function(catId){
-        var next = dojo.clone(this.state.collapsedCats || {});
-        next[catId] = !next[catId];
-        this.setState({collapsedCats: next});
-    },
-
     render: function(){
-        var self = this;
-        var categories = [
-            { id: "dao", title: "大道修持", order: ["xiuwei", "science", "culture", "faith", "starchart"], rows: [] },
-            { id: "material", title: "天地灵材", order: ["catnip", "wood", "minerals", "coal", "iron", "titanium", "gold", "oil", "uranium", "unobtainium"], rows: [] },
-            { id: "treasure", title: "仙缘奇珍", order: ["karma", "paragon", "timeCrystal", "relic", "antimatter", "spice"], rows: [] }
+        var order = [
+            "xiuwei", "catnip", "wood", "minerals", "gold", "science", "faith",
+            "unobtainium", "relic", "timeCrystal", "karma", "paragon",
+            "iron", "coal", "titanium", "oil", "uranium", "culture", "starchart", "antimatter", "spice"
         ];
-        var catMap = { dao: categories[0], material: categories[1], treasure: categories[2] };
-
         var resList = (this.props.resources || []).slice();
         resList.sort(function(a, b){
-            var catA = catMap[a.category] || catMap.treasure;
-            var catB = catMap[b.category] || catMap.treasure;
-            var idxA = catA.order.indexOf(a.name);
-            var idxB = catB.order.indexOf(b.name);
+            var idxA = order.indexOf(a.name);
+            var idxB = order.indexOf(b.name);
             if (idxA === -1) { idxA = 99; }
             if (idxB === -1) { idxB = 99; }
             return idxA - idxB;
         });
 
+        var rows = [];
         for (var i = 0; i < resList.length; i++){
             var res = resList[i];
             if (!res || res.category === "craft" || game.resPool.isNormalCraftableResource(res)) {
@@ -639,48 +622,22 @@ WResourceTable = React.createClass({
             if (!res.visible && !game.resPool.showHiddenResources) {
                 continue;
             }
-            if (!res.unlocked || (res.isHidden && !this.state.isEditMode)) {
+            if (!res.unlocked || res.isHidden) {
                 continue;
             }
             var isRequired = (this.props.reqRes.indexOf(res.name) >= 0);
-            if (!game.resPool.showAllResources && !game.resPool.showHiddenResources && !isRequired && !this.state.isEditMode) {
-                if (game.cultivation && game.cultivation.isCoreRealmResource && !game.cultivation.isCoreRealmResource(res.name)) {
-                    continue;
-                }
+            if (!isRequired && game.cultivation && game.cultivation.isCoreRealmResource && !game.cultivation.isCoreRealmResource(res.name)) {
+                continue;
             }
-            var targetCat = catMap[res.category] || catMap.treasure;
-            targetCat.rows.push(
+            rows.push(
                 $r(WResourceRow, {
                     key: res.name,
                     resource: res, 
-                    isEditMode: this.state.isEditMode, 
+                    isEditMode: false, 
                     isRequired: isRequired,
                     showHiddenResources: game.resPool.showHiddenResources,
                     isTemporalParadox: game.calendar.day < 0
                 })
-            );
-        }
-
-        var catSections = [];
-        for (var c = 0; c < categories.length; c++){
-            var cat = categories[c];
-            if (cat.rows.length === 0) {
-                continue;
-            }
-            var isCatCollapsed = Boolean(this.state.collapsedCats[cat.id]);
-            catSections.push(
-                $r("div", {key: cat.id, className: "xx-res-sec xx-res-sec-" + cat.id}, [
-                    $r("div", {
-                        className: "xx-res-sec-hd",
-                        onClick: self.toggleCategory.bind(self, cat.id)
-                    }, [
-                        $r("span", {className: "xx-res-sec-dot"}),
-                        $r("span", {className: "xx-res-sec-title"}, cat.title),
-                        $r("span", {className: "xx-res-sec-count"}, cat.rows.length),
-                        $r("span", {className: "xx-res-sec-caret"}, isCatCollapsed ? "▸" : "▾")
-                    ]),
-                    !isCatCollapsed ? $r("div", {className: "res-table", role: "grid"}, cat.rows) : null
-                ])
             );
         }
 
@@ -690,66 +647,17 @@ WResourceTable = React.createClass({
                     $r("span", {className: "xx-treasury-seal"}, "库"),
                     $r("span", null, "洞府灵库"),
                     $r("span", {className: "xx-res-sec-caret"}, this.state.isCollapsed ? "▸" : "▾")
-                ]),
-                $r("div", {className:"res-toolbar right"}, [
-                    $r("a", {
-                        className: "link xx-core-res-toggle" + (!game.resPool.showAllResources ? " toggled" : ""),
-                        onClick: this.toggleCoreResources,
-                        title: "切换【一境一核心灵材】精简视图与全部辅佐灵材视图",
-                        tabIndex: 0
-                    }, game.resPool.showAllResources ? "全显" : "一境一核"),
-                    $r("a", {
-                        className: "link" + (this.state.isEditMode ? " toggled" : ""), 
-                        onClick: this.toggleEdit,
-                        onKeyDown: this.onKeyDown,
-                        title: "筛选显示灵材",
-                        tabIndex: 1
-                    }, "筛选")
                 ])
             ]),
             (!this.state.isCollapsed) &&
                 $r("div", {className: "xx-treasury-body"}, [
-                    this.state.isEditMode && $r("div", {className: "xx-edit-bar"}, [
-                        $r("a", {className:"link", onClick: game.ui.zoomUp.bind(game.ui)}, $I("left.font.inc")),
-                        $r("a", {className:"link", onClick: game.ui.zoomDown.bind(game.ui)}, $I("left.font.dec")),
-                        $r("label", {className:"res-toggle-hidden"}, [
-                            $r("input", {
-                                type:"checkbox", 
-                                checked: game.resPool.showHiddenResources,
-                                onClick: this.toggleHiddenResources,
-                                style:{display:"inline-block"},
-                            }),
-                            $I("res.show.hidden")
-                        ])
-                    ]),
-                    catSections
+                    $r("div", {className: "res-table", role: "grid"}, rows)
                 ])
         ]);
     },
 
-    onKeyDown: function(event){
-        if (event.keyCode == 13){
-            this.toggleEdit();
-        }
-    },
-
-    toggleEdit: function(){
-        this.setState({isEditMode: !this.state.isEditMode});
-    },
-
     toggleCollapsed: function(){
         this.setState({isCollapsed: !this.state.isCollapsed});
-    },
-
-    toggleHiddenResources: function(e){
-        game.resPool.showHiddenResources = e.target.checked;
-        this.forceUpdate();
-    },
-
-    toggleCoreResources: function(e){
-        if (e && e.preventDefault){ e.preventDefault(); e.stopPropagation(); }
-        game.resPool.showAllResources = !game.resPool.showAllResources;
-        this.forceUpdate();
     }
 });
 
@@ -782,7 +690,6 @@ WCraftTable = React.createClass({
         var resRows = [];
         var hasAnyCraft = false;
         var canCraftBasic = false;
-        var visibleCraftCount = 0;
 
         for (var i in this.props.resources){
             var res = this.props.resources[i];
@@ -792,9 +699,6 @@ WCraftTable = React.createClass({
             var recipe = game.workshop.getCraft(res.name);
             if ((recipe && recipe.unlocked) || res.unlocked || res.value > 0){
                 hasAnyCraft = true;
-                if (!res.isHidden || this.state.isEditMode) {
-                    visibleCraftCount++;
-                }
             }
             if ((res.name === "beam" || res.name === "slab" || res.name === "steel") &&
                 recipe && recipe.unlocked && game.workshop.getCraftAllCount(res.name) > 0){
@@ -802,7 +706,7 @@ WCraftTable = React.createClass({
             }
             var isRequired = (this.props.reqRes.indexOf(res.name) >= 0);
             resRows.push(
-                $r(WCraftRow, {key: res.name, resource: res, isEditMode: this.state.isEditMode, isRequired: isRequired})
+                $r(WCraftRow, {key: res.name, resource: res, isEditMode: false, isRequired: isRequired})
             );
         }
 
@@ -812,15 +716,13 @@ WCraftTable = React.createClass({
 
         return $r("div", {className: "xx-res-sec xx-res-sec-craft sidebar-section", ariaLabel:"Craftable resources"}, [
             $r("div", {className: "xx-res-sec-hd", onClick: this.toggleCollapsed}, [
-                $r("span", {className: "xx-res-sec-dot"}),
                 $r("span", {className: "xx-res-sec-title"}, "百艺炼制"),
-                visibleCraftCount > 0 ? $r("span", {className: "xx-res-sec-count"}, visibleCraftCount) : null,
                 (!game.isReadOnly() && game.bld.get("workshop").on > 0 && canCraftBasic) ?
                     $r("a", {
                         href: "#!",
                         className: "xx-craft-batch",
                         onClick: this.craftAllBasics,
-                        title: "一键全炼基础阵材 (阵木 / 阵石 / 玄铁)"
+                        title: "一键全炼基础阵材"
                     }, "一键全炼") : null,
                 $r("span", {className: "xx-res-sec-caret"}, this.state.isCollapsed ? "▸" : "▾")
             ]),

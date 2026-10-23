@@ -1482,5 +1482,36 @@ test("Hidden realm xiuwei soft-cap: untouched below knee, smoothly decays toward
     expect(xwRes.maxValue).toBe(0);
 });
 
+test("Commercial minimalist UI: no mode toggles, no synergy banners, automatic hiding of researched techs/upgrades, and clean button labels", () => {
+    const cult = game.cultivation;
+    cult.getStage("zhuji_0").researched = true;
+    cult.syncRealmUnlocks();
+
+    // 1. Unlocked buildings, techs, upgrades, and crafts have clean names without redundant [XX境] tags
+    const bldCtrl = new com.nuclearunicorn.game.ui.BuildingStackableBtnController(game);
+    const fieldName = bldCtrl.getName({metadata: game.bld.get("field"), name: "百亩灵田"});
+    expect(fieldName).not.toContain("xxRealmGateBadge ok");
+
+    const techCtrl = new com.nuclearunicorn.game.ui.TechButtonController(game);
+    const calTech = game.science.get("calendar");
+    expect(techCtrl.getName({metadata: calTech, name: calTech.label})).not.toContain("xxRealmGateBadge ok");
+
+    // 2. Researched techs and upgrades automatically hide without needing a manual checkbox toggle
+    calTech.unlocked = true;
+    calTech.researched = true;
+    const techModel = {metadata: calTech, visible: true};
+    techCtrl.updateVisible(techModel);
+    expect(techModel.visible).toBe(false);
+
+    const upgCtrl = new com.nuclearunicorn.game.ui.UpgradeButtonController(game);
+    const hoes = game.workshop.get("mineralHoes");
+    hoes.unlocked = true;
+    hoes.researched = true;
+    const upgModel = {metadata: hoes, visible: true};
+    upgCtrl.updateVisible(upgModel);
+    expect(upgModel.visible).toBe(false);
+});
+
+
 
 

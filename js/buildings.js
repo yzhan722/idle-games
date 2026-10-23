@@ -3128,13 +3128,8 @@ dojo.declare("classes.ui.btn.BuildingBtnModernController", com.nuclearunicorn.ga
 		if (this.game && this.game.cultivation && meta && meta.name){
 			var cult = this.game.cultivation;
 			var gate = cult.getItemRealmGate("building", meta.name);
-			if (gate){
-				var unlockedByRealm = cult.isItemRealmUnlocked("building", meta.name);
-				if (!unlockedByRealm){
-					name += " <span class=\"xxRealmGateBadge locked\">🔒 需突破【" + gate.title + "】</span>";
-				} else {
-					name += " <span class=\"xxRealmGateBadge ok\">【" + gate.shortTitle + "境·" + gate.resTitle + "】</span>";
-				}
+			if (gate && !cult.isItemRealmUnlocked("building", meta.name)){
+				name += " <span class=\"xxRealmGateBadge locked\">🔒 " + gate.title + "</span>";
 			}
 		}
 		return name;
@@ -3156,7 +3151,7 @@ dojo.declare("classes.ui.btn.BuildingBtnModernController", com.nuclearunicorn.ga
 			var gate = cult.getItemRealmGate("building", model.metadata.name);
 			var curIdx = cult.getCurrentRealmIndex();
 			var val = model.metadata.val || 0;
-			if (!this.game.bld.showAuxBuildings && !gate.isCore && val <= 0){
+			if (!gate.isCore && val <= 0){
 				model.visible = false;
 				return;
 			}
@@ -3442,90 +3437,22 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.BuildingsModern", com.nuclearunicor
 
 	render: function(content){
 		this.bldGroups = [];
-		var self = this;
-
-		if (this.game && this.game.cultivation){
-			this.synergyNode = dojo.create("div", {
-				className: "xxSynergyMount",
-				innerHTML: this.game.cultivation.renderRealmSynergyBanner("Bonfire")
-			}, content);
-			this._synHtml = this.synergyNode.innerHTML;
-		}
 
 		var topContainer = dojo.create("div", {
 			className: "bldTopContainer"
 		}, content);
 
-		if (this.game && this.game.bld){
-			var modeBar = dojo.create("div", {className: "xxBldModeBar"}, topContainer);
-			var isAux = !!this.game.bld.showAuxBuildings;
-			var toggleLink = dojo.create("a", {
-				href: "#!",
-				className: "xxBldModeToggle" + (isAux ? " all" : " core"),
-				innerHTML: isAux
-					? "🏛️ 当前：显示全部灵筑（点击切回【一境一核·17座核心灵筑】）"
-					: "✦ 当前：一境一核精简模式（仅示17座境界核心灵筑 · 点击展开辅佐建筑）"
-			}, modeBar);
-			dojo.connect(toggleLink, "onclick", this, function(e){
-				if (e && e.preventDefault){ e.preventDefault(); }
-				self.game.bld.showAuxBuildings = !self.game.bld.showAuxBuildings;
-				self.game.render();
-			});
-		}
-
 		var groups = this.game.bld.getBuildingGroups(true /*includeNonGroupFilters*/);
 
-		if (!this.activeGroup){
-			this.activeGroup = groups[0].name;
-		}
+		this.activeGroup = groups[0].name;
 		for (var i = 0; i < groups.length; i++){
-			var isActiveGroup = (groups[i].name == this.activeGroup);
-
-			var hasVisibleBldngs = false;
-			for (var j = 0; j < groups[i].buildings.length; j++){
-				var bld = this.game.bld.get(groups[i].buildings[j]);
-				if (bld.unlocked){
-					hasVisibleBldngs = true;
-					break;
-				}
-			}
-			if (!groups[i].buildings.length){	//empty groups are visible by default
-				hasVisibleBldngs = true;
-			}
-
-			var separator = null;
-			if (i != 0){
-				separator = dojo.create("span", {
-					innerHTML: " &#183; ",
-					style: {
-						display: hasVisibleBldngs ? "" : "none"
-					}
-				}, topContainer);
-			}
-
-			var tab = dojo.create("a", {
-				innerHTML: groups[i].title,
-				href: "#",
-				style: {
-					display: hasVisibleBldngs ? "" : "none",
-					whiteSpace: "nowrap"
-				},
-				className: isActiveGroup ? "activeTab" : ""
-			}, topContainer);
-
 			this.bldGroups.push({
 				group: groups[i],
-				visible: hasVisibleBldngs,
-				tab: tab,
-				separator: separator
+				visible: false,
+				tab: null,
+				separator: null
 			});
-
-			dojo.connect(tab, "onclick", this, dojo.partial(function(groupName){
-				this.activeGroup = groupName;
-				this.game.render();
-			}, groups[i].name));
 		}
-
 
 		var groupContainer = dojo.create("div", { className: "bldGroupContainer"}, topContainer);
 		this.groupContainer = groupContainer;
@@ -3537,13 +3464,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.BuildingsModern", com.nuclearunicor
 
 	update: function(){
 		this.inherited(arguments);
-		if (this.synergyNode && this.game && this.game.cultivation){
-			var synHtml = this.game.cultivation.renderRealmSynergyBanner("Bonfire");
-			if (synHtml !== this._synHtml){
-				this._synHtml = synHtml;
-				this.synergyNode.innerHTML = synHtml;
-			}
-		}
 	},
 
 	isAggregateGroup: function(){
