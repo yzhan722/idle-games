@@ -1791,6 +1791,10 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 				title: $I("effectsMgr.statics.realmProductionRatio.title"),
 				type: "ratio"
 			},
+			"realmStorageRatio":{
+				title: $I("effectsMgr.statics.realmStorageRatio.title"),
+				type: "ratio"
+			},
 			"seclusionMundaneRatio":{
 				title: $I("effectsMgr.statics.seclusionMundaneRatio.title"),
 				type: "ratio"

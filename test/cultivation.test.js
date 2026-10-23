@@ -911,11 +911,11 @@ test("Building and technology names in zh.json use canonical Fanren Xiuxianzhuan
 
     // Fine-grained descriptions include both Fanren lore and explicit numerical/mechanical breakdowns
     expect(zh["buildings.hut.desc"]).toContain("神手谷");
-    expect(zh["buildings.hut.desc"]).toContain("+0.005/跳");
+    expect(zh["buildings.hut.desc"]).toContain("+0.025/跳");
     expect(zh["buildings.library.desc"]).toContain("+12%");
     expect(zh["buildings.library.desc"]).toContain("大衍神机阁");
     expect(zh["buildings.smelter.desc"]).toContain("0.05 灵木");
-    expect(zh["buildings.smelter.desc"]).toContain("0.03 玄铁");
+    expect(zh["buildings.smelter.desc"]).toContain("0.05 玄铁");
     expect(zh["science.construction.effectDesc"]).toContain("太岳石室");
     expect(zh["science.construction.effectDesc"]).toContain("须弥宝库");
     expect(zh["science.construction.effectDesc"]).toContain("千竹炼木坊");
@@ -1370,4 +1370,59 @@ test("Unified Realm-Module Interlock & One Key Resource per Major Realm (九境�
     expect(bannerHtml).toContain("结丹期");
     expect(bannerHtml).toContain("金精");
 });
+
+test("Resource production & storage capacity rebalance: realmStorageRatio, core building *Max & *PerTickBase, and per-tick relic/timeCrystal", () => {
+    const cult = game.cultivation;
+
+    // 1. Coherent base storage caps in effectsBase
+    expect(game.bld.effectsBase.catnipMax).toBe(2000);
+    expect(game.bld.effectsBase.woodMax).toBe(500);
+    expect(game.bld.effectsBase.mineralsMax).toBe(600);
+    expect(game.bld.effectsBase.goldMax).toBe(200);
+    expect(game.bld.effectsBase.titaniumMax).toBe(150);
+
+    // 2. Early-realm core buildings expand storage so players are never cap-locked before Jiedan (barn)
+    expect(game.bld.get("hut").priceRatio).toBe(1.25);
+    expect(game.bld.get("hut").effects.woodMax).toBe(200);
+    expect(game.bld.get("field").effects.catnipMax).toBe(400);
+    expect(game.bld.get("workshop").effects.mineralsMax).toBe(250);
+    expect(game.bld.get("barn").priceRatio).toBe(1.22);
+
+    // 3. Realm breakthroughs grant realmStorageRatio that scales maxValue proportionally
+    game.updateCaches();
+    game.calculateAllEffects();
+    game.resPool.updateMaxValueAll();
+    const baseWoodMax = game.resPool.get("wood").maxValue;
+    expect(baseWoodMax).toBe(500);
+
+    cult.getStage("zhuji_0").researched = true;
+    game.updateCaches();
+    game.calculateAllEffects();
+    game.resPool.updateMaxValueAll();
+    expect(game.getEffect("realmStorageRatio")).toBeGreaterThan(0);
+    expect(game.resPool.get("wood").maxValue).toBeGreaterThan(baseWoodMax);
+
+    // 4. Late-game core buildings produce and store their realm's signature resources (oil, unobtainium, relic, timeCrystal)
+    expect(game.resPool.get("relic").calculatePerTick).toBe(true);
+    expect(game.resPool.get("timeCrystal").calculatePerTick).toBe(true);
+
+    const magneto = game.bld.get("magneto");
+    magneto.unlocked = true; magneto.val = 2; magneto.on = 2;
+    const reactor = game.bld.get("reactor");
+    reactor.unlocked = true; reactor.val = 2; reactor.on = 2;
+    const accel = game.bld.get("accelerator");
+    accel.unlocked = true; accel.val = 2; accel.on = 2;
+    const chrono = game.bld.get("chronosphere");
+    chrono.unlocked = true; chrono.val = 2; chrono.on = 2;
+
+    game.updateCaches();
+    game.calculateAllEffects();
+    game.resPool.updateMaxValueAll();
+
+    expect(game.calcResourcePerTick("oil")).toBeGreaterThan(0);
+    expect(game.calcResourcePerTick("unobtainium")).toBeGreaterThan(0);
+    expect(game.calcResourcePerTick("relic")).toBeGreaterThan(0);
+    expect(game.calcResourcePerTick("timeCrystal")).toBeGreaterThan(0);
+});
+
 

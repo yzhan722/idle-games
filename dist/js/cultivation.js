@@ -101,14 +101,14 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		//gate — 大境界门槛:首层突破除修为/核心灵材外还需一道大关
 		//  {riftFloor:N}   需通关上古秘境第N层——历生死之险,道基方凝
 		{key:"lianqi",  layers:10, base:{xiuwei:45},                       mul:1.45, bonus:0.03, chance:1.0,  life:80,     keyRes:"wood"},
-		{key:"zhuji",   layers:3,  base:{xiuwei:3200, minerals:260},       mul:1.70, bonus:0.15, chance:0.55, life:200,    keyRes:"minerals"},
-		{key:"jiedan",  layers:3,  base:{xiuwei:18000, gold:150},          mul:1.68, bonus:0.30, chance:0.48, life:500,    keyRes:"gold",        gate:{riftFloor:3}},
-		{key:"yuanying",layers:3,  base:{xiuwei:72000, science:2800},      mul:1.52, bonus:0.65, chance:0.42, life:1200,   keyRes:"science",     gate:{riftFloor:6}},
-		{key:"huashen", layers:3,  base:{xiuwei:280000, faith:2200},       mul:1.48, bonus:1.25, chance:0.36, life:3200,   keyRes:"faith",       gate:{riftFloor:9}},
-		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50},   mul:1.52, bonus:2.10, chance:0.30, life:8000,   keyRes:"unobtainium", gate:{riftFloor:12}},
-		{key:"heti",    layers:3,  base:{xiuwei:2600000, relic:20},        mul:1.60, bonus:3.20, chance:0.25, life:20000,  keyRes:"relic",       gate:{riftFloor:15}},
-		{key:"dacheng", layers:3,  base:{xiuwei:7200000, timeCrystal:15},  mul:1.50, bonus:5.80, chance:0.20, life:60000,  keyRes:"timeCrystal", gate:{riftFloor:20}},
-		{key:"dujie",   layers:1,  base:{xiuwei:24000000, timeCrystal:50}, mul:1,    bonus:12.0, chance:0.10, life:100000, keyRes:"timeCrystal", gate:{riftFloor:25}}
+		{key:"zhuji",   layers:3,  base:{xiuwei:3200, minerals:220},       mul:1.60, bonus:0.10, chance:0.55, life:200,    keyRes:"minerals"},
+		{key:"jiedan",  layers:3,  base:{xiuwei:18000, gold:150},          mul:1.58, bonus:0.22, chance:0.48, life:500,    keyRes:"gold",        gate:{riftFloor:3}},
+		{key:"yuanying",layers:3,  base:{xiuwei:72000, science:2800},      mul:1.52, bonus:0.45, chance:0.42, life:1200,   keyRes:"science",     gate:{riftFloor:6}},
+		{key:"huashen", layers:3,  base:{xiuwei:280000, faith:2200},       mul:1.48, bonus:0.80, chance:0.36, life:3200,   keyRes:"faith",       gate:{riftFloor:9}},
+		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50},   mul:1.52, bonus:1.35, chance:0.30, life:8000,   keyRes:"unobtainium", gate:{riftFloor:12}},
+		{key:"heti",    layers:3,  base:{xiuwei:2600000, relic:20},        mul:1.60, bonus:2.10, chance:0.25, life:20000,  keyRes:"relic",       gate:{riftFloor:15}},
+		{key:"dacheng", layers:3,  base:{xiuwei:7200000, timeCrystal:15},  mul:1.50, bonus:3.20, chance:0.20, life:60000,  keyRes:"timeCrystal", gate:{riftFloor:20}},
+		{key:"dujie",   layers:1,  base:{xiuwei:24000000, timeCrystal:50}, mul:1,    bonus:5.00, chance:0.10, life:100000, keyRes:"timeCrystal", gate:{riftFloor:25}}
 	],
 
 	//九境万法同源矩阵 — 每一个大修为境界绑定唯一核心灵材，并与洞府灵筑(房屋)、问道功法(科技)、百艺丹器(工坊)严密互锁
@@ -1094,12 +1094,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					prices: prices,
 					effects: {
 						"realmProductionRatio": def.bonus,
+						"realmStorageRatio": (r == 0 && i == 0) ? 0 : def.bonus * 0.5,
 						//was xiuweiJobRatio — dead since the disciple system was
 						//removed; now a direct multiplier on xiuwei production
-						"xiuweiRatio": def.bonus * 0.5,
+						"xiuweiRatio": def.bonus * 0.35,
 						//flat trickle: the floor under early-game income — meaningful at
-						//炼气 (0.03/tick ≈ 0.15/s), negligible next to building income later
-						"xiuweiPerTickBase": def.bonus * 1.0,
+						//炼气 (0.03/tick ≈ 0.15/s), working alongside Cave-Heaven buildings
+						"xiuweiPerTickBase": def.bonus,
 						//战力底数——境界即道行;每境底数约翻四倍,境内层层渐涨
 						"combatPower": this.COMBAT_BASE[r] * (1 + i * 0.5)
 					},
