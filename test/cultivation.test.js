@@ -1151,3 +1151,26 @@ test("Full-game balance invariants: zero storage cap deadlocks and monotonic cul
         checkPricesAgainstCaps(pl.buildings || []);
     }
 });
+
+test("Redesigned Spiritual Treasury (洞府灵库) categorizes all resources with high-contrast palette and eliminates duplicate/teleporting resource rows", () => {
+    const validCategories = new Set(["dao", "material", "craft", "treasure"]);
+    const activeRes = game.resPool.resources.filter(r => r.visible || r.craftable);
+    expect(activeRes.length).toBe(26);
+
+    for (const r of activeRes) {
+        expect(validCategories.has(r.category)).toBe(true);
+        expect(r.color).toMatch(/^#[0-9a-fA-F]{6}$/);
+    }
+
+    // Dao category contains the 5 core cultivation & comprehension essences
+    const daoRes = activeRes.filter(r => r.category === "dao").map(r => r.name);
+    expect(daoRes).toEqual(["science", "culture", "faith", "xiuwei", "starchart"]);
+
+    // Material category contains the 10 gathered cave-heaven materials (including wood, which is never duplicated in craft table)
+    const matRes = activeRes.filter(r => r.category === "material").map(r => r.name);
+    expect(matRes).toEqual(["catnip", "wood", "minerals", "coal", "iron", "titanium", "gold", "oil", "uranium", "unobtainium"]);
+
+    // Craft category contains the 6 workshop-refined materials (including blueprint, which stays in craft section instead of jumping tables)
+    const craftRes = activeRes.filter(r => r.category === "craft").map(r => r.name);
+    expect(craftRes).toEqual(["beam", "slab", "steel", "alloy", "eludium", "blueprint"]);
+});

@@ -142,7 +142,7 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 #devPanel a:hover, #headerToolbar a:hover { color: var(--xx-jade); }
 
 /* ============================================================
-   Layout — resources on top, nav rail left, content, log right
+   Layout — Spiritual Treasury left, nav + content center, log right
    ============================================================ */
 #game {
 	position: absolute;
@@ -153,89 +153,184 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	width: 100%;
 	min-width: 0;
 	display: grid;
-	grid-template-columns: 156px minmax(460px, 1fr) 320px;
+	grid-template-columns: 308px minmax(460px, 1fr) 300px;
 	grid-template-rows: auto minmax(0, 1fr) auto;
 	grid-template-areas:
-		"res  res   res"
-		"nav  main  log"
-		"nav  guide log";
+		"res  nav   log"
+		"res  main  log"
+		"res  guide log";
 }
 
-/* resource strip — 灵息卡纵排布局 */
+/* 洞府灵库 — Dedicated full-height left sidebar, zero vertical clipping */
 #leftColumn {
 	grid-area: res;
 	position: relative;
 	width: auto;
 	max-width: none;
 	min-width: 0;
-	height: auto;
-	min-height: 62px;
-	max-height: 124px;
-	padding: 6px 84px 7px 12px;
+	height: 100%;
+	min-height: 0;
+	max-height: none;
+	padding: 10px 10px 20px 12px;
 	margin-top: 0;
+	box-sizing: border-box;
 	overflow-y: auto;
 	overflow-x: hidden;
-	border-bottom: 1px solid var(--xx-line);
-	background: linear-gradient(180deg, rgba(13, 20, 29, .86), rgba(10, 15, 22, .74));
+	border-right: 1px solid var(--xx-line);
+	border-bottom: none;
+	background: linear-gradient(180deg, rgba(12, 18, 27, .94), rgba(9, 14, 21, .90));
 	scrollbar-width: thin;
 	scrollbar-gutter: stable;
 }
 
-/* Float the resource collapse/settings toolbar into the top-right corner
-   so it never wastes a full 24px vertical row above the resource cards */
-#leftColumn div:has(> .res-toolbar) {
-	position: absolute;
-	top: 6px;
-	right: 10px;
-	z-index: 2;
+.xx-left-wrap {
 	display: flex;
-	align-items: center;
-	gap: 3px;
-}
-/* Hide empty trade-pin collapse link & hidden praise/sacrifice placeholders */
-#fastPraiseContainer[style*="hidden"],
-#fastSacrificeContainer[style*="hidden"],
-#leftColumn div:not(:has(.res-table)):not(:has(.pin-link)) > .left > .link.collapse {
-	display: none !important;
+	flex-direction: column;
+	gap: 6px;
 }
 
-/* default.css renders .res-table as a table — responsive card grid instead */
-#leftColumn .res-table {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
-	grid-auto-rows: 52px;
+/* 灵库总览顶栏 */
+.xx-treasury-hd {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 4px 6px 7px;
+	border-bottom: 1px solid rgba(212, 176, 106, .24);
+	margin-bottom: 4px;
+}
+.xx-treasury-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-family: var(--xx-serif);
+	font-size: 15.5px;
+	font-weight: 600;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+	cursor: pointer;
+	user-select: none;
+}
+.xx-treasury-seal {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	border-radius: 5px;
+	border: 1px solid rgba(212, 176, 106, .6);
+	background: linear-gradient(145deg, rgba(184, 69, 46, .85), rgba(110, 34, 22, .9));
+	color: #fff;
+	font-size: 12px;
+	line-height: 1;
+}
+
+/* 分类灵库小标题 (大道修持 / 天地灵材 / 百艺炼制 / 仙缘奇珍) */
+.xx-res-sec {
+	margin-bottom: 6px;
+}
+.xx-res-sec-hd {
+	display: flex;
+	align-items: center;
 	gap: 6px;
-	width: auto;
+	padding: 4px 8px;
+	margin: 2px 0 4px;
+	border-radius: 6px;
+	background: linear-gradient(90deg, rgba(24, 35, 50, .85), rgba(15, 22, 33, .45));
+	border-left: 2.5px solid var(--xx-gold);
+	cursor: pointer;
+	user-select: none;
+	transition: background .15s;
+}
+.xx-res-sec-dao > .xx-res-sec-hd { border-left-color: var(--xx-jade); }
+.xx-res-sec-craft > .xx-res-sec-hd { border-left-color: #67c8ff; }
+.xx-res-sec-treasure > .xx-res-sec-hd { border-left-color: #e29eff; }
+.xx-res-sec-hd:hover {
+	background: linear-gradient(90deg, rgba(32, 46, 66, .92), rgba(18, 27, 40, .6));
+}
+.xx-res-sec-dot {
+	width: 5px;
+	height: 5px;
+	border-radius: 999px;
+	background: var(--xx-gold);
+	opacity: .85;
+}
+.xx-res-sec-dao .xx-res-sec-dot { background: var(--xx-jade); }
+.xx-res-sec-craft .xx-res-sec-dot { background: #67c8ff; }
+.xx-res-sec-treasure .xx-res-sec-dot { background: #e29eff; }
+.xx-res-sec-title {
+	font-family: var(--xx-serif);
+	font-size: 13px;
+	letter-spacing: 1.5px;
+	color: var(--xx-paper);
+}
+.xx-res-sec-count {
+	font-size: 10.5px;
+	color: var(--xx-mute);
+	padding: 0 5px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, .05);
+}
+.xx-res-sec-caret {
+	margin-left: auto;
+	font-size: 11px;
+	color: var(--xx-mute);
+}
+.xx-craft-batch {
+	margin-left: auto;
+	margin-right: 4px;
+	padding: 1px 7px;
+	border-radius: 999px;
+	border: 1px solid rgba(79, 209, 165, .42);
+	background: rgba(79, 209, 165, .12);
+	color: var(--xx-jade) !important;
+	font-family: var(--xx-sans);
+	font-size: 10.5px;
+	letter-spacing: .5px;
+}
+.xx-craft-batch:hover {
+	border-color: var(--xx-gold);
+	background: rgba(212, 176, 106, .18);
+	color: var(--xx-gold-hi) !important;
+}
+
+/* Single-column structured resource list — never clips or overlaps */
+#leftColumn .res-table {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	width: 100%;
 	max-width: none;
 	border-collapse: collapse;
 	border-spacing: 0;
 }
 
-/* 灵息卡——名·值·率三层纵排,底缘一条仓位 */
+/* 单行灵材条 —— 左(图标+名+天气+快捷) · 中(储量/上限) · 右(速率) + 底缘2px进度条 */
 #leftColumn .res-row {
 	display: flex !important;
-	flex-direction: column;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
 	position: relative;
 	white-space: nowrap;
-	padding: 4px 10px 7px;
-	height: 52px;
+	padding: 5px 8px 6px;
+	min-height: 32px;
+	height: auto;
 	box-sizing: border-box;
-	overflow: hidden;
-	background: linear-gradient(180deg, rgba(28, 39, 55, .66), rgba(17, 25, 36, .66));
-	border: 1px solid rgba(120, 136, 156, .25);
-	border-radius: 8px;
+	overflow: visible;
+	background: linear-gradient(90deg, rgba(24, 34, 48, .72), rgba(16, 24, 35, .72));
+	border: 1px solid rgba(120, 136, 156, .20);
+	border-radius: 6px;
 	font-size: 12.5px;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
-	transition: border-color .18s, background .18s, transform .12s;
+	transition: border-color .15s, background .15s;
 }
 #leftColumn .res-row:hover {
 	border-color: var(--xx-jade-dim);
-	background: linear-gradient(180deg, rgba(34, 48, 66, .78), rgba(20, 30, 44, .78));
-	transform: translateY(-1px);
+	background: linear-gradient(90deg, rgba(32, 45, 64, .88), rgba(20, 30, 44, .88));
 }
 #leftColumn .res-cell {
-	display: block;
-	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
 	border: none !important;
 	background: transparent !important;
 	padding: 0;
@@ -243,71 +338,109 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	width: auto !important;
 	max-width: none !important;
 	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	line-height: 1.15;
+	overflow: visible;
+	line-height: 1.25;
 }
 
-/* 层一:名 + 天气徽记 */
+/* 左区: 图标 + 名称 + 天气修正 + 行内操作(凝木/礼敬) */
 #leftColumn .res-head {
-	display: flex !important;
-	align-items: baseline;
-	justify-content: space-between;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: flex-start;
 	gap: 4px;
+	flex: 1 1 auto;
+	min-width: 0;
 }
 #leftColumn .resource-name {
-	color: #9fb0c4;
-	font-size: 11px;
-	letter-spacing: 1px;
+	color: var(--xx-paper);
+	font-size: 12.5px;
+	font-weight: 500;
+	letter-spacing: .5px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
-#leftColumn .res-weather { font-size: 10px; flex: 0 0 auto; }
+#leftColumn .res-weather {
+	font-size: 10px;
+	padding: 0 4px;
+	border-radius: 3px;
+	background: rgba(255, 255, 255, .05);
+	flex: 0 0 auto;
+}
 #leftColumn .res-weather.positive-weather { color: #6fc3df; }
-#leftColumn .res-weather.negative-weather { color: #d98a76; }
+#leftColumn .res-weather.negative-weather { color: #e58a76; }
 
-/* 层二:数值主角 — 大数字,上限小字后缀 */
+/* 行内快捷按钮 (灵木[+1][全]、愿力[礼敬]) */
+.xx-res-acts {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	margin-left: 2px;
+	flex: 0 0 auto;
+}
+.xx-res-act {
+	display: inline-block;
+	padding: 1px 5px;
+	border-radius: 4px;
+	border: 1px solid rgba(79, 209, 165, .38);
+	background: rgba(79, 209, 165, .10);
+	color: var(--xx-jade) !important;
+	font-size: 10.5px;
+	line-height: 1.2;
+}
+.xx-res-act:hover {
+	border-color: var(--xx-gold);
+	background: rgba(212, 176, 106, .18);
+	color: var(--xx-gold-hi) !important;
+}
+
+/* 中区: 当前数量 / 储量上限 */
 #leftColumn .res-figure {
-	display: flex !important;
+	display: inline-flex !important;
 	align-items: baseline;
+	justify-content: flex-end;
 	gap: 2px;
-	margin-top: 1px;
+	flex: 0 0 auto;
+	margin-left: auto;
 }
 #leftColumn .res-figure .res-val,
 #leftColumn .res-figure.resAmount {
 	color: var(--xx-gold-hi);
 	font-weight: 600;
-	font-size: 14px;
+	font-size: 13px;
 	font-variant-numeric: tabular-nums;
-	letter-spacing: .3px;
 }
 #leftColumn .res-figure.resLimitWarn .res-val { color: var(--xx-gold); }
 #leftColumn .res-figure.resLimitNotice .res-val { color: #e0604a; }
 #leftColumn .res-figure .maxRes {
 	color: var(--xx-mute);
-	font-size: 10px;
-	font-variant-numeric: tabular-nums;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-/* 层三:速率 — 玉色正产、赤色负耗、灰无流 */
-#leftColumn .resPerTick {
-	color: var(--xx-jade);
 	font-size: 10.5px;
 	font-variant-numeric: tabular-nums;
-	margin-top: auto;
+}
+
+/* 右区: 每秒速率 */
+#leftColumn .resPerTick {
+	color: var(--xx-jade);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	min-width: 56px;
+	justify-content: flex-end;
+	text-align: right;
+	flex: 0 0 auto;
 }
 #leftColumn .resPerTick.neg { color: #e0604a; }
+#leftColumn .resPerTick.idle { color: rgba(143, 160, 181, .4); }
 
-/* 底缘仓位条 — 玉→金→赤 */
+/* 底缘仓位进度条 — 玉→金→赤 */
 #leftColumn .res-cap {
 	position: absolute;
-	left: 8px; right: 8px; bottom: 3px;
-	height: 2.5px;
+	left: 6px;
+	right: 6px;
+	bottom: 2px;
+	height: 2px;
 	border-radius: 2px;
-	background: rgba(120, 130, 145, .18);
+	background: rgba(120, 130, 145, .16);
 	overflow: hidden;
+	pointer-events: none;
 }
 #leftColumn .res-cap i {
 	display: block;
@@ -322,93 +455,147 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	box-shadow: 0 0 6px rgba(224, 96, 74, .7);
 }
 
-/* 状态类 — 修为永远置顶第一张卡,当前高亮资源次之 */
-#leftColumn .res-row.hidden { opacity: .42; }
+/* 高亮态 — 不改变 DOM/flex order，彻底杜绝列表乱跳 */
+#leftColumn .res-row.hidden { opacity: .45; }
 #leftColumn .res-row.hidden .resource-name { color: rgba(147,164,184,.5); }
 #leftColumn .res-row.highlited {
-	order: -1;
 	border-color: var(--xx-gold);
-	box-shadow: 0 0 0 1px rgba(212,175,55,.35), 0 0 10px rgba(212,175,55,.15);
+	box-shadow: 0 0 0 1px rgba(212, 175, 55, .32), inset 0 0 10px rgba(212, 175, 55, .10);
 }
 #leftColumn .res-row.resource_xiuwei {
-	order: -2;
-	border-color: rgba(79, 209, 165, .5);
-	background: linear-gradient(180deg, rgba(22, 38, 32, .75), rgba(14, 24, 21, .75));
+	border-color: rgba(79, 209, 165, .48);
+	background: linear-gradient(90deg, rgba(20, 38, 32, .82), rgba(14, 24, 22, .82));
 }
-#leftColumn .res-edit { position: absolute; top: 3px; right: 6px; z-index: 1; }
-#leftColumn .res-edit input { transform: scale(.8); margin: 0; }
+#leftColumn .res-edit { flex: 0 0 auto; margin-right: 4px; }
+#leftColumn .res-edit input { transform: scale(.85); margin: 0; }
 .xx-res-toggle, .xx-log-toggle, .xx-log-ticker, .xx-guide-toggle { display: none; }
 
-/* collapse / edit toggles at strip edges — quiet ghost buttons */
-#leftColumn .res-toolbar { display: inline-flex; align-items: center; gap: 3px; margin: 0; }
-#leftColumn .res-toolbar a, #leftColumn .link.collapse {
+/* 筛选工具栏 */
+.xx-edit-bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 6px;
+	margin-bottom: 6px;
+	border-radius: 5px;
+	background: rgba(16, 24, 36, .75);
+	font-size: 11.5px;
+}
+#leftColumn .res-toolbar { display: inline-flex; align-items: center; gap: 4px; margin: 0; float: none; }
+#leftColumn .res-toolbar a {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	padding: 3px 6px;
+	padding: 2px 8px;
 	margin: 0;
-	border: 1px solid rgba(120,130,145,.26);
+	border: 1px solid rgba(120, 130, 145, .3);
 	border-radius: 5px;
 	color: var(--xx-mute);
-	background: rgba(13, 20, 29, .65);
-	font-size: 10px;
+	background: rgba(16, 24, 35, .75);
+	font-size: 11px;
 	line-height: 1.2;
 }
-#leftColumn .res-toolbar a:hover, #leftColumn .link.collapse:hover {
+#leftColumn .res-toolbar a:hover {
 	color: var(--xx-jade);
 	border-color: var(--xx-jade-dim);
 }
 #leftColumn .res-toolbar .link.toggled { color: var(--xx-gold-hi); border-color: var(--xx-gold); }
-#leftColumn .res-toolbar .svg-icon { width: 10px; height: 10px; display: block; }
-#leftColumn .res-toggle-hidden { margin: 4px 0 0; font-size: 11px; color: var(--xx-mute); }
-#leftColumn .res-toggle-hidden input { vertical-align: -1px; }
+#leftColumn .res-toggle-hidden { margin: 0 0 0 auto; font-size: 11px; color: var(--xx-mute); cursor: pointer; }
+#leftColumn .res-toggle-hidden input { vertical-align: -1px; margin-right: 3px; }
 
-.res-toolbar a, .link.collapse {
-	display: inline-block;
-	padding: 2px 8px;
-	margin: 0 4px 0 0;
-	border: 1px solid var(--xx-line);
-	border-radius: 4px;
-	color: var(--xx-mute);
-	font-size: 12px;
-}
-.sidebar-section { display: block; margin-top: 6px; }
+.sidebar-section { display: block; margin-top: 4px; }
+
+/* 百艺炼制行 (.res-row.craft) — 单行紧凑排布: 名 · 储量(+自动率) · 炼制钮 */
 #leftColumn .res-row.craft {
 	flex-direction: row !important;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	align-items: center;
-	justify-content: flex-start;
+	justify-content: space-between;
 	height: auto !important;
-	min-height: 48px;
+	min-height: 32px;
 	padding: 4px 8px;
-	gap: 2px 5px;
+	gap: 6px;
 }
 #leftColumn .res-row.craft .resource-name {
 	font-weight: 600;
 	color: var(--xx-paper);
 }
 #leftColumn .res-row.craft .resource-value {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 4px;
 	color: var(--xx-gold-hi);
 	font-weight: 600;
+	font-size: 12.5px;
 	font-variant-numeric: tabular-nums;
 	margin-left: auto;
 	width: auto !important;
+	flex: 0 0 auto;
+}
+.xx-craft-rate {
+	font-size: 10.5px;
+	font-weight: 400;
+	color: var(--xx-jade);
+}
+.xx-craft-rate.neg { color: #e0604a; }
+.xx-craft-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	flex: 0 0 auto;
+}
+.xx-craft-btn-wrap {
+	display: inline-flex;
 }
 #leftColumn .res-row.craft .craft-link {
 	font-size: 10.5px;
 	color: var(--xx-jade);
-	padding: 1px 4px;
+	padding: 1px 6px;
 	border-radius: 4px;
-	background: rgba(79, 209, 165, .08);
-	border: 1px solid rgba(79, 209, 165, .22);
+	background: rgba(79, 209, 165, .10);
+	border: 1px solid rgba(79, 209, 165, .32);
+	cursor: pointer;
+	user-select: none;
+	opacity: 1;
+	width: auto;
+	max-width: none;
+	transition: border-color .14s, background .14s, color .14s;
+}
+#leftColumn .res-row.craft .craft-link:hover {
+	border-color: var(--xx-gold);
+	background: rgba(212, 176, 106, .18);
+	color: var(--xx-gold-hi);
+	text-decoration: none;
+}
+#leftColumn .res-row.craft .craft-link.all {
+	color: var(--xx-gold-hi);
+	border-color: rgba(212, 176, 106, .38);
+	background: rgba(212, 176, 106, .10);
+}
+#leftColumn .res-row.craft .craft-link.craft-disabled {
+	color: rgba(143, 160, 181, .52);
+	border-color: rgba(120, 136, 156, .20);
+	background: rgba(255, 255, 255, .03);
+	cursor: help;
+}
+.xx-advisor-warn {
+	padding: 6px 10px;
+	margin-top: 4px;
+	border-radius: 6px;
+	border: 1px solid rgba(224, 96, 74, .45);
+	background: rgba(184, 69, 46, .16);
+	color: #f2a494;
+	font-size: 11.5px;
 }
 .pin-link {
-	display: inline-flex;
-	margin: 3px 6px 3px 0;
-	padding: 4px 10px;
+	display: flex;
+	align-items: center;
+	margin: 3px 0;
+	padding: 5px 10px;
 	border: 1px dashed var(--xx-jade-dim);
 	border-radius: 6px;
 	color: var(--xx-jade);
+	font-size: 12px;
 }
 .pin-link a { color: var(--xx-jade); }
 
@@ -427,52 +614,56 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 }
 
 /* ============================================================
-   Vertical tab rail
+   Horizontal Center Top Tab Bar (.tabsContainer)
    ============================================================ */
 .tabsContainer {
 	grid-area: nav;
 	position: static !important;
 	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	padding: 12px 8px;
+	flex-direction: row;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 8px 18px;
 	margin-top: 0;
 	text-align: left;
-	border-right: 1px solid var(--xx-line);
-	background: linear-gradient(180deg, rgba(11, 16, 24, .75), rgba(9, 13, 20, .55));
-	overflow-y: auto;
+	border-bottom: 1px solid var(--xx-line);
+	border-right: none;
+	background: linear-gradient(180deg, rgba(14, 21, 31, .92), rgba(10, 15, 23, .82));
+	overflow-x: auto;
+	overflow-y: hidden;
 }
 .tabsContainer span { display: none; }
 #game .tabsContainer .tab,
 body.scheme_default .tabsContainer a.tab {
-	display: flex;
+	display: inline-flex;
 	align-items: center;
-	padding: 9px 12px;
-	border-left: 3px solid transparent;
-	border-radius: 0 8px 8px 0;
+	padding: 6px 14px;
+	border-left: none;
+	border-bottom: 2px solid transparent;
+	border-radius: 7px;
 	font-family: var(--xx-serif);
-	font-size: 16px;
-	letter-spacing: 3px;
+	font-size: 15.5px;
+	letter-spacing: 2.5px;
 	color: var(--xx-mute) !important;
-	transition: color .18s, background .18s, border-color .18s, padding-left .18s;
+	transition: color .18s, background .18s, border-color .18s;
 }
 #game .tabsContainer .tab:hover {
 	color: var(--xx-paper) !important;
-	background: rgba(79, 209, 165, .07);
-	padding-left: 15px;
+	background: rgba(79, 209, 165, .08);
 }
 #game .tabsContainer .tab.activeTab,
 body.scheme_default .tabsContainer a.tab.activeTab {
 	color: var(--xx-gold-hi) !important;
-	border-left-color: var(--xx-jade);
-	background: linear-gradient(90deg, var(--xx-jade-faint), rgba(212, 176, 106, .05) 65%, transparent);
+	border-bottom-color: var(--xx-jade);
+	background: linear-gradient(180deg, rgba(79, 209, 165, .14), rgba(212, 176, 106, .06));
 	text-shadow: 0 0 10px rgba(212, 176, 106, .35);
 }
 #game .tabsContainer .tab.activeTab::before {
 	content: "";
 	display: inline-block;
 	width: 5px; height: 5px;
-	margin: 0 7px 1px 0;
+	margin: 0 6px 1px 0;
 	border-radius: 999px;
 	background: var(--xx-jade);
 	box-shadow: 0 0 8px var(--xx-jade);
@@ -1881,30 +2072,23 @@ input, select, textarea, button { font-family: inherit; }
    Responsive Breakpoints (Tablet & Mobile)
    ============================================================ */
 @media (max-width: 1100px) {
-	#game { grid-template-columns: 124px minmax(340px, 1fr) 260px; }
+	#game { grid-template-columns: 274px minmax(340px, 1fr) 256px; }
 	.xxActionRow.xxActionRow4 {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
 
-/* ---- narrow / tablet: log rail folds into a bottom strip ---- */
+/* ---- narrow / tablet: 2-column resource sidebar + main, log strip bottom ---- */
 @media (max-width: 860px) {
 	#game {
-		grid-template-columns: 98px minmax(0, 1fr);
+		grid-template-columns: 244px minmax(0, 1fr);
 		grid-template-rows: auto minmax(0, 1fr) auto auto;
 		grid-template-areas:
-			"res   res"
-			"nav   main"
-			"guide guide"
+			"nav   nav"
+			"res   main"
+			"res   guide"
 			"log   log";
 	}
-	#leftColumn { max-height: 112px; }
-	#leftColumn .res-table {
-		grid-template-columns: repeat(auto-fill, minmax(106px, 1fr));
-		grid-auto-rows: 46px;
-		gap: 5px;
-	}
-	#leftColumn .res-row { height: 46px; padding: 4px 8px 6px; }
 	#rightColumn {
 		max-height: 140px;
 		border-left: none;
@@ -1912,8 +2096,8 @@ input, select, textarea, button { font-family: inherit; }
 	}
 	#game .tabsContainer .tab {
 		font-size: 14px;
-		letter-spacing: 1px;
-		padding: 8px 9px;
+		letter-spacing: 1.5px;
+		padding: 6px 10px;
 	}
 	.tabInner { padding: 12px 14px 20px; }
 	#midColumnViewport { right: 10px; top: 6px; }
@@ -1952,12 +2136,6 @@ input, select, textarea, button { font-family: inherit; }
 	#headerLinks { display: none !important; }
 	#topBar .links-block { flex: 0 0 auto; margin-left: auto; padding-right: 2px; }
 
-	/* App Shell Grid:
-	   1. Top Resource Strip (with 修为 pinned #1 + expand toggle)
-	   2. 1-Line Collapsible Next-Step Guide Banner
-	   3. Main Playable Viewport (~540px+ height!)
-	   4. Live Log Ticker Bar (tap to expand slide-up log drawer)
-	   5. Thumb-Friendly Bottom Navigation Dock */
 	#game {
 		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: auto auto minmax(0, 1fr) auto auto;
@@ -1969,41 +2147,48 @@ input, select, textarea, button { font-family: inherit; }
 			"nav";
 	}
 
-	/* 1. Top Resource Strip — 3×2 cards + [展开灵息 ▾] drawer toggle */
+	/* 1. Top Collapsible Resource Drawer on Mobile */
 	#leftColumn {
 		height: auto;
 		min-height: 0;
 		max-height: none;
 		padding: 5px 8px 0;
 		overflow: hidden;
+		border-right: none;
+		border-bottom: 1px solid var(--xx-line);
 	}
 	#leftColumn.xx-res-open {
-		max-height: 44dvh;
+		max-height: 48dvh;
 		overflow-y: auto;
 	}
-	#leftColumn div:has(> .res-toolbar),
+	#leftColumn:not(.xx-res-open) .xx-treasury-hd,
+	#leftColumn:not(.xx-res-open) .xx-res-sec-hd,
+	#leftColumn:not(.xx-res-open) .xx-res-sec-craft,
+	#leftColumn:not(.xx-res-open) .xx-res-sec-treasure,
 	#leftColumn:not(.xx-res-open) .sidebar-section {
 		display: none !important;
 	}
-	#leftColumn .res-table {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		grid-auto-rows: 44px;
-		gap: 4px;
-	}
-	#leftColumn:not(.xx-res-open) .res-table {
-		max-height: 92px;
+	#leftColumn:not(.xx-res-open) .xx-left-wrap {
+		max-height: 102px;
 		overflow: hidden;
 	}
+	#leftColumn .res-table {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 4px;
+	}
+	#leftColumn .res-table.craftTable {
+		grid-template-columns: minmax(0, 1fr);
+	}
 	#leftColumn .res-row {
-		height: 44px;
-		margin: 0;
-		padding: 3px 7px 5px;
+		min-height: 30px;
+		padding: 4px 6px 5px;
 		font-size: 11px;
 	}
-	#leftColumn .resource-name { font-size: 10.5px; }
+	#leftColumn .resource-name { font-size: 11px; }
 	#leftColumn .res-figure .res-val,
-	#leftColumn .res-figure.resAmount { font-size: 12.5px; }
-	#leftColumn .resPerTick { font-size: 10px; }
+	#leftColumn .res-figure.resAmount { font-size: 11.5px; }
+	#leftColumn .resPerTick { font-size: 10px; min-width: 44px; }
 	.xx-res-toggle {
 		display: block;
 		position: sticky;
