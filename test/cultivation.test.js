@@ -1100,7 +1100,7 @@ test("Full-game balance invariants: zero storage cap deadlocks and monotonic cul
     // 1. Early-to-mid realm curve invariants
     expect(cult.getStage("lianqi_1").prices[0].val).toBe(65);
     expect(cult.getStage("lianqi_4").prices.some(p => p.name === "wood" && p.val === 25)).toBe(true);
-    expect(cult.getStage("lianqi_7").prices.some(p => p.name === "minerals" && p.val === 60)).toBe(true);
+    expect(cult.getStage("lianqi_7").prices.some(p => p.name === "wood" && p.val === 112)).toBe(true);
     expect(cult.getStage("zhuji_0").prices.find(p => p.name === "xiuwei").val).toBe(3200);
     expect(cult.getStage("jiedan_0").prices.find(p => p.name === "xiuwei").val).toBe(18000);
     expect(cult.getStage("yuanying_0").prices.find(p => p.name === "xiuwei").val).toBe(72000);
@@ -1290,3 +1290,84 @@ test("Redesigned Alchemy Cauldron: 3 fire modes, Dan Toxicity meridian balance, 
     expect(rank5.costMult).toBeCloseTo(0.75);
     expect(rank5.xiuweiRatio).toBeCloseTo(0.25);
 });
+
+
+test("Unified Realm-Module Interlock & One Key Resource per Major Realm (九境万法同源 · 一境一核心灵材)", () => {
+    const cult = game.cultivation;
+    const synergy = cult.getRealmSynergy();
+    expect(synergy.length).toBe(9);
+
+    // 1. Every Major Realm strictly uses 1 signature key resource (besides xiuwei) across all its sub-stages
+    const expectedRealmRes = {
+        lianqi: "wood",
+        zhuji: "minerals",
+        jiedan: "gold",
+        yuanying: "science",
+        huashen: "faith",
+        lianxu: "unobtainium",
+        heti: "relic",
+        dacheng: "timeCrystal",
+        dujie: "timeCrystal"
+    };
+    for (const st of cult.stages) {
+        const expectedRes = expectedRealmRes[st.realm];
+        expect(expectedRes).toBeDefined();
+        for (const p of st.prices) {
+            if (p.name !== "xiuwei") {
+                expect(p.name).toBe(expectedRes);
+            }
+        }
+    }
+
+    // 2. Streamlined 17 core buildings and 8 realm signature resources
+    expect(cult.getCoreBuildings().length).toBe(17);
+    expect(cult.isCoreBuilding("field")).toBe(true);
+    expect(cult.isCoreBuilding("chronosphere")).toBe(true);
+    expect(cult.isCoreBuilding("ziggurat")).toBe(false);
+
+    expect(cult.isCoreRealmResource("xiuwei")).toBe(true);
+    expect(cult.isCoreRealmResource("wood")).toBe(true);
+    expect(cult.isCoreRealmResource("minerals")).toBe(true);
+    expect(cult.isCoreRealmResource("gold")).toBe(true);
+    expect(cult.isCoreRealmResource("science")).toBe(true);
+    expect(cult.isCoreRealmResource("faith")).toBe(true);
+    expect(cult.isCoreRealmResource("unobtainium")).toBe(true);
+    expect(cult.isCoreRealmResource("relic")).toBe(true);
+    expect(cult.isCoreRealmResource("timeCrystal")).toBe(true);
+    expect(cult.isCoreRealmResource("coal")).toBe(false);
+
+    // 3. Realm gates interlock Buildings, Science Techs, and Hundred-Arts (Crafts & Upgrades)
+    // At Lianqi (realmIdx = 0):
+    expect(cult.getCurrentRealmIndex()).toBe(0);
+    expect(cult.isItemRealmUnlocked("building", "field")).toBe(true);
+    expect(cult.isItemRealmUnlocked("building", "mine")).toBe(false); // Requires Zhuji (idx 1)
+    expect(cult.isItemRealmUnlocked("building", "smelter")).toBe(false); // Requires Jiedan (idx 2)
+    expect(cult.isItemRealmUnlocked("tech", "calendar")).toBe(true);
+    expect(cult.isItemRealmUnlocked("tech", "mining")).toBe(false); // Requires Zhuji
+    expect(cult.isItemRealmUnlocked("craft", "wood")).toBe(true);
+    expect(cult.isItemRealmUnlocked("craft", "beam")).toBe(false); // Requires Zhuji
+
+    // 4. Advancing to Zhuji and Jiedan unlocks corresponding buildings, signature resources, and crafts via syncRealmUnlocks
+    cult.getStage("zhuji_0").researched = true;
+    cult.syncRealmUnlocks();
+    expect(cult.getCurrentRealmIndex()).toBe(1);
+    expect(cult.isItemRealmUnlocked("building", "mine")).toBe(true);
+    expect(cult.isItemRealmUnlocked("tech", "mining")).toBe(true);
+    expect(cult.isItemRealmUnlocked("craft", "beam")).toBe(true);
+    expect(game.bld.get("mine").unlocked).toBe(true);
+    expect(game.resPool.get("minerals").unlocked).toBe(true);
+
+    cult.getStage("jiedan_0").researched = true;
+    cult.syncRealmUnlocks();
+    expect(cult.getCurrentRealmIndex()).toBe(2);
+    expect(cult.isItemRealmUnlocked("building", "smelter")).toBe(true);
+    expect(game.bld.get("smelter").unlocked).toBe(true);
+    expect(game.resPool.get("gold").unlocked).toBe(true);
+
+    // 5. Cross-module Realm Synergy Banner renders cleanly across tabs
+    const bannerHtml = cult.renderRealmSynergyBanner("Bonfire");
+    expect(bannerHtml).toContain("九境万法同源总纲");
+    expect(bannerHtml).toContain("结丹期");
+    expect(bannerHtml).toContain("金精");
+});
+

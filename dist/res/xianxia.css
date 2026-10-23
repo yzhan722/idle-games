@@ -4246,3 +4246,311 @@ input, select, textarea, button { font-family: inherit; }
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ============================================================
+   九境万法同源总纲 · 一境一核跨模块联动栏 & 境界门禁徽章
+   ============================================================ */
+.xxSynergyMount {
+	margin: 0 0 12px 0;
+}
+.xxSynergyBanner {
+	border: 1px solid rgba(212, 176, 106, .36);
+	border-radius: 10px;
+	background: linear-gradient(155deg, rgba(16, 26, 38, .95), rgba(10, 17, 26, .96));
+	box-shadow: 0 8px 24px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .05);
+	padding: 10px 13px;
+}
+.xxSynHd {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	flex-wrap: wrap;
+	padding-bottom: 8px;
+	border-bottom: 1px solid rgba(212, 176, 106, .18);
+	margin-bottom: 8px;
+}
+.xxSynTitle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.xxSynSeal {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px 7px;
+	border-radius: 5px;
+	background: linear-gradient(135deg, rgba(212, 176, 106, .24), rgba(79, 209, 165, .18));
+	border: 1px solid rgba(212, 176, 106, .48);
+	font-family: var(--xx-serif);
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--xx-gold-hi);
+	letter-spacing: 1px;
+}
+.xxSynTitle b {
+	font-family: var(--xx-serif);
+	font-size: 13.5px;
+	color: var(--xx-gold-hi);
+	letter-spacing: 1px;
+}
+.xxSynRealmSub {
+	font-size: 11.5px;
+	color: var(--xx-mute);
+}
+.xxSynKeyChip {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: rgba(15, 30, 32, .85);
+	border: 1px solid rgba(79, 209, 165, .36);
+	font-size: 11.5px;
+}
+.xxSynKeyLbl {
+	color: var(--xx-mute);
+}
+.xxSynKeyName {
+	color: var(--xx-jade);
+	font-family: var(--xx-serif);
+}
+.xxSynKeyVal {
+	color: var(--xx-paper);
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+.xxSynKeyDesc {
+	color: #94a3b8;
+	font-size: 11px;
+}
+
+.xxSynSpine {
+	display: grid;
+	grid-template-columns: repeat(9, minmax(0, 1fr));
+	gap: 5px;
+	margin-bottom: 9px;
+}
+.xxSynNode {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 5px 4px;
+	border-radius: 7px;
+	border: 1px solid rgba(120, 136, 156, .22);
+	background: rgba(11, 18, 27, .78);
+	text-align: center;
+	transition: all .15s ease;
+}
+.xxSynNodeRealm {
+	font-family: var(--xx-serif);
+	font-size: 11.5px;
+	font-weight: 700;
+	color: #94a3b8;
+}
+.xxSynNodeRes {
+	font-size: 10px;
+	color: var(--xx-mute);
+	margin-top: 1px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+.xxSynNode.reached {
+	border-color: rgba(79, 209, 165, .34);
+	background: rgba(16, 34, 34, .78);
+}
+.xxSynNode.reached .xxSynNodeRealm {
+	color: var(--xx-jade);
+}
+.xxSynNode.reached .xxSynNodeRes {
+	color: #cbd5e1;
+}
+.xxSynNode.current {
+	border-color: var(--xx-gold);
+	background: linear-gradient(180deg, rgba(48, 38, 18, .92), rgba(20, 26, 34, .92));
+	box-shadow: 0 0 12px rgba(212, 176, 106, .26);
+}
+.xxSynNode.current .xxSynNodeRealm {
+	color: var(--xx-gold-hi);
+}
+.xxSynNode.current .xxSynNodeRes {
+	color: var(--xx-gold);
+}
+.xxSynNode.next {
+	border-style: dashed;
+	border-color: rgba(212, 176, 106, .45);
+}
+.xxSynNode.locked {
+	opacity: .55;
+}
+
+.xxSynModules {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 7px;
+}
+.xxSynModCol {
+	padding: 7px 9px;
+	border-radius: 8px;
+	border: 1px solid rgba(120, 136, 156, .22);
+	background: rgba(12, 20, 30, .78);
+	cursor: pointer;
+	transition: border-color .15s ease, background .15s ease;
+}
+.xxSynModCol:hover,
+.xxSynModCol.active {
+	border-color: rgba(79, 209, 165, .45);
+	background: rgba(16, 30, 38, .90);
+}
+.xxSynModHd {
+	font-family: var(--xx-serif);
+	font-size: 11.5px;
+	font-weight: 700;
+	color: var(--xx-gold-hi);
+	margin-bottom: 5px;
+	letter-spacing: .5px;
+}
+.xxSynModList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+.xxSynItemChip {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	padding: 2px 6px;
+	border-radius: 5px;
+	font-size: 11px;
+	background: rgba(15, 24, 36, .88);
+	border: 1px solid rgba(120, 136, 156, .25);
+	color: #cbd5e1;
+}
+.xxSynItemChip em {
+	font-style: normal;
+	font-size: 10px;
+	color: var(--xx-gold);
+}
+.xxSynItemChip.ok {
+	border-color: rgba(79, 209, 165, .38);
+	color: var(--xx-jade);
+	background: rgba(16, 38, 35, .82);
+}
+
+.xxSynNextBar {
+	margin-top: 8px;
+	padding-top: 7px;
+	border-top: 1px dashed rgba(212, 176, 106, .22);
+	font-size: 11.5px;
+	color: #cbd5e1;
+	line-height: 1.45;
+}
+.xxSynNextLbl {
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+}
+.xxSynNextBar b {
+	color: var(--xx-jade);
+}
+
+/* 境界门禁徽章（洞府/问道/百艺卡片内联显示） */
+.xxRealmGateBadge {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 5px;
+	padding: 1px 6px;
+	border-radius: 4px;
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: .5px;
+	vertical-align: middle;
+}
+.xxRealmGateBadge.ok {
+	background: rgba(79, 209, 165, .13);
+	border: 1px solid rgba(79, 209, 165, .34);
+	color: var(--xx-jade);
+}
+.xxRealmGateBadge.locked {
+	background: rgba(224, 96, 74, .16);
+	border: 1px solid rgba(224, 96, 74, .42);
+	color: #f29b8c;
+}
+
+/* 洞府建筑精简模式切换栏 */
+.xxBldModeBar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin: 0 0 10px 0;
+	padding: 6px 11px;
+	border-radius: 8px;
+	background: rgba(13, 22, 33, .86);
+	border: 1px solid rgba(79, 209, 165, .26);
+	font-size: 11.5px;
+}
+.xxBldModeHint {
+	color: #cbd5e1;
+}
+.xxBldModeToggle {
+	padding: 3px 9px;
+	border-radius: 999px;
+	border: 1px solid rgba(212, 176, 106, .42);
+	background: rgba(212, 176, 106, .12);
+	color: var(--xx-gold-hi);
+	font-size: 11px;
+	text-decoration: none !important;
+	white-space: nowrap;
+}
+.xxBldModeToggle:hover {
+	border-color: var(--xx-gold-hi);
+	background: rgba(212, 176, 106, .22);
+}
+
+/* 左侧灵库「一境一核」专属角标与切换按钮 */
+.xx-res-realm-tag {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 4px;
+	padding: 0 4px;
+	border-radius: 3px;
+	background: rgba(212, 176, 106, .15);
+	border: 1px solid rgba(212, 176, 106, .35);
+	color: var(--xx-gold-hi);
+	font-size: 9.5px;
+	line-height: 1.35;
+	font-weight: 600;
+	flex: 0 0 auto;
+}
+.xx-core-res-toggle {
+	margin-left: auto;
+	padding: 1px 7px;
+	border-radius: 999px;
+	border: 1px solid rgba(79, 209, 165, .35);
+	background: rgba(79, 209, 165, .10);
+	color: var(--xx-jade);
+	font-size: 10.5px;
+	cursor: pointer;
+	user-select: none;
+}
+.xx-core-res-toggle:hover {
+	border-color: var(--xx-gold);
+	color: var(--xx-gold-hi);
+}
+
+@media (max-width: 900px) {
+	.xxSynSpine {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+	.xxSynModules {
+		grid-template-columns: 1fr;
+	}
+}
+

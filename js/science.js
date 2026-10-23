@@ -1000,9 +1000,43 @@ dojo.declare("com.nuclearunicorn.game.ui.TechButtonController", com.nuclearunico
 		return this.game.science.getPrices(model.metadata);
 	},
 
+	getName: function(model){
+		var name = this.inherited("getName", arguments);
+		var meta = model.metadata;
+		if (this.game && this.game.cultivation && meta && meta.name && !meta.researched){
+			var cult = this.game.cultivation;
+			var gate = cult.getItemRealmGate("tech", meta.name);
+			if (gate){
+				if (!cult.isItemRealmUnlocked("tech", meta.name)){
+					name += " <span class=\"xxRealmGateBadge locked\">🔒 需突破【" + gate.title + "】</span>";
+				} else {
+					name += " <span class=\"xxRealmGateBadge ok\">【" + gate.shortTitle + "境】</span>";
+				}
+			}
+		}
+		return name;
+	},
+
+	updateEnabled: function(model){
+		this.inherited(arguments);
+		var meta = model.metadata;
+		if (this.game && this.game.cultivation && !this.game.devMode && meta && meta.name && !meta.researched){
+			if (!this.game.cultivation.isItemRealmUnlocked("tech", meta.name)){
+				model.enabled = false;
+			}
+		}
+	},
+
 	updateVisible: function(model){
 		var meta = model.metadata;
 		model.visible = meta.unlocked;
+		if (this.game && this.game.cultivation && meta && meta.name && !meta.researched){
+			var cult = this.game.cultivation;
+			var gate = cult.getItemRealmGate("tech", meta.name);
+			if (gate && gate.realmIdx > cult.getCurrentRealmIndex() + 1){
+				model.visible = false;
+			}
+		}
 
 		if (meta.researched && this.game.science.hideResearched){
 			model.visible = false;
@@ -1017,6 +1051,14 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Library", com.nuclearunicorn.game.u
 	render: function(tabContainer){
 
 		this.buttons = [];
+
+		if (this.game && this.game.cultivation){
+			this.synergyNode = dojo.create("div", {
+				className: "xxSynergyMount",
+				innerHTML: this.game.cultivation.renderRealmSynergyBanner("Science")
+			}, tabContainer);
+			this._synHtml = this.synergyNode.innerHTML;
+		}
 
 		var hasCivil = this.game.science.get("civil");
 
@@ -1098,6 +1140,14 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Library", com.nuclearunicorn.game.u
 
 	update: function(){
 		this.inherited(arguments);
+
+		if (this.synergyNode && this.game && this.game.cultivation){
+			var synHtml = this.game.cultivation.renderRealmSynergyBanner("Science");
+			if (synHtml !== this._synHtml){
+				this._synHtml = synHtml;
+				this.synergyNode.innerHTML = synHtml;
+			}
+		}
 
 		if (this.metaphysicsPanel){
 			this.metaphysicsPanel.update();

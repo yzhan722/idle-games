@@ -2121,9 +2121,43 @@ dojo.declare("com.nuclearunicorn.game.ui.UpgradeButtonController", com.nuclearun
 		return prices;
 	},
 
+	getName: function(model){
+		var name = this.inherited("getName", arguments);
+		var meta = model.metadata;
+		if (this.game && this.game.cultivation && meta && meta.name && !meta.researched){
+			var cult = this.game.cultivation;
+			var gate = cult.getItemRealmGate("upgrade", meta.name);
+			if (gate){
+				if (!cult.isItemRealmUnlocked("upgrade", meta.name)){
+					name += " <span class=\"xxRealmGateBadge locked\">🔒 需突破【" + gate.title + "】</span>";
+				} else {
+					name += " <span class=\"xxRealmGateBadge ok\">【" + gate.shortTitle + "境】</span>";
+				}
+			}
+		}
+		return name;
+	},
+
+	updateEnabled: function(model){
+		this.inherited(arguments);
+		var meta = model.metadata;
+		if (this.game && this.game.cultivation && !this.game.devMode && meta && meta.name && !meta.researched){
+			if (!this.game.cultivation.isItemRealmUnlocked("upgrade", meta.name)){
+				model.enabled = false;
+			}
+		}
+	},
+
 	updateVisible: function(model){
 		var upgrade = model.metadata;
 		model.visible = upgrade.unlocked;
+		if (this.game && this.game.cultivation && upgrade && upgrade.name && !upgrade.researched){
+			var cult = this.game.cultivation;
+			var gate = cult.getItemRealmGate("upgrade", upgrade.name);
+			if (gate && gate.realmIdx > cult.getCurrentRealmIndex() + 1){
+				model.visible = false;
+			}
+		}
 
 		if (upgrade.researched && this.game.workshop.hideResearched){
 			model.visible = false;
@@ -2162,10 +2196,27 @@ dojo.declare("com.nuclearunicorn.game.ui.CraftButtonController", com.nuclearunic
 
 	updateVisible: function(model){
 		model.visible = model.craft.unlocked;
+		if (this.game && this.game.cultivation && model.craft && model.craft.name){
+			var cult = this.game.cultivation;
+			var gate = cult.getItemRealmGate("craft", model.craft.name);
+			if (gate && gate.realmIdx > cult.getCurrentRealmIndex() + 1){
+				model.visible = false;
+			}
+		}
+	},
+
+	updateEnabled: function(model){
+		this.inherited(arguments);
+		if (this.game && this.game.cultivation && !this.game.devMode && model.craft && model.craft.name){
+			if (!this.game.cultivation.isItemRealmUnlocked("craft", model.craft.name)){
+				model.enabled = false;
+			}
+		}
 	},
 
 	getName: function(model){
 		var craft = model.craft;
+		var baseName;
 		if (this.game.science.get("mechanization").researched && craft.value != 0) {
 			var progressDisplayed = this.game.toDisplayPercentage(craft.progress, 0, true);
 			if (progressDisplayed > 99){
@@ -2176,10 +2227,22 @@ dojo.declare("com.nuclearunicorn.game.ui.CraftButtonController", com.nuclearunic
 				progressDisplayed = "0" + progressDisplayed;
 			}
 
-			return "<div class=\"label\"><span class=\"label-content\">" + model.craft.label + "</span></div><div>(" + craft.value + ")</div><div class=\"progress\">[" + progressDisplayed + "%]</div>";
+			baseName = "<div class=\"label\"><span class=\"label-content\">" + model.craft.label + "</span></div><div>(" + craft.value + ")</div><div class=\"progress\">[" + progressDisplayed + "%]</div>";
 		} else {
-			return this.inherited("getName", arguments);
+			baseName = this.inherited("getName", arguments);
 		}
+		if (this.game && this.game.cultivation && craft && craft.name){
+			var cult = this.game.cultivation;
+			var gate = cult.getItemRealmGate("craft", craft.name);
+			if (gate){
+				if (!cult.isItemRealmUnlocked("craft", craft.name)){
+					baseName += " <span class=\"xxRealmGateBadge locked\">🔒 需突破【" + gate.title + "】</span>";
+				} else {
+					baseName += " <span class=\"xxRealmGateBadge ok\">【" + gate.shortTitle + "境】</span>";
+				}
+			}
+		}
+		return baseName;
 	},
 
 	getDescription: function(model) {
@@ -2274,6 +2337,14 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Workshop", com.nuclearunicorn.game.
 		this.craftBtns = [];
 		this.buttons = [];
 
+		if (this.game && this.game.cultivation){
+			this.synergyNode = dojo.create("div", {
+				className: "xxSynergyMount",
+				innerHTML: this.game.cultivation.renderRealmSynergyBanner("Workshop")
+			}, tabContainer);
+			this._synHtml = this.synergyNode.innerHTML;
+		}
+
 		var div = dojo.create("div", { style: { float: "left"}}, tabContainer);
 		dojo.create("span", {innerHTML: $I("workshop.craft.effectiveness", [this.game.getDisplayValueExt(100 * this.game.getCraftRatio(), false, false, 0)])}, div);
 
@@ -2353,7 +2424,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Workshop", com.nuclearunicorn.game.
 		this.renderResources(this.resTd);
 
 		//----------------
-		if (!this.game.science.get("construction").researched){
+		if (!this.game.science.get("construction").researched && !(this.game.cultivation && this.game.cultivation.getCurrentRealmIndex() >= 1)){
 			craftPanel.setVisible(false);
 		}
 
@@ -2395,6 +2466,14 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Workshop", com.nuclearunicorn.game.
 
 	update: function(){
 		this.inherited(arguments);
+
+		if (this.synergyNode && this.game && this.game.cultivation){
+			var synHtml = this.game.cultivation.renderRealmSynergyBanner("Workshop");
+			if (synHtml !== this._synHtml){
+				this._synHtml = synHtml;
+				this.synergyNode.innerHTML = synHtml;
+			}
+		}
 
 		for (var i = this.craftBtns.length - 1; i >= 0; i--) {
 			var craftBtn = this.craftBtns[i];

@@ -95,18 +95,168 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		//lianqi layers are guaranteed successes — the onboarding slope
 		//xiuwei costs are tuned against simulate-cultivation.js: each layer should
 		//read as a rising wall (minutes→hours by realm), never a stall
-		//gate — 大境界门槛:首层突破除修为/材料外还需一道大关
-		//  {pill:"x"}      需该丹×1,冲关时消耗(并得丹力加成)
+		//一境一核心灵材 (One Signature Key Resource per Major Realm):
+		//  炼气=灵木(wood) | 筑基=灵石(minerals) | 结丹=金精(gold) | 元婴=典籍(science)
+		//  化神=愿力(faith)| 炼虚=太虚仙金(unobtainium) | 合体=上古遗宝(relic) | 大乘/渡劫=岁月仙晶(timeCrystal)
+		//gate — 大境界门槛:首层突破除修为/核心灵材外还需一道大关
 		//  {riftFloor:N}   需通关上古秘境第N层——历生死之险,道基方凝
-		{key:"lianqi",  layers:10, base:{xiuwei:45},             mul:1.45, bonus:0.03, chance:1.0,  life:80},
-		{key:"zhuji",   layers:3,  base:{xiuwei:3200, minerals:260},   mul:1.70, bonus:0.15, chance:0.55, life:200},
-		{key:"jiedan",  layers:3,  base:{xiuwei:18000, gold:150},      mul:1.68, bonus:0.30, chance:0.48, life:500,  gate:{riftFloor:3}},
-		{key:"yuanying",layers:3,  base:{xiuwei:72000, science:2800},  mul:1.52, bonus:0.65, chance:0.42, life:1200, gate:{riftFloor:6}},
-		{key:"huashen", layers:3,  base:{xiuwei:280000, faith:2200},   mul:1.48, bonus:1.25, chance:0.36, life:3200, gate:{riftFloor:9}},
-		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50}, mul:1.52, bonus:2.10, chance:0.30, life:8000, gate:{riftFloor:12}},
-		{key:"heti",    layers:3,  base:{xiuwei:2600000, relic:20},    mul:1.60, bonus:3.20, chance:0.25, life:20000, gate:{riftFloor:15}},
-		{key:"dacheng", layers:3,  base:{xiuwei:7200000, relic:50, timeCrystal:15}, mul:1.50, bonus:5.80, chance:0.20, life:60000, gate:{riftFloor:20}},
-		{key:"dujie",   layers:1,  base:{xiuwei:24000000, relic:130, timeCrystal:50}, mul:1, bonus:12.0, chance:0.10, life:100000, gate:{riftFloor:25}}
+		{key:"lianqi",  layers:10, base:{xiuwei:45},                       mul:1.45, bonus:0.03, chance:1.0,  life:80,     keyRes:"wood"},
+		{key:"zhuji",   layers:3,  base:{xiuwei:3200, minerals:260},       mul:1.70, bonus:0.15, chance:0.55, life:200,    keyRes:"minerals"},
+		{key:"jiedan",  layers:3,  base:{xiuwei:18000, gold:150},          mul:1.68, bonus:0.30, chance:0.48, life:500,    keyRes:"gold",        gate:{riftFloor:3}},
+		{key:"yuanying",layers:3,  base:{xiuwei:72000, science:2800},      mul:1.52, bonus:0.65, chance:0.42, life:1200,   keyRes:"science",     gate:{riftFloor:6}},
+		{key:"huashen", layers:3,  base:{xiuwei:280000, faith:2200},       mul:1.48, bonus:1.25, chance:0.36, life:3200,   keyRes:"faith",       gate:{riftFloor:9}},
+		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50},   mul:1.52, bonus:2.10, chance:0.30, life:8000,   keyRes:"unobtainium", gate:{riftFloor:12}},
+		{key:"heti",    layers:3,  base:{xiuwei:2600000, relic:20},        mul:1.60, bonus:3.20, chance:0.25, life:20000,  keyRes:"relic",       gate:{riftFloor:15}},
+		{key:"dacheng", layers:3,  base:{xiuwei:7200000, timeCrystal:15},  mul:1.50, bonus:5.80, chance:0.20, life:60000,  keyRes:"timeCrystal", gate:{riftFloor:20}},
+		{key:"dujie",   layers:1,  base:{xiuwei:24000000, timeCrystal:50}, mul:1,    bonus:12.0, chance:0.10, life:100000, keyRes:"timeCrystal", gate:{riftFloor:25}}
+	],
+
+	//九境万法同源矩阵 — 每一个大修为境界绑定唯一核心灵材，并与洞府灵筑(房屋)、问道功法(科技)、百艺丹器(工坊)严密互锁
+	REALM_SYNERGY: [
+		{
+			realmIdx: 0,
+			key: "lianqi",
+			stageKey: "lianqi_0",
+			title: "炼气期",
+			shortTitle: "炼气",
+			res: "wood",
+			resTitle: "灵木",
+			resBadge: "炼气核",
+			resDesc: "辟百亩灵田，伐灵竹筑庐，凝练灵木立下长生根基",
+			coreBlds: ["field", "hut", "library"],
+			auxBlds: ["pasture", "lumberMill"],
+			techs: ["calendar", "agriculture", "archery"],
+			crafts: ["wood"],
+			upgrades: ["mineralHoes", "mineralAxes", "bolas"]
+		},
+		{
+			realmIdx: 1,
+			key: "zhuji",
+			stageKey: "zhuji_0",
+			title: "筑基期",
+			shortTitle: "筑基",
+			res: "minerals",
+			resTitle: "灵石",
+			resBadge: "筑基核",
+			resDesc: "勘破地肺灵石矿脉，辟太岳石室，引地火开启百艺之门",
+			coreBlds: ["mine", "logHouse", "workshop"],
+			auxBlds: ["aqueduct", "warehouse"],
+			techs: ["mining", "metal", "animal", "construction", "math", "engineering", "currency"],
+			crafts: ["beam", "slab"],
+			upgrades: ["ironHoes", "ironAxes", "reinforcedSaw", "stoneBarns", "reinforcedBarns", "advancedRefinement", "compositeBow", "celestialMechanics", "huntingArmor", "prospecting"]
+		},
+		{
+			realmIdx: 2,
+			key: "jiedan",
+			stageKey: "jiedan_0",
+			title: "结丹期",
+			shortTitle: "结丹",
+			res: "gold",
+			resTitle: "金精",
+			resBadge: "结丹核",
+			resDesc: "地火炼器室淬炼金精，立大衍神机阁与须弥宝库凝结金丹",
+			coreBlds: ["smelter", "academy", "barn"],
+			auxBlds: ["tradepost", "amphitheatre", "unicornPasture", "harbor", "quarry"],
+			techs: ["writing", "philosophy", "steel", "machinery", "theology"],
+			crafts: ["steel", "blueprint"],
+			upgrades: ["goldOre", "register", "steelAxe", "steelSaw", "steelArmor", "reinforcedWarehouses", "coalFurnace", "deepMining", "pyrolysis", "crossbow", "printingPress", "factoryAutomation", "combustionEngine", "caravanserai", "cargoShips"]
+		},
+		{
+			realmIdx: 3,
+			key: "yuanying",
+			stageKey: "yuanying_0",
+			title: "元婴期",
+			shortTitle: "元婴",
+			res: "science",
+			resTitle: "悟道典籍",
+			resBadge: "元婴核",
+			resDesc: "辟天星洞府、立浑天观星台，参悟周天典籍碎丹成婴",
+			coreBlds: ["mansion", "observatory"],
+			auxBlds: ["steamworks", "calciner", "oilWell", "mint", "brewery"],
+			techs: ["astronomy", "navigation", "architecture", "physics", "chemistry", "biology", "biochemistry", "geology", "electricity"],
+			crafts: ["alloy"],
+			upgrades: ["titaniumAxe", "titaniumSaw", "alloyAxe", "alloySaw", "titaniumBarns", "alloyBarns", "silos", "warehouses", "barges", "astrolabe", "titaniumMirrors", "geodesy", "miningDrill", "railgun", "augumentation"]
+		},
+		{
+			realmIdx: 4,
+			key: "huashen",
+			stageKey: "huashen_0",
+			title: "化神期",
+			shortTitle: "化神",
+			res: "faith",
+			resTitle: "大道香火",
+			resBadge: "化神核",
+			resDesc: "筑太古玄坛与百药仙园，聚九天香火愿力元神化道",
+			coreBlds: ["temple", "biolab"],
+			auxBlds: ["chapel", "factory", "ziggurat"],
+			techs: ["industrialization", "mechanization", "metalurgy", "combustion", "ecology", "acoustics", "drama"],
+			crafts: [],
+			upgrades: ["concratePillars", "concreteBarns", "concreteWarehouses", "oilRefinery", "pumpjack", "biofuel", "petri", "factoryLogistics", "offsetPress", "photolithography", "uplink", "starlink", "cryocomputing", "machineLearning", "electrolyticSmelting", "oxidation", "rotaryKiln", "fluidizedBed", "nuclearSmelters", "carbonSequestration"]
+		},
+		{
+			realmIdx: 5,
+			key: "lianxu",
+			stageKey: "lianxu_0",
+			title: "炼虚期",
+			shortTitle: "炼虚",
+			res: "unobtainium",
+			resTitle: "太虚仙金",
+			resBadge: "炼虚核",
+			resDesc: "布乾蓝地火阵与颠倒五行阵，自太虚法则中萃取仙金",
+			coreBlds: ["reactor", "magneto"],
+			auxBlds: ["ivoryTemple"],
+			techs: ["nuclearFission", "rocketry", "oilProcessing", "electronics", "orbitalEngineering", "sattelites"],
+			crafts: ["eludium"],
+			upgrades: ["unobtainiumAxe", "unobtainiumSaw", "unobtainiumDrill", "unobtainiumHut", "unobtainiumReflectors", "thoriumReactors", "enrichedUranium", "coldFusion", "neuralNetworks", "aiBases", "AiEngineers", "orbitalGeodesy", "spaceManufacturing", "spiceRefinery"]
+		},
+		{
+			realmIdx: 6,
+			key: "heti",
+			stageKey: "heti_0",
+			title: "合体期",
+			shortTitle: "合体",
+			res: "relic",
+			resTitle: "上古遗宝",
+			resBadge: "合体核",
+			resDesc: "运转元磁极光阵贯通古今，凝练上古遗宝天人合体",
+			coreBlds: ["accelerator"],
+			auxBlds: ["zebraOutpost", "zebraWorkshop", "zebraForge"],
+			techs: ["nanotechnology", "particlePhysics", "dimensionalPhysics", "exogeology", "advExogeology", "thorium"],
+			crafts: [],
+			upgrades: ["eludiumHara", "eludiumHut", "eludiumCracker", "mWReactor", "lhc", "energyRifts", "stasisChambers", "voidEnergy", "darkEnergy", "tachyonAccelerators", "chronoforge", "fluxCondensator", "radiocarbonDating", "planetBuster", "amReactors", "amBases", "amDrive", "relicStation", "voidAspiration", "distorsion", "turnSmoothly", "invisibleBlackHand", "freightfulExchange", "transportSuperposition"]
+		},
+		{
+			realmIdx: 7,
+			key: "dacheng",
+			stageKey: "dacheng_0",
+			title: "大乘期",
+			shortTitle: "大乘",
+			res: "timeCrystal",
+			resTitle: "岁月仙晶",
+			resBadge: "大乘核",
+			resDesc: "祭起真言轮回盘，掌光阴长河，凝岁月仙晶证大乘道果",
+			coreBlds: ["chronosphere"],
+			auxBlds: ["aiCore", "stasisPod"],
+			techs: ["chronophysics", "tachyonTheory", "cryptotheology", "voidSpace", "paradoxalKnowledge"],
+			crafts: [],
+			upgrades: ["chronosurge", "temporalPress"]
+		},
+		{
+			realmIdx: 8,
+			key: "dujie",
+			stageKey: "dujie_0",
+			title: "渡劫期",
+			shortTitle: "渡劫",
+			res: "timeCrystal",
+			resTitle: "岁月仙晶",
+			resBadge: "渡劫核",
+			resDesc: "参透先天太易大道，以岁月仙晶逆天改命，渡九天雷劫飞升",
+			coreBlds: [],
+			auxBlds: [],
+			techs: ["metaphysics", "artificialGravity", "terraformation", "hydroponics", "antimatter", "blackchain"],
+			crafts: [],
+			upgrades: ["longRangeSpaceships", "voidHoover", "voidRift", "chronocontrol"]
+		}
 	],
 
 	//spiritual roots, rolled per life
@@ -174,7 +324,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		maxRealmIdx: 2,
 		effectSummary: "下次冲关破境成功率相对提升 +50%（✦丹纹灵丹额外涤除 8 点心魔）",
 		unlock: function(c){ return c.getStage("lianqi_8").researched; },
-		prices: [{name:"minerals", val:200}, {name:"spice", val:25}],
+		prices: [{name:"wood", val:120}, {name:"spice", val:25}],
 		val: 0
 	},{
 		name: "qingxin",
@@ -702,7 +852,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		label: $I("cultivation.sect.6.label"),
 		description: $I("cultivation.sect.6.desc"),
 		gate: "lianxu_0",
-		prices: [{name:"relic", val:60}, {name:"xiuwei", val:880000}],
+		prices: [{name:"unobtainium", val:40}, {name:"xiuwei", val:880000}],
 		effects: {"xiuweiRatio": 0.95, "realmProductionRatio": 0.28},
 		chance: 1.0, researched: false
 	}],
@@ -932,10 +1082,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					if (r == 0 && i == 0){ continue; }	//炼气一层 is the free starting stage
 					prices.push({name: res, val: val});
 				}
-				if (r == 0 && i >= 4 && i <= 6){
-					prices.push({name: "wood", val: this.roundNice(25 * Math.pow(1.8, i - 4))});
-				} else if (r == 0 && i >= 7){
-					prices.push({name: "minerals", val: this.roundNice(60 * Math.pow(1.75, i - 7))});
+				if (r == 0 && i >= 4){
+					//一境一核心灵材: 炼气期全程唯以【灵木(wood)】为破境核心灵材
+					prices.push({name: "wood", val: this.roundNice(25 * Math.pow(1.65, i - 4))});
 				}
 				stages.push({
 					name: def.key + "_" + i,
@@ -1401,6 +1550,309 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			if (this.REALM_DEFS[i].key == cur.realm){ return i; }
 		}
 		return 0;
+	},
+
+	// ---------------- 九境同源 · 一境一核与全模块联动体系 ----------------
+
+	getRealmSynergy: function(realmKeyOrIdx){
+		if (realmKeyOrIdx === undefined || realmKeyOrIdx === null){
+			return this.REALM_SYNERGY;
+		}
+		if (typeof realmKeyOrIdx === "number"){
+			return this.REALM_SYNERGY[Math.max(0, Math.min(this.REALM_SYNERGY.length - 1, realmKeyOrIdx))];
+		}
+		for (var i = 0; i < this.REALM_SYNERGY.length; i++){
+			if (this.REALM_SYNERGY[i].key === realmKeyOrIdx){
+				return this.REALM_SYNERGY[i];
+			}
+		}
+		return this.REALM_SYNERGY[0];
+	},
+
+	getCoreBuildings: function(){
+		var list = [];
+		for (var i = 0; i < this.REALM_SYNERGY.length; i++){
+			var cb = this.REALM_SYNERGY[i].coreBlds;
+			for (var j = 0; j < cb.length; j++){
+				if (list.indexOf(cb[j]) === -1){ list.push(cb[j]); }
+			}
+		}
+		return list;
+	},
+
+	isCoreBuilding: function(bldName){
+		for (var i = 0; i < this.REALM_SYNERGY.length; i++){
+			if (this.REALM_SYNERGY[i].coreBlds.indexOf(bldName) !== -1){
+				return true;
+			}
+		}
+		return false;
+	},
+
+	getResourceRealmInfo: function(resName){
+		for (var i = 0; i < this.REALM_SYNERGY.length; i++){
+			var syn = this.REALM_SYNERGY[i];
+			if (syn.res === resName){
+				return {
+					realmIdx: syn.realmIdx,
+					key: syn.key,
+					title: syn.title,
+					shortTitle: syn.shortTitle,
+					badge: syn.resBadge,
+					resTitle: syn.resTitle,
+					desc: syn.resDesc
+				};
+			}
+		}
+		return null;
+	},
+
+	//洞府灵库默认仅聚焦展示「修为 + 灵谷 + 九境唯一核心灵材 + 轮回道果」,彻底消除繁杂次要资源干扰
+	isCoreRealmResource: function(resName){
+		if (resName === "xiuwei" || resName === "catnip"){
+			return true;
+		}
+		if (this.getResourceRealmInfo(resName) !== null){
+			return true;
+		}
+		if ((resName === "karma" || resName === "paragon") && this.game && this.game.resPool){
+			var rObj = this.game.resPool.get(resName);
+			return !!(rObj && rObj.value > 0);
+		}
+		return false;
+	},
+
+	getItemRealmGate: function(type, name){
+		if (!name){ return this.REALM_SYNERGY[0]; }
+		var normType = String(type || "").toLowerCase();
+		for (var i = 0; i < this.REALM_SYNERGY.length; i++){
+			var syn = this.REALM_SYNERGY[i];
+			if (normType === "building" || normType === "buildings" || normType === "bld"){
+				if (syn.coreBlds.indexOf(name) !== -1){
+					return {
+						realmIdx: syn.realmIdx, key: syn.key, title: syn.title, shortTitle: syn.shortTitle,
+						stageKey: syn.stageKey, res: syn.res, resTitle: syn.resTitle, resBadge: syn.resBadge, isCore: true
+					};
+				}
+				if (syn.auxBlds && syn.auxBlds.indexOf(name) !== -1){
+					return {
+						realmIdx: syn.realmIdx, key: syn.key, title: syn.title, shortTitle: syn.shortTitle,
+						stageKey: syn.stageKey, res: syn.res, resTitle: syn.resTitle, resBadge: syn.resBadge, isCore: false
+					};
+				}
+			} else if (normType === "tech" || normType === "science"){
+				if (syn.techs.indexOf(name) !== -1){
+					return {
+						realmIdx: syn.realmIdx, key: syn.key, title: syn.title, shortTitle: syn.shortTitle,
+						stageKey: syn.stageKey, res: syn.res, resTitle: syn.resTitle, resBadge: syn.resBadge, isCore: true
+					};
+				}
+			} else if (normType === "craft" || normType === "crafts"){
+				if (syn.crafts.indexOf(name) !== -1){
+					return {
+						realmIdx: syn.realmIdx, key: syn.key, title: syn.title, shortTitle: syn.shortTitle,
+						stageKey: syn.stageKey, res: syn.res, resTitle: syn.resTitle, resBadge: syn.resBadge, isCore: true
+					};
+				}
+			} else if (normType === "upgrade" || normType === "upgrades" || normType === "workshop"){
+				if (syn.upgrades.indexOf(name) !== -1){
+					return {
+						realmIdx: syn.realmIdx, key: syn.key, title: syn.title, shortTitle: syn.shortTitle,
+						stageKey: syn.stageKey, res: syn.res, resTitle: syn.resTitle, resBadge: syn.resBadge, isCore: true
+					};
+				}
+			}
+		}
+
+		//Fallback: 根据条目耗材智能推断所属大境界
+		var itemObj = null;
+		if (this.game){
+			if ((normType === "building" || normType === "buildings") && this.game.bld){
+				itemObj = this.game.bld.get(name);
+			} else if ((normType === "tech" || normType === "science") && this.game.science){
+				itemObj = this.game.science.get(name);
+			} else if ((normType === "upgrade" || normType === "upgrades") && this.game.workshop){
+				itemObj = this.game.workshop.get(name);
+			} else if ((normType === "craft" || normType === "crafts") && this.game.workshop){
+				itemObj = this.game.workshop.getCraft(name);
+			}
+		}
+		var inferredIdx = 0;
+		var prices = (itemObj && itemObj.prices) || [];
+		for (var p = 0; p < prices.length; p++){
+			var pn = prices[p].name;
+			var pv = prices[p].val || 0;
+			if (pn === "timeCrystal" || pn === "antimatter" || pn === "void"){ inferredIdx = Math.max(inferredIdx, 7); }
+			else if (pn === "relic" || pn === "eludium"){ inferredIdx = Math.max(inferredIdx, 6); }
+			else if (pn === "unobtainium" || pn === "uranium"){ inferredIdx = Math.max(inferredIdx, 5); }
+			else if (pn === "faith" || pn === "oil" || (pn === "science" && pv >= 30000)){ inferredIdx = Math.max(inferredIdx, 4); }
+			else if (pn === "titanium" || pn === "alloy" || (pn === "science" && pv >= 7500)){ inferredIdx = Math.max(inferredIdx, 3); }
+			else if (pn === "gold" || pn === "steel" || pn === "blueprint" || (pn === "science" && pv >= 1800)){ inferredIdx = Math.max(inferredIdx, 2); }
+			else if (pn === "minerals" || pn === "iron" || pn === "beam" || pn === "slab" || (pn === "science" && pv >= 250)){ inferredIdx = Math.max(inferredIdx, 1); }
+		}
+		var fbSyn = this.REALM_SYNERGY[inferredIdx] || this.REALM_SYNERGY[0];
+		return {
+			realmIdx: fbSyn.realmIdx, key: fbSyn.key, title: fbSyn.title, shortTitle: fbSyn.shortTitle,
+			stageKey: fbSyn.stageKey, res: fbSyn.res, resTitle: fbSyn.resTitle, resBadge: fbSyn.resBadge, isCore: false
+		};
+	},
+
+	isItemRealmUnlocked: function(type, name){
+		var gate = this.getItemRealmGate(type, name);
+		return this.getCurrentRealmIndex() >= gate.realmIdx;
+	},
+
+	//境界突破与同步联动: 随着修为大境界提升，自动解锁对应境界的唯一核心灵材、核心洞府灵筑、问道秘籍与百艺配方
+	syncRealmUnlocks: function(){
+		if (!this.game || !this.stages || !this.stages.length){ return; }
+		var curRealmIdx = this.getCurrentRealmIndex();
+		for (var r = 0; r <= curRealmIdx; r++){
+			var syn = this.REALM_SYNERGY[r];
+			if (!syn){ continue; }
+			//1. 解锁本境唯一核心灵材 (炼气期灵木在伐木/筑庐后自然显现，筑基及以上破境即显核心灵材)
+			if (this.game.resPool && (r >= 1 || this.getHighestStageIndex() >= 1)){
+				var keyResObj = this.game.resPool.get(syn.res);
+				if (keyResObj){ keyResObj.unlocked = true; }
+			}
+			//2. 筑基及以上: 破入新大境界即点亮本境核心洞府建筑 (unlockable + unlocked)
+			if (r >= 1 && this.game.bld){
+				for (var b = 0; b < syn.coreBlds.length; b++){
+					var bldObj = this.game.bld.get(syn.coreBlds[b]);
+					if (bldObj){
+						bldObj.unlockable = true;
+						bldObj.unlocked = true;
+					}
+				}
+			}
+			//3. 筑基及以上: 解锁本境首门核心问道功法与本境百艺炼制配方
+			if (r >= 1 && this.game.science && syn.techs.length > 0){
+				var firstTech = this.game.science.get(syn.techs[0]);
+				if (firstTech){ firstTech.unlocked = true; }
+			}
+			if (r >= 1 && this.game.workshop && syn.crafts.length > 0){
+				for (var c = 0; c < syn.crafts.length; c++){
+					var crObj = this.game.workshop.getCraft(syn.crafts[c]);
+					if (crObj){ crObj.unlocked = true; }
+				}
+			}
+		}
+	},
+
+	//渲染《九境同源 · 一境一核万法联动总纲》横幅 (通用于 修行/洞府/问道/百艺 四大核心页签)
+	renderRealmSynergyBanner: function(tabId){
+		var curIdx = this.getCurrentRealmIndex();
+		var curSyn = this.getRealmSynergy(curIdx);
+		var nextSyn = (curIdx + 1 < this.REALM_SYNERGY.length) ? this.getRealmSynergy(curIdx + 1) : null;
+		var fmt = this.game ? this.game.getDisplayValueExt.bind(this.game) : function(v){ return String(v); };
+
+		//1. 九境一核阶梯脉络条
+		var spineHtml = "<div class=\"xxSynSpine\">";
+		for (var i = 0; i < this.REALM_SYNERGY.length; i++){
+			var s = this.REALM_SYNERGY[i];
+			var stCls = (i < curIdx) ? "reached" : (i === curIdx ? "current" : (i === curIdx + 1 ? "next" : "locked"));
+			spineHtml += "<div class=\"xxSynNode " + stCls + "\" title=\"" + s.title + " · 唯一核心灵材：【" + s.resTitle + "】&#10;" + s.resDesc + "\">" +
+				"<span class=\"xxSynRealm\">" + s.shortTitle + "</span>" +
+				"<span class=\"xxSynRes\">" + s.resTitle + "</span>" +
+			"</div>";
+		}
+		spineHtml += "</div>";
+
+		//2. 当前境界核心灵材 + 洞府/问道/百艺三脉联动详情
+		var resObj = this.game && this.game.resPool ? this.game.resPool.get(curSyn.res) : null;
+		var resValStr = resObj ? fmt(resObj.value, false, false, 0) : "0";
+		var resMaxStr = (resObj && resObj.maxValue > 0) ? (" / " + fmt(resObj.maxValue, false, false, 0)) : "";
+
+		var bldLabels = [];
+		for (var b = 0; b < curSyn.coreBlds.length; b++){
+			var bMeta = this.game && this.game.bld ? this.game.bld.get(curSyn.coreBlds[b]) : null;
+			var bLbl = (bMeta && (bMeta.label || (bMeta.stages && bMeta.stages[0] && bMeta.stages[0].label))) || curSyn.coreBlds[b];
+			var bCnt = bMeta ? (bMeta.val || 0) : 0;
+			bldLabels.push("<span class=\"xxSynItemChip bld\">" + bLbl + (bCnt > 0 ? " <b>×" + bCnt + "</b>" : "") + "</span>");
+		}
+
+		var techLabels = [];
+		for (var t = 0; t < Math.min(4, curSyn.techs.length); t++){
+			var tMeta = this.game && this.game.science ? this.game.science.get(curSyn.techs[t]) : null;
+			if (tMeta){
+				techLabels.push("<span class=\"xxSynItemChip tech" + (tMeta.researched ? " done" : "") + "\">" + tMeta.label + (tMeta.researched ? " ✓" : "") + "</span>");
+			}
+		}
+
+		var artLabels = [];
+		for (var c = 0; c < curSyn.crafts.length; c++){
+			var cMeta = this.game && this.game.workshop ? this.game.workshop.getCraft(curSyn.crafts[c]) : null;
+			if (cMeta){
+				artLabels.push("<span class=\"xxSynItemChip craft\">炼制·" + cMeta.label + "</span>");
+			}
+		}
+		for (var u = 0; u < Math.min(3, curSyn.upgrades.length); u++){
+			var uMeta = this.game && this.game.workshop ? this.game.workshop.get(curSyn.upgrades[u]) : null;
+			if (uMeta){
+				artLabels.push("<span class=\"xxSynItemChip upg" + (uMeta.researched ? " done" : "") + "\">" + uMeta.label + (uMeta.researched ? " ✓" : "") + "</span>");
+			}
+		}
+
+		//下一境界预告
+		var nextPreviewHtml = "";
+		if (nextSyn){
+			var nextBlds = [];
+			for (var nb = 0; nb < nextSyn.coreBlds.length; nb++){
+				var nbMeta = this.game && this.game.bld ? this.game.bld.get(nextSyn.coreBlds[nb]) : null;
+				nextBlds.push((nbMeta && (nbMeta.label || (nbMeta.stages && nbMeta.stages[0] && nbMeta.stages[0].label))) || nextSyn.coreBlds[nb]);
+			}
+			var nextTechs = [];
+			for (var nt = 0; nt < Math.min(2, nextSyn.techs.length); nt++){
+				var ntMeta = this.game && this.game.science ? this.game.science.get(nextSyn.techs[nt]) : null;
+				if (ntMeta){ nextTechs.push(ntMeta.label); }
+			}
+			nextPreviewHtml =
+				"<div class=\"xxSynNextBar\">" +
+					"<span class=\"xxSynNextTag\">🔒 下一大境预告 · 突破【" + nextSyn.title + "】开启</span>" +
+					"<span class=\"xxSynNextDetail\">" +
+						"唯一核心灵材：<b>" + nextSyn.resTitle + "</b>" +
+						(nextBlds.length ? " ｜ 解锁洞府灵筑：<b>" + nextBlds.join("、") + "</b>" : "") +
+						(nextTechs.length ? " ｜ 解锁问道百艺：<b>" + nextTechs.join("、") + "</b> 等" : "") +
+					"</span>" +
+				"</div>";
+		} else {
+			nextPreviewHtml =
+				"<div class=\"xxSynNextBar max\">" +
+					"<span class=\"xxSynNextTag\">✦ 九境圆满 · 渡劫飞升</span>" +
+					"<span class=\"xxSynNextDetail\">已臻人界与灵界道途绝巅，万法归宗！</span>" +
+				"</div>";
+		}
+
+		return "<div class=\"xxSynergyBanner xxSynTab-" + (tabId || "Cultivation") + "\">" +
+			"<div class=\"xxSynHd\">" +
+				"<div class=\"xxSynTitleWrap\">" +
+					"<span class=\"xxSynSeal\">脉</span>" +
+					"<div>" +
+						"<div class=\"xxSynTitle\">九境万法同源总纲 · 【" + curSyn.title + " · 唯以" + curSyn.resTitle + "为核】</div>" +
+						"<div class=\"xxSynSub\">" + curSyn.resDesc + " —— 修为破境方能解锁更高阶的洞府灵筑、问道典籍与百艺秘术</div>" +
+					"</div>" +
+				"</div>" +
+				"<div class=\"xxSynKeyResBox\">" +
+					"<span class=\"xxSynKeyResLbl\">" + curSyn.resBadge + " · 破境唯一核心灵材</span>" +
+					"<span class=\"xxSynKeyResVal\">" + curSyn.resTitle + " <b>" + resValStr + "</b>" + resMaxStr + "</span>" +
+				"</div>" +
+			"</div>" +
+			spineHtml +
+			"<div class=\"xxSynModules\">" +
+				"<div class=\"xxSynModCol" + (tabId === "Bonfire" ? " active" : "") + "\">" +
+					"<span class=\"xxSynModLbl\">🏯 本境核心洞府 (" + curSyn.coreBlds.length + ")</span>" +
+					"<div class=\"xxSynChipList\">" + (bldLabels.join("") || "<span class=\"xxSynIdle\">九境洞府已圆满</span>") + "</div>" +
+				"</div>" +
+				"<div class=\"xxSynModCol" + (tabId === "Science" ? " active" : "") + "\">" +
+					"<span class=\"xxSynModLbl\">📜 本境问道功法</span>" +
+					"<div class=\"xxSynChipList\">" + (techLabels.join("") || "<span class=\"xxSynIdle\">万法通玄</span>") + "</div>" +
+				"</div>" +
+				"<div class=\"xxSynModCol" + (tabId === "Workshop" ? " active" : "") + "\">" +
+					"<span class=\"xxSynModLbl\">🔥 本境百艺技艺</span>" +
+					"<div class=\"xxSynChipList\">" + (artLabels.join("") || "<span class=\"xxSynIdle\">百艺化境</span>") + "</div>" +
+				"</div>" +
+			"</div>" +
+			nextPreviewHtml +
+		"</div>";
 	},
 
 	// ---------------- 轮回印记 (Reincarnation Legacy) ----------------
@@ -3054,6 +3506,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (typeof c.sihuaCount == "number"){ this.sihuaCount = Math.max(0, c.sihuaCount); }
 		if (typeof c.failStreak == "number"){ this.failStreak = Math.max(0, c.failStreak); }
 		if (typeof c.failStreakStage == "string"){ this.failStreakStage = c.failStreakStage; }
+		this.syncRealmUnlocks();
 	},
 
 	update: function(){
@@ -3062,6 +3515,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (tab && !tab.visible){
 			tab.visible = true;
 		}
+		this.syncRealmUnlocks();
 
 		if (this.dying){
 			//坐化期间万缘停摆;读档回来的档上 dying=true 但卡面已随 DOM 消失,
@@ -3543,6 +3997,7 @@ dojo.declare("classes.ui.RealmBtnController", com.nuclearunicorn.game.ui.Buildin
 			return;	//a vein or sect, not a stage
 		}
 		cult.triggerBreakPhenomenon(meta);
+		cult.syncRealmUnlocks();
 		if (meta.chance != null && meta.chance < 1){
 			//大关告破,道基震荡——余威期内再破真关耗修大涨(以历法纪年锚定,随档)
 			cult.lastBreakYear = cult.game.calendar.trueYear();
@@ -3687,6 +4142,11 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		this.realmInfo = dojo.create("div", {
 			className: "cultivationHeader"
 		}, tabContainer);
+		//①.5 九境万法同源总纲——一境一核心灵材 + 洞府/问道/百艺联动一览
+		this.synergyWrap = dojo.create("div", {
+			className: "xxSynergyMount"
+		}, tabContainer);
+		this._synHtml = null;
 		//改命 + 道音开关 + 点击法宝祭炼本命 + 移动端点击仙缘/法宝徽章浮窗查看详情
 		this.realmInfo.onclick = function(e){
 			var el = e.target;
@@ -4175,6 +4635,13 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		if (html !== this._hdrHtml){
 			this._hdrHtml = html;
 			this.realmInfo.innerHTML = html;
+		}
+		if (this.synergyWrap){
+			var synHtml = cult.renderRealmSynergyBanner("Cultivation");
+			if (synHtml !== this._synHtml){
+				this._synHtml = synHtml;
+				this.synergyWrap.innerHTML = synHtml;
+			}
 		}
 
 		//境界分区:唯现「当前境界」与「即将叩关的下一境界」
