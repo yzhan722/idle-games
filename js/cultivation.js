@@ -3612,6 +3612,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			floor: floor,
 			waveKeys: waveKeys,
 			natalName: natalName,
+			autoFlow: true,
+			castTick: 0,
+			castMax: 10,
+			animSeq: 0,
+			lastEvent: null,
 			player: {
 				hp: maxHp,
 				maxHp: maxHp,
@@ -3637,12 +3642,35 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return true;
 	},
 
+	pickBestCombatSkill: function(){
+		if (!this.battle || !this.battle.active){ return "strike"; }
+		var p = this.battle.player;
+		var e = this.battle.enemy;
+		if (e.intent === "heavy"){
+			return "guard";
+		}
+		if (p.mp >= 55 && (p.hp <= p.maxHp * 0.65 || p.poison > 0 || p.chill > 0 || e.hp <= p.atk * 2.5)){
+			return "ult";
+		}
+		if (p.mp >= 35 && (e.shield > 0 || e.armorBreak <= 0)){
+			return "skill";
+		}
+		return "strike";
+	},
+
+	toggleBattleAutoFlow: function(){
+		if (!this.battle){ return false; }
+		this.battle.autoFlow = !this.battle.autoFlow;
+		return this.battle.autoFlow;
+	},
+
 	executeBattleTurn: function(skillKey){
 		if (!this.battle || !this.battle.active){ return false; }
 		var b = this.battle;
 		var p = b.player;
 		var e = b.enemy;
 		if (!p || !e){ return false; }
+		b.castTick = 0;
 
 		var sk = null;
 		for (var i = 0; i < this.COMBAT_SKILLS.length; i++){
@@ -3655,6 +3683,20 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 		p.counterStance = false;
 		var turnNotes = [];
+		var ev = {
+			seq: (b.animSeq || 0) + 1,
+			skillKey: sk.key,
+			enemyIntent: e.intent || "strike",
+			pDmgDealt: 0,
+			eDmgDealt: 0,
+			pHeal: 0,
+			pShieldGain: 0,
+			eShieldGain: 0,
+			counterHit: false,
+			shieldBroken: false
+		};
+		b.animSeq = ev.seq;
+		b.lastEvent = ev;
 
 		// 1. 玩家回合初状态结算 (蛇毒)
 		if (p.poison > 0){
@@ -3692,16 +3734,20 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					var leftoverRatio = Math.max(0, (effShieldDmg - e.shield) / Math.max(1, effShieldDmg));
 					e.shield = 0;
 					brokeShield = true;
+					ev.shieldBroken = true;
 					dmg = Math.round(dmg * leftoverRatio);
 				} else {
 					e.shield -= effShieldDmg;
+					ev.pDmgDealt += effShieldDmg;
 					dmg = 0;
 				}
 			}
 			e.hp = Math.max(0, e.hp - dmg);
+			ev.pDmgDealt += dmg;
 			if (brokeShield && (e.key === "puppet" || e.key === "jinjia")){
 				var crushDmg = Math.max(8, Math.round(e.maxHp * 0.12));
 				e.hp = Math.max(0, e.hp - crushDmg);
+				ev.pDmgDealt += crushDmg;
 				e.expose = Math.max(e.expose, 2);
 				if (e.key === "jinjia"){ e.overloaded = true; }
 				turnNotes.push("💥 击碎【" + e.traitTitle + "】护盾！核心反噬再创 " + crushDmg + " 并陷入【破绽】！");
@@ -3722,6 +3768,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		} else if (sk.key === "guard"){
 			var shieldAdd = Math.max(25, Math.round(p.atk * 1.45));
 			p.shield += shieldAdd;
+			ev.pShieldGain = shieldAdd;
 			p.counterStance = true;
 			turnNotes.push("🛡 祭起【玄水灵盾】凝盾 +" + shieldAdd + "，立下【太极反震】剑势！");
 		} else if (sk.key === "ult"){
@@ -3730,6 +3777,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var uDealt = applyDamageToEnemy(ultRaw, 1.0, true);
 			var healAmt = Math.max(18, Math.round(p.maxHp * 0.28));
 			p.hp = Math.min(p.maxHp, p.hp + healAmt);
+			ev.pHeal = healAmt;
 			p.poison = 0;
 			p.chill = 0;
 			p.weak = 0;
@@ -3759,6 +3807,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			if (e.key === "zhenxian"){
 				var sRegen = Math.round(e.maxHp * 0.12);
 				e.shield += sRegen;
+				ev.eShieldGain += sRegen;
 				turnNotes.push("👁 【万法归墟】法则流转，恢复 " + regenHp + " 气血并凝盾 +" + sRegen);
 			} else {
 				turnNotes.push("🐉 【" + e.traitTitle + "】再生恢复 " + regenHp + " 气血");
@@ -3784,6 +3833,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 			var totalHpLost = directHpDmg + shieldableDmg;
 			p.hp = Math.max(0, p.hp - totalHpLost);
+			ev.eDmgDealt += totalHpLost;
 			return totalHpLost;
 		};
 
@@ -3797,6 +3847,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					counterDmg += backlash;
 				}
 				e.hp = Math.max(0, e.hp - counterDmg);
+				ev.pDmgDealt += counterDmg;
+				ev.counterHit = true;
 				e.expose = Math.max(e.expose, 2);
 				turnNotes.push("☯ 【太极反震】完美格挡" + e.name + "蓄力杀招(仅受 " + reducedDmg + " 伤)，反震回敬 " + counterDmg + " 点重创并打出2回合【破绽】！");
 				if (e.hp <= 0){
@@ -3819,6 +3871,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		} else if (intent === "guard"){
 			var eShieldAdd = Math.max(20, Math.round(e.maxHp * 0.28));
 			e.shield += eShieldAdd;
+			ev.eShieldGain += eShieldAdd;
 			var gLost = applyDamageToPlayer(eAtk * 0.65, 0);
 			turnNotes.push("🛡 " + e.name + "凝结 " + eShieldAdd + " 点妖罡护盾并反扑造成 " + gLost + " 点伤害");
 		} else if (intent === "curse"){
@@ -3871,6 +3924,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	advanceBattleWaveOrWin: function(turnSummary){
 		var b = this.battle;
 		if (!b){ return false; }
+		b.turn = (b.turn || 1) + 1;
 		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 		var scale = 1 + this.getCurrentRealmIndex() * 0.8;
@@ -4532,6 +4586,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 		}
 		if (!this.spiritRoot){ this.rollRoot(); }
+		if (this.battle && this.battle.active && this.battle.autoFlow){
+			this.battle.castTick = (this.battle.castTick || 0) + 1;
+			if (this.battle.castTick >= (this.battle.castMax || 10)){
+				this.battle.castTick = 0;
+				this.executeBattleTurn(this.pickBestCombatSkill());
+			}
+		}
 		this.runAutoSteward();
 	},
 
@@ -5129,6 +5190,10 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						self._riftDeckSig = null;
 						self.update();
 					}
+				} else if (bAct === "flow"){
+					cult.toggleBattleAutoFlow();
+					self._riftDeckSig = null;
+					self.update();
 				} else if (bAct === "flee"){
 					if (cult.fleeBattle()){
 						self._riftDeckSig = null;
@@ -5797,7 +5862,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			dojo.toggleClass(this.actionRow, "xxActionRow4", riftOpen);
 		}
 
-		//玄天秘境面板——回合制斗法主舞台 & 双秘境备战大厅
+		//玄天秘境面板——回合制斗法主舞台(银河奶牛/梅尔沃式平滑战斗画面) & 双秘境备战大厅
 		if (this.riftPanel){
 			this.riftPanel.style.display = riftOpen ? "" : "none";
 			if (riftOpen){
@@ -5806,62 +5871,235 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				var pw = gInfo.need, cp = gInfo.cp;
 				var b = cult.battle;
 				var bActive = !!(b && b.active);
-				var bSig = bActive
-					? ("ACT:" + b.mode + ":" + b.turn + ":" + b.wave + ":" +
-						b.player.hp + ":" + b.player.mp + ":" + b.player.shield + ":" +
-						b.player.poison + ":" + b.player.chill + ":" + b.player.weak + ":" +
-						b.enemy.key + ":" + b.enemy.hp + ":" + b.enemy.shield + ":" + b.enemy.intent + ":" +
-						b.enemy.armorBreak + ":" + b.enemy.expose + ":" + (b.enemy.enraged ? 1 : 0) + ":" +
-						(b.logs && b.logs[0] ? b.logs[0] : ""))
-					: ("IDLE:" + (b && b.result ? b.result + ":" + (b.logs && b.logs[0] ? b.logs[0] : "") : "none"));
-				var deckSig = [
-					F,
-					cult.riftKeys,
-					Math.round(cp),
-					Math.round(pw),
-					burstBlocked ? 1 : 0,
-					bSig
-				].join("|");
 
-				if (this._riftDeckSig !== deckSig){
-					this._riftDeckSig = deckSig;
+				if (bActive){
+					var p = b.player;
+					var e = b.enemy;
+					var pHpPct = Math.max(0, Math.min(100, Math.round((p.hp / Math.max(1, p.maxHp)) * 100)));
+					var pMpPct = Math.max(0, Math.min(100, Math.round((p.mp / Math.max(1, p.maxMp)) * 100)));
+					var eHpPct = Math.max(0, Math.min(100, Math.round((e.hp / Math.max(1, e.maxHp)) * 100)));
+					var castPct = Math.max(0, Math.min(100, Math.round(((b.castTick || 0) / Math.max(1, b.castMax || 10)) * 100)));
+					var intentInfo = cult.describeEnemyIntent(e);
+					var playerName = (cult.identity && cult.identity.name) ? cult.identity.name : "本尊修士";
+					var stageBadge = (b.mode === "greater")
+						? ("上古大秘境 · 第 " + b.floor + " 层守关战")
+						: ("灵脉秘境 · 第 " + b.wave + " / " + b.maxWaves + " 波妖兽");
 
-					if (bActive){
-						var p = b.player;
-						var e = b.enemy;
-						var pHpPct = Math.max(0, Math.min(100, Math.round((p.hp / Math.max(1, p.maxHp)) * 100)));
-						var pMpPct = Math.max(0, Math.min(100, Math.round((p.mp / Math.max(1, p.maxMp)) * 100)));
-						var eHpPct = Math.max(0, Math.min(100, Math.round((e.hp / Math.max(1, e.maxHp)) * 100)));
-						var intentInfo = cult.describeEnemyIntent(e);
+					// 首次进入战斗时挂载持久化 DOM 舞台，后续每帧原位平滑更新，杜绝 innerHTML 重建导致动画卡顿
+					if (!this._combatDom || !this.riftDeck.contains(this._combatDom.root)){
+						this.riftDeck.innerHTML =
+							"<div class=\"xxCombatStage\">" +
+								"<div class=\"xxCombatTopBar\">" +
+									"<div class=\"xxCombatMeta\">" +
+										"<span class=\"xxCombatModeTag\"></span>" +
+										"<span class=\"xxCombatTurnTag\"></span>" +
+										"<span class=\"xxCombatLootTag\"></span>" +
+									"</div>" +
+									"<div class=\"xxCombatQuickActions\">" +
+										"<a href=\"#!\" class=\"xxCombatActBtn flow\" data-battle-act=\"flow\"></a>" +
+										"<a href=\"#!\" class=\"xxCombatActBtn auto\" data-battle-act=\"auto\">⚡ 速战结算</a>" +
+										"<a href=\"#!\" class=\"xxCombatActBtn flee\" data-battle-act=\"flee\">💨 携宝遁走</a>" +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxFighterArena\">" +
+									"<div class=\"xxFighterCard player\">" +
+										"<div class=\"xxFighterHd\">" +
+											"<div>" +
+												"<span class=\"xxFighterName\"></span>" +
+												"<span class=\"xxFighterSub\"></span>" +
+											"</div>" +
+											"<span class=\"xxShieldBadge player\" style=\"display:none\"></span>" +
+										"</div>" +
+										"<div class=\"xxSpriteStage player\">" +
+											"<div class=\"xxSpriteWrap player\"></div>" +
+											"<div class=\"xxVfxLayer player\"></div>" +
+											"<div class=\"xxFloatLayer player\"></div>" +
+										"</div>" +
+										"<div class=\"xxCastBarWrap\">" +
+											"<div class=\"xxCastLabel\"><span>剑诀蓄势</span><b class=\"xxCastStateText\"></b></div>" +
+											"<div class=\"xxCastBar\"><i class=\"xxCastFill player\"></i></div>" +
+										"</div>" +
+										"<div class=\"xxBarGroup\">" +
+											"<div class=\"xxBarLabel\"><span>气血 HP</span><b class=\"xxPlayerHpVal\"></b></div>" +
+											"<div class=\"xxHpBar player\"><u class=\"xxBarTrail\"></u><i class=\"xxBarFill\"></i></div>" +
+										"</div>" +
+										"<div class=\"xxBarGroup\">" +
+											"<div class=\"xxBarLabel\"><span>真元 MP</span><b class=\"xxPlayerMpVal\"></b></div>" +
+											"<div class=\"xxMpBar\"><i class=\"xxBarFill\"></i></div>" +
+										"</div>" +
+										"<div class=\"xxStatusRow player\"></div>" +
+									"</div>" +
+									"<div class=\"xxArenaVs\"><span>⚔</span><small>斗法交锋</small></div>" +
+									"<div class=\"xxFighterCard enemy\">" +
+										"<div class=\"xxFighterHd\">" +
+											"<div>" +
+												"<span class=\"xxFighterName\"></span>" +
+												"<span class=\"xxFighterSub\"></span>" +
+											"</div>" +
+											"<span class=\"xxShieldBadge enemy\" style=\"display:none\"></span>" +
+										"</div>" +
+										"<div class=\"xxSpriteStage enemy\">" +
+											"<div class=\"xxSpriteWrap enemy\"></div>" +
+											"<div class=\"xxVfxLayer enemy\"></div>" +
+											"<div class=\"xxFloatLayer enemy\"></div>" +
+										"</div>" +
+										"<div class=\"xxCastBarWrap\">" +
+											"<div class=\"xxCastLabel\"><span>妖煞蓄势</span><b class=\"xxEnemyIntentMini\"></b></div>" +
+											"<div class=\"xxCastBar enemy\"><i class=\"xxCastFill enemy\"></i></div>" +
+										"</div>" +
+										"<div class=\"xxBarGroup\">" +
+											"<div class=\"xxBarLabel\"><span>妖血 HP</span><b class=\"xxEnemyHpVal\"></b></div>" +
+											"<div class=\"xxHpBar enemy\"><u class=\"xxBarTrail\"></u><i class=\"xxBarFill\"></i></div>" +
+										"</div>" +
+										"<div class=\"xxTraitBox\">" +
+											"<span class=\"xxTraitBadge\"></span>" +
+											"<span class=\"xxTraitText\"></span>" +
+										"</div>" +
+										"<div class=\"xxStatusRow enemy\"></div>" +
+										"<div class=\"xxIntentBox\">" +
+											"<div class=\"xxIntentMain\">" +
+												"<span class=\"xxIntentTag\"></span>" +
+												"<span class=\"xxIntentDmg\"></span>" +
+											"</div>" +
+											"<div class=\"xxIntentCounter\"></div>" +
+										"</div>" +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxSkillDeck\"></div>" +
+								"<div class=\"xxCombatFeed\"></div>" +
+							"</div>";
+						var rootEl = this.riftDeck.querySelector(".xxCombatStage");
+						this._combatDom = {
+							root: rootEl,
+							modeTag: rootEl.querySelector(".xxCombatModeTag"),
+							turnTag: rootEl.querySelector(".xxCombatTurnTag"),
+							lootTag: rootEl.querySelector(".xxCombatLootTag"),
+							flowBtn: rootEl.querySelector(".xxCombatActBtn.flow"),
+							pName: rootEl.querySelector(".xxFighterCard.player .xxFighterName"),
+							pSub: rootEl.querySelector(".xxFighterCard.player .xxFighterSub"),
+							pShield: rootEl.querySelector(".xxShieldBadge.player"),
+							pSprite: rootEl.querySelector(".xxSpriteWrap.player"),
+							pVfx: rootEl.querySelector(".xxVfxLayer.player"),
+							pFloat: rootEl.querySelector(".xxFloatLayer.player"),
+							pCastText: rootEl.querySelector(".xxCastStateText"),
+							pCastFill: rootEl.querySelector(".xxCastFill.player"),
+							pHpVal: rootEl.querySelector(".xxPlayerHpVal"),
+							pHpTrail: rootEl.querySelector(".xxHpBar.player .xxBarTrail"),
+							pHpFill: rootEl.querySelector(".xxHpBar.player .xxBarFill"),
+							pMpVal: rootEl.querySelector(".xxPlayerMpVal"),
+							pMpFill: rootEl.querySelector(".xxMpBar .xxBarFill"),
+							pStatus: rootEl.querySelector(".xxStatusRow.player"),
+							eName: rootEl.querySelector(".xxFighterCard.enemy .xxFighterName"),
+							eSub: rootEl.querySelector(".xxFighterCard.enemy .xxFighterSub"),
+							eShield: rootEl.querySelector(".xxShieldBadge.enemy"),
+							eSprite: rootEl.querySelector(".xxSpriteWrap.enemy"),
+							eVfx: rootEl.querySelector(".xxVfxLayer.enemy"),
+							eFloat: rootEl.querySelector(".xxFloatLayer.enemy"),
+							eIntentMini: rootEl.querySelector(".xxEnemyIntentMini"),
+							eCastFill: rootEl.querySelector(".xxCastFill.enemy"),
+							eHpVal: rootEl.querySelector(".xxEnemyHpVal"),
+							eHpTrail: rootEl.querySelector(".xxHpBar.enemy .xxBarTrail"),
+							eHpFill: rootEl.querySelector(".xxHpBar.enemy .xxBarFill"),
+							eTraitBadge: rootEl.querySelector(".xxTraitBadge"),
+							eTraitText: rootEl.querySelector(".xxTraitText"),
+							eStatus: rootEl.querySelector(".xxStatusRow.enemy"),
+							eIntentBox: rootEl.querySelector(".xxIntentBox"),
+							eIntentTag: rootEl.querySelector(".xxIntentTag"),
+							eIntentDmg: rootEl.querySelector(".xxIntentDmg"),
+							eIntentCounter: rootEl.querySelector(".xxIntentCounter"),
+							skillDeck: rootEl.querySelector(".xxSkillDeck"),
+							feed: rootEl.querySelector(".xxCombatFeed"),
+							pSpriteSig: "",
+							eSpriteSig: "",
+							skillSig: "",
+							logSig: "",
+							lastAnimSeq: b.animSeq || 0
+						};
+						this._riftDeckSig = null;
+					}
 
-						var pStatuses = [];
-						if (p.counterStance){ pStatuses.push("<span class=\"xxStChip buff\">☯ 反震剑势</span>"); }
-						if (p.poison > 0){ pStatuses.push("<span class=\"xxStChip debuff\">☠ 蛇毒(" + p.poison + ")</span>"); }
-						if (p.chill > 0){ pStatuses.push("<span class=\"xxStChip debuff\">❄ 寒霜(" + p.chill + ")</span>"); }
-						if (p.weak > 0){ pStatuses.push("<span class=\"xxStChip debuff\">💫 虚弱(" + p.weak + ")</span>"); }
-						if (!pStatuses.length){ pStatuses.push("<span class=\"xxStChip neutral\">道心澄明</span>"); }
+					var cdm = this._combatDom;
+					cdm.modeTag.className = "xxCombatModeTag " + b.mode;
+					cdm.modeTag.textContent = stageBadge;
+					cdm.turnTag.textContent = "第 " + b.turn + " 回合";
+					cdm.lootTag.textContent = "已获修为 +" + fmt(b.loot.xiuwei, false, false, 0) +
+						(b.loot.keys ? " · 秘境令 +" + b.loot.keys : "") +
+						(b.loot.relic ? " · 遗宝 +" + b.loot.relic : "");
+					cdm.flowBtn.className = "xxCombatActBtn flow" + (b.autoFlow ? " on" : "");
+					cdm.flowBtn.textContent = b.autoFlow ? "⏸ 自动流转中" : "▶ 开启自动流转";
 
-						var eStatuses = [];
-						if (e.enraged){ eStatuses.push("<span class=\"xxStChip rage\">🔥 狂暴(攻+42%)</span>"); }
-						if (e.armorBreak > 0){ eStatuses.push("<span class=\"xxStChip vuln\">💥 破甲+30%(" + e.armorBreak + ")</span>"); }
-						if (e.expose > 0){ eStatuses.push("<span class=\"xxStChip vuln\">⚡ 破绽+40%(" + e.expose + ")</span>"); }
-						if (e.overloaded){ eStatuses.push("<span class=\"xxStChip vuln\">💫 核心过载(+50%)</span>"); }
+					// 更新修士与妖兽形象 SVG (仅当状态变化时重绘 SVG 内部)
+					var curRealmKey = realm.realm || "lianqi";
+					var pSprSig = curRealmKey + ":" + (p.shield > 0 ? 1 : 0) + ":" + (p.counterStance ? 1 : 0);
+					if (cdm.pSpriteSig !== pSprSig){
+						cdm.pSpriteSig = pSprSig;
+						cdm.pSprite.innerHTML = artMgr ? artMgr.combatPlayerSVG(curRealmKey, p.shield > 0, p.counterStance) : "";
+					}
+					var eSprSig = e.key + ":" + (e.shield > 0 ? 1 : 0) + ":" + (e.enraged ? 1 : 0);
+					if (cdm.eSpriteSig !== eSprSig){
+						cdm.eSpriteSig = eSprSig;
+						cdm.eSprite.innerHTML = artMgr ? artMgr.combatMonsterSVG(e.key, e.shield > 0, e.enraged) : "";
+					}
 
-						var playerName = (cult.identity && cult.identity.name) ? cult.identity.name : "本尊修士";
-						var stageBadge = (b.mode === "greater")
-							? ("上古大秘境 · 第 " + b.floor + " 层守关战")
-							: ("灵脉秘境 · 第 " + b.wave + " / " + b.maxWaves + " 波妖兽");
+					// 更新平滑蓄势条 & 气血/真元条 (保留 DOM 引用以触发 CSS cubic-bezier 平滑过渡与残影条)
+					cdm.pCastText.textContent = b.autoFlow ? (castPct + "%") : "手动待命";
+					cdm.pCastFill.style.width = (b.autoFlow ? castPct : 100) + "%";
+					cdm.eIntentMini.textContent = intentInfo.title;
+					cdm.eCastFill.style.width = (b.autoFlow ? castPct : 100) + "%";
 
-						// 推荐克制技能高亮
-						var recSkill = "strike";
-						if (e.intent === "heavy"){
-							recSkill = "guard";
-						} else if (p.mp >= 55 && (p.hp <= p.maxHp * 0.65 || p.poison > 0 || p.chill > 0 || e.key === "viper" || e.key === "wraith")){
-							recSkill = "ult";
-						} else if (p.mp >= 35 && (e.shield > 0 || e.armorBreak <= 0)){
-							recSkill = "skill";
-						}
+					cdm.pName.textContent = playerName;
+					cdm.pSub.textContent = realmLabel + " · 攻 " + p.atk + " / 防 " + p.def;
+					if (p.shield > 0){
+						cdm.pShield.style.display = "";
+						cdm.pShield.textContent = "🛡 灵盾 " + p.shield;
+					} else {
+						cdm.pShield.style.display = "none";
+					}
+					cdm.pHpVal.textContent = p.hp + " / " + p.maxHp;
+					cdm.pHpFill.style.width = pHpPct + "%";
+					cdm.pHpTrail.style.width = pHpPct + "%";
+					cdm.pMpVal.textContent = p.mp + " / " + p.maxMp;
+					cdm.pMpFill.style.width = pMpPct + "%";
 
+					var pStatuses = [];
+					if (p.counterStance){ pStatuses.push("<span class=\"xxStChip buff\">☯ 反震剑势</span>"); }
+					if (p.poison > 0){ pStatuses.push("<span class=\"xxStChip debuff\">☠ 蛇毒(" + p.poison + ")</span>"); }
+					if (p.chill > 0){ pStatuses.push("<span class=\"xxStChip debuff\">❄ 寒霜(" + p.chill + ")</span>"); }
+					if (p.weak > 0){ pStatuses.push("<span class=\"xxStChip debuff\">💫 虚弱(" + p.weak + ")</span>"); }
+					if (!pStatuses.length){ pStatuses.push("<span class=\"xxStChip neutral\">道心澄明</span>"); }
+					cdm.pStatus.innerHTML = pStatuses.join("");
+
+					cdm.eName.textContent = e.icon + " " + e.name;
+					cdm.eSub.textContent = e.tier + " · 攻 " + e.atk + " / 防 " + e.def;
+					if (e.shield > 0){
+						cdm.eShield.style.display = "";
+						cdm.eShield.textContent = "🛡 护盾 " + e.shield;
+					} else {
+						cdm.eShield.style.display = "none";
+					}
+					cdm.eHpVal.textContent = e.hp + " / " + e.maxHp;
+					cdm.eHpFill.style.width = eHpPct + "%";
+					cdm.eHpTrail.style.width = eHpPct + "%";
+					cdm.eTraitBadge.textContent = "特征 · " + e.traitTitle;
+					cdm.eTraitText.textContent = e.traitDesc;
+
+					var eStatuses = [];
+					if (e.enraged){ eStatuses.push("<span class=\"xxStChip rage\">🔥 狂暴(攻+42%)</span>"); }
+					if (e.armorBreak > 0){ eStatuses.push("<span class=\"xxStChip vuln\">💥 破甲+30%(" + e.armorBreak + ")</span>"); }
+					if (e.expose > 0){ eStatuses.push("<span class=\"xxStChip vuln\">⚡ 破绽+40%(" + e.expose + ")</span>"); }
+					if (e.overloaded){ eStatuses.push("<span class=\"xxStChip vuln\">💫 核心过载(+50%)</span>"); }
+					cdm.eStatus.innerHTML = eStatuses.join("");
+
+					cdm.eIntentBox.className = "xxIntentBox " + intentInfo.key;
+					cdm.eIntentTag.textContent = "下回合动作：" + intentInfo.title;
+					cdm.eIntentDmg.textContent = intentInfo.desc;
+					cdm.eIntentCounter.textContent = intentInfo.counter;
+
+					// 推荐克制技能与技能面板更新
+					var recSkill = cult.pickBestCombatSkill();
+					var skSig = p.mp + ":" + recSkill + ":" + (b.natalName || "");
+					if (cdm.skillSig !== skSig){
+						cdm.skillSig = skSig;
 						var skillBtnsHtml = "";
 						for (var si = 0; si < cult.COMBAT_SKILLS.length; si++){
 							var skDef = cult.COMBAT_SKILLS[si];
@@ -5880,87 +6118,100 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 									"<div class=\"xxSkillDesc\">" + skDef.desc + "</div>" +
 								"</a>";
 						}
+						cdm.skillDeck.innerHTML = skillBtnsHtml;
+					}
 
+					var logsArr = b.logs || [];
+					var lSig = logsArr.slice(0, 3).join("||");
+					if (cdm.logSig !== lSig){
+						cdm.logSig = lSig;
 						var logHtml = "";
-						var logsArr = b.logs || [];
 						for (var li = 0; li < Math.min(3, logsArr.length); li++){
 							logHtml += "<div class=\"xxCombatLogLine" + (li === 0 ? " latest" : "") + "\">" + logsArr[li] + "</div>";
 						}
+						cdm.feed.innerHTML = logHtml;
+					}
 
-						this.riftDeck.innerHTML =
-							"<div class=\"xxCombatStage\">" +
-								"<div class=\"xxCombatTopBar\">" +
-									"<div class=\"xxCombatMeta\">" +
-										"<span class=\"xxCombatModeTag " + b.mode + "\">" + stageBadge + "</span>" +
-										"<span class=\"xxCombatTurnTag\">第 " + b.turn + " 回合</span>" +
-										"<span class=\"xxCombatLootTag\">已获修为 +" + fmt(b.loot.xiuwei, false, false, 0) +
-											(b.loot.keys ? " · 秘境令 +" + b.loot.keys : "") +
-											(b.loot.relic ? " · 遗宝 +" + b.loot.relic : "") + "</span>" +
-									"</div>" +
-									"<div class=\"xxCombatQuickActions\">" +
-										"<a href=\"#!\" class=\"xxCombatActBtn auto\" data-battle-act=\"auto\">⚡ 自动完战</a>" +
-										"<a href=\"#!\" class=\"xxCombatActBtn flee\" data-battle-act=\"flee\">💨 携宝遁走</a>" +
-									"</div>" +
-								"</div>" +
-								"<div class=\"xxFighterArena\">" +
-									"<div class=\"xxFighterCard player\">" +
-										"<div class=\"xxFighterHd\">" +
-											"<div>" +
-												"<span class=\"xxFighterName\">🧘 " + playerName + "</span>" +
-												"<span class=\"xxFighterSub\">" + realmLabel + " · 攻 " + p.atk + " / 防 " + p.def + "</span>" +
-											"</div>" +
-											(p.shield > 0 ? "<span class=\"xxShieldBadge player\">🛡 灵盾 " + p.shield + "</span>" : "") +
-										"</div>" +
-										"<div class=\"xxBarGroup\">" +
-											"<div class=\"xxBarLabel\"><span>气血 HP</span><b>" + p.hp + " / " + p.maxHp + "</b></div>" +
-											"<div class=\"xxHpBar player\"><i style=\"width:" + pHpPct + "%\"></i></div>" +
-										"</div>" +
-										"<div class=\"xxBarGroup\">" +
-											"<div class=\"xxBarLabel\"><span>真元 MP</span><b>" + p.mp + " / " + p.maxMp + "</b></div>" +
-											"<div class=\"xxMpBar\"><i style=\"width:" + pMpPct + "%\"></i></div>" +
-										"</div>" +
-										"<div class=\"xxStatusRow\">" + pStatuses.join("") + "</div>" +
-									"</div>" +
-									"<div class=\"xxArenaVs\">⚔</div>" +
-									"<div class=\"xxFighterCard enemy\">" +
-										"<div class=\"xxFighterHd\">" +
-											"<div>" +
-												"<span class=\"xxFighterName\">" + e.icon + " " + e.name + "</span>" +
-												"<span class=\"xxFighterSub\">" + e.tier + " · 攻 " + e.atk + " / 防 " + e.def + "</span>" +
-											"</div>" +
-											(e.shield > 0 ? "<span class=\"xxShieldBadge enemy\">🛡 护盾 " + e.shield + "</span>" : "") +
-										"</div>" +
-										"<div class=\"xxBarGroup\">" +
-											"<div class=\"xxBarLabel\"><span>妖血 HP</span><b>" + e.hp + " / " + e.maxHp + "</b></div>" +
-											"<div class=\"xxHpBar enemy\"><i style=\"width:" + eHpPct + "%\"></i></div>" +
-										"</div>" +
-										"<div class=\"xxTraitBox\">" +
-											"<span class=\"xxTraitBadge\">特征 · " + e.traitTitle + "</span>" +
-											"<span class=\"xxTraitText\">" + e.traitDesc + "</span>" +
-										"</div>" +
-										(eStatuses.length ? "<div class=\"xxStatusRow\">" + eStatuses.join("") + "</div>" : "") +
-										"<div class=\"xxIntentBox " + intentInfo.key + "\">" +
-											"<div class=\"xxIntentMain\">" +
-												"<span class=\"xxIntentTag\">下回合动作：" + intentInfo.title + "</span>" +
-												"<span class=\"xxIntentDmg\">" + intentInfo.desc + "</span>" +
-											"</div>" +
-											"<div class=\"xxIntentCounter\">" + intentInfo.counter + "</div>" +
-										"</div>" +
-									"</div>" +
-								"</div>" +
-								"<div class=\"xxSkillDeck\">" + skillBtnsHtml + "</div>" +
-								"<div class=\"xxCombatFeed\">" + logHtml + "</div>" +
-							"</div>";
-					} else {
+					// 触发新回合丝滑出招冲刺、刀光剑阵特效、受击震颤与飘字伤害 (Milky Way / Melvor 动效)
+					if (b.animSeq && cdm.lastAnimSeq !== b.animSeq && b.lastEvent){
+						cdm.lastAnimSeq = b.animSeq;
+						var ev = b.lastEvent;
+
+						var triggerAnimCls = function(el, cls){
+							if (!el){ return; }
+							dojo.removeClass(el, cls);
+							void el.offsetWidth;
+							dojo.addClass(el, cls);
+						};
+						var spawnSplat = function(container, text, kind){
+							if (!container || !text){ return; }
+							var sp = dojo.create("span", {
+								className: "xxDmgSplat " + (kind || "dmg"),
+								innerHTML: text
+							}, container);
+							setTimeout(function(){
+								if (sp && sp.parentNode){ sp.parentNode.removeChild(sp); }
+							}, 950);
+						};
+
+						triggerAnimCls(cdm.pSprite, "xx-anim-lunge-right");
+						if (ev.skillKey === "guard"){
+							if (artMgr){
+								cdm.pVfx.innerHTML = artMgr.combatVfxSVG("guard");
+								triggerAnimCls(cdm.pVfx, "xx-vfx-burst");
+							}
+							if (ev.pShieldGain > 0){
+								spawnSplat(cdm.pFloat, "🛡 +" + ev.pShieldGain, "shield");
+							}
+						} else {
+							if (artMgr){
+								cdm.eVfx.innerHTML = artMgr.combatVfxSVG(ev.skillKey);
+								triggerAnimCls(cdm.eVfx, "xx-vfx-burst");
+							}
+							triggerAnimCls(cdm.eSprite, "xx-anim-hit");
+						}
+						if (ev.pDmgDealt > 0){
+							var dmgTxt = (ev.counterHit ? "☯ 反震 -" : (ev.shieldBroken ? "💥 破盾 -" : "-")) + ev.pDmgDealt;
+							spawnSplat(cdm.eFloat, dmgTxt, ev.counterHit || ev.skillKey === "ult" ? "crit" : "dmg");
+						}
+						if (ev.pHeal > 0){
+							spawnSplat(cdm.pFloat, "💚 +" + ev.pHeal, "heal");
+						}
+
+						// 妖兽反击动作与受击飘字
+						triggerAnimCls(cdm.eSprite, "xx-anim-lunge-left");
+						if (ev.eDmgDealt > 0){
+							triggerAnimCls(cdm.pSprite, "xx-anim-hit-delay");
+							spawnSplat(cdm.pFloat, "-" + ev.eDmgDealt, "enemy-dmg");
+						}
+						if (ev.eShieldGain > 0){
+							spawnSplat(cdm.eFloat, "🛡 +" + ev.eShieldGain, "shield");
+						}
+					}
+				} else {
+					this._combatDom = null;
+					var idleSig = [
+						F,
+						cult.riftKeys,
+						Math.round(cp),
+						Math.round(pw),
+						burstBlocked ? 1 : 0,
+						b && b.result ? b.result + ":" + (b.logs && b.logs[0] ? b.logs[0] : "") : "none"
+					].join("|");
+
+					if (this._riftDeckSig !== idleSig){
+						this._riftDeckSig = idleSig;
 						// 备战大厅：左栏【灵脉秘境 · 三波妖兽连战】 + 右栏【上古大秘境 · 守关妖王战】
 						var nextWaveKeys = cult.getNextMonsterWaveKeys();
 						var wavePreviewHtml = "<div class=\"xxWavePreviewList\">";
 						for (var wi = 0; wi < nextWaveKeys.length; wi++){
 							var mDef = cult.getMonsterDef(nextWaveKeys[wi]);
+							var miniSvg = artMgr ? "<span class=\"xxWaveMiniArt\">" + artMgr.combatMonsterSVG(mDef.key, mDef.startShieldRatio > 0, false) + "</span>" : "";
 							wavePreviewHtml +=
 								"<div class=\"xxWavePreviewItem\">" +
 									"<span class=\"xxWaveIdx\">第" + (wi + 1) + "波</span>" +
-									"<span class=\"xxWaveMon\">" + mDef.icon + " " + mDef.name + "</span>" +
+									miniSvg +
+									"<span class=\"xxWaveMon\">" + mDef.name + "</span>" +
 									"<span class=\"xxWaveTrait\" title=\"" + mDef.traitDesc + "\">【" + mDef.traitTitle + "】</span>" +
 								"</div>";
 						}
@@ -5971,6 +6222,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 							: "";
 
 						var bossDef = cult.getBossDef(F + 1);
+						var bossMiniSvg = artMgr ? "<div class=\"xxBossPreviewArt\">" + artMgr.combatMonsterSVG(bossDef.key, true, false) + "</div>" : "";
 						var vsRatio = Math.max(8, Math.min(92, Math.round((cp / (cp + pw)) * 100)));
 
 						this.riftDeck.innerHTML =
@@ -5988,11 +6240,14 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 								"<div class=\"xxRiftColTitle\"><span>上古大秘境 · " + bossDef.zone + "</span><small>秘境令 ×<b>" + cult.riftKeys + "</b></small></div>" +
 								"<div class=\"xxGriftCard\">" +
 									"<div class=\"xxGriftBossHd\">" +
-										"<div>" +
-											"<span class=\"xxGriftFloorTag\">第 " + (F + 1) + " 层</span>" +
-											"<span class=\"xxGriftBossName\">" + bossDef.icon + " " + bossDef.name + "</span>" +
+										bossMiniSvg +
+										"<div class=\"xxGriftBossMeta\">" +
+											"<div>" +
+												"<span class=\"xxGriftFloorTag\">第 " + (F + 1) + " 层</span>" +
+												"<span class=\"xxGriftBossName\">" + bossDef.name + "</span>" +
+											"</div>" +
+											"<span class=\"xxTraitBadge boss\">" + bossDef.traitTitle + "</span>" +
 										"</div>" +
-										"<span class=\"xxTraitBadge boss\">" + bossDef.traitTitle + "</span>" +
 									"</div>" +
 									"<div class=\"xxBossTraitDesc\">" + bossDef.traitDesc + "</div>" +
 									"<div class=\"xxVsBox\">" +
@@ -6607,5 +6862,251 @@ classes.ui.XianxiaArt = {
 			return this.resIcon("xiuwei");
 		}
 		return this.resIcon("xiuwei");
+	},
+
+	// ---------------- 7. 秘境回合制斗法 · 修士法相 / 十一大妖兽妖王形象 / 剑光特效 (Combat Sprites & VFX) ----------------
+	combatPlayerSVG: function(realmKey, hasShield, counterStance){
+		var pal = this.REALM_PALETTE[realmKey] || this.REALM_PALETTE.lianqi;
+		var pri = pal.pri;
+		var sec = pal.sec;
+		var portraitHref = this.PORTRAIT_ART[realmKey] || this.PORTRAIT_ART.lianqi;
+
+		var shieldSvg = "";
+		if (hasShield || counterStance){
+			var sCol = counterStance ? "#38bdf8" : "#4fd1a5";
+			shieldSvg =
+				"<g class=\"xx-svg-shield-dome\">" +
+					"<circle cx=\"58\" cy=\"58\" r=\"52\" fill=\"" + sCol + "\" fill-opacity=\"0.10\" stroke=\"" + sCol + "\" stroke-width=\"1.8\" stroke-dasharray=\"" + (counterStance ? "8 4" : "12 4") + "\"/>" +
+					"<circle cx=\"58\" cy=\"58\" r=\"47\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1\" stroke-opacity=\"0.55\" stroke-dasharray=\"3 6\"/>" +
+					(counterStance ? "<path d=\"M58 10 A24 24 0 0 1 58 58 A24 24 0 0 0 58 106 A48 48 0 0 1 58 10 Z\" fill=\"#38bdf8\" fill-opacity=\"0.12\"/>" : "") +
+				"</g>";
+		}
+
+		return "<svg viewBox=\"0 0 116 116\" class=\"xx-combat-avatar-svg player\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<defs>" +
+				"<radialGradient id=\"xxCpAura_" + realmKey + "\" cx=\"50%\" cy=\"50%\" r=\"50%\">" +
+					"<stop offset=\"0%\" stop-color=\"" + pri + "\" stop-opacity=\"0.42\"/>" +
+					"<stop offset=\"70%\" stop-color=\"" + sec + "\" stop-opacity=\"0.12\"/>" +
+					"<stop offset=\"100%\" stop-color=\"#091019\" stop-opacity=\"0\"/>" +
+				"</radialGradient>" +
+				"<clipPath id=\"xxCpClip\">" +
+					"<circle cx=\"58\" cy=\"58\" r=\"39\"/>" +
+				"</clipPath>" +
+			"</defs>" +
+			// 脚下周天阵盘
+			"<ellipse cx=\"58\" cy=\"101\" rx=\"42\" ry=\"9\" fill=\"" + pri + "\" fill-opacity=\"0.16\" stroke=\"" + pri + "\" stroke-width=\"1\" stroke-dasharray=\"5 3\"/>" +
+			"<circle cx=\"58\" cy=\"56\" r=\"50\" fill=\"url(#xxCpAura_" + realmKey + ")\"/>" +
+			// 旋转背光罗盘
+			"<g class=\"xx-art-spin\" style=\"transform-origin:58px 56px\">" +
+				"<circle cx=\"58\" cy=\"56\" r=\"44\" fill=\"none\" stroke=\"" + pri + "\" stroke-width=\"1.2\" stroke-dasharray=\"7 4 2 4\" opacity=\"0.75\"/>" +
+				"<polygon points=\"58,9 63,20 53,20\" fill=\"" + sec + "\" opacity=\"0.75\"/>" +
+				"<polygon points=\"58,103 63,92 53,92\" fill=\"" + sec + "\" opacity=\"0.75\"/>" +
+				"<polygon points=\"11,56 22,51 22,61\" fill=\"" + pri + "\" opacity=\"0.75\"/>" +
+				"<polygon points=\"105,56 94,51 94,61\" fill=\"" + pri + "\" opacity=\"0.75\"/>" +
+			"</g>" +
+			// 修士境界原画法相
+			"<circle cx=\"58\" cy=\"56\" r=\"40\" fill=\"#0b131e\" stroke=\"#d4b06a\" stroke-width=\"1.8\"/>" +
+			"<image href=\"" + portraitHref + "\" x=\"18\" y=\"16\" width=\"80\" height=\"80\" preserveAspectRatio=\"xMidYMid slice\" clip-path=\"url(#xxCpClip)\"/>" +
+			"<circle cx=\"58\" cy=\"56\" r=\"39\" fill=\"none\" stroke=\"" + pri + "\" stroke-width=\"1.2\" opacity=\"0.65\"/>" +
+			// 环绕护体飞剑 (三柄青竹蜂云剑游弋)
+			"<g class=\"xx-svg-sword-orbit\">" +
+				"<g transform=\"translate(14,26) rotate(-28)\">" +
+					"<path d=\"M0 10 L22 0 L19 11 L2 14 Z\" fill=\"#4fd1a5\" stroke=\"#eed39a\" stroke-width=\"0.9\"/>" +
+				"</g>" +
+				"<g transform=\"translate(84,20) rotate(25)\">" +
+					"<path d=\"M0 0 L22 10 L19 14 L2 4 Z\" fill=\"#4fd1a5\" stroke=\"#eed39a\" stroke-width=\"0.9\"/>" +
+				"</g>" +
+				"<g transform=\"translate(86,74) rotate(-18)\">" +
+					"<path d=\"M0 8 L20 0 L17 10 Z\" fill=\"#eed39a\" stroke=\"#4fd1a5\" stroke-width=\"0.9\"/>" +
+				"</g>" +
+			"</g>" +
+			shieldSvg +
+		"</svg>";
+	},
+
+	combatMonsterSVG: function(monsterKey, hasShield, enraged){
+		var key = monsterKey || "viper";
+		var theme = {
+			viper:      {pri: "#34d399", sec: "#a7f3d0", acc: "#ef4444", bg: "#071f18"},
+			puppet:     {pri: "#94a3b8", sec: "#f59e0b", acc: "#38bdf8", bg: "#111827"},
+			wraith:     {pri: "#c084fc", sec: "#e9d5ff", acc: "#38bdf8", bg: "#1b0f2e"},
+			mantis:     {pri: "#fbbf24", sec: "#fde68a", acc: "#ef4444", bg: "#231909"},
+			frostwyrm:  {pri: "#38bdf8", sec: "#bae6fd", acc: "#818cf8", bg: "#081c2e"},
+			bloodcult:  {pri: "#f87171", sec: "#fca5a5", acc: "#fbbf24", bg: "#28090e"},
+			mojiaowang: {pri: "#10b981", sec: "#d4b06a", acc: "#a855f7", bg: "#061d17"},
+			jinjia:     {pri: "#f59e0b", sec: "#fef08a", acc: "#38bdf8", bg: "#241907"},
+			yinlang:    {pri: "#93c5fd", sec: "#f8fafc", acc: "#f43f5e", bg: "#0c192c"},
+			gumo:       {pri: "#ef4444", sec: "#c084fc", acc: "#fbbf24", bg: "#230712"},
+			zhenxian:   {pri: "#fde047", sec: "#67e8f9", acc: "#f472b6", bg: "#14102b"}
+		}[key] || {pri: "#f87171", sec: "#fbbf24", acc: "#38bdf8", bg: "#1a1016"};
+
+		var artBody = "";
+		if (key === "viper"){
+			// 赤练妖蟒：盘绕玄鳞巨蟒 + 猩红竖瞳 + 分叉毒信 + 碧绿毒瘴球
+			artBody =
+				"<path d=\"M28 88 Q18 68 38 58 Q68 48 64 32 Q58 18 42 26\" fill=\"none\" stroke=\"#047857\" stroke-width=\"14\" stroke-linecap=\"round\"/>" +
+				"<path d=\"M28 88 Q18 68 38 58 Q68 48 64 32 Q58 18 42 26\" fill=\"none\" stroke=\"" + theme.pri + "\" stroke-width=\"9\" stroke-dasharray=\"5 3\" stroke-linecap=\"round\"/>" +
+				"<path d=\"M30 28 L46 16 L58 26 L48 40 L32 38 Z\" fill=\"#065f46\" stroke=\"" + theme.pri + "\" stroke-width=\"1.8\"/>" +
+				"<polygon points=\"42,16 38,6 46,12\" fill=\"#fbbf24\"/><polygon points=\"52,18 56,7 57,15\" fill=\"#fbbf24\"/>" +
+				"<circle cx=\"40\" cy=\"26\" r=\"2.8\" fill=\"#ef4444\"/><circle cx=\"50\" cy=\"27\" r=\"2.8\" fill=\"#ef4444\"/>" +
+				"<path d=\"M35 37 L22 44 M26 42 L20 39 M26 42 L23 48\" fill=\"none\" stroke=\"#ef4444\" stroke-width=\"1.8\" stroke-linecap=\"round\"/>" +
+				"<polygon points=\"37,37 35,44 39,38\" fill=\"#fff\"/><polygon points=\"45,38 43,45 47,39\" fill=\"#fff\"/>" +
+				"<circle cx=\"24\" cy=\"62\" r=\"5\" fill=\"#34d399\" opacity=\"0.55\" class=\"xx-art-pulse\"/>" +
+				"<circle cx=\"82\" cy=\"46\" r=\"6.5\" fill=\"#10b981\" opacity=\"0.45\" class=\"xx-art-pulse\"/>";
+		} else if (key === "puppet"){
+			// 铁甲尸傀：重装玄铁机关肩甲 + 符文面甲 + 胸膛熔炉核心 + 巨阙重剑
+			artBody =
+				"<polygon points=\"32,38 84,38 92,88 24,88\" fill=\"#1e293b\" stroke=\"#94a3b8\" stroke-width=\"2\"/>" +
+				"<polygon points=\"16,36 38,28 42,54 14,50\" fill=\"#334155\" stroke=\"#cbd5e1\" stroke-width=\"1.8\"/>" +
+				"<polygon points=\"100,36 78,28 74,54 102,50\" fill=\"#334155\" stroke=\"#cbd5e1\" stroke-width=\"1.8\"/>" +
+				"<rect x=\"42\" y=\"16\" width=\"32\" height=\"26\" rx=\"5\" fill=\"#0f172a\" stroke=\"#94a3b8\" stroke-width=\"2\"/>" +
+				"<line x1=\"47\" y1=\"27\" x2=\"55\" y2=\"27\" stroke=\"#f59e0b\" stroke-width=\"3\" stroke-linecap=\"round\"/>" +
+				"<line x1=\"61\" y1=\"27\" x2=\"69\" y2=\"27\" stroke=\"#f59e0b\" stroke-width=\"3\" stroke-linecap=\"round\"/>" +
+				"<polygon points=\"58,46 70,58 58,70 46,58\" fill=\"#f59e0b\" stroke=\"#fef08a\" stroke-width=\"1.6\" class=\"xx-art-pulse\"/>" +
+				"<rect x=\"84\" y=\"18\" width=\"8\" height=\"72\" rx=\"2\" fill=\"#64748b\" stroke=\"#e2e8f0\" stroke-width=\"1.4\"/>";
+		} else if (key === "wraith"){
+			// 阴冥鬼母：幽紫冥袍残魂 + 九幽魂火灯环 + 惨白摄魂鬼爪
+			artBody =
+				"<path d=\"M32 92 Q36 52 58 26 Q80 52 84 92 Q70 82 58 92 Q46 82 32 92 Z\" fill=\"#2e1065\" stroke=\"#c084fc\" stroke-width=\"1.8\"/>" +
+				"<circle cx=\"58\" cy=\"36\" r=\"14\" fill=\"#1e1b4b\" stroke=\"#e9d5ff\" stroke-width=\"1.5\"/>" +
+				"<circle cx=\"53\" cy=\"35\" r=\"2.8\" fill=\"#38bdf8\"/><circle cx=\"63\" cy=\"35\" r=\"2.8\" fill=\"#38bdf8\"/>" +
+				"<path d=\"M46 18 L52 25 L58 15 L64 25 L70 18\" fill=\"none\" stroke=\"#e9d5ff\" stroke-width=\"2\"/>" +
+				"<path d=\"M18 54 L34 48 M16 60 L34 54 M20 66 L34 60\" stroke=\"#67e8f9\" stroke-width=\"2\" stroke-linecap=\"round\"/>" +
+				"<path d=\"M98 54 L82 48 M100 60 L82 54 M96 66 L82 60\" stroke=\"#67e8f9\" stroke-width=\"2\" stroke-linecap=\"round\"/>" +
+				"<circle cx=\"24\" cy=\"30\" r=\"4.5\" fill=\"#38bdf8\" opacity=\"0.8\" class=\"xx-art-pulse\"/>" +
+				"<circle cx=\"92\" cy=\"30\" r=\"4.5\" fill=\"#c084fc\" opacity=\"0.8\" class=\"xx-art-pulse\"/>" +
+				"<circle cx=\"58\" cy=\"12\" r=\"4\" fill=\"#38bdf8\" opacity=\"0.85\" class=\"xx-art-pulse\"/>";
+		} else if (key === "mantis"){
+			// 金背妖螂：流金薄翼 + 倒三角复眼凶首 + 双柄寒芒巨镰刀臂
+			artBody =
+				"<ellipse cx=\"42\" cy=\"58\" rx=\"14\" ry=\"28\" transform=\"rotate(-22 42 58)\" fill=\"#78350f\" fill-opacity=\"0.65\" stroke=\"#fbbf24\" stroke-width=\"1.4\"/>" +
+				"<ellipse cx=\"74\" cy=\"58\" rx=\"14\" ry=\"28\" transform=\"rotate(22 74 58)\" fill=\"#78350f\" fill-opacity=\"0.65\" stroke=\"#fbbf24\" stroke-width=\"1.4\"/>" +
+				"<polygon points=\"58,42 70,22 46,22\" fill=\"#d97706\" stroke=\"#fde68a\" stroke-width=\"1.8\"/>" +
+				"<circle cx=\"49\" cy=\"25\" r=\"3.5\" fill=\"#ef4444\"/><circle cx=\"67\" cy=\"25\" r=\"3.5\" fill=\"#ef4444\"/>" +
+				"<path d=\"M42 40 L14 26 Q8 48 32 68 Z\" fill=\"#fbbf24\" stroke=\"#fff\" stroke-width=\"1.6\"/>" +
+				"<path d=\"M74 40 L102 26 Q108 48 84 68 Z\" fill=\"#fbbf24\" stroke=\"#fff\" stroke-width=\"1.6\"/>" +
+				"<polygon points=\"58,40 66,86 58,94 50,86\" fill=\"#b45309\" stroke=\"#fde68a\" stroke-width=\"1.5\"/>";
+		} else if (key === "frostwyrm"){
+			// 双首寒蛟：左右冰晶双龙首 + 冰冠龙角 + 寒霜吐息旋涡
+			artBody =
+				"<path d=\"M36 90 Q24 62 36 36 M80 90 Q92 62 80 36\" fill=\"none\" stroke=\"#0284c7\" stroke-width=\"11\" stroke-linecap=\"round\"/>" +
+				"<polygon points=\"22,36 38,20 48,34 34,46\" fill=\"#0369a1\" stroke=\"#7dd3fc\" stroke-width=\"1.8\"/>" +
+				"<polygon points=\"94,36 78,20 68,34 82,46\" fill=\"#0369a1\" stroke=\"#7dd3fc\" stroke-width=\"1.8\"/>" +
+				"<polyline points=\"34,20 28,8 40,16\" fill=\"none\" stroke=\"#e0f2fe\" stroke-width=\"2.2\"/>" +
+				"<polyline points=\"82,20 88,8 76,16\" fill=\"none\" stroke=\"#e0f2fe\" stroke-width=\"2.2\"/>" +
+				"<circle cx=\"34\" cy=\"32\" r=\"2.6\" fill=\"#fef08a\"/><circle cx=\"82\" cy=\"32\" r=\"2.6\" fill=\"#fef08a\"/>" +
+				"<polygon points=\"58,46 66,58 58,70 50,58\" fill=\"#38bdf8\" stroke=\"#e0f2fe\" stroke-width=\"1.5\" class=\"xx-art-pulse\"/>";
+		} else if (key === "bloodcult"){
+			// 血禁邪修：血煞莲台 + 魔道兜帽法袍 + 双手血雷法球 + 背后血幡
+			artBody =
+				"<ellipse cx=\"58\" cy=\"90\" rx=\"32\" ry=\"8\" fill=\"#991b1b\" stroke=\"#f87171\" stroke-width=\"1.6\"/>" +
+				"<polygon points=\"34,88 46,36 70,36 82,88\" fill=\"#450a0a\" stroke=\"#f87171\" stroke-width=\"1.8\"/>" +
+				"<path d=\"M42 38 Q58 12 74 38 Z\" fill=\"#7f1d1d\" stroke=\"#fca5a5\" stroke-width=\"1.8\"/>" +
+				"<circle cx=\"53\" cy=\"32\" r=\"2.5\" fill=\"#fbbf24\"/><circle cx=\"63\" cy=\"32\" r=\"2.5\" fill=\"#fbbf24\"/>" +
+				"<circle cx=\"24\" cy=\"52\" r=\"8\" fill=\"#ef4444\" stroke=\"#fde047\" stroke-width=\"1.5\" class=\"xx-art-pulse\"/>" +
+				"<circle cx=\"92\" cy=\"52\" r=\"8\" fill=\"#ef4444\" stroke=\"#fde047\" stroke-width=\"1.5\" class=\"xx-art-pulse\"/>" +
+				"<path d=\"M20 20 L30 36 L22 42 L32 56 M96 20 L86 36 L94 42 L84 56\" fill=\"none\" stroke=\"#fca5a5\" stroke-width=\"1.6\"/>";
+		} else if (key === "mojiaowang"){
+			// 千年墨蛟王 (Boss 1)：黄金龙角墨鳞巨首 + 毒沼漩涡 + 镇狱妖丹
+			artBody =
+				"<ellipse cx=\"58\" cy=\"90\" rx=\"38\" ry=\"10\" fill=\"#064e3b\" stroke=\"#10b981\" stroke-width=\"1.8\"/>" +
+				"<path d=\"M28 86 Q20 52 46 42 Q76 34 62 18\" fill=\"none\" stroke=\"#111827\" stroke-width=\"16\" stroke-linecap=\"round\"/>" +
+				"<path d=\"M28 86 Q20 52 46 42 Q76 34 62 18\" fill=\"none\" stroke=\"#10b981\" stroke-width=\"10\" stroke-dasharray=\"6 4\" stroke-linecap=\"round\"/>" +
+				"<polygon points=\"38,30 58,14 78,30 68,48 48,48\" fill=\"#064e3b\" stroke=\"#d4b06a\" stroke-width=\"2.2\"/>" +
+				"<path d=\"M46 18 L34 4 L52 14 M70 18 L82 4 L64 14\" fill=\"#fbbf24\" stroke=\"#fef08a\" stroke-width=\"1.5\"/>" +
+				"<circle cx=\"50\" cy=\"30\" r=\"3.2\" fill=\"#a855f7\"/><circle cx=\"66\" cy=\"30\" r=\"3.2\" fill=\"#a855f7\"/>" +
+				"<circle cx=\"58\" cy=\"66\" r=\"8\" fill=\"#10b981\" stroke=\"#fef08a\" stroke-width=\"1.6\" class=\"xx-art-pulse\"/>";
+		} else if (key === "jinjia"){
+			// 金甲镇殿傀儡 (Boss 2)：六臂黄金巨神兵 + 元磁极光背轮 + 黄金重盾
+			artBody =
+				"<circle cx=\"58\" cy=\"52\" r=\"38\" fill=\"none\" stroke=\"#38bdf8\" stroke-width=\"2\" stroke-dasharray=\"8 4\" class=\"xx-art-spin\" style=\"transform-origin:58px 52px\"/>" +
+				"<polygon points=\"30,36 86,36 94,90 22,90\" fill=\"#78350f\" stroke=\"#f59e0b\" stroke-width=\"2.4\"/>" +
+				"<polygon points=\"42,14 74,14 78,36 38,36\" fill=\"#92400e\" stroke=\"#fde047\" stroke-width=\"2\"/>" +
+				"<circle cx=\"51\" cy=\"25\" r=\"3\" fill=\"#38bdf8\"/><circle cx=\"65\" cy=\"25\" r=\"3\" fill=\"#38bdf8\"/>" +
+				"<polygon points=\"14,44 28,36 28,76 14,68\" fill=\"#d97706\" stroke=\"#fef08a\" stroke-width=\"1.8\"/>" +
+				"<polygon points=\"102,44 88,36 88,76 102,68\" fill=\"#d97706\" stroke=\"#fef08a\" stroke-width=\"1.8\"/>" +
+				"<circle cx=\"58\" cy=\"58\" r=\"10\" fill=\"#38bdf8\" stroke=\"#fef08a\" stroke-width=\"2\" class=\"xx-art-pulse\"/>";
+		} else if (key === "yinlang"){
+			// 双首银狼王 (Boss 3)：满月银轮 + 左右咆哮银狼首 + 冰蓝月华风刃
+			artBody =
+				"<circle cx=\"58\" cy=\"36\" r=\"26\" fill=\"#e2e8f0\" fill-opacity=\"0.18\" stroke=\"#93c5fd\" stroke-width=\"1.5\"/>" +
+				"<polygon points=\"32,88 26,48 58,42 90,48 84,88\" fill=\"#1e293b\" stroke=\"#93c5fd\" stroke-width=\"2\"/>" +
+				"<polygon points=\"16,42 28,18 36,30 48,20 46,50 24,52\" fill=\"#334155\" stroke=\"#f8fafc\" stroke-width=\"1.8\"/>" +
+				"<polygon points=\"100,42 88,18 80,30 68,20 70,50 92,52\" fill=\"#334155\" stroke=\"#f8fafc\" stroke-width=\"1.8\"/>" +
+				"<circle cx=\"32\" cy=\"36\" r=\"2.8\" fill=\"#f43f5e\"/><circle cx=\"84\" cy=\"36\" r=\"2.8\" fill=\"#f43f5e\"/>" +
+				"<path d=\"M12 64 Q36 52 58 68 Q80 52 104 64\" fill=\"none\" stroke=\"#67e8f9\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>";
+		} else if (key === "gumo"){
+			// 古魔血影 (Boss 4)：四魔角深渊法相 + 魔魂黑炎翼 + 天魔血雷巨剑
+			artBody =
+				"<path d=\"M10 26 Q34 44 38 78 L18 68 Z M106 26 Q82 44 78 78 L98 68 Z\" fill=\"#4c0519\" stroke=\"#ef4444\" stroke-width=\"1.8\"/>" +
+				"<polygon points=\"36,88 44,34 72,34 80,88\" fill=\"#1f0916\" stroke=\"#c084fc\" stroke-width=\"2\"/>" +
+				"<path d=\"M44 26 L26 6 L48 18 M72 26 L90 6 L68 18\" fill=\"#dc2626\" stroke=\"#fca5a5\" stroke-width=\"1.6\"/>" +
+				"<circle cx=\"51\" cy=\"28\" r=\"3\" fill=\"#fde047\"/><circle cx=\"65\" cy=\"28\" r=\"3\" fill=\"#fde047\"/>" +
+				"<polygon points=\"58,8 63,56 58,96 53,56\" fill=\"#ef4444\" fill-opacity=\"0.85\" stroke=\"#fde047\" stroke-width=\"1.6\" class=\"xx-art-pulse\"/>";
+		} else {
+			// 真仙法则化身 (Boss 5)：九重万法金轮 + 太虚法则真瞳 + 紫霄仙雷
+			artBody =
+				"<g class=\"xx-art-spin\" style=\"transform-origin:58px 54px\">" +
+					"<circle cx=\"58\" cy=\"54\" r=\"42\" fill=\"none\" stroke=\"#fde047\" stroke-width=\"1.8\" stroke-dasharray=\"10 4 2 4\"/>" +
+					"<polygon points=\"58,10 96,76 20,76\" fill=\"none\" stroke=\"#67e8f9\" stroke-width=\"1.4\" opacity=\"0.75\"/>" +
+					"<polygon points=\"58,98 96,32 20,32\" fill=\"none\" stroke=\"#f472b6\" stroke-width=\"1.4\" opacity=\"0.75\"/>" +
+				"</g>" +
+				"<polygon points=\"40,88 48,38 68,38 76,88\" fill=\"#1e1b4b\" stroke=\"#fde047\" stroke-width=\"2\"/>" +
+				"<circle cx=\"58\" cy=\"28\" r=\"11\" fill=\"#312e81\" stroke=\"#fde047\" stroke-width=\"2\"/>" +
+				"<ellipse cx=\"58\" cy=\"28\" rx=\"6\" ry=\"3\" fill=\"#67e8f9\" class=\"xx-art-pulse\"/>" +
+				"<circle cx=\"58\" cy=\"58\" r=\"8\" fill=\"#fde047\" stroke=\"#fff\" stroke-width=\"1.8\" class=\"xx-art-pulse\"/>";
+		}
+
+		var shieldRing = hasShield
+			? "<circle cx=\"58\" cy=\"56\" r=\"50\" fill=\"#f59e0b\" fill-opacity=\"0.08\" stroke=\"#fbbf24\" stroke-width=\"2\" stroke-dasharray=\"9 4\"/>"
+			: "";
+		var rageAura = enraged
+			? "<circle cx=\"58\" cy=\"56\" r=\"47\" fill=\"none\" stroke=\"#ef4444\" stroke-width=\"2.2\" stroke-dasharray=\"5 4\" class=\"xx-art-pulse\"/>"
+			: "";
+
+		return "<svg viewBox=\"0 0 116 116\" class=\"xx-combat-avatar-svg enemy " + key + "\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<defs>" +
+				"<radialGradient id=\"xxCmBg_" + key + "\" cx=\"50%\" cy=\"50%\" r=\"50%\">" +
+					"<stop offset=\"0%\" stop-color=\"" + theme.pri + "\" stop-opacity=\"0.34\"/>" +
+					"<stop offset=\"72%\" stop-color=\"" + theme.bg + "\" stop-opacity=\"0.92\"/>" +
+					"<stop offset=\"100%\" stop-color=\"#070b12\" stop-opacity=\"1\"/>" +
+				"</radialGradient>" +
+			"</defs>" +
+			"<ellipse cx=\"58\" cy=\"101\" rx=\"42\" ry=\"9\" fill=\"" + theme.pri + "\" fill-opacity=\"0.18\" stroke=\"" + theme.pri + "\" stroke-width=\"1\" stroke-dasharray=\"5 3\"/>" +
+			"<circle cx=\"58\" cy=\"56\" r=\"44\" fill=\"url(#xxCmBg_" + key + ")\" stroke=\"" + theme.pri + "\" stroke-width=\"1.6\"/>" +
+			"<g class=\"xx-svg-monster-body\">" + artBody + "</g>" +
+			rageAura +
+			shieldRing +
+		"</svg>";
+	},
+
+	combatVfxSVG: function(vfxType){
+		if (vfxType === "skill"){
+			// 青元剑阵：七十二道青金剑光交错斩落
+			return "<svg viewBox=\"0 0 120 120\" class=\"xx-vfx-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+				"<line x1=\"10\" y1=\"18\" x2=\"110\" y2=\"102\" stroke=\"#4fd1a5\" stroke-width=\"4\" stroke-linecap=\"round\"/>" +
+				"<line x1=\"110\" y1=\"18\" x2=\"10\" y2=\"102\" stroke=\"#fde047\" stroke-width=\"4\" stroke-linecap=\"round\"/>" +
+				"<line x1=\"60\" y1=\"6\" x2=\"60\" y2=\"114\" stroke=\"#67e8f9\" stroke-width=\"3.5\" stroke-linecap=\"round\"/>" +
+				"<circle cx=\"60\" cy=\"60\" r=\"38\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"2.5\" stroke-dasharray=\"8 4\"/>" +
+			"</svg>";
+		}
+		if (vfxType === "guard"){
+			// 玄水灵盾 / 太极反震：玄水太极波纹
+			return "<svg viewBox=\"0 0 120 120\" class=\"xx-vfx-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+				"<circle cx=\"60\" cy=\"60\" r=\"46\" fill=\"none\" stroke=\"#38bdf8\" stroke-width=\"3.5\"/>" +
+				"<circle cx=\"60\" cy=\"60\" r=\"32\" fill=\"none\" stroke=\"#fde047\" stroke-width=\"2.2\" stroke-dasharray=\"6 4\"/>" +
+			"</svg>";
+		}
+		if (vfxType === "ult"){
+			// 法宝镇压：纯阳金光天降法印
+			return "<svg viewBox=\"0 0 120 120\" class=\"xx-vfx-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+				"<polygon points=\"60,8 74,44 112,60 74,76 60,112 46,76 8,60 46,44\" fill=\"#fde047\" fill-opacity=\"0.35\" stroke=\"#fde047\" stroke-width=\"3\"/>" +
+				"<circle cx=\"60\" cy=\"60\" r=\"42\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"2.5\"/>" +
+			"</svg>";
+		}
+		// 默认御剑斩弧光
+		return "<svg viewBox=\"0 0 120 120\" class=\"xx-vfx-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<path d=\"M16 96 Q62 24 106 20 Q72 56 26 104 Z\" fill=\"#4fd1a5\" stroke=\"#fef08a\" stroke-width=\"2\"/>" +
+		"</svg>";
 	}
 };

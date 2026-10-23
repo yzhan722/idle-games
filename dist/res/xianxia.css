@@ -4624,6 +4624,16 @@ input, select, textarea, button { font-family: inherit; }
 	text-decoration: none !important;
 	transition: all .15s ease;
 }
+.xxCombatActBtn.flow {
+	background: rgba(56, 189, 248, .12);
+	border: 1px solid rgba(56, 189, 248, .42);
+	color: #7dd3fc;
+}
+.xxCombatActBtn.flow.on {
+	background: rgba(79, 209, 165, .18);
+	border-color: rgba(79, 209, 165, .55);
+	color: var(--xx-jade);
+}
 .xxCombatActBtn.auto {
 	background: linear-gradient(135deg, rgba(212, 176, 106, .24), rgba(79, 209, 165, .18));
 	border: 1px solid rgba(212, 176, 106, .55);
@@ -4645,18 +4655,222 @@ input, select, textarea, button { font-family: inherit; }
 
 .xxFighterArena {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.15fr);
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.12fr);
 	gap: 10px;
 	align-items: stretch;
 }
 .xxArenaVs {
 	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	font-size: 20px;
+	gap: 3px;
+	font-size: 22px;
 	color: var(--xx-gold);
-	padding: 0 2px;
-	text-shadow: 0 0 10px rgba(212, 176, 106, .45);
+	padding: 0 4px;
+	text-shadow: 0 0 12px rgba(212, 176, 106, .55);
+}
+.xxArenaVs small {
+	font-size: 10px;
+	color: var(--xx-mute);
+	letter-spacing: 1px;
+	writing-mode: vertical-rl;
+}
+
+/* 角色与妖兽立绘舞台 (Milky Way / Melvor 丝滑战斗形象区) */
+.xxSpriteStage {
+	position: relative;
+	height: 118px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9px;
+	background: radial-gradient(circle at 50% 60%, rgba(30, 48, 68, .55), rgba(7, 11, 18, .85));
+	border: 1px solid rgba(255, 255, 255, .06);
+	overflow: hidden;
+}
+.xxSpriteStage.enemy {
+	background: radial-gradient(circle at 50% 60%, rgba(68, 22, 34, .50), rgba(8, 11, 18, .88));
+}
+.xxSpriteWrap {
+	width: 108px;
+	height: 108px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	will-change: transform, filter;
+	animation: xxSpriteFloat 3.2s ease-in-out infinite;
+}
+.xxSpriteWrap.enemy {
+	animation-delay: -1.4s;
+}
+.xx-combat-avatar-svg {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .55));
+}
+.xx-svg-sword-orbit {
+	transform-origin: 58px 56px;
+	animation: xxSwordOrbit 4.2s ease-in-out infinite alternate;
+}
+.xx-svg-monster-body {
+	transform-origin: 58px 64px;
+	animation: xxMonsterBreath 2.6s ease-in-out infinite;
+}
+
+@keyframes xxSpriteFloat {
+	0%, 100% { transform: translate3d(0, 0, 0); }
+	50%      { transform: translate3d(0, -5px, 0); }
+}
+@keyframes xxSwordOrbit {
+	0%   { transform: translateY(-2px) rotate(-4deg); }
+	100% { transform: translateY(3px) rotate(4deg); }
+}
+@keyframes xxMonsterBreath {
+	0%, 100% { transform: scale(1); }
+	50%      { transform: scale(1.035, 0.975); }
+}
+
+/* 丝滑出招冲刺、受击震颤与刀光剑阵特效 */
+.xx-anim-lunge-right {
+	animation: xxLungeRight 0.44s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+.xx-anim-lunge-left {
+	animation: xxLungeLeft 0.46s cubic-bezier(0.22, 1, 0.36, 1) 0.14s !important;
+}
+.xx-anim-hit {
+	animation: xxHitShake 0.38s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.06s !important;
+}
+.xx-anim-hit-delay {
+	animation: xxHitShake 0.38s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.22s !important;
+}
+
+@keyframes xxLungeRight {
+	0%   { transform: translate3d(0, 0, 0) scale(1); }
+	32%  { transform: translate3d(26px, -4px, 0) scale(1.08); filter: brightness(1.28); }
+	100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes xxLungeLeft {
+	0%   { transform: translate3d(0, 0, 0) scale(1); }
+	35%  { transform: translate3d(-26px, -4px, 0) scale(1.08); filter: brightness(1.28); }
+	100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes xxHitShake {
+	0%   { transform: translate3d(0, 0, 0); filter: brightness(1); }
+	20%  { transform: translate3d(7px, -2px, 0) scale(0.95); filter: brightness(1.85) saturate(1.4); }
+	45%  { transform: translate3d(-6px, 2px, 0); }
+	70%  { transform: translate3d(4px, -1px, 0); }
+	100% { transform: translate3d(0, 0, 0); filter: brightness(1); }
+}
+
+.xxVfxLayer {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	opacity: 0;
+}
+.xxVfxLayer .xx-vfx-svg {
+	width: 96px;
+	height: 96px;
+}
+.xxVfxLayer.xx-vfx-burst {
+	animation: xxVfxBurst 0.52s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes xxVfxBurst {
+	0%   { opacity: 0; transform: scale(0.55) rotate(-12deg); }
+	30%  { opacity: 1; transform: scale(1.08) rotate(4deg); }
+	100% { opacity: 0; transform: scale(1.28) rotate(10deg); }
+}
+
+/* 伤害 / 破盾 / 反震 / 回血飘字 (Floating Damage Splats) */
+.xxFloatLayer {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	z-index: 4;
+}
+.xxDmgSplat {
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 12.5px;
+	font-weight: 800;
+	letter-spacing: 0.5px;
+	text-shadow: 0 2px 6px rgba(0, 0, 0, .85);
+	animation: xxSplatFloat 0.92s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.xxDmgSplat.dmg {
+	color: #fde047;
+	background: rgba(20, 14, 8, .75);
+	border: 1px solid rgba(253, 224, 71, .55);
+}
+.xxDmgSplat.crit {
+	font-size: 13.5px;
+	color: #fff;
+	background: linear-gradient(135deg, rgba(220, 38, 38, .88), rgba(217, 119, 6, .88));
+	border: 1px solid #fef08a;
+	box-shadow: 0 0 12px rgba(251, 191, 36, .55);
+}
+.xxDmgSplat.enemy-dmg {
+	color: #fca5a5;
+	background: rgba(40, 10, 14, .78);
+	border: 1px solid rgba(248, 113, 113, .55);
+}
+.xxDmgSplat.heal {
+	color: #6ee7b7;
+	background: rgba(6, 36, 26, .80);
+	border: 1px solid rgba(52, 211, 153, .55);
+}
+.xxDmgSplat.shield {
+	color: #7dd3fc;
+	background: rgba(12, 28, 48, .80);
+	border: 1px solid rgba(56, 189, 248, .55);
+}
+@keyframes xxSplatFloat {
+	0%   { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.75); }
+	22%  { opacity: 1; transform: translate3d(0, -4px, 0) scale(1.06); }
+	80%  { opacity: 1; transform: translate3d(0, -22px, 0) scale(1); }
+	100% { opacity: 0; transform: translate3d(0, -32px, 0) scale(0.92); }
+}
+
+/* 银河奶牛 / 梅尔沃式平滑出手蓄势条 (Action Cast Progress Bar) */
+.xxCastBarWrap {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.xxCastLabel {
+	display: flex;
+	justify-content: space-between;
+	font-size: 10.5px;
+	color: var(--xx-mute);
+}
+.xxCastLabel b {
+	color: var(--xx-jade);
+	font-weight: 600;
+}
+.xxCastBar {
+	height: 5px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, .07);
+	overflow: hidden;
+}
+.xxCastFill {
+	display: block;
+	height: 100%;
+	width: 0%;
+	background: linear-gradient(90deg, #38bdf8, #4fd1a5);
+	transition: width 0.21s linear;
+}
+.xxCastFill.enemy {
+	background: linear-gradient(90deg, #f59e0b, #ef4444);
 }
 .xxFighterCard {
 	display: flex;
@@ -4723,28 +4937,45 @@ input, select, textarea, button { font-family: inherit; }
 }
 .xxHpBar,
 .xxMpBar {
-	height: 8px;
+	position: relative;
+	height: 9px;
 	border-radius: 999px;
 	background: rgba(255, 255, 255, .08);
 	overflow: hidden;
 }
-.xxHpBar.player > i {
+.xxHpBar > .xxBarTrail {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	display: block;
+	background: rgba(253, 224, 71, .55);
+	transition: width 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.08s;
+}
+.xxHpBar.player > i,
+.xxHpBar.player > .xxBarFill {
+	position: relative;
+	z-index: 1;
 	display: block;
 	height: 100%;
 	background: linear-gradient(90deg, #10b981, #4fd1a5);
-	transition: width .2s ease;
+	transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.xxHpBar.enemy > i {
+.xxHpBar.enemy > i,
+.xxHpBar.enemy > .xxBarFill {
+	position: relative;
+	z-index: 1;
 	display: block;
 	height: 100%;
 	background: linear-gradient(90deg, #dc2626, #f97316);
-	transition: width .2s ease;
+	transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.xxMpBar > i {
+.xxMpBar > i,
+.xxMpBar > .xxBarFill {
 	display: block;
 	height: 100%;
 	background: linear-gradient(90deg, #2563eb, #38bdf8);
-	transition: width .2s ease;
+	transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .xxStatusRow {
 	display: flex;
@@ -4964,6 +5195,28 @@ input, select, textarea, button { font-family: inherit; }
 	color: var(--xx-jade);
 	font-size: 10.5px;
 	font-weight: 600;
+}
+.xxWaveMiniArt {
+	width: 30px;
+	height: 30px;
+	flex: 0 0 30px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+.xxBossPreviewArt {
+	width: 54px;
+	height: 54px;
+	flex: 0 0 54px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+.xxGriftBossMeta {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1 1 auto;
 }
 .xxWaveMon {
 	color: var(--xx-paper);
