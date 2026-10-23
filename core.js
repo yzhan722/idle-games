@@ -2928,17 +2928,24 @@ var UIUtils = {
 			pos.top -= posGame.top;
 			pos.left -= posGame.left;
 
-			pos.top += topPosition;
-			pos.left += leftPosition;
+			var leftCol = dojo.byId("leftColumn");
+			if (leftCol && leftCol.contains && leftCol.contains(container)){
+				pos.left = ($(leftCol).outerWidth() || 308) + 8;
+				pos.top = Math.max(6, pos.top - 4);
+			} else {
+				pos.top += topPosition;
+				pos.left += leftPosition;
+			}
 
-			// Prevent tooltip from leaving the window area
-			// The 25 here is an arbitrary padding, so that the tooltip doesn't sit right on the window edge.
-			var maxTooltipTop = $(window).scrollTop() + $(window).height() - $(tooltip).outerHeight() - 25;
-			var maxTooltipLeft = $(window).scrollLeft() + $(window).width() - $(tooltip).outerWidth() - 25;
+			// Prevent tooltip from leaving the game viewport area
+			var gameH = $(gameNode).height() || ($(window).height() - 44);
+			var gameW = $(gameNode).width() || $(window).width();
+			var maxTooltipTop = Math.max(6, gameH - $(tooltip).outerHeight() - 14);
+			var maxTooltipLeft = Math.max(6, gameW - $(tooltip).outerWidth() - 16);
 
 			// Keep position inside expected bounds.
-			pos.top = Math.min(pos.top, maxTooltipTop);
-			pos.left = Math.min(pos.left, maxTooltipLeft);
+			pos.top = Math.max(6, Math.min(pos.top, maxTooltipTop));
+			pos.left = Math.max(6, Math.min(pos.left, maxTooltipLeft));
 
 			dojo.style(tooltip, "top", pos.top + "px");
 			dojo.style(tooltip, "left", pos.left + "px");

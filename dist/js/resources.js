@@ -23,12 +23,16 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		name : "catnip",
 		title: $I("resources.catnip.title"),
 		type : "common",
+		category: "material",
+		color: "#7ed99a",
 		visible: true,
 		calculatePerTick: true
 	},{
 		name : "wood",
 		title: $I("resources.wood.title"),
 		type : "common",
+		category: "material",
+		color: "#d4b06a",
 		craftable: true,
 		visible: true,
 		calculatePerTick: true
@@ -36,19 +40,24 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		name : "minerals",
 		title: $I("resources.minerals.title"),
 		type : "common",
+		category: "material",
+		color: "#9ec5e8",
 		visible: true,
 		calculatePerTick: true
 	},{
 		name : "coal",
 		title: $I("resources.coal.title"),
 		type : "common",
+		category: "material",
 		visible: true,
-		color: "gray",
+		color: "#b0bec5",
 		calculatePerTick: true
 	},{
 		name : "iron",
 		title: $I("resources.iron.title"),
 		type : "common",
+		category: "material",
+		color: "#cfd8dc",
 		visible: true,
 		calculatePerTick: true,
 		tag: "baseMetal"
@@ -56,6 +65,8 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		name : "titanium",
 		title: $I("resources.titanium.title"),
 		type : "common",
+		category: "material",
+		color: "#e0f7fa",
 		visible: true,
 		calculatePerTick: true,
 		tag: "baseMetal"
@@ -63,6 +74,8 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		name : "gold",
 		title: $I("resources.gold.title"),
 		type : "common",
+		category: "material",
+		color: "#ffd54f",
 		visible: true,
 		calculatePerTick: true,
 		tag: "baseMetal"
@@ -70,6 +83,8 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		name : "oil",
 		title: $I("resources.oil.title"),
 		type : "common",
+		category: "material",
+		color: "#ffab40",
 		visible: true,
 		calculatePerTick: true,
 		isNotRefundable: true
@@ -77,63 +92,72 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		name : "uranium",
 		title: $I("resources.uranium.title"),
 		type : "common",
+		category: "material",
 		visible: true,
-		color: "#4EA24E",
+		color: "#69f0ae",
 		calculatePerTick: true,
 		tag: "baseMetal"
 	},{
 		name : "unobtainium",
 		title: $I("resources.unobtainium.title"),
 		type : "common",
+		category: "material",
 		visible: true,
 		display: true,
-		color: "#A00000",
+		color: "#ff7070",
 		calculatePerTick: true,
 		tag: "baseMetal"
 	},{
 		name : "science",
 		title: $I("resources.science.title"),
 		type : "common",
+		category: "dao",
 		visible: true,
 		transient: true,
-		color: "#01A9DB",
+		color: "#67c8ff",
 		calculatePerTick: true
 	},{
 		name : "culture",
 		title: $I("resources.culture.title"),
 		type : "common",
+		category: "dao",
 		visible: true,
 		transient: true,
-		color: "#DF01D7",
+		color: "#e29eff",
 		calculatePerTick: true
 	},{
 		name : "faith",
 		title: $I("resources.faith.title"),
 		type : "common",
+		category: "dao",
 		visible: true,
 		transient: true,
-		color: "gray",
+		color: "#f5d076",
 		calculatePerTick: true
 	},{
 		name : "xiuwei",
 		title: $I("resources.xiuwei.title"),
 		type : "common",
+		category: "dao",
 		visible: true,
 		transient: true,
-		color: "#7B4FA6",
+		color: "#4fd1a5",
 		calculatePerTick: true
 	},{
 		name : "starchart",
 		title: $I("resources.starchart.title"),
 		type : "common",
+		category: "dao",
 		transient: true,
 		visible: true,
-		color: "#9A2EFE",
+		color: "#b39ddb",
 		calculatePerTick: true
 	},{
 		name : "spice",
 		title: $I("resources.spice.title"),
 		type : "uncommon",
+		category: "treasure",
+		color: "#ffab91",
 		transient: true,
 		visible: true,
 		persists: false,
@@ -142,28 +166,33 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		name : "karma",
 		title: $I("resources.karma.title"),
 		type : "rare",
+		category: "treasure",
+		color: "#ffb74d",
 		visible: true,
 		persists: false
 	},{
 		name : "paragon",
 		title: $I("resources.paragon.title"),
 		type : "common",
+		category: "treasure",
 		visible: true,
-		color: "#6141CD",
+		color: "#b388ff",
 		persists: true
 	},{
 		name : "timeCrystal",
 		title: $I("resources.timeCrystal.title"),
 		type : "common",
+		category: "treasure",
 		visible: true,
-		color: "#14CD61"
+		color: "#26e6a6"
 	},{
 		name : "relic",
 		title: $I("resources.relic.title"),
 		type : "exotic",
+		category: "treasure",
 		craftable: false,
 		visible: true,
-		color: "#5A0EDE",
+		color: "#ff80ab",
 		calculatePerDay: true
 	},
 	//=========================================
@@ -173,46 +202,53 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		name : "beam",
 		title: $I("resources.beam.title"),
 		type : "common",
+		category: "craft",
 		craftable: true,
-		color: "#df9000"
+		color: "#e6b465"
 	},{
 		name : "slab",
 		title: $I("resources.slab.title"),
 		type : "common",
-		craftable: true
+		category: "craft",
+		craftable: true,
+		color: "#a7c7e7"
 	},{
 		name : "steel",
 		title: $I("resources.steel.title"),
 		type : "common",
+		category: "craft",
 		craftable: true,
 		visible: false,
-		color: "gray",
+		color: "#90caf9",
 		calculatePerTick: true,
 		tag: "metallurgist"
 	},{
 		name : "alloy",
 		title: $I("resources.alloy.title"),
 		type : "common",
+		category: "craft",
 		craftable: true,
 		visible: false,
-		color: "gray",
+		color: "#ffe082",
 		tag: "metallurgist"
 	},{
 		name : "eludium",
 		title: $I("resources.eludium.title"),
 		type : "common",
+		category: "craft",
 		craftable: true,
 		visible: false,
-		color: "darkViolet",
+		color: "#ce93d8",
 		tag: "chemist"
 	},{
 		name : "blueprint",
 		title: $I("resources.blueprint.title"),
 		type : "common",
+		category: "craft",
 		transient: true,
 		visible: true,
 		craftable: true,
-		color: "#01A9DB"
+		color: "#4fc3f7"
 	},
 	//=========================================
 	// 		INTERNAL ENGINE COUNTERS (hidden)
