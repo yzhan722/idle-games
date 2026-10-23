@@ -4245,11 +4245,6 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		this.realmInfo = dojo.create("div", {
 			className: "cultivationHeader"
 		}, tabContainer);
-		//①.5 九境万法同源总纲——一境一核心灵材 + 洞府/问道/百艺联动一览
-		this.synergyWrap = dojo.create("div", {
-			className: "xxSynergyMount"
-		}, tabContainer);
-		this._synHtml = null;
 		//改命 + 道音开关 + 点击法宝祭炼本命 + 移动端点击仙缘/法宝徽章浮窗查看详情
 		this.realmInfo.onclick = function(e){
 			var el = e.target;
@@ -4315,14 +4310,14 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		};
 		this._stewardSig = null;
 
-		//②.8 玄天秘境 · 探幽罗盘与虚天破界塔(专属交互式主控台,紧随历练四式下方)
+		//②.8 玄天秘境面板
 		this.riftPanel = dojo.create("div", {className: "xxRiftPanel xxRiftArena", style: {display: "none"}}, tabContainer);
-		this.riftHead = dojo.create("div", {className: "xxRiftHead"}, this.riftPanel);
+		this.riftHead = dojo.create("div", {className: "xxRiftHead", style: {display: "none"}}, this.riftPanel);
 		this.riftDeck = dojo.create("div", {className: "xxRiftDeck"}, this.riftPanel);
 		this.riftPower = dojo.create("div", {className: "xxRiftPower", style: {display: "none"}}, this.riftPanel);
-		this.riftLadder = dojo.create("div", {className: "xxRiftLadder"}, this.riftPanel);
-		this.riftSealsEl = dojo.create("div", {className: "xxRiftSeals"}, this.riftPanel);
-		var riftFoot = dojo.create("div", {className: "xxRiftFoot"}, this.riftPanel);
+		this.riftLadder = dojo.create("div", {className: "xxRiftLadder", style: {display: "none"}}, this.riftPanel);
+		this.riftSealsEl = dojo.create("div", {className: "xxRiftSeals", style: {display: "none"}}, this.riftPanel);
+		var riftFoot = dojo.create("div", {className: "xxRiftFoot", style: {display: "none"}}, this.riftPanel);
 		this.riftKeysEl = dojo.create("span", {className: "xxRiftKeys"}, riftFoot);
 		dojo.create("span", {className: "xxRiftHint", innerHTML: $I("cultivation.rift.hint")}, riftFoot);
 		this.riftResult = dojo.create("div", {className: "xxRiftResult", style: {display: "none"}}, this.riftPanel);
@@ -4739,13 +4734,6 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			this._hdrHtml = html;
 			this.realmInfo.innerHTML = html;
 		}
-		if (this.synergyWrap){
-			var synHtml = cult.renderRealmSynergyBanner("Cultivation");
-			if (synHtml !== this._synHtml){
-				this._synHtml = synHtml;
-				this.synergyWrap.innerHTML = synHtml;
-			}
-		}
 
 		//境界分区:唯现「当前境界」与「即将叩关的下一境界」
 		//——旧境进度自成纪事,不必再占眼帘
@@ -4784,14 +4772,11 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			if (this.alchemyPanel){
 				this.alchemyPanel.style.display = pillShow ? "" : "none";
 				if (pillShow){
-					var rankInfo = cult.getAlchemyRank();
 					var toxInfo = cult.getToxicityStatus();
 					var bottleFate = cult.getFate("bottle");
 					var dewShow = (bottleFate && bottleFate.researched) || (cult.bottleDew || 0) > 0;
 					var dewCnt = cult.bottleDew || 0;
 					var pSigParts = [
-						cult.cauldronFire,
-						rankInfo.exp,
 						toxInfo.val,
 						Math.round(cult.heartDemon || 0),
 						Math.round((cult.breakMult || 0) * 100),
@@ -4800,106 +4785,53 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						Math.ceil((cult.buffs.jiangchen || 0) / 5),
 						Math.ceil((cult.buffs.biyan || 0) / 5),
 						dewShow ? dewCnt : -1,
-						cult.getCurrentRealmIndex(),
-						cult.lastAlchemyNote || ""
+						cult.getCurrentRealmIndex()
 					];
 					for (var pi = 0; pi < cult.pills.length; pi++){
 						var pObj = cult.pills[pi];
 						var unl = cult.isPillUnlocked(pObj);
 						var supC = (cult.supremePills && cult.supremePills[pObj.name]) || 0;
 						var canAff = unl ? (cult.canAffordPill(pObj.name) ? 1 : 0) : 0;
-						var cntCr = (cult.pillCraftCount && cult.pillCraftCount[pObj.name]) || 0;
-						pSigParts.push(pObj.name + ":" + (unl ? 1 : 0) + ":" + (pObj.val || 0) + ":" + supC + ":" + canAff + ":" + cntCr);
+						pSigParts.push(pObj.name + ":" + (unl ? 1 : 0) + ":" + (pObj.val || 0) + ":" + supC + ":" + canAff);
 					}
 					var alcSig = pSigParts.join("|");
 					if (this._alcSig !== alcSig){
 						this._alcSig = alcSig;
 
-						//1. 顶栏: 丹道造诣品阶 + 三昧控火法门切换器
-						var fireBarHtml = "<div class=\"xxFireBar\"><span class=\"xxFireLbl\">丹鼎控火</span>";
-						for (var fi = 0; fi < cult.CAULDRON_FIRES.length; fi++){
-							var fMode = cult.CAULDRON_FIRES[fi];
-							var fOn = (cult.cauldronFire === fMode.key);
-							fireBarHtml += "<a href=\"#!\" class=\"xxFireChip " + fMode.key + (fOn ? " active" : "") +
-								"\" data-fire=\"" + fMode.key + "\" title=\"" + fMode.desc + "\">" +
-								"<span class=\"xxFireName\">" + fMode.label + "</span>" +
-								"<span class=\"xxFireTag\">" + fMode.tag + "</span></a>";
-						}
-						fireBarHtml += "</div>";
-
-						var alcHeadHtml =
-							"<div class=\"xxAlcTopRow\">" +
-								"<div class=\"xxAlcTitleBlock\">" +
-									"<span class=\"xxAlcSealBadge\">鼎</span>" +
-									"<div>" +
-										"<div class=\"xxAlcMainTitle\">玄天丹鼎 · 三昧控火与丹毒经脉体系</div>" +
-										"<div class=\"xxAlcSubTitle\">丹道造诣：<b>" + rankInfo.title + "</b>（熟练度 " + rankInfo.exp + "/" + rankInfo.nextExp + "） · " + rankInfo.desc + "</div>" +
-									"</div>" +
-								"</div>" +
-								fireBarHtml +
-							"</div>";
-
-						//2. 中栏双表盘: 左【经脉丹毒仪 + 周天洗髓】 / 右【周天药力运转 + 掌天绿液催熟】
-						var toxHtml =
-							"<div class=\"xxAlcMeterCard xxToxCard\">" +
-								"<div class=\"xxAlcMeterHd\">" +
-									"<span class=\"xxAlcMeterTitle\">☯ 经脉丹毒淤积 · <b>" + toxInfo.val + " / 100</b></span>" +
-									"<span class=\"xxToxBadge " + toxInfo.tier + "\">" + toxInfo.label + "（药效 " + Math.round(toxInfo.effMult * 100) + "%）</span>" +
-								"</div>" +
-								"<div class=\"xxToxBarWrap\">" +
-									"<div class=\"xxToxBar\"><i class=\"" + toxInfo.tier + "\" style=\"width:" + toxInfo.val + "%\"></i></div>" +
-									"<div class=\"xxToxTicks\"><span>0 澄澈</span><span>40 抗药</span><span>70 淤塞</span><span>90 攻心禁药</span></div>" +
-								"</div>" +
-								"<div class=\"xxToxFoot\">" +
-									"<span class=\"xxToxDesc\">" + toxInfo.desc + "</span>" +
-									"<a href=\"#!\" class=\"xxToxPurgeBtn" + (toxInfo.val <= 0 ? " disabled" : "") + "\" data-alc-act=\"purge\" title=\"消耗少量灵谷运转周天灵泉，立即逼出 25 点丹毒并平复 3 点心魔\">" +
-										"💧 周天洗髓 · 运功逼毒 (-" + Math.round(25 * rankInfo.detoxMult) + "丹毒)" +
-									"</a>" +
-								"</div>" +
-							"</div>";
-
 						var activeBuffs = [];
 						if (cult.buffs.juqi > 0){
-							activeBuffs.push("<span class=\"xxAlcBuffChip on\">" + (cult.buffs.juqiSupreme > 0 ? "✦丹纹聚气丹" : "聚气丹") + " · " + Math.ceil(cult.buffs.juqi / 5) + "s</span>");
+							activeBuffs.push("<span class=\"xxAlcBuffChip on\">聚气丹 · " + Math.ceil(cult.buffs.juqi / 5) + "s</span>");
 						}
 						if (cult.buffs.jiangchen > 0){
 							activeBuffs.push("<span class=\"xxAlcBuffChip on\">降尘丹 · " + Math.ceil(cult.buffs.jiangchen / 5) + "s</span>");
 						}
 						if (cult.buffs.biyan > 0){
-							activeBuffs.push("<span class=\"xxAlcBuffChip on\">" + (cult.buffs.biyanSupreme > 0 ? "✦丹纹碧焰酒" : "碧焰酒") + " · " + Math.ceil(cult.buffs.biyan / 5) + "s</span>");
+							activeBuffs.push("<span class=\"xxAlcBuffChip on\">碧焰酒 · " + Math.ceil(cult.buffs.biyan / 5) + "s</span>");
 						}
 						if (cult.breakMult > 0){
-							activeBuffs.push("<span class=\"xxAlcBuffChip boost\">破境丹力加成 +" + Math.round(cult.breakMult * 100) + "%（下次冲关生效）</span>");
+							activeBuffs.push("<span class=\"xxAlcBuffChip boost\">破境加成 +" + Math.round(cult.breakMult * 100) + "%</span>");
 						}
-						var buffListHtml = activeBuffs.length
+						if (toxInfo.val > 0){
+							activeBuffs.push("<span class=\"xxToxBadge " + toxInfo.tier + "\">丹毒 " + toxInfo.val + "/100</span>");
+						}
+						var statusLeftHtml = activeBuffs.length
 							? activeBuffs.join("")
-							: "<span class=\"xxAlcBuffIdle\">当前周天经脉平缓，未运转限时灵丹药力</span>";
+							: "<span class=\"xxAlcBuffIdle\">周天平缓 · 丹毒 0/100</span>";
 
-						var dewBlockHtml = dewShow
-							? "<div class=\"xxAlcDewRow\">" +
-								"<div class=\"xxAlcDewInfo\">" +
-									"<b>🧪 掌天瓶造化绿液：×" + dewCnt + " / 5 滴</b>" +
-									"<span>每逢岁首自动凝聚 1 滴；催熟直得 2 枚最高阶灵丹（必出 1 枚✦丹纹极品）并祛除 15 点丹毒</span>" +
-								"</div>" +
-								"<a href=\"#!\" class=\"xxAlcDewBtn" + (dewCnt <= 0 ? " disabled" : "") + "\" data-alc-act=\"dew\">✦ 绿液催丹 (直成2丹+丹纹)</a>" +
-							"</div>"
-							: "<div class=\"xxAlcDewRow locked\"><span>🧪 掌天瓶造化绿液：踏入炼气三层触发【神秘小瓶】仙缘后开启岁首凝露催丹</span></div>";
+						var statusRightHtml = "";
+						if (toxInfo.val > 0){
+							statusRightHtml += "<a href=\"#!\" class=\"xxToxPurgeBtn\" data-alc-act=\"purge\">💧 运功逼毒</a>";
+						}
+						if (dewShow){
+							statusRightHtml += "<a href=\"#!\" class=\"xxAlcDewBtn" + (dewCnt <= 0 ? " disabled" : "") + "\" data-alc-act=\"dew\">🧪 绿液催丹 (" + dewCnt + "/5)</a>";
+						}
 
-						var buffCardHtml =
-							"<div class=\"xxAlcMeterCard xxBuffCard\">" +
-								"<div class=\"xxAlcMeterHd\">" +
-									"<span class=\"xxAlcMeterTitle\">🔥 周天药力运转 & 掌天瓶催丹台</span>" +
-									"<span class=\"xxAlcFireHint\">当前炉火：" + cult.getCauldronFire().label + "</span>" +
-								"</div>" +
-								"<div class=\"xxAlcBuffRow\">" + buffListHtml + "</div>" +
-								dewBlockHtml +
+						var topBarHtml =
+							"<div class=\"xxAlcTopRow\">" +
+								"<div class=\"xxAlcBuffRow\">" + statusLeftHtml + "</div>" +
+								(statusRightHtml ? "<div class=\"xxFireBar\">" + statusRightHtml + "</div>" : "") +
 							"</div>";
 
-						var noteBarHtml = cult.lastAlchemyNote
-							? "<div class=\"xxAlcNoteBar\"><span>✦ 丹鼎纪要：</span>" + cult.lastAlchemyNote + "</div>"
-							: "";
-
-						//3. 六大丹方符箓卡网格
 						var cardsHtml = "<div class=\"xxAlcRecipeGrid\">";
 						for (var ci = 0; ci < cult.pills.length; ci++){
 							var pill = cult.pills[ci];
@@ -4908,49 +4840,27 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 							var supVal = (cult.supremePills && cult.supremePills[pill.name]) || 0;
 							var prices = cult.getPillCraftPrices(pill.name);
 							var canCraft = cult.canAffordPill(pill.name);
-							var rEff = Math.round(cult.getPillRealmEfficacy(pill.name) * 100);
 
-							//判定当前是否可服用及原因提示
 							var canUse = pVal > 0;
-							var useSub = supVal > 0 ? "优先服✦丹纹" : "消耗库存×1";
 							if (pVal <= 0){
 								canUse = false;
-								useSub = "尚无成丹库存";
 							} else if (pill.name !== "qingxin" && pill.name !== "peiying" && toxInfo.blocked){
 								canUse = false;
-								useSub = "丹毒攻心禁服";
 							} else if (pill.name === "zhujidan" && cult.breakMult >= 0.5){
 								canUse = false;
-								useSub = "破境药力已满";
 							} else if (pill.name === "juqi" && cult.buffs.juqi > 0){
 								canUse = false;
-								useSub = "周天药力运转中";
 							} else if (pill.name === "jiangchen" && cult.breakMult >= 0.65 && cult.buffs.jiangchen > 0){
 								canUse = false;
-								useSub = "药力已达顶峰";
 							} else if (pill.name === "biyan" && cult.buffs.biyan > 0){
 								canUse = false;
-								useSub = "灵火药力运转中";
 							} else if (pill.name === "qingxin" && cult.heartDemon <= 0 && (cult.pillToxicity || 0) <= 0){
 								canUse = false;
-								useSub = "心魔丹毒皆净";
 							} else if (pill.name === "peiying" && cult.heartDemon <= 0 && cult.getBreakSurge() <= 1 && (cult.pillToxicity || 0) <= 0){
 								canUse = false;
-								useSub = "道基平稳无需服";
 							}
 
-							var toxBadgeHtml = "";
-							if (pill.toxicity > 0){
-								var effTox = Math.round(pill.toxicity * (cult.cauldronFire === "gentle" ? 0.70 : 1.0));
-								toxBadgeHtml = "<span class=\"xxPillTag tox-add\">丹毒 +" + effTox + "</span>";
-							} else if (pill.toxicity < 0){
-								toxBadgeHtml = "<span class=\"xxPillTag tox-purge\">✦ 祛除丹毒 " + Math.abs(pill.toxicity) + "</span>";
-							}
-							var effBadgeHtml = (rEff < 100)
-								? "<span class=\"xxPillTag eff-warn\" title=\"当前境界较高，低阶凡丹受抗药性影响药效衰减；炼出✦丹纹灵丹可无视衰减\">境界药效 " + rEff + "%</span>"
-								: "<span class=\"xxPillTag eff-ok\">药效圆满 100%</span>";
-
-							var costHtml = "<div class=\"xxPillCosts\"><span class=\"xxPillCostLbl\">丹方药引：</span>";
+							var costHtml = "<div class=\"xxPillCosts\">";
 							for (var pri = 0; pri < prices.length; pri++){
 								var pr = prices[pri];
 								var rObj = this.game.resPool.get(pr.name);
@@ -4965,38 +4875,24 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 								"<div class=\"xxPillCard " + (pill.toxicity < 0 ? "cleansing" : "offensive") + "\">" +
 									"<div class=\"xxPillCardHd\">" +
 										"<div class=\"xxPillTitleWrap\">" +
-											"<span class=\"xxPillTierTag\">" + (pill.tier || "灵丹") + "</span>" +
 											"<span class=\"xxPillName\">" + pill.label + "</span>" +
 										"</div>" +
 										"<div class=\"xxPillStockWrap\">" +
-											"<span class=\"xxPillStock" + (pVal > 0 ? " has" : "") + "\">库存 ×<b>" + pVal + "</b></span>" +
-											(supVal > 0 ? "<span class=\"xxPillSupStock\">✦丹纹 ×<b>" + supVal + "</b></span>" : "") +
+											"<span class=\"xxPillStock" + (pVal > 0 ? " has" : "") + "\">×<b>" + pVal + "</b></span>" +
+											(supVal > 0 ? "<span class=\"xxPillSupStock\">✦×<b>" + supVal + "</b></span>" : "") +
 										"</div>" +
-									"</div>" +
-									"<div class=\"xxPillTagRow\">" +
-										"<span class=\"xxPillTag role\">" + (pill.role || "辅修") + "</span>" +
-										toxBadgeHtml +
-										effBadgeHtml +
 									"</div>" +
 									"<div class=\"xxPillDesc\">" + (pill.effectSummary || pill.description) + "</div>" +
 									costHtml +
 									"<div class=\"xxPillBtnRow\">" +
-										"<a href=\"#!\" class=\"xxAlcBtn craft" + (canCraft ? "" : " disabled") + "\" data-alc-craft=\"" + pill.name + "\">" +
-											"<b>🔥 开炉炼制</b><span>" + (cult.cauldronFire === "fierce" ? "武火·可出双丹" : (cult.cauldronFire === "azure" ? "乾蓝·可出丹纹" : "文火·温养祛毒")) + "</span>" +
-										"</a>" +
-										"<a href=\"#!\" class=\"xxAlcBtn use" + (canUse ? "" : " disabled") + "\" data-alc-use=\"" + pill.name + "\">" +
-											"<b>💊 服用灵丹</b><span>" + useSub + "</span>" +
-										"</a>" +
+										"<a href=\"#!\" class=\"xxAlcBtn craft" + (canCraft ? "" : " disabled") + "\" data-alc-craft=\"" + pill.name + "\"><b>炼制</b></a>" +
+										"<a href=\"#!\" class=\"xxAlcBtn use" + (canUse ? "" : " disabled") + "\" data-alc-use=\"" + pill.name + "\"><b>服用</b></a>" +
 									"</div>" +
 								"</div>";
 						}
 						cardsHtml += "</div>";
 
-						this.alchemyPanel.innerHTML =
-							alcHeadHtml +
-							"<div class=\"xxAlcStatusRow\">" + toxHtml + buffCardHtml + "</div>" +
-							noteBarHtml +
-							cardsHtml;
+						this.alchemyPanel.innerHTML = topBarHtml + cardsHtml;
 					}
 				}
 			}
@@ -5082,7 +4978,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			dojo.toggleClass(this.actionRow, "xxActionRow4", riftOpen);
 		}
 
-		//玄天秘境主控台——三大破阵姿态 + 秘境探幽三重奇遇 + 上古大秘境虚天破界塔 + 六枚玄天古印
+		//玄天秘境面板——左栏【秘境探幽】+ 右栏【上古秘境】精简双栏
 		if (this.riftPanel){
 			this.riftPanel.style.display = riftOpen ? "" : "none";
 			if (riftOpen){
@@ -5094,7 +4990,6 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				var deckSig = [
 					F,
 					cult.riftKeys,
-					cult.riftStance,
 					Math.round(cp),
 					Math.round(pw),
 					burstBlocked ? 1 : 0,
@@ -5104,53 +4999,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				if (this._riftDeckSig !== deckSig){
 					this._riftDeckSig = deckSig;
 
-					//1. 顶栏: 秘境古界名称 + 秘境令库存 + 三大破阵姿态切换胶囊
-					var stanceHtml = "<div class=\"xxStanceBar\"><span class=\"xxStanceLbl\">破阵姿态</span>";
-					for (var sti = 0; sti < cult.RIFT_STANCES.length; sti++){
-						var st = cult.RIFT_STANCES[sti];
-						var stOn = (cult.riftStance === st.key);
-						var isCounter = (st.key === gInfo.affix.counter);
-						stanceHtml += "<a href=\"#!\" class=\"xxStanceChip" + (stOn ? " active" : "") + (isCounter ? " counter" : "") +
-							"\" data-stance=\"" + st.key + "\" title=\"" + st.desc + "\">" +
-							"<span class=\"xxStanceName\">" + st.label + "</span>" +
-							"<span class=\"xxStanceTag\">" + (isCounter ? "✦克制词缀" : st.tag) + "</span></a>";
-					}
-					stanceHtml += "</div>";
-
-					this.riftHead.innerHTML =
-						"<div class=\"xxRiftTopRow\">" +
-							"<div class=\"xxRiftTitleBlock\">" +
-								"<span class=\"xxRiftSealBadge\">秘</span>" +
-								"<div>" +
-									"<div class=\"xxRiftMainTitle\">玄天秘境 · 探幽与破界罗盘</div>" +
-									"<div class=\"xxRiftSubTitle\">当前古界：" + gInfo.zoneName + " · 已破第 <b>" + F + "</b> 层 · 秘境令 <b>×" + cult.riftKeys + "</b></div>" +
-								"</div>" +
-							"</div>" +
-							stanceHtml +
-						"</div>";
-
-					//2. 左栏: 【秘境探幽 · 三重连环奇遇】
 					var expStep = (exp && exp.step) ? exp.step : 0;
 					var expActive = !!(exp && exp.active);
-					var mapLabels = ["① 禁地入口", "② 第一重奇遇", "③ 第二重奇遇", "④ 核心古宝匣"];
-					if (exp && exp.nodes && exp.nodes.length >= 3){
-						var r1Obj = cult.EXPEDITION_ROOMS[exp.nodes[0]];
-						var r2Obj = cult.EXPEDITION_ROOMS[exp.nodes[1]];
-						if (r1Obj){ mapLabels[1] = "② " + r1Obj.title; }
-						if (r2Obj){ mapLabels[2] = "③ " + r2Obj.title; }
-					}
-					var mapHtml = "<div class=\"xxExpMap\">";
-					for (var mi = 0; mi < 4; mi++){
-						var mState = "locked";
-						if (mi === 0){ mState = exp ? "done" : "active"; }
-						else if (exp){
-							if (!exp.active || expStep > mi){ mState = "done"; }
-							else if (expStep === mi){ mState = "active"; }
-						}
-						mapHtml += "<div class=\"xxExpNode " + mState + "\"><i class=\"xxExpDot\"></i><span>" + mapLabels[mi] + "</span></div>";
-					}
-					mapHtml += "</div>";
-
 					var expBodyHtml = "";
 					if (expActive){
 						var curRoomKey = (exp.nodes && exp.nodes[expStep - 1]) || "herb";
@@ -5158,7 +5008,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						expBodyHtml =
 							"<div class=\"xxExpEncounter\">" +
 								"<div class=\"xxExpEncHd\">" +
-									"<span class=\"xxExpStepBadge\">第 " + expStep + " / 3 重 · " + room.badge + "</span>" +
+									"<span class=\"xxExpStepBadge\">第 " + expStep + " / 3 重</span>" +
 									"<span class=\"xxExpRoomTitle\">" + room.title + "</span>" +
 								"</div>" +
 								"<div class=\"xxExpRoomDesc\">" + room.desc + "</div>" +
@@ -5171,69 +5021,52 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 									"</a>" +
 								"</div>" +
 								"<div class=\"xxExpFooterBar\">" +
-									"<span class=\"xxExpBag\">储物袋累计：修为 +" + fmt(exp.loot.xiuwei, false, false, 0) +
+									"<span class=\"xxExpBag\">收获：修为 +" + fmt(exp.loot.xiuwei, false, false, 0) +
 										(exp.loot.keys ? " · 秘境令 +" + exp.loot.keys : "") +
 										(exp.loot.relic ? " · 遗宝 +" + exp.loot.relic : "") + "</span>" +
-									"<a href=\"#!\" class=\"xxExpExtractBtn\" data-exp-act=\"extract\">见好就收·携宝遁出 (修为加成 / 心魔-4)</a>" +
+									"<a href=\"#!\" class=\"xxExpExtractBtn\" data-exp-act=\"extract\">见好就收</a>" +
 								"</div>" +
 							"</div>";
 					} else {
 						var lastLootStr = exp && exp.loot
-							? "上轮探幽收获：修为 +" + fmt(exp.loot.xiuwei, false, false, 0) +
+							? "上轮收获：修为 +" + fmt(exp.loot.xiuwei, false, false, 0) +
 								(exp.loot.keys ? " · 秘境令 +" + exp.loot.keys : "") +
 								(exp.loot.relic ? " · 上古遗宝 +" + exp.loot.relic : "")
-							: "踏入外围禁地可历经三重奇遇抉择，搜寻【秘境令】、千年灵药与上古遗宝。";
+							: "探索秘境禁地，搜寻秘境令、灵草与上古遗宝。";
 						expBodyHtml =
 							"<div class=\"xxExpIdle\">" +
 								"<div class=\"xxExpIdleNote\">" + (exp && exp.lastNote ? exp.lastNote : lastLootStr) + "</div>" +
-								"<div class=\"xxExpIdleSub\">" + lastLootStr + "</div>" +
 								"<a href=\"#!\" class=\"xxRiftMainBtn" + (burstBlocked ? " disabled" : "") + "\" data-exp-act=\"start\">" +
-									(burstBlocked ? "气脉调息中 · 稍候入境" : "✦ 踏入秘境 · 开启三重探幽") +
+									(burstBlocked ? "气脉调息中" : "✦ 踏入秘境") +
 								"</a>" +
 							"</div>";
 					}
 
-					//3. 右栏: 【上古大秘境 · 虚天破界塔】
 					var winPct = Math.round(gInfo.chance * 100);
 					var vsRatio = Math.max(8, Math.min(92, Math.round((cp / (cp + pw)) * 100)));
-					var counterStanceObj = cult.RIFT_STANCES[0];
-					for (var csi = 0; csi < cult.RIFT_STANCES.length; csi++){
-						if (cult.RIFT_STANCES[csi].key === gInfo.affix.counter){
-							counterStanceObj = cult.RIFT_STANCES[csi];
-							break;
-						}
-					}
-					var counterBadge = gInfo.countered
-						? "<span class=\"xxAffixCounter ok\">✦ 已由【" + gInfo.stance.label + "】破除此法则（胜算+12% · 奖励+25%）</span>"
-						: "<a href=\"#!\" class=\"xxAffixCounter warn\" data-stance=\"" + counterStanceObj.key + "\">▸ 点击切换【" + counterStanceObj.label + "】可克制此法则 (+12%胜算)</a>";
-
 					var griftHtml =
 						"<div class=\"xxGriftCard\">" +
 							"<div class=\"xxGriftBossHd\">" +
 								"<div>" +
-									"<span class=\"xxGriftFloorTag\">第 " + (F + 1) + " 层镇守</span>" +
+									"<span class=\"xxGriftFloorTag\">第 " + (F + 1) + " 层</span>" +
 									"<span class=\"xxGriftBossName\">" + gInfo.bossName + "</span>" +
 								"</div>" +
-								"<span class=\"xxGriftOddsBadge " + (winPct >= 75 ? "hi" : (winPct >= 45 ? "mid" : "lo")) + "\">破阵胜算 " + winPct + "%</span>" +
-							"</div>" +
-							"<div class=\"xxAffixBox\">" +
-								"<div class=\"xxAffixLine\"><span class=\"xxAffixTag\">天地法则 · " + gInfo.affix.label + "</span>" + counterBadge + "</div>" +
-								"<div class=\"xxAffixDesc\">" + gInfo.affix.desc + "</div>" +
+								"<span class=\"xxGriftOddsBadge " + (winPct >= 75 ? "hi" : (winPct >= 45 ? "mid" : "lo")) + "\">胜率 " + winPct + "%</span>" +
 							"</div>" +
 							"<div class=\"xxVsBox\">" +
 								"<div class=\"xxVsLabels\">" +
-									"<span class=\"xxVsMine\">吾道战力 <b>" + fmt(cp, false, false, 0) + "</b></span>" +
-									"<span class=\"xxVsNeed\">守关威压 <b>" + fmt(pw, false, false, 0) + "</b></span>" +
+									"<span class=\"xxVsMine\">战力 <b>" + fmt(cp, false, false, 0) + "</b></span>" +
+									"<span class=\"xxVsNeed\">守关 <b>" + fmt(pw, false, false, 0) + "</b></span>" +
 								"</div>" +
 								"<div class=\"xxVsBar\"><i style=\"width:" + vsRatio + "%\"></i></div>" +
 							"</div>" +
 							"<div class=\"xxGriftBtnRow\">" +
 								"<a href=\"#!\" class=\"xxRiftMainBtn grift" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-grift-act=\"challenge\">" +
-									"⚔ 破阵闯关 · 第 " + (F + 1) + " 层 <span>(耗1枚秘境令)</span>" +
+									"⚔ 闯关第 " + (F + 1) + " 层 <span>(秘境令×1)</span>" +
 								"</a>" +
 								(F >= 1 ? (
-									"<a href=\"#!\" class=\"xxRiftSubBtn" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-grift-act=\"sweep\" title=\"100%必胜稳刷第 " + F + " 层，无心魔风险，获取修为、上古遗宝与法宝掉落\">" +
-										"☯ 清剿旧境 · 第 " + F + " 层 <span>(100%稳刷遗宝/法宝)</span>" +
+									"<a href=\"#!\" class=\"xxRiftSubBtn" + ((burstBlocked || cult.riftKeys <= 0) ? " disabled" : "") + "\" data-grift-act=\"sweep\">" +
+										"☯ 扫荡第 " + F + " 层 <span>(100%稳刷)</span>" +
 									"</a>"
 								) : "") +
 							"</div>" +
@@ -5241,55 +5074,21 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 
 					this.riftDeck.innerHTML =
 						"<div class=\"xxRiftCol xxExpCol\">" +
-							"<div class=\"xxRiftColTitle\"><span>秘境探幽 · 连环奇遇</span><small>三重抉择 · 搜寻秘境令与仙草</small></div>" +
-							mapHtml + expBodyHtml +
+							"<div class=\"xxRiftColTitle\"><span>灵脉秘境 · 探幽</span><small>三重奇遇</small></div>" +
+							expBodyHtml +
 						"</div>" +
 						"<div class=\"xxRiftCol xxGriftCol\">" +
-							"<div class=\"xxRiftColTitle\"><span>虚天破界 · 上古大秘境</span><small>法则破阵 · 夺取上古遗宝与本命法宝</small></div>" +
+							"<div class=\"xxRiftColTitle\"><span>上古秘境 · " + gInfo.zoneName + "</span><small>秘境令 ×<b>" + cult.riftKeys + "</b></small></div>" +
 							griftHtml +
 						"</div>";
-
-					//4. 天梯层数条 + 六枚玄天古印
-					var lo = Math.max(1, F - 8), lhtml = "<span class=\"xxLadderLbl\">破界天梯</span>";
-					for (var f = lo; f <= F + 3; f++){
-						var cls = f <= F ? "lit" : (f === F + 1 ? "next" : "future");
-						lhtml += "<span class=\"xxFloor " + cls + "\" title=\"" +
-							String($I("cultivation.rift.floor.tip", [f])).replace(/"/g, "&quot;") + "\">" + f + "</span>";
-					}
-					this.riftLadder.innerHTML = lhtml;
-
-					var sealHtml = "<span class=\"xxLadderLbl\">玄天古印</span>";
-					for (var si2 = 0; si2 < cult.RIFT_SEALS.length; si2++){
-						var sealObj = cult.RIFT_SEALS[si2];
-						var sealLit = (F >= sealObj.floor);
-						sealHtml += "<span class=\"xxSealBadge " + (sealLit ? "lit" : "locked") + "\" title=\"通关上古秘境第 " + sealObj.floor + " 层激活：" + sealObj.desc + "\">" +
-							"<i>" + (sealLit ? "✦" : "○") + "</i>" + sealObj.floor + "层·" + sealObj.label + " <small>(" + sealObj.desc + ")</small></span>";
-					}
-					this.riftSealsEl.innerHTML = sealHtml;
 				}
-
-				//保持旧字段兼容测试
-				var powerHtml = $I("cultivation.rift.power", [fmt(pw, false, false, 0), fmt(cp, false, false, 0)]);
-				if (this.riftPower.innerHTML !== powerHtml){ this.riftPower.innerHTML = powerHtml; }
-				dojo.toggleClass(this.riftPower, "xxPowerLow", cp < pw);
-				var keysHtml = $I("cultivation.rift.keys", [cult.riftKeys]);
-				if (this.riftKeysEl.innerHTML !== keysHtml){ this.riftKeysEl.innerHTML = keysHtml; }
 
 				var last = cult.lastAction;
 				this.riftResult.style.display = last ? "" : "none";
 				if (last && this._resultSeq !== last.seq){
 					this._resultSeq = last.seq;
 					this.riftResult.className = "xxRiftResult " + last.cls;
-					var resHtml = "<div class=\"xxRiftResSummary\">" + last.text + "</div>";
-					var rep = cult.lastBattleReport;
-					if (rep && rep.seq === last.seq && rep.rounds && rep.rounds.length){
-						resHtml += "<div class=\"xxBattleReport\">";
-						for (var ri = 0; ri < rep.rounds.length; ri++){
-							resHtml += "<div class=\"xxBattleRound\">" + rep.rounds[ri] + "</div>";
-						}
-						resHtml += "</div>";
-					}
-					this.riftResult.innerHTML = resHtml;
+					this.riftResult.innerHTML = "<div class=\"xxRiftResSummary\">" + last.text + "</div>";
 				}
 			}
 		}
