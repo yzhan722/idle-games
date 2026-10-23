@@ -1577,6 +1577,36 @@ test("Turn-Based Combat System: Lesser Rift 3-wave gauntlet, Greater Rift Boss b
     expect(cult.battle.active).toBe(false);
     expect(cult.battle.result).toBe("win");
     expect(cult.riftFloor).toBe(floorBefore + 1);
+
+    // 7. Visual Sprites (combatPlayerSVG, combatMonsterSVG for all 11 monsters/bosses, combatVfxSVG) & Melvor/MilkyWay smooth auto-flow
+    const art = classes.ui.XianxiaArt;
+    expect(art.combatPlayerSVG("zhuji", true, true)).toContain("xx-combat-avatar-svg player");
+    const allMonsterKeys = [
+        "viper", "puppet", "wraith", "mantis", "frostwyrm", "bloodcult",
+        "mojiaowang", "jinjia", "yinlang", "gumo", "zhenxian"
+    ];
+    for (const mk of allMonsterKeys) {
+        const mSvg = art.combatMonsterSVG(mk, true, true);
+        expect(mSvg).toContain("xx-combat-avatar-svg enemy " + mk);
+        expect(mSvg).toContain("xx-svg-monster-body");
+    }
+    expect(art.combatVfxSVG("strike")).toContain("xx-vfx-svg");
+    expect(art.combatVfxSVG("skill")).toContain("xx-vfx-svg");
+    expect(art.combatVfxSVG("guard")).toContain("xx-vfx-svg");
+    expect(art.combatVfxSVG("ult")).toContain("xx-vfx-svg");
+
+    // Verify smooth auto-flow castTick progression across game.cultivation.update()
+    cult.actionCd = 0;
+    expect(cult.rift()).toBe(true);
+    expect(cult.battle.autoFlow).toBe(true);
+    expect(cult.battle.castTick).toBe(0);
+    const turnBefore = cult.battle.turn;
+    for (let t = 0; t < cult.battle.castMax; t++) {
+        cult.update();
+    }
+    expect(cult.battle.turn).toBeGreaterThan(turnBefore);
+    expect(cult.battle.animSeq).toBeGreaterThan(0);
+    expect(cult.battle.lastEvent).toBeTruthy();
 });
 
 
