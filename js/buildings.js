@@ -3393,7 +3393,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.BuildingsModern", com.nuclearunicor
 		dojo.empty(groupContainer);
 		this.children = [];
 
-		this.twoRows = (this.activeGroup == "all" || this.activeGroup == "iw");
+		this.twoRows = true;
 		this.initRenderer(groupContainer);
 
 		var isAggregate = this.isAggregateGroup();
