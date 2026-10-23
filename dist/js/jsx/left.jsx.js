@@ -125,6 +125,8 @@ WResourceRow = React.createClass({
             (capPct >= 95 ? " full" : (capPct >= 75 ? " high" : "")) : null;
         var resIcoSvg = (typeof classes != "undefined" && classes.ui && classes.ui.XianxiaArt)
             ? classes.ui.XianxiaArt.resIcon(res.name) : "";
+        var realmInfo = (game.cultivation && game.cultivation.getResourceRealmInfo)
+            ? game.cultivation.getResourceRealmInfo(res.name) : null;
 
         // Inline contextual actions:
         // 1) wood (灵木): compact single-pill inline refine from catnip so row never overflows
@@ -178,12 +180,16 @@ WResourceRow = React.createClass({
                     className:"resource-name",
                     style:resNameCss,
                     onClick: this.onClickName,
-                    title: (res.title || res.name) + " " + resPercent + " " + perTickVal,
+                    title: (res.title || res.name) + (realmInfo ? "（" + realmInfo.title + "唯一核心灵材）" : "") + " " + resPercent + " " + perTickVal,
                     userFocus:"normal",
                     tabIndex: 0,
                 },
                     res.title || res.name
                 ),
+                realmInfo != null && $r("span", {
+                    className: "xx-res-realm-tag",
+                    title: realmInfo.title + "唯一核心灵材：" + realmInfo.desc
+                }, realmInfo.badge),
                 weatherModValue != null && $r("span", {
                     className:"res-weather" + (weatherModCss ? " " + weatherModCss : "")
                 }, weatherModValue),
@@ -250,6 +256,12 @@ WResourceRow = React.createClass({
         var hasVisibility = res.unlocked;
         if (!hasVisibility || (!this.getIsVisible(res) && !props.isEditMode)){
             return false;
+        }
+        // 一境一核心灵材精简模式: 默认只展示修为、灵谷与各境界唯一核心灵材(悬停需求或开启全显时才展开辅佐资源)
+        if (!game.resPool.showAllResources && !props.showHiddenResources && !props.isRequired && !props.isEditMode){
+            if (game.cultivation && game.cultivation.isCoreRealmResource && !game.cultivation.isCoreRealmResource(res.name)){
+                return false;
+            }
         }
         return true;
     },
@@ -542,6 +554,11 @@ WCraftRow = React.createClass({
         if (!recipe){
             return false;
         }
+        if (game.cultivation && game.cultivation.isItemRealmUnlocked && !game.resPool.showAllResources && !props.isEditMode && !(res.value > 0)){
+            if (!game.cultivation.isItemRealmUnlocked("craft", res.name)){
+                return false;
+            }
+        }
         var hasVisibility = Boolean((recipe && recipe.unlocked) || res.unlocked || (res.value > 0));
         if (!hasVisibility || (!this.getIsVisible(res) && !props.isEditMode)){
             return false;
@@ -625,8 +642,13 @@ WResourceTable = React.createClass({
             if (!res.unlocked || (res.isHidden && !this.state.isEditMode)) {
                 continue;
             }
-            var targetCat = catMap[res.category] || catMap.treasure;
             var isRequired = (this.props.reqRes.indexOf(res.name) >= 0);
+            if (!game.resPool.showAllResources && !game.resPool.showHiddenResources && !isRequired && !this.state.isEditMode) {
+                if (game.cultivation && game.cultivation.isCoreRealmResource && !game.cultivation.isCoreRealmResource(res.name)) {
+                    continue;
+                }
+            }
+            var targetCat = catMap[res.category] || catMap.treasure;
             targetCat.rows.push(
                 $r(WResourceRow, {
                     key: res.name,
@@ -670,6 +692,12 @@ WResourceTable = React.createClass({
                     $r("span", {className: "xx-res-sec-caret"}, this.state.isCollapsed ? "▸" : "▾")
                 ]),
                 $r("div", {className:"res-toolbar right"}, [
+                    $r("a", {
+                        className: "link xx-core-res-toggle" + (!game.resPool.showAllResources ? " toggled" : ""),
+                        onClick: this.toggleCoreResources,
+                        title: "切换【一境一核心灵材】精简视图与全部辅佐灵材视图",
+                        tabIndex: 0
+                    }, game.resPool.showAllResources ? "全显" : "一境一核"),
                     $r("a", {
                         className: "link" + (this.state.isEditMode ? " toggled" : ""), 
                         onClick: this.toggleEdit,
@@ -715,6 +743,12 @@ WResourceTable = React.createClass({
 
     toggleHiddenResources: function(e){
         game.resPool.showHiddenResources = e.target.checked;
+        this.forceUpdate();
+    },
+
+    toggleCoreResources: function(e){
+        if (e && e.preventDefault){ e.preventDefault(); e.stopPropagation(); }
+        game.resPool.showAllResources = !game.resPool.showAllResources;
         this.forceUpdate();
     }
 });

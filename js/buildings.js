@@ -1008,6 +1008,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"ironPerTickAutoprod": 0,
 			"coalPerTickAutoprod": 0,
 			"goldPerTickAutoprod": 0,
+			"goldMax": 250,
 			"cathPollutionPerTickProd": 0.15
 		},
 		effectsCalculated: {},
@@ -1016,12 +1017,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			var smelterRatio = (1 + game.getEffect("smelterRatio"));
 			self.effects["ironPerTickAutoprod"] = 0.03 * smelterRatio;
 			self.effects["coalPerTickAutoprod"] = game.science.get("steel").researched ? 0.015 * smelterRatio : 0;
-
-			if (game.workshop.get("goldOre").researched){
-				self.effects["goldPerTickAutoprod"] = 0.008 * smelterRatio;
-			} else {
-				self.effects["goldPerTickAutoprod"] = 0;
-			}
+			//一境一核联动: 结丹期核心灵筑【地火炼器室】直接凝练并储藏【金精(gold)】
+			self.effects["goldPerTickAutoprod"] = (game.workshop.get("goldOre").researched ? 0.016 : 0.008) * smelterRatio;
+			self.effects["goldMax"] = 250 * (1 + game.getEffect("warehouseRatio"));
 
 			self.effects["woodPerTickCon"] = -0.05;
 			self.effects["mineralsPerTickCon"] = -0.1;
@@ -1448,11 +1446,15 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"uraniumPerTick" : -0.001,
 			"productionRatio": 0.05,
 			"uraniumMax" : 2500,
+			"unobtainiumPerTickBase": 0.05,
+			"unobtainiumMax": 500,
 			"energyProduction" : 10
 		},
 		isAutomationEnabled: null,
 		calculateEffects: function(self, game) {
 			self.effects["uraniumPerTick"] = -0.001 * (1 - game.getEffect("uraniumRatio"));
+			self.effects["unobtainiumPerTickBase"] = 0.05;
+			self.effects["unobtainiumMax"] = 500;
 			if (game.workshop.get("thoriumReactors").researched) {
 				self.description = $I("buildings.reactor.desc") + "<br>" + $I("buildings.reactor.desc.automation");
 				if (self.isAutomationEnabled == null ) {
@@ -1464,7 +1466,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			}
 		},
 		action: function(self, game) {
-			if (game.resPool.get("uranium").value + self.effects["uraniumPerTick"] <= 0) {
+			if (game.resPool.get("uranium").value > 0 && game.resPool.get("uranium").value + self.effects["uraniumPerTick"] <= 0) {
 				self.on = 0;
 			}
 
@@ -1487,6 +1489,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"titaniumPerTickCon" : -0.015,
 			"uraniumPerTickAutoprod" : 0.0025,
+			"relicPerTickBase": 0.02,
 			"catnipMax": 0,
 			"woodMax": 0,
 			"mineralsMax": 0,
@@ -1499,6 +1502,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		},
 		calculateEffects: function(self, game){
 			self.effects["energyConsumption"] = 2;
+			self.effects["relicPerTickBase"] = 0.02;
 
 			self.effects["scienceMax"] = 0;
 			if (game.workshop.get("lhc").researched){
@@ -1903,6 +1907,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		effects: {
 			"temporalParadoxChance": 0.01, //1% chance of Temporal Paradox each season
 			"resStasisRatio": 0.015, //1.5% of resources will be preserved
+			"timeCrystalPerTickBase": 0.015,
 			"temporalFluxProduction" : 0,
 			"energyConsumption" : 0
 		},
@@ -1912,6 +1917,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		},
 		calculateEffects: function(self, game) {
 			self.effects["energyConsumption"] = 20;
+			self.effects["timeCrystalPerTickBase"] = 0.015;
 			self.effects["temporalFluxProduction"] = game.getEffect("temporalFluxProductionChronosphere");
 		}
 	},{
@@ -3042,7 +3048,49 @@ dojo.declare("classes.ui.btn.BuildingBtnModernController", com.nuclearunicorn.ga
 		if (meta.almostLimited){
 			name = "* " + name + " *";
 		}
+		if (this.game && this.game.cultivation && meta && meta.name){
+			var cult = this.game.cultivation;
+			var gate = cult.getItemRealmGate("building", meta.name);
+			if (gate){
+				var unlockedByRealm = cult.isItemRealmUnlocked("building", meta.name);
+				if (!unlockedByRealm){
+					name += " <span class=\"xxRealmGateBadge locked\">🔒 需突破【" + gate.title + "】</span>";
+				} else {
+					name += " <span class=\"xxRealmGateBadge ok\">【" + gate.shortTitle + "境·" + gate.resTitle + "】</span>";
+				}
+			}
+		}
 		return name;
+	},
+
+	updateEnabled: function(model){
+		this.inherited(arguments);
+		if (this.game && this.game.cultivation && !this.game.devMode && model && model.metadata && model.metadata.name){
+			if (!this.game.cultivation.isItemRealmUnlocked("building", model.metadata.name)){
+				model.enabled = false;
+			}
+		}
+	},
+
+	updateVisible: function(model){
+		this.inherited(arguments);
+		if (this.game && this.game.cultivation && model && model.metadata && model.metadata.name){
+			var cult = this.game.cultivation;
+			var gate = cult.getItemRealmGate("building", model.metadata.name);
+			var curIdx = cult.getCurrentRealmIndex();
+			var val = model.metadata.val || 0;
+			if (!this.game.bld.showAuxBuildings && !gate.isCore && val <= 0){
+				model.visible = false;
+				return;
+			}
+			if (gate.realmIdx > curIdx + 1 && val <= 0){
+				model.visible = false;
+				return;
+			}
+			if (gate.realmIdx === curIdx + 1 && gate.isCore){
+				model.visible = true;
+			}
+		}
 	},
 
 	getPrices: function(model){
@@ -3317,10 +3365,36 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.BuildingsModern", com.nuclearunicor
 
 	render: function(content){
 		this.bldGroups = [];
+		var self = this;
+
+		if (this.game && this.game.cultivation){
+			this.synergyNode = dojo.create("div", {
+				className: "xxSynergyMount",
+				innerHTML: this.game.cultivation.renderRealmSynergyBanner("Bonfire")
+			}, content);
+			this._synHtml = this.synergyNode.innerHTML;
+		}
 
 		var topContainer = dojo.create("div", {
 			className: "bldTopContainer"
 		}, content);
+
+		if (this.game && this.game.bld){
+			var modeBar = dojo.create("div", {className: "xxBldModeBar"}, topContainer);
+			var isAux = !!this.game.bld.showAuxBuildings;
+			var toggleLink = dojo.create("a", {
+				href: "#!",
+				className: "xxBldModeToggle" + (isAux ? " all" : " core"),
+				innerHTML: isAux
+					? "🏛️ 当前：显示全部灵筑（点击切回【一境一核·17座核心灵筑】）"
+					: "✦ 当前：一境一核精简模式（仅示17座境界核心灵筑 · 点击展开辅佐建筑）"
+			}, modeBar);
+			dojo.connect(toggleLink, "onclick", this, function(e){
+				if (e && e.preventDefault){ e.preventDefault(); }
+				self.game.bld.showAuxBuildings = !self.game.bld.showAuxBuildings;
+				self.game.render();
+			});
+		}
 
 		var groups = this.game.bld.getBuildingGroups(true /*includeNonGroupFilters*/);
 
@@ -3382,6 +3456,17 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.BuildingsModern", com.nuclearunicor
 		this.renderActiveGroup(groupContainer);
 
 		this.update();
+	},
+
+	update: function(){
+		this.inherited(arguments);
+		if (this.synergyNode && this.game && this.game.cultivation){
+			var synHtml = this.game.cultivation.renderRealmSynergyBanner("Bonfire");
+			if (synHtml !== this._synHtml){
+				this._synHtml = synHtml;
+				this.synergyNode.innerHTML = synHtml;
+			}
+		}
 	},
 
 	isAggregateGroup: function(){
