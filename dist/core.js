@@ -1169,7 +1169,12 @@ dojo.declare("com.nuclearunicorn.game.ui.Button", com.nuclearunicorn.core.Contro
 
 		}, linkModel.handler));
 
-		dojo.place(link, this.getButtonContent());
+		var btnContent = this.getButtonContent();
+		if (this.costNode && this.costNode.parentNode === btnContent) {
+			dojo.place(link, this.costNode, "before");
+		} else {
+			dojo.place(link, btnContent);
+		}
 
 		if (tooltipHtmlProvider) {
 			UIUtils.attachTooltip(this.game, link, 0, 300, tooltipHtmlProvider);
@@ -1733,7 +1738,11 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 				if (fn){ fn(ev); }
 			});
 		}
-		if (this.affordNode || !prices || !prices.length){
+		if (this.affordNode){ return; }
+		if (!prices || !prices.length){
+			if (this.buttonContent && !this.costNode && !dojo.hasClass(this.domNode, "xxAction") && !dojo.hasClass(this.domNode, "xxFateBtn")){
+				this.costNode = dojo.create("div", { className: "xx-cost", innerHTML: "<span class=\"xx-ci ok\"><i>山间采撷 · 万法之源</i></span>" }, this.buttonContent);
+			}
 			return;
 		}
 		if (this.buttonContent && !this.costNode){
@@ -2662,14 +2671,11 @@ dojo.declare("com.nuclearunicorn.game.ui.ContentRowRenderer", null, {
 		this.content = content;
 
 		if (this.twoRows){
-			var table = dojo.create("table", {
-				cellpadding: "0",
-				cellspacing: "0",
-				style: { width: "100%"}
+			var grid = dojo.create("div", {
+				className: "xx-card-grid"
 			}, content);
-			var tr = dojo.create("tr", {}, table);
-			this.leftRow  = dojo.create("td", {style:{verticalAlign: "top"}}, tr);
-			this.rightRow = dojo.create("td", {style:{verticalAlign: "top"}}, tr);
+			this.leftRow  = grid;
+			this.rightRow = grid;
 		}
 	},
 

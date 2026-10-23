@@ -153,7 +153,7 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	width: 100%;
 	min-width: 0;
 	display: grid;
-	grid-template-columns: 308px minmax(460px, 1fr) 300px;
+	grid-template-columns: 332px minmax(460px, 1fr) 300px;
 	grid-template-rows: auto minmax(0, 1fr) auto;
 	grid-template-areas:
 		"res  nav   log"
@@ -356,6 +356,8 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	font-size: 12.5px;
 	font-weight: 500;
 	letter-spacing: .5px;
+	white-space: nowrap !important;
+	flex: 0 0 auto;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
@@ -736,16 +738,38 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 	height: auto;
 }
 
-/* Two-column tables across Bonfire, Science, Workshop, Religion, Village */
+/* Responsive aligned card grids & two-column tables across Bonfire, Science, Workshop, Religion, Village */
+.xx-card-grid,
+.tabInner table.table tr:last-child {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px 14px;
+	width: 100%;
+	max-width: 1120px;
+	align-items: stretch;
+	margin: 0;
+}
+.xx-card-grid > .btn.modern,
+.tabInner table.table tr:last-child > .btn.modern {
+	width: 100%;
+	max-width: none;
+	margin: 0;
+	height: 100%;
+}
+
 .tabInner table.table,
 .tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable),
 .bldGroupContainer > table,
 .panelContainer .container > table {
 	width: 100%;
-	max-width: 760px;
+	max-width: 1120px;
 	border-collapse: separate;
 	border-spacing: 10px 0;
 	margin: 0 -10px;
+}
+.tabInner table.table {
+	margin: 0;
+	border-spacing: 0;
 }
 .tabInner table.table td,
 .tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable) td,
@@ -887,9 +911,10 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 	border-radius: 10px;
 	padding: 0;
 	width: 100%;
-	max-width: 340px;
+	max-width: 440px;
 	box-sizing: border-box;
 	overflow: hidden;
+	text-align: left;
 	border-color: rgba(79, 209, 165, .30);
 	background: linear-gradient(180deg, rgba(30, 42, 58, .92), rgba(17, 25, 36, .94));
 }
@@ -910,8 +935,9 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 }
 
 .modern .btnContent {
-	padding: 9px 0 10px 13px;
+	padding: 9px 10px 10px 13px;
 	color: var(--xx-paper);
+	text-align: left;
 }
 .btn.bldEnabled.modern div.btnContent {
 	border-color: var(--xx-jade);
@@ -923,27 +949,32 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 }
 .btn.modern a {
 	color: var(--xx-jade);
-	background-color: rgba(79, 209, 165, .07);
-	border-left: 1px solid rgba(79, 209, 165, .24);
-	padding: 18px 8px 18px 8px !important;
-	margin: -9px 0 -22px 0;
-	min-width: 24px;
+	background-color: rgba(79, 209, 165, .10);
+	border: 1px solid rgba(79, 209, 165, .28);
+	border-radius: 5px;
+	padding: 2px 7px !important;
+	margin: 0 0 0 4px;
+	min-width: 20px;
+	font-size: 11.5px;
+	line-height: 1.35;
 	text-align: center;
 }
 .btn.modern a:hover {
-	background-color: rgba(212, 176, 106, .16);
+	background-color: rgba(212, 176, 106, .18);
+	border-color: var(--xx-gold);
 	color: var(--xx-gold-hi);
 }
 .btn.modern a.enabled { color: var(--xx-gold-hi); font-weight: bold; }
-.btnTitle { font-size: 13.5px; letter-spacing: .3px; }
+.btnTitle { font-size: 13.5px; font-weight: 500; letter-spacing: .3px; }
 
 /* Inline price subline inside .btn.modern */
 .xx-cost {
+	clear: both;
 	display: flex;
 	flex-wrap: wrap;
 	gap: 2px 10px;
-	margin-top: 3px;
-	padding-right: 8px;
+	margin-top: 4px;
+	padding-right: 4px;
 	font-size: 11px;
 	line-height: 1.25;
 	font-variant-numeric: tabular-nums;
@@ -2268,6 +2299,11 @@ input, select, textarea, button { font-family: inherit; }
 	.bldGroupContainer { padding-top: 8px; }
 
 	/* Single-column full-width tactile cards with inline costs & left-docked ? info button */
+	.xx-card-grid,
+	.tabInner table.table tr:last-child {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 6px;
+	}
 	.tabInner table.table,
 	.tabInner > table:not(.statTable):not(.jianghuTable):not(.craftTable),
 	.bldGroupContainer > table,
@@ -2699,8 +2735,8 @@ input, select, textarea, button { font-family: inherit; }
 .xxSceneBanner {
 	position: relative;
 	width: 100%;
-	max-width: 760px;
-	height: 86px;
+	max-width: 1120px;
+	height: 92px;
 	margin: 0 0 12px 0;
 	border-radius: 12px;
 	border: 1px solid rgba(212, 176, 106, .36);

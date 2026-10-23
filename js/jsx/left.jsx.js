@@ -127,27 +127,21 @@ WResourceRow = React.createClass({
             ? classes.ui.XianxiaArt.resIcon(res.name) : "";
 
         // Inline contextual actions:
-        // 1) wood (灵木): inline refine from catnip (灵草×100 -> 灵木×1) so wood never needs a duplicate row in CraftTable
+        // 1) wood (灵木): compact single-pill inline refine from catnip so row never overflows
         // 2) faith (愿力): inline praise button when faith >= 1
         var inlineActions = null;
         if (!game.isReadOnly()) {
             if (res.name == "wood") {
-                var catnipVal = game.resPool.get("catnip").value;
-                var canRefineWood = Math.floor(catnipVal / 100);
+                var canRefineWood = game.workshop.getCraftAllCount("wood");
                 if (canRefineWood >= 1) {
+                    var stepAmt = canRefineWood >= 4 ? Math.max(1, Math.floor(canRefineWood * 0.25)) : 1;
                     inlineActions = $r("span", {className: "xx-res-acts"}, [
                         $r("a", {
                             href: "#!",
                             className: "xx-res-act",
-                            onClick: this.refineWoodOne,
-                            title: "凝练灵木 (消耗100灵草)"
-                        }, "+1"),
-                        canRefineWood >= 5 ? $r("a", {
-                            href: "#!",
-                            className: "xx-res-act xx-res-act-all",
-                            onClick: this.refineWoodAll,
-                            title: "全部凝木 (消耗灵草凝练 " + canRefineWood + " 灵木)"
-                        }, "全") : null
+                            onClick: this.refineWoodQuick,
+                            title: "点击凝练 " + stepAmt + " 灵木 · Shift+点击全部凝练 (" + canRefineWood + ")"
+                        }, "凝木")
                     ]);
                 }
             } else if (res.name == "faith" && res.value >= 1) {
@@ -198,7 +192,7 @@ WResourceRow = React.createClass({
             $r("div", {className:"res-cell res-figure " + resAmtClassName, role: "gridcell"}, [
                 $r("span", {className:"res-val"}, game.getDisplayValueExt(res.value)),
                 res.maxValue ? $r("span", {className:"maxRes"},
-                    "/" + game.getDisplayValueExt(res.maxValue)) : null
+                    "/" + game.getDisplayValueExt(Math.floor(res.maxValue), false, false, res.maxValue >= 1000 ? 1 : 0)) : null
             ]),
             $r("div", {className:"res-cell resPerTick" + (perTick < 0 ? " neg" : (!perTickVal ? " idle" : "")), role: "gridcell"},
                 isTimeParadox ? "???" : (perTickVal || "—")),
@@ -208,14 +202,15 @@ WResourceRow = React.createClass({
         ]);
     },
 
-    refineWoodOne: function(e){
+    refineWoodQuick: function(e){
         if (e){ e.preventDefault(); e.stopPropagation(); }
-        game.craft("wood", 1);
-    },
-
-    refineWoodAll: function(e){
-        if (e){ e.preventDefault(); e.stopPropagation(); }
-        game.craftAll("wood");
+        if (e && e.shiftKey) {
+            game.craftAll("wood");
+            return;
+        }
+        var total = game.workshop.getCraftAllCount("wood");
+        var amt = total >= 4 ? Math.max(1, Math.floor(total * 0.25)) : 1;
+        game.craft("wood", amt);
     },
 
     praiseFaith: function(e){
@@ -244,6 +239,9 @@ WResourceRow = React.createClass({
 
         // Core workshop crafts always live in the dedicated 【百艺炼制】 section, never jumping tables
         if (res.category === "craft" || game.resPool.isNormalCraftableResource(res)){
+            return false;
+        }
+        if (res.name === "spice" && !props.showHiddenResources){
             return false;
         }
         if (!res.visible && !props.showHiddenResources){
@@ -544,7 +542,7 @@ WCraftRow = React.createClass({
         if (!recipe){
             return false;
         }
-        var hasVisibility = (res.unlocked && recipe.unlocked) || (res.value > 0);
+        var hasVisibility = Boolean((recipe && recipe.unlocked) || res.unlocked || (res.value > 0));
         if (!hasVisibility || (!this.getIsVisible(res) && !props.isEditMode)){
             return false;
         }
@@ -616,6 +614,9 @@ WResourceTable = React.createClass({
         for (var i = 0; i < resList.length; i++){
             var res = resList[i];
             if (!res || res.category === "craft" || game.resPool.isNormalCraftableResource(res)) {
+                continue;
+            }
+            if (res.name === "spice" && !game.resPool.showHiddenResources) {
                 continue;
             }
             if (!res.visible && !game.resPool.showHiddenResources) {
@@ -747,6 +748,7 @@ WCraftTable = React.createClass({
         var resRows = [];
         var hasAnyCraft = false;
         var canCraftBasic = false;
+        var visibleCraftCount = 0;
 
         for (var i in this.props.resources){
             var res = this.props.resources[i];
@@ -754,8 +756,11 @@ WCraftTable = React.createClass({
                 continue;
             }
             var recipe = game.workshop.getCraft(res.name);
-            if ((res.unlocked && recipe && recipe.unlocked) || res.value > 0){
+            if ((recipe && recipe.unlocked) || res.unlocked || res.value > 0){
                 hasAnyCraft = true;
+                if (!res.isHidden || this.state.isEditMode) {
+                    visibleCraftCount++;
+                }
             }
             if ((res.name === "beam" || res.name === "slab" || res.name === "steel") &&
                 recipe && recipe.unlocked && game.workshop.getCraftAllCount(res.name) > 0){
@@ -775,6 +780,7 @@ WCraftTable = React.createClass({
             $r("div", {className: "xx-res-sec-hd", onClick: this.toggleCollapsed}, [
                 $r("span", {className: "xx-res-sec-dot"}),
                 $r("span", {className: "xx-res-sec-title"}, "百艺炼制"),
+                visibleCraftCount > 0 ? $r("span", {className: "xx-res-sec-count"}, visibleCraftCount) : null,
                 (!game.isReadOnly() && game.bld.get("workshop").on > 0 && canCraftBasic) ?
                     $r("a", {
                         href: "#!",
