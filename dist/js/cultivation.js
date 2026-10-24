@@ -111,7 +111,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		{key:"dujie",   layers:1,  base:{xiuwei:24000000, timeCrystal:50}, mul:1,    bonus:1.60,  chance:0.10, life:100000, keyRes:"timeCrystal", gate:{riftFloor:25}}
 	],
 
-	//九境万法同源矩阵 — 每一个大修为境界绑定唯一核心灵材，并与洞府灵筑(房屋)、问道功法(科技)、百艺丹器(工坊)严密互锁
+	//四座共享储灵建筑 — 每 2~3 种有上限的核心灵材共享一座提升上限的储灵建筑
+	SHARED_STORAGE_BLDS: [
+		{ name: "barn",        realm: "zhuji",    resources: ["catnip", "wood", "minerals"] },
+		{ name: "academy",     realm: "yuanying", resources: ["gold", "science"] },
+		{ name: "mansion",     realm: "lianxu",   resources: ["faith", "unobtainium"] },
+		{ name: "observatory", realm: "dacheng",  resources: ["relic", "timeCrystal"] }
+	],
+
+	//九境万法同源矩阵 — 每一个大修为境界严格只保留 1 种核心灵材（1座专属产出建筑），每 2~3 种灵材共享 1 座储灵上限建筑
 	REALM_SYNERGY: [
 		{
 			realmIdx: 0,
@@ -122,8 +130,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			res: "wood",
 			resTitle: "灵木",
 			resBadge: "炼气核",
-			resDesc: "辟百亩灵田，伐灵竹筑庐，凝练灵木立下长生根基",
-			coreBlds: ["field", "hut", "library"],
+			resDesc: "辟百亩灵田，筑神手竹庐与太岳石室，凝练灵木立下长生根基",
+			coreBlds: ["field", "hut", "logHouse"],
 			auxBlds: ["pasture", "lumberMill"],
 			techs: ["calendar", "agriculture", "archery"],
 			crafts: ["wood"],
@@ -138,9 +146,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			res: "minerals",
 			resTitle: "灵石",
 			resBadge: "筑基核",
-			resDesc: "勘破地肺灵石矿脉，辟太岳石室，引地火开启百艺之门",
-			coreBlds: ["mine", "logHouse", "workshop"],
-			auxBlds: ["aqueduct", "warehouse"],
+			resDesc: "勘破地肺灵石矿脉，立须弥宝库（灵谷/灵木/灵石共享上限），凝铸道基",
+			coreBlds: ["mine", "barn"],
+			auxBlds: ["workshop", "aqueduct", "warehouse"],
 			techs: ["mining", "metal", "animal", "construction", "math", "engineering", "currency"],
 			crafts: ["beam", "slab"],
 			upgrades: ["mineralHoes", "mineralAxes", "bolas", "ironHoes", "ironAxes", "reinforcedSaw", "stoneBarns", "reinforcedBarns", "advancedRefinement", "compositeBow", "celestialMechanics", "huntingArmor", "prospecting"]
@@ -154,11 +162,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			res: "gold",
 			resTitle: "金精",
 			resBadge: "结丹核",
-			resDesc: "地火炼器室淬炼金精，立大衍神机阁与须弥宝库凝结金丹",
-			coreBlds: ["smelter", "academy", "barn"],
+			resDesc: "地火炼器室淬炼金精，铸就九品金丹大道",
+			coreBlds: ["smelter"],
 			auxBlds: ["tradepost", "amphitheatre", "unicornPasture", "harbor", "quarry"],
 			techs: ["writing", "philosophy", "steel", "machinery", "theology"],
-			crafts: ["steel", "blueprint"],
+			crafts: [],
 			upgrades: ["goldOre", "register", "steelAxe", "steelSaw", "steelArmor", "reinforcedWarehouses", "crossbow", "printingPress", "factoryAutomation", "combustionEngine", "caravanserai", "cargoShips"]
 		},
 		{
@@ -170,11 +178,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			res: "science",
 			resTitle: "悟道典籍",
 			resBadge: "元婴核",
-			resDesc: "辟天星洞府、立浑天观星台，参悟周天典籍碎丹成婴",
-			coreBlds: ["mansion", "observatory"],
+			resDesc: "立藏经阁参悟周天典籍，辟大衍神机阁（金精/悟道典籍共享上限），碎丹成婴",
+			coreBlds: ["library", "academy"],
 			auxBlds: ["steamworks", "calciner", "oilWell", "mint", "brewery"],
 			techs: ["astronomy", "navigation", "architecture", "physics", "chemistry", "biology", "biochemistry", "archeology", "electricity"],
-			crafts: ["alloy"],
+			crafts: [],
 			upgrades: ["titaniumAxe", "titaniumSaw", "alloyAxe", "alloySaw", "titaniumBarns", "alloyBarns", "silos", "titaniumWarehouses", "alloyWarehouses", "barges", "astrolabe", "titaniumMirrors", "geodesy", "miningDrill", "railgun"]
 		},
 		{
@@ -186,9 +194,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			res: "faith",
 			resTitle: "大道香火",
 			resBadge: "化神核",
-			resDesc: "筑太古玄坛与百药仙园，聚九天香火愿力元神化道",
-			coreBlds: ["temple", "biolab"],
-			auxBlds: ["chapel", "factory", "ziggurat"],
+			resDesc: "筑太古玄坛，聚九天香火愿力元神化道",
+			coreBlds: ["temple"],
+			auxBlds: ["biolab", "chapel", "factory", "ziggurat"],
 			techs: ["industrialization", "mechanization", "metalurgy", "combustion", "ecology", "acoustics", "drama"],
 			crafts: [],
 			upgrades: ["concreteBarns", "concreteWarehouses", "oilRefinery", "pumpjack", "biofuel", "petri", "factoryLogistics", "offsetPress", "uplink", "starlink", "electrolyticSmelting", "oxidation", "rotaryKiln", "fluidizedReactors", "carbonSequestration"]
@@ -202,11 +210,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			res: "unobtainium",
 			resTitle: "太虚仙金",
 			resBadge: "炼虚核",
-			resDesc: "布乾蓝地火阵与颠倒五行阵，自太虚法则中萃取仙金",
-			coreBlds: ["reactor", "magneto"],
-			auxBlds: ["ivoryTemple"],
+			resDesc: "布乾蓝地火阵萃取太虚仙金，辟天星洞府（大道香火/太虚仙金共享上限）",
+			coreBlds: ["reactor", "mansion"],
+			auxBlds: ["magneto", "ivoryTemple"],
 			techs: ["nuclearFission", "rocketry", "oilProcessing", "electronics", "orbitalEngineering", "sattelites"],
-			crafts: ["eludium"],
+			crafts: [],
 			upgrades: ["unobtainiumAxe", "unobtainiumSaw", "unobtainiumReflectors", "thoriumReactors", "enrichedUranium", "coldFusion", "nuclearPlants", "neuralNetworks", "aiBases", "aiEngineers", "spaceManufacturing", "augumentation", "photolithography", "cryocomputing", "machineLearning"]
 		},
 		{
@@ -234,8 +242,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			res: "timeCrystal",
 			resTitle: "岁月仙晶",
 			resBadge: "大乘核",
-			resDesc: "祭起真言轮回盘，掌光阴长河，凝岁月仙晶证大乘道果",
-			coreBlds: ["chronosphere"],
+			resDesc: "祭起真言轮回盘凝岁月仙晶，立浑天观星台（上古遗宝/岁月仙晶共享上限）",
+			coreBlds: ["chronosphere", "observatory"],
 			auxBlds: ["aiCore", "stasisPod"],
 			techs: ["chronophysics", "tachyonTheory", "cryptotheology", "voidSpace", "paradoxalKnowledge"],
 			crafts: [],
@@ -1113,6 +1121,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.registerMeta("research", this.fates, null);
 		this.registerMeta("research", this.artifacts, null);
 		this.setEffectsCachedExisting();
+		this.normalizeRealmPrices();
 	},
 
 	buildStages: function(){
@@ -1727,6 +1736,138 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 		}
 		return false;
+	},
+
+	getSharedStorageBuildings: function(){
+		return this.SHARED_STORAGE_BLDS;
+	},
+
+	isSharedStorageBuilding: function(bldName){
+		for (var i = 0; i < this.SHARED_STORAGE_BLDS.length; i++){
+			if (this.SHARED_STORAGE_BLDS[i].name === bldName){
+				return true;
+			}
+		}
+		return false;
+	},
+
+	//将全部问道功法(science.techs)与百艺秘术(workshop.upgrades)的耗材归一至各境唯一核心灵材链，并确保绝不超出20座储灵建筑上限
+	normalizeRealmPrices: function(){
+		if (!this.game){ return; }
+		var allowedUpToRealm = [
+			{ catnip: true, wood: true, xiuwei: true },
+			{ catnip: true, wood: true, xiuwei: true, minerals: true },
+			{ catnip: true, wood: true, xiuwei: true, minerals: true, gold: true },
+			{ catnip: true, wood: true, xiuwei: true, minerals: true, gold: true, science: true },
+			{ catnip: true, wood: true, xiuwei: true, minerals: true, gold: true, science: true, faith: true },
+			{ catnip: true, wood: true, xiuwei: true, minerals: true, gold: true, science: true, faith: true, unobtainium: true },
+			{ catnip: true, wood: true, xiuwei: true, minerals: true, gold: true, science: true, faith: true, unobtainium: true, relic: true },
+			{ catnip: true, wood: true, xiuwei: true, minerals: true, gold: true, science: true, faith: true, unobtainium: true, relic: true, timeCrystal: true },
+			{ catnip: true, wood: true, xiuwei: true, minerals: true, gold: true, science: true, faith: true, unobtainium: true, relic: true, timeCrystal: true }
+		];
+		var convertClamp = {
+			wood: 500,
+			minerals: 2500,
+			gold: 1000,
+			science: 15000,
+			faith: 8000,
+			unobtainium: 2500,
+			relic: 1000,
+			timeCrystal: 500
+		};
+		var safeCaps = {
+			catnip: 40000,
+			wood: 20000,
+			minerals: 25000,
+			gold: 10000,
+			science: 500000,
+			faith: 25000,
+			unobtainium: 15000,
+			relic: 10000,
+			timeCrystal: 5000,
+			coal: 10000,
+			iron: 20000,
+			titanium: 15000,
+			oil: 150000,
+			uranium: 35000,
+			culture: 10000,
+			antimatter: 3500
+		};
+		var self = this;
+		var normalizeList = function(type, items){
+			if (!items){ return; }
+			for (var i = 0; i < items.length; i++){
+				var it = items[i];
+				if (!it || !it.prices){ continue; }
+				if (!it._origPrices){
+					it._origPrices = dojo.clone(it.prices);
+				}
+				var gate = self.getItemRealmGate(type, it.name);
+				var r = gate ? gate.realmIdx : 0;
+				var allowed = allowedUpToRealm[r] || allowedUpToRealm[0];
+				var targetRes = (self.REALM_SYNERGY[r] && self.REALM_SYNERGY[r].res) || "wood";
+				var maxConv = convertClamp[targetRes] || 1000;
+				var merged = [];
+				var byName = {};
+				for (var j = 0; j < it._origPrices.length; j++){
+					var p = it._origPrices[j];
+					var rName = p.name;
+					var rVal = p.val || 0;
+					if (!allowed[rName]){
+						if (rName === "science" && r === 0){
+							rName = "wood";
+							rVal = Math.max(10, Math.min(500, Math.round(rVal)));
+						} else if (rName === "science" && r === 1){
+							rName = "minerals";
+							rVal = Math.max(20, Math.min(2000, Math.round(rVal * 0.5)));
+						} else if (rName === "science" && r === 2){
+							rName = "gold";
+							rVal = Math.max(15, Math.min(800, Math.round(rVal * 0.08)));
+						} else {
+							rName = targetRes;
+							rVal = Math.max(5, Math.min(maxConv, Math.round(rVal)));
+						}
+					}
+					if (safeCaps[rName] && rVal > safeCaps[rName]){
+						rVal = safeCaps[rName];
+					}
+					if (byName[rName]){
+						byName[rName].val = Math.max(byName[rName].val, rVal);
+					} else {
+						var entry = { name: rName, val: rVal };
+						byName[rName] = entry;
+						merged.push(entry);
+					}
+				}
+				it.prices = merged;
+			}
+		};
+		if (this.game.science && this.game.science.techs){
+			normalizeList("tech", this.game.science.techs);
+		}
+		if (this.game.workshop && this.game.workshop.upgrades){
+			normalizeList("upgrade", this.game.workshop.upgrades);
+		}
+		var clampListCaps = function(items){
+			if (!items){ return; }
+			for (var i = 0; i < items.length; i++){
+				var it = items[i];
+				if (!it || !it.prices){ continue; }
+				for (var j = 0; j < it.prices.length; j++){
+					var p = it.prices[j];
+					if (safeCaps[p.name] && p.val > safeCaps[p.name]){
+						p.val = safeCaps[p.name];
+					}
+				}
+			}
+		};
+		if (this.game.space){
+			clampListCaps(this.game.space.programs);
+			var planets = this.game.space.planets || [];
+			for (var pl = 0; pl < planets.length; pl++){
+				clampListCaps(planets[pl].buildings);
+			}
+		}
 	},
 
 	getResourceRealmInfo: function(resName){
@@ -4881,6 +5022,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		for (var i = 0; i < this.pills.length; i++){ this.pills[i].val = 0; }	//转世丹药随身化去
 		this.clearBreakFail();	//新世新身,前尘连败一笔勾销
 		this.rollRoot();
+		this.normalizeRealmPrices();
 	}
 });
 
