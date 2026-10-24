@@ -324,7 +324,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		maxRealmIdx: 2,
 		effectSummary: "5分钟内修为吐纳 +65%~100%（结丹后凡丹产生境界抗药性；✦丹纹灵丹无视衰减且持续7分钟）",
 		unlock: function(c){ return c.getStage("lianqi_2").researched; },
-		prices: [{name:"catnip", val:120}, {name:"spice", val:8}],
+		prices: [{name:"catnip", val:120}, {name:"wood", val:8}],
 		val: 0
 	},{
 		name: "zhujidan",
@@ -336,7 +336,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		maxRealmIdx: 2,
 		effectSummary: "下次冲关破境成功率相对提升 +50%（✦丹纹灵丹额外涤除 8 点心魔）",
 		unlock: function(c){ return c.getStage("lianqi_8").researched; },
-		prices: [{name:"wood", val:120}, {name:"spice", val:25}],
+		prices: [{name:"catnip", val:300}, {name:"wood", val:120}],
 		val: 0
 	},{
 		name: "qingxin",
@@ -348,7 +348,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		maxRealmIdx: 8,
 		effectSummary: "立消 15 点心魔，并涤荡经脉 18 点丹毒（✦丹纹灵丹消 24 心魔、祛 28 丹毒）",
 		unlock: function(c){ return c.getStage("zhuji_0").researched; },
-		prices: [{name:"spice", val:60}, {name:"minerals", val:400}],
+		prices: [{name:"wood", val:60}, {name:"minerals", val:400}],
 		val: 0
 	},{
 		name: "jiangchen",
@@ -360,7 +360,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		maxRealmIdx: 5,
 		effectSummary: "破境率 +25%（上限+65%），且5分钟内修为吐纳 +35%（✦丹纹灵丹破境+35%且持续7分钟）",
 		unlock: function(c){ return c.getStage("jiedan_0").researched; },
-		prices: [{name:"gold", val:150}, {name:"spice", val:80}],
+		prices: [{name:"minerals", val:300}, {name:"gold", val:150}],
 		val: 0
 	},{
 		name: "peiying",
@@ -372,7 +372,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		maxRealmIdx: 8,
 		effectSummary: "瞬间平息破境余威震荡，净除 30 点心魔与 35 点丹毒（✦丹纹灵丹消 45 心魔、祛 50 丹毒）",
 		unlock: function(c){ return c.getStage("yuanying_0").researched; },
-		prices: [{name:"science", val:3500}, {name:"spice", val:200}],
+		prices: [{name:"gold", val:200}, {name:"science", val:3500}],
 		val: 0
 	},{
 		name: "biyan",
@@ -384,7 +384,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		maxRealmIdx: 8,
 		effectSummary: "5分钟内修为吐纳 +50%、洞府万产 +25%、斗法战力 ×1.35（✦丹纹圣酿持续7分钟且战力 ×1.45）",
 		unlock: function(c){ return c.getStage("huashen_0").researched; },
-		prices: [{name:"faith", val:2500}, {name:"spice", val:400}],
+		prices: [{name:"science", val:4000}, {name:"faith", val:2500}],
 		val: 0
 	}],
 
@@ -424,8 +424,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		researched: false,
 		atStage: "lianqi_2",
 		pages: 2,
-		grant: {spice: 8, xiuwei: 6},		//初得凝露瓶即凝一滴碧露,恰可炼首炉聚气丹
-		effects: {"spicePerTickBase": 0.02}	//月露凝碧,灵香自生——凝露瓶是命定之物
+		grant: {wood: 8, xiuwei: 6},		//初得凝露瓶即催熟灵木,恰可炼首炉聚气丹
+		effects: {"catnipPerTickBase": 0.08}	//月露凝碧,药田自生——凝露瓶是命定之物
 	},{
 		name: "feiyu",
 		label: $I("cultivation.fate.feiyu.label"),
@@ -452,11 +452,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "kill",	//夺舍反杀——斩断师徒,也斩断后患
-			grant: {xiuwei: 15, spice: 6},
+			grant: {xiuwei: 15, wood: 12},
 			effects: {"xiuweiRatio": 0.05}
 		},{
 			key: "spare",	//擒而不杀——残魂囚于法器,结丹之期他将反扑
-			grant: {xiuwei: 12, minerals: 25, spice: 8}
+			grant: {xiuwei: 12, minerals: 25, wood: 15}
 		}]
 	},{
 		name: "jinguang",
@@ -467,10 +467,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "fight",	//挺身而出——阵前斩之,得登仙令
-			grant: {xiuwei: 20, minerals: 35, spice: 10}
+			grant: {xiuwei: 20, minerals: 35, wood: 20}
 		},{
 			key: "flee",	//携瓶夜遁
-			grant: {xiuwei: 18, spice: 12}
+			grant: {xiuwei: 18, wood: 25}
 		}]
 	},{
 		name: "xuese",
@@ -481,10 +481,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		effects: {},
 		choices: [{
 			key: "jiao",	//玄蛟泽援手——初遇冷凝霜(tale.nangong="met")
-			grant: {spice: 35, xiuwei: 35}
+			grant: {wood: 50, xiuwei: 35}
 		},{
 			key: "lurk",	//苟着采药——收获更丰,未识佳人
-			grant: {relic: 2, spice: 60, xiuwei: 25}
+			grant: {relic: 2, minerals: 80, xiuwei: 25}
 		}]
 	},{
 		//———— 苍梧山(筑基)————
@@ -509,8 +509,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			effects: {"xiuweiRatio": 0.05}
 		},{
 			key: "seed",	//收灵药种子——与凝露瓶相合
-			grant: {spice: 25, catnip: 200},
-			effects: {"spicePerTickBase": 0.015}
+			grant: {wood: 40, catnip: 200},
+			effects: {"catnipPerTickBase": 0.06}
 		},{
 			key: "wine",	//沽酒听书——星海传闻入耳
 			grant: {xiuwei: 110, relic: 1}
@@ -551,8 +551,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			key: "burn",	//焚其残魂——恩怨尽泯,tales.mojuren="ended"
 			grant: {karma: 3}
 		},{
-			key: "tame",	//镇而收之——以其毕生药理为已用
-			effects: {"spicePerTickBase": 0.08}	//温先生的医术丹道,至此为你所用
+			key: "tame",	//镇而收之——以其毕生丹器造诣为己用
+			effects: {"goldPerTickBase": 0.005}	//温先生的百炼器道,至此为你所用
 		}]
 	},{
 		name: "chen",
@@ -939,7 +939,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		refine:   {wood: 2},
 		hut:      {xiuwei: 5, wood: 1},
 		break2:   {xiuwei: 4, minerals: 6},
-		wander:   {xiuwei: 5, spice: 2},
+		wander:   {xiuwei: 5, wood: 2},
 		seclude:  {xiuwei: 6, minerals: 10},
 		zhuji:    {xiuwei: 40, minerals: 25},
 		rift:     {xiuwei: 60, minerals: 30},
@@ -992,7 +992,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		},
 		{
 			key: "hunter",
-			effects: {hunterRatio: 0.25, ironRatio: 0.15, xiuweiRatio: -0.10},
+			effects: {hunterRatio: 0.25, mineralsRatio: 0.15, xiuweiRatio: -0.10},
 			powerMult: 1.20,
 			chanceBonus: -0.04
 		},
@@ -1848,25 +1848,88 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (this.game.workshop && this.game.workshop.upgrades){
 			normalizeList("upgrade", this.game.workshop.upgrades);
 		}
-		var clampListCaps = function(items){
+		var secondaryToCore = {
+			coal:        { res: "minerals",    scale: 1.0,  max: 5000 },
+			iron:        { res: "minerals",    scale: 1.0,  max: 5000 },
+			beam:        { res: "wood",        scale: 2.0,  max: 3000 },
+			slab:        { res: "minerals",    scale: 2.0,  max: 5000 },
+			steel:       { res: "gold",        scale: 1.0,  max: 2000 },
+			culture:     { res: "gold",        scale: 0.5,  max: 1500 },
+			spice:       { res: "wood",        scale: 2.0,  max: 1000 },
+			titanium:    { res: "gold",        scale: 1.0,  max: 3000 },
+			alloy:       { res: "science",     scale: 10.0, max: 15000 },
+			blueprint:   { res: "science",     scale: 50.0, max: 20000 },
+			starchart:   { res: "science",     scale: 5.0,  max: 25000 },
+			oil:         { res: "faith",       scale: 0.5,  max: 15000 },
+			uranium:     { res: "unobtainium", scale: 0.5,  max: 5000 },
+			eludium:     { res: "relic",       scale: 1.0,  max: 2500 }
+		};
+		var normalizePriceArray = function(priceArr){
+			if (!priceArr || !priceArr.length){ return priceArr; }
+			var merged = [];
+			var byName = {};
+			for (var j = 0; j < priceArr.length; j++){
+				var p = priceArr[j];
+				if (!p || !p.name){ continue; }
+				var rName = p.name;
+				var rVal = p.val || 0;
+				var mapRule = secondaryToCore[rName];
+				if (mapRule){
+					rName = mapRule.res;
+					rVal = Math.max(5, Math.min(mapRule.max, Math.round(rVal * mapRule.scale)));
+				}
+				if (safeCaps[rName] && rVal > safeCaps[rName]){
+					rVal = safeCaps[rName];
+				}
+				if (byName[rName]){
+					byName[rName].val = Math.max(byName[rName].val, rVal);
+				} else {
+					var entry = dojo.clone(p);
+					entry.name = rName;
+					entry.val = rVal;
+					byName[rName] = entry;
+					merged.push(entry);
+				}
+			}
+			return merged;
+		};
+		var normalizeSystemItems = function(items){
 			if (!items){ return; }
 			for (var i = 0; i < items.length; i++){
 				var it = items[i];
-				if (!it || !it.prices){ continue; }
-				for (var j = 0; j < it.prices.length; j++){
-					var p = it.prices[j];
-					if (safeCaps[p.name] && p.val > safeCaps[p.name]){
-						p.val = safeCaps[p.name];
-					}
+				if (!it){ continue; }
+				if (it.prices){
+					if (!it._origPrices){ it._origPrices = dojo.clone(it.prices); }
+					it.prices = normalizePriceArray(it._origPrices);
+				}
+				if (it.fixPrices){
+					if (!it._origFixPrices){ it._origFixPrices = dojo.clone(it.fixPrices); }
+					it.fixPrices = normalizePriceArray(it._origFixPrices);
+				}
+				if (it.stages && it.stages[0] && it.stages[0].prices){
+					if (!it.stages[0]._origPrices){ it.stages[0]._origPrices = dojo.clone(it.stages[0].prices); }
+					it.stages[0].prices = normalizePriceArray(it.stages[0]._origPrices);
 				}
 			}
 		};
+		if (this.game.bld && this.game.bld.buildingsData){
+			normalizeSystemItems(this.game.bld.buildingsData);
+		}
+		if (this.game.religion){
+			normalizeSystemItems(this.game.religion.zigguratUpgrades);
+			normalizeSystemItems(this.game.religion.religionUpgrades);
+			normalizeSystemItems(this.game.religion.transcendenceUpgrades);
+		}
 		if (this.game.space){
-			clampListCaps(this.game.space.programs);
+			normalizeSystemItems(this.game.space.programs);
 			var planets = this.game.space.planets || [];
 			for (var pl = 0; pl < planets.length; pl++){
-				clampListCaps(planets[pl].buildings);
+				normalizeSystemItems(planets[pl].buildings);
 			}
+		}
+		if (this.game.time){
+			normalizeSystemItems(this.game.time.chronoforgeUpgrades);
+			normalizeSystemItems(this.game.time.voidspaceUpgrades);
 		}
 	},
 
@@ -2870,7 +2933,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - 15);
 		this.alchemyExp = (this.alchemyExp || 0) + 2;
 		var scale = 1 + this.getCurrentRealmIndex();
-		this.game.resPool.addResEvent("spice", this.roundNice(8 * scale));
+		this.game.resPool.addResEvent("wood", this.roundNice(10 * scale));
 		this.game.resPool.addResEvent("catnip", this.roundNice(40 * scale));
 		this.lastAlchemyNote = "【掌天绿液催熟】造化绿液滴入丹炉，瞬间凝成【" + target.label + "】×2（含✦丹纹极品×1），并涤除 15 点丹毒！";
 		this.game.msg($I("cultivation.msg.dew.catalyze", [target.label]), "important");
@@ -3125,9 +3188,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			addRes("minerals", amt);
 			this.game.msg($I("cultivation.msg.wander.minerals", [fmt(amt)]), "notice");
 		} else if (roll < 44){
-			var amt = this.roundNice(4 * scale);
-			addRes("spice", amt);
-			addRes("wood", this.roundNice(3 * scale));
+			var amt = this.roundNice(6 * scale);
+			addRes("wood", amt);
+			addRes("catnip", this.roundNice(30 * scale));
 			this.game.msg($I("cultivation.msg.wander.spice", [fmt(amt)]), "notice");
 		} else if (roll < 64){
 			var amt = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY * (hasSwords ? 1.5 : 1)));
@@ -3135,7 +3198,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.game.msg($I("cultivation.msg.wander.xiuwei", [fmt(amt + baseXw)]), "notice");
 		} else if (roll < 75){
 			var amt = this.roundNice(25 * scale);
-			addRes("iron", amt);
+			addRes("minerals", amt);
 			this.game.msg($I("cultivation.msg.wander.iron", [fmt(amt)]), "notice");
 		} else if (roll < ambushMin){
 			var amt = Math.max(1, Math.round(0.6 * scale));

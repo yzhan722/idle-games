@@ -48,7 +48,7 @@ test("every modeled trade stays within the sanctioned value band", () => {
 test("leviathans sell prestige-tier goods not covered by the value model", () => {
     var lev = game.diplomacy.get("leviathans");
     var sells = lev.sells.map(function(s){ return s.name; });
-    ["timeCrystal", "sorrow", "relic", "temporalFlux", "tears", "starchart"].forEach(function(n){
+    ["timeCrystal", "sorrow", "relic", "temporalFlux", "tears"].forEach(function(n){
         expect(sells).toContain(n);
     });
     expect(lev.buys[0].name).toBe("unobtainium");

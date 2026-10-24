@@ -58,8 +58,8 @@ test("Fate without choices opens a story card at its stage, applies on close", (
     expect(bottle.researched).toBe(false);
     cult.applyFate(bottle, null);
     expect(bottle.researched).toBe(true);
-    //凝露瓶是命定之物——常驻灵香涓滴,不是纯剧情节点
-    expect(bottle.effects.spicePerTickBase).toBeCloseTo(0.02);
+    //凝露瓶是命定之物——常驻灵草涓滴,不是纯剧情节点
+    expect(bottle.effects.catnipPerTickBase).toBeCloseTo(0.08);
 });
 
 test("Fate with choices stays pending until a choice is applied", () => {
@@ -1290,7 +1290,7 @@ test("Redesigned Alchemy Cauldron: 3 fire modes, Dan Toxicity meridian balance, 
     expect(cult.getCauldronFire().key).toBe("gentle");
     expect(cult.setCauldronFire("fierce")).toBe(true);
     game.resPool.get("catnip").value = 5000;
-    game.resPool.get("spice").value = 500;
+    game.resPool.get("wood").value = 500;
     game.resPool.get("minerals").value = 5000;
 
     jest.spyOn(Math, "random").mockReturnValue(0.10); // triggers fierce double pill & azure supreme pill
@@ -1819,7 +1819,6 @@ test("Full-system resource integrity & unobstructed progression route: zero refe
                 prodRes.add(res.name);
             }
         }
-        prodRes.add("spice"); // bottle fate & wander
 
         let craftAdded = true;
         while (craftAdded) {
@@ -1917,10 +1916,10 @@ test("Differentiated Origins (buffs + debuffs) and Lore-Accurate Spirit Roots (m
     expect(cult.getLifespan()).toBe(Math.round(baseLife * 1.15));
     expect(cult.getCombatPower()).toBeCloseTo(baseCp * 0.90);
 
-    // Hunter: +20% combatPower, +25% hunterRatio, +15% ironRatio | -10% xiuweiRatio, -4% breakChance
+    // Hunter: +20% combatPower, +25% hunterRatio, +15% mineralsRatio | -10% xiuweiRatio, -4% breakChance
     cult.setIdentity("韩立", "m", "hunter");
     expect(cult.effectsBase.hunterRatio).toBeCloseTo(0.25);
-    expect(cult.effectsBase.ironRatio).toBeCloseTo(0.15);
+    expect(cult.effectsBase.mineralsRatio).toBeCloseTo(0.15);
     expect(cult.effectsBase.xiuweiRatio).toBeCloseTo(-0.10);
     expect(cult.getCombatPower()).toBeCloseTo(baseCp * 1.20);
     expect(cult.getBreakChance(jiedan0)).toBeCloseTo(baseChance - 0.04);
@@ -2007,13 +2006,64 @@ test("1-Resource-Per-Realm & Shared-Storage-Building Architecture: 10 single-out
     }
     expect(seenProdEffects.size).toBe(10);
     expect(seenStorageEffects.size).toBe(9);
+
+    // 3. Cross-mechanic resource consumption alignment: pills, fates, trade races, buildings, science, workshop, religion, space, time
+    const secondaryResources = new Set([
+        "coal", "iron", "titanium", "oil", "uranium",
+        "culture", "starchart", "spice",
+        "beam", "slab", "steel", "alloy", "eludium", "blueprint"
+    ]);
+    const coreResources = new Set([
+        "catnip", "wood", "minerals", "gold", "science",
+        "faith", "unobtainium", "relic", "timeCrystal", "xiuwei"
+    ]);
+
+    for (const pill of game.cultivation.pills) {
+        for (const p of (pill.prices || [])) {
+            expect(coreResources.has(p.name)).toBe(true);
+            expect(secondaryResources.has(p.name)).toBe(false);
+        }
+    }
+
+    for (const fate of game.cultivation.fates) {
+        for (const k of Object.keys(fate.grants || {})) {
+            expect(coreResources.has(k)).toBe(true);
+        }
+        for (const ch of (fate.choices || [])) {
+            for (const k of Object.keys(ch.grants || {})) {
+                expect(coreResources.has(k)).toBe(true);
+            }
+        }
+    }
+
+    const leviathanSpecials = new Set(["sorrow", "temporalFlux", "tears"]);
+    for (const race of game.diplomacy.races) {
+        for (const b of (race.buys || [])) {
+            expect(coreResources.has(b.name)).toBe(true);
+            expect(secondaryResources.has(b.name)).toBe(false);
+        }
+        for (const s of (race.sells || [])) {
+            expect(coreResources.has(s.name) || leviathanSpecials.has(s.name)).toBe(true);
+            expect(secondaryResources.has(s.name)).toBe(false);
+        }
+    }
+
+    const allPriceLists = [
+        ...game.bld.buildingsData.map(b => b.prices || (b.stages && b.stages[0].prices) || []),
+        ...game.science.techs.map(t => t.prices || []),
+        ...game.workshop.upgrades.map(u => u.prices || []),
+        ...game.religion.zigguratUpgrades.map(u => u.prices || []),
+        ...game.religion.religionUpgrades.map(u => u.prices || []),
+        ...game.religion.transcendenceUpgrades.map(u => u.prices || []),
+        ...game.space.programs.map(u => u.prices || []),
+        ...game.space.planets.flatMap(pl => (pl.buildings || []).flatMap(b => [b.prices || [], b.fixPrices || []])),
+        ...game.time.chronoforgeUpgrades.map(u => u.prices || []),
+        ...game.time.voidspaceUpgrades.flatMap(u => [u.prices || [], u.fixPrices || []])
+    ];
+    for (const plist of allPriceLists) {
+        for (const p of plist) {
+            expect(secondaryResources.has(p.name)).toBe(false);
+        }
+    }
 });
-
-
-
-
-
-
-
-
 

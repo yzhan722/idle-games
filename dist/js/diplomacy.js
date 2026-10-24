@@ -40,57 +40,57 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		collapsed: false,
 		pinned: false
 	},{
-		//蛟族:灵谷 -> 玄铁 (1280s -> 2100s, x1.64) 深海蛟族贩玄铁,把富余灵谷转成瓶颈资源
+		//蛟族:灵谷 -> 灵石 (1280s -> 1920s, x1.50)
 		name: "sharks",
 		title: $I("trade.race.sharks"),
 		buys: [
 			{name: "catnip", val: 4000}
 		],
 		sells:[
-			{name: "iron", value: 75}
+			{name: "minerals", value: 1200}
 		],
 		collapsed: false,
 		pinned: false
 	},{
-		//金翅:灵木 -> 玄铁 (1950s -> 2520s, x1.29)
+		//金翅:灵木 -> 金精 (1950s -> 2400s, x1.23)
 		name: "griffins",
 		title: $I("trade.race.griffins"),
 		buys: [
 			{name: "wood", val: 500}
 		],
 		sells:[
-			{name: "iron", value: 90}
+			{name: "gold", value: 12}
 		],
 		collapsed: false,
 		pinned: false
 	},{
-		//玄蛇:文心 -> 灵石+灵香 (3120s -> 3680s, x1.18) 灵香无产线,溢价值得
+		//玄蛇:金精 -> 灵石+悟道典籍 (3000s -> 3840s, x1.28)
 		name: "nagas",
 		title: $I("trade.race.nagas"),
 		hidden: true,
-		buys: [{ name: "culture", val: 800 }],
+		buys: [{ name: "gold", val: 15 }],
 		sells:[
-			{name: "minerals", value: 800},
-			{name: "spice", value: 60}
+			{name: "minerals", value: 1000},
+			{name: "science", value: 700}
 		],
 		collapsed: false,
 		pinned: false
 	},{
-		//云斑驹:玄岩砖 -> 玄铁+庚金 (20000s -> 26100s, x1.3) 庚金是此行的目的
+		//云斑驹:悟道典籍 -> 金精+大道香火 (6400s -> 7900s, x1.23)
 		name: "zebras",
 		hidden: true,
 		title: $I("trade.race.zebras"),
 		buys: [
-			{name: "slab", val: 50}
+			{name: "science", val: 2000}
 		],
 		sells:[
-			{name: "iron", value: 150},
-			{name: "titanium", value: 3}
+			{name: "gold", value: 20},
+			{name: "faith", value: 100}
 		],
 		collapsed: false,
 		pinned: false
 	},{
-		//蛛魔:灵石 -> 玄炭 (3200s -> 4050s, x1.27) 原为50云梯架(1.7M s)换玄炭,荒谬
+		//蛛魔:灵石 -> 悟道典籍 (3200s -> 4000s, x1.25)
 		name: "spiders",
 		hidden: true,
 		title: $I("trade.race.spiders"),
@@ -98,23 +98,23 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 			{name: "minerals", val: 2000}
 		],
 		sells:[
-			{name: "coal", value: 250}
+			{name: "science", value: 1250}
 		],
 		collapsed: false,
 		pinned: false
 	},{
-		//龙:庚金 -> 雷晶 (1.83M s -> 1.54M s, x0.84) 深后期平价兑换
+		//真龙:大道香火 -> 太虚仙金 (9750s -> 13050s, x1.34)
 		name: "dragons",
 		hidden: true,
 		title: $I("trade.race.dragons"),
 		buys: [
-			{name: "titanium", val: 250}
+			{name: "faith", val: 250}
 		],
-		sells:[{ name: "uranium", value: 35 }],
+		sells:[{ name: "unobtainium", value: 450 }],
 		collapsed: false,
 		pinned: false
 	},{
-		//古魔:虚空仙金 -> 传承级回报(时晶/悲叹/遗宝/泪),不套生产模型
+		//古魔:太虚仙金 -> 传承级回报(时晶/悲叹/遗宝/泪),不套生产模型
 		name: "leviathans",
 		hidden: true,
 		title: $I("trade.race.leviathans"),
@@ -122,7 +122,6 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 			{name: "unobtainium", val: 2500}
 		],
 		sells:[
-			{name: "starchart", value: 200},
 			{name: "timeCrystal", value: 0.25},
 			{name: "sorrow", value: 0.2},
 			{name: "relic", value: 0.1},
@@ -197,7 +196,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 	 */
 	isValidTrade: function(sell, race){
 		var resName = sell.name;
-		return this.game.resPool.get(resName).unlocked || resName === "coal" || resName === "uranium" || race.name === "leviathans";
+		return this.game.resPool.get(resName).unlocked || race.name === "leviathans";
 	},
 
 	getAmbassadorEffect: function(effectName) {
