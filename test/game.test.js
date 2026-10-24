@@ -693,14 +693,14 @@ test("buyItem internals should work properly for Calendar", () => {
     expect(itemBought).toBe(false);
     expect(reason).toBe("cannot-afford");
 
-    //Give ourselves plenty of science & try again; this time it should succeed:
-    game.resPool.get("science").value = 100;
+    //Give ourselves plenty of wood & try again; this time it should succeed:
+    game.resPool.get("wood").value = 100;
     controller.updateEnabled(model);
     var {itemBought, reason} = controller.buyItem(model, null);
     expect(model.metadata.researched).toBe(true);
     expect(itemBought).toBe(true);
     expect(reason).toBe("paid-for");
-    expect(game.resPool.get("science").value).toBe(70);
+    expect(game.resPool.get("wood").value).toBe(70);
 
     //Try again; this time it should fail because already bought:
     controller.updateEnabled(model);
@@ -708,7 +708,7 @@ test("buyItem internals should work properly for Calendar", () => {
     expect(model.metadata.researched).toBe(true);
     expect(itemBought).toBe(false);
     expect(reason).toBe("already-bought");
-    expect(game.resPool.get("science").value).toBe(70);
+    expect(game.resPool.get("wood").value).toBe(70);
 });
 
 test("buyItem internals: removed PolicyBtnController stays gone (policy system deleted)", () => {

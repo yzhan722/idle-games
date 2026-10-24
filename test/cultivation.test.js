@@ -1363,11 +1363,16 @@ test("Unified Realm-Module Interlock & One Key Resource per Major Realm (九境�
         }
     }
 
-    // 2. Streamlined 17 core buildings and 8 realm signature resources
-    expect(cult.getCoreBuildings().length).toBe(17);
+    // 2. Streamlined 14 core buildings (10 production + 4 shared storage) and 8 realm signature resources
+    expect(cult.getCoreBuildings().length).toBe(14);
     expect(cult.isCoreBuilding("field")).toBe(true);
     expect(cult.isCoreBuilding("chronosphere")).toBe(true);
     expect(cult.isCoreBuilding("ziggurat")).toBe(false);
+    expect(cult.getSharedStorageBuildings().length).toBe(4);
+    expect(cult.isSharedStorageBuilding("barn")).toBe(true);
+    expect(cult.isSharedStorageBuilding("academy")).toBe(true);
+    expect(cult.isSharedStorageBuilding("mansion")).toBe(true);
+    expect(cult.isSharedStorageBuilding("observatory")).toBe(true);
 
     expect(cult.isCoreRealmResource("xiuwei")).toBe(true);
     expect(cult.isCoreRealmResource("wood")).toBe(true);
@@ -1425,14 +1430,17 @@ test("Resource production & storage capacity rebalance: realmStorageRatio, core 
     expect(game.bld.effectsBase.goldMax).toBe(200);
     expect(game.bld.effectsBase.titaniumMax).toBe(150);
 
-    // 2. Early-realm core buildings have a single dedicated resource bonus and expand storage via getBuildingStorageBonus
+    // 2. Early-realm core buildings have a single dedicated resource output or shared storage cap
     game.updateCaches();
     game.calculateAllEffects();
     expect(game.bld.get("hut").priceRatio).toBe(1.25);
     expect(game.bld.get("hut").effects.xiuweiPerTickBase).toBe(0.005);
     expect(game.bld.get("field").effects.catnipPerTickBase).toBe(0.12);
-    expect(game.bld.get("workshop").effects.ironPerTickBase).toBe(0.018);
+    expect(game.bld.get("logHouse").effects.woodPerTickBase).toBeCloseTo(0.035);
     expect(game.bld.get("barn").priceRatio).toBe(1.22);
+    expect(game.bld.get("barn").effects.catnipMax).toBeGreaterThanOrEqual(4000);
+    expect(game.bld.get("barn").effects.woodMax).toBeGreaterThanOrEqual(2000);
+    expect(game.bld.get("barn").effects.mineralsMax).toBeGreaterThanOrEqual(2500);
 
     // 3. Realm breakthroughs grant realmStorageRatio that scales maxValue proportionally
     game.updateCaches();
@@ -1448,14 +1456,12 @@ test("Resource production & storage capacity rebalance: realmStorageRatio, core 
     expect(game.getEffect("realmStorageRatio")).toBeGreaterThan(0);
     expect(game.resPool.get("wood").maxValue).toBeGreaterThan(baseWoodMax);
 
-    // 4. Late-game core buildings produce and store their realm's signature resources (oil, uranium, unobtainium, relic, timeCrystal)
+    // 4. Late-game core buildings produce their realm's 1 signature resource (faith, unobtainium, relic, timeCrystal)
     expect(game.resPool.get("relic").calculatePerTick).toBe(true);
     expect(game.resPool.get("timeCrystal").calculatePerTick).toBe(true);
 
-    const biolab = game.bld.get("biolab");
-    biolab.unlocked = true; biolab.val = 2; biolab.on = 2;
-    const magneto = game.bld.get("magneto");
-    magneto.unlocked = true; magneto.val = 2; magneto.on = 2;
+    const temple = game.bld.get("temple");
+    temple.unlocked = true; temple.val = 2; temple.on = 2;
     const reactor = game.bld.get("reactor");
     reactor.unlocked = true; reactor.val = 2; reactor.on = 2;
     const accel = game.bld.get("accelerator");
@@ -1467,8 +1473,7 @@ test("Resource production & storage capacity rebalance: realmStorageRatio, core 
     game.calculateAllEffects();
     game.resPool.updateMaxValueAll();
 
-    expect(game.calcResourcePerTick("oil")).toBeGreaterThan(0);
-    expect(game.calcResourcePerTick("uranium")).toBeGreaterThan(0);
+    expect(game.calcResourcePerTick("faith")).toBeGreaterThan(0);
     expect(game.calcResourcePerTick("unobtainium")).toBeGreaterThan(0);
     expect(game.calcResourcePerTick("relic")).toBeGreaterThan(0);
     expect(game.calcResourcePerTick("timeCrystal")).toBeGreaterThan(0);
@@ -1945,49 +1950,63 @@ test("Differentiated Origins (buffs + debuffs) and Lore-Accurate Spirit Roots (m
     expect(ctrl.getPrices({metadata: jiedan0})[0].val).toBeCloseTo(baseBreakCost * 1.10);
 });
 
-test("Strict 1-to-1 Building-to-Resource Bonus Bijection: each building has at most 1 resource bonus and each resource has at most 1 building bonus", () => {
+test("1-Resource-Per-Realm & Shared-Storage-Building Architecture: 10 single-output production buildings and 4 shared storage-cap buildings (2-3 resources each)", () => {
     game.updateCaches();
     game.calculateAllEffects();
 
-    const expectedBijection = {
+    // 1. 10 Dedicated Production Buildings (strictly 1 *PerTickBase output per building, and 1 building per resource)
+    const expectedProductionBijection = {
         field: "catnipPerTickBase",
         hut: "xiuweiPerTickBase",
-        library: "sciencePerTickBase",
         logHouse: "woodPerTickBase",
         mine: "mineralsPerTickBase",
-        workshop: "ironPerTickBase",
         smelter: "goldPerTickBase",
-        academy: "coalPerTickBase",
-        barn: "culturePerTickBase",
-        mansion: "titaniumPerTickBase",
-        observatory: "starchartPerTickBase",
+        library: "sciencePerTickBase",
         temple: "faithPerTickBase",
-        biolab: "oilPerTickBase",
         reactor: "unobtainiumPerTickBase",
-        magneto: "uraniumPerTickBase",
         accelerator: "relicPerTickBase",
         chronosphere: "timeCrystalPerTickBase"
     };
 
-    const seenEffectKeys = new Map();
+    // 2. 4 Shared Storage Buildings (every 2-3 capped core resources share 1 storage-cap building)
+    const expectedSharedStorage = {
+        barn: ["catnipMax", "woodMax", "mineralsMax"],
+        academy: ["goldMax", "scienceMax"],
+        mansion: ["faithMax", "unobtainiumMax"],
+        observatory: ["relicMax", "timeCrystalMax"]
+    };
+
+    const seenProdEffects = new Map();
+    const seenStorageEffects = new Map();
+
     for (const b of game.bld.buildingsData) {
         const keys = Object.keys(b.effects || {});
-        expect(keys.length).toBeLessThanOrEqual(1);
-        if (b.stages) {
-            for (const st of b.stages) {
-                expect(Object.keys(st.effects || {}).length).toBeLessThanOrEqual(1);
-            }
-        }
-        if (expectedBijection[b.name]) {
-            expect(keys).toEqual([expectedBijection[b.name]]);
+        if (expectedProductionBijection[b.name]) {
+            expect(keys).toEqual([expectedProductionBijection[b.name]]);
             expect(b.effects[keys[0]]).toBeGreaterThan(0);
-            expect(seenEffectKeys.has(keys[0])).toBe(false);
-            seenEffectKeys.set(keys[0], b.name);
+            expect(seenProdEffects.has(keys[0])).toBe(false);
+            seenProdEffects.set(keys[0], b.name);
+            if (b.stages) {
+                for (const st of b.stages) {
+                    expect(Object.keys(st.effects || {})).toEqual([expectedProductionBijection[b.name]]);
+                }
+            }
+        } else if (expectedSharedStorage[b.name]) {
+            const expectedMaxKeys = expectedSharedStorage[b.name];
+            expect(keys.length).toBeGreaterThanOrEqual(2);
+            expect(keys.length).toBeLessThanOrEqual(3);
+            expect(keys.sort()).toEqual([...expectedMaxKeys].sort());
+            for (const mk of expectedMaxKeys) {
+                expect(b.effects[mk]).toBeGreaterThan(0);
+                expect(seenStorageEffects.has(mk)).toBe(false);
+                seenStorageEffects.set(mk, b.name);
+            }
         } else {
             expect(keys.length).toBe(0);
         }
     }
-    expect(seenEffectKeys.size).toBe(17);
+    expect(seenProdEffects.size).toBe(10);
+    expect(seenStorageEffects.size).toBe(9);
 });
 
 

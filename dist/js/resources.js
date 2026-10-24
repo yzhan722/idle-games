@@ -571,36 +571,20 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		whRatio *= (1 + harborBonus * 0.1) * spaceportBonus;
 
 		switch (resName) {
-			case "catnip":
-				return bld("field").val * 400 + (bld("barn").val * 2500 + bld("accelerator").val * 30000 * accelRatio) * (1 + barnRatio * 0.25);
-			case "wood":
-				return bld("hut").val * 200 + bld("logHouse").val * 350 + (bld("barn").val * 1200 + bld("accelerator").val * 20000 * accelRatio) * (1 + barnRatio) * whRatio;
-			case "minerals":
-				return bld("workshop").val * 250 + bld("mine").val * 400 + (bld("barn").val * 1500 + bld("accelerator").val * 25000 * accelRatio) * (1 + barnRatio) * whRatio;
 			case "coal":
 				return (bld("academy").val * 300 + bld("barn").val * 400 * (1 + (game.getEffect("harborCoalRatio") || 0)) + bld("accelerator").val * 2500 * accelRatio) * whRatio;
 			case "iron":
 				return (bld("workshop").val * 300 + bld("barn").val * 600 + bld("accelerator").val * 7500 * accelRatio) * (1 + barnRatio) * whRatio;
 			case "titanium":
 				return (bld("mansion").val * 600 + bld("barn").val * 400 + bld("accelerator").val * 2500 * accelRatio) * whRatio;
-			case "gold":
-				return (bld("smelter").val * 250 + bld("barn").val * 300 + bld("accelerator").val * 1000 * accelRatio) * whRatio;
 			case "oil":
 				return bld("biolab").val * 12000 + bld("magneto").val * 6000;
 			case "uranium":
 				return bld("magneto").val * 2500 + bld("reactor").val * 2500;
-			case "unobtainium":
-				return bld("reactor").val * 1000 + bld("accelerator").val * 1000;
-			case "science": {
-				var lib = bld("library");
-				var libBase = (lib.stage == 1 ? 3000 : 800) * (1 + bld("observatory").on * (game.getEffect("libraryRatio") || 0));
-				var compBonus = game.getEffect("scienceMaxCompendia") || 0;
-				return lib.val * libBase + bld("academy").val * 2500 + bld("observatory").val * 8000 + bld("biolab").val * 15000 + bld("accelerator").val * 45000 + compBonus;
-			}
+			case "science":
+				return game.getEffect("scienceMaxCompendia") || 0;
 			case "culture":
 				return (bld("library").val * 200 + bld("barn").val * 600 + bld("temple").val * 600) * (1 + bld("ziggurat").val * (0.08 + (game.getEffect("cultureMaxRatioBonus") || 0)));
-			case "faith":
-				return bld("temple").val * 1000 + bld("biolab").val * 600;
 			case "manpower":
 				return bld("hut").val * 75 + bld("logHouse").val * 80 + bld("mansion").val * 150;
 			case "unicorns":

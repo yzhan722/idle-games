@@ -463,6 +463,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		],
 		priceRatio: 1.25,
 		defaultUnlockable: true,
+		unlocks: {
+			tabs: ["science"]
+		},
 		effects: {
 			"xiuweiPerTickBase": 0.005
 		},
@@ -475,9 +478,10 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.logHouse.label"),
 		description: $I("buildings.logHouse.desc"),
 		unlockRatio: 0.3,
+		defaultUnlockable: true,
 		prices: [
-			{ name : "wood", val: 150 },
-			{ name : "minerals", val: 180 }
+			{ name : "catnip", val: 120 },
+			{ name : "wood", val: 10 }
 		],
 		priceRatio: 1.15,
 		effects: {
@@ -496,17 +500,19 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.mansion.label"),
 		description: $I("buildings.mansion.desc"),
 		prices: [
-			{ name : "gold", val: 60 },
-			{ name : "slab", val: 80 },
-			{ name : "steel", val: 35 }
+			{ name : "science", val: 4000 },
+			{ name : "faith", val: 1200 }
 		],
 		priceRatio: 1.15,
 		effects: {
-			"titaniumPerTickBase": 0.015
+			"faithMax": 2500,
+			"unobtainiumMax": 1500
 		},
 		calculateEffects: function(self, game){
+			var ratio = 1 + game.getEffect("warehouseRatio") + game.getEffect("calcinerRatio") * 0.1;
 			self.effects = {
-				"titaniumPerTickBase": 0.015 * (1 + game.getEffect("calcinerRatio"))
+				"faithMax": 2500 * ratio,
+				"unobtainiumMax": 1500 * ratio
 			};
 		},
 		breakIronWill: true,
@@ -525,7 +531,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				description: $I("buildings.library.desc"),
 				unlockRatio: 0.3,
 				prices: [
-					{ name : "wood", val: 20 }
+					{ name : "minerals", val: 300 },
+					{ name : "gold", val: 60 }
 				],
 				effects: {
 					"sciencePerTickBase": 0.006
@@ -535,7 +542,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			},{
 				label: $I("buildings.dataCenter.label"),
 				description: $I("buildings.dataCenter.desc"),
-				prices: [{ name: "steel", val: 100 }, { name: "slab", val: 300 }, { name: "gold", val: 250 }],
+				prices: [{ name: "minerals", val: 1200 }, { name: "gold", val: 250 }, { name: "science", val: 1500 }],
 				effects: {
 					"sciencePerTickBase": 0.025
 				},
@@ -547,7 +554,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			}
 		],
 		priceRatio: 1.15,
-		defaultUnlockable: true,
+		defaultUnlockable: false,
 		unlocks: {
 			tabs: ["science"]
 		},
@@ -584,22 +591,19 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		description: $I("buildings.academy.desc"),
 		unlockRatio: 0.3,
 		prices: [
-			{ name : "wood", val: 50 },
-			{ name : "minerals", val: 70 },
-			{ name : "science", val: 100 }
+			{ name : "minerals", val: 400 },
+			{ name : "gold", val: 100 }
 		],
 		priceRatio: 1.15,
 		effects: {
-			"coalPerTickBase": 0.018
+			"goldMax": 1000,
+			"scienceMax": 35000
 		},
 		calculateEffects: function(self, game){
-			var coalBase = 0.018 +
-				(game.science.get("steel").researched ? 0.006 : 0) +
-				(game.workshop.get("geodesy").researched ? 0.003 : 0) +
-				(game.workshop.get("miningDrill").researched ? 0.004 : 0) +
-				Math.max(0, game.getEffect("coalRatioGlobalReduction") * 0.01);
+			var ratio = 1 + game.getEffect("warehouseRatio") + Math.max(0, game.getEffect("coalRatioGlobalReduction") * 0.01);
 			self.effects = {
-				"coalPerTickBase": coalBase
+				"goldMax": 1000 * ratio,
+				"scienceMax": 35000 * ratio
 			};
 		},
 		flavor: $I("buildings.academy.flavor"),
@@ -611,18 +615,20 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "observatory",
 		label: $I("buildings.observatory.label"),
 		description: $I("buildings.observatory.desc"),
-		prices: [{ name: "iron", val: 350 }, { name: "science", val: 800 }, { name: "slab", val: 25 }, { name: "beam", val: 80 }],
+		prices: [{ name: "unobtainium", val: 300 }, { name: "relic", val: 60 }],
 		priceRatio: 1.12,
 		upgrades: {
 			buildings: ["library"]
 		},
 		effects: {
-			"starchartPerTickBase": 0.008
+			"relicMax": 1000,
+			"timeCrystalMax": 500
 		},
 		calculateEffects: function(self, game) {
-			var ratio = 1 + game.getEffect("observatoryRatio");
+			var ratio = 1 + game.getEffect("observatoryRatio") + game.getEffect("warehouseRatio");
 			self.effects = {
-				"starchartPerTickBase": ratio * 0.008
+				"relicMax": 1000 * ratio,
+				"timeCrystalMax": 500 * ratio
 			};
 		},
 		flavor: $I("buildings.observatory.flavor")
@@ -632,17 +638,14 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		description: $I("buildings.biolab.desc"),
 		prices: [{ name: "science", val: 1500 }, { name: "slab", val: 60 }, { name: "titanium", val: 40 }, { name: "alloy", val: 10 }],
 		priceRatio: 1.12,
-		effects: {
-			"oilPerTickBase": 0.03
-		},
+		effects: {},
 		upgrades: {
 			buildings: ["library"]
 		},
 		calculateEffects: function(self, game){
 			var labBonus = 1 + game.getEffect("oilWellRatio") + (game.workshop.get("uplink").researched ? game.getEffect("uplinkLabRatio") : 0);
-			self.effects = {
-				"oilPerTickBase": 0.03 * labBonus
-			};
+			void labBonus;
+			self.effects = {};
 		},
 		flavor: $I("buildings.biolab.flavor")
 	},
@@ -658,14 +661,18 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		],
 		priceRatio: 1.22,
 		effects: {
-			"culturePerTickBase": 0.018
+			"catnipMax": 4000,
+			"woodMax": 2000,
+			"mineralsMax": 2500
 		},
 		calculateEffects: function (self, game){
 			var stainedGlass = game.religion.getRU("stainedGlass");
-			var sgBonus = (stainedGlass && stainedGlass.on) ? 0.018 * stainedGlass.on : 0;
-			var btRatio = 1 + game.getEffect("broadcastTowerRatio") + game.getEffect("cultureMaxRatioBonus");
+			var sgBonus = (stainedGlass && stainedGlass.on) ? 0.1 * stainedGlass.on : 0;
+			var ratio = (1 + game.getEffect("barnRatio") + sgBonus + game.getEffect("broadcastTowerRatio") * 0.1 + game.getEffect("cultureMaxRatioBonus") * 0.1) * (1 + game.getEffect("warehouseRatio"));
 			self.effects = {
-				"culturePerTickBase": (0.018 + sgBonus) * btRatio
+				"catnipMax": 4000 * ratio,
+				"woodMax": 2000 * ratio,
+				"mineralsMax": 2500 * ratio
 			};
 		},
 		flavor: $I("buildings.barn.flavor")
@@ -741,6 +748,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			{ name : "wood", val: 60 }
 		],
 		priceRatio: 1.15,
+		unlocks: {
+			tabs: ["workshop"]
+		},
 		effects: {
 			"mineralsPerTickBase": 0.05
 		},
@@ -826,13 +836,11 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		description: $I("buildings.magneto.desc"),
 		prices: [{ name: "steel", val: 20 }, { name: "alloy", val: 10 }, { name: "blueprint", val: 1 }],
 		priceRatio: 1.18,
-		effects: {
-			"uraniumPerTickBase": 0.02
-		},
+		effects: {},
 		calculateEffects: function(self, game) {
-			self.effects = {
-				"uraniumPerTickBase": 0.02 * (1 + game.getEffect("uraniumRatio"))
-			};
+			var uRatio = game.getEffect("uraniumRatio");
+			void uRatio;
+			self.effects = {};
 		}
 	},
 	{
@@ -884,9 +892,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		unlocks: {
 			tabs: ["workshop"]
 		},
-		effects: {
-			"ironPerTickBase": 0.018
-		},
+		effects: {},
 		calculateEffects: function(self, game){
 			var steelRatio = 1 + (game.workshop.get("steelPlants").researched ? (
 				game.getEffect("calcinerSteelRatio") +
@@ -894,9 +900,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 				game.getEffect("calcinerSteelReactorBonus") +
 				game.getEffect("calcinerSteelRatioBonus")
 			) : 0);
-			self.effects = {
-				"ironPerTickBase": 0.018 * steelRatio
-			};
+			void steelRatio;
+			self.effects = {};
 			if (self.val) {
 				game.time.queue.unlockQueueSource("upgrades");
 			}
@@ -921,7 +926,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "reactor",
 		label: $I("buildings.reactor.label"),
 		description: $I("buildings.reactor.desc"),
-		prices: [{ name: "titanium", val: 350 }, { name: "oil", val: 600 }, { name: "slab", val: 250 }, { name: "blueprint", val: 5 }],
+		prices: [{ name: "gold", val: 400 }, { name: "science", val: 5000 }, { name: "faith", val: 1500 }],
 		priceRatio: 1.15,
 		upgrades: {
 			buildings: ["harbor"]
@@ -940,7 +945,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "accelerator",
 		label: $I("buildings.accelerator.label"),
 		description: $I("buildings.accelerator.desc"),
-		prices: [{ name: "titanium", val: 600 }, { name: "unobtainium", val: 120 }, { name: "uranium", val: 100 }, { name: "slab", val: 400 }],
+		prices: [{ name: "science", val: 12000 }, { name: "faith", val: 3000 }, { name: "unobtainium", val: 120 }],
 		priceRatio: 1.15,
 		effects: {
 			"relicPerTickBase": 0.018
@@ -1047,7 +1052,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		name: "temple",
 		label: $I("buildings.temple.label"),
 		description: $I("buildings.temple.desc"),
-		prices: [{ name: "gold", val: 25 }, { name: "slab", val: 15 }, { name: "iron", val: 150 }, { name: "culture", val: 150 }],
+		prices: [{ name: "minerals", val: 600 }, { name: "gold", val: 120 }, { name: "science", val: 1200 }],
 		priceRatio: 1.15,
 		upgrades: {
 			buildings: ["ziggurat"]
@@ -1115,8 +1120,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		prices: [
 			{ name : "unobtainium", val: 400 },
 			{ name : "relic", 		val: 80 },
-			{ name : "science", 	val: 35000 },
-			{ name : "blueprint", 	val: 15 }
+			{ name : "science", 	val: 35000 }
 		],
 		priceRatio: 1.20,
 		effects: {
@@ -1276,6 +1280,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		"oilMax"        : 800,
 		"uraniumMax"	: 300,
 		"unobtainiumMax": 300,
+		"relicMax"      : 500,
+		"timeCrystalMax": 200,
 		"antimatterMax" : 200,
 		"manpowerMax"	: 150,
 		"manpowerPerTickBase": 0.25,
