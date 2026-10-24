@@ -411,16 +411,20 @@ test("Rift progress and artifacts survive save/load", () => {
 //--------------------------------
 //       Progression curve
 //--------------------------------
-test("Every stage grants a flat xiuwei trickle that scales with realm bonus", () => {
+test("Initial Mortal stage (lianqi_0) has 0 xiuweiPerTickBase while subsequent stages scale with realm bonus", () => {
     const cult = game.cultivation;
-    for (const s of cult.stages){
+    expect(cult.stages[0].name).toBe("lianqi_0");
+    expect(cult.stages[0].effects.xiuweiPerTickBase).toBe(0);
+    for (let i = 1; i < cult.stages.length; i++){
+        const s = cult.stages[i];
         const def = cult.REALM_DEFS.find(d => d.key == s.realm);
         expect(s.effects.xiuweiPerTickBase).toBeCloseTo(def.bonus);
     }
-    //and it actually flows into the shared effect cache
+    // On a fresh game (Mortal state), initial xiuwei growth speed is strictly 0
     game.globalEffectsCached = {};
     cult.updateEffectCached();
-    expect(game.globalEffectsCached.xiuweiPerTickBase).toBeCloseTo(0.006);	//lianqi_0
+    expect(game.globalEffectsCached.xiuweiPerTickBase || 0).toBe(0);
+    expect(game.calcResourcePerTick("xiuwei")).toBe(0);
 });
 
 test("Sect promotions announce themselves; non-stage purchases never echo breakthrough text", () => {
@@ -769,18 +773,27 @@ test("Early-game guide milestone rewards claim once without skipping steps and s
     expect(cult.guideClaimed.gather).toBe(true);
     expect(cult.guideClaimed.field).toBeFalsy();	//must not auto-complete field or refine
     expect(cult.guideClaimed.refine).toBeFalsy();
-    const xwAfterFirst = game.resPool.get("xiuwei").value;
-    expect(xwAfterFirst).toBeGreaterThan(0);
+    // Mortal herb gathering grants catnip only; xiuwei remains 0 until building 神手竹庐 (hut)
+    expect(game.resPool.get("catnip").value).toBeGreaterThan(5);
+    expect(game.resPool.get("xiuwei").value).toBe(0);
+
+    // Building first hut awakens spiritual qi and grants the first xiuwei boon
+    game.bld.get("hut").val = 1;
+    cult.claimGuideRewards();
+    expect(cult.guideClaimed.hut).toBe(true);
+    const xwAfterHut = game.resPool.get("xiuwei").value;
+    expect(xwAfterHut).toBeGreaterThan(0);
 
     //claiming again does not double-grant
     cult.claimGuideRewards();
-    expect(game.resPool.get("xiuwei").value).toBe(xwAfterFirst);
+    expect(game.resPool.get("xiuwei").value).toBe(xwAfterHut);
 
     const saveData = {};
     cult.save(saveData);
     cult.guideClaimed = {};
     cult.load(saveData);
     expect(cult.guideClaimed.gather).toBe(true);
+    expect(cult.guideClaimed.hut).toBe(true);
 });
 
 test("resolveWander always grants base xiuwei and protects Lianqi players from ambush loss", () => {
@@ -1629,6 +1642,53 @@ test("Turn-Based Combat System: Lesser Rift 3-wave gauntlet, Greater Rift Boss b
     expect(cult.battle.animSeq).toBeGreaterThan(0);
     expect(cult.battle.lastEvent).toBeTruthy();
 });
+
+test("Mortal Phase (凡人状态): initial xiuwei growth speed is strictly 0, Mortal UI banner & tags highlight mortal state, and building 神手竹庐 awakens Qi Refining", () => {
+    const cult = game.cultivation;
+    game.updateCaches();
+    game.calculateAllEffects();
+
+    // 1. Fresh game starts in Mortal state with 0 xiuwei and 0 xiuwei growth speed
+    expect(cult.isMortal()).toBe(true);
+    expect(game.resPool.get("xiuwei").value).toBe(0);
+    expect(game.getEffect("xiuweiPerTickBase")).toBe(0);
+    expect(game.calcResourcePerTick("xiuwei")).toBe(0);
+
+    // 2. Gathering herbs, building herb fields (灵田), and refining wood keep player in Mortal state with 0 xiuwei/s
+    game.bld.gatherCatnip();
+    const field = game.bld.get("field");
+    field.unlocked = true; field.val = 3; field.on = 3;
+    game.resPool.get("wood").value = 2;
+    game.updateCaches();
+    game.calculateAllEffects();
+    expect(cult.isMortal()).toBe(true);
+    expect(game.getEffect("xiuweiPerTickBase")).toBe(0);
+    expect(game.calcResourcePerTick("xiuwei")).toBe(0);
+
+    // 3. Mortal status & banner highlight the Mortal phase and 4-step awakening track
+    const mortalSt = cult.getMortalStatus();
+    expect(mortalSt.isMortal).toBe(true);
+    expect(mortalSt.step).toBe(3); // wood >= 1 -> step 3
+    const bannerHtml = cult.renderMortalBanner();
+    expect(bannerHtml).toContain("xx-mortal-banner");
+    expect(bannerHtml).toContain("xx-mortal-track");
+
+    const ctrl = new classes.ui.RealmBtnController(game);
+    const lianqi0BtnHtml = ctrl.getName({metadata: cult.getStage("lianqi_0")});
+    expect(lianqi0BtnHtml).toContain("xx-mortal-tag");
+
+    // 4. Building 神手竹庐 (hut) awakens spiritual qi (引气入体), exits Mortal state, and starts passive xiuwei growth
+    const hut = game.bld.get("hut");
+    hut.unlocked = true; hut.val = 1; hut.on = 1;
+    game.updateCaches();
+    game.calculateAllEffects();
+    expect(cult.isMortal()).toBe(false);
+    expect(cult.renderMortalBanner()).toBe("");
+    expect(game.getEffect("xiuweiPerTickBase")).toBeCloseTo(0.005);
+    expect(game.calcResourcePerTick("xiuwei")).toBeGreaterThan(0);
+    expect(ctrl.getName({metadata: cult.getStage("lianqi_0")})).not.toContain("xx-mortal-tag");
+});
+
 
 
 

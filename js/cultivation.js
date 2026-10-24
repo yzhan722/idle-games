@@ -920,11 +920,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	//道途赐福 — 每次达成指引里程碑即赐一笔开荒资粮,串联起前五分钟的正向反馈链。
 	//各阶奖励严格避开后续步骤的完成判定(如 gather/field 不提前给灵木),绝不跳步。
+	//凡人阶段(gather/field/refine)尚未引气入体,唯赐凡俗草木;筑起【神手竹庐】(hut)引气入体后方赐第一缕修为!
 	GUIDE_REWARDS: {
-		gather:   {catnip: 5, xiuwei: 1},
-		field:    {catnip: 8, xiuwei: 1},
-		refine:   {wood: 1, xiuwei: 2},
-		hut:      {xiuwei: 3, wood: 1},
+		gather:   {catnip: 8},
+		field:    {catnip: 12},
+		refine:   {wood: 2},
+		hut:      {xiuwei: 5, wood: 1},
 		break2:   {xiuwei: 4, minerals: 6},
 		wander:   {xiuwei: 5, spice: 2},
 		seclude:  {xiuwei: 6, minerals: 10},
@@ -1099,9 +1100,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 						//was xiuweiJobRatio — dead since the disciple system was
 						//removed; now a direct multiplier on xiuwei production
 						"xiuweiRatio": def.bonus * 0.35,
-						//flat trickle: the floor under early-game income — meaningful at
-						//炼气 (0.006/tick), working alongside Cave-Heaven buildings
-						"xiuweiPerTickBase": def.bonus,
+						//凡人修仙传: 初始凡人态(lianqi_0)尚未引气入体,基础修为增速恒为 0;
+						//须先筑起神手竹庐或突破炼气二层后方有周天灵气自生
+						"xiuweiPerTickBase": (r == 0 && i == 0) ? 0 : def.bonus,
 						//战力底数——境界即道行;每境底数约翻四倍,境内层层渐涨
 						"combatPower": this.COMBAT_BASE[r] * (1 + i * 0.5)
 					},
@@ -1241,7 +1242,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		box.style.display = "";
 		dojo.toggleClass(box, "xx-guide-open", !!this._guideOpen);
 		var show = Math.min(3, guide.pending.length);
-		var sig = guide.done + "|" + (this._guideOpen ? "1|" : "0|");
+		var mortal = this.isMortal ? this.isMortal() : false;
+		var sig = guide.done + "|" + (this._guideOpen ? "1|" : "0|") + (mortal ? "M|" : "I|");
 		for (var i = 0; i < show; i++){
 			var step = guide.pending[i];
 			sig += step.key;
@@ -1256,12 +1258,17 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		box._xxGuideSig = sig;
 
 		var toggleTxt = $I(this._guideOpen ? "ui.mobile.guide.collapse" : "ui.mobile.guide.expand");
+		var mortalTag = mortal ? (" <span class=\"xx-mortal-chip\">" + $I("cultivation.mortal.chip") + "</span>") : "";
 		var gh = "<div class=\"xx-guide-hd\">" +
 			$I("cultivation.guide.title", [guide.done, guide.total]) +
+			mortalTag +
 			" <span class=\"xx-guide-toggle\">" + toggleTxt + "</span>" +
 			" <span class=\"xx-guide-help\">" + $I("cultivation.guide.help") + "</span></div>" +
 			"<div class=\"xx-guide-bar\"><i style=\"width:" +
 				Math.round(guide.done / Math.max(1, guide.total) * 100) + "%\"></i></div>";
+		if (mortal){
+			gh += "<div class=\"xx-guide-mortal-note\">" + $I("cultivation.mortal.guide.note") + "</div>";
+		}
 		for (var i = 0; i < show; i++){
 			var step = guide.pending[i];
 			gh += "<div class=\"xx-guide-step" + (i == 0 ? " xx-guide-next" : "") + "\">" +
@@ -1531,6 +1538,72 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	getCurrentRealm: function(){
 		var hi = this.getHighestStageIndex();
 		return (hi >= 0) ? this.stages[hi] : this.stages[0];
+	},
+
+	// ---------------- 凡人篇 · 凡胎肉身与引气入体 (Mortal Phase) ----------------
+	//《凡人修仙传》之始: 初入七玄门神手谷时玩家尚为肉体凡胎,未习《长春功》引气入体,
+	//故初始修为增长速度严格为 0; 唯有在山涧采药、辟田、凝木并筑起【神手竹庐】(或出门游历得仙缘)后,
+	//方才感应天地灵气、正式踏上修仙长生路。
+	isMortal: function(){
+		if (this.getHighestStageIndex() > 0){ return false; }
+		var huts = (this.game && this.game.bld && this.game.bld.get("hut")) ?
+			(this.game.bld.get("hut").val || 0) : 0;
+		if (huts > 0){ return false; }
+		var xw = (this.game && this.game.resPool && this.game.resPool.get("xiuwei")) ?
+			(this.game.resPool.get("xiuwei").value || 0) : 0;
+		if (xw > 0){ return false; }
+		if (this.stats && (this.stats.wander > 0 || this.stats.seclude > 0)){ return false; }
+		if (this.secluded){ return false; }
+		return true;
+	},
+
+	getMortalStatus: function(){
+		var mortal = this.isMortal();
+		var huts = (this.game && this.game.bld && this.game.bld.get("hut")) ? (this.game.bld.get("hut").val || 0) : 0;
+		var fields = (this.game && this.game.bld && this.game.bld.get("field")) ? (this.game.bld.get("field").val || 0) : 0;
+		var wood = (this.game && this.game.resPool && this.game.resPool.get("wood")) ? (this.game.resPool.get("wood").value || 0) : 0;
+		var catnip = (this.game && this.game.resPool && this.game.resPool.get("catnip")) ? (this.game.resPool.get("catnip").value || 0) : 0;
+		var stepIdx = 1;
+		if (!mortal || huts > 0){ stepIdx = 4; }
+		else if (wood >= 1){ stepIdx = 3; }
+		else if (fields >= 1){ stepIdx = 2; }
+		else if (catnip >= 5){ stepIdx = 2; }
+		return {
+			isMortal: mortal,
+			step: stepIdx,
+			label: mortal ? $I("cultivation.mortal.label") : this.getCurrentRealm().label,
+			seal: mortal ? $I("cultivation.mortal.seal") : "炼",
+			daoTitle: mortal ? $I("cultivation.mortal.daotitle") : this.getDaoTitle(),
+			title: $I("cultivation.mortal.banner.title"),
+			desc: $I("cultivation.mortal.banner.desc")
+		};
+	},
+
+	renderMortalBanner: function(){
+		if (!this.isMortal()){ return ""; }
+		var st = this.getMortalStatus();
+		var steps = [
+			$I("cultivation.mortal.step.1"),
+			$I("cultivation.mortal.step.2"),
+			$I("cultivation.mortal.step.3"),
+			$I("cultivation.mortal.step.4")
+		];
+		var trackHtml = "<div class=\"xx-mortal-track\">";
+		for (var i = 0; i < steps.length; i++){
+			var idx = i + 1;
+			var cls = (idx < st.step) ? "done" : (idx === st.step ? "cur" : "todo");
+			trackHtml += "<span class=\"xx-mortal-step " + cls + "\">" + steps[i] + "</span>";
+		}
+		trackHtml += "</div>";
+		return "<div class=\"xx-mortal-banner\">" +
+			"<div class=\"xx-mortal-hd\">" +
+				"<span class=\"xx-mortal-badge\">" + $I("cultivation.mortal.badge") + "</span>" +
+				"<span class=\"xx-mortal-title\">" + st.title + "</span>" +
+				"<span class=\"xx-mortal-rate\">" + $I("cultivation.mortal.rate") + "</span>" +
+			"</div>" +
+			"<div class=\"xx-mortal-desc\">" + st.desc + "</div>" +
+			trackHtml +
+		"</div>";
 	},
 
 	//大关瓶颈——首层突破除材料外的第二道门(秘境历练层数)
@@ -4778,8 +4851,13 @@ dojo.declare("classes.ui.RealmBtnController", com.nuclearunicorn.game.ui.Buildin
 	getName: function(model){
 		var meta = model.metadata;
 		var cult = this.game.cultivation;
-		var label = "<div class=\"label\"><span class=\"label-content\">" + meta.label + "</span></div>";
+		var isMortalStart = (meta.name === "lianqi_0" && cult && cult.isMortal && cult.isMortal());
+		var displayLabel = isMortalStart ? $I("cultivation.mortal.label") : meta.label;
+		var label = "<div class=\"label\"><span class=\"label-content\">" + displayLabel + "</span></div>";
 		if (meta.researched){
+			if (isMortalStart){
+				return label + "<div class=\"xx-done xx-mortal-tag\">" + $I("cultivation.mortal.btn.tag") + "</div>";
+			}
 			return label + "<div class=\"xx-done\">" + $I("cultivation.btn.reached") + "</div>";
 		}
 		var suffix = (meta.name.indexOf("vein") === 0)
@@ -5481,8 +5559,10 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				"<span class=\"xx-id-edit\">" + $I("identity.edit") + "</span></div>";
 		}
 
-		var realmLabel = String(realm.label || "");
-		var seal = realmLabel.replace(/<[^>]*>/g, "").charAt(0) || "道";
+		var isMortal = !!(cult.isMortal && cult.isMortal());
+		var realmLabel = isMortal ? $I("cultivation.mortal.label") : String(realm.label || "");
+		var seal = isMortal ? $I("cultivation.mortal.seal") : (realmLabel.replace(/<[^>]*>/g, "").charAt(0) || "道");
+		var daoTitle = isMortal ? $I("cultivation.mortal.daotitle") : cult.getDaoTitle();
 		var artMgr = classes.ui && classes.ui.XianxiaArt;
 		var tile = function(cls, icoKey, label, value, bar){
 			var tIco = artMgr ? "<i class=\"xx-tile-ico\" aria-hidden=\"true\">" + artMgr.tileIcon(icoKey) + "</i>" : "";
@@ -5515,18 +5595,20 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			phenomBanner = "<div class=\"xx-phenom-banner " + (pMaj ? "xx-phenom-major" : "xx-phenom-minor") + "\">" +
 				$I(pMaj ? "cultivation.phenom.major" : "cultivation.phenom.minor") + "</div>";
 		}
+		var mortalBanner = isMortal ? cult.renderMortalBanner() : "";
 
-		var html = heroBg + phenomBanner + "<div class=\"xx-hero\">" +
+		var html = heroBg + phenomBanner + "<div class=\"xx-hero" + (isMortal ? " xx-hero-mortal" : "") + "\">" +
 				heroVisual +
 				"<div class=\"xx-hero-body\">" + idLine +
 					"<div class=\"xx-hd-main\">" +
-						"<span class=\"xx-realm-big\">" + realmLabel + "</span>" +
-						"<span class=\"xx-chip xx-daotitle\">" + cult.getDaoTitle() + "</span>" +
+						"<span class=\"xx-realm-big" + (isMortal ? " xx-realm-mortal" : "") + "\">" + realmLabel + "</span>" +
+						"<span class=\"xx-chip xx-daotitle" + (isMortal ? " xx-daotitle-mortal" : "") + "\">" + daoTitle + "</span>" +
 						(cult.secluded ? "<span class=\"xx-chip xx-secl\">" + $I("cultivation.header.secluded") + "</span>" : "") +
 						sndChip +
 					"</div>" +
 				"</div>" +
 			"</div>" +
+			mortalBanner +
 			"<div class=\"xx-tiles\">" +
 				tile("xx-bonus", "bonus", $I("cultivation.tile.bonus"), "+" + fmt(ratio * 100, false, false, 0) + "%") +
 				tile("xx-combat", "combat", $I("cultivation.tile.combat"), fmt(cult.getCombatPower(), false, false, 0)) +
