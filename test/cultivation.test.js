@@ -365,7 +365,7 @@ test("Artifact drops grant, rank up, then salvage at max rank", () => {
     game.globalEffectsCached = {};
     cult.updateEffectCached();
     expect(game.globalEffectsCached.xiuweiRatio).toBeCloseTo(
-        0.015 + 0.08);	//lianqi_0 stage bonus + artifact
+        cult.stages[0].effects.xiuweiRatio + 0.08);	//lianqi_0 stage bonus + artifact
 
     cult.rollArtifactDrop(1);	//dupe -> rank 2, effects double
     expect(art.rank).toBe(2);
@@ -420,7 +420,7 @@ test("Every stage grants a flat xiuwei trickle that scales with realm bonus", ()
     //and it actually flows into the shared effect cache
     game.globalEffectsCached = {};
     cult.updateEffectCached();
-    expect(game.globalEffectsCached.xiuweiPerTickBase).toBeCloseTo(0.03);	//lianqi_0
+    expect(game.globalEffectsCached.xiuweiPerTickBase).toBeCloseTo(0.006);	//lianqi_0
 });
 
 test("Sect promotions announce themselves; non-stage purchases never echo breakthrough text", () => {

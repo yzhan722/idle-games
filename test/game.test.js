@@ -81,11 +81,11 @@ test("Building metadata effects should be correctly extracted", () => {
     game.bld.updateEffectCached();
     var bld = game.bld.getBuildingExt("lumberMill");
     expect(bld.meta.val).toBe(10);
-    expect(game.getEffect("woodRatio")).toBe(1);
+    expect(game.getEffect("woodRatio")).toBeCloseTo(0.6);
 
     //other managers should not interfere with effect calculation of game.bld
     game.updateCaches();
-    expect(game.getEffect("woodRatio")).toBe(1);
+    expect(game.getEffect("woodRatio")).toBeCloseTo(0.6);
 
     //let bldMeta = game.bld.get("lumberMill");
     //TODO: bldMeta effects seems to be polluted with unnecessery stuff, let's clean it up
@@ -97,8 +97,8 @@ test("Library stage-0 science trickle survives calculateEffects (感悟涓滴)",
     var lib = game.bld.get("library");
     lib.on = 1; lib.val = 1; lib.stage = 0;
     game.updateCaches();
-    expect(lib.stages[0].effects.sciencePerTickBase).toBeCloseTo(0.03);
-    expect(game.getEffect("sciencePerTickBase")).toBeCloseTo(0.03);
+    expect(lib.stages[0].effects.sciencePerTickBase).toBeCloseTo(0.006);
+    expect(game.getEffect("sciencePerTickBase")).toBeCloseTo(0.006);
     expect(game.calcResourcePerTick("science")).toBeGreaterThan(0);
 });
 
@@ -1046,9 +1046,9 @@ test("Disciple removal: buildings produce xiuwei directly without kittens", () =
     game.updateCaches();
     game.calculateAllEffects();
 
-    //增量 = 5 茅庐 × 0.025 xiuweiPerTickBase = 0.125
+    //增量 = 5 茅庐 × 0.005 xiuweiPerTickBase = 0.025
     var xiuweiPerTick = game.getEffect("xiuweiPerTickBase");
-    expect(xiuweiPerTick - baseline).toBeCloseTo(0.125);
+    expect(xiuweiPerTick - baseline).toBeCloseTo(0.025);
 });
 
 test("Disciple removal: village shell survives save/load", () => {
