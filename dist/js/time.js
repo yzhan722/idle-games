@@ -507,7 +507,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         description: $I("time.cfu.temporalPress.desc"),
         prices: [
             { name : "timeCrystal", val: 100 },
-            { name : "void", val: 10 }
+            { name : "relic", val: 50 }
         ],
         priceRatio: 1.1,
         //limitBuild: 0, let's just not
@@ -542,7 +542,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         prices: [
             { name : "karma", val: 1 },
             { name : "timeCrystal", val: 2 },
-            { name : "void", val: 100 }
+            { name : "relic", val: 25 }
         ],
         priceRatio: 1.25,
         limitBuild: 0,
@@ -567,9 +567,9 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 
         ],
         fixPrices:[
-            {name: "temporalFlux", val: 3000},
+            {name: "relic", val: 100},
 			{name: "timeCrystal", val: 100},
-			{name: "void", val: 500}
+			{name: "unobtainium", val: 500}
         ],
         priceRatio: 1.25,
         limitBuild: 0,
@@ -587,9 +587,9 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         label: $I("time.vsu.voidHoover.label"),
         description: $I("time.vsu.voidHoover.desc"),
         prices: [
-			{ name: "antimatter", val: 1000 },
+			{ name: "eludium", val: 100 },
 			{ name: "timeCrystal", val: 10 },
-			{ name: "void", val: 250 }
+			{ name: "relic", val: 50 }
         ],
         priceRatio: 1.25,
         effects: {
@@ -601,7 +601,8 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         label: $I("time.vsu.voidRift.label"),
         description: $I("time.vsu.voidRift.desc"),
         prices: [
-            { name: "void", val: 75 }
+            { name: "relic", val: 40 },
+            { name: "timeCrystal", val: 5 }
         ],
         priceRatio: 1.3,
         effects: {
@@ -617,9 +618,9 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         label: $I("time.vsu.chronocontrol.label"),
         description: $I("time.vsu.chronocontrol.desc"),
         prices: [
-			{ name: "temporalFlux", val: 3000},
+			{ name: "eludium", val: 150 },
 			{ name: "timeCrystal", val: 30 },
-			{ name: "void", val: 500 }
+			{ name: "relic", val: 100 }
         ],
         priceRatio: 1.25,
         effects: {
@@ -644,7 +645,7 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
         prices: [
             { name: "timeCrystal", val: 1000 },
             { name: "relic", val: 10000 },
-            { name: "void", val: 50 }
+            { name: "eludium", val: 250 }
         ],
         priceRatio: 1.25,
         effects: {
@@ -735,94 +736,6 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 
         // Apply seasonEffect for the newSeason
 		game.upgrade({
-			buildings: ["pasture"]
-		});
-        this.updateQueue();
-    },
-    /* shatterInCycles does this:
-    1) indepenently calculates space travel
-    2) while there are still years left:
-        2.1)calculates how many years are spent in left in this cycle
-        2.2)produces resources as if that number of years was shattered for
-        2.3)increases year number that number of years
-        2.4)calculates production per millenia (more accurate for paragon production bonuses)
-    3)calculates Millenium production
-    4)calculates flux
-    likely to be deprecated after shatterInGroupCycles is finished
-       Note from another dev: it's deprecated already, so does that mean shatterInGroupCycles is finished now?
-    */
-    shatterInCycles: function(amt){
-        amt = amt || 1;
-        var maxYearsShattered = amt;
-
-        var game = this.game;
-        var cal = game.calendar;
-        var endYear = cal.year + amt;
-
-        var routeSpeed = game.getEffect("routeSpeed") || 1;
-        var shatterTCGain = game.getEffect("shatterTCGain") * (1 + game.getEffect("rrRatio"));
-        var triggersOrderOfTheVoid = game.getEffect("voidResonance") > 0;
-
-        var daysPerYear = cal.daysPerSeason * cal.seasonsPerYear;
-        var remainingDaysInFirstYear = cal.daysPerSeason * (cal.seasonsPerYear - cal.season) - cal.day;
-        var remainingDaysInFirstYearSaved = remainingDaysInFirstYear;
-        cal.day = 0;
-        cal.season = 0;
-        // Space ETA
-        var remainingDays = remainingDaysInFirstYear + (amt - 1) * daysPerYear;
-        for (var j in game.space.planets) {
-            var planet = game.space.planets[j];
-            if (planet.unlocked && !planet.reached) {
-                planet.routeDays = Math.max(0, planet.routeDays - remainingDays * routeSpeed);
-            }
-        }
-
-        while (maxYearsShattered > 0){
-            var remainingYearsInCurrentCycle = Math.min(cal.yearsPerCycle - cal.cycleYear, maxYearsShattered);
-            var remainingDaysInCurrentCycle = (remainingYearsInCurrentCycle - 1) * daysPerYear + remainingDaysInFirstYear;
-            var remainingTicksInCurrentCycle = remainingDaysInCurrentCycle * cal.ticksPerDay;
-
-            // ShatterTC gain
-            if (shatterTCGain > 0) {
-                // XXX Partially duplicates resources#fastforward and #enforceLimits, some nice factorization is probably possible
-                var limits = {};
-                for (var j = 0; j < game.resPool.resources.length; j++) {
-                    var res = game.resPool.resources[j];
-                    limits[res.name] = Math.max(res.value, res.maxValue || Number.POSITIVE_INFINITY);
-                    game.resPool.addRes(res, game.getResourcePerTick(res.name, true) * remainingTicksInCurrentCycle * shatterTCGain, false, true);
-                }
-                for (var j = 0; j < game.resPool.resources.length; j++) {
-                    var res = game.resPool.resources[j];
-                    res.value = Math.min(res.value, limits[res.name]);
-                }
-                game.bld.cacheCathPollutionPerTick();
-                game.bld.cathPollutionFastForward(remainingTicksInCurrentCycle * shatterTCGain);
-            }
-
-            if (triggersOrderOfTheVoid) {
-                game.religion.triggerOrderOfTheVoid(remainingTicksInCurrentCycle);
-            }
-
-            // Calendar
-            cal.year += remainingYearsInCurrentCycle;
-            cal.onNewYears(endYear == cal.year, remainingYearsInCurrentCycle, false);
-            cal.calculateMilleniumProduction(cal.getMilleniaChanged(cal.year - remainingYearsInCurrentCycle, cal.year));
-            maxYearsShattered -= remainingYearsInCurrentCycle;
-            remainingDaysInFirstYear = cal.daysPerSeason * cal.seasonsPerYear;
-        }
-        if (amt == 1) {
-            game.msg($I("time.tc.shatterOne"), "", "tcShatter");
-        } else {
-            game.msg($I("time.tc.shatter",[amt]), "", "tcShatter");
-        }
-        this.flux += amt - 1 + remainingDaysInFirstYearSaved / daysPerYear;
-
-        game.challenges.getChallenge("1000Years").unlocked = true;
-        if (game.challenges.isActive("1000Years") && cal.year >= 1000) {
-            game.challenges.researchChallenge("1000Years");
-        }
-		// Apply seasonEffect for the newSeason
-		this.game.upgrade({
 			buildings: ["pasture"]
 		});
         this.updateQueue();
@@ -944,43 +857,6 @@ dojo.declare("classes.managers.TimeManager", com.nuclearunicorn.core.TabManager,
 			buildings: ["pasture"]
 		});
         this.updateQueue();
-    },
-    compareShatterTime: function(shatters, times, ignoreOldFunction, ignoreShatterInCycles, ignoreGroupCycles){
-        if (!ignoreOldFunction){
-            var oldShatterD1 = new Date();
-            for (var i = 0; i < times; i++){
-                this.shatter(shatters);
-            }
-            var oldShatterD2 = new Date();
-            //Average time in milliseconds to resolve 1 batch of *shatters* shatters, averaged across *times* trials
-            console.log("Old shatter average = " + (oldShatterD2.getTime() - oldShatterD1.getTime())/times + " ms");
-        }
-        if (!ignoreGroupCycles){
-            var newShatterD1 = new Date();
-            for (var i = 0; i < times; i++){
-                this.shatterInGroupCycles(shatters);
-            }
-            var newShatterD2 = new Date();
-            console.log("Group shatter average = " + (newShatterD2.getTime() - newShatterD1.getTime())/times + " ms");
-        }
-        if (!ignoreShatterInCycles){
-            //shatterInCycles is currently deprecated
-            var new1ShatterD1 = new Date();
-            for (var i = 0; i < times; i++){
-                this.shatterInCycles(shatters);
-            }
-            var new1ShatterD2 = new Date();
-            console.log("Cycle shatter average = " + (new1ShatterD2.getTime() - new1ShatterD1.getTime())/times + " ms");
-        }
-
-        if (!ignoreOldFunction && !ignoreGroupCycles){
-             console.log("newEfficensy = " + (oldShatterD2.getTime() - oldShatterD1.getTime())/(newShatterD2.getTime() - newShatterD1.getTime()));
-        }
-
-        if (!ignoreOldFunction && !ignoreShatterInCycles){
-            //shatterInCycles is currently deprecated
-            console.log("new1Efficensy = " + (oldShatterD2.getTime() - oldShatterD1.getTime())/(new1ShatterD2.getTime() - new1ShatterD1.getTime()));
-        }
     },
     unlockAll: function(){
         for (var i in this.cfu){
@@ -2510,11 +2386,6 @@ dojo.declare("classes.queue.manager", null,{
             this.game._publish("ui/update", this.game);
         }
     },
-    listDrop: function(event){
-        //this.queueItems.pop();
-        this.dropLastItem();
-        this.showList();
-    },
     getQueueElementModel: function(el) {
         var controllerAndModel = this.getQueueElementControllerAndModel(el);
         if (controllerAndModel) {
@@ -2594,11 +2465,6 @@ dojo.declare("classes.queue.manager", null,{
 
             case "transcendenceUpgrades":
                 props.controller = new classes.ui.TranscendenceBtnController(this.game);
-                var model = props.controller.fetchModel(props);
-                break;
-
-            case "pacts":
-                props.controller = new com.nuclearunicorn.game.ui.PactsBtnController(this.game);
                 var model = props.controller.fetchModel(props);
                 break;
 

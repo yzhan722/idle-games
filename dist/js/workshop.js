@@ -1044,7 +1044,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			"dataCenterAIRatio": 0.1
 		},
 		prices:[
-			{ name : "antimatter",  val: 125 },
+			{ name : "unobtainium", val: 125 },
 			{ name : "science",     val: 175000 },
 			{ name : "eludium",  	val: 25 }
 		],
@@ -1153,7 +1153,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			"queueCap": 3
 		},
 		prices:[
-			{ name : "antimatter",  val: 500 },
+			{ name : "unobtainium", val: 300 },
 			{ name : "science",     val: 35000 },
 			{ name : "eludium",     val: 50 }
 		]
@@ -1273,7 +1273,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.amBases.label"),
 		description: $I("workshop.amBases.desc"),
 		prices: [
-			{name: "antimatter", val: 250},
+			{name: "unobtainium", val: 250},
 			{name: "eludium", val: 15}
 		],
 		upgrades: {
@@ -1287,7 +1287,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.aiBases.label"),
 		description: $I("workshop.aiBases.desc"),
 		prices:[
-			{ name : "antimatter", val: 2500 },
+			{ name : "eludium", val: 100 },
 			{ name : "science", val: 750000 }
 		],
 		upgrades: {
@@ -1301,7 +1301,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			"spaceScienceRatio": 0.95
 		},
 		prices: [
-			{name: "antimatter", val: 750},
+			{name: "unobtainium", val: 500},
 			{name: "eludium", val: 35}
 		],
 		upgrades: {
@@ -1321,7 +1321,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			spaceBuilding: ["researchVessel", "spaceBeacon"]
 		},
 		prices: [
-			{name: "antimatter", val: 1750},
+			{name: "unobtainium", val: 1200},
 			{name: "eludium", val: 70}
 		],
 		unlocks: {
@@ -1338,8 +1338,8 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			spaceBuilding: ["researchVessel", "spaceBeacon"]
 		},
 		prices: [
-			{name: "antimatter", val: 2500},
-			{name: "void", val: 250}
+			{name: "eludium", val: 150},
+			{name: "relic", val: 50}
 		]
 	},{
 		name: "relicStation",
@@ -1352,7 +1352,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			spaceBuilding: ["spaceBeacon"]
 		},
 		prices: [
-			{name: "antimatter", val: 2500},
+			{name: "relic", val: 25},
 			{name: "eludium", val: 100}
 		]
 	},{
@@ -1360,7 +1360,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			label: $I("workshop.amDrive.label"),
 			description: $I("workshop.amDrive.desc"),
 			prices:[
-				{ name : "antimatter", val: 125 },
+				{ name : "eludium", val: 35 },
 				{ name : "science",  val: 450000 }
 			],
 			effects: {
@@ -1442,7 +1442,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		prices:[
 			{ name: "wood", val: 3000 },
 			{ name: "gold", val: 100 },
-			{ name: "alicorn", val: 20 }
+			{ name: "faith", val: 2500 }
 		]
 	},
 	
@@ -1709,7 +1709,7 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 
         },
         prices:[
-            { name : "antimatter", val: 2000 },
+            { name : "relic", val: 30 },
             { name : "timeCrystal", val: 15 }
         ],
         unlocks: {
@@ -1723,10 +1723,10 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 			"temporalParadoxDayBonus": 2
         },
         prices:[
-            { name : "antimatter", val: 2000 },
+            { name : "eludium", val: 150 },
             { name : "science", val: 300000 },
             { name : "timeCrystal", val: 25 },
-            { name : "void", val: 1000 }
+            { name : "relic", val: 60 }
         ],
         upgrades: {
             voidSpace: ["chronocontrol"]
@@ -1740,9 +1740,9 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
         },
         prices:[
 			{ name : "unobtainium", val: 15000 },
-			{ name : "temporalFlux", val: 6500 },
+			{ name : "relic", val: 80 },
 			{ name : "timeCrystal", val: 25 },
-			{ name : "void", val: 750 }
+			{ name : "eludium", val: 200 }
         ],
         upgrades: {
             buildings: ["chronosphere"]
@@ -1753,10 +1753,9 @@ dojo.declare("classes.managers.WorkshopManager", com.nuclearunicorn.core.TabMana
 		label: $I("workshop.invisibleBlackHand.label"),
 		description: $I("workshop.invisibleBlackHand.desc"),
 		prices: [
-			{name: "temporalFlux", val: 4096},
+			{name: "relic", val: 120},
 			{name: "timeCrystal", val: 128},
-			{name: "void", val: 32},
-			{name: "blackcoin", val: 64}
+			{name: "eludium", val: 250}
 		],
 		unlocks: {
 		}
@@ -2403,11 +2402,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Workshop", com.nuclearunicorn.game.
 
 	createBtn: function(upgrade) {
 		var controller = new com.nuclearunicorn.game.ui.UpgradeButtonController(this.game);
-		return new com.nuclearunicorn.game.ui.BuildingResearchBtn({id: upgrade.name, controller: controller}, this.game);
-	},
-
-	createZebraUpgradeBtn: function(upgrade) {
-		var controller = new com.nuclearunicorn.game.ui.ZebraUpgradeButtonController(this.game);
 		return new com.nuclearunicorn.game.ui.BuildingResearchBtn({id: upgrade.name, controller: controller}, this.game);
 	},
 

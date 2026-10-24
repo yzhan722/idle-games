@@ -389,10 +389,6 @@ var TabManager = dojo.declare("com.nuclearunicorn.core.TabManager", Control, {
 				bld.togglable = (bld.name == "oilWell" || bld.name == "biolab" || bld.name == "chronosphere" || bld.name == "aiCore") ? false : true;
 			}
 		}
-	},
-
-	resetStateResearch: function() {
-		//TODO
 	}
 });
 
@@ -746,38 +742,6 @@ var ButtonController = dojo.declare("com.nuclearunicorn.game.ui.ButtonController
 		return model.options.type;
 	},
 
-	/**
-	 * Deprecated method for price management (increases price property stored in button)
-	 */
-	adjustPrice:function(model, ratio ){
-		var prices = this.getPrices(model);
-		if (prices.length){
-			for ( var i = 0; i < prices.length; i++){
-				var price = prices[i];
-
-				price.val = price.val * ratio;
-			}
-		}
-
-		this.game.render();
-	},
-
-	/**
-	 * Deprecated method for price management (same as above, but decreases price on sale)
-	 */
-	rejustPrice: function(model, ratio){
-		var prices = model.prices;
-		if (prices.length){
-			for ( var i = 0; i < prices.length; i++){
-				var price = prices[i];
-
-				price.val = price.val / ratio;
-
-			}
-		}
-		this.game.render();
-	},
-
 	payPrice: function(model) {
 		this.game.resPool.payPrices(model.prices);
 		model.prices = this.getPrices(model);
@@ -800,6 +764,21 @@ var ButtonController = dojo.declare("com.nuclearunicorn.game.ui.ButtonController
 			}
 		}
 		model.prices = this.getPrices(model);
+	},
+
+	/**
+	 * Deprecated method for price management
+	 */
+	adjustPrice: function(model, ratio){
+		var prices = model.prices;
+		if (prices.length){
+			for ( var i = 0; i < prices.length; i++){
+				var price = prices[i];
+
+				price.val = price.val * ratio;
+			}
+		}
+		this.game.render();
 	},
 
 	clickHandler: function(model, event){
@@ -2417,10 +2396,6 @@ dojo.declare("com.nuclearunicorn.game.ui.BuildingStackableBtnController", Buildi
 		}
 	},
 	
-
-	buyItemAll: function(model, event, callback){
-		return this.buyItem(model, event, "all" /*isBuyAll*/);
-	},
 
 	_buyItem_step2: function(model, event, buyType) {
 		if (!event) { event = {}; /*event is an optional parameter*/ }

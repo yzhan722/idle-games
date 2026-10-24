@@ -25,16 +25,6 @@ dojo.declare("com.nuclearunicorn.game.Math", null, {
         return this.loopOrGaussianApproximation(trials, false, 1 / 2, 1 / 12, 0, 1, Math.random);
     },
 
-    binominalRandomInteger: function(trials, successProbability) {
-        return successProbability <= 0
-            ? 0
-            : successProbability >= 1
-                ? trials
-                : this.loopOrGaussianApproximation(trials, true, successProbability, successProbability * (1 - successProbability), 0, 1, function() {
-                    return Math.random() < successProbability ? 1 : 0;
-                });
-    },
-
     // Parameters mean, variance, lowerBound and upperBound are the characteristics of the base distribution, not of the global sum
     loopOrGaussianApproximation: function(trials, isDiscrete, mean, variance, lowerBound, upperBound, baseDistribution) {
         var globalMean = trials * mean;

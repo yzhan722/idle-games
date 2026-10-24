@@ -114,13 +114,9 @@ try {
     require("../js/stats");
     require("../js/challenges");
     require("../js/void");
-    require("../js/math");
-    require("../js/preview");
-    require("../game");
+    require("../js/math");    require("../game");
     require("../js/jsx/left.jsx");
-    require("../js/ui");
-    require("../js/toolbar");
-
+    require("../js/ui");
     //xianxia mod: CultivationTab/btn controllers extend ui.js base classes, load after ui
     require("../js/cultivation");
 

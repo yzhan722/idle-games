@@ -351,19 +351,6 @@ var Server = dojo.declare("classes.game.Server", null, {
 		this.userProfile = userProfile;
 	},
 
-	/**
-	 * Terminate the current KGNet session and clear local session state.
-	 * Returns the jqXHR so callers can chain UI updates.
-	 */
-	logout: function(){
-		var self = this;
-
-		return this._xhr("/user/logout/", "POST", {}).always(function(){
-			self.userProfile = null;
-			self.saveData = null;
-		});
-	},
-
     getServerUrl: function(){
 		var host = window.location.hostname;
 		var isLocalhost = window.location.protocol == "file:" || host == "localhost" || host == "127.0.0.1";
@@ -382,11 +369,6 @@ var Server = dojo.declare("classes.game.Server", null, {
 		//fetch UID only after server.json resolved — kgnetUrl must be set before
 		//getServerUrl() is consulted, else the first call races and hits the
 		//UNCONFIGURED placeholder
-		var fetchProfile = function(){
-			if (!self.userProfile){
-				self.syncUserProfile();
-			}
-		};
 		this._serverInfoPromise = $.ajax({
 			cache: false,
 			url: "server.json",
@@ -404,10 +386,8 @@ var Server = dojo.declare("classes.game.Server", null, {
 				self.motdContentPrevious = self.motdContent;
 				self.motdFreshMessage = true;
 			}
-			fetchProfile();
 		}).fail(function(err) {
 			console.log("Unable to parse server.json configuration:", err);
-			fetchProfile();
 		});
 
 	},
@@ -439,25 +419,6 @@ var Server = dojo.declare("classes.game.Server", null, {
 				self.setUserProfile(null);
 			}
 		});
-	},
-
-	/**
-	 * Show a failed KGNet operation in the game log with a human-readable reason.
-	 * 403 means the session expired; status 0 means the server could not be reached at all.
-	 *
-	 * @param {string} i18nKey - operation message with a {0} placeholder for the reason
-	 * @param {*} jqXHR
-	 */
-	_notifyRequestError: function(i18nKey, jqXHR){
-		var reason;
-		if (jqXHR.status == 403){
-			reason = $I("ui.kgnet.error.auth");
-		} else if (jqXHR.status > 0){
-			reason = $I("ui.kgnet.error.status", [jqXHR.status]);
-		} else {
-			reason = $I("ui.kgnet.error.network");
-		}
-		this.game.msg($I(i18nKey, [reason]), "alert");
 	},
 
 	//------------------ 江湖榜 leaderboard ------------------
@@ -512,135 +473,6 @@ var Server = dojo.declare("classes.game.Server", null, {
 	},
 
 	/**
-	 * Fetch user profile from the chiral server, 
-	 * User must be logged in and session cookie should be set beforehead
-	 */
-	syncUserProfile: function(){
-		var self = this;
-
-		this._xhr("/user/", "GET", {}).done(function(resp){
-			if (resp && resp.id){
-				self.setUserProfile(resp);
-				self.syncSaveData();
-			}
-		});
-	},
-
-	syncSaveData: function(){
-		var self = this;
-		return this._xhr("/kgnet/save/", "GET", {}).done(function(resp){
-			self.saveData = resp;
-		});
-	},
-
-	pushSave: function(){
-		var self = this,
-			game = this.game;
-
-		if (game.isReadOnly()){
-			return;
-		}
-
-		game.lastBackup = new Date().getTime();
-
-		var saveData = this.game.save();
-		this._xhr("/kgnet/save/upload/", "POST",
-		{
-			//pre-parsing guid to avoid checking it on the backend side
-			guid: this.game.telemetry.guid,
-			saveData: this.game.compressLZData(JSON.stringify(saveData, this.game.JSONreplacer), true),
-			metadata: {
-				calendar: {
-					year: game.calendar.year,
-					day: game.calendar.day
-				}
-			}
-		}).done(function(resp){
-			game.lastBackup = new Date().getTime();
-			self.saveData = resp;
-			self.game.msg($I("save.export.msg"));
-		}).fail(function(jqXHR){
-			self._notifyRequestError("save.export.fail", jqXHR);
-		});
-	},
-
-	/**
-	 * @param {string} guid - identifies which cloud save to update
-	 * @param {{archived?: boolean, label?: string}} metadata
-	 */
-	pushSaveMetadata: function(guid, metadata){
-		var self = this;
-		if (this.game.isReadOnly()){
-			return $.Deferred().reject().promise();
-		}
-		return this._xhr("/kgnet/save/update/", "POST",
-		{
-			//pre-parsing guid to avoid checking it on the backend side
-			guid: guid,
-			metadata: metadata
-		}).done(function(resp){
-			self.saveData = resp;
-		}).fail(function(jqXHR){
-			self._notifyRequestError("save.update.fail", jqXHR);
-		});
-	},
-
-	/**
-	 * Fetch your own cloud save without applying it anywhere (see also downloadPreview)
-	 * loadSave() layers the "overwrite my game with it" part on top.
-	 * @param {string} guid
-	 * @returns {any} the jqXHR, resolving to {data: string, metadata?: object}
-	 */
-	downloadSave: function(guid){
-		return this._xhr("/kgnet/save/" + guid + "/download/", "GET", {});
-	},
-
-	/**
-	 * Fetch public save based on its shareId
-	 * 
-	 * @param {string} shareId
-	 * @returns {any} the jqXHR, resolving to {data: string, metadata?: object}
-	 */
-	downloadPreview: function(shareId){
-		return this._xhr("/preview/" + shareId + "/save/", "GET", {});
-	},
-
-	/**
-	 * Public sharable URL that goes through KGNET and generates openhost preview card
-	 * @param {string} shareId
-	 */
-	getPreviewUrl: function(shareId){
-		//generate redirect url, backend will verify the host
-		var returnPath = window.location.pathname.replace(/[^/]*$/, "");
-		return this.getServerUrl() + "/preview/" + shareId + "?r=" + encodeURIComponent(returnPath);
-	},
-
-	/** @param {string} guid */
-	loadSave: function(guid){
-		var self = this;
-		if (this.game.isReadOnly()){
-			return;
-		}
-		this.downloadSave(guid).done(function(resp){
-			if (!resp || !resp.data){
-				console.error("unable to load game data", resp);
-				self.game.msg($I("save.import.fail", [$I("ui.kgnet.error.nodata")]), "alert");
-				return;
-			}
-			var data = resp.data;
-			LCstorage["com.nuclearunicorn.kittengame.savedata"] = data;
-			console.log("load successful?");
-
-			self.game.load();
-			self.game.msg($I("save.import.msg"));
-
-			self.game.render();
-		}).fail(function(jqXHR){
-			self._notifyRequestError("save.import.fail", jqXHR);
-		});
-	},
-
-	/**
 	 * "hodl" mode price feed.
 	 * Fetches the current real-world b-coin price and caches it in this.bcoinPrice
 	 * (which is persisted in the save file). On any failure we simply keep the last
@@ -678,25 +510,6 @@ var Server = dojo.declare("classes.game.Server", null, {
 		};
 	},
 
-	//TOOD: separate getting chiral client status and sending command to a separate component
-	/** @param {string} command */
-	sendCommand: function(command){
-		var self = this;
-		if (this.game.isReadOnly()){
-			return;
-		}
-		this._xhr("/kgnet/chiral/game/command/", "POST", {
-			command: command
-		}).done(function(resp){
-			if (resp.clientState){
-                self.setChiral(resp);
-			}
-		});
-	},
-
-	setChiral: function(data){
-		this.chiral = JSON.stringify(data, null, 2);
-	}
 });
 
 /**
@@ -2105,7 +1918,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		this.console = new com.nuclearunicorn.game.log.Console(this);
 		this.telemetry = new classes.game.Telemetry(this);
 		this.server = new classes.game.Server(this);
-		this.preview = new classes.game.Preview(this);
 		this.math = new com.nuclearunicorn.game.Math();
 
 		this.resPool = new classes.managers.ResourceManager(this);
@@ -3965,58 +3777,11 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			//console.error("Unable to fetch resource stack for resName '" + resName + "'");
 			return;
 		}
-		if (resName == "necrocorn"){
-			stack.push({
-				name: $I("res.stack.pactsConsumption"),
-				type: "perDay",
-				value: this.religion.pactsManager.getNecrocornDeficitConsumptionModifier() * this.getEffect("necrocornPerDay")
-			});
-		} else {
-			stack.push({
-				name: $I("res.stack.buildings"),
-				type: "perDay",
-				value: this.getEffect(res.name + "PerDay")
-			});
-		}
-		if (resName == "necrocorn"){
-			//ReligionManager keeps data on all corruption-related effects
-			var corruptionModifiers = this.religion.corruptionCached || [];
-			/** @type {ResStackEntry} */
-			var corruptionTotal = {
-				name: $I("res.stack.corruptionPerDay"),
-				type: "perDay",
-				value: (corruptionModifiers.finalCorruptionPerTick || 0) * this.calendar.ticksPerDay
-			};
-			/** @type {ResStack} */
-			var corruptionStack = [];
-			corruptionStack.push(corruptionTotal);
-			for (var i = 0; i < corruptionModifiers.length; i += 1) {
-				var modifier = corruptionModifiers[i];
-				switch (modifier.behavior) {
-				case "additive":
-					//Convert a per-tick effect to a per-day effect.
-					corruptionStack.push({
-						name: modifier.label,
-						type: "perDay",
-						value: modifier.value * this.calendar.ticksPerDay
-					});
-					//Hack to make the total corruption line display if net corruption is 0 due to Siphoning
-					if (modifier.value) {
-						corruptionTotal.forceDisplay = true;
-					}
-					break;
-				case "multiplicative":
-					//Convert a multiplier to a ratio bonus
-					corruptionStack.push({
-						name: modifier.label,
-						type: "ratio",
-						value: modifier.value - 1
-					});
-					break;
-				}
-			}
-			stack.push(corruptionStack);
-		}
+		stack.push({
+			name: $I("res.stack.buildings"),
+			type: "perDay",
+			value: this.getEffect(res.name + "PerDay")
+		});
 
 		return stack;
 	},
@@ -4090,11 +3855,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			ratio += scienceBldAmt * bpRatio;
 		}
 
-		if (craftedResName == "kerosene") {
-			var fRatio = 0.75 * this.getEffect("factoryRefineRatio");	//25% penalty
-			var amt = this.bld.get("factory").on;
-			ratio *= 1 + amt * fRatio;
-		}
 
 		//get resource specific craft ratio (like factory bonus)
 		ratio += this.getEffect(craftedResName + "CraftRatio") || 0;
@@ -4249,10 +4009,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	 * @returns {number}
 	 */
 	getResourcePerDay: function(resName){
-		if (resName == "necrocorn"){
-			return (this.religion.pactsManager.getNecrocornDeficitConsumptionModifier() * this.getEffect(resName + "PerDay") +
-			this.religion.getCorruptionPerTick() * this.calendar.ticksPerDay);
-		}
 		return this.getEffect(resName + "PerDay");
 	},
 	/**
@@ -4374,29 +4130,11 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				}
 			if (resPerDay < 0) {
 				var resourceValue = res.value;
-				var fractionOfCurrentDayElapsed = this.calendar.day - Math.floor(this.calendar.day);
-				if (res.name == "necrocorn") {
-					//Fast-forward a fractional amount of days' worth of pacts consumption:
-					var perDayConsumption = this.religion.pactsManager.getNecrocornDeficitConsumptionModifier() * this.getEffect("necrocornPerDay");
-					resourceValue += fractionOfCurrentDayElapsed * perDayConsumption;
-					//Count corruption as fractional necrocorns:
-					resourceValue += this.religion.corruption;
-
-					//This isn't completely accurate; it doesn't account for if we reach 0 necrocorns before next corruption.
-					//It also doesn't account for if we run out of alicorns to corrupt.
-				}
-
 				var toZero = this.calendar.ticksPerDay * resourceValue / (-resPerDay * this.getTicksPerSecondUI());
 				if (res.value == 0) {
 					toZero = 0;
 				}
 				resString += "<br>" + $I("res.toZero") + ": " + this.toDisplaySeconds(toZero.toFixed());
-			}
-			if (res.name == "necrocorn"){
-				var toNextNecrocorn = (1 - this.religion.corruption)/(this.religion.getCorruptionPerTick() * this.getTicksPerSecondUI());
-				if (toNextNecrocorn > 0){
-					resString += "<br>" + $I("res.toNextNecrocorn") + ": " + this.toDisplaySeconds(toNextNecrocorn.toFixed());
-				}
 			}
 			return resString;
 		} else if (res.calculateOnYear){
@@ -5072,16 +4810,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		}
 	},
 
-	restartFPSCounters: function() {
-        this.totalUpdateTime[0] = 0;
-        this.totalUpdateTime[1] = 0;
-        this.totalUpdateTime[2] = 0;
-        this.totalUpdateTime[3] = 0;
-        this.totalUpdateTime[4] = 0;
-        this.totalUpdateTimeCurrent = 0;
-        this.totalUpdateTimeTicks = 5;
-	},
-
 	reset: function(){
 		if (this.isReadOnly()){
 			return;
@@ -5151,10 +4879,8 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 	},
 
 	doDiscardParagon: function() {
-		this.resPool.get("burnedParagon").value += this.resPool.get("paragon").value;
 		this.resPool.get("paragon").value = 0;
 		this.ironWill = Boolean(this.ironWill && this.achievements.get("spaceOddity").starUnlocked);
-		//TODO: add some special hidden effect for this mechanics
 	},
 
 	/**
@@ -5301,7 +5027,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 
 		//-------------------------- very confusing and convoluted stuff related to karma zebras ---------------
 		var bonusZebras = this._getBonusZebras();
-		if (this.resPool.get("zebras").value > 0 && this.ironWill){
+		if (this.ironWill){
 			karmaZebras += bonusZebras;
 		}
 
@@ -5453,8 +5179,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				activeHolyGenocide: this.religion.getTU("holyGenocide").on,
 				zu: [],
 				ru: [],
-				tu: this.religion.filterMetadata(this.religion.transcendenceUpgrades, ["name", "val", "on", "unlocked"]),
-				pact: []
+				tu: this.religion.filterMetadata(this.religion.transcendenceUpgrades, ["name", "val", "on", "unlocked"])
 			},
 			science: {
 				hideResearched: this.science.hideResearched,
@@ -5612,7 +5337,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				zigguratUpgrades: this.religion.zigguratUpgrades.map(getName),
 				religion: this.religion.religionUpgrades.map(getName),
 				transcendenceUpgrades: this.religion.transcendenceUpgrades.map(getName),
-				pacts: this.religion.pactsManager.pacts.map(getName),
 				challenges: this.challenges.challenges.map(getName)
 			};
 		this.upgrade({ buildings: ["warehouse"], spaceBuilding: ["hydroponics"]});
@@ -5658,8 +5382,6 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 				return this.religion.getRU(unlockId);
 			case "transcendenceUpgrades":
 				return this.religion.getTU(unlockId);
-			case "pacts":
-				return this.religion.getPact(unlockId);
 			//--- Space tab
 			case "spaceMission":
 				return this.space.getProgram(unlockId);
@@ -5852,207 +5574,12 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		this._publish("server/undoStateChanged");
 	},
 
-	//-----------------------------------------------------------------
-	//TODO: use me on mobile version
-	checkEldermass: function(){
-		if (this.isEldermass()){
-			if (this.resPool.get("elderBox").value == 0){
-				this.resPool.get("elderBox").value++;
-				this.msg($I("gift.get"), "important");
-			}
-		} else {
-			if (this.resPool.get("elderBox").value > 0 && this.resPool.get("elderBox").value < 1) {
-				this.resPool.get("elderBox").value = 1;
-				this.msg($I("gift.repaired"), "important");
-			}
-		}
-	},
-
-	redeemGift: function(){
-		if (this.resPool.get("elderBox").value == 0) {
-			return;
-		}
-
-		var gift = "Karma";
-		if (this.resPool.get("paragon").value >= 100) {
-			gift = "Paragon";
-		}
-		if (this.resPool.get("timeCrystal").value && this.prestige.getPerk("anachronomancy").researched && this.workshop.get("stasisChambers").researched) {
-			gift = "TimeCrystal";
-		}
-		if (this.resPool.get("sorrow").value / this.resPool.get("sorrow").maxValue < 0.25 && this.prestige.getPerk("megalomania").researched && this.religion.getZU("blackPyramid").val < 3) {
-			gift = "BLS";
-		}
-		if (this.religion.getRU("apocripha").on) {
-			gift = "Apocrypha";
-		}
-		if (this.religion.getRU("transcendence").on && this.religion.transcendenceTier <= 10) {
-			gift = "Transcendence";
-		}
-		if (this.prestige.getPerk("engeneering").researched && !this.prestige.getPerk("renaissance").researched) {
-			gift = "Metaphysics";
-		}
-		if (this.bld.get("chronosphere").on) {
-			gift = "Compendiums";
-		}
-		if (this.diplomacy.get("leviathans").energy == this.diplomacy.getMarkerCap()){
-			gift = "BurnedParagon";
-		}
-		var ucfirst = function (string) { return string.charAt(0).toUpperCase() + string.slice(1); };
-
-		switch (gift) {
-			case "Karma":
-				if (this.resPool.get("karma").value > 50) {
-					var amt = 25 * Math.min(this.karmaKittens, 25000);
-				} else {
-					var amt = 5000;
-				}
-				var karmaGained = this.getUnlimitedDR(this.karmaKittens + amt, 5) - this.getUnlimitedDR(this.karmaKittens, 5);
-				var msg = $I("gift.resources", [this.getDisplayValueExt(karmaGained), ucfirst($I("resources.karma.title"))]);
-
-				this.karmaKittens += amt;
-				break;
-
-			case "Paragon":
-				if (this.resPool.get("paragon").value > 500) {
-					var amt = Math.min(this.resPool.get("paragon").value, 1000);
-				} else {
-					var amt = 100;
-				}
-				var msg = $I("gift.resources", [this.getDisplayValueExt(amt), ucfirst($I("resources.paragon.title"))]);
-				this.resPool.addResEvent("paragon", amt);
-				break;
-
-			case "TimeCrystal":
-				if (this.resPool.get("timeCrystal").value > 100) {
-					var amt = Math.min(this.resPool.get("timeCrystal").value, 2000);
-				} else {
-					var amt = 50;
-				}
-				var msg = $I("gift.resources", [this.getDisplayValueExt(amt), ucfirst($I("resources.timeCrystal.title"))]);
-				this.resPool.addResEvent("timeCrystal", amt);
-				break;
-
-			case "BLS" :
-				amt = this.resPool.get("sorrow").maxValue - this.resPool.get("sorrow").value;
-				var msg = $I("gift.resources", [this.getDisplayValueExt(amt), ucfirst($I("resources.sorrow.full"))]);
-				this.resPool.addResEvent("sorrow", amt);
-				break;
-
-			case "Apocrypha":
-				if (this.religion.faithRatio > 10) {
-					var amt = 4 * Math.min(this.religion.faithRatio, 1000);
-				} else {
-					var amt = 5;
-				}
-				var pre = this.religion.getApocryphaBonus();
-				this.religion.faithRatio += amt;
-				var post = this.religion.getApocryphaBonus();
-				var apocryphaGained = (post - pre) * 100;
-				var msg = $I("gift.apocrypha", [this.getDisplayValueExt(apocryphaGained)]);
-				break;
-
-			case "Transcendence":
-				this.religion.transcendenceTier += 4;
-				var msg = $I("gift.transcendence");
-				break;
-
-			case "Metaphysics":
-				if (!this.prestige.getPerk("goldenRatio").researched) {
-					this.prestige.getPerk("goldenRatio").researched = true;
-					this.unlock(this.prestige.getPerk("goldenRatio").unlocks);
-					var perk = "Golden Ratio";
-				}
-				else if (!this.prestige.getPerk("divineProportion").researched) {
-					this.prestige.getPerk("divineProportion").researched = true;
-					this.unlock(this.prestige.getPerk("divineProportion").unlocks);
-					var perk = "Divine Proportion";
-				}
-				else if (!this.prestige.getPerk("vitruvianFeline").researched) {
-					this.prestige.getPerk("vitruvianFeline").researched = true;
-					this.unlock(this.prestige.getPerk("vitruvianFeline").unlocks);
-					var perk = "Vitruvian Feline";
-				}
-				else if (!this.prestige.getPerk("renaissance").researched) {
-					this.prestige.getPerk("renaissance").researched = true;
-					var perk = "Renaissance";
-				}
-				var msg = $I("gift.metaphysics", [perk]);
-				break;
-
-			case "Compendiums":
-				if (this.resPool.get("compedium").value > 500000) {
-					var amt = 4 * this.resPool.get("compedium").value;
-				} else {
-					var amt = 100000;
-				}
-				var unicornGraveyard = this.religion.getZU("unicornGraveyard");
-				var unicornNecropolis = this.religion.getZU("unicornNecropolis");
-				var getSumOfPrices = function(item, resName){ //this function should return how much of one resource was spent on a stackable
-					var priceRatio = item.priceRatio;
-					var resPrice = 0;
-					var num = item.val;
-					for (var i in item.prices){
-						if (item.prices[i].name == resName){
-							resPrice = item.prices[i].val;
-						}
-					}
-					return resPrice * (Math.pow(priceRatio, num) - 1)/(priceRatio - 1);
-				};
-				var amt1 = Math.max(getSumOfPrices(unicornGraveyard, "necrocorn") + getSumOfPrices(unicornNecropolis, "necrocorn"), 
-				Math.max(this.resPool.get("necrocorn").value, 10));
-				var msg = $I("gift.resources", [this.getDisplayValueExt(amt), ucfirst($I("resources.compedium.title"))]);
-				msg += $I("gift.resources", [this.getDisplayValueExt(amt1), ucfirst($I("resources.necrocorn.title"))]);
-				this.resPool.addResEvent("compedium", amt);
-				this.resPool.addResEvent("necrocorn", amt1);
-				break;
-			case "BurnedParagon":
-				if (this.resPool.get("burnedParagon").value > 500){
-					var amt = Math.min(this.resPool.get("burnedParagon").value, 1500);
-				} else {
-					var amt = 150;
-				}
-				var msg = $I("gift.resources", [this.getDisplayValueExt(amt), ucfirst($I("resources.burnedParagon.title"))]);
-				this.resPool.addResEvent("burnedParagon", amt);
-			break;
-		}
-
-		this.msg(msg);
-		this.resPool.addResEvent("elderBox", -1);
-		this.resPool.addResEvent("wrappingPaper", 1);
-	},
-
 	unlockAll: function(){
 		for (var i in this.tabs){
 			this.tabs[i].visible = true;
 		}
 
 		this.resPool.get("paragon").value = 1;
-	},
-
-	/** @returns {boolean} true for the second half of December */
-	isEldermass: function(){
-		var date = new Date();
-		return (date.getMonth() == 11 && date.getDate() >= 15  && date.getDate() <= 31);
-	},
-	/**
-	 * @param {number} [lenConst] - exact length; random 5-10 otherwise
-	 * @param {string} [charPool] - alphabet to draw from
-	 * @returns {string}
-	 */
-	createRandomName: function(lenConst, charPool) {
-		if (!charPool) {
-			charPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■◆◆åœ∑ß≈ç∂´®ƒ√∫©†¥˙˜µ∆¨ˆ˚µ≤¬øπ≥…π“æ÷æ«§¡™£¢∞§¶•ªº≠"; //◆ 
-		}
-		var nameLength = Math.floor(Math.random() * 6 + 5);
-		if (lenConst) {
-			nameLength = lenConst - 1;
-		}
-		var name = "";
-		for (var i = 0; i <= nameLength; i++){
-			name += charPool[Math.floor(Math.random() * charPool.length)];
-		}
-		return name;
 	}
 });
 

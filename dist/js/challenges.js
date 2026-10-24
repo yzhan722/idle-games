@@ -279,9 +279,6 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 			}
 			game.upgrade(self.upgrades); //this is a hack, might need to think of a better sollution later
 		},
-		updateTradeKnowledgeRatio: function(self, game){
-			self.effects["tradeKnowledgeRatio"] = self.getTradeBonusEffect(game);
-		},
 		checkCompletionConditionOnReset: function(game){
 			// hack: this code is here as a sort of general "code that runs on
 			// reset when pacifism is active" hook. it intentionally does not
@@ -414,23 +411,14 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 			//---Craftables---//
 			"beam": 0.75,
 			"slab": 0.75,
-			"plate": 5,
-			"concrate": 25,
-			"gear": 20,
+			"steel": 15,
 			"alloy": 300,
 			"eludium": 1e8,
-			"ship": 1500,
-			"tanker": 150000,
-			"kerosene": 7000,
-			"parchment": 2,
-			"compedium": 20,
 			"blueprint": 50,
-			"thorium": 180000,
 			//---Other---//
-			"unicorns": -Infinity, //Used to prevent a building that already costs this resource from having its price modified
+			"unicorns": -Infinity,
 			"alicorn": -Infinity,
 			"tears": -Infinity,
-			"megalith": -Infinity,
 			"default": 10 //Used for any resource not explicitly specified
 		},
 		checkCompletionCondition: function(game) {
@@ -456,9 +444,6 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 				self.effects["cryochamberSupport"] = 1;
 				game.bld.getBuildingExt("field").meta.priceRules = undefined;
 			}
-		},
-		findRuins: function (self, game) {
-			
 		},
 		checkCompletionCondition: function(game){
 			return game.bld.cathPollution == 0;

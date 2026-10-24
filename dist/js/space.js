@@ -26,7 +26,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		description: $I("space.orbitalLaunch.desc"),
 		prices: [
 			{name: "oil", val: 15000},
-			{name: "manpower", val: 5000},
+			{name: "titanium", val: 2500},
 			{name: "science", val: 100000},
 			{name: "starchart", val: 250}
 		],
@@ -511,7 +511,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 			description: $I("space.planet.helios.sunforge.desc"),
 			unlocked: false,
 			priceRatio: 1.12,
-			prices: [{ name: "antimatter", val: 250 }, { name: "science", val: 100000 }, { name: "relic", val: 1 }, { name: "oil", val: 62500 }],
+			prices: [{ name: "unobtainium", val: 250 }, { name: "science", val: 100000 }, { name: "relic", val: 1 }, { name: "oil", val: 62500 }],
 			effects: {
 				"baseMetalMaxRatio": 0.01
 			},
@@ -573,7 +573,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				description: $I("space.planet.kairo.spaceBeacon.desc"),
 				unlocked: false,
 				priceRatio: 1.15,
-				prices: [{ name: "antimatter", val: 50 }, { name: "starchart", val: 25000 }, { name: "alloy", val: 15000 }, { name: "oil", val: 120000 }],
+				prices: [{ name: "eludium", val: 50 }, { name: "starchart", val: 25000 }, { name: "alloy", val: 15000 }, { name: "oil", val: 120000 }],
 				effects: {
 					"scienceMax": 100000,
 					"starchartPerTickBaseSpace": 0.025,
@@ -612,7 +612,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				description: $I("space.planet.yarn.terraformingStation.desc"),
 				unlocked: false,
 				priceRatio: 1.25,
-				prices: [{ name: "uranium", val: 5000 }, { name: "antimatter", val: 25 }, { name: "oil", val: 90000 }],
+				prices: [{ name: "uranium", val: 5000 }, { name: "eludium", val: 25 }, { name: "oil", val: 90000 }],
 				requiredTech: ["terraformation"],
 				effects: {
 					"xiuweiPerTickBase": 0.01
@@ -668,7 +668,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				unlocked: true,
 				priceRatio: 1.15,
 				prices: [
-					{name: "antimatter", val: 1250 },
+					{name: "unobtainium", val: 1250 },
 					{name: "relic", val: 25 }
 				],
 				effects: {
@@ -701,7 +701,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				requiredTech: false,
 				priceRatio: 1.15,
 				prices: [
-					{name: "antimatter", val: 50 }, // TBD
+					{name: "unobtainium", val: 50 }, // TBD
 					{name: "eludium", val: 500 }
 				],
 				effects: {} // TBD
@@ -719,13 +719,13 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				unlocked: false,
 				priceRatio: 1.15,
 				prices: [
-					{name: "antimatter", val: 2500 },
+					{name: "timeCrystal", val: 25 },
 					{name: "relic", val: 1250 },
 					{name: "eludium", val: 5000 }
 				],
 				requiredTech: ["quantumCryptography"],
+				hashrates: 0,
 				effects: {
-					"gflopsConsumption": 0.1,
 					"hashrate": 0,
 					"hashRateLevel": 0,
 					"nextHashLevelAt": 0,
@@ -733,17 +733,16 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 					"energyConsumption": 25
 				},
 				action: function(self, game){
-					var gflopsPerTick = self.effects["gflopsConsumption"] * self.on;
-					if (game.resPool.get("gflops").value < gflopsPerTick && game.resPool.get("gflops").value > 0){
-						gflopsPerTick = game.resPool.get("gflops").value;
+					var aiCore = game.bld.get("aiCore");
+					var gflopsPerTick = 0.1 * self.on;
+					var avail = (aiCore && aiCore.gflops) ? aiCore.gflops : 0;
+					var consumed = Math.min(avail, gflopsPerTick);
+					if (consumed > 0 && aiCore) {
+						aiCore.gflops -= consumed;
+						self.hashrates = (self.hashrates || 0) + consumed;
 					}
 
-					if (game.resPool.get("gflops").value != 0) {
-						game.resPool.addResEvent("gflops", -gflopsPerTick);
-						game.resPool.addResEvent("hashrates", gflopsPerTick);
-					}
-
-					var hr = game.resPool.get("hashrates").value,
+					var hr = self.hashrates || 0,
 						difficulty = 1000,
 						rate = 1.6;
 
@@ -755,9 +754,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 					} else {
 						self.effects["hashRateLevel"] = 0;
 					}
-					self.effects["gflopsConsumption"] = 0.1;
 
-					//Hide all hash-related things from the tooltip if we don't have any hashes:
 					if (hr == 0) {
 						self.effects["hashrate"] = 0;
 						self.effects["nextHashLevelAt"] = 0;
@@ -778,7 +775,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 				description: $I("space.planet.centaurusSystem.tectonic.desc"),
 				unlocked: false,
 				priceRatio: 1.25,
-				prices: [{ name: "antimatter", val: 500 }, { name: "uranium", val: 75000 }],
+				prices: [{ name: "eludium", val: 200 }, { name: "uranium", val: 75000 }],
 				requiredTech: ["terraformation"],
 				effects: {
 					"energyProduction": 0
@@ -1012,18 +1009,15 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 		}
 
 		var entangler = this.getBuilding("entangler");
-
-		var existingGFlops = this.game.resPool.get("gflops").value;
-		var gflopsPerTick = entangler.effects.gflopsConsumption * entangler.on;
-		var gflopsAttemptConsume = gflopsPerTick * times;
-
+		var aiCore = this.game.bld.get("aiCore");
+		var existingGFlops = (aiCore && aiCore.gflops) ? aiCore.gflops : 0;
+		var gflopsAttemptConsume = 0.1 * entangler.on * times;
 		var gflopsConsume = Math.min(existingGFlops, gflopsAttemptConsume);
 		if (gflopsConsume <= 0) {
 			return;
 		}
-
-		this.game.resPool.addResEvent("gflops", -gflopsConsume);
-		this.game.resPool.addResEvent("hashrates", gflopsConsume);
+		if (aiCore) { aiCore.gflops -= gflopsConsume; }
+		entangler.hashrates = (entangler.hashrates || 0) + gflopsConsume;
 	},
 
 	getProgram: function(name){
@@ -1335,35 +1329,12 @@ dojo.declare("classes.ui.space.PlanetPanel", com.nuclearunicorn.game.ui.Panel, {
 	}
 });
 
-dojo.declare("classes.ui.space.FurthestRingPanel", [classes.ui.space.PlanetPanel], {
-	constructor: function(title, manager, game){
-		this.game = game;
-	},
-
-	render: function(container){
-		//var wrapper = new mixin.IReactAware(WChiral, this.game);
-
-		var content = this.inherited("render", arguments);
-		//wrapper.render(content);
-
-		return content;
-	}
-});
-
 dojo.declare("com.nuclearunicorn.game.ui.tab.SpaceTab", com.nuclearunicorn.game.ui.tab, {
 
 	GCPanel: null,
 	planetPanels: null,
 
 	constructor: function(){
-		//------------ void stuff --------------
-		this.aPanel = new com.nuclearunicorn.game.ui.Panel($I("space.panel.rorshach.label"));
-		this.aPanel.setVisible(false);
-		this.addChild(this.aPanel);
-
-		var aWgt = new classes.ui.RorshachWgt(this.game);
-		aWgt.setGame(this.game);
-		this.aPanel.addChild(aWgt);
 	},
 
 	render: function(container) {
@@ -1422,12 +1393,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.SpaceTab", com.nuclearunicorn.game.
 					planetTitle = planet.label;
 				}
 
-				var planetPanel = null;
-				if (planet.name == "furthestRing"){
-					planetPanel = new classes.ui.space.FurthestRingPanel(planetTitle, self.game.space, self.game);
-				} else {
-					planetPanel = new classes.ui.space.PlanetPanel(planetTitle, self.game.space);
-				}
+				var planetPanel = new classes.ui.space.PlanetPanel(planetTitle, self.game.space);
 
                 planetPanel.planet = planet;
                 planetPanel.setGame(self.game);
@@ -1448,10 +1414,5 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.SpaceTab", com.nuclearunicorn.game.
         });
 
 		this.inherited(arguments);
-
-		var hasAstronomicon = this.game.space.getProgram("rorschachMission").on;
-		if (hasAstronomicon){
-			this.aPanel.setVisible(true);
-		}
 	}
 });

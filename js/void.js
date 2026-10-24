@@ -42,36 +42,3 @@ dojo.declare("classes.managers.VoidManager", com.nuclearunicorn.core.TabManager,
         return this.getMeta(name, this.voidUpgrades);
     }
 });
-
-
-/*dojo.declare("classes.ui.space.VoidBuildingController", com.nuclearunicorn.game.ui.PlanetBuildingBtnController, {
-	updateVisible: function(model){
-		var meta = model.metadata;
-		if (this.game.calendar.day < 0){
-			model.visible = meta.unlocked;
-		} else {
-			model.visible = false;
-		}
-	}
-});*/
-
-dojo.declare("classes.ui.RorshachWgt", [mixin.IChildrenAware, mixin.IGameAware], {
-    constructor: function(game){
-    },
-
-    render: function(container){
-        var div = dojo.create("div", null, container);
-        var factionDashboard = dojo.create("span", {}, div);
-
-        this.factionDashboard = factionDashboard;
-    },
-
-    update: function(){
-        /*var msg = "Faction: " + (this.game.void.faction || "N/A") + "<br>";
-        msg += "GUID: " + this.game.telemetry.guid + "<br>";*/
-
-        var msg = "";
-
-        this.factionDashboard.innerHTML = msg;
-    }
-});
