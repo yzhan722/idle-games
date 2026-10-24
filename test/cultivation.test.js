@@ -953,13 +953,13 @@ test("Building and technology names in zh.json use canonical Fanren Xiuxianzhuan
         }
     }
 
-    // Fine-grained descriptions include both Fanren lore and explicit numerical/mechanical breakdowns
+    // Fine-grained descriptions include both Fanren lore and explicit single-resource breakdowns
     expect(zh["buildings.hut.desc"]).toContain("神手谷");
-    expect(zh["buildings.hut.desc"]).toContain("+0.025/跳");
-    expect(zh["buildings.library.desc"]).toContain("+12%");
-    expect(zh["buildings.library.desc"]).toContain("大衍神机阁");
-    expect(zh["buildings.smelter.desc"]).toContain("0.05 灵木");
-    expect(zh["buildings.smelter.desc"]).toContain("0.05 玄铁");
+    expect(zh["buildings.hut.desc"]).toContain("【修为】");
+    expect(zh["buildings.library.desc"]).toContain("【感悟】");
+    expect(zh["buildings.library.desc"]).toContain("天衍星枢阁");
+    expect(zh["buildings.smelter.desc"]).toContain("【金精】");
+    expect(zh["buildings.smelter.desc"]).toContain("+0.008/跳");
     expect(zh["science.construction.effectDesc"]).toContain("太岳石室");
     expect(zh["science.construction.effectDesc"]).toContain("须弥宝库");
     expect(zh["science.construction.effectDesc"]).toContain("千竹炼木坊");
@@ -1425,11 +1425,13 @@ test("Resource production & storage capacity rebalance: realmStorageRatio, core 
     expect(game.bld.effectsBase.goldMax).toBe(200);
     expect(game.bld.effectsBase.titaniumMax).toBe(150);
 
-    // 2. Early-realm core buildings expand storage so players are never cap-locked before Jiedan (barn)
+    // 2. Early-realm core buildings have a single dedicated resource bonus and expand storage via getBuildingStorageBonus
+    game.updateCaches();
+    game.calculateAllEffects();
     expect(game.bld.get("hut").priceRatio).toBe(1.25);
-    expect(game.bld.get("hut").effects.woodMax).toBe(200);
-    expect(game.bld.get("field").effects.catnipMax).toBe(400);
-    expect(game.bld.get("workshop").effects.mineralsMax).toBe(250);
+    expect(game.bld.get("hut").effects.xiuweiPerTickBase).toBe(0.005);
+    expect(game.bld.get("field").effects.catnipPerTickBase).toBe(0.12);
+    expect(game.bld.get("workshop").effects.ironPerTickBase).toBe(0.018);
     expect(game.bld.get("barn").priceRatio).toBe(1.22);
 
     // 3. Realm breakthroughs grant realmStorageRatio that scales maxValue proportionally
@@ -1446,10 +1448,12 @@ test("Resource production & storage capacity rebalance: realmStorageRatio, core 
     expect(game.getEffect("realmStorageRatio")).toBeGreaterThan(0);
     expect(game.resPool.get("wood").maxValue).toBeGreaterThan(baseWoodMax);
 
-    // 4. Late-game core buildings produce and store their realm's signature resources (oil, unobtainium, relic, timeCrystal)
+    // 4. Late-game core buildings produce and store their realm's signature resources (oil, uranium, unobtainium, relic, timeCrystal)
     expect(game.resPool.get("relic").calculatePerTick).toBe(true);
     expect(game.resPool.get("timeCrystal").calculatePerTick).toBe(true);
 
+    const biolab = game.bld.get("biolab");
+    biolab.unlocked = true; biolab.val = 2; biolab.on = 2;
     const magneto = game.bld.get("magneto");
     magneto.unlocked = true; magneto.val = 2; magneto.on = 2;
     const reactor = game.bld.get("reactor");
@@ -1464,6 +1468,7 @@ test("Resource production & storage capacity rebalance: realmStorageRatio, core 
     game.resPool.updateMaxValueAll();
 
     expect(game.calcResourcePerTick("oil")).toBeGreaterThan(0);
+    expect(game.calcResourcePerTick("uranium")).toBeGreaterThan(0);
     expect(game.calcResourcePerTick("unobtainium")).toBeGreaterThan(0);
     expect(game.calcResourcePerTick("relic")).toBeGreaterThan(0);
     expect(game.calcResourcePerTick("timeCrystal")).toBeGreaterThan(0);
@@ -1473,8 +1478,8 @@ test("Hidden realm xiuwei soft-cap: untouched below knee, smoothly decays toward
     const cult = game.cultivation;
     cult.spiritRoot = "san"; // neutral priceMult = 1.0
     const xwRes = game.resPool.get("xiuwei");
-    const lib = game.bld.get("library");
-    lib.unlocked = true; lib.val = 5; lib.on = 5;
+    const hut = game.bld.get("hut");
+    hut.unlocked = true; hut.val = 5; hut.on = 5;
     game.updateCaches();
     game.calculateAllEffects();
     game.resPool.updateMaxValueAll();
@@ -1939,6 +1944,52 @@ test("Differentiated Origins (buffs + debuffs) and Lore-Accurate Spirit Roots (m
     expect(cult.getCombatPower()).toBeCloseTo(baseCp * 1.12);
     expect(ctrl.getPrices({metadata: jiedan0})[0].val).toBeCloseTo(baseBreakCost * 1.10);
 });
+
+test("Strict 1-to-1 Building-to-Resource Bonus Bijection: each building has at most 1 resource bonus and each resource has at most 1 building bonus", () => {
+    game.updateCaches();
+    game.calculateAllEffects();
+
+    const expectedBijection = {
+        field: "catnipPerTickBase",
+        hut: "xiuweiPerTickBase",
+        library: "sciencePerTickBase",
+        logHouse: "woodPerTickBase",
+        mine: "mineralsPerTickBase",
+        workshop: "ironPerTickBase",
+        smelter: "goldPerTickBase",
+        academy: "coalPerTickBase",
+        barn: "culturePerTickBase",
+        mansion: "titaniumPerTickBase",
+        observatory: "starchartPerTickBase",
+        temple: "faithPerTickBase",
+        biolab: "oilPerTickBase",
+        reactor: "unobtainiumPerTickBase",
+        magneto: "uraniumPerTickBase",
+        accelerator: "relicPerTickBase",
+        chronosphere: "timeCrystalPerTickBase"
+    };
+
+    const seenEffectKeys = new Map();
+    for (const b of game.bld.buildingsData) {
+        const keys = Object.keys(b.effects || {});
+        expect(keys.length).toBeLessThanOrEqual(1);
+        if (b.stages) {
+            for (const st of b.stages) {
+                expect(Object.keys(st.effects || {}).length).toBeLessThanOrEqual(1);
+            }
+        }
+        if (expectedBijection[b.name]) {
+            expect(keys).toEqual([expectedBijection[b.name]]);
+            expect(b.effects[keys[0]]).toBeGreaterThan(0);
+            expect(seenEffectKeys.has(keys[0])).toBe(false);
+            seenEffectKeys.set(keys[0], b.name);
+        } else {
+            expect(keys.length).toBe(0);
+        }
+    }
+    expect(seenEffectKeys.size).toBe(17);
+});
+
 
 
 

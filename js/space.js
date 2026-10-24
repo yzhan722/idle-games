@@ -1068,7 +1068,7 @@ dojo.declare("classes.managers.SpaceManager", com.nuclearunicorn.core.TabManager
 
 		if (this.game.workshop.get("spaceManufacturing").researched){
 			var factory = this.game.bld.get("factory");
-			ratio *= (1 + factory.on * factory.effects["craftRatio"] * 0.75);
+			ratio *= (1 + factory.on * (factory.effects["craftRatio"] || 0) * 0.75);
 		}
 		return ratio;
 	},

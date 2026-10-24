@@ -3252,7 +3252,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		var spaceRatio = 1 + this.getEffect("spaceRatio");
 		if (this.workshop.get("spaceManufacturing").researched && res.name != "uranium"){
 			var factory = this.bld.get("factory");
-			spaceRatio *= (1 + factory.on * factory.effects["craftRatio"] * 0.75);
+			spaceRatio *= (1 + factory.on * (factory.effects["craftRatio"] || 0) * 0.75);
 		}
 
 		// +SPACE PerTickBase
@@ -3307,7 +3307,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		if (!res.transient && this.bld.get("magneto").on > 0 && res.name != "catnip"){
 
 			var steamworks = this.bld.get("steamworks");
-			var swRatio = steamworks.on > 0 ? (1 + steamworks.effects["magnetoBoostRatio"] * steamworks.on) : 1;
+			var swRatio = steamworks.on > 0 ? (1 + (steamworks.effects["magnetoBoostRatio"] || 0) * steamworks.on) : 1;
 			if (res.name != "oil"){
 				perTick *= 1 + (this.getEffect("magnetoRatio") * swRatio);
 			}
@@ -3439,7 +3439,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		var spaceRatio = 1 + this.getEffect("spaceRatio");
 		if (this.workshop.get("spaceManufacturing").researched && res.name != "uranium"){
 			var factory = this.bld.get("factory");
-			spaceRatio *= (1 + factory.on * factory.effects["craftRatio"] * 0.75);
+			spaceRatio *= (1 + factory.on * (factory.effects["craftRatio"] || 0) * 0.75);
 		}
 
 		// +SPACE PerTickBase
@@ -3550,7 +3550,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		if (!res.transient && this.bld.get("magneto").on > 0 && res.name != "catnip"){
 
 			var steamworks = this.bld.get("steamworks");
-			var swRatio = steamworks.on > 0 ? (1 + steamworks.effects["magnetoBoostRatio"] * steamworks.on) : 1;
+			var swRatio = steamworks.on > 0 ? (1 + (steamworks.effects["magnetoBoostRatio"] || 0) * steamworks.on) : 1;
 			if (res.name != "oil"){
 				stack.push({
 					name: $I("res.stack.magnetos"),
@@ -5038,7 +5038,7 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		}
 		//------------------------------------------------------------------------------------------------------
 
-		var saveRatio = this.bld.get("chronosphere").val > 0 ? this.getEffect("resStasisRatio") : 0; // resStasisRatio excepted when challenge
+		var saveRatio = this.bld.get("chronosphere").val > 0 ? (this.getEffect("resStasisRatio") || this.bld.get("chronosphere").val * 0.015) : 0; // resStasisRatio excepted when challenge
 		if (saveRatio > 1) {
 			this.achievements.unlockBadge("wheredThisComeFrom");
 		}
