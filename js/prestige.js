@@ -26,8 +26,8 @@ dojo.declare("classes.managers.PrestigeManager", com.nuclearunicorn.core.TabMana
 			"perks": ["codexLogos"]
 		},
 		effects:{
-			"manuscriptCraftRatio" : 0.25,
-			"manuscriptGlobalCraftRatio": 0.05
+			"cultureRatio" : 0.15,
+			"blueprintCraftRatio": 0.10
 		}
 	},{
 		name: "codexLogos",
@@ -40,10 +40,9 @@ dojo.declare("classes.managers.PrestigeManager", com.nuclearunicorn.core.TabMana
 			"perks": ["codexAgrum", "codexLeviathanianus"]
 		},
 		effects:{
-			"manuscriptGlobalCraftRatio": 0.05,
-			"compediumCraftRatio" : 0.25,
-			"compediumGlobalCraftRatio": 0.05
-
+			"scienceRatio": 0.15,
+			"blueprintCraftRatio" : 0.20,
+			"blueprintGlobalCraftRatio": 0.05
 		}
 	},{
 		name: "codexAgrum",
@@ -529,46 +528,24 @@ dojo.declare("classes.managers.PrestigeManager", com.nuclearunicorn.core.TabMana
 		return this.getMeta(name, this.perks);
 	},
 
-	getSpentParagon: function(){
-		var paragon = 0;
-		for (var i = 0; i < this.perks.length; i++){
-			var perk = this.perks[i];
-			if (perk.researched){
-				paragon += perk.paragon || 0;
-			}
-		}
-		return paragon;
-	},
-
     getParagonRatio: function(){
         return 1.0 + this.game.getEffect("paragonRatio");
     },
 
 	getBurnedParagonRatio: function(){
-		return this.game.getUnlimitedDR(this.game.resPool.get("burnedParagon").value, 500);
+		return 0;
 	},
 
 	getParagonProductionRatio: function(){
 		var paragonRatio = this.getParagonRatio();
-
 		var productionRatioParagon = (this.game.resPool.get("paragon").value * 0.010) * paragonRatio;
 		productionRatioParagon = this.game.getLimitedDR(productionRatioParagon, 2 * paragonRatio);
-
-		var ratio = this.game.calendar.darkFutureYears() >= 0 ? 4 : 1;
-		var productionRatioBurnedParagon = this.game.resPool.get("burnedParagon").value * 0.010 * paragonRatio;
-		productionRatioBurnedParagon = this.game.getLimitedDR(productionRatioBurnedParagon, ratio * paragonRatio);
-
-		return productionRatioParagon + productionRatioBurnedParagon;
+		return productionRatioParagon;
 	},
 
 	getParagonStorageRatio: function(){
 		var paragonRatio = this.getParagonRatio();
-		var storageRatio = (this.game.resPool.get("paragon").value / 1000) * paragonRatio; //every 100 paragon will give a 10% bonus to the storage capacity
-		if (this.game.calendar.darkFutureYears() >= 0) {
-			storageRatio += (this.game.resPool.get("burnedParagon").value / 500) * paragonRatio;
-		} else {
-			storageRatio += (this.game.resPool.get("burnedParagon").value / 2000) * paragonRatio;
-		}
+		var storageRatio = (this.game.resPool.get("paragon").value / 1000) * paragonRatio;
 		return storageRatio;
 	},
 

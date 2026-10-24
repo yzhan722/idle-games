@@ -688,6 +688,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"starEventChance": 0.002,
 			"starAutoSuccessChance": 0.01,
 			"sciencePerTickBase": 0.04,
+			"starchartPerTickBase": 0.004,
 			"titaniumPerTickBase": 0.006,
 			"titaniumMax": 200,
 			"xiuweiPerTickBase": 0.022
@@ -696,6 +697,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			var ratio = 1 + game.getEffect("observatoryRatio");
 			self.effects["scienceRatio"] = ratio * 0.14;
 			self.effects["sciencePerTickBase"] = ratio * 0.04;
+			self.effects["starchartPerTickBase"] = ratio * 0.004;
 			self.effects["titaniumPerTickBase"] = ratio * 0.006;
 			self.effects["titaniumMax"] = ratio * 200;
 			self.effects["xiuweiPerTickBase"] = 0.022;
@@ -712,6 +714,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			"scienceRatio": 0.18,
 			"sciencePerTickBase": 0.08,
 			"faithPerTickBase": 0.018,
+			"oilPerTickBase": 0.015,
+			"oilMax": 2500,
 			"xiuweiPerTickBase": 0.035,
 			"refineRatio": 0.1,
 			"scienceMax": 0,
@@ -740,6 +744,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 			self.effects["sciencePerTickBase"] = 0.08;
 			self.effects["faithPerTickBase"] = 0.018;
+			self.effects["oilPerTickBase"] = 0.015 * (1 + game.getEffect("oilWellRatio"));
+			self.effects["oilMax"] = 2500;
 			self.effects["xiuweiPerTickBase"] = 0.035;
 			self.effects["scienceMax"] = 12000;
 			self.effects["faithMax"] = 600;
@@ -937,7 +943,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 
 			var cargoShips = game.workshop.get("cargoShips");
 			if (cargoShips.researched){
-				var shipVal = game.resPool.get("ship").value;
+				var shipVal = Math.max(self.on * 25, game.resPool.get("starchart").value);
 
 				//100% to 225% with slow falldown on the 75%
 				var limit = 2.25 + game.getEffect("shipLimit") * game.bld.get("reactor").on;
@@ -1628,8 +1634,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		],
 		priceRatio: 1.15,
 		effects: {
-			"fursDemandRatio"   : -0.04,
-			"ivoryDemandRatio"  : -0.04,
 			"spiceDemandRatio"  : -0.04,
 			"tradeRatio" : 0.015
 		},
@@ -1913,7 +1917,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		description: $I("buildings.unicornPasture.desc"),
 		unlockRatio: 0.3,
 		prices: [
-			{ name : "unicorns", val: 2 }
+			{ name : "catnip", val: 500 },
+			{ name : "wood", val: 200 }
 		],
 		priceRatio: 1.75,
 		effects: {
@@ -2001,10 +2006,9 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.aicore.label"),
 		description: $I("buildings.aicore.desc"),
 		unlockRatio: 0.01,
-		prices: [{ name: "antimatter", val: 125 }, { name: "gold", val: 1250 }, { name: "science", val: 500000 }],
+		prices: [{ name: "eludium", val: 50 }, { name: "gold", val: 1250 }, { name: "science", val: 500000 }],
 		priceRatio: 1.15,
 		effects: {
-			"gflopsPerTickBase": 0.02,
 			"energyConsumption": 2
 		},
 		upgrades: {
@@ -2015,21 +2019,13 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			name: "cyber",
 			threshold: 5
 		},
-		// TODO Actually "action" is almost always just updating effects (unclear from the name), better separate the 2 concerns: update effects (can be done several times per tick) and perform specific action (only once per tick!)
-		// TODO Separation of concerns currently done only for AI Core, Time Boilers and Hydroponics (REQUIRED by non-proportional effect!), will be systematized later
+		gflops: 0,
 		updateEffects: function(self, game) {
-			// Core #1: 2  ; Total:  2  ; Average: 2    =  8/4 = (3*1+5)/4
-			// Core #2: 3.5; Total:  5.5; Average: 2.75 = 11/4 = (3*2+5)/4
-			// Core #3: 5  ; Total: 10.5; Average: 3.5  = 14/4 = (3*3+5)/4
-			// Core #4: 6.5; Total: 17  ; Average: 4.25 = 17/4 = (3*4+5)/4
-			// etc.
 			self.effects["energyConsumption"] = (3 * self.on + 5) / 4;
-            var gflopsPerTickBase = 0.02;
-            self.effects["gflopsPerTickBase"] = gflopsPerTickBase;
-			self.effects["aiLevel"] = Math.round(Math.log(Math.max(game.resPool.get("gflops").value, 1)));
+			self.effects["aiLevel"] = Math.round(Math.log(Math.max(self.gflops || 1, 1)));
 		},
 		action: function(self, game) {
-			game.resPool.get("gflops").value += self.effects["gflopsPerTickBase"] * self.on;
+			self.gflops = (self.gflops || 0) + 0.02 * self.on;
 			self.updateEffects(self, game);
 		},
 		flavor: $I("buildings.aicore.flavor"),
@@ -2124,11 +2120,11 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		label: $I("buildings.stasisPod.label"),
 		description: $I("buildings.stasisPod.desc"),
 		unlockRatio: 0.01,
-		prices: [{ name: "titanium", val: 200 }, { name: "timeCrystal", val: 2 }, { name: "void", val: 100 }],
+		prices: [{ name: "titanium", val: 200 }, { name: "timeCrystal", val: 2 }, { name: "relic", val: 10 }],
 		fewZebrasPrices : [
 			{ name : "eludium", val: 100 },
             { name : "timeCrystal", val: 2 },
-            { name : "void", val: 100 }
+            { name : "relic", val: 10 }
 		],
 		priceRatio: 1.25,
 		zebraRequired: 1,
@@ -2351,15 +2347,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		//This function must stay atm for Steel Plants
 	},
 
-	/**
-	 * Since there are now dynamic effects affecting price ratio, it should be calculated there
-	 * All direct calls to bld.price ratio should be considered deprecated
-	 */
-	getPriceRatio: function(bldName){
-		var bld = this.getBuildingExt(bldName);
-		return this.getPriceRatioWithAccessor(bld);
-	},
-
 	getPriceRatioWithAccessor: function(bld){
 		var ratio = bld.get("priceRatio");
 		var ratioBase = ratio - 1;
@@ -2408,7 +2395,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			return prices;
 		}
 		if (bld.get("priceRules")){
-			if (bldName == "stasisPod" && this.game.resPool.get("zebras").maxValue < 10){
+			if (bldName == "stasisPod"){
 				bldPrices = bld.get("fewZebrasPrices");
 			}
 			for (var i = 0; i < bldPrices.length; i++) {
@@ -2764,16 +2751,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 	},
 
 
-    //============ dev =============
-    devAddStorage: function(){
-        this.get("warehouse").val += 10;
-        this.get("warehouse").on += 10;
-        this.get("barn").val += 10;
-        this.get("barn").on += 10;
-        this.get("harbor").val += 10;
-        this.get("harbor").on += 10;
-    },
-
 	gatherCatnip: function(){
 		this.game.gatherClicks = (this.game.gatherClicks || 0) + 1;
 		var res = this.game.resPool.get("catnip");
@@ -2837,12 +2814,6 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 			return -1;
 		}
 	},
-	setEquilibriumPollution: function(){
-		var equilibriumPollution = this.getEquilibriumPollution();
-		if (equilibriumPollution != -1) {
-			this.cathPollution = equilibriumPollution;
-		}
-	},
 	cathPollutionFastForward: function(ticks, simplified){
 		if (simplified || !this.pollutionEffects["pollutionDissipationRatio"]) {
 			this.cathPollution += this.cathPollutionPerTick * ticks;
@@ -2860,10 +2831,8 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		}
 	},
 	gflopsFastForward: function(ticks) {
-		var game = this.game;
 		var aiCore = this.get("aiCore");
-		var gflopsProduced = aiCore.effects["gflopsPerTickBase"] * aiCore.on * ticks;
-		game.resPool.get("gflops").value += gflopsProduced;
+		aiCore.gflops = (aiCore.gflops || 0) + 0.02 * aiCore.on * ticks;
 	},
 	
 	fastforward: function(daysOffset) {

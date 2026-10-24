@@ -92,9 +92,6 @@ dojo.declare("classes.ui.UISystem", null, {
     confirm: function(title, msg, callbackOk, callbackCancel) {
     },
 
-    openPopupPage: function(pageName) {
-    },
-
     pulse: function(node){
     },
 
@@ -828,34 +825,9 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         notationSelect.val(selectedNotation);
 
 
-        var schemeSelect = $("#schemeToggle");
-        schemeSelect.empty();
-        for (var i = 0; i < this.allSchemes.length; ++i) {
-            var scheme = this.allSchemes[i];
-            var option = $("<option />").attr("value", scheme).text($I("opts.theme." + scheme));
-            if (game.unlockedSchemes.indexOf(scheme) < 0) {
-                if (this.defaultSchemes.indexOf(scheme) >= 0) {
-                    game.unlockedSchemes.push(scheme);
-                } else {
-                    option.html("&nbsp;&nbsp;" + $I("opts.theme." + scheme)).attr("disabled", "disabled");
-                }
-            }
-            option.appendTo(schemeSelect);
-        }
-        schemeSelect.val(game.colorScheme);
     },
 
 	unlockScheme: function(name) {
-		if (this.game.unlockedSchemes.indexOf(name) < 0) {
-			$("#schemeToggle > option[value=" + name + "]").removeAttr("disabled");
-			this.game.msg($I("opts.theme.unlocked") + $I("opts.theme." + name), "important");
-			this.game.unlockedSchemes.push(name);
-		}
-	},
-
-	relockSchemes: function() {
-		this.game.unlockedSchemes = this.defaultSchemes;
-		this.updateOptions();
 	},
 
     displayAutosave: function(){
@@ -878,17 +850,6 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         return this.fontSize;
     },
 
-    zoomUp: function(){
-        this.fontSize = this.getFontSize() + 1;
-        this.updateFontSize();
-    },
-    zoomDown: function(){
-        this.fontSize = this.getFontSize() - 1;
-        if (this.fontSize < 1){
-            this.fontSize = 1; //prevent resources text from disappearing altogether
-        }
-        this.updateFontSize();
-    },
     updateFontSize: function(){
         $("#leftColumn").css("font-size", this.fontSize + "px");
     },
@@ -1262,10 +1223,6 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
             $(".close", container).unbind();
             container.hide();
         });
-    },
-
-    displayAppDialog: function(){
-        this.showDialog("appDiv");
     },
 
     load: function() {

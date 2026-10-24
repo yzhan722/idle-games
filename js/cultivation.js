@@ -127,7 +127,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			auxBlds: ["pasture", "lumberMill"],
 			techs: ["calendar", "agriculture", "archery"],
 			crafts: ["wood"],
-			upgrades: ["mineralHoes", "mineralAxes", "bolas"]
+			upgrades: []
 		},
 		{
 			realmIdx: 1,
@@ -143,7 +143,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			auxBlds: ["aqueduct", "warehouse"],
 			techs: ["mining", "metal", "animal", "construction", "math", "engineering", "currency"],
 			crafts: ["beam", "slab"],
-			upgrades: ["ironHoes", "ironAxes", "reinforcedSaw", "stoneBarns", "reinforcedBarns", "advancedRefinement", "compositeBow", "celestialMechanics", "huntingArmor", "prospecting"]
+			upgrades: ["mineralHoes", "mineralAxes", "bolas", "ironHoes", "ironAxes", "reinforcedSaw", "stoneBarns", "reinforcedBarns", "advancedRefinement", "compositeBow", "celestialMechanics", "huntingArmor", "prospecting"]
 		},
 		{
 			realmIdx: 2,
@@ -159,7 +159,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			auxBlds: ["tradepost", "amphitheatre", "unicornPasture", "harbor", "quarry"],
 			techs: ["writing", "philosophy", "steel", "machinery", "theology"],
 			crafts: ["steel", "blueprint"],
-			upgrades: ["goldOre", "register", "steelAxe", "steelSaw", "steelArmor", "reinforcedWarehouses", "coalFurnace", "deepMining", "pyrolysis", "crossbow", "printingPress", "factoryAutomation", "combustionEngine", "caravanserai", "cargoShips"]
+			upgrades: ["goldOre", "register", "steelAxe", "steelSaw", "steelArmor", "reinforcedWarehouses", "crossbow", "printingPress", "factoryAutomation", "combustionEngine", "caravanserai", "cargoShips"]
 		},
 		{
 			realmIdx: 3,
@@ -173,9 +173,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			resDesc: "辟天星洞府、立浑天观星台，参悟周天典籍碎丹成婴",
 			coreBlds: ["mansion", "observatory"],
 			auxBlds: ["steamworks", "calciner", "oilWell", "mint", "brewery"],
-			techs: ["astronomy", "navigation", "architecture", "physics", "chemistry", "biology", "biochemistry", "geology", "electricity"],
+			techs: ["astronomy", "navigation", "architecture", "physics", "chemistry", "biology", "biochemistry", "archeology", "electricity"],
 			crafts: ["alloy"],
-			upgrades: ["titaniumAxe", "titaniumSaw", "alloyAxe", "alloySaw", "titaniumBarns", "alloyBarns", "silos", "warehouses", "barges", "astrolabe", "titaniumMirrors", "geodesy", "miningDrill", "railgun", "augumentation"]
+			upgrades: ["titaniumAxe", "titaniumSaw", "alloyAxe", "alloySaw", "titaniumBarns", "alloyBarns", "silos", "titaniumWarehouses", "alloyWarehouses", "barges", "astrolabe", "titaniumMirrors", "geodesy", "miningDrill", "railgun"]
 		},
 		{
 			realmIdx: 4,
@@ -191,7 +191,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			auxBlds: ["chapel", "factory", "ziggurat"],
 			techs: ["industrialization", "mechanization", "metalurgy", "combustion", "ecology", "acoustics", "drama"],
 			crafts: [],
-			upgrades: ["concratePillars", "concreteBarns", "concreteWarehouses", "oilRefinery", "pumpjack", "biofuel", "petri", "factoryLogistics", "offsetPress", "photolithography", "uplink", "starlink", "cryocomputing", "machineLearning", "electrolyticSmelting", "oxidation", "rotaryKiln", "fluidizedBed", "nuclearSmelters", "carbonSequestration"]
+			upgrades: ["concreteBarns", "concreteWarehouses", "oilRefinery", "pumpjack", "biofuel", "petri", "factoryLogistics", "offsetPress", "uplink", "starlink", "electrolyticSmelting", "oxidation", "rotaryKiln", "fluidizedReactors", "carbonSequestration"]
 		},
 		{
 			realmIdx: 5,
@@ -207,7 +207,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			auxBlds: ["ivoryTemple"],
 			techs: ["nuclearFission", "rocketry", "oilProcessing", "electronics", "orbitalEngineering", "sattelites"],
 			crafts: ["eludium"],
-			upgrades: ["unobtainiumAxe", "unobtainiumSaw", "unobtainiumDrill", "unobtainiumHut", "unobtainiumReflectors", "thoriumReactors", "enrichedUranium", "coldFusion", "neuralNetworks", "aiBases", "AiEngineers", "orbitalGeodesy", "spaceManufacturing", "spiceRefinery"]
+			upgrades: ["unobtainiumAxe", "unobtainiumSaw", "unobtainiumReflectors", "thoriumReactors", "enrichedUranium", "coldFusion", "nuclearPlants", "neuralNetworks", "aiBases", "aiEngineers", "spaceManufacturing", "augumentation", "photolithography", "cryocomputing", "machineLearning"]
 		},
 		{
 			realmIdx: 6,
@@ -221,9 +221,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			resDesc: "运转元磁极光阵贯通古今，凝练上古遗宝天人合体",
 			coreBlds: ["accelerator"],
 			auxBlds: ["zebraOutpost", "zebraWorkshop", "zebraForge"],
-			techs: ["nanotechnology", "particlePhysics", "dimensionalPhysics", "exogeology", "advExogeology", "thorium"],
+			techs: ["nanotechnology", "superconductors", "particlePhysics", "dimensionalPhysics", "exogeology", "advExogeology", "thorium"],
 			crafts: [],
-			upgrades: ["eludiumHara", "eludiumHut", "eludiumCracker", "mWReactor", "lhc", "energyRifts", "stasisChambers", "voidEnergy", "darkEnergy", "tachyonAccelerators", "chronoforge", "fluxCondensator", "radiocarbonDating", "planetBuster", "amReactors", "amBases", "amDrive", "relicStation", "voidAspiration", "distorsion", "turnSmoothly", "invisibleBlackHand", "freightfulExchange", "transportSuperposition"]
+			upgrades: ["eludiumCracker", "eludiumReflectors", "mWReactor", "lhc", "energyRifts", "amReactors", "amBases", "amDrive", "relicStation", "freightfulExchange", "transportSuperposition"]
 		},
 		{
 			realmIdx: 7,
@@ -239,7 +239,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			auxBlds: ["aiCore", "stasisPod"],
 			techs: ["chronophysics", "tachyonTheory", "cryptotheology", "voidSpace", "paradoxalKnowledge"],
 			crafts: [],
-			upgrades: ["chronosurge", "temporalPress"]
+			upgrades: ["stasisChambers", "voidEnergy", "darkEnergy", "tachyonAccelerators", "chronoforge", "fluxCondensator", "chronoEngineers", "tachyonModerator", "voidAspiration", "distorsion", "turnSmoothly", "invisibleBlackHand"]
 		},
 		{
 			realmIdx: 8,
@@ -253,20 +253,24 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			resDesc: "参透先天太易大道，以岁月仙晶逆天改命，渡九天雷劫飞升",
 			coreBlds: [],
 			auxBlds: [],
-			techs: ["metaphysics", "artificialGravity", "terraformation", "hydroponics", "antimatter", "blackchain"],
+			techs: ["metaphysics", "artificialGravity", "terraformation", "hydroponics", "exogeophysics", "antimatter", "blackchain", "quantumCryptography"],
 			crafts: [],
-			upgrades: ["longRangeSpaceships", "voidHoover", "voidRift", "chronocontrol"]
+			upgrades: ["longRangeSpaceships", "spiceNavigation", "thoriumEngine"]
 		}
 	],
 
 	//spiritual roots, rolled per life
-	//combatMult — 根骨亦定战力:伪灵根根基虚浮,天灵根生而近道
+	//《凡人修仙传》原著法则:
+	//多灵根(伪灵根/三灵根)五行驳杂,平时吐纳慢、破境消耗高(priceMult > 1),
+	//但五脏同淬、兼修多系神通(如《三转重元功》《青元剑诀》),同境界法力浑厚、战力更高(combatMult > 1);
+	//单灵根/异灵根(天灵根/异灵根)生而近道,吐纳极快、破境消耗低(priceMult < 1),
+	//但顺风顺水未历生死磨砺,同境界战力反而略逊(combatMult < 1)。
 	ROOTS: [
-		{key:"wei",  weight:30, xiuweiMult:0.65, priceMult:0.85, combatMult:0.9},
-		{key:"san",  weight:30, xiuweiMult:1.0,  priceMult:1.0,  combatMult:1.0},
-		{key:"zhen", weight:20, xiuweiMult:1.5,  priceMult:1.0,  combatMult:1.1},
-		{key:"yi",   weight:12, xiuweiMult:1.8,  priceMult:1.0,  combatMult:1.15},
-		{key:"tian", weight:8,  xiuweiMult:2.5,  priceMult:1.0,  combatMult:1.25}
+		{key:"wei",  weight:30, xiuweiMult:0.65, priceMult:1.35, combatMult:1.35},
+		{key:"san",  weight:30, xiuweiMult:1.0,  priceMult:1.15, combatMult:1.18},
+		{key:"zhen", weight:20, xiuweiMult:1.5,  priceMult:1.0,  combatMult:1.0},
+		{key:"yi",   weight:12, xiuweiMult:1.8,  priceMult:0.90, combatMult:0.95},
+		{key:"tian", weight:8,  xiuweiMult:2.5,  priceMult:0.80, combatMult:0.85}
 	],
 
 	//玄天丹鼎 · 三昧控火法门: 决定开炉炼丹的火候特性与服丹丹毒减免
@@ -969,14 +973,40 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return null;
 	},
 
-	//出身 — 开局择一,给一个小小的主题加成。effects 走 effectsBase 常驻管线,
-	//powerMult/chanceBonus 是 manager 内直接消费的私钥。
+	//出身 — 开局择一,每个出身皆具鲜明【增益】与【减益】,折射凡尘来路对仙途的深刻烙印。
+	//effects 走 effectsBase 常驻管线, powerMult/chanceBonus/breakCostMult/lifespanMult 由 manager 消费。
 	ORIGINS: [
-		{key: "farmer",  effects: {catnipRatio: 0.15}},
-		{key: "hunter",  powerMult: 1.08},
-		{key: "scholar", effects: {xiuweiRatio: 0.10}},
-		{key: "trader",  effects: {mineralsRatio: 0.15}},
-		{key: "orphan",  chanceBonus: 0.05}
+		{
+			key: "farmer",
+			effects: {catnipRatio: 0.25, woodRatio: 0.15, scienceRatio: -0.10},
+			lifespanMult: 1.15,
+			powerMult: 0.90
+		},
+		{
+			key: "hunter",
+			effects: {hunterRatio: 0.25, ironRatio: 0.15, xiuweiRatio: -0.10},
+			powerMult: 1.20,
+			chanceBonus: -0.04
+		},
+		{
+			key: "scholar",
+			effects: {scienceRatio: 0.25, xiuweiRatio: 0.15, mineralsRatio: -0.10},
+			chanceBonus: 0.04,
+			powerMult: 0.88
+		},
+		{
+			key: "trader",
+			effects: {mineralsRatio: 0.25, goldRatio: 0.20, xiuweiRatio: -0.10},
+			breakCostMult: 0.90,
+			powerMult: 0.92
+		},
+		{
+			key: "orphan",
+			effects: {xiuweiRatio: 0.08, realmProductionRatio: -0.10},
+			chanceBonus: 0.08,
+			powerMult: 1.12,
+			breakCostMult: 1.10
+		}
 	],
 
 	//随机道号池 — 姓氏与男女名分列,roll 时按性别取
@@ -1015,6 +1045,21 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	getOriginLabel: function(){
 		var o = this.getOrigin();
 		return o ? $I("identity.origin." + o.key + ".label") : "";
+	},
+
+	getOriginDesc: function(){
+		var o = this.getOrigin();
+		if (!o){ return ""; }
+		var k = "identity.origin." + o.key;
+		return $I(k + ".desc");
+	},
+
+	//破境消耗倍率: 灵根底子(伪灵根多系同修×1.35 / 天灵根一脉通明×0.80) × 出身加成(商贾×0.90 / 遗孤×1.10)
+	getBreakCostMult: function(){
+		var rootMult = (this.getRoot() && this.getRoot().priceMult) || 1;
+		var origin = this.getOrigin();
+		var originMult = (origin && origin.breakCostMult) || 1;
+		return rootMult * originMult;
 	},
 
 	setIdentity: function(name, gender, originKey){
@@ -1079,9 +1124,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				var layerKey = (def.layers == 10) ? ("l" + (i + 1)) : ["early","mid","late"][i];
 				var prices = [];
 				for (var res in def.base){
-					var val = def.base[res] * Math.pow(def.mul, i);
-					val = this.roundNice(val);
 					if (r == 0 && i == 0){ continue; }	//炼气一层 is the free starting stage
+					if (r >= 1 && r <= 7 && i == 0 && res != "xiuwei"){
+						//大境界初破(初期 _0): 破入新境方才解锁本境核心灵筑(如筑基开矿脉、结丹开炼器室、化神筑玄坛、炼虚布地火阵、合体起极光阵、大乘祭轮回盘);
+						//故初入大境唯验修为道行与秘境生死大关,本境核心灵材自中期(_1)、后期(_2)起正式入药淬炼,彻底消除先有鸡还是先有蛋的卡关死锁!
+						continue;
+					}
+					var expIdx = (r >= 1 && r <= 7 && res != "xiuwei") ? (i - 1) : i;
+					var val = def.base[res] * Math.pow(def.mul, expIdx);
+					val = this.roundNice(val);
 					prices.push({name: res, val: val});
 				}
 				if (r == 0 && i >= 4){
@@ -1173,6 +1224,20 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	getRootLabel: function(){
 		return $I("cultivation.root." + this.getRoot().key);
+	},
+
+	getRootDesc: function(){
+		var k = "cultivation.root." + this.getRoot().key;
+		return $I(k + ".desc");
+	},
+
+	getRootSummary: function(){
+		var r = this.getRoot();
+		var xwPct = Math.round((r.xiuweiMult - 1) * 100);
+		var costPct = Math.round(((r.priceMult || 1) - 1) * 100);
+		var cpPct = Math.round(((r.combatMult || 1) - 1) * 100);
+		var fmtSigned = function(v){ return (v >= 0 ? "+" : "") + v + "%"; };
+		return "吐纳" + fmtSigned(xwPct) + " · 破境消耗" + fmtSigned(costPct) + " · 同阶战力" + fmtSigned(cpPct);
 	},
 
 	getDaoTitle: function(){
@@ -1971,7 +2036,16 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	},
 
 	// ---------------- 战力 ----------------
-	//道行之数:境界是底,灵根定质,神兵道兵灵兽器灵各添一筹;
+	//境界裸战力底数(不含灵根/出身/法宝/仙缘/丹药/心魔乘区)——供小秘境妖兽生成锚定同阶基准
+	getBaseRealmCombatPower: function(){
+		var base = 0;
+		for (var i = 0; i < this.stages.length; i++){
+			if (this.stages[i].researched){ base += this.stages[i].effects.combatPower || 0; }
+		}
+		return Math.max(10, base);
+	},
+
+	//道行之数:境界是底,灵根定质(多灵根五行齐备同阶战力浑厚,天灵根属性单一战力偏弱),神兵道兵灵兽器灵各添一筹;
 	//心魔蚀骨,道心不澄者神通先折。秘境/伏击的成败皆以此论。
 	getCombatPower: function(){
 		//战力底数直接求和——不依赖全局效果缓存的刷新时机
@@ -2093,10 +2167,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	// ---------------- 寿元 ----------------
 
-	//当前境界的寿元上限(随层数渐进,stage meta 上已按 def.life*(i+1)/layers 生成)
+	//当前境界的寿元上限(随层数渐进,stage meta 上已按 def.life*(i+1)/layers 生成; 农家出身筋骨绵长 ×1.15)
 	getLifespan: function(){
 		var realm = this.getCurrentRealm();
-		return (realm && realm.lifespan) || 80;
+		var base = (realm && realm.lifespan) || 80;
+		var origin = this.getOrigin();
+		if (origin && origin.lifespanMult){
+			return Math.round(base * origin.lifespanMult);
+		}
+		return base;
 	},
 
 	getLifespanRemaining: function(){
@@ -2729,7 +2808,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//每个境界达到当前道途瓶颈阈值后，修为增长速度平滑渐近衰减并无限趋近于 0，但界面绝不向玩家展示上限数值；
 	//一旦突破至下一小层或大境界，瓶颈阈值立即抬升，修为吐纳与历练增速随即恢复如初。
 	getXiuweiSoftCapKnee: function(){
-		var priceMult = (this.getRoot() && this.getRoot().priceMult) || 1;
+		var priceMult = this.getBreakCostMult ? this.getBreakCostMult() : ((this.getRoot() && this.getRoot().priceMult) || 1);
 		var hi = this.getHighestStageIndex();
 		var nextStage = (hi + 1 < this.stages.length) ? this.stages[hi + 1] : null;
 		if (!nextStage){
@@ -2839,7 +2918,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 			if (xw){ fallback = xw; }
 			if (st.researched){ cleared++; continue; }
-			if (!anchor && xw){ anchor = xw * this.getRoot().priceMult; }
+			if (!anchor && xw){ anchor = xw * (this.getBreakCostMult ? this.getBreakCostMult() : this.getRoot().priceMult); }
 		}
 		if (!anchor){ anchor = fallback; }	//全境圆满后锚定末层价
 		return this.roundNice(Math.max(1, anchor * share / (1 + cleared * 0.05)));
@@ -3613,7 +3692,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var mKey = keys[wave - 1] || "viper";
 			def = this.getMonsterDef(mKey);
 			var wScale = wave === 1 ? 0.66 : (wave === 2 ? 0.82 : 0.98);
-			basePower = Math.max(12, cp * wScale);
+			//小秘境妖兽锚定同境界裸基准战力,令多灵根/猎户/法宝的同阶战力加成为真实优势
+			var realmCp = this.getBaseRealmCombatPower ? this.getBaseRealmCombatPower() : cp;
+			basePower = Math.max(12, realmCp * wScale);
 		}
 		var maxHp = Math.max(60, Math.round(basePower * hpMult * (def.hpMult || 1)));
 		var atk = Math.max(12, Math.round(basePower * atkMult * (def.atkMult || 1)));
@@ -4827,11 +4908,10 @@ dojo.declare("classes.ui.RealmBtnController", com.nuclearunicorn.game.ui.Buildin
 	getPrices: function(model){
 		var prices = this.inherited(arguments);
 		var meta = model.metadata;
-		//spirit-root priceMult applies to realm breakthroughs only — 伪灵根's
-		//0.85 discount is a real knob in ROOTS, wire it or it's a dead field
+		//spirit-root priceMult & origin breakCostMult apply to realm breakthroughs only (leaving veins alone)
 		if (meta && meta.name && meta.name.indexOf("_") > 0){
 			var cult = this.game.cultivation;
-			var mult = cult.getRoot().priceMult;
+			var mult = cult.getBreakCostMult ? cult.getBreakCostMult() : cult.getRoot().priceMult;
 			//破境余威 + 心魔耗修:真关的修为价按两者叠乘膨胀
 			var surge = (meta.chance != null && meta.chance < 1) ? cult.getBreakSurge() * cult.getDemonTax() : 1;
 			if ((mult && mult !== 1) || surge > 1){
@@ -5552,7 +5632,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		if (idt && idt.name){
 			var escName = String(idt.name)
 				.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-			idLine = "<div class=\"xx-hd-id\">" +
+			var oTip = cult.getOriginDesc ? cult.getOriginDesc().replace(/"/g, "&quot;") : "";
+			idLine = "<div class=\"xx-hd-id\"" + (oTip ? " title=\"" + oTip + "\"" : "") + ">" +
 				"<span class=\"xx-id-name\">" + escName + "</span>" +
 				"<span class=\"xx-id-meta\">" + $I("identity.gender." + (idt.gender == "f" ? "f" : "m")) +
 				(cult.getOrigin() ? " · " + cult.getOriginLabel() : "") + "</span>" +
@@ -5564,9 +5645,10 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		var seal = isMortal ? $I("cultivation.mortal.seal") : (realmLabel.replace(/<[^>]*>/g, "").charAt(0) || "道");
 		var daoTitle = isMortal ? $I("cultivation.mortal.daotitle") : cult.getDaoTitle();
 		var artMgr = classes.ui && classes.ui.XianxiaArt;
-		var tile = function(cls, icoKey, label, value, bar){
+		var tile = function(cls, icoKey, label, value, bar, tip){
 			var tIco = artMgr ? "<i class=\"xx-tile-ico\" aria-hidden=\"true\">" + artMgr.tileIcon(icoKey) + "</i>" : "";
-			return "<div class=\"xx-tile " + cls + "\"><span class=\"xx-tile-lbl\">" + tIco + label + "</span>" +
+			var escTip = tip ? " title=\"" + String(tip).replace(/"/g, "&quot;") + "\"" : "";
+			return "<div class=\"xx-tile " + cls + "\"" + escTip + "><span class=\"xx-tile-lbl\">" + tIco + label + "</span>" +
 				"<span class=\"xx-tile-val\">" + value + "</span>" +
 				(bar != null ? "<span class=\"xx-tile-bar\"><i style=\"width:" + Math.max(0, Math.min(100, Math.round(bar))) + "%\"></i></span>" : "") +
 				"</div>";
@@ -5579,6 +5661,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			rootPips += "<i" + (rp <= rootTier ? " class=\"on\"" : "") + "></i>";
 		}
 		rootPips += "</span>";
+		var rootTip = (cult.getRootDesc ? cult.getRootDesc() : "") +
+			(cult.getRootSummary ? "（" + cult.getRootSummary() + "）" : "");
 
 		var hasBuff = !!(cult.buffs.juqi > 0 || cult.buffs.ziqi > 0 || cult.buffs.jiangchen > 0 || cult.buffs.biyan > 0);
 		var heroVisual = artMgr
@@ -5612,7 +5696,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			"<div class=\"xx-tiles\">" +
 				tile("xx-bonus", "bonus", $I("cultivation.tile.bonus"), "+" + fmt(ratio * 100, false, false, 0) + "%") +
 				tile("xx-combat", "combat", $I("cultivation.tile.combat"), fmt(cult.getCombatPower(), false, false, 0)) +
-				tile("xx-root xx-root-" + root.key, "root", $I("cultivation.tile.root"), "<span>" + cult.getRootLabel() + "</span>" + rootPips) +
+				tile("xx-root xx-root-" + root.key, "root", $I("cultivation.tile.root"), "<span>" + cult.getRootLabel() + "</span>" + rootPips, null, rootTip) +
 				tile("xx-life" + lifeCls, "life", $I("cultivation.tile.life"),
 					$I("cultivation.tile.life.val", [fmt(lifeRemain, false, false, 0), fmt(lifeMax, false, false, 0)]),
 					lifeFrac * 100) +
@@ -5620,6 +5704,9 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			"</div>";
 
 		var extras = [];
+		if (cult.getRootSummary){
+			extras.push(cult.getRootLabel() + "：" + cult.getRootSummary());
+		}
 		var leg = cult.getLegacyBonus();
 		if (leg.lives > 0){
 			extras.push($I("cultivation.header.legacy", [

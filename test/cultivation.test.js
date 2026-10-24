@@ -439,19 +439,30 @@ test("Sect promotions announce themselves; non-stage purchases never echo breakt
     spy.mockRestore();
 });
 
-test("Spirit root priceMult discounts stage prices but leaves veins alone", () => {
+test("Spirit root priceMult scales stage breakthrough prices (multi-root higher, heavenly root lower) and leaves veins alone", () => {
     const cult = game.cultivation;
-    cult.spiritRoot = "wei";	//priceMult 0.85
     const ctrl = new classes.ui.RealmBtnController(game);
-    const stage = ctrl.getPrices({metadata: cult.getStage("zhuji_0")});
     const list = cult.getStage("zhuji_0").prices;
+
+    // 伪灵根 (wei): 多灵根突破消耗提高 (priceMult 1.35)
+    cult.spiritRoot = "wei";
+    const stageWei = ctrl.getPrices({metadata: cult.getStage("zhuji_0")});
     for (let i = 0; i < list.length; i++){
-        const p = stage.find(x => x.name == list[i].name);
-        expect(p.val).toBeCloseTo(list[i].val * 0.85);
+        const p = stageWei.find(x => x.name == list[i].name);
+        expect(p.val).toBeCloseTo(list[i].val * 1.35);
     }
+
+    // 天灵根 (tian): 单灵根瓶颈松动突破消耗降低 (priceMult 0.80)
+    cult.spiritRoot = "tian";
+    const stageTian = ctrl.getPrices({metadata: cult.getStage("zhuji_0")});
+    for (let i = 0; i < list.length; i++){
+        const p = stageTian.find(x => x.name == list[i].name);
+        expect(p.val).toBeCloseTo(list[i].val * 0.80);
+    }
+
     const vein = ctrl.getPrices({metadata: cult.getRealm("vein1")});
     const veinList = cult.getRealm("vein1").prices;
-    expect(vein[0].val).toBeCloseTo(veinList[0].val);	//no discount on 灵脉
+    expect(vein[0].val).toBeCloseTo(veinList[0].val);	//no scaling on 灵脉
 });
 
 test("Breakthrough grants no xiuwei kickback — the new realm's bonus is the reward", () => {
@@ -1688,6 +1699,248 @@ test("Mortal Phase (凡人状态): initial xiuwei growth speed is strictly 0, Mo
     expect(game.calcResourcePerTick("xiuwei")).toBeGreaterThan(0);
     expect(ctrl.getName({metadata: cult.getStage("lianqi_0")})).not.toContain("xx-mortal-tag");
 });
+
+test("Full-system resource integrity & unobstructed progression route: zero references to deleted/hidden resources and 100% reachable realm-by-realm progression", () => {
+    const activeResSet = new Set(
+        game.resPool.resources.filter(r => r.visible || r.craftable).map(r => r.name)
+    );
+    expect(activeResSet.size).toBe(26);
+
+    // 1. Every price across all game systems only references the 26 active visible/craftable resources
+    const assertPricesValid = (items) => {
+        for (const it of (items || [])) {
+            const prices = it.prices || (it.stages && it.stages[0].prices) || [];
+            for (const p of prices) {
+                expect(activeResSet.has(p.name)).toBe(true);
+            }
+            if (it.fixPrices) {
+                for (const p of it.fixPrices) {
+                    expect(activeResSet.has(p.name)).toBe(true);
+                }
+            }
+        }
+    };
+    assertPricesValid(game.bld.buildingsData);
+    assertPricesValid(game.science.techs);
+    assertPricesValid(game.workshop.upgrades);
+    assertPricesValid(game.workshop.crafts);
+    assertPricesValid(game.cultivation.stages);
+    assertPricesValid(game.cultivation.pills);
+    assertPricesValid(game.cultivation.veins);
+    assertPricesValid(game.cultivation.sects);
+    assertPricesValid(game.space.programs);
+    for (const pl of game.space.planets) {
+        assertPricesValid(pl.buildings);
+    }
+    assertPricesValid(game.religion.religionUpgrades);
+    assertPricesValid(game.religion.zigguratUpgrades);
+    assertPricesValid(game.religion.transcendenceUpgrades);
+    assertPricesValid(game.time.chronoforgeUpgrades);
+    assertPricesValid(game.time.voidspaceUpgrades);
+
+    // 2. Every REALM_SYNERGY entry resolves to an existing resource, building, tech, craft, or upgrade
+    for (const syn of game.cultivation.REALM_SYNERGY) {
+        expect(activeResSet.has(syn.res)).toBe(true);
+        for (const bName of syn.coreBlds) {
+            expect(game.bld.get(bName)).toBeTruthy();
+        }
+        for (const bName of syn.auxBlds) {
+            expect(game.bld.get(bName)).toBeTruthy();
+        }
+        for (const tName of syn.techs) {
+            expect(game.science.get(tName)).toBeTruthy();
+        }
+        for (const cName of syn.crafts) {
+            expect(game.workshop.getCraft(cName)).toBeTruthy();
+        }
+        for (const uName of syn.upgrades) {
+            expect(game.workshop.get(uName)).toBeTruthy();
+        }
+    }
+
+    // 3. End-to-end realm-by-realm progression simulation (Lianqi -> Dujie): zero deadlocks
+    const realms = ["lianqi", "zhuji", "jiedan", "yuanying", "huashen", "lianxu", "heti", "dacheng", "dujie"];
+    for (let r = 0; r < realms.length; r++) {
+        game.resetState();
+        for (const st of game.cultivation.stages) {
+            if (realms.indexOf(st.realm) <= r) {
+                st.researched = true;
+            }
+        }
+        game.cultivation.syncRealmUnlocks();
+
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (const b of game.bld.buildingsData) {
+                if (game.cultivation.isItemRealmUnlocked("building", b.name)) {
+                    const gate = game.cultivation.getItemRealmGate("building", b.name);
+                    if ((gate.isCore || b.unlocked) && b.val === 0) {
+                        b.unlocked = true; b.val = 5; b.on = 5;
+                        if (b.unlocks) game.unlock(b.unlocks);
+                        changed = true;
+                    }
+                }
+            }
+            for (const t of game.science.techs) {
+                if (t.unlocked && !t.researched && game.cultivation.isItemRealmUnlocked("tech", t.name)) {
+                    t.researched = true;
+                    if (t.unlocks) game.unlock(t.unlocks);
+                    changed = true;
+                }
+            }
+            for (const u of game.workshop.upgrades) {
+                if (u.unlocked && !u.researched && game.cultivation.isItemRealmUnlocked("upgrade", u.name)) {
+                    u.researched = true;
+                    if (u.unlocks) game.unlock(u.unlocks);
+                    changed = true;
+                }
+            }
+        }
+
+        game.updateCaches();
+        game.calculateAllEffects();
+        game.resPool.updateMaxValueAll();
+        for (let i = 0; i < 5; i++) game.update();
+
+        const prodRes = new Set();
+        for (const res of game.resPool.resources) {
+            if (game.calcResourcePerTick(res.name) > 0 || res.value > 0) {
+                prodRes.add(res.name);
+            }
+        }
+        prodRes.add("spice"); // bottle fate & wander
+
+        let craftAdded = true;
+        while (craftAdded) {
+            craftAdded = false;
+            for (const cr of game.workshop.crafts) {
+                if (cr.unlocked && game.cultivation.isItemRealmUnlocked("craft", cr.name) && !prodRes.has(cr.name)) {
+                    if (cr.prices.every(p => prodRes.has(p.name))) {
+                        prodRes.add(cr.name);
+                        craftAdded = true;
+                    }
+                }
+            }
+        }
+
+        const syn = game.cultivation.REALM_SYNERGY[r];
+        // All stages in current realm r and the breakthrough stage into realm r+1 must only require producible resources
+        for (const st of game.cultivation.stages.filter(s => s.realm === realms[r])) {
+            for (const p of (st.prices || [])) {
+                expect(prodRes.has(p.name)).toBe(true);
+            }
+        }
+        if (r + 1 < realms.length) {
+            const nextStage0 = game.cultivation.getStage(realms[r + 1] + "_0");
+            for (const p of (nextStage0.prices || [])) {
+                expect(prodRes.has(p.name)).toBe(true);
+            }
+        }
+        // All core buildings, crafts, techs, and upgrades in realm r must only require producible resources
+        for (const bName of syn.coreBlds) {
+            const b = game.bld.get(bName);
+            const prices = b.prices || (b.stages && b.stages[0].prices) || [];
+            for (const p of prices) {
+                expect(prodRes.has(p.name)).toBe(true);
+            }
+        }
+        for (const cName of syn.crafts) {
+            const cr = game.workshop.getCraft(cName);
+            for (const p of (cr.prices || [])) {
+                expect(prodRes.has(p.name)).toBe(true);
+            }
+        }
+        for (const tName of syn.techs) {
+            const t = game.science.get(tName);
+            for (const p of (t.prices || [])) {
+                expect(prodRes.has(p.name)).toBe(true);
+            }
+        }
+        for (const uName of syn.upgrades) {
+            const u = game.workshop.get(uName);
+            for (const p of (u.prices || [])) {
+                expect(prodRes.has(p.name)).toBe(true);
+            }
+        }
+    }
+});
+
+test("Differentiated Origins (buffs + debuffs) and Lore-Accurate Spirit Roots (multi-root higher breakthrough cost & higher same-realm combat power)", () => {
+    const cult = game.cultivation;
+    const ctrl = new classes.ui.RealmBtnController(game);
+    cult.getStage("zhuji_0").researched = true;
+
+    // 1. Spirit Roots: multi-element roots (wei > san > zhen > yi > tian) have higher breakthrough cost AND higher same-realm combat power, while cultivating slower
+    const rootOrder = ["wei", "san", "zhen", "yi", "tian"];
+    for (let i = 0; i < rootOrder.length - 1; i++) {
+        cult.spiritRoot = rootOrder[i];
+        const rMore = cult.getRoot();
+        const cpMore = cult.getCombatPower();
+        const costMore = cult.getBreakCostMult();
+
+        cult.spiritRoot = rootOrder[i + 1];
+        const rFewer = cult.getRoot();
+        const cpFewer = cult.getCombatPower();
+        const costFewer = cult.getBreakCostMult();
+
+        expect(rMore.xiuweiMult).toBeLessThan(rFewer.xiuweiMult);
+        expect(costMore).toBeGreaterThan(costFewer);
+        expect(cpMore).toBeGreaterThan(cpFewer);
+    }
+
+    // 2. Every Origin has both positive buffs and negative debuffs across resources, lifespan, combat power, breakthrough chance, or breakthrough cost
+    cult.spiritRoot = "zhen"; // baseline 1.0x priceMult, 1.0x combatMult
+    const baseCp = cult.getCombatPower();
+    const baseLife = cult.getLifespan(); // 200 in zhuji
+    const jiedan0 = cult.getStage("jiedan_0");
+    const baseChance = cult.getBreakChance(jiedan0);
+    const baseBreakCost = ctrl.getPrices({metadata: jiedan0})[0].val;
+
+    // Farmer: +25% catnip, +15% wood, +15% lifespan | -10% science, -10% combatPower
+    cult.setIdentity("韩立", "m", "farmer");
+    game.updateCaches();
+    game.calculateAllEffects();
+    expect(cult.effectsBase.catnipRatio).toBeCloseTo(0.25);
+    expect(cult.effectsBase.woodRatio).toBeCloseTo(0.15);
+    expect(cult.effectsBase.scienceRatio).toBeCloseTo(-0.10);
+    expect(cult.getLifespan()).toBe(Math.round(baseLife * 1.15));
+    expect(cult.getCombatPower()).toBeCloseTo(baseCp * 0.90);
+
+    // Hunter: +20% combatPower, +25% hunterRatio, +15% ironRatio | -10% xiuweiRatio, -4% breakChance
+    cult.setIdentity("韩立", "m", "hunter");
+    expect(cult.effectsBase.hunterRatio).toBeCloseTo(0.25);
+    expect(cult.effectsBase.ironRatio).toBeCloseTo(0.15);
+    expect(cult.effectsBase.xiuweiRatio).toBeCloseTo(-0.10);
+    expect(cult.getCombatPower()).toBeCloseTo(baseCp * 1.20);
+    expect(cult.getBreakChance(jiedan0)).toBeCloseTo(baseChance - 0.04);
+
+    // Scholar: +25% science, +15% xiuwei, +4% breakChance | -12% combatPower, -10% minerals
+    cult.setIdentity("韩立", "m", "scholar");
+    expect(cult.effectsBase.scienceRatio).toBeCloseTo(0.25);
+    expect(cult.effectsBase.xiuweiRatio).toBeCloseTo(0.15);
+    expect(cult.effectsBase.mineralsRatio).toBeCloseTo(-0.10);
+    expect(cult.getBreakChance(jiedan0)).toBeCloseTo(baseChance + 0.04);
+    expect(cult.getCombatPower()).toBeCloseTo(baseCp * 0.88);
+
+    // Trader: +25% minerals, +20% gold, -10% breakCost | -10% xiuwei, -8% combatPower
+    cult.setIdentity("韩立", "m", "trader");
+    expect(cult.effectsBase.mineralsRatio).toBeCloseTo(0.25);
+    expect(cult.effectsBase.goldRatio).toBeCloseTo(0.20);
+    expect(cult.effectsBase.xiuweiRatio).toBeCloseTo(-0.10);
+    expect(cult.getCombatPower()).toBeCloseTo(baseCp * 0.92);
+    expect(ctrl.getPrices({metadata: jiedan0})[0].val).toBeCloseTo(baseBreakCost * 0.90);
+
+    // Orphan: +8% breakChance, +12% combatPower, +8% xiuwei | +10% breakCost, -10% realmProductionRatio
+    cult.setIdentity("韩立", "m", "orphan");
+    expect(cult.effectsBase.xiuweiRatio).toBeCloseTo(0.08);
+    expect(cult.effectsBase.realmProductionRatio).toBeCloseTo(-0.10);
+    expect(cult.getBreakChance(jiedan0)).toBeCloseTo(baseChance + 0.08);
+    expect(cult.getCombatPower()).toBeCloseTo(baseCp * 1.12);
+    expect(ctrl.getPrices({metadata: jiedan0})[0].val).toBeCloseTo(baseBreakCost * 1.10);
+});
+
+
 
 
 

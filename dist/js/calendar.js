@@ -486,7 +486,7 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 		if (this.festivalDays){
 			this.festivalDays--;
 			if (this.game.getEffect("festivalLuxuryConsumptionRatio")){
-				if (!this.game.resPool.get("furs").value || !this.game.resPool.get("ivory").value || !this.game.resPool.get("spice").value){
+				if (!this.game.resPool.get("spice").value){
 					this.game.msg($I("village.festival.msg.deficitEnd"), "important", "festival");
 					this.festivalDays = 0;
 				}
@@ -503,16 +503,6 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 		} else {
 			//------------------------- relic -------------------------
 			this.game.resPool.addResPerTick("relic", this.game.getEffect("relicPerDay"));
-		}
-		//------------------------- necrocorns pacts -------------------------
-		//deficit changing
-		this.game.religion.pactsManager.necrocornConsumptionDays(1);
-		this.game.religion.getZU("blackPyramid").updateEffects(this.game.religion.getZU("blackPyramid"), this.game);
-		this.game.religion.getPact("payDebt").onNewDay(this.game);
-
-		//-------------------------  consequenses of accumulating too much necrocorn deficit -------------------------
-		if (this.game.religion.pactsManager.necrocornDeficit>=this.game.religion.pactsManager.fractureNecrocornDeficit){
-			this.game.religion.pactsManager.necrocornDeficitPunishment();
 		}
 		//------------------------- astronomical events -------------------------
 		if (this.getAreAstroEventsUnlocked()) {
@@ -581,15 +571,15 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 				sciGain = this.game.resPool.addResEvent("science", sciBonus);
 			}
 			var ironGain = 0;
-			var bloodstoneGain = 0;
+			var goldGain = 0;
 			if (this.game.workshop.get("prospecting").researched) {
 				ironGain = this.game.resPool.addResEvent("iron", 5 * (1 + minerologyBonus));
 				if (this.game.science.get("archery").researched) {
-					bloodstoneGain = this.game.resPool.addResEvent("bloodstone", 1 * (1 + this.game.getEffect("bloodstoneRatio")));
+					goldGain = this.game.resPool.addResEvent("gold", 1 * (1 + minerologyBonus));
 				}
 			}
 
-			if (mineralsGain > 0 || sciGain > 0 || ironGain > 0 || bloodstoneGain > 0){
+			if (mineralsGain > 0 || sciGain > 0 || ironGain > 0 || goldGain > 0){
 				var meteorMsg = $I("calendar.msg.meteor");
 
 				if (mineralsGain > 0){
@@ -601,8 +591,8 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 				if (sciGain > 0) {
 					meteorMsg += ", +" + this.game.getDisplayValueExt(sciGain) + " " + $I("resources.science.title");
 				}
-				if (bloodstoneGain > 0) {
-					meteorMsg += ", +" + this.game.getDisplayValueExt(bloodstoneGain) + " " + $I("resources.bloodstone.title");
+				if (goldGain > 0) {
+					meteorMsg += ", +" + this.game.getDisplayValueExt(goldGain) + " " + $I("resources.gold.title");
 				}
 
 				this.game.msg(meteorMsg + "!", null, "meteor");
@@ -626,41 +616,11 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 			}
 		}
 		//------------------------- 0.035% chance of spawning unicorns in Iron Will -----------------
-		var zebras = this.game.resPool.get("zebras");
-
 		if (this.game.ironWill){
 			var archery = this.game.science.get("archery");
 			if (this.game.rand(100000) <= 17 * unicornChanceRatio && unicorns.value < 2 && archery.researched){
 				this.game.resPool.addResEvent("unicorns", 1);
 				this.game.msg($I("calendar.msg.unicorn"));
-			}
-
-			if (!zebras.value && archery.researched){
-				this.game.resPool.addResEvent("zebras", 1);
-				this.game.msg($I("calendar.msg.zebra.hunter"));
-			} else if ( zebras.value > 0 && zebras.value < zebras.maxValue){
-				var chanceModifier = 1;
-				if (this.game.rand(100000) <= 500 * chanceModifier){
-					this.game.resPool.addResEvent("zebras", 1);
-					this.game.msg($I("calendar.msg.zebra.hunter.new"));
-					this.game.ui.render();
-				}
-			}
-		} else {
-			var zTreshold = 0;
-			if (this.game.prestige.getPerk("zebraDiplomacy").researched){
-				zTreshold = Math.floor(0.10 * zebras.maxValue);   //5 - 10% of hunters will stay
-			}
-			if (this.game.prestige.getPerk("zebraCovenant").researched){
-				zTreshold = Math.floor(0.50 * zebras.maxValue);   //5 - 50% of hunters will stay
-			}
-			if (zebras.value > zTreshold ){
-				this.game.msg( zebras.value > 1 ?
-						$I("calendar.msg.zebra.hunter.departed.pl") :
-						$I("calendar.msg.zebra.hunter.departed")
-				);
-				zebras.value = zTreshold;
-				this.game.ui.render();
 			}
 		}
 		//TODO: maybe it is a good idea to start moving daily events to json metadata
@@ -691,25 +651,20 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 			});
 		}
 
-		// -------------- ivory meteors ---------------
+		// -------------- spirit stone meteors ---------------
 		var meteorChance = 0 + this.game.getEffect("ivoryMeteorChance");	//5 OPTK
 		if (this.game.rand(10000) < meteorChance * 10000 * unicornChanceRatio){
-
-			var ivory = (250 + this.game.rand(1500) * (1 + this.game.getEffect("ivoryMeteorRatio")));
-			this.game.msg($I("calendar.msg.ivoryMeteor", [this.game.getDisplayValueExt(ivory)]), "notice", "ivoryMeteor");
-
-			this.game.resPool.addResEvent("ivory", ivory);
+			var bonusMinerals = (250 + this.game.rand(1500) * (1 + this.game.getEffect("ivoryMeteorRatio")));
+			this.game.resPool.addResEvent("minerals", bonusMinerals);
 		}
 
 		// -------------- Enforce storage limits in Unicorn Tears Challenge ---------------
 		if (this.game.challenges.isActive("unicornTears")) {
 			var unicorns = this.game.resPool.get("unicorns");
 			if (unicorns.value > unicorns.maxValue) {
-				//Unicorns wander away (always in integer amounts!)
 				var amtLost = Math.ceil(unicorns.value - unicorns.maxValue);
 				this.game.resPool.addResEvent("unicorns", -amtLost);
-				//Mostly a joke way to get T-Mythril, really
-				this.game.resPool.addResEvent("tMythril", amtLost * 0.00075); //1000 unicorns -> 0.75 T-Mythril
+				this.game.resPool.addResEvent("relic", amtLost * 0.00075);
 				this.game.msg($I("calendar.msg.unicorn.departed", [this.game.getDisplayValueExt(amtLost)]));
 			}
 			var tears = this.game.resPool.get("tears");
@@ -795,32 +750,20 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 			if (this.game.workshop.get("prospecting").researched) {
 				this.game.resPool.addResEvent("iron", numberEvents * 5 * (1 + minerologyBonus));
 				if (this.game.science.get("archery").researched) {
-					this.game.resPool.addResEvent("bloodstone", numberEvents * (1 + this.game.getEffect("bloodstoneRatio")));
+					this.game.resPool.addResEvent("gold", numberEvents * (1 + minerologyBonus));
 				}
 			}
-
-			//TODO: make meteors give titanium on higher levels
 
 			totalNumberOfEvents += numberEvents;
 		}
 
 		//------------------------- 0.035% chance of spawning unicorns in Iron Will -----------------
-		var zebras = this.game.resPool.get("zebras");
-
 		if (this.game.ironWill){
 			var archery = this.game.science.get("archery");
 			var unicorns = this.game.resPool.get("unicorns");
-
-
 			if (unicorns.value < 2 && archery.researched){
 				numberEvents = Math.round(daysOffset * 17 * unicornChanceRatio / 100000);
 				this.game.resPool.addResEvent("unicorns", numberEvents);
-				totalNumberOfEvents += numberEvents;
-			}
-
-			if ( zebras.value > 0 && zebras.value < zebras.maxValue){
-				numberEvents = Math.round(daysOffset * 500 / 100000);
-				this.game.resPool.addResEvent("zebras", numberEvents);
 				totalNumberOfEvents += numberEvents;
 			}
 		}
@@ -860,12 +803,12 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 		}
 		totalNumberOfEvents += numberEvents;
 
-		// -------------- ivory meteors ---------------
+		// -------------- spirit stone meteors ---------------
 		var meteorChance = 0 + this.game.getEffect("ivoryMeteorChance");	//5 OPTK
 		numberEvents = Math.round(daysOffset * meteorChance * unicornChanceRatio);
 		if (numberEvents){
-			var ivory = (250 + this.game.rand(1500) * (1 + this.game.getEffect("ivoryMeteorRatio")));
-			this.game.resPool.addResEvent("ivory", ivory * numberEvents);
+			var bonusMinerals = (250 + this.game.rand(1500) * (1 + this.game.getEffect("ivoryMeteorRatio")));
+			this.game.resPool.addResEvent("minerals", bonusMinerals * numberEvents);
 		}
 		totalNumberOfEvents += numberEvents;
 
@@ -920,7 +863,6 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 			resPool.addResEvent("paragon", paragon);
 			this.game.stats.getStat("totalParagon").val += paragon;
 		}
-		this.game.religion.pactsManager.pactsMilleniumKarmaKittens(paragon);
 		var oldYear = this.year;
 		this.year += yearsOffset;
 		this.game.stats.getStat("totalYears").val += yearsOffset;
@@ -984,7 +926,6 @@ dojo.declare("com.nuclearunicorn.game.Calendar", null, {
 		: 1;
 		this.game.resPool.addResEvent("paragon", milleniums * paragonRatio);
 		this.game.stats.getStat("totalParagon").val += milleniums * paragonRatio;
-		this.game.religion.pactsManager.pactsMilleniumKarmaKittens(milleniums);
 	},
 	onNewYears: function(updateUI, years, milleniumChangeCalculated) {
 		var ty = this.game.stats.getStat("totalYears");

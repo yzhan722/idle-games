@@ -230,14 +230,14 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		}
 
 		var zebras = this.get("zebras");
-		if (!zebras.unlocked && this.game.resPool.get("ship").value >= 1){
+		if (!zebras.unlocked && (this.game.science.get("navigation").researched || this.game.cultivation.getCurrentRealmIndex() >= 2)){
 			zebras.unlocked = true;
 			this.game.workshop.get("caravanserai").unlocked = true;
 			return zebras;
 		}
 
 		var spiders = this.get("spiders");
-		if (!spiders.unlocked && this.game.resPool.get("ship").value >= 100 && this.game.resPool.get("science").maxValue > 125000){
+		if (!spiders.unlocked && (this.game.science.get("navigation").researched || this.game.cultivation.getCurrentRealmIndex() >= 2) && this.game.resPool.get("science").maxValue > 10000){
 			spiders.unlocked = true;
 			return spiders;
 		}
@@ -261,7 +261,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		if (!this.hasUnlockedRaces()) {
 
 			var unlockYear = (this.game.prestige.getPerk("navigationDiplomacy").researched
-					&& this.game.resPool.get("ship").value > 0) ?
+					&& this.game.science.get("navigation").researched) ?
 				0 : this.game.prestige.getPerk("diplomacy").researched ?
 				1 : this.game.karmaKittens > 0 ? 5 : 20;
 
@@ -373,10 +373,6 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		}, $I("ui.undo.diplomacy.trade", [this.game.getDisplayValueExt(totalTradeAmount), race.title]));
 
 		return boughtResources;
-	},
-
-	_fuzzGainedAmount: function(amount, width) {
-		return amount + width * (this.game.math.irwinHallRandom(amount) - amount / 2);
 	},
 
 	getManpowerCost: function() {
@@ -907,7 +903,7 @@ dojo.declare("classes.trade.ui.SendExplorersButtonController", com.nuclearunicor
 			}
 
 			this.game.msg($I("trade.new.failure", [hint]));
-			this.game.resPool.addResEvent("manpower", 950);
+			this.game.resPool.addResEvent("gold", 45);
 		}
 		this.game.render();
 	}
@@ -1040,7 +1036,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Diplomacy", com.nuclearunicorn.game
 					}, leftColumn);
 			}
 
-			var tradePrices = [{ name: "manpower", val: this.game.diplomacy.getManpowerCost()}, { name: "gold", val: this.game.diplomacy.getGoldCost()}];
+			var tradePrices = [{ name: "gold", val: this.game.diplomacy.getGoldCost()}];
 			var buys = race.buys;
 			for (var boughtItem in buys){
 				tradePrices.push({
@@ -1115,7 +1111,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Diplomacy", com.nuclearunicorn.game
 		var exploreBtn = new classes.trade.ui.SendExplorersButton({
 			name: $I("trade.send.explorers"),
 			description: $I("trade.send.explorers.desc"),
-			prices: [{ name: "manpower", val: 1000}],
+			prices: [{ name: "gold", val: 50}],
 			controller: new classes.trade.ui.SendExplorersButtonController(this.game)
 		}, this.game);
 		exploreBtn.render(tabContainer);

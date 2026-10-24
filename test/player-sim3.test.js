@@ -92,15 +92,6 @@ describe("deep — 宗教/信仰", () => {
 		expect(bad).toEqual([]);
 	});
 
-	test("pacts: every pact has price + effects wired", () => {
-		const bad = [];
-		const pacts = (game.religion.pactsManager && game.religion.pactsManager.pacts) || game.religion.pacts || [];
-		for (const p of pacts){
-			if (!p.name) bad.push("unnamed pact");
-			if (!p.prices && !p.price) bad.push(p.name + ": no price");
-		}
-		expect(bad).toEqual([]);
-	});
 });
 
 describe("deep — 太空/时间/历法", () => {

@@ -4,8 +4,6 @@
 dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabManager, {
 
 	game: null,
-	pactsManager: null,
-
 	//your TT level!
 	transcendenceTier: 0,
 
@@ -55,8 +53,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 				return effectValue * bld.on;
 			}
 		});
-		this.pactsManager = new classes.religion.pactsManager(game);
-		this.registerMeta("stackable", this.pactsManager.pacts, null);
 		this.setEffectsCachedExisting();
 
 		//Other game systems will want to interact with unicorn sacrifice, so let's ensure that
@@ -98,7 +94,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 			tu.unlocked = false;
 			this.resetStateStackable(tu);
 		}
-		this.pactsManager.resetState();
 	},
 
 	save: function(saveData){
@@ -108,14 +103,12 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 			faithRatio: this.faithRatio,
 			transcendenceTier: this.transcendenceTier,
 			activeHolyGenocide: this.activeHolyGenocide,
-			necrocornDeficit: this.pactsManager.necrocornDeficit,
 
 			// Duplicated save, for older versions like mobile
 			tcratio: this._getTranscendTotalPrice(this.transcendenceTier),
 			zu: this.filterMetadata(this.zigguratUpgrades, ["name", "val", "on", "unlocked"]),
 			ru: this.filterMetadata(this.religionUpgrades, ["name", "val", "on"]),
-			tu: this.filterMetadata(this.transcendenceUpgrades, ["name", "val", "on", "unlocked"]),
-			pact: this.filterMetadata(this.pactsManager.pacts, ["name", "val", "on", "unlocked"])
+			tu: this.filterMetadata(this.transcendenceUpgrades, ["name", "val", "on", "unlocked"])
 
 		};
 	},
@@ -133,7 +126,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		this.faithRatio = _data.faithRatio || 0;
 		this.transcendenceTier = _data.transcendenceTier || 0;
 		this.activeHolyGenocide = _data.activeHolyGenocide || 0;
-		this.pactsManager.necrocornDeficit = saveData.religion.necrocornDeficit || 0;
 
 		// Read old save
 		if (this.transcendenceTier == 0 && _data.tcratio > 0) {
@@ -143,7 +135,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		this.loadMetadata(this.zigguratUpgrades, _data.zu, "zigguratUpgrades");
 		this.loadMetadata(this.religionUpgrades, _data.ru, "religionUpgrades");
 		this.loadMetadata(this.transcendenceUpgrades, _data.tu, "transcendenceUpgrades");
-		this.loadMetadata(this.pactsManager.pacts, _data.pact, "pacts");
 	},
 	/**
 	 * This function is meant to be called while loading a savefile, AFTER everything has been initialized.
@@ -161,139 +152,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 				this.game.unlock(tu.unlocks);
 			}
 		}
-		//necrocorn deficit affecting 
-		var pacts = this.pactsManager.pacts;
-		for (var i = 0; i < pacts.length; i++){
-			pacts[i].calculateEffects(pacts[i], this.game);
-		}
-		this.getZU("blackPyramid").updateEffects(this.getZU("blackPyramid"), this.game);
-		console.log("pactsAdjustment");
-		if (!this.getPact("fractured").researched && this.getZU("blackPyramid").val > 0 && this.game.religion.getTU("mausoleum").val > 0){
-			this.game.unlock({
-				pacts: ["pactOfCleansing", "pactOfDestruction",  "pactOfExtermination", "pactOfPurity", "pactOfArcane", "pactOfChronicler"]
-			});
-		}
-	},
-	/**
-	 * Game rule: If the current number of necrocorns is strictly greater than a certain value,
-	 * a penalty is applied to necrocorn corruption rate.  This function returns where that threshold is.
-	 * @return A number in units of necrocorns, intended for use in necrocorn-related calculations
-	 */
-	getExistNecrocornThreshold: function() {
-		return 0;
-	},
-	/**
-	 * This function does 2 things:
-	 * (1) It calculates necrocorn production in a way that remembers intermediate values.
-	 * (2) It keeps information on the names of all the different modifiers, bonuses, etc.
-	 *     This is the information that will be shown to the player in the production breakdown tooltip.
-	 * 
-	 * My intent here is to make adding a new bonus as easy as possible.  Instead of having to add it to both
-	 * the UI code and to the effects calculation code, which may be in different files,
-	 * it's all contained in one place.
-	 * 
-	 * If a dev wants to add a new upgrade that grants a necrocorn bonus, all they need to do is to add
-	 * just a few lines of code to this function specifying the name of the effect & how it's calculated.
-	 * 
-	 * @param pretendExistNecrocorn bool (optional) There's one specific effect whose value is based on
-	 *                                   whether or not there are a non-zero number of necrocorns already.
-	 *                                   If this flag is true, we pretend we have some necrocorns.
-	 *                                   If false, we pretend we have exactly 0 necrocorns.
-	 *                                   If this flag is omitted (i.e. left undefined), we will check
-	 *                                   how many necrocorns the game-state actually has.
-	 * @return An array.  Each element in the array represents an individual bonus/modifier to necrocorn production.
-	 *         The point of this array is that the code for the UI can process this array to make it human-readable.
-	 * 
-	 * Each element in the array is an object with the following 3 keys:
-	 *	label: string.  What the player will see in the UI as the name for this effect.
-	 *	value: number.  Has different meaning depending on the behavior field.
-	 *	behavior: string.  How this effect interacts with the others in the list.  Can have 2 possible values:
-	 *		"additive" - The value field represents a flat bonus, in units of necrocorns per tick
-	 *		"multiplicative" - All additive effects before this point will be multiplied by the value
-	 * 
-	 * But, if all you want are some quick & easy numbers, fear not!  You need not bother with the array elements.
-	 * The return value will also have an additional numerical field, in addition to being an array.
-	 *	finalCorruptionPerTick: number.  The TOTAL necrocorn production per tick, after applying ALL modifiers.
-	 */
-	getCorruptionEffects: function(pretendExistNecrocorn) {
-		var existNecrocorn = (pretendExistNecrocorn === undefined) ? (this.game.resPool.get("necrocorn").value > this.getExistNecrocornThreshold()) : pretendExistNecrocorn;
-		var effectsList = [];
-		effectsList.finalCorruptionPerTick = 0;
-		effectsList.corruptionProdPerTick = 0;
-		effectsList.deficitPerTick = 0;
-		//effectsList is an ARRAY but it also has properties like an object.  This is intentional.
-
-		//Base production (from Markers, affected by Black Sky Challenge reward)
-		if (this.game.resPool.get("alicorn").value > 0) {
-			effectsList.push({
-				label: $I("res.stack.corruptionFromMarkers"),
-				value: this.game.getEffect("corruptionRatio"),
-				behavior: "additive"
-			});
-		}
-		//Game rule: Necrocorn production is slower if you have necrocorns already.
-		//corruptionBoostRatio reduces this & can eventually turn it into a bonus.
-		if (existNecrocorn) {
-			var multiplier = 0.25 * (1 + this.game.getEffect("corruptionBoostRatio"));
-			effectsList.push({
-				label: $I(multiplier < 1 ? "res.stack.corruptionExistPenalty" : "res.stack.religion"),
-				value: multiplier,
-				behavior: "multiplicative"
-			});
-		}
-		//Black Radiances
-		effectsList.push({
-			label: $I("res.stack.corruptionSorrowBonus"),
-			//30% bls * 20 Radiance should yield ~ 50-75% boost rate which is laughable but we can always buff it
-			value: 1 + Math.sqrt(this.game.resPool.get("sorrow").value * this.game.getEffect("blsCorruptionRatio")),
-			behavior: "multiplicative"
-		});
-		// >>>here<<< is the place to add new bonuses/modifiers/etc. if the devs want to add more content
-		// Just define a label (the i18n string to show to the player, giving this effect a name)
-		// Give it a value & either "additive" or "multiplicative" behavior
-		// The game will recalculate this once per tick, so you can put in a mathematical formula if you want.
-
-		//Calculation time: Go through every effect & apply them, in order.
-		for (var i = 0; i < effectsList.length; i += 1) {
-			var effect = effectsList[i];
-			switch (effect.behavior) {
-			case "additive":
-				effectsList.finalCorruptionPerTick += effect.value;
-				effectsList.corruptionProdPerTick += effect.value;
-				break;
-			case "multiplicative":
-				effectsList.finalCorruptionPerTick *= effect.value;
-				effectsList.corruptionProdPerTick *= effect.value;
-				break;
-			case "siphoning": //Back in the old days, the Siphoning polcy used to work differently.
-				if (effect.value < effectsList.finalCorruptionPerTick) {
-					//We can pay siphoned Pacts in full!
-					effectsList.finalCorruptionPerTick -= effect.value;
-				} else {
-					effectsList.deficitPerTick = Math.max(effect.value - effectsList.finalCorruptionPerTick, 0);
-					//Shrink so it doesn't consume more than we have from other sources.
-					effect.value = effectsList.finalCorruptionPerTick;
-					effectsList.finalCorruptionPerTick = 0;
-				}
-				//Leave effectsList.corruptionProdPerTick unchanged.
-				//Flip value from positive to negative & mark as "additive"
-				effect.value *= -1;
-				effect.behavior = "additive";
-				break;
-			}
-		}
-		return effectsList;
-	},
-	/**
-	 * Gets the amount of necrocorns corrupted per tick.
-	 * @param pretendExistNecrocorn boolean (optional) --If omitted, checks the game-state we're actually in right now.
-	 */
-	getCorruptionPerTick: function(pretendExistNecrocorn){
-		//Recalculate if needed, grab cached value if we can
-		if (typeof(pretendExistNecrocorn) === "boolean" || !this.corruptionCached) {
-			return this.getCorruptionEffects(pretendExistNecrocorn).finalCorruptionPerTick;
-		}
-		return this.corruptionCached.finalCorruptionPerTick;
 	},
 	update: function(){
 		if (this.game.resPool.get("faith").value > 0 || this.game.challenges.isActive("atheism") && this.game.bld.get("ziggurat").val > 0){
@@ -311,23 +169,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 			this.faith = 0;
 		}
 
-		//Update cached corruption-related values (only once per tick!)
-		this.corruptionCached = this.getCorruptionEffects();
-
-		var alicorns = this.game.resPool.get("alicorn");
-		if (alicorns.value > 0) {
-			this.corruption += this.getCorruptionPerTick();
-		} else {
-			this.corruption = 0;
-		}
-
-		if (this.corruption >= 1) {
-			var corrupted = this.corruptNecrocorns();
-			if (corrupted > 0) {
-				this.game.msg($I("religion.msg.corruption"), "important", "alicornCorruption");
-			}
-		}
-
 		if (this.game.calendar.day >= 0) {
 			this.triggerOrderOfTheVoid(1);
 		}
@@ -340,165 +181,8 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 			this.faith = 0;
 		}
 		
-		// calculate percentage of days in paradox by floor of which reduce days
-		// this is partially duplicating calendar.js fastForward which might need revisiting in the future
-		// TODO: test/necrocorns.test.js for necrocornFastForward
-		var temporalParadoxChance = this.game.getEffect("temporalParadoxChance");
-		if (temporalParadoxChance > 0)
-		{
-			var daysInParadox = 10 + this.game.getEffect("temporalParadoxDay");
-			var daysBetweenParadox = daysInParadox + 100 * Math.max( 1 , 1 / temporalParadoxChance );
-			var percentTimeInParadox = daysInParadox / daysBetweenParadox;
-			var daysInParadox = Math.floor(daysOffset * percentTimeInParadox);
-			daysOffset -= daysInParadox;
-		}
-
-		this.necrocornFastForward(daysOffset, times);
-
 		this.triggerOrderOfTheVoid(times);
 	},
-	/**
-	 * If the necrocorn corruption progress has reached 100%, convert alicorns into necrocorns at a 1:1 ratio.
-	 * If the Siphoning policy is active, these necrocorns are immediately used to repay debt.
-	 * Otherwise, the player gets to keep them.
-	 * If there are not enough alicorns, the corruption progress remains at 100%.
-	 * @return The number of necrocorns gained from this.  (Necrocorns spent to pay debt due to Siphoning don't count.  We only count necrocorns if the player gets to keep them.)
-	 */
-	corruptNecrocorns: function(){
-		var alicorns = this.game.resPool.get("alicorn");
-		// Prevents alicorn count to fall to 0, which would stop the per-tick generation
-		var maxAlicornsToCorrupt = Math.ceil(alicorns.value) - 1;
-		var alicornsToCorrupt = Math.floor(Math.min(this.corruption, maxAlicornsToCorrupt));
-		if (alicornsToCorrupt > 0) {
-			this.corruption -= alicornsToCorrupt;
-			alicorns.value -= alicornsToCorrupt;
-			this.game.resPool.get("necrocorn").value += alicornsToCorrupt;
-			this.game.upgrade({
-				zigguratUpgrades: ["skyPalace", "unicornUtopia", "sunspire"]
-			});
-		}
-		if (this.corruption >= 1) {
-			this.corruption = 1;
-		}
-		return alicornsToCorrupt;
-	},
-	/**
-	 * Internal helper function
-	 * Makes assumptions: We have Siphoning Policy, we'll never run out of alicorns to corrupt.
-	 * This implementation is designed to properly handle the edge case where Siphoning might prevent
-	 * us from generating a necrocorn & transitioning from below to above the threshold.
-	 * TODO: Write a test suite to ensure it works properly
-	 * It might be theoretically possible to complete this by simulating a max of 3 points, rather than looping.
-	 */
-
-	/**
-	 * Internal helper function.
-	 * Makes assumptions: We don't have Siphoning Policy, we'll never run out of alicorns to corrupt.
-	 * Does NOT handle the edge case where consumption could take us from above to below the threshold.
-	 * TODO: Write a test suite to ensure it works
-	 */
-	_necrocornsNaiveFastForward_withoutSiphoning: function(daysOffset, times) {
-		var corruptionBefore = this.corruption;
-		var threshold = this.getExistNecrocornThreshold();
-		//Number of necrocorns we had at the start:
-		var necrocornsBefore = this.game.resPool.get("necrocorn").value;
-		var corruptionPerTickUnpenalized = this.getCorruptionPerTick(false /*pretendExistNecrocorn*/);
-		if (corruptionPerTickUnpenalized > 0) { //Avoid divide-by-zero errors
-			var corruptionPerTickPenalized = this.getCorruptionPerTick(true /*pretendExistNecrocorn*/);
-			//Number of necrocorns we need to generate in order to surpass the threshold
-			var necrocornsToPassThreshold = 1 + Math.floor(threshold - necrocornsBefore);
-			//How many ticks we'll get of necrocorn production while <= the threshold:
-			var ticksUnpenalized = Math.ceil((necrocornsToPassThreshold - this.corruption) / corruptionPerTickUnpenalized);
-			if (ticksUnpenalized < 0) { ticksUnpenalized = 0; } //This would happen if we're above the threshold already.
-			if (ticksUnpenalized > times) { ticksUnpenalized = times; } //This would happen if we are fast-forwarding for a very short duration only
-			//How many ticks we'll get of necrocorn production while > the threshold:
-			var ticksPenalized = times - ticksUnpenalized;
-
-			this.corruption += corruptionPerTickUnpenalized * ticksUnpenalized + corruptionPerTickPenalized * ticksPenalized;
-		}
-
-		/*Debug info, so you can check my math:
-		console.log("ReligionManager#necrocornsNaiveFastForward for a total of " + daysOffset + " days, corresponding to " + times +
-			" ticks:\nWe are currently at " + necrocornsBefore + " necrocorns, & the threshold is at " +
-			threshold + " necrocorns.\nWe need to produce " + necrocornsToPassThreshold + " necrocorns to pass the threshold.\n> " + ticksUnpenalized + " ticks are at base production rate (" +
-			corruptionPerTickUnpenalized + " necrocorn/tick),\n> the remaining " + ticksPenalized +
-			" ticks are penalized (" + corruptionPerTickPenalized + " necrocorn/tick).\nWe started at " +
-			corruptionBefore + " corruption; we ended at " + this.corruption + " corruption (increase of " +
-			(this.corruption - corruptionBefore) + ").");//*/
-
-		this.corruptNecrocorns();
-		//------------------------- Pacts consume necrocorns/accumulate debt -------------------------
-		this.pactsManager.necrocornConsumptionDays(daysOffset);
-	},
-	/**
-	 * A naive function for calculating how the amount of necrocorns evolves over time.
-	 * It's inaccurate because it calculates all necrocorn production & all consumption in single chunks.
-	 * It doesn't take into account the fact that, without Siphoning, necrocorns are consumed continuously,
-	 * which could cause us to fall below the threshold & start generating necrocorns faster all of a sudden.
-	 * This DOES take into account how debt increases continuously over time if the player has Siphoning.
-	 * It also doesn't take into account what happens if the player runs out of alicorns partway through.
-	 * @param daysOffset number The number of days that elapse (used to calculate Pact consumption)
-	 * @param times number The number of ticks that elapse (used to calculate corruption)
-	 */
-	necrocornsNaiveFastForward: function(daysOffset, times) {
-		var alicorns = this.game.resPool.get("alicorn");
-		if (alicorns.value > 0) { //We can corrupt necrocorns
-			this._necrocornsNaiveFastForward_withoutSiphoning(daysOffset, times);
-		} else { //No alicorns, so we can't corrupt necrocorns...but we must still pay for Pacts
-			this.pactsManager.necrocornConsumptionDays(daysOffset);
-		}
-	},
-	/**
-	 * A function for calculating how the amount of necrocorns evolves over time.
-	 * Markers corrupt alicorns into necrocorns, & Pacts consume necrocorns.
-	 * This is better than the naive version because it deals with edge cases.
-	 * @param daysOffset number The number of days that elapse (used to calculate Pact consumption)
-	 * @param times number The number of ticks that elapse (used to calculate corruption)
-	 */
-	necrocornFastForward: function(days, times) {
-		//The idea is that necrocornsNaiveFastForward is accurate unless one of the following occurs:
-		// (1) We continuously consume necrocorns & it causes us to transition from *above* to *below* the "exist-necrocorn threshold."
-		//So, the plan is that we'll use the naive solution until we hit one of the above edge cases, fix the edge case, then continue onwards.
-		var threshold = this.getExistNecrocornThreshold();
-		var necrocornRes = this.game.resPool.get("necrocorn"); //Resource object
-		var necrocornPerDay = this.game.getEffect("necrocornPerDay"); //This is a NEGATIVE NUMBER if we have active Pacts
-		var continuouslyConsumeNecrocorns = true;
-		//Normally, the number of ticks per day is a well-defined constant--but this might not be the case in the future if redshift paradox handling gets changed.
-		var ticksPerDay = times / days;
-
-		//Set up a loop!
-		//All variables defined above this point are CONSTANT within the loop.
-		for (var daysRemaining = days, timesRemaining = times, i = 0; daysRemaining > 0 || timesRemaining > 0; i++ ) {
-			//Calculate the projected amount of time until we hit edge case #1:
-			var daysUntilWeHitEdgeCase1 = 0;
-			if (continuouslyConsumeNecrocorns && necrocornPerDay < 0) {
-				if (necrocornRes.value > threshold) {
-					var consumptionRate = -necrocornPerDay * this.pactsManager.getNecrocornDeficitConsumptionModifier(); //Positive value, in units of necrocorn/day
-					daysUntilWeHitEdgeCase1 = Math.ceil((necrocornRes.value - threshold) / consumptionRate);
-				} else {
-					//We'll need to check for edge case #1 again after we go above the threshold
-					var ticksUntilReachThreshold = Math.ceil((1 + Math.floor(threshold - necrocornRes.value) - this.corruption) / this.getCorruptionPerTick(false /*we are below threshold*/));
-					daysUntilWeHitEdgeCase1 = Math.ceil(ticksUntilReachThreshold / ticksPerDay);
-				}
-			} else { //We are in a situation where edge case #1 cannot happen
-				daysUntilWeHitEdgeCase1 = Infinity;
-			}
-
-			if (isNaN(daysUntilWeHitEdgeCase1)) { //Sanity check
-				daysUntilWeHitEdgeCase1 = Infinity;
-			}
-			//Alright, now how many do we simulate?
-			var daysToSimulate = Math.min(daysRemaining, daysUntilWeHitEdgeCase1);
-			var timesToSimulate = Math.min(Math.ceil(daysToSimulate * ticksPerDay), timesRemaining);
-			if (daysToSimulate < 1) { //If we sim 0 days, let's use up all remaining ticks at once.
-				timesToSimulate = timesRemaining;
-			}
-			this.necrocornsNaiveFastForward(daysToSimulate, timesToSimulate);
-			daysRemaining -= daysToSimulate;
-			timesRemaining -= timesToSimulate;
-		}
-	},
-
 	// Converts the equivalent of 10 % (improved by Void Resonators) of produced faith, but with only a quarter of apocrypha bonus
 	triggerOrderOfTheVoid: function(numberOfTicks) {
 		if (this.game.prestige.getPerk("voidOrder").researched) {
@@ -511,7 +195,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "unicornTomb",
 		label: $I("religion.zu.unicornTomb.label"),
 		description: $I("religion.zu.unicornTomb.desc"),
-		prices: [{ name: "minerals", val: 500 }, { name: "tears", val: 5 }],
+		prices: [{ name: "minerals", val: 500 }, { name: "faith", val: 250 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0.05,
@@ -549,7 +233,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "ivoryTower",
 		label: $I("religion.zu.ivoryTower.label"),
 		description: $I("religion.zu.ivoryTower.desc"),
-		prices: [{ name: "minerals", val: 25000 }, { name: "tears", val: 25 }],
+		prices: [{ name: "minerals", val: 25000 }, { name: "faith", val: 1200 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0.1,
@@ -572,7 +256,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "ivoryCitadel",
 		label: $I("religion.zu.ivoryCitadel.label"),
 		description: $I("religion.zu.ivoryCitadel.desc"),
-		prices: [{ name: "minerals", val: 50000 }, { name: "tears", val: 50 }],
+		prices: [{ name: "minerals", val: 50000 }, { name: "faith", val: 3500 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0.25,
@@ -598,7 +282,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "skyPalace",
 		label: $I("religion.zu.skyPalace.label"),
 		description: $I("religion.zu.skyPalace.desc"),
-		prices: [{ name: "minerals", val: 125000 }, { name: "tears", val: 500 }, { name: "slab", val: 100 }],
+		prices: [{ name: "minerals", val: 125000 }, { name: "faith", val: 12000 }, { name: "slab", val: 100 }],
 		priceRatio: 1.15,
 		effects: {
 			"goldMaxRatio": 0,
@@ -642,7 +326,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "unicornUtopia",
 		label: $I("religion.zu.unicornUtopia.label"),
 		description: $I("religion.zu.unicornUtopia.desc"),
-		prices: [{ name: "gold", val: 500 }, { name: "minerals", val: 1000000 }, { name: "tears", val: 5000 }],
+		prices: [{ name: "gold", val: 500 }, { name: "minerals", val: 1000000 }, { name: "faith", val: 45000 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0,
@@ -692,7 +376,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 
 		//TODO: make SSPIRE make something really interesting
 		description: $I("religion.zu.sunspire.desc"),
-		prices: [{ name: "gold", val: 1250 }, { name: "minerals", val: 750000 }, { name: "tears", val: 25000 }],
+		prices: [{ name: "gold", val: 1250 }, { name: "minerals", val: 750000 }, { name: "faith", val: 120000 }],
 		priceRatio: 1.15,
 		effects: {
 			"unicornsRatioReligion" : 0,
@@ -733,7 +417,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "marker",
 		label: $I("religion.zu.marker.label"),
 		description: $I("religion.zu.marker.desc"),
-		prices: [{ name: "unobtainium", val: 2500 }, { name: "spice", val: 50000 }, { name: "tears", val: 5000 }, { name: "slab", val: 15000 }],
+		prices: [{ name: "unobtainium", val: 2500 }, { name: "spice", val: 50000 }, { name: "relic", val: 15 }, { name: "slab", val: 15000 }],
 		priceRatio: 1.15,
 		effects: {
 			"corruptionRatio" : 0.000001
@@ -756,7 +440,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "unicornGraveyard",
 		label: $I("religion.zu.unicornGraveyard.label"),
 		description: $I("religion.zu.unicornGraveyard.desc"),
-		prices: [{ name: "necrocorn", val: 5 }, { name: "slab", val: 20000 }],
+		prices: [{ name: "relic", val: 25 }, { name: "slab", val: 20000 }],
 		priceRatio: 1.15,
 		effects: {
 			"cultureMaxRatioBonus" : 0.01,
@@ -773,7 +457,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "unicornNecropolis",
 		label: $I("religion.zu.unicornNecropolis.label"),
 		description: $I("religion.zu.unicornNecropolis.desc"),
-		prices: [{ name: "alicorn", val: 100 }, { name: "necrocorn", val: 15 }, { name: "void", val: 5 }, { name: "slab", val: 50000 }],
+		prices: [{ name: "relic", val: 60 }, { name: "timeCrystal", val: 10 }, { name: "slab", val: 50000 }],
 		priceRatio: 1.15,
 		effects: {
 			"corruptionBoostRatio" : 0.10
@@ -783,10 +467,8 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		name: "blackPyramid",
 		label: $I("religion.zu.blackPyramid.label"),
 		description: $I("religion.zu.blackPyramid.desc"),
-		prices: [{ name: "unobtainium", val: 5000 }, { name: "spice", val: 150000 }, { name: "sorrow", val: 5 }, { name: "slab", val: 50000 }],
+		prices: [{ name: "unobtainium", val: 5000 }, { name: "spice", val: 150000 }, { name: "relic", val: 100 }, { name: "slab", val: 50000 }],
 		priceRatio: 1.15,
-		effectsPreDeficit: {},
-		jammed: false,
 		effects: {
 			"pyramidGlobalResourceRatio" : 0,
 			"pyramidGlobalProductionRatio" : 0,
@@ -798,74 +480,9 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 			"pyramidPerYearRatio" : 0,
 			"timeRatio" : 0
 		},
-		simpleEffectNames: [
-			"GlobalResourceRatio",
-			"RecoveryRatio",
-			"GlobalProductionRatio",
-			"FaithRatio",
-			"SpaceCompendiumRatio",
-			"PerYearRatio"
-		],
-		prefixEffectNames: [
-			"craftRatio",
-			"timeRatio"
-		],
 		upgrades: {
 			spaceBuilding: ["spaceBeacon"],
 			chronoforge: ["temporalImpedance"]
-		},
-		calculateEffects: function(self, game) {
-			self.togglable = false;
-			if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-				for (var eff in self.effects){
-					self.effects[eff] = 0;
-				}
-				return;
-			}
-			var pacts = game.religion.pactsManager.pacts;
-			for (var i = 0; i < pacts.length; i++){
-				if (pacts[i].updatePreDeficitEffects){
-					pacts[i].updatePreDeficitEffects(game);
-				}
-			}
-		},
-		cashPreDeficitEffects: function (game) {
-			var transcendenceTierModifier = Math.max(game.religion.transcendenceTier - 24, 1);
-			var self = game.religion.getZU("blackPyramid");
-			for (var counter in self.simpleEffectNames){
-				self.effectsPreDeficit["pyramid" + self.simpleEffectNames[counter]] = game.getEffect("pact" + self.simpleEffectNames[counter]) * transcendenceTierModifier;
-			}
-			for (var counter in self.prefixEffectNames){
-				self.effectsPreDeficit[self.prefixEffectNames[counter]] = game.getEffect("pact" + self.prefixEffectNames[counter]) * transcendenceTierModifier;
-			}
-			self.effectsPreDeficit["deficitRecoveryRatio"] = game.getEffect("pactDeficitRecoveryRatio");
-
-			var pactBlackLibraryBoost = game.getEffect("pactBlackLibraryBoost") * transcendenceTierModifier;
-			var unicornGraveyard = game.religion.getZU("unicornGraveyard");
-			self.effectsPreDeficit["blackLibraryBonus"] = pactBlackLibraryBoost * unicornGraveyard.effects["blackLibraryBonus"] * (1 + unicornGraveyard.on);
-		},
-		updateEffects: function(self, game){
-			if (!self.jammed){
-				self.cashPreDeficitEffects(game);
-				self.jammed = true;
-			}
-			self.effects["deficitRecoveryRatio"] = self.effectsPreDeficit["deficitRecoveryRatio"];
-			//applying deficit
-			var deficiteModifier = game.religion.pactsManager.getDebtPenaltyRatio();
-			var existsDifference = false;
-			//console.warn(deficiteModifier);
-			for (var name in self.effectsPreDeficit){
-				if (name != "deficitRecoveryRatio"){
-					var old = self.effects[name];
-					self.effects[name] = self.effectsPreDeficit[name] * deficiteModifier;
-					if (self.effects[name] != old){
-						existsDifference = true;
-					}
-				}
-			}
-			if (existsDifference) {
-				game.upgrade(self.upgrades);
-			}
 		},
 		unlocked: false,
 		flavor: $I("religion.zu.blackPyramid.flavor"),
@@ -1204,7 +821,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		description: $I("religion.tu.darkNova.desc"),
 		prices: [
 			{ name : "relic", val: 75000 },
-			{ name : "void",  val: 7500 }
+			{ name : "timeCrystal", val: 100 }
 		],
 		tier: 20,
 		priceRatio: 1.15,
@@ -1214,55 +831,13 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		unlocked: false,
 		flavor: $I("religion.tu.darkNova.flavor")
 	},
-		//pacts can go to the TT23
-	{
-		name: "mausoleum",
-		label: $I("religion.tu.mausoleum.label"),
-		description: $I("religion.tu.mausoleum.desc"),
-		tier: 23,
-		priceRatio: 1.15,
-		prices: [
-			{ name : "relic", val: 50000 },
-			{ name : "void", val: 12500 },
-			{ name: "necrocorn", val: 10}
-		],
-		effects: {
-			"pactsAvailable": 1
-		},
-		upgrades: {
-			pacts: ["fractured"]
-		},
-		unlocked: false,
-		unlocks: {
-			pacts: ["pactOfCleansing", "pactOfDestruction",  "pactOfExtermination", "pactOfPurity", "pactOfArcane", "pactOfChronicler"]
-		},
-		calculateEffects: function (self, game){
-			if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-				self.effects["pactsAvailable"] = 0;
-				self.unlocked = false;
-				game.updateCaches();
-				return;
-			}
-			self.effects = {
-				"pactsAvailable": 7
-			};
-			if (game.religion.getPact("fractured").on >= 1){
-				self.effects["pactsAvailable"] = 0;
-			}
-			game.updateCaches();
-		},
-		evaluateLocks: function(game){
-			return game.getFeatureFlag("MAUSOLEUM_PACTS");
-		}
-		//flavor: $I("religion.tu.mausoleum.flavor")
-	},
 	{
 		name: "holyGenocide",
 		label: $I("religion.tu.holyGenocide.label"),
 		description: $I("religion.tu.holyGenocide.desc"),
 		prices: [
 			{ name : "relic", val: 100000 },
-			{ name : "void", val: 25000 }
+			{ name : "timeCrystal", val: 250 }
 		],
 		tier: 25,
 		priceRatio: 1.15,
@@ -1288,7 +863,7 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		description: $I("religion.tu.darkParacosm.desc"),
 		prices: [
 			{ name : "relic", val: 230000},
-			{ name : "void", val: 29000},
+			{ name : "timeCrystal", val: 500},
 			{ name : "paragon", val: 8, priceRatio: 2}
 		],
 		priceRules: true,
@@ -1310,30 +885,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 	},
 	],
 
-	effectsBase: {
-		"pactNecrocornConsumption" : -0.0005
-	},
-
-	necrocornDeficitPunishment: function(){
-		this.game.religion.getPact("fractured").on = 1;
-		this.game.religion.getPact("fractured").val = 1;
-		this.game.upgrade(
-			{
-				transcendenceUpgrades:["mausoleum"],
-				pacts:["fractured"]
-			}
-		);
-		//this.game.religion.getPact("fractured").calculateEffects(this.game.religion.getPact("fractured"), this.game);
-		this.game.religion.necrocornDeficit = 0;
-		this.game.msg($I("msg.pacts.fractured", [Math.round(100 * this.game.resPool.get("alicorn").value)/100]),"alert", "ai");
-		this.game.resPool.get("alicorn").value = 0;
-		var blackPyramid = this.game.religion.getZU("blackPyramid");
-		for (var i in blackPyramid.effectsPreDeficit){
-			blackPyramid.effectsPreDeficit[i] = 0;
-		}
-		this.game.religion.getZU("blackPyramid").updateEffects(this.game.religion.getZU("blackPyramid"), this.game);
-	},
-
 	getZU: function(name){
 		return this.getMeta(name, this.zigguratUpgrades);
 	},
@@ -1344,9 +895,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 
 	getTU: function(name){
 		return this.getMeta(name, this.transcendenceUpgrades);
-	},
-	getPact: function(name){
-		return this.getMeta(name, this.pactsManager.pacts);
 	},
 	/**
 	 * Checks if the player has unlocked the ability to sacrifice unicorns to gain unicorn tears.
@@ -1372,21 +920,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 		return this.game.getUnlimitedDR(this.faithRatio, 0.1) * 0.1;
 	},
 
-	getHGScalingBonus: function(){
-		var scalingRatio = this.game.getEffect("simScalingRatio");
-		if (!scalingRatio){
-			return 1;
-		}
-		return 1 + scalingRatio;
-	},
-
-	/**
-	 * Quick & easy way for other game systems to trigger a unicorn sacrifice
-	 */
-	sacrificeAllUnicorns: function() {
-		var model = { prices: [{ name: "unicorns", val: 2500 }]};
-		this.unicornSacController.transform(model, 1 /*all*/);
-	},
 	/**
 	 * Sacrifices as many unicorns as we need to generate the desired quantity of unicorn tears.
 	 * If we cannot afford them all, sacrifices the amount we can.
@@ -1480,10 +1013,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 
 				//In the future, we might add more things that care about Transcendence Tier.
 				game.calculateAllEffects();
-				if (game.getFeatureFlag("MAUSOLEUM_PACTS") && game.religion.getTU("mausoleum").val){
-					var blackPyramid = game.religion.getZU("blackPyramid");
-					blackPyramid.cashPreDeficitEffects(game);
-				}
 				game.msg($I("religion.transcend.msg.success", [religion.transcendenceTier]));
 			} else {
 				game.msg($I("religion.transcend.msg.failure", [
@@ -1513,10 +1042,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 
 		for (var i in this.transcendenceUpgrades){
 			this.transcendenceUpgrades[i].unlocked = true;
-		}
-
-		for (var i in this.pacts){
-			this.pacts[i].unlocked = true;
 		}
 
 		this.faith = 1000000;
@@ -1621,37 +1146,6 @@ dojo.declare("classes.managers.ReligionManager", com.nuclearunicorn.core.TabMana
 				props.controller.payPriceForUndoRefund(model);
 			}
 			this.game.render();
-		} else if (data.action === "buyPact") {
-			if (this.getPact("fractured").on) { //should fail if fractured
-				this.game.msg($I("religion.undo.buy.pact.fractured"), "alert", "undo", true /*noBullet*/);
-			} else {
-				var pact = this.getPact(data.metaId);
-				var props = {
-					id:            pact.name,
-					name:           pact.label,
-					description:    pact.description,
-					building:       pact.name
-				};
-				props.controller = new com.nuclearunicorn.game.ui.PactsBtnController(this.game);
-				var model = props.controller.fetchModel(props);
-				model.refundPercentage = 1.0;	//full refund for undo
-				props.controller.sellInternal(model, model.metadata.val - data.val, false /*requireSellLink*/);
-
-				//Un-incur necrocorn debt:
-				if (!model.metadata.notAddDeficit) {
-					this.pactsManager.necrocornDeficit = Math.max(this.pactsManager.necrocornDeficit - 0.5 * data.val, 0);
-				}
-				//Update effects:
-				if (model.metadata.updatePreDeficitEffects){
-					model.metadata.updatePreDeficitEffects(this.game);
-				}
-				if (!model.metadata.special){
-					this.game.upgrade({
-						pacts: ["payDebt"]
-					});
-				}
-				this.getZU("blackPyramid").jammed = false;
-			}
 		}
 		this.game.render();
 	}
@@ -1700,7 +1194,7 @@ dojo.declare("com.nuclearunicorn.game.ui.ZigguratBtnController", com.nuclearunic
 			var resPriceDiscount = this.game.getEffect(meta.prices[i].name + "CostReduction");
 			resPriceDiscount = this.game.getLimitedDR(resPriceDiscount, 1);
 			var resPriceModifier = 1 - resPriceDiscount;
-			var ratioToUse = meta.prices[i].name == "ivory" ? ivoryRatio : ratio;
+			var ratioToUse = ratio;
 
 			prices.push({
 				val: meta.prices[i].val * Math.pow(ratioToUse, meta.val) * resPriceModifier * priceModifier,
@@ -2056,100 +1550,6 @@ dojo.declare("classes.ui.religion.MultiLinkBtn", com.nuclearunicorn.game.ui.Butt
 	}
 });
 
-dojo.declare("classes.ui.religion.RefineTearsBtnController", com.nuclearunicorn.game.ui.ButtonModernController, {
-	defaults: function() {
-		var result = this.inherited("defaults", arguments);
-
-		result.hasResourceHover = true;
-		return result;
-	},
-
-	fetchModel: function (options) {
-		var model = this.inherited("fetchModel", arguments);
-		model.fiveLink = this._newLink(model, 5);
-		model.twentyFiveLink = this._newLink(model, 25);
-		model.hundredLink = this._newLink(model, 100);
-		return model;
-	},
-
-	_newLink: function (model, count) {
-		var self = this;
-		return {
-			visible: this.game.opts.showNonApplicableButtons
-				|| this.game.resPool.get("sorrow").value <= this.game.resPool.get("sorrow").maxValue - count
-				&& self.getCanAfford(model, count) >= count,
-			title: "x" + count,
-			handler: function (event) {
-				self.buyItem(model, null, count);
-				this.update();
-			}
-		};
-	},
-
-	getCanAfford: function(model, count) {
-		return Math.floor(this.game.resPool.get(model.prices[0].name).value / model.prices[0].val);
-	},
-
-	buyItem: function(model, event, count){
-		if (!this.hasResources(model)) {
-			return {
-				itemBought: false,
-				reason: "cannot-afford"
-			};
-		}
-		if (!model.enabled) {
-			//As far as I can tell, this shouldn't ever happen because being
-			//unable to afford it is the only reason for it to be disabled.
-			return {
-				itemBought: false,
-				reason: "not-enabled"
-			};
-		}
-		if (this.game.resPool.get("sorrow").value >= this.game.resPool.get("sorrow").maxValue){
-			//We can't refine because we're at the limit.
-			this.game.msg($I("religion.refineTearsBtn.refine.msg.failure"));
-			return {
-				itemBought: false,
-				reason: "already-bought"
-			};
-		}
-		if (!event) { event = {}; /*event is an optional parameter*/ }
-		var amtRefined = 0;
-		var sorrowObj = this.game.resPool.get("sorrow");
-		for (var batchSize = count || (event.ctrlKey ? this.game.opts.batchSize : 1);
-			 batchSize > 0
-			 && this.hasResources(model)
-			 && sorrowObj.value < sorrowObj.maxValue;
-			 batchSize--) {
-			this.payPrice(model);
-			this.refine();
-			amtRefined++;
-		}
-		var priceCount = model.prices[0].val * amtRefined;
-		var priceName = model.prices[0].name;
-		var descriptiveStrings = [this.game.getDisplayValueExt(priceCount),
-			this.game.resPool.get(priceName).title,
-			this.game.getDisplayValueExt(amtRefined),
-			sorrowObj.title];
-		var undo = this.game.registerUndoChange();
-		undo.addEvent(this.game.religion.id, {
-			action: "refine",
-			resFrom: priceName,
-			resTo:  sorrowObj.name,
-			valFrom: priceCount,
-			valTo: amtRefined
-		}, $I("ui.undo.religion.refine", descriptiveStrings));
-		return {
-			itemBought: true,
-			reason: "paid-for"
-		};
-	},
-
-	refine: function(){
-		this.game.resPool.get("sorrow").value++; //resPool.update() force below maxValue
-	}
-});
-
 dojo.declare("classes.ui.CryptotheologyWGT", [mixin.IChildrenAware, mixin.IGameAware], {
 	constructor: function(game){
 		var self = this;
@@ -2183,551 +1583,6 @@ dojo.declare("classes.ui.CryptotheologyPanel", com.nuclearunicorn.game.ui.Panel,
 	visible: false,
 });
 
-dojo.declare("classes.ui.PactsWGT", [mixin.IChildrenAware, mixin.IGameAware], {
-	updateInterval: 10, //Once every 2 sec
-	ticksSinceUpdate: 0,
-
-	constructor: function(game){
-		var self = this;
-		var controller = com.nuclearunicorn.game.ui.PactsBtnController(game);
-		dojo.forEach(game.religion.pactsManager.pacts, function(tu, i){
-			var button = new com.nuclearunicorn.game.ui.BuildingStackableBtn({
-				id: 		tu.name,
-				name: 		tu.label,
-				description: tu.description,
-				controller: controller
-			}, game);
-			self.addChild(button);
-		});
-	},
-
-	render: function(container){
-		var div = dojo.create("div", null, container);
-		this.spanPactsInfo = dojo.create("span", {
-			id: "pactsTextSum",
-			innerHTML: this.game.religion.pactsManager.getPactsTextSum()}, div);
-		var btnsContainer = dojo.create("div", null, div);
-		this.spanDeficitInfo = dojo.create("span", {
-			id: "pactsTextDeficit",
-			innerHTML: this.game.religion.pactsManager.getPactsTextDeficit()}, div);
-		this.inherited(arguments, [btnsContainer]);
-		this.ticksSinceUpdate = 0;
-	},
-
-	update: function(){
-		this.inherited(arguments);
-
-		//Update Pact-related text frequently, but not too often
-		this.ticksSinceUpdate++;
-		if (this.ticksSinceUpdate >= this.updateInterval) {
-			this.spanPactsInfo.innerHTML = this.game.religion.pactsManager.getPactsTextSum();
-			this.spanDeficitInfo.innerHTML = this.game.religion.pactsManager.getPactsTextDeficit();
-			this.ticksSinceUpdate = 0;
-		}
-	}
-});
-dojo.declare("classes.ui.PactsPanel", com.nuclearunicorn.game.ui.Panel, {
-	visible: false
-});
-
-/**
- * A button controller for pacts upgrade
- */
- dojo.declare("com.nuclearunicorn.game.ui.PactsBtnController", com.nuclearunicorn.game.ui.BuildingStackableBtnController, {
-	defaults: function() {
-		var result = this.inherited("defaults", arguments);
-		result.tooltipName = true;
-		return result;
-	},
-    getMetadata: function(model){
-        if (!model.metaCached){
-            model.metaCached = this.game.religion.getPact(model.options.id);
-		}
-        return model.metaCached;
-	},
-
-	updateEnabled: function(model){
-		this.inherited(arguments);
-		if (this.game.getEffect("pactsAvailable")<=0 && model.metadata.effects["pactsAvailable"] != 0){
-			model.enabled = false;
-		}
-	},
-
-	getPrices: function(model) {
-		var retVal = this.inherited("getPrices", arguments);
-		return retVal;
-	},
-
-	shouldBeBough: function(model, game){
-		return game.getEffect("pactsAvailable") + model.metadata.effects["pactsAvailable"]>=0;
-	},
-	buyItem: function(model, event) {
-		this.game.updateCaches();
-		this.updateEnabled(model);
-
-		if (!this.hasResources(model) && !this.game.devMode) {
-			return {
-				itemBought: false,
-				reason: "cannot-afford"
-			};
-		}
-		if (!this.shouldBeBough(model, this.game)){
-			return {
-				itemBought: false,
-				reason: "already-bought"
-			};
-		}
-		return this._buyItem_step2(model, event);
-	},
-
-	build: function(model, maxBld){
-		var meta = model.metadata;
-		var counter = 0;
-		if (typeof meta.limitBuild == "number" && meta.limitBuild - meta.val < maxBld){
-			maxBld = meta.limitBuild - meta.val;
-		}
-		if (meta.effects["pactsAvailable"] != 0){
-			maxBld = Math.min(maxBld, this.game.getEffect("pactsAvailable")/(-meta.effects["pactsAvailable"]));
-		}
-        if (model.enabled && this.hasResources(model) || this.game.devMode ){
-	        while (this.hasResources(model) && maxBld > 0){
-				this.incrementValue(model);
-				this.payPrice(model);
-	            counter++;
-	            maxBld--;
-	        }
-
-			if (!meta.notAddDeficit){
-				this.game.religion.pactsManager.necrocornDeficit += 0.5 * counter;
-			}
-	        if (counter > 1) {
-		        this.game.msg(meta.label + " x" + counter + " constructed.", "notice");
-			}
-
-			if (meta.breakIronWill) {
-				this.game.ironWill = false;
-			}
-
-			if (meta.unlocks) {
-				this.game.unlock(meta.unlocks);
-			}
-
-			if (meta.unlockScheme && meta.val >= meta.unlockScheme.threshold) {
-				this.game.ui.unlockScheme(meta.unlockScheme.name);
-			}
-
-			if (meta.upgrades) {
-				if (meta.updateEffects) {
-					meta.updateEffects(meta, this.game);
-				}
-				this.game.upgrade(meta.upgrades);
-			}
-			if (meta.updatePreDeficitEffects){
-				meta.updatePreDeficitEffects(this.game);
-			}
-			if (!meta.special) { //Potential performance optimization where we batch this in with the previous call a few lines above here, so we only call game.upgrade once.
-				this.game.upgrade({
-					pacts: ["payDebt"]}
-				);
-			}
-			if (meta.name != "payDebt"){
-				this.game.religion.getZU("blackPyramid").jammed = false;
-			}
-        }
-
-		if (counter && meta.name != "payDebt") { //The player cannot un-pay their debts (I'm lazy & don't feel like making the code work properly for that one)
-			var undo = this.game.registerUndoChange();
-			undo.addEvent(this.game.religion.id, {
-				action: "buyPact",
-				metaId: model.metadata.name,
-				val: counter
-			}, $I("ui.undo.religion.pact", [counter, model.metadata.label]));
-		}
-		return counter;
-    },
-
-});
-
-dojo.declare("classes.ui.religion.RefineBtn", com.nuclearunicorn.game.ui.ButtonModern, {
-	renderLinks: function () {
-		this.hundred = this.addLink(this.model.hundredLink);
-		this.twentyFive = this.addLink(this.model.twentyFiveLink);
-		this.five = this.addLink(this.model.fiveLink);
-	},
-
-	update: function () {
-		this.inherited(arguments);
-
-		dojo.style(this.five.link, "display", this.model.fiveLink.visible ? "" : "none");
-		dojo.style(this.twentyFive.link, "display", this.model.twentyFiveLink.visible ? "" : "none");
-		dojo.style(this.hundred.link, "display", this.model.hundredLink.visible ? "" : "none");
-	}
-});
-
-dojo.declare("classes.religion.pactsManager", null, {
-	game: null,
-	necrocornDeficit: 0,
-	fractureNecrocornDeficit: 50,
-	pacts: [
-		{
-			name: "pactOfCleansing",
-			label: $I("religion.pact.pactOfCleansing.label"),
-			description: $I("religion.pact.pactOfCleansing.desc"),
-			prices: [				
-				{ name : "relic", val: 100},
-			],
-			unlocks: {
-				//"pacts": ["pactOfFanaticism"]
-			},
-			effects: {
-				"pactsAvailable": -1,
-				"necrocornPerDay" : 0,
-				"pactDeficitRecoveryRatio": 0.003,
-				"pactGlobalResourceRatio" : 0.0005,
-				//"cathPollutionPerTickCon" : -5
-			},
-			unlocked: false,
-			calculateEffects: function(self, game){
-				if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-					return;
-				}
-				self.effects["necrocornPerDay"] = game.getEffect("pactNecrocornConsumption");
-			}
-		},{
-			name: "pactOfDestruction",
-			label: $I("religion.pact.pactOfDestruction.label"),
-			description: $I("religion.pact.pactOfDestruction.desc"),
-			prices: [				
-				{ name : "relic", val: 100},
-			],
-			unlocks: {
-				//"pacts": ["pactOfGlowing"] will deal with this later
-			},
-			effects: {
-				"pactsAvailable": -1,
-				"necrocornPerDay": 0,
-				"pactDeficitRecoveryRatio": -0.0001,
-				"pactGlobalProductionRatio": 0.0005,
-				//"cathPollutionPerTickProd" : 10
-			},
-			unlocked: false,
-			calculateEffects: function(self, game){
-				if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-					return;
-				}
-				self.effects["necrocornPerDay"] = game.getEffect("pactNecrocornConsumption");
-			}
-		},{
-			name: "pactOfExtermination",
-			label: $I("religion.pact.pactOfExtermination.label"),
-			description: $I("religion.pact.pactOfExtermination.desc"),
-			prices: [
-				{ name : "relic", val: 100},
-			],
-			effects: {
-				"pactsAvailable": -1,
-				"necrocornPerDay" : 0,
-				"pactFaithRatio": 0.001
-			},
-			unlocked: false,
-			calculateEffects: function(self, game){
-				if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-					return;
-				}
-				self.effects["necrocornPerDay"] = game.getEffect("pactNecrocornConsumption");
-			}
-		},{
-			name: "pactOfPurity",
-			label: $I("religion.pact.pactOfPurity.label"),
-			description: $I("religion.pact.pactOfPurity.desc"),
-			prices: [
-				{ name : "relic", val: 100},
-			],
-			//unlocks: {
-				//"pacts": ["pactOfFlame", "pactOfFanaticism"]
-			//},
-			effects: {
-				"pactsAvailable": -1,
-				"necrocornPerDay": 0,
-				"pactDeficitRecoveryRatio": 0.005,
-				"pactBlackLibraryBoost": 0.0005,
-				"pactSpaceCompendiumRatio": 0.001
-				//"cathPollutionPerTickCon" : -7
-			},
-			unlocked: false,
-			calculateEffects: function(self, game){
-				if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-					return;
-				}
-				self.effects["necrocornPerDay"] = game.getEffect("pactNecrocornConsumption");
-				game.religion.getZU("blackPyramid").jammed = false;
-			}
-		},{
-			name: "pactOfArcane",
-			label: $I("religion.pact.pactOfArcane.label"),
-			description: $I("religion.pact.pactOfArcane.desc"),
-
-			prices: [
-				{ name : "relic", val: 100},
-			],
-			effects: {
-				"pactsAvailable": -1,
-				"necrocornPerDay": 0,
-				"pactcraftRatio": 0.001,
-			},
-			unlocked: false,
-			calculateEffects: function(self, game){
-				if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-					return;
-				}
-				self.effects["necrocornPerDay"] = game.getEffect("pactNecrocornConsumption");
-				game.religion.getZU("blackPyramid").jammed = false;
-			}
-		},{
-			name: "pactOfChronicler",
-			label: $I("religion.pact.pactOfChronicler.label"),
-			description: $I("religion.pact.pactOfChronicler.desc"),
-
-			prices: [
-				{ name : "relic", val: 100},
-			],
-			effects: {
-				"pactsAvailable": -1,
-				"necrocornPerDay": 0,
-				"pactPerYearRatio" : 0.003,
-				"umbraBoostRatio": 0.1,
-				"pacttimeRatio": 0.1,
-			},
-			unlocked: false,
-			calculateEffects: function(self, game){
-				if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-					return;
-				}
-				self.effects["necrocornPerDay"] = game.getEffect("pactNecrocornConsumption");
-				game.religion.getZU("blackPyramid").jammed = false;
-			},
-			upgrades: {
-				spaceBuilding: ["hrHarvester"]
-			},
-		},{
-			name: "payDebt",
-			label: $I("religion.pact.payDebt.label"),
-			description: $I("religion.pact.payDebt.desc"),
-			prices: [
-				{ name : "necrocorn", val: 0},
-			],
-			upgrades: {
-				pacts: ["payDebt"]
-			},
-			effects: {
-				"pactsAvailable": 0,
-			},
-			special: true,
-			unlocked: false,
-			calculateEffects: function(self, game){
-				self.onNewDay(game);
-				if (self.val > 0){
-					self.on = 0;
-					self.val = 0;
-					game.religion.pactsManager.necrocornDeficit = 0;
-					self.unlocked = false;
-				}
-			},
-			onNewDay: function(game){
-				var self = game.religion.getPact("payDebt");
-				self.prices[0].val = Math.ceil(game.religion.pactsManager.necrocornDeficit);
-				self.unlocked = this.evaluateLocks(game);
-			},
-			limitBuild: 1,
-			notAddDeficit: true,
-			evaluateLocks: function(game){
-				return game.religion.pactsManager.necrocornDeficit > 0 && game.getFeatureFlag("MAUSOLEUM_PACTS");
-			},
-		},{
-			name: "fractured",
-			label: $I("religion.pact.fractured.label"),
-			description: $I("religion.pact.fractured.desc"),
-			prices: [
-				{ name : "catnip", val: 1 }
-			],
-			effects: {
-				"pyramidGlobalResourceRatio" : -0.5,
-				"pyramidGlobalProductionRatio" : -0.5,
-				"pyramidFaithRatio" : -0.5,
-				"pactsAvailable": 0,
-			},
-			limitBuild: 1,
-			special: true,
-			unlocked: false,
-			calculateEffects: function(self, game){
-				if (!game.getFeatureFlag("MAUSOLEUM_PACTS")){
-					self.effects = {
-						"pyramidGlobalResourceRatio" : 0,
-						"pyramidGlobalProductionRatio" : 0,
-						"pyramidFaithRatio" : 0,
-						"pactsAvailable": 0,
-					};
-					return;
-				}
-				if (self.on>=1){
-					for (var i = 0; i<game.religion.pactsManager.pacts.length; i++){
-						game.religion.pactsManager.pacts[i].on = 0;
-						game.religion.pactsManager.pacts[i].val = 0;
-						game.religion.pactsManager.pacts[i].unlocked = game.religion.pactsManager.pacts[i].name =="fractured";
-					}
-					self.val = 1;
-					self.on = 1;
-				}
-			}
-		}
-	],
-	necrocornDeficitPunishment: function(){
-		this.game.religion.getPact("fractured").on = 1;
-		this.game.religion.getPact("fractured").val = 1;
-		this.game.upgrade(
-			{
-				transcendenceUpgrades:["mausoleum"],
-				pacts:["fractured"]
-			}
-		);
-		//this.game.religion.getPact("fractured").calculateEffects(this.game.religion.getPact("fractured"), this.game);
-		this.game.religion.pactsManager.necrocornDeficit = 0;
-		var alicornsLost = Math.round(100 * this.game.resPool.get("alicorn").value) / 100;
-		this.game.msg($I("msg.pacts.fractured", [this.game.getDisplayValueExt(alicornsLost)]),"alert", "ai");
-		this.game.resPool.get("alicorn").value = 0;
-		var blackPyramid = this.game.religion.getZU("blackPyramid");
-		for (var i in blackPyramid.effectsPreDeficit){
-			blackPyramid.effectsPreDeficit[i] = 0;
-		}
-		this.game.religion.getZU("blackPyramid").updateEffects(this.game.religion.getZU("blackPyramid"), this.game);
-	},
-	constructor: function(game){
-		this.game = game;
-
-		//Enforce rule: all Pacts must have price ratio of 1 exactly.
-		this.pacts.forEach(function(meta) { meta.priceRatio = 1; });
-	},
-	resetState: function(){
-		//console.warn(this)
-		//console.warn(this.game.religion.pactsManager)
-		//console.warn(this.game.religion.pactsManager.pacts);
-		for (var i in this.game.religion.pactsManager.pacts){
-			this.game.religion.pactsManager.pacts[i].on = 0;
-			this.game.religion.pactsManager.pacts[i].val = 0;
-			this.game.religion.pactsManager.pacts[i].unlocked = false;
-		}
-	},
-	getPactsTextSum: function(){
-		return $I("msg.pacts.info", [this.game.getEffect("pactsAvailable"), -this.game.getEffect("pactNecrocornConsumption")]); //Every TT above 25 adds 100% to pact effects (not consumption) and 10% to karma per millenia effect
-	},
-	getPactsTextDeficit: function(){
-		if (this.game.religion.pactsManager.necrocornDeficit <= 0) {
-			return ""; //No deficit.  Nothing to see here.
-		}
-		return $I("msg.necrocornDeficit.info", [Math.round(this.game.religion.pactsManager.necrocornDeficit * 10000)/10000, 
-				"-" + Math.round(100*
-				((1 - this.game.religion.pactsManager.getDebtPenaltyRatio()))),
-				Math.round(10000*
-					(0.15 *(1 + this.game.getEffect("deficitRecoveryRatio")/2)))/100,
-					-Math.round((this.game.getEffect("necrocornPerDay") *(0.15 *(1 + this.game.getEffect("deficitRecoveryRatio"))))*1000000)/1000000
-				]);
-	},
-	/**
-	 * If there is Pact debt, certain game-effects are reduced based on how deep into debt the player is.
-	 * This function calculates a ratio that effects are multiplied with.
-	 * At low debt, returns a number closer to 1.  At high debt, returns a number closer to 0.
-	 * If Pacts are Fractured, it's treated as though we have maximum debt.
-	 * @return A number from 0 to 1, inclusive.
-	 */
-	getDebtPenaltyRatio: function() {
-		if (this.game.religion.getPact("fractured").on || this.necrocornDeficit >= this.fractureNecrocornDeficit) {
-			return 0; //Maximum debt
-		}
-		//Account for punishment exemption (0 by default):
-		var lowerBound = 0;
-		if (this.necrocornDeficit <= lowerBound) {
-			return 1; //0 debt
-		}
-		if (lowerBound >= this.fractureNecrocornDeficit) {
-			console.warn("smallDebtPunishmentExemption is too high relative to fractureNecrocornDeficit; cannot calculate debt penalty ratio!");
-		}
-		return 1 - (this.necrocornDeficit - lowerBound) / (this.fractureNecrocornDeficit - lowerBound);
-	},
-	getNecrocornDeficitConsumptionModifier: function(){
-		if (this.necrocornDeficit <= 0){
-			return 1;
-		}
-		var necrocornPerDay = this.game.getEffect("necrocornPerDay");
-		var necrocornDeficitRepaymentModifier = 1 + 0.15 * (1 + this.game.getEffect("deficitRecoveryRatio")/2);
-		if ((this.game.resPool.get("necrocorn").value + necrocornPerDay * necrocornDeficitRepaymentModifier) < 0){
-			necrocornDeficitRepaymentModifier = Math.max((necrocornPerDay * necrocornDeficitRepaymentModifier + this.game.resPool.get("necrocorn").value)/necrocornPerDay, 0);
-			return necrocornDeficitRepaymentModifier;
-		}
-		return necrocornDeficitRepaymentModifier;
-	},
-	necrocornConsumptionDays: function(days){
-		//------------------------- necrocorns pacts -------------------------
-		//deficit changing
-		var necrocornDeficitRepaymentModifier = 1;
-		var necrocornPerDay = this.game.getEffect("necrocornPerDay"); //This is a NEGATIVE NUMBER if we have active Pacts
-		//if siphening is not enough to pay for per day consumption ALSO consume necrocorns;
-		if (this.necrocornDeficit > 0){
-			necrocornDeficitRepaymentModifier = 1 + 0.15 * (1 + this.game.getEffect("deficitRecoveryRatio")/2);
-		}
-		if ((this.game.resPool.get("necrocorn").value + necrocornPerDay * days * necrocornDeficitRepaymentModifier) < 0){
-			this.necrocornDeficit += Math.max(-necrocornPerDay * days - this.game.resPool.get("necrocorn").value, 0);
-			necrocornDeficitRepaymentModifier = 1;
-		} else if (this.necrocornDeficit > 0){
-			this.necrocornDeficit += necrocornPerDay *(0.15 * (1 + this.game.getEffect("deficitRecoveryRatio")) * days);
-			this.necrocornDeficit = Math.max(this.necrocornDeficit, 0);
-		}
-		this.game.resPool.addResPerTick("necrocorn", necrocornPerDay * necrocornDeficitRepaymentModifier * days);
-	},
-	/**
-	 * This function counts how many unique Pacts the player is running.
-	 * For the purposes of this function, special objects like "pay the debt" or "fractured" don't count.
-	 * We're talking about regular Pacts here.
-	 * @return A number.  Specifically a nonnegative integer, because that's the type of number you usually use when counting something.
-	 */
-	countUniqueActivePacts: function() {
-		if (!this.game.getFeatureFlag("MAUSOLEUM_PACTS")) {
-			return 0;
-		}
-		var counter = 0;
-		for (var i = 0; i < this.pacts.length; i++) {
-			var pact = this.pacts[i];
-			if (pact.name === "fractured" && pact.on) { //There can be game-states where Fractured is on but so are some other Pacts (such as in the middle of the tick when fracturing triggers, before the engine has finished updating things)
-				return 0;
-			}
-			if (pact.special) { continue; } //Skip counting this one
-			if (pact.on) {
-				counter++;
-			}
-		}
-		return counter;
-	},
-	/**
-	 * This function counts how many total Pacts the player is running.
-	 * For the purposes of this function, special objects like "pay the debt" or "fractured" don't count.
-	 * We're talking about regular Pacts here.
-	 * @return A nonnegative integer
-	 */
-	countActivePacts: function() {
-		if (!this.game.getFeatureFlag("MAUSOLEUM_PACTS")) {
-			return 0;
-		}
-		var sum = 0;
-		for (var i = 0; i < this.pacts.length; i++) {
-			var pact = this.pacts[i];
-			if (pact.name === "fractured" && pact.on) { //There can be game-states where Fractured is on but so are some other Pacts (such as in the middle of the tick when fracturing triggers, before the engine has finished updating things)
-				return 0;
-			}
-			if (pact.special) { continue; } //Skip counting this one
-			sum += pact.on;
-		}
-		return sum;
-	}
-});
 dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.game.ui.tab, {
 
 	sacrificeBtn : null,
@@ -2752,13 +1607,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 		wgt.setGame(this.game);
 		ctPanel.addChild(wgt);
 
-		var ptPanel = new classes.ui.PactsPanel($I("religion.panel.pacts.label"));
-		ptPanel.game = this.game;
-		this.addChild(ptPanel);
-		this.ptPanel = ptPanel;
-		var wgtP = new classes.ui.PactsWGT(this.game);
-		wgtP.setGame(this.game);
-		ptPanel.addChild(wgtP);
 	},
 
 	render: function(container) {
@@ -2805,19 +1653,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 			}, game);
 			sacrificeAlicornsBtn.render(content);
 			this.sacrificeAlicornsBtn = sacrificeAlicornsBtn;
-
-			var refineBtn = new classes.ui.religion.RefineBtn({
-				name: $I("religion.refineTearsBtn.label"),
-				description: $I("religion.refineTearsBtn.desc"),
-				prices: [{ name: "tears", val: 10000}],
-				controller: new classes.ui.religion.RefineTearsBtnController(game, {
-					updateVisible: function(model) {
-						model.visible = this.game.religion.getZU("blackPyramid").unlocked;
-					}
-				})
-			}, game);
-			refineBtn.render(content);
-			this.refineBtn = refineBtn;
 
 			var refineTCBtn = new classes.ui.religion.MultiLinkBtn({
 				name: $I("religion.refineTCsBtn.label"),
@@ -2950,10 +1785,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 			this.sacrificeAlicornsBtn.update();
 		}
 
-		if (this.refineBtn) {
-			this.refineBtn.update();
-		}
-
 		if (this.refineTCBtn) {
 			this.refineTCBtn.update();
 		}
@@ -2991,9 +1822,6 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 		this.ctPanel.setVisible(hasCT);
 
 		dojo.forEach(this.zgUpgradeButtons, function(e, i){ e.update(); });
-		var canSeePacts = !this.game.religion.getPact("fractured").researched && this.game.religion.getZU("blackPyramid").val > 0 && this.game.religion.getTU("mausoleum").val > 0;
-		canSeePacts = canSeePacts && this.game.getFeatureFlag("MAUSOLEUM_PACTS");
-		this.ptPanel.setVisible(canSeePacts);
 	}
 
 });

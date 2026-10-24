@@ -211,7 +211,7 @@ describe("player sim — 突破与心魔", () => {
 
 	test("demon tax inflates xiuwei price only on real breakthrough", () => {
 		const c = game.cultivation, ctrl = new classes.ui.RealmBtnController(game);
-		c.spiritRoot = "san"; c.heartDemon = 40;
+		c.spiritRoot = "zhen"; c.heartDemon = 40;
 		const zhuji = stageOf(game, "zhuji_0");
 		const priced = ctrl.getPrices({ metadata: zhuji });
 		const xw = priced.find(p => p.name == "xiuwei").val;

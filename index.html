@@ -23,16 +23,6 @@
 		<!-- friends don't let friends use AMD and require.js -->
 		<script src="lib/system.js"></script>
 
-		<script>
-			SystemJS.config({
-				map: {
-					'plugin-babel': 'lib/babel/plugin-babel.js',
-					'systemjs-babel-build': 'lib/babel/systemjs-babel-browser.js'
-				},
-				transpiler: 'plugin-babel'
-			});
-		</script>
-
 		<script type="text/javascript">
 			var now = Date.now();
 			$("<link />").attr("rel", "stylesheet").attr("type", "text/css").attr("href", "res/default.css?_=" + now).appendTo($("head"));
@@ -106,15 +96,6 @@
 				}
 			}
 
-			function loadTheme(themeId, timestamp){
-				if (themeId == "default"){ return; }	//vanilla look — res/default.css already loaded, no file to fetch
-				$("<link />")
-					.attr("rel", "stylesheet")
-					.attr("type", "text/css")
-					.attr("href", "res/theme_" + themeId + ".css?_=" + timestamp)
-					.appendTo($("head"));
-			}
-
 			dojo.addOnLoad(function() {
 				var channelSuffix = ""; // version now comes from version.json; .rN still from build.version.json
 				if (window.location.href.indexOf("alpha") >= 0) {
@@ -140,7 +121,6 @@
 					"js/jsx/left.jsx",
 					"js/jsx/mid.jsx",
 					"js/jsx/toolbar.jsx",
-					"js/jsx/chiral.jsx",
 					"js/jsx/queue.jsx",
 
 					//required for defining IReactAware, will be relied upon by js/space
@@ -153,40 +133,17 @@
 					"js/challenges",
 					"js/void",
 					"js/math",
-					"js/preview",
 					"js/cultivation",
-					"game",
-
-					"js/toolbar"
+					"game"
 				];
 				progressMax = modules.length + 3;
 				console.log("Loading...");
-
-				//------ preload theme id ---------
-				var uiData = LCstorage["com.nuclearunicorn.kittengame.ui"];
-				var uiSettings = uiData && JSON.parse(uiData);
-				if (uiSettings){
-					if (uiSettings.theme){
-						$("body").addClass("scheme_" + uiSettings.theme);
-						loadTheme(uiSettings.theme, now);
-					}
-				}
-
 				var def = $.getJSON("version.json?="+now).then(function(vjson){ window.KGVersion = vjson; version = vjson.version; }).then(function(){ return $.getJSON("build.version.json?="+now); }, function(){ return $.getJSON("build.version.json?="+now); }).then(function(json){
 					buildRevision = json.buildRevision;
 					console.log("build revison is: " + buildRevision);
 					$("#versionLink").html(version + channelSuffix + ".r" + buildRevision);
 				});
 				def = _import("config", def);
-				def.then(function() {
-					var schemes = new classes.KGConfig().statics.schemes;
-					for (var i = 0; i < schemes.length; ++i) {
-						//todo: skip theme if preloaded
-						if (!uiSettings || uiSettings.theme != schemes[i]){
-							loadTheme(schemes[i], buildRevision);
-						}
-					}
-				});
 
 				def = _import("i18n", def);
 				def.then(function () {
@@ -231,15 +188,8 @@
 			function initGame() {
 				console.log("About to initialize the game");
 
-				// ?saveId=<kgnet guid> boots a read-only preview of somebody else's save.
-				// Detach storage first so nothing downstream can touch the local save.
-				var previewSaveId = classes.game.Preview.getSaveId();
-				if (previewSaveId) {
-					classes.game.Preview.detachStorage();
-				} else {
-					$("#loadingContainer").hide();
-					$("#game").show();
-				}
+				$("#loadingContainer").hide();
+				$("#game").show();
 
 				try {
 					gamePage = game = new com.nuclearunicorn.game.ui.GamePage();
@@ -251,11 +201,7 @@
 						gamePage.telemetry.buildRevision += "-b";
 					}
 
-					if (previewSaveId) {
-						//async: the rest of the boot happens once the cloud save lands
-						gamePage.preview.boot(previewSaveId);
-					} else {
-						gamePage.load();
+					gamePage.load();
 						gamePage.updateKarma();
 
 						gamePage.render();
@@ -267,8 +213,6 @@
 
 						//update eldermass gifts on every game load pass
 						//TODO: toggle timer in the background?
-						gamePage.checkEldermass();
-					}
 					//---------------------------------
 					gamePage.isLocalhost = isLocalhost;
 					if (gamePage.isLocalhost){
@@ -338,8 +282,6 @@
 					<a id="reset-link" href="#" onclick="gamePage.reset();">Reset</a>
 				</div>
 			</div>
-
-			<div id="previewBanner" style="display: none;" aria-label="Read-only preview banner"></div>
 
 			<div id="loadingContainer" aria-label="Loading screen">
 				<div class="content">
@@ -514,12 +456,6 @@
 						<select id="notationSelector" onchange="gamePage.ui.updateNotation()" style="margin-top: 2px;">
 						</select>
 					</div>
-
-					<div>
-						<label id="optionScheme" for="schemeToggle">Color scheme:</label><span id="schemeTip" style="cursor: help; padding-left: 4px;">(?)</span><br>
-						<select id="schemeToggle" onchange="gamePage.toggleScheme($('#schemeToggle').val())" style="margin-top: 2px;">
-						</select>
-					</div>
 				</div>
 				<br>
 
@@ -534,10 +470,6 @@
 					<div id="booleanOptionsExtra"></div>
 					<input id="batchSize" type="number" min="1" max="9999" size="4" oninput="$('#batchSize')[0].value = gamePage.opts.batchSize = Math.max(1, Math.min(9999, $('#batchSize')[0].value));">
 					<label id="optionBatchSize" for="batchSize">Batch size of Ctrl-click</label>
-					<br>
-					<a id="addTranslationLink" target="_blank" href="https://crowdin.com/project/kittensgame">Translation portal</a>
-					<br>
-					<a id="schemeRelock" href="#" onclick="gamePage.ui.relockSchemes()">Relock schemes</a>
 				</div>
 
 				<br>
@@ -577,20 +509,6 @@
 			<div id="helpDiv" style="display: none" class="dialog help xxHelp">
 				<a href="#" class="close" onclick="$('#helpDiv').hide();" style="position: absolute; top: 10px; right: 15px;">close</a>
 				<div id="helpContent"></div>
-			</div>
-
-			<div id="appDiv" style="display: none" class="dialog help">
-				<a id="dialogClose" href="#" class="close" style="position: absolute; top: 10px; right: 15px;">close</a>
-
-				<span id="appText">Kittens Game Mobile has been released! Click on the link to follow:</span>
-				<br>
-				<br>
-				<a id="appAndroid" target="_blank" href="https://play.google.com/store/apps/details?id=com.nuclearunicorn.kittensgame&hl=en">Android</a>&nbsp;|&nbsp;
-				<a id="appIOS" target="_blank" href="https://itunes.apple.com/us/app/kittens-game/id1198099725?mt=8">iOS</a>
-				<br>
-				<br>
-				<br>
-				<!--span style="font-size:12px;">(Will open in a new window)</span-->
 			</div>
 
 			<div id="xxToasts" class="xxToasts" aria-live="polite"></div>

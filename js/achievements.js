@@ -193,7 +193,7 @@ dojo.declare("classes.managers.Achievements", com.nuclearunicorn.core.TabManager
             title: $I("achievements.heartOfDarkness.title"),
             description: $I("achievements.heartOfDarkness.desc"),
             condition: function () {
-                return (this.game.resPool.get("zebras").value > 1);
+                return (this.game.karmaZebras > 1);
             }
         }, {
             name: "deathStranding",

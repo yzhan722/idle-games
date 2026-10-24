@@ -363,7 +363,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 	},
 
 	get: function(name){
-		if (name == "worship" || name == "epiphany" || name == "necrocornDeficit") {
+		if (name == "worship" || name == "epiphany") {
 			return false;
 		}
 		return this.resourceMap[name] || (this.resourceMap[name] = this.createResource(name));
@@ -371,7 +371,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 
 	//put your custom fake resources there
 	getPseudoResources: function(){
-		var pactsManager = this.game.religion.pactsManager;
 		var pseudoResArr = [
 			{
 				name: "worship",
@@ -388,19 +387,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 				          this.game.science.get("theology").researched &&
 				          !this.game.challenges.isActive("atheism"),
 				visible: false
-			},
-			{
-				name: "necrocornDeficit",
-				title: $I("resources.necrocornDeficit.title"),
-				value: pactsManager.necrocornDeficit,
-				maxValue: pactsManager.fractureNecrocornDeficit,
-				unlocked: pactsManager.necrocornDeficit > 0 ||
-					//Do we have at least 1 pact purchased?
-					pactsManager.pacts.some(function(pact) {
-						return pact.val > 0;
-					}),
-				visible: false,
-				color: "#E00000"}
+			}
 		];
 		//Apply settings to mark as hidden:
 		for (var i = 0; i < pseudoResArr.length; i += 1) {
@@ -536,9 +523,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 			if (res.unlocked == false && res.value > 0){
 				res.unlocked = true;
 			} else if (res.value == 0 && res.unlocked == true) {
-				if (res.name == "zebras" ||
-					res.name == "paragon" ||
-					res.name == "elderBox"){
+				if (res.name == "paragon"){
 					res.unlocked = false;
 				}
 			}
@@ -585,9 +570,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 
 		var maxValue = game.getEffect(res.name + "Max") || 0;
 
-		if (res.name == "zebras") {
-			maxValue += (game.karmaZebras || 0) + 1;
-		}
 
 		maxValue = Math.min(this.addResMaxRatios(res, maxValue), Number.MAX_VALUE);
 		
@@ -718,7 +700,7 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 	 * Called in tooltips for more accurate per-building resMax increases
 	 */
 	addResMaxRatios: function(res, maxValue) {
-		if (res.name == "temporalFlux" || res.name == "zebras") {
+		if (res.name == "temporalFlux") {
 			return maxValue;
 		}
 
@@ -876,15 +858,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		}
 	},
 
-	maxAll: function(){
-		for (var i = 0; i < this.resources.length; i++){
-			var res = this.resources[i];
-			if (res.maxValue && res.value < res.maxValue){
-				res.value = res.maxValue;
-			}
-		}
-	},
-
     getEnergyDelta: function(){
 		if (this.energyCons == 0) {
 			return 0;
@@ -910,16 +883,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
     getVoidQuantityStatistically: function() {
 		return (this.game.getEffect("temporalParadoxVoid") + 1) / 2 ;
     },
-
-	setDisplayAll: function() {
-		for (var i = 0; i < this.resources.length; i++){
-			var res = this.resources[i];
-			res.isHidden = false;
-			if (res.name == "wood") {
-				res.isHiddenFromCrafting = false;
-			}
-		}
-	},
 
 	//Sets the "isHidden" flag of a resource or a pseudo-resource.
 	//This exists because the UI code can't know if a resource is real or pseudo.
@@ -954,10 +917,6 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 				this.hiddenPseudoResources.push(resName);
 			}
 		}
-	},
-
-	toggleLock: function(){
-		this.isLocked = !this.isLocked;
 	},
 
 	isNormalCraftableResource: function(res) {

@@ -145,12 +145,6 @@ dojo.declare("classes.managers.StatsManager", com.nuclearunicorn.core.TabManager
         return stat;
     },
 
-    resetStatsCurrent: function () {
-        for (var i in this.statsCurrent) {
-            this.statsCurrent[i].val = 0;
-        }
-    },
-
     unlockAll: function(){
         for (var i in this.statsCurrent) {
             this.statsCurrent[i].unlocked = true;

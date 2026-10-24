@@ -633,7 +633,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		effectDesc: $I("science.antimatter.effectDesc"),
 		prices: [
 			{name : "science", val: 500000},
-			{name : "antimatter", val: 1},
+			{name : "eludium", val: 50},
 			{name : "relic",   val: 1}
 		],
 		unlocks: {
@@ -764,7 +764,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		prices: [
 			{name : "science", val: 800000},
 			{name: 	"timeCrystal", val: 30},
-			{name : "void",   val: 100}
+			{name : "relic",   val: 25}
 		],
 		unlocks: {
 			tech: ["paradoxalKnowledge"],
@@ -785,7 +785,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 		prices: [
 			{name : "science", val: 1000000},
 			{name: 	"timeCrystal", val: 40},
-			{name : "void",   val: 250}
+			{name : "relic",   val: 50}
 		],
 		unlocks: {
 			upgrades: ["distorsion"],
@@ -864,15 +864,7 @@ dojo.declare("classes.managers.ScienceManager", com.nuclearunicorn.core.TabManag
 				//If the tech costs blueprints, add alicorns to the price.
 				for (var i = 0; i < prices.length; i += 1) {
 					switch (prices[i].name) {
-					case "manuscript":
-						prices_result = prices_result.concat([{name: "unicorns", val: prices[i].val * priceScaling}]);
-						break;
-					case "compedium":
-						prices_result = prices_result.concat([{name: "tears", val: prices[i].val * priceScaling}]);
-						break;
 					case "blueprint":
-						//Alicorn requirement is independent of the cost of the tech
-						//Minimum of 1, maximum of 10 with LDR.
 						prices_result = prices_result.concat([{name: "alicorn", val: Math.max(1, this.game.getLimitedDR(priceScaling, 10))}]);
 						break;
 					}
