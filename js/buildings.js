@@ -355,8 +355,7 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		priceRatio: 1.12,
 		effects: {
 			"catnipPerTickBase": 0.12,
-			"catnipMax": 400,
-			"xiuweiPerTickBase": 0.002
+			"catnipMax": 400
 		},
 		flavor : $I("buildings.field.flavor"),
 		unlockScheme: {
@@ -2788,13 +2787,13 @@ dojo.declare("classes.managers.BuildingsManager", com.nuclearunicorn.core.TabMan
 		}
 		var gain = 5 + Math.min(6, Math.floor(fields * 0.5)) + Math.min(8, stIdx * 2);
 		this.game.resPool.addResEvent("catnip", gain);
-		//山野采药偶触发微末机缘:伴生灵木或吐纳顿悟
+		//山野采药偶触发微末机缘:伴生灵木或(已引气入体后)吐纳顿悟
 		if (cult && this.game.gatherClicks > 1){
 			var roll = Math.random();
 			if (roll < 0.08){
 				this.game.resPool.addResEvent("wood", 1);
 				this.game.msg($I("buildings.gatherCatnip.boon.wood"), "notice");
-			} else if (roll < 0.22){
+			} else if (roll < 0.22 && (!cult.isMortal || !cult.isMortal())){
 				var xw = 1 + Math.floor(stIdx * 0.25);
 				this.game.resPool.addResEvent("xiuwei", xw);
 				this.game.msg($I("buildings.gatherCatnip.boon.xiuwei", [xw]), "notice");
