@@ -872,12 +872,32 @@ test("XianxiaArt generates SVG illustrations with Nano Banana artwork for hero p
     expect(art.fateArtSVG("nangong", null)).toContain("res/art/fate_companion.jpg");
     expect(art.fateArtSVG("duoshi", null)).toContain("res/art/fate_soul.jpg");
     expect(art.fateArtSVG("death", "samsara")).toContain("res/art/banner_time.jpg");
-    expect(art.originIcon("farmer")).toContain("<svg");
-    expect(art.actionArt("游")).toContain("<svg");
-    expect(art.tileIcon("bonus")).toContain("<svg");
-    expect(art.resIcon("xiuwei")).toContain("<svg");
-    expect(art.resIcon("catnip")).toContain("<svg");
-    expect(art.btnIcon({model: {metadata: {name: "field"}}})).toContain("<svg");
+    expect(art.originIcon("farmer")).toContain("res/art/origin_farmer.jpg");
+    expect(art.actionArt("游")).toContain("res/art/act_wander.jpg");
+    expect(art.tileIcon("bonus")).toContain("res/art/tile_bonus.jpg");
+    expect(art.resIcon("xiuwei")).toContain("res/art/res_xiuwei.jpg");
+    expect(art.resIcon("catnip")).toContain("res/art/res_catnip.jpg");
+    expect(art.btnIcon({model: {metadata: {name: "field"}}})).toContain("res/art/res_catnip.jpg");
+    expect(art.btnIcon({model: {metadata: {name: "hut"}}})).toContain("res/art/btn_cave.jpg");
+    expect(art.btnIcon({model: {metadata: {name: "smelter"}}})).toContain("res/art/btn_furnace.jpg");
+    expect(art.btnIcon({model: {metadata: {name: "vein1"}}})).toContain("res/art/btn_vein.jpg");
+    expect(art.btnIcon({model: {metadata: {name: "sect1"}}})).toContain("res/art/btn_sect.jpg");
+    expect(art.btnIcon({model: {metadata: {name: "lianqi_1"}}})).toContain("res/art/btn_realm.jpg");
+
+    // Verify all 63 newly generated AI icon & monster assets exist and no geometric <path>/<polygon> primitives remain
+    const allIconMaps = [art.ORIGIN_ART, art.ACTION_ART, art.TILE_ART, art.RES_ART, art.BTN_ART, art.MONSTER_ART, art.VFX_ART];
+    for (const m of allIconMaps) {
+        for (const k of Object.keys(m)) {
+            const rel = m[k];
+            const f1 = path.join(__dirname, "..", rel);
+            const f2 = path.join(__dirname, "..", "dist", rel);
+            expect(fs.existsSync(f1)).toBe(true);
+            expect(fs.statSync(f1).size).toBeGreaterThan(1500);
+            expect(fs.existsSync(f2)).toBe(true);
+        }
+    }
+    expect(art.resIcon("xiuwei")).not.toMatch(/<path|<polygon|<circle|<rect/);
+    expect(art.combatMonsterSVG("viper", true, true)).not.toMatch(/<path|<polygon|<circle|<rect/);
 });
 
 test("Building and technology names in zh.json use canonical Fanren Xiuxianzhuan terminology", () => {
@@ -1589,11 +1609,12 @@ test("Turn-Based Combat System: Lesser Rift 3-wave gauntlet, Greater Rift Boss b
         const mSvg = art.combatMonsterSVG(mk, true, true);
         expect(mSvg).toContain("xx-combat-avatar-svg enemy " + mk);
         expect(mSvg).toContain("xx-svg-monster-body");
+        expect(mSvg).toContain("res/art/monster_" + mk + ".jpg");
     }
-    expect(art.combatVfxSVG("strike")).toContain("xx-vfx-svg");
-    expect(art.combatVfxSVG("skill")).toContain("xx-vfx-svg");
-    expect(art.combatVfxSVG("guard")).toContain("xx-vfx-svg");
-    expect(art.combatVfxSVG("ult")).toContain("xx-vfx-svg");
+    expect(art.combatVfxSVG("strike")).toContain("res/art/vfx_strike.jpg");
+    expect(art.combatVfxSVG("skill")).toContain("res/art/vfx_skill.jpg");
+    expect(art.combatVfxSVG("guard")).toContain("res/art/vfx_guard.jpg");
+    expect(art.combatVfxSVG("ult")).toContain("res/art/vfx_ult.jpg");
 
     // Verify smooth auto-flow castTick progression across game.cultivation.update()
     cult.actionCd = 0;

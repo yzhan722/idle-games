@@ -5755,11 +5755,12 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 							}
 							costHtml += "</div>";
 
+							var pillIco = artMgr ? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.resIcon("spice") + "</i>" : "";
 							cardsHtml +=
 								"<div class=\"xxPillCard " + (pill.toxicity < 0 ? "cleansing" : "offensive") + "\">" +
 									"<div class=\"xxPillCardHd\">" +
 										"<div class=\"xxPillTitleWrap\">" +
-											"<span class=\"xxPillName\">" + pill.label + "</span>" +
+											"<span class=\"xxPillName\">" + pillIco + pill.label + "</span>" +
 										"</div>" +
 										"<div class=\"xxPillStockWrap\">" +
 											"<span class=\"xxPillStock" + (pVal > 0 ? " has" : "") + "\">×<b>" + pVal + "</b></span>" +
@@ -6105,14 +6106,15 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 							var skDef = cult.COMBAT_SKILLS[si];
 							var canCast = p.mp >= skDef.cost;
 							var isRec = (skDef.key === recSkill && canCast);
-							var skLabel = (skDef.key === "ult" && b.natalName) ? ("✨ " + b.natalName) : skDef.label;
+							var skLabel = (skDef.key === "ult" && b.natalName) ? b.natalName : skDef.label.replace(/^[^\u4e00-\u9fa5]+/, "");
+							var skIco = (artMgr && artMgr.skillIcon) ? "<i class=\"xx-skill-ico\" aria-hidden=\"true\">" + artMgr.skillIcon(skDef.key) + "</i>" : "";
 							skillBtnsHtml +=
 								"<a href=\"#!\" class=\"xxSkillBtn " + skDef.key +
 									(canCast ? "" : " disabled") +
 									(isRec ? " rec" : "") +
 									"\" data-battle-skill=\"" + skDef.key + "\">" +
 									"<div class=\"xxSkillHd\">" +
-										"<span class=\"xxSkillName\">" + skLabel + "</span>" +
+										"<span class=\"xxSkillName\">" + skIco + skLabel + "</span>" +
 										"<span class=\"xxSkillCost " + (skDef.cost > 0 ? "spend" : "gain") + "\">" + skDef.tag + "</span>" +
 									"</div>" +
 									"<div class=\"xxSkillDesc\">" + skDef.desc + "</div>" +
@@ -6422,8 +6424,8 @@ classes.ui.XianxiaAudio = {
 };
 
 /**
- * 东方水墨流金美术系统 (Xianxia Ink-Wash & Gold-Leaf Visual Art System)
- * 纯离线矢量画境、盘膝吐纳法相、仙缘章回插画、灵材法宝徽记。
+ * 东方水墨流金美术系统 (Xianxia AI-Generated Art Visual System)
+ * 全量采用 AI 原画素材渲染境界法相、页签画卷、仙缘章回、全灵材图标、出身/动作/道行徽记及秘境妖兽与神通特效。
  */
 classes.ui.XianxiaArt = {
 
@@ -6463,65 +6465,108 @@ classes.ui.XianxiaArt = {
 		karma:   "res/art/banner_time.jpg"
 	},
 
+	ORIGIN_ART: {
+		farmer:  "res/art/origin_farmer.jpg",
+		hunter:  "res/art/origin_hunter.jpg",
+		scholar: "res/art/origin_scholar.jpg",
+		trader:  "res/art/origin_trader.jpg",
+		orphan:  "res/art/origin_orphan.jpg"
+	},
+
+	ACTION_ART: {
+		"游":    "res/art/act_wander.jpg",
+		wander:  "res/art/act_wander.jpg",
+		"闭":    "res/art/act_seclude.jpg",
+		seclude: "res/art/act_seclude.jpg",
+		"秘":    "res/art/act_rift.jpg",
+		rift:    "res/art/act_rift.jpg",
+		"古":    "res/art/act_grift.jpg",
+		grift:   "res/art/act_grift.jpg"
+	},
+
+	TILE_ART: {
+		bonus:    "res/art/tile_bonus.jpg",
+		combat:   "res/art/tile_combat.jpg",
+		root:     "res/art/tile_root.jpg",
+		life:     "res/art/tile_life.jpg",
+		demon:    "res/art/tile_demon.jpg",
+		fate:     "res/art/tile_fate.jpg",
+		artifact: "res/art/tile_artifact.jpg"
+	},
+
+	RES_ART: {
+		xiuwei:       "res/art/res_xiuwei.jpg",
+		catnip:       "res/art/res_catnip.jpg",
+		wood:         "res/art/res_wood.jpg",
+		minerals:     "res/art/res_minerals.jpg",
+		coal:         "res/art/res_coal.jpg",
+		iron:         "res/art/res_iron.jpg",
+		steel:        "res/art/res_steel.jpg",
+		titanium:     "res/art/res_titanium.jpg",
+		alloy:        "res/art/res_alloy.jpg",
+		eludium:      "res/art/res_eludium.jpg",
+		gold:         "res/art/res_gold.jpg",
+		oil:          "res/art/res_oil.jpg",
+		uranium:      "res/art/res_uranium.jpg",
+		unobtainium:  "res/art/res_unobtainium.jpg",
+		science:      "res/art/res_science.jpg",
+		blueprint:    "res/art/res_blueprint.jpg",
+		culture:      "res/art/res_culture.jpg",
+		faith:        "res/art/res_faith.jpg",
+		starchart:    "res/art/res_starchart.jpg",
+		spice:        "res/art/res_spice.jpg",
+		relic:        "res/art/res_relic.jpg",
+		timeCrystal:  "res/art/res_timeCrystal.jpg",
+		karma:        "res/art/res_karma.jpg",
+		paragon:      "res/art/res_paragon.jpg",
+		beam:         "res/art/res_beam.jpg",
+		slab:         "res/art/res_slab.jpg",
+		manpower:     "res/art/origin_hunter.jpg",
+		antimatter:   "res/art/res_eludium.jpg",
+		temporalFlux: "res/art/res_timeCrystal.jpg",
+		void:         "res/art/res_eludium.jpg"
+	},
+
+	BTN_ART: {
+		cave:    "res/art/btn_cave.jpg",
+		furnace: "res/art/btn_furnace.jpg",
+		vein:    "res/art/btn_vein.jpg",
+		sect:    "res/art/btn_sect.jpg",
+		realm:   "res/art/btn_realm.jpg"
+	},
+
+	MONSTER_ART: {
+		viper:      "res/art/monster_viper.jpg",
+		puppet:     "res/art/monster_puppet.jpg",
+		wraith:     "res/art/monster_wraith.jpg",
+		mantis:     "res/art/monster_mantis.jpg",
+		frostwyrm:  "res/art/monster_frostwyrm.jpg",
+		bloodcult:  "res/art/monster_bloodcult.jpg",
+		mojiaowang: "res/art/monster_mojiaowang.jpg",
+		jinjia:     "res/art/monster_jinjia.jpg",
+		yinlang:    "res/art/monster_yinlang.jpg",
+		gumo:       "res/art/monster_gumo.jpg",
+		zhenxian:   "res/art/monster_zhenxian.jpg"
+	},
+
+	VFX_ART: {
+		strike: "res/art/vfx_strike.jpg",
+		skill:  "res/art/vfx_skill.jpg",
+		guard:  "res/art/vfx_guard.jpg",
+		ult:    "res/art/vfx_ult.jpg"
+	},
+
 	// ---------------- 1. 境界盘膝吐纳法相 (Hero Cultivator Portrait) ----------------
 	heroPortraitSVG: function(realmKey, sealChar, rootKey, secluded, demon, hasBuff){
-		var pal = this.REALM_PALETTE[realmKey] || this.REALM_PALETTE.lianqi;
-		var pri = pal.pri;
-		var sec = pal.sec;
-		var dHigh = demon >= 50;
-		var coreColor = dHigh ? "#e0604a" : pri;
-		var spinCls = (secluded || hasBuff) ? "xx-art-spin-fast" : "xx-art-spin";
 		var portraitHref = this.PORTRAIT_ART[realmKey] || this.PORTRAIT_ART.lianqi;
-
-		//按境界演化的背光异象:炼气气旋 / 筑基道台 / 结丹金丸 / 元婴法相 / 化神星冕 / 渡劫雷霆
-		var realmAura = "";
-		if (realmKey == "jiedan"){
-			realmAura = "<circle cx=\"44\" cy=\"42\" r=\"9\" fill=\"" + pri + "\" opacity=\"0.28\" class=\"xx-art-pulse\"/>";
-		} else if (realmKey == "yuanying" || realmKey == "huashen"){
-			realmAura = "<ellipse cx=\"44\" cy=\"28\" rx=\"16\" ry=\"22\" fill=\"none\" stroke=\"" + pri + "\" stroke-width=\"1.1\" stroke-dasharray=\"3 2\" opacity=\"0.55\"/>";
-		} else if (realmKey == "lianxu" || realmKey == "heti" || realmKey == "dacheng" || realmKey == "dujie"){
-			realmAura = "<path d=\"M14 20 L24 30 L19 34 L29 44 M74 20 L64 30 L69 34 L59 44\" stroke=\"" + sec + "\" stroke-width=\"1.3\" fill=\"none\" opacity=\"0.75\"/>" +
-				"<circle cx=\"44\" cy=\"44\" r=\"36\" fill=\"none\" stroke=\"" + pri + "\" stroke-width=\"1.1\" opacity=\"0.5\"/>";
-		}
-
 		return "<svg viewBox=\"0 0 88 88\" class=\"xx-portrait-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
-			"<defs>" +
-				"<radialGradient id=\"xxHgGlow\" cx=\"50%\" cy=\"46%\" r=\"50%\">" +
-					"<stop offset=\"0%\" stop-color=\"" + pri + "\" stop-opacity=\"0.38\"/>" +
-					"<stop offset=\"65%\" stop-color=\"" + sec + "\" stop-opacity=\"0.10\"/>" +
-					"<stop offset=\"100%\" stop-color=\"#0a0f16\" stop-opacity=\"0\"/>" +
-				"</radialGradient>" +
-				"<radialGradient id=\"xxPortVig\" cx=\"50%\" cy=\"50%\" r=\"50%\">" +
-					"<stop offset=\"62%\" stop-color=\"#0a0f16\" stop-opacity=\"0\"/>" +
-					"<stop offset=\"100%\" stop-color=\"#080d14\" stop-opacity=\"0.78\"/>" +
-				"</radialGradient>" +
-				"<clipPath id=\"xxPortClip\">" +
-					"<rect x=\"3\" y=\"3\" width=\"82\" height=\"82\" rx=\"14\"/>" +
-				"</clipPath>" +
-			"</defs>" +
-			"<circle cx=\"44\" cy=\"44\" r=\"42\" fill=\"url(#xxHgGlow)\"/>" +
-			//Nano Banana 境界法相原画底图
-			"<image href=\"" + portraitHref + "\" x=\"3\" y=\"3\" width=\"82\" height=\"82\" preserveAspectRatio=\"xMidYMid slice\" clip-path=\"url(#xxPortClip)\" opacity=\"0.95\"/>" +
-			"<rect x=\"3\" y=\"3\" width=\"82\" height=\"82\" rx=\"14\" fill=\"url(#xxPortVig)\"/>" +
-			//外层周天八卦阵环
-			"<g class=\"" + spinCls + "\" style=\"transform-origin:44px 44px\">" +
-				"<circle cx=\"44\" cy=\"44\" r=\"39\" fill=\"none\" stroke=\"" + pri + "\" stroke-width=\"1\" stroke-dasharray=\"6 4 2 4\" opacity=\"0.68\"/>" +
-				"<circle cx=\"44\" cy=\"44\" r=\"34\" fill=\"none\" stroke=\"#d4b06a\" stroke-width=\"0.7\" stroke-dasharray=\"2 5\" opacity=\"0.48\"/>" +
-			"</g>" +
-			realmAura +
-			//丹田气海灵光呼吸点
-			"<circle cx=\"44\" cy=\"58\" r=\"4.5\" fill=\"" + coreColor + "\" opacity=\"0.28\" class=\"xx-art-pulse\"/>" +
-			//周身灵气光尘
-			"<circle cx=\"18\" cy=\"28\" r=\"1.3\" fill=\"" + pri + "\" opacity=\"0.85\"/>" +
-			"<circle cx=\"70\" cy=\"26\" r=\"1.4\" fill=\"#eed39a\" opacity=\"0.85\"/>" +
-			"<circle cx=\"68\" cy=\"62\" r=\"1.1\" fill=\"" + pri + "\" opacity=\"0.78\"/>" +
+			"<image href=\"" + portraitHref + "\" x=\"0\" y=\"0\" width=\"88\" height=\"88\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 			"</svg>" +
 			"<span class=\"xx-hero-seal-badge\">" + sealChar + "</span>";
 	},
 
 	//境界总览卡右侧水墨洞天画卷底图(随大境界演化画境)
 	cultivationBgSVG: function(realmKey){
-		var pal = this.REALM_PALETTE[realmKey] || this.REALM_PALETTE.lianqi;
 		var bgHref = "res/art/banner_cultivation.jpg";
 		if (realmKey == "huashen" || realmKey == "lianxu"){
 			bgHref = "res/art/banner_spacetime.jpg";
@@ -6529,23 +6574,7 @@ classes.ui.XianxiaArt = {
 			bgHref = "res/art/banner_time.jpg";
 		}
 		return "<svg viewBox=\"0 0 600 180\" preserveAspectRatio=\"xMidYMid slice\" class=\"xx-cult-bg-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
-			"<defs>" +
-				"<linearGradient id=\"xxCultFade\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">" +
-					"<stop offset=\"0%\" stop-color=\"#0b121c\" stop-opacity=\"0.92\"/>" +
-					"<stop offset=\"45%\" stop-color=\"#0b121c\" stop-opacity=\"0.60\"/>" +
-					"<stop offset=\"100%\" stop-color=\"#0b121c\" stop-opacity=\"0.14\"/>" +
-				"</linearGradient>" +
-				"<linearGradient id=\"xxMt1\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">" +
-					"<stop offset=\"0%\" stop-color=\"" + pal.pri + "\" stop-opacity=\"0.18\"/>" +
-					"<stop offset=\"100%\" stop-color=\"#0a0f16\" stop-opacity=\"0\"/>" +
-				"</linearGradient>" +
-			"</defs>" +
-			"<image href=\"" + bgHref + "\" x=\"0\" y=\"0\" width=\"600\" height=\"180\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.68\"/>" +
-			"<rect width=\"600\" height=\"180\" fill=\"url(#xxCultFade)\"/>" +
-			"<circle cx=\"515\" cy=\"42\" r=\"24\" fill=\"" + pal.sec + "\" opacity=\"0.14\"/>" +
-			"<path d=\"M260 180 L345 112 L425 68 L495 122 L555 78 L600 115 L600 180 Z\" fill=\"url(#xxMt1)\"/>" +
-			"<path d=\"M465 44 Q471 39 476 44 Q481 39 487 44\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.2\" opacity=\"0.5\"/>" +
-			"<path d=\"M488 34 Q493 30 497 34 Q501 30 506 34\" fill=\"none\" stroke=\"" + pal.pri + "\" stroke-width=\"1\" opacity=\"0.45\"/>" +
+			"<image href=\"" + bgHref + "\" x=\"0\" y=\"0\" width=\"600\" height=\"180\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 			"</svg>";
 	},
 
@@ -6579,88 +6608,13 @@ classes.ui.XianxiaArt = {
 
 	sceneSVG: function(kind){
 		var artHref = this.SCENE_BANNER_ART[kind] || this.SCENE_BANNER_ART.cosmos;
-		var baseDefs = "<defs>" +
-			"<linearGradient id=\"xxScSky\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">" +
-				"<stop offset=\"0%\" stop-color=\"#0e1824\"/>" +
-				"<stop offset=\"55%\" stop-color=\"#152535\"/>" +
-				"<stop offset=\"100%\" stop-color=\"#0d1620\"/>" +
-			"</linearGradient>" +
-			"<linearGradient id=\"xxScMask\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">" +
-				"<stop offset=\"0%\" stop-color=\"#091019\" stop-opacity=\"0.88\"/>" +
-				"<stop offset=\"42%\" stop-color=\"#0b1420\" stop-opacity=\"0.42\"/>" +
-				"<stop offset=\"100%\" stop-color=\"#0b1420\" stop-opacity=\"0.12\"/>" +
-			"</linearGradient>" +
-			"<linearGradient id=\"xxScJade\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">" +
-				"<stop offset=\"0%\" stop-color=\"#4fd1a5\" stop-opacity=\"0.22\"/>" +
-				"<stop offset=\"100%\" stop-color=\"#0d1620\" stop-opacity=\"0.02\"/>" +
-			"</linearGradient>" +
-			"<linearGradient id=\"xxScGold\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">" +
-				"<stop offset=\"0%\" stop-color=\"#d4b06a\" stop-opacity=\"0.20\"/>" +
-				"<stop offset=\"100%\" stop-color=\"#0d1620\" stop-opacity=\"0.02\"/>" +
-			"</linearGradient>" +
-		"</defs>" +
-		"<rect width=\"800\" height=\"96\" fill=\"url(#xxScSky)\"/>" +
-		"<image href=\"" + artHref + "\" x=\"0\" y=\"0\" width=\"800\" height=\"96\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.88\"/>" +
-		"<rect width=\"800\" height=\"96\" fill=\"url(#xxScMask)\"/>";
-
-		if (kind == "cave"){
-			//云深洞府图:Nano Banana 神手谷灵田原画 + 仙鹤流光点缀
-			return "<svg viewBox=\"0 0 800 96\" class=\"xx-scene-svg\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">" +
-				baseDefs +
-				"<path d=\"M595 32 Q602 25 608 32 Q614 25 621 32\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.2\" opacity=\"0.65\"/>" +
-				"<path d=\"M628 22 Q633 17 638 22 Q643 17 648 22\" fill=\"none\" stroke=\"#8be8cb\" stroke-width=\"1\" opacity=\"0.55\"/>" +
-				"<circle cx=\"520\" cy=\"42\" r=\"1.6\" fill=\"#4fd1a5\" opacity=\"0.8\"/>" +
-				"<circle cx=\"685\" cy=\"54\" r=\"1.5\" fill=\"#eed39a\" opacity=\"0.85\"/>" +
-			"</svg>";
-		}
-		if (kind == "library"){
-			//琅嬛书阁图:Nano Banana 藏经阁玉简原画 + 浑天八卦星轨点缀
-			return "<svg viewBox=\"0 0 800 96\" class=\"xx-scene-svg\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">" +
-				baseDefs +
-				"<g transform=\"translate(690,48)\" opacity=\"0.48\">" +
-					"<circle r=\"30\" fill=\"none\" stroke=\"#d4b06a\" stroke-width=\"1.1\" stroke-dasharray=\"5 3\"/>" +
-					"<circle r=\"20\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"0.9\"/>" +
-				"</g>" +
-				"<polyline points=\"610,24 645,16 678,32 715,18\" fill=\"none\" stroke=\"#8be8cb\" stroke-width=\"0.9\" opacity=\"0.5\"/>" +
-			"</svg>";
-		}
-		if (kind == "furnace"){
-			//地火丹器图:Nano Banana 虚天丹鼎原画 + 火星流光
-			return "<svg viewBox=\"0 0 800 96\" class=\"xx-scene-svg\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">" +
-				baseDefs +
-				"<circle cx=\"620\" cy=\"28\" r=\"2\" fill=\"#ffd08a\" opacity=\"0.8\"/>" +
-				"<circle cx=\"665\" cy=\"42\" r=\"1.6\" fill=\"#4fd1a5\" opacity=\"0.75\"/>" +
-				"<circle cx=\"715\" cy=\"24\" r=\"1.8\" fill=\"#ff7b6b\" opacity=\"0.75\"/>" +
-			"</svg>";
-		}
-		if (kind == "bazaar"){
-			//云海仙坊图:Nano Banana 四海坊市飞舟原画
-			return "<svg viewBox=\"0 0 800 96\" class=\"xx-scene-svg\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">" +
-				baseDefs +
-				"<path d=\"M520 72 Q555 62 590 72 T660 70\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.1\" opacity=\"0.45\"/>" +
-			"</svg>";
-		}
-		if (kind == "altar"){
-			//九天玄坛图:Nano Banana 九天香火玄坛原画
-			return "<svg viewBox=\"0 0 800 96\" class=\"xx-scene-svg\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">" +
-				baseDefs +
-				"<g transform=\"translate(680,48)\" opacity=\"0.45\">" +
-					"<circle r=\"28\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.2\"/>" +
-					"<circle r=\"19\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"0.9\" stroke-dasharray=\"4 3\"/>" +
-				"</g>" +
-			"</svg>";
-		}
-		//默认星海/天劫/岁月画境
 		return "<svg viewBox=\"0 0 800 96\" class=\"xx-scene-svg\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">" +
-			baseDefs +
-			"<circle cx=\"680\" cy=\"46\" r=\"26\" fill=\"none\" stroke=\"#b98eff\" stroke-width=\"1\" stroke-dasharray=\"5 3\" opacity=\"0.45\"/>" +
-			"<circle cx=\"650\" cy=\"26\" r=\"1.8\" fill=\"#eed39a\"/><circle cx=\"715\" cy=\"54\" r=\"2\" fill=\"#4fd1a5\"/>" +
+			"<image href=\"" + artHref + "\" x=\"0\" y=\"0\" width=\"800\" height=\"96\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 		"</svg>";
 	},
 
 	// ---------------- 3. 仙缘章回卡插画 (Story Fate Card Illustrations) ----------------
 	fateArtSVG: function(fateName, arcKey){
-		var pal = this.REALM_PALETTE[arcKey] || this.REALM_PALETTE.lianqi;
 		var scene = "mountain";
 		if (fateName == "bottle"){ scene = "bottle"; }
 		else if (fateName == "mojuren" || fateName == "duoshi" || fateName == "erying" || fateName == "xiedao"){ scene = "soul"; }
@@ -6679,146 +6633,49 @@ classes.ui.XianxiaArt = {
 		else if (scene == "array"){ fateImg = "res/art/banner_trade.jpg"; }
 		else if (scene == "samsara"){ fateImg = "res/art/banner_time.jpg"; }
 
-		var bg = "<defs>" +
-			"<linearGradient id=\"xxFtSky\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">" +
-				"<stop offset=\"0%\" stop-color=\"#0b131e\"/>" +
-				"<stop offset=\"100%\" stop-color=\"#152436\"/>" +
-			"</linearGradient>" +
-			"<radialGradient id=\"xxFtVig\" cx=\"50%\" cy=\"45%\" r=\"65%\">" +
-				"<stop offset=\"45%\" stop-color=\"#0b131e\" stop-opacity=\"0.08\"/>" +
-				"<stop offset=\"100%\" stop-color=\"#070c14\" stop-opacity=\"0.78\"/>" +
-			"</radialGradient>" +
-		"</defs>" +
-		"<rect width=\"480\" height=\"112\" rx=\"8\" fill=\"url(#xxFtSky)\"/>" +
-		"<image href=\"" + fateImg + "\" x=\"0\" y=\"0\" width=\"480\" height=\"112\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.90\"/>" +
-		"<rect width=\"480\" height=\"112\" rx=\"8\" fill=\"url(#xxFtVig)\"/>";
-
-		var fg = "";
-		if (scene == "bottle"){
-			fg = "<circle cx=\"240\" cy=\"56\" r=\"26\" fill=\"#4fd1a5\" opacity=\"0.16\" class=\"xx-art-pulse\"/>";
-		} else if (scene == "soul"){
-			fg = "<circle cx=\"185\" cy=\"54\" r=\"18\" fill=\"#f0c45a\" opacity=\"0.20\"/>" +
-				"<circle cx=\"295\" cy=\"54\" r=\"18\" fill=\"#e0604a\" opacity=\"0.20\"/>";
-		} else if (scene == "samsara"){
-			fg = "<circle cx=\"240\" cy=\"56\" r=\"32\" fill=\"none\" stroke=\"#d4b06a\" stroke-width=\"1.2\" stroke-dasharray=\"6 4\" opacity=\"0.65\"/>";
-		} else {
-			fg = "<circle cx=\"240\" cy=\"56\" r=\"26\" fill=\"none\" stroke=\"" + pal.pri + "\" stroke-width=\"1\" stroke-dasharray=\"5 3\" opacity=\"0.38\"/>";
-		}
-
-		return "<svg viewBox=\"0 0 480 112\" class=\"xx-fate-svg\" xmlns=\"http://www.w3.org/2000/svg\">" + bg + fg + "</svg>";
+		return "<svg viewBox=\"0 0 480 112\" class=\"xx-fate-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + fateImg + "\" x=\"0\" y=\"0\" width=\"480\" height=\"112\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
 	},
 
 	// ---------------- 4. 出身徽记 / 历练四式 / 五维道行小图标 ----------------
 	originIcon: function(key){
-		var map = {
-			farmer:  "<path d=\"M12 22 C12 13 20 8 24 6 C24 14 19 20 12 22 Z M12 22 C7 18 5 12 8 7 C12 11 13 16 12 22 Z\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.8\"/><line x1=\"12\" y1=\"21\" x2=\"12\" y2=\"27\" stroke=\"#d4b06a\" stroke-width=\"2\"/>",
-			hunter:  "<path d=\"M7 25 L25 7 M18 7 L25 7 L25 14\" fill=\"none\" stroke=\"#e08a7a\" stroke-width=\"1.8\" stroke-linecap=\"round\"/><path d=\"M8 10 Q18 14 22 24\" fill=\"none\" stroke=\"#d4b06a\" stroke-width=\"1.6\"/>",
-			scholar: "<rect x=\"6\" y=\"6\" width=\"5\" height=\"20\" rx=\"1.5\" fill=\"none\" stroke=\"#6fd3ff\" stroke-width=\"1.6\"/><rect x=\"13.5\" y=\"5\" width=\"5\" height=\"22\" rx=\"1.5\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.6\"/><rect x=\"21\" y=\"6\" width=\"5\" height=\"20\" rx=\"1.5\" fill=\"none\" stroke=\"#6fd3ff\" stroke-width=\"1.6\"/>",
-			trader:  "<path d=\"M5 17 Q16 24 27 17 L23 24 L9 24 Z\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.8\"/><circle cx=\"16\" cy=\"12\" r=\"4\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.6\"/>",
-			orphan:  "<polygon points=\"16,4 20,16 16,28 12,16\" fill=\"none\" stroke=\"#b98eff\" stroke-width=\"1.7\"/><circle cx=\"16\" cy=\"16\" r=\"2.5\" fill=\"#eed39a\"/>"
-		};
-		var body = map[key] || map.farmer;
-		return "<svg viewBox=\"0 0 32 32\" class=\"xx-orig-svg\" xmlns=\"http://www.w3.org/2000/svg\">" + body + "</svg>";
+		var href = this.ORIGIN_ART[key] || this.ORIGIN_ART.farmer;
+		return "<svg viewBox=\"0 0 32 32\" class=\"xx-orig-svg xx-origin-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"32\" height=\"32\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
 	},
 
 	actionArt: function(glyph){
-		var svg = "";
-		if (glyph == "游"){
-			//御剑乘云
-			svg = "<path d=\"M4 18 L24 6 M18 6 L24 6 L24 12\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"2\" stroke-linecap=\"round\"/>" +
-				"<path d=\"M4 23 Q11 19 18 23 T26 21\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.6\" stroke-linecap=\"round\"/>";
-		} else if (glyph == "闭"){
-			//青莲打坐
-			svg = "<circle cx=\"14\" cy=\"10\" r=\"3.5\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.8\"/>" +
-				"<path d=\"M7 22 Q14 14 21 22 Z\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.8\"/>" +
-				"<path d=\"M4 24 Q14 20 24 24\" fill=\"none\" stroke=\"#d4b06a\" stroke-width=\"1.5\"/>";
-		} else if (glyph == "秘"){
-			//秘境旋涡门
-			svg = "<circle cx=\"14\" cy=\"14\" r=\"9\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.8\" stroke-dasharray=\"5 3\"/>" +
-				"<polygon points=\"14,7 20,14 14,21 8,14\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.6\"/>" +
-				"<circle cx=\"14\" cy=\"14\" r=\"2\" fill=\"#fff\"/>";
-		} else {
-			//上古秘境宝塔
-			svg = "<path d=\"M14 4 L22 10 L6 10 Z M8 15 L20 15 L23 20 L5 20 Z\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.6\"/>" +
-				"<rect x=\"9\" y=\"20\" width=\"10\" height=\"5\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.6\"/>";
-		}
-		return "<svg viewBox=\"0 0 28 28\" class=\"xx-act-svg\" xmlns=\"http://www.w3.org/2000/svg\">" + svg + "</svg>";
+		var href = this.ACTION_ART[glyph] || this.ACTION_ART["古"];
+		return "<svg viewBox=\"0 0 28 28\" class=\"xx-act-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"28\" height=\"28\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
 	},
 
 	tileIcon: function(key){
-		var map = {
-			bonus:    "<circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"8\" r=\"2\" fill=\"#4fd1a5\"/>",
-			combat:   "<path d=\"M3 13 L13 3 M9 3 L13 3 L13 7 M3 3 L13 13\" fill=\"none\" stroke=\"#eab6b6\" stroke-width=\"1.6\" stroke-linecap=\"round\"/>",
-			root:     "<path d=\"M8 2 C12 6 12 11 8 14 C4 11 4 6 8 2 Z\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.5\"/><path d=\"M3 7 C6 7 8 10 8 14 M13 7 C10 7 8 10 8 14\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.3\"/>",
-			life:     "<circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"none\" stroke=\"#8be8cb\" stroke-width=\"1.5\"/><polyline points=\"8,4 8,8 11,10\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>",
-			demon:    "<path d=\"M8 2 Q13 7 12 11 A4 4 0 1 1 4 11 Q3 7 8 2 Z\" fill=\"none\" stroke=\"#e0604a\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"10\" r=\"1.5\" fill=\"#ffd08a\"/>",
-			fate:     "<polygon points=\"8,1 10,6 15,8 10,10 8,15 6,10 1,8 6,6\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.3\"/>",
-			artifact: "<polygon points=\"8,1 14,5 12,14 4,14 2,5\" fill=\"none\" stroke=\"#9ecbff\" stroke-width=\"1.4\"/><circle cx=\"8\" cy=\"8\" r=\"2\" fill=\"#eed39a\"/>"
-		};
-		return "<svg viewBox=\"0 0 16 16\" class=\"xx-mini-svg\" xmlns=\"http://www.w3.org/2000/svg\">" + (map[key] || map.bonus) + "</svg>";
+		var href = this.TILE_ART[key] || this.TILE_ART.bonus;
+		return "<svg viewBox=\"0 0 16 16\" class=\"xx-mini-svg xx-tile-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"16\" height=\"16\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
 	},
 
-	// ---------------- 5. 全灵材资源定制图标 (Resource Icons) ----------------
+	skillIcon: function(key){
+		var href = this.VFX_ART[key] || this.VFX_ART.strike;
+		return "<svg viewBox=\"0 0 20 20\" class=\"xx-mini-svg xx-skill-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"20\" height=\"20\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
+	},
+
+	// ---------------- 5. 全灵材资源 AI 定制图标 (Resource Icons) ----------------
 	resIcon: function(name){
-		var p = "";
-		switch (name){
-			case "xiuwei":
-				p = "<circle cx=\"8\" cy=\"8\" r=\"6.2\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.5\"/><path d=\"M8 1.8 A3.1 3.1 0 0 1 8 8 A3.1 3.1 0 0 0 8 14.2\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.4\"/><circle cx=\"8\" cy=\"5\" r=\"1.2\" fill=\"#eed39a\"/><circle cx=\"8\" cy=\"11\" r=\"1.2\" fill=\"#4fd1a5\"/>";
-				break;
-			case "catnip":
-				p = "<path d=\"M8 14 L8 6 M8 10 C4 9 3 5 6 3 C8 5 9 8 8 10 Z M8 8 C12 7 13 4 10 2 C8 4 7 6 8 8 Z\" fill=\"none\" stroke=\"#5ce0a8\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>";
-				break;
-			case "wood":
-				p = "<path d=\"M4 13 L12 5 M6 7 L9 4 M7 12 L12 9\" fill=\"none\" stroke=\"#c89d66\" stroke-width=\"1.8\" stroke-linecap=\"round\"/><circle cx=\"12\" cy=\"4\" r=\"2\" fill=\"#4fd1a5\"/>";
-				break;
-			case "minerals":
-				p = "<polygon points=\"8,2 13,6 11,14 5,14 3,6\" fill=\"none\" stroke=\"#7ec8e3\" stroke-width=\"1.5\"/><polyline points=\"3,6 8,9 13,6\" fill=\"none\" stroke=\"#7ec8e3\" stroke-width=\"1.2\"/>";
-				break;
-			case "coal":
-				p = "<polygon points=\"4,12 3,7 7,4 13,6 12,13\" fill=\"none\" stroke=\"#9aa7b8\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"9\" r=\"1.8\" fill=\"#e0604a\"/>";
-				break;
-			case "iron":
-			case "steel":
-			case "alloy":
-				p = "<polygon points=\"3,11 6,5 12,5 14,11\" fill=\"none\" stroke=\"#a8b8c8\" stroke-width=\"1.5\"/><line x1=\"6\" y1=\"8\" x2=\"11\" y2=\"8\" stroke=\"#eed39a\" stroke-width=\"1.3\"/>";
-				break;
-			case "titanium":
-			case "eludium":
-				p = "<polygon points=\"8,1 14,8 8,15 2,8\" fill=\"none\" stroke=\"#9ecbff\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"8\" r=\"2\" fill=\"#fff\"/>";
-				break;
-			case "gold":
-				p = "<path d=\"M2 9 Q8 14 14 9 L12 13 L4 13 Z\" fill=\"none\" stroke=\"#ffd166\" stroke-width=\"1.6\"/><ellipse cx=\"8\" cy=\"8\" rx=\"3.5\" ry=\"2\" fill=\"#ffd166\"/>";
-				break;
-			case "oil":
-				p = "<path d=\"M8 2 C12 7 13 10 11 13 A4 4 0 0 1 5 13 C3 10 4 7 8 2 Z\" fill=\"none\" stroke=\"#6fd3ff\" stroke-width=\"1.5\"/>";
-				break;
-			case "science":
-			case "blueprint":
-				p = "<rect x=\"3\" y=\"3\" width=\"3\" height=\"10\" rx=\"1\" fill=\"none\" stroke=\"#6fd3ff\" stroke-width=\"1.4\"/><rect x=\"6.5\" y=\"2\" width=\"3\" height=\"12\" rx=\"1\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.4\"/><rect x=\"10\" y=\"3\" width=\"3\" height=\"10\" rx=\"1\" fill=\"none\" stroke=\"#6fd3ff\" stroke-width=\"1.4\"/>";
-				break;
-			case "culture":
-				p = "<circle cx=\"8\" cy=\"8\" r=\"5.5\" fill=\"none\" stroke=\"#d4a5ff\" stroke-width=\"1.5\"/><rect x=\"6.2\" y=\"6.2\" width=\"3.6\" height=\"3.6\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.2\"/>";
-				break;
-			case "faith":
-				p = "<path d=\"M4 10 L12 10 L11 14 L5 14 Z\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1.5\"/><path d=\"M6 8 Q6 4 8 3 M10 8 Q10 4 8 2\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.3\" stroke-linecap=\"round\"/>";
-				break;
-			case "spice":
-				p = "<path d=\"M6 3 L10 3 L9 6 C12 8 12 12 10 14 L6 14 C4 12 4 8 7 6 Z\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"10\" r=\"1.6\" fill=\"#eed39a\"/>";
-				break;
-			case "relic":
-			case "timeCrystal":
-			case "unobtainium":
-			case "karma":
-			case "paragon":
-				p = "<polygon points=\"8,1 14,5 14,11 8,15 2,11 2,5\" fill=\"none\" stroke=\"#b98eff\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"8\" r=\"2.2\" fill=\"#eed39a\"/>";
-				break;
-			default:
-				p = "<polygon points=\"8,2 13,8 8,14 3,8\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"8\" r=\"1.5\" fill=\"#eed39a\"/>";
-		}
-		return "<svg viewBox=\"0 0 16 16\" class=\"xx-res-svg\" xmlns=\"http://www.w3.org/2000/svg\">" + p + "</svg>";
+		var href = this.RES_ART[name] || this.RES_ART.xiuwei;
+		return "<svg viewBox=\"0 0 16 16\" class=\"xx-res-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"16\" height=\"16\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
 	},
 
-	// ---------------- 6. 营造/境界/丹器卡片定制徽记 (Card Button Emblems) ----------------
+	// ---------------- 6. 营造/境界/丹器卡片 AI 定制徽记 (Card Button Emblems) ----------------
 	btnIcon: function(btn){
 		var opts = (btn && btn.opts) || {};
 		var mdl = (btn && btn.model) || {};
@@ -6830,95 +6687,65 @@ classes.ui.XianxiaArt = {
 			else if (ctrl.declaredClass.indexOf("RefineCatnip") >= 0){ id = "refineCatnip"; }
 		}
 
-		//采集灵谷 & 凝练灵木
-		if (id == "gatherCatnip" || id == "field" || id == "pasture" || id == "unicornPasture"){
-			return this.resIcon("catnip");
+		var href = this.RES_ART.xiuwei;
+		if (id == "gatherCatnip" || id == "field" || id == "pasture" || id == "unicornPasture" || id == "aqueduct"){
+			href = this.RES_ART.catnip;
+		} else if (id == "refineCatnip" || id == "lumberMill"){
+			href = this.RES_ART.wood;
+		} else if (id == "hut" || id == "logHouse" || id == "mansion"){
+			href = this.BTN_ART.cave;
+		} else if (id == "library" || id == "academy" || mdl.type == "science"){
+			href = this.RES_ART.science;
+		} else if (id == "observatory"){
+			href = this.RES_ART.starchart;
+		} else if (id == "biolab" || id == "brewery" || id == "juqi" || id == "zhujidan" || id == "qingxin" || id == "jiangchen" || id == "peiying" || id == "biyan" || mdl.type == "pill"){
+			href = this.RES_ART.spice;
+		} else if (id == "barn" || id == "warehouse" || id == "harbor" || id == "mint" || id == "tradepost"){
+			href = this.RES_ART.gold;
+		} else if (id == "mine" || id == "quarry"){
+			href = this.RES_ART.minerals;
+		} else if (id == "smelter" || id == "calciner" || id == "workshop" || id == "factory" || id == "magneto" || id == "steamworks"){
+			href = this.BTN_ART.furnace;
+		} else if (id == "oilWell"){
+			href = this.RES_ART.oil;
+		} else if (id == "reactor" || id == "accelerator"){
+			href = this.RES_ART.uranium;
+		} else if (id == "amphitheatre"){
+			href = this.RES_ART.culture;
+		} else if (id == "chapel" || id == "temple" || id == "ziggurat"){
+			href = this.RES_ART.faith;
+		} else if (id == "chronosphere"){
+			href = this.RES_ART.timeCrystal;
+		} else if (id.indexOf("vein") === 0){
+			href = this.BTN_ART.vein;
+		} else if (id.indexOf("sect") === 0){
+			href = this.BTN_ART.sect;
+		} else if (id.indexOf("_") > 0 || mdl.type == "realm"){
+			href = this.BTN_ART.realm;
+		} else if (this.RES_ART[id]){
+			href = this.RES_ART[id];
 		}
-		if (id == "refineCatnip" || id == "hut" || id == "logHouse" || id == "mansion" || id == "lumberMill"){
-			return this.resIcon("wood");
-		}
-		if (id == "library" || id == "academy" || id == "observatory" || id == "biolab" || mdl.type == "science"){
-			return this.resIcon("science");
-		}
-		if (id == "barn" || id == "warehouse" || id == "harbor" || id == "mint" || id == "tradepost"){
-			return this.resIcon("gold");
-		}
-		if (id == "mine" || id == "quarry" || id == "smelter" || id == "calciner" || id == "workshop" || id == "factory"){
-			return this.resIcon("minerals");
-		}
-		if (id == "chapel" || id == "temple" || id == "ziggurat"){
-			return this.resIcon("faith");
-		}
-		if (id == "juqi" || id == "zhujidan" || id == "qingxin" || mdl.type == "pill"){
-			return this.resIcon("spice");
-		}
-		if (id.indexOf("vein") === 0){
-			return this.resIcon("minerals");
-		}
-		if (id.indexOf("sect") === 0){
-			return this.tileIcon("fate");
-		}
-		if (id.indexOf("_") > 0 || mdl.type == "realm"){
-			return this.resIcon("xiuwei");
-		}
-		return this.resIcon("xiuwei");
+
+		return "<svg viewBox=\"0 0 20 20\" class=\"xx-btn-svg xx-res-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"20\" height=\"20\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
 	},
 
-	// ---------------- 7. 秘境回合制斗法 · 修士法相 / 十一大妖兽妖王形象 / 剑光特效 (Combat Sprites & VFX) ----------------
+	// ---------------- 7. 秘境回合制斗法 · 修士法相 / 十一大妖兽妖王 AI 原画 / 神通特效 (Combat Sprites & VFX) ----------------
 	combatPlayerSVG: function(realmKey, hasShield, counterStance){
-		var pal = this.REALM_PALETTE[realmKey] || this.REALM_PALETTE.lianqi;
-		var pri = pal.pri;
-		var sec = pal.sec;
 		var portraitHref = this.PORTRAIT_ART[realmKey] || this.PORTRAIT_ART.lianqi;
-
 		var shieldSvg = "";
 		if (hasShield || counterStance){
-			var sCol = counterStance ? "#38bdf8" : "#4fd1a5";
 			shieldSvg =
 				"<g class=\"xx-svg-shield-dome\">" +
-					"<circle cx=\"58\" cy=\"58\" r=\"52\" fill=\"" + sCol + "\" fill-opacity=\"0.10\" stroke=\"" + sCol + "\" stroke-width=\"1.8\" stroke-dasharray=\"" + (counterStance ? "8 4" : "12 4") + "\"/>" +
-					"<circle cx=\"58\" cy=\"58\" r=\"47\" fill=\"none\" stroke=\"#eed39a\" stroke-width=\"1\" stroke-opacity=\"0.55\" stroke-dasharray=\"3 6\"/>" +
-					(counterStance ? "<path d=\"M58 10 A24 24 0 0 1 58 58 A24 24 0 0 0 58 106 A48 48 0 0 1 58 10 Z\" fill=\"#38bdf8\" fill-opacity=\"0.12\"/>" : "") +
+					"<image href=\"" + this.VFX_ART.guard + "\" x=\"4\" y=\"4\" width=\"108\" height=\"108\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.42\"/>" +
 				"</g>";
 		}
 
 		return "<svg viewBox=\"0 0 116 116\" class=\"xx-combat-avatar-svg player\" xmlns=\"http://www.w3.org/2000/svg\">" +
-			"<defs>" +
-				"<radialGradient id=\"xxCpAura_" + realmKey + "\" cx=\"50%\" cy=\"50%\" r=\"50%\">" +
-					"<stop offset=\"0%\" stop-color=\"" + pri + "\" stop-opacity=\"0.42\"/>" +
-					"<stop offset=\"70%\" stop-color=\"" + sec + "\" stop-opacity=\"0.12\"/>" +
-					"<stop offset=\"100%\" stop-color=\"#091019\" stop-opacity=\"0\"/>" +
-				"</radialGradient>" +
-				"<clipPath id=\"xxCpClip\">" +
-					"<circle cx=\"58\" cy=\"58\" r=\"39\"/>" +
-				"</clipPath>" +
-			"</defs>" +
-			// 脚下周天阵盘
-			"<ellipse cx=\"58\" cy=\"101\" rx=\"42\" ry=\"9\" fill=\"" + pri + "\" fill-opacity=\"0.16\" stroke=\"" + pri + "\" stroke-width=\"1\" stroke-dasharray=\"5 3\"/>" +
-			"<circle cx=\"58\" cy=\"56\" r=\"50\" fill=\"url(#xxCpAura_" + realmKey + ")\"/>" +
-			// 旋转背光罗盘
-			"<g class=\"xx-art-spin\" style=\"transform-origin:58px 56px\">" +
-				"<circle cx=\"58\" cy=\"56\" r=\"44\" fill=\"none\" stroke=\"" + pri + "\" stroke-width=\"1.2\" stroke-dasharray=\"7 4 2 4\" opacity=\"0.75\"/>" +
-				"<polygon points=\"58,9 63,20 53,20\" fill=\"" + sec + "\" opacity=\"0.75\"/>" +
-				"<polygon points=\"58,103 63,92 53,92\" fill=\"" + sec + "\" opacity=\"0.75\"/>" +
-				"<polygon points=\"11,56 22,51 22,61\" fill=\"" + pri + "\" opacity=\"0.75\"/>" +
-				"<polygon points=\"105,56 94,51 94,61\" fill=\"" + pri + "\" opacity=\"0.75\"/>" +
-			"</g>" +
-			// 修士境界原画法相
-			"<circle cx=\"58\" cy=\"56\" r=\"40\" fill=\"#0b131e\" stroke=\"#d4b06a\" stroke-width=\"1.8\"/>" +
-			"<image href=\"" + portraitHref + "\" x=\"18\" y=\"16\" width=\"80\" height=\"80\" preserveAspectRatio=\"xMidYMid slice\" clip-path=\"url(#xxCpClip)\"/>" +
-			"<circle cx=\"58\" cy=\"56\" r=\"39\" fill=\"none\" stroke=\"" + pri + "\" stroke-width=\"1.2\" opacity=\"0.65\"/>" +
-			// 环绕护体飞剑 (三柄青竹蜂云剑游弋)
+			"<image href=\"" + portraitHref + "\" x=\"12\" y=\"12\" width=\"92\" height=\"92\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 			"<g class=\"xx-svg-sword-orbit\">" +
-				"<g transform=\"translate(14,26) rotate(-28)\">" +
-					"<path d=\"M0 10 L22 0 L19 11 L2 14 Z\" fill=\"#4fd1a5\" stroke=\"#eed39a\" stroke-width=\"0.9\"/>" +
-				"</g>" +
-				"<g transform=\"translate(84,20) rotate(25)\">" +
-					"<path d=\"M0 0 L22 10 L19 14 L2 4 Z\" fill=\"#4fd1a5\" stroke=\"#eed39a\" stroke-width=\"0.9\"/>" +
-				"</g>" +
-				"<g transform=\"translate(86,74) rotate(-18)\">" +
-					"<path d=\"M0 8 L20 0 L17 10 Z\" fill=\"#eed39a\" stroke=\"#4fd1a5\" stroke-width=\"0.9\"/>" +
-				"</g>" +
+				"<image href=\"res/art/icon_swords.jpg\" x=\"76\" y=\"8\" width=\"32\" height=\"32\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 			"</g>" +
 			shieldSvg +
 		"</svg>";
@@ -6926,187 +6753,27 @@ classes.ui.XianxiaArt = {
 
 	combatMonsterSVG: function(monsterKey, hasShield, enraged){
 		var key = monsterKey || "viper";
-		var theme = {
-			viper:      {pri: "#34d399", sec: "#a7f3d0", acc: "#ef4444", bg: "#071f18"},
-			puppet:     {pri: "#94a3b8", sec: "#f59e0b", acc: "#38bdf8", bg: "#111827"},
-			wraith:     {pri: "#c084fc", sec: "#e9d5ff", acc: "#38bdf8", bg: "#1b0f2e"},
-			mantis:     {pri: "#fbbf24", sec: "#fde68a", acc: "#ef4444", bg: "#231909"},
-			frostwyrm:  {pri: "#38bdf8", sec: "#bae6fd", acc: "#818cf8", bg: "#081c2e"},
-			bloodcult:  {pri: "#f87171", sec: "#fca5a5", acc: "#fbbf24", bg: "#28090e"},
-			mojiaowang: {pri: "#10b981", sec: "#d4b06a", acc: "#a855f7", bg: "#061d17"},
-			jinjia:     {pri: "#f59e0b", sec: "#fef08a", acc: "#38bdf8", bg: "#241907"},
-			yinlang:    {pri: "#93c5fd", sec: "#f8fafc", acc: "#f43f5e", bg: "#0c192c"},
-			gumo:       {pri: "#ef4444", sec: "#c084fc", acc: "#fbbf24", bg: "#230712"},
-			zhenxian:   {pri: "#fde047", sec: "#67e8f9", acc: "#f472b6", bg: "#14102b"}
-		}[key] || {pri: "#f87171", sec: "#fbbf24", acc: "#38bdf8", bg: "#1a1016"};
-
-		var artBody = "";
-		if (key === "viper"){
-			// 赤练妖蟒：盘绕玄鳞巨蟒 + 猩红竖瞳 + 分叉毒信 + 碧绿毒瘴球
-			artBody =
-				"<path d=\"M28 88 Q18 68 38 58 Q68 48 64 32 Q58 18 42 26\" fill=\"none\" stroke=\"#047857\" stroke-width=\"14\" stroke-linecap=\"round\"/>" +
-				"<path d=\"M28 88 Q18 68 38 58 Q68 48 64 32 Q58 18 42 26\" fill=\"none\" stroke=\"" + theme.pri + "\" stroke-width=\"9\" stroke-dasharray=\"5 3\" stroke-linecap=\"round\"/>" +
-				"<path d=\"M30 28 L46 16 L58 26 L48 40 L32 38 Z\" fill=\"#065f46\" stroke=\"" + theme.pri + "\" stroke-width=\"1.8\"/>" +
-				"<polygon points=\"42,16 38,6 46,12\" fill=\"#fbbf24\"/><polygon points=\"52,18 56,7 57,15\" fill=\"#fbbf24\"/>" +
-				"<circle cx=\"40\" cy=\"26\" r=\"2.8\" fill=\"#ef4444\"/><circle cx=\"50\" cy=\"27\" r=\"2.8\" fill=\"#ef4444\"/>" +
-				"<path d=\"M35 37 L22 44 M26 42 L20 39 M26 42 L23 48\" fill=\"none\" stroke=\"#ef4444\" stroke-width=\"1.8\" stroke-linecap=\"round\"/>" +
-				"<polygon points=\"37,37 35,44 39,38\" fill=\"#fff\"/><polygon points=\"45,38 43,45 47,39\" fill=\"#fff\"/>" +
-				"<circle cx=\"24\" cy=\"62\" r=\"5\" fill=\"#34d399\" opacity=\"0.55\" class=\"xx-art-pulse\"/>" +
-				"<circle cx=\"82\" cy=\"46\" r=\"6.5\" fill=\"#10b981\" opacity=\"0.45\" class=\"xx-art-pulse\"/>";
-		} else if (key === "puppet"){
-			// 铁甲尸傀：重装玄铁机关肩甲 + 符文面甲 + 胸膛熔炉核心 + 巨阙重剑
-			artBody =
-				"<polygon points=\"32,38 84,38 92,88 24,88\" fill=\"#1e293b\" stroke=\"#94a3b8\" stroke-width=\"2\"/>" +
-				"<polygon points=\"16,36 38,28 42,54 14,50\" fill=\"#334155\" stroke=\"#cbd5e1\" stroke-width=\"1.8\"/>" +
-				"<polygon points=\"100,36 78,28 74,54 102,50\" fill=\"#334155\" stroke=\"#cbd5e1\" stroke-width=\"1.8\"/>" +
-				"<rect x=\"42\" y=\"16\" width=\"32\" height=\"26\" rx=\"5\" fill=\"#0f172a\" stroke=\"#94a3b8\" stroke-width=\"2\"/>" +
-				"<line x1=\"47\" y1=\"27\" x2=\"55\" y2=\"27\" stroke=\"#f59e0b\" stroke-width=\"3\" stroke-linecap=\"round\"/>" +
-				"<line x1=\"61\" y1=\"27\" x2=\"69\" y2=\"27\" stroke=\"#f59e0b\" stroke-width=\"3\" stroke-linecap=\"round\"/>" +
-				"<polygon points=\"58,46 70,58 58,70 46,58\" fill=\"#f59e0b\" stroke=\"#fef08a\" stroke-width=\"1.6\" class=\"xx-art-pulse\"/>" +
-				"<rect x=\"84\" y=\"18\" width=\"8\" height=\"72\" rx=\"2\" fill=\"#64748b\" stroke=\"#e2e8f0\" stroke-width=\"1.4\"/>";
-		} else if (key === "wraith"){
-			// 阴冥鬼母：幽紫冥袍残魂 + 九幽魂火灯环 + 惨白摄魂鬼爪
-			artBody =
-				"<path d=\"M32 92 Q36 52 58 26 Q80 52 84 92 Q70 82 58 92 Q46 82 32 92 Z\" fill=\"#2e1065\" stroke=\"#c084fc\" stroke-width=\"1.8\"/>" +
-				"<circle cx=\"58\" cy=\"36\" r=\"14\" fill=\"#1e1b4b\" stroke=\"#e9d5ff\" stroke-width=\"1.5\"/>" +
-				"<circle cx=\"53\" cy=\"35\" r=\"2.8\" fill=\"#38bdf8\"/><circle cx=\"63\" cy=\"35\" r=\"2.8\" fill=\"#38bdf8\"/>" +
-				"<path d=\"M46 18 L52 25 L58 15 L64 25 L70 18\" fill=\"none\" stroke=\"#e9d5ff\" stroke-width=\"2\"/>" +
-				"<path d=\"M18 54 L34 48 M16 60 L34 54 M20 66 L34 60\" stroke=\"#67e8f9\" stroke-width=\"2\" stroke-linecap=\"round\"/>" +
-				"<path d=\"M98 54 L82 48 M100 60 L82 54 M96 66 L82 60\" stroke=\"#67e8f9\" stroke-width=\"2\" stroke-linecap=\"round\"/>" +
-				"<circle cx=\"24\" cy=\"30\" r=\"4.5\" fill=\"#38bdf8\" opacity=\"0.8\" class=\"xx-art-pulse\"/>" +
-				"<circle cx=\"92\" cy=\"30\" r=\"4.5\" fill=\"#c084fc\" opacity=\"0.8\" class=\"xx-art-pulse\"/>" +
-				"<circle cx=\"58\" cy=\"12\" r=\"4\" fill=\"#38bdf8\" opacity=\"0.85\" class=\"xx-art-pulse\"/>";
-		} else if (key === "mantis"){
-			// 金背妖螂：流金薄翼 + 倒三角复眼凶首 + 双柄寒芒巨镰刀臂
-			artBody =
-				"<ellipse cx=\"42\" cy=\"58\" rx=\"14\" ry=\"28\" transform=\"rotate(-22 42 58)\" fill=\"#78350f\" fill-opacity=\"0.65\" stroke=\"#fbbf24\" stroke-width=\"1.4\"/>" +
-				"<ellipse cx=\"74\" cy=\"58\" rx=\"14\" ry=\"28\" transform=\"rotate(22 74 58)\" fill=\"#78350f\" fill-opacity=\"0.65\" stroke=\"#fbbf24\" stroke-width=\"1.4\"/>" +
-				"<polygon points=\"58,42 70,22 46,22\" fill=\"#d97706\" stroke=\"#fde68a\" stroke-width=\"1.8\"/>" +
-				"<circle cx=\"49\" cy=\"25\" r=\"3.5\" fill=\"#ef4444\"/><circle cx=\"67\" cy=\"25\" r=\"3.5\" fill=\"#ef4444\"/>" +
-				"<path d=\"M42 40 L14 26 Q8 48 32 68 Z\" fill=\"#fbbf24\" stroke=\"#fff\" stroke-width=\"1.6\"/>" +
-				"<path d=\"M74 40 L102 26 Q108 48 84 68 Z\" fill=\"#fbbf24\" stroke=\"#fff\" stroke-width=\"1.6\"/>" +
-				"<polygon points=\"58,40 66,86 58,94 50,86\" fill=\"#b45309\" stroke=\"#fde68a\" stroke-width=\"1.5\"/>";
-		} else if (key === "frostwyrm"){
-			// 双首寒蛟：左右冰晶双龙首 + 冰冠龙角 + 寒霜吐息旋涡
-			artBody =
-				"<path d=\"M36 90 Q24 62 36 36 M80 90 Q92 62 80 36\" fill=\"none\" stroke=\"#0284c7\" stroke-width=\"11\" stroke-linecap=\"round\"/>" +
-				"<polygon points=\"22,36 38,20 48,34 34,46\" fill=\"#0369a1\" stroke=\"#7dd3fc\" stroke-width=\"1.8\"/>" +
-				"<polygon points=\"94,36 78,20 68,34 82,46\" fill=\"#0369a1\" stroke=\"#7dd3fc\" stroke-width=\"1.8\"/>" +
-				"<polyline points=\"34,20 28,8 40,16\" fill=\"none\" stroke=\"#e0f2fe\" stroke-width=\"2.2\"/>" +
-				"<polyline points=\"82,20 88,8 76,16\" fill=\"none\" stroke=\"#e0f2fe\" stroke-width=\"2.2\"/>" +
-				"<circle cx=\"34\" cy=\"32\" r=\"2.6\" fill=\"#fef08a\"/><circle cx=\"82\" cy=\"32\" r=\"2.6\" fill=\"#fef08a\"/>" +
-				"<polygon points=\"58,46 66,58 58,70 50,58\" fill=\"#38bdf8\" stroke=\"#e0f2fe\" stroke-width=\"1.5\" class=\"xx-art-pulse\"/>";
-		} else if (key === "bloodcult"){
-			// 血禁邪修：血煞莲台 + 魔道兜帽法袍 + 双手血雷法球 + 背后血幡
-			artBody =
-				"<ellipse cx=\"58\" cy=\"90\" rx=\"32\" ry=\"8\" fill=\"#991b1b\" stroke=\"#f87171\" stroke-width=\"1.6\"/>" +
-				"<polygon points=\"34,88 46,36 70,36 82,88\" fill=\"#450a0a\" stroke=\"#f87171\" stroke-width=\"1.8\"/>" +
-				"<path d=\"M42 38 Q58 12 74 38 Z\" fill=\"#7f1d1d\" stroke=\"#fca5a5\" stroke-width=\"1.8\"/>" +
-				"<circle cx=\"53\" cy=\"32\" r=\"2.5\" fill=\"#fbbf24\"/><circle cx=\"63\" cy=\"32\" r=\"2.5\" fill=\"#fbbf24\"/>" +
-				"<circle cx=\"24\" cy=\"52\" r=\"8\" fill=\"#ef4444\" stroke=\"#fde047\" stroke-width=\"1.5\" class=\"xx-art-pulse\"/>" +
-				"<circle cx=\"92\" cy=\"52\" r=\"8\" fill=\"#ef4444\" stroke=\"#fde047\" stroke-width=\"1.5\" class=\"xx-art-pulse\"/>" +
-				"<path d=\"M20 20 L30 36 L22 42 L32 56 M96 20 L86 36 L94 42 L84 56\" fill=\"none\" stroke=\"#fca5a5\" stroke-width=\"1.6\"/>";
-		} else if (key === "mojiaowang"){
-			// 千年墨蛟王 (Boss 1)：黄金龙角墨鳞巨首 + 毒沼漩涡 + 镇狱妖丹
-			artBody =
-				"<ellipse cx=\"58\" cy=\"90\" rx=\"38\" ry=\"10\" fill=\"#064e3b\" stroke=\"#10b981\" stroke-width=\"1.8\"/>" +
-				"<path d=\"M28 86 Q20 52 46 42 Q76 34 62 18\" fill=\"none\" stroke=\"#111827\" stroke-width=\"16\" stroke-linecap=\"round\"/>" +
-				"<path d=\"M28 86 Q20 52 46 42 Q76 34 62 18\" fill=\"none\" stroke=\"#10b981\" stroke-width=\"10\" stroke-dasharray=\"6 4\" stroke-linecap=\"round\"/>" +
-				"<polygon points=\"38,30 58,14 78,30 68,48 48,48\" fill=\"#064e3b\" stroke=\"#d4b06a\" stroke-width=\"2.2\"/>" +
-				"<path d=\"M46 18 L34 4 L52 14 M70 18 L82 4 L64 14\" fill=\"#fbbf24\" stroke=\"#fef08a\" stroke-width=\"1.5\"/>" +
-				"<circle cx=\"50\" cy=\"30\" r=\"3.2\" fill=\"#a855f7\"/><circle cx=\"66\" cy=\"30\" r=\"3.2\" fill=\"#a855f7\"/>" +
-				"<circle cx=\"58\" cy=\"66\" r=\"8\" fill=\"#10b981\" stroke=\"#fef08a\" stroke-width=\"1.6\" class=\"xx-art-pulse\"/>";
-		} else if (key === "jinjia"){
-			// 金甲镇殿傀儡 (Boss 2)：六臂黄金巨神兵 + 元磁极光背轮 + 黄金重盾
-			artBody =
-				"<circle cx=\"58\" cy=\"52\" r=\"38\" fill=\"none\" stroke=\"#38bdf8\" stroke-width=\"2\" stroke-dasharray=\"8 4\" class=\"xx-art-spin\" style=\"transform-origin:58px 52px\"/>" +
-				"<polygon points=\"30,36 86,36 94,90 22,90\" fill=\"#78350f\" stroke=\"#f59e0b\" stroke-width=\"2.4\"/>" +
-				"<polygon points=\"42,14 74,14 78,36 38,36\" fill=\"#92400e\" stroke=\"#fde047\" stroke-width=\"2\"/>" +
-				"<circle cx=\"51\" cy=\"25\" r=\"3\" fill=\"#38bdf8\"/><circle cx=\"65\" cy=\"25\" r=\"3\" fill=\"#38bdf8\"/>" +
-				"<polygon points=\"14,44 28,36 28,76 14,68\" fill=\"#d97706\" stroke=\"#fef08a\" stroke-width=\"1.8\"/>" +
-				"<polygon points=\"102,44 88,36 88,76 102,68\" fill=\"#d97706\" stroke=\"#fef08a\" stroke-width=\"1.8\"/>" +
-				"<circle cx=\"58\" cy=\"58\" r=\"10\" fill=\"#38bdf8\" stroke=\"#fef08a\" stroke-width=\"2\" class=\"xx-art-pulse\"/>";
-		} else if (key === "yinlang"){
-			// 双首银狼王 (Boss 3)：满月银轮 + 左右咆哮银狼首 + 冰蓝月华风刃
-			artBody =
-				"<circle cx=\"58\" cy=\"36\" r=\"26\" fill=\"#e2e8f0\" fill-opacity=\"0.18\" stroke=\"#93c5fd\" stroke-width=\"1.5\"/>" +
-				"<polygon points=\"32,88 26,48 58,42 90,48 84,88\" fill=\"#1e293b\" stroke=\"#93c5fd\" stroke-width=\"2\"/>" +
-				"<polygon points=\"16,42 28,18 36,30 48,20 46,50 24,52\" fill=\"#334155\" stroke=\"#f8fafc\" stroke-width=\"1.8\"/>" +
-				"<polygon points=\"100,42 88,18 80,30 68,20 70,50 92,52\" fill=\"#334155\" stroke=\"#f8fafc\" stroke-width=\"1.8\"/>" +
-				"<circle cx=\"32\" cy=\"36\" r=\"2.8\" fill=\"#f43f5e\"/><circle cx=\"84\" cy=\"36\" r=\"2.8\" fill=\"#f43f5e\"/>" +
-				"<path d=\"M12 64 Q36 52 58 68 Q80 52 104 64\" fill=\"none\" stroke=\"#67e8f9\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>";
-		} else if (key === "gumo"){
-			// 古魔血影 (Boss 4)：四魔角深渊法相 + 魔魂黑炎翼 + 天魔血雷巨剑
-			artBody =
-				"<path d=\"M10 26 Q34 44 38 78 L18 68 Z M106 26 Q82 44 78 78 L98 68 Z\" fill=\"#4c0519\" stroke=\"#ef4444\" stroke-width=\"1.8\"/>" +
-				"<polygon points=\"36,88 44,34 72,34 80,88\" fill=\"#1f0916\" stroke=\"#c084fc\" stroke-width=\"2\"/>" +
-				"<path d=\"M44 26 L26 6 L48 18 M72 26 L90 6 L68 18\" fill=\"#dc2626\" stroke=\"#fca5a5\" stroke-width=\"1.6\"/>" +
-				"<circle cx=\"51\" cy=\"28\" r=\"3\" fill=\"#fde047\"/><circle cx=\"65\" cy=\"28\" r=\"3\" fill=\"#fde047\"/>" +
-				"<polygon points=\"58,8 63,56 58,96 53,56\" fill=\"#ef4444\" fill-opacity=\"0.85\" stroke=\"#fde047\" stroke-width=\"1.6\" class=\"xx-art-pulse\"/>";
-		} else {
-			// 真仙法则化身 (Boss 5)：九重万法金轮 + 太虚法则真瞳 + 紫霄仙雷
-			artBody =
-				"<g class=\"xx-art-spin\" style=\"transform-origin:58px 54px\">" +
-					"<circle cx=\"58\" cy=\"54\" r=\"42\" fill=\"none\" stroke=\"#fde047\" stroke-width=\"1.8\" stroke-dasharray=\"10 4 2 4\"/>" +
-					"<polygon points=\"58,10 96,76 20,76\" fill=\"none\" stroke=\"#67e8f9\" stroke-width=\"1.4\" opacity=\"0.75\"/>" +
-					"<polygon points=\"58,98 96,32 20,32\" fill=\"none\" stroke=\"#f472b6\" stroke-width=\"1.4\" opacity=\"0.75\"/>" +
-				"</g>" +
-				"<polygon points=\"40,88 48,38 68,38 76,88\" fill=\"#1e1b4b\" stroke=\"#fde047\" stroke-width=\"2\"/>" +
-				"<circle cx=\"58\" cy=\"28\" r=\"11\" fill=\"#312e81\" stroke=\"#fde047\" stroke-width=\"2\"/>" +
-				"<ellipse cx=\"58\" cy=\"28\" rx=\"6\" ry=\"3\" fill=\"#67e8f9\" class=\"xx-art-pulse\"/>" +
-				"<circle cx=\"58\" cy=\"58\" r=\"8\" fill=\"#fde047\" stroke=\"#fff\" stroke-width=\"1.8\" class=\"xx-art-pulse\"/>";
-		}
-
-		var shieldRing = hasShield
-			? "<circle cx=\"58\" cy=\"56\" r=\"50\" fill=\"#f59e0b\" fill-opacity=\"0.08\" stroke=\"#fbbf24\" stroke-width=\"2\" stroke-dasharray=\"9 4\"/>"
+		var monsterHref = this.MONSTER_ART[key] || this.MONSTER_ART.viper;
+		var shieldOverlay = hasShield
+			? "<image href=\"" + this.VFX_ART.guard + "\" x=\"6\" y=\"6\" width=\"104\" height=\"104\" preserveAspectRatio=\"xMidYMid slice\" opacity=\"0.36\"/>"
 			: "";
-		var rageAura = enraged
-			? "<circle cx=\"58\" cy=\"56\" r=\"47\" fill=\"none\" stroke=\"#ef4444\" stroke-width=\"2.2\" stroke-dasharray=\"5 4\" class=\"xx-art-pulse\"/>"
+		var rageOverlay = enraged
+			? "<image href=\"" + this.TILE_ART.demon + "\" x=\"80\" y=\"6\" width=\"28\" height=\"28\" preserveAspectRatio=\"xMidYMid slice\" class=\"xx-art-pulse\"/>"
 			: "";
 
 		return "<svg viewBox=\"0 0 116 116\" class=\"xx-combat-avatar-svg enemy " + key + "\" xmlns=\"http://www.w3.org/2000/svg\">" +
-			"<defs>" +
-				"<radialGradient id=\"xxCmBg_" + key + "\" cx=\"50%\" cy=\"50%\" r=\"50%\">" +
-					"<stop offset=\"0%\" stop-color=\"" + theme.pri + "\" stop-opacity=\"0.34\"/>" +
-					"<stop offset=\"72%\" stop-color=\"" + theme.bg + "\" stop-opacity=\"0.92\"/>" +
-					"<stop offset=\"100%\" stop-color=\"#070b12\" stop-opacity=\"1\"/>" +
-				"</radialGradient>" +
-			"</defs>" +
-			"<ellipse cx=\"58\" cy=\"101\" rx=\"42\" ry=\"9\" fill=\"" + theme.pri + "\" fill-opacity=\"0.18\" stroke=\"" + theme.pri + "\" stroke-width=\"1\" stroke-dasharray=\"5 3\"/>" +
-			"<circle cx=\"58\" cy=\"56\" r=\"44\" fill=\"url(#xxCmBg_" + key + ")\" stroke=\"" + theme.pri + "\" stroke-width=\"1.6\"/>" +
-			"<g class=\"xx-svg-monster-body\">" + artBody + "</g>" +
-			rageAura +
-			shieldRing +
+			"<g class=\"xx-svg-monster-body\">" +
+				"<image href=\"" + monsterHref + "\" x=\"8\" y=\"8\" width=\"100\" height=\"100\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+			"</g>" +
+			rageOverlay +
+			shieldOverlay +
 		"</svg>";
 	},
 
 	combatVfxSVG: function(vfxType){
-		if (vfxType === "skill"){
-			// 青元剑阵：七十二道青金剑光交错斩落
-			return "<svg viewBox=\"0 0 120 120\" class=\"xx-vfx-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
-				"<line x1=\"10\" y1=\"18\" x2=\"110\" y2=\"102\" stroke=\"#4fd1a5\" stroke-width=\"4\" stroke-linecap=\"round\"/>" +
-				"<line x1=\"110\" y1=\"18\" x2=\"10\" y2=\"102\" stroke=\"#fde047\" stroke-width=\"4\" stroke-linecap=\"round\"/>" +
-				"<line x1=\"60\" y1=\"6\" x2=\"60\" y2=\"114\" stroke=\"#67e8f9\" stroke-width=\"3.5\" stroke-linecap=\"round\"/>" +
-				"<circle cx=\"60\" cy=\"60\" r=\"38\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"2.5\" stroke-dasharray=\"8 4\"/>" +
-			"</svg>";
-		}
-		if (vfxType === "guard"){
-			// 玄水灵盾 / 太极反震：玄水太极波纹
-			return "<svg viewBox=\"0 0 120 120\" class=\"xx-vfx-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
-				"<circle cx=\"60\" cy=\"60\" r=\"46\" fill=\"none\" stroke=\"#38bdf8\" stroke-width=\"3.5\"/>" +
-				"<circle cx=\"60\" cy=\"60\" r=\"32\" fill=\"none\" stroke=\"#fde047\" stroke-width=\"2.2\" stroke-dasharray=\"6 4\"/>" +
-			"</svg>";
-		}
-		if (vfxType === "ult"){
-			// 法宝镇压：纯阳金光天降法印
-			return "<svg viewBox=\"0 0 120 120\" class=\"xx-vfx-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
-				"<polygon points=\"60,8 74,44 112,60 74,76 60,112 46,76 8,60 46,44\" fill=\"#fde047\" fill-opacity=\"0.35\" stroke=\"#fde047\" stroke-width=\"3\"/>" +
-				"<circle cx=\"60\" cy=\"60\" r=\"42\" fill=\"none\" stroke=\"#4fd1a5\" stroke-width=\"2.5\"/>" +
-			"</svg>";
-		}
-		// 默认御剑斩弧光
+		var href = this.VFX_ART[vfxType] || this.VFX_ART.strike;
 		return "<svg viewBox=\"0 0 120 120\" class=\"xx-vfx-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
-			"<path d=\"M16 96 Q62 24 106 20 Q72 56 26 104 Z\" fill=\"#4fd1a5\" stroke=\"#fef08a\" stroke-width=\"2\"/>" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"120\" height=\"120\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 		"</svg>";
 	}
 };
