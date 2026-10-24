@@ -75,17 +75,17 @@ test("Building metadata effects should be correctly extracted", () => {
     game.resPool.get("iron").value = 10000;
 
 
-    _build("lumberMill", 10);
+    _build("hut", 10);
 
     //updating cached effects should correctly update bld metadata
     game.bld.updateEffectCached();
-    var bld = game.bld.getBuildingExt("lumberMill");
+    var bld = game.bld.getBuildingExt("hut");
     expect(bld.meta.val).toBe(10);
-    expect(game.getEffect("woodRatio")).toBeCloseTo(0.6);
+    expect(game.getEffect("xiuweiPerTickBase")).toBeCloseTo(0.05);
 
     //other managers should not interfere with effect calculation of game.bld
     game.updateCaches();
-    expect(game.getEffect("woodRatio")).toBeCloseTo(0.6);
+    expect(game.getEffect("xiuweiPerTickBase")).toBeCloseTo(0.05);
 
     //let bldMeta = game.bld.get("lumberMill");
     //TODO: bldMeta effects seems to be polluted with unnecessery stuff, let's clean it up

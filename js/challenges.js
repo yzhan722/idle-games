@@ -306,7 +306,8 @@ dojo.declare("classes.managers.ChallengesManager", com.nuclearunicorn.core.TabMa
 			var tradeKnowledge = game.getEffect("tradeKnowledge");
 			var tradepostLimit = (7 + tradeKnowledge * 3) * (0.99 + tradeKnowledge * 0.01);
 			var tradepostRatioLimit = game.getLimitedDR(0.099 + tradeKnowledge * 0.0075, 0.25);
-			return (tradepost.effects["tradeRatio"] * Math.min(tradepostLimit, tradepost.val * tradepostRatioLimit));
+			var tpRatio = tradepost.effects["tradeRatio"] || (game.workshop.get("caravanserai").researched ? 0.02 : 0.015);
+			return (tpRatio * Math.min(tradepostLimit, tradepost.val * tradepostRatioLimit));
 		}
 	},{
 		name: "unicornTears",
@@ -664,7 +665,7 @@ dojo.declare("classes.reserveMan", null,{
 		this.reserveCryochambers = 0;
 	},
 	calculateReserveResources: function(){
-		var saveRatio = this.game.bld.get("chronosphere").val > 0 ? this.game.getEffect("resStasisRatio") : 0;
+		var saveRatio = this.game.bld.get("chronosphere").val > 0 ? (this.game.getEffect("resStasisRatio") || this.game.bld.get("chronosphere").val * 0.015) : 0;
 		if (!saveRatio){
 			return;
 		}

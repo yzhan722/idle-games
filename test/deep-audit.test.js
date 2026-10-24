@@ -421,8 +421,9 @@ describe("deep audit — every content entry", () => {
 
 	test("progression & parity regressions: coal unlock, precraft, tooltip stack, upgrades & challenges", () => {
 		const g = game;
-		// 1. steel tech unlocks passive coal on mine & smelter; geodesy adds goldPerTickBase
+		// 1. 1-to-1 core building bonuses: mine -> minerals, academy -> coal (boosted by steel), smelter -> gold (boosted by geodesy)
 		g.bld.get("mine").val = g.bld.get("mine").on = 5;
+		g.bld.get("academy").val = g.bld.get("academy").on = 5;
 		g.bld.get("smelter").val = g.bld.get("smelter").on = 5;
 		g.resPool.get("wood").value = 1000;
 		g.resPool.get("minerals").value = 1000;
@@ -430,9 +431,9 @@ describe("deep audit — every content entry", () => {
 		g.workshop.get("geodesy").researched = true;
 		g.calculateAllEffects();
 		g.tick();
-		expect(g.bld.get("mine").effects["coalPerTickBase"]).toBeGreaterThan(0);
-		expect(g.bld.get("mine").effects["goldPerTickBase"]).toBeGreaterThan(0);
-		expect(g.bld.get("smelter").effects["coalPerTickAutoprod"]).toBeGreaterThan(0);
+		expect(g.bld.get("mine").effects["mineralsPerTickBase"]).toBeGreaterThan(0);
+		expect(g.bld.get("academy").effects["coalPerTickBase"]).toBeGreaterThan(0.018);
+		expect(g.bld.get("smelter").effects["goldPerTickBase"]).toBeGreaterThan(0.008);
 		expect(g.calcResourcePerTick("coal")).toBeGreaterThan(0);
 
 		// 2. precraft on wood-priced building does not throw when village.getKittens is absent
@@ -453,22 +454,23 @@ describe("deep audit — every content entry", () => {
 		expect(flatNames).toContain($I("effectsMgr.statics.realmProductionRatio.title"));
 		expect(flatNames).toContain($I("effectsMgr.statics.seclusionMundaneRatio.title"));
 
-		// 4. stainedGlass doubles temple base culture, chapel produces culture, neuralNetworks boosts factory craftRatio
+		// 4. stainedGlass doubles barn base culture, temple produces faith, calcinerSteelRatio boosts workshop ironPerTickBase
+		const barn = g.bld.get("barn");
+		barn.calculateEffects(barn, g);
+		const baseBarnCulture = barn.effects["culturePerTickBase"];
+		g.religion.getRU("stainedGlass").on = 1;
+		barn.calculateEffects(barn, g);
+		expect(barn.effects["culturePerTickBase"]).toBeCloseTo(baseBarnCulture * 2, 5);
 		const temple = g.bld.get("temple");
 		temple.calculateEffects(temple, g);
-		const baseTempleCulture = temple.effects["culturePerTickBase"];
-		g.religion.getRU("stainedGlass").on = 1;
-		temple.calculateEffects(temple, g);
-		expect(temple.effects["culturePerTickBase"]).toBeCloseTo(baseTempleCulture * 2, 5);
-		const chapel = g.bld.get("chapel");
-		chapel.calculateEffects(chapel, g);
-		expect(chapel.effects["culturePerTickBase"]).toBeGreaterThan(0);
-		const factory = g.bld.get("factory");
-		factory.calculateEffects(factory, g);
-		const baseFactoryCraft = factory.effects["craftRatio"];
-		g.workshop.get("neuralNetworks").researched = true;
-		factory.calculateEffects(factory, g);
-		expect(factory.effects["craftRatio"]).toBeGreaterThan(baseFactoryCraft);
+		expect(temple.effects["faithPerTickBase"]).toBeGreaterThan(0);
+		const workshop = g.bld.get("workshop");
+		workshop.calculateEffects(workshop, g);
+		const baseWorkshopIron = workshop.effects["ironPerTickBase"];
+		g.workshop.get("steelPlants").researched = true;
+		g.updateCaches();
+		workshop.calculateEffects(workshop, g);
+		expect(workshop.effects["ironPerTickBase"]).toBeGreaterThan(baseWorkshopIron);
 
 		// 5. pacifism completion condition on reset & anarchy active penalty
 		const pacifism = g.challenges.getChallenge("pacifism");
