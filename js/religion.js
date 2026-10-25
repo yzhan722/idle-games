@@ -1569,8 +1569,9 @@ dojo.declare("classes.ui.CryptotheologyWGT", [mixin.IChildrenAware, mixin.IGameA
 		var div = dojo.create("div", null, container);
 		dojo.create("span", {
 			id: "cryptotheologyInfo",
+			style: { display: "block", marginBottom: "10px" },
 			innerHTML: $I("religion.panel.cryptotheology.info")}, div);
-		var btnsContainer = dojo.create("div", null, div);
+		var btnsContainer = dojo.create("div", { className: "xx-card-grid" }, div);
 		this.inherited(arguments, [btnsContainer]);
 	},
 
@@ -1620,6 +1621,8 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 		if (zigguratCount > 0){
 			var zigguratPanel = new com.nuclearunicorn.game.ui.Panel($I("religion.panel.ziggurat.label"), game.religion);
 			var content = zigguratPanel.render(container);
+			var zgGrid = dojo.create("div", { className: "xx-card-grid" }, content);
+			var allowUnicorns = !(game.cultivation && game.cultivation.isCoreRealmResource && !game.cultivation.isCoreRealmResource("unicorns"));
 
 			var sacrificeBtn = new classes.ui.religion.MultiLinkBtn({
 				name: $I("religion.sacrificeBtn.label"),
@@ -1627,7 +1630,10 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 				prices: [{ name: "unicorns", val: 2500}],
 				controller: game.religion.unicornSacController,
 			}, game);
-			sacrificeBtn.render(content);
+			sacrificeBtn.render(zgGrid);
+			if (!allowUnicorns && sacrificeBtn.domNode){
+				sacrificeBtn.domNode.style.display = "none";
+			}
 			this.sacrificeBtn = sacrificeBtn;
 
 			var sacrificeAlicornsBtn = classes.ui.religion.MultiLinkBtn({
@@ -1636,7 +1642,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 				prices: [{ name: "alicorn", val: 25}],
 				controller: new classes.ui.religion.TransformBtnController(game, {
 					updateVisible: function(model) {
-						model.visible = this.hasResources(model) || (this.game.resPool.get("alicorn").value > 0 && this.game.resPool.get("timeCrystal").unlocked);
+						model.visible = allowUnicorns && (this.hasResources(model) || (this.game.resPool.get("alicorn").value > 0 && this.game.resPool.get("timeCrystal").unlocked));
 					},
 					gainMultiplier: function() {
 						return 1 + this.game.getEffect("tcRefineRatio");
@@ -1651,7 +1657,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 					logfilterID: "alicornSacrifice"
 				})
 			}, game);
-			sacrificeAlicornsBtn.render(content);
+			sacrificeAlicornsBtn.render(zgGrid);
 			this.sacrificeAlicornsBtn = sacrificeAlicornsBtn;
 
 			var refineTCBtn = new classes.ui.religion.MultiLinkBtn({
@@ -1670,7 +1676,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 					logfilterID: "tcRefine"
 				})
 			}, game);
-			refineTCBtn.render(content);
+			refineTCBtn.render(zgGrid);
 			this.refineTCBtn = refineTCBtn;
 
 			//TODO: all the dark miracles there
@@ -1688,7 +1694,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 					handler: upgr.handler
 				}, game);
 
-				button.render(content);
+				button.render(zgGrid);
 				this.zgUpgradeButtons.push(button);
 			}
 		}	//eo zg upgrades
@@ -1698,8 +1704,9 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 			var religionPanel = new com.nuclearunicorn.game.ui.Panel($I("religion.panel.orderOfTheSun.label"), game.religion);
 			var content = religionPanel.render(container);
 
-			var faithCount = dojo.create("span", { style: { display: "inline-block", marginBottom: "10px"}}, content);
+			var faithCount = dojo.create("span", { style: { display: "block", marginBottom: "10px"}}, content);
 			this.faithCount = faithCount;
+			var relGrid = dojo.create("div", { className: "xx-card-grid" }, content);
 
 			this.praiseBtn = new com.nuclearunicorn.game.ui.ButtonModern({
 				name: $I("religion.praiseBtn.label"),
@@ -1739,8 +1746,8 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 				"transcendence": this.transcendBtn
 			};
 
-			this.praiseBtn.render(content);
-			this.adoreBtn.render(content);
+			this.praiseBtn.render(relGrid);
+			this.adoreBtn.render(relGrid);
 
 			var controller = new com.nuclearunicorn.game.ui.ReligionBtnController(game);
 			var upgrades = game.religion.religionUpgrades;
@@ -1760,10 +1767,10 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 						}
 					}
 				}, game);
-				button.render(content);
+				button.render(relGrid);
 				var associatedButton = buttonAssociations[upgr.name];
 				if (associatedButton) {
-					associatedButton.render(content);
+					associatedButton.render(relGrid);
 				}
 				this.rUpgradeButtons.push(button);
 			}
@@ -1779,6 +1786,9 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.ReligionTab", com.nuclearunicorn.ga
 
 		if (this.sacrificeBtn) {
 			this.sacrificeBtn.update();
+			if (this.game.cultivation && this.game.cultivation.isCoreRealmResource && !this.game.cultivation.isCoreRealmResource("unicorns") && this.sacrificeBtn.domNode){
+				this.sacrificeBtn.domNode.style.display = "none";
+			}
 		}
 
 		if (this.sacrificeAlicornsBtn) {

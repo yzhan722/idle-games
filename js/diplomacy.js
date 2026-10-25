@@ -64,11 +64,11 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 		collapsed: false,
 		pinned: false
 	},{
-		//玄蛇:金精 -> 灵石+悟道典籍 (3000s -> 3840s, x1.28)
+		//玄蛇:灵木 -> 灵石+悟道典籍 (2925s -> 3840s, x1.31)
 		name: "nagas",
 		title: $I("trade.race.nagas"),
 		hidden: true,
-		buys: [{ name: "gold", val: 15 }],
+		buys: [{ name: "wood", val: 750 }],
 		sells:[
 			{name: "minerals", value: 1000},
 			{name: "science", value: 700}
@@ -223,7 +223,7 @@ dojo.declare("classes.managers.DiplomacyManager", null, {
 
 		//nagas like highly cultural kittens :3
 		var nagas = this.get("nagas");
-		if (!nagas.unlocked && this.game.resPool.get("culture").value >= 1500){
+		if (!nagas.unlocked && (this.game.resPool.get("culture").value >= 1500 || this.game.resPool.get("gold").value >= 150 || (this.game.cultivation && this.game.cultivation.getCurrentRealmIndex() >= 2))){
 			nagas.unlocked = true;
 			return nagas;
 		}

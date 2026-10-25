@@ -2074,6 +2074,91 @@ hr { border: none; border-top: 1px solid var(--xx-line); }
 table.craftTable tr:hover td { background-color: rgba(79, 209, 165, .12); }
 .panel-title { color: var(--xx-mute); }
 
+/* Collapsible Panels (.panelContainer) across Workshop, Trade, Religion, Space, Time */
+.panelContainer {
+	max-width: 1120px;
+	margin-top: 10px;
+	border: 1px solid rgba(212, 176, 106, .26);
+	border-radius: 10px;
+	background: linear-gradient(180deg, rgba(16, 24, 36, .78), rgba(11, 17, 26, .84));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 4px 16px rgba(0, 0, 0, .3);
+	overflow: hidden;
+}
+.panelContainer > .title {
+	font-family: var(--xx-serif);
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+	padding: 8px 14px;
+	background: linear-gradient(90deg, rgba(24, 35, 50, .72), rgba(14, 21, 31, .45));
+	border-bottom: 1px solid rgba(212, 176, 106, .16);
+}
+.panelContainer > .toggle {
+	border: 1px solid rgba(79, 209, 165, .35);
+	border-radius: 5px;
+	background: rgba(79, 209, 165, .10);
+	color: var(--xx-jade);
+	margin: 6px 10px;
+	padding: 1px 8px;
+	font-size: 12px;
+	line-height: 1.4;
+	transition: all .15s;
+}
+.panelContainer > .toggle:hover {
+	border-color: var(--xx-gold);
+	color: var(--xx-gold-hi);
+	background: rgba(212, 176, 106, .16);
+}
+.panelContainer > .container {
+	padding: 12px 14px;
+}
+.tabInner.Space .panelContainer > .container {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px 14px;
+	align-items: stretch;
+}
+.tabInner.Space .panelContainer > .container > .btn.modern {
+	width: 100%;
+	max-width: none;
+	margin: 0;
+	height: 100%;
+}
+@media (max-width: 640px) {
+	.tabInner.Space .panelContainer > .container {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 6px;
+	}
+}
+.trade-race > .left {
+	line-height: 1.65;
+	font-size: 13px;
+}
+.trade-race > .right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 6px;
+}
+.trade-race > .right > .btn.modern {
+	max-width: 340px;
+	margin: 0;
+}
+.trade-race .buys {
+	color: var(--xx-jade);
+	font-weight: 600;
+	min-width: 44px;
+}
+.trade-race .sells {
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+	min-width: 44px;
+}
+.trade-race .tradeAmount {
+	color: var(--xx-mute);
+}
+
 .tabsContainer .tab:focus-visible, .xx-guide-nav:focus-visible {
 	outline: 2px solid var(--xx-jade-dim);
 	outline-offset: 1px;

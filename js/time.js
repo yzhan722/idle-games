@@ -1559,7 +1559,7 @@ dojo.declare("classes.ui.ChronoforgeWgt", [mixin.IChildrenAware, mixin.IGameAwar
     render: function(container){
         var div = dojo.create("div", null, container);
 
-        var btnsContainer = dojo.create("div", {style:{paddingTop:"20px"}}, div);
+        var btnsContainer = dojo.create("div", { className: "xx-card-grid", style: { paddingTop: "8px" } }, div);
         this.inherited(arguments, [btnsContainer]);
     },
 
@@ -1762,7 +1762,7 @@ dojo.declare("classes.ui.VoidSpaceWgt", [mixin.IChildrenAware, mixin.IGameAware]
     render: function(container){
         var div = dojo.create("div", null, container);
 
-        var btnsContainer = dojo.create("div", {style:{paddingTop:"20px"}}, div);
+        var btnsContainer = dojo.create("div", { className: "xx-card-grid", style: { paddingTop: "8px" } }, div);
         this.inherited(arguments, [btnsContainer]);
     },
 
