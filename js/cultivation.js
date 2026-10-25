@@ -6155,7 +6155,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 								"<div class=\"xxAlcTitleBlock\">" +
 									"<span class=\"xxAlcSealBadge\">丹</span>" +
 									"<div>" +
-										"<div class=\"xxAlcMainTitle\">玄天丹鼎 · <b>" + alcRank.title + "</b> <small style=\"font-size:11px;color:var(--xx-mute);font-weight:400;\">(造诣 " + alcRank.exp + "/" + alcRank.nextExp + ")</small></div>" +
+										"<div class=\"xxAlcMainTitle\">玄天丹鼎 · <b>" + alcRank.title + "</b> <small style=\"font-size:11px;color:var(--xx-mute);font-weight:400;\">(" + (alcRank.exp >= alcRank.nextExp ? ("造诣 " + alcRank.exp + " · 已臻圆满") : ("造诣 " + alcRank.exp + "/" + alcRank.nextExp)) + ")</small></div>" +
 										"<div class=\"xxAlcSubTitle\">" + alcRank.desc + "</div>" +
 									"</div>" +
 								"</div>" +

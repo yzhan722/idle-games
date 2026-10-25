@@ -1325,19 +1325,22 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 
 .xx-hd-extra {
 	margin-top: 8px;
-	font-size: 13px;
+	font-size: 12px;
 	color: var(--xx-jade);
-	letter-spacing: 1px;
+	letter-spacing: .5px;
 	text-shadow: 0 1px 4px rgba(0, 0, 0, .92);
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	row-gap: 3px;
+	gap: 6px;
 }
-.xx-hd-extra > span + span::before {
-	content: " · ";
-	color: var(--xx-gold);
-	margin: 0 4px;
+.xx-hd-extra > span {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 6px;
+	background: rgba(12, 21, 30, .78);
+	border: 1px solid rgba(79, 209, 165, .24);
 }
 .xx-chip {
 	display: inline-flex;

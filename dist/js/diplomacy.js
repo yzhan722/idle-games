@@ -756,7 +756,7 @@ dojo.declare("com.nuclearunicorn.game.ui.TradeButton", com.nuclearunicorn.game.u
 	update: function(){
 		this.inherited(arguments);
 
-		this.pinHref.link.textContent = this.race.pinned ? "[v]" : "[ ]";
+		this.pinHref.link.textContent = this.race.pinned ? "[v]" : "[ ]"; dojo.style(this.pinHref.link, "display", "none");
 		this.pinHref.link.title = this.race.pinned ?
 			$I("trade.pin.pinned") : $I("trade.pin.unpinned");
 
