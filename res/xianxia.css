@@ -1838,12 +1838,15 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .xxDeathCard .xxFateTitle { color: #c8b8a8; }
 
 /* 入世留名卡——道号/性别/出身 (2-column compact origin grid) */
-.xxIdCard { border-color: rgba(212, 175, 55, .5); width: 560px; }
+.xxIdCard { border-color: rgba(212, 175, 55, .5); width: 640px; padding: 16px 22px; }
+.xxIdCard .xxFateArt { height: 96px; margin-bottom: 8px; }
+.xxIdCard .xxFateTitle { font-size: 19px; margin-bottom: 6px; }
+.xxIdCard .xxFateStory { font-size: 13px; line-height: 1.55; margin-bottom: 10px; }
 .xxIdRow {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	margin: 10px 0 4px;
+	margin: 6px 0 2px;
 }
 .xxIdLbl {
 	font-size: 12px;
@@ -1851,7 +1854,7 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	color: var(--xx-mute);
 	flex: 0 0 auto;
 }
-.xxIdLblTop { margin-top: 12px; }
+.xxIdLblTop { margin-top: 8px; }
 .xxIdName {
 	flex: 1 1 auto;
 	min-width: 0;
@@ -1860,9 +1863,9 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	border-radius: 6px;
 	color: var(--xx-paper);
 	font-family: var(--xx-serif);
-	font-size: 15px;
+	font-size: 14px;
 	letter-spacing: 2px;
-	padding: 7px 10px;
+	padding: 5px 10px;
 }
 .xxIdName:focus { border-color: var(--xx-jade-dim); outline: none; }
 .xxIdDice {
@@ -1879,7 +1882,7 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	color: var(--xx-mute);
 	cursor: pointer;
 	font-size: 13px;
-	padding: 4px 16px;
+	padding: 3px 15px;
 	text-decoration: none;
 }
 .xxIdChip.xx-sel {
@@ -1890,18 +1893,21 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .xxIdOrigins {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 8px;
-	margin: 8px 0 14px;
+	gap: 7px;
+	margin: 6px 0 10px;
 }
 .xxIdOrigin:last-child:nth-child(odd) {
 	grid-column: span 2;
 }
 .xxIdOrigin {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
 	border: 1px dashed var(--xx-jade-dim);
 	border-radius: 8px;
 	cursor: pointer;
-	padding: 8px 12px;
-	line-height: 1.45;
+	padding: 7px 10px;
+	line-height: 1.4;
 	background: rgba(10, 16, 24, .45);
 	transition: border-color .15s, background .15s, transform .12s;
 }
@@ -4576,15 +4582,15 @@ input, select, textarea, button { font-family: inherit; }
 	grid-column: 1 / -1;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: 7px;
 }
 .xxCombatTopBar {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 10px;
+	gap: 8px;
 	flex-wrap: wrap;
-	padding: 8px 12px;
+	padding: 6px 10px;
 	border-radius: 8px;
 	background: rgba(8, 13, 21, .88);
 	border: 1px solid rgba(212, 176, 106, .35);
@@ -4692,7 +4698,8 @@ input, select, textarea, button { font-family: inherit; }
 /* 角色与妖兽立绘舞台 (Milky Way / Melvor 丝滑战斗形象区) */
 .xxSpriteStage {
 	position: relative;
-	height: 118px;
+	width: 76px;
+	height: 82px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -4705,8 +4712,8 @@ input, select, textarea, button { font-family: inherit; }
 	background: radial-gradient(circle at 50% 60%, rgba(68, 22, 34, .50), rgba(8, 11, 18, .88));
 }
 .xxSpriteWrap {
-	width: 108px;
-	height: 108px;
+	width: 72px;
+	height: 72px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -4885,13 +4892,28 @@ input, select, textarea, button { font-family: inherit; }
 	background: linear-gradient(90deg, #f59e0b, #ef4444);
 }
 .xxFighterCard {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 11px 13px;
+	display: grid;
+	grid-template-columns: 76px minmax(0, 1fr);
+	column-gap: 10px;
+	row-gap: 4px;
+	align-items: center;
+	padding: 8px 11px;
 	border-radius: 10px;
 	background: rgba(9, 15, 24, .88);
 	border: 1px solid rgba(79, 209, 165, .30);
+}
+.xxFighterCard > .xxSpriteStage {
+	grid-column: 1;
+	grid-row: 1 / span 4;
+	align-self: center;
+}
+.xxFighterCard > :not(.xxSpriteStage) {
+	grid-column: 2;
+}
+.xxFighterCard > .xxTraitBox,
+.xxFighterCard > .xxIntentBox,
+.xxFighterCard > .xxStatusRow {
+	grid-column: 1 / -1;
 }
 .xxFighterCard.enemy {
 	border-color: rgba(224, 96, 74, .42);

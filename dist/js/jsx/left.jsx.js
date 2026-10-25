@@ -696,6 +696,10 @@ WCraftTable = React.createClass({
             if (!res.craftable || res.name === "wood"){
                 continue;
             }
+            var isRequired = (this.props.reqRes.indexOf(res.name) >= 0);
+            if (!isRequired && game.cultivation && game.cultivation.isCoreRealmResource && !game.cultivation.isCoreRealmResource(res.name)){
+                continue;
+            }
             var recipe = game.workshop.getCraft(res.name);
             if ((recipe && recipe.unlocked) || res.unlocked || res.value > 0){
                 hasAnyCraft = true;
@@ -704,13 +708,12 @@ WCraftTable = React.createClass({
                 recipe && recipe.unlocked && game.workshop.getCraftAllCount(res.name) > 0){
                 canCraftBasic = true;
             }
-            var isRequired = (this.props.reqRes.indexOf(res.name) >= 0);
             resRows.push(
                 $r(WCraftRow, {key: res.name, resource: res, isEditMode: false, isRequired: isRequired})
             );
         }
 
-        if (game.bld.get("workshop").on <= 0 && !hasAnyCraft){
+        if (!resRows.length || (game.bld.get("workshop").on <= 0 && !hasAnyCraft)){
             return null;
         }
 
