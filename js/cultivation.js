@@ -943,7 +943,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		seclude:  {xiuwei: 6, minerals: 10},
 		zhuji:    {xiuwei: 40, minerals: 25},
 		rift:     {xiuwei: 60, minerals: 30},
-		grift:    {xiuwei: 90, relic: 1}
+		grift:    {xiuwei: 90, gold: 25}
 	},
 
 	claimGuideRewards: function(){
@@ -2068,15 +2068,44 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					}
 				}
 			}
-			//3. 筑基及以上: 解锁本境首门核心问道功法与本境百艺炼制配方
-			if (r >= 1 && this.game.science && syn.techs.length > 0){
+			//3. 筑基及以上(或引气入体后): 解锁本境首门核心问道功法与本境百艺配方/升级
+			if ((r >= 1 || this.getHighestStageIndex() >= 1) && this.game.science && syn.techs.length > 0){
 				var firstTech = this.game.science.get(syn.techs[0]);
 				if (firstTech){ firstTech.unlocked = true; }
 			}
-			if (r >= 1 && this.game.workshop && syn.crafts.length > 0){
+			if (r >= 1 && this.game.workshop){
 				for (var c = 0; c < syn.crafts.length; c++){
 					var crObj = this.game.workshop.getCraft(syn.crafts[c]);
 					if (crObj){ crObj.unlocked = true; }
+				}
+				if (syn.upgrades && syn.upgrades.length > 0){
+					var firstUpg = this.game.workshop.get(syn.upgrades[0]);
+					if (firstUpg){ firstUpg.unlocked = true; }
+				}
+			}
+		}
+		//4. 同步顶部导航页签可见性——避免藏经阁/百艺/坊市/道统因建筑跨境而隐身卡死
+		if (this.game.tabs && this.game.tabs.length){
+			var hasLibrary = !!(this.game.bld && this.game.bld.get("library") && this.game.bld.get("library").val > 0);
+			var hasWorkshop = !!(this.game.bld && this.game.bld.get("workshop") && this.game.bld.get("workshop").val > 0);
+			var hasTradepost = !!(this.game.bld && this.game.bld.get("tradepost") && this.game.bld.get("tradepost").val > 0);
+			var hasTemple = !!(this.game.bld && this.game.bld.get("temple") && this.game.bld.get("temple").val > 0);
+			var hasChrono = !!(this.game.bld && this.game.bld.get("chronosphere") && this.game.bld.get("chronosphere").val > 0);
+			for (var ti = 0; ti < this.game.tabs.length; ti++){
+				var tb = this.game.tabs[ti];
+				if (!tb){ continue; }
+				if (tb.tabId === "Science" && (curRealmIdx >= 1 || this.getHighestStageIndex() >= 1 || hasLibrary)){
+					tb.visible = true;
+				} else if (tb.tabId === "Workshop" && (curRealmIdx >= 1 || hasWorkshop)){
+					tb.visible = true;
+				} else if (tb.tabId === "Trade" && (curRealmIdx >= 2 || hasTradepost)){
+					tb.visible = true;
+				} else if (tb.tabId === "Religion" && (curRealmIdx >= 4 || hasTemple)){
+					tb.visible = true;
+				} else if (tb.tabId === "Space" && curRealmIdx >= 5){
+					tb.visible = true;
+				} else if (tb.tabId === "Time" && (curRealmIdx >= 7 || hasChrono)){
+					tb.visible = true;
 				}
 			}
 		}
@@ -6029,11 +6058,16 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				this.alchemyPanel.style.display = pillShow ? "" : "none";
 				if (pillShow){
 					var toxInfo = cult.getToxicityStatus();
+					var alcRank = cult.getAlchemyRank();
+					var curFire = cult.getCauldronFire();
 					var bottleFate = cult.getFate("bottle");
 					var dewShow = (bottleFate && bottleFate.researched) || (cult.bottleDew || 0) > 0;
 					var dewCnt = cult.bottleDew || 0;
 					var pSigParts = [
 						toxInfo.val,
+						alcRank.rank,
+						alcRank.exp,
+						curFire.key,
 						Math.round(cult.heartDemon || 0),
 						Math.round((cult.breakMult || 0) * 100),
 						cult.getBreakSurge() > 1 ? 1 : 0,
@@ -6054,6 +6088,17 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 					if (this._alcSig !== alcSig){
 						this._alcSig = alcSig;
 
+						var fireChipsHtml = "<div class=\"xxFireBar\"><span class=\"xxFireLbl\">三昧控火</span>";
+						for (var fi = 0; fi < cult.CAULDRON_FIRES.length; fi++){
+							var fd = cult.CAULDRON_FIRES[fi];
+							var fAct = (fd.key === curFire.key);
+							var fTip = String(fd.desc || "").replace(/"/g, "&quot;");
+							fireChipsHtml += "<a href=\"#!\" class=\"xxFireChip " + fd.key + (fAct ? " active" : "") +
+								"\" data-fire=\"" + fd.key + "\" title=\"" + fTip + "\">" +
+								"<span>" + fd.label + "</span><span class=\"xxFireTag\">" + fd.tag + "</span></a>";
+						}
+						fireChipsHtml += "</div>";
+
 						var activeBuffs = [];
 						if (cult.buffs.juqi > 0){
 							activeBuffs.push("<span class=\"xxAlcBuffChip on\">聚气丹 · " + Math.ceil(cult.buffs.juqi / 5) + "s</span>");
@@ -6067,12 +6112,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						if (cult.breakMult > 0){
 							activeBuffs.push("<span class=\"xxAlcBuffChip boost\">破境加成 +" + Math.round(cult.breakMult * 100) + "%</span>");
 						}
-						if (toxInfo.val > 0){
-							activeBuffs.push("<span class=\"xxToxBadge " + toxInfo.tier + "\">丹毒 " + toxInfo.val + "/100</span>");
-						}
-						var statusLeftHtml = activeBuffs.length
-							? activeBuffs.join("")
-							: "<span class=\"xxAlcBuffIdle\">周天平缓 · 丹毒 0/100</span>";
+						activeBuffs.push("<span class=\"xxToxBadge " + toxInfo.tier + "\">丹毒 " + toxInfo.val + "/100 · " + toxInfo.label + "</span>");
+						var statusLeftHtml = activeBuffs.join("");
 
 						var statusRightHtml = "";
 						if (toxInfo.val > 0){
@@ -6084,6 +6125,16 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 
 						var topBarHtml =
 							"<div class=\"xxAlcTopRow\">" +
+								"<div class=\"xxAlcTitleBlock\">" +
+									"<span class=\"xxAlcSealBadge\">丹</span>" +
+									"<div>" +
+										"<div class=\"xxAlcMainTitle\">玄天丹鼎 · <b>" + alcRank.title + "</b> <small style=\"font-size:11px;color:var(--xx-mute);font-weight:400;\">(造诣 " + alcRank.exp + "/" + alcRank.nextExp + ")</small></div>" +
+										"<div class=\"xxAlcSubTitle\">" + alcRank.desc + "</div>" +
+									"</div>" +
+								"</div>" +
+								fireChipsHtml +
+							"</div>" +
+							"<div class=\"xxAlcTopRow\" style=\"padding-top:8px;padding-bottom:6px;border-bottom:none;\">" +
 								"<div class=\"xxAlcBuffRow\">" + statusLeftHtml + "</div>" +
 								(statusRightHtml ? "<div class=\"xxFireBar\">" + statusRightHtml + "</div>" : "") +
 							"</div>";
@@ -6125,14 +6176,21 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 								costHtml += "<span class=\"xxPillCostChip " + (enough ? "ok" : "lack") + "\">" +
 									rTitle + " <b>" + fmt(pr.val, false, false, 0) + "</b></span>";
 							}
-							costHtml += "</div>";
+							var toxTag = pill.toxicity < 0
+								? "<span class=\"xxPillCostChip ok\" style=\"margin-left:auto;\">净毒 " + pill.toxicity + "</span>"
+								: "<span class=\"xxPillCostChip\" style=\"margin-left:auto;border-color:rgba(240,140,75,.38);color:#ffb87a;\">丹毒 +" + pill.toxicity + "</span>";
+							costHtml += toxTag + "</div>";
 
-							var pillIco = artMgr ? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.resIcon("spice") + "</i>" : "";
+							var pillIco = (artMgr && artMgr.pillIcon)
+								? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.pillIcon(pill.name) + "</i>"
+								: (artMgr ? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.resIcon("spice") + "</i>" : "");
+							var tierBadge = pill.tier ? "<span class=\"xxPillTierTag\">" + pill.tier + "</span>" : "";
 							cardsHtml +=
 								"<div class=\"xxPillCard " + (pill.toxicity < 0 ? "cleansing" : "offensive") + "\">" +
 									"<div class=\"xxPillCardHd\">" +
 										"<div class=\"xxPillTitleWrap\">" +
 											"<span class=\"xxPillName\">" + pillIco + pill.label + "</span>" +
+											tierBadge +
 										"</div>" +
 										"<div class=\"xxPillStockWrap\">" +
 											"<span class=\"xxPillStock" + (pVal > 0 ? " has" : "") + "\">×<b>" + pVal + "</b></span>" +
@@ -7051,46 +7109,75 @@ classes.ui.XianxiaArt = {
 		"</svg>";
 	},
 
+	pillIcon: function(pillName){
+		var href = this.RES_ART.spice;
+		if (pillName == "zhujidan"){ href = this.BTN_ART.realm; }
+		else if (pillName == "qingxin"){ href = this.TILE_ART.life; }
+		else if (pillName == "jiangchen"){ href = this.RES_ART.gold; }
+		else if (pillName == "peiying"){ href = this.TILE_ART.bonus; }
+		else if (pillName == "biyan"){ href = this.BTN_ART.furnace; }
+		return "<svg viewBox=\"0 0 16 16\" class=\"xx-res-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"16\" height=\"16\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
+	},
+
 	// ---------------- 6. 营造/境界/丹器卡片 AI 定制徽记 (Card Button Emblems) ----------------
 	btnIcon: function(btn){
 		var opts = (btn && btn.opts) || {};
 		var mdl = (btn && btn.model) || {};
 		var meta = mdl.metadata || {};
-		var id = meta.name || opts.building || opts.id || "";
+		var id = meta.name || opts.building || opts.craft || opts.id || "";
 		var ctrl = btn && btn.controller;
-		if (!id && ctrl && ctrl.declaredClass){
-			if (ctrl.declaredClass.indexOf("GatherCatnip") >= 0){ id = "gatherCatnip"; }
-			else if (ctrl.declaredClass.indexOf("RefineCatnip") >= 0){ id = "refineCatnip"; }
+		var ctrlClass = (ctrl && ctrl.declaredClass) ? String(ctrl.declaredClass) : "";
+		if (!id && ctrlClass){
+			if (ctrlClass.indexOf("GatherCatnip") >= 0){ id = "gatherCatnip"; }
+			else if (ctrlClass.indexOf("RefineCatnip") >= 0){ id = "refineCatnip"; }
 		}
 
 		var href = this.RES_ART.xiuwei;
-		if (id == "gatherCatnip" || id == "field" || id == "pasture" || id == "unicornPasture" || id == "aqueduct"){
+		if (id == "gatherCatnip" || id == "field" || id == "pasture" || id == "unicornPasture" || id == "aqueduct" ||
+			id == "agriculture" || id == "mineralHoes" || id == "ironHoes" || id == "biofuel" || id == "hydroponics"){
 			href = this.RES_ART.catnip;
-		} else if (id == "refineCatnip" || id == "lumberMill"){
+		} else if (id == "refineCatnip" || id == "lumberMill" || id == "wood" ||
+			id == "mineralAxes" || id == "ironAxes" || id == "steelAxe" || id == "titaniumAxe" || id == "alloyAxe" || id == "unobtainiumAxe" ||
+			id == "reinforcedSaw" || id == "steelSaw" || id == "titaniumSaw" || id == "alloySaw" || id == "unobtainiumSaw"){
 			href = this.RES_ART.wood;
-		} else if (id == "hut" || id == "logHouse" || id == "mansion"){
+		} else if (id == "hut" || id == "logHouse" || id == "mansion" || id == "construction" || id == "architecture" ||
+			id == "ExpandedBarns" || id == "stoneBarns" || id == "reinforcedBarns" || id == "titaniumBarns" || id == "alloyBarns" || id == "concreteBarns" ||
+			id == "reinforcedWarehouses" || id == "titaniumWarehouses" || id == "alloyWarehouses" || id == "concreteWarehouses" || id == "silos"){
 			href = this.BTN_ART.cave;
-		} else if (id == "library" || id == "academy" || mdl.type == "science"){
+		} else if (id == "library" || id == "academy" || id == "math" || id == "philosophy" || id == "archeology" || id == "physics" || id == "metaphysics"){
 			href = this.RES_ART.science;
-		} else if (id == "observatory"){
+		} else if (id == "observatory" || id == "calendar" || id == "astronomy" || id == "celestialMechanics" || id == "astrolabe" ||
+			id == "navigation" || id == "sattelites" || id == "orbitalEngineering" || id == "starlink" || id == "uplink"){
 			href = this.RES_ART.starchart;
-		} else if (id == "biolab" || id == "brewery" || id == "juqi" || id == "zhujidan" || id == "qingxin" || id == "jiangchen" || id == "peiying" || id == "biyan" || mdl.type == "pill"){
+		} else if (id == "biolab" || id == "brewery" || id == "juqi" || id == "zhujidan" || id == "qingxin" || id == "jiangchen" || id == "peiying" || id == "biyan" ||
+			id == "chemistry" || id == "biology" || id == "biochemistry" || id == "ecology" || id == "petri" || mdl.type == "pill"){
 			href = this.RES_ART.spice;
-		} else if (id == "barn" || id == "warehouse" || id == "harbor" || id == "mint" || id == "tradepost"){
+		} else if (id == "barn" || id == "warehouse" || id == "harbor" || id == "mint" || id == "tradepost" ||
+			id == "currency" || id == "goldOre" || id == "caravanserai" || id == "cargoShips" || id == "barges" || id == "register"){
 			href = this.RES_ART.gold;
-		} else if (id == "mine" || id == "quarry"){
+		} else if (id == "mine" || id == "quarry" || id == "mining" || id == "bolas" || id == "prospecting" || id == "miningDrill" || id == "geodesy"){
 			href = this.RES_ART.minerals;
-		} else if (id == "smelter" || id == "calciner" || id == "workshop" || id == "factory" || id == "magneto" || id == "steamworks"){
+		} else if (id == "smelter" || id == "calciner" || id == "workshop" || id == "factory" || id == "magneto" || id == "steamworks" ||
+			id == "metal" || id == "steel" || id == "machinery" || id == "engineering" || id == "metalurgy" || id == "combustion" ||
+			id == "industrialization" || id == "mechanization" || id == "advancedRefinement" || id == "factoryAutomation" || id == "combustionEngine" ||
+			id == "electrolyticSmelting" || id == "oxidation" || id == "rotaryKiln"){
 			href = this.BTN_ART.furnace;
-		} else if (id == "oilWell"){
+		} else if (id == "archery" || id == "animal" || id == "huntingArmor" || id == "steelArmor" || id == "compositeBow" || id == "crossbow" || id == "railgun"){
+			href = this.TILE_ART.combat;
+		} else if (id == "oilWell" || id == "oilProcessing" || id == "oilRefinery" || id == "pumpjack"){
 			href = this.RES_ART.oil;
-		} else if (id == "reactor" || id == "accelerator"){
+		} else if (id == "reactor" || id == "accelerator" || id == "electricity" || id == "electronics" || id == "nuclearFission" ||
+			id == "particlePhysics" || id == "dimensionalPhysics" || id == "nanotechnology" || id == "superconductors" || id == "thorium"){
 			href = this.RES_ART.uranium;
-		} else if (id == "amphitheatre"){
+		} else if (id == "rocketry" || id == "exogeology" || id == "advExogeology" || id == "artificialGravity" || id == "terraformation" || id == "antimatter"){
+			href = this.RES_ART.unobtainium;
+		} else if (id == "amphitheatre" || id == "writing" || id == "civil" || id == "drama" || id == "acoustics" || id == "printingPress" || id == "offsetPress"){
 			href = this.RES_ART.culture;
-		} else if (id == "chapel" || id == "temple" || id == "ziggurat"){
+		} else if (id == "chapel" || id == "temple" || id == "ziggurat" || id == "theology" || id == "cryptotheology"){
 			href = this.RES_ART.faith;
-		} else if (id == "chronosphere"){
+		} else if (id == "chronosphere" || id == "chronophysics" || id == "tachyonTheory" || id == "voidSpace" || id == "paradoxalKnowledge"){
 			href = this.RES_ART.timeCrystal;
 		} else if (id.indexOf("vein") === 0){
 			href = this.BTN_ART.vein;
@@ -7100,6 +7187,10 @@ classes.ui.XianxiaArt = {
 			href = this.BTN_ART.realm;
 		} else if (this.RES_ART[id]){
 			href = this.RES_ART[id];
+		} else if (ctrlClass.indexOf("TechButton") >= 0){
+			href = this.RES_ART.science;
+		} else if (ctrlClass.indexOf("UpgradeButton") >= 0){
+			href = this.BTN_ART.furnace;
 		}
 
 		return "<svg viewBox=\"0 0 20 20\" class=\"xx-btn-svg xx-res-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
