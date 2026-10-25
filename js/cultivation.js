@@ -1861,7 +1861,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			blueprint:   { res: "science",     scale: 50.0, max: 20000 },
 			starchart:   { res: "science",     scale: 5.0,  max: 25000 },
 			oil:         { res: "faith",       scale: 0.5,  max: 15000 },
+			unicorns:    { res: "faith",       scale: 0.5,  max: 5000 },
+			tears:       { res: "faith",       scale: 20.0, max: 15000 },
 			uranium:     { res: "unobtainium", scale: 0.5,  max: 5000 },
+			alicorn:     { res: "relic",       scale: 2.0,  max: 2500 },
+			sorrow:      { res: "relic",       scale: 5.0,  max: 2500 },
 			eludium:     { res: "relic",       scale: 1.0,  max: 2500 }
 		};
 		var normalizePriceArray = function(priceArr){
@@ -7132,11 +7136,24 @@ classes.ui.XianxiaArt = {
 		if (!id && ctrlClass){
 			if (ctrlClass.indexOf("GatherCatnip") >= 0){ id = "gatherCatnip"; }
 			else if (ctrlClass.indexOf("RefineCatnip") >= 0){ id = "refineCatnip"; }
+			else if (ctrlClass.indexOf("PraiseBtn") >= 0){ id = "praiseFaith"; }
+			else if (ctrlClass.indexOf("ResetFaithBtn") >= 0){ id = "adoreFaith"; }
+			else if (ctrlClass.indexOf("TranscendBtn") >= 0){ id = "transcendFaith"; }
+			else if (ctrlClass.indexOf("TransformBtn") >= 0){ id = "refineRelic"; }
+			else if (ctrlClass.indexOf("TradeButton") >= 0){ id = "tradeCaravan"; }
+			else if (ctrlClass.indexOf("SendExplorers") >= 0){ id = "sendExplorers"; }
+			else if (ctrlClass.indexOf("EmbassyButton") >= 0){ id = "buildEmbassy"; }
+			else if (ctrlClass.indexOf("AccelerateTimeBtn") >= 0){ id = "accelerateTime"; }
+			else if (ctrlClass.indexOf("ShatterTCBtn") >= 0){ id = "shatterTC"; }
+			else if (ctrlClass.indexOf("UseHeatBtn") >= 0){ id = "useHeat"; }
+			else if (ctrlClass.indexOf("FixCryochamber") >= 0){ id = "fixCryochamber"; }
+			else if (mdl && mdl.name === $I("menu.reset")){ id = "reincarnate"; }
 		}
 
 		var href = this.RES_ART.xiuwei;
 		if (id == "gatherCatnip" || id == "field" || id == "pasture" || id == "unicornPasture" || id == "aqueduct" ||
-			id == "agriculture" || id == "mineralHoes" || id == "ironHoes" || id == "biofuel" || id == "hydroponics"){
+			id == "agriculture" || id == "mineralHoes" || id == "ironHoes" || id == "biofuel" || id == "hydroponics" ||
+			id == "unicornTomb" || id == "ivoryTower" || id == "ivoryCitadel" || id == "skyPalace"){
 			href = this.RES_ART.catnip;
 		} else if (id == "refineCatnip" || id == "lumberMill" || id == "wood" ||
 			id == "mineralAxes" || id == "ironAxes" || id == "steelAxe" || id == "titaniumAxe" || id == "alloyAxe" || id == "unobtainiumAxe" ||
@@ -7144,41 +7161,61 @@ classes.ui.XianxiaArt = {
 			href = this.RES_ART.wood;
 		} else if (id == "hut" || id == "logHouse" || id == "mansion" || id == "construction" || id == "architecture" ||
 			id == "ExpandedBarns" || id == "stoneBarns" || id == "reinforcedBarns" || id == "titaniumBarns" || id == "alloyBarns" || id == "concreteBarns" ||
-			id == "reinforcedWarehouses" || id == "titaniumWarehouses" || id == "alloyWarehouses" || id == "concreteWarehouses" || id == "silos"){
+			id == "reinforcedWarehouses" || id == "titaniumWarehouses" || id == "alloyWarehouses" || id == "concreteWarehouses" || id == "silos" ||
+			id == "spaceStation" || id == "moonBase" || id == "cryochambers" || id == "fixCryochamber" || id == "buildEmbassy"){
 			href = this.BTN_ART.cave;
-		} else if (id == "library" || id == "academy" || id == "math" || id == "philosophy" || id == "archeology" || id == "physics" || id == "metaphysics"){
+		} else if (id == "library" || id == "academy" || id == "math" || id == "philosophy" || id == "archeology" || id == "physics" || id == "metaphysics" ||
+			id == "scholasticism" || id == "apocripha" || id == "researchVessel"){
 			href = this.RES_ART.science;
 		} else if (id == "observatory" || id == "calendar" || id == "astronomy" || id == "celestialMechanics" || id == "astrolabe" ||
-			id == "navigation" || id == "sattelites" || id == "orbitalEngineering" || id == "starlink" || id == "uplink"){
+			id == "navigation" || id == "sattelites" || id == "orbitalEngineering" || id == "starlink" || id == "uplink" ||
+			id == "orbitalLaunch" || id == "sattelite" || id == "moonMission" || id == "duneMission" || id == "piscineMission" ||
+			id == "heliosMission" || id == "terminusMission" || id == "kairoMission" || id == "rorschachMission" || id == "centaurusSystemMission" ||
+			id == "furthestRingMission" || id == "spaceElevator" || id == "spaceBeacon" || id == "orbitalArray" || id == "sendExplorers"){
 			href = this.RES_ART.starchart;
 		} else if (id == "biolab" || id == "brewery" || id == "juqi" || id == "zhujidan" || id == "qingxin" || id == "jiangchen" || id == "peiying" || id == "biyan" ||
-			id == "chemistry" || id == "biology" || id == "biochemistry" || id == "ecology" || id == "petri" || mdl.type == "pill"){
+			id == "chemistry" || id == "biology" || id == "biochemistry" || id == "ecology" || id == "petri" || id == "spiceRefinery" || mdl.type == "pill"){
 			href = this.RES_ART.spice;
 		} else if (id == "barn" || id == "warehouse" || id == "harbor" || id == "mint" || id == "tradepost" ||
-			id == "currency" || id == "goldOre" || id == "caravanserai" || id == "cargoShips" || id == "barges" || id == "register"){
+			id == "currency" || id == "goldOre" || id == "caravanserai" || id == "cargoShips" || id == "barges" || id == "register" ||
+			id == "tradeCaravan" || id == "goldenSpire" || id == "sunAltar" || id == "solarRevolution" || id == "sunspire" || id == "sunlifter" || id == "sunforge"){
 			href = this.RES_ART.gold;
-		} else if (id == "mine" || id == "quarry" || id == "mining" || id == "bolas" || id == "prospecting" || id == "miningDrill" || id == "geodesy"){
+		} else if (id == "mine" || id == "quarry" || id == "mining" || id == "bolas" || id == "prospecting" || id == "miningDrill" || id == "geodesy" ||
+			id == "planetCracker" || id == "moonOutpost"){
 			href = this.RES_ART.minerals;
 		} else if (id == "smelter" || id == "calciner" || id == "workshop" || id == "factory" || id == "magneto" || id == "steamworks" ||
 			id == "metal" || id == "steel" || id == "machinery" || id == "engineering" || id == "metalurgy" || id == "combustion" ||
 			id == "industrialization" || id == "mechanization" || id == "advancedRefinement" || id == "factoryAutomation" || id == "combustionEngine" ||
-			id == "electrolyticSmelting" || id == "oxidation" || id == "rotaryKiln"){
+			id == "electrolyticSmelting" || id == "oxidation" || id == "rotaryKiln" || id == "blastFurnace" || id == "timeBoiler" || id == "useHeat" || id == "heatsink"){
 			href = this.BTN_ART.furnace;
-		} else if (id == "archery" || id == "animal" || id == "huntingArmor" || id == "steelArmor" || id == "compositeBow" || id == "crossbow" || id == "railgun"){
+		} else if (id == "archery" || id == "animal" || id == "huntingArmor" || id == "steelArmor" || id == "compositeBow" || id == "crossbow" || id == "railgun" ||
+			id == "templars"){
 			href = this.TILE_ART.combat;
-		} else if (id == "oilWell" || id == "oilProcessing" || id == "oilRefinery" || id == "pumpjack"){
+		} else if (id == "oilWell" || id == "oilProcessing" || id == "oilRefinery" || id == "pumpjack" || id == "hydrofracturer"){
 			href = this.RES_ART.oil;
 		} else if (id == "reactor" || id == "accelerator" || id == "electricity" || id == "electronics" || id == "nuclearFission" ||
-			id == "particlePhysics" || id == "dimensionalPhysics" || id == "nanotechnology" || id == "superconductors" || id == "thorium"){
+			id == "particlePhysics" || id == "dimensionalPhysics" || id == "nanotechnology" || id == "superconductors" || id == "thorium" ||
+			id == "containmentChamber" || id == "heatsink"){
 			href = this.RES_ART.uranium;
-		} else if (id == "rocketry" || id == "exogeology" || id == "advExogeology" || id == "artificialGravity" || id == "terraformation" || id == "antimatter"){
+		} else if (id == "rocketry" || id == "exogeology" || id == "advExogeology" || id == "artificialGravity" || id == "terraformation" || id == "antimatter" ||
+			id == "unicornUtopia" || id == "transcendence" || id == "transcendFaith"){
 			href = this.RES_ART.unobtainium;
-		} else if (id == "amphitheatre" || id == "writing" || id == "civil" || id == "drama" || id == "acoustics" || id == "printingPress" || id == "offsetPress"){
+		} else if (id == "amphitheatre" || id == "writing" || id == "civil" || id == "drama" || id == "acoustics" || id == "printingPress" || id == "offsetPress" ||
+			id == "stainedGlass" || id == "basilica" || id == "frescoes"){
 			href = this.RES_ART.culture;
-		} else if (id == "chapel" || id == "temple" || id == "ziggurat" || id == "theology" || id == "cryptotheology"){
+		} else if (id == "chapel" || id == "temple" || id == "ziggurat" || id == "theology" || id == "cryptotheology" ||
+			id == "praiseFaith" || id == "adoreFaith" || id == "solarchant"){
 			href = this.RES_ART.faith;
-		} else if (id == "chronosphere" || id == "chronophysics" || id == "tachyonTheory" || id == "voidSpace" || id == "paradoxalKnowledge"){
+		} else if (id == "blackPyramid" || id == "marker" || id == "blackObelisk" || id == "blackNexus" || id == "blackCore" ||
+			id == "singularity" || id == "blackLibrary" || id == "blackRadiance" || id == "blazar" || id == "darkNova" || id == "holyGenocide" ||
+			id == "refineRelic" || id == "relicStation" || id == "voidHoover" || id == "voidRift" || id == "voidResonance"){
+			href = this.RES_ART.relic;
+		} else if (id == "chronosphere" || id == "chronophysics" || id == "tachyonTheory" || id == "voidSpace" || id == "paradoxalKnowledge" ||
+			id == "accelerateTime" || id == "shatterTC" || id == "temporalBattery" || id == "controlledDelay" || id == "temporalPress" ||
+			id == "temporalImpedance" || id == "resourceRetrieval" || id == "chronocontrol"){
 			href = this.RES_ART.timeCrystal;
+		} else if (id == "reincarnate"){
+			href = this.RES_ART.karma;
 		} else if (id.indexOf("vein") === 0){
 			href = this.BTN_ART.vein;
 		} else if (id.indexOf("sect") === 0){
@@ -7191,6 +7228,14 @@ classes.ui.XianxiaArt = {
 			href = this.RES_ART.science;
 		} else if (ctrlClass.indexOf("UpgradeButton") >= 0){
 			href = this.BTN_ART.furnace;
+		} else if (ctrlClass.indexOf("SpaceProgram") >= 0 || ctrlClass.indexOf("PlanetBuilding") >= 0){
+			href = this.RES_ART.starchart;
+		} else if (ctrlClass.indexOf("ZigguratBtn") >= 0 || ctrlClass.indexOf("ReligionBtn") >= 0){
+			href = this.RES_ART.faith;
+		} else if (ctrlClass.indexOf("TranscendenceBtn") >= 0 || ctrlClass.indexOf("VoidSpaceBtn") >= 0){
+			href = this.RES_ART.relic;
+		} else if (ctrlClass.indexOf("ChronoforgeBtn") >= 0){
+			href = this.RES_ART.timeCrystal;
 		}
 
 		return "<svg viewBox=\"0 0 20 20\" class=\"xx-btn-svg xx-res-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
