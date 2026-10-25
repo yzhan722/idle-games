@@ -587,7 +587,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		researched: false,
 		atStage: "yuanying_0",
 		pages: 2,
-		effects: {"relicPerTickBase": 0.001}
+		effects: {"sciencePerTickBase": 0.25}
 	},{
 		name: "dayan",
 		label: $I("cultivation.fate.dayan.label"),
@@ -2447,14 +2447,14 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var selOrigin = (this.identity && this.identity.origin) || "farmer";
 		var oCards = {};
 		var markO = function(){
-			for (var k in oCards){ oCards[k].className = "xxIdOrigin" + (k == selOrigin ? " xx-sel" : ""); }
+			for (var k in oCards){ oCards[k].className = "xxIdOrigin xxIdOriginHasArt" + (k == selOrigin ? " xx-sel" : ""); }
 		};
 		var oWrap = dojo.create("div", {className: "xxIdOrigins"}, card);
 		this.ORIGINS.forEach(function(o){
 			var oIco = (classes.ui && classes.ui.XianxiaArt) ?
 				"<i class=\"xxIdOriginIco\" aria-hidden=\"true\">" + classes.ui.XianxiaArt.originIcon(o.key) + "</i>" : "";
 			oCards[o.key] = dojo.create("div", {
-				className: "xxIdOrigin",
+				className: "xxIdOrigin xxIdOriginHasArt",
 				innerHTML: oIco + "<div class=\"xxIdOriginBody\"><b>" + $I("identity.origin." + o.key + ".label") + "</b>" +
 					"<span>" + $I("identity.origin." + o.key + ".desc") + "</span></div>"
 			}, oWrap);
@@ -2744,7 +2744,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var pill = this.getPill(name);
 		if (!pill || !this.isPillUnlocked(pill)){ return false; }
 		if (!this.canAffordPill(name)){
-			this.game.msg("药材或灵香不足，无法开炉炼制【" + pill.label + "】。", "alert");
+			this.game.msg("药材不足，无法开炉炼制【" + pill.label + "】。", "alert");
 			return false;
 		}
 		var prices = this.getPillCraftPrices(name);
@@ -5807,9 +5807,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		var art = (classes.ui && classes.ui.XianxiaArt) ? classes.ui.XianxiaArt.actionArt(glyph) : glyph;
 		dojo.create("span", { className: "xxActGlyph", innerHTML: art, "aria-hidden": "true" }, btn);
 		dojo.create("span", { className: "btnTitle" }, btn);
-		if (classes.ui && classes.ui.XianxiaArt){
-			dojo.create("span", { className: "xxActWm", innerHTML: art, "aria-hidden": "true" }, btn);
-		}
+		dojo.create("span", { className: "xxActWm", innerHTML: glyph, "aria-hidden": "true" }, btn);
 		btn._cdMask = dojo.create("i", { className: "xxActCd", "aria-hidden": "true" }, btn);
 		dojo.connect(btn, "onclick", onClick);
 		dojo.connect(btn, "onkeypress", function(e){ if (e.key == "Enter"){ onClick(e); } });
@@ -6391,6 +6389,10 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 							lastAnimSeq: b.animSeq || 0
 						};
 						this._riftDeckSig = null;
+						if (this.riftPanel && this.riftPanel.closest){
+							var ti = this.riftPanel.closest(".tabInner");
+							if (ti){ ti.scrollTop = Math.max(0, this.riftPanel.offsetTop - 10); }
+						}
 					}
 
 					var cdm = this._combatDom;
@@ -7007,7 +7009,7 @@ classes.ui.XianxiaArt = {
 		else if (scene == "array"){ fateImg = "res/art/banner_trade.jpg"; }
 		else if (scene == "samsara"){ fateImg = "res/art/banner_time.jpg"; }
 
-		return "<svg viewBox=\"0 0 480 112\" class=\"xx-fate-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+		return "<svg viewBox=\"0 0 480 112\" preserveAspectRatio=\"xMidYMid slice\" class=\"xx-fate-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
 			"<image href=\"" + fateImg + "\" x=\"0\" y=\"0\" width=\"480\" height=\"112\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 		"</svg>";
 	},
