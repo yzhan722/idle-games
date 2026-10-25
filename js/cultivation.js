@@ -6025,7 +6025,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		}
 		if (arts.length){
 			var artIco = artMgr ? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.tileIcon("artifact") + "</i>" : "";
-			html += "<div class=\"xx-hd-fates\"><span class=\"xx-fate-lbl\">" +
+			html += "<div class=\"xx-hd-fates xx-hd-arts\"><span class=\"xx-fate-lbl\">" +
 				$I("cultivation.section.artifact") + "</span>";
 			for (var j = 0; j < arts.length; j++){
 				var isNatal = (cult.natalArtifact == arts[j].name);
