@@ -651,11 +651,13 @@ dojo.declare("classes.ui.PrestigePanel", com.nuclearunicorn.game.ui.Panel, {
 		dojo.create("label", { innerHTML: $I("prestige.toggleResearched.label") + "<br>", for: "prestigeHideResearched"}, this.toggleResearchedSpan);
 
 		var self = this;
+		this.children = [];
+		var grid = dojo.create("div", { className: "xx-card-grid", style: { clear: "both" } }, content);
 		//---------------------------------------------------------------
 		var controller = new classes.ui.PrestigeBtnController(this.game);
 		dojo.forEach(this.game.prestige.perks, function(perk, i){
 			var button = new com.nuclearunicorn.game.ui.BuildingResearchBtn({id: perk.name, controller: controller}, self.game);
-			button.render(content);
+			button.render(grid);
 			self.addChild(button);
 		});
 		//--------------------------------------------------------------------
@@ -667,7 +669,7 @@ dojo.declare("classes.ui.PrestigePanel", com.nuclearunicorn.game.ui.Panel, {
 			}),
 			controller: new classes.ui.BurnParagonBtnController(self.game)
 		}, self.game);
-		buttonBP.render(content);
+		buttonBP.render(grid);
 		self.addChild(buttonBP);
 		var buttonOffHG = new com.nuclearunicorn.game.ui.ButtonModern({
 			name : $I("prestige.btn.turnHGOff.label"),
@@ -677,7 +679,7 @@ dojo.declare("classes.ui.PrestigePanel", com.nuclearunicorn.game.ui.Panel, {
 			}),
 			controller: new classes.ui.turnHGOffButtonController(self.game)
 		}, self.game);
-		buttonOffHG.render(content);
+		buttonOffHG.render(grid);
 		self.addChild(buttonOffHG);
 		//---------------------------------------------------------------------
 	}

@@ -1553,12 +1553,13 @@ dojo.declare("classes.ui.religion.MultiLinkBtn", com.nuclearunicorn.game.ui.Butt
 dojo.declare("classes.ui.CryptotheologyWGT", [mixin.IChildrenAware, mixin.IGameAware], {
 	constructor: function(game){
 		var self = this;
-		var controller = classes.ui.TranscendenceBtnController(game);
+		var controller = new classes.ui.TranscendenceBtnController(game);
 		dojo.forEach(game.religion.transcendenceUpgrades, function(tu, i){
 			var button = new com.nuclearunicorn.game.ui.BuildingStackableBtn({
 				id: 		tu.name,
 				name: 		tu.label,
 				description: tu.description,
+				prices: 	tu.prices,
 				controller: controller
 			}, game);
 			self.addChild(button);
