@@ -3882,6 +3882,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (!enemy){
 			return {key: "strike", title: "⚔ 凶煞扑击", desc: "蓄势待发", counter: "宜用【御剑斩】抢攻"};
 		}
+		var self = this;
+		var iFmt = function(n){
+			var v = Math.round(n);
+			return (v >= 10000 && self.game && self.game.getDisplayValueExt)
+				? self.game.getDisplayValueExt(v, false, false, 1)
+				: String(v);
+		};
 		var intent = enemy.intent || "strike";
 		var atk = enemy.atk || 20;
 		if (enemy.enraged){ atk = Math.round(atk * 1.42); }
@@ -3890,7 +3897,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			return {
 				key: "heavy",
 				title: "🔥 蓄力杀招",
-				desc: "预计轰出 ~" + hDmg + " 点狂暴重击",
+				desc: "预计轰出 ~" + iFmt(hDmg) + " 点狂暴重击",
 				counter: "破招：施展【🛡 玄水灵盾】触发太极反震！"
 			};
 		}
@@ -3899,7 +3906,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			return {
 				key: "guard",
 				title: "🛡 妖罡凝盾",
-				desc: "凝结 ~" + sGain + " 点护盾并反击",
+				desc: "凝结 ~" + iFmt(sGain) + " 点护盾并反击",
 				counter: "破招：施展【⚡ 青元剑阵】2.5倍破盾碎甲！"
 			};
 		}
@@ -3908,7 +3915,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			return {
 				key: "curse",
 				title: "☠ 妖术蚀灵",
-				desc: "造成 ~" + cDmg + " 伤害并附加剧毒/寒霜/蚀气",
+				desc: "造成 ~" + iFmt(cDmg) + " 伤害并附加剧毒/寒霜/蚀气",
 				counter: "破招：施展【✨ 法宝镇压】涤荡净化全异常！"
 			};
 		}
@@ -3916,7 +3923,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return {
 			key: "strike",
 			title: "⚔ 凶煞扑击",
-			desc: "预计造成 ~" + sDmg + " 点扑击伤害",
+			desc: "预计造成 ~" + iFmt(sDmg) + " 点扑击伤害",
 			counter: "应对：【🗡 御剑斩】聚气或【⚡ 青元剑阵】压制"
 		};
 	},
@@ -3998,8 +4005,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var natalName = (nArt && nArt.researched) ? nArt.label : "青竹蜂云剑";
 
 		var openLog = (bMode === "greater")
-			? "【上古大秘境 · 第 " + floor + " 层】" + enemy.icon + " " + enemy.name + "（特征：" + enemy.traitTitle + "）镇守阵眼，斗法开始！"
-			: "【灵脉秘境 · 第 1/3 波】遭遇 " + enemy.icon + " " + enemy.name + "（特征：" + enemy.traitTitle + "），亮剑迎敌！";
+			? "【上古大秘境 · 第 " + floor + " 层】「" + enemy.name + "」（特征：" + enemy.traitTitle + "）镇守阵眼，斗法开始！"
+			: "【灵脉秘境 · 第 1/3 波】遭遇「" + enemy.name + "」（特征：" + enemy.traitTitle + "），亮剑迎敌！";
 
 		this.battle = {
 			active: true,
@@ -4344,7 +4351,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				b.player.hp = Math.min(b.player.maxHp, b.player.hp + healBetween);
 				b.player.mp = Math.min(b.player.maxMp, b.player.mp + 20);
 				b.enemy = this.spawnBattleMonster("lesser", b.wave, b.waveKeys);
-				b.logs.unshift((turnSummary ? turnSummary + " — " : "") + "✦ 斩杀【" + slainName + "】获修为 +" + fmt(waveXw) + "！气血恢复 +" + healBetween + "，第 " + b.wave + "/3 波【" + b.enemy.icon + " " + b.enemy.name + "】现身！");
+				b.logs.unshift((turnSummary ? turnSummary + " — " : "") + "✦ 斩杀【" + slainName + "】获修为 +" + fmt(waveXw) + "！气血恢复 +" + healBetween + "，第 " + b.wave + "/3 波【" + b.enemy.name + "】现身！");
 				if (b.logs.length > 5){ b.logs.length = 5; }
 				return true;
 			}
@@ -6527,7 +6534,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 					if (!pStatuses.length){ pStatuses.push("<span class=\"xxStChip neutral\">道心澄明</span>"); }
 					cdm.pStatus.innerHTML = pStatuses.join("");
 
-					cdm.eName.textContent = e.icon + " " + e.name;
+					cdm.eName.textContent = e.name;
 					cdm.eSub.textContent = e.tier + " · 攻 " + cFmt(e.atk) + " / 防 " + cFmt(e.def);
 					if (e.shield > 0){
 						cdm.eShield.style.display = "";
