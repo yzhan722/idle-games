@@ -58,8 +58,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     const now = new Date();
     const next = await load(userId, now);
-    const saved = await storage.savePlayerState(userId, next);
-    return reply.send(taskBoardView(saved, contentPack, now));
+    return reply.send({ ...taskBoardView(next, contentPack, now), stateRevision: next.stateRevision });
   });
 
   app.post("/tasks/claim", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -69,7 +68,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => claimTask(s, contentPack, body.taskId, n));
-      return reply.send({ ...outcome.result, board: taskBoardView(outcome.state, contentPack, now), stateRevision: outcome.state.stateRevision });
+      return reply.send({ ...outcome.result, inventory: outcome.state.inventory, board: taskBoardView(outcome.state, contentPack, now), stateRevision: outcome.state.stateRevision });
     } catch (error) { return commandFail(reply, error); }
   });
 
@@ -80,7 +79,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => rerollTask(s, contentPack, body.taskId, n));
-      return reply.send({ ...outcome.result, board: taskBoardView(outcome.state, contentPack, now), stateRevision: outcome.state.stateRevision });
+      return reply.send({ ...outcome.result, inventory: outcome.state.inventory, board: taskBoardView(outcome.state, contentPack, now), stateRevision: outcome.state.stateRevision });
     } catch (error) { return commandFail(reply, error); }
   });
 
@@ -113,7 +112,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => buyTaskShop(s, contentPack, body.itemId, n));
-      return reply.send({ ...outcome.result, board: taskBoardView(outcome.state, contentPack, now), stateRevision: outcome.state.stateRevision });
+      return reply.send({ ...outcome.result, inventory: outcome.state.inventory, board: taskBoardView(outcome.state, contentPack, now), stateRevision: outcome.state.stateRevision });
     } catch (error) { return commandFail(reply, error); }
   });
 
@@ -124,7 +123,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => claimGift(s, contentPack, n));
-      return reply.send({ ...outcome.result, board: taskBoardView(outcome.state, contentPack, now), stateRevision: outcome.state.stateRevision });
+      return reply.send({ ...outcome.result, inventory: outcome.state.inventory, board: taskBoardView(outcome.state, contentPack, now), stateRevision: outcome.state.stateRevision });
     } catch (error) { return commandFail(reply, error); }
   });
 }

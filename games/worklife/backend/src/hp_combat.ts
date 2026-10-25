@@ -369,6 +369,12 @@ export function startHpCombat(
     enrageStacks: 0,
     runStats: opts.runStats || { startedAt: now.getTime(), kills: 0, xp: 0, gold: 0, loot: {} },
   };
+  player.combatLoadout = {
+    food: player.combatLoadout?.food || [],
+    drink: player.combatLoadout?.drink || [],
+    ...(player.combatLoadout?.mp ? { mp: player.combatLoadout.mp } : {}),
+    autoRepeat: true,
+  };
   return state;
 }
 
@@ -624,7 +630,7 @@ export function tickHpCombat(
     if (enc.outcome) {
       // Auto-repeat: a finished fight restarts against the same monster once the intermission
       // (win) or the respawn timer (loss) has passed.
-      const canRepeat = player.combatLoadout?.autoRepeat && enc.nextFightAt && now.getTime() >= enc.nextFightAt;
+      const canRepeat = Boolean(enc.nextFightAt && now.getTime() >= enc.nextFightAt);
       if (!canRepeat) return now.getTime();
       const startAt = new Date(enc.nextFightAt!);
       const streak = enc.outcome === "win" ? (enc.streak || 0) + 1 : 0;
@@ -741,7 +747,8 @@ function tickOneFight(
     grantWin(player, pack, enc, rng);
     // Surviving HP carries into the next fight; intermission time still counts toward regen.
     persistCombatHp(player, enc.playerHp, simMs);
-    if (player.combatLoadout?.autoRepeat) enc.nextFightAt = simMs + AUTO_REPEAT_INTERMISSION_MS;
+    if (player.combatLoadout) player.combatLoadout.autoRepeat = true;
+    enc.nextFightAt = simMs + AUTO_REPEAT_INTERMISSION_MS;
   } else if (enc.playerHp <= 0) {
     enc.outcome = "loss";
     enc.deaths = (enc.deaths || 0) + 1;
@@ -750,17 +757,14 @@ function tickOneFight(
     // Respawn heals to full — persisting 0 would soft-lock the auto-repeat loop.
     persistCombatHp(player, enc.playerMaxHp, simMs);
     enc.lossStreak = (enc.lossStreak || 0) + 1;
-    if (player.combatLoadout?.autoRepeat && enc.lossStreak >= AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS) {
+    if (enc.lossStreak >= AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS) {
       // Death-spiral guard: stop instead of feeding gear durability to a monster that keeps winning.
-      player.combatLoadout.autoRepeat = false;
       enc.nextFightAt = undefined;
-      pushLog(enc, `连续阵亡 ${enc.lossStreak} 次，已自动关闭连续战斗以保护装备耐久。检查装备、技能和补给，或换个更弱的对手。`);
-      appendLog(player, `在 ${enc.monsterName} 面前连续阵亡 ${enc.lossStreak} 次，连续战斗已自动关闭`);
-    } else if (player.combatLoadout?.autoRepeat) {
-      enc.nextFightAt = simMs + RESPAWN_MS;
-      pushLog(enc, `你被击败了。${Math.round(RESPAWN_MS / 1000)} 秒后重生并继续连续战斗（在配置里可以关掉；连续阵亡 ${AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS} 次会自动停止）。`);
+      pushLog(enc, `连续阵亡 ${enc.lossStreak} 次，已自动停止战斗以保护装备耐久。检查装备、技能和补给，或换个更弱的对手。`);
+      appendLog(player, `在 ${enc.monsterName} 面前连续阵亡 ${enc.lossStreak} 次，已自动停止战斗`);
     } else {
-      pushLog(enc, "你被击败了。检查装备、技能触发和补给，再选择适合的对手。");
+      enc.nextFightAt = simMs + RESPAWN_MS;
+      pushLog(enc, `你被击败了。${Math.round(RESPAWN_MS / 1000)} 秒后重生并继续战斗（连续阵亡 ${AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS} 次会自动停止）。`);
     }
   }
   return simMs;
@@ -797,7 +801,8 @@ export function tryCastAbility(
     pushLog(enc, `${enc.monsterName} 被击败了！`);
     grantWin(player, pack, enc, rng);
     persistCombatHp(player, enc.playerHp, now.getTime());
-    if (player.combatLoadout?.autoRepeat) enc.nextFightAt = now.getTime() + AUTO_REPEAT_INTERMISSION_MS;
+    if (player.combatLoadout) player.combatLoadout.autoRepeat = true;
+    enc.nextFightAt = now.getTime() + AUTO_REPEAT_INTERMISSION_MS;
   }
   return { ok: true };
 }
@@ -869,7 +874,7 @@ export function setCombatLoadout(
         ? { itemId: d.itemId, triggerMissingMp: Math.min(maxMp, Math.max(1, Math.floor(Number(d.triggerMissingMp) || 1))) }
         : { itemId: d.itemId }
     ),
-    autoRepeat: input.autoRepeat !== undefined ? !!input.autoRepeat : Boolean(player.combatLoadout?.autoRepeat),
+    autoRepeat: true,
   };
   if (mp.length > 0) {
     nextLoadout.mp = mp.map((m) => ({

@@ -25,11 +25,29 @@ export function SkillTreePanel({ playerState: _playerState, onRefresh, currentPr
   }
 
   useEffect(() => {
-    loadSkillData()
+    let cancelled = false
+    setMessage('')
+    apiClient.clearCache()
+    Promise.all([
+      apiClient.getSkillTree(currentProfession),
+      apiClient.getSkillProgress(currentProfession)
+    ])
+      .then(([tree, progress]) => {
+        if (cancelled) return
+        setSkillTree(tree)
+        setSkillProgress(progress)
+      })
+      .catch((error) => {
+        if (!cancelled) logger.error('加载技能数据失败:', error)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [currentProfession])
 
   const loadSkillData = async () => {
     try {
+      apiClient.clearCache()
       const [tree, progress] = await Promise.all([
         apiClient.getSkillTree(currentProfession),
         apiClient.getSkillProgress(currentProfession)
@@ -143,7 +161,7 @@ export function SkillTreePanel({ playerState: _playerState, onRefresh, currentPr
                 <div className="node-body">
                   <div className="node-header">
                     <h4>{node.name}</h4>
-                    <span className="node-level">Lv.{node.requirements.level}</span>
+                    <span className="node-level">Lv.{node.requirements?.level || 1}</span>
                   </div>
                   
                   <p className="node-description">{node.description}</p>
@@ -178,7 +196,11 @@ export function SkillTreePanel({ playerState: _playerState, onRefresh, currentPr
                 )}
 
                 {!unlocked && !canUnlock && (
-                  <div className="locked-badge">🔒 需达到 Lv.{node.requirements.level}</div>
+                  <div className="locked-badge">
+                    {(skillProgress?.level ?? 0) < (node.requirements?.level || 1)
+                      ? `🔒 需达到 Lv.${node.requirements?.level || 1}`
+                      : '🔒 需先解锁前置节点'}
+                  </div>
                 )}
               </div>
             )

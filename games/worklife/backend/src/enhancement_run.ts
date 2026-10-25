@@ -176,9 +176,7 @@ export function tickEnhanceRun(
       }
     }
     if (player.stats) {
-      player.stats.totalEnhancements = (player.stats.totalEnhancements || 0) + 1;
       player.stats.totalActions = (player.stats.totalActions || 0) + 1;
-      player.stats.totalXpEarned = (player.stats.totalXpEarned || 0) + (result.xpGained || 0);
     }
     run.xpGained = Math.round((run.xpGained + (result.xpGained || 0)) * 10) / 10;
     if (result.success) {

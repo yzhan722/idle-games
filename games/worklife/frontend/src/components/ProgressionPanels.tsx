@@ -71,6 +71,7 @@ export function AchievementsPanel({ onClose, onGoldChange }: { onClose: () => vo
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      apiClient.clearCache();
       const res: any = await apiClient.getAchievements();
       setList(res.achievements || []);
     } catch (e) {
@@ -195,6 +196,7 @@ export function DailyQuestsPanel({ onClose, onGoldChange }: { onClose: () => voi
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      apiClient.clearCache();
       const res: any = await apiClient.getDailyQuests();
       setQuests(res.quests || []);
       setDate(res.date || '');
@@ -252,7 +254,7 @@ export function DailyQuestsPanel({ onClose, onGoldChange }: { onClose: () => voi
                   </div>
                   <div className="ach-meta">
                     <span className="ach-count">{q.progress} / {q.target} ({pct}%)</span>
-                    <span className="ach-reward">💰 {q.reward.gold}</span>
+                    <span className="ach-reward">💰 {q.reward.gold}{q.reward.xp ? ` · ⭐ ${q.reward.xp} 经验` : ''}</span>
                   </div>
                 </div>
                 {q.claimed ? (
@@ -396,9 +398,13 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     if (saveBusy) return;
     setSaveBusy(true);
     try {
+      apiClient.clearCache();
       const state: any = await apiClient.get('/player/state');
       const token = apiClient.getToken() || '';
-      const resumeToken = localStorage.getItem('guest_resume_token');
+      const resumeToken =
+        user?.resumeToken ||
+        localStorage.getItem('worklife_guest_resume_token') ||
+        localStorage.getItem('guest_resume_token');
       // 始终使用 AES-256-GCM 认证加密生成 WLS1 密文（绝不导出明文 JSON）
       const saveCode = await encryptSaveEnvelope({
         v: 1,

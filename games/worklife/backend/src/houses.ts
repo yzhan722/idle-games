@@ -1,5 +1,6 @@
 import type { EnhancedContentPack, EnhancedPlayerState } from "./types";
 import { appendLog, ensurePlayerExtensions, GATHER_SKILL_FOR_CRAFT } from "./storage";
+import { syncAchievements } from "./progression";
 
 /**
  * MWI 房屋 (Houses): one room per skill. Every level costs gold plus that skill's own materials
@@ -103,6 +104,7 @@ export function upgradeRoom(
     if (player.inventory[m.itemId] <= 0) delete player.inventory[m.itemId];
   }
   house.rooms[roomId] = next;
+  syncAchievements(player);
   appendLog(player, `${room.name}升到 ${next} 级`);
   return { ok: true, level: next, cost };
 }

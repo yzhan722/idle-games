@@ -68,6 +68,7 @@ export function CheckInModal({
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      apiClient.clearCache();
       const res: any = await apiClient.getCheckIn();
       setInfo(res);
     } catch (e) {
@@ -85,7 +86,8 @@ export function CheckInModal({
     setClaiming(true);
     try {
       const res: any = await apiClient.doCheckIn();
-      const itemText = Object.entries(res.reward.items || {})
+      apiClient.clearCache();
+      const itemText = Object.entries(res?.reward?.items || {})
         .map(([k, v]) => `${getItemName(k)}×${v}`)
         .join('、');
       toast.reward(`签到成功（连续${res.streak}天）+${res.reward.gold}金币${itemText ? '、' + itemText : ''}`);
@@ -127,7 +129,7 @@ export function CheckInModal({
                   <div className="checkin-day">第{r.day}天</div>
                   <div className="checkin-reward-gold">💰{r.gold}</div>
                   <div className="checkin-reward-items">
-                    {Object.entries(r.items).map(([k, v]) => (
+                    {Object.entries(r.items || {}).map(([k, v]) => (
                       <span key={k} className="checkin-item">{getItemName(k)}×{v}</span>
                     ))}
                   </div>

@@ -38,7 +38,17 @@ export function encounterStages(pack: Pack | null | undefined): Array<{
   encounters: Encounter[];
 }> {
   if (!pack) return [];
-  if (pack.encounterStages?.length) return pack.encounterStages;
+  if (pack.encounterStages?.length) {
+    return pack.encounterStages.map((stage) => ({
+      ...stage,
+      encounters: (stage.encounters || []).map((enc) => ({
+        ...enc,
+        mechanicDefs: enc.mechanicDefs?.length
+          ? enc.mechanicDefs
+          : resolveMechanicDefs(enc.mechanics as string[] | undefined, pack.bossMechanics),
+      })),
+    }));
+  }
   const byId = new Map((pack.monsters || []).map((m) => [m.id, m]));
   return (pack.stages || []).map((stage) => ({
     id: stage.id,

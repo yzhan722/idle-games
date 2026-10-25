@@ -82,7 +82,7 @@ export async function playerRoutes(
         apply(state) {
           const inSoloCombat = Boolean(
             state.hpCombat &&
-              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+              (!state.hpCombat.outcome || state.hpCombat.nextFightAt)
           );
           if (inPartyCombat || inSoloCombat) {
             throw new PlayerCommandRejected('already_in_combat');
@@ -133,7 +133,7 @@ export async function playerRoutes(
           // 单人战斗或组队战斗进行中均不接续——防止边打怪边执行队列生活动作
           const inSoloCombat = Boolean(
             state.hpCombat &&
-              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+              (!state.hpCombat.outcome || state.hpCombat.nextFightAt)
           );
           if (!inSoloCombat && !inPartyCombat) startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
           return { ok: true as const };
@@ -229,7 +229,7 @@ export async function playerRoutes(
           // life_action 但战斗仍在继续，变成边打怪边制作的双进度状态。
           const inSoloCombat = Boolean(
             state.hpCombat &&
-              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+              (!state.hpCombat.outcome || state.hpCombat.nextFightAt)
           );
           if (state.mode === 'idle' && !inSoloCombat && !inPartyCombat) startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
           return { ok: true as const };
@@ -331,6 +331,10 @@ export async function playerRoutes(
       ...revisionSchema,
     }).strict().parse((req.body ?? {}) as unknown);
 
+    const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
+    if (activeParty?.currentActivity) {
+      return reply.status(400).send({ error: "combat_in_progress", message: "组队副本中不能切换职业" });
+    }
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
@@ -340,7 +344,7 @@ export async function playerRoutes(
           // 战斗中途换职业则连战循环跨职业漂移。先停当前动作再切换。
           const inSoloCombat = Boolean(
             state.hpCombat &&
-              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+              (!state.hpCombat.outcome || state.hpCombat.nextFightAt)
           );
           if (inSoloCombat) {
             throw new PlayerCommandRejected("combat_in_progress", "战斗中不能切换职业");
@@ -354,7 +358,8 @@ export async function playerRoutes(
       });
       return reply.send(outcome.state);
     } catch (error) {
-      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+      const msg = error instanceof PlayerCommandRejected && typeof error.details === "string" ? error.details : undefined;
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code, ...(msg ? { message: msg } : {}) }));
     }
   });
 }

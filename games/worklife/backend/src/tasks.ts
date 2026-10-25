@@ -399,6 +399,7 @@ export function buyTaskShop(player: EnhancedPlayerState, pack: EnhancedContentPa
       gained[pick] = (gained[pick] || 0) + 1;
     }
     appendLog(player, `打开大宝箱：金币 +${gold}`);
+    syncAchievements(player);
   }
   return { ok: true as const, cost, gained };
 }
@@ -414,6 +415,7 @@ export function claimGift(player: EnhancedPlayerState, pack: EnhancedContentPack
   const books = ["book_smash", "book_minor_heal", "book_brace"].filter((b) => (pack.items as Array<{ id: string }>).some((i) => i.id === b));
   const book = books[Math.floor(rng() * books.length)];
   if (book) player.inventory[book] = (player.inventory[book] || 0) + 1;
+  syncAchievements(player);
   appendLog(player, `打开小紫牛的礼物：金币 +${gold}，任务代币 +5${book ? "，还有一本技能书" : ""}`);
   return { ok: true as const, gold, tokens: 5, book };
 }

@@ -1,5 +1,5 @@
 /** JWT 鉴权白名单：精确 pathname，不含 query、不含尾斜杠。 */
-export const PUBLIC_API_PATHS = new Set(["/health", "/content", "/auth/guest", "/auth/register", "/auth/login", "/ws"]);
+export const PUBLIC_API_PATHS = new Set(["/health", "/content", "/auth/guest", "/auth/register", "/auth/login", "/auth/google", "/ws"]);
 
 export function requestPathname(url: string): string {
   const raw = url.split("?", 1)[0] || "/";

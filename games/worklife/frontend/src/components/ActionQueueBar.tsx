@@ -4,7 +4,7 @@ type Props = {
   queue: ActivityQueueItem[];
   max: number;
   /** Currently running action (shown first, not removable here). */
-  current?: { name: string; quantity?: number; remaining?: number } | null;
+  current?: { actionId?: string; name: string; quantity?: number; remaining?: number } | null;
   nameOf: (actionId: string) => string;
   durationOf?: (actionId: string) => number;
   onRemove: (id: string) => void;
@@ -30,8 +30,13 @@ function formatEta(totalSec: number): string {
 export function ActionQueueBar(props: Props) {
   if (!props.queue.length) return null;
   const hasInfinite = props.queue.some((q) => !q.quantity);
+  const currentEtaSec =
+    props.durationOf && props.current?.actionId && typeof props.current.remaining === "number"
+      ? (props.durationOf(props.current.actionId) || 0) * Math.max(0, props.current.remaining)
+      : 0;
   const totalEtaSec = props.durationOf
-    ? props.queue.reduce((sum, q) => {
+    ? currentEtaSec +
+      props.queue.reduce((sum, q) => {
         if (!q.quantity) return sum;
         const sec = props.durationOf!(q.actionId) || 0;
         return sum + sec * q.quantity;

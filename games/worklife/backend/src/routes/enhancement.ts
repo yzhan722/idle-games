@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import type { Storage } from "../storage";
+import { startNextQueuedAction, type Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
 import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
 import { startEnhanceRun, stopEnhanceRun } from "../enhancement_run";
@@ -46,9 +46,16 @@ export async function enhancementRoutes(
     }
 
     try {
-      await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+      const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+      const inSoloCombat = Boolean(
+        state.hpCombat &&
+          (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+      );
+      if (inSoloCombat) {
+        return reply.status(409).send({ error: "in_combat", message: "战斗中不能强化，请先停止战斗" });
+      }
       const { result } = await storage.deduplicateOperation({
-        userId, operationId: body.operationId, operationPayload: { route: "enhancement/enhance", ...body },
+        userId, operationId: body.operationId, operationPayload: { route: "enhancement/enhance", ...(operationPayload(body) as Record<string, unknown>) },
         run: () => storage.enhanceEquipment({
           userId,
           request: {
@@ -62,7 +69,7 @@ export async function enhancementRoutes(
         }),
       });
 
-      if (!result.success) {
+      if (!result.success && Object.keys(result.consumedMaterials || {}).length === 0) {
         return reply.status(400).send({ error: "enhance_failed", message: result.failureReason || "强化失败" });
       }
       return reply.send(result);
@@ -92,7 +99,7 @@ export async function enhancementRoutes(
         apply(state) {
           const inSoloCombat = Boolean(
             state.hpCombat &&
-              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+              (!state.hpCombat.outcome || state.hpCombat.nextFightAt)
           );
           if (inPartyCombat || inSoloCombat) {
             throw new PlayerCommandRejected('in_combat', { message: '战斗中不能强化，请先停止战斗' });
@@ -119,6 +126,13 @@ export async function enhancementRoutes(
         operationId: body.operationId, operationPayload: operationPayload(body),
         apply(state) {
           stopEnhanceRun(state, now);
+          const inSoloCombat = Boolean(
+            state.hpCombat &&
+              (!state.hpCombat.outcome || state.hpCombat.nextFightAt)
+          );
+          if (!inSoloCombat) {
+            startNextQueuedAction(state, contentPack, now);
+          }
           return { ok: true as const };
         },
       });
@@ -218,6 +232,9 @@ export async function enhancementRoutes(
         }),
       });
 
+      if (!result.success) {
+        return reply.status(400).send({ error: "respond_service_failed", message: result.message || "响应服务请求失败" });
+      }
       return reply.send(result);
     } catch (error) {
       return reply.status(400).send({ error: error instanceof Error ? error.message : "响应服务请求失败" });

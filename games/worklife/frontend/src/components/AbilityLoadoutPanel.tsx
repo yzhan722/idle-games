@@ -50,14 +50,21 @@ export function AbilityLoadoutPanel(props: Props) {
     } else {
       const def = catalog.find((d) => d.id === abilityId);
       const dup = next.findIndex((s, j) => j !== i && s?.abilityId === abilityId);
-      const preservedTrigger =
+      const rawPreserved =
         next[i]?.abilityId === abilityId
           ? next[i].trigger
           : dup >= 0 && next[dup]?.trigger
           ? next[dup].trigger
           : def?.defaultTrigger || { type: "always" };
+      const canEnemyGuard = Boolean(def?.breaksGuard || def?.damageMult);
+      const preservedTrigger =
+        rawPreserved.type === "enemy_guard" && !canEnemyGuard
+          ? def?.defaultTrigger || { type: "always" }
+          : rawPreserved;
+      if (dup >= 0) {
+        next[dup] = next[i];
+      }
       next[i] = { abilityId, trigger: preservedTrigger };
-      if (dup >= 0) next.splice(dup, 1);
     }
     update(next.filter(Boolean));
   };

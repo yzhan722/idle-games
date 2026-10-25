@@ -15,6 +15,8 @@ export type MemorySnapshot = {
   priceHistory?: Array<[string, PriceHistory[]]>;
   /** Pending/completed enhancement service requests. */
   enhancementServiceRequests?: EnhancementServiceRequest[];
+  /** Provider service statistics (completed count & ratings). */
+  enhancementServiceStats?: Array<[string, { completed: number; totalRating: number; ratingCount: number }]>;
 };
 
 export function emptySnapshot(): MemorySnapshot {
@@ -29,6 +31,7 @@ export function buildSnapshot(input: {
   tradingOrders?: Iterable<TradingOrder>;
   priceHistory?: Iterable<[string, PriceHistory[]]>;
   enhancementServiceRequests?: Iterable<EnhancementServiceRequest>;
+  enhancementServiceStats?: Iterable<[string, { completed: number; totalRating: number; ratingCount: number }]>;
 }): MemorySnapshot {
   return {
     version: 1,
@@ -39,6 +42,7 @@ export function buildSnapshot(input: {
     ...(input.tradingOrders ? { tradingOrders: [...input.tradingOrders] } : {}),
     ...(input.priceHistory ? { priceHistory: [...input.priceHistory] } : {}),
     ...(input.enhancementServiceRequests ? { enhancementServiceRequests: [...input.enhancementServiceRequests] } : {}),
+    ...(input.enhancementServiceStats ? { enhancementServiceStats: [...input.enhancementServiceStats] } : {}),
   };
 }
 
@@ -54,5 +58,6 @@ export function parseSnapshot(raw: unknown): MemorySnapshot {
     ...(Array.isArray(obj.tradingOrders) ? { tradingOrders: obj.tradingOrders } : {}),
     ...(Array.isArray(obj.priceHistory) ? { priceHistory: obj.priceHistory } : {}),
     ...(Array.isArray(obj.enhancementServiceRequests) ? { enhancementServiceRequests: obj.enhancementServiceRequests } : {}),
+    ...(Array.isArray(obj.enhancementServiceStats) ? { enhancementServiceStats: obj.enhancementServiceStats } : {}),
   };
 }

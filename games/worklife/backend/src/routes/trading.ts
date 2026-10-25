@@ -51,11 +51,12 @@ export async function tradingRoutes(
       price: z.number().int().min(1).max(1000000000),
       type: z.enum(['sell', 'buy']),
       operationId: z.string().max(128).optional(),
-    }).parse(req.body);
+    }).strict().parse((req.body ?? {}) as unknown);
 
     try {
+      await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
       const { result } = await storage.deduplicateOperation({
-        userId, operationId: body.operationId, operationPayload: { route: "trading/orders", ...body },
+        userId, operationId: body.operationId, operationPayload: { route: "trading/orders", itemId: body.itemId, quantity: body.quantity, price: body.price, type: body.type },
         run: () => storage.createTradingOrder({
           userId,
           itemId: body.itemId,
@@ -81,11 +82,12 @@ export async function tradingRoutes(
       orderId: z.string().uuid(),
       quantity: z.number().int().min(1).max(999999),
       operationId: z.string().max(128).optional(),
-    }).parse(req.body);
+    }).strict().parse((req.body ?? {}) as unknown);
 
     try {
+      await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
       const { result } = await storage.deduplicateOperation({
-        userId, operationId: body.operationId, operationPayload: { route: "trading/buy", ...body },
+        userId, operationId: body.operationId, operationPayload: { route: "trading/buy", orderId: body.orderId, quantity: body.quantity },
         run: () => storage.executeTrade({
           buyerId: userId,
           orderId: body.orderId,
@@ -105,10 +107,11 @@ export async function tradingRoutes(
       return reply.status(401).send({ error: "Unauthorized" });
     }
     
-    const { orderId } = req.params;
-    const operationId = (req.query as any)?.operationId as string | undefined;
+    const { orderId } = z.object({ orderId: z.string().min(1).max(128) }).parse(req.params ?? {});
+    const { operationId } = z.object({ operationId: z.string().min(1).max(128).optional() }).parse(req.query ?? {});
 
     try {
+      await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
       await storage.deduplicateOperation({
         userId, operationId, operationPayload: { route: "trading/orders:delete", orderId },
         run: async () => { await storage.cancelTradingOrder({ userId, orderId }); },

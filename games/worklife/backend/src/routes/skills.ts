@@ -40,7 +40,8 @@ export async function skillsRoutes(
     }
 
     try {
-      await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+      const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+      await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
       const progress = await storage.getPlayerSkillProgress({ userId, professionId });
       return reply.send(progress);
     } catch (error) {
@@ -60,7 +61,8 @@ export async function skillsRoutes(
     }).strict().parse((req.body ?? {}) as unknown);
 
     try {
-      await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+      const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+      await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
       const result = await storage.unlockSkillNode({
         userId,
         professionId: body.professionId,

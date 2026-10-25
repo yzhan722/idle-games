@@ -40,6 +40,11 @@ export function GameChatPanel(props: Props) {
           aria-label="展开聊天"
         >
           <T1Art kind="ui" id="chat" fallback="聊" alt="" />
+          {Object.values(props.unread || {}).reduce((s, n) => s + (n || 0), 0) > 0 && (
+            <span className="unread-badge">
+              {Object.values(props.unread || {}).reduce((s, n) => s + (n || 0), 0)}
+            </span>
+          )}
         </button>
       )}
       <div className="chat-header">
@@ -113,7 +118,7 @@ export function GameChatPanel(props: Props) {
                   className={`chat-message ${msg.isSelf ? "own-message" : ""} ${msg.type === "system" ? "system-message" : ""} ${msg.type === "error" ? "error-message" : ""}`}
                 >
                   <div className="message-header">
-                    {msg.type === "message" ? (
+                    {msg.type === "message" && !msg.isSelf ? (
                       <button
                         className="message-sender sender-btn"
                         type="button"

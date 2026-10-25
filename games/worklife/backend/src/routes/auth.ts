@@ -119,7 +119,7 @@ export async function authRoutes(app: FastifyInstance, storage: Storage) {
 
     if (body.resumeToken) {
       const user = await storage.findUserByResumeTokenHash(hashGuestResumeToken(body.resumeToken));
-      if (!user || user.googleSub) {
+      if (!user || user.googleSub || user.username || user.passwordHash) {
         return reply.status(401).send({ error: "invalid_guest_resume_token" });
       }
       return reply.send({
@@ -145,7 +145,7 @@ export async function authRoutes(app: FastifyInstance, storage: Storage) {
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     const user = await storage.getUser(userId);
     if (!user) return reply.status(401).send({ error: "Unauthorized" });
-    if (user.googleSub) return reply.status(403).send({ error: "guest_resume_unavailable" });
+    if (user.googleSub || user.username || user.passwordHash) return reply.status(403).send({ error: "guest_resume_unavailable" });
     const resumeToken = newGuestResumeToken();
     await storage.setGuestResumeTokenHash(user.id, hashGuestResumeToken(resumeToken));
     return reply.send({

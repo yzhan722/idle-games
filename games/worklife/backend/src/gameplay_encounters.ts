@@ -1,4 +1,6 @@
 /** Project content-pack monsters + stages into UI encounters. Single source: shared JSON. */
+import { mechanicDefsFor } from "./boss_mechanics";
+import type { BossMechanicDef } from "./types";
 
 export type Encounter = {
   id: string;
@@ -17,6 +19,7 @@ export type Encounter = {
   incomingDamageMult?: number;
   outgoingDamageMult?: number;
   mechanics?: string[];
+  mechanicDefs?: BossMechanicDef[];
   desc?: string;
   icon?: string;
   rare?: string;
@@ -27,6 +30,7 @@ type StageIn = { id: string; name: string; monsters: string[] };
 type MonsterIn = Record<string, unknown> & { id: string; name?: string };
 
 export function encounterStages(pack: {
+  bossMechanics?: BossMechanicDef[];
   monsters?: MonsterIn[];
   stages?: StageIn[];
   encounterStages?: Array<{ id: string; name: string; encounters: Encounter[] }>;
@@ -55,6 +59,7 @@ export function encounterStages(pack: {
         map: stage.id,
         actionId: `act_combat_${id}`,
         isBoss,
+        mechanicDefs: mechanicDefsFor(pack, m),
         archetype: String(m.archetype || (isBoss ? "boss" : "ordinary")),
         attackIntervalMs: Number(m.attackIntervalMs || (isBoss ? 2200 : 2400)),
         incomingDamageMult: Number(m.incomingDamageMult || 1),

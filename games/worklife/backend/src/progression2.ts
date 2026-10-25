@@ -17,6 +17,7 @@ import type {
 } from "./types";
 import { ensurePlayerExtensions, appendLog } from "./storage";
 import { defaultCombatSkills } from "./combat_skills";
+import { syncAchievements } from "./progression";
 import { todayLocal } from "./time";
 
 /* ============================ 声望系统 ============================ */
@@ -306,6 +307,7 @@ export function rerollBounties(
   player.stats!.totalGoldSpent += REROLL_COST;
   state.rerollsUsed += 1;
   state.bounties = [...accepted, ...fresh];
+  syncAchievements(player);
   appendLog(player, `刷新了赏金契约板（消耗金币 ${REROLL_COST}）`);
   return { ok: true, cost: REROLL_COST, rerollsLeft: MAX_DAILY_REROLLS - state.rerollsUsed };
 }

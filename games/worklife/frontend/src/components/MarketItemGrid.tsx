@@ -16,12 +16,12 @@ type Props = {
 
 /** MWI tile footer: live market first, shop value as the fallback. */
 function priceLine(quote: MarketQuote | undefined, shopValue: number | undefined) {
-  if (quote && (quote.ask !== undefined || quote.bid !== undefined)) {
+  if (quote && (quote.ask != null || quote.bid != null)) {
     return (
       <span className="inv-tile-value market-quote">
-        {quote.ask !== undefined ? <em className="quote-ask" title={`最低卖价 · ${quote.askQty} 个在售`}>卖 {quote.ask}</em> : <em className="quote-none">无卖单</em>}
+        {quote.ask != null ? <em className="quote-ask" title={`最低卖价 · ${quote.askQty} 个在售`}>卖 {quote.ask}</em> : <em className="quote-none">无卖单</em>}
         {" · "}
-        {quote.bid !== undefined ? <em className="quote-bid" title={`最高收购 · 收 ${quote.bidQty} 个`}>收 {quote.bid}</em> : <em className="quote-none">无收购</em>}
+        {quote.bid != null ? <em className="quote-bid" title={`最高收购 · 收 ${quote.bidQty} 个`}>收 {quote.bid}</em> : <em className="quote-none">无收购</em>}
       </span>
     );
   }

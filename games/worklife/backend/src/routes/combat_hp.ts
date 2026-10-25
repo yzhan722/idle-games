@@ -35,6 +35,14 @@ export async function combatHpRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     const body = z.object({ monsterId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
+    const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
+    if (activeParty?.currentActivity) {
+      if (activeParty.leaderId === userId) {
+        await storage.cancelPartyActivity({ userId, partyId: activeParty.id }).catch(() => undefined);
+      } else {
+        return reply.status(409).send({ error: "already_in_combat", message: "正在组队副本中，请先离开队伍或由队长取消活动" });
+      }
+    }
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now, expectedRevision: body.expectedRevision,
@@ -48,7 +56,6 @@ export async function combatHpRoutes(
             const sameMonsterActiveRepeat =
               state.hpCombat &&
               state.hpCombat.monsterId === body.monsterId &&
-              state.combatLoadout?.autoRepeat &&
               state.hpCombat.nextFightAt &&
               now.getTime() - state.hpCombat.nextFightAt < 30_000;
             const carry = sameMonsterActiveRepeat && state.hpCombat

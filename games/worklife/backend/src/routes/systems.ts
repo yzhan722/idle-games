@@ -44,17 +44,19 @@ export async function systemsRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const state = await storage.getOrCreatePlayerState(userId, ver);
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
     const now = new Date();
+    const state = await storage.getOrCreatePlayerState(userId, ver);
+    const next = await storage.simulateToNow({ userId, state, now, contentPack });
+    const beforeLen = next.activeBuffs?.length || 0;
     pruneExpiredBuffs(next, now);
-    await storage.savePlayerState(userId, next);
+    const saved = (next.activeBuffs?.length || 0) !== beforeLen ? await storage.savePlayerState(userId, next) : next;
     return reply.send({
-      buffs: (next.activeBuffs || []).map((b) => ({
+      buffs: (saved.activeBuffs || []).map((b) => ({
         ...b,
         remainingSec: Math.max(0, Math.floor((Date.parse(b.expiresAt) - now.getTime()) / 1000))
       })),
-      effects: getBuffEffects(next, now)
+      effects: getBuffEffects(saved, now),
+      stateRevision: saved.stateRevision
     });
   });
 
@@ -144,9 +146,11 @@ export async function systemsRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const state = await storage.getOrCreatePlayerState(userId, ver);
+    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
     return reply.send({
       stock: getShopStock(contentPack),
-      gold: state.inventory.gold || 0
+      gold: next.inventory.gold || 0,
+      stateRevision: next.stateRevision
     });
   });
 

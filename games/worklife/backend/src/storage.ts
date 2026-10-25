@@ -557,6 +557,11 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
   const { ensureAbilities } = require("./abilities") as typeof import("./abilities");
   ensureCombatSkills(player);
   ensureAbilities(player);
+  if (!player.combatLoadout) {
+    player.combatLoadout = { food: [], drink: [], autoRepeat: true };
+  } else {
+    player.combatLoadout.autoRepeat = true;
+  }
   return player;
 }
 
@@ -1244,7 +1249,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
 
   // Tick a running fight, or a finished one that auto-repeat is about to restart.
   const hpc = next.hpCombat;
-  const awaitingRepeat = !!(hpc && hpc.outcome && next.combatLoadout?.autoRepeat && hpc.nextFightAt);
+  const awaitingRepeat = !!(hpc && hpc.outcome && hpc.nextFightAt);
   if (hpc && (!hpc.outcome || awaitingRepeat) && timeDiff > 0) {
     const { tickHpCombat } = require("./hp_combat") as typeof import("./hp_combat");
     const processed = tickHpCombat(next, input.contentPack as EnhancedContentPack, input.now, timeDiff, input.rng);
@@ -1512,7 +1517,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
             }
             next.mode = 'idle';
             next.lifeActionState = undefined;
-            finishedAt = new Date(actionStartTime.getTime() + timeCyclesUsed * effectiveDuration);
+            finishedAt = new Date(Math.max(lastSimulated.getTime(), actionStartTime.getTime() + timeCyclesUsed * effectiveDuration));
           }
         } else if (action.consumes && Array.isArray(action.consumes)) {
           // 无限制作：下一轮材料不够就停下（银河奶牛的做法），让队列能接上下一个动作，
@@ -1528,7 +1533,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
             appendLog(next, `材料不足，已停止：${action.name}`);
             next.mode = 'idle';
             next.lifeActionState = undefined;
-            finishedAt = new Date(actionStartTime.getTime() + timeCyclesUsed * effectiveDuration);
+            finishedAt = new Date(Math.max(lastSimulated.getTime(), actionStartTime.getTime() + timeCyclesUsed * effectiveDuration));
           }
         }
 

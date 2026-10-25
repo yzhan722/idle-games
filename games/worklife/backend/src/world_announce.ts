@@ -28,8 +28,9 @@ export function worldAnnouncements(
   const beforeKills = before.stats?.killsByMonster ?? {};
   const afterKills = after.stats?.killsByMonster ?? {};
   for (const m of contentPack.monsters ?? []) {
-    if (!m.isBoss) continue;
     const id = String(m.id ?? "");
+    const isBoss = Boolean(m.isBoss) || id.endsWith("_boss");
+    if (!isBoss) continue;
     if ((beforeKills[id] ?? 0) === 0 && (afterKills[id] ?? 0) > 0) {
       const bossName = String(m.name ?? id).replace(/\(BOSS\)$/i, "");
       out.push(`⚔️ 「${name}」首次击败了「${bossName}」！`);

@@ -92,13 +92,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const persistSession = useCallback((response: { userId: string; token: string; username?: string; resumeToken?: string }) => {
     const prev = localStorage.getItem('worklife_user')
-    const prevUsername = (() => {
-      try { return prev ? JSON.parse(prev).username : undefined } catch { return undefined }
+    const prevParsed = (() => {
+      try { return prev ? JSON.parse(prev) : undefined } catch { return undefined }
     })()
+    const resumeToken = response.resumeToken || prevParsed?.resumeToken
     const userData: User = {
       id: response.userId,
       token: response.token,
-      username: response.username || prevUsername,
+      username: response.username || prevParsed?.username,
+      ...(resumeToken ? { resumeToken } : {}),
+    }
+    if (resumeToken) {
+      localStorage.setItem('worklife_guest_resume_token', resumeToken)
+      localStorage.setItem('guest_resume_token', resumeToken)
     }
     apiClient.setToken(userData.token)
     localStorage.setItem('worklife_user', JSON.stringify(userData))
@@ -128,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     apiClient.setToken('')
     localStorage.removeItem('worklife_user')
     localStorage.removeItem('worklife_guest_resume_token')
+    localStorage.removeItem('guest_resume_token')
   }, [])
 
   // 注册全局 401 处理：会话失效时回到账号登录页

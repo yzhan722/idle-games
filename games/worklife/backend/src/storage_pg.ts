@@ -46,6 +46,7 @@ import {
   professionLevelForTree,
   CRAFT_SKILL_BY_PROFESSION,
   UsernameTaken,
+  isDurabilityBroken,
 } from "./storage";
 import { enhancementRequestUserColumn } from "./sql_identifiers";
 import { isStageOpen } from "./zones";
@@ -791,6 +792,8 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         if (providerId && providerState && serviceFee > 0) {
           st.inventory.gold = (st.inventory.gold || 0) - serviceFee;
           providerState.inventory.gold = (providerState.inventory.gold || 0) + serviceFee;
+          if (st.stats) st.stats.totalGoldSpent = (st.stats.totalGoldSpent || 0) + serviceFee;
+          if (providerState.stats) providerState.stats.totalGoldEarned = (providerState.stats.totalGoldEarned || 0) + serviceFee;
           appendLog(providerState, `提供强化服务获得 ${serviceFee} 金币`);
           await txPersistState(client, providerId, providerState, providerLoaded!.contentVersion);
         }
@@ -1559,6 +1562,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       }
 
       st.inventory.gold = (st.inventory.gold || 0) - cost;
+      if (st.stats) st.stats.totalGoldSpent = (st.stats.totalGoldSpent || 0) + cost;
       st.equipment.durability[request.itemId] = targetDurability;
       appendLog(st, `修复装备：${request.itemId}，耐久度 ${oldDurability} -> ${targetDurability}，花费 ${cost} 金币`);
       await persistState(userId, st);
@@ -1643,6 +1647,8 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       for (const [slot, itemId] of Object.entries(st.equipment)) {
         if (!itemId || typeof itemId !== 'string') continue;
         if (['enhancementLevels', 'durability', 'maxDurability', 'tool'].includes(slot)) continue;
+        if ((st.inventory?.[itemId] || 0) <= 0) continue;
+        if (isDurabilityBroken(st, itemId)) continue;
 
         const item = (contentPack.items as any[]).find(i => i.id === itemId);
         if (!item) continue;
@@ -1659,6 +1665,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
           if (item.atk) enhancementStats.atk = (enhancementStats.atk || 0) + item.atk * bonus;
           if (item.def) enhancementStats.def = (enhancementStats.def || 0) + item.def * bonus;
           if (item.mag) enhancementStats.mag = (enhancementStats.mag || 0) + item.mag * bonus;
+          if (item.hp) enhancementStats.hp = (enhancementStats.hp || 0) + item.hp * bonus;
         }
       }
 
@@ -1686,7 +1693,13 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         let equippedPieces = 0;
         for (const piece of set.pieces) {
           const equippedItem = st.equipment[piece.slot as keyof typeof st.equipment];
-          if (equippedItem === piece.itemId) equippedPieces++;
+          if (
+            equippedItem === piece.itemId &&
+            (st.inventory?.[piece.itemId] || 0) > 0 &&
+            !isDurabilityBroken(st, piece.itemId)
+          ) {
+            equippedPieces++;
+          }
         }
         if (equippedPieces === 0) continue;
 

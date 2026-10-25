@@ -47,8 +47,7 @@ export async function progression2Routes(
 
     const state = await storage.getOrCreatePlayerState(userId, ver);
     const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-    await storage.savePlayerState(userId, next);
-    return reply.send(getReputationInfo(next));
+    return reply.send({ ...getReputationInfo(next), stateRevision: next.stateRevision });
   });
 
   /* ----------------------- 赏金契约 ----------------------- */
@@ -59,9 +58,10 @@ export async function progression2Routes(
 
     const state = await storage.getOrCreatePlayerState(userId, ver);
     const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
+    const hadBounties = Boolean(next.bounties);
     const info = getBountyInfo(next); // ensureBounties 可能初始化契约板
-    await storage.savePlayerState(userId, next);
-    return reply.send(info);
+    const saved = !hadBounties ? await storage.savePlayerState(userId, next) : next;
+    return reply.send({ ...info, stateRevision: saved.stateRevision });
   });
 
   app.post("/progression2/bounties/accept", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -126,8 +126,7 @@ export async function progression2Routes(
 
     const state = await storage.getOrCreatePlayerState(userId, ver);
     const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-    await storage.savePlayerState(userId, next);
-    return reply.send(getPrestigeInfo(next));
+    return reply.send({ ...getPrestigeInfo(next), stateRevision: next.stateRevision });
   });
 
   app.post("/progression2/prestige", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -135,6 +134,10 @@ export async function progression2Routes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const body = z.object({ ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
+    const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
+    if (activeParty?.currentActivity) {
+      return reply.status(409).send({ error: "in_combat", message: "正在组队副本中，请先停止战斗再转生" });
+    }
     try {
       const outcome = await runCommand(userId, body, (state) => {
         const res = doPrestige(state);

@@ -147,21 +147,22 @@ function formatPct(v: number): string {
   return `${(v * 100).toFixed(v * 100 < 10 ? 1 : 0)}%`;
 }
 
-function statPreview(item: ItemDef, level: number): string[] {
-  const mult = enhancementStatMultiplier(level, item);
+function statPreview(item: ItemDef, currentLevel: number, nextLevel: number): string[] {
+  const curMult = enhancementStatMultiplier(currentLevel, item);
+  const nextMult = enhancementStatMultiplier(nextLevel, item);
   const out: string[] = [];
   const stat = (label: string, value: number | undefined) => {
     if (!value) return;
-    out.push(`${label} ${value} → ${Math.round(value * mult * 10) / 10}`);
+    out.push(`${label} ${Math.round(value * curMult * 10) / 10} → ${Math.round(value * nextMult * 10) / 10}`);
   };
   stat("攻击", item.atk);
   stat("魔法", item.mag);
   stat("防御", item.def);
   stat("生命", item.hp);
   if (item.toolSpeed) {
-    out.push(`工具速度 +${Math.round(item.toolSpeed * 100)}% → +${Math.round(item.toolSpeed * mult * 1000) / 10}%`);
+    out.push(`工具速度 +${Math.round(item.toolSpeed * curMult * 1000) / 10}% → +${Math.round(item.toolSpeed * nextMult * 1000) / 10}%`);
   } else if (item.enhanceSuccess) {
-    out.push(`强化成功率 +${Math.round(item.enhanceSuccess * 1000) / 10}% → +${Math.round(item.enhanceSuccess * mult * 10000) / 100}%`);
+    out.push(`强化成功率 +${Math.round(item.enhanceSuccess * curMult * 10000) / 100}% → +${Math.round(item.enhanceSuccess * nextMult * 10000) / 100}%`);
   }
   return out;
 }
@@ -517,7 +518,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                     +{info.currentStatBonusPct}% → +{info.nextStatBonusPct}%
                   </strong>
                 </div>
-                {statPreview(item, info.currentLevel + 1).map((line) => (
+                {statPreview(item, info.currentLevel, info.currentLevel + 1).map((line) => (
                   <span key={line}>{line}</span>
                 ))}
               </div>
@@ -680,7 +681,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                   </small>
                 </div>
                 <span className="svc-actions">
-                  <button type="button" className="qty-chip" disabled={serviceBusy} onClick={() => handleRespondService(r, true)}>接单</button>
+                  <button type="button" className="qty-chip" disabled={serviceBusy || combatLocked || runActive} onClick={() => handleRespondService(r, true)}>接单</button>
                   <button type="button" className="qty-chip" disabled={serviceBusy} onClick={() => handleRespondService(r, false)}>拒绝</button>
                 </span>
               </div>
@@ -743,7 +744,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                     ? "不可委托自己"
                     : Number(playerState?.inventory?.gold || 0) < p.serviceFee
                       ? `金币不足（需 ${p.serviceFee}）`
-                      : `委托 → +${info.currentLevel + 1}`}
+                      : `委托 → +${targetLevel ?? info.currentLevel + 1}`}
                 </button>
               </div>
             ))

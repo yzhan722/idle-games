@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GoldIcon, T1ItemIcon } from "./T1Art";
+import { enhancementStatMultiplier } from "../gameplay/enhancement";
 
 export type InventoryRow = {
   itemId: string;
@@ -62,7 +63,7 @@ export function formatGold(n: number): string {
 
 function quickStatLine(pack: PackItem | undefined, enh = 0): string {
   if (!pack) return "";
-  const mult = enh > 0 ? 1 + enh * 0.05 : 1;
+  const mult = enhancementStatMultiplier(enh, pack);
   if (pack.toolSpeed) return `速度 +${Math.round(Number(pack.toolSpeed) * mult * 100)}%`;
   const parts: string[] = [];
   if (pack.atk) parts.push(`攻+${Math.round(pack.atk * mult)}`);
@@ -102,6 +103,22 @@ export function InventoryPage(props: Props) {
         return b.tier - a.tier || a.name.localeCompare(b.name, "zh-CN");
       });
   }, [props.rows, search, sortBy, packById]);
+
+  const unfilteredCounts = useMemo(() => {
+    const out = new Map<GroupId, number>();
+    for (const r of props.rows) {
+      if (r.count <= 0) continue;
+      const g = groupOf(r, packById.get(r.itemId));
+      out.set(g, (out.get(g) || 0) + 1);
+    }
+    return out;
+  }, [props.rows, packById]);
+
+  useEffect(() => {
+    if (group !== "all" && (unfilteredCounts.get(group) || 0) === 0) {
+      setGroup("all");
+    }
+  }, [group, unfilteredCounts]);
 
   const grouped = useMemo(() => {
     const out = new Map<GroupId, InventoryRow[]>();
@@ -149,9 +166,9 @@ export function InventoryPage(props: Props) {
               aria-selected={group === g.id}
               className={`qty-chip${group === g.id ? " active" : ""}`}
               onClick={() => setGroup(g.id)}
-              disabled={(grouped.get(g.id)?.length || 0) === 0 && group !== g.id}
+              disabled={(unfilteredCounts.get(g.id) || 0) === 0 && group !== g.id}
             >
-              {g.emoji} {g.title} {grouped.get(g.id)?.length || 0}
+              {g.emoji} {g.title} {search.trim() ? (grouped.get(g.id)?.length || 0) : (unfilteredCounts.get(g.id) || 0)}
             </button>
           ))}
         </div>

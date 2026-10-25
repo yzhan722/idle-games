@@ -153,9 +153,13 @@ function StatBox(props: {
         {props.label}
       </span>
       <strong className="sheet-stat-value">{props.displayValue ?? props.value}</strong>
-      {delta !== null && !props.displayValue && (
+      {delta !== null && (
         <span className={`sheet-stat-delta ${isPositiveGood ? "up" : "down"}`}>
-          {delta > 0 ? `+${delta}` : `${delta}`}
+          {props.invertDelta
+            ? `${delta > 0 ? "+" : ""}${(delta / 1000).toFixed(2)}s`
+            : delta > 0
+            ? `+${delta}`
+            : `${delta}`}
         </span>
       )}
     </div>

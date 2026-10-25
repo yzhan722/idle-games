@@ -1,5 +1,6 @@
 import type { Storage } from "./storage";
 import type { EnhancedContentPack, Party } from "./types";
+import { defaultCombatSkills } from "./combat_skills";
 
 export interface PartyBotProfile {
   deviceId: string;
@@ -231,7 +232,8 @@ export async function ensurePresetParties(
 ): Promise<void> {
   const existingPromise = seededStorages.get(storage);
   if (existingPromise) {
-    await existingPromise;
+    await existingPromise.catch(() => undefined);
+    return;
   }
 
   const run = (async () => {
@@ -245,7 +247,7 @@ export async function ensurePresetParties(
 
       const st = await storage.getOrCreatePlayerState(user.id, version);
       const curName = st.settings?.playerName;
-      if (curName !== profile.name) {
+      if (curName !== profile.name || st.combatLevel !== profile.combatLevel) {
         await storage.executePlayerCommand({
           userId: user.id,
           now: new Date(),
@@ -253,6 +255,7 @@ export async function ensurePresetParties(
           apply: (state) => {
             state.activeClassId = profile.classId;
             state.combatLevel = profile.combatLevel;
+            state.combatSkills = defaultCombatSkills(profile.combatLevel);
             state.settings = {
               soundEnabled: true,
               animationsEnabled: true,
@@ -326,8 +329,7 @@ export async function ensureHumanLeaderIfBotParty(
   const leaderIsBotOrOffline =
     isPartyBotUserId(party.leaderId) ||
     !leaderMember ||
-    !leaderMember.isOnline ||
-    isGarbledOrDefaultName(leaderMember.displayName);
+    !leaderMember.isOnline;
 
   if (leaderIsBotOrOffline) {
     const res = await storage
@@ -441,7 +443,7 @@ export async function simulateBotPartyContributions(
   const elapsedMinutes = Math.max(1, Math.floor(elapsedMs / 30_000));
 
   for (const m of party.members) {
-    const isBot = isPartyBotUserId(m.userId) || !m.isOnline;
+    const isBot = isPartyBotUserId(m.userId);
     if (!isBot) continue;
 
     const base = activity.baseline?.[m.userId];
@@ -495,8 +497,8 @@ export function enrichPartyForClient(party: Party | null, currentUserId?: string
       ...m,
       displayName,
       title: botProfile?.title || (isBot ? "协战冒险者" : undefined),
-      classId: botProfile?.classId || fallbackClasses[idx % fallbackClasses.length],
-      gender: botProfile?.gender || (idx % 2 === 0 ? "male" : "female"),
+      classId: botProfile?.classId || (m as any).classId || fallbackClasses[idx % fallbackClasses.length],
+      gender: botProfile?.gender || (m as any).gender || (idx % 2 === 0 ? "male" : "female"),
       combatLevel: botProfile?.combatLevel || Math.max(1, Number((m as any).combatLevel || 8)),
       isBot,
       isOnline: isBot ? true : Boolean(m.isOnline),

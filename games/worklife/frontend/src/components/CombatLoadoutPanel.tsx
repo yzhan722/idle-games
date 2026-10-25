@@ -75,7 +75,7 @@ export function CombatLoadoutPanel(props: Props) {
   const drinks = owned((i) => !!i.effect?.buff);
   const defaultTrigger = Math.max(1, Math.round(props.playerMaxHp * 0.5));
   const maxMp = Math.max(20, props.playerMaxMp || 50);
-  const defaultMpTrigger = Math.max(1, Math.round(maxMp * 0.4));
+  const defaultMpTrigger = Math.max(1, Math.round(maxMp * 0.5));
   const describeBuff = (d?: PackItem) => {
     const b = d?.effect?.buff;
     if (!b) return "";
@@ -94,8 +94,14 @@ export function CombatLoadoutPanel(props: Props) {
   };
   const setFood = (i: number, itemId: string, trigger?: number) => {
     const food = [...lo.food];
-    if (!itemId) food.splice(i, 1);
-    else food[i] = { itemId, triggerMissingHp: trigger ?? food[i]?.triggerMissingHp ?? defaultTrigger };
+    if (!itemId) {
+      food.splice(i, 1);
+    } else {
+      const dup = food.findIndex((f, j) => j !== i && f?.itemId === itemId);
+      const entry = { itemId, triggerMissingHp: trigger ?? food[i]?.triggerMissingHp ?? defaultTrigger };
+      if (dup >= 0) food[dup] = food[i];
+      food[i] = entry;
+    }
     update({ food: food.filter(Boolean) });
   };
   const setMp = (itemId: string, trigger?: number) => {
@@ -104,8 +110,13 @@ export function CombatLoadoutPanel(props: Props) {
   };
   const setDrink = (i: number, itemId: string) => {
     const drink = [...lo.drink];
-    if (!itemId) drink.splice(i, 1);
-    else drink[i] = { itemId };
+    if (!itemId) {
+      drink.splice(i, 1);
+    } else {
+      const dup = drink.findIndex((d, j) => j !== i && d?.itemId === itemId);
+      if (dup >= 0) drink[dup] = drink[i];
+      drink[i] = { itemId };
+    }
     update({ drink: drink.filter(Boolean) });
   };
 
@@ -251,18 +262,18 @@ export function CombatLoadoutPanel(props: Props) {
       </label>
       {(lo.food.length > 0 || (lo.mp?.length || 0) > 0 || lo.drink.length > 0) && (
         <div className="loadout-summary">
-          {lo.food.map((f) => {
+          {lo.food.map((f, idx) => {
             const d = props.items?.find((x) => x.id === f.itemId);
             return (
-              <span className="loadout-chip" key={`c-${f.itemId}`}>
+              <span className="loadout-chip" key={`c-${f.itemId}-${idx}`}>
                 <T1ItemIcon itemId={f.itemId} fallback={props.iconOf(f.itemId)} alt="" /> {d?.name || f.itemId} · 缺血 {f.triggerMissingHp} 时喝
               </span>
             );
           })}
-          {(lo.mp || []).map((m) => {
+          {(lo.mp || []).map((m, idx) => {
             const d = props.items?.find((x) => x.id === m.itemId);
             return (
-              <span className="loadout-chip" key={`m-${m.itemId}`}>
+              <span className="loadout-chip" key={`m-${m.itemId}-${idx}`}>
                 <T1ItemIcon itemId={m.itemId} fallback={props.iconOf(m.itemId)} alt="" /> {d?.name || m.itemId} · 缺蓝 {m.triggerMissingMp} 时喝
               </span>
             );

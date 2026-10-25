@@ -17,6 +17,7 @@ export const ENHANCEMENT_BASE_SUCCESS = [
   0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
 ] as const;
 
+import { syncAchievements } from "./progression";
 export const MAX_ENHANCEMENT_LEVEL = 20;
 export const PROTECTION_MIRROR_ID = "mirror_protection";
 
@@ -191,6 +192,8 @@ export function enhancementMaterials(
 export function equippedEnhanceToolBonus(player: EnhancedPlayerState, pack: EnhancedContentPack): number {
   const toolId = player.equipment?.tool;
   if (!toolId) return 0;
+  // 背包里不存在该工具时不生效（防幽灵装备槽）
+  if ((player.inventory?.[toolId] || 0) <= 0) return 0;
   // 损坏的工具不提供帮助（耐久语义与幽灵槽一致）
   const dur = (player.equipment as { durability?: Record<string, number> }).durability?.[toolId];
   if (typeof dur === "number" && Number.isFinite(dur) && dur <= 0) return 0;
@@ -201,13 +204,7 @@ export function equippedEnhanceToolBonus(player: EnhancedPlayerState, pack: Enha
 }
 
 export function ownsEnhanceableItem(player: EnhancedPlayerState, itemId: string): boolean {
-  if ((player.inventory[itemId] || 0) > 0) return true;
-  return Object.entries(player.equipment || {}).some(
-    ([slot, value]) =>
-      !["enhancementLevels", "durability", "maxDurability"].includes(slot) &&
-      typeof value === "string" &&
-      value === itemId
-  );
+  return (player.inventory?.[itemId] || 0) > 0;
 }
 
 type AttemptInput = {
@@ -302,7 +299,11 @@ export function performEnhancementAttempt(input: AttemptInput): EnhancementResul
   if (player.stats) {
     player.stats.totalEnhancements = (player.stats.totalEnhancements || 0) + 1;
     player.stats.totalXpEarned = (player.stats.totalXpEarned || 0) + xpGained;
+    if (materials.gold && materials.gold > 0) {
+      player.stats.totalGoldSpent = (player.stats.totalGoldSpent || 0) + materials.gold;
+    }
   }
+  syncAchievements(player);
 
   return {
     success,

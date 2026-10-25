@@ -66,6 +66,7 @@ export function PrestigePanel({
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      apiClient.clearCache();
       const res: any = await apiClient.getPrestige();
       setInfo(res);
     } catch (e) {
@@ -83,6 +84,7 @@ export function PrestigePanel({
     setBusy(true);
     try {
       const res: any = await apiClient.doPrestige();
+      apiClient.clearCache();
       toast.success(`转生成功！获得 ${res.gainedPoints} 转生点，全局收益 +${Math.round((res.multiplier - 1) * 100)}%`);
       setConfirming(false);
       onChange?.();

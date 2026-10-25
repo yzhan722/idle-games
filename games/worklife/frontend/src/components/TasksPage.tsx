@@ -134,7 +134,10 @@ export function TasksPage(props: Props) {
 
   const remaining = Date.parse(board.nextTaskAt) - now;
   const boardFull = board.tasks.length >= board.slots;
-  const giftPct = Math.min(100, Math.max(0, ((board.points % Math.max(1, board.giftPoints)) / Math.max(1, board.giftPoints)) * 100));
+  const giftStep = Math.max(1, board.giftPoints);
+  const unspentGiftPts = Math.max(0, (board.points || 0) - ((board as any).giftsClaimed || 0) * giftStep);
+  const shownGiftPts = board.giftReady ? giftStep : Math.min(giftStep, unspentGiftPts % giftStep);
+  const giftPct = Math.min(100, Math.max(0, (shownGiftPts / giftStep) * 100));
 
   return (
     <div className="tasks-page skill-page" data-skill-page="tasks">
@@ -158,7 +161,7 @@ export function TasksPage(props: Props) {
               领取
             </button>
           ) : (
-            <small>{board.points % Math.max(1, board.giftPoints)}/{Math.max(1, board.giftPoints)} ({Math.floor(giftPct)}%)</small>
+            <small>{shownGiftPts}/{giftStep} ({Math.floor(giftPct)}%)</small>
           )}
         </span>
       </div>

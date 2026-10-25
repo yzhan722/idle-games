@@ -196,11 +196,14 @@ export function CombatPotionBar(props: Props) {
       nextFood.splice(slotIdx, 1);
     } else {
       const dup = nextFood.findIndex((f, i) => i !== slotIdx && f?.itemId === itemId);
-      nextFood[slotIdx] = {
+      const entry = {
         itemId,
         triggerMissingHp: nextFood[slotIdx]?.triggerMissingHp ?? defaultHpTrigger,
       };
-      if (dup >= 0) nextFood.splice(dup, 1);
+      if (dup >= 0) {
+        nextFood[dup] = nextFood[slotIdx];
+      }
+      nextFood[slotIdx] = entry;
     }
     commitLoadout({ ...lo, food: nextFood.filter(Boolean) });
   };
@@ -223,8 +226,10 @@ export function CombatPotionBar(props: Props) {
       nextDrink.splice(slotIdx, 1);
     } else {
       const dup = nextDrink.findIndex((d, i) => i !== slotIdx && d?.itemId === itemId);
+      if (dup >= 0) {
+        nextDrink[dup] = nextDrink[slotIdx];
+      }
       nextDrink[slotIdx] = { itemId };
-      if (dup >= 0) nextDrink.splice(dup, 1);
     }
     commitLoadout({ ...lo, drink: nextDrink.filter(Boolean) });
   };

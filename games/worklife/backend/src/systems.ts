@@ -14,6 +14,8 @@ import type {
   CheckInState
 } from "./types";
 import { appendLog, getBuffEffects, pruneExpiredBuffs } from "./storage";
+import { EQUIP_SLOT_KEYS } from "./equipment_equip";
+import { syncAchievements } from "./progression";
 import { todayLocal as todayLocalImpl, dayDiff } from "./time";
 
 // 重新导出供路由层使用
@@ -209,6 +211,7 @@ export function doCheckIn(player: EnhancedPlayerState, now: Date = new Date()): 
   if (player.stats) player.stats.totalGoldEarned += reward.gold;
 
   player.checkIn = st;
+  syncAchievements(player);
   const itemText = Object.entries(reward.items).map(([k, v]) => `${k} x${v}`).join("、");
   appendLog(player, `每日签到成功（连续${st.streak}天）：获得金币 ${reward.gold}${itemText ? "、" + itemText : ""}`);
 
@@ -341,6 +344,7 @@ export function buyFromShop(
   player.inventory["gold"] = gold - total;
   player.inventory[itemId] = (player.inventory[itemId] || 0) + qty;
   if (player.stats) { player.stats.totalGoldSpent += total; player.stats.totalTrades = (player.stats.totalTrades || 0) + 1; }
+  syncAchievements(player);
   appendLog(player, `从商店购买 ${def.name} x${qty}，花费金币 ${total}`);
 
   return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };
@@ -359,9 +363,14 @@ export function sellToShop(
   if (!def) return { ok: false, reason: "物品不存在" };
   const have = player.inventory[itemId] || 0;
   if (have < qty) return { ok: false, reason: "库存不足" };
-  // 装备槽存的是物品 id 引用：卖掉仍穿着的装备会留下幽灵槽（属性照算、背包却没有）。
+  // 装备槽存的是物品 id 引用：仅当剩余库存少于当前已穿戴份数时阻止出售（允许卖掉多余闲置副本）。
   const eq = player.equipment as Record<string, unknown> | undefined;
-  if (eq && Object.values(eq).includes(itemId)) return { ok: false, reason: "装备中的物品不能出售" };
+  const equippedCopies = eq
+    ? EQUIP_SLOT_KEYS.filter((slot) => eq[slot] === itemId).length
+    : 0;
+  if (equippedCopies > 0 && have - qty < equippedCopies) {
+    return { ok: false, reason: "装备中的物品不能出售" };
+  }
 
   const unit = sellPrice(def);
   const total = unit * qty;
@@ -369,6 +378,7 @@ export function sellToShop(
   if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
   player.inventory["gold"] = (player.inventory["gold"] || 0) + total;
   if (player.stats) { player.stats.totalGoldEarned += total; player.stats.totalTrades = (player.stats.totalTrades || 0) + 1; }
+  syncAchievements(player);
   appendLog(player, `向商店出售 ${def.name} x${qty}，获得金币 ${total}`);
 
   return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };

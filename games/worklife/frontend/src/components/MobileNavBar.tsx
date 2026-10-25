@@ -45,7 +45,15 @@ export function MobileNavBar(props: Props) {
     Object.entries(props.badges || {}).reduce((sum, [id, n]) => sum + (mobileGroupForTab(id) === g ? n || 0 : 0), 0);
 
   const onGroup = (g: MobileNavGroup) => {
-    if (g.id === "combat") { props.onOpenSheet(null); props.onSelect("adventure"); return; }
+    if (g.id === "combat") {
+      if (props.lockedIds?.has("adventure")) {
+        props.onLocked?.("adventure");
+        return;
+      }
+      props.onOpenSheet(null);
+      props.onSelect("adventure");
+      return;
+    }
     if (g.id === "character") { props.onOpenSheet(null); props.onSelect("character"); return; }
     props.onOpenSheet(props.openSheet === g.id ? null : g.id);
   };

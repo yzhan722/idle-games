@@ -89,11 +89,11 @@ export async function progressionRoutes(
     const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
     const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
     const newlyUnlocked = syncAchievements(next);
-    await storage.savePlayerState(userId, next);
+    const saved = newlyUnlocked.length > 0 ? await storage.savePlayerState(userId, next) : next;
 
     const list = ACHIEVEMENTS.map((def) => {
-      const prog = next.achievements?.[def.id];
-      const current = (next.stats?.[def.metric] as number) || 0;
+      const prog = saved.achievements?.[def.id];
+      const current = (saved.stats?.[def.metric] as number) || 0;
       return {
         ...def,
         progress: Math.min(current, def.target),
@@ -106,7 +106,8 @@ export async function progressionRoutes(
 
     return reply.send({
       achievements: list,
-      newlyUnlocked: newlyUnlocked.map((d) => ({ id: d.id, name: d.name, icon: d.icon }))
+      newlyUnlocked: newlyUnlocked.map((d) => ({ id: d.id, name: d.name, icon: d.icon })),
+      stateRevision: saved.stateRevision
     });
   });
 
@@ -146,14 +147,13 @@ export async function progressionRoutes(
     const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
     const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
     const daily = ensureDailyQuests(next);
-    await storage.savePlayerState(userId, next);
 
     const quests = daily.quests.map((q) => ({
       ...q,
       progress: dailyProgress(next.stats!, q),
       completed: dailyProgress(next.stats!, q) >= q.target
     }));
-    return reply.send({ date: daily.date, quests });
+    return reply.send({ date: daily.date, quests, stateRevision: next.stateRevision });
   });
 
   // 领取每日任务奖励
@@ -251,13 +251,13 @@ export async function progressionRoutes(
         };
       }
     }
-    await storage.savePlayerState(userId, state);
+    const saved = await storage.savePlayerState(userId, state);
     // 建号落库瞬间全服播报新村民
     if (justCreated) {
-      const name = state.settings.playerName || `玩家_${userId.slice(0, 6)}`;
+      const name = saved.settings?.playerName || `玩家_${userId.slice(0, 6)}`;
       storage.announceWorld?.(`🌱 欢迎新村民「${name}」来到异世界打工！`);
     }
-    return reply.send({ ok: true, settings: state.settings, inventory: state.inventory, combatLoadout: state.combatLoadout });
+    return reply.send({ ok: true, settings: saved.settings, inventory: saved.inventory, combatLoadout: saved.combatLoadout, stateRevision: saved.stateRevision });
   });
 
   // 加密存档导出（AES-256-GCM 密文，禁止明文 JSON）
@@ -307,10 +307,10 @@ export async function progressionRoutes(
       userId,
       partyState: current.partyState,
       partyInvites: current.partyInvites,
-      stateRevision: (current.stateRevision || 0) + 1,
+      stateRevision: current.stateRevision,
       lastSimulatedAt: new Date().toISOString(),
     };
-    await storage.savePlayerState(userId, restored as any);
-    return reply.send({ ok: true, state: restored });
+    const saved = await storage.savePlayerState(userId, restored as any);
+    return reply.send({ ok: true, state: saved, stateRevision: saved.stateRevision });
   });
 }

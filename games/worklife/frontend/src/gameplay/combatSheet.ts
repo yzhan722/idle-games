@@ -24,6 +24,8 @@ type PackItem = {
 
 type Equipment = Record<string, unknown> & {
   enhancementLevels?: Record<string, number>;
+  durability?: Record<string, number>;
+  maxDurability?: Record<string, number>;
 };
 
 export type CombatSkillKey = "stamina" | "intelligence" | "attack" | "defense" | "melee" | "ranged" | "magic";
@@ -36,6 +38,7 @@ type State = {
   combatSkills?: SkillLevels;
   chapter1Build?: "sharpened_edge" | "thick_bark";
   equipment?: Equipment;
+  inventory?: Record<string, number>;
   activeBuffs?: Array<{
     expiresAt: string;
     stats?: { atk?: number; def?: number };
@@ -99,17 +102,27 @@ export type PackEquipmentSet = {
   id: string;
   name?: string;
   pieces?: Array<{ slot: string; itemId: string }>;
-  bonuses?: Array<{ requiredPieces?: number; stats?: { atk?: number; def?: number }; description?: string }>;
+  bonuses?: Array<{ requiredPieces?: number; stats?: { atk?: number; def?: number; hp?: number }; description?: string }>;
 };
 
-export type ActiveSetBonus = { setId: string; name: string; pieces: number; atk: number; def: number; description?: string };
+export type ActiveSetBonus = { setId: string; name: string; pieces: number; atk: number; def: number; hp?: number; description?: string };
 
 /** Mirror of the set-bonus half of backend getEquippedCombatStats. */
-export function activeSetBonuses(eq: Equipment | undefined, sets: PackEquipmentSet[] | undefined): ActiveSetBonus[] {
+export function activeSetBonuses(
+  eq: Equipment | undefined,
+  sets: PackEquipmentSet[] | undefined,
+  inventory?: Record<string, number>
+): ActiveSetBonus[] {
   if (!eq || !sets?.length) return [];
   const out: ActiveSetBonus[] = [];
   for (const set of sets) {
-    const pieces = (set.pieces || []).filter((p) => eq[p.slot] === p.itemId).length;
+    const pieces = (set.pieces || []).filter((p) => {
+      if (eq[p.slot] !== p.itemId) return false;
+      if (inventory && (inventory[p.itemId] || 0) <= 0) return false;
+      const dur = eq.durability?.[p.itemId];
+      if (typeof dur === "number" && Number.isFinite(dur) && dur <= 0) return false;
+      return true;
+    }).length;
     // Mirror of backend set_bonus.highestActiveBonus: the pack words each tier as a total, so only
     // the highest satisfied tier applies (summing every tier inflated top sets by 1.5–1.75×).
     let top: NonNullable<PackEquipmentSet["bonuses"]>[number] | undefined;
@@ -120,8 +133,9 @@ export function activeSetBonuses(eq: Equipment | undefined, sets: PackEquipmentS
     }
     const atk = Number(top?.stats?.atk || 0);
     const def = Number(top?.stats?.def || 0);
+    const hp = Number(top?.stats?.hp || 0);
     const description = top?.description;
-    if (atk || def) out.push({ setId: set.id, name: set.name || set.id, pieces, atk, def, description });
+    if (atk || def || hp) out.push({ setId: set.id, name: set.name || set.id, pieces, atk, def, ...(hp ? { hp } : {}), description });
   }
   return out;
 }
@@ -135,12 +149,16 @@ export function combatSheetFromPack(
   const extras = (state?.chapter1Build && BUILD[state.chapter1Build]) || { atk: 0, hp: 0, def: 0 };
   let gearAtk = 0;
   let gearDef = 0;
+  let gearHp = 0;
   const eq = state?.equipment;
   if (eq && items?.length) {
     for (const [slot, itemId] of Object.entries(eq)) {
       if (typeof itemId !== "string") continue;
       // the tool slot is skilling-only (mirrors backend getEquippedCombatStats)
       if (slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability" || slot === "tool") continue;
+      if (state?.inventory && (state.inventory[itemId] || 0) <= 0) continue;
+      const dur = eq.durability?.[itemId];
+      if (typeof dur === "number" && Number.isFinite(dur) && dur <= 0) continue;
       const item = items.find((i) => i.id === itemId);
       if (!item) continue;
       const enh = eq.enhancementLevels?.[itemId] || 0;
@@ -148,12 +166,14 @@ export function combatSheetFromPack(
       if (item.atk) gearAtk += Number(item.atk) * mult;
       if (item.mag) gearAtk += Number(item.mag) * mult; // staffs carry damage as mag (mirrors backend)
       if (item.def) gearDef += Number(item.def) * mult;
+      if (item.hp) gearHp += Number(item.hp) * mult;
     }
   }
   // Backend rounds gear+set totals together (Math.round), so do the same here.
-  for (const bonus of activeSetBonuses(eq, sets)) {
+  for (const bonus of activeSetBonuses(eq, sets, state?.inventory)) {
     gearAtk += bonus.atk;
     gearDef += bonus.def;
+    if (bonus.hp) gearHp += bonus.hp;
   }
   const unbuffedAtk = skills.atk + Math.round(gearAtk) + extras.atk;
   const unbuffedDef = skills.def + Math.round(gearDef) + extras.def;
@@ -169,7 +189,7 @@ export function combatSheetFromPack(
   if (buffAtk > 0) buffAtk = Math.min(buffAtk, Math.max(2, Math.floor(unbuffedAtk * 0.4)));
   if (buffDef > 0) buffDef = Math.min(buffDef, Math.max(2, Math.floor(unbuffedDef * 0.4 + 4)));
   return {
-    hp: skills.hp + extras.hp,
+    hp: skills.hp + Math.round(gearHp) + extras.hp,
     atk: unbuffedAtk + buffAtk,
     def: unbuffedDef + buffDef,
     intervalMs: skills.intervalMs,
@@ -181,6 +201,12 @@ export function combatSheetFromPack(
 export function equippedWeaponAtk(state: State | null | undefined, items: PackItem[] | undefined): number {
   const id = state?.equipment?.main_hand;
   if (typeof id !== "string" || !items) return 0;
+  if (state?.inventory && (state.inventory[id] || 0) <= 0) return 0;
+  const dur = state?.equipment?.durability?.[id];
+  if (typeof dur === "number" && Number.isFinite(dur) && dur <= 0) return 0;
   const item = items.find((i) => i.id === id);
-  return Number(item?.atk || 0);
+  if (!item) return 0;
+  const enh = state?.equipment?.enhancementLevels?.[id] || 0;
+  const mult = enhancementStatMultiplier(enh, item);
+  return Math.round((Number(item.atk || 0) + Number(item.mag || 0)) * mult);
 }

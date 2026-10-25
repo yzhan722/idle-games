@@ -4,6 +4,7 @@ export type PackItem = {
   id: string;
   name?: string;
   atk?: number;
+  mag?: number;
   def?: number;
   hp?: number;
   type?: string;
@@ -16,10 +17,16 @@ export function craftWhy(
 ): string {
   if (!item) return "做成之后会进背包。";
   if (item.id === "lumber_1") return "用于木头短剑。两根原木换一块。";
-  if (item.atk) {
-    const without = opts.outputEquipped ? sheet.atk - Number(item.atk) : sheet.atk - opts.equippedMainAtk;
-    const next = without + Number(item.atk);
-    return `ATK ${without} → ${next} (+${item.atk})`;
+  const dmg = Number(item.atk || 0) + Number(item.mag || 0);
+  if (dmg > 0) {
+    const isMainWeapon = !item.type || item.type === "weapon";
+    const without = opts.outputEquipped
+      ? sheet.atk - dmg
+      : isMainWeapon
+      ? sheet.atk - opts.equippedMainAtk
+      : sheet.atk;
+    const next = without + dmg;
+    return `ATK ${without} → ${next} (+${dmg})`;
   }
   if (item.def) {
     const without = opts.outputEquipped ? sheet.def - Number(item.def) : sheet.def;

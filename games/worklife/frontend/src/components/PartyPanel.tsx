@@ -856,6 +856,9 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   ) {
                     continue;
                   }
+                  if (trig.type === "enemy_guard" && !livingEnemiesNow.some((e) => e.isBoss)) {
+                    continue;
+                  }
                   const levelMult = 1 + Math.max(0, (slot.level || 1) - 1) * (def.levelStep ?? 0.05);
                   const cdMs = Math.max(2000, Number(def.cooldownMs || 8000));
                   if (def.healPct && def.healPct > 0) {
@@ -1766,8 +1769,14 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   type="button"
                   className="header-menu-btn"
                   onClick={() => {
-                    void navigator.clipboard.writeText(party.id);
-                    toast.success("已复制队伍 ID");
+                    if (navigator.clipboard?.writeText) {
+                      navigator.clipboard
+                        .writeText(party.id)
+                        .then(() => toast.success("已复制队伍 ID"))
+                        .catch(() => toast.info(`队伍 ID：${party.id}`));
+                    } else {
+                      toast.info(`队伍 ID：${party.id}`);
+                    }
                   }}
                 >
                   复制完整 ID

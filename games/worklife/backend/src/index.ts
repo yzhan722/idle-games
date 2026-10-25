@@ -30,6 +30,7 @@ import { mapThrownError } from "./http_errors";
 import { encounterStages } from "./gameplay_encounters";
 import { abilityCatalog } from "./abilities";
 import { COMBAT_SKILL_IDS, COMBAT_SKILL_NAMES, COMBAT_SKILL_BLURBS, defaultCombatSkills, ensureCombatSkills } from "./combat_skills";
+import { ensureProgression } from "./progression_state";
 import { applyE2eFastContent } from "./e2e_fast";
 import { assertRuntimePolicy } from "./runtime_policy";
 
@@ -211,9 +212,9 @@ async function main() {
     const items = (contentPack as any).items || [];
     return {
       materials: items.filter((item: any) => item.type === "material"),
-      weapons: items.filter((item: any) => item.type === "weapon" || item.type === "offhand"),
-      armor: items.filter((item: any) => item.type === "armor"),
-      consumables: items.filter((item: any) => item.type === "consumable" || item.type === "food"),
+      weapons: items.filter((item: any) => item.type === "weapon" || item.type === "offhand" || item.type === "shield" || item.type === "tool" || Boolean(item.toolFor)),
+      armor: items.filter((item: any) => item.type === "armor" || item.type === "accessory"),
+      consumables: items.filter((item: any) => item.type === "consumable" || item.type === "food" || item.type === "book"),
       all: items,
     };
   });
@@ -231,7 +232,7 @@ async function main() {
         (state as any).combatSkills = defaultCombatSkills(level);
         ensureCombatSkills(state as any);
         (state as any).combatHp = undefined;
-        (state as any).combatHpUpdatedAt = undefined;
+        state.combatHpAt = undefined;
         const saved = await storage.savePlayerState(userId, state);
         return reply.send({ ok: true, inventory: saved.inventory });
       }
@@ -260,6 +261,7 @@ async function main() {
           forest_boss: Math.max(stats.killsByMonster?.forest_boss || 0, 1),
         };
       }
+      ensureProgression(state, new Date());
       const saved = await storage.savePlayerState(userId, state);
       return reply.send({ ok: true, inventory: saved.inventory });
     });
@@ -291,21 +293,26 @@ async function main() {
 
     socket.on("message", (data: any) => {
       if (!authed) {
-        try {
-          const msg = JSON.parse(data.toString());
-          if (msg?.type === "auth" && typeof msg.token === "string") {
-            const payload = app.jwt.verify<{ sub: string }>(msg.token);
-            if (payload.sub) {
-              userId = payload.sub;
-              authed = true;
-              clearTimeout(authDeadline);
-              storage.wsConnect(userId, { socket });
-              socket.send(JSON.stringify({ type: "auth:ok" }));
-              return;
+        void (async () => {
+          try {
+            const msg = JSON.parse(data.toString());
+            if (msg?.type === "auth" && typeof msg.token === "string") {
+              const payload = app.jwt.verify<{ sub: string; av?: number }>(msg.token);
+              if (payload.sub) {
+                const user = await storage.getUser(payload.sub);
+                if (user && payload.av === (user.authVersion ?? 1)) {
+                  userId = payload.sub;
+                  authed = true;
+                  clearTimeout(authDeadline);
+                  storage.wsConnect(userId, { socket });
+                  socket.send(JSON.stringify({ type: "auth:ok" }));
+                  return;
+                }
+              }
             }
-          }
-        } catch { /* fallthrough */ }
-        socket.close();
+          } catch { /* fallthrough */ }
+          socket.close();
+        })();
         return;
       }
       // 认证后：chat:send 走限频，其余消息直通

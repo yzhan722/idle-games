@@ -145,6 +145,9 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
     for (const req of snap.enhancementServiceRequests ?? []) {
       if (req && req.id) enhancementServiceRequests.set(req.id, req);
     }
+    for (const [providerId, stat] of snap.enhancementServiceStats ?? []) {
+      if (providerId && stat) enhancementServiceStats.set(providerId, stat);
+    }
   }
 
   function loadPersist() {
@@ -192,6 +195,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       tradingOrders: tradingOrders.values(),
       priceHistory: [...priceHistory.entries()].map(([itemId, m]) => [itemId, [...m.values()]]),
       enhancementServiceRequests: enhancementServiceRequests.values(),
+      enhancementServiceStats: enhancementServiceStats.entries(),
     });
     const payload = JSON.stringify(snap);
     const tmpPath = `${targetPath}.tmp.${process.pid}.${Date.now()}`;
@@ -540,6 +544,9 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const u = users.get(userId);
       if (!u) throw new Error("user_not_found");
 
+      if (u.googleSub && u.googleSub !== googleSub) {
+        usersByGoogle.delete(u.googleSub);
+      }
       u.googleSub = googleSub;
       usersByGoogle.set(googleSub, userId);
       // 凭据变更即吊销旧会话
@@ -822,8 +829,14 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (request.serviceProviderId && providerState && serviceFee > 0) {
         st.inventory.gold = (st.inventory.gold || 0) - serviceFee;
         providerState.inventory.gold = (providerState.inventory.gold || 0) + serviceFee;
+        if (st.stats) st.stats.totalGoldSpent = (st.stats.totalGoldSpent || 0) + serviceFee;
+        if (providerState.stats) providerState.stats.totalGoldEarned = (providerState.stats.totalGoldEarned || 0) + serviceFee;
+        syncAchievements(st);
+        syncAchievements(providerState);
+        providerState.stateRevision = (providerState.stateRevision ?? 0) + 1;
         appendLog(providerState, `提供强化服务获得 ${serviceFee} 金币`);
       }
+      st.stateRevision = (st.stateRevision ?? 0) + 1;
       schedulePersist();
       return result;
     },
@@ -1582,11 +1595,16 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const enriched: Party = {
         ...party,
         members: party.members.map(m => {
-          const name = states.get(m.userId)?.settings?.playerName;
+          const memberSt = states.get(m.userId);
+          const name = memberSt?.settings?.playerName;
           return {
             ...m,
             isOnline: ws.has(m.userId),
             displayName: name?.trim() || `玩家_${m.userId.slice(0, 6)}`,
+            ...(memberSt?.activeClassId ? { classId: memberSt.activeClassId } : {}),
+            ...(memberSt?.settings?.gender ? { gender: memberSt.settings.gender } : {}),
+            ...(memberSt?.settings?.avatar ? { avatar: memberSt.settings.avatar } : {}),
+            ...(typeof memberSt?.combatLevel === "number" ? { combatLevel: memberSt.combatLevel } : {}),
           };
         }),
       };
@@ -1920,9 +1938,10 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
 
-      // 检查装备是否存在
+      // 检查装备是否存在（已穿戴或在背包中均可查看/修理，避免耐久归零卸下后无法再修）
       const isEquipped = Object.values(st.equipment).includes(itemId);
-      if (!isEquipped) {
+      const inBag = (st.inventory?.[itemId] || 0) > 0;
+      if (!isEquipped && !inBag) {
         throw new Error("item_not_equipped");
       }
 
@@ -1954,16 +1973,17 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
 
-      // 检查装备是否存在
+      // 检查装备是否存在（已穿戴或在背包中均可修理）
       const isEquipped = Object.values(st.equipment).includes(request.itemId);
-      if (!isEquipped) {
+      const inBag = (st.inventory?.[request.itemId] || 0) > 0;
+      if (!isEquipped && !inBag) {
         return {
           success: false,
           itemId: request.itemId,
           oldDurability: 0,
           newDurability: 0,
           cost: 0,
-          message: "装备未装备"
+          message: "装备未装备或不在背包中"
         };
       }
 
@@ -2333,6 +2353,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         }
         // 扣除物品
         state.inventory[itemId] = currentQuantity - quantity;
+        if (state.inventory[itemId] <= 0) delete state.inventory[itemId];
       }
 
       // 如果是收购单，检查是否有足够的金币
@@ -2346,6 +2367,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         state.inventory.gold = currentGold - totalCost;
       }
 
+      state.stateRevision = (state.stateRevision ?? 0) + 1;
       const order: TradingOrder = {
         id: randomUUID(),
         userId,
@@ -2445,6 +2467,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         const totalCost = order.quantity * order.price;
         state.inventory.gold = (state.inventory.gold || 0) + totalCost;
       }
+      state.stateRevision = (state.stateRevision ?? 0) + 1;
       schedulePersist();
     },
 
