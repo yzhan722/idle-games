@@ -5827,14 +5827,22 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 
 		var ascendRow = dojo.create("div", { className: "xxAscendRow" }, tabContainer);
 		this.ascendBtn = dojo.create("div", {
-			className: "btn nosel modern xxAscend",
+			className: "btn nosel modern xxAscend xx-has-ico",
 			style: { display: "none" },
 			title: $I("cultivation.ascend.desc")
 		}, ascendRow);
+		var ascendContent = dojo.create("div", { className: "btnContent" }, this.ascendBtn);
+		var ascendIco = (classes.ui && classes.ui.XianxiaArt)
+			? "<i class=\"xx-btn-ico\" aria-hidden=\"true\">" + classes.ui.XianxiaArt.resIcon("karma") + "</i>"
+			: "";
 		dojo.create("span", {
 			className: "btnTitle",
-			innerHTML: $I("cultivation.ascend.label")
-		}, this.ascendBtn);
+			innerHTML: ascendIco + $I("cultivation.ascend.label")
+		}, ascendContent);
+		dojo.create("div", {
+			className: "xx-cost xx-sub",
+			innerHTML: "<span class=\"xx-ci ok\"><i>" + $I("cultivation.ascend.desc") + "</i></span>"
+		}, ascendContent);
 		dojo.connect(this.ascendBtn, "onclick", function(){
 			self.game.reset();
 		});
@@ -6751,7 +6759,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 
 		if (this.ascendBtn){
 			var dujie = cult.getStage("dujie_0");
-			this.ascendBtn.style.display = (dujie && dujie.researched) ? "inline-block" : "none";
+			this.ascendBtn.style.display = (dujie && dujie.researched) ? "block" : "none";
 		}
 	}
 });
@@ -7160,8 +7168,7 @@ classes.ui.XianxiaArt = {
 
 		var href = this.RES_ART.xiuwei;
 		if (id == "gatherCatnip" || id == "field" || id == "pasture" || id == "unicornPasture" || id == "aqueduct" ||
-			id == "agriculture" || id == "mineralHoes" || id == "ironHoes" || id == "biofuel" || id == "hydroponics" ||
-			id == "unicornTomb" || id == "ivoryTower" || id == "ivoryCitadel" || id == "skyPalace"){
+			id == "agriculture" || id == "mineralHoes" || id == "ironHoes" || id == "biofuel" || id == "hydroponics"){
 			href = this.RES_ART.catnip;
 		} else if (id == "refineCatnip" || id == "lumberMill" || id == "wood" ||
 			id == "mineralAxes" || id == "ironAxes" || id == "steelAxe" || id == "titaniumAxe" || id == "alloyAxe" || id == "unobtainiumAxe" ||
@@ -7170,16 +7177,17 @@ classes.ui.XianxiaArt = {
 		} else if (id == "hut" || id == "logHouse" || id == "mansion" || id == "construction" || id == "architecture" ||
 			id == "ExpandedBarns" || id == "stoneBarns" || id == "reinforcedBarns" || id == "titaniumBarns" || id == "alloyBarns" || id == "concreteBarns" ||
 			id == "reinforcedWarehouses" || id == "titaniumWarehouses" || id == "alloyWarehouses" || id == "concreteWarehouses" || id == "silos" ||
-			id == "spaceStation" || id == "moonBase" || id == "cryochambers" || id == "fixCryochamber" || id == "buildEmbassy"){
+			id == "spaceStation" || id == "moonBase" || id == "cryochambers" || id == "fixCryochamber" || id == "buildEmbassy" || id == "skyPalace"){
 			href = this.BTN_ART.cave;
 		} else if (id == "library" || id == "academy" || id == "math" || id == "philosophy" || id == "archeology" || id == "physics" || id == "metaphysics" ||
-			id == "scholasticism" || id == "apocripha" || id == "researchVessel"){
+			id == "scholasticism" || id == "apocripha" || id == "researchVessel" || id == "blackObelisk" || id == "blackLibrary"){
 			href = this.RES_ART.science;
 		} else if (id == "observatory" || id == "calendar" || id == "astronomy" || id == "celestialMechanics" || id == "astrolabe" ||
 			id == "navigation" || id == "sattelites" || id == "orbitalEngineering" || id == "starlink" || id == "uplink" ||
 			id == "orbitalLaunch" || id == "sattelite" || id == "moonMission" || id == "duneMission" || id == "piscineMission" ||
 			id == "heliosMission" || id == "terminusMission" || id == "kairoMission" || id == "rorschachMission" || id == "centaurusSystemMission" ||
-			id == "furthestRingMission" || id == "spaceElevator" || id == "spaceBeacon" || id == "orbitalArray" || id == "sendExplorers"){
+			id == "furthestRingMission" || id == "spaceElevator" || id == "spaceBeacon" || id == "orbitalArray" || id == "sendExplorers" ||
+			id == "blackNexus" || id == "singularity"){
 			href = this.RES_ART.starchart;
 		} else if (id == "biolab" || id == "brewery" || id == "juqi" || id == "zhujidan" || id == "qingxin" || id == "jiangchen" || id == "peiying" || id == "biyan" ||
 			id == "chemistry" || id == "biology" || id == "biochemistry" || id == "ecology" || id == "petri" || id == "spiceRefinery" || mdl.type == "pill"){
@@ -7197,13 +7205,17 @@ classes.ui.XianxiaArt = {
 			id == "electrolyticSmelting" || id == "oxidation" || id == "rotaryKiln" || id == "blastFurnace" || id == "timeBoiler" || id == "useHeat" || id == "heatsink"){
 			href = this.BTN_ART.furnace;
 		} else if (id == "archery" || id == "animal" || id == "huntingArmor" || id == "steelArmor" || id == "compositeBow" || id == "crossbow" || id == "railgun" ||
-			id == "templars"){
+			id == "templars" || id == "holyGenocide"){
 			href = this.TILE_ART.combat;
+		} else if (id == "unicornTomb" || id == "unicornGraveyard" || id == "unicornNecropolis"){
+			href = this.TILE_ART.demon;
+		} else if (id == "ivoryTower" || id == "ivoryCitadel"){
+			href = this.BTN_ART.sect;
 		} else if (id == "oilWell" || id == "oilProcessing" || id == "oilRefinery" || id == "pumpjack" || id == "hydrofracturer"){
 			href = this.RES_ART.oil;
 		} else if (id == "reactor" || id == "accelerator" || id == "electricity" || id == "electronics" || id == "nuclearFission" ||
 			id == "particlePhysics" || id == "dimensionalPhysics" || id == "nanotechnology" || id == "superconductors" || id == "thorium" ||
-			id == "containmentChamber" || id == "heatsink"){
+			id == "containmentChamber" || id == "heatsink" || id == "blazar" || id == "darkNova"){
 			href = this.RES_ART.uranium;
 		} else if (id == "rocketry" || id == "exogeology" || id == "advExogeology" || id == "artificialGravity" || id == "terraformation" || id == "antimatter" ||
 			id == "unicornUtopia" || id == "transcendence" || id == "transcendFaith"){
@@ -7214,8 +7226,8 @@ classes.ui.XianxiaArt = {
 		} else if (id == "chapel" || id == "temple" || id == "ziggurat" || id == "theology" || id == "cryptotheology" ||
 			id == "praiseFaith" || id == "adoreFaith" || id == "solarchant"){
 			href = this.RES_ART.faith;
-		} else if (id == "blackPyramid" || id == "marker" || id == "blackObelisk" || id == "blackNexus" || id == "blackCore" ||
-			id == "singularity" || id == "blackLibrary" || id == "blackRadiance" || id == "blazar" || id == "darkNova" || id == "holyGenocide" ||
+		} else if (id == "blackPyramid" || id == "marker" || id == "blackCore" ||
+			id == "blackRadiance" || id == "darkParacosm" ||
 			id == "refineRelic" || id == "relicStation" || id == "voidHoover" || id == "voidRift" || id == "voidResonance"){
 			href = this.RES_ART.relic;
 		} else if (id == "chronosphere" || id == "chronophysics" || id == "tachyonTheory" || id == "voidSpace" || id == "paradoxalKnowledge" ||
@@ -7262,6 +7274,8 @@ classes.ui.XianxiaArt = {
 			href = this.RES_ART.faith;
 		} else if (ctrlClass.indexOf("TranscendenceBtn") >= 0 || ctrlClass.indexOf("VoidSpaceBtn") >= 0){
 			href = this.RES_ART.relic;
+		} else if (ctrlClass.indexOf("PrestigeBtn") >= 0 || ctrlClass.indexOf("BurnParagonBtn") >= 0){
+			href = this.RES_ART.paragon;
 		} else if (ctrlClass.indexOf("ChronoforgeBtn") >= 0){
 			href = this.RES_ART.timeCrystal;
 		}

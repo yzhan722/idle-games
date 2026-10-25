@@ -1685,11 +1685,13 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 	//蓄力条 + 内联价签——按钮底缘一线显示离「买得起」还差多少,
 	//卡面直接列出所需资源与缺口色标,移动端无需悬停即可一眼读全价目
 	renderAfford: function(){
-		var prices = this.model && this.model.prices;
+		var prices = (this.model && this.model.prices) ||
+			(this.controller && this.controller.getPrices ? this.controller.getPrices(this.model) : null);
 		if (!this.domNode){
 			return;
 		}
-		if (!this.artNode && typeof classes != "undefined" && classes.ui && classes.ui.XianxiaArt &&
+		if ((!this.artNode || this.artNode.parentNode !== this.domNode) &&
+			typeof classes != "undefined" && classes.ui && classes.ui.XianxiaArt &&
 			!dojo.hasClass(this.domNode, "xxAction") && !dojo.hasClass(this.domNode, "xxFateBtn")){
 			var artSvg = classes.ui.XianxiaArt.btnIcon(this);
 			if (artSvg){
@@ -1701,7 +1703,8 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 				dojo.addClass(this.domNode, "xx-has-ico");
 			}
 		}
-		if (!this.infoBtn && this.model && (this.model.description || (prices && prices.length))){
+		if ((!this.infoBtn || this.infoBtn.parentNode !== this.domNode) &&
+			this.model && (this.model.description || (prices && prices.length))){
 			this.infoBtn = dojo.create("span", {
 				className: "xx-info-btn",
 				innerHTML: "?",
@@ -1717,9 +1720,10 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 				if (fn){ fn(ev); }
 			});
 		}
-		if (this.affordNode){ return; }
+		if (this.affordNode && this.affordNode.parentNode === this.domNode){ return; }
 		if (!prices || !prices.length){
-			if (this.buttonContent && !this.costNode && !dojo.hasClass(this.domNode, "xxAction") && !dojo.hasClass(this.domNode, "xxFateBtn")){
+			if (this.buttonContent && (!this.costNode || this.costNode.parentNode !== this.buttonContent) &&
+				!dojo.hasClass(this.domNode, "xxAction") && !dojo.hasClass(this.domNode, "xxFateBtn")){
 				var ctrlCls = (this.controller && this.controller.declaredClass) ? String(this.controller.declaredClass) : "";
 				var freeHint = "";
 				if (ctrlCls.indexOf("GatherCatnip") >= 0){
@@ -1734,6 +1738,8 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 					freeHint = "燃宙光流辉 · 加速天地光阴";
 				} else if (ctrlCls.indexOf("UseHeatBtn") >= 0){
 					freeHint = "泄百劫炉火 · 化为碎晶流年";
+				} else if (ctrlCls.indexOf("BurnParagonBtn") >= 0){
+					freeHint = "焚炼本源道果 · 化为永世烬余";
 				} else if (ctrlCls.indexOf("ChallengeBtn") >= 0 && this.model && this.model.metadata){
 					var cDesc = String(this.model.metadata.effectDesc || this.model.metadata.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 					freeHint = cDesc ? (cDesc.length > 26 ? cDesc.slice(0, 26) + "…" : cDesc) : "以身试劫 · 勘破生死大道";
@@ -1746,13 +1752,14 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 			}
 			return;
 		}
-		if (this.buttonContent && !this.costNode){
+		if (this.buttonContent && (!this.costNode || this.costNode.parentNode !== this.buttonContent)){
 			this.costNode = dojo.create("div", {className: "xx-cost"}, this.buttonContent);
 		}
 		this.affordNode = dojo.create("div", {className: "xx-afford", role: "presentation"}, this.domNode);
 		this.affordFill = dojo.create("i", null, this.affordNode);
 		this._affordPct = -1;
 		this._costHtml = "";
+		this._affordDone = null;
 		this.updateAfford();
 	},
 
