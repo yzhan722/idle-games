@@ -1174,7 +1174,7 @@ dojo.declare("com.nuclearunicorn.game.ui.SpaceProgramBtnController", com.nuclear
 				}
 			}
 		}
-		if (meta.on && meta.noStackable && this.game.space.hideResearched){
+		if (meta.on && meta.noStackable){
 			model.visible = false;
 			return;
 		}
@@ -1341,7 +1341,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.SpaceTab", com.nuclearunicorn.game.
 		var self = this;
 
 		//--------------------------------------------------------------------
-		var div = dojo.create("div", { style: { float: "right"}}, container);
+		var div = dojo.create("div", { style: { display: "none"}}, container);
 		var groupCheckbox = dojo.create("input", {
 			id : "toggleResearched",
 			type: "checkbox",
@@ -1359,7 +1359,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.SpaceTab", com.nuclearunicorn.game.
 		//---------------------------------------------------------------------
 
 		//padding div to preserve markup
-		dojo.create("div", { style: { height: "20px"}}, container);
+		dojo.create("div", { style: { display: "none"}}, container);
 
 		this.GCPanel = new com.nuclearunicorn.game.ui.Panel($I("space.ground.control.label"), this.game.space);
 		var content = this.GCPanel.render(container);

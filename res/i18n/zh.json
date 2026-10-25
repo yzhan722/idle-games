@@ -2186,7 +2186,7 @@
 	"cultivation.artifact.yuanci.label": "玄磁灵山",
 	"cultivation.artifact.yuanci.desc": "玄磁神光凝成的寸许山岳,五行辟易、万宝俯首。产出 +7%,修为 +8%。",
 	"cultivation.action.rift": "秘境历练",
-	"cultivation.action.grift": "上古秘境·第{0}层(钥×{1})",
+	"cultivation.action.grift": "上古秘境·{0}层(钥{1})",
 	"cultivation.msg.action.cd": "气息未稳——先静坐调息,再图闭关。",
 	"cultivation.rift.head": "上古秘境 —— 已破第 {0} 层 · 正叩第 {1} 层",
 	"cultivation.rift.floor.tip": "第 {0} 层",

@@ -1521,15 +1521,24 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .xxActionRow.xxActionRow4 {
 	grid-template-columns: repeat(4, minmax(0, 1fr));
 }
+.xxActionRow.xxActionRow4 .btn.modern.xxAction {
+	padding: 6px 8px;
+	gap: 6px;
+}
+.xxActionRow.xxActionRow4 .btn.modern.xxAction .btnTitle {
+	font-size: 12px;
+	letter-spacing: 0;
+}
 .tabInner.Cultivation .btn.modern.xxAction {
 	position: relative;
 	display: flex;
 	align-items: center;
+	gap: 8px;
 	width: 100%;
 	max-width: none;
 	min-height: 44px;
 	margin: 0;
-	padding: 6px 12px;
+	padding: 6px 10px;
 	border-radius: 10px;
 	border: 1px solid rgba(79, 209, 165, .38);
 	background: linear-gradient(135deg, rgba(24, 38, 48, .92), rgba(15, 23, 34, .92));
@@ -1544,7 +1553,7 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	z-index: 1;
 	display: flex;
 	align-items: center;
-	gap: 10px;
+	gap: 8px;
 	padding: 0;
 	width: 100%;
 }
@@ -1563,10 +1572,13 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	justify-content: center;
 }
 .tabInner.Cultivation .btn.modern.xxAction .btnTitle {
-	font-size: 13.5px;
+	font-size: 12.5px;
 	font-weight: 600;
 	color: var(--xx-paper);
-	letter-spacing: 1px;
+	letter-spacing: .3px;
+	white-space: nowrap !important;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .xxActCd {
 	position: absolute;
@@ -2405,6 +2417,51 @@ input, select, textarea, button { font-family: inherit; }
 	#leftColumn .resPerTick {
 		font-size: 10px;
 		min-width: 46px;
+	}
+	.xxToasts {
+		top: 82px;
+		right: 12px;
+		max-width: 280px;
+	}
+	.xxGuide {
+		padding: 6px 12px;
+	}
+	.xx-guide-hd {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 2px;
+		font-size: 12px;
+		cursor: pointer;
+	}
+	.xx-guide-toggle {
+		display: inline-block;
+		padding: 1px 6px;
+		border-radius: 999px;
+		border: 1px solid rgba(79, 209, 165, .3);
+		background: rgba(79, 209, 165, .08);
+		font-size: 10.5px;
+		color: var(--xx-jade);
+	}
+	.xx-guide-help {
+		float: none;
+		margin-left: auto;
+		font-size: 11px;
+	}
+	.xx-guide-bar { margin: 3px 0 4px; height: 2.5px; }
+	.xxGuide:not(.xx-guide-open) .xx-guide-step:not(.xx-guide-next),
+	.xxGuide:not(.xx-guide-open) .xx-guide-more {
+		display: none;
+	}
+	.xx-guide-next {
+		font-size: 12.5px;
+		line-height: 1.35;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.xxGuide.xx-guide-open .xx-guide-next {
+		white-space: normal;
 	}
 	#rightColumn {
 		max-height: 140px;
