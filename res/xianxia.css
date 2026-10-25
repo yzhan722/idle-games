@@ -350,6 +350,7 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	gap: 4px;
 	flex: 1 1 auto;
 	min-width: 0;
+	overflow: hidden;
 }
 #leftColumn .resource-name {
 	color: var(--xx-paper);
@@ -2371,13 +2372,39 @@ input, select, textarea, button { font-family: inherit; }
 /* ---- narrow / tablet: 2-column resource sidebar + main, log strip bottom ---- */
 @media (max-width: 860px) {
 	#game {
-		grid-template-columns: 244px minmax(0, 1fr);
+		grid-template-columns: 266px minmax(0, 1fr);
 		grid-template-rows: auto minmax(0, 1fr) auto auto;
 		grid-template-areas:
 			"nav   nav"
 			"res   main"
 			"res   guide"
 			"log   log";
+	}
+	#leftColumn {
+		padding: 8px 8px 14px;
+	}
+	#leftColumn .res-row {
+		padding: 4px 6px 5px;
+		gap: 4px;
+		font-size: 11.5px;
+	}
+	#leftColumn .res-weather,
+	#leftColumn .xx-res-acts {
+		display: none !important;
+	}
+	#leftColumn .resource-name {
+		font-size: 11.5px;
+	}
+	#leftColumn .res-figure .res-val,
+	#leftColumn .res-figure.resAmount {
+		font-size: 11.5px;
+	}
+	#leftColumn .res-figure .maxRes {
+		font-size: 9.5px;
+	}
+	#leftColumn .resPerTick {
+		font-size: 10px;
+		min-width: 46px;
 	}
 	#rightColumn {
 		max-height: 140px;
