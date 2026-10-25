@@ -31,21 +31,22 @@ describe("chapter 1 next goal", () => {
     );
   });
 
-  it("asks for a build after the first kill, then three archetypes, then chest, then boss", () => {
+  it("asks for a build after the first kill, then chest, then three archetypes, then boss", () => {
     const base = {
       inventory: { weapon_wooden_sword: 1, armor_wood_chest: 0 },
       equipment: { main_hand: "weapon_wooden_sword" as const },
       stats: { totalKills: 1, killsByMonster: { slime: 1 } },
     };
     assert.equal(nextChapter1Goal(base).id, "build");
-    assert.equal(nextChapter1Goal({ ...base, chapter1Build: "thick_bark" }).id, "archetypes");
+    assert.equal(nextChapter1Goal({ ...base, chapter1Build: "thick_bark" }).id, "chest");
     assert.equal(
       nextChapter1Goal({
-        ...base,
+        inventory: { weapon_wooden_sword: 1, armor_wood_chest: 1 },
+        equipment: { main_hand: "weapon_wooden_sword", chest: "armor_wood_chest" },
         chapter1Build: "thick_bark",
-        stats: { totalKills: 4, killsByMonster: { slime: 1, crab: 1, monkey: 1 } },
+        stats: { totalKills: 1, killsByMonster: { slime: 1 } },
       }).id,
-      "chest"
+      "archetypes"
     );
     assert.equal(
       nextChapter1Goal({

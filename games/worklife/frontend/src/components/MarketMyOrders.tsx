@@ -7,6 +7,7 @@ type Order = { id: string; itemId: string; quantity: number; price: number; type
 type Props = {
   nameOf: (itemId: string) => string;
   onChanged: () => void;
+  refreshKey?: string | number;
 };
 
 /** MWI 我的挂单: what you have on the market right now, with cancel (refunds gold / items). */
@@ -27,9 +28,10 @@ export function MarketMyOrders(props: Props) {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, props.refreshKey]);
 
   const cancel = async (o: Order) => {
+    if (busy) return;
     setBusy(o.id);
     try {
       apiClient.clearCache();

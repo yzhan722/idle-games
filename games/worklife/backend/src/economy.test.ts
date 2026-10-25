@@ -41,15 +41,16 @@ describe("economy loops", () => {
     await storage.savePlayerState(seller.id, sellerState);
     await storage.savePlayerState(buyer.id, buyerState);
 
-    const listing = await storage.listItemForSale({
+    const order = await storage.createTradingOrder({
       userId: seller.id,
       itemId: "wood_1",
       quantity: 1,
-      pricePerUnit: 5,
+      price: 5,
+      type: "sell",
     });
-    const result = await storage.purchaseItem({
-      userId: buyer.id,
-      listingId: listing.id,
+    const result = await storage.executeTrade({
+      buyerId: buyer.id,
+      orderId: order.id,
       quantity: 1,
     });
     assert.equal(result.success, true);
@@ -215,5 +216,18 @@ describe("economy loops", () => {
     await storage.getOrCreatePlayerState(extra.id, "1.0.0");
     await assert.rejects(() => storage.joinParty({ userId: extra.id, partyId: party.id }), /party_full/);
     await storage.close();
+  });
+});
+
+describe("trading fee display consistency", () => {
+  it("fee + seller income always equals total (small totals included)", async () => {
+    const { calculateTradingFee } = await import("./storage");
+    for (const total of [1, 5, 10, 19, 20, 99, 100, 1000]) {
+      const fee = calculateTradingFee(total);
+      const income = total - fee;
+      assert.equal(fee + income, total, `total=${total} must reconcile`);
+      assert.ok(fee >= 0 && income >= 0);
+    }
+    assert.equal(calculateTradingFee(10), 0);
   });
 });

@@ -385,3 +385,44 @@ body.no-animations * {
   animation: none !important;
   transition: none !important;
 }
+
+/* 设置-绑定账号 */
+.settings-bind { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.settings-bind-form { display: flex; flex-direction: column; gap: 8px; }
+.settings-bind-form .input { width: 100%; box-sizing: border-box; }
+
+/* 设置-加密存档导出与导入 */
+.settings-save-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-save-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.settings-save-code-box .input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 12px;
+}
+.settings-import-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.settings-import-row .input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.settings-import-submit {
+  width: auto;
+  flex-shrink: 0;
+  padding: 10px 16px;
+}

@@ -1,4 +1,6 @@
-import { T1Art, T1ItemIcon } from "./T1Art";
+import { useState } from "react";
+import { T1Art, T1ItemIcon, characterArtId, PlayerAvatarIcon } from "./T1Art";
+import { getProfessionPerk } from "../gameplay/professionPerks";
 
 type EquipSlot = { id: string; name: string; icon: string; type: string };
 
@@ -9,7 +11,7 @@ type InvItem = {
   tier?: number;
 };
 
-type ProfessionInfo = { icon: string; name: string };
+type ProfessionInfo = { id?: string; icon: string; name: string };
 type SkillInfo = { level: number; xp: number };
 type CombatSheet = { hp: number; atk: number; def: number };
 
@@ -17,6 +19,12 @@ type Props = {
   expanded: boolean;
   onToggle: () => void;
   playerName: string;
+  /** 建角时选的头像 emoji；未建角则显示职业图标 */
+  playerAvatar?: string;
+  /** 角色性别外观（male / female / animal） */
+  playerGender?: string;
+  /** Persists a custom display name (empty string clears back to the derived default). */
+  onRename?: (name: string) => void | Promise<void>;
   onOpenProfessionModal: () => void;
   profession: ProfessionInfo;
   professionSkill: SkillInfo;
@@ -50,6 +58,8 @@ type Props = {
 };
 
 export function PlayerRightPanel(props: Props) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
   // 服务端在 xp >= need(当前等级) 时升级，所以这里传当前等级，不是 +1
   const professionNeed = props.getXpForLevel(props.professionSkill.level);
   const combatNeed = props.getXpForLevel(props.combatLevel || 1);
@@ -76,15 +86,52 @@ export function PlayerRightPanel(props: Props) {
         <div className="right-panel-status">
           <div className="status-player-info">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-              <span className="status-player-name">{props.playerName}</span>
-              {props.allowProfessionSwitch !== false && (
-                <button className="btn-switch-compact" onClick={props.onOpenProfessionModal} title="切换职业">
-                  切换
-                </button>
+              <span className="status-player-avatar" aria-hidden>
+                <PlayerAvatarIcon avatar={props.playerAvatar} gender={props.playerGender} />
+              </span>
+              {editingName ? (
+                <form
+                  className="player-name-edit"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setEditingName(false);
+                    void props.onRename?.(nameDraft);
+                  }}
+                >
+                  <input
+                    autoFocus
+                    maxLength={16}
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Escape") setEditingName(false); }}
+                    placeholder="玩家名"
+                  />
+                  <button type="submit" aria-label="保存名字">✓</button>
+                </form>
+              ) : (
+                <span
+                  className="status-player-name"
+                  role={props.onRename ? "button" : undefined}
+                  title={props.onRename ? "点击改名" : undefined}
+                  onClick={() => {
+                    if (!props.onRename) return;
+                    setNameDraft(props.playerName);
+                    setEditingName(true);
+                  }}
+                >
+                  {props.playerName}
+                </span>
               )}
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {props.allowProfessionSwitch !== false && (
+                  <button className="btn-switch-compact" onClick={props.onOpenProfessionModal} title="切换职业">
+                    切换
+                  </button>
+                )}
+              </div>
             </div>
-            <span className="status-player-class">
-              {props.profession.icon} {props.profession.name}
+            <span className="status-player-class" title={`【${getProfessionPerk(props.profession.id).traitName}】${getProfessionPerk(props.profession.id).combatAndUtilityDesc}`}>
+              {props.profession.icon} {props.profession.name} · <small style={{ opacity: 0.85 }}>{getProfessionPerk(props.profession.id).traitName}</small>
             </span>
           </div>
 
@@ -107,7 +154,7 @@ export function PlayerRightPanel(props: Props) {
             <div className="status-xp-bar">
               <div className="xp-header">
                 <span className="status-xp-label">职业经验</span>
-                <span className="xp-percentage">{Math.round(professionPct)}%</span>
+                <span className="xp-percentage">{Math.floor(professionPct)}%</span>
               </div>
               <div className="status-xp-progress">
                 <div className="status-xp-fill profession" style={{ width: `${professionPct}%` }}>
@@ -116,15 +163,15 @@ export function PlayerRightPanel(props: Props) {
               </div>
               <div className="xp-footer">
                 <span className="status-xp-text">
-                  {props.professionSkill.xp || 0} / {fmtNeed(professionNeed)}
+                  {Math.floor(props.professionSkill.xp || 0)} / {fmtNeed(professionNeed)}
                 </span>
-                <span className="xp-remaining">{fmtRemaining(props.professionSkill.xp || 0, professionNeed)}</span>
+                <span className="xp-remaining">{fmtRemaining(Math.floor(props.professionSkill.xp || 0), professionNeed)}</span>
               </div>
             </div>
             <div className="status-xp-bar">
               <div className="xp-header">
                 <span className="status-xp-label">战斗经验</span>
-                <span className="xp-percentage">{Math.round(combatPct)}%</span>
+                <span className="xp-percentage">{Math.floor(combatPct)}%</span>
               </div>
               <div className="status-xp-progress">
                 <div className="status-xp-fill combat" style={{ width: `${combatPct}%` }}>
@@ -133,9 +180,9 @@ export function PlayerRightPanel(props: Props) {
               </div>
               <div className="xp-footer">
                 <span className="status-xp-text">
-                  {props.combatXp || 0} / {fmtNeed(combatNeed)}
+                  {Math.floor(props.combatXp || 0)} / {fmtNeed(combatNeed)}
                 </span>
-                <span className="xp-remaining">{fmtRemaining(props.combatXp || 0, combatNeed)}</span>
+                <span className="xp-remaining">{fmtRemaining(Math.floor(props.combatXp || 0), combatNeed)}</span>
               </div>
             </div>
           </div>
@@ -176,9 +223,9 @@ export function PlayerRightPanel(props: Props) {
                         {equippedId ? (
                           <T1ItemIcon itemId={equippedId} fallback={equippedName.charAt(0)} alt="" />
                         ) : (
-                          <span className="slot-icon">{slot.name.charAt(0)}</span>
+                          <span className="slot-icon" aria-hidden="true">{slot.icon}</span>
                         )}
-                        <div className="slot-hover-hint">{equippedName || "空"}</div>
+                        <div className="slot-hover-hint">{equippedName || `空·${slot.name}`}</div>
                       </div>
                       <span className="equipment-slot-name">{slot.name}</span>
                     </div>
@@ -188,7 +235,7 @@ export function PlayerRightPanel(props: Props) {
                 <div className="paperdoll-center">
                   <div className="character-avatar-display">
                     <div className="avatar-glow"></div>
-                    <T1Art kind="character" id="woodcutter" alt="伐木工" />
+                    <T1Art kind="character" id={characterArtId(props.profession.id, props.playerGender)} alt={props.profession.name || "伐木工"} />
                     <span className="avatar-level">Lv.{props.combatLevel || 1}</span>
                   </div>
                 </div>
@@ -202,9 +249,9 @@ export function PlayerRightPanel(props: Props) {
                         {equippedId ? (
                           <T1ItemIcon itemId={equippedId} fallback={equippedName.charAt(0)} alt="" />
                         ) : (
-                          <span className="slot-icon">{slot.name.charAt(0)}</span>
+                          <span className="slot-icon" aria-hidden="true">{slot.icon}</span>
                         )}
-                        <div className="slot-hover-hint">{equippedName || "空"}</div>
+                        <div className="slot-hover-hint">{equippedName || `空·${slot.name}`}</div>
                       </div>
                       <span className="equipment-slot-name">{slot.name}</span>
                     </div>
@@ -287,6 +334,12 @@ export function PlayerRightPanel(props: Props) {
                   onClick={() => props.onFilter("weapon")}
                 >
                   ⚔️ 武器
+                </button>
+                <button
+                  className={`filter-btn ${props.inventoryFilter === "armor" ? "active" : ""}`}
+                  onClick={() => props.onFilter("armor")}
+                >
+                  🛡️ 防具
                 </button>
                 <button
                   className={`filter-btn ${props.inventoryFilter === "consumable" ? "active" : ""}`}

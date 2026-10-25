@@ -6,7 +6,7 @@ test("E2E-04 double click on craft start hits the backend once", async ({ page }
   await seedT1(page);
   await page.reload();
   await page.getByRole("button", { name: "制作" }).click();
-  await page.getByText("制作标准木板").first().click();
+  await page.getByText("标准木板").first().click();
 
   const starts: string[] = [];
   page.on("request", (req) => {

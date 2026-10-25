@@ -43,6 +43,8 @@ type PackAction = { id: string; yields?: Array<{ itemId: string; qty: number }> 
 type Props = {
   actions: PackAction[] | undefined;
   iconOf: (itemId: string) => string;
+  /** Player gold — disables the reroll button when the fee is unaffordable. */
+  gold: number;
   /** Changes whenever progress-relevant stats change so the board refreshes. */
   progressKey: string;
   onGoldChange: () => void;
@@ -88,13 +90,18 @@ export function TasksPage(props: Props) {
   }, []);
 
   // Timer crossing → the server may have handed out a task.
+  const [lastAutoLoadAt, setLastAutoLoadAt] = useState(0);
   useEffect(() => {
     if (!board) return;
     const remaining = Date.parse(board.nextTaskAt) - now;
-    if (remaining <= 0 && board.tasks.length < board.slots && remaining > -2000) void load();
-  }, [now, board, load]);
+    if (remaining <= 0 && board.tasks.length < board.slots && now - lastAutoLoadAt > 5000) {
+      setLastAutoLoadAt(now);
+      void load();
+    }
+  }, [now, board, load, lastAutoLoadAt]);
 
   const run = async (key: string, fn: () => Promise<{ board?: TaskBoard } & Record<string, unknown>>, ok: (res: any) => string) => {
+    if (busy) return;
     setBusy(key);
     try {
       apiClient.clearCache();
@@ -127,7 +134,7 @@ export function TasksPage(props: Props) {
 
   const remaining = Date.parse(board.nextTaskAt) - now;
   const boardFull = board.tasks.length >= board.slots;
-  const giftPct = Math.min(100, ((board.points % board.giftPoints) / board.giftPoints) * 100);
+  const giftPct = Math.min(100, Math.max(0, ((board.points % Math.max(1, board.giftPoints)) / Math.max(1, board.giftPoints)) * 100));
 
   return (
     <div className="tasks-page skill-page" data-skill-page="tasks">
@@ -147,18 +154,18 @@ export function TasksPage(props: Props) {
           🎁 小紫牛的礼物
           <span className="tasks-gift-bar" aria-hidden="true"><span style={{ width: `${board.giftReady ? 100 : giftPct}%` }} /></span>
           {board.giftReady ? (
-            <button type="button" className="qty-chip active" disabled={busy === "gift"} onClick={() => run("gift", () => apiClient.claimTaskGift(), (r) => `礼物：金币 +${r.gold}，代币 +${r.tokens}${r.book ? "，还有一本技能书" : ""}`)}>
+            <button type="button" className="qty-chip active" disabled={!!busy} onClick={() => run("gift", () => apiClient.claimTaskGift(), (r) => `礼物：金币 +${r.gold}，代币 +${r.tokens}${r.book ? "，还有一本技能书" : ""}`)}>
               领取
             </button>
           ) : (
-            <small>{board.points % board.giftPoints}/{board.giftPoints}</small>
+            <small>{board.points % Math.max(1, board.giftPoints)}/{Math.max(1, board.giftPoints)} ({Math.floor(giftPct)}%)</small>
           )}
         </span>
       </div>
 
       <div className="tasks-grid">
         {board.tasks.map((t) => {
-          const pct = Math.min(100, (t.progress / t.target) * 100);
+          const pct = Math.min(100, Math.max(0, (t.progress / Math.max(1, t.target)) * 100));
           return (
             <div className={`task-card${t.completed ? " completed" : ""}`} key={t.id} data-task-id={t.id}>
               <div className="task-card-head">
@@ -170,7 +177,7 @@ export function TasksPage(props: Props) {
               </div>
               <div className="task-progress">
                 <span className="skill-xp-bar" aria-hidden="true"><span className="skill-xp-fill" style={{ width: `${pct}%` }} /></span>
-                <small>{t.progress}/{t.target}{t.completed ? " · 已完成" : ""}</small>
+                <small>{t.progress}/{t.target} ({Math.floor(pct)}%){t.completed ? " · 已完成" : ""}</small>
               </div>
               <div className="task-reward"><GoldIcon /> {t.reward.gold} · 🎟️ {t.reward.tokens}</div>
               <div className="task-actions">
@@ -180,7 +187,7 @@ export function TasksPage(props: Props) {
                   </button>
                 ) : (
                   <>
-                    <button type="button" className="qty-chip" disabled={busy === t.id} title={`重选这个任务，花 ${board.rerollCost} 金币（当日每次翻倍）`} onClick={() => run(t.id, () => apiClient.rerollTask(t.id), (r) => `已重选（花了 ${r.cost} 金币）`)}>
+                    <button type="button" className="qty-chip" disabled={busy === t.id || props.gold < board.rerollCost} title={props.gold < board.rerollCost ? `金币不足：重选要 ${board.rerollCost} 金` : `重选这个任务，花 ${board.rerollCost} 金币（当日每次翻倍）`} onClick={() => run(t.id, () => apiClient.rerollTask(t.id), (r) => `已重选（花了 ${r.cost} 金币）`)}>
                       重选 {board.rerollCost} 金
                     </button>
                     <button type="button" className="qty-chip" disabled={busy === t.id} title="免费丢弃；空出的槽位按冷却补发" onClick={() => run(t.id, () => apiClient.deleteTask(t.id), () => "已丢弃")}>

@@ -68,7 +68,7 @@ export async function progression2Routes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ bountyId: z.string().min(1), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ bountyId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     try {
       const outcome = await runCommand(userId, body, (state) => {
         const res = acceptBounty(state, body.bountyId);
@@ -83,7 +83,7 @@ export async function progression2Routes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ bountyId: z.string().min(1), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ bountyId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     try {
       const outcome = await runCommand(userId, body, (state) => {
         const res = claimBounty(state, body.bountyId);
@@ -107,7 +107,7 @@ export async function progression2Routes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     try {
       const outcome = await runCommand(userId, body, (state) => {
         const res = rerollBounties(state);
@@ -134,7 +134,7 @@ export async function progression2Routes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     try {
       const outcome = await runCommand(userId, body, (state) => {
         const res = doPrestige(state);

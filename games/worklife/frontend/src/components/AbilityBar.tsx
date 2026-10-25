@@ -34,42 +34,60 @@ type Props = {
   maxMp: number;
   guardActive: boolean;
   disabled?: boolean;
-  onCast: (abilityId: string) => void;
+  onCast?: (abilityId: string) => void;
 };
 
 /**
- * MWI-style ability row during a fight. Equipped abilities auto-cast by trigger on the server; the
- * buttons show cooldown / mana state and let the player fire one by hand (the server still decides).
+ * MWI-style passive/auto-cast ability icon row during a fight.
+ * All active abilities fire automatically when off cooldown & trigger is met; each slot is a pure
+ * status icon showing its live cooldown (CD) overlay and countdown.
  */
 export function AbilityBar(props: Props) {
   if (props.abilities.length === 0) {
-    return <div className="ability-bar empty">没有装备技能 · 在冒险页的战斗配置里放入技能</div>;
+    return null;
   }
   return (
-    <div className="ability-bar" role="group" aria-label="技能">
+    <div className="ability-bar ability-icon-bar" role="group" aria-label="自动技能状态">
       {props.abilities.map((a) => {
         const ready = props.readyAt(a.def.id);
         const cdLeft = Math.max(0, ready - props.now);
+        const cdTotal = Math.max(1, a.def.cooldownMs || 8000);
+        const cdPct = cdLeft > 0 ? Math.min(100, Math.max(0, ((cdTotal - Math.min(cdTotal, cdLeft)) / cdTotal) * 100)) : 100;
+        const remainPct = Math.max(0, Math.min(100, 100 - cdPct));
         const noMana = a.def.mpCost > props.mp;
-        const urgent = a.def.breaksGuard && props.guardActive && cdLeft === 0;
-        const isReady = cdLeft === 0 && !noMana;
-        const state = cdLeft > 0 ? `冷却 ${Math.ceil(cdLeft / 1000)}s` : noMana ? `魔力不足（需 ${a.def.mpCost}）` : urgent ? "破防！" : "就绪";
+        const urgent = !props.disabled && Boolean(a.def.breaksGuard && props.guardActive && cdLeft === 0);
+        const isReady = !props.disabled && cdLeft === 0 && !noMana;
+        const stateText = props.disabled
+          ? "待命中"
+          : cdLeft > 0
+            ? `冷却中 ${(cdLeft / 1000).toFixed(1)}s`
+            : noMana
+              ? `魔力不足（需 ${a.def.mpCost}）`
+              : urgent
+                ? "自动破防就绪"
+                : "自动释放就绪";
         const label = `${a.def.name}${a.level > 1 ? ` Lv.${a.level}` : ""}`;
         return (
-          <button
+          <div
             key={a.def.id}
-            type="button"
-            className={`btn-action skill-action ability-btn${isReady ? " skill-ready" : ""}${urgent ? " skill-urgent" : ""}`}
-            disabled={props.disabled || !isReady}
-            title={`${a.def.blurb}\n触发：${describeTrigger(a.trigger)}`}
-            onClick={() => props.onCast(a.def.id)}
+            className={`ability-icon-slot${isReady ? " is-ready" : ""}${cdLeft > 0 ? " on-cd" : ""}${noMana ? " no-mana" : ""}${urgent ? " is-urgent" : ""}`}
+            title={`${label}（自动释放）\n${a.def.blurb}\n触发条件：${describeTrigger(a.trigger)} · 冷却 ${(cdTotal / 1000).toFixed(0)}s${a.def.mpCost > 0 ? ` · 魔力 ${a.def.mpCost}` : ""}\n状态：${stateText}`}
+            aria-label={`${label} ${stateText}`}
           >
-            <T1Art kind="skills" id={a.def.id} fallback={abilityEmoji(a.def.id)} alt="" />
-            <span className="ability-copy">
-              <strong>{label}</strong>
-              <small>{state}{a.def.mpCost > 0 ? ` · ${a.def.mpCost} 魔力` : ""}</small>
-            </span>
-          </button>
+            <div className="ability-icon-art">
+              <T1Art kind="skills" id={a.def.id} fallback={abilityEmoji(a.def.id)} alt={a.def.name} />
+            </div>
+            {cdLeft > 0 && (
+              <>
+                <div className="ability-icon-cd-sweep" style={{ height: `${remainPct}%` }} aria-hidden="true" />
+                <span className="ability-icon-cd-text">{(cdLeft / 1000).toFixed(1)}s</span>
+              </>
+            )}
+            {cdLeft === 0 && noMana && (
+              <span className="ability-icon-cd-text is-oom">缺蓝</span>
+            )}
+            {a.level > 1 && <span className="ability-icon-lvl">Lv.{a.level}</span>}
+          </div>
         );
       })}
     </div>

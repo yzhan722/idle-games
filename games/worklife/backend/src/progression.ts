@@ -8,7 +8,7 @@ import type {
   PlayerStats,
   DailyQuestState
 } from "./types";
-import { ensurePlayerExtensions } from "./storage";
+import { ensurePlayerExtensions, grantProfessionXp } from "./storage";
 import { todayLocal } from "./time";
 
 // ============ 成就定义 ============
@@ -156,7 +156,7 @@ type DailyTemplate = {
   reward: { gold: number; xp?: number };
 };
 
-const DAILY_TEMPLATES: DailyTemplate[] = [
+export const DAILY_TEMPLATES: DailyTemplate[] = [
   { id: "dq_gather_30", name: "今日采集", description: "今日采集 30 次", icon: "🌿", metric: "totalGathered", target: 30, reward: { gold: 200 } },
   { id: "dq_gather_60", name: "勤采不辍", description: "今日采集 60 次", icon: "🍃", metric: "totalGathered", target: 60, reward: { gold: 400 } },
   { id: "dq_craft_15", name: "今日制作", description: "今日制作 15 件", icon: "🔧", metric: "totalCrafted", target: 15, reward: { gold: 250 } },
@@ -255,5 +255,11 @@ export function claimDailyQuest(
     player.inventory.gold = (player.inventory.gold || 0) + gold;
     stats.totalGoldEarned += gold;
   }
-  return { ok: true, goldGained: gold, xpGained: quest.reward.xp || 0 };
+  const xp = quest.reward.xp || 0;
+  if (xp > 0) {
+    const skillKey = `skill_${player.activeClassId || "woodcutter"}`;
+    grantProfessionXp(player, skillKey, xp);
+  }
+  syncAchievements(player);
+  return { ok: true, goldGained: gold, xpGained: xp };
 }

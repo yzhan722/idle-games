@@ -1,3 +1,5 @@
+import { resolveMechanicDefs, type BossMechanicDef } from "./bossMechanics";
+
 export type Encounter = {
   id: string;
   name: string;
@@ -15,6 +17,8 @@ export type Encounter = {
   incomingDamageMult?: number;
   outgoingDamageMult?: number;
   mechanics?: string[];
+  /** `mechanics` resolved against the pack's `bossMechanics` table (preview + monster card). */
+  mechanicDefs?: BossMechanicDef[];
   desc?: string;
   icon?: string;
   rare?: string;
@@ -22,6 +26,7 @@ export type Encounter = {
 };
 
 type Pack = {
+  bossMechanics?: BossMechanicDef[];
   monsters?: Array<Record<string, unknown> & { id: string }>;
   stages?: Array<{ id: string; name: string; monsters: string[] }>;
   encounterStages?: Array<{ id: string; name: string; encounters: Encounter[] }>;
@@ -57,6 +62,7 @@ export function encounterStages(pack: Pack | null | undefined): Array<{
         map: stage.id,
         actionId: `act_combat_${id}`,
         isBoss,
+        mechanicDefs: resolveMechanicDefs(m.mechanics as string[] | undefined, pack.bossMechanics),
         archetype: String(m.archetype || (isBoss ? "boss" : "ordinary")),
         attackIntervalMs: Number(m.attackIntervalMs || (isBoss ? 2200 : 2400)),
         incomingDamageMult: Number(m.incomingDamageMult || 1),
@@ -72,7 +78,7 @@ export function encounterStages(pack: Pack | null | undefined): Array<{
  * roster has art (a zone with emoji monsters is not shipped). Append the next id here when its
  * seven illustrations land — the adventure sidebar and VS-01 read this list.
  */
-export const OPEN_ZONE_IDS = ["forest", "mine", "swamp", "snow"] as const;
+export const OPEN_ZONE_IDS = ["forest", "mine", "swamp", "snow", "volcano", "abyss", "celestial", "rift", "inferno", "genesis", "omega"] as const;
 
 /** Sidebar model: the zones to list and the next locked door (undefined when everything is open). */
 export function zoneDoors<S extends { id: string }>(stages: S[], chapterDone: boolean): { open: S[]; locked: S | undefined } {

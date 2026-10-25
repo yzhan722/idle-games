@@ -1,10 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
-import { ACTION_QUEUE_MAX, getActionRates, getRareFindMultiplier, yieldChance, queuedActionBlocker, startNextQueuedAction, startLifeActionNow, startCombatFarmNow, type Storage } from "../storage";
+import { ACTION_QUEUE_MAX, getActionRates, getRareFindMultiplier, yieldChance, queuedActionBlocker, startNextQueuedAction, startLifeActionNow, type Storage } from "../storage";
 import type { EnhancedContentPack, EnhancedPlayerState } from "../types";
 import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
-import { OFFLINE_REPORT_MIN_MS, buildOfflineReport, reportHasContent, snapshotForReport } from "../offline_report";
 import { taskSummary } from "../tasks";
 
 const revisionSchema = {
@@ -31,43 +30,33 @@ export async function playerRoutes(
       return reply.status(401).send({ error: "Unauthorized" });
     }
 
-    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    const now = new Date();
-    const from = new Date(state.lastSimulatedAt);
-    const away = now.getTime() - from.getTime();
-    const before = away >= OFFLINE_REPORT_MIN_MS ? snapshotForReport(state as EnhancedPlayerState) : null;
-    let next = (await storage.simulateToNow({ userId, state, now, contentPack })) as EnhancedPlayerState;
-
-    // 离线报告：离开 ≥5 分钟后回来的第一次结算，把这段时间发生的事整理成一份摘要
-    if (before) {
-      const report = buildOfflineReport(before, next, contentPack, from, now);
-      if (reportHasContent(report) || next.mode !== "idle") {
-        next.offlineReport = report;
-        next = (await storage.savePlayerState(userId, next)) as EnhancedPlayerState;
+    const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
+    const inPartyCombat = Boolean(activeParty?.currentActivity);
+    let state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    // 组队战斗与生活动作/单人战斗严格互斥：在组队副本中时禁止同时结算生活动作或单人战斗
+    if (inPartyCombat && (state.mode === "life_action" || state.lifeActionState || state.hpCombat)) {
+      if (state.hpCombat && !state.hpCombat.outcome) {
+        const { persistCombatHp } = require("../hp_combat") as typeof import("../hp_combat");
+        persistCombatHp(state, state.hpCombat.playerHp, Date.now());
       }
+      state.mode = "idle";
+      state.lifeActionState = undefined;
+      state.hpCombat = undefined;
+      if (state.combatLoadout?.autoRepeat) {
+        state.combatLoadout = { ...state.combatLoadout, autoRepeat: false };
+      }
+      state = await storage.savePlayerState(userId, state);
     }
+    const next = (await storage.simulateToNow({ userId, state, now: new Date(), contentPack })) as EnhancedPlayerState;
 
     // MWI task badge: how many tasks are claimable right now (derived, not stored).
-    return reply.send({ ...next, taskSummary: taskSummary(next) });
-  });
-
-  app.post("/player/offline-report/ack", async (req: FastifyRequest, reply: FastifyReply) => {
-    const userId = (req as any).userId as string;
-    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
-    try {
-      const outcome = await storage.executePlayerCommand({
-        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
-        operationId: body.operationId, operationPayload: operationPayload(body),
-        apply(state) {
-          (state as EnhancedPlayerState).offlineReport = undefined;
-          return { ok: true as const };
-        },
-      });
-      return reply.send({ ok: true, stateRevision: outcome.state.stateRevision });
-    } catch (error) {
-      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
-    }
+    return reply.send({
+      ...next,
+      taskSummary: taskSummary(next),
+      activePartyActivity: activeParty?.currentActivity
+        ? { partyId: activeParty.id, ...activeParty.currentActivity }
+        : null,
+    });
   });
 
   app.post("/actions/start", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -82,13 +71,22 @@ export async function playerRoutes(
         quantity: z.number().int().positive().max(5000).optional(),
         ...revisionSchema,
       })
-      .parse((req.body ?? {}) as unknown);
+      .strict()      .parse((req.body ?? {}) as unknown);
     const now = new Date();
+    const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
+    const inPartyCombat = Boolean(activeParty?.currentActivity);
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now, expectedRevision: body.expectedRevision,
         operationId: body.operationId, operationPayload: operationPayload(body),
         apply(state) {
+          const inSoloCombat = Boolean(
+            state.hpCombat &&
+              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+          );
+          if (inPartyCombat || inSoloCombat) {
+            throw new PlayerCommandRejected('already_in_combat');
+          }
           try {
             startLifeActionNow(state, contentPack, body.actionId, body.quantity, now);
           } catch (err) {
@@ -100,11 +98,14 @@ export async function playerRoutes(
       return reply.send(outcome.state);
     } catch (error) {
       return commandFail(reply, error, (code, r) => {
+        if (code === 'already_in_combat') {
+          return r.status(409).send({ error: code, message: '战斗中不能开始生活动作，请先结束战斗' });
+        }
         if (code.startsWith('skill_level_required:')) {
           const need = code.split(':')[1];
           return r.status(400).send({ error: 'skill_level_required', message: `技能等级不足，需要 ${need} 级` });
         }
-        return r.status(400).send({ error: code, message: code === 'unknown_action' ? '未知的动作' : code });
+        return r.status(400).send({ error: code, message: code === 'unknown_action' ? '未知的动作' : code === 'stage_locked' ? '该区域尚未开放' : code });
       });
     }
   });
@@ -115,8 +116,10 @@ export async function playerRoutes(
       return reply.status(401).send({ error: "Unauthorized" });
     }
 
-    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
+    const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
+    const inPartyCombat = Boolean(activeParty?.currentActivity);
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now, expectedRevision: body.expectedRevision,
@@ -126,8 +129,13 @@ export async function playerRoutes(
           state.mode = "idle";
           state.lifeActionState = undefined;
           state.combatFarmState = undefined;
-          // 停掉当前动作后，队列里还有的话直接接上（清空队列请用 /actions/queue/clear）
-          startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
+          // 停掉当前动作后，队列里还有的话直接接上（清空队列请用 /actions/queue/clear）。
+          // 单人战斗或组队战斗进行中均不接续——防止边打怪边执行队列生活动作
+          const inSoloCombat = Boolean(
+            state.hpCombat &&
+              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+          );
+          if (!inSoloCombat && !inPartyCombat) startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
           return { ok: true as const };
         },
       });
@@ -195,8 +203,10 @@ export async function playerRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     const body = z
       .object({ actionId: z.string().min(1), quantity: z.number().int().positive().max(5000).optional(), ...revisionSchema })
-      .parse((req.body ?? {}) as unknown);
+      .strict()      .parse((req.body ?? {}) as unknown);
     const now = new Date();
+    const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
+    const inPartyCombat = Boolean(activeParty?.currentActivity);
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now, expectedRevision: body.expectedRevision,
@@ -215,8 +225,13 @@ export async function playerRoutes(
             throw new PlayerCommandRejected(blocker);
           }
           state.activityQueue.push({ id: randomUUID(), actionId: body.actionId, ...(body.quantity ? { quantity: body.quantity } : {}) });
-          // 空闲时排队等于立刻开始
-          if (state.mode !== 'life_action') startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
+          // 仅真正空闲时才立刻开始：单人战斗/组队战斗/刷关中排队只入队等待，否则 mode 会被翻成
+          // life_action 但战斗仍在继续，变成边打怪边制作的双进度状态。
+          const inSoloCombat = Boolean(
+            state.hpCombat &&
+              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+          );
+          if (state.mode === 'idle' && !inSoloCombat && !inPartyCombat) startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
           return { ok: true as const };
         },
       });
@@ -242,20 +257,23 @@ export async function playerRoutes(
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now: new Date(),
         apply(state) {
-          state.activityQueue = (state.activityQueue || []).filter((q) => q.id !== id);
+          const q = state.activityQueue || [];
+          if (!q.some((x) => x.id === id)) throw new PlayerCommandRejected('queue_item_not_found');
+          state.activityQueue = q.filter((x) => x.id !== id);
           return { ok: true as const };
         },
       });
       return reply.send(outcome.state);
     } catch (error) {
-      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+      return commandFail(reply, error, (code, r) =>
+        r.status(code === 'queue_item_not_found' ? 404 : 400).send({ error: code, message: code === 'queue_item_not_found' ? '队列项不存在' : code }));
     }
   });
 
   app.post("/actions/queue/clear", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
@@ -274,7 +292,7 @@ export async function playerRoutes(
   app.post("/actions/queue/move", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ id: z.string().min(1), direction: z.enum(["up", "down"]), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ id: z.string().min(1), direction: z.enum(["up", "down"]), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
@@ -282,40 +300,21 @@ export async function playerRoutes(
         apply(state) {
           const q = state.activityQueue || [];
           const i = q.findIndex((x) => x.id === body.id);
+          if (i < 0) throw new PlayerCommandRejected("queue_item_not_found");
           const j = body.direction === "up" ? i - 1 : i + 1;
-          if (i >= 0 && j >= 0 && j < q.length) {
-            [q[i], q[j]] = [q[j], q[i]];
-          }
+          if (j < 0 || j >= q.length) throw new PlayerCommandRejected("queue_move_out_of_range");
+          [q[i], q[j]] = [q[j], q[i]];
           state.activityQueue = q;
           return { ok: true as const };
         },
       });
       return reply.send(outcome.state);
     } catch (error) {
-      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
-    }
-  });
-
-  app.post("/combat/start", async (req: FastifyRequest, reply: FastifyReply) => {
-    const userId = (req as any).userId as string;
-    if (!userId) {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-
-    const body = z.object({ stageId: z.string().min(1), ...revisionSchema }).parse((req.body ?? {}) as unknown);
-    const now = new Date();
-    try {
-      const outcome = await storage.executePlayerCommand({
-        userId, contentPack, now, expectedRevision: body.expectedRevision,
-        operationId: body.operationId, operationPayload: operationPayload(body),
-        apply(state) {
-          startCombatFarmNow(state, body.stageId, now);
-          return { ok: true as const };
-        },
-      });
-      return reply.send(outcome.state);
-    } catch (error) {
-      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+      return commandFail(reply, error, (code, r) =>
+        code === "queue_item_not_found"
+          ? r.status(404).send({ error: code, message: "队列中不存在该动作" })
+          : r.status(400).send({ error: code })
+      );
     }
   });
 
@@ -330,13 +329,25 @@ export async function playerRoutes(
     const body = z.object({
       classId: z.enum(CLASS_IDS),
       ...revisionSchema,
-    }).parse((req.body ?? {}) as unknown);
+    }).strict().parse((req.body ?? {}) as unknown);
 
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
         operationId: body.operationId, operationPayload: operationPayload(body),
         apply(state) {
+          // 行动/战斗/强化中不允许切职业：伐木中切厨师会继续吃伐木队列却显示厨师技能栏，
+          // 战斗中途换职业则连战循环跨职业漂移。先停当前动作再切换。
+          const inSoloCombat = Boolean(
+            state.hpCombat &&
+              (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+          );
+          if (inSoloCombat) {
+            throw new PlayerCommandRejected("combat_in_progress", "战斗中不能切换职业");
+          }
+          if (state.mode === "life_action" || (state.enhanceRun && !state.enhanceRun.outcome)) {
+            throw new PlayerCommandRejected("action_in_progress", "正在执行动作，请先停止再切换职业");
+          }
           state.activeClassId = body.classId;
           return { ok: true as const };
         },

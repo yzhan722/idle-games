@@ -7,12 +7,23 @@ type PackItem = {
   type?: string;
   foodSlots?: number;
   drinkSlots?: number;
-  effect?: { hp?: number; mp?: number; buff?: { id: string; name: string; durationSec?: number; multipliers?: Record<string, number>; stats?: Record<string, number> } };
+  effect?: {
+    hp?: number;
+    mp?: number;
+    buff?: {
+      id: string;
+      name: string;
+      durationSec?: number;
+      multipliers?: Record<string, number>;
+      stats?: Record<string, number>;
+    };
+  };
 };
 
 export type CombatLoadout = {
   food: Array<{ itemId: string; triggerMissingHp: number }>;
-  drink: Array<{ itemId: string }>;
+  drink: Array<{ itemId: string; triggerMissingMp?: number }>;
+  mp?: Array<{ itemId: string; triggerMissingMp: number }>;
   autoRepeat?: boolean;
 };
 
@@ -22,6 +33,7 @@ type Props = {
   inventory: Record<string, number>;
   equipment: Record<string, unknown> | undefined;
   playerMaxHp: number;
+  playerMaxMp?: number;
   iconOf: (itemId: string) => string;
   onChange: (next: CombatLoadout) => void;
   compact?: boolean;
@@ -46,24 +58,24 @@ export function slotCounts(equipment: Record<string, unknown> | undefined, items
 
 /**
  * MWI-style consumable slots for combat. Food slots eat when missing HP ≥ trigger (30s cooldown each),
- * drink slots keep their buff up, plus the auto-repeat toggle. Slot count comes from equipped pouches.
- * Only items the player owns are offered, so the panel doubles as "what do I have that helps in a fight".
+ * MP slot drinks when missing MP ≥ trigger (20s cooldown), and drink slots keep their status buff up.
  */
 export function CombatLoadoutPanel(props: Props) {
-  // Optimistic local copy: the server round-trip takes a moment and a controlled control that
-  // does not move on click feels broken. Re-synced whenever the server loadout changes.
-  const [lo, setLo] = useState<CombatLoadout>(props.loadout || { food: [], drink: [], autoRepeat: false });
+  const [lo, setLo] = useState<CombatLoadout>(props.loadout || { food: [], drink: [], mp: [], autoRepeat: false });
   const serverKey = JSON.stringify(props.loadout || null);
   useEffect(() => {
-    setLo(props.loadout || { food: [], drink: [], autoRepeat: false });
+    setLo(props.loadout || { food: [], drink: [], mp: [], autoRepeat: false });
   }, [serverKey]);
 
   const counts = slotCounts(props.equipment, props.items);
   const owned = (pred: (i: PackItem) => boolean) =>
     (props.items || []).filter((i) => (i.type === "consumable" || i.type === "food") && (props.inventory[i.id] || 0) > 0 && pred(i));
   const foods = owned((i) => Number(i.effect?.hp) > 0);
+  const mpPotions = owned((i) => Number(i.effect?.mp) > 0);
   const drinks = owned((i) => !!i.effect?.buff);
   const defaultTrigger = Math.max(1, Math.round(props.playerMaxHp * 0.5));
+  const maxMp = Math.max(20, props.playerMaxMp || 50);
+  const defaultMpTrigger = Math.max(1, Math.round(maxMp * 0.4));
   const describeBuff = (d?: PackItem) => {
     const b = d?.effect?.buff;
     if (!b) return "";
@@ -86,6 +98,10 @@ export function CombatLoadoutPanel(props: Props) {
     else food[i] = { itemId, triggerMissingHp: trigger ?? food[i]?.triggerMissingHp ?? defaultTrigger };
     update({ food: food.filter(Boolean) });
   };
+  const setMp = (itemId: string, trigger?: number) => {
+    if (!itemId) update({ mp: [] });
+    else update({ mp: [{ itemId, triggerMissingMp: trigger ?? lo.mp?.[0]?.triggerMissingMp ?? defaultMpTrigger }] });
+  };
   const setDrink = (i: number, itemId: string) => {
     const drink = [...lo.drink];
     if (!itemId) drink.splice(i, 1);
@@ -97,8 +113,8 @@ export function CombatLoadoutPanel(props: Props) {
     <section className={`combat-loadout${props.compact ? " compact" : ""}`} aria-label="战斗配置">
       <div className="loadout-slot">
         <div className="loadout-slot-head">
-          <span className="loadout-slot-title">🍖 食物槽 <small>{counts.food}/{SLOT_CAP}</small></span>
-          <span className="loadout-slot-sub">缺血到阈值就吃，每格 30 秒一次{counts.food < SLOT_CAP ? " · 布袋饰品可加格" : ""}</span>
+          <span className="loadout-slot-title">❤️ 生命药剂 / 食物槽 <small>{counts.food}/{SLOT_CAP}</small></span>
+          <span className="loadout-slot-sub">缺血到阈值就喝，每格 30 秒一次{counts.food < SLOT_CAP ? " · 布袋饰品可加格" : ""}</span>
         </div>
         <div className="loadout-slot-body">
           {Array.from({ length: counts.food }).map((_, i) => {
@@ -149,22 +165,67 @@ export function CombatLoadoutPanel(props: Props) {
               </div>
             );
           })}
-          {foods.length === 0 && lo.food.length === 0 && <div className="loadout-hint">背包里没有能恢复生命的食物或药水。烹饪 / 炼金可以做。</div>}
+          {foods.length === 0 && lo.food.length === 0 && <div className="loadout-hint">背包里没有能恢复生命的食物或药水。商店 / 烹饪 / 炼金可获取。</div>}
         </div>
       </div>
 
       <div className="loadout-slot">
         <div className="loadout-slot-head">
-          <span className="loadout-slot-title">🧪 饮品槽 <small>{counts.drink}/{SLOT_CAP}</small></span>
-          <span className="loadout-slot-sub">增益掉了就自动再喝</span>
+          <span className="loadout-slot-title">💧 魔力药剂槽 <small>1/1</small></span>
+          <span className="loadout-slot-sub">缺蓝达到阈值自动补充魔力（20秒冷却）</span>
         </div>
         <div className="loadout-slot-body">
-          {Array.from({ length: counts.drink }).map((_, i) => {
+          {(() => {
+            const curMp = lo.mp?.[0];
+            const def = curMp ? props.items?.find((x) => x.id === curMp.itemId) : undefined;
+            const trigger = curMp?.triggerMissingMp || defaultMpTrigger;
+            return (
+              <div className="loadout-row">
+                <select
+                  className="loadout-select"
+                  value={curMp?.itemId || ""}
+                  onChange={(e) => setMp(e.target.value)}
+                  aria-label="魔力药剂"
+                >
+                  <option value="">（空）</option>
+                  {mpPotions.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ×{props.inventory[m.id]} · 恢复 {m.effect?.mp} 魔力
+                    </option>
+                  ))}
+                  {curMp && !mpPotions.some((m) => m.id === curMp.itemId) && <option value={curMp.itemId}>{def?.name || curMp.itemId}（没有了）</option>}
+                </select>
+                {curMp && (
+                  <div className="loadout-trigger" role="group" aria-label="缺蓝触发阈值">
+                    <span>缺蓝 ≥</span>
+                    {[0.3, 0.5, 0.75].map((p) => {
+                      const v = Math.max(1, Math.round(maxMp * p));
+                      return (
+                        <button key={p} type="button" className={`qty-chip${trigger === v ? " active" : ""}`} onClick={() => setMp(curMp.itemId, v)}>
+                          {v}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      <div className="loadout-slot">
+        <div className="loadout-slot-head">
+          <span className="loadout-slot-title">🧪 状态药剂槽 <small>3/{SLOT_CAP}</small></span>
+          <span className="loadout-slot-sub">进入战斗或增益到期时自动续杯（狂战 / 铁壁 / 奥术涌流 / 守护战意）</span>
+        </div>
+        <div className="loadout-slot-body">
+          {Array.from({ length: SLOT_CAP }).map((_, i) => {
             const cur = lo.drink[i];
             const def = cur ? props.items?.find((x) => x.id === cur.itemId) : undefined;
             return (
               <div className="loadout-row" key={`drink-${i}`}>
-                <select className="loadout-select" value={cur?.itemId || ""} onChange={(e) => setDrink(i, e.target.value)} aria-label={`饮品 ${i + 1}`}>
+                <select className="loadout-select" value={cur?.itemId || ""} onChange={(e) => setDrink(i, e.target.value)} aria-label={`状态药剂 ${i + 1}`}>
                   <option value="">（空）</option>
                   {drinks.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -177,7 +238,7 @@ export function CombatLoadoutPanel(props: Props) {
               </div>
             );
           })}
-          {drinks.length === 0 && lo.drink.length === 0 && <div className="loadout-hint">背包里没有增益饮品。狂战药剂 +20 攻击对 Boss 很有用。</div>}
+          {drinks.length === 0 && lo.drink.length === 0 && <div className="loadout-hint">背包里没有状态药剂。狂战药剂(+20攻)、铁壁药剂(+18防)、奥术涌流药剂对战斗很有帮助。</div>}
         </div>
       </div>
 
@@ -188,20 +249,28 @@ export function CombatLoadoutPanel(props: Props) {
           <small>胜利后 3 秒自动再打同一只，离线也继续（有食物才安全）；拖得久怪物会狂暴</small>
         </span>
       </label>
-      {(lo.food.length > 0 || lo.drink.length > 0) && (
+      {(lo.food.length > 0 || (lo.mp?.length || 0) > 0 || lo.drink.length > 0) && (
         <div className="loadout-summary">
           {lo.food.map((f) => {
             const d = props.items?.find((x) => x.id === f.itemId);
             return (
               <span className="loadout-chip" key={`c-${f.itemId}`}>
-                <T1ItemIcon itemId={f.itemId} fallback={props.iconOf(f.itemId)} alt="" /> {d?.name || f.itemId} · 缺血 {f.triggerMissingHp} 时吃
+                <T1ItemIcon itemId={f.itemId} fallback={props.iconOf(f.itemId)} alt="" /> {d?.name || f.itemId} · 缺血 {f.triggerMissingHp} 时喝
               </span>
             );
           })}
-          {lo.drink.map((dr) => {
+          {(lo.mp || []).map((m) => {
+            const d = props.items?.find((x) => x.id === m.itemId);
+            return (
+              <span className="loadout-chip" key={`m-${m.itemId}`}>
+                <T1ItemIcon itemId={m.itemId} fallback={props.iconOf(m.itemId)} alt="" /> {d?.name || m.itemId} · 缺蓝 {m.triggerMissingMp} 时喝
+              </span>
+            );
+          })}
+          {lo.drink.map((dr, idx) => {
             const d = props.items?.find((x) => x.id === dr.itemId);
             return (
-              <span className="loadout-chip" key={`d-${dr.itemId}`}>
+              <span className="loadout-chip" key={`d-${dr.itemId}-${idx}`}>
                 <T1ItemIcon itemId={dr.itemId} fallback={props.iconOf(dr.itemId)} alt="" /> {d?.name || dr.itemId}
               </span>
             );

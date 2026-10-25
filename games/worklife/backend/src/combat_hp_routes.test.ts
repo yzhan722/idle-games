@@ -118,6 +118,48 @@ test('flee clears the fight and auto-repeat, and the next start works through th
   } finally { await f.storage.close(); }
 });
 
+test('flee clears zombie life-action and farm state left by a corrupt save', async () => {
+  const f = await fixture();
+  try {
+    const started = await f.start();
+    assert.equal(started.statusCode, 200);
+    // 残影状态：战斗中还挂着 lifeActionState / combatFarmState（老存档或异常路径留下的）
+    const st = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
+    st.lifeActionState = { actionId: 'act_chop_wood_t1', startedAt: new Date().toISOString() };
+    st.combatFarmState = { stageId: 'stage_t1_forest', startedAt: new Date().toISOString(), seed: 's' };
+    await f.storage.savePlayerState(f.userId, st);
+    const fled = await f.flee();
+    assert.equal(fled.statusCode, 200);
+    const after = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
+    assert.equal(after.hpCombat, undefined);
+    assert.equal(after.mode, 'idle');
+    assert.equal(after.lifeActionState, undefined);
+    assert.equal(after.combatFarmState, undefined);
+  } finally { await f.storage.close(); }
+});
+
+test('enabling auto-repeat via /loadout on a finished fight schedules the next fight', async () => {
+  const f = await fixture(s => {
+    s.hpCombat = { monsterId: 'slime', monsterName: '史莱姆', outcome: 'win', playerHp: 40, enemyHp: 0, log: [], startedAt: Date.now() - 10_000 } as never;
+    s.combatLoadout = { food: [], drink: [], autoRepeat: false };
+  });
+  try {
+    const before = Date.now();
+    const r = await f.loadout({ food: [], drink: [], autoRepeat: true });
+    assert.equal(r.statusCode, 200);
+    assert.equal(r.payload.combatLoadout.autoRepeat, true);
+    const nfa = r.payload.hpCombat?.nextFightAt;
+    assert.ok(typeof nfa === 'number' && nfa >= before + 3_000 && nfa <= Date.now() + 3_500,
+      `expected nextFightAt ≈ now+3s, got ${nfa}`);
+    // 关掉不应再排下一场
+    const off = await f.loadout({ food: [], drink: [], autoRepeat: false });
+    assert.equal(off.statusCode, 200);
+    const st = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
+    assert.equal(st.combatLoadout!.autoRepeat, false);
+    assert.equal(st.hpCombat?.outcome, 'win');
+  } finally { await f.storage.close(); }
+});
+
 test('a stale combat build revision returns the current revision without choosing', async () => {
   const f = await fixture();
   try {

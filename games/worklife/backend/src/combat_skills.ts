@@ -1,5 +1,5 @@
 import type { CombatSkillId, CombatSkills, EnhancedPlayerState } from "./types";
-import { appendLog, getXpForLevel } from "./storage";
+import { appendLog, getXpForLevel, isDurabilityBroken } from "./storage";
 
 /**
  * MWI combat skills.
@@ -81,7 +81,11 @@ export function weaponMainSkill(mainHandItemId: string | undefined): CombatSkill
 }
 
 export function mainCombatSkill(player: EnhancedPlayerState): CombatSkillId {
-  return weaponMainSkill((player.equipment as { main_hand?: string } | undefined)?.main_hand);
+  const mainHand = (player.equipment as { main_hand?: string } | undefined)?.main_hand;
+  if (!mainHand || (player.inventory?.[mainHand] || 0) <= 0 || isDurabilityBroken(player, mainHand)) {
+    return "melee";
+  }
+  return weaponMainSkill(mainHand);
 }
 
 /** The five skills that share the 70%: the four utility skills plus the weapon's main skill. */
@@ -103,6 +107,7 @@ export function focusedCombatSkill(player: EnhancedPlayerState, pack: CharmPack 
   const eq = player.equipment as { accessory1?: string; accessory2?: string } | undefined;
   for (const id of [eq?.accessory1, eq?.accessory2]) {
     if (!id) continue;
+    if ((player.inventory?.[id] || 0) <= 0 || isDurabilityBroken(player, id)) continue;
     const item = pack.items.find((i) => i.id === id);
     const focus = item?.focusSkill as CombatSkillId | undefined;
     if (focus && FOCUSABLE.includes(focus)) return focus;

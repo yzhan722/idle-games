@@ -16,8 +16,9 @@ export function enhancementBonusPct(level: number): number {
   return ENHANCEMENT_BONUS_PCT[safe];
 }
 
-export function enhancementSlotMultiplier(item?: { type?: string; slot?: string }): number {
-  return item?.type === "accessory" || item?.slot === "accessory" ? 5 : 1;
+/** Mirror of backend enhancementSlotMultiplier: every slot enhances at 1× (jewelry no longer 5×). */
+export function enhancementSlotMultiplier(_item?: { type?: string; slot?: string }): number {
+  return 1;
 }
 
 export function enhancementStatMultiplier(

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { defaultEnhancedPlayerState, simulateToNow } from './storage';
 import { startHpCombat, tickHpCombat } from './hp_combat';
+import { ensureCombatSkills } from './combat_skills';
 import raw from '../../shared/enhanced_content_pack_chinese.json';
 import type { EnhancedContentPack, EnhancedPlayerState } from './types';
 const pack = raw as EnhancedContentPack;
@@ -9,9 +10,14 @@ const t0 = new Date('2026-09-22T00:00:00Z');
 function fighter(monster = 'crab') {
   const p = defaultEnhancedPlayerState(pack.version);
   p.lastSimulatedAt = t0.toISOString();
+  // 装备槽是背包物品的指针：必须在背包里才有属性（幽灵槽按无装备处理）
+  p.inventory.weapon_wooden_sword = 1;
+  p.inventory.armor_wood_chest = 1;
   p.equipment.main_hand = 'weapon_wooden_sword';
   p.equipment.chest = 'armor_wood_chest';
   p.abilityLoadout = [];
+  ensureCombatSkills(p); // 先种 1 级技能（保属性），再抬 combatLevel 过等级门
+  p.combatLevel = 10;
   p.hpCombat = startHpCombat(p, pack, monster, t0);
   return p;
 }
@@ -31,29 +37,31 @@ test('the player settlement resumes a defeated auto-repeat run', () => {
   assert.notEqual(next.hpCombat?.outcome, 'loss');
   assert.equal(next.hpCombat?.deaths, 1);
 });
-test('bounded offline work resumes until it agrees with segmented online combat', () => {
-  let offline = fighter('slime'); let online = structuredClone(offline);
-  offline.combatLoadout = online.combatLoadout = { food: [], drink: [], autoRepeat: true };
+test('a long gap settles in one call and only pays the short recent window', () => {
+  let offline = fighter('slime');
+  offline.combatLoadout = { food: [], drink: [], autoRepeat: true };
   const end = new Date(+t0 + 8 * 3600_000);
-  for (let i = 1; i <= 480; i++) online = simulateToNow({state: online, now: new Date(+t0 + i * 60_000), contentPack: pack, rng: () => .99}).state as EnhancedPlayerState;
-  for (let n=0; n<200 && offline.lastSimulatedAt !== end.toISOString(); n++) offline = simulateToNow({state: offline, now: end, contentPack: pack, rng: () => .99}).state as EnhancedPlayerState;
+  offline = simulateToNow({state: offline, now: end, contentPack: pack, rng: () => .99}).state as EnhancedPlayerState;
   assert.equal(offline.lastSimulatedAt, end.toISOString());
-  assert.equal(offline.stats!.totalKills, online.stats!.totalKills);
-  assert.deepEqual(offline.inventory, online.inventory);
+  // 8 小时只结算最近 120 秒：击杀数以十计，绝不可能追上分段在线的 8 小时。
+  assert.ok(offline.stats!.totalKills < 50, `kills after 8h gap: ${offline.stats!.totalKills}`);
+  // 战斗时间锚点被平移进窗口，而不是停在 8 小时前。
+  assert.ok(end.getTime() - (offline.hpCombat?.startedAt ?? 0) < 8 * 3600_000, 'combat anchor shifted');
 });
 
-test('48 hours offline is capped once and never replays the discarded time', () => {
+test('a multi-day gap is discarded once and never replays', () => {
   let p = fighter('slime');
   p.combatLoadout = { food: [], drink: [], autoRepeat: true };
   const end = new Date(+t0 + 48 * 3600_000);
-  for (let i=0; i<500 && p.lastSimulatedAt !== end.toISOString(); i++) p = simulateToNow({state:p, now:end, contentPack:pack, rng:()=>.99}).state as EnhancedPlayerState;
+  p = simulateToNow({state:p, now:end, contentPack:pack, rng:()=>.99}).state as EnhancedPlayerState;
   assert.equal(p.lastSimulatedAt, end.toISOString());
   const kills = p.stats!.totalKills;
+  assert.ok(kills < 50, `kills after 48h gap: ${kills}`);
   p = simulateToNow({state:p, now:new Date(+end + 1000), contentPack:pack, rng:()=>.99}).state as EnhancedPlayerState;
   assert.ok(p.stats!.totalKills - kills <= 1, 'only one second of new time, not another day');
 });
 
-test('an intermission beyond the cap is shifted instead of replaying a discarded day', () => {
+test('an intermission beyond the settle window is shifted instead of replaying a discarded day', () => {
   let p = fighter('slime');
   p.combatLoadout = { food: [], drink: [], autoRepeat: true };
   p.hpCombat!.outcome = 'win';
@@ -64,7 +72,7 @@ test('an intermission beyond the cap is shifted instead of replaying a discarded
   assert.equal(p.stats!.totalKills, 0);
 });
 
-test('storage finishes every offline chunk before returning a state for a command', async () => {
+test('storage settles the whole allowed window in a single call', async () => {
   const { createMemoryStorage } = await import('./storage_memory');
   const storage = createMemoryStorage();
   try {
@@ -75,8 +83,9 @@ test('storage finishes every offline chunk before returning a state for a comman
     const now = new Date(+t0 + 8 * 3600_000);
     const next = await storage.simulateToNow({ userId: user.id, state, now, contentPack: pack });
     assert.equal(next.lastSimulatedAt, now.toISOString());
-    assert.equal(next.settlement?.complete, true);
-    assert.ok(next.stats!.totalKills > 100);
+    assert.equal((next as any).settlement, undefined);
+    // 离线不再累积收益：8 小时的缺口只结算最近 120 秒的战斗。
+    assert.ok(next.stats!.totalKills < 50, `kills after 8h gap: ${next.stats!.totalKills}`);
   } finally { await storage.close(); }
 });
 

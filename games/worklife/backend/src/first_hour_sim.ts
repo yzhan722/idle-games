@@ -126,8 +126,11 @@ export async function runFirstHourSimulation(): Promise<FirstHourReport> {
   const swordCrab = simulateFight(playerCombatant(swordOnly, contentPack), monsterCombatant(monster("crab")));
   const swordMonkey = simulateFight(playerCombatant(swordOnly, contentPack), monsterCombatant(monster("monkey")));
 
-  while ((state.skills.skill_woodcutter?.level || 1) < 3) {
-    await runAction("act_chop_wood_t1", 1);
+  // 采集/生产技能拆分后，胸甲要求木工 Lv.3——靠锯木板练木工（独立经验）
+  while ((state.skills.skill_woodworking?.level || 1) < 3) {
+    const woodForBoards = Math.max(0, 8 - (state.inventory.wood_1 || 0));
+    if (woodForBoards > 0) await runAction("act_chop_wood_t1", woodForBoards);
+    await runAction("act_craft_lumber_t1", 4);
   }
   const woodForChest = Math.max(0, 12 - (state.inventory.wood_1 || 0));
   if (woodForChest > 0) await runAction("act_chop_wood_t1", woodForChest);

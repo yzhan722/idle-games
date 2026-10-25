@@ -10,19 +10,25 @@ export function xpToNextLevel(level: number): number {
   if (level < 1) return 0;
   if (level >= 200) return Infinity;
 
-  const baseXP = 50;
   const earlyBaseXP = 40;
   const earlyExp = 1.35;
-  const level30XP = Math.floor(earlyBaseXP * Math.pow(30, earlyExp));
-
-  if (level <= 30) {
+  if (level <= 15) {
     return Math.floor(earlyBaseXP * Math.pow(level, earlyExp));
   }
-  if (level <= 100) {
-    return Math.floor(level30XP + baseXP * Math.pow(level - 30, 2.0));
+
+  const level15XP = Math.floor(earlyBaseXP * Math.pow(15, earlyExp));
+  if (level <= 30) {
+    return Math.floor(level15XP + 65 * Math.pow(level - 15, 1.65));
   }
-  const level100XP = Math.floor(level30XP + baseXP * Math.pow(70, 2.0));
-  return Math.floor(level100XP + baseXP * Math.pow(level - 100, 2.5) * 2);
+
+  const level30XP = Math.floor(level15XP + 65 * Math.pow(15, 1.65));
+  if (level <= 100) {
+    return Math.floor(level30XP + 56 * Math.pow(level - 30, 1.96));
+  }
+
+  const level100XP = Math.floor(level30XP + 56 * Math.pow(70, 1.96));
+  const d = level - 100;
+  return Math.floor(level100XP + 9500 * d + 110 * Math.pow(d, 2.15));
 }
 
 export function xpProgress(level: number, xp: number): { need: number; pct: number; remaining: number } {

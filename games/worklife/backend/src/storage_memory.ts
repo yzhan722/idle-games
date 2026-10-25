@@ -1,3 +1,4 @@
+import { highestActiveBonus } from './set_bonus';
 import { ensureProgression } from './progression_state';
 import { applyPlayerCommand, commandOperationHash, commandRevision, PlayerCommandConflict, PlayerCommandOperationMismatch, type PlayerCommand, type PlayerCommandReceipt } from './player_commands';
 import type { 
@@ -6,8 +7,6 @@ import type {
   UserRecord, 
   EnhancedPlayerState,
   EnhancedContentPack,
-  MarketListing,
-  TradeHistory,
   Party,
   PartyMember,
   ChatMessage,
@@ -25,22 +24,31 @@ import {
   enhancementUnlockIds,
 } from "./enhancement_utils";
 import { randomUUID } from "crypto";
-import { 
-  appendLog, 
-  defaultPlayerState, 
+import {
+  appendLog,
+  defaultPlayerState,
   defaultEnhancedPlayerState,
-  normalizeInv, 
-  pickSeed, 
-  settleToNowSync,
-  createMarketListing,
+  normalizeInv,
+  pickSeed,
+  simulateToNow,
   calculateTradingFee,
   createParty,
   getXpForLevel,
   addPartyMember,
   summarizeOrders,
   startLifeActionNow,
-  startCombatFarmNow
+  grantProfessionXp,
+  ensureProfessionSkills,
+  professionLevelForTree,
+  GATHER_SKILL_BY_PROFESSION,
+  CRAFT_SKILL_BY_PROFESSION,
+  isDurabilityBroken,
+  UsernameTaken
 } from "./storage";
+import { EQUIP_SLOT_KEYS } from "./equipment_equip";
+import { syncAchievements } from "./progression";
+import { isStageOpen } from "./zones";
+import { worldAnnouncements } from "./world_announce";
 import fs from "fs";
 import path from "path";
 import {
@@ -80,12 +88,12 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
   const usersByDevice = new Map<string, string>();
   const usersByGoogle = new Map<string, string>();
   const usersByResumeHash = new Map<string, string>();
+  const usersByUsername = new Map<string, string>(); // 小写用户名 -> userId
   const states = new Map<string, EnhancedPlayerState>();
   const tradingOrders = new Map<string, TradingOrder>();
 
   // 新增数据存储
-  const marketListings = new Map<string, MarketListing>();
-  const tradeHistory = new Map<string, TradeHistory>();
+
   const priceHistory = new Map<string, Map<string, import("./types").PriceHistory>>(); // itemId -> date -> PriceHistory
   const parties = new Map<string, Party>();
   const partyMembers = new Map<string, PartyMember[]>(); // partyId -> members
@@ -103,46 +111,135 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
   const ws = new Map<string, WsConn>();
   const channelMembers = new Map<string, Set<string>>();
 
+  function applyParsedSnapshot(snap: ReturnType<typeof parseSnapshot>) {
+    for (const u of snap.users) {
+      users.set(u.id, u);
+      if (u.guestDeviceId) usersByDevice.set(u.guestDeviceId, u.id);
+      if (u.googleSub) usersByGoogle.set(u.googleSub, u.id);
+      if (u.guestResumeTokenHash) usersByResumeHash.set(u.guestResumeTokenHash, u.id);
+      if (u.username) usersByUsername.set(u.username.toLowerCase(), u.id);
+    }
+    for (const [id, st] of snap.states) {
+      states.set(id, st);
+      if (st?.skills) {
+        for (const [skillKey, skillObj] of Object.entries(st.skills)) {
+          if (skillKey.startsWith("skill_") && skillObj?.unlockedRecipes?.some(r => r.startsWith("enhance_"))) {
+            const prof = skillKey.slice("skill_".length);
+            let set = enhancementProviderIndex.get(prof);
+            if (!set) { set = new Set(); enhancementProviderIndex.set(prof, set); }
+            set.add(id);
+          }
+        }
+      }
+    }
+    for (const p of snap.parties) parties.set(p.id, p);
+    for (const [userId, list] of snap.commandReceipts ?? []) {
+      commandReceipts.set(userId, new Map(list.map(r => [r.operationId, r])));
+    }
+    for (const o of snap.tradingOrders ?? []) {
+      if (o && o.id && o.quantity > 0) tradingOrders.set(o.id, o);
+    }
+    for (const [itemId, list] of snap.priceHistory ?? []) {
+      priceHistory.set(itemId, new Map(list.map(r => [r.recordDate, r])));
+    }
+    for (const req of snap.enhancementServiceRequests ?? []) {
+      if (req && req.id) enhancementServiceRequests.set(req.id, req);
+    }
+  }
+
   function loadPersist() {
     if (!opts?.persistPath) return;
-    try {
-      const raw = fs.readFileSync(opts.persistPath, "utf8");
-      const snap = parseSnapshot(JSON.parse(raw));
-      for (const u of snap.users) {
-        users.set(u.id, u);
-        if (u.guestDeviceId) usersByDevice.set(u.guestDeviceId, u.id);
-        if (u.googleSub) usersByGoogle.set(u.googleSub, u.id);
-        if (u.guestResumeTokenHash) usersByResumeHash.set(u.guestResumeTokenHash, u.id);
+    const primaryPath = opts.persistPath;
+    const bakPath = `${primaryPath}.bak`;
+    if (fs.existsSync(primaryPath)) {
+      try {
+        const raw = fs.readFileSync(primaryPath, "utf8");
+        const snap = parseSnapshot(JSON.parse(raw));
+        applyParsedSnapshot(snap);
+        return;
+      } catch (err) {
+        console.error(`[storage] Primary save file corrupted (${primaryPath}), preserving and attempting .bak recovery:`, err);
+        try {
+          fs.copyFileSync(primaryPath, `${primaryPath}.corrupt.${Date.now()}`);
+        } catch {}
       }
-      for (const [id, st] of snap.states) states.set(id, st);
-      for (const p of snap.parties) parties.set(p.id, p);
-      for (const [userId, list] of snap.commandReceipts ?? []) {
-        commandReceipts.set(userId, new Map(list.map(r => [r.operationId, r])));
+    }
+    if (fs.existsSync(bakPath)) {
+      try {
+        const rawBak = fs.readFileSync(bakPath, "utf8");
+        const snap = parseSnapshot(JSON.parse(rawBak));
+        applyParsedSnapshot(snap);
+        console.warn(`[storage] Successfully recovered player data from backup (${bakPath}).`);
+      } catch (err) {
+        console.error(`[storage] Backup save file also unreadable (${bakPath}):`, err);
       }
-    } catch {
-      // Missing or unreadable save file: start empty.
     }
   }
 
   let persistTimer: ReturnType<typeof setTimeout> | null = null;
+  let persistDirty = false;
   function flushPersist() {
     if (!opts?.persistPath) return;
-    fs.mkdirSync(path.dirname(opts.persistPath), { recursive: true });
+    persistDirty = false;
+    const targetPath = opts.persistPath;
+    const dir = path.dirname(targetPath);
+    fs.mkdirSync(dir, { recursive: true });
     const snap = buildSnapshot({
       users: users.values(),
       states: states.entries(),
       parties: parties.values(),
       commandReceipts: [...commandReceipts.entries()].map(([userId, m]) => [userId, [...m.values()]] as [string, PlayerCommandReceipt[]]),
+      tradingOrders: tradingOrders.values(),
+      priceHistory: [...priceHistory.entries()].map(([itemId, m]) => [itemId, [...m.values()]]),
+      enhancementServiceRequests: enhancementServiceRequests.values(),
     });
-    fs.writeFileSync(opts.persistPath, JSON.stringify(snap));
+    const payload = JSON.stringify(snap);
+    const tmpPath = `${targetPath}.tmp.${process.pid}.${Date.now()}`;
+    const bakPath = `${targetPath}.bak`;
+    try {
+      const fd = fs.openSync(tmpPath, "w");
+      try {
+        fs.writeFileSync(fd, payload, "utf8");
+        fs.fsyncSync(fd);
+      } finally {
+        fs.closeSync(fd);
+      }
+      if (fs.existsSync(targetPath)) {
+        try {
+          const stat = fs.statSync(targetPath);
+          if (stat.size > 2) {
+            fs.copyFileSync(targetPath, bakPath);
+          }
+        } catch {}
+      }
+      fs.renameSync(tmpPath, targetPath);
+    } catch (err) {
+      try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch {}
+      console.error("[storage] Atomic flushPersist failed, falling back to direct write:", err);
+      fs.writeFileSync(targetPath, payload, "utf8");
+    }
   }
   function schedulePersist() {
     if (!opts?.persistPath) return;
+    persistDirty = true;
     if (persistTimer) clearTimeout(persistTimer);
     persistTimer = setTimeout(() => {
       persistTimer = null;
       flushPersist();
     }, 50);
+  }
+
+  const onProcessExit = () => {
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    if (persistDirty) {
+      try { flushPersist(); } catch {}
+    }
+  };
+  if (opts?.persistPath) {
+    process.on("exit", onProcessExit);
   }
 
   loadPersist();
@@ -179,14 +276,24 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
            value <= max;
   }
 
-  // 防作弊：验证物品数量
+  // 防作弊：验证物品数量（必须为正整数——小数会产出小数库存/金币）
   function validateItemQuantity(quantity: number): boolean {
-    return validateNumber(quantity, 1, 999999);
+    return Number.isInteger(quantity) && validateNumber(quantity, 1, 999999);
   }
 
-  // 防作弊：验证价格
+  // 防作弊：验证价格（必须为正整数）
   function validatePrice(price: number): boolean {
-    return validateNumber(price, 1, 1000000000);
+    return Number.isInteger(price) && validateNumber(price, 1, 1000000000);
+  }
+
+  // 装备槽是物品 id 引用：卖出/挂出仍穿着的最后一件装备会留下幽灵槽（背包已扣、属性照算）。
+  function countEquippedCopies(st: EnhancedPlayerState, itemId: string): number {
+    const eq = (st.equipment || {}) as Record<string, unknown>;
+    return EQUIP_SLOT_KEYS.filter((s) => eq[s] === itemId).length;
+  }
+
+  function isEquippedItem(st: EnhancedPlayerState, itemId: string): boolean {
+    return countEquippedCopies(st, itemId) > 0;
   }
 
   function broadcast(channel: string, msg: unknown) {
@@ -220,6 +327,46 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         console.error('WebSocket broadcastToChannel error:', error);
       }
     }
+  }
+
+  /** 通用 WS 推送：市场成交、服务单、队伍事件实时下发给指定用户。 */
+  function notifyUser(userId: string, payload: Record<string, unknown>) {
+    const c = ws.get(userId);
+    if (!c?.socket || typeof c.socket.send !== 'function') return;
+    try {
+      c.socket.send(JSON.stringify({ type: 'notify', ts: nowIso(), ...payload }));
+    } catch (error) {
+      console.error('notifyUser error:', error);
+    }
+  }
+
+  /** 加入队伍的核心流程（joinParty / acceptPartyInvite 共用） */
+  function joinPartyCore(userId: string, partyId: string): Party {
+    const party = parties.get(partyId);
+    if (!party) throw new Error("party_not_found");
+    if (party.members.length >= 6) throw new Error("party_full");
+    if (party.members.some(m => m.userId === userId)) throw new Error("already_in_party");
+    const st = states.get(userId);
+    if (!st) throw new Error("state_not_found");
+    if (st.partyState) throw new Error("already_in_party");
+
+    const updatedParty = addPartyMember(party, userId);
+    parties.set(partyId, updatedParty);
+    st.partyState = {
+      partyId,
+      role: 'member',
+      isLeader: false,
+      joinedAt: new Date().toISOString()
+    };
+    appendLog(st, `加入队伍：${partyId}`);
+    // 在线成员立刻进队伍频道，不必等重连
+    const conn = ws.get(userId);
+    if (conn && !conn.channels.has(`party:${partyId}`)) {
+      addMembership(channelMembers, conn.channels, userId, `party:${partyId}`);
+    }
+    broadcast(`party:${partyId}`, { type: "party:event", event: "member_joined", memberId: userId, ts: nowIso() });
+    schedulePersist();
+    return updatedParty;
   }
 
   // 辅助函数：更新价格历史
@@ -329,6 +476,9 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
   return {
     async init() {},
     async close() {
+      if (opts?.persistPath) {
+        process.off("exit", onProcessExit);
+      }
       if (persistTimer) {
         clearTimeout(persistTimer);
         persistTimer = null;
@@ -336,8 +486,6 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       flushPersist();
     },
     async healthCheck() { return { ok: true, latencyMs: 0 }; },
-    async cleanupExpiredListings() { return 0; },
-
     async findOrCreateGuestUser(deviceId: string) {
       const existingId = usersByDevice.get(deviceId);
       if (existingId) return users.get(existingId)!;
@@ -394,6 +542,51 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
 
       u.googleSub = googleSub;
       usersByGoogle.set(googleSub, userId);
+      // 凭据变更即吊销旧会话
+      u.authVersion = (u.authVersion ?? 1) + 1;
+      schedulePersist();
+    },
+
+    async findUserByGoogleSub(googleSub: string) {
+      const id = usersByGoogle.get(googleSub);
+      return id ? users.get(id) ?? null : null;
+    },
+
+    async invalidateSessions(userId: string) {
+      const u = users.get(userId);
+      if (!u) return;
+      u.authVersion = (u.authVersion ?? 1) + 1;
+      flushPersist();
+    },
+
+    async createPasswordUser(username: string, passwordHash: string) {
+      const key = username.toLowerCase();
+      if (usersByUsername.has(key)) throw new UsernameTaken();
+      const id = crypto.randomUUID();
+      const rec: UserRecord = { id, guestDeviceId: null, googleSub: null, username, passwordHash, createdAt: nowIso() };
+      users.set(id, rec);
+      usersByUsername.set(key, id);
+      flushPersist();
+      return rec;
+    },
+
+    async findUserByUsername(username: string) {
+      const id = usersByUsername.get(username.toLowerCase());
+      return id ? users.get(id) ?? null : null;
+    },
+
+    async bindPassword(userId: string, username: string, passwordHash: string) {
+      const key = username.toLowerCase();
+      const other = usersByUsername.get(key);
+      if (other && other !== userId) throw new UsernameTaken();
+      const u = users.get(userId);
+      if (!u) throw new Error("user_not_found");
+      if (u.username) usersByUsername.delete(u.username.toLowerCase());
+      u.username = username;
+      u.passwordHash = passwordHash;
+      usersByUsername.set(key, userId);
+      u.authVersion = (u.authVersion ?? 1) + 1;
+      flushPersist();
     },
 
     async getOrCreatePlayerState(userId: string, contentVersion: string) {
@@ -414,11 +607,14 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       contentPack: EnhancedContentPack 
     }) {
       const revision = currentRevision(userId, state);
-      const result = settleToNowSync({ state, now, contentPack });
+      const result = simulateToNow({ state: structuredClone(state), now, contentPack });
       const next = { ...result.state as EnhancedPlayerState, inventory: normalizeInv(result.state.inventory) };
       next.stateRevision = revision + 1;
       states.set(userId, next);
       schedulePersist();
+      for (const text of worldAnnouncements(state, next, contentPack, userId)) {
+        broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+      }
       return next;
     },
 
@@ -436,7 +632,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       }
       const revision = commandRevision(current, command.expectedRevision);
       // No event-loop yield between snapshot and publication: memory commands are atomic.
-      const settled = settleToNowSync({ state: current, now: command.now, contentPack: command.contentPack });
+      const settled = simulateToNow({ state: structuredClone(current), now: command.now, contentPack: command.contentPack });
       const outcome = applyPlayerCommand(settled.state as EnhancedPlayerState, command.apply);
       outcome.state.inventory = normalizeInv(outcome.state.inventory);
       ensureProgression(outcome.state, command.now);
@@ -454,7 +650,37 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         });
       }
       schedulePersist();
+      for (const text of worldAnnouncements(current, outcome.state as EnhancedPlayerState, command.contentPack, command.userId)) {
+        broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+      }
       return outcome;
+    },
+
+    async deduplicateOperation<T>({ userId, operationId, operationPayload, run }: {
+      userId: string;
+      operationId?: string;
+      operationPayload?: unknown;
+      run: () => Promise<T>;
+    }): Promise<{ result: T; deduplicated: boolean }> {
+      if (!operationId) return { result: await run(), deduplicated: false };
+      const requestHash = commandOperationHash(userId, operationId, operationPayload);
+      const existing = commandReceipts.get(userId)?.get(operationId);
+      if (existing) {
+        if (existing.requestHash !== requestHash) throw new PlayerCommandOperationMismatch();
+        return { result: existing.result as T, deduplicated: true };
+      }
+      const result = await run();
+      let receipts = commandReceipts.get(userId);
+      if (!receipts) commandReceipts.set(userId, receipts = new Map());
+      receipts.set(operationId, {
+        operationId,
+        requestHash,
+        result,
+        stateRevision: 0,
+        createdAt: nowIso(),
+      });
+      schedulePersist();
+      return { result, deduplicated: false };
     },
 
     async savePlayerState(userId: string, state: EnhancedPlayerState) {
@@ -467,6 +693,10 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       return next;
     },
 
+    announceWorld(text: string) {
+      broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+    },
+
   async startLifeAction({ userId, actionId, quantity, now, contentPack }: { userId: string; actionId: string; quantity?: number; now: Date; contentPack?: EnhancedContentPack }) {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
@@ -474,14 +704,6 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       // 直接使用前端传来的 actionId，不再做硬编码映射
       // 前端应该发送正确的 actionId（如 act_chop_wood_t1, act_combat_slime 等）
       startLifeActionNow(st, contentPack as EnhancedContentPack, actionId, quantity, now);
-      schedulePersist();
-      return st;
-    },
-
-    async startCombatFarm({ userId, stageId, now }: { userId: string; stageId: string; now: Date }) {
-      const st = states.get(userId);
-      if (!st) throw new Error("state_not_found");
-      startCombatFarmNow(st, stageId, now);
       schedulePersist();
       return st;
     },
@@ -520,6 +742,56 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         };
       }
 
+      // 服务费在尝试前就校验：自我接单是印钞漏洞，请求者也必须真付这笔费（不再凭空铸造）
+      let serviceFee = 0;
+      let providerState: EnhancedPlayerState | undefined;
+      if (request.serviceProviderId) {
+        if (request.serviceProviderId === userId) {
+          return {
+            success: false,
+            previousLevel: currentLevel,
+            newLevel: currentLevel,
+            consumedMaterials: {},
+            failureReason: "不能向自己购买强化服务"
+          };
+        }
+        providerState = states.get(request.serviceProviderId);
+        if (!providerState) {
+          return {
+            success: false,
+            previousLevel: currentLevel,
+            newLevel: currentLevel,
+            consumedMaterials: {},
+            failureReason: "服务提供者不存在"
+          };
+        }
+        // 资质校验必须在这里：/enhancement/enhance 路由直接收 serviceProviderId，
+        // 不经过服务单的下单/接单两道闸
+        const requiredProfession = ruleMatch?.requiredProfession ?? enhancementRule.requiredProfession;
+        const providerSkill = providerState.skills?.[`skill_${requiredProfession}`];
+        if (!providerSkill || !hasEnhancementSkill(providerSkill.unlockedRecipes, requiredProfession, enhancementRule.itemType)) {
+          return {
+            success: false,
+            previousLevel: currentLevel,
+            newLevel: currentLevel,
+            consumedMaterials: {},
+            failureReason: "服务提供者不具备对应强化技能"
+          };
+        }
+        serviceFee = Math.floor((enhancementRule.materials.find(
+          (m: { itemId: string }) => m.itemId === "gold"
+        )?.quantity || 100) * 0.5);
+        if ((st.inventory.gold || 0) < serviceFee) {
+          return {
+            success: false,
+            previousLevel: currentLevel,
+            newLevel: currentLevel,
+            consumedMaterials: {},
+            failureReason: "金币不足以支付服务费"
+          };
+        }
+      }
+
       const result = performEnhancementAttempt({
         player: st,
         item,
@@ -545,17 +817,12 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         appendLog(st, `强化技能升级到 ${level} 级！`);
       }
 
-      // If another player provided the service, pay the service fee after a real attempt.
-      if (request.serviceProviderId) {
-        const goldMaterial = enhancementRule.materials.find(
-          (m: { itemId: string }) => m.itemId === "gold"
-        );
-        const serviceFee = Math.floor((goldMaterial?.quantity || 100) * 0.5);
-        const providerState = states.get(request.serviceProviderId);
-        if (providerState) {
-          providerState.inventory.gold = (providerState.inventory.gold || 0) + serviceFee;
-          appendLog(providerState, `提供强化服务获得 ${serviceFee} 金币`);
-        }
+      // If another player provided the service, the requester pays the fee and the provider
+      // receives it after a real attempt — a transfer, not minted gold.
+      if (request.serviceProviderId && providerState && serviceFee > 0) {
+        st.inventory.gold = (st.inventory.gold || 0) - serviceFee;
+        providerState.inventory.gold = (providerState.inventory.gold || 0) + serviceFee;
+        appendLog(providerState, `提供强化服务获得 ${serviceFee} 金币`);
       }
       schedulePersist();
       return result;
@@ -601,6 +868,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
           canAfford: false,
           isOwned: ownsEnhanceableItem(st, itemId),
           requiredProfession: undefined,
+          itemType: undefined,
           protection: {
             itemId: PROTECTION_MIRROR_ID,
             available: st.inventory[PROTECTION_MIRROR_ID] || 0,
@@ -617,7 +885,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       );
       const nextLevelCost =
         nextLevel <= maxLevel
-          ? enhancementMaterials(enhancementRule, nextLevel)
+          ? enhancementMaterials(enhancementRule, nextLevel, undefined, item, contentPack)
           : {};
       const rates = enhancementSuccessBreakdown(nextLevel, skill.level, itemLevel, equippedEnhanceToolBonus(st, contentPack));
       const isOwned = ownsEnhanceableItem(st, itemId);
@@ -647,6 +915,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         canAfford,
         isOwned,
         requiredProfession: requiredProfession || undefined,
+        itemType: enhancementRule?.itemType,
         protection: {
           itemId: PROTECTION_MIRROR_ID,
           available: st.inventory[PROTECTION_MIRROR_ID] || 0,
@@ -683,13 +952,17 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         enhancementProviderIndex.set(requiredProfession, providerIds);
       }
 
-      // 从索引中获取提供者信息
+      // 从索引中获取提供者信息（索引是写入时建的，读侧仍要复核——转生/重置后技能可能已失效，
+      // 否则旧条目会让无资质玩家继续挂着"可接单"的招牌）
       for (const userId of providerIds) {
         const state = states.get(userId);
-        if (!state) continue;
+        if (!state) { providerIds.delete(userId); continue; }
         
         const playerSkill = state.skills[skillKey];
-        if (!playerSkill) continue;
+        if (!playerSkill || !hasEnhancementSkill(playerSkill.unlockedRecipes, requiredProfession, enhancementRule.itemType)) {
+          providerIds.delete(userId);
+          continue;
+        }
 
         // 计算服务费（基于技能等级）
         const serviceFee = Math.floor((enhancementRule.materials.find(m => m.itemId === 'gold')?.quantity || 100) * 0.5);
@@ -735,6 +1008,8 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       
       if (!requesterState) throw new Error("请求者不存在");
       if (!providerState) throw new Error("服务提供者不存在");
+      // 自我接单 = 用自己的号收自己的服务费（绕过市场分工），禁止
+      if (requesterId === providerId) throw new Error("不能向自己发起强化服务");
       
       // 验证请求者拥有该物品
       if (!requesterState.inventory[itemId] || requesterState.inventory[itemId] < 1) {
@@ -746,6 +1021,13 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const ruleMatch = item ? findEnhancementRuleForItem(item, contentPack) : null;
       const enhancementRule = ruleMatch?.rule;
       if (!enhancementRule) throw new Error("该物品无法强化");
+
+      // 下单时就校验提供者资质，而不是等接单时才发现对方根本不会这门手艺
+      const requiredProfession = ruleMatch?.requiredProfession ?? enhancementRule.requiredProfession;
+      const providerSkill = providerState.skills[`skill_${requiredProfession}`];
+      if (!providerSkill || !hasEnhancementSkill(providerSkill.unlockedRecipes, requiredProfession, enhancementRule.itemType)) {
+        throw new Error("该服务提供者不具备对应强化技能");
+      }
 
       const serviceFee = Math.floor((enhancementRule.materials.find(m => m.itemId === 'gold')?.quantity || 100) * 0.5);
 
@@ -765,6 +1047,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       };
 
       enhancementServiceRequests.set(requestId, request);
+      schedulePersist();
 
       // 发送通知给服务提供者
       broadcastToChannel('enhancement_service', {
@@ -772,6 +1055,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         request,
         requesterName: requesterId.slice(0, 8) + '...'
       });
+      notifyUser(providerId, { kind: "enhancement:service_request", requestId, requesterId, itemId, targetLevel, serviceFee });
 
       return request;
     },
@@ -787,6 +1071,19 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (!request) throw new Error("服务请求不存在");
       if (request.providerId !== providerId) throw new Error("您无权响应此请求");
       if (request.status !== 'pending') throw new Error("请求已被处理");
+
+      // 接单时复核资质：下单后提供者可能已失去技能（如转生），无资质不能接
+      if (accepted) {
+        const item = contentPack.items.find((i: any) => i.id === request.itemId);
+        const ruleMatch = item ? findEnhancementRuleForItem(item, contentPack) : null;
+        const requiredProfession = ruleMatch?.requiredProfession ?? ruleMatch?.rule?.requiredProfession;
+        const providerState = states.get(providerId);
+        const providerSkill = requiredProfession ? providerState?.skills[`skill_${requiredProfession}`] : undefined;
+        if (!providerState || !providerSkill || !requiredProfession ||
+            !hasEnhancementSkill(providerSkill.unlockedRecipes, requiredProfession, ruleMatch?.rule?.itemType ?? "")) {
+          return { success: false, message: "您当前不具备该强化服务资质" };
+        }
+      }
 
       request.status = accepted ? 'accepted' : 'rejected';
       request.responseMessage = message;
@@ -813,6 +1110,10 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
             const stats = enhancementServiceStats.get(providerId) || { completed: 0, totalRating: 0, ratingCount: 0 };
             stats.completed += 1;
             enhancementServiceStats.set(providerId, stats);
+          } else {
+            // 强化执行失败不能停在 'accepted' 永远卡住——与 pg 一致标为 rejected 终态
+            request.status = 'rejected';
+            request.responseMessage = result.failureReason || "强化失败";
           }
 
           // 通知请求者
@@ -822,10 +1123,13 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
             result,
             providerName: providerId.slice(0, 8) + '...'
           });
+          notifyUser(request.requesterId, { kind: "enhancement:service_completed", requestId, success: result.success, failureReason: result.failureReason });
+          schedulePersist();
 
           return { success: true, message: result.success ? "强化成功完成" : `强化失败：${result.failureReason}` };
         } catch (error) {
           request.status = 'rejected';
+          schedulePersist();
           return { success: false, message: error instanceof Error ? error.message : "强化执行失败" };
         }
       } else {
@@ -836,6 +1140,8 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
           message,
           providerName: providerId.slice(0, 8) + '...'
         });
+        notifyUser(request.requesterId, { kind: "enhancement:service_rejected", requestId, message });
+        schedulePersist();
 
         return { success: true, message: "已拒绝服务请求" };
       }
@@ -859,166 +1165,12 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       return requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     },
 
-    // 新增：交易行功能
-    async listItemForSale({ userId, itemId, quantity, pricePerUnit, duration }: {
-      userId: string;
-      itemId: string;
-      quantity: number;
-      pricePerUnit: number;
-      duration?: number;
-    }): Promise<MarketListing> {
-      // 防作弊：检查操作频率
-      if (!checkActionRate(userId)) {
-        throw new Error("操作过于频繁，请稍后再试");
-      }
-
-      // 防作弊：验证数量和价格
-      if (!validateItemQuantity(quantity)) {
-        throw new Error("物品数量无效");
-      }
-      if (!validatePrice(pricePerUnit)) {
-        throw new Error("价格无效");
-      }
-
-      const st = states.get(userId);
-      if (!st) throw new Error("state_not_found");
-
-      const available = st.inventory[itemId] || 0;
-      if (available < quantity) {
-        throw new Error("insufficient_items");
-      }
-
-      // 创建市场列表
-      const listing = createMarketListing(userId, itemId, quantity, pricePerUnit, duration);
-      
-      // 从背包中移除物品
-      st.inventory[itemId] = available - quantity;
-      
-      // 添加到活跃列表
-      st.tradingState.activeListings.push(listing.id);
-      
-      // 存储列表
-      marketListings.set(listing.id, listing);
-      
-      appendLog(st, `上架物品：${itemId} x${quantity} @ ${pricePerUnit}金币`);
-      
-      return listing;
-    },
-
-    async purchaseItem({ userId, listingId, quantity }: {
-      userId: string;
-      listingId: string;
-      quantity: number;
-    }): Promise<{ success: boolean; message?: string }> {
-      // 防作弊：检查操作频率
-      if (!checkActionRate(userId)) {
-        return { success: false, message: "操作过于频繁，请稍后再试" };
-      }
-
-      // 防作弊：验证数量
-      if (!validateItemQuantity(quantity)) {
-        return { success: false, message: "购买数量无效" };
-      }
-
-      const st = states.get(userId);
-      const listing = marketListings.get(listingId);
-      
-      if (!st) throw new Error("state_not_found");
-      if (!listing || listing.status !== 'active') {
-        return { success: false, message: "商品不存在或已下架" };
-      }
-      
-      // 防作弊：不能购买自己的商品
-      if (listing.sellerId === userId) {
-        return { success: false, message: "不能购买自己的商品" };
-      }
-      
-      if (quantity > listing.quantity) {
-        return { success: false, message: "购买数量超过可用数量" };
-      }
-
-      const totalPrice = quantity * listing.pricePerUnit;
-      const fee = calculateTradingFee(totalPrice);
-      const finalPrice = totalPrice + fee;
-
-      // 检查金币是否足够
-      const availableGold = st.inventory.gold || 0;
-      if (availableGold < finalPrice) {
-        return { success: false, message: "金币不足" };
-      }
-
-      // 执行交易
-      st.inventory.gold = availableGold - finalPrice;
-      st.inventory[listing.itemId] = (st.inventory[listing.itemId] || 0) + quantity;
-
-      // 更新卖家
-      const sellerState = states.get(listing.sellerId);
-      if (sellerState) {
-        sellerState.inventory.gold = (sellerState.inventory.gold || 0) + totalPrice;
-        appendLog(sellerState, `物品售出：${listing.itemId} x${quantity} 获得 ${totalPrice}金币`);
-      }
-
-      // 更新列表
-      listing.quantity -= quantity;
-      if (listing.quantity === 0) {
-        listing.status = 'sold';
-      }
-
-      // 记录交易历史
-      const trade: TradeHistory = {
-        id: crypto.randomUUID(),
-        buyerId: userId,
-        sellerId: listing.sellerId,
-        itemId: listing.itemId,
-        quantity,
-        totalPrice,
-        completedAt: nowIso()
-      };
-      tradeHistory.set(trade.id, trade);
-
-      // 更新价格历史
-      updatePriceHistory(listing.itemId, listing.pricePerUnit, quantity);
-
-      // 添加到购买历史
-      st.tradingState.purchaseHistory.push({
-        itemId: listing.itemId,
-        price: totalPrice,
-        timestamp: nowIso()
-      });
-
-      appendLog(st, `购买物品：${listing.itemId} x${quantity} 花费 ${finalPrice}金币`);
-
-      return { success: true };
-    },
-
-    async getMarketListings({ query, filters }: {
-      query?: string;
-      filters?: any;
-    }): Promise<MarketListing[]> {
-      let activeListings = Array.from(marketListings.values())
-        .filter(listing => listing.status === 'active' && new Date(listing.expiresAt).getTime() > Date.now());
-      
-      // 搜索过滤
-      if (query) {
-        activeListings = activeListings.filter(listing => 
-          listing.itemId.toLowerCase().includes(query.toLowerCase())
-        );
-      }
-      
-      // 分页限制，最多返回100条
-      const limit = filters?.limit || 100;
-      const offset = filters?.offset || 0;
-      
-      return activeListings
-        .sort((a, b) => new Date(b.listedAt).getTime() - new Date(a.listedAt).getTime())
-        .slice(offset, offset + limit);
-    },
-
     // 新增：组队功能
     async createParty({ userId, name }: { userId: string; name?: string }): Promise<Party> {
       // 检查用户是否已经在队伍中
       const st = states.get(userId);
-      if (st && st.partyState) {
+      if (!st) throw new Error("state_not_found");
+      if (st.partyState) {
         throw new Error("already_in_party");
       }
 
@@ -1027,100 +1179,101 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       parties.set(party.id, party);
 
       // 更新玩家状态
-      if (st) {
-        st.partyState = {
-          partyId: party.id,
-          role: 'leader',
-          isLeader: true,
-          joinedAt: new Date().toISOString()
-        };
-        appendLog(st, `创建队伍：${party.id}`);
-        schedulePersist();
+      st.partyState = {
+        partyId: party.id,
+        role: 'leader',
+        isLeader: true,
+        joinedAt: new Date().toISOString()
+      };
+      const conn = ws.get(userId);
+      if (conn && !conn.channels.has(`party:${party.id}`)) {
+        addMembership(channelMembers, conn.channels, userId, `party:${party.id}`);
       }
+      appendLog(st, `创建队伍：${party.id}`);
+      schedulePersist();
 
       return party;
     },
 
     async joinParty({ userId, partyId }: { userId: string; partyId: string }): Promise<Party> {
-      const party = parties.get(partyId);
-      if (!party) {
-        throw new Error("party_not_found");
-      }
-
-      if (party.members.length >= 6) {
-        throw new Error("party_full");
-      }
-
-      if (party.members.some(m => m.userId === userId)) {
-        throw new Error("already_in_party");
-      }
-
-      // 添加成员到队伍
-      const updatedParty = addPartyMember(party, userId);
-      parties.set(partyId, updatedParty);
-
-      // 更新玩家状态
-      const st = states.get(userId);
-      if (st) {
-        st.partyState = {
-          partyId: partyId,
-          role: 'member',
-          isLeader: false,
-          joinedAt: new Date().toISOString()
-        };
-        appendLog(st, `加入队伍：${partyId}`);
-        schedulePersist();
-      }
-
-      return updatedParty;
+      return joinPartyCore(userId, partyId);
     },
 
-    // 队伍活动功能
-    async startPartyActivity({ userId, partyId, activityType, stageId }: {
+    // 队伍活动功能——时长制 + 贡献制：开始时刻快照每个成员的统计基线，
+    // 结算时按统计差值的比例分奖，0 贡献 = 0 奖励（堵住小号挂机白嫖）。
+    async startPartyActivity({ userId, partyId, activityType, stageId, durationMinutes, contentPack }: {
       userId: string;
       partyId: string;
-      activityType: 'combat' | 'group_craft';
+      activityType: 'combat' | 'group_craft' | 'raid';
       stageId?: string;
+      durationMinutes?: number;
+      contentPack?: EnhancedContentPack;
     }): Promise<{ success: boolean; message?: string }> {
       const party = parties.get(partyId);
-      if (!party) {
-        return { success: false, message: "队伍不存在" };
-      }
-
+      if (!party) return { success: false, message: "队伍不存在" };
       const member = party.members.find(m => m.userId === userId);
-      if (!member) {
-        return { success: false, message: "您不是该队伍成员" };
-      }
-      if (party.leaderId !== userId) {
-        return { success: false, message: "只有队长可以开始活动" };
-      }
+      if (!member) return { success: false, message: "您不是该队伍成员" };
+      if (party.leaderId !== userId) return { success: false, message: "只有队长可以开始活动" };
+      if (party.currentActivity) return { success: false, message: "队伍已有进行中的活动" };
 
-      // 检查是否已有活动
-      if (party.currentActivity) {
-        return { success: false, message: "队伍已有进行中的活动" };
-      }
+      const duration = Math.min(480, Math.max(5, Math.floor(durationMinutes ?? 30)));
+      const now = new Date();
+      let raidBossId: string | undefined;
+      let raidBossName: string | undefined;
+      let bossKillsNeeded: number | undefined;
 
-      // 检查成员是否都准备好
-      const allReady = party.members.every(m => m.isOnline);
-      if (!allReady) {
-        return { success: false, message: "部分成员未在线" };
-      }
-
-      // 开始活动
-      party.currentActivity = {
-        type: activityType,
-        stageId,
-        startedAt: new Date().toISOString()
-      };
-
-      // 通知所有成员
-      for (const member of party.members) {
-        const memberState = states.get(member.userId);
-        if (memberState) {
-          appendLog(memberState, `队伍活动开始：${activityType}`);
+      if (activityType === 'combat' || activityType === 'raid') {
+        if (!stageId) return { success: false, message: "战斗类活动需要指定关卡" };
+        const stage = contentPack ? (contentPack.stages as any[]).find((s: any) => s.id === stageId) : null;
+        if (contentPack && !stage) return { success: false, message: "关卡不存在" };
+        if (!isStageOpen(stageId)) return { success: false, message: "该关卡尚未开放" };
+        if (activityType === 'raid') {
+          const ids: string[] = stage?.monsters ?? [];
+          const boss = contentPack
+            ? ids.map(id => (contentPack.monsters as any[]).find((m: any) => m.id === id)).find(m => m && (m.isBoss || String(m.id).endsWith('_boss')))
+              ?? ids.map(id => (contentPack.monsters as any[]).find((m: any) => m.id === id)).filter(Boolean).at(-1)
+            : null;
+          raidBossId = boss?.id ?? ids.at(-1);
+          if (!raidBossId) return { success: false, message: "该关卡没有可讨伐的首领" };
+          raidBossName = boss?.name ?? raidBossId;
+          bossKillsNeeded = party.members.length * 2;
         }
       }
 
+      // 成员统计基线：离线成员同样入快照——放置游戏的核心是离线进度也算贡献
+      const baseline: Record<string, { kills: number; bossKills: number; raidBossKills: number; actions: number; xp: number }> = {};
+      for (const m of party.members) {
+        const s = states.get(m.userId);
+        const stats = s?.stats as any;
+        baseline[m.userId] = {
+          kills: stats?.totalKills || 0,
+          bossKills: stats?.totalBossKills || 0,
+          raidBossKills: raidBossId ? (stats?.killsByMonster?.[raidBossId] || 0) : 0,
+          actions: stats?.totalActions || 0,
+          xp: stats?.totalXpEarned || 0,
+        };
+      }
+
+      party.currentActivity = {
+        type: activityType,
+        stageId,
+        startedAt: now.toISOString(),
+        endsAt: new Date(now.getTime() + duration * 60_000).toISOString(),
+        durationMinutes: duration,
+        raidBossId,
+        raidBossName,
+        bossKillsNeeded,
+        baseline,
+      };
+
+      for (const m of party.members) {
+        const memberState = states.get(m.userId);
+        if (memberState) appendLog(memberState, `队伍活动开始：${activityType}${raidBossName ? `·讨伐 ${raidBossName}` : ''}（${duration} 分钟）`);
+        const conn = ws.get(m.userId);
+        if (conn && !conn.channels.has(`party:${partyId}`)) addMembership(channelMembers, conn.channels, m.userId, `party:${partyId}`);
+      }
+      broadcast(`party:${partyId}`, { type: "party:event", event: "activity_started", activity: party.currentActivity, ts: nowIso() });
+      schedulePersist();
       return { success: true };
     },
 
@@ -1133,51 +1286,235 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (!party || !party.currentActivity) {
         return { success: false, message: "没有进行中的活动" };
       }
-
       const member = party.members.find(m => m.userId === userId);
-      if (!member) {
-        return { success: false, message: "您不是该队伍成员" };
-      }
-      if (party.leaderId !== userId) {
-        return { success: false, message: "只有队长可以完成活动" };
-      }
+      if (!member) return { success: false, message: "您不是该队伍成员" };
+      if (party.leaderId !== userId) return { success: false, message: "只有队长可以完成活动" };
 
       const activity = party.currentActivity;
+      if (activity.endsAt && Date.parse(activity.endsAt) > Date.now()) {
+        return { success: false, message: `活动尚未结束（${Math.ceil((Date.parse(activity.endsAt) - Date.now()) / 60000)} 分钟后可结算）` };
+      }
+
+      const durationFactor = Math.max(0.1, (activity.durationMinutes ?? 30) / 30);
       const rewards: Record<string, Record<string, number>> = {};
+      const contributions: Record<string, number> = {};
 
-      // 根据活动类型分配奖励
-      if (activity.type === 'combat' && activity.stageId) {
-        // 战斗奖励：基于队伍人数和等级
-        const baseReward = 100 * party.members.length;
-        const goldPerMember = Math.floor(baseReward / party.members.length);
-
-        for (const member of party.members) {
-          rewards[member.userId] = { gold: goldPerMember };
-          
-          const memberState = states.get(member.userId);
-          if (memberState) {
-            memberState.inventory.gold = (memberState.inventory.gold || 0) + goldPerMember;
-            appendLog(memberState, `队伍活动完成，获得 ${goldPerMember} 金币`);
+      if (activity.baseline) {
+        // 贡献制：统计差值 → 按比例分奖
+        for (const m of party.members) {
+          const base = activity.baseline[m.userId];
+          const s = states.get(m.userId);
+          const stats = s?.stats as any;
+          if (!base || !stats) { contributions[m.userId] = 0; continue; }
+          const kills = Math.max(0, (stats.totalKills || 0) - base.kills);
+          const raidBossKills = activity.raidBossId ? Math.max(0, (stats.killsByMonster?.[activity.raidBossId] || 0) - base.raidBossKills) : 0;
+          const actions = Math.max(0, (stats.totalActions || 0) - base.actions);
+          contributions[m.userId] = activity.type === 'group_craft'
+            ? actions
+            : activity.type === 'raid'
+              ? raidBossKills * 10 + kills
+              : kills;
+        }
+        const totalC = Object.values(contributions).reduce((a, b) => a + b, 0);
+        if (totalC <= 0) {
+          party.currentActivity = undefined;
+          broadcast(`party:${partyId}`, { type: "party:event", event: "activity_completed", rewards, ts: nowIso() });
+          schedulePersist();
+          return { success: true, rewards, message: "活动期间无人产生贡献，无奖励发放" };
+        }
+        const split = (pool: number) => {
+          const shares: Record<string, number> = {};
+          let assigned = 0, top: string | null = null;
+          for (const m of party.members) {
+            shares[m.userId] = Math.floor(pool * contributions[m.userId] / totalC);
+            assigned += shares[m.userId];
+            if (!top || contributions[m.userId] > contributions[top]) top = m.userId;
+          }
+          if (top) shares[top] += pool - assigned;
+          return shares;
+        };
+        if (activity.type === 'group_craft') {
+          const xpShares = split(Math.round(60 * party.members.length * durationFactor));
+          for (const m of party.members) {
+            const xp = xpShares[m.userId];
+            if (xp <= 0) continue;
+            rewards[m.userId] = { xp };
+            const s = states.get(m.userId);
+            if (s) {
+              ensureProfessionSkills(s);
+              const skillId = CRAFT_SKILL_BY_PROFESSION[s.activeClassId] || `skill_${s.activeClassId}`;
+              const ups = grantProfessionXp(s, skillId, xp);
+              appendLog(s, `队伍活动完成，${s.activeClassId} 获得 ${xp} 经验`);
+              for (const lv of ups) appendLog(s, `${skillId} 技能升级到 ${lv} 级！`);
+            }
+          }
+        } else {
+          const bossKillsTotal = activity.raidBossId
+            ? party.members.reduce((n, m) => n + Math.max(0, (((states.get(m.userId)?.stats as any)?.killsByMonster?.[activity.raidBossId!] || 0) - (activity.baseline![m.userId]?.raidBossKills || 0))), 0)
+            : 0;
+          const pool = activity.type === 'raid'
+            ? Math.round((150 * party.members.length + 80 * bossKillsTotal) * durationFactor)
+            : Math.round(120 * party.members.length * durationFactor);
+          const goldShares = split(pool);
+          for (const m of party.members) {
+            const gold = goldShares[m.userId];
+            if (gold <= 0) continue;
+            rewards[m.userId] = { gold };
+            const s = states.get(m.userId);
+            if (s) {
+              s.inventory.gold = (s.inventory.gold || 0) + gold;
+              appendLog(s, `队伍活动完成，按贡献分得 ${gold} 金币`);
+            }
           }
         }
-      } else if (activity.type === 'group_craft') {
-        // 制作奖励：经验加成
-        const xpBonus = 50 * party.members.length;
-
-        for (const member of party.members) {
-          rewards[member.userId] = { xp: xpBonus };
-          
-          const memberState = states.get(member.userId);
-          if (memberState) {
-            appendLog(memberState, `队伍制作完成，获得 ${xpBonus} 经验`);
+      } else {
+        // 旧存档的活动没有基线：沿用平摊（兼容历史数据）
+        const goldPerMember = 100;
+        for (const m of party.members) {
+          rewards[m.userId] = activity.type === 'group_craft' ? { xp: 50 } : { gold: goldPerMember };
+          const s = states.get(m.userId);
+          if (!s) continue;
+          if (activity.type === 'group_craft') {
+            ensureProfessionSkills(s);
+            const skillId = CRAFT_SKILL_BY_PROFESSION[s.activeClassId] || `skill_${s.activeClassId}`;
+            grantProfessionXp(s, skillId, 50);
+            appendLog(s, `队伍制作完成，获得 50 经验`);
+          } else {
+            s.inventory.gold = (s.inventory.gold || 0) + goldPerMember;
+            appendLog(s, `队伍活动完成，获得 ${goldPerMember} 金币`);
           }
         }
       }
 
-      // 清除活动状态
       party.currentActivity = undefined;
-
+      broadcast(`party:${partyId}`, { type: "party:event", event: "activity_completed", rewards, contributions, ts: nowIso() });
+      schedulePersist();
       return { success: true, rewards };
+    },
+
+    async cancelPartyActivity({ userId, partyId }: {
+      userId: string;
+      partyId: string;
+    }): Promise<{ success: boolean; message?: string }> {
+      const party = parties.get(partyId);
+      if (!party || !party.currentActivity) return { success: false, message: "没有进行中的活动" };
+      if (party.leaderId !== userId) return { success: false, message: "只有队长可以取消活动" };
+      party.currentActivity = undefined;
+      broadcast(`party:${partyId}`, { type: "party:event", event: "activity_cancelled", ts: nowIso() });
+      schedulePersist();
+      return { success: true };
+    },
+
+    async listParties({ limit }: { limit?: number }) {
+      const out: Array<{ id: string; name?: string; leaderId: string; memberCount: number; hasActivity: boolean; createdAt: string }> = [];
+      for (const p of parties.values()) {
+        if (p.members.length >= 6) continue;
+        out.push({ id: p.id, name: (p as any).name, leaderId: p.leaderId, memberCount: p.members.length, hasActivity: !!p.currentActivity, createdAt: p.createdAt });
+        if (out.length >= (limit ?? 50)) break;
+      }
+      return out;
+    },
+
+    async inviteToParty({ userId, partyId, targetUserId }: {
+      userId: string;
+      partyId: string;
+      targetUserId: string;
+    }): Promise<{ success: boolean; message?: string }> {
+      const party = parties.get(partyId);
+      if (!party) return { success: false, message: "队伍不存在" };
+      if (!party.members.some(m => m.userId === userId)) return { success: false, message: "您不是该队伍成员" };
+      if (party.members.length >= 6) return { success: false, message: "队伍已满员" };
+      if (userId === targetUserId) return { success: false, message: "不能邀请自己" };
+      const target = states.get(targetUserId);
+      if (!target) return { success: false, message: "玩家不存在" };
+      if (target.partyState) return { success: false, message: "对方已有队伍" };
+      if (!Array.isArray(target.partyInvites)) target.partyInvites = [];
+      const now = Date.now();
+      target.partyInvites = target.partyInvites.filter(i => Date.parse(i.invitedAt) > now - 24 * 3600_000);
+      if (target.partyInvites.some(i => i.partyId === partyId)) return { success: true, message: "邀请已发送" };
+      if (target.partyInvites.length >= 10) target.partyInvites.shift();
+      target.partyInvites.push({ partyId, fromUserId: userId, invitedAt: nowIso() });
+      notifyUser(targetUserId, { kind: "party:invite", partyId, from: userId });
+      schedulePersist();
+      return { success: true };
+    },
+
+    async acceptPartyInvite({ userId, partyId }: { userId: string; partyId: string }): Promise<Party> {
+      const st = states.get(userId);
+      if (!st) throw new Error("state_not_found");
+      const invite = (st.partyInvites || []).find(i => i.partyId === partyId);
+      if (!invite) throw new Error("invite_not_found");
+      if (Date.parse(invite.invitedAt) < Date.now() - 24 * 3600_000) {
+        st.partyInvites = (st.partyInvites || []).filter(i => i !== invite);
+        throw new Error("invite_expired");
+      }
+      const party = joinPartyCore(userId, partyId);
+      st.partyInvites = (st.partyInvites || []).filter(i => i.partyId !== partyId);
+      schedulePersist();
+      return party;
+    },
+
+    async declinePartyInvite({ userId, partyId }: { userId: string; partyId: string }) {
+      const st = states.get(userId);
+      if (!st) throw new Error("state_not_found");
+      const before = (st.partyInvites || []).length;
+      st.partyInvites = (st.partyInvites || []).filter(i => i.partyId !== partyId);
+      schedulePersist();
+      return { success: (st.partyInvites || []).length < before };
+    },
+
+    async kickPartyMember({ userId, partyId, memberId }: {
+      userId: string;
+      partyId: string;
+      memberId: string;
+    }): Promise<{ success: boolean; message?: string }> {
+      const party = parties.get(partyId);
+      if (!party) return { success: false, message: "队伍不存在" };
+      if (party.leaderId !== userId) return { success: false, message: "只有队长可以踢出成员" };
+      if (memberId === userId) return { success: false, message: "队长不能踢出自己（请直接离开队伍）" };
+      const idx = party.members.findIndex(m => m.userId === memberId);
+      if (idx === -1) return { success: false, message: "该玩家不在队伍中" };
+      party.members.splice(idx, 1);
+      const target = states.get(memberId);
+      if (target) {
+        target.partyState = undefined;
+        appendLog(target, "您已被移出队伍");
+      }
+      const conn = ws.get(memberId);
+      if (conn) {
+        conn.channels.delete(`party:${partyId}`);
+        channelMembers.get(`party:${partyId}`)?.delete(memberId);
+      }
+      notifyUser(memberId, { kind: "party:kicked", partyId });
+      broadcast(`party:${partyId}`, { type: "party:event", event: "member_left", memberId, kicked: true, ts: nowIso() });
+      schedulePersist();
+      return { success: true };
+    },
+
+    async transferPartyLeadership({ userId, partyId, memberId }: {
+      userId: string;
+      partyId: string;
+      memberId: string;
+    }): Promise<{ success: boolean; message?: string }> {
+      const party = parties.get(partyId);
+      if (!party) return { success: false, message: "队伍不存在" };
+      if (party.leaderId !== userId) return { success: false, message: "只有队长可以移交队长" };
+      if (memberId === userId) return { success: false, message: "您已经是队长" };
+      const target = party.members.find(m => m.userId === memberId);
+      if (!target) return { success: false, message: "该玩家不在队伍中" };
+      party.leaderId = memberId;
+      for (const m of party.members) m.role = m.userId === memberId ? 'leader' : 'member';
+      for (const uid of [userId, memberId]) {
+        const s = states.get(uid);
+        if (s?.partyState) {
+          s.partyState.isLeader = uid === memberId;
+          s.partyState.role = s.partyState.isLeader ? 'leader' : 'member';
+        }
+      }
+      broadcast(`party:${partyId}`, { type: "party:event", event: "leader_changed", memberId, ts: nowIso() });
+      notifyUser(memberId, { kind: "party:leader", partyId });
+      schedulePersist();
+      return { success: true };
     },
 
     async leaveParty({ userId, partyId }: {
@@ -1194,17 +1531,23 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         return { success: false, message: "不在队伍中" };
       }
 
+      const dropChannel = (uid: string) => {
+        const conn = ws.get(uid);
+        if (conn) conn.channels.delete(`party:${partyId}`);
+        channelMembers.get(`party:${partyId}`)?.delete(uid);
+      };
+
       // 如果是队长离开，解散队伍
       if (party.leaderId === userId) {
         parties.delete(partyId);
-        
-        // 通知所有成员
+        broadcast(`party:${partyId}`, { type: "party:event", event: "party_disbanded", ts: nowIso() });
         for (const member of party.members) {
           const memberState = states.get(member.userId);
           if (memberState) {
             memberState.partyState = undefined;
             appendLog(memberState, "队伍已解散");
           }
+          dropChannel(member.userId);
         }
         schedulePersist();
         return { success: true, message: "队伍已解散" };
@@ -1212,12 +1555,13 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
 
       // 普通成员离开
       party.members.splice(memberIndex, 1);
-      
       const memberState = states.get(userId);
       if (memberState) {
         memberState.partyState = undefined;
         appendLog(memberState, "已离开队伍");
       }
+      dropChannel(userId);
+      broadcast(`party:${partyId}`, { type: "party:event", event: "member_left", memberId: userId, ts: nowIso() });
       schedulePersist();
       return { success: true };
     },
@@ -1226,7 +1570,27 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const st = states.get(userId);
       const partyId = st?.partyState?.partyId;
       if (!partyId) return null;
-      return parties.get(partyId) ?? null;
+      const party = parties.get(partyId);
+      if (!party) return null;
+      // 单侧悬挂自愈：队伍成员表里没有该用户（历史脏数据/离队漏写），清掉死引用
+      if (!party.members.some(m => m.userId === userId)) {
+        st!.partyState = undefined;
+        schedulePersist();
+        return null;
+      }
+      // 在线状态实时计算（存档里的 isOnline 只是快照，读时必须用 ws 连接表）
+      const enriched: Party = {
+        ...party,
+        members: party.members.map(m => {
+          const name = states.get(m.userId)?.settings?.playerName;
+          return {
+            ...m,
+            isOnline: ws.has(m.userId),
+            displayName: name?.trim() || `玩家_${m.userId.slice(0, 6)}`,
+          };
+        }),
+      };
+      return enriched;
     },
     async getSkillTree({ professionId, contentPack }: {
       professionId: string;
@@ -1247,6 +1611,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
     }): Promise<{ success: boolean; message?: string }> {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
+      ensureProfessionSkills(st);
 
       const professionTree = contentPack.professionTrees.find(tree => tree.professionId === professionId);
       if (!professionTree) {
@@ -1258,10 +1623,18 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         return { success: false, message: "技能节点不存在" };
       }
 
-      // 检查技能等级要求
+      // 检查技能等级要求：采集/生产拆分后节点看两侧最高等级
       const playerSkill = st.skills[`skill_${professionId}`];
-      if (!playerSkill || playerSkill.level < skillNode.requirements.level) {
+      if (professionLevelForTree(st, professionId) < skillNode.requirements.level) {
         return { success: false, message: `技能等级不足，需要 ${skillNode.requirements.level} 级` };
+      }
+      if (!playerSkill) {
+        return { success: false, message: "技能不存在" };
+      }
+
+      // 重复解锁幂等：之前已解锁就直接成功返回，避免 recipes/actions 被无限追加
+      if (playerSkill.unlockedRecipes.includes(nodeId)) {
+        return { success: true, message: "该节点已解锁" };
       }
 
       // 检查前置技能
@@ -1271,12 +1644,16 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         }
       }
 
-      // 解锁技能节点
+      // 解锁技能节点（set 语义：同一 id 不重复追加）
       if (skillNode.unlocks.recipes) {
-        playerSkill.unlockedRecipes.push(...skillNode.unlocks.recipes);
+        for (const id of skillNode.unlocks.recipes) {
+          if (!playerSkill.unlockedRecipes.includes(id)) playerSkill.unlockedRecipes.push(id);
+        }
       }
       if (skillNode.unlocks.actions) {
-        playerSkill.unlockedRecipes.push(...skillNode.unlocks.actions);
+        for (const id of skillNode.unlocks.actions) {
+          if (!playerSkill.unlockedRecipes.includes(id)) playerSkill.unlockedRecipes.push(id);
+        }
       }
       if (skillNode.unlocks.enhancements) {
         for (const id of enhancementUnlockIds(professionId, nodeId, skillNode.unlocks.enhancements)) {
@@ -1298,7 +1675,9 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         playerSkill.unlockedRecipes.push(nodeId);
       }
 
+      st.stateRevision = (st.stateRevision ?? 0) + 1;
       appendLog(st, `解锁技能节点：${skillNode.name}`);
+      schedulePersist();
       return { success: true };
     },
 
@@ -1309,21 +1688,20 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
 
+      ensureProfessionSkills(st);
       const skillKey = `skill_${professionId}`;
       const playerSkill = st.skills[skillKey];
-      
-      if (!playerSkill) {
-        // 初始化技能
-        st.skills[skillKey] = {
-          level: 1,
-          xp: 0,
-          unlockedRecipes: [],
-          enhancementLevel: 0
-        };
-        return st.skills[skillKey];
-      }
-
-      return playerSkill;
+      if (!playerSkill) throw new Error("state_not_found");
+      const craftSkill = st.skills[CRAFT_SKILL_BY_PROFESSION[professionId] || ""];
+      // 面板等级 = 技能树门槛等级（采集/生产取高）；两条经验各自单列
+      return {
+        ...playerSkill,
+        level: Math.max(playerSkill.level, craftSkill?.level || 0),
+        gatherLevel: playerSkill.level,
+        gatherXp: playerSkill.xp,
+        craftLevel: craftSkill?.level ?? 0,
+        craftXp: craftSkill?.xp ?? 0,
+      };
     },
 
     async awardSkillExperience({ userId, professionId, xpAmount }: {
@@ -1365,6 +1743,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         playerSkill.level = 200;
       }
 
+      schedulePersist();
       return { leveledUp: playerSkill.level > levelBefore, newLevel: playerSkill.level };
     },
 
@@ -1378,6 +1757,14 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       ws.set(userId, c);
       for (const key of keys) {
         addMembership(channelMembers, c.channels, userId, key);
+      }
+
+      // 上线回写：party members[].isOnline 只是快照，presence 以 ws 连接为准
+      const partyId = st?.partyState?.partyId;
+      if (partyId) {
+        const party = parties.get(partyId);
+        const m = party?.members.find(mm => mm.userId === userId);
+        if (m) { m.isOnline = true; schedulePersist(); }
       }
 
       try {
@@ -1402,6 +1789,15 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       }
 
       ws.delete(userId);
+
+      // 下线回写 member.isOnline
+      const st = states.get(userId);
+      const partyId = st?.partyState?.partyId;
+      if (partyId) {
+        const party = parties.get(partyId);
+        const m = party?.members.find(mm => mm.userId === userId);
+        if (m) { m.isOnline = false; schedulePersist(); }
+      }
     },
 
     wsMessage(userId: string, raw: string) {
@@ -1411,11 +1807,17 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (parsed.type === "chat:send") {
         const channel = typeof parsed.channel === "string" ? parsed.channel : "world";
         const content = typeof parsed.content === "string" ? parsed.content.slice(0, 300) : "";
-        if (!content) return;
+        if (!content.trim()) {
+          // 空消息不能静默吞：发送方至少要知道没发出去
+          const c = ws.get(userId);
+          try { c?.socket?.send(JSON.stringify({ type: "chat:error", channel, message: "消息不能为空", ts: nowIso() })); } catch { /* 连接已断 */ }
+          return;
+        }
 
         // 获取用户职业信息
         const userState = states.get(userId);
         const senderProfession = userState?.activeClassId;
+        const senderName = userState?.settings?.playerName || `玩家_${userId.slice(0, 6)}`;
 
         // 处理私聊
         if (channel === "private" && parsed.recipient) {
@@ -1429,6 +1831,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
                 type: "chat:message",
                 channel: "private",
                 sender: userId,
+                senderName,
                 senderProfession,
                 recipient: recipientId,
                 ts: nowIso(),
@@ -1446,6 +1849,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
                   type: "chat:message",
                   channel: "private",
                   sender: userId,
+                  senderName,
                   senderProfession,
                   recipient: recipientId,
                   ts: nowIso(),
@@ -1500,6 +1904,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
           type: "chat:message",
           channel: payloadChannel(channel),
           sender: userId,
+          senderName,
           senderProfession,
           ts: nowIso(),
           content
@@ -1521,8 +1926,10 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         throw new Error("item_not_equipped");
       }
 
-      const currentDurability = st.equipment.durability[itemId] || 0;
-      const maxDurability = st.equipment.maxDurability[itemId] || 100;
+      // 未记录 = 满耐久（新装备不应显示成 0% 待修）；记录为 0 = 破损（不能 || 兜底成满）
+      const maxDurability = Number.isFinite(st.equipment.maxDurability?.[itemId]) ? st.equipment.maxDurability[itemId] : 100;
+      const raw = st.equipment.durability?.[itemId];
+      const currentDurability = Number.isFinite(raw) ? raw! : maxDurability;
       const durabilityPercent = maxDurability > 0 ? (currentDurability / maxDurability) * 100 : 0;
       const needsRepair = durabilityPercent < 50;
 
@@ -1560,13 +1967,26 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         };
       }
 
-      const oldDurability = st.equipment.durability[request.itemId] || 0;
       const maxDurability = st.equipment.maxDurability[request.itemId] || 100;
+      // 未记录过耐久的装备视为全新（满耐久），不是破损——||0 会把全新装备当破损收全款；
+      // NaN 视为满耐久自愈，防止脏档产出 NaN 修理费
+      const rawOld = st.equipment.durability[request.itemId];
+      const oldDurability = Number.isFinite(rawOld) ? rawOld! : maxDurability;
 
-      // 计算修复目标
+      // 计算修复目标（NaN/负数会让 cost 变 NaN 把金币洗没，非数按满修处理）
       let targetDurability = maxDurability;
       if (request.repairType === 'partial' && request.targetDurability !== undefined) {
-        targetDurability = Math.min(request.targetDurability, maxDurability);
+        if (!Number.isFinite(request.targetDurability) || request.targetDurability < 0) {
+          return {
+            success: false,
+            itemId: request.itemId,
+            oldDurability,
+            newDurability: oldDurability,
+            cost: 0,
+            message: "修复目标无效"
+          };
+        }
+        targetDurability = Math.floor(Math.min(request.targetDurability, maxDurability));
       }
 
       // 计算修复成本
@@ -1600,8 +2020,14 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       // 执行修复
       st.inventory.gold = availableGold - cost;
       st.equipment.durability[request.itemId] = targetDurability;
+      if (st.stats) {
+        st.stats.totalGoldSpent = (st.stats.totalGoldSpent || 0) + cost;
+      }
+      syncAchievements(st);
+      st.stateRevision = (st.stateRevision ?? 0) + 1;
 
       appendLog(st, `修复装备：${request.itemId}，耐久度 ${oldDurability} -> ${targetDurability}，花费 ${cost} 金币`);
+      schedulePersist();
 
       return {
         success: true,
@@ -1621,6 +2047,15 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const st = states.get(userId);
       if (!st) throw new Error("state_not_found");
 
+      // 损耗必须为正有限数：负数/NaN 会把耐久抬到上限之上
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return {
+          success: false,
+          newDurability: st.equipment.durability[itemId] ?? st.equipment.maxDurability[itemId] ?? 0,
+          broken: false
+        };
+      }
+
       // 检查装备是否存在
       const isEquipped = Object.values(st.equipment).includes(itemId);
       if (!isEquipped) {
@@ -1637,7 +2072,8 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       }
 
       const currentDurability = st.equipment.durability[itemId];
-      const newDurability = Math.max(0, currentDurability - amount);
+      const cap = st.equipment.maxDurability[itemId] || 100;
+      const newDurability = Math.min(cap, Math.max(0, currentDurability - amount));
       st.equipment.durability[itemId] = newDurability;
 
       const broken = newDurability === 0;
@@ -1645,6 +2081,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (broken) {
         appendLog(st, `装备损坏：${itemId}，需要修复才能继续使用`);
       }
+      schedulePersist();
 
       return {
         success: true,
@@ -1658,6 +2095,8 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       itemId: string;
       days?: number;
     }): Promise<import("./types").PriceHistory[]> {
+      // days 无上限会被当成 DoS 向量（路由只 parseInt 不限范围）；钳到 [1,90]
+      const safeDays = Number.isFinite(days) ? Math.min(Math.max(Math.floor(days), 1), 90) : 7;
       const itemPriceHistory = priceHistory.get(itemId);
       if (!itemPriceHistory) {
         return [];
@@ -1667,7 +2106,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const now = new Date();
       const results: import("./types").PriceHistory[] = [];
       
-      for (let i = 0; i < days; i++) {
+      for (let i = 0; i < safeDays; i++) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
         const dateKey = date.toISOString().split('T')[0];
@@ -1740,10 +2179,12 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const enhancementStats: Record<string, number> = {};
       const setStats: Record<string, number> = {};
 
-      // 计算基础属性
+      // 计算基础属性（跳过幽灵槽与已彻底损坏的装备）
       for (const [slot, itemId] of Object.entries(st.equipment)) {
         if (!itemId || typeof itemId !== 'string') continue;
         if (slot === 'enhancementLevels' || slot === 'durability' || slot === 'maxDurability' || slot === 'tool') continue;
+        if ((st.inventory?.[itemId] || 0) <= 0) continue;
+        if (isDurabilityBroken(st, itemId)) continue;
 
         const item = contentPack.items.find((i: any) => i.id === itemId) as any;
         if (!item) continue;
@@ -1762,6 +2203,8 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
           if (item.atk) enhancementStats.atk = (enhancementStats.atk || 0) + item.atk * bonus;
           if (item.def) enhancementStats.def = (enhancementStats.def || 0) + item.def * bonus;
           if (item.mag) enhancementStats.mag = (enhancementStats.mag || 0) + item.mag * bonus;
+          if (item.hp) enhancementStats.hp = (enhancementStats.hp || 0) + item.hp * bonus;
+          if (item.mp) enhancementStats.mp = (enhancementStats.mp || 0) + item.mp * bonus;
         }
       }
 
@@ -1810,20 +2253,25 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       for (const set of contentPack.equipmentSets) {
         let equippedPieces = 0;
 
-        // 计算已装备的套装件数
+        // 计算已装备的套装件数（跳过幽灵槽与已损坏件）
         for (const piece of set.pieces) {
           const equippedItem = st.equipment[piece.slot as keyof typeof st.equipment];
-          if (equippedItem === piece.itemId) {
+          if (
+            equippedItem === piece.itemId &&
+            (st.inventory?.[piece.itemId] || 0) > 0 &&
+            !isDurabilityBroken(st, piece.itemId)
+          ) {
             equippedPieces++;
           }
         }
 
         if (equippedPieces === 0) continue;
 
-        // 计算激活的套装效果
+        // 计算激活的套装效果：只有已满足的最高档生效
+        const top = highestActiveBonus(set.bonuses as Array<{ requiredPieces?: number; stats?: Record<string, number> }>, equippedPieces);
         const activeBonuses = set.bonuses.map(bonus => ({
           ...bonus,
-          isActive: equippedPieces >= bonus.requiredPieces
+          isActive: bonus === top
         }));
 
         // 计算总套装属性
@@ -1862,13 +2310,24 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
 
     getMarketSummary: async () => summarizeOrders(tradingOrders.values()),
 
-    createTradingOrder: async ({ userId, itemId, quantity, price, type }) => {
+    createTradingOrder: async ({ userId, itemId, quantity, price, type, contentPack }) => {
       const state = states.get(userId);
       if (!state) throw new Error('玩家状态不存在');
 
-      // 如果是出售单，检查是否有足够的物品
+      // 存储层是经济权威：HTTP zod 挡得住的外部输入，内部调用/旧客户端可能绕过，这里再挡一次
+      if (type !== 'buy' && type !== 'sell') throw new Error('订单类型无效');
+      if (!validateItemQuantity(quantity)) throw new Error('订单数量无效');
+      if (!validatePrice(price)) throw new Error('订单价格无效');
+      if (itemId === 'gold') throw new Error('金币不可挂单');
+      if (contentPack && !(contentPack.items as any[]).some((i) => i.id === itemId)) throw new Error('物品不存在');
+
+      // 如果是出售单，检查是否有足够的未装备物品
       if (type === 'sell') {
         const currentQuantity = state.inventory[itemId] || 0;
+        const equippedCopies = countEquippedCopies(state, itemId);
+        if (equippedCopies > 0 && currentQuantity - quantity < equippedCopies) {
+          throw new Error('装备中的物品不能挂单');
+        }
         if (currentQuantity < quantity) {
           throw new Error(`物品数量不足，当前拥有: ${currentQuantity}`);
         }
@@ -1898,41 +2357,72 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       };
 
       tradingOrders.set(order.id, order);
+      schedulePersist();
       return order;
     },
 
     executeTrade: async ({ buyerId, orderId, quantity }) => {
+      // buyerId 语义是"成交发起方"：sell 单时其为买家，buy 单时其为卖家。
       const order = tradingOrders.get(orderId);
       if (!order) throw new Error('订单不存在');
 
-      if (order.type !== 'sell') throw new Error('只能购买出售单');
-      if (order.userId === buyerId) throw new Error('不能购买自己的订单');
+      if (!validateItemQuantity(quantity)) throw new Error('交易数量无效');
+      if (order.userId === buyerId) throw new Error('不能成交自己的订单');
       if (order.quantity < quantity) throw new Error('订单数量不足');
 
-      const buyerState = states.get(buyerId);
-      if (!buyerState) throw new Error('买家状态不存在');
+      const fillerState = states.get(buyerId);
+      if (!fillerState) throw new Error('玩家状态不存在');
 
-      const sellerState = states.get(order.userId);
-      if (!sellerState) throw new Error('卖家状态不存在');
+      const posterState = states.get(order.userId);
+      if (!posterState) throw new Error('挂单方状态不存在');
 
       const totalCost = quantity * order.price;
-      const buyerGold = buyerState.inventory.gold || 0;
 
-      if (buyerGold < totalCost) {
-        throw new Error(`金币不足，需要: ${totalCost}，当前拥有: ${buyerGold}`);
+      if (order.type === 'sell') {
+        // 购买出售单：发起方付金收货
+        const gold = fillerState.inventory.gold || 0;
+        if (gold < totalCost) {
+          throw new Error(`金币不足，需要: ${totalCost}，当前拥有: ${gold}`);
+        }
+        fillerState.inventory.gold = gold - totalCost;
+        fillerState.inventory[order.itemId] = (fillerState.inventory[order.itemId] || 0) + quantity;
+        posterState.inventory.gold = (posterState.inventory.gold || 0) + totalCost;
+        if (fillerState.stats) fillerState.stats.totalGoldSpent = (fillerState.stats.totalGoldSpent || 0) + totalCost;
+        if (posterState.stats) posterState.stats.totalGoldEarned = (posterState.stats.totalGoldEarned || 0) + totalCost;
+        appendLog(posterState, `订单成交：${order.itemId} x${quantity} 获得 ${totalCost} 金币`);
+      } else {
+        // 卖给收购单：发起方交货收金（买家金币在挂单时已托管扣除）
+        const have = fillerState.inventory[order.itemId] || 0;
+        if (have < quantity) {
+          throw new Error(`物品不足，需要: ${quantity}，当前拥有: ${have}`);
+        }
+        const equippedCopies = countEquippedCopies(fillerState, order.itemId);
+        if (equippedCopies > 0 && have - quantity < equippedCopies) {
+          throw new Error('装备中的物品不能出售');
+        }
+        fillerState.inventory[order.itemId] = have - quantity;
+        if (fillerState.inventory[order.itemId] <= 0) delete fillerState.inventory[order.itemId];
+        fillerState.inventory.gold = (fillerState.inventory.gold || 0) + totalCost;
+        posterState.inventory[order.itemId] = (posterState.inventory[order.itemId] || 0) + quantity;
+        if (fillerState.stats) fillerState.stats.totalGoldEarned = (fillerState.stats.totalGoldEarned || 0) + totalCost;
+        if (posterState.stats) posterState.stats.totalGoldSpent = (posterState.stats.totalGoldSpent || 0) + totalCost;
+        appendLog(posterState, `收购成交：${order.itemId} x${quantity} 花费 ${totalCost} 金币`);
       }
-
-      // 执行交易
-      buyerState.inventory.gold = buyerGold - totalCost;
-      buyerState.inventory[order.itemId] = (buyerState.inventory[order.itemId] || 0) + quantity;
-
-      sellerState.inventory.gold = (sellerState.inventory.gold || 0) + totalCost;
+      if (fillerState.stats) fillerState.stats.totalTrades = (fillerState.stats.totalTrades || 0) + 1;
+      if (posterState.stats) posterState.stats.totalTrades = (posterState.stats.totalTrades || 0) + 1;
+      syncAchievements(fillerState);
+      syncAchievements(posterState);
+      fillerState.stateRevision = (fillerState.stateRevision ?? 0) + 1;
+      posterState.stateRevision = (posterState.stateRevision ?? 0) + 1;
 
       // 更新订单数量
       order.quantity -= quantity;
       if (order.quantity <= 0) {
         tradingOrders.delete(orderId);
       }
+      updatePriceHistory(order.itemId, order.price, quantity);
+      schedulePersist();
+      notifyUser(order.userId, { kind: "order:filled", orderId, itemId: order.itemId, quantity, gold: totalCost, remaining: Math.max(0, order.quantity) });
 
       return { success: true, message: '交易成功' };
     },
@@ -1955,6 +2445,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         const totalCost = order.quantity * order.price;
         state.inventory.gold = (state.inventory.gold || 0) + totalCost;
       }
+      schedulePersist();
     },
 
     getMyTradingOrders: async ({ userId }) => {

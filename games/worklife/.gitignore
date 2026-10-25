@@ -71,3 +71,6 @@ ngrok
 *.tar.gz
 *.rar
 
+e2e/.shots/
+.shots*/
+backups/

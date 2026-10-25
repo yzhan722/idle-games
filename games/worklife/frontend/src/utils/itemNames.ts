@@ -93,11 +93,17 @@ export const itemNameMap: Record<string, string> = {
 // 技能名称映射表
 export const skillNameMap: Record<string, string> = {
   'skill_woodcutter': '伐木技艺',
-  'skill_blacksmith': '锻造技艺', 
+  'skill_blacksmith': '挖矿技艺',
   'skill_farmer': '农牧技艺',
-  'skill_chef': '烹饪技艺',
-  'skill_tailor': '裁缝技艺',
-  'skill_alchemist': '炼金技艺',
+  'skill_chef': '钓鱼技艺',
+  'skill_tailor': '采集技艺',
+  'skill_alchemist': '采晶技艺',
+  'skill_woodworking': '木工技艺',
+  'skill_smithing': '锻造技艺',
+  'skill_husbandry': '畜牧技艺',
+  'skill_cooking': '烹饪技艺',
+  'skill_tailoring': '缝纫技艺',
+  'skill_alchemy': '炼金技艺',
   'skill_enhancing': '强化'
 }
 

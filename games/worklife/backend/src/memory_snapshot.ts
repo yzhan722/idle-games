@@ -1,5 +1,6 @@
 import type { PlayerCommandReceipt } from "./player_commands";
-import type { EnhancedPlayerState, Party, UserRecord } from "./types";
+import type { TradingOrder } from "./storage";
+import type { EnhancedPlayerState, EnhancementServiceRequest, Party, PriceHistory, UserRecord } from "./types";
 
 export type MemorySnapshot = {
   version: 1;
@@ -8,6 +9,12 @@ export type MemorySnapshot = {
   parties: Party[];
   /** userId -> committed operation receipts (idempotent replay protection). */
   commandReceipts?: Array<[string, PlayerCommandReceipt[]]>;
+  /** Open market orders (with escrowed items/gold). */
+  tradingOrders?: TradingOrder[];
+  /** Market price history per itemId. */
+  priceHistory?: Array<[string, PriceHistory[]]>;
+  /** Pending/completed enhancement service requests. */
+  enhancementServiceRequests?: EnhancementServiceRequest[];
 };
 
 export function emptySnapshot(): MemorySnapshot {
@@ -19,6 +26,9 @@ export function buildSnapshot(input: {
   states: Iterable<[string, EnhancedPlayerState]>;
   parties: Iterable<Party>;
   commandReceipts?: Iterable<[string, PlayerCommandReceipt[]]>;
+  tradingOrders?: Iterable<TradingOrder>;
+  priceHistory?: Iterable<[string, PriceHistory[]]>;
+  enhancementServiceRequests?: Iterable<EnhancementServiceRequest>;
 }): MemorySnapshot {
   return {
     version: 1,
@@ -26,6 +36,9 @@ export function buildSnapshot(input: {
     states: [...input.states],
     parties: [...input.parties],
     ...(input.commandReceipts ? { commandReceipts: [...input.commandReceipts] } : {}),
+    ...(input.tradingOrders ? { tradingOrders: [...input.tradingOrders] } : {}),
+    ...(input.priceHistory ? { priceHistory: [...input.priceHistory] } : {}),
+    ...(input.enhancementServiceRequests ? { enhancementServiceRequests: [...input.enhancementServiceRequests] } : {}),
   };
 }
 
@@ -38,5 +51,8 @@ export function parseSnapshot(raw: unknown): MemorySnapshot {
     states: Array.isArray(obj.states) ? (obj.states as MemorySnapshot["states"]) : [],
     parties: Array.isArray(obj.parties) ? obj.parties : [],
     ...(Array.isArray(obj.commandReceipts) ? { commandReceipts: obj.commandReceipts } : {}),
+    ...(Array.isArray(obj.tradingOrders) ? { tradingOrders: obj.tradingOrders } : {}),
+    ...(Array.isArray(obj.priceHistory) ? { priceHistory: obj.priceHistory } : {}),
+    ...(Array.isArray(obj.enhancementServiceRequests) ? { enhancementServiceRequests: obj.enhancementServiceRequests } : {}),
   };
 }

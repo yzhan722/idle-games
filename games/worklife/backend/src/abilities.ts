@@ -139,16 +139,19 @@ export function learnFromBook(
   const item = (pack.items as Array<{ id: string; type?: string }>).find((i) => i.id === itemId);
   if (!def || !item || item.type !== "book") return { ok: false, error: "not_a_book" };
   if ((player.inventory[itemId] || 0) < 1) return { ok: false, error: "missing_book" };
+  const known = ensureAbilities(player);
+  if (known[def.id] && known[def.id].level >= MAX_ABILITY_LEVEL) {
+    return { ok: false, error: "ability_max_level" };
+  }
   player.inventory[itemId] -= 1;
   if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
-  const known = ensureAbilities(player);
   if (!known[def.id]) {
     known[def.id] = { level: 1, xp: 0 };
     appendLog(player, `读完《${def.name}》，学会了新技能。`);
     // Auto-equip into a free slot so a fresh book is felt in the next fight.
     const slots = activeAbilitySlots(player);
     if (slots.length < abilitySlotCount(ensureCombatSkills(player))) {
-      player.abilityLoadout = [...(player.abilityLoadout || []), { abilityId: def.id, trigger: def.defaultTrigger }];
+      player.abilityLoadout = [...slots, { abilityId: def.id, trigger: def.defaultTrigger }];
     }
     return { ok: true, abilityId: def.id, learned: true };
   }

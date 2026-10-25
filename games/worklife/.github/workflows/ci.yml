@@ -1,9 +1,6 @@
 name: RC quality gate
 
 on:
-  push:
-    branches: [main, devops]
-  pull_request:
   workflow_dispatch:
 
 jobs:

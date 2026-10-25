@@ -1,6 +1,9 @@
 import { randomUUID } from "crypto";
 import type { EnhancedContentPack, EnhancedPlayerState, Task, TaskState } from "./types";
 import { appendLog, ensurePlayerExtensions } from "./storage";
+import { syncAchievements } from "./progression";
+import { todayLocal } from "./time";
+import { isMonsterInOpenZone } from "./zones";
 
 const newTaskId = () => `task_${randomUUID().slice(0, 8)}`;
 
@@ -82,7 +85,8 @@ export function rerollCost(state: TaskState, day: string): number {
 }
 
 function dayKey(now: Date): string {
-  return now.toISOString().slice(0, 10);
+  // 与其他每日系统（签到/赏金）一致按东八区切日，而不是 UTC
+  return todayLocal(now);
 }
 
 type PackAction = {
@@ -99,12 +103,20 @@ type PackAction = {
 type PackMonster = { id: string; name?: string; level?: number; xp?: number; gold?: number; isBoss?: boolean };
 
 const SKILL_NAMES: Record<string, string> = {
-  skill_woodcutter: "伐木工",
-  skill_blacksmith: "铁匠",
-  skill_farmer: "农夫",
-  skill_chef: "厨师",
-  skill_tailor: "裁缝",
-  skill_alchemist: "炼金术师",
+  // 采集侧（skill_<profession>）
+  skill_woodcutter: "伐木",
+  skill_blacksmith: "挖矿",
+  skill_farmer: "种植",
+  skill_chef: "钓鱼",
+  skill_tailor: "采集",
+  skill_alchemist: "采晶",
+  // 生产侧（skill_<动作名>）
+  skill_woodworking: "木工",
+  skill_smithing: "锻造",
+  skill_husbandry: "畜牧",
+  skill_cooking: "烹饪",
+  skill_tailoring: "缝纫",
+  skill_alchemy: "炼金",
   skill_combat: "战斗",
 };
 
@@ -128,10 +140,18 @@ function eligibleActions(pack: EnhancedContentPack, player: EnhancedPlayerState,
   );
 }
 
-/** Monsters worth tasking: the player has beaten them, or the starter slime. */
+/** Monsters worth tasking: the player has beaten them, or the starter slime, in an open zone and within combat level. */
 function eligibleMonsters(pack: EnhancedContentPack, player: EnhancedPlayerState): PackMonster[] {
   const kills = player.stats?.killsByMonster || {};
-  const list = (pack.monsters as PackMonster[]).filter((m) => !m.isBoss && ((kills[m.id] || 0) > 0 || m.id === "slime"));
+  const combatLevel = player.combatLevel || 1;
+  const actions = (pack.actions || []) as PackAction[];
+  const list = (pack.monsters as PackMonster[]).filter((m) => {
+    if (m.isBoss) return false;
+    if (!isMonsterInOpenZone(pack, m.id)) return false;
+    const reqLvl = Number(actions.find((a) => a.id === `act_combat_${m.id}`)?.requirements?.skillLevel || 1);
+    if (combatLevel < reqLvl) return false;
+    return (kills[m.id] || 0) > 0 || m.id === "slime";
+  });
   return list.length ? list : (pack.monsters as PackMonster[]).filter((m) => m.id === "slime");
 }
 
@@ -160,17 +180,24 @@ export function generateTask(
   player: EnhancedPlayerState,
   pack: EnhancedContentPack,
   now: Date,
-  rng: () => number = Math.random
+  rng: () => number = Math.random,
+  avoidKey?: string
 ): Task | undefined {
   const state = player.tasksState!;
   const blocked = new Set(state.blockedSkills);
+  const existingKeys = new Set(
+    (state.tasks || []).map((t) => (t.kind === "kill" ? `kill:${t.monsterId}` : `act:${t.actionId}`))
+  );
+  if (avoidKey) existingKeys.add(avoidKey);
   const stats = player.stats!;
   for (let attempt = 0; attempt < 6; attempt++) {
     const skillId = pickSkill(player, blocked, rng);
     if (!skillId) return undefined;
     const minutes = TARGET_MINUTES_MIN + rng() * (TARGET_MINUTES_MAX - TARGET_MINUTES_MIN);
     if (skillId === "skill_combat") {
-      const pool = eligibleMonsters(pack, player);
+      const fullPool = eligibleMonsters(pack, player);
+      const dedupPool = fullPool.filter((m) => !existingKeys.has(`kill:${m.id}`));
+      const pool = dedupPool.length > 0 ? dedupPool : fullPool;
       const m = pool[Math.floor(rng() * pool.length)];
       if (!m) continue;
       // ~40s per kill including intermission at T1 → 30–70 kills for a 20–45 minute task
@@ -188,8 +215,10 @@ export function generateTask(
         assignedAt: now.toISOString(),
       };
     }
-    const pool = eligibleActions(pack, player, skillId);
-    if (!pool.length) continue;
+    const fullPool = eligibleActions(pack, player, skillId);
+    if (!fullPool.length) continue;
+    const dedupPool = fullPool.filter((a) => !existingKeys.has(`act:${a.id}`));
+    const pool = dedupPool.length > 0 ? dedupPool : fullPool;
     const a = pool[Math.floor(rng() * pool.length)];
     const durationSec = Math.max(1, Number(a.duration) / 1000);
     const target = roundTo((minutes * 60) / durationSec, durationSec >= 20 ? 5 : 10);
@@ -251,6 +280,11 @@ export function ensureTasks(
     if (task) state.tasks.push(task);
     state.nextTaskAt = new Date(at.getTime() + cooldownMs(state)).toISOString();
   }
+  if (Date.parse(state.nextTaskAt) <= now.getTime()) {
+    state.nextTaskAt = state.tasks.length >= TASK_SLOTS
+      ? now.toISOString()
+      : new Date(now.getTime() + cooldownMs(state)).toISOString();
+  }
   return state;
 }
 
@@ -273,6 +307,7 @@ export function claimTask(player: EnhancedPlayerState, pack: EnhancedContentPack
   state.completed += 1;
   // A freed slot lets a waiting timer resume immediately.
   if (Date.parse(state.nextTaskAt) < now.getTime()) state.nextTaskAt = now.toISOString();
+  syncAchievements(player);
   appendLog(player, `完成任务「${t.name}」：金币 +${t.reward.gold}，任务代币 +${t.reward.tokens}`);
   const giftReady = Math.floor(state.points / GIFT_POINTS) > state.giftsClaimed;
   return { ok: true as const, gold: t.reward.gold, tokens: t.reward.tokens, giftReady };
@@ -294,10 +329,13 @@ export function rerollTask(player: EnhancedPlayerState, pack: EnhancedContentPac
   const day = dayKey(now);
   const cost = rerollCost(state, day);
   if ((player.inventory.gold || 0) < cost) return { ok: false as const, error: "no_gold", cost };
-  const replacement = generateTask(player, pack, now, rng);
+  const oldTask = state.tasks[idx];
+  const avoidKey = oldTask ? (oldTask.kind === "kill" ? `kill:${oldTask.monsterId}` : `act:${oldTask.actionId}`) : undefined;
+  const replacement = generateTask(player, pack, now, rng, avoidKey);
   if (!replacement) return { ok: false as const, error: "no_task_available" };
   player.inventory.gold -= cost;
   player.stats!.totalGoldSpent += cost;
+  syncAchievements(player);
   if (state.rerollDay !== day) {
     state.rerollDay = day;
     state.rerollsToday = 0;

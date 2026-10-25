@@ -32,7 +32,15 @@ export async function skillsRoutes(
     
     const { professionId } = req.params;
 
+    // 先校验职业存在：不存在的职业此前落入 catch 返回 500，
+    // 与 /skills/tree/:id 的 404 语义不一致（资源不存在 ≠ 服务器故障）。
+    const skillIds = new Set(((contentPack as any).skills || []).map((s: any) => s.id));
+    if (!skillIds.has(`skill_${professionId}`)) {
+      return reply.status(404).send({ error: "profession_not_found", message: "职业不存在" });
+    }
+
     try {
+      await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
       const progress = await storage.getPlayerSkillProgress({ userId, professionId });
       return reply.send(progress);
     } catch (error) {
@@ -49,9 +57,10 @@ export async function skillsRoutes(
     const body = z.object({
       professionId: z.string().min(1),
       nodeId: z.string().min(1)
-    }).parse((req.body ?? {}) as unknown);
+    }).strict().parse((req.body ?? {}) as unknown);
 
     try {
+      await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
       const result = await storage.unlockSkillNode({
         userId,
         professionId: body.professionId,

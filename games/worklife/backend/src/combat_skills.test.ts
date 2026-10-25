@@ -234,8 +234,8 @@ describe("MWI abilities", () => {
     assert.equal(state.hpCombat.playerMaxMp, 20);
     // atk 10 (5 base + sword 5) vs def 4 → 8 per hit, 重劈 floor(8×2.2) = 17
     tickHpCombat(state, pack, new Date(T0.getTime() + 8_100), 8_100, () => 0.99);
-    // t0: 17, 3s: 8, 6s: 8, 8s: 17 → 50 dealt, slime 30/80 left
-    assert.equal(state.hpCombat.enemyHp, 30);
+    // t0: 17, 3s: 8, 6s: 8, 8s: 17 → 50 dealt, slime 20/70 left
+    assert.equal(state.hpCombat.enemyHp, 20);
     assert.equal(state.hpCombat.log.filter((l) => l.startsWith("重劈造成 17")).length, 2);
     assert.equal(state.abilities!.heavy_chop.xp, 2, "1 XP per cast");
     assert.equal(state.hpCombat.playerMp, 20, "重劈 costs no mana; regen keeps the pool full");
@@ -258,9 +258,9 @@ describe("MWI abilities", () => {
     tickHpCombat(state, pack, new Date(T0.getTime() + 60_000), 59_999, () => 0.99);
     assert.equal(state.hpCombat.outcome, "win");
     const g = state.hpCombat.xpGained!;
-    assert.equal(g.melee, 4.4, "slime 10 XP → 44% melee");
-    assert.equal(g.stamina, 1.4);
-    assert.equal(state.combatSkills!.melee.xp, 4.4);
+    assert.equal(g.melee, 1.8, "slime 4 XP → 44% melee");
+    assert.equal(g.stamina, 0.6);
+    assert.equal(state.combatSkills!.melee.xp, 1.76);
     await storage.close();
   });
 
@@ -275,14 +275,17 @@ describe("MWI abilities", () => {
       { abilityId: "brace", trigger: { type: "always" } },
       { abilityId: "minor_heal", trigger: { type: "self_hp_below", pct: 60 } },
     ]).ok, true);
+    state.combatLevel = 10; // forest_boss 需要战斗等级 10（startHpCombat 的等级门）
     state.hpCombat = startHpCombat(state, pack, "forest_boss", T0);
     state.abilityLoadout = state.abilityLoadout!; // keep
     tickHpCombat(state, pack, new Date(T0.getTime() + 3_600), 3_600, () => 0.99);
-    // 坚守 at t0 (6s window): the boss hit at 3.5s is 8 → floor(8 × 0.65) = 5
+    // 坚守 at t0 (6s window): the boss hit at 2.2s is its full atk (no armour) → floor(atk × 0.65)
+    const bossAtk = Number((pack.monsters as Array<{ id: string; atk?: number }>).find((m) => m.id === "forest_boss")!.atk);
+    const braced = Math.floor(bossAtk * 0.65);
     assert.ok(state.hpCombat.log.some((l) => l.includes("坚守！")), state.hpCombat.log.join(" | "));
-    assert.ok(state.hpCombat.log.some((l) => l.includes("造成 5 伤害（坚守中）")), state.hpCombat.log.join(" | "));
-    assert.equal(state.hpCombat.playerHp, 45);
-    assert.equal(state.hpCombat.log.some((l) => l.includes("小治疗")), false, "45/50 is above the 60% trigger");
+    assert.ok(state.hpCombat.log.some((l) => l.includes(`造成 ${braced} 伤害（坚守中）`)), state.hpCombat.log.join(" | "));
+    assert.equal(state.hpCombat.playerHp, state.hpCombat.playerMaxHp - braced);
+    assert.equal(state.hpCombat.log.some((l) => l.includes("小治疗")), false, "still above the 60% trigger");
     // manual cast of a heal at 90% HP is refused
     assert.equal(tryCastAbility(state, pack, "smash", new Date(T0.getTime() + 3_600)).error, "unknown_ability");
     state.hpCombat.playerHp = 20;

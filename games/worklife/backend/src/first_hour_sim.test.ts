@@ -20,14 +20,17 @@ describe("first-hour simulation checkpoints", () => {
     assert.equal(byId.first_armor.chest, 1);
     assert.equal(byId.first_armor.equippedChest, true);
 
+    // The new forest curve: the crafted sword buys exactly the first kill — crab's
+    // shell and the monkey's speed need the wood armor set (and levels) that come
+    // after the sword. The boss is out of first-hour reach no matter the build.
     assert.equal(report.unarmedSlime.won, false);
     assert.equal(report.swordSlime.won, true);
-    assert.equal(report.swordCrab.won, true);
-    assert.equal(report.swordMonkey.won, true);
-    assert.ok(report.swordCrab.durationMs > report.swordSlime.durationMs);
-    assert.ok(report.swordMonkey.durationMs < report.swordSlime.durationMs);
+    assert.equal(report.swordCrab.won, false);
+    assert.equal(report.swordMonkey.won, false);
+    assert.ok(report.swordMonkey.durationMs < report.swordSlime.durationMs, "fast mob ends a losing fight quickly");
 
-    assert.equal(report.bossBark.won, true);
-    assert.ok(report.bossBark.playerHpLeft > report.bossEdge.playerHpLeft);
+    assert.equal(report.bossBark.won, false);
+    assert.equal(report.bossEdge.won, false);
+    assert.ok(report.bossBark.durationMs > report.bossEdge.durationMs, "the defensive build survives the boss longer");
   });
 });

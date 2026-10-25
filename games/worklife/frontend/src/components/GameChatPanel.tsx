@@ -3,13 +3,17 @@ import type { ChatMsg } from "../services/websocket";
 import { T1Art } from "./T1Art";
 import "./T1UiIcons.css";
 
-type ChatChannel = "world" | "profession" | "party";
+type ChatChannel = "world" | "profession" | "party" | "private";
 
 type Props = {
   expanded: boolean;
   onToggle: () => void;
   channel: ChatChannel;
   onSwitchChannel: (channel: ChatChannel) => void;
+  /** 当前私聊对象（channel==='private' 时展示） */
+  privateTarget?: { id: string; name: string } | null;
+  /** 点击消息里的玩家名 → 对其发起私聊 */
+  onPrivateChat: (target: { id: string; name: string }) => void;
   unread: Record<string, number>;
   professionIcon: string;
   wsStatus: "connecting" | "connected" | "disconnected";
@@ -75,7 +79,21 @@ export function GameChatPanel(props: Props) {
               队伍
               {props.unread.party > 0 && <span className="unread-badge">{props.unread.party}</span>}
             </button>
+            <button
+              className={`channel-btn ${props.channel === "private" ? "active" : ""}`}
+              onClick={() => props.onSwitchChannel("private")}
+            >
+              私聊
+              {(props.unread.private || 0) > 0 && <span className="unread-badge">{props.unread.private}</span>}
+            </button>
           </div>
+          {props.channel === "private" && (
+            <div className="chat-private-target">
+              {props.privateTarget
+                ? <>私聊 → <b>{props.privateTarget.name}</b>（点消息中的玩家名可换人）</>
+                : "点任意玩家名字开始私聊"}
+            </div>
+          )}
           <div className="chat-messages">
             {props.wsStatus !== "connected" && (
               <div className="chat-status">
@@ -95,9 +113,23 @@ export function GameChatPanel(props: Props) {
                   className={`chat-message ${msg.isSelf ? "own-message" : ""} ${msg.type === "system" ? "system-message" : ""} ${msg.type === "error" ? "error-message" : ""}`}
                 >
                   <div className="message-header">
-                    <span className="message-sender">
-                      {msg.sender.length > 10 ? msg.sender.slice(0, 8) + "…" : msg.sender}
-                    </span>
+                    {msg.type === "message" ? (
+                      <button
+                        className="message-sender sender-btn"
+                        type="button"
+                        title={`私聊 ${msg.senderName || msg.sender}`}
+                        onClick={() =>
+                          props.onPrivateChat({
+                            id: msg.sender,
+                            name: msg.senderName || msg.sender,
+                          })
+                        }
+                      >
+                        {msg.senderName || (msg.sender.length > 10 ? msg.sender.slice(0, 8) + "…" : msg.sender)}
+                      </button>
+                    ) : (
+                      <span className="message-sender">{msg.senderName || msg.sender}</span>
+                    )}
                     <span className="message-time">
                       {new Date(msg.ts).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
                     </span>
@@ -127,7 +159,11 @@ export function GameChatPanel(props: Props) {
             <input
               type="text"
               className="chat-input"
-              placeholder={`发送到${props.channel === "world" ? "世界" : props.channel === "profession" ? "职业" : "队伍"}频道...`}
+              placeholder={
+                props.channel === "private"
+                  ? props.privateTarget ? `私聊 ${props.privateTarget.name}...` : "先点击玩家名选择私聊对象"
+                  : `发送到${props.channel === "world" ? "世界" : props.channel === "profession" ? "职业" : "队伍"}频道...`
+              }
               value={props.input}
               onChange={(e) => props.onInput(e.target.value)}
               onKeyPress={props.onKeyPress}

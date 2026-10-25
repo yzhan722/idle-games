@@ -5,24 +5,14 @@ import { CAREER_GROUPS } from "../gameplay/ia";
 export type ProgPanelId =
   | "achievements"
   | "daily"
-  | "stats"
   | "settings"
-  | "buffs"
-  | "shop"
   | "checkin"
-  | "reputation"
-  | "bounties"
   | "prestige";
 
 const LABELS: Record<ProgPanelId, string> = {
   daily: "每日任务",
   achievements: "成就",
   checkin: "签到",
-  shop: "商店",
-  buffs: "增益",
-  stats: "生涯统计",
-  reputation: "声望",
-  bounties: "赏金契约",
   prestige: "转生",
   settings: "设置",
 };
@@ -40,6 +30,7 @@ type Props = {
   batchTotal?: number;
   battleActive: boolean;
   battleMonsterName?: string;
+  battleSubtitle?: string;
   /** MWI timed enhancing: shown in the activity slot like any other action. */
   enhanceRun?: { itemName: string; level: number; target: number; nextAttemptAt: number; intervalMs: number } | null;
   onStopEnhance?: () => void;
@@ -69,6 +60,8 @@ function activityLabel(tab: string) {
   return "工";
 }
 
+const fmtSec = (s: number) => (Number.isInteger(s) ? `${s}` : s.toFixed(1));
+
 export function GameHeader(props: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -78,11 +71,36 @@ export function GameHeader(props: Props) {
   const [tick, setTick] = useState(() => Date.now());
   useEffect(() => {
     if (!enhancing) return;
-    const id = window.setInterval(() => setTick(Date.now()), 250);
+    setTick(Date.now());
+    const id = window.setInterval(() => setTick(Date.now()), 50);
     return () => window.clearInterval(id);
-  }, [enhancing]);
+  }, [enhancing, props.enhanceRun?.nextAttemptAt]);
   const enhanceRemainingMs = props.enhanceRun ? Math.max(0, props.enhanceRun.nextAttemptAt - tick) : 0;
-  const enhancePct = props.enhanceRun ? Math.round(Math.min(100, Math.max(0, 100 - (enhanceRemainingMs / props.enhanceRun.intervalMs) * 100))) : 0;
+  const enhancePct = props.enhanceRun
+    ? Math.min(100, Math.max(0, 100 - (enhanceRemainingMs / Math.max(1, props.enhanceRun.intervalMs)) * 100))
+    : 0;
+  const activePct = enhancing ? enhancePct : Math.min(100, Math.max(0, props.progress));
+
+  useEffect(() => {
+    const base = "异世界の打工生活 · 奇幻放置冒险与工坊";
+    if (props.battleActive && props.battleMonsterName) {
+      document.title = `⚔️ 讨伐·${props.battleMonsterName} | ${base}`;
+    } else if (enhancing && props.enhanceRun) {
+      document.title = `🔨 强化·${props.enhanceRun.itemName} +${props.enhanceRun.level} | ${base}`;
+    } else if (props.currentActivity && props.playerMode === "life_action") {
+      document.title = `⛏️ ${props.currentActivity.name} | ${base}`;
+    } else {
+      document.title = `${base} RPG`;
+    }
+  }, [
+    props.battleActive,
+    props.battleMonsterName,
+    enhancing,
+    props.enhanceRun?.itemName,
+    props.enhanceRun?.level,
+    props.currentActivity?.name,
+    props.playerMode,
+  ]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -98,8 +116,9 @@ export function GameHeader(props: Props) {
   const groups = props.chapterComplete
     ? CAREER_GROUPS
     : CAREER_GROUPS.filter((g) => g.title === "系统");
-  // 声望 / 赏金契约 / 转生 的数值量级属于第二章之后；第一章刚结束时先以"第二章开放"占位，避免一次倒出十个系统
-  const lockedGroupTitles = new Set(["远期"]);
+  // 声望 / 赏金契约 / 转生 本身已带等级门槛（面板内显示解锁条件），入口在第一章通关后即可见，
+  // 避免功能完全不可达；数值门槛仍由各面板自身把关。
+  const lockedGroupTitles = new Set<string>();
   const isLocked = (groupTitle: string) => lockedGroupTitles.has(groupTitle);
   // 角标只统计菜单里当前可见且可点的入口：第一章结束前只有"设置"，此时不该亮红点
   const visibleIds = new Set(
@@ -151,16 +170,16 @@ export function GameHeader(props: Props) {
                 <path
                   className="progress-ring-fill"
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  style={{ strokeDasharray: `${enhancing ? enhancePct : props.progress}, 100` }}
+                  style={{ strokeDasharray: `${activePct.toFixed(1)}, 100` }}
                 />
               </svg>
-              <span className="progress-ring-text">{enhancing ? enhancePct : props.progress}%</span>
+              <span className="progress-ring-text">{Math.floor(activePct)}%</span>
             </div>
           )}
           <div className="activity-details">
             <div className="activity-name">
               {props.battleActive
-                ? props.battleMonsterName
+                ? props.battleMonsterName || "战斗中"
                 : enhancing
                   ? `强化 ${props.enhanceRun!.itemName} +${props.enhanceRun!.level} → +${props.enhanceRun!.target}`
                   : props.currentActivity
@@ -172,13 +191,13 @@ export function GameHeader(props: Props) {
             </div>
             <div className="activity-countdown">
               {props.battleActive
-                ? "自动战斗"
+                ? props.battleSubtitle || "自动战斗"
                 : enhancing
-                  ? `下一次尝试 ${Math.ceil(enhanceRemainingMs / 1000)} 秒`
+                  ? `下一次尝试 ${(enhanceRemainingMs / 1000).toFixed(1)}/${fmtSec(props.enhanceRun!.intervalMs / 1000)}秒 (${Math.floor(enhancePct)}%)`
                   : props.currentActivity
-                    ? `${Math.ceil((props.currentActivity.duration * (100 - props.progress)) / 100)}/${props.currentActivity.duration}秒` +
+                    ? `${((props.currentActivity.duration * Math.max(0, 100 - activePct)) / 100).toFixed(1)}/${fmtSec(props.currentActivity.duration)}秒 (${Math.floor(activePct)}%)` +
                       ((props.batchTotal ?? 1) > 1 && typeof props.batchRemaining === "number" ? ` · 还剩 ${props.batchRemaining} 件` : "")
-                    : "点左侧任一技能开始干活"}
+                    : "选择技能开始采集、制作或冒险"}
             </div>
           </div>
           {enhancing && (

@@ -3,14 +3,14 @@ import { useGame } from '../contexts/GameContext'
 import { useAuth } from '../hooks/useAuth'
 import { EnhancementPanel } from './EnhancementPanel'
 import { SkillTreePanel } from './SkillTreePanel'
-import { PartyPanel } from './PartyPanel'
+import { PartyPanel, type PartyCombatHeaderInfo } from './PartyPanel'
 import { GameChatPanel } from './GameChatPanel'
 import { SkillSidebar } from './SkillSidebar'
 import { MobileNavBar } from './MobileNavBar'
 import { navIdForAction, visibleSkillNav, recommendedSkillNavIds, tabForNavId, SKILL_NAV } from '../gameplay/skillNav'
 import { SkillActionList } from './SkillActionList'
-import { CraftRecipeList } from './CraftRecipeList'
-import { CombatLoadoutPanel } from './CombatLoadoutPanel'
+import { CraftRecipeList, stripCraftVerb, type CraftRecipeView } from './CraftRecipeList'
+import { CombatPotionBar } from './CombatPotionBar'
 import { skillActionRows, type SkillActionRow } from '../gameplay/skillActions'
 import { t1Url } from '../assets/t1/manifest'
 import { GameHeader } from './GameHeader'
@@ -18,13 +18,16 @@ import { PlayerRightPanel } from './PlayerRightPanel'
 import { apiClient } from '../services/api'
 import { chatWs, ChatMsg } from '../services/websocket'
 import { logger } from '../utils/logger'
-import { getSimpleSkillName, registerItemNames } from '../utils/itemNames'
-import { T1Art, T1ItemIcon } from './T1Art'
-import { AchievementsPanel, DailyQuestsPanel, StatsPanel, SettingsPanel } from './ProgressionPanels'
-import { BuffsPanel, ShopPanel, CheckInModal } from './SystemPanels'
-import { ReputationPanel, BountiesPanel, PrestigePanel } from './AdvancementPanels'
-import { OfflineModal, type OfflineReport } from './OfflineModal'
+import { getItemName, registerItemNames } from '../utils/itemNames'
+import { T1Art, T1ItemIcon, characterArtId } from './T1Art'
+import { AchievementsPanel, DailyQuestsPanel, SettingsPanel } from './ProgressionPanels'
+import { CheckInModal } from './SystemPanels'
+import { PrestigePanel } from './AdvancementPanels'
+
 import { useToast } from './Toast'
+import { CharacterCreate } from './CharacterCreate'
+import { getProfessionPerk } from '../gameplay/professionPerks'
+import { TutorialGuide } from './TutorialGuide'
 import { NextGoalBar } from './NextGoalBar'
 import { ActionQueueBar } from './ActionQueueBar'
 import { ActionRatesPanel } from './ActionRatesPanel'
@@ -35,9 +38,9 @@ import { nextChapter1Goal, chapter1Complete } from '../gameplay/chapter1'
 import { CHAPTER1_MONSTERS } from '../gameplay/ia'
 import { COMBAT_SKILL_KEYS, abilitySlotCount, activeSetBonuses, combatSheetFromPack, equippedWeaponAtk, mainCombatSkill } from '../gameplay/combatSheet'
 import { enhancementStatMultiplier, toolEffectLine } from '../gameplay/enhancement'
-import { difficultyFromPreview, previewAbilities, previewFight, previewLine } from '../gameplay/fightPreview'
+import { previewAbilities } from '../gameplay/fightPreview'
 import { AbilityLoadoutPanel } from './AbilityLoadoutPanel'
-import { AbilityBar } from './AbilityBar'
+import { AbilityBar, describeTrigger } from './AbilityBar'
 import { InventoryPage } from './InventoryPage'
 import { TasksPage } from './TasksPage'
 import { HousesPage } from './HousesPage'
@@ -46,7 +49,8 @@ import { MarketMyOrders } from './MarketMyOrders'
 import type { AbilityDef } from '../types/game'
 import { craftWhy, missingMaterials } from '../gameplay/craftPreview'
 import { xpToNextLevel } from '../gameplay/xp'
-import { archetypeLabel, encounterRewardLine, mechanicLabels } from '../gameplay/encounterLabels'
+import { archetypeLabel, encounterRewardLine, mechanicEntries, mechanicLabels } from '../gameplay/encounterLabels'
+import { mechanicLogMatcher } from '../gameplay/bossMechanics'
 import { playGameSound, setGameSoundEnabled } from '../gameplay/sound'
 import './NewGameInterface.css'
 
@@ -220,62 +224,71 @@ export default function NewGameInterface() {
     outcome?: string;
     logLen: number;
     heavyReady: boolean;
+    startedAt?: number;
   } | null>(null)
   const prevLevelsRef = useRef<{ combat: number; wood: number } | null>(null)
   const prevUnlockRef = useRef<{ craft: boolean; adventure: boolean } | null>(null)
 
+  const [customPlayerName, setCustomPlayerName] = useState<string | null>(null)
+  const [customPlayerGender, setCustomPlayerGender] = useState<string | null>(null)
+  const [customPlayerAvatar, setCustomPlayerAvatar] = useState<string | null>(null)
   useEffect(() => {
-    void apiClient.getSettings().then((res: { settings?: { soundEnabled?: boolean; animationsEnabled?: boolean; compactMode?: boolean } }) => {
+    void apiClient.getSettings().then((res: { settings?: { soundEnabled?: boolean; animationsEnabled?: boolean; compactMode?: boolean; playerName?: string; gender?: string; avatar?: string } }) => {
       const s = res.settings
       setGameSoundEnabled(s?.soundEnabled !== false)
       document.body.classList.toggle("no-animations", s?.animationsEnabled === false)
       document.body.classList.toggle("compact-mode", !!s?.compactMode)
+      setCustomPlayerName(s?.playerName || null)
+      if (s?.gender) setCustomPlayerGender(s.gender === 'secret' ? 'animal' : s.gender)
+      if (s?.avatar) setCustomPlayerAvatar(s.avatar)
     }).catch(() => undefined)
   }, [])
-  // 玩家展示名：基于用户 id 派生一个稳定的名字（无独立昵称系统时的兜底）
-  const playerName = user?.id ? `玩家_${String(user.id).slice(0, 6)}` : '玩家'
+  // 玩家展示名：优先自定义角色名（存档里的 settings.playerName），其次注册账号名，最后按用户 id 派生
+  const fallbackName = user?.username || (user?.id ? `玩家_${String(user.id).slice(0, 6)}` : '玩家')
+  const playerName = customPlayerName || fallbackName
+  const rawGender = customPlayerGender || playerState?.settings?.gender || 'male'
+  const playerGender: 'male' | 'female' | 'animal' = rawGender === 'female' ? 'female' : (rawGender === 'animal' || rawGender === 'secret') ? 'animal' : 'male'
+  const playerAvatar = customPlayerAvatar || playerState?.settings?.avatar
+  const renamePlayer = useCallback(async (name: string) => {
+    const trimmed = name.trim().slice(0, 16)
+    await apiClient.updateSettings({ playerName: trimmed || null })
+    setCustomPlayerName(trimmed || null)
+  }, [])
+  const changePlayerAvatar = useCallback(async (avatar: string) => {
+    setCustomPlayerAvatar(avatar)
+    await apiClient.updateSettings({ avatar }).catch(() => undefined)
+    void refreshPlayerState()
+  }, [refreshPlayerState])
   const [activeTab, setActiveTab] = useState<ActiveTab>('logging')
 
-  // 进度系统弹窗：成就 / 每日任务 / 统计 / 设置 / 增益 / 商店 / 签到 / 声望 / 赏金 / 转生
-  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'stats' | 'settings' | 'buffs' | 'shop' | 'checkin' | 'reputation' | 'bounties' | 'prestige'>(null)
+  // 进度系统弹窗：成就 / 每日任务 / 设置 / 签到 / 转生
+  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'prestige'>(null)
   // 顶栏角标：可领取数量
   const [claimableCount, setClaimableCount] = useState(0)
   // 顶栏角标：今日是否可签到
   const [checkInAvailable, setCheckInAvailable] = useState(false)
   // 离线收益弹窗（服务端报告）
-  const [offlineSummary, setOfflineSummary] = useState<OfflineReport | null>(null)
-  const offlineCheckedRef = useRef<string | null>(null)
   
   // 轮询可领取的成就/每日任务数量，用于顶栏角标提醒
-  useEffect(() => {
-    let cancelled = false
-    const refreshClaimable = async () => {
-      try {
-        const [ach, daily, checkin]: any[] = await Promise.all([
-          apiClient.getAchievements().catch(() => ({ achievements: [] })),
-          apiClient.getDailyQuests().catch(() => ({ quests: [] })),
-          apiClient.getCheckIn().catch(() => ({ canCheckIn: false }))
-        ])
-        if (cancelled) return
-        const achCount = (ach.achievements || []).filter((a: any) => a.unlocked && !a.claimed).length
-        const dailyCount = (daily.quests || []).filter((q: any) => q.completed && !q.claimed).length
-        setClaimableCount(achCount + dailyCount)
-        setCheckInAvailable(!!checkin.canCheckIn)
-      } catch { /* 忽略 */ }
-    }
-    refreshClaimable()
-    const timer = window.setInterval(refreshClaimable, 30000)
-    return () => { cancelled = true; window.clearInterval(timer) }
+  const refreshClaimable = useCallback(async () => {
+    try {
+      const [ach, daily, checkin]: any[] = await Promise.all([
+        apiClient.getAchievements().catch(() => ({ achievements: [] })),
+        apiClient.getDailyQuests().catch(() => ({ quests: [] })),
+        apiClient.getCheckIn().catch(() => ({ canCheckIn: false }))
+      ])
+      const achCount = (ach.achievements || []).filter((a: any) => a.unlocked && !a.claimed).length
+      const dailyCount = (daily.quests || []).filter((q: any) => q.completed && !q.claimed).length
+      setClaimableCount(achCount + dailyCount)
+      setCheckInAvailable(!!checkin.canCheckIn)
+    } catch { /* 忽略 */ }
   }, [])
 
-  // 离线报告：服务端在离开 ≥5 分钟后的第一次结算里生成 playerState.offlineReport；这里只负责展示与确认
   useEffect(() => {
-    const report = (playerState as any)?.offlineReport as OfflineReport | undefined
-    if (!report) return
-    if (offlineCheckedRef.current === report.id) return
-    offlineCheckedRef.current = report.id
-    setOfflineSummary(report)
-  }, [(playerState as any)?.offlineReport?.id])
+    void refreshClaimable()
+    const timer = window.setInterval(() => { void refreshClaimable() }, 30000)
+    return () => { window.clearInterval(timer) }
+  }, [refreshClaimable])
 
   // 调试：监控组件是否重新挂载
   useEffect(() => {
@@ -298,8 +311,11 @@ export default function NewGameInterface() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [purchaseQuantity, setPurchaseQuantity] = useState(1)
   const [selectedOrder, setSelectedOrder] = useState<{id: string, quantity: number, price: number, type: 'sell' | 'buy'} | null>(null)
+  const [orderSubmitting, setOrderSubmitting] = useState(false)
+  const [repairingItemId, setRepairingItemId] = useState<string | null>(null)
   const [tradingOrders, setTradingOrders] = useState<any[]>([])
   const [tradingOrdersLoading, setTradingOrdersLoading] = useState(false)
+  const tradingOrdersReqRef = useRef(0) // 递增即作废仍在途的旧列表请求，防旧结果覆盖新单
   const [currentProfession, setCurrentProfession] = useState<'woodcutter' | 'blacksmith' | 'farmer' | 'chef' | 'tailor' | 'alchemist'>('woodcutter')
   const [showProfessionModal, setShowProfessionModal] = useState(false)
   const classHydratedRef = useRef(false)
@@ -331,17 +347,18 @@ export default function NewGameInterface() {
   const [contentPack, setContentPack] = useState<any>(null)
   const [contentPackLoading, setContentPackLoading] = useState(true)
   const adventureStages = useMemo(() => encounterStages(contentPack), [contentPack])
+  const isChapter1Done = Boolean(playerState && chapter1Complete(playerState))
   const selectedEncounters = useMemo(() => {
     const all = adventureStages.find((stage) => stage.id === selectedMap)?.encounters ?? []
     // Chapter 1 keeps the four tutorial cards; afterwards the whole zone is listed (MWI) with
     // the real difficulty forecast on each card, so the harder forest monsters become the
     // post-chapter content until the mine opens.
-    if (playerState && !chapter1Complete(playerState)) {
+    if (playerState && !isChapter1Done) {
       return all.filter((encounter) => (CHAPTER1_MONSTERS as readonly string[]).includes(encounter.id))
     }
     const bossLast = (a: { isBoss?: boolean }, b: { isBoss?: boolean }) => Number(!!a.isBoss) - Number(!!b.isBoss)
     return [...all].sort(bossLast)
-  }, [adventureStages, selectedMap, playerState])
+  }, [adventureStages, selectedMap, isChapter1Done, Boolean(playerState)])
   
   // 道具列表状态 - 用于交易所
   const [allItems, setAllItems] = useState<any>(null)
@@ -350,7 +367,9 @@ export default function NewGameInterface() {
   // 聊天相关状态 —— 接入 WebSocket 实时通信
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
-  const [chatChannel, setChatChannel] = useState<'world' | 'profession' | 'party'>('world')
+  const [chatChannel, setChatChannel] = useState<'world' | 'profession' | 'party' | 'private'>('world')
+  // 私聊目标：点消息里的玩家名设置；未选择时私聊频道不可发送
+  const [privateTarget, setPrivateTarget] = useState<{ id: string; name: string } | null>(null)
   // 窄屏（≤768px）下聊天默认收起，避免底部抽屉遮挡主内容
   const [isChatExpanded, setIsChatExpanded] = useState(false)
   // 移动端底栏：采集 / 生产 / 更多 三组以抽屉列出技能行
@@ -394,6 +413,56 @@ export default function NewGameInterface() {
     })
     return () => { unsubMsg(); unsubStatus() }
   }, [])
+
+  // 服务端定向通知（市场成交/强化委托/队伍事件）→ Toast + 玩家状态刷新。
+  // 通知一律意味着服务端状态已变（金币/物品/队伍关系），刷新本地副本。
+  useEffect(() => {
+    return chatWs.onNotify((n) => {
+      const item = typeof n.itemId === 'string' ? getItemName(n.itemId) : ''
+      switch (n.kind) {
+        case 'market:sale':
+          toast.reward(`市集售出 ${item}×${n.quantity}，+${n.gold} 金币`)
+          break
+        case 'order:filled':
+          toast.reward(`订单成交：${item}×${n.quantity}，+${n.gold} 金币`)
+          break
+        case 'party:invite':
+          toast.info('收到组队邀请，前往「组队」页查看')
+          break
+        case 'party:kicked':
+          toast.info('你已被移出队伍')
+          break
+        case 'party:leader':
+          toast.success('你已成为队长')
+          break
+        case 'party:leader_changed':
+          toast.info('队长已更换')
+          break
+        case 'party:member_joined':
+          toast.info('有新队员加入')
+          break
+        case 'party:activity_completed':
+          toast.reward('队伍活动已结算')
+          break
+        case 'party:party_disbanded':
+          toast.info('队伍已解散')
+          break
+        case 'enhancement:service_request':
+          toast.info(`收到强化委托${item ? `：${item}` : ''}`)
+          break
+        case 'enhancement:service_completed':
+          if (n.success) toast.success('委托的强化成功')
+          else toast.info(`委托的强化失败${n.failureReason ? `：${n.failureReason}` : ''}`)
+          break
+        case 'enhancement:service_rejected':
+          toast.info(`强化委托被拒绝${n.message ? `：${n.message}` : ''}`)
+          break
+        default:
+          break
+      }
+      void refreshPlayerState()
+    })
+  }, [toast, refreshPlayerState])
   
   // 右侧边栏状态
   const [rightPanelView, setRightPanelView] = useState<'character' | 'inventory'>('character')
@@ -421,74 +490,89 @@ export default function NewGameInterface() {
   const [craftQuantity, setCraftQuantity] = useState(1)
   const [favoriteRecipes, setFavoriteRecipes] = useState<Set<string>>(new Set())
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [partyTargetStageId, setPartyTargetStageId] = useState<string | null>(null)
+  const [partyCombatInfo, setPartyCombatInfo] = useState<PartyCombatHeaderInfo | null>(null)
+
+  useEffect(() => {
+    if (!playerState) return
+    if (!playerState.activePartyActivity && partyCombatInfo?.active) {
+      setPartyCombatInfo(null)
+    }
+  }, [playerState, playerState?.activePartyActivity, partyCombatInfo?.active])
   
-  // 职业配置 - 每个职业有采集和加工两个技能，共享同一个等级和经验
+  // 职业配置 - 每个职业有采集和生产两条技能，经验与等级相互独立
   const professions = {
-    woodcutter: { 
-      id: 'woodcutter', 
-      name: '伐木工', 
-      icon: '🪓', 
+    woodcutter: {
+      id: 'woodcutter',
+      name: '伐木工',
+      icon: '🪓',
       skill: 'skill_woodcutter',
+      craftSkill: 'skill_woodworking',
       gatherName: '伐木',
       gatherTab: 'logging' as ActiveTab,
       craftName: '木工',
       craftTab: 'woodworking' as ActiveTab,
     },
-    blacksmith: { 
-      id: 'blacksmith', 
-      name: '铁匠', 
-      icon: '⚒️', 
+    blacksmith: {
+      id: 'blacksmith',
+      name: '铁匠',
+      icon: '⚒️',
       skill: 'skill_blacksmith',
+      craftSkill: 'skill_smithing',
       gatherName: '挖矿',
       gatherTab: 'mining' as ActiveTab,
       craftName: '锻造',
       craftTab: 'smithing' as ActiveTab,
     },
-    farmer: { 
-      id: 'farmer', 
-      name: '农夫', 
-      icon: '🌾', 
+    farmer: {
+      id: 'farmer',
+      name: '农夫',
+      icon: '🌾',
       skill: 'skill_farmer',
+      craftSkill: 'skill_husbandry',
       gatherName: '种植',
       gatherTab: 'farming' as ActiveTab,
       craftName: '畜牧',
       craftTab: 'husbandry' as ActiveTab,
     },
-    chef: { 
-      id: 'chef', 
-      name: '厨师', 
-      icon: '👨‍🍳', 
+    chef: {
+      id: 'chef',
+      name: '厨师',
+      icon: '👨‍🍳',
       skill: 'skill_chef',
+      craftSkill: 'skill_cooking',
       gatherName: '钓鱼',
       gatherTab: 'fishing' as ActiveTab,
       craftName: '烹饪',
       craftTab: 'cooking' as ActiveTab,
     },
-    tailor: { 
-      id: 'tailor', 
-      name: '裁缝', 
-      icon: '🧵', 
+    tailor: {
+      id: 'tailor',
+      name: '裁缝',
+      icon: '🧵',
       skill: 'skill_tailor',
+      craftSkill: 'skill_tailoring',
       gatherName: '采集',
       gatherTab: 'gathering' as ActiveTab,
       craftName: '缝纫',
       craftTab: 'tailoring' as ActiveTab,
     },
-    alchemist: { 
-      id: 'alchemist', 
-      name: '炼金术师', 
-      icon: '🧪', 
+    alchemist: {
+      id: 'alchemist',
+      name: '炼金术师',
+      icon: '🧪',
       skill: 'skill_alchemist',
+      craftSkill: 'skill_alchemy',
       gatherName: '水晶',
       gatherTab: 'crystal_mining' as ActiveTab,
       craftName: '炼金',
       craftTab: 'alchemy' as ActiveTab,
     },
   }
-  
-  /** "伐木/木工" for a profession skill id; undefined for non-profession skills (e.g. skill_enhancing). */
+
+  /** "伐木/木工" for a profession skill id (采集或生产均可); undefined for non-profession skills. */
   const professionLabel = (skillId?: string): string | undefined => {
-    const prof = skillId ? Object.values(professions).find((p) => p.skill === skillId) : undefined
+    const prof = skillId ? Object.values(professions).find((p) => p.skill === skillId || p.craftSkill === skillId) : undefined
     return prof ? [prof.gatherName, prof.craftName].filter(Boolean).join('/') : undefined
   }
 
@@ -497,11 +581,22 @@ export default function NewGameInterface() {
   
   // 获取当前职业信息
   const getCurrentProfession = () => professions[currentProfession]
-  const getCurrentSkill = () => playerState?.skills?.[getCurrentProfession().skill] || { level: 1, xp: 0 }
+  // 技能树面板用的职业等级 = 采集/生产两侧最高者（与后端解锁门槛一致）；经验取领先侧
+  const getCurrentSkill = () => {
+    const p = getCurrentProfession()
+    const gather = playerState?.skills?.[p.skill]
+    const craft = playerState?.skills?.[p.craftSkill]
+    if (!gather && !craft) return { level: 1, xp: 0 }
+    if ((craft?.level || 0) > (gather?.level || 0)) return craft!
+    return gather || craft!
+  }
   
   // 判断是否正在战斗某个怪物
   const isCurrentlyFighting = (monsterId: string): boolean => {
-    if (playerState?.hpCombat && !playerState.hpCombat.outcome) {
+    if (
+      playerState?.hpCombat &&
+      (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt))
+    ) {
       return playerState.hpCombat.monsterId === monsterId
     }
     if (!battleState || !battleState.isActive) return false;
@@ -511,7 +606,18 @@ export default function NewGameInterface() {
   // 发送聊天消息（通过 WebSocket）
   const sendChatMessage = useCallback(() => {
     if (!chatInput.trim()) return
-    const sent = chatWs.send(chatChannel, chatInput.trim())
+    if (chatChannel === 'private' && !privateTarget) {
+      setChatMessages(prev => [...prev.slice(-99), {
+        id: `local_err_${Date.now()}`,
+        type: 'error' as const,
+        channel: 'private',
+        sender: '系统',
+        content: '先点击玩家名字选择私聊对象',
+        ts: new Date().toISOString(),
+      }])
+      return
+    }
+    const sent = chatWs.send(chatChannel, chatInput.trim(), chatChannel === 'private' ? privateTarget!.id : undefined)
     if (!sent) {
       // WebSocket 未连接，显示本地提示
       setChatMessages(prev => [...prev.slice(-99), {
@@ -525,7 +631,7 @@ export default function NewGameInterface() {
     }
     setChatInput('')
     setShowEmojiPicker(false)
-  }, [chatInput, chatChannel])
+  }, [chatInput, chatChannel, privateTarget])
   
   // 插入表情
   const insertEmoji = (emoji: string) => {
@@ -534,12 +640,23 @@ export default function NewGameInterface() {
   }
   
   // 切换频道时清除未读计数
-  const switchChannel = (channel: 'world' | 'profession' | 'party') => {
+  const switchChannel = (channel: 'world' | 'profession' | 'party' | 'private') => {
     setChatChannel(channel)
     setUnreadCounts(prev => ({ ...prev, [channel]: 0 }))
   }
 
+  // 点消息里的玩家名 → 切到私聊频道并锁定对象
+  const startPrivateChat = useCallback((target: { id: string; name: string }) => {
+    if (!target.id || target.id === user?.id) return
+    setPrivateTarget(target)
+    switchChannel('private')
+  }, [user])
+
   const openEquipSelector = (slotId: string) => {
+    if (slotId !== 'tool' && isCombatLockoutActive()) {
+      toast.info('当前正在战斗中，无法更换战斗装备（请先停止战斗）')
+      return
+    }
     setSelectedEquipSlot(slotId)
     setShowEquipSelector(true)
   }
@@ -547,6 +664,10 @@ export default function NewGameInterface() {
   // 装备物品
   const equipItem = async (itemId: string) => {
     if (!selectedEquipSlot) return
+    if (selectedEquipSlot !== 'tool' && isCombatLockoutActive()) {
+      toast.info('当前正在战斗中，无法更换战斗装备（请先停止战斗）')
+      return
+    }
     try {
       apiClient.clearCache()
       await apiClient.equipItem(UI_SLOT_TO_EQ[selectedEquipSlot], itemId)
@@ -562,6 +683,10 @@ export default function NewGameInterface() {
   }
 
   const unequipSlot = async (slotId: string) => {
+    if (slotId !== 'tool' && isCombatLockoutActive()) {
+      toast.info('当前正在战斗中，无法卸下战斗装备（请先停止战斗）')
+      return
+    }
     try {
       apiClient.clearCache()
       await apiClient.unequipItem(UI_SLOT_TO_EQ[slotId])
@@ -611,7 +736,15 @@ export default function NewGameInterface() {
     
     // 按类型筛选
     if (inventoryFilter !== 'all') {
-      items = items.filter(item => item.type === inventoryFilter)
+      items = items.filter(item => {
+        if (inventoryFilter === 'armor') {
+          return item.type === 'armor' || item.type === 'offhand' || item.type === 'shield' || item.type === 'accessory'
+        }
+        if (inventoryFilter === 'consumable') {
+          return item.type === 'consumable' || item.type === 'food'
+        }
+        return item.type === inventoryFilter
+      })
     }
     
     // 按名称搜索
@@ -659,20 +792,20 @@ export default function NewGameInterface() {
     })
   }
   
-  // 从内容包获取当前职业的制作配方
-  const getCraftRecipesFromContentPack = (category: string) => {
+  // 从内容包获取指定职业（默认当前职业）的制作配方
+  const getCraftRecipesFromContentPack = (category: string, profOverride?: string) => {
     if (!contentPack || !contentPack.actions) return []
-    
-    const professionSkillId = `skill_${currentProfession}`
+    const targetProf = (profOverride && profOverride in professions ? profOverride : currentProfession) as keyof typeof professions
+    const professionSkillId = `skill_${targetProf}`
+    const craftSkillId = professions[targetProf].craftSkill
+    // 技能树/强化解锁挂在采集技能（职业锚点）上；配方本身属于生产技能
     const unlocked = playerState?.skills?.[professionSkillId]?.unlockedRecipes || []
     const armorCraftUnlocked = unlocked.includes('woodcutter_armor_crafting')
     const ARMOR_ACTIONS = new Set(['act_craft_wood_chest', 'act_craft_wood_legs', 'act_craft_wood_boots', 'act_craft_wood_gloves'])
-    
-    // 过滤出当前职业的制作配方（有consumes的就是制作配方）
-    const recipes = contentPack.actions.filter((action: any) => 
-      action.skillId === professionSkillId && 
-      action.consumes && 
-      action.consumes.length > 0 &&
+
+    // 过滤出当前职业的制作配方（生产技能下的动作即制作配方）
+    const recipes = contentPack.actions.filter((action: any) =>
+      action.skillId === craftSkillId &&
       (!ARMOR_ACTIONS.has(action.id) || armorCraftUnlocked)
     )
     
@@ -699,7 +832,7 @@ export default function NewGameInterface() {
       // 转换为前端格式
       const formattedRecipe = {
         id: recipe.id,
-        name: recipe.name,
+        name: stripCraftVerb(recipe.name),
         output: outputItem,
         outputCount: recipe.yields[0].qty || 1,
         requires: recipe.consumes.map((consume: any) => ({
@@ -739,19 +872,20 @@ export default function NewGameInterface() {
   const CRAFT_CATEGORY_LABELS: Record<string, string> = {
     materials: '材料', weapons: '武器', equipment: '防具', consumables: '消耗品', accessories: '饰品',
   }
-  const craftCategoriesFor = (): string[] => {
+  const craftCategoriesFor = (profOverride?: string): string[] => {
+    const targetProf = profOverride || currentProfession
     // 厨师/炼金以消耗品为主业，放最前
-    const order = currentProfession === 'chef' || currentProfession === 'alchemist'
+    const order = targetProf === 'chef' || targetProf === 'alchemist'
       ? ['consumables', 'materials', 'weapons', 'equipment', 'accessories']
       : ['materials', 'weapons', 'equipment', 'consumables', 'accessories']
-    return order.filter((c) => getCraftRecipesFromContentPack(c).length > 0)
+    return order.filter((c) => getCraftRecipesFromContentPack(c, targetProf).length > 0)
   }
   
   // 计算最大可制作数量
   const getMaxCraftableQuantity = (recipe: any): number => {
     if (!recipe.requires || !playerState?.inventory) return 0
     
-    let maxQuantity = 999
+    let maxQuantity = 5000
     for (const req of recipe.requires) {
       const itemId = getRequiredItemId(req.item)
       const available = playerState.inventory?.[itemId] || 0
@@ -787,14 +921,36 @@ export default function NewGameInterface() {
     isPlayerDead: boolean; // 玩家是否死亡
     drops: Array<{ itemId: string; name: string; qty: number }>; // 服务端实际发放的稀有掉落
   } | null>(null)
+  const combatTimingRef = useRef<{
+    syncPerfNow: number;
+    playerCooldownMs: number;
+    enemyCooldownMs: number;
+    playerIntervalMs: number;
+    enemyIntervalMs: number;
+  } | null>(null)
+  const [combatNow, setCombatNow] = useState(() => Date.now())
 
   useEffect(() => {
     const hp = playerState?.hpCombat
     if (!hp) {
+      combatTimingRef.current = null
       setBattleState(null)
       return
     }
-    setBattleState({
+    const playerIntervalMs = Math.max(200, hp.playerIntervalMs || 2400)
+    const enemyIntervalMs = Math.max(200, hp.enemyIntervalMs || 3000)
+    combatTimingRef.current = {
+      syncPerfNow: performance.now(),
+      playerCooldownMs: hp.playerCooldownMs || 0,
+      enemyCooldownMs: hp.enemyCooldownMs || 0,
+      playerIntervalMs,
+      enemyIntervalMs,
+    }
+    setCombatNow(Date.now())
+    const prev = prevCombatRef.current
+    const isNewFight = Boolean(prev && ((hp.startedAt && prev.startedAt && hp.startedAt !== prev.startedAt) || (prev.outcome && !hp.outcome)))
+    const showFullSpawnFirst = isNewFight && !hp.outcome && hp.enemyHp < hp.enemyMaxHp
+    const baseState = {
       isActive: !hp.outcome,
       monster: {
         id: hp.monsterId,
@@ -807,18 +963,56 @@ export default function NewGameInterface() {
       },
       playerHp: hp.playerHp,
       playerMaxHp: hp.playerMaxHp,
-      enemyHp: hp.enemyHp,
+      enemyHp: showFullSpawnFirst ? hp.enemyMaxHp : hp.enemyHp,
       enemyMaxHp: hp.enemyMaxHp,
       playerCastTime: hp.playerCooldownMs,
       enemyCastTime: hp.enemyCooldownMs,
-      playerCastDuration: hp.playerIntervalMs,
-      enemyCastDuration: hp.enemyIntervalMs,
+      playerCastDuration: playerIntervalMs,
+      enemyCastDuration: enemyIntervalMs,
       battleLog: hp.log,
-      battleCount: 1,
+      battleCount: (hp.streak || 0) + 1,
       isPlayerDead: hp.outcome === 'loss',
       drops: hp.drops || [],
-    })
-  }, [playerState?.hpCombat, selectedEncounters])
+    }
+    setBattleState(baseState)
+    if (showFullSpawnFirst) {
+      const timerId = window.setTimeout(() => {
+        setBattleState((curr) => (curr && curr.isActive ? { ...curr, enemyHp: hp.enemyHp } : curr))
+      }, 150)
+      return () => window.clearTimeout(timerId)
+    }
+  }, [playerState?.hpCombat])
+
+  // Smoothly interpolate combat attack cast bars and ability cooldowns at 20fps between 1s server polls,
+  // and keep combatNow ticking at 1Hz out of combat so active buff duration bars on the adventure map stay live.
+  useEffect(() => {
+    const inFastCombatLoop = Boolean(
+      battleState?.isActive ||
+        (playerState?.hpCombat?.outcome && playerState?.combatLoadout?.autoRepeat && playerState?.hpCombat?.nextFightAt)
+    )
+    if (!inFastCombatLoop) {
+      const slowId = window.setInterval(() => setCombatNow(Date.now()), 1000)
+      return () => window.clearInterval(slowId)
+    }
+    const id = window.setInterval(() => {
+      setCombatNow(Date.now())
+      const timing = combatTimingRef.current
+      if (!timing || !battleState?.isActive) return
+      const dt = Math.max(0, performance.now() - timing.syncPerfNow)
+      const nextPlayerCast = Math.min(timing.playerIntervalMs, timing.playerCooldownMs + dt)
+      const nextEnemyCast = Math.min(timing.enemyIntervalMs, timing.enemyCooldownMs + dt)
+      setBattleState((prev) =>
+        prev && prev.isActive
+          ? {
+              ...prev,
+              playerCastTime: nextPlayerCast,
+              enemyCastTime: nextEnemyCast,
+            }
+          : prev
+      )
+    }, 50)
+    return () => window.clearInterval(id)
+  }, [battleState?.isActive, playerState?.hpCombat?.outcome, playerState?.combatLoadout?.autoRepeat, playerState?.hpCombat?.nextFightAt])
 
   // MWI timed enhancing: attempts land on the server every interval; poll so the page keeps up.
   useEffect(() => {
@@ -837,7 +1031,17 @@ export default function NewGameInterface() {
     const id = window.setInterval(() => {
       void refreshPlayerState()
     }, 1000)
-    return () => window.clearInterval(id)
+    let nextTimer: number | undefined
+    if (awaitingRepeat && playerState.hpCombat.nextFightAt) {
+      const waitMs = Math.max(25, playerState.hpCombat.nextFightAt - Date.now() + 30)
+      nextTimer = window.setTimeout(() => {
+        void refreshPlayerState()
+      }, waitMs)
+    }
+    return () => {
+      window.clearInterval(id)
+      if (nextTimer !== undefined) window.clearTimeout(nextTimer)
+    }
   }, [playerState?.hpCombat?.monsterId, playerState?.hpCombat?.outcome, playerState?.hpCombat?.nextFightAt, playerState?.combatLoadout?.autoRepeat, refreshPlayerState])
 
   useEffect(() => {
@@ -849,16 +1053,20 @@ export default function NewGameInterface() {
     const prev = prevCombatRef.current
     const heavyReadyNow = Date.now() >= (hp.heavyChopReadyAt || 0)
     if (prev) {
-      if (hp.enemyHp < prev.enemyHp) {
-        const newLines = hp.log.slice(-Math.max(1, hp.log.length - prev.logLen + 1))
+      const isNewFight = Boolean((hp.startedAt && prev.startedAt && hp.startedAt !== prev.startedAt) || (prev.outcome && !hp.outcome))
+      const baselineEnemyHp = isNewFight ? hp.enemyMaxHp : prev.enemyHp
+      const baselinePlayerHp = isNewFight ? hp.playerMaxHp : prev.playerHp
+      if (hp.enemyHp < baselineEnemyHp) {
+        const addedCount = Math.max(1, hp.log.length - (isNewFight ? 0 : prev.logLen))
+        const newLines = hp.log.slice(-addedCount)
         const heavy = newLines.some((l) => l.includes("重劈"))
         playGameSound(heavy ? "skill" : "combat-hit")
-        pushDamageFloat("enemy", prev.enemyHp - hp.enemyHp, heavy)
+        pushDamageFloat("enemy", baselineEnemyHp - hp.enemyHp, heavy)
         shake("enemy")
       }
-      if (hp.playerHp < prev.playerHp) {
+      if (hp.playerHp < baselinePlayerHp) {
         playGameSound("combat-hit")
-        pushDamageFloat("player", prev.playerHp - hp.playerHp, false)
+        pushDamageFloat("player", baselinePlayerHp - hp.playerHp, false)
         shake("player")
       }
       if ((hp.guardActive && !prev.guardActive) || (hp.wrathActive && !prev.wrathActive)) {
@@ -866,8 +1074,6 @@ export default function NewGameInterface() {
       }
       if (heavyReadyNow && !prev.heavyReady && !hp.outcome) {
         playGameSound("skill-ready")
-        setHeavyReadyPulse(true)
-        window.setTimeout(() => setHeavyReadyPulse(false), 1500)
       }
       if (hp.outcome === "win" && prev.outcome !== "win") {
         playGameSound(hp.monsterId === "forest_boss" ? "boss-win" : "victory")
@@ -886,6 +1092,7 @@ export default function NewGameInterface() {
       outcome: hp.outcome,
       logLen: hp.log.length,
       heavyReady: heavyReadyNow,
+      startedAt: hp.startedAt,
     }
   }, [playerState?.hpCombat])
 
@@ -951,14 +1158,8 @@ export default function NewGameInterface() {
     window.setTimeout(() => setHitShake((prev) => ({ ...prev, [target]: false })), 320)
   }, [])
 
-  // 重劈就绪提示：冷却结束的那一刻高亮按钮并播一次音效
-  const [heavyReadyPulse, setHeavyReadyPulse] = useState(false)
-
   // 胜利特效状态
   const [showVictoryFx, setShowVictoryFx] = useState(false)
-
-  // 预测会输的战斗需要点两次确认（Boss 不设硬门禁，但要让玩家知道自己在做什么）
-  const [riskyConfirm, setRiskyConfirm] = useState(false)
 
   // 胜利奖励先亮 1.5 秒，再弹"选择你的第一刀"，两个高光时刻不互相遮
   const [buildModalDelayDone, setBuildModalDelayDone] = useState(true)
@@ -1011,15 +1212,16 @@ export default function NewGameInterface() {
       return;
     }
 
+    const reqId = ++tradingOrdersReqRef.current;
     const loadOrders = async () => {
       try {
         setTradingOrdersLoading(true);
         const orders = await apiClient.getTradingOrders(selectedTradingItem);
-        setTradingOrders(orders);
+        if (tradingOrdersReqRef.current === reqId) setTradingOrders(orders);
         logger.debug('✅ 订单加载成功:', orders);
       } catch (error) {
         logger.error('❌ 加载订单失败:', error);
-        setTradingOrders([]);
+        if (tradingOrdersReqRef.current === reqId) setTradingOrders([]);
       } finally {
         setTradingOrdersLoading(false);
       }
@@ -1051,6 +1253,20 @@ export default function NewGameInterface() {
       battleState: battleState
     });
     
+    // 战斗与生活互斥：若处于单人战斗（含连战等待中）或组队副本战斗，禁止恢复生活动作
+    const inSoloCombat = Boolean(
+      playerState.hpCombat &&
+        (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt))
+    );
+    const inPartyCombat = Boolean(playerState.activePartyActivity || partyCombatInfo?.active);
+    if (inSoloCombat || inPartyCombat) {
+      if (currentActivity) {
+        setCurrentActivity(null);
+        setProgress(0);
+      }
+      return;
+    }
+
     // 检查后端是否有正在进行的活动
     if (playerState.mode === 'life_action' && playerState.lifeActionState) {
       const actionId = playerState.lifeActionState.actionId;
@@ -1066,12 +1282,16 @@ export default function NewGameInterface() {
       const action = contentPack.actions.find((a: any) => a.id === actionId);
       if (action) {
         logger.debug('⚠️ 准备恢复活动:', action.name, 'actionId:', actionId);
+        const durationMs =
+          playerState.lifeActionState.effectiveDurationMs && playerState.lifeActionState.effectiveDurationMs > 0
+            ? playerState.lifeActionState.effectiveDurationMs
+            : action.duration;
         
         // 恢复活动状态
         const activityInfo: CurrentActivity = {
           name: action.name,
           output: action.yields[0].itemId ? getItemNameById(action.yields[0].itemId) : '未知',
-          duration: Math.floor(action.duration / 1000), // 转换为秒
+          duration: Math.round((durationMs / 1000) * 100) / 100, // 转换为秒（保留实际有效时长精度）
           mark: activityMarkFromAction(actionId),
           actionId,
         };
@@ -1080,8 +1300,7 @@ export default function NewGameInterface() {
         
         // 计算当前进度
         const now = new Date();
-        const elapsedMs = now.getTime() - startedAt.getTime();
-        const durationMs = action.duration;
+        const elapsedMs = Math.max(0, now.getTime() - startedAt.getTime());
         const currentProgress = ((elapsedMs % durationMs) / durationMs) * 100;
         
         setProgress(Math.min(currentProgress, 100));
@@ -1098,7 +1317,12 @@ export default function NewGameInterface() {
   // 开始请求进行中除外：此时 playerState 还没拿到新的 life_action。
   useEffect(() => {
     if (!playerState || !currentActivity || actionLoading) return;
-    if (playerState.mode !== 'life_action' || !playerState.lifeActionState) {
+    const inSoloCombat = Boolean(
+      playerState.hpCombat &&
+        (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt))
+    );
+    const inPartyCombat = Boolean(playerState.activePartyActivity || partyCombatInfo?.active);
+    if (playerState.mode !== 'life_action' || !playerState.lifeActionState || inSoloCombat || inPartyCombat) {
       setCurrentActivity(null);
       setProgress(0);
       return;
@@ -1107,10 +1331,19 @@ export default function NewGameInterface() {
     if (currentActivity.actionId && playerState.lifeActionState.actionId !== currentActivity.actionId) {
       setCurrentActivity(null);
       setProgress(0);
+      return;
     }
-  }, [playerState?.mode, playerState?.lifeActionState?.actionId, playerState?.lifeActionState, currentActivity, actionLoading]);
+    // 同步服务端计算出的实际有效耗时（含工具加速、职业专精、房屋与Buff加成）
+    const effMs = playerState.lifeActionState.effectiveDurationMs;
+    if (effMs && effMs > 0) {
+      const effSec = Math.round((effMs / 1000) * 100) / 100;
+      if (Math.abs(currentActivity.duration - effSec) > 0.01) {
+        setCurrentActivity((prev) => (prev ? { ...prev, duration: effSec } : prev));
+      }
+    }
+  }, [playerState?.mode, playerState?.lifeActionState?.actionId, playerState?.lifeActionState?.effectiveDurationMs, playerState?.lifeActionState, currentActivity, actionLoading]);
 
-  // 进度条循环动画：使用 requestAnimationFrame 按需提交状态，避免 50ms 定时器持续触发 React 重渲染
+  // 进度条循环动画：使用 requestAnimationFrame 以 ~30fps (0.1% 精度) 平滑更新顶部进度环与列表行进度条
   useEffect(() => {
     // 战斗时不显示进度条
     if (battleState?.isActive) {
@@ -1123,19 +1356,21 @@ export default function NewGameInterface() {
       return;
     }
 
-    const duration = currentActivity.duration * 1000; // 转换为毫秒
+    const duration = Math.max(200, currentActivity.duration * 1000); // 转换为毫秒
     const startedAt = performance.now() - (progress / 100) * duration;
     let animationFrameId = 0;
-    let lastPaintedProgress = Math.floor(progress);
+    let lastPaintedProgress = Math.round(progress * 10) / 10;
+    let lastPaintAt = 0;
 
     let lastCycleBucket = Math.floor((performance.now() - startedAt) / duration);
 
     const tick = (now: number) => {
-      const elapsed = now - startedAt;
-      const cycleProgress = Math.floor(((elapsed % duration) / duration) * 100);
+      const elapsed = Math.max(0, now - startedAt);
+      const cycleProgress = Math.round((((elapsed % duration) / duration) * 100) * 10) / 10;
 
-      if (cycleProgress !== lastPaintedProgress) {
+      if (cycleProgress !== lastPaintedProgress && (now - lastPaintAt >= 32 || cycleProgress < lastPaintedProgress)) {
         lastPaintedProgress = cycleProgress;
+        lastPaintAt = now;
         setProgress(cycleProgress);
       }
 
@@ -1145,7 +1380,8 @@ export default function NewGameInterface() {
         lastCycleBucket = currentBucket;
         setCycleCompleteFlash(true);
         playGameSound(currentActivity.mark === "制" ? "craft-complete" : "gather-complete");
-        setTimeout(() => setCycleCompleteFlash(false), 600);
+        if (flashTimerId !== null) window.clearTimeout(flashTimerId);
+        flashTimerId = window.setTimeout(() => setCycleCompleteFlash(false), 600);
       }
 
       if (elapsed >= duration) {
@@ -1155,21 +1391,32 @@ export default function NewGameInterface() {
           lastRefreshTimeRef.current = refreshKey;
           void refreshPlayerState();
           // 客户端计时器可能比服务端结算早几十毫秒；补一次刷新，避免库存永远慢一个周期
-          window.setTimeout(() => { void refreshPlayerState(); }, 600);
+          if (refreshTimerId !== null) window.clearTimeout(refreshTimerId);
+          refreshTimerId = window.setTimeout(() => { void refreshPlayerState(); }, 600);
         }
       }
 
       animationFrameId = requestAnimationFrame(tick);
     };
 
+    let flashTimerId: number | null = null;
+    let refreshTimerId: number | null = null;
     animationFrameId = requestAnimationFrame(tick);
 
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      if (flashTimerId !== null) window.clearTimeout(flashTimerId);
+      if (refreshTimerId !== null) window.clearTimeout(refreshTimerId);
+    };
   }, [currentActivity, battleState?.isActive, refreshPlayerState]);
 
   // 打开制作弹窗前先拉一次最新状态：弹窗里的"最大"和材料计数直接读 playerState，
   // 采集进行中时前端库存可能比服务端慢一个周期。
   const openCraftModal = (item: any) => {
+    if ( Boolean(playerState?.activePartyActivity || partyCombatInfo?.active || battleState?.isActive || (playerState?.hpCombat && (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))) ) {
+      toast.info("当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）");
+      return;
+    }
     setSelectedItem(item);
     setModalType('craft');
     setCraftQuantity(1);
@@ -1178,6 +1425,10 @@ export default function NewGameInterface() {
 
   // ---- 采集页（内容包驱动，银河奶牛式动作列表）----
   const openGatherRow = (row: SkillActionRow) => {
+    if ( Boolean(playerState?.activePartyActivity || partyCombatInfo?.active || battleState?.isActive || (playerState?.hpCombat && (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))) ) {
+      toast.info("当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）");
+      return;
+    }
     const a = row.action
     const flavor = GATHER_FLAVOR_BY_ACTION[a.id]
     const out = row.primaryYield
@@ -1214,12 +1465,31 @@ export default function NewGameInterface() {
       titleByActionId: Object.fromEntries(Object.entries(GATHER_FLAVOR_BY_ACTION).map(([k, v]) => [k, v.title])),
     })
     const skillName = professions[cfg.profession as keyof typeof professions]?.gatherName || cfg.title
+    const isCombatLock = Boolean(
+      playerState.activePartyActivity ||
+        partyCombatInfo?.active ||
+        battleState?.isActive ||
+        (playerState.hpCombat &&
+          (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))
+    )
     return (
-      <div className="logging-layout skill-page" data-skill-page={tab}>
+      <div className={`logging-layout skill-page${isCombatLock ? ' combat-disabled-page' : ''}`} data-skill-page={tab}>
         <div className="page-header">
           <h2 className="section-title">{cfg.title} <span className="skill-page-level">Lv.{skillLevel}</span></h2>
           <div className="page-info"><p>{cfg.blurb}</p></div>
+          <button
+            type="button"
+            className="header-menu-btn skill-tree-entry"
+            onClick={() => { setCurrentProfession(cfg.profession as typeof currentProfession); setActiveTab('skills') }}
+          >
+            🌳 技能树
+          </button>
         </div>
+        {isCombatLock && (
+          <div className="combat-lock-banner">
+            ⚔️ 当前正在战斗中，所有生产与生活技能已锁定置灰（请先在顶部停止战斗）
+          </div>
+        )}
         {contentPackLoading ? (
           <div className="loading-message">加载中...</div>
         ) : (
@@ -1228,10 +1498,14 @@ export default function NewGameInterface() {
             skillName={skillName}
             skillLevel={skillLevel}
             runningActionId={playerState.mode === 'life_action' ? playerState.lifeActionState?.actionId : undefined}
+            runningStartedAt={playerState.mode === 'life_action' ? playerState.lifeActionState?.startedAt : undefined}
+            runningProgress={playerState.mode === 'life_action' ? progress : undefined}
+            runningEffectiveDurationMs={playerState.mode === 'life_action' ? playerState.lifeActionState?.effectiveDurationMs : undefined}
             artIds={gatherArtIds}
             nameOf={getItemNameById}
             iconOf={getItemIcon}
             onOpen={openGatherRow}
+            onQuickToggle={quickToggleRow}
             hintFor={(row) => (row.action.id === 'act_chop_wood_t1' && !chapterDone ? goalMaterialHint() : null)}
           />
         )}
@@ -1251,18 +1525,37 @@ export default function NewGameInterface() {
   const renderCraftPage = (tab: keyof typeof CRAFT_PAGES) => {
     if (!playerState) return null
     const cfg = CRAFT_PAGES[tab]
-    const skillId = `skill_${cfg.profession}`
+    const skillId = professions[cfg.profession as keyof typeof professions].craftSkill
     const skillLevel = playerState.skills?.[skillId]?.level || 1
-    const cats = craftCategoriesFor()
+    const cats = craftCategoriesFor(cfg.profession)
     const active = cats.includes(craftCategory) ? craftCategory : (cats[0] || 'materials')
-    const recipes = getCraftRecipesFromContentPack(active).filter((r: any) => !showFavoritesOnly || favoriteRecipes.has(r.id))
+    const recipes = getCraftRecipesFromContentPack(active, cfg.profession).filter((r: any) => !showFavoritesOnly || favoriteRecipes.has(r.id))
     const skillName = professions[cfg.profession as keyof typeof professions]?.craftName || cfg.title
+    const isCombatLock = Boolean(
+      playerState.activePartyActivity ||
+        partyCombatInfo?.active ||
+        battleState?.isActive ||
+        (playerState.hpCombat &&
+          (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))
+    )
     return (
-      <div className="crafting-layout skill-page" data-skill-page={tab}>
+      <div className={`crafting-layout skill-page${isCombatLock ? ' combat-disabled-page' : ''}`} data-skill-page={tab}>
         <div className="page-header">
           <h2 className="section-title">{cfg.title} <span className="skill-page-level">Lv.{skillLevel}</span></h2>
           <div className="page-info"><p>{cfg.blurb}</p></div>
+          <button
+            type="button"
+            className="header-menu-btn skill-tree-entry"
+            onClick={() => { setCurrentProfession(cfg.profession as typeof currentProfession); setActiveTab('skills') }}
+          >
+            🌳 技能树
+          </button>
         </div>
+        {isCombatLock && (
+          <div className="combat-lock-banner">
+            ⚔️ 当前正在战斗中，所有生产与生活技能已锁定置灰（请先在顶部停止战斗）
+          </div>
+        )}
         <div className="craft-header-controls">
           <div className="craft-categories">
             {cats.map((c) => (
@@ -1288,6 +1581,9 @@ export default function NewGameInterface() {
             skillLevel={skillLevel}
             inventory={playerState.inventory}
             runningActionId={playerState.mode === 'life_action' ? playerState.lifeActionState?.actionId : undefined}
+            runningStartedAt={playerState.mode === 'life_action' ? playerState.lifeActionState?.startedAt : undefined}
+            runningProgress={playerState.mode === 'life_action' ? progress : undefined}
+            runningEffectiveDurationMs={playerState.mode === 'life_action' ? playerState.lifeActionState?.effectiveDurationMs : undefined}
             favorites={favoriteRecipes}
             nameOf={getItemNameById}
             iconOf={getItemIcon}
@@ -1303,6 +1599,7 @@ export default function NewGameInterface() {
             }}
             onOpen={(r) => openCraftModal(r)}
             onToggleFavorite={toggleFavoriteRecipe}
+            onQuickToggle={quickToggleCraft}
           />
         )}
         {showFavoritesOnly && recipes.length === 0 && (
@@ -1335,7 +1632,20 @@ export default function NewGameInterface() {
   const [gatherQuantity, setGatherQuantity] = useState<number | null>(null); // null = 无限
   const actionNameOf = (actionId: string) =>
     contentPack?.actions?.find((a: any) => a.id === actionId)?.name || actionId;
+  const isCombatLockoutActive = () =>
+    Boolean(
+      playerState?.activePartyActivity ||
+        partyCombatInfo?.active ||
+        battleState?.isActive ||
+        (playerState?.hpCombat &&
+          (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))
+    );
+
   const queueAction = async (actionId: string, quantity?: number) => {
+    if (isCombatLockoutActive()) {
+      toast.info('当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）');
+      return;
+    }
     try {
       const name = actionNameOf(actionId);
       const wasIdle = playerState?.mode !== 'life_action';
@@ -1360,6 +1670,10 @@ export default function NewGameInterface() {
   };
 
   const startAction = async (actionId: string, activityInfo: CurrentActivity, quantity?: number) => {
+    if (isCombatLockoutActive()) {
+      toast.info('当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）');
+      return;
+    }
     logger.debug('🚀 startAction called with:', actionId, activityInfo, quantity);
     try {
       setActionLoading(true)
@@ -1371,18 +1685,24 @@ export default function NewGameInterface() {
         setCurrentActivity(null);
         setProgress(0);
         // 同一时间只能做一件事：告诉玩家刚才那件被停了
-        if (currentActivity.name !== activityInfo.name) {
+        if (currentActivity.actionId ? currentActivity.actionId !== actionId : currentActivity.name !== activityInfo.name) {
           toast.info(`已停止「${currentActivity.name}」，开始「${activityInfo.name}」`);
         }
       }
-      if (battleState) {
+      const inSoloCombat = Boolean(
+        battleState ||
+          (playerState?.hpCombat &&
+            (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))
+      );
+      if (inSoloCombat) {
         logger.debug('🔄 清除战斗状态');
         isStoppingRef.current = true;
         setBattleState(null);
+        await apiClient.fleeHpCombat().catch(() => undefined);
       }
       
-      // 调用后端停止旧活动（如果有）
-      if (currentActivity || battleState) {
+      // 调用后端停止旧生活活动（如果有）
+      if (currentActivity) {
         await stopAction();
       }
       
@@ -1391,10 +1711,12 @@ export default function NewGameInterface() {
       isStoppingRef.current = false;
       const result = await startLifeAction(actionId, quantity)
       logger.debug('📡 startLifeAction result:', result);
+      const effMs = (result as any)?.lifeActionState?.effectiveDurationMs;
+      const effSec = effMs && effMs > 0 ? Math.round((effMs / 1000) * 100) / 100 : activityInfo.duration;
       
       // 设置新的前端状态
       logger.debug('📝 Setting currentActivity:', activityInfo);
-      setCurrentActivity({ ...activityInfo, actionId })
+      setCurrentActivity({ ...activityInfo, duration: effSec, actionId })
       setProgress(0)
       
       setSelectedItem(null)
@@ -1410,17 +1732,73 @@ export default function NewGameInterface() {
     }
   }
 
-  // 开始自动战斗
-  const startBattle = async (monster: any) => {
-    if (!playerState) return;
-    
-    // 如果有采集活动，先清除前端状态
-    if (currentActivity) {
-      logger.debug('🔄 清除采集活动以开始战斗');
+  // 停止当前生活动作（顶部活动条与卡片快捷 ■ 共用）
+  const stopCurrentActivity = async () => {
+    try {
+      logger.debug('🛑 停止采集活动');
       isStoppingRef.current = true;
       setCurrentActivity(null);
       setProgress(0);
       await stopAction();
+      logger.debug('✅ 采集活动已停止');
+      setTimeout(() => {
+        isStoppingRef.current = false;
+      }, 1000);
+    } catch (error) {
+      logger.error('停止活动失败:', error);
+      isStoppingRef.current = false;
+    }
+  }
+
+  // 卡片快捷开关：点 ▶ 直接开始不限次动作，点 ■ 停止——不必先开弹窗
+  const runningLifeActionId = () =>
+    playerState?.mode === 'life_action' ? playerState.lifeActionState?.actionId : undefined
+  const quickToggleRow = (row: SkillActionRow) => {
+    if ( Boolean(playerState?.activePartyActivity || partyCombatInfo?.active || battleState?.isActive || (playerState?.hpCombat && (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))) ) {
+      toast.info("当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）")
+      return
+    }
+    if (runningLifeActionId() === row.action.id) {
+      void stopCurrentActivity()
+      return
+    }
+    const a = row.action
+    const out = row.primaryYield
+    void startAction(a.id, {
+      name: GATHER_FLAVOR_BY_ACTION[a.id]?.title || a.name,
+      output: out ? getItemNameById(out.itemId) : '',
+      duration: Math.round(a.duration / 100) / 10,
+      mark: activityMarkFromAction(a.id),
+    })
+  }
+  const quickToggleCraft = (r: CraftRecipeView) => {
+    if ( Boolean(playerState?.activePartyActivity || partyCombatInfo?.active || battleState?.isActive || (playerState?.hpCombat && (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))) ) {
+      toast.info("当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）")
+      return
+    }
+    if (runningLifeActionId() === r.id) {
+      void stopCurrentActivity()
+      return
+    }
+    void startAction(r.id, {
+      name: r.name,
+      output: getItemNameById(r.output),
+      duration: r.time,
+      mark: '制',
+    })
+  }
+
+  // 开始自动战斗
+  const startBattle = async (monster: any) => {
+    if (!playerState) return;
+    
+    // 战斗与生活互斥：开始战斗前清除任何进行中的生活动作
+    if (currentActivity || playerState.mode === 'life_action') {
+      logger.debug('🔄 清除采集/生活活动以开始战斗');
+      isStoppingRef.current = true;
+      setCurrentActivity(null);
+      setProgress(0);
+      await stopAction().catch(() => undefined);
     }
     
     try {
@@ -1437,13 +1815,23 @@ export default function NewGameInterface() {
     }
   };
 
-  // 停止战斗
+  // 停止战斗（同时支持单人战斗与组队首领副本）
   const stopBattle = async () => {
     try {
       logger.debug('🛑 停止战斗');
       isStoppingRef.current = true;
       setBattleState(null);
-      await apiClient.fleeHpCombat();
+      const activePartyId =
+        partyCombatInfo?.partyId ||
+        playerState?.activePartyActivity?.partyId ||
+        playerState?.partyState?.partyId;
+      if ((partyCombatInfo?.active || playerState?.activePartyActivity) && activePartyId) {
+        setPartyCombatInfo(null);
+        await apiClient.cancelPartyActivity(activePartyId).catch(() => undefined);
+      }
+      if (playerState?.hpCombat) {
+        await apiClient.fleeHpCombat().catch(() => undefined);
+      }
       await refreshPlayerState();
       logger.debug('✅ 战斗已停止');
       setTimeout(() => {
@@ -1455,9 +1843,24 @@ export default function NewGameInterface() {
     }
   };
 
+  // 切换连续战斗：战后补开时后端会补排 nextFightAt，下一场自动开始（无需重新点怪）
+  const toggleAutoRepeat = async () => {
+    try {
+      apiClient.clearCache();
+      await apiClient.setCombatLoadout({
+        ...(playerState?.combatLoadout || { food: [], drink: [] }),
+        autoRepeat: !playerState?.combatLoadout?.autoRepeat,
+      });
+      await refreshPlayerState();
+    } catch (e: any) {
+      toast.error(e?.message || '切换连续战斗失败');
+    }
+  };
+
   // 创建交易订单
   const handleCreateOrder = async () => {
-    if (!selectedTradingItem) return;
+    if (!selectedTradingItem || orderSubmitting) return;
+    setOrderSubmitting(true);
 
     try {
       await apiClient.createTradingOrder({
@@ -1467,7 +1870,8 @@ export default function NewGameInterface() {
         type: orderType
       });
 
-      // 刷新订单列表
+      // 刷新订单列表（递增序号，作废仍在途的旧列表请求，防旧结果覆盖新单）
+      tradingOrdersReqRef.current++;
       const orders = await apiClient.getTradingOrders(selectedTradingItem);
       setTradingOrders(orders);
       setMarketRefreshKey((k) => k + 1);
@@ -1484,18 +1888,23 @@ export default function NewGameInterface() {
     } catch (error: any) {
       logger.error('创建订单失败:', error);
       toast.error('创建订单失败: ' + (error.message || '未知错误'));
+    } finally {
+      setOrderSubmitting(false);
     }
   };
 
-  // 购买订单
+  // 购买/出售吃单
   const handleBuyOrder = async () => {
-    if (!selectedOrder) return;
+    if (!selectedOrder || orderSubmitting) return;
+    const isSellingToBid = selectedOrder.type === 'buy';
+    setOrderSubmitting(true);
 
     try {
       await apiClient.buyFromOrder(selectedOrder.id, purchaseQuantity);
 
-      // 刷新订单列表
+      // 刷新订单列表（递增序号，作废仍在途的旧列表请求，防旧结果覆盖新单）
       if (selectedTradingItem) {
+        tradingOrdersReqRef.current++;
         const orders = await apiClient.getTradingOrders(selectedTradingItem);
         setTradingOrders(orders);
       }
@@ -1509,10 +1918,12 @@ export default function NewGameInterface() {
       setSelectedOrder(null);
       setPurchaseQuantity(1);
 
-      toast.success('购买成功！');
+      toast.success(isSellingToBid ? '出售成功！' : '购买成功！');
     } catch (error: any) {
-      logger.error('购买失败:', error);
-      toast.error('购买失败: ' + (error.message || '未知错误'));
+      logger.error(isSellingToBid ? '出售失败:' : '购买失败:', error);
+      toast.error((isSellingToBid ? '出售失败: ' : '购买失败: ') + (error.message || '未知错误'));
+    } finally {
+      setOrderSubmitting(false);
     }
   };
 
@@ -1542,21 +1953,10 @@ export default function NewGameInterface() {
   // 技能目录来自 /content（与服务端同一份定义）；未加载时退回内置的重劈
   const abilityCatalog: AbilityDef[] | undefined = contentPack?.abilities
   const equippedAbilities = previewAbilities(playerState.abilityLoadout, playerState.abilities, abilityCatalog, abilitySlotCount(playerState))
-  // 难度标签与预测都来自确定性模拟（和服务端同一套公式，含当前技能配置），不再按等级差猜
-  const fightInfo = (m: any) => {
-    const isBoss = !!m?.isBoss || String(m?.id || '').endsWith('_boss')
-    const preview = previewFight(combatSheet, m, equippedAbilities)
-    // "不放技能会怎样"——Boss 卡上用它说明重劈的价值
-    const auto = isBoss ? previewFight(combatSheet, m, []) : preview
-    return {
-      isBoss,
-      preview,
-      auto,
-      tier: difficultyFromPreview(preview),
-      line: previewLine(preview) + (isBoss && equippedAbilities.length ? '（技能自动释放）' : ''),
-      kills: playerState.stats?.killsByMonster?.[m?.id] || 0,
-    }
-  }
+  const fightInfo = (m: any) => ({
+    isBoss: !!m?.isBoss || String(m?.id || '').endsWith('_boss'),
+    kills: playerState.stats?.killsByMonster?.[m?.id] || 0,
+  })
   // 当前章节目标还差多少原木/木板，挂在白杨卡和采集弹窗上
   const goalMaterialHint = (): string | null => {
     const wood = playerState.inventory.wood_1 || 0
@@ -1595,10 +1995,33 @@ export default function NewGameInterface() {
   const navBadges: Record<string, number | undefined> = {
     tasks: (playerState.taskSummary?.ready || 0) + (playerState.taskSummary?.giftReady ? 1 : 0) || undefined,
   }
+  const combatSkillRows = playerState.combatSkills as Record<string, { level: number; xp: number }> | undefined
+  const soloCombatActive = Boolean(
+    battleState?.isActive ||
+      (playerState.hpCombat &&
+        (!playerState.hpCombat.outcome || (playerState.combatLoadout?.autoRepeat && playerState.hpCombat.nextFightAt)))
+  )
+  const partyCombatActive = Boolean(playerState.activePartyActivity || partyCombatInfo?.active)
+  const headerBattleActive = soloCombatActive || partyCombatActive
+
   const sidebarLocked = new Set<string>()
   if (!hasFirstGather) sidebarLocked.add("woodworking")
   if (!hasSwordOn) sidebarLocked.add("adventure")
+  if (headerBattleActive) {
+    for (const s of SKILL_NAV) {
+      if (s.group === "gathering" || s.group === "production") {
+        sidebarLocked.add(s.id)
+      }
+    }
+  }
   const onNavLocked = (id: string) => {
+    if (headerBattleActive) {
+      const navItem = SKILL_NAV.find((s) => s.id === id)
+      if (navItem && (navItem.group === "gathering" || navItem.group === "production")) {
+        toast.info("当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）")
+        return
+      }
+    }
     if (id === "woodworking") toast.info("先砍到第一根木头，制作才会打开")
     if (id === "adventure") toast.info("先穿上木头短剑，再进森林")
   }
@@ -1612,15 +2035,62 @@ export default function NewGameInterface() {
     // 战斗技能行（耐力 / 智力 / …）只是进度读数，统一打开冒险页
     setActiveTab(tabForNavId(id) as ActiveTab)
   }
-  const combatSkillRows = playerState.combatSkills as Record<string, { level: number; xp: number }> | undefined
-  const runningAction = playerState.mode === 'life_action' && playerState.lifeActionState
+  const resolvedPartyCombatDisplay = (() => {
+    if (!partyCombatActive) return null
+    if (partyCombatInfo?.active && partyCombatInfo.title) {
+      return {
+        title: partyCombatInfo.title,
+        subtitle: partyCombatInfo.subtitle || '组队自动战斗',
+      }
+    }
+    const rawStageId = playerState.activePartyActivity?.stageId || partyCombatInfo?.stageId || 'forest'
+    const stageAliases: Record<string, string> = {
+      stage_1: 'forest',
+      stage_2: 'mine',
+      stage_3: 'swamp',
+      stage_4: 'snow',
+      stage_forest: 'forest',
+      stage_mine: 'mine',
+      stage_swamp: 'swamp',
+      stage_snow: 'snow',
+      stage_volcano: 'volcano',
+    }
+    const normStageId = stageAliases[rawStageId] || rawStageId
+    const stg = (contentPack?.stages as any[] | undefined)?.find((s) => s.id === normStageId)
+    const stageName = stg?.name || '组队首领副本'
+    const bossId =
+      playerState.activePartyActivity?.raidBossId ||
+      ((stg?.monsters || []) as string[]).find((id) => String(id).endsWith('_boss'))
+    const bossMonster = (contentPack?.monsters as any[] | undefined)?.find((m) => m.id === bossId)
+    const bossName = playerState.activePartyActivity?.raidBossName || bossMonster?.name
+    return {
+      title: bossName ? `${stageName} · 讨伐【${bossName}】` : stageName,
+      subtitle: '组队自动战斗',
+    }
+  })()
+  const headerBattleName = partyCombatActive
+    ? resolvedPartyCombatDisplay?.title
+    : battleState?.monster?.name || playerState.hpCombat?.monsterName || '战斗中'
+  const headerBattleSubtitle = partyCombatActive
+    ? resolvedPartyCombatDisplay?.subtitle
+    : playerState.hpCombat?.outcome === 'loss' && playerState.combatLoadout?.autoRepeat && playerState.hpCombat?.nextFightAt
+      ? '重伤休整 · 准备再战'
+      : playerState.hpCombat?.outcome === 'win' && playerState.combatLoadout?.autoRepeat && playerState.hpCombat?.nextFightAt
+        ? '连续自动战斗 · 索敌中'
+        : playerState.combatLoadout?.autoRepeat
+          ? '连续自动战斗'
+          : '自动战斗'
+
+  const runningAction = playerState.mode === 'life_action' && playerState.lifeActionState && !headerBattleActive
     ? contentPack?.actions?.find((a: any) => a.id === playerState.lifeActionState!.actionId)
-    : playerState.hpCombat && !playerState.hpCombat.outcome
+    : soloCombatActive && playerState.hpCombat
       ? { id: 'act_combat_' + playerState.hpCombat.monsterId, skillId: 'skill_combat' }
       : undefined
   const runningNavId = playerState.mode === 'enhancing' && playerState.enhanceRun && !playerState.enhanceRun.outcome
     ? 'enhance'
-    : navIdForAction(runningAction as any)
+    : partyCombatActive
+      ? 'party'
+      : navIdForAction(runningAction as any)
 
   // 获取品质名称
   const getTierName = (tier: number): string => {
@@ -1721,7 +2191,17 @@ export default function NewGameInterface() {
       'weapon_magic_staff': { name: '魔法法杖', tier: 4, type: 'weapon', description: '蕴含魔力的法杖' },
     };
     
-    return itemInfoMap[itemId] || { name: itemId, tier: 0, type: 'unknown', description: '未知物品' };
+    const pack = contentPack?.items?.find((i: any) => i.id === itemId);
+    const legacy = itemInfoMap[itemId];
+    if (pack) {
+      return {
+        name: pack.name || legacy?.name || itemId,
+        tier: Number(pack.tier ?? legacy?.tier ?? 0),
+        type: pack.type || legacy?.type || 'unknown',
+        description: pack.description || legacy?.description || '',
+      };
+    }
+    return legacy || { name: itemId, tier: 0, type: 'unknown', description: '未知物品' };
   };
 
   // 获取物品图标的辅助函数
@@ -1754,6 +2234,12 @@ export default function NewGameInterface() {
       
       // 武器类
       'weapon_wooden_sword': '🗡️', 'weapon_iron_sword': '⚔️', 'weapon_steel_axe': '🪓', 'weapon_magic_staff': '🪄',
+      // 药剂类
+      'potion_hp_t1': '❤️', 'potion_hp_t2': '❤️‍🔥', 'potion_hp_t3': '💖', 'potion_hp_t4': '👑',
+      'potion_mp_t1': '💧', 'potion_mp_t2': '🔷', 'potion_mp_t3': '💠', 'potion_mp_t4': '🌌',
+      'potion_battle_fury': '🔥', 'potion_iron_skin': '🛡️',
+      'potion_arcane_surge': '✨', 'potion_guardian_elixir': '⚔️', 'potion_craft_focus': '🧪', 'potion_fortune': '🍀',
+      'potion_scholar': '📖', 'potion_berserk': '⚡', 'food_simple': '🍖', 'drink_basic': '🍹',
     };
     
     return iconMap[itemId] || '📦';
@@ -1778,7 +2264,7 @@ export default function NewGameInterface() {
       '世界精华板': 'lumber_7',
     };
     
-    return nameToIdMap[itemName] || itemName;
+    return nameToIdMap[itemName] || contentPack?.items?.find((i: any) => i.name === itemName)?.id || itemName;
   };
 
   // 根据物品ID获取中文名称
@@ -1795,8 +2281,9 @@ export default function NewGameInterface() {
         currentActivity={currentActivity}
         batchRemaining={playerState.lifeActionState?.remaining}
         batchTotal={playerState.lifeActionState?.quantity}
-        battleActive={!!battleState?.isActive}
-        battleMonsterName={battleState?.monster?.name}
+        battleActive={headerBattleActive}
+        battleMonsterName={headerBattleName}
+        battleSubtitle={headerBattleSubtitle}
         enhanceRun={playerState.mode === 'enhancing' && playerState.enhanceRun && !playerState.enhanceRun.outcome
           ? {
               itemName: getItemNameById(playerState.enhanceRun.itemId),
@@ -1816,22 +2303,7 @@ export default function NewGameInterface() {
         cycleCompleteFlash={cycleCompleteFlash}
         activeTab={activeTab}
         progress={progress}
-        onStopActivity={async () => {
-          try {
-            logger.debug('🛑 停止采集活动');
-            isStoppingRef.current = true;
-            setCurrentActivity(null);
-            setProgress(0);
-            await stopAction();
-            logger.debug('✅ 采集活动已停止');
-            setTimeout(() => {
-              isStoppingRef.current = false;
-            }, 1000);
-          } catch (error) {
-            logger.error('停止活动失败:', error);
-            isStoppingRef.current = false;
-          }
-        }}
+        onStopActivity={stopCurrentActivity}
         onStopBattle={stopBattle}
         rewardNotification={rewardNotification}
         onOpenProg={(id) => setProgPanel(id)}
@@ -1860,7 +2332,7 @@ export default function NewGameInterface() {
         queue={playerState.activityQueue || []}
         max={ACTION_QUEUE_MAX}
         current={
-          playerState.mode === 'life_action' && playerState.lifeActionState
+          playerState.mode === 'life_action' && playerState.lifeActionState && !headerBattleActive
             ? {
                 name: actionNameOf(playerState.lifeActionState.actionId),
                 quantity: playerState.lifeActionState.quantity,
@@ -1869,6 +2341,10 @@ export default function NewGameInterface() {
             : null
         }
         nameOf={actionNameOf}
+        durationOf={(actionId) => {
+          const act = contentPack?.actions?.find((a: any) => a.id === actionId)
+          return act?.duration ? act.duration / 1000 : 0
+        }}
         onRemove={removeQueued}
         onMove={moveQueued}
         onClear={clearQueue}
@@ -1909,6 +2385,8 @@ export default function NewGameInterface() {
           onToggle={() => setIsChatExpanded(!isChatExpanded)}
           channel={chatChannel}
           onSwitchChannel={switchChannel}
+          privateTarget={privateTarget}
+          onPrivateChat={startPrivateChat}
           unread={unreadCounts}
           professionIcon={getCurrentProfession().icon}
           wsStatus={wsStatus}
@@ -1930,6 +2408,9 @@ export default function NewGameInterface() {
           <div className={`adventure-layout${battleState ? ' combat-open' : ''}`}>
             <div className="page-header">
               <h2 className="section-title">冒险</h2>
+              {!battleState && (
+                <CombatHpChip maxHp={combatSheet.hp} combatHp={playerState.combatHp} combatHpAt={playerState.combatHpAt} activeClassId={playerState.activeClassId} />
+              )}
               {!battleState && !playerState.equipment?.main_hand && (
                 <div className="page-info">
                   <p>
@@ -1954,28 +2435,20 @@ export default function NewGameInterface() {
               {!battleState && chapterGoal.id === 'chest' && !!playerState.equipment?.main_hand && !playerState.equipment?.chest && (
                 <div className="page-info">
                   <p>
-                    {playerState.skills?.skill_woodcutter?.unlockedRecipes?.includes('woodcutter_armor_crafting')
-                      ? '武器有了，上衣还空着。去制作做木制胸甲，再点角色穿上。'
-                      : '武器有了。先在技能树解锁「木制装备制作」，再去做胸甲。'}
+                    武器有了，但林子里的小猴和寄居蟹可不好惹。先去木工做出木制胸甲，再到角色穿上。
                     <button
                       type="button"
                       className="header-menu-btn"
                       style={{ marginLeft: 8 }}
                       onClick={() => {
                         setCurrentProfession('woodcutter');
+                        setActiveTab('woodworking');
+                        setCraftCategory('equipment');
+                        setIsRightPanelExpanded(true);
                         void apiClient.setActiveClass('woodcutter').catch(() => undefined);
-                        if (playerState.skills?.skill_woodcutter?.unlockedRecipes?.includes('woodcutter_armor_crafting')) {
-                          setActiveTab('woodworking');
-                          setCraftCategory('equipment');
-                          setIsRightPanelExpanded(true);
-                        } else {
-                          setActiveTab('skills');
-                        }
                       }}
                     >
-                      {playerState.skills?.skill_woodcutter?.unlockedRecipes?.includes('woodcutter_armor_crafting')
-                        ? '去做护甲'
-                        : '去解锁'}
+                      去做护甲
                     </button>
                   </p>
                 </div>
@@ -2021,7 +2494,7 @@ export default function NewGameInterface() {
                       <div className="entity-name">{playerName}</div>
                       <div className="entity-level">Lv.{playerState.combatLevel || 1}</div>
                       <div className={`entity-avatar${hitShake.player ? ' avatar-shake' : ''}`}>
-                        <T1Art kind="character" id="woodcutter" alt="" />
+                        <T1Art kind="character" id={characterArtId(currentProfession || "woodcutter", playerGender)} alt="" />
                       </div>
                       {/* 玩家伤害飘字 */}
                       <div className="damage-float-container">
@@ -2065,18 +2538,24 @@ export default function NewGameInterface() {
                               style={{ width: `${Math.max(0, Math.min(100, ((playerState.hpCombat!.playerMp || 0) / (playerState.hpCombat!.playerMaxMp || 1)) * 100))}%` }}
                             />
                           </div>
-                          <div className="mp-numbers">MP {playerState.hpCombat!.playerMp ?? 0}/{playerState.hpCombat!.playerMaxMp}</div>
+                          <div className="mp-numbers">
+                            MP {playerState.hpCombat!.playerMp ?? 0}/{playerState.hpCombat!.playerMaxMp} ({Math.round(((playerState.hpCombat!.playerMp || 0) / Math.max(1, playerState.hpCombat!.playerMaxMp || 1)) * 100)}%)
+                          </div>
                         </div>
                       )}
-                      {/* 玩家读条 */}
-                      <div className={`cast-bar${battleState.playerCastTime / battleState.playerCastDuration > 0.8 ? ' cast-nearly-ready' : ''}`}>
+                      {/* 玩家读条（战斗结束后清零，不残留半截充能态） */}
+                      <div className={`cast-bar${battleState.isActive && battleState.playerCastTime / battleState.playerCastDuration > 0.8 ? ' cast-nearly-ready' : ''}`}>
                         <div className="cast-container">
                           <div 
                             className="cast-fill player-cast" 
-                            style={{ width: `${Math.max(0, (battleState.playerCastTime / battleState.playerCastDuration) * 100)}%` }}
+                            style={{ width: `${battleState.isActive ? Math.max(0, Math.min(100, (battleState.playerCastTime / battleState.playerCastDuration) * 100)) : 0}%` }}
                           ></div>
                         </div>
-                        <div className="cast-time">{(battleState.playerCastTime / 1000).toFixed(1)}s / {(battleState.playerCastDuration / 1000).toFixed(1)}s</div>
+                        <div className="cast-time">
+                          {battleState.isActive
+                            ? `${(battleState.playerCastTime / 1000).toFixed(1)}s / ${(battleState.playerCastDuration / 1000).toFixed(1)}s (${Math.min(100, Math.floor((battleState.playerCastTime / Math.max(1, battleState.playerCastDuration)) * 100))}%)`
+                            : `${(battleState.playerCastDuration / 1000).toFixed(1)}s`}
+                        </div>
                       </div>
                     </div>
 
@@ -2128,40 +2607,80 @@ export default function NewGameInterface() {
                         </div>
                         <div className="hp-numbers">{battleState.enemyHp}/{battleState.enemyMaxHp}</div>
                       </div>
-                      {/* 敌人读条 */}
-                      <div className={`cast-bar${battleState.enemyCastTime / battleState.enemyCastDuration > 0.8 ? ' cast-nearly-ready' : ''}`}>
+                      {/* 敌人读条（战斗结束后清零） */}
+                      <div className={`cast-bar${battleState.isActive && battleState.enemyCastTime / battleState.enemyCastDuration > 0.8 ? ' cast-nearly-ready' : ''}`}>
                         <div className="cast-container">
                           <div 
                             className="cast-fill enemy-cast" 
-                            style={{ width: `${Math.max(0, (battleState.enemyCastTime / battleState.enemyCastDuration) * 100)}%` }}
+                            style={{ width: `${battleState.isActive ? Math.max(0, Math.min(100, (battleState.enemyCastTime / battleState.enemyCastDuration) * 100)) : 0}%` }}
                           ></div>
                         </div>
-                        <div className="cast-time">{(battleState.enemyCastTime / 1000).toFixed(1)}s / {(battleState.enemyCastDuration / 1000).toFixed(1)}s</div>
+                        <div className="cast-time">
+                          {battleState.isActive
+                            ? `${(battleState.enemyCastTime / 1000).toFixed(1)}s / ${(battleState.enemyCastDuration / 1000).toFixed(1)}s (${Math.min(100, Math.floor((battleState.enemyCastTime / Math.max(1, battleState.enemyCastDuration)) * 100))}%)`
+                            : `${(battleState.enemyCastDuration / 1000).toFixed(1)}s`}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* MWI battle statistics: the whole auto-repeat run, with an hourly rate once it has run a while */}
-                  {playerState.hpCombat?.runStats && playerState.combatLoadout?.autoRepeat && (() => {
-                    const rs = playerState.hpCombat!.runStats!
-                    const elapsedMs = Math.max(1000, Date.now() - rs.startedAt)
-                    const perHour = (n: number) => Math.round((n / elapsedMs) * 3_600_000)
-                    const mins = Math.floor(elapsedMs / 60_000)
-                    const lootEntries = Object.entries(rs.loot)
+                  {/* MWI battle statistics: cumulative stats from the start of combat */}
+                  {(() => {
+                    const rs = playerState?.hpCombat?.runStats ?? {
+                      startedAt: playerState?.hpCombat?.startedAt || combatNow,
+                      kills: 0,
+                      xp: 0,
+                      gold: 0,
+                      loot: {} as Record<string, number>,
+                    }
+                    const deaths = playerState?.hpCombat?.deaths ?? 0
+                    const startMs = rs.startedAt || playerState?.hpCombat?.startedAt || combatNow
+                    const elapsedMs = Math.max(0, combatNow - startMs)
+                    const totalSecs = Math.max(0, Math.floor(elapsedMs / 1000))
+                    const hrs = Math.floor(totalSecs / 3600)
+                    const mins = Math.floor((totalSecs % 3600) / 60)
+                    const secs = totalSecs % 60
+                    const durationText = hrs > 0
+                      ? `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+                      : `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+                    const lootEntries = Object.entries(rs.loot || {})
                     return (
-                      <div className="battle-run-stats" aria-label="本轮战斗统计">
-                        <span className="run-stat"><small>本轮</small><strong>{mins < 1 ? '刚开始' : `${mins} 分钟`}</strong></span>
-                        <span className="run-stat"><small>击杀</small><strong>{rs.kills}</strong>{rs.kills >= 3 && <em>{perHour(rs.kills)}/时</em>}</span>
-                        <span className="run-stat"><small>经验</small><strong>{Math.round(rs.xp)}</strong>{rs.kills >= 3 && <em>{perHour(rs.xp)}/时</em>}</span>
-                        <span className="run-stat"><small>金币</small><strong>{rs.gold}</strong>{rs.kills >= 3 && <em>{perHour(rs.gold)}/时</em>}</span>
-                        {(playerState.hpCombat!.deaths || 0) > 0 && <span className="run-stat"><small>阵亡</small><strong>{playerState.hpCombat!.deaths}</strong></span>}
+                      <div className="battle-run-stats" aria-label="战斗累计统计">
+                        <span className="run-stat">
+                          <small>战斗时长</small>
+                          <strong>{durationText}</strong>
+                        </span>
+                        <span className="run-stat">
+                          <small>累计击杀</small>
+                          <strong>{rs.kills.toLocaleString()}</strong>
+                        </span>
+                        <span className="run-stat">
+                          <small>死亡次数</small>
+                          <strong className={deaths > 0 ? 'stat-danger-val' : ''}>{deaths}</strong>
+                        </span>
+                        <span className="run-stat">
+                          <small>累计经验</small>
+                          <strong>+{Math.round(rs.xp).toLocaleString()}</strong>
+                        </span>
+                        <span className="run-stat">
+                          <small>累计金币</small>
+                          <strong>+{Math.round(rs.gold).toLocaleString()}</strong>
+                        </span>
                         <span className="run-stat run-loot">
-                          <small>掉落</small>
-                          {lootEntries.length === 0 ? <strong>—</strong> : lootEntries.map(([id, qty]) => (
-                            <span className="run-loot-chip" key={id} title={getItemNameById(id)}>
-                              <T1ItemIcon itemId={id} fallback={getItemIcon(id)} alt="" /> ×{qty}
+                          <small>累计掉落</small>
+                          {lootEntries.length === 0 ? (
+                            <strong>暂无</strong>
+                          ) : (
+                            <span className="run-loot-list">
+                              {lootEntries.map(([id, qty]) => (
+                                <span className="run-loot-chip" key={id} title={`${getItemNameById(id)} ×${qty}`}>
+                                  <T1ItemIcon itemId={id} fallback={getItemIcon(id)} alt="" />
+                                  <span className="run-loot-name">{getItemNameById(id)}</span>
+                                  <b>×{qty}</b>
+                                </span>
+                              ))}
                             </span>
-                          ))}
+                          )}
                         </span>
                       </div>
                     )
@@ -2223,11 +2742,16 @@ export default function NewGameInterface() {
                         ) : (
                           <>
                             <div className="auto-text">
-                              {battleState.drops.length > 0 ? '稀有掉落已放进背包。' : '奖励已结算。'}返回森林继续当前目标。
+                              {battleState.drops.length > 0 ? '稀有掉落已放进背包。' : '奖励已结算。'}可以返回森林，或开启连续战斗自动再战。
                             </div>
-                            <button className="btn-continue-large" onClick={stopBattle}>
-                              返回森林
-                            </button>
+                            <div className="victory-actions">
+                              <button className="btn-continue-large" onClick={toggleAutoRepeat}>
+                                🔁 连续战斗
+                              </button>
+                              <button className="btn-stop-large" onClick={stopBattle}>
+                                返回森林
+                              </button>
+                            </div>
                           </>
                         )}
                       </div>
@@ -2268,9 +2792,14 @@ export default function NewGameInterface() {
                                   : '先完成当前目标；如果仍然吃力，再制作木甲提升生存。'}
                               </div>
                             </div>
-                            <button className="btn-stop-large" onClick={stopBattle}>
-                              返回森林
-                            </button>
+                            <div className="victory-actions">
+                              <button className="btn-continue-large" onClick={toggleAutoRepeat}>
+                                🔁 重生后连续挑战
+                              </button>
+                              <button className="btn-stop-large" onClick={stopBattle}>
+                                返回森林
+                              </button>
+                            </div>
                           </>
                         )}
                       </div>
@@ -2289,24 +2818,12 @@ export default function NewGameInterface() {
                         <AbilityBar
                           abilities={equippedAbilities}
                           readyAt={(id) => (id === 'heavy_chop' ? playerState.hpCombat?.heavyChopReadyAt || 0 : playerState.hpCombat?.abilityReadyAt?.[id] || 0)}
-                          now={Date.now()}
+                          now={combatNow}
                           mp={playerState.hpCombat?.playerMp ?? combatSheet.mp ?? 0}
                           maxMp={playerState.hpCombat?.playerMaxMp ?? combatSheet.mp ?? 0}
                           guardActive={!!playerState.hpCombat?.guardActive}
                           disabled={!playerState.hpCombat || !!playerState.hpCombat.outcome}
-                          onCast={async (id) => {
-                            try {
-                              playGameSound("skill");
-                              await apiClient.castAbility(id);
-                              await refreshPlayerState();
-                            } catch (err) {
-                              toast.error((err as Error)?.message || '技能还在冷却');
-                            }
-                          }}
                         />
-                        <div className={`progress-text${heavyReadyPulse ? ' skill-ready-pulse' : ''}`}>
-                          {equippedAbilities.length ? '技能按触发条件自动释放，也可以手动点' : '普攻自动进行中'}
-                        </div>
                         <button className="btn-stop-small" onClick={stopBattle}>
                           停止战斗
                         </button>
@@ -2314,15 +2831,72 @@ export default function NewGameInterface() {
                     )}
                   </div>
 
+                  {/* 银河奶牛式常驻战斗药剂与补给栏：HP药 + MP药 + 3格状态药 + 一键手动喝药与随身买药 */}
+                  <CombatPotionBar
+                    inCombat
+                    loadout={playerState.combatLoadout}
+                    items={contentPack?.items as any}
+                    inventory={playerState.inventory}
+                    equipment={playerState.equipment as any}
+                    activeBuffs={playerState.activeBuffs}
+                    playerHp={battleState.playerHp}
+                    playerMaxHp={battleState.playerMaxHp}
+                    playerMp={playerState.hpCombat?.playerMp ?? combatSheet.mp ?? 0}
+                    playerMaxMp={playerState.hpCombat?.playerMaxMp ?? combatSheet.mp ?? 0}
+                    foodReadyAt={playerState.hpCombat?.foodReadyAt}
+                    mpReadyAt={playerState.hpCombat?.mpReadyAt}
+                    now={combatNow}
+                    iconOf={getItemIcon}
+                    onChangeLoadout={async (next) => {
+                      try {
+                        apiClient.clearCache()
+                        await apiClient.setCombatLoadout(next)
+                        await refreshPlayerState()
+                      } catch (e: any) {
+                        toast.error(e?.message || '保存药剂槽失败')
+                      }
+                    }}
+                    onManualConsume={async (itemId) => {
+                      try {
+                        apiClient.clearCache()
+                        const res = await apiClient.consumeItem(itemId)
+                        await refreshPlayerState()
+                        const parts: string[] = []
+                        if (res?.healed?.hp) parts.push(`+${res.healed.hp} 生命`)
+                        if (res?.healed?.mp) parts.push(`+${res.healed.mp} 魔力`)
+                        if (res?.buff?.name) parts.push(`激活「${res.buff.name}」`)
+                        toast.success(`已饮用 ${res?.itemName || getItemNameById(itemId)}${parts.length ? `（${parts.join(' · ')}）` : ''}`)
+                      } catch (e: any) {
+                        toast.error(e?.message || '饮用药剂失败')
+                      }
+                    }}
+                    onQuickBuyPotion={async (itemId, qty) => {
+                      try {
+                        apiClient.clearCache()
+                        await apiClient.shopBuy(itemId, qty)
+                        await refreshPlayerState()
+                        toast.success(`购买成功：${getItemNameById(itemId)} ×${qty}`)
+                        return true
+                      } catch (e: any) {
+                        toast.error(e?.message || '金币不足或购买失败')
+                        return false
+                      }
+                    }}
+                  />
+
                   <div className="battle-log-center">
                     <h4>📜 战斗记录</h4>
                     <div className="log-content">
                       {battleState.battleLog.map((log, index) => {
-                        const phase = /举起树皮盾|自然之怒|蓄力举盾|震碎|破防/.test(log)
-                        const heavy = !phase && log.includes('重劈')
+                        // Mechanic warnings / damage lines come from the monster's pack-table messages.
+                        const mechanic = mechanicLogMatcher(adventureStages.flatMap((s) => s.encounters).find((e) => e.id === battleState.monster.id)?.mechanicDefs)(log)
+                        const phase = mechanic === 'warn' || /举起树皮盾|自然之怒|蓄力举盾|震碎|破防/.test(log)
+                        const hazard = !phase && mechanic === 'hazard'
+                        const heavy = !phase && !hazard && log.includes('重劈')
+                        const potion = !phase && !hazard && (/🧪|吃了|喝下了/.test(log))
                         const drop = log.startsWith('掉落')
                         const end = /被击败了|你被击败/.test(log)
-                        const cls = phase ? ' log-phase' : heavy ? ' log-heavy' : drop ? ' log-drop' : end ? ' log-end' : ''
+                        const cls = phase ? ' log-phase' : hazard ? ' log-hazard' : potion ? ' log-potion' : heavy ? ' log-heavy' : drop ? ' log-drop' : end ? ' log-end' : ''
                         return (
                           <div key={`${battleState.battleCount}-${index}`} className={`log-entry${cls}`}>
                             {log}
@@ -2361,76 +2935,102 @@ export default function NewGameInterface() {
                   )}
                 </div>
 
-                {/* 第一次击杀之后再展示配置栏，教学阶段保持安静。MWI：一行摘要，展开才是完整配置 */}
-                {(playerState.stats?.totalKills || 0) >= 1 && (
-                  <section className={`combat-config${showCombatConfig ? ' open' : ''}`} aria-label="战斗配置">
-                    <div className="combat-config-summary">
-                      <div className="combat-config-chips">
-                        <span className="config-chip" title="技能槽">
-                          ✨ {equippedAbilities.length ? equippedAbilities.map((a) => `${a.def.name}${a.level > 1 ? ` Lv.${a.level}` : ''}`).join(' → ') : '没有装备技能'}
-                        </span>
-                        <span className="config-chip" title="食物槽">
-                          🍖 {(playerState.combatLoadout?.food || []).length
-                            ? playerState.combatLoadout!.food.map((f) => `${getItemNameById(f.itemId)}（缺血 ${f.triggerMissingHp}）`).join('、')
-                            : '未配食物'}
-                        </span>
-                        <span className="config-chip" title="饮品槽">
-                          🧪 {(playerState.combatLoadout?.drink || []).length ? playerState.combatLoadout!.drink.map((d) => getItemNameById(d.itemId)).join('、') : '未配饮品'}
-                        </span>
-                        <span className={`config-chip${playerState.combatLoadout?.autoRepeat ? ' on' : ''}`} title="连续战斗">
-                          🔁 {playerState.combatLoadout?.autoRepeat ? '连续战斗开' : '连续战斗关'}
-                        </span>
-                      </div>
+                {/* 银河奶牛式战前药剂与补给栏：直接展示 HP 药槽、MP 药槽与 3 个状态药槽 */}
+                <CombatPotionBar
+                  loadout={playerState.combatLoadout}
+                  items={contentPack?.items as any}
+                  inventory={playerState.inventory}
+                  equipment={playerState.equipment as any}
+                  activeBuffs={playerState.activeBuffs}
+                  playerHp={playerState.combatHp ?? combatSheet.hp}
+                  playerMaxHp={combatSheet.hp}
+                  playerMp={combatSheet.mp ?? 50}
+                  playerMaxMp={combatSheet.mp ?? 50}
+                  now={combatNow}
+                  iconOf={getItemIcon}
+                  onChangeLoadout={async (next) => {
+                    try {
+                      apiClient.clearCache()
+                      await apiClient.setCombatLoadout(next)
+                      await refreshPlayerState()
+                    } catch (e: any) {
+                      toast.error(e?.message || '保存药剂槽失败')
+                    }
+                  }}
+                  onManualConsume={async (itemId) => {
+                    try {
+                      apiClient.clearCache()
+                      const res = await apiClient.consumeItem(itemId)
+                      await refreshPlayerState()
+                      const parts: string[] = []
+                      if (res?.healed?.hp) parts.push(`+${res.healed.hp} 生命`)
+                      if (res?.healed?.mp) parts.push(`+${res.healed.mp} 魔力`)
+                      if (res?.buff?.name) parts.push(`激活「${res.buff.name}」`)
+                      toast.success(`已饮用 ${res?.itemName || getItemNameById(itemId)}${parts.length ? `（${parts.join(' · ')}）` : ''}`)
+                    } catch (e: any) {
+                      toast.error(e?.message || '饮用药剂失败')
+                    }
+                  }}
+                  onQuickBuyPotion={async (itemId, qty) => {
+                    try {
+                      apiClient.clearCache()
+                      await apiClient.shopBuy(itemId, qty)
+                      await refreshPlayerState()
+                      toast.success(`购买成功：${getItemNameById(itemId)} ×${qty}`)
+                      return true
+                    } catch (e: any) {
+                      toast.error(e?.message || '金币不足或购买失败')
+                      return false
+                    }
+                  }}
+                />
+
+                <section className={`combat-config${showCombatConfig ? ' open' : ''}`} aria-label="战斗配置">
+                  <div className="combat-config-summary">
+                    <div className="combat-config-chips">
+                      <span className="config-chip" title="技能槽">
+                        ✨ {equippedAbilities.length ? equippedAbilities.map((a) => `${a.def.name}${a.level > 1 ? ` Lv.${a.level}` : ''}`).join(' → ') : '没有装备技能'}
+                      </span>
                       <button
                         type="button"
-                        className="header-menu-btn combat-config-toggle"
-                        aria-expanded={showCombatConfig}
-                        onClick={() => setShowCombatConfig((v) => !v)}
+                        className={`config-chip config-chip-btn${playerState.combatLoadout?.autoRepeat ? ' on' : ''}`}
+                        title="连续战斗：胜利后自动再战同一只（点击切换）"
+                        onClick={toggleAutoRepeat}
                       >
-                        {showCombatConfig ? '收起配置' : '配置技能 / 消耗品'}
+                        🔁 {playerState.combatLoadout?.autoRepeat ? '连续战斗开' : '连续战斗关'}
                       </button>
                     </div>
-                    {showCombatConfig && (
-                      <div className="combat-config-body">
-                        <AbilityLoadoutPanel
-                          catalog={abilityCatalog}
-                          known={playerState.abilities}
-                          loadout={playerState.abilityLoadout}
-                          slotCount={abilitySlotCount(playerState)}
-                          intelligenceLevel={playerState.combatSkills?.intelligence?.level || 1}
-                          compact
-                          onChange={async (slots) => {
-                            try {
-                              apiClient.clearCache()
-                              await apiClient.setAbilityLoadout(slots)
-                              await refreshPlayerState()
-                            } catch (e: any) {
-                              toast.error(e?.message || '保存技能配置失败')
-                            }
-                          }}
-                        />
-                        <CombatLoadoutPanel
-                          loadout={playerState.combatLoadout}
-                          items={contentPack?.items}
-                          inventory={playerState.inventory}
-                          equipment={playerState.equipment as any}
-                          playerMaxHp={combatSheet.hp}
-                          iconOf={getItemIcon}
-                          compact
-                          onChange={async (next) => {
-                            try {
-                              apiClient.clearCache()
-                              await apiClient.setCombatLoadout(next)
-                              await refreshPlayerState()
-                            } catch (e: any) {
-                              toast.error(e?.message || '保存战斗配置失败')
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
-                  </section>
-                )}
+                    <button
+                      type="button"
+                      className="header-menu-btn combat-config-toggle"
+                      aria-expanded={showCombatConfig}
+                      onClick={() => setShowCombatConfig((v) => !v)}
+                    >
+                      {showCombatConfig ? '收起技能' : '配置技能'}
+                    </button>
+                  </div>
+                  {showCombatConfig && (
+                    <div className="combat-config-body">
+                      <AbilityLoadoutPanel
+                        catalog={abilityCatalog}
+                        known={playerState.abilities}
+                        loadout={playerState.abilityLoadout}
+                        slotCount={abilitySlotCount(playerState)}
+                        intelligenceLevel={playerState.combatSkills?.intelligence?.level || 1}
+                        compact
+                        onChange={async (slots) => {
+                          try {
+                            apiClient.clearCache()
+                            await apiClient.setAbilityLoadout(slots)
+                            await refreshPlayerState()
+                          } catch (e: any) {
+                            toast.error(e?.message || '保存技能配置失败')
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </section>
                 
                 <div className="monster-grid">
           {selectedEncounters.map((monster) => {
@@ -2438,11 +3038,10 @@ export default function NewGameInterface() {
                     return (
                       <div
                         key={monster.id}
-                        className={`monster-card ${isCurrentlyFighting(monster.id) ? 'active' : ''} ${monster.isBoss ? 'boss' : ''} tier-${info.tier}`}
+                        className={`monster-card ${isCurrentlyFighting(monster.id) ? 'active' : ''} ${monster.isBoss ? 'boss' : ''}`}
                         onClick={() => { 
                           setSelectedItem(monster); 
                           setModalType('monster'); 
-                          setRiskyConfirm(false);
                         }}
                       >
                         <div className="card-image">
@@ -2452,11 +3051,12 @@ export default function NewGameInterface() {
                           {info.kills > 0 && <div className="card-kills">已击败 ×{info.kills}</div>}
                         </div>
                         <div className="card-title">{monster.name}</div>
-                        <div className="card-identity">{archetypeLabel(monster.archetype)} · <span className={`tier tier-${info.tier}`}>{info.tier}</span></div>
-                        <div className="card-forecast">{info.line}</div>
+                        <div className="card-identity">
+                          Lv.{monster.level} · {monster.isBoss ? '👥 组队首领副本 (10波制)' : archetypeLabel(monster.archetype)}
+                        </div>
                         <div className="card-reward">{encounterRewardLine(monster)}</div>
-                        {mechanicLabels(monster.mechanics).length > 0 && (
-                          <div className="card-mechanic">{mechanicLabels(monster.mechanics).join(" · ")}</div>
+                        {mechanicLabels(monster.mechanics, monster.mechanicDefs).length > 0 && (
+                          <div className="card-mechanic">{mechanicLabels(monster.mechanics, monster.mechanicDefs).join(" · ")}</div>
                         )}
                       </div>
                     );
@@ -2473,6 +3073,12 @@ export default function NewGameInterface() {
             totalLevel={totalLevel}
             combatLevel={playerState.combatLevel || 1}
             sheet={combatSheet}
+            activeClassId={currentProfession}
+            activeClassName={getCurrentProfession().name}
+            playerGender={playerGender}
+            playerAvatar={playerAvatar}
+            onChangeAvatar={changePlayerAvatar}
+            onOpenProfessionModal={chapterDone ? () => setShowProfessionModal(true) : undefined}
             mainSkill={mainCombatSkill(playerState)}
             focusSkill={(() => {
               // mirrors backend focusedCombatSkill: first equipped accessory with a focusSkill wins
@@ -2490,12 +3096,27 @@ export default function NewGameInterface() {
               level: playerState.combatSkills?.[id]?.level || 1,
               xp: playerState.combatSkills?.[id]?.xp || 0,
             }))}
-            abilities={Object.entries(playerState.abilities || {}).map(([id, st]) => ({
-              id,
-              name: abilityCatalog?.find((a) => a.id === id)?.name || id,
-              level: st.level,
-              equipped: (playerState.abilityLoadout || []).some((s) => s.abilityId === id),
-            }))}
+            abilities={Object.entries(playerState.abilities || {}).map(([id, st]) => {
+              const def = abilityCatalog?.find((a) => a.id === id)
+              const slot = (playerState.abilityLoadout || []).find((s) => s.abilityId === id)
+              return {
+                id,
+                name: def?.name || id,
+                level: st.level,
+                xp: st.xp,
+                equipped: Boolean(slot),
+                blurb: def?.blurb,
+                cooldownMs: def?.cooldownMs,
+                mpCost: def?.mpCost,
+                damageMult: def?.damageMult,
+                healPct: def?.healPct,
+                guardMult: def?.guardMult,
+                durationMs: def?.durationMs,
+                breaksGuard: def?.breaksGuard,
+                levelStep: def?.levelStep,
+                triggerText: slot ? describeTrigger(slot.trigger) : undefined,
+              }
+            })}
             slots={[...equipSlots.left, ...equipSlots.right].map((s, _i, arr) => {
               const itemId = getEquippedItemId(s.id)
               const def: any = itemId ? contentPack?.items?.find((it: any) => it.id === itemId) : undefined
@@ -2504,12 +3125,22 @@ export default function NewGameInterface() {
               const enh = itemId ? Number(playerState.equipment?.enhancementLevels?.[itemId] || 0) : 0
               const mult = enhancementStatMultiplier(enh, def)
               const effective = (n: number) => Math.round(n * mult * 10) / 10
+              const dur = itemId ? playerState.equipment?.durability?.[itemId] : undefined
+              const maxDur = itemId ? (playerState.equipment?.maxDurability?.[itemId] || 100) : 100
+              const durRecorded = typeof dur === 'number' && Number.isFinite(dur)
+              const durabilityPct = durRecorded ? Math.max(0, Math.min(100, Math.round((dur / maxDur) * 1000) / 10)) : undefined
+              const broken = durRecorded && dur <= 0
+              const repairCost = durRecorded ? Math.ceil((maxDur - Math.max(0, dur)) * 0.5) : undefined
               return {
                 id: s.id,
                 name: s.name,
+                icon: s.icon,
                 ariaLabel: dup ? `${s.name} ${arr.filter((x) => x.name === s.name).indexOf(s) + 1}` : undefined,
                 itemId,
                 itemName: itemId ? `${getItemNameById(itemId)}${enh ? ` +${enh}` : ''}` : '',
+                durabilityPct,
+                broken,
+                repairCost,
                 available: !itemId && getEquippableItems(s.id).length > 0,
                 effect: tool
                   ? toolEffectLine(def, professionLabel(def?.toolFor), enh)
@@ -2518,10 +3149,48 @@ export default function NewGameInterface() {
               }
             })}
             onOpenSlot={(slotId) => openEquipSelector(slotId)}
+            onRepairItem={async (itemId) => {
+              if (repairingItemId) return
+              setRepairingItemId(itemId)
+              try {
+                apiClient.clearCache()
+                await apiClient.repairEquipment(itemId, 'full')
+                toast.success('装备已修理')
+                await refreshPlayerState()
+              } catch (e: any) {
+                toast.error(e?.message || '修理失败')
+              } finally {
+                setRepairingItemId(null)
+              }
+            }}
+            onRepairAll={async () => {
+              if (repairingItemId) return
+              const damagedIds = [...equipSlots.left, ...equipSlots.right]
+                .map((s) => getEquippedItemId(s.id))
+                .filter((id): id is string => {
+                  if (!id) return false
+                  const d = playerState.equipment?.durability?.[id]
+                  const maxD = playerState.equipment?.maxDurability?.[id] || 100
+                  return typeof d === 'number' && Number.isFinite(d) && d < maxD
+                })
+              const uniqueIds = [...new Set(damagedIds)]
+              if (!uniqueIds.length) return
+              setRepairingItemId('__all__')
+              try {
+                apiClient.clearCache()
+                for (const id of uniqueIds) {
+                  await apiClient.repairEquipment(id, 'full')
+                }
+                toast.success(`已全部修理（${uniqueIds.length} 件装备）`)
+                await refreshPlayerState()
+              } catch (e: any) {
+                toast.error(e?.message || '修理失败')
+              } finally {
+                setRepairingItemId(null)
+              }
+            }}
+            repairingItemId={repairingItemId}
             setBonuses={setBonuses}
-            wood={playerState.inventory.wood_1 || 0}
-            lumber={playerState.inventory.lumber_1 || 0}
-            onOpenInventory={() => setActiveTab('inventory')}
           />
         )}
 
@@ -2534,6 +3203,7 @@ export default function NewGameInterface() {
             gold={playerState.inventory.gold || 0}
             packItems={contentPack?.items}
             equippedIds={new Set(Object.values(playerState.equipment || {}).filter((v): v is string => typeof v === 'string'))}
+            enhancementLevels={playerState.equipment?.enhancementLevels}
             iconOf={getItemIcon}
             onOpen={(row) => {
               setSelectedItem({ ...row, id: row.itemId })
@@ -2547,6 +3217,7 @@ export default function NewGameInterface() {
           <TasksPage
             actions={contentPack?.actions}
             iconOf={getItemIcon}
+            gold={playerState.inventory.gold || 0}
             progressKey={`${playerState.stats?.totalActions || 0}:${playerState.stats?.totalKills || 0}`}
             onGoldChange={() => { void refreshPlayerState() }}
           />
@@ -2601,14 +3272,28 @@ export default function NewGameInterface() {
         {/* 背包页面 */}
         {/* 装备强化页面 */}
         {activeTab === 'enhance' && (
-          <EnhancementPanel 
-            playerState={playerState} 
-            contentItems={contentPack?.items}
-            onRefresh={refreshPlayerState}
-          />
+          <div className={headerBattleActive ? 'combat-disabled-page' : undefined}>
+            {headerBattleActive && (
+              <div className="combat-lock-banner" role="status">
+                ⚔️ 当前正在战斗中，生产与生活技能已锁定（请先在顶部停止战斗）
+              </div>
+            )}
+            <EnhancementPanel 
+              playerState={playerState} 
+              contentItems={contentPack?.items}
+              combatLocked={headerBattleActive}
+              onRefresh={refreshPlayerState}
+            />
+          </div>
         )}
 
-        {activeTab === 'party' && <PartyPanel />}
+        <div style={{ display: activeTab === 'party' ? 'contents' : 'none' }}>
+          <PartyPanel
+            initialStageId={partyTargetStageId}
+            onConsumeInitialStage={() => setPartyTargetStageId(null)}
+            onCombatStatusChange={setPartyCombatInfo}
+          />
+        </div>
 
         {/* 技能树页面 */}
         {activeTab === 'skills' && (
@@ -2616,6 +3301,7 @@ export default function NewGameInterface() {
             playerState={playerState} 
             onRefresh={refreshPlayerState}
             currentProfession={currentProfession}
+            onBack={() => setActiveTab(getCurrentProfession().gatherTab)}
           />
         )}
         
@@ -2632,14 +3318,16 @@ export default function NewGameInterface() {
                 <div className="page-header">
                   <h2 className="section-title">交易行</h2>
                   <div className="page-info">
-                    <p>玩家之间买卖任何物品：直接吃掉最优挂单，或按自己的价格挂出售单 / 收购单。成交按卖方所得收 5% 税。</p>
+                    <p>玩家之间买卖任何物品：直接吃掉最优挂单，或按自己的价格挂出售单 / 收购单。商会补给站亦常年以高于店价的溢价供应基础资源，保障新手起步循环。成交按卖方所得收 5% 税。</p>
                   </div>
                 </div>
                 <MarketItemGrid
                   groups={[
                     { id: 'materials', title: '材料', emoji: '📦', items: allItems.materials || [] },
                     { id: 'weapons', title: '武器', emoji: '⚔️', items: allItems.weapons || [] },
-                    { id: 'armor', title: '防具', emoji: '🛡️', items: allItems.armor || [] },
+                    { id: 'armor', title: '防具', emoji: '🛡️', items: [...(allItems.armor || []), ...((allItems.all || []).filter((i: any) => (i.type === 'offhand' || i.type === 'shield') && !(allItems.armor || []).some((a: any) => a.id === i.id)))] },
+                    { id: 'accessories', title: '饰品', emoji: '💍', items: (allItems.all || []).filter((i: any) => i.type === 'accessory') },
+                    { id: 'tools', title: '工具', emoji: '🪓', items: (allItems.all || []).filter((i: any) => !!i.toolFor) },
                     { id: 'consumables', title: '消耗品', emoji: '🍖', items: allItems.consumables || [] },
                     { id: 'books', title: '技能书', emoji: '📖', items: (allItems.all || []).filter((i: any) => i.type === 'book') },
                   ]}
@@ -2648,7 +3336,7 @@ export default function NewGameInterface() {
                   onPick={(id) => setSelectedTradingItem(id)}
                   refreshKey={marketRefreshKey}
                 />
-                <MarketMyOrders nameOf={getItemNameById} onChanged={() => { setMarketRefreshKey((k) => k + 1); void refreshPlayerState() }} />
+                <MarketMyOrders nameOf={getItemNameById} refreshKey={marketRefreshKey} onChanged={() => { setMarketRefreshKey((k) => k + 1); void refreshPlayerState() }} />
               </>
             ) : (
               /* 物品详情页 */
@@ -2679,13 +3367,31 @@ export default function NewGameInterface() {
                   <div className="trading-detail-actions">
                     <button 
                       className="btn-create-order sell"
-                      onClick={() => { setOrderType('sell'); setShowSellModal(true); }}
+                      disabled={(playerState.inventory[selectedTradingItem] || 0) <= 0}
+                      title={(playerState.inventory[selectedTradingItem] || 0) <= 0 ? '背包中没有该物品可出售' : undefined}
+                      onClick={() => {
+                        setOrderType('sell');
+                        setSellQuantity(1);
+                        const asks = tradingOrders.filter((o) => o.type === 'sell').map((o) => o.price);
+                        const shop = Number(contentPack?.items?.find((i: any) => i.id === selectedTradingItem)?.value || 0);
+                        if (asks.length) setSellPrice(Math.max(1, Math.min(...asks)));
+                        else if (shop > 0) setSellPrice(Math.max(1, shop * 2));
+                        setShowSellModal(true);
+                      }}
                     >
                       📤 挂出售单
                     </button>
                     <button 
                       className="btn-create-order buy"
-                      onClick={() => { setOrderType('buy'); setShowSellModal(true); }}
+                      onClick={() => {
+                        setOrderType('buy');
+                        setSellQuantity(1);
+                        const bids = tradingOrders.filter((o) => o.type === 'buy').map((o) => o.price);
+                        const shop = Number(contentPack?.items?.find((i: any) => i.id === selectedTradingItem)?.value || 0);
+                        if (bids.length) setSellPrice(Math.max(1, Math.max(...bids)));
+                        else if (shop > 0) setSellPrice(Math.max(1, shop));
+                        setShowSellModal(true);
+                      }}
                     >
                       📥 挂收购单
                     </button>
@@ -2706,7 +3412,10 @@ export default function NewGameInterface() {
                         <>
                           {tradingOrders.filter(order => order.type === 'sell').sort((a, b) => a.price - b.price).slice(0, 5).map(order => (
                             <div key={order.id} className="order-item-compact sell">
-                              <span className="order-quantity">x{order.quantity}</span>
+                              <span className="order-quantity">
+                                x{order.quantity}
+                                {order.username === '商会补给站' && <small style={{ marginLeft: 6, opacity: 0.72, fontSize: '0.75rem' }}>商会预设</small>}
+                              </span>
                               <span className="order-price">{order.price} 💰</span>
                             </div>
                           ))}
@@ -2748,7 +3457,10 @@ export default function NewGameInterface() {
                         <>
                           {tradingOrders.filter(order => order.type === 'buy').sort((a, b) => b.price - a.price).slice(0, 5).map(order => (
                             <div key={order.id} className="order-item-compact buy">
-                              <span className="order-quantity">x{order.quantity}</span>
+                              <span className="order-quantity">
+                                x{order.quantity}
+                                {order.username === '商会补给站' && <small style={{ marginLeft: 6, opacity: 0.72, fontSize: '0.75rem' }}>商会预设</small>}
+                              </span>
                               <span className="order-price">{order.price} 💰</span>
                             </div>
                           ))}
@@ -2777,6 +3489,14 @@ export default function NewGameInterface() {
                     </div>
                   </div>
                 </div>
+                <MarketMyOrders
+                  nameOf={getItemNameById}
+                  refreshKey={marketRefreshKey}
+                  onChanged={() => {
+                    setMarketRefreshKey((k) => k + 1);
+                    void refreshPlayerState();
+                  }}
+                />
               </>
             )}
           </div>
@@ -2787,8 +3507,11 @@ export default function NewGameInterface() {
         expanded={isRightPanelExpanded}
         onToggle={() => setIsRightPanelExpanded(!isRightPanelExpanded)}
         playerName={playerName}
+        playerAvatar={playerAvatar}
+        playerGender={playerGender}
+        onRename={renamePlayer}
         onOpenProfessionModal={() => setShowProfessionModal(true)}
-        profession={getCurrentProfession()}
+        profession={{ ...getCurrentProfession(), id: currentProfession }}
         professionSkill={getCurrentSkill()}
         combatLevel={playerState.combatLevel || 1}
         combatXp={playerState.combatXp || 0}
@@ -2825,6 +3548,14 @@ export default function NewGameInterface() {
       {showEquipSelector && selectedEquipSlot && (
         <div className="modal-overlay" onClick={() => { setShowEquipSelector(false); setSelectedEquipSlot(null); }}>
           <div className="modal-content equip-selector-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              aria-label="关闭"
+              onClick={() => { setShowEquipSelector(false); setSelectedEquipSlot(null); }}
+            >
+              ✕
+            </button>
             <h3 className="modal-title">
                 选择装备 - {[...equipSlots.left, ...equipSlots.right].find(s => s.id === selectedEquipSlot)?.name ?? ''}
             </h3>
@@ -2841,7 +3572,18 @@ export default function NewGameInterface() {
                 <p className="modal-desc equip-hint">点一件即可装备</p>
                 <div className="equippable-items-grid">
                   {getEquippableItems(selectedEquipSlot).map((item: any) => {
-                    const equipped = getEquippedItemId(selectedEquipSlot) === item.id;
+                    const currentEqId = getEquippedItemId(selectedEquipSlot);
+                    const equipped = currentEqId === item.id;
+                    const curDef: any = currentEqId ? contentPack?.items?.find((it: any) => it.id === currentEqId) : undefined;
+                    const itemEnh = Number(playerState.equipment?.enhancementLevels?.[item.id] || 0);
+                    const curEnh = currentEqId ? Number(playerState.equipment?.enhancementLevels?.[currentEqId] || 0) : 0;
+                    const itemMult = enhancementStatMultiplier(itemEnh, item);
+                    const curMult = enhancementStatMultiplier(curEnh, curDef);
+                    const eff = (v: number | undefined, m: number) => Math.round((v || 0) * m * 10) / 10;
+                    const atkDiff = Math.round((eff(item.atk, itemMult) - eff(curDef?.atk, curMult)) * 10) / 10;
+                    const magDiff = Math.round((eff(item.mag, itemMult) - eff(curDef?.mag, curMult)) * 10) / 10;
+                    const defDiff = Math.round((eff(item.def, itemMult) - eff(curDef?.def, curMult)) * 10) / 10;
+                    const hpDiff = Math.round((eff(item.hp, itemMult) - eff(curDef?.hp, curMult)) * 10) / 10;
                     return (
                     <div 
                       key={item.id}
@@ -2852,17 +3594,27 @@ export default function NewGameInterface() {
                       <div className="item-icon-large">
                         <T1ItemIcon itemId={item.id} fallback={getItemIcon(item.id)} alt="" />
                       </div>
-                      <div className="item-name">{item.name}</div>
+                      <div className="item-name">{item.name}{itemEnh > 0 ? ` +${itemEnh}` : ''}</div>
                       <div className="item-stats">
                         {selectedEquipSlot === 'tool' && item.toolFor ? (
-                          <span>{toolEffectLine(item, professionLabel(item.toolFor), Number(playerState.equipment?.enhancementLevels?.[item.id] || 0))}</span>
+                          <span>{toolEffectLine(item, professionLabel(item.toolFor), itemEnh)}</span>
                         ) : (
                           <>
-                            {item.atk && <span>攻击 +{item.atk}</span>}
-                            {item.def && <span>防御 +{item.def}</span>}
+                            {item.atk && <span>攻击 +{eff(item.atk, itemMult)}</span>}
+                            {item.mag && <span>魔法 +{eff(item.mag, itemMult)}</span>}
+                            {item.def && <span>防御 +{eff(item.def, itemMult)}</span>}
+                            {item.hp && <span>生命 +{eff(item.hp, itemMult)}</span>}
                           </>
                         )}
                       </div>
+                      {!equipped && selectedEquipSlot !== 'tool' && (atkDiff !== 0 || magDiff !== 0 || defDiff !== 0 || hpDiff !== 0) && (
+                        <div className="equip-delta-row">
+                          {atkDiff !== 0 && <span className={`equip-delta ${atkDiff > 0 ? 'up' : 'down'}`}>攻{atkDiff > 0 ? `+${atkDiff}` : atkDiff}</span>}
+                          {magDiff !== 0 && <span className={`equip-delta ${magDiff > 0 ? 'up' : 'down'}`}>魔{magDiff > 0 ? `+${magDiff}` : magDiff}</span>}
+                          {defDiff !== 0 && <span className={`equip-delta ${defDiff > 0 ? 'up' : 'down'}`}>防{defDiff > 0 ? `+${defDiff}` : defDiff}</span>}
+                          {hpDiff !== 0 && <span className={`equip-delta ${hpDiff > 0 ? 'up' : 'down'}`}>血{hpDiff > 0 ? `+${hpDiff}` : hpDiff}</span>}
+                        </div>
+                      )}
                       <div className="item-cta">{equipped ? '已装备' : '装备'}</div>
                     </div>
                     );
@@ -2896,19 +3648,16 @@ export default function NewGameInterface() {
       {selectedItem && modalType && (
         <div className="modal-overlay" onClick={() => { setSelectedItem(null); setModalType(null); }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              aria-label="关闭"
+              onClick={() => { setSelectedItem(null); setModalType(null); }}
+            >
+              ✕
+            </button>
             {modalType === 'monster' && (() => {
               const info = fightInfo(selectedItem);
-              const noChest = !playerState.equipment?.chest;
-              const risky = !info.preview.won;
-              // 穿上木甲后管家每拳能少多少：用同一套公式算一个"如果"，让推荐有数字
-              const chestDef = Number(contentPack?.items?.find((i: any) => i.id === 'armor_wood_chest')?.def || 8);
-              const withChest = previewFight({ ...combatSheet, def: combatSheet.def + chestDef }, selectedItem, equippedAbilities);
-              const bossHint = info.isBoss && noChest
-                ? `上衣还空着：管家每拳 ${info.preview.enemyHit} 伤害，穿上木制胸甲后只有 ${withChest.enemyHit}。${withChest.won ? `穿甲后预计剩 ${Math.round(withChest.playerHpLeftPct * 100)}% 生命。` : ''}`
-                : null;
-              const heavyHint = info.isBoss && !info.auto.won && info.preview.won
-                ? '光靠普攻会输：重劈会在冷却好时自动破防；想更稳，把重劈的触发设成"敌人格挡时"。'
-                : null;
               return (
               <>
                 <h3 className="modal-title">{selectedItem.name}</h3>
@@ -2920,18 +3669,17 @@ export default function NewGameInterface() {
                 <p className="modal-desc">{selectedItem.desc}</p>
                 
                 <div className="modal-stats">
-                  <div className="stat-line"><span>身份</span><span>{archetypeLabel(selectedItem.archetype)}</span></div>
-                  <div className="stat-line"><span>难度</span><span className={`tier tier-${info.tier}`}>{info.tier}</span></div>
-                  <div className="stat-line"><span>预测</span><span>{info.line}</span></div>
-                  <div className="stat-line"><span>你每刀</span><span>{info.preview.normalHit}（重劈 {info.preview.heavyHit}）</span></div>
-                  <div className="stat-line"><span>它每击</span><span>{info.preview.enemyHit}</span></div>
+                  <div className="stat-line"><span>身份</span><span>Lv.{selectedItem.level} · {archetypeLabel(selectedItem.archetype)}</span></div>
                   <div className="stat-line"><span>生命</span><span>{selectedItem.hp}</span></div>
                   <div className="stat-line"><span>攻击</span><span>{selectedItem.atk}</span></div>
                   <div className="stat-line"><span>防御</span><span>{selectedItem.def}</span></div>
                   <div className="stat-line"><span>经验奖励</span><span>{selectedItem.xp} XP</span></div>
                   <div className="stat-line"><span>金币奖励</span><span>{selectedItem.gold} 金币</span></div>
-                  {mechanicLabels(selectedItem.mechanics).map((label: string) => (
-                    <div className="stat-line" key={label}><span>机制</span><span>{label}</span></div>
+                  {mechanicEntries(selectedItem.mechanics, selectedItem.mechanicDefs).map(({ id, label, desc }) => (
+                    <div className="stat-line stat-mechanic" key={id}>
+                      <span>机制</span>
+                      <span>{label}{desc && <small className="mechanic-desc">{desc}</small>}</span>
+                    </div>
                   ))}
                   {(() => {
                     const rare = rareItemOf(selectedItem)
@@ -2958,25 +3706,29 @@ export default function NewGameInterface() {
                     <div className="stat-line"><span>战绩</span><span>已击败 {info.kills} 次</span></div>
                   )}
                 </div>
-                {(bossHint || heavyHint) && (
-                  <div className={`fight-hint ${risky ? 'fight-hint-danger' : 'fight-hint-info'}`}>
-                    {bossHint && <p>{bossHint}</p>}
-                    {heavyHint && <p>{heavyHint}</p>}
-                  </div>
-                )}
-                
-                <button 
-                  className={`btn-action${risky ? ' btn-risky' : ''}`}
-                  onClick={() => {
-                    if (risky && !riskyConfirm) { setRiskyConfirm(true); return; }
-                    startBattle(selectedItem);
-                  }}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? '准备中...'
-                    : risky ? (riskyConfirm ? '知道了，仍要挑战' : '预计会输 — 再点一次确认')
-                    : selectedItem.isBoss ? '挑战BOSS' : '开始战斗'}
-                </button>
+                <div className="modal-actions">
+                  {selectedItem.isBoss ? (
+                    <button
+                      className="btn-action"
+                      onClick={() => {
+                        setPartyTargetStageId(selectedMap);
+                        setSelectedItem(null);
+                        setModalType(null);
+                        setActiveTab('party');
+                      }}
+                    >
+                      👥 前往组队挑战首领（前9波群怪 · 第10波BOSS）
+                    </button>
+                  ) : (
+                    <button 
+                      className="btn-action"
+                      onClick={() => startBattle(selectedItem)}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? '准备中...' : '开始战斗'}
+                    </button>
+                  )}
+                </div>
               </>
               );
             })()}
@@ -2993,23 +3745,36 @@ export default function NewGameInterface() {
                   <p className="craft-need-line">本步目标：{goalMaterialHint()}</p>
                 )}
                 <div className="modal-stats">
-                  <div className="stat-line"><span>需求</span><span>lv{selectedItem.level}{getCurrentProfession().name}</span></div>
-                  <div className="stat-line"><span>产出</span><span>{selectedItem.xp} <span className="tag">XP</span></span></div>
-                  <div className="stat-line"><span></span><span>{selectedItem.outputRange} <span className="tag">{selectedItem.outputItemId ? getItemNameById(selectedItem.outputItemId) : getItemNameById(selectedItem.output)}</span></span></div>
+                  <div className="stat-line"><span>等级需求</span><span>Lv.{selectedItem.level} {getCurrentProfession().gatherName}</span></div>
+                  <div className="stat-line"><span>经验奖励</span><span>{selectedItem.xp} <span className="tag">XP</span></span></div>
+                  <div className="stat-line"><span>采集产出</span><span>{selectedItem.outputRange} <span className="tag">{selectedItem.outputItemId ? getItemNameById(selectedItem.outputItemId) : getItemNameById(selectedItem.output)}</span></span></div>
                   {(() => {
                     // 只展示内容包里真实存在的概率产出；本地表里的装饰性 rare 字段不再显示
                     const packAction = contentPack?.actions?.find((a: any) => a.id === selectedItem.actionId);
                     const rareYield = packAction?.yields?.find((y: any) => typeof y.chance === 'number' && y.chance > 0 && y.chance < 1);
                     if (!rareYield) return null;
                     return (
-                      <div className="stat-line"><span>稀有</span><span>{rareYield.qty || 1} <span className="tag">{getItemNameById(rareYield.itemId)}</span> {(rareYield.chance * 100).toFixed(rareYield.chance * 100 < 1 ? 1 : 0)}%</span></div>
+                      <div className="stat-line"><span>稀有掉落</span><span>{rareYield.qty || 1} <span className="tag">{getItemNameById(rareYield.itemId)}</span> {(rareYield.chance * 100).toFixed(rareYield.chance * 100 < 1 ? 1 : 0)}%</span></div>
                     );
                   })()}
-                  <div className="stat-line"><span>时间</span><span>{selectedItem.time} 秒</span></div>
+                  <div className="stat-line"><span>单次耗时</span><span>{actionPreview ? (actionPreview.effectiveDurationMs / 1000).toFixed(2) : selectedItem.time} 秒</span></div>
                 </div>
+                {playerState.mode === 'life_action' && playerState.lifeActionState?.actionId === selectedItem.actionId && (
+                  <div className="modal-live-progress" aria-label="当前生产进度">
+                    <div className="modal-live-progress-head">
+                      <span>当前采集进度</span>
+                      <strong>{Math.floor(progress)}%</strong>
+                    </div>
+                    <div className="skill-xp-bar">
+                      <div className="skill-xp-fill" style={{ width: `${Math.max(0, Math.min(100, progress))}%`, transition: 'none' }} />
+                    </div>
+                  </div>
+                )}
                 <ActionRatesPanel preview={actionPreview} loading={actionPreviewLoading} />
                 {(() => {
-                  const currentSkillLevel = playerState.skills[`skill_${currentProfession}`].level || 1;
+                  const packAction = contentPack?.actions?.find((a: any) => a.id === selectedItem.actionId);
+                  const reqSkillId = packAction?.skillId || `skill_${currentProfession}`;
+                  const currentSkillLevel = playerState.skills?.[reqSkillId]?.level || 1;
                   const hasLevel = currentSkillLevel >= selectedItem.level;
                   const queueFull = (playerState.activityQueue?.length || 0) >= ACTION_QUEUE_MAX;
                   const presets: Array<number | null> = [null, 10, 50, 100];
@@ -3089,70 +3854,39 @@ export default function NewGameInterface() {
                 
                 <div className="modal-image">
                   <div className="placeholder-img craft-placeholder large">
-                    <T1Art kind="craft" id={selectedItem.id} fallback="" alt="" />
+                    <T1Art kind="craft" id={selectedItem.output || selectedItem.id} fallback="" alt="" />
                   </div>
                 </div>
-                <p className="modal-desc">{selectedItem.desc}</p>
-                <p className="craft-why-line">{craftWhy({ id: selectedItem.output, atk: selectedItem.atk, def: selectedItem.def, hp: selectedItem.hp }, combatSheet, { equippedMainAtk: weaponAtk, outputEquipped: Object.values(playerState.equipment || {}).includes(selectedItem.output) })}</p>
+                {selectedItem.desc ? <p className="modal-desc">{selectedItem.desc}</p> : null}
+                {(() => {
+                  const whyText = craftWhy({ id: selectedItem.output, atk: selectedItem.atk, def: selectedItem.def, hp: selectedItem.hp }, combatSheet, { equippedMainAtk: weaponAtk, outputEquipped: Object.values(playerState.equipment || {}).includes(selectedItem.output) });
+                  return whyText && whyText !== selectedItem.desc ? <p className="craft-why-line">{whyText}</p> : null;
+                })()}
                 <p className="craft-need-line">{missingMaterials(selectedItem.requires || [], playerState.inventory, getItemNameById)}</p>
+                {playerState.mode === 'life_action' && playerState.lifeActionState?.actionId === selectedItem.id && (
+                  <div className="modal-live-progress" aria-label="当前制作进度">
+                    <div className="modal-live-progress-head">
+                      <span>当前制作进度</span>
+                      <strong>{Math.floor(progress)}%</strong>
+                    </div>
+                    <div className="skill-xp-bar">
+                      <div className="skill-xp-fill" style={{ width: `${Math.max(0, Math.min(100, progress))}%`, transition: 'none' }} />
+                    </div>
+                  </div>
+                )}
                 <ActionRatesPanel preview={actionPreview} loading={actionPreviewLoading} />
-                
-                {/* 批量制作数量选择 */}
-                <div className="craft-quantity-section">
-                  <div className="quantity-header">
-                    <span className="quantity-label">制作数量:</span>
-                    <span className="quantity-max">
-                      按现有材料最多 {getMaxCraftableQuantity(selectedItem)} 个
-                    </span>
-                  </div>
-                  <div className="quantity-controls">
-                    <button 
-                      className="btn-quantity"
-                      onClick={() => setCraftQuantity(Math.max(1, craftQuantity - 1))}
-                      disabled={craftQuantity <= 1}
-                    >
-                      -
-                    </button>
-                    <input 
-                      type="number"
-                      className="quantity-input"
-                      value={craftQuantity}
-                      onChange={(e) => {
-                        // 允许超过现有材料：排队时材料可以由前面的动作产出，立即开始时按钮会提示材料不足
-                        const val = parseInt(e.target.value) || 1
-                        setCraftQuantity(Math.max(1, Math.min(5000, val)))
-                      }}
-                      min="1"
-                      max={5000}
-                    />
-                    <button 
-                      className="btn-quantity"
-                      onClick={() => setCraftQuantity(Math.min(5000, craftQuantity + 1))}
-                      disabled={craftQuantity >= 5000}
-                    >
-                      +
-                    </button>
-                    <button 
-                      className="btn-quantity-max"
-                      onClick={() => setCraftQuantity(getMaxCraftableQuantity(selectedItem))}
-                      disabled={craftQuantity >= getMaxCraftableQuantity(selectedItem)}
-                    >
-                      最大
-                    </button>
-                  </div>
-                </div>
                 
                 <div className="modal-stats">
                   <div className="stat-line">
                     <span>技能需求</span>
-                    <span className={`skill-requirement ${(playerState.skills[`skill_${currentProfession}`].level || 1) >= selectedItem.level ? 'satisfied' : 'missing'}`}>
-                      Lv.{selectedItem.level} {getCurrentProfession().name} 
-                      {(playerState.skills[`skill_${currentProfession}`].level || 1) >= selectedItem.level ? ' ✓' : ' ✗'}
+                    <span className={`skill-requirement ${(playerState.skills[getCurrentProfession().craftSkill]?.level || 1) >= selectedItem.level ? 'satisfied' : 'missing'}`}>
+                      Lv.{selectedItem.level} {getCurrentProfession().craftName}
+                      {(playerState.skills[getCurrentProfession().craftSkill]?.level || 1) >= selectedItem.level ? ' ✓' : ' ✗'}
                     </span>
                   </div>
                   
                   <div className="materials-section">
-                    <div className="section-title">材料需求(×{craftQuantity}):</div>
+                    <div className="section-title">材料需求 (×{craftQuantity})</div>
                     {selectedItem.requires.map((req: any, i: number) => {
                       const requiredItemId = getRequiredItemId(req.item);
                       const available = playerState.inventory[requiredItemId] || 0;
@@ -3175,12 +3909,12 @@ export default function NewGameInterface() {
                   </div>
                   
                   <div className="rewards-section">
-                    <div className="section-title">制作奖励 (×{craftQuantity}):</div>
-                    <div className="stat-line"><span>经验</span><span>{selectedItem.xp * craftQuantity} <span className="tag">XP</span></span></div>
-                    <div className="stat-line"><span>产出</span><span>{craftQuantity} <span className="tag">{getItemNameById(selectedItem.output)}</span></span></div>
+                    <div className="section-title">制作奖励 (×{craftQuantity})</div>
+                    <div className="stat-line"><span>经验奖励</span><span>{selectedItem.xp * craftQuantity} <span className="tag">XP</span></span></div>
+                    <div className="stat-line"><span>制作产出</span><span>{craftQuantity * (selectedItem.outputCount || 1)} <span className="tag">{getItemNameById(selectedItem.output)}</span></span></div>
                     {selectedItem.stats && (
                       <div className="stat-line">
-                        <span>属性</span>
+                        <span>装备属性</span>
                         <span>
                           {selectedItem.stats.atk && `攻击+${selectedItem.stats.atk} `}
                           {selectedItem.stats.mag && `魔力+${selectedItem.stats.mag} `}
@@ -3193,59 +3927,105 @@ export default function NewGameInterface() {
                     {selectedItem.rare && (
                       <div className="stat-line"><span>稀有奖励</span><span>随机 <span className="tag">{getItemNameById(selectedItem.rare)}</span></span></div>
                     )}
-                    <div className="stat-line"><span>总耗时</span><span>{selectedItem.time * craftQuantity} 秒</span></div>
+                    <div className="stat-line"><span>预计耗时</span><span>{actionPreview ? Math.round((actionPreview.effectiveDurationMs / 1000) * craftQuantity * 10) / 10 : Math.round(selectedItem.time * craftQuantity * 10) / 10} 秒</span></div>
                   </div>
                 </div>
                 
                 {(() => {
-                  const hasLevel = (playerState.skills[`skill_${currentProfession}`].level || 1) >= selectedItem.level;
+                  const hasLevel = (playerState.skills?.[getCurrentProfession().craftSkill]?.level || 1) >= selectedItem.level;
                   const hasMaterials = selectedItem.requires.every((req: any) => {
                     const requiredItemId = getRequiredItemId(req.item);
                     return (playerState.inventory[requiredItemId] || 0) >= (req.count * craftQuantity);
                   });
                   const canCraft = hasLevel && hasMaterials && craftQuantity > 0;
+                  const maxCraftable = getMaxCraftableQuantity(selectedItem);
                   
                   return (
                     <div className="craft-actions">
-                      <button 
-                        className={`btn-action ${canCraft ? 'craftable' : 'disabled'}`}
-                        onClick={() => {
-                          if (canCraft) {
-                            // selectedItem.id 已是完整配方 ID（如 act_craft_lumber_t1），不要再加前缀
-                            startAction(selectedItem.id, {
-                              name: selectedItem.name || `制作 ×${craftQuantity}`,
-                              output: selectedItem.output,
-                              // 进度环按单件周期走；批量剩余件数由服务端 lifeActionState.remaining 提供
-                              duration: selectedItem.time,
-                              mark: '制',
-                            }, craftQuantity);
-                            setCraftQuantity(1); // 重置数量
-                          }
-                        }}
-                        disabled={actionLoading || !canCraft}
-                      >
-                        {actionLoading ? '制作中...' : 
-                         !hasLevel ? `需要等级${selectedItem.level}` :
-                         !hasMaterials ? '材料不足' : 
-                         `开始制作 ×${craftQuantity}`}
-                      </button>
-                      {(() => {
-                        const queueFull = (playerState.activityQueue?.length || 0) >= ACTION_QUEUE_MAX;
-                        return (
-                          <button
-                            className="btn-secondary btn-queue"
-                            disabled={actionLoading || !hasLevel || queueFull || craftQuantity < 1}
-                            title={queueFull ? `队列最多 ${ACTION_QUEUE_MAX} 项` : '当前动作结束后自动开始；材料可以由前面的动作产出'}
-                            onClick={() => queueAction(selectedItem.id, craftQuantity)}
+                      <div className="craft-quantity-section">
+                        <div className="quantity-header">
+                          <span className="quantity-label">制作数量</span>
+                          <span className="quantity-max">
+                            按现有材料最多 {maxCraftable} 个
+                          </span>
+                        </div>
+                        <div className="quantity-controls">
+                          <button 
+                            className="btn-quantity"
+                            onClick={() => setCraftQuantity(Math.max(1, craftQuantity - 1))}
+                            disabled={craftQuantity <= 1}
                           >
-                            {queueFull ? '队列已满' : `加入队列 ×${craftQuantity}`}
+                            -
                           </button>
-                        );
-                      })()}
+                          <input 
+                            type="number"
+                            className="quantity-input"
+                            value={craftQuantity}
+                            onChange={(e) => {
+                              // 允许超过现有材料：排队时材料可以由前面的动作产出，立即开始时按钮会提示材料不足
+                              const val = parseInt(e.target.value) || 1
+                              setCraftQuantity(Math.max(1, Math.min(5000, val)))
+                            }}
+                            min="1"
+                            max={5000}
+                          />
+                          <button 
+                            className="btn-quantity"
+                            onClick={() => setCraftQuantity(Math.min(5000, craftQuantity + 1))}
+                            disabled={craftQuantity >= 5000}
+                          >
+                            +
+                          </button>
+                          <button 
+                            className="btn-quantity-max"
+                            onClick={() => setCraftQuantity(Math.max(1, maxCraftable))}
+                            disabled={maxCraftable <= 1 || craftQuantity >= maxCraftable}
+                          >
+                            最大
+                          </button>
+                        </div>
+                      </div>
+                      <div className="gather-buttons craft-buttons">
+                        <button 
+                          className={`btn-action ${canCraft ? 'craftable' : 'disabled'}`}
+                          onClick={() => {
+                            if (canCraft) {
+                              // selectedItem.id 已是完整配方 ID（如 act_craft_lumber_t1），不要再加前缀
+                              startAction(selectedItem.id, {
+                                name: selectedItem.name || `制作 ×${craftQuantity}`,
+                                output: selectedItem.output,
+                                // 进度环按单件周期走；批量剩余件数由服务端 lifeActionState.remaining 提供
+                                duration: selectedItem.time,
+                                mark: '制',
+                              }, craftQuantity);
+                              setCraftQuantity(1); // 重置数量
+                            }
+                          }}
+                          disabled={actionLoading || !canCraft}
+                        >
+                          {actionLoading ? '制作中...' : 
+                           !hasLevel ? `需要等级${selectedItem.level}` :
+                           !hasMaterials ? '材料不足' : 
+                           `开始制作 ×${craftQuantity}`}
+                        </button>
+                        {(() => {
+                          const queueFull = (playerState.activityQueue?.length || 0) >= ACTION_QUEUE_MAX;
+                          return (
+                            <button
+                              className="btn-secondary btn-queue"
+                              disabled={actionLoading || !hasLevel || queueFull || craftQuantity < 1}
+                              title={queueFull ? `队列最多 ${ACTION_QUEUE_MAX} 项` : '当前动作结束后自动开始；材料可以由前面的动作产出'}
+                              onClick={() => queueAction(selectedItem.id, craftQuantity)}
+                            >
+                              {queueFull ? '队列已满' : `加入队列 ×${craftQuantity}`}
+                            </button>
+                          );
+                        })()}
+                      </div>
                       
                       {!canCraft && (
                         <div className="craft-hint">
-                          {!hasLevel && <p>🎯 提升{getCurrentProfession().name}等级到{selectedItem.level} 级</p>}
+                          {!hasLevel && <p>🎯 提升{getCurrentProfession().craftName}等级到{selectedItem.level} 级</p>}
                           {hasLevel && !hasMaterials && <p>📦 材料不够时可以先加入队列，等前面的采集/制作把材料做出来</p>}
                         </div>
                       )}
@@ -3259,7 +4039,15 @@ export default function NewGameInterface() {
               // 以内容包为准：背包条目里没有 atk/def/value，之前显示的"攻击力 +0"是从背包条目读的
               const packItem: any = contentPack?.items?.find((i: any) => i.id === selectedItem.id) || {};
               const type: string = packItem.type || selectedItem.type;
-              const typeLabel = type === 'material' ? '材料' : type === 'weapon' ? '武器' : type === 'armor' ? '防具' : type === 'consumable' ? '消耗品' : type === 'book' ? '技能书' : '其他';
+              const typeLabel =
+                type === 'material' ? '材料'
+                : type === 'weapon' ? '武器'
+                : type === 'armor' ? '防具'
+                : type === 'offhand' || type === 'shield' ? '副手'
+                : type === 'accessory' ? '饰品'
+                : type === 'consumable' ? '消耗品'
+                : type === 'book' ? '技能书'
+                : '其他';
               const bookAbility: AbilityDef | undefined = type === 'book' ? abilityCatalog?.find((a) => a.id === packItem.abilityId) : undefined;
               const bookKnown = bookAbility ? playerState.abilities?.[bookAbility.id] : undefined;
               const learnFromDetail = async () => {
@@ -3275,18 +4063,46 @@ export default function NewGameInterface() {
                   toast.error(e?.message || '阅读失败');
                 }
               };
-              const eqKey: 'main_hand' | 'chest' | 'head' | 'legs' | 'feet' | 'off_hand' | undefined =
+              const eq = (playerState.equipment || {}) as Record<string, any>;
+              const eqKey: 'main_hand' | 'chest' | 'head' | 'legs' | 'feet' | 'hands' | 'off_hand' | 'accessory1' | 'accessory2' | undefined =
                 type === 'weapon' ? 'main_hand'
+                : type === 'offhand' || type === 'shield' || packItem.slot === 'off_hand' ? 'off_hand'
+                : type === 'accessory'
+                  ? (eq.accessory1 === selectedItem.id
+                      ? 'accessory1'
+                      : eq.accessory2 === selectedItem.id
+                        ? 'accessory2'
+                        : !eq.accessory1
+                          ? 'accessory1'
+                          : !eq.accessory2
+                            ? 'accessory2'
+                            : 'accessory1')
                 : type === 'armor' ? ((packItem.slot as any) || 'chest')
                 : undefined;
-              const equippedHere = !!eqKey && (playerState.equipment as any)?.[eqKey] === selectedItem.id;
+              const equippedHere = !!eqKey && eq[eqKey] === selectedItem.id;
+              const curEqId = eqKey ? (eq[eqKey] as string | undefined) : undefined;
+              const curEqDef: any = curEqId ? contentPack?.items?.find((i: any) => i.id === curEqId) : undefined;
+              const itemEnh = Number(playerState.equipment?.enhancementLevels?.[selectedItem.id] || 0);
+              const curEnh = curEqId ? Number(playerState.equipment?.enhancementLevels?.[curEqId] || 0) : 0;
+              const itemMult = enhancementStatMultiplier(itemEnh, packItem);
+              const curMult = enhancementStatMultiplier(curEnh, curEqDef);
+              const eff = (v: number | undefined, m: number) => Math.round((v || 0) * m * 10) / 10;
+              const atkDiff = eqKey && !equippedHere ? Math.round((eff(packItem.atk, itemMult) - eff(curEqDef?.atk, curMult)) * 10) / 10 : 0;
+              const magDiff = eqKey && !equippedHere ? Math.round((eff(packItem.mag, itemMult) - eff(curEqDef?.mag, curMult)) * 10) / 10 : 0;
+              const defDiff = eqKey && !equippedHere ? Math.round((eff(packItem.def, itemMult) - eff(curEqDef?.def, curMult)) * 10) / 10 : 0;
+              const hpDiff = eqKey && !equippedHere ? Math.round((eff(packItem.hp, itemMult) - eff(curEqDef?.hp, curMult)) * 10) / 10 : 0;
               const effect = packItem.effect || {};
               const effectParts: string[] = [];
               if (effect.hp) effectParts.push(`恢复 ${effect.hp} 生命`);
+              if (effect.mp) effectParts.push(`恢复 ${effect.mp} 魔力`);
               if (effect.buff?.name) effectParts.push(`增益「${effect.buff.name}」${effect.buff.durationSec ? ` ${Math.round(effect.buff.durationSec / 60)} 分钟` : ''}`);
               const close = () => { setSelectedItem(null); setModalType(null); };
               const equipFromDetail = async () => {
                 if (!eqKey) return;
+                if (isCombatLockoutActive()) {
+                  toast.info('当前正在战斗中，无法更换或卸下战斗装备（请先停止战斗）');
+                  return;
+                }
                 try {
                   apiClient.clearCache();
                   if (equippedHere) {
@@ -3305,6 +4121,7 @@ export default function NewGameInterface() {
               };
               const useFromDetail = async () => {
                 try {
+                  apiClient.clearCache();
                   const res: any = await apiClient.consumeItem(selectedItem.id);
                   toast.success(res?.buff ? `使用 ${selectedItem.name}，获得增益「${res.buff.name}」` : `使用了 ${selectedItem.name}`);
                   await refreshPlayerState();
@@ -3315,7 +4132,10 @@ export default function NewGameInterface() {
               };
               return (
               <>
-                <h3 className="modal-title">{selectedItem.name}</h3>
+                <h3 className="modal-title">
+                  {selectedItem.name}
+                  {itemEnh > 0 ? <span className="modal-enh-badge"> +{itemEnh}</span> : null}
+                </h3>
                 <div className="modal-image">
                   <div className="item-icon-large">
                     <T1ItemIcon itemId={selectedItem.id} fallback={getItemIcon(selectedItem.id)} alt="" />
@@ -3327,13 +4147,56 @@ export default function NewGameInterface() {
                   <div className="stat-line"><span>品质</span><span>{getTierName(packItem.tier ?? selectedItem.tier)}</span></div>
                   <div className="stat-line"><span>数量</span><span>{selectedItem.count}</span></div>
                   {typeof packItem.atk === 'number' && (
-                    <div className="stat-line"><span>攻击</span><span>+{packItem.atk}</span></div>
+                    <div className="stat-line">
+                      <span>攻击</span>
+                      <span>
+                        +{eff(packItem.atk, itemMult)}
+                        {atkDiff !== 0 && (
+                          <em className={`equip-delta ${atkDiff > 0 ? 'up' : 'down'}`} style={{ marginLeft: 6 }}>
+                            ({atkDiff > 0 ? `+${atkDiff}` : atkDiff})
+                          </em>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {typeof packItem.mag === 'number' && (
+                    <div className="stat-line">
+                      <span>魔法</span>
+                      <span>
+                        +{eff(packItem.mag, itemMult)}
+                        {magDiff !== 0 && (
+                          <em className={`equip-delta ${magDiff > 0 ? 'up' : 'down'}`} style={{ marginLeft: 6 }}>
+                            ({magDiff > 0 ? `+${magDiff}` : magDiff})
+                          </em>
+                        )}
+                      </span>
+                    </div>
                   )}
                   {typeof packItem.def === 'number' && (
-                    <div className="stat-line"><span>防御</span><span>+{packItem.def}</span></div>
+                    <div className="stat-line">
+                      <span>防御</span>
+                      <span>
+                        +{eff(packItem.def, itemMult)}
+                        {defDiff !== 0 && (
+                          <em className={`equip-delta ${defDiff > 0 ? 'up' : 'down'}`} style={{ marginLeft: 6 }}>
+                            ({defDiff > 0 ? `+${defDiff}` : defDiff})
+                          </em>
+                        )}
+                      </span>
+                    </div>
                   )}
                   {typeof packItem.hp === 'number' && (
-                    <div className="stat-line"><span>生命</span><span>+{packItem.hp}</span></div>
+                    <div className="stat-line">
+                      <span>生命</span>
+                      <span>
+                        +{eff(packItem.hp, itemMult)}
+                        {hpDiff !== 0 && (
+                          <em className={`equip-delta ${hpDiff > 0 ? 'up' : 'down'}`} style={{ marginLeft: 6 }}>
+                            ({hpDiff > 0 ? `+${hpDiff}` : hpDiff})
+                          </em>
+                        )}
+                      </span>
+                    </div>
                   )}
                   {effectParts.length > 0 && (
                     <div className="stat-line"><span>效果</span><span>{effectParts.join(' · ')}</span></div>
@@ -3361,7 +4224,7 @@ export default function NewGameInterface() {
                   )}
                   {eqKey && (
                     <button className={`btn-action ${equippedHere ? '' : 'craftable'}`} onClick={equipFromDetail}>
-                      {equippedHere ? '卸下' : type === 'weapon' ? '装备到主手' : '穿上'}
+                      {equippedHere ? '卸下' : type === 'weapon' ? '装备到主手' : type === 'offhand' || type === 'shield' ? '装备到副手' : type === 'accessory' ? '佩戴饰品' : '穿上'}
                     </button>
                   )}
                   {packItem.toolFor && (
@@ -3403,6 +4266,14 @@ export default function NewGameInterface() {
       {showSellModal && (
         <div className="modal-overlay" onClick={() => { setShowSellModal(false); }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              aria-label="关闭"
+              onClick={() => setShowSellModal(false)}
+            >
+              ✕
+            </button>
             <h3 className="modal-title">
               {orderType === 'sell' ? '📤 挂出售单' : '📥 挂收购单'}
               {selectedTradingItem && ` - ${getItemInfo(selectedTradingItem).name}`}
@@ -3435,16 +4306,44 @@ export default function NewGameInterface() {
                   />
                   {orderType === 'sell' && selectedTradingItem && (
                     <button 
+                      type="button"
                       className="btn-max"
                       onClick={() => {
                         const maxQty = playerState.inventory[selectedTradingItem] || 0;
-                        setSellQuantity(maxQty);
+                        setSellQuantity(Math.max(1, maxQty));
                       }}
                     >
                       最大
                     </button>
                   )}
                 </div>
+                {selectedTradingItem && (
+                  <div className="sell-preset-chips">
+                    {[1, 5, 10, 50].map((n) => {
+                      const maxQty = orderType === 'sell' ? (playerState.inventory[selectedTradingItem] || 1) : 999999;
+                      if (n > maxQty && n !== 1) return null;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`qty-chip${sellQuantity === n ? ' active' : ''}`}
+                          onClick={() => setSellQuantity(Math.min(maxQty, n))}
+                        >
+                          ×{n}
+                        </button>
+                      );
+                    })}
+                    {orderType === 'sell' && (playerState.inventory[selectedTradingItem] || 0) >= 4 && (
+                      <button
+                        type="button"
+                        className="qty-chip"
+                        onClick={() => setSellQuantity(Math.max(1, Math.floor((playerState.inventory[selectedTradingItem] || 0) / 2)))}
+                      >
+                        半仓
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               
               <div className="form-group">
@@ -3458,6 +4357,38 @@ export default function NewGameInterface() {
                   value={sellPrice}
                   onChange={(e) => setSellPrice(Math.max(1, parseInt(e.target.value) || 1))}
                 />
+                {selectedTradingItem && (() => {
+                  const asks = tradingOrders.filter((o) => o.type === 'sell').map((o) => o.price);
+                  const bids = tradingOrders.filter((o) => o.type === 'buy').map((o) => o.price);
+                  const shop = Number(contentPack?.items?.find((i: any) => i.id === selectedTradingItem)?.value || 0);
+                  const bestAsk = asks.length ? Math.min(...asks) : 0;
+                  const bestBid = bids.length ? Math.max(...bids) : 0;
+                  return (
+                    <div className="sell-preset-chips">
+                      {shop > 0 && (
+                        <button type="button" className="qty-chip" onClick={() => setSellPrice(Math.max(1, shop))}>
+                          店价 {shop}
+                        </button>
+                      )}
+                      {bestAsk > 0 && (
+                        <button type="button" className="qty-chip" onClick={() => setSellPrice(Math.max(1, bestAsk))}>
+                          最低卖 {bestAsk}
+                        </button>
+                      )}
+                      {bestBid > 0 && (
+                        <button type="button" className="qty-chip" onClick={() => setSellPrice(Math.max(1, bestBid))}>
+                          最高买 {bestBid}
+                        </button>
+                      )}
+                      <button type="button" className="qty-chip" onClick={() => setSellPrice((p) => Math.max(1, Math.floor(p * 0.95)))}>
+                        -5%
+                      </button>
+                      <button type="button" className="qty-chip" onClick={() => setSellPrice((p) => Math.max(1, Math.ceil(p * 1.05)))}>
+                        +5%
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
               
               <div className="sell-summary">
@@ -3473,7 +4404,7 @@ export default function NewGameInterface() {
                     </div>
                     <div className="summary-row total">
                       <span>实际收入</span>
-                      <span className="summary-value gold">{Math.floor(sellQuantity * sellPrice * 0.95)} 💰</span>
+                      <span className="summary-value gold">{sellQuantity * sellPrice - Math.floor(sellQuantity * sellPrice * 0.05)} 💰</span>
                     </div>
                   </>
                 )}
@@ -3556,9 +4487,25 @@ export default function NewGameInterface() {
                   <span>单价</span>
                   <span className="summary-value">{selectedOrder.price} 💰</span>
                 </div>
+                {selectedOrder.type === 'buy' && (
+                  <>
+                    <div className="summary-row">
+                      <span>总价</span>
+                      <span className="summary-value gold">{purchaseQuantity * selectedOrder.price} 💰</span>
+                    </div>
+                    <div className="summary-row">
+                      <span>手续费(5%)</span>
+                      <span className="summary-value">{Math.floor(purchaseQuantity * selectedOrder.price * 0.05)} 💰</span>
+                    </div>
+                  </>
+                )}
                 <div className="summary-row total">
-                  <span>总{selectedOrder.type === 'sell' ? '支付' : '收入'}</span>
-                  <span className="summary-value gold">{purchaseQuantity * selectedOrder.price} 💰</span>
+                  <span>{selectedOrder.type === 'sell' ? '总支付' : '实际收入'}</span>
+                  <span className="summary-value gold">
+                    {selectedOrder.type === 'sell'
+                      ? purchaseQuantity * selectedOrder.price
+                      : purchaseQuantity * selectedOrder.price - Math.floor(purchaseQuantity * selectedOrder.price * 0.05)} 💰
+                  </span>
                 </div>
               </div>
               
@@ -3566,6 +4513,7 @@ export default function NewGameInterface() {
                 <button 
                   className="btn-action"
                   disabled={
+                    orderSubmitting ||
                     !!(
                       (selectedOrder.type === 'sell' && purchaseQuantity * selectedOrder.price > (playerState.inventory.gold || 0)) ||
                       (selectedOrder.type === 'buy' && selectedTradingItem && purchaseQuantity > (playerState.inventory[selectedTradingItem] || 0))
@@ -3573,7 +4521,7 @@ export default function NewGameInterface() {
                   }
                   onClick={handleBuyOrder}
                 >
-                  确认{selectedOrder.type === 'sell' ? '购买' : '出售'}
+                  {orderSubmitting ? '处理中...' : `确认${selectedOrder.type === 'sell' ? '购买' : '出售'}`}
                 </button>
                 <button 
                   className="btn-secondary"
@@ -3595,22 +4543,29 @@ export default function NewGameInterface() {
       {showProfessionModal && (
         <div className="modal-overlay" onClick={() => setShowProfessionModal(false)}>
           <div className="modal-content profession-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-with-favorite">
-              <h3 className="modal-title">选择职业</h3>
-              <button className="prog-close" type="button" onClick={() => setShowProfessionModal(false)} aria-label="关闭">
-                关闭
-              </button>
+            <button
+              className="modal-close-btn"
+              type="button"
+              onClick={() => setShowProfessionModal(false)}
+              aria-label="关闭"
+            >
+              ✕
+            </button>
+            <h3 className="modal-title">选择职业</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              <p className="modal-subtitle" style={{ margin: 0 }}>
+                {chapterDone ? "点当前职业可关闭；点其他职业会跳到对应采集页" : "第一章只做伐木工。矿山的门还没开。"}
+              </p>
             </div>
-            <p className="modal-subtitle">
-              {chapterDone ? "点当前职业可关闭；点其他职业会跳到对应采集页" : "第一章只做伐木工。矿山的门还没开。"}
-            </p>
             
             <div className="profession-grid">
               {Object.values(professions).filter((prof) => chapterDone || prof.id === "woodcutter").map((prof) => {
                 const skill = playerState.skills[prof.skill] || { level: 1, xp: 0 };
+                const craft = playerState.skills[prof.craftSkill] || { level: 1, xp: 0 };
                 const isCurrent = prof.id === currentProfession;
-                const nextLevelXp = getXpForLevel(skill.level);
-                const xpProgress = Number.isFinite(nextLevelXp) && nextLevelXp > 0 ? (skill.xp / nextLevelXp) * 100 : 100;
+                const nextLevelXp = getXpForLevel(Math.max(skill.level, craft.level));
+                const lead = skill.level >= craft.level ? skill : craft;
+                const xpProgress = Number.isFinite(nextLevelXp) && nextLevelXp > 0 ? (lead.xp / nextLevelXp) * 100 : 100;
                 
                 return (
                   <div
@@ -3630,9 +4585,11 @@ export default function NewGameInterface() {
                     }}
                   >
                     {isCurrent && <div className="current-badge">当前</div>}
-                    <div className="profession-icon">{prof.icon}</div>
-                    <div className="profession-name">{prof.name}</div>
-                    <div className="profession-level">Lv.{skill.level}</div>
+                    <div className="profession-icon" style={{ height: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <T1Art kind="character" id={characterArtId(prof.id, playerGender)} fallback={prof.icon} alt={prof.name} />
+                    </div>
+                    <div className="profession-name">{prof.icon} {prof.name}</div>
+                    <div className="profession-level">{prof.gatherName} Lv.{skill.level} · {prof.craftName} Lv.{craft.level}</div>
                     
                     {/* 经验进度条 */}
                     <div className="profession-xp-bar">
@@ -3642,13 +4599,21 @@ export default function NewGameInterface() {
                       ></div>
                     </div>
                     <div className="profession-xp-text">
-                      {Math.round(xpProgress)}%
+                      {lead === skill ? prof.gatherName : prof.craftName}经验 {Math.floor(lead.xp)}/{Number.isFinite(nextLevelXp) ? nextLevelXp : 'MAX'} ({Math.floor(Math.min(100, xpProgress))}%)
                     </div>
                     
-                    {/* 技能提示 */}
+                    {/* 技能提示与职业专长 */}
                     <div className="profession-skills">
                       <span className="skill-tag">{prof.gatherName}</span>
                       <span className="skill-tag">{prof.craftName}</span>
+                    </div>
+                    <div className="profession-perk-box">
+                      <div className="profession-perk-title">
+                        【{getProfessionPerk(prof.id).traitName}】{getProfessionPerk(prof.id).shortTag}
+                      </div>
+                      <div className="profession-perk-sub">
+                        本职5级起：速度+5% · 每5级效率+1%
+                      </div>
                     </div>
                   </div>
                 );
@@ -3665,40 +4630,24 @@ export default function NewGameInterface() {
       {/* 进度系统弹窗 */}
       {progPanel === 'achievements' && (
         <AchievementsPanel
-          onClose={() => setProgPanel(null)}
-          onGoldChange={() => { refreshPlayerState(); }}
+          onClose={() => { setProgPanel(null); void refreshClaimable(); }}
+          onGoldChange={() => { void refreshPlayerState(); void refreshClaimable(); }}
         />
       )}
       {progPanel === 'daily' && (
         <DailyQuestsPanel
-          onClose={() => setProgPanel(null)}
-          onGoldChange={() => { refreshPlayerState(); }}
+          onClose={() => { setProgPanel(null); void refreshClaimable(); }}
+          onGoldChange={() => { void refreshPlayerState(); void refreshClaimable(); }}
         />
-      )}
-      {progPanel === 'stats' && (
-        <StatsPanel onClose={() => setProgPanel(null)} />
       )}
       {progPanel === 'settings' && (
         <SettingsPanel onClose={() => setProgPanel(null)} />
       )}
-      {(playerState?.stats?.totalKills ?? 0) >= 1 && !playerState?.chapter1Build && buildModalDelayDone && (() => {
-        // 用"穿上木甲 + 按时重劈"打森林管家作为参照，把两条路线算成玩家看得懂的结果
-        const boss = selectedEncounters.find((m) => m.id === 'forest_boss');
-        const projected = (build: 'sharpened_edge' | 'thick_bark') =>
-          combatSheetFromPack(
-            { ...playerState, chapter1Build: build, equipment: { ...(playerState.equipment as any), main_hand: 'weapon_wooden_sword', chest: 'armor_wood_chest' } } as any,
-            contentPack?.items,
-            contentPack?.equipmentSets
-          );
-        const edge = boss ? previewFight(projected('sharpened_edge'), boss, equippedAbilities) : null;
-        const bark = boss ? previewFight(projected('thick_bark'), boss, equippedAbilities) : null;
-        const fmt = (p: ReturnType<typeof previewFight> | null) =>
-          p ? (p.won ? `预计剩 ${Math.round(p.playerHpLeftPct * 100)}% 生命，${Math.round(p.durationMs / 1000)} 秒` : '预计战败') : '';
-        return (
+      {(playerState?.stats?.totalKills ?? 0) >= 1 && !playerState?.chapter1Build && buildModalDelayDone && (
         <div className="modal-overlay">
           <div className="modal-content build-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">选择你的第一刀</h3>
-            <p className="modal-desc">这一选择会改变之后的森林战斗。只能选一次。下面的预测按"穿上木甲、按时重劈"打森林管家来算。</p>
+            <p className="modal-desc">这一选择会改变之后的森林战斗，只能选一次。</p>
             <button
               className="btn-action skill-action build-option"
               onClick={async () => {
@@ -3710,7 +4659,7 @@ export default function NewGameInterface() {
               <T1Art kind="skills" id="sharpened_edge" alt="" />
               <span className="build-copy">
                 <strong>开刃 — 攻击 +4</strong>
-                {edge && <small>进攻型：每刀 {edge.normalHit}、重劈 {edge.heavyHit} · {fmt(edge)}</small>}
+                <small>进攻型：显著提升普攻与重劈伤害，加快清怪节奏</small>
               </span>
             </button>
             <button
@@ -3725,38 +4674,16 @@ export default function NewGameInterface() {
               <T1Art kind="skills" id="thick_bark" alt="" />
               <span className="build-copy">
                 <strong>厚树皮 — 生命 +20 · 防御 +4</strong>
-                {bark && <small>稳健型：管家每拳 {bark.enemyHit} · {fmt(bark)}</small>}
+                <small>稳健型：提升生命上限与防御减伤，面对强敌更耐打</small>
               </span>
             </button>
           </div>
         </div>
-        );
-      })()}
-      {progPanel === 'buffs' && (
-        <BuffsPanel
-          onClose={() => setProgPanel(null)}
-          onChange={() => { refreshPlayerState(); }}
-        />
-      )}
-      {progPanel === 'shop' && (
-        <ShopPanel
-          onClose={() => setProgPanel(null)}
-          onChange={() => { refreshPlayerState(); }}
-        />
       )}
       {progPanel === 'checkin' && (
         <CheckInModal
-          onClose={() => setProgPanel(null)}
-          onChange={() => { refreshPlayerState(); }}
-        />
-      )}
-      {progPanel === 'reputation' && (
-        <ReputationPanel onClose={() => setProgPanel(null)} />
-      )}
-      {progPanel === 'bounties' && (
-        <BountiesPanel
-          onClose={() => setProgPanel(null)}
-          onChange={() => { refreshPlayerState(); }}
+          onClose={() => { setProgPanel(null); void refreshClaimable(); }}
+          onChange={() => { void refreshPlayerState(); void refreshClaimable(); }}
         />
       )}
       {progPanel === 'prestige' && (
@@ -3766,23 +4693,53 @@ export default function NewGameInterface() {
         />
       )}
 
-      {/* 离线收益弹窗 */}
-      {offlineSummary && (
-        <OfflineModal
-          report={offlineSummary}
-          nameOf={getItemNameById}
-          iconOf={getItemIcon}
-          skillNameOf={(id) => (id === 'combat' ? '战斗' : getSimpleSkillName(id))}
-          onClose={() => {
-            setOfflineSummary(null)
-            void apiClient.ackOfflineReport().catch(() => undefined)
-            if (offlineSummary.items.length > 0 || offlineSummary.gold > 0) {
-              toast.reward('离线收益已结算')
-            }
+      {/* 首次建角：无 characterCreated 标记的存档一律补一次 */}
+      {playerState && !playerState.settings?.characterCreated && (
+        <CharacterCreate
+          classes={Object.values(professions).map((p) => ({ id: p.id, name: p.name, icon: p.icon, gatherName: p.gatherName, craftName: p.craftName }))}
+          currentName={playerName}
+          currentClassId={playerState.activeClassId || 'woodcutter'}
+          onDone={(res) => {
+            if (res?.name) setCustomPlayerName(res.name);
+            if (res?.gender) setCustomPlayerGender(res.gender);
+            if (res?.avatar) setCustomPlayerAvatar(res.avatar);
+            if (res?.classId) setCurrentProfession(res.classId as any);
+            void refreshPlayerState();
           }}
         />
+      )}
+      {/* 开场三步引导：建角完成后、看过为止 */}
+      {playerState?.settings?.characterCreated && !playerState.settings.tutorialDone && (
+        <TutorialGuide onDone={() => { void refreshPlayerState(); }} />
       )}
     </div>
   )
 }
 
+
+/** Persistent combat HP chip — wounds carry between fights, pool refills over ~60s out of combat. */
+function CombatHpChip({ maxHp, combatHp, combatHpAt, activeClassId }: { maxHp: number; combatHp?: number; combatHpAt?: number; activeClassId?: string }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 250)
+    return () => window.clearInterval(id)
+  }, [])
+  const spanSec = activeClassId === 'farmer' ? 40 : 60
+  const baseHp = combatHp === undefined ? maxHp : Math.min(Math.max(0, combatHp), maxHp)
+  const curExact =
+    baseHp < maxHp && combatHpAt !== undefined
+      ? Math.min(maxHp, baseHp + (Math.max(0, now - combatHpAt) / (spanSec * 1000)) * maxHp)
+      : baseHp
+  const cur = Math.min(maxHp, Math.floor(curExact))
+  if (cur >= maxHp) return null
+  const pct = maxHp > 0 ? Math.max(0, Math.min(100, (curExact / maxHp) * 100)) : 100
+  const secsLeft = Math.max(1, Math.ceil(((maxHp - curExact) / maxHp) * spanSec))
+  return (
+    <div className="page-info combat-hp-chip" title="战斗血量会跨场保留；脱战后约 1 分钟回满">
+      <p>❤️ 生命值 <b>{cur}</b> / {maxHp} ({Math.floor(pct)}%) · 回血中（约 {secsLeft}s 回满）</p>
+      <div className="combat-hp-chip-bar" aria-hidden="true">
+        <div className="combat-hp-chip-fill" style={{ width: `${pct.toFixed(1)}%` }} />
+      </div>
+    </div>
+  )
+}

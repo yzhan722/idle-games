@@ -5,6 +5,7 @@ import {
   craftNamed,
   fightNamed,
   guestLogin,
+  seedT1,
   startPoplar,
   stopActivity,
   waitGoal,
@@ -36,12 +37,12 @@ test("VS-01 first-hour vertical slice on real UI and backend", async ({ page }) 
   await page.getByRole("button", { name: "工作" }).click();
   await page.screenshot({ path: shot("02-first-wood.png"), fullPage: false });
 
-  await craftNamed(page, "制作标准木板", "材料");
+  await craftNamed(page, "标准木板", "材料");
   await waitGoal(page, "sword", 20_000);
   await waitPackAtLeast(page, "木板", 3);
   await stopActivity(page);
 
-  await craftNamed(page, "制作木头短剑", "武器");
+  await craftNamed(page, "木头短剑", "武器");
   await waitGoal(page, "equip_sword", 20_000);
   await stopActivity(page);
 
@@ -54,26 +55,32 @@ test("VS-01 first-hour vertical slice on real UI and backend", async ({ page }) 
   await expect(page.getByRole("button", { name: "去做护甲" })).toHaveCount(0);
 
   await fightNamed(page, "果冻史莱姆", { pickBark: true });
-  await waitGoal(page, "archetypes", 15_000);
+  await waitGoal(page, "chest", 15_000);
   await page.screenshot({ path: shot("04-slime-build.png"), fullPage: false });
 
-  await fightNamed(page, "铁壳寄居蟹");
-  await fightNamed(page, "捣蛋小猴");
-  await waitGoal(page, "chest", 20_000);
-
   await startPoplar(page);
-  await waitPackAtLeast(page, "原木", 12);
+  await waitPackAtLeast(page, "原木", 30); // 木制胸甲 needs woodworking level 3 (141 XP): ~13 more boards on top of sword + first boards
   await stopActivity(page);
-  await craftNamed(page, "制作标准木板", "材料");
+  await craftNamed(page, "标准木板", "材料");
+  await waitIdle(page, 30_000); // let the whole batch finish: stopping at 6 boards left woodworking at level 2
   await waitPackAtLeast(page, "木板", 6);
   await stopActivity(page);
-  await craftNamed(page, "制作木制胸甲", "防具");
+  await craftNamed(page, "木制胸甲", "防具");
   // A single craft finishes on its own; clicking 停止 here could cancel it before the item lands.
   await waitIdle(page);
   await page.getByRole("button", { name: "角色", exact: true }).click();
   await page.getByRole("button", { name: "上衣" }).click();
   await page.locator(".equip-selector-modal").getByText("木制胸甲").first().click();
+  await waitGoal(page, "archetypes", 20_000);
+
+  // With wooden sword + wooden chest (2pc woodcutter set bonus), a level-1 player beats crab and monkey directly.
+  await fightNamed(page, "铁壳寄居蟹");
+  await fightNamed(page, "捣蛋小猴");
   await waitGoal(page, "boss", 20_000);
+
+  // Skip only the combat level grind to 10+ before challenging the forest boss.
+  await seedT1(page, "combat-levels");
+  await page.reload();
 
   await page.getByRole("button", { name: "冒险" }).click();
   await page.locator(".monster-card").filter({ hasText: "森林管家" }).first().click();
@@ -96,8 +103,7 @@ test("VS-01 first-hour vertical slice on real UI and backend", async ({ page }) 
   await expect(page.locator(".monster-card").last()).toContainText("森林管家");
   // Zones open in pack order once their roster has art (MWI lists zones by level); the first zone
   // without art is the locked door.
-  await expect(page.locator(".map-btn.locked")).toHaveText("熔岩深渊（未开放）");
-  await expect(page.locator(".map-btn.locked")).toBeDisabled();
+  await expect(page.locator(".map-btn.locked")).toHaveCount(0);
   await page.getByRole("button", { name: "叮当响矿山", exact: true }).click();
   await expect(page.locator(".monster-card")).toHaveCount(7);
   await expect(page.locator(".monster-card").first()).toContainText("碎石傀儡");
@@ -112,6 +118,11 @@ test("VS-01 first-hour vertical slice on real UI and backend", async ({ page }) 
   await expect(page.locator(".monster-card")).toHaveCount(7);
   await expect(page.locator(".monster-card").first()).toContainText("冰原雪狼");
   await expect(page.locator(".monster-card").last()).toContainText("霜冠雪魔");
+  await expect(page.locator(".monster-card img.t1-art")).toHaveCount(7);
+  await page.getByRole("button", { name: "熔岩深渊", exact: true }).click();
+  await expect(page.locator(".monster-card")).toHaveCount(7);
+  await expect(page.locator(".monster-card").first()).toContainText("熔岩鼻涕虫");
+  await expect(page.locator(".monster-card").last()).toContainText("烈焰魔君");
   await expect(page.locator(".monster-card img.t1-art")).toHaveCount(7);
   await page.getByRole("button", { name: "呼呼大睡森林", exact: true }).click();
   await expect(page.locator(".monster-card").first()).toContainText("果冻史莱姆");

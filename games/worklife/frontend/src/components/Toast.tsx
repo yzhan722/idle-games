@@ -34,6 +34,11 @@ const DEFAULT_ICON: Record<ToastType, string> = {
   reward: '🎁'
 };
 
+let toastNotificationsEnabled = true;
+export function setToastNotificationsEnabled(enabled: boolean) {
+  toastNotificationsEnabled = Boolean(enabled);
+}
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const idRef = useRef(0);
@@ -44,6 +49,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const show = useCallback(
     (message: string, type: ToastType = 'info', icon?: string) => {
+      if (!toastNotificationsEnabled && type !== 'error') {
+        return;
+      }
       const id = ++idRef.current;
       const item: ToastItem = { id, type, message, icon: icon || DEFAULT_ICON[type] };
       setToasts((prev) => [...prev, item]);

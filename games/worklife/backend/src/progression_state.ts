@@ -23,8 +23,8 @@ export function ensureProgression(player: EnhancedPlayerState, now: Date, source
   mark('equip_sword', !!eq.main_hand);
   mark('first_kill', (player.stats?.totalKills || 0) > 0);
   mark('build', !!player.chapter1Build);
-  mark('archetypes', ['slime', 'crab', 'monkey'].every(id => (kills[id] || 0) > 0));
   mark('chest', !!eq.chest);
+  mark('archetypes', ['slime', 'crab', 'monkey'].every(id => (kills[id] || 0) > 0));
   mark('boss', (kills.forest_boss || 0) > 0);
   if (p.completedMilestones.boss && !p.completedChapters.forest) {
     p.completedChapters.forest = { ...p.completedMilestones.boss };

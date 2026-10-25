@@ -24,7 +24,7 @@ export async function housesRoutes(app: FastifyInstance, storage: Storage, conte
   app.post("/houses/upgrade", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ roomId: z.string().min(1), expectedRevision: z.number().int().nonnegative().optional(), operationId: z.string().min(1).max(128).optional() }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ roomId: z.string().min(1), expectedRevision: z.number().int().nonnegative().optional(), operationId: z.string().min(1).max(128).optional() }).strict().parse((req.body ?? {}) as unknown);
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
@@ -35,7 +35,13 @@ export async function housesRoutes(app: FastifyInstance, storage: Storage, conte
           return result;
         },
       });
-      return reply.send({ ...outcome.result, house: houseView(outcome.state, contentPack), stateRevision: outcome.state.stateRevision });
+      return reply.send({
+        ...outcome.result,
+        house: houseView(outcome.state, contentPack),
+        inventory: outcome.state.inventory,
+        gold: outcome.state.inventory.gold || 0,
+        stateRevision: outcome.state.stateRevision,
+      });
     } catch (error) {
       if (error instanceof PlayerCommandRejected) {
         const key = error.code.split(':')[0];

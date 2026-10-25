@@ -29,7 +29,9 @@ async function fixture(patch?: (state: EnhancedPlayerState) => void) {
       status(code: number) { statusCode = code; return this; },
       send(payload: any) { return { statusCode, payload }; },
     };
-    try { return await handlers.get(`${method} ${path}`)!({ userId: user.id, body, params }, reply); }
+    const handler = handlers.get(`${method} ${path}`);
+    if (!handler) return reply.status(404).send({ error: 'not_found' });
+    try { return await handler({ userId: user.id, body, params }, reply); }
     catch (error) {
       const mapped = mapThrownError(error);
       return reply.status(mapped.status).send(mapped.body);
@@ -49,8 +51,8 @@ async function fixture(patch?: (state: EnhancedPlayerState) => void) {
     queueDel: (id: string) => invoke('DELETE', '/actions/queue/:id', undefined, { id }),
     queueClear: (body: Record<string, unknown> = {}) => invoke('POST', '/actions/queue/clear', body),
     queueMove: (body: Record<string, unknown>) => invoke('POST', '/actions/queue/move', body),
-    combatStart: (body: Record<string, unknown> = { stageId: 'forest' }) => invoke('POST', '/combat/start', body),
     setClass: (body: Record<string, unknown> = { classId: 'farmer' }) => invoke('POST', '/player/class', body),
+    getState: () => invoke('GET', '/player/state'),
     ack: (body: Record<string, unknown> = {}) => invoke('POST', '/player/offline-report/ack', body),
   };
 }
@@ -142,6 +144,22 @@ test('queue move and clear settle first and keep queue order consistent', async 
   } finally { await f.storage.close(); }
 });
 
+test('queueing during an hp fight waits instead of starting a parallel life action', async () => {
+  const f = await fixture(s => {
+    s.mode = 'idle';
+    // outcome 已定但玩家尚未离场的战斗：排队只许入队，不许开工
+    s.hpCombat = { monsterId: 'slime', playerHp: 0, playerMaxHp: 10, enemyHp: 5, enemyMaxHp: 10, outcome: 'loss', log: [] } as any;
+  });
+  try {
+    const queued = await f.queue({ actionId: 'act_mine_ore_t1' });
+    assert.equal(queued.statusCode, 200);
+    let state = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
+    assert.equal(state.activityQueue.length, 1);
+    assert.equal(state.lifeActionState, undefined);
+    assert.ok(state.hpCombat, 'fight must still be running');
+  } finally { await f.storage.close(); }
+});
+
 test('a stale stop revision returns the current revision without stopping', async () => {
   const f = await fixture();
   try {
@@ -149,8 +167,8 @@ test('a stale stop revision returns the current revision without stopping', asyn
     f.running()(before);
     await f.storage.savePlayerState(f.userId, before);
     const stale = (f.seeded as EnhancedPlayerState).stateRevision ?? 0;
-    // A real commit bumps the revision first.
-    assert.equal((await f.setClass()).statusCode, 200);
+    // A real commit bumps the revision first (queueing is legal while an action runs).
+    assert.equal((await f.queue({ actionId: 'act_mine_ore_t1' })).statusCode, 200);
     const current = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
     assert.equal(current.mode, 'life_action');
     const response = await f.stop({ expectedRevision: stale });
@@ -162,16 +180,9 @@ test('a stale stop revision returns the current revision without stopping', asyn
   } finally { await f.storage.close(); }
 });
 
-test('combat farm start banks pending gains and class switches go through the command', async () => {
+test('class switches go through the command boundary', async () => {
   const f = await fixture();
   try {
-    const before = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
-    f.running('act_chop_wood_t1', 60_000)(before);
-    await f.storage.savePlayerState(f.userId, before);
-    const combat = await f.combatStart();
-    assert.equal(combat.statusCode, 200);
-    assert.equal(combat.payload.mode, 'combat_farm');
-    assert.ok((combat.payload.inventory.wood_1 || 0) >= 10);
     const cls = await f.setClass({ classId: 'chef' });
     assert.equal(cls.statusCode, 200);
     const state = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
@@ -179,16 +190,23 @@ test('combat farm start banks pending gains and class switches go through the co
   } finally { await f.storage.close(); }
 });
 
-test('offline-report ack clears the flag inside the command boundary', async () => {
+test('offline-report ack route is gone; a long gap pays no catch-up income', async () => {
   const f = await fixture(s => {
-    s.offlineReport = { from: 'x', to: 'y', durationMs: 1, actions: [], items: {}, stopReasons: [] } as any;
+    s.mode = 'life_action';
+    s.lifeActionState = { actionId: 'act_chop_wood_t1', startedAt: new Date(Date.now() - 8 * 3_600_000).toISOString() };
+    s.lastSimulatedAt = new Date(Date.now() - 8 * 3_600_000).toISOString();
   });
   try {
-    const response = await f.ack();
+    const gone = await f.ack();
+    assert.equal(gone.statusCode, 404);
+    const response = await f.getState();
     assert.equal(response.statusCode, 200);
-    assert.equal(response.payload.ok, true);
-    assert.ok(typeof response.payload.stateRevision === 'number');
-    const state = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
-    assert.equal(state.offlineReport, undefined);
+    assert.equal(response.payload.offlineReport, undefined);
+    // 8 小时前开工的动作：只有最近 ~120s 结算（5s/轮 ≈ 24 轮上限），不允许上千次追赶。
+    const banked = response.payload.inventory.wood_1 || 0;
+    assert.ok(banked > 0 && banked <= 30, `wood banked after 8h gap: ${banked}`);
+    // 时间锚点已平移：继续挂机的动作剩余时间按新窗口起算，不是 8 小时前。
+    const startedAt = Date.parse(response.payload.lifeActionState.startedAt);
+    assert.ok(Date.now() - startedAt <= 130_000, `startedAt age: ${Date.now() - startedAt}ms`);
   } finally { await f.storage.close(); }
 });

@@ -10,18 +10,32 @@ export type InventoryRow = {
   description?: string;
 };
 
-type PackItem = { id: string; type?: string; value?: number; toolFor?: string; abilityId?: string };
+type PackItem = {
+  id: string;
+  type?: string;
+  value?: number;
+  toolFor?: string;
+  toolSpeed?: number;
+  abilityId?: string;
+  atk?: number;
+  mag?: number;
+  def?: number;
+  hp?: number;
+  effect?: { hp?: number; mp?: number; buff?: { name?: string } };
+};
 
 type Props = {
   rows: InventoryRow[];
   gold: number;
   packItems: PackItem[] | undefined;
   equippedIds: Set<string>;
+  enhancementLevels?: Record<string, number>;
   iconOf: (itemId: string) => string;
   onOpen: (row: InventoryRow) => void;
 };
 
 type GroupId = "equipment" | "tools" | "consumables" | "books" | "materials";
+type SortId = "tier" | "count" | "value" | "name";
 
 const GROUPS: Array<{ id: GroupId; title: string; emoji: string }> = [
   { id: "equipment", title: "装备", emoji: "⚔️" },
@@ -35,7 +49,7 @@ export function groupOf(row: InventoryRow, pack: PackItem | undefined): GroupId 
   if (pack?.toolFor) return "tools";
   const t = pack?.type || row.type;
   if (t === "book") return "books";
-  if (t === "weapon" || t === "armor" || t === "offhand" || t === "accessory") return "equipment";
+  if (t === "weapon" || t === "armor" || t === "offhand" || t === "shield" || t === "accessory") return "equipment";
   if (t === "consumable" || t === "food") return "consumables";
   return "materials";
 }
@@ -46,6 +60,22 @@ export function formatGold(n: number): string {
   return String(n);
 }
 
+function quickStatLine(pack: PackItem | undefined, enh = 0): string {
+  if (!pack) return "";
+  const mult = enh > 0 ? 1 + enh * 0.05 : 1;
+  if (pack.toolSpeed) return `速度 +${Math.round(Number(pack.toolSpeed) * mult * 100)}%`;
+  const parts: string[] = [];
+  if (pack.atk) parts.push(`攻+${Math.round(pack.atk * mult)}`);
+  if (pack.mag) parts.push(`魔+${Math.round(pack.mag * mult)}`);
+  if (pack.def) parts.push(`防+${Math.round(pack.def * mult)}`);
+  if (pack.hp) parts.push(`血+${Math.round(pack.hp * mult)}`);
+  if (parts.length) return parts.slice(0, 2).join(" ");
+  if (pack.effect?.hp) return `回血 +${pack.effect.hp}`;
+  if (pack.effect?.mp) return `回蓝 +${pack.effect.mp}`;
+  if (pack.effect?.buff?.name) return pack.effect.buff.name;
+  return "";
+}
+
 /**
  * MWI-style bag: one page, grouped by what the item is for, every tile shows icon / name / count,
  * the header shows gold and the shop value of everything you carry. Actions live in the item modal.
@@ -53,6 +83,7 @@ export function formatGold(n: number): string {
 export function InventoryPage(props: Props) {
   const [search, setSearch] = useState("");
   const [group, setGroup] = useState<GroupId | "all">("all");
+  const [sortBy, setSortBy] = useState<SortId>("tier");
   const packById = useMemo(() => new Map((props.packItems || []).map((p) => [p.id, p])), [props.packItems]);
 
   const rows = useMemo(() => {
@@ -60,8 +91,17 @@ export function InventoryPage(props: Props) {
     return props.rows
       .filter((r) => r.count > 0)
       .filter((r) => !q || r.name.toLowerCase().includes(q) || r.itemId.toLowerCase().includes(q))
-      .sort((a, b) => b.tier - a.tier || a.name.localeCompare(b.name, "zh-CN"));
-  }, [props.rows, search]);
+      .sort((a, b) => {
+        if (sortBy === "count") return b.count - a.count || b.tier - a.tier;
+        if (sortBy === "value") {
+          const va = a.count * Number(packById.get(a.itemId)?.value || 0);
+          const vb = b.count * Number(packById.get(b.itemId)?.value || 0);
+          return vb - va || b.tier - a.tier;
+        }
+        if (sortBy === "name") return a.name.localeCompare(b.name, "zh-CN");
+        return b.tier - a.tier || a.name.localeCompare(b.name, "zh-CN");
+      });
+  }, [props.rows, search, sortBy, packById]);
 
   const grouped = useMemo(() => {
     const out = new Map<GroupId, InventoryRow[]>();
@@ -81,7 +121,7 @@ export function InventoryPage(props: Props) {
     <div className="inventory-page skill-page" data-skill-page="inventory">
       <div className="page-header">
         <h2 className="section-title">背包</h2>
-        <div className="page-info"><p>没有格数上限。点物品查看详情、装备、使用或阅读。</p></div>
+        <div className="page-info"><p>没有格数上限。点物品查看详情、属性对比、装备、使用或阅读。</p></div>
       </div>
       <div className="inventory-page-summary">
         <span className="inv-sum" title="金币"><GoldIcon /> <strong>{formatGold(props.gold)}</strong> 金币</span>
@@ -115,11 +155,28 @@ export function InventoryPage(props: Props) {
             </button>
           ))}
         </div>
+        <div className="inv-sort-chips" aria-label="排序">
+          {([
+            ["tier", "按品阶"],
+            ["count", "按数量"],
+            ["value", "按总价"],
+            ["name", "按名称"],
+          ] as const).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={`qty-chip inv-sort-chip${sortBy === id ? " active" : ""}`}
+              onClick={() => setSortBy(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
       {visibleGroups.length === 0 && (
         <div className="inventory-empty inv-page-empty">
           <div className="empty-icon">📭</div>
-          <p>{search ? "没有匹配的物品" : "背包还是空的。去砍第一棵小白杨。"}</p>
+          <p>{search ? "没有匹配的物品" : kinds > 0 ? "该分类下暂无物品" : "背包还是空的。去砍第一棵小白杨。"}</p>
         </div>
       )}
       {visibleGroups.map((g) => (
@@ -131,6 +188,8 @@ export function InventoryPage(props: Props) {
             {grouped.get(g.id)!.map((r) => {
               const pack = packById.get(r.itemId);
               const equipped = props.equippedIds.has(r.itemId);
+              const enh = Number(props.enhancementLevels?.[r.itemId] || 0);
+              const statHint = quickStatLine(pack, enh);
               return (
                 <button
                   type="button"
@@ -145,7 +204,11 @@ export function InventoryPage(props: Props) {
                     <T1ItemIcon itemId={r.itemId} fallback={props.iconOf(r.itemId)} alt="" />
                   </span>
                   <span className="inv-tile-count">×{r.count}</span>
-                  <span className="inv-tile-name">{r.name}</span>
+                  <span className="inv-tile-name">
+                    {r.name}
+                    {enh > 0 ? <em className="inv-tile-enh"> +{enh}</em> : null}
+                  </span>
+                  {statHint && <span className="inv-tile-stat-hint">{statHint}</span>}
                   <span className="inv-tile-meta">
                     {equipped ? <em className="inv-tile-tag">已装备</em> : null}
                     {pack?.value ? <span className="inv-tile-value">{formatGold(Number(pack.value))} 金</span> : null}

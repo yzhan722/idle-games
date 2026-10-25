@@ -8,14 +8,21 @@
  */
 import type { CombatSheet } from "./combatSheet";
 import type { AbilityDef, AbilitySlot, AbilityTrigger } from "../types/game";
+import {
+  chargedHitDamage,
+  mechanicEventOffset,
+  mechanicEventStage,
+  mechanicOfKind,
+  mechanicParam,
+  shieldIncomingMult,
+  type BossMechanicDef,
+  type MechanicStage,
+} from "./bossMechanics";
 
 export const PLAYER_INTERVAL_MS = 3000;
 export const HEAVY_CHOP_MULT = 2.2;
 export const HEAVY_CHOP_COOLDOWN_MS = 8000;
-const GUARD_RATIO = 0.6;
-const WRATH_RATIO = 0.3;
-const GUARD_INCOMING = 0.45;
-const WRATH_INTERVAL_MULT = 0.6;
+// Guard / wrath numbers come from the pack's `bossMechanics` table (monster.mechanicDefs), not constants.
 // MWI enrage (mirrors hp_combat): +10% monster damage per 3 min (boss 10 min), max 10 stacks
 const ENRAGE_INTERVAL_MS = 3 * 60_000;
 const BOSS_ENRAGE_INTERVAL_MS = 10 * 60_000;
@@ -33,6 +40,8 @@ export type PreviewMonster = {
   incomingDamageMult?: number;
   outgoingDamageMult?: number;
   mechanics?: string[];
+  /** `mechanics` resolved against the pack table (see bossMechanics.ts); attached by `encounterStages`. */
+  mechanicDefs?: BossMechanicDef[];
 };
 
 /** One equipped ability as the simulator sees it (definition + the player's level + trigger). */
@@ -76,8 +85,10 @@ export type FightPreview = {
   casts: Record<string, number>;
 };
 
+/** Mirror of backend first_hour_combat.mitigatedDamage / hitDamage: atk² / (atk + floor(def/2)). */
 function hit(atk: number, outgoing: number, def: number, incoming: number): number {
-  const raw = atk * outgoing - Math.floor(def / 2);
+  const a = atk * outgoing;
+  const raw = a > 0 ? (a * a) / (a + Math.max(0, Math.floor(def / 2))) : 0;
   return Math.max(1, Math.floor(raw * incoming));
 }
 
@@ -135,9 +146,16 @@ export function previewFight(
   maxMs = 10 * 60_000
 ): FightPreview {
   const abilities = resolveAbilities(abilitiesOrMode);
-  const mechanics = m.mechanics || [];
-  const hasGuard = mechanics.includes("guard_60");
-  const hasWrath = mechanics.includes("nature_wrath_30");
+  const guardDef = mechanicOfKind(m.mechanicDefs, "guard");
+  const wrathDef = mechanicOfKind(m.mechanicDefs, "wrath");
+  const guardStart = guardDef ? mechanicParam(guardDef, "startRatio") : 0;
+  const guardEnd = guardDef ? mechanicParam(guardDef, "endRatio") : 0;
+  const guardIncoming = shieldIncomingMult(m.mechanicDefs) ?? 1;
+  const miasmaDef = mechanicOfKind(m.mechanicDefs, "miasma");
+  const timedDefs = (m.mechanicDefs || []).filter((d) => mechanicEventOffset(d, 0) !== undefined);
+  const eventCounts = timedDefs.map(() => 0);
+  let miasmaStacks = 0;
+  const wrathStart = wrathDef ? mechanicParam(wrathDef, "startRatio") : 0;
   const enemyIncoming = Number(m.incomingDamageMult || 1);
   const enemyOutgoing = Number(m.outgoingDamageMult || 1);
   const baseInterval = monsterBaseInterval(m);
@@ -160,20 +178,51 @@ export function previewFight(
   let guardUsed = false;
   let wrathActive = false;
   let braceUntil = 0;
+  let bossHits = 0;
   const readyAt: Record<string, number> = {};
   const casts: Record<string, number> = {};
   let heavyChops = 0;
 
+  const nextMechanicEvent = () => {
+    let next = Infinity;
+    timedDefs.forEach((d, i) => {
+      const off = mechanicEventOffset(d, eventCounts[i]);
+      if (off !== undefined) next = Math.min(next, off);
+    });
+    return next;
+  };
+
+  // Mirror of backend runMechanicEvents: every due event of this stage, in order.
+  const runEvents = (stage: MechanicStage, braceNow: number) => {
+    timedDefs.forEach((d, i) => {
+      for (;;) {
+        const e = eventCounts[i];
+        const off = mechanicEventOffset(d, e);
+        if (off === undefined || off > t || mechanicEventStage(d, e) !== stage) break;
+        eventCounts[i] = e + 1;
+        if (d.kind === "frost") {
+          guardActive = e % 2 === 0;
+        } else if (d.kind === "miasma") {
+          if (miasmaStacks > 0) {
+            playerHp = Math.max(0, playerHp - Math.max(1, Math.floor(sheet.hp * mechanicParam(d, "maxHpPctPerStack") * miasmaStacks)));
+          }
+        } else if (d.kind === "eruption" && e % 2 === 1) {
+          playerHp = Math.max(0, playerHp - Math.max(1, Math.floor(Math.floor(sheet.hp * mechanicParam(d, "maxHpPct")) * braceNow)));
+        }
+      }
+    });
+  };
+
   const phases = () => {
     const ratio = enemyHp / enemyMax;
-    if (hasGuard && !guardUsed && !wrathActive && ratio <= GUARD_RATIO && ratio > WRATH_RATIO) {
+    if (guardDef && !guardUsed && !wrathActive && ratio <= guardStart && ratio > guardEnd) {
       guardActive = true;
       guardUsed = true;
     }
-    if (hasWrath && !wrathActive && ratio <= WRATH_RATIO) {
+    if (wrathDef && !wrathActive && ratio <= wrathStart) {
       wrathActive = true;
       guardActive = false;
-      enemyInterval = Math.max(800, Math.floor(baseInterval * WRATH_INTERVAL_MULT));
+      enemyInterval = Math.max(mechanicParam(wrathDef, "minIntervalMs"), Math.floor(baseInterval * mechanicParam(wrathDef, "intervalMult")));
     }
   };
 
@@ -193,9 +242,10 @@ export function previewFight(
     if (a.def.id === "heavy_chop") heavyChops += 1;
     if (a.def.damageMult) {
       const guardBefore = guardActive;
-      const incoming = guardBefore ? (a.def.breaksGuard ? 1 : GUARD_INCOMING) : enemyIncoming;
+      const incoming = guardBefore ? (a.def.breaksGuard ? 1 : guardIncoming) : enemyIncoming;
       const dmg = Math.max(1, Math.floor(hit(sheet.atk, 1, m.def, incoming) * a.def.damageMult * mult));
-      enemyHp = Math.max(0, enemyHp - dmg);
+      const minHpAfterOpeningCast = atMs <= 0 ? Math.max(1, Math.ceil(enemyMax * 0.25)) : 0;
+      enemyHp = Math.max(minHpAfterOpeningCast, enemyHp - dmg);
       if (a.def.breaksGuard && guardBefore) guardActive = false;
       phases();
       if (a.def.breaksGuard && !guardBefore && guardActive) guardActive = false; // same swing shatters a freshly raised guard
@@ -203,6 +253,7 @@ export function previewFight(
     if (a.def.healPct) {
       const heal = Math.max(1, Math.floor(sheet.hp * a.def.healPct * mult));
       playerHp = Math.min(sheet.hp, playerHp + heal);
+      miasmaStacks = 0; // a heal washes the miasma off
     }
     if (a.def.guardMult && a.def.durationMs) {
       braceUntil = atMs + Math.round(a.def.durationMs * mult);
@@ -224,12 +275,14 @@ export function previewFight(
       const r = readyAt[a.def.id] || 0;
       if (r > t) toA = Math.min(toA, r - t);
     }
-    const step = Math.max(1, Math.min(toP, toE, toA));
+    const step = Math.max(1, Math.min(toP, toE, toA, nextMechanicEvent() - t));
     t += step;
     playerCd += step;
     enemyCd += step;
+    const braceNow = braceUntil > t ? braceMult : 1;
+    runEvents("state", braceNow);
     if (playerCd >= playerInterval) {
-      const dmg = hit(sheet.atk, 1, m.def, guardActive ? GUARD_INCOMING : enemyIncoming);
+      const dmg = hit(sheet.atk, 1, m.def, guardActive ? guardIncoming : enemyIncoming);
       enemyHp = Math.max(0, enemyHp - dmg);
       playerCd = 0;
       playerMp = Math.min(maxMp, playerMp + mpRegen);
@@ -238,10 +291,15 @@ export function previewFight(
     if (enemyHp <= 0) break;
     if (enemyCd >= enemyInterval) {
       const braced = braceUntil > t ? braceMult : 1;
-      const dmg = Math.max(1, Math.floor(hit(m.atk, enemyOutgoing * enrageMult(t), sheet.def, 1) * braced));
+      bossHits += 1;
+      const baseHit = hit(m.atk, enemyOutgoing * enrageMult(t), sheet.def, 1);
+      const charged = chargedHitDamage(m.mechanicDefs, bossHits, sheet.hp);
+      const dmg = Math.max(1, Math.floor((charged === undefined ? baseHit : Math.max(baseHit, charged)) * braced));
       playerHp = Math.max(0, playerHp - dmg);
       enemyCd = 0;
+      if (miasmaDef) miasmaStacks = Math.min(mechanicParam(miasmaDef, "maxStacks"), miasmaStacks + 1);
     }
+    if (playerHp > 0) runEvents("damage", braceNow);
   }
 
   return {

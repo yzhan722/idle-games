@@ -40,9 +40,14 @@ export function enhancementBonusPct(level: number): number {
   return ENHANCEMENT_BONUS_PCT[safe];
 }
 
-/** MWI jewelry receives 5× the normal enhancement bonus; normal gear and tools receive 1×. */
-export function enhancementSlotMultiplier(item: Pick<ItemLike, "type" | "slot"> | undefined): number {
-  return item?.type === "accessory" || item?.slot === "accessory" ? 5 : 1;
+/**
+ * Every slot, jewelry included, receives the normal enhancement bonus (1×). Jewelry used to get 5×,
+ * which made a +20 low-tier ring (×6.0) worth more than a whole tier of gear (×2.0) and turned
+ * the two accessory slots into the strongest stat source in the game. Kept as a function so the
+ * item-shaped callers (storage, UI payload) do not change.
+ */
+export function enhancementSlotMultiplier(_item: Pick<ItemLike, "type" | "slot"> | undefined): number {
+  return 1;
 }
 
 /** Multiplier for an item's base stats, e.g. +10 normal gear = 1.29. */
@@ -155,11 +160,25 @@ export function grantEnhancingXp(
 export function enhancementMaterials(
   rule: RuleLike,
   targetLevel: number,
-  protectionItemId?: string
+  protectionItemId?: string,
+  item?: ItemLike,
+  pack?: EnhancedContentPack
 ): Record<string, number> {
   const out: Record<string, number> = {};
+  const knownIds = pack ? new Set((pack.items as ItemLike[]).map((i) => i.id)) : undefined;
+  const tier = Math.max(1, Number(item?.tier || 1));
   for (const material of rule.materials) {
-    out[material.itemId] = (out[material.itemId] || 0) + material.quantity * targetLevel;
+    // 高阶装备吃同族高阶材料：T5 装备的强化消耗 ingot_5 而不是 ingot_1——
+    // 否则强化系统永远只烧 T1 材料，高阶 lumber/ingot/yarn 全是只能卖店的死物。
+    let itemId = material.itemId;
+    if (item && knownIds && tier > 1) {
+      const m = /^(.+)_\d+$/.exec(itemId);
+      if (m) {
+        const candidate = `${m[1]}_${tier}`;
+        if (knownIds.has(candidate)) itemId = candidate;
+      }
+    }
+    out[itemId] = (out[itemId] || 0) + material.quantity * targetLevel;
   }
   if (protectionItemId) out[protectionItemId] = (out[protectionItemId] || 0) + 1;
   return out;
@@ -172,6 +191,9 @@ export function enhancementMaterials(
 export function equippedEnhanceToolBonus(player: EnhancedPlayerState, pack: EnhancedContentPack): number {
   const toolId = player.equipment?.tool;
   if (!toolId) return 0;
+  // 损坏的工具不提供帮助（耐久语义与幽灵槽一致）
+  const dur = (player.equipment as { durability?: Record<string, number> }).durability?.[toolId];
+  if (typeof dur === "number" && Number.isFinite(dur) && dur <= 0) return 0;
   const tool = (pack.items as Array<ItemLike & { toolFor?: string; enhanceSuccess?: number }>).find((i) => i.id === toolId);
   if (!tool || tool.toolFor !== "skill_enhancing" || !(Number(tool.enhanceSuccess) > 0)) return 0;
   const enh = Number(player.equipment.enhancementLevels?.[toolId] || 0);
@@ -237,7 +259,9 @@ export function performEnhancementAttempt(input: AttemptInput): EnhancementResul
   const materials = enhancementMaterials(
     rule,
     request.targetLevel,
-    request.protectionItemId
+    request.protectionItemId,
+    item,
+    pack
   );
   for (const [itemId, required] of Object.entries(materials)) {
     if ((player.inventory[itemId] || 0) < required) {

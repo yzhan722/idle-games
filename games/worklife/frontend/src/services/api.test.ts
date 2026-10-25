@@ -39,3 +39,55 @@ test('a read may safely retry a transient error', async () => {
   try { assert.deepEqual(await client().get('/content'), {ok:true}); assert.equal(calls,2); }
   finally { globalThis.fetch = original; }
 });
+
+test('a write invalidates an in-flight read so the next read is fresh', async () => {
+  const original = globalThis.fetch;
+  const api = client();
+  const releases: Array<() => void> = [];
+  let getCalls = 0;
+  globalThis.fetch = async (_input: any, init?: any) => {
+    const method = init?.method || 'GET';
+    if (method !== 'GET') return new Response('{"ok":true}');
+    getCalls++;
+    if (getCalls === 1) {
+      await new Promise<void>((r) => releases.push(r));
+      return new Response('{"orders":[]}');
+    }
+    return new Response('{"orders":[1]}');
+  };
+  try {
+    const staleRead = api.get('/trading/orders/sword'); // in-flight when the write commits
+    await api.post('/trading/orders', {});
+    const freshRead = api.get('/trading/orders/sword'); // must not join the stale promise
+    releases[0]?.();
+    assert.deepEqual(await staleRead, { orders: [] });
+    assert.deepEqual(await freshRead, { orders: [1] });
+    assert.equal(getCalls, 2);
+  } finally { globalThis.fetch = original; }
+});
+
+test('a stale in-flight read finishing late does not unregister its fresh successor', async () => {
+  const original = globalThis.fetch;
+  const api = client();
+  const releases: Array<() => void> = [];
+  let getCalls = 0;
+  globalThis.fetch = async (_input: any, init?: any) => {
+    const method = init?.method || 'GET';
+    if (method !== 'GET') return new Response('{"ok":true}');
+    const n = ++getCalls;
+    await new Promise<void>((r) => releases.push(r));
+    return new Response(`{"n":${n}}`);
+  };
+  try {
+    const stale = api.get('/trading/orders/sword'); // read #1, pending
+    await api.post('/trading/orders', {});
+    const fresh = api.get('/trading/orders/sword');  // read #2 registers after the write
+    const joined = api.get('/trading/orders/sword'); // dedupes onto read #2
+    releases[0]?.();                                  // read #1 resolves; its finally must keep #2
+    releases[1]?.();
+    assert.deepEqual(await stale, { n: 1 });
+    assert.deepEqual(await fresh, { n: 2 });
+    assert.deepEqual(await joined, { n: 2 });
+    assert.equal(getCalls, 2, 'read #3 would mean the stale finally removed the fresh entry');
+  } finally { globalThis.fetch = original; }
+});

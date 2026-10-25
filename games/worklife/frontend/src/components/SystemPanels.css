@@ -40,8 +40,8 @@
 }
 .buff-active-card {
   padding: 12px;
-  background: linear-gradient(135deg, rgba(212, 154, 72), 0.12), rgba(212, 154, 72), 0.04));
-  border: 1px solid rgba(212, 154, 72), 0.35);
+  background: linear-gradient(135deg, rgba(212, 154, 72, 0.12), rgba(212, 154, 72, 0.04));
+  border: 1px solid rgba(212, 154, 72, 0.35);
   border-radius: 10px;
 }
 .buff-active-head {
@@ -59,7 +59,7 @@
   font-size: 12px;
   color: var(--brand);
   font-variant-numeric: tabular-nums;
-  background: rgba(212, 154, 72), 0.15);
+  background: rgba(212, 154, 72, 0.15);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -85,8 +85,8 @@
   transition: border-color 0.2s, background 0.2s;
 }
 .usable-card:hover {
-  border-color: rgba(212, 154, 72), 0.4);
-  background: rgba(212, 154, 72), 0.05);
+  border-color: rgba(212, 154, 72, 0.4);
+  background: rgba(212, 154, 72, 0.05);
 }
 .usable-info { flex: 1; min-width: 0; }
 .usable-name {
@@ -133,7 +133,7 @@
   border: 1px solid rgba(120, 150, 180, 0.15);
   border-radius: 10px;
 }
-.shop-row:hover { border-color: rgba(212, 154, 72), 0.4); }
+.shop-row:hover { border-color: rgba(212, 154, 72, 0.4); }
 .shop-row-info { min-width: 0; }
 .shop-row-name { font-weight: 600; color: #d8e6f2; font-size: 14px; }
 .shop-row-desc { font-size: 12px; color: #7b8a9a; margin-top: 2px; }
@@ -204,8 +204,8 @@
 }
 .checkin-cell.today {
   border-color: var(--brand);
-  background: rgba(212, 154, 72), 0.12);
-  box-shadow: 0 0 0 1px rgba(212, 154, 72), 0.4), 0 0 16px rgba(212, 154, 72), 0.2);
+  background: rgba(212, 154, 72, 0.12);
+  box-shadow: 0 0 0 1px rgba(212, 154, 72, 0.4), 0 0 16px rgba(212, 154, 72, 0.2);
 }
 .checkin-cell.claimed {
   opacity: 0.55;
@@ -228,7 +228,7 @@
   margin-top: 4px;
 }
 .checkin-item {
-  font-size: 10px;
+  font-size: 11.5px;
   color: #8fa0b0;
   line-height: 1.3;
 }
@@ -278,8 +278,8 @@
   animation: sys-fade-up 0.28s ease both, sys-today-pulse 2.4s ease-in-out infinite;
 }
 @keyframes sys-today-pulse {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(212, 154, 72), 0.4), 0 0 14px rgba(212, 154, 72), 0.18); }
-  50% { box-shadow: 0 0 0 1px rgba(212, 154, 72), 0.7), 0 0 22px rgba(212, 154, 72), 0.4); }
+  0%, 100% { box-shadow: 0 0 0 1px rgba(212, 154, 72, 0.4), 0 0 14px rgba(212, 154, 72, 0.18); }
+  50% { box-shadow: 0 0 0 1px rgba(212, 154, 72, 0.7), 0 0 22px rgba(212, 154, 72, 0.4); }
 }
 
 @media (max-width: 560px) {

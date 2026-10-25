@@ -138,7 +138,7 @@ describe("action queue", () => {
     assert.deepEqual(state.activityQueue, []);
     const logs = state.logs.map((l) => l.text);
     assert.ok(logs.some((l) => l.includes("队列：开始 砍伐小白杨 ×3")));
-    assert.ok(logs.some((l) => l.includes("队列：开始 制作标准木板")));
+    assert.ok(logs.some((l) => l.includes("队列：开始 标准木板")));
     assert.ok(logs.some((l) => l.includes("材料不足，已停止")));
     await storage.close();
   });

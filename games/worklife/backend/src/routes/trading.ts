@@ -2,82 +2,15 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
+import { ensurePresetMarketOrders } from "../market_presets";
 
 export async function tradingRoutes(
   app: FastifyInstance, 
   storage: Storage, 
   contentPack: EnhancedContentPack
 ) {
-  app.get("/trading/listings", async (req: FastifyRequest, reply: FastifyReply) => {
-    const userId = (req as any).userId as string;
-    if (!userId) {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-    
-    const query = req.query as any;
-
-    try {
-      const listings = await storage.getMarketListings({ 
-        query: query.search,
-        filters: query.filters ? JSON.parse(query.filters) : undefined
-      });
-      return reply.send(listings);
-    } catch (error) {
-      return reply.status(500).send({ error: "获取交易列表失败" });
-    }
-  });
-
-  app.post("/trading/list", async (req: FastifyRequest, reply: FastifyReply) => {
-    const userId = (req as any).userId as string;
-    if (!userId) {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-    
-    const body = z.object({
-      itemId: z.string().min(1).max(100),
-      quantity: z.number().int().min(1).max(999999),
-      pricePerUnit: z.number().int().min(1).max(1000000000),
-      duration: z.number().int().min(1).max(168).optional() // 最多7天
-    }).parse((req.body ?? {}) as unknown);
-
-    try {
-      const listing = await storage.listItemForSale({
-        userId,
-        itemId: body.itemId,
-        quantity: body.quantity,
-        pricePerUnit: body.pricePerUnit,
-        duration: body.duration
-      });
-      
-      return reply.send(listing);
-    } catch (error) {
-      return reply.status(400).send({ error: error instanceof Error ? error.message : "上架物品失败" });
-    }
-  });
-
-  app.post("/trading/purchase", async (req: FastifyRequest, reply: FastifyReply) => {
-    const userId = (req as any).userId as string;
-    if (!userId) {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-    
-    const body = z.object({
-      listingId: z.string().uuid(),
-      quantity: z.number().int().min(1).max(999999)
-    }).parse((req.body ?? {}) as unknown);
-
-    try {
-      const result = await storage.purchaseItem({
-        userId,
-        listingId: body.listingId,
-        quantity: body.quantity
-      });
-      
-      return reply.send(result);
-    } catch (error) {
-      return reply.status(400).send({ error: error instanceof Error ? error.message : "购买物品失败" });
-    }
-  });
+  // 初始化商会补给站预设资源挂单（高于正常店价，保证新玩家开荒顺畅滚雪球）
+  await ensurePresetMarketOrders(storage, contentPack);
 
   // MWI market overview: best ask / bid per item so the grid can show live prices, not only shop value.
   app.get("/trading/summary", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -116,16 +49,21 @@ export async function tradingRoutes(
       itemId: z.string().min(1).max(100),
       quantity: z.number().int().min(1).max(999999),
       price: z.number().int().min(1).max(1000000000),
-      type: z.enum(['sell', 'buy'])
+      type: z.enum(['sell', 'buy']),
+      operationId: z.string().max(128).optional(),
     }).parse(req.body);
-    
+
     try {
-      const result = await storage.createTradingOrder({
-        userId,
-        itemId: body.itemId,
-        quantity: body.quantity,
-        price: body.price,
-        type: body.type
+      const { result } = await storage.deduplicateOperation({
+        userId, operationId: body.operationId, operationPayload: { route: "trading/orders", ...body },
+        run: () => storage.createTradingOrder({
+          userId,
+          itemId: body.itemId,
+          quantity: body.quantity,
+          price: body.price,
+          type: body.type,
+          contentPack
+        }),
       });
       return reply.send(result);
     } catch (error: any) {
@@ -141,15 +79,20 @@ export async function tradingRoutes(
     
     const body = z.object({
       orderId: z.string().uuid(),
-      quantity: z.number().int().min(1).max(999999)
+      quantity: z.number().int().min(1).max(999999),
+      operationId: z.string().max(128).optional(),
     }).parse(req.body);
-    
+
     try {
-      const result = await storage.executeTrade({
-        buyerId: userId,
-        orderId: body.orderId,
-        quantity: body.quantity
+      const { result } = await storage.deduplicateOperation({
+        userId, operationId: body.operationId, operationPayload: { route: "trading/buy", ...body },
+        run: () => storage.executeTrade({
+          buyerId: userId,
+          orderId: body.orderId,
+          quantity: body.quantity
+        }),
       });
+      void ensurePresetMarketOrders(storage, contentPack);
       return reply.send(result);
     } catch (error: any) {
       return reply.status(400).send({ error: error.message || "Failed to execute trade" });
@@ -163,9 +106,13 @@ export async function tradingRoutes(
     }
     
     const { orderId } = req.params;
-    
+    const operationId = (req.query as any)?.operationId as string | undefined;
+
     try {
-      await storage.cancelTradingOrder({ userId, orderId });
+      await storage.deduplicateOperation({
+        userId, operationId, operationPayload: { route: "trading/orders:delete", orderId },
+        run: async () => { await storage.cancelTradingOrder({ userId, orderId }); },
+      });
       return reply.send({ success: true });
     } catch (error: any) {
       return reply.status(400).send({ error: error.message || "Failed to cancel order" });
@@ -193,8 +140,14 @@ export async function tradingRoutes(
     }
     
     const { itemId } = req.params;
-    const query = req.query as any;
-    const days = query.days ? parseInt(query.days) : 7;
+    const q = z.object({ days: z.coerce.number().int().min(1).max(365).optional() })
+      .parse((req.query ?? {}) as unknown);
+    const days = q.days ?? 7;
+
+    // 不存在的物品不编造空历史，直接 404
+    if (!(contentPack.items as Array<{ id: string }>).some((i) => i.id === itemId)) {
+      return reply.status(404).send({ error: "item_not_found" });
+    }
 
     try {
       const history = await storage.getPriceHistory({ itemId, days });
@@ -211,6 +164,9 @@ export async function tradingRoutes(
     }
     
     const { itemId } = req.params;
+    if (!(contentPack.items as Array<{ id: string }>).some((i) => i.id === itemId)) {
+      return reply.status(404).send({ error: "item_not_found" });
+    }
 
     try {
       const trend = await storage.getItemPriceTrend({ itemId });

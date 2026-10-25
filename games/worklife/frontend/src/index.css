@@ -18,7 +18,7 @@
 
   --text-primary: #f3e6d4;
   --text-secondary: #c4b09a;
-  --text-muted: #8a7764;
+  --text-muted: #a8917a; /* ≥4.5:1 on bg-base/bg-surface-2/bg-elevated（WCAG AA） */
   --text-accent: #e2b36a;
 
   --brand: #d49a48;

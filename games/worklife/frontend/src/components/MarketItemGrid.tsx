@@ -59,7 +59,14 @@ export function MarketItemGrid(props: Props) {
   );
   const owned = useMemo(() => {
     const ids = new Set(Object.keys(props.inventory).filter((k) => k !== "gold" && (props.inventory[k] || 0) > 0));
-    return props.groups.flatMap((g) => g.items).filter((i) => ids.has(i.id));
+    const seen = new Set<string>();
+    return props.groups
+      .flatMap((g) => g.items)
+      .filter((i) => {
+        if (!ids.has(i.id) || seen.has(i.id)) return false;
+        seen.add(i.id);
+        return true;
+      });
   }, [props.groups, props.inventory]);
 
   return (

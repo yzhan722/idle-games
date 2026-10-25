@@ -1,11 +1,10 @@
+import { highestActiveBonus } from "./set_bonus";
 import type { 
   ContentPack, 
   PlayerState, 
   UserRecord, 
   EnhancedPlayerState, 
   EnhancedContentPack,
-  MarketListing,
-  TradeHistory,
   Party,
   PartyMember,
   ChatMessage,
@@ -23,20 +22,24 @@ import path from "path";
 import { createPgStorage } from "./storage_pg";
 import { createMemoryStorage } from "./storage_memory";
 import type { PlayerCommand, PlayerCommandResult } from './player_commands';
-// 声望/转生：永久被动加成与全局倍率，接入离线结算 simulateToNow。
+// 声望/转生：永久被动加成与全局倍率，接入 simulateToNow 在线结算。
 // 注：progression2 也会从本模块导入 appendLog/ensurePlayerExtensions，
 // 二者均仅在函数体内（运行时）相互引用，故此循环依赖在求值期是安全的。
 import { getReputationBonuses, getPrestigeMultiplier } from "./progression2";
 import { enhancementStatMultiplier } from "./enhancement_math";
 import { ensureProgression } from './progression_state';
+import { professionMasteryBonuses } from './profession_perks';
+import { isMonsterInOpenZone } from "./zones";
+
+/** 用户名已被占用（注册/绑定时由存储层抛出） */
+export class UsernameTaken extends Error { constructor() { super("username_taken"); } }
 
 // 存储接口类型定义
 export interface Storage {
   init(): Promise<void>;
   close(): Promise<void>;
   healthCheck(): Promise<{ ok: boolean; latencyMs: number }>;
-  cleanupExpiredListings(): Promise<number>;
-  /** Internal fixture key. Not a public recovery credential. */
+   /** Internal fixture key. Not a public recovery credential. */
   findOrCreateGuestUser(deviceId: string): Promise<UserRecord>;
   /** Always a new guest. Client deviceId must not select this row. */
   createGuestUser(): Promise<UserRecord>;
@@ -44,6 +47,16 @@ export interface Storage {
   setGuestResumeTokenHash(userId: string, hash: string): Promise<void>;
   findUserByResumeTokenHash(hash: string): Promise<UserRecord | null>;
   bindGoogle(userId: string, googleSub: string): Promise<void>;
+  /** Google 登录用：按已验证的 sub 查用户；未绑定返回 null。 */
+  findUserByGoogleSub(googleSub: string): Promise<UserRecord | null>;
+  /** 会话版本 +1：使该用户此前签发的所有 JWT 失效（登出/绑定凭据时调用）。 */
+  invalidateSessions(userId: string): Promise<void>;
+  /** 账号密码注册：用户名唯一（大小写不敏感），重名抛 UsernameTaken。 */
+  createPasswordUser(username: string, passwordHash: string): Promise<UserRecord>;
+  /** 登录用：返回含 passwordHash 的记录；未命中返回 null。 */
+  findUserByUsername(username: string): Promise<UserRecord | null>;
+  /** 给现有账号（游客/Google）补绑用户名+密码；重名抛 UsernameTaken。 */
+  bindPassword(userId: string, username: string, passwordHash: string): Promise<void>;
   getOrCreatePlayerState(userId: string, contentVersion: string): Promise<EnhancedPlayerState>;
   simulateToNow(params: { 
     userId: string; 
@@ -53,9 +66,10 @@ export interface Storage {
   }): Promise<EnhancedPlayerState>;
   // 直接持久化玩家状态（成就/每日任务/设置等领奖与更新后调用）
   savePlayerState(userId: string, state: EnhancedPlayerState): Promise<EnhancedPlayerState>;
+  /** 世界频道系统播报(无 WS 连接时为 no-op)。 */
+  announceWorld?(text: string): void;
   executePlayerCommand<T>(command: PlayerCommand<T>): Promise<PlayerCommandResult<T>>;
   startLifeAction(params: { userId: string; actionId: string; quantity?: number; now: Date; contentPack?: EnhancedContentPack }): Promise<EnhancedPlayerState>;
-  startCombatFarm(params: { userId: string; stageId: string; now: Date }): Promise<EnhancedPlayerState>;
   
   // 新增：技能系统方法
   getSkillTree(params: { professionId: string; contentPack: EnhancedContentPack }): Promise<any>;
@@ -114,38 +128,46 @@ export interface Storage {
     type: 'requester' | 'provider';
   }): Promise<EnhancementServiceRequest[]>;
   
-  // 新增：交易行方法
-  listItemForSale(params: {
+  /**
+   * 跨玩家写接口的幂等边界：同一 (userId, operationId) 已提交过的调用直接重放结果。
+   * 与 executePlayerCommand 的差别：多用户操作没有单一 state 可结算/CAS，
+   * 幂等粒度是"业务结果"。无 operationId 时直接执行。
+   */
+  deduplicateOperation<T>(params: {
     userId: string;
-    itemId: string;
-    quantity: number;
-    pricePerUnit: number;
-    duration?: number;
-  }): Promise<MarketListing>;
-  purchaseItem(params: {
-    userId: string;
-    listingId: string;
-    quantity: number;
-  }): Promise<{ success: boolean; message?: string }>;
-  getMarketListings(params: {
-    query?: string;
-    filters?: any;
-  }): Promise<MarketListing[]>;
-  
+    operationId?: string;
+    operationPayload?: unknown;
+    run: () => Promise<T>;
+  }): Promise<{ result: T; deduplicated: boolean }>;
+
   // 新增：组队方法
   createParty(params: { userId: string; name?: string }): Promise<Party>;
   joinParty(params: { userId: string; partyId: string }): Promise<Party>;
+  /** 公开队伍列表（未满员），供队伍发现 */
+  listParties(params: { limit?: number }): Promise<Array<{ id: string; name?: string; leaderId: string; memberCount: number; hasActivity: boolean; createdAt: string }>>;
+  /** 向目标玩家发组队邀请（任意队员可发；写进对方 state.partyInvites + WS 推送） */
+  inviteToParty(params: { userId: string; partyId: string; targetUserId: string }): Promise<{ success: boolean; message?: string }>;
+  acceptPartyInvite(params: { userId: string; partyId: string }): Promise<Party>;
+  declinePartyInvite(params: { userId: string; partyId: string }): Promise<{ success: boolean }>;
+  kickPartyMember(params: { userId: string; partyId: string; memberId: string }): Promise<{ success: boolean; message?: string }>;
+  transferPartyLeadership(params: { userId: string; partyId: string; memberId: string }): Promise<{ success: boolean; message?: string }>;
   startPartyActivity(params: {
     userId: string;
     partyId: string;
-    activityType: 'combat' | 'group_craft';
+    activityType: 'combat' | 'group_craft' | 'raid';
     stageId?: string;
+    durationMinutes?: number;
+    contentPack?: EnhancedContentPack;
   }): Promise<{ success: boolean; message?: string }>;
   completePartyActivity(params: {
     userId: string;
     partyId: string;
     contentPack: EnhancedContentPack;
   }): Promise<{ success: boolean; rewards?: Record<string, Record<string, number>>; message?: string }>;
+  cancelPartyActivity(params: {
+    userId: string;
+    partyId: string;
+  }): Promise<{ success: boolean; message?: string }>;
   leaveParty(params: {
     userId: string;
     partyId: string;
@@ -211,7 +233,10 @@ export interface Storage {
     quantity: number;
     price: number;
     type: 'sell' | 'buy';
+    /** 提供内容包时校验 itemId 真实存在，防止挂单幻影物品 */
+    contentPack?: EnhancedContentPack;
   }): Promise<TradingOrder>;
+  /** 成交一张订单。sell 单：buyerId 是买家；buy 单：buyerId 是卖出方（给收购方交货收金）。 */
   executeTrade(params: {
     buyerId: string;
     orderId: string;
@@ -277,20 +302,30 @@ export async function createStorage(opts: { databaseUrl?: string }): Promise<Sto
     return createMemoryStorage({ persistPath });
   }
 
-  try {
-    const pg = await createPgStorage(opts.databaseUrl);
-    await pg.init();
-    return pg;
-  } catch (err) {
-    // 配置了数据库却连不上，说明环境异常。绝不静默回退内存存储，
-    // 否则会让用户误以为数据已持久化，实则重启即丢失。
-    console.error("[storage] PostgreSQL 连接失败:", err);
-    throw new Error(
-      `PostgreSQL 连接失败，已配置 DATABASE_URL 但无法建立连接，拒绝回退到内存存储。原因: ${
-        err instanceof Error ? err.message : String(err)
-      }`
-    );
+  // 编排部署下数据库先起来不代表可连接：postgres 镜像跑完 init 脚本后会
+  // 重启主服务，中间有一个 ECONNREFUSED 窗口。重试覆盖该窗口，
+  // 但绝不静默回退内存存储（会让用户误以为数据已持久化）。
+  const maxAttempts = Number(process.env.DB_CONNECT_RETRIES || 15);
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const pg = await createPgStorage(opts.databaseUrl);
+      await pg.init();
+      return pg;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxAttempts) {
+        console.warn(`[storage] PostgreSQL 连接失败(${attempt}/${maxAttempts}),2s 后重试…`);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
   }
+  console.error("[storage] PostgreSQL 连接失败:", lastErr);
+  throw new Error(
+    `PostgreSQL 连接失败，已配置 DATABASE_URL 但无法建立连接，拒绝回退到内存存储。原因: ${
+      lastErr instanceof Error ? lastErr.message : String(lastErr)
+    }`
+  );
 }
 
 export function defaultPlayerState(contentVersion: string): PlayerState {
@@ -305,6 +340,61 @@ export function defaultPlayerState(contentVersion: string): PlayerState {
     skills: {},
     logs: [{ ts: now, text: "欢迎来到 WorkLife" }]
   };
+}
+
+/**
+ * 职业技能拆分（MWI 语义）：每个职业的「采集」与「生产」是两条独立经验/等级。
+ * 采集技能沿用历史 id（skill_<profession>），生产技能用动作名做 id。
+ * 技能树节点/强化服务资格等职业级进度仍挂在采集技能对象的 unlockedRecipes 上。
+ */
+export const GATHER_SKILL_BY_PROFESSION: Record<string, string> = {
+  woodcutter: "skill_woodcutter",
+  blacksmith: "skill_blacksmith",
+  farmer: "skill_farmer",
+  chef: "skill_chef",
+  tailor: "skill_tailor",
+  alchemist: "skill_alchemist",
+};
+export const CRAFT_SKILL_BY_PROFESSION: Record<string, string> = {
+  woodcutter: "skill_woodworking",
+  blacksmith: "skill_smithing",
+  farmer: "skill_husbandry",
+  chef: "skill_cooking",
+  tailor: "skill_tailoring",
+  alchemist: "skill_alchemy",
+};
+/** 生产技能 → 采集技能（房屋房间加成/职业归属判定用）。 */
+export const GATHER_SKILL_FOR_CRAFT: Record<string, string> = Object.fromEntries(
+  Object.entries(CRAFT_SKILL_BY_PROFESSION).map(([prof, craft]) => [craft, GATHER_SKILL_BY_PROFESSION[prof]])
+);
+
+function newSkill(unlockedRecipes: string[] = []) {
+  return { level: 1, xp: 0, unlockedRecipes, enhancementLevel: 0 };
+}
+
+/**
+ * 补齐每职业的双技能。老存档迁移：生产技能继承采集技能的等级/经验
+ * （拆分前两者本就是同一条经验），unlockedRecipes（树节点进度）只留在采集技能上。
+ */
+export function ensureProfessionSkills(player: EnhancedPlayerState): void {
+  if (!player.skills) player.skills = {};
+  for (const prof of Object.keys(GATHER_SKILL_BY_PROFESSION)) {
+    const gatherId = GATHER_SKILL_BY_PROFESSION[prof];
+    const craftId = CRAFT_SKILL_BY_PROFESSION[prof];
+    if (!player.skills[gatherId]) player.skills[gatherId] = newSkill();
+    if (!player.skills[craftId]) {
+      const g = player.skills[gatherId];
+      player.skills[craftId] = { ...newSkill(), level: g.level, xp: g.xp };
+    }
+  }
+}
+
+/** 技能树节点要求的「职业等级」= 采集/生产两侧最高者（哪条腿都能推进职业树）。 */
+export function professionLevelForTree(player: EnhancedPlayerState, professionId: string): number {
+  return Math.max(
+    player.skills?.[GATHER_SKILL_BY_PROFESSION[professionId] || ""]?.level || 0,
+    player.skills?.[CRAFT_SKILL_BY_PROFESSION[professionId] || ""]?.level || 0
+  );
 }
 
 // 创建增强的默认玩家状态
@@ -325,50 +415,21 @@ export function defaultEnhancedPlayerState(contentVersion: string): EnhancedPlay
       maxDurability: {}
     },
     skills: {
-      // 给每个职业初始技能
-      skill_woodcutter: {
-        level: 1,
-        xp: 0,
-        unlockedRecipes: ["woodcutter_basic_cutting", "woodcutter_armor_crafting"],
-        enhancementLevel: 0
-      },
-      skill_blacksmith: {
-        level: 1,
-        xp: 0,
-        unlockedRecipes: ["blacksmith_basic_mining"],
-        enhancementLevel: 0
-      },
-      skill_farmer: {
-        level: 1,
-        xp: 0,
-        unlockedRecipes: ["farmer_basic_planting"],
-        enhancementLevel: 0
-      },
-      skill_chef: {
-        level: 1,
-        xp: 0,
-        unlockedRecipes: ["chef_basic_cooking"],
-        enhancementLevel: 0
-      },
-      skill_tailor: {
-        level: 1,
-        xp: 0,
-        unlockedRecipes: ["tailor_basic_processing"],
-        enhancementLevel: 0
-      },
-      skill_alchemist: {
-        level: 1,
-        xp: 0,
-        unlockedRecipes: ["alchemist_basic_brewing"],
-        enhancementLevel: 0
-      },
+      // 每职业双技能：采集（skill_<profession>）+ 生产（skill_<动作名>），互不共享经验
+      skill_woodcutter: newSkill(["woodcutter_basic_cutting", "woodcutter_armor_crafting"]),
+      skill_woodworking: newSkill(),
+      skill_blacksmith: newSkill(["blacksmith_basic_mining"]),
+      skill_smithing: newSkill(),
+      skill_farmer: newSkill(["farmer_basic_planting"]),
+      skill_husbandry: newSkill(),
+      skill_chef: newSkill(["chef_basic_cooking"]),
+      skill_cooking: newSkill(),
+      skill_tailor: newSkill(["tailor_basic_processing"]),
+      skill_tailoring: newSkill(),
+      skill_alchemist: newSkill(["alchemist_basic_brewing"]),
+      skill_alchemy: newSkill(),
       // MWI: Enhancing is its own non-combat skill, not a profession unlock.
-      skill_enhancing: {
-        level: 1,
-        xp: 0,
-        unlockedRecipes: [],
-        enhancementLevel: 0
-      }
+      skill_enhancing: newSkill()
     },
     logs: [{ ts: now, text: "欢迎来到 WorkLife！开始你的多职业冒险吧！" }],
     tradingState: {
@@ -418,6 +479,25 @@ export function defaultPlayerSettings(): import("./types").PlayerSettings {
  * 确保旧存档具备新字段（向后兼容迁移）。
  * 直接在传入对象上补齐缺失的 stats/achievements/settings。
  */
+/**
+ * NaN/Infinity 无法落进 JSON，只会来自进程内缺陷；它们一旦出现就会让所有
+ * "余额 < 花费"、"进度 < 目标" 比较穿透（NaN 比较恒为 false）——无限领奖、
+ * 免单购物都从这类污染来。统一归零，胜过在每张存档上炸出不同的洞。
+ */
+function sanitizeFiniteNumbers(node: unknown, dirtyKeys: string[]): void {
+  if (!node || typeof node !== "object" || node instanceof Date) return;
+  for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+    if (typeof v === "number") {
+      if (!Number.isFinite(v)) {
+        (node as Record<string, unknown>)[k] = 0;
+        dirtyKeys.push(k);
+      }
+    } else if (v && typeof v === "object") {
+      sanitizeFiniteNumbers(v, dirtyKeys);
+    }
+  }
+}
+
 export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPlayerState {
   const now = new Date().toISOString();
   if (!player.stats) {
@@ -430,8 +510,46 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
       if (s[k] === undefined) s[k] = d[k];
     }
   }
+  // 耐久表中的 NaN/非有限数先删除，使其按"未记录=满耐久"自愈，而非被 sanitizeFiniteNumbers 置 0 变成破损装备
+  const eqDur = (player as any).equipment?.durability;
+  if (eqDur && typeof eqDur === "object") {
+    for (const [k, v] of Object.entries(eqDur)) {
+      if (typeof v === "number" && !Number.isFinite(v)) delete eqDur[k];
+    }
+  }
+  const eqMaxDur = (player as any).equipment?.maxDurability;
+  if (eqMaxDur && typeof eqMaxDur === "object") {
+    for (const [k, v] of Object.entries(eqMaxDur)) {
+      if (typeof v === "number" && (!Number.isFinite(v) || v <= 0)) delete eqMaxDur[k];
+    }
+  }
+  // 数值防腐（见上）：inventory/stats/skills/tasks/bounties/耐久等所有数字字段
+  const dirty: string[] = [];
+  sanitizeFiniteNumbers(player, dirty);
+  if (dirty.length) appendLog(player, `检测到 ${dirty.length} 个损坏的数值字段，已重置`);
+  // combat_farm 模式已下线（历史上没有独立结算器，进入即永久卡死）：老存档残留一律回退 idle
+  if ((player.mode as string) === "combat_farm") {
+    player.mode = "idle";
+    player.combatFarmState = undefined;
+    player.lifeActionState = undefined;
+  }
+  // combatRunState 字段已删除（功能由 hp 连战覆盖）：残留一律剥离
+  if ((player as any).combatRunState !== undefined) delete (player as any).combatRunState;
+  // 离线系统已下线：报告与分块结算游标属于尸体数据，残留一律剥离
+  if ((player as any).offlineReport !== undefined) delete (player as any).offlineReport;
+  if ((player as any).settlement !== undefined) delete (player as any).settlement;
+  // 持久战斗血量防腐：负值/0/NaN 一律视为满血（0 血出战斗属于尸体数据，阵亡本就复活满血）；
+  // 时间戳非法则重锚，防止回血计错
+  if (player.combatHp !== undefined && (!Number.isFinite(player.combatHp) || player.combatHp <= 0)) {
+    player.combatHp = undefined;
+    player.combatHpAt = undefined;
+  } else if (player.combatHp !== undefined && (!Number.isFinite(player.combatHpAt) || (player.combatHpAt as number) <= 0)) {
+    player.combatHpAt = Date.now();
+  }
   if (!player.achievements) player.achievements = {};
   if (!player.settings) player.settings = defaultPlayerSettings();
+  // 采集/生产技能拆分：老存档补出缺失的生产技能（继承采集等级），新存档补全 12 项
+  ensureProfessionSkills(player);
   const { ensureEnhancingSkill } = require("./enhancement_math") as typeof import("./enhancement_math");
   ensureEnhancingSkill(player);
   // MWI combat skills / abilities (lazy require: these modules import helpers from this file).
@@ -455,29 +573,30 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
 export function getXpForLevel(level: number): number {
   if (level < 1) return 0;
   if (level >= 200) return Infinity; // 200级为满级
-  
-  const baseXP = 50; // 基础经验值
-  // 新手期基础值与指数：调低后让 1-30 级升级更快，更早体验中高阶内容
+
+  // 1-15级：新手引导与开荒期（保持轻快节奏，Lv1=40，Lv15=1548）
   const earlyBaseXP = 40;
   const earlyExp = 1.35;
-  // 30 级锚点：后续阶段都基于此衔接，统一用新手期公式计算，避免边界出现断崖
-  const level30XP = Math.floor(earlyBaseXP * Math.pow(30, earlyExp));
-  
-  if (level <= 30) {
-    // 1-30级: 快速升级阶段（已下调 base 40 / 指数 1.35，前期更顺滑）
+  if (level <= 15) {
     return Math.floor(earlyBaseXP * Math.pow(level, earlyExp));
-  } else if (level <= 100) {
-    // 31-100级: 正常升级阶段
-    // 使用中等指数 (2.0)，以 30 级锚点衔接
-    const offset = 30;
-    return Math.floor(level30XP + baseXP * Math.pow(level - offset, 2.0));
-  } else {
-    // 101-200级: 极慢升级阶段
-    // 使用高指数 (2.5)
-    const offset = 100;
-    const level100XP = Math.floor(level30XP + baseXP * Math.pow(70, 2.0));
-    return Math.floor(level100XP + baseXP * Math.pow(level - offset, 2.5) * 2);
   }
+
+  // 16-30级：初阶过渡期（平滑拉升斜率，Lv30=7,246）
+  const level15XP = Math.floor(earlyBaseXP * Math.pow(15, earlyExp));
+  if (level <= 30) {
+    return Math.floor(level15XP + 65 * Math.pow(level - 15, 1.65));
+  }
+
+  // 31-100级：中长线挂机成长期（匹配 500-1000 小时全技能生命周期，Lv50=27,053，Lv100=239,716）
+  const level30XP = Math.floor(level15XP + 65 * Math.pow(15, 1.65));
+  if (level <= 100) {
+    return Math.floor(level30XP + 56 * Math.pow(level - 30, 1.96));
+  }
+
+  // 101-199级：终局大师期（带一阶导数连续项 9500*d，彻底消除 Lv101 斜率回跌）
+  const level100XP = Math.floor(level30XP + 56 * Math.pow(70, 1.96));
+  const d = level - 100;
+  return Math.floor(level100XP + 9500 * d + 110 * Math.pow(d, 2.15));
 }
 
 /**
@@ -491,6 +610,26 @@ export function getTotalXpForLevel(level: number): number {
   return total;
 }
 
+/**
+ * 给职业技能加经验并按共享曲线升级（与 simulateWindow 里动作结算同一套逻辑）。
+ * 返回升到的等级列表，供调用方写日志。
+ */
+export function grantProfessionXp(state: EnhancedPlayerState, skillId: string, xp: number): number[] {
+  const skill = state.skills?.[skillId];
+  const ups: number[] = [];
+  if (!skill || !Number.isFinite(xp) || xp <= 0) return ups;
+  skill.xp += xp;
+  if (state.stats) state.stats.totalXpEarned += xp;
+  let need = getXpForLevel(skill.level);
+  while (skill.xp >= need && skill.level < 200) {
+    skill.level += 1;
+    skill.xp -= need;
+    ups.push(skill.level);
+    need = getXpForLevel(skill.level);
+  }
+  return ups;
+}
+
 export function appendLog(state: PlayerState | EnhancedPlayerState, text: string) {
   const ts = new Date().toISOString();
   state.logs = [...state.logs.slice(-200), { ts, text }];
@@ -502,7 +641,11 @@ export function pickSeed() {
 
 export function normalizeInv(inv: Record<string, number>) {
   const out: Record<string, number> = {};
+  if (inv && Object.prototype.hasOwnProperty.call(inv, "gold")) {
+    out.gold = Math.max(0, Math.floor(Number(inv.gold) || 0));
+  }
   for (const [k, v] of Object.entries(inv)) {
+    if (k === "gold") continue;
     if (v > 0) out[k] = v;
   }
   return out;
@@ -540,6 +683,8 @@ export function getBuffEffects(
   goldGain: number;
   atk: number;
   def: number;
+  efficiency: number;
+  rareFind: number;
 } {
   const eff = {
     gatherSpeed: 1,
@@ -548,7 +693,9 @@ export function getBuffEffects(
     xpGain: 1,
     goldGain: 1,
     atk: 0,
-    def: 0
+    def: 0,
+    efficiency: 0,
+    rareFind: 0,
   };
   if (!player.activeBuffs) return eff;
   const nowMs = now.getTime();
@@ -560,10 +707,14 @@ export function getBuffEffects(
       if (b.multipliers.combatSpeed) eff.combatSpeed *= b.multipliers.combatSpeed;
       if (b.multipliers.xpGain) eff.xpGain *= b.multipliers.xpGain;
       if (b.multipliers.goldGain) eff.goldGain *= b.multipliers.goldGain;
+      if ((b.multipliers as any).efficiency) eff.efficiency += Number((b.multipliers as any).efficiency);
+      if ((b.multipliers as any).rareFind) eff.rareFind += Number((b.multipliers as any).rareFind);
     }
     if (b.stats) {
       if (b.stats.atk) eff.atk += b.stats.atk;
       if (b.stats.def) eff.def += b.stats.def;
+      if ((b.stats as any).efficiency) eff.efficiency += Number((b.stats as any).efficiency);
+      if ((b.stats as any).rareFind) eff.rareFind += Number((b.stats as any).rareFind);
     }
   }
   return eff;
@@ -587,6 +738,10 @@ export function getEquippedCombatStats(
   for (const [slot, itemId] of Object.entries(eq)) {
     if (!itemId || typeof itemId !== "string") continue;
     if (slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability" || slot === "tool") continue;
+    // 幽灵槽防护：槽位引用背包里已没有的物品（被卖/被挂单/旧脏档）时不计入战斗属性
+    if ((player.inventory?.[itemId] || 0) <= 0) continue;
+    // 损坏的装备不提供战斗属性
+    if (isDurabilityBroken(player, itemId)) continue;
     const item = findItem(itemId);
     if (!item) continue;
     const enhLevel = (eq.enhancementLevels && eq.enhancementLevels[itemId]) || 0;
@@ -596,20 +751,17 @@ export function getEquippedCombatStats(
     if (item.mag) atk += item.mag * mult;
     if (item.def) def += item.def * mult;
   }
-  // 套装加成
+  // 套装加成（同样跳过幽灵槽：引用了背包里没有的物品不算件数）
   const sets: any[] = (contentPack as any)?.equipmentSets || [];
   for (const set of sets) {
     let equippedPieces = 0;
     for (const piece of set.pieces || []) {
-      if (eq[piece.slot] === piece.itemId) equippedPieces++;
+      if (eq[piece.slot] === piece.itemId && (player.inventory?.[piece.itemId] || 0) > 0 && !isDurabilityBroken(player, piece.itemId)) equippedPieces++;
     }
-    // 内容包字段为 set.bonuses（与 types.ts / storage_memory 保持一致）
-    for (const bonus of set.bonuses || []) {
-      if (equippedPieces >= (bonus.requiredPieces || 99)) {
-        if (bonus.stats?.atk) atk += bonus.stats.atk;
-        if (bonus.stats?.def) def += bonus.stats.def;
-      }
-    }
+    // 内容包字段为 set.bonuses（与 types.ts / storage_memory 保持一致）；只取已满足的最高档
+    const top = highestActiveBonus<{ requiredPieces?: number; stats?: Record<string, number> }>(set.bonuses, equippedPieces);
+    if (top?.stats?.atk) atk += top.stats.atk;
+    if (top?.stats?.def) def += top.stats.def;
   }
   return { atk: Math.round(atk), def: Math.round(def) };
 }
@@ -636,15 +788,12 @@ export function getEquippedProductionBuffs(
   for (const set of sets) {
     let equippedPieces = 0;
     for (const piece of set.pieces || []) {
-      if (eq[piece.slot] === piece.itemId) equippedPieces++;
+      if (eq[piece.slot] === piece.itemId && (player.inventory?.[piece.itemId] || 0) > 0 && !isDurabilityBroken(player, piece.itemId)) equippedPieces++;
     }
-    for (const bonus of set.bonuses || []) {
-      if (equippedPieces >= (bonus.requiredPieces || 99)) {
-        const s = bonus.stats || {};
-        for (const k of Object.keys(pct)) {
-          if (typeof s[k] === "number") pct[k] += s[k];
-        }
-      }
+    const top = highestActiveBonus<{ requiredPieces?: number; stats?: Record<string, number> }>(set.bonuses, equippedPieces);
+    const s = top?.stats || {};
+    for (const k of Object.keys(pct)) {
+      if (typeof s[k] === "number") pct[k] += s[k];
     }
   }
   return {
@@ -677,7 +826,33 @@ export type ActionRates = {
   setBuffs: ReturnType<typeof getEquippedProductionBuffs>;
   repBuffs: ReturnType<typeof getReputationBonuses>;
   prestigeMul: number;
+  /** 本轮实际提供加速的工具——结算时按完成周期数磨损它。 */
+  wornToolId?: string;
 };
+
+/**
+ * 耐久语义：durability[itemId] === 0 = 装备损坏——与幽灵槽同规则，不计任何属性。
+ * 未记录（undefined）= 满耐久新装备；NaN 已在 ensurePlayerExtensions 防腐归零前被拦下。
+ */
+export function isDurabilityBroken(player: EnhancedPlayerState, itemId: string): boolean {
+  const d = (player.equipment as any)?.durability?.[itemId];
+  return typeof d === "number" && Number.isFinite(d) && d <= 0;
+}
+
+/** 通用损耗落点：把已装备物品的耐久扣减 amount（允许小数累积），跌破 0 记损坏日志。 */
+export function applyDurabilityWear(player: EnhancedPlayerState, itemId: string, amount: number): void {
+  const eq = player.equipment as any;
+  if (!eq || !itemId || !Number.isFinite(amount) || amount <= 0) return;
+  const cap = Number.isFinite(eq.maxDurability?.[itemId]) ? Number(eq.maxDurability[itemId]) : 100;
+  const cur = Number.isFinite(eq.durability?.[itemId]) ? Number(eq.durability[itemId]) : cap;
+  const next = Math.min(cap, Math.max(0, cur - amount));
+  if (next === cur) return;
+  eq.durability = eq.durability || {};
+  eq.maxDurability = eq.maxDurability || {};
+  if (!Number.isFinite(eq.maxDurability[itemId])) eq.maxDurability[itemId] = cap;
+  eq.durability[itemId] = next;
+  if (next === 0 && cur > 0) appendLog(player, `装备损坏：${itemId}，需修理后才会生效`);
+}
 
 /** Sum of an equipment stat (e.g. `efficiency`, `gatherSpeed`) across equipped items, with enhancement. */
 function equippedStatSum(player: EnhancedPlayerState, pack: EnhancedContentPack, stat: string): number {
@@ -688,6 +863,10 @@ function equippedStatSum(player: EnhancedPlayerState, pack: EnhancedContentPack,
   for (const [slot, itemId] of Object.entries(eq)) {
     if (!itemId || typeof itemId !== "string") continue;
     if (slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability" || slot === "tool") continue;
+    // 幽灵槽防护：槽位引用着背包里已经没有的物品（旧档/历史脏数据）时不计入属性
+    if ((player.inventory?.[itemId] || 0) <= 0) continue;
+    // 损坏的装备不提供属性（与幽灵槽同规则，修好后自动恢复）
+    if (isDurabilityBroken(player, itemId)) continue;
     const item = items.find((i: any) => i.id === itemId);
     const v = Number(item?.[stat] ?? item?.stats?.[stat] ?? 0);
     if (!v) continue;
@@ -728,13 +907,24 @@ export function getActionRates(
   const repSpeed = (repBuffs as any)[lane] as number;
   // MWI tool speed: the equipped tool speeds up its own profession's skilling actions (not combat).
   const toolId = (player.equipment as any)?.tool as string | undefined;
-  const toolDef = toolId ? ((pack as any).items as any[]).find((i) => i.id === toolId) : undefined;
+  // 幽灵槽防护：工具已不在背包（被卖/挂单/旧脏档）或已损坏时不提供加速
+  const toolOwned = !!toolId && (player.inventory?.[toolId] || 0) > 0 && !isDurabilityBroken(player, toolId);
+  const toolDef = toolOwned ? ((pack as any).items as any[]).find((i) => i.id === toolId) : undefined;
   const toolApplies = !!toolDef && !isCombatAct && toolDef.toolFor === action.skillId && Number(toolDef.toolSpeed) > 0;
   const toolEnh = toolApplies ? Number((player.equipment as any)?.enhancementLevels?.[toolId!] || 0) : 0;
   const toolSpeedMul = toolApplies
     ? 1 + Number(toolDef.toolSpeed) * enhancementStatMultiplier(toolEnh, toolDef)
     : 1;
-  const speedMul = buffSpeed * atkSpeedMul * setSpeed * repSpeed * toolSpeedMul;
+  const mastery = isCombatAct
+    ? { active: false, speedMul: 1, efficiencyPct: 0 }
+    : professionMasteryBonuses(
+        player.activeClassId,
+        action.skillId,
+        Number(player.skills?.[action.skillId]?.level || 1),
+        GATHER_SKILL_BY_PROFESSION,
+        CRAFT_SKILL_BY_PROFESSION
+      );
+  const speedMul = buffSpeed * atkSpeedMul * setSpeed * repSpeed * toolSpeedMul * mastery.speedMul;
   const effectiveDurationMs = Math.max(1, Number(action.duration || 0) / (speedMul || 1));
 
   const speedSources: Array<{ label: string; pct: number }> = [];
@@ -743,6 +933,7 @@ export function getActionRates(
     if (Math.abs(pct) >= 0.05) arr.push({ label, pct });
   };
   if (toolApplies) pushPct(speedSources, `工具 · ${toolDef.name}`, toolSpeedMul);
+  if (mastery.active) pushPct(speedSources, "本职专精", mastery.speedMul);
   pushPct(speedSources, "增益", buffSpeed);
   pushPct(speedSources, "套装", setSpeed);
   pushPct(speedSources, "声望", repSpeed);
@@ -765,6 +956,7 @@ export function getActionRates(
     const buffEffPct = Number((buffEff as any).efficiency || 0);
     if (buffEffPct > 0) efficiencySources.push({ label: "增益", pct: buffEffPct });
     if (houseLevel > 0) efficiencySources.push({ label: `房屋 · ${houseRoomName}`, pct: houseLevel * HOUSE_EFFICIENCY_PER_LEVEL });
+    if (mastery.efficiencyPct > 0) efficiencySources.push({ label: "本职专精", pct: mastery.efficiencyPct });
     efficiencyPct = efficiencySources.reduce((s, x) => s + x.pct, 0);
   }
 
@@ -773,7 +965,7 @@ export function getActionRates(
   const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul;
   // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成
   const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul;
-  return { isCombatAct, hasConsumesAct, speedMul, effectiveDurationMs, efficiencyPct, speedSources, efficiencySources, xpMul, goldMul, defGoldMul, setBuffs, repBuffs, prestigeMul };
+  return { isCombatAct, hasConsumesAct, speedMul, effectiveDurationMs, efficiencyPct, speedSources, efficiencySources, xpMul, goldMul, defGoldMul, setBuffs, repBuffs, prestigeMul, wornToolId: toolApplies ? toolId : undefined };
 }
 
 /**
@@ -787,7 +979,8 @@ export function getRareFindMultiplier(player: EnhancedPlayerState, pack: Enhance
   // MWI house: 训练场 adds +1% rare find per level.
   const { houseLevelForSkill, HOUSE_RARE_FIND_PER_LEVEL } = require("./houses") as typeof import("./houses");
   const house = houseLevelForSkill(player, "skill_combat") * HOUSE_RARE_FIND_PER_LEVEL;
-  const total = gear + Number(buffs.rareFind || 0) + house;
+  const tailorBonus = player.activeClassId === "tailor" ? 15 : 0;
+  const total = gear + Number(buffs.rareFind || 0) + house + tailorBonus;
   return Math.max(0, 1 + total / 100);
 }
 
@@ -810,7 +1003,7 @@ export const ACTION_QUEUE_MAX = 5;
 
 /**
  * Why a queued action cannot start right now (undefined = it can).
- * Shared by the queue API (to reject early) and by the simulator (to skip while offline).
+ * Shared by the queue API (to reject early) and by the simulator (to skip while settling).
  */
 export function queuedActionBlocker(
   state: EnhancedPlayerState,
@@ -846,9 +1039,16 @@ export function startLifeActionNow(
     const action = (pack.actions as any[]).find((a) => a.id === actionId) as any;
     if (!action) throw new Error("unknown_action");
     // 非战斗动作按 skillId 校验对应职业技能等级；战斗动作按战斗等级校验
+    const isCombatAct = typeof action.id === "string" && action.id.startsWith("act_combat_");
+    if (isCombatAct) {
+      // 战斗动作同样受区域门限制：act_combat_* 直接起刷曾可绕过未开放区域
+      const monsterId = (action as { monsterId?: string; targetId?: string }).monsterId
+        ?? (action as { monsterId?: string; targetId?: string }).targetId
+        ?? actionId.replace(/^act_combat_/, "");
+      if (!isMonsterInOpenZone(pack!, monsterId)) throw new Error("stage_locked");
+    }
     const reqLevel = action.requirements?.skillLevel || 1;
     if (reqLevel > 1) {
-      const isCombatAct = typeof action.id === "string" && action.id.startsWith("act_combat_");
       const currentLevel = isCombatAct
         ? (state.combatLevel || 1)
         : (state.skills[action.skillId]?.level || 0);
@@ -857,11 +1057,34 @@ export function startLifeActionNow(
       }
     }
   }
-  // 规整批量制作数量：仅取正整数，最大 5000，缺省/非法时按不限次处理（undefined）
+  // 规整批量制作数量：缺省（undefined）为不限次；显式传入非法值（0/负数/NaN/Infinity）
+  // 拒绝而不是悄悄变成不限次——否则上游校验缺口会把 quantity=0 刷成无限挂机。
   let normalizedQty: number | undefined = undefined;
-  if (typeof quantity === "number" && Number.isFinite(quantity)) {
-    const q = Math.floor(quantity);
-    if (q > 0) normalizedQty = Math.min(q, 5000);
+  if (quantity !== undefined) {
+    if (typeof quantity !== "number" || !Number.isFinite(quantity) || quantity <= 0) {
+      throw new Error("invalid_quantity");
+    }
+    normalizedQty = Math.min(Math.floor(quantity), 5000);
+    if (normalizedQty <= 0) throw new Error("invalid_quantity");
+  }
+  // 战斗与生活动作严格互斥：开始生活动作时自动终止任何进行中或等待连战的战斗
+  if (state.hpCombat) {
+    if (!state.hpCombat.outcome) {
+      const { persistCombatHp } = require("./hp_combat") as typeof import("./hp_combat");
+      persistCombatHp(state, state.hpCombat.playerHp, now.getTime());
+    }
+    state.hpCombat = undefined;
+  }
+  if (state.combatLoadout?.autoRepeat) {
+    state.combatLoadout = { ...state.combatLoadout, autoRepeat: false };
+  }
+  state.combatFarmState = undefined;
+  let effectiveDurationMs: number | undefined = undefined;
+  if (Array.isArray(pack?.actions)) {
+    const action = (pack.actions as any[]).find((a) => a.id === actionId) as any;
+    if (action && action.duration) {
+      effectiveDurationMs = Math.round(getActionRates(state, pack!, action, now).effectiveDurationMs);
+    }
   }
   state.mode = "life_action";
   state.lastSimulatedAt = now.toISOString();
@@ -869,15 +1092,9 @@ export function startLifeActionNow(
     actionId,
     startedAt: now.toISOString(),
     ...(normalizedQty !== undefined ? { quantity: normalizedQty, remaining: normalizedQty } : {}),
+    ...(effectiveDurationMs !== undefined ? { effectiveDurationMs } : {}),
   };
   appendLog(state, normalizedQty !== undefined ? `开始工作：${actionId} ×${normalizedQty}` : `开始工作：${actionId}`);
-}
-
-/** Pure start for a combat farm run. Callers settle first. */
-export function startCombatFarmNow(state: EnhancedPlayerState, stageId: string, now: Date): void {
-  state.mode = "combat_farm";
-  state.combatFarmState = { stageId, startedAt: now.toISOString(), seed: pickSeed() };
-  appendLog(state, `开始刷关：${stageId}`);
 }
 
 /**
@@ -900,11 +1117,18 @@ export function startNextQueuedAction(
       continue;
     }
     const qty = typeof item.quantity === "number" && item.quantity > 0 ? Math.min(Math.floor(item.quantity), 5000) : undefined;
+    const effectiveDurationMs = action && action.duration
+      ? Math.round(getActionRates(state, pack, action, at).effectiveDurationMs)
+      : undefined;
+    if (state.hpCombat?.outcome) {
+      state.hpCombat = undefined;
+    }
     state.mode = "life_action";
     state.lifeActionState = {
       actionId: item.actionId,
       startedAt: at.toISOString(),
       ...(qty !== undefined ? { quantity: qty, remaining: qty } : {}),
+      ...(effectiveDurationMs !== undefined ? { effectiveDurationMs } : {}),
     };
     appendLog(state, qty !== undefined ? `队列：开始 ${action.name} ×${qty}` : `队列：开始 ${action.name}`);
     return true;
@@ -920,56 +1144,29 @@ type SimulationInput = {
   rng?: () => number;
 };
 
-/** Bounded chunks preserve their unprocessed time; callers choose scheduling by storage contract. */
-function* settlementChunks(input: SimulationInput): Generator<SimulateResult> {
-  let state = structuredClone(input.state);
-  for (;;) {
-    const previousTime = Date.parse(state.lastSimulatedAt);
-    const result = simulateToNow({ ...input, state });
-    state = result.state;
-    yield result;
-    if ((state as EnhancedPlayerState).settlement?.complete !== false) return;
-    if (Date.parse(state.lastSimulatedAt) <= previousTime) throw new Error('settlement_no_progress');
-  }
-}
-
-/** PostgreSQL detects writes accepted during a scheduling yield with its revision CAS. */
-export async function settleToNow(input: SimulationInput): Promise<SimulateResult> {
-  let result!: SimulateResult;
-  for (result of settlementChunks(input)) {
-    if ((result.state as EnhancedPlayerState).settlement?.complete === false) {
-      await new Promise<void>(resolve => setImmediate(resolve));
-    }
-  }
-  return result;
-}
-
-/** Memory writes have no database CAS: drain and publish without an event-loop yield. */
-export function settleToNowSync(input: SimulationInput): SimulateResult {
-  let result!: SimulateResult;
-  for (result of settlementChunks(input)) { /* consume every bounded chunk */ }
-  return result;
-}
+/** 单次结算的最大时间窗：离线不产生收益——超过一个轮询间隔的间隔全部丢弃。
+ *  前端在线时每 ~15s 轮询一次；关掉页面后的时间直接作废，进行中的动作/战斗/强化
+ *  时间锚点平移到"刚离开 120 秒"，相当于挂机期间时间冻结。 */
+const MAX_SETTLE_WINDOW_MS = 120_000;
 
 export function simulateToNow(input: SimulationInput): SimulateResult {
-  const previous = (input.state as EnhancedPlayerState).settlement;
-  const last = Date.parse(input.state.lastSimulatedAt);
-  if (!Number.isFinite(last) || !Number.isFinite(+input.now)) throw new Error('invalid_simulation_time');
+  if (!Number.isFinite(+input.now)) throw new Error('invalid_simulation_time');
+  let last = Date.parse(input.state.lastSimulatedAt);
+  // 存档时间戳损坏（脏数据/手动改档）：重置为 now，而不是让玩家此后每个请求都 500 永久卡死。
+  if (!Number.isFinite(last)) {
+    input.state.lastSimulatedAt = input.now.toISOString();
+    appendLog(input.state, '检测到存档时间异常，已重置');
+    last = +input.now;
+  }
   if (+input.now < last) return { state: input.state };
-  const pending = previous && !previous.complete;
-  const target = pending ? Date.parse(previous.targetUntil) : Math.min(+input.now, last + 24 * 3600_000);
-  const requested = pending ? previous.requestedUntil : input.now.toISOString();
-  const result = simulateWindow({ ...input, now: new Date(target) });
-  const state = result.state as EnhancedPlayerState;
-  const complete = Date.parse(state.lastSimulatedAt) >= target;
-  state.settlement = { processedUntil: state.lastSimulatedAt, targetUntil: new Date(target).toISOString(),
-    requestedUntil: requested, complete, cappedByOfflineLimit: target < Date.parse(requested) };
-  if (complete && state.settlement.cappedByOfflineLimit) {
-    const delta = Date.parse(requested) - target;
-    state.lastSimulatedAt = requested;
-    // Drop only time outside the explicit offline cap, including the action's old time anchor.
-    if (state.lifeActionState) {
-      state.lifeActionState.startedAt = new Date(Date.parse(state.lifeActionState.startedAt) + delta).toISOString();
+  const delta = +input.now - last - MAX_SETTLE_WINDOW_MS;
+  if (delta > 0) {
+    // 窗口溢出（离线/掉线）：把整个时间轴平移 delta，使待结算窗口恰好是最近 120 秒。
+    const state = input.state as EnhancedPlayerState;
+    state.lastSimulatedAt = new Date(last + delta).toISOString();
+    if (state.lifeActionState?.startedAt) {
+      const parsedStart = Date.parse(state.lifeActionState.startedAt);
+      state.lifeActionState.startedAt = new Date((Number.isFinite(parsedStart) ? parsedStart : last) + delta).toISOString();
     }
     const combat = state.hpCombat;
     if (combat) {
@@ -977,13 +1174,18 @@ export function simulateToNow(input: SimulationInput): SimulateResult {
         if (typeof combat[key] === 'number') combat[key] = combat[key]! + delta;
       }
       if (combat.foodReadyAt) combat.foodReadyAt = combat.foodReadyAt.map(t => t + delta);
+      if (combat.mpReadyAt) combat.mpReadyAt = combat.mpReadyAt.map(t => t + delta);
       if (combat.abilityReadyAt) for (const key of Object.keys(combat.abilityReadyAt)) combat.abilityReadyAt[key] += delta;
+      if (combat.runStats?.startedAt) combat.runStats.startedAt += delta;
     }
-    if (state.enhanceRun && !state.enhanceRun.outcome) state.enhanceRun.nextAttemptAt += delta;
-    pruneExpiredBuffs(state, new Date(requested));
-    appendLog(state, '离线收益已按24小时上限结算。');
+    if (state.enhanceRun && !state.enhanceRun.outcome) {
+      state.enhanceRun.nextAttemptAt += delta;
+      state.enhanceRun.startedAt += delta;
+    }
+    // combatHpAt / nextTaskAt 等按真实挂钟走的锚点不平移：脱战回血和每日刷新本就看离线时长。
+    pruneExpiredBuffs(state, input.now);
   }
-  return result;
+  return simulateWindow({ ...input, now: input.now });
 }
 
 function simulateWindow(input: SimulationInput): SimulateResult {
@@ -993,6 +1195,37 @@ function simulateWindow(input: SimulationInput): SimulateResult {
 
   // 确保统计字段存在（向后兼容旧存档）
   ensurePlayerExtensions(next);
+  // 物品防腐：内容包中不存在的物品 id 一律剔除（背包/装备/强化/耐久/消耗品槽）
+  {
+    const known = new Set(["gold", ...((input.contentPack as EnhancedContentPack).items || []).map(i => i.id)]);
+    const pruned: string[] = [];
+    const inv = next.inventory || {};
+    for (const k of Object.keys(inv)) if (!known.has(k)) { pruned.push(k); delete inv[k]; }
+    const eq = next.equipment as any;
+    if (eq) {
+      for (const mapKey of ["enhancementLevels", "durability", "maxDurability"]) {
+        const m = eq[mapKey];
+        if (m && typeof m === "object") for (const k of Object.keys(m)) if (!known.has(k)) { pruned.push(k); delete m[k]; }
+      }
+      for (const [k, v] of Object.entries(eq)) {
+        if (typeof v === "string" && v && !known.has(v)) { pruned.push(v); delete eq[k]; }
+      }
+    }
+    const loadout = next.combatLoadout as any;
+    if (loadout) for (const key of ["food", "mp", "drink"]) {
+      if (Array.isArray(loadout[key])) {
+        // 槽位条目是对象 { itemId, triggerMissingHp? }，不是裸字符串 ——
+        // 此前按字符串比对，死引用永远清不掉。
+        const entryId = (e: any) => (e && typeof e === "object" ? e.itemId : e);
+        const bad = loadout[key].filter((e: any) => !known.has(entryId(e)));
+        if (bad.length) {
+          pruned.push(...bad.map(entryId));
+          loadout[key] = loadout[key].filter((e: any) => known.has(entryId(e)));
+        }
+      }
+    }
+    if (pruned.length) appendLog(next, `清理失效物品 ${pruned.length} 处：${[...new Set(pruned)].join('、')}`);
+  }
   ensureProgression(next, input.now);
   const stats = next.stats!;
 
@@ -1016,11 +1249,25 @@ function simulateWindow(input: SimulationInput): SimulateResult {
     const { tickHpCombat } = require("./hp_combat") as typeof import("./hp_combat");
     const processed = tickHpCombat(next, input.contentPack as EnhancedContentPack, input.now, timeDiff, input.rng);
     if (processed < +input.now) {
-      next.lastSimulatedAt = new Date(processed).toISOString();
+      const processedDate = new Date(processed);
+      pruneExpiredBuffs(next, processedDate);
+      if ((next.combatLevel || 1) > stats.highestCombatLevel) {
+        stats.highestCombatLevel = next.combatLevel || 1;
+      }
+      next.lastSimulatedAt = processedDate.toISOString();
       addPlaytime(stats, Math.max(0, processed - +lastSimulated));
-      ensureProgression(next, new Date(processed));
+      ensureProgression(next, processedDate);
       return { state: next };
     }
+  }
+
+  // mode 与战斗状态同步：开打/战后重复 期间保持 "combat"（不再向客户端谎报 idle），
+  // 且战斗与生活动作严格互斥，战斗或连战等待期间绝不允许同时保留 lifeActionState。
+  if (next.hpCombat && (!next.hpCombat.outcome || awaitingRepeat)) {
+    next.mode = "combat";
+    next.lifeActionState = undefined;
+  } else if (next.mode === "combat" && !awaitingRepeat) {
+    next.mode = "idle";
   }
 
   // 进度以 lifeActionState.startedAt 为锚，所以任意频率的轮询都不会丢进度；这里只挡住
@@ -1034,35 +1281,28 @@ function simulateWindow(input: SimulationInput): SimulateResult {
 
   let advanceClock = true;
 
-  // 清理过期 Buff 并汇总当前增益效果（用于离线/挂机结算）
+  // 清理过期 Buff 并汇总当前增益效果
   pruneExpiredBuffs(next, input.now);
-  // 离线收益上限：从 8 小时提升至 24 小时，覆盖“睡一觉/上一天班”的真实离线场景
-  const maxOfflineTime = 24 * 60 * 60 * 1000; // 24小时
-  if (timeDiff > maxOfflineTime) {
-    appendLog(next, `离线时间过长，只计算最近24小时的收益`);
-  }
   
-  // 限制实际计算的时间差
-  const effectiveTimeDiff = Math.min(timeDiff, maxOfflineTime);
-  
-  // 队列推进时记录当前动作精确结束的时刻，让离线时间窗剩余部分继续给下一个动作
+  // 队列推进时记录当前动作精确结束的时刻，让窗口剩余部分继续给下一个动作
   let finishedAt: Date | null = null;
 
-  // MWI 强化计时动作：结算到 now（受 24h 离线上限约束）的每一次尝试
+  // MWI 强化计时动作：结算窗口内的每一次尝试（窗口上限见 MAX_SETTLE_WINDOW_MS）
   if (next.enhanceRun && !next.enhanceRun.outcome) {
     const { tickEnhanceRun } = require("./enhancement_run") as typeof import("./enhancement_run");
-    const untilMs = Math.min(input.now.getTime(), lastSimulated.getTime() + maxOfflineTime);
-    const ended = tickEnhanceRun(next, input.contentPack as EnhancedContentPack, untilMs, input.rng);
+    // lastSim 之前的尝试属于已作废/已结算时间：钳住 nextAttemptAt，防止遗留锚点在一个小窗口内补发数千次。
+    next.enhanceRun.nextAttemptAt = Math.max(next.enhanceRun.nextAttemptAt, lastSimulated.getTime());
+    const ended = tickEnhanceRun(next, input.contentPack as EnhancedContentPack, input.now.getTime(), input.rng);
     if (ended) finishedAt = ended;
   }
 
-  // 处理职业活动的离线进度
+  // 处理职业活动的流逝进度
   if (next.mode === 'life_action' && next.lifeActionState) {
-    const actionStartTime = new Date(next.lifeActionState.startedAt);
+    let actionStartTime = new Date(next.lifeActionState.startedAt);
     // 以 startedAt（当前这一轮的真实开始时刻）为锚计算进度，而不是上次结算时刻：
     // 否则每次轮询完成一轮后，剩下的零头都会被丢掉，5 秒的动作在 1 秒轮询下会变成 5~6 秒。
     const sinceCycleStart = Math.max(0, input.now.getTime() - actionStartTime.getTime());
-    const actionDuration = Math.min(sinceCycleStart, maxOfflineTime);
+    let actionDuration = sinceCycleStart;
     
     // 查找动作定义
     const contentPack = input.contentPack as EnhancedContentPack;
@@ -1071,13 +1311,16 @@ function simulateWindow(input: SimulationInput): SimulateResult {
     if (action && action.duration) {
       const rates = getActionRates(next, contentPack, action, input.now);
       const effectiveDuration = rates.effectiveDurationMs;
-      // 计算可以完成多少次动作
-      const completedCycles = Math.floor(actionDuration / effectiveDuration);
+      // 只结算落在 (lastSimulated, now] 内的周期：把锚点快进到上一个结算时刻所在的周期起点，
+      // 窗口之前的完成属于已作废/已结算的时间——防止 startedAt 远早于 lastSimulatedAt
+      // 的存档（遗留/损坏）在一个小窗口内超发，并让下方 finishedAt/重锚逻辑拿到一致的时间轴。
+      const alreadySettled = Math.max(0, Math.floor((lastSimulated.getTime() - actionStartTime.getTime()) / effectiveDuration));
+      actionStartTime = new Date(actionStartTime.getTime() + alreadySettled * effectiveDuration);
+      actionDuration = Math.max(0, input.now.getTime() - actionStartTime.getTime());
+      const completedCycles = Math.max(0, Math.floor(actionDuration / effectiveDuration));
       
       if (completedCycles > 0) {
-        // 限制离线进度，最多8小时的收益
-        const maxCycles = Math.floor(maxOfflineTime / effectiveDuration);
-        const actualCycles = Math.min(completedCycles, maxCycles);
+        const actualCycles = completedCycles;
         
         // 防作弊：限制单次最多完成500次动作，防止高级动作产出过多
         let safeCycles = Math.min(actualCycles, 500);
@@ -1105,7 +1348,6 @@ function simulateWindow(input: SimulationInput): SimulateResult {
         
         const rareFindMul = getRareFindMultiplier(next, contentPack, input.now);
         cycles: while (timeCyclesUsed < safeCycles) {
-          timeCyclesUsed += 1;
           const repeats = 1 + efficiencyRepeats(rates.efficiencyPct, rng);
           for (let r = 0; r < repeats; r++) {
           // 检查材料需求
@@ -1121,6 +1363,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
           }
           
           if (!canComplete) break cycles;
+          if (r === 0) timeCyclesUsed += 1;
           actuallyCompleted += 1;
           if (r > 0) bonusCompletions += 1;
           
@@ -1201,6 +1444,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
               // 非战斗动作增加职业经验
               const playerSkill = next.skills[action.skillId];
               if (playerSkill) {
+                const levelBeforeLoop = playerSkill.level;
                 playerSkill.xp += gainedXp;
                 
                 // 检查升级 - 使用新的指数成长曲线
@@ -1212,10 +1456,12 @@ function simulateWindow(input: SimulationInput): SimulateResult {
                   levelUpXp = getXpForLevel(playerSkill.level);
                 }
                 
-                // 如果达到满级，保留多余经验但不再升级
+                // 如果刚达到满级，记录一次日志并保留多余经验
                 if (playerSkill.level >= 200) {
                   playerSkill.level = 200;
-                  appendLog(next, `${action.skillId} 已达到满级 200 级！`);
+                  if (levelBeforeLoop < 200) {
+                    appendLog(next, `${action.skillId} 已达到满级 200 级！`);
+                  }
                 }
               }
             }
@@ -1224,7 +1470,14 @@ function simulateWindow(input: SimulationInput): SimulateResult {
           if (requestedRemaining !== undefined && actuallyCompleted >= requestedRemaining) break cycles;
           }
         }
-        
+
+        // 工具磨损：每个实际消耗的时间周期 -0.1 耐久（效率额外次数不占时间不磨损）；
+        // 满 100 耐久 ≈ 1000 个周期后需修理，是温和的持续金币消耗点
+        if (rates.wornToolId && timeCyclesUsed > 0) {
+          const toolWearPerCycle = next.activeClassId === "woodcutter" ? 0.05 : 0.1;
+          applyDurabilityWear(next, rates.wornToolId, timeCyclesUsed * toolWearPerCycle);
+        }
+
         // 记录收益
         if (Object.keys(totalRewards).length > 0) {
           const rewardText = Object.entries(totalRewards)
@@ -1283,6 +1536,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
         if (next.lifeActionState) {
           const remainingTime = actionDuration - timeCyclesUsed * effectiveDuration;
           next.lifeActionState.startedAt = new Date(input.now.getTime() - remainingTime).toISOString();
+          next.lifeActionState.effectiveDurationMs = Math.round(effectiveDuration);
         }
       } else {
         // 一次都没完成：若是材料不足导致的制作，也应停止，避免卡在 life_action 模式
@@ -1298,15 +1552,22 @@ function simulateWindow(input: SimulationInput): SimulateResult {
             appendLog(next, `材料不足，无法制作：${action.name}`);
             next.mode = 'idle';
             next.lifeActionState = undefined;
-            finishedAt = actionStartTime;
+            finishedAt = new Date(Math.max(lastSimulated.getTime(), actionStartTime.getTime()));
           }
+        }
+        if (next.lifeActionState) {
+          next.lifeActionState.effectiveDurationMs = Math.round(effectiveDuration);
         }
       }
     }
   }
 
-  // 行动队列：当前动作结束后，立刻从结束时刻接上下一个动作，并把时间窗剩余部分继续结算
-  if (next.mode !== 'life_action' && finishedAt && Array.isArray(next.activityQueue) && next.activityQueue.length > 0) {
+  // 行动队列：当前动作结束后，立刻从结束时刻接上下一个动作，并把时间窗剩余部分继续结算。
+  // 正在进行的战斗（或连战等待中）时不接，由 flee 入口统一接续；已结算且非连战的旧战斗残影允许接续。
+  const activeSoloCombat = Boolean(
+    next.hpCombat && (!next.hpCombat.outcome || (next.combatLoadout?.autoRepeat && next.hpCombat.nextFightAt))
+  );
+  if (next.mode !== 'life_action' && !activeSoloCombat && finishedAt && Array.isArray(next.activityQueue) && next.activityQueue.length > 0) {
     const startAt: Date = finishedAt;
     if (startNextQueuedAction(next, input.contentPack as EnhancedContentPack, startAt)) {
       next.lastSimulatedAt = startAt.toISOString();
@@ -1326,7 +1587,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
   }
   if (advanceClock) {
     next.lastSimulatedAt = input.now.toISOString();
-    addPlaytime(stats, Math.min(timeDiff, maxOfflineTime));
+    addPlaytime(stats, timeDiff);
   }
   
   ensureProgression(next, input.now);
@@ -1341,28 +1602,6 @@ function addPlaytime(stats: PlayerStats, ms: number) {
 }
 
 // 交易行相关工具函数
-export function createMarketListing(
-  sellerId: string,
-  itemId: string,
-  quantity: number,
-  pricePerUnit: number,
-  durationHours: number = 24
-): MarketListing {
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + durationHours * 60 * 60 * 1000);
-  
-  return {
-    id: randomUUID(),
-    sellerId,
-    itemId,
-    quantity,
-    pricePerUnit,
-    listedAt: now.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-    status: 'active'
-  };
-}
-
 export function calculateTradingFee(totalPrice: number, feeRate: number = 0.05): number {
   return Math.floor(totalPrice * feeRate);
 }
@@ -1371,6 +1610,7 @@ export function calculateTradingFee(totalPrice: number, feeRate: number = 0.05):
 export function createParty(leaderId: string, name?: string): Party {
   return {
     id: randomUUID(),
+    ...(name ? { name } : {}),
     leaderId,
     members: [{
       userId: leaderId,

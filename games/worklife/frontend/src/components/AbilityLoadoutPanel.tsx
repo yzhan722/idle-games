@@ -49,9 +49,15 @@ export function AbilityLoadoutPanel(props: Props) {
       next.splice(i, 1);
     } else {
       const def = catalog.find((d) => d.id === abilityId);
-      const dup = next.findIndex((s, j) => j !== i && s.abilityId === abilityId);
+      const dup = next.findIndex((s, j) => j !== i && s?.abilityId === abilityId);
+      const preservedTrigger =
+        next[i]?.abilityId === abilityId
+          ? next[i].trigger
+          : dup >= 0 && next[dup]?.trigger
+          ? next[dup].trigger
+          : def?.defaultTrigger || { type: "always" };
+      next[i] = { abilityId, trigger: preservedTrigger };
       if (dup >= 0) next.splice(dup, 1);
-      next[i] = { abilityId, trigger: next[i]?.abilityId === abilityId ? next[i].trigger : def?.defaultTrigger || { type: "always" } };
     }
     update(next.filter(Boolean));
   };

@@ -14,11 +14,30 @@ export async function assertNoHorizontalBleed(page: Page) {
 /** Either primary navigation: desktop skill rail or the mobile five-group bar. */
 export const primaryNav = (page: Page) => page.locator("nav.skill-sidebar:visible, nav.mobile-nav:visible").first();
 
+/**
+ * First-run overlays — 创建角色, then 新手指引 — sit on top of the whole shell for a fresh guest.
+ * A player clears them once (the flags are saved on the account); specs must do the same before they click.
+ */
+export async function finishOnboarding(page: Page) {
+  const create = page.getByRole("dialog", { name: "创建角色" });
+  if (await create.waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false)) {
+    await create.locator(".cc-name").fill("E2E 打工人");
+    await create.getByRole("button", { name: "进入异世界" }).click();
+    await expect(create).toBeHidden({ timeout: 10_000 });
+  }
+  const guide = page.getByRole("dialog", { name: "新手指引" });
+  if (await guide.waitFor({ state: "visible", timeout: 3_000 }).then(() => true, () => false)) {
+    await guide.getByRole("button", { name: "跳过" }).click();
+    await expect(guide).toBeHidden({ timeout: 10_000 });
+  }
+}
+
 export async function guestLogin(page: Page, deviceId: string) {
   await page.goto("/");
   await page.getByLabel(/设备 ID/).fill(deviceId);
   await page.getByRole("button", { name: "开始打工" }).click();
   await expect(primaryNav(page)).toBeVisible({ timeout: 20_000 });
+  await finishOnboarding(page);
 }
 
 type NavId =
@@ -57,7 +76,7 @@ export async function openNav(page: Page, id: NavId) {
   await page.locator(`nav.skill-sidebar [data-nav-id="${id}"]`).click();
 }
 
-export async function seedT1(page: Page, scene?: "chapter-complete") {
+export async function seedT1(page: Page, scene?: "chapter-complete" | "combat-levels") {
   const res = await page.evaluate(async ({ sceneName, api }) => {
     const raw = localStorage.getItem("worklife_user");
     if (!raw) throw new Error("missing worklife_user");

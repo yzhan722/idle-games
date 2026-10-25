@@ -64,7 +64,13 @@ export function SkillSidebar(props: Props) {
               <button
                 key={item.id}
                 type="button"
-                title={locked ? `${item.name}（未解锁）` : st ? `${item.name} Lv.${st.level} · ${Math.floor(st.xp)}/${Number.isFinite(prog!.need) ? prog!.need : "MAX"} XP` : item.name}
+                title={
+                  locked
+                    ? `${item.name}（未解锁）`
+                    : st && prog
+                      ? `${item.name} Lv.${st.level} · ${Math.floor(st.xp)}/${Number.isFinite(prog.need) ? prog.need : "MAX"} XP (${Math.floor(prog.pct)}%)`
+                      : item.name
+                }
                 aria-label={item.ariaLabel || item.name}
                 aria-current={active ? "page" : undefined}
                 aria-disabled={locked || undefined}

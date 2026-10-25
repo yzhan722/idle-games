@@ -1,10 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { Storage } from "../storage";
-import type { EnhancedContentPack } from "../types";
-import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
+import type { EnhancedContentPack, EnhancedPlayerState } from "../types";
+import { useCombatConsumable } from "../hp_combat";
+import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from "../player_commands";
 import {
-  consumeItem,
   getBuffEffects,
   pruneExpiredBuffs,
   getCheckInInfo,
@@ -25,7 +25,7 @@ function replyCommandError(error: unknown, reply: FastifyReply) {
     return reply.status(400).send({ error: error.code });
   }
   if (error instanceof PlayerCommandConflict) {
-    return reply.status(409).send({ error: 'state_version_conflict', message: '状态已更新，请刷新后重试', stateRevision: error.stateRevision });
+    return reply.status(409).send({ error: "state_version_conflict", message: "状态已更新，请刷新后重试", stateRevision: error.stateRevision });
   }
   throw error;
 }
@@ -63,15 +63,15 @@ export async function systemsRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ itemId: z.string().min(1), ...revisionField }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ itemId: z.string().min(1), ...revisionField }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now, expectedRevision: body.expectedRevision,
         operationId: body.operationId, operationPayload: operationPayload(body),
         apply(state) {
-          const result = consumeItem(state, contentPack, body.itemId, now);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'consume_rejected');
+          const result = useCombatConsumable(state as EnhancedPlayerState, contentPack, body.itemId, now);
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || "consume_rejected");
           return result;
         },
       });
@@ -82,6 +82,9 @@ export async function systemsRoutes(
         buff: outcome.result.buff,
         inventory: outcome.state.inventory,
         activeBuffs: outcome.state.activeBuffs || [],
+        hpCombat: outcome.state.hpCombat,
+        combatHp: outcome.state.combatHp,
+        combatHpAt: outcome.state.combatHpAt,
         stateRevision: outcome.state.stateRevision
       });
     } catch (error) {
@@ -106,7 +109,7 @@ export async function systemsRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = z.object({ ...revisionField }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ ...revisionField }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     try {
       const outcome = await storage.executePlayerCommand({
@@ -114,7 +117,7 @@ export async function systemsRoutes(
         operationId: body.operationId, operationPayload: operationPayload(body),
         apply(state) {
           const result = doCheckIn(state, now);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'checkin_rejected');
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || "checkin_rejected");
           return result;
         },
       });
@@ -154,14 +157,14 @@ export async function systemsRoutes(
 
     const body = z
       .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(9999), ...revisionField })
-      .parse((req.body ?? {}) as unknown);
+      .strict()      .parse((req.body ?? {}) as unknown);
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
         operationId: body.operationId, operationPayload: operationPayload(body),
         apply(state) {
           const result = buyFromShop(state, contentPack, body.itemId, body.qty);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'buy_rejected');
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || "buy_rejected");
           return result;
         },
       });
@@ -178,14 +181,14 @@ export async function systemsRoutes(
 
     const body = z
       .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(99999), ...revisionField })
-      .parse((req.body ?? {}) as unknown);
+      .strict()      .parse((req.body ?? {}) as unknown);
     try {
       const outcome = await storage.executePlayerCommand({
         userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
         operationId: body.operationId, operationPayload: operationPayload(body),
         apply(state) {
           const result = sellToShop(state, contentPack, body.itemId, body.qty);
-          if (!result.ok) throw new PlayerCommandRejected(result.reason || 'sell_rejected');
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || "sell_rejected");
           return result;
         },
       });

@@ -1,3 +1,4 @@
+import { highestActiveBonus } from './set_bonus';
 import { ensureProgression } from './progression_state';
 import { applyPlayerCommand, commandOperationHash, commandRevision, PlayerCommandConflict, PlayerCommandOperationMismatch, type PlayerCommand, type PlayerCommandReceipt } from './player_commands';
 import { Pool } from "pg";
@@ -10,7 +11,6 @@ import type {
   UserRecord, 
   EnhancedPlayerState,
   EnhancedContentPack,
-  MarketListing,
   Party,
   EnhancementRequest,
   EnhancementResult,
@@ -30,20 +30,25 @@ import {
   membershipKeys,
   payloadChannel,
 } from "./chat_channels";
+import { worldAnnouncements } from "./world_announce";
 import { socketFromWsConnection } from "./ws_socket";
 import { 
   appendLog, 
   defaultEnhancedPlayerState, 
   normalizeInv, 
   pickSeed, 
-  settleToNow,
-  createMarketListing,
+  simulateToNow,
   calculateTradingFee,
   getXpForLevel,
   startLifeActionNow,
-  startCombatFarmNow,
+  grantProfessionXp,
+  ensureProfessionSkills,
+  professionLevelForTree,
+  CRAFT_SKILL_BY_PROFESSION,
+  UsernameTaken,
 } from "./storage";
 import { enhancementRequestUserColumn } from "./sql_identifiers";
+import { isStageOpen } from "./zones";
 import { randomUUID } from "crypto";
 import {
   MAX_ENHANCEMENT_LEVEL,
@@ -85,6 +90,52 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
   function nowIso() { return new Date().toISOString(); }
 
+  /** 通用 WS 推送：市场成交、服务单、队伍事件实时下发给指定用户。 */
+  function notifyUser(userId: string, payload: Record<string, unknown>) {
+    const c = wsConnections.get(userId);
+    if (!c?.socket || typeof c.socket.send !== 'function') return;
+    try { c.socket.send(JSON.stringify({ type: 'notify', ts: nowIso(), ...payload })); } catch {}
+  }
+
+  /** 把成员的 isOnline 快照写回其所属队伍的 members jsonb（单语句，覆盖其所在任一队）。 */
+  async function patchMemberOnline(userId: string, isOnline: boolean) {
+    try {
+      await pool.query(
+        `UPDATE parties SET members = (
+           SELECT jsonb_agg(CASE WHEN m->>'userId' = $2 THEN m || $3::jsonb ELSE m END)
+           FROM jsonb_array_elements(members) m
+         )
+         WHERE EXISTS (SELECT 1 FROM jsonb_array_elements(members) m WHERE m->>'userId' = $2)`,
+        [userId, userId, JSON.stringify({ isOnline })]
+      );
+    } catch {}
+  }
+
+  /**
+   * 事务内加入队伍（joinParty / acceptPartyInvite 共用）。
+   * 调用方必须在 withTransaction 上下文中；队伍行会被 FOR UPDATE 锁定。
+   */
+  async function txJoinParty(client: any, userId: string, partyId: string): Promise<Party> {
+    const partyResult = await client.query("SELECT * FROM parties WHERE id = $1 FOR UPDATE", [partyId]);
+    if (!partyResult.rows[0]) throw new Error("party_not_found");
+    const party = partyResult.rows[0];
+    const members = party.members as any[];
+
+    if (members.length >= 6) throw new Error("party_full");
+    if (members.some((m: any) => m.userId === userId)) throw new Error("already_in_party");
+
+    members.push({ userId, role: 'member', joinedAt: nowIso(), isOnline: wsConnections.has(userId) });
+    await client.query("UPDATE parties SET members = $1 WHERE id = $2", [JSON.stringify(members), partyId]);
+
+    const { state: st, contentVersion } = await txLoadStateForUpdate(client, userId);
+    if (st.partyState) throw new Error("already_in_party");
+    st.partyState = { partyId, role: 'member', isLeader: false, joinedAt: nowIso() };
+    appendLog(st, `加入队伍：${partyId}`);
+    await txPersistState(client, userId, st, contentVersion);
+
+    return { id: partyId, leaderId: party.leader_id, members, createdAt: party.created_at.toISOString() } as Party;
+  }
+
   // ========== 并发控制 ==========
   // 1) 进程内 per-user 互斥：保证同一用户的请求串行执行，避免同实例下
   //    "读-改-写" 交错导致的丢更新。
@@ -118,6 +169,16 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     await pool.query(
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS guest_resume_token_hash TEXT"
     );
+    // 用户名/密码登录（002_password_auth 的 runtime 等价迁移）
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(32)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT");
+    await pool.query(
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (LOWER(username)) WHERE username IS NOT NULL"
+    );
+    // 会话版本号：JWT 凭据吊销用（幂等迁移）
+    await pool.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_version INTEGER NOT NULL DEFAULT 1"
+    );
     await pool.query(
       "CREATE UNIQUE INDEX IF NOT EXISTS users_guest_resume_token_hash_key ON users (guest_resume_token_hash)"
     );
@@ -135,18 +196,6 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       "ALTER TABLE player_states ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0"
     );
     // 交易表
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS market_listings (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        seller_id UUID NOT NULL REFERENCES users(id),
-        item_id TEXT NOT NULL,
-        quantity INT NOT NULL CHECK (quantity > 0),
-        price_per_unit INT NOT NULL CHECK (price_per_unit > 0),
-        status TEXT NOT NULL DEFAULT 'active',
-        listed_at TIMESTAMPTZ DEFAULT now(),
-        expires_at TIMESTAMPTZ NOT NULL
-      )
-    `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS trade_history (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -240,12 +289,16 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
   }
 
   // ========== 用户管理 ==========
+  const USER_COLS = "id, guest_device_id, google_sub, created_at, guest_resume_token_hash, username, password_hash, auth_version";
   function mapUser(r: {
     id: string;
     guest_device_id: string | null;
     google_sub: string | null;
     created_at: Date;
     guest_resume_token_hash?: string | null;
+    username?: string | null;
+    password_hash?: string | null;
+    auth_version?: number | null;
   }): UserRecord {
     return {
       id: r.id,
@@ -253,22 +306,25 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       googleSub: r.google_sub,
       createdAt: r.created_at.toISOString(),
       guestResumeTokenHash: r.guest_resume_token_hash ?? null,
+      username: r.username ?? null,
+      passwordHash: r.password_hash ?? null,
+      authVersion: r.auth_version ?? 1,
     };
   }
 
   async function findOrCreateGuestUser(deviceId: string): Promise<UserRecord> {
     const existing = await pool.query(
-      "SELECT id, guest_device_id, google_sub, created_at, guest_resume_token_hash FROM users WHERE guest_device_id = $1",
+      "SELECT " + USER_COLS + " FROM users WHERE guest_device_id = $1",
       [deviceId]
     );
     if (existing.rows[0]) return mapUser(existing.rows[0]);
     const created = await pool.query(
-      "INSERT INTO users (id, guest_device_id) VALUES (gen_random_uuid(), $1) RETURNING id, guest_device_id, google_sub, created_at, guest_resume_token_hash",
+      "INSERT INTO users (id, guest_device_id) VALUES (gen_random_uuid(), $1) RETURNING " + USER_COLS,
       [deviceId]
     );
     if (!created.rows[0]) {
       // 并发插入，重新查询
-      const again = await pool.query("SELECT id, guest_device_id, google_sub, created_at, guest_resume_token_hash FROM users WHERE guest_device_id = $1", [deviceId]);
+      const again = await pool.query("SELECT " + USER_COLS + " FROM users WHERE guest_device_id = $1", [deviceId]);
       return mapUser(again.rows[0]);
     }
     return mapUser(created.rows[0]);
@@ -277,7 +333,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
   async function createGuestUser(): Promise<UserRecord> {
     const id = randomUUID();
     const created = await pool.query(
-      "INSERT INTO users (id, guest_device_id) VALUES ($1, $2) RETURNING id, guest_device_id, google_sub, created_at, guest_resume_token_hash",
+      "INSERT INTO users (id, guest_device_id) VALUES ($1, $2) RETURNING " + USER_COLS,
       [id, `guest_${id}`]
     );
     return mapUser(created.rows[0]);
@@ -285,7 +341,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
   async function getUser(userId: string): Promise<UserRecord | null> {
     const found = await pool.query(
-      "SELECT id, guest_device_id, google_sub, created_at, guest_resume_token_hash FROM users WHERE id = $1",
+      "SELECT " + USER_COLS + " FROM users WHERE id = $1",
       [userId]
     );
     return found.rows[0] ? mapUser(found.rows[0]) : null;
@@ -301,7 +357,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
   async function findUserByResumeTokenHash(hash: string): Promise<UserRecord | null> {
     const found = await pool.query(
-      "SELECT id, guest_device_id, google_sub, created_at, guest_resume_token_hash FROM users WHERE guest_resume_token_hash = $1",
+      "SELECT " + USER_COLS + " FROM users WHERE guest_resume_token_hash = $1",
       [hash]
     );
     return found.rows[0] ? mapUser(found.rows[0]) : null;
@@ -411,16 +467,60 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     async bindGoogle(userId: string, googleSub: string) {
       const existing = await pool.query("SELECT id FROM users WHERE google_sub = $1 AND id <> $2", [googleSub, userId]);
       if (existing.rows[0]) throw new Error("google_sub_already_bound");
-      await pool.query("UPDATE users SET google_sub = $1 WHERE id = $2", [googleSub, userId]);
+      // 凭据变更即吊销旧会话
+      await pool.query("UPDATE users SET google_sub = $1, auth_version = COALESCE(auth_version, 1) + 1 WHERE id = $2", [googleSub, userId]);
+    },
+
+    async findUserByGoogleSub(googleSub: string) {
+      const found = await pool.query(
+        "SELECT " + USER_COLS + " FROM users WHERE google_sub = $1",
+        [googleSub]
+      );
+      return found.rows[0] ? mapUser(found.rows[0]) : null;
+    },
+
+    async invalidateSessions(userId: string) {
+      await pool.query("UPDATE users SET auth_version = COALESCE(auth_version, 1) + 1 WHERE id = $1", [userId]);
+    },
+
+    async createPasswordUser(username: string, passwordHash: string) {
+      try {
+        const created = await pool.query(
+          "INSERT INTO users (id, username, password_hash) VALUES ($1, $2, $3) RETURNING " + USER_COLS,
+          [randomUUID(), username, passwordHash]
+        );
+        return mapUser(created.rows[0]);
+      } catch (e: any) {
+        if (e?.code === "23505") throw new UsernameTaken();
+        throw e;
+      }
+    },
+
+    async findUserByUsername(username: string) {
+      const found = await pool.query(
+        "SELECT " + USER_COLS + " FROM users WHERE lower(username) = lower($1)",
+        [username]
+      );
+      return found.rows[0] ? mapUser(found.rows[0]) : null;
+    },
+
+    async bindPassword(userId: string, username: string, passwordHash: string) {
+      const existing = await pool.query("SELECT id FROM users WHERE lower(username) = lower($1) AND id <> $2", [username, userId]);
+      if (existing.rows[0]) throw new UsernameTaken();
+      const updated = await pool.query("UPDATE users SET username = $1, password_hash = $2, auth_version = COALESCE(auth_version, 1) + 1 WHERE id = $3", [username, passwordHash, userId]);
+      if (updated.rowCount !== 1) throw new Error("user_not_found");
     },
 
     getOrCreatePlayerState,
 
     async simulateToNow({ userId, state, now, contentPack }) {
       return withUserLock(userId, async () => {
-        const result = await settleToNow({ state, now, contentPack });
+        const result = simulateToNow({ state: structuredClone(state), now, contentPack });
         const next = { ...result.state as EnhancedPlayerState, inventory: normalizeInv(result.state.inventory) };
         await persistState(userId, next);
+        for (const text of worldAnnouncements(state, next, contentPack, userId)) {
+          broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+        }
         return next;
       });
     },
@@ -440,8 +540,8 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
             }
           }
           const revision = commandRevision(snapshot, command.expectedRevision);
-          // Expensive simulation runs outside the short database transaction and can yield.
-          const settled = await settleToNow({ state: snapshot, now: command.now, contentPack: command.contentPack });
+          // 模拟在短数据库事务外执行；单次结算窗口 ≤120s，无需分块续算。
+          const settled = simulateToNow({ state: structuredClone(snapshot), now: command.now, contentPack: command.contentPack });
           const outcome = applyPlayerCommand(settled.state as EnhancedPlayerState, command.apply);
           outcome.state.inventory = normalizeInv(outcome.state.inventory);
           ensureProgression(outcome.state, command.now);
@@ -460,12 +560,43 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
                 if (inserted.rowCount === 0) throw new PlayerCommandConflict(currentRevision);
               }
             });
+            for (const text of worldAnnouncements(snapshot, outcome.state as EnhancedPlayerState, command.contentPack, command.userId)) {
+              broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+            }
             return outcome;
           } catch (error) {
             // Retry only an uncommitted, pure command after rereading its authoritative snapshot.
             if (!(error instanceof PlayerCommandConflict) || command.expectedRevision !== undefined || attempt >= 2) throw error;
           }
         }
+      });
+    },
+
+    async deduplicateOperation<T>({ userId, operationId, operationPayload, run }: {
+      userId: string;
+      operationId?: string;
+      operationPayload?: unknown;
+      run: () => Promise<T>;
+    }): Promise<{ result: T; deduplicated: boolean }> {
+      if (!operationId) return { result: await run(), deduplicated: false };
+      return withUserLock(userId, async () => {
+        const requestHash = commandOperationHash(userId, operationId, operationPayload);
+        const existing = await getCommandReceipt(userId, operationId);
+        if (existing) {
+          if (existing.requestHash !== requestHash) throw new PlayerCommandOperationMismatch();
+          return { result: existing.result as T, deduplicated: true };
+        }
+        const result = await run();
+        const inserted = await pool.query(
+          'INSERT INTO player_command_receipts (user_id, operation_id, request_hash, result, state_revision) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (user_id, operation_id) DO NOTHING',
+          [userId, operationId, requestHash, JSON.stringify(result ?? null), 0]
+        );
+        if (inserted.rowCount === 0) {
+          // 并发重试抢先写入：以收据为准返回去重结果
+          const raced = await getCommandReceipt(userId, operationId);
+          if (raced) return { result: raced.result as T, deduplicated: true };
+        }
+        return { result, deduplicated: false };
       });
     },
 
@@ -478,21 +609,16 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       });
     },
 
+    announceWorld(text: string) {
+      broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+    },
+
     async startLifeAction({ userId, actionId, quantity, now, contentPack }) {
       return withUserLock(userId, async () => {
       const st = await getOrCreatePlayerState(userId, "unknown");
       startLifeActionNow(st, contentPack, actionId, quantity, now);
       await persistState(userId, st);
       return st;
-      });
-    },
-
-    async startCombatFarm({ userId, stageId, now }) {
-      return withUserLock(userId, async () => {
-        const st = await getOrCreatePlayerState(userId, "unknown");
-        startCombatFarmNow(st, stageId, now);
-        await persistState(userId, st);
-        return st;
       });
     },
 
@@ -515,7 +641,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       if (!node) return { success: false, message: "技能节点不存在" };
 
       const skill = st.skills[`skill_${professionId}`];
-      if (!skill || skill.level < node.requirements.level) {
+      if (!skill || professionLevelForTree(st, professionId) < node.requirements.level) {
         return { success: false, message: `技能等级不足，需要 ${node.requirements.level} 级` };
       }
 
@@ -546,12 +672,19 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     async getPlayerSkillProgress({ userId, professionId }) {
       return withUserLock(userId, async () => {
         const st = await getOrCreatePlayerState(userId, "unknown");
+        ensureProfessionSkills(st);
         const key = `skill_${professionId}`;
-        if (!st.skills[key]) {
-          st.skills[key] = { level: 1, xp: 0, unlockedRecipes: [], enhancementLevel: 0 };
-          await persistState(userId, st);
-        }
-        return st.skills[key];
+        const skill = st.skills[key];
+        if (!skill) throw new Error("state_not_found");
+        const craftSkill = st.skills[CRAFT_SKILL_BY_PROFESSION[professionId] || ""];
+        return {
+          ...skill,
+          level: Math.max(skill.level, craftSkill?.level || 0),
+          gatherLevel: skill.level,
+          gatherXp: skill.xp,
+          craftLevel: craftSkill?.level ?? 0,
+          craftXp: craftSkill?.xp ?? 0,
+        };
       });
     },
 
@@ -585,7 +718,31 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       // 并发请求会读到同一份材料与等级，导致刷材料/越级强化。串行化后由
       // CAS 兜底跨进程一致性。
       return withUserLock(userId, async () => {
-      const st = await getOrCreatePlayerState(userId, "unknown");
+      // 服务费转账必须在同一事务内：请求者扣费与提供者收款要么同时成功要么同时回滚
+      return withTransaction(async (client) => {
+      const providerId = request.serviceProviderId;
+      // 自我接单 = 用自己的号收自己的服务费（印钞漏洞），在任何读写前拒绝
+      if (providerId === userId) {
+        const lv = 0;
+        return { success: false, previousLevel: lv, newLevel: lv, consumedMaterials: {}, failureReason: "不能向自己购买强化服务" };
+      }
+      if (providerId) {
+        // txLoadStateForUpdate 会对不存在的 userId 触发外键违规——先做一次廉价存在性检查
+        const exists = await client.query("SELECT 1 FROM users WHERE id = $1", [providerId]);
+        if (!exists.rows[0]) {
+          const lv0 = 0;
+          return { success: false, previousLevel: lv0, newLevel: lv0, consumedMaterials: {}, failureReason: "服务提供者不存在" };
+        }
+      }
+      // 固定加锁顺序（按 userId 字典序），避免双向服务请求互锁死锁
+      const lockFirst = providerId && providerId < userId ? providerId : userId;
+      const lockSecond = providerId && providerId < userId ? userId : providerId;
+      const loaded1 = await txLoadStateForUpdate(client, lockFirst);
+      const loaded2 = lockSecond ? await txLoadStateForUpdate(client, lockSecond) : loaded1;
+      const userLoaded = lockFirst === userId ? loaded1 : loaded2;
+      const providerLoaded = providerId ? (lockFirst === providerId ? loaded1 : loaded2) : undefined;
+      const st = userLoaded.state;
+      const providerState = providerLoaded?.state;
       const currentLevel = st.equipment.enhancementLevels?.[request.itemId] || 0;
       const item = (contentPack.items as any[]).find(i => i.id === request.itemId);
       if (!item) return { success: false, previousLevel: currentLevel, newLevel: currentLevel, consumedMaterials: {}, failureReason: "未知物品" };
@@ -594,6 +751,23 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       const rule = ruleMatch?.rule ?? null;
       if (!rule) {
         return { success: false, previousLevel: currentLevel, newLevel: currentLevel, consumedMaterials: {}, failureReason: "该物品无法强化" };
+      }
+
+      // 服务费语义与内存适配器一致：提供者必须存在且有资质，请求者真金实付
+      let serviceFee = 0;
+      if (providerId) {
+        if (!providerState) {
+          return { success: false, previousLevel: currentLevel, newLevel: currentLevel, consumedMaterials: {}, failureReason: "服务提供者不存在" };
+        }
+        const requiredProfession = ruleMatch?.requiredProfession ?? rule.requiredProfession;
+        const providerSkill = providerState.skills?.[`skill_${requiredProfession}`];
+        if (!providerSkill || !hasEnhancementSkill(providerSkill.unlockedRecipes, requiredProfession, rule.itemType)) {
+          return { success: false, previousLevel: currentLevel, newLevel: currentLevel, consumedMaterials: {}, failureReason: "服务提供者不具备对应强化技能" };
+        }
+        serviceFee = Math.floor((rule.materials.find((m: { itemId: string }) => m.itemId === "gold")?.quantity || 100) * 0.5);
+        if ((st.inventory.gold || 0) < serviceFee) {
+          return { success: false, previousLevel: currentLevel, newLevel: currentLevel, consumedMaterials: {}, failureReason: "金币不足以支付服务费" };
+        }
       }
 
       const result = performEnhancementAttempt({
@@ -613,9 +787,17 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
             : `${item.name}${result.failureReason}（强化经验 +${result.xpGained}）`
         );
         for (const level of result.levelUps || []) appendLog(st, `强化技能升级到 ${level} 级！`);
-        await persistState(userId, st);
+        // 服务费是转账不是铸造：请求者扣、提供者收，同一事务原子完成
+        if (providerId && providerState && serviceFee > 0) {
+          st.inventory.gold = (st.inventory.gold || 0) - serviceFee;
+          providerState.inventory.gold = (providerState.inventory.gold || 0) + serviceFee;
+          appendLog(providerState, `提供强化服务获得 ${serviceFee} 金币`);
+          await txPersistState(client, providerId, providerState, providerLoaded!.contentVersion);
+        }
+        await txPersistState(client, userId, st, userLoaded.contentVersion);
       }
       return result;
+      });
       });
     },
 
@@ -650,6 +832,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         canEnhance: false,
         canAfford: false,
         isOwned,
+        itemType: undefined,
         protection: {
           itemId: PROTECTION_MIRROR_ID,
           available: st.inventory[PROTECTION_MIRROR_ID] || 0,
@@ -660,7 +843,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
       const nextLevel = currentLevel + 1;
       const maxLevel = Math.min(MAX_ENHANCEMENT_LEVEL, Number(rule.maxLevel || MAX_ENHANCEMENT_LEVEL));
-      const nextLevelCost = nextLevel <= maxLevel ? enhancementMaterials(rule, nextLevel) : {};
+      const nextLevelCost = nextLevel <= maxLevel ? enhancementMaterials(rule, nextLevel, undefined, item, contentPack) : {};
       const rates = enhancementSuccessBreakdown(nextLevel, skill.level, itemLevel, equippedEnhanceToolBonus(st, contentPack));
       const canAfford = Object.entries(nextLevelCost).every(([id, qty]) => (st.inventory[id] || 0) >= qty);
 
@@ -683,6 +866,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         canAfford,
         isOwned,
         requiredProfession,
+        itemType: rule?.itemType,
         protection: {
           itemId: PROTECTION_MIRROR_ID,
           available: st.inventory[PROTECTION_MIRROR_ID] || 0,
@@ -728,18 +912,47 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
     // ========== 强化服务请求 ==========
     async createEnhancementServiceRequest({ requesterId, providerId, itemId, targetLevel, message, contentPack }) {
-      const result = await pool.query(
-        `INSERT INTO enhancement_requests (requester_id, provider_id, item_id, target_level, message)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [requesterId, providerId, itemId, targetLevel, message]
-      );
-      const row = result.rows[0];
-      return {
-        id: row.id, requesterId: row.requester_id, providerId: row.provider_id,
-        itemId: row.item_id, targetLevel: row.target_level, serviceFee: row.service_fee,
-        message: row.message, status: row.status, createdAt: row.created_at.toISOString(),
-        updatedAt: row.updated_at.toISOString(),
-      } as EnhancementServiceRequest;
+      // 自我接单 = 用自己的号收自己的服务费，禁止（与内存适配器一致）
+      if (requesterId === providerId) throw new Error("不能向自己发起强化服务");
+      // 下单时就校验：请求者得真拥有该物品、物品得可强化、提供者得有资质——
+      // 不是等接单时才发现（内存适配器对齐）
+      return withTransaction(async (client) => {
+        const lockFirst = requesterId < providerId ? requesterId : providerId;
+        const lockSecond = requesterId < providerId ? providerId : requesterId;
+        const loaded1 = await txLoadStateForUpdate(client, lockFirst);
+        const loaded2 = await txLoadStateForUpdate(client, lockSecond);
+        const requesterState = (lockFirst === requesterId ? loaded1 : loaded2).state;
+        const providerState = (lockFirst === providerId ? loaded1 : loaded2).state;
+
+        if (!requesterState.inventory[itemId] || requesterState.inventory[itemId] < 1) {
+          throw new Error("您没有该物品");
+        }
+        const item = (contentPack.items as any[]).find((i: any) => i.id === itemId);
+        const ruleMatch = item ? findEnhancementRuleForItem(item, contentPack) : null;
+        const enhancementRule = ruleMatch?.rule;
+        if (!enhancementRule) throw new Error("该物品无法强化");
+
+        const requiredProfession = ruleMatch?.requiredProfession ?? enhancementRule.requiredProfession;
+        const providerSkill = providerState.skills?.[`skill_${requiredProfession}`];
+        if (!providerSkill || !hasEnhancementSkill(providerSkill.unlockedRecipes, requiredProfession, enhancementRule.itemType)) {
+          throw new Error("该服务提供者不具备对应强化技能");
+        }
+
+        const serviceFee = Math.floor((enhancementRule.materials.find((m: any) => m.itemId === 'gold')?.quantity || 100) * 0.5);
+        const result = await client.query(
+          `INSERT INTO enhancement_requests (requester_id, provider_id, item_id, target_level, service_fee, message)
+           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+          [requesterId, providerId, itemId, targetLevel, serviceFee, message]
+        );
+        const row = result.rows[0];
+        notifyUser(providerId, { kind: "enhancement:service_request", requestId: row.id, requesterId, itemId, targetLevel, serviceFee });
+        return {
+          id: row.id, requesterId: row.requester_id, providerId: row.provider_id,
+          itemId: row.item_id, targetLevel: row.target_level, serviceFee: row.service_fee,
+          message: row.message, status: row.status, createdAt: row.created_at.toISOString(),
+          updatedAt: row.updated_at.toISOString(),
+        } as EnhancementServiceRequest;
+      });
     },
 
     async respondToEnhancementServiceRequest({ requestId, providerId, accepted, message, contentPack }) {
@@ -765,6 +978,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
             "UPDATE enhancement_requests SET status = 'rejected', response_message = $1, updated_at = now() WHERE id = $2",
             [enhanceResult.failureReason || "强化失败", requestId]
           );
+          notifyUser(req.requester_id, { kind: "enhancement:service_completed", requestId, success: false, failureReason: enhanceResult.failureReason });
           return { success: false, message: enhanceResult.failureReason || "强化失败" };
         }
       }
@@ -774,6 +988,9 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         "UPDATE enhancement_requests SET status = $1, response_message = $2, updated_at = now() WHERE id = $3",
         [newStatus, message, requestId]
       );
+      notifyUser(req.requester_id, accepted
+        ? { kind: "enhancement:service_completed", requestId, success: true }
+        : { kind: "enhancement:service_rejected", requestId, message });
       return { success: true, message: accepted ? "已接受" : "已拒绝" };
     },
 
@@ -791,118 +1008,6 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       })) as EnhancementServiceRequest[];
     },
 
-    // ========== 交易行 ==========
-    async listItemForSale({ userId, itemId, quantity, pricePerUnit, duration }) {
-      // 事务化：扣减卖家库存与写入挂单原子完成，避免"扣了库存但挂单写入失败"。
-      const row = await withTransaction(async (client) => {
-        const { state: st, contentVersion } = await txLoadStateForUpdate(client, userId);
-        if ((st.inventory[itemId] || 0) < quantity) throw new Error("insufficient_items");
-
-        st.inventory[itemId] = (st.inventory[itemId] || 0) - quantity;
-        if (!st.tradingState) st.tradingState = { activeListings: [], purchaseHistory: [] };
-        await txPersistState(client, userId, st, contentVersion);
-
-        const expiresAt = new Date(Date.now() + (duration || 24) * 3600000);
-        const result = await client.query(
-          `INSERT INTO market_listings (seller_id, item_id, quantity, price_per_unit, expires_at)
-           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-          [userId, itemId, quantity, pricePerUnit, expiresAt]
-        );
-        return result.rows[0];
-      });
-      return {
-        id: row.id, sellerId: row.seller_id, itemId: row.item_id,
-        quantity: row.quantity, pricePerUnit: row.price_per_unit,
-        listedAt: row.listed_at.toISOString(), expiresAt: row.expires_at.toISOString(),
-        status: row.status,
-      } as MarketListing;
-    },
-
-    async purchaseItem({ userId, listingId, quantity }) {
-      // 全程置于单个数据库事务中：
-      // 1) 用条件 UPDATE 原子扣减挂单数量，杜绝并发超卖；
-      // 2) 用 FOR UPDATE 行锁串行化买卖双方状态读写，杜绝丢更新；
-      // 3) 任一步失败整体 ROLLBACK，杜绝"钱货两失/凭空增发"。
-      return withTransaction(async (client) => {
-        // 先读挂单做前置校验（拿到 seller_id / item_id / 单价）
-        const listingResult = await client.query(
-          "SELECT * FROM market_listings WHERE id = $1 AND status = 'active'",
-          [listingId]
-        );
-        if (!listingResult.rows[0]) return { success: false, message: "商品不存在或已下架" };
-        const listing = listingResult.rows[0];
-
-        if (listing.seller_id === userId) return { success: false, message: "不能购买自己的商品" };
-
-        const totalPrice = quantity * listing.price_per_unit;
-        const fee = calculateTradingFee(totalPrice);
-        const finalPrice = totalPrice + fee;
-
-        // 原子扣减挂单数量：仅当 status='active' 且剩余数量足够时才扣减成功。
-        // 并发购买中只有一方能扣到，避免超卖。
-        const deduct = await client.query(
-          `UPDATE market_listings
-             SET quantity = quantity - $1,
-                 status = CASE WHEN quantity - $1 <= 0 THEN 'sold' ELSE status END
-           WHERE id = $2 AND status = 'active' AND quantity >= $1
-           RETURNING quantity`,
-          [quantity, listingId]
-        );
-        if (deduct.rowCount === 0) return { success: false, message: "购买数量超过可用数量" };
-
-        // 固定加锁顺序（按 userId 字典序）避免买卖双方互锁导致死锁
-        const buyerId = userId;
-        const sellerId = listing.seller_id as string;
-        const lockFirst = buyerId < sellerId ? buyerId : sellerId;
-        const lockSecond = buyerId < sellerId ? sellerId : buyerId;
-        const loaded1 = await txLoadStateForUpdate(client, lockFirst);
-        const loaded2 = await txLoadStateForUpdate(client, lockSecond);
-        const buyerLoaded = lockFirst === buyerId ? loaded1 : loaded2;
-        const sellerLoaded = lockFirst === sellerId ? loaded1 : loaded2;
-        const buyer = buyerLoaded.state;
-        const seller = sellerLoaded.state;
-
-        if ((buyer.inventory.gold || 0) < finalPrice) {
-          // 余额不足：抛错触发 ROLLBACK，挂单扣减一并回滚
-          throw new Error("insufficient_gold");
-        }
-
-        // 执行交易
-        buyer.inventory.gold = (buyer.inventory.gold || 0) - finalPrice;
-        buyer.inventory[listing.item_id] = (buyer.inventory[listing.item_id] || 0) + quantity;
-        appendLog(buyer, `购买物品：${listing.item_id} x${quantity} 花费 ${finalPrice}金币`);
-        seller.inventory.gold = (seller.inventory.gold || 0) + totalPrice;
-        appendLog(seller, `物品售出：${listing.item_id} x${quantity} 获得 ${totalPrice}金币`);
-
-        await txPersistState(client, buyerId, buyer, buyerLoaded.contentVersion);
-        await txPersistState(client, sellerId, seller, sellerLoaded.contentVersion);
-
-        // 记录交易
-        await client.query(
-          "INSERT INTO trade_history (buyer_id, seller_id, item_id, quantity, total_price) VALUES ($1,$2,$3,$4,$5)",
-          [buyerId, sellerId, listing.item_id, quantity, totalPrice]
-        );
-
-        return { success: true };
-      }).catch((e) => {
-        if (e instanceof Error && e.message === "insufficient_gold") {
-          return { success: false, message: "金币不足" };
-        }
-        throw e;
-      });
-    },
-
-    async getMarketListings({ query, filters }) {
-      const result = await pool.query(
-        "SELECT * FROM market_listings WHERE status = 'active' AND expires_at > now() ORDER BY listed_at DESC LIMIT 100"
-      );
-      return result.rows.map(r => ({
-        id: r.id, sellerId: r.seller_id, itemId: r.item_id,
-        quantity: r.quantity, pricePerUnit: r.price_per_unit,
-        listedAt: r.listed_at.toISOString(), expiresAt: r.expires_at.toISOString(),
-        status: r.status,
-      })) as MarketListing[];
-    },
 
     // ========== 组队系统 ==========
     async createParty({ userId, name }) {
@@ -931,32 +1036,143 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     async joinParty({ userId, partyId }) {
       // 事务 + 行锁：锁定队伍行后再"读成员 → 校验人数 → 写回"，避免并发加入
       // 各自读到旧成员数导致超员。
+      const joined = await withTransaction(async (client) => txJoinParty(client, userId, partyId));
+      const conn = wsConnections.get(userId);
+      if (conn && !conn.channels.has(`party:${partyId}`)) {
+        addMembership(channelMembers, conn.channels, userId, `party:${partyId}`);
+      }
+      broadcast(`party:${partyId}`, { type: "party:event", event: "member_joined", memberId: userId, ts: nowIso() });
+      return joined;
+    },
+
+    async listParties({ limit }) {
+      const result = await pool.query(
+        "SELECT id, name, leader_id, members, current_activity, created_at FROM parties WHERE jsonb_array_length(members) < 6 ORDER BY created_at DESC LIMIT $1",
+        [Math.min(200, Math.max(1, limit ?? 50))]
+      );
+      return result.rows.map(r => ({
+        id: r.id, name: r.name ?? undefined, leaderId: r.leader_id,
+        memberCount: (r.members as any[]).length, hasActivity: !!r.current_activity,
+        createdAt: r.created_at.toISOString(),
+      }));
+    },
+
+    async inviteToParty({ userId, partyId, targetUserId }) {
       return withTransaction(async (client) => {
         const partyResult = await client.query("SELECT * FROM parties WHERE id = $1 FOR UPDATE", [partyId]);
-        if (!partyResult.rows[0]) throw new Error("party_not_found");
-        const party = partyResult.rows[0];
-        const members = party.members as any[];
-
-        if (members.length >= 6) throw new Error("party_full");
-        if (members.some((m: any) => m.userId === userId)) throw new Error("already_in_party");
-
-        members.push({ userId, role: 'member', joinedAt: nowIso(), isOnline: true });
-        await client.query("UPDATE parties SET members = $1 WHERE id = $2", [JSON.stringify(members), partyId]);
-
-        const { state: st, contentVersion } = await txLoadStateForUpdate(client, userId);
-        if (st.partyState) throw new Error("already_in_party");
-        st.partyState = { partyId, role: 'member', isLeader: false, joinedAt: nowIso() };
-        appendLog(st, `加入队伍：${partyId}`);
-        await txPersistState(client, userId, st, contentVersion);
-
-        return { id: partyId, leaderId: party.leader_id, members, createdAt: party.created_at.toISOString() } as Party;
+        if (!partyResult.rows[0]) return { success: false, message: "队伍不存在" };
+        const members = partyResult.rows[0].members as any[];
+        if (!members.some((m: any) => m.userId === userId)) return { success: false, message: "您不是该队伍成员" };
+        if (members.length >= 6) return { success: false, message: "队伍已满员" };
+        if (userId === targetUserId) return { success: false, message: "不能邀请自己" };
+        const { state: target, contentVersion } = await txLoadStateForUpdate(client, targetUserId);
+        if (target.partyState) return { success: false, message: "对方已有队伍" };
+        if (!Array.isArray(target.partyInvites)) target.partyInvites = [];
+        const now = Date.now();
+        target.partyInvites = target.partyInvites.filter(i => Date.parse(i.invitedAt) > now - 24 * 3600_000);
+        if (target.partyInvites.some(i => i.partyId === partyId)) return { success: true, message: "邀请已发送" };
+        if (target.partyInvites.length >= 10) target.partyInvites.shift();
+        target.partyInvites.push({ partyId, fromUserId: userId, invitedAt: nowIso() });
+        await txPersistState(client, targetUserId, target, contentVersion);
+        notifyUser(targetUserId, { kind: "party:invite", partyId, from: userId });
+        return { success: true };
       });
     },
 
-    async startPartyActivity({ userId, partyId, activityType, stageId }) {
+    async acceptPartyInvite({ userId, partyId }) {
+      const party = await withTransaction(async (client) => {
+        const { state: st, contentVersion } = await txLoadStateForUpdate(client, userId);
+        const invite = (st.partyInvites || []).find(i => i.partyId === partyId);
+        if (!invite) throw new Error("invite_not_found");
+        if (Date.parse(invite.invitedAt) < Date.now() - 24 * 3600_000) {
+          st.partyInvites = (st.partyInvites || []).filter(i => i !== invite);
+          await txPersistState(client, userId, st, contentVersion);
+          throw new Error("invite_expired");
+        }
+        st.partyInvites = (st.partyInvites || []).filter(i => i.partyId !== partyId);
+        await txPersistState(client, userId, st, contentVersion);
+        return txJoinParty(client, userId, partyId);
+      });
+      const conn = wsConnections.get(userId);
+      if (conn && !conn.channels.has(`party:${partyId}`)) {
+        addMembership(channelMembers, conn.channels, userId, `party:${partyId}`);
+      }
+      broadcast(`party:${partyId}`, { type: "party:event", event: "member_joined", memberId: userId, ts: nowIso() });
+      return party;
+    },
+
+    async declinePartyInvite({ userId, partyId }) {
+      return withTransaction(async (client) => {
+        const { state: st, contentVersion } = await txLoadStateForUpdate(client, userId);
+        const before = (st.partyInvites || []).length;
+        st.partyInvites = (st.partyInvites || []).filter(i => i.partyId !== partyId);
+        await txPersistState(client, userId, st, contentVersion);
+        return { success: (st.partyInvites || []).length < before };
+      });
+    },
+
+    async kickPartyMember({ userId, partyId, memberId }) {
+      const res = await withTransaction(async (client) => {
+        const partyResult = await client.query("SELECT * FROM parties WHERE id = $1 FOR UPDATE", [partyId]);
+        if (!partyResult.rows[0]) return { success: false, message: "队伍不存在" };
+        const party = partyResult.rows[0];
+        if (party.leader_id !== userId) return { success: false, message: "只有队长可以踢出成员" };
+        if (memberId === userId) return { success: false, message: "队长不能踢出自己（请直接离开队伍）" };
+        const members = party.members as any[];
+        const idx = members.findIndex((m: any) => m.userId === memberId);
+        if (idx === -1) return { success: false, message: "该玩家不在队伍中" };
+        members.splice(idx, 1);
+        await client.query("UPDATE parties SET members = $1 WHERE id = $2", [JSON.stringify(members), partyId]);
+        const { state: target, contentVersion } = await txLoadStateForUpdate(client, memberId);
+        target.partyState = undefined;
+        appendLog(target, "您已被移出队伍");
+        await txPersistState(client, memberId, target, contentVersion);
+        return { success: true };
+      });
+      if (res.success) {
+        const conn = wsConnections.get(memberId);
+        if (conn) { conn.channels.delete(`party:${partyId}`); channelMembers.get(`party:${partyId}`)?.delete(memberId); }
+        notifyUser(memberId, { kind: "party:kicked", partyId });
+        broadcast(`party:${partyId}`, { type: "party:event", event: "member_left", memberId, kicked: true, ts: nowIso() });
+      }
+      return res;
+    },
+
+    async transferPartyLeadership({ userId, partyId, memberId }) {
+      const res = await withTransaction(async (client) => {
+        const partyResult = await client.query("SELECT * FROM parties WHERE id = $1 FOR UPDATE", [partyId]);
+        if (!partyResult.rows[0]) return { success: false, message: "队伍不存在" };
+        const party = partyResult.rows[0];
+        if (party.leader_id !== userId) return { success: false, message: "只有队长可以移交队长" };
+        if (memberId === userId) return { success: false, message: "您已经是队长" };
+        const members = party.members as any[];
+        const target = members.find((m: any) => m.userId === memberId);
+        if (!target) return { success: false, message: "该玩家不在队伍中" };
+        for (const m of members) m.role = m.userId === memberId ? 'leader' : 'member';
+        await client.query("UPDATE parties SET leader_id = $1, members = $2 WHERE id = $3", [memberId, JSON.stringify(members), partyId]);
+        const sorted = [userId, memberId].sort();
+        for (const uid of sorted) {
+          const { state: s, contentVersion } = await txLoadStateForUpdate(client, uid);
+          if (s.partyState) {
+            s.partyState.isLeader = uid === memberId;
+            s.partyState.role = s.partyState.isLeader ? 'leader' : 'member';
+          }
+          await txPersistState(client, uid, s, contentVersion);
+        }
+        return { success: true };
+      });
+      if (res.success) {
+        broadcast(`party:${partyId}`, { type: "party:event", event: "leader_changed", memberId, ts: nowIso() });
+        notifyUser(memberId, { kind: "party:leader", partyId });
+      }
+      return res;
+    },
+
+    async startPartyActivity({ userId, partyId, activityType, stageId, durationMinutes, contentPack }) {
       // 事务 + 行锁：锁定队伍行后校验并原子设置 current_activity，
       // 循环写队员日志在同一事务内完成，避免部分写入成功/活动重复开始。
-      return withTransaction(async (client) => {
+      // 时长制 + 贡献制：开始时刻快照每个成员的统计基线，结算按统计差值分奖。
+      const res = await withTransaction(async (client) => {
         const partyResult = await client.query("SELECT * FROM parties WHERE id = $1 FOR UPDATE", [partyId]);
         if (!partyResult.rows[0]) return { success: false, message: "队伍不存在" };
         const party = partyResult.rows[0];
@@ -967,18 +1183,72 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
         if (party.current_activity) return { success: false, message: "队伍已有进行中的活动" };
 
-        const activity = { type: activityType, stageId, startedAt: nowIso() };
-        await client.query("UPDATE parties SET current_activity = $1 WHERE id = $2", [JSON.stringify(activity), partyId]);
+        const duration = Math.min(480, Math.max(5, Math.floor(durationMinutes ?? 30)));
+        const now = new Date();
+        let raidBossId: string | undefined;
+        let raidBossName: string | undefined;
+        let bossKillsNeeded: number | undefined;
 
-        // 按 userId 排序加行锁写日志，固定顺序避免死锁
+        if (activityType === 'combat' || activityType === 'raid') {
+          if (!stageId) return { success: false, message: "战斗类活动需要指定关卡" };
+          const stage = contentPack ? (contentPack.stages as any[]).find((s: any) => s.id === stageId) : null;
+          if (contentPack && !stage) return { success: false, message: "关卡不存在" };
+          if (!isStageOpen(stageId)) return { success: false, message: "该关卡尚未开放" };
+          if (activityType === 'raid') {
+            const ids: string[] = stage?.monsters ?? [];
+            const boss = contentPack
+              ? ids.map(id => (contentPack.monsters as any[]).find((m: any) => m.id === id)).find(m => m && (m.isBoss || String(m.id).endsWith('_boss')))
+                ?? ids.map(id => (contentPack.monsters as any[]).find((m: any) => m.id === id)).filter(Boolean).at(-1)
+              : null;
+            raidBossId = boss?.id ?? ids.at(-1);
+            if (!raidBossId) return { success: false, message: "该关卡没有可讨伐的首领" };
+            raidBossName = boss?.name ?? raidBossId;
+            bossKillsNeeded = members.length * 2;
+          }
+        }
+
+        // 成员统计基线：离线成员同样入快照——放置游戏的核心是离线进度也算贡献
+        const baseline: Record<string, { kills: number; bossKills: number; raidBossKills: number; actions: number; xp: number }> = {};
+        const states = new Map<string, { state: EnhancedPlayerState; contentVersion: string }>();
         const sorted = [...members].sort((a: any, b: any) => (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0));
         for (const m of sorted) {
-          const { state, contentVersion } = await txLoadStateForUpdate(client, m.userId);
-          appendLog(state, `队伍活动开始：${activityType}`);
+          const loaded = await txLoadStateForUpdate(client, m.userId);
+          states.set(m.userId, loaded);
+          const stats = loaded.state.stats as any;
+          baseline[m.userId] = {
+            kills: stats?.totalKills || 0,
+            bossKills: stats?.totalBossKills || 0,
+            raidBossKills: raidBossId ? (stats?.killsByMonster?.[raidBossId] || 0) : 0,
+            actions: stats?.totalActions || 0,
+            xp: stats?.totalXpEarned || 0,
+          };
+        }
+
+        const activity = {
+          type: activityType, stageId, startedAt: now.toISOString(),
+          endsAt: new Date(now.getTime() + duration * 60_000).toISOString(),
+          durationMinutes: duration, raidBossId, raidBossName, bossKillsNeeded, baseline,
+        };
+        await client.query("UPDATE parties SET current_activity = $1 WHERE id = $2", [JSON.stringify(activity), partyId]);
+
+        // 同一事务内按排序顺序写队员日志，避免死锁
+        for (const m of sorted) {
+          const { state, contentVersion } = states.get(m.userId)!;
+          appendLog(state, `队伍活动开始：${activityType}${raidBossName ? `·讨伐 ${raidBossName}` : ''}（${duration} 分钟）`);
           await txPersistState(client, m.userId, state, contentVersion);
         }
         return { success: true };
       });
+      if (res.success) {
+        for (const m of (await pool.query("SELECT members FROM parties WHERE id = $1", [partyId])).rows[0]?.members ?? []) {
+          const conn = wsConnections.get(m.userId);
+          if (conn && !conn.channels.has(`party:${partyId}`)) {
+            addMembership(channelMembers, conn.channels, m.userId, `party:${partyId}`);
+          }
+        }
+        broadcast(`party:${partyId}`, { type: "party:event", event: "activity_started", ts: nowIso() });
+      }
+      return res;
     },
 
     async completePartyActivity({ userId, partyId, contentPack }) {
@@ -1001,6 +1271,12 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
           return { success: false, message: "您不是该队伍成员" };
         }
 
+        const activity = party.current_activity;
+        // 时长门槛必须在原子抢占之前：否则未结束的活动会被清掉却报失败
+        if (activity.endsAt && Date.parse(activity.endsAt) > Date.now()) {
+          return { success: false, message: `活动尚未结束（${Math.ceil((Date.parse(activity.endsAt) - Date.now()) / 60000)} 分钟后可结算）` };
+        }
+
         // 原子抢占：仅当仍有进行中的活动时清空并返回，确保只发一次奖励
         const claim = await client.query(
           "UPDATE parties SET current_activity = NULL WHERE id = $1 AND current_activity IS NOT NULL RETURNING 1",
@@ -1010,41 +1286,141 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
           return { success: false, message: "活动已被结算" };
         }
 
-        const activity = party.current_activity;
+        const durationFactor = Math.max(0.1, (activity.durationMinutes ?? 30) / 30);
         const rewards: Record<string, Record<string, number>> = {};
+        const contributions: Record<string, number> = {};
 
-        // 计算每位队员的奖励
-        const tasks: { userId: string; gold: number; log: string }[] = [];
-        if (activity.type === 'combat') {
-          const goldPerMember = Math.floor((100 * members.length) / members.length);
-          for (const member of members) {
-            rewards[member.userId] = { gold: goldPerMember };
-            tasks.push({ userId: member.userId, gold: goldPerMember, log: `队伍活动完成，获得 ${goldPerMember} 金币` });
+        if (activity.baseline) {
+          // 贡献制：统计差值 → 按比例分奖
+          const memberStates = new Map<string, { state: EnhancedPlayerState; contentVersion: string }>();
+          const sortedM = [...members].sort((a: any, b: any) => (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0));
+          for (const m of sortedM) memberStates.set(m.userId, await txLoadStateForUpdate(client, m.userId));
+          for (const m of members) {
+            const base = activity.baseline[m.userId];
+            const stats = memberStates.get(m.userId)?.state.stats as any;
+            if (!base || !stats) { contributions[m.userId] = 0; continue; }
+            const kills = Math.max(0, (stats.totalKills || 0) - base.kills);
+            const raidBossKills = activity.raidBossId ? Math.max(0, (stats.killsByMonster?.[activity.raidBossId] || 0) - base.raidBossKills) : 0;
+            const actions = Math.max(0, (stats.totalActions || 0) - base.actions);
+            contributions[m.userId] = activity.type === 'group_craft'
+              ? actions
+              : activity.type === 'raid'
+                ? raidBossKills * 10 + kills
+                : kills;
           }
-        } else if (activity.type === 'group_craft') {
-          const xpBonus = 50 * members.length;
-          for (const member of members) {
-            rewards[member.userId] = { xp: xpBonus };
-            tasks.push({ userId: member.userId, gold: 0, log: `队伍制作完成，获得 ${xpBonus} 经验` });
+          const totalC = Object.values(contributions).reduce((a, b) => a + b, 0);
+          if (totalC <= 0) {
+            broadcast(`party:${partyId}`, { type: "party:event", event: "activity_completed", rewards, ts: nowIso() });
+            return { success: true, rewards, message: "活动期间无人产生贡献，无奖励发放" };
+          }
+          const split = (pool: number) => {
+            const shares: Record<string, number> = {};
+            let assigned = 0, top: string | null = null;
+            for (const m of members) {
+              shares[m.userId] = Math.floor(pool * contributions[m.userId] / totalC);
+              assigned += shares[m.userId];
+              if (!top || contributions[m.userId] > contributions[top]) top = m.userId;
+            }
+            if (top) shares[top] += pool - assigned;
+            return shares;
+          };
+          if (activity.type === 'group_craft') {
+            const xpShares = split(Math.round(60 * members.length * durationFactor));
+            for (const m of members) {
+              const xp = xpShares[m.userId];
+              if (xp <= 0) continue;
+              rewards[m.userId] = { xp };
+              const loaded = memberStates.get(m.userId);
+              if (loaded) {
+                ensureProfessionSkills(loaded.state);
+                const skillId = CRAFT_SKILL_BY_PROFESSION[loaded.state.activeClassId] || `skill_${loaded.state.activeClassId}`;
+                const ups = grantProfessionXp(loaded.state, skillId, xp);
+                appendLog(loaded.state, `队伍活动完成，${loaded.state.activeClassId} 获得 ${xp} 经验`);
+                for (const lv of ups) appendLog(loaded.state, `${skillId} 技能升级到 ${lv} 级！`);
+              }
+            }
+          } else {
+            const bossKillsTotal = activity.raidBossId
+              ? members.reduce((n: number, m: any) => n + Math.max(0, (((memberStates.get(m.userId)?.state.stats as any)?.killsByMonster?.[activity.raidBossId!] || 0) - (activity.baseline![m.userId]?.raidBossKills || 0))), 0)
+              : 0;
+            const pool = activity.type === 'raid'
+              ? Math.round((150 * members.length + 80 * bossKillsTotal) * durationFactor)
+              : Math.round(120 * members.length * durationFactor);
+            const goldShares = split(pool);
+            for (const m of members) {
+              const gold = goldShares[m.userId];
+              if (gold <= 0) continue;
+              rewards[m.userId] = { gold };
+              const loaded = memberStates.get(m.userId);
+              if (loaded) {
+                loaded.state.inventory.gold = (loaded.state.inventory.gold || 0) + gold;
+                appendLog(loaded.state, `队伍活动完成，按贡献分得 ${gold} 金币`);
+              }
+            }
+          }
+          for (const m of sortedM) {
+            const loaded = memberStates.get(m.userId)!;
+            await txPersistState(client, m.userId, loaded.state, loaded.contentVersion);
+          }
+        } else {
+          // 旧存档的活动没有基线：沿用平摊（兼容历史数据）
+          const tasks: { userId: string; gold: number; xp: number; log: string }[] = [];
+          if (activity.type === 'combat') {
+            const goldPerMember = Math.floor((100 * members.length) / members.length);
+            for (const member of members) {
+              rewards[member.userId] = { gold: goldPerMember };
+              tasks.push({ userId: member.userId, gold: goldPerMember, xp: 0, log: `队伍活动完成，获得 ${goldPerMember} 金币` });
+            }
+          } else if (activity.type === 'group_craft') {
+            const xpBonus = 50 * members.length;
+            for (const member of members) {
+              rewards[member.userId] = { xp: xpBonus };
+              tasks.push({ userId: member.userId, gold: 0, xp: xpBonus, log: `队伍制作完成，获得 ${xpBonus} 经验` });
+            }
+          }
+
+          // 按 userId 排序后逐个加行锁写入，固定顺序避免与其它事务死锁
+          tasks.sort((a, b) => (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0));
+          for (const t of tasks) {
+            const { state, contentVersion } = await txLoadStateForUpdate(client, t.userId);
+            if (t.gold > 0) state.inventory.gold = (state.inventory.gold || 0) + t.gold;
+            if (t.xp > 0) {
+              // 经验发到当前职业的生产技能（修复：原先只写日志不发经验）
+              ensureProfessionSkills(state);
+              const skillId = CRAFT_SKILL_BY_PROFESSION[state.activeClassId] || `skill_${state.activeClassId}`;
+              const ups = grantProfessionXp(state, skillId, t.xp);
+              t.log = `队伍制作完成，${state.activeClassId} 获得 ${t.xp} 经验`;
+              for (const lv of ups) appendLog(state, `${skillId} 技能升级到 ${lv} 级！`);
+            }
+            appendLog(state, t.log);
+            await txPersistState(client, t.userId, state, contentVersion);
           }
         }
 
-        // 按 userId 排序后逐个加行锁写入，固定顺序避免与其它事务死锁
-        tasks.sort((a, b) => (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0));
-        for (const t of tasks) {
-          const { state, contentVersion } = await txLoadStateForUpdate(client, t.userId);
-          if (t.gold > 0) state.inventory.gold = (state.inventory.gold || 0) + t.gold;
-          appendLog(state, t.log);
-          await txPersistState(client, t.userId, state, contentVersion);
-        }
-
+        broadcast(`party:${partyId}`, { type: "party:event", event: "activity_completed", rewards, contributions, ts: nowIso() });
         return { success: true, rewards };
       });
     },
 
+    async cancelPartyActivity({ userId, partyId }) {
+      const res = await withTransaction(async (client) => {
+        const partyResult = await client.query("SELECT * FROM parties WHERE id = $1 FOR UPDATE", [partyId]);
+        if (!partyResult.rows[0] || !partyResult.rows[0].current_activity) {
+          return { success: false, message: "没有进行中的活动" };
+        }
+        if (partyResult.rows[0].leader_id !== userId) {
+          return { success: false, message: "只有队长可以取消活动" };
+        }
+        await client.query("UPDATE parties SET current_activity = NULL WHERE id = $1", [partyId]);
+        return { success: true };
+      });
+      if (res.success) broadcast(`party:${partyId}`, { type: "party:event", event: "activity_cancelled", ts: nowIso() });
+      return res;
+    },
+
     async leaveParty({ userId, partyId }) {
       // 事务 + 行锁：锁定队伍行后再读改写成员数组，避免并发退出/解散丢更新。
-      return withTransaction(async (client) => {
+      const res = await withTransaction(async (client) => {
         const partyResult = await client.query("SELECT * FROM parties WHERE id = $1 FOR UPDATE", [partyId]);
         if (!partyResult.rows[0]) return { success: false, message: "队伍不存在" };
         const party = partyResult.rows[0];
@@ -1063,7 +1439,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
             appendLog(state, "队伍已解散");
             await txPersistState(client, member.userId, state, contentVersion);
           }
-          return { success: true, message: "队伍已解散" };
+          return { success: true, message: "队伍已解散", disbanded: true, memberIds: members.map((m: any) => m.userId) };
         }
 
         members.splice(memberIndex, 1);
@@ -1073,8 +1449,24 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         st.partyState = undefined;
         appendLog(st, "已离开队伍");
         await txPersistState(client, userId, st, contentVersion);
-        return { success: true };
+        return { success: true, memberIds: [userId] };
       });
+      if (res.success) {
+        const dropChannel = (uid: string) => {
+          const conn = wsConnections.get(uid);
+          if (conn) conn.channels.delete(`party:${partyId}`);
+          channelMembers.get(`party:${partyId}`)?.delete(uid);
+        };
+        if ((res as any).disbanded) {
+          broadcast(`party:${partyId}`, { type: "party:event", event: "party_disbanded", ts: nowIso() });
+          for (const uid of (res as any).memberIds ?? []) dropChannel(uid);
+        } else {
+          dropChannel(userId);
+          broadcast(`party:${partyId}`, { type: "party:event", event: "member_left", memberId: userId, ts: nowIso() });
+        }
+      }
+      const { memberIds: _m, disbanded: _d, ...pub } = res as any;
+      return pub;
     },
 
     async getPartyForUser({ userId }) {
@@ -1084,10 +1476,31 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       const result = await pool.query("SELECT * FROM parties WHERE id = $1", [partyId]);
       const row = result.rows[0];
       if (!row) return null;
+      const members = row.members as Array<{ userId: string }>;
+      // 单侧悬挂自愈（与内存适配器一致）：成员表没这人但 partyState 指着队伍——
+      // 历史脏数据/离队漏写会卡死后续组队，读时清掉死引用
+      if (!members.some((m) => m.userId === userId)) {
+        st.partyState = undefined;
+        await persistState(userId, st);
+        return null;
+      }
+      // 展示名：只读 peek 队友存档（不能用 getOrCreate——会给没登过的队友凭空造档）
+      const nameRows = await pool.query(
+        "SELECT user_id, state_json->'settings'->>'playerName' AS name FROM player_states WHERE user_id = ANY($1)",
+        [members.map((m) => m.userId)],
+      );
+      const nameByUser = new Map<string, string>(
+        nameRows.rows.map((r: { user_id: string; name: string | null }) => [r.user_id, r.name || `玩家_${r.user_id.slice(0, 6)}`]),
+      );
       return {
         id: row.id,
+        name: row.name ?? undefined,
         leaderId: row.leader_id,
-        members: row.members,
+        members: (row.members as any[]).map((m: any) => ({
+          ...m,
+          isOnline: wsConnections.has(m.userId),
+          displayName: nameByUser.get(m.userId) || `玩家_${m.userId.slice(0, 6)}`,
+        })),
         createdAt: row.created_at.toISOString(),
         currentActivity: row.current_activity,
       } as Party;
@@ -1099,8 +1512,10 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       const isEquipped = Object.values(st.equipment).includes(itemId);
       if (!isEquipped) throw new Error("item_not_equipped");
 
-      const currentDurability = st.equipment.durability?.[itemId] || 100;
-      const maxDurability = st.equipment.maxDurability?.[itemId] || 100;
+      // 未记录 = 满耐久；记录为 0 = 破损（||100 会把破装备显示成满耐久）
+      const maxDurability = Number.isFinite(st.equipment.maxDurability?.[itemId]) ? st.equipment.maxDurability![itemId] : 100;
+      const rawDur = st.equipment.durability?.[itemId];
+      const currentDurability = Number.isFinite(rawDur) ? rawDur! : maxDurability;
       const durabilityPercent = maxDurability > 0 ? (currentDurability / maxDurability) * 100 : 0;
       const needsRepair = durabilityPercent < 50;
       const repairCost = Math.ceil((maxDurability - currentDurability) * 0.5);
@@ -1120,11 +1535,17 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       if (!st.equipment.durability) st.equipment.durability = {};
       if (!st.equipment.maxDurability) st.equipment.maxDurability = {};
 
-      const oldDurability = st.equipment.durability[request.itemId] || 100;
       const maxDurability = st.equipment.maxDurability[request.itemId] || 100;
+      // 耐久 0 的破损装备要能修（||100 会把它当满耐久拒绝），未记录/NaN 视为全新满耐久
+      const rawOld = st.equipment.durability[request.itemId];
+      const oldDurability = Number.isFinite(rawOld) ? rawOld! : maxDurability;
       let targetDurability = maxDurability;
       if (request.repairType === 'partial' && request.targetDurability !== undefined) {
-        targetDurability = Math.min(request.targetDurability, maxDurability);
+        // NaN/负目标会把 cost 变成 NaN 洗掉金币（与内存适配器一致的校验）
+        if (!Number.isFinite(request.targetDurability) || request.targetDurability < 0) {
+          return { success: false, itemId: request.itemId, oldDurability, newDurability: oldDurability, cost: 0, message: "修复目标无效" };
+        }
+        targetDurability = Math.floor(Math.min(request.targetDurability, maxDurability));
       }
 
       const repairAmount = targetDurability - oldDurability;
@@ -1150,6 +1571,10 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       // 包 withUserLock：扣耐久属读改写，并发会丢更新（耐久回退）。
       return withUserLock(userId, async () => {
       const st = await getOrCreatePlayerState(userId, "unknown");
+      // 损耗必须为正有限数：负数/NaN 会把耐久抬到上限之上
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return { success: false, newDurability: st.equipment.durability?.[itemId] ?? 0, broken: false };
+      }
       const isEquipped = Object.values(st.equipment).includes(itemId);
       if (!isEquipped) return { success: false, newDurability: 0, broken: false };
 
@@ -1159,7 +1584,8 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       }
 
       const currentDurability = st.equipment.durability[itemId];
-      const newDurability = Math.max(0, currentDurability - amount);
+      const cap = st.equipment.maxDurability?.[itemId] || 100;
+      const newDurability = Math.min(cap, Math.max(0, currentDurability - amount));
       st.equipment.durability[itemId] = newDurability;
       const broken = newDurability === 0;
 
@@ -1172,9 +1598,11 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
 
     // ========== 价格历史 ==========
     async getPriceHistory({ itemId, days = 7 }) {
+      // days 无上限是 DoS 向量（路由只 parseInt 不限范围）；钳到 [1,90]，与内存适配器一致
+      const safeDays = Number.isFinite(days) ? Math.min(Math.max(Math.floor(days), 1), 90) : 7;
       const result = await pool.query(
-        `SELECT * FROM price_history WHERE item_id = $1 AND record_date >= CURRENT_DATE - $2 ORDER BY record_date DESC`,
-        [itemId, days]
+        `SELECT * FROM price_history WHERE item_id = $1 AND record_date >= CURRENT_DATE - $2 * INTERVAL '1 day' ORDER BY record_date DESC`,
+        [itemId, safeDays]
       );
       return result.rows.map(r => ({
         itemId: r.item_id, averagePrice: parseFloat(r.average_price), minPrice: r.min_price,
@@ -1262,8 +1690,9 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         }
         if (equippedPieces === 0) continue;
 
+        const top = highestActiveBonus(set.bonuses as Array<{ requiredPieces?: number; stats?: Record<string, number> }>, equippedPieces);
         const activeBonuses = set.bonuses.map((bonus: any) => ({
-          ...bonus, isActive: equippedPieces >= bonus.requiredPieces
+          ...bonus, isActive: bonus === top
         }));
 
         const totalStats: Record<string, number> = {};
@@ -1296,6 +1725,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
           partyId: st.partyState?.partyId,
         });
         for (const key of keys) addMembership(channelMembers, c.channels, userId, key);
+        if (st.partyState?.partyId) void patchMemberOnline(userId, true);
       }).catch(() => {});
     },
 
@@ -1307,6 +1737,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         if (set) { set.delete(userId); if (set.size === 0) channelMembers.delete(ch); }
       }
       wsConnections.delete(userId);
+      void patchMemberOnline(userId, false);
     },
 
     wsMessage(userId, raw) {
@@ -1315,7 +1746,31 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       if (parsed.type === "chat:send") {
         const channel = typeof parsed.channel === "string" ? parsed.channel : "world";
         const content = typeof parsed.content === "string" ? parsed.content.slice(0, 300) : "";
-        if (!content) return;
+        const senderConn = wsConnections.get(userId);
+        if (!content.trim()) {
+          try { senderConn?.socket?.send(JSON.stringify({ type: "chat:error", channel, message: "消息不能为空", ts: nowIso() })); } catch { /* 连接已断 */ }
+          return;
+        }
+        // 私聊：与内存适配器同协议，此前 PG 走公共分桶静默丢弃
+        if (channel === "private" && typeof parsed.recipient === "string" && parsed.recipient) {
+          const recipientId = parsed.recipient;
+          void (async () => {
+            const st = await getOrCreatePlayerState(userId, "unknown");
+            const senderName = st.settings?.playerName || `玩家_${userId.slice(0, 6)}`;
+            const recipientConn = wsConnections.get(recipientId);
+            if (recipientConn?.socket) {
+              const payload = {
+                type: "chat:message", channel: "private", sender: userId, senderName,
+                senderProfession: st.activeClassId, recipient: recipientId, ts: nowIso(), content,
+              };
+              try { recipientConn.socket.send(JSON.stringify(payload)); } catch { /* 连接已断 */ }
+              try { senderConn?.socket?.send(JSON.stringify({ ...payload, isSelf: true })); } catch { /* 连接已断 */ }
+            } else {
+              try { senderConn?.socket?.send(JSON.stringify({ type: "chat:error", channel: "private", message: "用户不在线", ts: nowIso() })); } catch { /* 连接已断 */ }
+            }
+          })().catch(() => {});
+          return;
+        }
         void (async () => {
           const st = await getOrCreatePlayerState(userId, "unknown");
           const memberKey = membershipKeyForSend(channel, {
@@ -1329,6 +1784,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
             type: "chat:message",
             channel: payloadChannel(channel),
             sender: userId,
+            senderName: st.settings?.playerName || `玩家_${userId.slice(0, 6)}`,
             senderProfession: st.activeClassId,
             ts: nowIso(),
             content,
@@ -1375,12 +1831,19 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       return out;
     },
 
-    async createTradingOrder({ userId, itemId, quantity, price, type }) {
+    async createTradingOrder({ userId, itemId, quantity, price, type, contentPack }) {
+      // 存储层自身校验（与内存适配器一致）
+      if (type !== 'buy' && type !== 'sell') throw new Error('订单类型无效');
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999999) throw new Error('订单数量无效');
+      if (!Number.isInteger(price) || price < 1 || price > 1000000000) throw new Error('订单价格无效');
+      if (itemId === 'gold') throw new Error('金币不可挂单');
+      if (contentPack && !(contentPack.items as any[]).some((i) => i.id === itemId)) throw new Error('物品不存在');
       // 事务化：托管资产（卖单扣物品 / 买单冻结金币）与写订单原子完成。
       const row = await withTransaction(async (client) => {
         const { state: st, contentVersion } = await txLoadStateForUpdate(client, userId);
 
         if (type === 'sell') {
+          if (Object.values(st.equipment || {}).includes(itemId)) throw new Error('装备中的物品不能挂单');
           const currentQuantity = st.inventory[itemId] || 0;
           if (currentQuantity < quantity) throw new Error(`物品数量不足，当前拥有: ${currentQuantity}`);
           st.inventory[itemId] = currentQuantity - quantity;
@@ -1405,7 +1868,9 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     },
 
     async executeTrade({ buyerId, orderId, quantity }) {
-      // 事务化：行锁锁定订单，原子扣减订单数量，串行化买卖双方状态写入。
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999999) throw new Error('交易数量无效');
+      // 事务化：行锁锁定订单，原子扣减订单数量，串行化双方状态写入。
+      // buyerId 语义是"成交发起方"：sell 单时其为买家，buy 单时其为卖家。
       return withTransaction(async (client) => {
         const orderResult = await client.query(
           "SELECT * FROM trading_orders WHERE id = $1 FOR UPDATE",
@@ -1414,33 +1879,52 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         if (!orderResult.rows[0]) throw new Error('订单不存在');
         const order = orderResult.rows[0];
 
-        if (order.type !== 'sell') throw new Error('只能购买出售单');
-        if (order.user_id === buyerId) throw new Error('不能购买自己的订单');
+        if (order.user_id === buyerId) throw new Error('不能成交自己的订单');
         if (order.quantity < quantity) throw new Error('订单数量不足');
 
         const totalCost = quantity * order.price;
 
         // 固定加锁顺序避免死锁
-        const sellerId = order.user_id as string;
-        const lockFirst = buyerId < sellerId ? buyerId : sellerId;
-        const lockSecond = buyerId < sellerId ? sellerId : buyerId;
+        const posterId = order.user_id as string;
+        const lockFirst = buyerId < posterId ? buyerId : posterId;
+        const lockSecond = buyerId < posterId ? posterId : buyerId;
         const loaded1 = await txLoadStateForUpdate(client, lockFirst);
         const loaded2 = await txLoadStateForUpdate(client, lockSecond);
-        const buyerLoaded = lockFirst === buyerId ? loaded1 : loaded2;
-        const sellerLoaded = lockFirst === sellerId ? loaded1 : loaded2;
-        const buyer = buyerLoaded.state;
-        const seller = sellerLoaded.state;
+        const fillerLoaded = lockFirst === buyerId ? loaded1 : loaded2;
+        const posterLoaded = lockFirst === posterId ? loaded1 : loaded2;
+        const filler = fillerLoaded.state;
+        const poster = posterLoaded.state;
 
-        if ((buyer.inventory.gold || 0) < totalCost) {
-          throw new Error(`金币不足，需要: ${totalCost}，当前拥有: ${buyer.inventory.gold || 0}`);
+        if (order.type === 'sell') {
+          // 购买出售单：发起方付金收货
+          if ((filler.inventory.gold || 0) < totalCost) {
+            throw new Error(`金币不足，需要: ${totalCost}，当前拥有: ${filler.inventory.gold || 0}`);
+          }
+          filler.inventory.gold = (filler.inventory.gold || 0) - totalCost;
+          filler.inventory[order.item_id] = (filler.inventory[order.item_id] || 0) + quantity;
+          poster.inventory.gold = (poster.inventory.gold || 0) + totalCost;
+          appendLog(poster, `订单成交：${order.item_id} x${quantity} 获得 ${totalCost} 金币`);
+        } else {
+          // 卖给收购单：发起方交货收金（买家金币在挂单时已托管扣除）
+          const have = filler.inventory[order.item_id] || 0;
+          if (have < quantity) {
+            throw new Error(`物品不足，需要: ${quantity}，当前拥有: ${have}`);
+          }
+          const eq = filler.equipment as Record<string, unknown> | undefined;
+          if (eq && Object.values(eq).includes(order.item_id)) {
+            throw new Error('装备中的物品不能出售');
+          }
+          filler.inventory[order.item_id] = have - quantity;
+          if (filler.inventory[order.item_id] <= 0) delete filler.inventory[order.item_id];
+          filler.inventory.gold = (filler.inventory.gold || 0) + totalCost;
+          poster.inventory[order.item_id] = (poster.inventory[order.item_id] || 0) + quantity;
+          appendLog(poster, `收购成交：${order.item_id} x${quantity} 花费 ${totalCost} 金币`);
         }
+        if (filler.stats) filler.stats.totalTrades = (filler.stats.totalTrades || 0) + 1;
+        if (poster.stats) poster.stats.totalTrades = (poster.stats.totalTrades || 0) + 1;
 
-        buyer.inventory.gold = (buyer.inventory.gold || 0) - totalCost;
-        buyer.inventory[order.item_id] = (buyer.inventory[order.item_id] || 0) + quantity;
-        seller.inventory.gold = (seller.inventory.gold || 0) + totalCost;
-
-        await txPersistState(client, buyerId, buyer, buyerLoaded.contentVersion);
-        await txPersistState(client, sellerId, seller, sellerLoaded.contentVersion);
+        await txPersistState(client, buyerId, filler, fillerLoaded.contentVersion);
+        await txPersistState(client, posterId, poster, posterLoaded.contentVersion);
 
         const newQty = order.quantity - quantity;
         if (newQty <= 0) {
@@ -1449,6 +1933,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
           await client.query("UPDATE trading_orders SET quantity = $1 WHERE id = $2", [newQty, orderId]);
         }
 
+        notifyUser(posterId, { kind: "order:filled", orderId, itemId: order.item_id, quantity, gold: totalCost, remaining: Math.max(0, newQty) });
         return { success: true, message: '交易成功' };
       });
     },
@@ -1497,14 +1982,6 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       } catch {
         return { ok: false, latencyMs: Date.now() - start };
       }
-    },
-    async cleanupExpiredListings() {
-      const result = await pool.query(
-        `UPDATE market_listings SET status = 'expired', updated_at = CURRENT_TIMESTAMP
-         WHERE status = 'active' AND expires_at < CURRENT_TIMESTAMP
-         RETURNING id`
-      );
-      return result.rowCount ?? 0;
     },
   };
   return storage;

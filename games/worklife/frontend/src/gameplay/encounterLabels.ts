@@ -5,6 +5,7 @@ const ARCHETYPE: Record<string, string> = {
   tank: "高防",
   fast: "快攻",
   slow: "迟缓",
+  brute: "重击",
   boss: "首领",
 };
 
@@ -17,8 +18,17 @@ export function archetypeLabel(archetype: string | undefined): string {
   return ARCHETYPE[archetype || ""] || "森林";
 }
 
-export function mechanicLabels(mechanics?: string[]): string[] {
-  return (mechanics || []).map((id) => MECHANIC[id] || id);
+/** Card labels for a monster's mechanics: the pack table's `label` wins, the static map is the fallback. */
+export function mechanicLabels(mechanics?: string[], defs?: ReadonlyArray<{ id: string; label: string }>): string[] {
+  return (mechanics || []).map((id) => defs?.find((d) => d.id === id)?.label || MECHANIC[id] || id);
+}
+
+/** Label + one-line explanation (with the counter-play) for each mechanic, for the monster detail modal. */
+export function mechanicEntries(mechanics?: string[], defs?: ReadonlyArray<{ id: string; label: string; desc?: string }>): Array<{ id: string; label: string; desc?: string }> {
+  return (mechanics || []).map((id) => {
+    const def = defs?.find((d) => d.id === id);
+    return { id, label: def?.label || MECHANIC[id] || id, desc: def?.desc };
+  });
 }
 
 /**

@@ -4,7 +4,7 @@ import { assertNoHorizontalBleed, guestLogin, openNav, seedT1 } from "./helpers"
 async function openCraftModal(page: Page) {
   await openNav(page, "woodworking");
   await expect(page.getByRole("heading", { name: "木工" })).toBeVisible();
-  const recipe = page.locator(".craft-row").filter({ hasText: "制作标准木板" }).first();
+  const recipe = page.locator(".craft-row").filter({ hasText: "标准木板" }).first();
   await expect(recipe).toBeVisible({ timeout: 15_000 });
   await expect(recipe.getByText("用于木头短剑")).toBeVisible();
   await recipe.click();
@@ -117,6 +117,11 @@ test.describe("desktop 1280", () => {
     await expect(page.getByRole("heading", { name: "背包" })).toBeVisible();
     await expect(page.locator('.inv-group[aria-label="装备"] .inv-tile[data-item-id="weapon_wooden_sword"]')).toHaveClass(/equipped/);
     await expect(page.locator('.inv-group[aria-label="材料"] .inv-tile[data-item-id="wood_1"] .inv-tile-count')).toHaveText("×20");
+    // 装备中的物品后端拒绝挂单——先卸下这把剑（成功后模态自动关闭），后面市场环节才能卖出
+    await page.locator('.inv-tile[data-item-id="weapon_wooden_sword"]').click();
+    await expect(page.getByRole("heading", { name: "木头短剑" })).toBeVisible();
+    await page.getByRole("button", { name: "卸下", exact: true }).click();
+    await expect(page.locator('.inv-group[aria-label="装备"] .inv-tile[data-item-id="weapon_wooden_sword"]')).not.toHaveClass(/equipped/);
     await page.locator('.inv-tile[data-item-id="lumber_1"]').click();
     await expect(page.getByRole("heading", { name: "标准木板" })).toBeVisible();
     await page.keyboard.press("Escape");
@@ -137,7 +142,7 @@ test.describe("desktop 1280", () => {
     await expect(page.locator(".house-room")).toHaveCount(7);
     await expect(page.locator(".house-room .house-room-emoji img.t1-art")).toHaveCount(7);
     const lumberYard = page.locator('.house-room[data-room-id="lumber_yard"]');
-    await expect(lumberYard.locator(".house-upgrade")).toHaveText("材料不足"); // 100 gold < 200
+    await expect(lumberYard.locator(".house-upgrade")).toHaveText("金币不足"); // 100 gold < 200 (wood is enough, so only gold is short)
     await expect(page.locator('.house-room[data-room-id="forge"] .house-cost-lines .short')).toHaveCount(2);
 
     // MWI market: searchable grid, the owned shelf, an order-book detail, and cancelling own orders.

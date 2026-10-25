@@ -11,8 +11,8 @@ import type { Bounty, EnhancedContentPack, EnhancedPlayerState } from './types';
 
 const pack = packJson as EnhancedContentPack;
 
-const bounty = (id: string, accepted = false): Bounty => ({
-  id, templateId: 'tpl_gather', name: '采集契约', description: '', icon: '',
+const bounty = (id: string, accepted = false, templateId = 'bt_gather_50'): Bounty => ({
+  id, templateId, name: '采集契约', description: '', icon: '',
   metric: 'gather', target: 5, baseline: 0, accepted, claimed: false, rarity: 'common',
   reward: { gold: 100, reputation: 10 },
 });
@@ -86,7 +86,7 @@ test('concurrent daily quest claims pay once', async () => {
 });
 
 test('concurrent bounty accepts mark the contract once', async () => {
-  const f = await fixture(s => { s.bounties = { date: todayLocal(), bounties: [bounty('b1'), bounty('b2')], rerollsUsed: 0 }; });
+  const f = await fixture(s => { s.bounties = { date: todayLocal(), bounties: [bounty('b1'), bounty('b2', false, 'bt_craft_25')], rerollsUsed: 0 }; });
   try {
     const responses = await Promise.all([f.accept(), f.accept()]);
     assert.deepEqual(responses.map(r => r.statusCode), [200, 400]);
@@ -114,7 +114,7 @@ test('a completed bounty claim pays gold and reputation exactly once', async () 
 test('bounty rerolls under concurrency debit gold per roll and stop at the daily cap', async () => {
   const f = await fixture(s => {
     s.inventory.gold = 5000;
-    s.bounties = { date: todayLocal(), bounties: [bounty('b1'), bounty('b2'), bounty('b3'), bounty('b4'), bounty('b5')], rerollsUsed: 0 };
+    s.bounties = { date: todayLocal(), bounties: [bounty('b1'), bounty('b2', false, 'bt_craft_25'), bounty('b3', false, 'bt_kill_30'), bounty('b4', false, 'bt_gather_120'), bounty('b5', false, 'bt_craft_60')], rerollsUsed: 0 };
   });
   try {
     const responses = await Promise.all([f.reroll(), f.reroll(), f.reroll(), f.reroll()]);
@@ -124,6 +124,20 @@ test('bounty rerolls under concurrency debit gold per roll and stop at the daily
     assert.equal(state.inventory.gold, 3500); // 5000 - 3 × 500
     assert.equal(state.bounties!.rerollsUsed, 3);
     assert.equal(state.stats!.totalGoldSpent, 1500);
+  } finally { await f.storage.close(); }
+});
+
+test('a bounty board reroll never offers the same contract twice', async () => {
+  const f = await fixture(s => {
+    s.inventory.gold = 5000;
+    s.bounties = { date: todayLocal(), bounties: [bounty('b1')], rerollsUsed: 0 };
+  });
+  try {
+    const res = await f.reroll();
+    assert.equal(res.statusCode, 200);
+    const state = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
+    const templateIds = state.bounties!.bounties.map(b => b.templateId);
+    assert.equal(new Set(templateIds).size, templateIds.length, 'board must not contain duplicate contracts');
   } finally { await f.storage.close(); }
 });
 

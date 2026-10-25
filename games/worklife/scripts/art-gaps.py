@@ -20,7 +20,11 @@ T1 = ROOT / "frontend" / "src" / "assets" / "t1"
 
 
 def folder_for(item_id: str) -> str:
-    if re.match(r"^(weapon|armor|tool|shield|offhand|accessory|ring|amulet|pendant|crown|charm)_", item_id):
+    if (
+        re.match(r"^(weapon|armor|tool|shield|offhand|accessory|ring|amulet|pendant|crown|charm)_", item_id)
+        or re.search(r"_(ring|amulet|pendant)$", item_id)
+        or re.match(r"^(sovereign|omega)_crown$", item_id)
+    ):
         return "equipment"
     if re.match(r"^(food|potion|drink|elixir|dish)_", item_id):
         return "consumables"

@@ -24,7 +24,7 @@ const sword = pack.items.find((i: any) => i.id === "weapon_wooden_sword") as any
 const woodRule = findEnhancementRuleForItem(sword, pack)!.rule;
 
 describe("MWI enhancement math", () => {
-  it("uses the exact +1…+20 nonlinear stat table and 5× jewelry multiplier", () => {
+  it("uses the exact +1…+20 nonlinear stat table and the same multiplier for jewelry as for gear", () => {
     assert.equal(MAX_ENHANCEMENT_LEVEL, 20);
     assert.equal(enhancementBonusPct(0), 0);
     assert.equal(enhancementBonusPct(1), 2);
@@ -32,9 +32,11 @@ describe("MWI enhancement math", () => {
     assert.equal(enhancementBonusPct(15), 57);
     assert.equal(enhancementBonusPct(20), 100);
     assert.equal(enhancementSlotMultiplier({ type: "weapon" }), 1);
-    assert.equal(enhancementSlotMultiplier({ type: "accessory" }), 5);
+    // jewelry used to be 5× (a +20 ring ×6.0 out-scaled a whole tier of gear ×2.0); it is normal now
+    assert.equal(enhancementSlotMultiplier({ type: "accessory" }), 1);
     assert.equal(enhancementStatMultiplier(10, { type: "weapon" }), 1.29);
-    assert.equal(enhancementStatMultiplier(10, { type: "accessory" }), 2.45);
+    assert.equal(enhancementStatMultiplier(10, { type: "accessory" }), 1.29);
+    assert.equal(enhancementStatMultiplier(20, { type: "accessory" }), 2);
   });
 
   it("uses MWI's target-level base rates and level modifier", () => {
@@ -150,7 +152,7 @@ describe("MWI enhancement math", () => {
     // the smithing recipe exists and yields the tool
     const recipe = (pack.actions as any[]).find((a) => a.id === "act_forge_enhancer_t1");
     assert.equal(recipe?.yields?.[0]?.itemId, "tool_enhancer_t1");
-    assert.equal(recipe?.skillId, "skill_blacksmith");
+    assert.equal(recipe?.skillId, "skill_smithing");
   });
 
   it("validation consumes nothing and all equipped slots count as owned", async () => {

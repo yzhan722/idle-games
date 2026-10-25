@@ -13,6 +13,8 @@ export type PackAction = {
   duration: number;
   xp: number;
   requirements?: { skillLevel?: number };
+  /** Optional pack-declared gather page override for professions with two gather tabs (farmer: 种植 vs 畜牧). */
+  page?: "primary" | "secondary";
   yields?: Array<{ itemId: string; qty?: number; chance?: number }>;
   consumes?: Array<{ itemId: string; qty: number }>;
 };
@@ -35,6 +37,7 @@ export type ActionKind = "gathering" | "production";
 
 /** Which gather page an action belongs to when a profession has more than one (farmer: 种植 vs 畜牧). */
 export function gatherPageFor(action: PackAction): "primary" | "secondary" {
+  if (action.page === "secondary" || action.page === "primary") return action.page;
   return action.id.startsWith("act_raise_") ? "secondary" : "primary";
 }
 

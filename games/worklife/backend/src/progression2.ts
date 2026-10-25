@@ -24,7 +24,7 @@ import { todayLocal } from "./time";
 // 声望等级：每达到一层，其 bonuses 永久叠加（百分比点数）。
 // 设计为前期增长快、后期边际递减，鼓励长期挂机但不至于失衡。
 export const REPUTATION_TIERS: ReputationTierDef[] = [
-  { tier: 1, name: "无名之辈", icon: "🪵", required: 0, bonuses: {} },
+  { tier: 1, name: "无名之辈", icon: "🌱", required: 0, bonuses: {} },
   { tier: 2, name: "初露锋芒", icon: "🌿", required: 100, bonuses: { gatherSpeed: 3, xpGain: 2 } },
   { tier: 3, name: "小有名气", icon: "🍀", required: 300, bonuses: { craftSpeed: 3, goldGain: 3 } },
   { tier: 4, name: "声名鹊起", icon: "⭐", required: 700, bonuses: { combatSpeed: 4, xpGain: 3 } },
@@ -136,7 +136,7 @@ type BountyTemplate = {
 };
 
 // 契约模板池：覆盖采集/制作/击杀三类，目标数量与奖励分档。
-const BOUNTY_TEMPLATES: BountyTemplate[] = [
+export const BOUNTY_TEMPLATES: BountyTemplate[] = [
   { id: "bt_gather_50", name: "物资征集", description: "采集 50 份资源", icon: "🌿", metric: "gather", target: 50, baseGold: 400, baseRep: 20 },
   { id: "bt_gather_120", name: "大批征集", description: "采集 120 份资源", icon: "🌾", metric: "gather", target: 120, baseGold: 900, baseRep: 45 },
   { id: "bt_gather_250", name: "囤积如山", description: "采集 250 份资源", icon: "🏔️", metric: "gather", target: 250, baseGold: 1800, baseRep: 90 },
@@ -179,9 +179,21 @@ function metricToStat(metric: Bounty["metric"]): keyof PlayerStats {
   return "totalKills";
 }
 
+/** 生成一整板契约：模板无放回抽取，同板不会出现两条相同契约 */
+function genBountyBoard(stats: PlayerStats, count: number): Bounty[] {
+  const pool = [...BOUNTY_TEMPLATES];
+  const out: Bounty[] = [];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    out.push(genBountyFrom(pool.splice(idx, 1)[0], stats));
+  }
+  // 槽位多于模板时允许重复补齐（当前 5 槽 < 9 模板，不会触发）
+  while (out.length < count) out.push(genBountyFrom(BOUNTY_TEMPLATES[Math.floor(Math.random() * BOUNTY_TEMPLATES.length)], stats));
+  return out;
+}
+
 /** 生成一条随机契约（baseline 取当前 stats） */
-function genBounty(stats: PlayerStats): Bounty {
-  const tpl = BOUNTY_TEMPLATES[Math.floor(Math.random() * BOUNTY_TEMPLATES.length)];
+function genBountyFrom(tpl: BountyTemplate, stats: PlayerStats): Bounty {
   const { rarity, mult } = rollRarity();
   const statKey = metricToStat(tpl.metric);
   return {
@@ -205,11 +217,16 @@ export function ensureBounties(player: EnhancedPlayerState): BountyState {
   ensurePlayerExtensions(player);
   const stats = player.stats!;
   const today = todayUTC();
-  if (!player.bounties || player.bounties.date !== today) {
+  const known = new Set(BOUNTY_TEMPLATES.map(t => t.id));
+  const stale = (board: Bounty[] | undefined) =>
+    !board || board.length === 0 ||
+    new Set(board.map(b => b.templateId)).size !== board.length ||
+    board.some(b => !known.has(b.templateId));
+  if (!player.bounties || player.bounties.date !== today || stale(player.bounties.bounties)) {
     player.bounties = {
       date: today,
-      bounties: Array.from({ length: BOUNTY_SLOTS }, () => genBounty(stats)),
-      rerollsUsed: 0
+      bounties: genBountyBoard(stats, BOUNTY_SLOTS),
+      rerollsUsed: player.bounties && player.bounties.date === today ? player.bounties.rerollsUsed : 0
     };
   }
   return player.bounties;
@@ -275,10 +292,20 @@ export function rerollBounties(
   }
   const gold = player.inventory.gold || 0;
   if (gold < REROLL_COST) return { ok: false, reason: "金币不足" };
+  // 已接取的契约必须活着走完：整板重生成会把进行中进度静默清掉。
+  const accepted = state.bounties.filter((b) => b.accepted);
+  const acceptedTpls = new Set(accepted.map((b) => b.templateId));
+  const freshPool = BOUNTY_TEMPLATES.filter((t) => !acceptedTpls.has(t.id));
+  const fresh: Bounty[] = [];
+  const pool = [...freshPool];
+  while (fresh.length + accepted.length < BOUNTY_SLOTS && pool.length > 0) {
+    const idx = Math.floor(Math.random() * pool.length);
+    fresh.push(genBountyFrom(pool.splice(idx, 1)[0], player.stats!));
+  }
   player.inventory.gold = gold - REROLL_COST;
   player.stats!.totalGoldSpent += REROLL_COST;
   state.rerollsUsed += 1;
-  state.bounties = Array.from({ length: BOUNTY_SLOTS }, () => genBounty(player.stats!));
+  state.bounties = [...accepted, ...fresh];
   appendLog(player, `刷新了赏金契约板（消耗金币 ${REROLL_COST}）`);
   return { ok: true, cost: REROLL_COST, rerollsLeft: MAX_DAILY_REROLLS - state.rerollsUsed };
 }
@@ -374,13 +401,27 @@ export function doPrestige(
   for (const k of Object.keys(player.skills || {})) {
     player.skills[k].level = 1;
     player.skills[k].xp = 0;
+    player.skills[k].unlockedRecipes = [];
+    player.skills[k].enhancementLevel = 0;
   }
-  // 背包重置（保留启动金币），装备卸下
+  if (player.tasksState) {
+    player.tasksState.tasks = [];
+    player.tasksState.nextTaskAt = new Date().toISOString();
+  }
+  // 背包重置（保留启动金币），装备卸下；进行中的战斗/刷关/强化计时/队列等暂态一并清掉，
+  // 否则旧世界的 hpCombat 会带着满管血跨转生延续
   player.inventory = { gold: 100 };
   player.equipment = { enhancementLevels: {}, durability: {}, maxDurability: {} };
   player.activeBuffs = [];
   player.mode = "idle";
   player.lifeActionState = undefined;
+  player.combatFarmState = undefined;
+  player.hpCombat = undefined;
+  player.combatHp = undefined;
+  player.combatHpAt = undefined;
+  player.enhanceRun = undefined;
+  player.activityQueue = [];
+  player.combatLoadout = undefined;
 
   const mult = getPrestigeMultiplier(player);
   appendLog(

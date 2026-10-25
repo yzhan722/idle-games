@@ -65,7 +65,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
   app.post("/tasks/claim", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ taskId: z.string().min(1), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ taskId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => claimTask(s, contentPack, body.taskId, n));
@@ -76,7 +76,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
   app.post("/tasks/reroll", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ taskId: z.string().min(1), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ taskId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => rerollTask(s, contentPack, body.taskId, n));
@@ -87,7 +87,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
   app.post("/tasks/delete", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ taskId: z.string().min(1), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ taskId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => deleteTask(s, contentPack, body.taskId, n));
@@ -98,7 +98,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
   app.post("/tasks/block", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ skillId: z.string().min(1), blocked: z.boolean(), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ skillId: z.string().min(1), blocked: z.boolean(), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => setTaskBlock(s, contentPack, body.skillId, body.blocked, n));
@@ -109,7 +109,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
   app.post("/tasks/shop/buy", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ itemId: z.string().min(1), ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ itemId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => buyTaskShop(s, contentPack, body.itemId, n));
@@ -120,7 +120,7 @@ export async function tasksRoutes(app: FastifyInstance, storage: Storage, conten
   app.post("/tasks/gift/claim", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ ...revisionSchema }).parse((req.body ?? {}) as unknown);
+    const body = z.object({ ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     try {
       const outcome = await runTaskCommand(userId, body, now, (s, n) => claimGift(s, contentPack, n));

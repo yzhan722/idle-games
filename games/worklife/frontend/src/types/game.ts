@@ -9,7 +9,7 @@ export interface PlayerState {
   contentVersion: string;
   lastSimulatedAt: string;
   activeClassId: string;
-  mode: "idle" | "life_action" | "combat_farm" | "enhancing";
+  mode: "idle" | "life_action" | "enhancing";
   /** MWI: enhancing is a timed action — attempts run until the target level or the materials run out. */
   enhanceRun?: {
     itemId: string;
@@ -24,7 +24,7 @@ export interface PlayerState {
     xpGained: number;
     outcome?: { reason: "reached" | "materials" | "stopped" | "max" | "no_protection"; level: number; at: number };
   };
-  lifeActionState?: { actionId: string; startedAt: string; quantity?: number; remaining?: number };
+  lifeActionState?: { actionId: string; startedAt: string; quantity?: number; remaining?: number; effectiveDurationMs?: number };
   combatFarmState?: { stageId: string; startedAt: string; seed: string };
   combatLevel: number;
   combatXp: number;
@@ -48,6 +48,15 @@ export interface PlayerState {
   logs: Array<{ ts: string; text: string }>;
   tradingState: TradingState;
   partyState?: PartyState;
+  activePartyActivity?: {
+    partyId: string;
+    type: string;
+    stageId?: string;
+    startedAt: string;
+    endsAt?: string;
+    raidBossId?: string;
+    raidBossName?: string;
+  } | null;
   activityQueue: ActivityQueueItem[];
   /** Derived by GET /player/state: MWI task badge. */
   taskSummary?: { total: number; ready: number; giftReady: boolean };
@@ -78,9 +87,13 @@ export interface PlayerState {
     outcome?: "win" | "loss";
     drops?: Array<{ itemId: string; name: string; qty: number }>;
     consumed?: Array<{ itemId: string; name: string; qty: number }>;
+    foodReadyAt?: number[];
+    mpReadyAt?: number[];
     nextFightAt?: number;
     streak?: number;
     deaths?: number;
+    /** Consecutive defeats; at 3 the server switches auto-repeat off by itself. */
+    lossStreak?: number;
     startedAt?: number;
     /** MWI battle statistics for the current auto-repeat run. */
     runStats?: { startedAt: number; kills: number; xp: number; gold: number; loot: Record<string, number> };
@@ -91,14 +104,39 @@ export interface PlayerState {
     braceUntil?: number;
     xpGained?: Record<string, number>;
   };
+  activeBuffs?: Array<{
+    id: string;
+    name: string;
+    sourceItemId: string;
+    expiresAt: string;
+    multipliers?: Record<string, number>;
+    stats?: Record<string, number>;
+  }>;
   chapter1Build?: "sharpened_edge" | "thick_bark";
+  /** 玩家偏好/角色档案（建角屏写入；老存档可能整体缺失） */
+  settings?: {
+    soundEnabled?: boolean;
+    animationsEnabled?: boolean;
+    compactMode?: boolean;
+    notificationsEnabled?: boolean;
+    playerName?: string;
+    avatar?: string;
+    gender?: 'male' | 'female' | 'animal' | 'secret';
+    characterCreated?: boolean;
+    tutorialDone?: boolean;
+  };
+  /** Persistent combat HP — survives between fights, regenerates out of combat (60s → full). */
+  combatHp?: number;
+  /** Wall-clock ms when combatHp was last written (regen accrues from here). */
+  combatHpAt?: number;
   /** MWI combat skills (server-derived 战斗等级 lives in combatLevel). */
   combatSkills?: Record<CombatSkillId, { level: number; xp: number }>;
   abilities?: Record<string, { level: number; xp: number }>;
   abilityLoadout?: AbilitySlot[];
   combatLoadout?: {
     food: Array<{ itemId: string; triggerMissingHp: number }>;
-    drink: Array<{ itemId: string }>;
+    drink: Array<{ itemId: string; triggerMissingMp?: number }>;
+    mp?: Array<{ itemId: string; triggerMissingMp: number }>;
     autoRepeat?: boolean;
   };
 }

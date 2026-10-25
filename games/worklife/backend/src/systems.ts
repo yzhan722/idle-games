@@ -73,16 +73,19 @@ export function consumeItem(
   player.inventory[itemId] = have - 1;
   if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
 
-  // 即时恢复（HP/MP）——仅记录日志，HP/MP 在战斗为收益式简化模型中并非硬约束
+  // 即时恢复（HP/MP）
   const healed: { hp?: number; mp?: number } = {};
-  if (typeof effect.hp === "number") healed.hp = effect.hp;
+  if (typeof effect.hp === "number") {
+    healed.hp = player.activeClassId === "chef" && effect.hp > 0 ? Math.round(effect.hp * 1.2) : effect.hp;
+  }
   if (typeof effect.mp === "number") healed.mp = effect.mp;
 
   // Buff 效果
   let appliedBuff: ActiveBuff | undefined;
   if (effect.buff && typeof effect.buff === "object") {
     const bdef = effect.buff as AnyItem;
-    const durationSec: number = Number(bdef.durationSec) || 0;
+    const rawDurationSec: number = Number(bdef.durationSec) || 0;
+    const durationSec: number = player.activeClassId === "alchemist" ? Math.round(rawDurationSec * 1.25) : rawDurationSec;
     const expiresAt = new Date(now.getTime() + durationSec * 1000).toISOString();
     const buff: ActiveBuff = {
       id: String(bdef.id || itemId),
@@ -93,14 +96,13 @@ export function consumeItem(
       stats: bdef.stats
     };
     if (!player.activeBuffs) player.activeBuffs = [];
-    // 同 id 刷新（取较晚过期时间）
+    // 同 id 叠时间：剩余时间 + 新一份时长（此前取较晚过期时间，
+    // 等于第二份白吃）。效果数值不叠层，时长可续。
     const idx = player.activeBuffs.findIndex((b) => b.id === buff.id);
     if (idx >= 0) {
       const existing = player.activeBuffs[idx];
-      buff.expiresAt =
-        Date.parse(existing.expiresAt) > Date.parse(buff.expiresAt)
-          ? existing.expiresAt
-          : buff.expiresAt;
+      const base = Math.max(Date.parse(existing.expiresAt), now.getTime());
+      buff.expiresAt = new Date(base + durationSec * 1000).toISOString();
       player.activeBuffs[idx] = buff;
     } else {
       player.activeBuffs.push(buff);
@@ -265,8 +267,8 @@ export function buyPrice(def: AnyItem): number {
  * 仅出售基础材料/食物/药水，避免破坏高阶装备的产出循环。
  *
  * 不卖第一章的产出链本身（wood_1 / lumber_1）：8 金一块木板会让"升到 3 级做木甲"的教学被
- * 48 金绕过；也不卖 crystal_1（史莱姆的稀有掉落，商店有货就不稀有了）。HP/MP 药水在
- * 服务端 HP 战斗里没有使用入口且战斗间自动回满，先不上架，避免卖没用的东西。
+ * 48 金绕过；也不卖 crystal_1（史莱姆的稀有掉落，商店有货就不稀有了）。
+ * 商店出售基础 HP 药水、MP 药水与全套战斗状态药剂（狂战、铁壁、奥术涌流、守护战意等），方便战斗补给。
  */
 export const SHOP_STOCK_IDS = [
   "ore_1",
@@ -277,9 +279,20 @@ export const SHOP_STOCK_IDS = [
   "fiber_2",
   "food_simple",
   "drink_basic",
+  "potion_hp_t1",
+  "potion_hp_t2",
+  "potion_hp_t3",
+  "potion_hp_t4",
+  "potion_mp_t1",
+  "potion_mp_t2",
+  "potion_mp_t3",
+  "potion_mp_t4",
   "food_hearty_stew",
   "food_master_feast",
   "potion_craft_focus",
+  "potion_iron_skin",
+  "potion_arcane_surge",
+  "potion_guardian_elixir",
   "potion_battle_fury",
   "potion_fortune",
   "potion_scholar",
@@ -316,7 +329,7 @@ export function buyFromShop(
   qty: number
 ): TradeResult {
   if (!SHOP_STOCK_IDS.includes(itemId)) return { ok: false, reason: "商店未出售该物品" };
-  if (!Number.isFinite(qty) || qty < 1) return { ok: false, reason: "数量无效" };
+  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "数量无效" };
   const def = findItem(contentPack, itemId);
   if (!def) return { ok: false, reason: "物品不存在" };
 
@@ -327,7 +340,7 @@ export function buyFromShop(
 
   player.inventory["gold"] = gold - total;
   player.inventory[itemId] = (player.inventory[itemId] || 0) + qty;
-  if (player.stats) player.stats.totalGoldSpent += total;
+  if (player.stats) { player.stats.totalGoldSpent += total; player.stats.totalTrades = (player.stats.totalTrades || 0) + 1; }
   appendLog(player, `从商店购买 ${def.name} x${qty}，花费金币 ${total}`);
 
   return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };
@@ -341,18 +354,21 @@ export function sellToShop(
   qty: number
 ): TradeResult {
   if (itemId === "gold") return { ok: false, reason: "金币不可出售" };
-  if (!Number.isFinite(qty) || qty < 1) return { ok: false, reason: "数量无效" };
+  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "数量无效" };
   const def = findItem(contentPack, itemId);
   if (!def) return { ok: false, reason: "物品不存在" };
   const have = player.inventory[itemId] || 0;
   if (have < qty) return { ok: false, reason: "库存不足" };
+  // 装备槽存的是物品 id 引用：卖掉仍穿着的装备会留下幽灵槽（属性照算、背包却没有）。
+  const eq = player.equipment as Record<string, unknown> | undefined;
+  if (eq && Object.values(eq).includes(itemId)) return { ok: false, reason: "装备中的物品不能出售" };
 
   const unit = sellPrice(def);
   const total = unit * qty;
   player.inventory[itemId] = have - qty;
   if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
   player.inventory["gold"] = (player.inventory["gold"] || 0) + total;
-  if (player.stats) player.stats.totalGoldEarned += total;
+  if (player.stats) { player.stats.totalGoldEarned += total; player.stats.totalTrades = (player.stats.totalTrades || 0) + 1; }
   appendLog(player, `向商店出售 ${def.name} x${qty}，获得金币 ${total}`);
 
   return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };

@@ -12,7 +12,7 @@ import { isE2eFast } from "./e2e_fast";
 
 /**
  * MWI 强化是一个计时动作，不是一次点击：玩家设定目标等级，服务端每个间隔尝试一次，成功 +1，
- * 失败按保护规则回退，直到达标、材料耗尽或手动停止。离线期间同样结算。
+ * 失败按保护规则回退，直到达标、材料耗尽或手动停止。只在在线结算窗口内推进。
  */
 export const ENHANCE_BASE_INTERVAL_MS = 20_000;
 
@@ -35,7 +35,11 @@ export function startEnhanceRun(
   input: { itemId: string; targetLevel: number; useProtection?: boolean },
   now: Date
 ): StartEnhanceResult {
-  if (player.hpCombat && !player.hpCombat.outcome) {
+  const inSoloCombat = Boolean(
+    player.hpCombat &&
+      (!player.hpCombat.outcome || (player.combatLoadout?.autoRepeat && player.hpCombat.nextFightAt))
+  );
+  if (inSoloCombat) {
     return { ok: false, error: "in_combat", message: "战斗中不能强化，先停止战斗" };
   }
   const item = itemById(pack, input.itemId);
@@ -53,7 +57,7 @@ export function startEnhanceRun(
   }
   if (target > maxLevel) return { ok: false, error: "bad_target", message: `最高只能强化到 +${maxLevel}` };
   // First attempt must be payable now, so the player never "starts" a run that does nothing.
-  const cost = enhancementMaterials(ruleMatch.rule, current + 1, input.useProtection ? PROTECTION_MIRROR_ID : undefined);
+  const cost = enhancementMaterials(ruleMatch.rule, current + 1, input.useProtection ? PROTECTION_MIRROR_ID : undefined, item, pack);
   for (const [id, qty] of Object.entries(cost)) {
     if ((player.inventory[id] || 0) < qty) {
       return { ok: false, error: "missing_materials", message: `材料不足：${id}（需要 ${qty}，拥有 ${player.inventory[id] || 0}）` };
@@ -159,6 +163,23 @@ export function tickEnhanceRun(
       return new Date(run.nextAttemptAt);
     }
     run.attempts += 1;
+    // 强化工具随尝试磨损（仅当装备的是强化专属工具且玩家实际持有该工具时才磨损）
+    {
+      const eq = (player as { equipment?: { tool?: string } }).equipment;
+      const toolId = eq?.tool;
+      if (toolId && (player.inventory?.[toolId] || 0) > 0) {
+        const toolDef = (pack.items as Array<{ id: string; toolFor?: string }>).find((i) => i.id === toolId);
+        if (toolDef?.toolFor === "skill_enhancing") {
+          const { applyDurabilityWear } = require("./storage") as typeof import("./storage");
+          applyDurabilityWear(player, toolId, 0.1);
+        }
+      }
+    }
+    if (player.stats) {
+      player.stats.totalEnhancements = (player.stats.totalEnhancements || 0) + 1;
+      player.stats.totalActions = (player.stats.totalActions || 0) + 1;
+      player.stats.totalXpEarned = (player.stats.totalXpEarned || 0) + (result.xpGained || 0);
+    }
     run.xpGained = Math.round((run.xpGained + (result.xpGained || 0)) * 10) / 10;
     if (result.success) {
       run.successes += 1;

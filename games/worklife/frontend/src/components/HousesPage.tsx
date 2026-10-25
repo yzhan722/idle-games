@@ -67,6 +67,7 @@ export function HousesPage(props: Props) {
   }, [load, props.refreshKey]);
 
   const upgrade = async (room: RoomView) => {
+    if (busy) return;
     setBusy(room.id);
     try {
       apiClient.clearCache();
@@ -114,26 +115,37 @@ export function HousesPage(props: Props) {
                 <span key={i} className={`house-pip${i < r.level ? " on" : ""}`} />
               ))}
             </div>
-            {r.nextCost ? (
-              <div className="house-room-cost">
-                <div className="house-cost-lines">
-                  <span className={props.gold >= r.nextCost.gold ? "ok" : "short"}><GoldIcon /> {r.nextCost.gold}</span>
-                  {r.nextCost.materials.map((m) => (
-                    <span key={m.itemId} className={m.have >= m.qty ? "ok" : "short"}>
-                      <T1ItemIcon itemId={m.itemId} fallback={props.iconOf(m.itemId)} alt="" /> {m.name} {m.have}/{m.qty}
-                    </span>
-                  ))}
+            {r.nextCost ? (() => {
+              const goldShort = props.gold < r.nextCost.gold;
+              const matsShort = r.nextCost.materials.some((m) => m.have < m.qty);
+              const isAffordable = !goldShort && !matsShort;
+              return (
+                <div className="house-room-cost">
+                  <div className="house-cost-lines">
+                    <span className={!goldShort ? "ok" : "short"}><GoldIcon /> {r.nextCost.gold}</span>
+                    {r.nextCost.materials.map((m) => (
+                      <span key={m.itemId} className={m.have >= m.qty ? "ok" : "short"}>
+                        <T1ItemIcon itemId={m.itemId} fallback={props.iconOf(m.itemId)} alt="" /> {m.name} {m.have}/{m.qty}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn-action${isAffordable ? " craftable" : ""} house-upgrade`}
+                    disabled={!isAffordable || !!busy}
+                    onClick={() => upgrade(r)}
+                  >
+                    {isAffordable
+                      ? `升到 Lv.${r.level + 1}`
+                      : goldShort && matsShort
+                        ? "金币与材料不足"
+                        : goldShort
+                          ? "金币不足"
+                          : "材料不足"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className={`btn-action${r.nextCost.affordable ? " craftable" : ""} house-upgrade`}
-                  disabled={!r.nextCost.affordable || busy === r.id}
-                  onClick={() => upgrade(r)}
-                >
-                  {r.nextCost.affordable ? `升到 Lv.${r.level + 1}` : "材料不足"}
-                </button>
-              </div>
-            ) : (
+              );
+            })() : (
               <div className="house-room-cost"><span className="ok">已满级</span></div>
             )}
           </div>

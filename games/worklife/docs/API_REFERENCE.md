@@ -329,59 +329,70 @@ Authorization: Bearer {token}
 
 ## 交易系统 API
 
-### 获取交易列表
+### 获取订单簿
 ```http
-GET /trading/listings?search=wood&filters={}
+GET /trading/orders/:itemId
 Authorization: Bearer {token}
 ```
 
 **响应**:
 ```json
-[
-  {
-    "id": "listing-uuid",
-    "sellerId": "seller-uuid",
-    "itemId": "wood_1",
-    "quantity": 100,
-    "pricePerUnit": 10,
-    "listedAt": "2024-01-01T00:00:00.000Z",
-    "expiresAt": "2024-01-02T00:00:00.000Z",
-    "status": "active"
-  }
-]
+{
+  "orders": [
+    {
+      "id": "order-uuid",
+      "userId": "seller-uuid",
+      "itemId": "wood_1",
+      "quantity": 100,
+      "price": 10,
+      "type": "sell",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
 ```
 
-### 上架物品
+### 创建订单（type: sell 挂单 / buy 收购）
 ```http
-POST /trading/list
+POST /trading/orders
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
   "itemId": "wood_1",
   "quantity": 100,
-  "pricePerUnit": 10,
-  "duration": 24
+  "price": 10,
+  "type": "sell",
+  "operationId": "op-uuid"
 }
 ```
 
-### 购买物品
+### 成交订单
 ```http
-POST /trading/purchase
+POST /trading/buy
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "listingId": "listing-uuid",
-  "quantity": 10
+  "orderId": "order-uuid",
+  "quantity": 10,
+  "operationId": "op-uuid"
 }
 ```
 
-**响应**:
-```json
-{
-  "success": true
-}
+### 撤销订单
+```http
+DELETE /trading/orders/:orderId
+Authorization: Bearer {token}
+```
+
+### 我的订单 / 市场概览 / 价格历史
+```http
+GET /trading/my-orders
+GET /trading/summary
+GET /trading/price-history/:itemId
+GET /trading/price-trend/:itemId
+Authorization: Bearer {token}
 ```
 
 ## 组队系统 API

@@ -21,8 +21,8 @@ export const CHAPTER1_OBJECTIVES = [
   "equip_sword",
   "first_kill",
   "build",
-  "archetypes",
   "chest",
+  "archetypes",
   "boss",
   "complete",
 ] as const;
@@ -41,7 +41,7 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
   const lumber = inv.lumber_1 || 0;
   const sword = inv.weapon_wooden_sword || 0;
   const chest = inv.armor_wood_chest || 0;
-  const wc = state?.skills?.skill_woodcutter?.level || 1;
+  const wc = state?.skills?.skill_woodworking?.level || state?.skills?.skill_woodcutter?.level || 1;
 
   if (!achieved.chop && !achieved.board && !achieved.sword && wood < 1 && lumber < 1 && sword < 1) {
     return {
@@ -91,6 +91,14 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       tab: "adventure",
     };
   }
+  if (!achieved.chest && (chest < 1 || !eq.chest)) {
+    return {
+      id: "chest",
+      title: wc < 3 ? "把木工升到 3 级并做木甲" : "穿上木制胸甲",
+      detail: "小猴出手快、寄居蟹壳硬，上衣空着打不过。做好木甲凑齐木工两件套再去闯林子。",
+      tab: chest < 1 ? "woodworking" : "character",
+    };
+  }
   const archetypes =
     (kills.slime || 0) > 0 && (kills.crab || 0) > 0 && (kills.monkey || 0) > 0;
   if (!achieved.archetypes && !archetypes) {
@@ -99,14 +107,6 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       title: "见识三种森林怪物",
       detail: "史莱姆、铁壳寄居蟹、捣蛋小猴各至少一只。它们打法不一样。",
       tab: "adventure",
-    };
-  }
-  if (!achieved.chest && (chest < 1 || !eq.chest)) {
-    return {
-      id: "chest",
-      title: wc < 3 ? "把伐木升到 3 级并做木甲" : "穿上木制胸甲",
-      detail: "管家的拳头很重。上衣空着不要去敲门。",
-      tab: chest < 1 ? "woodworking" : "character",
     };
   }
   if (!bossKills) {

@@ -36,7 +36,7 @@ function slotMatchesItem(slot: EquipSlot, item: EquipItemDef): boolean {
     return item.slot === slot;
   }
   if (item.type === "weapon") return slot === "main_hand";
-  if (item.type === "offhand") return slot === "off_hand";
+  if (item.type === "offhand" || item.type === "shield") return slot === "off_hand";
   return false;
 }
 
@@ -44,10 +44,16 @@ export function canEquipItem(
   inventory: Record<string, number>,
   slot: EquipSlot,
   itemId: string,
-  items: EquipItemDef[]
+  items: EquipItemDef[],
+  equipment?: Record<string, unknown>
 ): EquipResult {
   const qty = Number(inventory[itemId] || 0);
-  if (qty <= 0) {
+  // 装备槽存的是物品 id 引用：同一件物品（数量 1）不能同时占多个槽位，
+  // 否则 equippedStatSum 会把同一件装备的属性按槽位数重复计算。
+  const alreadyEquipped = equipment
+    ? EQUIP_SLOT_KEYS.filter((s) => s !== slot && equipment[s] === itemId).length
+    : 0;
+  if (qty <= alreadyEquipped) {
     return { ok: false, error: "item_not_owned", message: "背包中没有这件物品" };
   }
   const item = items.find((i) => i.id === itemId);

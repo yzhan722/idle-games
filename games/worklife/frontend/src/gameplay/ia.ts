@@ -13,10 +13,10 @@ export const CHAPTER1_MONSTERS = ["slime", "crab", "monkey", "forest_boss"] as c
 
 export const CAREER_GROUPS: Array<{
   title: string;
-  items: Array<"daily" | "achievements" | "stats" | "checkin" | "shop" | "buffs" | "reputation" | "bounties" | "prestige" | "settings">;
+  items: Array<"daily" | "achievements" | "checkin" | "prestige" | "settings">;
 }> = [
-  { title: "进度", items: ["daily", "achievements", "stats"] },
-  { title: "日常", items: ["checkin", "shop", "buffs"] },
-  { title: "远期", items: ["reputation", "bounties", "prestige"] },
+  { title: "进度", items: ["daily", "achievements"] },
+  { title: "日常", items: ["checkin"] },
+  { title: "远期", items: ["prestige"] },
   { title: "系统", items: ["settings"] },
 ];

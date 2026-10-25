@@ -14,9 +14,10 @@ export type SkillNavItem = {
   id: string;
   name: string;
   group: SkillNavGroup;
-  /** Profession whose skill level this row shows (gathering + production share it). */
+  /** Profession whose skill level this row shows. */
   profession?: string;
-  /** `skill_<profession>` key in playerState.skills, "combat" (derived level), or `combat:<skill>` (MWI combat skill). */
+  /** Side-specific skill key in playerState.skills (`skill_<profession>` 采集 / `skill_<动作>` 生产),
+   * "combat" (derived level), or `combat:<skill>` (MWI combat skill). */
   skillKey?: string;
   /** Rows that are pure progress readouts navigate to this tab instead of a page of their own. */
   opensTab?: string;
@@ -38,12 +39,12 @@ export const SKILL_NAV: SkillNavItem[] = [
   { id: "fishing", name: "钓鱼", group: "gathering", profession: "chef", skillKey: "skill_chef", icon: "nav-fishing", emoji: "🎣" },
   { id: "gathering", name: "采集", group: "gathering", profession: "tailor", skillKey: "skill_tailor", icon: "nav-gathering", emoji: "🧺" },
   { id: "crystal_mining", name: "水晶", group: "gathering", profession: "alchemist", skillKey: "skill_alchemist", icon: "nav-crystal", emoji: "💎" },
-  { id: "woodworking", name: "木工", group: "production", profession: "woodcutter", skillKey: "skill_woodcutter", icon: "nav-woodworking", emoji: "🪚", ariaLabel: "制作" },
-  { id: "smithing", name: "锻造", group: "production", profession: "blacksmith", skillKey: "skill_blacksmith", icon: "nav-smithing", emoji: "⚒️" },
-  { id: "husbandry", name: "畜牧", group: "production", profession: "farmer", skillKey: "skill_farmer", icon: "nav-husbandry", emoji: "🐄" },
-  { id: "cooking", name: "烹饪", group: "production", profession: "chef", skillKey: "skill_chef", icon: "nav-cooking", emoji: "🍲" },
-  { id: "tailoring", name: "缝纫", group: "production", profession: "tailor", skillKey: "skill_tailor", icon: "nav-tailoring", emoji: "🧵" },
-  { id: "alchemy", name: "炼金", group: "production", profession: "alchemist", skillKey: "skill_alchemist", icon: "nav-alchemy", emoji: "⚗️" },
+  { id: "woodworking", name: "木工", group: "production", profession: "woodcutter", skillKey: "skill_woodworking", icon: "nav-woodworking", emoji: "🪚", ariaLabel: "制作" },
+  { id: "smithing", name: "锻造", group: "production", profession: "blacksmith", skillKey: "skill_smithing", icon: "nav-smithing", emoji: "⚒️" },
+  { id: "husbandry", name: "畜牧", group: "production", profession: "farmer", skillKey: "skill_husbandry", icon: "nav-husbandry", emoji: "🐄" },
+  { id: "cooking", name: "烹饪", group: "production", profession: "chef", skillKey: "skill_cooking", icon: "nav-cooking", emoji: "🍲" },
+  { id: "tailoring", name: "缝纫", group: "production", profession: "tailor", skillKey: "skill_tailoring", icon: "nav-tailoring", emoji: "🧵" },
+  { id: "alchemy", name: "炼金", group: "production", profession: "alchemist", skillKey: "skill_alchemy", icon: "nav-alchemy", emoji: "⚗️" },
   { id: "enhance", name: "强化", group: "production", skillKey: "skill_enhancing", icon: "nav-enhance", emoji: "✨" },
   { id: "adventure", name: "冒险", group: "combat", skillKey: "combat", icon: "nav-adventure", emoji: "⚔️" },
   // MWI combat skills: each is a row with its own level / XP bar; all of them open the combat page.
@@ -112,14 +113,18 @@ export function mobileGroupForTab(tabId: string): MobileNavGroup["id"] {
 type PackActionLike = { id: string; skillId?: string; consumes?: unknown[] };
 
 /**
- * Which nav row hosts a running action. Pack action ids do not encode gather vs production
- * (`act_craft_*` exists for every profession), so decide by skillId + whether inputs are consumed.
+ * Which nav row hosts a running action. Pack actions carry the side-specific skill id
+ * (采集 `skill_<profession>` / 生产 `skill_<动作>`), so match skillKey directly; fall back
+ * to the consumes heuristic for packs that pre-date the skill split.
  */
 export function navIdForAction(action: PackActionLike | undefined | null): string | undefined {
   if (!action) return undefined;
   if (action.id.startsWith("act_combat_")) return "adventure";
+  const isProduction = Array.isArray(action.consumes) && action.consumes.length > 0;
+  // 新包直接按 skillKey 命中；consumes 动作只接受 production 组，兼容老包里生产动作挂采集 id
+  const skillItem = SKILL_NAV.find((s) => s.skillKey === action.skillId && (!isProduction || s.group === "production"));
+  if (skillItem) return skillItem.id;
   const profession = (action.skillId || "").replace(/^skill_/, "");
   if (!profession) return undefined;
-  const isProduction = Array.isArray(action.consumes) && action.consumes.length > 0;
   return SKILL_NAV.find((s) => s.profession === profession && s.group === (isProduction ? "production" : "gathering"))?.id;
 }

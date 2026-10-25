@@ -36,6 +36,10 @@ type State = {
   combatSkills?: SkillLevels;
   chapter1Build?: "sharpened_edge" | "thick_bark";
   equipment?: Equipment;
+  activeBuffs?: Array<{
+    expiresAt: string;
+    stats?: { atk?: number; def?: number };
+  }>;
 };
 
 /** Mirror of backend weaponMainSkill: bows → ranged, staffs / scepters / wands → magic, else melee. */
@@ -106,16 +110,17 @@ export function activeSetBonuses(eq: Equipment | undefined, sets: PackEquipmentS
   const out: ActiveSetBonus[] = [];
   for (const set of sets) {
     const pieces = (set.pieces || []).filter((p) => eq[p.slot] === p.itemId).length;
-    let atk = 0;
-    let def = 0;
-    let description: string | undefined;
+    // Mirror of backend set_bonus.highestActiveBonus: the pack words each tier as a total, so only
+    // the highest satisfied tier applies (summing every tier inflated top sets by 1.5–1.75×).
+    let top: NonNullable<PackEquipmentSet["bonuses"]>[number] | undefined;
     for (const bonus of set.bonuses || []) {
-      if (pieces >= (bonus.requiredPieces ?? 99)) {
-        atk += Number(bonus.stats?.atk || 0);
-        def += Number(bonus.stats?.def || 0);
-        description = bonus.description || description;
-      }
+      const need = bonus.requiredPieces ?? 99;
+      if (pieces < need) continue;
+      if (!top || need >= (top.requiredPieces ?? 99)) top = bonus;
     }
+    const atk = Number(top?.stats?.atk || 0);
+    const def = Number(top?.stats?.def || 0);
+    const description = top?.description;
     if (atk || def) out.push({ setId: set.id, name: set.name || set.id, pieces, atk, def, description });
   }
   return out;
@@ -150,10 +155,23 @@ export function combatSheetFromPack(
     gearAtk += bonus.atk;
     gearDef += bonus.def;
   }
+  const unbuffedAtk = skills.atk + Math.round(gearAtk) + extras.atk;
+  const unbuffedDef = skills.def + Math.round(gearDef) + extras.def;
+  let buffAtk = 0;
+  let buffDef = 0;
+  const nowMs = Date.now();
+  for (const b of state?.activeBuffs || []) {
+    if (Date.parse(b.expiresAt) > nowMs) {
+      buffAtk += Number(b.stats?.atk || 0);
+      buffDef += Number(b.stats?.def || 0);
+    }
+  }
+  if (buffAtk > 0) buffAtk = Math.min(buffAtk, Math.max(2, Math.floor(unbuffedAtk * 0.4)));
+  if (buffDef > 0) buffDef = Math.min(buffDef, Math.max(2, Math.floor(unbuffedDef * 0.4 + 4)));
   return {
     hp: skills.hp + extras.hp,
-    atk: skills.atk + Math.round(gearAtk) + extras.atk,
-    def: skills.def + Math.round(gearDef) + extras.def,
+    atk: unbuffedAtk + buffAtk,
+    def: unbuffedDef + buffDef,
     intervalMs: skills.intervalMs,
     mp: skills.mp,
     mpRegenPerTick: skills.mpRegenPerTick,

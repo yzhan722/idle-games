@@ -65,7 +65,7 @@ CREATE TABLE player_states (
 
 **字段说明**:
 - `active_class_id`: 当前激活的职业
-- `mode`: 当前模式 (idle/life_action/combat_farm)
+- `mode`: 当前模式 (idle/life_action/enhancing)
 - `combat_level`: 战斗等级 (1-200)
 - `combat_xp`: 战斗经验值
 - `last_simulated_at`: 最后模拟时间（用于离线进度计算）
@@ -195,27 +195,24 @@ CREATE TABLE player_activity_queue (
 
 ### 5. 交易系统 (Trading System)
 
-#### market_listings - 市场挂单表
-存储所有交易市场的挂单。
+#### trading_orders - 订单簿表
+存储所有交易订单（卖单/收购单）。挂单市场（market_listings）已下线。
 
 ```sql
-CREATE TABLE market_listings (
+CREATE TABLE trading_orders (
     id UUID PRIMARY KEY,
-    seller_id UUID REFERENCES users(id),
+    user_id UUID REFERENCES users(id),
     item_id VARCHAR(100),
     quantity INTEGER,
-    price_per_unit INTEGER,
-    status VARCHAR(20), -- active, sold, expired, cancelled
-    listed_at TIMESTAMP WITH TIME ZONE,
-    expires_at TIMESTAMP WITH TIME ZONE
+    price INTEGER,
+    type VARCHAR(10), -- sell, buy
+    created_at TIMESTAMP WITH TIME ZONE
 );
 ```
 
-**状态说明**:
-- `active`: 活跃挂单
-- `sold`: 已售出
-- `expired`: 已过期
-- `cancelled`: 已取消
+**类型说明**:
+- `sell`: 卖单（挂卖物品，物品挂单时托管扣除）
+- `buy`: 收购单（金币挂单时托管扣除）
 
 #### trade_history - 交易历史表
 记录所有完成的交易。
@@ -225,12 +222,9 @@ CREATE TABLE trade_history (
     id UUID PRIMARY KEY,
     buyer_id UUID REFERENCES users(id),
     seller_id UUID REFERENCES users(id),
-    listing_id UUID REFERENCES market_listings(id),
     item_id VARCHAR(100),
     quantity INTEGER,
-    price_per_unit INTEGER,
     total_price INTEGER,
-    fee INTEGER,
     completed_at TIMESTAMP WITH TIME ZONE
 );
 ```
@@ -484,8 +478,7 @@ CREATE TABLE game_action_yields (
 
 ### 复合索引
 ```sql
-CREATE INDEX idx_market_active_items ON market_listings(status, item_id) 
-    WHERE status = 'active';
+CREATE INDEX idx_trading_orders_item_created ON trading_orders(item_id, created_at DESC);
     
 CREATE INDEX idx_player_inventory_user_item ON player_inventory(user_id, item_id);
 ```
@@ -499,18 +492,6 @@ RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```
-
-### 自动清理过期挂单
-```sql
-CREATE FUNCTION cleanup_expired_listings()
-RETURNS void AS $$
-BEGIN
-    UPDATE market_listings
-    SET status = 'expired'
-    WHERE status = 'active' AND expires_at < CURRENT_TIMESTAMP;
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -533,9 +514,6 @@ $$ LANGUAGE plpgsql;
 
 ### v_player_full_state - 玩家完整状态视图
 聚合玩家的所有核心数据。
-
-### v_active_market_listings - 活跃市场挂单视图
-只显示未过期的活跃挂单。
 
 ### v_top_enhancement_providers - 强化服务提供者排行视图
 按评分和完成数排序的服务提供者列表。

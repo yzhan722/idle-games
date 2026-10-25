@@ -11,8 +11,8 @@ describe("gameplay encounters SSOT", () => {
     const forest = encounterStages(pack as never).find((s) => s.id === "forest");
     const slime = forest?.encounters.find((e) => e.id === "slime");
     assert.ok(slime);
-    assert.equal(slime.hp, 80);
-    assert.equal(slime.atk, 3);
+    assert.equal(slime.hp, 70);
+    assert.equal(slime.atk, 4);
     assert.equal(slime.actionId, "act_combat_slime");
     assert.equal(slime.isBoss, false);
     assert.equal(slime.archetype, "ordinary");
@@ -32,7 +32,7 @@ describe("gameplay encounters SSOT", () => {
     assert.equal(byId.monkey.archetype, "fast");
     assert.equal(byId.forest_boss.archetype, "boss");
     assert.equal(byId.forest_boss.isBoss, true);
-    assert.equal(byId.forest_boss.hp, 220);
+    assert.equal(byId.forest_boss.hp, 572);
     assert.ok(byId.crab.def > byId.slime.def);
     assert.ok(byId.monkey.attackIntervalMs < byId.slime.attackIntervalMs);
   });

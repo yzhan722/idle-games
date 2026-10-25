@@ -71,8 +71,8 @@ describe("MWI houses", () => {
     state.hpCombat = startHpCombat(state, pack, "slime", T0);
     tickHpCombat(state, pack, new Date(T0.getTime() + 60_000), 60_000, () => 0.99);
     assert.equal(state.hpCombat?.outcome, "win");
-    // slime 10 XP × 1.04 = 10.4 → melee 44% = 4.576 → 4.6
-    assert.equal(state.hpCombat?.xpGained?.melee, 4.6);
+    // slime 4 XP × 1.04 = 4.16 → melee 44% = 1.8304 → 1.8
+    assert.equal(state.hpCombat?.xpGained?.melee, 1.8);
     await storage.close();
   });
 

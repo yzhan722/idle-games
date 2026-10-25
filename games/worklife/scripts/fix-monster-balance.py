@@ -1,4 +1,7 @@
-"""Content repair (2026-09-08): monster stats that two different formulas left unwinnable.
+"""SUPERSEDED (2026-10): do not run. Monster atk is now solved by scripts/audit/calibrate.ts against the
+ratio damage formula; the STATS below are stale and would overwrite those values.
+
+Content repair (2026-09-08): monster stats that two different formulas left unwinnable.
 
 The ordinary monsters of the forest, mine and swamp follow one gentle line (hp +15, atk +2, def +1
 per level), and the player formula (hp 50 + 10/level, atk 5 + level + gear, damage = atk -

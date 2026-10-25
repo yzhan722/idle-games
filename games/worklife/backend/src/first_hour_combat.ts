@@ -63,13 +63,34 @@ export function monsterCombatant(monster: Record<string, unknown>): Combatant {
   };
 }
 
+/**
+ * Damage after mitigation: atk² / (atk + floor(def / 2)).
+ *
+ * The old rule was `atk − floor(def / 2)`, floored at 1. Gear and set defence grow far faster than
+ * monster attack, so from the first full set onward every monster — bosses included — dealt exactly
+ * 1 damage per hit (see the 2026-10 balance audit). This ratio form is *the same curve for small
+ * defence* (≈ atk − def/2 while def/2 ≪ atk, so the first hour plays as before) yet each extra point
+ * of defence is worth less than the last: def/2 = atk halves the damage, def/2 = 3×atk cuts it to a
+ * quarter, and it never reaches zero. The frontend mirrors this in `fightPreview.hit`.
+ */
+export function mitigatedDamage(atk: number, def: number): number {
+  if (!(atk > 0)) return 0;
+  return (atk * atk) / (atk + Math.max(0, Math.floor(def / 2)));
+}
+
 export function hitDamage(attacker: Combatant, defender: Combatant): number {
-  const raw = attacker.atk * attacker.outgoingDamageMult - Math.floor(defender.def / 2);
+  const raw = mitigatedDamage(attacker.atk * attacker.outgoingDamageMult, defender.def);
   return Math.max(1, Math.floor(raw * defender.incomingDamageMult));
 }
 
 /** Deterministic HP combat. No RNG. Used to retune first-hour numbers. */
-export function simulateFight(player: Combatant, enemy: Combatant, maxMs = 10 * 60_000): FightResult {
+export function simulateFight(
+  player: Combatant,
+  enemy: Combatant,
+  maxMs = 10 * 60_000,
+  /** Optional boss-mechanic hooks (see boss_mechanics.enemyDamageHook); the plain fight has none. */
+  hooks: { enemyDamage?: (hitNumber: number, baseDamage: number, playerMaxHp: number) => number } = {}
+): FightResult {
   let playerHp = player.hp;
   let enemyHp = enemy.hp;
   let t = 0;
@@ -96,7 +117,8 @@ export function simulateFight(player: Combatant, enemy: Combatant, maxMs = 10 * 
     }
     if (enemyHp <= 0) break;
     if (enemyCd >= enemy.intervalMs) {
-      const dmg = hitDamage(enemy, { ...player, incomingDamageMult: 1 });
+      let dmg = hitDamage(enemy, { ...player, incomingDamageMult: 1 });
+      if (hooks.enemyDamage) dmg = hooks.enemyDamage(enemyHits + 1, dmg, player.hp);
       playerHp -= dmg;
       enemyHits += 1;
       enemyCd = 0;

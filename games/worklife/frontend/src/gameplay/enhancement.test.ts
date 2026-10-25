@@ -19,10 +19,10 @@ describe("frontend MWI enhancement mirror", () => {
     assert.equal(enhancementBonusPct(20), 100);
   });
 
-  it("scales accessories at 5× and normal gear at 1×", () => {
-    assert.equal(enhancementSlotMultiplier({ type: "accessory" }), 5);
+  it("scales accessories and normal gear identically (jewelry is no longer 5×)", () => {
+    assert.equal(enhancementSlotMultiplier({ type: "accessory" }), 1);
     assert.equal(enhancementSlotMultiplier({ type: "weapon" }), 1);
-    assert.equal(enhancementStatMultiplier(10, { type: "accessory" }), 2.45);
+    assert.equal(enhancementStatMultiplier(10, { type: "accessory" }), 1.29);
     assert.equal(enhancementStatMultiplier(10, { type: "weapon" }), 1.29);
   });
 

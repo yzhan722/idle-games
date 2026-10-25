@@ -92,7 +92,7 @@ export function MobileNavBar(props: Props) {
                         <span className="tab-name">{item.name}</span>
                         {recommended && !active && <span className="skill-recommended">推荐</span>}
                         {(props.badges?.[item.id] || 0) > 0 && <span className="skill-badge">{props.badges![item.id]}</span>}
-                        {st && <span className="skill-level">Lv.{st.level}</span>}
+                        {st && <span className="skill-level">Lv.{st.level}{prog ? ` · ${Math.floor(prog.pct)}%` : ""}</span>}
                       </span>
                       {prog && (
                         <span className="skill-xp-bar" aria-hidden="true">
