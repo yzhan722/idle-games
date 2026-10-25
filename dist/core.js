@@ -1720,7 +1720,29 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 		if (this.affordNode){ return; }
 		if (!prices || !prices.length){
 			if (this.buttonContent && !this.costNode && !dojo.hasClass(this.domNode, "xxAction") && !dojo.hasClass(this.domNode, "xxFateBtn")){
-				this.costNode = dojo.create("div", { className: "xx-cost", innerHTML: "<span class=\"xx-ci ok\"><i>山间采撷 · 万法之源</i></span>" }, this.buttonContent);
+				var ctrlCls = (this.controller && this.controller.declaredClass) ? String(this.controller.declaredClass) : "";
+				var freeHint = "";
+				if (ctrlCls.indexOf("GatherCatnip") >= 0){
+					freeHint = "山间采撷 · 万法之源";
+				} else if (ctrlCls.indexOf("PraiseBtn") >= 0){
+					freeHint = "聚万灵香火 · 归入大道愿池";
+				} else if (ctrlCls.indexOf("ResetFaithBtn") >= 0){
+					freeHint = "化愿池香火 · 凝长生护道真罡";
+				} else if (ctrlCls.indexOf("TranscendBtn") >= 0){
+					freeHint = "勘破太虚玄奥 · 晋升超脱阶位";
+				} else if (ctrlCls.indexOf("AccelerateTimeBtn") >= 0){
+					freeHint = "燃宙光流辉 · 加速天地光阴";
+				} else if (ctrlCls.indexOf("UseHeatBtn") >= 0){
+					freeHint = "泄百劫炉火 · 化为碎晶流年";
+				} else if (ctrlCls.indexOf("ChallengeBtn") >= 0 && this.model && this.model.metadata){
+					var cDesc = String(this.model.metadata.effectDesc || this.model.metadata.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+					freeHint = cDesc ? (cDesc.length > 26 ? cDesc.slice(0, 26) + "…" : cDesc) : "以身试劫 · 勘破生死大道";
+				} else if (this.model && this.model.name === $I("menu.reset")){
+					freeHint = "兵解重修 · 凝结宿慧道果";
+				}
+				if (freeHint){
+					this.costNode = dojo.create("div", { className: "xx-cost", innerHTML: "<span class=\"xx-ci ok\"><i>" + freeHint + "</i></span>" }, this.buttonContent);
+				}
 			}
 			return;
 		}

@@ -943,7 +943,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		seclude:  {xiuwei: 6, minerals: 10},
 		zhuji:    {xiuwei: 40, minerals: 25},
 		rift:     {xiuwei: 60, minerals: 30},
-		grift:    {xiuwei: 90, relic: 1}
+		grift:    {xiuwei: 90, gold: 25}
 	},
 
 	claimGuideRewards: function(){
@@ -1861,7 +1861,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			blueprint:   { res: "science",     scale: 50.0, max: 20000 },
 			starchart:   { res: "science",     scale: 5.0,  max: 25000 },
 			oil:         { res: "faith",       scale: 0.5,  max: 15000 },
+			unicorns:    { res: "faith",       scale: 0.5,  max: 5000 },
+			tears:       { res: "faith",       scale: 20.0, max: 15000 },
 			uranium:     { res: "unobtainium", scale: 0.5,  max: 5000 },
+			alicorn:     { res: "relic",       scale: 2.0,  max: 2500 },
+			sorrow:      { res: "relic",       scale: 5.0,  max: 2500 },
 			eludium:     { res: "relic",       scale: 1.0,  max: 2500 }
 		};
 		var normalizePriceArray = function(priceArr){
@@ -2068,15 +2072,44 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					}
 				}
 			}
-			//3. 筑基及以上: 解锁本境首门核心问道功法与本境百艺炼制配方
-			if (r >= 1 && this.game.science && syn.techs.length > 0){
+			//3. 筑基及以上(或引气入体后): 解锁本境首门核心问道功法与本境百艺配方/升级
+			if ((r >= 1 || this.getHighestStageIndex() >= 1) && this.game.science && syn.techs.length > 0){
 				var firstTech = this.game.science.get(syn.techs[0]);
 				if (firstTech){ firstTech.unlocked = true; }
 			}
-			if (r >= 1 && this.game.workshop && syn.crafts.length > 0){
+			if (r >= 1 && this.game.workshop){
 				for (var c = 0; c < syn.crafts.length; c++){
 					var crObj = this.game.workshop.getCraft(syn.crafts[c]);
 					if (crObj){ crObj.unlocked = true; }
+				}
+				if (syn.upgrades && syn.upgrades.length > 0){
+					var firstUpg = this.game.workshop.get(syn.upgrades[0]);
+					if (firstUpg){ firstUpg.unlocked = true; }
+				}
+			}
+		}
+		//4. 同步顶部导航页签可见性——避免藏经阁/百艺/坊市/道统因建筑跨境而隐身卡死
+		if (this.game.tabs && this.game.tabs.length){
+			var hasLibrary = !!(this.game.bld && this.game.bld.get("library") && this.game.bld.get("library").val > 0);
+			var hasWorkshop = !!(this.game.bld && this.game.bld.get("workshop") && this.game.bld.get("workshop").val > 0);
+			var hasTradepost = !!(this.game.bld && this.game.bld.get("tradepost") && this.game.bld.get("tradepost").val > 0);
+			var hasTemple = !!(this.game.bld && this.game.bld.get("temple") && this.game.bld.get("temple").val > 0);
+			var hasChrono = !!(this.game.bld && this.game.bld.get("chronosphere") && this.game.bld.get("chronosphere").val > 0);
+			for (var ti = 0; ti < this.game.tabs.length; ti++){
+				var tb = this.game.tabs[ti];
+				if (!tb){ continue; }
+				if (tb.tabId === "Science" && (curRealmIdx >= 1 || this.getHighestStageIndex() >= 1 || hasLibrary)){
+					tb.visible = true;
+				} else if (tb.tabId === "Workshop" && (curRealmIdx >= 1 || hasWorkshop)){
+					tb.visible = true;
+				} else if (tb.tabId === "Trade" && (curRealmIdx >= 2 || hasTradepost)){
+					tb.visible = true;
+				} else if (tb.tabId === "Religion" && (curRealmIdx >= 4 || hasTemple)){
+					tb.visible = true;
+				} else if (tb.tabId === "Space" && curRealmIdx >= 5){
+					tb.visible = true;
+				} else if (tb.tabId === "Time" && (curRealmIdx >= 7 || hasChrono)){
+					tb.visible = true;
 				}
 			}
 		}
@@ -2474,10 +2507,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			dojo.connect(oCards[o.key], "onclick", function(){ selOrigin = o.key; markO(); });
 		});
 
-		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn", tabIndex: 0}, card);
+		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0}, card);
+		var btnContent = dojo.create("div", {className: "btnContent"}, btn);
 		dojo.create("span", {
 			className: "btnTitle", innerHTML: "<b>" + $I("identity.confirm") + "</b>"
-		}, btn);
+		}, btnContent);
 		dojo.connect(btn, "onclick", function(){
 			if (originOnly){
 				//转世择身——魂还是那缕魂,只换这一世的出身
@@ -2519,6 +2553,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	showDeathOverlay: function(bonus, karmaText){
 		var self = this;
+		if (typeof bonus != "number" || isNaN(bonus)){
+			bonus = this.getCurrentRealmIndex() * this.ASCENSION_KARMA;
+		}
+		if (!karmaText){
+			karmaText = $I("cultivation.msg.lifespan.karma." + (bonus > 0 ? "gain" : "none"), [bonus]);
+		}
 		this.deathOverlayOpen = true;
 		var overlay = dojo.create("div", {className: "xxFateOverlay"}, dojo.byId("gamePageContainer"));
 		var card = dojo.create("div", {
@@ -2543,11 +2583,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			innerHTML: $I("cultivation.msg.lifespan.end",
 				[this.getCurrentRealm().label, Math.floor(this.age), karmaText])
 		}, card);
-		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn", tabIndex: 0}, card);
+		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0}, card);
+		var btnContent = dojo.create("div", {className: "btnContent"}, btn);
 		dojo.create("span", {
 			className: "btnTitle",
 			innerHTML: "<b>" + $I("cultivation.msg.lifespan.rebirth") + "</b>"
-		}, btn);
+		}, btnContent);
 		dojo.connect(btn, "onclick", function(){
 			dojo.destroy(overlay);
 			self.applyReincarnation(bonus);
@@ -6029,11 +6070,16 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				this.alchemyPanel.style.display = pillShow ? "" : "none";
 				if (pillShow){
 					var toxInfo = cult.getToxicityStatus();
+					var alcRank = cult.getAlchemyRank();
+					var curFire = cult.getCauldronFire();
 					var bottleFate = cult.getFate("bottle");
 					var dewShow = (bottleFate && bottleFate.researched) || (cult.bottleDew || 0) > 0;
 					var dewCnt = cult.bottleDew || 0;
 					var pSigParts = [
 						toxInfo.val,
+						alcRank.rank,
+						alcRank.exp,
+						curFire.key,
 						Math.round(cult.heartDemon || 0),
 						Math.round((cult.breakMult || 0) * 100),
 						cult.getBreakSurge() > 1 ? 1 : 0,
@@ -6054,6 +6100,17 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 					if (this._alcSig !== alcSig){
 						this._alcSig = alcSig;
 
+						var fireChipsHtml = "<div class=\"xxFireBar\"><span class=\"xxFireLbl\">三昧控火</span>";
+						for (var fi = 0; fi < cult.CAULDRON_FIRES.length; fi++){
+							var fd = cult.CAULDRON_FIRES[fi];
+							var fAct = (fd.key === curFire.key);
+							var fTip = String(fd.desc || "").replace(/"/g, "&quot;");
+							fireChipsHtml += "<a href=\"#!\" class=\"xxFireChip " + fd.key + (fAct ? " active" : "") +
+								"\" data-fire=\"" + fd.key + "\" title=\"" + fTip + "\">" +
+								"<span>" + fd.label + "</span><span class=\"xxFireTag\">" + fd.tag + "</span></a>";
+						}
+						fireChipsHtml += "</div>";
+
 						var activeBuffs = [];
 						if (cult.buffs.juqi > 0){
 							activeBuffs.push("<span class=\"xxAlcBuffChip on\">聚气丹 · " + Math.ceil(cult.buffs.juqi / 5) + "s</span>");
@@ -6067,12 +6124,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						if (cult.breakMult > 0){
 							activeBuffs.push("<span class=\"xxAlcBuffChip boost\">破境加成 +" + Math.round(cult.breakMult * 100) + "%</span>");
 						}
-						if (toxInfo.val > 0){
-							activeBuffs.push("<span class=\"xxToxBadge " + toxInfo.tier + "\">丹毒 " + toxInfo.val + "/100</span>");
-						}
-						var statusLeftHtml = activeBuffs.length
-							? activeBuffs.join("")
-							: "<span class=\"xxAlcBuffIdle\">周天平缓 · 丹毒 0/100</span>";
+						activeBuffs.push("<span class=\"xxToxBadge " + toxInfo.tier + "\">丹毒 " + toxInfo.val + "/100 · " + toxInfo.label + "</span>");
+						var statusLeftHtml = activeBuffs.join("");
 
 						var statusRightHtml = "";
 						if (toxInfo.val > 0){
@@ -6084,6 +6137,16 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 
 						var topBarHtml =
 							"<div class=\"xxAlcTopRow\">" +
+								"<div class=\"xxAlcTitleBlock\">" +
+									"<span class=\"xxAlcSealBadge\">丹</span>" +
+									"<div>" +
+										"<div class=\"xxAlcMainTitle\">玄天丹鼎 · <b>" + alcRank.title + "</b> <small style=\"font-size:11px;color:var(--xx-mute);font-weight:400;\">(造诣 " + alcRank.exp + "/" + alcRank.nextExp + ")</small></div>" +
+										"<div class=\"xxAlcSubTitle\">" + alcRank.desc + "</div>" +
+									"</div>" +
+								"</div>" +
+								fireChipsHtml +
+							"</div>" +
+							"<div class=\"xxAlcTopRow\" style=\"padding-top:8px;padding-bottom:6px;border-bottom:none;\">" +
 								"<div class=\"xxAlcBuffRow\">" + statusLeftHtml + "</div>" +
 								(statusRightHtml ? "<div class=\"xxFireBar\">" + statusRightHtml + "</div>" : "") +
 							"</div>";
@@ -6125,14 +6188,21 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 								costHtml += "<span class=\"xxPillCostChip " + (enough ? "ok" : "lack") + "\">" +
 									rTitle + " <b>" + fmt(pr.val, false, false, 0) + "</b></span>";
 							}
-							costHtml += "</div>";
+							var toxTag = pill.toxicity < 0
+								? "<span class=\"xxPillCostChip ok\" style=\"margin-left:auto;\">净毒 " + pill.toxicity + "</span>"
+								: "<span class=\"xxPillCostChip\" style=\"margin-left:auto;border-color:rgba(240,140,75,.38);color:#ffb87a;\">丹毒 +" + pill.toxicity + "</span>";
+							costHtml += toxTag + "</div>";
 
-							var pillIco = artMgr ? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.resIcon("spice") + "</i>" : "";
+							var pillIco = (artMgr && artMgr.pillIcon)
+								? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.pillIcon(pill.name) + "</i>"
+								: (artMgr ? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.resIcon("spice") + "</i>" : "");
+							var tierBadge = pill.tier ? "<span class=\"xxPillTierTag\">" + pill.tier + "</span>" : "";
 							cardsHtml +=
 								"<div class=\"xxPillCard " + (pill.toxicity < 0 ? "cleansing" : "offensive") + "\">" +
 									"<div class=\"xxPillCardHd\">" +
 										"<div class=\"xxPillTitleWrap\">" +
 											"<span class=\"xxPillName\">" + pillIco + pill.label + "</span>" +
+											tierBadge +
 										"</div>" +
 										"<div class=\"xxPillStockWrap\">" +
 											"<span class=\"xxPillStock" + (pVal > 0 ? " has" : "") + "\">×<b>" + pVal + "</b></span>" +
@@ -7051,47 +7121,129 @@ classes.ui.XianxiaArt = {
 		"</svg>";
 	},
 
+	pillIcon: function(pillName){
+		var href = this.RES_ART.spice;
+		if (pillName == "zhujidan"){ href = this.BTN_ART.realm; }
+		else if (pillName == "qingxin"){ href = this.TILE_ART.life; }
+		else if (pillName == "jiangchen"){ href = this.RES_ART.gold; }
+		else if (pillName == "peiying"){ href = this.TILE_ART.bonus; }
+		else if (pillName == "biyan"){ href = this.BTN_ART.furnace; }
+		return "<svg viewBox=\"0 0 16 16\" class=\"xx-res-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"16\" height=\"16\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
+	},
+
 	// ---------------- 6. 营造/境界/丹器卡片 AI 定制徽记 (Card Button Emblems) ----------------
 	btnIcon: function(btn){
 		var opts = (btn && btn.opts) || {};
 		var mdl = (btn && btn.model) || {};
 		var meta = mdl.metadata || {};
-		var id = meta.name || opts.building || opts.id || "";
+		var id = meta.name || opts.building || opts.craft || opts.id || "";
 		var ctrl = btn && btn.controller;
-		if (!id && ctrl && ctrl.declaredClass){
-			if (ctrl.declaredClass.indexOf("GatherCatnip") >= 0){ id = "gatherCatnip"; }
-			else if (ctrl.declaredClass.indexOf("RefineCatnip") >= 0){ id = "refineCatnip"; }
+		var ctrlClass = (ctrl && ctrl.declaredClass) ? String(ctrl.declaredClass) : "";
+		if (!id && ctrlClass){
+			if (ctrlClass.indexOf("GatherCatnip") >= 0){ id = "gatherCatnip"; }
+			else if (ctrlClass.indexOf("RefineCatnip") >= 0){ id = "refineCatnip"; }
+			else if (ctrlClass.indexOf("PraiseBtn") >= 0){ id = "praiseFaith"; }
+			else if (ctrlClass.indexOf("ResetFaithBtn") >= 0){ id = "adoreFaith"; }
+			else if (ctrlClass.indexOf("TranscendBtn") >= 0){ id = "transcendFaith"; }
+			else if (ctrlClass.indexOf("TransformBtn") >= 0){ id = "refineRelic"; }
+			else if (ctrlClass.indexOf("TradeButton") >= 0){ id = "tradeCaravan"; }
+			else if (ctrlClass.indexOf("SendExplorers") >= 0){ id = "sendExplorers"; }
+			else if (ctrlClass.indexOf("EmbassyButton") >= 0){ id = "buildEmbassy"; }
+			else if (ctrlClass.indexOf("AccelerateTimeBtn") >= 0){ id = "accelerateTime"; }
+			else if (ctrlClass.indexOf("ShatterTCBtn") >= 0){ id = "shatterTC"; }
+			else if (ctrlClass.indexOf("UseHeatBtn") >= 0){ id = "useHeat"; }
+			else if (ctrlClass.indexOf("FixCryochamber") >= 0){ id = "fixCryochamber"; }
+			else if (mdl && mdl.name === $I("menu.reset")){ id = "reincarnate"; }
 		}
 
 		var href = this.RES_ART.xiuwei;
-		if (id == "gatherCatnip" || id == "field" || id == "pasture" || id == "unicornPasture" || id == "aqueduct"){
+		if (id == "gatherCatnip" || id == "field" || id == "pasture" || id == "unicornPasture" || id == "aqueduct" ||
+			id == "agriculture" || id == "mineralHoes" || id == "ironHoes" || id == "biofuel" || id == "hydroponics" ||
+			id == "unicornTomb" || id == "ivoryTower" || id == "ivoryCitadel" || id == "skyPalace"){
 			href = this.RES_ART.catnip;
-		} else if (id == "refineCatnip" || id == "lumberMill"){
+		} else if (id == "refineCatnip" || id == "lumberMill" || id == "wood" ||
+			id == "mineralAxes" || id == "ironAxes" || id == "steelAxe" || id == "titaniumAxe" || id == "alloyAxe" || id == "unobtainiumAxe" ||
+			id == "reinforcedSaw" || id == "steelSaw" || id == "titaniumSaw" || id == "alloySaw" || id == "unobtainiumSaw"){
 			href = this.RES_ART.wood;
-		} else if (id == "hut" || id == "logHouse" || id == "mansion"){
+		} else if (id == "hut" || id == "logHouse" || id == "mansion" || id == "construction" || id == "architecture" ||
+			id == "ExpandedBarns" || id == "stoneBarns" || id == "reinforcedBarns" || id == "titaniumBarns" || id == "alloyBarns" || id == "concreteBarns" ||
+			id == "reinforcedWarehouses" || id == "titaniumWarehouses" || id == "alloyWarehouses" || id == "concreteWarehouses" || id == "silos" ||
+			id == "spaceStation" || id == "moonBase" || id == "cryochambers" || id == "fixCryochamber" || id == "buildEmbassy"){
 			href = this.BTN_ART.cave;
-		} else if (id == "library" || id == "academy" || mdl.type == "science"){
+		} else if (id == "library" || id == "academy" || id == "math" || id == "philosophy" || id == "archeology" || id == "physics" || id == "metaphysics" ||
+			id == "scholasticism" || id == "apocripha" || id == "researchVessel"){
 			href = this.RES_ART.science;
-		} else if (id == "observatory"){
+		} else if (id == "observatory" || id == "calendar" || id == "astronomy" || id == "celestialMechanics" || id == "astrolabe" ||
+			id == "navigation" || id == "sattelites" || id == "orbitalEngineering" || id == "starlink" || id == "uplink" ||
+			id == "orbitalLaunch" || id == "sattelite" || id == "moonMission" || id == "duneMission" || id == "piscineMission" ||
+			id == "heliosMission" || id == "terminusMission" || id == "kairoMission" || id == "rorschachMission" || id == "centaurusSystemMission" ||
+			id == "furthestRingMission" || id == "spaceElevator" || id == "spaceBeacon" || id == "orbitalArray" || id == "sendExplorers"){
 			href = this.RES_ART.starchart;
-		} else if (id == "biolab" || id == "brewery" || id == "juqi" || id == "zhujidan" || id == "qingxin" || id == "jiangchen" || id == "peiying" || id == "biyan" || mdl.type == "pill"){
+		} else if (id == "biolab" || id == "brewery" || id == "juqi" || id == "zhujidan" || id == "qingxin" || id == "jiangchen" || id == "peiying" || id == "biyan" ||
+			id == "chemistry" || id == "biology" || id == "biochemistry" || id == "ecology" || id == "petri" || id == "spiceRefinery" || mdl.type == "pill"){
 			href = this.RES_ART.spice;
-		} else if (id == "barn" || id == "warehouse" || id == "harbor" || id == "mint" || id == "tradepost"){
+		} else if (id == "barn" || id == "warehouse" || id == "harbor" || id == "mint" || id == "tradepost" ||
+			id == "currency" || id == "goldOre" || id == "caravanserai" || id == "cargoShips" || id == "barges" || id == "register" ||
+			id == "tradeCaravan" || id == "goldenSpire" || id == "sunAltar" || id == "solarRevolution" || id == "sunspire" || id == "sunlifter" || id == "sunforge"){
 			href = this.RES_ART.gold;
-		} else if (id == "mine" || id == "quarry"){
+		} else if (id == "mine" || id == "quarry" || id == "mining" || id == "bolas" || id == "prospecting" || id == "miningDrill" || id == "geodesy" ||
+			id == "planetCracker" || id == "moonOutpost"){
 			href = this.RES_ART.minerals;
-		} else if (id == "smelter" || id == "calciner" || id == "workshop" || id == "factory" || id == "magneto" || id == "steamworks"){
+		} else if (id == "smelter" || id == "calciner" || id == "workshop" || id == "factory" || id == "magneto" || id == "steamworks" ||
+			id == "metal" || id == "steel" || id == "machinery" || id == "engineering" || id == "metalurgy" || id == "combustion" ||
+			id == "industrialization" || id == "mechanization" || id == "advancedRefinement" || id == "factoryAutomation" || id == "combustionEngine" ||
+			id == "electrolyticSmelting" || id == "oxidation" || id == "rotaryKiln" || id == "blastFurnace" || id == "timeBoiler" || id == "useHeat" || id == "heatsink"){
 			href = this.BTN_ART.furnace;
-		} else if (id == "oilWell"){
+		} else if (id == "archery" || id == "animal" || id == "huntingArmor" || id == "steelArmor" || id == "compositeBow" || id == "crossbow" || id == "railgun" ||
+			id == "templars"){
+			href = this.TILE_ART.combat;
+		} else if (id == "oilWell" || id == "oilProcessing" || id == "oilRefinery" || id == "pumpjack" || id == "hydrofracturer"){
 			href = this.RES_ART.oil;
-		} else if (id == "reactor" || id == "accelerator"){
+		} else if (id == "reactor" || id == "accelerator" || id == "electricity" || id == "electronics" || id == "nuclearFission" ||
+			id == "particlePhysics" || id == "dimensionalPhysics" || id == "nanotechnology" || id == "superconductors" || id == "thorium" ||
+			id == "containmentChamber" || id == "heatsink"){
 			href = this.RES_ART.uranium;
-		} else if (id == "amphitheatre"){
+		} else if (id == "rocketry" || id == "exogeology" || id == "advExogeology" || id == "artificialGravity" || id == "terraformation" || id == "antimatter" ||
+			id == "unicornUtopia" || id == "transcendence" || id == "transcendFaith"){
+			href = this.RES_ART.unobtainium;
+		} else if (id == "amphitheatre" || id == "writing" || id == "civil" || id == "drama" || id == "acoustics" || id == "printingPress" || id == "offsetPress" ||
+			id == "stainedGlass" || id == "basilica" || id == "frescoes"){
 			href = this.RES_ART.culture;
-		} else if (id == "chapel" || id == "temple" || id == "ziggurat"){
+		} else if (id == "chapel" || id == "temple" || id == "ziggurat" || id == "theology" || id == "cryptotheology" ||
+			id == "praiseFaith" || id == "adoreFaith" || id == "solarchant"){
 			href = this.RES_ART.faith;
-		} else if (id == "chronosphere"){
+		} else if (id == "blackPyramid" || id == "marker" || id == "blackObelisk" || id == "blackNexus" || id == "blackCore" ||
+			id == "singularity" || id == "blackLibrary" || id == "blackRadiance" || id == "blazar" || id == "darkNova" || id == "holyGenocide" ||
+			id == "refineRelic" || id == "relicStation" || id == "voidHoover" || id == "voidRift" || id == "voidResonance"){
+			href = this.RES_ART.relic;
+		} else if (id == "chronosphere" || id == "chronophysics" || id == "tachyonTheory" || id == "voidSpace" || id == "paradoxalKnowledge" ||
+			id == "accelerateTime" || id == "shatterTC" || id == "temporalBattery" || id == "controlledDelay" || id == "temporalPress" ||
+			id == "temporalImpedance" || id == "resourceRetrieval" || id == "chronocontrol"){
 			href = this.RES_ART.timeCrystal;
+		} else if (id == "reincarnate"){
+			href = this.RES_ART.karma;
+		} else if (id == "ironWill"){
+			href = this.TILE_ART.combat;
+		} else if (id == "winterIsComing"){
+			href = this.RES_ART.uranium;
+		} else if (id == "anarchy"){
+			href = this.BTN_ART.sect;
+		} else if (id == "energy"){
+			href = this.BTN_ART.vein;
+		} else if (id == "atheism"){
+			href = this.RES_ART.faith;
+		} else if (id == "1000Years"){
+			href = this.RES_ART.timeCrystal;
+		} else if (id == "blackSky"){
+			href = this.RES_ART.starchart;
+		} else if (id == "pacifism"){
+			href = this.RES_ART.gold;
+		} else if (id == "unicornTears"){
+			href = this.RES_ART.spice;
+		} else if (id == "postApocalypse"){
+			href = this.RES_ART.relic;
 		} else if (id.indexOf("vein") === 0){
 			href = this.BTN_ART.vein;
 		} else if (id.indexOf("sect") === 0){
@@ -7100,6 +7252,18 @@ classes.ui.XianxiaArt = {
 			href = this.BTN_ART.realm;
 		} else if (this.RES_ART[id]){
 			href = this.RES_ART[id];
+		} else if (ctrlClass.indexOf("TechButton") >= 0){
+			href = this.RES_ART.science;
+		} else if (ctrlClass.indexOf("UpgradeButton") >= 0){
+			href = this.BTN_ART.furnace;
+		} else if (ctrlClass.indexOf("SpaceProgram") >= 0 || ctrlClass.indexOf("PlanetBuilding") >= 0){
+			href = this.RES_ART.starchart;
+		} else if (ctrlClass.indexOf("ZigguratBtn") >= 0 || ctrlClass.indexOf("ReligionBtn") >= 0){
+			href = this.RES_ART.faith;
+		} else if (ctrlClass.indexOf("TranscendenceBtn") >= 0 || ctrlClass.indexOf("VoidSpaceBtn") >= 0){
+			href = this.RES_ART.relic;
+		} else if (ctrlClass.indexOf("ChronoforgeBtn") >= 0){
+			href = this.RES_ART.timeCrystal;
 		}
 
 		return "<svg viewBox=\"0 0 20 20\" class=\"xx-btn-svg xx-res-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +

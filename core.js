@@ -1734,6 +1734,9 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 					freeHint = "燃宙光流辉 · 加速天地光阴";
 				} else if (ctrlCls.indexOf("UseHeatBtn") >= 0){
 					freeHint = "泄百劫炉火 · 化为碎晶流年";
+				} else if (ctrlCls.indexOf("ChallengeBtn") >= 0 && this.model && this.model.metadata){
+					var cDesc = String(this.model.metadata.effectDesc || this.model.metadata.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+					freeHint = cDesc ? (cDesc.length > 26 ? cDesc.slice(0, 26) + "…" : cDesc) : "以身试劫 · 勘破生死大道";
 				} else if (this.model && this.model.name === $I("menu.reset")){
 					freeHint = "兵解重修 · 凝结宿慧道果";
 				}

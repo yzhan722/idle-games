@@ -18,12 +18,14 @@ dojo.declare("classes.managers.StatsManager", com.nuclearunicorn.core.TabManager
             name: "totalParagon",
             title:  $I("stats.paragon.total"),
             val: 0,
-            unlocked: false
+            unlocked: true,
+            defaultUnlocked: true
         }, {
             name: "eventsObserved",
             title: $I("stats.events.total"),
             val: 0,
-            unlocked: false
+            unlocked: true,
+            defaultUnlocked: true
         }, {
             name: "unicornsSacrificed",
             title: $I("stats.unicorns"),
@@ -33,22 +35,26 @@ dojo.declare("classes.managers.StatsManager", com.nuclearunicorn.core.TabManager
             name: "buildingsConstructed",
             title: $I("stats.buildings"),
             val: 0,
-            unlocked: false
+            unlocked: true,
+            defaultUnlocked: true
         }, {
             name: "totalClicks",
             title: $I("stats.clicks.total"),
             val: 0,
-            unlocked: false
+            unlocked: true,
+            defaultUnlocked: true
         },{
             name: "totalTrades",
             title:  $I("stats.trades.total"),
             val: 0,
-            unlocked: false
+            unlocked: true,
+            defaultUnlocked: true
         },{
             name: "totalCrafts",
             title: $I("stats.crafts.total"),
             val: 0,
-            unlocked: false
+            unlocked: true,
+            defaultUnlocked: true
         },{
             name: "transcendenceTier",
             title: $I("stats.transcendenceTier"),
@@ -56,7 +62,8 @@ dojo.declare("classes.managers.StatsManager", com.nuclearunicorn.core.TabManager
             calculate: function(game){
                 return game.religion.transcendenceTier;
             },
-            unlocked: false
+            unlocked: true,
+            defaultUnlocked: true
         },{
             name: "totalChallengesCompleted",
             title: $I("stats.challenges.total"),
@@ -64,7 +71,8 @@ dojo.declare("classes.managers.StatsManager", com.nuclearunicorn.core.TabManager
             calculate: function(game){
                 return game.challenges.getCountCompletions();
             },
-            unlocked: false
+            unlocked: true,
+            defaultUnlocked: true
         }
     ],
 
@@ -72,12 +80,14 @@ dojo.declare("classes.managers.StatsManager", com.nuclearunicorn.core.TabManager
         name: "totalTrades",
         title: $I("stats.trades.current"),
         val: 0,
-        unlocked: false
+        unlocked: true,
+        defaultUnlocked: true
     },{
         name: "totalCrafts",
         title:$I("stats.crafts.current") ,
         val: 0,
-        unlocked: false
+        unlocked: true,
+        defaultUnlocked: true
     },{
         name: "timePlayed",
         title: $I("stats.time.current"),
@@ -85,7 +95,8 @@ dojo.declare("classes.managers.StatsManager", com.nuclearunicorn.core.TabManager
         calculate: function (game) {
             return game.toDisplaySeconds(game.calendar.trueYear() * game.calendar.seasonsPerYear * game.calendar.daysPerSeason * game.calendar.ticksPerDay / game.ticksPerSecond);
         },
-        unlocked: false
+        unlocked: true,
+        defaultUnlocked: true
     }
     ],
 
@@ -304,6 +315,9 @@ dojo.declare("classes.tab.StatsTab", com.nuclearunicorn.game.ui.tab, {
                     stat.val++;
                 }
 
+                if (stat._titleCell && stat._titleCell.parentNode){
+                    stat._titleCell.parentNode.style.display = stat.unlocked ? "" : "none";
+                }
                 stat._titleCell.innerHTML = stat.unlocked ? stat.title : "???";
                 stat._valueCell.innerHTML = stat.unlocked
                     ? typeof stat.val == "number" ? this.game.getDisplayValueExt(stat.val) : stat.val
