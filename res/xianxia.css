@@ -2475,6 +2475,14 @@ input, select, textarea, button { font-family: inherit; }
 	}
 	.tabInner { padding: 12px 14px 20px; }
 	#midColumnViewport { right: 10px; top: 6px; }
+	.btn.modern:not(.craft-link) > .btnContent > .btnTitle {
+		font-size: 13px;
+	}
+	.btn.modern .xxRealmLockBadge {
+		font-size: 10px;
+		padding: 1px 5px;
+		margin-left: 4px;
+	}
 
 	/* dialogs: center via transform */
 	.dialog {

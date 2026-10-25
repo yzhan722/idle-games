@@ -4005,8 +4005,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var natalName = (nArt && nArt.researched) ? nArt.label : "青竹蜂云剑";
 
 		var openLog = (bMode === "greater")
-			? "【上古大秘境 · 第 " + floor + " 层】" + enemy.icon + " " + enemy.name + "（特征：" + enemy.traitTitle + "）镇守阵眼，斗法开始！"
-			: "【灵脉秘境 · 第 1/3 波】遭遇 " + enemy.icon + " " + enemy.name + "（特征：" + enemy.traitTitle + "），亮剑迎敌！";
+			? "【上古大秘境 · 第 " + floor + " 层】「" + enemy.name + "」（特征：" + enemy.traitTitle + "）镇守阵眼，斗法开始！"
+			: "【灵脉秘境 · 第 1/3 波】遭遇「" + enemy.name + "」（特征：" + enemy.traitTitle + "），亮剑迎敌！";
 
 		this.battle = {
 			active: true,
@@ -4351,7 +4351,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				b.player.hp = Math.min(b.player.maxHp, b.player.hp + healBetween);
 				b.player.mp = Math.min(b.player.maxMp, b.player.mp + 20);
 				b.enemy = this.spawnBattleMonster("lesser", b.wave, b.waveKeys);
-				b.logs.unshift((turnSummary ? turnSummary + " — " : "") + "✦ 斩杀【" + slainName + "】获修为 +" + fmt(waveXw) + "！气血恢复 +" + healBetween + "，第 " + b.wave + "/3 波【" + b.enemy.icon + " " + b.enemy.name + "】现身！");
+				b.logs.unshift((turnSummary ? turnSummary + " — " : "") + "✦ 斩杀【" + slainName + "】获修为 +" + fmt(waveXw) + "！气血恢复 +" + healBetween + "，第 " + b.wave + "/3 波【" + b.enemy.name + "】现身！");
 				if (b.logs.length > 5){ b.logs.length = 5; }
 				return true;
 			}
@@ -6534,7 +6534,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 					if (!pStatuses.length){ pStatuses.push("<span class=\"xxStChip neutral\">道心澄明</span>"); }
 					cdm.pStatus.innerHTML = pStatuses.join("");
 
-					cdm.eName.textContent = e.icon + " " + e.name;
+					cdm.eName.textContent = e.name;
 					cdm.eSub.textContent = e.tier + " · 攻 " + cFmt(e.atk) + " / 防 " + cFmt(e.def);
 					if (e.shield > 0){
 						cdm.eShield.style.display = "";
