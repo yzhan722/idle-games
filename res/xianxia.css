@@ -2584,6 +2584,9 @@ input, select, textarea, button { font-family: inherit; }
 	#leftColumn .res-figure .res-val,
 	#leftColumn .res-figure.resAmount { font-size: 11px; }
 	#leftColumn .resPerTick { font-size: 10px; min-width: 38px; }
+	#leftColumn.xx-res-open .xx-left-wrap {
+		padding-bottom: 8px;
+	}
 	.xx-res-toggle {
 		display: block;
 		position: sticky;
@@ -2591,13 +2594,14 @@ input, select, textarea, button { font-family: inherit; }
 		left: 0;
 		right: 0;
 		margin: 4px -8px 0;
-		padding: 2px 0;
+		padding: 4px 0;
 		text-align: center;
 		font-size: 11px;
 		letter-spacing: 1.5px;
 		color: var(--xx-jade);
-		background: linear-gradient(180deg, rgba(12, 18, 26, .95), rgba(14, 22, 32, .99));
-		border-top: 1px solid rgba(79, 209, 165, .18);
+		background: #0d1520;
+		box-shadow: 0 -4px 10px rgba(6, 10, 16, .92);
+		border-top: 1px solid rgba(79, 209, 165, .24);
 		z-index: 3;
 	}
 
@@ -5306,19 +5310,21 @@ input, select, textarea, button { font-family: inherit; }
 }
 .xxFighterSub {
 	display: block;
-	font-size: 11px;
+	font-size: 10.5px;
 	color: var(--xx-mute);
 	margin-top: 2px;
+	white-space: nowrap !important;
 }
 .xxShieldBadge {
-	padding: 2px 8px;
+	flex: 0 0 auto;
+	padding: 2px 7px;
 	border-radius: 999px;
-	font-size: 11px;
+	font-size: 10.5px;
 	font-weight: 700;
 	background: rgba(56, 189, 248, .18);
 	border: 1px solid rgba(56, 189, 248, .55);
 	color: #7dd3fc;
-	white-space: nowrap;
+	white-space: nowrap !important;
 }
 .xxShieldBadge.enemy {
 	background: rgba(245, 158, 11, .18);
