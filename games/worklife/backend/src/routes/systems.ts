@@ -12,7 +12,8 @@ import {
   getShopStock,
   buyFromShop,
   sellToShop,
-  sellPrice
+  sellPrice,
+  alchemyCoinify
 } from "../systems";
 
 const revisionField = {
@@ -215,5 +216,40 @@ export async function systemsRoutes(
       if (def) prices[itemId] = sellPrice(def);
     }
     return reply.send({ prices });
+  });
+
+  // 炼金分支：点石成金（Coinify）
+  app.post("/systems/alchemy/coinify", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const body = z
+      .object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(99999), ...revisionField })
+      .strict()
+      .parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId,
+        contentPack,
+        now: new Date(),
+        expectedRevision: body.expectedRevision,
+        operationId: body.operationId,
+        operationPayload: operationPayload(body),
+        apply(state) {
+          const result = alchemyCoinify(state, contentPack, body.itemId, body.qty);
+          if (!result.ok) throw new PlayerCommandRejected(result.reason || "coinify_rejected");
+          return result;
+        },
+      });
+      return reply.send({
+        ...outcome.result,
+        gold: outcome.state.inventory.gold || 0,
+        inventory: outcome.state.inventory,
+        skills: outcome.state.skills,
+        stateRevision: outcome.state.stateRevision,
+      });
+    } catch (error) {
+      return replyCommandError(error, reply);
+    }
   });
 }

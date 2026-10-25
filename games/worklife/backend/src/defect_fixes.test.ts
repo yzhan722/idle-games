@@ -3,7 +3,6 @@ import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { createMemoryStorage } from './storage_memory';
 import { partyRoutes } from './routes/party';
-import { skillsRoutes } from './routes/skills';
 import { mapThrownError } from './http_errors';
 import { consumeItem } from './systems';
 import { rerollBounties, ensureBounties } from './progression2';
@@ -79,18 +78,6 @@ test('party create rejects an empty name via schema', async () => {
   await partyRoutes(app as any, storage, pack);
   const res = await callHandler(app.handlers, 'POST', '/party/create', { userId: user.id, body: { name: '   ' } });
   assert.equal(res.statusCode, 400);
-  await storage.close();
-});
-
-test('unknown profession progress returns 404 not 500', async () => {
-  const storage = createMemoryStorage();
-  const user = await storage.findOrCreateGuestUser(`skills-${randomUUID()}`);
-  const app = fakeApp();
-  await skillsRoutes(app as any, storage, pack);
-  const res = await callHandler(app.handlers, 'GET', '/skills/progress/:professionId', {
-    userId: user.id, params: { professionId: 'ghost' }, query: {},
-  });
-  assert.equal(res.statusCode, 404);
   await storage.close();
 });
 

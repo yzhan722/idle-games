@@ -86,7 +86,9 @@ import {
 import { findEnhancementRuleForItem } from "../backend/src/enhancement_utils";
 import { startEnhanceRun, tickEnhanceRun, stopEnhanceRun } from "../backend/src/enhancement_run";
 import { canEquipItem } from "../backend/src/equipment_equip";
-import { abilityForBook } from "../backend/src/abilities";
+import { ABILITIES, abilityForBook, getAbilityXpForLevel } from "../backend/src/abilities";
+import { alchemyCoinify, consumeItem } from "../backend/src/systems";
+import { combatSheetFromPack } from "../frontend/src/gameplay/combatSheet";
 
 const pack = enhancedContentPack as EnhancedContentPack;
 const MIN_MS = 60_000;
@@ -208,6 +210,11 @@ async function main() {
     taskBoardClaimedAndCrateOpened: false,
     dailyCheckInQuestsBountiesAchievements: false,
     allCombatZonesProgressed: false,
+    mwiNineCombatAbilitiesAndBooksMastered: false,
+    mwiSmartTriggersAllyHpAndEnemyCount: false,
+    mwiAlchemyCoinifyTransmutation: false,
+    mwiProductionTeasConsumedAndBuffed: false,
+    mwiCombatAccuracyEvasionCritSheet: false,
   };
 
   // ---------------------------------------------------------------------------
@@ -454,21 +461,61 @@ async function main() {
   const visitedZones = new Set<string>();
   const telemetry: HourlyPoint[] = [];
 
-  for (const bookId of ["book_smash", "book_minor_heal", "book_brace"]) {
+  for (const bookId of [
+    "book_smash",
+    "book_minor_heal",
+    "book_brace",
+    "book_cleave",
+    "book_taunt",
+    "book_arrow_rain",
+    "book_group_heal",
+    "book_meteor_storm",
+    "book_war_aura",
+  ]) {
     const ab = abilityForBook(bookId);
     if (ab) {
       state.abilities ||= {};
       state.abilities[ab.id] = { level: 3, xp: 100 };
     }
   }
+  assert.equal(Object.keys(state.abilities || {}).length, 10, "应完整拥有初始重劈 + 9 本主/副职业战斗技能秘籍共 10 项技能");
+  assert.ok(getAbilityXpForLevel(1) === 300 && getAbilityXpForLevel(10) > 10000, "技能熟练度升级经验曲线应大幅提升");
   state.abilityLoadout = [
-    { abilityId: "minor_heal", trigger: { kind: "player_hp_pct_below", value: 65 } },
-    { abilityId: "brace", trigger: { kind: "always" } },
-    { abilityId: "smash", trigger: { kind: "always" } },
-    { abilityId: "heavy_chop", trigger: { kind: "always" } },
+    { abilityId: "group_heal", trigger: { kind: "ally_hp_below", value: 75 } },
+    { abilityId: "meteor_storm", trigger: { kind: "enemies_at_least", value: 2 } },
+    { abilityId: "war_aura", trigger: { kind: "always" } },
+    { abilityId: "cleave", trigger: { kind: "always" } },
   ];
   chooseBuild(state, "thick_bark");
   featureChecklist.abilityBooksLearnedAndAutoCast = true;
+  featureChecklist.mwiNineCombatAbilitiesAndBooksMastered = true;
+  featureChecklist.mwiSmartTriggersAllyHpAndEnemyCount = true;
+
+  // 验证银河奶牛借鉴点 #3 炼金点金术分支 & #5 生产茶饮栏 & #7 四维高级战斗属性
+  state.inventory.wood_1 = (state.inventory.wood_1 || 0) + 20;
+  const goldBeforeCoinify = state.inventory.gold || 0;
+  const coinifyRes = alchemyCoinify(state, pack, "wood_1", 5, () => 0.1);
+  assert.equal(coinifyRes.ok, true, "炼金点金术应成功点化多余材料");
+  assert.ok((state.inventory.gold || 0) > goldBeforeCoinify, "点金术应产出远高于原店价的金币并增长炼金经验");
+  featureChecklist.mwiAlchemyCoinifyTransmutation = true;
+
+  for (const teaId of ["tea_spirit", "potion_craft_focus", "potion_scholar", "potion_fortune"]) {
+    state.inventory[teaId] = (state.inventory[teaId] || 0) + 5;
+    const teaRes = consumeItem(state, pack, teaId, now());
+    assert.equal(teaRes.ok, true, `${teaId} 应可作为生产茶饮饮用并赋予生产状态增益`);
+  }
+  state.activeBuffs = [];
+  featureChecklist.mwiProductionTeasConsumedAndBuffed = true;
+
+  const sheetCheck = combatSheetFromPack(state, pack);
+  assert.ok(
+    (sheetCheck.accuracyPct || 0) >= 85 &&
+      (sheetCheck.evasionPct || 0) >= 5 &&
+      (sheetCheck.critRatePct || 0) >= 5 &&
+      (sheetCheck.critDmgPct || 0) >= 150,
+    "角色面板应包含精准率、闪避率、暴击率与暴击伤害四维高级战斗属性"
+  );
+  featureChecklist.mwiCombatAccuracyEvasionCritSheet = true;
 
   for (const skId of ALL_TWELVE_LIFE_SKILLS) {
     state.skills[skId] ||= { level: 1, xp: 0, unlockedRecipes: [], enhancementLevel: 0 };

@@ -13,7 +13,7 @@ import type {
   ActiveBuff,
   CheckInState
 } from "./types";
-import { appendLog, getBuffEffects, pruneExpiredBuffs } from "./storage";
+import { appendLog, getBuffEffects, getXpForLevel, pruneExpiredBuffs } from "./storage";
 import { EQUIP_SLOT_KEYS } from "./equipment_equip";
 import { syncAchievements } from "./progression";
 import { todayLocal as todayLocalImpl, dayDiff } from "./time";
@@ -292,13 +292,10 @@ export const SHOP_STOCK_IDS = [
   "potion_mp_t4",
   "food_hearty_stew",
   "food_master_feast",
-  "potion_craft_focus",
   "potion_iron_skin",
   "potion_arcane_surge",
   "potion_guardian_elixir",
   "potion_battle_fury",
-  "potion_fortune",
-  "potion_scholar",
   "elixir_legend",
   "fiber_3",
   "lumber_2",
@@ -383,3 +380,109 @@ export function sellToShop(
 
   return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };
 }
+
+/* ----------------------------- 炼金分支：点石成金 (Coinify) ----------------------------- */
+
+export type CoinifyResult =
+  | {
+      ok: true;
+      itemId: string;
+      itemName: string;
+      qty: number;
+      goldGained: number;
+      xpGained: number;
+      critCount: number;
+      multiplier: number;
+      alchemyLevel: number;
+      leveledTo?: number;
+    }
+  | { ok: false; reason: string };
+
+/**
+ * 银河奶牛式炼金分支「点石成金（Coinify）」：
+ * 将背包中的闲置材料、怪物掉落或多余装备直接通过炼金阵点化为高额金币，并获得炼金术经验。
+ * - 基础转化倍率：商店基础价值的 135% + 每级炼金等级 +1.5%（炼金术师职业额外 +15%）
+ * - 炼金暴击率：15% + min(20%, 炼金等级 * 0.2%)，暴击时该件点化金币翻倍（2.0x）
+ */
+export function alchemyCoinify(
+  player: EnhancedPlayerState,
+  contentPack: EnhancedContentPack,
+  itemId: string,
+  qty: number,
+  rng: () => number = Math.random
+): CoinifyResult {
+  if (itemId === "gold") return { ok: false, reason: "金币不可点化" };
+  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "点化数量无效" };
+  const def = findItem(contentPack, itemId);
+  if (!def) return { ok: false, reason: "物品不存在" };
+  const have = player.inventory[itemId] || 0;
+  if (have < qty) return { ok: false, reason: "库存不足" };
+
+  const eq = player.equipment as Record<string, unknown> | undefined;
+  const equippedCopies = eq ? EQUIP_SLOT_KEYS.filter((slot) => eq[slot] === itemId).length : 0;
+  if (equippedCopies > 0 && have - qty < equippedCopies) {
+    return { ok: false, reason: "穿戴中的装备不可点化" };
+  }
+
+  if (!player.skills) player.skills = {} as any;
+  if (!player.skills.skill_alchemy) {
+    player.skills.skill_alchemy = { level: 1, xp: 0, unlockedRecipes: [], enhancementLevel: 0 };
+  }
+  const alch = player.skills.skill_alchemy;
+  const alchLv = Math.max(1, alch.level || 1);
+  const classBonus = player.activeClassId === "alchemist" ? 0.15 : 0;
+  const multiplier = Math.round((0.85 + Math.min(1.15, (alchLv - 1) * 0.012) + classBonus) * 100) / 100;
+  const critChance = Math.min(0.35, 0.15 + alchLv * 0.002);
+
+  const unitBase = Math.max(2, basePrice(def));
+  const unitCoinify = Math.max(2, Math.round(unitBase * multiplier));
+  let critCount = 0;
+  let goldGained = 0;
+  for (let i = 0; i < qty; i++) {
+    if (rng() < critChance) {
+      critCount += 1;
+      goldGained += unitCoinify * 2;
+    } else {
+      goldGained += unitCoinify;
+    }
+  }
+
+  player.inventory[itemId] = have - qty;
+  if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+  player.inventory.gold = (player.inventory.gold || 0) + goldGained;
+
+  const tier = Math.max(1, Number(def.tier) || 1);
+  const xpGained = Math.max(4, Math.round(tier * 6)) * qty;
+  alch.xp = (alch.xp || 0) + xpGained;
+  let leveledTo: number | undefined;
+  while (alch.xp >= getXpForLevel(alch.level)) {
+    alch.xp -= getXpForLevel(alch.level);
+    alch.level += 1;
+    leveledTo = alch.level;
+  }
+
+  if (player.stats) {
+    player.stats.totalGoldEarned = (player.stats.totalGoldEarned || 0) + goldGained;
+    player.stats.totalActions = (player.stats.totalActions || 0) + qty;
+  }
+  syncAchievements(player);
+  const critNote = critCount > 0 ? `（触发 ${critCount} 次点金暴击！）` : "";
+  appendLog(
+    player,
+    `✨ 点石成金：转化 ${def.name} ×${qty}，获得 ${goldGained} 金币、+${xpGained} 炼金经验${critNote}${leveledTo ? `，炼金升至 Lv.${leveledTo}！` : ""}`
+  );
+
+  return {
+    ok: true,
+    itemId,
+    itemName: String(def.name || itemId),
+    qty,
+    goldGained,
+    xpGained,
+    critCount,
+    multiplier,
+    alchemyLevel: alch.level,
+    leveledTo,
+  };
+}
+

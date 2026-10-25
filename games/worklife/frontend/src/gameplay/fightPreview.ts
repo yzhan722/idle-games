@@ -32,6 +32,7 @@ const ENRAGE_MAX_STACKS = 10;
 export type PreviewMonster = {
   id: string;
   name?: string;
+  level?: number;
   hp: number;
   atk: number;
   def: number;
@@ -48,8 +49,58 @@ export type PreviewMonster = {
 export type PreviewAbility = {
   def: AbilityDef;
   level: number;
+  xp?: number;
+  nextXp?: number;
+  masteryTitle?: string;
+  cdReductionPct?: number;
+  castXp?: number;
   trigger: AbilityTrigger;
 };
+
+export const MAX_ABILITY_LEVEL = 200;
+export const CAST_XP = 2;
+export const BOOK_REREAD_XP = 150;
+
+/** Mirror of backend abilities.getAbilityXpForLevel. */
+export function getAbilityXpForLevel(level: number): number {
+  if (level >= MAX_ABILITY_LEVEL) return Infinity;
+  const lv = Math.max(1, Math.floor(level));
+  if (lv <= 15) return Math.floor(300 * Math.pow(lv, 1.55));
+  const e15 = Math.floor(300 * Math.pow(15, 1.55));
+  if (lv <= 50) return Math.floor(e15 + 520 * Math.pow(lv - 15, 1.75));
+  const e50 = Math.floor(e15 + 520 * Math.pow(35, 1.75));
+  return Math.floor(e50 + 1200 * Math.pow(lv - 50, 1.95));
+}
+
+/** Mirror of backend abilities.abilityMasteryTier. */
+export function abilityMasteryTier(level: number): { tier: number; title: string; cdReductionPct: number } {
+  const lv = Math.max(1, Math.floor(level));
+  const step5 = Math.floor(lv / 5);
+  const cdReductionPct = Math.min(35, Math.round(step5 * 2.5 * 10) / 10);
+  if (lv >= 70) return { tier: 8, title: "登峰造极", cdReductionPct };
+  if (lv >= 50) return { tier: 7, title: "出神入化", cdReductionPct };
+  if (lv >= 30) return { tier: 6, title: "炉火纯青", cdReductionPct };
+  if (lv >= 20) return { tier: 5, title: "融会贯通", cdReductionPct };
+  if (lv >= 15) return { tier: 4, title: "登堂入室", cdReductionPct };
+  if (lv >= 10) return { tier: 3, title: "驾轻就熟", cdReductionPct };
+  if (lv >= 5) return { tier: 2, title: "略有小成", cdReductionPct };
+  return { tier: 1, title: "初窥门径", cdReductionPct };
+}
+
+/** Mirror of backend abilities.abilityCooldownMsForLevel. */
+export function abilityEffectiveCooldownMs(def: AbilityDef, level: number): number {
+  const { cdReductionPct } = abilityMasteryTier(level);
+  if (cdReductionPct <= 0) return def.cooldownMs;
+  return Math.max(1000, Math.round(def.cooldownMs * (1 - cdReductionPct / 100)));
+}
+
+/** Mirror of backend abilities.abilityCastXp. */
+export function abilityCastXp(def: AbilityDef, monsterLevel = 1): number {
+  const mpBonus = Math.floor((def.mpCost || 0) / 2);
+  const cdBonus = def.cooldownMs >= 12000 ? 2 : 0;
+  const lvBonus = Math.floor(Math.max(0, (monsterLevel || 1) - 1) * 0.35);
+  return CAST_XP + mpBonus + cdBonus + lvBonus;
+}
 
 /** Innate 重劈 as every fresh woodcutter has it; used when no content pack is loaded yet. */
 export const HEAVY_CHOP_DEF: AbilityDef = {
@@ -100,7 +151,7 @@ export function monsterBaseInterval(m: PreviewMonster): number {
 /** Mirror of backend abilities.triggerSatisfied. */
 export function triggerSatisfied(
   trigger: AbilityTrigger,
-  s: { playerHp: number; playerMaxHp: number; enemyHp: number; enemyMaxHp: number; guardActive: boolean }
+  s: { playerHp: number; playerMaxHp: number; enemyHp: number; enemyMaxHp: number; guardActive: boolean; enemyCount?: number }
 ): boolean {
   switch (trigger.type) {
     case "always":
@@ -108,7 +159,10 @@ export function triggerSatisfied(
     case "enemy_hp_below":
       return s.enemyMaxHp > 0 && (s.enemyHp / s.enemyMaxHp) * 100 <= trigger.pct;
     case "self_hp_below":
+    case "ally_hp_below":
       return s.playerMaxHp > 0 && (s.playerHp / s.playerMaxHp) * 100 <= trigger.pct;
+    case "enemies_at_least":
+      return (s.enemyCount ?? 1) >= Math.max(1, trigger.pct || 1);
     case "enemy_guard":
       return s.guardActive;
   }
@@ -117,7 +171,7 @@ export function triggerSatisfied(
 /** Build the preview ability list from the player's loadout + the /content catalog. */
 export function previewAbilities(
   loadout: AbilitySlot[] | undefined,
-  known: Record<string, { level: number }> | undefined,
+  known: Record<string, { level: number; xp?: number }> | undefined,
   catalog: AbilityDef[] | undefined,
   slotCount: number
 ): PreviewAbility[] {
@@ -128,7 +182,20 @@ export function previewAbilities(
     const def = defs.find((d) => d.id === slot.abilityId);
     if (!def) continue;
     if (known && !known[slot.abilityId] && slot.abilityId !== "heavy_chop") continue;
-    out.push({ def, level: known?.[slot.abilityId]?.level || 1, trigger: slot.trigger });
+    const level = known?.[slot.abilityId]?.level || 1;
+    const xp = Math.round((known?.[slot.abilityId]?.xp || 0) * 10) / 10;
+    const nextXp = getAbilityXpForLevel(level);
+    const mastery = abilityMasteryTier(level);
+    out.push({
+      def,
+      level,
+      xp,
+      nextXp,
+      masteryTitle: mastery.title,
+      cdReductionPct: mastery.cdReductionPct,
+      castXp: abilityCastXp(def, 1),
+      trigger: slot.trigger,
+    });
   }
   return out.slice(0, slotCount);
 }
@@ -181,6 +248,7 @@ export function previewFight(
   let bossHits = 0;
   const readyAt: Record<string, number> = {};
   const casts: Record<string, number> = {};
+  const abState = new Map(abilities.map((a) => [a.def.id, { level: a.level, xp: a.xp || 0 }]));
   let heavyChops = 0;
 
   const nextMechanicEvent = () => {
@@ -229,15 +297,28 @@ export function previewFight(
   const canFire = (a: PreviewAbility, atMs: number) => {
     if ((readyAt[a.def.id] || 0) > atMs) return false;
     if (a.def.mpCost > playerMp) return false;
-    if (a.def.healPct && playerHp >= sheet.hp) return false;
-    if (a.def.guardMult && braceUntil > atMs) return false;
+    if (a.def.healPct && !a.def.damageMult && !a.def.guardMult && playerHp >= sheet.hp) return false;
+    if (a.def.guardMult && !a.def.damageMult && !a.def.healPct && braceUntil > atMs) return false;
     return triggerSatisfied(a.trigger, { playerHp, playerMaxHp: sheet.hp, enemyHp, enemyMaxHp: enemyMax, guardActive });
   };
 
+  let braceMult = abilities.find((a) => a.def.guardMult)?.def.guardMult ?? 1;
+
   const cast = (a: PreviewAbility, atMs: number) => {
-    const mult = 1 + Math.max(0, a.level - 1) * a.def.levelStep;
+    const st = abState.get(a.def.id) || { level: a.level, xp: a.xp || 0 };
+    const curLevel = st.level;
+    const mult = 1 + Math.max(0, curLevel - 1) * a.def.levelStep;
     if (a.def.mpCost > 0) playerMp = Math.max(0, playerMp - a.def.mpCost);
-    readyAt[a.def.id] = atMs + a.def.cooldownMs;
+    readyAt[a.def.id] = atMs + abilityEffectiveCooldownMs(a.def, curLevel);
+    const gainedXp = abilityCastXp(a.def, Number(m.level || 1));
+    st.xp += gainedXp;
+    let need = getAbilityXpForLevel(st.level);
+    while (st.xp >= need && st.level < MAX_ABILITY_LEVEL) {
+      st.xp -= need;
+      st.level += 1;
+      need = getAbilityXpForLevel(st.level);
+    }
+    abState.set(a.def.id, st);
     casts[a.def.id] = (casts[a.def.id] || 0) + 1;
     if (a.def.id === "heavy_chop") heavyChops += 1;
     if (a.def.damageMult) {
@@ -257,10 +338,13 @@ export function previewFight(
     }
     if (a.def.guardMult && a.def.durationMs) {
       braceUntil = atMs + Math.round(a.def.durationMs * mult);
+      braceMult = a.def.guardMult;
+    }
+    if (a.def.mpRestore) {
+      const gain = Math.max(1, Math.round(a.def.mpRestore * mult));
+      playerMp = Math.min(maxMp, playerMp + gain);
     }
   };
-
-  const braceMult = abilities.find((a) => a.def.guardMult)?.def.guardMult ?? 1;
 
   while (playerHp > 0 && enemyHp > 0 && t < maxMs) {
     for (const a of abilities) {

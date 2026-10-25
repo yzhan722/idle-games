@@ -147,8 +147,14 @@ export type HpCombatState = {
   abilityReadyAt?: Record<string, number>;
   /** Incoming damage reduction window from 坚守 (ms epoch until). */
   braceUntil?: number;
+  /** Active incoming damage multiplier while `braceUntil` is in effect. */
+  braceMult?: number;
   /** Combat-skill XP granted on win (30/70 split), for the victory panel. */
   xpGained?: Record<string, number>;
+  /** Active ability XP granted via skill casts during this fight. */
+  abilityXpGained?: Record<string, number>;
+  /** Active abilities that leveled up during this fight. */
+  abilityLevelUps?: Array<{ id: string; name: string; level: number }>;
 };
 
 /**
@@ -164,6 +170,8 @@ export type AbilityTrigger =
   | { type: "always" }
   | { type: "enemy_hp_below"; pct: number }
   | { type: "self_hp_below"; pct: number }
+  | { type: "ally_hp_below"; pct: number }
+  | { type: "enemies_at_least"; pct: number }
   | { type: "enemy_guard" };
 
 export type AbilitySlot = { abilityId: string; trigger: AbilityTrigger };

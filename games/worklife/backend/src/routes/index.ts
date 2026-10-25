@@ -1,6 +1,5 @@
 export { authRoutes } from "./auth";
 export { playerRoutes } from "./player";
-export { skillsRoutes } from "./skills";
 export { enhancementRoutes } from "./enhancement";
 export { tradingRoutes } from "./trading";
 export { partyRoutes } from "./party";

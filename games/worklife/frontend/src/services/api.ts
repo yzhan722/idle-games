@@ -277,14 +277,6 @@ class ApiClient {
   }
   async getPriceTrend(itemId: string) { return this.get(`/trading/price-trend/${itemId}`); }
 
-
-  // 技能树相关API
-  async getSkillTree(professionId: string) { return this.get(`/skills/tree/${professionId}`); }
-  async getSkillProgress(professionId: string) { return this.get(`/skills/progress/${professionId}`); }
-  async unlockSkillNode(professionId: string, nodeId: string) {
-    return this.post('/skills/unlock', { professionId, nodeId });
-  }
-
   // 组队相关API
   async createParty(name?: string) { return this.post('/party/create', name ? { name } : {}); }
   async joinParty(partyId: string) { return this.post('/party/join', { partyId }); }
@@ -307,8 +299,8 @@ class ApiClient {
   async startPartyActivity(partyId: string, activityType: 'combat' | 'group_craft' | 'raid' = 'raid', stageId?: string, durationMinutes?: number) {
     return this.post('/party/start-activity', { partyId, activityType, stageId, durationMinutes });
   }
-  async partyWaveClear(partyId: string, stageId: string, wave: number) {
-    return this.post('/party/wave-clear', { partyId, stageId, wave });
+  async partyWaveClear(partyId: string, stageId: string, wave: number, abilityCasts?: Record<string, number>) {
+    return this.post('/party/wave-clear', { partyId, stageId, wave, ...(abilityCasts ? { abilityCasts } : {}) });
   }
   async completePartyActivity(partyId: string) { return this.post('/party/complete-activity', { partyId }); }
   async cancelPartyActivity(partyId: string) { return this.post('/party/cancel-activity', { partyId }); }
@@ -374,6 +366,7 @@ class ApiClient {
   async getSellPrices() { return this.get('/systems/shop/sell-prices'); }
   async shopBuy(itemId: string, qty: number) { return this.post('/systems/shop/buy', { itemId, qty }); }
   async shopSell(itemId: string, qty: number) { return this.post('/systems/shop/sell', { itemId, qty }); }
+  async alchemyCoinify(itemId: string, qty: number) { return this.post('/systems/alchemy/coinify', { itemId, qty }); }
 
   // 进阶系统：声望 / 赏金契约 / 转生
   async getReputation() { return this.get('/progression2/reputation'); }
@@ -385,7 +378,7 @@ class ApiClient {
   async doPrestige() { return this.post('/progression2/prestige', {}); }
 
   async startHpCombat(monsterId: string) {
-    return this.post('/combat/hp/start', { monsterId });
+    return this.post('/combat/hp/start', { monsterId, autoRepeat: true });
   }
   async useHeavyChop() {
     return this.post('/combat/hp/skill', { skillId: 'heavy_chop' });

@@ -312,31 +312,6 @@ describe("soak regressions — prestige", () => {
   });
 });
 
-describe("soak regressions — skill tree", () => {
-  it("unlockSkillNode is idempotent (no duplicate recipe/action entries)", async () => {
-    const storage = createMemoryStorage();
-    const { user, state } = await ctx(storage, "sk-user");
-    const tree = contentPack.professionTrees.find((t) =>
-      t.skillNodes.some((n) => n.requirements.level <= 1 && n.requirements.prerequisites.length === 0)
-    );
-    assert.ok(tree, "need an unlockable node");
-    const node = tree.skillNodes.find(
-      (n) => n.requirements.level <= 1 && n.requirements.prerequisites.length === 0
-    )!;
-    state.skills[`skill_${tree.professionId}`] = { level: 99, xp: 0, unlockedRecipes: [], enhancementLevel: 0 };
-    await storage.savePlayerState(user.id, state);
-
-    const r1 = await storage.unlockSkillNode({ userId: user.id, professionId: tree.professionId, nodeId: node.id, contentPack });
-    assert.equal(r1.success, true);
-    const len1 = state.skills[`skill_${tree.professionId}`].unlockedRecipes.length;
-    const r2 = await storage.unlockSkillNode({ userId: user.id, professionId: tree.professionId, nodeId: node.id, contentPack });
-    assert.equal(r2.success, true);
-    const len2 = state.skills[`skill_${tree.professionId}`].unlockedRecipes.length;
-    assert.equal(len2, len1, `重复解锁把数组从 ${len1} 撑到 ${len2}`);
-    await storage.close();
-  });
-});
-
 describe("soak regressions — durability", () => {
   it("reduceDurability rejects negative/NaN amounts", async () => {
     const storage = createMemoryStorage();

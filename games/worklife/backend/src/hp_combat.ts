@@ -23,6 +23,8 @@ import {
 import {
   ABILITY_BY_ID,
   CAST_XP,
+  abilityCastXp,
+  abilityCooldownMsForLevel,
   abilityLevelMult,
   abilityReadyAt,
   activeAbilitySlots,
@@ -369,20 +371,15 @@ export function startHpCombat(
     enrageStacks: 0,
     runStats: opts.runStats || { startedAt: now.getTime(), kills: 0, xp: 0, gold: 0, loot: {} },
   };
-  player.combatLoadout = {
-    food: player.combatLoadout?.food || [],
-    drink: player.combatLoadout?.drink || [],
-    ...(player.combatLoadout?.mp ? { mp: player.combatLoadout.mp } : {}),
-    autoRepeat: true,
-  };
   return state;
 }
 
 /** Effective cooldown for an ability (E2E fast mode compresses every cooldown the same way). */
-function abilityCooldownMs(def: AbilityDef): number {
+function abilityCooldownMs(def: AbilityDef, level = 1): number {
+  const effectiveCd = abilityCooldownMsForLevel(def, level);
   const fast = e2eFastHeavyChopCdMs();
-  if (fast !== 8000) return Math.max(50, Math.round((def.cooldownMs / 8000) * fast));
-  return def.cooldownMs;
+  if (fast !== 8000) return Math.max(50, Math.round((effectiveCd / 8000) * fast));
+  return effectiveCd;
 }
 
 /**
@@ -400,7 +397,17 @@ function castAbility(
   const level = player.abilities?.[def.id]?.level || 1;
   const mult = abilityLevelMult(def, level);
   if (def.mpCost > 0) enc.playerMp = Math.max(0, (enc.playerMp || 0) - def.mpCost);
-  setAbilityReadyAt(enc, def.id, atMs + abilityCooldownMs(def));
+  setAbilityReadyAt(enc, def.id, atMs + abilityCooldownMs(def, level));
+
+  const castXp = abilityCastXp(def, Number(monster.level || 1));
+  const xpRes = grantAbilityXp(player, def.id, castXp);
+  enc.abilityXpGained = enc.abilityXpGained || {};
+  enc.abilityXpGained[def.id] = Math.round(((enc.abilityXpGained[def.id] || 0) + castXp) * 100) / 100;
+  if (xpRes.leveledTo) {
+    enc.abilityLevelUps = enc.abilityLevelUps || [];
+    enc.abilityLevelUps.push({ id: def.id, name: def.name, level: xpRes.leveledTo });
+  }
+  const xpSuffix = `（+${castXp} 技能经验${xpRes.leveledTo ? ` · 升至 Lv.${xpRes.leveledTo}！` : ""}）`;
 
   if (def.damageMult) {
     const pc = playerCombatant(player, pack, playerExtras(player, new Date(atMs), pack));
@@ -417,9 +424,9 @@ function castAbility(
     enc.enemyHp = Math.max(minHpAfterOpeningCast, enc.enemyHp - dmg);
     if (def.breaksGuard && guardBefore) {
       enc.guardActive = false;
-      pushLog(enc, `${def.name}破防！造成 ${dmg} 伤害`);
+      pushLog(enc, `${def.name}破防！造成 ${dmg} 伤害${xpSuffix}`);
     } else {
-      pushLog(enc, `${def.name}造成 ${dmg} 伤害`);
+      pushLog(enc, `${def.name}造成 ${dmg} 伤害${xpSuffix}`);
     }
     maybePhases(enc, monster, pack);
     // A guard-breaker that pushes the boss through the guard threshold shatters the shield it just
@@ -433,14 +440,19 @@ function castAbility(
     const heal = Math.max(1, Math.floor(enc.playerMaxHp * def.healPct * mult));
     const before = enc.playerHp;
     enc.playerHp = Math.min(enc.playerMaxHp, enc.playerHp + heal);
-    pushLog(enc, `${def.name}恢复 ${enc.playerHp - before} 生命`);
+    pushLog(enc, `${def.name}恢复 ${enc.playerHp - before} 生命${xpSuffix}`);
     cleanseMiasma(enc, mechanicDefsFor(pack, monster), def.name, pushLog);
   }
   if (def.guardMult && def.durationMs) {
     enc.braceUntil = atMs + Math.round(def.durationMs * mult);
-    pushLog(enc, `${def.name}！${Math.round(def.durationMs / 1000)} 秒内受伤 -${Math.round((1 - def.guardMult) * 100)}%`);
+    enc.braceMult = def.guardMult;
+    pushLog(enc, `${def.name}！${Math.round(def.durationMs / 1000)} 秒内受伤 -${Math.round((1 - def.guardMult) * 100)}%${xpSuffix}`);
   }
-  grantAbilityXp(player, def.id, CAST_XP);
+  if (def.mpRestore) {
+    const gain = Math.max(1, Math.round(def.mpRestore * mult));
+    enc.playerMp = Math.min(enc.playerMaxMp || 0, (enc.playerMp || 0) + gain);
+    pushLog(enc, `${def.name}回流 ${gain} 魔力${xpSuffix}`);
+  }
 }
 
 /** Whether a slot may fire at `atMs`: learned, off cooldown, affordable, trigger met. */
@@ -454,8 +466,8 @@ function slotCanFire(
   if (!def) return undefined;
   if (abilityReadyAt(enc, def.id) > atMs) return undefined;
   if (def.mpCost > (enc.playerMp || 0)) return undefined;
-  if (def.healPct && enc.playerHp >= enc.playerMaxHp) return undefined;
-  if (def.guardMult && (enc.braceUntil || 0) > atMs) return undefined;
+  if (def.healPct && !def.damageMult && !def.guardMult && enc.playerHp >= enc.playerMaxHp) return undefined;
+  if (def.guardMult && !def.damageMult && !def.healPct && (enc.braceUntil || 0) > atMs) return undefined;
   if (!triggerSatisfied(slot.trigger, enc)) return undefined;
   return def;
 }
@@ -630,11 +642,11 @@ export function tickHpCombat(
     if (enc.outcome) {
       // Auto-repeat: a finished fight restarts against the same monster once the intermission
       // (win) or the respawn timer (loss) has passed.
-      const canRepeat = Boolean(enc.nextFightAt && now.getTime() >= enc.nextFightAt);
+      const canRepeat = Boolean(player.combatLoadout?.autoRepeat && enc.nextFightAt && now.getTime() >= enc.nextFightAt);
       if (!canRepeat) return now.getTime();
       const startAt = new Date(enc.nextFightAt!);
       const streak = enc.outcome === "win" ? (enc.streak || 0) + 1 : 0;
-      const deaths = enc.deaths || 0;
+      const deaths = (enc.deaths || 0) + (enc.outcome === "loss" ? 1 : 0);
       // When the client is actively polling across an intermission boundary, return the newly
       // spawned encounter at 100% full HP (matching POST /combat/hp/start) before ticking
       // opening auto-cast skills, so the monster always starts at full health in the UI.
@@ -701,7 +713,7 @@ function tickOneFight(
     simMs += step;
     enc.playerCooldownMs += step;
     enc.enemyCooldownMs += step;
-    const braceNow = (enc.braceUntil || 0) > simMs ? (ABILITY_BY_ID.brace?.guardMult ?? 1) : 1;
+    const braceNow = (enc.braceUntil || 0) > simMs ? (enc.braceMult ?? ABILITY_BY_ID.brace?.guardMult ?? 1) : 1;
     // Timed mechanics that change the board (frost armour up/down, eruption warning) land before the swings.
     runMechanicEvents(enc, mechDefs, simMs, "state", braceNow, pushLog);
     const enemyAtk = {
@@ -723,7 +735,7 @@ function tickOneFight(
       // Enrage is read at the moment the hit lands, so results do not depend on poll granularity.
       updateEnrage(enc, monster, simMs);
       const enraged = enemy.outgoingDamageMult * (1 + (enc.enrageStacks || 0) * ENRAGE_STEP);
-      const braced = (enc.braceUntil || 0) > simMs ? (ABILITY_BY_ID.brace?.guardMult ?? 1) : 1;
+      const braced = (enc.braceUntil || 0) > simMs ? (enc.braceMult ?? ABILITY_BY_ID.brace?.guardMult ?? 1) : 1;
       const hitNumber = (enc.bossHits || 0) + 1;
       enc.bossHits = hitNumber;
       const baseHit = hitDamage({ ...enemyAtk, outgoingDamageMult: enraged, incomingDamageMult: 1 }, { ...playerAtk, incomingDamageMult: 1 });
@@ -747,24 +759,27 @@ function tickOneFight(
     grantWin(player, pack, enc, rng);
     // Surviving HP carries into the next fight; intermission time still counts toward regen.
     persistCombatHp(player, enc.playerHp, simMs);
-    if (player.combatLoadout) player.combatLoadout.autoRepeat = true;
-    enc.nextFightAt = simMs + AUTO_REPEAT_INTERMISSION_MS;
+    if (player.combatLoadout?.autoRepeat) {
+      enc.nextFightAt = simMs + AUTO_REPEAT_INTERMISSION_MS;
+    }
   } else if (enc.playerHp <= 0) {
     enc.outcome = "loss";
-    enc.deaths = (enc.deaths || 0) + 1;
     wearCombatGear(player, GEAR_WEAR_ON_DEATH_EXTRA);
     if (player.stats) player.stats.totalDeaths = (player.stats.totalDeaths || 0) + 1;
     // Respawn heals to full — persisting 0 would soft-lock the auto-repeat loop.
     persistCombatHp(player, enc.playerMaxHp, simMs);
     enc.lossStreak = (enc.lossStreak || 0) + 1;
-    if (enc.lossStreak >= AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS) {
+    if (player.combatLoadout?.autoRepeat && enc.lossStreak >= AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS) {
       // Death-spiral guard: stop instead of feeding gear durability to a monster that keeps winning.
+      player.combatLoadout.autoRepeat = false;
       enc.nextFightAt = undefined;
-      pushLog(enc, `连续阵亡 ${enc.lossStreak} 次，已自动停止战斗以保护装备耐久。检查装备、技能和补给，或换个更弱的对手。`);
-      appendLog(player, `在 ${enc.monsterName} 面前连续阵亡 ${enc.lossStreak} 次，已自动停止战斗`);
-    } else {
+      pushLog(enc, `连续阵亡 ${enc.lossStreak} 次，已自动关闭连续战斗以保护装备耐久。检查装备、技能和补给，或换个更弱的对手。`);
+      appendLog(player, `在 ${enc.monsterName} 面前连续阵亡 ${enc.lossStreak} 次，连续战斗已自动关闭`);
+    } else if (player.combatLoadout?.autoRepeat) {
       enc.nextFightAt = simMs + RESPAWN_MS;
       pushLog(enc, `你被击败了。${Math.round(RESPAWN_MS / 1000)} 秒后重生并继续战斗（连续阵亡 ${AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS} 次会自动停止）。`);
+    } else {
+      pushLog(enc, "你被击败了。检查装备与等级后再战。");
     }
   }
   return simMs;
@@ -792,7 +807,7 @@ export function tryCastAbility(
     enc.playerMp = enc.playerMaxMp;
   }
   if (def.mpCost > (enc.playerMp || 0)) return { ok: false, error: "no_mana" };
-  if (def.healPct && enc.playerHp >= enc.playerMaxHp) return { ok: false, error: "full_hp" };
+  if (def.healPct && !def.damageMult && !def.guardMult && enc.playerHp >= enc.playerMaxHp) return { ok: false, error: "full_hp" };
 
   const monster = monsterById(pack, enc.monsterId);
   castAbility(player, pack, enc, def, now.getTime(), monster);
@@ -801,8 +816,9 @@ export function tryCastAbility(
     pushLog(enc, `${enc.monsterName} 被击败了！`);
     grantWin(player, pack, enc, rng);
     persistCombatHp(player, enc.playerHp, now.getTime());
-    if (player.combatLoadout) player.combatLoadout.autoRepeat = true;
-    enc.nextFightAt = now.getTime() + AUTO_REPEAT_INTERMISSION_MS;
+    if (player.combatLoadout?.autoRepeat) {
+      enc.nextFightAt = now.getTime() + AUTO_REPEAT_INTERMISSION_MS;
+    }
   }
   return { ok: true };
 }
@@ -864,6 +880,7 @@ export function setCombatLoadout(
   const pc = playerCombatant(player, pack, playerExtras(player, now ?? new Date(), pack));
   const maxHp = pc.hp;
   const maxMp = Math.max(10, pc.mp || 50);
+  const autoRepeat = input.autoRepeat !== undefined ? Boolean(input.autoRepeat) : Boolean(player.combatLoadout?.autoRepeat);
   const nextLoadout: NonNullable<EnhancedPlayerState["combatLoadout"]> = {
     food: food.map((f) => ({
       itemId: f.itemId,
@@ -874,7 +891,7 @@ export function setCombatLoadout(
         ? { itemId: d.itemId, triggerMissingMp: Math.min(maxMp, Math.max(1, Math.floor(Number(d.triggerMissingMp) || 1))) }
         : { itemId: d.itemId }
     ),
-    autoRepeat: true,
+    autoRepeat,
   };
   if (mp.length > 0) {
     nextLoadout.mp = mp.map((m) => ({
@@ -892,6 +909,8 @@ export function setCombatLoadout(
     player.hpCombat.nextFightAt = base + (player.hpCombat.outcome === "loss" ? RESPAWN_MS : AUTO_REPEAT_INTERMISSION_MS);
     // Re-enabling is an explicit "try again": give back the full defeat allowance.
     player.hpCombat.lossStreak = 0;
+  } else if (!player.combatLoadout.autoRepeat && player.hpCombat?.outcome && player.hpCombat.nextFightAt) {
+    player.hpCombat.nextFightAt = undefined;
   }
   return { ok: true };
 }

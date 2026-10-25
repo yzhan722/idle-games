@@ -204,7 +204,14 @@ export function equippedEnhanceToolBonus(player: EnhancedPlayerState, pack: Enha
 }
 
 export function ownsEnhanceableItem(player: EnhancedPlayerState, itemId: string): boolean {
-  return (player.inventory?.[itemId] || 0) > 0;
+  if ((player.inventory?.[itemId] || 0) > 0) return true;
+  const eq = player.equipment as Record<string, unknown> | undefined;
+  if (!eq) return false;
+  for (const [slot, val] of Object.entries(eq)) {
+    if (slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability") continue;
+    if (val === itemId) return true;
+  }
+  return false;
 }
 
 type AttemptInput = {

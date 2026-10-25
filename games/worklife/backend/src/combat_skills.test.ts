@@ -176,22 +176,25 @@ describe("MWI abilities", () => {
     await storage.close();
   });
 
-  it("learns from a book, re-reading gives 50 XP, and books are consumed", async () => {
+  it("learns from a book, re-reading gives fixed 150 XP, and books are consumed", async () => {
     const { storage, state } = await fresh();
     assert.equal(learnFromBook(state, pack, "book_smash").ok, false, "no book yet");
     assert.equal(learnFromBook(state, pack, "wood_1").ok, false, "not a book");
-    state.inventory.book_smash = 2;
+    state.inventory.book_smash = 3;
     const first = learnFromBook(state, pack, "book_smash");
     assert.deepEqual({ ok: first.ok, learned: first.learned, abilityId: first.abilityId }, { ok: true, learned: true, abilityId: "smash" });
-    assert.equal(state.inventory.book_smash, 1);
+    assert.equal(state.inventory.book_smash, 2);
     assert.deepEqual(state.abilities!.smash, { level: 1, xp: 0 });
     // Only one slot at intelligence 1, so the new ability is learned but not auto-equipped.
     assert.deepEqual(activeAbilitySlots(state).map((s) => s.abilityId), ["heavy_chop"]);
     const second = learnFromBook(state, pack, "book_smash");
     assert.equal(second.learned, false);
-    assert.equal(state.abilities!.smash.level, 2, "50 XP passes the 40 XP level-2 threshold");
-    assert.equal(state.abilities!.smash.xp, 10, "50 − 40 carried over");
-    assert.equal(second.leveledTo, 2);
+    assert.equal(state.abilities!.smash.level, 1, "150 XP is half of the 300 XP level-2 threshold");
+    assert.equal(state.abilities!.smash.xp, 150, "fixed 150 XP granted");
+    const third = learnFromBook(state, pack, "book_smash");
+    assert.equal(third.leveledTo, 2, "second re-read (150 + 150 = 300 XP) reaches level 2");
+    assert.equal(state.abilities!.smash.level, 2);
+    assert.equal(state.abilities!.smash.xp, 0);
     assert.equal(state.inventory.book_smash, undefined);
     await storage.close();
   });
@@ -237,7 +240,7 @@ describe("MWI abilities", () => {
     // t0: 17, 3s: 8, 6s: 8, 8s: 17 → 50 dealt, slime 20/70 left
     assert.equal(state.hpCombat.enemyHp, 20);
     assert.equal(state.hpCombat.log.filter((l) => l.startsWith("重劈造成 17")).length, 2);
-    assert.equal(state.abilities!.heavy_chop.xp, 2, "1 XP per cast");
+    assert.equal(state.abilities!.heavy_chop.xp, 4, "2 XP per cast on Lv1 slime (2 casts = 4 XP)");
     assert.equal(state.hpCombat.playerMp, 20, "重劈 costs no mana; regen keeps the pool full");
     await storage.close();
   });

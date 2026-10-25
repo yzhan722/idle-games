@@ -17,8 +17,7 @@ import {
   onBossHit,
   runMechanicEvents,
 } from "./boss_mechanics";
-import { CHAINS } from "../../scripts/audit/zone-chains";
-import { realBossFight } from "../../scripts/audit/real-fight";
+import { CHAINS, realBossFight } from "./zone_chains_fixture";
 
 const contentPack = pack as unknown as EnhancedContentPack;
 const forestBoss = (contentPack.monsters as Array<Record<string, unknown>>).find((m) => m.id === "forest_boss")!;

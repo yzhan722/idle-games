@@ -102,7 +102,10 @@ export interface PlayerState {
     playerMaxMp?: number;
     abilityReadyAt?: Record<string, number>;
     braceUntil?: number;
+    braceMult?: number;
     xpGained?: Record<string, number>;
+    abilityXpGained?: Record<string, number>;
+    abilityLevelUps?: Array<{ id: string; name: string; level: number }>;
   };
   activeBuffs?: Array<{
     id: string;
@@ -147,6 +150,8 @@ export type AbilityTrigger =
   | { type: "always" }
   | { type: "enemy_hp_below"; pct: number }
   | { type: "self_hp_below"; pct: number }
+  | { type: "ally_hp_below"; pct: number }
+  | { type: "enemies_at_least"; pct: number }
   | { type: "enemy_guard" };
 
 export type AbilitySlot = { abilityId: string; trigger: AbilityTrigger };
@@ -159,9 +164,16 @@ export type AbilityDef = {
   cooldownMs: number;
   mpCost: number;
   damageMult?: number;
+  targetCount?: number;
   healPct?: number;
+  isPartyHeal?: boolean;
   guardMult?: number;
   durationMs?: number;
+  tauntDurationMs?: number;
+  auraAtkPct?: number;
+  auraCritPct?: number;
+  auraDurationMs?: number;
+  mpRestore?: number;
   breaksGuard?: boolean;
   bookItemId?: string;
   defaultTrigger: AbilityTrigger;

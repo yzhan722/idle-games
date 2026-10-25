@@ -3,6 +3,7 @@ import { z } from "zod";
 import { appendLog, getBuffEffects, getRareFindMultiplier, type Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
 import { grantCombatXp } from "../combat_skills";
+import { ABILITY_BY_ID, abilityCastXp, activeAbilitySlots, grantAbilityXp } from "../abilities";
 import { HOUSE_XP_PER_LEVEL, houseLevelForSkill } from "../houses";
 import { syncAchievements } from "../progression";
 import { getPrestigeMultiplier, getReputationBonuses } from "../progression2";
@@ -376,6 +377,7 @@ export async function partyRoutes(
       stageId: z.string().optional(),
       wave: z.number().int().min(1).max(10000),
       operationId: z.string().max(128).optional(),
+      abilityCasts: z.record(z.string(), z.number().int().min(0).max(50)).optional(),
     }).strict().parse((req.body ?? {}) as unknown);
 
     try {
@@ -395,12 +397,20 @@ export async function partyRoutes(
       const bossMonster = stageMonsters.find((m) => m.isBoss || String(m.id).endsWith("_boss")) || stageMonsters.at(-1);
 
       const isBossWave = body.wave % 10 === 0;
+      const partyMemberCount = Math.max(1, current.members?.length || 1);
+      const dynamicMinionCount = Math.max(2, Math.min(6, partyMemberCount <= 1 ? 2 : partyMemberCount + 1));
+      const bossGuardCount = partyMemberCount >= 5 ? 2 : partyMemberCount >= 3 ? 1 : 0;
       const waveMonsters: any[] = [];
       if (isBossWave && bossMonster) {
         waveMonsters.push(bossMonster);
+        if (normalMonsters.length > 0 && bossGuardCount > 0) {
+          for (let g = 0; g < bossGuardCount; g++) {
+            waveMonsters.push(normalMonsters[g % normalMonsters.length]);
+          }
+        }
       } else if (normalMonsters.length > 0) {
         const offset = (body.wave - 1) % 10;
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < dynamicMinionCount; i++) {
           waveMonsters.push(normalMonsters[(offset + i) % normalMonsters.length]);
         }
       } else if (bossMonster) {
@@ -491,6 +501,26 @@ export async function partyRoutes(
           stats.totalGoldEarned = (stats.totalGoldEarned || 0) + totalGold;
           stats.totalXpEarned = (stats.totalXpEarned || 0) + totalXp;
           const xpGrant = grantCombatXp(st, totalXp, contentPack as any);
+
+          // Grant active ability XP for skills cast during this party wave
+          const abilityXpGained: Record<string, number> = {};
+          const abilityLevelUps: Array<{ id: string; name: string; level: number }> = [];
+          const refLevel = Number(bossMonster?.level || waveMonsters[0]?.level || 1);
+          const castEntries = body.abilityCasts && Object.keys(body.abilityCasts).length > 0
+            ? Object.entries(body.abilityCasts)
+            : activeAbilitySlots(st).map((s) => [s.abilityId, isBossWave ? 2 : 1] as const);
+          for (const [abilityId, rawCount] of castEntries) {
+            const count = Math.max(0, Math.min(20, Number(rawCount || 0)));
+            const def = ABILITY_BY_ID[abilityId];
+            if (!def || count <= 0 || !st.abilities?.[abilityId]) continue;
+            const totalAbilityXp = abilityCastXp(def, refLevel) * count;
+            const abRes = grantAbilityXp(st, abilityId, totalAbilityXp);
+            abilityXpGained[abilityId] = totalAbilityXp;
+            if (abRes.leveledTo) {
+              abilityLevelUps.push({ id: abilityId, name: def.name, level: abRes.leveledTo });
+            }
+          }
+
           syncAchievements(st);
           appendLog(
             st,
@@ -498,11 +528,11 @@ export async function partyRoutes(
               ? `组队首领战第 ${body.wave} 波大捷！击败 ${bossMonster?.name || "区域首领"}，获得 ${totalXp} 战斗经验、${totalGold} 金币`
               : `组队副本第 ${body.wave} 波清剿完成，获得 ${totalXp} 战斗经验、${totalGold} 金币`
           );
-          return xpGrant;
+          return { xpGrant, abilityXpGained, abilityLevelUps };
         },
       });
 
-      const xpGrant = outcome.result;
+      const { xpGrant, abilityXpGained, abilityLevelUps } = outcome.result || {};
       const state = outcome.state;
       await simulateBotPartyContributions(storage, current, contentPack).catch(() => undefined);
 
@@ -513,6 +543,8 @@ export async function partyRoutes(
         xpGained: totalXp,
         xpSplit: xpGrant?.gained || {},
         levelUps: xpGrant?.levelUps || [],
+        abilityXpGained: abilityXpGained || {},
+        abilityLevelUps: abilityLevelUps || [],
         combatLevel: state.combatLevel || 1,
         goldGained: totalGold,
         drops: Array.from(dropMap.values()),

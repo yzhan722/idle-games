@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { T1Art, characterArtId, normalizeGender, normalizeAvatarId, AVATAR_OPTIONS, PlayerAvatarIcon } from "./T1Art";
 import { abilityEmoji } from "./AbilityBar";
+import { abilityMasteryTier, getAbilityXpForLevel } from "../gameplay/fightPreview";
 import type { ActiveSetBonus } from "../gameplay/combatSheet";
 import { getProfessionPerk } from "../gameplay/professionPerks";
 import "./T1UiIcons.css";
@@ -73,7 +74,17 @@ type Props = {
   /** MWI total level: every skill row added up. */
   totalLevel: number;
   combatLevel: number;
-  sheet: { hp: number; atk: number; def: number; mp?: number; intervalMs?: number };
+  sheet: {
+    hp: number;
+    atk: number;
+    def: number;
+    mp?: number;
+    intervalMs?: number;
+    accuracyPct?: number;
+    evasionPct?: number;
+    critRatePct?: number;
+    critDmgPct?: number;
+  };
   /** MWI combat skills, in display order. */
   combatSkills?: CombatSkillRow[];
   /** The damage skill the equipped weapon trains (gets the 主修 tag). */
@@ -246,6 +257,30 @@ export function CharacterSheet(props: Props) {
           displayValue={`${((props.sheet.intervalMs ?? 3000) / 1000).toFixed(2)}s`}
           invertDelta
         />
+        <StatBox
+          icon="stat-atk"
+          label="命中率"
+          value={Math.round((props.sheet.accuracyPct ?? 88) * 10)}
+          displayValue={`${props.sheet.accuracyPct ?? 88}%`}
+        />
+        <StatBox
+          icon="stat-def"
+          label="闪避率"
+          value={Math.round((props.sheet.evasionPct ?? 8) * 10)}
+          displayValue={`${props.sheet.evasionPct ?? 8}%`}
+        />
+        <StatBox
+          icon="stat-atk"
+          label="暴击率"
+          value={Math.round((props.sheet.critRatePct ?? 15) * 10)}
+          displayValue={`${props.sheet.critRatePct ?? 15}%`}
+        />
+        <StatBox
+          icon="stat-spd"
+          label="暴击伤害"
+          value={props.sheet.critDmgPct ?? 165}
+          displayValue={`${props.sheet.critDmgPct ?? 165}%`}
+        />
       </div>
       {props.abilities && props.abilities.length > 0 && (
         <div className="sheet-abilities" aria-label="战斗技能">
@@ -254,8 +289,15 @@ export function CharacterSheet(props: Props) {
           </div>
           <div className="sheet-ability-list">
             {props.abilities.map((a) => {
-              const cdSec = Math.round(((a.cooldownMs ?? (a.id === "smash" ? 5000 : a.id === "minor_heal" ? 15000 : a.id === "brace" ? 12000 : 8000)) / 1000) * 10) / 10;
+              const baseCdMs = a.cooldownMs ?? (a.id === "smash" ? 5000 : a.id === "minor_heal" ? 15000 : a.id === "brace" ? 12000 : 8000);
+              const mastery = abilityMasteryTier(a.level || 1);
+              const effCdMs = Math.max(1000, Math.round(baseCdMs * (1 - mastery.cdReductionPct / 100)));
+              const cdSec = Math.round((effCdMs / 1000) * 10) / 10;
               const mpCost = a.mpCost ?? (a.id === "smash" ? 4 : a.id === "minor_heal" ? 8 : a.id === "brace" ? 6 : 0);
+              const xp = Math.round((a.xp || 0) * 10) / 10;
+              const nextXp = getAbilityXpForLevel(a.level || 1);
+              const xpPct = Number.isFinite(nextXp) && nextXp > 0 ? Math.min(100, Math.max(0, Math.round((xp / nextXp) * 100))) : 100;
+              const bonusPct = Math.round(Math.max(0, (a.level || 1) - 1) * (a.levelStep ?? 0.05) * 100);
               return (
                 <div key={a.id} className={`sheet-ability-card${a.equipped ? " equipped" : ""}`}>
                   <div className="sheet-ability-icon">
@@ -264,15 +306,22 @@ export function CharacterSheet(props: Props) {
                   <div className="sheet-ability-body">
                     <div className="sheet-ability-head">
                       <strong className="sheet-ability-name">{a.name}</strong>
-                      <span className="sheet-ability-level">Lv.{a.level}</span>
+                      <span className="sheet-ability-level">Lv.{a.level} · {mastery.title}</span>
                       <span className={`sheet-ability-status${a.equipped ? " on" : ""}`}>
                         {a.equipped ? "已装备" : "未装备"}
                       </span>
                       <span className="sheet-ability-meta">
-                        <span>⏱️ 冷却 {cdSec}s</span>
+                        <span>⏱️ 冷却 {cdSec}s{mastery.cdReductionPct > 0 ? ` (-${mastery.cdReductionPct}%)` : ""}</span>
                         <span>💧 {mpCost > 0 ? `${mpCost} 魔力` : "无消耗"}</span>
+                        <span>🔥 等级威力 +{bonusPct}%</span>
                         {a.equipped && <span>⚡ 触发：{a.triggerText || "冷却好了就放"}</span>}
                       </span>
+                    </div>
+                    <div className="sheet-ability-xp-row">
+                      <div className="ability-xp-track">
+                        <div className="ability-xp-fill" style={{ width: `${xpPct}%` }} />
+                      </div>
+                      <span className="sheet-ability-xp-text">熟练度 {xp} / {nextXp} ({xpPct}%)</span>
                     </div>
                     <p className="sheet-ability-desc">{formatAbilityEffect(a)}</p>
                   </div>

@@ -82,7 +82,7 @@ export function weaponMainSkill(mainHandItemId: string | undefined): CombatSkill
 
 export function mainCombatSkill(player: EnhancedPlayerState): CombatSkillId {
   const mainHand = (player.equipment as { main_hand?: string } | undefined)?.main_hand;
-  if (!mainHand || (player.inventory?.[mainHand] || 0) <= 0 || isDurabilityBroken(player, mainHand)) {
+  if (!mainHand || isDurabilityBroken(player, mainHand)) {
     return "melee";
   }
   return weaponMainSkill(mainHand);

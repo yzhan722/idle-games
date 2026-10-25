@@ -125,6 +125,9 @@ describe("profession balance", () => {
       }
       for (const d of m.drops ?? []) {
         assert.ok((d.chance ?? 1) <= 0.1, `${m.id}: drop ${d.itemId} chance ${d.chance} > 0.1`);
+        if (d.itemId.startsWith("book_")) {
+          assert.ok((d.chance ?? 1) <= 0.01, `${m.id}: skill book ${d.itemId} chance ${d.chance} > 0.01 (baseline ~0.5%)`);
+        }
       }
     }
   });

@@ -227,10 +227,7 @@ export async function playerRoutes(
           state.activityQueue.push({ id: randomUUID(), actionId: body.actionId, ...(body.quantity ? { quantity: body.quantity } : {}) });
           // 仅真正空闲时才立刻开始：单人战斗/组队战斗/刷关中排队只入队等待，否则 mode 会被翻成
           // life_action 但战斗仍在继续，变成边打怪边制作的双进度状态。
-          const inSoloCombat = Boolean(
-            state.hpCombat &&
-              (!state.hpCombat.outcome || state.hpCombat.nextFightAt)
-          );
+          const inSoloCombat = Boolean(state.hpCombat);
           if (state.mode === 'idle' && !inSoloCombat && !inPartyCombat) startNextQueuedAction(state as EnhancedPlayerState, contentPack, now);
           return { ok: true as const };
         },

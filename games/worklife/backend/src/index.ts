@@ -12,7 +12,6 @@ import type { EnhancedContentPack } from "./types";
 import {
   authRoutes,
   playerRoutes,
-  skillsRoutes,
   enhancementRoutes,
   tradingRoutes,
   partyRoutes,
@@ -195,7 +194,6 @@ async function main() {
 
   // 注册功能路由
   await playerRoutes(app, storage, contentPack);
-  await skillsRoutes(app, storage, contentPack);
   await enhancementRoutes(app, storage, contentPack);
   await tradingRoutes(app, storage, contentPack);
   await partyRoutes(app, storage, contentPack);

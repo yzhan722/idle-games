@@ -83,12 +83,11 @@ export const PRESET_MARKET_SPECS: PresetMarketSpec[] = [
   { itemId: "potion_hp_t2", category: "consumable", targetQty: 100 },
   { itemId: "potion_mp_t1", category: "consumable", targetQty: 140 },
   { itemId: "potion_mp_t2", category: "consumable", targetQty: 100 },
-  { itemId: "potion_craft_focus", category: "consumable", targetQty: 90 },
   { itemId: "potion_iron_skin", category: "consumable", targetQty: 80 },
   { itemId: "potion_arcane_surge", category: "consumable", targetQty: 80 },
-  { itemId: "book_smash", category: "tool", targetQty: 25 },
-  { itemId: "book_minor_heal", category: "tool", targetQty: 25 },
-  { itemId: "book_brace", category: "tool", targetQty: 25 },
+  { itemId: "book_smash", category: "tool", targetQty: 10, priceMultiplier: 2.0 },
+  { itemId: "book_minor_heal", category: "tool", targetQty: 10, priceMultiplier: 2.0 },
+  { itemId: "book_brace", category: "tool", targetQty: 10, priceMultiplier: 2.0 },
   { itemId: "weapon_logging_axe_t1", category: "tool", targetQty: 20 },
   { itemId: "weapon_forge_hammer_t1", category: "tool", targetQty: 20 },
   { itemId: "weapon_hoe_t1", category: "tool", targetQty: 20 },
@@ -180,8 +179,8 @@ export function resolvePresetMarketBidListings(contentPack: EnhancedContentPack)
   const out: ResolvedPresetBidListing[] = [];
   for (const item of items) {
     const tier = Number(item.tier || 1);
-    // 预设收购单覆盖 T1–T6 的材料、消耗品、技能书与装备
-    if (tier > 6) continue;
+    // 预设收购单覆盖 T1–T6 的材料、消耗品、装备以及全阶技能书（T1–T7）
+    if (tier > 6 && item.type !== "book") continue;
     const price = computePresetBidPrice(item);
     const sellSpec = sellSpecMap.get(item.id);
     let targetQty = 40;

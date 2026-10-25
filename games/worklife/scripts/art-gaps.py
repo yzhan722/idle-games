@@ -86,8 +86,11 @@ def main() -> int:
 
     if "--gather" in flags:
         # The gather pages read levels from the pack but take the card id (= trees/<cardId> art key)
-        # from the local flavour tables in NewGameInterface.tsx; the row shape is fixed enough to regex.
+        # from the local flavour tables in gameConstants.ts / NewGameInterface.tsx; the row shape is fixed enough to regex.
         tsx = (ROOT / "frontend" / "src" / "components" / "NewGameInterface.tsx").read_text(encoding="utf-8")
+        constants_path = ROOT / "frontend" / "src" / "gameplay" / "gameConstants.ts"
+        if constants_path.exists():
+            tsx += "\n" + constants_path.read_text(encoding="utf-8")
         cards = re.findall(r"\{\s*id:\s*'([\w-]+)',\s*actionId:\s*'(\w+)',\s*name:\s*'([^']*)'", tsx)
         actions = {a["id"]: a for a in pack.get("actions", [])}
         gone = []

@@ -33,7 +33,7 @@ export async function combatHpRoutes(
   app.post("/combat/hp/start", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
-    const body = z.object({ monsterId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
+    const body = z.object({ monsterId: z.string().min(1), autoRepeat: z.boolean().optional(), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();
     const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
     if (activeParty?.currentActivity) {
@@ -52,6 +52,14 @@ export async function combatHpRoutes(
           if (state.enhanceRun && !state.enhanceRun.outcome) throw new PlayerCommandRejected("already_enhancing");
           state.lifeActionState = undefined;
           state.combatFarmState = undefined;
+          if (body.autoRepeat !== undefined) {
+            state.combatLoadout = {
+              food: state.combatLoadout?.food || [],
+              drink: state.combatLoadout?.drink || [],
+              ...(state.combatLoadout?.mp ? { mp: state.combatLoadout.mp } : {}),
+              autoRepeat: body.autoRepeat,
+            };
+          }
           try {
             const sameMonsterActiveRepeat =
               state.hpCombat &&

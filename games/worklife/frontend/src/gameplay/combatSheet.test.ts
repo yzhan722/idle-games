@@ -9,7 +9,7 @@ const items = [
   { id: "weapon_staff_t1", mag: 10 },
 ];
 
-const BASE = { hp: 50, atk: 5, def: 0, intervalMs: 3000, mp: 20, mpRegenPerTick: 1 };
+const BASE = { hp: 50, atk: 5, def: 0, intervalMs: 3000, mp: 20, mpRegenPerTick: 1, accuracyPct: 86, evasionPct: 6, critRatePct: 14, critDmgPct: 160 };
 
 describe("combat sheet from content pack", () => {
   it("matches unarmed level-1 woodcutter used by HP combat", () => {
@@ -34,6 +34,10 @@ describe("combat sheet from content pack", () => {
       intervalMs: Math.round(3000 / 1.25),
       mp: 115,
       mpRegenPerTick: 3,
+      accuracyPct: 94.8,
+      evasionPct: 8.6,
+      critRatePct: 23.1,
+      critDmgPct: 180,
     });
     assert.equal(abilitySlotCount(state), 3);
     // 0.1 × (11+20+26+9+max(16,1,1)) + 0.5 × 26 = 8.2 + 13 = 21.2 → 21
@@ -89,7 +93,7 @@ describe("combat sheet from content pack", () => {
       },
     ];
     const state = { combatLevel: 1, equipment: { main_hand: "weapon_wooden_sword", chest: "armor_wood_chest" } };
-    assert.deepEqual(combatSheetFromPack(state, items, sets), { ...BASE, atk: 15, def: 11 });
+    assert.deepEqual(combatSheetFromPack(state, items, sets), { ...BASE, atk: 15, def: 11, critDmgPct: 161 });
     assert.deepEqual(activeSetBonuses(state.equipment, sets), [
       { setId: "woodcutter_basic_set", name: "伐木工基础套装", pieces: 2, atk: 5, def: 3, description: "2件套：攻击+5，防御+3" },
     ]);

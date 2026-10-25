@@ -4,181 +4,30 @@ import { useGame } from "../contexts/GameContext";
 import { useAuth } from "../hooks/useAuth";
 import { chatWs } from "../services/websocket";
 import { T1Art, T1ItemIcon, characterArtId } from "./T1Art";
+import { MonsterSceneBackdrop } from "./MonsterSceneBackdrop";
 import { CombatPotionBar } from "./CombatPotionBar";
 import { AbilityBar } from "./AbilityBar";
 import { abilitySlotCount, combatSheetFromPack } from "../gameplay/combatSheet";
-import { previewAbilities } from "../gameplay/fightPreview";
+import { abilityCastXp, abilityEffectiveCooldownMs, previewAbilities } from "../gameplay/fightPreview";
 import { playGameSound } from "../gameplay/sound";
 import { useToast } from "./Toast";
 import type { AbilityDef, PartyState } from "../types/game";
-
-type PartyActivity = {
-  type: "combat" | "group_craft" | "raid";
-  stageId?: string;
-  startedAt: string;
-  endsAt?: string;
-  durationMinutes?: number;
-  raidBossId?: string;
-  raidBossName?: string;
-  bossKillsNeeded?: number;
-};
-
-type PartyMemberItem = {
-  userId: string;
-  role: string;
-  isOnline?: boolean;
-  isReady?: boolean;
-  isBot?: boolean;
-  title?: string;
-  classId?: string;
-  gender?: "male" | "female" | "animal";
-  combatLevel?: number;
-  joinedAt?: string;
-  displayName?: string;
-};
-
-type PartyPayload = {
-  id: string;
-  name?: string;
-  leaderId: string;
-  members: PartyMemberItem[];
-  allReady?: boolean;
-  currentActivity?: PartyActivity | null;
-  createdAt?: string;
-};
-
-type PartyListItem = {
-  id: string;
-  name?: string;
-  leaderId: string;
-  leaderName?: string;
-  memberCount: number;
-  hasActivity: boolean;
-  isBotParty?: boolean;
-  allBotsReady?: boolean;
-  recommendedStageId?: string;
-  createdAt: string;
-};
-
-type PartyInvite = { partyId: string; fromUserId: string; invitedAt: string };
-
-type StageBossDungeon = {
-  id: string;
-  name: string;
-  recommendedLevel: number;
-  boss: {
-    id: string;
-    name: string;
-    level: number;
-    hp: number;
-    atk: number;
-    def: number;
-    xp: number;
-    gold: number;
-    icon?: string;
-  };
-  minions: Array<{
-    id: string;
-    name: string;
-    level: number;
-    hp: number;
-    atk: number;
-    def: number;
-    xp: number;
-    gold: number;
-    icon?: string;
-  }>;
-};
-
-type AllyCombatUnit = {
-  userId: string;
-  name: string;
-  title?: string;
-  isSelf: boolean;
-  isBot: boolean;
-  role: string;
-  classId: string;
-  gender: "male" | "female" | "animal";
-  level: number;
-  hp: number;
-  maxHp: number;
-  atk: number;
-  def: number;
-  castMs: number;
-  intervalMs: number;
-  reviveRemainingMs: number;
-  reviveTotalMs: number;
-  hitShakeUntil: number;
-  attackAnimUntil: number;
-};
-
-const ALLY_REVIVE_MS = 60000;
-
-type EnemyCombatUnit = {
-  slotKey: string;
-  id: string;
-  name: string;
-  level: number;
-  isBoss: boolean;
-  hp: number;
-  maxHp: number;
-  atk: number;
-  def: number;
-  xp: number;
-  gold: number;
-  castMs: number;
-  intervalMs: number;
-  hitShakeUntil: number;
-  attackAnimUntil: number;
-};
-
-type DamageFloatItem = {
-  id: number;
-  unitKey: string;
-  value: number;
-  isCrit?: boolean;
-  isHeal?: boolean;
-  tag?: string;
-};
-
-const STAGE_ID_ALIASES: Record<string, string> = {
-  stage_1: "forest",
-  stage_2: "mine",
-  stage_3: "swamp",
-  stage_4: "snow",
-  stage_forest: "forest",
-  stage_mine: "mine",
-  stage_swamp: "swamp",
-  stage_snow: "snow",
-  stage_volcano: "volcano",
-};
-
-function normalizeStageId(raw?: string): string {
-  if (!raw) return "forest";
-  return STAGE_ID_ALIASES[raw] || raw;
-}
-
-const ITEM_ICON_FALLBACK: Record<string, string> = {
-  potion_hp_t1: "❤️",
-  potion_hp_t2: "❤️‍🔥",
-  potion_hp_t3: "💖",
-  potion_hp_t4: "👑",
-  potion_mp_t1: "💧",
-  potion_mp_t2: "🔷",
-  potion_mp_t3: "💠",
-  potion_mp_t4: "🌌",
-  potion_battle_fury: "🔥",
-  potion_iron_skin: "🛡️",
-  potion_arcane_surge: "✨",
-  potion_guardian_elixir: "⚔️",
-  potion_berserk: "⚡",
-  food_simple: "🍖",
-  drink_basic: "🍹",
-};
-
-function getItemIconFallback(itemId: string): string {
-  return ITEM_ICON_FALLBACK[itemId] || "📦";
-}
+import {
+  ALLY_REVIVE_MS,
+  getBossGuardCount,
+  getBossSignatureSkills,
+  getItemIconFallback,
+  getWaveMinionCount,
+  normalizeStageId,
+  type AllyCombatUnit,
+  type DamageFloatItem,
+  type EnemyCombatUnit,
+  type PartyInvite,
+  type PartyListItem,
+  type PartyPayload,
+  type StageBossDungeon,
+} from "../gameplay/partyRaidData";
+import { PartyLobbyView } from "./PartyLobbyView";
 
 export interface PartyCombatHeaderInfo {
   active: boolean;
@@ -247,6 +96,8 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
   const abilityCooldownsRef = useRef<Record<string, number>>({});
   const playerMpRef = useRef<number>(50);
   const selfGuardRef = useRef<{ until: number; mult: number }>({ until: 0, mult: 1 });
+  const selfTauntUntilRef = useRef<number>(0);
+  const teamAuraRef = useRef<{ until: number; atkPct: number; critPct: number }>({ until: 0, atkPct: 0, critPct: 0 });
 
   const clearTransitionTimers = useCallback(() => {
     for (const tid of transitionTimersRef.current) {
@@ -276,12 +127,12 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     playerMpRef.current = playerMp;
   }, [playerMp]);
 
+  const abilityCastsRef = useRef<Record<string, number>>({});
+
   const userId = user?.id as string | undefined;
   const partyState = playerState?.partyState as PartyState | undefined;
   const invites = ((playerState as any)?.partyInvites ?? []) as PartyInvite[];
   const isLeader = !!party && party.leaderId === userId;
-  const selfMember = party?.members.find((m) => m.userId === userId);
-  const selfReady = Boolean(selfMember?.isReady);
 
   const combatSheet = useMemo(
     () => (playerState ? combatSheetFromPack(playerState, contentPack?.items, contentPack?.equipmentSets) : { hp: 100, mp: 50, atk: 12, def: 4, intervalMs: 2200 }),
@@ -316,7 +167,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         recommendedLevel: Number(stg.recommendedPower || boss.level || 1),
         boss: {
           id: boss.id,
-          name: boss.name || boss.id,
+          name: String(boss.name || boss.id).replace(/\s*[(（]BOSS[)）]\s*$/i, ""),
           level: Number(boss.level || 10),
           hp: Number(boss.hp || 300),
           atk: Number(boss.atk || 20),
@@ -415,25 +266,29 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         active: true,
         partyId: party.id,
         stageId: activeDungeon.id,
-        title: `${activeDungeon.name} · 讨伐【${activeDungeon.boss.name}】`,
-        subtitle: `组队自动战斗 · 第 ${currentWave} 波${isBossWave ? " (BOSS)" : ""}`,
+        title: `${activeDungeon.name} · ${activeDungeon.boss.name}`,
+        subtitle: `第 ${currentWave} 波${isBossWave ? " · 首领战" : ""}`,
       });
     } else if (!party?.currentActivity) {
       onCombatStatusChange?.(null);
     }
   }, [partyLoaded, party?.id, party?.currentActivity, activeDungeon, currentWave, onCombatStatusChange]);
 
-  // Build wave enemies: Waves 1-9 spawn 3 simultaneous normal monsters; every 10th Wave spawns the Zone Boss!
+  // Build wave enemies: Waves 1-9 scale monster count dynamically with partySize (2-6 monsters);
+  // Every 10th Wave spawns the strengthened Zone Boss + dynamic Elite Guards when partySize >= 3!
   const buildWaveEnemies = useCallback((dungeon: StageBossDungeon, wave: number, partySize: number): EnemyCombatUnit[] => {
     const isBossWave = wave % 10 === 0;
     const cycleIndex = Math.floor((wave - 1) / 10);
-    const waveScale = 1 + cycleIndex * 0.35 + ((wave - 1) % 10) * 0.04;
-    const teamScale = 1 + Math.max(0, partySize - 1) * 0.22;
+    const waveScale = 1 + cycleIndex * 0.38 + ((wave - 1) % 10) * 0.045;
+    const teamScale = 1 + Math.max(0, partySize - 1) * 0.42;
+    const pool = dungeon.minions.length > 0 ? dungeon.minions : [dungeon.boss];
 
     if (isBossWave) {
       const b = dungeon.boss;
-      const bossHp = Math.max(120, Math.round(b.hp * waveScale * teamScale * 1.35));
-      return [
+      const bossHp = Math.max(420, Math.round(b.hp * waveScale * teamScale * 2.15));
+      const bossAtk = Math.max(18, Math.round(b.atk * (1.35 + cycleIndex * 0.28 + Math.max(0, partySize - 1) * 0.12)));
+      const bossDef = Math.max(5, Math.round(b.def * (1.2 + cycleIndex * 0.18)));
+      const units: EnemyCombatUnit[] = [
         {
           slotKey: `enemy-boss-${wave}`,
           id: b.id,
@@ -442,26 +297,57 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
           isBoss: true,
           hp: bossHp,
           maxHp: bossHp,
-          atk: Math.max(8, Math.round(b.atk * (1 + cycleIndex * 0.2))),
-          def: Math.max(2, Math.round(b.def * (1 + cycleIndex * 0.15))),
-          xp: Math.max(15, Math.round((b.xp || 36) * (1 + cycleIndex * 0.25))),
-          gold: Math.max(8, Math.round((b.gold || 20) * (1 + cycleIndex * 0.25))),
-          castMs: 400,
-          intervalMs: 2600,
+          atk: bossAtk,
+          def: bossDef,
+          xp: Math.max(25, Math.round((b.xp || 80) * (1 + cycleIndex * 0.3))),
+          gold: Math.max(15, Math.round((b.gold || 50) * (1 + cycleIndex * 0.3))),
+          castMs: 900,
+          intervalMs: 2300,
           hitShakeUntil: 0,
           attackAnimUntil: 0,
+          attackCount: 0,
+          nextSkillIdx: 0,
+          shieldUntil: 0,
+          enraged: false,
         },
       ];
+      const guardCount = getBossGuardCount(partySize);
+      for (let g = 0; g < guardCount; g++) {
+        const gm = pool[(pool.length - 1 - g + pool.length) % pool.length];
+        const guardHp = Math.max(120, Math.round(gm.hp * waveScale * (1.1 + partySize * 0.18)));
+        units.push({
+          slotKey: `enemy-guard-${wave}-${g}`,
+          id: gm.id,
+          name: `首领亲卫·${gm.name}`,
+          level: gm.level + cycleIndex * 2 + 1,
+          isBoss: false,
+          isEliteGuard: true,
+          hp: guardHp,
+          maxHp: guardHp,
+          atk: Math.max(8, Math.round(gm.atk * (1.1 + cycleIndex * 0.2))),
+          def: Math.max(3, Math.round(gm.def * (1.1 + cycleIndex * 0.15))),
+          xp: Math.max(10, Math.round((gm.xp || 16) * (1.2 + cycleIndex * 0.2))),
+          gold: Math.max(5, Math.round((gm.gold || 10) * (1.2 + cycleIndex * 0.2))),
+          castMs: 500 + g * 550,
+          intervalMs: 2400 + g * 220,
+          hitShakeUntil: 0,
+          attackAnimUntil: 0,
+          attackCount: 0,
+          nextSkillIdx: 0,
+          shieldUntil: 0,
+          enraged: false,
+        });
+      }
+      return units;
     }
 
-    const pool = dungeon.minions.length > 0 ? dungeon.minions : [dungeon.boss];
     const waveOffset = (wave - 1) % 10;
-    // Waves 1-9: simultaneously spawn 3 monsters per wave!
-    const count = 3;
+    // Waves 1-9: dynamically scale monster count with partySize (2 to 6 monsters)!
+    const count = getWaveMinionCount(partySize);
     const units: EnemyCombatUnit[] = [];
     for (let i = 0; i < count; i++) {
       const m = pool[(waveOffset + i) % pool.length];
-      const hp = Math.max(30, Math.round(m.hp * waveScale * (0.75 + partySize * 0.12)));
+      const hp = Math.max(40, Math.round(m.hp * waveScale * (0.85 + partySize * 0.16)));
       units.push({
         slotKey: `enemy-${wave}-${i}`,
         id: m.id,
@@ -470,14 +356,18 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         isBoss: false,
         hp,
         maxHp: hp,
-        atk: Math.max(4, Math.round(m.atk * (0.85 + cycleIndex * 0.15))),
-        def: Math.max(1, Math.round(m.def * (1 + cycleIndex * 0.1))),
+        atk: Math.max(5, Math.round(m.atk * (0.95 + cycleIndex * 0.18 + Math.max(0, partySize - 2) * 0.05))),
+        def: Math.max(1, Math.round(m.def * (1 + cycleIndex * 0.12))),
         xp: Math.max(5, Math.round((m.xp || 12) * (1 + cycleIndex * 0.2))),
         gold: Math.max(2, Math.round((m.gold || 6) * (1 + cycleIndex * 0.2))),
-        castMs: (i * 650) % 2400,
-        intervalMs: 2500 + i * 280,
+        castMs: (i * 480) % 2200,
+        intervalMs: 2400 + (i % 3) * 240,
         hitShakeUntil: 0,
         attackAnimUntil: 0,
+        attackCount: 0,
+        nextSkillIdx: 0,
+        shieldUntil: 0,
+        enraged: false,
       });
     }
     return units;
@@ -614,10 +504,11 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     setEnemies(initialEnemies);
     setPlayerMp(startMp);
     setRunStats(restoredStats);
+    const bossSkills = getBossSignatureSkills(activeDungeon.boss.id);
     setBattleLog([
-      `🚩 组队首领副本【${activeDungeon.name}】开启！我方 ${initialAllies.length} 人小队全员集结！`,
-      `⚔️ 规则：第 1~9 波每波同时迎战 3 只区域小怪，第 10 波迎战区域首领【${activeDungeon.boss.name}】！`,
-      `🌊 第 ${restoredWave} 波群怪来袭：${initialEnemies.map((e) => e.name).join("、")} 同时出战！`,
+      `🚩 组队首领副本【${activeDungeon.name}】开启！我方 ${initialAllies.length} 人小队集结，敌方随小队规模出动 ${initialEnemies.length} 只魔物！`,
+      `👹 首领【${activeDungeon.boss.name}】独门秘技：${bossSkills.map((s) => `《${s.name}》(${s.tag})`).join("、")}！`,
+      `🌊 第 ${restoredWave} 波来袭：${initialEnemies.map((e) => e.name).join("、")} 同时出战！`,
     ]);
     setWaveBanner(`第 ${restoredWave} 波`);
     const t = window.setTimeout(() => setWaveBanner(null), 1600);
@@ -657,6 +548,23 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     setAllies((prev) => {
       const fresh = buildAlliesFormation(party);
       if (prev.length === 0) return fresh;
+      if (fresh.length > prev.length && activeDungeon) {
+        // Dynamically scale live wave enemies when player recruits more teammates mid-battle!
+        setEnemies((prevEnemies) => {
+          const isBossW = currentWave % 10 === 0;
+          const desiredTotal = isBossW ? 1 + getBossGuardCount(fresh.length) : getWaveMinionCount(fresh.length);
+          if (prevEnemies.length >= desiredTotal) return prevEnemies;
+          const templateWave = buildWaveEnemies(activeDungeon, currentWave, fresh.length);
+          const extra = templateWave.slice(prevEnemies.length).map((u, idx) => ({
+            ...u,
+            slotKey: `${u.slotKey}-reinforce-${Date.now()}-${idx}`,
+          }));
+          if (extra.length > 0) {
+            appendBattleLog(`🌊 小队人数扩编至 ${fresh.length} 人，敌方增援【${extra.map((e) => e.name).join("、")}】加入战场！`);
+          }
+          return [...prevEnemies, ...extra];
+        });
+      }
       return fresh.map((f) => {
         const existing = prev.find((p) => p.userId === f.userId);
         if (!existing) return f;
@@ -672,7 +580,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         };
       });
     });
-  }, [party, buildAlliesFormation, playerState, stopAction, onCombatStatusChange]);
+  }, [party, buildAlliesFormation, buildWaveEnemies, activeDungeon, currentWave, appendBattleLog, playerState, stopAction, onCombatStatusChange]);
 
   // Advance to next wave when all enemies in current wave are defeated
   const handleWaveCleared = useCallback(
@@ -683,10 +591,13 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
       playGameSound("victory");
 
       try {
-        const res: any = await apiClient.partyWaveClear(party.id, activeDungeon.id, clearedWave);
+        const waveCasts = { ...abilityCastsRef.current };
+        abilityCastsRef.current = {};
+        const res: any = await apiClient.partyWaveClear(party.id, activeDungeon.id, clearedWave, waveCasts);
         const xpGained = Number(res?.xpGained || (isBossWave ? activeDungeon.boss.xp * 2 : 36));
         const goldGained = Number(res?.goldGained || (isBossWave ? activeDungeon.boss.gold * 2 : 20));
         const drops: Array<{ itemId: string; name: string; qty: number }> = Array.isArray(res?.drops) ? res.drops : [];
+        const abilityLevelUps: Array<{ id: string; name: string; level: number }> = Array.isArray(res?.abilityLevelUps) ? res.abilityLevelUps : [];
 
         setRunStats((prev) => {
           const nextLoot = { ...prev.loot };
@@ -705,8 +616,11 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         appendBattleLog(
           isBossWave
             ? `🏆 【第 ${clearedWave} 波 · 首领击破】全队合力斩杀 ${activeDungeon.boss.name}！获得 +${xpGained} 经验、+${goldGained} 金币${dropText}！`
-            : `✨ 【第 ${clearedWave} 波清剿完成】击溃 3 只群怪！获得 +${xpGained} 经验、+${goldGained} 金币${dropText}`
+            : `✨ 【第 ${clearedWave} 波清剿完成】击溃全部魔物！获得 +${xpGained} 经验、+${goldGained} 金币${dropText}`
         );
+        for (const lu of abilityLevelUps) {
+          appendBattleLog(`🎉 【技能升级】「${lu.name}」熟练度突破，升至 Lv.${lu.level}！`);
+        }
         void refreshPlayerState();
       } catch {
         // Fallback local log if network hiccups
@@ -851,52 +765,138 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   const trig = slot.trigger || { type: "always" };
                   if (trig.type === "self_hp_below" && (ally.hp / Math.max(1, ally.maxHp)) * 100 > trig.pct) continue;
                   if (
+                    trig.type === "ally_hp_below" &&
+                    !nextAllies.some((a) => a.hp > 0 && (a.hp / Math.max(1, a.maxHp)) * 100 <= trig.pct)
+                  ) {
+                    continue;
+                  }
+                  if (trig.type === "enemies_at_least" && livingEnemiesNow.length < Math.max(1, trig.pct || 1)) {
+                    continue;
+                  }
+                  if (
                     trig.type === "enemy_hp_below" &&
                     !livingEnemiesNow.some((e) => (e.hp / Math.max(1, e.maxHp)) * 100 <= trig.pct)
                   ) {
                     continue;
                   }
-                  if (trig.type === "enemy_guard" && !livingEnemiesNow.some((e) => e.isBoss)) {
+                  if (trig.type === "enemy_guard" && !livingEnemiesNow.some((e) => e.isBoss || now < e.shieldUntil)) {
                     continue;
                   }
                   const levelMult = 1 + Math.max(0, (slot.level || 1) - 1) * (def.levelStep ?? 0.05);
-                  const cdMs = Math.max(2000, Number(def.cooldownMs || 8000));
-                  if (def.healPct && def.healPct > 0) {
-                    const wounded = nextAllies.some((a) => a.hp > 0 && a.hp <= a.maxHp * 0.75);
-                    if (!wounded) continue;
+                  const cdMs = Math.max(1500, abilityEffectiveCooldownMs(def, slot.level || 1));
+                  const castXp = abilityCastXp(def, activeDungeon?.boss.level || 1);
+                  if (def.healPct && def.healPct > 0 && !def.damageMult) {
+                    const wounded = nextAllies.some((a) => a.hp > 0 && a.hp <= a.maxHp * 0.85);
+                    if (!wounded && !def.guardMult && !def.auraAtkPct) continue;
                     playerMpRef.current = Math.max(0, playerMpRef.current - mpCost);
+                    if (def.mpRestore) {
+                      playerMpRef.current = Math.min(combatSheet.mp || 50, playerMpRef.current + Math.round(def.mpRestore * levelMult));
+                    }
                     setPlayerMp(playerMpRef.current);
                     abilityCooldownsRef.current = { ...abilityCooldownsRef.current, [def.id]: now + cdMs };
                     setAbilityCooldowns(abilityCooldownsRef.current);
+                    abilityCastsRef.current[def.id] = (abilityCastsRef.current[def.id] || 0) + 1;
+                    if (def.auraAtkPct || def.auraCritPct) {
+                      teamAuraRef.current = {
+                        until: now + Number(def.auraDurationMs || 10000),
+                        atkPct: Math.round((def.auraAtkPct || 20) * levelMult),
+                        critPct: Math.round((def.auraCritPct || 15) * levelMult),
+                      };
+                    }
+                    if (def.guardMult) {
+                      const reduce = Math.min(0.8, (1 - def.guardMult) * levelMult);
+                      selfGuardRef.current = {
+                        until: now + Number(def.durationMs || 6000),
+                        mult: Math.max(0.2, 1 - reduce),
+                      };
+                      if (def.tauntDurationMs) {
+                        selfTauntUntilRef.current = now + Number(def.tauntDurationMs);
+                      }
+                    }
                     for (const a of nextAllies) {
                       if (a.hp <= 0) continue;
                       const healAmt = Math.max(12, Math.round(a.maxHp * def.healPct * levelMult));
                       a.hp = Math.min(a.maxHp, a.hp + healAmt);
                       pushFloat(`ally-${a.userId}`, healAmt, { isHeal: true, tag: def.name });
                     }
-                    appendBattleLog(`💚 自动释放【${def.name}】，为全体存活队友恢复生命值！`);
+                    appendBattleLog(`💚 自动释放【${def.name} Lv.${slot.level || 1}】，为全体存活队友恢复生命值（+${castXp} 技能经验）！`);
                     break;
                   } else if (def.damageMult && def.damageMult > 0) {
                     playerMpRef.current = Math.max(0, playerMpRef.current - mpCost);
+                    if (def.mpRestore) {
+                      playerMpRef.current = Math.min(combatSheet.mp || 50, playerMpRef.current + Math.round(def.mpRestore * levelMult));
+                    }
                     setPlayerMp(playerMpRef.current);
                     abilityCooldownsRef.current = { ...abilityCooldownsRef.current, [def.id]: now + cdMs };
                     setAbilityCooldowns(abilityCooldownsRef.current);
-                    const target = livingEnemiesNow[Math.floor(Math.random() * livingEnemiesNow.length)];
-                    const skillDmg = Math.max(6, Math.round(ally.atk * def.damageMult * levelMult - target.def * 0.2));
-                    target.hp = Math.max(0, target.hp - skillDmg);
-                    target.hitShakeUntil = now + 300;
-                    pushFloat(target.slotKey, skillDmg, { isCrit: true, tag: def.name });
-                    if (target.hp === 0) {
-                      setRunStats((prev) => ({
-                        ...prev,
-                        totalKills: prev.totalKills + 1,
-                        bossKills: prev.bossKills + (target.isBoss ? 1 : 0),
-                        xp: prev.xp + target.xp,
-                        gold: prev.gold + target.gold,
-                      }));
-                      appendBattleLog(`🪓 自动释放【${def.name}】击倒了 ${target.name}（-${skillDmg}）！`);
+                    abilityCastsRef.current[def.id] = (abilityCastsRef.current[def.id] || 0) + 1;
+                    if (def.auraAtkPct || def.auraCritPct) {
+                      teamAuraRef.current = {
+                        until: now + Number(def.auraDurationMs || 10000),
+                        atkPct: Math.round((def.auraAtkPct || 20) * levelMult),
+                        critPct: Math.round((def.auraCritPct || 15) * levelMult),
+                      };
+                    }
+                    if (def.guardMult) {
+                      const reduce = Math.min(0.8, (1 - def.guardMult) * levelMult);
+                      selfGuardRef.current = {
+                        until: now + Number(def.durationMs || 6000),
+                        mult: Math.max(0.2, 1 - reduce),
+                      };
+                    }
+                    if (def.healPct && def.healPct > 0) {
+                      for (const a of nextAllies) {
+                        if (a.hp <= 0 || (!def.isPartyHeal && !a.isSelf)) continue;
+                        const healAmt = Math.max(10, Math.round(a.maxHp * def.healPct * levelMult));
+                        a.hp = Math.min(a.maxHp, a.hp + healAmt);
+                        pushFloat(`ally-${a.userId}`, healAmt, { isHeal: true, tag: def.name });
+                      }
+                    }
+                    const maxTargets = Math.max(1, Number(def.targetCount || 1));
+                    const hitTargets =
+                      maxTargets >= livingEnemiesNow.length
+                        ? [...livingEnemiesNow]
+                        : [...livingEnemiesNow].sort(() => Math.random() - 0.5).slice(0, maxTargets);
+                    const auraAtkMult = now < teamAuraRef.current.until ? 1 + teamAuraRef.current.atkPct / 100 : 1;
+                    let totalSkillDmg = 0;
+                    const killedNames: string[] = [];
+                    for (const target of hitTargets) {
+                      const shieldMult = now < target.shieldUntil && !def.breaksGuard ? 0.55 : 1;
+                      if (now < target.shieldUntil && def.breaksGuard) {
+                        target.shieldUntil = 0;
+                        appendBattleLog(`💥 【${ally.name}】施展【${def.name} Lv.${slot.level || 1}】直接震碎了 ${target.name} 的护盾壁障！`);
+                      }
+                      const skillDmg = Math.max(
+                        6,
+                        Math.round((ally.atk * auraAtkMult * def.damageMult * levelMult - target.def * 0.2) * shieldMult)
+                      );
+                      target.hp = Math.max(0, target.hp - skillDmg);
+                      target.hitShakeUntil = now + 300;
+                      totalSkillDmg += skillDmg;
+                      pushFloat(target.slotKey, skillDmg, { isCrit: true, tag: def.name });
+                      if (target.hp === 0) {
+                        killedNames.push(target.name);
+                        setRunStats((prev) => ({
+                          ...prev,
+                          totalKills: prev.totalKills + 1,
+                          bossKills: prev.bossKills + (target.isBoss ? 1 : 0),
+                          xp: prev.xp + target.xp,
+                          gold: prev.gold + target.gold,
+                        }));
+                      }
+                    }
+                    const auraNote =
+                      def.auraAtkPct || def.auraCritPct
+                        ? `，并激活全队光环（攻击+${teamAuraRef.current.atkPct}%·暴击+${teamAuraRef.current.critPct}%）`
+                        : "";
+                    if (hitTargets.length > 1) {
+                      appendBattleLog(
+                        `☄️ 自动释放群攻【${def.name} Lv.${slot.level || 1}】横扫 ${hitTargets.length} 名敌人，合计造成 ${totalSkillDmg} 点伤害${auraNote}${killedNames.length ? `（击倒 ${killedNames.join("、")}）` : ""}（+${castXp} 技能经验）！`
+                      );
+                    } else if (killedNames.length > 0) {
+                      appendBattleLog(`🪓 自动释放【${def.name} Lv.${slot.level || 1}】击倒了 ${killedNames[0]}（-${totalSkillDmg}${auraNote} · +${castXp} 技能经验）！`);
                     } else {
-                      appendBattleLog(`🪓 自动释放【${def.name}】命中 ${target.name}，造成 ${skillDmg} 点伤害！`);
+                      appendBattleLog(`🪓 自动释放【${def.name} Lv.${slot.level || 1}】命中 ${hitTargets[0].name}，造成 ${totalSkillDmg} 点伤害${auraNote}（+${castXp} 技能经验）！`);
                     }
                     break;
                   } else if (def.guardMult) {
@@ -904,12 +904,20 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     setPlayerMp(playerMpRef.current);
                     abilityCooldownsRef.current = { ...abilityCooldownsRef.current, [def.id]: now + cdMs };
                     setAbilityCooldowns(abilityCooldownsRef.current);
+                    abilityCastsRef.current[def.id] = (abilityCastsRef.current[def.id] || 0) + 1;
                     const reduce = Math.min(0.8, (1 - def.guardMult) * levelMult);
                     selfGuardRef.current = {
                       until: now + Number(def.durationMs || 6000),
                       mult: Math.max(0.2, 1 - reduce),
                     };
-                    appendBattleLog(`🛡️ 自动释放【${def.name}】，提升自身防护！`);
+                    if (def.tauntDurationMs) {
+                      selfTauntUntilRef.current = now + Number(def.tauntDurationMs);
+                      appendBattleLog(
+                        `🎯 自动释放【${def.name} Lv.${slot.level || 1}】，减伤 ${Math.round(reduce * 100)}% 并强制吸引敌方绝大部分仇恨保护队友（+${castXp} 技能经验）！`
+                      );
+                    } else {
+                      appendBattleLog(`🛡️ 自动释放【${def.name} Lv.${slot.level || 1}】，提升自身防护与前排仇恨（+${castXp} 技能经验）！`);
+                    }
                     break;
                   }
                 }
@@ -924,8 +932,17 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
               const livingTargets = nextEnemies.filter((e) => e.hp > 0);
               if (livingTargets.length > 0) {
                 const preferred = livingTargets[Math.floor(Math.random() * livingTargets.length)];
-                const isCrit = Math.random() < (ally.isSelf ? 0.22 : 0.15);
-                const rawDmg = Math.max(4, Math.round((ally.atk * (0.92 + Math.random() * 0.22) - preferred.def * 0.25) * (isCrit ? 1.65 : 1)));
+                const auraActive = now < teamAuraRef.current.until;
+                const auraAtkMult = auraActive ? 1 + teamAuraRef.current.atkPct / 100 : 1;
+                const auraCritBonus = auraActive ? teamAuraRef.current.critPct / 100 : 0;
+                const baseCritChance = ally.isSelf ? (combatSheet.critRatePct ?? 18) / 100 : 0.16;
+                const critMult = ally.isSelf ? (combatSheet.critDmgPct ?? 165) / 100 : 1.65;
+                const isCrit = Math.random() < Math.min(0.85, baseCritChance + auraCritBonus);
+                const shieldMult = now < preferred.shieldUntil ? 0.55 : 1;
+                const rawDmg = Math.max(
+                  4,
+                  Math.round((ally.atk * auraAtkMult * (0.92 + Math.random() * 0.22) - preferred.def * 0.25) * (isCrit ? critMult : 1) * shieldMult)
+                );
                 preferred.hp = Math.max(0, preferred.hp - rawDmg);
                 preferred.hitShakeUntil = now + 260;
 
@@ -958,49 +975,229 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
             }
           }
 
-          // 2. Advance each living Enemy's cast bar & attack a random living Ally
+          // 2. Advance each living Enemy's cast bar & execute Boss Signature Skills / AOE / Attacks
           for (let j = 0; j < nextEnemies.length; j++) {
             const enemy = nextEnemies[j];
             if (enemy.hp <= 0) {
               enemy.castMs = 0;
               continue;
             }
+            // Auto-enrage Boss below 45% HP
+            if (enemy.isBoss && !enemy.enraged && enemy.hp <= enemy.maxHp * 0.45) {
+              enemy.enraged = true;
+              enemy.intervalMs = Math.max(1350, Math.round(enemy.intervalMs * 0.72));
+              appendBattleLog(`🔥 【狂暴觉醒】${enemy.name} 生命降至 45% 以下，进入狂暴状态，攻速与秘技频率大幅飙升！`);
+            }
             enemy.castMs += TICK_MS;
             if (enemy.castMs >= enemy.intervalMs) {
               enemy.castMs = enemy.castMs % enemy.intervalMs;
-              enemy.attackAnimUntil = now + 260;
+              enemy.attackAnimUntil = now + 320;
+              enemy.attackCount = (enemy.attackCount || 0) + 1;
 
               const livingAllies = nextAllies.filter((a) => a.hp > 0);
               if (livingAllies.length > 0) {
-                const targetAlly = livingAllies[Math.floor(Math.random() * livingAllies.length)];
-                const baseEnemyDmg = Math.max(2, Math.round(enemy.atk * (0.85 + Math.random() * 0.25) - targetAlly.def * 0.45));
-                const guardMult = targetAlly.isSelf && now < selfGuardRef.current.until ? selfGuardRef.current.mult : 1;
-                const rawEnemyDmg = Math.max(1, Math.round(baseEnemyDmg * guardMult));
-                targetAlly.hp = Math.max(0, targetAlly.hp - rawEnemyDmg);
-                targetAlly.hitShakeUntil = now + 240;
+                // MWI Threat / Aggro weighting: Tanks & players with active Taunt/Brace draw the majority of enemy attacks!
+                const getAllyThreatWeight = (a: AllyCombatUnit): number => {
+                  let w = 100;
+                  if (a.classId === "blacksmith" || a.role === "tank" || String(a.title || "").includes("铁卫") || String(a.title || "").includes("盾")) {
+                    w += 160;
+                  }
+                  if (a.isSelf && now < selfTauntUntilRef.current) {
+                    w += 480;
+                  } else if (a.isSelf && now < selfGuardRef.current.until) {
+                    w += 220;
+                  }
+                  return w;
+                };
+                const pickThreatWeightedAlly = (pool: AllyCombatUnit[]): AllyCombatUnit => {
+                  const totalW = pool.reduce((sum, a) => sum + getAllyThreatWeight(a), 0);
+                  let r = Math.random() * Math.max(1, totalW);
+                  for (const a of pool) {
+                    r -= getAllyThreatWeight(a);
+                    if (r <= 0) return a;
+                  }
+                  return pool[pool.length - 1];
+                };
 
-                pushFloat(`ally-${targetAlly.userId}`, rawEnemyDmg, {
-                  isCrit: enemy.isBoss && Math.random() < 0.25,
-                });
+                const applyHitToAlly = (
+                  targetAlly: AllyCombatUnit,
+                  dmg: number,
+                  opts?: { skillName?: string; isCrit?: boolean; castPushbackPct?: number; canDodge?: boolean }
+                ): number => {
+                  if (opts?.canDodge) {
+                    const evaPct = targetAlly.isSelf ? (combatSheet.evasionPct ?? 8) : 9;
+                    if (Math.random() * 100 < evaPct) {
+                      pushFloat(`ally-${targetAlly.userId}`, 0, {
+                        isHeal: true,
+                        tag: "💨闪避",
+                      });
+                      if (targetAlly.isSelf || enemy.isBoss) {
+                        appendBattleLog(`💨 【${targetAlly.name}】灵巧闪避了 ${enemy.name} 的攻击！`);
+                      }
+                      return 0;
+                    }
+                  }
+                  const guardMult = targetAlly.isSelf && now < selfGuardRef.current.until ? selfGuardRef.current.mult : 1;
+                  const finalDmg = Math.max(2, Math.round(dmg * guardMult));
+                  targetAlly.hp = Math.max(0, targetAlly.hp - finalDmg);
+                  targetAlly.hitShakeUntil = now + 280;
+                  if (opts?.castPushbackPct && targetAlly.hp > 0) {
+                    targetAlly.castMs = Math.max(0, Math.round(targetAlly.castMs - targetAlly.intervalMs * opts.castPushbackPct));
+                  }
+                  pushFloat(`ally-${targetAlly.userId}`, finalDmg, {
+                    isCrit: opts?.isCrit,
+                    tag: opts?.skillName,
+                  });
+                  if (targetAlly.hp <= 0) {
+                    targetAlly.castMs = 0;
+                    const totalRevive = targetAlly.reviveTotalMs || ALLY_REVIVE_MS;
+                    targetAlly.reviveRemainingMs = totalRevive;
+                    setRunStats((prev) => ({
+                      ...prev,
+                      deaths: prev.deaths + 1,
+                    }));
+                    const survivorsLeft = nextAllies.some((a) => a.hp > 0);
+                    appendBattleLog(
+                      survivorsLeft
+                        ? `💀 ${enemy.name}${opts?.skillName ? `【${opts.skillName}】` : ""}重创【${targetAlly.name}】（-${finalDmg}）！【${targetAlly.name}】进入 ${(totalRevive / 1000).toFixed(0)} 秒复活倒计时...`
+                        : `💀 ${enemy.name}${opts?.skillName ? `【${opts.skillName}】` : ""}击倒了最后一名队员【${targetAlly.name}】（-${finalDmg}）！`
+                    );
+                  }
+                  return finalDmg;
+                };
 
-                if (targetAlly.hp <= 0) {
-                  targetAlly.castMs = 0;
-                  const totalRevive = targetAlly.reviveTotalMs || ALLY_REVIVE_MS;
-                  targetAlly.reviveRemainingMs = totalRevive;
-                  setRunStats((prev) => ({
-                    ...prev,
-                    deaths: prev.deaths + 1,
-                  }));
-                  const survivorsLeft = nextAllies.some((a) => a.hp > 0);
+                // BOSS SIGNATURE SKILL ROTATION: Unleashes a unique signature skill on 1st attack and every 2nd attack!
+                if (enemy.isBoss && enemy.attackCount % 2 === 1) {
+                  const skills = getBossSignatureSkills(enemy.id);
+                  const skill = skills[enemy.nextSkillIdx % skills.length];
+                  enemy.nextSkillIdx = (enemy.nextSkillIdx + 1) % skills.length;
+
+                  if (skill.kind === "aoe") {
+                    // Full-Party AOE Ultimate: hits EVERY living party member simultaneously!
+                    let totalAoeDmg = 0;
+                    for (const allyUnit of livingAllies) {
+                      const rawSkillDmg =
+                        enemy.atk * skill.dmgMult * (enemy.enraged ? 1.18 : 1) +
+                        allyUnit.maxHp * skill.maxHpPct -
+                        allyUnit.def * 0.25;
+                      totalAoeDmg += applyHitToAlly(allyUnit, rawSkillDmg, {
+                        skillName: skill.name,
+                        isCrit: true,
+                        castPushbackPct: skill.castPushbackPct,
+                      });
+                    }
+                    if (skill.mpDrainPct && skill.mpDrainPct > 0) {
+                      setPlayerMp((mp) => {
+                        const drained = Math.max(0, Math.round(mp * (1 - skill.mpDrainPct!)));
+                        playerMpRef.current = drained;
+                        return drained;
+                      });
+                    }
+                    setWaveBanner(`💥 ${enemy.name} 施展全屏秘技：《${skill.name}》！`);
+                    scheduleTransitionTimeout(() => setWaveBanner(null), 1600);
+                    appendBattleLog(
+                      `🌋 【首领全屏秘技】${enemy.name} 释放《${skill.name}》（${skill.tag}），横扫我方全体 ${livingAllies.length} 名队员，合计造成 ${totalAoeDmg} 点毁灭伤害！`
+                    );
+                  } else if (skill.kind === "cleave") {
+                    // Multi-Target Cleave + Lifesteal Signature Skill
+                    const shuffled = [...livingAllies].sort(() => Math.random() - 0.5);
+                    const targets = shuffled.slice(0, Math.min(livingAllies.length, skill.targetCount || 3));
+                    let totalCleaveDmg = 0;
+                    for (const allyUnit of targets) {
+                      const rawSkillDmg =
+                        enemy.atk * skill.dmgMult * (enemy.enraged ? 1.15 : 1) +
+                        allyUnit.maxHp * skill.maxHpPct -
+                        allyUnit.def * 0.3;
+                      totalCleaveDmg += applyHitToAlly(allyUnit, rawSkillDmg, {
+                        skillName: skill.name,
+                        isCrit: true,
+                      });
+                    }
+                    let healLog = "";
+                    if (skill.lifestealPct && skill.lifestealPct > 0 && enemy.hp > 0) {
+                      const healVal = Math.max(25, Math.round(totalCleaveDmg * skill.lifestealPct));
+                      enemy.hp = Math.min(enemy.maxHp, enemy.hp + healVal);
+                      pushFloat(enemy.slotKey, healVal, { isHeal: true, tag: skill.name });
+                      healLog = `，并汲取 ${healVal} 点生命值`;
+                    }
+                    appendBattleLog(
+                      `⚡ 【首领独门秘技】${enemy.name} 施展《${skill.name}》，同时重创 ${targets.map((t) => t.name).join("、")}（合计 -${totalCleaveDmg}${healLog}）！`
+                    );
+                  } else {
+                    // Tactical Shockwave AOE + Boss Shield + Enrage + Elite Guard Summon
+                    for (const allyUnit of livingAllies) {
+                      const rawSkillDmg =
+                        enemy.atk * skill.dmgMult + allyUnit.maxHp * skill.maxHpPct - allyUnit.def * 0.3;
+                      applyHitToAlly(allyUnit, rawSkillDmg, {
+                        skillName: skill.name,
+                        isCrit: false,
+                        castPushbackPct: skill.castPushbackPct,
+                      });
+                    }
+                    if (skill.shieldMs) {
+                      enemy.shieldUntil = now + skill.shieldMs;
+                    }
+                    if (skill.enrage && !enemy.enraged) {
+                      enemy.enraged = true;
+                      enemy.intervalMs = Math.max(1400, Math.round(enemy.intervalMs * 0.78));
+                    }
+                    const aliveEnemyCount = nextEnemies.filter((e) => e.hp > 0).length;
+                    let summonedName = "";
+                    if (skill.summonGuard && aliveEnemyCount < Math.min(4, Math.max(2, Math.ceil(nextAllies.length / 2) + 1)) && activeDungeon) {
+                      const pool = activeDungeon.minions.length > 0 ? activeDungeon.minions : [activeDungeon.boss];
+                      const gm = pool[enemy.attackCount % pool.length];
+                      const guardHp = Math.max(120, Math.round(enemy.maxHp * 0.24));
+                      summonedName = `首领亲卫·${gm.name}`;
+                      nextEnemies.push({
+                        slotKey: `enemy-summon-${currentWave}-${now}-${enemy.attackCount}`,
+                        id: gm.id,
+                        name: summonedName,
+                        level: Math.max(1, enemy.level - 1),
+                        isBoss: false,
+                        isEliteGuard: true,
+                        hp: guardHp,
+                        maxHp: guardHp,
+                        atk: Math.max(8, Math.round(enemy.atk * 0.58)),
+                        def: Math.max(2, Math.round(enemy.def * 0.65)),
+                        xp: Math.max(10, Math.round(gm.xp || 15)),
+                        gold: Math.max(6, Math.round(gm.gold || 10)),
+                        castMs: 400,
+                        intervalMs: 2300,
+                        hitShakeUntil: 0,
+                        attackAnimUntil: 0,
+                        attackCount: 0,
+                        nextSkillIdx: 0,
+                        shieldUntil: 0,
+                        enraged: false,
+                      });
+                    }
+                    appendBattleLog(
+                      `🛡️ 【首领秘技·${skill.tag}】${enemy.name} 施展《${skill.name}》震击全队${skill.shieldMs ? "，展开护盾减免 45% 伤害" : ""}${summonedName ? `，并召唤【${summonedName}】助战` : ""}！`
+                    );
+                  }
+                } else if (!enemy.isBoss && (enemy.isEliteGuard || nextAllies.length >= 4) && enemy.attackCount % 3 === 0 && livingAllies.length >= 2) {
+                  // Elite guard or pack monster cleave in larger parties
+                  const shuffled = [...livingAllies].sort(() => Math.random() - 0.5);
+                  const cleaveTargets = shuffled.slice(0, 2);
+                  for (const allyUnit of cleaveTargets) {
+                    const dmg = Math.max(2, Math.round(enemy.atk * 1.15 - allyUnit.def * 0.4));
+                    applyHitToAlly(allyUnit, dmg, { skillName: "狂暴顺劈", isCrit: true });
+                  }
                   appendBattleLog(
-                    survivorsLeft
-                      ? `💀 ${enemy.name} 重创【${targetAlly.name}】（-${rawEnemyDmg}）！尚有存活队友，【${targetAlly.name}】进入 ${(totalRevive / 1000).toFixed(0)} 秒复活倒计时...`
-                      : `💀 ${enemy.name} 击倒了最后一名队员【${targetAlly.name}】（-${rawEnemyDmg}）！`
+                    `👾 ${enemy.name} 发动【狂暴顺劈】，同时斩击 ${cleaveTargets.map((t) => t.name).join("、")}！`
                   );
-                } else if (enemy.isBoss || targetAlly.isSelf) {
-                  appendBattleLog(
-                    `${enemy.isBoss ? "👹" : "👾"} ${enemy.name} 攻击【${targetAlly.name}】，造成 ${rawEnemyDmg} 点伤害`
-                  );
+                } else {
+                  const targetAlly = pickThreatWeightedAlly(livingAllies);
+                  const baseEnemyDmg = Math.max(2, Math.round(enemy.atk * (0.9 + Math.random() * 0.25) - targetAlly.def * 0.42));
+                  const dealt = applyHitToAlly(targetAlly, baseEnemyDmg, {
+                    isCrit: enemy.isBoss && Math.random() < 0.3,
+                    canDodge: true,
+                  });
+                  if (dealt > 0 && targetAlly.hp > 0 && (enemy.isBoss || targetAlly.isSelf)) {
+                    appendBattleLog(
+                      `${enemy.isBoss ? "👹" : "👾"} ${enemy.name} 攻击【${targetAlly.name}】，造成 ${dealt} 点伤害`
+                    );
+                  }
                 }
               }
             }
@@ -1096,15 +1293,14 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
       {party?.currentActivity && activeDungeon ? (
         <div className="battle-full-screen party-multi-battle-screen">
           <div className="battle-status-panel-center party-status-panel-center">
-            {/* Top Header: Dungeon Title + 10-Wave Progress Bar + Team Controls */}
+            {/* Top Header: Dungeon Title + Wave Pill + Team Controls */}
             <div className="battle-header-bar party-battle-header">
             <div className="party-battle-title-block">
-              <span className="party-dungeon-badge">👥 组队首领副本</span>
               <h3 className="battle-title">
-                {activeDungeon.name} · 讨伐【{activeDungeon.boss.name}】
+                {activeDungeon.name} · {activeDungeon.boss.name}
               </h3>
               <span className={`party-wave-pill ${isBossWaveNow ? "is-boss-wave" : ""}`}>
-                {isBossWaveNow ? `🔥 第 ${currentWave} 波 · BOSS` : `第 ${currentWave} 波`}
+                {isBossWaveNow ? `🔥 第 ${currentWave} 波 · 首领` : `第 ${currentWave} 波`}
               </span>
             </div>
 
@@ -1204,10 +1400,19 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                         <span className="entity-level">Lv.{ally.level}</span>
                       </div>
                       <div className="party-unit-role-tag">
-                        {isDead ? `${Math.ceil(remRevive / 1000)}秒后复活` : ally.title}
+                        {ally.title}
+                        {ally.isSelf && nowTs < selfTauntUntilRef.current
+                          ? " · 🎯嘲讽主坦"
+                          : ally.isSelf && nowTs < selfGuardRef.current.until
+                          ? " · 🛡️坚守减伤"
+                          : ally.classId === "blacksmith" || ally.role === "tank"
+                          ? " · 🛡️前排高仇恨"
+                          : ""}
+                        {nowTs < teamAuraRef.current.until ? " · 🚩战神光环" : ""}
                       </div>
 
                       <div className={`entity-avatar party-unit-avatar${shaking ? " avatar-shake" : ""}`}>
+                        <MonsterSceneBackdrop monsterId={ally.classId} mapId={activeDungeon.id} variant="card" />
                         <T1Art kind="character" id={characterArtId(ally.classId, ally.gender)} alt={ally.name} />
                       </div>
 
@@ -1218,7 +1423,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                             className={`damage-float ${f.isHeal ? "damage-heal" : "damage-taken"}${f.isCrit ? " crit" : ""}`}
                           >
                             {f.tag ? `${f.tag} ` : ""}
-                            {f.isHeal ? `+${f.value}` : `-${f.value}`}
+                            {f.value === 0 ? "" : f.isHeal ? `+${f.value}` : `-${f.value}`}
                           </span>
                         ))}
                       </div>
@@ -1297,17 +1502,14 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
             {/* CENTER VS EMBLEM */}
             <div className="battle-vs-center party-vs-column">
               <div className="vs-text">VS</div>
-              <div className="turn-indicator">
-                {isBossWaveNow ? `🔥 第 ${currentWave} 波` : `第 ${currentWave} 波`}
-              </div>
               <div className="party-vs-sub">
                 {allies.filter((a) => a.hp > 0).length} 对 {enemies.filter((e) => e.hp > 0).length}
               </div>
             </div>
 
-            {/* RIGHT SIDE: ENEMY FORMATION (Waves 1-9: 3 Simultaneous Monsters; Wave 10: BOSS) */}
+            {/* RIGHT SIDE: ENEMY FORMATION (Dynamic 2-6 Monsters by Party Size; Wave 10: BOSS + Elite Guards) */}
             <div className="party-side-column party-enemies-column">
-              <div className={`party-units-grid enemies-grid ${isBossWaveNow ? "boss-single-grid" : "multi-minion-grid"}`}>
+              <div className={`party-units-grid enemies-grid ${isBossWaveNow && enemies.length === 1 ? "boss-single-grid" : "multi-minion-grid"}`}>
                 {enemies.map((enemy) => {
                   const isDead = enemy.hp <= 0;
                   const shaking = nowTs < enemy.hitShakeUntil;
@@ -1315,6 +1517,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   const hpPct = Math.max(0, Math.min(100, Math.round((enemy.hp / Math.max(1, enemy.maxHp)) * 100)));
                   const castPct = isDead ? 0 : Math.max(0, Math.min(100, Math.floor((enemy.castMs / Math.max(1, enemy.intervalMs)) * 100)));
                   const unitFloats = damageFloats.filter((f) => f.unitKey === enemy.slotKey);
+                  const bossSkills = enemy.isBoss ? getBossSignatureSkills(enemy.id) : [];
+                  const nextBossSkill = enemy.isBoss ? bossSkills[enemy.nextSkillIdx % bossSkills.length] : null;
+                  const isSkillTurnNext = enemy.isBoss && (enemy.attackCount || 0) % 2 === 0;
+                  const shieldActive = nowTs < enemy.shieldUntil;
 
                   return (
                     <div
@@ -1323,24 +1529,53 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     >
                       <div className="party-unit-top">
                         <span className="entity-name">
-                          {enemy.isBoss ? "👑 " : ""}
+                          {enemy.isBoss ? "👑 " : enemy.isEliteGuard ? "🛡️ " : ""}
                           {enemy.name}
                         </span>
                         <span className="entity-level">Lv.{enemy.level}</span>
                       </div>
 
                       <div className="party-unit-role-tag">
-                        {isDead ? "💀 已击倒" : enemy.isBoss ? "首领" : "魔物"}
+                        {enemy.isBoss ? (
+                          <span>
+                            首领
+                            {shieldActive ? " · 🛡️护盾减伤" : ""}
+                            {enemy.enraged ? " · 🔥狂暴" : ""}
+                          </span>
+                        ) : enemy.isEliteGuard ? (
+                          "首领亲卫"
+                        ) : (
+                          "魔物"
+                        )}
                       </div>
 
                       <div className={`entity-avatar party-unit-avatar${shaking ? " avatar-shake" : ""}${enemy.isBoss ? " is-boss-art" : ""}`}>
+                        <MonsterSceneBackdrop monsterId={enemy.id} mapId={activeDungeon.id} isBoss={enemy.isBoss} variant="card" />
                         <T1Art kind="monster" id={enemy.id} alt={enemy.name} />
                       </div>
 
+                      {enemy.isBoss && !isDead && (
+                        <div className="boss-skill-strip">
+                          {bossSkills.map((sk, idx) => {
+                            const isNext = isSkillTurnNext && idx === enemy.nextSkillIdx % bossSkills.length;
+                            return (
+                              <span
+                                key={sk.id}
+                                className={`boss-skill-chip${sk.kind === "aoe" ? " is-aoe" : ""}${isNext ? " is-charging" : ""}`}
+                                title={`${sk.name}（${sk.tag}）：${sk.desc}`}
+                              >
+                                {isNext ? "⚡" : sk.kind === "aoe" ? "🌋" : "✦"} {sk.name}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <div className="damage-float-container">
                         {unitFloats.map((f) => (
-                          <span key={f.id} className={`damage-float damage-dealt${f.isCrit ? " crit" : ""}`}>
-                            {f.tag ? `${f.tag} ` : ""}-{f.value}
+                          <span key={f.id} className={`damage-float ${f.isHeal ? "damage-heal" : "damage-dealt"}${f.isCrit ? " crit" : ""}`}>
+                            {f.tag ? `${f.tag} ` : ""}
+                            {f.value === 0 ? "" : f.isHeal ? `+${f.value}` : `-${f.value}`}
                           </span>
                         ))}
                       </div>
@@ -1381,6 +1616,8 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                         <div className="cast-time">
                           {isDead
                             ? "已击倒"
+                            : isSkillTurnNext && nextBossSkill && castPct >= 45
+                            ? `⚠️ 蓄力秘技：《${nextBossSkill.name}》(${nextBossSkill.tag})`
                             : `${(enemy.castMs / 1000).toFixed(1)}s / ${(enemy.intervalMs / 1000).toFixed(1)}s`}
                         </div>
                       </div>
@@ -1410,7 +1647,6 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                 <span className="run-stat">
                   <small>战斗时长</small>
                   <strong>{durationText}</strong>
-                  <em>第 {currentWave} 波</em>
                 </span>
                 <span className="run-stat">
                   <small>累计击杀</small>
@@ -1551,341 +1787,50 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
           </div>
         </div>
       ) : (
-        /* =====================================================================
-            BOSS DUNGEON SELECTION & PARTY LOBBY (Before Battle Starts)
-           ===================================================================== */
-        <>
-          <div className="page-header">
-            <h2 className="section-title">组队首领副本</h2>
-            <div className="page-info">
-              <p>
-                🔥 <b>仅首领关（Boss 副本）开放组队挑战</b>：前 9 波每一波同时迎战 3 只区域小怪，每第 10 波迎战区域首领 BOSS！最多 6 人小队同屏多对多激战。
-              </p>
-            </div>
-          </div>
-
-          {/* BOSS DUNGEON SELECTOR CARDS */}
-          <div className="category-section">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-              <h3 style={{ margin: 0 }}>👑 选择首领副本（前 9 波群怪围猎 · 每 10 波 BOSS 决战）</h3>
-              <span style={{ fontSize: 12, opacity: 0.8 }}>
-                {party ? `当前小队：${party.name || "冒险小队"} (${party.members.length}/6 人)` : "点击任意首领副本可自动组队并开战"}
-              </span>
-            </div>
-
-            <div className="party-boss-dungeon-grid">
-              {bossDungeons.slice(0, 6).map((dungeon) => {
-                const isSelected = normalizeStageId(actStage) === dungeon.id;
-                return (
-                  <div
-                    key={dungeon.id}
-                    className={`party-boss-dungeon-card${isSelected ? " selected" : ""}`}
-                    onClick={() => setActStage(dungeon.id)}
-                  >
-                    <div className="party-boss-card-top">
-                      <div className="party-boss-avatar">
-                        <T1Art kind="monster" id={dungeon.boss.id} fallback={dungeon.boss.icon || "👹"} alt={dungeon.boss.name} />
-                      </div>
-                      <div className="party-boss-meta">
-                        <div className="party-boss-stage-name">{dungeon.name}</div>
-                        <div className="party-boss-name">
-                          👑 {dungeon.boss.name} <small>Lv.{dungeon.boss.level}</small>
-                        </div>
-                        <div className="party-boss-rule-badges">
-                          <span className="rule-badge">第1~9波：3只小怪同屏</span>
-                          <span className="rule-badge boss">第10波：首领BOSS</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="party-boss-minion-strip">
-                      <small>前9波群怪阵容：</small>
-                      <div className="minion-tags">
-                        {dungeon.minions.slice(0, 4).map((m) => (
-                          <span key={m.id} className="minion-tag">
-                            {m.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="party-boss-card-actions">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        style={{ width: "100%" }}
-                        disabled={busy}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void quickStartBossDungeon(dungeon.id);
-                        }}
-                      >
-                        {party ? `⚔️ 开启【${dungeon.boss.name}】多对多副本` : `⚡ 立即组队挑战【${dungeon.boss.name}】`}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* CURRENT PARTY ROSTER OR PUBLIC BOT PARTIES */}
-          {!party ? (
-            <>
-              {invites.length > 0 && (
-                <div className="category-section">
-                  <h3>队伍邀请</h3>
-                  <ul>
-                    {invites.map((inv) => (
-                      <li key={inv.partyId} className="party-id-row">
-                        收到冒险小队邀请（队伍码 <code>{inv.partyId.slice(0, 8)}</code>）
-                        <button
-                          className="btn btn-primary"
-                          style={{ marginLeft: 8 }}
-                          disabled={busy}
-                          onClick={() => run(() => apiClient.acceptPartyInvite(inv.partyId))}
-                        >
-                          接受
-                        </button>
-                        <button
-                          className="btn"
-                          style={{ marginLeft: 4 }}
-                          disabled={busy}
-                          onClick={() => run(() => apiClient.declinePartyInvite(inv.partyId))}
-                        >
-                          拒绝
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="category-section">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-                  <h3 style={{ margin: 0 }}>常驻讨伐小队（加入即享满编协战队友）</h3>
-                  <button className="btn btn-primary" disabled={busy} onClick={() => run(() => apiClient.createParty())}>
-                    + 创建我的讨伐小队
-                  </button>
-                </div>
-
-                {publicParties.length === 0 ? (
-                  <p>暂无公开队伍，可直接点击上方首领卡片一键组建小队开战！</p>
-                ) : (
-                  <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {publicParties.map((p) => {
-                      const stageNorm = normalizeStageId(p.recommendedStageId);
-                      const targetDungeon = bossDungeons.find((d) => d.id === stageNorm) || bossDungeons[0];
-                      return (
-                        <li
-                          key={p.id}
-                          className="party-id-row"
-                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}
-                        >
-                          <span>
-                            <strong>{p.name || "冒险小队"}</strong>
-                            {p.leaderName && <span style={{ opacity: 0.85 }}> · 驻守：{p.leaderName}</span>}
-                            <span> · {p.memberCount}/6 人</span>
-                            {targetDungeon && (
-                              <span style={{ marginLeft: 8, fontSize: 12, color: "#fbbf24" }}>
-                                🎯 目标：{targetDungeon.name} · {targetDungeon.boss.name}
-                              </span>
-                            )}
-                            {p.isBotParty && (
-                              <span style={{ marginLeft: 6, fontSize: 12, color: "var(--accent, #6ee7b7)" }}>
-                                🤖 队员已准备
-                              </span>
-                            )}
-                          </span>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button
-                              className="btn"
-                              disabled={busy}
-                              onClick={() =>
-                                run(async () => {
-                                  if (p.recommendedStageId) setActStage(normalizeStageId(p.recommendedStageId));
-                                  await apiClient.joinParty(p.id);
-                                })
-                              }
-                            >
-                              加入小队
-                            </button>
-                            <button
-                              className="btn btn-primary"
-                              disabled={busy}
-                              onClick={() =>
-                                run(async () => {
-                                  const stg = normalizeStageId(p.recommendedStageId || actStage);
-                                  setActStage(stg);
-                                  waveTransitionRef.current = false;
-                                  clearTransitionTimers();
-                                  if (playerState?.mode === "life_action") {
-                                    await stopAction().catch(() => undefined);
-                                  }
-                                  if (playerState?.hpCombat && (!playerState.hpCombat.outcome || playerState.combatLoadout?.autoRepeat)) {
-                                    await apiClient.fleeHpCombat().catch(() => undefined);
-                                  }
-                                  await apiClient.joinParty(p.id);
-                                  await apiClient.setPartyReady(p.id, true).catch(() => undefined);
-                                  await apiClient.startPartyActivity(p.id, "raid", stg, 30).catch(() => undefined);
-                                })
-                              }
-                            >
-                              ⚔️ 加入并直接开战
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-
-                <div className="chat-input-area" style={{ marginTop: 12 }}>
-                  <input
-                    className="chat-input"
-                    placeholder="输入好友队伍 ID 加入"
-                    value={joinId}
-                    onChange={(e) => setJoinId(e.target.value.trim())}
-                  />
-                  <button className="chat-send-btn" disabled={busy || !joinId} onClick={() => run(() => apiClient.joinParty(joinId))}>
-                    加入
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="category-section">
-              <div
-                className="party-id-row"
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 8 }}
-              >
-                <div>
-                  <strong style={{ fontSize: 15 }}>{party.name || "冒险小队"}</strong>
-                  <span style={{ marginLeft: 10, opacity: 0.75, fontSize: 12 }}>
-                    队伍码：<code>{party.id.slice(0, 8)}</code>
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="header-menu-btn"
-                  onClick={() => {
-                    if (navigator.clipboard?.writeText) {
-                      navigator.clipboard
-                        .writeText(party.id)
-                        .then(() => toast.success("已复制队伍 ID"))
-                        .catch(() => toast.info(`队伍 ID：${party.id}`));
-                    } else {
-                      toast.info(`队伍 ID：${party.id}`);
-                    }
-                  }}
-                >
-                  复制完整 ID
-                </button>
-              </div>
-
-              <ul style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {party.members.map((m) => {
-                  const memberReady = Boolean(m.isReady || m.isBot);
-                  return (
-                    <li
-                      key={m.userId}
-                      className="party-id-row"
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}
-                    >
-                      <span>
-                        {m.isBot ? "🤖" : m.isOnline ? "🟢" : "⚫"} <b>{m.role === "leader" ? "队长" : "队员"}</b> ·{" "}
-                        <span>{m.displayName || "神秘冒险者"}</span>
-                        {m.title && <small style={{ marginLeft: 6, opacity: 0.75 }}>[{m.title}]</small>}
-                        {m.combatLevel && <small style={{ marginLeft: 6, opacity: 0.8 }}>Lv.{m.combatLevel}</small>}
-                        {m.userId === userId ? "（你）" : ""}
-                        <span
-                          style={{
-                            marginLeft: 8,
-                            padding: "1px 7px",
-                            borderRadius: 999,
-                            fontSize: 12,
-                            background: memberReady ? "rgba(16, 185, 129, 0.18)" : "rgba(245, 158, 11, 0.18)",
-                            color: memberReady ? "#34d399" : "#fbbf24",
-                            border: `1px solid ${memberReady ? "rgba(52, 211, 153, 0.35)" : "rgba(251, 191, 36, 0.35)"}`,
-                          }}
-                        >
-                          {memberReady ? "✅ 已准备" : "⏳ 待准备"}
-                        </span>
-                      </span>
-                      {isLeader && m.userId !== userId && (
-                        <span style={{ marginLeft: 8 }}>
-                          {!m.isBot && (
-                            <button className="btn" disabled={busy} onClick={() => run(() => apiClient.transferPartyLeadership(party.id, m.userId))}>
-                              移交队长
-                            </button>
-                          )}
-                          <button
-                            className="btn"
-                            style={{ marginLeft: 4 }}
-                            disabled={busy}
-                            onClick={() => run(() => apiClient.kickPartyMember(party.id, m.userId))}
-                          >
-                            移出
-                          </button>
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={busy}
-                  onClick={() => void quickStartBossDungeon(actStage)}
-                >
-                  ⚔️ 开始首领副本（{activeDungeon?.name || "呼呼大睡森林"} · {activeDungeon?.boss.name || "树精首领"}）
-                </button>
-                <button
-                  type="button"
-                  className={selfReady ? "btn" : "btn"}
-                  disabled={busy}
-                  onClick={() => run(() => apiClient.setPartyReady(party.id, !selfReady))}
-                >
-                  {selfReady ? "✅ 已准备" : "✋ 点击准备"}
-                </button>
-                {party.members.length < 6 && (
-                  <button type="button" className="btn" disabled={busy} onClick={() => run(() => apiClient.recruitPartyBot(party.id))}>
-                    🤖 招募机器人队友 ({party.members.length}/6)
-                  </button>
-                )}
-                <button className="btn" disabled={busy} onClick={() => run(() => apiClient.leaveParty(party.id))}>
-                  {isLeader && party.members.length === 1 ? "解散队伍" : "离开队伍"}
-                </button>
-              </div>
-
-              {party.members.length < 6 && (
-                <div className="chat-input-area" style={{ marginTop: 10 }}>
-                  <input
-                    className="chat-input"
-                    placeholder="输入真人玩家 ID 邀请入队"
-                    value={inviteId}
-                    onChange={(e) => setInviteId(e.target.value.trim())}
-                  />
-                  <button
-                    className="chat-send-btn"
-                    disabled={busy || !inviteId}
-                    onClick={() =>
-                      run(async () => {
-                        await apiClient.inviteToParty(party.id, inviteId);
-                        setInviteId("");
-                      })
-                    }
-                  >
-                    邀请玩家
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </>
+        <PartyLobbyView
+          bossDungeons={bossDungeons}
+          actStage={actStage}
+          setActStage={setActStage}
+          busy={busy}
+          party={party}
+          invites={invites}
+          publicParties={publicParties}
+          joinId={joinId}
+          setJoinId={setJoinId}
+          inviteId={inviteId}
+          setInviteId={setInviteId}
+          isLeader={isLeader}
+          userId={userId}
+          run={run}
+          quickStartBossDungeon={quickStartBossDungeon}
+          onQuickJoinAndStart={(p) =>
+            void run(async () => {
+              const stg = normalizeStageId(p.recommendedStageId || actStage);
+              setActStage(stg);
+              waveTransitionRef.current = false;
+              clearTransitionTimers();
+              if (playerState?.mode === "life_action") {
+                await stopAction().catch(() => undefined);
+              }
+              if (playerState?.hpCombat && (!playerState.hpCombat.outcome || playerState.combatLoadout?.autoRepeat)) {
+                await apiClient.fleeHpCombat().catch(() => undefined);
+              }
+              await apiClient.joinParty(p.id);
+              await apiClient.setPartyReady(p.id, true).catch(() => undefined);
+              await apiClient.startPartyActivity(p.id, "raid", stg, 30).catch(() => undefined);
+            })
+          }
+          onCopyPartyId={(partyId) => {
+            if (navigator.clipboard?.writeText) {
+              navigator.clipboard
+                .writeText(partyId)
+                .then(() => toast.success("已复制队伍 ID"))
+                .catch(() => toast.info(`队伍 ID：${partyId}`));
+            } else {
+              toast.info(`队伍 ID：${partyId}`);
+            }
+          }}
+        />
       )}
     </div>
   );

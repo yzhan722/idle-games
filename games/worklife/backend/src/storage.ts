@@ -72,14 +72,6 @@ export interface Storage {
   startLifeAction(params: { userId: string; actionId: string; quantity?: number; now: Date; contentPack?: EnhancedContentPack }): Promise<EnhancedPlayerState>;
   
   // 新增：技能系统方法
-  getSkillTree(params: { professionId: string; contentPack: EnhancedContentPack }): Promise<any>;
-  unlockSkillNode(params: {
-    userId: string;
-    professionId: string;
-    nodeId: string;
-    contentPack: EnhancedContentPack;
-  }): Promise<{ success: boolean; message?: string }>;
-  getPlayerSkillProgress(params: { userId: string; professionId: string }): Promise<any>;
   awardSkillExperience(params: {
     userId: string;
     professionId: string;
@@ -510,13 +502,6 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
       if (s[k] === undefined) s[k] = d[k];
     }
   }
-  // 耐久表中的 NaN/非有限数先删除，使其按"未记录=满耐久"自愈，而非被 sanitizeFiniteNumbers 置 0 变成破损装备
-  const eqDur = (player as any).equipment?.durability;
-  if (eqDur && typeof eqDur === "object") {
-    for (const [k, v] of Object.entries(eqDur)) {
-      if (typeof v === "number" && !Number.isFinite(v)) delete eqDur[k];
-    }
-  }
   const eqMaxDur = (player as any).equipment?.maxDurability;
   if (eqMaxDur && typeof eqMaxDur === "object") {
     for (const [k, v] of Object.entries(eqMaxDur)) {
@@ -557,11 +542,6 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
   const { ensureAbilities } = require("./abilities") as typeof import("./abilities");
   ensureCombatSkills(player);
   ensureAbilities(player);
-  if (!player.combatLoadout) {
-    player.combatLoadout = { food: [], drink: [], autoRepeat: true };
-  } else {
-    player.combatLoadout.autoRepeat = true;
-  }
   return player;
 }
 

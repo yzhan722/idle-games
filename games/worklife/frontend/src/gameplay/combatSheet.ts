@@ -10,6 +10,11 @@ export type CombatSheet = {
   intervalMs?: number;
   mp?: number;
   mpRegenPerTick?: number;
+  /** MWI Combat Advanced Stats: Accuracy %, Evasion %, Crit Rate %, Crit Damage % */
+  accuracyPct?: number;
+  evasionPct?: number;
+  critRatePct?: number;
+  critDmgPct?: number;
 };
 
 type PackItem = {
@@ -188,13 +193,26 @@ export function combatSheetFromPack(
   }
   if (buffAtk > 0) buffAtk = Math.min(buffAtk, Math.max(2, Math.floor(unbuffedAtk * 0.4)));
   if (buffDef > 0) buffDef = Math.min(buffDef, Math.max(2, Math.floor(unbuffedDef * 0.4 + 4)));
+  const finalAtk = unbuffedAtk + buffAtk;
+  const finalDef = unbuffedDef + buffDef;
+  const atkLv = state?.combatSkills?.attack?.level || state?.combatLevel || 1;
+  const defLv = state?.combatSkills?.defense?.level || state?.combatLevel || 1;
+  const intLv = state?.combatSkills?.intelligence?.level || state?.combatLevel || 1;
+  const accuracyPct = Math.min(99, Math.round((86 + (atkLv - 1) * 0.35 + Math.floor(finalAtk / 22)) * 10) / 10);
+  const evasionPct = Math.min(45, Math.round((6 + (defLv - 1) * 0.32 + Math.floor(finalDef / 24)) * 10) / 10);
+  const critRatePct = Math.min(65, Math.round((14 + (atkLv - 1) * 0.25 + (intLv - 1) * 0.15 + Math.floor(finalAtk / 28)) * 10) / 10);
+  const critDmgPct = Math.min(300, Math.round(160 + (atkLv - 1) * 0.75 + Math.floor(finalAtk / 14)));
   return {
     hp: skills.hp + Math.round(gearHp) + extras.hp,
-    atk: unbuffedAtk + buffAtk,
-    def: unbuffedDef + buffDef,
+    atk: finalAtk,
+    def: finalDef,
     intervalMs: skills.intervalMs,
     mp: skills.mp,
     mpRegenPerTick: skills.mpRegenPerTick,
+    accuracyPct,
+    evasionPct,
+    critRatePct,
+    critDmgPct,
   };
 }
 

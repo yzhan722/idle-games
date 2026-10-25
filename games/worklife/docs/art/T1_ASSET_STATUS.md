@@ -68,6 +68,12 @@ P1 MISSING 0
 - `skills/smash` PRODUCTION (webp)
 - `skills/minor_heal` PRODUCTION (webp)
 - `skills/brace` PRODUCTION (webp)
+- `skills/cleave` PRODUCTION (webp)
+- `skills/taunt` PRODUCTION (webp)
+- `skills/arrow_rain` PRODUCTION (webp)
+- `skills/group_heal` PRODUCTION (webp)
+- `skills/meteor_storm` PRODUCTION (webp)
+- `skills/war_aura` PRODUCTION (webp)
 - `materials/ore_1` PRODUCTION (webp)
 - `materials/ingot_1` PRODUCTION (webp)
 - `materials/fiber_1` PRODUCTION (webp)
@@ -438,6 +444,12 @@ P1 MISSING 0
 - `materials/yarn_8` PRODUCTION (webp)
 - `materials/yarn_9` PRODUCTION (webp)
 - `materials/yarn_silk_fine` PRODUCTION (webp)
+- `materials/book_cleave` PRODUCTION (webp)
+- `materials/book_taunt` PRODUCTION (webp)
+- `materials/book_arrow_rain` PRODUCTION (webp)
+- `materials/book_group_heal` PRODUCTION (webp)
+- `materials/book_meteor_storm` PRODUCTION (webp)
+- `materials/book_war_aura` PRODUCTION (webp)
 - `trees/copper` PRODUCTION (webp)
 - `trees/cotton` PRODUCTION (webp)
 - `trees/river` PRODUCTION (webp)
@@ -603,8 +615,8 @@ P1 MISSING 0
 - `ui/avatar_animal_cat` PRODUCTION (webp)
 
 ```
-P2 REQUIRED 553
-P2 PRODUCTION 553
+P2 REQUIRED 565
+P2 PRODUCTION 565
 P2 PLACEHOLDER 0
 P2 MISSING 0
 ```

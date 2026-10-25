@@ -4,8 +4,7 @@ import pack from "../../shared/enhanced_content_pack_chinese.json";
 import { hitDamage, monsterCombatant, simulateFight, type Combatant } from "./first_hour_combat";
 import { encounterStages } from "./gameplay_encounters";
 import { enemyDamageHook, mechanicDefsFor } from "./boss_mechanics";
-import { CHAINS, PREV_ZONE, playerFor } from "../../scripts/audit/zone-chains";
-import { realBossFight } from "../../scripts/audit/real-fight";
+import { CHAINS, PREV_ZONE, playerFor, realBossFight } from "./zone_chains_fixture";
 
 /**
  * Zone progression sanity (MWI: farm a zone, craft its gear, take the next zone). Every check runs the

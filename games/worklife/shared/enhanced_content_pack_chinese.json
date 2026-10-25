@@ -835,8 +835,8 @@
       "type": "book",
       "tier": 1,
       "abilityId": "smash",
-      "description": "读后学会「猛击」：1.6 倍伤害，5 秒冷却，消耗 4 魔力。重复阅读可获得技能经验。",
-      "value": 60
+      "description": "读后学会「猛击」：1.6 倍伤害，5 秒冷却，消耗 4 魔力。已掌握时重复阅读固定获得 +150 技能经验。",
+      "value": 1500
     },
     {
       "id": "book_minor_heal",
@@ -844,8 +844,8 @@
       "type": "book",
       "tier": 1,
       "abilityId": "minor_heal",
-      "description": "读后学会「小治疗」：恢复 25% 最大生命，15 秒冷却，消耗 8 魔力。重复阅读可获得技能经验。",
-      "value": 60
+      "description": "读后学会「小治疗」：恢复 25% 最大生命，15 秒冷却，消耗 8 魔力。已掌握时重复阅读固定获得 +150 技能经验。",
+      "value": 1600
     },
     {
       "id": "book_brace",
@@ -853,8 +853,8 @@
       "type": "book",
       "tier": 1,
       "abilityId": "brace",
-      "description": "读后学会「坚守」：6 秒内受到的伤害 -35%，12 秒冷却，消耗 6 魔力。重复阅读可获得技能经验。",
-      "value": 60
+      "description": "读后学会「坚守」：6 秒内受到的伤害 -35%，12 秒冷却，消耗 6 魔力。已掌握时重复阅读固定获得 +150 技能经验。",
+      "value": 2000
     },
     {
       "id": "poison_sac",
@@ -4219,6 +4219,222 @@
       "value": 70000,
       "description": "藤木缠绕的腿甲，踏叶无声。",
       "def": 88
+    },
+    {
+      "id": "book_cleave",
+      "name": "技能书：横扫顺劈",
+      "type": "book",
+      "tier": 2,
+      "abilityId": "cleave",
+      "value": 4800,
+      "description": "阅读后学会主动技能「横扫顺劈」：挥动兵刃对目标造成 1.85 倍斩击伤害，组队时同时顺劈最多 3 名敌人。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_taunt",
+      "name": "技能书：威压嘲讽",
+      "type": "book",
+      "tier": 3,
+      "abilityId": "taunt",
+      "value": 10000,
+      "description": "阅读后学会防战核心技能「威压嘲讽」：8 秒内受到伤害降低 45%，并在组队副本中强制吸引敌方绝大部分仇恨保护队友。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_arrow_rain",
+      "name": "技能书：漫天箭雨",
+      "type": "book",
+      "tier": 4,
+      "abilityId": "arrow_rain",
+      "value": 22000,
+      "description": "阅读后学会远程群攻技能「漫天箭雨」：向天空倾泻密集箭雨，对场上全体敌人造成 1.55 倍穿透伤害。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_group_heal",
+      "name": "技能书：复苏群疗",
+      "type": "book",
+      "tier": 5,
+      "abilityId": "group_heal",
+      "value": 48000,
+      "description": "阅读后学会团队治疗技能「复苏群疗」：凝聚生机法阵，立即恢复自身或全队全体存活成员 32% 最大生命值并净化负面状态。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_meteor_storm",
+      "name": "技能书：星陨天罚",
+      "type": "book",
+      "tier": 6,
+      "abilityId": "meteor_storm",
+      "value": 96000,
+      "description": "阅读后学会奥术大招「星陨天罚」：召唤星界陨石雨轰炸全场，对全体敌人造成 2.35 倍毁灭伤害并震碎护盾格挡。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_war_aura",
+      "name": "技能书：战神光环",
+      "type": "book",
+      "tier": 7,
+      "abilityId": "war_aura",
+      "value": 180000,
+      "description": "阅读后学会统帅技能「战神光环」：震击敌军造成 1.4 倍伤害，并在 10 秒内激励全队攻击力 +22%、暴击率 +15%。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_quick_shot",
+      "name": "技能书：疾风连射",
+      "type": "book",
+      "tier": 1,
+      "abilityId": "quick_shot",
+      "value": 2200,
+      "description": "阅读后学会远程技能「疾风连射」：疾速射出双生风矢，造成 1.45 倍伤害并可同时命中 2 名敌人。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_spore_ward",
+      "name": "技能书：灵蕈祝祷",
+      "type": "book",
+      "tier": 1,
+      "abilityId": "spore_ward",
+      "value": 1900,
+      "description": "阅读后学会自然技能「灵蕈祝祷」：沐浴森林灵蕈孢子，立即恢复 18% 最大生命并在 5 秒内受伤 -20%。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_shield_bash",
+      "name": "技能书：碎岩盾击",
+      "type": "book",
+      "tier": 2,
+      "abilityId": "shield_bash",
+      "value": 5200,
+      "description": "阅读后学会防战技能「碎岩盾击」：挥盾猛砸造成 1.55 倍伤害、击碎敌人护盾，并使自身 5 秒内受伤 -28%。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_mana_pulse",
+      "name": "技能书：晶脉共鸣",
+      "type": "book",
+      "tier": 2,
+      "abilityId": "mana_pulse",
+      "value": 5500,
+      "description": "阅读后学会奥术技能「晶脉共鸣」：引爆微光晶脉造成 1.5 倍奥术伤害，并立即回流 +10 点魔力（零耗蓝续航核心）。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_venom_fang",
+      "name": "技能书：剧毒穿刺",
+      "type": "book",
+      "tier": 3,
+      "abilityId": "venom_fang",
+      "value": 11000,
+      "description": "阅读后学会刺杀技能「剧毒穿刺」：淬毒利刃直刺要害，对单体目标造成 2.15 倍剧毒穿刺伤害。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_soul_drain",
+      "name": "技能书：噬魂汲取",
+      "type": "book",
+      "tier": 3,
+      "abilityId": "soul_drain",
+      "value": 12500,
+      "description": "阅读后学会暗影技能「噬魂汲取」：抽取敌方生机造成 1.65 倍暗影伤害，同时恢复自身 16% 最大生命并驱散瘴气。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_frost_nova",
+      "name": "技能书：寒冰新星",
+      "type": "book",
+      "tier": 4,
+      "abilityId": "frost_nova",
+      "value": 24000,
+      "description": "阅读后学会冰法技能「寒冰新星」：爆发极寒冰环席卷全场，对全体敌人造成 1.7 倍冰霜伤害，并凝结冰甲令 6 秒内受伤 -32%。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_glacial_snipe",
+      "name": "技能书：极寒穿云箭",
+      "type": "book",
+      "tier": 4,
+      "abilityId": "glacial_snipe",
+      "value": 26000,
+      "description": "阅读后学会神射技能「极寒穿云箭」：凝聚极地寒霜射出贯穿一箭，造成 2.45 倍高额单体伤害并直接击碎首领护盾。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_flame_burst",
+      "name": "技能书：熔岩爆裂",
+      "type": "book",
+      "tier": 5,
+      "abilityId": "flame_burst",
+      "value": 52000,
+      "description": "阅读后学会火法技能「熔岩爆裂」：引动地心熔岩连环爆裂，对最多 3 名敌人造成 2.1 倍烈焰重创。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_phoenix_blessing",
+      "name": "技能书：浴火圣歌",
+      "type": "book",
+      "tier": 5,
+      "abilityId": "phoenix_blessing",
+      "value": 56000,
+      "description": "阅读后学会圣歌技能「浴火圣歌」：恢复全队 28% 最大生命值并令全队 8 秒内攻击 +15%、暴击 +10%。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_void_rift",
+      "name": "技能书：虚空裂斩",
+      "type": "book",
+      "tier": 6,
+      "abilityId": "void_rift",
+      "value": 88000,
+      "description": "阅读后学会深渊技能「虚空裂斩」：撕裂深渊维度斩向敌阵，对最多 3 名敌人造成 2.65 倍虚空伤害并粉碎护盾。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_abyssal_pact",
+      "name": "技能书：深渊噬魂契",
+      "type": "book",
+      "tier": 6,
+      "abilityId": "abyssal_pact",
+      "value": 105000,
+      "description": "阅读后学会深渊技能「深渊噬魂契」：造成 1.95 倍暗影群伤，恢复自身 20% 生命并回流 +16 魔力。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_holy_judgment",
+      "name": "技能书：天罚圣裁",
+      "type": "book",
+      "tier": 7,
+      "abilityId": "holy_judgment",
+      "value": 150000,
+      "description": "阅读后学会神圣技能「天罚圣裁」：降下天界圣光裁决全场，造成 2.55 倍神圣群伤、击碎护盾，并治疗全队 22% 最大生命。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_seraph_aegis",
+      "name": "技能书：炽天圣盾",
+      "type": "book",
+      "tier": 7,
+      "abilityId": "seraph_aegis",
+      "value": 165000,
+      "description": "阅读后学会守护技能「炽天圣盾」：展开六翼炽天圣盾，恢复 24% 最大生命，并在 9 秒内令受伤降低 55% 且强力吸引全队仇恨。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_chrono_overload",
+      "name": "技能书：时空超载",
+      "type": "book",
+      "tier": 8,
+      "abilityId": "chrono_overload",
+      "value": 240000,
+      "description": "阅读后学会裂隙技能「时空超载」：扭曲时空法则轰击全场造成 2.4 倍伤害，回流 +22 魔力，并令全队 10 秒内攻击 +26%、暴击 +18%。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_hellfire_cataclysm",
+      "name": "技能书：炼狱浩劫",
+      "type": "book",
+      "tier": 9,
+      "abilityId": "hellfire_cataclysm",
+      "value": 350000,
+      "description": "阅读后学会炼狱技能「炼狱浩劫」：召唤地狱业火焚尽万物，对全体敌人造成 2.95 倍毁灭伤害并瞬间融化一切护盾。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_genesis_sanctuary",
+      "name": "技能书：创世神恩",
+      "type": "book",
+      "tier": 10,
+      "abilityId": "genesis_sanctuary",
+      "value": 520000,
+      "description": "阅读后学会创世技能「创世神恩」：对全场造成 2.75 倍圣光伤害，恢复全队 36% 生命，8 秒内受伤 -50% 且全队攻击 +30%、暴击 +20%。已学会后再次阅读固定获得 +150 技能经验。"
+    },
+    {
+      "id": "book_omega_annihilation",
+      "name": "技能书：万界终焉",
+      "type": "book",
+      "tier": 12,
+      "abilityId": "omega_annihilation",
+      "value": 880000,
+      "description": "阅读后学会终焉奥义「万界终焉」：对全体敌人造成 3.4 倍终极破防伤害，恢复全队 25% 生命、回流 +30 魔力，并令全队 12 秒内攻击 +35%、暴击 +25%。已学会后再次阅读固定获得 +150 技能经验。"
     }
   ],
   "actions": [
@@ -14335,7 +14551,7 @@
       "drops": [
         {
           "itemId": "book_smash",
-          "chance": 0.08
+          "chance": 0.005
         }
       ],
       "isBoss": false
@@ -14379,7 +14595,7 @@
       "drops": [
         {
           "itemId": "book_minor_heal",
-          "chance": 0.08
+          "chance": 0.005
         }
       ],
       "isBoss": false
@@ -14401,7 +14617,13 @@
       "desc": "看起来很生气的蘑菇，会释放孢子",
       "rare": "辉光水晶",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_spore_ward",
+          "chance": 0.0045
+        }
+      ]
     },
     {
       "id": "bee",
@@ -14420,7 +14642,13 @@
       "desc": "经常迷路的小蜜蜂，但很勤劳",
       "rare": "微光水晶",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_quick_shot",
+          "chance": 0.0045
+        }
+      ]
     },
     {
       "id": "crab",
@@ -14442,7 +14670,7 @@
       "drops": [
         {
           "itemId": "book_brace",
-          "chance": 0.08
+          "chance": 0.005
         }
       ],
       "isBoss": false
@@ -14473,6 +14701,10 @@
           "itemId": "mirror_protection",
           "chance": 0.05,
           "qty": 1
+        },
+        {
+          "itemId": "book_quick_shot",
+          "chance": 0.005
         }
       ],
       "isBoss": true
@@ -14494,6 +14726,12 @@
       "desc": "由矿石碎片组成的生物，移动时发出叮当声",
       "rare": "铁矿石",
       "rareChance": 0.05,
+      "drops": [
+        {
+          "itemId": "book_cleave",
+          "chance": 0.0035
+        }
+      ],
       "isBoss": false
     },
     {
@@ -14513,7 +14751,13 @@
       "desc": "翅膀闪烁着水晶光芒的蝙蝠",
       "rare": "辉光水晶",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_mana_pulse",
+          "chance": 0.004
+        }
+      ]
     },
     {
       "id": "ore_rat",
@@ -14570,7 +14814,13 @@
       "desc": "外壳坚硬如铁的蜘蛛，八条腿力大无穷",
       "rare": "金矿石",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_shield_bash",
+          "chance": 0.0035
+        }
+      ]
     },
     {
       "id": "gem_thief",
@@ -14589,7 +14839,13 @@
       "desc": "专门偷宝石的狡猾生物，动作敏捷",
       "rare": "白金矿石",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_mana_pulse",
+          "chance": 0.004
+        }
+      ]
     },
     {
       "id": "mine_boss",
@@ -14608,6 +14864,16 @@
       "desc": "统治整个矿山的强大存在，全身覆盖着珍贵矿石",
       "rare": "秘银矿石",
       "rareChance": 0.01,
+      "drops": [
+        {
+          "itemId": "book_cleave",
+          "chance": 0.004
+        },
+        {
+          "itemId": "book_shield_bash",
+          "chance": 0.004
+        }
+      ],
       "isBoss": true,
       "mechanics": [
         "rockfall_charge"
@@ -14630,7 +14896,13 @@
       "desc": "会喷射毒雾的青蛙，皮肤五颜六色",
       "rare": "毒囊",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_venom_fang",
+          "chance": 0.003
+        }
+      ]
     },
     {
       "id": "swamp_zombie",
@@ -14649,6 +14921,12 @@
       "desc": "从沼泽中爬出的僵尸，动作迟缓但力量惊人",
       "rare": "腐烂之心",
       "rareChance": 0.05,
+      "drops": [
+        {
+          "itemId": "book_taunt",
+          "chance": 0.003
+        }
+      ],
       "isBoss": false
     },
     {
@@ -14687,7 +14965,13 @@
       "desc": "伪装成藤蔓的毒蛇，擅长偷袭",
       "rare": "蛇毒",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_venom_fang",
+          "chance": 0.0035
+        }
+      ]
     },
     {
       "id": "ghost_light",
@@ -14706,7 +14990,13 @@
       "desc": "漂浮在沼泽上的神秘鬼火，会迷惑旅人",
       "rare": "幽灵精华",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_soul_drain",
+          "chance": 0.003
+        }
+      ]
     },
     {
       "id": "swamp_troll",
@@ -14725,7 +15015,13 @@
       "desc": "身材高大的巨魔，力大无穷但头脑简单",
       "rare": "巨魔之力",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_soul_drain",
+          "chance": 0.0035
+        }
+      ]
     },
     {
       "id": "swamp_boss",
@@ -14744,6 +15040,12 @@
       "desc": "沼泽深处的恐怖存在，掌控着整片沼泽的生死",
       "rare": "沼泽王冠",
       "rareChance": 0.02,
+      "drops": [
+        {
+          "itemId": "book_taunt",
+          "chance": 0.0035
+        }
+      ],
       "isBoss": true,
       "mechanics": [
         "miasma_3s"
@@ -14804,7 +15106,13 @@
       "desc": "由万年寒冰凝聚而成的傀儡，防御惊人",
       "rare": "frost_shard",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_frost_nova",
+          "chance": 0.0028
+        }
+      ]
     },
     {
       "id": "snow_harpy",
@@ -14823,7 +15131,13 @@
       "desc": "盘旋在雪峰间的女妖，振翅可掀起暴风雪",
       "rare": "snow_pelt",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_frost_nova",
+          "chance": 0.003
+        }
+      ]
     },
     {
       "id": "frozen_knight",
@@ -14842,7 +15156,13 @@
       "desc": "被永冻封印的古代骑士，剑意森寒",
       "rare": "glacier_core",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_glacial_snipe",
+          "chance": 0.0028
+        }
+      ]
     },
     {
       "id": "yeti",
@@ -14861,7 +15181,13 @@
       "desc": "盘踞雪山深处的巨型雪人，力大无穷",
       "rare": "glacier_core",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_glacial_snipe",
+          "chance": 0.003
+        }
+      ]
     },
     {
       "id": "snow_boss",
@@ -14880,6 +15206,12 @@
       "desc": "统御整座雪山的远古霜魔，所到之处万物冰封",
       "rare": "frost_crown",
       "rareChance": 0.015,
+      "drops": [
+        {
+          "itemId": "book_arrow_rain",
+          "chance": 0.003
+        }
+      ],
       "isBoss": true,
       "mechanics": [
         "frost_armor_15"
@@ -14959,7 +15291,13 @@
       "desc": "从熔岩中崛起的巨人，每一步都震得大地颤抖",
       "rare": "obsidian_chunk",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_flame_burst",
+          "chance": 0.0024
+        }
+      ]
     },
     {
       "id": "flame_wraith",
@@ -14978,7 +15316,13 @@
       "desc": "葬身火海者的怨念所化，缠绕着不灭之火",
       "rare": "flame_core",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_phoenix_blessing",
+          "chance": 0.0022
+        }
+      ]
     },
     {
       "id": "inferno_drake",
@@ -14997,7 +15341,13 @@
       "desc": "盘踞火山口的火龙，吐息可融化钢铁",
       "rare": "flame_core",
       "rareChance": 0.025,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_flame_burst",
+          "chance": 0.0025
+        }
+      ]
     },
     {
       "id": "volcano_boss",
@@ -15016,6 +15366,16 @@
       "desc": "熔岩深渊的统治者，传说其苏醒之日山河尽燃",
       "rare": "demon_horn",
       "rareChance": 0.015,
+      "drops": [
+        {
+          "itemId": "book_group_heal",
+          "chance": 0.0025
+        },
+        {
+          "itemId": "book_phoenix_blessing",
+          "chance": 0.0025
+        }
+      ],
       "isBoss": true,
       "mechanics": [
         "eruption_20s",
@@ -15077,7 +15437,13 @@
       "desc": "被虚空腐蚀的堕落骑士，散发令人窒息的恐惧",
       "rare": "虚空裂片",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_void_rift",
+          "chance": 0.0018
+        }
+      ]
     },
     {
       "id": "abyss_maw",
@@ -15115,7 +15481,13 @@
       "desc": "编织噩梦的恐怖存在，让人深陷幻境",
       "rare": "深渊之核",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_abyssal_pact",
+          "chance": 0.0018
+        }
+      ]
     },
     {
       "id": "void_behemoth",
@@ -15134,15 +15506,21 @@
       "desc": "体型庞大的虚空巨兽，每一步都撕裂空间",
       "rare": "深渊之核",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_void_rift",
+          "chance": 0.002
+        }
+      ]
     },
     {
       "id": "abyss_boss",
       "name": "虚空领主(BOSS)",
       "level": 75,
-      "hp": 9623,
-      "atk": 89,
-      "def": 103,
+      "hp": 11800,
+      "atk": 165,
+      "def": 112,
       "xp": 19236,
       "gold": 28854,
       "archetype": "boss",
@@ -15153,7 +15531,26 @@
       "desc": "幽影深渊的至高统治者，凝视它会坠入永夜",
       "rare": "虚空王冠",
       "rareChance": 0.015,
-      "isBoss": true
+      "drops": [
+        {
+          "itemId": "book_group_heal",
+          "chance": 0.0025
+        },
+        {
+          "itemId": "book_meteor_storm",
+          "chance": 0.002
+        },
+        {
+          "itemId": "book_abyssal_pact",
+          "chance": 0.002
+        }
+      ],
+      "isBoss": true,
+      "mechanics": [
+        "void_collapse_16s",
+        "abyss_miasma_3s",
+        "void_frenzy_35"
+      ]
     },
     {
       "id": "light_sprite",
@@ -15229,7 +15626,13 @@
       "desc": "六翼炽天使形态的哨兵，圣光灼目",
       "rare": "圣辉金",
       "rareChance": 0.035,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_seraph_aegis",
+          "chance": 0.0016
+        }
+      ]
     },
     {
       "id": "divine_colossus",
@@ -15248,7 +15651,13 @@
       "desc": "由天界圣石铸成的巨像，守护着神域",
       "rare": "天使之泪",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_holy_judgment",
+          "chance": 0.0016
+        }
+      ]
     },
     {
       "id": "archon",
@@ -15267,15 +15676,21 @@
       "desc": "掌管天界秩序的执政天神，威严不可侵犯",
       "rare": "天使之泪",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_holy_judgment",
+          "chance": 0.0016
+        }
+      ]
     },
     {
       "id": "celestial_boss",
       "name": "堕落天使(BOSS)",
       "level": 90,
-      "hp": 13629,
-      "atk": 89,
-      "def": 136,
+      "hp": 16800,
+      "atk": 220,
+      "def": 148,
       "xp": 29140,
       "gold": 43710,
       "archetype": "boss",
@@ -15286,7 +15701,26 @@
       "desc": "坠入黑暗的天使，光明与堕落在其身上交织",
       "rare": "堕落光环",
       "rareChance": 0.015,
-      "isBoss": true
+      "drops": [
+        {
+          "itemId": "book_meteor_storm",
+          "chance": 0.002
+        },
+        {
+          "itemId": "book_holy_judgment",
+          "chance": 0.0018
+        },
+        {
+          "itemId": "book_seraph_aegis",
+          "chance": 0.0018
+        }
+      ],
+      "isBoss": true,
+      "mechanics": [
+        "fallen_judgment_16s",
+        "seraph_aegis_15s",
+        "twilight_spear_charge"
+      ]
     },
     {
       "id": "chrono_phantom",
@@ -15362,7 +15796,13 @@
       "desc": "盘踞时空乱流的巨龙，吐息可逆转时光",
       "rare": "裂境结晶",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_chrono_overload",
+          "chance": 0.0014
+        }
+      ]
     },
     {
       "id": "void_emperor",
@@ -15400,15 +15840,21 @@
       "desc": "能撕裂现实本身的存在，所到之处世界崩坏",
       "rare": "时空精华",
       "rareChance": 0.025,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_chrono_overload",
+          "chance": 0.0014
+        }
+      ]
     },
     {
       "id": "rift_boss",
       "name": "时空主宰(BOSS)",
       "level": 105,
-      "hp": 17988,
-      "atk": 150,
-      "def": 165,
+      "hp": 22500,
+      "atk": 265,
+      "def": 180,
       "xp": 35353,
       "gold": 53030,
       "archetype": "boss",
@@ -15419,7 +15865,26 @@
       "desc": "掌控过去与未来的终极主宰，世界的终焉与起源",
       "rare": "主宰之心",
       "rareChance": 0.015,
-      "isBoss": true
+      "drops": [
+        {
+          "itemId": "book_meteor_storm",
+          "chance": 0.002
+        },
+        {
+          "itemId": "book_war_aura",
+          "chance": 0.0015
+        },
+        {
+          "itemId": "book_chrono_overload",
+          "chance": 0.0015
+        }
+      ],
+      "isBoss": true,
+      "mechanics": [
+        "chrono_storm_15s",
+        "paradox_strike_charge",
+        "chrono_haste_40"
+      ]
     },
     {
       "id": "hellhound",
@@ -15514,7 +15979,13 @@
       "desc": "盘踞炼狱核心的火龙，焰息可熔金",
       "rare": "炼狱之核",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_hellfire_cataclysm",
+          "chance": 0.0012
+        }
+      ]
     },
     {
       "id": "doom_bringer",
@@ -15571,15 +16042,21 @@
       "desc": "统御一方炼狱的亲王，威压令人窒息",
       "rare": "魔神王冠",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_hellfire_cataclysm",
+          "chance": 0.0012
+        }
+      ]
     },
     {
       "id": "inferno_boss",
       "name": "炼狱魔神(BOSS)",
       "level": 120,
-      "hp": 21613,
-      "atk": 157,
-      "def": 185,
+      "hp": 28000,
+      "atk": 310,
+      "def": 205,
       "xp": 43401,
       "gold": 65102,
       "archetype": "boss",
@@ -15590,7 +16067,22 @@
       "desc": "永劫炼狱的至高魔神，号令亿万恶魔",
       "rare": "魔神王冠",
       "rareChance": 0.04,
-      "isBoss": true
+      "drops": [
+        {
+          "itemId": "book_war_aura",
+          "chance": 0.0015
+        },
+        {
+          "itemId": "book_hellfire_cataclysm",
+          "chance": 0.0014
+        }
+      ],
+      "isBoss": true,
+      "mechanics": [
+        "apocalypse_meteor_15s",
+        "hellfire_miasma_3s",
+        "demon_god_wrath_35"
+      ]
     },
     {
       "id": "star_seraph",
@@ -15685,7 +16177,13 @@
       "desc": "浴火重生的神圣不死鸟，永恒不灭",
       "rare": "创世之种",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_genesis_sanctuary",
+          "chance": 0.0011
+        }
+      ]
     },
     {
       "id": "astral_judge",
@@ -15742,15 +16240,21 @@
       "desc": "预言创世降临的先知，洞悉天机",
       "rare": "神之心脏",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_genesis_sanctuary",
+          "chance": 0.0011
+        }
+      ]
     },
     {
       "id": "genesis_boss",
       "name": "创世之神(BOSS)",
       "level": 135,
-      "hp": 28912,
-      "atk": 177,
-      "def": 232,
+      "hp": 36000,
+      "atk": 360,
+      "def": 250,
       "xp": 68395,
       "gold": 102593,
       "archetype": "boss",
@@ -15761,7 +16265,18 @@
       "desc": "开天辟地的创世之神，万物的起源",
       "rare": "神之心脏",
       "rareChance": 0.04,
-      "isBoss": true
+      "isBoss": true,
+      "mechanics": [
+        "genesis_supernova_14s",
+        "divine_barrier_15s",
+        "origin_decree_charge"
+      ],
+      "drops": [
+        {
+          "itemId": "book_genesis_sanctuary",
+          "chance": 0.0012
+        }
+      ]
     },
     {
       "id": "void_devourer",
@@ -15875,7 +16390,13 @@
       "desc": "终结一个世界的存在，灭世于弹指",
       "rare": "寰宇精华",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_omega_annihilation",
+          "chance": 0.001
+        }
+      ]
     },
     {
       "id": "paradox_god",
@@ -15913,15 +16434,21 @@
       "desc": "宣告万界终焉的传令者，丧钟敲响",
       "rare": "万界之心",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "drops": [
+        {
+          "itemId": "book_omega_annihilation",
+          "chance": 0.001
+        }
+      ]
     },
     {
       "id": "omega_boss",
       "name": "万界终焉(BOSS)",
       "level": 150,
-      "hp": 39647,
-      "atk": 262,
-      "def": 299,
+      "hp": 52000,
+      "atk": 420,
+      "def": 320,
       "xp": 109146,
       "gold": 163719,
       "archetype": "boss",
@@ -15932,7 +16459,18 @@
       "desc": "掌控所有世界命运的终极存在，世界的终结与起源",
       "rare": "万界之心",
       "rareChance": 0.04,
-      "isBoss": true
+      "isBoss": true,
+      "mechanics": [
+        "omega_oblivion_12s",
+        "entropy_miasma_3s",
+        "omega_wrath_40"
+      ],
+      "drops": [
+        {
+          "itemId": "book_omega_annihilation",
+          "chance": 0.0012
+        }
+      ]
     }
   ],
   "stages": [
@@ -18751,6 +19289,21 @@
       }
     },
     {
+      "id": "thorn_storm_16s",
+      "kind": "eruption",
+      "label": "万木荆棘阵(AOE)",
+      "desc": "每 16 秒召唤漫天荆棘穿刺全场，按最大生命的 7% 造成无视防御的全屏伤害。",
+      "params": {
+        "periodMs": 16000,
+        "warnMs": 3000,
+        "maxHpPct": 0.07
+      },
+      "messages": {
+        "warn": "森林地面涌出无数荆棘……万木荆棘阵即将爆发！",
+        "boom": "万木荆棘阵(AOE)！全屏穿刺造成 {damage} 点伤害{brace}"
+      }
+    },
+    {
       "id": "rockfall_charge",
       "kind": "charge",
       "label": "落石重击",
@@ -18821,6 +19374,370 @@
       },
       "messages": {
         "start": "魔君怒吼！烈焰之躯攻势更猛了！"
+      }
+    },
+    {
+      "id": "mine_quake_18s",
+      "kind": "eruption",
+      "label": "地脉崩塌(AOE)",
+      "desc": "每 18 秒引爆晶簇震裂矿脉，按最大生命的 8% 造成无视防御的全屏震荡伤害。",
+      "params": {
+        "periodMs": 18000,
+        "warnMs": 3000,
+        "maxHpPct": 0.08
+      },
+      "messages": {
+        "warn": "矿洞剧烈摇晃……矿山霸主即将引发地脉崩塌！",
+        "boom": "地脉崩塌(AOE)！全屏震荡造成 {damage} 点伤害{brace}"
+      }
+    },
+    {
+      "id": "mine_fury_35",
+      "kind": "wrath",
+      "label": "矿脉狂怒",
+      "desc": "血量降到 35% 时激发黑曜狂怒，攻击速度大幅提升。",
+      "params": {
+        "startRatio": 0.35,
+        "intervalMult": 0.72,
+        "minIntervalMs": 800
+      },
+      "messages": {
+        "start": "矿山霸主咆哮震天，全身晶簇暴走，攻击速度暴涨！"
+      }
+    },
+    {
+      "id": "swamp_tsunami_18s",
+      "kind": "eruption",
+      "label": "剧毒狂潮(AOE)",
+      "desc": "每 18 秒掀起腐化毒潮席卷全场，按最大生命的 9% 造成无视防御的毒蚀 AOE。",
+      "params": {
+        "periodMs": 18000,
+        "warnMs": 3000,
+        "maxHpPct": 0.09
+      },
+      "messages": {
+        "warn": "沼泽沸腾冒泡……沼泽之王正在凝聚剧毒狂潮！",
+        "boom": "剧毒狂潮(AOE)席卷全场！造成 {damage} 点腐蚀伤害{brace}"
+      }
+    },
+    {
+      "id": "swamp_devour_charge",
+      "kind": "charge",
+      "label": "深渊吞噬",
+      "desc": "每第 4 次攻击张开巨颚吞噬目标，按最大生命的 7% 造成无视防御伤害。",
+      "params": {
+        "everyNth": 4,
+        "maxHpPct": 0.07
+      },
+      "messages": {
+        "telegraph": "沼泽之王张开深渊巨颚……下一击是深渊吞噬！",
+        "hit": "深渊吞噬"
+      }
+    },
+    {
+      "id": "blizzard_aoe_16s",
+      "kind": "eruption",
+      "label": "绝对零度·暴风雪(AOE)",
+      "desc": "每 16 秒召唤极寒暴风雪冰封全场，按最大生命的 10% 造成全屏冰霜伤害。",
+      "params": {
+        "periodMs": 16000,
+        "warnMs": 3000,
+        "maxHpPct": 0.1
+      },
+      "messages": {
+        "warn": "空气骤降至冰点……绝对零度暴风雪即将降临！",
+        "boom": "绝对零度·暴风雪(AOE)！全屏冰封造成 {damage} 点伤害{brace}"
+      }
+    },
+    {
+      "id": "glacier_lance_charge",
+      "kind": "charge",
+      "label": "极寒冰枪穿刺",
+      "desc": "每第 3 次攻击凝聚万年冰枪贯穿防线，按最大生命的 8% 造成无视防御伤害。",
+      "params": {
+        "everyNth": 3,
+        "maxHpPct": 0.08
+      },
+      "messages": {
+        "telegraph": "霜冠雪魔凝聚极寒冰枪……下一击将贯穿防线！",
+        "hit": "极寒冰枪穿刺"
+      }
+    },
+    {
+      "id": "hellfire_cleave_charge",
+      "kind": "charge",
+      "label": "炎狱劫火斩",
+      "desc": "每第 3 次攻击挥动熔岩魔剑横扫，按最大生命的 9% 造成无视防御的烈焰重创。",
+      "params": {
+        "everyNth": 3,
+        "maxHpPct": 0.09
+      },
+      "messages": {
+        "telegraph": "烈焰魔君高举熔岩魔剑……下一击是炎狱劫火斩！",
+        "hit": "炎狱劫火斩"
+      }
+    },
+    {
+      "id": "void_collapse_16s",
+      "kind": "eruption",
+      "label": "次元黑洞坍缩(AOE)",
+      "desc": "每 16 秒撕裂空间引发黑洞坍缩，按最大生命的 12% 造成无视防御的全屏虚空伤害。",
+      "params": {
+        "periodMs": 16000,
+        "warnMs": 3000,
+        "maxHpPct": 0.12
+      },
+      "messages": {
+        "warn": "空间开始扭曲坍塌……虚空领主即将引爆次元黑洞！",
+        "boom": "次元黑洞坍缩(AOE)！造成 {damage} 点虚空湮灭伤害{brace}"
+      }
+    },
+    {
+      "id": "abyss_miasma_3s",
+      "kind": "miasma",
+      "label": "永夜暗影侵蚀",
+      "desc": "每次攻击叠加一层暗影侵蚀（最多 5 层），每 3 秒按最大生命百分比持续蚀骨。",
+      "params": {
+        "maxStacks": 5,
+        "tickMs": 3000,
+        "maxHpPctPerStack": 0.008
+      },
+      "messages": {
+        "tick": "永夜暗影侵蚀！{damage} 点伤害（{stacks} 层）",
+        "cleanse": "{source}净化了暗影侵蚀！"
+      }
+    },
+    {
+      "id": "void_frenzy_35",
+      "kind": "wrath",
+      "label": "虚空暴走",
+      "desc": "血量降到 35% 时坠入永夜暴走，攻速大幅加快。",
+      "params": {
+        "startRatio": 0.35,
+        "intervalMult": 0.68,
+        "minIntervalMs": 800
+      },
+      "messages": {
+        "start": "虚空领主撕裂维度，进入永夜暴走状态！"
+      }
+    },
+    {
+      "id": "fallen_judgment_16s",
+      "kind": "eruption",
+      "label": "堕天圣裁·光暗陨灭(AOE)",
+      "desc": "每 16 秒降下漫天黑白圣裁光柱，按最大生命的 13% 造成无视防御的全屏伤害。",
+      "params": {
+        "periodMs": 16000,
+        "warnMs": 3000,
+        "maxHpPct": 0.13
+      },
+      "messages": {
+        "warn": "天穹裂开黑白光环……堕落天使正在咏唱堕天圣裁！",
+        "boom": "堕天圣裁·光暗陨灭(AOE)！造成 {damage} 点圣裁伤害{brace}"
+      }
+    },
+    {
+      "id": "seraph_aegis_15s",
+      "kind": "frost",
+      "label": "六翼黑羽神盾",
+      "desc": "每 15 秒展开六翼黑羽护盾持续 5 秒，期间受到伤害降低 55%，重劈可破盾。",
+      "params": {
+        "periodMs": 15000,
+        "durationMs": 5000,
+        "incomingMult": 0.45
+      },
+      "messages": {
+        "up": "堕落天使展开六翼黑羽神盾！伤害大减——用重劈破盾！",
+        "down": "黑羽神盾散去，全员集火！"
+      }
+    },
+    {
+      "id": "twilight_spear_charge",
+      "kind": "charge",
+      "label": "黄昏弑神枪",
+      "desc": "每第 3 次攻击投掷光暗交织的弑神枪，按最大生命的 10% 造成无视防御伤害。",
+      "params": {
+        "everyNth": 3,
+        "maxHpPct": 0.1
+      },
+      "messages": {
+        "telegraph": "堕落天使凝聚光暗神枪……下一击是黄昏弑神枪！",
+        "hit": "黄昏弑神枪"
+      }
+    },
+    {
+      "id": "chrono_storm_15s",
+      "kind": "eruption",
+      "label": "时空风暴·纪元崩塌(AOE)",
+      "desc": "每 15 秒逆转时空引爆次元风暴，按最大生命的 14% 造成全屏无视防御伤害。",
+      "params": {
+        "periodMs": 15000,
+        "warnMs": 3000,
+        "maxHpPct": 0.14
+      },
+      "messages": {
+        "warn": "时间流向开始逆转……时空风暴即将吞噬全场！",
+        "boom": "时空风暴·纪元崩塌(AOE)！造成 {damage} 点时空撕裂伤害{brace}"
+      }
+    },
+    {
+      "id": "paradox_strike_charge",
+      "kind": "charge",
+      "label": "因果律抹杀",
+      "desc": "每第 3 次攻击跨越时间线斩击，按最大生命的 11% 造成真实伤害。",
+      "params": {
+        "everyNth": 3,
+        "maxHpPct": 0.11
+      },
+      "messages": {
+        "telegraph": "时空主宰锁定了因果线……下一击是因果律抹杀！",
+        "hit": "因果律抹杀"
+      }
+    },
+    {
+      "id": "chrono_haste_40",
+      "kind": "wrath",
+      "label": "时间加速领域",
+      "desc": "血量降到 40% 时开启时间加速领域，攻击间隔大幅缩短。",
+      "params": {
+        "startRatio": 0.4,
+        "intervalMult": 0.65,
+        "minIntervalMs": 750
+      },
+      "messages": {
+        "start": "时空主宰开启时间加速领域，出招速度突破极限！"
+      }
+    },
+    {
+      "id": "apocalypse_meteor_15s",
+      "kind": "eruption",
+      "label": "灭世天陨·炼狱火海(AOE)",
+      "desc": "每 15 秒召唤末日星陨轰炸全场，按最大生命的 15% 造成毁灭性全屏火焰伤害。",
+      "params": {
+        "periodMs": 15000,
+        "warnMs": 3000,
+        "maxHpPct": 0.15
+      },
+      "messages": {
+        "warn": "炼狱苍穹化作火海……灭世天陨即将轰击全场！",
+        "boom": "灭世天陨·炼狱火海(AOE)！造成 {damage} 点毁灭伤害{brace}"
+      }
+    },
+    {
+      "id": "hellfire_miasma_3s",
+      "kind": "miasma",
+      "label": "不灭业火焚魂",
+      "desc": "每次攻击附带不灭业火（最多 5 层），每 3 秒按最大生命百分比持续焚烧。",
+      "params": {
+        "maxStacks": 5,
+        "tickMs": 3000,
+        "maxHpPctPerStack": 0.009
+      },
+      "messages": {
+        "tick": "业火焚魂！{damage} 点灼烧伤害（{stacks} 层）",
+        "cleanse": "{source}熄灭了不灭业火！"
+      }
+    },
+    {
+      "id": "demon_god_wrath_35",
+      "kind": "wrath",
+      "label": "魔神真身解放",
+      "desc": "血量降到 35% 时解放魔神真身，攻速暴增。",
+      "params": {
+        "startRatio": 0.35,
+        "intervalMult": 0.64,
+        "minIntervalMs": 750
+      },
+      "messages": {
+        "start": "炼狱魔神解放魔神真身，滔天魔焰席卷战场！"
+      }
+    },
+    {
+      "id": "genesis_supernova_14s",
+      "kind": "eruption",
+      "label": "创世星云大爆炸(AOE)",
+      "desc": "每 14 秒引爆原初星云，按最大生命的 16% 造成开天辟地的全屏神罚伤害。",
+      "params": {
+        "periodMs": 14000,
+        "warnMs": 3000,
+        "maxHpPct": 0.16
+      },
+      "messages": {
+        "warn": "原初星云极速坍缩发光……创世大爆炸即将降临！",
+        "boom": "创世星云大爆炸(AOE)！造成 {damage} 点神罚伤害{brace}"
+      }
+    },
+    {
+      "id": "divine_barrier_15s",
+      "kind": "frost",
+      "label": "创世法则壁障",
+      "desc": "每 15 秒凝聚创世法则壁障持续 5 秒，期间受到伤害降低 60%。",
+      "params": {
+        "periodMs": 15000,
+        "durationMs": 5000,
+        "incomingMult": 0.4
+      },
+      "messages": {
+        "up": "创世之神展开法则壁障！伤害大幅减免——用重劈破壁！",
+        "down": "法则壁障消散，全力输出！"
+      }
+    },
+    {
+      "id": "origin_decree_charge",
+      "kind": "charge",
+      "label": "原初神谕裁决",
+      "desc": "每第 3 次攻击降下原初神谕，按最大生命的 12% 造成无视防御的真实伤害。",
+      "params": {
+        "everyNth": 3,
+        "maxHpPct": 0.12
+      },
+      "messages": {
+        "telegraph": "创世之神宣读原初神谕……下一击是神谕裁决！",
+        "hit": "原初神谕裁决"
+      }
+    },
+    {
+      "id": "omega_oblivion_12s",
+      "kind": "eruption",
+      "label": "万界归墟·终焉寂灭(AOE)",
+      "desc": "每 12 秒湮灭多元宇宙法则，按最大生命的 18% 造成全屏无视防御的终焉伤害。",
+      "params": {
+        "periodMs": 12000,
+        "warnMs": 3000,
+        "maxHpPct": 0.18
+      },
+      "messages": {
+        "warn": "万界法则正在归零……终焉寂灭即将抹除一切！",
+        "boom": "万界归墟·终焉寂灭(AOE)！造成 {damage} 点终焉伤害{brace}"
+      }
+    },
+    {
+      "id": "entropy_miasma_3s",
+      "kind": "miasma",
+      "label": "宇宙热寂·熵增崩解",
+      "desc": "每次攻击叠加终焉熵增（最多 5 层），每 3 秒按高额最大生命百分比湮灭生机。",
+      "params": {
+        "maxStacks": 5,
+        "tickMs": 3000,
+        "maxHpPctPerStack": 0.01
+      },
+      "messages": {
+        "tick": "熵增崩解！{damage} 点真实伤害（{stacks} 层）",
+        "cleanse": "{source}逆转了熵增崩解！"
+      }
+    },
+    {
+      "id": "omega_wrath_40",
+      "kind": "wrath",
+      "label": "终焉神格解放",
+      "desc": "血量降到 40% 时解放终焉神格，攻击频率提升至极限。",
+      "params": {
+        "startRatio": 0.4,
+        "intervalMult": 0.6,
+        "minIntervalMs": 700
+      },
+      "messages": {
+        "start": "万界终焉解放终焉神格，时间与空间同时崩塌！"
       }
     }
   ]
