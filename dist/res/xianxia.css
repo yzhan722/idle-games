@@ -1992,6 +1992,83 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 }
 .xxIdOrigin.xx-sel b { color: var(--xx-gold-hi); }
 
+@media (max-width: 640px) {
+	.xxFateCard {
+		max-width: 94vw;
+		max-height: 92vh;
+		padding: 16px 16px;
+	}
+	.xxIdCard {
+		width: 94vw;
+		max-width: 94vw;
+		max-height: 95vh;
+		padding: 10px 13px;
+	}
+	.xxIdCard .xxFateArt {
+		height: 64px;
+		margin-bottom: 4px;
+	}
+	.xxIdCard .xxFateTitle {
+		font-size: 16px;
+		margin-bottom: 2px;
+	}
+	.xxIdCard .xxFateStory {
+		font-size: 11.5px;
+		line-height: 1.32;
+		margin-bottom: 5px;
+	}
+	.xxIdCard .xxIdRow {
+		margin: 3px 0 1px;
+		gap: 6px;
+	}
+	.xxIdCard .xxIdName {
+		font-size: 13px;
+		padding: 3px 8px;
+	}
+	.xxIdCard .xxIdChip {
+		font-size: 12px;
+		padding: 2px 12px;
+	}
+	.xxIdCard .xxIdLblTop {
+		margin-top: 3px;
+	}
+	.xxIdCard .xxIdOrigins {
+		grid-template-columns: 1fr;
+		gap: 4px;
+		margin: 3px 0 6px;
+	}
+	.xxIdCard .xxIdOrigin:last-child:nth-child(odd) {
+		grid-column: span 1;
+	}
+	.xxIdCard .xxIdOrigin,
+	.xxIdCard .xxIdOrigin.xxIdOriginHasArt {
+		padding: 4px 8px;
+		gap: 8px;
+		line-height: 1.24;
+		align-items: center;
+	}
+	.xxIdCard .xxIdOriginIco {
+		width: 30px !important;
+		height: 30px !important;
+		flex: 0 0 30px !important;
+	}
+	.xxIdCard .xxIdOrigin b {
+		font-size: 12px;
+		line-height: 1.25;
+	}
+	.xxIdCard .xxIdOrigin span {
+		font-size: 10.5px;
+		line-height: 1.24;
+	}
+	.xxIdCard .btn.modern.xxFateBtn {
+		margin-top: 4px;
+	}
+	.xxIdCard .btn.modern.xxFateBtn .btnTitle {
+		padding: 6px 12px;
+		font-size: 13px;
+	}
+}
+
 /* 光阴似箭倍率选择 */
 .xxAccelRow {
 	display: flex;
@@ -3332,6 +3409,19 @@ input, select, textarea, button { font-family: inherit; }
 	.xxSceneTitle { font-size: 14.5px; letter-spacing: 2px; }
 	.xxSceneSub { font-size: 11px; }
 	.xxFateArt { height: 78px; }
+	.xxIdCard .xxFateArt { height: 58px !important; margin-bottom: 4px !important; }
+	.xxIdCard .xxIdOrigin,
+	.xxIdCard .xxIdOrigin.xxIdOriginHasArt {
+		padding: 4px 8px !important;
+		gap: 8px !important;
+		line-height: 1.22 !important;
+		align-items: center !important;
+	}
+	.xxIdCard .xx-orig-svg,
+	.xxIdCard .xx-origin-svg {
+		width: 24px;
+		height: 24px;
+	}
 	.xx-btn-ico {
 		left: 8px;
 		width: 22px;
@@ -4172,6 +4262,10 @@ input, select, textarea, button { font-family: inherit; }
 	letter-spacing: 2px;
 	color: var(--xx-gold-hi);
 }
+.xxAlcMainTitle small {
+	white-space: nowrap !important;
+	display: inline-block;
+}
 .xxAlcSubTitle {
 	font-family: var(--xx-sans);
 	font-size: 12px;
@@ -4474,6 +4568,7 @@ input, select, textarea, button { font-family: inherit; }
 	display: flex;
 	align-items: center;
 	gap: 6px;
+	min-width: 0;
 }
 .xxPillTierTag {
 	padding: 1px 6px;
@@ -4483,6 +4578,8 @@ input, select, textarea, button { font-family: inherit; }
 	background: rgba(212, 176, 106, .16);
 	border: 1px solid rgba(212, 176, 106, .38);
 	color: var(--xx-gold-hi);
+	white-space: nowrap !important;
+	flex-shrink: 0;
 }
 .xxPillCard.cleansing .xxPillTierTag {
 	background: rgba(79, 209, 165, .15);
@@ -4490,20 +4587,26 @@ input, select, textarea, button { font-family: inherit; }
 	color: var(--xx-jade);
 }
 .xxPillName {
+	display: inline-flex;
+	align-items: center;
 	font-family: var(--xx-serif);
 	font-size: 14.5px;
 	font-weight: 600;
 	letter-spacing: 1px;
 	color: var(--xx-paper);
+	white-space: nowrap !important;
+	flex-shrink: 0;
 }
 .xxPillStockWrap {
 	display: flex;
 	align-items: center;
 	gap: 5px;
+	flex-shrink: 0;
 }
 .xxPillStock {
 	font-size: 11.5px;
 	color: var(--xx-mute);
+	white-space: nowrap !important;
 }
 .xxPillStock.has {
 	color: var(--xx-gold-hi);
@@ -4516,6 +4619,7 @@ input, select, textarea, button { font-family: inherit; }
 	background: rgba(111, 211, 255, .18);
 	border: 1px solid rgba(111, 211, 255, .48);
 	color: #9be2ff;
+	white-space: nowrap !important;
 }
 
 .xxPillTagRow {
