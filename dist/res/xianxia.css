@@ -1466,13 +1466,15 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 }
 @media (max-width: 700px) {
 	.xxHelp {
-		width: 92vw;
-		left: 4vw;
-		margin-left: 0;
-		top: 8vh;
-		margin-top: 0;
-		height: 84vh;
-		max-height: 84vh;
+		width: 92vw !important;
+		max-width: 92vw !important;
+		left: 50% !important;
+		top: 50% !important;
+		margin-left: 0 !important;
+		margin-top: 0 !important;
+		transform: translate(-50%, -50%) !important;
+		height: 82vh;
+		max-height: 82vh;
 	}
 }
 .xx-help-title {
@@ -2150,6 +2152,7 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 }
 .tabInner.Cultivation .btn.modern.xxAscend .btnContent {
 	padding-left: 42px !important;
+	padding-right: 12px !important;
 }
 .tabInner.Cultivation .btn.modern.xxAscend .btnTitle {
 	display: inline-flex;
@@ -2564,12 +2567,29 @@ input, select, textarea, button { font-family: inherit; }
 		margin-left: 4px;
 	}
 
-	/* dialogs: center via transform */
-	.dialog {
+	/* dialogs: center via transform (include ID selectors to beat default.css #optionsDiv specificity) */
+	.dialog,
+	#optionsDiv,
+	#importDiv,
+	#exportDiv,
+	#creditsDiv,
+	#helpDiv.xxHelp {
+		position: fixed !important;
 		left: 50% !important;
+		top: 50% !important;
 		margin-left: 0 !important;
 		margin-top: 0 !important;
-		transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%) !important;
+		width: 92vw !important;
+		max-width: 560px !important;
+		max-height: 84vh !important;
+		box-sizing: border-box !important;
+	}
+	#exportData,
+	#importData {
+		width: 100% !important;
+		max-width: 100% !important;
+		box-sizing: border-box !important;
 	}
 	.xxFateCard { transform: none; }
 	.help, .credits {
