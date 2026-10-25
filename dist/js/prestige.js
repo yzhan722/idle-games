@@ -598,7 +598,7 @@ dojo.declare("classes.ui.PrestigeBtnController", com.nuclearunicorn.game.ui.Buil
 		var meta = model.metadata;
 		model.visible = meta.unlocked && (meta.researched || this.game.science.get("metaphysics").researched);
 
-		if (meta.researched && this.game.prestige.hideResearched){
+		if (meta.researched){
 			model.visible = false;
 		}
 	}
@@ -627,9 +627,9 @@ dojo.declare("classes.ui.PrestigePanel", com.nuclearunicorn.game.ui.Panel, {
 		var content = this.inherited("render", arguments);
 
 		self = this;
-		var msgBox = dojo.create("span", { style: { display: "inline-block", marginBottom: "10px", width: "50%"}}, content);
+		var msgBox = dojo.create("span", { style: { display: "none" }}, content);
 
-		var div = dojo.create("div", { style: { float: "right"}}, content);
+		var div = dojo.create("div", { style: { display: "none" }}, content);
 
 		this.toggleResearchedSpan = dojo.create("span", null, div);
 

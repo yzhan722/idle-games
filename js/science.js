@@ -1073,7 +1073,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Library", com.nuclearunicorn.game.u
 		//------------ metaphysics ----------------
 		this.metaphysicsPanel = null;
 
-		var showMetaphysics = this.game.science.get("metaphysics").researched && this.game.resPool.get("paragon").value > 0;
+		var showMetaphysics = this.game.science.get("metaphysics").researched || this.game.resPool.get("paragon").value > 0;
 		if (!showMetaphysics){
 			for (var i = this.game.prestige.perks.length - 1; i >= 0; i--){
 				var perk = this.game.prestige.perks[i];
