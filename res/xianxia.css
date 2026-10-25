@@ -1876,7 +1876,7 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	inset: 0;
 	background: rgba(5, 9, 13, .76);
 	backdrop-filter: blur(4px);
-	z-index: 100;
+	z-index: 220;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -2633,8 +2633,8 @@ input, select, textarea, button { font-family: inherit; }
 		margin-left: 4px;
 	}
 
-	/* dialogs: center via transform (include ID selectors to beat default.css #optionsDiv specificity) */
-	.dialog,
+	/* dialogs: center via transform (include ID selectors to beat default.css #optionsDiv specificity; exclude .xxFateCard which is flex-centered by .xxFateOverlay) */
+	.dialog:not(.xxFateCard),
 	#optionsDiv,
 	#importDiv,
 	#exportDiv,
@@ -2650,6 +2650,12 @@ input, select, textarea, button { font-family: inherit; }
 		max-width: 560px !important;
 		max-height: 84vh !important;
 		box-sizing: border-box !important;
+	}
+	.dialog.xxFateCard {
+		position: static !important;
+		transform: none !important;
+		margin: 0 !important;
+		box-shadow: 0 14px 60px rgba(0, 0, 0, .68), 0 0 0 1px rgba(212, 176, 106, .14) !important;
 	}
 	#exportData,
 	#importData {
@@ -2706,10 +2712,10 @@ input, select, textarea, button { font-family: inherit; }
 		border-bottom: 1px solid var(--xx-line);
 	}
 	#leftColumn.xx-res-open {
-		max-height: 48dvh;
+		max-height: 56dvh;
 		overflow-y: auto;
 	}
-	#leftColumn:not(.xx-res-open) .xx-treasury-hd,
+	#leftColumn .xx-treasury-hd,
 	#leftColumn:not(.xx-res-open) .xx-res-sec-hd,
 	#leftColumn:not(.xx-res-open) .xx-res-sec-craft,
 	#leftColumn:not(.xx-res-open) .xx-res-sec-treasure,
@@ -2939,7 +2945,7 @@ input, select, textarea, button { font-family: inherit; }
 	.xx-tile-val, .xx-tile-v { font-size: 13px; margin-top: 2px; }
 	.xx-pips i { width: 5px; height: 5px; }
 
-	/* Single-line touch-scroll strip for passive Fate badges; full wrap for interactive Natal Artifacts */
+	/* Single-line touch-scroll strip with soft fade mask for passive Fate badges; full wrap for interactive Natal Artifacts */
 	.xx-hd-fates {
 		flex-wrap: nowrap;
 		overflow-x: auto;
@@ -2948,12 +2954,18 @@ input, select, textarea, button { font-family: inherit; }
 		margin-top: 7px;
 		padding-top: 6px;
 		padding-bottom: 2px;
+		padding-right: 18px;
+		-webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 22px), transparent 100%);
+		mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 22px), transparent 100%);
 	}
 	.xx-hd-fates::-webkit-scrollbar { display: none; }
 	.xx-hd-fates.xx-hd-arts {
 		flex-wrap: wrap;
 		overflow-x: visible;
 		gap: 5px;
+		padding-right: 0;
+		-webkit-mask-image: none;
+		mask-image: none;
 	}
 	.xx-hd-fates .xx-chip {
 		flex: 0 0 auto;
@@ -3038,12 +3050,29 @@ input, select, textarea, button { font-family: inherit; }
 		background: rgba(10, 15, 22, .98);
 		box-shadow: 0 -10px 30px rgba(0, 0, 0, .65);
 		z-index: 30;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	#rightColumn.xx-log-open #rightTabLog {
+		flex: 1 1 auto;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
 	}
 	#rightColumn .console-intro,
 	#rightColumn .console-intro-sub {
 		display: none !important;
 	}
-	#gameLog { font-size: 12px; padding-top: 4px; }
+	#gameLog {
+		font-size: 12px;
+		padding-top: 4px;
+		padding-bottom: 8px;
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+	}
 
 	/* 5. Thumb-Friendly Bottom Navigation Dock (.tabsContainer) */
 	.tabsContainer {
@@ -4843,6 +4872,51 @@ input, select, textarea, button { font-family: inherit; }
 }
 
 @media (max-width: 960px) {
+	.xx-hd-fates {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		padding-right: 18px;
+		-webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 22px), transparent 100%);
+		mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 22px), transparent 100%);
+	}
+	.xx-hd-fates::-webkit-scrollbar { display: none; }
+	.xx-hd-fates.xx-hd-arts {
+		flex-wrap: wrap;
+		overflow-x: visible;
+		gap: 5px;
+		padding-right: 0;
+		-webkit-mask-image: none;
+		mask-image: none;
+	}
+	.xxFireBar {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		width: 100%;
+		gap: 6px;
+	}
+	.xxFireLbl {
+		grid-column: 1 / -1;
+		margin-bottom: -2px;
+	}
+	.xxFireChip {
+		flex-direction: column;
+		justify-content: center;
+		text-align: center;
+		padding: 6px 4px;
+		gap: 3px;
+		border-radius: 8px;
+	}
+	.xxFireTag {
+		font-size: 10px;
+		padding: 1px 5px;
+		white-space: nowrap;
+	}
+	.xxToxPurgeBtn,
+	.xxAlcDewBtn {
+		white-space: nowrap;
+	}
 	.xxAlcStatusRow {
 		grid-template-columns: 1fr;
 	}
@@ -4851,6 +4925,15 @@ input, select, textarea, button { font-family: inherit; }
 	}
 }
 @media (max-width: 600px) {
+	.xxFireBar {
+		grid-template-columns: 1fr;
+		gap: 5px;
+	}
+	.xxFireChip {
+		flex-direction: row;
+		justify-content: space-between;
+		padding: 6px 12px;
+	}
 	.xxAlcRecipeGrid {
 		grid-template-columns: 1fr;
 	}
