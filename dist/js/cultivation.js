@@ -3882,6 +3882,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (!enemy){
 			return {key: "strike", title: "⚔ 凶煞扑击", desc: "蓄势待发", counter: "宜用【御剑斩】抢攻"};
 		}
+		var self = this;
+		var iFmt = function(n){
+			var v = Math.round(n);
+			return (v >= 10000 && self.game && self.game.getDisplayValueExt)
+				? self.game.getDisplayValueExt(v, false, false, 1)
+				: String(v);
+		};
 		var intent = enemy.intent || "strike";
 		var atk = enemy.atk || 20;
 		if (enemy.enraged){ atk = Math.round(atk * 1.42); }
@@ -3890,7 +3897,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			return {
 				key: "heavy",
 				title: "🔥 蓄力杀招",
-				desc: "预计轰出 ~" + hDmg + " 点狂暴重击",
+				desc: "预计轰出 ~" + iFmt(hDmg) + " 点狂暴重击",
 				counter: "破招：施展【🛡 玄水灵盾】触发太极反震！"
 			};
 		}
@@ -3899,7 +3906,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			return {
 				key: "guard",
 				title: "🛡 妖罡凝盾",
-				desc: "凝结 ~" + sGain + " 点护盾并反击",
+				desc: "凝结 ~" + iFmt(sGain) + " 点护盾并反击",
 				counter: "破招：施展【⚡ 青元剑阵】2.5倍破盾碎甲！"
 			};
 		}
@@ -3908,7 +3915,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			return {
 				key: "curse",
 				title: "☠ 妖术蚀灵",
-				desc: "造成 ~" + cDmg + " 伤害并附加剧毒/寒霜/蚀气",
+				desc: "造成 ~" + iFmt(cDmg) + " 伤害并附加剧毒/寒霜/蚀气",
 				counter: "破招：施展【✨ 法宝镇压】涤荡净化全异常！"
 			};
 		}
@@ -3916,7 +3923,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return {
 			key: "strike",
 			title: "⚔ 凶煞扑击",
-			desc: "预计造成 ~" + sDmg + " 点扑击伤害",
+			desc: "预计造成 ~" + iFmt(sDmg) + " 点扑击伤害",
 			counter: "应对：【🗡 御剑斩】聚气或【⚡ 青元剑阵】压制"
 		};
 	},
