@@ -335,6 +335,9 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.SettingsTab", com.nuclearunicorn.ga
 		dojo.empty(divExtra);
 
 		this.game.settings.forEach(function(setting) {
+			if (setting.name === "IWSmelter" || setting.name === "disablePollution" || setting.name === "enableRedshiftGflops" || setting.name === "hodl") {
+				return;
+			}
 			//In dev mode, show all options.
 			//Outside of dev mode, hide any options that shouldn't appear on the web version of the game.
 			if (!this.game.devMode) {

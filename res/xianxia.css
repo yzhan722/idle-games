@@ -1037,15 +1037,20 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
    Panels, dialogs, tooltip
    ============================================================ */
 .dialog, #optionsDiv, #importDiv, #exportDiv, #creditsDiv {
-	background: linear-gradient(160deg, rgba(18, 27, 39, .98), rgba(11, 17, 26, .99)) !important;
+	background: linear-gradient(160deg, #121c29, #0b111a) !important;
 	border: 1px solid var(--xx-gold) !important;
 	border-radius: 12px;
-	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .76), 0 18px 60px rgba(0, 0, 0, .85) !important;
+	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .82), 0 18px 60px rgba(0, 0, 0, .88) !important;
 	color: var(--text-color);
 	padding: 20px 24px !important;
 	z-index: 110 !important;
 	max-width: 94vw;
 	box-sizing: border-box;
+}
+#optionsDiv #batchSize {
+	margin-top: 8px;
+	margin-right: 6px;
+	width: 68px;
 }
 #optionsDiv label {
 	cursor: pointer;
@@ -1457,11 +1462,11 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	font-size: 13.5px;
 	line-height: 1.75;
 	letter-spacing: .5px;
-	background: linear-gradient(160deg, rgba(18, 28, 40, .98), rgba(10, 16, 24, .99)) !important;
+	background: linear-gradient(160deg, #121c29, #0a1018) !important;
 	border: 1px solid var(--xx-gold) !important;
 	border-radius: 12px;
 	padding: 20px 26px !important;
-	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .76), 0 18px 60px rgba(0, 0, 0, .85) !important;
+	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .82), 0 18px 60px rgba(0, 0, 0, .88) !important;
 	z-index: 110 !important;
 }
 @media (max-width: 700px) {
