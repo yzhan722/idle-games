@@ -2356,6 +2356,9 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Workshop", com.nuclearunicorn.game.
 		var controller = new com.nuclearunicorn.game.ui.CraftButtonController(this.game);
 		for (var i = 0; i < crafts.length; i++ ){
 			var craft =  crafts[i];
+			if (this.game.cultivation && this.game.cultivation.isCoreRealmResource && !this.game.cultivation.isCoreRealmResource(craft.name)){
+				continue;
+			}
 			var craftBtn = new com.nuclearunicorn.game.ui.CraftButton({
 				name: craft.label,
 				description: craft.description,
@@ -2370,7 +2373,7 @@ dojo.declare("com.nuclearunicorn.game.ui.tab.Workshop", com.nuclearunicorn.game.
 		}
 
 		//----------------
-		if (!this.game.science.get("construction").researched && !(this.game.cultivation && this.game.cultivation.getCurrentRealmIndex() >= 1)){
+		if (this.craftBtns.length === 0 || (!this.game.science.get("construction").researched && !(this.game.cultivation && this.game.cultivation.getCurrentRealmIndex() >= 1))){
 			craftPanel.setVisible(false);
 		}
 

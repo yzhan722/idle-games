@@ -624,9 +624,9 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	flex-wrap: wrap;
-	gap: 6px;
-	padding: 8px 18px;
+	flex-wrap: nowrap;
+	gap: 4px;
+	padding: 7px 14px;
 	margin-top: 0;
 	text-align: left;
 	border-bottom: 1px solid var(--xx-line);
@@ -634,19 +634,23 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	background: linear-gradient(180deg, rgba(14, 21, 31, .92), rgba(10, 15, 23, .82));
 	overflow-x: auto;
 	overflow-y: hidden;
+	scrollbar-width: none;
 }
+.tabsContainer::-webkit-scrollbar { display: none; }
 .tabsContainer span { display: none; }
 #game .tabsContainer .tab,
 body.scheme_default .tabsContainer a.tab {
 	display: inline-flex;
 	align-items: center;
-	padding: 6px 14px;
+	flex: 0 0 auto;
+	white-space: nowrap;
+	padding: 5px 11px;
 	border-left: none;
 	border-bottom: 2px solid transparent;
 	border-radius: 7px;
 	font-family: var(--xx-serif);
-	font-size: 15.5px;
-	letter-spacing: 2.5px;
+	font-size: 14.5px;
+	letter-spacing: 1.5px;
 	color: var(--xx-mute) !important;
 	transition: color .18s, background .18s, border-color .18s;
 }
@@ -1310,6 +1314,16 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	font-size: 13px;
 	color: var(--xx-jade);
 	letter-spacing: 1px;
+	text-shadow: 0 1px 4px rgba(0, 0, 0, .92);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	row-gap: 3px;
+}
+.xx-hd-extra > span + span::before {
+	content: " · ";
+	color: var(--xx-gold);
+	margin: 0 4px;
 }
 .xx-chip {
 	display: inline-flex;
@@ -1319,9 +1333,10 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	border-radius: 999px;
 	font-size: 12.5px;
 	letter-spacing: 1px;
-	background: rgba(10, 15, 22, .8);
+	background: rgba(8, 13, 20, .88);
 	border: 1px solid rgba(120, 130, 145, .3);
 	color: var(--xx-mute);
+	text-shadow: 0 1px 2px rgba(0, 0, 0, .85);
 	transition: border-color .2s, transform .15s, box-shadow .2s;
 }
 .xx-chip.xx-bonus { color: var(--xx-gold-hi); border-color: var(--xx-line); }
@@ -1333,10 +1348,15 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	flex-wrap: wrap;
 	margin-top: 10px;
 	padding-top: 8px;
-	border-top: 1px dashed rgba(212, 176, 106, .16);
+	border-top: 1px dashed rgba(212, 176, 106, .24);
 	align-items: center;
 }
-.xx-fate-lbl { font-size: 12px; color: var(--xx-mute); letter-spacing: 2px; }
+.xx-fate-lbl {
+	font-size: 12px;
+	color: var(--xx-paper);
+	letter-spacing: 2px;
+	text-shadow: 0 1px 3px rgba(0, 0, 0, .9);
+}
 .xx-fate { color: var(--xx-gold-hi); border-color: rgba(212, 176, 106, .4); cursor: help; }
 .xx-art { color: #9ecbff; border-color: rgba(158, 203, 255, .4); cursor: help; }
 .xx-fate:hover, .xx-art:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.4); }
@@ -1420,6 +1440,12 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	font-size: 13.5px;
 	line-height: 1.75;
 	letter-spacing: .5px;
+	background: linear-gradient(160deg, rgba(18, 28, 40, .98), rgba(10, 16, 24, .99)) !important;
+	border: 1px solid var(--xx-gold) !important;
+	border-radius: 12px;
+	padding: 20px 26px !important;
+	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .76), 0 18px 60px rgba(0, 0, 0, .85) !important;
+	z-index: 110 !important;
 }
 @media (max-width: 700px) {
 	.xxHelp {
@@ -1828,9 +1854,13 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	border-radius: 8px;
 	margin-top: 8px;
 }
-.btn.modern.xxFateBtn .btnTitle { text-align: left; }
+.btn.modern.xxFateBtn > .btnTitle {
+	display: block;
+	padding: 9px 14px;
+}
+.btn.modern.xxFateBtn .btnTitle { text-align: left; display: block; width: 100%; }
 .xxFateHint { font-size: 12px; color: var(--xx-jade); font-weight: normal; }
-.xxFateNext .btnTitle, .xxFateDone .btnTitle { text-align: center; }
+.btn.modern.xxFateNext .btnTitle, .btn.modern.xxFateDone .btnTitle { text-align: center !important; }
 .xxFateNext { border-style: dashed; opacity: .9; }
 
 /* 坐化卡——寿尽 modal */
@@ -2074,6 +2104,184 @@ hr { border: none; border-top: 1px solid var(--xx-line); }
 table.craftTable tr:hover td { background-color: rgba(79, 209, 165, .12); }
 .panel-title { color: var(--xx-mute); }
 
+/* Collapsible Panels (.panelContainer) across Workshop, Trade, Religion, Space, Time */
+.panelContainer {
+	max-width: 1120px;
+	margin-top: 10px;
+	border: 1px solid rgba(212, 176, 106, .26);
+	border-radius: 10px;
+	background: linear-gradient(180deg, rgba(16, 24, 36, .78), rgba(11, 17, 26, .84));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 4px 16px rgba(0, 0, 0, .3);
+	overflow: hidden;
+}
+.panelContainer > .title {
+	font-family: var(--xx-serif);
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+	padding: 8px 14px;
+	background: linear-gradient(90deg, rgba(24, 35, 50, .72), rgba(14, 21, 31, .45));
+	border-bottom: 1px solid rgba(212, 176, 106, .16);
+}
+.panelContainer > .toggle {
+	border: 1px solid rgba(79, 209, 165, .35);
+	border-radius: 5px;
+	background: rgba(79, 209, 165, .10);
+	color: var(--xx-jade);
+	margin: 6px 10px;
+	padding: 1px 8px;
+	font-size: 12px;
+	line-height: 1.4;
+	transition: all .15s;
+}
+.panelContainer > .toggle:hover {
+	border-color: var(--xx-gold);
+	color: var(--xx-gold-hi);
+	background: rgba(212, 176, 106, .16);
+}
+.panelContainer > .container {
+	padding: 12px 14px;
+}
+.tabInner.Space .panelContainer > .container,
+.tabInner.Challenges .panelContainer > .container {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px 14px;
+	align-items: stretch;
+}
+.tabInner.Challenges .panelContainer > .container > span,
+.tabInner.Challenges .panelContainer > .container > table {
+	grid-column: 1 / -1;
+}
+.tabInner.Space .panelContainer > .container > .btn.modern,
+.tabInner.Challenges .panelContainer > .container > .btn.modern {
+	width: 100%;
+	max-width: none;
+	margin: 0;
+	height: 100%;
+}
+.tabInner.Achievements .panelContainer > .container > div,
+.tabInner.Achievements .badges-container {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px 12px;
+	align-items: stretch;
+}
+.tabInner.Achievements .achievement-header {
+	grid-column: 1 / -1;
+	font-family: var(--xx-serif);
+	font-size: 14px;
+	letter-spacing: 1.5px;
+	color: var(--xx-gold-hi);
+	margin-bottom: 4px;
+}
+.tabInner.Achievements .achievement {
+	position: relative;
+	display: block;
+	width: 100% !important;
+	box-sizing: border-box;
+	margin: 0 !important;
+	padding: 9px 14px !important;
+	border-radius: 8px;
+	border: 1px solid rgba(120, 136, 156, .22) !important;
+	background: rgba(11, 18, 28, .72);
+	color: var(--xx-mute);
+	font-family: var(--xx-serif);
+	font-size: 14px;
+	letter-spacing: 1px;
+	transition: all .15s;
+}
+.tabInner.Achievements .achievement.unlocked {
+	border-color: rgba(212, 176, 106, .48) !important;
+	background: linear-gradient(135deg, rgba(28, 40, 56, .92), rgba(15, 23, 35, .92));
+	color: var(--xx-gold-hi);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 4px 12px rgba(0, 0, 0, .28);
+}
+.tabInner.Achievements .achievement.unlocked::after {
+	content: attr(title);
+	display: block;
+	margin-top: 3px;
+	font-family: var(--xx-sans);
+	font-size: 11.5px;
+	font-weight: 400;
+	letter-spacing: .5px;
+	color: var(--xx-paper);
+	opacity: .84;
+}
+.tabInner.Stats h1 {
+	font-family: var(--xx-serif);
+	font-size: 15px;
+	letter-spacing: 2px;
+	color: var(--xx-gold-hi);
+	margin: 14px 0 8px;
+	padding-bottom: 4px;
+	border-bottom: 1px solid rgba(212, 176, 106, .22);
+}
+.tabInner.Stats .jianghuBoard,
+.tabInner.Stats .statTable {
+	width: 100%;
+	max-width: 760px;
+	background: linear-gradient(180deg, rgba(16, 24, 36, .78), rgba(11, 17, 26, .84));
+	border: 1px solid rgba(212, 176, 106, .24);
+	border-radius: 10px;
+	padding: 12px 16px;
+	box-sizing: border-box;
+	border-collapse: separate;
+	border-spacing: 0;
+}
+.tabInner.Stats .statTable td {
+	padding: 6px 8px;
+	border-bottom: 1px dashed rgba(120, 136, 156, .16);
+	font-size: 13px;
+	color: var(--xx-paper);
+}
+.tabInner.Stats .statTable tr:last-child td {
+	border-bottom: none;
+}
+.tabInner.Stats .statTable td:last-child {
+	text-align: right;
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+	.tabInner.Space .panelContainer > .container,
+	.tabInner.Challenges .panelContainer > .container,
+	.tabInner.Achievements .panelContainer > .container > div,
+	.tabInner.Achievements .badges-container {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 6px;
+	}
+}
+.trade-race > .left {
+	line-height: 1.65;
+	font-size: 13px;
+}
+.trade-race > .right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 6px;
+}
+.trade-race > .right > .btn.modern {
+	max-width: 340px;
+	margin: 0;
+}
+.trade-race .buys {
+	color: var(--xx-jade);
+	font-weight: 600;
+	min-width: 44px;
+}
+.trade-race .sells {
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+	min-width: 44px;
+}
+.trade-race .tradeAmount {
+	color: var(--xx-mute);
+}
+
 .tabsContainer .tab:focus-visible, .xx-guide-nav:focus-visible {
 	outline: 2px solid var(--xx-jade-dim);
 	outline-offset: 1px;
@@ -2217,18 +2425,28 @@ input, select, textarea, button { font-family: inherit; }
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 4px;
 	}
+	#leftColumn.xx-res-open .res-table,
 	#leftColumn .res-table.craftTable {
 		grid-template-columns: minmax(0, 1fr);
+	}
+	#leftColumn:not(.xx-res-open) .res-weather,
+	#leftColumn:not(.xx-res-open) .xx-res-acts,
+	#leftColumn:not(.xx-res-open) .maxRes {
+		display: none !important;
 	}
 	#leftColumn .res-row {
 		min-height: 30px;
 		padding: 4px 6px 5px;
 		font-size: 11px;
+		overflow: hidden;
+	}
+	#leftColumn .res-head {
+		overflow: hidden;
 	}
 	#leftColumn .resource-name { font-size: 11px; }
 	#leftColumn .res-figure .res-val,
-	#leftColumn .res-figure.resAmount { font-size: 11.5px; }
-	#leftColumn .resPerTick { font-size: 10px; min-width: 44px; }
+	#leftColumn .res-figure.resAmount { font-size: 11px; }
+	#leftColumn .resPerTick { font-size: 10px; min-width: 38px; }
 	.xx-res-toggle {
 		display: block;
 		position: sticky;
@@ -2354,22 +2572,27 @@ input, select, textarea, button { font-family: inherit; }
 		text-align: left;
 	}
 	.btn.modern:not(.xxAction):not(.xxFateBtn) .btnContent {
-		padding: 8px 12px 9px 38px !important;
+		padding: 8px 34px 9px 14px !important;
 		text-align: left;
+	}
+	.btn.modern.xx-has-ico:not(.xxAction):not(.xxFateBtn) .btnContent {
+		padding: 8px 34px 9px 38px !important;
 	}
 	.btn.modern:not(.xxAction):not(.xxFateBtn) .xx-info-btn {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		position: absolute;
-		left: 9px;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 21px;
-		height: 21px;
+		left: auto;
+		right: 8px;
+		bottom: 7px;
+		top: auto;
+		transform: none;
+		width: 20px;
+		height: 20px;
 		border-radius: 999px;
-		border: 1px solid rgba(79, 209, 165, .32);
-		background: rgba(10, 15, 22, .75);
+		border: 1px solid rgba(79, 209, 165, .36);
+		background: rgba(10, 15, 22, .85);
 		color: var(--xx-jade);
 		font-size: 11px;
 		font-weight: 600;
@@ -2461,7 +2684,7 @@ input, select, textarea, button { font-family: inherit; }
 	#calendarDiv, #calendarSign {
 		font-size: 12px;
 		letter-spacing: 1px;
-		white-space: nowrap;
+		white-space: nowrap !important;
 		flex: 0 0 auto;
 	}
 	.xx-log-ticker {
@@ -2470,7 +2693,7 @@ input, select, textarea, button { font-family: inherit; }
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space: nowrap;
+		white-space: nowrap !important;
 		font-size: 11.5px;
 		color: var(--xx-paper);
 		opacity: .9;
@@ -2487,6 +2710,7 @@ input, select, textarea, button { font-family: inherit; }
 		background: rgba(212, 176, 106, .10);
 		color: var(--xx-gold-hi);
 		font-size: 10.5px;
+		white-space: nowrap !important;
 	}
 	#rightColumn:not(.xx-log-open) .right-tab-header,
 	#rightColumn:not(.xx-log-open) #observeButton,
@@ -2509,8 +2733,9 @@ input, select, textarea, button { font-family: inherit; }
 	/* 5. Thumb-Friendly Bottom Navigation Dock (.tabsContainer) */
 	.tabsContainer {
 		flex-direction: row;
+		flex-wrap: nowrap !important;
 		align-items: stretch;
-		justify-content: space-around;
+		justify-content: flex-start;
 		gap: 2px;
 		height: 46px;
 		padding: 0 4px;
@@ -2522,8 +2747,10 @@ input, select, textarea, button { font-family: inherit; }
 		overflow-x: auto;
 		overflow-y: hidden;
 		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
 		z-index: 25;
 	}
+	.tabsContainer::-webkit-scrollbar { display: none; }
 	#game .tabsContainer .tab {
 		flex: 1 0 auto;
 		display: inline-flex;
@@ -2534,9 +2761,9 @@ input, select, textarea, button { font-family: inherit; }
 		border-bottom: none;
 		border-top: 3px solid transparent;
 		border-radius: 0;
-		font-size: 14.5px;
-		letter-spacing: 1.5px;
-		white-space: nowrap;
+		font-size: 14px;
+		letter-spacing: 1px;
+		white-space: nowrap !important;
 	}
 	#game .tabsContainer .tab:hover { padding-left: 10px; }
 	#game .tabsContainer .tab.activeTab {
@@ -2632,14 +2859,21 @@ input, select, textarea, button { font-family: inherit; }
 	z-index: 0;
 	opacity: .88;
 }
+.xx-hero-bg::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background:
+		linear-gradient(90deg, rgba(10, 15, 23, .82) 0%, rgba(12, 18, 28, .64) 55%, rgba(10, 15, 23, .56) 100%),
+		linear-gradient(180deg, rgba(10, 15, 23, .18) 0%, rgba(10, 15, 23, .76) 72%, rgba(10, 15, 23, .92) 100%);
+	pointer-events: none;
+}
 .xx-cult-bg-svg {
 	width: 100%;
 	height: 100%;
 	display: block;
 }
-.cultivationHeader > .xx-hero,
-.cultivationHeader > .xx-tiles,
-.cultivationHeader > .xx-chips {
+.cultivationHeader > *:not(.xx-hero-bg) {
 	position: relative;
 	z-index: 1;
 }
@@ -5296,12 +5530,62 @@ input, select, textarea, button { font-family: inherit; }
 @media (max-width: 860px) {
 	.xxFighterArena {
 		grid-template-columns: 1fr;
+		gap: 6px;
 	}
 	.xxArenaVs {
 		display: none;
 	}
 	.xxSkillDeck {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 6px;
+	}
+}
+@media (max-width: 640px) {
+	.xxCombatStage {
+		padding: 8px 9px;
+		gap: 6px;
+	}
+	.xxCombatStageHd {
+		padding-bottom: 4px;
+	}
+	.xxFighterCard {
+		grid-template-columns: 54px minmax(0, 1fr);
+		gap: 3px 8px;
+		padding: 6px 8px;
+	}
+	.xxSpriteStage {
+		width: 54px;
+		height: 58px;
+	}
+	.xxSpriteWrap {
+		width: 50px;
+		height: 50px;
+	}
+	.xxTraitBox {
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		padding: 3px 6px;
+	}
+	.xxTraitText {
+		font-size: 10.5px;
+		white-space: nowrap !important;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.xxIntentBox {
+		padding: 4px 7px;
+	}
+	.xxSkillBtn {
+		padding: 6px 8px;
+		gap: 2px;
+	}
+	.xxSkillName {
+		font-size: 12px;
+	}
+	.xxSkillDesc {
+		font-size: 10px;
+		line-height: 1.25;
 	}
 }
 

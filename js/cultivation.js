@@ -2507,10 +2507,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			dojo.connect(oCards[o.key], "onclick", function(){ selOrigin = o.key; markO(); });
 		});
 
-		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn", tabIndex: 0}, card);
+		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0}, card);
+		var btnContent = dojo.create("div", {className: "btnContent"}, btn);
 		dojo.create("span", {
 			className: "btnTitle", innerHTML: "<b>" + $I("identity.confirm") + "</b>"
-		}, btn);
+		}, btnContent);
 		dojo.connect(btn, "onclick", function(){
 			if (originOnly){
 				//转世择身——魂还是那缕魂,只换这一世的出身
@@ -2552,6 +2553,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	showDeathOverlay: function(bonus, karmaText){
 		var self = this;
+		if (typeof bonus != "number" || isNaN(bonus)){
+			bonus = this.getCurrentRealmIndex() * this.ASCENSION_KARMA;
+		}
+		if (!karmaText){
+			karmaText = $I("cultivation.msg.lifespan.karma." + (bonus > 0 ? "gain" : "none"), [bonus]);
+		}
 		this.deathOverlayOpen = true;
 		var overlay = dojo.create("div", {className: "xxFateOverlay"}, dojo.byId("gamePageContainer"));
 		var card = dojo.create("div", {
@@ -2576,11 +2583,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			innerHTML: $I("cultivation.msg.lifespan.end",
 				[this.getCurrentRealm().label, Math.floor(this.age), karmaText])
 		}, card);
-		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn", tabIndex: 0}, card);
+		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0}, card);
+		var btnContent = dojo.create("div", {className: "btnContent"}, btn);
 		dojo.create("span", {
 			className: "btnTitle",
 			innerHTML: "<b>" + $I("cultivation.msg.lifespan.rebirth") + "</b>"
-		}, btn);
+		}, btnContent);
 		dojo.connect(btn, "onclick", function(){
 			dojo.destroy(overlay);
 			self.applyReincarnation(bonus);
@@ -7216,6 +7224,26 @@ classes.ui.XianxiaArt = {
 			href = this.RES_ART.timeCrystal;
 		} else if (id == "reincarnate"){
 			href = this.RES_ART.karma;
+		} else if (id == "ironWill"){
+			href = this.TILE_ART.combat;
+		} else if (id == "winterIsComing"){
+			href = this.RES_ART.uranium;
+		} else if (id == "anarchy"){
+			href = this.BTN_ART.sect;
+		} else if (id == "energy"){
+			href = this.BTN_ART.vein;
+		} else if (id == "atheism"){
+			href = this.RES_ART.faith;
+		} else if (id == "1000Years"){
+			href = this.RES_ART.timeCrystal;
+		} else if (id == "blackSky"){
+			href = this.RES_ART.starchart;
+		} else if (id == "pacifism"){
+			href = this.RES_ART.gold;
+		} else if (id == "unicornTears"){
+			href = this.RES_ART.spice;
+		} else if (id == "postApocalypse"){
+			href = this.RES_ART.relic;
 		} else if (id.indexOf("vein") === 0){
 			href = this.BTN_ART.vein;
 		} else if (id.indexOf("sect") === 0){
