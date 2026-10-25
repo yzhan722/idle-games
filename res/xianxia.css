@@ -1036,21 +1036,73 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 /* ============================================================
    Panels, dialogs, tooltip
    ============================================================ */
-.dialog, #optionsDiv, #importDiv, #exportDiv, #creditsDiv {
+.dialog:not(.xxFateCard),
+#optionsDiv,
+#importDiv,
+#exportDiv,
+#creditsDiv,
+#helpDiv.xxHelp {
+	position: fixed !important;
+	left: 50% !important;
+	top: 50% !important;
+	margin-left: 0 !important;
+	margin-top: 0 !important;
+	transform: translate(-50%, -50%) !important;
+	height: auto !important;
+	max-height: 86vh !important;
+	overflow-y: auto !important;
 	background: linear-gradient(160deg, #121c29, #0b111a) !important;
 	border: 1px solid var(--xx-gold) !important;
 	border-radius: 12px;
-	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .82), 0 18px 60px rgba(0, 0, 0, .88) !important;
+	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .78), 0 18px 60px rgba(0, 0, 0, .88) !important;
 	color: var(--text-color);
 	padding: 20px 24px !important;
 	z-index: 110 !important;
 	max-width: 94vw;
-	box-sizing: border-box;
+	box-sizing: border-box !important;
+}
+.dialog.xxFateCard {
+	position: static !important;
+	transform: none !important;
+	margin: 0 !important;
+	box-shadow:
+		0 14px 60px rgba(0, 0, 0, .68),
+		0 0 0 1px rgba(212, 176, 106, .14),
+		0 0 40px rgba(212, 176, 106, .10) !important;
+}
+textarea::selection,
+input::selection {
+	background: rgba(79, 209, 165, .26);
+	color: var(--xx-gold-hi);
+}
+#optionsDiv > br {
+	display: none;
+}
+#optionsDiv #booleanOptionsNormal {
+	margin: 10px 0 6px;
+}
+#optionsDiv #optionMore {
+	display: inline-block;
+	margin: 2px 0 6px;
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+}
+#optionsDiv .optsExtra {
+	margin: 2px 0 8px;
+	padding: 8px 12px 10px;
+	border-radius: 8px;
+	background: rgba(8, 13, 20, .62);
+	border: 1px solid rgba(212, 176, 106, .20);
 }
 #optionsDiv #batchSize {
 	margin-top: 8px;
 	margin-right: 6px;
 	width: 68px;
+}
+#optionsDiv #exportButton,
+#optionsDiv #importButton,
+#optionsDiv #debugExportButton {
+	margin-top: 8px !important;
 }
 #exportDiv h1, #importDiv h1 {
 	font-family: var(--xx-serif);
@@ -2888,6 +2940,9 @@ input, select, textarea, button { font-family: inherit; }
 	.btn.modern.xx-has-ico:not(.xxAction):not(.xxFateBtn) .btnContent {
 		padding: 8px 34px 9px 38px !important;
 	}
+	.tabInner.Cultivation .btn.modern.xxAscend .btnContent {
+		padding: 9px 12px 10px 40px !important;
+	}
 	.btn.modern:not(.xxAction):not(.xxFateBtn) .xx-info-btn {
 		display: inline-flex;
 		align-items: center;
@@ -3125,6 +3180,18 @@ input, select, textarea, button { font-family: inherit; }
 	.xxFateCard, .xxIdCard {
 		width: 92vw;
 		padding: 16px 14px;
+	}
+	#optionsDiv {
+		padding: 14px 16px 16px !important;
+		max-height: 88dvh !important;
+	}
+	#optionsDiv label {
+		line-height: 1.56;
+		font-size: 13px;
+	}
+	#optionsDiv .optsExtra {
+		padding: 6px 10px 8px;
+		margin: 2px 0 6px;
 	}
 	.xxIdOrigins {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
