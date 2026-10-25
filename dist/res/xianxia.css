@@ -2853,7 +2853,7 @@ input, select, textarea, button { font-family: inherit; }
 	.xx-tile-val, .xx-tile-v { font-size: 13px; margin-top: 2px; }
 	.xx-pips i { width: 5px; height: 5px; }
 
-	/* Single-line horizontal touch-scroll strip for Fate & Artifact badges */
+	/* Single-line touch-scroll strip for passive Fate badges; full wrap for interactive Natal Artifacts */
 	.xx-hd-fates {
 		flex-wrap: nowrap;
 		overflow-x: auto;
@@ -2864,9 +2864,20 @@ input, select, textarea, button { font-family: inherit; }
 		padding-bottom: 2px;
 	}
 	.xx-hd-fates::-webkit-scrollbar { display: none; }
-	.xx-hd-fates .xx-chip, .xx-hd-fates .xx-fate-lbl {
+	.xx-hd-fates.xx-hd-arts {
+		flex-wrap: wrap;
+		overflow-x: visible;
+		gap: 5px;
+	}
+	.xx-hd-fates .xx-chip {
 		flex: 0 0 auto;
-		white-space: nowrap;
+		white-space: nowrap !important;
+		font-size: 11px;
+		padding: 2px 8px;
+	}
+	.xx-hd-fates .xx-fate-lbl {
+		flex: 0 0 auto;
+		white-space: nowrap !important;
 	}
 
 	/* 2×2 Action Cards on Mobile */
@@ -3865,13 +3876,24 @@ input, select, textarea, button { font-family: inherit; }
 }
 
 /* 探幽奇遇事件卡 */
-.xxExpEncounter,
-.xxExpIdle {
+.xxExpEncounter {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 	flex: 1 1 auto;
 	justify-content: space-between;
+}
+.xxExpIdle {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex: 0 0 auto;
+	margin-top: auto;
+}
+.xxExpIdle > .xxRiftMainBtn {
+	flex: 0 0 auto;
+	width: 100%;
+	min-height: 40px;
 }
 .xxExpEncHd {
 	display: flex;
@@ -4095,6 +4117,7 @@ input, select, textarea, button { font-family: inherit; }
 .xxRiftMainBtn,
 .xxRiftSubBtn {
 	flex: 1 1 180px;
+	box-sizing: border-box;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;

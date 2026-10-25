@@ -1742,7 +1742,7 @@ dojo.declare("com.nuclearunicorn.game.ui.ButtonModern", com.nuclearunicorn.game.
 					freeHint = "焚炼本源道果 · 化为永世烬余";
 				} else if (ctrlCls.indexOf("ChallengeBtn") >= 0 && this.model && this.model.metadata){
 					var cDesc = String(this.model.metadata.effectDesc || this.model.metadata.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-					freeHint = cDesc ? (cDesc.length > 26 ? cDesc.slice(0, 26) + "…" : cDesc) : "以身试劫 · 勘破生死大道";
+					freeHint = cDesc ? (cDesc.length > 44 ? cDesc.slice(0, 44) + "…" : cDesc) : "以身试劫 · 勘破生死大道";
 				} else if (this.model && this.model.name === $I("menu.reset")){
 					freeHint = "兵解重修 · 凝结宿慧道果";
 				}
