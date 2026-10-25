@@ -6753,7 +6753,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				for (var ci = cult.taleLog.length - 1; ci >= 0; ci--){
 					var e = cult.taleLog[ci];
 					var ef = cult.getFate(e.f);
-					var realmKey = (ef && ef.atStage) ? ef.atStage.split("_")[0] : "";
+					if (!ef){ continue; }
+					var realmKey = ef.atStage ? ef.atStage.split("_")[0] : "lianqi";
 					ch += "<div class=\"xxChronRow\">" +
 						"<span class=\"xxChronAge\">" + $I("cultivation.chronicle.age", [e.a]) + "</span>" +
 						"<span class=\"xxChronRealm\">" + $I("cultivation.realm." + realmKey + ".label") + "</span>" +
