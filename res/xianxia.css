@@ -1137,6 +1137,26 @@ input::selection {
 	color: var(--xx-gold-hi);
 	letter-spacing: .06em;
 }
+#helpDiv.xxHelp > a.close {
+	position: sticky !important;
+	top: 0 !important;
+	right: 0 !important;
+	float: right !important;
+	z-index: 6;
+	margin: -4px -4px 4px 12px;
+	padding: 2px 10px;
+	border-radius: 999px;
+	border: 1px solid rgba(212, 176, 106, .38);
+	background: rgba(14, 22, 34, .94);
+	color: var(--xx-gold-hi);
+	font-size: 12px;
+	text-decoration: none;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, .5);
+}
+#helpDiv.xxHelp > a.close:hover {
+	border-color: var(--xx-gold-hi);
+	background: rgba(28, 42, 60, .96);
+}
 .xxCreditsBody {
 	font-size: 13.5px;
 	line-height: 1.72;
