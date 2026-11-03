@@ -1,0 +1,88 @@
+/* 全局 Toast 通知 —— 深蓝灰主题，青色/琥珀金点缀 */
+/* 放在底部：顶部中央是活动状态栏（进度环 + 停止），toast 不能压在上面 */
+.toast-container {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  pointer-events: none;
+  width: max-content;
+  max-width: 90vw;
+}
+
+.toast-item {
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  max-width: 460px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--text-primary);
+  background: linear-gradient(135deg, rgba(51, 40, 30, 0.97), rgba(33, 26, 20, 0.97));
+  border: 1px solid rgba(212, 154, 72, 0.35);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(6px);
+  animation: toast-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.toast-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.toast-msg {
+  flex: 1;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* 类型样式：左侧高亮条 */
+.toast-success {
+  border-left: 4px solid #5fbf7e;
+}
+.toast-error {
+  border-left: 4px solid #d8694e;
+}
+.toast-info {
+  border-left: 4px solid var(--brand);
+}
+.toast-reward {
+  border-left: 4px solid #e8b860;
+  background: linear-gradient(135deg, rgba(60, 48, 24, 0.95), rgba(30, 28, 42, 0.97));
+  border-color: rgba(232, 184, 96, 0.45);
+  color: #f3e6c8;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  /* 底部导航 56px + 聊天 FAB 区域之上 */
+  .toast-container {
+    bottom: 124px;
+  }
+  .toast-item {
+    min-width: 180px;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+}

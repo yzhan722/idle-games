@@ -1,0 +1,497 @@
+{
+  "combatClasses": {
+    "woodcutter": {
+      "className": "狂战士",
+      "classIcon": "🪓",
+      "description": "挥舞伐木斧的狂暴战士，以高额伤害和持续输出著称",
+      "weapon": "伐木斧",
+      "primaryStat": "力量",
+      "role": "DPS",
+      "skills": [
+        {
+          "id": "berserker_chop",
+          "name": "劈砍",
+          "level": 1,
+          "type": "active",
+          "cooldown": 0,
+          "description": "用伐木斧重击敌人，造成120%攻击力的伤害",
+          "effect": {
+            "damage": 1.2,
+            "damageType": "physical"
+          }
+        },
+        {
+          "id": "berserker_cleave",
+          "name": "顺劈斩",
+          "level": 5,
+          "type": "active",
+          "cooldown": 10,
+          "description": "横扫伐木斧，对前方敌人造成150%攻击力的范围伤害",
+          "effect": {
+            "damage": 1.5,
+            "damageType": "physical",
+            "aoe": true
+          }
+        },
+        {
+          "id": "berserker_frenzy",
+          "name": "狂暴",
+          "level": 10,
+          "type": "active",
+          "cooldown": 20,
+          "description": "进入狂暴状态，攻击速度提高40%，攻击力提高30%，持续8秒",
+          "effect": {
+            "attackSpeed": 0.4,
+            "attackBonus": 0.3,
+            "duration": 8
+          }
+        },
+        {
+          "id": "berserker_bloodlust",
+          "name": "嗜血",
+          "level": 15,
+          "type": "passive",
+          "description": "每次攻击回复造成伤害的15%生命值，暴击率提高10%",
+          "effect": {
+            "lifesteal": 0.15,
+            "critRate": 0.1
+          }
+        },
+        {
+          "id": "berserker_execute",
+          "name": "斩杀",
+          "level": 20,
+          "type": "active",
+          "cooldown": 25,
+          "description": "全力挥砍伐木斧，造成300%攻击力伤害，对生命值低于30%的敌人额外造成100%伤害",
+          "effect": {
+            "damage": 3.0,
+            "damageType": "physical",
+            "executeBonus": 1.0,
+            "executeThreshold": 0.3
+          }
+        }
+      ]
+    },
+    "blacksmith": {
+      "className": "铁壁",
+      "classIcon": "🛡️",
+      "description": "手持锻造锤和盾牌的坚固坦克，能够承受大量伤害并保护队友",
+      "weapon": "锻造锤 + 盾牌",
+      "primaryStat": "体质",
+      "role": "坦克",
+      "skills": [
+        {
+          "id": "ironwall_bash",
+          "name": "锤击",
+          "level": 1,
+          "type": "active",
+          "cooldown": 0,
+          "description": "用锻造锤重击敌人，造成100%攻击力的伤害",
+          "effect": {
+            "damage": 1.0,
+            "damageType": "physical"
+          }
+        },
+        {
+          "id": "ironwall_shield_slam",
+          "name": "盾牌猛击",
+          "level": 5,
+          "type": "active",
+          "cooldown": 12,
+          "description": "用盾牌猛击敌人，造成90%攻击力伤害并眩晕2秒",
+          "effect": {
+            "damage": 0.9,
+            "damageType": "physical",
+            "stun": 2
+          }
+        },
+        {
+          "id": "ironwall_fortify",
+          "name": "坚固",
+          "level": 10,
+          "type": "active",
+          "cooldown": 18,
+          "description": "举起盾牌防御，减少60%受到的伤害，持续6秒",
+          "effect": {
+            "damageReduction": 0.6,
+            "duration": 6
+          }
+        },
+        {
+          "id": "ironwall_endurance",
+          "name": "钢铁之躯",
+          "level": 15,
+          "type": "passive",
+          "description": "最大生命值提高30%，防御力提高25%",
+          "effect": {
+            "hpBonus": 0.3,
+            "defenseBonus": 0.25
+          }
+        },
+        {
+          "id": "ironwall_taunt",
+          "name": "嘲讽",
+          "level": 20,
+          "type": "active",
+          "cooldown": 20,
+          "description": "敲击盾牌嘲讽敌人，强制敌人攻击自己，同时获得40%伤害减免，持续5秒",
+          "effect": {
+            "taunt": true,
+            "damageReduction": 0.4,
+            "duration": 5
+          }
+        }
+      ]
+    },
+    "farmer": {
+      "className": "自然使者",
+      "classIcon": "🌾",
+      "description": "使用锄头和镰刀的辅助职业，擅长为队友提供增益并削弱敌人",
+      "weapon": "锄头 + 镰刀",
+      "primaryStat": "智慧",
+      "role": "辅助",
+      "skills": [
+        {
+          "id": "nature_strike",
+          "name": "自然打击",
+          "level": 1,
+          "type": "active",
+          "cooldown": 0,
+          "description": "用锄头攻击敌人，造成90%攻击力的伤害",
+          "effect": {
+            "damage": 0.9,
+            "damageType": "physical"
+          }
+        },
+        {
+          "id": "nature_blessing",
+          "name": "自然祝福",
+          "level": 5,
+          "type": "active",
+          "cooldown": 15,
+          "description": "为队友施加自然祝福，提高20%攻击力和15%防御力，持续10秒",
+          "effect": {
+            "attackBuff": 0.2,
+            "defenseBuff": 0.15,
+            "duration": 10,
+            "target": "ally"
+          }
+        },
+        {
+          "id": "nature_weaken",
+          "name": "虚弱诅咒",
+          "level": 10,
+          "type": "active",
+          "cooldown": 12,
+          "description": "用镰刀划伤敌人，降低敌人25%攻击力和20%防御力，持续8秒",
+          "effect": {
+            "attackDebuff": 0.25,
+            "defenseDebuff": 0.2,
+            "duration": 8,
+            "target": "enemy"
+          }
+        },
+        {
+          "id": "nature_harvest",
+          "name": "丰收",
+          "level": 15,
+          "type": "passive",
+          "description": "队友击杀敌人时，额外获得20%经验和15%金币",
+          "effect": {
+            "xpBonus": 0.2,
+            "goldBonus": 0.15,
+            "target": "party"
+          }
+        },
+        {
+          "id": "nature_growth",
+          "name": "生长",
+          "level": 20,
+          "type": "active",
+          "cooldown": 25,
+          "description": "在地面种下自然种子，每秒为范围内队友恢复5%最大生命值，持续6秒",
+          "effect": {
+            "healPerTick": 0.05,
+            "duration": 6,
+            "tickRate": 1,
+            "target": "party",
+            "aoe": true
+          }
+        }
+      ]
+    },
+    "chef": {
+      "className": "圣厨",
+      "classIcon": "🍳",
+      "description": "挥舞平底锅和锅铲的治疗职业，用美食的力量恢复队友",
+      "weapon": "平底锅 + 锅铲",
+      "primaryStat": "智慧",
+      "role": "治疗",
+      "skills": [
+        {
+          "id": "chef_pan_smash",
+          "name": "平底锅猛击",
+          "level": 1,
+          "type": "active",
+          "cooldown": 0,
+          "description": "用平底锅敲击敌人，造成80%攻击力的伤害",
+          "effect": {
+            "damage": 0.8,
+            "damageType": "physical"
+          }
+        },
+        {
+          "id": "chef_quick_meal",
+          "name": "快速料理",
+          "level": 5,
+          "type": "active",
+          "cooldown": 10,
+          "description": "快速制作料理，为自己或队友恢复30%最大生命值",
+          "effect": {
+            "heal": 0.3,
+            "target": "single"
+          }
+        },
+        {
+          "id": "chef_feast",
+          "name": "盛宴",
+          "level": 10,
+          "type": "active",
+          "cooldown": 18,
+          "description": "准备丰盛的盛宴，为所有队友恢复25%最大生命值并提供持续恢复效果（每秒3%，持续5秒）",
+          "effect": {
+            "heal": 0.25,
+            "healOverTime": 0.03,
+            "duration": 5,
+            "target": "party"
+          }
+        },
+        {
+          "id": "chef_nourishment",
+          "name": "滋养",
+          "level": 15,
+          "type": "passive",
+          "description": "治疗效果提高25%，队友受到治疗后额外获得10%伤害加成，持续5秒",
+          "effect": {
+            "healingBonus": 0.25,
+            "damageBuffAfterHeal": 0.1,
+            "buffDuration": 5
+          }
+        },
+        {
+          "id": "chef_resurrection",
+          "name": "复苏料理",
+          "level": 20,
+          "type": "active",
+          "cooldown": 30,
+          "description": "制作神奇料理，完全恢复目标生命值并移除所有负面效果，同时提供5秒无敌状态",
+          "effect": {
+            "heal": 1.0,
+            "cleanse": true,
+            "invulnerable": true,
+            "duration": 5,
+            "target": "single"
+          }
+        }
+      ]
+    },
+    "tailor": {
+      "className": "影刃",
+      "classIcon": "✂️",
+      "description": "使用裁缝剪刀的刺客，以快速连击和致命暴击著称",
+      "weapon": "裁缝剪刀",
+      "primaryStat": "敏捷",
+      "role": "刺客",
+      "skills": [
+        {
+          "id": "shadow_snip",
+          "name": "剪切",
+          "level": 1,
+          "type": "active",
+          "cooldown": 0,
+          "description": "用剪刀快速攻击，造成110%攻击力的伤害",
+          "effect": {
+            "damage": 1.1,
+            "damageType": "physical"
+          }
+        },
+        {
+          "id": "shadow_combo",
+          "name": "连续剪击",
+          "level": 5,
+          "type": "active",
+          "cooldown": 8,
+          "description": "快速挥舞剪刀进行5次连击，每次造成50%攻击力伤害",
+          "effect": {
+            "damage": 0.5,
+            "hits": 5,
+            "damageType": "physical"
+          }
+        },
+        {
+          "id": "shadow_stealth",
+          "name": "潜行",
+          "level": 10,
+          "type": "active",
+          "cooldown": 15,
+          "description": "进入潜行状态，下一次攻击造成200%伤害并必定暴击",
+          "effect": {
+            "damageBonus": 1.0,
+            "guaranteedCrit": true,
+            "stealth": true
+          }
+        },
+        {
+          "id": "shadow_precision",
+          "name": "精准切割",
+          "level": 15,
+          "type": "passive",
+          "description": "暴击率提高30%，暴击伤害提高60%，攻击速度提高20%",
+          "effect": {
+            "critRate": 0.3,
+            "critDamage": 0.6,
+            "attackSpeed": 0.2
+          }
+        },
+        {
+          "id": "shadow_assassinate",
+          "name": "刺杀",
+          "level": 20,
+          "type": "active",
+          "cooldown": 20,
+          "description": "瞬移到敌人身后进行致命一击，造成350%攻击力伤害，对生命值低于40%的敌人直接击杀",
+          "effect": {
+            "damage": 3.5,
+            "damageType": "physical",
+            "teleport": true,
+            "execute": true,
+            "executeThreshold": 0.4
+          }
+        }
+      ]
+    },
+    "alchemist": {
+      "className": "药剂师",
+      "classIcon": "⚗️",
+      "description": "使用炼金瓶和法杖的法师，通过魔法药剂和元素法术造成大量伤害",
+      "weapon": "炼金瓶 + 法杖",
+      "primaryStat": "智力",
+      "role": "法师",
+      "skills": [
+        {
+          "id": "alchemist_bolt",
+          "name": "魔法箭",
+          "level": 1,
+          "type": "active",
+          "cooldown": 0,
+          "description": "用法杖发射魔法箭，造成100%魔法攻击力的伤害",
+          "effect": {
+            "damage": 1.0,
+            "damageType": "magic"
+          }
+        },
+        {
+          "id": "alchemist_potion_throw",
+          "name": "投掷药剂",
+          "level": 5,
+          "type": "active",
+          "cooldown": 10,
+          "description": "投掷爆炸药剂，造成140%魔法攻击力的范围伤害",
+          "effect": {
+            "damage": 1.4,
+            "damageType": "magic",
+            "aoe": true
+          }
+        },
+        {
+          "id": "alchemist_transmute",
+          "name": "元素转化",
+          "level": 10,
+          "type": "active",
+          "cooldown": 12,
+          "description": "转化元素能量，造成180%魔法攻击力伤害并随机附加火焰、冰霜或毒素效果",
+          "effect": {
+            "damage": 1.8,
+            "damageType": "magic",
+            "randomEffect": ["burn", "freeze", "poison"]
+          }
+        },
+        {
+          "id": "alchemist_mastery",
+          "name": "炼金精通",
+          "level": 15,
+          "type": "passive",
+          "description": "魔法攻击力提高35%，技能冷却时间减少20%",
+          "effect": {
+            "magicAttackBonus": 0.35,
+            "cooldownReduction": 0.2
+          }
+        },
+        {
+          "id": "alchemist_elixir",
+          "name": "终极药剂",
+          "level": 20,
+          "type": "active",
+          "cooldown": 30,
+          "description": "投掷终极炼金药剂，造成300%魔法攻击力的巨大范围伤害，并在6秒内持续造成每秒10%魔法攻击力的伤害",
+          "effect": {
+            "damage": 3.0,
+            "damageType": "magic",
+            "aoe": true,
+            "dot": {
+              "damage": 0.1,
+              "duration": 6
+            }
+          }
+        }
+      ]
+    }
+  },
+  "skillCategories": {
+    "active": "主动技能",
+    "passive": "被动技能"
+  },
+  "damageTypes": {
+    "physical": {
+      "name": "物理",
+      "color": "#ff6b6b"
+    },
+    "magic": {
+      "name": "魔法",
+      "color": "#4ecdc4"
+    }
+  },
+  "roles": {
+    "DPS": {
+      "name": "输出",
+      "description": "专注于造成高额伤害",
+      "color": "#ff4444"
+    },
+    "坦克": {
+      "name": "坦克",
+      "description": "承受伤害并保护队友",
+      "color": "#4444ff"
+    },
+    "辅助": {
+      "name": "辅助",
+      "description": "提供增益和削弱效果",
+      "color": "#44ff44"
+    },
+    "治疗": {
+      "name": "治疗",
+      "description": "恢复队友生命值",
+      "color": "#ffff44"
+    },
+    "刺客": {
+      "name": "刺客",
+      "description": "高爆发和快速击杀",
+      "color": "#ff44ff"
+    },
+    "法师": {
+      "name": "法师",
+      "description": "强大的魔法伤害",
+      "color": "#44ffff"
+    }
+  }
+}
