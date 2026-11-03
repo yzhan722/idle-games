@@ -16,6 +16,11 @@ if ($PassThruArgs -contains "--self-test") {
     & $GodotConsole --path $ProjectDir -- --self-test
     exit $LASTEXITCODE
 } else {
-    & $GodotConsole --path $ProjectDir @PassThruArgs
-    exit $LASTEXITCODE
+    $GodotGui = Join-Path $ProjectDir ".godot_bin\Godot_v4.3-stable_win64.exe"
+    $cmdLine = "`"$GodotGui`" --path `"$ProjectDir`""
+    $null = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
+        CommandLine = $cmdLine
+        CurrentDirectory = $ProjectDir
+    }
+    exit 0
 }
