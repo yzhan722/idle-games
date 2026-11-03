@@ -1,17 +1,22 @@
 extends Node2D
 class_name AnimalWorker
-## 6 Specialized Pipeline Animal Workers (`src/entities/units/AnimalWorker.gd`) — PRD v2.0 Section 4.1
-## - Reads frame regions dynamically from `EconomyConfig.get_frame_region(sheet_key, frame_idx)` (`sprite_manifest.json`)
-## - Moves along `WaypointGraph` with sinusoidal bounce (`-abs(sin(time * 12.0)) * 4.0`), squash-and-stretch, waddle tilt, and footstep dust
-## - Mounts `CarryIcon (Sprite2D)` overhead to display carried raw crops or delicacies in real time
+## 6 Specialized Pipeline Animal Workers with Cold-Start Fallback & Smart Overflow (`src/entities/units/AnimalWorker.gd`) — PRD Patch v2.1
+## - Rule 1.1 Single-Bunny Cold Start: When `otter` is unhired (Lv.0), `bunny` personally carries harvested crops
+##   along WaypointGraph directly to `market_stall` for 1x sale!
+## - Rule 1.3 Specialized Pipeline: Once `otter` is hired (Lv.>=1), `bunny` immediately returns to pure farming
+##   (depositing crops into the backend numeric buffer `raw_baskets[1]`) while `otter` takes over hauling.
+## - Rule 2.2 Smart Workshop Overflow: When `otter` / `toucan` hauls raw crops, if the target workshop input buffer
+##   is full (cap 10) or the chef is unhired, it immediately diverts to `market_stall` for direct sale without waiting!
+## - Rule 2.3 Full Buffer Sleep Bubble: When the farm buffer is full and no one is hauling, `bunny` pauses harvesting
+##   and displays a clean `"Zzz..."` text bubble overhead.
 
 enum RoleType {
-	BUNNY_FARMER,      # 1. 兔子: 专职农夫 (巡视耕地/果树 -> 播种照料 -> 收割入【田边菜篮】)
-	OTTER_LOGISTICS,   # 2. 水獭: 岛内物流员 (【田边菜篮】->【工坊输入槽】; 【工坊成品槽】->【集市摊位】)
-	TOUCAN_TRADER,     # 3. 巨嘴鸟: 跨岛贸易专员 (跨木桥将2/3岛原料与高阶炼金美食大批量运回主岛集市)
-	FOX_MORTAR_CHEF,   # 4. 狐狸: 初级研钵主厨 (驻守 workshop_mortar -> 研磨 3.5x 初级美食)
-	PENGUIN_ALCHEMIST, # 5. 企鹅: 高级坩埚炼金师 (驻守 workshop_cauldron -> 炼制 12.0x 精制美食)
-	SHIBA_MANAGER      # 6. 柴犬: 集市金牌店长 (驻守 market_stall -> 整理货架 + 收银结账售价加成)
+	BUNNY_FARMER,      # 1. 兔子: 专职农夫 (冷启动期兼任直售搬运; 雇佣水獭后专职种地入缓存; 满仓显示 "Zzz...")
+	OTTER_LOGISTICS,   # 2. 水獭: 岛内物流员 (缓存->研钵输入槽; 研钵满载或未雇狐狸时智能分流直售集市; 成品槽->集市)
+	TOUCAN_TRADER,     # 3. 巨嘴鸟: 跨岛贸易专员 (跨木桥将岛2的12x料理与岛3的52x料理批量运回岛1主集市)
+	FOX_MORTAR_CHEF,   # 4. 狐狸: 初级研钵主厨 (驻守岛1 workshop_mortar -> 研磨 3.5x 初级美食)
+	PENGUIN_ALCHEMIST, # 5. 企鹅: 高级坩埚炼金师 (驻守岛2 workshop_cauldron & 岛3联动工坊 -> 炼制 12x / 52x 料理)
+	SHIBA_MANAGER      # 6. 柴犬: 集市金牌店长 (驻守 market_stall -> 结账加速 + 全摊位售价加成 PriceBonus = 1.0 + 0.1*L)
 }
 
 @export var role_type: RoleType = RoleType.BUNNY_FARMER
@@ -34,6 +39,7 @@ var state_timer: float = 0.0
 var work_duration: float = 2.5
 var anim_time: float = 0.0
 var is_moving: bool = false
+var is_sleeping_full: bool = false
 var facing_left: bool = false
 var visual_flip: float = 1.0
 
@@ -78,11 +84,10 @@ func setup_worker(p_role: RoleType, p_pos: Vector2, p_graph: WaypointGraph, p_wo
 	_assign_next_task()
 
 func get_level() -> int:
-	return int(GameManager.animal_levels.get(animal_key, 1))
+	return int(GameManager.animal_levels.get(animal_key, 0))
 
-func trigger_pet_boost() -> void:
-	boost_timer = 8.0
-	EventBus.spawn_floating_text.emit(position + Vector2(-24, -52), "♥元气加速!", Color(1.0, 0.72, 0.86))
+func is_hired() -> bool:
+	return GameManager.is_animal_hired(animal_key)
 
 func _set_carry_visual(item_id: String, qty: int) -> void:
 	carrying_item_id = item_id
@@ -108,6 +113,10 @@ func _navigate_to(dest: Vector2) -> void:
 		nav_path = [dest]
 
 func _process(delta: float) -> void:
+	visible = is_hired()
+	if not visible:
+		return
+
 	anim_time += delta
 	if boost_timer > 0.0:
 		boost_timer = maxf(0.0, boost_timer - delta)
@@ -138,7 +147,7 @@ func _process(delta: float) -> void:
 		else:
 			if absf(to_wp.x) > 0.5:
 				facing_left = to_wp.x < 0.0
-			var spd := EconomyConfig.calc_move_speed(animal_key, get_level()) * (1.35 if boost_timer > 0.0 else 1.0)
+			var spd := EconomyConfig.calc_move_speed(animal_key, maxi(1, get_level())) * (1.35 if boost_timer > 0.0 else 1.0)
 			var next_pos := position + (to_wp / dist) * spd * delta
 			position = waypoint_graph.constrain_to_walkable_surface(next_pos) if waypoint_graph != null else next_pos
 
@@ -159,41 +168,58 @@ func _process(delta: float) -> void:
 
 func _assign_next_task() -> void:
 	state_timer = 0.0
-	work_duration = EconomyConfig.calc_work_duration(animal_key, get_level())
+	is_sleeping_full = false
+	work_duration = EconomyConfig.calc_work_duration(animal_key, maxi(1, get_level()))
 
 	match role_type:
 		RoleType.BUNNY_FARMER:
-			# Step 0: Find a plot on Island 1 to tend/harvest -> Step 1: Deposit into Island 1 RawStorageBasket
+			# Check if farm buffer is full (when Otter is hired) or stall is full (when Otter is unhired)
+			var otter_hired := GameManager.is_animal_hired("otter")
+			if (otter_hired and GameManager.is_raw_basket_full(1)) or (not otter_hired and GameManager.is_stall_full()):
+				is_sleeping_full = true
+				worker_step = 99 # Sleep with "Zzz..." bubble until buffer space frees up
+				return
+
 			target_plot = world_ref.find_best_plot_for_bunny() if (world_ref != null and world_ref.has_method("find_best_plot_for_bunny")) else null
-			if target_plot != null:
+			if target_plot != null and (randi() % 3 != 0):
 				target_plot.reserved_by_worker = true
 				worker_step = 0
 				_navigate_to(target_plot.position + Vector2(0, 4))
 			else:
+				target_plot = null
 				worker_step = 0
 				_navigate_to(waypoint_graph.get_named_pos("apple_tree"))
 
 		RoleType.OTTER_LOGISTICS:
-			# Priority A: If Mortar output has delicacies, carry to Market Stall
-			if GameManager.get_workshop_output_total("mortar") > 0:
-				worker_step = 10 # Go pick up from mortar output
+			# Priority 1: Carry finished 3.5x delicacies from Mortar Output to Market Stall
+			if GameManager.get_workshop_output_total("mortar") > 0 and not GameManager.is_stall_full():
+				worker_step = 10
 				_navigate_to(waypoint_graph.get_named_pos("mortar") + Vector2(14, 4))
-			# Priority B: Pick up raw crops from Island 1 RawStorageBasket -> deliver to Mortar input
-			else:
+			# Priority 2: Pick up raw crops from Island 1 numeric buffer
+			elif GameManager.get_island_basket_total(1) > 0:
 				worker_step = 0
+				_navigate_to(waypoint_graph.get_named_pos("basket_1"))
+			else:
+				worker_step = 20
 				_navigate_to(waypoint_graph.get_named_pos("basket_1"))
 
 		RoleType.TOUCAN_TRADER:
-			# Cross-bridge trade between Island 2 (Ellinia), Island 3 (Orbis), and Island 1 Market Stall
-			if GameManager.get_workshop_output_total("cauldron") > 0:
-				worker_step = 10 # Pick up refined 12x delicacy from Cauldron
-				_navigate_to(waypoint_graph.get_named_pos("cauldron") + Vector2(12, 4))
-			elif (randi() % 2 == 0) and bool(GameManager.unlocked_islands.get(3, true)):
-				worker_step = 20 # Visit Island 3 (Orbis) basket
+			# Cross-bridge trade: Island 3 (52x delicacy) & Island 2 (12x delicacy) -> Main Market Stall
+			if bool(GameManager.unlocked_islands.get(3, false)) and GameManager.get_workshop_output_total("orbis_linked") > 0 and not GameManager.is_stall_full():
+				worker_step = 30
 				_navigate_to(waypoint_graph.get_named_pos("basket_3"))
+			elif bool(GameManager.unlocked_islands.get(2, false)) and GameManager.get_workshop_output_total("cauldron") > 0 and not GameManager.is_stall_full():
+				worker_step = 10
+				_navigate_to(waypoint_graph.get_named_pos("cauldron") + Vector2(12, 4))
+			elif bool(GameManager.unlocked_islands.get(3, false)) and (randi() % 2 == 0):
+				worker_step = 20
+				_navigate_to(waypoint_graph.get_named_pos("soil_3_center"))
+			elif bool(GameManager.unlocked_islands.get(2, false)):
+				worker_step = 0
+				_navigate_to(waypoint_graph.get_named_pos("soil_2_center"))
 			else:
-				worker_step = 0 # Visit Island 2 (Ellinia) basket
-				_navigate_to(waypoint_graph.get_named_pos("basket_2"))
+				worker_step = 40
+				_navigate_to(waypoint_graph.get_named_pos("market_stall") + Vector2(-28, 4))
 
 		RoleType.FOX_MORTAR_CHEF:
 			worker_step = 0
@@ -210,84 +236,141 @@ func _assign_next_task() -> void:
 func _update_role_work_step() -> void:
 	match role_type:
 		RoleType.BUNNY_FARMER:
+			if worker_step == 99:
+				# Sleeping with "Zzz..." because buffer is full; wake up as soon as space is available
+				var otter_hired := GameManager.is_animal_hired("otter")
+				var still_full := (otter_hired and GameManager.is_raw_basket_full(1)) or (not otter_hired and GameManager.is_stall_full())
+				if not still_full and state_timer >= 0.8:
+					is_sleeping_full = false
+					_assign_next_task()
+				return
+
 			if worker_step == 0:
 				if state_timer >= work_duration * 0.65:
 					var crop_got := "crop_0"
 					var qty_got := 1
 					if is_instance_valid(target_plot):
 						crop_got = target_plot.crop_id
-						target_plot.watered = true
-						if target_plot.growth >= 0.90:
-							qty_got = target_plot.harvest_into_basket()
-						else:
-							target_plot.growth = minf(1.0, target_plot.growth + 0.55)
-							GameManager.add_to_raw_basket(1, crop_got, 1)
-						target_plot.reserved_by_worker = false
+						qty_got = target_plot.harvest_crop_yield()
 					else:
 						crop_got = "crop_1"
-						GameManager.add_to_raw_basket(1, "crop_1", 1)
-					_set_carry_visual(crop_got, qty_got)
-					worker_step = 1
-					_navigate_to(waypoint_graph.get_named_pos("basket_1"))
-			elif worker_step == 1:
-				if state_timer >= 0.5:
-					EventBus.spawn_floating_text.emit(position + Vector2(-18, -42), "入菜篮+" + str(maxi(1, carrying_qty)), Color(0.78, 1.0, 0.65))
+						qty_got = 1
+
+					# PRD v2.1 Rule 1.1 vs Rule 1.3:
+					# - If Otter is NOT hired yet: Bunny personally carries crop to Market Stall for 1x sale!
+					# - If Otter IS hired: Bunny immediately puts crop into Island 1 numeric buffer and keeps farming!
+					if not GameManager.is_animal_hired("otter"):
+						_set_carry_visual(crop_got, qty_got)
+						worker_step = 2 # Walk directly to Market Stall!
+						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+					else:
+						GameManager.add_to_raw_basket(1, crop_got, qty_got)
+						_set_carry_visual("", 0)
+						_assign_next_task()
+
+			elif worker_step == 2:
+				# Single-Bunny Cold-Start Direct Delivery to Market Stall!
+				if state_timer >= 0.45:
+					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
+					var q := maxi(1, carrying_qty)
+					GameManager.add_to_stall(cid, q)
+					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "鲜果直售+" + str(q), Color(0.78, 1.0, 0.65))
 					_set_carry_visual("", 0)
 					_assign_next_task()
 
 		RoleType.OTTER_LOGISTICS:
-			var cap := EconomyConfig.calc_carry_capacity("otter", get_level())
+			var cap := EconomyConfig.calc_carry_capacity("otter", maxi(1, get_level()))
+			if worker_step == 20:
+				if state_timer >= 0.8:
+					_assign_next_task()
+				return
+
 			if worker_step == 0:
-				if state_timer >= 0.6:
+				if state_timer >= 0.45:
 					var taken := GameManager.take_from_raw_basket(1, cap)
-					var item_id := String(taken.get("item_id", "crop_0"))
-					var qty := maxi(1, int(taken.get("qty", 1)))
+					if taken.is_empty():
+						_assign_next_task()
+						return
+					var item_id := String(taken["item_id"])
+					var qty := int(taken["qty"])
 					_set_carry_visual(item_id, qty)
-					worker_step = 1
-					_navigate_to(waypoint_graph.get_named_pos("mortar") + Vector2(-14, 4))
+
+					# PRD v2.1 Rule 2.2 Smart Overflow:
+					# If Fox is hired AND Mortar input is NOT full -> deliver to Mortar;
+					# Otherwise (Mortar full or Fox unhired) -> divert directly to Market Stall for 1x sale!
+					if GameManager.is_animal_hired("fox") and not GameManager.is_workshop_input_full("mortar"):
+						worker_step = 1
+						_navigate_to(waypoint_graph.get_named_pos("mortar") + Vector2(-14, 4))
+					else:
+						worker_step = 2 # Smart overflow direct to Market Stall!
+						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+
 			elif worker_step == 1:
-				if state_timer >= 0.5:
-					GameManager.add_to_workshop_input("mortar", carrying_item_id if carrying_item_id != "" else "crop_0", maxi(1, carrying_qty))
-					EventBus.spawn_floating_text.emit(position + Vector2(-20, -44), "送入研钵x" + str(maxi(1, carrying_qty)), Color(0.75, 0.95, 1.0))
+				if state_timer >= 0.45:
+					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
+					var q := maxi(1, carrying_qty)
+					var accepted := GameManager.add_to_workshop_input("mortar", cid, q)
+					var leftover := q - accepted
+					if leftover > 0:
+						# Overflow remainder goes straight to Market Stall!
+						_set_carry_visual(cid, leftover)
+						worker_step = 2
+						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+					else:
+						_set_carry_visual("", 0)
+						_assign_next_task()
+
+			elif worker_step == 2:
+				if state_timer >= 0.45:
+					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
+					var q := maxi(1, carrying_qty)
+					GameManager.add_to_stall(cid, q)
+					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "分流直售+" + str(q), Color(0.82, 0.96, 1.0))
 					_set_carry_visual("", 0)
 					_assign_next_task()
+
 			elif worker_step == 10:
-				if state_timer >= 0.5:
+				if state_timer >= 0.45:
 					var out_taken := GameManager.take_from_workshop_output("mortar", cap)
-					var del_id := String(out_taken.get("item_id", "delicacy_0"))
-					var qty := maxi(1, int(out_taken.get("qty", 1)))
-					_set_carry_visual(del_id, qty)
+					if out_taken.is_empty():
+						_assign_next_task()
+						return
+					_set_carry_visual(String(out_taken["item_id"]), int(out_taken["qty"]))
 					worker_step = 11
 					_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+
 			elif worker_step == 11:
-				if state_timer >= 0.5:
-					var did := carrying_item_id if carrying_item_id != "" else "delicacy_0"
-					var q := maxi(1, carrying_qty)
-					GameManager.add_to_stall(did, q)
-					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "上架美食+" + str(q), Color(1.0, 0.92, 0.48))
+				if state_timer >= 0.45:
+					GameManager.add_to_stall(carrying_item_id, maxi(1, carrying_qty))
+					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "3.5x美食+" + str(maxi(1, carrying_qty)), Color(1.0, 0.92, 0.48))
 					_set_carry_visual("", 0)
 					_assign_next_task()
 
 		RoleType.TOUCAN_TRADER:
-			var cap := EconomyConfig.calc_carry_capacity("toucan", get_level())
+			var cap := EconomyConfig.calc_carry_capacity("toucan", maxi(1, get_level()))
+			if worker_step == 40:
+				if state_timer >= 1.2:
+					_assign_next_task()
+				return
+
 			if worker_step == 0:
-				# At Island 2 (Ellinia) basket -> pick up glow_mushroom -> carry to Cauldron input
-				if state_timer >= 0.6:
-					var taken := GameManager.take_from_raw_basket(2, cap)
-					var cid := String(taken.get("item_id", "crop_2"))
-					var q := maxi(1, int(taken.get("qty", 2)))
-					_set_carry_visual(cid, q)
-					worker_step = 1
-					_navigate_to(waypoint_graph.get_named_pos("cauldron") + Vector2(-14, 4))
+				# Harvest / collect Island 2 glow_mushroom -> feed Cauldron or overflow to Market Stall
+				if state_timer >= 0.55:
+					if GameManager.is_animal_hired("penguin") and not GameManager.is_workshop_input_full("cauldron"):
+						_set_carry_visual("crop_2", cap)
+						worker_step = 1
+						_navigate_to(waypoint_graph.get_named_pos("cauldron") + Vector2(-14, 4))
+					else:
+						_set_carry_visual("crop_2", cap)
+						worker_step = 11
+						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
 			elif worker_step == 1:
-				if state_timer >= 0.5:
-					GameManager.add_to_workshop_input("cauldron", carrying_item_id if carrying_item_id != "" else "crop_2", maxi(1, carrying_qty))
+				if state_timer >= 0.45:
+					GameManager.add_to_workshop_input("cauldron", "crop_2", maxi(1, carrying_qty))
 					_set_carry_visual("", 0)
-					worker_step = 10
-					_navigate_to(waypoint_graph.get_named_pos("cauldron") + Vector2(12, 4))
+					_assign_next_task()
 			elif worker_step == 10:
-				# Pick up 12x delicacy from Cauldron output -> transport to Market Stall
-				if state_timer >= 0.5:
+				if state_timer >= 0.45:
 					var out_taken := GameManager.take_from_workshop_output("cauldron", cap)
 					var did := String(out_taken.get("item_id", "delicacy_2"))
 					var q := maxi(1, int(out_taken.get("qty", 1)))
@@ -295,69 +378,90 @@ func _update_role_work_step() -> void:
 					worker_step = 11
 					_navigate_to(waypoint_graph.get_named_pos("market_stall"))
 			elif worker_step == 20:
-				# At Island 3 (Orbis) basket -> pick up golden pineapple / coconut delicacy -> carry across bridges to Market Stall
-				if state_timer >= 0.6:
-					GameManager.take_from_raw_basket(3, cap)
-					_set_carry_visual("delicacy_3", cap)
+				# Island 3 Dual Linked Workshop (52x Royal Pineapple Feast)
+				if state_timer >= 0.55:
+					GameManager.add_to_workshop_output("orbis_linked", "delicacy_3", 1)
+					var out_taken := GameManager.take_from_workshop_output("orbis_linked", cap)
+					_set_carry_visual("delicacy_3", maxi(1, int(out_taken.get("qty", 1))))
+					worker_step = 11
+					_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+			elif worker_step == 30:
+				if state_timer >= 0.45:
+					var out_taken := GameManager.take_from_workshop_output("orbis_linked", cap)
+					_set_carry_visual("delicacy_3", maxi(1, int(out_taken.get("qty", 1))))
 					worker_step = 11
 					_navigate_to(waypoint_graph.get_named_pos("market_stall"))
 			elif worker_step == 11:
-				if state_timer >= 0.5:
+				if state_timer >= 0.45:
 					var did := carrying_item_id if carrying_item_id != "" else "delicacy_2"
 					var q := maxi(1, carrying_qty)
 					GameManager.add_to_stall(did, q)
-					EventBus.spawn_floating_text.emit(position + Vector2(-26, -48), "跨岛运达+" + str(q), Color(1.0, 0.88, 0.35))
+					var tag := "52x盛宴+" if did == "delicacy_3" else "跨岛运达+"
+					EventBus.spawn_floating_text.emit(position + Vector2(-26, -48), tag + str(q), Color(1.0, 0.88, 0.35))
 					_set_carry_visual("", 0)
 					_assign_next_task()
 
 		RoleType.FOX_MORTAR_CHEF:
 			var mortar_node: Workshop = world_ref.mortar_workshop if (world_ref != null and "mortar_workshop" in world_ref) else null
+			if GameManager.get_workshop_input_total("mortar") <= 0 or GameManager.is_workshop_output_full("mortar"):
+				if mortar_node != null:
+					mortar_node.is_processing = false
+				state_timer = 0.0
+				return
 			if mortar_node != null:
 				mortar_node.is_processing = true
 				mortar_node.process_progress = clampf(state_timer / maxf(0.5, work_duration), 0.0, 1.0)
 			if state_timer >= work_duration:
 				state_timer = 0.0
 				var used_crop := GameManager.take_workshop_input_for_processing("mortar")
-				var out_del := "delicacy_1" if used_crop == "crop_1" else "delicacy_0"
+				if used_crop != "":
+					var out_del := "delicacy_1" if used_crop == "crop_1" else "delicacy_0"
+					GameManager.add_to_workshop_output("mortar", out_del, 1)
+					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "3.5x美食+1", Color(1.0, 0.92, 0.55))
 				if mortar_node != null:
-					mortar_node.active_delicacy_id = out_del
 					mortar_node.process_progress = 0.0
-				GameManager.add_to_workshop_output("mortar", out_del, 1)
-				EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "研磨完成! (3.5x)", Color(1.0, 0.92, 0.55))
 
 		RoleType.PENGUIN_ALCHEMIST:
 			var cauldron_node: Workshop = world_ref.cauldron_workshop if (world_ref != null and "cauldron_workshop" in world_ref) else null
+			if not bool(GameManager.unlocked_islands.get(2, false)):
+				if cauldron_node != null:
+					cauldron_node.is_processing = false
+				return
+			# Auto-gather from Island 2 farm if cauldron input is empty
+			if GameManager.get_workshop_input_total("cauldron") <= 0 and not GameManager.is_workshop_output_full("cauldron"):
+				GameManager.add_to_workshop_input("cauldron", "crop_2", 1)
+			if GameManager.is_workshop_output_full("cauldron"):
+				if cauldron_node != null:
+					cauldron_node.is_processing = false
+				state_timer = 0.0
+				return
 			if cauldron_node != null:
 				cauldron_node.is_processing = true
 				cauldron_node.process_progress = clampf(state_timer / maxf(0.5, work_duration), 0.0, 1.0)
 			if state_timer >= work_duration:
 				state_timer = 0.0
 				var used_crop := GameManager.take_workshop_input_for_processing("cauldron")
-				var out_del := "delicacy_3" if used_crop == "crop_3" else "delicacy_2"
+				if used_crop != "":
+					GameManager.add_to_workshop_output("cauldron", "delicacy_2", 1)
+					EventBus.spawn_floating_text.emit(position + Vector2(-26, -48), "12x甘露+1", Color(0.75, 0.96, 1.0))
 				if cauldron_node != null:
-					cauldron_node.active_delicacy_id = out_del
 					cauldron_node.process_progress = 0.0
-				GameManager.add_to_workshop_output("cauldron", out_del, 1)
-				EventBus.spawn_floating_text.emit(position + Vector2(-26, -48), "炼成甘露! (12x)", Color(0.75, 0.96, 1.0))
 
 		RoleType.SHIBA_MANAGER:
 			facing_left = true
-			if state_timer >= 6.0:
-				state_timer = 0.0
-				# Keep Islands 2 & 3 raw baskets slowly replenished too
-				GameManager.add_to_raw_basket(2, "crop_2", 1)
-				GameManager.add_to_raw_basket(3, "crop_3", 1)
 
 func _get_pose_index() -> int:
+	if is_sleeping_full:
+		return 4
 	if is_moving:
 		var walk_frame := int(floor(anim_time * 7.5 / PI)) % 2
 		if carrying_item_id != "":
 			return 2 if walk_frame == 0 else 1
 		return walk_frame
-	return 3 # Active crafting / harvesting / store-managing pose
+	return 3
 
 func _draw() -> void:
-	if tex_sheet == null:
+	if tex_sheet == null or not is_hired():
 		return
 
 	for puff in footstep_puffs:
@@ -365,7 +469,6 @@ func _draw() -> void:
 		draw_circle(local_p, float(puff["r"]), Color(0.95, 0.91, 0.80, float(puff["alpha"])))
 
 	var pose_idx := _get_pose_index()
-	# PRD 3.2 sinusoidal bounce: -abs(sin(time * 12.0)) * 4.0 while moving
 	var hop_y := 0.0
 	var scale_x := 1.0
 	var scale_y := 1.0
@@ -393,5 +496,9 @@ func _draw() -> void:
 	draw_texture_rect_region(tex_sheet, dst_rect, src_rect, Color.WHITE, facing_left)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-	if boost_timer > 0.0 and tex_heart != null:
+	# PRD v2.1 Rule 2.3: Full-Buffer Sleep Text Bubble ("Zzz...")
+	if is_sleeping_full:
+		var z_bob := sin(anim_time * 2.5) * 2.0
+		PixelFontRenderer.draw_pixel_cn(self, Vector2(-14.0, -56.0 + z_bob), "Zzz...", 13, Color(0.86, 0.94, 1.0), Color(0.12, 0.06, 0.02, 0.95), true)
+	elif boost_timer > 0.0 and tex_heart != null:
 		draw_texture_rect(tex_heart, Rect2(8, -62 + hop_y, 20, 20), false)
