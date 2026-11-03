@@ -13,6 +13,13 @@ yarn-error.log
 .godot_bin/
 *.import.tmp
 
+# renpy (engine SDK never committed; compiled caches & local saves excluded)
+renpy-*-sdk/
+*.rpyc
+**/_saves_backup/
+game/cache/
+dists/
+
 # env & secrets
 .env
 .env.local
