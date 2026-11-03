@@ -1,0 +1,51 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="云岛集市 · Cloud Isle Market"
+config/description="《云岛集市 (Cloud Isle Market)》1.5D 浮空微缩生态岛 · 桌面透明置顶挂机经营游戏 (PRD v2.2)"
+run/main_scene="res://src/world/MainWorld.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+run/low_processor_mode=false
+run/max_fps=60
+
+[autoload]
+
+EventBus="*res://src/autoload/EventBus.gd"
+EconomyConfig="*res://src/autoload/EconomyConfig.gd"
+PixelFontRenderer="*res://src/autoload/PixelFontRenderer.gd"
+WindowController="*res://src/autoload/WindowController.gd"
+SoundManager="*res://src/autoload/SoundManager.gd"
+GameManager="*res://src/autoload/GameManager.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=300
+window/size/mode=0
+window/size/resizable=false
+window/size/borderless=true
+window/size/always_on_top=true
+window/size/transparent=true
+window/size/window_width_override=1920
+window/size/window_height_override=300
+window/per_pixel_transparency/allowed=true
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+viewport/transparent_background=true
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true

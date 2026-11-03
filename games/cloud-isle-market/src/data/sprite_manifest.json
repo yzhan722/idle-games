@@ -1,0 +1,830 @@
+{
+  "animals/bunny_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/bunny_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 15,
+        "tight_y": 2,
+        "tight_w": 29,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 75,
+        "tight_y": 2,
+        "tight_w": 30,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 130,
+        "tight_y": 2,
+        "tight_w": 39,
+        "tight_h": 56
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 186,
+        "tight_y": 2,
+        "tight_w": 47,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/otter_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/otter_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 10,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 70,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 3,
+        "tight_w": 56,
+        "tight_h": 55
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 185,
+        "tight_y": 2,
+        "tight_w": 49,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/toucan_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/toucan_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 2,
+        "tight_y": 4,
+        "tight_w": 56,
+        "tight_h": 54
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 62,
+        "tight_y": 4,
+        "tight_w": 56,
+        "tight_h": 54
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 8,
+        "tight_w": 56,
+        "tight_h": 50
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 9,
+        "tight_w": 56,
+        "tight_h": 49
+      }
+    ]
+  },
+  "animals/fox_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/fox_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 6,
+        "tight_y": 2,
+        "tight_w": 48,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 66,
+        "tight_y": 2,
+        "tight_w": 48,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 6,
+        "tight_w": 56,
+        "tight_h": 52
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 2,
+        "tight_w": 56,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/penguin_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/penguin_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 8,
+        "tight_y": 2,
+        "tight_w": 44,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 68,
+        "tight_y": 2,
+        "tight_w": 44,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 2,
+        "tight_w": 56,
+        "tight_h": 56
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 2,
+        "tight_w": 55,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/shiba_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/shiba_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 11,
+        "tight_y": 2,
+        "tight_w": 37,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 72,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 130,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 56
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 9,
+        "tight_w": 56,
+        "tight_h": 49
+      }
+    ]
+  },
+  "travelers/traveler_slime.png": {
+    "cell_width": 48,
+    "cell_height": 48,
+    "hframes": 2,
+    "vframes": 1,
+    "total_frames": 2,
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_slime_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 5,
+        "tight_y": 2,
+        "tight_w": 38,
+        "tight_h": 44
+      },
+      {
+        "x": 48,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 53,
+        "tight_y": 2,
+        "tight_w": 37,
+        "tight_h": 44
+      }
+    ]
+  },
+  "travelers/traveler_mushroom.png": {
+    "cell_width": 48,
+    "cell_height": 48,
+    "hframes": 2,
+    "vframes": 1,
+    "total_frames": 2,
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_mushroom_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 4,
+        "tight_y": 2,
+        "tight_w": 39,
+        "tight_h": 44
+      },
+      {
+        "x": 48,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 52,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 44
+      }
+    ]
+  },
+  "travelers/traveler_pig.png": {
+    "cell_width": 48,
+    "cell_height": 48,
+    "hframes": 2,
+    "vframes": 1,
+    "total_frames": 2,
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_pig_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 4,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 44
+      },
+      {
+        "x": 48,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 52,
+        "tight_y": 2,
+        "tight_w": 39,
+        "tight_h": 44
+      }
+    ]
+  },
+  "crops/crops_sheet.png": {
+    "cell_width": 40,
+    "cell_height": 40,
+    "hframes": 4,
+    "vframes": 4,
+    "total_frames": 16,
+    "normalized_sheet": "res://assets/pixel_art/crops/crops_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 40,
+        "tight_x": 1,
+        "tight_y": 21,
+        "tight_w": 38,
+        "tight_h": 18
+      },
+      {
+        "x": 40,
+        "y": 0,
+        "w": 40,
+        "h": 40,
+        "tight_x": 41,
+        "tight_y": 9,
+        "tight_w": 38,
+        "tight_h": 30
+      },
+      {
+        "x": 80,
+        "y": 0,
+        "w": 40,
+        "h": 40,
+        "tight_x": 84,
+        "tight_y": 1,
+        "tight_w": 31,
+        "tight_h": 38
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 40,
+        "h": 40,
+        "tight_x": 122,
+        "tight_y": 1,
+        "tight_w": 36,
+        "tight_h": 38
+      },
+      {
+        "x": 0,
+        "y": 40,
+        "w": 40,
+        "h": 40,
+        "tight_x": 1,
+        "tight_y": 60,
+        "tight_w": 38,
+        "tight_h": 19
+      },
+      {
+        "x": 40,
+        "y": 40,
+        "w": 40,
+        "h": 40,
+        "tight_x": 41,
+        "tight_y": 47,
+        "tight_w": 38,
+        "tight_h": 32
+      },
+      {
+        "x": 80,
+        "y": 40,
+        "w": 40,
+        "h": 40,
+        "tight_x": 81,
+        "tight_y": 46,
+        "tight_w": 38,
+        "tight_h": 33
+      },
+      {
+        "x": 120,
+        "y": 40,
+        "w": 40,
+        "h": 40,
+        "tight_x": 121,
+        "tight_y": 51,
+        "tight_w": 38,
+        "tight_h": 28
+      },
+      {
+        "x": 0,
+        "y": 80,
+        "w": 40,
+        "h": 40,
+        "tight_x": 1,
+        "tight_y": 81,
+        "tight_w": 38,
+        "tight_h": 38
+      },
+      {
+        "x": 40,
+        "y": 80,
+        "w": 40,
+        "h": 40,
+        "tight_x": 41,
+        "tight_y": 88,
+        "tight_w": 38,
+        "tight_h": 31
+      },
+      {
+        "x": 80,
+        "y": 80,
+        "w": 40,
+        "h": 40,
+        "tight_x": 81,
+        "tight_y": 81,
+        "tight_w": 37,
+        "tight_h": 38
+      },
+      {
+        "x": 120,
+        "y": 80,
+        "w": 40,
+        "h": 40,
+        "tight_x": 121,
+        "tight_y": 82,
+        "tight_w": 38,
+        "tight_h": 37
+      },
+      {
+        "x": 0,
+        "y": 120,
+        "w": 40,
+        "h": 40,
+        "tight_x": 1,
+        "tight_y": 136,
+        "tight_w": 38,
+        "tight_h": 23
+      },
+      {
+        "x": 40,
+        "y": 120,
+        "w": 40,
+        "h": 40,
+        "tight_x": 42,
+        "tight_y": 121,
+        "tight_w": 35,
+        "tight_h": 38
+      },
+      {
+        "x": 80,
+        "y": 120,
+        "w": 40,
+        "h": 40,
+        "tight_x": 81,
+        "tight_y": 126,
+        "tight_w": 38,
+        "tight_h": 33
+      },
+      {
+        "x": 120,
+        "y": 120,
+        "w": 40,
+        "h": 40,
+        "tight_x": 128,
+        "tight_y": 121,
+        "tight_w": 23,
+        "tight_h": 38
+      }
+    ],
+    "items": [
+      {
+        "id": "crop_0",
+        "name": "strawberry_osmanthus",
+        "stages": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 40,
+            "y": 0,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 80,
+            "y": 0,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 120,
+            "y": 0,
+            "w": 40,
+            "h": 40
+          }
+        ]
+      },
+      {
+        "id": "crop_1",
+        "name": "sweet_berry",
+        "stages": [
+          {
+            "x": 0,
+            "y": 40,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 40,
+            "y": 40,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 80,
+            "y": 40,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 120,
+            "y": 40,
+            "w": 40,
+            "h": 40
+          }
+        ]
+      },
+      {
+        "id": "crop_2",
+        "name": "glow_mushroom",
+        "stages": [
+          {
+            "x": 0,
+            "y": 80,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 40,
+            "y": 80,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 80,
+            "y": 80,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 120,
+            "y": 80,
+            "w": 40,
+            "h": 40
+          }
+        ]
+      },
+      {
+        "id": "crop_3",
+        "name": "sun_pineapple",
+        "stages": [
+          {
+            "x": 0,
+            "y": 120,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 40,
+            "y": 120,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 80,
+            "y": 120,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 120,
+            "y": 120,
+            "w": 40,
+            "h": 40
+          }
+        ]
+      }
+    ]
+  },
+  "buildings/delicacies_sheet.png": {
+    "cell_width": 36,
+    "cell_height": 36,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/buildings/delicacies_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 36,
+        "h": 36,
+        "tight_x": 1,
+        "tight_y": 8,
+        "tight_w": 34,
+        "tight_h": 20
+      },
+      {
+        "x": 36,
+        "y": 0,
+        "w": 36,
+        "h": 36,
+        "tight_x": 37,
+        "tight_y": 5,
+        "tight_w": 34,
+        "tight_h": 25
+      },
+      {
+        "x": 72,
+        "y": 0,
+        "w": 36,
+        "h": 36,
+        "tight_x": 79,
+        "tight_y": 1,
+        "tight_w": 21,
+        "tight_h": 34
+      },
+      {
+        "x": 108,
+        "y": 0,
+        "w": 36,
+        "h": 36,
+        "tight_x": 110,
+        "tight_y": 1,
+        "tight_w": 32,
+        "tight_h": 34
+      }
+    ],
+    "items": [
+      {
+        "id": "delicacy_0",
+        "name": "桂花糯米糕",
+        "tier": 1,
+        "region": {
+          "x": 0,
+          "y": 0,
+          "w": 36,
+          "h": 36
+        }
+      },
+      {
+        "id": "delicacy_1",
+        "name": "焦糖苹果草莓派",
+        "tier": 1,
+        "region": {
+          "x": 36,
+          "y": 0,
+          "w": 36,
+          "h": 36
+        }
+      },
+      {
+        "id": "delicacy_2",
+        "name": "星露荧光甘露饮",
+        "tier": 2,
+        "region": {
+          "x": 72,
+          "y": 0,
+          "w": 36,
+          "h": 36
+        }
+      },
+      {
+        "id": "delicacy_3",
+        "name": "海岛凤梨椰奶冻",
+        "tier": 2,
+        "region": {
+          "x": 108,
+          "y": 0,
+          "w": 36,
+          "h": 36
+        }
+      }
+    ]
+  },
+  "islands/soil_plot.png": {
+    "cell_width": 40,
+    "cell_height": 18,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/islands/soil_plot_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 18,
+        "tight_x": 2,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 14
+      },
+      {
+        "x": 40,
+        "y": 0,
+        "w": 40,
+        "h": 18,
+        "tight_x": 42,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 14
+      },
+      {
+        "x": 80,
+        "y": 0,
+        "w": 40,
+        "h": 18,
+        "tight_x": 82,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 14
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 40,
+        "h": 18,
+        "tight_x": 122,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 14
+      }
+    ]
+  }
+}
