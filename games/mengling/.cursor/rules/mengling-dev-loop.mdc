@@ -1,0 +1,41 @@
+---
+description: 萌灵马拉松开发 Loop — 开发到底
+alwaysApply: true
+---
+
+# 萌灵开发 Loop（马拉松 · 开发到底）
+
+## 触发
+
+用户说「loop开发到底」「长跑到队列空」「执行开发 loop」。
+
+## 节奏
+
+- **同一会话连续执行 `FINAL_LOOP_BACKLOG.md` 全部可执行项**，不逐波停顿、不等「继续」
+- 任务源：`FINAL_LOOP_BACKLOG.md`（优先于 `DEV_BACKLOG.md`）
+- 每完成一条：勾选 → 立刻下一条
+- **每 4 条或会话结束前 commit+push**（用户已授权马拉松提交）
+- 单条 min-diff；验证失败则最小修复，仍失败才 blocked
+
+## 每条流程
+
+1. 读 `FINAL_LOOP_BACKLOG.md`、本规则、`mengling-collab.mdc`
+2. 选队首 `size:S/M` 且 deps 满足
+3. 实现 → 跑相关 selfcheck → 勾选 → 下一条
+
+## 禁止
+
+- 不自动 `deploy.ps1`（除非用户明确说上线）
+- 不伪造 IAP 支付成功
+- 不顺手改数值平衡（除非任务写明）
+- 不 inflate 评分
+
+## Blocked 仅当
+
+- `tag:blocked-external` / `tag:decision`
+- `size:L` 未拆子项
+- 验证两轮仍失败
+
+## 完成汇报
+
+队列空时：完成 ID 列表、验证证据、诚实分数、外部阻塞项、建议下一步（PR/上线）。

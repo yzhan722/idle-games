@@ -1,0 +1,879 @@
+import { applyEncounterBias, confirmPrestige, eraEncounterRechargeMul, eraPokeballBonusCrafted } from "../systems/era.js";
+import { rollNature } from "../mons.js";
+import {
+  bumpCatchStreak,
+  ensureLuckyDay,
+  luckyCatchMul,
+  luckyWeekEncounterMul,
+  natureEncounterRechargeMul,
+  natureAdvMissingPreferChance,
+  partyHasAlwaysEscape,
+  pityFailStep,
+  natureWildCatchMul,
+  resetCatchStreak,
+  noteCatchNearMiss,
+  clearCatchNearMiss,
+  tryBallSave,
+  typeZh,
+  captureSessionProgress,
+  abilityCatchRateAdd,
+} from "../systems/gameplay_fun.js";
+import { ballCatchMult } from "../systems/ball_catch.js";
+
+export function initCaptureTab({
+  elCaptureArea,
+  elCaptureInfo,
+  elCaptureActions,
+  ui,
+  getState,
+  clamp,
+  randFloat,
+  getPokeballMakeCost,
+  canAfford,
+  pay,
+  addRes,
+  addLog,
+  render,
+  markCaptureDirty,
+  getCapturePool,
+  getMythicPool,
+  pickRandomFromPool,
+  getSpeciesByPid,
+  computeTechEffects,
+  baseCatchChanceByDex,
+  awardCaughtBeast,
+  doCatch,
+  pushTickerEvent,
+  onPokeballCraft,
+  onEraAdvance,
+  getCaptureAreas,
+  starterMonFactory,
+}) {
+  const CAPTURE_PREVIEW_KEY = "mengling_idle_capture_preview_hidden_v1";
+  const rareWeight = (p, base, rareWeightMul) =>
+    (p?.tier === "rare" || p?.tier === "epic") ? base * rareWeightMul : base;
+  const getMonTypesForBias = (p) => {
+    const localTypes = globalThis.BEAST_TYPES;
+    return localTypes && typeof localTypes === "object" ? localTypes[p?.dex] : null;
+  };
+
+  const refundBallIfSaved = (state, ballType) => {
+    if (!tryBallSave(state, randFloat)) return;
+    const r = state.res?.[ballType];
+    if (!r) return;
+    r.value = Math.max(0, (r.value ?? 0) + 1);
+    addLog("捡拾：灵球被弹回！");
+  };
+
+  const onCatchSuccessFun = (state) => {
+    const { streak, reward } = bumpCatchStreak(state);
+    if (streak >= 3) addLog(`连捕中：×${streak}`);
+    if (reward?.berry > 0) {
+      addRes("catnip", reward.berry);
+      addLog(`★ ${reward.label}：灵果 +${reward.berry}`, true);
+    }
+  };
+
+  const onCatchFailFun = (state) => {
+    resetCatchStreak(state);
+  };
+
+  if (elCaptureArea) {
+    elCaptureArea.addEventListener("change", () => {
+      ui.captureAreaId = String(elCaptureArea.value || "meadow");
+      markCaptureDirty();
+    });
+  }
+
+  if (elCaptureInfo) {
+    elCaptureInfo.addEventListener("click", (ev) => {
+      const stageActBtn = ev.target?.closest?.("button[data-capture-action]");
+      if (stageActBtn && elCaptureInfo.contains(stageActBtn)) {
+        if (stageActBtn.disabled) return;
+        const act = stageActBtn.getAttribute("data-capture-action");
+        const targetBtn = elCaptureActions?.querySelector?.(`button[data-capture-action="${act}"]`);
+        if (targetBtn && !targetBtn.disabled) targetBtn.click();
+        return;
+      }
+
+      const eraAdvanceBtn = ev.target?.closest?.("button[data-era-advance]");
+      if (eraAdvanceBtn && elCaptureInfo.contains(eraAdvanceBtn)) {
+        if (eraAdvanceBtn.disabled) return;
+        if (typeof onEraAdvance === "function") onEraAdvance();
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const eraPrestigeBtn = ev.target?.closest?.("button[data-era-prestige]");
+      if (eraPrestigeBtn && elCaptureInfo.contains(eraPrestigeBtn)) {
+        const state = getState();
+        const result = confirmPrestige(state, { addLog, getCaptureAreas, starterMonFactory });
+        if (result.ok) {
+          markCaptureDirty();
+          render();
+        }
+        return;
+      }
+
+      const sessionClaim = ev.target?.closest?.("button[data-capture-session-claim]");
+      if (sessionClaim && elCaptureInfo.contains(sessionClaim)) {
+        if (sessionClaim.disabled) return;
+        const state = getState();
+        const prog = captureSessionProgress(state);
+        if (!prog.canClaim) return;
+        state.fun.sessionCatchClaimed = true;
+        addRes("futurecoin", 15);
+        addLog("本会话捕捉目标达成：未来币 +15", true);
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const lockedToggle = ev.target?.closest?.("button[data-capture-locked-toggle]");
+      if (lockedToggle && elCaptureInfo.contains(lockedToggle)) {
+        ui.captureShowAllLocked = !Boolean(ui.captureShowAllLocked);
+        markCaptureDirty();
+        render();
+        return;
+      }
+      const btn = ev.target?.closest?.("button[data-capture-preview-toggle]");
+      if (!btn || !elCaptureInfo.contains(btn)) return;
+      ui.capturePreviewHidden = !Boolean(ui.capturePreviewHidden);
+      try {
+        localStorage.setItem(CAPTURE_PREVIEW_KEY, ui.capturePreviewHidden ? "1" : "0");
+      } catch {
+      }
+      markCaptureDirty();
+      render();
+    });
+  }
+
+  if (elCaptureActions) {
+    const CAPTURE_FOCUS_SELECTOR = "select[data-capture-qty],select[data-ball-selector]";
+
+    const focusOn = () => { ui.captureQtyFocus = true; };
+    const focusOff = () => {
+      ui.captureQtyFocus = false;
+      markCaptureDirty();
+      render();
+    };
+
+    for (const [evt, handler] of [
+      ["pointerdown", focusOn],
+      ["mousedown", focusOn],
+      ["touchstart", focusOn],
+      ["focusin", focusOn],
+      ["focusout", focusOff],
+    ]) {
+      elCaptureActions.addEventListener(evt, (ev) => {
+        const sel = ev.target?.closest?.(CAPTURE_FOCUS_SELECTOR);
+        if (!sel || !elCaptureActions.contains(sel)) return;
+        handler();
+      }, true);
+    }
+
+    const onCaptureActionsActivate = (ev) => {
+      const now = Date.now();
+      const debounceOk = () => {
+        const last =
+          typeof ui.captureLastActionAtMs === "number" && Number.isFinite(ui.captureLastActionAtMs) ? ui.captureLastActionAtMs : 0;
+        if (now - last < 250) return false;
+        ui.captureLastActionAtMs = now;
+        return true;
+      };
+
+      const mythicCloseBtn = ev.target?.closest?.("button[data-mythic-close]");
+      if (mythicCloseBtn && elCaptureActions.contains(mythicCloseBtn)) {
+        if (!debounceOk()) return;
+        ui.mythicModalOpen = false;
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const fcCloseBtn = ev.target?.closest?.("button[data-capture-fc-close]");
+      if (fcCloseBtn && elCaptureActions.contains(fcCloseBtn)) {
+        if (!debounceOk()) return;
+        ui.captureFcModalOpen = false;
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const mythicOverlay = ev.target?.closest?.("div[data-mythic-overlay]");
+      if (mythicOverlay && elCaptureActions.contains(mythicOverlay) && ev.target === mythicOverlay) {
+        if (!debounceOk()) return;
+        ui.mythicModalOpen = false;
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const fcOverlay = ev.target?.closest?.("div[data-capture-fc-overlay]");
+      if (fcOverlay && elCaptureActions.contains(fcOverlay) && ev.target === fcOverlay) {
+        if (!debounceOk()) return;
+        ui.captureFcModalOpen = false;
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const closeBtn = ev.target?.closest?.("button[data-shiny-close]");
+      if (closeBtn && elCaptureActions.contains(closeBtn)) {
+        if (!debounceOk()) return;
+        ui.shinyModalOpen = false;
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const overlay = ev.target?.closest?.("div[data-shiny-overlay]");
+      if (overlay && elCaptureActions.contains(overlay) && ev.target === overlay) {
+        if (!debounceOk()) return;
+        ui.shinyModalOpen = false;
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const btn = ev.target?.closest?.("button[data-capture-action]");
+      if (!btn || !elCaptureActions.contains(btn)) return;
+      if (btn.disabled) return;
+      if (!debounceOk()) return;
+      const act = btn.getAttribute("data-capture-action");
+      const state = getState();
+
+      const doNormalEncounter = () => {
+        if (typeof ui.encounterPid === "string" && ui.encounterPid) return false;
+
+        const charges0 =
+          typeof state.encounterCharges === "number" && Number.isFinite(state.encounterCharges) ? state.encounterCharges : 100;
+        const cd0 = typeof state.encounterCdSec === "number" && Number.isFinite(state.encounterCdSec) ? state.encounterCdSec : 0;
+        const maxCharges = 100;
+        const rechargeSec = 60 * eraEncounterRechargeMul(state) * natureEncounterRechargeMul(state);
+        const charges1 = Math.max(0, Math.min(maxCharges, Math.floor(charges0)));
+        if (charges1 <= 0) return false;
+
+        if (ui.captureAreaId === "sanctum") {
+          const need = 100;
+          const cur = Math.max(0, Math.floor(state.res.futurecoin?.value ?? 0));
+          if (cur < need) {
+            ui.captureFcModalOpen = true;
+            ui.captureFcNeed = need;
+            ui.captureFcAction = "遭遇";
+            markCaptureDirty();
+            render();
+            return true;
+          }
+          state.res.futurecoin.value = cur - need;
+          addLog(`幻梦秘境：未来币 -${need}（遭遇）`);
+        }
+
+        const pool = getCapturePool();
+        if (!pool || pool.length === 0) {
+          addLog("遭遇失败：该区域没有可遭遇的萌灵。", true);
+          return false;
+        }
+        const mythicChance = 0.002;
+        const isNormalArea = ui.captureAreaId !== "sanctum";
+        const hitMythic = isNormalArea && randFloat() < mythicChance;
+        const mythicPool = hitMythic && typeof getMythicPool === "function" ? getMythicPool() : null;
+        const techEff = computeTechEffects();
+        const rareWeightMul = Math.max(0, typeof techEff.rareWeightMul === "number" ? techEff.rareWeightMul : 1);
+        const p =
+          hitMythic && Array.isArray(mythicPool) && mythicPool.length > 0
+            ? mythicPool[Math.floor(randFloat() * mythicPool.length)]
+            : (() => {
+                const tierWeight = (x) =>
+                  applyEncounterBias(
+                    rareWeight(x, x?.tier === "common" ? 80 : x?.tier === "uncommon" ? 15 : x?.tier === "rare" ? 4 : x?.tier === "epic" ? 1 : 1, rareWeightMul),
+                    x,
+                    state,
+                    getMonTypesForBias
+                  ) * luckyWeekEncounterMul(state, getMonTypesForBias(x));
+                let total = 0;
+                for (const x of pool) total += tierWeight(x);
+                let r = randFloat() * total;
+                for (const x of pool) {
+                  r -= tierWeight(x);
+                  if (r <= 0) return x;
+                }
+                return pool[pool.length - 1];
+              })();
+
+        state.encounterCharges = charges1 - 1;
+        if (state.encounterCharges < maxCharges && cd0 <= 0) state.encounterCdSec = rechargeSec;
+
+        ui.encounterPid = p.id;
+        ui.encounterNature = rollNature();
+        // 闪光概率计算：基础 1/4096，激活虹彩护符时 x2
+        const baseShinyRate = 1 / 4096;
+        const charmOn = typeof state.shinyCharmRemainingSec === "number" && state.shinyCharmRemainingSec > 0;
+        const shinyMul = Math.max(0, typeof techEff.shinyChanceMul === "number" ? techEff.shinyChanceMul : 1);
+        const shinyRate = (charmOn ? baseShinyRate * 2 : baseShinyRate) * shinyMul;
+        const isShiny = randFloat() < shinyRate;
+        ui.encounterIsShiny = isShiny;
+        ui.shinyModalOpen = false;
+        ui.mythicModalOpen = false;
+        ensureLuckyDay(state);
+        const lucky = state.luckyDay;
+        const monTypes = getMonTypesForBias(p);
+        const luckyHit = luckyCatchMul(state, monTypes) > 1;
+        addLog(
+          `遭遇：${p.name}${ui.encounterNature ? `（${ui.encounterNature}）` : ""}${
+            luckyHit && lucky?.type ? ` · 今日幸运·${typeZh(lucky.type)}` : ""
+          }`
+        );
+        if (p.tier === "epic") {
+          ui.mythicModalOpen = true;
+          addLog(`！！！幻灵出现：${p.name}！！！`, true);
+          if (typeof pushTickerEvent === "function") pushTickerEvent("mythic", `遭遇幻灵 ${p.name}`);
+        }
+        if (isShiny) {
+          ui.shinyModalOpen = true;
+          addLog(`！！！闪光出现：${p.name}！！！`, true);
+          if (typeof pushTickerEvent === "function") pushTickerEvent("shiny", `遭遇闪光 ${p.name}`);
+        }
+        // 遭遇后若开启自动投球且非幻灵/闪光，标记待自动投球
+        if (ui.captureAutoThrow && p.tier !== "epic" && !isShiny) {
+          ui._pendingAutoThrow = true;
+        }
+        markCaptureDirty();
+        render();
+        return true;
+      };
+
+      const tryAutoEncounter = () => {
+        if (!ui.captureAutoEncounter) return false;
+        if (Boolean(ui.captureFcModalOpen)) return false;
+        return doNormalEncounter();
+      };
+
+      // 自动投球：遭遇后自动用当前球类型进行捕捉判定
+      const tryAutoThrow = () => {
+        if (!ui.captureAutoThrow) return false;
+        const pid = typeof ui.encounterPid === "string" ? ui.encounterPid : null;
+        const p = pid ? getSpeciesByPid(pid) : null;
+        if (!p) return false;
+        // 幻灵/闪光遭遇不自动投球，让玩家手动决策
+        if (p.tier === "epic" || Boolean(ui.encounterIsShiny)) return false;
+        const ballType = ui.selectedBallType || "pokeball";
+        if ((state.res[ballType]?.value ?? 0) < 1) return false;
+        state.res[ballType].value = Math.max(0, (state.res[ballType]?.value ?? 0) - 1);
+        refundBallIfSaved(state, ballType);
+        const techEff = computeTechEffects();
+        const add = (typeof techEff.catchChanceAdd === "number" ? techEff.catchChanceAdd : 0) + abilityCatchRateAdd(state);
+        const mult = Math.max(0, 1 + add);
+        const base = baseCatchChanceByDex(p.dex);
+        const fails = typeof state.rng?.catchFails === "number" ? state.rng.catchFails : 0;
+        const pity = Math.min(0.02 * Math.max(0, Math.floor(fails)), 0.2);
+        const caughtMap = state.dex && typeof state.dex === "object" ? state.dex.caught : null;
+        const caughtCount = caughtMap && typeof caughtMap[p.id] === "number" ? caughtMap[p.id] : 0;
+        const ballMult = ballCatchMult(ballType, { types: getMonTypesForBias(p), caughtCount });
+        const luckyMul = luckyCatchMul(state, getMonTypesForBias(p));
+        let chance = base * mult * ballMult * luckyMul * natureWildCatchMul(ui.encounterNature) + pity;
+        chance = clamp(chance, 0, 0.95);
+        if (randFloat() > chance) {
+          if (!state.rng) state.rng = { catchFails: 0 };
+          state.rng.catchFails = Math.max(0, (state.rng.catchFails ?? 0) + pityFailStep(state, randFloat, ui.encounterNature));
+          onCatchFailFun(state);
+          noteCatchNearMiss(ui, p.id, chance);
+          ui.encounterPid = null;
+          ui.encounterNature = null;
+          ui.encounterIsShiny = false;
+          ui.shinyModalOpen = false;
+          ui.mythicModalOpen = false;
+          addLog(`自动捕捉失败：${p.name} 逃走了。`);
+          const didAuto = tryAutoEncounter();
+          if (!didAuto) { markCaptureDirty(); render(); }
+          return true;
+        }
+        if (!state.rng) state.rng = { catchFails: 0 };
+        state.rng.catchFails = 0;
+        clearCatchNearMiss(ui);
+        ui.encounterPid = null;
+        ui.encounterNature = null;
+        const isShiny = Boolean(ui.encounterIsShiny);
+        ui.encounterIsShiny = false;
+        ui.shinyModalOpen = false;
+        ui.mythicModalOpen = false;
+        const luxuryBonus = ballType === "luxuryball" ? 20 : 0;
+        awardCaughtBeast(p, { isShiny, affectionBonus: luxuryBonus, ballType, nature: ui.encounterNature || undefined });
+        onCatchSuccessFun(state);
+        if (luxuryBonus > 0) addLog(`豪华灵球效果：${p.name} 亲密度 +${luxuryBonus}`);
+        const didAuto = tryAutoEncounter();
+        if (!didAuto) { markCaptureDirty(); render(); }
+        return true;
+      };
+
+      if (act === "makeBall" || act === "makeBall1") {
+        const qtyWanted = act === "makeBall1" ? 1 : typeof ui.makeBallQty === "number" ? Math.floor(ui.makeBallQty) : 1;
+        const space = Math.max(0, (state.res.pokeball.cap ?? 0) - (state.res.pokeball.value ?? 0));
+        const qty = Math.max(0, Math.min(clamp(qtyWanted, 1, 1000), space));
+        if (qty <= 0) return;
+
+        const cost = getPokeballMakeCost(qty);
+        if (!canAfford(cost)) return;
+
+        pay(cost);
+        const before = state.res.pokeball.value;
+        addRes("pokeball", qty);
+        const after = state.res.pokeball.value;
+        const made = Math.max(0, after - before);
+        const bonus = eraPokeballBonusCrafted(state, made);
+        if (bonus > 0) addRes("pokeball", bonus);
+        const afterBonus = state.res.pokeball.value;
+        const bonusMade = Math.max(0, afterBonus - after);
+        state.pokeballMade = Math.max(0, (state.pokeballMade ?? 0) + made + bonusMade);
+        if (made > 0 && typeof onPokeballCraft === "function") onPokeballCraft(made + bonusMade);
+        if (made > 0) addLog(`制作：灵球 +${made + bonusMade}${bonusMade > 0 ? `（时代加成 +${bonusMade}）` : ""}`);
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      if (act === "encounter") {
+        doNormalEncounter();
+        if (ui._pendingAutoThrow) {
+          ui._pendingAutoThrow = false;
+          setTimeout(() => { tryAutoThrow(); }, 350);
+        }
+        return;
+      }
+
+      if (act === "encounterPlus") {
+        if (typeof ui.encounterPid === "string" && ui.encounterPid) return;
+        const charges0 =
+          typeof state.encounterPlusCharges === "number" && Number.isFinite(state.encounterPlusCharges) ? state.encounterPlusCharges : 1;
+        const cd0 =
+          typeof state.encounterPlusCdSec === "number" && Number.isFinite(state.encounterPlusCdSec) ? state.encounterPlusCdSec : 0;
+        const encPlusMaxBonus =
+          typeof state.permanentBoosts?.encPlusMax === "number"
+            ? Math.max(0, Math.min(20, Math.floor(state.permanentBoosts.encPlusMax)))
+            : 0;
+        const maxCharges = 10 + encPlusMaxBonus;
+        const rechargeSec = 600 * eraEncounterRechargeMul(state) * natureEncounterRechargeMul(state);
+
+        const charges1 = Math.max(0, Math.min(maxCharges, Math.floor(charges0)));
+        if (charges1 <= 0) return;
+
+        if (ui.captureAreaId === "sanctum") {
+          const need = 100;
+          const cur = Math.max(0, Math.floor(state.res.futurecoin?.value ?? 0));
+          if (cur < need) {
+            ui.captureFcModalOpen = true;
+            ui.captureFcNeed = need;
+            ui.captureFcAction = "高级遭遇";
+            markCaptureDirty();
+            render();
+            return;
+          }
+          state.res.futurecoin.value = cur - need;
+          addLog(`幻梦秘境：未来币 -${need}（高级遭遇）`);
+        }
+
+        const pool = getCapturePool();
+        if (!pool || pool.length === 0) {
+          addLog("遭遇失败：该区域没有可遭遇的萌灵。", true);
+          return;
+        }
+
+        const mythicChance = 0.002;
+        const isNormalArea = ui.captureAreaId !== "sanctum";
+        const hitMythic = isNormalArea && randFloat() < mythicChance;
+        const mythicPool = hitMythic && typeof getMythicPool === "function" ? getMythicPool() : null;
+
+        const caught = state.dex && typeof state.dex === "object" && state.dex.caught && typeof state.dex.caught === "object" ? state.dex.caught : {};
+        const missing = pool.filter((p) => (typeof caught[p.id] === "number" ? caught[p.id] : 0) <= 0);
+        const preferMissing = !hitMythic && missing.length > 0 && randFloat() < natureAdvMissingPreferChance(state, 0.75);
+        const cand = preferMissing ? missing : pool;
+        const techEff = computeTechEffects();
+        const rareWeightMul = Math.max(0, typeof techEff.rareWeightMul === "number" ? techEff.rareWeightMul : 1);
+
+        let chosen = cand[cand.length - 1];
+        if (hitMythic && Array.isArray(mythicPool) && mythicPool.length > 0) {
+          chosen = mythicPool[Math.floor(randFloat() * mythicPool.length)];
+        } else {
+          const tierWeight = (p) =>
+            applyEncounterBias(
+              rareWeight(p, p.tier === "epic" ? 15 : p.tier === "rare" ? 8 : p.tier === "uncommon" ? 3 : 1, rareWeightMul),
+              p,
+              state,
+              getMonTypesForBias
+            ) * luckyWeekEncounterMul(state, getMonTypesForBias(p));
+          let total = 0;
+          for (const p of cand) total += tierWeight(p);
+          let r = randFloat() * total;
+          for (const p of cand) {
+            r -= tierWeight(p);
+            if (r <= 0) {
+              chosen = p;
+              break;
+            }
+          }
+        }
+
+        ui.encounterPid = chosen.id;
+        ui.encounterNature = rollNature();
+        // 闪光概率计算：基础 1/1024，激活虹彩护符时 x2
+        const baseShinyRate = 1 / 1024;
+        const charmOn = typeof state.shinyCharmRemainingSec === "number" && state.shinyCharmRemainingSec > 0;
+        const shinyMul = Math.max(0, typeof techEff.shinyChanceMul === "number" ? techEff.shinyChanceMul : 1);
+        const shinyRate = (charmOn ? baseShinyRate * 2 : baseShinyRate) * shinyMul;
+        const isShiny = randFloat() < shinyRate;
+        ui.encounterIsShiny = isShiny;
+        ui.shinyModalOpen = false;
+        ui.mythicModalOpen = false;
+        state.encounterPlusCharges = charges1 - 1;
+        if (state.encounterPlusCharges < maxCharges && cd0 <= 0) state.encounterPlusCdSec = rechargeSec;
+        addLog(`高级遭遇：${chosen.name}`);
+        if (chosen.tier === "epic") {
+          ui.mythicModalOpen = true;
+          addLog(`！！！幻灵出现：${chosen.name}！！！`, true);
+          if (typeof pushTickerEvent === "function") pushTickerEvent("mythic", `高级遭遇幻灵 ${chosen.name}`);
+        }
+        if (isShiny) {
+          ui.shinyModalOpen = true;
+          addLog(`！！！闪光出现：${chosen.name}！！！`, true);
+          if (typeof pushTickerEvent === "function") pushTickerEvent("shiny", `高级遭遇闪光 ${chosen.name}`);
+        }
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      if (act === "run") {
+        const enc = typeof ui.encounterPid === "string" ? getSpeciesByPid(ui.encounterPid) : null;
+        if (!enc) return;
+
+        const forced = partyHasAlwaysEscape(state);
+        const ok = forced || randFloat() < 0.5;
+        const okTexts = [
+          "你借着林间灌木的掩护轻巧脱身，平安撤回营地外围。",
+          "你果断收敛灵气退入秘境小径，成功避开了野生萌灵的纠缠。",
+          "你投出一缕草叶障目，转身稳步撤出了遭遇圈。",
+          "你顺着星辉风向悄然撤离，没有惊动草丛深处的动静。",
+        ];
+        const failTexts = [
+          "撤离时惊动了周遭灌木，慌乱间遗落了随身物资。",
+          "野生萌灵气势迫人，你仓促后撤时散落了少许行囊。",
+          "你试图绕开藤蔓脱身，却在跨越溪石时遗失了部分采集品。",
+          "秘境灵风骤起阻住了退路，撤离途中折损了些许物资。",
+        ];
+        const lossParts = [];
+        if (!ok) {
+          const nameMap = { catnip: "灵果", wood: "灵木", minerals: "灵晶碎片" };
+          const keys0 = ["catnip", "wood", "minerals"];
+          const keys = keys0.filter((k) => state.res?.[k] && (state.res[k].value ?? 0) > 0);
+
+          const maxPick = Math.min(2, keys.length);
+          for (let i = 0; i < maxPick; i += 1) {
+            const idx = Math.floor(randFloat() * keys.length);
+            const k = keys.splice(idx, 1)[0];
+            const cur = Math.max(0, Math.floor(state.res[k].value ?? 0));
+            if (cur <= 0) continue;
+            const pct = 0.05 + randFloat() * 0.45;
+            let loss = Math.floor(cur * pct);
+            if (loss <= 0) loss = 1;
+            state.res[k].value = Math.max(0, cur - loss);
+            lossParts.push(`${nameMap[k] ?? k} -${loss}`);
+          }
+        }
+
+        ui.encounterPid = null;
+        ui.encounterNature = null;
+        ui.encounterIsShiny = false;
+        ui.shinyModalOpen = false;
+        ui.mythicModalOpen = false;
+
+        if (ok) {
+          const msg = forced
+            ? "顽皮性格：你从叙事里溜走了。"
+            : okTexts[Math.floor(randFloat() * okTexts.length)] || "逃跑成功！";
+          addLog(msg, true);
+        } else {
+          const msg = failTexts[Math.floor(randFloat() * failTexts.length)] || "逃跑失败！";
+          const lossText = lossParts.length > 0 ? lossParts.join("，") : "无";
+          addLog(`${msg}（代价：${lossText}）`, true);
+        }
+        const didAuto = tryAutoEncounter();
+        if (!didAuto) {
+          markCaptureDirty();
+          render();
+        }
+        return;
+      }
+
+      if (act === "throw") {
+        const pid = typeof ui.encounterPid === "string" ? ui.encounterPid : null;
+        const p = pid ? getSpeciesByPid(pid) : null;
+        if (!p) return;
+        
+        const ballType = ui.selectedBallType || "pokeball";
+        if ((state.res[ballType]?.value ?? 0) < 1) return;
+        state.res[ballType].value = Math.max(0, (state.res[ballType]?.value ?? 0) - 1);
+        refundBallIfSaved(state, ballType);
+
+        const techEff = computeTechEffects();
+        const add = (typeof techEff.catchChanceAdd === "number" ? techEff.catchChanceAdd : 0) + abilityCatchRateAdd(state);
+        const mult = Math.max(0, 1 + add);
+        const base = baseCatchChanceByDex(p.dex);
+        const fails = typeof state.rng?.catchFails === "number" ? state.rng.catchFails : 0;
+        const pity = Math.min(0.02 * Math.max(0, Math.floor(fails)), 0.2);
+        
+        const caughtMap = state.dex && typeof state.dex === "object" ? state.dex.caught : null;
+        const caughtCount = caughtMap && typeof caughtMap[p.id] === "number" ? caughtMap[p.id] : 0;
+        const ballMult = ballCatchMult(ballType, { types: getMonTypesForBias(p), caughtCount });
+        
+        const tacticalAdd =
+          Math.max(0, Number(ui.encounterAmbushBonus || 0)) +
+          (Math.max(0, Math.floor(ui.lureStacks || 0)) > 0 ? 0.06 : 0) +
+          Math.min(3, Math.max(0, Math.floor(ui.encounterBaitStacks || 0))) * 0.04 +
+          Math.min(2, Math.max(0, Math.floor(ui.encounterMudStacks || 0))) * 0.05 +
+          Math.max(0, Number(ui.throwTimingBonus || 0));
+        ui.throwTimingBonus = 0;
+
+        let chance = base * mult * ballMult * luckyCatchMul(state, getMonTypesForBias(p)) * natureWildCatchMul(ui.encounterNature) + pity + tacticalAdd;
+        chance = clamp(chance, 0, 0.95);
+
+        if (randFloat() > chance) {
+          if (!state.rng) state.rng = { catchFails: 0 };
+          state.rng.catchFails = Math.max(0, (state.rng.catchFails ?? 0) + pityFailStep(state, randFloat, ui.encounterNature));
+          onCatchFailFun(state);
+          noteCatchNearMiss(ui, p.id, chance);
+
+          if (Boolean(ui.captureAutoEncounter)) {
+            ui.encounterPid = null;
+            ui.encounterNature = null;
+            ui.encounterIsShiny = false;
+            ui.encounterAmbushBonus = 0;
+            ui.encounterBaitStacks = 0;
+            ui.encounterMudStacks = 0;
+            if ((ui.lureStacks || 0) > 0) ui.lureStacks = Math.max(0, ui.lureStacks - 1);
+            ui.shinyModalOpen = false;
+            ui.mythicModalOpen = false;
+            addLog(`捕捉失败：${p.name} 逃走了。`);
+            const didAuto = tryAutoEncounter();
+            if (!didAuto) {
+              markCaptureDirty();
+              render();
+            }
+            return;
+          }
+
+          // 捕捉失败抖动动画
+          if (elCaptureActions) {
+            elCaptureActions.classList.remove("capture-fail-shake");
+            void elCaptureActions.offsetWidth;
+            elCaptureActions.classList.add("capture-fail-shake");
+            setTimeout(() => elCaptureActions.classList.remove("capture-fail-shake"), 500);
+          }
+
+          if (chance >= 0.35) addLog(`差一点！成功率约 ${Math.round(chance * 100)}%`);
+
+          const mudBlocked = Math.max(0, Math.floor(ui.encounterMudStacks || 0)) > 0;
+          if (mudBlocked) {
+            ui.encounterMudStacks = Math.max(0, Math.floor(ui.encounterMudStacks || 0) - 1);
+            addLog(`★ 泥团封路生效：${p.name} 被泥团绊住未能逃脱！可以继续投掷灵球。`);
+          } else {
+            const clearEncounter = randFloat() < 0.5;
+            if (clearEncounter) {
+              ui.encounterPid = null;
+              ui.encounterNature = null;
+              ui.encounterIsShiny = false;
+              ui.encounterAmbushBonus = 0;
+              ui.encounterBaitStacks = 0;
+              ui.encounterMudStacks = 0;
+              if ((ui.lureStacks || 0) > 0) ui.lureStacks = Math.max(0, ui.lureStacks - 1);
+              ui.shinyModalOpen = false;
+              ui.mythicModalOpen = false;
+              addLog(`捕捉失败：${p.name} 逃走了。`);
+            } else {
+              addLog(`捕捉失败：${p.name} 挣扎中！可以继续投掷灵球。`);
+            }
+          }
+
+          markCaptureDirty();
+          render();
+          return;
+        }
+
+        if (!state.rng) state.rng = { catchFails: 0 };
+        state.rng.catchFails = 0;
+        clearCatchNearMiss(ui);
+        ui.encounterPid = null;
+        ui.encounterNature = null;
+        ui.encounterAmbushBonus = 0;
+        ui.encounterBaitStacks = 0;
+        ui.encounterMudStacks = 0;
+        if ((ui.lureStacks || 0) > 0) ui.lureStacks = Math.max(0, ui.lureStacks - 1);
+        const isShiny = Boolean(ui.encounterIsShiny);
+        ui.encounterIsShiny = false;
+        ui.shinyModalOpen = false;
+        ui.mythicModalOpen = false;
+        
+        // 捕捉成功动画
+        if (elCaptureActions) {
+          const flashClass = isShiny ? "capture-shiny-flash" : "capture-success-flash";
+          elCaptureActions.classList.remove("capture-success-flash", "capture-shiny-flash", "capture-fail-shake");
+          void elCaptureActions.offsetWidth;
+          elCaptureActions.classList.add(flashClass);
+          setTimeout(() => elCaptureActions.classList.remove(flashClass), 900);
+        }
+        
+        // 豪华灵球效果：捕获后亲密度+20
+        const luxuryBonus = ballType === "luxuryball" ? 20 : 0;
+        
+        // 记录捕捉前的唯一数量，用于里程碑检测
+        const uniqueBefore = Object.values(state.dex?.caught ?? {}).filter((v) => typeof v === "number" && v > 0).length;
+        
+        awardCaughtBeast(p, { isShiny, affectionBonus: luxuryBonus, ballType, nature: ui.encounterNature || undefined });
+        onCatchSuccessFun(state);
+        
+        if (luxuryBonus > 0) {
+          addLog(`豪华灵球效果：${p.name} 亲密度 +${luxuryBonus}`);
+        }
+        
+        // 里程碑检测：检查是否刚达到某区域解锁门槛
+        const MILESTONES = [5, 13, 26, 38, 51, 64, 77, 96];
+        const MILESTONE_NAMES = {
+          5: "蜜露林径", 13: "溪光浅滩", 26: "风铃高原",
+          38: "星砂荒漠", 51: "月见花园", 64: "霜晶山脊",
+          77: "龙眠幽谷", 96: "幻梦秘境",
+        };
+        const uniqueAfter = Object.values(state.dex?.caught ?? {}).filter((v) => typeof v === "number" && v > 0).length;
+        for (const m of MILESTONES) {
+          if (uniqueBefore < m && uniqueAfter >= m) {
+            addLog(`★ 新区域解锁：${MILESTONE_NAMES[m]}！快去遭遇新萌灵吧！`, true);
+            if (typeof pushTickerEvent === "function") pushTickerEvent("unlock", `解锁新区域 ${MILESTONE_NAMES[m]}`);
+          }
+        }
+        
+        const didAuto = tryAutoEncounter();
+        if (!didAuto) {
+          markCaptureDirty();
+          render();
+        }
+        return;
+      }
+
+      if (act === "masterball") {
+        const pid = typeof ui.encounterPid === "string" ? ui.encounterPid : null;
+        const p = pid ? getSpeciesByPid(pid) : null;
+        if (!p) return;
+        if ((state.res.masterball?.value ?? 0) < 1) return;
+        state.res.masterball.value = Math.max(0, (state.res.masterball?.value ?? 0) - 1);
+
+        if (!state.rng) state.rng = { catchFails: 0 };
+        state.rng.catchFails = 0;
+        clearCatchNearMiss(ui);
+        ui.encounterPid = null;
+        ui.encounterNature = null;
+        const isShiny = Boolean(ui.encounterIsShiny);
+        ui.encounterIsShiny = false;
+        ui.shinyModalOpen = false;
+        ui.mythicModalOpen = false;
+        // 究极灵球捕捉动画
+        if (elCaptureActions) {
+          elCaptureActions.classList.remove("capture-success-flash", "capture-shiny-flash");
+          void elCaptureActions.offsetWidth;
+          elCaptureActions.classList.add("capture-success-flash");
+          setTimeout(() => elCaptureActions.classList.remove("capture-success-flash"), 900);
+        }
+        const uniqueBeforeMb = Object.values(state.dex?.caught ?? {}).filter((v) => typeof v === "number" && v > 0).length;
+        awardCaughtBeast(p, { isShiny, ballType: "masterball", nature: ui.encounterNature || undefined });
+        onCatchSuccessFun(state);
+        addLog(`究极灵球捕捉：${p.name} 捕捉成功！`, true);
+        const uniqueAfterMb = Object.values(state.dex?.caught ?? {}).filter((v) => typeof v === "number" && v > 0).length;
+        const MILESTONES_MB = { 5:"蜜露林径",13:"溪光浅滩",26:"风铃高原",38:"星砂荒漠",51:"月见花园",64:"霜晶山脊",77:"龙眠幽谷",96:"幻梦秘境" };
+        for (const [m, name] of Object.entries(MILESTONES_MB)) {
+          if (uniqueBeforeMb < Number(m) && uniqueAfterMb >= Number(m)) {
+            addLog(`★ 新区域解锁：${name}！快去遭遇新萌灵吧！`, true);
+            if (typeof pushTickerEvent === "function") pushTickerEvent("unlock", `解锁新区域 ${name}`);
+          }
+        }
+        const didAuto = tryAutoEncounter();
+        if (!didAuto) {
+          markCaptureDirty();
+          render();
+        }
+        return;
+      }
+
+      // 自动捕捉开关
+      if (act === "autoThrowToggle") {
+        ui.captureAutoThrow = !Boolean(ui.captureAutoThrow);
+        // 关闭时清除待投球标记
+        if (!ui.captureAutoThrow) ui._pendingAutoThrow = false;
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      if (act === "catch") {
+        doCatch();
+        markCaptureDirty();
+        render();
+      }
+    };
+
+    elCaptureActions.addEventListener("pointerup", onCaptureActionsActivate);
+    elCaptureActions.addEventListener("click", onCaptureActionsActivate);
+
+    elCaptureActions.addEventListener("change", (ev) => {
+      const state = getState();
+
+      const ballSelector = ev.target?.closest?.("select[data-ball-selector]");
+      if (ballSelector && elCaptureActions.contains(ballSelector)) {
+        ui.selectedBallType = ballSelector.value || "pokeball";
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const autoEncToggle = ev.target?.closest?.("input[data-auto-encounter-toggle]");
+      if (autoEncToggle && elCaptureActions.contains(autoEncToggle)) {
+        ui.captureAutoEncounter = Boolean(autoEncToggle.checked);
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const autoThrowToggle = ev.target?.closest?.("input[data-auto-throw-toggle]");
+      if (autoThrowToggle && elCaptureActions.contains(autoThrowToggle)) {
+        ui.captureAutoThrow = Boolean(autoThrowToggle.checked);
+        if (!ui.captureAutoThrow) ui._pendingAutoThrow = false;
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const autoToggle = ev.target?.closest?.("input[data-auto-ball-toggle]");
+      if (autoToggle && elCaptureActions.contains(autoToggle)) {
+        if (!state.auto || typeof state.auto !== "object") {
+          state.auto = {
+            autoBuildOn: false,
+            autoBuildMode: "cheap",
+            autoBuildCarrySec: 0,
+            autoBallOn: false,
+            autoBallQty: 1,
+            autoBallCarrySec: 0,
+          };
+        }
+        state.auto.autoBallOn = Boolean(autoToggle.checked);
+        markCaptureDirty();
+        render();
+        return;
+      }
+
+      const sel = ev.target?.closest?.("select[data-capture-qty],select[data-ball-selector]");
+      if (!sel || !elCaptureActions.contains(sel)) return;
+      const v = Number(sel.value);
+      ui.makeBallQty = Number.isFinite(v) ? Math.max(1, Math.floor(v)) : 1;
+      ui.captureQtyFocus = false;
+      markCaptureDirty();
+      render();
+    });
+  }
+}

@@ -1,0 +1,176 @@
+// defs_buildings.js — 数值已预乘平衡系数（×0.25），app.js中BUILDING_BALANCE设为1.0
+// 即此处的数值就是游戏实际运行值，无需额外缩放
+export const BUILDING_DEFS = {
+  field: {
+    name: "灵果园",
+    category: "灵果",
+    desc: "提供灵果自动产出。",
+    baseCost: { catnip: 3 },      // 原10 × 0.25 = 2.5 → 3
+    costMul: 1.12,
+    effects: (state) => {
+      const n = state.buildings.field.owned;
+      return {
+        // 0.10 raw → ×0.5 finalize ≈ 0.05/s/田（慢节奏休闲标定）
+        catnipPerSec: 0.10 * n,
+      };
+    },
+    visible: () => true,
+  },
+  hut: {
+    name: "灵木营",
+    category: "灵木",
+    desc: "解锁灵木。增加灵木产出与上限。",
+    baseCost: { catnip: 5 },      // 原20 × 0.25
+    costMul: 1.18,
+    effects: (state) => {
+      const n = state.buildings.hut.owned;
+      return {
+        unlockWood: n > 0,
+        woodPerSec: 0.016 * n,
+        capWoodAdd: 25 * n,
+      };
+    },
+    visible: (state) => state.res.catnip.value >= 5 || state.buildings.hut.owned > 0,
+  },
+  workshop: {
+    name: "灵晶工坊",
+    category: "灵晶",
+    desc: "解锁灵晶碎片，并提供灵晶自动产出。",
+    baseCost: { catnip: 30, wood: 8 }, // 原120×0.25, 30×0.25
+    costMul: 1.1831,
+    effects: (state) => {
+      const n = state.buildings.workshop.owned;
+      return {
+        unlockMinerals: n > 0,
+        mineralsPerSec: 0.02 * n,
+      };
+    },
+    visible: (state) => state.unlocks.wood || state.buildings.workshop.owned > 0,
+  },
+  researchLab: {
+    name: "研究所",
+    category: "研究",
+    desc: "提升研究效率，减少研究耗时。每级减少 2% 研究时间。",
+    baseCost: { minerals: 6 },    // 原25 × 0.25 = 6.25 → 6
+    costMul: 1.22,
+    effects: () => ({}),          // 效果在computeResearchTimeSec中通过owned数量计算
+    visible: (state) => state.buildings.workshop.owned > 0 || state.buildings.researchLab.owned > 0,
+  },
+  granary: {
+    name: "灵果仓",
+    category: "灵果",
+    desc: "大幅提升灵果上限。",
+    baseCost: { catnip: 9, wood: 2 }, // 原35×0.25, 8×0.25
+    costMul: 1.15,
+    effects: (state) => {
+      const n = state.buildings.granary.owned;
+      return {
+        capCatnipAdd: 90 * n,
+      };
+    },
+    visible: (state) => state.unlocks.wood || state.tech.berryCultivation || state.buildings.granary.owned > 0,
+  },
+  berryPress: {
+    name: "灵果压榨坊",
+    category: "灵果",
+    desc: "提供大量灵果自动产出。",
+    baseCost: { catnip: 45, wood: 9 }, // 原180×0.25, 35×0.25
+    costMul: 1.1712,
+    effects: (state) => {
+      const n = state.buildings.berryPress.owned;
+      return {
+        catnipPerSec: 0.075 * n,
+      };
+    },
+    visible: (state) => state.tech.composting || state.buildings.berryPress.owned > 0,
+  },
+  storehouse: {
+    name: "灵木储藏棚",
+    category: "灵木",
+    desc: "大幅提升灵木上限。",
+    baseCost: { catnip: 50, wood: 10 }, // 原200×0.25, 40×0.25
+    costMul: 1.12,
+    effects: (state) => {
+      const n = state.buildings.storehouse.owned;
+      return {
+        capWoodAdd: 120 * n,
+      };
+    },
+    visible: (state) => state.unlocks.wood || state.buildings.storehouse.owned > 0,
+  },
+  lumberYard: {
+    name: "灵木堆场",
+    category: "灵木",
+    desc: "增加灵木自动产出与上限。",
+    baseCost: { catnip: 65, wood: 30 }, // 原260×0.25, 120×0.25
+    costMul: 1.1604,
+    effects: (state) => {
+      const n = state.buildings.lumberYard.owned;
+      return {
+        woodPerSec: 0.03 * n,
+        capWoodAdd: 35 * n,
+      };
+    },
+    visible: (state) => state.tech.carpentry || state.buildings.lumberYard.owned > 0,
+  },
+  mineralSilo: {
+    name: "灵晶储藏箱",
+    category: "灵晶",
+    desc: "大幅提升灵晶碎片上限。",
+    baseCost: { catnip: 4, wood: 3 }, // 原15×0.25, 10×0.25
+    costMul: 1.19,
+    effects: (state) => {
+      const n = state.buildings.mineralSilo.owned;
+      return {
+        capMineralsAdd: 120 * n,
+      };
+    },
+    visible: (state) => state.unlocks.minerals || state.buildings.mineralSilo.owned > 0,
+  },
+  ballBench: {
+    name: "灵球台",
+    category: "灵球",
+    desc: "提升灵球携带与制作上限。",
+    baseCost: { catnip: 30, wood: 18 }, // 原120×0.25, 70×0.25
+    costMul: 1.13,
+    effects: (state) => {
+      const n = state.buildings.ballBench.owned;
+      return {
+        capPokeballAdd: 10 * n,
+      };
+    },
+    visible: (state) => state.tech.pokeballBasics || state.buildings.ballBench.owned > 0,
+  },
+  trainingGround: {
+    name: "训练场",
+    category: "功能建筑",
+    desc: "建造后解锁训练场功能；每级增加 1 个训练槽位（最高 10）。",
+    baseCost: { catnip: 25, wood: 25, minerals: 25 }, // 原100×0.25
+    costMul: 1.668,
+    maxLevel: 10,
+    effects: () => ({}),
+    visible: (state) => state.unlocks.minerals || state.buildings.trainingGround.owned > 0,
+  },
+  breedingHouse: {
+    name: "育灵屋",
+    category: "功能建筑",
+    desc: "解锁育灵屋功能，并提升生蛋效率。",
+    baseCost: { catnip: 25, wood: 25, minerals: 25 }, // 原100×0.25
+    costMul: 1.668,
+    maxLevel: 10,
+    effects: () => ({}),
+    visible: (state) => state.buildings.trainingGround.owned > 0 || state.buildings.breedingHouse.owned > 0,
+  },
+  expeditionPost: {
+    name: "远征所",
+    category: "功能建筑",
+    desc: "解锁远征功能，并提升可挑战的远征等级。",
+    // ponytail: minerals 250 exceeded early cap (30); catnip/wood 250 stalled mid-game after dawn pacing
+    baseCost: { catnip: 50, wood: 50, minerals: 25 },
+    costMul: 1.395,
+    maxLevel: 10,
+    effects: () => ({}),
+    visible: (state) =>
+      (state.buildings.trainingGround.owned > 0 && state.buildings.breedingHouse.owned > 0) || state.buildings.expeditionPost.owned > 0,
+  },
+};
