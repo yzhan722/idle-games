@@ -58,6 +58,11 @@ var customers: Array[CustomerNPC] = []
 
 var island2_props: Array[Node2D] = []
 var island3_props: Array[Node2D] = []
+var tree_1_node: Sprite2D
+var cot_1_node: Sprite2D
+var left_hut_node: Sprite2D
+var tree_3_node: Sprite2D
+var right_tiki_node: Sprite2D
 
 var customer_spawn_timer: float = 4.0
 var vip_customer_timer: float = 38.0
@@ -165,41 +170,83 @@ func get_active_island_bounds() -> Rect2:
 func _build_landmarks_and_buildings() -> void:
 	# Island 1 (Henesys): AppleTree (x=612.4), SoilPlot (x=710.8), Cottage (x=811.2), Mortar (x=908.4), Stall (x=1013.4)
 	# GEMINI.md Law 3.3: `apple_tree.png` & `cottage_mushroom.png` have built-in grass base shadows -> NO procedural shadow!
-	var tree_1 := _make_grounded_prop(tex_tree, 612.4, 120, 0.65)
-	ysort_layer.add_child(tree_1)
+	tree_1_node = _make_grounded_prop(tex_tree, 612.4, 120, 0.65)
+	tree_1_node.name = "AppleTree_1"
+	ysort_layer.add_child(tree_1_node)
 
-	var cot_1 := _make_grounded_prop(tex_cottage, 811.2, 114, 0.65)
-	ysort_layer.add_child(cot_1)
+	cot_1_node = _make_grounded_prop(tex_cottage, 811.2, 114, 0.65)
+	cot_1_node.name = "MushroomCottage_1"
+	ysort_layer.add_child(cot_1_node)
 
 	# Island 2 (Ellinia): Left Hut (x=144.0), SoilPlot (x=272.0), Cauldron (x=397.0)
-	var left_sp := _make_grounded_prop(tex_left_hut, 144.0, 108, 0.68)
-	ysort_layer.add_child(left_sp)
-	island2_props.append(left_sp)
+	left_hut_node = _make_grounded_prop(tex_left_hut, 144.0, 108, 0.68)
+	left_hut_node.name = "LeftHut_2"
+	ysort_layer.add_child(left_hut_node)
+	island2_props.append(left_hut_node)
 
 	# Island 3 (Orbis Coast): AppleTree (x=1462.0), SoilPlot (x=1562.4), Dual Workshop (x=1655.3), Right Tiki (x=1755.6)
-	var tree_3 := _make_grounded_prop(tex_tree, 1462.0, 120, 0.65)
-	ysort_layer.add_child(tree_3)
-	island3_props.append(tree_3)
+	tree_3_node = _make_grounded_prop(tex_tree, 1462.0, 120, 0.65)
+	tree_3_node.name = "AppleTree_3"
+	ysort_layer.add_child(tree_3_node)
+	island3_props.append(tree_3_node)
 
-	var right_sp := _make_grounded_prop(tex_right_tiki, 1755.6, 108, 0.68)
-	ysort_layer.add_child(right_sp)
-	island3_props.append(right_sp)
+	right_tiki_node = _make_grounded_prop(tex_right_tiki, 1755.6, 108, 0.68)
+	right_tiki_node.name = "RightTiki_3"
+	ysort_layer.add_child(right_tiki_node)
+	island3_props.append(right_tiki_node)
 
 	mortar_workshop = Workshop.new()
+	mortar_workshop.name = "MortarWorkshop_1"
 	mortar_workshop.setup_workshop("mortar", 1, Vector2(908.4, GROUND_Y))
 	ysort_layer.add_child(mortar_workshop)
 
 	cauldron_workshop = Workshop.new()
+	cauldron_workshop.name = "CauldronWorkshop_2"
 	cauldron_workshop.setup_workshop("cauldron", 2, Vector2(397.0, GROUND_Y))
 	ysort_layer.add_child(cauldron_workshop)
 
 	orbis_linked_workshop = Workshop.new()
+	orbis_linked_workshop.name = "OrbisWorkshop_3"
 	orbis_linked_workshop.setup_workshop("orbis_linked", 3, Vector2(1655.3, GROUND_Y))
 	ysort_layer.add_child(orbis_linked_workshop)
 
 	market_stall = MarketStall.new()
+	market_stall.name = "MarketStall_1"
 	market_stall.position = Vector2(1013.4, GROUND_Y)
 	ysort_layer.add_child(market_stall)
+
+func get_island_main_building_rects() -> Dictionary:
+	var oy := world_root.position.y
+	var p1_rect := soil_plots[0].get_screen_rect() if soil_plots.size() > 0 else Rect2(710.8 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	var p2_rect := soil_plots[1].get_screen_rect() if soil_plots.size() > 1 else Rect2(272.0 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	var p3_rect := soil_plots[2].get_screen_rect() if soil_plots.size() > 2 else Rect2(1562.4 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	return {
+		1: [
+			{"name": "AppleTree_1",       "rect": _sprite_global_rect(tree_1_node, oy)},
+			{"name": "SoilPlot_1",        "rect": Rect2(p1_rect.position + Vector2(0, oy), p1_rect.size)},
+			{"name": "MushroomCottage_1", "rect": _sprite_global_rect(cot_1_node, oy)},
+			{"name": "MortarWorkshop_1",  "rect": Rect2(mortar_workshop.get_screen_rect().position + Vector2(0, oy), mortar_workshop.get_screen_rect().size)},
+			{"name": "MarketStall_1",     "rect": Rect2(market_stall.get_screen_rect().position + Vector2(0, oy), market_stall.get_screen_rect().size)}
+		],
+		2: [
+			{"name": "LeftHut_2",         "rect": _sprite_global_rect(left_hut_node, oy)},
+			{"name": "SoilPlot_2",        "rect": Rect2(p2_rect.position + Vector2(0, oy), p2_rect.size)},
+			{"name": "CauldronWorkshop_2","rect": Rect2(cauldron_workshop.get_screen_rect().position + Vector2(0, oy), cauldron_workshop.get_screen_rect().size)}
+		],
+		3: [
+			{"name": "AppleTree_3",       "rect": _sprite_global_rect(tree_3_node, oy)},
+			{"name": "SoilPlot_3",        "rect": Rect2(p3_rect.position + Vector2(0, oy), p3_rect.size)},
+			{"name": "OrbisWorkshop_3",   "rect": Rect2(orbis_linked_workshop.get_screen_rect().position + Vector2(0, oy), orbis_linked_workshop.get_screen_rect().size)},
+			{"name": "RightTiki_3",       "rect": _sprite_global_rect(right_tiki_node, oy)}
+		]
+	}
+
+func _sprite_global_rect(sp: Sprite2D, oy: float) -> Rect2:
+	if sp == null or sp.texture == null:
+		return Rect2()
+	var w := float(sp.texture.get_width()) * absf(sp.scale.x)
+	var h := float(sp.texture.get_height()) * absf(sp.scale.y)
+	return Rect2(sp.position.x - w * 0.5, sp.position.y + oy - h, w, h)
 
 func _build_soil_plots() -> void:
 	var p1 := SoilPlot.new()

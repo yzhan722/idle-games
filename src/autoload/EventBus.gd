@@ -4,6 +4,7 @@ extends Node
 signal gold_changed(new_gold: int, delta: int)
 signal prosperity_changed(new_score: int)
 signal inventory_changed()
+signal item_produced(island_idx: int, item_id: String, qty: int)
 signal item_delivered(item_id: String, amount: int, target_name: String)
 signal customer_paid(recipe_id: String, qty: int, total_gold: int, world_pos: Vector2)
 signal customer_left_unhappy(world_pos: Vector2)

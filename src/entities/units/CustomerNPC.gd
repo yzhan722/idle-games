@@ -207,16 +207,21 @@ func _begin_leave() -> void:
 func _follow_path(delta: float, spd: float) -> bool:
 	if nav_path.size() == 0:
 		return true
-	var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
-	var diff_x := wp.x - position.x
-	var dist := absf(diff_x)
-	if dist <= 3.5:
-		position = wp
-		nav_path.remove_at(0)
-		return nav_path.size() == 0
-	facing_left = diff_x < 0.0
-	position = Vector2(position.x + signf(diff_x) * minf(dist, spd * delta), EconomyConfig.GROUND_Y)
-	return false
+	var rem_move := spd * delta
+	while rem_move > 0.0 and nav_path.size() > 0:
+		var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
+		var diff_x := wp.x - position.x
+		var dist := absf(diff_x)
+		if absf(diff_x) > 0.2:
+			facing_left = diff_x < 0.0
+		if dist <= rem_move or dist <= 1.5:
+			position = wp
+			rem_move -= dist
+			nav_path.remove_at(0)
+		else:
+			position = Vector2(position.x + signf(diff_x) * rem_move, EconomyConfig.GROUND_Y)
+			rem_move = 0.0
+	return nav_path.size() == 0
 
 func _move_directly_toward(dest: Vector2, delta: float, spd: float) -> void:
 	var diff_x := dest.x - position.x

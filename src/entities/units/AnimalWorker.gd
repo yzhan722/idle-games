@@ -53,6 +53,7 @@ var carrying_item_id: String = ""
 var carrying_qty: int = 0
 var target_plot: SoilPlot = null
 var boost_timer: float = 0.0
+var total_distance_moved: float = 0.0
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_UNIT
@@ -196,20 +197,27 @@ func _process(delta: float) -> void:
 
 	if nav_path.size() > 0:
 		is_moving = true
-		var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
-		var to_wp := wp - position
-		var dist := absf(to_wp.x)
-		if dist <= 3.5:
-			position = wp
-			nav_path.remove_at(0)
-			if nav_path.size() == 0:
-				is_moving = false
-				state_timer = 0.0
-		else:
-			facing_left = to_wp.x < 0.0
-			var spd := EconomyConfig.calc_move_speed(animal_key, get_level())
-			var step_x := signf(to_wp.x) * minf(dist, spd * delta)
-			position = Vector2(position.x + step_x, EconomyConfig.GROUND_Y)
+		var spd := EconomyConfig.calc_move_speed(animal_key, get_level())
+		var rem_move := spd * delta
+		while rem_move > 0.0 and nav_path.size() > 0:
+			var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
+			var diff_x := wp.x - position.x
+			var dist := absf(diff_x)
+			if absf(diff_x) > 0.2:
+				facing_left = diff_x < 0.0
+			if dist <= rem_move or dist <= 1.5:
+				total_distance_moved += dist
+				position = wp
+				rem_move -= dist
+				nav_path.remove_at(0)
+			else:
+				var step_x := signf(diff_x) * rem_move
+				total_distance_moved += absf(step_x)
+				position = Vector2(position.x + step_x, EconomyConfig.GROUND_Y)
+				rem_move = 0.0
+		if nav_path.size() == 0:
+			is_moving = false
+			state_timer = 0.0
 	else:
 		is_moving = false
 		position.y = EconomyConfig.GROUND_Y

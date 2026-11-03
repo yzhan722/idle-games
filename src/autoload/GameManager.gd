@@ -180,6 +180,7 @@ func add_to_raw_basket(island_idx: int, crop_id: String, qty: int) -> int:
 		if SoundManager != null:
 			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
+		EventBus.item_delivered.emit(crop_id, added, "raw_basket_" + str(island_idx))
 	return added
 
 func take_from_raw_basket(island_idx: int, max_qty: int) -> Dictionary:
@@ -220,6 +221,7 @@ func add_to_workshop_input(workshop_id: String, crop_id: String, qty: int) -> in
 		if SoundManager != null:
 			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
+		EventBus.item_delivered.emit(crop_id, added, workshop_id + "_input")
 	return added
 
 func take_workshop_input_for_processing(workshop_id: String) -> String:
@@ -254,6 +256,7 @@ func add_to_workshop_output(workshop_id: String, delicacy_id: String, qty: int) 
 		if SoundManager != null:
 			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
+		EventBus.item_delivered.emit(delicacy_id, added, workshop_id + "_output")
 	return added
 
 func take_from_workshop_output(workshop_id: String, max_qty: int) -> Dictionary:

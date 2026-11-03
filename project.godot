@@ -24,6 +24,7 @@ EconomyConfig="*res://src/autoload/EconomyConfig.gd"
 WindowController="*res://src/autoload/WindowController.gd"
 SoundManager="*res://src/autoload/SoundManager.gd"
 GameManager="*res://src/autoload/GameManager.gd"
+SelfTestRunner="*res://src/autoload/SelfTestRunner.gd"
 
 [display]
 

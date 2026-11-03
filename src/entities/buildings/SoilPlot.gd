@@ -25,6 +25,7 @@ var watered: bool = true
 var growth: float = 0.35
 var reserved_by_worker: bool = false
 var sway_time: float = 0.0
+var harvest_count: int = 0
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_BUILDING
@@ -156,9 +157,12 @@ func harvest_crop_yield() -> int:
 	var b_key := "soil_" + str(island_idx)
 	var b_lv := int(GameManager.building_levels.get(b_key, 1))
 	var qty := 1 + int(floor(float(b_lv) / 25.0))
+	harvest_count += 1
 	sown = true
 	watered = true
 	growth = 0.05
 	reserved_by_worker = false
 	_sync_sprites()
+	if EventBus != null:
+		EventBus.item_produced.emit(island_idx, crop_id, qty)
 	return qty
