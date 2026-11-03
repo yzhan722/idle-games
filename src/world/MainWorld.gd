@@ -369,7 +369,8 @@ func _process(delta: float) -> void:
 				_spawn_customer(true)
 
 	if WindowController != null and hud != null:
-		WindowController.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect())
+		var active_drawer_rect := HUD.DRAWER_RECT if hud.drawer_expanded else Rect2()
+		WindowController.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect(), active_drawer_rect)
 
 	queue_redraw()
 

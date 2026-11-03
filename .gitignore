@@ -2,6 +2,7 @@
 .godot/
 .godot_bin/
 build/
+*.zip
 *.translation
 
 # Temporary / OS files

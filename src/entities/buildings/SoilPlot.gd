@@ -1,13 +1,23 @@
 extends Node2D
 class_name SoilPlot
-## Enlarged 1.5D Soil Bed (`64x26`) + Lv.25 Crop Auto-Evolution + Native Level Label (`src/entities/buildings/SoilPlot.gd`)
-## Strictly enforces GEMINI.md Laws 2, 3, 4, 5:
+## Enlarged 1.5D Soil Bed (`64x26`), 3-Stage Crop Growth, Buffer Cap 10 & Lv.25 Auto-Evolution (`src/entities/buildings/SoilPlot.gd`)
+## Strictly enforces PRD v2.2 & GEMINI.md Laws 2, 3, 4, 5:
 ## - Root `position = Vector2(slot_x, GROUND_Y)` is the bottom-center grounding point.
 ## - `soil_sprite`: `z_index = -2`, `hframes = 4, vframes = 1`, `region_enabled = false`, `centered = true`, `offset = Vector2(0.0, -float(18) * 0.5)`.
 ## - `crop_sprite`: `z_index = 1`, `hframes = 4, vframes = 4`, `region_enabled = false`, `centered = true`, `offset = Vector2(0.0, -float(40) * 0.5)`.
+## - Implements 3 growth stages (`Stage 0: Seed -> Stage 1: Sprout -> Stage 2: Mature`) on `crops_sheet_normalized.png`.
+## - Enforces pure numeric buffer cap (default `10`, `+5/lv`), pausing growth/harvest when full so Bunny displays `"Zzz..."` bubble.
+## - Every 25 building levels (`Lv.25 / Lv.50 / Lv.75`), automatically evolves crop species to the next row and doubles (`2x`) harvest yield!
 
 const VISUAL_WIDTH := 64.0
 const VISUAL_HEIGHT := 26.0
+const DEFAULT_BASKET_CAP := 10
+
+enum GrowthStage {
+	SEED = 0,
+	SPROUT = 1,
+	MATURE = 2
+}
 
 @export var island_idx: int = 1
 @export var plot_index_on_island: int = 0
@@ -23,16 +33,18 @@ var level_label: Label
 var sown: bool = true
 var watered: bool = true
 var growth: float = 0.35
+var current_stage: GrowthStage = GrowthStage.SEED
 var reserved_by_worker: bool = false
 var sway_time: float = 0.0
 var harvest_count: int = 0
+var total_crops_harvested: int = 0
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_BUILDING
 	z_as_relative = false
 	tex_soil = load("res://assets/pixel_art/islands/soil_plot_normalized.png")
 	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
-	sway_time = randf() * 6.28
+	sway_time = randf() * TAU
 
 	# GEMINI.md Law 2.2 & 2.3 & 4.2: Soil base Sprite2D (`z_index = -2`, `hframes = 4, vframes = 1`, `region_enabled = false`, bottom-center pivot)
 	soil_sprite = Sprite2D.new()
@@ -56,7 +68,7 @@ func _ready() -> void:
 	crop_sprite.region_enabled = false
 	crop_sprite.hframes = 4
 	crop_sprite.vframes = 4
-	crop_sprite.frame = 2
+	crop_sprite.frame = 0
 	crop_sprite.centered = true
 	crop_sprite.offset = Vector2(0.0, -float(40) * 0.5)
 	crop_sprite.position = Vector2(0.0, -6.0)
@@ -65,8 +77,7 @@ func _ready() -> void:
 	crop_sprite.z_as_relative = false
 	add_child(crop_sprite)
 
-	var b_key := "soil_" + str(island_idx)
-	var cur_lv := int(GameManager.building_levels.get(b_key, 1))
+	var cur_lv := get_building_level()
 
 	visual_upgrader = BuildingVisualUpgrader.new()
 	add_child(visual_upgrader)
@@ -78,7 +89,9 @@ func _ready() -> void:
 		level_label.custom_minimum_size = Vector2(56.0, 20.0)
 		add_child(level_label)
 
-	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+	if EventBus != null:
+		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+	_refresh_evolved_crop()
 	_sync_sprites()
 
 func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: Vector2) -> void:
@@ -91,13 +104,40 @@ func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: V
 	_refresh_evolved_crop()
 	_sync_sprites()
 
+func get_building_key() -> String:
+	return "soil_" + str(island_idx)
+
+func get_building_level() -> int:
+	return maxi(1, int(GameManager.building_levels.get(get_building_key(), 1)))
+
+func get_milestone_tier() -> int:
+	return int(floor(float(get_building_level()) / 25.0))
+
+func get_milestone_yield_multiplier() -> int:
+	return int(round(pow(2.0, float(get_milestone_tier()))))
+
+func get_basket_capacity() -> int:
+	if GameManager != null:
+		return GameManager.get_raw_basket_max_cap(island_idx)
+	return DEFAULT_BASKET_CAP
+
+func is_output_buffer_blocked() -> bool:
+	if GameManager == null:
+		return false
+	var otter_hired := GameManager.is_island_otter_hired(island_idx)
+	if otter_hired:
+		return GameManager.is_raw_basket_full(island_idx)
+	elif island_idx == 1:
+		return GameManager.is_stall_full()
+	return GameManager.is_raw_basket_full(island_idx)
+
 func get_screen_rect() -> Rect2:
 	var w := VISUAL_WIDTH * scale.x
 	var h := VISUAL_HEIGHT * scale.y
 	return Rect2(position.x - w * 0.5, position.y - h, w, h)
 
 func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
-	if category == "building" and key == ("soil_" + str(island_idx)):
+	if category == "building" and key == get_building_key():
 		_refresh_evolved_crop()
 		if level_label != null:
 			level_label.text = "Lv." + str(new_level)
@@ -105,14 +145,19 @@ func _on_upgrade_purchased(category: String, key: String, new_level: int) -> voi
 			visual_upgrader.apply_level_visuals(new_level, true)
 
 func _refresh_evolved_crop() -> void:
-	var b_key := "soil_" + str(island_idx)
-	var b_lv := int(GameManager.building_levels.get(b_key, 1))
-	crop_id = EconomyConfig.get_evolved_crop_id(island_idx, b_lv)
+	crop_id = EconomyConfig.get_evolved_crop_id(island_idx, get_building_level())
 
 func is_plot_active() -> bool:
 	if not bool(GameManager.unlocked_islands.get(island_idx, false)):
 		return false
 	return plot_index_on_island < GameManager.get_unlocked_plot_count(island_idx)
+
+func _compute_growth_stage(g: float) -> GrowthStage:
+	if g >= 0.72:
+		return GrowthStage.MATURE
+	elif g >= 0.34:
+		return GrowthStage.SPROUT
+	return GrowthStage.SEED
 
 func _process(delta: float) -> void:
 	sway_time += delta
@@ -123,18 +168,18 @@ func _process(delta: float) -> void:
 	if sown and growth < 1.0:
 		var c_cfg: Dictionary = EconomyConfig.CROPS.get(crop_id, EconomyConfig.CROPS["crop_0"])
 		var base_dur := float(c_cfg.get("grow_time", 5.2))
-		var b_key := "soil_" + str(island_idx)
-		var b_lv := int(GameManager.building_levels.get(b_key, 1))
+		var b_lv := get_building_level()
 		var speed_mult := (1.35 if watered else 1.0) * (1.0 + 0.06 * float(b_lv - 1))
-		growth = minf(1.0, growth + (delta * speed_mult) / base_dur)
+		growth = minf(1.0, growth + (delta * speed_mult) / maxf(1.0, base_dur))
 
+	current_stage = _compute_growth_stage(growth)
 	_sync_sprites()
 
 func _sync_sprites() -> void:
 	if soil_sprite != null:
 		var st_idx := 0
 		if sown:
-			if growth >= 0.96:
+			if growth >= 0.92:
 				st_idx = 3
 			elif watered:
 				st_idx = 2
@@ -147,22 +192,30 @@ func _sync_sprites() -> void:
 		if sown:
 			var c_data: Dictionary = EconomyConfig.CROPS.get(crop_id, EconomyConfig.CROPS["crop_0"])
 			var row := clampi(int(c_data.get("crop_row", 0)), 0, 3)
-			var stage := clampi(int(floor(growth * 2.99)), 0, 2)
-			crop_sprite.frame = row * 4 + stage
-			var sway_x := roundf(sin(sway_time * 1.4 + position.x * 0.05) * (1.0 if stage >= 2 else 0.0))
+			var stage_col := int(current_stage) # 0 = Seed, 1 = Sprout, 2 = Mature in-ground
+			crop_sprite.frame = row * 4 + clampi(stage_col, 0, 2)
+			var sway_amp := 1.2 if current_stage == GrowthStage.MATURE else (0.5 if current_stage == GrowthStage.SPROUT else 0.0)
+			var sway_x := roundf(sin(sway_time * 1.6 + position.x * 0.05) * sway_amp)
 			crop_sprite.position = Vector2(sway_x, -6.0)
 
 func harvest_crop_yield() -> int:
 	_refresh_evolved_crop()
-	var b_key := "soil_" + str(island_idx)
-	var b_lv := int(GameManager.building_levels.get(b_key, 1))
-	var qty := 1 + int(floor(float(b_lv) / 25.0))
+	# PRD v2.2 Section 4: Every 25 levels doubles (`2x`) crop production yield!
+	var qty := maxi(1, get_milestone_yield_multiplier())
 	harvest_count += 1
+	total_crops_harvested += qty
 	sown = true
 	watered = true
 	growth = 0.05
+	current_stage = GrowthStage.SEED
 	reserved_by_worker = false
 	_sync_sprites()
+
+	if crop_sprite != null and is_inside_tree():
+		var tw := create_tween()
+		tw.tween_property(crop_sprite, "scale", Vector2(1.02, 0.72), 0.06)
+		tw.tween_property(crop_sprite, "scale", Vector2(0.85, 0.85), 0.10)
+
 	if EventBus != null:
 		EventBus.item_produced.emit(island_idx, crop_id, qty)
 	return qty

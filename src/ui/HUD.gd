@@ -1,9 +1,13 @@
 extends Control
 class_name HUD
-## Native Label Retro Maple-Style HUD (`src/ui/HUD.gd`)
-## Strictly enforces GEMINI.md Law 5:
+## Native Label Retro Maple-Style HUD, 3s Auto-Collapse Capsule & Recruit-to-Promote Drawer (`src/ui/HUD.gd`)
+## Strictly enforces PRD v2.2 & GEMINI.md Law 5:
 ## - 100% Native Godot `Label` nodes via `EconomyConfig.create_pixel_label` (`make_pixel_label_settings`).
 ## - Zero legacy bitmap font atlas usage anywhere.
+## - Implements Desktop Companion Mode `ui_resource_pill.png` Gold Capsule:
+##   * Hovering expands the bottom HUD bar / drawer (`hud_opacity = 1.0`);
+##   * Moving mouse outside for `>= 3.0s` auto-collapses into the compact Gold Capsule at `40%` opacity (`hud_opacity = 0.40`).
+## - Provides deterministic `open_drawer(tab_idx)` and `close_drawer()` API for both user interaction and `SelfTestRunner.gd`.
 
 var tex_panel: Texture2D
 var tex_drawer: Texture2D
@@ -30,6 +34,7 @@ var drawer_expanded: bool = false
 var drawer_anim_t: float = 0.0
 var mouse_outside_timer: float = 0.0
 var hud_opacity: float = 1.0
+var force_pin_open: bool = false
 
 var offline_banner_timer: float = 0.0
 var offline_banner_text: String = ""
@@ -77,6 +82,29 @@ func _ready() -> void:
 		offline_banner_text = "★离线挂机 " + str(GameManager.pending_offline_seconds) + "秒 · 自动结账 +" + str(GameManager.pending_offline_gold) + "G!"
 
 	_build_native_labels()
+
+func open_drawer(tab_idx: int = 0) -> void:
+	active_tab = clampi(tab_idx, 0, 2)
+	force_pin_open = true
+	mouse_outside_timer = 0.0
+	is_collapsed_capsule = false
+	drawer_expanded = true
+	drawer_anim_t = 1.0
+	hud_opacity = 1.0
+	modulate.a = 1.0
+	_sync_label_nodes()
+	queue_redraw()
+
+func close_drawer(collapse_to_capsule: bool = false) -> void:
+	force_pin_open = false
+	drawer_expanded = false
+	drawer_anim_t = 0.0
+	is_collapsed_capsule = collapse_to_capsule
+	hud_opacity = 0.40 if collapse_to_capsule else 1.0
+	modulate.a = hud_opacity
+	mouse_outside_timer = 3.5 if collapse_to_capsule else 0.0
+	_sync_label_nodes()
+	queue_redraw()
 
 func _build_native_labels() -> void:
 	lbl_offline = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
@@ -150,7 +178,12 @@ func _process(delta: float) -> void:
 	var hover_zone := _get_interactive_zone()
 	is_mouse_over_hud = hover_zone.has_point(mpos)
 
-	if GameManager.desktop_companion_mode:
+	if force_pin_open:
+		is_collapsed_capsule = false
+		drawer_expanded = true
+		drawer_anim_t = 1.0
+		hud_opacity = 1.0
+	elif GameManager.desktop_companion_mode:
 		if is_mouse_over_hud:
 			mouse_outside_timer = 0.0
 			is_collapsed_capsule = false
@@ -165,7 +198,8 @@ func _process(delta: float) -> void:
 		is_collapsed_capsule = false
 		hud_opacity = 1.0
 
-	drawer_anim_t = lerpf(drawer_anim_t, 1.0 if drawer_expanded else 0.0, minf(1.0, delta * 10.0))
+	if not force_pin_open:
+		drawer_anim_t = lerpf(drawer_anim_t, 1.0 if drawer_expanded else 0.0, minf(1.0, delta * 10.0))
 	modulate.a = hud_opacity
 
 	hovered_tab = -1
@@ -300,6 +334,7 @@ func _gui_input(event: InputEvent) -> void:
 				if hovered_tab == 3:
 					_toggle_companion_mode()
 				else:
+					force_pin_open = false
 					active_tab = hovered_tab
 					drawer_expanded = true
 					mouse_outside_timer = 0.0
@@ -366,7 +401,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					act_str = "招募 " + str(cost) + "G"
 				else:
 					sub_str = "满编 " + str(cur_rec) + "/" + str(max_cap) + " · Lv." + str(lv)
-					act_str = "全队进修 (" + str(cost) + "G)"
+					act_str = "全队进修 Lv.+1 (" + str(cost) + "G)"
 
 				list.append({
 					"type": "animal",

@@ -1,8 +1,11 @@
 extends Node
-## Real-Engine 20x Fast-Forward Self-Test & Viewport Screenshot Exporter (`src/autoload/SelfTestRunner.gd`)
+## Real-Engine 20x Fast-Forward Self-Test & Dual-State Viewport Screenshot Exporter (`src/autoload/SelfTestRunner.gd`)
 ## Activated when command-line args contain `--self-test` (via `./run_godot.ps1 --self-test`).
 ## Runs `MainWorld` for 180 frames at `Engine.time_scale = 20.0` (~60s simulated idle production),
-## verifies all 4 Hard Assertions, exports `res://preview_live_godot.png`, and exits with code 0 (or 1 on failure).
+## verifies all 4 Hard Assertions, exports TWO distinct real engine screenshots:
+##   1) Collapsed Drawer State -> `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
+##   2) Expanded Drawer State (`HUD.open_drawer(0)`) -> `res://preview_drawer_open_1920x360.png`
+## Asserts that the two captured images have distinct byte hashes before exiting with code 0!
 
 var is_self_test: bool = false
 var frame_counter: int = 0
@@ -186,29 +189,56 @@ func _run_all_four_assertions_and_export() -> void:
 	print("[PASS] [断言4-零乱码字体] 通过: 全局节点树 0 个废弃位图字体引用，100%% 采用 Godot 原生 Label + LabelSettings!")
 
 	# ------------------------------------------------------------------
-	# Export 100% Real Engine Viewport Screenshot (`res://preview_live_godot.png`)
+	# Export 2 Distinct Real Engine Viewport Screenshots:
+	#   State A (Drawer Collapsed): `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
+	#   State B (Drawer Expanded via `HUD.open_drawer(0)`): `res://preview_drawer_open_1920x360.png`
 	# ------------------------------------------------------------------
 	Engine.time_scale = 1.0
 	if world.hud != null:
-		world.hud.mouse_outside_timer = 0.0
-		world.hud.is_collapsed_capsule = false
-		world.hud.hud_opacity = 1.0
-		world.hud.modulate.a = 1.0
-		world.hud._sync_label_nodes()
-		world.hud.queue_redraw()
+		world.hud.close_drawer(false)
+	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
-	var img := get_viewport().get_texture().get_image()
-	if img == null or img.is_empty():
-		_fail_and_quit("[SelfTestRunner]", "Viewport image is empty (ensure Godot is launched with real renderer, not --headless)!")
+	var img_closed := get_viewport().get_texture().get_image()
+	if img_closed == null or img_closed.is_empty():
+		_fail_and_quit("[SelfTestRunner]", "Viewport image (collapsed state) is empty!")
 		return
-	var err := img.save_png("res://preview_live_godot.png")
-	if err != OK:
-		_fail_and_quit("[SelfTestRunner]", "Failed to save res://preview_live_godot.png (err=%d)" % err)
+	var err_a1 := img_closed.save_png("res://preview_live_godot.png")
+	var err_a2 := img_closed.save_png("res://preview_engine_1920x360.png")
+	if err_a1 != OK or err_a2 != OK:
+		_fail_and_quit("[SelfTestRunner]", "Failed to save collapsed preview PNGs!")
 		return
 
-	print("[PASS] [真机截图导出] 已成功导出真实引擎渲染画面: res://preview_live_godot.png (%dx%d)" % [img.get_width(), img.get_height()])
+	if world.hud != null:
+		world.hud.open_drawer(0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var img_open := get_viewport().get_texture().get_image()
+	if img_open == null or img_open.is_empty():
+		_fail_and_quit("[SelfTestRunner]", "Viewport image (drawer open state) is empty!")
+		return
+	var err_b := img_open.save_png("res://preview_drawer_open_1920x360.png")
+	if err_b != OK:
+		_fail_and_quit("[SelfTestRunner]", "Failed to save res://preview_drawer_open_1920x360.png!")
+		return
+
+	var hash_closed := _sha256_bytes(img_closed.get_data())
+	var hash_open := _sha256_bytes(img_open.get_data())
+	if hash_closed == hash_open:
+		_fail_and_quit("[SelfTestRunner]", "preview_engine_1920x360.png and preview_drawer_open_1920x360.png have identical pixel data!")
+		return
+
+	print("[PASS] [真机双状态截图导出] 收起态与展开态视口截图已真实导出且哈希完全独立:")
+	print("       - 收起态 (`preview_engine_1920x360.png` / `preview_live_godot.png`): %dx%d | SHA256=%s" % [img_closed.get_width(), img_closed.get_height(), hash_closed.substr(0, 16)])
+	print("       - 展开态 (`preview_drawer_open_1920x360.png` via `HUD.open_drawer(0)`): %dx%d | SHA256=%s" % [img_open.get_width(), img_open.get_height(), hash_open.substr(0, 16)])
 	print("==================================================================")
 	get_tree().quit(0)
+
+func _sha256_bytes(buf: PackedByteArray) -> String:
+	var hc := HashingContext.new()
+	hc.start(HashingContext.HASH_SHA256)
+	hc.update(buf)
+	return hc.finish().hex_encode()
 
 func _find_deprecated_font_node(node: Node) -> String:
 	var forbidden_name := "Pixel" + "FontRenderer"
