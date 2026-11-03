@@ -15,7 +15,10 @@
      - `[断言2-建筑防叠罗汉]`：读取同一岛屿上所有主建筑的全局屏幕矩形，若任意两座主建筑水平重叠区域大于 `15%`，立即打印冲突节点名并报错退出！
      - `[断言3-产线活体闭环]`：统计这 60 秒模拟时间内，农田是否完成了收获、动物 (`AnimalWorker`) 的累计位移是否大于 `50px`、是否有物品成功进入工坊或集市摊位。若动物原地不动或产线零产出，立即判定为“状态机死锁”并报错退出！
      - `[断言4-零乱码字体]`：全局扫描节点树，若发现仍在使用废弃的 `PixelFontRenderer`，立即报错退出！
-   - **导出真机视口截图**：在第 180 帧通过上述断言后，调用 `await RenderingServer.frame_post_draw`，使用 `get_viewport().get_texture().get_image().save_png("res://preview_live_godot.png")` 导出 100% 真实的引擎渲染画面，然后正常退出 (`get_tree().quit(0)`)。
+   - **导出真机视口截图并立即自动关闭**：在第 180 帧通过上述断言后，调用 `await RenderingServer.frame_post_draw`，使用 `get_viewport().get_texture().get_image().save_png("res://preview_live_godot.png")` 导出 100% 真实的引擎渲染画面，然后立即调用 `get_tree().quit(0)` 自动退出关闭窗口。
+3. **审核后即关、零常驻打扰铁律**：
+   - AI 仅在需要执行 `--self-test` 自检审核时短暂打开项目，审核截图完成后必须确保 Godot 进程已完全退出关闭；
+   - 除非用户明确要求打开游戏游玩，**严禁在任务完成后额外启动或遗留常驻的 Godot 游戏窗口**，避免置顶窗口干扰用户正常工作！
 
 ### 第二阶：强制「视觉照镜子自省协议 (Visual Self-Critique)」
 每次运行完 `./run_godot.ps1 --self-test` 生成 `preview_live_godot.png` 后，**必须主动调用图像查看工具（`read_file`）亲自打开并审视 `preview_live_godot.png`**，对照以下 4 个问题进行自我拷问：
