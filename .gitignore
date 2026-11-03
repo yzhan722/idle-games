@@ -1,0 +1,27 @@
+# deps & package managers
+node_modules/
+.pnpm-store/
+yarn-error.log
+
+# builds (per-game dist/ may still be tracked where it's the deploy convention, e.g. games/xianxia)
+.wrangler/
+.turbo/
+.cache/
+
+# godot
+.godot/
+.godot_bin/
+*.import.tmp
+
+# env & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# os / editors
+.DS_Store
+Thumbs.db
+*.log
+.aider*
