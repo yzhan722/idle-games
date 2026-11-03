@@ -1,0 +1,17 @@
+# 静态发布时排除——开发工具与一次性脚本,玩家不需要
+node_modules/
+test/
+tools/
+worker/
+docs/
+types/
+*.cjs
+*.md
+.git/
+.github/
+jest.config*.json
+jsconfig.json
+package.json
+yarn.lock
+package-lock.json
+.deployignore

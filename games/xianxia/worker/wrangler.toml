@@ -1,0 +1,29 @@
+name = "kgnet-xianxia"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# workers.dev is DNS-poisoned on some CN networks — serve on a custom domain
+# under one of the account's zones instead (CF creates the DNS record itself).
+routes = [
+  { pattern = "kgnet-xianxia.yinosites.com", custom_domain = true }
+]
+
+# One KV namespace holds everything, namespaced by key prefix:
+#   save:<guid>    cloud-save blob (metadata: label/archived/index/timestamp/size/shareId)
+#   share:<token>  shareId -> guid lookup for the public preview surface
+#   jh:<guid>      江湖榜 entry (the whole entry lives in KV metadata -> one list() reads the board)
+#
+# Create it once and paste the returned ids here:
+#   npx wrangler kv namespace create KGNET
+#   npx wrangler kv namespace create KGNET --preview
+[[kv_namespaces]]
+binding = "KGNET"
+id = "3e20b8ad634c4f5a9cc10554102ebad0"
+preview_id = "3035c5c667904a8a8cd12094e4ad958e"
+
+[vars]
+# Where preview links should send humans (the game's public origin).
+GAME_URL = "https://xianxia.yinosites.com/"
+# Credentialed CORS allowlist — the game's real origin.
+ALLOWED_ORIGINS = "https://xianxia.yinosites.com"
+# UPLOAD_THROTTLE_MS = "3000"   # per-guid save-upload minimum interval
