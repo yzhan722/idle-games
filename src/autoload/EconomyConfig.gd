@@ -19,8 +19,8 @@ const ISLAND_RECRUIT_CAPS: Dictionary = {
 
 ## Raw Crops (auto-evolves to next row in `crops_sheet.png` every 25 building levels!)
 const CROPS: Dictionary = {
-	"crop_0": {"name": "晨露红草莓", "island": 1, "crop_row": 0, "base_value": 12, "grow_time": 5.2},
-	"crop_1": {"name": "金桂甜苹果", "island": 1, "crop_row": 1, "base_value": 18, "grow_time": 6.0},
+	"crop_0": {"name": "晨露胡萝卜", "island": 1, "crop_row": 0, "base_value": 12, "grow_time": 5.2},
+	"crop_1": {"name": "晨风红草莓", "island": 1, "crop_row": 1, "base_value": 18, "grow_time": 6.0},
 	"crop_2": {"name": "幽谷荧光菇", "island": 2, "crop_row": 2, "base_value": 30, "grow_time": 7.0},
 	"crop_3": {"name": "晴滩黄金凤梨", "island": 3, "crop_row": 3, "base_value": 48, "grow_time": 8.0}
 }
@@ -70,19 +70,20 @@ func _load_sprite_manifest() -> void:
 func get_manifest_entry(sheet_key: String) -> Dictionary:
 	if sprite_manifest.has(sheet_key):
 		return sprite_manifest[sheet_key]
-	return {"cell_width": 60, "cell_height": 60, "hframes": 5, "vframes": 1, "total_frames": 5, "regions": []}
+	return {"cell_width": 60, "cell_height": 60, "hframes": 4, "vframes": 1, "total_frames": 4, "regions": []}
 
 func get_frame_region(sheet_key: String, frame_idx: int) -> Rect2:
 	var entry := get_manifest_entry(sheet_key)
 	var regions: Array = entry.get("regions", [])
-	if frame_idx >= 0 and frame_idx < regions.size():
-		var r: Dictionary = regions[frame_idx]
+	if regions.size() > 0:
+		var clamped_idx := clampi(frame_idx, 0, regions.size() - 1)
+		var r: Dictionary = regions[clamped_idx]
 		return Rect2(float(r.get("x", 0)), float(r.get("y", 0)), float(r.get("w", 60)), float(r.get("h", 60)))
 	var cw := float(entry.get("cell_width", 60))
 	var ch := float(entry.get("cell_height", 60))
-	var hf := maxi(1, int(entry.get("hframes", 5)))
-	var col := frame_idx % hf
-	var row := frame_idx / hf
+	var hf := maxi(1, int(entry.get("hframes", 4)))
+	var col := clampi(frame_idx, 0, hf - 1) % hf
+	var row := clampi(frame_idx, 0, hf - 1) / hf
 	return Rect2(col * cw, row * ch, cw, ch)
 
 ## PRD v2.2 Section 4.1: Every 25 levels, crop automatically evolves to the next high-tier variety in `crops_sheet.png`!

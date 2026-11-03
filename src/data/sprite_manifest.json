@@ -1,16 +1,16 @@
 {
   "animals/bunny_sheet.png": {
-    "cell_width": 48,
+    "cell_width": 60,
     "cell_height": 60,
-    "hframes": 5,
+    "hframes": 4,
     "vframes": 1,
-    "total_frames": 5,
+    "total_frames": 4,
     "normalized_sheet": "res://assets/pixel_art/animals/bunny_sheet_normalized.png",
     "regions": [
       {
         "x": 0,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
         "tight_x": 15,
         "tight_y": 2,
@@ -18,299 +18,249 @@
         "tight_h": 56
       },
       {
-        "x": 48,
+        "x": 60,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
         "tight_x": 75,
         "tight_y": 2,
-        "tight_w": 21,
+        "tight_w": 30,
         "tight_h": 56
       },
       {
-        "x": 96,
+        "x": 120,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
-        "tight_x": 96,
+        "tight_x": 130,
         "tight_y": 2,
-        "tight_w": 48,
+        "tight_w": 39,
         "tight_h": 56
       },
       {
-        "x": 144,
+        "x": 180,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
-        "tight_x": 144,
+        "tight_x": 186,
         "tight_y": 2,
-        "tight_w": 48,
-        "tight_h": 56
-      },
-      {
-        "x": 192,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 192,
-        "tight_y": 2,
-        "tight_w": 41,
+        "tight_w": 47,
         "tight_h": 56
       }
     ]
   },
   "animals/otter_sheet.png": {
-    "cell_width": 48,
+    "cell_width": 60,
     "cell_height": 60,
-    "hframes": 5,
+    "hframes": 4,
     "vframes": 1,
-    "total_frames": 5,
+    "total_frames": 4,
     "normalized_sheet": "res://assets/pixel_art/animals/otter_sheet_normalized.png",
     "regions": [
       {
         "x": 0,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
         "tight_x": 10,
-        "tight_y": 2,
-        "tight_w": 38,
-        "tight_h": 56
-      },
-      {
-        "x": 48,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 48,
-        "tight_y": 2,
-        "tight_w": 48,
-        "tight_h": 56
-      },
-      {
-        "x": 96,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 96,
-        "tight_y": 5,
-        "tight_w": 48,
-        "tight_h": 53
-      },
-      {
-        "x": 144,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 144,
-        "tight_y": 3,
-        "tight_w": 48,
-        "tight_h": 55
-      },
-      {
-        "x": 192,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 192,
-        "tight_y": 2,
-        "tight_w": 42,
-        "tight_h": 56
-      }
-    ]
-  },
-  "animals/toucan_sheet.png": {
-    "cell_width": 48,
-    "cell_height": 60,
-    "hframes": 5,
-    "vframes": 1,
-    "total_frames": 5,
-    "normalized_sheet": "res://assets/pixel_art/animals/toucan_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 2,
-        "tight_y": 4,
-        "tight_w": 46,
-        "tight_h": 54
-      },
-      {
-        "x": 48,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 48,
-        "tight_y": 4,
-        "tight_w": 48,
-        "tight_h": 54
-      },
-      {
-        "x": 96,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 96,
-        "tight_y": 4,
-        "tight_w": 48,
-        "tight_h": 54
-      },
-      {
-        "x": 144,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 144,
-        "tight_y": 8,
-        "tight_w": 48,
-        "tight_h": 50
-      },
-      {
-        "x": 192,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 192,
-        "tight_y": 9,
-        "tight_w": 46,
-        "tight_h": 49
-      }
-    ]
-  },
-  "animals/fox_sheet.png": {
-    "cell_width": 48,
-    "cell_height": 60,
-    "hframes": 5,
-    "vframes": 1,
-    "total_frames": 5,
-    "normalized_sheet": "res://assets/pixel_art/animals/fox_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 6,
-        "tight_y": 2,
-        "tight_w": 42,
-        "tight_h": 56
-      },
-      {
-        "x": 48,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 48,
-        "tight_y": 2,
-        "tight_w": 48,
-        "tight_h": 56
-      },
-      {
-        "x": 96,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 96,
-        "tight_y": 2,
-        "tight_w": 48,
-        "tight_h": 56
-      },
-      {
-        "x": 144,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 144,
-        "tight_y": 5,
-        "tight_w": 48,
-        "tight_h": 53
-      },
-      {
-        "x": 192,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 192,
-        "tight_y": 2,
-        "tight_w": 46,
-        "tight_h": 56
-      }
-    ]
-  },
-  "animals/penguin_sheet.png": {
-    "cell_width": 48,
-    "cell_height": 60,
-    "hframes": 5,
-    "vframes": 1,
-    "total_frames": 5,
-    "normalized_sheet": "res://assets/pixel_art/animals/penguin_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 8,
         "tight_y": 2,
         "tight_w": 40,
         "tight_h": 56
       },
       {
-        "x": 48,
+        "x": 60,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
-        "tight_x": 48,
+        "tight_x": 70,
         "tight_y": 2,
-        "tight_w": 48,
+        "tight_w": 40,
         "tight_h": 56
       },
       {
-        "x": 96,
+        "x": 120,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
-        "tight_x": 96,
+        "tight_x": 122,
         "tight_y": 3,
-        "tight_w": 48,
+        "tight_w": 56,
         "tight_h": 55
       },
       {
-        "x": 144,
+        "x": 180,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
-        "tight_x": 144,
+        "tight_x": 185,
+        "tight_y": 2,
+        "tight_w": 49,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/toucan_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/toucan_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 2,
+        "tight_y": 4,
+        "tight_w": 56,
+        "tight_h": 54
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 62,
+        "tight_y": 4,
+        "tight_w": 56,
+        "tight_h": 54
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 8,
+        "tight_w": 56,
+        "tight_h": 50
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 9,
+        "tight_w": 56,
+        "tight_h": 49
+      }
+    ]
+  },
+  "animals/fox_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/fox_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 6,
         "tight_y": 2,
         "tight_w": 48,
         "tight_h": 56
       },
       {
-        "x": 192,
+        "x": 60,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
-        "tight_x": 192,
+        "tight_x": 66,
         "tight_y": 2,
-        "tight_w": 45,
+        "tight_w": 48,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 6,
+        "tight_w": 56,
+        "tight_h": 52
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 2,
+        "tight_w": 56,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/penguin_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/penguin_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 8,
+        "tight_y": 2,
+        "tight_w": 44,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 68,
+        "tight_y": 2,
+        "tight_w": 44,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 2,
+        "tight_w": 56,
+        "tight_h": 56
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 2,
+        "tight_w": 55,
         "tight_h": 56
       }
     ]
   },
   "animals/shiba_sheet.png": {
-    "cell_width": 48,
+    "cell_width": 60,
     "cell_height": 60,
-    "hframes": 5,
+    "hframes": 4,
     "vframes": 1,
-    "total_frames": 5,
+    "total_frames": 4,
     "normalized_sheet": "res://assets/pixel_art/animals/shiba_sheet_normalized.png",
     "regions": [
       {
         "x": 0,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
         "tight_x": 11,
         "tight_y": 2,
@@ -318,43 +268,33 @@
         "tight_h": 56
       },
       {
-        "x": 48,
+        "x": 60,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
         "tight_x": 72,
         "tight_y": 2,
-        "tight_w": 24,
+        "tight_w": 36,
         "tight_h": 56
       },
       {
-        "x": 96,
+        "x": 120,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
-        "tight_x": 96,
+        "tight_x": 130,
         "tight_y": 2,
-        "tight_w": 48,
+        "tight_w": 40,
         "tight_h": 56
       },
       {
-        "x": 144,
+        "x": 180,
         "y": 0,
-        "w": 48,
+        "w": 60,
         "h": 60,
-        "tight_x": 144,
-        "tight_y": 2,
-        "tight_w": 48,
-        "tight_h": 56
-      },
-      {
-        "x": 192,
-        "y": 0,
-        "w": 48,
-        "h": 60,
-        "tight_x": 192,
+        "tight_x": 182,
         "tight_y": 9,
-        "tight_w": 46,
+        "tight_w": 56,
         "tight_h": 49
       }
     ]

@@ -180,7 +180,9 @@ func _draw() -> void:
 	var hop_y := -absf(sin(anim_time * 6.0)) * 2.4 if is_walking else 0.0
 	var tilt := sin(anim_time * 6.0) * 0.04 if is_walking else 0.0
 
-	draw_circle(Vector2(0, 2), 11.0, Color(0.05, 0.04, 0.02, 0.32))
+	# Flat 1.5D contact ellipse shadow under feet
+	draw_set_transform(Vector2(0.0, 1.0), 0.0, Vector2(1.0, 0.25))
+	draw_circle(Vector2.ZERO, 9.5, Color(0.05, 0.04, 0.02, 0.22))
 
 	var src_rect := EconomyConfig.get_frame_region(sheet_key, frame_idx)
 	var cw := src_rect.size.x

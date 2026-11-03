@@ -452,14 +452,15 @@ func _update_role_work_step() -> void:
 			facing_left = true
 
 func _get_pose_index() -> int:
+	# Each animal sheet (`240x60`) has 4 exact `60x60` poses:
+	# 0: Walk A, 1: Walk B, 2: Work / Tool Action, 3: Sleep (Zzz)
 	if is_sleeping_full:
-		return 4
+		return 3
 	if is_moving:
-		var walk_frame := int(floor(anim_time * 7.5 / PI)) % 2
-		if carrying_item_id != "":
-			return 2 if walk_frame == 0 else 1
-		return walk_frame
-	return 3
+		return int(floor(anim_time * 7.5 / PI)) % 2
+	if role_type == RoleType.SHIBA_MANAGER:
+		return 0
+	return 2 if (int(floor(anim_time * 4.2)) % 2 == 0) else 0
 
 func _draw() -> void:
 	if tex_sheet == null or not is_hired():
@@ -485,8 +486,10 @@ func _draw() -> void:
 		scale_x = 1.0 + breath * 0.02
 		scale_y = 1.0 - breath * 0.02
 
+	# Flat 1.5D contact ellipse shadow under feet (never a giant dark circle)
 	var shadow_ratio := clampf(1.0 + hop_y * 0.08, 0.72, 1.0)
-	draw_circle(Vector2(0, 2), 13.0 * shadow_ratio, Color(0.05, 0.04, 0.02, 0.34 * shadow_ratio))
+	draw_set_transform(Vector2(0.0, 1.0), 0.0, Vector2(1.0 * shadow_ratio, 0.25 * shadow_ratio))
+	draw_circle(Vector2.ZERO, 10.5, Color(0.05, 0.04, 0.02, 0.22 * shadow_ratio))
 
 	var src_rect := EconomyConfig.get_frame_region(sheet_key, pose_idx)
 	var cw := src_rect.size.x

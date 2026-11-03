@@ -156,9 +156,9 @@ func _build_landmarks_and_buildings() -> void:
 	ysort_layer.add_child(right_sp)
 	island3_props.append(right_sp)
 
-	# Island 1 Mortar Workshop (3.5x)
+	# Island 1 Mortar Workshop (3.5x) placed on back lawn above cobblestone path
 	mortar_workshop = Workshop.new()
-	mortar_workshop.setup_workshop("mortar", 1, Vector2(942.0, 126.0), Vector2(-34.0, -52.0))
+	mortar_workshop.setup_workshop("mortar", 1, Vector2(936.0, 118.0), Vector2(-34.0, -52.0))
 	ysort_layer.add_child(mortar_workshop)
 
 	# Island 2 Cauldron Workshop (12.0x)
@@ -306,6 +306,9 @@ func _process(delta: float) -> void:
 			vip_customer_timer = randf_range(35.0, 50.0)
 			if customers.size() < 4:
 				_spawn_customer(true)
+
+	if window_controller != null and hud != null:
+		window_controller.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect())
 
 	queue_redraw()
 

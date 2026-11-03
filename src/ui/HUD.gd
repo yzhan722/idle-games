@@ -16,6 +16,7 @@ var hovered_card: int = -1
 var displayed_gold: float = 120.0
 
 var is_mouse_over_hud: bool = false
+var is_collapsed_capsule: bool = false
 var drawer_expanded: bool = false
 var drawer_anim_t: float = 0.0
 var mouse_outside_timer: float = 0.0
@@ -26,11 +27,11 @@ var offline_banner_text: String = ""
 
 var window_controller: WindowController
 
-const CAPSULE_RECT := Rect2(770.0, 246.0, 380.0, 42.0)
-const CAPSULE_MUTE_RECT := Rect2(1088.0, 251.0, 54.0, 32.0)
-const FULL_BAR_RECT := Rect2(480.0, 238.0, 960.0, 58.0)
-const DRAWER_RECT := Rect2(520.0, 130.0, 880.0, 106.0)
-const TOP_RIGHT_MUTE_RECT := Rect2(1332.0, 138.0, 58.0, 24.0)
+const CAPSULE_RECT := Rect2(770.0, 232.0, 380.0, 40.0)
+const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
+const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
+const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
+const TOP_RIGHT_MUTE_RECT := Rect2(1332.0, 130.0, 58.0, 24.0)
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
@@ -64,14 +65,16 @@ func _process(delta: float) -> void:
 	if GameManager.desktop_companion_mode:
 		if is_mouse_over_hud:
 			mouse_outside_timer = 0.0
-			drawer_expanded = true
+			is_collapsed_capsule = false
 			hud_opacity = lerpf(hud_opacity, 1.0, minf(1.0, delta * 10.0))
 		else:
 			mouse_outside_timer += delta
 			if mouse_outside_timer >= 3.0:
 				drawer_expanded = false
+				is_collapsed_capsule = true
 				hud_opacity = lerpf(hud_opacity, 0.40, minf(1.0, delta * 5.0))
 	else:
+		is_collapsed_capsule = false
 		hud_opacity = 1.0
 
 	drawer_anim_t = lerpf(drawer_anim_t, 1.0 if drawer_expanded else 0.0, minf(1.0, delta * 10.0))
@@ -79,7 +82,7 @@ func _process(delta: float) -> void:
 
 	hovered_tab = -1
 	hovered_card = -1
-	if drawer_expanded or not GameManager.desktop_companion_mode:
+	if not is_collapsed_capsule:
 		for i in range(4):
 			if _get_tab_button_rect(i).has_point(mpos):
 				hovered_tab = i
@@ -95,8 +98,8 @@ func _process(delta: float) -> void:
 
 func _get_interactive_zone() -> Rect2:
 	if drawer_expanded:
-		return Rect2(476.0, 124.0, 968.0, 176.0)
-	if GameManager.desktop_companion_mode:
+		return Rect2(476.0, 118.0, 968.0, 174.0)
+	if is_collapsed_capsule:
 		return CAPSULE_RECT.grow(8.0)
 	return FULL_BAR_RECT.grow(6.0)
 
@@ -152,13 +155,13 @@ func _toggle_companion_mode() -> void:
 	GameManager.save_game()
 
 func _get_tab_button_rect(idx: int) -> Rect2:
-	return Rect2(1062.0 + float(idx) * 78.0, 243.0, 72.0, 44.0)
+	return Rect2(1062.0 + float(idx) * 78.0, 235.0, 72.0, 44.0)
 
 func _get_card_rect(idx: int, total: int) -> Rect2:
 	var w := 196.0 if total <= 4 else 132.0
 	var gap := 12.0 if total <= 4 else 8.0
 	var start_x := 548.0 if total <= 4 else 538.0
-	return Rect2(start_x + float(idx) * (w + gap), 164.0, w, 58.0)
+	return Rect2(start_x + float(idx) * (w + gap), 156.0, w, 58.0)
 
 func _get_current_tab_cards() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
@@ -260,15 +263,15 @@ func _draw() -> void:
 	var mute_lbl := "🔇静音" if (SoundManager != null and SoundManager.is_muted) else "🔊音效"
 
 	# Collapsed Gold Capsule Floating Orb in Desktop Companion Mode
-	if GameManager.desktop_companion_mode and not drawer_expanded:
+	if is_collapsed_capsule:
 		if tex_pill != null:
 			draw_texture_rect(tex_pill, CAPSULE_RECT, false)
 		if tex_icons != null:
-			draw_texture_rect_region(tex_icons, Rect2(CAPSULE_RECT.position.x + 10.0, CAPSULE_RECT.position.y + 7.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
-		PixelFontRenderer.draw_pixel_string(self, Vector2(CAPSULE_RECT.position.x + 42.0, CAPSULE_RECT.position.y + 11.0), str(int(round(displayed_gold))) + "G", Color.WHITE, false, 0.64)
+			draw_texture_rect_region(tex_icons, Rect2(CAPSULE_RECT.position.x + 10.0, CAPSULE_RECT.position.y + 6.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+		PixelFontRenderer.draw_pixel_string(self, Vector2(CAPSULE_RECT.position.x + 42.0, CAPSULE_RECT.position.y + 10.0), str(int(round(displayed_gold))) + "G", Color.WHITE, false, 0.64)
 		PixelFontRenderer.draw_pixel_cn(
 			self,
-			Vector2(CAPSULE_RECT.position.x + 154.0, CAPSULE_RECT.position.y + 26.0),
+			Vector2(CAPSULE_RECT.position.x + 154.0, CAPSULE_RECT.position.y + 25.0),
 			"摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 悬停展开",
 			12,
 			Color(1.0, 0.95, 0.76),
@@ -282,18 +285,18 @@ func _draw() -> void:
 		draw_texture_rect(tex_panel, FULL_BAR_RECT, false)
 
 	if tex_pill != null:
-		draw_texture_rect(tex_pill, Rect2(496.0, 247.0, 156.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(658.0, 247.0, 192.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(856.0, 247.0, 192.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(496.0, 239.0, 156.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(658.0, 239.0, 192.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(856.0, 239.0, 192.0, 36.0), false)
 
 	if tex_icons != null:
-		draw_texture_rect_region(tex_icons, Rect2(502.0, 250.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
-	PixelFontRenderer.draw_pixel_string(self, Vector2(532.0, 254.0), str(int(round(displayed_gold))) + "G", Color.WHITE, false, 0.64)
+		draw_texture_rect_region(tex_icons, Rect2(502.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+	PixelFontRenderer.draw_pixel_string(self, Vector2(532.0, 246.0), str(int(round(displayed_gold))) + "G", Color.WHITE, false, 0.64)
 
 	var mode_stage := "单兔全包期" if not GameManager.is_island_otter_hired(1) else "专职流水线"
 	PixelFontRenderer.draw_pixel_cn(
 		self,
-		Vector2(672.0, 269.0),
+		Vector2(672.0, 261.0),
 		mode_stage + " · 缓存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1)),
 		12,
 		Color(0.84, 0.96, 1.0),
@@ -304,7 +307,7 @@ func _draw() -> void:
 	var shiba_txt := ("柴犬+" + str(int(GameManager.animal_levels.get("shiba", 0)) * 10) + "%") if GameManager.is_animal_hired("shiba") else "自助结账1x"
 	PixelFontRenderer.draw_pixel_cn(
 		self,
-		Vector2(868.0, 269.0),
+		Vector2(868.0, 261.0),
 		"摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · " + shiba_txt,
 		12,
 		Color(1.0, 0.94, 0.72),
@@ -316,11 +319,11 @@ func _draw() -> void:
 	var icon_indices := [6, 3, 4, 7]
 	for i in range(4):
 		var bx := 1062.0 + float(i) * 78.0
-		var lift := -2.0 if (hovered_tab == i or active_tab == i) else 0.0
+		var lift := -2.0 if (hovered_tab == i or (drawer_expanded and active_tab == i)) else 0.0
 		if tex_icons != null:
-			draw_texture_rect_region(tex_icons, Rect2(bx + 14.0, 239.0 + lift, 40.0, 40.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
-		var lbl_col := Color(1.0, 0.98, 0.72) if (hovered_tab == i or active_tab == i) else Color(1.0, 0.94, 0.82)
-		PixelFontRenderer.draw_pixel_cn(self, Vector2(bx + 8.0, 287.0), tab_labels[i], 12, lbl_col, Color(0.16, 0.06, 0.02, 0.98), true)
+			draw_texture_rect_region(tex_icons, Rect2(bx + 14.0, 231.0 + lift, 40.0, 40.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
+		var lbl_col := Color(1.0, 0.98, 0.72) if (hovered_tab == i or (drawer_expanded and active_tab == i)) else Color(1.0, 0.94, 0.82)
+		PixelFontRenderer.draw_pixel_cn(self, Vector2(bx + 8.0, 279.0), tab_labels[i], 12, lbl_col, Color(0.16, 0.06, 0.02, 0.98), true)
 
 	if drawer_expanded and tex_drawer != null:
 		var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
@@ -331,7 +334,7 @@ func _draw() -> void:
 			"【动物编制与招满转进修】未满编时招募新伙伴 · 招满上限后一键全队进修(Lv.+1)!",
 			"【三岛固定槽位与木桥开拓】魔法密林(12x坩埚) · 天空海岸(52x双工坊+👑2x富豪顾客)"
 		]
-		PixelFontRenderer.draw_pixel_cn(self, Vector2(548.0, 152.0 + slide_y), titles[clampi(active_tab, 0, 2)], 13, Color(1.0, 0.95, 0.72), Color(0.16, 0.06, 0.02, 0.98), true)
+		PixelFontRenderer.draw_pixel_cn(self, Vector2(548.0, 144.0 + slide_y), titles[clampi(active_tab, 0, 2)], 13, Color(1.0, 0.95, 0.72), Color(0.16, 0.06, 0.02, 0.98), true)
 
 		# Top-Right One-Click Mute Button (🔊/🔇)
 		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)

@@ -55,7 +55,6 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	if tex_building == null:
 		return
-	draw_circle(Vector2(0, 2), 20.0, Color(0.06, 0.04, 0.02, 0.30))
 	draw_texture(tex_building, draw_offset)
 	if tex_secondary != null:
 		draw_texture_rect(tex_secondary, Rect2(draw_offset.x + 26.0, draw_offset.y + 4.0, 46.0, 48.0), false)

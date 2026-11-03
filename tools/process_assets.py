@@ -239,7 +239,7 @@ def main():
 
     manifest = {}
 
-    # 2. Analyze animal sheets (5 poses x 1 row = 300x60 -> 60x60 cells)
+    # 2. Analyze animal sheets (4 poses x 1 row = 240x60 -> 60x60 cells)
     animal_files = [
         "animals/bunny_sheet.png",
         "animals/otter_sheet.png",
@@ -250,7 +250,7 @@ def main():
     ]
     for af in animal_files:
         if os.path.exists(os.path.join(ART_DIR, *af.split("/"))):
-            manifest[af] = analyze_and_normalize_sheet(af, expected_cols=5, expected_rows=1)
+            manifest[af] = analyze_and_normalize_sheet(af, expected_cols=4, expected_rows=1)
 
     # 3. Analyze traveler sheets (2 frames x 1 row = 96x48 -> 48x48 cells)
     traveler_files = [

@@ -92,7 +92,9 @@ func _draw() -> void:
 		draw_texture_rect_region(tex_soil, Rect2(-20, -9, 40, 18), soil_reg)
 
 	if sown and tex_crops != null:
-		var stage := clampi(int(floor(growth * 3.99)), 0, 3)
+		# Columns 0..2 in `crops_sheet.png` are soil-planted growth stages (Seed, Sprout, Mature Plant in soil);
+		# Column 3 is the harvested produce icon carried by workers & shown in thought bubbles!
+		var stage := clampi(int(floor(growth * 2.99)), 0, 2)
 		var crop_reg := EconomyConfig.get_crop_stage_region(crop_id, stage)
 		var sway_x := roundf(sin(sway_time * 1.4 + position.x * 0.05) * (1.0 if stage >= 2 else 0.0))
 		draw_texture_rect_region(tex_crops, Rect2(-15 + sway_x, -26, 30, 30), crop_reg)

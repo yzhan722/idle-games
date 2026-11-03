@@ -50,8 +50,4 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if tex_stall == null:
 		return
-	draw_circle(Vector2(0, 4), 28.0, Color(0.06, 0.04, 0.02, 0.32))
 	draw_texture(tex_stall, draw_offset)
-
-	var glow_a := 0.22 + 0.08 * sin(anim_time * 2.2)
-	draw_circle(draw_offset + Vector2(18, 42), 14.0, Color(1.0, 0.85, 0.38, glow_a))
