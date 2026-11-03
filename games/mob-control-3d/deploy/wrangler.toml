@@ -1,0 +1,13 @@
+name = "mob-control-proxy"
+main = "worker.mjs"
+compatibility_date = "2024-09-23"
+
+assets = { directory = "../dist", binding = "ASSETS" }
+
+routes = [
+  { pattern = "mob-control.yinosites.com", custom_domain = true }
+]
+
+[[kv_namespaces]]
+binding = "MOB_CONTROL_LEADERBOARD"
+id = "af83ba38768c492cadeb533506916826"
