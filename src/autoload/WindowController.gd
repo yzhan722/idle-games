@@ -1,9 +1,8 @@
 extends Node
-class_name WindowController
-## Manages the 1920x300 desktop borderless transparent strip window:
-## - Full 36px top sky headroom so treetops, windmill blades, chimney smoke, and tooltips are NEVER clipped
-## - 1:1 60FPS OS-cursor locked window dragging from anywhere on the HUD or islands (zero rubber-banding or stiffness)
-## - Supports Top/Bottom Dock snapping, 75% / 100% / 125% Scale Presets, and Multi-Monitor switching.
+## Desktop Companion Window & Mouse Passthrough Autoload (`src/autoload/WindowController.gd`) — PRD v2.2 Unified Architecture
+## Registered as Autoload `WindowController`:
+## - Manages the 1920x300 desktop borderless transparent strip window.
+## - Supports `Alt + Left-Click` or HUD bar dragging and dynamic `DisplayServer.window_set_mouse_passthrough(poly)`.
 
 enum DockPosition { BOTTOM_STRIP, TOP_STRIP }
 
@@ -24,7 +23,7 @@ var _drag_start_mouse: Vector2i = Vector2i.ZERO
 var _drag_start_win_pos: Vector2i = Vector2i.ZERO
 
 var _last_island_rect: Rect2 = Rect2(40, 0, 1840, 300)
-var _last_hud_rect: Rect2 = Rect2(480, 238, 960, 58)
+var _last_hud_rect: Rect2 = Rect2(480, 230, 960, 58)
 var _last_drawer_rect: Rect2 = Rect2()
 
 func _ready() -> void:
@@ -63,7 +62,6 @@ func start_window_drag() -> void:
 	is_dragging = true
 	_drag_start_mouse = DisplayServer.mouse_get_position()
 	_drag_start_win_pos = DisplayServer.window_get_position()
-	# Disable passthrough region while dragging so fast cursor movement never loses window focus
 	DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 
 func stop_window_drag() -> void:
@@ -71,50 +69,6 @@ func stop_window_drag() -> void:
 		return
 	is_dragging = false
 	_refresh_passthrough()
-
-func get_scale_label() -> String:
-	return SCALE_LABELS[clampi(scale_idx, 0, SCALE_PRESETS.size() - 1)]
-
-func get_monitor_label() -> String:
-	var count := maxi(1, DisplayServer.get_screen_count())
-	return "屏幕 " + str((target_screen_idx % count) + 1) + "/" + str(count)
-
-func cycle_target_monitor() -> int:
-	var count := maxi(1, DisplayServer.get_screen_count())
-	target_screen_idx = (target_screen_idx + 1) % count
-	custom_pos_active = false
-	DisplayServer.window_set_current_screen(target_screen_idx)
-	snap_window_to_desktop(current_dock)
-	_refresh_passthrough()
-	return target_screen_idx
-
-func set_scale_index(idx: int) -> void:
-	scale_idx = clampi(idx, 0, SCALE_PRESETS.size() - 1)
-	snap_window_to_desktop(current_dock)
-	_refresh_passthrough()
-
-func cycle_scale_preset() -> int:
-	scale_idx = (scale_idx + 1) % SCALE_PRESETS.size()
-	custom_pos_active = false
-	snap_window_to_desktop(current_dock)
-	_refresh_passthrough()
-	return scale_idx
-
-func toggle_dock_position() -> void:
-	if current_dock == DockPosition.BOTTOM_STRIP:
-		current_dock = DockPosition.TOP_STRIP
-	else:
-		current_dock = DockPosition.BOTTOM_STRIP
-	custom_pos_active = false
-	snap_window_to_desktop(current_dock)
-	_refresh_passthrough()
-
-func drag_window_by(screen_delta: Vector2i) -> void:
-	var cur := DisplayServer.window_get_position()
-	var next_pos := cur + screen_delta
-	custom_pos_active = true
-	custom_pos = next_pos
-	DisplayServer.window_set_position(next_pos)
 
 func snap_window_to_desktop(dock: DockPosition) -> void:
 	var count := maxi(1, DisplayServer.get_screen_count())
@@ -148,7 +102,6 @@ func _refresh_passthrough() -> void:
 	var merged := _last_island_rect.merge(_last_hud_rect)
 	if _last_drawer_rect.size.x > 0 and _last_drawer_rect.size.y > 0:
 		merged = merged.merge(_last_drawer_rect)
-	# Ensure top y is always 0.0 so SetWindowRgn on Windows NEVER clips rooftops, treetops, or tooltips!
 	merged.position.y = 0.0
 	merged.size.y = VIEWPORT_H
 	var s := scale_factor

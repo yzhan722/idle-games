@@ -18,7 +18,6 @@ var tex_right_tiki: Texture2D
 
 var waypoint_graph: WaypointGraph
 var camera_controller: CameraController
-var window_controller: WindowController
 var hud: HUD
 var floating_text: FloatingText
 
@@ -77,15 +76,13 @@ func _ready() -> void:
 	canvas_layer.layer = 10
 	add_child(canvas_layer)
 
-	hud = HUD.new()
+	var hud_scene: PackedScene = load("res://src/ui/HUD.tscn")
+	hud = hud_scene.instantiate() as HUD
 	hud.name = "HUD"
 	canvas_layer.add_child(hud)
 
-	window_controller = WindowController.new()
-	window_controller.name = "WindowController"
-	add_child(window_controller)
-	window_controller.setup(self, hud)
-	hud.window_controller = window_controller
+	if WindowController != null:
+		WindowController.setup(self, hud)
 
 	_build_landmarks_and_buildings()
 	_build_soil_plots()
@@ -246,11 +243,11 @@ func find_best_plot_for_island(isl_idx: int) -> SoilPlot:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed and Input.is_key_pressed(KEY_ALT) and window_controller != null:
-				window_controller.begin_window_drag()
+			if event.pressed and Input.is_key_pressed(KEY_ALT) and WindowController != null:
+				WindowController.begin_window_drag()
 				return
-			elif not event.pressed and window_controller != null and window_controller.is_dragging:
-				window_controller.end_window_drag()
+			elif not event.pressed and WindowController != null and WindowController.is_dragging:
+				WindowController.end_window_drag()
 				return
 		elif event.pressed and GameManager.desktop_companion_mode:
 			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -304,8 +301,8 @@ func _process(delta: float) -> void:
 			if customers.size() < 4:
 				_spawn_customer(true)
 
-	if window_controller != null and hud != null:
-		window_controller.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect())
+	if WindowController != null and hud != null:
+		WindowController.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect())
 
 	queue_redraw()
 

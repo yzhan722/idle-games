@@ -11,10 +11,16 @@ var tex_card_hover: Texture2D
 var tex_pill: Texture2D
 var tex_icons: Texture2D
 var tex_delicacies: Texture2D
+var tex_btn_normal: Texture2D
+var tex_btn_hover: Texture2D
+var tex_btn_pressed: Texture2D
 
 var active_tab: int = 0
 var hovered_tab: int = -1
 var hovered_card: int = -1
+var prev_hovered_tab: int = -1
+var prev_hovered_card: int = -1
+var is_pressing_btn: bool = false
 var displayed_gold: float = 120.0
 
 var is_mouse_over_hud: bool = false
@@ -26,8 +32,6 @@ var hud_opacity: float = 1.0
 
 var offline_banner_timer: float = 0.0
 var offline_banner_text: String = ""
-
-var window_controller: WindowController
 
 # Native Label Nodes (`font_size = 14`, `#FFE066` / `Color.WHITE`, `outline_size = 2`, `outline_color = Color.BLACK`)
 var lbl_offline: Label
@@ -62,7 +66,10 @@ func _ready() -> void:
 	tex_card_hover = load("res://assets/pixel_art/ui/ui_drawer_card_hover.png")
 	tex_pill = load("res://assets/pixel_art/ui/ui_resource_pill.png")
 	tex_icons = load("res://assets/pixel_art/ui/icons_ui.png")
-	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+	tex_btn_normal = load("res://assets/pixel_art/ui/btn_normal.png")
+	tex_btn_hover = load("res://assets/pixel_art/ui/btn_hover.png")
+	tex_btn_pressed = load("res://assets/pixel_art/ui/btn_pressed.png")
 
 	displayed_gold = float(GameManager.gold)
 	if GameManager.pending_offline_gold > 0:
@@ -175,6 +182,12 @@ func _process(delta: float) -> void:
 					hovered_card = i
 					break
 
+	if (hovered_tab != -1 and hovered_tab != prev_hovered_tab) or (hovered_card != -1 and hovered_card != prev_hovered_card):
+		if SoundManager != null:
+			SoundManager.play_hover_sfx()
+	prev_hovered_tab = hovered_tab
+	prev_hovered_card = hovered_card
+
 	_sync_label_nodes()
 	queue_redraw()
 
@@ -257,19 +270,21 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		var mpos: Vector2 = event.position
 		if event.pressed:
-			if Input.is_key_pressed(KEY_ALT) and window_controller != null:
-				window_controller.begin_window_drag()
+			is_pressing_btn = true
+			if Input.is_key_pressed(KEY_ALT) and WindowController != null:
+				WindowController.begin_window_drag()
 				accept_event()
 				return
 			var hitting_mute := (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
 			if hovered_tab == -1 and hovered_card == -1 and not hitting_mute and _get_interactive_zone().has_point(mpos):
-				if window_controller != null:
-					window_controller.begin_window_drag()
+				if WindowController != null:
+					WindowController.begin_window_drag()
 					accept_event()
 					return
 		else:
-			if window_controller != null and window_controller.is_dragging:
-				window_controller.end_window_drag()
+			is_pressing_btn = false
+			if WindowController != null and WindowController.is_dragging:
+				WindowController.end_window_drag()
 				accept_event()
 				return
 
@@ -280,6 +295,8 @@ func _gui_input(event: InputEvent) -> void:
 				return
 
 			if hovered_tab >= 0:
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
 				if hovered_tab == 3:
 					_toggle_companion_mode()
 				else:
@@ -290,6 +307,8 @@ func _gui_input(event: InputEvent) -> void:
 				return
 
 			if drawer_expanded and hovered_card >= 0:
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
 				_activate_card(hovered_card)
 				mouse_outside_timer = 0.0
 				accept_event()
@@ -426,9 +445,17 @@ func _draw() -> void:
 	var icon_indices := [6, 3, 4, 7]
 	for i in range(4):
 		var bx := 1062.0 + float(i) * 78.0
-		var lift := -2.0 if (hovered_tab == i or (drawer_expanded and active_tab == i)) else 0.0
+		var is_active_or_hov := (hovered_tab == i or (drawer_expanded and active_tab == i))
+		var lift := -2.0 if is_active_or_hov else 0.0
+		var btex := tex_btn_normal
+		if hovered_tab == i and is_pressing_btn and tex_btn_pressed != null:
+			btex = tex_btn_pressed
+		elif is_active_or_hov and tex_btn_hover != null:
+			btex = tex_btn_hover
+		if btex != null:
+			draw_texture_rect(btex, Rect2(bx + 12.0, 226.0 + lift, 42.0, 42.0), false)
 		if tex_icons != null:
-			draw_texture_rect_region(tex_icons, Rect2(bx + 14.0, 229.0 + lift, 38.0, 38.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
+			draw_texture_rect_region(tex_icons, Rect2(bx + 15.0, 229.0 + lift, 36.0, 36.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
 
 	if drawer_expanded and tex_drawer != null:
 		var slide_y := lerpf(40.0, 0.0, drawer_anim_t)

@@ -13,10 +13,16 @@ enum State {
 	LEAVE
 }
 
-const TRAVELER_SHEETS: Array[String] = [
+const TRAVELER_KEYS: Array[String] = [
 	"travelers/traveler_slime.png",
 	"travelers/traveler_mushroom.png",
 	"travelers/traveler_pig.png"
+]
+
+const TRAVELER_NORMALIZED_PATHS: Array[String] = [
+	"res://assets/pixel_art/travelers/traveler_slime_normalized.png",
+	"res://assets/pixel_art/travelers/traveler_mushroom_normalized.png",
+	"res://assets/pixel_art/travelers/traveler_pig_normalized.png"
 ]
 
 var state: State = State.SPAWN_AND_STROLL
@@ -59,8 +65,8 @@ func _ready() -> void:
 	add_child(bubble_label)
 
 	tex_parchment = load("res://assets/pixel_art/ui/panel_parchment_9patch.png")
-	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet.png")
-	tex_crops = load("res://assets/pixel_art/crops/crops_sheet.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
 	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
 
 func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketStall, p_is_vip: bool = false) -> void:
@@ -70,8 +76,9 @@ func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketSta
 	spawn_pos = waypoint_graph.constrain_to_walkable_surface(p_spawn) if waypoint_graph != null else p_spawn
 	position = spawn_pos
 
-	sheet_key = TRAVELER_SHEETS[2 if is_vip else (randi() % TRAVELER_SHEETS.size())]
-	tex_sheet = load("res://assets/pixel_art/" + sheet_key)
+	var t_idx := 2 if is_vip else (randi() % TRAVELER_KEYS.size())
+	sheet_key = TRAVELER_KEYS[t_idx]
+	tex_sheet = load(TRAVELER_NORMALIZED_PATHS[t_idx])
 	if body_sprite != null:
 		body_sprite.texture = tex_sheet
 		body_sprite.region_enabled = true

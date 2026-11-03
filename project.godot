@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="云岛集市 · Cloud Isle Market"
-config/description="《云岛集市 (Cloud Isle Market)》1.5D 浮空微缩生态岛 · 桌面透明置顶挂机经营游戏 (PRD v2.0)"
+config/description="《云岛集市 (Cloud Isle Market)》1.5D 浮空微缩生态岛 · 桌面透明置顶挂机经营游戏 (PRD v2.2)"
 run/main_scene="res://src/world/MainWorld.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 run/low_processor_mode=false
@@ -21,6 +21,8 @@ run/max_fps=60
 
 EventBus="*res://src/autoload/EventBus.gd"
 EconomyConfig="*res://src/autoload/EconomyConfig.gd"
+PixelFontRenderer="*res://src/autoload/PixelFontRenderer.gd"
+WindowController="*res://src/autoload/WindowController.gd"
 SoundManager="*res://src/autoload/SoundManager.gd"
 GameManager="*res://src/autoload/GameManager.gd"
 

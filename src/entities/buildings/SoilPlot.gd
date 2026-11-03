@@ -20,8 +20,8 @@ var reserved_by_worker: bool = false
 var sway_time: float = 0.0
 
 func _ready() -> void:
-	tex_soil = load("res://assets/pixel_art/islands/soil_plot.png")
-	tex_crops = load("res://assets/pixel_art/crops/crops_sheet.png")
+	tex_soil = load("res://assets/pixel_art/islands/soil_plot_normalized.png")
+	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
 	sway_time = randf() * 6.28
 
 	var b_key := "soil_" + str(island_idx)
