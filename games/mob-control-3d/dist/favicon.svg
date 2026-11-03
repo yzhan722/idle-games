@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="creamBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fffdf7" />
+      <stop offset="100%" stop-color="#f3dfc0" />
+    </linearGradient>
+    <linearGradient id="brassRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe082" />
+      <stop offset="50%" stop-color="#d4933b" />
+      <stop offset="100%" stop-color="#9c621e" />
+    </linearGradient>
+    <linearGradient id="jellyBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7ce8ff" />
+      <stop offset="60%" stop-color="#2bb8f5" />
+      <stop offset="100%" stop-color="#1488cc" />
+    </linearGradient>
+  </defs>
+
+  <!-- Warm Cream & Brass Toybox App Icon Frame -->
+  <rect x="3.5" y="3.5" width="57" height="57" rx="16" fill="url(#creamBg)" stroke="url(#brassRim)" stroke-width="4" />
+
+  <!-- Glowing Pink & Gold Idol Lightsticks -->
+  <line x1="11" y1="22" x2="16" y2="39" stroke="#ff6ba8" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="11" y1="22" x2="15.2" y2="36" stroke="#ffd8ea" stroke-width="1.8" stroke-linecap="round" />
+  <line x1="53" y1="22" x2="48" y2="39" stroke="#ffc233" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="53" y1="22" x2="48.8" y2="36" stroke="#fff3bd" stroke-width="1.8" stroke-linecap="round" />
+
+  <!-- Cute Glossy Bubble Slime Body -->
+  <path
+    d="M32 12 C37 19, 50 27, 50 39.5 C50 49.5, 42.2 54, 32 54 C21.8 54, 14 49.5, 14 39.5 C14 27, 27 19, 32 12 Z"
+    fill="url(#jellyBlue)"
+    stroke="#126da6"
+    stroke-width="2"
+  />
+
+  <!-- Glossy Jelly Catchlight -->
+  <ellipse cx="24" cy="24" rx="4.5" ry="2.3" transform="rotate(-28 24 24)" fill="#ffffff" opacity="0.88" />
+
+  <!-- Pure White Knotted Victory Headband -->
+  <path d="M16.5 31 Q32 34.5 47.5 31" fill="none" stroke="#ffffff" stroke-width="4.4" stroke-linecap="round" />
+  <path d="M46 30 L52 26 M46.5 31.5 L53 32" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" />
+
+  <!-- Cute Eyes, Rosy Cheeks & Happy Smile -->
+  <circle cx="25.5" cy="40.5" r="2.7" fill="#173e57" />
+  <circle cx="24.8" cy="39.7" r="0.9" fill="#ffffff" />
+  <circle cx="38.5" cy="40.5" r="2.7" fill="#173e57" />
+  <circle cx="37.8" cy="39.7" r="0.9" fill="#ffffff" />
+  <ellipse cx="21" cy="43.5" rx="2.6" ry="1.4" fill="#ff85a2" opacity="0.78" />
+  <ellipse cx="43" cy="43.5" rx="2.6" ry="1.4" fill="#ff85a2" opacity="0.78" />
+  <path d="M28.8 44 Q32 47.2 35.2 44" fill="none" stroke="#173e57" stroke-width="2.1" stroke-linecap="round" />
+</svg>
