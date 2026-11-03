@@ -1036,21 +1036,73 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 /* ============================================================
    Panels, dialogs, tooltip
    ============================================================ */
-.dialog, #optionsDiv, #importDiv, #exportDiv, #creditsDiv {
+.dialog:not(.xxFateCard),
+#optionsDiv,
+#importDiv,
+#exportDiv,
+#creditsDiv,
+#helpDiv.xxHelp {
+	position: fixed !important;
+	left: 50% !important;
+	top: 50% !important;
+	margin-left: 0 !important;
+	margin-top: 0 !important;
+	transform: translate(-50%, -50%) !important;
+	height: auto !important;
+	max-height: 86vh !important;
+	overflow-y: auto !important;
 	background: linear-gradient(160deg, #121c29, #0b111a) !important;
 	border: 1px solid var(--xx-gold) !important;
 	border-radius: 12px;
-	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .82), 0 18px 60px rgba(0, 0, 0, .88) !important;
+	box-shadow: 0 0 0 9999px rgba(5, 9, 14, .78), 0 18px 60px rgba(0, 0, 0, .88) !important;
 	color: var(--text-color);
 	padding: 20px 24px !important;
 	z-index: 110 !important;
 	max-width: 94vw;
-	box-sizing: border-box;
+	box-sizing: border-box !important;
+}
+.dialog.xxFateCard {
+	position: static !important;
+	transform: none !important;
+	margin: 0 !important;
+	box-shadow:
+		0 14px 60px rgba(0, 0, 0, .68),
+		0 0 0 1px rgba(212, 176, 106, .14),
+		0 0 40px rgba(212, 176, 106, .10) !important;
+}
+textarea::selection,
+input::selection {
+	background: rgba(79, 209, 165, .26);
+	color: var(--xx-gold-hi);
+}
+#optionsDiv > br {
+	display: none;
+}
+#optionsDiv #booleanOptionsNormal {
+	margin: 10px 0 6px;
+}
+#optionsDiv #optionMore {
+	display: inline-block;
+	margin: 2px 0 6px;
+	color: var(--xx-gold-hi);
+	font-weight: 600;
+}
+#optionsDiv .optsExtra {
+	margin: 2px 0 8px;
+	padding: 8px 12px 10px;
+	border-radius: 8px;
+	background: rgba(8, 13, 20, .62);
+	border: 1px solid rgba(212, 176, 106, .20);
 }
 #optionsDiv #batchSize {
 	margin-top: 8px;
 	margin-right: 6px;
 	width: 68px;
+}
+#optionsDiv #exportButton,
+#optionsDiv #importButton,
+#optionsDiv #debugExportButton {
+	margin-top: 8px !important;
 }
 #exportDiv h1, #importDiv h1 {
 	font-family: var(--xx-serif);
@@ -1084,6 +1136,26 @@ body.scheme_default .upgrade-available { color: var(--xx-jade); }
 	font-weight: 600;
 	color: var(--xx-gold-hi);
 	letter-spacing: .06em;
+}
+#helpDiv.xxHelp > a.close {
+	position: sticky !important;
+	top: 0 !important;
+	right: 0 !important;
+	float: right !important;
+	z-index: 6;
+	margin: -4px -4px 4px 12px;
+	padding: 2px 10px;
+	border-radius: 999px;
+	border: 1px solid rgba(212, 176, 106, .38);
+	background: rgba(14, 22, 34, .94);
+	color: var(--xx-gold-hi);
+	font-size: 12px;
+	text-decoration: none;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, .5);
+}
+#helpDiv.xxHelp > a.close:hover {
+	border-color: var(--xx-gold-hi);
+	background: rgba(28, 42, 60, .96);
 }
 .xxCreditsBody {
 	font-size: 13.5px;
@@ -1876,7 +1948,7 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	inset: 0;
 	background: rgba(5, 9, 13, .76);
 	backdrop-filter: blur(4px);
-	z-index: 100;
+	z-index: 220;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -2633,8 +2705,8 @@ input, select, textarea, button { font-family: inherit; }
 		margin-left: 4px;
 	}
 
-	/* dialogs: center via transform (include ID selectors to beat default.css #optionsDiv specificity) */
-	.dialog,
+	/* dialogs: center via transform (include ID selectors to beat default.css #optionsDiv specificity; exclude .xxFateCard which is flex-centered by .xxFateOverlay) */
+	.dialog:not(.xxFateCard),
 	#optionsDiv,
 	#importDiv,
 	#exportDiv,
@@ -2650,6 +2722,12 @@ input, select, textarea, button { font-family: inherit; }
 		max-width: 560px !important;
 		max-height: 84vh !important;
 		box-sizing: border-box !important;
+	}
+	.dialog.xxFateCard {
+		position: static !important;
+		transform: none !important;
+		margin: 0 !important;
+		box-shadow: 0 14px 60px rgba(0, 0, 0, .68), 0 0 0 1px rgba(212, 176, 106, .14) !important;
 	}
 	#exportData,
 	#importData {
@@ -2706,10 +2784,10 @@ input, select, textarea, button { font-family: inherit; }
 		border-bottom: 1px solid var(--xx-line);
 	}
 	#leftColumn.xx-res-open {
-		max-height: 48dvh;
+		max-height: 56dvh;
 		overflow-y: auto;
 	}
-	#leftColumn:not(.xx-res-open) .xx-treasury-hd,
+	#leftColumn .xx-treasury-hd,
 	#leftColumn:not(.xx-res-open) .xx-res-sec-hd,
 	#leftColumn:not(.xx-res-open) .xx-res-sec-craft,
 	#leftColumn:not(.xx-res-open) .xx-res-sec-treasure,
@@ -2882,6 +2960,9 @@ input, select, textarea, button { font-family: inherit; }
 	.btn.modern.xx-has-ico:not(.xxAction):not(.xxFateBtn) .btnContent {
 		padding: 8px 34px 9px 38px !important;
 	}
+	.tabInner.Cultivation .btn.modern.xxAscend .btnContent {
+		padding: 9px 12px 10px 40px !important;
+	}
 	.btn.modern:not(.xxAction):not(.xxFateBtn) .xx-info-btn {
 		display: inline-flex;
 		align-items: center;
@@ -2939,7 +3020,7 @@ input, select, textarea, button { font-family: inherit; }
 	.xx-tile-val, .xx-tile-v { font-size: 13px; margin-top: 2px; }
 	.xx-pips i { width: 5px; height: 5px; }
 
-	/* Single-line touch-scroll strip for passive Fate badges; full wrap for interactive Natal Artifacts */
+	/* Single-line touch-scroll strip with soft fade mask for passive Fate badges; full wrap for interactive Natal Artifacts */
 	.xx-hd-fates {
 		flex-wrap: nowrap;
 		overflow-x: auto;
@@ -2948,12 +3029,18 @@ input, select, textarea, button { font-family: inherit; }
 		margin-top: 7px;
 		padding-top: 6px;
 		padding-bottom: 2px;
+		padding-right: 18px;
+		-webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 22px), transparent 100%);
+		mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 22px), transparent 100%);
 	}
 	.xx-hd-fates::-webkit-scrollbar { display: none; }
 	.xx-hd-fates.xx-hd-arts {
 		flex-wrap: wrap;
 		overflow-x: visible;
 		gap: 5px;
+		padding-right: 0;
+		-webkit-mask-image: none;
+		mask-image: none;
 	}
 	.xx-hd-fates .xx-chip {
 		flex: 0 0 auto;
@@ -3038,12 +3125,29 @@ input, select, textarea, button { font-family: inherit; }
 		background: rgba(10, 15, 22, .98);
 		box-shadow: 0 -10px 30px rgba(0, 0, 0, .65);
 		z-index: 30;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	#rightColumn.xx-log-open #rightTabLog {
+		flex: 1 1 auto;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
 	}
 	#rightColumn .console-intro,
 	#rightColumn .console-intro-sub {
 		display: none !important;
 	}
-	#gameLog { font-size: 12px; padding-top: 4px; }
+	#gameLog {
+		font-size: 12px;
+		padding-top: 4px;
+		padding-bottom: 8px;
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+	}
 
 	/* 5. Thumb-Friendly Bottom Navigation Dock (.tabsContainer) */
 	.tabsContainer {
@@ -3096,6 +3200,18 @@ input, select, textarea, button { font-family: inherit; }
 	.xxFateCard, .xxIdCard {
 		width: 92vw;
 		padding: 16px 14px;
+	}
+	#optionsDiv {
+		padding: 14px 16px 16px !important;
+		max-height: 88dvh !important;
+	}
+	#optionsDiv label {
+		line-height: 1.56;
+		font-size: 13px;
+	}
+	#optionsDiv .optsExtra {
+		padding: 6px 10px 8px;
+		margin: 2px 0 6px;
 	}
 	.xxIdOrigins {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4843,6 +4959,51 @@ input, select, textarea, button { font-family: inherit; }
 }
 
 @media (max-width: 960px) {
+	.xx-hd-fates {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		padding-right: 18px;
+		-webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 22px), transparent 100%);
+		mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 22px), transparent 100%);
+	}
+	.xx-hd-fates::-webkit-scrollbar { display: none; }
+	.xx-hd-fates.xx-hd-arts {
+		flex-wrap: wrap;
+		overflow-x: visible;
+		gap: 5px;
+		padding-right: 0;
+		-webkit-mask-image: none;
+		mask-image: none;
+	}
+	.xxFireBar {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		width: 100%;
+		gap: 6px;
+	}
+	.xxFireLbl {
+		grid-column: 1 / -1;
+		margin-bottom: -2px;
+	}
+	.xxFireChip {
+		flex-direction: column;
+		justify-content: center;
+		text-align: center;
+		padding: 6px 4px;
+		gap: 3px;
+		border-radius: 8px;
+	}
+	.xxFireTag {
+		font-size: 10px;
+		padding: 1px 5px;
+		white-space: nowrap;
+	}
+	.xxToxPurgeBtn,
+	.xxAlcDewBtn {
+		white-space: nowrap;
+	}
 	.xxAlcStatusRow {
 		grid-template-columns: 1fr;
 	}
@@ -4851,6 +5012,15 @@ input, select, textarea, button { font-family: inherit; }
 	}
 }
 @media (max-width: 600px) {
+	.xxFireBar {
+		grid-template-columns: 1fr;
+		gap: 5px;
+	}
+	.xxFireChip {
+		flex-direction: row;
+		justify-content: space-between;
+		padding: 6px 12px;
+	}
 	.xxAlcRecipeGrid {
 		grid-template-columns: 1fr;
 	}
