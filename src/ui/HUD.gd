@@ -1,6 +1,8 @@
 extends Control
 class_name HUD
-## Retro Maple-Style Artisan HUD, Recruit-to-Promote Cards, One-Click Mute & Auto-Collapsing Capsule (`src/ui/HUD.gd`) — PRD Patch v2.2
+## Native Label Retro Maple-Style HUD (`src/ui/HUD.gd`) — Visual Polish Patch
+## - 100% Native Godot `Label` nodes with `LabelSettings` (`font_size = 14`, `#FFE066` / pure white, `outline_size = 2`, `outline_color = Color.BLACK`).
+## - Zero `pixel_font_atlas.png` slicing anywhere.
 
 var tex_panel: Texture2D
 var tex_drawer: Texture2D
@@ -27,6 +29,23 @@ var offline_banner_text: String = ""
 
 var window_controller: WindowController
 
+# Native Label Nodes (`font_size = 14`, `#FFE066` / `Color.WHITE`, `outline_size = 2`, `outline_color = Color.BLACK`)
+var lbl_offline: Label
+var lbl_capsule_gold: Label
+var lbl_capsule_info: Label
+var lbl_capsule_mute: Label
+
+var lbl_bar_gold: Label
+var lbl_bar_pipeline: Label
+var lbl_bar_stall: Label
+var lbl_tabs: Array[Label] = []
+
+var lbl_drawer_title: Label
+var lbl_drawer_mute: Label
+var lbl_card_titles: Array[Label] = []
+var lbl_card_subs: Array[Label] = []
+var lbl_card_costs: Array[Label] = []
+
 const CAPSULE_RECT := Rect2(770.0, 232.0, 380.0, 40.0)
 const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
@@ -49,6 +68,68 @@ func _ready() -> void:
 	if GameManager.pending_offline_gold > 0:
 		offline_banner_timer = 7.5
 		offline_banner_text = "★离线挂机 " + str(GameManager.pending_offline_seconds) + "秒 · 自动结账 +" + str(GameManager.pending_offline_gold) + "G!"
+
+	_build_native_labels()
+
+func _build_native_labels() -> void:
+	lbl_offline = PixelFontRenderer.create_label("", 14, Color("#FFE066"), true)
+	lbl_offline.position = Vector2(680.0, 8.0)
+	lbl_offline.custom_minimum_size = Vector2(560.0, 26.0)
+	add_child(lbl_offline)
+
+	lbl_capsule_gold = PixelFontRenderer.create_label("120G", 14, Color("#FFE066"), false)
+	lbl_capsule_gold.position = Vector2(CAPSULE_RECT.position.x + 42.0, CAPSULE_RECT.position.y + 10.0)
+	add_child(lbl_capsule_gold)
+
+	lbl_capsule_info = PixelFontRenderer.create_label("", 14, Color.WHITE, false)
+	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 114.0, CAPSULE_RECT.position.y + 10.0)
+	add_child(lbl_capsule_info)
+
+	lbl_capsule_mute = PixelFontRenderer.create_label("🔇静音", 14, Color("#FFE066"), false)
+	lbl_capsule_mute.position = Vector2(CAPSULE_MUTE_RECT.position.x + 2.0, CAPSULE_MUTE_RECT.position.y + 6.0)
+	add_child(lbl_capsule_mute)
+
+	lbl_bar_gold = PixelFontRenderer.create_label("120G", 14, Color("#FFE066"), false)
+	lbl_bar_gold.position = Vector2(534.0, 247.0)
+	add_child(lbl_bar_gold)
+
+	lbl_bar_pipeline = PixelFontRenderer.create_label("", 14, Color.WHITE, true)
+	lbl_bar_pipeline.position = Vector2(658.0, 247.0)
+	lbl_bar_pipeline.custom_minimum_size = Vector2(192.0, 24.0)
+	add_child(lbl_bar_pipeline)
+
+	lbl_bar_stall = PixelFontRenderer.create_label("", 14, Color("#FFE066"), true)
+	lbl_bar_stall.position = Vector2(856.0, 247.0)
+	lbl_bar_stall.custom_minimum_size = Vector2(192.0, 24.0)
+	add_child(lbl_bar_stall)
+
+	for i in range(4):
+		var tl := PixelFontRenderer.create_label("", 14, Color("#FFE066"), true)
+		tl.position = Vector2(1056.0 + float(i) * 78.0, 264.0)
+		tl.custom_minimum_size = Vector2(84.0, 22.0)
+		add_child(tl)
+		lbl_tabs.append(tl)
+
+	lbl_drawer_title = PixelFontRenderer.create_label("", 14, Color("#FFE066"), false)
+	lbl_drawer_title.position = Vector2(544.0, 128.0)
+	add_child(lbl_drawer_title)
+
+	lbl_drawer_mute = PixelFontRenderer.create_label("🔇静音", 14, Color.WHITE, false)
+	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
+	add_child(lbl_drawer_mute)
+
+	for i in range(6):
+		var ct := PixelFontRenderer.create_label("", 14, Color("#FFE066"), false)
+		var cs := PixelFontRenderer.create_label("", 14, Color.WHITE, false)
+		var cc := PixelFontRenderer.create_label("", 14, Color("#FFE066"), false)
+		cs.scale = Vector2(0.85, 0.85)
+		cc.scale = Vector2(0.90, 0.90)
+		add_child(ct)
+		add_child(cs)
+		add_child(cc)
+		lbl_card_titles.append(ct)
+		lbl_card_subs.append(cs)
+		lbl_card_costs.append(cc)
 
 func _process(delta: float) -> void:
 	displayed_gold = lerpf(displayed_gold, float(GameManager.gold), minf(1.0, delta * 9.0))
@@ -94,7 +175,73 @@ func _process(delta: float) -> void:
 					hovered_card = i
 					break
 
+	_sync_label_nodes()
 	queue_redraw()
+
+func _sync_label_nodes() -> void:
+	var gold_str := str(int(round(displayed_gold))) + "G"
+	var mute_lbl := "🔇静音" if (SoundManager != null and SoundManager.is_muted) else "🔊音效"
+
+	lbl_offline.visible = (offline_banner_timer > 0.0)
+	lbl_offline.text = offline_banner_text
+
+	lbl_capsule_gold.visible = is_collapsed_capsule
+	lbl_capsule_info.visible = is_collapsed_capsule
+	lbl_capsule_mute.visible = is_collapsed_capsule
+	if is_collapsed_capsule:
+		lbl_capsule_gold.text = gold_str
+		lbl_capsule_info.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 悬停展开"
+		lbl_capsule_mute.text = mute_lbl
+
+	var show_bar := not is_collapsed_capsule
+	lbl_bar_gold.visible = show_bar
+	lbl_bar_pipeline.visible = show_bar
+	lbl_bar_stall.visible = show_bar
+	if show_bar:
+		lbl_bar_gold.text = gold_str
+		var mode_stage := "单兔全包" if not GameManager.is_island_otter_hired(1) else "专职产线"
+		lbl_bar_pipeline.text = mode_stage + " · 缓存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
+		var shiba_txt := ("柴犬+" + str(int(GameManager.animal_levels.get("shiba", 0)) * 10) + "%") if GameManager.is_animal_hired("shiba") else "自助1x"
+		lbl_bar_stall.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · " + shiba_txt
+
+	var tab_names := ["建筑升级", "动物编制", "木桥开拓", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
+	for i in range(4):
+		lbl_tabs[i].visible = show_bar
+		lbl_tabs[i].text = tab_names[i]
+
+	var show_drawer := show_bar and drawer_expanded
+	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
+	lbl_drawer_title.visible = show_drawer
+	lbl_drawer_mute.visible = show_drawer
+	if show_drawer:
+		var titles := [
+			"【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
+			"【动物编制与招满转进修】未满编时招募伙伴 · 招满后一键全队进修(Lv.+1)!",
+			"【三岛固定槽位与木桥开拓】魔法密林(12x坩埚) · 天空海岸(52x双工坊+👑2x富豪)"
+		]
+		lbl_drawer_title.text = titles[clampi(active_tab, 0, 2)]
+		lbl_drawer_title.position = Vector2(544.0, 128.0 + slide_y)
+		lbl_drawer_mute.text = mute_lbl
+		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + slide_y)
+
+	var cards: Array[Dictionary] = []
+	if show_drawer:
+		cards = _get_current_tab_cards()
+	for i in range(6):
+		var vis := show_drawer and (i < cards.size())
+		lbl_card_titles[i].visible = vis
+		lbl_card_subs[i].visible = vis
+		lbl_card_costs[i].visible = vis
+		if vis:
+			var crect := _get_card_rect(i, cards.size())
+			crect.position.y += slide_y
+			var cdata: Dictionary = cards[i]
+			lbl_card_titles[i].text = String(cdata["title"])
+			lbl_card_titles[i].position = crect.position + Vector2(8.0, 3.0)
+			lbl_card_subs[i].text = String(cdata["sub"])
+			lbl_card_subs[i].position = crect.position + Vector2(8.0, 22.0)
+			lbl_card_costs[i].text = String(cdata["cost"])
+			lbl_card_costs[i].position = crect.position + Vector2(8.0, 38.0)
 
 func _get_interactive_zone() -> Rect2:
 	if drawer_expanded:
@@ -114,7 +261,7 @@ func _gui_input(event: InputEvent) -> void:
 				window_controller.begin_window_drag()
 				accept_event()
 				return
-			var hitting_mute := (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (not drawer_expanded and CAPSULE_MUTE_RECT.has_point(mpos))
+			var hitting_mute := (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
 			if hovered_tab == -1 and hovered_card == -1 and not hitting_mute and _get_interactive_zone().has_point(mpos):
 				if window_controller != null:
 					window_controller.begin_window_drag()
@@ -126,7 +273,7 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
-			if (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (not drawer_expanded and CAPSULE_MUTE_RECT.has_point(mpos)):
+			if (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)):
 				if SoundManager != null:
 					SoundManager.toggle_mute()
 				accept_event()
@@ -166,7 +313,7 @@ func _get_card_rect(idx: int, total: int) -> Rect2:
 func _get_current_tab_cards() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
 	match active_tab:
-		0: # Tab 1: 【建筑升级与25级四阶视觉蜕变】
+		0:
 			for b_key in ["soil_1", "mortar", "stall", "cauldron"]:
 				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
 				var lv := int(GameManager.building_levels.get(b_key, 1))
@@ -179,7 +326,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"sub": "下个2x蜕变: Lv." + str(next_ms),
 					"cost": "升级 " + str(cost) + "G"
 				})
-		1: # Tab 2: 【动物编制招募与招满转全队进修】 (PRD v2.2 Section 3)
+		1:
 			for a_key in ["bunny", "otter", "fox", "shiba", "penguin", "toucan"]:
 				var cfg: Dictionary = EconomyConfig.ANIMALS[a_key]
 				var cur_rec := GameManager.get_total_recruited(a_key)
@@ -193,15 +340,14 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				var sub_str := ""
 				var act_str := ""
 				if max_cap <= 0:
-					sub_str = "需先解锁魔法密林/天空海岸"
+					sub_str = "需先解锁新岛屿"
 					act_str = "待解锁岛屿"
 				elif next_isl > 0:
-					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " (岛" + str(next_isl) + "可招)"
+					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " (岛" + str(next_isl) + ")"
 					act_str = "招募 " + str(cost) + "G"
 				else:
-					# Reached Recruit Cap -> Automatically switch button to 【全队进修 (Lv.+1)】!
-					sub_str = "已满编 " + str(cur_rec) + "/" + str(max_cap) + " · 进修Lv." + str(lv)
-					act_str = "全队进修Lv.+1 (" + str(cost) + "G)"
+					sub_str = "满编 " + str(cur_rec) + "/" + str(max_cap) + " · Lv." + str(lv)
+					act_str = "全队进修 (" + str(cost) + "G)"
 
 				list.append({
 					"type": "animal",
@@ -210,21 +356,21 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"sub": sub_str,
 					"cost": act_str
 				})
-		2: # Tab 3: 【三岛木桥开拓与双工坊】
+		2:
 			var isl2_unlocked := bool(GameManager.unlocked_islands.get(2, false))
 			var isl3_unlocked := bool(GameManager.unlocked_islands.get(3, false))
 			list.append({
 				"type": "unlock_island",
 				"key": "2",
 				"title": "木桥1 · 魔法密林" + (" (已通)" if isl2_unlocked else ""),
-				"sub": "2x农田+12x坩埚+企鹅/巨嘴鸟",
+				"sub": "2x农田+12x坩埚+企鹅",
 				"cost": "已解锁" if isl2_unlocked else "180G 解锁"
 			})
 			list.append({
 				"type": "unlock_island",
 				"key": "3",
 				"title": "木桥2 · 天空海岸" + (" (已通)" if isl3_unlocked else ""),
-				"sub": "双工坊52x精炼+👑2x皇冠富豪",
+				"sub": "双工坊52x+👑2x富豪",
 				"cost": "已解锁" if isl3_unlocked else "480G 解锁"
 			})
 			for b_key in ["soil_2", "soil_3"]:
@@ -235,7 +381,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"type": "building",
 					"key": b_key,
 					"title": String(cfg["name"]) + " Lv." + str(lv),
-					"sub": String(cfg["desc"]).substr(0, 14),
+					"sub": String(cfg["desc"]).substr(0, 12),
 					"cost": "升级 " + str(cost) + "G"
 				})
 	return list
@@ -258,27 +404,12 @@ func _activate_card(idx: int) -> void:
 func _draw() -> void:
 	if offline_banner_timer > 0.0 and tex_pill != null:
 		draw_texture_rect(tex_pill, Rect2(680.0, 6.0, 560.0, 30.0), false)
-		PixelFontRenderer.draw_pixel_cn(self, Vector2(704.0, 26.0), offline_banner_text, 13, Color(1.0, 0.95, 0.55), Color(0.14, 0.06, 0.02, 0.96), true)
 
-	var mute_lbl := "🔇静音" if (SoundManager != null and SoundManager.is_muted) else "🔊音效"
-
-	# Collapsed Gold Capsule Floating Orb in Desktop Companion Mode
 	if is_collapsed_capsule:
 		if tex_pill != null:
 			draw_texture_rect(tex_pill, CAPSULE_RECT, false)
 		if tex_icons != null:
 			draw_texture_rect_region(tex_icons, Rect2(CAPSULE_RECT.position.x + 10.0, CAPSULE_RECT.position.y + 6.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
-		PixelFontRenderer.draw_pixel_string(self, Vector2(CAPSULE_RECT.position.x + 42.0, CAPSULE_RECT.position.y + 10.0), str(int(round(displayed_gold))) + "G", Color.WHITE, false, 0.64)
-		PixelFontRenderer.draw_pixel_cn(
-			self,
-			Vector2(CAPSULE_RECT.position.x + 154.0, CAPSULE_RECT.position.y + 25.0),
-			"摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 悬停展开",
-			12,
-			Color(1.0, 0.95, 0.76),
-			Color(0.14, 0.06, 0.02, 0.96),
-			true
-		)
-		PixelFontRenderer.draw_pixel_cn(self, Vector2(CAPSULE_MUTE_RECT.position.x + 4.0, CAPSULE_MUTE_RECT.position.y + 21.0), mute_lbl, 11, Color(0.85, 0.96, 1.0), Color(0.14, 0.06, 0.02, 0.96), false)
 		return
 
 	if tex_panel != null:
@@ -291,56 +422,22 @@ func _draw() -> void:
 
 	if tex_icons != null:
 		draw_texture_rect_region(tex_icons, Rect2(502.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
-	PixelFontRenderer.draw_pixel_string(self, Vector2(532.0, 246.0), str(int(round(displayed_gold))) + "G", Color.WHITE, false, 0.64)
 
-	var mode_stage := "单兔全包期" if not GameManager.is_island_otter_hired(1) else "专职流水线"
-	PixelFontRenderer.draw_pixel_cn(
-		self,
-		Vector2(672.0, 261.0),
-		mode_stage + " · 缓存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1)),
-		12,
-		Color(0.84, 0.96, 1.0),
-		Color(0.14, 0.06, 0.02, 0.96),
-		true
-	)
-
-	var shiba_txt := ("柴犬+" + str(int(GameManager.animal_levels.get("shiba", 0)) * 10) + "%") if GameManager.is_animal_hired("shiba") else "自助结账1x"
-	PixelFontRenderer.draw_pixel_cn(
-		self,
-		Vector2(868.0, 261.0),
-		"摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · " + shiba_txt,
-		12,
-		Color(1.0, 0.94, 0.72),
-		Color(0.14, 0.06, 0.02, 0.96),
-		true
-	)
-
-	var tab_labels := ["建筑升级", "动物编制", "木桥开拓", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
 	var icon_indices := [6, 3, 4, 7]
 	for i in range(4):
 		var bx := 1062.0 + float(i) * 78.0
 		var lift := -2.0 if (hovered_tab == i or (drawer_expanded and active_tab == i)) else 0.0
 		if tex_icons != null:
-			draw_texture_rect_region(tex_icons, Rect2(bx + 14.0, 231.0 + lift, 40.0, 40.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
-		var lbl_col := Color(1.0, 0.98, 0.72) if (hovered_tab == i or (drawer_expanded and active_tab == i)) else Color(1.0, 0.94, 0.82)
-		PixelFontRenderer.draw_pixel_cn(self, Vector2(bx + 8.0, 279.0), tab_labels[i], 12, lbl_col, Color(0.16, 0.06, 0.02, 0.98), true)
+			draw_texture_rect_region(tex_icons, Rect2(bx + 14.0, 229.0 + lift, 38.0, 38.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
 
 	if drawer_expanded and tex_drawer != null:
 		var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
 		draw_texture_rect(tex_drawer, d_rect, false)
-		var titles := [
-			"【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变(稻草人/蒸汽/银星/金辉)!",
-			"【动物编制与招满转进修】未满编时招募新伙伴 · 招满上限后一键全队进修(Lv.+1)!",
-			"【三岛固定槽位与木桥开拓】魔法密林(12x坩埚) · 天空海岸(52x双工坊+👑2x富豪顾客)"
-		]
-		PixelFontRenderer.draw_pixel_cn(self, Vector2(548.0, 144.0 + slide_y), titles[clampi(active_tab, 0, 2)], 13, Color(1.0, 0.95, 0.72), Color(0.16, 0.06, 0.02, 0.98), true)
 
-		# Top-Right One-Click Mute Button (🔊/🔇)
 		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
 		if tex_pill != null:
 			draw_texture_rect(tex_pill, m_rect, false)
-		PixelFontRenderer.draw_pixel_cn(self, m_rect.position + Vector2(6.0, 17.0), mute_lbl, 12, Color(0.86, 0.98, 1.0), Color(0.14, 0.06, 0.02, 0.96), false)
 
 		var cards := _get_current_tab_cards()
 		for i in range(cards.size()):
@@ -349,7 +446,3 @@ func _draw() -> void:
 			var ctex := tex_card_hover if hovered_card == i else tex_card
 			if ctex != null:
 				draw_texture_rect(ctex, crect, false)
-			var cdata: Dictionary = cards[i]
-			PixelFontRenderer.draw_pixel_cn(self, crect.position + Vector2(10.0, 20.0), String(cdata["title"]), 12, Color(1.0, 0.96, 0.82), Color(0.16, 0.06, 0.02, 0.96), true)
-			PixelFontRenderer.draw_pixel_cn(self, crect.position + Vector2(10.0, 36.0), String(cdata["sub"]), 11, Color(0.84, 0.98, 0.80), Color(0.14, 0.06, 0.02, 0.96), false)
-			PixelFontRenderer.draw_pixel_cn(self, crect.position + Vector2(10.0, 51.0), String(cdata["cost"]), 11, Color(1.0, 0.88, 0.34), Color(0.16, 0.06, 0.02, 0.96), false)

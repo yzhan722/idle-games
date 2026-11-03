@@ -1,16 +1,8 @@
 extends Node2D
 class_name BuildingVisualUpgrader
-## 4-Tier Building Visual Evolution & Bouncy Upgrade Animator (`src/entities/buildings/BuildingVisualUpgrader.gd`) — PRD Patch v2.2 Section 4.2
-## - Every upgrade triggers:
-##   * Q-bounce Tween (`scale: 1.22 -> 0.92 -> base_scale`) + `"LV UP!"` floating text + `SoundManager.play_upgrade_sfx()`
-## - 4 Visual Evolution Tiers:
-##   * Tier 1 (Lv. 1 ~ 24): Base building sprite
-##   * Tier 2 (Lv. 25 ~ 49):
-##     - SoilPlot mounts `decor_scarecrow.png`
-##     - Workshop mounts `decor_signpost.png` + activates top `CPUParticles2D` (white steam / alchemy sparks)
-##     - MarketStall mounts `decor_lamp.png` + warm yellow glow halo
-##   * Tier 3 (Lv. 50 ~ 99): Base scale increased to `1.08x`, renders pixel 「银星徽章」 pedestal badge, particle density 2x
-##   * Tier 4 (Lv. 100+): Applies custom `ShaderMaterial` for pixel-level Golden Outline & Shimmer + golden stardust particles
+## 4-Tier Building Visual Evolution & Bouncy Upgrade Animator (`src/entities/buildings/BuildingVisualUpgrader.gd`) — Visual Polish Patch
+## - Places Streetlamp (`decor_lamp.png`) at the side-rear of the Market Stall (`z_index = -1`, `Vector2(54, -8)`)
+##   so it NEVER overlaps the Mortar Workshop or blocks the Market Stall front!
 
 @export var building_kind: String = "soil" # "soil", "mortar", "cauldron", "stall"
 
@@ -36,21 +28,23 @@ func _init_child_nodes() -> void:
 	decor_sprite.name = "Tier2DecorSprite"
 	decor_sprite.visible = false
 	decor_sprite.centered = false
+	decor_sprite.z_index = -1
 	add_child(decor_sprite)
 
 	if building_kind == "soil":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_scarecrow.png")
-		decor_sprite.position = Vector2(14.0, -4.0)
-		decor_sprite.offset = Vector2(-16.0, -38.0)
-		decor_sprite.scale = Vector2(0.72, 0.72)
+		decor_sprite.position = Vector2(-36.0, -8.0)
+		decor_sprite.offset = Vector2(-18.0, -42.0)
+		decor_sprite.scale = Vector2(0.75, 0.75)
 	elif building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
-		decor_sprite.position = Vector2(-28.0, 4.0)
-		decor_sprite.offset = Vector2(-18.0, -42.0)
+		decor_sprite.position = Vector2(-38.0, -4.0)
+		decor_sprite.offset = Vector2(-18.0, -44.0)
 		decor_sprite.scale = Vector2(0.78, 0.78)
 	elif building_kind == "stall":
+		# Visual Polish Patch Rule 3: Place Streetlamp at the side-rear of Market Stall (z_index = -1), never blocking the front or Mortar!
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
-		decor_sprite.position = Vector2(-46.0, 4.0)
+		decor_sprite.position = Vector2(54.0, -8.0)
 		decor_sprite.offset = Vector2(-22.0, -62.0)
 
 	# Tier 2/3 Workshop Steam / Alchemy Spark CPUParticles2D
@@ -147,11 +141,11 @@ func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
 
 			var gpos := target_parent.global_position - Vector2(0, 36)
 			if current_tier > old_tier or (new_level % 25 == 0):
-				EventBus.spawn_floating_text.emit(gpos + Vector2(-28, -54), "★里程碑突破 Lv." + str(new_level) + "!", Color(1.0, 0.88, 0.25))
+				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -54), "★里程碑突破 Lv." + str(new_level) + "!", Color("#FFE066"))
 				if SoundManager != null:
 					SoundManager.play_milestone_sfx()
 			else:
-				EventBus.spawn_floating_text.emit(gpos + Vector2(-18, -48), "LV UP!", Color(0.68, 1.0, 0.58))
+				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -48), "LV UP!", Color("#FFE066"))
 				if SoundManager != null:
 					SoundManager.play_upgrade_sfx()
 		else:
@@ -165,14 +159,9 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	# Tier 2+: MarketStall streetlamp warm yellow halo
-	if current_tier >= 2 and building_kind == "stall":
-		var glow_a := 0.24 + 0.08 * sin(shimmer_time * 2.5)
-		draw_circle(Vector2(-46.0, -44.0), 18.0, Color(1.0, 0.88, 0.36, glow_a))
-
 	# Tier 3 (Lv. 50 ~ 99+): Pixel Silver Star Pedestal Badge at the base of the building
 	if current_tier >= 3:
 		var badge_col := Color(1.0, 0.86, 0.24, 0.95) if current_tier >= 4 else Color(0.84, 0.92, 1.0, 0.92)
-		draw_circle(Vector2(0.0, 6.0), 9.0, Color(0.14, 0.08, 0.04, 0.85))
-		draw_arc(Vector2(0.0, 6.0), 9.0, 0.0, TAU, 16, badge_col, 1.5)
-		draw_circle(Vector2(0.0, 6.0), 3.5, badge_col)
+		draw_circle(Vector2(0.0, 6.0), 8.0, Color(0.14, 0.08, 0.04, 0.85))
+		draw_arc(Vector2(0.0, 6.0), 8.0, 0.0, TAU, 16, badge_col, 1.5)
+		draw_circle(Vector2(0.0, 6.0), 3.0, badge_col)

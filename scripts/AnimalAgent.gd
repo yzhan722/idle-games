@@ -35,6 +35,7 @@ const ROLE_NAMES: Array[String] = [
 	"大嘴鸟 · 暖沙果农与特调师"
 ]
 
+@onready var body_sprite: Sprite2D = Sprite2D.new()
 var role: Role = Role.MOON_BUNNY
 var agent_state: AgentState = AgentState.IDLE_BREATHER
 var sheet_tex: Texture2D
@@ -66,6 +67,13 @@ var delicacies_tex: Texture2D
 var pet_boost_timer: float = 0.0
 var frenzy_heart_timer: float = 0.0
 var tasks_since_break: int = 0
+
+func _ready() -> void:
+	body_sprite.name = "BodySprite"
+	body_sprite.region_enabled = true
+	body_sprite.centered = true
+	body_sprite.offset = Vector2(0.0, -26.0)
+	add_child(body_sprite)
 
 func setup(
 	p_role: Role,
@@ -451,21 +459,24 @@ func _draw() -> void:
 		scale_x = 1.0 - breath * 0.015
 		scale_y = 1.0 + breath * 0.022
 
-	# 1. Dynamic ground shadow (shrinks & softens slightly when hopping up)
-	var shadow_w := 28.0 * (1.0 + (0.0 if agent_state != AgentState.MOVING else -stride_lift * 0.16))
-	var shadow_a := 0.28 * (1.0 + (0.0 if agent_state != AgentState.MOVING else -stride_lift * 0.22))
-	draw_rect(Rect2(-shadow_w * 0.5, -3, shadow_w, 6), Color(0.08, 0.16, 0.06, shadow_a), true)
+	# 1. Ultra-flat horizontal ellipse ground shadow (scale.y = 0.2, width = 60% of 60px = 36px, Color(0, 0, 0, 0.22))
+	draw_set_transform(Vector2(0.0, 2.0), 0.0, Vector2(1.0, 0.2))
+	draw_circle(Vector2.ZERO, 18.0, Color(0.0, 0.0, 0.0, 0.22))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	# 2. Footstep dust puffs behind the heel
 	for pf in footstep_puffs:
 		draw_circle(Vector2(float(pf["x"]), float(pf["y"])), float(pf["r"]), Color(0.96, 0.92, 0.82, float(pf["alpha"])))
 
-	# 3. Draw character sprite with squash-and-stretch, waddle tilt, and smooth turn flip
-	draw_set_transform(Vector2(0.0, hop_y), tilt_rad, Vector2(scale_x * visual_flip, scale_y))
-	var src := Rect2(current_frame * FRAME_SIZE, 0, FRAME_SIZE, FRAME_SIZE)
-	var dst := Rect2(-FRAME_SIZE * 0.5, -FRAME_SIZE + 4, FRAME_SIZE, FRAME_SIZE)
-	draw_texture_rect_region(sheet_tex, dst, src)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# 3. Update single-frame Sprite2D with region_enabled = true
+	if body_sprite != null and sheet_tex != null:
+		body_sprite.texture = sheet_tex
+		body_sprite.region_enabled = true
+		body_sprite.region_rect = Rect2(clampi(current_frame, 0, 3) * FRAME_SIZE, 0, FRAME_SIZE, FRAME_SIZE)
+		body_sprite.flip_h = facing_left
+		body_sprite.position = Vector2(0.0, hop_y)
+		body_sprite.rotation = tilt_rad
+		body_sprite.scale = Vector2(scale_x, scale_y)
 
 	if role == Role.ANGLER_PENGUIN:
 		var bob_y := sin(anim_time * 1.2) * 1.8

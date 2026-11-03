@@ -1,6 +1,6 @@
 extends Node2D
 class_name Workshop
-## Mortar, Cauldron & Island 3 Dual Workshop + 4-Tier Visual Upgrader (`src/entities/buildings/Workshop.gd`) — PRD Patch v2.2
+## Mortar, Cauldron & Island 3 Dual Workshop + Ultra-Flat Contact Shadow + Native Level Label (`src/entities/buildings/Workshop.gd`) — Visual Polish Patch
 
 @export var workshop_id: String = "mortar" # "mortar", "cauldron", or "orbis_linked"
 @export var island_idx: int = 1
@@ -9,15 +9,24 @@ class_name Workshop
 var tex_building: Texture2D
 var tex_secondary: Texture2D
 var visual_upgrader: BuildingVisualUpgrader
+var level_label: Label
 var is_processing: bool = false
 var process_progress: float = 0.0
 
 func _ready() -> void:
 	_reload_texture()
+	var b_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
+	var cur_lv := int(GameManager.building_levels.get(b_key, 1))
+
 	visual_upgrader = BuildingVisualUpgrader.new()
 	add_child(visual_upgrader)
-	var b_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
-	visual_upgrader.setup_upgrader(self, workshop_id, int(GameManager.building_levels.get(b_key, 1)))
+	visual_upgrader.setup_upgrader(self, workshop_id, cur_lv)
+
+	level_label = PixelFontRenderer.create_label("Lv." + str(cur_lv), 14, Color("#FFE066"), true)
+	level_label.position = Vector2(-28.0, 4.0)
+	level_label.custom_minimum_size = Vector2(56.0, 20.0)
+	add_child(level_label)
+
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 
 func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, p_offset: Vector2) -> void:
@@ -29,8 +38,11 @@ func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, p_offset: Vecto
 
 func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
 	var target_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
-	if category == "building" and key == target_key and visual_upgrader != null:
-		visual_upgrader.apply_level_visuals(new_level, true)
+	if category == "building" and key == target_key:
+		if level_label != null:
+			level_label.text = "Lv." + str(new_level)
+		if visual_upgrader != null:
+			visual_upgrader.apply_level_visuals(new_level, true)
 
 func get_evolved_output_delicacy() -> String:
 	var b_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
@@ -55,6 +67,11 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	if tex_building == null:
 		return
+	# Visual Polish Patch Rule 2: Ultra-flat horizontal ellipse shadow (`scale.y = 0.2`, width = 60% of 68px = 40.8px -> radius 20.4px, `Color(0, 0, 0, 0.22)`)
+	draw_set_transform(Vector2(0.0, 2.0), 0.0, Vector2(1.0, 0.2))
+	draw_circle(Vector2.ZERO, 20.4, Color(0.0, 0.0, 0.0, 0.22))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
 	draw_texture(tex_building, draw_offset)
 	if tex_secondary != null:
 		draw_texture_rect(tex_secondary, Rect2(draw_offset.x + 26.0, draw_offset.y + 4.0, 46.0, 48.0), false)

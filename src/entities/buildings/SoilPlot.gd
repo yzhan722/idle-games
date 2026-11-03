@@ -1,6 +1,8 @@
 extends Node2D
 class_name SoilPlot
-## 1.5D Feathered Soil Bed + Lv.25 Crop Auto-Evolution + 4-Tier Visual Upgrader (`src/entities/buildings/SoilPlot.gd`) — PRD Patch v2.2
+## Enlarged 1.5D Soil Bed (`64x26`) + Lv.25 Crop Auto-Evolution + Native Level Label (`src/entities/buildings/SoilPlot.gd`) — Visual Polish Patch
+## - Enlarges `soil_plot.png` bed to `64x26` (`Rect2(-32, -12, 64, 26)`) so crops clearly grow inside a generous tilled soil bed.
+## - Displays building level on plot 0 using a native Godot `Label` node (`font_size = 14`, `#FFE066`, `outline_size = 2`, `Color.BLACK`).
 
 @export var island_idx: int = 1
 @export var plot_index_on_island: int = 0
@@ -9,6 +11,7 @@ class_name SoilPlot
 var tex_soil: Texture2D
 var tex_crops: Texture2D
 var visual_upgrader: BuildingVisualUpgrader
+var level_label: Label
 
 var sown: bool = true
 var watered: bool = true
@@ -21,10 +24,19 @@ func _ready() -> void:
 	tex_crops = load("res://assets/pixel_art/crops/crops_sheet.png")
 	sway_time = randf() * 6.28
 
+	var b_key := "soil_" + str(island_idx)
+	var cur_lv := int(GameManager.building_levels.get(b_key, 1))
+
 	visual_upgrader = BuildingVisualUpgrader.new()
 	add_child(visual_upgrader)
-	var b_key := "soil_" + str(island_idx)
-	visual_upgrader.setup_upgrader(self, "soil", int(GameManager.building_levels.get(b_key, 1)))
+	visual_upgrader.setup_upgrader(self, "soil", cur_lv)
+
+	if plot_index_on_island == 0:
+		level_label = PixelFontRenderer.create_label("Lv." + str(cur_lv), 14, Color("#FFE066"), true)
+		level_label.position = Vector2(-28.0, 10.0)
+		level_label.custom_minimum_size = Vector2(56.0, 20.0)
+		add_child(level_label)
+
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 
 func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: Vector2) -> void:
@@ -39,6 +51,8 @@ func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: V
 func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
 	if category == "building" and key == ("soil_" + str(island_idx)):
 		_refresh_evolved_crop()
+		if level_label != null:
+			level_label.text = "Lv." + str(new_level)
 		if visual_upgrader != null and plot_index_on_island == 0:
 			visual_upgrader.apply_level_visuals(new_level, true)
 
@@ -89,12 +103,11 @@ func _draw() -> void:
 			else:
 				st_idx = 1
 		var soil_reg := EconomyConfig.get_frame_region("islands/soil_plot.png", st_idx)
-		draw_texture_rect_region(tex_soil, Rect2(-20, -9, 40, 18), soil_reg)
+		# Visual Polish Patch Rule 3: Enlarged 64x26 tilled soil bed so crops clearly grow inside the plot center
+		draw_texture_rect_region(tex_soil, Rect2(-32.0, -12.0, 64.0, 26.0), soil_reg)
 
 	if sown and tex_crops != null:
-		# Columns 0..2 in `crops_sheet.png` are soil-planted growth stages (Seed, Sprout, Mature Plant in soil);
-		# Column 3 is the harvested produce icon carried by workers & shown in thought bubbles!
 		var stage := clampi(int(floor(growth * 2.99)), 0, 2)
 		var crop_reg := EconomyConfig.get_crop_stage_region(crop_id, stage)
 		var sway_x := roundf(sin(sway_time * 1.4 + position.x * 0.05) * (1.0 if stage >= 2 else 0.0))
-		draw_texture_rect_region(tex_crops, Rect2(-15 + sway_x, -26, 30, 30), crop_reg)
+		draw_texture_rect_region(tex_crops, Rect2(-16.0 + sway_x, -30.0, 32.0, 32.0), crop_reg)

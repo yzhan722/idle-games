@@ -1,13 +1,10 @@
 extends Node2D
 class_name AnimalWorker
-## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`) — PRD Patch v2.2
-## - Supports strict per-island Recruit Caps (`home_island: 1..3`, `slot_index: 0..1`):
-##   * Island 1: Bunny Max 2, Otter Max 2, Fox Max 1, Shiba Max 1
-##   * Island 2: Bunny Max 2, Otter Max 1, Penguin Max 1, Toucan Max 2
-##   * Island 3: Bunny Max 2, Otter Max 2, Fox Max 1, Penguin Max 1, Toucan Max 2
-## - Supports Single-Bunny Cold-Start Fallback (when Island 1 has 0 Otters, Bunny carries straight to Market Stall),
-##   Otter Smart Overflow Routing (diverts to Market Stall when Workshop input is full),
-##   and Full-Buffer `"Zzz..."` Sleep Bubble!
+## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`) — Visual Polish Patch
+## - Uses a dedicated `body_sprite: Sprite2D` with `region_enabled = true` and single-frame regions from `sprite_manifest.json`
+##   (`60x60` per frame, `flip_h = facing_left`), completely preventing multi-frame overlap or transpose distortion!
+## - Uses ultra-flat horizontal ellipse shadow (`scale.y = 0.2`, width = `60%` of `60px` = `36px`, `Color(0, 0, 0, 0.22)`).
+## - Uses native Godot `Label` node with `LabelSettings` (`font_size = 14`, `outline_size = 2`, `outline_color = Color.BLACK`) for `"Zzz..."`.
 
 enum RoleType {
 	BUNNY_FARMER,
@@ -30,7 +27,9 @@ var tex_crops: Texture2D
 var tex_delicacies: Texture2D
 var tex_heart: Texture2D
 
+@onready var body_sprite: Sprite2D = Sprite2D.new()
 @onready var carry_icon: Sprite2D = Sprite2D.new()
+var sleep_label: Label
 
 var waypoint_graph: WaypointGraph
 var world_ref: Node2D
@@ -43,7 +42,6 @@ var anim_time: float = 0.0
 var is_moving: bool = false
 var is_sleeping_full: bool = false
 var facing_left: bool = false
-var visual_flip: float = 1.0
 
 var carrying_item_id: String = ""
 var carrying_qty: int = 0
@@ -53,10 +51,22 @@ var footstep_puffs: Array[Dictionary] = []
 var last_step_cycle: int = -1
 
 func _ready() -> void:
+	body_sprite.name = "BodySprite"
+	body_sprite.region_enabled = true
+	body_sprite.centered = true
+	body_sprite.offset = Vector2(0.0, -26.0)
+	add_child(body_sprite)
+
 	carry_icon.name = "CarryIcon"
 	carry_icon.visible = false
-	carry_icon.position = Vector2(0, -54)
+	carry_icon.position = Vector2(0.0, -56.0)
 	add_child(carry_icon)
+
+	sleep_label = PixelFontRenderer.create_label("Zzz...", 14, Color("#FFE066"), true)
+	sleep_label.position = Vector2(-30.0, -68.0)
+	sleep_label.custom_minimum_size = Vector2(60.0, 20.0)
+	sleep_label.visible = false
+	add_child(sleep_label)
 
 	tex_crops = load("res://assets/pixel_art/crops/crops_sheet.png")
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet.png")
@@ -84,6 +94,10 @@ func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, 
 	var cfg: Dictionary = EconomyConfig.ANIMALS[animal_key]
 	sheet_key = String(cfg["sheet"])
 	tex_sheet = load("res://assets/pixel_art/" + sheet_key)
+	if body_sprite != null:
+		body_sprite.texture = tex_sheet
+		body_sprite.region_enabled = true
+		body_sprite.region_rect = EconomyConfig.get_frame_region(sheet_key, 0)
 	position = waypoint_graph.constrain_to_walkable_surface(p_pos) if waypoint_graph != null else p_pos
 	anim_time = randf() * 3.14
 	_assign_next_task()
@@ -130,8 +144,8 @@ func _get_home_workshop_pos() -> Vector2:
 	if home_island == 1:
 		return waypoint_graph.get_named_pos("mortar")
 	elif home_island == 2:
-		return Vector2(362.0, 130.0)
-	return Vector2(1632.0, 118.0)
+		return Vector2(422.0, 128.0)
+	return Vector2(1668.0, 118.0)
 
 func _get_home_basket_pos() -> Vector2:
 	if home_island == 1:
@@ -155,11 +169,6 @@ func _process(delta: float) -> void:
 		footstep_puffs[i]["alpha"] -= 0.75 * delta
 		if float(footstep_puffs[i]["alpha"]) <= 0.02:
 			footstep_puffs.remove_at(i)
-
-	var target_flip := -1.0 if facing_left else 1.0
-	visual_flip = move_toward(visual_flip, target_flip, delta * 9.0)
-	if absf(visual_flip) < 0.15:
-		visual_flip = 0.15 * signf(target_flip)
 
 	if nav_path.size() > 0:
 		is_moving = true
@@ -189,8 +198,39 @@ func _process(delta: float) -> void:
 		state_timer += delta
 		_update_role_work_step()
 
+	# Update single-frame Sprite2D region & bounce
+	var pose_idx := _get_pose_index()
+	var hop_y := 0.0
+	var scale_x := 1.0
+	var scale_y := 1.0
+	var tilt_rad := 0.0
+	if is_moving:
+		hop_y = -absf(sin(anim_time * 8.5)) * 3.0
+		var squash := cos(anim_time * 17.0)
+		scale_x = 1.0 - squash * 0.04
+		scale_y = 1.0 + squash * 0.04
+		tilt_rad = sin(anim_time * 8.5) * 0.04
+	else:
+		var breath := sin(anim_time * 3.2)
+		scale_x = 1.0 + breath * 0.02
+		scale_y = 1.0 - breath * 0.02
+
+	if body_sprite != null and tex_sheet != null:
+		body_sprite.texture = tex_sheet
+		body_sprite.region_enabled = true
+		body_sprite.region_rect = EconomyConfig.get_frame_region(sheet_key, pose_idx)
+		body_sprite.flip_h = facing_left
+		body_sprite.position = Vector2(0.0, hop_y)
+		body_sprite.rotation = tilt_rad
+		body_sprite.scale = Vector2(scale_x, scale_y)
+
 	if carry_icon != null and carry_icon.visible:
-		carry_icon.position = Vector2(0.0, -54.0 - absf(sin(anim_time * 12.0)) * 3.0)
+		carry_icon.position = Vector2(0.0, -56.0 + hop_y)
+
+	if sleep_label != null:
+		sleep_label.visible = is_sleeping_full
+		if is_sleeping_full:
+			sleep_label.position = Vector2(-30.0, -68.0 + sin(anim_time * 2.5) * 2.0)
 
 	queue_redraw()
 
@@ -232,7 +272,7 @@ func _assign_next_task() -> void:
 
 		RoleType.TOUCAN_TRADER:
 			var wid := "orbis_linked" if home_island == 3 else "cauldron"
-			var wpos := Vector2(1632.0, 118.0) if home_island == 3 else Vector2(362.0, 130.0)
+			var wpos := Vector2(1668.0, 118.0) if home_island == 3 else Vector2(422.0, 128.0)
 			if GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
 				worker_step = 10
 				_navigate_to(wpos + Vector2(12, 4))
@@ -245,17 +285,17 @@ func _assign_next_task() -> void:
 
 		RoleType.FOX_MORTAR_CHEF:
 			worker_step = 0
-			var fpos := Vector2(1612.0, 118.0) if home_island == 3 else (waypoint_graph.get_named_pos("mortar") + Vector2(-18, 4))
+			var fpos := Vector2(1646.0, 118.0) if home_island == 3 else (waypoint_graph.get_named_pos("mortar") + Vector2(-20, 4))
 			_navigate_to(fpos)
 
 		RoleType.PENGUIN_ALCHEMIST:
 			worker_step = 0
-			var ppos := Vector2(1652.0, 118.0) if home_island == 3 else Vector2(344.0, 130.0)
+			var ppos := Vector2(1690.0, 118.0) if home_island == 3 else Vector2(400.0, 128.0)
 			_navigate_to(ppos)
 
 		RoleType.SHIBA_MANAGER:
 			worker_step = 0
-			_navigate_to(waypoint_graph.get_named_pos("market_stall") + Vector2(22, 4))
+			_navigate_to(waypoint_graph.get_named_pos("market_stall") + Vector2(24, 4))
 
 func _update_role_work_step() -> void:
 	match role_type:
@@ -277,8 +317,6 @@ func _update_role_work_step() -> void:
 						crop_got = target_plot.crop_id
 						qty_got = target_plot.harvest_crop_yield()
 
-					# PRD v2.2 Rule 1.1 vs Rule 1.3:
-					# On Island 1 before Otter is hired: Bunny carries directly to Market Stall for 1x sale!
 					if home_island == 1 and not GameManager.is_island_otter_hired(1):
 						_set_carry_visual(crop_got, qty_got)
 						worker_step = 2
@@ -293,7 +331,7 @@ func _update_role_work_step() -> void:
 					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
 					var q := maxi(1, carrying_qty)
 					GameManager.add_to_stall(cid, q)
-					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "鲜果直售+" + str(q), Color(0.78, 1.0, 0.65))
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), "鲜果直售+" + str(q), Color("#FFE066"))
 					_set_carry_visual("", 0)
 					_assign_next_task()
 
@@ -322,7 +360,6 @@ func _update_role_work_step() -> void:
 						worker_step = 1
 						_navigate_to(wpos + Vector2(-14, 4))
 					else:
-						# PRD v2.2 Rule 2.2: Smart Overflow directly to Market Stall!
 						worker_step = 2
 						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
 
@@ -345,7 +382,7 @@ func _update_role_work_step() -> void:
 					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
 					var q := maxi(1, carrying_qty)
 					GameManager.add_to_stall(cid, q)
-					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "分流直售+" + str(q), Color(0.82, 0.96, 1.0))
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), "分流直售+" + str(q), Color.WHITE)
 					_set_carry_visual("", 0)
 					_assign_next_task()
 
@@ -362,7 +399,7 @@ func _update_role_work_step() -> void:
 			elif worker_step == 11:
 				if state_timer >= 0.45:
 					GameManager.add_to_stall(carrying_item_id, maxi(1, carrying_qty))
-					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), "3.5x美食+" + str(maxi(1, carrying_qty)), Color(1.0, 0.92, 0.48))
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), "3.5x美食+" + str(maxi(1, carrying_qty)), Color("#FFE066"))
 					_set_carry_visual("", 0)
 					_assign_next_task()
 
@@ -400,7 +437,7 @@ func _update_role_work_step() -> void:
 					var q := maxi(1, carrying_qty)
 					GameManager.add_to_stall(did, q)
 					var tag := "52x盛宴+" if home_island == 3 else "12x甘露+"
-					EventBus.spawn_floating_text.emit(position + Vector2(-26, -48), tag + str(q), Color(1.0, 0.88, 0.35))
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), tag + str(q), Color("#FFE066"))
 					_set_carry_visual("", 0)
 					_assign_next_task()
 
@@ -422,7 +459,7 @@ func _update_role_work_step() -> void:
 					var out_del := w_node.get_evolved_output_delicacy() if w_node != null else "delicacy_0"
 					GameManager.add_to_workshop_output(wid, out_del, 1)
 					var mult_txt := "52x精炼+1" if home_island == 3 else "3.5x美食+1"
-					EventBus.spawn_floating_text.emit(position + Vector2(-22, -46), mult_txt, Color(1.0, 0.92, 0.55))
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), mult_txt, Color("#FFE066"))
 				if w_node != null:
 					w_node.process_progress = 0.0
 
@@ -444,7 +481,7 @@ func _update_role_work_step() -> void:
 					var out_del := w_node.get_evolved_output_delicacy() if w_node != null else "delicacy_2"
 					GameManager.add_to_workshop_output(wid, out_del, 1)
 					var mult_txt := "52x星露宴+1" if home_island == 3 else "12x甘露+1"
-					EventBus.spawn_floating_text.emit(position + Vector2(-26, -48), mult_txt, Color(0.75, 0.96, 1.0))
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), mult_txt, Color("#FFE066"))
 				if w_node != null:
 					w_node.process_progress = 0.0
 
@@ -463,43 +500,14 @@ func _get_pose_index() -> int:
 	return 2 if (int(floor(anim_time * 4.2)) % 2 == 0) else 0
 
 func _draw() -> void:
-	if tex_sheet == null or not is_hired():
+	if not is_hired():
 		return
 
 	for puff in footstep_puffs:
 		var local_p := Vector2(float(puff["x"]) - position.x, float(puff["y"]) - position.y)
 		draw_circle(local_p, float(puff["r"]), Color(0.95, 0.91, 0.80, float(puff["alpha"])))
 
-	var pose_idx := _get_pose_index()
-	var hop_y := 0.0
-	var scale_x := 1.0
-	var scale_y := 1.0
-	var tilt_rad := 0.0
-	if is_moving:
-		hop_y = -absf(sin(anim_time * 8.5)) * 3.2
-		var squash := cos(anim_time * 17.0)
-		scale_x = 1.0 - squash * 0.04
-		scale_y = 1.0 + squash * 0.045
-		tilt_rad = sin(anim_time * 8.5) * 0.045
-	else:
-		var breath := sin(anim_time * 3.2)
-		scale_x = 1.0 + breath * 0.02
-		scale_y = 1.0 - breath * 0.02
-
-	# Flat 1.5D contact ellipse shadow under feet (never a giant dark circle)
-	var shadow_ratio := clampf(1.0 + hop_y * 0.08, 0.72, 1.0)
-	draw_set_transform(Vector2(0.0, 1.0), 0.0, Vector2(1.0 * shadow_ratio, 0.25 * shadow_ratio))
-	draw_circle(Vector2.ZERO, 10.5, Color(0.05, 0.04, 0.02, 0.22 * shadow_ratio))
-
-	var src_rect := EconomyConfig.get_frame_region(sheet_key, pose_idx)
-	var cw := src_rect.size.x
-	var ch := src_rect.size.y
-
-	draw_set_transform(Vector2(0.0, hop_y), tilt_rad, Vector2(scale_x * absf(visual_flip), scale_y))
-	var dst_rect := Rect2(-cw * 0.5, -ch + 4.0, cw, ch)
-	draw_texture_rect_region(tex_sheet, dst_rect, src_rect, Color.WHITE, facing_left)
+	# Visual Polish Patch Rule 2: Ultra-flat horizontal ellipse shadow (`scale.y = 0.2`, width = 60% of 60px = 36px -> radius 18px, `Color(0, 0, 0, 0.22)`)
+	draw_set_transform(Vector2(0.0, 2.0), 0.0, Vector2(1.0, 0.2))
+	draw_circle(Vector2.ZERO, 18.0, Color(0.0, 0.0, 0.0, 0.22))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-	if is_sleeping_full:
-		var z_bob := sin(anim_time * 2.5) * 2.0
-		PixelFontRenderer.draw_pixel_cn(self, Vector2(-14.0, -56.0 + z_bob), "Zzz...", 13, Color(0.86, 0.94, 1.0), Color(0.12, 0.06, 0.02, 0.95), true)

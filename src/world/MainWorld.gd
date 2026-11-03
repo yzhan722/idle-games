@@ -1,13 +1,11 @@
 extends Node2D
 class_name MainWorld
-## Panoramic 3-Island World with Fixed Building Slots & Strict Per-Island Animal Roster (`src/world/MainWorld.gd`) — PRD Patch v2.2
-## Fixed Building Layouts per Island (PRD v2.2 Section 3):
-## - Island 1 (Henesys): 2x SoilPlot, 1x AppleTree, 1x Mortar Workshop, 1x MarketStall, 1x Mushroom Cottage
-##   * Animal Roster Caps: Bunny Max 2, Otter Max 2, Fox Max 1, Shiba Max 1
-## - Island 2 (Ellinia): 2x SoilPlot, 1x Cauldron Workshop
-##   * Animal Roster Caps: Bunny Max 2, Otter Max 1, Penguin Max 1, Toucan Max 2
-## - Island 3 (Orbis Coast): 2x SoilPlot, 1x AppleTree, 1x Mortar Workshop + 1x Cauldron Workshop (Dual Linked 52x)
-##   * Animal Roster Caps: Bunny Max 2, Otter Max 2, Fox Max 1, Penguin Max 1, Toucan Max 2
+## Panoramic 3-Island World with 110px~140px Spacious Building Layout (`src/world/MainWorld.gd`) — Visual Polish Patch
+## Calibrated X-Coordinates (110px~140px clean spacing, zero overlap):
+## - Island 1 (Henesys): AppleTree (596, 112), SoilPlots (692, 128) & (760, 128), Cottage (796, 110),
+##   Mortar Workshop (912, 122), MarketStall (1038, 118)
+## - Island 2 (Ellinia): Left Hut (128, 118), SoilPlots (246, 126) & (312, 126), Cauldron Workshop (422, 124)
+## - Island 3 (Orbis Coast): AppleTree (1432, 110), SoilPlots (1518, 116) & (1582, 116), Dual Workshop (1668, 116), Right Tiki (1782, 118)
 
 var tex_henesys: Texture2D
 var tex_ellinia: Texture2D
@@ -106,7 +104,7 @@ func _apply_desktop_mode(enabled: bool) -> void:
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
 		if SoundManager != null:
-			SoundManager.set_muted(true) # PRD v2.2 Section 5: Auto-mute on entering Desktop Companion Mode
+			SoundManager.set_muted(true)
 	else:
 		get_tree().root.transparent_bg = false
 	queue_redraw()
@@ -115,71 +113,71 @@ func get_active_island_bounds() -> Rect2:
 	return Rect2(40.0, 0.0, 1840.0, 300.0)
 
 func _build_landmarks_and_buildings() -> void:
-	# Island 1 (Henesys): 1x Apple Tree, 1x Mushroom Cottage, 1x Mortar Workshop, 1x Market Stall
+	# Island 1 (Henesys) — Spacious 110px~140px building spacing:
+	# Apple Tree at x=596 -> SoilPlots at x=692..760 -> Cottage at x=796 -> Mortar at x=912 -> Market Stall at x=1038
 	var tree_1 := Sprite2D.new()
 	tree_1.texture = tex_tree
 	tree_1.centered = false
-	tree_1.position = Vector2(632, 114)
-	tree_1.offset = Vector2(-58, -114)
+	tree_1.position = Vector2(596.0, 112.0)
+	tree_1.offset = Vector2(-58.0, -114.0)
 	ysort_layer.add_child(tree_1)
 
 	var cot_1 := Sprite2D.new()
 	cot_1.texture = tex_cottage
 	cot_1.centered = false
-	cot_1.position = Vector2(842, 112)
-	cot_1.offset = Vector2(-62, -112)
+	cot_1.position = Vector2(796.0, 110.0)
+	cot_1.offset = Vector2(-62.0, -112.0)
 	ysort_layer.add_child(cot_1)
 
-	# Left Landmark Hut (`landmark_left_hut` — Customer Spawn A)
+	# Island 2 (Ellinia): Left Landmark Hut (x=128) -> SoilPlots (x=246..312) -> Cauldron Workshop (x=422)
 	var left_sp := Sprite2D.new()
 	left_sp.texture = tex_left_hut
 	left_sp.centered = false
-	left_sp.position = Vector2(138, 120)
-	left_sp.offset = Vector2(-58, -108)
+	left_sp.position = Vector2(128.0, 118.0)
+	left_sp.offset = Vector2(-58.0, -108.0)
 	ysort_layer.add_child(left_sp)
 	island2_props.append(left_sp)
 
-	# Island 3 (Orbis Coast): 1x Apple Tree + Right Tiki Landmark (`landmark_right_tiki` — VIP Spawn B)
+	# Island 3 (Orbis Coast): Apple Tree (x=1432) -> SoilPlots (x=1518..1582) -> Dual Workshop (x=1668) -> Right Tiki (x=1782)
 	var tree_3 := Sprite2D.new()
 	tree_3.texture = tex_tree
 	tree_3.centered = false
-	tree_3.position = Vector2(1442, 110)
-	tree_3.offset = Vector2(-58, -114)
+	tree_3.position = Vector2(1432.0, 110.0)
+	tree_3.offset = Vector2(-58.0, -114.0)
 	ysort_layer.add_child(tree_3)
 	island3_props.append(tree_3)
 
 	var right_sp := Sprite2D.new()
 	right_sp.texture = tex_right_tiki
 	right_sp.centered = false
-	right_sp.position = Vector2(1748, 120)
-	right_sp.offset = Vector2(-60, -108)
+	right_sp.position = Vector2(1782.0, 118.0)
+	right_sp.offset = Vector2(-60.0, -108.0)
 	ysort_layer.add_child(right_sp)
 	island3_props.append(right_sp)
 
-	# Island 1 Mortar Workshop (3.5x) placed on back lawn above cobblestone path
+	# Island 1 Mortar Workshop (x=912, 116px right of Cottage and 126px left of Market Stall!)
 	mortar_workshop = Workshop.new()
-	mortar_workshop.setup_workshop("mortar", 1, Vector2(936.0, 118.0), Vector2(-34.0, -52.0))
+	mortar_workshop.setup_workshop("mortar", 1, Vector2(912.0, 122.0), Vector2(-34.0, -52.0))
 	ysort_layer.add_child(mortar_workshop)
 
-	# Island 2 Cauldron Workshop (12.0x)
+	# Island 2 Cauldron Workshop (x=422, 110px right of SoilPlots)
 	cauldron_workshop = Workshop.new()
-	cauldron_workshop.setup_workshop("cauldron", 2, Vector2(362.0, 128.0), Vector2(-34.0, -56.0))
+	cauldron_workshop.setup_workshop("cauldron", 2, Vector2(422.0, 124.0), Vector2(-34.0, -56.0))
 	ysort_layer.add_child(cauldron_workshop)
 
-	# Island 3 Dual Mortar + Cauldron Linked Workshop (52.0x)
+	# Island 3 Dual Mortar + Cauldron Linked Workshop (x=1668, 114px left of Right Tiki)
 	orbis_linked_workshop = Workshop.new()
-	orbis_linked_workshop.setup_workshop("orbis_linked", 3, Vector2(1632.0, 118.0), Vector2(-34.0, -52.0))
+	orbis_linked_workshop.setup_workshop("orbis_linked", 3, Vector2(1668.0, 116.0), Vector2(-34.0, -52.0))
 	ysort_layer.add_child(orbis_linked_workshop)
 
-	# Island 1 Main Market Stall
+	# Island 1 Main Market Stall (x=1038, 126px right of Mortar Workshop — zero overlap!)
 	market_stall = MarketStall.new()
-	market_stall.position = Vector2(1022.0, 116.0)
+	market_stall.position = Vector2(1038.0, 118.0)
 	ysort_layer.add_child(market_stall)
 
 func _build_soil_plots() -> void:
-	# PRD v2.2 Section 3: Each island has exactly 2x fixed SoilPlot slots!
-	# Island 1 (Henesys): 2x SoilPlot
-	var isl1_coords := [Vector2(704.0, 122.0), Vector2(762.0, 130.0)]
+	# Island 1 (Henesys): 2x SoilPlot (64x26 enlarged beds)
+	var isl1_coords := [Vector2(692.0, 128.0), Vector2(760.0, 132.0)]
 	for i in range(2):
 		var p := SoilPlot.new()
 		p.setup_plot(1, i, "crop_0", isl1_coords[i])
@@ -187,7 +185,7 @@ func _build_soil_plots() -> void:
 		soil_plots.append(p)
 
 	# Island 2 (Ellinia): 2x SoilPlot
-	var isl2_coords := [Vector2(236.0, 120.0), Vector2(292.0, 128.0)]
+	var isl2_coords := [Vector2(246.0, 126.0), Vector2(312.0, 130.0)]
 	for i in range(2):
 		var p := SoilPlot.new()
 		p.setup_plot(2, i, "crop_2", isl2_coords[i])
@@ -195,7 +193,7 @@ func _build_soil_plots() -> void:
 		soil_plots.append(p)
 
 	# Island 3 (Orbis Coast Dry Sand): 2x SoilPlot
-	var isl3_coords := [Vector2(1502.0, 110.0), Vector2(1558.0, 118.0)]
+	var isl3_coords := [Vector2(1518.0, 114.0), Vector2(1582.0, 118.0)]
 	for i in range(2):
 		var p := SoilPlot.new()
 		p.setup_plot(3, i, "crop_3", isl3_coords[i])
@@ -203,33 +201,32 @@ func _build_soil_plots() -> void:
 		soil_plots.append(p)
 
 func _spawn_all_roster_slots() -> void:
-	# Pre-allocate all strict Recruit Cap worker slots across Islands 1, 2, 3 (each activates when recruited!):
 	var roster_defs := [
 		# Island 1 (Henesys): Bunny Max 2, Otter Max 2, Fox Max 1, Shiba Max 1
-		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 0, Vector2(704.0, 128.0)],
-		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 1, Vector2(762.0, 132.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 0, Vector2(828.0, 136.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 1, Vector2(868.0, 136.0)],
-		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 1, 0, Vector2(920.0, 130.0)],
-		[AnimalWorker.RoleType.SHIBA_MANAGER, 1, 0, Vector2(1042.0, 136.0)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 0, Vector2(692.0, 132.0)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 1, Vector2(760.0, 134.0)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 0, Vector2(822.0, 136.0)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 1, Vector2(856.0, 136.0)],
+		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 1, 0, Vector2(892.0, 128.0)],
+		[AnimalWorker.RoleType.SHIBA_MANAGER, 1, 0, Vector2(1058.0, 136.0)],
 
 		# Island 2 (Ellinia): Bunny Max 2, Otter Max 1, Penguin Max 1, Toucan Max 2
-		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 0, Vector2(236.0, 126.0)],
-		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 1, Vector2(292.0, 130.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 2, 0, Vector2(328.0, 132.0)],
-		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 2, 0, Vector2(344.0, 130.0)],
-		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 0, Vector2(388.0, 132.0)],
-		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 1, Vector2(418.0, 132.0)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 0, Vector2(246.0, 130.0)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 1, Vector2(312.0, 132.0)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 2, 0, Vector2(352.0, 132.0)],
+		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 2, 0, Vector2(400.0, 128.0)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 0, Vector2(442.0, 132.0)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 1, Vector2(468.0, 132.0)],
 
 		# Island 3 (Orbis Coast): Bunny Max 2, Otter Max 2, Fox Max 1, Penguin Max 1, Toucan Max 2
-		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 0, Vector2(1502.0, 114.0)],
-		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 1, Vector2(1558.0, 118.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 0, Vector2(1588.0, 118.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 1, Vector2(1602.0, 118.0)],
-		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 3, 0, Vector2(1614.0, 118.0)],
-		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 3, 0, Vector2(1652.0, 118.0)],
-		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 0, Vector2(1682.0, 118.0)],
-		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 1, Vector2(1706.0, 118.0)]
+		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 0, Vector2(1518.0, 118.0)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 1, Vector2(1582.0, 120.0)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 0, Vector2(1612.0, 118.0)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 1, Vector2(1632.0, 118.0)],
+		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 3, 0, Vector2(1646.0, 118.0)],
+		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 3, 0, Vector2(1690.0, 118.0)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 0, Vector2(1716.0, 118.0)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 1, Vector2(1742.0, 118.0)]
 	]
 	for rd in roster_defs:
 		var w := AnimalWorker.new()
@@ -281,7 +278,7 @@ func _process(delta: float) -> void:
 	chimney_timer += delta
 	if chimney_timer >= 1.4:
 		chimney_timer = 0.0
-		chimney_wisps.append({"x": 866.0, "y": 60.0, "r": 3.5, "alpha": 0.55})
+		chimney_wisps.append({"x": 820.0, "y": 58.0, "r": 3.5, "alpha": 0.55})
 	for i in range(chimney_wisps.size() - 1, -1, -1):
 		chimney_wisps[i]["y"] = float(chimney_wisps[i]["y"]) - 7.5 * delta
 		chimney_wisps[i]["x"] = float(chimney_wisps[i]["x"]) + sin(cloud_time + float(i)) * 4.0 * delta
