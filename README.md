@@ -10,6 +10,7 @@
 | `games/xianxia` | 凡人修仙传放置（Kittens Game mod） | JS / Cloudflare Workers+Pages | `kittensgame-xianxia` | subtree 全量 |
 | `games/cloud-isle-market` | 云屿小集（桌面挂机经营） | Godot 4.3 / GDScript | `cloud-isle-market`（旧本地名 maple-isle-idle） | subtree 全量 |
 | `games/worklife` | WorkLife 多职业放置 RPG | TS / React + Fastify | `worklife` | 快照压平（旧历史封存于原仓） |
+| `games/mob-control-3d` | 波波应援团：蒸汽糖果工坊（3D Pixar 倍增闯关放置） | TS / Three.js + Canvas 2.5D / Vite / Cloudflare Workers+Assets | 本地直建 `mob-control-3d` | 全量源码与精模资产 |
 
 ## 共享包
 
