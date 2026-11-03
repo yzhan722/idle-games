@@ -1,5 +1,20 @@
 extends Node
-## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution & Sprite Manifest (`EconomyConfig.gd`) — PRD Patch v2.2
+## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution, Native Typography & Drop Shadow Math (`EconomyConfig.gd`)
+## Strictly enforces GEMINI.md Engineering Laws 1~6.
+
+const GROUND_Y := 124.0
+const MIN_BUILDING_PADDING := 28.0
+const DECOR_OUTER_OFFSET := 16.0
+
+const Z_SKY := -100
+const Z_TERRAIN := -20
+const Z_SHADOW := -5
+const Z_SOIL_BASE := -2
+const Z_BUILDING := 0
+const Z_CROP := 1
+const Z_UNIT := 10
+const Z_CARRY_EMOTE := 20
+const Z_FLOATING_UI := 50
 
 const MULTIPLIER_RAW := 1.0
 const MULTIPLIER_MORTAR := 3.5
@@ -67,6 +82,39 @@ func _load_sprite_manifest() -> void:
 		if parsed is Dictionary:
 			sprite_manifest = parsed
 
+## GEMINI.md Law 5.2: Native Typography Helper (`make_pixel_label_settings`)
+func make_pixel_label_settings(size: int = 14, color: Color = Color("#FFF4D6")) -> LabelSettings:
+	var ls := LabelSettings.new()
+	ls.font_size = size
+	ls.font_color = color
+	ls.outline_size = 2
+	ls.outline_color = Color("#1A120B")
+	ls.shadow_size = 1
+	ls.shadow_color = Color(0.0, 0.0, 0.0, 0.6)
+	ls.shadow_offset = Vector2(1.0, 1.0)
+	return ls
+
+func create_pixel_label(text_str: String = "", size: int = 14, color: Color = Color("#FFF4D6"), center_align: bool = false) -> Label:
+	var lbl := Label.new()
+	lbl.text = text_str
+	lbl.label_settings = make_pixel_label_settings(size, color)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if center_align:
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return lbl
+
+## GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow (`shadow_width = w * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`)
+func draw_drop_shadow(canvas: CanvasItem, entity_visual_width: float, center: Vector2 = Vector2.ZERO) -> void:
+	var shadow_width := entity_visual_width * 0.55
+	var shadow_height := shadow_width * 0.18
+	var rx := shadow_width * 0.5
+	var ry := shadow_height * 0.5
+	var pts := PackedVector2Array()
+	for i in range(24):
+		var ang := float(i) * TAU / 24.0
+		pts.append(center + Vector2(cos(ang) * rx, sin(ang) * ry))
+	canvas.draw_colored_polygon(pts, Color(0.0, 0.0, 0.0, 0.20))
+
 func get_manifest_entry(sheet_key: String) -> Dictionary:
 	if sprite_manifest.has(sheet_key):
 		return sprite_manifest[sheet_key]
@@ -86,14 +134,12 @@ func get_frame_region(sheet_key: String, frame_idx: int) -> Rect2:
 	var row := clampi(frame_idx, 0, hf - 1) / hf
 	return Rect2(col * cw, row * ch, cw, ch)
 
-## PRD v2.2 Section 4.1: Every 25 levels, crop automatically evolves to the next high-tier variety in `crops_sheet.png`!
 func get_evolved_crop_id(base_island: int, building_level: int) -> String:
 	var base_idx := clampi(base_island - 1, 0, 3)
 	var evo_steps := int(floor(float(maxi(1, building_level)) / 25.0))
 	var final_idx := clampi(base_idx + evo_steps, 0, 3)
 	return "crop_" + str(final_idx)
 
-## PRD v2.2 Section 4.1: Every 25 levels, workshop delicacy automatically evolves to the next dish in `delicacies_sheet.png`!
 func get_evolved_delicacy_id(workshop_id: String, workshop_level: int) -> String:
 	var base_idx := 0
 	if workshop_id == "cauldron":

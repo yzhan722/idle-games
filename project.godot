@@ -21,7 +21,6 @@ run/max_fps=60
 
 EventBus="*res://src/autoload/EventBus.gd"
 EconomyConfig="*res://src/autoload/EconomyConfig.gd"
-PixelFontRenderer="*res://src/autoload/PixelFontRenderer.gd"
 WindowController="*res://src/autoload/WindowController.gd"
 SoundManager="*res://src/autoload/SoundManager.gd"
 GameManager="*res://src/autoload/GameManager.gd"

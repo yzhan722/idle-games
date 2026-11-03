@@ -1,8 +1,9 @@
 extends Node2D
 class_name BuildingVisualUpgrader
-## 4-Tier Building Visual Evolution & Bouncy Upgrade Animator (`src/entities/buildings/BuildingVisualUpgrader.gd`) — Visual Polish Patch
-## - Places Streetlamp (`decor_lamp.png`) at the side-rear of the Market Stall (`z_index = -1`, `Vector2(54, -8)`)
-##   so it NEVER overlaps the Mortar Workshop or blocks the Market Stall front!
+## 4-Tier Building Visual Evolution & Bouncy Upgrade Animator (`src/entities/buildings/BuildingVisualUpgrader.gd`)
+## Strictly enforces GEMINI.md Laws 2.2, 2.3 & 3.2:
+## - `decor_sprite`: `centered = true`, `offset = Vector2(0.0, -float(frame_h) * 0.5)`, `z_index = 0`.
+## - Placed at outer edge of main building + 16px (`DECOR_OUTER_OFFSET`), never overlapping building centers!
 
 @export var building_kind: String = "soil" # "soil", "mortar", "cauldron", "stall"
 
@@ -27,25 +28,27 @@ func _init_child_nodes() -> void:
 	decor_sprite = Sprite2D.new()
 	decor_sprite.name = "Tier2DecorSprite"
 	decor_sprite.visible = false
-	decor_sprite.centered = false
-	decor_sprite.z_index = -1
+	decor_sprite.centered = true
+	decor_sprite.z_index = EconomyConfig.Z_BUILDING
+	decor_sprite.z_as_relative = false
 	add_child(decor_sprite)
 
+	# GEMINI.md Law 2.2 & 3.2: Bottom-Center Pivot (`offset = Vector2(0.0, -float(frame_h) * 0.5)`) + outer edge + 16px
 	if building_kind == "soil":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_scarecrow.png")
-		decor_sprite.position = Vector2(-36.0, -8.0)
-		decor_sprite.offset = Vector2(-18.0, -42.0)
-		decor_sprite.scale = Vector2(0.75, 0.75)
+		decor_sprite.offset = Vector2(0.0, -float(56) * 0.5)
+		decor_sprite.scale = Vector2(0.65, 0.65)
+		decor_sprite.position = Vector2(-(SoilPlot.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
 	elif building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
-		decor_sprite.position = Vector2(-38.0, -4.0)
-		decor_sprite.offset = Vector2(-18.0, -44.0)
-		decor_sprite.scale = Vector2(0.78, 0.78)
+		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
+		decor_sprite.scale = Vector2(0.65, 0.65)
+		decor_sprite.position = Vector2(-(Workshop.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
 	elif building_kind == "stall":
-		# Visual Polish Patch Rule 3: Place Streetlamp at the side-rear of Market Stall (z_index = -1), never blocking the front or Mortar!
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
-		decor_sprite.position = Vector2(54.0, -8.0)
-		decor_sprite.offset = Vector2(-22.0, -62.0)
+		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
+		decor_sprite.scale = Vector2(0.75, 0.75)
+		decor_sprite.position = Vector2(MarketStall.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
 
 	# Tier 2/3 Workshop Steam / Alchemy Spark CPUParticles2D
 	particles = CPUParticles2D.new()
@@ -159,9 +162,8 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	# Tier 3 (Lv. 50 ~ 99+): Pixel Silver Star Pedestal Badge at the base of the building
 	if current_tier >= 3:
 		var badge_col := Color(1.0, 0.86, 0.24, 0.95) if current_tier >= 4 else Color(0.84, 0.92, 1.0, 0.92)
-		draw_circle(Vector2(0.0, 6.0), 8.0, Color(0.14, 0.08, 0.04, 0.85))
-		draw_arc(Vector2(0.0, 6.0), 8.0, 0.0, TAU, 16, badge_col, 1.5)
-		draw_circle(Vector2(0.0, 6.0), 3.0, badge_col)
+		draw_circle(Vector2(0.0, 4.0), 6.0, Color(0.14, 0.08, 0.04, 0.85))
+		draw_arc(Vector2(0.0, 4.0), 6.0, 0.0, TAU, 16, badge_col, 1.5)
+		draw_circle(Vector2(0.0, 4.0), 2.5, badge_col)

@@ -1,86 +1,73 @@
 extends Node2D
 class_name WaypointGraph
-## Pre-configured 1D Main Road + Building Branch Waypoint Graph (`src/world/WaypointGraph.gd`) — Visual Polish Patch
-## Calibrated to match the spacious 110px~140px building layout across all 3 islands.
+## 1D Walkable Waypoint Graph along Unified `GROUND_Y` (`src/world/WaypointGraph.gd`)
+## Strictly enforces GEMINI.md Law 2.1 (`GROUND_Y = 124.0`) & Law 3.1 (1D Slot Coordinates).
 
-var named_points: Dictionary = {
-	"spawn_left": Vector2(118.0, 134.0),
-	"basket_1": Vector2(685.0, 136.0),
-	"soil_1_center": Vector2(726.0, 128.0),
-	"apple_tree": Vector2(598.0, 124.0),
-	"mortar": Vector2(912.0, 132.0),
-	"market_stall": Vector2(1038.0, 136.0),
-	"stall_queue_0": Vector2(1022.0, 140.0),
-	"stall_queue_1": Vector2(996.0, 141.0),
-	"stall_queue_2": Vector2(970.0, 141.0),
-	"stall_queue_3": Vector2(944.0, 141.0),
-	"basket_2": Vector2(342.0, 132.0),
-	"soil_2_center": Vector2(276.0, 126.0),
-	"cauldron": Vector2(422.0, 130.0),
-	"basket_3": Vector2(1485.0, 118.0),
-	"soil_3_center": Vector2(1548.0, 116.0),
-	"spawn_right": Vector2(1782.0, 118.0)
-}
+const GROUND_Y := 124.0
 
-const HIGHWAY_GATES: Array[Vector2] = [
-	Vector2(128.0, 134.0),   # Left Landmark Hut Gate
-	Vector2(342.0, 132.0),   # Island 2 (Ellinia) Basket / Clearing Gate
-	Vector2(486.0, 136.0),   # Bridge 1 Left Bridgehead
-	Vector2(540.0, 131.5),   # Bridge 1 Arch Crown
-	Vector2(594.0, 138.0),   # Bridge 1 Right Bridgehead
-	Vector2(685.0, 136.0),   # Island 1 (Henesys) Farm Gate
-	Vector2(912.0, 134.0),   # Island 1 Mortar Workshop Gate
-	Vector2(1038.0, 138.0),  # Island 1 Market Stall Gate
-	Vector2(1082.0, 139.0),  # Lotus Pond Wooden Footbridge West Pier
-	Vector2(1192.0, 134.5),  # Lotus Pond Wooden Footbridge Arch Crown
-	Vector2(1302.0, 139.0),  # Lotus Pond Wooden Footbridge East Pier
-	Vector2(1358.0, 125.0),  # Bridge 2 Arch Crown
-	Vector2(1416.0, 120.0),  # Bridge 2 Right Bridgehead (Orbis Dry Sand)
-	Vector2(1548.0, 116.0),  # Island 3 (Orbis) Farm Gate
-	Vector2(1782.0, 118.0)   # Right Tiki Landmark Gate
+const WAYPOINTS: Array[Vector2] = [
+	Vector2(144.0, GROUND_Y),   # 0: Island 2 Left Hut
+	Vector2(272.0, GROUND_Y),   # 1: Island 2 SoilPlot
+	Vector2(397.0, GROUND_Y),   # 2: Island 2 Cauldron Workshop
+	Vector2(492.0, GROUND_Y),   # 3: Bridge 1 Left
+	Vector2(542.0, GROUND_Y),   # 4: Bridge 1 Arch Center
+	Vector2(586.0, GROUND_Y),   # 5: Bridge 1 Right
+	Vector2(612.4, GROUND_Y),   # 6: Island 1 Apple Tree
+	Vector2(710.8, GROUND_Y),   # 7: Island 1 SoilPlot
+	Vector2(811.2, GROUND_Y),   # 8: Island 1 Mushroom Cottage
+	Vector2(908.4, GROUND_Y),   # 9: Island 1 Mortar Workshop
+	Vector2(1013.4, GROUND_Y),  # 10: Island 1 Market Stall
+	Vector2(1082.0, GROUND_Y),  # 11: Lotus Pond Bridge Left
+	Vector2(1192.0, GROUND_Y),  # 12: Lotus Pond Bridge Center
+	Vector2(1302.0, GROUND_Y),  # 13: Lotus Pond Bridge Right
+	Vector2(1358.0, GROUND_Y),  # 14: Bridge 2 Arch Center
+	Vector2(1414.0, GROUND_Y),  # 15: Island 3 West Landing
+	Vector2(1462.0, GROUND_Y),  # 16: Island 3 Apple Tree
+	Vector2(1562.4, GROUND_Y),  # 17: Island 3 SoilPlot
+	Vector2(1655.3, GROUND_Y),  # 18: Island 3 Dual Workshop
+	Vector2(1755.6, GROUND_Y)   # 19: Island 3 Right Tiki Landmark
 ]
 
-func _ready() -> void:
-	for k in named_points.keys():
-		var m := Marker2D.new()
-		m.name = "WP_" + String(k)
-		m.position = named_points[k]
-		add_child(m)
+const NAMED_WAYPOINTS: Dictionary = {
+	"spawn_left": 0,
+	"basket_2": 1,
+	"cauldron": 2,
+	"apple_tree": 6,
+	"basket_1": 7,
+	"cottage": 8,
+	"mortar": 9,
+	"market_stall": 10,
+	"basket_3": 17,
+	"orbis_linked": 18,
+	"spawn_right": 19
+}
 
 func get_named_pos(key: String) -> Vector2:
-	return named_points.get(key, Vector2(1038.0, 136.0))
+	var idx: int = int(NAMED_WAYPOINTS.get(key, 10))
+	return WAYPOINTS[clampi(idx, 0, WAYPOINTS.size() - 1)]
+
+func get_nearest_waypoint_index(pos: Vector2) -> int:
+	var best_idx := 0
+	var best_d := 1e9
+	for i in range(WAYPOINTS.size()):
+		var d := absf(pos.x - WAYPOINTS[i].x)
+		if d < best_d:
+			best_d = d
+			best_idx = i
+	return best_idx
 
 func compute_path(from_pos: Vector2, to_pos: Vector2) -> Array[Vector2]:
-	var clean_target := constrain_to_walkable_surface(to_pos)
+	var s_idx := get_nearest_waypoint_index(from_pos)
+	var e_idx := get_nearest_waypoint_index(to_pos)
 	var path: Array[Vector2] = []
-	if clean_target.x > from_pos.x + 10.0:
-		for g in HIGHWAY_GATES:
-			if g.x > from_pos.x + 8.0 and g.x < clean_target.x - 8.0:
-				path.append(g)
-	elif clean_target.x < from_pos.x - 10.0:
-		for i in range(HIGHWAY_GATES.size() - 1, -1, -1):
-			var g := HIGHWAY_GATES[i]
-			if g.x < from_pos.x - 8.0 and g.x > clean_target.x + 8.0:
-				path.append(g)
-	path.append(clean_target)
+	if s_idx <= e_idx:
+		for i in range(s_idx, e_idx + 1):
+			path.append(WAYPOINTS[i])
+	else:
+		for i in range(s_idx, e_idx - 1, -1):
+			path.append(WAYPOINTS[i])
+	path.append(constrain_to_walkable_surface(to_pos))
 	return path
 
 func constrain_to_walkable_surface(pos: Vector2) -> Vector2:
-	var x := clampf(pos.x, 96.0, 1824.0)
-	var y := pos.y
-	if x < 486.0:
-		y = clampf(y, 112.0, 136.0)
-	elif x <= 594.0:
-		var t := clampf((x - 486.0) / 108.0, 0.0, 1.0)
-		y = lerpf(136.0, 138.0, t) - 5.0 * sin(t * PI)
-	elif x < 1082.0:
-		y = clampf(y, 112.0, 142.0)
-	elif x <= 1302.0:
-		var t := clampf((x - 1082.0) / 220.0, 0.0, 1.0)
-		y = 139.0 - 4.5 * sin(t * PI)
-	elif x <= 1416.0:
-		var t := clampf((x - 1302.0) / 114.0, 0.0, 1.0)
-		y = lerpf(139.0, 120.0, t) - 4.5 * sin(t * PI)
-	else:
-		y = clampf(y, 100.0, 122.0)
-	return Vector2(x, y)
+	return Vector2(clampf(pos.x, 120.0, 1790.0), GROUND_Y)

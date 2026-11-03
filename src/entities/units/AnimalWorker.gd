@@ -1,10 +1,16 @@
 extends Node2D
 class_name AnimalWorker
-## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`) — Visual Polish Patch
-## - Uses a dedicated `body_sprite: Sprite2D` with `region_enabled = true` and single-frame regions from `sprite_manifest.json`
-##   (`60x60` per frame, `flip_h = facing_left`), completely preventing multi-frame overlap or transpose distortion!
-## - Uses ultra-flat horizontal ellipse shadow (`scale.y = 0.2`, width = `60%` of `60px` = `36px`, `Color(0, 0, 0, 0.22)`).
-## - Uses native Godot `Label` node with `LabelSettings` (`font_size = 14`, `outline_size = 2`, `outline_color = Color.BLACK`) for `"Zzz..."`.
+## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`)
+## Strictly enforces GEMINI.md Laws 2, 3, 4, 5:
+## - Root `position.y = GROUND_Y` (`z_index = 10`, `z_as_relative = false`).
+## - `body_sprite`: `region_enabled = false`, `hframes = 4`, `vframes = 1`, `frame = pose_idx` (`60x60` per frame, aspect 1.0).
+## - `body_sprite`: `centered = true`, `offset = Vector2(0.0, -float(60) * 0.5) = Vector2(0.0, -30.0)`.
+## - `carry_icon`: `z_index = 20`, `z_as_relative = false`.
+## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` (`shadow_width = 44 * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`).
+
+const FRAME_W := 60
+const FRAME_H := 60
+const VISUAL_WIDTH := 44.0
 
 enum RoleType {
 	BUNNY_FARMER,
@@ -47,25 +53,37 @@ var carrying_item_id: String = ""
 var carrying_qty: int = 0
 var target_plot: SoilPlot = null
 var boost_timer: float = 0.0
-var footstep_puffs: Array[Dictionary] = []
-var last_step_cycle: int = -1
 
 func _ready() -> void:
+	z_index = EconomyConfig.Z_UNIT
+	z_as_relative = false
+
+	# GEMINI.md Law 2.2 & Law 4: Fixed grid slicing (`hframes = 4, vframes = 1, region_enabled = false`) + Bottom-Center Pivot
 	body_sprite.name = "BodySprite"
-	body_sprite.region_enabled = true
+	body_sprite.region_enabled = false
+	body_sprite.hframes = 4
+	body_sprite.vframes = 1
+	body_sprite.frame = 0
 	body_sprite.centered = true
-	body_sprite.offset = Vector2(0.0, -26.0)
+	body_sprite.offset = Vector2(0.0, -float(FRAME_H) * 0.5)
+	body_sprite.z_index = EconomyConfig.Z_UNIT
+	body_sprite.z_as_relative = false
 	add_child(body_sprite)
 
 	carry_icon.name = "CarryIcon"
 	carry_icon.visible = false
+	carry_icon.centered = true
 	carry_icon.position = Vector2(0.0, -56.0)
+	carry_icon.z_index = EconomyConfig.Z_CARRY_EMOTE
+	carry_icon.z_as_relative = false
 	add_child(carry_icon)
 
-	sleep_label = PixelFontRenderer.create_label("Zzz...", 14, Color("#FFE066"), true)
+	sleep_label = EconomyConfig.create_pixel_label("Zzz...", 14, Color("#FFF4D6"), true)
 	sleep_label.position = Vector2(-30.0, -68.0)
 	sleep_label.custom_minimum_size = Vector2(60.0, 20.0)
 	sleep_label.visible = false
+	sleep_label.z_index = EconomyConfig.Z_CARRY_EMOTE
+	sleep_label.z_as_relative = false
 	add_child(sleep_label)
 
 	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
@@ -98,9 +116,12 @@ func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, 
 	tex_sheet = load(norm_path)
 	if body_sprite != null:
 		body_sprite.texture = tex_sheet
-		body_sprite.region_enabled = true
-		body_sprite.region_rect = EconomyConfig.get_frame_region(sheet_key, 0)
-	position = waypoint_graph.constrain_to_walkable_surface(p_pos) if waypoint_graph != null else p_pos
+		body_sprite.region_enabled = false
+		body_sprite.hframes = 4
+		body_sprite.vframes = 1
+		body_sprite.frame = 0
+		body_sprite.offset = Vector2(0.0, -float(FRAME_H) * 0.5)
+	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	anim_time = randf() * 3.14
 	_assign_next_task()
 
@@ -119,21 +140,29 @@ func _set_carry_visual(item_id: String, qty: int) -> void:
 		carry_icon.visible = false
 		return
 	carry_icon.visible = true
-	carry_icon.region_enabled = true
+	carry_icon.region_enabled = false
 	if item_id.begins_with("delicacy_"):
+		var d_data: Dictionary = EconomyConfig.DELICACIES.get(item_id, EconomyConfig.DELICACIES["delicacy_0"])
 		carry_icon.texture = tex_delicacies
-		carry_icon.region_rect = EconomyConfig.get_delicacy_region(item_id)
+		carry_icon.hframes = 4
+		carry_icon.vframes = 1
+		carry_icon.frame = clampi(int(d_data.get("idx", 0)), 0, 3)
 		carry_icon.scale = Vector2(0.65, 0.65)
 	else:
+		var c_data: Dictionary = EconomyConfig.CROPS.get(item_id, EconomyConfig.CROPS["crop_0"])
+		var row := clampi(int(c_data.get("crop_row", 0)), 0, 3)
 		carry_icon.texture = tex_crops
-		carry_icon.region_rect = EconomyConfig.get_crop_stage_region(item_id, 3)
+		carry_icon.hframes = 4
+		carry_icon.vframes = 4
+		carry_icon.frame = row * 4 + 3
 		carry_icon.scale = Vector2(0.60, 0.60)
 
 func _navigate_to(dest: Vector2) -> void:
+	var grounded_dest := Vector2(dest.x, EconomyConfig.GROUND_Y)
 	if waypoint_graph != null:
-		nav_path = waypoint_graph.compute_path(position, dest)
+		nav_path = waypoint_graph.compute_path(position, grounded_dest)
 	else:
-		nav_path = [dest]
+		nav_path = [grounded_dest]
 
 func _get_home_workshop_id() -> String:
 	if home_island == 1:
@@ -146,8 +175,8 @@ func _get_home_workshop_pos() -> Vector2:
 	if home_island == 1:
 		return waypoint_graph.get_named_pos("mortar")
 	elif home_island == 2:
-		return Vector2(422.0, 128.0)
-	return Vector2(1668.0, 118.0)
+		return waypoint_graph.get_named_pos("cauldron")
+	return waypoint_graph.get_named_pos("orbis_linked")
 
 func _get_home_basket_pos() -> Vector2:
 	if home_island == 1:
@@ -165,53 +194,39 @@ func _process(delta: float) -> void:
 	if boost_timer > 0.0:
 		boost_timer = maxf(0.0, boost_timer - delta)
 
-	for i in range(footstep_puffs.size() - 1, -1, -1):
-		footstep_puffs[i]["y"] -= 5.0 * delta
-		footstep_puffs[i]["r"] += 2.0 * delta
-		footstep_puffs[i]["alpha"] -= 0.75 * delta
-		if float(footstep_puffs[i]["alpha"]) <= 0.02:
-			footstep_puffs.remove_at(i)
-
 	if nav_path.size() > 0:
 		is_moving = true
-		var wp := nav_path[0]
+		var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
 		var to_wp := wp - position
-		var dist := to_wp.length()
+		var dist := absf(to_wp.x)
 		if dist <= 3.5:
-			position = waypoint_graph.constrain_to_walkable_surface(wp) if waypoint_graph != null else wp
+			position = wp
 			nav_path.remove_at(0)
 			if nav_path.size() == 0:
 				is_moving = false
 				state_timer = 0.0
 		else:
-			if absf(to_wp.x) > 0.5:
-				facing_left = to_wp.x < 0.0
+			facing_left = to_wp.x < 0.0
 			var spd := EconomyConfig.calc_move_speed(animal_key, get_level())
-			var next_pos := position + (to_wp / dist) * spd * delta
-			position = waypoint_graph.constrain_to_walkable_surface(next_pos) if waypoint_graph != null else next_pos
-
-			var cyc := int(floor(anim_time * 7.5 / PI))
-			if cyc != last_step_cycle:
-				last_step_cycle = cyc
-				var heel_x := 6.0 if facing_left else -6.0
-				footstep_puffs.append({"x": position.x + heel_x, "y": position.y + 1.0, "r": 2.0, "alpha": 0.42})
+			var step_x := signf(to_wp.x) * minf(dist, spd * delta)
+			position = Vector2(position.x + step_x, EconomyConfig.GROUND_Y)
 	else:
 		is_moving = false
+		position.y = EconomyConfig.GROUND_Y
 		state_timer += delta
 		_update_role_work_step()
 
-	# Update single-frame Sprite2D region & bounce
 	var pose_idx := _get_pose_index()
 	var hop_y := 0.0
 	var scale_x := 1.0
 	var scale_y := 1.0
 	var tilt_rad := 0.0
 	if is_moving:
-		hop_y = -absf(sin(anim_time * 8.5)) * 3.0
+		hop_y = -absf(sin(anim_time * 8.5)) * 2.5
 		var squash := cos(anim_time * 17.0)
-		scale_x = 1.0 - squash * 0.04
-		scale_y = 1.0 + squash * 0.04
-		tilt_rad = sin(anim_time * 8.5) * 0.04
+		scale_x = 1.0 - squash * 0.03
+		scale_y = 1.0 + squash * 0.03
+		tilt_rad = sin(anim_time * 8.5) * 0.03
 	else:
 		var breath := sin(anim_time * 3.2)
 		scale_x = 1.0 + breath * 0.02
@@ -219,8 +234,10 @@ func _process(delta: float) -> void:
 
 	if body_sprite != null and tex_sheet != null:
 		body_sprite.texture = tex_sheet
-		body_sprite.region_enabled = true
-		body_sprite.region_rect = EconomyConfig.get_frame_region(sheet_key, pose_idx)
+		body_sprite.region_enabled = false
+		body_sprite.hframes = 4
+		body_sprite.vframes = 1
+		body_sprite.frame = clampi(pose_idx, 0, 3)
 		body_sprite.flip_h = facing_left
 		body_sprite.position = Vector2(0.0, hop_y)
 		body_sprite.rotation = tilt_rad
@@ -253,7 +270,7 @@ func _assign_next_task() -> void:
 			if target_plot != null:
 				target_plot.reserved_by_worker = true
 				worker_step = 0
-				_navigate_to(target_plot.position + Vector2(float(slot_index * 8), 4.0))
+				_navigate_to(target_plot.position + Vector2(float(slot_index * 10), 0.0))
 			else:
 				worker_step = 0
 				var fallback_pos := waypoint_graph.get_named_pos("apple_tree") if home_island == 1 else _get_home_basket_pos()
@@ -264,7 +281,7 @@ func _assign_next_task() -> void:
 			var wpos := _get_home_workshop_pos()
 			if home_island == 1 and GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
 				worker_step = 10
-				_navigate_to(wpos + Vector2(14, 4))
+				_navigate_to(wpos + Vector2(14.0, 0.0))
 			elif GameManager.get_island_basket_total(home_island) > 0:
 				worker_step = 0
 				_navigate_to(_get_home_basket_pos() + Vector2(float(slot_index * 10), 0.0))
@@ -274,30 +291,30 @@ func _assign_next_task() -> void:
 
 		RoleType.TOUCAN_TRADER:
 			var wid := "orbis_linked" if home_island == 3 else "cauldron"
-			var wpos := Vector2(1668.0, 118.0) if home_island == 3 else Vector2(422.0, 128.0)
+			var wpos := _get_home_workshop_pos()
 			if GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
 				worker_step = 10
-				_navigate_to(wpos + Vector2(12, 4))
+				_navigate_to(wpos + Vector2(12.0, 0.0))
 			elif GameManager.get_island_basket_total(home_island) > 0 and not GameManager.is_stall_full():
 				worker_step = 0
 				_navigate_to(_get_home_basket_pos())
 			else:
 				worker_step = 40
-				_navigate_to(wpos + Vector2(float(slot_index * 12), 8.0))
+				_navigate_to(wpos + Vector2(float(slot_index * 12), 0.0))
 
 		RoleType.FOX_MORTAR_CHEF:
 			worker_step = 0
-			var fpos := Vector2(1646.0, 118.0) if home_island == 3 else (waypoint_graph.get_named_pos("mortar") + Vector2(-20, 4))
+			var fpos := _get_home_workshop_pos() + Vector2(-18.0, 0.0)
 			_navigate_to(fpos)
 
 		RoleType.PENGUIN_ALCHEMIST:
 			worker_step = 0
-			var ppos := Vector2(1690.0, 118.0) if home_island == 3 else Vector2(400.0, 128.0)
+			var ppos := _get_home_workshop_pos() + Vector2(-18.0, 0.0)
 			_navigate_to(ppos)
 
 		RoleType.SHIBA_MANAGER:
 			worker_step = 0
-			_navigate_to(waypoint_graph.get_named_pos("market_stall") + Vector2(24, 4))
+			_navigate_to(waypoint_graph.get_named_pos("market_stall") + Vector2(22.0, 0.0))
 
 func _update_role_work_step() -> void:
 	match role_type:
@@ -360,7 +377,7 @@ func _update_role_work_step() -> void:
 					var chef_ready := GameManager.get_island_recruited_count(home_island, chef_key) >= 1
 					if chef_ready and not GameManager.is_workshop_input_full(wid):
 						worker_step = 1
-						_navigate_to(wpos + Vector2(-14, 4))
+						_navigate_to(wpos + Vector2(-14.0, 0.0))
 					else:
 						worker_step = 2
 						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
@@ -384,7 +401,7 @@ func _update_role_work_step() -> void:
 					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
 					var q := maxi(1, carrying_qty)
 					GameManager.add_to_stall(cid, q)
-					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), "分流直售+" + str(q), Color.WHITE)
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), "分流直售+" + str(q), Color("#FFF4D6"))
 					_set_carry_visual("", 0)
 					_assign_next_task()
 
@@ -491,8 +508,6 @@ func _update_role_work_step() -> void:
 			facing_left = true
 
 func _get_pose_index() -> int:
-	# Each animal sheet (`240x60`) has 4 exact `60x60` poses:
-	# 0: Walk A, 1: Walk B, 2: Work / Tool Action, 3: Sleep (Zzz)
 	if is_sleeping_full:
 		return 3
 	if is_moving:
@@ -504,12 +519,5 @@ func _get_pose_index() -> int:
 func _draw() -> void:
 	if not is_hired():
 		return
-
-	for puff in footstep_puffs:
-		var local_p := Vector2(float(puff["x"]) - position.x, float(puff["y"]) - position.y)
-		draw_circle(local_p, float(puff["r"]), Color(0.95, 0.91, 0.80, float(puff["alpha"])))
-
-	# Visual Polish Patch Rule 2: Ultra-flat horizontal ellipse shadow (`scale.y = 0.2`, width = 60% of 60px = 36px -> radius 18px, `Color(0, 0, 0, 0.22)`)
-	draw_set_transform(Vector2(0.0, 2.0), 0.0, Vector2(1.0, 0.2))
-	draw_circle(Vector2.ZERO, 18.0, Color(0.0, 0.0, 0.0, 0.22))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
+	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)

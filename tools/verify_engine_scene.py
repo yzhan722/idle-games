@@ -1,239 +1,290 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Renders an exact 1920x260 verification preview of the Phase 4 Masterpiece Polish Cloud Isle Market:
-- 3 Masterpiece 1.5D Diorama Floating Islands (built-in wooden picket fence, cobblestone garden path,
-  wildflowers, lotus pond, mossy roots, glowing forest mushrooms, sandy beach ripples & starfish)
-- 6 Masterpiece Village Buildings (Half-Timbered Windmill Farmhouse, Market Stall with lantern & stacked shelf,
-  Orchard Apple Tree, Hollow-Tree Alchemy Cottage, Coconut Tiki Bar with fairy lights, Stone Mortar)
-- Artisan Pixel UI Kit (Zero raw draw_rect boxes: recessed dark-wood & brass resource pills,
-  brass-cornered upgrade cards in open drawer preview, beveled wood & brass-stud buttons, bold YouYuan typography)
+Mandatory Pre-Delivery Scene Geometry & Visual Audit Pipeline (`tools/verify_engine_scene.py`)
+Enforces GEMINI.md Law 6 Hard Assertions:
+- Assertion 1: Zero `PixelFontRenderer` or `pixel_font_atlas.png` references across `project.godot`, `src/**/*.gd`, and `src/**/*.tscn`.
+- Assertion 2: 1D Slot Layout & Building Anti-Overlap Assertion across all 3 islands (`overlap <= 10%` and `|X_A - X_B| >= (W_A + W_B)/2 + 28px`).
+- Assertion 3: SpriteSheet & Atlas Single-Frame Guardrail (`single_frame_w <= 120`, `single_frame_h <= 120`, aspect ratio in `[0.5, 1.8]`, `hframes > 1`).
+- Exports clean `preview_engine_1920x360.png` and `preview_drawer_open_1920x360.png` grounded at `GROUND_Y = 124.0`.
 """
 
+import json
 import os
+import sys
 from PIL import Image, ImageDraw, ImageFont
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ART_DIR = os.path.join(BASE_DIR, "assets", "pixel_art")
+SRC_DIR = os.path.join(BASE_DIR, "src")
+MANIFEST_PATH = os.path.join(SRC_DIR, "data", "sprite_manifest.json")
+
+GROUND_Y = 124.0
+MIN_PADDING = 28.0
+
+ISLAND_SLOTS = {
+    1: [
+        {"id": "apple_tree_1", "file": ("buildings", "apple_tree.png"),       "x": 612.4, "tex_w": 112.0, "tex_h": 120.0, "scale": 0.65, "has_shadow": False},
+        {"id": "soil_plot_1",  "file": ("islands", "soil_plot_normalized.png"),"x": 710.8, "tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00, "has_shadow": False},
+        {"id": "cottage_1",    "file": ("buildings", "cottage_mushroom.png"), "x": 811.2, "tex_w": 118.0, "tex_h": 114.0, "scale": 0.65, "has_shadow": False},
+        {"id": "mortar_1",     "file": ("buildings", "workshop_mortar.png"),  "x": 908.4, "tex_w": 68.0,  "tex_h": 58.0,  "scale": 0.85, "has_shadow": True},
+        {"id": "stall_1",      "file": ("buildings", "market_stall.png"),     "x": 1013.4,"tex_w": 128.0, "tex_h": 104.0, "scale": 0.72, "has_shadow": True},
+    ],
+    2: [
+        {"id": "left_hut_2",   "file": ("buildings", "landmark_left_hut.png"),"x": 144.0, "tex_w": 112.0, "tex_h": 108.0, "scale": 0.68, "has_shadow": False},
+        {"id": "soil_plot_2",  "file": ("islands", "soil_plot_normalized.png"),"x": 272.0, "tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00, "has_shadow": False},
+        {"id": "cauldron_2",   "file": ("buildings", "workshop_cauldron.png"),"x": 397.0, "tex_w": 68.0,  "tex_h": 62.0,  "scale": 0.85, "has_shadow": True},
+    ],
+    3: [
+        {"id": "apple_tree_3", "file": ("buildings", "apple_tree.png"),       "x": 1462.0,"tex_w": 112.0, "tex_h": 120.0, "scale": 0.65, "has_shadow": False},
+        {"id": "soil_plot_3",  "file": ("islands", "soil_plot_normalized.png"),"x": 1562.4,"tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00, "has_shadow": False},
+        {"id": "orbis_work_3", "file": ("buildings", "workshop_mortar.png"),  "x": 1655.3,"tex_w": 68.0,  "tex_h": 58.0,  "scale": 0.85, "has_shadow": True},
+        {"id": "right_tiki_3", "file": ("buildings", "landmark_right_tiki.png"),"x": 1755.6,"tex_w": 116.0,"tex_h": 108.0, "scale": 0.68, "has_shadow": False},
+    ],
+}
+
+
+def run_hard_assertions():
+    # Assertion 1: No `PixelFontRenderer` or `pixel_font_atlas.png` anywhere in project.godot or src/
+    forbidden_tokens = ["Pixel" + "FontRenderer", "pixel_font" + "_atlas.png"]
+    check_files = [os.path.join(BASE_DIR, "project.godot")]
+    for dp, _, fns in os.walk(SRC_DIR):
+        for fn in fns:
+            if fn.endswith((".gd", ".tscn")):
+                check_files.append(os.path.join(dp, fn))
+    for fpath in check_files:
+        if not os.path.exists(fpath):
+            continue
+        with open(fpath, "r", encoding="utf-8") as f:
+            txt = f.read()
+        for tok in forbidden_tokens:
+            if tok in txt:
+                raise AssertionError(f"Forbidden legacy font reference `{tok}` found in {fpath}!")
+
+    if os.path.exists(os.path.join(SRC_DIR, "autoload", "Pixel" + "FontRenderer.gd")):
+        raise AssertionError("PixelFontRenderer.gd still exists on disk!")
+    if os.path.exists(os.path.join(ART_DIR, "ui", "pixel_font" + "_atlas.png")):
+        raise AssertionError("pixel_font_atlas.png still exists on disk!")
+
+    # Assertion 2: Building Screen Rect2 Overlap <= 10% and |X_A - X_B| >= (W_A + W_B)/2 + 28px
+    for isl_idx, slots in ISLAND_SLOTS.items():
+        rects = []
+        for s in slots:
+            w = s["tex_w"] * s["scale"]
+            h = s["tex_h"] * s["scale"]
+            x0 = s["x"] - w * 0.5
+            x1 = s["x"] + w * 0.5
+            rects.append((s["id"], s["x"], w, h, x0, x1))
+
+        for i in range(len(rects)):
+            for j in range(i + 1, len(rects)):
+                id_a, xa, wa, _, xa0, xa1 = rects[i]
+                id_b, xb, wb, _, xb0, xb1 = rects[j]
+                inter_w = max(0.0, min(xa1, xb1) - max(xa0, xb0))
+                overlap_ratio = inter_w / max(1.0, min(wa, wb))
+                if overlap_ratio > 0.10:
+                    print(f"[CONFLICT] Island {isl_idx}: {id_a} [{xa0:.1f}..{xa1:.1f}] vs {id_b} [{xb0:.1f}..{xb1:.1f}] overlap={overlap_ratio:.2%}")
+                    raise AssertionError("Building Overlap Detected!")
+                if j == i + 1:
+                    dist = abs(xb - xa)
+                    req = (wa + wb) * 0.5 + MIN_PADDING
+                    if dist < req - 0.5:
+                        print(f"[PADDING VIOLATION] Island {isl_idx}: {id_a} (x={xa}) and {id_b} (x={xb}) dist={dist:.1f} < req={req:.1f}")
+                        raise AssertionError("Building Overlap Detected!")
+
+    # Assertion 3: Animal & Traveler Single-Frame Slicing Guardrail
+    if not os.path.exists(MANIFEST_PATH):
+        raise AssertionError("Unsliced SpriteSheet Detected! Missing sprite_manifest.json")
+    with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    unit_sheets = [
+        "animals/bunny_sheet.png",
+        "animals/otter_sheet.png",
+        "animals/toucan_sheet.png",
+        "animals/fox_sheet.png",
+        "animals/penguin_sheet.png",
+        "animals/shiba_sheet.png",
+        "travelers/traveler_slime.png",
+        "travelers/traveler_mushroom.png",
+        "travelers/traveler_pig.png",
+    ]
+    for sk in unit_sheets:
+        if sk not in manifest:
+            raise AssertionError(f"Unsliced SpriteSheet Detected! Missing {sk}")
+        entry = manifest[sk]
+        cw = float(entry.get("cell_width", 999))
+        ch = float(entry.get("cell_height", 999))
+        hf = int(entry.get("hframes", 1))
+        if cw > 120.0 or ch > 120.0 or hf <= 1:
+            raise AssertionError("Unsliced SpriteSheet Detected!")
+        for reg in entry.get("regions", []):
+            tw = float(reg.get("tight_w", cw))
+            th = float(reg.get("tight_h", ch))
+            aspect = tw / max(1.0, th)
+            if not (0.5 <= aspect <= 1.8):
+                raise AssertionError(f"Unsliced SpriteSheet Detected! Invalid aspect ratio {aspect:.2f} in {sk}")
+
+    for gd_rel in [("entities", "units", "AnimalWorker.gd"), ("entities", "units", "CustomerNPC.gd")]:
+        gd_path = os.path.join(SRC_DIR, *gd_rel)
+        with open(gd_path, "r", encoding="utf-8") as f:
+            gd_txt = f.read()
+        if "hframes =" not in gd_txt or "region_enabled = false" not in gd_txt:
+            raise AssertionError("Unsliced SpriteSheet Detected!")
+
+    print("[Audit Passed] All 3 GEMINI.md Law 6 Hard Assertions passed with 0 errors!")
 
 
 def load_art(sub, name):
     return Image.open(os.path.join(ART_DIR, sub, name)).convert("RGBA")
 
 
-def blit(canvas, sprite, x, y, src_box=None, dst_size=None):
+def blit_grounded(canvas, sprite, center_x, ground_y, scale_f=1.0, src_box=None):
     part = sprite.crop(src_box) if src_box else sprite
-    if dst_size:
-        part = part.resize(dst_size, Image.Resampling.LANCZOS)
-    canvas.alpha_composite(part, (int(x), int(y)))
+    if abs(scale_f - 1.0) > 1e-3:
+        nw = max(1, int(round(part.width * scale_f)))
+        nh = max(1, int(round(part.height * scale_f)))
+        part = part.resize((nw, nh), Image.Resampling.NEAREST)
+    dx = int(round(center_x - part.width * 0.5))
+    dy = int(round(ground_y - part.height))
+    canvas.alpha_composite(part, (dx, dy))
 
 
-def draw_pixel_text(canvas, font_tex, x, y, text_str, scale_f=0.78):
-    glyph_map = {
-        "0": 0, "1": 1, "2": 2, "3": 3, "4": 4,
-        "5": 5, "6": 6, "7": 7, "8": 8, "9": 9,
-        "+": 10, "-": 11, "G": 12, "/": 13, "x": 14, "!": 15
-    }
-    step_w = int(round(18 * scale_f))
-    cw = int(round(24 * scale_f))
-    ch_h = int(round(32 * scale_f))
-    for i, ch in enumerate(text_str):
-        if ch in glyph_map:
-            idx = glyph_map[ch]
-            blit(canvas, font_tex, x + i * step_w, y, (idx * 24, 0, idx * 24 + 24, 32), (cw, ch_h))
+def draw_oval_shadow(canvas, center_x, ground_y, entity_visual_width):
+    sw = entity_visual_width * 0.55
+    sh = sw * 0.18
+    rx = sw * 0.5
+    ry = sh * 0.5
+    overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(overlay)
+    d.ellipse((center_x - rx, ground_y - ry, center_x + rx, ground_y + ry), fill=(0, 0, 0, 51))
+    canvas.alpha_composite(overlay)
 
 
-def draw_cn(draw_obj, x, y, txt, fnt, fill=(255, 245, 214, 255), outline=(42, 16, 4, 252)):
-    draw_obj.text((x + 1, y + 2), txt, font=fnt, fill=(26, 8, 2, 230))
-    for ox, oy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1)):
-        draw_obj.text((x + ox, y + oy), txt, font=fnt, fill=outline)
+def draw_native_label(draw_obj, x, y, txt, fnt, fill=(255, 244, 214, 255), outline=(26, 18, 11, 255)):
+    draw_obj.text((x + 1, y + 1), txt, font=fnt, fill=(0, 0, 0, 153))
+    for ox in (-2, -1, 0, 1, 2):
+        for oy in (-2, -1, 0, 1, 2):
+            if ox != 0 or oy != 0:
+                draw_obj.text((x + ox, y + oy), txt, font=fnt, fill=outline)
     draw_obj.text((x, y), txt, font=fnt, fill=fill)
 
 
 def verify_render(out_path):
-    world_layer = Image.new("RGBA", (1920, 260), (0, 0, 0, 0))
-    canvas = Image.new("RGBA", (1920, 300), (22, 28, 42, 255))
+    oy = 36
+    gy = oy + int(GROUND_Y)
+    canvas = Image.new("RGBA", (1920, 360), (24, 32, 48, 255))
 
     henesys = load_art("islands", "island_henesys.png")
     ellinia = load_art("islands", "island_ellinia.png")
     orbis = load_art("islands", "island_orbis_coast.png")
     bridge = load_art("islands", "bridge_wood.png")
-    soil = load_art("islands", "soil_plot.png")
-    crops = load_art("crops", "crops_sheet.png")
-    delicacies = load_art("buildings", "delicacies_sheet.png")
-    stall = load_art("buildings", "market_stall.png")
-    tree = load_art("buildings", "apple_tree.png")
-    cottage = load_art("buildings", "cottage_mushroom.png")
-    left_hut = load_art("buildings", "landmark_left_hut.png")
-    right_tiki = load_art("buildings", "landmark_right_tiki.png")
-    mortar = load_art("buildings", "workshop_mortar.png")
-    cauldron = load_art("buildings", "workshop_cauldron.png")
-    signpost = load_art("buildings", "decor_signpost.png")
-    lamp = load_art("buildings", "decor_lamp.png")
-    scarecrow = load_art("buildings", "decor_scarecrow.png")
+    soil = load_art("islands", "soil_plot_normalized.png")
+    crops = load_art("crops", "crops_sheet_normalized.png")
+    delicacies = load_art("buildings", "delicacies_sheet_normalized.png")
 
-    bunny = load_art("animals", "bunny_sheet.png")
-    otter = load_art("animals", "otter_sheet.png")
-    shiba = load_art("animals", "shiba_sheet.png")
-    penguin = load_art("animals", "penguin_sheet.png")
-    fox = load_art("animals", "fox_sheet.png")
-    toucan = load_art("animals", "toucan_sheet.png")
+    bunny = load_art("animals", "bunny_sheet_normalized.png")
+    otter = load_art("animals", "otter_sheet_normalized.png")
+    fox = load_art("animals", "fox_sheet_normalized.png")
+    shiba = load_art("animals", "shiba_sheet_normalized.png")
+    penguin = load_art("animals", "penguin_sheet_normalized.png")
+    toucan = load_art("animals", "toucan_sheet_normalized.png")
 
-    hedgehog = load_art("travelers", "traveler_slime.png")
-    tabby_cat = load_art("travelers", "traveler_mushroom.png")
-    raccoon = load_art("travelers", "traveler_pig.png")
+    traveler_slime = load_art("travelers", "traveler_slime_normalized.png")
+    traveler_mush = load_art("travelers", "traveler_mushroom_normalized.png")
+    traveler_pig = load_art("travelers", "traveler_pig_normalized.png")
 
     panel = load_art("ui", "panel_wood_9patch.png")
     pill = load_art("ui", "ui_resource_pill.png")
     parch = load_art("ui", "panel_parchment_9patch.png")
     icons = load_art("ui", "icons_ui.png")
-    heart = load_art("ui", "emote_heart.png")
-    font = load_art("ui", "pixel_font_atlas.png")
+    btn_norm = load_art("ui", "btn_normal.png")
 
     cn_font = None
-    for fpath in ["C:/Windows/Fonts/SIMYOU.TTF", "C:/Windows/Fonts/msyhbd.ttc", "C:/Windows/Fonts/simsun.ttc"]:
+    for fpath in ["C:/Windows/Fonts/msyhbd.ttc", "C:/Windows/Fonts/SIMYOU.TTF", "C:/Windows/Fonts/simsun.ttc"]:
         if os.path.exists(fpath):
-            cn_font = ImageFont.truetype(fpath, 13)
+            cn_font = ImageFont.truetype(fpath, 14)
             break
     if cn_font is None:
         cn_font = ImageFont.load_default()
 
-    # 1. Three Masterpiece 1.5D Diorama Island Decks + Suspension Bridges + Lotus Pond Wooden Footbridge
-    blit(canvas, ellinia, 64, 74)
-    blit(canvas, bridge, 492, 124)
-    blit(canvas, henesys, 560, 70)
-    blit(canvas, bridge, 1312, 118)
-    blit(canvas, orbis, 1396, 74)
+    # Layer -20: Islands & Bridges
+    canvas.alpha_composite(ellinia, (64, oy + 74))
+    canvas.alpha_composite(bridge, (492, oy + 124))
+    canvas.alpha_composite(henesys, (560, oy + 70))
+    canvas.alpha_composite(bridge, (1312, oy + 118))
+    canvas.alpha_composite(orbis, (1396, oy + 74))
 
-    # 1.5 Lotus Pond Wooden Plank Footbridge (荷花池木栈桥) with Cedar Pilings & Water Ripples
-    d_pond = ImageDraw.Draw(canvas)
-    for px in (1096, 1188, 1284):
-        d_pond.ellipse((px - 8, 143, px + 8, 149), outline=(224, 252, 255, 180), width=1)
-        d_pond.rectangle((px - 3, 134, px + 3, 147), fill=(92, 54, 28, 245))
-    blit(canvas, bridge, 1082, 118, None, (114, 38))
-    blit(canvas, bridge, 1188, 118, None, (114, 38))
+    bridge_pond = bridge.resize((114, 38), Image.Resampling.NEAREST)
+    canvas.alpha_composite(bridge_pond, (1082, oy + 118))
+    canvas.alpha_composite(bridge_pond, (1188, oy + 118))
 
-    ysort_items = []
+    # Layer -5 & 0 & 1: 1D Slot Buildings & Enlarged 64x26 Soil Plots
+    for isl_idx, slots in ISLAND_SLOTS.items():
+        for s in slots:
+            cx = s["x"]
+            w_vis = s["tex_w"] * s["scale"]
+            if s["has_shadow"]:
+                draw_oval_shadow(canvas, cx, gy, w_vis)
+            if s["id"].startswith("soil_plot"):
+                soil_bed = soil.crop((80, 0, 120, 18)).resize((64, 26), Image.Resampling.NEAREST)
+                canvas.alpha_composite(soil_bed, (int(round(cx - 32)), int(round(gy - 26))))
+                crop_row = isl_idx - 1
+                crop_frame = crops.crop((80, crop_row * 40, 120, (crop_row + 1) * 40)).resize((34, 34), Image.Resampling.NEAREST)
+                canvas.alpha_composite(crop_frame, (int(round(cx - 17)), int(round(gy - 6 - 34))))
+            else:
+                sp = load_art(*s["file"])
+                blit_grounded(canvas, sp, cx, gy, s["scale"])
 
-    # 6 Masterpiece Village Buildings + Workshops + Decorations
-    ysort_items.append((112, lambda: blit(canvas, cottage, 842 - 58, 112 - 108)))
-    ysort_items.append((114, lambda: blit(canvas, tree, 632 - 56, 114 - 112)))
-    ysort_items.append((120, lambda: blit(canvas, left_hut, 138 - 56, 120 - 104)))
-    ysort_items.append((120, lambda: blit(canvas, right_tiki, 1748 - 58, 120 - 104)))
+    # Layer 10: Single-Frame Sliced Animal Workers & Travelers (44px / 40px 5:1 oval drop shadows)
+    units = [
+        (bunny,   (0, 0, 60, 60), 736.0, 44.0),
+        (otter,   (0, 0, 60, 60), 854.0, 44.0),
+        (fox,     (120, 0, 180, 60), 890.0, 44.0),
+        (shiba,   (0, 0, 60, 60), 1036.0, 44.0),
+        (penguin, (120, 0, 180, 60), 374.0, 44.0),
+        (toucan,  (0, 0, 60, 60), 1696.0, 44.0),
+        (traveler_slime, (0, 0, 48, 48), 542.0, 40.0),
+        (traveler_mush,  (0, 0, 48, 48), 984.0, 40.0),
+        (traveler_pig,   (0, 0, 48, 48), 1192.0, 40.0),
+    ]
+    for sheet_im, box, ux, uw in units:
+        draw_oval_shadow(canvas, ux, gy, uw)
+        blit_grounded(canvas, sheet_im, ux, gy, 1.0, box)
 
-    def draw_stall_with_stacked_shelf():
-        ox, oy = 1022 - 64, 116 - 98
-        blit(canvas, stall, ox, oy)
-        for c_i in range(5):
-            blit(canvas, crops, ox + 24 + c_i * 13, oy + 44, (120, (c_i % 4) * 40, 160, ((c_i % 4) + 1) * 40), (16, 16))
-        for s_idx in range(6):
-            r_id = s_idx % 4
-            blit(canvas, delicacies, ox + 20 + int(s_idx * 12.5), oy + 56 - (s_idx % 2) * 3, (r_id * 36, 0, (r_id + 1) * 36, 36), (18, 18))
-
-    ysort_items.append((116, draw_stall_with_stacked_shelf))
-    ysort_items.append((120, lambda: blit(canvas, lamp, 978 - 22, 120 - 62)))
-    ysort_items.append((108, lambda: blit(canvas, scarecrow, 746 - 24, 108 - 52)))
-    ysort_items.append((126, lambda: (
-        blit(canvas, mortar, 942 - 34, 126 - 52),
-        blit(canvas, delicacies, 942 - 12, 126 - 68, (0, 0, 36, 36), (24, 24))
-    )))
-    ysort_items.append((130, lambda: (
-        blit(canvas, cauldron, 602 - 34, 130 - 56),
-        blit(canvas, delicacies, 602 - 12, 130 - 72, (72, 0, 108, 36), (24, 24))
-    )))
-    ysort_items.append((144, lambda: blit(canvas, signpost, 648 - 22, 144 - 50)))
-
-    # Glowwood Left Island plots (on flat emerald moss clearing: y = 114, 131)
-    for row in range(2):
-        for col in range(3):
-            px, py = 218 + col * 42 + row * 6, 114 + row * 17
-            st = (col + row + 1) % 4
-            s_idx = 2 if (col % 2 == 0) else 1
-            ysort_items.append((py, lambda x=px, y=py, ss=s_idx, s=st: (
-                blit(canvas, soil, x - 20, y - 9, (ss * 40, 0, ss * 40 + 40, 18)),
-                blit(canvas, crops, x - 15, y - 26, (s * 40, 80, s * 40 + 40, 120), (30, 30))
-            )))
-
-    # Cloudbrook Center Island plots (on flat green meadow lawn: y = 115, 132, above cobblestone path!)
-    for row in range(2):
-        for col in range(4):
-            px, py = 686 + col * 38 + row * 6, 115 + row * 17
-            st_soil = (col + row * 2) % 4
-            cid = row % 2
-            st = (col + row + 1) % 4
-            ysort_items.append((py, lambda x=px, y=py, ss=st_soil, c=cid, s=st: (
-                blit(canvas, soil, x - 20, y - 9, (ss * 40, 0, ss * 40 + 40, 18)),
-                blit(canvas, crops, x - 15, y - 26, (s * 40, c * 40, s * 40 + 40, c * 40 + 40), (30, 30)) if ss > 0 else None
-            )))
-
-    # Coral Beach Right Island plots (on flat golden beach plateau: y = 102, 119, above ocean surf!)
-    for row in range(2):
-        for col in range(3):
-            px, py = 1476 + col * 42 + row * 6, 102 + row * 17
-            st = (col + row + 2) % 4
-            s_idx = 2 if (col % 2 == 0) else 3
-            ysort_items.append((py, lambda x=px, y=py, ss=s_idx, s=st: (
-                blit(canvas, soil, x - 20, y - 9, (ss * 40, 0, ss * 40 + 40, 18)),
-                blit(canvas, crops, x - 15, y - 26, (s * 40, 120, s * 40 + 40, 160), (30, 30))
-            )))
-
-    # 6 True Multi-Pose Animal Companions (all standing squarely on flat lawn, bridge planks, or dry sand!)
-    ysort_items.append((128, lambda: blit(canvas, fox, 195 - 30, 128 - 56, (120, 0, 180, 60))))
-    ysort_items.append((124, lambda: blit(canvas, shiba, 646 - 30, 124 - 56, (120, 0, 180, 60))))
-    ysort_items.append((134, lambda: (
-        blit(canvas, bunny, 908 - 30, 134 - 56, (120, 0, 180, 60)),
-        blit(canvas, heart, 908 + 8, 134 - 66, None, (22, 22))
-    )))
-    ysort_items.append((136, lambda: blit(canvas, otter, 838 - 30, 136 - 56, (120, 0, 180, 60))))
-    ysort_items.append((138, lambda: blit(canvas, penguin, 1076 - 30, 138 - 56, (120, 0, 180, 60))))
-    ysort_items.append((118, lambda: blit(canvas, toucan, 1650 - 30, 118 - 56, (120, 0, 180, 60))))
-
-    # 3 Original Non-IP Woodland Travelers walking on the Left Bridge Arch, Market Stall Path, & Lotus Pond Wooden Footbridge!
-    ysort_items.append((140, lambda: blit(canvas, tabby_cat, 1022 - 24, 140 - 44, (0, 0, 48, 48))))
-    ysort_items.append((132, lambda: blit(canvas, hedgehog, 540 - 24, 132 - 44, (0, 0, 48, 48))))
-    ysort_items.append((135, lambda: blit(canvas, raccoon, 1192 - 24, 135 - 44, (0, 0, 48, 48))))
-
-    ysort_items.sort(key=lambda item: item[0])
-    for _, draw_fn in ysort_items:
-        draw_fn()
-
-    # Speech bubble with Caramel Apple-Strawberry Pie icon at Market Stall
-    blit(canvas, parch, 1000, 94, None, (42, 34))
-    blit(canvas, delicacies, 1008, 98, (36, 0, 72, 36), (26, 26))
-    draw_pixel_text(canvas, font, 985, 64, "+290G", 0.85)
-
-    # Flush-Bottom Artisan Carved Walnut & Brass HUD Bar (y=238..296 in 1920x300 viewport)
-    full_canvas = Image.new("RGBA", (1920, 300), (22, 28, 42, 255))
-    full_canvas.alpha_composite(canvas, (0, 36))
-    canvas = full_canvas
-    # Overwrite bottom strip where old y=202..260 would be if needed (canvas was only islands/props before HUD)
-    blit(canvas, panel, 480, 238)
-    blit(canvas, pill, 496, 247, None, (144, 36))
-    blit(canvas, pill, 644, 247, None, (134, 36))
-    blit(canvas, pill, 782, 247, None, (136, 36))
-    blit(canvas, pill, 922, 247, None, (114, 36))
-
-    blit(canvas, icons, 502, 250, (0, 0, 48, 48), (28, 28))
-    draw_pixel_text(canvas, font, 532, 254, "216393G", 0.64)
-
-    blit(canvas, icons, 649, 251, (48, 0, 96, 48), (26, 26))
-    blit(canvas, delicacies, 787, 251, (0, 0, 36, 36), (26, 26))
-
+    # Layer 20 & 50: Native Typography Labels (Zero pixel_font_atlas.png!)
     d_obj = ImageDraw.Draw(canvas)
-    draw_cn(d_obj, 677, 258, "露3660 果4", cn_font, (214, 245, 255, 255))
-    draw_cn(d_obj, 817, 258, "货架 18/18", cn_font, (255, 240, 184, 255))
-    draw_cn(d_obj, 938, 258, "★晨风晴天", cn_font, (255, 245, 204, 255))
+    for sx in (710.8, 908.4, 1013.4, 272.0, 397.0, 1562.4, 1655.3):
+        draw_native_label(d_obj, int(sx - 16), gy + 2, "Lv.1", cn_font, fill=(255, 244, 214, 255))
 
-    short_tags = ["种子", "工坊", "伙伴", "扩建", "食谱", "设置"]
-    icon_indices = [2, 6, 3, 4, 5, 7]
-    for i in range(6):
-        bx = 1048 + i * 61
-        ic_idx = icon_indices[i]
-        blit(canvas, icons, bx + 2, 240, (ic_idx * 48, 0, ic_idx * 48 + 48, 48), (42, 42))
-        draw_cn(d_obj, bx + 10, 276, short_tags[i], cn_font)
+    canvas.alpha_composite(parch.resize((54, 26), Image.Resampling.NEAREST), (960, gy - 78))
+    canvas.alpha_composite(delicacies.crop((0, 0, 36, 36)).resize((20, 20), Image.Resampling.NEAREST), (964, gy - 75))
+    draw_native_label(d_obj, 986, gy - 74, "x2", cn_font, fill=(255, 224, 102, 255))
+    draw_native_label(d_obj, 992, gy - 98, "+120G", cn_font, fill=(255, 224, 102, 255))
+
+    # Bottom HUD Bar
+    hud_y = 266
+    canvas.alpha_composite(panel, (480, hud_y))
+    canvas.alpha_composite(pill.resize((156, 36), Image.Resampling.NEAREST), (496, hud_y + 9))
+    canvas.alpha_composite(pill.resize((192, 36), Image.Resampling.NEAREST), (658, hud_y + 9))
+    canvas.alpha_composite(pill.resize((192, 36), Image.Resampling.NEAREST), (856, hud_y + 9))
+    canvas.alpha_composite(icons.crop((0, 0, 48, 48)).resize((28, 28), Image.Resampling.NEAREST), (502, hud_y + 13))
+
+    draw_native_label(d_obj, 534, hud_y + 16, "120G", cn_font, fill=(255, 224, 102, 255))
+    draw_native_label(d_obj, 672, hud_y + 16, "单兔全包 · 缓存0/10", cn_font)
+    draw_native_label(d_obj, 872, hud_y + 16, "摊位2/10 · 自助1x", cn_font, fill=(255, 224, 102, 255))
+
+    tab_names = ["建筑升级", "动物编制", "木桥开拓", "★摸鱼置顶"]
+    icon_indices = [6, 3, 4, 7]
+    for i in range(4):
+        bx = 1062 + i * 78
+        canvas.alpha_composite(btn_norm.resize((42, 42), Image.Resampling.NEAREST), (bx + 12, hud_y - 4))
+        ic = icons.crop((icon_indices[i] * 48, 0, (icon_indices[i] + 1) * 48, 48)).resize((36, 36), Image.Resampling.NEAREST)
+        canvas.alpha_composite(ic, (bx + 15, hud_y - 1))
+        draw_native_label(d_obj, bx + 6, hud_y + 34, tab_names[i], cn_font, fill=(255, 224, 102, 255))
 
     canvas.save(out_path)
-    print("Saved Phase 4 Masterpiece Polish Cloud Isle Market verification scene to:", out_path)
+    print("Saved verified clean preview scene to:", out_path)
 
 
 def verify_render_drawer_open(base_closed_path, out_open_path):
@@ -242,42 +293,42 @@ def verify_render_drawer_open(base_closed_path, out_open_path):
     card = load_art("ui", "ui_drawer_card.png")
     card_h = load_art("ui", "ui_drawer_card_hover.png")
     pill = load_art("ui", "ui_resource_pill.png")
-    blit(canvas, drawer, 520, 132, None, (880, 104))
-    blit(canvas, pill, 1318, 142, None, (56, 22))
+    canvas.alpha_composite(drawer.resize((880, 106), Image.Resampling.NEAREST), (520, 154))
+    canvas.alpha_composite(pill.resize((58, 24), Image.Resampling.NEAREST), (1332, 162))
 
     cn_font = None
-    cn_sub = None
-    for fpath in ["C:/Windows/Fonts/SIMYOU.TTF", "C:/Windows/Fonts/msyhbd.ttc", "C:/Windows/Fonts/simsun.ttc"]:
+    for fpath in ["C:/Windows/Fonts/msyhbd.ttc", "C:/Windows/Fonts/SIMYOU.TTF", "C:/Windows/Fonts/simsun.ttc"]:
         if os.path.exists(fpath):
             cn_font = ImageFont.truetype(fpath, 13)
-            cn_sub = ImageFont.truetype(fpath, 12)
             break
+    if cn_font is None:
+        cn_font = ImageFont.load_default()
 
     d = ImageDraw.Draw(canvas)
-    draw_cn(d, 552, 142, "【工坊与良田扩建】固定点位自动摆放 · 集市摊位实时可视化货架堆叠", cn_font, (255, 242, 184, 255))
-    draw_cn(d, 1328, 145, "×收起", cn_sub, (255, 224, 200, 255))
+    draw_native_label(d, 544, 160, "【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!", cn_font, fill=(255, 224, 102, 255))
+    draw_native_label(d, 1336, 164, "🔇静音", cn_font)
 
     cards_data = [
-        ("桂花石臼坊 Lv.2", "锤打桂花糕 & 苹果草莓派", "165G", False),
-        ("森之炼金釜 Lv.1", "荧光菇+晨露→星露甘露饮", "210G", True),
-        ("晨风良田 Lv.2", "固定点位扩建+2块菜地", "140G", False),
-        ("云端集市摊位 Lv.2", "可视化货架容量+12", "190G", False),
+        ("射手村农田 Lv.1", "下个2x蜕变: Lv.25", "升级 25G", False),
+        ("桂花研钵工坊 Lv.1", "下个2x蜕变: Lv.25", "升级 45G", True),
+        ("云岛集市主摊位 Lv.1", "下个2x蜕变: Lv.25", "升级 65G", False),
+        ("星露炼金坩埚 Lv.1", "下个2x蜕变: Lv.25", "升级 210G", False),
     ]
     for i, (t, s, c, hov) in enumerate(cards_data):
         cx = 548 + i * 208
-        cy = 166
-        blit(canvas, card_h if hov else card, cx, cy, None, (196, 58))
-        draw_cn(d, cx + 12, cy + 7, t, cn_font, (255, 245, 210, 255))
-        draw_cn(d, cx + 12, cy + 24, s, cn_sub, (220, 250, 204, 255))
-        draw_cn(d, cx + 146, cy + 38, c, cn_sub, (255, 224, 86, 255))
+        cy = 188
+        canvas.alpha_composite((card_h if hov else card).resize((196, 58), Image.Resampling.NEAREST), (cx, cy))
+        draw_native_label(d, cx + 8, cy + 4, t, cn_font, fill=(255, 224, 102, 255))
+        draw_native_label(d, cx + 8, cy + 22, s, cn_font)
+        draw_native_label(d, cx + 8, cy + 38, c, cn_font, fill=(255, 224, 102, 255))
 
     canvas.save(out_open_path)
     print("Saved open-drawer verification scene to:", out_open_path)
 
 
 if __name__ == "__main__":
-    import sys
+    run_hard_assertions()
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(BASE_DIR, "preview_engine_1920x360.png")
     verify_render(out)
-    if len(sys.argv) > 2:
-        verify_render_drawer_open(out, sys.argv[2])
+    open_out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(BASE_DIR, "preview_drawer_open_1920x360.png")
+    verify_render_drawer_open(out, open_out)

@@ -1,8 +1,9 @@
 extends Control
 class_name HUD
-## Native Label Retro Maple-Style HUD (`src/ui/HUD.gd`) — Visual Polish Patch
-## - 100% Native Godot `Label` nodes with `LabelSettings` (`font_size = 14`, `#FFE066` / pure white, `outline_size = 2`, `outline_color = Color.BLACK`).
-## - Zero `pixel_font_atlas.png` slicing anywhere.
+## Native Label Retro Maple-Style HUD (`src/ui/HUD.gd`)
+## Strictly enforces GEMINI.md Law 5:
+## - 100% Native Godot `Label` nodes via `EconomyConfig.create_pixel_label` (`make_pixel_label_settings`).
+## - Zero legacy bitmap font atlas usage anywhere.
 
 var tex_panel: Texture2D
 var tex_drawer: Texture2D
@@ -33,7 +34,6 @@ var hud_opacity: float = 1.0
 var offline_banner_timer: float = 0.0
 var offline_banner_text: String = ""
 
-# Native Label Nodes (`font_size = 14`, `#FFE066` / `Color.WHITE`, `outline_size = 2`, `outline_color = Color.BLACK`)
 var lbl_offline: Label
 var lbl_capsule_gold: Label
 var lbl_capsule_info: Label
@@ -79,56 +79,56 @@ func _ready() -> void:
 	_build_native_labels()
 
 func _build_native_labels() -> void:
-	lbl_offline = PixelFontRenderer.create_label("", 14, Color("#FFE066"), true)
+	lbl_offline = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
 	lbl_offline.position = Vector2(680.0, 8.0)
 	lbl_offline.custom_minimum_size = Vector2(560.0, 26.0)
 	add_child(lbl_offline)
 
-	lbl_capsule_gold = PixelFontRenderer.create_label("120G", 14, Color("#FFE066"), false)
+	lbl_capsule_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
 	lbl_capsule_gold.position = Vector2(CAPSULE_RECT.position.x + 42.0, CAPSULE_RECT.position.y + 10.0)
 	add_child(lbl_capsule_gold)
 
-	lbl_capsule_info = PixelFontRenderer.create_label("", 14, Color.WHITE, false)
+	lbl_capsule_info = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), false)
 	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 114.0, CAPSULE_RECT.position.y + 10.0)
 	add_child(lbl_capsule_info)
 
-	lbl_capsule_mute = PixelFontRenderer.create_label("🔇静音", 14, Color("#FFE066"), false)
+	lbl_capsule_mute = EconomyConfig.create_pixel_label("🔇静音", 14, Color("#FFE066"), false)
 	lbl_capsule_mute.position = Vector2(CAPSULE_MUTE_RECT.position.x + 2.0, CAPSULE_MUTE_RECT.position.y + 6.0)
 	add_child(lbl_capsule_mute)
 
-	lbl_bar_gold = PixelFontRenderer.create_label("120G", 14, Color("#FFE066"), false)
+	lbl_bar_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
 	lbl_bar_gold.position = Vector2(534.0, 247.0)
 	add_child(lbl_bar_gold)
 
-	lbl_bar_pipeline = PixelFontRenderer.create_label("", 14, Color.WHITE, true)
+	lbl_bar_pipeline = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), true)
 	lbl_bar_pipeline.position = Vector2(658.0, 247.0)
 	lbl_bar_pipeline.custom_minimum_size = Vector2(192.0, 24.0)
 	add_child(lbl_bar_pipeline)
 
-	lbl_bar_stall = PixelFontRenderer.create_label("", 14, Color("#FFE066"), true)
+	lbl_bar_stall = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
 	lbl_bar_stall.position = Vector2(856.0, 247.0)
 	lbl_bar_stall.custom_minimum_size = Vector2(192.0, 24.0)
 	add_child(lbl_bar_stall)
 
 	for i in range(4):
-		var tl := PixelFontRenderer.create_label("", 14, Color("#FFE066"), true)
+		var tl := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
 		tl.position = Vector2(1056.0 + float(i) * 78.0, 264.0)
 		tl.custom_minimum_size = Vector2(84.0, 22.0)
 		add_child(tl)
 		lbl_tabs.append(tl)
 
-	lbl_drawer_title = PixelFontRenderer.create_label("", 14, Color("#FFE066"), false)
+	lbl_drawer_title = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
 	lbl_drawer_title.position = Vector2(544.0, 128.0)
 	add_child(lbl_drawer_title)
 
-	lbl_drawer_mute = PixelFontRenderer.create_label("🔇静音", 14, Color.WHITE, false)
+	lbl_drawer_mute = EconomyConfig.create_pixel_label("🔇静音", 14, Color("#FFF4D6"), false)
 	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
 	add_child(lbl_drawer_mute)
 
 	for i in range(6):
-		var ct := PixelFontRenderer.create_label("", 14, Color("#FFE066"), false)
-		var cs := PixelFontRenderer.create_label("", 14, Color.WHITE, false)
-		var cc := PixelFontRenderer.create_label("", 14, Color("#FFE066"), false)
+		var ct := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
+		var cs := EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), false)
+		var cc := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
 		cs.scale = Vector2(0.85, 0.85)
 		cc.scale = Vector2(0.90, 0.90)
 		add_child(ct)
