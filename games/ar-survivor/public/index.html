@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>AR DeepSeek娘 · 实景桌宠养成</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <!-- 底层全屏实景摄像头 -->
+  <video id="camera-video" playsinline autoplay muted></video>
+
+  <!-- 游戏主舞台（默认强制横屏） -->
+  <div id="game-stage" class="game-stage">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- 治愈系手绘顶部 HUD：左侧角色状态铭牌 + 心愿委托条，中间玩法切换坞，右侧系统工具按钮 -->
+    <header class="cyber-hud-top">
+      <div class="hud-left-stack">
+        <!-- 角色状态主铭牌 -->
+        <div class="hud-profile-card">
+          <div class="avatar-ring" id="hud-avatar-btn" title="点击摸摸头">
+            <img src="./assets/hero_idle2.webp?v=hd5" alt="DeepSeek娘" class="avatar-img" />
+            <span class="pet-lv-pill" id="hud-pet-lv">LV.1</span>
+          </div>
+
+          <div class="profile-main">
+            <div class="profile-top-row">
+              <span class="pet-name-tag">DeepSeek娘</span>
+              <button class="coin-pill" id="hud-coins-btn" title="点击打开商店">
+                <img src="./assets/ui_coin.webp?v=hd6" alt="金币" class="ui-coin-ico" />
+                <span id="hud-coins">60</span>
+              </button>
+            </div>
+
+            <div class="bars-wrap">
+              <div class="bar-row" title="体力与心情">
+                <img src="./assets/ui_hp_icon.webp?v=hd6" alt="HP" class="bar-badge-ico" />
+                <div class="hp-bar-outer"><div class="hp-bar-inner" id="hud-hp-bar"></div></div>
+              </div>
+              <div class="bar-row" title="饱食度">
+                <img src="./assets/ui_food_icon.webp?v=hd6" alt="饱食" class="bar-badge-ico" />
+                <div class="hunger-bar-outer"><div class="hunger-bar-inner" id="hud-hunger-bar"></div></div>
+              </div>
+            </div>
+
+            <!-- 底部细长亲密经验光条 -->
+            <div class="xp-bar-outer" title="亲密成长经验">
+              <div class="xp-bar-inner" id="hud-xp-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 桌宠心愿委托追踪条 -->
+        <button id="hud-wish-pill" class="wish-pill">
+          <span class="wish-tag">心愿</span>
+          <span class="wish-text" id="hud-wish-text">伸出手掌让我跳上去玩~</span>
+          <span class="wish-reward">+25 <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></span>
+        </button>
+      </div>
+
+      <!-- 治愈系手绘顶部模式切换坞 -->
+      <div class="mode-switcher" id="mode-switcher">
+        <button class="mode-btn active" data-mode="pet">
+          <img src="./assets/ui_mode_pet.webp?v=hd6" alt="" class="mode-ico" />
+          <span>日常养成</span>
+        </button>
+        <button class="mode-btn" data-mode="parkour">
+          <img src="./assets/ui_mode_star.webp?v=hd6" alt="" class="mode-ico" />
+          <span>实景摘星</span>
+        </button>
+        <button class="mode-btn mode-btn-survivor" data-mode="survivor">
+          <img src="./assets/ui_mode_work.webp?v=hd6" alt="" class="mode-ico" />
+          <span>幸存者打工</span>
+          <em class="mode-badge">赚<img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></em>
+        </button>
+      </div>
+
+      <!-- 右上角治愈系手绘工具栏：拍立得合影 + BGM/语音开关 + 实景重扫 + 屏幕翻转 -->
+      <div class="hud-right">
+        <button id="btn-photo-snap" class="icon-btn" title="AR拍立得合影（也可对镜头比耶自动触发）" aria-label="AR拍立得合影">
+          <img src="./assets/ui_btn_camera.webp?v=hd6" alt="" class="top-tool-ico" />
+        </button>
+        <button id="btn-sound-toggle" class="icon-btn" title="开关BGM与角色语音" aria-label="开关声音">
+          <img src="./assets/ui_btn_sound.webp?v=hd6" alt="" class="top-tool-ico" />
+        </button>
+        <button id="btn-rescan" class="icon-btn" title="精准扫描手掌与目标" aria-label="扫描实景物体">
+          <img src="./assets/ui_btn_scan.webp?v=hd6" alt="" class="top-tool-ico" />
+        </button>
+        <button id="btn-flip-side" class="icon-btn" title="翻转横屏方向" aria-label="翻转横屏方向">
+          <img src="./assets/ui_btn_rotate.webp?v=hd6" alt="" class="top-tool-ico" />
+        </button>
+      </div>
+    </header>
+
+    <!-- 实景石头剪刀布（猜拳）轻量互动条：支持摄像头真实手势识别或触屏点击出拳 -->
+    <div id="rps-hud" class="rps-hud hidden">
+      <div class="rps-title" id="rps-status-text">对镜头伸出手势出拳！倒计时 3</div>
+      <div class="rps-choices">
+        <button class="rps-choice-btn" data-rps="rock">
+          <img src="./assets/ui_rps_rock.webp?v=hd6" alt="" class="rps-ico" />
+          <span>石头</span>
+        </button>
+        <button class="rps-choice-btn" data-rps="scissors">
+          <img src="./assets/ui_rps_scissors.webp?v=hd6" alt="" class="rps-ico" />
+          <span>剪刀</span>
+        </button>
+        <button class="rps-choice-btn" data-rps="paper">
+          <img src="./assets/ui_rps_paper.webp?v=hd6" alt="" class="rps-ico" />
+          <span>布</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 快门闪光层与非阻塞 AR 拍立得纪念相片卡 -->
+    <div id="shutter-flash" class="shutter-flash"></div>
+    <div id="polaroid-card" class="polaroid-card hidden">
+      <button id="btn-polaroid-close" class="polaroid-close" aria-label="关闭相片">×</button>
+      <img id="polaroid-img" class="polaroid-img" alt="AR拍立得合影" />
+      <div class="polaroid-actions">
+        <span class="polaroid-caption">AR 纪念拍立得</span>
+        <button id="btn-polaroid-save" class="polaroid-save-btn">保存相片</button>
+      </div>
+    </div>
+
+    <!-- 治愈系奶油手账抽屉面板（鲸鱼食堂 / 玩具装扮 / 打工武装） -->
+    <div id="pet-drawer" class="pet-drawer hidden">
+      <div class="drawer-header">
+        <div class="drawer-tabs">
+          <button class="drawer-tab active" data-tab="food">食堂投喂</button>
+          <button class="drawer-tab" data-tab="dress">家具与装扮</button>
+          <button class="drawer-tab" data-tab="upgrade">打工武装</button>
+        </div>
+        <button id="btn-drawer-close" class="drawer-close-btn" aria-label="关闭面板">×</button>
+      </div>
+      <div class="drawer-items" id="drawer-items"></div>
+    </div>
+
+    <!-- 底部触控层：手绘珍珠贝壳左摇杆 + 中间桌宠互动船坞 + 右侧手绘云朵/软垫动作键 -->
+    <div class="controls-layer" id="controls-layer">
+      <div class="joystick-zone" id="joystick-zone">
+        <div class="joystick-base" id="joystick-base">
+          <div class="joystick-stick" id="joystick-stick"></div>
+        </div>
+      </div>
+
+      <!-- 桌面宠物养成互动船坞（全套治愈系手绘原画图标） -->
+      <div class="pet-care-bar" id="pet-care-bar">
+        <button id="btn-feed" class="care-btn" aria-label="喂食菜单">
+          <img src="./assets/food_rice.webp?v=hd2" alt="" class="care-thumb" />
+          <span class="care-label">喂食</span>
+        </button>
+        <button id="btn-toy" class="care-btn" aria-label="抛玩具球互动">
+          <img src="./assets/toy_whale.webp?v=hd2" id="btn-toy-img" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-toy-label">玩球</span>
+        </button>
+        <button id="btn-palm-catch" class="care-btn" aria-label="手掌托举接美食小游戏">
+          <img src="./assets/food_bento.webp?v=hd2" alt="" class="care-thumb" />
+          <span class="care-label">接美食</span>
+        </button>
+        <button id="btn-rps" class="care-btn" aria-label="实景猜拳小游戏">
+          <img src="./assets/hero_pose_rps.webp?v=hd5" alt="" class="care-thumb" />
+          <span class="care-label">猜拳</span>
+        </button>
+        <button id="btn-nap" class="care-btn" aria-label="摸鱼小憩">
+          <img src="./assets/prop_cushion.webp?v=hd2" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-nap-label">小憩</span>
+        </button>
+        <button id="btn-shop" class="care-btn care-btn-shop" aria-label="打开鲸鱼小铺">
+          <img src="./assets/ui_shop.webp?v=hd6" alt="" class="care-thumb" />
+          <span class="care-label">小铺</span>
+        </button>
+      </div>
+
+      <div class="action-zone">
+        <button id="btn-crouch" class="action-btn btn-crouch" aria-label="蹲伏与互动">
+          <img src="./assets/ui_btn_crouch.webp?v=hd6" alt="" class="act-ico" />
+          <span class="act-sub">蹲伏</span>
+        </button>
+        <button id="btn-jump" class="action-btn btn-jump" aria-label="跳跃">
+          <img src="./assets/ui_btn_jump.webp?v=hd6" alt="" class="act-ico act-ico-jump" />
+          <span class="act-sub">跳跃</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
