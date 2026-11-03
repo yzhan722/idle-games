@@ -1,0 +1,265 @@
+// 道具使用系统
+export function createItemUsage({ getState, addRes, addLog, addExpToMon, render }) {
+  
+  // 使用历练糖丸
+  function useExpCandy(monId, itemType) {
+    const state = getState();
+    const id = Number(monId);
+    const mon = state.mons.list.find(m => m.id === id);
+    if (!mon) return { success: false, message: "萌灵不存在" };
+
+    const expValues = {
+      expCandyS: 200,
+      expCandy: 1000,
+      expCandyL: 5000,
+      expCandyXL: 20000,
+    };
+
+    const expGain = expValues[itemType] || 0;
+    if (expGain <= 0) return { success: false, message: "无效的道具类型" };
+
+    const itemCount = state.res[itemType]?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+
+    state.res[itemType].value = Math.max(0, itemCount - 1);
+    addExpToMon(mon, expGain);
+    
+    const itemNames = {
+      expCandyS: "历练糖丸S",
+      expCandy: "历练糖丸",
+      expCandyL: "历练糖丸L",
+      expCandyXL: "历练糖丸XL",
+    };
+
+    addLog(`使用${itemNames[itemType]}：${mon.name} 获得 ${expGain} 经验`);
+    return { success: true, message: `${mon.name} 获得了 ${expGain} 经验！` };
+  }
+
+  // 使用亲密度道具
+  function useAffectionItem(monId, itemType) {
+    const state = getState();
+    const id = Number(monId);
+    const mon = state.mons.list.find(m => m.id === id);
+    if (!mon) return { success: false, message: "萌灵不存在" };
+
+    const affectionValues = {
+      affectionTreat: 5,
+      friendshipBracelet: 100,
+    };
+
+    const affectionGain = affectionValues[itemType];
+    if (!affectionGain) return { success: false, message: "无效的道具类型" };
+
+    const itemCount = state.res[itemType]?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+
+    const currentAffection = typeof mon.affection === "number" ? mon.affection : 0;
+    const maxAffection = 100;
+
+    if (currentAffection >= maxAffection) {
+      return { success: false, message: "亲密度已达到最大值" };
+    }
+
+    state.res[itemType].value = Math.max(0, itemCount - 1);
+    
+    if (itemType === "friendshipBracelet") {
+      mon.affection = maxAffection;
+    } else {
+      mon.affection = Math.min(maxAffection, currentAffection + affectionGain);
+    }
+
+    const itemNames = {
+      affectionTreat: "亲密点心",
+      friendshipBracelet: "友谊手环",
+    };
+
+    addLog(`使用${itemNames[itemType]}：${mon.name} 亲密度 +${affectionGain}`);
+    return { success: true, message: `${mon.name} 的亲密度提升了！` };
+  }
+
+  // 使用王冠（提升个体值）
+  function useBottleCap(monId, itemType, statType) {
+    const state = getState();
+    const id = Number(monId);
+    const mon = state.mons.list.find(m => m.id === id);
+    if (!mon) return { success: false, message: "萌灵不存在" };
+
+    const itemCount = state.res[itemType]?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+
+    // 修复：萌灵实例使用 iv 而不是 ivs
+    if (!mon.iv || typeof mon.iv !== "object") {
+      mon.iv = { hp: 15, atk: 15, def: 15, spa: 15, spd: 15, spe: 15 };
+    }
+
+    if (itemType === "goldBottleCap") {
+      // 金桂冠：全部个体值提升到31
+      mon.iv = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
+      state.res[itemType].value = Math.max(0, itemCount - 1);
+      addLog(`使用金桂冠：${mon.name} 所有个体值提升至31（6V）`);
+      return { success: true, message: `${mon.name} 的所有个体值已达到完美！` };
+    } else if (itemType === "bottleCap") {
+      // 银桂冠：单项个体值提升到31
+      if (!statType) return { success: false, message: "请选择要提升的属性" };
+      
+      const statNames = {
+        hp: "HP",
+        atk: "攻击",
+        def: "防御",
+        spa: "特攻",
+        spd: "特防",
+        spe: "速度",
+      };
+
+      if (!statNames[statType]) return { success: false, message: "无效的属性类型" };
+      if (mon.iv[statType] >= 31) return { success: false, message: "该属性个体值已达到最大值" };
+
+      mon.iv[statType] = 31;
+      state.res[itemType].value = Math.max(0, itemCount - 1);
+      addLog(`使用银桂冠：${mon.name} ${statNames[statType]}个体值提升至31`);
+      return { success: true, message: `${mon.name} 的${statNames[statType]}个体值已达到完美！` };
+    }
+
+    return { success: false, message: "无效的道具类型" };
+  }
+
+  // 使用福缘蛋（经验加成）
+  function useLuckyEgg(monId) {
+    const state = getState();
+    const id = Number(monId);
+    const mon = state.mons.list.find(m => m.id === id);
+    if (!mon) return { success: false, message: "萌灵不存在" };
+
+    const itemCount = state.res.luckyEgg?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+
+    state.res.luckyEgg.value = Math.max(0, itemCount - 1);
+
+    // 添加1小时的经验加成buff
+    if (!mon.buffs) mon.buffs = {};
+    const currentTime = Date.now();
+    const duration = 3600000; // 1小时
+    mon.buffs.luckyEgg = currentTime + duration;
+
+    addLog(`使用福缘蛋：${mon.name} 获得1小时经验加成（1.5倍）`);
+    return { success: true, message: `${mon.name} 获得了经验加成效果！` };
+  }
+
+  function useMegaStone(monId) {
+    const state = getState();
+    const id = Number(monId);
+    const mon = state.mons.list.find(m => m && m.id === id);
+    if (!mon) return { success: false, message: "萌灵不存在" };
+
+    const itemCount = state.res.megaStone?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+
+    state.res.megaStone.value = Math.max(0, itemCount - 1);
+    const rem0 =
+      typeof mon.megaAuraRemainingSec === "number" && Number.isFinite(mon.megaAuraRemainingSec)
+        ? Math.max(0, mon.megaAuraRemainingSec)
+        : 0;
+    mon.megaAuraRemainingSec = rem0 + 3600;
+
+    addLog("超级觉醒：PvE 能力提升 1小时");
+    return { success: true, message: `${mon.name} 超级觉醒！` };
+  }
+
+  function useShinyCharm() {
+    const state = getState();
+    const itemCount = state.res.shinyCharm?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+    state.res.shinyCharm.value = Math.max(0, itemCount - 1);
+    const remaining =
+      typeof state.shinyCharmRemainingSec === "number" && Number.isFinite(state.shinyCharmRemainingSec)
+        ? Math.max(0, state.shinyCharmRemainingSec)
+        : 0;
+    state.shinyCharmRemainingSec = remaining + 86400;
+    addLog("使用虹彩护符：闪光率 x2（24小时）");
+    return { success: true, message: "虹彩护符已激活！" };
+  }
+
+  /** 能量饮料：回复采集充能 */
+  function useEnergyDrink() {
+    const state = getState();
+    const itemCount = state.res.energyDrink?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+    const cur = typeof state.gatherCharges === "number" && Number.isFinite(state.gatherCharges) ? state.gatherCharges : 0;
+    if (cur >= 1000) return { success: false, message: "采集充能已满" };
+    state.res.energyDrink.value = Math.max(0, itemCount - 1);
+    state.gatherCharges = Math.min(1000, Math.floor(cur) + 250);
+    if (state.gatherCharges >= 1000) state.gatherCdSec = 0;
+    addLog(`使用能量饮料：采集充能 → ${Math.floor(state.gatherCharges)}/1000`);
+    return { success: true, message: "采集充能已回复！" };
+  }
+
+  /** 搜索信号弹：回复遭遇充能 */
+  function useSearchFlare() {
+    const state = getState();
+    const itemCount = state.res.searchFlare?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+    const cur = typeof state.encounterCharges === "number" && Number.isFinite(state.encounterCharges) ? state.encounterCharges : 0;
+    if (cur >= 100) return { success: false, message: "遭遇充能已满" };
+    state.res.searchFlare.value = Math.max(0, itemCount - 1);
+    state.encounterCharges = Math.min(100, Math.floor(cur) + 25);
+    if (state.encounterCharges >= 100) state.encounterCdSec = 0;
+    addLog(`使用搜索信号弹：遭遇充能 → ${Math.floor(state.encounterCharges)}/100`);
+    return { success: true, message: "遭遇充能已回复！" };
+  }
+
+  /** 高级搜索电池：回复高级搜索次数 */
+  function useAdvSearchCell() {
+    const state = getState();
+    const itemCount = state.res.advSearchCell?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+    const encPlusMaxBonus =
+      typeof state.permanentBoosts?.encPlusMax === "number"
+        ? Math.max(0, Math.min(20, Math.floor(state.permanentBoosts.encPlusMax)))
+        : 0;
+    const maxCharges = 10 + encPlusMaxBonus;
+    const cur =
+      typeof state.encounterPlusCharges === "number" && Number.isFinite(state.encounterPlusCharges)
+        ? state.encounterPlusCharges
+        : 0;
+    if (cur >= maxCharges) return { success: false, message: "高级搜索次数已满" };
+    state.res.advSearchCell.value = Math.max(0, itemCount - 1);
+    state.encounterPlusCharges = Math.min(maxCharges, Math.floor(cur) + 2);
+    if (state.encounterPlusCharges >= maxCharges) state.encounterPlusCdSec = 0;
+    addLog(`使用高级搜索电池：高级搜索 → ${Math.floor(state.encounterPlusCharges)}/${maxCharges}`);
+    return { success: true, message: "高级搜索次数已回复！" };
+  }
+
+  /** 暖心铃：全队亲密度 +3 */
+  function useSootheBell() {
+    const state = getState();
+    const itemCount = state.res.sootheBell?.value || 0;
+    if (itemCount < 1) return { success: false, message: "道具数量不足" };
+    const list = Array.isArray(state.mons?.list) ? state.mons.list : [];
+    if (list.length === 0) return { success: false, message: "没有萌灵" };
+    let raised = 0;
+    for (const mon of list) {
+      if (!mon) continue;
+      const cur = typeof mon.affection === "number" && Number.isFinite(mon.affection) ? mon.affection : 0;
+      if (cur >= 100) continue;
+      mon.affection = Math.min(100, cur + 3);
+      raised += 1;
+    }
+    if (raised === 0) return { success: false, message: "全体亲密度已满" };
+    state.res.sootheBell.value = Math.max(0, itemCount - 1);
+    addLog(`使用暖心铃：${raised} 只萌灵亲密度 +3`);
+    return { success: true, message: `${raised} 只萌灵亲密度提升了！` };
+  }
+
+  return {
+    useExpCandy,
+    useAffectionItem,
+    useBottleCap,
+    useLuckyEgg,
+    useMegaStone,
+    useShinyCharm,
+    useEnergyDrink,
+    useSearchFlare,
+    useAdvSearchCell,
+    useSootheBell,
+  };
+}

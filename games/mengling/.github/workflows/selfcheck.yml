@@ -1,0 +1,52 @@
+name: selfcheck
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Frontend selfcheck
+        run: node scripts/selfcheck.mjs
+      - name: API contract selfcheck
+        run: node scripts/api-contract-selfcheck.mjs
+      - name: Items selfcheck
+        run: node scripts/items-selfcheck.mjs
+      - name: Analytics selfcheck
+        run: node scripts/analytics-selfcheck.mjs
+      - name: Era selfcheck
+        run: node scripts/era-selfcheck.mjs
+      - name: Rebirth selfcheck
+        run: node scripts/rebirth-selfcheck.mjs
+      - name: Branding selfcheck
+        run: node scripts/branding-selfcheck.mjs
+      - name: Gameplay fun selfcheck
+        run: node scripts/gameplay-fun-selfcheck.mjs
+      - name: Cloud save selfcheck
+        run: node scripts/cloud-save-selfcheck.mjs
+      - name: Newbie path selfcheck
+        run: node scripts/newbie-path-selfcheck.mjs
+      - name: Restart P1-P13 selfcheck
+        run: node scripts/restart-p1-p13-selfcheck.mjs
+      - name: Migrations selfcheck
+        run: node scripts/migrations-selfcheck.mjs
+      - name: Install deps
+        run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install chromium --with-deps
+      - name: Playwright smoke
+        run: node scripts/playwright-smoke.mjs
+      - name: Player sim (6h)
+        run: node scripts/player-sim.mjs
+        env:
+          SIM_HOURS: "6"
+          SIM_DT: "30"
+      - name: E2E smoke
+        run: node scripts/e2e-smoke.mjs

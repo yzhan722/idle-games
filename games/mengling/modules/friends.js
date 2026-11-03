@@ -1,0 +1,202 @@
+// 好友系统模块
+
+const TOKEN_KEY = "mengling_idle_cloud_token_v1";
+
+function getAuthToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function authHeaders() {
+  const token = getAuthToken();
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+function needLogin(addLog) {
+  if (getAuthToken()) return false;
+  addLog("请先在设置页登录云账号", true);
+  return true;
+}
+
+export function createFriendsSystem({ lbBaseUrl, ui, addLog }) {
+  async function getFriendsList() {
+    if (!getAuthToken()) return null;
+    try {
+      const base = lbBaseUrl();
+      const response = await fetch(`${base}/api/friends/list`, { headers: authHeaders() });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        if (response.status === 401) addLog("云登录已失效，请重新登录", true);
+        else addLog("获取好友列表失败", true);
+        return null;
+      }
+      return data;
+    } catch (error) {
+      console.error("Get friends error:", error);
+      addLog("获取好友列表失败", true);
+      return null;
+    }
+  }
+
+  async function sendFriendRequest(toUsername) {
+    if (needLogin(addLog)) return false;
+    try {
+      const base = lbBaseUrl();
+      const response = await fetch(`${base}/api/friends/request`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ toUsername }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.error) {
+        addLog(`发送好友请求失败：${data.error || `HTTP ${response.status}`}`, true);
+        return false;
+      }
+      addLog(`已向 ${toUsername} 发送好友请求`, true);
+      return true;
+    } catch (error) {
+      console.error("Send friend request error:", error);
+      addLog("发送好友请求失败", true);
+      return false;
+    }
+  }
+
+  async function acceptFriendRequest(requestId) {
+    if (needLogin(addLog)) return false;
+    try {
+      const base = lbBaseUrl();
+      const response = await fetch(`${base}/api/friends/accept`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ requestId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.error) {
+        addLog(`接受好友请求失败：${data.error || `HTTP ${response.status}`}`, true);
+        return false;
+      }
+      addLog("已接受好友请求", true);
+      return true;
+    } catch (error) {
+      console.error("Accept friend request error:", error);
+      addLog("接受好友请求失败", true);
+      return false;
+    }
+  }
+
+  return {
+    getFriendsList,
+    sendFriendRequest,
+    acceptFriendRequest,
+    hasAuth: () => Boolean(getAuthToken()),
+  };
+}
+
+export function createRenderFriends({ ui, escapeHtml, friendsSystem }) {
+  return async function renderFriends() {
+    const elFriends = document.getElementById("friends");
+    if (!elFriends) return;
+
+    if (!friendsSystem.hasAuth()) {
+      elFriends.innerHTML = `
+        <div class="row">
+          <div class="row__left">
+            <div class="row__title">好友系统</div>
+            <div class="row__desc">请先在设置页登录云账号，再添加好友与发起对战。</div>
+          </div>
+          <div class="row__right">
+            <button type="button" class="btn btn--primary btn--small" data-social-goto-options>去设置</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const data = await friendsSystem.getFriendsList();
+    if (!data) {
+      elFriends.innerHTML = `
+        <div class="row">
+          <div class="row__left">
+            <div class="row__title">加载失败</div>
+            <div class="row__desc">无法获取好友列表（检查登录或网络）</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const { friends, pendingRequests } = data;
+    let html = `
+      <div class="row">
+        <div class="row__left">
+          <div class="row__title">添加好友</div>
+          <div class="row__desc">输入对方云用户名</div>
+        </div>
+        <div class="row__right">
+          <input class="input" id="friendUsername" placeholder="用户名" />
+          <button class="btn btn--primary btn--small" data-friend-action="send-request">发送请求</button>
+        </div>
+      </div>
+    `;
+
+    if (pendingRequests && pendingRequests.length > 0) {
+      html += `
+        <div class="row">
+          <div class="row__left">
+            <div class="row__title">好友请求 (${pendingRequests.length})</div>
+          </div>
+        </div>
+      `;
+      for (const req of pendingRequests) {
+        html += `
+          <div class="row">
+            <div class="row__left">
+              <div class="row__title">${escapeHtml(req.username)}</div>
+            </div>
+            <div class="row__right">
+              <button class="btn btn--primary btn--small" data-friend-action="accept" data-request-id="${req.id}">接受</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    if (friends && friends.length > 0) {
+      html += `
+        <div class="row">
+          <div class="row__left">
+            <div class="row__title">好友列表 (${friends.length})</div>
+          </div>
+        </div>
+      `;
+      for (const friend of friends) {
+        html += `
+          <div class="row">
+            <div class="row__left">
+              <div class="row__title">${escapeHtml(friend.username)}</div>
+            </div>
+            <div class="row__right">
+              <button class="btn btn--small" data-friend-action="challenge" data-friend-uid="${escapeHtml(friend.uid)}" data-friend-name="${escapeHtml(friend.username)}">发起对战</button>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      html += `
+        <div class="row">
+          <div class="row__left">
+            <div class="row__title">暂无好友</div>
+            <div class="row__desc">添加并互相同意后，可发起异步 PvP</div>
+          </div>
+        </div>
+      `;
+    }
+
+    elFriends.innerHTML = html;
+  };
+}
