@@ -1,5 +1,5 @@
 extends Node
-class_name GameManager
+class_name LegacyGameManager
 ## Complete Incremental Progression & Save System for Cloud Isle Market (Phase 3 Original IP Edition).
 ## 100% Original Cozy Floating-Isle World borrowing the vibrant 2D cel-shaded pixel art style:
 ## - Central Island: 晨风草坪岛 (Cloudbrook Meadow) — Windmill Farmhouse, Apple Orchard, Rice Cake Mortar

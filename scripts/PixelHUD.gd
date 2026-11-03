@@ -6,7 +6,7 @@ class_name PixelHUD
 
 signal drawer_toggled
 
-var game_manager: GameManager
+var game_manager: LegacyGameManager
 var island_world: IslandWorld
 var window_controller: WindowController
 var sound_manager: SoundManager
@@ -200,7 +200,7 @@ func _rebuild_drawer_cards() -> void:
 			]
 		3:  # 两段式合成食谱与森林旅人信物
 			for r_i in range(4):
-				var r_data: Dictionary = GameManager.RECIPE_DATA[r_i]
+				var r_data: Dictionary = LegacyGameManager.RECIPE_DATA[r_i]
 				var cnt: int = int(game_manager.recipe_stocks[r_i])
 				drawer_cards.append({
 					"id": "recipe_" + str(r_i),

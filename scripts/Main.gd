@@ -2,7 +2,7 @@ extends Node2D
 ## Root scene controller connecting WindowController, GameManager, SoundManager, IslandWorld, and PixelHUD.
 
 @onready var window_controller: WindowController = $WindowController
-@onready var game_manager: GameManager = $GameManager
+@onready var game_manager: LegacyGameManager = $GameManager
 @onready var sound_manager: SoundManager = $SoundManager
 @onready var island_world: IslandWorld = $IslandWorld
 @onready var pixel_hud: PixelHUD = $CanvasLayer/PixelHUD

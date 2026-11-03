@@ -48,6 +48,15 @@ func _process(_delta: float) -> void:
 	if DisplayServer.window_get_position() != next_pos:
 		DisplayServer.window_set_position(next_pos)
 
+func setup(_world: Node = null, _hud: Node = null) -> void:
+	_refresh_passthrough()
+
+func begin_window_drag() -> void:
+	start_window_drag()
+
+func end_window_drag() -> void:
+	stop_window_drag()
+
 func start_window_drag() -> void:
 	if is_dragging:
 		return

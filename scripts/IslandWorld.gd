@@ -5,7 +5,7 @@ class_name IslandWorld
 ##   and shimmering lotus pond water ripples.
 ## - Unhurried, cozy casual pacing: slow traveler spawns (10.5s), slow floating numbers, gentle island breathing.
 
-var game_manager: GameManager
+var game_manager: LegacyGameManager
 var window_controller: WindowController
 var sound_manager: SoundManager
 
@@ -389,7 +389,7 @@ func _process(delta: float) -> void:
 		var cid: int = p["crop_id"]
 		var is_sown: bool = bool(p.get("sown", true))
 		if is_sown and cid >= 0 and float(p["growth"]) < 1.0:
-			var grow_dur: float = float(GameManager.CROP_DATA[cid]["grow_time"])
+			var grow_dur: float = float(LegacyGameManager.CROP_DATA[cid]["grow_time"])
 			var mult := (1.50 if bool(p["watered"]) else 1.0) * crop_mult
 			p["growth"] = minf(1.0, float(p["growth"]) + (delta * mult) / grow_dur)
 		if i < plot_nodes.size() and is_instance_valid(plot_nodes[i]):
