@@ -2,7 +2,7 @@
   "name": "idle-games",
   "private": true,
   "version": "0.0.0",
-  "description": "Idle games monorepo: mengling, xianxia, cloud-isle-market, worklife, mob-control-3d",
+  "description": "Idle games monorepo: mengling, xianxia, cloud-isle-market, worklife, mob-control-3d, ar-survivor, paper-crane-detective",
   "workspaces": [
     "games/*",
     "packages/*"
