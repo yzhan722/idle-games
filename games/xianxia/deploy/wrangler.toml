@@ -1,0 +1,11 @@
+name = "xianxia-game"
+compatibility_date = "2025-01-01"
+
+# Static-assets-only Worker: serves dist/ directly at the edge, no script.
+# Subdomain only — apex yinosites.com and all other services are untouched.
+routes = [
+  { pattern = "xianxia.yinosites.com", custom_domain = true }
+]
+
+[assets]
+directory = "../dist"

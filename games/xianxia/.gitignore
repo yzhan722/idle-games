@@ -1,0 +1,9 @@
+node_modules
+yarn-error.log
+build.version.json
+.aider*
+tools/mock-kgnet/jianghu.json
+
+# wrangler local state
+.wrangler/
+worker/.wrangler/
