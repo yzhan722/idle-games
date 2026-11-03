@@ -3,7 +3,7 @@ extends Node2D
 
 @onready var window_controller: WindowController = $WindowController
 @onready var game_manager: LegacyGameManager = $GameManager
-@onready var sound_manager: SoundManager = $SoundManager
+@onready var sound_manager: LegacySoundManager = $SoundManager
 @onready var island_world: IslandWorld = $IslandWorld
 @onready var pixel_hud: PixelHUD = $CanvasLayer/PixelHUD
 

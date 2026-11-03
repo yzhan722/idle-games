@@ -1,11 +1,9 @@
 extends Node2D
 class_name MarketStall
-## Clean Market Stall Component (`src/entities/buildings/MarketStall.gd`) — PRD Patch v2.1
-## - Pure Numeric Shelf Inventory: maintained in GameManager without extra stacked icons cluttering the stall sprite!
-## - Supports unattended self-service checkout before Shiba Store Manager is hired,
-##   and accelerated + PriceBonus checkout once Shiba is hired!
+## Clean Market Stall Component + 4-Tier Visual Upgrader (`src/entities/buildings/MarketStall.gd`) — PRD Patch v2.2
 
 var tex_stall: Texture2D
+var visual_upgrader: BuildingVisualUpgrader
 var draw_offset: Vector2 = Vector2(-66.0, -102.0)
 
 var queue_customers: Array[Node2D] = []
@@ -13,6 +11,14 @@ var anim_time: float = 0.0
 
 func _ready() -> void:
 	tex_stall = load("res://assets/pixel_art/buildings/market_stall.png")
+	visual_upgrader = BuildingVisualUpgrader.new()
+	add_child(visual_upgrader)
+	visual_upgrader.setup_upgrader(self, "stall", int(GameManager.building_levels.get("stall", 1)))
+	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+
+func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
+	if category == "building" and key == "stall" and visual_upgrader != null:
+		visual_upgrader.apply_level_visuals(new_level, true)
 
 func register_in_queue(cust: Node2D) -> int:
 	_cleanup_queue()
@@ -47,6 +53,5 @@ func _draw() -> void:
 	draw_circle(Vector2(0, 4), 28.0, Color(0.06, 0.04, 0.02, 0.32))
 	draw_texture(tex_stall, draw_offset)
 
-	# Warm lantern glow on Market Stall eaves
 	var glow_a := 0.22 + 0.08 * sin(anim_time * 2.2)
 	draw_circle(draw_offset + Vector2(18, 42), 14.0, Color(1.0, 0.85, 0.38, glow_a))

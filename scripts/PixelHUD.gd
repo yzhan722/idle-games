@@ -9,7 +9,7 @@ signal drawer_toggled
 var game_manager: LegacyGameManager
 var island_world: IslandWorld
 var window_controller: WindowController
-var sound_manager: SoundManager
+var sound_manager: LegacySoundManager
 
 var tex_panel: Texture2D
 var tex_drawer: Texture2D

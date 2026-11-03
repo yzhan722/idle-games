@@ -1,5 +1,5 @@
 extends Node
-class_name SoundManager
+class_name LegacySoundManager
 ## Plays crisp 16-bit WAV sound effects and automatically switches the background ambient
 ## nature loop according to the current Day/Night & Weather phase:
 ## - Phase 0 (晴天): 清脆鸟鸣与溪流 (ambient_day.wav)

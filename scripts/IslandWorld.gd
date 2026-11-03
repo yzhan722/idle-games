@@ -7,7 +7,7 @@ class_name IslandWorld
 
 var game_manager: LegacyGameManager
 var window_controller: WindowController
-var sound_manager: SoundManager
+var sound_manager: LegacySoundManager
 
 var tex_henesys: Texture2D
 var tex_ellinia: Texture2D

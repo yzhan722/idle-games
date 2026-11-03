@@ -1,25 +1,19 @@
 extends Node
-## Global State, Pure Numeric Buffers, Cold-Start Evolution & Save System (`src/autoload/GameManager.gd`) — PRD Patch v2.1
-## - Starts with Island 1 unlocked, 1 SoilPlot (`soil_1: 1`), 1 AppleTree, 1 MarketStall (`stall: 1`), and 1 Starter Bunny (`bunny: 1`).
-## - All other animals (`otter`, `fox`, `shiba`, `penguin`, `toucan`) start at Level 0 (unhired) so the Single-Bunny Cold Start
-##   smoothly evolves into the Full Specialized Pipeline as the player hires them!
-## - Pure numeric buffers (default cap 10, scales with level) with smart overflow routing.
+## Global State, Strict Per-Island Recruit Caps, Recruit-to-Promote & Save System (`src/autoload/GameManager.gd`) — PRD Patch v2.2
 
 const SAVE_PATH := "user://savegame.json"
-const SAVE_VERSION := 21
+const SAVE_VERSION := 22
 
 var gold: int = 120
 var total_gold_earned: int = 120
 var desktop_companion_mode: bool = true
 
-## PRD v2.1 Section 1 & 3: Start on Island 1 (Henesys); unlock Island 2 & Island 3 via bridges
 var unlocked_islands: Dictionary = {
 	1: true,
 	2: false,
 	3: false
 }
 
-## PRD v2.1 Section 1: Start with 1 SoilPlot (soil_1=1), 1 MarketStall (stall=1); workshops unlock/upgrade
 var building_levels: Dictionary = {
 	"soil_1": 1,
 	"mortar": 1,
@@ -29,7 +23,7 @@ var building_levels: Dictionary = {
 	"soil_3": 1
 }
 
-## PRD v2.1 Section 1: Gift 1 Starter Bunny (bunny=1); Otter/Fox/Shiba/Penguin/Toucan start at 0 (unhired)
+## Team Promotion Level (Lv.1+ once recruited; increments when 【全队进修 (Lv.+1)】 is clicked after reaching Recruit Cap!)
 var animal_levels: Dictionary = {
 	"bunny": 1,
 	"otter": 0,
@@ -39,23 +33,30 @@ var animal_levels: Dictionary = {
 	"toucan": 0
 }
 
-## Pure Numeric Buffers (default cap = 10, scales with building level; NO visual icon clutter on buildings)
+## PRD v2.2 Section 3: Recruited Headcount per Island (Island 1 starts with 1 free Bunny; Max caps defined in EconomyConfig.ISLAND_RECRUIT_CAPS)
+var island_recruited: Dictionary = {
+	1: {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0},
+	2: {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0},
+	3: {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+}
+
+## Pure Numeric Buffers (default cap = 10, scales with building level; zero visual icon clutter)
 var raw_baskets: Dictionary = {
-	1: {"crop_0": 0, "crop_1": 0},
-	2: {"crop_2": 0},
-	3: {"crop_3": 0}
+	1: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+	2: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+	3: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
 }
 
 var workshop_inputs: Dictionary = {
-	"mortar": {"crop_0": 0, "crop_1": 0},
-	"cauldron": {"crop_2": 0, "crop_3": 0},
-	"orbis_linked": {"crop_3": 0}
+	"mortar": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+	"cauldron": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+	"orbis_linked": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
 }
 
 var workshop_outputs: Dictionary = {
-	"mortar": {"delicacy_0": 0, "delicacy_1": 0},
-	"cauldron": {"delicacy_2": 0},
-	"orbis_linked": {"delicacy_3": 0}
+	"mortar": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
+	"cauldron": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
+	"orbis_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
 }
 
 var stall_inventory: Dictionary = {
@@ -83,24 +84,47 @@ func _process(delta: float) -> void:
 		save_game()
 
 func is_animal_hired(animal_key: String) -> bool:
-	return int(animal_levels.get(animal_key, 0)) >= 1
+	return get_total_recruited(animal_key) >= 1
 
+func get_island_recruited_count(island_idx: int, animal_key: String) -> int:
+	if not island_recruited.has(island_idx):
+		return 0
+	return int(island_recruited[island_idx].get(animal_key, 0))
+
+func is_island_otter_hired(island_idx: int) -> bool:
+	return get_island_recruited_count(island_idx, "otter") >= 1
+
+func get_total_recruited(animal_key: String) -> int:
+	var sum := 0
+	for isl in [1, 2, 3]:
+		if bool(unlocked_islands.get(isl, false)):
+			sum += get_island_recruited_count(isl, animal_key)
+	return sum
+
+func get_total_max_cap(animal_key: String) -> int:
+	var cap := 0
+	for isl in [1, 2, 3]:
+		if bool(unlocked_islands.get(isl, false)):
+			cap += int(EconomyConfig.ISLAND_RECRUIT_CAPS[isl].get(animal_key, 0))
+	return cap
+
+func find_next_recruit_island(animal_key: String) -> int:
+	for isl in [1, 2, 3]:
+		if bool(unlocked_islands.get(isl, false)):
+			var cur := get_island_recruited_count(isl, animal_key)
+			var mx := int(EconomyConfig.ISLAND_RECRUIT_CAPS[isl].get(animal_key, 0))
+			if cur < mx:
+				return isl
+	return 0
+
+## PRD v2.2 Section 3: Fixed 2x SoilPlot Slots per Island (Island 1 starts with 1 plot at Lv.1, unlocks 2nd slot at Lv.2+)
 func get_unlocked_plot_count(island_idx: int) -> int:
+	if not bool(unlocked_islands.get(island_idx, false)):
+		return 0
 	if island_idx == 1:
 		var lv := int(building_levels.get("soil_1", 1))
-		# PRD v2.1: Start with 1 plot at Lv.1, expand up to 8 plots as soil_1 levels up!
-		return clampi(1 + (lv - 1), 1, 8)
-	elif island_idx == 2:
-		if not bool(unlocked_islands.get(2, false)):
-			return 0
-		var lv2 := int(building_levels.get("soil_2", 1))
-		return clampi(2 + (lv2 - 1), 2, 6)
-	elif island_idx == 3:
-		if not bool(unlocked_islands.get(3, false)):
-			return 0
-		var lv3 := int(building_levels.get("soil_3", 1))
-		return clampi(2 + (lv3 - 1), 2, 6)
-	return 1
+		return 1 if lv <= 1 else 2
+	return 2
 
 func add_gold(amount: int) -> void:
 	if amount == 0:
@@ -123,14 +147,14 @@ func get_prosperity_score() -> int:
 	for k in building_levels.keys():
 		score += int(building_levels[k]) * 20
 	for k in animal_levels.keys():
-		score += int(animal_levels[k]) * 35
+		score += get_total_recruited(k) * 35 + int(animal_levels[k]) * 25
 	if bool(unlocked_islands.get(2, false)):
-		score += 150
+		score += 180
 	if bool(unlocked_islands.get(3, false)):
-		score += 350
+		score += 420
 	return score
 
-## Pure Numeric Buffer Capacities (default cap = 10, +5 per level above 1)
+## Pure Numeric Buffer Capacities (default cap = 10, +5 per building level above 1)
 func get_raw_basket_max_cap(island_idx: int) -> int:
 	var b_key := "soil_" + str(island_idx)
 	return EconomyConfig.calc_buffer_capacity(int(building_levels.get(b_key, 1)))
@@ -153,6 +177,8 @@ func add_to_raw_basket(island_idx: int, crop_id: String, qty: int) -> int:
 	var added := mini(qty, room)
 	if added > 0:
 		raw_baskets[island_idx][crop_id] = int(raw_baskets[island_idx].get(crop_id, 0)) + added
+		if SoundManager != null:
+			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
 	return added
 
@@ -191,6 +217,8 @@ func add_to_workshop_input(workshop_id: String, crop_id: String, qty: int) -> in
 	var added := mini(qty, room)
 	if added > 0:
 		workshop_inputs[workshop_id][crop_id] = int(workshop_inputs[workshop_id].get(crop_id, 0)) + added
+		if SoundManager != null:
+			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
 	return added
 
@@ -223,6 +251,8 @@ func add_to_workshop_output(workshop_id: String, delicacy_id: String, qty: int) 
 	var added := mini(qty, room)
 	if added > 0:
 		workshop_outputs[workshop_id][delicacy_id] = int(workshop_outputs[workshop_id].get(delicacy_id, 0)) + added
+		if SoundManager != null:
+			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
 	return added
 
@@ -256,12 +286,12 @@ func add_to_stall(item_id: String, qty: int) -> int:
 	var added := mini(qty, room)
 	if added > 0:
 		stall_inventory[item_id] = int(stall_inventory.get(item_id, 0)) + added
+		if SoundManager != null:
+			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
 		EventBus.item_delivered.emit(item_id, added, "market_stall")
 	return added
 
-## PRD v2.1: Supports Self-Service Checkout when Shiba is unhired (shiba=0),
-## Shiba PriceBonus (1.0 + 0.1*L) when hired, and 2.0x VIP Crown Customer Tip!
 func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2, is_vip: bool = false) -> int:
 	var target_id := preferred_id
 	if int(stall_inventory.get(target_id, 0)) <= 0:
@@ -283,17 +313,20 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 	elif target_id == "delicacy_3":
 		b_lv = int(building_levels.get("soil_3", 1))
 
+	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
 	var unit_price := EconomyConfig.calc_item_unit_price(
 		target_id,
 		b_lv,
 		int(building_levels.get("stall", 1)),
-		int(animal_levels.get("shiba", 0))
+		shiba_lv
 	)
 	var total_earned := unit_price * bought
 	if is_vip:
 		total_earned = int(round(float(total_earned) * EconomyConfig.VIP_TIP_MULTIPLIER))
 
 	add_gold(total_earned)
+	if SoundManager != null:
+		SoundManager.play_coin_sfx()
 	EventBus.inventory_changed.emit()
 	EventBus.customer_paid.emit(target_id, bought, total_earned, world_pos)
 	return total_earned
@@ -312,16 +345,37 @@ func upgrade_building(b_key: String) -> bool:
 	save_game()
 	return true
 
+## PRD v2.2 Section 3: Recruit-to-Promote Mechanism (`招满转进修机制`):
+## - If any unlocked island has room below `ISLAND_RECRUIT_CAPS`, recruits +1 animal worker onto that island.
+## - Once all unlocked islands reach Max Cap for `a_key`, upgrades `animal_levels[a_key] += 1` (Team Promotion Lv.+1)!
 func upgrade_animal(a_key: String) -> bool:
 	if not EconomyConfig.ANIMALS.has(a_key):
 		return false
+	var next_isl := find_next_recruit_island(a_key)
 	var cur_lv := int(animal_levels.get(a_key, 0))
+	var total_rec := get_total_recruited(a_key)
 	var base_c := int(EconomyConfig.ANIMALS[a_key]["base_cost"])
-	var cost := EconomyConfig.calc_upgrade_cost(base_c, maxi(1, cur_lv + 1))
+	var cost_step := total_rec + maxi(1, cur_lv)
+	var cost := EconomyConfig.calc_upgrade_cost(base_c, cost_step)
 	if not spend_gold(cost):
 		return false
-	animal_levels[a_key] = cur_lv + 1
-	EventBus.upgrade_purchased.emit("animal", a_key, cur_lv + 1)
+
+	if next_isl > 0:
+		island_recruited[next_isl][a_key] = get_island_recruited_count(next_isl, a_key) + 1
+		if cur_lv <= 0:
+			animal_levels[a_key] = 1
+		if SoundManager != null:
+			SoundManager.play_upgrade_sfx()
+		EventBus.upgrade_purchased.emit("recruit", a_key, get_total_recruited(a_key))
+	else:
+		animal_levels[a_key] = maxi(1, cur_lv) + 1
+		if SoundManager != null:
+			if animal_levels[a_key] % 25 == 0:
+				SoundManager.play_milestone_sfx()
+			else:
+				SoundManager.play_upgrade_sfx()
+		EventBus.upgrade_purchased.emit("animal", a_key, animal_levels[a_key])
+
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
 	return true
@@ -334,10 +388,8 @@ func unlock_island(island_idx: int) -> bool:
 	if not spend_gold(cost):
 		return false
 	unlocked_islands[island_idx] = true
-	if island_idx == 2 and int(animal_levels.get("penguin", 0)) == 0:
-		animal_levels["penguin"] = 1
-	if island_idx == 3 and int(animal_levels.get("toucan", 0)) == 0:
-		animal_levels["toucan"] = 1
+	if SoundManager != null:
+		SoundManager.play_milestone_sfx()
 	EventBus.island_unlocked.emit(island_idx)
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
@@ -348,7 +400,7 @@ func estimate_idle_gold_per_sec() -> float:
 	for k in building_levels.keys():
 		base_rate += float(building_levels[k]) * 1.1
 	for k in animal_levels.keys():
-		base_rate += float(animal_levels[k]) * 1.5
+		base_rate += float(get_total_recruited(k)) * 1.6
 	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0)))
 
 func save_game() -> void:
@@ -365,6 +417,11 @@ func save_game() -> void:
 		},
 		"building_levels": building_levels,
 		"animal_levels": animal_levels,
+		"island_recruited": {
+			"1": island_recruited[1],
+			"2": island_recruited[2],
+			"3": island_recruited[3]
+		},
 		"stall_inventory": stall_inventory
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -378,7 +435,6 @@ func load_game() -> void:
 	var parsed = JSON.parse_string(txt)
 	if not (parsed is Dictionary):
 		return
-	# Only load saves matching SAVE_VERSION (21) so PRD v2.1 Single-Bunny Cold Start rules apply cleanly
 	if int(parsed.get("version", 0)) != SAVE_VERSION:
 		return
 	gold = int(parsed.get("gold", gold))
@@ -395,6 +451,13 @@ func load_game() -> void:
 	if parsed.has("animal_levels") and parsed["animal_levels"] is Dictionary:
 		for k in parsed["animal_levels"].keys():
 			animal_levels[String(k)] = int(parsed["animal_levels"][k])
+	if parsed.has("island_recruited") and parsed["island_recruited"] is Dictionary:
+		var ir: Dictionary = parsed["island_recruited"]
+		for isl_str in ["1", "2", "3"]:
+			if ir.has(isl_str) and ir[isl_str] is Dictionary:
+				var isl_i := int(isl_str)
+				for ak in ir[isl_str].keys():
+					island_recruited[isl_i][String(ak)] = int(ir[isl_str][ak])
 	if parsed.has("stall_inventory") and parsed["stall_inventory"] is Dictionary:
 		for k in parsed["stall_inventory"].keys():
 			stall_inventory[String(k)] = int(parsed["stall_inventory"][k])

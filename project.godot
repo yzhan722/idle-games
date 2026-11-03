@@ -21,6 +21,7 @@ run/max_fps=60
 
 EventBus="*res://src/autoload/EventBus.gd"
 EconomyConfig="*res://src/autoload/EconomyConfig.gd"
+SoundManager="*res://src/autoload/SoundManager.gd"
 GameManager="*res://src/autoload/GameManager.gd"
 
 [display]

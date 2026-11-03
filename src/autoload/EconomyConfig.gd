@@ -1,10 +1,5 @@
 extends Node
-## Pure Idle Economy Math & Sprite Manifest Loader (`EconomyConfig.gd` Autoload) — PRD v2.1
-## - Raw ingredient fallback sale: 1.0x
-## - Island 1 Mortar Workshop (Fox): 3.5x
-## - Island 2 Cauldron Workshop (Penguin): 12.0x
-## - Island 3 Dual Mortar+Cauldron Linked Workshop: 52.0x (>= 50x)
-## - VIP Crown Customer Tip Multiplier: 2.0x
+## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution & Sprite Manifest (`EconomyConfig.gd`) — PRD Patch v2.2
 
 const MULTIPLIER_RAW := 1.0
 const MULTIPLIER_MORTAR := 3.5
@@ -15,194 +10,50 @@ const DEFAULT_BUFFER_CAP := 10
 
 var sprite_manifest: Dictionary = {}
 
-## Raw Crops (grown on SoilPlot & AppleTree)
+## PRD v2.2 Section 3: Strict Per-Island Animal Recruit Caps
+const ISLAND_RECRUIT_CAPS: Dictionary = {
+	1: {"bunny": 2, "otter": 2, "fox": 1, "shiba": 1, "penguin": 0, "toucan": 0},
+	2: {"bunny": 2, "otter": 1, "fox": 0, "shiba": 0, "penguin": 1, "toucan": 2},
+	3: {"bunny": 2, "otter": 2, "fox": 1, "shiba": 0, "penguin": 1, "toucan": 2}
+}
+
+## Raw Crops (auto-evolves to next row in `crops_sheet.png` every 25 building levels!)
 const CROPS: Dictionary = {
-	"crop_0": {
-		"name": "晨露红草莓",
-		"island": 1,
-		"crop_row": 0,
-		"base_value": 12,
-		"grow_time": 5.5
-	},
-	"crop_1": {
-		"name": "金桂红苹果",
-		"island": 1,
-		"crop_row": 1,
-		"base_value": 16,
-		"grow_time": 6.5
-	},
-	"crop_2": {
-		"name": "幽谷荧光菇",
-		"island": 2,
-		"crop_row": 2,
-		"base_value": 28,
-		"grow_time": 7.5
-	},
-	"crop_3": {
-		"name": "晴滩黄金凤梨",
-		"island": 3,
-		"crop_row": 3,
-		"base_value": 45,
-		"grow_time": 8.5
-	}
+	"crop_0": {"name": "晨露红草莓", "island": 1, "crop_row": 0, "base_value": 12, "grow_time": 5.2},
+	"crop_1": {"name": "金桂甜苹果", "island": 1, "crop_row": 1, "base_value": 18, "grow_time": 6.0},
+	"crop_2": {"name": "幽谷荧光菇", "island": 2, "crop_row": 2, "base_value": 30, "grow_time": 7.0},
+	"crop_3": {"name": "晴滩黄金凤梨", "island": 3, "crop_row": 3, "base_value": 48, "grow_time": 8.0}
 }
 
-## Processed Delicacies
+## Processed Delicacies (auto-evolves to next dish in `delicacies_sheet.png` every 25 workshop levels!)
 const DELICACIES: Dictionary = {
-	"delicacy_0": {
-		"name": "桂花糯米糕",
-		"idx": 0,
-		"tier": 1,
-		"workshop": "mortar",
-		"input_crop": "crop_0",
-		"base_crop_val": 12,
-		"mult": MULTIPLIER_MORTAR
-	},
-	"delicacy_1": {
-		"name": "焦糖苹果草莓派",
-		"idx": 1,
-		"tier": 1,
-		"workshop": "mortar",
-		"input_crop": "crop_1",
-		"base_crop_val": 16,
-		"mult": MULTIPLIER_MORTAR
-	},
-	"delicacy_2": {
-		"name": "星露荧光甘露饮",
-		"idx": 2,
-		"tier": 2,
-		"workshop": "cauldron",
-		"input_crop": "crop_2",
-		"base_crop_val": 28,
-		"mult": MULTIPLIER_CAULDRON
-	},
-	"delicacy_3": {
-		"name": "皇家凤梨星露宴",
-		"idx": 3,
-		"tier": 3,
-		"workshop": "orbis_linked",
-		"input_crop": "crop_3",
-		"base_crop_val": 45,
-		"mult": MULTIPLIER_ORBIS_LINKED
-	}
+	"delicacy_0": {"name": "桂花糯米糕", "idx": 0, "tier": 1, "workshop": "mortar", "base_crop_val": 12, "mult": MULTIPLIER_MORTAR},
+	"delicacy_1": {"name": "焦糖苹果草莓派", "idx": 1, "tier": 1, "workshop": "mortar", "base_crop_val": 18, "mult": MULTIPLIER_MORTAR},
+	"delicacy_2": {"name": "星露荧光甘露饮", "idx": 2, "tier": 2, "workshop": "cauldron", "base_crop_val": 30, "mult": MULTIPLIER_CAULDRON},
+	"delicacy_3": {"name": "皇家凤梨星露宴", "idx": 3, "tier": 3, "workshop": "orbis_linked", "base_crop_val": 48, "mult": MULTIPLIER_ORBIS_LINKED}
 }
 
-## Buildings Config
 const BUILDINGS: Dictionary = {
-	"soil_1": {
-		"name": "射手村良田",
-		"desc": "主岛草莓/苹果产能与农田块数提升",
-		"base_cost": 25,
-		"base_value": 12,
-		"island": 1
-	},
-	"mortar": {
-		"name": "桂花研钵工坊",
-		"desc": "岛1初级美食加工 (3.5x价值增值)",
-		"base_cost": 45,
-		"base_value": 42,
-		"island": 1
-	},
-	"stall": {
-		"name": "云岛集市主摊位",
-		"desc": "扩充缓存上限(10+5/级)与基础售价",
-		"base_cost": 65,
-		"base_value": 50,
-		"island": 1
-	},
-	"soil_2": {
-		"name": "魔法密林菌圃",
-		"desc": "岛2中阶魔法荧光菇产能提升",
-		"base_cost": 140,
-		"base_value": 28,
-		"island": 2
-	},
-	"cauldron": {
-		"name": "星露炼金坩埚",
-		"desc": "岛2炼制中阶魔法料理 (12.0x价值)",
-		"base_cost": 210,
-		"base_value": 336,
-		"island": 2
-	},
-	"soil_3": {
-		"name": "天空海岸果园",
-		"desc": "岛3顶级凤梨+双工坊联动 (52x价值)",
-		"base_cost": 360,
-		"base_value": 2340,
-		"island": 3
-	}
+	"soil_1": {"name": "射手村农田", "desc": "每25级作物自动换代+产能翻倍+外观进化", "base_cost": 25, "base_value": 12, "island": 1},
+	"mortar": {"name": "桂花研钵工坊", "desc": "狐狸研磨3.5x美食 · 每25级菜品与外观进化", "base_cost": 45, "base_value": 42, "island": 1},
+	"stall": {"name": "云岛集市主摊位", "desc": "扩充缓存上限(10+5/级) · Lv.25解锁暖光路灯", "base_cost": 65, "base_value": 50, "island": 1},
+	"soil_2": {"name": "魔法密林农田", "desc": "岛2魔法作物产能 · 每25级品种与外观进化", "base_cost": 140, "base_value": 30, "island": 2},
+	"cauldron": {"name": "星露炼金坩埚", "desc": "企鹅炼制12x甘露 · Lv.25开启炼金星火粒子", "base_cost": 210, "base_value": 360, "island": 2},
+	"soil_3": {"name": "天空海岸双工坊", "desc": "岛3顶级农田+研钵坩埚联动 (52x价值)", "base_cost": 360, "base_value": 2496, "island": 3}
 }
 
-## 6 Specialized Animal Workers Config (PRD v2.1: Starter Bunny Lv.1, others start at Lv.0 unhired)
 const ANIMALS: Dictionary = {
-	"bunny": {
-		"name": "月兔 · 专职农夫",
-		"role_tag": "无水獭时直达集市 · 有水獭时入田边缓存",
-		"sheet": "animals/bunny_sheet.png",
-		"base_cost": 30,
-		"base_time": 2.8,
-		"base_speed": 72.0,
-		"base_cap": 1
-	},
-	"otter": {
-		"name": "水獭 · 岛内物流员",
-		"role_tag": "接管岛内搬运 · 工坊满载智能分流直售",
-		"sheet": "animals/otter_sheet.png",
-		"base_cost": 45,
-		"base_time": 1.6,
-		"base_speed": 80.0,
-		"base_cap": 2
-	},
-	"fox": {
-		"name": "小狐狸 · 初级研钵主厨",
-		"role_tag": "驻守岛1研钵 · 加工3.5x初级美食",
-		"sheet": "animals/fox_sheet.png",
-		"base_cost": 60,
-		"base_time": 3.6,
-		"base_speed": 64.0,
-		"base_cap": 1
-	},
-	"shiba": {
-		"name": "柴犬 · 集市金牌店长",
-		"role_tag": "加速收银结账 · 全摊位售价+10%/级",
-		"sheet": "animals/shiba_sheet.png",
-		"base_cost": 80,
-		"base_time": 1.0,
-		"base_speed": 66.0,
-		"base_cap": 1
-	},
-	"penguin": {
-		"name": "小企鹅 · 高级坩埚炼金师",
-		"role_tag": "驻守岛2坩埚 · 炼制12x中阶与52x顶阶料理",
-		"sheet": "animals/penguin_sheet.png",
-		"base_cost": 160,
-		"base_time": 4.2,
-		"base_speed": 60.0,
-		"base_cap": 1
-	},
-	"toucan": {
-		"name": "巨嘴鸟 · 跨岛贸易专员",
-		"role_tag": "跨木桥批量将岛2/岛3高阶美食运回主集市",
-		"sheet": "animals/toucan_sheet.png",
-		"base_cost": 140,
-		"base_time": 1.5,
-		"base_speed": 92.0,
-		"base_cap": 3
-	}
+	"bunny": {"name": "月兔 · 专职农夫", "role_tag": "无水獭时直达集市 · 招满后全队进修提速", "sheet": "animals/bunny_sheet.png", "base_cost": 30, "base_time": 2.6, "base_speed": 72.0, "base_cap": 1},
+	"otter": {"name": "水獭 · 岛内物流员", "role_tag": "接管岛内搬运 · 工坊满载自动分流直售", "sheet": "animals/otter_sheet.png", "base_cost": 45, "base_time": 1.5, "base_speed": 80.0, "base_cap": 2},
+	"fox": {"name": "小狐狸 · 研钵主厨", "role_tag": "驻守研钵工坊 · 研磨3.5x/52x精制美食", "sheet": "animals/fox_sheet.png", "base_cost": 60, "base_time": 3.4, "base_speed": 64.0, "base_cap": 1},
+	"shiba": {"name": "柴犬 · 金牌店长", "role_tag": "加速收银结账 · 全摊位售价+10%/级", "sheet": "animals/shiba_sheet.png", "base_cost": 80, "base_time": 1.0, "base_speed": 66.0, "base_cap": 1},
+	"penguin": {"name": "小企鹅 · 坩埚炼金师", "role_tag": "驻守坩埚工坊 · 炼制12x/52x高阶甘露", "sheet": "animals/penguin_sheet.png", "base_cost": 150, "base_time": 4.0, "base_speed": 60.0, "base_cap": 1},
+	"toucan": {"name": "巨嘴鸟 · 跨岛专员", "role_tag": "跨木桥批量将岛2/岛3料理运回岛1主集市", "sheet": "animals/toucan_sheet.png", "base_cost": 135, "base_time": 1.4, "base_speed": 94.0, "base_cap": 3}
 }
 
-## Island Expansion Config (Tab 3)
 const EXPANSIONS: Dictionary = {
-	"island_2": {
-		"name": "解锁【岛屿2：魔法密林 Ellinia】",
-		"desc": "修复木桥1 · 开启荧光菇菌圃与12x星露坩埚",
-		"cost": 180
-	},
-	"island_3": {
-		"name": "解锁【岛屿3：天空海岸 Orbis】",
-		"desc": "修复木桥2 · 开启52x双工坊联动与2x皇冠富豪顾客",
-		"cost": 480
-	}
+	"island_2": {"name": "木桥1 · 魔法密林", "desc": "开启2x农田+12x坩埚工坊+企鹅/巨嘴鸟编制", "cost": 180},
+	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+👑2.0x皇冠富豪顾客", "cost": 480}
 }
 
 func _ready() -> void:
@@ -234,6 +85,24 @@ func get_frame_region(sheet_key: String, frame_idx: int) -> Rect2:
 	var row := frame_idx / hf
 	return Rect2(col * cw, row * ch, cw, ch)
 
+## PRD v2.2 Section 4.1: Every 25 levels, crop automatically evolves to the next high-tier variety in `crops_sheet.png`!
+func get_evolved_crop_id(base_island: int, building_level: int) -> String:
+	var base_idx := clampi(base_island - 1, 0, 3)
+	var evo_steps := int(floor(float(maxi(1, building_level)) / 25.0))
+	var final_idx := clampi(base_idx + evo_steps, 0, 3)
+	return "crop_" + str(final_idx)
+
+## PRD v2.2 Section 4.1: Every 25 levels, workshop delicacy automatically evolves to the next dish in `delicacies_sheet.png`!
+func get_evolved_delicacy_id(workshop_id: String, workshop_level: int) -> String:
+	var base_idx := 0
+	if workshop_id == "cauldron":
+		base_idx = 2
+	elif workshop_id == "orbis_linked":
+		base_idx = 3
+	var evo_steps := int(floor(float(maxi(1, workshop_level)) / 25.0))
+	var final_idx := clampi(base_idx + evo_steps, 0, 3)
+	return "delicacy_" + str(final_idx)
+
 func get_crop_stage_region(crop_id: String, stage_idx: int) -> Rect2:
 	var c_data: Dictionary = CROPS.get(crop_id, CROPS["crop_0"])
 	var row := int(c_data.get("crop_row", 0))
@@ -258,25 +127,21 @@ func get_delicacy_region(delicacy_id: String) -> Rect2:
 				return Rect2(float(reg["x"]), float(reg["y"]), float(reg["w"]), float(reg["h"]))
 	return Rect2(idx * 36.0, 0.0, 36.0, 36.0)
 
-## Cost(L) = round(BaseCost * 1.15^(L - 1))
 func calc_upgrade_cost(base_cost: int, level: int) -> int:
 	var lv := maxi(1, level)
 	return int(round(float(base_cost) * pow(1.15, float(lv - 1))))
 
-## Value(L) = BaseValue * L * 2^floor(L / 25)
 func calc_milestone_value(base_value: float, level: int) -> float:
 	var lv := maxi(1, level)
 	var milestone_pow := int(floor(float(lv) / 25.0))
 	return base_value * float(lv) * pow(2.0, float(milestone_pow))
 
-## Duration(L) = max(0.8, BaseTime * 0.96^(L - 1))
 func calc_work_duration(animal_key: String, level: int) -> float:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["bunny"])
-	var base_t := float(a_cfg.get("base_time", 2.8))
+	var base_t := float(a_cfg.get("base_time", 2.6))
 	var lv := maxi(1, level)
 	return maxf(0.8, base_t * pow(0.96, float(lv - 1)))
 
-## Capacity(L) = BaseCap + floor(L / 5)
 func calc_carry_capacity(animal_key: String, level: int) -> int:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
 	var base_cap := int(a_cfg.get("base_cap", 1))
@@ -289,8 +154,6 @@ func calc_move_speed(animal_key: String, level: int) -> float:
 	var lv := maxi(1, level)
 	return base_spd * (1.0 + 0.03 * float(lv - 1))
 
-## PRD v2.1: Before Shiba is hired (level == 0), PriceBonus = 1.0 (self-service stall);
-## Once Shiba is hired (level >= 1), PriceBonus = 1.0 + 0.1 * L
 func calc_shiba_price_bonus(shiba_level: int) -> float:
 	if shiba_level <= 0:
 		return 1.0

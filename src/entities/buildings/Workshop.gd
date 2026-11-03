@@ -1,8 +1,6 @@
 extends Node2D
 class_name Workshop
-## Mortar, Cauldron & Island 3 Dual-Linked Workshop (`src/entities/buildings/Workshop.gd`) — PRD Patch v2.1
-## - Pure Numeric Buffer: Input/Output slots are maintained in GameManager without visual icon clutter beside the building!
-## - Displays clean building sprite + subtle crafting progress bar when Fox / Penguin is actively crafting.
+## Mortar, Cauldron & Island 3 Dual Workshop + 4-Tier Visual Upgrader (`src/entities/buildings/Workshop.gd`) — PRD Patch v2.2
 
 @export var workshop_id: String = "mortar" # "mortar", "cauldron", or "orbis_linked"
 @export var island_idx: int = 1
@@ -10,11 +8,17 @@ class_name Workshop
 
 var tex_building: Texture2D
 var tex_secondary: Texture2D
+var visual_upgrader: BuildingVisualUpgrader
 var is_processing: bool = false
 var process_progress: float = 0.0
 
 func _ready() -> void:
 	_reload_texture()
+	visual_upgrader = BuildingVisualUpgrader.new()
+	add_child(visual_upgrader)
+	var b_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
+	visual_upgrader.setup_upgrader(self, workshop_id, int(GameManager.building_levels.get(b_key, 1)))
+	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 
 func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, p_offset: Vector2) -> void:
 	workshop_id = p_id
@@ -23,12 +27,21 @@ func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, p_offset: Vecto
 	draw_offset = p_offset
 	_reload_texture()
 
+func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
+	var target_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
+	if category == "building" and key == target_key and visual_upgrader != null:
+		visual_upgrader.apply_level_visuals(new_level, true)
+
+func get_evolved_output_delicacy() -> String:
+	var b_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
+	var lv := int(GameManager.building_levels.get(b_key, 1))
+	return EconomyConfig.get_evolved_delicacy_id(workshop_id, lv)
+
 func _reload_texture() -> void:
 	if workshop_id == "cauldron":
 		tex_building = load("res://assets/pixel_art/buildings/workshop_cauldron.png")
 		tex_secondary = null
 	elif workshop_id == "orbis_linked":
-		# Island 3 Dual Mortar + Cauldron Linked Workshop (52x value!)
 		tex_building = load("res://assets/pixel_art/buildings/workshop_mortar.png")
 		tex_secondary = load("res://assets/pixel_art/buildings/workshop_cauldron.png")
 	else:
@@ -47,7 +60,6 @@ func _draw() -> void:
 	if tex_secondary != null:
 		draw_texture_rect(tex_secondary, Rect2(draw_offset.x + 26.0, draw_offset.y + 4.0, 46.0, 48.0), false)
 
-	# Subtle Crafting Progress Bar above Workshop while Fox / Penguin is actively processing
 	if is_processing:
 		var bar_w := 36.0
 		var bar_h := 5.0
