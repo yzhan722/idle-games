@@ -1,0 +1,10 @@
+# Godot 4+ specific ignores
+.godot/
+.godot_bin/
+*.translation
+
+# Temporary / OS files
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
