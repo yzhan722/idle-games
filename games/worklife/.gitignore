@@ -1,0 +1,76 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Local file-backed saves (dev memory store)
+backend/data/
+e2e/.tmp*
+test-results/
+playwright-report/
+playwright/.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+
+# Temporary files
+*.tmp
+.cache/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Package manager (保留package-lock.json用于版本锁定)
+yarn.lock
+pnpm-lock.yaml
+
+# Ngrok
+ngrok.exe
+ngrok
+*.ngrok.io
+
+# 备份文件
+*.bak
+*.backup
+*~
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+
+e2e/.shots/
+.shots*/
+backups/
