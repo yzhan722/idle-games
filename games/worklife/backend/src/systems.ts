@@ -1,0 +1,488 @@
+/**
+ * 游戏系统模块：消耗品/Buff、每日签到、商店。
+ *
+ * 设计原则：
+ * - 所有函数为纯函数风格，直接在传入的 player 对象上原地修改并返回结果信息。
+ * - 不直接读写存储；由路由层负责 getOrCreatePlayerState -> simulateToNow -> 调用本模块 -> savePlayerState。
+ * - 与内容包（ContentPack）解耦：items/actions 为松散类型 Array<Record<string, unknown>>，
+ *   因此这里通过 helper 安全读取字段。
+ */
+import type {
+  EnhancedPlayerState,
+  EnhancedContentPack,
+  ActiveBuff,
+  CheckInState
+} from "./types";
+import { appendLog, getBuffEffects, getXpForLevel, pruneExpiredBuffs } from "./storage";
+import { EQUIP_SLOT_KEYS } from "./equipment_equip";
+import { syncAchievements } from "./progression";
+import { todayLocal as todayLocalImpl, dayDiff } from "./time";
+
+// 重新导出供路由层使用
+export { getBuffEffects, pruneExpiredBuffs };
+
+/* ----------------------------- 通用工具 ----------------------------- */
+
+type AnyItem = Record<string, any>;
+
+/** 从内容包中按 id 查找物品定义 */
+export function findItem(contentPack: EnhancedContentPack, itemId: string): AnyItem | undefined {
+  return (contentPack.items as AnyItem[]).find((it) => it.id === itemId);
+}
+
+// 时区/日期工具统一收敛到 time.ts（无依赖，避免循环引用）。
+// 重新导出以兼容历史调用点：todayUtc 现等价于东八区的 todayLocal。
+export { DAILY_RESET_TZ_OFFSET_MINUTES, todayLocal } from "./time";
+export { dayDiff };
+
+/**
+ * 历史命名：返回当前“业务当日”日期字符串 YYYY-MM-DD。
+ * 现已对齐到东八区（不再是 UTC），保留此名以兼容既有调用点。
+ */
+export function todayUtc(now: Date = new Date()): string {
+  return todayLocalImpl(now);
+}
+
+/* ----------------------------- 消耗品 / Buff ----------------------------- */
+
+export type ConsumeResult =
+  | { ok: true; itemName: string; healed?: { hp?: number; mp?: number }; buff?: ActiveBuff }
+  | { ok: false; reason: string };
+
+/**
+ * 使用一个消耗品（食物/药水）。
+ * - 校验库存
+ * - instant 效果：恢复 HP/MP
+ * - buff 效果：写入/刷新 activeBuffs（同一 buff.id 刷新过期时间，不叠加层数）
+ */
+export function consumeItem(
+  player: EnhancedPlayerState,
+  contentPack: EnhancedContentPack,
+  itemId: string,
+  now: Date = new Date()
+): ConsumeResult {
+  const def = findItem(contentPack, itemId);
+  if (!def) return { ok: false, reason: "物品不存在" };
+  if (def.type !== "food" && def.type !== "consumable") {
+    return { ok: false, reason: "该物品不可使用" };
+  }
+  const have = player.inventory[itemId] || 0;
+  if (have < 1) return { ok: false, reason: "库存不足" };
+
+  const effect = (def.effect || {}) as AnyItem;
+
+  // 先扣库存
+  player.inventory[itemId] = have - 1;
+  if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+
+  // 即时恢复（HP/MP）
+  const healed: { hp?: number; mp?: number } = {};
+  if (typeof effect.hp === "number") {
+    healed.hp = player.activeClassId === "chef" && effect.hp > 0 ? Math.round(effect.hp * 1.2) : effect.hp;
+  }
+  if (typeof effect.mp === "number") healed.mp = effect.mp;
+
+  // Buff 效果
+  let appliedBuff: ActiveBuff | undefined;
+  if (effect.buff && typeof effect.buff === "object") {
+    const bdef = effect.buff as AnyItem;
+    const rawDurationSec: number = Number(bdef.durationSec) || 0;
+    const durationSec: number = player.activeClassId === "alchemist" ? Math.round(rawDurationSec * 1.25) : rawDurationSec;
+    const expiresAt = new Date(now.getTime() + durationSec * 1000).toISOString();
+    const buff: ActiveBuff = {
+      id: String(bdef.id || itemId),
+      name: String(bdef.name || def.name || "增益"),
+      sourceItemId: itemId,
+      expiresAt,
+      multipliers: bdef.multipliers,
+      stats: bdef.stats
+    };
+    if (!player.activeBuffs) player.activeBuffs = [];
+    // 同 id 叠时间：剩余时间 + 新一份时长（此前取较晚过期时间，
+    // 等于第二份白吃）。效果数值不叠层，时长可续。
+    const idx = player.activeBuffs.findIndex((b) => b.id === buff.id);
+    if (idx >= 0) {
+      const existing = player.activeBuffs[idx];
+      const base = Math.max(Date.parse(existing.expiresAt), now.getTime());
+      buff.expiresAt = new Date(base + durationSec * 1000).toISOString();
+      player.activeBuffs[idx] = buff;
+    } else {
+      player.activeBuffs.push(buff);
+    }
+    appliedBuff = buff;
+  }
+
+  const parts: string[] = [];
+  if (healed.hp) parts.push(`恢复生命 ${healed.hp}`);
+  if (healed.mp) parts.push(`恢复魔力 ${healed.mp}`);
+  if (appliedBuff) parts.push(`获得增益「${appliedBuff.name}」`);
+  appendLog(player, `使用了 ${def.name}${parts.length ? "，" + parts.join("、") : ""}`);
+
+  return { ok: true, itemName: String(def.name || itemId), healed, buff: appliedBuff };
+}
+
+/* ----------------------------- 每日签到 ----------------------------- */
+
+/**
+ * 连续签到 14 天为一个周期，奖励随连续天数递增。
+ * 第 N 天（1..14）奖励金币与材料；第 7、14 天给予稀有大奖，第 14 天为终局材料巨奖。
+ */
+export const CHECKIN_REWARDS: Array<{ day: number; gold: number; items: Record<string, number>; label: string }> = [
+  { day: 1, gold: 200, items: { ore_1: 5 }, label: "第1天" },
+  { day: 2, gold: 350, items: { wood_2: 5 }, label: "第2天" },
+  { day: 3, gold: 500, items: { ingot_1: 3 }, label: "第3天" },
+  { day: 4, gold: 700, items: { crystal_1: 3 }, label: "第4天" },
+  { day: 5, gold: 1000, items: { food_hearty_stew: 2 }, label: "第5天" },
+  { day: 6, gold: 1500, items: { potion_fortune: 1 }, label: "第6天" },
+  { day: 7, gold: 3000, items: { elixir_legend: 1, crystal_7: 1 }, label: "第7天（周奖）" },
+  { day: 8, gold: 4000, items: { ingot_7: 3 }, label: "第8天" },
+  { day: 9, gold: 5000, items: { crystal_7: 2 }, label: "第9天" },
+  { day: 10, gold: 6500, items: { void_shard: 2, shadow_silk: 2 }, label: "第10天" },
+  { day: 11, gold: 8000, items: { celestial_feather: 2 }, label: "第11天" },
+  { day: 12, gold: 10000, items: { holy_gold: 1, abyss_core: 1 }, label: "第12天" },
+  { day: 13, gold: 13000, items: { rift_crystal: 1, elixir_legend: 2 }, label: "第13天" },
+  { day: 14, gold: 20000, items: { sovereign_heart: 1, space_essence: 2, crystal_9: 1 }, label: "第14天（终极巨奖）" },
+  { day: 15, gold: 24000, items: { ingot_9: 3 }, label: "第15天" },
+  { day: 16, gold: 28000, items: { crystal_9: 3 }, label: "第16天" },
+  { day: 17, gold: 33000, items: { hellfire_ember: 2, infernal_core: 1 }, label: "第17天" },
+  { day: 18, gold: 40000, items: { genesis_light: 1, divine_essence: 1 }, label: "第18天" },
+  { day: 19, gold: 48000, items: { ingot_11: 2, elixir_mythic: 1 }, label: "第19天" },
+  { day: 20, gold: 60000, items: { cosmos_essence: 1, eternity_crystal: 1 }, label: "第20天" },
+  { day: 21, gold: 100000, items: { omega_heart: 1, god_heart: 1, elixir_omega: 1 }, label: "第21天（神话级巨奖）" }
+];
+
+export type CheckInResult =
+  | { ok: true; reward: { gold: number; items: Record<string, number> }; streak: number; totalDays: number; cycleDay: number }
+  | { ok: false; reason: string };
+
+/** 返回签到面板信息（不发放奖励） */
+export function getCheckInInfo(player: EnhancedPlayerState, now: Date = new Date()): {
+  canCheckIn: boolean;
+  streak: number;
+  totalDays: number;
+  nextCycleDay: number;
+  rewards: typeof CHECKIN_REWARDS;
+  lastDate?: string;
+} {
+  const today = todayUtc(now);
+  const st = player.checkIn;
+  let nextStreak = 1;
+  if (st) {
+    const diff = dayDiff(st.lastDate, today);
+    if (diff === 0) nextStreak = st.streak; // 今天已签
+    else if (diff === 1) nextStreak = st.streak + 1;
+    else nextStreak = 1; // 断签重置
+  }
+  const cycleDay = ((nextStreak - 1) % CHECKIN_REWARDS.length) + 1;
+  return {
+    canCheckIn: !st || dayDiff(st.lastDate, today) >= 1,
+    streak: st?.streak || 0,
+    totalDays: st?.totalDays || 0,
+    nextCycleDay: cycleDay,
+    rewards: CHECKIN_REWARDS,
+    lastDate: st?.lastDate
+  };
+}
+
+/** 执行签到，发放奖励 */
+export function doCheckIn(player: EnhancedPlayerState, now: Date = new Date()): CheckInResult {
+  const today = todayUtc(now);
+  let st: CheckInState = player.checkIn || { lastDate: "", streak: 0, totalDays: 0 };
+
+  if (st.lastDate) {
+    const diff = dayDiff(st.lastDate, today);
+    if (diff === 0) return { ok: false, reason: "今天已经签到过了" };
+    if (diff === 1) st = { ...st, streak: st.streak + 1 };
+    else st = { ...st, streak: 1 }; // 断签
+  } else {
+    st = { lastDate: "", streak: 1, totalDays: st.totalDays };
+  }
+  st.lastDate = today;
+  st.totalDays = (st.totalDays || 0) + 1;
+
+  const cycleDay = ((st.streak - 1) % CHECKIN_REWARDS.length) + 1;
+  const reward = CHECKIN_REWARDS[cycleDay - 1];
+
+  // 发放
+  player.inventory["gold"] = (player.inventory["gold"] || 0) + reward.gold;
+  for (const [itemId, qty] of Object.entries(reward.items)) {
+    player.inventory[itemId] = (player.inventory[itemId] || 0) + qty;
+  }
+  if (player.stats) player.stats.totalGoldEarned += reward.gold;
+
+  player.checkIn = st;
+  syncAchievements(player);
+  const itemText = Object.entries(reward.items).map(([k, v]) => `${k} x${v}`).join("、");
+  appendLog(player, `每日签到成功（连续${st.streak}天）：获得金币 ${reward.gold}${itemText ? "、" + itemText : ""}`);
+
+  return {
+    ok: true,
+    reward: { gold: reward.gold, items: reward.items },
+    streak: st.streak,
+    totalDays: st.totalDays,
+    cycleDay
+  };
+}
+
+/* ----------------------------- 商店 / NPC 买卖 ----------------------------- */
+
+/**
+ * 商店定价规则：
+ * - 基础价由物品 tier 决定（tier 越高越贵）。
+ * - 出售价（玩家卖给NPC）= 基础价 * SELL_RATE。
+ * - 购买价（玩家从NPC买）= 基础价 * BUY_MARKUP。
+ * 这样形成稳定的金币回收（gold sink）与基础物资补给渠道。
+ */
+const TIER_BASE_PRICE: Record<number, number> = {
+  1: 20,
+  2: 60,
+  3: 150,
+  4: 400,
+  5: 1000,
+  6: 2500,
+  7: 6000,
+  8: 14000,
+  9: 32000,
+  10: 70000,
+  11: 150000,
+  12: 320000
+};
+const SELL_RATE = 0.35; // 卖出回收率
+const BUY_MARKUP = 1.0; // 购买加价系数（基础价即售价）
+
+/** 单个物品基础价 */
+function basePrice(def: AnyItem): number {
+  const tier = Number(def.tier) || 1;
+  const explicit = Number(def.value || def.basePrice);
+  if (explicit > 0) return explicit;
+  return TIER_BASE_PRICE[tier] || tier * 30;
+}
+
+export function sellPrice(def: AnyItem): number {
+  return Math.max(1, Math.floor(basePrice(def) * SELL_RATE));
+}
+export function buyPrice(def: AnyItem): number {
+  return Math.max(1, Math.floor(basePrice(def) * BUY_MARKUP));
+}
+
+/**
+ * 商店在售商品列表（NPC 提供的基础补给）。
+ * 仅出售基础材料/食物/药水，避免破坏高阶装备的产出循环。
+ *
+ * 不卖第一章的产出链本身（wood_1 / lumber_1）：8 金一块木板会让"升到 3 级做木甲"的教学被
+ * 48 金绕过；也不卖 crystal_1（史莱姆的稀有掉落，商店有货就不稀有了）。
+ * 商店出售基础 HP 药水、MP 药水与全套战斗状态药剂（狂战、铁壁、奥术涌流、守护战意等），方便战斗补给。
+ */
+export const SHOP_STOCK_IDS = [
+  "ore_1",
+  "fiber_1",
+  "ingot_1",
+  "wood_2",
+  "ore_2",
+  "fiber_2",
+  "food_simple",
+  "drink_basic",
+  "potion_hp_t1",
+  "potion_hp_t2",
+  "potion_hp_t3",
+  "potion_hp_t4",
+  "potion_mp_t1",
+  "potion_mp_t2",
+  "potion_mp_t3",
+  "potion_mp_t4",
+  "food_hearty_stew",
+  "food_master_feast",
+  "potion_iron_skin",
+  "potion_arcane_surge",
+  "potion_guardian_elixir",
+  "potion_battle_fury",
+  "elixir_legend",
+  "fiber_3",
+  "lumber_2",
+  "crystal_2",
+  "food_royal_banquet",
+  "drink_arcane",
+  "potion_harvest",
+  "potion_berserk",
+  "potion_artisan",
+  "elixir_mythic"
+];
+
+export function getShopStock(contentPack: EnhancedContentPack): Array<AnyItem & { buyPrice: number }> {
+  const out: Array<AnyItem & { buyPrice: number }> = [];
+  for (const id of SHOP_STOCK_IDS) {
+    const def = findItem(contentPack, id);
+    if (def) out.push({ ...def, buyPrice: buyPrice(def) });
+  }
+  return out;
+}
+
+export type TradeResult =
+  | { ok: true; gold: number; itemId: string; qty: number; unitPrice: number; total: number }
+  | { ok: false; reason: string };
+
+/** 玩家从商店购买物品 */
+export function buyFromShop(
+  player: EnhancedPlayerState,
+  contentPack: EnhancedContentPack,
+  itemId: string,
+  qty: number
+): TradeResult {
+  if (!SHOP_STOCK_IDS.includes(itemId)) return { ok: false, reason: "商店未出售该物品" };
+  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "数量无效" };
+  const def = findItem(contentPack, itemId);
+  if (!def) return { ok: false, reason: "物品不存在" };
+
+  const unit = buyPrice(def);
+  const total = unit * qty;
+  const gold = player.inventory["gold"] || 0;
+  if (gold < total) return { ok: false, reason: "金币不足" };
+
+  player.inventory["gold"] = gold - total;
+  player.inventory[itemId] = (player.inventory[itemId] || 0) + qty;
+  if (player.stats) { player.stats.totalGoldSpent += total; player.stats.totalTrades = (player.stats.totalTrades || 0) + 1; }
+  syncAchievements(player);
+  appendLog(player, `从商店购买 ${def.name} x${qty}，花费金币 ${total}`);
+
+  return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };
+}
+
+/** 玩家出售物品给商店 */
+export function sellToShop(
+  player: EnhancedPlayerState,
+  contentPack: EnhancedContentPack,
+  itemId: string,
+  qty: number
+): TradeResult {
+  if (itemId === "gold") return { ok: false, reason: "金币不可出售" };
+  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "数量无效" };
+  const def = findItem(contentPack, itemId);
+  if (!def) return { ok: false, reason: "物品不存在" };
+  const have = player.inventory[itemId] || 0;
+  if (have < qty) return { ok: false, reason: "库存不足" };
+  // 装备槽存的是物品 id 引用：仅当剩余库存少于当前已穿戴份数时阻止出售（允许卖掉多余闲置副本）。
+  const eq = player.equipment as Record<string, unknown> | undefined;
+  const equippedCopies = eq
+    ? EQUIP_SLOT_KEYS.filter((slot) => eq[slot] === itemId).length
+    : 0;
+  if (equippedCopies > 0 && have - qty < equippedCopies) {
+    return { ok: false, reason: "装备中的物品不能出售" };
+  }
+
+  const unit = sellPrice(def);
+  const total = unit * qty;
+  player.inventory[itemId] = have - qty;
+  if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+  player.inventory["gold"] = (player.inventory["gold"] || 0) + total;
+  if (player.stats) { player.stats.totalGoldEarned += total; player.stats.totalTrades = (player.stats.totalTrades || 0) + 1; }
+  syncAchievements(player);
+  appendLog(player, `向商店出售 ${def.name} x${qty}，获得金币 ${total}`);
+
+  return { ok: true, gold: player.inventory["gold"], itemId, qty, unitPrice: unit, total };
+}
+
+/* ----------------------------- 炼金分支：点石成金 (Coinify) ----------------------------- */
+
+export type CoinifyResult =
+  | {
+      ok: true;
+      itemId: string;
+      itemName: string;
+      qty: number;
+      goldGained: number;
+      xpGained: number;
+      critCount: number;
+      multiplier: number;
+      alchemyLevel: number;
+      leveledTo?: number;
+    }
+  | { ok: false; reason: string };
+
+/**
+ * 银河奶牛式炼金分支「点石成金（Coinify）」：
+ * 将背包中的闲置材料、怪物掉落或多余装备直接通过炼金阵点化为高额金币，并获得炼金术经验。
+ * - 基础转化倍率：商店基础价值的 135% + 每级炼金等级 +1.5%（炼金术师职业额外 +15%）
+ * - 炼金暴击率：15% + min(20%, 炼金等级 * 0.2%)，暴击时该件点化金币翻倍（2.0x）
+ */
+export function alchemyCoinify(
+  player: EnhancedPlayerState,
+  contentPack: EnhancedContentPack,
+  itemId: string,
+  qty: number,
+  rng: () => number = Math.random
+): CoinifyResult {
+  if (itemId === "gold") return { ok: false, reason: "金币不可点化" };
+  if (!Number.isInteger(qty) || qty < 1) return { ok: false, reason: "点化数量无效" };
+  const def = findItem(contentPack, itemId);
+  if (!def) return { ok: false, reason: "物品不存在" };
+  const have = player.inventory[itemId] || 0;
+  if (have < qty) return { ok: false, reason: "库存不足" };
+
+  const eq = player.equipment as Record<string, unknown> | undefined;
+  const equippedCopies = eq ? EQUIP_SLOT_KEYS.filter((slot) => eq[slot] === itemId).length : 0;
+  if (equippedCopies > 0 && have - qty < equippedCopies) {
+    return { ok: false, reason: "穿戴中的装备不可点化" };
+  }
+
+  if (!player.skills) player.skills = {} as any;
+  if (!player.skills.skill_alchemy) {
+    player.skills.skill_alchemy = { level: 1, xp: 0, unlockedRecipes: [], enhancementLevel: 0 };
+  }
+  const alch = player.skills.skill_alchemy;
+  const alchLv = Math.max(1, alch.level || 1);
+  const classBonus = player.activeClassId === "alchemist" ? 0.15 : 0;
+  const multiplier = Math.round((0.85 + Math.min(1.15, (alchLv - 1) * 0.012) + classBonus) * 100) / 100;
+  const critChance = Math.min(0.35, 0.15 + alchLv * 0.002);
+
+  const unitBase = Math.max(2, basePrice(def));
+  const unitCoinify = Math.max(2, Math.round(unitBase * multiplier));
+  let critCount = 0;
+  let goldGained = 0;
+  for (let i = 0; i < qty; i++) {
+    if (rng() < critChance) {
+      critCount += 1;
+      goldGained += unitCoinify * 2;
+    } else {
+      goldGained += unitCoinify;
+    }
+  }
+
+  player.inventory[itemId] = have - qty;
+  if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+  player.inventory.gold = (player.inventory.gold || 0) + goldGained;
+
+  const tier = Math.max(1, Number(def.tier) || 1);
+  const xpGained = Math.max(4, Math.round(tier * 6)) * qty;
+  alch.xp = (alch.xp || 0) + xpGained;
+  let leveledTo: number | undefined;
+  while (alch.xp >= getXpForLevel(alch.level)) {
+    alch.xp -= getXpForLevel(alch.level);
+    alch.level += 1;
+    leveledTo = alch.level;
+  }
+
+  if (player.stats) {
+    player.stats.totalGoldEarned = (player.stats.totalGoldEarned || 0) + goldGained;
+    player.stats.totalActions = (player.stats.totalActions || 0) + qty;
+  }
+  syncAchievements(player);
+  const critNote = critCount > 0 ? `（触发 ${critCount} 次点金暴击！）` : "";
+  appendLog(
+    player,
+    `✨ 点石成金：转化 ${def.name} ×${qty}，获得 ${goldGained} 金币、+${xpGained} 炼金经验${critNote}${leveledTo ? `，炼金升至 Lv.${leveledTo}！` : ""}`
+  );
+
+  return {
+    ok: true,
+    itemId,
+    itemName: String(def.name || itemId),
+    qty,
+    goldGained,
+    xpGained,
+    critCount,
+    multiplier,
+    alchemyLevel: alch.level,
+    leveledTo,
+  };
+}
+

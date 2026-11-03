@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    // composite 要求可 emit；将产物重定向到临时目录，避免污染源目录（如 vite.config.js）
+    "outDir": "./node_modules/.tmp/tsnode",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsnode/.tsbuildinfo"
+  },
+  "include": ["vite.config.ts"]
+}

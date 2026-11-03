@@ -1,0 +1,290 @@
+/* ===== SystemPanels：增益/商店/签到 专属样式（与 ProgressionPanels 主题一致）===== */
+
+.sys-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand);
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  padding-left: 8px;
+  border-left: 3px solid var(--brand);
+}
+
+.sys-empty-inline {
+  padding: 18px;
+  text-align: center;
+  color: #7b8a9a;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(120, 150, 180, 0.2);
+  border-radius: 10px;
+}
+
+/* ---------- Buff 标签 ---------- */
+.buff-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+  font-size: 12px;
+  color: #e8b860;
+  background: rgba(232, 184, 96, 0.12);
+  border: 1px solid rgba(232, 184, 96, 0.3);
+  border-radius: 6px;
+}
+
+/* ---------- 生效中的 Buff ---------- */
+.buff-active-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.buff-active-card {
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(212, 154, 72, 0.12), rgba(212, 154, 72, 0.04));
+  border: 1px solid rgba(212, 154, 72, 0.35);
+  border-radius: 10px;
+}
+.buff-active-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.buff-active-name {
+  font-weight: 600;
+  color: #d8e6f2;
+  font-size: 14px;
+}
+.buff-active-timer {
+  font-size: 12px;
+  color: var(--brand);
+  font-variant-numeric: tabular-nums;
+  background: rgba(212, 154, 72, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.buff-active-effects {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* ---------- 可用物品网格 ---------- */
+.usable-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.usable-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(120, 150, 180, 0.15);
+  border-radius: 10px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.usable-card:hover {
+  border-color: rgba(212, 154, 72, 0.4);
+  background: rgba(212, 154, 72, 0.05);
+}
+.usable-info { flex: 1; min-width: 0; }
+.usable-name {
+  font-weight: 600;
+  color: #d8e6f2;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.usable-qty {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #7b8a9a;
+  font-weight: 400;
+}
+.usable-effects { display: flex; flex-wrap: wrap; }
+.usable-noeff { font-size: 12px; color: #7b8a9a; }
+
+/* ---------- 商店 ---------- */
+.shop-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.shop-tabs { display: flex; gap: 8px; }
+.shop-gold {
+  font-size: 13px;
+  color: #c8d4e0;
+}
+.shop-gold b { color: #e8b860; font-size: 15px; }
+
+.shop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shop-row {
+  display: grid;
+  grid-template-columns: 1fr auto 64px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(120, 150, 180, 0.15);
+  border-radius: 10px;
+}
+.shop-row:hover { border-color: rgba(212, 154, 72, 0.4); }
+.shop-row-info { min-width: 0; }
+.shop-row-name { font-weight: 600; color: #d8e6f2; font-size: 14px; }
+.shop-row-desc { font-size: 12px; color: #7b8a9a; margin-top: 2px; }
+.shop-row-price {
+  color: #e8b860;
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.shop-qty {
+  width: 60px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(120, 150, 180, 0.3);
+  border-radius: 8px;
+  color: #d8e6f2;
+  font-size: 13px;
+  text-align: center;
+}
+.shop-qty:focus { outline: none; border-color: var(--brand); }
+
+/* ---------- 签到 ---------- */
+.checkin-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.checkin-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(232, 184, 96, 0.1), rgba(232, 184, 96, 0.03));
+  border: 1px solid rgba(232, 184, 96, 0.25);
+  border-radius: 12px;
+}
+.checkin-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e8b860;
+  line-height: 1;
+}
+.checkin-stat-label {
+  font-size: 12px;
+  color: #9aa8b6;
+  margin-top: 6px;
+}
+
+.checkin-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.checkin-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(120, 150, 180, 0.18);
+  border-radius: 10px;
+  text-align: center;
+  min-height: 92px;
+}
+.checkin-cell.today {
+  border-color: var(--brand);
+  background: rgba(212, 154, 72, 0.12);
+  box-shadow: 0 0 0 1px rgba(212, 154, 72, 0.4), 0 0 16px rgba(212, 154, 72, 0.2);
+}
+.checkin-cell.claimed {
+  opacity: 0.55;
+}
+.checkin-day {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c8d4e0;
+  margin-bottom: 6px;
+}
+.checkin-reward-gold {
+  font-size: 13px;
+  color: #e8b860;
+  font-weight: 600;
+}
+.checkin-reward-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+.checkin-item {
+  font-size: 11.5px;
+  color: #8fa0b0;
+  line-height: 1.3;
+}
+.checkin-check {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 14px;
+  color: #5ad88a;
+  font-weight: 700;
+}
+
+.checkin-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a2530;
+  background: linear-gradient(135deg, #e8b860, #d4a04a);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+}
+.checkin-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(232, 184, 96, 0.3);
+}
+.checkin-btn:disabled {
+  background: rgba(120, 150, 180, 0.2);
+  color: #7b8a9a;
+  cursor: not-allowed;
+}
+
+/* ---------- 入场动效（仅作用于本模块卡片）---------- */
+.buff-active-card,
+.usable-card,
+.shop-row,
+.checkin-cell {
+  animation: sys-fade-up 0.28s ease both;
+}
+@keyframes sys-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.checkin-cell.today {
+  animation: sys-fade-up 0.28s ease both, sys-today-pulse 2.4s ease-in-out infinite;
+}
+@keyframes sys-today-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(212, 154, 72, 0.4), 0 0 14px rgba(212, 154, 72, 0.18); }
+  50% { box-shadow: 0 0 0 1px rgba(212, 154, 72, 0.7), 0 0 22px rgba(212, 154, 72, 0.4); }
+}
+
+@media (max-width: 560px) {
+  .buff-active-list { grid-template-columns: 1fr; }
+  .checkin-grid { grid-template-columns: repeat(4, 1fr); }
+  .shop-row { grid-template-columns: 1fr auto; }
+  .shop-qty { grid-column: 1; }
+}
