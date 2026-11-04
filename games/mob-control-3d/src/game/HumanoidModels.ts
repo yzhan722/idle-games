@@ -21,39 +21,6 @@ interface PartSpec {
   tintMask?: number; // 1 = tinted by InstancedMesh instanceColor (candy jelly body); 0 = fixed baked color (white headband, eyes, props)
 }
 
-let cachedSmoothVinylBumpTex: THREE.CanvasTexture | null = null;
-
-/**
- * Generates a subtle, silky-smooth procedural vinyl/jelly micro-sheen texture (zero dark scale seams).
- */
-export function getMicroArmorBumpTexture(): THREE.CanvasTexture {
-  if (cachedSmoothVinylBumpTex) return cachedSmoothVinylBumpTex;
-  const size = 128;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(0, 0, size, size);
-
-  for (let i = 0; i < 24; i++) {
-    const cx = ((i * 53) % size);
-    const cy = ((i * 79) % size);
-    const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, 28);
-    grad.addColorStop(0, 'rgba(255,255,255,0.06)');
-    grad.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
-  }
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.needsUpdate = true;
-  cachedSmoothVinylBumpTex = tex;
-  return tex;
-}
-
 interface LoftRingSpec {
   pos: [number, number, number];
   rx: number;

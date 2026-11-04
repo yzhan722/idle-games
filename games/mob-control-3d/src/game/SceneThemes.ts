@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 export type ThemeId =
   | 'wasteland'
@@ -1348,390 +1349,189 @@ export function create2DBlobShadowTexture(): THREE.CanvasTexture {
 }
 
 /**
- * Generates a High-Resolution 1024x1024 2D Thick-Painted Anime Illustration Texture
- * of the Chibi Pink-Twintail Idol Cheerleader Mascot (matching the bottom-left character in the reference screenshot!).
- * Features:
- * - Crisp dark-espresso (#381b0e) 2D anime linework
- * - Flowing sakura-pink twintails with bright hair gloss & golden hair cuffs
- * - Black & gold DJ headphones
- * - Cheerful winking & smiling anime face with rosy blush cheeks
- * - Pink-and-white frilly idol dress with golden star brooch
- * - Cute white bunny-blob backpack with red/white cheering flag
- * - Waving left hand & right hand holding a brass megaphone with red grip!
+ * Generates a Red-and-White Peppermint Swirl Candy Wheel Texture (256x256, 16x Anisotropy)
  */
-let cachedCheerleaderTex: THREE.CanvasTexture | null = null;
-export function create2DCheerleaderIllustrationTexture(): THREE.CanvasTexture {
-  if (cachedCheerleaderTex) return cachedCheerleaderTex;
+let cachedPeppermintWheelTex: THREE.CanvasTexture | null = null;
+export function createPeppermintWheelTexture(): THREE.CanvasTexture {
+  if (cachedPeppermintWheelTex) return cachedPeppermintWheelTex;
+  const peppermintCanvas = document.createElement('canvas');
+  peppermintCanvas.width = 256;
+  peppermintCanvas.height = 256;
+  const pCtx = peppermintCanvas.getContext('2d')!;
+  pCtx.fillStyle = '#fff8f0';
+  pCtx.fillRect(0, 0, 256, 256);
+  pCtx.translate(128, 128);
+  for (let s = 0; s < 12; s++) {
+    if (s % 2 === 0) {
+      pCtx.fillStyle = '#ef4444';
+      pCtx.beginPath();
+      pCtx.moveTo(0, 0);
+      pCtx.arc(0, 0, 126, (s * Math.PI) / 6, ((s + 1) * Math.PI) / 6);
+      pCtx.closePath();
+      pCtx.fill();
+    }
+  }
+  pCtx.lineWidth = 10;
+  pCtx.strokeStyle = '#dc2626';
+  pCtx.beginPath();
+  pCtx.arc(0, 0, 120, 0, Math.PI * 2);
+  pCtx.stroke();
+  const peppermintTex = new THREE.CanvasTexture(peppermintCanvas);
+  peppermintTex.colorSpace = THREE.SRGBColorSpace;
+  peppermintTex.anisotropy = 16;
+  peppermintTex.needsUpdate = true;
+  cachedPeppermintWheelTex = peppermintTex;
+  return peppermintTex;
+}
+
+export function createConveyorBeltTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1024;
+  canvas.width = 128;
+  canvas.height = 128;
   const ctx = canvas.getContext('2d')!;
-  ctx.clearRect(0, 0, 1024, 1024);
 
-  const ink = '#381b0e';
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.fillStyle = '#3e7db5';
+  ctx.fillRect(0, 0, 128, 128);
 
-  const fillAndStroke = (fill: string | CanvasGradient, lw = 12) => {
-    ctx.fillStyle = fill;
-    ctx.fill();
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = lw;
-    ctx.stroke();
-  };
-
-  // --- 1. Back Cheering Flag & Cute White Bunny-Blob Backpack (upper-left behind shoulder) ---
-  ctx.save();
-  // Flag pole
-  ctx.beginPath();
-  ctx.moveTo(310, 560);
-  ctx.lineTo(190, 210);
-  ctx.strokeStyle = '#d89e32';
-  ctx.lineWidth = 22;
-  ctx.stroke();
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 8;
-  ctx.stroke();
-
-  // Red & Cream Pennant Flag
-  ctx.beginPath();
-  ctx.moveTo(198, 224);
-  ctx.lineTo(74, 278);
-  ctx.lineTo(228, 344);
-  ctx.closePath();
-  fillAndStroke('#f25565', 11);
-
-  // Cute White Bunny-Blob Backpack sitting on her back-left
-  ctx.beginPath();
-  ctx.ellipse(264, 548, 86, 76, -0.22, 0, Math.PI * 2);
-  fillAndStroke('#fffdf9', 12);
-  // Backpack cute dot eyes & blush
-  ctx.fillStyle = ink;
-  ctx.beginPath();
-  ctx.arc(232, 540, 8, 0, Math.PI * 2);
-  ctx.arc(272, 532, 8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#ff85a2';
-  ctx.beginPath();
-  ctx.ellipse(216, 554, 12, 7, 0, 0, Math.PI * 2);
-  ctx.ellipse(288, 544, 12, 7, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // --- 2. Flowing Sakura-Pink Twintails (Left & Right) with Hair Gloss ---
-  const drawTwintail = (dir: -1 | 1) => {
-    ctx.save();
-    const bx = 512 + dir * 210;
-    const by = 370;
-    const hairGrad = ctx.createLinearGradient(bx, by - 40, bx + dir * 160, by + 390);
-    hairGrad.addColorStop(0, '#ffb3c9');
-    hairGrad.addColorStop(0.55, '#ff80a6');
-    hairGrad.addColorStop(1, '#e85282');
-
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.bezierCurveTo(
-      bx + dir * 155,
-      by + 20,
-      bx + dir * 215,
-      by + 230,
-      bx + dir * 110,
-      by + 380
-    );
-    ctx.bezierCurveTo(
-      bx + dir * 55,
-      by + 355,
-      bx + dir * 75,
-      by + 250,
-      bx + dir * 28,
-      by + 330
-    );
-    ctx.bezierCurveTo(
-      bx - dir * 25,
-      by + 220,
-      bx - dir * 10,
-      by + 95,
-      bx,
-      by
-    );
-    ctx.closePath();
-    fillAndStroke(hairGrad, 13);
-
-    // Golden-Brass & Pink Hair Tie Cuff
-    ctx.beginPath();
-    ctx.ellipse(bx - dir * 6, by + 12, 34, 22, dir * 0.45, 0, Math.PI * 2);
-    fillAndStroke('#f6bd38', 11);
-    ctx.restore();
-  };
-  drawTwintail(-1);
-  drawTwintail(1);
-
-  // --- 3. Chibi Boots & Stockings ---
-  for (const side of [-1, 1] as const) {
-    const lx = 512 + side * 78;
-    // White stocking leg
-    ctx.beginPath();
-    ctx.roundRect(lx - 34, 740, 68, 155, 30);
-    fillAndStroke('#fff9f5', 12);
-
-    // Pink & Brown Idol Ankle Boot
-    ctx.beginPath();
-    ctx.ellipse(lx + side * 8, 902, 52, 36, 0, 0, Math.PI * 2);
-    fillAndStroke('#5a2d1c', 12);
-
-    ctx.beginPath();
-    ctx.ellipse(lx + side * 6, 892, 42, 26, 0, 0, Math.PI * 2);
-    fillAndStroke('#ff7aa2', 10);
+  ctx.fillStyle = '#316494';
+  for (let y = 0; y < 128; y += 16) {
+    ctx.fillRect(0, y, 128, 4);
   }
+  ctx.fillStyle = '#254c73';
+  ctx.fillRect(0, 0, 12, 128);
+  ctx.fillRect(116, 0, 12, 128);
+  ctx.fillStyle = '#3b1d0c';
+  ctx.fillRect(11, 0, 3, 128);
+  ctx.fillRect(114, 0, 3, 128);
 
-  // --- 4. Frilly White & Sakura-Pink Idol Dress & Pleated Skirt ---
-  // Outer white ruffle petticoat
-  ctx.beginPath();
-  ctx.moveTo(395, 620);
-  ctx.lineTo(629, 620);
-  ctx.quadraticCurveTo(695, 765, 665, 792);
-  ctx.quadraticCurveTo(512, 828, 359, 792);
-  ctx.quadraticCurveTo(329, 765, 395, 620);
-  ctx.closePath();
-  fillAndStroke('#fffdf9', 12);
-
-  // Main Sakura-Pink Idol Skirt + Bodice
-  const dressGrad = ctx.createLinearGradient(512, 520, 512, 760);
-  dressGrad.addColorStop(0, '#ff9ebb');
-  dressGrad.addColorStop(0.6, '#ff6e99');
-  dressGrad.addColorStop(1, '#e44b7b');
-  ctx.beginPath();
-  ctx.moveTo(426, 520);
-  ctx.lineTo(598, 520);
-  ctx.quadraticCurveTo(662, 695, 642, 748);
-  ctx.quadraticCurveTo(512, 782, 382, 748);
-  ctx.quadraticCurveTo(362, 695, 426, 520);
-  ctx.closePath();
-  fillAndStroke(dressGrad, 13);
-
-  // Skirt vertical pleat lines
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 8;
-  for (const px of [456, 512, 568]) {
+  for (const cy of [36, 98]) {
+    ctx.strokeStyle = '#3b1d0c';
+    ctx.lineWidth = 19;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.beginPath();
-    ctx.moveTo(px, 635);
-    ctx.lineTo(px + (px - 512) * 0.25, 752);
+    ctx.moveTo(28, cy + 16);
+    ctx.lineTo(64, cy - 14);
+    ctx.lineTo(100, cy + 16);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffcb36';
+    ctx.lineWidth = 11;
+    ctx.beginPath();
+    ctx.moveTo(28, cy + 16);
+    ctx.lineTo(64, cy - 14);
+    ctx.lineTo(100, cy + 16);
     ctx.stroke();
   }
-
-  // White Sailor/Idol Collar & Golden Star Ribbon Brooch
-  ctx.beginPath();
-  ctx.moveTo(432, 528);
-  ctx.lineTo(512, 608);
-  ctx.lineTo(592, 528);
-  ctx.closePath();
-  fillAndStroke('#ffffff', 11);
-
-  // Pink chest bow + Golden Star Center
-  ctx.beginPath();
-  ctx.ellipse(476, 586, 32, 18, -0.3, 0, Math.PI * 2);
-  ctx.ellipse(548, 586, 32, 18, 0.3, 0, Math.PI * 2);
-  fillAndStroke('#ff4f82', 10);
-  ctx.beginPath();
-  ctx.arc(512, 586, 18, 0, Math.PI * 2);
-  fillAndStroke('#ffd43b', 10);
-
-  // --- 5. Left Arm Raised Waving Cheerfully ---
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(428, 556);
-  ctx.quadraticCurveTo(335, 518, 304, 446);
-  ctx.quadraticCurveTo(286, 412, 324, 398);
-  ctx.quadraticCurveTo(362, 392, 376, 434);
-  ctx.quadraticCurveTo(398, 492, 446, 532);
-  ctx.closePath();
-  fillAndStroke('#ffe6d4', 12);
-  // Pink sleeve cuff
-  ctx.beginPath();
-  ctx.ellipse(412, 540, 34, 24, -0.5, 0, Math.PI * 2);
-  fillAndStroke('#ff7aa2', 11);
-  ctx.restore();
-
-  // --- 6. Right Arm Holding Golden-Brass Megaphone with Red Handle ---
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(594, 552);
-  ctx.quadraticCurveTo(668, 542, 708, 494);
-  ctx.quadraticCurveTo(732, 466, 702, 442);
-  ctx.quadraticCurveTo(672, 432, 646, 474);
-  ctx.quadraticCurveTo(618, 512, 578, 534);
-  ctx.closePath();
-  fillAndStroke('#ffe6d4', 12);
-
-  // Megaphone Red Handle
-  ctx.beginPath();
-  ctx.roundRect(692, 464, 34, 78, 12);
-  fillAndStroke('#e04836', 11);
-
-  // Megaphone Golden-Brass Cone flaring right-upward!
-  const megaGrad = ctx.createLinearGradient(680, 360, 890, 520);
-  megaGrad.addColorStop(0, '#fff0a6');
-  megaGrad.addColorStop(0.45, '#f5b82e');
-  megaGrad.addColorStop(1, '#c87d14');
-  ctx.beginPath();
-  ctx.moveTo(674, 448);
-  ctx.lineTo(876, 344);
-  ctx.lineTo(906, 504);
-  ctx.lineTo(686, 488);
-  ctx.closePath();
-  fillAndStroke(megaGrad, 13);
-
-  // Megaphone mouth dark interior & cream rim
-  ctx.beginPath();
-  ctx.ellipse(891, 424, 26, 80, -0.18, 0, Math.PI * 2);
-  fillAndStroke('#5a2614', 12);
-  ctx.restore();
-
-  // --- 7. Large Chibi Anime Head, Sakura Hair Bangs, Headphones & Expressive Face ---
-  // Back hair dome
-  ctx.beginPath();
-  ctx.arc(512, 348, 198, 0, Math.PI * 2);
-  fillAndStroke('#ff85a8', 13);
-
-  // Black & Gold Headphone Band arching over head
-  ctx.beginPath();
-  ctx.arc(512, 342, 214, Math.PI * 1.08, Math.PI * 1.92);
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 34;
-  ctx.stroke();
-  ctx.strokeStyle = '#3b3f4a';
-  ctx.lineWidth = 18;
-  ctx.stroke();
-
-  // Warm Peach Chibi Face Contour
-  const skinGrad = ctx.createLinearGradient(512, 210, 512, 525);
-  skinGrad.addColorStop(0, '#fff3e8');
-  skinGrad.addColorStop(0.75, '#ffe3ce');
-  skinGrad.addColorStop(1, '#f7c5a8');
-  ctx.beginPath();
-  ctx.ellipse(512, 378, 168, 152, 0, 0, Math.PI * 2);
-  fillAndStroke(skinGrad, 13);
-
-  // Left Eye: Cheerful Anime Wink Curve ( > or ^ )
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 14;
-  ctx.beginPath();
-  ctx.moveTo(404, 368);
-  ctx.quadraticCurveTo(442, 336, 474, 374);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(408, 352);
-  ctx.lineTo(392, 340);
-  ctx.stroke();
-
-  // Right Eye: Big Sparkling Rose-Amber Anime Eye with Double White Catchlights!
-  ctx.beginPath();
-  ctx.ellipse(584, 368, 36, 44, 0, 0, Math.PI * 2);
-  fillAndStroke('#ffffff', 11);
-
-  const irisGrad = ctx.createLinearGradient(584, 330, 584, 408);
-  irisGrad.addColorStop(0, '#6b233b');
-  irisGrad.addColorStop(0.55, '#d94876');
-  irisGrad.addColorStop(1, '#ff9eb8');
-  ctx.fillStyle = irisGrad;
-  ctx.beginPath();
-  ctx.ellipse(582, 370, 25, 33, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Pupil + Sparkling white catchlights
-  ctx.fillStyle = '#2d101c';
-  ctx.beginPath();
-  ctx.arc(582, 372, 13, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(570, 352, 11, 0, Math.PI * 2);
-  ctx.arc(594, 386, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Rosy Blush Cheeks with cute anime slash marks
-  ctx.fillStyle = 'rgba(255, 110, 145, 0.55)';
-  ctx.beginPath();
-  ctx.ellipse(412, 412, 32, 18, 0, 0, Math.PI * 2);
-  ctx.ellipse(614, 412, 32, 18, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Happy Open Singing Anime Mouth ("D" shape)
-  ctx.beginPath();
-  ctx.moveTo(484, 422);
-  ctx.quadraticCurveTo(512, 416, 540, 422);
-  ctx.quadraticCurveTo(538, 476, 512, 476);
-  ctx.quadraticCurveTo(486, 476, 484, 422);
-  ctx.closePath();
-  fillAndStroke('#a82846', 10);
-  // Pink tongue inside mouth
-  ctx.fillStyle = '#ff7a98';
-  ctx.beginPath();
-  ctx.arc(512, 456, 18, 0, Math.PI);
-  ctx.fill();
-
-  // Voluminous Sakura-Pink Front Hair Bangs & Side Locks
-  const bangGrad = ctx.createLinearGradient(512, 155, 512, 360);
-  bangGrad.addColorStop(0, '#ffc2d4');
-  bangGrad.addColorStop(0.55, '#ff88ad');
-  bangGrad.addColorStop(1, '#ef5b8a');
-  ctx.beginPath();
-  ctx.moveTo(334, 356);
-  ctx.quadraticCurveTo(336, 178, 512, 168);
-  ctx.quadraticCurveTo(688, 178, 690, 356);
-  // Scalloped anime front bangs
-  ctx.quadraticCurveTo(650, 290, 622, 346);
-  ctx.quadraticCurveTo(582, 268, 538, 338);
-  ctx.quadraticCurveTo(502, 265, 466, 338);
-  ctx.quadraticCurveTo(418, 272, 384, 346);
-  ctx.quadraticCurveTo(358, 298, 334, 356);
-  ctx.closePath();
-  fillAndStroke(bangGrad, 13);
-
-  // Bright 2D White/Pale-Pink Anime Hair Gloss Highlight Ribbon across bangs
-  ctx.fillStyle = 'rgba(255, 250, 252, 0.78)';
-  ctx.beginPath();
-  ctx.ellipse(462, 236, 44, 15, -0.22, 0, Math.PI * 2);
-  ctx.ellipse(564, 238, 38, 14, 0.22, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Cute Top Ahoge Hair Curl
-  ctx.beginPath();
-  ctx.moveTo(504, 172);
-  ctx.quadraticCurveTo(476, 102, 548, 114);
-  ctx.quadraticCurveTo(516, 138, 526, 172);
-  ctx.closePath();
-  fillAndStroke('#ff9ebb', 11);
-
-  // Left & Right DJ Ear Cups (Charcoal & Golden-Brass)
-  for (const side of [-1, 1] as const) {
-    const ex = 512 + side * 184;
-    ctx.beginPath();
-    ctx.ellipse(ex, 372, 30, 52, side * 0.12, 0, Math.PI * 2);
-    fillAndStroke('#353944', 12);
-
-    ctx.beginPath();
-    ctx.ellipse(ex + side * 6, 372, 16, 34, side * 0.12, 0, Math.PI * 2);
-    fillAndStroke('#f6bd38', 9);
-  }
-
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.needsUpdate = true;
-  cachedCheerleaderTex = tex;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 16;
   return tex;
 }
 
 /**
- * Injects a 2D Cel-Toon / Painterly Illustration Shader Hook into any Three.js MeshStandardMaterial
- * so architectural props (red-brick factory walls, brass steam pipes, sandstone curbs, copper boilers, cannon)
- * render with warm 2D stepped cel-shading, warm caramel shadows, and crisp 2D dark-brown (#381c0c) cartoon outlines!
+ * Supercell 3D Glossy Toy-Box Post-Processing ShaderPass (Directional FXAA 3.11 + Vibrant Studio Color Grading)
+ */
+export function createCinemaPostProcessingPass(width: number, height: number): ShaderPass {
+  return new ShaderPass({
+    uniforms: {
+      tDiffuse: { value: null },
+      uResolution: { value: new THREE.Vector2(width, height) },
+      uAberration: { value: 0.0 },
+      uVignette: { value: 0.1 },
+      uDangerPulse: { value: 0.0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform vec2 uResolution;
+      uniform float uAberration;
+      uniform float uVignette;
+      uniform float uDangerPulse;
+      varying vec2 vUv;
+
+      void main() {
+        vec2 texel = 1.0 / max(uResolution, vec2(1.0));
+        vec2 centerVec = vUv - 0.5;
+        float dist = length(centerVec);
+
+        vec3 col = texture2D(tDiffuse, vUv).rgb;
+
+        // Directional Luma-Edge FXAA 3.11 Anti-Aliasing
+        vec3 rgbNW = texture2D(tDiffuse, vUv + vec2(-texel.x,  texel.y)).rgb;
+        vec3 rgbNE = texture2D(tDiffuse, vUv + vec2( texel.x,  texel.y)).rgb;
+        vec3 rgbSW = texture2D(tDiffuse, vUv + vec2(-texel.x, -texel.y)).rgb;
+        vec3 rgbSE = texture2D(tDiffuse, vUv + vec2( texel.x, -texel.y)).rgb;
+
+        const vec3 lumaW = vec3(0.299, 0.587, 0.114);
+        float lumaM  = dot(col,   lumaW);
+        float lumaNW = dot(rgbNW, lumaW);
+        float lumaNE = dot(rgbNE, lumaW);
+        float lumaSW = dot(rgbSW, lumaW);
+        float lumaSE = dot(rgbSE, lumaW);
+        float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+        float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+        float lumaRange = lumaMax - lumaMin;
+
+        if (lumaRange > max(0.024, lumaMax * 0.075)) {
+          vec2 dir;
+          dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
+          dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
+          float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * 0.125), 1.0 / 128.0);
+          float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+          dir = clamp(dir * rcpDirMin, vec2(-8.0), vec2(8.0)) * texel;
+
+          vec3 rgbA = 0.5 * (
+            texture2D(tDiffuse, vUv + dir * (1.0 / 3.0 - 0.5)).rgb +
+            texture2D(tDiffuse, vUv + dir * (2.0 / 3.0 - 0.5)).rgb
+          );
+          vec3 rgbB = rgbA * 0.5 + 0.25 * (
+            texture2D(tDiffuse, vUv + dir * -0.5).rgb +
+            texture2D(tDiffuse, vUv + dir *  0.5).rgb
+          );
+          float lumaB = dot(rgbB, lumaW);
+          col = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
+        }
+
+        if (uAberration > 0.015) {
+          vec2 caOffset = centerVec * dist * (uAberration * 0.006);
+          col.r = texture2D(tDiffuse, vUv + caOffset).r;
+          col.b = texture2D(tDiffuse, vUv - caOffset).b;
+        }
+
+        float luma = dot(col, lumaW);
+        col = clamp(mix(vec3(luma), col, 1.10), 0.0, 1.0);
+
+        // Light Sunny Vignette & Low-HP Danger Edge Pulse
+        float vig = smoothstep(0.95, 0.32, dist * (0.82 + uVignette * 0.22));
+        col *= mix(0.94, 1.0, vig);
+        float edgeMask = smoothstep(0.35, 0.78, dist);
+        col = mix(col, vec3(0.95, 0.22, 0.26), edgeMask * uDangerPulse * 0.32);
+
+        // NaN/Inf Sanitize Guard
+        if (any(isnan(col)) || any(isinf(col))) col = vec3(0.92, 0.85, 0.74);
+
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `,
+  });
+}
+
+/**
+ * Injects a 3D Glossy Toy-Box & Brushed-Gold PBR Material Enhancement into any Three.js MeshStandardMaterial
  */
 export function stylizeMaterialAs2DIllustration(
   mat: THREE.MeshStandardMaterial,
   _outlineStrength = 0.85
 ): THREE.MeshStandardMaterial {
-  // Supercell 3D Glossy Toy-Box & Brushed-Gold PBR Material Enhancement
   mat.roughness = Math.max(0.24, Math.min(0.48, mat.roughness * 0.78));
   mat.metalness = Math.max(0.14, mat.metalness);
   mat.needsUpdate = true;

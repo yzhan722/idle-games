@@ -5,17 +5,8 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import {
-  BarrelConfig,
-  BumperConfig,
-  GateConfig,
-  GearConfig,
-  LevelConfig,
-  SideNestConfig,
-  TerrainZoneConfig,
-  WallConfig,
-} from '../levels/LevelData';
-import { GameState, MechaMode, SkinSpec } from './State';
+import { LevelConfig, WallConfig } from '../levels/LevelData';
+import { GameState, SkinSpec } from './State';
 import { UI_ART, replaceEmojiWithArt } from './SkillIcons';
 import { sound } from '../audio/SoundManager';
 import {
@@ -26,7 +17,6 @@ import {
   buildRedMutantGeometry,
   buildShamanGeometry,
   createAnimatedHumanoidMaterial,
-  getMicroArmorBumpTexture,
 } from './HumanoidModels';
 import {
   create2DBlobShadowTexture,
@@ -36,8 +26,11 @@ import {
   createAbyssalSeaShaderMaterial,
   createBastionShieldShaderMaterial,
   createBossPortalShaderMaterial,
+  createCinemaPostProcessingPass,
+  createConveyorBeltTexture,
   createEnergyWaterfallShaderMaterial,
   createGateForcefieldTexture,
+  createPeppermintWheelTexture,
   createRoadBumpTexture,
   createRoadNormalTexture,
   createThemedRoadEmissiveTexture,
@@ -48,140 +41,30 @@ import {
   ThemeConfig,
   ThemeId,
 } from './SceneThemes';
+import {
+  BOSS_GATE_Z,
+  BarrelRuntime,
+  BumperRuntime,
+  CombatLightRuntime,
+  GateRuntime,
+  GearRuntime,
+  MAX_PARTICLES,
+  MAX_SHOCKWAVES,
+  MAX_SKY_PILLARS,
+  MAX_UNITS,
+  MeteorTelegraphRuntime,
+  NestRuntime,
+  PLAYER_Z,
+  Particle,
+  ShockwaveRing,
+  SkyPillar,
+  TRACK_HALF_W,
+  Unit,
+  WallRuntime,
+  ZoneRuntime,
+} from './WorldTypes';
 
-export interface Unit {
-  active: boolean;
-  id: number;
-  team: 'blue' | 'red';
-  kind: 'normal' | 'charged' | 'champion' | 'brute' | 'baneling' | 'shaman';
-  mechaType?: MechaMode;
-  x: number;
-  z: number;
-  vx: number;
-  vz: number;
-  yaw: number;
-  turnRate: number;
-  walkPhase: number;
-  attackAnim: number;
-  spawnHop: number;
-  hp: number;
-  maxHp: number;
-  dmg: number;
-  radius: number;
-  speed: number;
-  age: number;
-  attackCooldown: number;
-  specialTimer: number;
-  isMiniGiant?: boolean;
-  fusionTier?: number;
-  fusionCooldown?: number;
-  empTimer?: number;
-  passedGates: Set<string>;
-}
-
-interface GateRuntime {
-  cfg: GateConfig;
-  group: THREE.Group;
-  pillarMat: THREE.MeshStandardMaterial;
-  shieldMat: THREE.MeshBasicMaterial;
-  currentX: number;
-  pulseTimer: number;
-  addCooldown: number;
-  chargeHits: number;
-  labelEl: HTMLDivElement;
-}
-
-interface BarrelRuntime {
-  cfg: BarrelConfig;
-  mesh: THREE.Group;
-  hp: number;
-  alive: boolean;
-  labelEl: HTMLDivElement;
-}
-
-interface GearRuntime {
-  cfg: GearConfig;
-  mesh: THREE.Group;
-  baseX: number;
-  hp: number;
-  alive: boolean;
-  hitFlash: number;
-  labelEl: HTMLDivElement;
-}
-
-interface WallRuntime {
-  cfg: WallConfig;
-  group: THREE.Group;
-  baseX1: number;
-  baseX2: number;
-}
-
-interface ZoneRuntime {
-  cfg: TerrainZoneConfig;
-  group: THREE.Group;
-  beltTex?: THREE.CanvasTexture;
-  ringMesh?: THREE.Mesh;
-  holoCross?: THREE.Group;
-  labelEl: HTMLDivElement;
-}
-
-interface BumperRuntime {
-  cfg: BumperConfig;
-  group: THREE.Group;
-  ringMat: THREE.MeshBasicMaterial;
-  pulseTimer: number;
-}
-
-interface NestRuntime {
-  cfg: SideNestConfig;
-  group: THREE.Group;
-  monsterMesh: THREE.Group;
-  hp: number;
-  maxHp: number;
-  alive: boolean;
-  hitFlash: number;
-  labelEl: HTMLDivElement;
-}
-
-interface Particle {
-  active: boolean;
-  x: number;
-  y: number;
-  z: number;
-  vx: number;
-  vy: number;
-  vz: number;
-  life: number;
-  maxLife: number;
-  scale: number;
-  color: THREE.Color;
-}
-
-interface ShockwaveRing {
-  active: boolean;
-  mesh: THREE.Mesh;
-  mat: THREE.MeshBasicMaterial;
-  life: number;
-  maxLife: number;
-  maxRadius: number;
-}
-
-interface SkyPillar {
-  active: boolean;
-  mesh: THREE.Mesh;
-  mat: THREE.MeshBasicMaterial;
-  life: number;
-  maxLife: number;
-  maxRadius: number;
-}
-
-const MAX_UNITS = 2600;
-const MAX_PARTICLES = 1800;
-const MAX_SHOCKWAVES = 72;
-const MAX_SKY_PILLARS = 36;
-const TRACK_HALF_W = 11.2;
-const PLAYER_Z = 18.8;
-const BOSS_GATE_Z = -17.2;
+export type { Unit };
 
 export class World3D {
   private canvas: HTMLCanvasElement;
@@ -194,12 +77,7 @@ export class World3D {
   private cinemaPass: ShaderPass;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private combatLights: Array<{
-    light: THREE.PointLight;
-    life: number;
-    maxLife: number;
-    maxIntensity: number;
-  }> = [];
+  private combatLights: CombatLightRuntime[] = [];
   private starfieldPoints?: THREE.Points;
   private godRayMats: THREE.MeshBasicMaterial[] = [];
   private cameraMode: 0 | 1 | 2 = 0; // 0: Classic Mob Control 3D, 1: Low Action, 2: High Tactical
@@ -236,12 +114,8 @@ export class World3D {
   private mascotMegaphone?: THREE.Mesh;
   private turretWheels: THREE.Mesh[] = [];
   private turretGears: THREE.Mesh[] = [];
-  private prevTurretX = -7.8;
   private turretGaugeNeedle?: THREE.Group;
   private turretGroundRingMat?: THREE.MeshBasicMaterial;
-  private turretBodyMat!: THREE.MeshStandardMaterial;
-  private turretDomeMat!: THREE.MeshStandardMaterial;
-  private turretBarrelMat!: THREE.MeshStandardMaterial;
   private turretBarrel!: THREE.Mesh;
   private turretMuzzleLight!: THREE.PointLight;
   private turretEvo1Group = new THREE.Group();
@@ -291,7 +165,6 @@ export class World3D {
   private megaBossHalo?: THREE.Mesh;
   private bossPortalMat!: THREE.ShaderMaterial;
   private bossPortalRing!: THREE.Mesh;
-  private bossPortalRingMat!: THREE.MeshBasicMaterial;
   private bossShieldMesh!: THREE.Mesh;
   private bossHitFlash = 0;
 
@@ -305,17 +178,7 @@ export class World3D {
   private megaBossCurseTimer = 11.0;
   private megaBossSlamTimer = 8.8;
   private miniBossWarCryTimer = 7.2;
-  private meteorTelegraphs: Array<{
-    active: boolean;
-    x: number;
-    z: number;
-    radius: number;
-    timer: number;
-    maxTimer: number;
-    isTurretLock: boolean;
-    mesh: THREE.Mesh;
-    mat: THREE.MeshBasicMaterial;
-  }> = [];
+  private meteorTelegraphs: MeteorTelegraphRuntime[] = [];
 
   // Theme & Environment Materials / Lights
   public currentTheme: ThemeConfig = THEMES.wasteland;
@@ -350,7 +213,6 @@ export class World3D {
   private bastionShieldMat?: THREE.ShaderMaterial;
   private planetGroup?: THREE.Group;
   private planetBodyMat?: THREE.MeshStandardMaterial;
-  private planetRingMat?: THREE.MeshBasicMaterial;
   private planetHaloMat?: THREE.MeshBasicMaterial;
   private floatingMonoliths: Array<{
     group: THREE.Group;
@@ -463,14 +325,6 @@ export class World3D {
   private nextStreakMilestone = 25;
   public adrenalineTimer = 0;
 
-  private enemyBaseWorldHpEl?: HTMLDivElement;
-  private enemyBaseWorldFillEl?: HTMLDivElement;
-  private enemyBaseWorldTextEl?: HTMLSpanElement;
-
-  private playerBaseWorldHpEl?: HTMLDivElement;
-  private playerBaseWorldFillEl?: HTMLDivElement;
-  private playerBaseWorldTextEl?: HTMLSpanElement;
-
   private activeBlueIndices: number[] = [];
   private activeRedIndices: number[] = [];
   private activeAegisIndices: number[] = [];
@@ -484,9 +338,6 @@ export class World3D {
   // Input state
   private isPointerDown = false;
   private keysDown = new Set<string>();
-  private raycaster = new THREE.Raycaster();
-  private groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  private pointerNDC = new THREE.Vector2();
 
   // Callbacks to UI
   public onBanner?: (title: string, sub: string) => void;
@@ -575,99 +426,10 @@ export class World3D {
     const outputPass = new OutputPass();
 
     // Supercell 3D Glossy Toy-Box Post-Processing ShaderPass (Directional FXAA 3.11 + Vibrant Studio Color Grading)
-    this.cinemaPass = new ShaderPass({
-      uniforms: {
-        tDiffuse: { value: null },
-        uResolution: {
-          value: new THREE.Vector2(
-            window.innerWidth * effectiveDpr,
-            window.innerHeight * effectiveDpr
-          ),
-        },
-        uAberration: { value: 0.0 },
-        uVignette: { value: 0.1 },
-        uDangerPulse: { value: 0.0 },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform vec2 uResolution;
-        uniform float uAberration;
-        uniform float uVignette;
-        uniform float uDangerPulse;
-        varying vec2 vUv;
-
-        void main() {
-          vec2 texel = 1.0 / max(uResolution, vec2(1.0));
-          vec2 centerVec = vUv - 0.5;
-          float dist = length(centerVec);
-
-          vec3 col = texture2D(tDiffuse, vUv).rgb;
-
-          // Directional Luma-Edge FXAA 3.11 Anti-Aliasing
-          vec3 rgbNW = texture2D(tDiffuse, vUv + vec2(-texel.x,  texel.y)).rgb;
-          vec3 rgbNE = texture2D(tDiffuse, vUv + vec2( texel.x,  texel.y)).rgb;
-          vec3 rgbSW = texture2D(tDiffuse, vUv + vec2(-texel.x, -texel.y)).rgb;
-          vec3 rgbSE = texture2D(tDiffuse, vUv + vec2( texel.x, -texel.y)).rgb;
-
-          const vec3 lumaW = vec3(0.299, 0.587, 0.114);
-          float lumaM  = dot(col,   lumaW);
-          float lumaNW = dot(rgbNW, lumaW);
-          float lumaNE = dot(rgbNE, lumaW);
-          float lumaSW = dot(rgbSW, lumaW);
-          float lumaSE = dot(rgbSE, lumaW);
-          float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
-          float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
-          float lumaRange = lumaMax - lumaMin;
-
-          if (lumaRange > max(0.024, lumaMax * 0.075)) {
-            vec2 dir;
-            dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
-            dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
-            float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * 0.125), 1.0 / 128.0);
-            float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
-            dir = clamp(dir * rcpDirMin, vec2(-8.0), vec2(8.0)) * texel;
-
-            vec3 rgbA = 0.5 * (
-              texture2D(tDiffuse, vUv + dir * (1.0 / 3.0 - 0.5)).rgb +
-              texture2D(tDiffuse, vUv + dir * (2.0 / 3.0 - 0.5)).rgb
-            );
-            vec3 rgbB = rgbA * 0.5 + 0.25 * (
-              texture2D(tDiffuse, vUv + dir * -0.5).rgb +
-              texture2D(tDiffuse, vUv + dir *  0.5).rgb
-            );
-            float lumaB = dot(rgbB, lumaW);
-            col = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
-          }
-
-          if (uAberration > 0.015) {
-            vec2 caOffset = centerVec * dist * (uAberration * 0.006);
-            col.r = texture2D(tDiffuse, vUv + caOffset).r;
-            col.b = texture2D(tDiffuse, vUv - caOffset).b;
-          }
-
-          float luma = dot(col, lumaW);
-          col = clamp(mix(vec3(luma), col, 1.10), 0.0, 1.0);
-
-          // 4. Light Sunny Vignette & Low-HP Danger Edge Pulse
-          float vig = smoothstep(0.95, 0.32, dist * (0.82 + uVignette * 0.22));
-          col *= mix(0.94, 1.0, vig);
-          float edgeMask = smoothstep(0.35, 0.78, dist);
-          col = mix(col, vec3(0.95, 0.22, 0.26), edgeMask * uDangerPulse * 0.32);
-
-          // 5. NaN/Inf Sanitize Guard
-          if (any(isnan(col)) || any(isinf(col))) col = vec3(0.92, 0.85, 0.74);
-
-          gl_FragColor = vec4(col, 1.0);
-        }
-      `,
-    });
+    this.cinemaPass = createCinemaPostProcessingPass(
+      window.innerWidth * effectiveDpr,
+      window.innerHeight * effectiveDpr
+    );
 
     this.composer.addPass(renderPass);
     this.composer.addPass(this.bloomPass);
@@ -1119,13 +881,6 @@ export class World3D {
     const coronaRing = new THREE.Mesh(new THREE.CircleGeometry(9.6, 32), this.planetHaloMat);
     coronaRing.lookAt(this.baseCameraPos);
     this.planetGroup.add(coronaRing);
-
-    this.planetRingMat = new THREE.MeshBasicMaterial({
-      color: 0xfff0c2,
-      transparent: true,
-      opacity: 0.0,
-      depthWrite: false,
-    });
     this.scene.add(this.planetGroup);
 
     // 4e. Four Charming Brass-and-Cream Steampunk Blimps / Airships Drifting in the Sunny Sky
@@ -1350,34 +1105,9 @@ export class World3D {
     this.turretGroup.add(laserSight);
 
     // Supercell Style 2: Red-and-White Peppermint Swirl Candy Wheels + Chocolate-Wood & Brass Carriage!
-    const peppermintCanvas = document.createElement('canvas');
-    peppermintCanvas.width = 256;
-    peppermintCanvas.height = 256;
-    const pCtx = peppermintCanvas.getContext('2d')!;
-    pCtx.fillStyle = '#fff8f0';
-    pCtx.fillRect(0, 0, 256, 256);
-    pCtx.translate(128, 128);
-    for (let s = 0; s < 12; s++) {
-      if (s % 2 === 0) {
-        pCtx.fillStyle = '#ef4444';
-        pCtx.beginPath();
-        pCtx.moveTo(0, 0);
-        pCtx.arc(0, 0, 126, (s * Math.PI) / 6, ((s + 1) * Math.PI) / 6);
-        pCtx.closePath();
-        pCtx.fill();
-      }
-    }
-    pCtx.lineWidth = 10;
-    pCtx.strokeStyle = '#dc2626';
-    pCtx.beginPath();
-    pCtx.arc(0, 0, 120, 0, Math.PI * 2);
-    pCtx.stroke();
-    const peppermintTex = new THREE.CanvasTexture(peppermintCanvas);
-    peppermintTex.colorSpace = THREE.SRGBColorSpace;
-    peppermintTex.anisotropy = 16;
     const peppermintWheelMat = stylizeMaterialAs2DIllustration(
       new THREE.MeshStandardMaterial({
-        map: peppermintTex,
+        map: createPeppermintWheelTexture(),
         roughness: 0.32,
         metalness: 0.05,
       })
@@ -1462,28 +1192,14 @@ export class World3D {
     this.turretGears.push(pinkGear);
 
     // Carriage Base Plate
-    this.turretBodyMat = new THREE.MeshStandardMaterial({
-      color: 0xd89e32,
-      metalness: 0.72,
-      roughness: 0.24,
-    });
     const carriageBase = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.44, 1.88), chocoWoodMat);
     carriageBase.position.set(0, 0.35, 0.12);
     carriageBase.castShadow = true;
     this.turretGroup.add(carriageBase);
 
-    this.turretDomeMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      metalness: 0.35,
-      roughness: 0.22,
-      emissive: 0x0284c7,
-      emissiveIntensity: 0.2,
-    });
-
     // Plump Cream-Ivory & Brass Tapered Cannon Barrel + Peppermint Muzzle Collar & Candy-Cane Fuse!
     const barrelGeo = new THREE.CylinderGeometry(0.46, 0.64, 2.35, 22);
     barrelGeo.rotateX(Math.PI / 2);
-    this.turretBarrelMat = creamIvoryMat;
     this.turretBarrel = new THREE.Mesh(barrelGeo, creamIvoryMat);
     this.turretBarrel.position.set(0, 0.96, -0.62);
     this.turretBarrel.castShadow = true;
@@ -1916,7 +1632,6 @@ export class World3D {
     }
 
     // 3. Giant Golden-Brass Cogwheel Crest above the Hangar Archway (with cute Droplet-Blob relief!)
-    this.bossPortalRingMat = new THREE.MeshBasicMaterial({ color: 0xe8b038 });
     this.bossPortalRing = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.75, 0.45, 20), brassMat);
     this.bossPortalRing.rotation.x = Math.PI / 2;
     this.bossPortalRing.position.set(0, 8.2, 1.85);
@@ -2907,12 +2622,6 @@ export class World3D {
       this.levelGroup.remove(child);
     }
     this.labelsContainer.innerHTML = '';
-    this.enemyBaseWorldHpEl = undefined;
-    this.enemyBaseWorldFillEl = undefined;
-    this.enemyBaseWorldTextEl = undefined;
-    this.playerBaseWorldHpEl = undefined;
-    this.playerBaseWorldFillEl = undefined;
-    this.playerBaseWorldTextEl = undefined;
 
     this.gates = [];
     this.gears = [];
@@ -3144,7 +2853,7 @@ export class World3D {
         deckBed.receiveShadow = true;
         zGroup.add(deckBed);
 
-        beltTex = this.createConveyorBeltTexture();
+        beltTex = createConveyorBeltTexture();
         beltTex.repeat.set(1, Math.max(1, Math.round(zCfg.length / 2.1)));
         const beltMat = new THREE.MeshStandardMaterial({
           map: beltTex,
@@ -3912,56 +3621,6 @@ export class World3D {
       this.gateTextures[key] = createGateForcefieldTexture(style, labelText);
     }
     return this.gateTextures[key];
-  }
-
-  private createConveyorBeltTexture(): THREE.CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d')!;
-
-    // 2D Hand-Painted Slate-Blue Industrial Conveyor Belt
-    ctx.fillStyle = '#3e7db5';
-    ctx.fillRect(0, 0, 128, 128);
-
-    // 2D Cartoon Tread Ribs & Dark-Brown Outlined Side Borders
-    ctx.fillStyle = '#316494';
-    for (let y = 0; y < 128; y += 16) {
-      ctx.fillRect(0, y, 128, 4);
-    }
-    ctx.fillStyle = '#254c73';
-    ctx.fillRect(0, 0, 12, 128);
-    ctx.fillRect(116, 0, 12, 128);
-    ctx.fillStyle = '#3b1d0c';
-    ctx.fillRect(11, 0, 3, 128);
-    ctx.fillRect(114, 0, 3, 128);
-
-    // Bold 2D Cartoon Golden-Yellow Forward Chevrons (^ ^) with Dark-Brown Ink Outline
-    for (const cy of [36, 98]) {
-      ctx.strokeStyle = '#3b1d0c';
-      ctx.lineWidth = 19;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(28, cy + 16);
-      ctx.lineTo(64, cy - 14);
-      ctx.lineTo(100, cy + 16);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#ffcb36';
-      ctx.lineWidth = 11;
-      ctx.beginPath();
-      ctx.moveTo(28, cy + 16);
-      ctx.lineTo(64, cy - 14);
-      ctx.lineTo(100, cy + 16);
-      ctx.stroke();
-    }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    tex.anisotropy = 16;
-    return tex;
   }
 
   public toggleCameraMode(): string {
@@ -5280,7 +4939,6 @@ export class World3D {
     const prevX = this.turretX;
     this.turretX = THREE.MathUtils.lerp(this.turretX, this.turretTargetX, Math.min(1, clampedDt * 22));
     const turretDX = this.turretX - prevX;
-    this.prevTurretX = this.turretX;
     this.turretGroup.position.x = this.turretX;
 
     // Bubble Cannon recoil recovery, rolling peppermint wheels, spinning candy gears & lively Q-Slime Gunner!
@@ -8425,24 +8083,6 @@ export class World3D {
         }
       }
     }
-  }
-
-  private triggerBaseOverrun(): void {
-    this.isOverrunFrenzy = true;
-    this.overrunTimer = 3.2;
-    sound.playExplosion();
-
-    // Wipe remaining red swarmers in a dramatic shockwave so blue swarm floods the Boss Base!
-    for (const u of this.units) {
-      if (u.active && u.team === 'red') {
-        u.active = false;
-        if (Math.random() < 0.2) {
-          this.spawnBurstParticles(u.x, 0.6, u.z, 0xff2a55, 3);
-        }
-      }
-    }
-
-    this.onBanner?.('🔥 母巢破防！射速 ×300%', '');
   }
 
   private finishStage(victory: boolean): void {
