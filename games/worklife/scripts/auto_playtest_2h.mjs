@@ -44,6 +44,7 @@ async function main() {
   const issues = [];
   const consoleErrors = [];
   const failedRequests = [];
+  let goalSummary = "unknown";
 
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -133,17 +134,44 @@ async function main() {
       await page.waitForTimeout(600);
     }
 
-    // 5. Start chopping wood ("路边的小白杨" quick play button) on Desktop Gathering view if idle
-    const quickStartBtn = page.locator(".sar-quick:not(.stop)").first();
-    if (await quickStartBtn.isVisible().catch(() => false)) {
-      const hasStop = await page.locator(".sar-quick.stop").first().isVisible().catch(() => false);
-      if (!hasStop) {
-        await quickStartBtn.click().catch(() => {});
+    // 5. Advance Chapter 1 progression based on NextGoalBar
+    const goalBar = page.locator(".next-goal-bar").first();
+    const goalId = (await goalBar.getAttribute("data-goal-id").catch(() => "")) || "chop";
+    const goalTitle = (await page.locator(".next-goal-title").first().textContent().catch(() => "")) || goalId;
+    goalSummary = `${goalId} (${goalTitle.trim()})`;
+
+    if (goalId === "board" || goalId === "sword") {
+      await page.locator("button.next-goal-go").first().click().catch(() => {});
+      await page.waitForTimeout(800);
+      const swordQuick = page.locator(".craft-row[data-action-id='act_craft_weapon_wooden_sword'] .sar-quick:not(.stop)").first();
+      const boardQuick = page.locator(".craft-row[data-action-id='act_craft_lumber_1'] .sar-quick:not(.stop)").first();
+      if (goalId === "sword" && (await swordQuick.isVisible().catch(() => false))) {
+        await swordQuick.click().catch(() => {});
         await page.waitForTimeout(800);
+      } else if (await boardQuick.isVisible().catch(() => false)) {
+        await boardQuick.click().catch(() => {});
+        await page.waitForTimeout(800);
+      }
+    } else if (goalId === "equip_sword") {
+      await page.locator("button.next-goal-go").first().click().catch(() => {});
+      await page.waitForTimeout(800);
+      const equipBtn = page.locator("button:has-text('装备'), button:has-text('穿戴')").first();
+      if (await equipBtn.isVisible().catch(() => false)) {
+        await equipBtn.click().catch(() => {});
+        await page.waitForTimeout(800);
+      }
+    } else {
+      const quickStartBtn = page.locator(".sar-quick:not(.stop)").first();
+      if (await quickStartBtn.isVisible().catch(() => false)) {
+        const hasStop = await page.locator(".sar-quick.stop").first().isVisible().catch(() => false);
+        if (!hasStop) {
+          await quickStartBtn.click().catch(() => {});
+          await page.waitForTimeout(800);
+        }
       }
     }
 
-    await checkBrokenImages(page, "Desktop-Gather", issues);
+    await checkBrokenImages(page, "Desktop-Main", issues);
     await page.screenshot({ path: outDesktop, fullPage: false });
 
     // 6. Open Adventure / Combat view and inspect Ability Loadout panel
@@ -196,10 +224,10 @@ async function main() {
   const status = issues.length === 0 ? "PASS" : `ISSUES_FOUND (${issues.length})`;
   const entry = [
     `## [${stamp}] Autonomous Playtest — ${status}`,
-    `- Target: \`${targetUrl}\``,
+    `- Target: \`${targetUrl}\` | Chapter Goal: \`${goalSummary}\``,
     `- Screenshots: \`playtest_live_desktop.png\`, \`playtest_live_combat.png\`, \`playtest_live_mobile.png\``,
     issues.length === 0
-      ? `- Result: Entered in-game views (Gather + Combat + AbilityLoadout + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.`
+      ? `- Result: Entered in-game views (Main + Combat + AbilityLoadout + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.`
       : `- Issues:\n${issues.map((i) => `  - ${i}`).join("\n")}`,
     "",
   ].join("\n");

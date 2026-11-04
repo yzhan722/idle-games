@@ -125,7 +125,7 @@ export function AdventurePanel({
           {!playerState.equipment?.main_hand && (
             <div className="page-info adventure-hint-banner">
               <p>
-                还没装备武器。去制作做一把短剑，再点角色穿上。
+                还没装备武器。先去木工打造一把木头短剑，再点角色穿上。
                 <button
                   type="button"
                   className="header-menu-btn"
