@@ -3975,6 +3975,7 @@ export class World3D {
       const bastionSpec = this.state.getBastionTrooperSpec();
       const plasmaCritMult = 1 + this.state.getSkillNodeRank('plasma_t1') * 0.16;
       this.state.stageClonesSpawned++;
+      this.state.runSpawnsPool++;
       if (kind === 'champion') {
         const mode = slot.mechaType || 'hammer';
         slot.maxHp = (mode === 'aegis' ? 320 : mode === 'pyro' ? 210 : 245) * champMult;
@@ -4476,6 +4477,7 @@ export class World3D {
       }
       if (count > 0) {
         this.state.stageMutantsKilled += count;
+        this.state.runKillsPool += count;
         this.state.addGold(Math.max(1, Math.floor(count * goldPerKillMult)));
       }
       return count;
@@ -4909,6 +4911,8 @@ export class World3D {
 
     if (!this.isOverrunFrenzy) {
       this.stageCombatTime += clampedDt;
+      this.state.runCombatTimePool += clampedDt;
+      this.state.runSiegePool += clampedDt * 2.0;
     }
 
     // 1. Handle Keyboard movement for Turret (Shift boosts speed, S/ArrowDown centers)
@@ -7017,6 +7021,7 @@ export class World3D {
           }
 
           this.bossHp = Math.max(0, this.bossHp - dmg);
+          this.state.runSiegePool += dmg;
           this.bossHitFlash = 1.0;
           if (Math.random() < 0.25) {
             this.state.addGold(1);
@@ -7974,6 +7979,7 @@ export class World3D {
     if (u.team === 'red') {
       const chargeMult = this.state.getSkillChargeMultiplier();
       this.state.stageMutantsKilled++;
+      this.state.runKillsPool++;
 
       // Track Kill-Streak Adrenaline Frenzy (Pillar 4)
       this.killStreakCount++;

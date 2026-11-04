@@ -1521,33 +1521,37 @@ function startLevel(idx: number): void {
 function refreshUpgradeUI(): void {
   goldAmountEl.textContent = `${Math.floor(state.gold)}`;
 
-  // Fire Rate
+  // Fire Rate (controlled by in-run Combat Time seconds — never costs meta gold!)
   const costFR = state.getFireRateCost();
+  const curTime = Math.floor(state.runCombatTimePool);
   lvlFireRate.textContent = `Lv.${state.fireRateLevel}`;
   if (statFireRate) statFireRate.textContent = `${state.getFireRatePerSec().toFixed(1)}/s`;
-  costFireRate.textContent = `${costFR}`;
-  upgFireRate.disabled = state.gold < costFR;
+  costFireRate.textContent = `${Math.min(curTime, costFR)}/${costFR}秒`;
+  upgFireRate.disabled = curTime < costFR;
 
-  // Power
+  // Power (controlled by in-run Kills — never costs meta gold!)
   const costPwr = state.getPowerCost();
+  const curKills = Math.floor(state.runKillsPool);
   lvlPower.textContent = `Lv.${state.powerLevel}`;
   if (statPower) statPower.textContent = `×${state.getPowerMultiplier().toFixed(2)}`;
-  costPower.textContent = `${costPwr}`;
-  upgPower.disabled = state.gold < costPwr;
+  costPower.textContent = `${Math.min(curKills, costPwr)}/${costPwr}击杀`;
+  upgPower.disabled = curKills < costPwr;
 
-  // Champion
+  // Champion (controlled by in-run Spawns — never costs meta gold!)
   const costChamp = state.getChampionCost();
+  const curSpawns = Math.floor(state.runSpawnsPool);
   lvlChampion.textContent = `Lv.${state.championLevel}`;
   if (statChampion) statChampion.textContent = `×${state.getChampionMultiplier().toFixed(2)}`;
-  costChampion.textContent = `${costChamp}`;
-  upgChampion.disabled = state.gold < costChamp;
+  costChampion.textContent = `${Math.min(curSpawns, costChamp)}/${costChamp}出兵`;
+  upgChampion.disabled = curSpawns < costChamp;
 
-  // Loot
+  // Loot (controlled by in-run Siege Damage — never costs meta gold!)
   const costLt = state.getLootCost();
+  const curSiege = Math.floor(state.runSiegePool);
   lvlLoot.textContent = `Lv.${state.lootLevel}`;
   if (statLoot) statLoot.textContent = `+${Math.round((state.getLootMultiplier() - 1) * 100)}%`;
-  costLoot.textContent = `${costLt}`;
-  upgLoot.disabled = state.gold < costLt;
+  costLoot.textContent = `${Math.min(curSiege, costLt)}/${costLt}攻城`;
+  upgLoot.disabled = curSiege < costLt;
 }
 
 let lastBerserkState = false;
@@ -1573,7 +1577,7 @@ function updateLiveHUD(): void {
   }
 
   const curGold = Math.floor(state.gold);
-  const upgKey = `${state.fireRateLevel}_${state.powerLevel}_${state.championLevel}_${state.lootLevel}`;
+  const upgKey = `${state.fireRateLevel}_${state.powerLevel}_${state.championLevel}_${state.lootLevel}_${Math.floor(state.runCombatTimePool)}_${Math.floor(state.runKillsPool)}_${Math.floor(state.runSpawnsPool)}_${Math.floor(state.runSiegePool)}`;
   if (curGold !== lastHudGold || upgKey !== lastUpgLevelsKey) {
     lastHudGold = curGold;
     lastUpgLevelsKey = upgKey;
@@ -1924,8 +1928,8 @@ btnOrbital.addEventListener('click', () => {
 
 upgFireRate.addEventListener('click', () => {
   const cost = state.getFireRateCost();
-  if (state.gold >= cost) {
-    state.gold -= cost;
+  if (Math.floor(state.runCombatTimePool) >= cost) {
+    state.runCombatTimePool = Math.max(0, state.runCombatTimePool - cost);
     state.fireRateLevel++;
     state.save();
     sound.playUpgrade();
@@ -1936,8 +1940,8 @@ upgFireRate.addEventListener('click', () => {
 
 upgPower.addEventListener('click', () => {
   const cost = state.getPowerCost();
-  if (state.gold >= cost) {
-    state.gold -= cost;
+  if (Math.floor(state.runKillsPool) >= cost) {
+    state.runKillsPool = Math.max(0, state.runKillsPool - cost);
     state.powerLevel++;
     state.save();
     sound.playUpgrade();
@@ -1948,9 +1952,9 @@ upgPower.addEventListener('click', () => {
 
 upgChampion.addEventListener('click', () => {
   const cost = state.getChampionCost();
-  if (state.gold >= cost) {
+  if (Math.floor(state.runSpawnsPool) >= cost) {
     const prevTier = state.getUltimateEvolutionSpec().tier;
-    state.gold -= cost;
+    state.runSpawnsPool = Math.max(0, state.runSpawnsPool - cost);
     state.championLevel++;
     state.save();
     sound.playUpgrade();
@@ -1970,8 +1974,8 @@ upgChampion.addEventListener('click', () => {
 
 upgLoot.addEventListener('click', () => {
   const cost = state.getLootCost();
-  if (state.gold >= cost) {
-    state.gold -= cost;
+  if (Math.floor(state.runSiegePool) >= cost) {
+    state.runSiegePool = Math.max(0, state.runSiegePool - cost);
     state.lootLevel++;
     state.save();
     sound.playUpgrade();

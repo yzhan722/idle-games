@@ -1137,6 +1137,10 @@ export class GameState {
   public stageClonesSpawned = 0;
   public stageMutantsKilled = 0;
   public stageGoldEarned = 0;
+  public runCombatTimePool = 0;
+  public runKillsPool = 0;
+  public runSpawnsPool = 0;
+  public runSiegePool = 0;
 
   constructor() {
     this.load();
@@ -1240,6 +1244,10 @@ export class GameState {
     this.powerLevel = 1;
     this.championLevel = 1;
     this.lootLevel = 1;
+    this.runCombatTimePool = 0;
+    this.runKillsPool = 0;
+    this.runSpawnsPool = 0;
+    this.runSiegePool = 0;
     this.buffStacks = {};
     this.activeDebuffs = [];
     const startCharge = this.getStartingSkillCharge();
@@ -2347,21 +2355,21 @@ export class GameState {
     return Math.max(0.55, 1 - this.getSkillNodeRank('tycoon_t2') * 0.1);
   }
 
-  // Upgrade costs
+  // In-run tactical upgrade requirements (controlled by in-run Time, Kills, Spawns, and Siege — never costs meta gold!)
   public getFireRateCost(): number {
-    return Math.max(20, Math.floor(55 * Math.pow(1.48, this.fireRateLevel - 1) * this.getInMatchUpgradeDiscountMult()));
+    return Math.max(5, Math.floor(8 * Math.pow(1.35, this.fireRateLevel - 1) * this.getInMatchUpgradeDiscountMult()));
   }
 
   public getPowerCost(): number {
-    return Math.max(25, Math.floor(65 * Math.pow(1.5, this.powerLevel - 1) * this.getInMatchUpgradeDiscountMult()));
+    return Math.max(8, Math.floor(12 * Math.pow(1.38, this.powerLevel - 1) * this.getInMatchUpgradeDiscountMult()));
   }
 
   public getChampionCost(): number {
-    return Math.max(35, Math.floor(85 * Math.pow(1.52, this.championLevel - 1) * this.getInMatchUpgradeDiscountMult()));
+    return Math.max(15, Math.floor(25 * Math.pow(1.4, this.championLevel - 1) * this.getInMatchUpgradeDiscountMult()));
   }
 
   public getLootCost(): number {
-    return Math.max(30, Math.floor(75 * Math.pow(1.5, this.lootLevel - 1) * this.getInMatchUpgradeDiscountMult()));
+    return Math.max(20, Math.floor(30 * Math.pow(1.4, this.lootLevel - 1) * this.getInMatchUpgradeDiscountMult()));
   }
 
   public addGold(amount: number): number {
