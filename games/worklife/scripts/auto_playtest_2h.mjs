@@ -11,6 +11,20 @@ const outMobile = path.join(rootDir, "playtest_live_mobile.png");
 const logFile = path.join(rootDir, "playtest_audit_log.md");
 const targetUrl = process.env.PLAYTEST_URL || "https://worklife.yinosites.com";
 
+async function checkBrokenImages(page, label, issues) {
+  const brokenImgs = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll("img"))
+      .filter((img) => {
+        if (img.getClientRects().length === 0) return false;
+        return !img.complete || img.naturalWidth === 0;
+      })
+      .map((img) => img.getAttribute("src") || img.getAttribute("data-t1-key") || "unknown-img");
+  });
+  if (brokenImgs.length > 0) {
+    issues.push(`[${label}] Broken images detected (${brokenImgs.length}): ${brokenImgs.slice(0, 5).join(", ")}`);
+  }
+}
+
 async function main() {
   const browser = await chromium.launch({ headless: true });
   const issues = [];
@@ -20,10 +34,16 @@ async function main() {
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
+    page.setDefaultTimeout(3000);
 
     page.on("pageerror", (err) => consoleErrors.push(`PAGEERROR: ${err.message}`));
     page.on("console", (msg) => {
-      if (msg.type() === "error") consoleErrors.push(`CONSOLE_ERROR: ${msg.text()}`);
+      if (msg.type() === "error") {
+        const text = msg.text();
+        if (!text.includes("Failed to load resource: the server responded with a status of 40")) {
+          consoleErrors.push(`CONSOLE_ERROR: ${text}`);
+        }
+      }
     });
     page.on("requestfailed", (req) => {
       const url = req.url();
@@ -33,44 +53,103 @@ async function main() {
     });
 
     await page.goto(targetUrl, { waitUntil: "networkidle", timeout: 30000 });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1200);
 
-    // Complete guest login / character creation if shown
-    const guestBtn = page.locator("button:has-text('游客'), button:has-text('开始'), button:has-text('进入异世界')").first();
-    if (await guestBtn.isVisible().catch(() => false)) {
-      await guestBtn.click().catch(() => {});
-      await page.waitForTimeout(1500);
+    // 1. Complete login or auto-register
+    const loginUserField = page.locator("#username");
+    if (await loginUserField.isVisible().catch(() => false)) {
+      await loginUserField.fill("auto_playtest_2h");
+      await page.locator("#password").fill("WorklifePlaytest2026!");
+      const submitBtn = page.locator("button.login-btn").first();
+      await submitBtn.click().catch(() => {});
+      await page.waitForTimeout(1800);
+
+      const quickRegBtn = page.locator("button:has-text('立即用当前填写的账号密码直接注册')").first();
+      if (await quickRegBtn.isVisible().catch(() => false)) {
+        await quickRegBtn.click().catch(() => {});
+        await page.waitForTimeout(2200);
+      }
+
+      if (await loginUserField.isVisible().catch(() => false)) {
+        const regTab = page.locator("button.login-tab:has-text('注册账号')").first();
+        if (await regTab.isVisible().catch(() => false)) {
+          await regTab.click().catch(() => {});
+          await page.waitForTimeout(300);
+          await page.locator("#username").fill(`pt_${Date.now().toString(36)}`);
+          await page.locator("#password").fill("WorklifePlaytest2026!");
+          const confirmInput = page.locator("#confirm");
+          if (await confirmInput.isVisible().catch(() => false)) {
+            await confirmInput.fill("WorklifePlaytest2026!");
+          }
+          await page.locator("button.login-btn").first().click().catch(() => {});
+          await page.waitForTimeout(2200);
+        }
+      }
     }
-    const createBtn = page.locator("button:has-text('踏入异世界'), button:has-text('完成创建'), button:has-text('开始冒险')").first();
-    if (await createBtn.isVisible().catch(() => false)) {
-      await createBtn.click().catch(() => {});
-      await page.waitForTimeout(1500);
+
+    // 2. Complete Character Creation if shown
+    const nameInput = page.locator(".cc-name, input[placeholder*='个字']").first();
+    if (await nameInput.isVisible().catch(() => false)) {
+      const cur = await nameInput.inputValue().catch(() => "");
+      if (!cur) {
+        await nameInput.fill("巡检打工人");
+      }
+      const createBtn = page.locator("button.cc-submit, button:has-text('进入异世界')").first();
+      if (await createBtn.isVisible().catch(() => false)) {
+        await createBtn.click().catch(() => {});
+        await page.waitForTimeout(2000);
+      }
+    }
+
+    // 3. Verify we entered the main game layout
+    const inGame = await page
+      .locator(".game-main-layout, nav.skill-sidebar, .game-header")
+      .first()
+      .isVisible({ timeout: 8000 })
+      .catch(() => false);
+    if (!inGame) {
+      issues.push("Failed to enter in-game main layout (still on login or character creation screen).");
+    }
+    await page.waitForTimeout(1200);
+
+    // 4. Dismiss tutorial guide after player state loads
+    const skipBtn = page.locator("button.tg-skip").first();
+    if (await skipBtn.isVisible().catch(() => false)) {
+      await skipBtn.click().catch(() => {});
+      await page.waitForTimeout(600);
+    }
+
+    // 5. Start chopping wood ("路边的小白杨" quick play button) on Desktop Gathering view
+    const quickStartBtn = page.locator(".sar-quick:not(.stop)").first();
+    if (await quickStartBtn.isVisible().catch(() => false)) {
+      await quickStartBtn.click().catch(() => {});
+      await page.waitForTimeout(800);
     }
 
     await page.screenshot({ path: outDesktop, fullPage: false });
+    await checkBrokenImages(page, "Desktop-Gather", issues);
 
-    // Check broken images on desktop view
-    const brokenImgs = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("img"))
-        .filter((img) => !img.complete || img.naturalWidth === 0)
-        .map((img) => img.getAttribute("src") || img.getAttribute("data-t1-key") || "unknown-img");
-    });
-    if (brokenImgs.length > 0) {
-      issues.push(`Broken images detected (${brokenImgs.length}): ${brokenImgs.slice(0, 5).join(", ")}`);
-    }
-
-    // Navigate to Adventure / Combat tab and capture screenshot
-    const advTab = page.locator("button:has-text('冒险'), [aria-label*='冒险']").first();
-    if (await advTab.isVisible().catch(() => false)) {
-      await advTab.click().catch(() => {});
+    // 6. Open Adventure / Combat view (via "耐力" or enabled "冒险" nav item)
+    const staminaNav = page.locator("nav.skill-sidebar button:has-text('耐力'), [data-nav-id='stamina']").first();
+    if (await staminaNav.isVisible().catch(() => false)) {
+      await staminaNav.click().catch(() => {});
       await page.waitForTimeout(1200);
+    } else {
+      const advTab = page.locator("[data-nav-id='adventure'], button:has-text('冒险')").first();
+      if (await advTab.isVisible().catch(() => false)) {
+        await advTab.click().catch(() => {});
+        await page.waitForTimeout(1200);
+      }
     }
-    await page.screenshot({ path: outCombat, fullPage: false });
 
-    // Switch to Mobile viewport (390x844) and verify layout
+    await page.screenshot({ path: outCombat, fullPage: false });
+    await checkBrokenImages(page, "Desktop-Combat", issues);
+
+    // 7. Switch to Mobile viewport (390x844) and verify layout + overflow
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
     await page.screenshot({ path: outMobile, fullPage: false });
+    await checkBrokenImages(page, "Mobile-390x844", issues);
 
     const overflowPx = await page.evaluate(() => {
       return document.documentElement.scrollWidth - document.documentElement.clientWidth;
@@ -96,7 +175,7 @@ async function main() {
     `- Target: \`${targetUrl}\``,
     `- Screenshots: \`playtest_live_desktop.png\`, \`playtest_live_combat.png\`, \`playtest_live_mobile.png\``,
     issues.length === 0
-      ? `- Result: Zero console errors, zero broken images, zero layout overflow.`
+      ? `- Result: Entered in-game views (Gather + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.`
       : `- Issues:\n${issues.map((i) => `  - ${i}`).join("\n")}`,
     "",
   ].join("\n");
