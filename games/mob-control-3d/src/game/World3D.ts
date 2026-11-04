@@ -291,7 +291,7 @@ export class World3D {
 
   // Mobile Thermal & Adaptive Performance Governor
   public readonly isMobileDevice: boolean;
-  private usePostProcessing = true;
+  private usePostProcessing = false;
   private lowSpecMode = false;
   private slowFrameStreak = 0;
   private avgFrameMs = 16.6;
@@ -350,8 +350,8 @@ export class World3D {
     this.isMobileDevice =
       window.matchMedia('(max-width: 860px), (pointer: coarse)').matches ||
       /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    // Bypass multi-pass offscreen EffectComposer on mobile to prevent GPU VRAM thrashing & overheating!
-    this.usePostProcessing = !this.isMobileDevice;
+    // Unified direct hardware MSAA backbuffer render path across all desktop & mobile GPUs
+    this.usePostProcessing = false;
 
     const nativeDpr = window.devicePixelRatio || 1;
     const dpr = this.isMobileDevice
@@ -367,9 +367,6 @@ export class World3D {
     const dbgExt = gl.getExtension('WEBGL_debug_renderer_info');
     const glRendererStr = dbgExt ? String(gl.getParameter(dbgExt.UNMASKED_RENDERER_WEBGL)) : '';
     const isSoftwareWebGL = /SwiftShader|llvmpipe|Software|Basic Render/i.test(glRendererStr);
-    if (isSoftwareWebGL) {
-      this.usePostProcessing = false;
-    }
     const effectiveDpr = isSoftwareWebGL ? Math.min(dpr, 1.75) : dpr;
     this.renderer.setPixelRatio(effectiveDpr);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -396,21 +393,8 @@ export class World3D {
     this.camera = new THREE.PerspectiveCamera(26, window.innerWidth / window.innerHeight, 1.0, 220);
     this.applyCameraTransform();
 
-    // Post-Processing Pipeline with 4x Hardware MSAA RenderTarget + Directional FXAA 3.11
-    const maxSamples = this.renderer.capabilities.isWebGL2
-      ? Math.min(4, this.renderer.capabilities.maxSamples || 4)
-      : 0;
-    const composerTarget = new THREE.WebGLRenderTarget(
-      Math.max(1, Math.floor(window.innerWidth * effectiveDpr)),
-      Math.max(1, Math.floor(window.innerHeight * effectiveDpr)),
-      {
-        samples: maxSamples,
-        type: THREE.HalfFloatType,
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-      }
-    );
-    this.composer = new EffectComposer(this.renderer, composerTarget);
+    // Post-Processing Pipeline (kept WebGL1/2 compatible without MSAA renderbuffer sampling issues)
+    this.composer = new EffectComposer(this.renderer);
     this.composer.setPixelRatio(effectiveDpr);
     this.composer.setSize(window.innerWidth, window.innerHeight);
     const renderPass = new RenderPass(this.scene, this.camera);
@@ -539,7 +523,7 @@ export class World3D {
     distance = 14.0,
     duration = 0.36
   ): void {
-    if (this.isMobileDevice || this.lowSpecMode || !this.usePostProcessing) return;
+    if (this.isMobileDevice || this.lowSpecMode) return;
     let chosen = this.combatLights[0];
     for (const cl of this.combatLights) {
       if (!cl.light.visible) {

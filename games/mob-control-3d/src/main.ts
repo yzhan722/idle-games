@@ -479,7 +479,7 @@ function renderMainMenu(): void {
   const spentPts = state.getSpentTalentPoints();
 
   if (brandCrestImgEl) {
-    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=15`;
+    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=16`;
   }
   if (commanderRankTagEl) {
     commanderRankTagEl.textContent = getCommanderRankTitle(state.bestStageCleared);
@@ -760,7 +760,7 @@ function renderMainMenu(): void {
       row.style.setProperty('--stagger-i', `${idx}`);
       const lbRaceOrder = ['swarm', 'titan', 'gate', 'plasma', 'orbital', 'bastion', 'tycoon'];
       const avatarRace = lbRaceOrder[idx % lbRaceOrder.length];
-      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=15" alt="" draggable="false" /></div>`;
+      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=16" alt="" draggable="false" /></div>`;
       if (isActiveMode) {
         const timeStr = state.formatPlayTime(entry.playTimeSeconds);
         row.innerHTML = `

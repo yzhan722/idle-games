@@ -1516,8 +1516,7 @@ export function createCinemaPostProcessingPass(width: number, height: number): S
         float edgeMask = smoothstep(0.35, 0.78, dist);
         col = mix(col, vec3(0.95, 0.22, 0.26), edgeMask * uDangerPulse * 0.32);
 
-        // NaN/Inf Sanitize Guard
-        if (any(isnan(col)) || any(isinf(col))) col = vec3(0.92, 0.85, 0.74);
+        col = clamp(col, 0.0, 1.0);
 
         gl_FragColor = vec4(col, 1.0);
       }
