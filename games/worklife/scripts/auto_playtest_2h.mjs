@@ -11,7 +11,21 @@ const outMobile = path.join(rootDir, "playtest_live_mobile.png");
 const logFile = path.join(rootDir, "playtest_audit_log.md");
 const targetUrl = process.env.PLAYTEST_URL || "https://worklife.yinosites.com";
 
+async function waitForVisibleImages(page, timeoutMs = 4000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const pending = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll("img")).filter(
+        (img) => img.getClientRects().length > 0 && (!img.complete || img.naturalWidth === 0)
+      ).length;
+    });
+    if (pending === 0) return;
+    await page.waitForTimeout(200);
+  }
+}
+
 async function checkBrokenImages(page, label, issues) {
+  await waitForVisibleImages(page, 4000);
   const brokenImgs = await page.evaluate(() => {
     return Array.from(document.querySelectorAll("img"))
       .filter((img) => {
@@ -119,37 +133,47 @@ async function main() {
       await page.waitForTimeout(600);
     }
 
-    // 5. Start chopping wood ("路边的小白杨" quick play button) on Desktop Gathering view
+    // 5. Start chopping wood ("路边的小白杨" quick play button) on Desktop Gathering view if idle
     const quickStartBtn = page.locator(".sar-quick:not(.stop)").first();
     if (await quickStartBtn.isVisible().catch(() => false)) {
-      await quickStartBtn.click().catch(() => {});
-      await page.waitForTimeout(800);
+      const hasStop = await page.locator(".sar-quick.stop").first().isVisible().catch(() => false);
+      if (!hasStop) {
+        await quickStartBtn.click().catch(() => {});
+        await page.waitForTimeout(800);
+      }
     }
 
-    await page.screenshot({ path: outDesktop, fullPage: false });
     await checkBrokenImages(page, "Desktop-Gather", issues);
+    await page.screenshot({ path: outDesktop, fullPage: false });
 
-    // 6. Open Adventure / Combat view (via "耐力" or enabled "冒险" nav item)
+    // 6. Open Adventure / Combat view and inspect Ability Loadout panel
     const staminaNav = page.locator("nav.skill-sidebar button:has-text('耐力'), [data-nav-id='stamina']").first();
     if (await staminaNav.isVisible().catch(() => false)) {
       await staminaNav.click().catch(() => {});
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(1000);
     } else {
       const advTab = page.locator("[data-nav-id='adventure'], button:has-text('冒险')").first();
       if (await advTab.isVisible().catch(() => false)) {
         await advTab.click().catch(() => {});
-        await page.waitForTimeout(1200);
+        await page.waitForTimeout(1000);
       }
     }
 
-    await page.screenshot({ path: outCombat, fullPage: false });
+    const configSkillBtn = page.locator("button:has-text('配置技能')").first();
+    if (await configSkillBtn.isVisible().catch(() => false)) {
+      await configSkillBtn.click().catch(() => {});
+      await page.waitForTimeout(600);
+      await checkBrokenImages(page, "Desktop-AbilityLoadout", issues);
+    }
+
     await checkBrokenImages(page, "Desktop-Combat", issues);
+    await page.screenshot({ path: outCombat, fullPage: false });
 
     // 7. Switch to Mobile viewport (390x844) and verify layout + overflow
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: outMobile, fullPage: false });
     await checkBrokenImages(page, "Mobile-390x844", issues);
+    await page.screenshot({ path: outMobile, fullPage: false });
 
     const overflowPx = await page.evaluate(() => {
       return document.documentElement.scrollWidth - document.documentElement.clientWidth;
@@ -175,7 +199,7 @@ async function main() {
     `- Target: \`${targetUrl}\``,
     `- Screenshots: \`playtest_live_desktop.png\`, \`playtest_live_combat.png\`, \`playtest_live_mobile.png\``,
     issues.length === 0
-      ? `- Result: Entered in-game views (Gather + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.`
+      ? `- Result: Entered in-game views (Gather + Combat + AbilityLoadout + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.`
       : `- Issues:\n${issues.map((i) => `  - ${i}`).join("\n")}`,
     "",
   ].join("\n");
