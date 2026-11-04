@@ -99,7 +99,7 @@ func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: V
 	plot_index_on_island = p_idx_on_island
 	crop_id = p_crop_id
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
-	growth = randf_range(0.35, 0.88)
+	growth = 0.62 if (GameManager != null and GameManager.is_automated_test_mode) else randf_range(0.35, 0.88)
 	watered = true
 	_refresh_evolved_crop()
 	_sync_sprites()

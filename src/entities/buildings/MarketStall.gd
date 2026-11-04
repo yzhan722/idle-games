@@ -11,7 +11,7 @@ class_name MarketStall
 const BASE_SPRITE_SCALE := 0.72
 const VISUAL_WIDTH := 92.16 # 128 * 0.72
 const VISUAL_HEIGHT := 74.88 # 104 * 0.72
-const QUEUE_BASE_OFFSET_X := -6.0
+const QUEUE_BASE_OFFSET_X := -34.0
 const QUEUE_SPACING_X := 26.0
 const MAX_VISIBLE_QUEUE := 5
 

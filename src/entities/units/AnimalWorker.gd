@@ -646,8 +646,8 @@ func _update_chef_work_step() -> void:
 		else:
 			w_node = world_ref.mortar_workshop
 
-	# Face toward the center of the workshop (`fox` at dx=-18 faces right; `penguin` on Island 3 at dx=+18 faces left)
-	facing_left = (home_island == 3 and is_penguin)
+	# Face toward the center of the workshop (`mortar_chef`/`cauldron_chef` at dx=+10 face left; on Island 3 `fox` at dx=-10 faces right, `penguin` at dx=+16 faces left)
+	facing_left = (home_island != 3) or is_penguin
 	var chef_slot_key := animal_key + "_" + str(home_island)
 
 	if worker_step == 0:
