@@ -5071,8 +5071,7 @@ body.screen-quake-active #app {
       rgba(15, 23, 42, 0.55) 100%
     ),
     url('/assets/icons/title_splash_bg.jpg?v=12') center center / cover no-repeat;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: high-quality;
+  image-rendering: auto;
   animation: none !important;
   transform: none !important;
   z-index: 0;
@@ -7232,8 +7231,7 @@ img,
 .meta-art-img,
 .skill-art-img,
 .hero-cannon-stage-img {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: high-quality;
+  image-rendering: auto !important;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }

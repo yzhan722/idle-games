@@ -505,16 +505,19 @@ export function createAnimatedHumanoidMaterial(options: {
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <dithering_fragment>',
       `
-      // === TRUE 2D CEL-TOON / MATCAP ILLUSTRATION SHADING FOR UNITS ===
+      // === TRUE 2D CEL-TOON / MATCAP ILLUSTRATION SHADING FOR UNITS (DERIVATIVE ANTI-ALIASED) ===
       vec3 viewDir2D = normalize(vViewPosition);
       vec3 viewN2D = normalize(normal);
       float ndv2D = abs(dot(viewN2D, viewDir2D));
+      float fwNdv = max(0.035, fwidth(ndv2D) * 1.45);
 
-      // 1. 2-Step Warm Cel-Toon Lighting (Zero dark/muddy 3D PBR shadows!)
+      // 1. 2-Step Warm Cel-Toon Lighting with fwidth() derivative smoothing
       vec3 toonLightDir = normalize(vec3(-0.36, 0.74, 0.56));
       float ndl2D = dot(viewN2D, toonLightDir);
-      float celBand = mix(0.80, 1.06, smoothstep(-0.10, 0.15, ndl2D));
-      vec3 shadowWarmth = mix(vec3(0.95, 0.84, 0.78), vec3(1.0, 1.0, 1.0), smoothstep(-0.10, 0.15, ndl2D));
+      float fwNdl = max(0.04, fwidth(ndl2D) * 1.45);
+      float celStep = smoothstep(-0.08 - fwNdl, 0.14 + fwNdl, ndl2D);
+      float celBand = mix(0.80, 1.06, celStep);
+      vec3 shadowWarmth = mix(vec3(0.95, 0.84, 0.78), vec3(1.0, 1.0, 1.0), celStep);
       vec3 toonCol = diffuseColor.rgb * shadowWarmth * celBand;
 
       // 2. Soft Translucent Jelly Rim Glow + Hit/Charge Flash
@@ -526,20 +529,26 @@ export function createAnimatedHumanoidMaterial(options: {
       // 3. Iconic Supercell Vinyl-Toy Dual Specular Catchlights on Jelly Slimes (vTintMask > 0.5)
       if (vTintMask > 0.5 && viewN2D.z > 0.12) {
         vec2 catchUV = (viewN2D.xy - vec2(-0.31, 0.36)) * vec2(0.95, 1.32);
-        float catchDot = 1.0 - smoothstep(0.14, 0.21, length(catchUV));
+        float catchLen = length(catchUV);
+        float fwCatch = max(0.035, fwidth(catchLen) * 1.4);
+        float catchDot = 1.0 - smoothstep(0.16 - fwCatch, 0.19 + fwCatch, catchLen);
         vec2 subCatchUV = (viewN2D.xy - vec2(-0.14, 0.51)) * vec2(1.4, 1.6);
-        float subCatchDot = 1.0 - smoothstep(0.06, 0.11, length(subCatchUV));
+        float subLen = length(subCatchUV);
+        float fwSub = max(0.035, fwidth(subLen) * 1.4);
+        float subCatchDot = 1.0 - smoothstep(0.07 - fwSub, 0.10 + fwSub, subLen);
         float vinylGloss = max(catchDot, subCatchDot * 0.85);
         toonCol = mix(toonCol, vec3(1.0, 1.0, 1.0), vinylGloss * 0.96);
       } else {
-        // Crisp 2D cartoon specular band for crowns, helmets, goggles & weapons
-        float hardSpec = smoothstep(0.82, 0.89, max(0.0, dot(viewN2D, toonLightDir))) * 0.30;
+        // Derivative-antialiased cartoon specular band for crowns, helmets, goggles & weapons
+        float specDot = max(0.0, dot(viewN2D, toonLightDir));
+        float fwSpec = max(0.035, fwidth(specDot) * 1.4);
+        float hardSpec = smoothstep(0.84 - fwSpec, 0.88 + fwSpec, specDot) * 0.30;
         toonCol += vec3(hardSpec);
       }
 
-      // 4. Crisp Supercell Vinyl-Toy Dark-Espresso Cartoon Silhouette Ink Outline (#1e110a)
-      float inkEdge = 1.0 - smoothstep(0.24, 0.36, ndv2D);
-      toonCol = mix(toonCol, vec3(0.118, 0.067, 0.039), inkEdge * 0.94);
+      // 4. Derivative-Antialiased Supercell Vinyl-Toy Dark-Espresso Cartoon Silhouette Outline (#1e110a)
+      float inkEdge = 1.0 - smoothstep(0.27 - fwNdv, 0.35 + fwNdv, ndv2D);
+      toonCol = mix(toonCol, vec3(0.118, 0.067, 0.039), inkEdge * 0.90);
 
       gl_FragColor = vec4(toonCol, diffuseColor.a);
       #include <dithering_fragment>

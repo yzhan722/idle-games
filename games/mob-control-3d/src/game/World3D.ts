@@ -504,8 +504,8 @@ export class World3D {
 
     const nativeDpr = window.devicePixelRatio || 1;
     const dpr = this.isMobileDevice
-      ? Math.min(nativeDpr, 1.35)
-      : Math.min(Math.max(nativeDpr, 1.5), 2.25);
+      ? Math.min(Math.max(nativeDpr, 1.5), 2.0)
+      : Math.min(Math.max(nativeDpr, 2.0), 2.5);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
@@ -515,13 +515,15 @@ export class World3D {
     const gl = this.renderer.getContext();
     const dbgExt = gl.getExtension('WEBGL_debug_renderer_info');
     const glRendererStr = dbgExt ? String(gl.getParameter(dbgExt.UNMASKED_RENDERER_WEBGL)) : '';
-    if (/SwiftShader|llvmpipe|Software|Basic Render/i.test(glRendererStr)) {
+    const isSoftwareWebGL = /SwiftShader|llvmpipe|Software|Basic Render/i.test(glRendererStr);
+    if (isSoftwareWebGL) {
       this.usePostProcessing = false;
     }
-    this.renderer.setPixelRatio(this.usePostProcessing ? dpr : Math.min(nativeDpr, 1.5));
+    const effectiveDpr = isSoftwareWebGL ? Math.min(dpr, 1.75) : dpr;
+    this.renderer.setPixelRatio(effectiveDpr);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.shadowMap.needsUpdate = true;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -543,15 +545,28 @@ export class World3D {
     this.camera = new THREE.PerspectiveCamera(26, window.innerWidth / window.innerHeight, 1.0, 220);
     this.applyCameraTransform();
 
-    // Post-Processing Pipeline (Desktop High-Perf Mode; auto-bypassed on Mobile for cool thermal efficiency)
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.setPixelRatio(dpr);
+    // Post-Processing Pipeline with 4x Hardware MSAA RenderTarget + Directional FXAA 3.11
+    const maxSamples = this.renderer.capabilities.isWebGL2
+      ? Math.min(4, this.renderer.capabilities.maxSamples || 4)
+      : 0;
+    const composerTarget = new THREE.WebGLRenderTarget(
+      Math.max(1, Math.floor(window.innerWidth * effectiveDpr)),
+      Math.max(1, Math.floor(window.innerHeight * effectiveDpr)),
+      {
+        samples: maxSamples,
+        type: THREE.HalfFloatType,
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+      }
+    );
+    this.composer = new EffectComposer(this.renderer, composerTarget);
+    this.composer.setPixelRatio(effectiveDpr);
     this.composer.setSize(window.innerWidth, window.innerHeight);
     const renderPass = new RenderPass(this.scene, this.camera);
     this.bloomPass = new UnrealBloomPass(
       new THREE.Vector2(
-        Math.floor(window.innerWidth * dpr * 0.5),
-        Math.floor(window.innerHeight * dpr * 0.5)
+        Math.floor(window.innerWidth * effectiveDpr * 0.5),
+        Math.floor(window.innerHeight * effectiveDpr * 0.5)
       ),
       0.16,
       0.32,
@@ -559,12 +574,15 @@ export class World3D {
     );
     const outputPass = new OutputPass();
 
-    // Supercell 3D Glossy Toy-Box Post-Processing ShaderPass (Crisp CAS + Vibrant Studio Color Grading, Zero 2D Brown Ink)
+    // Supercell 3D Glossy Toy-Box Post-Processing ShaderPass (Directional FXAA 3.11 + Vibrant Studio Color Grading)
     this.cinemaPass = new ShaderPass({
       uniforms: {
         tDiffuse: { value: null },
         uResolution: {
-          value: new THREE.Vector2(window.innerWidth * dpr, window.innerHeight * dpr),
+          value: new THREE.Vector2(
+            window.innerWidth * effectiveDpr,
+            window.innerHeight * effectiveDpr
+          ),
         },
         uAberration: { value: 0.0 },
         uVignette: { value: 0.1 },
@@ -591,22 +609,51 @@ export class World3D {
           float dist = length(centerVec);
 
           vec3 col = texture2D(tDiffuse, vUv).rgb;
+
+          // Directional Luma-Edge FXAA 3.11 Anti-Aliasing
+          vec3 rgbNW = texture2D(tDiffuse, vUv + vec2(-texel.x,  texel.y)).rgb;
+          vec3 rgbNE = texture2D(tDiffuse, vUv + vec2( texel.x,  texel.y)).rgb;
+          vec3 rgbSW = texture2D(tDiffuse, vUv + vec2(-texel.x, -texel.y)).rgb;
+          vec3 rgbSE = texture2D(tDiffuse, vUv + vec2( texel.x, -texel.y)).rgb;
+
+          const vec3 lumaW = vec3(0.299, 0.587, 0.114);
+          float lumaM  = dot(col,   lumaW);
+          float lumaNW = dot(rgbNW, lumaW);
+          float lumaNE = dot(rgbNE, lumaW);
+          float lumaSW = dot(rgbSW, lumaW);
+          float lumaSE = dot(rgbSE, lumaW);
+          float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+          float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+          float lumaRange = lumaMax - lumaMin;
+
+          if (lumaRange > max(0.024, lumaMax * 0.075)) {
+            vec2 dir;
+            dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
+            dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
+            float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * 0.125), 1.0 / 128.0);
+            float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+            dir = clamp(dir * rcpDirMin, vec2(-8.0), vec2(8.0)) * texel;
+
+            vec3 rgbA = 0.5 * (
+              texture2D(tDiffuse, vUv + dir * (1.0 / 3.0 - 0.5)).rgb +
+              texture2D(tDiffuse, vUv + dir * (2.0 / 3.0 - 0.5)).rgb
+            );
+            vec3 rgbB = rgbA * 0.5 + 0.25 * (
+              texture2D(tDiffuse, vUv + dir * -0.5).rgb +
+              texture2D(tDiffuse, vUv + dir *  0.5).rgb
+            );
+            float lumaB = dot(rgbB, lumaW);
+            col = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
+          }
+
           if (uAberration > 0.015) {
-            vec2 caOffset = centerVec * dist * (uAberration * 0.008);
+            vec2 caOffset = centerVec * dist * (uAberration * 0.006);
             col.r = texture2D(tDiffuse, vUv + caOffset).r;
             col.b = texture2D(tDiffuse, vUv - caOffset).b;
           }
 
-          vec3 tc = texture2D(tDiffuse, vUv + vec2( 0.0,      texel.y)).rgb;
-          vec3 bc = texture2D(tDiffuse, vUv + vec2( 0.0,     -texel.y)).rgb;
-          vec3 ml = texture2D(tDiffuse, vUv + vec2(-texel.x,  0.0)).rgb;
-          vec3 mr = texture2D(tDiffuse, vUv + vec2( texel.x,  0.0)).rgb;
-
-          // Crisp 3D Supercell CAS Sharpening & Subtle Vibrance Boost
-          vec3 blur = (tc + bc + ml + mr) * 0.25;
-          col = clamp(col + (col - blur) * 0.22, 0.0, 1.0);
-          float luma = dot(col, vec3(0.299, 0.587, 0.114));
-          col = clamp(mix(vec3(luma), col, 1.12), 0.0, 1.0);
+          float luma = dot(col, lumaW);
+          col = clamp(mix(vec3(luma), col, 1.10), 0.0, 1.0);
 
           // 4. Light Sunny Vignette & Low-HP Danger Edge Pulse
           float vig = smoothstep(0.95, 0.32, dist * (0.82 + uVignette * 0.22));
@@ -690,9 +737,10 @@ export class World3D {
     this.dirLight = new THREE.DirectionalLight(0xfff0d4, 1.78);
     this.dirLight.position.set(16, 38, 24);
     this.dirLight.castShadow = true;
-    this.dirLight.shadow.mapSize.set(1024, 1024);
-    this.dirLight.shadow.bias = -0.0004;
-    this.dirLight.shadow.normalBias = 0.02;
+    this.dirLight.shadow.mapSize.set(2048, 2048);
+    this.dirLight.shadow.radius = 2.2;
+    this.dirLight.shadow.bias = -0.00035;
+    this.dirLight.shadow.normalBias = 0.025;
     this.dirLight.shadow.camera.near = 5;
     this.dirLight.shadow.camera.far = 95;
     const d = 26;
@@ -775,10 +823,8 @@ export class World3D {
     this.roadMat = new THREE.MeshStandardMaterial({
       map: createThemedRoadTexture(theme),
       normalMap: roadNormal,
-      normalScale: new THREE.Vector2(0.42, 0.42),
+      normalScale: new THREE.Vector2(0.16, 0.16),
       roughnessMap: roadBump,
-      bumpMap: roadBump,
-      bumpScale: 0.032,
       emissive: new THREE.Color(0xffffff),
       emissiveMap: createThemedRoadEmissiveTexture(theme),
       emissiveIntensity: 0.06,
@@ -1328,6 +1374,7 @@ export class World3D {
     pCtx.stroke();
     const peppermintTex = new THREE.CanvasTexture(peppermintCanvas);
     peppermintTex.colorSpace = THREE.SRGBColorSpace;
+    peppermintTex.anisotropy = 16;
     const peppermintWheelMat = stylizeMaterialAs2DIllustration(
       new THREE.MeshStandardMaterial({
         map: peppermintTex,
@@ -3913,6 +3960,7 @@ export class World3D {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
+    tex.anisotropy = 16;
     return tex;
   }
 
@@ -4191,12 +4239,12 @@ export class World3D {
     const onResize = () => {
       const nativeDpr = window.devicePixelRatio || 1;
       const dpr = this.lowSpecMode
-        ? 1.0
+        ? Math.min(Math.max(nativeDpr, 1.5), 2.0)
         : !this.usePostProcessing
-          ? Math.min(nativeDpr, 1.5)
+          ? Math.min(Math.max(nativeDpr, 1.75), 2.25)
           : this.isMobileDevice
-            ? Math.min(nativeDpr, 1.35)
-            : Math.min(Math.max(nativeDpr, 1.5), 2.25);
+            ? Math.min(Math.max(nativeDpr, 1.5), 2.0)
+            : Math.min(Math.max(nativeDpr, 2.0), 2.5);
       this.renderer.setPixelRatio(dpr);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.composer.setPixelRatio(dpr);
@@ -5103,14 +5151,15 @@ export class World3D {
       } else {
         this.slowFrameStreak = Math.max(0, this.slowFrameStreak - 1);
       }
-      // Step 1 Adaptive Frame-Rate Governor: if frame time > 21.5ms (< 46 FPS), bypass multi-pass EffectComposer
-      if (this.usePostProcessing && (this.avgFrameMs > 21.5 || this.slowFrameStreak >= 16)) {
+      // Step 1 Adaptive Frame-Rate Governor: only bypass multi-pass EffectComposer under sustained heavy load (< 30 FPS)
+      if (this.usePostProcessing && (this.avgFrameMs > 33.5 && this.slowFrameStreak >= 45)) {
         this.usePostProcessing = false;
       }
-      // Step 2 Low-Spec Resolution Scaling: if weak host still exceeds 24.5ms (< 41 FPS), drop pixel ratio to 1.0
-      if (!this.lowSpecMode && (this.avgFrameMs > 24.5 || this.slowFrameStreak >= 28)) {
+      // Step 2 Low-Spec Resolution Scaling: preserve crisp anti-aliased DPR (>= 1.5) even on slower hosts
+      if (!this.lowSpecMode && (this.avgFrameMs > 38.0 && this.slowFrameStreak >= 60)) {
         this.lowSpecMode = true;
-        this.renderer.setPixelRatio(1.0);
+        const fallbackDpr = Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2.0);
+        this.renderer.setPixelRatio(fallbackDpr);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
       }
     }
