@@ -143,13 +143,16 @@ async function main() {
     if (goalId === "board" || goalId === "sword") {
       await page.locator("button.next-goal-go").first().click().catch(() => {});
       await page.waitForTimeout(800);
-      const swordQuick = page.locator(".craft-row[data-action-id='act_craft_weapon_wooden_sword'] .sar-quick:not(.stop)").first();
-      const boardQuick = page.locator(".craft-row[data-action-id='act_craft_lumber_1'] .sar-quick:not(.stop)").first();
-      if (goalId === "sword" && (await swordQuick.isVisible().catch(() => false))) {
-        await swordQuick.click().catch(() => {});
-        await page.waitForTimeout(800);
-      } else if (await boardQuick.isVisible().catch(() => false)) {
-        await boardQuick.click().catch(() => {});
+      if (goalId === "sword") {
+        const wepTab = page.locator("button:has-text('武器')").first();
+        if (await wepTab.isVisible().catch(() => false)) {
+          await wepTab.click().catch(() => {});
+          await page.waitForTimeout(500);
+        }
+      }
+      const readyQuick = page.locator(".craft-row.ready .sar-quick:not(.stop)").first();
+      if (await readyQuick.isVisible().catch(() => false)) {
+        await readyQuick.click().catch(() => {});
         await page.waitForTimeout(800);
       }
     } else if (goalId === "equip_sword") {
