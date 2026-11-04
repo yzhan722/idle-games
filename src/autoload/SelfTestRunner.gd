@@ -144,8 +144,8 @@ func _run_all_four_assertions_and_export() -> void:
 		if not bool(GameManager.unlocked_islands.get(2, false)) and c.position.x < 538.0:
 			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked onto locked Island 2 (x=%.1f)!" % [c.sheet_key, c.position.x])
 			return
-		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1320.0:
-			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked onto locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
+		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1055.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
 			return
 		checked_sprites += 1
 

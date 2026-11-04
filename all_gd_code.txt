@@ -916,7 +916,7 @@ func load_game() -> void:
 		add_gold(pending_offline_gold)
 		EventBus.offline_earnings_ready.emit(pending_offline_seconds, pending_offline_gold)
 
-=== FILE: D:\project\maple-isle-idle\src\autoload\SelfTestRunner.gd (18966 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\autoload\SelfTestRunner.gd (18980 bytes) ===
 extends Node
 ## Real-Engine 20x Fast-Forward Self-Test & Dual-State Viewport Screenshot Exporter (`src/autoload/SelfTestRunner.gd`)
 ## Activated when command-line args contain `--self-test` (via `./run_godot.ps1 --self-test`).
@@ -1063,8 +1063,8 @@ func _run_all_four_assertions_and_export() -> void:
 		if not bool(GameManager.unlocked_islands.get(2, false)) and c.position.x < 538.0:
 			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "CustomerNPC `%s` walked onto locked Island 2 (x=%.1f)!" % [c.sheet_key, c.position.x])
 			return
-		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1320.0:
-			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "CustomerNPC `%s` walked onto locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
+		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1055.0:
+			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
 			return
 		checked_sprites += 1
 
@@ -4180,7 +4180,7 @@ func _draw() -> void:
 [node name="AnimalWorker" type="Node2D"]
 script = ExtResource("1_worker")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.gd (11085 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.gd (11134 bytes) ===
 extends Node2D
 class_name CustomerNPC
 ## Long-Cycle Island Customer & Crown VIP Tycoon (`src/entities/units/CustomerNPC.gd`)
@@ -4464,7 +4464,8 @@ func _draw() -> void:
 			draw_texture_rect_region(tex_crops, Rect2(-20, -75 + hop_y, 20, 20), c_reg)
 	elif state == State.LEAVE:
 		if purchased_ok and tex_heart != null:
-			draw_texture_rect(tex_heart, Rect2(-10, -68 + hop_y, 20, 20), false)
+			var heart_y := -80.0 if is_vip else -68.0
+			draw_texture_rect(tex_heart, Rect2(-10, heart_y + hop_y, 20, 20), false)
 		elif disappointed and tex_parchment != null:
 			draw_texture_rect(tex_parchment, Rect2(-16, -72 + hop_y, 32, 22), false)
 
@@ -5487,7 +5488,7 @@ func _apply_to_world() -> void:
 		if absf(prev_z - current_zoom) > 0.0005 or prev_pos.distance_to(current_root_pos) > 0.1:
 			world_ref.queue_redraw()
 
-=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.gd (23139 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.gd (23095 bytes) ===
 extends Node2D
 class_name MainWorld
 ## Panoramic 3-Island World (`src/world/MainWorld.gd`)
@@ -5945,12 +5946,9 @@ func _process(delta: float) -> void:
 func _spawn_customer(as_vip: bool) -> void:
 	var c := CustomerNPC.new()
 	var sp := Vector2(612.4, GROUND_Y)
-	if as_vip:
-		if bool(GameManager.unlocked_islands.get(3, false)):
-			sp = waypoint_graph.get_named_pos("spawn_right")
-		else:
-			sp = waypoint_graph.get_named_pos("pond_east")
-	elif bool(GameManager.unlocked_islands.get(2, false)):
+	if as_vip and bool(GameManager.unlocked_islands.get(3, false)):
+		sp = waypoint_graph.get_named_pos("spawn_right")
+	elif (not as_vip) and bool(GameManager.unlocked_islands.get(2, false)):
 		sp = waypoint_graph.get_named_pos("spawn_left")
 	c.setup_customer(sp, waypoint_graph, market_stall, as_vip)
 	ysort_layer.add_child(c)

@@ -281,6 +281,7 @@ func _draw() -> void:
 			draw_texture_rect_region(tex_crops, Rect2(-20, -75 + hop_y, 20, 20), c_reg)
 	elif state == State.LEAVE:
 		if purchased_ok and tex_heart != null:
-			draw_texture_rect(tex_heart, Rect2(-10, -68 + hop_y, 20, 20), false)
+			var heart_y := -80.0 if is_vip else -68.0
+			draw_texture_rect(tex_heart, Rect2(-10, heart_y + hop_y, 20, 20), false)
 		elif disappointed and tex_parchment != null:
 			draw_texture_rect(tex_parchment, Rect2(-16, -72 + hop_y, 32, 22), false)
