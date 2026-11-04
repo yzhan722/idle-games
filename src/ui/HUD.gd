@@ -15,6 +15,7 @@ var tex_card: Texture2D
 var tex_card_hover: Texture2D
 var tex_pill: Texture2D
 var tex_icons: Texture2D
+var tex_crops: Texture2D
 var tex_delicacies: Texture2D
 var tex_btn_normal: Texture2D
 var tex_btn_hover: Texture2D
@@ -30,6 +31,7 @@ var displayed_gold: float = 120.0
 
 var is_mouse_over_hud: bool = false
 var is_collapsed_capsule: bool = false
+var boss_stealth_mode: bool = false
 var drawer_expanded: bool = false
 var drawer_anim_t: float = 0.0
 var mouse_outside_timer: float = 0.0
@@ -50,15 +52,18 @@ var lbl_bar_stall: Label
 var lbl_tabs: Array[Label] = []
 
 var lbl_drawer_title: Label
+var lbl_drawer_weather: Label
 var lbl_drawer_mute: Label
 var lbl_card_titles: Array[Label] = []
 var lbl_card_subs: Array[Label] = []
 var lbl_card_costs: Array[Label] = []
 
+const TAB_COUNT := 5
 const CAPSULE_RECT := Rect2(770.0, 232.0, 380.0, 40.0)
 const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
 const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
+const TOP_RIGHT_WEATHER_RECT := Rect2(1240.0, 130.0, 86.0, 24.0)
 const TOP_RIGHT_MUTE_RECT := Rect2(1332.0, 130.0, 58.0, 24.0)
 
 func _ready() -> void:
@@ -71,6 +76,7 @@ func _ready() -> void:
 	tex_card_hover = load("res://assets/pixel_art/ui/ui_drawer_card_hover.png")
 	tex_pill = load("res://assets/pixel_art/ui/ui_resource_pill.png")
 	tex_icons = load("res://assets/pixel_art/ui/icons_ui.png")
+	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 	tex_btn_normal = load("res://assets/pixel_art/ui/btn_normal.png")
 	tex_btn_hover = load("res://assets/pixel_art/ui/btn_hover.png")
@@ -78,13 +84,41 @@ func _ready() -> void:
 
 	displayed_gold = float(GameManager.gold)
 	if GameManager.pending_offline_gold > 0:
-		offline_banner_timer = 7.5
-		offline_banner_text = "★离线挂机 " + str(GameManager.pending_offline_seconds) + "秒 · 自动结账 +" + str(GameManager.pending_offline_gold) + "G!"
+		_show_offline_welcome_banner(GameManager.pending_offline_seconds, GameManager.pending_offline_gold)
+	if EventBus != null:
+		EventBus.offline_earnings_ready.connect(_show_offline_welcome_banner)
 
 	_build_native_labels()
 
+func _format_duration_cn(seconds: int) -> String:
+	if seconds >= 3600:
+		return str(seconds / 3600) + "小时" + str((seconds % 3600) / 60) + "分"
+	elif seconds >= 60:
+		return str(seconds / 60) + "分" + str(seconds % 60) + "秒"
+	return str(seconds) + "秒"
+
+func _show_offline_welcome_banner(seconds_away: int, gold_earned: int) -> void:
+	offline_banner_timer = 8.0
+	var codex_pct := (GameManager.get_unlocked_codex_count()) * 10
+	offline_banner_text = "★欢迎归来！离线 " + _format_duration_cn(seconds_away) + " · 自动创收 +" + str(gold_earned) + "G (图鉴+" + str(codex_pct) + "%)"
+
+func set_boss_stealth(stealth_on: bool) -> void:
+	boss_stealth_mode = stealth_on
+	if stealth_on:
+		drawer_expanded = false
+		is_collapsed_capsule = true
+		hud_opacity = 0.25
+		modulate.a = 0.25
+	else:
+		is_collapsed_capsule = false
+		hud_opacity = 1.0
+		modulate.a = 1.0
+	_sync_label_nodes()
+	queue_redraw()
+
 func open_drawer(tab_idx: int = 0) -> void:
-	active_tab = clampi(tab_idx, 0, 2)
+	active_tab = clampi(tab_idx, 0, 3)
+	boss_stealth_mode = false
 	force_pin_open = true
 	mouse_outside_timer = 0.0
 	is_collapsed_capsule = false
@@ -108,8 +142,8 @@ func close_drawer(collapse_to_capsule: bool = false) -> void:
 
 func _build_native_labels() -> void:
 	lbl_offline = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-	lbl_offline.position = Vector2(680.0, 8.0)
-	lbl_offline.custom_minimum_size = Vector2(560.0, 26.0)
+	lbl_offline.position = Vector2(650.0, 8.0)
+	lbl_offline.custom_minimum_size = Vector2(620.0, 26.0)
 	add_child(lbl_offline)
 
 	lbl_capsule_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
@@ -117,31 +151,32 @@ func _build_native_labels() -> void:
 	add_child(lbl_capsule_gold)
 
 	lbl_capsule_info = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), false)
-	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 114.0, CAPSULE_RECT.position.y + 10.0)
+	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 112.0, CAPSULE_RECT.position.y + 10.0)
 	add_child(lbl_capsule_info)
 
-	lbl_capsule_mute = EconomyConfig.create_pixel_label("🔇静音", 14, Color("#FFE066"), false)
+	lbl_capsule_mute = EconomyConfig.create_pixel_label("[静音]", 14, Color("#FFE066"), false)
 	lbl_capsule_mute.position = Vector2(CAPSULE_MUTE_RECT.position.x + 2.0, CAPSULE_MUTE_RECT.position.y + 6.0)
 	add_child(lbl_capsule_mute)
 
 	lbl_bar_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
-	lbl_bar_gold.position = Vector2(534.0, 247.0)
+	lbl_bar_gold.position = Vector2(530.0, 247.0)
 	add_child(lbl_bar_gold)
 
 	lbl_bar_pipeline = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), true)
-	lbl_bar_pipeline.position = Vector2(658.0, 247.0)
-	lbl_bar_pipeline.custom_minimum_size = Vector2(192.0, 24.0)
+	lbl_bar_pipeline.position = Vector2(648.0, 247.0)
+	lbl_bar_pipeline.custom_minimum_size = Vector2(196.0, 24.0)
 	add_child(lbl_bar_pipeline)
 
 	lbl_bar_stall = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-	lbl_bar_stall.position = Vector2(856.0, 247.0)
-	lbl_bar_stall.custom_minimum_size = Vector2(192.0, 24.0)
+	lbl_bar_stall.position = Vector2(848.0, 247.0)
+	lbl_bar_stall.custom_minimum_size = Vector2(196.0, 24.0)
 	add_child(lbl_bar_stall)
 
-	for i in range(4):
+	for i in range(TAB_COUNT):
 		var tl := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-		tl.position = Vector2(1056.0 + float(i) * 78.0, 264.0)
-		tl.custom_minimum_size = Vector2(84.0, 22.0)
+		tl.position = Vector2(1046.0 + float(i) * 74.0, 264.0)
+		tl.custom_minimum_size = Vector2(76.0, 22.0)
+		tl.scale = Vector2(0.92, 0.92)
 		add_child(tl)
 		lbl_tabs.append(tl)
 
@@ -149,7 +184,12 @@ func _build_native_labels() -> void:
 	lbl_drawer_title.position = Vector2(544.0, 128.0)
 	add_child(lbl_drawer_title)
 
-	lbl_drawer_mute = EconomyConfig.create_pixel_label("🔇静音", 14, Color("#FFF4D6"), false)
+	lbl_drawer_weather = EconomyConfig.create_pixel_label("[天气:晴昼]", 14, Color("#FFE066"), false)
+	lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 2.0)
+	lbl_drawer_weather.scale = Vector2(0.92, 0.92)
+	add_child(lbl_drawer_weather)
+
+	lbl_drawer_mute = EconomyConfig.create_pixel_label("[静音]", 14, Color("#FFF4D6"), false)
 	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
 	add_child(lbl_drawer_mute)
 
@@ -178,7 +218,12 @@ func _process(delta: float) -> void:
 	var hover_zone := _get_interactive_zone()
 	is_mouse_over_hud = hover_zone.has_point(mpos)
 
-	if force_pin_open:
+	if boss_stealth_mode:
+		is_collapsed_capsule = true
+		drawer_expanded = false
+		drawer_anim_t = 0.0
+		hud_opacity = 0.25
+	elif force_pin_open:
 		is_collapsed_capsule = false
 		drawer_expanded = true
 		drawer_anim_t = 1.0
@@ -198,14 +243,14 @@ func _process(delta: float) -> void:
 		is_collapsed_capsule = false
 		hud_opacity = 1.0
 
-	if not force_pin_open:
+	if not force_pin_open and not boss_stealth_mode:
 		drawer_anim_t = lerpf(drawer_anim_t, 1.0 if drawer_expanded else 0.0, minf(1.0, delta * 10.0))
 	modulate.a = hud_opacity
 
 	hovered_tab = -1
 	hovered_card = -1
 	if not is_collapsed_capsule:
-		for i in range(4):
+		for i in range(TAB_COUNT):
 			if _get_tab_button_rect(i).has_point(mpos):
 				hovered_tab = i
 				break
@@ -227,9 +272,11 @@ func _process(delta: float) -> void:
 
 func _sync_label_nodes() -> void:
 	var gold_str := str(int(round(displayed_gold))) + "G"
-	var mute_lbl := "🔇静音" if (SoundManager != null and SoundManager.is_muted) else "🔊音效"
+	var mute_lbl := "[静音]" if (SoundManager != null and SoundManager.is_muted) else "[音效]"
+	var weather_names := ["晴昼", "黄昏", "夜市", "微雨"]
+	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
 
-	lbl_offline.visible = (offline_banner_timer > 0.0)
+	lbl_offline.visible = (offline_banner_timer > 0.0 and not boss_stealth_mode)
 	lbl_offline.text = offline_banner_text
 
 	lbl_capsule_gold.visible = is_collapsed_capsule
@@ -237,8 +284,12 @@ func _sync_label_nodes() -> void:
 	lbl_capsule_mute.visible = is_collapsed_capsule
 	if is_collapsed_capsule:
 		lbl_capsule_gold.text = gold_str
-		lbl_capsule_info.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 悬停展开"
-		lbl_capsule_mute.text = mute_lbl
+		if boss_stealth_mode:
+			lbl_capsule_info.text = "后台挂机产金中 · 按F9或点击恢复"
+			lbl_capsule_mute.text = "[恢复]"
+		else:
+			lbl_capsule_info.text = GameManager.get_weather_status_text() + " · 悬停展开"
+			lbl_capsule_mute.text = mute_lbl
 
 	var show_bar := not is_collapsed_capsule
 	lbl_bar_gold.visible = show_bar
@@ -246,28 +297,32 @@ func _sync_label_nodes() -> void:
 	lbl_bar_stall.visible = show_bar
 	if show_bar:
 		lbl_bar_gold.text = gold_str
-		var mode_stage := "单兔全包" if not GameManager.is_island_otter_hired(1) else "专职产线"
-		lbl_bar_pipeline.text = mode_stage + " · 缓存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
-		var shiba_txt := ("柴犬+" + str(int(GameManager.animal_levels.get("shiba", 0)) * 10) + "%") if GameManager.is_animal_hired("shiba") else "自助1x"
-		lbl_bar_stall.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · " + shiba_txt
+		lbl_bar_pipeline.text = GameManager.get_weather_status_text() + " · 存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
+		var codex_pct := GameManager.get_unlocked_codex_count() * 10
+		lbl_bar_stall.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
 
-	var tab_names := ["建筑升级", "动物编制", "木桥开拓", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
-	for i in range(4):
+	var tab_names := ["建筑升级", "动物编制", "木桥开拓", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
+	for i in range(TAB_COUNT):
 		lbl_tabs[i].visible = show_bar
 		lbl_tabs[i].text = tab_names[i]
 
 	var show_drawer := show_bar and drawer_expanded
 	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 	lbl_drawer_title.visible = show_drawer
+	lbl_drawer_weather.visible = show_drawer
 	lbl_drawer_mute.visible = show_drawer
 	if show_drawer:
+		var codex_cnt := GameManager.get_unlocked_codex_count()
 		var titles := [
 			"【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
-			"【动物编制与招满转进修】未满编时招募伙伴 · 招满后一键全队进修(Lv.+1)!",
-			"【三岛固定槽位与木桥开拓】魔法密林(12x坩埚) · 天空海岸(52x双工坊+👑2x富豪)"
+			"【动物编制与招满转进修】点击小动物可摸头加速 · 招满后全队进修(Lv.+1)!",
+			"【三岛固定槽位与木桥开拓】魔法密林(12x坩埚) · 天空海岸(52x双工坊+★2x富豪)",
+			"【山海图鉴收集册】已点亮 " + str(codex_cnt) + "/8 种食材料理 · 永久全岛售价 +" + str(codex_cnt * 10) + "%!"
 		]
-		lbl_drawer_title.text = titles[clampi(active_tab, 0, 2)]
+		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
 		lbl_drawer_title.position = Vector2(544.0, 128.0 + slide_y)
+		lbl_drawer_weather.text = "[天气:" + cur_w_name + "]"
+		lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 3.0 + slide_y)
 		lbl_drawer_mute.text = mute_lbl
 		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + slide_y)
 
@@ -309,8 +364,8 @@ func _gui_input(event: InputEvent) -> void:
 				WindowController.begin_window_drag()
 				accept_event()
 				return
-			var hitting_mute := (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
-			if hovered_tab == -1 and hovered_card == -1 and not hitting_mute and _get_interactive_zone().has_point(mpos):
+			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
+			if hovered_tab == -1 and hovered_card == -1 and not hitting_top_btns and _get_interactive_zone().has_point(mpos):
 				if WindowController != null:
 					WindowController.begin_window_drag()
 					accept_event()
@@ -319,6 +374,21 @@ func _gui_input(event: InputEvent) -> void:
 			is_pressing_btn = false
 			if WindowController != null and WindowController.is_dragging:
 				WindowController.end_window_drag()
+				accept_event()
+				return
+
+			if boss_stealth_mode and CAPSULE_RECT.has_point(mpos):
+				if WindowController != null:
+					WindowController.toggle_boss_stealth()
+				else:
+					set_boss_stealth(false)
+				accept_event()
+				return
+
+			if drawer_expanded and TOP_RIGHT_WEATHER_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				GameManager.set_weather((GameManager.current_weather + 1) % 4)
 				accept_event()
 				return
 
@@ -331,7 +401,7 @@ func _gui_input(event: InputEvent) -> void:
 			if hovered_tab >= 0:
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
-				if hovered_tab == 3:
+				if hovered_tab == 4:
 					_toggle_companion_mode()
 				else:
 					force_pin_open = false
@@ -356,7 +426,7 @@ func _toggle_companion_mode() -> void:
 	GameManager.save_game()
 
 func _get_tab_button_rect(idx: int) -> Rect2:
-	return Rect2(1062.0 + float(idx) * 78.0, 235.0, 72.0, 44.0)
+	return Rect2(1050.0 + float(idx) * 74.0, 235.0, 68.0, 44.0)
 
 func _get_card_rect(idx: int, total: int) -> Rect2:
 	var w := 196.0 if total <= 4 else 132.0
@@ -424,7 +494,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				"type": "unlock_island",
 				"key": "3",
 				"title": "木桥2 · 天空海岸" + (" (已通)" if isl3_unlocked else ""),
-				"sub": "双工坊52x+👑2x富豪",
+				"sub": "双工坊52x+★2x富豪",
 				"cost": "已解锁" if isl3_unlocked else "480G 解锁"
 			})
 			for b_key in ["soil_2", "soil_3"]:
@@ -437,6 +507,29 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"title": String(cfg["name"]) + " Lv." + str(lv),
 					"sub": String(cfg["desc"]).substr(0, 12),
 					"cost": "升级 " + str(cost) + "G"
+				})
+		3:
+			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)
+			var codex_pairs := [
+				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "一阶·晨露田园"},
+				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "二阶·果香烘焙"},
+				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "三阶·密林星露"},
+				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "四阶·云海盛宴"}
+			]
+			for cp in codex_pairs:
+				var cid := String(cp["crop"])
+				var did := String(cp["del"])
+				var c_name := String(EconomyConfig.CROPS[cid]["name"])
+				var d_name := String(EconomyConfig.DELICACIES[did]["name"])
+				var c_on := bool(GameManager.unlocked_codex.get(cid, false))
+				var d_on := bool(GameManager.unlocked_codex.get(did, false))
+				var bonus_pct := (10 if c_on else 0) + (10 if d_on else 0)
+				list.append({
+					"type": "codex",
+					"key": str(cp["idx"]),
+					"title": String(cp["tier_name"]) + " (+" + str(bonus_pct) + "%)",
+					"sub": (c_name if c_on else "???(升至Lv.25)") + " | " + (d_name if d_on else "???(工坊解锁)"),
+					"cost": "已点亮 " + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 · 永久售价+" + str(bonus_pct) + "%"
 				})
 	return list
 
@@ -454,10 +547,14 @@ func _activate_card(idx: int) -> void:
 			GameManager.upgrade_animal(k)
 	elif t == "unlock_island":
 		GameManager.unlock_island(int(k))
+	elif t == "codex":
+		var codex_pct := GameManager.get_unlocked_codex_count() * 10
+		offline_banner_timer = 4.0
+		offline_banner_text = "★山海图鉴总加成: 全岛商品售价永久 +" + str(codex_pct) + "% (每解锁1种农作物或工坊美食 +10%)"
 
 func _draw() -> void:
-	if offline_banner_timer > 0.0 and tex_pill != null:
-		draw_texture_rect(tex_pill, Rect2(680.0, 6.0, 560.0, 30.0), false)
+	if offline_banner_timer > 0.0 and not boss_stealth_mode and tex_pill != null:
+		draw_texture_rect(tex_pill, Rect2(650.0, 6.0, 620.0, 30.0), false)
 
 	if is_collapsed_capsule:
 		if tex_pill != null:
@@ -470,16 +567,16 @@ func _draw() -> void:
 		draw_texture_rect(tex_panel, FULL_BAR_RECT, false)
 
 	if tex_pill != null:
-		draw_texture_rect(tex_pill, Rect2(496.0, 239.0, 156.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(658.0, 239.0, 192.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(856.0, 239.0, 192.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(492.0, 239.0, 152.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(648.0, 239.0, 196.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(848.0, 239.0, 196.0, 36.0), false)
 
 	if tex_icons != null:
-		draw_texture_rect_region(tex_icons, Rect2(502.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+		draw_texture_rect_region(tex_icons, Rect2(498.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
 
-	var icon_indices := [6, 3, 4, 7]
-	for i in range(4):
-		var bx := 1062.0 + float(i) * 78.0
+	var icon_indices := [6, 3, 4, 2, 7]
+	for i in range(TAB_COUNT):
+		var bx := 1050.0 + float(i) * 74.0
 		var is_active_or_hov := (hovered_tab == i or (drawer_expanded and active_tab == i))
 		var lift := -2.0 if is_active_or_hov else 0.0
 		var btex := tex_btn_normal
@@ -488,17 +585,19 @@ func _draw() -> void:
 		elif is_active_or_hov and tex_btn_hover != null:
 			btex = tex_btn_hover
 		if btex != null:
-			draw_texture_rect(btex, Rect2(bx + 12.0, 226.0 + lift, 42.0, 42.0), false)
+			draw_texture_rect(btex, Rect2(bx + 13.0, 226.0 + lift, 42.0, 42.0), false)
 		if tex_icons != null:
-			draw_texture_rect_region(tex_icons, Rect2(bx + 15.0, 229.0 + lift, 36.0, 36.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
+			draw_texture_rect_region(tex_icons, Rect2(bx + 16.0, 229.0 + lift, 36.0, 36.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
 
 	if drawer_expanded and tex_drawer != null:
 		var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
 		draw_texture_rect(tex_drawer, d_rect, false)
 
+		var w_rect := Rect2(TOP_RIGHT_WEATHER_RECT.position.x, TOP_RIGHT_WEATHER_RECT.position.y + slide_y, TOP_RIGHT_WEATHER_RECT.size.x, TOP_RIGHT_WEATHER_RECT.size.y)
 		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
 		if tex_pill != null:
+			draw_texture_rect(tex_pill, w_rect, false)
 			draw_texture_rect(tex_pill, m_rect, false)
 
 		var cards := _get_current_tab_cards()
@@ -508,3 +607,9 @@ func _draw() -> void:
 			var ctex := tex_card_hover if hovered_card == i else tex_card
 			if ctex != null:
 				draw_texture_rect(ctex, crect, false)
+			# Draw real pixel-art crop & delicacy icons inside Codex cards (Tab 3)
+			if active_tab == 3 and i < 4:
+				if tex_crops != null:
+					draw_texture_rect_region(tex_crops, Rect2(crect.end.x - 52.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(3.0 * 40.0, float(i) * 40.0, 40.0, 40.0))
+				if tex_delicacies != null:
+					draw_texture_rect_region(tex_delicacies, Rect2(crect.end.x - 28.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(float(i) * 36.0, 0.0, 36.0, 36.0))

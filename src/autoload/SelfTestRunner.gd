@@ -71,6 +71,11 @@ func _process(_delta: float) -> void:
 		var world := get_tree().current_scene as MainWorld
 		if world != null and world.customers.size() == 0:
 			world._spawn_customer(false)
+	elif frame_counter == 150:
+		# Trigger animal pet boost on Bunny so `HeartIcon` (`emote_heart.png`) and +50% haste are verified
+		var world := get_tree().current_scene as MainWorld
+		if world != null and world.workers.size() > 0 and is_instance_valid(world.workers[0]):
+			world.workers[0].trigger_pet_boost()
 
 	if frame_counter >= 180:
 		finishing = true
@@ -215,7 +220,7 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	if world.hud != null:
-		world.hud.open_drawer(0)
+		world.hud.open_drawer(3)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw

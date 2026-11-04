@@ -109,5 +109,6 @@ AI 严禁凭感觉盲填 `(x, y)` 魔法数字坐标，所有场景实体的空�
 
 ---
 
-## 铁律 6：交付前强制自动化自检管线 (Mandatory Pre-Delivery Audit)
-AI Agent 在每次修改完代码后，**严禁直接结束任务**，必须依次运行 `./run_godot.ps1 --self-test` 完成真机 180 帧 20x 快进仿真与四大断言自检，并亲自使用图像查看工具审视 `preview_live_godot.png`！
+## 铁律 6：交付前强制自动化自检管线 (Mandatory Pre-Delivery Audit & On-Demand Packaging)
+1. **真机自检后即关**：AI Agent 在每次修改完代码后，**严禁直接结束任务**，必须运行 `./run_godot.ps1 --self-test` 完成真机 180 帧 20x 快进仿真与四大断言自检（完成后自动退出进程，零常驻打扰），并亲自使用图像查看工具审视 `preview_live_godot.png`！
+2. **按需打包原则**：日常代码修改与自检时**不要自动执行 `package_win64.ps1` 或重新打 `.zip` 压缩包**；仅在用户明确提出“打包 / 打个压缩包”指令时才执行打包流程。

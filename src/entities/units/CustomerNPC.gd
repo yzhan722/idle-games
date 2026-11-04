@@ -145,14 +145,15 @@ func _process(delta: float) -> void:
 		State.PURCHASE:
 			var has_stock := GameManager.get_total_stall_count() > 0
 			if has_stock:
-				interact_timer += delta
+				var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
+				interact_timer += delta * frenzy_mult
 				var req_time := 1.0 if GameManager.is_animal_hired("shiba") else 1.8
 				if interact_timer >= req_time:
 					var earned := GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
 					if earned > 0:
 						purchased_ok = true
 						if is_vip:
-							EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "👑富豪2x小费!", Color("#FFE066"))
+							EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "★富豪2x小费!", Color("#FFE066"))
 						_begin_leave()
 			else:
 				wait_timer += delta

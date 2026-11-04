@@ -225,7 +225,7 @@ func calc_item_unit_price(item_id: String, building_lv: int, stall_lv: int, shib
 		return maxi(1, int(round(raw_v * MULTIPLIER_RAW * stall_mult * shiba_mult)))
 	return 15
 
-=== FILE: D:\project\maple-isle-idle\src\autoload\EventBus.gd (771 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\autoload\EventBus.gd (899 bytes) ===
 extends Node
 ## Global Signal Bus (`EventBus.gd` Autoload) 鈥?PRD v2.0 Section 6
 
@@ -241,8 +241,11 @@ signal upgrade_purchased(category: String, key: String, new_level: int)
 signal island_unlocked(island_idx: int)
 signal offline_earnings_ready(seconds_away: int, gold_earned: int)
 signal spawn_floating_text(world_pos: Vector2, text_str: String, col: Color)
+signal weather_changed(new_weather: int)
+signal codex_unlocked(item_id: String)
+signal carnival_frenzy_started(duration: float)
 
-=== FILE: D:\project\maple-isle-idle\src\autoload\GameManager.gd (16818 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\autoload\GameManager.gd (20729 bytes) ===
 extends Node
 ## Global State, Strict Per-Island Recruit Caps, Recruit-to-Promote & Save System (`src/autoload/GameManager.gd`) 鈥?PRD Patch v2.2
 
@@ -319,14 +322,105 @@ var save_timer: float = 0.0
 var pending_offline_seconds: int = 0
 var pending_offline_gold: int = 0
 
+## v2.3 Direction 1 & 2: Dynamic Weather/Time-of-Day Cycle & Carnival Frenzy Buff
+enum WeatherState { DAY = 0, DUSK = 1, NIGHT = 2, RAIN = 3 }
+var current_weather: int = WeatherState.DAY
+var weather_timer: float = 0.0
+var frenzy_timer: float = 0.0
+
+## v2.3 Direction 4: Mountain & Sea Collection Codex (4 Crops + 4 Delicacies -> +10% global sale price per unlocked entry)
+var unlocked_codex: Dictionary = {
+	"crop_0": true,
+	"crop_1": false,
+	"crop_2": false,
+	"crop_3": false,
+	"delicacy_0": false,
+	"delicacy_1": false,
+	"delicacy_2": false,
+	"delicacy_3": false
+}
+
 func _ready() -> void:
 	load_game()
+	_sync_codex_from_progression()
 
 func _process(delta: float) -> void:
 	save_timer += delta
 	if save_timer >= 15.0:
 		save_timer = 0.0
 		save_game()
+
+	if frenzy_timer > 0.0:
+		frenzy_timer = maxf(0.0, frenzy_timer - delta)
+
+	weather_timer += delta
+	if weather_timer >= 42.0:
+		weather_timer = 0.0
+		set_weather((current_weather + 1) % 4)
+
+func set_weather(next_weather: int) -> void:
+	current_weather = clampi(next_weather, 0, 3)
+	if SoundManager != null and SoundManager.has_method("crossfade_to_ambient"):
+		SoundManager.crossfade_to_ambient(current_weather)
+	EventBus.weather_changed.emit(current_weather)
+
+func get_weather_crop_growth_multiplier() -> float:
+	var mult := 1.35 if current_weather == WeatherState.RAIN else 1.0
+	if frenzy_timer > 0.0:
+		mult *= 1.6
+	return mult
+
+func get_weather_vip_chance() -> float:
+	var base_c := 0.36 if (current_weather == WeatherState.DUSK or current_weather == WeatherState.NIGHT) else 0.18
+	if frenzy_timer > 0.0:
+		base_c = maxf(base_c, 0.50)
+	return base_c
+
+func get_weather_status_text() -> String:
+	if frenzy_timer > 0.0:
+		return "鈽呭槈骞村崕鍔犻€?" + str(int(ceili(frenzy_timer))) + "s)"
+	match current_weather:
+		WeatherState.DAY:
+			return "鏅存樇路甯搁€?
+		WeatherState.DUSK:
+			return "榛勬槒路瀵岃豹2x"
+		WeatherState.NIGHT:
+			return "澶滃競路瀵岃豹2x"
+		WeatherState.RAIN:
+			return "寰洦路鍐滅敯+35%"
+	return "鏅存樇路甯搁€?
+
+func trigger_carnival_frenzy(duration: float = 20.0) -> void:
+	frenzy_timer = maxf(frenzy_timer, duration)
+	EventBus.carnival_frenzy_started.emit(frenzy_timer)
+
+func unlock_codex_entry(item_id: String) -> void:
+	if unlocked_codex.has(item_id) and not bool(unlocked_codex[item_id]):
+		unlocked_codex[item_id] = true
+		EventBus.codex_unlocked.emit(item_id)
+
+func _sync_codex_from_progression() -> void:
+	unlock_codex_entry("crop_0")
+	for isl in [1, 2, 3]:
+		if bool(unlocked_islands.get(isl, false)):
+			var slv := int(building_levels.get("soil_" + str(isl), 1))
+			unlock_codex_entry(EconomyConfig.get_evolved_crop_id(isl, slv))
+	if get_island_recruited_count(1, "fox") >= 1 or int(building_levels.get("mortar", 1)) > 1:
+		unlock_codex_entry(EconomyConfig.get_evolved_delicacy_id("mortar", int(building_levels.get("mortar", 1))))
+	if bool(unlocked_islands.get(2, false)) and (get_island_recruited_count(2, "penguin") >= 1 or int(building_levels.get("cauldron", 1)) > 1):
+		unlock_codex_entry("delicacy_2")
+	if bool(unlocked_islands.get(3, false)) and (get_island_recruited_count(3, "fox") >= 1 or get_island_recruited_count(3, "penguin") >= 1):
+		unlock_codex_entry("delicacy_3")
+
+func get_unlocked_codex_count() -> int:
+	var cnt := 0
+	for k in unlocked_codex.keys():
+		if bool(unlocked_codex[k]):
+			cnt += 1
+	return cnt
+
+func get_codex_price_multiplier() -> float:
+	return 1.0 + 0.10 * float(get_unlocked_codex_count())
 
 func is_animal_hired(animal_key: String) -> bool:
 	return get_total_recruited(animal_key) >= 1
@@ -416,6 +510,7 @@ func is_raw_basket_full(island_idx: int) -> bool:
 	return get_island_basket_total(island_idx) >= get_raw_basket_max_cap(island_idx)
 
 func add_to_raw_basket(island_idx: int, crop_id: String, qty: int) -> int:
+	unlock_codex_entry(crop_id)
 	if not raw_baskets.has(island_idx):
 		raw_baskets[island_idx] = {}
 	var room := maxi(0, get_raw_basket_max_cap(island_idx) - get_island_basket_total(island_idx))
@@ -492,6 +587,7 @@ func is_workshop_output_full(workshop_id: String) -> bool:
 	return get_workshop_output_total(workshop_id) >= get_workshop_buffer_cap(workshop_id)
 
 func add_to_workshop_output(workshop_id: String, delicacy_id: String, qty: int) -> int:
+	unlock_codex_entry(delicacy_id)
 	if not workshop_outputs.has(workshop_id):
 		workshop_outputs[workshop_id] = {}
 	var room := maxi(0, get_workshop_buffer_cap(workshop_id) - get_workshop_output_total(workshop_id))
@@ -530,6 +626,7 @@ func is_stall_full() -> bool:
 	return get_total_stall_count() >= get_stall_max_capacity()
 
 func add_to_stall(item_id: String, qty: int) -> int:
+	unlock_codex_entry(item_id)
 	var room := maxi(0, get_stall_max_capacity() - get_total_stall_count())
 	var added := mini(qty, room)
 	if added > 0:
@@ -552,6 +649,7 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 		return 0
 	var bought := mini(avail, maxi(1, qty))
 	stall_inventory[target_id] = avail - bought
+	unlock_codex_entry(target_id)
 
 	var b_lv := int(building_levels.get("soil_1", 1))
 	if target_id == "delicacy_0" or target_id == "delicacy_1":
@@ -568,7 +666,7 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 		int(building_levels.get("stall", 1)),
 		shiba_lv
 	)
-	var total_earned := unit_price * bought
+	var total_earned := int(round(float(unit_price * bought) * get_codex_price_multiplier()))
 	if is_vip:
 		total_earned = int(round(float(total_earned) * EconomyConfig.VIP_TIP_MULTIPLIER))
 
@@ -588,6 +686,7 @@ func upgrade_building(b_key: String) -> bool:
 	if not spend_gold(cost):
 		return false
 	building_levels[b_key] = cur_lv + 1
+	_sync_codex_from_progression()
 	EventBus.upgrade_purchased.emit("building", b_key, cur_lv + 1)
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
@@ -624,6 +723,7 @@ func upgrade_animal(a_key: String) -> bool:
 				SoundManager.play_upgrade_sfx()
 		EventBus.upgrade_purchased.emit("animal", a_key, animal_levels[a_key])
 
+	_sync_codex_from_progression()
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
 	return true
@@ -636,6 +736,7 @@ func unlock_island(island_idx: int) -> bool:
 	if not spend_gold(cost):
 		return false
 	unlocked_islands[island_idx] = true
+	_sync_codex_from_progression()
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
 	EventBus.island_unlocked.emit(island_idx)
@@ -649,7 +750,7 @@ func estimate_idle_gold_per_sec() -> float:
 		base_rate += float(building_levels[k]) * 1.1
 	for k in animal_levels.keys():
 		base_rate += float(get_total_recruited(k)) * 1.6
-	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0)))
+	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0))) * get_codex_price_multiplier()
 
 func save_game() -> void:
 	var data := {
@@ -670,7 +771,8 @@ func save_game() -> void:
 			"2": island_recruited[2],
 			"3": island_recruited[3]
 		},
-		"stall_inventory": stall_inventory
+		"stall_inventory": stall_inventory,
+		"unlocked_codex": unlocked_codex
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f != null:
@@ -709,6 +811,10 @@ func load_game() -> void:
 	if parsed.has("stall_inventory") and parsed["stall_inventory"] is Dictionary:
 		for k in parsed["stall_inventory"].keys():
 			stall_inventory[String(k)] = int(parsed["stall_inventory"][k])
+	if parsed.has("unlocked_codex") and parsed["unlocked_codex"] is Dictionary:
+		for ck in parsed["unlocked_codex"].keys():
+			if unlocked_codex.has(String(ck)):
+				unlocked_codex[String(ck)] = bool(parsed["unlocked_codex"][ck])
 
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())
@@ -717,8 +823,9 @@ func load_game() -> void:
 		pending_offline_seconds = elapsed
 		pending_offline_gold = maxi(8, int(round(float(elapsed) * estimate_idle_gold_per_sec() * 0.45)))
 		add_gold(pending_offline_gold)
+		EventBus.offline_earnings_ready.emit(pending_offline_seconds, pending_offline_gold)
 
-=== FILE: D:\project\maple-isle-idle\src\autoload\SelfTestRunner.gd (13096 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\autoload\SelfTestRunner.gd (13407 bytes) ===
 extends Node
 ## Real-Engine 20x Fast-Forward Self-Test & Dual-State Viewport Screenshot Exporter (`src/autoload/SelfTestRunner.gd`)
 ## Activated when command-line args contain `--self-test` (via `./run_godot.ps1 --self-test`).
@@ -792,6 +899,11 @@ func _process(_delta: float) -> void:
 		var world := get_tree().current_scene as MainWorld
 		if world != null and world.customers.size() == 0:
 			world._spawn_customer(false)
+	elif frame_counter == 150:
+		# Trigger animal pet boost on Bunny so `HeartIcon` (`emote_heart.png`) and +50% haste are verified
+		var world := get_tree().current_scene as MainWorld
+		if world != null and world.workers.size() > 0 and is_instance_valid(world.workers[0]):
+			world.workers[0].trigger_pet_boost()
 
 	if frame_counter >= 180:
 		finishing = true
@@ -936,7 +1048,7 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	if world.hud != null:
-		world.hud.open_drawer(0)
+		world.hud.open_drawer(3)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
@@ -1256,7 +1368,7 @@ func play_click_sfx() -> void:
 func play_hover_sfx() -> void:
 	play_sfx("ui_hover", 0.03, 0.0)
 
-=== FILE: D:\project\maple-isle-idle\src\autoload\WindowController.gd (8756 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\autoload\WindowController.gd (9890 bytes) ===
 extends Node
 ## Desktop Companion Window, Multi-Island + UI Polygon Mouse Passthrough & Alt+Drag Controller (`src/autoload/WindowController.gd`)
 ## Strictly implements PRD v2.2 Section 1 & Section 5:
@@ -1285,6 +1397,7 @@ var custom_pos_active: bool = false
 var custom_pos: Vector2i = Vector2i.ZERO
 
 var is_dragging: bool = false
+var boss_stealth_active: bool = false
 var _drag_start_mouse: Vector2i = Vector2i.ZERO
 var _drag_start_win_pos: Vector2i = Vector2i.ZERO
 
@@ -1323,12 +1436,25 @@ func apply_window_mode(companion_enabled: bool) -> void:
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 
 func _input(event: InputEvent) -> void:
+	# Global F9 Boss Key Stealth Toggle (hides islands & shrinks HUD while keeping 100% idle production running)
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F9:
+		toggle_boss_stealth()
+		return
 	# Global Alt + Left-Click window drag support anywhere over the window
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed and Input.is_key_pressed(KEY_ALT):
 			start_window_drag()
 		elif not event.pressed and is_dragging:
 			stop_window_drag()
+
+func toggle_boss_stealth() -> bool:
+	boss_stealth_active = not boss_stealth_active
+	if _world_ref != null and "world_root" in _world_ref and _world_ref.world_root != null:
+		_world_ref.world_root.modulate.a = 0.0 if boss_stealth_active else 1.0
+	if _hud_ref != null and _hud_ref.has_method("set_boss_stealth"):
+		_hud_ref.call("set_boss_stealth", boss_stealth_active)
+	_refresh_passthrough()
+	return boss_stealth_active
 
 func _process(_delta: float) -> void:
 	if not is_dragging:
@@ -1444,12 +1570,24 @@ func _refresh_passthrough() -> void:
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 		return
 
+	var s := maxf(0.1, scale_factor)
+	if boss_stealth_active:
+		# In F9 Boss Stealth Mode, only the tiny bottom capsule strip receives mouse input; 99% of desktop passes through!
+		var stealth_poly := PackedVector2Array([
+			Vector2(760.0 * s, 232.0 * s),
+			Vector2(1160.0 * s, 232.0 * s),
+			Vector2(1160.0 * s, 276.0 * s),
+			Vector2(760.0 * s, 276.0 * s)
+		])
+		_last_passthrough_polygon = stealth_poly
+		DisplayServer.window_set_mouse_passthrough(stealth_poly)
+		return
+
 	var isl_rect := _compute_active_islands_span()
 	var ui_rect := _last_hud_rect
 	if _last_drawer_rect.size.x > 0.0 and _last_drawer_rect.size.y > 0.0:
 		ui_rect = ui_rect.merge(_last_drawer_rect)
 
-	var s := maxf(0.1, scale_factor)
 	var top_y := maxf(0.0, minf(isl_rect.position.y, ui_rect.position.y))
 	var bot_y := minf(VIEWPORT_H, maxf(isl_rect.end.y, ui_rect.end.y))
 	var isl_l := clampf(isl_rect.position.x, 0.0, VIEWPORT_W)
@@ -2675,7 +2813,7 @@ func _draw() -> void:
 [node name="MarketStall" type="Node2D"]
 script = ExtResource("1_stall")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.gd (7898 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.gd (8016 bytes) ===
 extends Node2D
 class_name SoilPlot
 ## Enlarged 1.5D Soil Bed (`64x26`), 3-Stage Crop Growth, Buffer Cap 10 & Lv.25 Auto-Evolution (`src/entities/buildings/SoilPlot.gd`)
@@ -2847,7 +2985,8 @@ func _process(delta: float) -> void:
 		var c_cfg: Dictionary = EconomyConfig.CROPS.get(crop_id, EconomyConfig.CROPS["crop_0"])
 		var base_dur := float(c_cfg.get("grow_time", 5.2))
 		var b_lv := get_building_level()
-		var speed_mult := (1.35 if watered else 1.0) * (1.0 + 0.06 * float(b_lv - 1))
+		var weather_mult := GameManager.get_weather_crop_growth_multiplier() if GameManager != null else 1.0
+		var speed_mult := (1.35 if watered else 1.0) * (1.0 + 0.06 * float(b_lv - 1)) * weather_mult
 		growth = minf(1.0, growth + (delta * speed_mult) / maxf(1.0, base_dur))
 
 	current_stage = _compute_growth_stage(growth)
@@ -3100,7 +3239,7 @@ func _draw() -> void:
 [node name="Workshop" type="Node2D"]
 script = ExtResource("1_workshop")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.gd (19224 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.gd (20394 bytes) ===
 extends Node2D
 class_name AnimalWorker
 ## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`)
@@ -3138,6 +3277,7 @@ var tex_heart: Texture2D
 
 @onready var body_sprite: Sprite2D = Sprite2D.new()
 @onready var carry_icon: Sprite2D = Sprite2D.new()
+@onready var heart_icon: Sprite2D = Sprite2D.new()
 var sleep_label: Label
 
 var waypoint_graph: WaypointGraph
@@ -3193,6 +3333,27 @@ func _ready() -> void:
 	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
+
+	heart_icon.name = "HeartIcon"
+	heart_icon.texture = tex_heart
+	heart_icon.visible = false
+	heart_icon.centered = true
+	heart_icon.scale = Vector2(0.55, 0.55)
+	heart_icon.position = Vector2(0.0, -68.0)
+	heart_icon.z_index = EconomyConfig.Z_CARRY_EMOTE
+	heart_icon.z_as_relative = false
+	add_child(heart_icon)
+
+func get_pet_hit_rect() -> Rect2:
+	return Rect2(position.x - 24.0, position.y - 54.0, 48.0, 56.0)
+
+func trigger_pet_boost() -> void:
+	if not visible:
+		return
+	boost_timer = 15.0
+	if SoundManager != null:
+		SoundManager.play_pop_sfx()
+	EventBus.spawn_floating_text.emit(position + Vector2(0.0, -64.0), "鈽呮懜澶村厓姘?50%!", Color("#FFE066"))
 
 func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, p_graph: WaypointGraph, p_world: Node2D) -> void:
 	role_type = p_role
@@ -3298,9 +3459,15 @@ func _process(delta: float) -> void:
 	if boost_timer > 0.0:
 		boost_timer = maxf(0.0, boost_timer - delta)
 
+	var haste_mult := 1.0
+	if boost_timer > 0.0:
+		haste_mult *= 1.5
+	if GameManager != null and GameManager.frenzy_timer > 0.0:
+		haste_mult *= 1.5
+
 	if nav_path.size() > 0:
 		is_moving = true
-		var spd := EconomyConfig.calc_move_speed(animal_key, get_level())
+		var spd := EconomyConfig.calc_move_speed(animal_key, get_level()) * haste_mult
 		var rem_move := spd * delta
 		while rem_move > 0.0 and nav_path.size() > 0:
 			var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
@@ -3324,7 +3491,7 @@ func _process(delta: float) -> void:
 	else:
 		is_moving = false
 		position.y = EconomyConfig.GROUND_Y
-		state_timer += delta
+		state_timer += delta * haste_mult
 		_update_role_work_step()
 
 	var pose_idx := _get_pose_index()
@@ -3357,9 +3524,16 @@ func _process(delta: float) -> void:
 		carry_icon.position = Vector2(0.0, -56.0 + hop_y)
 		carry_icon.rotation = 0.0
 
+	if heart_icon != null:
+		heart_icon.visible = (boost_timer > 0.0)
+		if heart_icon.visible:
+			var heart_y := -74.0 if carry_icon.visible else -62.0
+			heart_icon.position = Vector2(0.0, heart_y + hop_y + sin(anim_time * 6.0) * 2.0)
+			heart_icon.rotation = 0.0
+
 	if sleep_label != null:
-		sleep_label.visible = is_sleeping_full
-		if is_sleeping_full:
+		sleep_label.visible = is_sleeping_full and (boost_timer <= 0.0)
+		if sleep_label.visible:
 			sleep_label.position = Vector2(-30.0, -68.0 + sin(anim_time * 2.5) * 2.0)
 
 	queue_redraw()
@@ -3643,7 +3817,7 @@ func _draw() -> void:
 [node name="AnimalWorker" type="Node2D"]
 script = ExtResource("1_worker")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.gd (9825 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.gd (9934 bytes) ===
 extends Node2D
 class_name CustomerNPC
 ## Long-Cycle Island Customer & Crown VIP Tycoon (`src/entities/units/CustomerNPC.gd`)
@@ -3791,14 +3965,15 @@ func _process(delta: float) -> void:
 		State.PURCHASE:
 			var has_stock := GameManager.get_total_stall_count() > 0
 			if has_stock:
-				interact_timer += delta
+				var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
+				interact_timer += delta * frenzy_mult
 				var req_time := 1.0 if GameManager.is_animal_hired("shiba") else 1.8
 				if interact_timer >= req_time:
 					var earned := GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
 					if earned > 0:
 						purchased_ok = true
 						if is_vip:
-							EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "馃憫瀵岃豹2x灏忚垂!", Color("#FFE066"))
+							EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "鈽呭瘜璞?x灏忚垂!", Color("#FFE066"))
 						_begin_leave()
 			else:
 				wait_timer += delta
@@ -4004,7 +4179,7 @@ func _draw() -> void:
 z_index = 20
 script = ExtResource("1_ft")
 
-=== FILE: D:\project\maple-isle-idle\src\ui\HUD.gd (19691 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\ui\HUD.gd (24668 bytes) ===
 extends Control
 class_name HUD
 ## Native Label Retro Maple-Style HUD, 3s Auto-Collapse Capsule & Recruit-to-Promote Drawer (`src/ui/HUD.gd`)
@@ -4022,6 +4197,7 @@ var tex_card: Texture2D
 var tex_card_hover: Texture2D
 var tex_pill: Texture2D
 var tex_icons: Texture2D
+var tex_crops: Texture2D
 var tex_delicacies: Texture2D
 var tex_btn_normal: Texture2D
 var tex_btn_hover: Texture2D
@@ -4037,6 +4213,7 @@ var displayed_gold: float = 120.0
 
 var is_mouse_over_hud: bool = false
 var is_collapsed_capsule: bool = false
+var boss_stealth_mode: bool = false
 var drawer_expanded: bool = false
 var drawer_anim_t: float = 0.0
 var mouse_outside_timer: float = 0.0
@@ -4057,15 +4234,18 @@ var lbl_bar_stall: Label
 var lbl_tabs: Array[Label] = []
 
 var lbl_drawer_title: Label
+var lbl_drawer_weather: Label
 var lbl_drawer_mute: Label
 var lbl_card_titles: Array[Label] = []
 var lbl_card_subs: Array[Label] = []
 var lbl_card_costs: Array[Label] = []
 
+const TAB_COUNT := 5
 const CAPSULE_RECT := Rect2(770.0, 232.0, 380.0, 40.0)
 const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
 const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
+const TOP_RIGHT_WEATHER_RECT := Rect2(1240.0, 130.0, 86.0, 24.0)
 const TOP_RIGHT_MUTE_RECT := Rect2(1332.0, 130.0, 58.0, 24.0)
 
 func _ready() -> void:
@@ -4078,6 +4258,7 @@ func _ready() -> void:
 	tex_card_hover = load("res://assets/pixel_art/ui/ui_drawer_card_hover.png")
 	tex_pill = load("res://assets/pixel_art/ui/ui_resource_pill.png")
 	tex_icons = load("res://assets/pixel_art/ui/icons_ui.png")
+	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 	tex_btn_normal = load("res://assets/pixel_art/ui/btn_normal.png")
 	tex_btn_hover = load("res://assets/pixel_art/ui/btn_hover.png")
@@ -4085,13 +4266,41 @@ func _ready() -> void:
 
 	displayed_gold = float(GameManager.gold)
 	if GameManager.pending_offline_gold > 0:
-		offline_banner_timer = 7.5
-		offline_banner_text = "鈽呯绾挎寕鏈?" + str(GameManager.pending_offline_seconds) + "绉?路 鑷姩缁撹处 +" + str(GameManager.pending_offline_gold) + "G!"
+		_show_offline_welcome_banner(GameManager.pending_offline_seconds, GameManager.pending_offline_gold)
+	if EventBus != null:
+		EventBus.offline_earnings_ready.connect(_show_offline_welcome_banner)
 
 	_build_native_labels()
 
+func _format_duration_cn(seconds: int) -> String:
+	if seconds >= 3600:
+		return str(seconds / 3600) + "灏忔椂" + str((seconds % 3600) / 60) + "鍒?
+	elif seconds >= 60:
+		return str(seconds / 60) + "鍒? + str(seconds % 60) + "绉?
+	return str(seconds) + "绉?
+
+func _show_offline_welcome_banner(seconds_away: int, gold_earned: int) -> void:
+	offline_banner_timer = 8.0
+	var codex_pct := (GameManager.get_unlocked_codex_count()) * 10
+	offline_banner_text = "鈽呮杩庡綊鏉ワ紒绂荤嚎 " + _format_duration_cn(seconds_away) + " 路 鑷姩鍒涙敹 +" + str(gold_earned) + "G (鍥鹃壌+" + str(codex_pct) + "%)"
+
+func set_boss_stealth(stealth_on: bool) -> void:
+	boss_stealth_mode = stealth_on
+	if stealth_on:
+		drawer_expanded = false
+		is_collapsed_capsule = true
+		hud_opacity = 0.25
+		modulate.a = 0.25
+	else:
+		is_collapsed_capsule = false
+		hud_opacity = 1.0
+		modulate.a = 1.0
+	_sync_label_nodes()
+	queue_redraw()
+
 func open_drawer(tab_idx: int = 0) -> void:
-	active_tab = clampi(tab_idx, 0, 2)
+	active_tab = clampi(tab_idx, 0, 3)
+	boss_stealth_mode = false
 	force_pin_open = true
 	mouse_outside_timer = 0.0
 	is_collapsed_capsule = false
@@ -4115,8 +4324,8 @@ func close_drawer(collapse_to_capsule: bool = false) -> void:
 
 func _build_native_labels() -> void:
 	lbl_offline = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-	lbl_offline.position = Vector2(680.0, 8.0)
-	lbl_offline.custom_minimum_size = Vector2(560.0, 26.0)
+	lbl_offline.position = Vector2(650.0, 8.0)
+	lbl_offline.custom_minimum_size = Vector2(620.0, 26.0)
 	add_child(lbl_offline)
 
 	lbl_capsule_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
@@ -4124,31 +4333,32 @@ func _build_native_labels() -> void:
 	add_child(lbl_capsule_gold)
 
 	lbl_capsule_info = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), false)
-	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 114.0, CAPSULE_RECT.position.y + 10.0)
+	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 112.0, CAPSULE_RECT.position.y + 10.0)
 	add_child(lbl_capsule_info)
 
-	lbl_capsule_mute = EconomyConfig.create_pixel_label("馃攪闈欓煶", 14, Color("#FFE066"), false)
+	lbl_capsule_mute = EconomyConfig.create_pixel_label("[闈欓煶]", 14, Color("#FFE066"), false)
 	lbl_capsule_mute.position = Vector2(CAPSULE_MUTE_RECT.position.x + 2.0, CAPSULE_MUTE_RECT.position.y + 6.0)
 	add_child(lbl_capsule_mute)
 
 	lbl_bar_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
-	lbl_bar_gold.position = Vector2(534.0, 247.0)
+	lbl_bar_gold.position = Vector2(530.0, 247.0)
 	add_child(lbl_bar_gold)
 
 	lbl_bar_pipeline = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), true)
-	lbl_bar_pipeline.position = Vector2(658.0, 247.0)
-	lbl_bar_pipeline.custom_minimum_size = Vector2(192.0, 24.0)
+	lbl_bar_pipeline.position = Vector2(648.0, 247.0)
+	lbl_bar_pipeline.custom_minimum_size = Vector2(196.0, 24.0)
 	add_child(lbl_bar_pipeline)
 
 	lbl_bar_stall = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-	lbl_bar_stall.position = Vector2(856.0, 247.0)
-	lbl_bar_stall.custom_minimum_size = Vector2(192.0, 24.0)
+	lbl_bar_stall.position = Vector2(848.0, 247.0)
+	lbl_bar_stall.custom_minimum_size = Vector2(196.0, 24.0)
 	add_child(lbl_bar_stall)
 
-	for i in range(4):
+	for i in range(TAB_COUNT):
 		var tl := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-		tl.position = Vector2(1056.0 + float(i) * 78.0, 264.0)
-		tl.custom_minimum_size = Vector2(84.0, 22.0)
+		tl.position = Vector2(1046.0 + float(i) * 74.0, 264.0)
+		tl.custom_minimum_size = Vector2(76.0, 22.0)
+		tl.scale = Vector2(0.92, 0.92)
 		add_child(tl)
 		lbl_tabs.append(tl)
 
@@ -4156,7 +4366,12 @@ func _build_native_labels() -> void:
 	lbl_drawer_title.position = Vector2(544.0, 128.0)
 	add_child(lbl_drawer_title)
 
-	lbl_drawer_mute = EconomyConfig.create_pixel_label("馃攪闈欓煶", 14, Color("#FFF4D6"), false)
+	lbl_drawer_weather = EconomyConfig.create_pixel_label("[澶╂皵:鏅存樇]", 14, Color("#FFE066"), false)
+	lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 2.0)
+	lbl_drawer_weather.scale = Vector2(0.92, 0.92)
+	add_child(lbl_drawer_weather)
+
+	lbl_drawer_mute = EconomyConfig.create_pixel_label("[闈欓煶]", 14, Color("#FFF4D6"), false)
 	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
 	add_child(lbl_drawer_mute)
 
@@ -4185,7 +4400,12 @@ func _process(delta: float) -> void:
 	var hover_zone := _get_interactive_zone()
 	is_mouse_over_hud = hover_zone.has_point(mpos)
 
-	if force_pin_open:
+	if boss_stealth_mode:
+		is_collapsed_capsule = true
+		drawer_expanded = false
+		drawer_anim_t = 0.0
+		hud_opacity = 0.25
+	elif force_pin_open:
 		is_collapsed_capsule = false
 		drawer_expanded = true
 		drawer_anim_t = 1.0
@@ -4205,14 +4425,14 @@ func _process(delta: float) -> void:
 		is_collapsed_capsule = false
 		hud_opacity = 1.0
 
-	if not force_pin_open:
+	if not force_pin_open and not boss_stealth_mode:
 		drawer_anim_t = lerpf(drawer_anim_t, 1.0 if drawer_expanded else 0.0, minf(1.0, delta * 10.0))
 	modulate.a = hud_opacity
 
 	hovered_tab = -1
 	hovered_card = -1
 	if not is_collapsed_capsule:
-		for i in range(4):
+		for i in range(TAB_COUNT):
 			if _get_tab_button_rect(i).has_point(mpos):
 				hovered_tab = i
 				break
@@ -4234,9 +4454,11 @@ func _process(delta: float) -> void:
 
 func _sync_label_nodes() -> void:
 	var gold_str := str(int(round(displayed_gold))) + "G"
-	var mute_lbl := "馃攪闈欓煶" if (SoundManager != null and SoundManager.is_muted) else "馃攰闊虫晥"
+	var mute_lbl := "[闈欓煶]" if (SoundManager != null and SoundManager.is_muted) else "[闊虫晥]"
+	var weather_names := ["鏅存樇", "榛勬槒", "澶滃競", "寰洦"]
+	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
 
-	lbl_offline.visible = (offline_banner_timer > 0.0)
+	lbl_offline.visible = (offline_banner_timer > 0.0 and not boss_stealth_mode)
 	lbl_offline.text = offline_banner_text
 
 	lbl_capsule_gold.visible = is_collapsed_capsule
@@ -4244,8 +4466,12 @@ func _sync_label_nodes() -> void:
 	lbl_capsule_mute.visible = is_collapsed_capsule
 	if is_collapsed_capsule:
 		lbl_capsule_gold.text = gold_str
-		lbl_capsule_info.text = "鎽婁綅" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " 路 鎮仠灞曞紑"
-		lbl_capsule_mute.text = mute_lbl
+		if boss_stealth_mode:
+			lbl_capsule_info.text = "鍚庡彴鎸傛満浜ч噾涓?路 鎸塅9鎴栫偣鍑绘仮澶?
+			lbl_capsule_mute.text = "[鎭㈠]"
+		else:
+			lbl_capsule_info.text = GameManager.get_weather_status_text() + " 路 鎮仠灞曞紑"
+			lbl_capsule_mute.text = mute_lbl
 
 	var show_bar := not is_collapsed_capsule
 	lbl_bar_gold.visible = show_bar
@@ -4253,28 +4479,32 @@ func _sync_label_nodes() -> void:
 	lbl_bar_stall.visible = show_bar
 	if show_bar:
 		lbl_bar_gold.text = gold_str
-		var mode_stage := "鍗曞厰鍏ㄥ寘" if not GameManager.is_island_otter_hired(1) else "涓撹亴浜х嚎"
-		lbl_bar_pipeline.text = mode_stage + " 路 缂撳瓨" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
-		var shiba_txt := ("鏌寸姮+" + str(int(GameManager.animal_levels.get("shiba", 0)) * 10) + "%") if GameManager.is_animal_hired("shiba") else "鑷姪1x"
-		lbl_bar_stall.text = "鎽婁綅" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " 路 " + shiba_txt
+		lbl_bar_pipeline.text = GameManager.get_weather_status_text() + " 路 瀛? + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
+		var codex_pct := GameManager.get_unlocked_codex_count() * 10
+		lbl_bar_stall.text = "鎽婁綅" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " 路 鍥鹃壌+" + str(codex_pct) + "%"
 
-	var tab_names := ["寤虹瓚鍗囩骇", "鍔ㄧ墿缂栧埗", "鏈ㄦˉ寮€鎷?, ("鈽呮懜楸肩疆椤? if GameManager.desktop_companion_mode else "鈽呭父瑙勭獥鍙?)]
-	for i in range(4):
+	var tab_names := ["寤虹瓚鍗囩骇", "鍔ㄧ墿缂栧埗", "鏈ㄦˉ寮€鎷?, "灞辨捣鍥鹃壌", ("鈽呮懜楸肩疆椤? if GameManager.desktop_companion_mode else "鈽呭父瑙勭獥鍙?)]
+	for i in range(TAB_COUNT):
 		lbl_tabs[i].visible = show_bar
 		lbl_tabs[i].text = tab_names[i]
 
 	var show_drawer := show_bar and drawer_expanded
 	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 	lbl_drawer_title.visible = show_drawer
+	lbl_drawer_weather.visible = show_drawer
 	lbl_drawer_mute.visible = show_drawer
 	if show_drawer:
+		var codex_cnt := GameManager.get_unlocked_codex_count()
 		var titles := [
 			"銆愬缓绛戝崌绾с€戞瘡25绾т綔鐗?缇庨鑷姩鎹唬 + 寤虹瓚鍥涢樁澶栬铚曞彉!",
-			"銆愬姩鐗╃紪鍒朵笌鎷涙弧杞繘淇€戞湭婊＄紪鏃舵嫑鍕熶紮浼?路 鎷涙弧鍚庝竴閿叏闃熻繘淇?Lv.+1)!",
-			"銆愪笁宀涘浐瀹氭Ы浣嶄笌鏈ㄦˉ寮€鎷撱€戦瓟娉曞瘑鏋?12x鍧╁煔) 路 澶╃┖娴峰哺(52x鍙屽伐鍧?馃憫2x瀵岃豹)"
+			"銆愬姩鐗╃紪鍒朵笌鎷涙弧杞繘淇€戠偣鍑诲皬鍔ㄧ墿鍙懜澶村姞閫?路 鎷涙弧鍚庡叏闃熻繘淇?Lv.+1)!",
+			"銆愪笁宀涘浐瀹氭Ы浣嶄笌鏈ㄦˉ寮€鎷撱€戦瓟娉曞瘑鏋?12x鍧╁煔) 路 澶╃┖娴峰哺(52x鍙屽伐鍧?鈽?x瀵岃豹)",
+			"銆愬北娴峰浘閴存敹闆嗗唽銆戝凡鐐逛寒 " + str(codex_cnt) + "/8 绉嶉鏉愭枡鐞?路 姘镐箙鍏ㄥ矝鍞环 +" + str(codex_cnt * 10) + "%!"
 		]
-		lbl_drawer_title.text = titles[clampi(active_tab, 0, 2)]
+		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
 		lbl_drawer_title.position = Vector2(544.0, 128.0 + slide_y)
+		lbl_drawer_weather.text = "[澶╂皵:" + cur_w_name + "]"
+		lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 3.0 + slide_y)
 		lbl_drawer_mute.text = mute_lbl
 		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + slide_y)
 
@@ -4316,8 +4546,8 @@ func _gui_input(event: InputEvent) -> void:
 				WindowController.begin_window_drag()
 				accept_event()
 				return
-			var hitting_mute := (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
-			if hovered_tab == -1 and hovered_card == -1 and not hitting_mute and _get_interactive_zone().has_point(mpos):
+			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
+			if hovered_tab == -1 and hovered_card == -1 and not hitting_top_btns and _get_interactive_zone().has_point(mpos):
 				if WindowController != null:
 					WindowController.begin_window_drag()
 					accept_event()
@@ -4326,6 +4556,21 @@ func _gui_input(event: InputEvent) -> void:
 			is_pressing_btn = false
 			if WindowController != null and WindowController.is_dragging:
 				WindowController.end_window_drag()
+				accept_event()
+				return
+
+			if boss_stealth_mode and CAPSULE_RECT.has_point(mpos):
+				if WindowController != null:
+					WindowController.toggle_boss_stealth()
+				else:
+					set_boss_stealth(false)
+				accept_event()
+				return
+
+			if drawer_expanded and TOP_RIGHT_WEATHER_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				GameManager.set_weather((GameManager.current_weather + 1) % 4)
 				accept_event()
 				return
 
@@ -4338,7 +4583,7 @@ func _gui_input(event: InputEvent) -> void:
 			if hovered_tab >= 0:
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
-				if hovered_tab == 3:
+				if hovered_tab == 4:
 					_toggle_companion_mode()
 				else:
 					force_pin_open = false
@@ -4363,7 +4608,7 @@ func _toggle_companion_mode() -> void:
 	GameManager.save_game()
 
 func _get_tab_button_rect(idx: int) -> Rect2:
-	return Rect2(1062.0 + float(idx) * 78.0, 235.0, 72.0, 44.0)
+	return Rect2(1050.0 + float(idx) * 74.0, 235.0, 68.0, 44.0)
 
 func _get_card_rect(idx: int, total: int) -> Rect2:
 	var w := 196.0 if total <= 4 else 132.0
@@ -4431,7 +4676,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				"type": "unlock_island",
 				"key": "3",
 				"title": "鏈ㄦˉ2 路 澶╃┖娴峰哺" + (" (宸查€?" if isl3_unlocked else ""),
-				"sub": "鍙屽伐鍧?2x+馃憫2x瀵岃豹",
+				"sub": "鍙屽伐鍧?2x+鈽?x瀵岃豹",
 				"cost": "宸茶В閿? if isl3_unlocked else "480G 瑙ｉ攣"
 			})
 			for b_key in ["soil_2", "soil_3"]:
@@ -4444,6 +4689,29 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"title": String(cfg["name"]) + " Lv." + str(lv),
 					"sub": String(cfg["desc"]).substr(0, 12),
 					"cost": "鍗囩骇 " + str(cost) + "G"
+				})
+		3:
+			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)
+			var codex_pairs := [
+				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "涓€闃堵锋櫒闇茬敯鍥?},
+				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "浜岄樁路鏋滈鐑樼剻"},
+				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "涓夐樁路瀵嗘灄鏄熼湶"},
+				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "鍥涢樁路浜戞捣鐩涘"}
+			]
+			for cp in codex_pairs:
+				var cid := String(cp["crop"])
+				var did := String(cp["del"])
+				var c_name := String(EconomyConfig.CROPS[cid]["name"])
+				var d_name := String(EconomyConfig.DELICACIES[did]["name"])
+				var c_on := bool(GameManager.unlocked_codex.get(cid, false))
+				var d_on := bool(GameManager.unlocked_codex.get(did, false))
+				var bonus_pct := (10 if c_on else 0) + (10 if d_on else 0)
+				list.append({
+					"type": "codex",
+					"key": str(cp["idx"]),
+					"title": String(cp["tier_name"]) + " (+" + str(bonus_pct) + "%)",
+					"sub": (c_name if c_on else "???(鍗囪嚦Lv.25)") + " | " + (d_name if d_on else "???(宸ュ潑瑙ｉ攣)"),
+					"cost": "宸茬偣浜?" + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 路 姘镐箙鍞环+" + str(bonus_pct) + "%"
 				})
 	return list
 
@@ -4461,10 +4729,14 @@ func _activate_card(idx: int) -> void:
 			GameManager.upgrade_animal(k)
 	elif t == "unlock_island":
 		GameManager.unlock_island(int(k))
+	elif t == "codex":
+		var codex_pct := GameManager.get_unlocked_codex_count() * 10
+		offline_banner_timer = 4.0
+		offline_banner_text = "鈽呭北娴峰浘閴存€诲姞鎴? 鍏ㄥ矝鍟嗗搧鍞环姘镐箙 +" + str(codex_pct) + "% (姣忚В閿?绉嶅啘浣滅墿鎴栧伐鍧婄編椋?+10%)"
 
 func _draw() -> void:
-	if offline_banner_timer > 0.0 and tex_pill != null:
-		draw_texture_rect(tex_pill, Rect2(680.0, 6.0, 560.0, 30.0), false)
+	if offline_banner_timer > 0.0 and not boss_stealth_mode and tex_pill != null:
+		draw_texture_rect(tex_pill, Rect2(650.0, 6.0, 620.0, 30.0), false)
 
 	if is_collapsed_capsule:
 		if tex_pill != null:
@@ -4477,16 +4749,16 @@ func _draw() -> void:
 		draw_texture_rect(tex_panel, FULL_BAR_RECT, false)
 
 	if tex_pill != null:
-		draw_texture_rect(tex_pill, Rect2(496.0, 239.0, 156.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(658.0, 239.0, 192.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(856.0, 239.0, 192.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(492.0, 239.0, 152.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(648.0, 239.0, 196.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(848.0, 239.0, 196.0, 36.0), false)
 
 	if tex_icons != null:
-		draw_texture_rect_region(tex_icons, Rect2(502.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+		draw_texture_rect_region(tex_icons, Rect2(498.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
 
-	var icon_indices := [6, 3, 4, 7]
-	for i in range(4):
-		var bx := 1062.0 + float(i) * 78.0
+	var icon_indices := [6, 3, 4, 2, 7]
+	for i in range(TAB_COUNT):
+		var bx := 1050.0 + float(i) * 74.0
 		var is_active_or_hov := (hovered_tab == i or (drawer_expanded and active_tab == i))
 		var lift := -2.0 if is_active_or_hov else 0.0
 		var btex := tex_btn_normal
@@ -4495,17 +4767,19 @@ func _draw() -> void:
 		elif is_active_or_hov and tex_btn_hover != null:
 			btex = tex_btn_hover
 		if btex != null:
-			draw_texture_rect(btex, Rect2(bx + 12.0, 226.0 + lift, 42.0, 42.0), false)
+			draw_texture_rect(btex, Rect2(bx + 13.0, 226.0 + lift, 42.0, 42.0), false)
 		if tex_icons != null:
-			draw_texture_rect_region(tex_icons, Rect2(bx + 15.0, 229.0 + lift, 36.0, 36.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
+			draw_texture_rect_region(tex_icons, Rect2(bx + 16.0, 229.0 + lift, 36.0, 36.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
 
 	if drawer_expanded and tex_drawer != null:
 		var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
 		draw_texture_rect(tex_drawer, d_rect, false)
 
+		var w_rect := Rect2(TOP_RIGHT_WEATHER_RECT.position.x, TOP_RIGHT_WEATHER_RECT.position.y + slide_y, TOP_RIGHT_WEATHER_RECT.size.x, TOP_RIGHT_WEATHER_RECT.size.y)
 		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
 		if tex_pill != null:
+			draw_texture_rect(tex_pill, w_rect, false)
 			draw_texture_rect(tex_pill, m_rect, false)
 
 		var cards := _get_current_tab_cards()
@@ -4515,6 +4789,12 @@ func _draw() -> void:
 			var ctex := tex_card_hover if hovered_card == i else tex_card
 			if ctex != null:
 				draw_texture_rect(ctex, crect, false)
+			# Draw real pixel-art crop & delicacy icons inside Codex cards (Tab 3)
+			if active_tab == 3 and i < 4:
+				if tex_crops != null:
+					draw_texture_rect_region(tex_crops, Rect2(crect.end.x - 52.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(3.0 * 40.0, float(i) * 40.0, 40.0, 40.0))
+				if tex_delicacies != null:
+					draw_texture_rect_region(tex_delicacies, Rect2(crect.end.x - 28.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(float(i) * 36.0, 0.0, 36.0, 36.0))
 
 === FILE: D:\project\maple-isle-idle\src\ui\HUD.tscn (278 bytes) ===
 [gd_scene load_steps=2 format=3]
@@ -4684,7 +4964,7 @@ func _process(delta: float) -> void:
 	position.y = lerpf(position.y, target_y, minf(1.0, delta * PAN_LERP_SPEED))
 	zoom = zoom.lerp(Vector2(target_zoom, target_zoom), minf(1.0, delta * ZOOM_LERP_SPEED))
 
-=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.gd (18953 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.gd (23225 bytes) ===
 extends Node2D
 class_name MainWorld
 ## Panoramic 3-Island World (`src/world/MainWorld.gd`)
@@ -4758,6 +5038,14 @@ var cloud_time: float = 0.0
 var chimney_timer: float = 0.0
 var chimney_wisps: Array[Dictionary] = []
 
+## v2.3 Direction 2: Floating Cloud Gift Encounter (`浜戠濂囬亣绀肩洅`)
+var tex_delicacies: Texture2D
+var cloud_gift_sprite: Sprite2D
+var cloud_gift_label: Label
+var cloud_gift_active: bool = false
+var cloud_gift_timer: float = 22.0
+var cloud_gift_pos: Vector2 = Vector2(560.0, 34.0)
+
 func _ready() -> void:
 	z_index = EconomyConfig.Z_TERRAIN
 	z_as_relative = false
@@ -4770,6 +5058,7 @@ func _ready() -> void:
 	tex_cottage = load("res://assets/pixel_art/buildings/cottage_mushroom.png")
 	tex_left_hut = load("res://assets/pixel_art/buildings/landmark_left_hut.png")
 	tex_right_tiki = load("res://assets/pixel_art/buildings/landmark_right_tiki.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 
 	_assert_1d_slot_layout()
 
@@ -4792,6 +5081,25 @@ func _ready() -> void:
 	floating_text = FloatingText.new()
 	floating_text.name = "FloatingText"
 	world_root.add_child(floating_text)
+
+	cloud_gift_sprite = Sprite2D.new()
+	cloud_gift_sprite.name = "CloudGiftSprite"
+	cloud_gift_sprite.texture = tex_delicacies
+	cloud_gift_sprite.region_enabled = false
+	cloud_gift_sprite.hframes = 4
+	cloud_gift_sprite.vframes = 1
+	cloud_gift_sprite.frame = 3
+	cloud_gift_sprite.centered = true
+	cloud_gift_sprite.scale = Vector2(0.85, 0.85)
+	cloud_gift_sprite.visible = false
+	cloud_gift_sprite.z_index = EconomyConfig.Z_CARRY_EMOTE
+	cloud_gift_sprite.z_as_relative = false
+	world_root.add_child(cloud_gift_sprite)
+
+	cloud_gift_label = EconomyConfig.create_pixel_label("鈽呭閬囩ぜ鐩?, 14, Color("#FFE066"), true)
+	cloud_gift_label.custom_minimum_size = Vector2(84.0, 20.0)
+	cloud_gift_label.position = Vector2(-42.0, -34.0)
+	cloud_gift_sprite.add_child(cloud_gift_label)
 
 	var canvas_layer := CanvasLayer.new()
 	canvas_layer.layer = 10
@@ -5003,6 +5311,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif not event.pressed and WindowController != null and WindowController.is_dragging:
 				WindowController.end_window_drag()
 				return
+			elif event.pressed:
+				var local_pos: Vector2 = (event.position - world_root.position) / maxf(0.1, companion_zoom)
+				if cloud_gift_active and cloud_gift_sprite != null and local_pos.distance_to(cloud_gift_sprite.position) <= 36.0:
+					_claim_cloud_gift()
+					return
+				for w in workers:
+					if is_instance_valid(w) and w.visible and w.get_pet_hit_rect().has_point(local_pos):
+						w.trigger_pet_boost()
+						return
 		elif event.pressed and GameManager.desktop_companion_mode:
 			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 				companion_zoom = clampf(companion_zoom + 0.08, 0.4, 1.5)
@@ -5011,6 +5328,18 @@ func _unhandled_input(event: InputEvent) -> void:
 				companion_zoom = clampf(companion_zoom - 0.08, 0.4, 1.5)
 				_apply_companion_zoom()
 
+func _claim_cloud_gift() -> void:
+	cloud_gift_active = false
+	if cloud_gift_sprite != null:
+		cloud_gift_sprite.visible = false
+	cloud_gift_timer = randf_range(55.0, 85.0)
+	var bonus_gold := maxi(60, int(round(GameManager.estimate_idle_gold_per_sec() * 25.0)))
+	GameManager.add_gold(bonus_gold)
+	GameManager.trigger_carnival_frenzy(20.0)
+	if SoundManager != null:
+		SoundManager.play_milestone_sfx()
+	EventBus.spawn_floating_text.emit(cloud_gift_pos, "鈽呭閬囩ぜ鐩?" + str(bonus_gold) + "G 路 鍢夊勾鍗?0s!", Color("#FFE066"))
+
 func _apply_companion_zoom() -> void:
 	world_root.scale = Vector2(companion_zoom, companion_zoom)
 	world_root.position = Vector2(960.0 * (1.0 - companion_zoom), 36.0 + 200.0 * (1.0 - companion_zoom))
@@ -5018,6 +5347,37 @@ func _apply_companion_zoom() -> void:
 
 func _process(delta: float) -> void:
 	cloud_time += delta
+
+	# v2.3 Direction 1: Weather & Time-of-Day ambient lighting interpolation
+	var target_tint := Color.WHITE
+	if GameManager != null:
+		match GameManager.current_weather:
+			1:
+				target_tint = Color(1.0, 0.94, 0.86, 1.0)
+			2:
+				target_tint = Color(0.88, 0.92, 1.0, 1.0)
+			3:
+				target_tint = Color(0.92, 0.96, 1.0, 1.0)
+	var target_alpha := 0.0 if (WindowController != null and WindowController.boss_stealth_active) else 1.0
+	target_tint.a = target_alpha
+	world_root.modulate = world_root.modulate.lerp(target_tint, minf(1.0, delta * 3.5))
+	world_root.modulate.a = target_alpha
+
+	# v2.3 Direction 2: Floating Cloud Gift hovering over the open Lotus Pond (`x: 1120..1250`)
+	if cloud_gift_active:
+		cloud_gift_pos.x = 1188.0 + sin(cloud_time * 0.85) * 48.0
+		cloud_gift_pos.y = 42.0 + sin(cloud_time * 2.6) * 4.0
+		if cloud_gift_sprite != null:
+			cloud_gift_sprite.visible = true
+			cloud_gift_sprite.position = cloud_gift_pos
+	else:
+		cloud_gift_timer -= delta
+		if cloud_gift_timer <= 0.0:
+			cloud_gift_active = true
+			cloud_gift_pos = Vector2(1188.0, 42.0)
+			if cloud_gift_sprite != null:
+				cloud_gift_sprite.visible = true
+				cloud_gift_sprite.position = cloud_gift_pos
 
 	var isl2_on := bool(GameManager.unlocked_islands.get(2, false))
 	var isl3_on := bool(GameManager.unlocked_islands.get(3, false))
@@ -5046,7 +5406,8 @@ func _process(delta: float) -> void:
 	if customer_spawn_timer <= 0.0:
 		customer_spawn_timer = randf_range(18.0, 30.0)
 		if customers.size() < 4:
-			_spawn_customer(false)
+			var roll_vip := randf() < GameManager.get_weather_vip_chance()
+			_spawn_customer(roll_vip)
 
 	if isl3_on:
 		vip_customer_timer -= delta
@@ -5124,6 +5485,21 @@ func _draw() -> void:
 
 	for wisp in chimney_wisps:
 		draw_circle(Vector2(float(wisp["x"]), float(wisp["y"])), float(wisp["r"]), Color(0.98, 0.96, 0.92, float(wisp["alpha"])))
+
+	# v2.3 Direction 1: Dusk/Night lotus pond pixel fireflies; Rain diagonal droplets (no sky circles behind roofs)
+	if GameManager != null and not (WindowController != null and WindowController.boss_stealth_active):
+		var w_state := GameManager.current_weather
+		if w_state == 1 or w_state == 2:
+			for fi in range(6):
+				var fx := 1104.0 + float(fi) * 34.0 + sin(cloud_time * 1.8 + float(fi) * 1.3) * 8.0
+				var fy := oy + 126.0 + cos(cloud_time * 2.3 + float(fi) * 0.9) * 6.0
+				var fa := 0.55 + 0.40 * sin(cloud_time * 4.0 + float(fi))
+				draw_rect(Rect2(fx, fy, 3.0, 3.0), Color(1.0, 0.94, 0.42, fa), true)
+		elif w_state == 3:
+			for ri in range(14):
+				var rx := fmod(580.0 + float(ri) * 52.0 + cloud_time * 95.0, 720.0) + 580.0
+				var ry := oy + fmod(float(ri) * 23.0 + cloud_time * 160.0, 75.0) + 72.0
+				draw_line(Vector2(rx, ry), Vector2(rx - 3.0, ry + 8.0), Color(0.78, 0.92, 1.0, 0.42), 1.0)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 

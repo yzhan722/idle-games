@@ -74,14 +74,105 @@ var save_timer: float = 0.0
 var pending_offline_seconds: int = 0
 var pending_offline_gold: int = 0
 
+## v2.3 Direction 1 & 2: Dynamic Weather/Time-of-Day Cycle & Carnival Frenzy Buff
+enum WeatherState { DAY = 0, DUSK = 1, NIGHT = 2, RAIN = 3 }
+var current_weather: int = WeatherState.DAY
+var weather_timer: float = 0.0
+var frenzy_timer: float = 0.0
+
+## v2.3 Direction 4: Mountain & Sea Collection Codex (4 Crops + 4 Delicacies -> +10% global sale price per unlocked entry)
+var unlocked_codex: Dictionary = {
+	"crop_0": true,
+	"crop_1": false,
+	"crop_2": false,
+	"crop_3": false,
+	"delicacy_0": false,
+	"delicacy_1": false,
+	"delicacy_2": false,
+	"delicacy_3": false
+}
+
 func _ready() -> void:
 	load_game()
+	_sync_codex_from_progression()
 
 func _process(delta: float) -> void:
 	save_timer += delta
 	if save_timer >= 15.0:
 		save_timer = 0.0
 		save_game()
+
+	if frenzy_timer > 0.0:
+		frenzy_timer = maxf(0.0, frenzy_timer - delta)
+
+	weather_timer += delta
+	if weather_timer >= 42.0:
+		weather_timer = 0.0
+		set_weather((current_weather + 1) % 4)
+
+func set_weather(next_weather: int) -> void:
+	current_weather = clampi(next_weather, 0, 3)
+	if SoundManager != null and SoundManager.has_method("crossfade_to_ambient"):
+		SoundManager.crossfade_to_ambient(current_weather)
+	EventBus.weather_changed.emit(current_weather)
+
+func get_weather_crop_growth_multiplier() -> float:
+	var mult := 1.35 if current_weather == WeatherState.RAIN else 1.0
+	if frenzy_timer > 0.0:
+		mult *= 1.6
+	return mult
+
+func get_weather_vip_chance() -> float:
+	var base_c := 0.36 if (current_weather == WeatherState.DUSK or current_weather == WeatherState.NIGHT) else 0.18
+	if frenzy_timer > 0.0:
+		base_c = maxf(base_c, 0.50)
+	return base_c
+
+func get_weather_status_text() -> String:
+	if frenzy_timer > 0.0:
+		return "★嘉年华加速(" + str(int(ceili(frenzy_timer))) + "s)"
+	match current_weather:
+		WeatherState.DAY:
+			return "晴昼·常速"
+		WeatherState.DUSK:
+			return "黄昏·富豪2x"
+		WeatherState.NIGHT:
+			return "夜市·富豪2x"
+		WeatherState.RAIN:
+			return "微雨·农田+35%"
+	return "晴昼·常速"
+
+func trigger_carnival_frenzy(duration: float = 20.0) -> void:
+	frenzy_timer = maxf(frenzy_timer, duration)
+	EventBus.carnival_frenzy_started.emit(frenzy_timer)
+
+func unlock_codex_entry(item_id: String) -> void:
+	if unlocked_codex.has(item_id) and not bool(unlocked_codex[item_id]):
+		unlocked_codex[item_id] = true
+		EventBus.codex_unlocked.emit(item_id)
+
+func _sync_codex_from_progression() -> void:
+	unlock_codex_entry("crop_0")
+	for isl in [1, 2, 3]:
+		if bool(unlocked_islands.get(isl, false)):
+			var slv := int(building_levels.get("soil_" + str(isl), 1))
+			unlock_codex_entry(EconomyConfig.get_evolved_crop_id(isl, slv))
+	if get_island_recruited_count(1, "fox") >= 1 or int(building_levels.get("mortar", 1)) > 1:
+		unlock_codex_entry(EconomyConfig.get_evolved_delicacy_id("mortar", int(building_levels.get("mortar", 1))))
+	if bool(unlocked_islands.get(2, false)) and (get_island_recruited_count(2, "penguin") >= 1 or int(building_levels.get("cauldron", 1)) > 1):
+		unlock_codex_entry("delicacy_2")
+	if bool(unlocked_islands.get(3, false)) and (get_island_recruited_count(3, "fox") >= 1 or get_island_recruited_count(3, "penguin") >= 1):
+		unlock_codex_entry("delicacy_3")
+
+func get_unlocked_codex_count() -> int:
+	var cnt := 0
+	for k in unlocked_codex.keys():
+		if bool(unlocked_codex[k]):
+			cnt += 1
+	return cnt
+
+func get_codex_price_multiplier() -> float:
+	return 1.0 + 0.10 * float(get_unlocked_codex_count())
 
 func is_animal_hired(animal_key: String) -> bool:
 	return get_total_recruited(animal_key) >= 1
@@ -171,6 +262,7 @@ func is_raw_basket_full(island_idx: int) -> bool:
 	return get_island_basket_total(island_idx) >= get_raw_basket_max_cap(island_idx)
 
 func add_to_raw_basket(island_idx: int, crop_id: String, qty: int) -> int:
+	unlock_codex_entry(crop_id)
 	if not raw_baskets.has(island_idx):
 		raw_baskets[island_idx] = {}
 	var room := maxi(0, get_raw_basket_max_cap(island_idx) - get_island_basket_total(island_idx))
@@ -247,6 +339,7 @@ func is_workshop_output_full(workshop_id: String) -> bool:
 	return get_workshop_output_total(workshop_id) >= get_workshop_buffer_cap(workshop_id)
 
 func add_to_workshop_output(workshop_id: String, delicacy_id: String, qty: int) -> int:
+	unlock_codex_entry(delicacy_id)
 	if not workshop_outputs.has(workshop_id):
 		workshop_outputs[workshop_id] = {}
 	var room := maxi(0, get_workshop_buffer_cap(workshop_id) - get_workshop_output_total(workshop_id))
@@ -285,6 +378,7 @@ func is_stall_full() -> bool:
 	return get_total_stall_count() >= get_stall_max_capacity()
 
 func add_to_stall(item_id: String, qty: int) -> int:
+	unlock_codex_entry(item_id)
 	var room := maxi(0, get_stall_max_capacity() - get_total_stall_count())
 	var added := mini(qty, room)
 	if added > 0:
@@ -307,6 +401,7 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 		return 0
 	var bought := mini(avail, maxi(1, qty))
 	stall_inventory[target_id] = avail - bought
+	unlock_codex_entry(target_id)
 
 	var b_lv := int(building_levels.get("soil_1", 1))
 	if target_id == "delicacy_0" or target_id == "delicacy_1":
@@ -323,7 +418,7 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 		int(building_levels.get("stall", 1)),
 		shiba_lv
 	)
-	var total_earned := unit_price * bought
+	var total_earned := int(round(float(unit_price * bought) * get_codex_price_multiplier()))
 	if is_vip:
 		total_earned = int(round(float(total_earned) * EconomyConfig.VIP_TIP_MULTIPLIER))
 
@@ -343,6 +438,7 @@ func upgrade_building(b_key: String) -> bool:
 	if not spend_gold(cost):
 		return false
 	building_levels[b_key] = cur_lv + 1
+	_sync_codex_from_progression()
 	EventBus.upgrade_purchased.emit("building", b_key, cur_lv + 1)
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
@@ -379,6 +475,7 @@ func upgrade_animal(a_key: String) -> bool:
 				SoundManager.play_upgrade_sfx()
 		EventBus.upgrade_purchased.emit("animal", a_key, animal_levels[a_key])
 
+	_sync_codex_from_progression()
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
 	return true
@@ -391,6 +488,7 @@ func unlock_island(island_idx: int) -> bool:
 	if not spend_gold(cost):
 		return false
 	unlocked_islands[island_idx] = true
+	_sync_codex_from_progression()
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
 	EventBus.island_unlocked.emit(island_idx)
@@ -404,7 +502,7 @@ func estimate_idle_gold_per_sec() -> float:
 		base_rate += float(building_levels[k]) * 1.1
 	for k in animal_levels.keys():
 		base_rate += float(get_total_recruited(k)) * 1.6
-	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0)))
+	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0))) * get_codex_price_multiplier()
 
 func save_game() -> void:
 	var data := {
@@ -425,7 +523,8 @@ func save_game() -> void:
 			"2": island_recruited[2],
 			"3": island_recruited[3]
 		},
-		"stall_inventory": stall_inventory
+		"stall_inventory": stall_inventory,
+		"unlocked_codex": unlocked_codex
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f != null:
@@ -464,6 +563,10 @@ func load_game() -> void:
 	if parsed.has("stall_inventory") and parsed["stall_inventory"] is Dictionary:
 		for k in parsed["stall_inventory"].keys():
 			stall_inventory[String(k)] = int(parsed["stall_inventory"][k])
+	if parsed.has("unlocked_codex") and parsed["unlocked_codex"] is Dictionary:
+		for ck in parsed["unlocked_codex"].keys():
+			if unlocked_codex.has(String(ck)):
+				unlocked_codex[String(ck)] = bool(parsed["unlocked_codex"][ck])
 
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())
@@ -472,3 +575,4 @@ func load_game() -> void:
 		pending_offline_seconds = elapsed
 		pending_offline_gold = maxi(8, int(round(float(elapsed) * estimate_idle_gold_per_sec() * 0.45)))
 		add_gold(pending_offline_gold)
+		EventBus.offline_earnings_ready.emit(pending_offline_seconds, pending_offline_gold)

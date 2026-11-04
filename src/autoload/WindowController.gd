@@ -26,6 +26,7 @@ var custom_pos_active: bool = false
 var custom_pos: Vector2i = Vector2i.ZERO
 
 var is_dragging: bool = false
+var boss_stealth_active: bool = false
 var _drag_start_mouse: Vector2i = Vector2i.ZERO
 var _drag_start_win_pos: Vector2i = Vector2i.ZERO
 
@@ -64,12 +65,25 @@ func apply_window_mode(companion_enabled: bool) -> void:
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 
 func _input(event: InputEvent) -> void:
+	# Global F9 Boss Key Stealth Toggle (hides islands & shrinks HUD while keeping 100% idle production running)
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F9:
+		toggle_boss_stealth()
+		return
 	# Global Alt + Left-Click window drag support anywhere over the window
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed and Input.is_key_pressed(KEY_ALT):
 			start_window_drag()
 		elif not event.pressed and is_dragging:
 			stop_window_drag()
+
+func toggle_boss_stealth() -> bool:
+	boss_stealth_active = not boss_stealth_active
+	if _world_ref != null and "world_root" in _world_ref and _world_ref.world_root != null:
+		_world_ref.world_root.modulate.a = 0.0 if boss_stealth_active else 1.0
+	if _hud_ref != null and _hud_ref.has_method("set_boss_stealth"):
+		_hud_ref.call("set_boss_stealth", boss_stealth_active)
+	_refresh_passthrough()
+	return boss_stealth_active
 
 func _process(_delta: float) -> void:
 	if not is_dragging:
@@ -185,12 +199,24 @@ func _refresh_passthrough() -> void:
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 		return
 
+	var s := maxf(0.1, scale_factor)
+	if boss_stealth_active:
+		# In F9 Boss Stealth Mode, only the tiny bottom capsule strip receives mouse input; 99% of desktop passes through!
+		var stealth_poly := PackedVector2Array([
+			Vector2(760.0 * s, 232.0 * s),
+			Vector2(1160.0 * s, 232.0 * s),
+			Vector2(1160.0 * s, 276.0 * s),
+			Vector2(760.0 * s, 276.0 * s)
+		])
+		_last_passthrough_polygon = stealth_poly
+		DisplayServer.window_set_mouse_passthrough(stealth_poly)
+		return
+
 	var isl_rect := _compute_active_islands_span()
 	var ui_rect := _last_hud_rect
 	if _last_drawer_rect.size.x > 0.0 and _last_drawer_rect.size.y > 0.0:
 		ui_rect = ui_rect.merge(_last_drawer_rect)
 
-	var s := maxf(0.1, scale_factor)
 	var top_y := maxf(0.0, minf(isl_rect.position.y, ui_rect.position.y))
 	var bot_y := minf(VIEWPORT_H, maxf(isl_rect.end.y, ui_rect.end.y))
 	var isl_l := clampf(isl_rect.position.x, 0.0, VIEWPORT_W)

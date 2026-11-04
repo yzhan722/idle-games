@@ -35,6 +35,7 @@ var tex_heart: Texture2D
 
 @onready var body_sprite: Sprite2D = Sprite2D.new()
 @onready var carry_icon: Sprite2D = Sprite2D.new()
+@onready var heart_icon: Sprite2D = Sprite2D.new()
 var sleep_label: Label
 
 var waypoint_graph: WaypointGraph
@@ -90,6 +91,27 @@ func _ready() -> void:
 	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
+
+	heart_icon.name = "HeartIcon"
+	heart_icon.texture = tex_heart
+	heart_icon.visible = false
+	heart_icon.centered = true
+	heart_icon.scale = Vector2(0.55, 0.55)
+	heart_icon.position = Vector2(0.0, -68.0)
+	heart_icon.z_index = EconomyConfig.Z_CARRY_EMOTE
+	heart_icon.z_as_relative = false
+	add_child(heart_icon)
+
+func get_pet_hit_rect() -> Rect2:
+	return Rect2(position.x - 24.0, position.y - 54.0, 48.0, 56.0)
+
+func trigger_pet_boost() -> void:
+	if not visible:
+		return
+	boost_timer = 15.0
+	if SoundManager != null:
+		SoundManager.play_pop_sfx()
+	EventBus.spawn_floating_text.emit(position + Vector2(0.0, -64.0), "★摸头元气+50%!", Color("#FFE066"))
 
 func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, p_graph: WaypointGraph, p_world: Node2D) -> void:
 	role_type = p_role
@@ -195,9 +217,15 @@ func _process(delta: float) -> void:
 	if boost_timer > 0.0:
 		boost_timer = maxf(0.0, boost_timer - delta)
 
+	var haste_mult := 1.0
+	if boost_timer > 0.0:
+		haste_mult *= 1.5
+	if GameManager != null and GameManager.frenzy_timer > 0.0:
+		haste_mult *= 1.5
+
 	if nav_path.size() > 0:
 		is_moving = true
-		var spd := EconomyConfig.calc_move_speed(animal_key, get_level())
+		var spd := EconomyConfig.calc_move_speed(animal_key, get_level()) * haste_mult
 		var rem_move := spd * delta
 		while rem_move > 0.0 and nav_path.size() > 0:
 			var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
@@ -221,7 +249,7 @@ func _process(delta: float) -> void:
 	else:
 		is_moving = false
 		position.y = EconomyConfig.GROUND_Y
-		state_timer += delta
+		state_timer += delta * haste_mult
 		_update_role_work_step()
 
 	var pose_idx := _get_pose_index()
@@ -254,9 +282,16 @@ func _process(delta: float) -> void:
 		carry_icon.position = Vector2(0.0, -56.0 + hop_y)
 		carry_icon.rotation = 0.0
 
+	if heart_icon != null:
+		heart_icon.visible = (boost_timer > 0.0)
+		if heart_icon.visible:
+			var heart_y := -74.0 if carry_icon.visible else -62.0
+			heart_icon.position = Vector2(0.0, heart_y + hop_y + sin(anim_time * 6.0) * 2.0)
+			heart_icon.rotation = 0.0
+
 	if sleep_label != null:
-		sleep_label.visible = is_sleeping_full
-		if is_sleeping_full:
+		sleep_label.visible = is_sleeping_full and (boost_timer <= 0.0)
+		if sleep_label.visible:
 			sleep_label.position = Vector2(-30.0, -68.0 + sin(anim_time * 2.5) * 2.0)
 
 	queue_redraw()

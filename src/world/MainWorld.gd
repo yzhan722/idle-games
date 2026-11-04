@@ -71,6 +71,14 @@ var cloud_time: float = 0.0
 var chimney_timer: float = 0.0
 var chimney_wisps: Array[Dictionary] = []
 
+## v2.3 Direction 2: Floating Cloud Gift Encounter (`云端奇遇礼盒`)
+var tex_delicacies: Texture2D
+var cloud_gift_sprite: Sprite2D
+var cloud_gift_label: Label
+var cloud_gift_active: bool = false
+var cloud_gift_timer: float = 22.0
+var cloud_gift_pos: Vector2 = Vector2(560.0, 34.0)
+
 func _ready() -> void:
 	z_index = EconomyConfig.Z_TERRAIN
 	z_as_relative = false
@@ -83,6 +91,7 @@ func _ready() -> void:
 	tex_cottage = load("res://assets/pixel_art/buildings/cottage_mushroom.png")
 	tex_left_hut = load("res://assets/pixel_art/buildings/landmark_left_hut.png")
 	tex_right_tiki = load("res://assets/pixel_art/buildings/landmark_right_tiki.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 
 	_assert_1d_slot_layout()
 
@@ -105,6 +114,25 @@ func _ready() -> void:
 	floating_text = FloatingText.new()
 	floating_text.name = "FloatingText"
 	world_root.add_child(floating_text)
+
+	cloud_gift_sprite = Sprite2D.new()
+	cloud_gift_sprite.name = "CloudGiftSprite"
+	cloud_gift_sprite.texture = tex_delicacies
+	cloud_gift_sprite.region_enabled = false
+	cloud_gift_sprite.hframes = 4
+	cloud_gift_sprite.vframes = 1
+	cloud_gift_sprite.frame = 3
+	cloud_gift_sprite.centered = true
+	cloud_gift_sprite.scale = Vector2(0.85, 0.85)
+	cloud_gift_sprite.visible = false
+	cloud_gift_sprite.z_index = EconomyConfig.Z_CARRY_EMOTE
+	cloud_gift_sprite.z_as_relative = false
+	world_root.add_child(cloud_gift_sprite)
+
+	cloud_gift_label = EconomyConfig.create_pixel_label("★奇遇礼盒", 14, Color("#FFE066"), true)
+	cloud_gift_label.custom_minimum_size = Vector2(84.0, 20.0)
+	cloud_gift_label.position = Vector2(-42.0, -34.0)
+	cloud_gift_sprite.add_child(cloud_gift_label)
 
 	var canvas_layer := CanvasLayer.new()
 	canvas_layer.layer = 10
@@ -316,6 +344,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif not event.pressed and WindowController != null and WindowController.is_dragging:
 				WindowController.end_window_drag()
 				return
+			elif event.pressed:
+				var local_pos: Vector2 = (event.position - world_root.position) / maxf(0.1, companion_zoom)
+				if cloud_gift_active and cloud_gift_sprite != null and local_pos.distance_to(cloud_gift_sprite.position) <= 36.0:
+					_claim_cloud_gift()
+					return
+				for w in workers:
+					if is_instance_valid(w) and w.visible and w.get_pet_hit_rect().has_point(local_pos):
+						w.trigger_pet_boost()
+						return
 		elif event.pressed and GameManager.desktop_companion_mode:
 			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 				companion_zoom = clampf(companion_zoom + 0.08, 0.4, 1.5)
@@ -324,6 +361,18 @@ func _unhandled_input(event: InputEvent) -> void:
 				companion_zoom = clampf(companion_zoom - 0.08, 0.4, 1.5)
 				_apply_companion_zoom()
 
+func _claim_cloud_gift() -> void:
+	cloud_gift_active = false
+	if cloud_gift_sprite != null:
+		cloud_gift_sprite.visible = false
+	cloud_gift_timer = randf_range(55.0, 85.0)
+	var bonus_gold := maxi(60, int(round(GameManager.estimate_idle_gold_per_sec() * 25.0)))
+	GameManager.add_gold(bonus_gold)
+	GameManager.trigger_carnival_frenzy(20.0)
+	if SoundManager != null:
+		SoundManager.play_milestone_sfx()
+	EventBus.spawn_floating_text.emit(cloud_gift_pos, "★奇遇礼盒+" + str(bonus_gold) + "G · 嘉年华20s!", Color("#FFE066"))
+
 func _apply_companion_zoom() -> void:
 	world_root.scale = Vector2(companion_zoom, companion_zoom)
 	world_root.position = Vector2(960.0 * (1.0 - companion_zoom), 36.0 + 200.0 * (1.0 - companion_zoom))
@@ -331,6 +380,37 @@ func _apply_companion_zoom() -> void:
 
 func _process(delta: float) -> void:
 	cloud_time += delta
+
+	# v2.3 Direction 1: Weather & Time-of-Day ambient lighting interpolation
+	var target_tint := Color.WHITE
+	if GameManager != null:
+		match GameManager.current_weather:
+			1:
+				target_tint = Color(1.0, 0.94, 0.86, 1.0)
+			2:
+				target_tint = Color(0.88, 0.92, 1.0, 1.0)
+			3:
+				target_tint = Color(0.92, 0.96, 1.0, 1.0)
+	var target_alpha := 0.0 if (WindowController != null and WindowController.boss_stealth_active) else 1.0
+	target_tint.a = target_alpha
+	world_root.modulate = world_root.modulate.lerp(target_tint, minf(1.0, delta * 3.5))
+	world_root.modulate.a = target_alpha
+
+	# v2.3 Direction 2: Floating Cloud Gift hovering over the open Lotus Pond (`x: 1120..1250`)
+	if cloud_gift_active:
+		cloud_gift_pos.x = 1188.0 + sin(cloud_time * 0.85) * 48.0
+		cloud_gift_pos.y = 42.0 + sin(cloud_time * 2.6) * 4.0
+		if cloud_gift_sprite != null:
+			cloud_gift_sprite.visible = true
+			cloud_gift_sprite.position = cloud_gift_pos
+	else:
+		cloud_gift_timer -= delta
+		if cloud_gift_timer <= 0.0:
+			cloud_gift_active = true
+			cloud_gift_pos = Vector2(1188.0, 42.0)
+			if cloud_gift_sprite != null:
+				cloud_gift_sprite.visible = true
+				cloud_gift_sprite.position = cloud_gift_pos
 
 	var isl2_on := bool(GameManager.unlocked_islands.get(2, false))
 	var isl3_on := bool(GameManager.unlocked_islands.get(3, false))
@@ -359,7 +439,8 @@ func _process(delta: float) -> void:
 	if customer_spawn_timer <= 0.0:
 		customer_spawn_timer = randf_range(18.0, 30.0)
 		if customers.size() < 4:
-			_spawn_customer(false)
+			var roll_vip := randf() < GameManager.get_weather_vip_chance()
+			_spawn_customer(roll_vip)
 
 	if isl3_on:
 		vip_customer_timer -= delta
@@ -437,5 +518,20 @@ func _draw() -> void:
 
 	for wisp in chimney_wisps:
 		draw_circle(Vector2(float(wisp["x"]), float(wisp["y"])), float(wisp["r"]), Color(0.98, 0.96, 0.92, float(wisp["alpha"])))
+
+	# v2.3 Direction 1: Dusk/Night lotus pond pixel fireflies; Rain diagonal droplets (no sky circles behind roofs)
+	if GameManager != null and not (WindowController != null and WindowController.boss_stealth_active):
+		var w_state := GameManager.current_weather
+		if w_state == 1 or w_state == 2:
+			for fi in range(6):
+				var fx := 1104.0 + float(fi) * 34.0 + sin(cloud_time * 1.8 + float(fi) * 1.3) * 8.0
+				var fy := oy + 126.0 + cos(cloud_time * 2.3 + float(fi) * 0.9) * 6.0
+				var fa := 0.55 + 0.40 * sin(cloud_time * 4.0 + float(fi))
+				draw_rect(Rect2(fx, fy, 3.0, 3.0), Color(1.0, 0.94, 0.42, fa), true)
+		elif w_state == 3:
+			for ri in range(14):
+				var rx := fmod(580.0 + float(ri) * 52.0 + cloud_time * 95.0, 720.0) + 580.0
+				var ry := oy + fmod(float(ri) * 23.0 + cloud_time * 160.0, 75.0) + 72.0
+				draw_line(Vector2(rx, ry), Vector2(rx - 3.0, ry + 8.0), Color(0.78, 0.92, 1.0, 0.42), 1.0)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
