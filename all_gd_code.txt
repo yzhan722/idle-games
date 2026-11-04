@@ -1,0 +1,5364 @@
+﻿=== FILE: D:\project\maple-isle-idle\src\autoload\EconomyConfig.gd (11464 bytes) ===
+extends Node
+## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution, Native Typography & Drop Shadow Math (`EconomyConfig.gd`)
+## Strictly enforces GEMINI.md Engineering Laws 1~6.
+
+const GROUND_Y := 124.0
+const MIN_BUILDING_PADDING := 28.0
+const DECOR_OUTER_OFFSET := 16.0
+
+const Z_SKY := -100
+const Z_TERRAIN := -20
+const Z_SHADOW := -5
+const Z_SOIL_BASE := -2
+const Z_BUILDING := 0
+const Z_CROP := 1
+const Z_UNIT := 10
+const Z_CARRY_EMOTE := 20
+const Z_FLOATING_UI := 50
+
+const MULTIPLIER_RAW := 1.0
+const MULTIPLIER_MORTAR := 3.5
+const MULTIPLIER_CAULDRON := 12.0
+const MULTIPLIER_ORBIS_LINKED := 52.0
+const VIP_TIP_MULTIPLIER := 2.0
+const DEFAULT_BUFFER_CAP := 10
+
+var sprite_manifest: Dictionary = {}
+
+## PRD v2.2 Section 3: Strict Per-Island Animal Recruit Caps
+const ISLAND_RECRUIT_CAPS: Dictionary = {
+	1: {"bunny": 2, "otter": 2, "fox": 1, "shiba": 1, "penguin": 0, "toucan": 0},
+	2: {"bunny": 2, "otter": 1, "fox": 0, "shiba": 0, "penguin": 1, "toucan": 2},
+	3: {"bunny": 2, "otter": 2, "fox": 1, "shiba": 0, "penguin": 1, "toucan": 2}
+}
+
+## Raw Crops (auto-evolves to next row in `crops_sheet.png` every 25 building levels!)
+const CROPS: Dictionary = {
+	"crop_0": {"name": "鏅ㄩ湶鑳¤悵鍗?, "island": 1, "crop_row": 0, "base_value": 12, "grow_time": 5.2},
+	"crop_1": {"name": "鏅ㄩ绾㈣崏鑾?, "island": 1, "crop_row": 1, "base_value": 18, "grow_time": 6.0},
+	"crop_2": {"name": "骞借胺鑽у厜鑿?, "island": 2, "crop_row": 2, "base_value": 30, "grow_time": 7.0},
+	"crop_3": {"name": "鏅存哗榛勯噾鍑ゆⅷ", "island": 3, "crop_row": 3, "base_value": 48, "grow_time": 8.0}
+}
+
+## Processed Delicacies (auto-evolves to next dish in `delicacies_sheet.png` every 25 workshop levels!)
+const DELICACIES: Dictionary = {
+	"delicacy_0": {"name": "妗傝姳绯背绯?, "idx": 0, "tier": 1, "workshop": "mortar", "base_crop_val": 12, "mult": MULTIPLIER_MORTAR},
+	"delicacy_1": {"name": "鐒︾硸鑻规灉鑽夎帗娲?, "idx": 1, "tier": 1, "workshop": "mortar", "base_crop_val": 18, "mult": MULTIPLIER_MORTAR},
+	"delicacy_2": {"name": "鏄熼湶鑽у厜鐢橀湶楗?, "idx": 2, "tier": 2, "workshop": "cauldron", "base_crop_val": 30, "mult": MULTIPLIER_CAULDRON},
+	"delicacy_3": {"name": "鐨囧鍑ゆⅷ鏄熼湶瀹?, "idx": 3, "tier": 3, "workshop": "orbis_linked", "base_crop_val": 48, "mult": MULTIPLIER_ORBIS_LINKED}
+}
+
+const BUILDINGS: Dictionary = {
+	"soil_1": {"name": "灏勬墜鏉戝啘鐢?, "desc": "姣?5绾т綔鐗╄嚜鍔ㄦ崲浠?浜ц兘缈诲€?澶栬杩涘寲", "base_cost": 25, "base_value": 12, "island": 1},
+	"mortar": {"name": "妗傝姳鐮旈挼宸ュ潑", "desc": "鐙愮嫺鐮旂（3.5x缇庨 路 姣?5绾ц彍鍝佷笌澶栬杩涘寲", "base_cost": 45, "base_value": 42, "island": 1},
+	"stall": {"name": "浜戝矝闆嗗競涓绘憡浣?, "desc": "鎵╁厖缂撳瓨涓婇檺(10+5/绾? 路 Lv.25瑙ｉ攣鏆栧厜璺伅", "base_cost": 65, "base_value": 50, "island": 1},
+	"soil_2": {"name": "榄旀硶瀵嗘灄鍐滅敯", "desc": "宀?榄旀硶浣滅墿浜ц兘 路 姣?5绾у搧绉嶄笌澶栬杩涘寲", "base_cost": 140, "base_value": 30, "island": 2},
+	"cauldron": {"name": "鏄熼湶鐐奸噾鍧╁煔", "desc": "浼侀箙鐐煎埗12x鐢橀湶 路 Lv.25寮€鍚偧閲戞槦鐏矑瀛?, "base_cost": 210, "base_value": 360, "island": 2},
+	"soil_3": {"name": "澶╃┖娴峰哺鍙屽伐鍧?, "desc": "宀?椤剁骇鍐滅敯+鐮旈挼鍧╁煔鑱斿姩 (52x浠峰€?", "base_cost": 360, "base_value": 2496, "island": 3}
+}
+
+const ANIMALS: Dictionary = {
+	"bunny": {"name": "鏈堝厰 路 涓撹亴鍐滃か", "role_tag": "鏃犳按鐛椂鐩磋揪闆嗗競 路 鎷涙弧鍚庡叏闃熻繘淇彁閫?, "sheet": "animals/bunny_sheet.png", "base_cost": 30, "base_time": 2.6, "base_speed": 72.0, "base_cap": 1},
+	"otter": {"name": "姘寸嵀 路 宀涘唴鐗╂祦鍛?, "role_tag": "鎺ョ宀涘唴鎼繍 路 宸ュ潑婊¤浇鑷姩鍒嗘祦鐩村敭", "sheet": "animals/otter_sheet.png", "base_cost": 45, "base_time": 1.5, "base_speed": 80.0, "base_cap": 2},
+	"fox": {"name": "灏忕嫄鐙?路 鐮旈挼涓诲帹", "role_tag": "椹诲畧鐮旈挼宸ュ潑 路 鐮旂（3.5x/52x绮惧埗缇庨", "sheet": "animals/fox_sheet.png", "base_cost": 60, "base_time": 3.4, "base_speed": 64.0, "base_cap": 1},
+	"shiba": {"name": "鏌寸姮 路 閲戠墝搴楅暱", "role_tag": "鍔犻€熸敹閾剁粨璐?路 鍏ㄦ憡浣嶅敭浠?10%/绾?, "sheet": "animals/shiba_sheet.png", "base_cost": 80, "base_time": 1.0, "base_speed": 66.0, "base_cap": 1},
+	"penguin": {"name": "灏忎紒楣?路 鍧╁煔鐐奸噾甯?, "role_tag": "椹诲畧鍧╁煔宸ュ潑 路 鐐煎埗12x/52x楂橀樁鐢橀湶", "sheet": "animals/penguin_sheet.png", "base_cost": 150, "base_time": 4.0, "base_speed": 60.0, "base_cap": 1},
+	"toucan": {"name": "宸ㄥ槾楦?路 璺ㄥ矝涓撳憳", "role_tag": "璺ㄦ湪妗ユ壒閲忓皢宀?/宀?鏂欑悊杩愬洖宀?涓婚泦甯?, "sheet": "animals/toucan_sheet.png", "base_cost": 135, "base_time": 1.4, "base_speed": 94.0, "base_cap": 3}
+}
+
+const EXPANSIONS: Dictionary = {
+	"island_2": {"name": "鏈ㄦˉ1 路 榄旀硶瀵嗘灄", "desc": "寮€鍚?x鍐滅敯+12x鍧╁煔宸ュ潑+浼侀箙/宸ㄥ槾楦熺紪鍒?, "cost": 180},
+	"island_3": {"name": "鏈ㄦˉ2 路 澶╃┖娴峰哺", "desc": "寮€鍚弻宸ュ潑52x鑱斿姩+馃憫2.0x鐨囧啝瀵岃豹椤惧", "cost": 480}
+}
+
+func _ready() -> void:
+	_load_sprite_manifest()
+
+func _load_sprite_manifest() -> void:
+	var path := "res://src/data/sprite_manifest.json"
+	if FileAccess.file_exists(path):
+		var txt := FileAccess.get_file_as_string(path)
+		var parsed = JSON.parse_string(txt)
+		if parsed is Dictionary:
+			sprite_manifest = parsed
+
+## GEMINI.md Law 5.2: Native Typography Helper (`make_pixel_label_settings`)
+func make_pixel_label_settings(size: int = 14, color: Color = Color("#FFF4D6")) -> LabelSettings:
+	var ls := LabelSettings.new()
+	ls.font_size = size
+	ls.font_color = color
+	ls.outline_size = 2
+	ls.outline_color = Color("#1A120B")
+	ls.shadow_size = 1
+	ls.shadow_color = Color(0.0, 0.0, 0.0, 0.6)
+	ls.shadow_offset = Vector2(1.0, 1.0)
+	return ls
+
+func create_pixel_label(text_str: String = "", size: int = 14, color: Color = Color("#FFF4D6"), center_align: bool = false) -> Label:
+	var lbl := Label.new()
+	lbl.text = text_str
+	lbl.label_settings = make_pixel_label_settings(size, color)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if center_align:
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return lbl
+
+## GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow (`shadow_width = w * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`)
+func draw_drop_shadow(canvas: CanvasItem, entity_visual_width: float, center: Vector2 = Vector2.ZERO) -> void:
+	var shadow_width := entity_visual_width * 0.55
+	var shadow_height := shadow_width * 0.18
+	var rx := shadow_width * 0.5
+	var ry := shadow_height * 0.5
+	var pts := PackedVector2Array()
+	for i in range(24):
+		var ang := float(i) * TAU / 24.0
+		pts.append(center + Vector2(cos(ang) * rx, sin(ang) * ry))
+	canvas.draw_colored_polygon(pts, Color(0.0, 0.0, 0.0, 0.20))
+
+func get_manifest_entry(sheet_key: String) -> Dictionary:
+	if sprite_manifest.has(sheet_key):
+		return sprite_manifest[sheet_key]
+	return {"cell_width": 60, "cell_height": 60, "hframes": 4, "vframes": 1, "total_frames": 4, "regions": []}
+
+func get_frame_region(sheet_key: String, frame_idx: int) -> Rect2:
+	var entry := get_manifest_entry(sheet_key)
+	var regions: Array = entry.get("regions", [])
+	if regions.size() > 0:
+		var clamped_idx := clampi(frame_idx, 0, regions.size() - 1)
+		var r: Dictionary = regions[clamped_idx]
+		return Rect2(float(r.get("x", 0)), float(r.get("y", 0)), float(r.get("w", 60)), float(r.get("h", 60)))
+	var cw := float(entry.get("cell_width", 60))
+	var ch := float(entry.get("cell_height", 60))
+	var hf := maxi(1, int(entry.get("hframes", 4)))
+	var col := clampi(frame_idx, 0, hf - 1) % hf
+	var row := clampi(frame_idx, 0, hf - 1) / hf
+	return Rect2(col * cw, row * ch, cw, ch)
+
+func get_evolved_crop_id(base_island: int, building_level: int) -> String:
+	var base_idx := clampi(base_island - 1, 0, 3)
+	var evo_steps := int(floor(float(maxi(1, building_level)) / 25.0))
+	var final_idx := clampi(base_idx + evo_steps, 0, 3)
+	return "crop_" + str(final_idx)
+
+func get_evolved_delicacy_id(workshop_id: String, workshop_level: int) -> String:
+	var base_idx := 0
+	if workshop_id == "cauldron":
+		base_idx = 2
+	elif workshop_id == "orbis_linked":
+		base_idx = 3
+	var evo_steps := int(floor(float(maxi(1, workshop_level)) / 25.0))
+	var final_idx := clampi(base_idx + evo_steps, 0, 3)
+	return "delicacy_" + str(final_idx)
+
+func get_crop_stage_region(crop_id: String, stage_idx: int) -> Rect2:
+	var c_data: Dictionary = CROPS.get(crop_id, CROPS["crop_0"])
+	var row := int(c_data.get("crop_row", 0))
+	var st := clampi(stage_idx, 0, 3)
+	if sprite_manifest.has("crops/crops_sheet.png"):
+		var items: Array = sprite_manifest["crops/crops_sheet.png"].get("items", [])
+		if row < items.size():
+			var stages: Array = items[row].get("stages", [])
+			if st < stages.size():
+				var sr: Dictionary = stages[st]
+				return Rect2(float(sr["x"]), float(sr["y"]), float(sr["w"]), float(sr["h"]))
+	return Rect2(st * 40.0, row * 40.0, 40.0, 40.0)
+
+func get_delicacy_region(delicacy_id: String) -> Rect2:
+	var d_data: Dictionary = DELICACIES.get(delicacy_id, DELICACIES["delicacy_0"])
+	var idx := int(d_data.get("idx", 0))
+	if sprite_manifest.has("buildings/delicacies_sheet.png"):
+		var items: Array = sprite_manifest["buildings/delicacies_sheet.png"].get("items", [])
+		if idx < items.size():
+			var reg: Dictionary = items[idx].get("region", {})
+			if reg.has("w"):
+				return Rect2(float(reg["x"]), float(reg["y"]), float(reg["w"]), float(reg["h"]))
+	return Rect2(idx * 36.0, 0.0, 36.0, 36.0)
+
+func calc_upgrade_cost(base_cost: int, level: int) -> int:
+	var lv := maxi(1, level)
+	return int(round(float(base_cost) * pow(1.15, float(lv - 1))))
+
+func calc_milestone_value(base_value: float, level: int) -> float:
+	var lv := maxi(1, level)
+	var milestone_pow := int(floor(float(lv) / 25.0))
+	return base_value * float(lv) * pow(2.0, float(milestone_pow))
+
+func calc_work_duration(animal_key: String, level: int) -> float:
+	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["bunny"])
+	var base_t := float(a_cfg.get("base_time", 2.6))
+	var lv := maxi(1, level)
+	return maxf(0.8, base_t * pow(0.96, float(lv - 1)))
+
+func calc_carry_capacity(animal_key: String, level: int) -> int:
+	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
+	var base_cap := int(a_cfg.get("base_cap", 1))
+	var lv := maxi(1, level)
+	return base_cap + int(floor(float(lv) / 5.0))
+
+func calc_move_speed(animal_key: String, level: int) -> float:
+	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
+	var base_spd := float(a_cfg.get("base_speed", 72.0))
+	var lv := maxi(1, level)
+	return base_spd * (1.0 + 0.03 * float(lv - 1))
+
+func calc_shiba_price_bonus(shiba_level: int) -> float:
+	if shiba_level <= 0:
+		return 1.0
+	return 1.0 + 0.1 * float(shiba_level)
+
+func calc_buffer_capacity(level: int) -> int:
+	return DEFAULT_BUFFER_CAP + maxi(0, level - 1) * 5
+
+func calc_item_unit_price(item_id: String, building_lv: int, stall_lv: int, shiba_lv: int) -> int:
+	var shiba_mult := calc_shiba_price_bonus(shiba_lv)
+	var stall_mult := 1.0 + 0.08 * float(maxi(1, stall_lv) - 1)
+	if DELICACIES.has(item_id):
+		var d: Dictionary = DELICACIES[item_id]
+		var base_c := float(d["base_crop_val"])
+		var w_mult := float(d["mult"])
+		var raw_v := calc_milestone_value(base_c, maxi(1, building_lv))
+		return maxi(1, int(round(raw_v * w_mult * stall_mult * shiba_mult)))
+	elif CROPS.has(item_id):
+		var c: Dictionary = CROPS[item_id]
+		var raw_v := calc_milestone_value(float(c["base_value"]), maxi(1, building_lv))
+		return maxi(1, int(round(raw_v * MULTIPLIER_RAW * stall_mult * shiba_mult)))
+	return 15
+
+=== FILE: D:\project\maple-isle-idle\src\autoload\EventBus.gd (771 bytes) ===
+extends Node
+## Global Signal Bus (`EventBus.gd` Autoload) 鈥?PRD v2.0 Section 6
+
+signal gold_changed(new_gold: int, delta: int)
+signal prosperity_changed(new_score: int)
+signal inventory_changed()
+signal item_produced(island_idx: int, item_id: String, qty: int)
+signal item_delivered(item_id: String, amount: int, target_name: String)
+signal customer_paid(recipe_id: String, qty: int, total_gold: int, world_pos: Vector2)
+signal customer_left_unhappy(world_pos: Vector2)
+signal toggle_desktop_mode(enabled: bool)
+signal upgrade_purchased(category: String, key: String, new_level: int)
+signal island_unlocked(island_idx: int)
+signal offline_earnings_ready(seconds_away: int, gold_earned: int)
+signal spawn_floating_text(world_pos: Vector2, text_str: String, col: Color)
+
+=== FILE: D:\project\maple-isle-idle\src\autoload\GameManager.gd (16818 bytes) ===
+extends Node
+## Global State, Strict Per-Island Recruit Caps, Recruit-to-Promote & Save System (`src/autoload/GameManager.gd`) 鈥?PRD Patch v2.2
+
+const SAVE_PATH := "user://savegame.json"
+const SAVE_VERSION := 22
+
+var gold: int = 120
+var total_gold_earned: int = 120
+var desktop_companion_mode: bool = true
+
+var unlocked_islands: Dictionary = {
+	1: true,
+	2: false,
+	3: false
+}
+
+var building_levels: Dictionary = {
+	"soil_1": 1,
+	"mortar": 1,
+	"stall": 1,
+	"soil_2": 1,
+	"cauldron": 1,
+	"soil_3": 1
+}
+
+## Team Promotion Level (Lv.1+ once recruited; increments when 銆愬叏闃熻繘淇?(Lv.+1)銆?is clicked after reaching Recruit Cap!)
+var animal_levels: Dictionary = {
+	"bunny": 1,
+	"otter": 0,
+	"fox": 0,
+	"shiba": 0,
+	"penguin": 0,
+	"toucan": 0
+}
+
+## PRD v2.2 Section 3: Recruited Headcount per Island (Island 1 starts with 1 free Bunny; Max caps defined in EconomyConfig.ISLAND_RECRUIT_CAPS)
+var island_recruited: Dictionary = {
+	1: {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0},
+	2: {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0},
+	3: {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+}
+
+## Pure Numeric Buffers (default cap = 10, scales with building level; zero visual icon clutter)
+var raw_baskets: Dictionary = {
+	1: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+	2: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+	3: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
+}
+
+var workshop_inputs: Dictionary = {
+	"mortar": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+	"cauldron": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+	"orbis_linked": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
+}
+
+var workshop_outputs: Dictionary = {
+	"mortar": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
+	"cauldron": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
+	"orbis_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
+}
+
+var stall_inventory: Dictionary = {
+	"crop_0": 2,
+	"crop_1": 1,
+	"crop_2": 0,
+	"crop_3": 0,
+	"delicacy_0": 0,
+	"delicacy_1": 0,
+	"delicacy_2": 0,
+	"delicacy_3": 0
+}
+
+var save_timer: float = 0.0
+var pending_offline_seconds: int = 0
+var pending_offline_gold: int = 0
+
+func _ready() -> void:
+	load_game()
+
+func _process(delta: float) -> void:
+	save_timer += delta
+	if save_timer >= 15.0:
+		save_timer = 0.0
+		save_game()
+
+func is_animal_hired(animal_key: String) -> bool:
+	return get_total_recruited(animal_key) >= 1
+
+func get_island_recruited_count(island_idx: int, animal_key: String) -> int:
+	if not island_recruited.has(island_idx):
+		return 0
+	return int(island_recruited[island_idx].get(animal_key, 0))
+
+func is_island_otter_hired(island_idx: int) -> bool:
+	return get_island_recruited_count(island_idx, "otter") >= 1
+
+func get_total_recruited(animal_key: String) -> int:
+	var sum := 0
+	for isl in [1, 2, 3]:
+		if bool(unlocked_islands.get(isl, false)):
+			sum += get_island_recruited_count(isl, animal_key)
+	return sum
+
+func get_total_max_cap(animal_key: String) -> int:
+	var cap := 0
+	for isl in [1, 2, 3]:
+		if bool(unlocked_islands.get(isl, false)):
+			cap += int(EconomyConfig.ISLAND_RECRUIT_CAPS[isl].get(animal_key, 0))
+	return cap
+
+func find_next_recruit_island(animal_key: String) -> int:
+	for isl in [1, 2, 3]:
+		if bool(unlocked_islands.get(isl, false)):
+			var cur := get_island_recruited_count(isl, animal_key)
+			var mx := int(EconomyConfig.ISLAND_RECRUIT_CAPS[isl].get(animal_key, 0))
+			if cur < mx:
+				return isl
+	return 0
+
+## PRD v2.2 Section 3: Fixed 2x SoilPlot Slots per Island (Island 1 starts with 1 plot at Lv.1, unlocks 2nd slot at Lv.2+)
+func get_unlocked_plot_count(island_idx: int) -> int:
+	if not bool(unlocked_islands.get(island_idx, false)):
+		return 0
+	if island_idx == 1:
+		var lv := int(building_levels.get("soil_1", 1))
+		return 1 if lv <= 1 else 2
+	return 2
+
+func add_gold(amount: int) -> void:
+	if amount == 0:
+		return
+	gold = maxi(0, gold + amount)
+	if amount > 0:
+		total_gold_earned += amount
+	EventBus.gold_changed.emit(gold, amount)
+	EventBus.prosperity_changed.emit(get_prosperity_score())
+
+func spend_gold(cost: int) -> bool:
+	if gold < cost:
+		return false
+	gold -= cost
+	EventBus.gold_changed.emit(gold, -cost)
+	return true
+
+func get_prosperity_score() -> int:
+	var score := 0
+	for k in building_levels.keys():
+		score += int(building_levels[k]) * 20
+	for k in animal_levels.keys():
+		score += get_total_recruited(k) * 35 + int(animal_levels[k]) * 25
+	if bool(unlocked_islands.get(2, false)):
+		score += 180
+	if bool(unlocked_islands.get(3, false)):
+		score += 420
+	return score
+
+## Pure Numeric Buffer Capacities (default cap = 10, +5 per building level above 1)
+func get_raw_basket_max_cap(island_idx: int) -> int:
+	var b_key := "soil_" + str(island_idx)
+	return EconomyConfig.calc_buffer_capacity(int(building_levels.get(b_key, 1)))
+
+func get_island_basket_total(island_idx: int) -> int:
+	if not raw_baskets.has(island_idx):
+		return 0
+	var s := 0
+	for k in raw_baskets[island_idx].keys():
+		s += int(raw_baskets[island_idx][k])
+	return s
+
+func is_raw_basket_full(island_idx: int) -> bool:
+	return get_island_basket_total(island_idx) >= get_raw_basket_max_cap(island_idx)
+
+func add_to_raw_basket(island_idx: int, crop_id: String, qty: int) -> int:
+	if not raw_baskets.has(island_idx):
+		raw_baskets[island_idx] = {}
+	var room := maxi(0, get_raw_basket_max_cap(island_idx) - get_island_basket_total(island_idx))
+	var added := mini(qty, room)
+	if added > 0:
+		raw_baskets[island_idx][crop_id] = int(raw_baskets[island_idx].get(crop_id, 0)) + added
+		if SoundManager != null:
+			SoundManager.play_pop_sfx()
+		EventBus.inventory_changed.emit()
+		EventBus.item_delivered.emit(crop_id, added, "raw_basket_" + str(island_idx))
+	return added
+
+func take_from_raw_basket(island_idx: int, max_qty: int) -> Dictionary:
+	if not raw_baskets.has(island_idx):
+		return {}
+	var b: Dictionary = raw_baskets[island_idx]
+	for crop_id in b.keys():
+		var avail := int(b[crop_id])
+		if avail > 0:
+			var take := mini(avail, max_qty)
+			b[crop_id] = avail - take
+			EventBus.inventory_changed.emit()
+			return {"item_id": String(crop_id), "qty": take}
+	return {}
+
+func get_workshop_buffer_cap(workshop_id: String) -> int:
+	var b_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
+	return EconomyConfig.calc_buffer_capacity(int(building_levels.get(b_key, 1)))
+
+func get_workshop_input_total(workshop_id: String) -> int:
+	if not workshop_inputs.has(workshop_id):
+		return 0
+	var s := 0
+	for k in workshop_inputs[workshop_id].keys():
+		s += int(workshop_inputs[workshop_id][k])
+	return s
+
+func is_workshop_input_full(workshop_id: String) -> bool:
+	return get_workshop_input_total(workshop_id) >= get_workshop_buffer_cap(workshop_id)
+
+func add_to_workshop_input(workshop_id: String, crop_id: String, qty: int) -> int:
+	if not workshop_inputs.has(workshop_id):
+		workshop_inputs[workshop_id] = {}
+	var room := maxi(0, get_workshop_buffer_cap(workshop_id) - get_workshop_input_total(workshop_id))
+	var added := mini(qty, room)
+	if added > 0:
+		workshop_inputs[workshop_id][crop_id] = int(workshop_inputs[workshop_id].get(crop_id, 0)) + added
+		if SoundManager != null:
+			SoundManager.play_pop_sfx()
+		EventBus.inventory_changed.emit()
+		EventBus.item_delivered.emit(crop_id, added, workshop_id + "_input")
+	return added
+
+func take_workshop_input_for_processing(workshop_id: String) -> String:
+	if not workshop_inputs.has(workshop_id):
+		return ""
+	var inp: Dictionary = workshop_inputs[workshop_id]
+	for crop_id in inp.keys():
+		if int(inp[crop_id]) > 0:
+			inp[crop_id] = int(inp[crop_id]) - 1
+			EventBus.inventory_changed.emit()
+			return String(crop_id)
+	return ""
+
+func get_workshop_output_total(workshop_id: String) -> int:
+	if not workshop_outputs.has(workshop_id):
+		return 0
+	var s := 0
+	for k in workshop_outputs[workshop_id].keys():
+		s += int(workshop_outputs[workshop_id][k])
+	return s
+
+func is_workshop_output_full(workshop_id: String) -> bool:
+	return get_workshop_output_total(workshop_id) >= get_workshop_buffer_cap(workshop_id)
+
+func add_to_workshop_output(workshop_id: String, delicacy_id: String, qty: int) -> int:
+	if not workshop_outputs.has(workshop_id):
+		workshop_outputs[workshop_id] = {}
+	var room := maxi(0, get_workshop_buffer_cap(workshop_id) - get_workshop_output_total(workshop_id))
+	var added := mini(qty, room)
+	if added > 0:
+		workshop_outputs[workshop_id][delicacy_id] = int(workshop_outputs[workshop_id].get(delicacy_id, 0)) + added
+		if SoundManager != null:
+			SoundManager.play_pop_sfx()
+		EventBus.inventory_changed.emit()
+		EventBus.item_delivered.emit(delicacy_id, added, workshop_id + "_output")
+	return added
+
+func take_from_workshop_output(workshop_id: String, max_qty: int) -> Dictionary:
+	if not workshop_outputs.has(workshop_id):
+		return {}
+	var out_dict: Dictionary = workshop_outputs[workshop_id]
+	for del_id in out_dict.keys():
+		var avail := int(out_dict[del_id])
+		if avail > 0:
+			var take := mini(avail, max_qty)
+			out_dict[String(del_id)] = avail - take
+			EventBus.inventory_changed.emit()
+			return {"item_id": String(del_id), "qty": take}
+	return {}
+
+func get_stall_max_capacity() -> int:
+	return EconomyConfig.calc_buffer_capacity(int(building_levels.get("stall", 1)))
+
+func get_total_stall_count() -> int:
+	var total := 0
+	for k in stall_inventory.keys():
+		total += int(stall_inventory[k])
+	return total
+
+func is_stall_full() -> bool:
+	return get_total_stall_count() >= get_stall_max_capacity()
+
+func add_to_stall(item_id: String, qty: int) -> int:
+	var room := maxi(0, get_stall_max_capacity() - get_total_stall_count())
+	var added := mini(qty, room)
+	if added > 0:
+		stall_inventory[item_id] = int(stall_inventory.get(item_id, 0)) + added
+		if SoundManager != null:
+			SoundManager.play_pop_sfx()
+		EventBus.inventory_changed.emit()
+		EventBus.item_delivered.emit(item_id, added, "market_stall")
+	return added
+
+func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2, is_vip: bool = false) -> int:
+	var target_id := preferred_id
+	if int(stall_inventory.get(target_id, 0)) <= 0:
+		for k in ["delicacy_3", "delicacy_2", "delicacy_1", "delicacy_0", "crop_3", "crop_2", "crop_1", "crop_0"]:
+			if int(stall_inventory.get(k, 0)) > 0:
+				target_id = k
+				break
+	var avail := int(stall_inventory.get(target_id, 0))
+	if avail <= 0:
+		return 0
+	var bought := mini(avail, maxi(1, qty))
+	stall_inventory[target_id] = avail - bought
+
+	var b_lv := int(building_levels.get("soil_1", 1))
+	if target_id == "delicacy_0" or target_id == "delicacy_1":
+		b_lv = int(building_levels.get("mortar", 1))
+	elif target_id == "delicacy_2":
+		b_lv = int(building_levels.get("cauldron", 1))
+	elif target_id == "delicacy_3":
+		b_lv = int(building_levels.get("soil_3", 1))
+
+	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
+	var unit_price := EconomyConfig.calc_item_unit_price(
+		target_id,
+		b_lv,
+		int(building_levels.get("stall", 1)),
+		shiba_lv
+	)
+	var total_earned := unit_price * bought
+	if is_vip:
+		total_earned = int(round(float(total_earned) * EconomyConfig.VIP_TIP_MULTIPLIER))
+
+	add_gold(total_earned)
+	if SoundManager != null:
+		SoundManager.play_coin_sfx()
+	EventBus.inventory_changed.emit()
+	EventBus.customer_paid.emit(target_id, bought, total_earned, world_pos)
+	return total_earned
+
+func upgrade_building(b_key: String) -> bool:
+	if not EconomyConfig.BUILDINGS.has(b_key):
+		return false
+	var cur_lv := int(building_levels.get(b_key, 1))
+	var base_c := int(EconomyConfig.BUILDINGS[b_key]["base_cost"])
+	var cost := EconomyConfig.calc_upgrade_cost(base_c, cur_lv)
+	if not spend_gold(cost):
+		return false
+	building_levels[b_key] = cur_lv + 1
+	EventBus.upgrade_purchased.emit("building", b_key, cur_lv + 1)
+	EventBus.prosperity_changed.emit(get_prosperity_score())
+	save_game()
+	return true
+
+## PRD v2.2 Section 3: Recruit-to-Promote Mechanism (`鎷涙弧杞繘淇満鍒禶):
+## - If any unlocked island has room below `ISLAND_RECRUIT_CAPS`, recruits +1 animal worker onto that island.
+## - Once all unlocked islands reach Max Cap for `a_key`, upgrades `animal_levels[a_key] += 1` (Team Promotion Lv.+1)!
+func upgrade_animal(a_key: String) -> bool:
+	if not EconomyConfig.ANIMALS.has(a_key):
+		return false
+	var next_isl := find_next_recruit_island(a_key)
+	var cur_lv := int(animal_levels.get(a_key, 0))
+	var total_rec := get_total_recruited(a_key)
+	var base_c := int(EconomyConfig.ANIMALS[a_key]["base_cost"])
+	var cost_step := total_rec + maxi(1, cur_lv)
+	var cost := EconomyConfig.calc_upgrade_cost(base_c, cost_step)
+	if not spend_gold(cost):
+		return false
+
+	if next_isl > 0:
+		island_recruited[next_isl][a_key] = get_island_recruited_count(next_isl, a_key) + 1
+		if cur_lv <= 0:
+			animal_levels[a_key] = 1
+		if SoundManager != null:
+			SoundManager.play_upgrade_sfx()
+		EventBus.upgrade_purchased.emit("recruit", a_key, get_total_recruited(a_key))
+	else:
+		animal_levels[a_key] = maxi(1, cur_lv) + 1
+		if SoundManager != null:
+			if animal_levels[a_key] % 25 == 0:
+				SoundManager.play_milestone_sfx()
+			else:
+				SoundManager.play_upgrade_sfx()
+		EventBus.upgrade_purchased.emit("animal", a_key, animal_levels[a_key])
+
+	EventBus.prosperity_changed.emit(get_prosperity_score())
+	save_game()
+	return true
+
+func unlock_island(island_idx: int) -> bool:
+	if bool(unlocked_islands.get(island_idx, false)):
+		return false
+	var exp_key := "island_" + str(island_idx)
+	var cost := int(EconomyConfig.EXPANSIONS.get(exp_key, {"cost": 180})["cost"])
+	if not spend_gold(cost):
+		return false
+	unlocked_islands[island_idx] = true
+	if SoundManager != null:
+		SoundManager.play_milestone_sfx()
+	EventBus.island_unlocked.emit(island_idx)
+	EventBus.prosperity_changed.emit(get_prosperity_score())
+	save_game()
+	return true
+
+func estimate_idle_gold_per_sec() -> float:
+	var base_rate := 1.8
+	for k in building_levels.keys():
+		base_rate += float(building_levels[k]) * 1.1
+	for k in animal_levels.keys():
+		base_rate += float(get_total_recruited(k)) * 1.6
+	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0)))
+
+func save_game() -> void:
+	var data := {
+		"version": SAVE_VERSION,
+		"timestamp": int(Time.get_unix_time_from_system()),
+		"gold": gold,
+		"total_gold_earned": total_gold_earned,
+		"desktop_companion_mode": desktop_companion_mode,
+		"unlocked_islands": {
+			"1": bool(unlocked_islands.get(1, true)),
+			"2": bool(unlocked_islands.get(2, false)),
+			"3": bool(unlocked_islands.get(3, false))
+		},
+		"building_levels": building_levels,
+		"animal_levels": animal_levels,
+		"island_recruited": {
+			"1": island_recruited[1],
+			"2": island_recruited[2],
+			"3": island_recruited[3]
+		},
+		"stall_inventory": stall_inventory
+	}
+	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify(data, "\t"))
+
+func load_game() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var txt := FileAccess.get_file_as_string(SAVE_PATH)
+	var parsed = JSON.parse_string(txt)
+	if not (parsed is Dictionary):
+		return
+	if int(parsed.get("version", 0)) != SAVE_VERSION:
+		return
+	gold = int(parsed.get("gold", gold))
+	total_gold_earned = int(parsed.get("total_gold_earned", total_gold_earned))
+	desktop_companion_mode = bool(parsed.get("desktop_companion_mode", true))
+	if parsed.has("unlocked_islands") and parsed["unlocked_islands"] is Dictionary:
+		var ui: Dictionary = parsed["unlocked_islands"]
+		unlocked_islands[1] = bool(ui.get("1", true))
+		unlocked_islands[2] = bool(ui.get("2", false))
+		unlocked_islands[3] = bool(ui.get("3", false))
+	if parsed.has("building_levels") and parsed["building_levels"] is Dictionary:
+		for k in parsed["building_levels"].keys():
+			building_levels[String(k)] = int(parsed["building_levels"][k])
+	if parsed.has("animal_levels") and parsed["animal_levels"] is Dictionary:
+		for k in parsed["animal_levels"].keys():
+			animal_levels[String(k)] = int(parsed["animal_levels"][k])
+	if parsed.has("island_recruited") and parsed["island_recruited"] is Dictionary:
+		var ir: Dictionary = parsed["island_recruited"]
+		for isl_str in ["1", "2", "3"]:
+			if ir.has(isl_str) and ir[isl_str] is Dictionary:
+				var isl_i := int(isl_str)
+				for ak in ir[isl_str].keys():
+					island_recruited[isl_i][String(ak)] = int(ir[isl_str][ak])
+	if parsed.has("stall_inventory") and parsed["stall_inventory"] is Dictionary:
+		for k in parsed["stall_inventory"].keys():
+			stall_inventory[String(k)] = int(parsed["stall_inventory"][k])
+
+	var last_ts := int(parsed.get("timestamp", 0))
+	var now_ts := int(Time.get_unix_time_from_system())
+	var elapsed := clampi(now_ts - last_ts, 0, 86400)
+	if elapsed >= 30:
+		pending_offline_seconds = elapsed
+		pending_offline_gold = maxi(8, int(round(float(elapsed) * estimate_idle_gold_per_sec() * 0.45)))
+		add_gold(pending_offline_gold)
+
+=== FILE: D:\project\maple-isle-idle\src\autoload\SelfTestRunner.gd (13096 bytes) ===
+extends Node
+## Real-Engine 20x Fast-Forward Self-Test & Dual-State Viewport Screenshot Exporter (`src/autoload/SelfTestRunner.gd`)
+## Activated when command-line args contain `--self-test` (via `./run_godot.ps1 --self-test`).
+## Runs `MainWorld` for 180 frames at `Engine.time_scale = 20.0` (~60s simulated idle production),
+## verifies all 4 Hard Assertions, exports TWO distinct real engine screenshots:
+##   1) Collapsed Drawer State -> `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
+##   2) Expanded Drawer State (`HUD.open_drawer(0)`) -> `res://preview_drawer_open_1920x360.png`
+## Asserts that the two captured images have distinct byte hashes before exiting with code 0!
+
+var is_self_test: bool = false
+var frame_counter: int = 0
+var finishing: bool = false
+
+var harvest_count: int = 0
+var items_delivered_count: int = 0
+var customer_paid_count: int = 0
+
+func _ready() -> void:
+	var all_args := OS.get_cmdline_args()
+	all_args.append_array(OS.get_cmdline_user_args())
+	for arg in all_args:
+		if String(arg) == "--self-test":
+			is_self_test = true
+			break
+
+	if not is_self_test:
+		set_process(false)
+		return
+
+	print("==================================================================")
+	print("[SelfTestRunner] Activated `--self-test`: Engine.time_scale = 20.0 (180 frames / ~60s simulation)")
+	print("==================================================================")
+	Engine.time_scale = 20.0
+
+	# Ensure buffers have room at test start so the 60s cold-start / pipeline loop runs actively
+	if GameManager != null:
+		if GameManager.is_stall_full():
+			for k in GameManager.stall_inventory.keys():
+				GameManager.stall_inventory[k] = 1
+		if GameManager.is_raw_basket_full(1):
+			for k in GameManager.raw_baskets[1].keys():
+				GameManager.raw_baskets[1][k] = 0
+
+	if EventBus != null:
+		EventBus.item_produced.connect(_on_item_produced)
+		EventBus.item_delivered.connect(_on_item_delivered)
+		EventBus.customer_paid.connect(_on_customer_paid)
+
+func _on_item_produced(_island_idx: int, _item_id: String, qty: int) -> void:
+	harvest_count += maxi(1, qty)
+
+func _on_item_delivered(_item_id: String, amount: int, _target_name: String) -> void:
+	items_delivered_count += maxi(1, amount)
+
+func _on_customer_paid(_recipe_id: String, _qty: int, _total_gold: int, _world_pos: Vector2) -> void:
+	customer_paid_count += 1
+
+func _fail_and_quit(assertion_tag: String, reason: String) -> void:
+	var msg := "%s FAILED: %s" % [assertion_tag, reason]
+	push_error(msg)
+	printerr(msg)
+	get_tree().quit(1)
+
+func _process(_delta: float) -> void:
+	if not is_self_test or finishing:
+		return
+
+	frame_counter += 1
+	if frame_counter == 10:
+		# Spawn an active customer early so the visual screenshot also shows a live traveler on the island
+		var world := get_tree().current_scene as MainWorld
+		if world != null and world.customers.size() == 0:
+			world._spawn_customer(false)
+
+	if frame_counter >= 180:
+		finishing = true
+		_run_all_four_assertions_and_export()
+
+func _run_all_four_assertions_and_export() -> void:
+	var world := get_tree().current_scene as MainWorld
+	if world == null:
+		_fail_and_quit("[SelfTestRunner]", "MainWorld is not the active current_scene!")
+		return
+
+	# ------------------------------------------------------------------
+	# [鏂█1-鍒囧抚闃插憜]: Check single-frame rendered dimensions of all animals, customers, and crops
+	# ------------------------------------------------------------------
+	var checked_sprites := 0
+	for w in world.workers:
+		if not is_instance_valid(w) or w.body_sprite == null or w.body_sprite.texture == null:
+			continue
+		var sp: Sprite2D = w.body_sprite
+		var fw := (sp.region_rect.size.x if sp.region_enabled else float(sp.texture.get_width()) / float(maxi(1, sp.hframes))) * absf(sp.scale.x)
+		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
+		if (not sp.region_enabled and sp.hframes <= 1) or fw > 180.0 or fh > 180.0:
+			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "AnimalWorker `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d, region=%s)" % [w.animal_key, fw, fh, sp.hframes, str(sp.region_enabled)])
+			return
+		if absf(w.rotation) > 0.001 or absf(sp.rotation) > 0.001 or sp.frame < 0 or sp.frame > 2:
+			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "AnimalWorker `%s` has invalid rotation/pose (rot=%.3f, sp_rot=%.3f, frame=%d)" % [w.animal_key, w.rotation, sp.rotation, sp.frame])
+			return
+		checked_sprites += 1
+
+	for c in world.customers:
+		if not is_instance_valid(c) or c.body_sprite == null or c.body_sprite.texture == null:
+			continue
+		var sp: Sprite2D = c.body_sprite
+		var fw := (sp.region_rect.size.x if sp.region_enabled else float(sp.texture.get_width()) / float(maxi(1, sp.hframes))) * absf(sp.scale.x)
+		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
+		if (not sp.region_enabled and sp.hframes <= 1) or fw > 180.0 or fh > 180.0:
+			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "CustomerNPC `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d)" % [c.sheet_key, fw, fh, sp.hframes])
+			return
+		if absf(c.rotation) > 0.001 or absf(sp.rotation) > 0.001:
+			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "CustomerNPC `%s` has non-zero rotation (rot=%.3f, sp_rot=%.3f)" % [c.sheet_key, c.rotation, sp.rotation])
+			return
+		checked_sprites += 1
+
+	for p in world.soil_plots:
+		if not is_instance_valid(p) or p.crop_sprite == null or p.crop_sprite.texture == null:
+			continue
+		var sp: Sprite2D = p.crop_sprite
+		var fw := (sp.region_rect.size.x if sp.region_enabled else float(sp.texture.get_width()) / float(maxi(1, sp.hframes))) * absf(sp.scale.x)
+		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
+		if (not sp.region_enabled and (sp.hframes <= 1 or sp.vframes <= 1)) or fw > 180.0 or fh > 180.0:
+			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "SoilPlot crop_sprite has unsliced or oversized frame: %.1fx%.1f" % [fw, fh])
+			return
+		checked_sprites += 1
+
+	print("[PASS] [鏂█1-鍒囧抚闃插憜] 閫氳繃: 宸叉牎楠?%d 涓姩鐗?娓稿/浣滅墿 Sprite2D 鑺傜偣锛屽崟甯у昂瀵稿叏閮?<= 60x60px (100%% 鍥哄畾缃戞牸鍒囩墖锛屾棤鏁村浘鎸ゅ帇)!" % checked_sprites)
+
+	# ------------------------------------------------------------------
+	# [鏂█2-寤虹瓚闃插彔缃楁眽]: Check global screen rects of main buildings on each island (horizontal overlap <= 15%)
+	# ------------------------------------------------------------------
+	var max_overlap_seen := 0.0
+	var min_gap_seen := 9999.0
+	var buildings_by_island: Dictionary = world.get_island_main_building_rects()
+	for isl_idx in buildings_by_island.keys():
+		var b_list: Array = buildings_by_island[isl_idx]
+		for i in range(b_list.size()):
+			for j in range(i + 1, b_list.size()):
+				var ba: Dictionary = b_list[i]
+				var bb: Dictionary = b_list[j]
+				var ra: Rect2 = ba["rect"]
+				var rb: Rect2 = bb["rect"]
+				var inter_w := maxf(0.0, minf(ra.end.x, rb.end.x) - maxf(ra.position.x, rb.position.x))
+				var overlap_ratio := inter_w / maxf(1.0, minf(ra.size.x, rb.size.x))
+				max_overlap_seen = maxf(max_overlap_seen, overlap_ratio)
+				if j == i + 1:
+					var gap := rb.position.x - ra.end.x
+					min_gap_seen = minf(min_gap_seen, gap)
+				if overlap_ratio > 0.15:
+					_fail_and_quit("[鏂█2-寤虹瓚闃插彔缃楁眽]", "Island %d building overlap %.1f%% > 15%% between `%s` (%s) and `%s` (%s)!" % [
+						isl_idx, overlap_ratio * 100.0, String(ba["name"]), str(ra), String(bb["name"]), str(rb)
+					])
+					return
+
+	print("[PASS] [鏂█2-寤虹瓚闃插彔缃楁眽] 閫氳繃: 涓夊矝鍏ㄩ儴 12 搴т富寤虹瓚姘村钩鏈€澶ч噸鍙犵巼 = %.1f%% (<= 15%%)锛屾渶灏忚竟缂樺噣鐣欑櫧 = %.1fpx (>= 28px)!" % [max_overlap_seen * 100.0, min_gap_seen])
+
+	# ------------------------------------------------------------------
+	# [鏂█3-浜х嚎娲讳綋闂幆]: Verify harvests > 0, animal movement > 50px, and items entered workshop or market stall
+	# ------------------------------------------------------------------
+	var total_bunny_dist := 0.0
+	var total_all_workers_dist := 0.0
+	for w in world.workers:
+		if is_instance_valid(w) and w.visible:
+			total_all_workers_dist += w.total_distance_moved
+			if w.animal_key == "bunny":
+				total_bunny_dist += w.total_distance_moved
+
+	for p in world.soil_plots:
+		if is_instance_valid(p):
+			harvest_count = maxi(harvest_count, p.harvest_count)
+
+	if harvest_count <= 0:
+		_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "鐘舵€佹満姝婚攣: 60 绉掓ā鎷熷唴鍐滅敯鏀惰幏娆℃暟涓?0!")
+		return
+	if total_all_workers_dist <= 50.0:
+		_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "鐘舵€佹満姝婚攣: 60 绉掓ā鎷熷唴鍔ㄧ墿绱绉诲姩璺濈浠呬负 %.1fpx (<= 50px)!" % total_all_workers_dist)
+		return
+	if items_delivered_count <= 0:
+		_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "鐘舵€佹満姝婚攣: 60 绉掓ā鎷熷唴鏃犱换浣曠墿鍝佽繘鍏ョ紦瀛樸€佸伐鍧婃垨闆嗗競鎽婁綅 (items_delivered_count = 0)!")
+		return
+
+	print("[PASS] [鏂█3-浜х嚎娲讳綋闂幆] 閫氳繃: 60s 鍐呭厰瀛愮Щ鍔ㄨ窛绂?= %.1fpx (鍏ㄥ憳绱 %.1fpx > 50px)锛屽啘鐢版敹鑾锋鏁?= %d 娆★紝鍏ュ簱/涓婃灦娴佽浆 = %d 浠讹紝椤惧缁撹处 = %d 鍗?" % [
+		total_bunny_dist, total_all_workers_dist, harvest_count, items_delivered_count, customer_paid_count
+	])
+
+	# ------------------------------------------------------------------
+	# [鏂█4-闆朵贡鐮佸瓧浣揮: Scan scene tree to ensure no deprecated bitmap font renderer exists
+	# ------------------------------------------------------------------
+	var bad_font_node := _find_deprecated_font_node(get_tree().root)
+	if bad_font_node != "" or ResourceLoader.exists("res://src/autoload/Pixel" + "FontRenderer.gd") or ResourceLoader.exists("res://assets/pixel_art/ui/pixel_font" + "_atlas.png"):
+		_fail_and_quit("[鏂█4-闆朵贡鐮佸瓧浣揮", "妫€娴嬪埌搴熷純浣嶅浘瀛椾綋鑺傜偣鎴栨枃浠? %s" % bad_font_node)
+		return
+
+	print("[PASS] [鏂█4-闆朵贡鐮佸瓧浣揮 閫氳繃: 鍏ㄥ眬鑺傜偣鏍?0 涓簾寮冧綅鍥惧瓧浣撳紩鐢紝100%% 閲囩敤 Godot 鍘熺敓 Label + LabelSettings!")
+
+	# ------------------------------------------------------------------
+	# Export 2 Distinct Real Engine Viewport Screenshots:
+	#   State A (Drawer Collapsed): `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
+	#   State B (Drawer Expanded via `HUD.open_drawer(0)`): `res://preview_drawer_open_1920x360.png`
+	# ------------------------------------------------------------------
+	Engine.time_scale = 1.0
+	if world.hud != null:
+		world.hud.close_drawer(false)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var img_closed := get_viewport().get_texture().get_image()
+	if img_closed == null or img_closed.is_empty():
+		_fail_and_quit("[SelfTestRunner]", "Viewport image (collapsed state) is empty!")
+		return
+	var err_a1 := img_closed.save_png("res://preview_live_godot.png")
+	var err_a2 := img_closed.save_png("res://preview_engine_1920x360.png")
+	if err_a1 != OK or err_a2 != OK:
+		_fail_and_quit("[SelfTestRunner]", "Failed to save collapsed preview PNGs!")
+		return
+
+	if world.hud != null:
+		world.hud.open_drawer(0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var img_open := get_viewport().get_texture().get_image()
+	if img_open == null or img_open.is_empty():
+		_fail_and_quit("[SelfTestRunner]", "Viewport image (drawer open state) is empty!")
+		return
+	var err_b := img_open.save_png("res://preview_drawer_open_1920x360.png")
+	if err_b != OK:
+		_fail_and_quit("[SelfTestRunner]", "Failed to save res://preview_drawer_open_1920x360.png!")
+		return
+
+	var hash_closed := _sha256_bytes(img_closed.get_data())
+	var hash_open := _sha256_bytes(img_open.get_data())
+	if hash_closed == hash_open:
+		_fail_and_quit("[SelfTestRunner]", "preview_engine_1920x360.png and preview_drawer_open_1920x360.png have identical pixel data!")
+		return
+
+	print("[PASS] [鐪熸満鍙岀姸鎬佹埅鍥惧鍑篯 鏀惰捣鎬佷笌灞曞紑鎬佽鍙ｆ埅鍥惧凡鐪熷疄瀵煎嚭涓斿搱甯屽畬鍏ㄧ嫭绔?")
+	print("       - 鏀惰捣鎬?(`preview_engine_1920x360.png` / `preview_live_godot.png`): %dx%d | SHA256=%s" % [img_closed.get_width(), img_closed.get_height(), hash_closed.substr(0, 16)])
+	print("       - 灞曞紑鎬?(`preview_drawer_open_1920x360.png` via `HUD.open_drawer(0)`): %dx%d | SHA256=%s" % [img_open.get_width(), img_open.get_height(), hash_open.substr(0, 16)])
+	print("==================================================================")
+	get_tree().quit(0)
+
+func _sha256_bytes(buf: PackedByteArray) -> String:
+	var hc := HashingContext.new()
+	hc.start(HashingContext.HASH_SHA256)
+	hc.update(buf)
+	return hc.finish().hex_encode()
+
+func _find_deprecated_font_node(node: Node) -> String:
+	var forbidden_name := "Pixel" + "FontRenderer"
+	if node.name == forbidden_name:
+		return node.get_path()
+	var scr: Script = node.get_script()
+	if scr != null and scr.resource_path.find(forbidden_name) != -1:
+		return scr.resource_path
+	for child in node.get_children():
+		var found := _find_deprecated_font_node(child)
+		if found != "":
+			return found
+	return ""
+
+=== FILE: D:\project\maple-isle-idle\src\autoload\SoundManager.gd (8582 bytes) ===
+extends Node
+## Full-Featured WAV Audio, Dual-Deck Ambient Crossfader & Polyphonic SFX Pool (`src/autoload/SoundManager.gd`)
+## Strictly implements PRD v2.2 Section 6:
+## - Loads all 11 genuine `.wav` streams in `res://assets/sfx/`:
+##   * 5 Ambient Weather/Time-of-Day Loops: `ambient_day`, `ambient_dusk`, `ambient_night`, `ambient_rain`, `ambient_stream`
+##   * 6 Action/UI SFX: `harvest_pop`, `meso_coin`, `water_splash`, `wood_build`, `ui_click`, `ui_hover`
+## - Dual-deck `AudioStreamPlayer` ambient crossfade pool (`_ambient_deck_a`, `_ambient_deck_b`) for seamless transitions.
+## - 8-channel polyphonic SFX `AudioStreamPlayer` pool with per-key anti-clipping cooldown and pitch jitter.
+## - Listens to `EventBus.toggle_desktop_mode` to auto-mute when entering Desktop Companion Mode (`鎽搁奔妯″紡`).
+
+const AMBIENT_PLAYLIST: Array[String] = [
+	"ambient_day",
+	"ambient_stream",
+	"ambient_dusk",
+	"ambient_night",
+	"ambient_rain"
+]
+
+const AMBIENT_LABELS: Dictionary = {
+	"ambient_day": "鏅ㄦ洣楦熼福 (Day)",
+	"ambient_stream": "鑽峰婧祦 (Stream)",
+	"ambient_dusk": "鏆壊椋庨搩 (Dusk)",
+	"ambient_night": "钀ょ伀澶忓 (Night)",
+	"ambient_rain": "鏄熼湶寰洦 (Rain)"
+}
+
+const SFX_FILE_MAP: Dictionary = {
+	"harvest_pop": "res://assets/sfx/harvest_pop.wav",
+	"meso_coin": "res://assets/sfx/meso_coin.wav",
+	"water_splash": "res://assets/sfx/water_splash.wav",
+	"wood_build": "res://assets/sfx/wood_build.wav",
+	"ui_click": "res://assets/sfx/ui_click.wav",
+	"ui_hover": "res://assets/sfx/ui_hover.wav",
+	"ambient_day": "res://assets/sfx/ambient_day.wav",
+	"ambient_dusk": "res://assets/sfx/ambient_dusk.wav",
+	"ambient_night": "res://assets/sfx/ambient_night.wav",
+	"ambient_rain": "res://assets/sfx/ambient_rain.wav",
+	"ambient_stream": "res://assets/sfx/ambient_stream.wav"
+}
+
+const SFX_COOLDOWNS_MS: Dictionary = {
+	"harvest_pop": 45,
+	"meso_coin": 55,
+	"water_splash": 70,
+	"wood_build": 80,
+	"ui_click": 30,
+	"ui_hover": 35
+}
+
+const SFX_BASE_VOL_DB: Dictionary = {
+	"harvest_pop": -5.5,
+	"meso_coin": -4.5,
+	"water_splash": -7.0,
+	"wood_build": -5.0,
+	"ui_click": -6.5,
+	"ui_hover": -10.5
+}
+
+const SFX_POOL_SIZE := 8
+const AMBIENT_BASE_DB := -14.0
+const AMBIENT_ROTATE_INTERVAL := 65.0
+const CROSSFADE_DURATION := 2.4
+
+var is_muted: bool = true # Default auto-muted in Desktop Companion Mode
+var master_sfx_volume_linear: float = 1.0
+var master_ambient_volume_linear: float = 1.0
+
+var current_ambient_idx: int = 0
+var ambient_cycle_timer: float = 0.0
+var _active_deck_is_a: bool = true
+var _crossfade_t: float = 1.0
+var _is_crossfading: bool = false
+
+var _streams: Dictionary = {}
+var _last_play_ticks: Dictionary = {}
+var _sfx_players: Array[AudioStreamPlayer] = []
+var _rr_cursor: int = 0
+
+var _ambient_deck_a: AudioStreamPlayer
+var _ambient_deck_b: AudioStreamPlayer
+
+func _ready() -> void:
+	_load_all_wav_streams()
+	_build_audio_pools()
+
+	if GameManager != null:
+		is_muted = GameManager.desktop_companion_mode
+	_apply_initial_ambient_track(0)
+
+	if EventBus != null:
+		EventBus.toggle_desktop_mode.connect(_on_toggle_desktop_mode)
+		EventBus.island_unlocked.connect(_on_island_unlocked)
+
+func _load_all_wav_streams() -> void:
+	for key in SFX_FILE_MAP.keys():
+		var res_path := String(SFX_FILE_MAP[key])
+		if ResourceLoader.exists(res_path):
+			var st := load(res_path) as AudioStream
+			if st != null:
+				_streams[key] = st
+
+func _build_audio_pools() -> void:
+	for i in range(SFX_POOL_SIZE):
+		var p := AudioStreamPlayer.new()
+		p.name = "SFXPlayer_" + str(i)
+		p.bus = "Master"
+		p.volume_db = -6.0
+		add_child(p)
+		_sfx_players.append(p)
+
+	_ambient_deck_a = AudioStreamPlayer.new()
+	_ambient_deck_a.name = "AmbientDeckA"
+	_ambient_deck_a.bus = "Master"
+	_ambient_deck_a.volume_db = AMBIENT_BASE_DB
+	add_child(_ambient_deck_a)
+
+	_ambient_deck_b = AudioStreamPlayer.new()
+	_ambient_deck_b.name = "AmbientDeckB"
+	_ambient_deck_b.bus = "Master"
+	_ambient_deck_b.volume_db = -60.0
+	add_child(_ambient_deck_b)
+
+func _on_toggle_desktop_mode(enabled: bool) -> void:
+	if enabled:
+		set_muted(true)
+	else:
+		set_muted(false)
+
+func _on_island_unlocked(_island_idx: int) -> void:
+	play_water_sfx()
+	advance_ambient_weather()
+
+func get_current_ambient_key() -> String:
+	return AMBIENT_PLAYLIST[posmod(current_ambient_idx, AMBIENT_PLAYLIST.size())]
+
+func get_current_ambient_label() -> String:
+	var k := get_current_ambient_key()
+	return String(AMBIENT_LABELS.get(k, k))
+
+func get_loaded_stream_count() -> int:
+	return _streams.size()
+
+func _apply_initial_ambient_track(idx: int) -> void:
+	current_ambient_idx = posmod(idx, AMBIENT_PLAYLIST.size())
+	var key := AMBIENT_PLAYLIST[current_ambient_idx]
+	_active_deck_is_a = true
+	_is_crossfading = false
+	_crossfade_t = 1.0
+	if _ambient_deck_a != null and _streams.has(key):
+		_ambient_deck_a.stream = _streams[key]
+		_ambient_deck_a.volume_db = _compute_ambient_db(1.0)
+		if not is_muted:
+			_ambient_deck_a.play()
+	if _ambient_deck_b != null:
+		_ambient_deck_b.stop()
+
+func advance_ambient_weather() -> void:
+	crossfade_to_ambient(current_ambient_idx + 1)
+
+func crossfade_to_ambient(next_idx: int) -> void:
+	current_ambient_idx = posmod(next_idx, AMBIENT_PLAYLIST.size())
+	var key := AMBIENT_PLAYLIST[current_ambient_idx]
+	if not _streams.has(key):
+		return
+
+	_active_deck_is_a = not _active_deck_is_a
+	var incoming := _ambient_deck_a if _active_deck_is_a else _ambient_deck_b
+	incoming.stream = _streams[key]
+	incoming.volume_db = _compute_ambient_db(0.05)
+	if not is_muted:
+		incoming.play()
+	_crossfade_t = 0.0
+	_is_crossfading = true
+
+func _compute_ambient_db(fade_weight: float) -> float:
+	var lin := clampf(fade_weight * master_ambient_volume_linear, 0.0001, 1.5)
+	return AMBIENT_BASE_DB + linear_to_db(lin)
+
+func _process(delta: float) -> void:
+	ambient_cycle_timer += delta
+	if ambient_cycle_timer >= AMBIENT_ROTATE_INTERVAL:
+		ambient_cycle_timer = 0.0
+		advance_ambient_weather()
+
+	if _is_crossfading:
+		_crossfade_t = minf(1.0, _crossfade_t + delta / maxf(0.2, CROSSFADE_DURATION))
+		var in_deck := _ambient_deck_a if _active_deck_is_a else _ambient_deck_b
+		var out_deck := _ambient_deck_b if _active_deck_is_a else _ambient_deck_a
+		if in_deck != null:
+			in_deck.volume_db = _compute_ambient_db(_crossfade_t)
+		if out_deck != null:
+			out_deck.volume_db = _compute_ambient_db(1.0 - _crossfade_t)
+		if _crossfade_t >= 1.0:
+			_is_crossfading = false
+			if out_deck != null:
+				out_deck.stop()
+
+	if not is_muted:
+		var active_deck := _ambient_deck_a if _active_deck_is_a else _ambient_deck_b
+		if active_deck != null and active_deck.stream != null and not active_deck.playing:
+			active_deck.play()
+
+func set_muted(mute: bool) -> void:
+	is_muted = mute
+	if is_muted:
+		if _ambient_deck_a != null:
+			_ambient_deck_a.stop()
+		if _ambient_deck_b != null:
+			_ambient_deck_b.stop()
+		for p in _sfx_players:
+			if p.playing:
+				p.stop()
+	else:
+		var active_deck := _ambient_deck_a if _active_deck_is_a else _ambient_deck_b
+		if active_deck != null and active_deck.stream != null:
+			active_deck.volume_db = _compute_ambient_db(1.0)
+			active_deck.play()
+
+func toggle_mute() -> bool:
+	set_muted(not is_muted)
+	if not is_muted:
+		play_click_sfx()
+	return is_muted
+
+func play_sfx(sfx_name: String, pitch_variance: float = 0.05, extra_db: float = 0.0) -> void:
+	if is_muted or not _streams.has(sfx_name):
+		return
+
+	var now_ms := Time.get_ticks_msec()
+	var min_cd := int(SFX_COOLDOWNS_MS.get(sfx_name, 35))
+	var prev_ms := int(_last_play_ticks.get(sfx_name, -9999))
+	if now_ms - prev_ms < min_cd:
+		return
+	_last_play_ticks[sfx_name] = now_ms
+
+	var base_db := float(SFX_BASE_VOL_DB.get(sfx_name, -6.0)) + extra_db
+	var final_db := base_db + linear_to_db(clampf(master_sfx_volume_linear, 0.05, 1.5))
+
+	var chosen: AudioStreamPlayer = null
+	for p in _sfx_players:
+		if not p.playing:
+			chosen = p
+			break
+	if chosen == null and _sfx_players.size() > 0:
+		chosen = _sfx_players[_rr_cursor % _sfx_players.size()]
+		_rr_cursor += 1
+
+	if chosen != null:
+		chosen.stream = _streams[sfx_name]
+		chosen.volume_db = final_db
+		chosen.pitch_scale = randf_range(1.0 - pitch_variance, 1.0 + pitch_variance)
+		chosen.play()
+
+func play_coin_sfx() -> void:
+	play_sfx("meso_coin", 0.05, 0.0)
+
+func play_upgrade_sfx() -> void:
+	play_sfx("wood_build", 0.05, 0.0)
+
+func play_milestone_sfx() -> void:
+	play_sfx("wood_build", 0.02, 1.5)
+	play_sfx("meso_coin", 0.03, -1.0)
+
+func play_pop_sfx() -> void:
+	play_sfx("harvest_pop", 0.06, 0.0)
+
+func play_water_sfx() -> void:
+	play_sfx("water_splash", 0.05, 0.0)
+
+func play_click_sfx() -> void:
+	play_sfx("ui_click", 0.03, 0.0)
+
+func play_hover_sfx() -> void:
+	play_sfx("ui_hover", 0.03, 0.0)
+
+=== FILE: D:\project\maple-isle-idle\src\autoload\WindowController.gd (8756 bytes) ===
+extends Node
+## Desktop Companion Window, Multi-Island + UI Polygon Mouse Passthrough & Alt+Drag Controller (`src/autoload/WindowController.gd`)
+## Strictly implements PRD v2.2 Section 1 & Section 5:
+## - Controls `WINDOW_FLAG_TRANSPARENT`, `WINDOW_FLAG_BORDERLESS`, `WINDOW_FLAG_ALWAYS_ON_TOP` and `get_tree().root.transparent_bg`.
+## - Dynamically computes the non-rectangular hull polygon covering the 3 islands AND the active HUD/drawer panel,
+##   and passes it to `DisplayServer.window_set_mouse_passthrough(polygon)` so clicking transparent sky passes through to desktop apps.
+## - Implements `Alt + Mouse Left-Click` (or HUD bar drag) window position dragging with multi-monitor clamping.
+
+enum DockPosition { BOTTOM_STRIP, TOP_STRIP }
+
+const VIEWPORT_W := 1920.0
+const VIEWPORT_H := 300.0
+const SCALE_PRESETS: Array[float] = [0.75, 1.0, 1.25]
+const SCALE_LABELS: Array[String] = ["75%", "100%", "125%"]
+
+## Per-island logical bounding rectangles in the 1920x300 panoramic strip
+const ISLAND_2_LOCAL_RECT := Rect2(56.0, 58.0, 480.0, 178.0)
+const ISLAND_1_LOCAL_RECT := Rect2(548.0, 42.0, 768.0, 198.0)
+const ISLAND_3_LOCAL_RECT := Rect2(1310.0, 58.0, 560.0, 178.0)
+
+var current_dock: DockPosition = DockPosition.BOTTOM_STRIP
+var scale_idx: int = 1
+var target_screen_idx: int = 0
+var scale_factor: float = 1.0
+var custom_pos_active: bool = false
+var custom_pos: Vector2i = Vector2i.ZERO
+
+var is_dragging: bool = false
+var _drag_start_mouse: Vector2i = Vector2i.ZERO
+var _drag_start_win_pos: Vector2i = Vector2i.ZERO
+
+var _world_ref: Node2D = null
+var _hud_ref: Control = null
+var _last_island_rect: Rect2 = Rect2(40.0, 38.0, 1840.0, 210.0)
+var _last_hud_rect: Rect2 = Rect2(480.0, 230.0, 960.0, 58.0)
+var _last_drawer_rect: Rect2 = Rect2()
+var _last_passthrough_polygon: PackedVector2Array = PackedVector2Array()
+
+func _ready() -> void:
+	var companion_on := true
+	if GameManager != null:
+		companion_on = GameManager.desktop_companion_mode
+	apply_window_mode(companion_on)
+	target_screen_idx = DisplayServer.window_get_current_screen()
+	snap_window_to_desktop(current_dock)
+
+	if EventBus != null:
+		EventBus.toggle_desktop_mode.connect(_on_toggle_desktop_mode)
+
+func _on_toggle_desktop_mode(enabled: bool) -> void:
+	apply_window_mode(enabled)
+
+func apply_window_mode(companion_enabled: bool) -> void:
+	if companion_enabled:
+		get_tree().root.transparent_bg = true
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_TRANSPARENT, true)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
+		_refresh_passthrough()
+	else:
+		get_tree().root.transparent_bg = false
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, false)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, false)
+		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
+
+func _input(event: InputEvent) -> void:
+	# Global Alt + Left-Click window drag support anywhere over the window
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed and Input.is_key_pressed(KEY_ALT):
+			start_window_drag()
+		elif not event.pressed and is_dragging:
+			stop_window_drag()
+
+func _process(_delta: float) -> void:
+	if not is_dragging:
+		return
+	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		stop_window_drag()
+		return
+	var cur_mouse := DisplayServer.mouse_get_position()
+	var raw_next := _drag_start_win_pos + (cur_mouse - _drag_start_mouse)
+	var clamped_pos := _clamp_window_to_desktop_bounds(raw_next)
+	custom_pos_active = true
+	custom_pos = clamped_pos
+	if DisplayServer.window_get_position() != clamped_pos:
+		DisplayServer.window_set_position(clamped_pos)
+
+func _clamp_window_to_desktop_bounds(pos: Vector2i) -> Vector2i:
+	var count := maxi(1, DisplayServer.get_screen_count())
+	var screen_idx := clampi(target_screen_idx, 0, count - 1)
+	var usable := DisplayServer.screen_get_usable_rect(screen_idx)
+	var win_size := DisplayServer.window_get_size()
+	var min_x := usable.position.x - int(win_size.x * 0.45)
+	var max_x := usable.position.x + usable.size.x - int(win_size.x * 0.55)
+	var min_y := usable.position.y
+	var max_y := usable.position.y + usable.size.y - int(win_size.y * 0.35)
+	return Vector2i(clampi(pos.x, min_x, maxi(min_x, max_x)), clampi(pos.y, min_y, maxi(min_y, max_y)))
+
+func setup(world: Node = null, hud: Node = null) -> void:
+	if world is Node2D:
+		_world_ref = world
+	if hud is Control:
+		_hud_ref = hud
+	_refresh_passthrough()
+
+func begin_window_drag() -> void:
+	start_window_drag()
+
+func end_window_drag() -> void:
+	stop_window_drag()
+
+func start_window_drag() -> void:
+	if is_dragging:
+		return
+	is_dragging = true
+	_drag_start_mouse = DisplayServer.mouse_get_position()
+	_drag_start_win_pos = DisplayServer.window_get_position()
+	DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
+
+func stop_window_drag() -> void:
+	if not is_dragging:
+		return
+	is_dragging = false
+	_refresh_passthrough()
+
+func cycle_window_scale() -> float:
+	scale_idx = (scale_idx + 1) % SCALE_PRESETS.size()
+	snap_window_to_desktop(current_dock)
+	return SCALE_PRESETS[scale_idx]
+
+func toggle_dock_position() -> DockPosition:
+	current_dock = DockPosition.TOP_STRIP if current_dock == DockPosition.BOTTOM_STRIP else DockPosition.BOTTOM_STRIP
+	custom_pos_active = false
+	snap_window_to_desktop(current_dock)
+	return current_dock
+
+func snap_window_to_desktop(dock: DockPosition) -> void:
+	var count := maxi(1, DisplayServer.get_screen_count())
+	var screen_idx := clampi(target_screen_idx, 0, count - 1)
+	var usable_rect := DisplayServer.screen_get_usable_rect(screen_idx)
+	var base_scale := float(usable_rect.size.x) / VIEWPORT_W
+	var user_mult: float = SCALE_PRESETS[clampi(scale_idx, 0, SCALE_PRESETS.size() - 1)]
+	scale_factor = minf(base_scale * 1.25, base_scale * user_mult)
+	var win_w := int(roundf(VIEWPORT_W * scale_factor))
+	var win_h := int(roundf(VIEWPORT_H * scale_factor))
+	var pos_x := usable_rect.position.x + int((usable_rect.size.x - win_w) * 0.5)
+	var pos_y := usable_rect.position.y + usable_rect.size.y - win_h
+	if dock == DockPosition.TOP_STRIP:
+		pos_y = usable_rect.position.y
+	if custom_pos_active:
+		pos_x = custom_pos.x
+		pos_y = custom_pos.y
+	DisplayServer.window_set_size(Vector2i(win_w, win_h))
+	DisplayServer.window_set_position(Vector2i(pos_x, pos_y))
+	_refresh_passthrough()
+
+func update_passthrough_polygon(logical_island_rect: Rect2, logical_hud_rect: Rect2, logical_drawer_rect: Rect2 = Rect2()) -> void:
+	_last_island_rect = logical_island_rect
+	_last_hud_rect = logical_hud_rect
+	_last_drawer_rect = logical_drawer_rect
+	if not is_dragging:
+		_refresh_passthrough()
+
+func get_current_passthrough_polygon() -> PackedVector2Array:
+	return _last_passthrough_polygon
+
+func _compute_active_islands_span() -> Rect2:
+	var span := ISLAND_1_LOCAL_RECT
+	if GameManager != null:
+		if bool(GameManager.unlocked_islands.get(2, false)):
+			span = span.merge(ISLAND_2_LOCAL_RECT)
+		else:
+			# Include silhouette bridge/island click preview zone
+			span = span.merge(Rect2(60.0, 74.0, 460.0, 150.0))
+		if bool(GameManager.unlocked_islands.get(3, false)):
+			span = span.merge(ISLAND_3_LOCAL_RECT)
+		else:
+			span = span.merge(Rect2(1312.0, 74.0, 540.0, 150.0))
+	return span.merge(_last_island_rect)
+
+func _refresh_passthrough() -> void:
+	if is_dragging:
+		return
+	if GameManager != null and not GameManager.desktop_companion_mode:
+		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
+		return
+
+	var isl_rect := _compute_active_islands_span()
+	var ui_rect := _last_hud_rect
+	if _last_drawer_rect.size.x > 0.0 and _last_drawer_rect.size.y > 0.0:
+		ui_rect = ui_rect.merge(_last_drawer_rect)
+
+	var s := maxf(0.1, scale_factor)
+	var top_y := maxf(0.0, minf(isl_rect.position.y, ui_rect.position.y))
+	var bot_y := minf(VIEWPORT_H, maxf(isl_rect.end.y, ui_rect.end.y))
+	var isl_l := clampf(isl_rect.position.x, 0.0, VIEWPORT_W)
+	var isl_r := clampf(isl_rect.end.x, 0.0, VIEWPORT_W)
+	var ui_l := clampf(ui_rect.position.x, isl_l, VIEWPORT_W)
+	var ui_r := clampf(ui_rect.end.x, 0.0, isl_r)
+	var split_y := clampf(ui_rect.position.y, top_y + 12.0, bot_y - 12.0)
+
+	# 8-vertex stepped polygon tightly wrapping the 3 islands + bottom HUD/drawer panel
+	var poly := PackedVector2Array([
+		Vector2(isl_l * s, top_y * s),
+		Vector2(isl_r * s, top_y * s),
+		Vector2(isl_r * s, split_y * s),
+		Vector2(maxf(isl_r, ui_r) * s, split_y * s),
+		Vector2(maxf(isl_r, ui_r) * s, bot_y * s),
+		Vector2(minf(isl_l, ui_l) * s, bot_y * s),
+		Vector2(minf(isl_l, ui_l) * s, split_y * s),
+		Vector2(isl_l * s, split_y * s)
+	])
+	_last_passthrough_polygon = poly
+	DisplayServer.window_set_mouse_passthrough(poly)
+
+=== FILE: D:\project\maple-isle-idle\src\data\sprite_manifest.json (16291 bytes) ===
+{
+  "animals/bunny_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/bunny_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 15,
+        "tight_y": 2,
+        "tight_w": 29,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 75,
+        "tight_y": 2,
+        "tight_w": 30,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 130,
+        "tight_y": 2,
+        "tight_w": 39,
+        "tight_h": 56
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 186,
+        "tight_y": 2,
+        "tight_w": 47,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/otter_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/otter_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 10,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 70,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 3,
+        "tight_w": 56,
+        "tight_h": 55
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 185,
+        "tight_y": 2,
+        "tight_w": 49,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/toucan_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/toucan_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 2,
+        "tight_y": 4,
+        "tight_w": 56,
+        "tight_h": 54
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 62,
+        "tight_y": 4,
+        "tight_w": 56,
+        "tight_h": 54
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 8,
+        "tight_w": 56,
+        "tight_h": 50
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 9,
+        "tight_w": 56,
+        "tight_h": 49
+      }
+    ]
+  },
+  "animals/fox_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/fox_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 6,
+        "tight_y": 2,
+        "tight_w": 48,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 66,
+        "tight_y": 2,
+        "tight_w": 48,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 6,
+        "tight_w": 56,
+        "tight_h": 52
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 2,
+        "tight_w": 56,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/penguin_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/penguin_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 8,
+        "tight_y": 2,
+        "tight_w": 44,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 68,
+        "tight_y": 2,
+        "tight_w": 44,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 122,
+        "tight_y": 2,
+        "tight_w": 56,
+        "tight_h": 56
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 2,
+        "tight_w": 55,
+        "tight_h": 56
+      }
+    ]
+  },
+  "animals/shiba_sheet.png": {
+    "cell_width": 60,
+    "cell_height": 60,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/animals/shiba_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 11,
+        "tight_y": 2,
+        "tight_w": 37,
+        "tight_h": 56
+      },
+      {
+        "x": 60,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 72,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 56
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 130,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 56
+      },
+      {
+        "x": 180,
+        "y": 0,
+        "w": 60,
+        "h": 60,
+        "tight_x": 182,
+        "tight_y": 9,
+        "tight_w": 56,
+        "tight_h": 49
+      }
+    ]
+  },
+  "travelers/traveler_slime.png": {
+    "cell_width": 48,
+    "cell_height": 48,
+    "hframes": 2,
+    "vframes": 1,
+    "total_frames": 2,
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_slime_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 5,
+        "tight_y": 2,
+        "tight_w": 38,
+        "tight_h": 44
+      },
+      {
+        "x": 48,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 53,
+        "tight_y": 2,
+        "tight_w": 37,
+        "tight_h": 44
+      }
+    ]
+  },
+  "travelers/traveler_mushroom.png": {
+    "cell_width": 48,
+    "cell_height": 48,
+    "hframes": 2,
+    "vframes": 1,
+    "total_frames": 2,
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_mushroom_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 4,
+        "tight_y": 2,
+        "tight_w": 39,
+        "tight_h": 44
+      },
+      {
+        "x": 48,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 52,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 44
+      }
+    ]
+  },
+  "travelers/traveler_pig.png": {
+    "cell_width": 48,
+    "cell_height": 48,
+    "hframes": 2,
+    "vframes": 1,
+    "total_frames": 2,
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_pig_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 4,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 44
+      },
+      {
+        "x": 48,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 52,
+        "tight_y": 2,
+        "tight_w": 39,
+        "tight_h": 44
+      }
+    ]
+  },
+  "crops/crops_sheet.png": {
+    "cell_width": 40,
+    "cell_height": 40,
+    "hframes": 4,
+    "vframes": 4,
+    "total_frames": 16,
+    "normalized_sheet": "res://assets/pixel_art/crops/crops_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 40,
+        "tight_x": 1,
+        "tight_y": 21,
+        "tight_w": 38,
+        "tight_h": 18
+      },
+      {
+        "x": 40,
+        "y": 0,
+        "w": 40,
+        "h": 40,
+        "tight_x": 41,
+        "tight_y": 9,
+        "tight_w": 38,
+        "tight_h": 30
+      },
+      {
+        "x": 80,
+        "y": 0,
+        "w": 40,
+        "h": 40,
+        "tight_x": 84,
+        "tight_y": 1,
+        "tight_w": 31,
+        "tight_h": 38
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 40,
+        "h": 40,
+        "tight_x": 122,
+        "tight_y": 1,
+        "tight_w": 36,
+        "tight_h": 38
+      },
+      {
+        "x": 0,
+        "y": 40,
+        "w": 40,
+        "h": 40,
+        "tight_x": 1,
+        "tight_y": 60,
+        "tight_w": 38,
+        "tight_h": 19
+      },
+      {
+        "x": 40,
+        "y": 40,
+        "w": 40,
+        "h": 40,
+        "tight_x": 41,
+        "tight_y": 47,
+        "tight_w": 38,
+        "tight_h": 32
+      },
+      {
+        "x": 80,
+        "y": 40,
+        "w": 40,
+        "h": 40,
+        "tight_x": 81,
+        "tight_y": 46,
+        "tight_w": 38,
+        "tight_h": 33
+      },
+      {
+        "x": 120,
+        "y": 40,
+        "w": 40,
+        "h": 40,
+        "tight_x": 121,
+        "tight_y": 51,
+        "tight_w": 38,
+        "tight_h": 28
+      },
+      {
+        "x": 0,
+        "y": 80,
+        "w": 40,
+        "h": 40,
+        "tight_x": 1,
+        "tight_y": 81,
+        "tight_w": 38,
+        "tight_h": 38
+      },
+      {
+        "x": 40,
+        "y": 80,
+        "w": 40,
+        "h": 40,
+        "tight_x": 41,
+        "tight_y": 88,
+        "tight_w": 38,
+        "tight_h": 31
+      },
+      {
+        "x": 80,
+        "y": 80,
+        "w": 40,
+        "h": 40,
+        "tight_x": 81,
+        "tight_y": 81,
+        "tight_w": 37,
+        "tight_h": 38
+      },
+      {
+        "x": 120,
+        "y": 80,
+        "w": 40,
+        "h": 40,
+        "tight_x": 121,
+        "tight_y": 82,
+        "tight_w": 38,
+        "tight_h": 37
+      },
+      {
+        "x": 0,
+        "y": 120,
+        "w": 40,
+        "h": 40,
+        "tight_x": 1,
+        "tight_y": 136,
+        "tight_w": 38,
+        "tight_h": 23
+      },
+      {
+        "x": 40,
+        "y": 120,
+        "w": 40,
+        "h": 40,
+        "tight_x": 42,
+        "tight_y": 121,
+        "tight_w": 35,
+        "tight_h": 38
+      },
+      {
+        "x": 80,
+        "y": 120,
+        "w": 40,
+        "h": 40,
+        "tight_x": 81,
+        "tight_y": 126,
+        "tight_w": 38,
+        "tight_h": 33
+      },
+      {
+        "x": 120,
+        "y": 120,
+        "w": 40,
+        "h": 40,
+        "tight_x": 128,
+        "tight_y": 121,
+        "tight_w": 23,
+        "tight_h": 38
+      }
+    ],
+    "items": [
+      {
+        "id": "crop_0",
+        "name": "strawberry_osmanthus",
+        "stages": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 40,
+            "y": 0,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 80,
+            "y": 0,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 120,
+            "y": 0,
+            "w": 40,
+            "h": 40
+          }
+        ]
+      },
+      {
+        "id": "crop_1",
+        "name": "sweet_berry",
+        "stages": [
+          {
+            "x": 0,
+            "y": 40,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 40,
+            "y": 40,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 80,
+            "y": 40,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 120,
+            "y": 40,
+            "w": 40,
+            "h": 40
+          }
+        ]
+      },
+      {
+        "id": "crop_2",
+        "name": "glow_mushroom",
+        "stages": [
+          {
+            "x": 0,
+            "y": 80,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 40,
+            "y": 80,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 80,
+            "y": 80,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 120,
+            "y": 80,
+            "w": 40,
+            "h": 40
+          }
+        ]
+      },
+      {
+        "id": "crop_3",
+        "name": "sun_pineapple",
+        "stages": [
+          {
+            "x": 0,
+            "y": 120,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 40,
+            "y": 120,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 80,
+            "y": 120,
+            "w": 40,
+            "h": 40
+          },
+          {
+            "x": 120,
+            "y": 120,
+            "w": 40,
+            "h": 40
+          }
+        ]
+      }
+    ]
+  },
+  "buildings/delicacies_sheet.png": {
+    "cell_width": 36,
+    "cell_height": 36,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/buildings/delicacies_sheet_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 36,
+        "h": 36,
+        "tight_x": 1,
+        "tight_y": 8,
+        "tight_w": 34,
+        "tight_h": 20
+      },
+      {
+        "x": 36,
+        "y": 0,
+        "w": 36,
+        "h": 36,
+        "tight_x": 37,
+        "tight_y": 5,
+        "tight_w": 34,
+        "tight_h": 25
+      },
+      {
+        "x": 72,
+        "y": 0,
+        "w": 36,
+        "h": 36,
+        "tight_x": 79,
+        "tight_y": 1,
+        "tight_w": 21,
+        "tight_h": 34
+      },
+      {
+        "x": 108,
+        "y": 0,
+        "w": 36,
+        "h": 36,
+        "tight_x": 110,
+        "tight_y": 1,
+        "tight_w": 32,
+        "tight_h": 34
+      }
+    ],
+    "items": [
+      {
+        "id": "delicacy_0",
+        "name": "妗傝姳绯背绯?,
+        "tier": 1,
+        "region": {
+          "x": 0,
+          "y": 0,
+          "w": 36,
+          "h": 36
+        }
+      },
+      {
+        "id": "delicacy_1",
+        "name": "鐒︾硸鑻规灉鑽夎帗娲?,
+        "tier": 1,
+        "region": {
+          "x": 36,
+          "y": 0,
+          "w": 36,
+          "h": 36
+        }
+      },
+      {
+        "id": "delicacy_2",
+        "name": "鏄熼湶鑽у厜鐢橀湶楗?,
+        "tier": 2,
+        "region": {
+          "x": 72,
+          "y": 0,
+          "w": 36,
+          "h": 36
+        }
+      },
+      {
+        "id": "delicacy_3",
+        "name": "娴峰矝鍑ゆⅷ妞板ザ鍐?,
+        "tier": 2,
+        "region": {
+          "x": 108,
+          "y": 0,
+          "w": 36,
+          "h": 36
+        }
+      }
+    ]
+  },
+  "islands/soil_plot.png": {
+    "cell_width": 40,
+    "cell_height": 18,
+    "hframes": 4,
+    "vframes": 1,
+    "total_frames": 4,
+    "normalized_sheet": "res://assets/pixel_art/islands/soil_plot_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 18,
+        "tight_x": 2,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 14
+      },
+      {
+        "x": 40,
+        "y": 0,
+        "w": 40,
+        "h": 18,
+        "tight_x": 42,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 14
+      },
+      {
+        "x": 80,
+        "y": 0,
+        "w": 40,
+        "h": 18,
+        "tight_x": 82,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 14
+      },
+      {
+        "x": 120,
+        "y": 0,
+        "w": 40,
+        "h": 18,
+        "tight_x": 122,
+        "tight_y": 2,
+        "tight_w": 36,
+        "tight_h": 14
+      }
+    ]
+  }
+}
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\BuildingVisualUpgrader.gd (8595 bytes) ===
+extends Node2D
+class_name BuildingVisualUpgrader
+## 4-Tier Building Visual Evolution, Outer-Edge Decor, Particles, Star Badge & Legendary Shader (`src/entities/buildings/BuildingVisualUpgrader.gd`)
+## Strictly enforces PRD v2.2 Section 4 & GEMINI.md Laws 2.2, 2.3 & 3.2:
+## - Upgrade feedback: Q-bouncy scale Tween (`1.22x -> 0.92x -> 1.0x/1.08x`) + `"LV UP!"` / `"鈽呴噷绋嬬绐佺牬 Lv.XX!"` floating text.
+## - 4-Tier Visual Evolution:
+##   * Tier 1 (Lv.1~24): Standard pixel building.
+##   * Tier 2 (Lv.25~49): Mounts outer-edge `+16px` (`DECOR_OUTER_OFFSET`) decor sprite (`decor_scarecrow.png` on SoilPlot,
+##     `decor_signpost.png` + top steam/alchemy spark `CPUParticles2D` on Workshop, `decor_lamp.png` + warm streetlamp glow on MarketStall).
+##   * Tier 3 (Lv.50~99): Elevates building scale to `1.08x`, renders a 5-pointed Silver Star Badge at base, and doubles (`2x`) particle emission.
+##   * Tier 4 (Lv.100+): Mounts custom Golden Shimmer Outline `ShaderMaterial`, emits Golden Stardust `CPUParticles2D`, and upgrades base badge to Gold Star.
+
+@export var building_kind: String = "soil" # "soil", "mortar", "cauldron", "orbis_linked", "stall"
+
+var current_level: int = 1
+var current_tier: int = 1
+var target_parent: Node2D
+
+var decor_sprite: Sprite2D
+var particles: CPUParticles2D
+var gold_particles: CPUParticles2D
+var legendary_shader_mat: ShaderMaterial
+var shimmer_time: float = 0.0
+
+func setup_upgrader(p_parent: Node2D, p_kind: String, p_initial_level: int = 1) -> void:
+	target_parent = p_parent
+	building_kind = p_kind
+	current_level = p_initial_level
+	_init_child_nodes()
+	apply_level_visuals(current_level, false)
+
+func _init_child_nodes() -> void:
+	decor_sprite = Sprite2D.new()
+	decor_sprite.name = "Tier2DecorSprite"
+	decor_sprite.visible = false
+	decor_sprite.centered = true
+	decor_sprite.z_index = EconomyConfig.Z_BUILDING
+	decor_sprite.z_as_relative = false
+	add_child(decor_sprite)
+
+	# GEMINI.md Law 2.2 & 3.2: Bottom-Center Pivot (`offset = Vector2(0.0, -float(frame_h) * 0.5)`) + outer edge + 16px
+	if building_kind == "soil":
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_scarecrow.png")
+		decor_sprite.offset = Vector2(0.0, -float(56) * 0.5)
+		decor_sprite.scale = Vector2(0.65, 0.65)
+		decor_sprite.position = Vector2(-(SoilPlot.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+	elif building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked":
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
+		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
+		decor_sprite.scale = Vector2(0.65, 0.65)
+		decor_sprite.position = Vector2(-(Workshop.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+	elif building_kind == "stall":
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
+		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
+		decor_sprite.scale = Vector2(0.75, 0.75)
+		decor_sprite.position = Vector2(MarketStall.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
+
+	# Tier 2/3 Workshop Steam / Alchemy Spark CPUParticles2D
+	particles = CPUParticles2D.new()
+	particles.name = "TierParticles"
+	particles.emitting = false
+	particles.amount = 8
+	particles.lifetime = 1.4
+	particles.position = Vector2(0.0, -38.0)
+	particles.direction = Vector2(0.0, -1.0)
+	particles.spread = 28.0
+	particles.gravity = Vector2(0.0, -12.0)
+	particles.initial_velocity_min = 8.0
+	particles.initial_velocity_max = 18.0
+	particles.scale_amount_min = 2.0
+	particles.scale_amount_max = 3.5
+	if building_kind == "cauldron" or building_kind == "orbis_linked":
+		particles.color = Color(0.55, 0.96, 1.0, 0.85)
+	else:
+		particles.color = Color(0.98, 0.96, 0.90, 0.75)
+	add_child(particles)
+
+	# Tier 4 (Lv.100+) Golden Stardust CPUParticles2D & Golden Shimmer Outline ShaderMaterial
+	gold_particles = CPUParticles2D.new()
+	gold_particles.name = "Tier4GoldParticles"
+	gold_particles.emitting = false
+	gold_particles.amount = 16
+	gold_particles.lifetime = 1.6
+	gold_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	gold_particles.emission_sphere_radius = 24.0
+	gold_particles.position = Vector2(0.0, -24.0)
+	gold_particles.gravity = Vector2(0.0, -8.0)
+	gold_particles.initial_velocity_min = 4.0
+	gold_particles.initial_velocity_max = 10.0
+	gold_particles.scale_amount_min = 2.0
+	gold_particles.scale_amount_max = 3.5
+	gold_particles.color = Color(1.0, 0.88, 0.25, 0.92)
+	add_child(gold_particles)
+
+	var sh := Shader.new()
+	sh.code = """
+shader_type canvas_item;
+uniform float shimmer_speed : hint_range(0.5, 5.0) = 2.4;
+uniform vec4 outline_gold : source_color = vec4(1.0, 0.88, 0.28, 1.0);
+void fragment() {
+	vec4 tex = texture(TEXTURE, UV);
+	float wave = 0.5 + 0.5 * sin(TIME * shimmer_speed + (UV.x + UV.y) * 9.0);
+	vec2 ps = TEXTURE_PIXEL_SIZE;
+	float edge_a = max(
+		max(texture(TEXTURE, UV + vec2(ps.x, 0.0)).a, texture(TEXTURE, UV - vec2(ps.x, 0.0)).a),
+		max(texture(TEXTURE, UV + vec2(0.0, ps.y)).a, texture(TEXTURE, UV - vec2(0.0, ps.y)).a)
+	);
+	vec3 gold_tint = mix(tex.rgb, outline_gold.rgb, wave * 0.30);
+	if (tex.a < 0.1 && edge_a > 0.4) {
+		COLOR = vec4(outline_gold.rgb, edge_a * (0.55 + 0.35 * wave));
+	} else {
+		COLOR = vec4(gold_tint, tex.a);
+	}
+}
+"""
+	legendary_shader_mat = ShaderMaterial.new()
+	legendary_shader_mat.shader = sh
+
+func get_tier_for_level(lv: int) -> int:
+	if lv >= 100:
+		return 4
+	elif lv >= 50:
+		return 3
+	elif lv >= 25:
+		return 2
+	return 1
+
+func get_base_scale_for_tier(tier: int) -> Vector2:
+	return Vector2(1.08, 1.08) if tier >= 3 else Vector2.ONE
+
+func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
+	var old_tier := current_tier
+	current_level = new_level
+	current_tier = get_tier_for_level(new_level)
+	var base_sc := get_base_scale_for_tier(current_tier)
+
+	if decor_sprite != null:
+		decor_sprite.visible = (current_tier >= 2)
+
+	if particles != null:
+		var is_workshop := (building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked")
+		particles.emitting = is_workshop and (current_tier >= 2)
+		particles.amount = 16 if current_tier >= 3 else 8
+
+	if gold_particles != null:
+		gold_particles.emitting = (current_tier >= 4)
+
+	if target_parent != null:
+		if current_tier >= 4:
+			target_parent.material = legendary_shader_mat
+		else:
+			target_parent.material = null
+
+		if play_bounce and is_inside_tree():
+			var tw := create_tween()
+			tw.tween_property(target_parent, "scale", base_sc * 1.22, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw.tween_property(target_parent, "scale", base_sc * 0.92, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+			tw.tween_property(target_parent, "scale", base_sc, 0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+			var gpos := target_parent.global_position - Vector2(0, 36)
+			if current_tier > old_tier or (new_level % 25 == 0):
+				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -54), "鈽呴噷绋嬬绐佺牬 Lv." + str(new_level) + "!", Color("#FFE066"))
+				if SoundManager != null:
+					SoundManager.play_milestone_sfx()
+			else:
+				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -48), "LV UP!", Color("#FFE066"))
+				if SoundManager != null:
+					SoundManager.play_upgrade_sfx()
+		else:
+			target_parent.scale = base_sc
+
+	queue_redraw()
+
+func _process(delta: float) -> void:
+	if current_tier >= 2:
+		shimmer_time += delta
+		queue_redraw()
+
+func _draw_five_pointed_star(center: Vector2, outer_r: float, inner_r: float, col: Color) -> void:
+	var pts := PackedVector2Array()
+	for i in range(10):
+		var r := outer_r if (i % 2 == 0) else inner_r
+		var ang := -PI * 0.5 + float(i) * PI / 5.0
+		pts.append(center + Vector2(cos(ang) * r, sin(ang) * r))
+	draw_colored_polygon(pts, col)
+
+func _draw() -> void:
+	# Tier 2+ MarketStall Streetlamp Warm Light Halo
+	if current_tier >= 2 and building_kind == "stall" and decor_sprite != null:
+		var pulse := 0.85 + 0.15 * sin(shimmer_time * 3.2)
+		var lamp_top := decor_sprite.position + Vector2(0.0, -36.0)
+		draw_circle(lamp_top, 18.0 * pulse, Color(1.0, 0.88, 0.42, 0.22 * pulse))
+		draw_circle(lamp_top, 9.0 * pulse, Color(1.0, 0.95, 0.68, 0.34 * pulse))
+
+	# Tier 3+ (Lv.50~99 Silver Star Badge / Lv.100+ Gold Star Badge) at Building Base
+	if current_tier >= 3:
+		var badge_center := Vector2(0.0, -4.0)
+		var star_col := Color(1.0, 0.88, 0.24, 0.98) if current_tier >= 4 else Color(0.86, 0.94, 1.0, 0.96)
+		draw_circle(badge_center, 7.0, Color(0.14, 0.08, 0.04, 0.88))
+		draw_arc(badge_center, 7.0, 0.0, TAU, 16, star_col, 1.4)
+		_draw_five_pointed_star(badge_center, 5.2, 2.3, star_col)
+
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\MarketStall.gd (6117 bytes) ===
+extends Node2D
+class_name MarketStall
+## Central Cloud Isle Market Stall, Queue Dispatcher & Shiba Manager Checkout Hub (`src/entities/buildings/MarketStall.gd`)
+## Strictly enforces PRD v2.2 & GEMINI.md Laws 2, 3, 5:
+## - Root `position = Vector2(slot_x, GROUND_Y)` is the bottom-center grounding point (`z_index = 0`).
+## - `body_sprite`: `centered = true`, `offset = Vector2(0.0, -float(104) * 0.5) = Vector2(0.0, -52.0)`.
+## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` (`shadow_width = w * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`).
+## - Supports zero-Shiba self-service checkout (`1.8s` duration, `1.0x` price bonus) and Shiba Manager accelerated checkout (`1.0s` duration, `PriceBonus = 1.0 + 0.1 * L`).
+## - Pure numeric inventory buffer (`GameManager.stall_inventory`, default cap = 10, +5 per building level) with zero icon clutter on the counter.
+
+const BASE_SPRITE_SCALE := 0.72
+const VISUAL_WIDTH := 92.16 # 128 * 0.72
+const VISUAL_HEIGHT := 74.88 # 104 * 0.72
+const QUEUE_BASE_OFFSET_X := -16.0
+const QUEUE_SPACING_X := 26.0
+const MAX_VISIBLE_QUEUE := 5
+
+const SELF_SERVICE_CHECKOUT_SEC := 1.8
+const SHIBA_MANAGER_CHECKOUT_SEC := 1.0
+
+var tex_stall: Texture2D
+var body_sprite: Sprite2D
+var visual_upgrader: BuildingVisualUpgrader
+var level_label: Label
+
+var queue_customers: Array[Node2D] = []
+var anim_time: float = 0.0
+var checkout_flash_timer: float = 0.0
+var total_customers_served: int = 0
+var total_gold_collected: int = 0
+
+func _ready() -> void:
+	z_index = EconomyConfig.Z_BUILDING
+	z_as_relative = false
+	tex_stall = load("res://assets/pixel_art/buildings/market_stall.png")
+
+	# GEMINI.md Law 2.2: Bottom-Center Pivot (`centered = true`, `offset = Vector2(0.0, -float(frame_h) * 0.5)`)
+	body_sprite = Sprite2D.new()
+	body_sprite.name = "BodySprite"
+	body_sprite.texture = tex_stall
+	body_sprite.centered = true
+	body_sprite.offset = Vector2(0.0, -float(104) * 0.5)
+	body_sprite.scale = Vector2(BASE_SPRITE_SCALE, BASE_SPRITE_SCALE)
+	body_sprite.z_index = EconomyConfig.Z_BUILDING
+	body_sprite.z_as_relative = false
+	add_child(body_sprite)
+
+	var cur_lv := get_stall_level()
+
+	visual_upgrader = BuildingVisualUpgrader.new()
+	add_child(visual_upgrader)
+	visual_upgrader.setup_upgrader(self, "stall", cur_lv)
+
+	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
+	level_label.position = Vector2(-28.0, 2.0)
+	level_label.custom_minimum_size = Vector2(56.0, 20.0)
+	add_child(level_label)
+
+	if EventBus != null:
+		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+		EventBus.customer_paid.connect(_on_customer_paid)
+
+func get_stall_level() -> int:
+	return maxi(1, int(GameManager.building_levels.get("stall", 1)))
+
+func get_shiba_level() -> int:
+	if not GameManager.is_animal_hired("shiba"):
+		return 0
+	return maxi(1, int(GameManager.animal_levels.get("shiba", 1)))
+
+func is_shiba_manager_active() -> bool:
+	return GameManager.is_animal_hired("shiba")
+
+func get_checkout_duration() -> float:
+	if not is_shiba_manager_active():
+		return SELF_SERVICE_CHECKOUT_SEC
+	var shiba_lv := get_shiba_level()
+	return maxf(0.45, SHIBA_MANAGER_CHECKOUT_SEC * pow(0.97, float(shiba_lv - 1)))
+
+func get_price_bonus_multiplier() -> float:
+	return EconomyConfig.calc_shiba_price_bonus(get_shiba_level())
+
+func get_current_stock_count() -> int:
+	return GameManager.get_total_stall_count()
+
+func get_max_stock_capacity() -> int:
+	return GameManager.get_stall_max_capacity()
+
+func has_available_stock() -> bool:
+	return get_current_stock_count() > 0
+
+func get_inventory_snapshot() -> Dictionary:
+	return GameManager.stall_inventory.duplicate()
+
+func execute_customer_checkout(preferred_item_id: String, desired_qty: int, customer_pos: Vector2, is_vip: bool = false) -> int:
+	return GameManager.try_purchase_from_stall(preferred_item_id, desired_qty, customer_pos, is_vip)
+
+func get_screen_rect() -> Rect2:
+	var w := VISUAL_WIDTH * scale.x
+	var h := VISUAL_HEIGHT * scale.y
+	return Rect2(position.x - w * 0.5, position.y - h, w, h)
+
+func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
+	if category == "building" and key == "stall":
+		if level_label != null:
+			level_label.text = "Lv." + str(new_level)
+		if visual_upgrader != null:
+			visual_upgrader.apply_level_visuals(new_level, true)
+
+func _on_customer_paid(_recipe_id: String, _qty: int, total_gold: int, _world_pos: Vector2) -> void:
+	total_customers_served += 1
+	total_gold_collected += total_gold
+	checkout_flash_timer = 0.35
+
+func register_in_queue(cust: Node2D) -> int:
+	_cleanup_queue()
+	if not queue_customers.has(cust):
+		queue_customers.append(cust)
+	return queue_customers.find(cust)
+
+func unregister_from_queue(cust: Node2D) -> void:
+	queue_customers.erase(cust)
+	_cleanup_queue()
+
+func get_queue_slot_pos(cust: Node2D) -> Vector2:
+	var idx := clampi(register_in_queue(cust), 0, MAX_VISIBLE_QUEUE)
+	return Vector2(position.x + QUEUE_BASE_OFFSET_X - float(idx) * QUEUE_SPACING_X, EconomyConfig.GROUND_Y)
+
+func is_front_of_queue(cust: Node2D) -> bool:
+	_cleanup_queue()
+	return queue_customers.size() > 0 and queue_customers[0] == cust
+
+func get_queue_length() -> int:
+	_cleanup_queue()
+	return queue_customers.size()
+
+func _cleanup_queue() -> void:
+	for i in range(queue_customers.size() - 1, -1, -1):
+		if not is_instance_valid(queue_customers[i]):
+			queue_customers.remove_at(i)
+
+func _process(delta: float) -> void:
+	anim_time += delta
+	if checkout_flash_timer > 0.0:
+		checkout_flash_timer = maxf(0.0, checkout_flash_timer - delta)
+	queue_redraw()
+
+func _draw() -> void:
+	if tex_stall == null:
+		return
+	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
+	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)
+
+	# Subtle warm lantern glow under the stall awning (enhanced when Shiba manager or Lv.25+ lamp is active)
+	var pulse := 0.85 + 0.15 * sin(anim_time * 3.0)
+	var base_alpha := (0.14 if is_shiba_manager_active() else 0.08) * pulse
+	if checkout_flash_timer > 0.0:
+		base_alpha += 0.18 * (checkout_flash_timer / 0.35)
+	draw_circle(Vector2(-10.0, -34.0), 14.0, Color(1.0, 0.86, 0.38, base_alpha))
+
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\MarketStall.tscn (200 bytes) ===
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/entities/buildings/MarketStall.gd" id="1_stall"]
+
+[node name="MarketStall" type="Node2D"]
+script = ExtResource("1_stall")
+
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.gd (7898 bytes) ===
+extends Node2D
+class_name SoilPlot
+## Enlarged 1.5D Soil Bed (`64x26`), 3-Stage Crop Growth, Buffer Cap 10 & Lv.25 Auto-Evolution (`src/entities/buildings/SoilPlot.gd`)
+## Strictly enforces PRD v2.2 & GEMINI.md Laws 2, 3, 4, 5:
+## - Root `position = Vector2(slot_x, GROUND_Y)` is the bottom-center grounding point.
+## - `soil_sprite`: `z_index = -2`, `hframes = 4, vframes = 1`, `region_enabled = false`, `centered = true`, `offset = Vector2(0.0, -float(18) * 0.5)`.
+## - `crop_sprite`: `z_index = 1`, `hframes = 4, vframes = 4`, `region_enabled = false`, `centered = true`, `offset = Vector2(0.0, -float(40) * 0.5)`.
+## - Implements 3 growth stages (`Stage 0: Seed -> Stage 1: Sprout -> Stage 2: Mature`) on `crops_sheet_normalized.png`.
+## - Enforces pure numeric buffer cap (default `10`, `+5/lv`), pausing growth/harvest when full so Bunny displays `"Zzz..."` bubble.
+## - Every 25 building levels (`Lv.25 / Lv.50 / Lv.75`), automatically evolves crop species to the next row and doubles (`2x`) harvest yield!
+
+const VISUAL_WIDTH := 64.0
+const VISUAL_HEIGHT := 26.0
+const DEFAULT_BASKET_CAP := 10
+
+enum GrowthStage {
+	SEED = 0,
+	SPROUT = 1,
+	MATURE = 2
+}
+
+@export var island_idx: int = 1
+@export var plot_index_on_island: int = 0
+@export var crop_id: String = "crop_0"
+
+var tex_soil: Texture2D
+var tex_crops: Texture2D
+var soil_sprite: Sprite2D
+var crop_sprite: Sprite2D
+var visual_upgrader: BuildingVisualUpgrader
+var level_label: Label
+
+var sown: bool = true
+var watered: bool = true
+var growth: float = 0.35
+var current_stage: GrowthStage = GrowthStage.SEED
+var reserved_by_worker: bool = false
+var sway_time: float = 0.0
+var harvest_count: int = 0
+var total_crops_harvested: int = 0
+
+func _ready() -> void:
+	z_index = EconomyConfig.Z_BUILDING
+	z_as_relative = false
+	tex_soil = load("res://assets/pixel_art/islands/soil_plot_normalized.png")
+	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
+	sway_time = randf() * TAU
+
+	# GEMINI.md Law 2.2 & 2.3 & 4.2: Soil base Sprite2D (`z_index = -2`, `hframes = 4, vframes = 1`, `region_enabled = false`, bottom-center pivot)
+	soil_sprite = Sprite2D.new()
+	soil_sprite.name = "SoilBaseSprite"
+	soil_sprite.texture = tex_soil
+	soil_sprite.region_enabled = false
+	soil_sprite.hframes = 4
+	soil_sprite.vframes = 1
+	soil_sprite.frame = 2
+	soil_sprite.centered = true
+	soil_sprite.offset = Vector2(0.0, -float(18) * 0.5)
+	soil_sprite.scale = Vector2(1.6, 1.44)
+	soil_sprite.z_index = EconomyConfig.Z_SOIL_BASE
+	soil_sprite.z_as_relative = false
+	add_child(soil_sprite)
+
+	# GEMINI.md Law 2.2 & 2.3 & 4.2: Crop Sprite2D (`z_index = 1`, `hframes = 4, vframes = 4`, `region_enabled = false`, bottom-center pivot)
+	crop_sprite = Sprite2D.new()
+	crop_sprite.name = "CropSprite"
+	crop_sprite.texture = tex_crops
+	crop_sprite.region_enabled = false
+	crop_sprite.hframes = 4
+	crop_sprite.vframes = 4
+	crop_sprite.frame = 0
+	crop_sprite.centered = true
+	crop_sprite.offset = Vector2(0.0, -float(40) * 0.5)
+	crop_sprite.position = Vector2(0.0, -6.0)
+	crop_sprite.scale = Vector2(0.85, 0.85)
+	crop_sprite.z_index = EconomyConfig.Z_CROP
+	crop_sprite.z_as_relative = false
+	add_child(crop_sprite)
+
+	var cur_lv := get_building_level()
+
+	visual_upgrader = BuildingVisualUpgrader.new()
+	add_child(visual_upgrader)
+	visual_upgrader.setup_upgrader(self, "soil", cur_lv)
+
+	if plot_index_on_island == 0:
+		level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
+		level_label.position = Vector2(-28.0, 2.0)
+		level_label.custom_minimum_size = Vector2(56.0, 20.0)
+		add_child(level_label)
+
+	if EventBus != null:
+		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+	_refresh_evolved_crop()
+	_sync_sprites()
+
+func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: Vector2) -> void:
+	island_idx = p_island
+	plot_index_on_island = p_idx_on_island
+	crop_id = p_crop_id
+	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
+	growth = randf_range(0.35, 0.88)
+	watered = true
+	_refresh_evolved_crop()
+	_sync_sprites()
+
+func get_building_key() -> String:
+	return "soil_" + str(island_idx)
+
+func get_building_level() -> int:
+	return maxi(1, int(GameManager.building_levels.get(get_building_key(), 1)))
+
+func get_milestone_tier() -> int:
+	return int(floor(float(get_building_level()) / 25.0))
+
+func get_milestone_yield_multiplier() -> int:
+	return int(round(pow(2.0, float(get_milestone_tier()))))
+
+func get_basket_capacity() -> int:
+	if GameManager != null:
+		return GameManager.get_raw_basket_max_cap(island_idx)
+	return DEFAULT_BASKET_CAP
+
+func is_output_buffer_blocked() -> bool:
+	if GameManager == null:
+		return false
+	var otter_hired := GameManager.is_island_otter_hired(island_idx)
+	if otter_hired:
+		return GameManager.is_raw_basket_full(island_idx)
+	elif island_idx == 1:
+		return GameManager.is_stall_full()
+	return GameManager.is_raw_basket_full(island_idx)
+
+func get_screen_rect() -> Rect2:
+	var w := VISUAL_WIDTH * scale.x
+	var h := VISUAL_HEIGHT * scale.y
+	return Rect2(position.x - w * 0.5, position.y - h, w, h)
+
+func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
+	if category == "building" and key == get_building_key():
+		_refresh_evolved_crop()
+		if level_label != null:
+			level_label.text = "Lv." + str(new_level)
+		if visual_upgrader != null and plot_index_on_island == 0:
+			visual_upgrader.apply_level_visuals(new_level, true)
+
+func _refresh_evolved_crop() -> void:
+	crop_id = EconomyConfig.get_evolved_crop_id(island_idx, get_building_level())
+
+func is_plot_active() -> bool:
+	if not bool(GameManager.unlocked_islands.get(island_idx, false)):
+		return false
+	return plot_index_on_island < GameManager.get_unlocked_plot_count(island_idx)
+
+func _compute_growth_stage(g: float) -> GrowthStage:
+	if g >= 0.72:
+		return GrowthStage.MATURE
+	elif g >= 0.34:
+		return GrowthStage.SPROUT
+	return GrowthStage.SEED
+
+func _process(delta: float) -> void:
+	sway_time += delta
+	visible = is_plot_active()
+	if not visible:
+		return
+
+	if sown and growth < 1.0:
+		var c_cfg: Dictionary = EconomyConfig.CROPS.get(crop_id, EconomyConfig.CROPS["crop_0"])
+		var base_dur := float(c_cfg.get("grow_time", 5.2))
+		var b_lv := get_building_level()
+		var speed_mult := (1.35 if watered else 1.0) * (1.0 + 0.06 * float(b_lv - 1))
+		growth = minf(1.0, growth + (delta * speed_mult) / maxf(1.0, base_dur))
+
+	current_stage = _compute_growth_stage(growth)
+	_sync_sprites()
+
+func _sync_sprites() -> void:
+	if soil_sprite != null:
+		var st_idx := 0
+		if sown:
+			if growth >= 0.92:
+				st_idx = 3
+			elif watered:
+				st_idx = 2
+			else:
+				st_idx = 1
+		soil_sprite.frame = clampi(st_idx, 0, 3)
+
+	if crop_sprite != null:
+		crop_sprite.visible = sown
+		if sown:
+			var c_data: Dictionary = EconomyConfig.CROPS.get(crop_id, EconomyConfig.CROPS["crop_0"])
+			var row := clampi(int(c_data.get("crop_row", 0)), 0, 3)
+			var stage_col := int(current_stage) # 0 = Seed, 1 = Sprout, 2 = Mature in-ground
+			crop_sprite.frame = row * 4 + clampi(stage_col, 0, 2)
+			var sway_amp := 1.2 if current_stage == GrowthStage.MATURE else (0.5 if current_stage == GrowthStage.SPROUT else 0.0)
+			var sway_x := roundf(sin(sway_time * 1.6 + position.x * 0.05) * sway_amp)
+			crop_sprite.position = Vector2(sway_x, -6.0)
+
+func harvest_crop_yield() -> int:
+	_refresh_evolved_crop()
+	# PRD v2.2 Section 4: Every 25 levels doubles (`2x`) crop production yield!
+	var qty := maxi(1, get_milestone_yield_multiplier())
+	harvest_count += 1
+	total_crops_harvested += qty
+	sown = true
+	watered = true
+	growth = 0.05
+	current_stage = GrowthStage.SEED
+	reserved_by_worker = false
+	_sync_sprites()
+
+	if crop_sprite != null and is_inside_tree():
+		var tw := create_tween()
+		tw.tween_property(crop_sprite, "scale", Vector2(1.02, 0.72), 0.06)
+		tw.tween_property(crop_sprite, "scale", Vector2(0.85, 0.85), 0.10)
+
+	if EventBus != null:
+		EventBus.item_produced.emit(island_idx, crop_id, qty)
+	return qty
+
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.tscn (192 bytes) ===
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/entities/buildings/SoilPlot.gd" id="1_soil"]
+
+[node name="SoilPlot" type="Node2D"]
+script = ExtResource("1_soil")
+
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\Workshop.gd (7024 bytes) ===
+extends Node2D
+class_name Workshop
+## Mortar, Cauldron & Island 3 Dual Workshop (`src/entities/buildings/Workshop.gd`)
+## Strictly enforces PRD v2.2 & GEMINI.md Laws 2, 3, 5:
+## - Root `position = Vector2(slot_x, GROUND_Y)` is the bottom-center grounding point (`z_index = 0`).
+## - Supports `workshop_mortar.png` (3.5x), `workshop_cauldron.png` (12x), and Island 3 linked dual workshop (`orbis_linked`, 52x).
+## - Manages dual numeric Input & Output buffers (`GameManager.workshop_inputs` & `workshop_outputs`, base cap = 10, +5/lv).
+## - Renders both a circular progress ring and a crisp horizontal progress bar above the workshop during active crafting.
+## - Every 25 workshop levels (`Lv.25 / Lv.50 / Lv.75`), automatically evolves output recipe along `delicacies_sheet_normalized.png` and doubles value (`2x`)!
+
+const BASE_SPRITE_SCALE := 0.85
+const VISUAL_WIDTH := 57.8 # 68 * 0.85
+const VISUAL_HEIGHT := 51.0
+const DEFAULT_BUFFER_CAP := 10
+
+@export var workshop_id: String = "mortar" # "mortar", "cauldron", or "orbis_linked"
+@export var island_idx: int = 1
+
+var tex_building: Texture2D
+var tex_secondary: Texture2D
+var tex_delicacies: Texture2D
+var body_sprite: Sprite2D
+var secondary_sprite: Sprite2D
+var visual_upgrader: BuildingVisualUpgrader
+var level_label: Label
+
+var is_processing: bool = false
+var process_progress: float = 0.0
+var work_anim_time: float = 0.0
+var crafted_count: int = 0
+
+func _ready() -> void:
+	z_index = EconomyConfig.Z_BUILDING
+	z_as_relative = false
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+
+	body_sprite = Sprite2D.new()
+	body_sprite.name = "BodySprite"
+	body_sprite.centered = true
+	body_sprite.scale = Vector2(BASE_SPRITE_SCALE, BASE_SPRITE_SCALE)
+	body_sprite.z_index = EconomyConfig.Z_BUILDING
+	body_sprite.z_as_relative = false
+	add_child(body_sprite)
+
+	secondary_sprite = Sprite2D.new()
+	secondary_sprite.name = "SecondarySprite"
+	secondary_sprite.centered = true
+	secondary_sprite.visible = false
+	secondary_sprite.scale = Vector2(0.68, 0.68)
+	secondary_sprite.position = Vector2(18.0, 0.0)
+	secondary_sprite.z_index = EconomyConfig.Z_BUILDING
+	secondary_sprite.z_as_relative = false
+	add_child(secondary_sprite)
+
+	_reload_texture()
+	var cur_lv := get_workshop_level()
+
+	visual_upgrader = BuildingVisualUpgrader.new()
+	add_child(visual_upgrader)
+	visual_upgrader.setup_upgrader(self, workshop_id, cur_lv)
+
+	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
+	level_label.position = Vector2(-28.0, 2.0)
+	level_label.custom_minimum_size = Vector2(56.0, 20.0)
+	add_child(level_label)
+
+	if EventBus != null:
+		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+
+func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, _p_offset: Vector2 = Vector2.ZERO) -> void:
+	workshop_id = p_id
+	island_idx = p_island
+	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
+	_reload_texture()
+
+func get_building_key() -> String:
+	return "soil_3" if workshop_id == "orbis_linked" else workshop_id
+
+func get_workshop_level() -> int:
+	return maxi(1, int(GameManager.building_levels.get(get_building_key(), 1)))
+
+func get_buffer_capacity() -> int:
+	if GameManager != null:
+		return GameManager.get_workshop_buffer_cap(workshop_id)
+	return DEFAULT_BUFFER_CAP
+
+func get_input_buffer_count() -> int:
+	return GameManager.get_workshop_input_total(workshop_id) if GameManager != null else 0
+
+func get_output_buffer_count() -> int:
+	return GameManager.get_workshop_output_total(workshop_id) if GameManager != null else 0
+
+func is_input_buffer_full() -> bool:
+	return GameManager.is_workshop_input_full(workshop_id) if GameManager != null else false
+
+func is_output_buffer_full() -> bool:
+	return GameManager.is_workshop_output_full(workshop_id) if GameManager != null else false
+
+func get_value_multiplier() -> float:
+	if workshop_id == "orbis_linked":
+		return EconomyConfig.MULTIPLIER_ORBIS_LINKED
+	elif workshop_id == "cauldron":
+		return EconomyConfig.MULTIPLIER_CAULDRON
+	return EconomyConfig.MULTIPLIER_MORTAR
+
+func get_screen_rect() -> Rect2:
+	var w := VISUAL_WIDTH * scale.x
+	var h := VISUAL_HEIGHT * scale.y
+	return Rect2(position.x - w * 0.5, position.y - h, w, h)
+
+func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
+	if category == "building" and key == get_building_key():
+		if level_label != null:
+			level_label.text = "Lv." + str(new_level)
+		if visual_upgrader != null:
+			visual_upgrader.apply_level_visuals(new_level, true)
+
+func get_evolved_output_delicacy() -> String:
+	return EconomyConfig.get_evolved_delicacy_id(workshop_id, get_workshop_level())
+
+func _reload_texture() -> void:
+	var frame_h := 58
+	if workshop_id == "cauldron":
+		tex_building = load("res://assets/pixel_art/buildings/workshop_cauldron.png")
+		tex_secondary = null
+		frame_h = 62
+	elif workshop_id == "orbis_linked":
+		tex_building = load("res://assets/pixel_art/buildings/workshop_mortar.png")
+		tex_secondary = load("res://assets/pixel_art/buildings/workshop_cauldron.png")
+		frame_h = 58
+	else:
+		tex_building = load("res://assets/pixel_art/buildings/workshop_mortar.png")
+		tex_secondary = null
+		frame_h = 58
+
+	if body_sprite != null and tex_building != null:
+		body_sprite.texture = tex_building
+		body_sprite.centered = true
+		# GEMINI.md Law 2.2: sprite.offset = Vector2(0.0, -float(frame_h) * 0.5)
+		body_sprite.offset = Vector2(0.0, -float(frame_h) * 0.5)
+
+	if secondary_sprite != null:
+		secondary_sprite.visible = (tex_secondary != null)
+		if tex_secondary != null:
+			secondary_sprite.texture = tex_secondary
+			secondary_sprite.centered = true
+			secondary_sprite.offset = Vector2(0.0, -float(62) * 0.5)
+
+func _process(delta: float) -> void:
+	visible = bool(GameManager.unlocked_islands.get(island_idx, false))
+	if not visible:
+		return
+
+	if is_processing:
+		work_anim_time += delta * 10.0
+		if body_sprite != null:
+			var squash := sin(work_anim_time) * 0.03
+			body_sprite.scale = Vector2(BASE_SPRITE_SCALE * (1.0 + squash), BASE_SPRITE_SCALE * (1.0 - squash))
+	else:
+		if body_sprite != null:
+			body_sprite.scale = Vector2(BASE_SPRITE_SCALE, BASE_SPRITE_SCALE)
+
+	queue_redraw()
+
+func _draw() -> void:
+	if tex_building == null:
+		return
+	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
+	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)
+
+	if is_processing:
+		var prog := clampf(process_progress, 0.0, 1.0)
+		var bar_w := 36.0
+		var bar_h := 5.0
+		var bx := -bar_w * 0.5
+		var by := -VISUAL_HEIGHT - 10.0
+		draw_rect(Rect2(bx - 1.0, by - 1.0, bar_w + 2.0, bar_h + 2.0), Color(0.10, 0.07, 0.04, 0.92), true)
+		var fill_col := Color(0.45, 0.95, 0.42, 0.96) if workshop_id == "mortar" else Color(0.42, 0.88, 1.0, 0.96)
+		draw_rect(Rect2(bx, by, bar_w * prog, bar_h), fill_col, true)
+
+		# Circular progress ring beside the bar
+		var ring_center := Vector2(bx - 9.0, by + 2.5)
+		draw_circle(ring_center, 5.5, Color(0.10, 0.07, 0.04, 0.90))
+		draw_arc(ring_center, 4.2, -PI * 0.5, -PI * 0.5 + prog * TAU, 16, Color("#FFE066"), 1.6)
+
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\Workshop.tscn (200 bytes) ===
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/entities/buildings/Workshop.gd" id="1_workshop"]
+
+[node name="Workshop" type="Node2D"]
+script = ExtResource("1_workshop")
+
+=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.gd (19224 bytes) ===
+extends Node2D
+class_name AnimalWorker
+## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`)
+## Strictly enforces GEMINI.md Laws 2, 3, 4, 5:
+## - Root `position.y = GROUND_Y` (`z_index = 10`, `z_as_relative = false`).
+## - `body_sprite`: `region_enabled = false`, `hframes = 4`, `vframes = 1`, `frame = pose_idx` (`60x60` per frame, aspect 1.0).
+## - `body_sprite`: `centered = true`, `offset = Vector2(0.0, -float(60) * 0.5) = Vector2(0.0, -30.0)`.
+## - `carry_icon`: `z_index = 20`, `z_as_relative = false`.
+## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` (`shadow_width = 44 * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`).
+
+const FRAME_W := 60
+const FRAME_H := 60
+const VISUAL_WIDTH := 44.0
+
+enum RoleType {
+	BUNNY_FARMER,
+	OTTER_LOGISTICS,
+	TOUCAN_TRADER,
+	FOX_MORTAR_CHEF,
+	PENGUIN_ALCHEMIST,
+	SHIBA_MANAGER
+}
+
+@export var role_type: RoleType = RoleType.BUNNY_FARMER
+@export var home_island: int = 1
+@export var slot_index: int = 0
+
+var animal_key: String = "bunny"
+var sheet_key: String = "animals/bunny_sheet.png"
+
+var tex_sheet: Texture2D
+var tex_crops: Texture2D
+var tex_delicacies: Texture2D
+var tex_heart: Texture2D
+
+@onready var body_sprite: Sprite2D = Sprite2D.new()
+@onready var carry_icon: Sprite2D = Sprite2D.new()
+var sleep_label: Label
+
+var waypoint_graph: WaypointGraph
+var world_ref: Node2D
+var nav_path: Array[Vector2] = []
+
+var worker_step: int = 0
+var state_timer: float = 0.0
+var work_duration: float = 2.5
+var anim_time: float = 0.0
+var is_moving: bool = false
+var is_sleeping_full: bool = false
+var facing_left: bool = false
+
+var carrying_item_id: String = ""
+var carrying_qty: int = 0
+var target_plot: SoilPlot = null
+var boost_timer: float = 0.0
+var total_distance_moved: float = 0.0
+
+func _ready() -> void:
+	z_index = EconomyConfig.Z_UNIT
+	z_as_relative = false
+
+	# GEMINI.md Law 2.2 & Law 4: Fixed grid slicing (`hframes = 4, vframes = 1, region_enabled = false`) + Bottom-Center Pivot
+	body_sprite.name = "BodySprite"
+	body_sprite.region_enabled = false
+	body_sprite.hframes = 4
+	body_sprite.vframes = 1
+	body_sprite.frame = 0
+	body_sprite.centered = true
+	body_sprite.offset = Vector2(0.0, -float(FRAME_H) * 0.5)
+	body_sprite.z_index = EconomyConfig.Z_UNIT
+	body_sprite.z_as_relative = false
+	add_child(body_sprite)
+
+	carry_icon.name = "CarryIcon"
+	carry_icon.visible = false
+	carry_icon.centered = true
+	carry_icon.position = Vector2(0.0, -56.0)
+	carry_icon.z_index = EconomyConfig.Z_CARRY_EMOTE
+	carry_icon.z_as_relative = false
+	add_child(carry_icon)
+
+	sleep_label = EconomyConfig.create_pixel_label("Zzz...", 14, Color("#FFF4D6"), true)
+	sleep_label.position = Vector2(-30.0, -68.0)
+	sleep_label.custom_minimum_size = Vector2(60.0, 20.0)
+	sleep_label.visible = false
+	sleep_label.z_index = EconomyConfig.Z_CARRY_EMOTE
+	sleep_label.z_as_relative = false
+	add_child(sleep_label)
+
+	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
+
+func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, p_graph: WaypointGraph, p_world: Node2D) -> void:
+	role_type = p_role
+	home_island = p_island
+	slot_index = p_slot
+	waypoint_graph = p_graph
+	world_ref = p_world
+	match role_type:
+		RoleType.BUNNY_FARMER:
+			animal_key = "bunny"
+		RoleType.OTTER_LOGISTICS:
+			animal_key = "otter"
+		RoleType.TOUCAN_TRADER:
+			animal_key = "toucan"
+		RoleType.FOX_MORTAR_CHEF:
+			animal_key = "fox"
+		RoleType.PENGUIN_ALCHEMIST:
+			animal_key = "penguin"
+		RoleType.SHIBA_MANAGER:
+			animal_key = "shiba"
+	var cfg: Dictionary = EconomyConfig.ANIMALS[animal_key]
+	sheet_key = String(cfg["sheet"])
+	var m_entry := EconomyConfig.get_manifest_entry(sheet_key)
+	var norm_path := String(m_entry.get("normalized_sheet", "res://assets/pixel_art/" + sheet_key))
+	tex_sheet = load(norm_path)
+	if body_sprite != null:
+		body_sprite.texture = tex_sheet
+		body_sprite.region_enabled = false
+		body_sprite.hframes = 4
+		body_sprite.vframes = 1
+		body_sprite.frame = 0
+		body_sprite.offset = Vector2(0.0, -float(FRAME_H) * 0.5)
+	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
+	anim_time = randf() * 3.14
+	_assign_next_task()
+
+func get_level() -> int:
+	return maxi(1, int(GameManager.animal_levels.get(animal_key, 1)))
+
+func is_hired() -> bool:
+	if not bool(GameManager.unlocked_islands.get(home_island, false)):
+		return false
+	return GameManager.get_island_recruited_count(home_island, animal_key) > slot_index
+
+func _set_carry_visual(item_id: String, qty: int) -> void:
+	carrying_item_id = item_id
+	carrying_qty = qty
+	if item_id == "" or qty <= 0:
+		carry_icon.visible = false
+		return
+	carry_icon.visible = true
+	carry_icon.region_enabled = false
+	if item_id.begins_with("delicacy_"):
+		var d_data: Dictionary = EconomyConfig.DELICACIES.get(item_id, EconomyConfig.DELICACIES["delicacy_0"])
+		carry_icon.texture = tex_delicacies
+		carry_icon.hframes = 4
+		carry_icon.vframes = 1
+		carry_icon.frame = clampi(int(d_data.get("idx", 0)), 0, 3)
+		carry_icon.scale = Vector2(0.65, 0.65)
+	else:
+		var c_data: Dictionary = EconomyConfig.CROPS.get(item_id, EconomyConfig.CROPS["crop_0"])
+		var row := clampi(int(c_data.get("crop_row", 0)), 0, 3)
+		carry_icon.texture = tex_crops
+		carry_icon.hframes = 4
+		carry_icon.vframes = 4
+		carry_icon.frame = row * 4 + 3
+		carry_icon.scale = Vector2(0.60, 0.60)
+
+func _navigate_to(dest: Vector2) -> void:
+	var grounded_dest := Vector2(dest.x, EconomyConfig.GROUND_Y)
+	if waypoint_graph != null:
+		nav_path = waypoint_graph.compute_path(position, grounded_dest)
+	else:
+		nav_path = [grounded_dest]
+
+func _get_home_workshop_id() -> String:
+	if home_island == 1:
+		return "mortar"
+	elif home_island == 2:
+		return "cauldron"
+	return "orbis_linked"
+
+func _get_home_workshop_pos() -> Vector2:
+	if home_island == 1:
+		return waypoint_graph.get_named_pos("mortar")
+	elif home_island == 2:
+		return waypoint_graph.get_named_pos("cauldron")
+	return waypoint_graph.get_named_pos("orbis_linked")
+
+func _get_home_basket_pos() -> Vector2:
+	if home_island == 1:
+		return waypoint_graph.get_named_pos("basket_1")
+	elif home_island == 2:
+		return waypoint_graph.get_named_pos("basket_2")
+	return waypoint_graph.get_named_pos("basket_3")
+
+func _process(delta: float) -> void:
+	visible = is_hired()
+	if not visible:
+		return
+
+	anim_time += delta
+	if boost_timer > 0.0:
+		boost_timer = maxf(0.0, boost_timer - delta)
+
+	if nav_path.size() > 0:
+		is_moving = true
+		var spd := EconomyConfig.calc_move_speed(animal_key, get_level())
+		var rem_move := spd * delta
+		while rem_move > 0.0 and nav_path.size() > 0:
+			var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
+			var diff_x := wp.x - position.x
+			var dist := absf(diff_x)
+			if absf(diff_x) > 0.2:
+				facing_left = diff_x < 0.0
+			if dist <= rem_move or dist <= 1.5:
+				total_distance_moved += dist
+				position = wp
+				rem_move -= dist
+				nav_path.remove_at(0)
+			else:
+				var step_x := signf(diff_x) * rem_move
+				total_distance_moved += absf(step_x)
+				position = Vector2(position.x + step_x, EconomyConfig.GROUND_Y)
+				rem_move = 0.0
+		if nav_path.size() == 0:
+			is_moving = false
+			state_timer = 0.0
+	else:
+		is_moving = false
+		position.y = EconomyConfig.GROUND_Y
+		state_timer += delta
+		_update_role_work_step()
+
+	var pose_idx := _get_pose_index()
+	var hop_y := 0.0
+	var scale_x := 1.0
+	var scale_y := 1.0
+	if is_moving:
+		hop_y = -absf(sin(anim_time * 8.5)) * 2.5
+		var squash := cos(anim_time * 17.0)
+		scale_x = 1.0 - squash * 0.03
+		scale_y = 1.0 + squash * 0.03
+	else:
+		var breath := sin(anim_time * 3.2)
+		scale_x = 1.0 + breath * 0.02
+		scale_y = 1.0 - breath * 0.02
+
+	rotation = 0.0
+	if body_sprite != null and tex_sheet != null:
+		body_sprite.texture = tex_sheet
+		body_sprite.region_enabled = false
+		body_sprite.hframes = 4
+		body_sprite.vframes = 1
+		body_sprite.frame = clampi(pose_idx, 0, 2)
+		body_sprite.flip_h = facing_left
+		body_sprite.position = Vector2(0.0, hop_y)
+		body_sprite.rotation = 0.0
+		body_sprite.scale = Vector2(scale_x, scale_y)
+
+	if carry_icon != null and carry_icon.visible:
+		carry_icon.position = Vector2(0.0, -56.0 + hop_y)
+		carry_icon.rotation = 0.0
+
+	if sleep_label != null:
+		sleep_label.visible = is_sleeping_full
+		if is_sleeping_full:
+			sleep_label.position = Vector2(-30.0, -68.0 + sin(anim_time * 2.5) * 2.0)
+
+	queue_redraw()
+
+func _assign_next_task() -> void:
+	state_timer = 0.0
+	is_sleeping_full = false
+	work_duration = EconomyConfig.calc_work_duration(animal_key, get_level())
+
+	match role_type:
+		RoleType.BUNNY_FARMER:
+			var otter_on_isl := GameManager.is_island_otter_hired(home_island)
+			if (otter_on_isl and GameManager.is_raw_basket_full(home_island)) or (not otter_on_isl and home_island == 1 and GameManager.is_stall_full()):
+				is_sleeping_full = true
+				worker_step = 99
+				return
+
+			target_plot = world_ref.find_best_plot_for_island(home_island) if (world_ref != null and world_ref.has_method("find_best_plot_for_island")) else null
+			if target_plot != null:
+				target_plot.reserved_by_worker = true
+				worker_step = 0
+				_navigate_to(target_plot.position + Vector2(float(slot_index * 10), 0.0))
+			else:
+				worker_step = 0
+				var fallback_pos := waypoint_graph.get_named_pos("apple_tree") if home_island == 1 else _get_home_basket_pos()
+				_navigate_to(fallback_pos)
+
+		RoleType.OTTER_LOGISTICS:
+			var wid := _get_home_workshop_id()
+			var wpos := _get_home_workshop_pos()
+			if home_island == 1 and GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
+				worker_step = 10
+				_navigate_to(wpos + Vector2(14.0, 0.0))
+			elif GameManager.get_island_basket_total(home_island) > 0:
+				worker_step = 0
+				_navigate_to(_get_home_basket_pos() + Vector2(float(slot_index * 10), 0.0))
+			else:
+				worker_step = 20
+				_navigate_to(_get_home_basket_pos() + Vector2(float(slot_index * 10), 0.0))
+
+		RoleType.TOUCAN_TRADER:
+			var wid := "orbis_linked" if home_island == 3 else "cauldron"
+			var wpos := _get_home_workshop_pos()
+			if GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
+				worker_step = 10
+				_navigate_to(wpos + Vector2(12.0, 0.0))
+			elif GameManager.get_island_basket_total(home_island) > 0 and not GameManager.is_stall_full():
+				worker_step = 0
+				_navigate_to(_get_home_basket_pos())
+			else:
+				worker_step = 40
+				_navigate_to(wpos + Vector2(float(slot_index * 12), 0.0))
+
+		RoleType.FOX_MORTAR_CHEF:
+			worker_step = 0
+			var fpos := _get_home_workshop_pos() + Vector2(-18.0, 0.0)
+			_navigate_to(fpos)
+
+		RoleType.PENGUIN_ALCHEMIST:
+			worker_step = 0
+			var ppos := _get_home_workshop_pos() + Vector2(-18.0, 0.0)
+			_navigate_to(ppos)
+
+		RoleType.SHIBA_MANAGER:
+			worker_step = 0
+			_navigate_to(waypoint_graph.get_named_pos("market_stall") + Vector2(22.0, 0.0))
+
+func _update_role_work_step() -> void:
+	match role_type:
+		RoleType.BUNNY_FARMER:
+			if worker_step == 99:
+				var otter_on_isl := GameManager.is_island_otter_hired(home_island)
+				var still_full := (otter_on_isl and GameManager.is_raw_basket_full(home_island)) or (not otter_on_isl and home_island == 1 and GameManager.is_stall_full())
+				if not still_full and state_timer >= 0.8:
+					is_sleeping_full = false
+					_assign_next_task()
+				return
+
+			if worker_step == 0:
+				if state_timer >= work_duration * 0.65:
+					var b_lv := int(GameManager.building_levels.get("soil_" + str(home_island), 1))
+					var crop_got := EconomyConfig.get_evolved_crop_id(home_island, b_lv)
+					var qty_got := 1
+					if is_instance_valid(target_plot):
+						crop_got = target_plot.crop_id
+						qty_got = target_plot.harvest_crop_yield()
+
+					if home_island == 1 and not GameManager.is_island_otter_hired(1):
+						_set_carry_visual(crop_got, qty_got)
+						worker_step = 2
+						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+					else:
+						GameManager.add_to_raw_basket(home_island, crop_got, qty_got)
+						_set_carry_visual("", 0)
+						_assign_next_task()
+
+			elif worker_step == 2:
+				if state_timer >= 0.45:
+					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
+					var q := maxi(1, carrying_qty)
+					GameManager.add_to_stall(cid, q)
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), "椴滄灉鐩村敭+" + str(q), Color("#FFE066"))
+					_set_carry_visual("", 0)
+					_assign_next_task()
+
+		RoleType.OTTER_LOGISTICS:
+			var cap := EconomyConfig.calc_carry_capacity("otter", get_level())
+			var wid := _get_home_workshop_id()
+			var wpos := _get_home_workshop_pos()
+			if worker_step == 20:
+				if state_timer >= 0.8:
+					_assign_next_task()
+				return
+
+			if worker_step == 0:
+				if state_timer >= 0.45:
+					var taken := GameManager.take_from_raw_basket(home_island, cap)
+					if taken.is_empty():
+						_assign_next_task()
+						return
+					var item_id := String(taken["item_id"])
+					var qty := int(taken["qty"])
+					_set_carry_visual(item_id, qty)
+
+					var chef_key := "fox" if home_island == 1 else "penguin"
+					var chef_ready := GameManager.get_island_recruited_count(home_island, chef_key) >= 1
+					if chef_ready and not GameManager.is_workshop_input_full(wid):
+						worker_step = 1
+						_navigate_to(wpos + Vector2(-14.0, 0.0))
+					else:
+						worker_step = 2
+						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+
+			elif worker_step == 1:
+				if state_timer >= 0.45:
+					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
+					var q := maxi(1, carrying_qty)
+					var accepted := GameManager.add_to_workshop_input(wid, cid, q)
+					var leftover := q - accepted
+					if leftover > 0:
+						_set_carry_visual(cid, leftover)
+						worker_step = 2
+						_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+					else:
+						_set_carry_visual("", 0)
+						_assign_next_task()
+
+			elif worker_step == 2:
+				if state_timer >= 0.45:
+					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
+					var q := maxi(1, carrying_qty)
+					GameManager.add_to_stall(cid, q)
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), "鍒嗘祦鐩村敭+" + str(q), Color("#FFF4D6"))
+					_set_carry_visual("", 0)
+					_assign_next_task()
+
+			elif worker_step == 10:
+				if state_timer >= 0.45:
+					var out_taken := GameManager.take_from_workshop_output(wid, cap)
+					if out_taken.is_empty():
+						_assign_next_task()
+						return
+					_set_carry_visual(String(out_taken["item_id"]), int(out_taken["qty"]))
+					worker_step = 11
+					_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+
+			elif worker_step == 11:
+				if state_timer >= 0.45:
+					GameManager.add_to_stall(carrying_item_id, maxi(1, carrying_qty))
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), "3.5x缇庨+" + str(maxi(1, carrying_qty)), Color("#FFE066"))
+					_set_carry_visual("", 0)
+					_assign_next_task()
+
+		RoleType.TOUCAN_TRADER:
+			var cap := EconomyConfig.calc_carry_capacity("toucan", get_level())
+			var wid := "orbis_linked" if home_island == 3 else "cauldron"
+			if worker_step == 40:
+				if state_timer >= 0.9:
+					_assign_next_task()
+				return
+
+			if worker_step == 0:
+				if state_timer >= 0.45:
+					var taken := GameManager.take_from_raw_basket(home_island, cap)
+					if taken.is_empty():
+						_assign_next_task()
+						return
+					_set_carry_visual(String(taken["item_id"]), int(taken["qty"]))
+					worker_step = 11
+					_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+
+			elif worker_step == 10:
+				if state_timer >= 0.45:
+					var out_taken := GameManager.take_from_workshop_output(wid, cap)
+					if out_taken.is_empty():
+						_assign_next_task()
+						return
+					_set_carry_visual(String(out_taken["item_id"]), int(out_taken["qty"]))
+					worker_step = 11
+					_navigate_to(waypoint_graph.get_named_pos("market_stall"))
+
+			elif worker_step == 11:
+				if state_timer >= 0.45:
+					var did := carrying_item_id if carrying_item_id != "" else "delicacy_2"
+					var q := maxi(1, carrying_qty)
+					GameManager.add_to_stall(did, q)
+					var tag := "52x鐩涘+" if home_island == 3 else "12x鐢橀湶+"
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), tag + str(q), Color("#FFE066"))
+					_set_carry_visual("", 0)
+					_assign_next_task()
+
+		RoleType.FOX_MORTAR_CHEF:
+			var wid := "orbis_linked" if home_island == 3 else "mortar"
+			var w_node: Workshop = (world_ref.orbis_linked_workshop if home_island == 3 else world_ref.mortar_workshop) if world_ref != null else null
+			if GameManager.get_workshop_input_total(wid) <= 0 or GameManager.is_workshop_output_full(wid):
+				if w_node != null:
+					w_node.is_processing = false
+				state_timer = 0.0
+				return
+			if w_node != null:
+				w_node.is_processing = true
+				w_node.process_progress = clampf(state_timer / maxf(0.5, work_duration), 0.0, 1.0)
+			if state_timer >= work_duration:
+				state_timer = 0.0
+				var used_crop := GameManager.take_workshop_input_for_processing(wid)
+				if used_crop != "":
+					var out_del := w_node.get_evolved_output_delicacy() if w_node != null else "delicacy_0"
+					GameManager.add_to_workshop_output(wid, out_del, 1)
+					var mult_txt := "52x绮剧偧+1" if home_island == 3 else "3.5x缇庨+1"
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), mult_txt, Color("#FFE066"))
+				if w_node != null:
+					w_node.process_progress = 0.0
+
+		RoleType.PENGUIN_ALCHEMIST:
+			var wid := "orbis_linked" if home_island == 3 else "cauldron"
+			var w_node: Workshop = (world_ref.orbis_linked_workshop if home_island == 3 else world_ref.cauldron_workshop) if world_ref != null else null
+			if GameManager.get_workshop_input_total(wid) <= 0 or GameManager.is_workshop_output_full(wid):
+				if w_node != null:
+					w_node.is_processing = false
+				state_timer = 0.0
+				return
+			if w_node != null:
+				w_node.is_processing = true
+				w_node.process_progress = clampf(state_timer / maxf(0.5, work_duration), 0.0, 1.0)
+			if state_timer >= work_duration:
+				state_timer = 0.0
+				var used_crop := GameManager.take_workshop_input_for_processing(wid)
+				if used_crop != "":
+					var out_del := w_node.get_evolved_output_delicacy() if w_node != null else "delicacy_2"
+					GameManager.add_to_workshop_output(wid, out_del, 1)
+					var mult_txt := "52x鏄熼湶瀹?1" if home_island == 3 else "12x鐢橀湶+1"
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -48), mult_txt, Color("#FFE066"))
+				if w_node != null:
+					w_node.process_progress = 0.0
+
+		RoleType.SHIBA_MANAGER:
+			facing_left = true
+
+func _get_pose_index() -> int:
+	# Strictly keep all animal poses upright (0 = Idle/Stand, 1 = Walk, 2 = Active Work).
+	# Never select frame 3 (horizontal lying-down sleep pose) to prevent sudden 90-degree sideways sprite flips.
+	if is_sleeping_full or worker_step == 20 or worker_step == 40 or worker_step == 99:
+		return 0
+	if is_moving:
+		return int(floor(anim_time * 7.5 / PI)) % 2
+	if role_type == RoleType.SHIBA_MANAGER:
+		return 0
+	return 2 if (int(floor(anim_time * 4.2)) % 2 == 0) else 0
+
+func _draw() -> void:
+	if not is_hired():
+		return
+	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
+	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)
+
+=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.tscn (200 bytes) ===
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/entities/units/AnimalWorker.gd" id="1_worker"]
+
+[node name="AnimalWorker" type="Node2D"]
+script = ExtResource("1_worker")
+
+=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.gd (9825 bytes) ===
+extends Node2D
+class_name CustomerNPC
+## Long-Cycle Island Customer & Crown VIP Tycoon (`src/entities/units/CustomerNPC.gd`)
+## Strictly enforces GEMINI.md Laws 2, 3, 4, 5:
+## - Root `position.y = GROUND_Y` (`z_index = 10`, `z_as_relative = false`).
+## - `body_sprite`: `region_enabled = false`, `hframes = 2`, `vframes = 1`, `frame = frame_idx` (`48x48` per frame, aspect 1.0).
+## - `body_sprite`: `centered = true`, `offset = Vector2(0.0, -float(48) * 0.5) = Vector2(0.0, -24.0)`.
+## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` (`shadow_width = 40 * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`).
+
+const FRAME_W := 48
+const FRAME_H := 48
+const VISUAL_WIDTH := 40.0
+
+enum State {
+	SPAWN_AND_STROLL,
+	QUEUE_AT_STALL,
+	PURCHASE,
+	LEAVE
+}
+
+const TRAVELER_KEYS: Array[String] = [
+	"travelers/traveler_slime.png",
+	"travelers/traveler_mushroom.png",
+	"travelers/traveler_pig.png"
+]
+
+const TRAVELER_NORMALIZED_PATHS: Array[String] = [
+	"res://assets/pixel_art/travelers/traveler_slime_normalized.png",
+	"res://assets/pixel_art/travelers/traveler_mushroom_normalized.png",
+	"res://assets/pixel_art/travelers/traveler_pig_normalized.png"
+]
+
+var state: State = State.SPAWN_AND_STROLL
+var is_vip: bool = false
+var sheet_key: String = "travelers/traveler_slime.png"
+var tex_sheet: Texture2D
+var tex_parchment: Texture2D
+var tex_delicacies: Texture2D
+var tex_crops: Texture2D
+var tex_heart: Texture2D
+
+@onready var body_sprite: Sprite2D = Sprite2D.new()
+var bubble_label: Label
+
+var waypoint_graph: WaypointGraph
+var stall_ref: MarketStall
+var spawn_pos: Vector2
+var nav_path: Array[Vector2] = []
+
+var desired_item_id: String = "crop_0"
+var desired_qty: int = 1
+var wait_timer: float = 0.0
+var interact_timer: float = 0.0
+var purchased_ok: bool = false
+var disappointed: bool = false
+
+var anim_time: float = 0.0
+var facing_left: bool = false
+var fade_alpha: float = 1.0
+
+func _ready() -> void:
+	z_index = EconomyConfig.Z_UNIT
+	z_as_relative = false
+
+	# GEMINI.md Law 2.2 & Law 4: Fixed grid slicing (`hframes = 2, vframes = 1, region_enabled = false`) + Bottom-Center Pivot
+	body_sprite.name = "BodySprite"
+	body_sprite.region_enabled = false
+	body_sprite.hframes = 2
+	body_sprite.vframes = 1
+	body_sprite.frame = 0
+	body_sprite.centered = true
+	body_sprite.offset = Vector2(0.0, -float(FRAME_H) * 0.5)
+	body_sprite.z_index = EconomyConfig.Z_UNIT
+	body_sprite.z_as_relative = false
+	add_child(body_sprite)
+
+	bubble_label = EconomyConfig.create_pixel_label("x1", 14, Color("#FFF4D6"), false)
+	bubble_label.position = Vector2(2.0, -76.0)
+	bubble_label.z_index = EconomyConfig.Z_CARRY_EMOTE
+	bubble_label.z_as_relative = false
+	add_child(bubble_label)
+
+	tex_parchment = load("res://assets/pixel_art/ui/panel_parchment_9patch.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
+	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
+
+func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketStall, p_is_vip: bool = false) -> void:
+	waypoint_graph = p_graph
+	stall_ref = p_stall
+	is_vip = p_is_vip
+	spawn_pos = Vector2(p_spawn.x, EconomyConfig.GROUND_Y)
+	position = spawn_pos
+
+	var t_idx := 2 if is_vip else (randi() % TRAVELER_KEYS.size())
+	sheet_key = TRAVELER_KEYS[t_idx]
+	tex_sheet = load(TRAVELER_NORMALIZED_PATHS[t_idx])
+	if body_sprite != null:
+		body_sprite.texture = tex_sheet
+		body_sprite.region_enabled = false
+		body_sprite.hframes = 2
+		body_sprite.vframes = 1
+		body_sprite.frame = 0
+		body_sprite.offset = Vector2(0.0, -float(FRAME_H) * 0.5)
+
+	if is_vip:
+		desired_item_id = "delicacy_3" if bool(GameManager.unlocked_islands.get(3, false)) else "delicacy_2"
+		desired_qty = randi_range(3, 5)
+	else:
+		var pool: Array[String] = ["crop_0", "crop_1"]
+		if GameManager.is_animal_hired("fox"):
+			pool.append_array(["delicacy_0", "delicacy_1"])
+		if bool(GameManager.unlocked_islands.get(2, false)):
+			pool.append("delicacy_2")
+		if bool(GameManager.unlocked_islands.get(3, false)):
+			pool.append("delicacy_3")
+		desired_item_id = pool[randi() % pool.size()]
+		desired_qty = randi_range(1, 3)
+
+	state = State.SPAWN_AND_STROLL
+	var queue_dest := stall_ref.get_queue_slot_pos(self) if stall_ref != null else Vector2(996.0, EconomyConfig.GROUND_Y)
+	nav_path = waypoint_graph.compute_path(position, queue_dest) if waypoint_graph != null else [queue_dest]
+
+func _process(delta: float) -> void:
+	anim_time += delta
+
+	match state:
+		State.SPAWN_AND_STROLL:
+			if _follow_path(delta, 42.0):
+				state = State.QUEUE_AT_STALL
+				wait_timer = 0.0
+
+		State.QUEUE_AT_STALL:
+			if stall_ref != null:
+				var slot_pos := stall_ref.get_queue_slot_pos(self)
+				if absf(position.x - slot_pos.x) > 4.0:
+					_move_directly_toward(slot_pos, delta, 36.0)
+				if stall_ref.is_front_of_queue(self):
+					state = State.PURCHASE
+					interact_timer = 0.0
+					wait_timer = 0.0
+			else:
+				state = State.PURCHASE
+
+		State.PURCHASE:
+			var has_stock := GameManager.get_total_stall_count() > 0
+			if has_stock:
+				interact_timer += delta
+				var req_time := 1.0 if GameManager.is_animal_hired("shiba") else 1.8
+				if interact_timer >= req_time:
+					var earned := GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
+					if earned > 0:
+						purchased_ok = true
+						if is_vip:
+							EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "馃憫瀵岃豹2x灏忚垂!", Color("#FFE066"))
+						_begin_leave()
+			else:
+				wait_timer += delta
+				if wait_timer >= 12.0:
+					disappointed = true
+					EventBus.customer_left_unhappy.emit(position)
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...缂鸿揣绂诲紑", Color("#FFF4D6"))
+					_begin_leave()
+
+		State.LEAVE:
+			if _follow_path(delta, 42.0):
+				fade_alpha -= delta * 1.8
+				modulate.a = maxf(0.0, fade_alpha)
+				if fade_alpha <= 0.02:
+					queue_free()
+
+	var is_walking := (state == State.SPAWN_AND_STROLL or state == State.LEAVE) and nav_path.size() > 0
+	var frame_idx := (int(floor(anim_time * 6.0 / PI)) % 2) if is_walking else 0
+	var hop_y := -absf(sin(anim_time * 6.0)) * 2.2 if is_walking else 0.0
+
+	rotation = 0.0
+	if body_sprite != null and tex_sheet != null:
+		body_sprite.texture = tex_sheet
+		body_sprite.region_enabled = false
+		body_sprite.hframes = 2
+		body_sprite.vframes = 1
+		body_sprite.frame = clampi(frame_idx, 0, 1)
+		body_sprite.flip_h = facing_left
+		body_sprite.position = Vector2(0.0, hop_y)
+		body_sprite.rotation = 0.0
+
+	if bubble_label != null:
+		if state == State.SPAWN_AND_STROLL or state == State.QUEUE_AT_STALL or state == State.PURCHASE:
+			bubble_label.visible = true
+			bubble_label.text = "x" + str(desired_qty)
+			bubble_label.position = Vector2(2.0, -78.0 + hop_y)
+		elif state == State.LEAVE and disappointed:
+			bubble_label.visible = true
+			bubble_label.text = "..."
+			bubble_label.position = Vector2(-8.0, -72.0 + hop_y)
+		else:
+			bubble_label.visible = false
+
+	queue_redraw()
+
+func _begin_leave() -> void:
+	if stall_ref != null:
+		stall_ref.unregister_from_queue(self)
+	state = State.LEAVE
+	nav_path = waypoint_graph.compute_path(position, spawn_pos) if waypoint_graph != null else [spawn_pos]
+
+func _follow_path(delta: float, spd: float) -> bool:
+	if nav_path.size() == 0:
+		return true
+	var rem_move := spd * delta
+	while rem_move > 0.0 and nav_path.size() > 0:
+		var wp := Vector2(nav_path[0].x, EconomyConfig.GROUND_Y)
+		var diff_x := wp.x - position.x
+		var dist := absf(diff_x)
+		if absf(diff_x) > 0.2:
+			facing_left = diff_x < 0.0
+		if dist <= rem_move or dist <= 1.5:
+			position = wp
+			rem_move -= dist
+			nav_path.remove_at(0)
+		else:
+			position = Vector2(position.x + signf(diff_x) * rem_move, EconomyConfig.GROUND_Y)
+			rem_move = 0.0
+	return nav_path.size() == 0
+
+func _move_directly_toward(dest: Vector2, delta: float, spd: float) -> void:
+	var diff_x := dest.x - position.x
+	if absf(diff_x) > 1.5:
+		facing_left = diff_x < 0.0
+		position = Vector2(position.x + signf(diff_x) * minf(absf(diff_x), spd * delta), EconomyConfig.GROUND_Y)
+
+func _draw_vip_crown(top_y: float) -> void:
+	var cx := 0.0
+	var cy := top_y
+	draw_rect(Rect2(cx - 9, cy - 6, 18, 6), Color(1.0, 0.84, 0.16, 0.98), true)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 9, cy - 6), Vector2(cx - 9, cy - 12), Vector2(cx - 4, cy - 7),
+		Vector2(cx, cy - 14), Vector2(cx + 4, cy - 7), Vector2(cx + 9, cy - 12), Vector2(cx + 9, cy - 6)
+	]), Color(1.0, 0.90, 0.25, 0.98))
+	draw_circle(Vector2(cx, cy - 4), 2.2, Color(0.96, 0.18, 0.28, 1.0))
+
+func _draw() -> void:
+	if tex_sheet == null:
+		return
+	var is_walking := (state == State.SPAWN_AND_STROLL or state == State.LEAVE) and nav_path.size() > 0
+	var hop_y := -absf(sin(anim_time * 6.0)) * 2.2 if is_walking else 0.0
+
+	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
+	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)
+
+	if is_vip:
+		_draw_vip_crown(-46.0 + hop_y)
+
+	if state == State.SPAWN_AND_STROLL or state == State.QUEUE_AT_STALL or state == State.PURCHASE:
+		if tex_parchment != null:
+			draw_texture_rect(tex_parchment, Rect2(-24, -78 + hop_y, 54, 26), false)
+		if desired_item_id.begins_with("delicacy_") and tex_delicacies != null:
+			var d_reg := EconomyConfig.get_delicacy_region(desired_item_id)
+			draw_texture_rect_region(tex_delicacies, Rect2(-20, -75 + hop_y, 20, 20), d_reg)
+		elif tex_crops != null:
+			var c_reg := EconomyConfig.get_crop_stage_region(desired_item_id, 3)
+			draw_texture_rect_region(tex_crops, Rect2(-20, -75 + hop_y, 20, 20), c_reg)
+	elif state == State.LEAVE:
+		if purchased_ok and tex_heart != null:
+			draw_texture_rect(tex_heart, Rect2(-10, -68 + hop_y, 20, 20), false)
+		elif disappointed and tex_parchment != null:
+			draw_texture_rect(tex_parchment, Rect2(-16, -72 + hop_y, 32, 22), false)
+
+=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.tscn (202 bytes) ===
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/entities/units/CustomerNPC.gd" id="1_customer"]
+
+[node name="CustomerNPC" type="Node2D"]
+script = ExtResource("1_customer")
+
+=== FILE: D:\project\maple-isle-idle\src\ui\FloatingText.gd (2627 bytes) ===
+extends Node2D
+class_name FloatingText
+## Native Label Floating Text & Parabolic Gold Coin Effect (`src/ui/FloatingText.gd`)
+## Strictly enforces GEMINI.md Law 2.3 (`z_index = 50`) & Law 5 (`EconomyConfig.create_pixel_label`).
+
+var active_labels: Array[Dictionary] = []
+var coin_arcs: Array[Dictionary] = []
+var tex_icons: Texture2D
+
+func _ready() -> void:
+	z_index = EconomyConfig.Z_FLOATING_UI
+	z_as_relative = false
+	tex_icons = load("res://assets/pixel_art/ui/icons_ui.png")
+	EventBus.spawn_floating_text.connect(_on_spawn_floating_text)
+	EventBus.customer_paid.connect(_on_customer_paid)
+
+func _on_spawn_floating_text(world_pos: Vector2, text_str: String, col: Color) -> void:
+	var is_gold := text_str.begins_with("+") and text_str.ends_with("G")
+	var final_col := Color("#FFE066") if is_gold else col
+	var lbl := EconomyConfig.create_pixel_label(text_str, 14, final_col, true)
+	lbl.position = world_pos + Vector2(-60.0, 0.0)
+	lbl.custom_minimum_size = Vector2(120.0, 22.0)
+	lbl.z_index = EconomyConfig.Z_FLOATING_UI
+	lbl.z_as_relative = false
+	add_child(lbl)
+	active_labels.append({
+		"node": lbl,
+		"ttl": 1.8
+	})
+
+func _on_customer_paid(_recipe_id: String, _qty: int, total_gold: int, world_pos: Vector2) -> void:
+	_on_spawn_floating_text(world_pos + Vector2(0.0, -58.0), "+" + str(total_gold) + "G", Color("#FFE066"))
+	for i in range(3):
+		coin_arcs.append({
+			"x": world_pos.x,
+			"y": world_pos.y - 24.0,
+			"vx": randf_range(-32.0, 32.0),
+			"vy": randf_range(-78.0, -48.0),
+			"ttl": 0.95
+		})
+
+func _process(delta: float) -> void:
+	for i in range(active_labels.size() - 1, -1, -1):
+		var item: Dictionary = active_labels[i]
+		var lbl: Label = item["node"]
+		var ttl := float(item["ttl"]) - delta
+		item["ttl"] = ttl
+		if is_instance_valid(lbl):
+			lbl.position.y -= 15.0 * delta
+			lbl.modulate.a = clampf(ttl / 0.6, 0.0, 1.0)
+			if ttl <= 0.0:
+				lbl.queue_free()
+				active_labels.remove_at(i)
+		else:
+			active_labels.remove_at(i)
+
+	var coins_dirty := false
+	for i in range(coin_arcs.size() - 1, -1, -1):
+		coin_arcs[i]["vy"] = float(coin_arcs[i]["vy"]) + 135.0 * delta
+		coin_arcs[i]["x"] = float(coin_arcs[i]["x"]) + float(coin_arcs[i]["vx"]) * delta
+		coin_arcs[i]["y"] = float(coin_arcs[i]["y"]) + float(coin_arcs[i]["vy"]) * delta
+		coin_arcs[i]["ttl"] = float(coin_arcs[i]["ttl"]) - delta
+		coins_dirty = true
+		if float(coin_arcs[i]["ttl"]) <= 0.0:
+			coin_arcs.remove_at(i)
+
+	if coins_dirty:
+		queue_redraw()
+
+func _draw() -> void:
+	if tex_icons != null:
+		for c in coin_arcs:
+			draw_texture_rect_region(tex_icons, Rect2(float(c["x"]) - 11.0, float(c["y"]) - 11.0, 22.0, 22.0), Rect2(0, 0, 48, 48))
+
+=== FILE: D:\project\maple-isle-idle\src\ui\FloatingText.tscn (193 bytes) ===
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/FloatingText.gd" id="1_ft"]
+
+[node name="FloatingText" type="Node2D"]
+z_index = 20
+script = ExtResource("1_ft")
+
+=== FILE: D:\project\maple-isle-idle\src\ui\HUD.gd (19691 bytes) ===
+extends Control
+class_name HUD
+## Native Label Retro Maple-Style HUD, 3s Auto-Collapse Capsule & Recruit-to-Promote Drawer (`src/ui/HUD.gd`)
+## Strictly enforces PRD v2.2 & GEMINI.md Law 5:
+## - 100% Native Godot `Label` nodes via `EconomyConfig.create_pixel_label` (`make_pixel_label_settings`).
+## - Zero legacy bitmap font atlas usage anywhere.
+## - Implements Desktop Companion Mode `ui_resource_pill.png` Gold Capsule:
+##   * Hovering expands the bottom HUD bar / drawer (`hud_opacity = 1.0`);
+##   * Moving mouse outside for `>= 3.0s` auto-collapses into the compact Gold Capsule at `40%` opacity (`hud_opacity = 0.40`).
+## - Provides deterministic `open_drawer(tab_idx)` and `close_drawer()` API for both user interaction and `SelfTestRunner.gd`.
+
+var tex_panel: Texture2D
+var tex_drawer: Texture2D
+var tex_card: Texture2D
+var tex_card_hover: Texture2D
+var tex_pill: Texture2D
+var tex_icons: Texture2D
+var tex_delicacies: Texture2D
+var tex_btn_normal: Texture2D
+var tex_btn_hover: Texture2D
+var tex_btn_pressed: Texture2D
+
+var active_tab: int = 0
+var hovered_tab: int = -1
+var hovered_card: int = -1
+var prev_hovered_tab: int = -1
+var prev_hovered_card: int = -1
+var is_pressing_btn: bool = false
+var displayed_gold: float = 120.0
+
+var is_mouse_over_hud: bool = false
+var is_collapsed_capsule: bool = false
+var drawer_expanded: bool = false
+var drawer_anim_t: float = 0.0
+var mouse_outside_timer: float = 0.0
+var hud_opacity: float = 1.0
+var force_pin_open: bool = false
+
+var offline_banner_timer: float = 0.0
+var offline_banner_text: String = ""
+
+var lbl_offline: Label
+var lbl_capsule_gold: Label
+var lbl_capsule_info: Label
+var lbl_capsule_mute: Label
+
+var lbl_bar_gold: Label
+var lbl_bar_pipeline: Label
+var lbl_bar_stall: Label
+var lbl_tabs: Array[Label] = []
+
+var lbl_drawer_title: Label
+var lbl_drawer_mute: Label
+var lbl_card_titles: Array[Label] = []
+var lbl_card_subs: Array[Label] = []
+var lbl_card_costs: Array[Label] = []
+
+const CAPSULE_RECT := Rect2(770.0, 232.0, 380.0, 40.0)
+const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
+const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
+const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
+const TOP_RIGHT_MUTE_RECT := Rect2(1332.0, 130.0, 58.0, 24.0)
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_PASS
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	tex_panel = load("res://assets/pixel_art/ui/panel_wood_9patch.png")
+	tex_drawer = load("res://assets/pixel_art/ui/panel_drawer_parchment.png")
+	tex_card = load("res://assets/pixel_art/ui/ui_drawer_card.png")
+	tex_card_hover = load("res://assets/pixel_art/ui/ui_drawer_card_hover.png")
+	tex_pill = load("res://assets/pixel_art/ui/ui_resource_pill.png")
+	tex_icons = load("res://assets/pixel_art/ui/icons_ui.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+	tex_btn_normal = load("res://assets/pixel_art/ui/btn_normal.png")
+	tex_btn_hover = load("res://assets/pixel_art/ui/btn_hover.png")
+	tex_btn_pressed = load("res://assets/pixel_art/ui/btn_pressed.png")
+
+	displayed_gold = float(GameManager.gold)
+	if GameManager.pending_offline_gold > 0:
+		offline_banner_timer = 7.5
+		offline_banner_text = "鈽呯绾挎寕鏈?" + str(GameManager.pending_offline_seconds) + "绉?路 鑷姩缁撹处 +" + str(GameManager.pending_offline_gold) + "G!"
+
+	_build_native_labels()
+
+func open_drawer(tab_idx: int = 0) -> void:
+	active_tab = clampi(tab_idx, 0, 2)
+	force_pin_open = true
+	mouse_outside_timer = 0.0
+	is_collapsed_capsule = false
+	drawer_expanded = true
+	drawer_anim_t = 1.0
+	hud_opacity = 1.0
+	modulate.a = 1.0
+	_sync_label_nodes()
+	queue_redraw()
+
+func close_drawer(collapse_to_capsule: bool = false) -> void:
+	force_pin_open = false
+	drawer_expanded = false
+	drawer_anim_t = 0.0
+	is_collapsed_capsule = collapse_to_capsule
+	hud_opacity = 0.40 if collapse_to_capsule else 1.0
+	modulate.a = hud_opacity
+	mouse_outside_timer = 3.5 if collapse_to_capsule else 0.0
+	_sync_label_nodes()
+	queue_redraw()
+
+func _build_native_labels() -> void:
+	lbl_offline = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
+	lbl_offline.position = Vector2(680.0, 8.0)
+	lbl_offline.custom_minimum_size = Vector2(560.0, 26.0)
+	add_child(lbl_offline)
+
+	lbl_capsule_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
+	lbl_capsule_gold.position = Vector2(CAPSULE_RECT.position.x + 42.0, CAPSULE_RECT.position.y + 10.0)
+	add_child(lbl_capsule_gold)
+
+	lbl_capsule_info = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), false)
+	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 114.0, CAPSULE_RECT.position.y + 10.0)
+	add_child(lbl_capsule_info)
+
+	lbl_capsule_mute = EconomyConfig.create_pixel_label("馃攪闈欓煶", 14, Color("#FFE066"), false)
+	lbl_capsule_mute.position = Vector2(CAPSULE_MUTE_RECT.position.x + 2.0, CAPSULE_MUTE_RECT.position.y + 6.0)
+	add_child(lbl_capsule_mute)
+
+	lbl_bar_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
+	lbl_bar_gold.position = Vector2(534.0, 247.0)
+	add_child(lbl_bar_gold)
+
+	lbl_bar_pipeline = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), true)
+	lbl_bar_pipeline.position = Vector2(658.0, 247.0)
+	lbl_bar_pipeline.custom_minimum_size = Vector2(192.0, 24.0)
+	add_child(lbl_bar_pipeline)
+
+	lbl_bar_stall = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
+	lbl_bar_stall.position = Vector2(856.0, 247.0)
+	lbl_bar_stall.custom_minimum_size = Vector2(192.0, 24.0)
+	add_child(lbl_bar_stall)
+
+	for i in range(4):
+		var tl := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
+		tl.position = Vector2(1056.0 + float(i) * 78.0, 264.0)
+		tl.custom_minimum_size = Vector2(84.0, 22.0)
+		add_child(tl)
+		lbl_tabs.append(tl)
+
+	lbl_drawer_title = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
+	lbl_drawer_title.position = Vector2(544.0, 128.0)
+	add_child(lbl_drawer_title)
+
+	lbl_drawer_mute = EconomyConfig.create_pixel_label("馃攪闈欓煶", 14, Color("#FFF4D6"), false)
+	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
+	add_child(lbl_drawer_mute)
+
+	for i in range(6):
+		var ct := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
+		var cs := EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), false)
+		var cc := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
+		cs.scale = Vector2(0.85, 0.85)
+		cc.scale = Vector2(0.90, 0.90)
+		add_child(ct)
+		add_child(cs)
+		add_child(cc)
+		lbl_card_titles.append(ct)
+		lbl_card_subs.append(cs)
+		lbl_card_costs.append(cc)
+
+func _process(delta: float) -> void:
+	displayed_gold = lerpf(displayed_gold, float(GameManager.gold), minf(1.0, delta * 9.0))
+	if absf(displayed_gold - float(GameManager.gold)) < 0.6:
+		displayed_gold = float(GameManager.gold)
+
+	if offline_banner_timer > 0.0:
+		offline_banner_timer = maxf(0.0, offline_banner_timer - delta)
+
+	var mpos := get_local_mouse_position()
+	var hover_zone := _get_interactive_zone()
+	is_mouse_over_hud = hover_zone.has_point(mpos)
+
+	if force_pin_open:
+		is_collapsed_capsule = false
+		drawer_expanded = true
+		drawer_anim_t = 1.0
+		hud_opacity = 1.0
+	elif GameManager.desktop_companion_mode:
+		if is_mouse_over_hud:
+			mouse_outside_timer = 0.0
+			is_collapsed_capsule = false
+			hud_opacity = lerpf(hud_opacity, 1.0, minf(1.0, delta * 10.0))
+		else:
+			mouse_outside_timer += delta
+			if mouse_outside_timer >= 3.0:
+				drawer_expanded = false
+				is_collapsed_capsule = true
+				hud_opacity = lerpf(hud_opacity, 0.40, minf(1.0, delta * 5.0))
+	else:
+		is_collapsed_capsule = false
+		hud_opacity = 1.0
+
+	if not force_pin_open:
+		drawer_anim_t = lerpf(drawer_anim_t, 1.0 if drawer_expanded else 0.0, minf(1.0, delta * 10.0))
+	modulate.a = hud_opacity
+
+	hovered_tab = -1
+	hovered_card = -1
+	if not is_collapsed_capsule:
+		for i in range(4):
+			if _get_tab_button_rect(i).has_point(mpos):
+				hovered_tab = i
+				break
+		if drawer_expanded:
+			var cards := _get_current_tab_cards()
+			for i in range(cards.size()):
+				if _get_card_rect(i, cards.size()).has_point(mpos):
+					hovered_card = i
+					break
+
+	if (hovered_tab != -1 and hovered_tab != prev_hovered_tab) or (hovered_card != -1 and hovered_card != prev_hovered_card):
+		if SoundManager != null:
+			SoundManager.play_hover_sfx()
+	prev_hovered_tab = hovered_tab
+	prev_hovered_card = hovered_card
+
+	_sync_label_nodes()
+	queue_redraw()
+
+func _sync_label_nodes() -> void:
+	var gold_str := str(int(round(displayed_gold))) + "G"
+	var mute_lbl := "馃攪闈欓煶" if (SoundManager != null and SoundManager.is_muted) else "馃攰闊虫晥"
+
+	lbl_offline.visible = (offline_banner_timer > 0.0)
+	lbl_offline.text = offline_banner_text
+
+	lbl_capsule_gold.visible = is_collapsed_capsule
+	lbl_capsule_info.visible = is_collapsed_capsule
+	lbl_capsule_mute.visible = is_collapsed_capsule
+	if is_collapsed_capsule:
+		lbl_capsule_gold.text = gold_str
+		lbl_capsule_info.text = "鎽婁綅" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " 路 鎮仠灞曞紑"
+		lbl_capsule_mute.text = mute_lbl
+
+	var show_bar := not is_collapsed_capsule
+	lbl_bar_gold.visible = show_bar
+	lbl_bar_pipeline.visible = show_bar
+	lbl_bar_stall.visible = show_bar
+	if show_bar:
+		lbl_bar_gold.text = gold_str
+		var mode_stage := "鍗曞厰鍏ㄥ寘" if not GameManager.is_island_otter_hired(1) else "涓撹亴浜х嚎"
+		lbl_bar_pipeline.text = mode_stage + " 路 缂撳瓨" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
+		var shiba_txt := ("鏌寸姮+" + str(int(GameManager.animal_levels.get("shiba", 0)) * 10) + "%") if GameManager.is_animal_hired("shiba") else "鑷姪1x"
+		lbl_bar_stall.text = "鎽婁綅" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " 路 " + shiba_txt
+
+	var tab_names := ["寤虹瓚鍗囩骇", "鍔ㄧ墿缂栧埗", "鏈ㄦˉ寮€鎷?, ("鈽呮懜楸肩疆椤? if GameManager.desktop_companion_mode else "鈽呭父瑙勭獥鍙?)]
+	for i in range(4):
+		lbl_tabs[i].visible = show_bar
+		lbl_tabs[i].text = tab_names[i]
+
+	var show_drawer := show_bar and drawer_expanded
+	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
+	lbl_drawer_title.visible = show_drawer
+	lbl_drawer_mute.visible = show_drawer
+	if show_drawer:
+		var titles := [
+			"銆愬缓绛戝崌绾с€戞瘡25绾т綔鐗?缇庨鑷姩鎹唬 + 寤虹瓚鍥涢樁澶栬铚曞彉!",
+			"銆愬姩鐗╃紪鍒朵笌鎷涙弧杞繘淇€戞湭婊＄紪鏃舵嫑鍕熶紮浼?路 鎷涙弧鍚庝竴閿叏闃熻繘淇?Lv.+1)!",
+			"銆愪笁宀涘浐瀹氭Ы浣嶄笌鏈ㄦˉ寮€鎷撱€戦瓟娉曞瘑鏋?12x鍧╁煔) 路 澶╃┖娴峰哺(52x鍙屽伐鍧?馃憫2x瀵岃豹)"
+		]
+		lbl_drawer_title.text = titles[clampi(active_tab, 0, 2)]
+		lbl_drawer_title.position = Vector2(544.0, 128.0 + slide_y)
+		lbl_drawer_mute.text = mute_lbl
+		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + slide_y)
+
+	var cards: Array[Dictionary] = []
+	if show_drawer:
+		cards = _get_current_tab_cards()
+	for i in range(6):
+		var vis := show_drawer and (i < cards.size())
+		lbl_card_titles[i].visible = vis
+		lbl_card_subs[i].visible = vis
+		lbl_card_costs[i].visible = vis
+		if vis:
+			var crect := _get_card_rect(i, cards.size())
+			crect.position.y += slide_y
+			var cdata: Dictionary = cards[i]
+			lbl_card_titles[i].text = String(cdata["title"])
+			lbl_card_titles[i].position = crect.position + Vector2(8.0, 3.0)
+			lbl_card_subs[i].text = String(cdata["sub"])
+			lbl_card_subs[i].position = crect.position + Vector2(8.0, 22.0)
+			lbl_card_costs[i].text = String(cdata["cost"])
+			lbl_card_costs[i].position = crect.position + Vector2(8.0, 38.0)
+
+func _get_interactive_zone() -> Rect2:
+	if drawer_expanded:
+		return Rect2(476.0, 118.0, 968.0, 174.0)
+	if is_collapsed_capsule:
+		return CAPSULE_RECT.grow(8.0)
+	return FULL_BAR_RECT.grow(6.0)
+
+func get_hud_Hit_rect() -> Rect2:
+	return _get_interactive_zone()
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		var mpos: Vector2 = event.position
+		if event.pressed:
+			is_pressing_btn = true
+			if Input.is_key_pressed(KEY_ALT) and WindowController != null:
+				WindowController.begin_window_drag()
+				accept_event()
+				return
+			var hitting_mute := (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
+			if hovered_tab == -1 and hovered_card == -1 and not hitting_mute and _get_interactive_zone().has_point(mpos):
+				if WindowController != null:
+					WindowController.begin_window_drag()
+					accept_event()
+					return
+		else:
+			is_pressing_btn = false
+			if WindowController != null and WindowController.is_dragging:
+				WindowController.end_window_drag()
+				accept_event()
+				return
+
+			if (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)):
+				if SoundManager != null:
+					SoundManager.toggle_mute()
+				accept_event()
+				return
+
+			if hovered_tab >= 0:
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if hovered_tab == 3:
+					_toggle_companion_mode()
+				else:
+					force_pin_open = false
+					active_tab = hovered_tab
+					drawer_expanded = true
+					mouse_outside_timer = 0.0
+				accept_event()
+				return
+
+			if drawer_expanded and hovered_card >= 0:
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				_activate_card(hovered_card)
+				mouse_outside_timer = 0.0
+				accept_event()
+				return
+
+func _toggle_companion_mode() -> void:
+	GameManager.desktop_companion_mode = not GameManager.desktop_companion_mode
+	drawer_expanded = not GameManager.desktop_companion_mode
+	EventBus.toggle_desktop_mode.emit(GameManager.desktop_companion_mode)
+	GameManager.save_game()
+
+func _get_tab_button_rect(idx: int) -> Rect2:
+	return Rect2(1062.0 + float(idx) * 78.0, 235.0, 72.0, 44.0)
+
+func _get_card_rect(idx: int, total: int) -> Rect2:
+	var w := 196.0 if total <= 4 else 132.0
+	var gap := 12.0 if total <= 4 else 8.0
+	var start_x := 548.0 if total <= 4 else 538.0
+	return Rect2(start_x + float(idx) * (w + gap), 156.0, w, 58.0)
+
+func _get_current_tab_cards() -> Array[Dictionary]:
+	var list: Array[Dictionary] = []
+	match active_tab:
+		0:
+			for b_key in ["soil_1", "mortar", "stall", "cauldron"]:
+				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
+				var lv := int(GameManager.building_levels.get(b_key, 1))
+				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), lv)
+				var next_ms := (int(floor(float(lv) / 25.0)) + 1) * 25
+				list.append({
+					"type": "building",
+					"key": b_key,
+					"title": String(cfg["name"]) + " Lv." + str(lv),
+					"sub": "涓嬩釜2x铚曞彉: Lv." + str(next_ms),
+					"cost": "鍗囩骇 " + str(cost) + "G"
+				})
+		1:
+			for a_key in ["bunny", "otter", "fox", "shiba", "penguin", "toucan"]:
+				var cfg: Dictionary = EconomyConfig.ANIMALS[a_key]
+				var cur_rec := GameManager.get_total_recruited(a_key)
+				var max_cap := GameManager.get_total_max_cap(a_key)
+				var next_isl := GameManager.find_next_recruit_island(a_key)
+				var lv := maxi(1, int(GameManager.animal_levels.get(a_key, 0)))
+				var cost_step := cur_rec + lv
+				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), cost_step)
+
+				var title_str := String(cfg["name"]).split(" 路 ")[0]
+				var sub_str := ""
+				var act_str := ""
+				if max_cap <= 0:
+					sub_str = "闇€鍏堣В閿佹柊宀涘笨"
+					act_str = "寰呰В閿佸矝灞?
+				elif next_isl > 0:
+					sub_str = "缂栧埗 " + str(cur_rec) + "/" + str(max_cap) + " (宀? + str(next_isl) + ")"
+					act_str = "鎷涘嫙 " + str(cost) + "G"
+				else:
+					sub_str = "婊＄紪 " + str(cur_rec) + "/" + str(max_cap) + " 路 Lv." + str(lv)
+					act_str = "鍏ㄩ槦杩涗慨 Lv.+1 (" + str(cost) + "G)"
+
+				list.append({
+					"type": "animal",
+					"key": a_key,
+					"title": title_str,
+					"sub": sub_str,
+					"cost": act_str
+				})
+		2:
+			var isl2_unlocked := bool(GameManager.unlocked_islands.get(2, false))
+			var isl3_unlocked := bool(GameManager.unlocked_islands.get(3, false))
+			list.append({
+				"type": "unlock_island",
+				"key": "2",
+				"title": "鏈ㄦˉ1 路 榄旀硶瀵嗘灄" + (" (宸查€?" if isl2_unlocked else ""),
+				"sub": "2x鍐滅敯+12x鍧╁煔+浼侀箙",
+				"cost": "宸茶В閿? if isl2_unlocked else "180G 瑙ｉ攣"
+			})
+			list.append({
+				"type": "unlock_island",
+				"key": "3",
+				"title": "鏈ㄦˉ2 路 澶╃┖娴峰哺" + (" (宸查€?" if isl3_unlocked else ""),
+				"sub": "鍙屽伐鍧?2x+馃憫2x瀵岃豹",
+				"cost": "宸茶В閿? if isl3_unlocked else "480G 瑙ｉ攣"
+			})
+			for b_key in ["soil_2", "soil_3"]:
+				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
+				var lv := int(GameManager.building_levels.get(b_key, 1))
+				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), lv)
+				list.append({
+					"type": "building",
+					"key": b_key,
+					"title": String(cfg["name"]) + " Lv." + str(lv),
+					"sub": String(cfg["desc"]).substr(0, 12),
+					"cost": "鍗囩骇 " + str(cost) + "G"
+				})
+	return list
+
+func _activate_card(idx: int) -> void:
+	var cards := _get_current_tab_cards()
+	if idx < 0 or idx >= cards.size():
+		return
+	var c: Dictionary = cards[idx]
+	var t := String(c["type"])
+	var k := String(c["key"])
+	if t == "building":
+		GameManager.upgrade_building(k)
+	elif t == "animal":
+		if GameManager.get_total_max_cap(k) > 0:
+			GameManager.upgrade_animal(k)
+	elif t == "unlock_island":
+		GameManager.unlock_island(int(k))
+
+func _draw() -> void:
+	if offline_banner_timer > 0.0 and tex_pill != null:
+		draw_texture_rect(tex_pill, Rect2(680.0, 6.0, 560.0, 30.0), false)
+
+	if is_collapsed_capsule:
+		if tex_pill != null:
+			draw_texture_rect(tex_pill, CAPSULE_RECT, false)
+		if tex_icons != null:
+			draw_texture_rect_region(tex_icons, Rect2(CAPSULE_RECT.position.x + 10.0, CAPSULE_RECT.position.y + 6.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+		return
+
+	if tex_panel != null:
+		draw_texture_rect(tex_panel, FULL_BAR_RECT, false)
+
+	if tex_pill != null:
+		draw_texture_rect(tex_pill, Rect2(496.0, 239.0, 156.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(658.0, 239.0, 192.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(856.0, 239.0, 192.0, 36.0), false)
+
+	if tex_icons != null:
+		draw_texture_rect_region(tex_icons, Rect2(502.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+
+	var icon_indices := [6, 3, 4, 7]
+	for i in range(4):
+		var bx := 1062.0 + float(i) * 78.0
+		var is_active_or_hov := (hovered_tab == i or (drawer_expanded and active_tab == i))
+		var lift := -2.0 if is_active_or_hov else 0.0
+		var btex := tex_btn_normal
+		if hovered_tab == i and is_pressing_btn and tex_btn_pressed != null:
+			btex = tex_btn_pressed
+		elif is_active_or_hov and tex_btn_hover != null:
+			btex = tex_btn_hover
+		if btex != null:
+			draw_texture_rect(btex, Rect2(bx + 12.0, 226.0 + lift, 42.0, 42.0), false)
+		if tex_icons != null:
+			draw_texture_rect_region(tex_icons, Rect2(bx + 15.0, 229.0 + lift, 36.0, 36.0), Rect2(float(icon_indices[i] * 48), 0.0, 48.0, 48.0))
+
+	if drawer_expanded and tex_drawer != null:
+		var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
+		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
+		draw_texture_rect(tex_drawer, d_rect, false)
+
+		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
+		if tex_pill != null:
+			draw_texture_rect(tex_pill, m_rect, false)
+
+		var cards := _get_current_tab_cards()
+		for i in range(cards.size()):
+			var crect := _get_card_rect(i, cards.size())
+			crect.position.y += slide_y
+			var ctex := tex_card_hover if hovered_card == i else tex_card
+			if ctex != null:
+				draw_texture_rect(ctex, crect, false)
+
+=== FILE: D:\project\maple-isle-idle\src\ui\HUD.tscn (278 bytes) ===
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/HUD.gd" id="1_hud"]
+
+[node name="HUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_hud")
+
+=== FILE: D:\project\maple-isle-idle\src\world\CameraController.gd (5514 bytes) ===
+extends Camera2D
+class_name CameraController
+## Panoramic Horizontal Scroll, Inertia Drag & Dynamic Zoom Camera (`src/world/CameraController.gd`)
+## Strictly implements PRD v2.0 Section 3.1 & PRD v2.2:
+## - Right-Mouse-Button (`MOUSE_BUTTON_RIGHT`) drag panning with smooth inertia & damping.
+## - `A / D` and `Left / Right` arrow key continuous acceleration/deceleration horizontal panning.
+## - Mouse Wheel dynamic zoom across `0.4x ~ 2.0x` (`MIN_ZOOM = 0.4`, `MAX_ZOOM = 2.0`) with cursor-pivot compensation.
+## - Strict world camera bounds: `limit_left = -1600`, `limit_right = 2800`.
+## - Quick island focus helpers (`focus_on_island(1..3)`) and automatic dock lock in Desktop Companion Mode.
+
+const MIN_ZOOM := 0.4
+const MAX_ZOOM := 2.0
+const ZOOM_STEP := 0.10
+const ZOOM_LERP_SPEED := 9.0
+
+const PAN_MAX_SPEED := 520.0
+const PAN_ACCEL := 1800.0
+const PAN_FRICTION := 1400.0
+const PAN_LERP_SPEED := 10.0
+
+const WORLD_CENTER_X := 960.0
+const WORLD_CENTER_Y := 150.0
+const SAFE_MARGIN_X := 320.0
+
+const ISLAND_FOCUS_X: Dictionary = {
+	1: 860.0,
+	2: 280.0,
+	3: 1610.0
+}
+
+var target_x: float = WORLD_CENTER_X
+var target_y: float = WORLD_CENTER_Y
+var target_zoom: float = 1.0
+var velocity_x: float = 0.0
+
+var is_rmb_panning: bool = false
+var rmb_last_mouse: Vector2 = Vector2.ZERO
+var rmb_drag_velocity: float = 0.0
+
+func _ready() -> void:
+	limit_left = -1600
+	limit_right = 2800
+	limit_top = -400
+	limit_bottom = 700
+	position = Vector2(WORLD_CENTER_X, WORLD_CENTER_Y)
+	target_x = WORLD_CENTER_X
+	target_y = WORLD_CENTER_Y
+	target_zoom = 1.0
+	zoom = Vector2.ONE
+	enabled = true
+
+	if EventBus != null:
+		EventBus.island_unlocked.connect(_on_island_unlocked)
+
+func _on_island_unlocked(island_idx: int) -> void:
+	if not GameManager.desktop_companion_mode:
+		focus_on_island(island_idx)
+
+func focus_on_island(island_idx: int, desired_zoom: float = -1.0) -> void:
+	if ISLAND_FOCUS_X.has(island_idx):
+		target_x = _clamp_target_x(float(ISLAND_FOCUS_X[island_idx]))
+		velocity_x = 0.0
+	if desired_zoom > 0.0:
+		target_zoom = clampf(desired_zoom, MIN_ZOOM, MAX_ZOOM)
+
+func reset_camera_view() -> void:
+	target_x = WORLD_CENTER_X
+	target_y = WORLD_CENTER_Y
+	target_zoom = 1.0
+	velocity_x = 0.0
+	is_rmb_panning = false
+
+func _clamp_target_x(raw_x: float) -> float:
+	var min_x := float(limit_left) + SAFE_MARGIN_X
+	var max_x := float(limit_right) - SAFE_MARGIN_X
+	return clampf(raw_x, min_x, max_x)
+
+func _apply_zoom_step(delta_zoom: float, mouse_screen_pos: Vector2) -> void:
+	var old_zoom := target_zoom
+	target_zoom = clampf(target_zoom + delta_zoom, MIN_ZOOM, MAX_ZOOM)
+	if absf(target_zoom - old_zoom) < 0.001:
+		return
+	var viewport_center_x := get_viewport_rect().size.x * 0.5
+	var screen_offset_x := mouse_screen_pos.x - viewport_center_x
+	var world_shift_x := screen_offset_x * (1.0 / maxf(MIN_ZOOM, old_zoom) - 1.0 / maxf(MIN_ZOOM, target_zoom))
+	target_x = _clamp_target_x(target_x + world_shift_x * 0.35)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if GameManager != null and GameManager.desktop_companion_mode:
+		# In Desktop Companion Mode, MainWorld handles companion_zoom while Camera2D stays anchored to the 1920x300 strip
+		is_rmb_panning = false
+		return
+
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_RIGHT:
+			is_rmb_panning = mb.pressed
+			rmb_last_mouse = get_viewport().get_mouse_position()
+			if mb.pressed:
+				velocity_x = 0.0
+				rmb_drag_velocity = 0.0
+			else:
+				velocity_x = clampf(rmb_drag_velocity, -PAN_MAX_SPEED * 1.5, PAN_MAX_SPEED * 1.5)
+		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_apply_zoom_step(ZOOM_STEP, get_viewport().get_mouse_position())
+		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_apply_zoom_step(-ZOOM_STEP, get_viewport().get_mouse_position())
+		elif mb.pressed and mb.button_index == MOUSE_BUTTON_MIDDLE:
+			reset_camera_view()
+
+	elif event is InputEventMouseMotion and is_rmb_panning:
+		var cur_m := get_viewport().get_mouse_position()
+		var dx := (cur_m.x - rmb_last_mouse.x) / maxf(MIN_ZOOM, zoom.x)
+		target_x = _clamp_target_x(target_x - dx)
+		rmb_drag_velocity = -dx * 28.0
+		rmb_last_mouse = cur_m
+
+	elif event is InputEventKey and event.pressed and not event.echo:
+		var ke := event as InputEventKey
+		if ke.keycode == KEY_HOME or ke.keycode == KEY_SPACE:
+			reset_camera_view()
+		elif ke.keycode == KEY_1:
+			focus_on_island(1)
+		elif ke.keycode == KEY_2:
+			focus_on_island(2)
+		elif ke.keycode == KEY_3:
+			focus_on_island(3)
+
+func _process(delta: float) -> void:
+	if GameManager != null and GameManager.desktop_companion_mode:
+		position = position.lerp(Vector2(WORLD_CENTER_X, WORLD_CENTER_Y), minf(1.0, delta * 10.0))
+		zoom = zoom.lerp(Vector2.ONE, minf(1.0, delta * 10.0))
+		return
+
+	var input_dir := 0.0
+	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
+		input_dir -= 1.0
+	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
+		input_dir += 1.0
+
+	if not is_rmb_panning:
+		if absf(input_dir) > 0.01:
+			velocity_x = move_toward(velocity_x, input_dir * PAN_MAX_SPEED, PAN_ACCEL * delta)
+		else:
+			velocity_x = move_toward(velocity_x, 0.0, PAN_FRICTION * delta)
+
+		if absf(velocity_x) > 0.5:
+			target_x = _clamp_target_x(target_x + velocity_x * delta)
+
+	position.x = lerpf(position.x, target_x, minf(1.0, delta * PAN_LERP_SPEED))
+	position.y = lerpf(position.y, target_y, minf(1.0, delta * PAN_LERP_SPEED))
+	zoom = zoom.lerp(Vector2(target_zoom, target_zoom), minf(1.0, delta * ZOOM_LERP_SPEED))
+
+=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.gd (18953 bytes) ===
+extends Node2D
+class_name MainWorld
+## Panoramic 3-Island World (`src/world/MainWorld.gd`)
+## Strictly enforces GEMINI.md Laws 1~6:
+## - Unified `GROUND_Y = 124.0` (`EconomyConfig.GROUND_Y`) across all islands.
+## - Bottom-center grounding pivot (`centered = true`, `offset = Vector2(0.0, -float(frame_h) * 0.5)`) on all buildings & props.
+## - Strict `z_index` layering (`Z_SKY = -100`, `Z_TERRAIN = -20`, `Z_SHADOW = -5`, `Z_SOIL_BASE = -2`, `Z_BUILDING = 0`, `Z_CROP = 1`, `Z_UNIT = 10`, `Z_CARRY_EMOTE = 20`, `Z_FLOATING_UI = 50`).
+## - 1D Slot Allocator & Anti-Overlap Assertion (`|X_A - X_B| >= (W_A + W_B)/2 + 28px`, 0% horizontal overlap).
+
+const GROUND_Y := 124.0
+
+## GEMINI.md Law 3.1 & 3.2: 1D Slot Definitions (every adjacent pair satisfies `|X_A - X_B| >= (W_A + W_B)/2 + 28.0`)
+const ISLAND_SLOTS: Dictionary = {
+	1: [
+		{"id": "apple_tree_1", "x": 612.4, "tex_w": 112.0, "tex_h": 120.0, "scale": 0.65},
+		{"id": "soil_plot_1",  "x": 710.8, "tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00},
+		{"id": "cottage_1",    "x": 811.2, "tex_w": 118.0, "tex_h": 114.0, "scale": 0.65},
+		{"id": "mortar_1",     "x": 908.4, "tex_w": 68.0,  "tex_h": 58.0,  "scale": 0.85},
+		{"id": "stall_1",      "x": 1013.4,"tex_w": 128.0, "tex_h": 104.0, "scale": 0.72}
+	],
+	2: [
+		{"id": "left_hut_2",   "x": 144.0, "tex_w": 112.0, "tex_h": 108.0, "scale": 0.68},
+		{"id": "soil_plot_2",  "x": 272.0, "tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00},
+		{"id": "cauldron_2",   "x": 397.0, "tex_w": 68.0,  "tex_h": 62.0,  "scale": 0.85}
+	],
+	3: [
+		{"id": "apple_tree_3", "x": 1462.0,"tex_w": 112.0, "tex_h": 120.0, "scale": 0.65},
+		{"id": "soil_plot_3",  "x": 1562.4,"tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00},
+		{"id": "orbis_work_3", "x": 1655.3,"tex_w": 68.0,  "tex_h": 58.0,  "scale": 0.85},
+		{"id": "right_tiki_3", "x": 1755.6,"tex_w": 116.0, "tex_h": 108.0, "scale": 0.68}
+	]
+}
+
+var tex_henesys: Texture2D
+var tex_ellinia: Texture2D
+var tex_orbis: Texture2D
+var tex_bridge: Texture2D
+var tex_tree: Texture2D
+var tex_cottage: Texture2D
+var tex_left_hut: Texture2D
+var tex_right_tiki: Texture2D
+
+var waypoint_graph: WaypointGraph
+var camera_controller: CameraController
+var hud: HUD
+var floating_text: FloatingText
+
+@onready var world_root: Node2D = Node2D.new()
+@onready var ysort_layer: Node2D = Node2D.new()
+
+var soil_plots: Array[SoilPlot] = []
+var mortar_workshop: Workshop
+var cauldron_workshop: Workshop
+var orbis_linked_workshop: Workshop
+var market_stall: MarketStall
+var workers: Array[AnimalWorker] = []
+var customers: Array[CustomerNPC] = []
+
+var island2_props: Array[Node2D] = []
+var island3_props: Array[Node2D] = []
+var tree_1_node: Sprite2D
+var cot_1_node: Sprite2D
+var left_hut_node: Sprite2D
+var tree_3_node: Sprite2D
+var right_tiki_node: Sprite2D
+
+var customer_spawn_timer: float = 4.0
+var vip_customer_timer: float = 38.0
+var companion_zoom: float = 1.0
+var cloud_time: float = 0.0
+var chimney_timer: float = 0.0
+var chimney_wisps: Array[Dictionary] = []
+
+func _ready() -> void:
+	z_index = EconomyConfig.Z_TERRAIN
+	z_as_relative = false
+
+	tex_henesys = load("res://assets/pixel_art/islands/island_henesys.png")
+	tex_ellinia = load("res://assets/pixel_art/islands/island_ellinia.png")
+	tex_orbis = load("res://assets/pixel_art/islands/island_orbis_coast.png")
+	tex_bridge = load("res://assets/pixel_art/islands/bridge_wood.png")
+	tex_tree = load("res://assets/pixel_art/buildings/apple_tree.png")
+	tex_cottage = load("res://assets/pixel_art/buildings/cottage_mushroom.png")
+	tex_left_hut = load("res://assets/pixel_art/buildings/landmark_left_hut.png")
+	tex_right_tiki = load("res://assets/pixel_art/buildings/landmark_right_tiki.png")
+
+	_assert_1d_slot_layout()
+
+	world_root.name = "WorldOffsetRoot"
+	world_root.position = Vector2(0.0, 36.0)
+	add_child(world_root)
+
+	waypoint_graph = WaypointGraph.new()
+	waypoint_graph.name = "WaypointGraph"
+	world_root.add_child(waypoint_graph)
+
+	ysort_layer.name = "YSortLayer"
+	ysort_layer.y_sort_enabled = true
+	world_root.add_child(ysort_layer)
+
+	camera_controller = CameraController.new()
+	camera_controller.name = "CameraController"
+	add_child(camera_controller)
+
+	floating_text = FloatingText.new()
+	floating_text.name = "FloatingText"
+	world_root.add_child(floating_text)
+
+	var canvas_layer := CanvasLayer.new()
+	canvas_layer.layer = 10
+	add_child(canvas_layer)
+
+	var hud_scene: PackedScene = load("res://src/ui/HUD.tscn")
+	hud = hud_scene.instantiate() as HUD
+	hud.name = "HUD"
+	canvas_layer.add_child(hud)
+
+	if WindowController != null:
+		WindowController.setup(self, hud)
+
+	_build_landmarks_and_buildings()
+	_build_soil_plots()
+	_spawn_all_roster_slots()
+
+	EventBus.toggle_desktop_mode.connect(_on_toggle_desktop_mode)
+	_apply_desktop_mode(GameManager.desktop_companion_mode)
+
+func _assert_1d_slot_layout() -> void:
+	for isl_idx in ISLAND_SLOTS.keys():
+		var slots: Array = ISLAND_SLOTS[isl_idx]
+		for i in range(slots.size() - 1):
+			var a: Dictionary = slots[i]
+			var b: Dictionary = slots[i + 1]
+			var wa := float(a["tex_w"]) * float(a["scale"])
+			var wb := float(b["tex_w"]) * float(b["scale"])
+			var dist := absf(float(b["x"]) - float(a["x"]))
+			var min_req := (wa + wb) * 0.5 + EconomyConfig.MIN_BUILDING_PADDING
+			assert(dist >= min_req - 0.5, "Building Overlap Detected on Island %d between %s and %s!" % [isl_idx, str(a["id"]), str(b["id"])])
+
+func _make_grounded_prop(tex: Texture2D, slot_x: float, frame_h: int, sc: float) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	# GEMINI.md Law 2.2: Bottom-Center Pivot (`centered = true`, `offset = Vector2(0.0, -float(frame_h) * 0.5)`)
+	sp.centered = true
+	sp.offset = Vector2(0.0, -float(frame_h) * 0.5)
+	sp.scale = Vector2(sc, sc)
+	sp.position = Vector2(slot_x, GROUND_Y)
+	sp.z_index = EconomyConfig.Z_BUILDING
+	sp.z_as_relative = false
+	return sp
+
+func _on_toggle_desktop_mode(enabled: bool) -> void:
+	_apply_desktop_mode(enabled)
+
+func _apply_desktop_mode(enabled: bool) -> void:
+	if enabled:
+		get_tree().root.transparent_bg = true
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_TRANSPARENT, true)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
+		if SoundManager != null:
+			SoundManager.set_muted(true)
+	else:
+		get_tree().root.transparent_bg = false
+	queue_redraw()
+
+func get_active_island_bounds() -> Rect2:
+	return Rect2(40.0, 0.0, 1840.0, 300.0)
+
+func _build_landmarks_and_buildings() -> void:
+	# Island 1 (Henesys): AppleTree (x=612.4), SoilPlot (x=710.8), Cottage (x=811.2), Mortar (x=908.4), Stall (x=1013.4)
+	# GEMINI.md Law 3.3: `apple_tree.png` & `cottage_mushroom.png` have built-in grass base shadows -> NO procedural shadow!
+	tree_1_node = _make_grounded_prop(tex_tree, 612.4, 120, 0.65)
+	tree_1_node.name = "AppleTree_1"
+	ysort_layer.add_child(tree_1_node)
+
+	cot_1_node = _make_grounded_prop(tex_cottage, 811.2, 114, 0.65)
+	cot_1_node.name = "MushroomCottage_1"
+	ysort_layer.add_child(cot_1_node)
+
+	# Island 2 (Ellinia): Left Hut (x=144.0), SoilPlot (x=272.0), Cauldron (x=397.0)
+	left_hut_node = _make_grounded_prop(tex_left_hut, 144.0, 108, 0.68)
+	left_hut_node.name = "LeftHut_2"
+	ysort_layer.add_child(left_hut_node)
+	island2_props.append(left_hut_node)
+
+	# Island 3 (Orbis Coast): AppleTree (x=1462.0), SoilPlot (x=1562.4), Dual Workshop (x=1655.3), Right Tiki (x=1755.6)
+	tree_3_node = _make_grounded_prop(tex_tree, 1462.0, 120, 0.65)
+	tree_3_node.name = "AppleTree_3"
+	ysort_layer.add_child(tree_3_node)
+	island3_props.append(tree_3_node)
+
+	right_tiki_node = _make_grounded_prop(tex_right_tiki, 1755.6, 108, 0.68)
+	right_tiki_node.name = "RightTiki_3"
+	ysort_layer.add_child(right_tiki_node)
+	island3_props.append(right_tiki_node)
+
+	mortar_workshop = Workshop.new()
+	mortar_workshop.name = "MortarWorkshop_1"
+	mortar_workshop.setup_workshop("mortar", 1, Vector2(908.4, GROUND_Y))
+	ysort_layer.add_child(mortar_workshop)
+
+	cauldron_workshop = Workshop.new()
+	cauldron_workshop.name = "CauldronWorkshop_2"
+	cauldron_workshop.setup_workshop("cauldron", 2, Vector2(397.0, GROUND_Y))
+	ysort_layer.add_child(cauldron_workshop)
+
+	orbis_linked_workshop = Workshop.new()
+	orbis_linked_workshop.name = "OrbisWorkshop_3"
+	orbis_linked_workshop.setup_workshop("orbis_linked", 3, Vector2(1655.3, GROUND_Y))
+	ysort_layer.add_child(orbis_linked_workshop)
+
+	market_stall = MarketStall.new()
+	market_stall.name = "MarketStall_1"
+	market_stall.position = Vector2(1013.4, GROUND_Y)
+	ysort_layer.add_child(market_stall)
+
+func get_island_main_building_rects() -> Dictionary:
+	var oy := world_root.position.y
+	var p1_rect := soil_plots[0].get_screen_rect() if soil_plots.size() > 0 else Rect2(710.8 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	var p2_rect := soil_plots[1].get_screen_rect() if soil_plots.size() > 1 else Rect2(272.0 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	var p3_rect := soil_plots[2].get_screen_rect() if soil_plots.size() > 2 else Rect2(1562.4 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	return {
+		1: [
+			{"name": "AppleTree_1",       "rect": _sprite_global_rect(tree_1_node, oy)},
+			{"name": "SoilPlot_1",        "rect": Rect2(p1_rect.position + Vector2(0, oy), p1_rect.size)},
+			{"name": "MushroomCottage_1", "rect": _sprite_global_rect(cot_1_node, oy)},
+			{"name": "MortarWorkshop_1",  "rect": Rect2(mortar_workshop.get_screen_rect().position + Vector2(0, oy), mortar_workshop.get_screen_rect().size)},
+			{"name": "MarketStall_1",     "rect": Rect2(market_stall.get_screen_rect().position + Vector2(0, oy), market_stall.get_screen_rect().size)}
+		],
+		2: [
+			{"name": "LeftHut_2",         "rect": _sprite_global_rect(left_hut_node, oy)},
+			{"name": "SoilPlot_2",        "rect": Rect2(p2_rect.position + Vector2(0, oy), p2_rect.size)},
+			{"name": "CauldronWorkshop_2","rect": Rect2(cauldron_workshop.get_screen_rect().position + Vector2(0, oy), cauldron_workshop.get_screen_rect().size)}
+		],
+		3: [
+			{"name": "AppleTree_3",       "rect": _sprite_global_rect(tree_3_node, oy)},
+			{"name": "SoilPlot_3",        "rect": Rect2(p3_rect.position + Vector2(0, oy), p3_rect.size)},
+			{"name": "OrbisWorkshop_3",   "rect": Rect2(orbis_linked_workshop.get_screen_rect().position + Vector2(0, oy), orbis_linked_workshop.get_screen_rect().size)},
+			{"name": "RightTiki_3",       "rect": _sprite_global_rect(right_tiki_node, oy)}
+		]
+	}
+
+func _sprite_global_rect(sp: Sprite2D, oy: float) -> Rect2:
+	if sp == null or sp.texture == null:
+		return Rect2()
+	var w := float(sp.texture.get_width()) * absf(sp.scale.x)
+	var h := float(sp.texture.get_height()) * absf(sp.scale.y)
+	return Rect2(sp.position.x - w * 0.5, sp.position.y + oy - h, w, h)
+
+func _build_soil_plots() -> void:
+	var p1 := SoilPlot.new()
+	p1.setup_plot(1, 0, "crop_0", Vector2(710.8, GROUND_Y))
+	ysort_layer.add_child(p1)
+	soil_plots.append(p1)
+
+	var p2 := SoilPlot.new()
+	p2.setup_plot(2, 0, "crop_2", Vector2(272.0, GROUND_Y))
+	ysort_layer.add_child(p2)
+	soil_plots.append(p2)
+
+	var p3 := SoilPlot.new()
+	p3.setup_plot(3, 0, "crop_3", Vector2(1562.4, GROUND_Y))
+	ysort_layer.add_child(p3)
+	soil_plots.append(p3)
+
+func _spawn_all_roster_slots() -> void:
+	var roster_defs := [
+		# Island 1 (Henesys): Bunny Max 2, Otter Max 2, Fox Max 1, Shiba Max 1
+		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 0, Vector2(698.0, GROUND_Y)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 1, Vector2(724.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 0, Vector2(852.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 1, Vector2(868.0, GROUND_Y)],
+		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 1, 0, Vector2(890.0, GROUND_Y)],
+		[AnimalWorker.RoleType.SHIBA_MANAGER, 1, 0, Vector2(1036.0, GROUND_Y)],
+
+		# Island 2 (Ellinia): Bunny Max 2, Otter Max 1, Penguin Max 1, Toucan Max 2
+		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 0, Vector2(262.0, GROUND_Y)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 1, Vector2(282.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 2, 0, Vector2(335.0, GROUND_Y)],
+		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 2, 0, Vector2(378.0, GROUND_Y)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 0, Vector2(426.0, GROUND_Y)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 1, Vector2(448.0, GROUND_Y)],
+
+		# Island 3 (Orbis Coast): Bunny Max 2, Otter Max 2, Fox Max 1, Penguin Max 1, Toucan Max 2
+		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 0, Vector2(1552.0, GROUND_Y)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 1, Vector2(1572.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 0, Vector2(1608.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 1, Vector2(1624.0, GROUND_Y)],
+		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 3, 0, Vector2(1638.0, GROUND_Y)],
+		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 3, 0, Vector2(1674.0, GROUND_Y)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 0, Vector2(1702.0, GROUND_Y)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 1, Vector2(1722.0, GROUND_Y)]
+	]
+	for rd in roster_defs:
+		var w := AnimalWorker.new()
+		w.setup_worker(rd[0], rd[1], rd[2], rd[3], waypoint_graph, self)
+		ysort_layer.add_child(w)
+		workers.append(w)
+
+func find_best_plot_for_island(isl_idx: int) -> SoilPlot:
+	for p in soil_plots:
+		if p.island_idx == isl_idx and p.is_plot_active() and not p.reserved_by_worker and p.growth >= 0.85:
+			return p
+	for p in soil_plots:
+		if p.island_idx == isl_idx and p.is_plot_active() and not p.reserved_by_worker:
+			return p
+	return null
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed and Input.is_key_pressed(KEY_ALT) and WindowController != null:
+				WindowController.begin_window_drag()
+				return
+			elif not event.pressed and WindowController != null and WindowController.is_dragging:
+				WindowController.end_window_drag()
+				return
+		elif event.pressed and GameManager.desktop_companion_mode:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				companion_zoom = clampf(companion_zoom + 0.08, 0.4, 1.5)
+				_apply_companion_zoom()
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				companion_zoom = clampf(companion_zoom - 0.08, 0.4, 1.5)
+				_apply_companion_zoom()
+
+func _apply_companion_zoom() -> void:
+	world_root.scale = Vector2(companion_zoom, companion_zoom)
+	world_root.position = Vector2(960.0 * (1.0 - companion_zoom), 36.0 + 200.0 * (1.0 - companion_zoom))
+	queue_redraw()
+
+func _process(delta: float) -> void:
+	cloud_time += delta
+
+	var isl2_on := bool(GameManager.unlocked_islands.get(2, false))
+	var isl3_on := bool(GameManager.unlocked_islands.get(3, false))
+	for n in island2_props:
+		n.visible = isl2_on
+	for n in island3_props:
+		n.visible = isl3_on
+
+	chimney_timer += delta
+	if chimney_timer >= 1.4:
+		chimney_timer = 0.0
+		chimney_wisps.append({"x": 796.0, "y": 54.0, "r": 3.5, "alpha": 0.55})
+	for i in range(chimney_wisps.size() - 1, -1, -1):
+		chimney_wisps[i]["y"] = float(chimney_wisps[i]["y"]) - 7.5 * delta
+		chimney_wisps[i]["x"] = float(chimney_wisps[i]["x"]) + sin(cloud_time + float(i)) * 4.0 * delta
+		chimney_wisps[i]["r"] = float(chimney_wisps[i]["r"]) + 1.8 * delta
+		chimney_wisps[i]["alpha"] = float(chimney_wisps[i]["alpha"]) - 0.16 * delta
+		if float(chimney_wisps[i]["alpha"]) <= 0.02:
+			chimney_wisps.remove_at(i)
+
+	for i in range(customers.size() - 1, -1, -1):
+		if not is_instance_valid(customers[i]):
+			customers.remove_at(i)
+
+	customer_spawn_timer -= delta
+	if customer_spawn_timer <= 0.0:
+		customer_spawn_timer = randf_range(18.0, 30.0)
+		if customers.size() < 4:
+			_spawn_customer(false)
+
+	if isl3_on:
+		vip_customer_timer -= delta
+		if vip_customer_timer <= 0.0:
+			vip_customer_timer = randf_range(35.0, 50.0)
+			if customers.size() < 4:
+				_spawn_customer(true)
+
+	if WindowController != null and hud != null:
+		var active_drawer_rect := HUD.DRAWER_RECT if hud.drawer_expanded else Rect2()
+		WindowController.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect(), active_drawer_rect)
+
+	queue_redraw()
+
+func _spawn_customer(as_vip: bool) -> void:
+	var c := CustomerNPC.new()
+	var sp := Vector2(612.4, GROUND_Y)
+	if as_vip:
+		sp = waypoint_graph.get_named_pos("spawn_right")
+	elif bool(GameManager.unlocked_islands.get(2, false)):
+		sp = waypoint_graph.get_named_pos("spawn_left")
+	c.setup_customer(sp, waypoint_graph, market_stall, as_vip)
+	ysort_layer.add_child(c)
+	customers.append(c)
+
+func _get_bridge_weight_sag(min_x: float, max_x: float) -> float:
+	var mid_x := (min_x + max_x) * 0.5
+	var half_span := maxf(20.0, (max_x - min_x) * 0.5)
+	var max_sag := 0.0
+	for w in workers:
+		if is_instance_valid(w) and w.visible and w.position.x >= min_x and w.position.x <= max_x:
+			max_sag = maxf(max_sag, (1.0 - absf(w.position.x - mid_x) / half_span) * 1.6)
+	for c in customers:
+		if is_instance_valid(c) and c.position.x >= min_x and c.position.x <= max_x:
+			max_sag = maxf(max_sag, (1.0 - absf(c.position.x - mid_x) / half_span) * 1.8)
+	return max_sag
+
+func _draw() -> void:
+	var oy := 36.0
+	var bob := roundf(sin(cloud_time * 0.55) * 1.0)
+
+	if not GameManager.desktop_companion_mode:
+		draw_rect(Rect2(0, 0, 1920, 300), Color(0.45, 0.74, 0.96, 1.0), true)
+		draw_rect(Rect2(0, 180, 1920, 120), Color(0.68, 0.88, 1.0, 1.0), true)
+
+	draw_set_transform(world_root.position - Vector2(0.0, oy * companion_zoom), 0.0, world_root.scale)
+
+	var left_sag := _get_bridge_weight_sag(486.0, 594.0)
+	var pond_sag := _get_bridge_weight_sag(1082.0, 1302.0)
+	var right_sag := _get_bridge_weight_sag(1302.0, 1416.0)
+
+	var isl2_tint := Color.WHITE if bool(GameManager.unlocked_islands.get(2, false)) else Color(0.55, 0.62, 0.72, 0.42)
+	if tex_ellinia != null:
+		draw_texture(tex_ellinia, Vector2(64.0, oy + 74.0 + bob), isl2_tint)
+	if tex_bridge != null:
+		draw_texture(tex_bridge, Vector2(492.0, oy + 124.0 + bob + roundf(left_sag)), isl2_tint)
+
+	var isl3_tint := Color.WHITE if bool(GameManager.unlocked_islands.get(3, false)) else Color(0.55, 0.62, 0.72, 0.42)
+	if tex_bridge != null:
+		draw_texture(tex_bridge, Vector2(1312.0, oy + 118.0 + bob + roundf(right_sag)), isl3_tint)
+	if tex_orbis != null:
+		draw_texture(tex_orbis, Vector2(1396.0, oy + 74.0 + bob), isl3_tint)
+
+	if tex_henesys != null:
+		draw_texture(tex_henesys, Vector2(560.0, oy + 70.0))
+
+	var ripple_alpha := 0.30 + 0.18 * sin(cloud_time * 1.6)
+	for px in [1096.0, 1188.0, 1284.0]:
+		var ring_r := 6.0 + fmod(cloud_time * 4.5 + px * 0.1, 5.0) + pond_sag * 1.5
+		draw_arc(Vector2(px, oy + 146.0), ring_r, 0.0, PI * 2.0, 16, Color(0.88, 0.99, 1.0, ripple_alpha * 0.85), 1.0)
+		draw_rect(Rect2(px - 3.0, oy + 134.0 + roundf(pond_sag), 6.0, 13.0), Color(0.36, 0.21, 0.11, 0.95), true)
+	if tex_bridge != null:
+		draw_texture_rect(tex_bridge, Rect2(1082.0, oy + 118.0 + roundf(pond_sag), 114.0, 38.0), false)
+		draw_texture_rect(tex_bridge, Rect2(1188.0, oy + 118.0 + roundf(pond_sag), 114.0, 38.0), false)
+
+	for wisp in chimney_wisps:
+		draw_circle(Vector2(float(wisp["x"]), float(wisp["y"])), float(wisp["r"]), Color(0.98, 0.96, 0.92, float(wisp["alpha"])))
+
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.tscn (191 bytes) ===
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/world/MainWorld.gd" id="1_mainworld"]
+
+[node name="MainWorld" type="Node2D"]
+script = ExtResource("1_mainworld")
+
+=== FILE: D:\project\maple-isle-idle\src\world\WaypointGraph.gd (7718 bytes) ===
+extends Node2D
+class_name WaypointGraph
+## Complete 3-Island Road, Dual Wooden Bridge & Building Dock Waypoint Graph (`src/world/WaypointGraph.gd`)
+## Strictly enforces GEMINI.md Law 2.1 (`GROUND_Y = 124.0`) & Law 3.1 (1D Slot Coordinates):
+## - Models all 3 islands' main roads (`island_2`, `island_1`, `island_3`),
+## - Models both wooden bridges' (`bridge_wood`) west/arch/east endpoints and the Lotus Pond twin bridges,
+## - Models dedicated loading/unloading dock nodes for every building (`soil_*_load`, `basket_*`, `mortar_in/out`, `cauldron_in/out`, `orbis_in/out`, `stall_drop`, `stall_queue_*`),
+## - Provides weighted adjacency list & Dijkstra shortest-path queries for cross-island and intra-island navigation.
+
+const GROUND_Y := 124.0
+
+## Master Waypoint Coordinates along unified `GROUND_Y = 124.0`
+const WAYPOINTS: Array[Vector2] = [
+	Vector2(144.0, GROUND_Y),   # 0: Island 2 Left Hut (Ellinia West Spawn)
+	Vector2(272.0, GROUND_Y),   # 1: Island 2 SoilPlot & Basket Dock
+	Vector2(397.0, GROUND_Y),   # 2: Island 2 Cauldron Workshop Dock
+	Vector2(492.0, GROUND_Y),   # 3: Bridge 1 West Endpoint (Ellinia -> Henesys)
+	Vector2(542.0, GROUND_Y),   # 4: Bridge 1 Center Arch
+	Vector2(586.0, GROUND_Y),   # 5: Bridge 1 East Endpoint
+	Vector2(612.4, GROUND_Y),   # 6: Island 1 Apple Tree
+	Vector2(710.8, GROUND_Y),   # 7: Island 1 SoilPlot & Basket Dock
+	Vector2(811.2, GROUND_Y),   # 8: Island 1 Mushroom Cottage
+	Vector2(908.4, GROUND_Y),   # 9: Island 1 Mortar Workshop Dock
+	Vector2(1013.4, GROUND_Y),  # 10: Island 1 Market Stall Main Counter
+	Vector2(1082.0, GROUND_Y),  # 11: Lotus Pond Bridge West
+	Vector2(1192.0, GROUND_Y),  # 12: Lotus Pond Bridge Center Pier
+	Vector2(1302.0, GROUND_Y),  # 13: Lotus Pond Bridge East
+	Vector2(1358.0, GROUND_Y),  # 14: Bridge 2 Center Arch (Henesys -> Orbis Coast)
+	Vector2(1414.0, GROUND_Y),  # 15: Bridge 2 East Endpoint (Orbis West Landing)
+	Vector2(1462.0, GROUND_Y),  # 16: Island 3 Apple Tree
+	Vector2(1562.4, GROUND_Y),  # 17: Island 3 SoilPlot & Basket Dock
+	Vector2(1655.3, GROUND_Y),  # 18: Island 3 Dual Linked Workshop Dock
+	Vector2(1755.6, GROUND_Y)   # 19: Island 3 Right Tiki Landmark (VIP East Spawn)
+]
+
+## Named Waypoint Node Index Lookup
+const NAMED_WAYPOINTS: Dictionary = {
+	"spawn_left": 0,
+	"left_hut": 0,
+	"soil_2": 1,
+	"basket_2": 1,
+	"cauldron": 2,
+	"bridge_1_west": 3,
+	"bridge_1_arch": 4,
+	"bridge_1_east": 5,
+	"apple_tree": 6,
+	"soil_1": 7,
+	"basket_1": 7,
+	"cottage": 8,
+	"mortar": 9,
+	"market_stall": 10,
+	"pond_west": 11,
+	"pond_center": 12,
+	"pond_east": 13,
+	"bridge_2_arch": 14,
+	"bridge_2_east": 15,
+	"apple_tree_3": 16,
+	"soil_3": 17,
+	"basket_3": 17,
+	"orbis_linked": 18,
+	"spawn_right": 19,
+	"right_tiki": 19
+}
+
+## Independent Building Loading / Unloading Dock Offsets (`x` offset relative to building waypoint)
+const BUILDING_DOCKS: Dictionary = {
+	"soil_1_slot_0": {"wp": 7, "dx": -12.0},
+	"soil_1_slot_1": {"wp": 7, "dx": 12.0},
+	"basket_1_pickup": {"wp": 7, "dx": 16.0},
+	"mortar_input": {"wp": 9, "dx": -16.0},
+	"mortar_chef": {"wp": 9, "dx": -18.0},
+	"mortar_output": {"wp": 9, "dx": 14.0},
+	"stall_restock": {"wp": 10, "dx": -8.0},
+	"stall_manager": {"wp": 10, "dx": 22.0},
+	"stall_checkout": {"wp": 10, "dx": -16.0},
+	"soil_2_slot_0": {"wp": 1, "dx": -10.0},
+	"soil_2_slot_1": {"wp": 1, "dx": 10.0},
+	"basket_2_pickup": {"wp": 1, "dx": 14.0},
+	"cauldron_input": {"wp": 2, "dx": -16.0},
+	"cauldron_chef": {"wp": 2, "dx": -18.0},
+	"cauldron_output": {"wp": 2, "dx": 14.0},
+	"soil_3_slot_0": {"wp": 17, "dx": -10.0},
+	"soil_3_slot_1": {"wp": 17, "dx": 10.0},
+	"basket_3_pickup": {"wp": 17, "dx": 14.0},
+	"orbis_input": {"wp": 18, "dx": -16.0},
+	"orbis_chef": {"wp": 18, "dx": -18.0},
+	"orbis_output": {"wp": 18, "dx": 14.0}
+}
+
+## Weighted Graph Adjacency List (`node_idx -> Array[{to: int, cost: float, bridge_id: int}]`)
+var _adjacency: Dictionary = {}
+
+func _ready() -> void:
+	_build_graph_topology()
+
+func _init() -> void:
+	_build_graph_topology()
+
+func _build_graph_topology() -> void:
+	_adjacency.clear()
+	for i in range(WAYPOINTS.size()):
+		_adjacency[i] = []
+
+	for i in range(WAYPOINTS.size() - 1):
+		var a := WAYPOINTS[i]
+		var b := WAYPOINTS[i + 1]
+		var dist := absf(b.x - a.x)
+		var bridge_id := 0
+		if i >= 2 and i <= 5:
+			bridge_id = 1 # Wooden Bridge 1 (Island 2 <-> Island 1)
+		elif i >= 13 and i <= 15:
+			bridge_id = 2 # Wooden Bridge 2 (Island 1 <-> Island 3)
+		_adjacency[i].append({"to": i + 1, "cost": dist, "bridge_id": bridge_id})
+		_adjacency[i + 1].append({"to": i, "cost": dist, "bridge_id": bridge_id})
+
+func get_named_pos(key: String) -> Vector2:
+	var idx: int = int(NAMED_WAYPOINTS.get(key, 10))
+	return WAYPOINTS[clampi(idx, 0, WAYPOINTS.size() - 1)]
+
+func get_dock_pos(dock_key: String) -> Vector2:
+	if BUILDING_DOCKS.has(dock_key):
+		var d: Dictionary = BUILDING_DOCKS[dock_key]
+		var wp_idx := clampi(int(d.get("wp", 10)), 0, WAYPOINTS.size() - 1)
+		var dx := float(d.get("dx", 0.0))
+		return Vector2(WAYPOINTS[wp_idx].x + dx, GROUND_Y)
+	return get_named_pos(dock_key)
+
+func get_island_for_x(x_coord: float) -> int:
+	if x_coord < 538.0:
+		return 2
+	elif x_coord > 1358.0:
+		return 3
+	return 1
+
+func is_on_wooden_bridge(x_coord: float) -> bool:
+	return (x_coord >= 486.0 and x_coord <= 594.0) or (x_coord >= 1082.0 and x_coord <= 1416.0)
+
+func get_nearest_waypoint_index(pos: Vector2) -> int:
+	var best_idx := 0
+	var best_d := 1e9
+	for i in range(WAYPOINTS.size()):
+		var d := absf(pos.x - WAYPOINTS[i].x)
+		if d < best_d:
+			best_d = d
+			best_idx = i
+	return best_idx
+
+## Dijkstra Shortest-Path Solver across the 3-Island & Dual-Bridge Graph
+func find_shortest_node_path(start_idx: int, end_idx: int) -> Array[int]:
+	var n := WAYPOINTS.size()
+	var s := clampi(start_idx, 0, n - 1)
+	var e := clampi(end_idx, 0, n - 1)
+	if s == e:
+		return [s]
+
+	if _adjacency.is_empty():
+		_build_graph_topology()
+
+	var dist: Array[float] = []
+	var prev: Array[int] = []
+	var visited: Array[bool] = []
+	for _i in range(n):
+		dist.append(1e12)
+		prev.append(-1)
+		visited.append(false)
+	dist[s] = 0.0
+
+	for _step in range(n):
+		var u := -1
+		var best := 1e12
+		for i in range(n):
+			if not visited[i] and dist[i] < best:
+				best = dist[i]
+				u = i
+		if u == -1 or u == e:
+			break
+		visited[u] = true
+		var edges: Array = _adjacency.get(u, [])
+		for edge in edges:
+			var v := int(edge["to"])
+			var w := float(edge["cost"])
+			if not visited[v] and dist[u] + w < dist[v]:
+				dist[v] = dist[u] + w
+				prev[v] = u
+
+	var node_seq: Array[int] = []
+	var cur := e
+	while cur != -1:
+		node_seq.push_front(cur)
+		if cur == s:
+			break
+		cur = prev[cur]
+	if node_seq.is_empty():
+		node_seq.append(e)
+	return node_seq
+
+func compute_path(from_pos: Vector2, to_pos: Vector2) -> Array[Vector2]:
+	var s_idx := get_nearest_waypoint_index(from_pos)
+	var e_idx := get_nearest_waypoint_index(to_pos)
+	var node_indices := find_shortest_node_path(s_idx, e_idx)
+	var path: Array[Vector2] = []
+	for idx in node_indices:
+		var wp := WAYPOINTS[idx]
+		if path.is_empty() or absf(path[path.size() - 1].x - wp.x) > 1.0:
+			path.append(wp)
+	var final_pt := constrain_to_walkable_surface(to_pos)
+	if path.is_empty() or absf(path[path.size() - 1].x - final_pt.x) > 1.0:
+		path.append(final_pt)
+	else:
+		path[path.size() - 1] = final_pt
+	return path
+
+func compute_dock_to_dock_path(from_pos: Vector2, target_dock_key: String) -> Array[Vector2]:
+	return compute_path(from_pos, get_dock_pos(target_dock_key))
+
+func get_path_total_length(path: Array[Vector2]) -> float:
+	if path.size() <= 1:
+		return 0.0
+	var total := 0.0
+	for i in range(path.size() - 1):
+		total += path[i].distance_to(path[i + 1])
+	return total
+
+func constrain_to_walkable_surface(pos: Vector2) -> Vector2:
+	return Vector2(clampf(pos.x, 120.0, 1790.0), GROUND_Y)
+

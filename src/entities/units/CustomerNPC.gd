@@ -172,8 +172,8 @@ func _process(delta: float) -> void:
 	var is_walking := (state == State.SPAWN_AND_STROLL or state == State.LEAVE) and nav_path.size() > 0
 	var frame_idx := (int(floor(anim_time * 6.0 / PI)) % 2) if is_walking else 0
 	var hop_y := -absf(sin(anim_time * 6.0)) * 2.2 if is_walking else 0.0
-	var tilt := sin(anim_time * 6.0) * 0.03 if is_walking else 0.0
 
+	rotation = 0.0
 	if body_sprite != null and tex_sheet != null:
 		body_sprite.texture = tex_sheet
 		body_sprite.region_enabled = false
@@ -182,7 +182,7 @@ func _process(delta: float) -> void:
 		body_sprite.frame = clampi(frame_idx, 0, 1)
 		body_sprite.flip_h = facing_left
 		body_sprite.position = Vector2(0.0, hop_y)
-		body_sprite.rotation = tilt
+		body_sprite.rotation = 0.0
 
 	if bubble_label != null:
 		if state == State.SPAWN_AND_STROLL or state == State.QUEUE_AT_STALL or state == State.PURCHASE:

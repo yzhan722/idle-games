@@ -95,6 +95,9 @@ func _run_all_four_assertions_and_export() -> void:
 		if (not sp.region_enabled and sp.hframes <= 1) or fw > 180.0 or fh > 180.0:
 			_fail_and_quit("[断言1-切帧防呆]", "AnimalWorker `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d, region=%s)" % [w.animal_key, fw, fh, sp.hframes, str(sp.region_enabled)])
 			return
+		if absf(w.rotation) > 0.001 or absf(sp.rotation) > 0.001 or sp.frame < 0 or sp.frame > 2:
+			_fail_and_quit("[断言1-切帧防呆]", "AnimalWorker `%s` has invalid rotation/pose (rot=%.3f, sp_rot=%.3f, frame=%d)" % [w.animal_key, w.rotation, sp.rotation, sp.frame])
+			return
 		checked_sprites += 1
 
 	for c in world.customers:
@@ -105,6 +108,9 @@ func _run_all_four_assertions_and_export() -> void:
 		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
 		if (not sp.region_enabled and sp.hframes <= 1) or fw > 180.0 or fh > 180.0:
 			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d)" % [c.sheet_key, fw, fh, sp.hframes])
+			return
+		if absf(c.rotation) > 0.001 or absf(sp.rotation) > 0.001:
+			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has non-zero rotation (rot=%.3f, sp_rot=%.3f)" % [c.sheet_key, c.rotation, sp.rotation])
 			return
 		checked_sprites += 1
 

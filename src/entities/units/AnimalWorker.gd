@@ -228,31 +228,31 @@ func _process(delta: float) -> void:
 	var hop_y := 0.0
 	var scale_x := 1.0
 	var scale_y := 1.0
-	var tilt_rad := 0.0
 	if is_moving:
 		hop_y = -absf(sin(anim_time * 8.5)) * 2.5
 		var squash := cos(anim_time * 17.0)
 		scale_x = 1.0 - squash * 0.03
 		scale_y = 1.0 + squash * 0.03
-		tilt_rad = sin(anim_time * 8.5) * 0.03
 	else:
 		var breath := sin(anim_time * 3.2)
 		scale_x = 1.0 + breath * 0.02
 		scale_y = 1.0 - breath * 0.02
 
+	rotation = 0.0
 	if body_sprite != null and tex_sheet != null:
 		body_sprite.texture = tex_sheet
 		body_sprite.region_enabled = false
 		body_sprite.hframes = 4
 		body_sprite.vframes = 1
-		body_sprite.frame = clampi(pose_idx, 0, 3)
+		body_sprite.frame = clampi(pose_idx, 0, 2)
 		body_sprite.flip_h = facing_left
 		body_sprite.position = Vector2(0.0, hop_y)
-		body_sprite.rotation = tilt_rad
+		body_sprite.rotation = 0.0
 		body_sprite.scale = Vector2(scale_x, scale_y)
 
 	if carry_icon != null and carry_icon.visible:
 		carry_icon.position = Vector2(0.0, -56.0 + hop_y)
+		carry_icon.rotation = 0.0
 
 	if sleep_label != null:
 		sleep_label.visible = is_sleeping_full
@@ -516,8 +516,10 @@ func _update_role_work_step() -> void:
 			facing_left = true
 
 func _get_pose_index() -> int:
-	if is_sleeping_full:
-		return 3
+	# Strictly keep all animal poses upright (0 = Idle/Stand, 1 = Walk, 2 = Active Work).
+	# Never select frame 3 (horizontal lying-down sleep pose) to prevent sudden 90-degree sideways sprite flips.
+	if is_sleeping_full or worker_step == 20 or worker_step == 40 or worker_step == 99:
+		return 0
 	if is_moving:
 		return int(floor(anim_time * 7.5 / PI)) % 2
 	if role_type == RoleType.SHIBA_MANAGER:
