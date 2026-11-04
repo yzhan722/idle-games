@@ -5188,7 +5188,7 @@ body.screen-quake-active #app {
       rgba(15, 23, 42, 0.0) 76%,
       rgba(15, 23, 42, 0.55) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=12') center center / cover no-repeat;
+    url('/assets/icons/title_splash_bg.jpg?v=17') center center / cover no-repeat;
   image-rendering: auto;
   animation: none !important;
   transform: none !important;
@@ -7432,7 +7432,7 @@ img,
       rgba(15, 28, 64, 0.05) 70%,
       rgba(20, 12, 6, 0.62) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=15') center center / cover no-repeat !important;
+    url('/assets/icons/title_splash_bg.jpg?v=17') center center / cover no-repeat !important;
 }
 
 .title-center-emblem {
@@ -8342,8 +8342,11 @@ img,
   flex: 1 1 auto !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  gap: 18px !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 0 18px !important;
+  box-sizing: border-box !important;
+  gap: 24px !important;
   margin-top: -8px !important;
 }
 
