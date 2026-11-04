@@ -473,7 +473,7 @@ function renderMainMenu(): void {
   const committedBranch = state.getCommittedSkillBranch();
   const activeRace = state.getActiveRaceBranch();
   const mechaSpec = state.getMechaSpec();
-  const spentPts = state.getSpentTalentPoints();
+  const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
   if (brandCrestImgEl) {
     brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=18`;
@@ -507,7 +507,7 @@ function renderMainMenu(): void {
     homeRaceTitleEl.innerHTML = `${activeKeystone ? `${UI_ART.crown} ` : ''}${activeRace.raceName}`;
   }
   if (homeRacePtsTagEl) {
-    homeRacePtsTagEl.innerHTML = `${UI_ART.star} ${spentPts}/16`;
+    homeRacePtsTagEl.innerHTML = `${UI_ART.star} ${activeRacePts}/16`;
   }
   if (homeRacePerkEl) {
     homeRacePerkEl.textContent = activeKeystone
@@ -521,12 +521,10 @@ function renderMainMenu(): void {
   if (menuActiveKeystonePill) {
     const desktopLabel = activeKeystone
       ? `${activeKeystone.branch.icon} ${UI_ART.crown} ${activeKeystone.branch.raceName}·${activeKeystone.node.name}`
-      : committedBranch
-        ? `${committedBranch.icon} ${committedBranch.raceName}·${committedBranch.unitName} (${spentPts}/16)`
-        : `${activeRace.icon} ${activeRace.raceName}·${activeRace.unitName} (可切族)`;
+      : `${activeRace.icon} ${activeRace.raceName}·${activeRace.unitName} (${activeRacePts}/16 生效中)`;
     const mobileLabel = activeKeystone
       ? `${activeKeystone.branch.icon}${UI_ART.crown} ${activeKeystone.branch.raceName}`
-      : `${activeRace.icon} ${activeRace.raceName} (${spentPts}/16)`;
+      : `${activeRace.icon} ${activeRace.raceName} (${activeRacePts}/16)`;
     menuActiveKeystonePill.innerHTML = `<span class="desktop-only-text">${desktopLabel}</span><span class="mobile-only-text">${mobileLabel}</span><kbd class="kbd-hint">G</kbd>`;
   }
 
@@ -829,7 +827,9 @@ function renderSkillInspectorBar(): void {
   if (!skillInspectorBarEl) return;
   const node = ALL_SKILL_NODES.find((n) => n.id === selectedSkillNodeId) || ALL_SKILL_NODES[0];
   const branch = SKILL_TREE_BRANCHES.find((b) => b.id === node.branchId) || SKILL_TREE_BRANCHES[0];
-  const rank = state.getSkillNodeRank(node.id);
+  const activeRace = state.getActiveRaceBranch();
+  const isBranchActive = activeRace.id === branch.id;
+  const rank = state.getSavedSkillNodeRank(node.id);
   const isMax = rank >= node.maxRank;
   const check = state.canUpgradeSkillNode(node.id);
   const svgIcon = SKILL_NODE_SVGS[node.id] || '';
@@ -850,12 +850,6 @@ function renderSkillInspectorBar(): void {
   if (!isMax) {
     if (check.ok) {
       btnLabel = `${UI_ART.arrowUp} 升级 (${node.pointCost}${UI_ART.star} + ${shortCost}${UI_ART.coin})`;
-    } else if (check.reqMatches) {
-      btnLabel = `${UI_ART.lock} 需累计 ${check.reqMatches} 局`;
-    } else if (check.reason.includes('先点满')) {
-      btnLabel = `${UI_ART.lock} 需先点满下层天赋`;
-    } else if (check.reason.includes('已锁')) {
-      btnLabel = `${UI_ART.lock} 已专精其他种族 (可洗点)`;
     } else if (check.reason.includes('天赋点不足')) {
       btnLabel = `${UI_ART.lock} 需 ${node.pointCost} ${UI_ART.star} 天赋星`;
     } else if (check.reason.includes('点数不足')) {
@@ -889,7 +883,7 @@ function renderSkillInspectorBar(): void {
         <div class="kr-title-line">
           <strong class="sib-name">${node.name}</strong>
           <span class="sib-branch-tag" style="color: ${branch.accentColor}; border-color: ${branch.accentColor}55">
-            ${branch.icon} ${branch.raceName}
+            ${branch.icon} ${branch.raceName}${isBranchActive ? ' · 生效中' : ' · 选中该族生效'}
           </span>
         </div>
         <p class="sib-desc">${node.desc}</p>
@@ -915,7 +909,7 @@ function renderSkillInspectorBar(): void {
         sound.playUpgrade();
         spawnMenuUpgradeBurst(
           upgBtn,
-          `${node.name} Lv.${state.getSkillNodeRank(node.id)}!`,
+          `${node.name} Lv.${state.getSavedSkillNodeRank(node.id)}!`,
           branch.accentColor
         );
         world.applySkin(state.getEquippedSkin());
@@ -931,30 +925,22 @@ function renderSkillInspectorBar(): void {
 function renderSkillTreePanel(): void {
   const avail = state.getAvailableTalentPoints();
   const spent = state.getSpentTalentPoints();
-  const maxByMatches = state.getMaxSkillPointsByMatches();
-  const curMatches = state.getEffectiveMatchesPlayed();
-  const committedBranch = state.getCommittedSkillBranch();
   const activeRace = state.getActiveRaceBranch();
-  const activeKeystone = state.getActiveKeystoneSpec();
+  const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
   if (skillAvailablePointsEl) {
     skillAvailablePointsEl.textContent = `${avail}`;
   }
   if (skillActiveKeystoneEl) {
-    const activeBranch = activeKeystone?.branch || committedBranch || activeRace;
-    skillActiveKeystoneEl.innerHTML = `${activeBranch.icon} ${activeBranch.raceName} · ${activeBranch.unitName}`;
+    skillActiveKeystoneEl.innerHTML = `${activeRace.icon} ${activeRace.raceName} · 已生效 ${activeRacePts}/16`;
   }
   if (btnBuyTalent) {
     const buyCheck = state.canBuyBonusTalentPoint();
     const buyCost = state.getBonusTalentPointCost();
     const shortBuyCost = buyCost >= 1000 ? `${Math.round(buyCost / 1000)}k` : `${buyCost}`;
-    btnBuyTalent.innerHTML = buyCheck.ok
-      ? `+${UI_ART.star} <small>${shortBuyCost}${UI_ART.coin}</small>`
-      : `${UI_ART.lock}${curMatches}局`;
+    btnBuyTalent.innerHTML = `+${UI_ART.star} <small>${shortBuyCost}${UI_ART.coin}</small>`;
     btnBuyTalent.disabled = !buyCheck.ok;
-    btnBuyTalent.title = buyCheck.ok
-      ? `${buyCheck.reason} [B]`
-      : `当前对局数(${curMatches}局)最多解锁 ${maxByMatches} 点技能上限`;
+    btnBuyTalent.title = `${buyCheck.reason} [B]`;
   }
   if (btnResetSkills) {
     const resetCost = state.getResetSkillTreeCost();
@@ -968,7 +954,7 @@ function renderSkillTreePanel(): void {
     btnResetSkills.title =
       spent <= 0
         ? `尚未投入天赋点（当前洗点价格 ${resetCost.toLocaleString()} 金币，每玩1关减免 1,000 金币）`
-        : `支付 ${resetCost.toLocaleString()} 金币重置流派并返还 ${spent} 点天赋（原价 ${baseCost.toLocaleString()} 金币，已减免 ${discount.toLocaleString()} 金币）[R]`;
+        : `支付 ${resetCost.toLocaleString()} 金币重置全部已点技能并返还 ${spent} 点天赋（原价 ${baseCost.toLocaleString()} 金币，已减免 ${discount.toLocaleString()} 金币）[R]`;
     btnResetSkills.disabled = spent <= 0 || state.gold < resetCost;
   }
 
@@ -980,22 +966,18 @@ function renderSkillTreePanel(): void {
 
   for (let bIdx = 0; bIdx < SKILL_TREE_BRANCHES.length; bIdx++) {
     const branch = SKILL_TREE_BRANCHES[bIdx];
-    const isBranchLockedOut = Boolean(committedBranch && committedBranch.id !== branch.id);
     const isActiveRace = activeRace.id === branch.id;
-    let branchPts = 0;
-    for (const n of branch.nodes) {
-      branchPts += state.getSkillNodeRank(n.id) * n.pointCost;
-    }
+    const branchPts = state.getBranchSpentPoints(branch.id);
 
     const colEl = document.createElement('div');
-    colEl.className = `kr-branch-col ${isActiveRace ? 'is-active-branch' : ''} ${isBranchLockedOut ? 'branch-locked-out' : ''}`;
+    colEl.className = `kr-branch-col ${isActiveRace ? 'is-active-branch' : ''}`;
     colEl.style.setProperty('--branch-color', branch.accentColor);
     colEl.style.setProperty('--stagger-i', `${bIdx}`);
 
     // Render 4 tiers from Top (T4 Crown, index 3) down to Bottom (T1 Base, index 0)
     const nodesTopToBottom = [...branch.nodes].reverse();
     nodesTopToBottom.forEach((node) => {
-      const rank = state.getSkillNodeRank(node.id);
+      const rank = state.getSavedSkillNodeRank(node.id);
       const isMax = rank >= node.maxRank;
       const check = state.canUpgradeSkillNode(node.id);
       const isSelected = selectedSkillNodeId === node.id;
@@ -1011,20 +993,16 @@ function renderSkillTreePanel(): void {
 
       const nodeBtn = document.createElement('button');
       nodeBtn.type = 'button';
-      nodeBtn.className = `tree-node tier-${node.tier} ${node.isKeystone ? 'keystone' : ''} ${stateClass} ${isBranchLockedOut ? 'branch-locked-out' : ''} ${isSelected ? 'selected' : ''}`;
+      nodeBtn.className = `tree-node tier-${node.tier} ${node.isKeystone ? 'keystone' : ''} ${stateClass} ${isSelected ? 'selected' : ''}`;
       nodeBtn.style.setProperty('--branch-color', branch.accentColor);
-      nodeBtn.title = `${branch.raceName} · ${node.name} (Lv.${rank}/${node.maxRank})`;
+      nodeBtn.title = `${branch.raceName} · ${node.name} (Lv.${rank}/${node.maxRank}${isActiveRace ? ' · 当前角色生效中' : ' · 切换至此角色后生效'})`;
 
       const svgArt = SKILL_NODE_SVGS[node.id] || '';
-      const reqFirstRankMatches = state.getRequiredMatchesForNodeRank(node.tier, 1);
-      const isMatchLocked = rank === 0 && curMatches < reqFirstRankMatches;
-      const badgeLabel = isMatchLocked
-        ? `${UI_ART.lock}${reqFirstRankMatches}`
-        : isMax
-          ? `${UI_ART.star}${rank}`
-          : rank > 0
-            ? `${UI_ART.star}${rank}/${node.maxRank}`
-            : `${UI_ART.star}${node.maxRank}`;
+      const badgeLabel = isMax
+        ? `${UI_ART.star}${rank}`
+        : rank > 0
+          ? `${UI_ART.star}${rank}/${node.maxRank}`
+          : `${UI_ART.star}${node.maxRank}`;
 
       nodeBtn.innerHTML = `
         <div class="tree-node-medallion">
@@ -1049,13 +1027,14 @@ function renderSkillTreePanel(): void {
         selectedSkillNodeId = node.id;
         if (state.selectRaceBranch(branch.id)) {
           world.applySkin(state.getEquippedSkin());
+          refreshMechaUI();
         }
         if (wasSelected && !isMax && state.canUpgradeSkillNode(node.id).ok) {
           if (state.upgradeSkillNode(node.id)) {
             sound.playUpgrade();
             spawnMenuUpgradeBurst(
               nodeBtn,
-              `${node.name} Lv.${state.getSkillNodeRank(node.id)}!`,
+              `${node.name} Lv.${state.getSavedSkillNodeRank(node.id)}!`,
               branch.accentColor
             );
             world.applySkin(state.getEquippedSkin());
@@ -1072,12 +1051,12 @@ function renderSkillTreePanel(): void {
       colEl.appendChild(nodeBtn);
     });
 
-    // Bottom Race Pedestal Shield Emblem (like the 6 class shields at the bottom of Kingdom Rush!)
+    // Bottom Race Pedestal Shield Emblem (click to freely switch active character!)
     const pedestalBtn = document.createElement('button');
     pedestalBtn.type = 'button';
     pedestalBtn.className = `kr-branch-pedestal ${isActiveRace ? 'active' : ''} ${branchPts > 0 ? 'has-points' : ''}`;
     pedestalBtn.style.setProperty('--branch-color', branch.accentColor);
-    pedestalBtn.title = `切换出战种族：${branch.raceName} (${branch.unitName})`;
+    pedestalBtn.title = `切换上阵角色：${branch.raceName} (${branchPts}/16 点技能${isActiveRace ? '生效中' : '待命'})`;
     pedestalBtn.innerHTML = `
       <span class="kr-pedestal-icon">${branch.icon}</span>
       <span class="kr-pedestal-name">${branch.raceName.slice(0, 2)}</span>
@@ -1087,6 +1066,7 @@ function renderSkillTreePanel(): void {
       if (state.selectRaceBranch(branch.id)) {
         sound.playUpgrade();
         world.applySkin(state.getEquippedSkin());
+        refreshMechaUI();
       }
       renderMainMenu();
     });
@@ -1721,8 +1701,7 @@ function cycleHomeRace(delta: number): void {
     spawnMenuUpgradeBurst(homeMascotArtEl, `${nextBranch.raceName}出阵!`, nextBranch.accentColor);
     refreshMechaUI();
     renderMainMenu();
-  } else {
-    showGlobalToast('当前已投入天赋锁定专精种族，洗点后可自由切换其他萌族！');
+    renderActiveBuffsBar();
   }
 }
 

@@ -1795,10 +1795,10 @@ export class GameState {
     orbitalZHalfSpan: number;
     orbitalXHalfSpan: number;
   } {
-    const spentPts = this.getSpentTalentPoints();
+    const spentPts = this.getBranchSpentPoints(this.selectedRaceId);
     const hasKeystone = Boolean(this.getActiveKeystoneSpec());
     const champLvl = this.championLevel;
-    // Combined evolution score from skill tree investment + in-match champion upgrade level
+    // Combined evolution score from active character's skill tree investment + in-match champion upgrade level
     const evoScore = spentPts + Math.max(0, champLvl - 1) * 1.4 + (hasKeystone ? 10 : 0);
 
     let tier: 0 | 1 | 2 | 3 = 0;
@@ -1836,106 +1836,60 @@ export class GameState {
   }
 
   // ==========================================
-  // 7-Branch Tactical Skill Tree Methods (Strict Single-Branch + Match-Count Gated Unlock)
+  // 7-Branch Tactical Skill Tree Methods (Free Character Switch + Free Multi-Branch Allocation; Only Active Character's Skills Take Effect!)
   // ==========================================
-  public getSkillNodeRank(id: SkillNodeId): number {
+  /**
+   * Returns the saved rank invested in `id` (regardless of which character is currently selected).
+   * Used by Skill Tree UI, save/load validation, and total point calculation.
+   */
+  public getSavedSkillNodeRank(id: SkillNodeId): number {
     return this.skillNodes[id] || 0;
+  }
+
+  /**
+   * Returns the effective rank of `id` in combat & stat calculations.
+   * ONLY skills belonging to the currently selected character (`this.selectedRaceId`) take effect!
+   */
+  public getSkillNodeRank(id: SkillNodeId): number {
+    if (!id.startsWith(`${this.selectedRaceId}_`)) return 0;
+    return this.skillNodes[id] || 0;
+  }
+
+  public getBranchSpentPoints(branchId: SkillBranchId): number {
+    const branch = SKILL_TREE_BRANCHES.find((b) => b.id === branchId);
+    if (!branch) return 0;
+    let pts = 0;
+    for (const n of branch.nodes) {
+      pts += this.getSavedSkillNodeRank(n.id) * n.pointCost;
+    }
+    return pts;
   }
 
   public getEffectiveMatchesPlayed(): number {
     return Math.max(0, this.totalMatchesPlayed, this.bestStageCleared);
   }
 
-  /**
-   * Returns how many total matches are required to unlock a given (tier, targetRank).
-   * - At 0 matches (start of game): ONLY T1 Lv.1 is unlocked (req = 0 matches)!
-   * - As matches increase, higher ranks and deeper tiers progressively unlock.
-   */
-  public getRequiredMatchesForNodeRank(tier: 1 | 2 | 3 | 4, targetRank: number): number {
-    if (tier === 1) {
-      if (targetRank <= 1) return 0; // Start of game: can only invest 1 skill (T1 Lv.1)
-      if (targetRank === 2) return 1; // 1 match played
-      return 2; // 2 matches played -> T1 maxed (3/3)
-    }
-    if (tier === 2) {
-      if (targetRank <= 1) return 4; // 4 matches -> unlock T2 Lv.1
-      if (targetRank === 2) return 6; // 6 matches -> unlock T2 Lv.2
-      return 8; // 8 matches -> T2 maxed (3/3)
-    }
-    if (tier === 3) {
-      if (targetRank <= 1) return 11; // 11 matches -> unlock T3 Lv.1
-      if (targetRank === 2) return 14; // 14 matches -> unlock T3 Lv.2
-      return 17; // 17 matches -> T3 maxed (3/3)
-    }
-    return 20; // 20 matches -> unlock T4 Ultimate Keystone!
+  public getRequiredMatchesForNodeRank(_tier: 1 | 2 | 3 | 4, _targetRank: number): number {
+    return 0;
   }
 
-  /**
-   * Maximum total skill points that can be invested at the current match count.
-   * Starts at 1 at 0 matches (so the player can only put 1 skill at the start),
-   * and expands up to 16 as matches played reach 20+.
-   */
   public getMaxSkillPointsByMatches(): number {
-    const m = this.getEffectiveMatchesPlayed();
-    if (m < 1) return 1; // 0 matches: strictly 1 skill (T1 Lv.1)
-    if (m < 2) return 2; // 1 match: up to T1 Lv.2
-    if (m < 4) return 3; // 2-3 matches: up to T1 Lv.3
-    if (m < 6) return 4; // 4-5 matches: up to T2 Lv.1
-    if (m < 8) return 5; // 6-7 matches: up to T2 Lv.2
-    if (m < 11) return 6; // 8-10 matches: up to T2 Lv.3
-    if (m < 14) return 8; // 11-13 matches: up to T3 Lv.1
-    if (m < 17) return 10; // 14-16 matches: up to T3 Lv.2
-    if (m < 20) return 12; // 17-19 matches: up to T3 Lv.3
-    return 16; // 20+ matches: full 16-point branch + T4 Crown Keystone
+    return ALL_SKILL_NODES.reduce((sum, n) => sum + n.maxRank * n.pointCost, 0);
   }
 
   public getNextMatchUnlockHint(): string {
-    const m = this.getEffectiveMatchesPlayed();
-    const milestones: Array<{ req: number; label: string }> = [
-      { req: 1, label: 'T1 二级' },
-      { req: 2, label: 'T1 满级' },
-      { req: 4, label: 'T2 技能' },
-      { req: 6, label: 'T2 二级' },
-      { req: 8, label: 'T2 满级' },
-      { req: 11, label: 'T3 技能' },
-      { req: 14, label: 'T3 二级' },
-      { req: 17, label: 'T3 满级' },
-      { req: 20, label: '👑 T4 基石' },
-    ];
-    for (const ms of milestones) {
-      if (m < ms.req) {
-        return `再战 ${ms.req - m} 局解锁【${ms.label}】`;
-      }
-    }
-    return `全阶 16 点槽位已全解锁`;
+    return '角色自由切换 · 仅当前上阵角色对应技能生效';
   }
 
   public sanitizeSkillTreeState(): void {
-    // Enforce single-branch commitment, full prerequisite ranks, match-count locks, and valid point budget
-    const unlockedBranches = new Set<SkillBranchId>();
-    const matches = this.getEffectiveMatchesPlayed();
-    let invalid = false;
     for (const node of ALL_SKILL_NODES) {
-      const r = this.getSkillNodeRank(node.id);
+      const r = this.getSavedSkillNodeRank(node.id);
       if (r <= 0) continue;
-      unlockedBranches.add(node.branchId);
-      if (r > node.maxRank) invalid = true;
-      if (matches < this.getRequiredMatchesForNodeRank(node.tier, r)) {
-        invalid = true;
-      }
-      if (node.prereq) {
-        const pSpec = ALL_SKILL_NODES.find((n) => n.id === node.prereq);
-        if (pSpec && this.getSkillNodeRank(node.prereq) < pSpec.maxRank) {
-          invalid = true;
-        }
+      if (r > node.maxRank) {
+        this.skillNodes[node.id] = node.maxRank;
       }
     }
-    if (
-      unlockedBranches.size > 1 ||
-      invalid ||
-      this.getSpentTalentPoints() > this.getTotalTalentPoints() ||
-      this.getSpentTalentPoints() > this.getMaxSkillPointsByMatches()
-    ) {
+    if (this.getSpentTalentPoints() > this.getTotalTalentPoints()) {
       this.skillNodes = {};
     }
   }
@@ -1951,14 +1905,13 @@ export class GameState {
   }
 
   public getTotalTalentPoints(): number {
-    // Strictly capped by the current match-unlocked skill capacity (starts at 1 at 0 matches!)
     return Math.min(this.getMaxSkillPointsByMatches(), this.getUncappedTalentPoints());
   }
 
   public getSpentTalentPoints(): number {
     let spent = 0;
     for (const node of ALL_SKILL_NODES) {
-      const r = this.getSkillNodeRank(node.id);
+      const r = this.getSavedSkillNodeRank(node.id);
       if (r > 0) spent += r * node.pointCost;
     }
     return spent;
@@ -1969,34 +1922,19 @@ export class GameState {
   }
 
   public getCommittedSkillBranch(): SkillBranchSpec | null {
-    for (const b of SKILL_TREE_BRANCHES) {
-      for (const n of b.nodes) {
-        if (this.getSkillNodeRank(n.id) > 0) {
-          return b;
-        }
-      }
-    }
-    return null;
+    return this.getActiveRaceBranch();
   }
 
   /**
-   * Returns the currently active Playable Race branch.
-   * If a skill branch has points invested, that Race is locked in; otherwise uses `selectedRaceId`.
+   * Returns the currently selected Playable Race branch (`selectedRaceId`).
+   * Characters can be switched freely at any time; only the selected character's skills take effect.
    */
   public getActiveRaceBranch(): SkillBranchSpec {
-    const committed = this.getCommittedSkillBranch();
-    if (committed) {
-      this.selectedRaceId = committed.id;
-      return committed;
-    }
     return SKILL_TREE_BRANCHES.find((b) => b.id === this.selectedRaceId) || SKILL_TREE_BRANCHES[0];
   }
 
   public selectRaceBranch(branchId: SkillBranchId): boolean {
-    const committed = this.getCommittedSkillBranch();
-    if (committed && committed.id !== branchId) {
-      return false;
-    }
+    if (!SKILL_TREE_BRANCHES.some((b) => b.id === branchId)) return false;
     if (this.selectedRaceId === branchId) return false;
     this.selectedRaceId = branchId;
     this.save();
@@ -2004,11 +1942,10 @@ export class GameState {
   }
 
   public getActiveKeystoneSpec(): { branch: SkillBranchSpec; node: SkillNodeSpec } | null {
-    for (const b of SKILL_TREE_BRANCHES) {
-      for (const n of b.nodes) {
-        if (n.isKeystone && this.getSkillNodeRank(n.id) > 0) {
-          return { branch: b, node: n };
-        }
+    const activeBranch = this.getActiveRaceBranch();
+    for (const n of activeBranch.nodes) {
+      if (n.isKeystone && this.getSkillNodeRank(n.id) > 0) {
+        return { branch: activeBranch, node: n };
       }
     }
     return null;
@@ -2045,55 +1982,16 @@ export class GameState {
   } {
     const spec = ALL_SKILL_NODES.find((n) => n.id === id);
     if (!spec) return { ok: false, reason: '未知节点', goldCost: 0 };
-    const curRank = this.getSkillNodeRank(id);
+    const curRank = this.getSavedSkillNodeRank(id);
     if (curRank >= spec.maxRank) return { ok: false, reason: '已满级', goldCost: 0 };
 
     const nextRank = curRank + 1;
     const goldCost = this.getSkillNodeUpgradeGoldCost(spec.tier, nextRank);
 
-    // Strict Single-Branch Commitment Rule: can only invest in ONE branch!
-    const committed = this.getCommittedSkillBranch();
-    if (committed && committed.id !== spec.branchId) {
-      return { ok: false, reason: `已锁【${committed.name.replace('流', '')}】(需洗点换线)`, goldCost };
-    }
-
-    // Must MAX OUT the previous tier before unlocking the next tier!
-    if (spec.prereq) {
-      const prereqSpec = ALL_SKILL_NODES.find((n) => n.id === spec.prereq);
-      const prereqRank = this.getSkillNodeRank(spec.prereq);
-      if (prereqSpec && prereqRank < prereqSpec.maxRank) {
-        return {
-          ok: false,
-          reason: `需先点满「${prereqSpec.name}」(${prereqRank}/${prereqSpec.maxRank})`,
-          goldCost,
-        };
-      }
-    }
-
-    // Match-Count Gate: at 0 matches only T1 Lv.1 is unlocked; higher ranks/tiers require playing more matches!
-    const reqMatches = this.getRequiredMatchesForNodeRank(spec.tier, nextRank);
-    const curMatches = this.getEffectiveMatchesPlayed();
-    if (curMatches < reqMatches) {
-      return {
-        ok: false,
-        reason: `需完成 ${reqMatches} 局解锁 (${curMatches}/${reqMatches}局)`,
-        reqMatches,
-        goldCost,
-      };
-    }
-
-    if (this.getSpentTalentPoints() + spec.pointCost > this.getMaxSkillPointsByMatches()) {
-      return {
-        ok: false,
-        reason: `当前局数上限 ${this.getMaxSkillPointsByMatches()} 点`,
-        goldCost,
-      };
-    }
-
     if (this.getAvailableTalentPoints() < spec.pointCost) {
       return {
         ok: false,
-        reason: `需 ${spec.pointCost}点 + ${goldCost.toLocaleString()}⚡`,
+        reason: `天赋点不足 (需 ${spec.pointCost}点)`,
         goldCost,
       };
     }
