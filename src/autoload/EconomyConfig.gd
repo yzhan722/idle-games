@@ -24,6 +24,9 @@ const VIP_TIP_MULTIPLIER := 2.0
 const DEFAULT_BUFFER_CAP := 10
 
 var sprite_manifest: Dictionary = {}
+var _label_settings_cache: Dictionary = {}
+var _shadow_polygon_cache: Dictionary = {}
+var _unit_circle_pts: PackedVector2Array = PackedVector2Array()
 
 ## PRD v2.2 Section 3: Strict Per-Island Animal Recruit Caps
 const ISLAND_RECRUIT_CAPS: Dictionary = {
@@ -72,7 +75,14 @@ const EXPANSIONS: Dictionary = {
 }
 
 func _ready() -> void:
+	_init_unit_circle()
 	_load_sprite_manifest()
+
+func _init_unit_circle() -> void:
+	_unit_circle_pts.resize(24)
+	for i in range(24):
+		var ang := float(i) * TAU / 24.0
+		_unit_circle_pts[i] = Vector2(cos(ang), sin(ang))
 
 func _load_sprite_manifest() -> void:
 	var path := "res://src/data/sprite_manifest.json"
@@ -82,8 +92,11 @@ func _load_sprite_manifest() -> void:
 		if parsed is Dictionary:
 			sprite_manifest = parsed
 
-## GEMINI.md Law 5.2: Native Typography Helper (`make_pixel_label_settings`)
+## GEMINI.md Law 5.2: Native Typography Helper (`make_pixel_label_settings`) with Resource Caching
 func make_pixel_label_settings(size: int = 14, color: Color = Color("#FFF4D6")) -> LabelSettings:
+	var cache_key := "%d_%s" % [size, color.to_html(true)]
+	if _label_settings_cache.has(cache_key):
+		return _label_settings_cache[cache_key]
 	var ls := LabelSettings.new()
 	ls.font_size = size
 	ls.font_color = color
@@ -92,6 +105,7 @@ func make_pixel_label_settings(size: int = 14, color: Color = Color("#FFF4D6")) 
 	ls.shadow_size = 1
 	ls.shadow_color = Color(0.0, 0.0, 0.0, 0.6)
 	ls.shadow_offset = Vector2(1.0, 1.0)
+	_label_settings_cache[cache_key] = ls
 	return ls
 
 func create_pixel_label(text_str: String = "", size: int = 14, color: Color = Color("#FFF4D6"), center_align: bool = false) -> Label:
@@ -104,15 +118,27 @@ func create_pixel_label(text_str: String = "", size: int = 14, color: Color = Co
 	return lbl
 
 ## GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow (`shadow_width = w * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`)
+## Optimized with polygon caching to eliminate per-frame trigonometry and array allocations.
 func draw_drop_shadow(canvas: CanvasItem, entity_visual_width: float, center: Vector2 = Vector2.ZERO) -> void:
-	var shadow_width := entity_visual_width * 0.55
-	var shadow_height := shadow_width * 0.18
-	var rx := shadow_width * 0.5
-	var ry := shadow_height * 0.5
-	var pts := PackedVector2Array()
-	for i in range(24):
-		var ang := float(i) * TAU / 24.0
-		pts.append(center + Vector2(cos(ang) * rx, sin(ang) * ry))
+	var w_key := int(roundf(entity_visual_width * 10.0))
+	var c_key := Vector2i(int(roundf(center.x)), int(roundf(center.y)))
+	var cache_key := Vector3i(w_key, c_key.x, c_key.y)
+	var pts: PackedVector2Array
+	if _shadow_polygon_cache.has(cache_key):
+		pts = _shadow_polygon_cache[cache_key]
+	else:
+		if _unit_circle_pts.size() != 24:
+			_init_unit_circle()
+		var shadow_width := entity_visual_width * 0.55
+		var shadow_height := shadow_width * 0.18
+		var rx := shadow_width * 0.5
+		var ry := shadow_height * 0.5
+		pts = PackedVector2Array()
+		pts.resize(24)
+		for i in range(24):
+			var u := _unit_circle_pts[i]
+			pts[i] = center + Vector2(u.x * rx, u.y * ry)
+		_shadow_polygon_cache[cache_key] = pts
 	canvas.draw_colored_polygon(pts, Color(0.0, 0.0, 0.0, 0.20))
 
 func get_manifest_entry(sheet_key: String) -> Dictionary:

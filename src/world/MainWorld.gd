@@ -45,8 +45,8 @@ var camera_controller: CameraController
 var hud: HUD
 var floating_text: FloatingText
 
-@onready var world_root: Node2D = Node2D.new()
-@onready var ysort_layer: Node2D = Node2D.new()
+var world_root: Node2D = Node2D.new()
+var ysort_layer: Node2D = Node2D.new()
 
 var soil_plots: Array[SoilPlot] = []
 var mortar_workshop: Workshop

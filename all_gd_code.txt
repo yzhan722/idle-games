@@ -1,4 +1,4 @@
-﻿=== FILE: D:\project\maple-isle-idle\src\autoload\EconomyConfig.gd (11464 bytes) ===
+﻿=== FILE: D:\project\maple-isle-idle\src\autoload\EconomyConfig.gd (12498 bytes) ===
 extends Node
 ## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution, Native Typography & Drop Shadow Math (`EconomyConfig.gd`)
 ## Strictly enforces GEMINI.md Engineering Laws 1~6.
@@ -25,6 +25,9 @@ const VIP_TIP_MULTIPLIER := 2.0
 const DEFAULT_BUFFER_CAP := 10
 
 var sprite_manifest: Dictionary = {}
+var _label_settings_cache: Dictionary = {}
+var _shadow_polygon_cache: Dictionary = {}
+var _unit_circle_pts: PackedVector2Array = PackedVector2Array()
 
 ## PRD v2.2 Section 3: Strict Per-Island Animal Recruit Caps
 const ISLAND_RECRUIT_CAPS: Dictionary = {
@@ -73,7 +76,14 @@ const EXPANSIONS: Dictionary = {
 }
 
 func _ready() -> void:
+	_init_unit_circle()
 	_load_sprite_manifest()
+
+func _init_unit_circle() -> void:
+	_unit_circle_pts.resize(24)
+	for i in range(24):
+		var ang := float(i) * TAU / 24.0
+		_unit_circle_pts[i] = Vector2(cos(ang), sin(ang))
 
 func _load_sprite_manifest() -> void:
 	var path := "res://src/data/sprite_manifest.json"
@@ -83,8 +93,11 @@ func _load_sprite_manifest() -> void:
 		if parsed is Dictionary:
 			sprite_manifest = parsed
 
-## GEMINI.md Law 5.2: Native Typography Helper (`make_pixel_label_settings`)
+## GEMINI.md Law 5.2: Native Typography Helper (`make_pixel_label_settings`) with Resource Caching
 func make_pixel_label_settings(size: int = 14, color: Color = Color("#FFF4D6")) -> LabelSettings:
+	var cache_key := "%d_%s" % [size, color.to_html(true)]
+	if _label_settings_cache.has(cache_key):
+		return _label_settings_cache[cache_key]
 	var ls := LabelSettings.new()
 	ls.font_size = size
 	ls.font_color = color
@@ -93,6 +106,7 @@ func make_pixel_label_settings(size: int = 14, color: Color = Color("#FFF4D6")) 
 	ls.shadow_size = 1
 	ls.shadow_color = Color(0.0, 0.0, 0.0, 0.6)
 	ls.shadow_offset = Vector2(1.0, 1.0)
+	_label_settings_cache[cache_key] = ls
 	return ls
 
 func create_pixel_label(text_str: String = "", size: int = 14, color: Color = Color("#FFF4D6"), center_align: bool = false) -> Label:
@@ -105,15 +119,27 @@ func create_pixel_label(text_str: String = "", size: int = 14, color: Color = Co
 	return lbl
 
 ## GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow (`shadow_width = w * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`)
+## Optimized with polygon caching to eliminate per-frame trigonometry and array allocations.
 func draw_drop_shadow(canvas: CanvasItem, entity_visual_width: float, center: Vector2 = Vector2.ZERO) -> void:
-	var shadow_width := entity_visual_width * 0.55
-	var shadow_height := shadow_width * 0.18
-	var rx := shadow_width * 0.5
-	var ry := shadow_height * 0.5
-	var pts := PackedVector2Array()
-	for i in range(24):
-		var ang := float(i) * TAU / 24.0
-		pts.append(center + Vector2(cos(ang) * rx, sin(ang) * ry))
+	var w_key := int(roundf(entity_visual_width * 10.0))
+	var c_key := Vector2i(int(roundf(center.x)), int(roundf(center.y)))
+	var cache_key := Vector3i(w_key, c_key.x, c_key.y)
+	var pts: PackedVector2Array
+	if _shadow_polygon_cache.has(cache_key):
+		pts = _shadow_polygon_cache[cache_key]
+	else:
+		if _unit_circle_pts.size() != 24:
+			_init_unit_circle()
+		var shadow_width := entity_visual_width * 0.55
+		var shadow_height := shadow_width * 0.18
+		var rx := shadow_width * 0.5
+		var ry := shadow_height * 0.5
+		pts = PackedVector2Array()
+		pts.resize(24)
+		for i in range(24):
+			var u := _unit_circle_pts[i]
+			pts[i] = center + Vector2(u.x * rx, u.y * ry)
+		_shadow_polygon_cache[cache_key] = pts
 	canvas.draw_colored_polygon(pts, Color(0.0, 0.0, 0.0, 0.20))
 
 func get_manifest_entry(sheet_key: String) -> Dictionary:
@@ -1368,7 +1394,7 @@ func play_click_sfx() -> void:
 func play_hover_sfx() -> void:
 	play_sfx("ui_hover", 0.03, 0.0)
 
-=== FILE: D:\project\maple-isle-idle\src\autoload\WindowController.gd (9890 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\autoload\WindowController.gd (10074 bytes) ===
 extends Node
 ## Desktop Companion Window, Multi-Island + UI Polygon Mouse Passthrough & Alt+Drag Controller (`src/autoload/WindowController.gd`)
 ## Strictly implements PRD v2.2 Section 1 & Section 5:
@@ -1540,6 +1566,8 @@ func snap_window_to_desktop(dock: DockPosition) -> void:
 	_refresh_passthrough()
 
 func update_passthrough_polygon(logical_island_rect: Rect2, logical_hud_rect: Rect2, logical_drawer_rect: Rect2 = Rect2()) -> void:
+	if _last_island_rect == logical_island_rect and _last_hud_rect == logical_hud_rect and _last_drawer_rect == logical_drawer_rect and not _last_passthrough_polygon.is_empty():
+		return
 	_last_island_rect = logical_island_rect
 	_last_hud_rect = logical_hud_rect
 	_last_drawer_rect = logical_drawer_rect
@@ -2813,7 +2841,7 @@ func _draw() -> void:
 [node name="MarketStall" type="Node2D"]
 script = ExtResource("1_stall")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.gd (8016 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.gd (8188 bytes) ===
 extends Node2D
 class_name SoilPlot
 ## Enlarged 1.5D Soil Bed (`64x26`), 3-Stage Crop Growth, Buffer Cap 10 & Lv.25 Auto-Evolution (`src/entities/buildings/SoilPlot.gd`)
@@ -3017,8 +3045,9 @@ func _sync_sprites() -> void:
 
 func harvest_crop_yield() -> int:
 	_refresh_evolved_crop()
-	# PRD v2.2 Section 4: Every 25 levels doubles (`2x`) crop production yield!
-	var qty := maxi(1, get_milestone_yield_multiplier())
+	# PRD v2.2 Section 3 & 4: Multiplies unlocked ridge slot count (`1x -> 2x` at Lv.2+) and Lv.25 milestone (`2x` per 25 levels)!
+	var ridge_slots := maxi(1, GameManager.get_unlocked_plot_count(island_idx)) if GameManager != null else 1
+	var qty := maxi(1, get_milestone_yield_multiplier() * ridge_slots)
 	harvest_count += 1
 	total_crops_harvested += qty
 	sown = true
@@ -3045,7 +3074,7 @@ func harvest_crop_yield() -> int:
 [node name="SoilPlot" type="Node2D"]
 script = ExtResource("1_soil")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\Workshop.gd (7024 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\Workshop.gd (7131 bytes) ===
 extends Node2D
 class_name Workshop
 ## Mortar, Cauldron & Island 3 Dual Workshop (`src/entities/buildings/Workshop.gd`)
@@ -3073,6 +3102,7 @@ var visual_upgrader: BuildingVisualUpgrader
 var level_label: Label
 
 var is_processing: bool = false
+var _was_processing: bool = false
 var process_progress: float = 0.0
 var work_anim_time: float = 0.0
 var crafted_count: int = 0
@@ -3204,11 +3234,13 @@ func _process(delta: float) -> void:
 		if body_sprite != null:
 			var squash := sin(work_anim_time) * 0.03
 			body_sprite.scale = Vector2(BASE_SPRITE_SCALE * (1.0 + squash), BASE_SPRITE_SCALE * (1.0 - squash))
+		queue_redraw()
 	else:
 		if body_sprite != null:
 			body_sprite.scale = Vector2(BASE_SPRITE_SCALE, BASE_SPRITE_SCALE)
-
-	queue_redraw()
+		if _was_processing:
+			queue_redraw()
+	_was_processing = is_processing
 
 func _draw() -> void:
 	if tex_building == null:
@@ -3239,7 +3271,7 @@ func _draw() -> void:
 [node name="Workshop" type="Node2D"]
 script = ExtResource("1_workshop")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.gd (20394 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.gd (20807 bytes) ===
 extends Node2D
 class_name AnimalWorker
 ## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`)
@@ -3275,9 +3307,9 @@ var tex_crops: Texture2D
 var tex_delicacies: Texture2D
 var tex_heart: Texture2D
 
-@onready var body_sprite: Sprite2D = Sprite2D.new()
-@onready var carry_icon: Sprite2D = Sprite2D.new()
-@onready var heart_icon: Sprite2D = Sprite2D.new()
+var body_sprite: Sprite2D = Sprite2D.new()
+var carry_icon: Sprite2D = Sprite2D.new()
+var heart_icon: Sprite2D = Sprite2D.new()
 var sleep_label: Label
 
 var waypoint_graph: WaypointGraph
@@ -3304,6 +3336,8 @@ func _ready() -> void:
 
 	# GEMINI.md Law 2.2 & Law 4: Fixed grid slicing (`hframes = 4, vframes = 1, region_enabled = false`) + Bottom-Center Pivot
 	body_sprite.name = "BodySprite"
+	if tex_sheet != null:
+		body_sprite.texture = tex_sheet
 	body_sprite.region_enabled = false
 	body_sprite.hframes = 4
 	body_sprite.vframes = 1
@@ -3443,6 +3477,16 @@ func _get_home_workshop_pos() -> Vector2:
 		return waypoint_graph.get_named_pos("cauldron")
 	return waypoint_graph.get_named_pos("orbis_linked")
 
+func _get_workshop_dock_pos(dock_suffix: String) -> Vector2:
+	var prefix := "mortar"
+	if home_island == 2:
+		prefix = "cauldron"
+	elif home_island == 3:
+		prefix = "orbis"
+	if waypoint_graph != null:
+		return waypoint_graph.get_dock_pos(prefix + "_" + dock_suffix)
+	return _get_home_workshop_pos()
+
 func _get_home_basket_pos() -> Vector2:
 	if home_island == 1:
 		return waypoint_graph.get_named_pos("basket_1")
@@ -3451,7 +3495,10 @@ func _get_home_basket_pos() -> Vector2:
 	return waypoint_graph.get_named_pos("basket_3")
 
 func _process(delta: float) -> void:
-	visible = is_hired()
+	var now_hired := is_hired()
+	if visible != now_hired:
+		visible = now_hired
+		queue_redraw()
 	if not visible:
 		return
 
@@ -3510,10 +3557,6 @@ func _process(delta: float) -> void:
 
 	rotation = 0.0
 	if body_sprite != null and tex_sheet != null:
-		body_sprite.texture = tex_sheet
-		body_sprite.region_enabled = false
-		body_sprite.hframes = 4
-		body_sprite.vframes = 1
 		body_sprite.frame = clampi(pose_idx, 0, 2)
 		body_sprite.flip_h = facing_left
 		body_sprite.position = Vector2(0.0, hop_y)
@@ -3536,8 +3579,6 @@ func _process(delta: float) -> void:
 		if sleep_label.visible:
 			sleep_label.position = Vector2(-30.0, -68.0 + sin(anim_time * 2.5) * 2.0)
 
-	queue_redraw()
-
 func _assign_next_task() -> void:
 	state_timer = 0.0
 	is_sleeping_full = false
@@ -3555,7 +3596,9 @@ func _assign_next_task() -> void:
 			if target_plot != null:
 				target_plot.reserved_by_worker = true
 				worker_step = 0
-				_navigate_to(target_plot.position + Vector2(float(slot_index * 10), 0.0))
+				var soil_dock_key := "soil_%d_slot_%d" % [home_island, clampi(slot_index, 0, 1)]
+				var dock_dest := waypoint_graph.get_dock_pos(soil_dock_key) if waypoint_graph != null else (target_plot.position + Vector2(float(slot_index * 10), 0.0))
+				_navigate_to(dock_dest)
 			else:
 				worker_step = 0
 				var fallback_pos := waypoint_graph.get_named_pos("apple_tree") if home_island == 1 else _get_home_basket_pos()
@@ -3563,10 +3606,9 @@ func _assign_next_task() -> void:
 
 		RoleType.OTTER_LOGISTICS:
 			var wid := _get_home_workshop_id()
-			var wpos := _get_home_workshop_pos()
 			if home_island == 1 and GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
 				worker_step = 10
-				_navigate_to(wpos + Vector2(14.0, 0.0))
+				_navigate_to(_get_workshop_dock_pos("output"))
 			elif GameManager.get_island_basket_total(home_island) > 0:
 				worker_step = 0
 				_navigate_to(_get_home_basket_pos() + Vector2(float(slot_index * 10), 0.0))
@@ -3576,30 +3618,27 @@ func _assign_next_task() -> void:
 
 		RoleType.TOUCAN_TRADER:
 			var wid := "orbis_linked" if home_island == 3 else "cauldron"
-			var wpos := _get_home_workshop_pos()
 			if GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
 				worker_step = 10
-				_navigate_to(wpos + Vector2(12.0, 0.0))
+				_navigate_to(_get_workshop_dock_pos("output"))
 			elif GameManager.get_island_basket_total(home_island) > 0 and not GameManager.is_stall_full():
 				worker_step = 0
 				_navigate_to(_get_home_basket_pos())
 			else:
 				worker_step = 40
-				_navigate_to(wpos + Vector2(float(slot_index * 12), 0.0))
+				_navigate_to(_get_home_workshop_pos() + Vector2(float(slot_index * 12), 0.0))
 
 		RoleType.FOX_MORTAR_CHEF:
 			worker_step = 0
-			var fpos := _get_home_workshop_pos() + Vector2(-18.0, 0.0)
-			_navigate_to(fpos)
+			_navigate_to(_get_workshop_dock_pos("chef"))
 
 		RoleType.PENGUIN_ALCHEMIST:
 			worker_step = 0
-			var ppos := _get_home_workshop_pos() + Vector2(-18.0, 0.0)
-			_navigate_to(ppos)
+			_navigate_to(_get_workshop_dock_pos("chef"))
 
 		RoleType.SHIBA_MANAGER:
 			worker_step = 0
-			_navigate_to(waypoint_graph.get_named_pos("market_stall") + Vector2(22.0, 0.0))
+			_navigate_to(waypoint_graph.get_dock_pos("stall_manager") if waypoint_graph != null else (waypoint_graph.get_named_pos("market_stall") + Vector2(22.0, 0.0)))
 
 func _update_role_work_step() -> void:
 	match role_type:
@@ -3817,7 +3856,7 @@ func _draw() -> void:
 [node name="AnimalWorker" type="Node2D"]
 script = ExtResource("1_worker")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.gd (9934 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.gd (10091 bytes) ===
 extends Node2D
 class_name CustomerNPC
 ## Long-Cycle Island Customer & Crown VIP Tycoon (`src/entities/units/CustomerNPC.gd`)
@@ -3859,7 +3898,7 @@ var tex_delicacies: Texture2D
 var tex_crops: Texture2D
 var tex_heart: Texture2D
 
-@onready var body_sprite: Sprite2D = Sprite2D.new()
+var body_sprite: Sprite2D = Sprite2D.new()
 var bubble_label: Label
 
 var waypoint_graph: WaypointGraph
@@ -3884,6 +3923,8 @@ func _ready() -> void:
 
 	# GEMINI.md Law 2.2 & Law 4: Fixed grid slicing (`hframes = 2, vframes = 1, region_enabled = false`) + Bottom-Center Pivot
 	body_sprite.name = "BodySprite"
+	if tex_sheet != null:
+		body_sprite.texture = tex_sheet
 	body_sprite.region_enabled = false
 	body_sprite.hframes = 2
 	body_sprite.vframes = 1
@@ -3963,13 +4004,13 @@ func _process(delta: float) -> void:
 				state = State.PURCHASE
 
 		State.PURCHASE:
-			var has_stock := GameManager.get_total_stall_count() > 0
+			var has_stock := stall_ref.has_available_stock() if stall_ref != null else (GameManager.get_total_stall_count() > 0)
 			if has_stock:
 				var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
 				interact_timer += delta * frenzy_mult
-				var req_time := 1.0 if GameManager.is_animal_hired("shiba") else 1.8
+				var req_time := stall_ref.get_checkout_duration() if stall_ref != null else (1.0 if GameManager.is_animal_hired("shiba") else 1.8)
 				if interact_timer >= req_time:
-					var earned := GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
+					var earned := stall_ref.execute_customer_checkout(desired_item_id, desired_qty, position, is_vip) if stall_ref != null else GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
 					if earned > 0:
 						purchased_ok = true
 						if is_vip:
@@ -3996,10 +4037,6 @@ func _process(delta: float) -> void:
 
 	rotation = 0.0
 	if body_sprite != null and tex_sheet != null:
-		body_sprite.texture = tex_sheet
-		body_sprite.region_enabled = false
-		body_sprite.hframes = 2
-		body_sprite.vframes = 1
 		body_sprite.frame = clampi(frame_idx, 0, 1)
 		body_sprite.flip_h = facing_left
 		body_sprite.position = Vector2(0.0, hop_y)
@@ -4095,13 +4132,16 @@ func _draw() -> void:
 [node name="CustomerNPC" type="Node2D"]
 script = ExtResource("1_customer")
 
-=== FILE: D:\project\maple-isle-idle\src\ui\FloatingText.gd (2627 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\ui\FloatingText.gd (3368 bytes) ===
 extends Node2D
 class_name FloatingText
 ## Native Label Floating Text & Parabolic Gold Coin Effect (`src/ui/FloatingText.gd`)
 ## Strictly enforces GEMINI.md Law 2.3 (`z_index = 50`) & Law 5 (`EconomyConfig.create_pixel_label`).
 
+const MAX_POOL_SIZE := 24
+
 var active_labels: Array[Dictionary] = []
+var _label_pool: Array[Label] = []
 var coin_arcs: Array[Dictionary] = []
 var tex_icons: Texture2D
 
@@ -4112,15 +4152,39 @@ func _ready() -> void:
 	EventBus.spawn_floating_text.connect(_on_spawn_floating_text)
 	EventBus.customer_paid.connect(_on_customer_paid)
 
+func _acquire_pooled_label(text_str: String, final_col: Color) -> Label:
+	var lbl: Label = null
+	while _label_pool.size() > 0 and lbl == null:
+		var cand: Label = _label_pool.pop_back()
+		if is_instance_valid(cand):
+			lbl = cand
+	if lbl == null:
+		lbl = EconomyConfig.create_pixel_label(text_str, 14, final_col, true)
+		lbl.custom_minimum_size = Vector2(120.0, 22.0)
+		lbl.z_index = EconomyConfig.Z_FLOATING_UI
+		lbl.z_as_relative = false
+		add_child(lbl)
+	else:
+		lbl.text = text_str
+		lbl.label_settings = EconomyConfig.make_pixel_label_settings(14, final_col)
+		lbl.visible = true
+	lbl.modulate.a = 1.0
+	return lbl
+
+func _release_pooled_label(lbl: Label) -> void:
+	if not is_instance_valid(lbl):
+		return
+	if _label_pool.size() < MAX_POOL_SIZE:
+		lbl.visible = false
+		_label_pool.append(lbl)
+	else:
+		lbl.queue_free()
+
 func _on_spawn_floating_text(world_pos: Vector2, text_str: String, col: Color) -> void:
 	var is_gold := text_str.begins_with("+") and text_str.ends_with("G")
 	var final_col := Color("#FFE066") if is_gold else col
-	var lbl := EconomyConfig.create_pixel_label(text_str, 14, final_col, true)
+	var lbl := _acquire_pooled_label(text_str, final_col)
 	lbl.position = world_pos + Vector2(-60.0, 0.0)
-	lbl.custom_minimum_size = Vector2(120.0, 22.0)
-	lbl.z_index = EconomyConfig.Z_FLOATING_UI
-	lbl.z_as_relative = false
-	add_child(lbl)
 	active_labels.append({
 		"node": lbl,
 		"ttl": 1.8
@@ -4147,7 +4211,7 @@ func _process(delta: float) -> void:
 			lbl.position.y -= 15.0 * delta
 			lbl.modulate.a = clampf(ttl / 0.6, 0.0, 1.0)
 			if ttl <= 0.0:
-				lbl.queue_free()
+				_release_pooled_label(lbl)
 				active_labels.remove_at(i)
 		else:
 			active_labels.remove_at(i)
@@ -4964,7 +5028,7 @@ func _process(delta: float) -> void:
 	position.y = lerpf(position.y, target_y, minf(1.0, delta * PAN_LERP_SPEED))
 	zoom = zoom.lerp(Vector2(target_zoom, target_zoom), minf(1.0, delta * ZOOM_LERP_SPEED))
 
-=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.gd (23225 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.gd (23207 bytes) ===
 extends Node2D
 class_name MainWorld
 ## Panoramic 3-Island World (`src/world/MainWorld.gd`)
@@ -5012,8 +5076,8 @@ var camera_controller: CameraController
 var hud: HUD
 var floating_text: FloatingText
 
-@onready var world_root: Node2D = Node2D.new()
-@onready var ysort_layer: Node2D = Node2D.new()
+var world_root: Node2D = Node2D.new()
+var ysort_layer: Node2D = Node2D.new()
 
 var soil_plots: Array[SoilPlot] = []
 var mortar_workshop: Workshop

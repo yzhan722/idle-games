@@ -33,9 +33,9 @@ var tex_crops: Texture2D
 var tex_delicacies: Texture2D
 var tex_heart: Texture2D
 
-@onready var body_sprite: Sprite2D = Sprite2D.new()
-@onready var carry_icon: Sprite2D = Sprite2D.new()
-@onready var heart_icon: Sprite2D = Sprite2D.new()
+var body_sprite: Sprite2D = Sprite2D.new()
+var carry_icon: Sprite2D = Sprite2D.new()
+var heart_icon: Sprite2D = Sprite2D.new()
 var sleep_label: Label
 
 var waypoint_graph: WaypointGraph
@@ -62,6 +62,8 @@ func _ready() -> void:
 
 	# GEMINI.md Law 2.2 & Law 4: Fixed grid slicing (`hframes = 4, vframes = 1, region_enabled = false`) + Bottom-Center Pivot
 	body_sprite.name = "BodySprite"
+	if tex_sheet != null:
+		body_sprite.texture = tex_sheet
 	body_sprite.region_enabled = false
 	body_sprite.hframes = 4
 	body_sprite.vframes = 1
@@ -201,6 +203,16 @@ func _get_home_workshop_pos() -> Vector2:
 		return waypoint_graph.get_named_pos("cauldron")
 	return waypoint_graph.get_named_pos("orbis_linked")
 
+func _get_workshop_dock_pos(dock_suffix: String) -> Vector2:
+	var prefix := "mortar"
+	if home_island == 2:
+		prefix = "cauldron"
+	elif home_island == 3:
+		prefix = "orbis"
+	if waypoint_graph != null:
+		return waypoint_graph.get_dock_pos(prefix + "_" + dock_suffix)
+	return _get_home_workshop_pos()
+
 func _get_home_basket_pos() -> Vector2:
 	if home_island == 1:
 		return waypoint_graph.get_named_pos("basket_1")
@@ -209,7 +221,10 @@ func _get_home_basket_pos() -> Vector2:
 	return waypoint_graph.get_named_pos("basket_3")
 
 func _process(delta: float) -> void:
-	visible = is_hired()
+	var now_hired := is_hired()
+	if visible != now_hired:
+		visible = now_hired
+		queue_redraw()
 	if not visible:
 		return
 
@@ -268,10 +283,6 @@ func _process(delta: float) -> void:
 
 	rotation = 0.0
 	if body_sprite != null and tex_sheet != null:
-		body_sprite.texture = tex_sheet
-		body_sprite.region_enabled = false
-		body_sprite.hframes = 4
-		body_sprite.vframes = 1
 		body_sprite.frame = clampi(pose_idx, 0, 2)
 		body_sprite.flip_h = facing_left
 		body_sprite.position = Vector2(0.0, hop_y)
@@ -294,8 +305,6 @@ func _process(delta: float) -> void:
 		if sleep_label.visible:
 			sleep_label.position = Vector2(-30.0, -68.0 + sin(anim_time * 2.5) * 2.0)
 
-	queue_redraw()
-
 func _assign_next_task() -> void:
 	state_timer = 0.0
 	is_sleeping_full = false
@@ -313,7 +322,9 @@ func _assign_next_task() -> void:
 			if target_plot != null:
 				target_plot.reserved_by_worker = true
 				worker_step = 0
-				_navigate_to(target_plot.position + Vector2(float(slot_index * 10), 0.0))
+				var soil_dock_key := "soil_%d_slot_%d" % [home_island, clampi(slot_index, 0, 1)]
+				var dock_dest := waypoint_graph.get_dock_pos(soil_dock_key) if waypoint_graph != null else (target_plot.position + Vector2(float(slot_index * 10), 0.0))
+				_navigate_to(dock_dest)
 			else:
 				worker_step = 0
 				var fallback_pos := waypoint_graph.get_named_pos("apple_tree") if home_island == 1 else _get_home_basket_pos()
@@ -321,10 +332,9 @@ func _assign_next_task() -> void:
 
 		RoleType.OTTER_LOGISTICS:
 			var wid := _get_home_workshop_id()
-			var wpos := _get_home_workshop_pos()
 			if home_island == 1 and GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
 				worker_step = 10
-				_navigate_to(wpos + Vector2(14.0, 0.0))
+				_navigate_to(_get_workshop_dock_pos("output"))
 			elif GameManager.get_island_basket_total(home_island) > 0:
 				worker_step = 0
 				_navigate_to(_get_home_basket_pos() + Vector2(float(slot_index * 10), 0.0))
@@ -334,30 +344,27 @@ func _assign_next_task() -> void:
 
 		RoleType.TOUCAN_TRADER:
 			var wid := "orbis_linked" if home_island == 3 else "cauldron"
-			var wpos := _get_home_workshop_pos()
 			if GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
 				worker_step = 10
-				_navigate_to(wpos + Vector2(12.0, 0.0))
+				_navigate_to(_get_workshop_dock_pos("output"))
 			elif GameManager.get_island_basket_total(home_island) > 0 and not GameManager.is_stall_full():
 				worker_step = 0
 				_navigate_to(_get_home_basket_pos())
 			else:
 				worker_step = 40
-				_navigate_to(wpos + Vector2(float(slot_index * 12), 0.0))
+				_navigate_to(_get_home_workshop_pos() + Vector2(float(slot_index * 12), 0.0))
 
 		RoleType.FOX_MORTAR_CHEF:
 			worker_step = 0
-			var fpos := _get_home_workshop_pos() + Vector2(-18.0, 0.0)
-			_navigate_to(fpos)
+			_navigate_to(_get_workshop_dock_pos("chef"))
 
 		RoleType.PENGUIN_ALCHEMIST:
 			worker_step = 0
-			var ppos := _get_home_workshop_pos() + Vector2(-18.0, 0.0)
-			_navigate_to(ppos)
+			_navigate_to(_get_workshop_dock_pos("chef"))
 
 		RoleType.SHIBA_MANAGER:
 			worker_step = 0
-			_navigate_to(waypoint_graph.get_named_pos("market_stall") + Vector2(22.0, 0.0))
+			_navigate_to(waypoint_graph.get_dock_pos("stall_manager") if waypoint_graph != null else (waypoint_graph.get_named_pos("market_stall") + Vector2(22.0, 0.0)))
 
 func _update_role_work_step() -> void:
 	match role_type:

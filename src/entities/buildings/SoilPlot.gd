@@ -201,8 +201,9 @@ func _sync_sprites() -> void:
 
 func harvest_crop_yield() -> int:
 	_refresh_evolved_crop()
-	# PRD v2.2 Section 4: Every 25 levels doubles (`2x`) crop production yield!
-	var qty := maxi(1, get_milestone_yield_multiplier())
+	# PRD v2.2 Section 3 & 4: Multiplies unlocked ridge slot count (`1x -> 2x` at Lv.2+) and Lv.25 milestone (`2x` per 25 levels)!
+	var ridge_slots := maxi(1, GameManager.get_unlocked_plot_count(island_idx)) if GameManager != null else 1
+	var qty := maxi(1, get_milestone_yield_multiplier() * ridge_slots)
 	harvest_count += 1
 	total_crops_harvested += qty
 	sown = true

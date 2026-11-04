@@ -169,6 +169,8 @@ func snap_window_to_desktop(dock: DockPosition) -> void:
 	_refresh_passthrough()
 
 func update_passthrough_polygon(logical_island_rect: Rect2, logical_hud_rect: Rect2, logical_drawer_rect: Rect2 = Rect2()) -> void:
+	if _last_island_rect == logical_island_rect and _last_hud_rect == logical_hud_rect and _last_drawer_rect == logical_drawer_rect and not _last_passthrough_polygon.is_empty():
+		return
 	_last_island_rect = logical_island_rect
 	_last_hud_rect = logical_hud_rect
 	_last_drawer_rect = logical_drawer_rect

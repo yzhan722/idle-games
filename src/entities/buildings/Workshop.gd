@@ -25,6 +25,7 @@ var visual_upgrader: BuildingVisualUpgrader
 var level_label: Label
 
 var is_processing: bool = false
+var _was_processing: bool = false
 var process_progress: float = 0.0
 var work_anim_time: float = 0.0
 var crafted_count: int = 0
@@ -156,11 +157,13 @@ func _process(delta: float) -> void:
 		if body_sprite != null:
 			var squash := sin(work_anim_time) * 0.03
 			body_sprite.scale = Vector2(BASE_SPRITE_SCALE * (1.0 + squash), BASE_SPRITE_SCALE * (1.0 - squash))
+		queue_redraw()
 	else:
 		if body_sprite != null:
 			body_sprite.scale = Vector2(BASE_SPRITE_SCALE, BASE_SPRITE_SCALE)
-
-	queue_redraw()
+		if _was_processing:
+			queue_redraw()
+	_was_processing = is_processing
 
 func _draw() -> void:
 	if tex_building == null:

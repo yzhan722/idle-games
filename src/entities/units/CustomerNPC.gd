@@ -39,7 +39,7 @@ var tex_delicacies: Texture2D
 var tex_crops: Texture2D
 var tex_heart: Texture2D
 
-@onready var body_sprite: Sprite2D = Sprite2D.new()
+var body_sprite: Sprite2D = Sprite2D.new()
 var bubble_label: Label
 
 var waypoint_graph: WaypointGraph
@@ -64,6 +64,8 @@ func _ready() -> void:
 
 	# GEMINI.md Law 2.2 & Law 4: Fixed grid slicing (`hframes = 2, vframes = 1, region_enabled = false`) + Bottom-Center Pivot
 	body_sprite.name = "BodySprite"
+	if tex_sheet != null:
+		body_sprite.texture = tex_sheet
 	body_sprite.region_enabled = false
 	body_sprite.hframes = 2
 	body_sprite.vframes = 1
@@ -143,13 +145,13 @@ func _process(delta: float) -> void:
 				state = State.PURCHASE
 
 		State.PURCHASE:
-			var has_stock := GameManager.get_total_stall_count() > 0
+			var has_stock := stall_ref.has_available_stock() if stall_ref != null else (GameManager.get_total_stall_count() > 0)
 			if has_stock:
 				var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
 				interact_timer += delta * frenzy_mult
-				var req_time := 1.0 if GameManager.is_animal_hired("shiba") else 1.8
+				var req_time := stall_ref.get_checkout_duration() if stall_ref != null else (1.0 if GameManager.is_animal_hired("shiba") else 1.8)
 				if interact_timer >= req_time:
-					var earned := GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
+					var earned := stall_ref.execute_customer_checkout(desired_item_id, desired_qty, position, is_vip) if stall_ref != null else GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
 					if earned > 0:
 						purchased_ok = true
 						if is_vip:
@@ -176,10 +178,6 @@ func _process(delta: float) -> void:
 
 	rotation = 0.0
 	if body_sprite != null and tex_sheet != null:
-		body_sprite.texture = tex_sheet
-		body_sprite.region_enabled = false
-		body_sprite.hframes = 2
-		body_sprite.vframes = 1
 		body_sprite.frame = clampi(frame_idx, 0, 1)
 		body_sprite.flip_h = facing_left
 		body_sprite.position = Vector2(0.0, hop_y)
