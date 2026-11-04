@@ -18,7 +18,6 @@ import {
 import { GameState, MechaMode, SkinSpec } from './State';
 import { UI_ART, replaceEmojiWithArt } from './SkillIcons';
 import { sound } from '../audio/SoundManager';
-import { DiagonalDioramaRenderer } from './DiagonalDioramaRenderer';
 import {
   buildBanelingGeometry,
   buildBlueMarineGeometry,
@@ -190,7 +189,6 @@ export class World3D {
   private state: GameState;
 
   private renderer: THREE.WebGLRenderer;
-  private dioramaRenderer?: DiagonalDioramaRenderer;
   private composer: EffectComposer;
   private bloomPass: UnrealBloomPass;
   private cinemaPass: ShaderPass;
@@ -497,15 +495,23 @@ export class World3D {
     // Bypass multi-pass offscreen EffectComposer on mobile to prevent GPU VRAM thrashing & overheating!
     this.usePostProcessing = !this.isMobileDevice;
 
-    const maxDpr = this.isMobileDevice ? 1.25 : 1.5;
-    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+    const nativeDpr = window.devicePixelRatio || 1;
+    const dpr = this.isMobileDevice
+      ? Math.min(nativeDpr, 1.35)
+      : Math.min(Math.max(nativeDpr, 1.5), 2.25);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
       powerPreference: this.isMobileDevice ? 'default' : 'high-performance',
     });
-    this.renderer.setPixelRatio(dpr);
+    const gl = this.renderer.getContext();
+    const dbgExt = gl.getExtension('WEBGL_debug_renderer_info');
+    const glRendererStr = dbgExt ? String(gl.getParameter(dbgExt.UNMASKED_RENDERER_WEBGL)) : '';
+    if (/SwiftShader|llvmpipe|Software|Basic Render/i.test(glRendererStr)) {
+      this.usePostProcessing = false;
+    }
+    this.renderer.setPixelRatio(this.usePostProcessing ? dpr : Math.min(nativeDpr, 1.5));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -536,7 +542,10 @@ export class World3D {
     this.composer.setSize(window.innerWidth, window.innerHeight);
     const renderPass = new RenderPass(this.scene, this.camera);
     this.bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(Math.floor(window.innerWidth * 0.5), Math.floor(window.innerHeight * 0.5)),
+      new THREE.Vector2(
+        Math.floor(window.innerWidth * dpr * 0.5),
+        Math.floor(window.innerHeight * dpr * 0.5)
+      ),
       0.16,
       0.32,
       0.92
@@ -548,10 +557,7 @@ export class World3D {
       uniforms: {
         tDiffuse: { value: null },
         uResolution: {
-          value: new THREE.Vector2(
-            window.innerWidth * Math.min(window.devicePixelRatio, 2),
-            window.innerHeight * Math.min(window.devicePixelRatio, 2)
-          ),
+          value: new THREE.Vector2(window.innerWidth * dpr, window.innerHeight * dpr),
         },
         uAberration: { value: 0.0 },
         uVignette: { value: 0.1 },
@@ -623,9 +629,6 @@ export class World3D {
     this.bindInput();
 
     this.scene.add(this.levelGroup);
-    if (this.canvas.parentElement) {
-      this.dioramaRenderer = new DiagonalDioramaRenderer(this.canvas.parentElement);
-    }
   }
 
   private initPools(): void {
@@ -747,13 +750,13 @@ export class World3D {
     this.abyssMat = new THREE.MeshBasicMaterial({
       map: createAbyssFloorTexture(theme),
     });
-    const abyssPlane = new THREE.Mesh(new THREE.PlaneGeometry(140, 42), this.abyssMat);
+    const abyssPlane = new THREE.Mesh(new THREE.PlaneGeometry(280, 240), this.abyssMat);
     abyssPlane.rotation.x = -Math.PI / 2;
     abyssPlane.position.set(0, -6.8, 1.5);
     this.scene.add(abyssPlane);
 
     this.abyssShaderMat = createAbyssalSeaShaderMaterial(theme);
-    const abyssShaderPlane = new THREE.Mesh(new THREE.PlaneGeometry(140, 42), this.abyssShaderMat);
+    const abyssShaderPlane = new THREE.Mesh(new THREE.PlaneGeometry(280, 240), this.abyssShaderMat);
     abyssShaderPlane.rotation.x = -Math.PI / 2;
     abyssShaderPlane.position.set(0, -6.4, 1.5);
     this.scene.add(abyssShaderPlane);
@@ -3899,7 +3902,7 @@ export class World3D {
   public toggleCameraMode(): string {
     this.cameraMode = ((this.cameraMode + 1) % 3) as 0 | 1 | 2;
     this.applyCameraTransform();
-    return this.cameraMode === 0 ? '经典俯视' : this.cameraMode === 1 ? '低空震撼' : '全景战术';
+    return this.cameraMode === 0 ? '斜向微缩' : this.cameraMode === 1 ? '经典俯视' : '低空震撼';
   }
 
   private applyCameraTransform(): void {
@@ -3910,29 +3913,34 @@ export class World3D {
     this.camera.aspect = aspect;
 
     if (this.cameraMode === 0) {
-      // Supercell 3D Toy-Box Battle Perspective (Matches supercell_3d_battle_hud_gameplay_1793627191206.jpg 1:1):
-      // Simultaneously frames the entire Steampunk Boss Overlord + Factory Arch at the top (screenY 12%..21%, below .hud-top)
-      // AND the entire 3D Candy Cannon + Peppermint Wheels + Slime Gunner at the bottom (screenY 62%..69%, above .hud-bottom)!
-      this.camera.fov = isPortrait ? 58 : 56;
+      // 3/4 Diagonal Diorama 3D Perspective:
+      // Genuine Three.js 3D diagonal camera positioned on the East (+X) side looking West-North-West so the
+      // cobblestone viaduct runs from Bottom-Left (Player 3D Candy Cannon, unobstructed by the bottom-right card dock!)
+      // to Top-Right (Steampunk Boss Gatehouse), while keeping all 3D gates, walls, gears, barrels, nests, and 2,600 units live!
+      this.camera.fov = isPortrait ? 56 : 50;
+      const targetX = isPortrait ? -0.8 : -2.2;
       const targetY = isPortrait ? -1.4 : -1.6;
-      const targetZ = isPortrait ? 5.6 : 6.2;
-      const offsetY = (isPortrait ? 19.6 : 19.2) * zoom;
-      const offsetZ = (isPortrait ? 27.0 : 26.2) * zoom;
+      const targetZ = isPortrait ? 4.8 : 5.4;
+      const offsetX = (isPortrait ? 8.8 : 12.6) * zoom;
+      const offsetY = (isPortrait ? 20.4 : 19.8) * zoom;
+      const offsetZ = (isPortrait ? 29.2 : 28.8) * zoom;
+      this.camera.position.set(targetX + offsetX, targetY + offsetY, targetZ + offsetZ);
+      this.camera.lookAt(targetX, targetY, targetZ);
+    } else if (this.cameraMode === 1) {
+      // Classic Centered 3D Toy-Box Battle Perspective
+      this.camera.fov = isPortrait ? 58 : 54;
+      const targetY = isPortrait ? -1.6 : -2.2;
+      const targetZ = isPortrait ? 5.8 : 6.6;
+      const offsetY = (isPortrait ? 20.2 : 19.8) * zoom;
+      const offsetZ = (isPortrait ? 28.0 : 27.6) * zoom;
       this.camera.position.set(0, targetY + offsetY, targetZ + offsetZ);
       this.camera.lookAt(0, targetY, targetZ);
-    } else if (this.cameraMode === 1) {
+    } else {
       // Ultra-Low Over-the-Shoulder Action Cam
       this.camera.fov = isPortrait ? 50 : 45;
       const targetY = 0.8;
       const targetZ = 0.5;
       this.camera.position.set(0, targetY + 10.2 * zoom, targetZ + 30.5 * zoom);
-      this.camera.lookAt(0, targetY, targetZ);
-    } else {
-      // High Tactical Overview
-      this.camera.fov = isPortrait ? 44 : 38;
-      const targetY = -0.8;
-      const targetZ = 1.5;
-      this.camera.position.set(0, targetY + 26.5 * zoom, targetZ + 40.5 * zoom);
       this.camera.lookAt(0, targetY, targetZ);
     }
 
@@ -4035,17 +4043,18 @@ export class World3D {
         return;
       }
 
-      // On PC Desktop, project a 1-unit reference point at the Turret's exact Z plane (PLAYER_Z)
-      // so the turret's screen X aligns 1:1 with the mouse cursor X regardless of cursor Y height!
+      // Project left and right endpoints of the 3D turret rail at PLAYER_Z into screen NDC space
+      // so the 3D turret aligns 1:1 with the cursor X in both Diagonal 3/4 and Centered camera modes!
+      const minRailX = -TRACK_HALF_W + 1.2;
+      const maxRailX = TRACK_HALF_W - 1.2;
       const pointerNdcX = ((clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
-      this.tempVec.set(1.0, 0.8, PLAYER_Z).project(this.camera);
-      const ndcPerWorldX = Math.max(0.02, Math.abs(this.tempVec.x));
-      const targetWorldX = pointerNdcX / ndcPerWorldX;
-      this.turretTargetX = THREE.MathUtils.clamp(
-        targetWorldX,
-        -TRACK_HALF_W + 1.2,
-        TRACK_HALF_W - 1.2
-      );
+      this.tempVec.set(minRailX, 0.8, PLAYER_Z).project(this.camera);
+      const leftNdcX = this.tempVec.x;
+      this.tempVec.set(maxRailX, 0.8, PLAYER_Z).project(this.camera);
+      const rightNdcX = this.tempVec.x;
+      const spanNdcX = Math.abs(rightNdcX - leftNdcX) > 0.04 ? rightNdcX - leftNdcX : 1.0;
+      const t = THREE.MathUtils.clamp((pointerNdcX - leftNdcX) / spanNdcX, 0, 1);
+      this.turretTargetX = THREE.MathUtils.lerp(minRailX, maxRailX, t);
     };
 
     const handleReleaseSummonHero = () => {
@@ -4163,15 +4172,21 @@ export class World3D {
     });
 
     const onResize = () => {
-      const maxDpr = this.lowSpecMode ? 1.0 : this.isMobileDevice ? 1.25 : 1.5;
-      const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+      const nativeDpr = window.devicePixelRatio || 1;
+      const dpr = this.lowSpecMode
+        ? 1.0
+        : !this.usePostProcessing
+          ? Math.min(nativeDpr, 1.5)
+          : this.isMobileDevice
+            ? Math.min(nativeDpr, 1.35)
+            : Math.min(Math.max(nativeDpr, 1.5), 2.25);
       this.renderer.setPixelRatio(dpr);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.composer.setPixelRatio(dpr);
       this.composer.setSize(window.innerWidth, window.innerHeight);
       this.bloomPass.resolution.set(
-        Math.floor(window.innerWidth * 0.5),
-        Math.floor(window.innerHeight * 0.5)
+        Math.floor(window.innerWidth * dpr * 0.5),
+        Math.floor(window.innerHeight * dpr * 0.5)
       );
       if (this.cinemaPass?.uniforms?.uResolution) {
         this.cinemaPass.uniforms.uResolution.value.set(
@@ -8449,9 +8464,6 @@ export class World3D {
   }
 
   private syncWorldLabels(): void {
-    if (this.dioramaRenderer) {
-      return;
-    }
     if ((this.lowSpecMode || this.isMobileDevice) && (this.frameTickCounter & 1) !== 0) {
       return;
     }
@@ -8776,44 +8788,6 @@ export class World3D {
       );
     } else {
       this.camera.position.copy(this.baseCameraPos);
-    }
-
-    if (this.dioramaRenderer) {
-      this.dioramaRenderer.render({
-        elapsedTime: this.elapsedTime,
-        isPaused: this.isPaused,
-        themeId: this.currentTheme?.id || 'wasteland',
-        activeRaceId: this.state.getActiveRaceBranch().id,
-        cameraMode: this.cameraMode,
-        stageId: this.currentLevel?.id || 1,
-        isMiniBoss: Boolean(this.currentLevel?.isMiniBoss),
-        isMegaBoss: Boolean(this.currentLevel?.isMegaBoss),
-        turretX: this.turretX,
-        turretRecoil: this.turretRecoil,
-        trackHalfW: TRACK_HALF_W,
-        playerZ: PLAYER_Z,
-        bossGateZ: BOSS_GATE_Z,
-        bossHp: this.bossHp,
-        bossMaxHp: this.bossMaxHp,
-        bossHitFlash: this.bossHitFlash,
-        bossShieldActive: this.bossShieldActive,
-        bossShieldHits: this.bossShieldHitsRemaining,
-        bossBerserk: this.bossBerserkTriggered,
-        cameraShake: this.cameraShake,
-        units: this.units,
-        gates: this.gates,
-        barrels: this.barrels,
-        gears: this.gears.map((gr) => ({
-          cfg: gr.cfg,
-          currentX: gr.mesh.position.x,
-          hp: gr.hp,
-          alive: gr.alive,
-          hitFlash: gr.hitFlash,
-        })),
-        bumpers: this.bumpers,
-        zones: this.zones,
-      });
-      return;
     }
 
     // Since active units use 2D ground contact blob shadows (unitShadowInst), the directional shadow map

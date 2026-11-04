@@ -6737,9 +6737,10 @@ body.screen-quake-active #app {
 
 .stage-badge {
   color: #ffffff !important;
-  font-size: 26px !important;
+  font-size: 21px !important;
   font-weight: 900 !important;
   line-height: 1.05 !important;
+  white-space: nowrap !important;
   text-shadow: 0 2.5px 0 #331907 !important;
 }
 
@@ -6891,10 +6892,9 @@ body.screen-quake-active #app {
   text-shadow: 0 2px 0 #291d16 !important;
 }
 
-/* Clean commercial Supercell UI: hide developer keycap boxes, bridge text clutter & title crest boxes */
+/* Clean commercial Supercell UI: hide developer keycap boxes & title crest boxes */
 .kbd-hint,
 .title-crest-trio,
-.zone-label,
 #btn-mecha-mode,
 .ui-upgrade-burst-container {
   display: none !important;
@@ -7184,17 +7184,6 @@ body.screen-quake-active #app {
   text-shadow: 0 1.5px 0 #1c1108 !important;
 }
 
-/* Hide legacy 3D floating DOM labels so zero unpositioned numbers appear at (0, 0) in 2.5D Diorama mode */
-#world-labels,
-.gear-label,
-.barrel-label,
-.nest-label,
-.gate-label,
-.lootbug-label,
-.turret-charge-hud {
-  display: none !important;
-}
-
 /* ==========================================================================
    PC / Desktop High-DPI Crisp Rendering & Proportional Widescreen Scaling
    ========================================================================== */
@@ -7205,8 +7194,7 @@ img,
 .skin-art-img,
 .meta-art-img,
 .skill-art-img,
-.hero-cannon-stage-img,
-#diorama-canvas {
+.hero-cannon-stage-img {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: high-quality;
   -webkit-backface-visibility: hidden;
@@ -7935,11 +7923,12 @@ img,
 
 @media (min-width: 1280px) {
   .hud-top {
-    zoom: 1.32;
+    zoom: 1.24;
+    width: min(76vw, 1080px) !important;
   }
 
   .hud-bottom {
-    zoom: 1.35;
+    zoom: 1.28;
   }
 
   .modal-card {
@@ -7953,11 +7942,12 @@ img,
 
 @media (min-width: 1800px) {
   .hud-top {
-    zoom: 1.58;
+    zoom: 1.48;
+    width: min(63vw, 1140px) !important;
   }
 
   .hud-bottom {
-    zoom: 1.62;
+    zoom: 1.52;
   }
 
   .modal-card {

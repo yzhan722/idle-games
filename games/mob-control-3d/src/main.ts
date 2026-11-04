@@ -1502,7 +1502,7 @@ function startLevel(idx: number): void {
   resultModal.classList.add('hidden');
   world.loadLevel(lvl);
   if (stageBadge) {
-    stageBadge.textContent = `3-${stageNum + 1}`;
+    stageBadge.textContent = `${world.currentTheme.badge} · 第 ${stageNum} 关`;
   }
   bossNameEl.innerHTML = lvl.isMegaBoss
     ? `${UI_ART.crown} 总厂督军`
