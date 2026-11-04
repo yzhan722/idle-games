@@ -340,8 +340,8 @@ var workshop_outputs: Dictionary = {
 }
 
 var stall_inventory: Dictionary = {
-	"crop_0": 2,
-	"crop_1": 1,
+	"crop_0": 3,
+	"crop_1": 0,
 	"crop_2": 0,
 	"crop_3": 0,
 	"delicacy_0": 0,
@@ -413,7 +413,7 @@ func reset_for_playtest_state() -> void:
 		"orbis_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
 	}
 	stall_inventory = {
-		"crop_0": 2, "crop_1": 1, "crop_2": 0, "crop_3": 0,
+		"crop_0": 3, "crop_1": 0, "crop_2": 0, "crop_3": 0,
 		"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0
 	}
 	unlocked_codex = {
@@ -1057,11 +1057,11 @@ func _run_all_four_assertions_and_export() -> void:
 		if absf(c.rotation) > 0.001 or absf(sp.rotation) > 0.001:
 			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has non-zero rotation (rot=%.3f, sp_rot=%.3f)" % [c.sheet_key, c.rotation, sp.rotation])
 			return
-		if not bool(GameManager.unlocked_islands.get(2, false)) and c.position.x < 538.0:
-			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked onto locked Island 2 (x=%.1f)!" % [c.sheet_key, c.position.x])
+		if c.position.x < 1035.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into worker production zone left of MarketStall (x=%.1f < 1035.0)!" % [c.sheet_key, c.position.x])
 			return
-		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1055.0:
-			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
+		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1080.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f > 1080.0)!" % [c.sheet_key, c.position.x])
 			return
 		checked_sprites += 1
 
@@ -1172,6 +1172,12 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 	if items_delivered_count <= 0:
 		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内无任何物品进入缓存、工坊或集市摊位 (items_delivered_count = 0)!")
+		return
+	if customer_paid_count <= 0:
+		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内顾客结账次数为 0!")
+		return
+	if int(GameManager.building_levels.get("soil_1", 1)) < 25 and bool(GameManager.unlocked_codex.get("crop_1", false)):
+		_fail_and_quit("[断言3-产线活体闭环]", "Codex `crop_1` unlocked prematurely before soil_1 reached Lv.25!")
 		return
 
 	print("[PASS] [断言3-产线活体闭环] 通过: 60s 内兔子移动距离 = %.1fpx (全员累计 %.1fpx > 50px)，农田收获次数 = %d 次，入库/上架流转 = %d 件，顾客结账 = %d 单!" % [
@@ -2006,8 +2012,8 @@ class_name MarketStall
 const BASE_SPRITE_SCALE := 0.72
 const VISUAL_WIDTH := 92.16 # 128 * 0.72
 const VISUAL_HEIGHT := 74.88 # 104 * 0.72
-const QUEUE_BASE_OFFSET_X := -34.0
-const QUEUE_SPACING_X := 26.0
+const QUEUE_BASE_OFFSET_X := 28.0
+const QUEUE_SPACING_X := 16.0
 const MAX_VISIBLE_QUEUE := 5
 
 const SELF_SERVICE_CHECKOUT_SEC := 1.8
@@ -2119,7 +2125,7 @@ func unregister_from_queue(cust: Node2D) -> void:
 
 func get_queue_slot_pos(cust: Node2D) -> Vector2:
 	var idx := clampi(register_in_queue(cust), 0, MAX_VISIBLE_QUEUE)
-	return Vector2(position.x + QUEUE_BASE_OFFSET_X - float(idx) * QUEUE_SPACING_X, EconomyConfig.GROUND_Y)
+	return Vector2(position.x + QUEUE_BASE_OFFSET_X + float(idx) * QUEUE_SPACING_X, EconomyConfig.GROUND_Y)
 
 func is_front_of_queue(cust: Node2D) -> bool:
 	_cleanup_queue()
@@ -3148,7 +3154,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 						_navigate_to(waypoint_graph.get_dock_pos("stall_restock"))
 
 			elif worker_step == 1:
-				facing_left = true
+				facing_left = false
 				if state_timer >= 0.40:
 					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
 					var q := maxi(1, carrying_qty)
@@ -3238,7 +3244,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 			_update_chef_work_step()
 
 		RoleType.SHIBA_MANAGER:
-			facing_left = true
+			facing_left = false
 
 func _update_chef_work_step() -> void:
 	var is_penguin := (role_type == RoleType.PENGUIN_ALCHEMIST)
@@ -5045,11 +5051,9 @@ func _process(delta: float) -> void:
 
 func _spawn_customer(as_vip: bool) -> void:
 	var c := CustomerNPC.new()
-	var sp := Vector2(612.4, GROUND_Y)
-	if as_vip and bool(GameManager.unlocked_islands.get(3, false)):
+	var sp := Vector2(1075.0, GROUND_Y)
+	if bool(GameManager.unlocked_islands.get(3, false)):
 		sp = waypoint_graph.get_named_pos("spawn_right")
-	elif (not as_vip) and bool(GameManager.unlocked_islands.get(2, false)):
-		sp = waypoint_graph.get_named_pos("spawn_left")
 	c.setup_customer(sp, waypoint_graph, market_stall, as_vip)
 	ysort_layer.add_child(c)
 	customers.append(c)
@@ -5193,24 +5197,24 @@ const BUILDING_DOCKS: Dictionary = {
 	"soil_1_slot_0": {"wp": 7, "dx": -12.0},
 	"soil_1_slot_1": {"wp": 7, "dx": 12.0},
 	"basket_1_pickup": {"wp": 7, "dx": 48.0},
-	"mortar_input": {"wp": 9, "dx": 24.0},
-	"mortar_chef": {"wp": 9, "dx": -20.0},
+	"mortar_input": {"wp": 9, "dx": -44.0},
+	"mortar_chef": {"wp": 9, "dx": -18.0},
 	"mortar_output": {"wp": 9, "dx": 24.0},
 	"stall_restock": {"wp": 10, "dx": -16.0},
-	"stall_manager": {"wp": 10, "dx": 22.0},
-	"stall_checkout": {"wp": 10, "dx": -34.0},
+	"stall_manager": {"wp": 10, "dx": 4.0},
+	"stall_checkout": {"wp": 10, "dx": 28.0},
 	"soil_2_slot_0": {"wp": 1, "dx": -10.0},
 	"soil_2_slot_1": {"wp": 1, "dx": 10.0},
 	"basket_2_pickup": {"wp": 1, "dx": 42.0},
-	"cauldron_input": {"wp": 2, "dx": 24.0},
-	"cauldron_chef": {"wp": 2, "dx": -20.0},
+	"cauldron_input": {"wp": 2, "dx": -44.0},
+	"cauldron_chef": {"wp": 2, "dx": -18.0},
 	"cauldron_output": {"wp": 2, "dx": 24.0},
 	"soil_3_slot_0": {"wp": 17, "dx": -10.0},
 	"soil_3_slot_1": {"wp": 17, "dx": 10.0},
 	"basket_3_pickup": {"wp": 17, "dx": 38.0},
-	"orbis_input": {"wp": 18, "dx": 34.0},
-	"orbis_chef": {"wp": 18, "dx": -20.0},
-	"orbis_chef_fox": {"wp": 18, "dx": -20.0},
+	"orbis_input": {"wp": 18, "dx": -42.0},
+	"orbis_chef": {"wp": 18, "dx": -18.0},
+	"orbis_chef_fox": {"wp": 18, "dx": -18.0},
 	"orbis_chef_penguin": {"wp": 18, "dx": 18.0},
 	"orbis_output": {"wp": 18, "dx": 36.0}
 }

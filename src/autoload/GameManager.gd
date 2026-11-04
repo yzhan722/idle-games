@@ -64,8 +64,8 @@ var workshop_outputs: Dictionary = {
 }
 
 var stall_inventory: Dictionary = {
-	"crop_0": 2,
-	"crop_1": 1,
+	"crop_0": 3,
+	"crop_1": 0,
 	"crop_2": 0,
 	"crop_3": 0,
 	"delicacy_0": 0,
@@ -137,7 +137,7 @@ func reset_for_playtest_state() -> void:
 		"orbis_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
 	}
 	stall_inventory = {
-		"crop_0": 2, "crop_1": 1, "crop_2": 0, "crop_3": 0,
+		"crop_0": 3, "crop_1": 0, "crop_2": 0, "crop_3": 0,
 		"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0
 	}
 	unlocked_codex = {

@@ -454,11 +454,9 @@ func _process(delta: float) -> void:
 
 func _spawn_customer(as_vip: bool) -> void:
 	var c := CustomerNPC.new()
-	var sp := Vector2(612.4, GROUND_Y)
-	if as_vip and bool(GameManager.unlocked_islands.get(3, false)):
+	var sp := Vector2(1075.0, GROUND_Y)
+	if bool(GameManager.unlocked_islands.get(3, false)):
 		sp = waypoint_graph.get_named_pos("spawn_right")
-	elif (not as_vip) and bool(GameManager.unlocked_islands.get(2, false)):
-		sp = waypoint_graph.get_named_pos("spawn_left")
 	c.setup_customer(sp, waypoint_graph, market_stall, as_vip)
 	ysort_layer.add_child(c)
 	customers.append(c)

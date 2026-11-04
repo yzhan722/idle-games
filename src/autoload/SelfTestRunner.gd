@@ -141,11 +141,11 @@ func _run_all_four_assertions_and_export() -> void:
 		if absf(c.rotation) > 0.001 or absf(sp.rotation) > 0.001:
 			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has non-zero rotation (rot=%.3f, sp_rot=%.3f)" % [c.sheet_key, c.rotation, sp.rotation])
 			return
-		if not bool(GameManager.unlocked_islands.get(2, false)) and c.position.x < 538.0:
-			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked onto locked Island 2 (x=%.1f)!" % [c.sheet_key, c.position.x])
+		if c.position.x < 1035.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into worker production zone left of MarketStall (x=%.1f < 1035.0)!" % [c.sheet_key, c.position.x])
 			return
-		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1055.0:
-			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
+		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1080.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f > 1080.0)!" % [c.sheet_key, c.position.x])
 			return
 		checked_sprites += 1
 
@@ -256,6 +256,12 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 	if items_delivered_count <= 0:
 		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内无任何物品进入缓存、工坊或集市摊位 (items_delivered_count = 0)!")
+		return
+	if customer_paid_count <= 0:
+		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内顾客结账次数为 0!")
+		return
+	if int(GameManager.building_levels.get("soil_1", 1)) < 25 and bool(GameManager.unlocked_codex.get("crop_1", false)):
+		_fail_and_quit("[断言3-产线活体闭环]", "Codex `crop_1` unlocked prematurely before soil_1 reached Lv.25!")
 		return
 
 	print("[PASS] [断言3-产线活体闭环] 通过: 60s 内兔子移动距离 = %.1fpx (全员累计 %.1fpx > 50px)，农田收获次数 = %d 次，入库/上架流转 = %d 件，顾客结账 = %d 单!" % [

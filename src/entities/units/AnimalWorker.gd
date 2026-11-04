@@ -542,7 +542,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 						_navigate_to(waypoint_graph.get_dock_pos("stall_restock"))
 
 			elif worker_step == 1:
-				facing_left = true
+				facing_left = false
 				if state_timer >= 0.40:
 					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
 					var q := maxi(1, carrying_qty)
@@ -632,7 +632,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 			_update_chef_work_step()
 
 		RoleType.SHIBA_MANAGER:
-			facing_left = true
+			facing_left = false
 
 func _update_chef_work_step() -> void:
 	var is_penguin := (role_type == RoleType.PENGUIN_ALCHEMIST)

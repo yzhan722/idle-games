@@ -11,8 +11,8 @@ class_name MarketStall
 const BASE_SPRITE_SCALE := 0.72
 const VISUAL_WIDTH := 92.16 # 128 * 0.72
 const VISUAL_HEIGHT := 74.88 # 104 * 0.72
-const QUEUE_BASE_OFFSET_X := -34.0
-const QUEUE_SPACING_X := 26.0
+const QUEUE_BASE_OFFSET_X := 28.0
+const QUEUE_SPACING_X := 16.0
 const MAX_VISIBLE_QUEUE := 5
 
 const SELF_SERVICE_CHECKOUT_SEC := 1.8
@@ -124,7 +124,7 @@ func unregister_from_queue(cust: Node2D) -> void:
 
 func get_queue_slot_pos(cust: Node2D) -> Vector2:
 	var idx := clampi(register_in_queue(cust), 0, MAX_VISIBLE_QUEUE)
-	return Vector2(position.x + QUEUE_BASE_OFFSET_X - float(idx) * QUEUE_SPACING_X, EconomyConfig.GROUND_Y)
+	return Vector2(position.x + QUEUE_BASE_OFFSET_X + float(idx) * QUEUE_SPACING_X, EconomyConfig.GROUND_Y)
 
 func is_front_of_queue(cust: Node2D) -> bool:
 	_cleanup_queue()
