@@ -42,7 +42,6 @@ const topToolsDrawer = document.getElementById('top-tools-drawer') as HTMLElemen
 const btnResumeDrawer = document.getElementById('btn-resume-drawer') as HTMLButtonElement | null;
 const btnHome = document.getElementById('btn-home') as HTMLButtonElement;
 const btnRerollMap = document.getElementById('btn-reroll-map') as HTMLButtonElement;
-const btnTheme = document.getElementById('btn-theme') as HTMLButtonElement;
 const btnCamera = document.getElementById('btn-camera') as HTMLButtonElement;
 const btnSound = document.getElementById('btn-sound') as HTMLButtonElement;
 const btnRestart = document.getElementById('btn-restart') as HTMLButtonElement;
@@ -73,8 +72,6 @@ const badgeTabSkillsEl = document.getElementById('badge-tab-skills') as HTMLElem
 const badgeTabMetaEl = document.getElementById('badge-tab-meta') as HTMLElement | null;
 const badgeTabSkinsEl = document.getElementById('badge-tab-skins') as HTMLElement | null;
 const homeHeroStageEl = document.getElementById('home-hero-stage') as HTMLElement | null;
-const btnHomeTheme = document.getElementById('btn-home-theme') as HTMLButtonElement | null;
-const homeThemeLabelEl = document.getElementById('home-theme-label') as HTMLElement | null;
 const btnHomeMecha = document.getElementById('btn-home-mecha') as HTMLButtonElement | null;
 const homeMechaIconEl = document.getElementById('home-mecha-icon') as HTMLElement | null;
 const homeMechaLabelEl = document.getElementById('home-mecha-label') as HTMLElement | null;
@@ -497,9 +494,6 @@ function renderMainMenu(): void {
     homeHeroStageEl.dataset.theme = world.currentTheme?.id || 'wasteland';
     homeHeroStageEl.dataset.race = activeRace.id;
   }
-  if (homeThemeLabelEl && world.currentTheme) {
-    homeThemeLabelEl.textContent = world.currentTheme.badge;
-  }
   if (homeMechaIconEl) {
     homeMechaIconEl.innerHTML = mechaSpec.icon;
   }
@@ -521,7 +515,7 @@ function renderMainMenu(): void {
       : `${activeRace.subtitle} · 大招【${activeRace.hammerMorphName}】`;
   }
   if (launchBtnSubEl && world.currentTheme) {
-    launchBtnSubEl.textContent = `第 1 关起航 · ${world.currentTheme.name} · ${activeRace.raceName}出阵`;
+    launchBtnSubEl.textContent = `第 1 关起航 · ${world.currentTheme.badge}【${world.currentTheme.perkTitle}】· ${activeRace.raceName}出阵`;
   }
 
   if (menuActiveKeystonePill) {
@@ -1209,6 +1203,12 @@ function renderActiveBuffsBar(): void {
   if (!activeBuffsBar || !world.currentLevel) return;
   const pills: string[] = [];
 
+  if (world.currentTheme) {
+    pills.push(
+      `<span class="buff-pill rarity-rare" title="${world.currentTheme.name}场景特效：${world.currentTheme.perkDesc}">${UI_ART.sparkle} ${world.currentTheme.badge}·${world.currentTheme.perkTitle}</span>`
+    );
+  }
+
   if (world.bossShieldActive) {
     pills.push(
       `<span class="buff-pill rarity-epic" title="大Boss虚空力场护盾：减伤88%，需集火${world.bossShieldHitsRemaining}次或用轰炸/炸药桶瞬间击碎">${UI_ART.shield} 虚空护盾(${world.bossShieldHitsRemaining})</span>`
@@ -1496,6 +1496,14 @@ function startLevel(idx: number): void {
   if (stageBadge) {
     stageBadge.textContent = `${world.currentTheme.badge} · 第 ${stageNum} 关`;
   }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl && world.currentTheme) {
+    stagePlaqueSubEl.textContent = `【${world.currentTheme.perkTitle}】${world.currentTheme.perkDesc}`;
+  }
+  const stagePickerEl = document.getElementById('btn-stage-theme');
+  if (stagePickerEl && world.currentTheme) {
+    stagePickerEl.title = `${world.currentTheme.name}特殊效果：【${world.currentTheme.perkTitle}】${world.currentTheme.perkDesc}`;
+  }
   bossNameEl.innerHTML = lvl.isMegaBoss
     ? `${UI_ART.crown} 总厂督军`
     : lvl.isMiniBoss
@@ -1732,18 +1740,6 @@ if (btnHomeNextRace) {
   });
 }
 
-if (btnHomeTheme) {
-  btnHomeTheme.addEventListener('click', () => {
-    sound.playUpgrade();
-    const nextTheme = world.cycleTheme();
-    if (stageBadge) {
-      stageBadge.textContent = `${nextTheme.badge} · 第 ${state.currentLevelIndex + 1} 关`;
-    }
-    spawnMenuUpgradeBurst(btnHomeTheme, `切换世界：${nextTheme.name}`, '#38bdf8');
-    renderMainMenu();
-  });
-}
-
 if (btnHomeMecha) {
   btnHomeMecha.addEventListener('click', () => {
     const nextSpec = state.cycleMechaMode();
@@ -1839,26 +1835,9 @@ document.querySelectorAll<HTMLButtonElement>('.menu-tab').forEach((tabBtn) => {
 });
 
 btnRerollMap.addEventListener('click', () => {
-  const nextTheme = world.cycleTheme();
   startLevel(state.currentLevelIndex);
-  showBanner(`🎲 切换地图 · ${nextTheme.name}`);
+  showBanner(`🎲 重随地图 · ${world.currentTheme.name}`);
 });
-
-const handleCycleSceneTheme = () => {
-  sound.playUpgrade();
-  const nextTheme = world.cycleTheme();
-  if (stageBadge) {
-    stageBadge.textContent = `${nextTheme.badge} · 第 ${state.currentLevelIndex + 1} 关`;
-  }
-  renderActiveBuffsBar();
-  showBanner(`🎨 ${nextTheme.name}`);
-};
-
-btnTheme.addEventListener('click', handleCycleSceneTheme);
-const btnStageTheme = document.getElementById('btn-stage-theme');
-if (btnStageTheme) {
-  btnStageTheme.addEventListener('click', handleCycleSceneTheme);
-}
 
 btnCamera.addEventListener('click', () => {
   const modeName = world.toggleCameraMode();
@@ -1927,11 +1906,22 @@ btnOrbital.addEventListener('click', () => {
   world.triggerOrbitalStrike();
 });
 
+function rollTycoonFreeDoubleUpgrade(btnEl: HTMLElement): boolean {
+  if (state.getSkillNodeRank('tycoon_t4') > 0 && Math.random() < 0.2) {
+    spawnMenuUpgradeBurst(btnEl, '👑 财阀免单连升 +2!', '#facc15');
+    return true;
+  }
+  return false;
+}
+
 upgFireRate.addEventListener('click', () => {
   const cost = state.getFireRateCost();
   if (Math.floor(state.runCombatTimePool) >= cost) {
-    state.runCombatTimePool = Math.max(0, state.runCombatTimePool - cost);
-    state.fireRateLevel++;
+    const isFreeDouble = rollTycoonFreeDoubleUpgrade(upgFireRate);
+    if (!isFreeDouble) {
+      state.runCombatTimePool = Math.max(0, state.runCombatTimePool - cost);
+    }
+    state.fireRateLevel += isFreeDouble ? 2 : 1;
     state.save();
     sound.playUpgrade();
     world.syncTurretEvolution(true);
@@ -1942,8 +1932,11 @@ upgFireRate.addEventListener('click', () => {
 upgPower.addEventListener('click', () => {
   const cost = state.getPowerCost();
   if (Math.floor(state.runKillsPool) >= cost) {
-    state.runKillsPool = Math.max(0, state.runKillsPool - cost);
-    state.powerLevel++;
+    const isFreeDouble = rollTycoonFreeDoubleUpgrade(upgPower);
+    if (!isFreeDouble) {
+      state.runKillsPool = Math.max(0, state.runKillsPool - cost);
+    }
+    state.powerLevel += isFreeDouble ? 2 : 1;
     state.save();
     sound.playUpgrade();
     world.syncTurretEvolution(true);
@@ -1955,8 +1948,11 @@ upgChampion.addEventListener('click', () => {
   const cost = state.getChampionCost();
   if (Math.floor(state.runSpawnsPool) >= cost) {
     const prevTier = state.getUltimateEvolutionSpec().tier;
-    state.runSpawnsPool = Math.max(0, state.runSpawnsPool - cost);
-    state.championLevel++;
+    const isFreeDouble = rollTycoonFreeDoubleUpgrade(upgChampion);
+    if (!isFreeDouble) {
+      state.runSpawnsPool = Math.max(0, state.runSpawnsPool - cost);
+    }
+    state.championLevel += isFreeDouble ? 2 : 1;
     state.save();
     sound.playUpgrade();
     refreshMechaUI();
@@ -1976,8 +1972,11 @@ upgChampion.addEventListener('click', () => {
 upgLoot.addEventListener('click', () => {
   const cost = state.getLootCost();
   if (Math.floor(state.runSiegePool) >= cost) {
-    state.runSiegePool = Math.max(0, state.runSiegePool - cost);
-    state.lootLevel++;
+    const isFreeDouble = rollTycoonFreeDoubleUpgrade(upgLoot);
+    if (!isFreeDouble) {
+      state.runSiegePool = Math.max(0, state.runSiegePool - cost);
+    }
+    state.lootLevel += isFreeDouble ? 2 : 1;
     state.save();
     sound.playUpgrade();
     refreshUpgradeUI();
@@ -2150,9 +2149,6 @@ window.addEventListener('keydown', (e) => {
       } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
         e.preventDefault();
         cycleHomeRace(1);
-      } else if (e.code === 'KeyT') {
-        e.preventDefault();
-        btnHomeTheme?.click();
       } else if (e.code === 'KeyW' || e.code === 'ArrowUp') {
         e.preventDefault();
         leaderboardListEl?.scrollBy({ top: -72, behavior: 'smooth' });
@@ -2434,9 +2430,6 @@ window.addEventListener('keydown', (e) => {
   } else if (e.code === 'KeyG') {
     e.preventDefault();
     btnRerollMap.click();
-  } else if (e.code === 'KeyT') {
-    e.preventDefault();
-    btnTheme.click();
   } else if (e.code === 'KeyV') {
     e.preventDefault();
     btnCamera.click();

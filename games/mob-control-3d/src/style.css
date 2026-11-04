@@ -4700,7 +4700,7 @@ body.screen-quake-active #app {
   z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -6862,10 +6862,11 @@ body.screen-quake-active #app {
 }
 
 .stage-plaque-sub {
-  font-size: 15px !important;
+  font-size: 12px !important;
   font-weight: 900 !important;
-  color: #ffffff !important;
-  line-height: 1.05 !important;
+  color: #fde047 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
   text-shadow: 0 2px 0 #331907 !important;
 }
 
@@ -8298,7 +8299,7 @@ img,
   width: 100% !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
+  justify-content: flex-end !important;
   padding: 2px 6px !important;
   z-index: 5 !important;
 }

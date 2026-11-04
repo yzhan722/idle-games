@@ -1,4 +1,5 @@
 import { SkinPalette } from './HumanoidModels';
+import { ThemeId } from './SceneThemes';
 import {
   DEBUFF_ART,
   MECHA_MODE_ART,
@@ -1149,6 +1150,7 @@ export class GameState {
   public runKillsPool = 0;
   public runSpawnsPool = 0;
   public runSiegePool = 0;
+  public activeSceneThemeId: ThemeId = 'wasteland';
 
   constructor() {
     this.leaderboardWeekKey = this.getLeaderboardWeekInfo().weekKey;
@@ -2211,7 +2213,8 @@ export class GameState {
       0.04 * this.getSkinBonusMult('nebula');
     const buffMult = 1 + this.getBuffStack('rapid_fire') * 0.05;
     const debuffMult = this.hasDebuff('barrel_overheat') ? 0.85 : 1.0;
-    return base * metaMult * swarmSkillMult * titanHeavySlowMult * skinMult * buffMult * debuffMult;
+    const sceneMult = this.activeSceneThemeId === 'wasteland' ? 1.18 : 1.0;
+    return base * metaMult * swarmSkillMult * titanHeavySlowMult * skinMult * buffMult * debuffMult * sceneMult;
   }
 
   public getSwarmTrooperSpec(): {
@@ -2338,7 +2341,9 @@ export class GameState {
       0.04 * this.getSkinBonusMult('nebula');
     const buffMult = 1 + this.getBuffStack('hyper_gene') * 0.06;
     const debuffMult = this.hasDebuff('gene_instability') ? 0.85 : 1.0;
-    return base * metaMult * skillMult * skinMult * buffMult * debuffMult;
+    const sceneMult =
+      this.activeSceneThemeId === 'magma' ? 1.2 : this.activeSceneThemeId === 'royal' ? 1.15 : 1.0;
+    return base * metaMult * skillMult * skinMult * buffMult * debuffMult * sceneMult;
   }
 
   public getChampionMultiplier(): number {
@@ -2354,13 +2359,15 @@ export class GameState {
   public getLootMultiplier(): number {
     const skinBonus = 0.05 * this.getSkinBonusMult('imperium');
     const tycoonLoot = this.getSkillNodeRank('tycoon_t1') * 0.16;
+    const sceneMult = this.activeSceneThemeId === 'royal' ? 1.35 : 1.0;
     return (
-      1 +
-      (this.lootLevel - 1) * 0.07 +
-      this.getMetaLevel('meta_bounty') * 0.04 +
-      this.getBuffStack('war_plunder') * 0.07 +
-      tycoonLoot +
-      skinBonus
+      (1 +
+        (this.lootLevel - 1) * 0.07 +
+        this.getMetaLevel('meta_bounty') * 0.04 +
+        this.getBuffStack('war_plunder') * 0.07 +
+        tycoonLoot +
+        skinBonus) *
+      sceneMult
     );
   }
 
@@ -2369,7 +2376,9 @@ export class GameState {
     const swarmSpeed = this.getSkillNodeRank('swarm_t1') > 0 ? 1.1 : 1.0;
     const buffMult = 1 + Math.min(0.36, this.getBuffStack('nitro_stride') * 0.04);
     const debuffMult = this.hasDebuff('cryo_sludge') ? 0.88 : 1.0;
-    return metaMult * swarmSpeed * buffMult * debuffMult;
+    const sceneMult =
+      this.activeSceneThemeId === 'emerald' ? 1.22 : this.activeSceneThemeId === 'sakura' ? 1.15 : 1.0;
+    return metaMult * swarmSpeed * buffMult * debuffMult * sceneMult;
   }
 
   public getExtraCloneChance(): number {
@@ -2396,7 +2405,8 @@ export class GameState {
     const orbitalSiphon = 1 + this.getSkillNodeRank('orbital_t1') * 0.16;
     const buffMult = 1 + this.getBuffStack('titan_reactor') * 0.07;
     const debuffMult = this.hasDebuff('reactor_leak') ? 0.7 : 1.0;
-    return skinMult * orbitalSiphon * buffMult * debuffMult;
+    const sceneMult = this.activeSceneThemeId === 'cyberhive' ? 1.35 : 1.0;
+    return skinMult * orbitalSiphon * buffMult * debuffMult * sceneMult;
   }
 
   public getBaseHpMultiplier(): number {
@@ -2405,7 +2415,8 @@ export class GameState {
     const bastionWall = 1 + this.getSkillNodeRank('bastion_t1') * 0.18;
     const buffMult = 1 + this.getBuffStack('bastion_aegis') * 0.1;
     const debuffMult = this.hasDebuff('shield_fracture') ? 0.75 : 1.0;
-    return metaMult * azureSkinMult * bastionWall * buffMult * debuffMult;
+    const sceneMult = this.activeSceneThemeId === 'emerald' ? 1.25 : 1.0;
+    return metaMult * azureSkinMult * bastionWall * buffMult * debuffMult * sceneMult;
   }
 
   public getGateBonusAdd(): number {
@@ -2419,7 +2430,8 @@ export class GameState {
 
   public getSiegeDamageMultiplier(): number {
     const bastionSiege = this.getSkillNodeRank('bastion_t3') * 0.2;
-    return 1 + this.getBuffStack('siege_breaker') * 0.1 + bastionSiege;
+    const sceneMult = this.activeSceneThemeId === 'wasteland' ? 1.25 : 1.0;
+    return (1 + this.getBuffStack('siege_breaker') * 0.1 + bastionSiege) * sceneMult;
   }
 
   public getInMatchUpgradeDiscountMult(): number {

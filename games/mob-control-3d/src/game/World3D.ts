@@ -182,7 +182,7 @@ export class World3D {
 
   // Theme & Environment Materials / Lights
   public currentTheme: ThemeConfig = THEMES.wasteland;
-  private customThemeOverride: ThemeId | null = null;
+  private sceneEffectTimer = 4.5;
   private hemiLight!: THREE.HemisphereLight;
   private dirLight!: THREE.DirectionalLight;
   private rimLight!: THREE.DirectionalLight;
@@ -1773,6 +1773,7 @@ export class World3D {
   public applyTheme(themeId: ThemeId): ThemeConfig {
     const theme = THEMES[themeId] || THEMES.wasteland;
     this.currentTheme = theme;
+    this.state.activeSceneThemeId = theme.id;
 
     this.scene.background = new THREE.Color(theme.skyColor);
     this.scene.fog = new THREE.FogExp2(theme.fogColor, theme.fogDensity);
@@ -2247,7 +2248,6 @@ export class World3D {
   public cycleTheme(): ThemeConfig {
     const curIdx = THEME_ORDER.indexOf(this.currentTheme.id);
     const nextId = THEME_ORDER[(curIdx + 1) % THEME_ORDER.length];
-    this.customThemeOverride = nextId;
     return this.applyTheme(nextId);
   }
 
@@ -2504,7 +2504,8 @@ export class World3D {
 
   public loadLevel(level: LevelConfig): void {
     this.currentLevel = level;
-    this.applyTheme(this.customThemeOverride || level.themeId);
+    this.applyTheme(level.themeId);
+    this.sceneEffectTimer = 4.5;
     this.applySkin(this.state.getEquippedSkin());
     this.bossMaxHp = level.bossMaxHp;
     this.bossHp = level.bossMaxHp;
@@ -3973,12 +3974,13 @@ export class World3D {
       const speedMult = this.state.getMoveSpeedMultiplier();
       const swarmSpec = this.state.getSwarmTrooperSpec();
       const bastionSpec = this.state.getBastionTrooperSpec();
+      const emeraldHpMult = this.currentTheme.id === 'emerald' ? 1.25 : 1.0;
       const plasmaCritMult = 1 + this.state.getSkillNodeRank('plasma_t1') * 0.16;
       this.state.stageClonesSpawned++;
       this.state.runSpawnsPool++;
       if (kind === 'champion') {
         const mode = slot.mechaType || 'hammer';
-        slot.maxHp = (mode === 'aegis' ? 320 : mode === 'pyro' ? 210 : 245) * champMult;
+        slot.maxHp = (mode === 'aegis' ? 320 : mode === 'pyro' ? 210 : 245) * champMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = (mode === 'hammer' ? 58 : mode === 'pyro' ? 38 : 42) * champMult;
         slot.radius = 0.72;
@@ -3988,26 +3990,26 @@ export class World3D {
         const tier = Math.max(1, slot.fusionTier || 1);
         const tierStats = this.computeGiantTierStats(tier, kind === 'charged');
         if (tier >= 2) slot.kind = 'charged';
-        slot.maxHp = tierStats.maxHp;
+        slot.maxHp = tierStats.maxHp * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = tierStats.dmg;
         slot.radius = tierStats.radius;
         slot.speed = (6.6 + tier * 0.14) * speedMult;
       } else if (isMiniGiant) {
         // Tycoon T4 / Bastion Guard Mini-Giant
-        slot.maxHp = 52 * pwr * bastionSpec.trooperHpMult;
+        slot.maxHp = 52 * pwr * bastionSpec.trooperHpMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = 30 * pwr;
         slot.radius = 0.46;
         slot.speed = 7.5 * speedMult;
       } else if (kind === 'charged') {
-        slot.maxHp = 38 * pwr * swarmSpec.hpMult * bastionSpec.trooperHpMult;
+        slot.maxHp = 38 * pwr * swarmSpec.hpMult * bastionSpec.trooperHpMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = 26 * pwr * swarmSpec.dmgMult * plasmaCritMult;
         slot.radius = swarmSpec.isSwarmMode ? 0.3 : 0.34;
         slot.speed = (this.state.getSkillNodeRank('plasma_t1') > 0 ? 8.5 : 8.0) * speedMult;
       } else {
-        slot.maxHp = 16 * pwr * swarmSpec.hpMult * bastionSpec.trooperHpMult;
+        slot.maxHp = 16 * pwr * swarmSpec.hpMult * bastionSpec.trooperHpMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = 12 * pwr * swarmSpec.dmgMult;
         slot.radius = swarmSpec.isSwarmMode ? 0.27 : 0.31;
@@ -4292,6 +4294,17 @@ export class World3D {
         },
       });
     });
+
+    // Tycoon T4 Keystone: Casting any skill automatically airdrops 5 Golden Royal Mercenaries!
+    if (this.state.getSkillNodeRank('tycoon_t4') > 0) {
+      this.spawnSkyPillar(spawnBaseX, PLAYER_Z - 2.4, 0xfacc15, 2.2, 0.45);
+      this.spawnUnit('blue', 'charged', spawnBaseX, PLAYER_Z - 2.2, 0, -8.5, undefined, true);
+      for (const ox of [-2.2, -0.8, 0.8, 2.2]) {
+        const mx = THREE.MathUtils.clamp(spawnBaseX + ox, -TRACK_HALF_W + 1.0, TRACK_HALF_W - 1.0);
+        this.spawnUnit('blue', 'charged', mx, PLAYER_Z - 2.0, (Math.random() - 0.5) * 0.8, -8.8);
+      }
+      this.spawnFloatingPopup(spawnBaseX, 2.6, PLAYER_Z - 2.4, '👑 财阀大招空投5只招财精英!', '#facc15');
+    }
 
     const morphTitle = committedBranch ? `【${ultEvo.badge}·${committedBranch.hammerMorphName}】` : `【${ultEvo.badge}·${spec.name}】`;
     const morphSub =
@@ -5662,6 +5675,78 @@ export class World3D {
       this.spawnUnit('blue', 'charged', 0, 4.2, 0, -8.2, undefined, true);
       this.spawnFloatingPopup(0, 2.6, 4.5, '👑 黄金皇家雇佣军空降参战!', '#facc15');
     }
+
+    // 10. Scene Special Effect Periodic Environmental Pulse (Sakura / Glacier / Magma / Ocean)
+    this.sceneEffectTimer -= dt;
+    if (this.sceneEffectTimer <= 0) {
+      const themeId = this.currentTheme.id;
+      if (themeId === 'sakura') {
+        this.sceneEffectTimer = 4.5;
+        if (this.activeBlueIndices.length > 0 || this.playerBaseHp < this.playerBaseMaxHp) {
+          for (const bIdx of this.activeBlueIndices) {
+            const bu = this.units[bIdx];
+            if (bu.active) bu.hp = Math.min(bu.maxHp, bu.hp + bu.maxHp * 0.22);
+          }
+          const healBase = Math.round(this.playerBaseMaxHp * 0.03);
+          this.playerBaseHp = Math.min(this.playerBaseMaxHp, this.playerBaseHp + healBase);
+          this.lastKnownBaseHp = Math.max(this.lastKnownBaseHp, this.playerBaseHp);
+          this.spawnShockwave(0, 2.0, 0xff80b5, 8.5, 0.42);
+          this.spawnBurstParticles(0, 1.4, 2.0, 0xffb3d1, 24);
+          this.spawnFloatingPopup(0, 2.4, 2.0, '🌸 落樱祈福: 全军治愈!', '#f472b6');
+        }
+      } else if (themeId === 'glacier') {
+        this.sceneEffectTimer = 5.0;
+        if (this.activeRedIndices.length > 0) {
+          const frostDmg = 18 * pwr;
+          for (const rIdx of this.activeRedIndices) {
+            const ru = this.units[rIdx];
+            if (!ru.active) continue;
+            ru.hp -= frostDmg;
+            ru.empTimer = Math.max(ru.empTimer || 0, 1.4);
+            if (ru.hp <= 0) {
+              ru.active = false;
+              this.onUnitKilled(ru);
+            }
+          }
+          this.spawnShockwave(0, 0, 0x38bdf8, 9.5, 0.45);
+          this.spawnBurstParticles(0, 1.2, 0, 0x67e8f9, 28);
+          this.spawnFloatingPopup(0, 2.4, 0, '🍧 极寒霜冻波: 全场冰封减速!', '#38bdf8');
+        }
+      } else if (themeId === 'magma') {
+        this.sceneEffectTimer = 5.0;
+        if (this.activeRedIndices.length > 0) {
+          const burnDmg = 24 * pwr;
+          for (const rIdx of this.activeRedIndices) {
+            const ru = this.units[rIdx];
+            if (!ru.active) continue;
+            ru.hp -= burnDmg;
+            if (ru.hp <= 0) {
+              ru.active = false;
+              this.onUnitKilled(ru);
+            }
+          }
+          this.spawnShockwave(0, 0, 0xf97316, 9.5, 0.45);
+          this.spawnBurstParticles(0, 1.2, 0, 0xfbbf24, 28);
+          this.spawnFloatingPopup(0, 2.4, 0, '🥐 焦糖热浪: 全场灼烧!', '#fb923c');
+        }
+      } else if (themeId === 'ocean') {
+        this.sceneEffectTimer = 5.0;
+        if (this.activeRedIndices.length > 0) {
+          for (const rIdx of this.activeRedIndices) {
+            const ru = this.units[rIdx];
+            if (!ru.active) continue;
+            ru.z = Math.max(BOSS_GATE_Z + 1.5, ru.z - 2.6);
+            ru.vz = -5.5;
+            ru.spawnHop = Math.max(ru.spawnHop, 0.65);
+          }
+          this.spawnShockwave(0, 2.5, 0x2dd4bf, 10.5, 0.48);
+          this.spawnBurstParticles(0, 1.2, 2.5, 0x38bdf8, 28);
+          this.spawnFloatingPopup(0, 2.4, 2.5, '🐳 潮汐浮力: 巨浪推退敌军!', '#2dd4bf');
+        }
+      } else {
+        this.sceneEffectTimer = 5.0;
+      }
+    }
   }
 
   private triggerBastionThornWave(): void {
@@ -6313,7 +6398,7 @@ export class World3D {
       const p1 = this.state.getSkillNodeRank('plasma_t1');
       const p2 = this.state.getSkillNodeRank('plasma_t2');
       const isT4 = this.state.getSkillNodeRank('plasma_t4') > 0;
-      let bolts = 3 + p2 * 2;
+      let bolts = 3 + p2 * 3;
       for (const rIdx of this.activeRedIndices) {
         if (bolts <= 0) break;
         const e = this.units[rIdx];
@@ -6596,7 +6681,8 @@ export class World3D {
       const prevX = u.x;
       const prevZ = u.z;
       const empSlow = u.team === 'red' && u.empTimer && u.empTimer > 0 ? 0.4 : 1.0;
-      const effSpeed = u.team === 'blue' ? u.speed * blueSpeedBoost : u.speed * empSlow;
+      const glacierSlow = u.team === 'red' && this.currentTheme.id === 'glacier' ? 0.78 : 1.0;
+      const effSpeed = u.team === 'blue' ? u.speed * blueSpeedBoost : u.speed * empSlow * glacierSlow;
 
       if (u.team === 'blue') {
         let targetVX = 0;
@@ -7275,7 +7361,8 @@ export class World3D {
                     const nearAegis = this.isNearAegisTitan(blueUnit.x, blueUnit.z);
                     const giantToughness = (blueUnit.fusionTier || 0) >= 1 ? 1 - giantSpec.dmgReduction : 1.0;
                     const bastionToughness = 1 - bastionSpec.trooperDmgReduction;
-                    const dmgReduction = (nearAegis ? 0.5 : 1.0) * giantToughness * bastionToughness;
+                    const oceanToughness = this.currentTheme.id === 'ocean' ? 0.8 : 1.0;
+                    const dmgReduction = (nearAegis ? 0.5 : 1.0) * giantToughness * bastionToughness * oceanToughness;
                     blueUnit.hp -= redUnit.dmg * dmgReduction;
                     // Titan T3: Aegis Thorns reflect damage back to Red attacker when near Aegis Titan!
                     const aegisThornsRank = this.state.getSkillNodeRank('titan_t3');
@@ -7291,11 +7378,11 @@ export class World3D {
 
                   if (a.hp <= 0 && a.active) {
                     a.active = false;
-                    this.onUnitKilled(a);
+                    this.onUnitKilled(a, b);
                   }
                   if (b.hp <= 0 && b.active) {
                     b.active = false;
-                    this.onUnitKilled(b);
+                    this.onUnitKilled(b, a);
                   }
                   // Swarm T4 Keystone: Infinite Brood Fission (18% chance to split a new clone when killing a Red unit in melee!)
                   if (!redUnit.active && blueUnit.active && this.state.getSkillNodeRank('swarm_t4') > 0) {
@@ -7908,10 +7995,13 @@ export class World3D {
     const isGateCrit = this.state.getSkillNodeRank('gate_t4') > 0 && Math.random() < 0.22;
     const isSwarmBonusClone =
       swarmSpec.gateExtraCloneChance > 0 && Math.random() < swarmSpec.gateExtraCloneChance;
+    const isCarnivalBonusClone = this.currentTheme.id === 'cyberhive' && Math.random() < 0.3;
     const maxCapCopies = 6 + this.state.getSkillNodeRank('gate_t2');
     const baseCopies = Math.min(
       maxCapCopies,
-      (op === 'add' ? value + gateResonance : value - 1) + (isSwarmBonusClone ? 1 : 0)
+      (op === 'add' ? value + gateResonance : value - 1) +
+        (isSwarmBonusClone ? 1 : 0) +
+        (isCarnivalBonusClone ? 1 : 0)
     );
     const rawExtraCopies = isGateCrit ? Math.min(maxCapCopies + 2, baseCopies * 2) : baseCopies;
     // In Giant Mode, each spawned Giant is already ~2.2x normal mass, so gates spawn fewer heavy clones (max 3) at Tier 1!
@@ -7975,7 +8065,7 @@ export class World3D {
     }
   }
 
-  private onUnitKilled(u: Unit): void {
+  private onUnitKilled(u: Unit, killer?: Unit): void {
     if (u.team === 'red') {
       const chargeMult = this.state.getSkillChargeMultiplier();
       this.state.stageMutantsKilled++;
@@ -8003,6 +8093,8 @@ export class World3D {
       this.state.orbitalCharge = Math.min(100, this.state.orbitalCharge + (isElite ? 1.8 : 0.16) * chargeMult);
 
       const ty1 = this.state.getSkillNodeRank('tycoon_t1');
+      const ty3 = this.state.getSkillNodeRank('tycoon_t3');
+      const isGoldenKill = ty3 > 0 && killer?.kind === 'charged';
       const tycoonEliteBonus = ty1 * 8;
       if (u.kind === 'brute') {
         const gold = this.state.addGold(25 + tycoonEliteBonus);
@@ -8027,10 +8119,10 @@ export class World3D {
         this.spawnBurstParticles(u.x, 0.6, u.z, 0x84cc16, 22);
       } else {
         this.spawnBurstParticles(u.x, 0.6, u.z, 0xff2a55, 8);
-        const dropChance = 0.25 + (ty1 > 0 ? 0.12 : 0);
+        const dropChance = isGoldenKill ? 1.0 : Math.min(1.0, 0.25 + (ty1 > 0 ? 0.12 : 0) + ty3 * 0.15);
         if (Math.random() < dropChance) {
-          this.state.addGold(1 + (ty1 > 0 ? 1 : 0));
-          this.spawnShockwave(u.x, u.z, ty1 > 0 ? 0xfacc15 : 0xff2a55, 1.6, 0.24);
+          this.state.addGold(1 + (ty1 > 0 ? 1 : 0) + (isGoldenKill ? 1 : 0));
+          this.spawnShockwave(u.x, u.z, isGoldenKill || ty1 > 0 ? 0xfacc15 : 0xff2a55, 1.6, 0.24);
         }
       }
     } else {

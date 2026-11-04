@@ -36,13 +36,9 @@
       <!-- Top HUD (1:1 Supercell Single-Row Battle Header: Stage Plaque + Dual Shield HP Bars + Gold & Pause) -->
       <header class="hud-top">
         <div class="hud-top-row">
-          <div id="btn-stage-theme" class="stage-picker" role="button" tabindex="0" title="点击切换场景世界（8大主题场景）[T]">
-            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_crown.png?v=18" alt="" draggable="false" />
-            <span class="stage-plaque-sub">Stage</span>
-            <span id="stage-badge" class="stage-badge">3-2</span>
-            <span class="stage-theme-hint" aria-hidden="true">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_palette.png?v=18" alt="" draggable="false" />
-            </span>
+          <div id="btn-stage-theme" class="stage-picker" title="当前场景与环境特殊效果">
+            <span id="stage-badge" class="stage-badge">齿轮城 · 第 1 关</span>
+            <span id="stage-plaque-sub" class="stage-plaque-sub">【蒸汽超压】主炮射速 +18% · 攻城伤害 +25%</span>
           </div>
 
           <!-- Dual Base HP Capsules (Supercell Shield/Crown Emblems in the Center of Top Bar) -->
@@ -124,10 +120,6 @@
             <button id="btn-reroll-map" type="button" class="drawer-tool-btn" title="随机重随地图 [G]">
               <img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=18" alt="" draggable="false" />
               <span>换地图</span>
-            </button>
-            <button id="btn-theme" type="button" class="drawer-tool-btn" title="切换场景街区 [T]">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_palette.png?v=18" alt="" draggable="false" />
-              <span>换街区</span>
             </button>
             <button id="btn-camera" type="button" class="drawer-tool-btn" title="切换视角 [V]">
               <img class="art-icon-img inline-art-img" src="/assets/icons/ui_camera.png?v=18" alt="" draggable="false" />
@@ -509,10 +501,6 @@
                 </div>
 
                 <div class="hero-stage-topbar">
-                  <button type="button" id="btn-home-theme" class="hero-quick-pill" title="点击切换3D背景街区世界 [T]">
-                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_palette.png?v=18" alt="" draggable="false" />
-                    <span id="home-theme-label">齿轮城</span>
-                  </button>
                   <button type="button" id="btn-home-mecha" class="hero-quick-pill" title="点击切换本局主打应援大招 [E]">
                     <span id="home-mecha-icon" class="hero-pill-icon"><img class="art-icon-img inline-art-img" src="/assets/icons/hud_hammer.png?v=18" alt="" draggable="false" /></span>
                     <span id="home-mecha-label">安可大招</span>

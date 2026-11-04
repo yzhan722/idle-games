@@ -25,6 +25,8 @@ export interface ThemeConfig {
   id: ThemeId;
   name: string;
   badge: string;
+  perkTitle: string;
+  perkDesc: string;
   skyColor: number;
   fogColor: number;
   fogDensity: number;
@@ -63,6 +65,8 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     id: 'wasteland',
     name: '🏭 暖阳街区 · 蒸汽齿轮城',
     badge: '齿轮城',
+    perkTitle: '蒸汽超压',
+    perkDesc: '主炮射速 +18% · 攻城伤害 +25%',
     skyColor: 0x1d4ed8,
     fogColor: 0x2563eb,
     fogDensity: 0.00042,
@@ -99,6 +103,8 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     id: 'sakura',
     name: '🌸 春日花见 · 樱花神社町',
     badge: '樱花町',
+    perkTitle: '落樱祈福',
+    perkDesc: '全军移速 +15% · 每4.5秒落樱治愈全军与基地',
     skyColor: 0xffdfee,
     fogColor: 0xffeef7,
     fogDensity: 0.0012,
@@ -135,6 +141,8 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     id: 'glacier',
     name: '🍧 极光冰晶 · 薄荷雪糕港',
     badge: '雪糕港',
+    perkTitle: '极寒冰霜',
+    perkDesc: '敌军移速 -22% · 每5秒爆发极寒霜冻波冻结敌群',
     skyColor: 0xb0f0ff,
     fogColor: 0xdff8ff,
     fogDensity: 0.0011,
@@ -171,6 +179,8 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     id: 'magma',
     name: '🥐 焦糖夕照 · 甜点烘焙坊',
     badge: '烘焙坊',
+    perkTitle: '焦糖热浪',
+    perkDesc: '全军战力 +20% · 每5秒喷发焦糖热浪灼烧全场敌军',
     skyColor: 0xffcca0,
     fogColor: 0xffe4c8,
     fogDensity: 0.0013,
@@ -207,6 +217,8 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     id: 'cyberhive',
     name: '🎡 星梦嘉年华 · 奇幻游乐园',
     badge: '游乐园',
+    perkTitle: '嘉年华狂欢',
+    perkDesc: '双大招充能 +35% · 穿过蓝门 30% 概率额外 +1 克隆兵',
     skyColor: 0xdcc2ff,
     fogColor: 0xf0e0ff,
     fogDensity: 0.0012,
@@ -243,6 +255,8 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     id: 'emerald',
     name: '🌲 翠林仙踪 · 精灵风车谷',
     badge: '精灵谷',
+    perkTitle: '森之顺风',
+    perkDesc: '全军移速 +22% · 全军与城防生命上限 +25%',
     skyColor: 0xc2f5d8,
     fogColor: 0xe4fcee,
     fogDensity: 0.0012,
@@ -279,6 +293,8 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     id: 'ocean',
     name: '🐳 珊瑚浅湾 · 泡泡海底城',
     badge: '海底城',
+    perkTitle: '潮汐浮力',
+    perkDesc: '我军受击减伤 +20% · 每5秒涌起潮汐波推退全场敌军',
     skyColor: 0x8ae6ff,
     fogColor: 0xc9f4ff,
     fogDensity: 0.0012,
@@ -315,6 +331,8 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     id: 'royal',
     name: '🏰 凯旋大道 · 皇家积木城',
     badge: '积木城',
+    perkTitle: '皇家赏金',
+    perkDesc: '战利品金币收益 +35% · 全军战力 +15%',
     skyColor: 0xa2d0ff,
     fogColor: 0xdbeeff,
     fogDensity: 0.0012,
