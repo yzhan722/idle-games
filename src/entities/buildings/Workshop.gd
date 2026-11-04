@@ -27,8 +27,24 @@ var level_label: Label
 var is_processing: bool = false
 var _was_processing: bool = false
 var process_progress: float = 0.0
+var _chef_progress: Dictionary = {}
 var work_anim_time: float = 0.0
 var crafted_count: int = 0
+
+func set_chef_progress(chef_key: String, prog: float, active: bool) -> void:
+	if active:
+		_chef_progress[chef_key] = clampf(prog, 0.0, 1.0)
+	else:
+		_chef_progress.erase(chef_key)
+	if _chef_progress.is_empty():
+		is_processing = false
+		process_progress = 0.0
+	else:
+		is_processing = true
+		var best_p := 0.0
+		for k in _chef_progress.keys():
+			best_p = maxf(best_p, float(_chef_progress[k]))
+		process_progress = best_p
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_BUILDING

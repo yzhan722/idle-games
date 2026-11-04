@@ -159,6 +159,16 @@ func _compute_growth_stage(g: float) -> GrowthStage:
 		return GrowthStage.SPROUT
 	return GrowthStage.SEED
 
+func is_ready_for_harvest() -> bool:
+	return sown and growth >= 0.72
+
+func apply_farmer_tending(tending_delta: float) -> void:
+	watered = true
+	if sown and growth < 1.0:
+		growth = minf(1.0, growth + tending_delta * 0.24)
+		current_stage = _compute_growth_stage(growth)
+		_sync_sprites()
+
 func _process(delta: float) -> void:
 	sway_time += delta
 	visible = is_plot_active()

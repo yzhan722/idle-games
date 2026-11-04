@@ -66,24 +66,26 @@ const NAMED_WAYPOINTS: Dictionary = {
 const BUILDING_DOCKS: Dictionary = {
 	"soil_1_slot_0": {"wp": 7, "dx": -12.0},
 	"soil_1_slot_1": {"wp": 7, "dx": 12.0},
-	"basket_1_pickup": {"wp": 7, "dx": 16.0},
+	"basket_1_pickup": {"wp": 8, "dx": -26.0},
 	"mortar_input": {"wp": 9, "dx": -16.0},
 	"mortar_chef": {"wp": 9, "dx": -18.0},
 	"mortar_output": {"wp": 9, "dx": 14.0},
-	"stall_restock": {"wp": 10, "dx": -8.0},
+	"stall_restock": {"wp": 10, "dx": -28.0},
 	"stall_manager": {"wp": 10, "dx": 22.0},
-	"stall_checkout": {"wp": 10, "dx": -16.0},
+	"stall_checkout": {"wp": 10, "dx": -6.0},
 	"soil_2_slot_0": {"wp": 1, "dx": -10.0},
 	"soil_2_slot_1": {"wp": 1, "dx": 10.0},
-	"basket_2_pickup": {"wp": 1, "dx": 14.0},
+	"basket_2_pickup": {"wp": 1, "dx": 42.0},
 	"cauldron_input": {"wp": 2, "dx": -16.0},
 	"cauldron_chef": {"wp": 2, "dx": -18.0},
 	"cauldron_output": {"wp": 2, "dx": 14.0},
 	"soil_3_slot_0": {"wp": 17, "dx": -10.0},
 	"soil_3_slot_1": {"wp": 17, "dx": 10.0},
-	"basket_3_pickup": {"wp": 17, "dx": 14.0},
+	"basket_3_pickup": {"wp": 17, "dx": 38.0},
 	"orbis_input": {"wp": 18, "dx": -16.0},
 	"orbis_chef": {"wp": 18, "dx": -18.0},
+	"orbis_chef_fox": {"wp": 18, "dx": -18.0},
+	"orbis_chef_penguin": {"wp": 18, "dx": 18.0},
 	"orbis_output": {"wp": 18, "dx": 14.0}
 }
 
@@ -195,15 +197,22 @@ func find_shortest_node_path(start_idx: int, end_idx: int) -> Array[int]:
 	return node_seq
 
 func compute_path(from_pos: Vector2, to_pos: Vector2) -> Array[Vector2]:
-	var s_idx := get_nearest_waypoint_index(from_pos)
-	var e_idx := get_nearest_waypoint_index(to_pos)
+	var start_pt := constrain_to_walkable_surface(from_pos)
+	var final_pt := constrain_to_walkable_surface(to_pos)
+	if absf(final_pt.x - start_pt.x) <= 1.5:
+		return [final_pt]
+	var min_x := minf(start_pt.x, final_pt.x) + 1.0
+	var max_x := maxf(start_pt.x, final_pt.x) - 1.0
+	var s_idx := get_nearest_waypoint_index(start_pt)
+	var e_idx := get_nearest_waypoint_index(final_pt)
 	var node_indices := find_shortest_node_path(s_idx, e_idx)
 	var path: Array[Vector2] = []
 	for idx in node_indices:
 		var wp := WAYPOINTS[idx]
-		if path.is_empty() or absf(path[path.size() - 1].x - wp.x) > 1.0:
-			path.append(wp)
-	var final_pt := constrain_to_walkable_surface(to_pos)
+		# Strictly filter to intermediate waypoints between start_pt.x and final_pt.x to eliminate dock overshoot/backtracking
+		if wp.x >= min_x and wp.x <= max_x:
+			if path.is_empty() or absf(path[path.size() - 1].x - wp.x) > 1.0:
+				path.append(wp)
 	if path.is_empty() or absf(path[path.size() - 1].x - final_pt.x) > 1.0:
 		path.append(final_pt)
 	else:

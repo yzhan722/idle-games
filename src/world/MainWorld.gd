@@ -328,10 +328,7 @@ func _spawn_all_roster_slots() -> void:
 
 func find_best_plot_for_island(isl_idx: int) -> SoilPlot:
 	for p in soil_plots:
-		if p.island_idx == isl_idx and p.is_plot_active() and not p.reserved_by_worker and p.growth >= 0.85:
-			return p
-	for p in soil_plots:
-		if p.island_idx == isl_idx and p.is_plot_active() and not p.reserved_by_worker:
+		if p.island_idx == isl_idx and p.is_plot_active():
 			return p
 	return null
 
@@ -459,7 +456,10 @@ func _spawn_customer(as_vip: bool) -> void:
 	var c := CustomerNPC.new()
 	var sp := Vector2(612.4, GROUND_Y)
 	if as_vip:
-		sp = waypoint_graph.get_named_pos("spawn_right")
+		if bool(GameManager.unlocked_islands.get(3, false)):
+			sp = waypoint_graph.get_named_pos("spawn_right")
+		else:
+			sp = waypoint_graph.get_named_pos("pond_east")
 	elif bool(GameManager.unlocked_islands.get(2, false)):
 		sp = waypoint_graph.get_named_pos("spawn_left")
 	c.setup_customer(sp, waypoint_graph, market_stall, as_vip)

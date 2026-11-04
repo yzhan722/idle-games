@@ -106,22 +106,32 @@ func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketSta
 		body_sprite.offset = Vector2(0.0, -float(FRAME_H) * 0.5)
 
 	if is_vip:
-		desired_item_id = "delicacy_3" if bool(GameManager.unlocked_islands.get(3, false)) else "delicacy_2"
+		if bool(GameManager.unlocked_islands.get(3, false)) and (GameManager.get_island_recruited_count(3, "fox") >= 1 or GameManager.get_island_recruited_count(3, "penguin") >= 1):
+			desired_item_id = "delicacy_3"
+		elif bool(GameManager.unlocked_islands.get(2, false)) and GameManager.get_island_recruited_count(2, "penguin") >= 1:
+			desired_item_id = "delicacy_2"
+		elif GameManager.is_animal_hired("fox"):
+			desired_item_id = EconomyConfig.get_evolved_delicacy_id("mortar", int(GameManager.building_levels.get("mortar", 1)))
+		else:
+			desired_item_id = EconomyConfig.get_evolved_crop_id(1, int(GameManager.building_levels.get("soil_1", 1)))
 		desired_qty = randi_range(3, 5)
 	else:
-		var pool: Array[String] = ["crop_0", "crop_1"]
-		if GameManager.is_animal_hired("fox"):
-			pool.append_array(["delicacy_0", "delicacy_1"])
-		if bool(GameManager.unlocked_islands.get(2, false)):
-			pool.append("delicacy_2")
-		if bool(GameManager.unlocked_islands.get(3, false)):
-			pool.append("delicacy_3")
+		var pool: Array[String] = []
+		for item_k in ["crop_0", "crop_1", "crop_2", "crop_3", "delicacy_0", "delicacy_1", "delicacy_2", "delicacy_3"]:
+			if bool(GameManager.unlocked_codex.get(item_k, false)):
+				pool.append(item_k)
+		if pool.is_empty():
+			pool.append("crop_0")
 		desired_item_id = pool[randi() % pool.size()]
 		desired_qty = randi_range(1, 3)
 
 	state = State.SPAWN_AND_STROLL
-	var queue_dest := stall_ref.get_queue_slot_pos(self) if stall_ref != null else Vector2(996.0, EconomyConfig.GROUND_Y)
-	nav_path = waypoint_graph.compute_path(position, queue_dest) if waypoint_graph != null else [queue_dest]
+	var approach_dest := waypoint_graph.get_dock_pos("stall_checkout") if waypoint_graph != null else Vector2(997.4, EconomyConfig.GROUND_Y)
+	nav_path = waypoint_graph.compute_path(position, approach_dest) if waypoint_graph != null else [approach_dest]
+
+func _exit_tree() -> void:
+	if stall_ref != null:
+		stall_ref.unregister_from_queue(self)
 
 func _process(delta: float) -> void:
 	anim_time += delta
@@ -129,14 +139,18 @@ func _process(delta: float) -> void:
 	match state:
 		State.SPAWN_AND_STROLL:
 			if _follow_path(delta, 42.0):
+				if stall_ref != null:
+					stall_ref.register_in_queue(self)
 				state = State.QUEUE_AT_STALL
 				wait_timer = 0.0
 
 		State.QUEUE_AT_STALL:
 			if stall_ref != null:
 				var slot_pos := stall_ref.get_queue_slot_pos(self)
-				if absf(position.x - slot_pos.x) > 4.0:
-					_move_directly_toward(slot_pos, delta, 36.0)
+				if absf(position.x - slot_pos.x) > 2.5:
+					_move_directly_toward(slot_pos, delta, 38.0)
+				else:
+					facing_left = (position.x > stall_ref.position.x)
 				if stall_ref.is_front_of_queue(self):
 					state = State.PURCHASE
 					interact_timer = 0.0
@@ -145,6 +159,12 @@ func _process(delta: float) -> void:
 				state = State.PURCHASE
 
 		State.PURCHASE:
+			if stall_ref != null:
+				var front_pos := stall_ref.get_queue_slot_pos(self)
+				if absf(position.x - front_pos.x) > 2.5:
+					_move_directly_toward(front_pos, delta, 38.0)
+				else:
+					facing_left = (position.x > stall_ref.position.x)
 			var has_stock := stall_ref.has_available_stock() if stall_ref != null else (GameManager.get_total_stall_count() > 0)
 			if has_stock:
 				var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0

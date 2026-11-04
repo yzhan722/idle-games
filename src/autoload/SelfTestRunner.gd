@@ -117,6 +117,12 @@ func _run_all_four_assertions_and_export() -> void:
 		if absf(c.rotation) > 0.001 or absf(sp.rotation) > 0.001:
 			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has non-zero rotation (rot=%.3f, sp_rot=%.3f)" % [c.sheet_key, c.rotation, sp.rotation])
 			return
+		if not bool(GameManager.unlocked_islands.get(2, false)) and c.position.x < 538.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked onto locked Island 2 (x=%.1f)!" % [c.sheet_key, c.position.x])
+			return
+		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1320.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked onto locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
+			return
 		checked_sprites += 1
 
 	for p in world.soil_plots:
@@ -161,15 +167,36 @@ func _run_all_four_assertions_and_export() -> void:
 	print("[PASS] [断言2-建筑防叠罗汉] 通过: 三岛全部 12 座主建筑水平最大重叠率 = %.1f%% (<= 15%%)，最小边缘净留白 = %.1fpx (>= 28px)!" % [max_overlap_seen * 100.0, min_gap_seen])
 
 	# ------------------------------------------------------------------
-	# [断言3-产线活体闭环]: Verify harvests > 0, animal movement > 50px, and items entered workshop or market stall
+	# [断言3-产线活体闭环]: Verify harvests > 0, animal movement > 50px, monotonic pathing, and items entered workshop or market stall
 	# ------------------------------------------------------------------
 	var total_bunny_dist := 0.0
 	var total_all_workers_dist := 0.0
 	for w in world.workers:
-		if is_instance_valid(w) and w.visible:
+		if not is_instance_valid(w):
+			continue
+		if absf(w.position.y - EconomyConfig.GROUND_Y) > 0.1:
+			_fail_and_quit("[断言3-产线活体闭环]", "AnimalWorker `%s` drifted off GROUND_Y (y=%.2f)!" % [w.animal_key, w.position.y])
+			return
+		if not w.is_hired() and w.nav_path.size() > 0:
+			_fail_and_quit("[断言3-产线活体闭环]", "Unhired AnimalWorker `%s` (island %d slot %d) has active nav_path!" % [w.animal_key, w.home_island, w.slot_index])
+			return
+		if w.visible:
 			total_all_workers_dist += w.total_distance_moved
 			if w.animal_key == "bunny":
 				total_bunny_dist += w.total_distance_moved
+
+	if world.waypoint_graph != null:
+		var test_path_a := world.waypoint_graph.compute_path(Vector2(698.8, EconomyConfig.GROUND_Y), Vector2(698.8, EconomyConfig.GROUND_Y))
+		if test_path_a.size() != 1 or absf(test_path_a[0].x - 698.8) > 0.1:
+			_fail_and_quit("[断言3-产线活体闭环]", "WaypointGraph same-dock path caused jitter: %s" % [str(test_path_a)])
+			return
+		var test_path_b := world.waypoint_graph.compute_path(Vector2(722.8, EconomyConfig.GROUND_Y), Vector2(1005.4, EconomyConfig.GROUND_Y))
+		var prev_x := 722.8
+		for pt in test_path_b:
+			if pt.x < prev_x - 0.1:
+				_fail_and_quit("[断言3-产线活体闭环]", "WaypointGraph path backtracked from %.1f to %.1f: %s" % [prev_x, pt.x, str(test_path_b)])
+				return
+			prev_x = pt.x
 
 	for p in world.soil_plots:
 		if is_instance_valid(p):
