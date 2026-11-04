@@ -1085,6 +1085,8 @@ export const DEBUFF_CATALOG: Omit<ActiveDebuff, 'remainingStages'>[] = [
   },
 ];
 
+export const RENAME_GOLD_COST = 100000;
+
 export class GameState {
   public gold = 160;
   public unlockedLevel = 50;
@@ -1298,12 +1300,21 @@ export class GameState {
     void this.syncRemoteLeaderboard(true);
   }
 
-  public setPlayerName(newName: string): void {
-    const cleaned = newName.trim().slice(0, 20);
-    if (!cleaned) return;
+  public setPlayerName(newName: string): {
+    ok: boolean;
+    reason?: 'empty' | 'same' | 'insufficient_gold';
+  } {
+    const cleaned = newName.trim().slice(0, 14);
+    if (!cleaned) return { ok: false, reason: 'empty' };
+    if (cleaned === this.playerName) return { ok: false, reason: 'same' };
+    if (this.gold < RENAME_GOLD_COST) {
+      return { ok: false, reason: 'insufficient_gold' };
+    }
+    this.gold -= RENAME_GOLD_COST;
     this.playerName = cleaned;
     this.save();
     void this.syncRemoteLeaderboard(true);
+    return { ok: true };
   }
 
   private getTodayKey(): string {

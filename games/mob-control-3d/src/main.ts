@@ -4,6 +4,7 @@ import {
   GameState,
   META_UPGRADES,
   MetaUpgradeId,
+  RENAME_GOLD_COST,
   RewardOption,
   SKILL_TREE_BRANCHES,
   SKINS_CATALOG,
@@ -1641,10 +1642,29 @@ if (btnStartBattle) {
 
 if (btnEditName) {
   btnEditName.addEventListener('click', () => {
-    const input = window.prompt('请输入你的指挥官昵称（最多14个字符）：', state.playerName);
+    if (state.gold < RENAME_GOLD_COST) {
+      showGlobalToast(
+        `💰 改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币（当前：${Math.floor(state.gold).toLocaleString()} 金币）`
+      );
+      return;
+    }
+    const input = window.prompt(
+      `请输入新的指挥官昵称（最多14个字符，改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币）：`,
+      state.playerName
+    );
     if (input && input.trim()) {
-      state.setPlayerName(input);
-      renderMainMenu();
+      const res = state.setPlayerName(input);
+      if (res.ok) {
+        sound.playUpgrade();
+        spawnMenuUpgradeBurst(btnEditName, `-${RENAME_GOLD_COST.toLocaleString()} 金币`, '#f59e0b');
+        showGlobalToast(`✅ 改名成功：「${state.playerName}」（已消耗 ${RENAME_GOLD_COST.toLocaleString()} 金币）`);
+        refreshUpgradeUI();
+        renderMainMenu();
+      } else if (res.reason === 'insufficient_gold') {
+        showGlobalToast(
+          `💰 改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币（当前：${Math.floor(state.gold).toLocaleString()} 金币）`
+        );
+      }
     }
   });
 }
