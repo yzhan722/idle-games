@@ -520,10 +520,10 @@ export default function NewGameInterface() {
       return item.slot === want || (item.type === 'armor' && item.slot === want)
     }
     return Object.entries(playerState.inventory)
-      .filter(([id, count]) => id !== 'gold' && (count || 0) > 0)
+      .filter(([id, count]) => id !== 'gold' && Number(count || 0) > 0)
       .map(([id, count]) => {
         const item = contentPack.items.find((i: any) => i.id === id)
-        return item ? { ...item, count } : null
+        return item ? { ...item, count: Number(count) } : null
       })
       .filter((item): item is any => !!item && matches(item))
   }
@@ -533,10 +533,10 @@ export default function NewGameInterface() {
     if (!playerState?.inventory) return []
     
     let items = Object.entries(playerState.inventory)
-      .filter(([key, value]) => key !== 'gold' && (value || 0) > 0)
+      .filter(([key, value]) => key !== 'gold' && Number(value || 0) > 0)
       .map(([itemId, count]) => ({
         itemId,
-        count,
+        count: Number(count),
         ...getItemInfo(itemId)
       }))
     
@@ -570,7 +570,7 @@ export default function NewGameInterface() {
         items.sort((a, b) => b.tier - a.tier)
         break
       case 'count':
-        items.sort((a, b) => b.count - a.count)
+        items.sort((a, b) => Number(b.count) - Number(a.count))
         break
       default:
         // 默认排序（按添加顺序）
@@ -859,7 +859,7 @@ export default function NewGameInterface() {
       if (hp.enemyHp < baselineEnemyHp) {
         const addedCount = Math.max(1, hp.log.length - (isNewFight ? 0 : prev.logLen))
         const newLines = hp.log.slice(-addedCount)
-        const heavy = newLines.some((l) => l.includes("重劈"))
+        const heavy = newLines.some((l: string) => l.includes("重劈"))
         playGameSound(heavy ? "skill" : "combat-hit")
         pushDamageFloat("enemy", baselineEnemyHp - hp.enemyHp, heavy)
         shake("enemy")
@@ -900,7 +900,7 @@ export default function NewGameInterface() {
   useEffect(() => {
     if (!playerState) return
     const combat = playerState.combatLevel || 1
-    const totalSkillLv = Object.values(playerState.skills || {}).reduce((sum, s) => sum + (s?.level || 1), 0)
+    const totalSkillLv = Object.values(playerState.skills || {}).reduce<number>((sum: number, s: any) => sum + (s?.level || 1), 0)
     if (prevLevelsRef.current) {
       if (combat > prevLevelsRef.current.combat || totalSkillLv > prevLevelsRef.current.wood) {
         playGameSound("level-up")
@@ -1810,7 +1810,7 @@ export default function NewGameInterface() {
   const totalLevel =
     Object.values(playerState.skills || {}).reduce((sum: number, s: any) => sum + Number(s?.level || 1), 0) +
     (playerState.combatSkills
-      ? Object.values(playerState.combatSkills).reduce((sum, s) => sum + Number(s?.level || 1), 0)
+      ? Object.values(playerState.combatSkills).reduce<number>((sum: number, s: any) => sum + Number(s?.level || 1), 0)
       : (playerState.combatLevel || 1) * 7)
   // MWI attention badges: claimable tasks (+1 when the gift is ready)
   const navBadges: Record<string, number | undefined> = {
@@ -2123,9 +2123,9 @@ export default function NewGameInterface() {
               level: playerState.combatSkills?.[id]?.level || 1,
               xp: playerState.combatSkills?.[id]?.xp || 0,
             }))}
-            abilities={Object.entries(playerState.abilities || {}).map(([id, st]) => {
+            abilities={Object.entries(playerState.abilities || {}).map(([id, st]: [string, any]) => {
               const def = abilityCatalog?.find((a) => a.id === id)
-              const slot = (playerState.abilityLoadout || []).find((s) => s.abilityId === id)
+              const slot = (playerState.abilityLoadout || []).find((s: any) => s.abilityId === id)
               return {
                 id,
                 name: def?.name || id,
@@ -2225,7 +2225,7 @@ export default function NewGameInterface() {
         {activeTab === 'inventory' && (
           <InventoryPage
             rows={Object.entries(playerState.inventory)
-              .filter(([key, value]) => key !== 'gold' && (value || 0) > 0)
+              .filter(([key, value]) => key !== 'gold' && Number(value || 0) > 0)
               .map(([itemId, count]) => ({ itemId, count: Number(count), ...getItemInfo(itemId) }))}
             gold={playerState.inventory.gold || 0}
             packItems={contentPack?.items}

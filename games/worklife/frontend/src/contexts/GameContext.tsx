@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, R
 import { apiClient } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { logger } from '../utils/logger'
-import type { PlayerState } from '../types'
+import type { PlayerState } from '../types/game'
 
 interface GameContextType {
   playerState: PlayerState | null

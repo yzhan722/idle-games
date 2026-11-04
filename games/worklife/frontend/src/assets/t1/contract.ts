@@ -382,7 +382,7 @@ export function p0RequiredKeys(): string[] {
   return T1_ASSET_CONTRACT.filter((s) => s.priority === "P0").map((s) => s.key);
 }
 
-export function profileForKey(key: string): T1AssetProfile {
+export function profileForKey(key: string): ArtProfile {
   const found = specByKey(key);
   if (found) return found.profile;
   if (key.startsWith("character/") || key.startsWith("monsters/") || key.startsWith("trees/") || key.startsWith("gather/")) {
