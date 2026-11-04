@@ -31,10 +31,12 @@ var sheet_key: String = "animals/bunny_sheet.png"
 var tex_sheet: Texture2D
 var tex_crops: Texture2D
 var tex_delicacies: Texture2D
+var tex_carry_rig: Texture2D
 var tex_heart: Texture2D
 
 var body_sprite: Sprite2D = Sprite2D.new()
 var carry_icon: Sprite2D = Sprite2D.new()
+var carry_front_grip: Sprite2D = Sprite2D.new()
 var heart_icon: Sprite2D = Sprite2D.new()
 var sleep_label: Label
 
@@ -79,10 +81,28 @@ func _ready() -> void:
 	carry_icon.name = "CarryIcon"
 	carry_icon.visible = false
 	carry_icon.centered = true
-	carry_icon.position = Vector2(0.0, -56.0)
+	carry_icon.position = Vector2(15.0, -22.0)
 	carry_icon.z_index = EconomyConfig.Z_CARRY_EMOTE
 	carry_icon.z_as_relative = false
 	add_child(carry_icon)
+
+	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+	tex_carry_rig = load("res://assets/pixel_art/animals/carry_rig_sheet.png")
+	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
+
+	carry_front_grip.name = "CarryFrontGrip"
+	carry_front_grip.texture = tex_carry_rig
+	carry_front_grip.region_enabled = false
+	carry_front_grip.hframes = 3
+	carry_front_grip.vframes = 1
+	carry_front_grip.frame = 0
+	carry_front_grip.visible = false
+	carry_front_grip.centered = true
+	carry_front_grip.position = Vector2(14.0, -18.0)
+	carry_front_grip.z_index = EconomyConfig.Z_CARRY_EMOTE + 1
+	carry_front_grip.z_as_relative = false
+	add_child(carry_front_grip)
 
 	sleep_label = EconomyConfig.create_pixel_label("Zzz...", 14, Color("#FFF4D6"), true)
 	sleep_label.position = Vector2(-30.0, -68.0)
@@ -91,10 +111,6 @@ func _ready() -> void:
 	sleep_label.z_index = EconomyConfig.Z_CARRY_EMOTE
 	sleep_label.z_as_relative = false
 	add_child(sleep_label)
-
-	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
-	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
-	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
 
 	heart_icon.name = "HeartIcon"
 	heart_icon.texture = tex_heart
@@ -168,6 +184,7 @@ func _set_carry_visual(item_id: String, qty: int) -> void:
 	carrying_qty = qty
 	if item_id == "" or qty <= 0:
 		carry_icon.visible = false
+		carry_front_grip.visible = false
 		return
 	carry_icon.visible = true
 	carry_icon.region_enabled = false
@@ -177,7 +194,7 @@ func _set_carry_visual(item_id: String, qty: int) -> void:
 		carry_icon.hframes = 4
 		carry_icon.vframes = 1
 		carry_icon.frame = clampi(int(d_data.get("idx", 0)), 0, 3)
-		carry_icon.scale = Vector2(0.65, 0.65)
+		carry_icon.scale = Vector2(0.50, 0.50)
 	else:
 		var c_data: Dictionary = EconomyConfig.CROPS.get(item_id, EconomyConfig.CROPS["crop_0"])
 		var row := clampi(int(c_data.get("crop_row", 0)), 0, 3)
@@ -185,7 +202,46 @@ func _set_carry_visual(item_id: String, qty: int) -> void:
 		carry_icon.hframes = 4
 		carry_icon.vframes = 4
 		carry_icon.frame = row * 4 + 3
-		carry_icon.scale = Vector2(0.60, 0.60)
+		carry_icon.scale = Vector2(0.44, 0.44)
+
+	carry_front_grip.visible = true
+	carry_front_grip.region_enabled = false
+	carry_front_grip.hframes = 3
+	carry_front_grip.vframes = 1
+	if role_type == RoleType.OTTER_LOGISTICS:
+		carry_front_grip.frame = 1
+	elif role_type == RoleType.TOUCAN_TRADER:
+		carry_front_grip.frame = 2
+	else:
+		carry_front_grip.frame = 0
+	_sync_carry_rig_transform(0.0)
+
+func _sync_carry_rig_transform(hop_y: float) -> void:
+	var dir_sign := -1.0 if facing_left else 1.0
+	var rig_x := 14.0
+	var rig_y := -18.0
+	var item_x := 15.0
+	var item_y := -22.0
+	if role_type == RoleType.OTTER_LOGISTICS:
+		rig_x = 15.0
+		rig_y = -18.0
+		item_x = 16.0
+		item_y = -21.0
+	elif role_type == RoleType.TOUCAN_TRADER:
+		rig_x = 14.0
+		rig_y = -15.0
+		item_x = 15.0
+		item_y = -19.0
+
+	if carry_icon != null and carry_icon.visible:
+		carry_icon.position = Vector2(dir_sign * item_x, item_y + hop_y)
+		carry_icon.flip_h = facing_left
+		carry_icon.rotation = 0.0
+
+	if carry_front_grip != null and carry_front_grip.visible:
+		carry_front_grip.position = Vector2(dir_sign * rig_x, rig_y + hop_y)
+		carry_front_grip.flip_h = facing_left
+		carry_front_grip.rotation = 0.0
 
 func _navigate_to(dest: Vector2) -> void:
 	var grounded_dest := Vector2(dest.x, EconomyConfig.GROUND_Y)
@@ -326,14 +382,12 @@ func _process(delta: float) -> void:
 		body_sprite.scale = Vector2(scale_x, scale_y)
 
 	if carry_icon != null and carry_icon.visible:
-		carry_icon.position = Vector2(0.0, -56.0 + hop_y)
-		carry_icon.rotation = 0.0
+		_sync_carry_rig_transform(hop_y)
 
 	if heart_icon != null:
 		heart_icon.visible = (boost_timer > 0.0)
 		if heart_icon.visible:
-			var heart_y := -74.0 if carry_icon.visible else -62.0
-			heart_icon.position = Vector2(0.0, heart_y + hop_y + sin(anim_time * 6.0) * 2.0)
+			heart_icon.position = Vector2(0.0, -62.0 + hop_y + sin(anim_time * 6.0) * 2.0)
 			heart_icon.rotation = 0.0
 
 	if sleep_label != null:
