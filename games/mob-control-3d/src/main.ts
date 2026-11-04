@@ -488,7 +488,7 @@ function renderMainMenu(): void {
     commanderNameTextEl.textContent = state.playerName;
   }
   if (commanderBestStageEl) {
-    commanderBestStageEl.innerHTML = `${UI_ART.trophy} <span>最高 ${state.bestStageCleared} 关</span>`;
+    commanderBestStageEl.innerHTML = `${UI_ART.trophy} <span>${state.bestStageCleared} 关</span>`;
   }
 
   // Update Home Hero Stage Showcase (Theme-Reactive 3D Studio Turntable Showcase!)
@@ -510,7 +510,7 @@ function renderMainMenu(): void {
     homeMascotArtEl.innerHTML = activeRace.icon;
   }
   if (homeRaceTitleEl) {
-    homeRaceTitleEl.innerHTML = `${activeKeystone ? `${UI_ART.crown} ` : ''}${activeRace.raceName} · ${activeRace.unitName}`;
+    homeRaceTitleEl.innerHTML = `${activeKeystone ? `${UI_ART.crown} ` : ''}${activeRace.raceName}`;
   }
   if (homeRacePtsTagEl) {
     homeRacePtsTagEl.innerHTML = `${UI_ART.star} ${spentPts}/16`;
@@ -725,7 +725,7 @@ function renderMainMenu(): void {
   if (btnLbActive) btnLbActive.classList.toggle('active', leaderboardMode === 'active');
   if (btnShareGame) {
     const canBonus = state.canClaimDailyShareBonus();
-    btnShareGame.innerHTML = `${canBonus ? `${UI_ART.gift} 分享+3000${UI_ART.coin}` : `${UI_ART.share} 分享`}<kbd class="kbd-hint">F</kbd>`;
+    btnShareGame.innerHTML = `${canBonus ? `${UI_ART.gift} 分享` : `${UI_ART.share} 分享`}`;
     btnShareGame.classList.toggle('has-bonus', canBonus);
   }
 
@@ -737,8 +737,8 @@ function renderMainMenu(): void {
     if (leaderboardSelfStatusEl) {
       const rankStr = selfRank && selfRank <= 10 ? `#${selfRank}` : '未上榜';
       leaderboardSelfStatusEl.innerHTML = isActiveMode
-        ? `<span class="desktop-only-text">${state.playerName} · 游戏时间 </span>${state.formatPlayTime(state.playTimeSeconds)} (${rankStr})`
-        : `<span class="desktop-only-text">${state.playerName} · </span>最高 ${state.bestStageCleared} 关 (${rankStr})`;
+        ? `${state.playerName} · ${rankStr} (${state.formatPlayTime(state.playTimeSeconds)})`
+        : `${state.playerName} · ${rankStr} (${state.bestStageCleared} 关)`;
     }
 
     leaderboardListEl.innerHTML = '';
@@ -752,9 +752,6 @@ function renderMainMenu(): void {
             : rank === 3
               ? UI_ART.medal3
               : `${rank}`;
-      const roleBadge = entry.isBot
-        ? `<span class="lb-role-tag lb-role-bot" title="预设守门AI基准线，有真人玩家上榜时自动腾出名额">AI</span>`
-        : `<span class="lb-role-tag lb-role-real" title="真实玩家云端战绩">真人</span>`;
       const row = document.createElement('div');
       row.className = `lb-row ${isActiveMode ? 'lb-active-mode' : ''} ${rank <= 3 ? `lb-top-${rank}` : ''} ${entry.isSelf ? 'lb-self-row' : ''}`;
       row.style.setProperty('--stagger-i', `${idx}`);
@@ -767,11 +764,8 @@ function renderMainMenu(): void {
           <span class="lb-rank">${rankBadge}</span>
           ${avatarHtml}
           <div class="lb-player">
-            <span class="lb-name">${entry.name}${entry.isSelf ? ' (我)' : ''}</span>
-            ${roleBadge}
-            <span class="lb-skin" style="color: ${entry.badgeColor}">${entry.skinName}</span>
+            <span class="lb-name">${entry.name}</span>
           </div>
-          <span class="lb-kills">${UI_ART.trophy} ${entry.bestStage} 关</span>
           <strong class="lb-time">${UI_ART.clock} ${timeStr}</strong>
         `;
       } else {
@@ -779,12 +773,9 @@ function renderMainMenu(): void {
           <span class="lb-rank">${rankBadge}</span>
           ${avatarHtml}
           <div class="lb-player">
-            <span class="lb-name">${entry.name}${entry.isSelf ? ' (我)' : ''}</span>
-            ${roleBadge}
-            <span class="lb-skin" style="color: ${entry.badgeColor}">${entry.skinName}</span>
+            <span class="lb-name">${entry.name}</span>
           </div>
-          <span class="lb-kills">${UI_ART.trophy} ${entry.totalKills.toLocaleString()}</span>
-          <strong class="lb-stage">${entry.bestStage} 关</strong>
+          <strong class="lb-stage">${UI_ART.trophy} ${entry.bestStage} 关</strong>
         `;
       }
       leaderboardListEl.appendChild(row);

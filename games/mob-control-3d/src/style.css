@@ -4516,6 +4516,124 @@ body.screen-quake-active #app {
   display: none !important;
 }
 
+/* ==========================================================================
+   DE-CLUTTER WEB-GAME REDUNDANCY (Title Splash & Main Lobby Home)
+   ========================================================================== */
+.title-version-pill,
+.title-ribbon-badge,
+.title-sub-plaque,
+#title-welcome-chip,
+.enter-btn-sub,
+.title-tap-hint,
+#btn-title-sound span,
+.kbd-hint,
+.commander-rank-tag,
+.hero-race-perk,
+.launch-btn-sub,
+.panel-subtitle,
+.menu-brand {
+  display: none !important;
+}
+
+.title-topbar {
+  justify-content: flex-end !important;
+}
+
+#btn-title-sound {
+  width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  justify-content: center !important;
+  background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%) !important;
+  border: 2.5px solid #040b1c !important;
+  outline: 2px solid #f59e0b !important;
+  outline-offset: -4px !important;
+  box-shadow:
+    0 5px 0 #040b1c,
+    0 8px 16px rgba(0, 0, 0, 0.45),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+#btn-title-sound .art-icon-img {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.title-center-emblem {
+  margin-top: -32vh !important;
+  gap: 0 !important;
+}
+
+.title-bottom-dock {
+  width: auto !important;
+  gap: 0 !important;
+  padding-bottom: 14px !important;
+}
+
+#btn-enter-workshop {
+  width: 280px !important;
+  max-width: 82vw !important;
+  min-height: 76px !important;
+  padding: 12px 32px !important;
+  border-radius: 22px !important;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 45%, #16a34a 85%, #15803d 100%) !important;
+  border: 3.5px solid #040b1c !important;
+  outline: 2.5px solid #fbbf24 !important;
+  outline-offset: -5.5px !important;
+  box-shadow:
+    0 8px 0 #14532d,
+    0 11px 0 #040b1c,
+    0 16px 32px rgba(22, 163, 74, 0.55),
+    inset 0 4px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+#btn-enter-workshop:hover {
+  transform: translateY(-3px) scale(1.03) !important;
+  filter: brightness(1.07) !important;
+}
+
+.enter-btn-main {
+  font-size: 30px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  gap: 12px !important;
+}
+
+.enter-btn-main .art-icon-img {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.hero-stage-ribbon {
+  width: auto !important;
+  min-width: 195px !important;
+  max-width: 320px !important;
+  padding: 7px 22px !important;
+  margin: -24px auto 8px !important;
+  border-radius: 999px !important;
+}
+
+.hero-race-head {
+  gap: 10px !important;
+  justify-content: center !important;
+}
+
+#btn-start-battle {
+  min-height: 74px !important;
+  padding: 10px 28px !important;
+  justify-content: center !important;
+}
+
+.launch-btn-main {
+  font-size: 28px !important;
+}
+
+.lb-row {
+  grid-template-columns: 34px 38px minmax(0, 1fr) auto !important;
+  padding: 6px 14px !important;
+}
+
 /* Home Hero Showcase Stage (Key Art Background + Floating Mascot Pedestal + Quick Switchers) */
 .home-hero-stage {
   --hero-race-color: #38bdf8;
@@ -8543,6 +8661,124 @@ img,
 
 .tab-notify-badge.hidden {
   display: none !important;
+}
+
+/* ==========================================================================
+   DE-CLUTTER WEB-GAME REDUNDANCY (Title Splash & Main Lobby Home)
+   ========================================================================== */
+.title-version-pill,
+.title-ribbon-badge,
+.title-sub-plaque,
+#title-welcome-chip,
+.enter-btn-sub,
+.title-tap-hint,
+#btn-title-sound span,
+.kbd-hint,
+.commander-rank-tag,
+.hero-race-perk,
+.launch-btn-sub,
+.panel-subtitle,
+.menu-brand {
+  display: none !important;
+}
+
+.title-topbar {
+  justify-content: flex-end !important;
+}
+
+#btn-title-sound {
+  width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  justify-content: center !important;
+  background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%) !important;
+  border: 2.5px solid #040b1c !important;
+  outline: 2px solid #f59e0b !important;
+  outline-offset: -4px !important;
+  box-shadow:
+    0 5px 0 #040b1c,
+    0 8px 16px rgba(0, 0, 0, 0.45),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+#btn-title-sound .art-icon-img {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.title-center-emblem {
+  margin-top: -32vh !important;
+  gap: 0 !important;
+}
+
+.title-bottom-dock {
+  width: auto !important;
+  gap: 0 !important;
+  padding-bottom: 14px !important;
+}
+
+#btn-enter-workshop {
+  width: 280px !important;
+  max-width: 82vw !important;
+  min-height: 76px !important;
+  padding: 12px 32px !important;
+  border-radius: 22px !important;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 45%, #16a34a 85%, #15803d 100%) !important;
+  border: 3.5px solid #040b1c !important;
+  outline: 2.5px solid #fbbf24 !important;
+  outline-offset: -5.5px !important;
+  box-shadow:
+    0 8px 0 #14532d,
+    0 11px 0 #040b1c,
+    0 16px 32px rgba(22, 163, 74, 0.55),
+    inset 0 4px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+#btn-enter-workshop:hover {
+  transform: translateY(-3px) scale(1.03) !important;
+  filter: brightness(1.07) !important;
+}
+
+.enter-btn-main {
+  font-size: 30px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  gap: 12px !important;
+}
+
+.enter-btn-main .art-icon-img {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.hero-stage-ribbon {
+  width: auto !important;
+  min-width: 195px !important;
+  max-width: 320px !important;
+  padding: 7px 22px !important;
+  margin: -24px auto 8px !important;
+  border-radius: 999px !important;
+}
+
+.hero-race-head {
+  gap: 10px !important;
+  justify-content: center !important;
+}
+
+#btn-start-battle {
+  min-height: 74px !important;
+  padding: 10px 28px !important;
+  justify-content: center !important;
+}
+
+.launch-btn-main {
+  font-size: 28px !important;
+}
+
+.lb-row {
+  grid-template-columns: 34px 38px minmax(0, 1fr) auto !important;
+  padding: 6px 14px !important;
 }
 
 .tree-node.branch-locked-out,
