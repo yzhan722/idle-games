@@ -2014,10 +2014,6 @@ export class GameState {
   public upgradeSkillNode(id: SkillNodeId): boolean {
     const check = this.canUpgradeSkillNode(id);
     if (!check.ok) return false;
-    const spec = ALL_SKILL_NODES.find((n) => n.id === id);
-    if (spec) {
-      this.selectedRaceId = spec.branchId;
-    }
     this.gold = Math.max(0, this.gold - check.goldCost);
     this.skillNodes[id] = (this.skillNodes[id] || 0) + 1;
     this.save();
@@ -2692,16 +2688,18 @@ export class GameState {
   public getActiveBuffBadges(): { icon: string; text: string; rarity: BuffRarity }[] {
     const badges: { icon: string; text: string; rarity: BuffRarity }[] = [];
     const keystone = this.getActiveKeystoneSpec();
+    const activeRace = this.getActiveRaceBranch();
+    const activeBranchPts = this.getBranchSpentPoints(activeRace.id);
     if (keystone) {
       badges.push({
         icon: keystone.branch.icon,
         text: `${UI_ART.crown} ${keystone.node.name}`,
         rarity: 'legendary',
       });
-    } else if (this.getSpentTalentPoints() > 0) {
+    } else if (activeBranchPts > 0) {
       badges.push({
-        icon: UI_ART.star,
-        text: `天赋×${this.getSpentTalentPoints()}`,
+        icon: activeRace.icon,
+        text: `${activeRace.raceName}·天赋×${activeBranchPts}`,
         rarity: 'epic',
       });
     }

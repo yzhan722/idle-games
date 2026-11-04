@@ -1025,10 +1025,6 @@ function renderSkillTreePanel(): void {
       nodeBtn.addEventListener('click', () => {
         const wasSelected = selectedSkillNodeId === node.id;
         selectedSkillNodeId = node.id;
-        if (state.selectRaceBranch(branch.id)) {
-          world.applySkin(state.getEquippedSkin());
-          refreshMechaUI();
-        }
         if (wasSelected && !isMax && state.canUpgradeSkillNode(node.id).ok) {
           if (state.upgradeSkillNode(node.id)) {
             sound.playUpgrade();
