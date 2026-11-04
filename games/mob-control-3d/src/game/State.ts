@@ -1034,6 +1034,10 @@ export interface SaveState {
   totalMatchesPlayed?: number;
   lifetimeKills?: number;
   playTimeSeconds?: number;
+  leaderboardWeekKey?: string;
+  weeklyBestStage?: number;
+  weeklyKills?: number;
+  weeklyPlayTimeSeconds?: number;
   skillNodes?: Partial<Record<SkillNodeId, number>>;
   selectedRaceId?: SkillBranchId;
   bonusTalentPoints?: number;
@@ -1120,6 +1124,10 @@ export class GameState {
   public totalMatchesPlayed = 0;
   public lifetimeKills = 0;
   public playTimeSeconds = 0;
+  public leaderboardWeekKey = '';
+  public weeklyBestStage = 0;
+  public weeklyKills = 0;
+  public weeklyPlayTimeSeconds = 0;
   private playTimeSaveAccum = 0;
   public remoteLeaderboard: LeaderboardEntry[] = [...DEFAULT_LEADERBOARD];
   public remoteActiveLeaderboard: LeaderboardEntry[] = [...DEFAULT_LEADERBOARD];
@@ -1143,6 +1151,7 @@ export class GameState {
   public runSiegePool = 0;
 
   constructor() {
+    this.leaderboardWeekKey = this.getLeaderboardWeekInfo().weekKey;
     this.load();
   }
 
@@ -1199,6 +1208,18 @@ export class GameState {
         this.playTimeSeconds = Math.max(0, parsed.playTimeSeconds);
       } else if (this.totalMatchesPlayed > 0 || this.lifetimeKills > 0) {
         this.playTimeSeconds = Math.round(this.totalMatchesPlayed * 45 + this.lifetimeKills * 0.12);
+      }
+      const curWeekKey = this.getLeaderboardWeekInfo().weekKey;
+      if (typeof parsed.leaderboardWeekKey === 'string' && parsed.leaderboardWeekKey === curWeekKey) {
+        this.leaderboardWeekKey = curWeekKey;
+        this.weeklyBestStage = Math.max(0, Number(parsed.weeklyBestStage) || 0);
+        this.weeklyKills = Math.max(0, Number(parsed.weeklyKills) || 0);
+        this.weeklyPlayTimeSeconds = Math.max(0, Number(parsed.weeklyPlayTimeSeconds) || 0);
+      } else {
+        this.leaderboardWeekKey = curWeekKey;
+        this.weeklyBestStage = 0;
+        this.weeklyKills = 0;
+        this.weeklyPlayTimeSeconds = 0;
       }
       if (parsed.skillNodes && typeof parsed.skillNodes === 'object') {
         this.skillNodes = { ...parsed.skillNodes };
@@ -1278,6 +1299,10 @@ export class GameState {
         totalMatchesPlayed: this.totalMatchesPlayed,
         lifetimeKills: this.lifetimeKills,
         playTimeSeconds: Math.floor(this.playTimeSeconds),
+        leaderboardWeekKey: this.leaderboardWeekKey || this.getLeaderboardWeekInfo().weekKey,
+        weeklyBestStage: this.weeklyBestStage,
+        weeklyKills: this.weeklyKills,
+        weeklyPlayTimeSeconds: Math.floor(this.weeklyPlayTimeSeconds),
         skillNodes: this.skillNodes,
         selectedRaceId: this.selectedRaceId,
         bonusTalentPoints: this.bonusTalentPoints,
@@ -1294,12 +1319,53 @@ export class GameState {
     }
   }
 
+  public getLeaderboardWeekInfo(nowMs = Date.now()): { weekKey: string; nextResetAtMs: number } {
+    const EPOCH_MONDAY_UTC8_MS = 316800000; // 1970-01-05 00:00:00 UTC+8 (Monday)
+    const WEEK_MS = 7 * 24 * 3600 * 1000;
+    const weekIndex = Math.floor((nowMs - EPOCH_MONDAY_UTC8_MS) / WEEK_MS);
+    return {
+      weekKey: `w${weekIndex}`,
+      nextResetAtMs: EPOCH_MONDAY_UTC8_MS + (weekIndex + 1) * WEEK_MS,
+    };
+  }
+
+  public ensureWeeklyLeaderboardCycle(): void {
+    const { weekKey } = this.getLeaderboardWeekInfo();
+    if (this.leaderboardWeekKey !== weekKey) {
+      this.leaderboardWeekKey = weekKey;
+      this.weeklyBestStage = 0;
+      this.weeklyKills = 0;
+      this.weeklyPlayTimeSeconds = 0;
+      this.remoteLeaderboard = [...DEFAULT_LEADERBOARD];
+      this.remoteActiveLeaderboard = [...DEFAULT_LEADERBOARD];
+      this.remoteRealPlayerCount = 0;
+    }
+  }
+
+  public getWeeklyResetCountdownText(): string {
+    const { nextResetAtMs } = this.getLeaderboardWeekInfo();
+    const remainSec = Math.max(60, Math.floor((nextResetAtMs - Date.now()) / 1000));
+    const days = Math.floor(remainSec / 86400);
+    const hours = Math.floor((remainSec % 86400) / 3600);
+    if (days > 0) {
+      return `每周一刷新（剩${days}天${hours}时）`;
+    }
+    const mins = Math.max(1, Math.floor((remainSec % 3600) / 60));
+    return hours > 0 ? `每周一刷新（剩${hours}时${mins}分）` : `每周一刷新（剩${mins}分）`;
+  }
+
   public recordBattleStats(clearedStageNum: number, killsInStage: number): void {
+    this.ensureWeeklyLeaderboardCycle();
     this.totalMatchesPlayed += 1;
     this.stagesPlayedSinceRespec += 1;
-    this.lifetimeKills += Math.max(0, killsInStage);
+    const safeKills = Math.max(0, killsInStage);
+    this.lifetimeKills += safeKills;
+    this.weeklyKills += safeKills;
     if (clearedStageNum > this.bestStageCleared) {
       this.bestStageCleared = clearedStageNum;
+    }
+    if (clearedStageNum > this.weeklyBestStage) {
+      this.weeklyBestStage = clearedStageNum;
     }
     if (this.totalMatchesPlayed < this.bestStageCleared) {
       this.totalMatchesPlayed = this.bestStageCleared;
@@ -1398,7 +1464,9 @@ export class GameState {
 
   public tickPlayTime(dt: number): void {
     if (dt <= 0 || dt > 1) return;
+    this.ensureWeeklyLeaderboardCycle();
     this.playTimeSeconds += dt;
+    this.weeklyPlayTimeSeconds += dt;
     this.playTimeSaveAccum += dt;
     if (this.playTimeSaveAccum >= 15) {
       this.playTimeSaveAccum = 0;
@@ -1429,6 +1497,7 @@ export class GameState {
   }
 
   public getTop10Leaderboard(): { top10: LeaderboardEntry[]; selfRank: number | null; realCount: number } {
+    this.ensureWeeklyLeaderboardCycle();
     const skin = this.getEquippedSkin();
     const others: LeaderboardEntry[] = this.remoteLeaderboard
       .filter((e) => e.name !== this.playerName && (!e.playerId || e.playerId !== this.playerId))
@@ -1437,13 +1506,13 @@ export class GameState {
     const realEntries = others.filter((e) => !e.isBot);
     const botEntries = others.filter((e) => Boolean(e.isBot));
 
-    if (this.bestStageCleared > 0 || this.lifetimeKills > 0) {
+    if (this.weeklyBestStage > 0 || this.weeklyKills > 0) {
       realEntries.push({
         playerId: this.playerId,
         name: this.playerName,
-        bestStage: this.bestStageCleared,
-        totalKills: this.lifetimeKills,
-        playTimeSeconds: Math.floor(this.playTimeSeconds),
+        bestStage: this.weeklyBestStage,
+        totalKills: this.weeklyKills,
+        playTimeSeconds: Math.floor(this.weeklyPlayTimeSeconds),
         skinName: skin.name,
         badgeColor: skin.badgeColor,
         isBot: false,
@@ -1466,6 +1535,7 @@ export class GameState {
   }
 
   public getTop10ActiveLeaderboard(): { top10: LeaderboardEntry[]; selfRank: number | null; realCount: number } {
+    this.ensureWeeklyLeaderboardCycle();
     const skin = this.getEquippedSkin();
     const sourceList =
       this.remoteActiveLeaderboard.length > 0 ? this.remoteActiveLeaderboard : this.remoteLeaderboard;
@@ -1476,13 +1546,13 @@ export class GameState {
     const realEntries = others.filter((e) => !e.isBot);
     const botEntries = others.filter((e) => Boolean(e.isBot));
 
-    if (this.bestStageCleared > 0 || this.lifetimeKills > 0 || this.playTimeSeconds >= 10) {
+    if (this.weeklyBestStage > 0 || this.weeklyKills > 0 || this.weeklyPlayTimeSeconds >= 10) {
       realEntries.push({
         playerId: this.playerId,
         name: this.playerName,
-        bestStage: this.bestStageCleared,
-        totalKills: this.lifetimeKills,
-        playTimeSeconds: Math.max(1, Math.floor(this.playTimeSeconds)),
+        bestStage: this.weeklyBestStage,
+        totalKills: this.weeklyKills,
+        playTimeSeconds: Math.max(1, Math.floor(this.weeklyPlayTimeSeconds)),
         skinName: skin.name,
         badgeColor: skin.badgeColor,
         isBot: false,
@@ -1510,8 +1580,9 @@ export class GameState {
 
   public async syncRemoteLeaderboard(pushSelf = false): Promise<void> {
     try {
+      this.ensureWeeklyLeaderboardCycle();
       const skin = this.getEquippedSkin();
-      const hasScore = this.bestStageCleared > 0 || this.lifetimeKills > 0 || this.playTimeSeconds >= 30;
+      const hasScore = this.weeklyBestStage > 0 || this.weeklyKills > 0 || this.weeklyPlayTimeSeconds >= 30;
       const shouldPost = pushSelf && hasScore;
       const resp = await fetch('/api/leaderboard', {
         method: shouldPost ? 'POST' : 'GET',
@@ -1520,9 +1591,9 @@ export class GameState {
           ? JSON.stringify({
               playerId: this.playerId,
               name: this.playerName,
-              bestStage: this.bestStageCleared,
-              totalKills: this.lifetimeKills,
-              playTimeSeconds: Math.floor(this.playTimeSeconds),
+              bestStage: this.weeklyBestStage,
+              totalKills: this.weeklyKills,
+              playTimeSeconds: Math.floor(this.weeklyPlayTimeSeconds),
               skinName: skin.name,
               badgeColor: skin.badgeColor,
             })
@@ -2583,10 +2654,14 @@ export class GameState {
 
   public creditSkippedStages(finalClearedStage: number, skippedCount: number): void {
     if (skippedCount <= 0) return;
+    this.ensureWeeklyLeaderboardCycle();
     this.totalMatchesPlayed += skippedCount;
     this.stagesPlayedSinceRespec += skippedCount;
     if (finalClearedStage > this.bestStageCleared) {
       this.bestStageCleared = finalClearedStage;
+    }
+    if (finalClearedStage > this.weeklyBestStage) {
+      this.weeklyBestStage = finalClearedStage;
     }
     if (this.totalMatchesPlayed < this.bestStageCleared) {
       this.totalMatchesPlayed = this.bestStageCleared;

@@ -736,9 +736,10 @@ function renderMainMenu(): void {
       : state.getTop10Leaderboard();
     if (leaderboardSelfStatusEl) {
       const rankStr = selfRank && selfRank <= 10 ? `#${selfRank}` : '未上榜';
+      const resetHint = state.getWeeklyResetCountdownText();
       leaderboardSelfStatusEl.innerHTML = isActiveMode
-        ? `${state.playerName} · ${rankStr} (${state.formatPlayTime(state.playTimeSeconds)})`
-        : `${state.playerName} · ${rankStr} (${state.bestStageCleared} 关)`;
+        ? `${state.playerName} · ${rankStr} (${state.formatPlayTime(state.weeklyPlayTimeSeconds)}) · ${resetHint}`
+        : `${state.playerName} · ${rankStr} (${state.weeklyBestStage} 关) · ${resetHint}`;
     }
 
     leaderboardListEl.innerHTML = '';
