@@ -3036,11 +3036,11 @@ func _assign_next_task() -> void:
 				_navigate_to(_get_workshop_dock_pos("output"))
 			elif GameManager.get_island_basket_total(home_island) > 0 and (can_feed_workshop or can_divert_to_stall):
 				worker_step = 0
-				_navigate_to(_get_home_basket_pos() + Vector2(float(slot_index * 10), 0.0))
+				_navigate_to(_get_home_basket_pos() + Vector2(14.0 + float(slot_index * 8), 0.0))
 			else:
 				worker_step = 20
 				is_sleeping_full = (GameManager.get_island_basket_total(home_island) > 0 and not can_feed_workshop and not can_divert_to_stall) or (home_island == 1 and GameManager.get_workshop_output_total(wid) > 0 and GameManager.is_stall_full())
-				_navigate_to(_get_home_basket_pos() + Vector2(float(slot_index * 10), 0.0))
+				_navigate_to(_get_home_basket_pos() + Vector2(14.0 + float(slot_index * 8), 0.0))
 
 		RoleType.TOUCAN_TRADER:
 			var wid := "orbis_linked" if home_island == 3 else "cauldron"
@@ -3098,7 +3098,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 						_navigate_to(waypoint_graph.get_dock_pos("stall_restock"))
 					else:
 						worker_step = 1
-						_navigate_to(_get_home_basket_pos() + Vector2(float(slot_index * 8), 0.0))
+						_navigate_to(_get_home_basket_pos() + Vector2(-14.0 + float(slot_index * 6), 0.0))
 
 			elif worker_step == 1:
 				facing_left = false
