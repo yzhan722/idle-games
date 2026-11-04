@@ -202,6 +202,19 @@ func _run_all_four_assertions_and_export() -> void:
 				return
 			prev_x = pt.x
 
+	if world.camera_controller == null:
+		_fail_and_quit("[断言3-产线活体闭环]", "MainWorld.camera_controller is null!")
+		return
+	world.camera_controller.reset_camera_view(true)
+	world.camera_controller.apply_wheel_zoom(1.0, 1.0, Vector2(710.0, 150.0))
+	var pinned_local_x := (710.0 - world.camera_controller.target_root_pos.x) / world.camera_controller.target_zoom
+	if world.camera_controller.target_zoom <= 1.05 or absf(pinned_local_x - 710.0) > 1.0:
+		_fail_and_quit("[断言3-产线活体闭环]", "CameraController zoom-to-cursor failed: zoom=%.3f, pinned_local_x=%.1f (expected 710.0)" % [
+			world.camera_controller.target_zoom, pinned_local_x
+		])
+		return
+	world.camera_controller.reset_camera_view(true)
+
 	for p in world.soil_plots:
 		if is_instance_valid(p):
 			harvest_count = maxi(harvest_count, p.harvest_count)

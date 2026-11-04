@@ -110,6 +110,7 @@ func _ready() -> void:
 	camera_controller = CameraController.new()
 	camera_controller.name = "CameraController"
 	add_child(camera_controller)
+	camera_controller.setup_world(self)
 
 	floating_text = FloatingText.new()
 	floating_text.name = "FloatingText"
@@ -193,7 +194,12 @@ func _apply_desktop_mode(enabled: bool) -> void:
 	queue_redraw()
 
 func get_active_island_bounds() -> Rect2:
-	return Rect2(40.0, 0.0, 1840.0, 300.0)
+	var z := maxf(0.1, companion_zoom)
+	var rx := clampf(world_root.position.x + 40.0 * z, 0.0, 1880.0)
+	var ry := clampf(world_root.position.y + 8.0 * z, 0.0, 260.0)
+	var rw := clampf(1840.0 * z, 200.0, 1920.0 - rx)
+	var rh := clampf(230.0 * z, 100.0, 300.0 - ry)
+	return Rect2(rx, ry, rw, rh)
 
 func _build_landmarks_and_buildings() -> void:
 	# Island 1 (Henesys): AppleTree (x=612.4), SoilPlot (x=710.8), Cottage (x=811.2), Mortar (x=908.4), Stall (x=1013.4)
@@ -350,13 +356,6 @@ func _unhandled_input(event: InputEvent) -> void:
 					if is_instance_valid(w) and w.visible and w.get_pet_hit_rect().has_point(local_pos):
 						w.trigger_pet_boost()
 						return
-		elif event.pressed and GameManager.desktop_companion_mode:
-			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				companion_zoom = clampf(companion_zoom + 0.08, 0.4, 1.5)
-				_apply_companion_zoom()
-			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				companion_zoom = clampf(companion_zoom - 0.08, 0.4, 1.5)
-				_apply_companion_zoom()
 
 func _claim_cloud_gift() -> void:
 	cloud_gift_active = false
@@ -371,8 +370,9 @@ func _claim_cloud_gift() -> void:
 	EventBus.spawn_floating_text.emit(cloud_gift_pos, "★奇遇礼盒+" + str(bonus_gold) + "G · 嘉年华20s!", Color("#FFE066"))
 
 func _apply_companion_zoom() -> void:
+	if camera_controller != null:
+		camera_controller.target_zoom = clampf(companion_zoom, CameraController.MIN_ZOOM, CameraController.MAX_ZOOM)
 	world_root.scale = Vector2(companion_zoom, companion_zoom)
-	world_root.position = Vector2(960.0 * (1.0 - companion_zoom), 36.0 + 200.0 * (1.0 - companion_zoom))
 	queue_redraw()
 
 func _process(delta: float) -> void:
