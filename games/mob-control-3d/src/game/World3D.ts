@@ -5,20 +5,10 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import {
-  BarrelConfig,
-  BumperConfig,
-  GateConfig,
-  GearConfig,
-  LevelConfig,
-  SideNestConfig,
-  TerrainZoneConfig,
-  WallConfig,
-} from '../levels/LevelData';
-import { GameState, MechaMode, SkinSpec } from './State';
+import { LevelConfig, WallConfig } from '../levels/LevelData';
+import { GameState, SkinSpec } from './State';
 import { UI_ART, replaceEmojiWithArt } from './SkillIcons';
 import { sound } from '../audio/SoundManager';
-import { DiagonalDioramaRenderer } from './DiagonalDioramaRenderer';
 import {
   buildBanelingGeometry,
   buildBlueMarineGeometry,
@@ -27,7 +17,6 @@ import {
   buildRedMutantGeometry,
   buildShamanGeometry,
   createAnimatedHumanoidMaterial,
-  getMicroArmorBumpTexture,
 } from './HumanoidModels';
 import {
   create2DBlobShadowTexture,
@@ -37,8 +26,11 @@ import {
   createAbyssalSeaShaderMaterial,
   createBastionShieldShaderMaterial,
   createBossPortalShaderMaterial,
+  createCinemaPostProcessingPass,
+  createConveyorBeltTexture,
   createEnergyWaterfallShaderMaterial,
   createGateForcefieldTexture,
+  createPeppermintWheelTexture,
   createRoadBumpTexture,
   createRoadNormalTexture,
   createThemedRoadEmissiveTexture,
@@ -49,140 +41,30 @@ import {
   ThemeConfig,
   ThemeId,
 } from './SceneThemes';
+import {
+  BOSS_GATE_Z,
+  BarrelRuntime,
+  BumperRuntime,
+  CombatLightRuntime,
+  GateRuntime,
+  GearRuntime,
+  MAX_PARTICLES,
+  MAX_SHOCKWAVES,
+  MAX_SKY_PILLARS,
+  MAX_UNITS,
+  MeteorTelegraphRuntime,
+  NestRuntime,
+  PLAYER_Z,
+  Particle,
+  ShockwaveRing,
+  SkyPillar,
+  TRACK_HALF_W,
+  Unit,
+  WallRuntime,
+  ZoneRuntime,
+} from './WorldTypes';
 
-export interface Unit {
-  active: boolean;
-  id: number;
-  team: 'blue' | 'red';
-  kind: 'normal' | 'charged' | 'champion' | 'brute' | 'baneling' | 'shaman';
-  mechaType?: MechaMode;
-  x: number;
-  z: number;
-  vx: number;
-  vz: number;
-  yaw: number;
-  turnRate: number;
-  walkPhase: number;
-  attackAnim: number;
-  spawnHop: number;
-  hp: number;
-  maxHp: number;
-  dmg: number;
-  radius: number;
-  speed: number;
-  age: number;
-  attackCooldown: number;
-  specialTimer: number;
-  isMiniGiant?: boolean;
-  fusionTier?: number;
-  fusionCooldown?: number;
-  empTimer?: number;
-  passedGates: Set<string>;
-}
-
-interface GateRuntime {
-  cfg: GateConfig;
-  group: THREE.Group;
-  pillarMat: THREE.MeshStandardMaterial;
-  shieldMat: THREE.MeshBasicMaterial;
-  currentX: number;
-  pulseTimer: number;
-  addCooldown: number;
-  chargeHits: number;
-  labelEl: HTMLDivElement;
-}
-
-interface BarrelRuntime {
-  cfg: BarrelConfig;
-  mesh: THREE.Group;
-  hp: number;
-  alive: boolean;
-  labelEl: HTMLDivElement;
-}
-
-interface GearRuntime {
-  cfg: GearConfig;
-  mesh: THREE.Group;
-  baseX: number;
-  hp: number;
-  alive: boolean;
-  hitFlash: number;
-  labelEl: HTMLDivElement;
-}
-
-interface WallRuntime {
-  cfg: WallConfig;
-  group: THREE.Group;
-  baseX1: number;
-  baseX2: number;
-}
-
-interface ZoneRuntime {
-  cfg: TerrainZoneConfig;
-  group: THREE.Group;
-  beltTex?: THREE.CanvasTexture;
-  ringMesh?: THREE.Mesh;
-  holoCross?: THREE.Group;
-  labelEl: HTMLDivElement;
-}
-
-interface BumperRuntime {
-  cfg: BumperConfig;
-  group: THREE.Group;
-  ringMat: THREE.MeshBasicMaterial;
-  pulseTimer: number;
-}
-
-interface NestRuntime {
-  cfg: SideNestConfig;
-  group: THREE.Group;
-  monsterMesh: THREE.Group;
-  hp: number;
-  maxHp: number;
-  alive: boolean;
-  hitFlash: number;
-  labelEl: HTMLDivElement;
-}
-
-interface Particle {
-  active: boolean;
-  x: number;
-  y: number;
-  z: number;
-  vx: number;
-  vy: number;
-  vz: number;
-  life: number;
-  maxLife: number;
-  scale: number;
-  color: THREE.Color;
-}
-
-interface ShockwaveRing {
-  active: boolean;
-  mesh: THREE.Mesh;
-  mat: THREE.MeshBasicMaterial;
-  life: number;
-  maxLife: number;
-  maxRadius: number;
-}
-
-interface SkyPillar {
-  active: boolean;
-  mesh: THREE.Mesh;
-  mat: THREE.MeshBasicMaterial;
-  life: number;
-  maxLife: number;
-  maxRadius: number;
-}
-
-const MAX_UNITS = 2600;
-const MAX_PARTICLES = 1800;
-const MAX_SHOCKWAVES = 72;
-const MAX_SKY_PILLARS = 36;
-const TRACK_HALF_W = 11.2;
-const PLAYER_Z = 18.8;
-const BOSS_GATE_Z = -17.2;
+export type { Unit };
 
 export class World3D {
   private canvas: HTMLCanvasElement;
@@ -190,18 +72,12 @@ export class World3D {
   private state: GameState;
 
   private renderer: THREE.WebGLRenderer;
-  private dioramaRenderer?: DiagonalDioramaRenderer;
   private composer: EffectComposer;
   private bloomPass: UnrealBloomPass;
   private cinemaPass: ShaderPass;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private combatLights: Array<{
-    light: THREE.PointLight;
-    life: number;
-    maxLife: number;
-    maxIntensity: number;
-  }> = [];
+  private combatLights: CombatLightRuntime[] = [];
   private starfieldPoints?: THREE.Points;
   private godRayMats: THREE.MeshBasicMaterial[] = [];
   private cameraMode: 0 | 1 | 2 = 0; // 0: Classic Mob Control 3D, 1: Low Action, 2: High Tactical
@@ -234,11 +110,12 @@ export class World3D {
   private turretGroup = new THREE.Group();
   private mascotGroup = new THREE.Group();
   private mascotLeftArm?: THREE.Group;
+  private mascotPeak?: THREE.Mesh;
+  private mascotMegaphone?: THREE.Mesh;
+  private turretWheels: THREE.Mesh[] = [];
+  private turretGears: THREE.Mesh[] = [];
   private turretGaugeNeedle?: THREE.Group;
   private turretGroundRingMat?: THREE.MeshBasicMaterial;
-  private turretBodyMat!: THREE.MeshStandardMaterial;
-  private turretDomeMat!: THREE.MeshStandardMaterial;
-  private turretBarrelMat!: THREE.MeshStandardMaterial;
   private turretBarrel!: THREE.Mesh;
   private turretMuzzleLight!: THREE.PointLight;
   private turretEvo1Group = new THREE.Group();
@@ -282,11 +159,12 @@ export class World3D {
 
   private bossGroup = new THREE.Group();
   private bossHead!: THREE.Group;
+  private bossWrenchGroup?: THREE.Group;
+  private bossForearms: THREE.Mesh[] = [];
   private megaBossCrownGroup = new THREE.Group();
   private megaBossHalo?: THREE.Mesh;
   private bossPortalMat!: THREE.ShaderMaterial;
   private bossPortalRing!: THREE.Mesh;
-  private bossPortalRingMat!: THREE.MeshBasicMaterial;
   private bossShieldMesh!: THREE.Mesh;
   private bossHitFlash = 0;
 
@@ -300,21 +178,11 @@ export class World3D {
   private megaBossCurseTimer = 11.0;
   private megaBossSlamTimer = 8.8;
   private miniBossWarCryTimer = 7.2;
-  private meteorTelegraphs: Array<{
-    active: boolean;
-    x: number;
-    z: number;
-    radius: number;
-    timer: number;
-    maxTimer: number;
-    isTurretLock: boolean;
-    mesh: THREE.Mesh;
-    mat: THREE.MeshBasicMaterial;
-  }> = [];
+  private meteorTelegraphs: MeteorTelegraphRuntime[] = [];
 
   // Theme & Environment Materials / Lights
   public currentTheme: ThemeConfig = THEMES.wasteland;
-  private customThemeOverride: ThemeId | null = null;
+  private sceneEffectTimer = 4.5;
   private hemiLight!: THREE.HemisphereLight;
   private dirLight!: THREE.DirectionalLight;
   private rimLight!: THREE.DirectionalLight;
@@ -345,7 +213,6 @@ export class World3D {
   private bastionShieldMat?: THREE.ShaderMaterial;
   private planetGroup?: THREE.Group;
   private planetBodyMat?: THREE.MeshStandardMaterial;
-  private planetRingMat?: THREE.MeshBasicMaterial;
   private planetHaloMat?: THREE.MeshBasicMaterial;
   private floatingMonoliths: Array<{
     group: THREE.Group;
@@ -424,7 +291,7 @@ export class World3D {
 
   // Mobile Thermal & Adaptive Performance Governor
   public readonly isMobileDevice: boolean;
-  private usePostProcessing = true;
+  private usePostProcessing = false;
   private lowSpecMode = false;
   private slowFrameStreak = 0;
   private avgFrameMs = 16.6;
@@ -458,14 +325,6 @@ export class World3D {
   private nextStreakMilestone = 25;
   public adrenalineTimer = 0;
 
-  private enemyBaseWorldHpEl?: HTMLDivElement;
-  private enemyBaseWorldFillEl?: HTMLDivElement;
-  private enemyBaseWorldTextEl?: HTMLSpanElement;
-
-  private playerBaseWorldHpEl?: HTMLDivElement;
-  private playerBaseWorldFillEl?: HTMLDivElement;
-  private playerBaseWorldTextEl?: HTMLSpanElement;
-
   private activeBlueIndices: number[] = [];
   private activeRedIndices: number[] = [];
   private activeAegisIndices: number[] = [];
@@ -479,9 +338,6 @@ export class World3D {
   // Input state
   private isPointerDown = false;
   private keysDown = new Set<string>();
-  private raycaster = new THREE.Raycaster();
-  private groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  private pointerNDC = new THREE.Vector2();
 
   // Callbacks to UI
   public onBanner?: (title: string, sub: string) => void;
@@ -494,21 +350,30 @@ export class World3D {
     this.isMobileDevice =
       window.matchMedia('(max-width: 860px), (pointer: coarse)').matches ||
       /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    // Bypass multi-pass offscreen EffectComposer on mobile to prevent GPU VRAM thrashing & overheating!
-    this.usePostProcessing = !this.isMobileDevice;
+    // Unified direct hardware MSAA backbuffer render path across all desktop & mobile GPUs
+    this.usePostProcessing = false;
 
-    const maxDpr = this.isMobileDevice ? 1.25 : 1.5;
-    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+    const nativeDpr = window.devicePixelRatio || 1;
+    const dpr = this.isMobileDevice
+      ? Math.min(Math.max(nativeDpr, 1.5), 2.0)
+      : Math.min(Math.max(nativeDpr, 2.0), 2.5);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
       powerPreference: this.isMobileDevice ? 'default' : 'high-performance',
     });
-    this.renderer.setPixelRatio(dpr);
+    const gl = this.renderer.getContext();
+    const dbgExt = gl.getExtension('WEBGL_debug_renderer_info');
+    const glRendererStr = dbgExt ? String(gl.getParameter(dbgExt.UNMASKED_RENDERER_WEBGL)) : '';
+    const isSoftwareWebGL = /SwiftShader|llvmpipe|Software|Basic Render/i.test(glRendererStr);
+    const effectiveDpr = isSoftwareWebGL
+      ? Math.min(dpr, 1440 / Math.max(1, window.innerWidth), 1.5)
+      : dpr;
+    this.renderer.setPixelRatio(effectiveDpr);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.shadowMap.needsUpdate = true;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -530,84 +395,27 @@ export class World3D {
     this.camera = new THREE.PerspectiveCamera(26, window.innerWidth / window.innerHeight, 1.0, 220);
     this.applyCameraTransform();
 
-    // Post-Processing Pipeline (Desktop High-Perf Mode; auto-bypassed on Mobile for cool thermal efficiency)
+    // Post-Processing Pipeline (kept WebGL1/2 compatible without MSAA renderbuffer sampling issues)
     this.composer = new EffectComposer(this.renderer);
-    this.composer.setPixelRatio(dpr);
+    this.composer.setPixelRatio(effectiveDpr);
     this.composer.setSize(window.innerWidth, window.innerHeight);
     const renderPass = new RenderPass(this.scene, this.camera);
     this.bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(Math.floor(window.innerWidth * 0.5), Math.floor(window.innerHeight * 0.5)),
+      new THREE.Vector2(
+        Math.floor(window.innerWidth * effectiveDpr * 0.5),
+        Math.floor(window.innerHeight * effectiveDpr * 0.5)
+      ),
       0.16,
       0.32,
       0.92
     );
     const outputPass = new OutputPass();
 
-    // Supercell 3D Glossy Toy-Box Post-Processing ShaderPass (Crisp CAS + Vibrant Studio Color Grading, Zero 2D Brown Ink)
-    this.cinemaPass = new ShaderPass({
-      uniforms: {
-        tDiffuse: { value: null },
-        uResolution: {
-          value: new THREE.Vector2(
-            window.innerWidth * Math.min(window.devicePixelRatio, 2),
-            window.innerHeight * Math.min(window.devicePixelRatio, 2)
-          ),
-        },
-        uAberration: { value: 0.0 },
-        uVignette: { value: 0.1 },
-        uDangerPulse: { value: 0.0 },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform vec2 uResolution;
-        uniform float uAberration;
-        uniform float uVignette;
-        uniform float uDangerPulse;
-        varying vec2 vUv;
-
-        void main() {
-          vec2 texel = 1.0 / max(uResolution, vec2(1.0));
-          vec2 centerVec = vUv - 0.5;
-          float dist = length(centerVec);
-
-          vec3 col = texture2D(tDiffuse, vUv).rgb;
-          if (uAberration > 0.015) {
-            vec2 caOffset = centerVec * dist * (uAberration * 0.008);
-            col.r = texture2D(tDiffuse, vUv + caOffset).r;
-            col.b = texture2D(tDiffuse, vUv - caOffset).b;
-          }
-
-          vec3 tc = texture2D(tDiffuse, vUv + vec2( 0.0,      texel.y)).rgb;
-          vec3 bc = texture2D(tDiffuse, vUv + vec2( 0.0,     -texel.y)).rgb;
-          vec3 ml = texture2D(tDiffuse, vUv + vec2(-texel.x,  0.0)).rgb;
-          vec3 mr = texture2D(tDiffuse, vUv + vec2( texel.x,  0.0)).rgb;
-
-          // Crisp 3D Supercell CAS Sharpening & Subtle Vibrance Boost
-          vec3 blur = (tc + bc + ml + mr) * 0.25;
-          col = clamp(col + (col - blur) * 0.22, 0.0, 1.0);
-          float luma = dot(col, vec3(0.299, 0.587, 0.114));
-          col = clamp(mix(vec3(luma), col, 1.12), 0.0, 1.0);
-
-          // 4. Light Sunny Vignette & Low-HP Danger Edge Pulse
-          float vig = smoothstep(0.95, 0.32, dist * (0.82 + uVignette * 0.22));
-          col *= mix(0.94, 1.0, vig);
-          float edgeMask = smoothstep(0.35, 0.78, dist);
-          col = mix(col, vec3(0.95, 0.22, 0.26), edgeMask * uDangerPulse * 0.32);
-
-          // 5. NaN/Inf Sanitize Guard
-          if (any(isnan(col)) || any(isinf(col))) col = vec3(0.92, 0.85, 0.74);
-
-          gl_FragColor = vec4(col, 1.0);
-        }
-      `,
-    });
+    // Supercell 3D Glossy Toy-Box Post-Processing ShaderPass (Directional FXAA 3.11 + Vibrant Studio Color Grading)
+    this.cinemaPass = createCinemaPostProcessingPass(
+      window.innerWidth * effectiveDpr,
+      window.innerHeight * effectiveDpr
+    );
 
     this.composer.addPass(renderPass);
     this.composer.addPass(this.bloomPass);
@@ -623,9 +431,6 @@ export class World3D {
     this.bindInput();
 
     this.scene.add(this.levelGroup);
-    if (this.canvas.parentElement) {
-      this.dioramaRenderer = new DiagonalDioramaRenderer(this.canvas.parentElement);
-    }
   }
 
   private initPools(): void {
@@ -680,9 +485,10 @@ export class World3D {
     this.dirLight = new THREE.DirectionalLight(0xfff0d4, 1.78);
     this.dirLight.position.set(16, 38, 24);
     this.dirLight.castShadow = true;
-    this.dirLight.shadow.mapSize.set(1024, 1024);
-    this.dirLight.shadow.bias = -0.0004;
-    this.dirLight.shadow.normalBias = 0.02;
+    this.dirLight.shadow.mapSize.set(2048, 2048);
+    this.dirLight.shadow.radius = 2.2;
+    this.dirLight.shadow.bias = -0.00035;
+    this.dirLight.shadow.normalBias = 0.025;
     this.dirLight.shadow.camera.near = 5;
     this.dirLight.shadow.camera.far = 95;
     const d = 26;
@@ -719,7 +525,7 @@ export class World3D {
     distance = 14.0,
     duration = 0.36
   ): void {
-    if (this.isMobileDevice || this.lowSpecMode || !this.usePostProcessing) return;
+    if (this.isMobileDevice || this.lowSpecMode) return;
     let chosen = this.combatLights[0];
     for (const cl of this.combatLights) {
       if (!cl.light.visible) {
@@ -747,13 +553,13 @@ export class World3D {
     this.abyssMat = new THREE.MeshBasicMaterial({
       map: createAbyssFloorTexture(theme),
     });
-    const abyssPlane = new THREE.Mesh(new THREE.PlaneGeometry(140, 42), this.abyssMat);
+    const abyssPlane = new THREE.Mesh(new THREE.PlaneGeometry(280, 240), this.abyssMat);
     abyssPlane.rotation.x = -Math.PI / 2;
     abyssPlane.position.set(0, -6.8, 1.5);
     this.scene.add(abyssPlane);
 
     this.abyssShaderMat = createAbyssalSeaShaderMaterial(theme);
-    const abyssShaderPlane = new THREE.Mesh(new THREE.PlaneGeometry(140, 42), this.abyssShaderMat);
+    const abyssShaderPlane = new THREE.Mesh(new THREE.PlaneGeometry(280, 240), this.abyssShaderMat);
     abyssShaderPlane.rotation.x = -Math.PI / 2;
     abyssShaderPlane.position.set(0, -6.4, 1.5);
     this.scene.add(abyssShaderPlane);
@@ -765,10 +571,8 @@ export class World3D {
     this.roadMat = new THREE.MeshStandardMaterial({
       map: createThemedRoadTexture(theme),
       normalMap: roadNormal,
-      normalScale: new THREE.Vector2(0.42, 0.42),
+      normalScale: new THREE.Vector2(0.16, 0.16),
       roughnessMap: roadBump,
-      bumpMap: roadBump,
-      bumpScale: 0.032,
       emissive: new THREE.Color(0xffffff),
       emissiveMap: createThemedRoadEmissiveTexture(theme),
       emissiveIntensity: 0.06,
@@ -1063,13 +867,6 @@ export class World3D {
     const coronaRing = new THREE.Mesh(new THREE.CircleGeometry(9.6, 32), this.planetHaloMat);
     coronaRing.lookAt(this.baseCameraPos);
     this.planetGroup.add(coronaRing);
-
-    this.planetRingMat = new THREE.MeshBasicMaterial({
-      color: 0xfff0c2,
-      transparent: true,
-      opacity: 0.0,
-      depthWrite: false,
-    });
     this.scene.add(this.planetGroup);
 
     // 4e. Four Charming Brass-and-Cream Steampunk Blimps / Airships Drifting in the Sunny Sky
@@ -1294,33 +1091,9 @@ export class World3D {
     this.turretGroup.add(laserSight);
 
     // Supercell Style 2: Red-and-White Peppermint Swirl Candy Wheels + Chocolate-Wood & Brass Carriage!
-    const peppermintCanvas = document.createElement('canvas');
-    peppermintCanvas.width = 256;
-    peppermintCanvas.height = 256;
-    const pCtx = peppermintCanvas.getContext('2d')!;
-    pCtx.fillStyle = '#fff8f0';
-    pCtx.fillRect(0, 0, 256, 256);
-    pCtx.translate(128, 128);
-    for (let s = 0; s < 12; s++) {
-      if (s % 2 === 0) {
-        pCtx.fillStyle = '#ef4444';
-        pCtx.beginPath();
-        pCtx.moveTo(0, 0);
-        pCtx.arc(0, 0, 126, (s * Math.PI) / 6, ((s + 1) * Math.PI) / 6);
-        pCtx.closePath();
-        pCtx.fill();
-      }
-    }
-    pCtx.lineWidth = 10;
-    pCtx.strokeStyle = '#dc2626';
-    pCtx.beginPath();
-    pCtx.arc(0, 0, 120, 0, Math.PI * 2);
-    pCtx.stroke();
-    const peppermintTex = new THREE.CanvasTexture(peppermintCanvas);
-    peppermintTex.colorSpace = THREE.SRGBColorSpace;
     const peppermintWheelMat = stylizeMaterialAs2DIllustration(
       new THREE.MeshStandardMaterial({
-        map: peppermintTex,
+        map: createPeppermintWheelTexture(),
         roughness: 0.32,
         metalness: 0.05,
       })
@@ -1354,6 +1127,8 @@ export class World3D {
       })
     );
 
+    this.turretWheels = [];
+    this.turretGears = [];
     for (const side of [-1, 1]) {
       const wheel = new THREE.Mesh(
         new THREE.CylinderGeometry(0.62, 0.62, 0.36, 22),
@@ -1363,6 +1138,7 @@ export class World3D {
       wheel.position.set(side * 1.04, 0.6, -0.05);
       wheel.castShadow = true;
       this.turretGroup.add(wheel);
+      this.turretWheels.push(wheel);
 
       const hubCap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.42, 14), brassMat);
       hubCap.rotation.z = Math.PI / 2;
@@ -1382,6 +1158,7 @@ export class World3D {
       sideGear.rotation.z = Math.PI / 2;
       sideGear.position.set(side * 0.9, 0.88, 0.34);
       this.turretGroup.add(sideGear);
+      this.turretGears.push(sideGear);
     }
 
     const candyPinkGearMat = stylizeMaterialAs2DIllustration(
@@ -1398,30 +1175,17 @@ export class World3D {
     pinkGear.rotation.z = Math.PI / 2;
     pinkGear.position.set(0.92, 0.56, 0.52);
     this.turretGroup.add(pinkGear);
+    this.turretGears.push(pinkGear);
 
     // Carriage Base Plate
-    this.turretBodyMat = new THREE.MeshStandardMaterial({
-      color: 0xd89e32,
-      metalness: 0.72,
-      roughness: 0.24,
-    });
     const carriageBase = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.44, 1.88), chocoWoodMat);
     carriageBase.position.set(0, 0.35, 0.12);
     carriageBase.castShadow = true;
     this.turretGroup.add(carriageBase);
 
-    this.turretDomeMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      metalness: 0.35,
-      roughness: 0.22,
-      emissive: 0x0284c7,
-      emissiveIntensity: 0.2,
-    });
-
     // Plump Cream-Ivory & Brass Tapered Cannon Barrel + Peppermint Muzzle Collar & Candy-Cane Fuse!
     const barrelGeo = new THREE.CylinderGeometry(0.46, 0.64, 2.35, 22);
     barrelGeo.rotateX(Math.PI / 2);
-    this.turretBarrelMat = creamIvoryMat;
     this.turretBarrel = new THREE.Mesh(barrelGeo, creamIvoryMat);
     this.turretBarrel.position.set(0, 0.96, -0.62);
     this.turretBarrel.castShadow = true;
@@ -1644,6 +1408,7 @@ export class World3D {
     const slimePeak = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.48, 16), slimeBodyMat);
     slimePeak.position.set(0, 1.12, 0);
     slimePivot.add(slimePeak);
+    this.mascotPeak = slimePeak;
 
     // Red Warrior Headband around Slime Forehead
     const headbandMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.35 });
@@ -1668,6 +1433,7 @@ export class World3D {
     megaphone.rotation.z = Math.PI / 2;
     megaphone.position.set(0.72, 0.56, 0.32);
     slimePivot.add(megaphone);
+    this.mascotMegaphone = megaphone;
 
     this.mascotLeftArm = slimePivot;
     this.mascotGroup.add(slimePivot);
@@ -1852,7 +1618,6 @@ export class World3D {
     }
 
     // 3. Giant Golden-Brass Cogwheel Crest above the Hangar Archway (with cute Droplet-Blob relief!)
-    this.bossPortalRingMat = new THREE.MeshBasicMaterial({ color: 0xe8b038 });
     this.bossPortalRing = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.75, 0.45, 20), brassMat);
     this.bossPortalRing.rotation.x = Math.PI / 2;
     this.bossPortalRing.position.set(0, 8.2, 1.85);
@@ -1897,6 +1662,7 @@ export class World3D {
     this.bossHead.add(backTank);
 
     // Muscular Boiler Arms
+    this.bossForearms = [];
     for (const side of [-1, 1]) {
       const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.88, 12, 10), boilerOrangeMat);
       shoulder.position.set(side * 2.15, 0.45, 0.25);
@@ -1907,6 +1673,7 @@ export class World3D {
       forearm.rotation.z = side * 0.28;
       forearm.rotation.x = 0.42;
       this.bossHead.add(forearm);
+      this.bossForearms.push(forearm);
     }
 
     // Dark-Iron Dome Helmet + Glowing Golden-Yellow Round Goggle Eyes!
@@ -1937,6 +1704,7 @@ export class World3D {
     wrenchHead.position.set(0, 1.85, 0);
     wrenchHead.rotation.z = 0.65;
     wrenchGroup.add(wrenchHead);
+    this.bossWrenchGroup = wrenchGroup;
     this.bossHead.add(wrenchGroup);
 
     this.bossGroup.add(this.bossHead);
@@ -2005,6 +1773,7 @@ export class World3D {
   public applyTheme(themeId: ThemeId): ThemeConfig {
     const theme = THEMES[themeId] || THEMES.wasteland;
     this.currentTheme = theme;
+    this.state.activeSceneThemeId = theme.id;
 
     this.scene.background = new THREE.Color(theme.skyColor);
     this.scene.fog = new THREE.FogExp2(theme.fogColor, theme.fogDensity);
@@ -2479,7 +2248,6 @@ export class World3D {
   public cycleTheme(): ThemeConfig {
     const curIdx = THEME_ORDER.indexOf(this.currentTheme.id);
     const nextId = THEME_ORDER[(curIdx + 1) % THEME_ORDER.length];
-    this.customThemeOverride = nextId;
     return this.applyTheme(nextId);
   }
 
@@ -2736,7 +2504,8 @@ export class World3D {
 
   public loadLevel(level: LevelConfig): void {
     this.currentLevel = level;
-    this.applyTheme(this.customThemeOverride || level.themeId);
+    this.applyTheme(level.themeId);
+    this.sceneEffectTimer = 4.5;
     this.applySkin(this.state.getEquippedSkin());
     this.bossMaxHp = level.bossMaxHp;
     this.bossHp = level.bossMaxHp;
@@ -2840,12 +2609,6 @@ export class World3D {
       this.levelGroup.remove(child);
     }
     this.labelsContainer.innerHTML = '';
-    this.enemyBaseWorldHpEl = undefined;
-    this.enemyBaseWorldFillEl = undefined;
-    this.enemyBaseWorldTextEl = undefined;
-    this.playerBaseWorldHpEl = undefined;
-    this.playerBaseWorldFillEl = undefined;
-    this.playerBaseWorldTextEl = undefined;
 
     this.gates = [];
     this.gears = [];
@@ -3077,7 +2840,7 @@ export class World3D {
         deckBed.receiveShadow = true;
         zGroup.add(deckBed);
 
-        beltTex = this.createConveyorBeltTexture();
+        beltTex = createConveyorBeltTexture();
         beltTex.repeat.set(1, Math.max(1, Math.round(zCfg.length / 2.1)));
         const beltMat = new THREE.MeshStandardMaterial({
           map: beltTex,
@@ -3847,59 +3610,10 @@ export class World3D {
     return this.gateTextures[key];
   }
 
-  private createConveyorBeltTexture(): THREE.CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d')!;
-
-    // 2D Hand-Painted Slate-Blue Industrial Conveyor Belt
-    ctx.fillStyle = '#3e7db5';
-    ctx.fillRect(0, 0, 128, 128);
-
-    // 2D Cartoon Tread Ribs & Dark-Brown Outlined Side Borders
-    ctx.fillStyle = '#316494';
-    for (let y = 0; y < 128; y += 16) {
-      ctx.fillRect(0, y, 128, 4);
-    }
-    ctx.fillStyle = '#254c73';
-    ctx.fillRect(0, 0, 12, 128);
-    ctx.fillRect(116, 0, 12, 128);
-    ctx.fillStyle = '#3b1d0c';
-    ctx.fillRect(11, 0, 3, 128);
-    ctx.fillRect(114, 0, 3, 128);
-
-    // Bold 2D Cartoon Golden-Yellow Forward Chevrons (^ ^) with Dark-Brown Ink Outline
-    for (const cy of [36, 98]) {
-      ctx.strokeStyle = '#3b1d0c';
-      ctx.lineWidth = 19;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(28, cy + 16);
-      ctx.lineTo(64, cy - 14);
-      ctx.lineTo(100, cy + 16);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#ffcb36';
-      ctx.lineWidth = 11;
-      ctx.beginPath();
-      ctx.moveTo(28, cy + 16);
-      ctx.lineTo(64, cy - 14);
-      ctx.lineTo(100, cy + 16);
-      ctx.stroke();
-    }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    return tex;
-  }
-
   public toggleCameraMode(): string {
     this.cameraMode = ((this.cameraMode + 1) % 3) as 0 | 1 | 2;
     this.applyCameraTransform();
-    return this.cameraMode === 0 ? '经典俯视' : this.cameraMode === 1 ? '低空震撼' : '全景战术';
+    return this.cameraMode === 0 ? '斜向微缩' : this.cameraMode === 1 ? '经典俯视' : '低空震撼';
   }
 
   private applyCameraTransform(): void {
@@ -3910,29 +3624,34 @@ export class World3D {
     this.camera.aspect = aspect;
 
     if (this.cameraMode === 0) {
-      // Supercell 3D Toy-Box Battle Perspective (Matches supercell_3d_battle_hud_gameplay_1793627191206.jpg 1:1):
-      // Simultaneously frames the entire Steampunk Boss Overlord + Factory Arch at the top (screenY 12%..21%, below .hud-top)
-      // AND the entire 3D Candy Cannon + Peppermint Wheels + Slime Gunner at the bottom (screenY 62%..69%, above .hud-bottom)!
-      this.camera.fov = isPortrait ? 58 : 56;
+      // 3/4 Diagonal Diorama 3D Perspective:
+      // Genuine Three.js 3D diagonal camera positioned on the East (+X) side looking West-North-West so the
+      // cobblestone viaduct runs from Bottom-Left (Player 3D Candy Cannon, unobstructed by the bottom-right card dock!)
+      // to Top-Right (Steampunk Boss Gatehouse), while keeping all 3D gates, walls, gears, barrels, nests, and 2,600 units live!
+      this.camera.fov = isPortrait ? 56 : 50;
+      const targetX = isPortrait ? -0.8 : -2.2;
       const targetY = isPortrait ? -1.4 : -1.6;
-      const targetZ = isPortrait ? 5.6 : 6.2;
-      const offsetY = (isPortrait ? 19.6 : 19.2) * zoom;
-      const offsetZ = (isPortrait ? 27.0 : 26.2) * zoom;
+      const targetZ = isPortrait ? 4.8 : 5.4;
+      const offsetX = (isPortrait ? 8.8 : 12.6) * zoom;
+      const offsetY = (isPortrait ? 20.4 : 19.8) * zoom;
+      const offsetZ = (isPortrait ? 29.2 : 28.8) * zoom;
+      this.camera.position.set(targetX + offsetX, targetY + offsetY, targetZ + offsetZ);
+      this.camera.lookAt(targetX, targetY, targetZ);
+    } else if (this.cameraMode === 1) {
+      // Classic Centered 3D Toy-Box Battle Perspective
+      this.camera.fov = isPortrait ? 58 : 54;
+      const targetY = isPortrait ? -1.6 : -2.2;
+      const targetZ = isPortrait ? 5.8 : 6.6;
+      const offsetY = (isPortrait ? 20.2 : 19.8) * zoom;
+      const offsetZ = (isPortrait ? 28.0 : 27.6) * zoom;
       this.camera.position.set(0, targetY + offsetY, targetZ + offsetZ);
       this.camera.lookAt(0, targetY, targetZ);
-    } else if (this.cameraMode === 1) {
+    } else {
       // Ultra-Low Over-the-Shoulder Action Cam
       this.camera.fov = isPortrait ? 50 : 45;
       const targetY = 0.8;
       const targetZ = 0.5;
       this.camera.position.set(0, targetY + 10.2 * zoom, targetZ + 30.5 * zoom);
-      this.camera.lookAt(0, targetY, targetZ);
-    } else {
-      // High Tactical Overview
-      this.camera.fov = isPortrait ? 44 : 38;
-      const targetY = -0.8;
-      const targetZ = 1.5;
-      this.camera.position.set(0, targetY + 26.5 * zoom, targetZ + 40.5 * zoom);
       this.camera.lookAt(0, targetY, targetZ);
     }
 
@@ -4035,17 +3754,18 @@ export class World3D {
         return;
       }
 
-      // On PC Desktop, project a 1-unit reference point at the Turret's exact Z plane (PLAYER_Z)
-      // so the turret's screen X aligns 1:1 with the mouse cursor X regardless of cursor Y height!
+      // Project left and right endpoints of the 3D turret rail at PLAYER_Z into screen NDC space
+      // so the 3D turret aligns 1:1 with the cursor X in both Diagonal 3/4 and Centered camera modes!
+      const minRailX = -TRACK_HALF_W + 1.2;
+      const maxRailX = TRACK_HALF_W - 1.2;
       const pointerNdcX = ((clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
-      this.tempVec.set(1.0, 0.8, PLAYER_Z).project(this.camera);
-      const ndcPerWorldX = Math.max(0.02, Math.abs(this.tempVec.x));
-      const targetWorldX = pointerNdcX / ndcPerWorldX;
-      this.turretTargetX = THREE.MathUtils.clamp(
-        targetWorldX,
-        -TRACK_HALF_W + 1.2,
-        TRACK_HALF_W - 1.2
-      );
+      this.tempVec.set(minRailX, 0.8, PLAYER_Z).project(this.camera);
+      const leftNdcX = this.tempVec.x;
+      this.tempVec.set(maxRailX, 0.8, PLAYER_Z).project(this.camera);
+      const rightNdcX = this.tempVec.x;
+      const spanNdcX = Math.abs(rightNdcX - leftNdcX) > 0.04 ? rightNdcX - leftNdcX : 1.0;
+      const t = THREE.MathUtils.clamp((pointerNdcX - leftNdcX) / spanNdcX, 0, 1);
+      this.turretTargetX = THREE.MathUtils.lerp(minRailX, maxRailX, t);
     };
 
     const handleReleaseSummonHero = () => {
@@ -4163,15 +3883,21 @@ export class World3D {
     });
 
     const onResize = () => {
-      const maxDpr = this.lowSpecMode ? 1.0 : this.isMobileDevice ? 1.25 : 1.5;
-      const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+      const nativeDpr = window.devicePixelRatio || 1;
+      const dpr = this.lowSpecMode
+        ? Math.min(Math.max(nativeDpr, 1.5), 2.0)
+        : !this.usePostProcessing
+          ? Math.min(Math.max(nativeDpr, 1.75), 2.25)
+          : this.isMobileDevice
+            ? Math.min(Math.max(nativeDpr, 1.5), 2.0)
+            : Math.min(Math.max(nativeDpr, 2.0), 2.5);
       this.renderer.setPixelRatio(dpr);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.composer.setPixelRatio(dpr);
       this.composer.setSize(window.innerWidth, window.innerHeight);
       this.bloomPass.resolution.set(
-        Math.floor(window.innerWidth * 0.5),
-        Math.floor(window.innerHeight * 0.5)
+        Math.floor(window.innerWidth * dpr * 0.5),
+        Math.floor(window.innerHeight * dpr * 0.5)
       );
       if (this.cinemaPass?.uniforms?.uResolution) {
         this.cinemaPass.uniforms.uResolution.value.set(
@@ -4248,11 +3974,13 @@ export class World3D {
       const speedMult = this.state.getMoveSpeedMultiplier();
       const swarmSpec = this.state.getSwarmTrooperSpec();
       const bastionSpec = this.state.getBastionTrooperSpec();
+      const emeraldHpMult = this.currentTheme.id === 'emerald' ? 1.25 : 1.0;
       const plasmaCritMult = 1 + this.state.getSkillNodeRank('plasma_t1') * 0.16;
       this.state.stageClonesSpawned++;
+      this.state.runSpawnsPool++;
       if (kind === 'champion') {
         const mode = slot.mechaType || 'hammer';
-        slot.maxHp = (mode === 'aegis' ? 320 : mode === 'pyro' ? 210 : 245) * champMult;
+        slot.maxHp = (mode === 'aegis' ? 320 : mode === 'pyro' ? 210 : 245) * champMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = (mode === 'hammer' ? 58 : mode === 'pyro' ? 38 : 42) * champMult;
         slot.radius = 0.72;
@@ -4262,26 +3990,26 @@ export class World3D {
         const tier = Math.max(1, slot.fusionTier || 1);
         const tierStats = this.computeGiantTierStats(tier, kind === 'charged');
         if (tier >= 2) slot.kind = 'charged';
-        slot.maxHp = tierStats.maxHp;
+        slot.maxHp = tierStats.maxHp * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = tierStats.dmg;
         slot.radius = tierStats.radius;
         slot.speed = (6.6 + tier * 0.14) * speedMult;
       } else if (isMiniGiant) {
         // Tycoon T4 / Bastion Guard Mini-Giant
-        slot.maxHp = 52 * pwr * bastionSpec.trooperHpMult;
+        slot.maxHp = 52 * pwr * bastionSpec.trooperHpMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = 30 * pwr;
         slot.radius = 0.46;
         slot.speed = 7.5 * speedMult;
       } else if (kind === 'charged') {
-        slot.maxHp = 38 * pwr * swarmSpec.hpMult * bastionSpec.trooperHpMult;
+        slot.maxHp = 38 * pwr * swarmSpec.hpMult * bastionSpec.trooperHpMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = 26 * pwr * swarmSpec.dmgMult * plasmaCritMult;
         slot.radius = swarmSpec.isSwarmMode ? 0.3 : 0.34;
         slot.speed = (this.state.getSkillNodeRank('plasma_t1') > 0 ? 8.5 : 8.0) * speedMult;
       } else {
-        slot.maxHp = 16 * pwr * swarmSpec.hpMult * bastionSpec.trooperHpMult;
+        slot.maxHp = 16 * pwr * swarmSpec.hpMult * bastionSpec.trooperHpMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = 12 * pwr * swarmSpec.dmgMult;
         slot.radius = swarmSpec.isSwarmMode ? 0.27 : 0.31;
@@ -4567,6 +4295,17 @@ export class World3D {
       });
     });
 
+    // Tycoon T4 Keystone: Casting any skill automatically airdrops 5 Golden Royal Mercenaries!
+    if (this.state.getSkillNodeRank('tycoon_t4') > 0) {
+      this.spawnSkyPillar(spawnBaseX, PLAYER_Z - 2.4, 0xfacc15, 2.2, 0.45);
+      this.spawnUnit('blue', 'charged', spawnBaseX, PLAYER_Z - 2.2, 0, -8.5, undefined, true);
+      for (const ox of [-2.2, -0.8, 0.8, 2.2]) {
+        const mx = THREE.MathUtils.clamp(spawnBaseX + ox, -TRACK_HALF_W + 1.0, TRACK_HALF_W - 1.0);
+        this.spawnUnit('blue', 'charged', mx, PLAYER_Z - 2.0, (Math.random() - 0.5) * 0.8, -8.8);
+      }
+      this.spawnFloatingPopup(spawnBaseX, 2.6, PLAYER_Z - 2.4, '👑 财阀大招空投5只招财精英!', '#facc15');
+    }
+
     const morphTitle = committedBranch ? `【${ultEvo.badge}·${committedBranch.hammerMorphName}】` : `【${ultEvo.badge}·${spec.name}】`;
     const morphSub =
       ultEvo.tier === 0
@@ -4751,6 +4490,7 @@ export class World3D {
       }
       if (count > 0) {
         this.state.stageMutantsKilled += count;
+        this.state.runKillsPool += count;
         this.state.addGold(Math.max(1, Math.floor(count * goldPerKillMult)));
       }
       return count;
@@ -4764,10 +4504,11 @@ export class World3D {
       ultEvo.orbitalZHalfSpan,
       initialEliteRatio
     );
-    if (primaryCluster.count > 0 && ultEvo.tier < 3) {
-      this.spawnFloatingPopup(targetX, 2.4, targetZ, `🎯 锁定敌群密集区 -${killed}!`, '#facc15');
+    if (primaryCluster.count > 0 && ultEvo.tier < 3 && killed > 0) {
+      this.spawnFloatingPopup(targetX, 2.4, targetZ, `🎯 锁定敌群密集区 -${killed}敌!`, '#facc15');
     }
-    let morphBannerTitle = `☄️ 【${ultEvo.badge}·天基轰炸】-${killed}`;
+    let morphBannerTitle =
+      killed > 0 ? `☄️ 【${ultEvo.badge}·天基轰炸】-${killed}敌` : `☄️ 【${ultEvo.badge}·天基轰炸】`;
     let morphBannerSub =
       ultEvo.tier === 0
         ? '已精准轰炸敌群最密集处 · 升级解锁【👑完全体】全屏歼星洗地！'
@@ -4955,8 +4696,8 @@ export class World3D {
           this.spawnUnit('blue', 'charged', ox, clampTrackZ(targetZ + 1.8), 0, -8.8);
         }
       }
-      this.spawnFloatingPopup(targetX, 3.0, targetZ, `💰 黄金陨石盗宝雨[${ultEvo.badge}] +${bonusJackpot}⚡ & 盗宝虫!`, '#facc15');
-      morphBannerTitle = `💰 【${ultEvo.badge}·黄金陨石盗宝雨】+${bonusJackpot}⚡`;
+      this.spawnFloatingPopup(targetX, 3.0, targetZ, `💰 黄金陨石盗宝雨[${ultEvo.badge}] +${bonusJackpot}🪙 & 盗宝虫!`, '#facc15');
+      morphBannerTitle = `💰 【${ultEvo.badge}·黄金陨石盗宝雨】+${bonusJackpot}🪙`;
       morphBannerSub = '黄金盗宝虫现身桥面 · 击杀小怪爆出高倍赏金！';
     }
 
@@ -5071,14 +4812,15 @@ export class World3D {
       } else {
         this.slowFrameStreak = Math.max(0, this.slowFrameStreak - 1);
       }
-      // Step 1 Adaptive Frame-Rate Governor: if frame time > 21.5ms (< 46 FPS), bypass multi-pass EffectComposer
-      if (this.usePostProcessing && (this.avgFrameMs > 21.5 || this.slowFrameStreak >= 16)) {
+      // Step 1 Adaptive Frame-Rate Governor: only bypass multi-pass EffectComposer under sustained heavy load (< 30 FPS)
+      if (this.usePostProcessing && (this.avgFrameMs > 33.5 && this.slowFrameStreak >= 45)) {
         this.usePostProcessing = false;
       }
-      // Step 2 Low-Spec Resolution Scaling: if weak host still exceeds 24.5ms (< 41 FPS), drop pixel ratio to 1.0
-      if (!this.lowSpecMode && (this.avgFrameMs > 24.5 || this.slowFrameStreak >= 28)) {
+      // Step 2 Low-Spec Resolution Scaling: preserve crisp anti-aliased DPR (>= 1.5) even on slower hosts
+      if (!this.lowSpecMode && (this.avgFrameMs > 38.0 && this.slowFrameStreak >= 60)) {
         this.lowSpecMode = true;
-        this.renderer.setPixelRatio(1.0);
+        const fallbackDpr = Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2.0);
+        this.renderer.setPixelRatio(fallbackDpr);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
       }
     }
@@ -5183,6 +4925,8 @@ export class World3D {
 
     if (!this.isOverrunFrenzy) {
       this.stageCombatTime += clampedDt;
+      this.state.runCombatTimePool += clampedDt;
+      this.state.runSiegePool += clampedDt * 2.0;
     }
 
     // 1. Handle Keyboard movement for Turret (Shift boosts speed, S/ArrowDown centers)
@@ -5196,13 +4940,33 @@ export class World3D {
       this.turretTargetX = Math.min(TRACK_HALF_W - 1.2, this.turretTargetX + keySpeed * clampedDt);
     }
 
+    const prevX = this.turretX;
     this.turretX = THREE.MathUtils.lerp(this.turretX, this.turretTargetX, Math.min(1, clampedDt * 22));
+    const turretDX = this.turretX - prevX;
     this.turretGroup.position.x = this.turretX;
 
-    // Bubble Cannon recoil recovery, Brass Pressure Gauge Needle & Chibi Idol Cheerleader animation!
+    // Bubble Cannon recoil recovery, rolling peppermint wheels, spinning candy gears & lively Q-Slime Gunner!
     this.turretRecoil = Math.max(0, this.turretRecoil - clampedDt * 8);
-    this.turretBarrel.position.z = -0.62 + this.turretRecoil * 0.36;
+    this.turretGroup.position.y =
+      Math.abs(Math.sin(this.elapsedTime * 6.5)) * 0.045 + this.turretRecoil * 0.09;
+    this.turretGroup.rotation.z = THREE.MathUtils.clamp(-turretDX * 1.6, -0.14, 0.14);
+    this.turretBarrel.position.z = -0.62 + this.turretRecoil * 0.42;
+    this.turretBarrel.scale.set(
+      1 + this.turretRecoil * 0.14,
+      1 + this.turretRecoil * 0.14,
+      1 - this.turretRecoil * 0.18
+    );
     this.turretMuzzleLight.intensity = this.turretRecoil * 6.5;
+
+    for (const wheel of this.turretWheels) {
+      wheel.rotation.x += turretDX * 1.85 + clampedDt * (this.isHoldingFireInput() ? 5.2 : 1.4);
+    }
+    for (let gIdx = 0; gIdx < this.turretGears.length; gIdx++) {
+      const gearDir = gIdx % 2 === 0 ? 1 : -1;
+      this.turretGears[gIdx].rotation.x +=
+        gearDir * clampedDt * (3.6 + this.turretRecoil * 14.0);
+    }
+
     if (this.turretGaugeNeedle) {
       this.turretGaugeNeedle.rotation.z =
         -0.45 + this.turretRecoil * 1.15 + Math.sin(this.elapsedTime * 16) * 0.08;
@@ -5215,16 +4979,40 @@ export class World3D {
         targetMascotX,
         Math.min(1, clampedDt * 11)
       );
-      const cheerTempo = this.state.championCharge >= 100 ? 11.5 : 7.5;
+      const cheerTempo = this.state.championCharge >= 100 ? 12.5 : 8.5;
+      const mascotPhase = this.elapsedTime * cheerTempo;
+      const mascotHop = Math.abs(Math.sin(mascotPhase));
+      const mascotSquash =
+        Math.cos(mascotPhase * 2.0) * 0.15 +
+        this.turretRecoil * 0.18 +
+        Math.sin(Math.min(1, this.mascotCheerBoost) * Math.PI) * 0.16;
       this.mascotGroup.position.y =
         0.02 +
-        Math.abs(Math.sin(this.elapsedTime * cheerTempo)) * 0.08 +
-        Math.sin(Math.min(1, this.mascotCheerBoost) * Math.PI) * 0.34;
-      this.mascotGroup.rotation.y = 0;
-    }
-    if (this.mascotLeftArm) {
-      this.mascotLeftArm.rotation.z =
-        Math.sin(this.elapsedTime * 7.5) * 0.05 + this.mascotCheerBoost * 0.12;
+        mascotHop * 0.24 +
+        Math.sin(Math.min(1, this.mascotCheerBoost) * Math.PI) * 0.42 +
+        this.turretRecoil * 0.16;
+      this.mascotGroup.rotation.y =
+        Math.sin(mascotPhase * 0.5) * 0.24 - THREE.MathUtils.clamp(turretDX * 3.5, -0.35, 0.35);
+
+      if (this.mascotLeftArm) {
+        this.mascotLeftArm.rotation.z =
+          Math.sin(mascotPhase) * 0.16 + this.mascotCheerBoost * 0.24;
+        this.mascotLeftArm.rotation.x =
+          -0.58 + Math.sin(mascotPhase * 2.0) * 0.12 - this.turretRecoil * 0.22;
+        this.mascotLeftArm.scale.set(
+          1.0 + mascotSquash * 0.78,
+          Math.max(0.74, 1.0 - mascotSquash),
+          1.0 + mascotSquash * 0.78
+        );
+      }
+      if (this.mascotPeak) {
+        this.mascotPeak.rotation.z = Math.sin(mascotPhase * 2.0 - 0.9) * 0.26;
+        this.mascotPeak.rotation.x = Math.cos(mascotPhase * 2.0 - 0.9) * 0.18;
+      }
+      if (this.mascotMegaphone) {
+        this.mascotMegaphone.rotation.z =
+          Math.PI / 2 + Math.sin(mascotPhase * 1.5) * 0.28 + this.turretRecoil * 0.35;
+      }
     }
     if (this.turretEvoHalo && this.currentTurretEvoTier >= 2) {
       this.turretEvoHalo.rotation.z = this.elapsedTime * 3.8;
@@ -5507,9 +5295,30 @@ export class World3D {
       }
     }
 
-    // Factory Boss Foreman idle, Golden Cogwheel Crest spin & Sunlit Motes
-    this.bossHead.position.y = 2.75 + Math.sin(this.elapsedTime * 2.6) * 0.14;
-    this.bossHead.rotation.z = Math.sin(this.elapsedTime * 1.5) * 0.04;
+    // Factory Boss Foreman lively breathing, battlefield scanning, wrench brandishing & Golden Cogwheel spin!
+    const bossBreath = Math.sin(this.elapsedTime * 3.4);
+    const bossSwagger = Math.sin(this.elapsedTime * 1.85);
+    this.bossHead.position.y = 2.75 + Math.abs(bossBreath) * 0.24 + this.bossHitFlash * 0.22;
+    this.bossHead.rotation.z = bossSwagger * 0.09 - this.bossHitFlash * 0.12;
+    this.bossHead.rotation.y = Math.sin(this.elapsedTime * 1.35) * 0.22;
+    this.bossHead.rotation.x = Math.cos(this.elapsedTime * 3.4) * 0.07 - this.bossHitFlash * 0.18;
+    this.bossHead.scale.set(
+      1.0 + bossBreath * 0.045 + this.bossHitFlash * 0.08,
+      1.0 - bossBreath * 0.05 - this.bossHitFlash * 0.06,
+      1.0 + bossBreath * 0.045 + this.bossHitFlash * 0.08
+    );
+    if (this.bossWrenchGroup) {
+      this.bossWrenchGroup.rotation.z =
+        -0.58 + Math.sin(this.elapsedTime * 3.4) * 0.28 + this.bossHitFlash * 0.45;
+      this.bossWrenchGroup.rotation.x = Math.cos(this.elapsedTime * 1.7) * 0.2;
+    }
+    for (let fIdx = 0; fIdx < this.bossForearms.length; fIdx++) {
+      const side = fIdx === 0 ? -1 : 1;
+      this.bossForearms[fIdx].rotation.x =
+        0.42 + Math.sin(this.elapsedTime * 3.4 + side * 0.8) * 0.22;
+      this.bossForearms[fIdx].rotation.z =
+        side * 0.28 + Math.cos(this.elapsedTime * 1.85) * 0.12;
+    }
     this.bossPortalRing.rotation.z = this.elapsedTime * 1.4;
     if (this.bossPortalMat?.uniforms) {
       this.bossPortalMat.uniforms.uTime.value = this.elapsedTime;
@@ -5866,6 +5675,78 @@ export class World3D {
       }
       this.spawnUnit('blue', 'charged', 0, 4.2, 0, -8.2, undefined, true);
       this.spawnFloatingPopup(0, 2.6, 4.5, '👑 黄金皇家雇佣军空降参战!', '#facc15');
+    }
+
+    // 10. Scene Special Effect Periodic Environmental Pulse (Sakura / Glacier / Magma / Ocean)
+    this.sceneEffectTimer -= dt;
+    if (this.sceneEffectTimer <= 0) {
+      const themeId = this.currentTheme.id;
+      if (themeId === 'sakura') {
+        this.sceneEffectTimer = 4.5;
+        if (this.activeBlueIndices.length > 0 || this.playerBaseHp < this.playerBaseMaxHp) {
+          for (const bIdx of this.activeBlueIndices) {
+            const bu = this.units[bIdx];
+            if (bu.active) bu.hp = Math.min(bu.maxHp, bu.hp + bu.maxHp * 0.22);
+          }
+          const healBase = Math.round(this.playerBaseMaxHp * 0.03);
+          this.playerBaseHp = Math.min(this.playerBaseMaxHp, this.playerBaseHp + healBase);
+          this.lastKnownBaseHp = Math.max(this.lastKnownBaseHp, this.playerBaseHp);
+          this.spawnShockwave(0, 2.0, 0xff80b5, 8.5, 0.42);
+          this.spawnBurstParticles(0, 1.4, 2.0, 0xffb3d1, 24);
+          this.spawnFloatingPopup(0, 2.4, 2.0, '🌸 落樱祈福: 全军治愈!', '#f472b6');
+        }
+      } else if (themeId === 'glacier') {
+        this.sceneEffectTimer = 5.0;
+        if (this.activeRedIndices.length > 0) {
+          const frostDmg = 18 * pwr;
+          for (const rIdx of this.activeRedIndices) {
+            const ru = this.units[rIdx];
+            if (!ru.active) continue;
+            ru.hp -= frostDmg;
+            ru.empTimer = Math.max(ru.empTimer || 0, 1.4);
+            if (ru.hp <= 0) {
+              ru.active = false;
+              this.onUnitKilled(ru);
+            }
+          }
+          this.spawnShockwave(0, 0, 0x38bdf8, 9.5, 0.45);
+          this.spawnBurstParticles(0, 1.2, 0, 0x67e8f9, 28);
+          this.spawnFloatingPopup(0, 2.4, 0, '🍧 极寒霜冻波: 全场冰封减速!', '#38bdf8');
+        }
+      } else if (themeId === 'magma') {
+        this.sceneEffectTimer = 5.0;
+        if (this.activeRedIndices.length > 0) {
+          const burnDmg = 24 * pwr;
+          for (const rIdx of this.activeRedIndices) {
+            const ru = this.units[rIdx];
+            if (!ru.active) continue;
+            ru.hp -= burnDmg;
+            if (ru.hp <= 0) {
+              ru.active = false;
+              this.onUnitKilled(ru);
+            }
+          }
+          this.spawnShockwave(0, 0, 0xf97316, 9.5, 0.45);
+          this.spawnBurstParticles(0, 1.2, 0, 0xfbbf24, 28);
+          this.spawnFloatingPopup(0, 2.4, 0, '🥐 焦糖热浪: 全场灼烧!', '#fb923c');
+        }
+      } else if (themeId === 'ocean') {
+        this.sceneEffectTimer = 5.0;
+        if (this.activeRedIndices.length > 0) {
+          for (const rIdx of this.activeRedIndices) {
+            const ru = this.units[rIdx];
+            if (!ru.active) continue;
+            ru.z = Math.max(BOSS_GATE_Z + 1.5, ru.z - 2.6);
+            ru.vz = -5.5;
+            ru.spawnHop = Math.max(ru.spawnHop, 0.65);
+          }
+          this.spawnShockwave(0, 2.5, 0x2dd4bf, 10.5, 0.48);
+          this.spawnBurstParticles(0, 1.2, 2.5, 0x38bdf8, 28);
+          this.spawnFloatingPopup(0, 2.4, 2.5, '🐳 潮汐浮力: 巨浪推退敌军!', '#2dd4bf');
+        }
+      } else {
+        this.sceneEffectTimer = 5.0;
+      }
     }
   }
 
@@ -6518,7 +6399,7 @@ export class World3D {
       const p1 = this.state.getSkillNodeRank('plasma_t1');
       const p2 = this.state.getSkillNodeRank('plasma_t2');
       const isT4 = this.state.getSkillNodeRank('plasma_t4') > 0;
-      let bolts = 3 + p2 * 2;
+      let bolts = 3 + p2 * 3;
       for (const rIdx of this.activeRedIndices) {
         if (bolts <= 0) break;
         const e = this.units[rIdx];
@@ -6624,7 +6505,7 @@ export class World3D {
       if (hitCount > 0 || isPeriodicLeap) {
         const minted = this.state.addGold(ty1 * 4 + Math.min(14, hitCount * 2) + 3);
         if (isPeriodicLeap) {
-          this.spawnFloatingPopup(champ.x, 2.2, slamZ, `💰 点金财阀碎钞锤 +${minted}⚡!`, '#facc15');
+          this.spawnFloatingPopup(champ.x, 2.2, slamZ, `💰 点金财阀碎钞锤 +${minted}🪙!`, '#facc15');
         }
       }
       if (ty2 > 0 && this.lootBug.active && isPeriodicLeap) {
@@ -6801,7 +6682,8 @@ export class World3D {
       const prevX = u.x;
       const prevZ = u.z;
       const empSlow = u.team === 'red' && u.empTimer && u.empTimer > 0 ? 0.4 : 1.0;
-      const effSpeed = u.team === 'blue' ? u.speed * blueSpeedBoost : u.speed * empSlow;
+      const glacierSlow = u.team === 'red' && this.currentTheme.id === 'glacier' ? 0.78 : 1.0;
+      const effSpeed = u.team === 'blue' ? u.speed * blueSpeedBoost : u.speed * empSlow * glacierSlow;
 
       if (u.team === 'blue') {
         let targetVX = 0;
@@ -6839,7 +6721,7 @@ export class World3D {
                   const gold = this.state.addGold(n.cfg.rewardGold);
                   this.spawnBurstParticles(n.cfg.x, 1.8, n.cfg.z, 0xfacc15, 65);
                   this.spawnBurstParticles(n.cfg.x, 1.4, n.cfg.z, 0x84cc16, 30);
-                  this.spawnFloatingPopup(n.cfg.x, 2.5, n.cfg.z, `+${gold} ⚡ 巢穴击破!`, '#facc15');
+                  this.spawnFloatingPopup(n.cfg.x, 2.5, n.cfg.z, `+${gold} 🪙 巢穴击破!`, '#facc15');
                   this.onBanner?.(`💥 摧毁 ${n.cfg.name}！`, `奖励 +${gold} 基因金币 & 泰坦充能！`);
                   this.state.championCharge = Math.min(100, this.state.championCharge + 40);
                 }
@@ -7043,11 +6925,12 @@ export class World3D {
         }
       }
 
-      // Smoothly update humanoid facing yaw, cornering bank (turnRate), and distance-matched stride phase!
+      // Smoothly update humanoid facing yaw, cornering bank (turnRate), and lively stride/brawl cadence!
       const moveDX = u.x - prevX;
       const moveDZ = u.z - prevZ;
       const actualSpeed = Math.hypot(moveDX, moveDZ) / Math.max(0.001, dt);
-      u.walkPhase += Math.max(1.8, actualSpeed * 3.3) * dt;
+      const combatCadence = u.attackAnim > 0 ? 5.5 : 0;
+      u.walkPhase += (5.2 + actualSpeed * 3.8 + combatCadence) * dt;
 
       const velMag = Math.hypot(u.vx, u.vz);
       const desiredYaw = velMag > 0.25 ? Math.atan2(u.vx, u.vz) : u.team === 'blue' ? Math.PI : 0;
@@ -7102,7 +6985,7 @@ export class World3D {
               this.spawnShockwave(gr.cfg.x, gr.cfg.z, 0xfacc15, 2.8, 0.34);
               this.spawnBurstParticles(gr.cfg.x, 1.0, gr.cfg.z, 0xff2a55, 55);
               this.spawnBurstParticles(gr.cfg.x, 1.2, gr.cfg.z, 0xfacc15, 25);
-              this.spawnFloatingPopup(gr.cfg.x, 1.8, gr.cfg.z, `⚙️ 齿轮粉碎! +${salvageGold}⚡`, '#facc15');
+              this.spawnFloatingPopup(gr.cfg.x, 1.8, gr.cfg.z, `⚙️ 齿轮粉碎! +${salvageGold}🪙`, '#facc15');
             }
             break;
           }
@@ -7175,8 +7058,8 @@ export class World3D {
             this.spawnShockwave(this.lootBug.x, this.lootBug.z, 0x00f0ff, 3.6, 0.36);
             this.spawnBurstParticles(this.lootBug.x, 1.2, this.lootBug.z, 0xfacc15, 95);
             this.spawnBurstParticles(this.lootBug.x, 1.5, this.lootBug.z, 0x00f0ff, 35);
-            this.spawnFloatingPopup(this.lootBug.x, 2.4, this.lootBug.z, `💰 盗宝虫爆金 +${jackpot}⚡!`, '#facc15');
-            this.onBanner?.(`💰 击破黄金盗宝虫！+${jackpot}⚡`, '双大招立即充能 +45%！');
+            this.spawnFloatingPopup(this.lootBug.x, 2.4, this.lootBug.z, `💰 盗宝虫爆金 +${jackpot}🪙!`, '#facc15');
+            this.onBanner?.(`💰 击破黄金盗宝虫！+${jackpot}🪙`, '双大招立即充能 +45%！');
           }
           if (!u.active) continue;
         }
@@ -7225,6 +7108,7 @@ export class World3D {
           }
 
           this.bossHp = Math.max(0, this.bossHp - dmg);
+          this.state.runSiegePool += dmg;
           this.bossHitFlash = 1.0;
           if (Math.random() < 0.25) {
             this.state.addGold(1);
@@ -7478,7 +7362,8 @@ export class World3D {
                     const nearAegis = this.isNearAegisTitan(blueUnit.x, blueUnit.z);
                     const giantToughness = (blueUnit.fusionTier || 0) >= 1 ? 1 - giantSpec.dmgReduction : 1.0;
                     const bastionToughness = 1 - bastionSpec.trooperDmgReduction;
-                    const dmgReduction = (nearAegis ? 0.5 : 1.0) * giantToughness * bastionToughness;
+                    const oceanToughness = this.currentTheme.id === 'ocean' ? 0.8 : 1.0;
+                    const dmgReduction = (nearAegis ? 0.5 : 1.0) * giantToughness * bastionToughness * oceanToughness;
                     blueUnit.hp -= redUnit.dmg * dmgReduction;
                     // Titan T3: Aegis Thorns reflect damage back to Red attacker when near Aegis Titan!
                     const aegisThornsRank = this.state.getSkillNodeRank('titan_t3');
@@ -7494,11 +7379,11 @@ export class World3D {
 
                   if (a.hp <= 0 && a.active) {
                     a.active = false;
-                    this.onUnitKilled(a);
+                    this.onUnitKilled(a, b);
                   }
                   if (b.hp <= 0 && b.active) {
                     b.active = false;
-                    this.onUnitKilled(b);
+                    this.onUnitKilled(b, a);
                   }
                   // Swarm T4 Keystone: Infinite Brood Fission (18% chance to split a new clone when killing a Red unit in melee!)
                   if (!redUnit.active && blueUnit.active && this.state.getSkillNodeRank('swarm_t4') > 0) {
@@ -7676,7 +7561,13 @@ export class World3D {
     }
 
     const bonusGold = this.state.addGold(15 + blasted * 2);
-    this.spawnFloatingPopup(br.cfg.x, 2.2, br.cfg.z, `💥 链式爆破 -${blasted} (+${bonusGold}⚡)`, '#facc15');
+    this.spawnFloatingPopup(
+      br.cfg.x,
+      2.2,
+      br.cfg.z,
+      blasted > 0 ? `💥 链式爆破 -${blasted}敌 (+${bonusGold}🪙)` : `💥 链式爆破 (+${bonusGold}🪙)`,
+      '#facc15'
+    );
 
     if (this.bossShieldActive) {
       this.shatterBossShield();
@@ -8111,10 +8002,13 @@ export class World3D {
     const isGateCrit = this.state.getSkillNodeRank('gate_t4') > 0 && Math.random() < 0.22;
     const isSwarmBonusClone =
       swarmSpec.gateExtraCloneChance > 0 && Math.random() < swarmSpec.gateExtraCloneChance;
+    const isCarnivalBonusClone = this.currentTheme.id === 'cyberhive' && Math.random() < 0.3;
     const maxCapCopies = 6 + this.state.getSkillNodeRank('gate_t2');
     const baseCopies = Math.min(
       maxCapCopies,
-      (op === 'add' ? value + gateResonance : value - 1) + (isSwarmBonusClone ? 1 : 0)
+      (op === 'add' ? value + gateResonance : value - 1) +
+        (isSwarmBonusClone ? 1 : 0) +
+        (isCarnivalBonusClone ? 1 : 0)
     );
     const rawExtraCopies = isGateCrit ? Math.min(maxCapCopies + 2, baseCopies * 2) : baseCopies;
     // In Giant Mode, each spawned Giant is already ~2.2x normal mass, so gates spawn fewer heavy clones (max 3) at Tier 1!
@@ -8178,10 +8072,11 @@ export class World3D {
     }
   }
 
-  private onUnitKilled(u: Unit): void {
+  private onUnitKilled(u: Unit, killer?: Unit): void {
     if (u.team === 'red') {
       const chargeMult = this.state.getSkillChargeMultiplier();
       this.state.stageMutantsKilled++;
+      this.state.runKillsPool++;
 
       // Track Kill-Streak Adrenaline Frenzy (Pillar 4)
       this.killStreakCount++;
@@ -8205,6 +8100,8 @@ export class World3D {
       this.state.orbitalCharge = Math.min(100, this.state.orbitalCharge + (isElite ? 1.8 : 0.16) * chargeMult);
 
       const ty1 = this.state.getSkillNodeRank('tycoon_t1');
+      const ty3 = this.state.getSkillNodeRank('tycoon_t3');
+      const isGoldenKill = ty3 > 0 && killer?.kind === 'charged';
       const tycoonEliteBonus = ty1 * 8;
       if (u.kind === 'brute') {
         const gold = this.state.addGold(25 + tycoonEliteBonus);
@@ -8214,14 +8111,14 @@ export class World3D {
         this.spawnShockwave(u.x, u.z, 0xffffff, 2.6, 0.3);
         this.spawnBurstParticles(u.x, 1.0, u.z, 0xfacc15, 45);
         this.spawnBurstParticles(u.x, 1.2, u.z, 0xff2a55, 20);
-        this.spawnFloatingPopup(u.x, 1.5, u.z, `+${gold} ⚡`, '#facc15');
+        this.spawnFloatingPopup(u.x, 1.5, u.z, `+${gold} 🪙`, '#facc15');
       } else if (u.kind === 'shaman') {
         const gold = this.state.addGold(18 + tycoonEliteBonus);
         this.addCameraShake(0.32);
         this.spawnSkyPillar(u.x, u.z, 0xd946ef, 1.8, 0.42);
         this.spawnShockwave(u.x, u.z, 0xd946ef, 3.8, 0.42);
         this.spawnBurstParticles(u.x, 1.0, u.z, 0xd946ef, 36);
-        this.spawnFloatingPopup(u.x, 1.5, u.z, `+${gold} ⚡`, '#e879f9');
+        this.spawnFloatingPopup(u.x, 1.5, u.z, `+${gold} 🪙`, '#e879f9');
       } else if (u.kind === 'baneling') {
         // When sniped/melted before touching a marine, Baneling pops in a harmless green puff + bonus gold!
         this.state.addGold(2 + ty1);
@@ -8229,10 +8126,10 @@ export class World3D {
         this.spawnBurstParticles(u.x, 0.6, u.z, 0x84cc16, 22);
       } else {
         this.spawnBurstParticles(u.x, 0.6, u.z, 0xff2a55, 8);
-        const dropChance = 0.25 + (ty1 > 0 ? 0.12 : 0);
+        const dropChance = isGoldenKill ? 1.0 : Math.min(1.0, 0.25 + (ty1 > 0 ? 0.12 : 0) + ty3 * 0.15);
         if (Math.random() < dropChance) {
-          this.state.addGold(1 + (ty1 > 0 ? 1 : 0));
-          this.spawnShockwave(u.x, u.z, ty1 > 0 ? 0xfacc15 : 0xff2a55, 1.6, 0.24);
+          this.state.addGold(1 + (ty1 > 0 ? 1 : 0) + (isGoldenKill ? 1 : 0));
+          this.spawnShockwave(u.x, u.z, isGoldenKill || ty1 > 0 ? 0xfacc15 : 0xff2a55, 1.6, 0.24);
         }
       }
     } else {
@@ -8279,24 +8176,6 @@ export class World3D {
     }
   }
 
-  private triggerBaseOverrun(): void {
-    this.isOverrunFrenzy = true;
-    this.overrunTimer = 3.2;
-    sound.playExplosion();
-
-    // Wipe remaining red swarmers in a dramatic shockwave so blue swarm floods the Boss Base!
-    for (const u of this.units) {
-      if (u.active && u.team === 'red') {
-        u.active = false;
-        if (Math.random() < 0.2) {
-          this.spawnBurstParticles(u.x, 0.6, u.z, 0xff2a55, 3);
-        }
-      }
-    }
-
-    this.onBanner?.('🔥 母巢破防！射速 ×300%', '');
-  }
-
   private finishStage(victory: boolean): void {
     if (this.isStageEnded) return;
     this.isStageEnded = true;
@@ -8334,8 +8213,8 @@ export class World3D {
       this.spawnBurstParticles(0, 3.0, BOSS_GATE_Z - 1.0, 0xfacc15, 135);
       this.spawnBurstParticles(-3.5, 2.2, BOSS_GATE_Z + 0.8, 0x00f0ff, 75);
       this.spawnBurstParticles(3.5, 2.2, BOSS_GATE_Z + 0.8, 0xd946ef, 75);
-      this.spawnFloatingPopup(0, 3.6, BOSS_GATE_Z + 1.0, `🏆 母巢崩塌! +${rewardGiven} ⚡`, '#facc15');
-      this.onBanner?.('🏆 母巢核心灰飞烟灭 · 战役大捷！', `🎉 通关赏金 +${rewardGiven} ⚡ · 全军欢呼！`);
+      this.spawnFloatingPopup(0, 3.6, BOSS_GATE_Z + 1.0, `🏆 母巢崩塌! +${rewardGiven} 🪙`, '#facc15');
+      this.onBanner?.('🏆 母巢核心灰飞烟灭 · 战役大捷！', `🎉 通关赏金 +${rewardGiven} 🪙 · 全军欢呼！`);
 
       // Schedule 4 sequential Victory Firework & Meltdown Waves across the bridge during the 1.25s climax!
       const victoryWaves: Array<{ delay: number; z: number; flash: string; col1: number; col2: number }> = [
@@ -8449,9 +8328,6 @@ export class World3D {
   }
 
   private syncWorldLabels(): void {
-    if (this.dioramaRenderer) {
-      return;
-    }
     if ((this.lowSpecMode || this.isMobileDevice) && (this.frameTickCounter & 1) !== 0) {
       return;
     }
@@ -8601,6 +8477,9 @@ export class World3D {
       this.unitShadowInst.setMatrixAt(shadowIdx++, this.dummy.matrix);
 
       if (u.team === 'blue') {
+        const hopCycle = Math.abs(Math.sin(u.walkPhase));
+        const squashWave = Math.cos(u.walkPhase * 2.0);
+        const atkJump = Math.sin(u.attackAnim * Math.PI);
         if (u.kind === 'champion' && champIdx < 120) {
           const titanScale =
             ultEvo.mechaScaleMult *
@@ -8608,10 +8487,17 @@ export class World3D {
               this.state.getSkillNodeRank('titan_t1') * 0.08 +
               this.state.getSkillNodeRank('titan_t3') * 0.06);
           const champDisplayYaw =
-            Math.sin(u.walkPhase * 0.45) * 0.14 - THREE.MathUtils.clamp(u.vx * 0.04, -0.32, 0.32);
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 0.35, champDisplayYaw, bankRoll * 0.5);
-          this.dummy.scale.set(titanScale, titanScale, titanScale);
+            Math.sin(u.walkPhase * 0.5) * 0.22 - THREE.MathUtils.clamp(u.vx * 0.055, -0.38, 0.38);
+          const champRoll = bankRoll * 0.65 + Math.sin(u.walkPhase) * 0.12;
+          const champStretchY = 1.0 - squashWave * 0.12 + atkJump * 0.15;
+          const champSquashXZ = 1.0 / Math.sqrt(Math.max(0.74, champStretchY));
+          this.dummy.position.set(u.x, hopY + hopCycle * 0.22 + atkJump * 0.28, u.z);
+          this.dummy.rotation.set(forwardPitch * 0.45, champDisplayYaw, champRoll);
+          this.dummy.scale.set(
+            titanScale * champSquashXZ,
+            titanScale * champStretchY,
+            titanScale * champSquashXZ
+          );
           this.dummy.updateMatrix();
           this.championInst.setMatrixAt(champIdx, this.dummy.matrix);
 
@@ -8632,14 +8518,16 @@ export class World3D {
                 ? 1.85
                 : (u.kind === 'charged' ? 1.18 : 1.0 + u.spawnHop * 0.12) * swarmSpec.scaleMult;
           const scale = baseUnitScale * evoScale;
-          // 2.5D Illustration Facing: Blue Bubble Slimes face toward the camera (+Z) so their cute eyes,
-          // rosy cheeks, white headband knot, and upper-left white oval highlight dot are always visible!
+          // 2.5D Illustration Facing + organic Q-jelly hop & squash-and-stretch!
           const displayYaw =
-            Math.sin(u.walkPhase * 0.5) * 0.16 - THREE.MathUtils.clamp(u.vx * 0.045, -0.35, 0.35);
-          const waddleRoll = bankRoll + Math.sin(u.walkPhase) * 0.08;
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 0.35, displayYaw, waddleRoll);
-          this.dummy.scale.set(scale, scale, scale);
+            Math.sin(u.walkPhase * 0.5) * 0.24 - THREE.MathUtils.clamp(u.vx * 0.065, -0.45, 0.45);
+          const waddleRoll = bankRoll + Math.sin(u.walkPhase) * 0.15;
+          const stretchY = 1.0 - squashWave * 0.14 + atkJump * 0.16;
+          const squashXZ = 1.0 / Math.sqrt(Math.max(0.72, stretchY));
+          const slimeHopY = hopY + hopCycle * 0.16 * Math.min(1.5, scale) + atkJump * 0.24;
+          this.dummy.position.set(u.x, slimeHopY, u.z);
+          this.dummy.rotation.set(forwardPitch * 0.42, displayYaw, waddleRoll);
+          this.dummy.scale.set(scale * squashXZ, scale * stretchY, scale * squashXZ);
           this.dummy.updateMatrix();
           this.blueBodyInst.setMatrixAt(blueIdx, this.dummy.matrix);
 
@@ -8661,10 +8549,17 @@ export class World3D {
           blueIdx++;
         }
       } else {
+        const redHop = Math.abs(Math.sin(u.walkPhase));
+        const redSquash = Math.cos(u.walkPhase * 2.0);
+        const redAtkJump = Math.sin(u.attackAnim * Math.PI);
+        const redSwaggerYaw = u.yaw + Math.sin(u.walkPhase * 0.5) * 0.16;
+        const redSwaggerRoll = bankRoll + Math.sin(u.walkPhase) * 0.12;
+        const redStretchY = 1.0 - redSquash * 0.1 + redAtkJump * 0.14;
+        const redSquashXZ = 1.0 / Math.sqrt(Math.max(0.76, redStretchY));
         if (u.kind === 'brute' && bruteIdx < 120) {
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 0.7, u.yaw, bankRoll * 0.5);
-          this.dummy.scale.set(1, 1, 1);
+          this.dummy.position.set(u.x, hopY + redHop * 0.16 + redAtkJump * 0.22, u.z);
+          this.dummy.rotation.set(forwardPitch * 0.7, redSwaggerYaw, redSwaggerRoll * 0.75);
+          this.dummy.scale.set(redSquashXZ, redStretchY, redSquashXZ);
           this.dummy.updateMatrix();
           this.bruteInst.setMatrixAt(bruteIdx, this.dummy.matrix);
 
@@ -8675,10 +8570,18 @@ export class World3D {
           this.bruteAnimData[br4 + 3] = 0;
           bruteIdx++;
         } else if (u.kind === 'baneling' && banelingIdx < 180) {
-          const pulseScale = 1 + Math.sin(this.elapsedTime * 12 + u.id) * 0.08;
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 1.1, u.yaw, bankRoll);
-          this.dummy.scale.set(pulseScale, pulseScale, pulseScale);
+          const pulseScale = 1 + Math.sin(this.elapsedTime * 14 + u.id) * 0.11;
+          this.dummy.position.set(u.x, hopY + redHop * 0.18, u.z);
+          this.dummy.rotation.set(
+            forwardPitch * 1.1,
+            redSwaggerYaw,
+            bankRoll + Math.sin(u.walkPhase * 1.5) * 0.18
+          );
+          this.dummy.scale.set(
+            pulseScale * redSquashXZ,
+            pulseScale * redStretchY,
+            pulseScale * redSquashXZ
+          );
           this.dummy.updateMatrix();
           this.banelingInst.setMatrixAt(banelingIdx, this.dummy.matrix);
 
@@ -8689,9 +8592,9 @@ export class World3D {
           this.banelingAnimData[bn4 + 3] = 0.25;
           banelingIdx++;
         } else if (u.kind === 'shaman' && shamanIdx < 120) {
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 0.6, u.yaw, bankRoll * 0.5);
-          this.dummy.scale.set(1.12, 1.12, 1.12);
+          this.dummy.position.set(u.x, hopY + redHop * 0.14 + redAtkJump * 0.18, u.z);
+          this.dummy.rotation.set(forwardPitch * 0.6, redSwaggerYaw, redSwaggerRoll * 0.7);
+          this.dummy.scale.set(1.12 * redSquashXZ, 1.12 * redStretchY, 1.12 * redSquashXZ);
           this.dummy.updateMatrix();
           this.shamanInst.setMatrixAt(shamanIdx, this.dummy.matrix);
 
@@ -8702,9 +8605,9 @@ export class World3D {
           this.shamanAnimData[sh4 + 3] = 0.15;
           shamanIdx++;
         } else {
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch, u.yaw, bankRoll);
-          this.dummy.scale.set(1, 1, 1);
+          this.dummy.position.set(u.x, hopY + redHop * 0.14 + redAtkJump * 0.2, u.z);
+          this.dummy.rotation.set(forwardPitch, redSwaggerYaw, redSwaggerRoll);
+          this.dummy.scale.set(redSquashXZ, redStretchY, redSquashXZ);
           this.dummy.updateMatrix();
           this.redBodyInst.setMatrixAt(redIdx, this.dummy.matrix);
 
@@ -8776,44 +8679,6 @@ export class World3D {
       );
     } else {
       this.camera.position.copy(this.baseCameraPos);
-    }
-
-    if (this.dioramaRenderer) {
-      this.dioramaRenderer.render({
-        elapsedTime: this.elapsedTime,
-        isPaused: this.isPaused,
-        themeId: this.currentTheme?.id || 'wasteland',
-        activeRaceId: this.state.getActiveRaceBranch().id,
-        cameraMode: this.cameraMode,
-        stageId: this.currentLevel?.id || 1,
-        isMiniBoss: Boolean(this.currentLevel?.isMiniBoss),
-        isMegaBoss: Boolean(this.currentLevel?.isMegaBoss),
-        turretX: this.turretX,
-        turretRecoil: this.turretRecoil,
-        trackHalfW: TRACK_HALF_W,
-        playerZ: PLAYER_Z,
-        bossGateZ: BOSS_GATE_Z,
-        bossHp: this.bossHp,
-        bossMaxHp: this.bossMaxHp,
-        bossHitFlash: this.bossHitFlash,
-        bossShieldActive: this.bossShieldActive,
-        bossShieldHits: this.bossShieldHitsRemaining,
-        bossBerserk: this.bossBerserkTriggered,
-        cameraShake: this.cameraShake,
-        units: this.units,
-        gates: this.gates,
-        barrels: this.barrels,
-        gears: this.gears.map((gr) => ({
-          cfg: gr.cfg,
-          currentX: gr.mesh.position.x,
-          hp: gr.hp,
-          alive: gr.alive,
-          hitFlash: gr.hitFlash,
-        })),
-        bumpers: this.bumpers,
-        zones: this.zones,
-      });
-      return;
     }
 
     // Since active units use 2D ground contact blob shadows (unitShadowInst), the directional shadow map

@@ -1,4 +1,5 @@
 import { SkinPalette } from './HumanoidModels';
+import { ThemeId } from './SceneThemes';
 import {
   DEBUFF_ART,
   MECHA_MODE_ART,
@@ -1034,6 +1035,10 @@ export interface SaveState {
   totalMatchesPlayed?: number;
   lifetimeKills?: number;
   playTimeSeconds?: number;
+  leaderboardWeekKey?: string;
+  weeklyBestStage?: number;
+  weeklyKills?: number;
+  weeklyPlayTimeSeconds?: number;
   skillNodes?: Partial<Record<SkillNodeId, number>>;
   selectedRaceId?: SkillBranchId;
   bonusTalentPoints?: number;
@@ -1085,6 +1090,8 @@ export const DEBUFF_CATALOG: Omit<ActiveDebuff, 'remainingStages'>[] = [
   },
 ];
 
+export const RENAME_GOLD_COST = 100000;
+
 export class GameState {
   public gold = 160;
   public unlockedLevel = 50;
@@ -1118,6 +1125,10 @@ export class GameState {
   public totalMatchesPlayed = 0;
   public lifetimeKills = 0;
   public playTimeSeconds = 0;
+  public leaderboardWeekKey = '';
+  public weeklyBestStage = 0;
+  public weeklyKills = 0;
+  public weeklyPlayTimeSeconds = 0;
   private playTimeSaveAccum = 0;
   public remoteLeaderboard: LeaderboardEntry[] = [...DEFAULT_LEADERBOARD];
   public remoteActiveLeaderboard: LeaderboardEntry[] = [...DEFAULT_LEADERBOARD];
@@ -1135,8 +1146,14 @@ export class GameState {
   public stageClonesSpawned = 0;
   public stageMutantsKilled = 0;
   public stageGoldEarned = 0;
+  public runCombatTimePool = 0;
+  public runKillsPool = 0;
+  public runSpawnsPool = 0;
+  public runSiegePool = 0;
+  public activeSceneThemeId: ThemeId = 'wasteland';
 
   constructor() {
+    this.leaderboardWeekKey = this.getLeaderboardWeekInfo().weekKey;
     this.load();
   }
 
@@ -1194,6 +1211,18 @@ export class GameState {
       } else if (this.totalMatchesPlayed > 0 || this.lifetimeKills > 0) {
         this.playTimeSeconds = Math.round(this.totalMatchesPlayed * 45 + this.lifetimeKills * 0.12);
       }
+      const curWeekKey = this.getLeaderboardWeekInfo().weekKey;
+      if (typeof parsed.leaderboardWeekKey === 'string' && parsed.leaderboardWeekKey === curWeekKey) {
+        this.leaderboardWeekKey = curWeekKey;
+        this.weeklyBestStage = Math.max(0, Number(parsed.weeklyBestStage) || 0);
+        this.weeklyKills = Math.max(0, Number(parsed.weeklyKills) || 0);
+        this.weeklyPlayTimeSeconds = Math.max(0, Number(parsed.weeklyPlayTimeSeconds) || 0);
+      } else {
+        this.leaderboardWeekKey = curWeekKey;
+        this.weeklyBestStage = 0;
+        this.weeklyKills = 0;
+        this.weeklyPlayTimeSeconds = 0;
+      }
       if (parsed.skillNodes && typeof parsed.skillNodes === 'object') {
         this.skillNodes = { ...parsed.skillNodes };
       }
@@ -1238,6 +1267,10 @@ export class GameState {
     this.powerLevel = 1;
     this.championLevel = 1;
     this.lootLevel = 1;
+    this.runCombatTimePool = 0;
+    this.runKillsPool = 0;
+    this.runSpawnsPool = 0;
+    this.runSiegePool = 0;
     this.buffStacks = {};
     this.activeDebuffs = [];
     const startCharge = this.getStartingSkillCharge();
@@ -1268,6 +1301,10 @@ export class GameState {
         totalMatchesPlayed: this.totalMatchesPlayed,
         lifetimeKills: this.lifetimeKills,
         playTimeSeconds: Math.floor(this.playTimeSeconds),
+        leaderboardWeekKey: this.leaderboardWeekKey || this.getLeaderboardWeekInfo().weekKey,
+        weeklyBestStage: this.weeklyBestStage,
+        weeklyKills: this.weeklyKills,
+        weeklyPlayTimeSeconds: Math.floor(this.weeklyPlayTimeSeconds),
         skillNodes: this.skillNodes,
         selectedRaceId: this.selectedRaceId,
         bonusTalentPoints: this.bonusTalentPoints,
@@ -1284,12 +1321,53 @@ export class GameState {
     }
   }
 
+  public getLeaderboardWeekInfo(nowMs = Date.now()): { weekKey: string; nextResetAtMs: number } {
+    const EPOCH_MONDAY_UTC8_MS = 316800000; // 1970-01-05 00:00:00 UTC+8 (Monday)
+    const WEEK_MS = 7 * 24 * 3600 * 1000;
+    const weekIndex = Math.floor((nowMs - EPOCH_MONDAY_UTC8_MS) / WEEK_MS);
+    return {
+      weekKey: `w${weekIndex}`,
+      nextResetAtMs: EPOCH_MONDAY_UTC8_MS + (weekIndex + 1) * WEEK_MS,
+    };
+  }
+
+  public ensureWeeklyLeaderboardCycle(): void {
+    const { weekKey } = this.getLeaderboardWeekInfo();
+    if (this.leaderboardWeekKey !== weekKey) {
+      this.leaderboardWeekKey = weekKey;
+      this.weeklyBestStage = 0;
+      this.weeklyKills = 0;
+      this.weeklyPlayTimeSeconds = 0;
+      this.remoteLeaderboard = [...DEFAULT_LEADERBOARD];
+      this.remoteActiveLeaderboard = [...DEFAULT_LEADERBOARD];
+      this.remoteRealPlayerCount = 0;
+    }
+  }
+
+  public getWeeklyResetCountdownText(): string {
+    const { nextResetAtMs } = this.getLeaderboardWeekInfo();
+    const remainSec = Math.max(60, Math.floor((nextResetAtMs - Date.now()) / 1000));
+    const days = Math.floor(remainSec / 86400);
+    const hours = Math.floor((remainSec % 86400) / 3600);
+    if (days > 0) {
+      return `每周一刷新（剩${days}天${hours}时）`;
+    }
+    const mins = Math.max(1, Math.floor((remainSec % 3600) / 60));
+    return hours > 0 ? `每周一刷新（剩${hours}时${mins}分）` : `每周一刷新（剩${mins}分）`;
+  }
+
   public recordBattleStats(clearedStageNum: number, killsInStage: number): void {
+    this.ensureWeeklyLeaderboardCycle();
     this.totalMatchesPlayed += 1;
     this.stagesPlayedSinceRespec += 1;
-    this.lifetimeKills += Math.max(0, killsInStage);
+    const safeKills = Math.max(0, killsInStage);
+    this.lifetimeKills += safeKills;
+    this.weeklyKills += safeKills;
     if (clearedStageNum > this.bestStageCleared) {
       this.bestStageCleared = clearedStageNum;
+    }
+    if (clearedStageNum > this.weeklyBestStage) {
+      this.weeklyBestStage = clearedStageNum;
     }
     if (this.totalMatchesPlayed < this.bestStageCleared) {
       this.totalMatchesPlayed = this.bestStageCleared;
@@ -1298,12 +1376,21 @@ export class GameState {
     void this.syncRemoteLeaderboard(true);
   }
 
-  public setPlayerName(newName: string): void {
-    const cleaned = newName.trim().slice(0, 20);
-    if (!cleaned) return;
+  public setPlayerName(newName: string): {
+    ok: boolean;
+    reason?: 'empty' | 'same' | 'insufficient_gold';
+  } {
+    const cleaned = newName.trim().slice(0, 14);
+    if (!cleaned) return { ok: false, reason: 'empty' };
+    if (cleaned === this.playerName) return { ok: false, reason: 'same' };
+    if (this.gold < RENAME_GOLD_COST) {
+      return { ok: false, reason: 'insufficient_gold' };
+    }
+    this.gold -= RENAME_GOLD_COST;
     this.playerName = cleaned;
     this.save();
     void this.syncRemoteLeaderboard(true);
+    return { ok: true };
   }
 
   private getTodayKey(): string {
@@ -1379,7 +1466,9 @@ export class GameState {
 
   public tickPlayTime(dt: number): void {
     if (dt <= 0 || dt > 1) return;
+    this.ensureWeeklyLeaderboardCycle();
     this.playTimeSeconds += dt;
+    this.weeklyPlayTimeSeconds += dt;
     this.playTimeSaveAccum += dt;
     if (this.playTimeSaveAccum >= 15) {
       this.playTimeSaveAccum = 0;
@@ -1410,6 +1499,7 @@ export class GameState {
   }
 
   public getTop10Leaderboard(): { top10: LeaderboardEntry[]; selfRank: number | null; realCount: number } {
+    this.ensureWeeklyLeaderboardCycle();
     const skin = this.getEquippedSkin();
     const others: LeaderboardEntry[] = this.remoteLeaderboard
       .filter((e) => e.name !== this.playerName && (!e.playerId || e.playerId !== this.playerId))
@@ -1418,13 +1508,13 @@ export class GameState {
     const realEntries = others.filter((e) => !e.isBot);
     const botEntries = others.filter((e) => Boolean(e.isBot));
 
-    if (this.bestStageCleared > 0 || this.lifetimeKills > 0) {
+    if (this.weeklyBestStage > 0 || this.weeklyKills > 0) {
       realEntries.push({
         playerId: this.playerId,
         name: this.playerName,
-        bestStage: this.bestStageCleared,
-        totalKills: this.lifetimeKills,
-        playTimeSeconds: Math.floor(this.playTimeSeconds),
+        bestStage: this.weeklyBestStage,
+        totalKills: this.weeklyKills,
+        playTimeSeconds: Math.floor(this.weeklyPlayTimeSeconds),
         skinName: skin.name,
         badgeColor: skin.badgeColor,
         isBot: false,
@@ -1447,6 +1537,7 @@ export class GameState {
   }
 
   public getTop10ActiveLeaderboard(): { top10: LeaderboardEntry[]; selfRank: number | null; realCount: number } {
+    this.ensureWeeklyLeaderboardCycle();
     const skin = this.getEquippedSkin();
     const sourceList =
       this.remoteActiveLeaderboard.length > 0 ? this.remoteActiveLeaderboard : this.remoteLeaderboard;
@@ -1457,13 +1548,13 @@ export class GameState {
     const realEntries = others.filter((e) => !e.isBot);
     const botEntries = others.filter((e) => Boolean(e.isBot));
 
-    if (this.bestStageCleared > 0 || this.lifetimeKills > 0 || this.playTimeSeconds >= 10) {
+    if (this.weeklyBestStage > 0 || this.weeklyKills > 0 || this.weeklyPlayTimeSeconds >= 10) {
       realEntries.push({
         playerId: this.playerId,
         name: this.playerName,
-        bestStage: this.bestStageCleared,
-        totalKills: this.lifetimeKills,
-        playTimeSeconds: Math.max(1, Math.floor(this.playTimeSeconds)),
+        bestStage: this.weeklyBestStage,
+        totalKills: this.weeklyKills,
+        playTimeSeconds: Math.max(1, Math.floor(this.weeklyPlayTimeSeconds)),
         skinName: skin.name,
         badgeColor: skin.badgeColor,
         isBot: false,
@@ -1491,8 +1582,9 @@ export class GameState {
 
   public async syncRemoteLeaderboard(pushSelf = false): Promise<void> {
     try {
+      this.ensureWeeklyLeaderboardCycle();
       const skin = this.getEquippedSkin();
-      const hasScore = this.bestStageCleared > 0 || this.lifetimeKills > 0 || this.playTimeSeconds >= 30;
+      const hasScore = this.weeklyBestStage > 0 || this.weeklyKills > 0 || this.weeklyPlayTimeSeconds >= 30;
       const shouldPost = pushSelf && hasScore;
       const resp = await fetch('/api/leaderboard', {
         method: shouldPost ? 'POST' : 'GET',
@@ -1501,9 +1593,9 @@ export class GameState {
           ? JSON.stringify({
               playerId: this.playerId,
               name: this.playerName,
-              bestStage: this.bestStageCleared,
-              totalKills: this.lifetimeKills,
-              playTimeSeconds: Math.floor(this.playTimeSeconds),
+              bestStage: this.weeklyBestStage,
+              totalKills: this.weeklyKills,
+              playTimeSeconds: Math.floor(this.weeklyPlayTimeSeconds),
               skinName: skin.name,
               badgeColor: skin.badgeColor,
             })
@@ -1703,10 +1795,10 @@ export class GameState {
     orbitalZHalfSpan: number;
     orbitalXHalfSpan: number;
   } {
-    const spentPts = this.getSpentTalentPoints();
+    const spentPts = this.getBranchSpentPoints(this.selectedRaceId);
     const hasKeystone = Boolean(this.getActiveKeystoneSpec());
     const champLvl = this.championLevel;
-    // Combined evolution score from skill tree investment + in-match champion upgrade level
+    // Combined evolution score from active character's skill tree investment + in-match champion upgrade level
     const evoScore = spentPts + Math.max(0, champLvl - 1) * 1.4 + (hasKeystone ? 10 : 0);
 
     let tier: 0 | 1 | 2 | 3 = 0;
@@ -1744,106 +1836,60 @@ export class GameState {
   }
 
   // ==========================================
-  // 7-Branch Tactical Skill Tree Methods (Strict Single-Branch + Match-Count Gated Unlock)
+  // 7-Branch Tactical Skill Tree Methods (Free Character Switch + Free Multi-Branch Allocation; Only Active Character's Skills Take Effect!)
   // ==========================================
-  public getSkillNodeRank(id: SkillNodeId): number {
+  /**
+   * Returns the saved rank invested in `id` (regardless of which character is currently selected).
+   * Used by Skill Tree UI, save/load validation, and total point calculation.
+   */
+  public getSavedSkillNodeRank(id: SkillNodeId): number {
     return this.skillNodes[id] || 0;
+  }
+
+  /**
+   * Returns the effective rank of `id` in combat & stat calculations.
+   * ONLY skills belonging to the currently selected character (`this.selectedRaceId`) take effect!
+   */
+  public getSkillNodeRank(id: SkillNodeId): number {
+    if (!id.startsWith(`${this.selectedRaceId}_`)) return 0;
+    return this.skillNodes[id] || 0;
+  }
+
+  public getBranchSpentPoints(branchId: SkillBranchId): number {
+    const branch = SKILL_TREE_BRANCHES.find((b) => b.id === branchId);
+    if (!branch) return 0;
+    let pts = 0;
+    for (const n of branch.nodes) {
+      pts += this.getSavedSkillNodeRank(n.id) * n.pointCost;
+    }
+    return pts;
   }
 
   public getEffectiveMatchesPlayed(): number {
     return Math.max(0, this.totalMatchesPlayed, this.bestStageCleared);
   }
 
-  /**
-   * Returns how many total matches are required to unlock a given (tier, targetRank).
-   * - At 0 matches (start of game): ONLY T1 Lv.1 is unlocked (req = 0 matches)!
-   * - As matches increase, higher ranks and deeper tiers progressively unlock.
-   */
-  public getRequiredMatchesForNodeRank(tier: 1 | 2 | 3 | 4, targetRank: number): number {
-    if (tier === 1) {
-      if (targetRank <= 1) return 0; // Start of game: can only invest 1 skill (T1 Lv.1)
-      if (targetRank === 2) return 1; // 1 match played
-      return 2; // 2 matches played -> T1 maxed (3/3)
-    }
-    if (tier === 2) {
-      if (targetRank <= 1) return 4; // 4 matches -> unlock T2 Lv.1
-      if (targetRank === 2) return 6; // 6 matches -> unlock T2 Lv.2
-      return 8; // 8 matches -> T2 maxed (3/3)
-    }
-    if (tier === 3) {
-      if (targetRank <= 1) return 11; // 11 matches -> unlock T3 Lv.1
-      if (targetRank === 2) return 14; // 14 matches -> unlock T3 Lv.2
-      return 17; // 17 matches -> T3 maxed (3/3)
-    }
-    return 20; // 20 matches -> unlock T4 Ultimate Keystone!
+  public getRequiredMatchesForNodeRank(_tier: 1 | 2 | 3 | 4, _targetRank: number): number {
+    return 0;
   }
 
-  /**
-   * Maximum total skill points that can be invested at the current match count.
-   * Starts at 1 at 0 matches (so the player can only put 1 skill at the start),
-   * and expands up to 16 as matches played reach 20+.
-   */
   public getMaxSkillPointsByMatches(): number {
-    const m = this.getEffectiveMatchesPlayed();
-    if (m < 1) return 1; // 0 matches: strictly 1 skill (T1 Lv.1)
-    if (m < 2) return 2; // 1 match: up to T1 Lv.2
-    if (m < 4) return 3; // 2-3 matches: up to T1 Lv.3
-    if (m < 6) return 4; // 4-5 matches: up to T2 Lv.1
-    if (m < 8) return 5; // 6-7 matches: up to T2 Lv.2
-    if (m < 11) return 6; // 8-10 matches: up to T2 Lv.3
-    if (m < 14) return 8; // 11-13 matches: up to T3 Lv.1
-    if (m < 17) return 10; // 14-16 matches: up to T3 Lv.2
-    if (m < 20) return 12; // 17-19 matches: up to T3 Lv.3
-    return 16; // 20+ matches: full 16-point branch + T4 Crown Keystone
+    return ALL_SKILL_NODES.reduce((sum, n) => sum + n.maxRank * n.pointCost, 0);
   }
 
   public getNextMatchUnlockHint(): string {
-    const m = this.getEffectiveMatchesPlayed();
-    const milestones: Array<{ req: number; label: string }> = [
-      { req: 1, label: 'T1 二级' },
-      { req: 2, label: 'T1 满级' },
-      { req: 4, label: 'T2 技能' },
-      { req: 6, label: 'T2 二级' },
-      { req: 8, label: 'T2 满级' },
-      { req: 11, label: 'T3 技能' },
-      { req: 14, label: 'T3 二级' },
-      { req: 17, label: 'T3 满级' },
-      { req: 20, label: '👑 T4 基石' },
-    ];
-    for (const ms of milestones) {
-      if (m < ms.req) {
-        return `再战 ${ms.req - m} 局解锁【${ms.label}】`;
-      }
-    }
-    return `全阶 16 点槽位已全解锁`;
+    return '角色自由切换 · 仅当前上阵角色对应技能生效';
   }
 
   public sanitizeSkillTreeState(): void {
-    // Enforce single-branch commitment, full prerequisite ranks, match-count locks, and valid point budget
-    const unlockedBranches = new Set<SkillBranchId>();
-    const matches = this.getEffectiveMatchesPlayed();
-    let invalid = false;
     for (const node of ALL_SKILL_NODES) {
-      const r = this.getSkillNodeRank(node.id);
+      const r = this.getSavedSkillNodeRank(node.id);
       if (r <= 0) continue;
-      unlockedBranches.add(node.branchId);
-      if (r > node.maxRank) invalid = true;
-      if (matches < this.getRequiredMatchesForNodeRank(node.tier, r)) {
-        invalid = true;
-      }
-      if (node.prereq) {
-        const pSpec = ALL_SKILL_NODES.find((n) => n.id === node.prereq);
-        if (pSpec && this.getSkillNodeRank(node.prereq) < pSpec.maxRank) {
-          invalid = true;
-        }
+      if (r > node.maxRank) {
+        this.skillNodes[node.id] = node.maxRank;
       }
     }
-    if (
-      unlockedBranches.size > 1 ||
-      invalid ||
-      this.getSpentTalentPoints() > this.getTotalTalentPoints() ||
-      this.getSpentTalentPoints() > this.getMaxSkillPointsByMatches()
-    ) {
+    if (this.getSpentTalentPoints() > this.getTotalTalentPoints()) {
       this.skillNodes = {};
     }
   }
@@ -1859,14 +1905,13 @@ export class GameState {
   }
 
   public getTotalTalentPoints(): number {
-    // Strictly capped by the current match-unlocked skill capacity (starts at 1 at 0 matches!)
     return Math.min(this.getMaxSkillPointsByMatches(), this.getUncappedTalentPoints());
   }
 
   public getSpentTalentPoints(): number {
     let spent = 0;
     for (const node of ALL_SKILL_NODES) {
-      const r = this.getSkillNodeRank(node.id);
+      const r = this.getSavedSkillNodeRank(node.id);
       if (r > 0) spent += r * node.pointCost;
     }
     return spent;
@@ -1877,34 +1922,19 @@ export class GameState {
   }
 
   public getCommittedSkillBranch(): SkillBranchSpec | null {
-    for (const b of SKILL_TREE_BRANCHES) {
-      for (const n of b.nodes) {
-        if (this.getSkillNodeRank(n.id) > 0) {
-          return b;
-        }
-      }
-    }
-    return null;
+    return this.getActiveRaceBranch();
   }
 
   /**
-   * Returns the currently active Playable Race branch.
-   * If a skill branch has points invested, that Race is locked in; otherwise uses `selectedRaceId`.
+   * Returns the currently selected Playable Race branch (`selectedRaceId`).
+   * Characters can be switched freely at any time; only the selected character's skills take effect.
    */
   public getActiveRaceBranch(): SkillBranchSpec {
-    const committed = this.getCommittedSkillBranch();
-    if (committed) {
-      this.selectedRaceId = committed.id;
-      return committed;
-    }
     return SKILL_TREE_BRANCHES.find((b) => b.id === this.selectedRaceId) || SKILL_TREE_BRANCHES[0];
   }
 
   public selectRaceBranch(branchId: SkillBranchId): boolean {
-    const committed = this.getCommittedSkillBranch();
-    if (committed && committed.id !== branchId) {
-      return false;
-    }
+    if (!SKILL_TREE_BRANCHES.some((b) => b.id === branchId)) return false;
     if (this.selectedRaceId === branchId) return false;
     this.selectedRaceId = branchId;
     this.save();
@@ -1912,11 +1942,10 @@ export class GameState {
   }
 
   public getActiveKeystoneSpec(): { branch: SkillBranchSpec; node: SkillNodeSpec } | null {
-    for (const b of SKILL_TREE_BRANCHES) {
-      for (const n of b.nodes) {
-        if (n.isKeystone && this.getSkillNodeRank(n.id) > 0) {
-          return { branch: b, node: n };
-        }
+    const activeBranch = this.getActiveRaceBranch();
+    for (const n of activeBranch.nodes) {
+      if (n.isKeystone && this.getSkillNodeRank(n.id) > 0) {
+        return { branch: activeBranch, node: n };
       }
     }
     return null;
@@ -1953,55 +1982,16 @@ export class GameState {
   } {
     const spec = ALL_SKILL_NODES.find((n) => n.id === id);
     if (!spec) return { ok: false, reason: '未知节点', goldCost: 0 };
-    const curRank = this.getSkillNodeRank(id);
+    const curRank = this.getSavedSkillNodeRank(id);
     if (curRank >= spec.maxRank) return { ok: false, reason: '已满级', goldCost: 0 };
 
     const nextRank = curRank + 1;
     const goldCost = this.getSkillNodeUpgradeGoldCost(spec.tier, nextRank);
 
-    // Strict Single-Branch Commitment Rule: can only invest in ONE branch!
-    const committed = this.getCommittedSkillBranch();
-    if (committed && committed.id !== spec.branchId) {
-      return { ok: false, reason: `已锁【${committed.name.replace('流', '')}】(需洗点换线)`, goldCost };
-    }
-
-    // Must MAX OUT the previous tier before unlocking the next tier!
-    if (spec.prereq) {
-      const prereqSpec = ALL_SKILL_NODES.find((n) => n.id === spec.prereq);
-      const prereqRank = this.getSkillNodeRank(spec.prereq);
-      if (prereqSpec && prereqRank < prereqSpec.maxRank) {
-        return {
-          ok: false,
-          reason: `需先点满「${prereqSpec.name}」(${prereqRank}/${prereqSpec.maxRank})`,
-          goldCost,
-        };
-      }
-    }
-
-    // Match-Count Gate: at 0 matches only T1 Lv.1 is unlocked; higher ranks/tiers require playing more matches!
-    const reqMatches = this.getRequiredMatchesForNodeRank(spec.tier, nextRank);
-    const curMatches = this.getEffectiveMatchesPlayed();
-    if (curMatches < reqMatches) {
-      return {
-        ok: false,
-        reason: `需完成 ${reqMatches} 局解锁 (${curMatches}/${reqMatches}局)`,
-        reqMatches,
-        goldCost,
-      };
-    }
-
-    if (this.getSpentTalentPoints() + spec.pointCost > this.getMaxSkillPointsByMatches()) {
-      return {
-        ok: false,
-        reason: `当前局数上限 ${this.getMaxSkillPointsByMatches()} 点`,
-        goldCost,
-      };
-    }
-
     if (this.getAvailableTalentPoints() < spec.pointCost) {
       return {
         ok: false,
-        reason: `需 ${spec.pointCost}点 + ${goldCost.toLocaleString()}⚡`,
+        reason: `天赋点不足 (需 ${spec.pointCost}点)`,
         goldCost,
       };
     }
@@ -2024,10 +2014,6 @@ export class GameState {
   public upgradeSkillNode(id: SkillNodeId): boolean {
     const check = this.canUpgradeSkillNode(id);
     if (!check.ok) return false;
-    const spec = ALL_SKILL_NODES.find((n) => n.id === id);
-    if (spec) {
-      this.selectedRaceId = spec.branchId;
-    }
     this.gold = Math.max(0, this.gold - check.goldCost);
     this.skillNodes[id] = (this.skillNodes[id] || 0) + 1;
     this.save();
@@ -2121,7 +2107,8 @@ export class GameState {
       0.04 * this.getSkinBonusMult('nebula');
     const buffMult = 1 + this.getBuffStack('rapid_fire') * 0.05;
     const debuffMult = this.hasDebuff('barrel_overheat') ? 0.85 : 1.0;
-    return base * metaMult * swarmSkillMult * titanHeavySlowMult * skinMult * buffMult * debuffMult;
+    const sceneMult = this.activeSceneThemeId === 'wasteland' ? 1.18 : 1.0;
+    return base * metaMult * swarmSkillMult * titanHeavySlowMult * skinMult * buffMult * debuffMult * sceneMult;
   }
 
   public getSwarmTrooperSpec(): {
@@ -2248,7 +2235,9 @@ export class GameState {
       0.04 * this.getSkinBonusMult('nebula');
     const buffMult = 1 + this.getBuffStack('hyper_gene') * 0.06;
     const debuffMult = this.hasDebuff('gene_instability') ? 0.85 : 1.0;
-    return base * metaMult * skillMult * skinMult * buffMult * debuffMult;
+    const sceneMult =
+      this.activeSceneThemeId === 'magma' ? 1.2 : this.activeSceneThemeId === 'royal' ? 1.15 : 1.0;
+    return base * metaMult * skillMult * skinMult * buffMult * debuffMult * sceneMult;
   }
 
   public getChampionMultiplier(): number {
@@ -2264,13 +2253,15 @@ export class GameState {
   public getLootMultiplier(): number {
     const skinBonus = 0.05 * this.getSkinBonusMult('imperium');
     const tycoonLoot = this.getSkillNodeRank('tycoon_t1') * 0.16;
+    const sceneMult = this.activeSceneThemeId === 'royal' ? 1.35 : 1.0;
     return (
-      1 +
-      (this.lootLevel - 1) * 0.07 +
-      this.getMetaLevel('meta_bounty') * 0.04 +
-      this.getBuffStack('war_plunder') * 0.07 +
-      tycoonLoot +
-      skinBonus
+      (1 +
+        (this.lootLevel - 1) * 0.07 +
+        this.getMetaLevel('meta_bounty') * 0.04 +
+        this.getBuffStack('war_plunder') * 0.07 +
+        tycoonLoot +
+        skinBonus) *
+      sceneMult
     );
   }
 
@@ -2279,7 +2270,9 @@ export class GameState {
     const swarmSpeed = this.getSkillNodeRank('swarm_t1') > 0 ? 1.1 : 1.0;
     const buffMult = 1 + Math.min(0.36, this.getBuffStack('nitro_stride') * 0.04);
     const debuffMult = this.hasDebuff('cryo_sludge') ? 0.88 : 1.0;
-    return metaMult * swarmSpeed * buffMult * debuffMult;
+    const sceneMult =
+      this.activeSceneThemeId === 'emerald' ? 1.22 : this.activeSceneThemeId === 'sakura' ? 1.15 : 1.0;
+    return metaMult * swarmSpeed * buffMult * debuffMult * sceneMult;
   }
 
   public getExtraCloneChance(): number {
@@ -2306,7 +2299,8 @@ export class GameState {
     const orbitalSiphon = 1 + this.getSkillNodeRank('orbital_t1') * 0.16;
     const buffMult = 1 + this.getBuffStack('titan_reactor') * 0.07;
     const debuffMult = this.hasDebuff('reactor_leak') ? 0.7 : 1.0;
-    return skinMult * orbitalSiphon * buffMult * debuffMult;
+    const sceneMult = this.activeSceneThemeId === 'cyberhive' ? 1.35 : 1.0;
+    return skinMult * orbitalSiphon * buffMult * debuffMult * sceneMult;
   }
 
   public getBaseHpMultiplier(): number {
@@ -2315,7 +2309,8 @@ export class GameState {
     const bastionWall = 1 + this.getSkillNodeRank('bastion_t1') * 0.18;
     const buffMult = 1 + this.getBuffStack('bastion_aegis') * 0.1;
     const debuffMult = this.hasDebuff('shield_fracture') ? 0.75 : 1.0;
-    return metaMult * azureSkinMult * bastionWall * buffMult * debuffMult;
+    const sceneMult = this.activeSceneThemeId === 'emerald' ? 1.25 : 1.0;
+    return metaMult * azureSkinMult * bastionWall * buffMult * debuffMult * sceneMult;
   }
 
   public getGateBonusAdd(): number {
@@ -2329,28 +2324,29 @@ export class GameState {
 
   public getSiegeDamageMultiplier(): number {
     const bastionSiege = this.getSkillNodeRank('bastion_t3') * 0.2;
-    return 1 + this.getBuffStack('siege_breaker') * 0.1 + bastionSiege;
+    const sceneMult = this.activeSceneThemeId === 'wasteland' ? 1.25 : 1.0;
+    return (1 + this.getBuffStack('siege_breaker') * 0.1 + bastionSiege) * sceneMult;
   }
 
   public getInMatchUpgradeDiscountMult(): number {
     return Math.max(0.55, 1 - this.getSkillNodeRank('tycoon_t2') * 0.1);
   }
 
-  // Upgrade costs
+  // In-run tactical upgrade requirements (controlled by in-run Time, Kills, Spawns, and Siege — never costs meta gold!)
   public getFireRateCost(): number {
-    return Math.max(20, Math.floor(55 * Math.pow(1.48, this.fireRateLevel - 1) * this.getInMatchUpgradeDiscountMult()));
+    return Math.max(5, Math.floor(8 * Math.pow(1.35, this.fireRateLevel - 1) * this.getInMatchUpgradeDiscountMult()));
   }
 
   public getPowerCost(): number {
-    return Math.max(25, Math.floor(65 * Math.pow(1.5, this.powerLevel - 1) * this.getInMatchUpgradeDiscountMult()));
+    return Math.max(8, Math.floor(12 * Math.pow(1.38, this.powerLevel - 1) * this.getInMatchUpgradeDiscountMult()));
   }
 
   public getChampionCost(): number {
-    return Math.max(35, Math.floor(85 * Math.pow(1.52, this.championLevel - 1) * this.getInMatchUpgradeDiscountMult()));
+    return Math.max(15, Math.floor(25 * Math.pow(1.4, this.championLevel - 1) * this.getInMatchUpgradeDiscountMult()));
   }
 
   public getLootCost(): number {
-    return Math.max(30, Math.floor(75 * Math.pow(1.5, this.lootLevel - 1) * this.getInMatchUpgradeDiscountMult()));
+    return Math.max(20, Math.floor(30 * Math.pow(1.4, this.lootLevel - 1) * this.getInMatchUpgradeDiscountMult()));
   }
 
   public addGold(amount: number): number {
@@ -2564,10 +2560,14 @@ export class GameState {
 
   public creditSkippedStages(finalClearedStage: number, skippedCount: number): void {
     if (skippedCount <= 0) return;
+    this.ensureWeeklyLeaderboardCycle();
     this.totalMatchesPlayed += skippedCount;
     this.stagesPlayedSinceRespec += skippedCount;
     if (finalClearedStage > this.bestStageCleared) {
       this.bestStageCleared = finalClearedStage;
+    }
+    if (finalClearedStage > this.weeklyBestStage) {
+      this.weeklyBestStage = finalClearedStage;
     }
     if (this.totalMatchesPlayed < this.bestStageCleared) {
       this.totalMatchesPlayed = this.bestStageCleared;
@@ -2688,16 +2688,18 @@ export class GameState {
   public getActiveBuffBadges(): { icon: string; text: string; rarity: BuffRarity }[] {
     const badges: { icon: string; text: string; rarity: BuffRarity }[] = [];
     const keystone = this.getActiveKeystoneSpec();
+    const activeRace = this.getActiveRaceBranch();
+    const activeBranchPts = this.getBranchSpentPoints(activeRace.id);
     if (keystone) {
       badges.push({
         icon: keystone.branch.icon,
         text: `${UI_ART.crown} ${keystone.node.name}`,
         rarity: 'legendary',
       });
-    } else if (this.getSpentTalentPoints() > 0) {
+    } else if (activeBranchPts > 0) {
       badges.push({
-        icon: UI_ART.star,
-        text: `天赋×${this.getSpentTalentPoints()}`,
+        icon: activeRace.icon,
+        text: `${activeRace.raceName}·天赋×${activeBranchPts}`,
         rarity: 'epic',
       });
     }
