@@ -367,7 +367,9 @@ export class World3D {
     const dbgExt = gl.getExtension('WEBGL_debug_renderer_info');
     const glRendererStr = dbgExt ? String(gl.getParameter(dbgExt.UNMASKED_RENDERER_WEBGL)) : '';
     const isSoftwareWebGL = /SwiftShader|llvmpipe|Software|Basic Render/i.test(glRendererStr);
-    const effectiveDpr = isSoftwareWebGL ? Math.min(dpr, 1.75) : dpr;
+    const effectiveDpr = isSoftwareWebGL
+      ? Math.min(dpr, 1440 / Math.max(1, window.innerWidth), 1.5)
+      : dpr;
     this.renderer.setPixelRatio(effectiveDpr);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
