@@ -1,4 +1,4 @@
-﻿import { generateDynamicLevel } from './levels/LevelData';
+import { generateDynamicLevel } from './levels/LevelData';
 import {
   ALL_SKILL_NODES,
   GameState,
@@ -79,7 +79,6 @@ const homeMechaIconEl = document.getElementById('home-mecha-icon') as HTMLElemen
 const homeMechaLabelEl = document.getElementById('home-mecha-label') as HTMLElement | null;
 const btnHomePrevRace = document.getElementById('btn-home-prev-race') as HTMLButtonElement | null;
 const btnHomeNextRace = document.getElementById('btn-home-next-race') as HTMLButtonElement | null;
-const btnHomePedestal = document.getElementById('btn-home-pedestal') as HTMLButtonElement | null;
 const homeMascotArtEl = document.getElementById('home-mascot-art') as HTMLElement | null;
 const homeRaceTitleEl = document.getElementById('home-race-title') as HTMLElement | null;
 const homeRacePtsTagEl = document.getElementById('home-race-pts-tag') as HTMLElement | null;
@@ -1674,13 +1673,6 @@ if (menuEquippedSkin) {
   menuEquippedSkin.addEventListener('click', () => {
     sound.playUpgrade();
     switchMainMenuTab('skins');
-  });
-}
-
-if (btnHomePedestal) {
-  btnHomePedestal.addEventListener('click', () => {
-    sound.playUpgrade();
-    switchMainMenuTab('skills');
   });
 }
 
