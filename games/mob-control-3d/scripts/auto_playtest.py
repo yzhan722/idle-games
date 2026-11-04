@@ -220,7 +220,7 @@ try:
             page.evaluate(
                 f"""() => {{
                 window.dispatchEvent(new PointerEvent('pointermove', {{ clientX: {target_x}, clientY: 960, bubbles: true }}));
-                ['btn-upg-firerate', 'btn-upg-power', 'btn-upg-champion', 'btn-upg-loot', 'btn-champion', 'btn-orbital'].forEach(id => {{
+                ['upg-firerate', 'upg-power', 'upg-champion', 'upg-loot', 'btn-champion', 'btn-orbital'].forEach(id => {{
                     const el = document.getElementById(id);
                     if (el && !el.disabled) el.click();
                 }});
@@ -264,7 +264,7 @@ try:
 
         bad_tokens = [
             tok
-            for tok in ["NaN", "undefined", "[object Object]"]
+            for tok in ["NaN", "undefined", "[object Object]", "链式爆破 -0"]
             if tok in battle_state["bodyText"]
         ]
         add_check("Zero NaN/Undefined in DOM Text", len(bad_tokens) == 0, f"bad_tokens={bad_tokens}")

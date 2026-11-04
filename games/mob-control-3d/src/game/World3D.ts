@@ -4504,10 +4504,11 @@ export class World3D {
       ultEvo.orbitalZHalfSpan,
       initialEliteRatio
     );
-    if (primaryCluster.count > 0 && ultEvo.tier < 3) {
-      this.spawnFloatingPopup(targetX, 2.4, targetZ, `🎯 锁定敌群密集区 -${killed}!`, '#facc15');
+    if (primaryCluster.count > 0 && ultEvo.tier < 3 && killed > 0) {
+      this.spawnFloatingPopup(targetX, 2.4, targetZ, `🎯 锁定敌群密集区 -${killed}敌!`, '#facc15');
     }
-    let morphBannerTitle = `☄️ 【${ultEvo.badge}·天基轰炸】-${killed}`;
+    let morphBannerTitle =
+      killed > 0 ? `☄️ 【${ultEvo.badge}·天基轰炸】-${killed}敌` : `☄️ 【${ultEvo.badge}·天基轰炸】`;
     let morphBannerSub =
       ultEvo.tier === 0
         ? '已精准轰炸敌群最密集处 · 升级解锁【👑完全体】全屏歼星洗地！'
@@ -4695,8 +4696,8 @@ export class World3D {
           this.spawnUnit('blue', 'charged', ox, clampTrackZ(targetZ + 1.8), 0, -8.8);
         }
       }
-      this.spawnFloatingPopup(targetX, 3.0, targetZ, `💰 黄金陨石盗宝雨[${ultEvo.badge}] +${bonusJackpot}⚡ & 盗宝虫!`, '#facc15');
-      morphBannerTitle = `💰 【${ultEvo.badge}·黄金陨石盗宝雨】+${bonusJackpot}⚡`;
+      this.spawnFloatingPopup(targetX, 3.0, targetZ, `💰 黄金陨石盗宝雨[${ultEvo.badge}] +${bonusJackpot}🪙 & 盗宝虫!`, '#facc15');
+      morphBannerTitle = `💰 【${ultEvo.badge}·黄金陨石盗宝雨】+${bonusJackpot}🪙`;
       morphBannerSub = '黄金盗宝虫现身桥面 · 击杀小怪爆出高倍赏金！';
     }
 
@@ -6504,7 +6505,7 @@ export class World3D {
       if (hitCount > 0 || isPeriodicLeap) {
         const minted = this.state.addGold(ty1 * 4 + Math.min(14, hitCount * 2) + 3);
         if (isPeriodicLeap) {
-          this.spawnFloatingPopup(champ.x, 2.2, slamZ, `💰 点金财阀碎钞锤 +${minted}⚡!`, '#facc15');
+          this.spawnFloatingPopup(champ.x, 2.2, slamZ, `💰 点金财阀碎钞锤 +${minted}🪙!`, '#facc15');
         }
       }
       if (ty2 > 0 && this.lootBug.active && isPeriodicLeap) {
@@ -6720,7 +6721,7 @@ export class World3D {
                   const gold = this.state.addGold(n.cfg.rewardGold);
                   this.spawnBurstParticles(n.cfg.x, 1.8, n.cfg.z, 0xfacc15, 65);
                   this.spawnBurstParticles(n.cfg.x, 1.4, n.cfg.z, 0x84cc16, 30);
-                  this.spawnFloatingPopup(n.cfg.x, 2.5, n.cfg.z, `+${gold} ⚡ 巢穴击破!`, '#facc15');
+                  this.spawnFloatingPopup(n.cfg.x, 2.5, n.cfg.z, `+${gold} 🪙 巢穴击破!`, '#facc15');
                   this.onBanner?.(`💥 摧毁 ${n.cfg.name}！`, `奖励 +${gold} 基因金币 & 泰坦充能！`);
                   this.state.championCharge = Math.min(100, this.state.championCharge + 40);
                 }
@@ -6984,7 +6985,7 @@ export class World3D {
               this.spawnShockwave(gr.cfg.x, gr.cfg.z, 0xfacc15, 2.8, 0.34);
               this.spawnBurstParticles(gr.cfg.x, 1.0, gr.cfg.z, 0xff2a55, 55);
               this.spawnBurstParticles(gr.cfg.x, 1.2, gr.cfg.z, 0xfacc15, 25);
-              this.spawnFloatingPopup(gr.cfg.x, 1.8, gr.cfg.z, `⚙️ 齿轮粉碎! +${salvageGold}⚡`, '#facc15');
+              this.spawnFloatingPopup(gr.cfg.x, 1.8, gr.cfg.z, `⚙️ 齿轮粉碎! +${salvageGold}🪙`, '#facc15');
             }
             break;
           }
@@ -7057,8 +7058,8 @@ export class World3D {
             this.spawnShockwave(this.lootBug.x, this.lootBug.z, 0x00f0ff, 3.6, 0.36);
             this.spawnBurstParticles(this.lootBug.x, 1.2, this.lootBug.z, 0xfacc15, 95);
             this.spawnBurstParticles(this.lootBug.x, 1.5, this.lootBug.z, 0x00f0ff, 35);
-            this.spawnFloatingPopup(this.lootBug.x, 2.4, this.lootBug.z, `💰 盗宝虫爆金 +${jackpot}⚡!`, '#facc15');
-            this.onBanner?.(`💰 击破黄金盗宝虫！+${jackpot}⚡`, '双大招立即充能 +45%！');
+            this.spawnFloatingPopup(this.lootBug.x, 2.4, this.lootBug.z, `💰 盗宝虫爆金 +${jackpot}🪙!`, '#facc15');
+            this.onBanner?.(`💰 击破黄金盗宝虫！+${jackpot}🪙`, '双大招立即充能 +45%！');
           }
           if (!u.active) continue;
         }
@@ -7560,7 +7561,13 @@ export class World3D {
     }
 
     const bonusGold = this.state.addGold(15 + blasted * 2);
-    this.spawnFloatingPopup(br.cfg.x, 2.2, br.cfg.z, `💥 链式爆破 -${blasted} (+${bonusGold}⚡)`, '#facc15');
+    this.spawnFloatingPopup(
+      br.cfg.x,
+      2.2,
+      br.cfg.z,
+      blasted > 0 ? `💥 链式爆破 -${blasted}敌 (+${bonusGold}🪙)` : `💥 链式爆破 (+${bonusGold}🪙)`,
+      '#facc15'
+    );
 
     if (this.bossShieldActive) {
       this.shatterBossShield();
@@ -8104,14 +8111,14 @@ export class World3D {
         this.spawnShockwave(u.x, u.z, 0xffffff, 2.6, 0.3);
         this.spawnBurstParticles(u.x, 1.0, u.z, 0xfacc15, 45);
         this.spawnBurstParticles(u.x, 1.2, u.z, 0xff2a55, 20);
-        this.spawnFloatingPopup(u.x, 1.5, u.z, `+${gold} ⚡`, '#facc15');
+        this.spawnFloatingPopup(u.x, 1.5, u.z, `+${gold} 🪙`, '#facc15');
       } else if (u.kind === 'shaman') {
         const gold = this.state.addGold(18 + tycoonEliteBonus);
         this.addCameraShake(0.32);
         this.spawnSkyPillar(u.x, u.z, 0xd946ef, 1.8, 0.42);
         this.spawnShockwave(u.x, u.z, 0xd946ef, 3.8, 0.42);
         this.spawnBurstParticles(u.x, 1.0, u.z, 0xd946ef, 36);
-        this.spawnFloatingPopup(u.x, 1.5, u.z, `+${gold} ⚡`, '#e879f9');
+        this.spawnFloatingPopup(u.x, 1.5, u.z, `+${gold} 🪙`, '#e879f9');
       } else if (u.kind === 'baneling') {
         // When sniped/melted before touching a marine, Baneling pops in a harmless green puff + bonus gold!
         this.state.addGold(2 + ty1);
@@ -8206,8 +8213,8 @@ export class World3D {
       this.spawnBurstParticles(0, 3.0, BOSS_GATE_Z - 1.0, 0xfacc15, 135);
       this.spawnBurstParticles(-3.5, 2.2, BOSS_GATE_Z + 0.8, 0x00f0ff, 75);
       this.spawnBurstParticles(3.5, 2.2, BOSS_GATE_Z + 0.8, 0xd946ef, 75);
-      this.spawnFloatingPopup(0, 3.6, BOSS_GATE_Z + 1.0, `🏆 母巢崩塌! +${rewardGiven} ⚡`, '#facc15');
-      this.onBanner?.('🏆 母巢核心灰飞烟灭 · 战役大捷！', `🎉 通关赏金 +${rewardGiven} ⚡ · 全军欢呼！`);
+      this.spawnFloatingPopup(0, 3.6, BOSS_GATE_Z + 1.0, `🏆 母巢崩塌! +${rewardGiven} 🪙`, '#facc15');
+      this.onBanner?.('🏆 母巢核心灰飞烟灭 · 战役大捷！', `🎉 通关赏金 +${rewardGiven} 🪙 · 全军欢呼！`);
 
       // Schedule 4 sequential Victory Firework & Meltdown Waves across the bridge during the 1.25s climax!
       const victoryWaves: Array<{ delay: number; z: number; flash: string; col1: number; col2: number }> = [
