@@ -4516,6 +4516,124 @@ body.screen-quake-active #app {
   display: none !important;
 }
 
+/* ==========================================================================
+   DE-CLUTTER WEB-GAME REDUNDANCY (Title Splash & Main Lobby Home)
+   ========================================================================== */
+.title-version-pill,
+.title-ribbon-badge,
+.title-sub-plaque,
+#title-welcome-chip,
+.enter-btn-sub,
+.title-tap-hint,
+#btn-title-sound span,
+.kbd-hint,
+.commander-rank-tag,
+.hero-race-perk,
+.launch-btn-sub,
+.panel-subtitle,
+.menu-brand {
+  display: none !important;
+}
+
+.title-topbar {
+  justify-content: flex-end !important;
+}
+
+#btn-title-sound {
+  width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  justify-content: center !important;
+  background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%) !important;
+  border: 2.5px solid #040b1c !important;
+  outline: 2px solid #f59e0b !important;
+  outline-offset: -4px !important;
+  box-shadow:
+    0 5px 0 #040b1c,
+    0 8px 16px rgba(0, 0, 0, 0.45),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+#btn-title-sound .art-icon-img {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.title-center-emblem {
+  margin-top: -32vh !important;
+  gap: 0 !important;
+}
+
+.title-bottom-dock {
+  width: auto !important;
+  gap: 0 !important;
+  padding-bottom: 14px !important;
+}
+
+#btn-enter-workshop {
+  width: 280px !important;
+  max-width: 82vw !important;
+  min-height: 76px !important;
+  padding: 12px 32px !important;
+  border-radius: 22px !important;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 45%, #16a34a 85%, #15803d 100%) !important;
+  border: 3.5px solid #040b1c !important;
+  outline: 2.5px solid #fbbf24 !important;
+  outline-offset: -5.5px !important;
+  box-shadow:
+    0 8px 0 #14532d,
+    0 11px 0 #040b1c,
+    0 16px 32px rgba(22, 163, 74, 0.55),
+    inset 0 4px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+#btn-enter-workshop:hover {
+  transform: translateY(-3px) scale(1.03) !important;
+  filter: brightness(1.07) !important;
+}
+
+.enter-btn-main {
+  font-size: 30px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  gap: 12px !important;
+}
+
+.enter-btn-main .art-icon-img {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.hero-stage-ribbon {
+  width: auto !important;
+  min-width: 195px !important;
+  max-width: 320px !important;
+  padding: 7px 22px !important;
+  margin: -24px auto 8px !important;
+  border-radius: 999px !important;
+}
+
+.hero-race-head {
+  gap: 10px !important;
+  justify-content: center !important;
+}
+
+#btn-start-battle {
+  min-height: 74px !important;
+  padding: 10px 28px !important;
+  justify-content: center !important;
+}
+
+.launch-btn-main {
+  font-size: 28px !important;
+}
+
+.lb-row {
+  grid-template-columns: 34px 38px minmax(0, 1fr) auto !important;
+  padding: 6px 14px !important;
+}
+
 /* Home Hero Showcase Stage (Key Art Background + Floating Mascot Pedestal + Quick Switchers) */
 .home-hero-stage {
   --hero-race-color: #38bdf8;
@@ -4582,7 +4700,7 @@ body.screen-quake-active #app {
   z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -4661,7 +4779,7 @@ body.screen-quake-active #app {
   background: transparent;
   border: none;
   padding: 4px 8px 10px;
-  cursor: pointer;
+  cursor: default;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5070,9 +5188,8 @@ body.screen-quake-active #app {
       rgba(15, 23, 42, 0.0) 76%,
       rgba(15, 23, 42, 0.55) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=12') center center / cover no-repeat;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: high-quality;
+    url('/assets/icons/title_splash_bg.jpg?v=18') center center / cover no-repeat;
+  image-rendering: auto;
   animation: none !important;
   transform: none !important;
   z-index: 0;
@@ -5841,7 +5958,10 @@ body.screen-quake-active #app {
   border: none !important;
   box-shadow: none !important;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.62)) !important;
-  transform: translateX(10px) translateY(6px) !important;
+  margin-left: 10px !important;
+  margin-top: 6px !important;
+  transform-origin: 50% 85% !important;
+  animation: heroCannonBreathe 2.1s cubic-bezier(0.36, 0, 0.64, 1) infinite !important;
 }
 
 .hero-mascot-box {
@@ -5854,7 +5974,34 @@ body.screen-quake-active #app {
   border-radius: 0 !important;
   padding: 0 !important;
   overflow: visible !important;
-  transform: translateX(-8px) translateY(4px) !important;
+  margin-left: -8px !important;
+  margin-top: 4px !important;
+  transform-origin: 50% 88% !important;
+  animation: heroMascotJellyHop 1.75s cubic-bezier(0.34, 1.56, 0.64, 1) infinite !important;
+}
+
+@keyframes heroCannonBreathe {
+  0%, 100% {
+    transform: translateY(0) scale(1.03, 0.97) rotate(-1.5deg);
+  }
+  45% {
+    transform: translateY(-7px) scale(0.97, 1.04) rotate(2deg);
+  }
+  70% {
+    transform: translateY(-2px) scale(1.05, 0.96) rotate(-0.8deg);
+  }
+}
+
+@keyframes heroMascotJellyHop {
+  0%, 100% {
+    transform: translateY(0) scale(1.08, 0.92) rotate(-4deg);
+  }
+  35% {
+    transform: translateY(-14px) scale(0.93, 1.09) rotate(4.5deg);
+  }
+  65% {
+    transform: translateY(-4px) scale(1.04, 0.96) rotate(-2deg);
+  }
 }
 
 .hero-mascot-box::before,
@@ -6519,6 +6666,13 @@ body.screen-quake-active #app {
   border-radius: 0 !important;
   box-shadow: none !important;
   filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.6)) !important;
+  transform-origin: 50% 86% !important;
+  animation: heroMascotJellyHop 2.2s ease-in-out infinite !important;
+}
+
+.kr-branch-pedestal.active .race-art-img {
+  transform-origin: 50% 85% !important;
+  animation: heroMascotJellyHop 1.6s ease-in-out infinite !important;
 }
 
 .skin-body {
@@ -6708,10 +6862,11 @@ body.screen-quake-active #app {
 }
 
 .stage-plaque-sub {
-  font-size: 15px !important;
+  font-size: 12px !important;
   font-weight: 900 !important;
-  color: #ffffff !important;
-  line-height: 1.05 !important;
+  color: #fde047 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
   text-shadow: 0 2px 0 #331907 !important;
 }
 
@@ -6737,9 +6892,10 @@ body.screen-quake-active #app {
 
 .stage-badge {
   color: #ffffff !important;
-  font-size: 26px !important;
+  font-size: 21px !important;
   font-weight: 900 !important;
   line-height: 1.05 !important;
+  white-space: nowrap !important;
   text-shadow: 0 2.5px 0 #331907 !important;
 }
 
@@ -6891,10 +7047,9 @@ body.screen-quake-active #app {
   text-shadow: 0 2px 0 #291d16 !important;
 }
 
-/* Clean commercial Supercell UI: hide developer keycap boxes, bridge text clutter & title crest boxes */
+/* Clean commercial Supercell UI: hide developer keycap boxes & title crest boxes */
 .kbd-hint,
 .title-crest-trio,
-.zone-label,
 #btn-mecha-mode,
 .ui-upgrade-burst-container {
   display: none !important;
@@ -7133,10 +7288,10 @@ body.screen-quake-active #app {
 }
 
 .battle-card-img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  filter: none !important;
+  width: 60px !important;
+  height: 60px !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5)) !important;
 }
 
 .upgrade-card .upg-meta {
@@ -7166,15 +7321,17 @@ body.screen-quake-active #app {
 .upg-cost {
   width: 100% !important;
   margin: 0 !important;
-  padding: 3px 6px !important;
-  background: linear-gradient(180deg, #6e4e37 0%, #4a3322 100%) !important;
+  padding: 3px 4px !important;
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%) !important;
   border: none !important;
   border-radius: 0 0 9px 9px !important;
-  color: #ffffff !important;
-  font-size: 14px !important;
+  color: #fef08a !important;
+  font-size: 12px !important;
   font-weight: 900 !important;
-  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.25) !important;
-  text-shadow: 0 2px 0 #1c1108 !important;
+  white-space: nowrap !important;
+  gap: 3px !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35) !important;
+  text-shadow: 0 1.5px 0 #052e16 !important;
 }
 
 .upgrade-card:disabled .upg-cost {
@@ -7182,17 +7339,6 @@ body.screen-quake-active #app {
   color: #f8fafc !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   text-shadow: 0 1.5px 0 #1c1108 !important;
-}
-
-/* Hide legacy 3D floating DOM labels so zero unpositioned numbers appear at (0, 0) in 2.5D Diorama mode */
-#world-labels,
-.gear-label,
-.barrel-label,
-.nest-label,
-.gate-label,
-.lootbug-label,
-.turret-charge-hud {
-  display: none !important;
 }
 
 /* ==========================================================================
@@ -7205,10 +7351,8 @@ img,
 .skin-art-img,
 .meta-art-img,
 .skill-art-img,
-.hero-cannon-stage-img,
-#diorama-canvas {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: high-quality;
+.hero-cannon-stage-img {
+  image-rendering: auto !important;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
@@ -7291,7 +7435,7 @@ img,
       rgba(15, 28, 64, 0.05) 70%,
       rgba(20, 12, 6, 0.62) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=15') center center / cover no-repeat !important;
+    url('/assets/icons/title_splash_bg.jpg?v=18') center center / cover no-repeat !important;
 }
 
 .title-center-emblem {
@@ -7359,12 +7503,11 @@ img,
 }
 
 .main-menu-card {
-  zoom: 1 !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
-  height: 100dvh !important;
-  max-height: 100dvh !important;
-  padding: max(12px, env(safe-area-inset-top)) 28px max(14px, env(safe-area-inset-bottom)) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  padding: max(12px, env(safe-area-inset-top)) 24px max(12px, env(safe-area-inset-bottom)) !important;
   box-sizing: border-box !important;
 }
 
@@ -7549,13 +7692,15 @@ img,
 .hero-cannon-stage-img {
   width: 210px !important;
   height: 210px !important;
-  transform: translateX(10px) translateY(10px) !important;
+  margin-left: 10px !important;
+  margin-top: 10px !important;
 }
 
 .hero-mascot-box {
   width: 186px !important;
   height: 186px !important;
-  transform: translateX(-8px) translateY(8px) !important;
+  margin-left: -8px !important;
+  margin-top: 8px !important;
 }
 
 /* Giant Glowing Golden Battle Button (Matches 重锤跃击 100% Super Bar in Battle!) */
@@ -7933,13 +8078,902 @@ img,
   color: #fef08a !important;
 }
 
+/* ==========================================================================
+   Full-Density Card & Panel Fill Rules + Authentic Clash Royale Main Lobby UI
+   ========================================================================== */
+.base-emblem {
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+
+/* 1. Clash Royale Royal-Blue 3D Hexagon Arena Backdrop */
+#main-menu.main-menu-backdrop,
+.main-menu-card {
+  background:
+    radial-gradient(circle at 26% 45%, rgba(56, 189, 248, 0.42) 0%, rgba(37, 99, 235, 0.18) 34%, transparent 58%),
+    radial-gradient(circle at 75% 48%, rgba(59, 130, 246, 0.25) 0%, transparent 55%),
+    repeating-linear-gradient(
+      30deg,
+      rgba(255, 255, 255, 0.028) 0px,
+      rgba(255, 255, 255, 0.028) 2px,
+      transparent 2px,
+      transparent 28px
+    ),
+    repeating-linear-gradient(
+      -30deg,
+      rgba(255, 255, 255, 0.028) 0px,
+      rgba(255, 255, 255, 0.028) 2px,
+      transparent 2px,
+      transparent 28px
+    ),
+    linear-gradient(180deg, #1b459e 0%, #133278 52%, #0a1c4a 100%) !important;
+}
+
+/* 2. Clash Royale Top Bar: Shield Player Banner + Top-Docked Crest + Dark-Navy Currency Capsules */
+.main-menu-card > .menu-header {
+  padding: 2px 4px 6px !important;
+  margin-bottom: 2px !important;
+}
+
+.menu-brand-cluster {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+.brand-crest-shield {
+  width: 58px !important;
+  height: 60px !important;
+  background: radial-gradient(circle at 50% 32%, #7dd3fc 0%, #0284c7 62%, #1e3a8a 100%) !important;
+  border: 3.5px solid #facc15 !important;
+  outline: 2.5px solid #040b1e !important;
+  border-radius: 14px 14px 22px 22px !important;
+  margin-right: -14px !important;
+  z-index: 4 !important;
+  box-shadow:
+    0 5px 0 #040b1e,
+    0 8px 16px rgba(0, 0, 0, 0.55),
+    inset 0 2px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+.commander-profile-pill {
+  background: linear-gradient(180deg, #1e4294 0%, #0f2459 100%) !important;
+  border: 2.5px solid #60a5fa !important;
+  outline: 2.5px solid #040b1e !important;
+  border-radius: 14px !important;
+  padding: 6px 14px 6px 22px !important;
+  gap: 8px !important;
+  box-shadow:
+    0 5px 0 #040b1e,
+    0 8px 18px rgba(0, 0, 0, 0.48),
+    inset 0 2px 0 rgba(191, 219, 254, 0.45) !important;
+}
+
+.commander-rank-tag {
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 100%) !important;
+  color: #241004 !important;
+  border: 2px solid #040b1e !important;
+  border-radius: 8px !important;
+  padding: 2px 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+.commander-name-text {
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  text-shadow: 0 2px 0 #040b1e !important;
+}
+
+.commander-best-stage {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%) !important;
+  border: 2px solid #040b1e !important;
+  border-radius: 8px !important;
+  padding: 2px 9px !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1.5px 0 #082f49 !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+.menu-brand {
+  top: -12px !important;
+  background: linear-gradient(180deg, #7c431b 0%, #52290d 55%, #381a06 100%) !important;
+  border: 3.5px solid #facc15 !important;
+  outline: 2.5px solid #1a0902 !important;
+  border-radius: 0 0 22px 22px !important;
+  padding: 10px 42px 8px !important;
+  box-shadow:
+    0 6px 0 #1a0902,
+    0 12px 24px rgba(0, 0, 0, 0.58),
+    inset 0 2px 0 rgba(254, 240, 138, 0.5) !important;
+}
+
+.menu-brand::before,
+.menu-brand::after {
+  display: none !important;
+}
+
+.menu-resources-bar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 22px !important;
+}
+
+.menu-treasury {
+  position: relative !important;
+  overflow: visible !important;
+  background: linear-gradient(180deg, #081433 0%, #0e2254 100%) !important;
+  border: 2.5px solid #3b82f6 !important;
+  outline: 2.5px solid #04091a !important;
+  border-radius: 13px !important;
+  padding: 4px 6px 4px 20px !important;
+  min-width: 118px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  box-shadow:
+    0 4px 0 #04091a,
+    inset 0 3px 6px rgba(0, 0, 0, 0.78) !important;
+}
+
+.treasury-art-img {
+  width: 36px !important;
+  height: 36px !important;
+  margin-left: -30px !important;
+  margin-top: -3px !important;
+  margin-bottom: -3px !important;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.75)) !important;
+}
+
+.menu-treasury strong {
+  font-size: 17px !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 0 #04091a !important;
+  margin: 0 auto !important;
+}
+
+.treasury-jump-plus {
+  width: 25px !important;
+  height: 25px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%) !important;
+  border: 2px solid #bbf7d0 !important;
+  outline: 2px solid #052e16 !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-shadow: 0 1.5px 0 #052e16 !important;
+  box-shadow: 0 2.5px 0 #052e16 !important;
+}
+
+/* 3. Left Column: Clash Royale Open Spotlight Hero Arena + Double-Tiered Gold Pedestal + Compact 3D Battle Button */
+#menu-panel-launch.menu-panel.active {
+  grid-template-columns: 1.02fr 0.98fr !important;
+  gap: 20px !important;
+}
+
+.launch-left-col {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 4px 6px 2px !important;
+  overflow: visible !important;
+}
+
+.home-hero-stage {
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 24px !important;
+  padding: 6px 10px 4px !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.hero-stage-bg-layer {
+  border-radius: 28px !important;
+  background:
+    conic-gradient(from 164deg at 50% -10%, transparent 0deg, rgba(186, 230, 253, 0.24) 16deg, transparent 32deg),
+    radial-gradient(ellipse 68% 44% at 50% 66%, var(--studio-Floor-glow, rgba(250, 204, 21, 0.35)) 0%, transparent 70%),
+    radial-gradient(circle at 50% 45%, rgba(56, 189, 248, 0.28) 0%, rgba(30, 64, 175, 0.12) 48%, transparent 72%) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+}
+
+.hero-stage-topbar {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  padding: 2px 6px !important;
+  z-index: 5 !important;
+}
+
+.hero-quick-pill,
+.hero-Quick-pill {
+  background: linear-gradient(180deg, #2557c4 0%, #132f73 100%) !important;
+  border: 2.5px solid #facc15 !important;
+  outline: 2.5px solid #040b1e !important;
+  border-radius: 13px !important;
+  padding: 6px 15px !important;
+  color: #fef08a !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  text-shadow: 0 2px 0 #040b1e !important;
+  box-shadow:
+    0 4px 0 #040b1e,
+    0 8px 16px rgba(0, 0, 0, 0.42),
+    inset 0 2px 0 rgba(191, 219, 254, 0.55) !important;
+}
+
+.hero-quick-pill:hover {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+.hero-carousel-arrow {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(180deg, #9a5824 0%, #5c3111 55%, #3d1e08 100%) !important;
+  border: 3px solid #facc15 !important;
+  outline: 2.5px solid #1a0902 !important;
+  color: #fef08a !important;
+  font-size: 21px !important;
+  box-shadow:
+    0 5px 0 #1a0902,
+    0 10px 20px rgba(0, 0, 0, 0.55),
+    inset 0 2px 0 rgba(254, 240, 138, 0.55) !important;
+}
+
+.hero-stage-center {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 0 18px !important;
+  box-sizing: border-box !important;
+  gap: 24px !important;
+  margin-top: -8px !important;
+}
+
+.hero-pedestal-wrap {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transform: scale(1.12) !important;
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.hero-cannon-stage-img {
+  display: none !important;
+}
+
+.hero-duo-stage-models {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.hero-mascot-box {
+  width: 224px !important;
+  height: 224px !important;
+  margin: 0 auto 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.hero-mascot-box .race-art-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.hero-pedestal-base {
+  display: block !important;
+  width: 260px !important;
+  height: 52px !important;
+  margin: -22px auto 0 !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(ellipse 72% 48% at 50% 32%, #fef9c3 0%, #facc15 48%, #d97706 82%, #92400e 100%) !important;
+  border: 3.5px solid #fef08a !important;
+  outline: 3px solid #2b1202 !important;
+  box-shadow:
+    0 9px 0 #92400e,
+    0 12px 0 #2b1202,
+    0 16px 0 9px #d97706,
+    0 25px 0 9px #78350f,
+    0 28px 0 11px #1f0b01,
+    0 36px 42px rgba(0, 0, 0, 0.72),
+    inset 0 4px 8px rgba(255, 255, 255, 0.85) !important;
+}
+
+.hero-stage-ribbon {
+  position: relative !important;
+  z-index: 6 !important;
+  width: min(78%, 350px) !important;
+  align-self: center !important;
+  margin: -22px auto 6px !important;
+  padding: 7px 18px 8px !important;
+  background: linear-gradient(180deg, #7c431b 0%, #4e270d 55%, #361906 100%) !important;
+  border: 3px solid #facc15 !important;
+  outline: 2.5px solid #1a0902 !important;
+  border-radius: 999px !important;
+  box-shadow:
+    0 5px 0 #1a0902,
+    0 12px 22px rgba(0, 0, 0, 0.58),
+    inset 0 2px 0 rgba(254, 240, 138, 0.5) !important;
+}
+
+/* Iconic Clash Royale Compact 3D Gold-Framed Emerald-Green Battle Button (Matches Concept 1 1:1!) */
+.btn-launch-battle {
+  width: min(80%, 380px) !important;
+  align-self: center !important;
+  min-height: 82px !important;
+  padding: 10px 26px 12px !important;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 48%, #15803d 100%) !important;
+  border: 4.5px solid #fde047 !important;
+  outline: 3px solid #052e16 !important;
+  border-radius: 22px !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 7px 0 #b45309,
+    0 10px 0 #052e16,
+    0 18px 32px rgba(0, 0, 0, 0.68),
+    0 0 26px rgba(74, 222, 128, 0.45),
+    inset 0 4px 0 rgba(255, 255, 255, 0.85) !important;
+  text-shadow:
+    0 3px 0 #052e16,
+    0 5px 10px rgba(0, 0, 0, 0.55) !important;
+}
+
+.btn-launch-battle:hover {
+  background: linear-gradient(180deg, #86efac 0%, #22c55e 48%, #16a34a 100%) !important;
+  transform: translateY(-2px) !important;
+}
+
+.btn-launch-battle .launch-btn-main {
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  letter-spacing: 2px !important;
+}
+
+.launch-btn-sub {
+  display: inline-block !important;
+  margin-top: 3px !important;
+  padding: 2px 12px !important;
+  border-radius: 999px !important;
+  background: rgba(5, 46, 22, 0.42) !important;
+  color: #fef9c3 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1.5px 0 #052e16 !important;
+}
+
+/* 4. Right Column: Clash Royale Royal-Blue Slate Leaderboard Panel + Top Folder Tabs + Bottom Pinned Self Bar */
+.leaderboard-box {
+  background: linear-gradient(180deg, #2557c4 0%, #173885 55%, #0e2459 100%) !important;
+  border: 3.5px solid #60a5fa !important;
+  outline: 3px solid #040b1e !important;
+  border-radius: 22px !important;
+  padding: 10px 14px 10px !important;
+  gap: 0 !important;
+  box-shadow:
+    0 8px 0 #040b1e,
+    0 18px 36px rgba(0, 0, 0, 0.6),
+    inset 0 2.5px 0 rgba(191, 219, 254, 0.65) !important;
+}
+
+.leaderboard-header {
+  display: contents !important;
+}
+
+.lb-tabs {
+  order: 1 !important;
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 4px !important;
+  margin-bottom: -3px !important;
+  z-index: 3 !important;
+  box-sizing: border-box !important;
+}
+
+.lb-tab-btn {
+  padding: 8px 14px 10px !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  border-radius: 14px 14px 0 0 !important;
+  background: linear-gradient(180deg, #132c6b 0%, #09183e 100%) !important;
+  border: 2.5px solid #3b82f6 !important;
+  border-bottom: none !important;
+  outline: 2px solid #040b1e !important;
+  color: #93c5fd !important;
+  text-shadow: 0 2px 0 #040b1e !important;
+  box-shadow: inset 0 1.5px 0 rgba(147, 197, 253, 0.35) !important;
+}
+
+.lb-tab-btn.active {
+  background: linear-gradient(180deg, #fef08a 0%, #facc15 52%, #eab308 100%) !important;
+  border: 2.5px solid #fef9c3 !important;
+  border-bottom: none !important;
+  outline: 2.5px solid #050d24 !important;
+  color: #451a03 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) !important;
+  box-shadow:
+    0 -2px 12px rgba(250, 204, 21, 0.45),
+    inset 0 2px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+.leaderboard-list {
+  order: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 4px !important;
+  padding: 7px 8px !important;
+  background: #f5eedc !important;
+  border: 3px solid #050d24 !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  z-index: 2 !important;
+}
+
+.lb-self-bar {
+  order: 3 !important;
+  width: 100% !important;
+  margin-top: 7px !important;
+  box-sizing: border-box !important;
+  background: rgba(7, 17, 46, 0.82) !important;
+  border: 2px solid rgba(96, 165, 250, 0.45) !important;
+  outline: none !important;
+  border-radius: 12px !important;
+  padding: 5px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  color: #fef08a !important;
+}
+
+#leaderboard-self-status {
+  margin-right: auto !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  color: #fef08a !important;
+  text-shadow: 0 1.5px 0 #040b1e !important;
+}
+
+.lb-edit-btn {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%) !important;
+  border: 2px solid #bae6fd !important;
+  outline: 1.5px solid #040b1e !important;
+  border-radius: 9px !important;
+  padding: 4px 10px !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1.5px 0 #082f49 !important;
+  box-shadow: 0 2.5px 0 #040b1e !important;
+}
+
+.lb-share-btn,
+.lb-share-btn.has-bonus {
+  background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%) !important;
+  border: 2px solid #bbf7d0 !important;
+  outline: 1.5px solid #052e16 !important;
+  border-radius: 9px !important;
+  padding: 4px 10px !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1.5px 0 #052e16 !important;
+  box-shadow: 0 2.5px 0 #052e16 !important;
+}
+
+.lb-row,
+.lb-row.lb-active-mode {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  padding: 2px 10px !important;
+  border-radius: 11px !important;
+}
+
+.lb-row.lb-self-row {
+  outline: 2.5px solid #0284c7 !important;
+}
+
+.lb-stage,
+.lb-time {
+  background: rgba(15, 23, 42, 0.08) !important;
+  border: 1.5px solid rgba(15, 23, 42, 0.16) !important;
+  border-radius: 8px !important;
+  padding: 1.5px 8px !important;
+  font-size: 12.5px !important;
+  font-weight: 900 !important;
+  color: #7c2d12 !important;
+}
+
+/* 5. Bottom-Right 4-Tab Dock: Clash Royale Vertical Square Icon Tiles + Glowing Cyan Active Tile */
+.main-menu-card > .menu-tabs {
+  background: linear-gradient(180deg, #5c371e 0%, #381f0e 100%) !important;
+  border: 3.5px solid #f59e0b !important;
+  outline: 3px solid #1a0b03 !important;
+  border-radius: 20px !important;
+  padding: 6px 10px !important;
+  gap: 10px !important;
+  width: min(100%, 460px) !important;
+  box-shadow:
+    0 7px 0 #1a0b03,
+    0 14px 28px rgba(0, 0, 0, 0.6),
+    inset 0 2px 0 rgba(254, 240, 138, 0.4) !important;
+}
+
+.menu-tab {
+  position: relative !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  padding: 6px 4px 5px !important;
+  min-height: 54px !important;
+  background: linear-gradient(180deg, #4a2c17 0%, #2b170a 100%) !important;
+  border: 2.5px solid #9a5b25 !important;
+  outline: 2px solid #160a03 !important;
+  border-radius: 14px !important;
+  color: #fde68a !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1.5px 0 #160a03 !important;
+  box-shadow:
+    0 4px 0 #160a03,
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.menu-tab .tab-art-img {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.menu-tab.active {
+  background: linear-gradient(180deg, #7dd3fc 0%, #0284c7 52%, #0369a1 100%) !important;
+  border: 2.5px solid #e0f2fe !important;
+  outline: 2.5px solid #082f49 !important;
+  color: #ffffff !important;
+  transform: translateY(-5px) !important;
+  text-shadow: 0 2px 0 #082f49 !important;
+  box-shadow:
+    0 6px 0 #082f49,
+    0 0 20px rgba(56, 189, 248, 0.8),
+    inset 0 2px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+.tab-notify-badge {
+  position: absolute !important;
+  top: -6px !important;
+  right: -5px !important;
+  min-width: 21px !important;
+  height: 21px !important;
+  padding: 0 5px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #f87171 0%, #dc2626 55%, #991b1b 100%) !important;
+  border: 2px solid #ffffff !important;
+  outline: 1.5px solid #450a0a !important;
+  color: #ffffff !important;
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 3px 0 #450a0a !important;
+  z-index: 6 !important;
+}
+
+.tab-notify-badge.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   DE-CLUTTER WEB-GAME REDUNDANCY (Title Splash & Main Lobby Home)
+   ========================================================================== */
+.title-version-pill,
+.title-ribbon-badge,
+.title-sub-plaque,
+#title-welcome-chip,
+.enter-btn-sub,
+.title-tap-hint,
+#btn-title-sound span,
+.kbd-hint,
+.commander-rank-tag,
+.hero-race-perk,
+.launch-btn-sub,
+.panel-subtitle,
+.menu-brand {
+  display: none !important;
+}
+
+.title-topbar {
+  justify-content: flex-end !important;
+}
+
+#btn-title-sound {
+  width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  justify-content: center !important;
+  background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%) !important;
+  border: 2.5px solid #040b1c !important;
+  outline: 2px solid #f59e0b !important;
+  outline-offset: -4px !important;
+  box-shadow:
+    0 5px 0 #040b1c,
+    0 8px 16px rgba(0, 0, 0, 0.45),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+#btn-title-sound .art-icon-img {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.title-center-emblem {
+  margin-top: -32vh !important;
+  gap: 0 !important;
+}
+
+.title-bottom-dock {
+  width: auto !important;
+  gap: 0 !important;
+  padding-bottom: 14px !important;
+}
+
+#btn-enter-workshop {
+  width: 280px !important;
+  max-width: 82vw !important;
+  min-height: 76px !important;
+  padding: 12px 32px !important;
+  border-radius: 22px !important;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 45%, #16a34a 85%, #15803d 100%) !important;
+  border: 3.5px solid #040b1c !important;
+  outline: 2.5px solid #fbbf24 !important;
+  outline-offset: -5.5px !important;
+  box-shadow:
+    0 8px 0 #14532d,
+    0 11px 0 #040b1c,
+    0 16px 32px rgba(22, 163, 74, 0.55),
+    inset 0 4px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+#btn-enter-workshop:hover {
+  transform: translateY(-3px) scale(1.03) !important;
+  filter: brightness(1.07) !important;
+}
+
+.enter-btn-main {
+  font-size: 30px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  gap: 12px !important;
+}
+
+.enter-btn-main .art-icon-img {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.hero-stage-ribbon {
+  width: auto !important;
+  min-width: 195px !important;
+  max-width: 320px !important;
+  padding: 7px 22px !important;
+  margin: -24px auto 8px !important;
+  border-radius: 999px !important;
+}
+
+.hero-race-head {
+  gap: 10px !important;
+  justify-content: center !important;
+}
+
+#btn-start-battle {
+  min-height: 74px !important;
+  padding: 10px 28px !important;
+  justify-content: center !important;
+}
+
+.launch-btn-main {
+  font-size: 28px !important;
+}
+
+.lb-row {
+  grid-template-columns: 34px 38px minmax(0, 1fr) auto !important;
+  padding: 6px 14px !important;
+}
+
+.tree-node.branch-locked-out,
+.tree-node.branch-locked-out.selected {
+  opacity: 0.9 !important;
+  filter: none !important;
+}
+
+.tree-node-medallion {
+  width: 62px !important;
+  height: 62px !important;
+  border-radius: 15px !important;
+  padding: 5px !important;
+}
+
+.kr-parchment-sheet {
+  justify-content: space-evenly !important;
+  gap: 10px !important;
+  padding: 16px 18px !important;
+}
+
+.kr-parchment-body {
+  flex: 0 1 auto !important;
+  width: 100% !important;
+  gap: 10px !important;
+}
+
+.sib-name {
+  font-size: 20px !important;
+}
+
+.sib-desc {
+  font-size: 13.5px !important;
+  line-height: 1.45 !important;
+  background: rgba(8, 20, 52, 0.46) !important;
+  border: 1.5px solid rgba(125, 211, 252, 0.35) !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.sib-stat {
+  font-size: 13.5px !important;
+  padding: 7px 12px !important;
+  border-radius: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.sib-upgrade-btn {
+  min-height: 46px !important;
+  font-size: 15.5px !important;
+  width: 100% !important;
+}
+
+.meta-card,
+.skin-card {
+  padding: 10px 14px !important;
+  gap: 5px !important;
+  overflow: hidden !important;
+  justify-content: space-between !important;
+}
+
+.meta-card-top {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  justify-content: space-evenly !important;
+  width: 100% !important;
+  gap: 4px !important;
+}
+
+.meta-portrait-well {
+  width: 132px !important;
+  height: 72px !important;
+  flex-shrink: 0 !important;
+}
+
+.meta-portrait-well .meta-art-img {
+  width: 64px !important;
+  height: 64px !important;
+}
+
+.skin-swatch {
+  min-height: 68px !important;
+  max-height: 82px !important;
+  flex: 1 1 auto !important;
+}
+
+.skin-art-portrait {
+  width: 68px !important;
+  height: 68px !important;
+}
+
+.meta-info {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-evenly !important;
+  gap: 3px !important;
+  width: 100% !important;
+}
+
+.meta-title-row strong,
+.skin-title {
+  font-size: 16px !important;
+}
+
+.meta-desc,
+.skin-desc {
+  display: block !important;
+  font-size: 12px !important;
+  color: #e0f2fe !important;
+  line-height: 1.25 !important;
+}
+
+.meta-progress-track {
+  width: 100% !important;
+  height: 15px !important;
+  border-radius: 999px !important;
+  border: 2px solid #071330 !important;
+  flex-shrink: 0 !important;
+}
+
+.meta-cur,
+.skin-bonus {
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  color: #fef08a !important;
+  background: rgba(8, 20, 52, 0.52) !important;
+  border: 1.5px solid rgba(125, 211, 252, 0.35) !important;
+  border-radius: 8px !important;
+  padding: 3px 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;
+}
+
+.meta-buy-btn,
+.skin-action-btn {
+  min-height: 36px !important;
+  height: 38px !important;
+  font-size: 14px !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+  margin-top: 2px !important;
+}
+
 @media (min-width: 1280px) {
+  .main-menu-card {
+    zoom: 1.15 !important;
+  }
+
   .hud-top {
-    zoom: 1.32;
+    zoom: 1.24;
+    width: min(76vw, 1080px) !important;
   }
 
   .hud-bottom {
-    zoom: 1.35;
+    zoom: 1.28;
   }
 
   .modal-card {
@@ -7951,23 +8985,72 @@ img,
   }
 }
 
-@media (min-width: 1800px) {
+@media (min-width: 1600px) and (min-height: 850px) {
+  .main-menu-card {
+    zoom: 1.32 !important;
+  }
+
   .hud-top {
-    zoom: 1.58;
+    zoom: 1.38;
+    width: min(68vw, 1120px) !important;
   }
 
   .hud-bottom {
-    zoom: 1.62;
+    zoom: 1.42;
   }
 
   .modal-card {
-    zoom: 1.24;
+    zoom: 1.28;
+  }
+}
+
+@media (min-width: 1900px) and (min-height: 960px) {
+  .main-menu-card {
+    zoom: 1.48 !important;
+  }
+
+  .hud-top {
+    zoom: 1.52;
+    width: min(62vw, 1140px) !important;
+  }
+
+  .hud-bottom {
+    zoom: 1.56;
+  }
+
+  .modal-card {
+    zoom: 1.38;
   }
 
   .title-topbar,
   .title-center-emblem,
   .title-bottom-dock {
-    zoom: 1.25;
+    zoom: 1.32;
+  }
+}
+
+@media (min-width: 2300px) and (min-height: 1120px) {
+  .main-menu-card {
+    zoom: 1.64 !important;
+  }
+
+  .hud-top {
+    zoom: 1.72;
+    width: min(56vw, 1160px) !important;
+  }
+
+  .hud-bottom {
+    zoom: 1.76;
+  }
+
+  .modal-card {
+    zoom: 1.56;
+  }
+
+  .title-topbar,
+  .title-center-emblem,
+  .title-bottom-dock {
+    zoom: 1.52;
   }
 }
 

@@ -21,39 +21,6 @@ interface PartSpec {
   tintMask?: number; // 1 = tinted by InstancedMesh instanceColor (candy jelly body); 0 = fixed baked color (white headband, eyes, props)
 }
 
-let cachedSmoothVinylBumpTex: THREE.CanvasTexture | null = null;
-
-/**
- * Generates a subtle, silky-smooth procedural vinyl/jelly micro-sheen texture (zero dark scale seams).
- */
-export function getMicroArmorBumpTexture(): THREE.CanvasTexture {
-  if (cachedSmoothVinylBumpTex) return cachedSmoothVinylBumpTex;
-  const size = 128;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(0, 0, size, size);
-
-  for (let i = 0; i < 24; i++) {
-    const cx = ((i * 53) % size);
-    const cy = ((i * 79) % size);
-    const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, 28);
-    grad.addColorStop(0, 'rgba(255,255,255,0.06)');
-    grad.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
-  }
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.needsUpdate = true;
-  cachedSmoothVinylBumpTex = tex;
-  return tex;
-}
-
 interface LoftRingSpec {
   pos: [number, number, number];
   rx: number;
@@ -395,60 +362,85 @@ export function createAnimatedHumanoidMaterial(options: {
       #include <begin_vertex>
       float walkPhase = aAnim.x;
       float speedAmt = clamp(aAnim.y, 0.0, 1.4);
+      float activeAmt = max(0.68, speedAmt);
       float atk = clamp(aAnim.z, 0.0, 1.0);
       vFlash = aAnim.w;
 
-      float stride = sin(walkPhase) * 0.78 * speedAmt;
-      float bounce = abs(sin(walkPhase)) * 0.105 * speedAmt;
-      float jellySquash = sin(walkPhase * 2.0) * 0.045 * speedAmt;
+      float stride = sin(walkPhase) * 0.98 * activeAmt;
+      float hopWave = abs(sin(walkPhase));
+      float bounce = hopWave * 0.22 * activeAmt;
+      float jellySquash = cos(walkPhase * 2.0) * 0.14 * activeAmt;
       float atkSwing = sin(atk * 3.14159265);
-      float wingFlap = sin(walkPhase * 1.7) * 0.34 * max(0.35, speedAmt) + atkSwing * 0.42;
+      float wingFlap = sin(walkPhase * 2.4) * 0.52 * activeAmt + atkSwing * 0.55;
 
       if (aPartId > 3.5 && aPartId < 4.5) {
         vec3 local = transformed - vec3(-0.14, ${hipY.toFixed(2)}, 0.0);
         local = rotateX(local, stride);
+        local = rotateZ(local, sin(walkPhase) * 0.12 * activeAmt);
         transformed = local + vec3(-0.14, ${hipY.toFixed(2)}, 0.0);
+        transformed.y += max(0.0, sin(walkPhase)) * 0.14 * activeAmt;
       } else if (aPartId > 4.5 && aPartId < 5.5) {
         vec3 local = transformed - vec3(0.14, ${hipY.toFixed(2)}, 0.0);
         local = rotateX(local, -stride);
+        local = rotateZ(local, -sin(walkPhase) * 0.12 * activeAmt);
         transformed = local + vec3(0.14, ${hipY.toFixed(2)}, 0.0);
+        transformed.y += max(0.0, -sin(walkPhase)) * 0.14 * activeAmt;
       } else if (aPartId > 5.5 && aPartId < 6.5) {
         vec3 pivot = vec3(-0.16, ${(shoulderY + 0.08).toFixed(2)}, -0.16);
         vec3 local = transformed - pivot;
         local = rotateY(local, wingFlap);
-        local = rotateZ(local, wingFlap * 0.42);
+        local = rotateZ(local, wingFlap * 0.52);
         transformed = local + pivot;
       } else if (aPartId > 6.5) {
         vec3 pivot = vec3(0.16, ${(shoulderY + 0.08).toFixed(2)}, -0.16);
         vec3 local = transformed - pivot;
         local = rotateY(local, -wingFlap);
-        local = rotateZ(local, -wingFlap * 0.42);
+        local = rotateZ(local, -wingFlap * 0.52);
         transformed = local + pivot;
       } else if (aPartId > 1.5 && aPartId < 2.5) {
         vec3 local = transformed - vec3(-0.28, ${shoulderY.toFixed(2)}, 0.0);
-        local = rotateX(local, -stride * 0.72 - atkSwing * 0.55);
-        local = rotateZ(local, sin(walkPhase) * 0.18 * speedAmt);
+        local = rotateX(local, -stride * 1.05 - atkSwing * 0.85);
+        local = rotateZ(local, (sin(walkPhase) * 0.34 - 0.12) * activeAmt - atkSwing * 0.28);
+        local = rotateY(local, cos(walkPhase) * 0.22 * activeAmt);
         transformed = local + vec3(-0.28, ${shoulderY.toFixed(2)}, 0.0);
       } else if (aPartId > 2.5 && aPartId < 3.5) {
         vec3 local = transformed - vec3(0.28, ${shoulderY.toFixed(2)}, 0.0);
-        local = rotateX(local, stride * 0.72 - atkSwing * 1.35);
-        local = rotateZ(local, -sin(walkPhase) * 0.18 * speedAmt);
+        local = rotateX(local, stride * 1.05 - atkSwing * 1.55);
+        local = rotateZ(local, (-sin(walkPhase) * 0.34 + 0.12) * activeAmt + atkSwing * 0.32);
+        local = rotateY(local, -cos(walkPhase) * 0.22 * activeAmt);
         transformed = local + vec3(0.28, ${shoulderY.toFixed(2)}, 0.0);
       } else if (aPartId > 0.5 && aPartId < 1.5) {
-        vec3 local = transformed - vec3(0.0, ${(shoulderY + 0.12).toFixed(2)}, 0.0);
-        local = rotateY(local, cos(walkPhase) * 0.1 * speedAmt);
-        transformed = local + vec3(0.0, ${(shoulderY + 0.12).toFixed(2)}, 0.0);
+        vec3 headPivot = vec3(0.0, ${(shoulderY + 0.12).toFixed(2)}, 0.0);
+        vec3 local = transformed - headPivot;
+        local = rotateY(local, cos(walkPhase) * 0.25 * activeAmt);
+        local = rotateZ(local, -sin(walkPhase) * 0.16 * activeAmt);
+        local = rotateX(local, sin(walkPhase * 2.0 - 0.5) * 0.15 * activeAmt - atkSwing * 0.22);
+        if (local.y > 0.18) {
+          float tipFactor = clamp((local.y - 0.18) * 1.8, 0.0, 1.2);
+          local.x += sin(walkPhase * 2.0 - 1.1) * 0.09 * tipFactor * activeAmt;
+          local.z += cos(walkPhase * 2.0 - 1.1) * 0.08 * tipFactor * activeAmt;
+        }
+        transformed = local + headPivot;
+      } else if (aPartId < 0.5) {
+        vec3 bodyPivot = vec3(0.0, ${hipY.toFixed(2)}, 0.0);
+        vec3 local = transformed - bodyPivot;
+        local = rotateZ(local, sin(walkPhase) * 0.11 * activeAmt);
+        local = rotateY(local, cos(walkPhase) * 0.14 * activeAmt);
+        local = rotateX(local, sin(walkPhase * 2.0) * 0.08 * activeAmt + atkSwing * 0.2);
+        transformed = local + bodyPivot;
       }
 
-      // Soft Q-elastic jelly squash & stretch on body + vertical cheer bounce
+      // Soft Q-elastic jelly squash & stretch + secondary follow-through wave on body & head
       if (aPartId < 3.5 || aPartId > 5.5) {
-        if (aTintMask > 0.5 && aPartId < 1.5) {
-          transformed.x *= (1.0 - jellySquash * 0.65);
-          transformed.z *= (1.0 - jellySquash * 0.65);
-          transformed.y *= (1.0 + jellySquash * 0.85);
+        if (aPartId < 1.5) {
+          float squashAmt = (aTintMask > 0.5 ? 1.0 : 0.6) * jellySquash;
+          float bellyWave = sin(walkPhase * 2.0 - transformed.y * 2.5) * 0.055 * activeAmt;
+          transformed.x *= (1.0 + squashAmt * 0.85 + bellyWave);
+          transformed.z *= (1.0 + squashAmt * 0.85 - bellyWave);
+          transformed.y *= max(0.72, 1.0 - squashAmt * 1.15);
         }
         transformed.y += bounce;
-        transformed.z += atkSwing * 0.16;
+        transformed.z += atkSwing * 0.22;
       }
       vHeight = clamp(transformed.y, 0.0, 2.2);
       `
@@ -480,16 +472,19 @@ export function createAnimatedHumanoidMaterial(options: {
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <dithering_fragment>',
       `
-      // === TRUE 2D CEL-TOON / MATCAP ILLUSTRATION SHADING FOR UNITS ===
+      // === TRUE 2D CEL-TOON / MATCAP ILLUSTRATION SHADING FOR UNITS (DERIVATIVE ANTI-ALIASED) ===
       vec3 viewDir2D = normalize(vViewPosition);
       vec3 viewN2D = normalize(normal);
       float ndv2D = abs(dot(viewN2D, viewDir2D));
+      float fwNdv = max(0.035, fwidth(ndv2D) * 1.45);
 
-      // 1. 2-Step Warm Cel-Toon Lighting (Zero dark/muddy 3D PBR shadows!)
+      // 1. 2-Step Warm Cel-Toon Lighting with fwidth() derivative smoothing
       vec3 toonLightDir = normalize(vec3(-0.36, 0.74, 0.56));
       float ndl2D = dot(viewN2D, toonLightDir);
-      float celBand = mix(0.80, 1.06, smoothstep(-0.10, 0.15, ndl2D));
-      vec3 shadowWarmth = mix(vec3(0.95, 0.84, 0.78), vec3(1.0, 1.0, 1.0), smoothstep(-0.10, 0.15, ndl2D));
+      float fwNdl = max(0.04, fwidth(ndl2D) * 1.45);
+      float celStep = smoothstep(-0.08 - fwNdl, 0.14 + fwNdl, ndl2D);
+      float celBand = mix(0.80, 1.06, celStep);
+      vec3 shadowWarmth = mix(vec3(0.95, 0.84, 0.78), vec3(1.0, 1.0, 1.0), celStep);
       vec3 toonCol = diffuseColor.rgb * shadowWarmth * celBand;
 
       // 2. Soft Translucent Jelly Rim Glow + Hit/Charge Flash
@@ -501,20 +496,26 @@ export function createAnimatedHumanoidMaterial(options: {
       // 3. Iconic Supercell Vinyl-Toy Dual Specular Catchlights on Jelly Slimes (vTintMask > 0.5)
       if (vTintMask > 0.5 && viewN2D.z > 0.12) {
         vec2 catchUV = (viewN2D.xy - vec2(-0.31, 0.36)) * vec2(0.95, 1.32);
-        float catchDot = 1.0 - smoothstep(0.14, 0.21, length(catchUV));
+        float catchLen = length(catchUV);
+        float fwCatch = max(0.035, fwidth(catchLen) * 1.4);
+        float catchDot = 1.0 - smoothstep(0.16 - fwCatch, 0.19 + fwCatch, catchLen);
         vec2 subCatchUV = (viewN2D.xy - vec2(-0.14, 0.51)) * vec2(1.4, 1.6);
-        float subCatchDot = 1.0 - smoothstep(0.06, 0.11, length(subCatchUV));
+        float subLen = length(subCatchUV);
+        float fwSub = max(0.035, fwidth(subLen) * 1.4);
+        float subCatchDot = 1.0 - smoothstep(0.07 - fwSub, 0.10 + fwSub, subLen);
         float vinylGloss = max(catchDot, subCatchDot * 0.85);
         toonCol = mix(toonCol, vec3(1.0, 1.0, 1.0), vinylGloss * 0.96);
       } else {
-        // Crisp 2D cartoon specular band for crowns, helmets, goggles & weapons
-        float hardSpec = smoothstep(0.82, 0.89, max(0.0, dot(viewN2D, toonLightDir))) * 0.30;
+        // Derivative-antialiased cartoon specular band for crowns, helmets, goggles & weapons
+        float specDot = max(0.0, dot(viewN2D, toonLightDir));
+        float fwSpec = max(0.035, fwidth(specDot) * 1.4);
+        float hardSpec = smoothstep(0.84 - fwSpec, 0.88 + fwSpec, specDot) * 0.30;
         toonCol += vec3(hardSpec);
       }
 
-      // 4. Crisp Supercell Vinyl-Toy Dark-Espresso Cartoon Silhouette Ink Outline (#1e110a)
-      float inkEdge = 1.0 - smoothstep(0.24, 0.36, ndv2D);
-      toonCol = mix(toonCol, vec3(0.118, 0.067, 0.039), inkEdge * 0.94);
+      // 4. Derivative-Antialiased Supercell Vinyl-Toy Dark-Espresso Cartoon Silhouette Outline (#1e110a)
+      float inkEdge = 1.0 - smoothstep(0.27 - fwNdv, 0.35 + fwNdv, ndv2D);
+      toonCol = mix(toonCol, vec3(0.118, 0.067, 0.039), inkEdge * 0.90);
 
       gl_FragColor = vec4(toonCol, diffuseColor.a);
       #include <dithering_fragment>

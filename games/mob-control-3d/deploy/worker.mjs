@@ -11,13 +11,28 @@ const SEED_LEADERBOARD = [
   { name: '新星侦察兵', bestStage: 2, totalKills: 1920, playTimeSeconds: 780, skinName: '蔚蓝先锋', badgeColor: '#38bdf8', isBot: true },
 ];
 
-const KV_KEY = 'real_players_v1';
+const EPOCH_MONDAY_UTC8_MS = 316800000; // 1970-01-05 00:00:00 UTC+8 (Monday)
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+
+function getWeeklyCycleInfo(nowMs = Date.now()) {
+  const weekIndex = Math.floor((nowMs - EPOCH_MONDAY_UTC8_MS) / WEEK_MS);
+  const weekKey = `w${weekIndex}`;
+  const kvKey = `real_players_weekly_${weekKey}`;
+  const nextResetAtMs = EPOCH_MONDAY_UTC8_MS + (weekIndex + 1) * WEEK_MS;
+  return { weekKey, kvKey, nextResetAtMs };
+}
+
+let fallbackWeekKey = '';
 let fallbackRealPlayers = [];
 
-async function loadRealPlayers(env) {
+async function loadRealPlayers(env, kvKey, weekKey) {
+  if (fallbackWeekKey !== weekKey) {
+    fallbackWeekKey = weekKey;
+    fallbackRealPlayers = [];
+  }
   if (env && env.MOB_CONTROL_LEADERBOARD) {
     try {
-      const data = await env.MOB_CONTROL_LEADERBOARD.get(KV_KEY, 'json');
+      const data = await env.MOB_CONTROL_LEADERBOARD.get(kvKey, 'json');
       if (Array.isArray(data)) {
         return data;
       }
@@ -28,11 +43,14 @@ async function loadRealPlayers(env) {
   return [...fallbackRealPlayers];
 }
 
-async function saveRealPlayers(env, players) {
+async function saveRealPlayers(env, kvKey, weekKey, players) {
+  fallbackWeekKey = weekKey;
   fallbackRealPlayers = players;
   if (env && env.MOB_CONTROL_LEADERBOARD) {
     try {
-      await env.MOB_CONTROL_LEADERBOARD.put(KV_KEY, JSON.stringify(players));
+      await env.MOB_CONTROL_LEADERBOARD.put(kvKey, JSON.stringify(players), {
+        expirationTtl: 14 * 86400,
+      });
     } catch {
       // Ignore KV write errors
     }
@@ -78,9 +96,10 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Edge API for Top 10 Leaderboard (Backed by Cloudflare KV)
+    // Edge API for Top 10 Weekly Leaderboard (Backed by Cloudflare KV, resets every Monday 00:00 UTC+8)
     if (url.pathname === '/api/leaderboard') {
-      let realPlayers = await loadRealPlayers(env);
+      const { weekKey, kvKey, nextResetAtMs } = getWeeklyCycleInfo();
+      let realPlayers = await loadRealPlayers(env, kvKey, weekKey);
 
       if (request.method === 'POST') {
         try {
@@ -126,7 +145,7 @@ export default {
 
             realPlayers.sort((a, b) => b.bestStage - a.bestStage || b.totalKills - a.totalKills);
             realPlayers = realPlayers.slice(0, 100);
-            await saveRealPlayers(env, realPlayers);
+            await saveRealPlayers(env, kvKey, weekKey, realPlayers);
           }
         } catch {
           // Ignore malformed JSON
@@ -137,6 +156,8 @@ export default {
       const activeTop10 = buildActiveTop10(realPlayers);
       return new Response(
         JSON.stringify({
+          weekKey,
+          nextResetAtMs,
           top10,
           activeTop10,
           realPlayerCount: realPlayers.length,

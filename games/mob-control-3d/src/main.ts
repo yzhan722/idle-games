@@ -4,6 +4,7 @@ import {
   GameState,
   META_UPGRADES,
   MetaUpgradeId,
+  RENAME_GOLD_COST,
   RewardOption,
   SKILL_TREE_BRANCHES,
   SKINS_CATALOG,
@@ -41,7 +42,6 @@ const topToolsDrawer = document.getElementById('top-tools-drawer') as HTMLElemen
 const btnResumeDrawer = document.getElementById('btn-resume-drawer') as HTMLButtonElement | null;
 const btnHome = document.getElementById('btn-home') as HTMLButtonElement;
 const btnRerollMap = document.getElementById('btn-reroll-map') as HTMLButtonElement;
-const btnTheme = document.getElementById('btn-theme') as HTMLButtonElement;
 const btnCamera = document.getElementById('btn-camera') as HTMLButtonElement;
 const btnSound = document.getElementById('btn-sound') as HTMLButtonElement;
 const btnRestart = document.getElementById('btn-restart') as HTMLButtonElement;
@@ -72,14 +72,11 @@ const badgeTabSkillsEl = document.getElementById('badge-tab-skills') as HTMLElem
 const badgeTabMetaEl = document.getElementById('badge-tab-meta') as HTMLElement | null;
 const badgeTabSkinsEl = document.getElementById('badge-tab-skins') as HTMLElement | null;
 const homeHeroStageEl = document.getElementById('home-hero-stage') as HTMLElement | null;
-const btnHomeTheme = document.getElementById('btn-home-theme') as HTMLButtonElement | null;
-const homeThemeLabelEl = document.getElementById('home-theme-label') as HTMLElement | null;
 const btnHomeMecha = document.getElementById('btn-home-mecha') as HTMLButtonElement | null;
 const homeMechaIconEl = document.getElementById('home-mecha-icon') as HTMLElement | null;
 const homeMechaLabelEl = document.getElementById('home-mecha-label') as HTMLElement | null;
 const btnHomePrevRace = document.getElementById('btn-home-prev-race') as HTMLButtonElement | null;
 const btnHomeNextRace = document.getElementById('btn-home-next-race') as HTMLButtonElement | null;
-const btnHomePedestal = document.getElementById('btn-home-pedestal') as HTMLButtonElement | null;
 const homeMascotArtEl = document.getElementById('home-mascot-art') as HTMLElement | null;
 const homeRaceTitleEl = document.getElementById('home-race-title') as HTMLElement | null;
 const homeRacePtsTagEl = document.getElementById('home-race-pts-tag') as HTMLElement | null;
@@ -476,10 +473,10 @@ function renderMainMenu(): void {
   const committedBranch = state.getCommittedSkillBranch();
   const activeRace = state.getActiveRaceBranch();
   const mechaSpec = state.getMechaSpec();
-  const spentPts = state.getSpentTalentPoints();
+  const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
   if (brandCrestImgEl) {
-    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=15`;
+    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=18`;
   }
   if (commanderRankTagEl) {
     commanderRankTagEl.textContent = getCommanderRankTitle(state.bestStageCleared);
@@ -488,7 +485,7 @@ function renderMainMenu(): void {
     commanderNameTextEl.textContent = state.playerName;
   }
   if (commanderBestStageEl) {
-    commanderBestStageEl.innerHTML = `${UI_ART.trophy} <span>最高 ${state.bestStageCleared} 关</span>`;
+    commanderBestStageEl.innerHTML = `${UI_ART.trophy} <span>${state.bestStageCleared} 关</span>`;
   }
 
   // Update Home Hero Stage Showcase (Theme-Reactive 3D Studio Turntable Showcase!)
@@ -496,9 +493,6 @@ function renderMainMenu(): void {
     homeHeroStageEl.style.setProperty('--hero-race-color', activeRace.accentColor);
     homeHeroStageEl.dataset.theme = world.currentTheme?.id || 'wasteland';
     homeHeroStageEl.dataset.race = activeRace.id;
-  }
-  if (homeThemeLabelEl && world.currentTheme) {
-    homeThemeLabelEl.textContent = world.currentTheme.badge;
   }
   if (homeMechaIconEl) {
     homeMechaIconEl.innerHTML = mechaSpec.icon;
@@ -510,10 +504,10 @@ function renderMainMenu(): void {
     homeMascotArtEl.innerHTML = activeRace.icon;
   }
   if (homeRaceTitleEl) {
-    homeRaceTitleEl.innerHTML = `${activeKeystone ? `${UI_ART.crown} ` : ''}${activeRace.raceName} · ${activeRace.unitName}`;
+    homeRaceTitleEl.innerHTML = `${activeKeystone ? `${UI_ART.crown} ` : ''}${activeRace.raceName}`;
   }
   if (homeRacePtsTagEl) {
-    homeRacePtsTagEl.innerHTML = `${UI_ART.star} ${spentPts}/16`;
+    homeRacePtsTagEl.innerHTML = `${UI_ART.star} ${activeRacePts}/16`;
   }
   if (homeRacePerkEl) {
     homeRacePerkEl.textContent = activeKeystone
@@ -521,18 +515,16 @@ function renderMainMenu(): void {
       : `${activeRace.subtitle} · 大招【${activeRace.hammerMorphName}】`;
   }
   if (launchBtnSubEl && world.currentTheme) {
-    launchBtnSubEl.textContent = `第 1 关起航 · ${world.currentTheme.name} · ${activeRace.raceName}出阵`;
+    launchBtnSubEl.textContent = `第 1 关起航 · ${world.currentTheme.badge}【${world.currentTheme.perkTitle}】· ${activeRace.raceName}出阵`;
   }
 
   if (menuActiveKeystonePill) {
     const desktopLabel = activeKeystone
       ? `${activeKeystone.branch.icon} ${UI_ART.crown} ${activeKeystone.branch.raceName}·${activeKeystone.node.name}`
-      : committedBranch
-        ? `${committedBranch.icon} ${committedBranch.raceName}·${committedBranch.unitName} (${spentPts}/16)`
-        : `${activeRace.icon} ${activeRace.raceName}·${activeRace.unitName} (可切族)`;
+      : `${activeRace.icon} ${activeRace.raceName}·${activeRace.unitName} (${activeRacePts}/16 生效中)`;
     const mobileLabel = activeKeystone
       ? `${activeKeystone.branch.icon}${UI_ART.crown} ${activeKeystone.branch.raceName}`
-      : `${activeRace.icon} ${activeRace.raceName} (${spentPts}/16)`;
+      : `${activeRace.icon} ${activeRace.raceName} (${activeRacePts}/16)`;
     menuActiveKeystonePill.innerHTML = `<span class="desktop-only-text">${desktopLabel}</span><span class="mobile-only-text">${mobileLabel}</span><kbd class="kbd-hint">G</kbd>`;
   }
 
@@ -725,7 +717,7 @@ function renderMainMenu(): void {
   if (btnLbActive) btnLbActive.classList.toggle('active', leaderboardMode === 'active');
   if (btnShareGame) {
     const canBonus = state.canClaimDailyShareBonus();
-    btnShareGame.innerHTML = `${canBonus ? `${UI_ART.gift} 分享+3000${UI_ART.coin}` : `${UI_ART.share} 分享`}<kbd class="kbd-hint">F</kbd>`;
+    btnShareGame.innerHTML = `${canBonus ? `${UI_ART.gift} 分享` : `${UI_ART.share} 分享`}`;
     btnShareGame.classList.toggle('has-bonus', canBonus);
   }
 
@@ -736,9 +728,10 @@ function renderMainMenu(): void {
       : state.getTop10Leaderboard();
     if (leaderboardSelfStatusEl) {
       const rankStr = selfRank && selfRank <= 10 ? `#${selfRank}` : '未上榜';
+      const resetHint = state.getWeeklyResetCountdownText();
       leaderboardSelfStatusEl.innerHTML = isActiveMode
-        ? `<span class="desktop-only-text">${state.playerName} · 游戏时间 </span>${state.formatPlayTime(state.playTimeSeconds)} (${rankStr})`
-        : `<span class="desktop-only-text">${state.playerName} · </span>最高 ${state.bestStageCleared} 关 (${rankStr})`;
+        ? `${state.playerName} · ${rankStr} (${state.formatPlayTime(state.weeklyPlayTimeSeconds)}) · ${resetHint}`
+        : `${state.playerName} · ${rankStr} (${state.weeklyBestStage} 关) · ${resetHint}`;
     }
 
     leaderboardListEl.innerHTML = '';
@@ -752,26 +745,20 @@ function renderMainMenu(): void {
             : rank === 3
               ? UI_ART.medal3
               : `${rank}`;
-      const roleBadge = entry.isBot
-        ? `<span class="lb-role-tag lb-role-bot" title="预设守门AI基准线，有真人玩家上榜时自动腾出名额">AI</span>`
-        : `<span class="lb-role-tag lb-role-real" title="真实玩家云端战绩">真人</span>`;
       const row = document.createElement('div');
       row.className = `lb-row ${isActiveMode ? 'lb-active-mode' : ''} ${rank <= 3 ? `lb-top-${rank}` : ''} ${entry.isSelf ? 'lb-self-row' : ''}`;
       row.style.setProperty('--stagger-i', `${idx}`);
       const lbRaceOrder = ['swarm', 'titan', 'gate', 'plasma', 'orbital', 'bastion', 'tycoon'];
       const avatarRace = lbRaceOrder[idx % lbRaceOrder.length];
-      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=15" alt="" draggable="false" /></div>`;
+      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=18" alt="" draggable="false" /></div>`;
       if (isActiveMode) {
         const timeStr = state.formatPlayTime(entry.playTimeSeconds);
         row.innerHTML = `
           <span class="lb-rank">${rankBadge}</span>
           ${avatarHtml}
           <div class="lb-player">
-            <span class="lb-name">${entry.name}${entry.isSelf ? ' (我)' : ''}</span>
-            ${roleBadge}
-            <span class="lb-skin" style="color: ${entry.badgeColor}">${entry.skinName}</span>
+            <span class="lb-name">${entry.name}</span>
           </div>
-          <span class="lb-kills">${UI_ART.trophy} ${entry.bestStage} 关</span>
           <strong class="lb-time">${UI_ART.clock} ${timeStr}</strong>
         `;
       } else {
@@ -779,12 +766,9 @@ function renderMainMenu(): void {
           <span class="lb-rank">${rankBadge}</span>
           ${avatarHtml}
           <div class="lb-player">
-            <span class="lb-name">${entry.name}${entry.isSelf ? ' (我)' : ''}</span>
-            ${roleBadge}
-            <span class="lb-skin" style="color: ${entry.badgeColor}">${entry.skinName}</span>
+            <span class="lb-name">${entry.name}</span>
           </div>
-          <span class="lb-kills">${UI_ART.trophy} ${entry.totalKills.toLocaleString()}</span>
-          <strong class="lb-stage">${entry.bestStage} 关</strong>
+          <strong class="lb-stage">${UI_ART.trophy} ${entry.bestStage} 关</strong>
         `;
       }
       leaderboardListEl.appendChild(row);
@@ -843,7 +827,9 @@ function renderSkillInspectorBar(): void {
   if (!skillInspectorBarEl) return;
   const node = ALL_SKILL_NODES.find((n) => n.id === selectedSkillNodeId) || ALL_SKILL_NODES[0];
   const branch = SKILL_TREE_BRANCHES.find((b) => b.id === node.branchId) || SKILL_TREE_BRANCHES[0];
-  const rank = state.getSkillNodeRank(node.id);
+  const activeRace = state.getActiveRaceBranch();
+  const isBranchActive = activeRace.id === branch.id;
+  const rank = state.getSavedSkillNodeRank(node.id);
   const isMax = rank >= node.maxRank;
   const check = state.canUpgradeSkillNode(node.id);
   const svgIcon = SKILL_NODE_SVGS[node.id] || '';
@@ -864,12 +850,6 @@ function renderSkillInspectorBar(): void {
   if (!isMax) {
     if (check.ok) {
       btnLabel = `${UI_ART.arrowUp} 升级 (${node.pointCost}${UI_ART.star} + ${shortCost}${UI_ART.coin})`;
-    } else if (check.reqMatches) {
-      btnLabel = `${UI_ART.lock} 需累计 ${check.reqMatches} 局`;
-    } else if (check.reason.includes('先点满')) {
-      btnLabel = `${UI_ART.lock} 需先点满下层天赋`;
-    } else if (check.reason.includes('已锁')) {
-      btnLabel = `${UI_ART.lock} 已专精其他种族 (可洗点)`;
     } else if (check.reason.includes('天赋点不足')) {
       btnLabel = `${UI_ART.lock} 需 ${node.pointCost} ${UI_ART.star} 天赋星`;
     } else if (check.reason.includes('点数不足')) {
@@ -903,7 +883,7 @@ function renderSkillInspectorBar(): void {
         <div class="kr-title-line">
           <strong class="sib-name">${node.name}</strong>
           <span class="sib-branch-tag" style="color: ${branch.accentColor}; border-color: ${branch.accentColor}55">
-            ${branch.icon} ${branch.raceName}
+            ${branch.icon} ${branch.raceName}${isBranchActive ? ' · 生效中' : ' · 选中该族生效'}
           </span>
         </div>
         <p class="sib-desc">${node.desc}</p>
@@ -929,7 +909,7 @@ function renderSkillInspectorBar(): void {
         sound.playUpgrade();
         spawnMenuUpgradeBurst(
           upgBtn,
-          `${node.name} Lv.${state.getSkillNodeRank(node.id)}!`,
+          `${node.name} Lv.${state.getSavedSkillNodeRank(node.id)}!`,
           branch.accentColor
         );
         world.applySkin(state.getEquippedSkin());
@@ -945,30 +925,22 @@ function renderSkillInspectorBar(): void {
 function renderSkillTreePanel(): void {
   const avail = state.getAvailableTalentPoints();
   const spent = state.getSpentTalentPoints();
-  const maxByMatches = state.getMaxSkillPointsByMatches();
-  const curMatches = state.getEffectiveMatchesPlayed();
-  const committedBranch = state.getCommittedSkillBranch();
   const activeRace = state.getActiveRaceBranch();
-  const activeKeystone = state.getActiveKeystoneSpec();
+  const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
   if (skillAvailablePointsEl) {
     skillAvailablePointsEl.textContent = `${avail}`;
   }
   if (skillActiveKeystoneEl) {
-    const activeBranch = activeKeystone?.branch || committedBranch || activeRace;
-    skillActiveKeystoneEl.innerHTML = `${activeBranch.icon} ${activeBranch.raceName} · ${activeBranch.unitName}`;
+    skillActiveKeystoneEl.innerHTML = `${activeRace.icon} ${activeRace.raceName} · 已生效 ${activeRacePts}/16`;
   }
   if (btnBuyTalent) {
     const buyCheck = state.canBuyBonusTalentPoint();
     const buyCost = state.getBonusTalentPointCost();
     const shortBuyCost = buyCost >= 1000 ? `${Math.round(buyCost / 1000)}k` : `${buyCost}`;
-    btnBuyTalent.innerHTML = buyCheck.ok
-      ? `+${UI_ART.star} <small>${shortBuyCost}${UI_ART.coin}</small>`
-      : `${UI_ART.lock}${curMatches}局`;
+    btnBuyTalent.innerHTML = `+${UI_ART.star} <small>${shortBuyCost}${UI_ART.coin}</small>`;
     btnBuyTalent.disabled = !buyCheck.ok;
-    btnBuyTalent.title = buyCheck.ok
-      ? `${buyCheck.reason} [B]`
-      : `当前对局数(${curMatches}局)最多解锁 ${maxByMatches} 点技能上限`;
+    btnBuyTalent.title = `${buyCheck.reason} [B]`;
   }
   if (btnResetSkills) {
     const resetCost = state.getResetSkillTreeCost();
@@ -982,7 +954,7 @@ function renderSkillTreePanel(): void {
     btnResetSkills.title =
       spent <= 0
         ? `尚未投入天赋点（当前洗点价格 ${resetCost.toLocaleString()} 金币，每玩1关减免 1,000 金币）`
-        : `支付 ${resetCost.toLocaleString()} 金币重置流派并返还 ${spent} 点天赋（原价 ${baseCost.toLocaleString()} 金币，已减免 ${discount.toLocaleString()} 金币）[R]`;
+        : `支付 ${resetCost.toLocaleString()} 金币重置全部已点技能并返还 ${spent} 点天赋（原价 ${baseCost.toLocaleString()} 金币，已减免 ${discount.toLocaleString()} 金币）[R]`;
     btnResetSkills.disabled = spent <= 0 || state.gold < resetCost;
   }
 
@@ -994,22 +966,18 @@ function renderSkillTreePanel(): void {
 
   for (let bIdx = 0; bIdx < SKILL_TREE_BRANCHES.length; bIdx++) {
     const branch = SKILL_TREE_BRANCHES[bIdx];
-    const isBranchLockedOut = Boolean(committedBranch && committedBranch.id !== branch.id);
     const isActiveRace = activeRace.id === branch.id;
-    let branchPts = 0;
-    for (const n of branch.nodes) {
-      branchPts += state.getSkillNodeRank(n.id) * n.pointCost;
-    }
+    const branchPts = state.getBranchSpentPoints(branch.id);
 
     const colEl = document.createElement('div');
-    colEl.className = `kr-branch-col ${isActiveRace ? 'is-active-branch' : ''} ${isBranchLockedOut ? 'branch-locked-out' : ''}`;
+    colEl.className = `kr-branch-col ${isActiveRace ? 'is-active-branch' : ''}`;
     colEl.style.setProperty('--branch-color', branch.accentColor);
     colEl.style.setProperty('--stagger-i', `${bIdx}`);
 
     // Render 4 tiers from Top (T4 Crown, index 3) down to Bottom (T1 Base, index 0)
     const nodesTopToBottom = [...branch.nodes].reverse();
     nodesTopToBottom.forEach((node) => {
-      const rank = state.getSkillNodeRank(node.id);
+      const rank = state.getSavedSkillNodeRank(node.id);
       const isMax = rank >= node.maxRank;
       const check = state.canUpgradeSkillNode(node.id);
       const isSelected = selectedSkillNodeId === node.id;
@@ -1025,20 +993,16 @@ function renderSkillTreePanel(): void {
 
       const nodeBtn = document.createElement('button');
       nodeBtn.type = 'button';
-      nodeBtn.className = `tree-node tier-${node.tier} ${node.isKeystone ? 'keystone' : ''} ${stateClass} ${isBranchLockedOut ? 'branch-locked-out' : ''} ${isSelected ? 'selected' : ''}`;
+      nodeBtn.className = `tree-node tier-${node.tier} ${node.isKeystone ? 'keystone' : ''} ${stateClass} ${isSelected ? 'selected' : ''}`;
       nodeBtn.style.setProperty('--branch-color', branch.accentColor);
-      nodeBtn.title = `${branch.raceName} · ${node.name} (Lv.${rank}/${node.maxRank})`;
+      nodeBtn.title = `${branch.raceName} · ${node.name} (Lv.${rank}/${node.maxRank}${isActiveRace ? ' · 当前角色生效中' : ' · 切换至此角色后生效'})`;
 
       const svgArt = SKILL_NODE_SVGS[node.id] || '';
-      const reqFirstRankMatches = state.getRequiredMatchesForNodeRank(node.tier, 1);
-      const isMatchLocked = rank === 0 && curMatches < reqFirstRankMatches;
-      const badgeLabel = isMatchLocked
-        ? `${UI_ART.lock}${reqFirstRankMatches}`
-        : isMax
-          ? `${UI_ART.star}${rank}`
-          : rank > 0
-            ? `${UI_ART.star}${rank}/${node.maxRank}`
-            : `${UI_ART.star}${node.maxRank}`;
+      const badgeLabel = isMax
+        ? `${UI_ART.star}${rank}`
+        : rank > 0
+          ? `${UI_ART.star}${rank}/${node.maxRank}`
+          : `${UI_ART.star}${node.maxRank}`;
 
       nodeBtn.innerHTML = `
         <div class="tree-node-medallion">
@@ -1061,15 +1025,12 @@ function renderSkillTreePanel(): void {
       nodeBtn.addEventListener('click', () => {
         const wasSelected = selectedSkillNodeId === node.id;
         selectedSkillNodeId = node.id;
-        if (state.selectRaceBranch(branch.id)) {
-          world.applySkin(state.getEquippedSkin());
-        }
         if (wasSelected && !isMax && state.canUpgradeSkillNode(node.id).ok) {
           if (state.upgradeSkillNode(node.id)) {
             sound.playUpgrade();
             spawnMenuUpgradeBurst(
               nodeBtn,
-              `${node.name} Lv.${state.getSkillNodeRank(node.id)}!`,
+              `${node.name} Lv.${state.getSavedSkillNodeRank(node.id)}!`,
               branch.accentColor
             );
             world.applySkin(state.getEquippedSkin());
@@ -1086,12 +1047,12 @@ function renderSkillTreePanel(): void {
       colEl.appendChild(nodeBtn);
     });
 
-    // Bottom Race Pedestal Shield Emblem (like the 6 class shields at the bottom of Kingdom Rush!)
+    // Bottom Race Pedestal Shield Emblem (click to freely switch active character!)
     const pedestalBtn = document.createElement('button');
     pedestalBtn.type = 'button';
     pedestalBtn.className = `kr-branch-pedestal ${isActiveRace ? 'active' : ''} ${branchPts > 0 ? 'has-points' : ''}`;
     pedestalBtn.style.setProperty('--branch-color', branch.accentColor);
-    pedestalBtn.title = `切换出战种族：${branch.raceName} (${branch.unitName})`;
+    pedestalBtn.title = `切换上阵角色：${branch.raceName} (${branchPts}/16 点技能${isActiveRace ? '生效中' : '待命'})`;
     pedestalBtn.innerHTML = `
       <span class="kr-pedestal-icon">${branch.icon}</span>
       <span class="kr-pedestal-name">${branch.raceName.slice(0, 2)}</span>
@@ -1101,6 +1062,7 @@ function renderSkillTreePanel(): void {
       if (state.selectRaceBranch(branch.id)) {
         sound.playUpgrade();
         world.applySkin(state.getEquippedSkin());
+        refreshMechaUI();
       }
       renderMainMenu();
     });
@@ -1216,6 +1178,12 @@ function launchBattle(): void {
 function renderActiveBuffsBar(): void {
   if (!activeBuffsBar || !world.currentLevel) return;
   const pills: string[] = [];
+
+  if (world.currentTheme) {
+    pills.push(
+      `<span class="buff-pill rarity-rare" title="${world.currentTheme.name}场景特效：${world.currentTheme.perkDesc}">${UI_ART.sparkle} ${world.currentTheme.badge}·${world.currentTheme.perkTitle}</span>`
+    );
+  }
 
   if (world.bossShieldActive) {
     pills.push(
@@ -1502,7 +1470,15 @@ function startLevel(idx: number): void {
   resultModal.classList.add('hidden');
   world.loadLevel(lvl);
   if (stageBadge) {
-    stageBadge.textContent = `3-${stageNum + 1}`;
+    stageBadge.textContent = `${world.currentTheme.badge} · 第 ${stageNum} 关`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl && world.currentTheme) {
+    stagePlaqueSubEl.textContent = `【${world.currentTheme.perkTitle}】${world.currentTheme.perkDesc}`;
+  }
+  const stagePickerEl = document.getElementById('btn-stage-theme');
+  if (stagePickerEl && world.currentTheme) {
+    stagePickerEl.title = `${world.currentTheme.name}特殊效果：【${world.currentTheme.perkTitle}】${world.currentTheme.perkDesc}`;
   }
   bossNameEl.innerHTML = lvl.isMegaBoss
     ? `${UI_ART.crown} 总厂督军`
@@ -1530,33 +1506,37 @@ function startLevel(idx: number): void {
 function refreshUpgradeUI(): void {
   goldAmountEl.textContent = `${Math.floor(state.gold)}`;
 
-  // Fire Rate
+  // Fire Rate (controlled by in-run Combat Time seconds — never costs meta gold!)
   const costFR = state.getFireRateCost();
+  const curTime = Math.floor(state.runCombatTimePool);
   lvlFireRate.textContent = `Lv.${state.fireRateLevel}`;
   if (statFireRate) statFireRate.textContent = `${state.getFireRatePerSec().toFixed(1)}/s`;
-  costFireRate.textContent = `${costFR}`;
-  upgFireRate.disabled = state.gold < costFR;
+  costFireRate.textContent = `${Math.min(curTime, costFR)}/${costFR}秒`;
+  upgFireRate.disabled = curTime < costFR;
 
-  // Power
+  // Power (controlled by in-run Kills — never costs meta gold!)
   const costPwr = state.getPowerCost();
+  const curKills = Math.floor(state.runKillsPool);
   lvlPower.textContent = `Lv.${state.powerLevel}`;
   if (statPower) statPower.textContent = `×${state.getPowerMultiplier().toFixed(2)}`;
-  costPower.textContent = `${costPwr}`;
-  upgPower.disabled = state.gold < costPwr;
+  costPower.textContent = `${Math.min(curKills, costPwr)}/${costPwr}击杀`;
+  upgPower.disabled = curKills < costPwr;
 
-  // Champion
+  // Champion (controlled by in-run Spawns — never costs meta gold!)
   const costChamp = state.getChampionCost();
+  const curSpawns = Math.floor(state.runSpawnsPool);
   lvlChampion.textContent = `Lv.${state.championLevel}`;
   if (statChampion) statChampion.textContent = `×${state.getChampionMultiplier().toFixed(2)}`;
-  costChampion.textContent = `${costChamp}`;
-  upgChampion.disabled = state.gold < costChamp;
+  costChampion.textContent = `${Math.min(curSpawns, costChamp)}/${costChamp}出兵`;
+  upgChampion.disabled = curSpawns < costChamp;
 
-  // Loot
+  // Loot (controlled by in-run Siege Damage — never costs meta gold!)
   const costLt = state.getLootCost();
+  const curSiege = Math.floor(state.runSiegePool);
   lvlLoot.textContent = `Lv.${state.lootLevel}`;
   if (statLoot) statLoot.textContent = `+${Math.round((state.getLootMultiplier() - 1) * 100)}%`;
-  costLoot.textContent = `${costLt}`;
-  upgLoot.disabled = state.gold < costLt;
+  costLoot.textContent = `${Math.min(curSiege, costLt)}/${costLt}攻城`;
+  upgLoot.disabled = curSiege < costLt;
 }
 
 let lastBerserkState = false;
@@ -1582,7 +1562,7 @@ function updateLiveHUD(): void {
   }
 
   const curGold = Math.floor(state.gold);
-  const upgKey = `${state.fireRateLevel}_${state.powerLevel}_${state.championLevel}_${state.lootLevel}`;
+  const upgKey = `${state.fireRateLevel}_${state.powerLevel}_${state.championLevel}_${state.lootLevel}_${Math.floor(state.runCombatTimePool)}_${Math.floor(state.runKillsPool)}_${Math.floor(state.runSpawnsPool)}_${Math.floor(state.runSiegePool)}`;
   if (curGold !== lastHudGold || upgKey !== lastUpgLevelsKey) {
     lastHudGold = curGold;
     lastUpgLevelsKey = upgKey;
@@ -1651,10 +1631,29 @@ if (btnStartBattle) {
 
 if (btnEditName) {
   btnEditName.addEventListener('click', () => {
-    const input = window.prompt('请输入你的指挥官昵称（最多14个字符）：', state.playerName);
+    if (state.gold < RENAME_GOLD_COST) {
+      showGlobalToast(
+        `💰 改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币（当前：${Math.floor(state.gold).toLocaleString()} 金币）`
+      );
+      return;
+    }
+    const input = window.prompt(
+      `请输入新的指挥官昵称（最多14个字符，改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币）：`,
+      state.playerName
+    );
     if (input && input.trim()) {
-      state.setPlayerName(input);
-      renderMainMenu();
+      const res = state.setPlayerName(input);
+      if (res.ok) {
+        sound.playUpgrade();
+        spawnMenuUpgradeBurst(btnEditName, `-${RENAME_GOLD_COST.toLocaleString()} 金币`, '#f59e0b');
+        showGlobalToast(`✅ 改名成功：「${state.playerName}」（已消耗 ${RENAME_GOLD_COST.toLocaleString()} 金币）`);
+        refreshUpgradeUI();
+        renderMainMenu();
+      } else if (res.reason === 'insufficient_gold') {
+        showGlobalToast(
+          `💰 改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币（当前：${Math.floor(state.gold).toLocaleString()} 金币）`
+        );
+      }
     }
   });
 }
@@ -1686,13 +1685,6 @@ if (menuEquippedSkin) {
   });
 }
 
-if (btnHomePedestal) {
-  btnHomePedestal.addEventListener('click', () => {
-    sound.playUpgrade();
-    switchMainMenuTab('skills');
-  });
-}
-
 function cycleHomeRace(delta: number): void {
   const curRace = state.getActiveRaceBranch();
   const idx = SKILL_TREE_BRANCHES.findIndex((b) => b.id === curRace.id);
@@ -1705,8 +1697,7 @@ function cycleHomeRace(delta: number): void {
     spawnMenuUpgradeBurst(homeMascotArtEl, `${nextBranch.raceName}出阵!`, nextBranch.accentColor);
     refreshMechaUI();
     renderMainMenu();
-  } else {
-    showGlobalToast('当前已投入天赋锁定专精种族，洗点后可自由切换其他萌族！');
+    renderActiveBuffsBar();
   }
 }
 
@@ -1721,18 +1712,6 @@ if (btnHomeNextRace) {
   btnHomeNextRace.addEventListener('click', (e) => {
     e.stopPropagation();
     cycleHomeRace(1);
-  });
-}
-
-if (btnHomeTheme) {
-  btnHomeTheme.addEventListener('click', () => {
-    sound.playUpgrade();
-    const nextTheme = world.cycleTheme();
-    if (stageBadge) {
-      stageBadge.textContent = `${nextTheme.badge} · 第 ${state.currentLevelIndex + 1} 关`;
-    }
-    spawnMenuUpgradeBurst(btnHomeTheme, `切换世界：${nextTheme.name}`, '#38bdf8');
-    renderMainMenu();
   });
 }
 
@@ -1831,26 +1810,9 @@ document.querySelectorAll<HTMLButtonElement>('.menu-tab').forEach((tabBtn) => {
 });
 
 btnRerollMap.addEventListener('click', () => {
-  const nextTheme = world.cycleTheme();
   startLevel(state.currentLevelIndex);
-  showBanner(`🎲 切换地图 · ${nextTheme.name}`);
+  showBanner(`🎲 重随地图 · ${world.currentTheme.name}`);
 });
-
-const handleCycleSceneTheme = () => {
-  sound.playUpgrade();
-  const nextTheme = world.cycleTheme();
-  if (stageBadge) {
-    stageBadge.textContent = `${nextTheme.badge} · 第 ${state.currentLevelIndex + 1} 关`;
-  }
-  renderActiveBuffsBar();
-  showBanner(`🎨 ${nextTheme.name}`);
-};
-
-btnTheme.addEventListener('click', handleCycleSceneTheme);
-const btnStageTheme = document.getElementById('btn-stage-theme');
-if (btnStageTheme) {
-  btnStageTheme.addEventListener('click', handleCycleSceneTheme);
-}
 
 btnCamera.addEventListener('click', () => {
   const modeName = world.toggleCameraMode();
@@ -1919,11 +1881,22 @@ btnOrbital.addEventListener('click', () => {
   world.triggerOrbitalStrike();
 });
 
+function rollTycoonFreeDoubleUpgrade(btnEl: HTMLElement): boolean {
+  if (state.getSkillNodeRank('tycoon_t4') > 0 && Math.random() < 0.2) {
+    spawnMenuUpgradeBurst(btnEl, '👑 财阀免单连升 +2!', '#facc15');
+    return true;
+  }
+  return false;
+}
+
 upgFireRate.addEventListener('click', () => {
   const cost = state.getFireRateCost();
-  if (state.gold >= cost) {
-    state.gold -= cost;
-    state.fireRateLevel++;
+  if (Math.floor(state.runCombatTimePool) >= cost) {
+    const isFreeDouble = rollTycoonFreeDoubleUpgrade(upgFireRate);
+    if (!isFreeDouble) {
+      state.runCombatTimePool = Math.max(0, state.runCombatTimePool - cost);
+    }
+    state.fireRateLevel += isFreeDouble ? 2 : 1;
     state.save();
     sound.playUpgrade();
     world.syncTurretEvolution(true);
@@ -1933,9 +1906,12 @@ upgFireRate.addEventListener('click', () => {
 
 upgPower.addEventListener('click', () => {
   const cost = state.getPowerCost();
-  if (state.gold >= cost) {
-    state.gold -= cost;
-    state.powerLevel++;
+  if (Math.floor(state.runKillsPool) >= cost) {
+    const isFreeDouble = rollTycoonFreeDoubleUpgrade(upgPower);
+    if (!isFreeDouble) {
+      state.runKillsPool = Math.max(0, state.runKillsPool - cost);
+    }
+    state.powerLevel += isFreeDouble ? 2 : 1;
     state.save();
     sound.playUpgrade();
     world.syncTurretEvolution(true);
@@ -1945,10 +1921,13 @@ upgPower.addEventListener('click', () => {
 
 upgChampion.addEventListener('click', () => {
   const cost = state.getChampionCost();
-  if (state.gold >= cost) {
+  if (Math.floor(state.runSpawnsPool) >= cost) {
     const prevTier = state.getUltimateEvolutionSpec().tier;
-    state.gold -= cost;
-    state.championLevel++;
+    const isFreeDouble = rollTycoonFreeDoubleUpgrade(upgChampion);
+    if (!isFreeDouble) {
+      state.runSpawnsPool = Math.max(0, state.runSpawnsPool - cost);
+    }
+    state.championLevel += isFreeDouble ? 2 : 1;
     state.save();
     sound.playUpgrade();
     refreshMechaUI();
@@ -1967,9 +1946,12 @@ upgChampion.addEventListener('click', () => {
 
 upgLoot.addEventListener('click', () => {
   const cost = state.getLootCost();
-  if (state.gold >= cost) {
-    state.gold -= cost;
-    state.lootLevel++;
+  if (Math.floor(state.runSiegePool) >= cost) {
+    const isFreeDouble = rollTycoonFreeDoubleUpgrade(upgLoot);
+    if (!isFreeDouble) {
+      state.runSiegePool = Math.max(0, state.runSiegePool - cost);
+    }
+    state.lootLevel += isFreeDouble ? 2 : 1;
     state.save();
     sound.playUpgrade();
     refreshUpgradeUI();
@@ -2142,9 +2124,6 @@ window.addEventListener('keydown', (e) => {
       } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
         e.preventDefault();
         cycleHomeRace(1);
-      } else if (e.code === 'KeyT') {
-        e.preventDefault();
-        btnHomeTheme?.click();
       } else if (e.code === 'KeyW' || e.code === 'ArrowUp') {
         e.preventDefault();
         leaderboardListEl?.scrollBy({ top: -72, behavior: 'smooth' });
@@ -2426,9 +2405,6 @@ window.addEventListener('keydown', (e) => {
   } else if (e.code === 'KeyG') {
     e.preventDefault();
     btnRerollMap.click();
-  } else if (e.code === 'KeyT') {
-    e.preventDefault();
-    btnTheme.click();
   } else if (e.code === 'KeyV') {
     e.preventDefault();
     btnCamera.click();
