@@ -19,7 +19,8 @@ func _ready() -> void:
 	var all_args := OS.get_cmdline_args()
 	all_args.append_array(OS.get_cmdline_user_args())
 	for arg in all_args:
-		if String(arg) == "--self-test":
+		var s := String(arg)
+		if s == "--self-test" or s == "--playtest":
 			is_self_test = true
 			break
 
@@ -28,18 +29,13 @@ func _ready() -> void:
 		return
 
 	print("==================================================================")
-	print("[SelfTestRunner] Activated `--self-test`: Engine.time_scale = 20.0 (180 frames / ~60s simulation)")
+	print("[SelfTestRunner] Activated `--self-test` / `--playtest`: Engine.time_scale = 20.0 (180 frames / ~60s simulation)")
 	print("==================================================================")
 	Engine.time_scale = 20.0
 
-	# Ensure buffers have room at test start so the 60s cold-start / pipeline loop runs actively
-	if GameManager != null:
-		if GameManager.is_stall_full():
-			for k in GameManager.stall_inventory.keys():
-				GameManager.stall_inventory[k] = 1
-		if GameManager.is_raw_basket_full(1):
-			for k in GameManager.raw_baskets[1].keys():
-				GameManager.raw_baskets[1][k] = 0
+	# Start from deterministic clean playtest state (never overwrites player's real `user://savegame.json`)
+	if GameManager != null and GameManager.has_method("reset_for_playtest_state"):
+		GameManager.reset_for_playtest_state()
 
 	if EventBus != null:
 		EventBus.item_produced.connect(_on_item_produced)
@@ -66,11 +62,35 @@ func _process(_delta: float) -> void:
 		return
 
 	frame_counter += 1
-	if frame_counter == 10:
-		# Spawn an active customer early so the visual screenshot also shows a live traveler on the island
+	if frame_counter == 5:
+		# Verify locked-island building upgrade guard and crop evolution mapping during playtest
+		if GameManager.upgrade_building("cauldron") or GameManager.upgrade_building("soil_2") or GameManager.upgrade_building("soil_3"):
+			_fail_and_quit("[断言3-产线活体闭环]", "Locked island building was allowed to upgrade before island unlock!")
+			return
+		if EconomyConfig.get_evolved_crop_id(2, 1) != "crop_2" or EconomyConfig.get_evolved_crop_id(3, 1) != "crop_3":
+			_fail_and_quit("[断言3-产线活体闭环]", "Island 2/3 base crop mapping error: isl2=%s, isl3=%s" % [
+				EconomyConfig.get_evolved_crop_id(2, 1), EconomyConfig.get_evolved_crop_id(3, 1)
+			])
+			return
+	elif frame_counter == 10:
+		# Spawn an active customer early and simulate player recruiting Otter + Fox + upgrading Island 1 buildings
 		var world := get_tree().current_scene as MainWorld
 		if world != null and world.customers.size() == 0:
 			world._spawn_customer(false)
+		GameManager.add_gold(320)
+		GameManager.upgrade_animal("otter")
+		GameManager.upgrade_animal("fox")
+		GameManager.upgrade_building("soil_1")
+		GameManager.upgrade_building("mortar")
+		GameManager.upgrade_building("stall")
+	elif frame_counter == 70:
+		# Simulate HUD tab cycling & weather interaction during autonomous playtest
+		var world := get_tree().current_scene as MainWorld
+		if world != null and world.hud != null:
+			for tab_i in [0, 1, 2, 3]:
+				world.hud.open_drawer(tab_i)
+			world.hud.close_drawer(false)
+		GameManager.set_weather(GameManager.WeatherState.DUSK)
 	elif frame_counter == 150:
 		# Trigger animal pet boost on Bunny so `HeartIcon` (`emote_heart.png`) and +50% haste are verified
 		var world := get_tree().current_scene as MainWorld
@@ -287,7 +307,27 @@ func _run_all_four_assertions_and_export() -> void:
 	print("       - 收起态 (`preview_engine_1920x360.png` / `preview_live_godot.png`): %dx%d | SHA256=%s" % [img_closed.get_width(), img_closed.get_height(), hash_closed.substr(0, 16)])
 	print("       - 展开态 (`preview_drawer_open_1920x360.png` via `HUD.open_drawer(0)`): %dx%d | SHA256=%s" % [img_open.get_width(), img_open.get_height(), hash_open.substr(0, 16)])
 	print("==================================================================")
+	_append_playtest_audit_log(checked_sprites, max_overlap_seen, min_gap_seen, total_bunny_dist, total_all_workers_dist, hash_closed, hash_open)
 	get_tree().quit(0)
+
+func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float, bunny_dist: float, all_dist: float, h_closed: String, h_open: String) -> void:
+	var log_path := "res://playtest_audit_log.md"
+	var existing := ""
+	if FileAccess.file_exists(log_path):
+		existing = FileAccess.get_file_as_string(log_path)
+	else:
+		existing = "# 《枫叶云岛物语》全自动真机试玩与巡检记录 (`playtest_audit_log.md`)\n\n"
+	var dt := Time.get_datetime_string_from_system(false, true)
+	var entry := "## [%s] 自主试玩巡检 PASS\n" % dt
+	entry += "- **切帧与姿态防呆**: 已校验 `%d` 个精灵节点，0 越界切帧、0 旋转异常、前爪抱篮 3 层合成挂载正常。\n" % sprites_cnt
+	entry += "- **建筑间距与图层**: 三岛 12 座主建筑最大水平重叠率 `%.1f%%` (`<=15%%`)，最小净间距 `%.1fpx` (`>=28px`)。\n" % [max_ov * 100.0, min_gap]
+	entry += "- **产线活体与交互**: 兔子累计移动 `%.1fpx` (全员 `%.1fpx`)，农田收获 `%d` 次，入库/上架 `%d` 件，顾客结账 `%d` 单，滚轮鼠标锚点缩放与锁岛防误升校验通过。\n" % [
+		bunny_dist, all_dist, harvest_count, items_delivered_count, customer_paid_count
+	]
+	entry += "- **真机双状态截图哈希**: 收起态 `%s` | 展开态 `%s`\n\n" % [h_closed.substr(0, 16), h_open.substr(0, 16)]
+	var f := FileAccess.open(log_path, FileAccess.WRITE)
+	if f != null:
+		f.store_string(existing + entry)
 
 func _sha256_bytes(buf: PackedByteArray) -> String:
 	var hc := HashingContext.new()

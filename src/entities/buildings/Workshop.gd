@@ -89,6 +89,12 @@ func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, _p_offset: Vect
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	_reload_texture()
+	var cur_lv := get_workshop_level()
+	if level_label != null:
+		level_label.text = "Lv." + str(cur_lv)
+	if visual_upgrader != null:
+		visual_upgrader.building_kind = workshop_id
+		visual_upgrader.apply_level_visuals(cur_lv, false)
 
 func get_building_key() -> String:
 	return "soil_3" if workshop_id == "orbis_linked" else workshop_id

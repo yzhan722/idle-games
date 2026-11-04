@@ -2,7 +2,11 @@ extends Node
 ## Global State, Strict Per-Island Recruit Caps, Recruit-to-Promote & Save System (`src/autoload/GameManager.gd`) — PRD Patch v2.2
 
 const SAVE_PATH := "user://savegame.json"
+const SELFTEST_SAVE_PATH := "user://savegame_selftest.json"
 const SAVE_VERSION := 22
+
+var active_save_path: String = SAVE_PATH
+var is_automated_test_mode: bool = false
 
 var gold: int = 120
 var total_gold_earned: int = 120
@@ -93,7 +97,53 @@ var unlocked_codex: Dictionary = {
 }
 
 func _ready() -> void:
-	load_game()
+	var all_args := OS.get_cmdline_args()
+	all_args.append_array(OS.get_cmdline_user_args())
+	for arg in all_args:
+		var s := String(arg)
+		if s == "--self-test" or s == "--playtest":
+			is_automated_test_mode = true
+			active_save_path = SELFTEST_SAVE_PATH
+			break
+	if not is_automated_test_mode:
+		load_game()
+	_sync_codex_from_progression()
+
+func reset_for_playtest_state() -> void:
+	gold = 120
+	total_gold_earned = 120
+	desktop_companion_mode = true
+	unlocked_islands = {1: true, 2: false, 3: false}
+	building_levels = {"soil_1": 1, "mortar": 1, "stall": 1, "soil_2": 1, "cauldron": 1, "soil_3": 1}
+	animal_levels = {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+	island_recruited = {
+		1: {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0},
+		2: {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0},
+		3: {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+	}
+	raw_baskets = {
+		1: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+		2: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+		3: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
+	}
+	workshop_inputs = {
+		"mortar": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+		"cauldron": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+		"orbis_linked": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
+	}
+	workshop_outputs = {
+		"mortar": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
+		"cauldron": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
+		"orbis_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
+	}
+	stall_inventory = {
+		"crop_0": 2, "crop_1": 1, "crop_2": 0, "crop_3": 0,
+		"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0
+	}
+	unlocked_codex = {
+		"crop_0": true, "crop_1": false, "crop_2": false, "crop_3": false,
+		"delicacy_0": false, "delicacy_1": false, "delicacy_2": false, "delicacy_3": false
+	}
 	_sync_codex_from_progression()
 
 func _process(delta: float) -> void:
@@ -160,8 +210,8 @@ func _sync_codex_from_progression() -> void:
 	if get_island_recruited_count(1, "fox") >= 1 or int(building_levels.get("mortar", 1)) > 1:
 		unlock_codex_entry(EconomyConfig.get_evolved_delicacy_id("mortar", int(building_levels.get("mortar", 1))))
 	if bool(unlocked_islands.get(2, false)) and (get_island_recruited_count(2, "penguin") >= 1 or int(building_levels.get("cauldron", 1)) > 1):
-		unlock_codex_entry("delicacy_2")
-	if bool(unlocked_islands.get(3, false)) and (get_island_recruited_count(3, "fox") >= 1 or get_island_recruited_count(3, "penguin") >= 1):
+		unlock_codex_entry(EconomyConfig.get_evolved_delicacy_id("cauldron", int(building_levels.get("cauldron", 1))))
+	if bool(unlocked_islands.get(3, false)) and (get_island_recruited_count(3, "fox") >= 1 or get_island_recruited_count(3, "penguin") >= 1 or int(building_levels.get("soil_3", 1)) > 1):
 		unlock_codex_entry("delicacy_3")
 
 func get_unlocked_codex_count() -> int:
@@ -236,7 +286,9 @@ func spend_gold(cost: int) -> bool:
 func get_prosperity_score() -> int:
 	var score := 0
 	for k in building_levels.keys():
-		score += int(building_levels[k]) * 20
+		var req_isl := int(EconomyConfig.BUILDINGS.get(k, {}).get("island", 1))
+		if bool(unlocked_islands.get(req_isl, false)):
+			score += int(building_levels[k]) * 20
 	for k in animal_levels.keys():
 		score += get_total_recruited(k) * 35 + int(animal_levels[k]) * 25
 	if bool(unlocked_islands.get(2, false)):
@@ -404,12 +456,16 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 	unlock_codex_entry(target_id)
 
 	var b_lv := int(building_levels.get("soil_1", 1))
-	if target_id == "delicacy_0" or target_id == "delicacy_1":
+	if target_id == "crop_2":
+		b_lv = int(building_levels.get("soil_2", 1))
+	elif target_id == "crop_3":
+		b_lv = int(building_levels.get("soil_3", 1))
+	elif target_id == "delicacy_0" or target_id == "delicacy_1":
 		b_lv = int(building_levels.get("mortar", 1))
 	elif target_id == "delicacy_2":
 		b_lv = int(building_levels.get("cauldron", 1))
 	elif target_id == "delicacy_3":
-		b_lv = int(building_levels.get("soil_3", 1))
+		b_lv = maxi(int(building_levels.get("cauldron", 1)), int(building_levels.get("soil_3", 1)))
 
 	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
 	var unit_price := EconomyConfig.calc_item_unit_price(
@@ -431,6 +487,9 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 
 func upgrade_building(b_key: String) -> bool:
 	if not EconomyConfig.BUILDINGS.has(b_key):
+		return false
+	var req_island := int(EconomyConfig.BUILDINGS[b_key].get("island", 1))
+	if not bool(unlocked_islands.get(req_island, false)):
 		return false
 	var cur_lv := int(building_levels.get(b_key, 1))
 	var base_c := int(EconomyConfig.BUILDINGS[b_key]["base_cost"])
@@ -499,7 +558,9 @@ func unlock_island(island_idx: int) -> bool:
 func estimate_idle_gold_per_sec() -> float:
 	var base_rate := 1.8
 	for k in building_levels.keys():
-		base_rate += float(building_levels[k]) * 1.1
+		var req_isl := int(EconomyConfig.BUILDINGS.get(k, {}).get("island", 1))
+		if bool(unlocked_islands.get(req_isl, false)):
+			base_rate += float(building_levels[k]) * 1.1
 	for k in animal_levels.keys():
 		base_rate += float(get_total_recruited(k)) * 1.6
 	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0))) * get_codex_price_multiplier()
@@ -526,14 +587,14 @@ func save_game() -> void:
 		"stall_inventory": stall_inventory,
 		"unlocked_codex": unlocked_codex
 	}
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(data, "\t"))
 
 func load_game() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(active_save_path):
 		return
-	var txt := FileAccess.get_file_as_string(SAVE_PATH)
+	var txt := FileAccess.get_file_as_string(active_save_path)
 	var parsed = JSON.parse_string(txt)
 	if not (parsed is Dictionary):
 		return

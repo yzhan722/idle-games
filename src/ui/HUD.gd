@@ -440,15 +440,17 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 		0:
 			for b_key in ["soil_1", "mortar", "stall", "cauldron"]:
 				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
+				var req_isl := int(cfg.get("island", 1))
+				var isl_on := bool(GameManager.unlocked_islands.get(req_isl, false))
 				var lv := int(GameManager.building_levels.get(b_key, 1))
 				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), lv)
 				var next_ms := (int(floor(float(lv) / 25.0)) + 1) * 25
 				list.append({
 					"type": "building",
 					"key": b_key,
-					"title": String(cfg["name"]) + " Lv." + str(lv),
-					"sub": "下个2x蜕变: Lv." + str(next_ms),
-					"cost": "升级 " + str(cost) + "G"
+					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (未解锁)"),
+					"sub": ("下个2x蜕变: Lv." + str(next_ms)) if isl_on else ("需先开拓木桥解锁岛" + str(req_isl)),
+					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿"
 				})
 		1:
 			for a_key in ["bunny", "otter", "fox", "shiba", "penguin", "toucan"]:
@@ -499,22 +501,24 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			})
 			for b_key in ["soil_2", "soil_3"]:
 				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
+				var req_isl := int(cfg.get("island", 2))
+				var isl_on := bool(GameManager.unlocked_islands.get(req_isl, false))
 				var lv := int(GameManager.building_levels.get(b_key, 1))
 				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), lv)
 				list.append({
 					"type": "building",
 					"key": b_key,
-					"title": String(cfg["name"]) + " Lv." + str(lv),
-					"sub": String(cfg["desc"]).substr(0, 12),
-					"cost": "升级 " + str(cost) + "G"
+					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (未解锁)"),
+					"sub": String(cfg["desc"]).substr(0, 12) if isl_on else ("需先解锁上方木桥" + str(req_isl - 1)),
+					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿"
 				})
 		3:
 			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)
 			var codex_pairs := [
-				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "一阶·晨露田园"},
-				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "二阶·果香烘焙"},
-				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "三阶·密林星露"},
-				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "四阶·云海盛宴"}
+				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "一阶·晨露田园", "c_hint": "???(初始解锁)", "d_hint": "???(研钵工坊)"},
+				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "二阶·果香烘焙", "c_hint": "???(农田Lv.25)", "d_hint": "???(研钵Lv.25)"},
+				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "三阶·密林星露", "c_hint": "???(解锁岛2)", "d_hint": "???(岛2坩埚)"},
+				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "四阶·云海盛宴", "c_hint": "???(解锁岛3)", "d_hint": "???(岛3双工坊)"}
 			]
 			for cp in codex_pairs:
 				var cid := String(cp["crop"])
@@ -528,7 +532,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"type": "codex",
 					"key": str(cp["idx"]),
 					"title": String(cp["tier_name"]) + " (+" + str(bonus_pct) + "%)",
-					"sub": (c_name if c_on else "???(升至Lv.25)") + " | " + (d_name if d_on else "???(工坊解锁)"),
+					"sub": (c_name if c_on else String(cp["c_hint"])) + " | " + (d_name if d_on else String(cp["d_hint"])),
 					"cost": "已点亮 " + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 · 永久售价+" + str(bonus_pct) + "%"
 				})
 	return list

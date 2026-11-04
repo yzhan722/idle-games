@@ -157,7 +157,7 @@ func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
 			tw.tween_property(target_parent, "scale", base_sc * 0.92, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 			tw.tween_property(target_parent, "scale", base_sc, 0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-			var gpos := target_parent.global_position - Vector2(0, 36)
+			var gpos := target_parent.position
 			if current_tier > old_tier or (new_level % 25 == 0):
 				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -54), "★里程碑突破 Lv." + str(new_level) + "!", Color("#FFE066"))
 				if SoundManager != null:

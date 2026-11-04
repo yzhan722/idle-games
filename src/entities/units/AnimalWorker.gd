@@ -289,12 +289,10 @@ func _is_home_chef_hired() -> bool:
 		return GameManager.get_island_recruited_count(2, "penguin") >= 1
 	return GameManager.get_island_recruited_count(3, "fox") >= 1 or GameManager.get_island_recruited_count(3, "penguin") >= 1
 
-func _try_deposit_to_stall(item_id: String, qty: int, float_prefix: String, float_col: Color) -> bool:
+func _try_deposit_to_stall(item_id: String, qty: int, _float_prefix: String, _float_col: Color) -> bool:
 	var safe_id := item_id if item_id != "" else "crop_0"
 	var safe_qty := maxi(1, qty)
 	var accepted := GameManager.add_to_stall(safe_id, safe_qty)
-	if accepted > 0:
-		EventBus.spawn_floating_text.emit(position + Vector2(0.0, -48.0), float_prefix + str(accepted), float_col)
 	var rem := safe_qty - accepted
 	if rem > 0:
 		# Route any stall-cap overflow back into the home buffer so no items are lost and workers never loiter at the stall counter
@@ -692,8 +690,6 @@ func _update_chef_work_step() -> void:
 			if w_node != null:
 				w_node.crafted_count += 1
 				w_node.set_chef_progress(chef_slot_key, 0.0, false)
-			var mult_txt := "52x精炼+1" if home_island == 3 else ("12x甘露+1" if is_penguin else "3.5x美食+1")
-			EventBus.spawn_floating_text.emit(position + Vector2(0.0, -48.0), mult_txt, Color("#FFE066"))
 			worker_step = 0
 			state_timer = 0.0
 

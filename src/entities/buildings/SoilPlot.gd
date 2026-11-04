@@ -103,6 +103,13 @@ func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: V
 	watered = true
 	_refresh_evolved_crop()
 	_sync_sprites()
+	var cur_lv := get_building_level()
+	if level_label != null:
+		level_label.visible = (plot_index_on_island == 0)
+		level_label.text = "Lv." + str(cur_lv)
+	if visual_upgrader != null:
+		visual_upgrader.visible = (plot_index_on_island == 0)
+		visual_upgrader.apply_level_visuals(cur_lv, false)
 
 func get_building_key() -> String:
 	return "soil_" + str(island_idx)

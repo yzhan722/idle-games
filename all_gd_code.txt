@@ -1,4 +1,4 @@
-﻿=== FILE: D:\project\maple-isle-idle\src\autoload\EconomyConfig.gd (12498 bytes) ===
+﻿=== FILE: D:\project\maple-isle-idle\src\autoload\EconomyConfig.gd (12546 bytes) ===
 extends Node
 ## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution, Native Typography & Drop Shadow Math (`EconomyConfig.gd`)
 ## Strictly enforces GEMINI.md Engineering Laws 1~6.
@@ -162,7 +162,11 @@ func get_frame_region(sheet_key: String, frame_idx: int) -> Rect2:
 	return Rect2(col * cw, row * ch, cw, ch)
 
 func get_evolved_crop_id(base_island: int, building_level: int) -> String:
-	var base_idx := clampi(base_island - 1, 0, 3)
+	var base_idx := 0
+	if base_island == 2:
+		base_idx = 2
+	elif base_island >= 3:
+		base_idx = 3
 	var evo_steps := int(floor(float(maxi(1, building_level)) / 25.0))
 	var final_idx := clampi(base_idx + evo_steps, 0, 3)
 	return "crop_" + str(final_idx)
@@ -271,12 +275,16 @@ signal weather_changed(new_weather: int)
 signal codex_unlocked(item_id: String)
 signal carnival_frenzy_started(duration: float)
 
-=== FILE: D:\project\maple-isle-idle\src\autoload\GameManager.gd (20729 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\autoload\GameManager.gd (23575 bytes) ===
 extends Node
 ## Global State, Strict Per-Island Recruit Caps, Recruit-to-Promote & Save System (`src/autoload/GameManager.gd`) 鈥?PRD Patch v2.2
 
 const SAVE_PATH := "user://savegame.json"
+const SELFTEST_SAVE_PATH := "user://savegame_selftest.json"
 const SAVE_VERSION := 22
+
+var active_save_path: String = SAVE_PATH
+var is_automated_test_mode: bool = false
 
 var gold: int = 120
 var total_gold_earned: int = 120
@@ -367,7 +375,53 @@ var unlocked_codex: Dictionary = {
 }
 
 func _ready() -> void:
-	load_game()
+	var all_args := OS.get_cmdline_args()
+	all_args.append_array(OS.get_cmdline_user_args())
+	for arg in all_args:
+		var s := String(arg)
+		if s == "--self-test" or s == "--playtest":
+			is_automated_test_mode = true
+			active_save_path = SELFTEST_SAVE_PATH
+			break
+	if not is_automated_test_mode:
+		load_game()
+	_sync_codex_from_progression()
+
+func reset_for_playtest_state() -> void:
+	gold = 120
+	total_gold_earned = 120
+	desktop_companion_mode = true
+	unlocked_islands = {1: true, 2: false, 3: false}
+	building_levels = {"soil_1": 1, "mortar": 1, "stall": 1, "soil_2": 1, "cauldron": 1, "soil_3": 1}
+	animal_levels = {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+	island_recruited = {
+		1: {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0},
+		2: {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0},
+		3: {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+	}
+	raw_baskets = {
+		1: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+		2: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+		3: {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
+	}
+	workshop_inputs = {
+		"mortar": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+		"cauldron": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
+		"orbis_linked": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
+	}
+	workshop_outputs = {
+		"mortar": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
+		"cauldron": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
+		"orbis_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
+	}
+	stall_inventory = {
+		"crop_0": 2, "crop_1": 1, "crop_2": 0, "crop_3": 0,
+		"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0
+	}
+	unlocked_codex = {
+		"crop_0": true, "crop_1": false, "crop_2": false, "crop_3": false,
+		"delicacy_0": false, "delicacy_1": false, "delicacy_2": false, "delicacy_3": false
+	}
 	_sync_codex_from_progression()
 
 func _process(delta: float) -> void:
@@ -434,8 +488,8 @@ func _sync_codex_from_progression() -> void:
 	if get_island_recruited_count(1, "fox") >= 1 or int(building_levels.get("mortar", 1)) > 1:
 		unlock_codex_entry(EconomyConfig.get_evolved_delicacy_id("mortar", int(building_levels.get("mortar", 1))))
 	if bool(unlocked_islands.get(2, false)) and (get_island_recruited_count(2, "penguin") >= 1 or int(building_levels.get("cauldron", 1)) > 1):
-		unlock_codex_entry("delicacy_2")
-	if bool(unlocked_islands.get(3, false)) and (get_island_recruited_count(3, "fox") >= 1 or get_island_recruited_count(3, "penguin") >= 1):
+		unlock_codex_entry(EconomyConfig.get_evolved_delicacy_id("cauldron", int(building_levels.get("cauldron", 1))))
+	if bool(unlocked_islands.get(3, false)) and (get_island_recruited_count(3, "fox") >= 1 or get_island_recruited_count(3, "penguin") >= 1 or int(building_levels.get("soil_3", 1)) > 1):
 		unlock_codex_entry("delicacy_3")
 
 func get_unlocked_codex_count() -> int:
@@ -510,7 +564,9 @@ func spend_gold(cost: int) -> bool:
 func get_prosperity_score() -> int:
 	var score := 0
 	for k in building_levels.keys():
-		score += int(building_levels[k]) * 20
+		var req_isl := int(EconomyConfig.BUILDINGS.get(k, {}).get("island", 1))
+		if bool(unlocked_islands.get(req_isl, false)):
+			score += int(building_levels[k]) * 20
 	for k in animal_levels.keys():
 		score += get_total_recruited(k) * 35 + int(animal_levels[k]) * 25
 	if bool(unlocked_islands.get(2, false)):
@@ -678,12 +734,16 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 	unlock_codex_entry(target_id)
 
 	var b_lv := int(building_levels.get("soil_1", 1))
-	if target_id == "delicacy_0" or target_id == "delicacy_1":
+	if target_id == "crop_2":
+		b_lv = int(building_levels.get("soil_2", 1))
+	elif target_id == "crop_3":
+		b_lv = int(building_levels.get("soil_3", 1))
+	elif target_id == "delicacy_0" or target_id == "delicacy_1":
 		b_lv = int(building_levels.get("mortar", 1))
 	elif target_id == "delicacy_2":
 		b_lv = int(building_levels.get("cauldron", 1))
 	elif target_id == "delicacy_3":
-		b_lv = int(building_levels.get("soil_3", 1))
+		b_lv = maxi(int(building_levels.get("cauldron", 1)), int(building_levels.get("soil_3", 1)))
 
 	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
 	var unit_price := EconomyConfig.calc_item_unit_price(
@@ -705,6 +765,9 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 
 func upgrade_building(b_key: String) -> bool:
 	if not EconomyConfig.BUILDINGS.has(b_key):
+		return false
+	var req_island := int(EconomyConfig.BUILDINGS[b_key].get("island", 1))
+	if not bool(unlocked_islands.get(req_island, false)):
 		return false
 	var cur_lv := int(building_levels.get(b_key, 1))
 	var base_c := int(EconomyConfig.BUILDINGS[b_key]["base_cost"])
@@ -773,7 +836,9 @@ func unlock_island(island_idx: int) -> bool:
 func estimate_idle_gold_per_sec() -> float:
 	var base_rate := 1.8
 	for k in building_levels.keys():
-		base_rate += float(building_levels[k]) * 1.1
+		var req_isl := int(EconomyConfig.BUILDINGS.get(k, {}).get("island", 1))
+		if bool(unlocked_islands.get(req_isl, false)):
+			base_rate += float(building_levels[k]) * 1.1
 	for k in animal_levels.keys():
 		base_rate += float(get_total_recruited(k)) * 1.6
 	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0))) * get_codex_price_multiplier()
@@ -800,14 +865,14 @@ func save_game() -> void:
 		"stall_inventory": stall_inventory,
 		"unlocked_codex": unlocked_codex
 	}
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(data, "\t"))
 
 func load_game() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(active_save_path):
 		return
-	var txt := FileAccess.get_file_as_string(SAVE_PATH)
+	var txt := FileAccess.get_file_as_string(active_save_path)
 	var parsed = JSON.parse_string(txt)
 	if not (parsed is Dictionary):
 		return
@@ -851,7 +916,7 @@ func load_game() -> void:
 		add_gold(pending_offline_gold)
 		EventBus.offline_earnings_ready.emit(pending_offline_seconds, pending_offline_gold)
 
-=== FILE: D:\project\maple-isle-idle\src\autoload\SelfTestRunner.gd (16189 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\autoload\SelfTestRunner.gd (18966 bytes) ===
 extends Node
 ## Real-Engine 20x Fast-Forward Self-Test & Dual-State Viewport Screenshot Exporter (`src/autoload/SelfTestRunner.gd`)
 ## Activated when command-line args contain `--self-test` (via `./run_godot.ps1 --self-test`).
@@ -873,7 +938,8 @@ func _ready() -> void:
 	var all_args := OS.get_cmdline_args()
 	all_args.append_array(OS.get_cmdline_user_args())
 	for arg in all_args:
-		if String(arg) == "--self-test":
+		var s := String(arg)
+		if s == "--self-test" or s == "--playtest":
 			is_self_test = true
 			break
 
@@ -882,18 +948,13 @@ func _ready() -> void:
 		return
 
 	print("==================================================================")
-	print("[SelfTestRunner] Activated `--self-test`: Engine.time_scale = 20.0 (180 frames / ~60s simulation)")
+	print("[SelfTestRunner] Activated `--self-test` / `--playtest`: Engine.time_scale = 20.0 (180 frames / ~60s simulation)")
 	print("==================================================================")
 	Engine.time_scale = 20.0
 
-	# Ensure buffers have room at test start so the 60s cold-start / pipeline loop runs actively
-	if GameManager != null:
-		if GameManager.is_stall_full():
-			for k in GameManager.stall_inventory.keys():
-				GameManager.stall_inventory[k] = 1
-		if GameManager.is_raw_basket_full(1):
-			for k in GameManager.raw_baskets[1].keys():
-				GameManager.raw_baskets[1][k] = 0
+	# Start from deterministic clean playtest state (never overwrites player's real `user://savegame.json`)
+	if GameManager != null and GameManager.has_method("reset_for_playtest_state"):
+		GameManager.reset_for_playtest_state()
 
 	if EventBus != null:
 		EventBus.item_produced.connect(_on_item_produced)
@@ -920,11 +981,35 @@ func _process(_delta: float) -> void:
 		return
 
 	frame_counter += 1
-	if frame_counter == 10:
-		# Spawn an active customer early so the visual screenshot also shows a live traveler on the island
+	if frame_counter == 5:
+		# Verify locked-island building upgrade guard and crop evolution mapping during playtest
+		if GameManager.upgrade_building("cauldron") or GameManager.upgrade_building("soil_2") or GameManager.upgrade_building("soil_3"):
+			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "Locked island building was allowed to upgrade before island unlock!")
+			return
+		if EconomyConfig.get_evolved_crop_id(2, 1) != "crop_2" or EconomyConfig.get_evolved_crop_id(3, 1) != "crop_3":
+			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "Island 2/3 base crop mapping error: isl2=%s, isl3=%s" % [
+				EconomyConfig.get_evolved_crop_id(2, 1), EconomyConfig.get_evolved_crop_id(3, 1)
+			])
+			return
+	elif frame_counter == 10:
+		# Spawn an active customer early and simulate player recruiting Otter + Fox + upgrading Island 1 buildings
 		var world := get_tree().current_scene as MainWorld
 		if world != null and world.customers.size() == 0:
 			world._spawn_customer(false)
+		GameManager.add_gold(320)
+		GameManager.upgrade_animal("otter")
+		GameManager.upgrade_animal("fox")
+		GameManager.upgrade_building("soil_1")
+		GameManager.upgrade_building("mortar")
+		GameManager.upgrade_building("stall")
+	elif frame_counter == 70:
+		# Simulate HUD tab cycling & weather interaction during autonomous playtest
+		var world := get_tree().current_scene as MainWorld
+		if world != null and world.hud != null:
+			for tab_i in [0, 1, 2, 3]:
+				world.hud.open_drawer(tab_i)
+			world.hud.close_drawer(false)
+		GameManager.set_weather(GameManager.WeatherState.DUSK)
 	elif frame_counter == 150:
 		# Trigger animal pet boost on Bunny so `HeartIcon` (`emote_heart.png`) and +50% haste are verified
 		var world := get_tree().current_scene as MainWorld
@@ -1141,7 +1226,27 @@ func _run_all_four_assertions_and_export() -> void:
 	print("       - 鏀惰捣鎬?(`preview_engine_1920x360.png` / `preview_live_godot.png`): %dx%d | SHA256=%s" % [img_closed.get_width(), img_closed.get_height(), hash_closed.substr(0, 16)])
 	print("       - 灞曞紑鎬?(`preview_drawer_open_1920x360.png` via `HUD.open_drawer(0)`): %dx%d | SHA256=%s" % [img_open.get_width(), img_open.get_height(), hash_open.substr(0, 16)])
 	print("==================================================================")
+	_append_playtest_audit_log(checked_sprites, max_overlap_seen, min_gap_seen, total_bunny_dist, total_all_workers_dist, hash_closed, hash_open)
 	get_tree().quit(0)
+
+func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float, bunny_dist: float, all_dist: float, h_closed: String, h_open: String) -> void:
+	var log_path := "res://playtest_audit_log.md"
+	var existing := ""
+	if FileAccess.file_exists(log_path):
+		existing = FileAccess.get_file_as_string(log_path)
+	else:
+		existing = "# 銆婃灚鍙朵簯宀涚墿璇€嬪叏鑷姩鐪熸満璇曠帺涓庡贰妫€璁板綍 (`playtest_audit_log.md`)\n\n"
+	var dt := Time.get_datetime_string_from_system(false, true)
+	var entry := "## [%s] 鑷富璇曠帺宸℃ PASS\n" % dt
+	entry += "- **鍒囧抚涓庡Э鎬侀槻鍛?*: 宸叉牎楠?`%d` 涓簿鐏佃妭鐐癸紝0 瓒婄晫鍒囧抚銆? 鏃嬭浆寮傚父銆佸墠鐖姳绡?3 灞傚悎鎴愭寕杞芥甯搞€俓n" % sprites_cnt
+	entry += "- **寤虹瓚闂磋窛涓庡浘灞?*: 涓夊矝 12 搴т富寤虹瓚鏈€澶ф按骞抽噸鍙犵巼 `%.1f%%` (`<=15%%`)锛屾渶灏忓噣闂磋窛 `%.1fpx` (`>=28px`)銆俓n" % [max_ov * 100.0, min_gap]
+	entry += "- **浜х嚎娲讳綋涓庝氦浜?*: 鍏斿瓙绱绉诲姩 `%.1fpx` (鍏ㄥ憳 `%.1fpx`)锛屽啘鐢版敹鑾?`%d` 娆★紝鍏ュ簱/涓婃灦 `%d` 浠讹紝椤惧缁撹处 `%d` 鍗曪紝婊氳疆榧犳爣閿氱偣缂╂斁涓庨攣宀涢槻璇崌鏍￠獙閫氳繃銆俓n" % [
+		bunny_dist, all_dist, harvest_count, items_delivered_count, customer_paid_count
+	]
+	entry += "- **鐪熸満鍙岀姸鎬佹埅鍥惧搱甯?*: 鏀惰捣鎬?`%s` | 灞曞紑鎬?`%s`\n\n" % [h_closed.substr(0, 16), h_open.substr(0, 16)]
+	var f := FileAccess.open(log_path, FileAccess.WRITE)
+	if f != null:
+		f.store_string(existing + entry)
 
 func _sha256_bytes(buf: PackedByteArray) -> String:
 	var hc := HashingContext.new()
@@ -2513,7 +2618,7 @@ func _refresh_passthrough() -> void:
     ]
   }
 }
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\BuildingVisualUpgrader.gd (8595 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\BuildingVisualUpgrader.gd (8571 bytes) ===
 extends Node2D
 class_name BuildingVisualUpgrader
 ## 4-Tier Building Visual Evolution, Outer-Edge Decor, Particles, Star Badge & Legendary Shader (`src/entities/buildings/BuildingVisualUpgrader.gd`)
@@ -2673,7 +2778,7 @@ func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
 			tw.tween_property(target_parent, "scale", base_sc * 0.92, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 			tw.tween_property(target_parent, "scale", base_sc, 0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-			var gpos := target_parent.global_position - Vector2(0, 36)
+			var gpos := target_parent.position
 			if current_tier > old_tier or (new_level % 25 == 0):
 				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -54), "鈽呴噷绋嬬绐佺牬 Lv." + str(new_level) + "!", Color("#FFE066"))
 				if SoundManager != null:
@@ -2885,7 +2990,7 @@ func _draw() -> void:
 [node name="MarketStall" type="Node2D"]
 script = ExtResource("1_stall")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.gd (8477 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.gd (8769 bytes) ===
 extends Node2D
 class_name SoilPlot
 ## Enlarged 1.5D Soil Bed (`64x26`), 3-Stage Crop Growth, Buffer Cap 10 & Lv.25 Auto-Evolution (`src/entities/buildings/SoilPlot.gd`)
@@ -2991,6 +3096,13 @@ func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: V
 	watered = true
 	_refresh_evolved_crop()
 	_sync_sprites()
+	var cur_lv := get_building_level()
+	if level_label != null:
+		level_label.visible = (plot_index_on_island == 0)
+		level_label.text = "Lv." + str(cur_lv)
+	if visual_upgrader != null:
+		visual_upgrader.visible = (plot_index_on_island == 0)
+		visual_upgrader.apply_level_visuals(cur_lv, false)
 
 func get_building_key() -> String:
 	return "soil_" + str(island_idx)
@@ -3128,7 +3240,7 @@ func harvest_crop_yield() -> int:
 [node name="SoilPlot" type="Node2D"]
 script = ExtResource("1_soil")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\Workshop.gd (7592 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\buildings\Workshop.gd (7822 bytes) ===
 extends Node2D
 class_name Workshop
 ## Mortar, Cauldron & Island 3 Dual Workshop (`src/entities/buildings/Workshop.gd`)
@@ -3220,6 +3332,12 @@ func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, _p_offset: Vect
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	_reload_texture()
+	var cur_lv := get_workshop_level()
+	if level_label != null:
+		level_label.text = "Lv." + str(cur_lv)
+	if visual_upgrader != null:
+		visual_upgrader.building_kind = workshop_id
+		visual_upgrader.apply_level_visuals(cur_lv, false)
 
 func get_building_key() -> String:
 	return "soil_3" if workshop_id == "orbis_linked" else workshop_id
@@ -3341,7 +3459,7 @@ func _draw() -> void:
 [node name="Workshop" type="Node2D"]
 script = ExtResource("1_workshop")
 
-=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.gd (25396 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.gd (25066 bytes) ===
 extends Node2D
 class_name AnimalWorker
 ## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`)
@@ -3633,12 +3751,10 @@ func _is_home_chef_hired() -> bool:
 		return GameManager.get_island_recruited_count(2, "penguin") >= 1
 	return GameManager.get_island_recruited_count(3, "fox") >= 1 or GameManager.get_island_recruited_count(3, "penguin") >= 1
 
-func _try_deposit_to_stall(item_id: String, qty: int, float_prefix: String, float_col: Color) -> bool:
+func _try_deposit_to_stall(item_id: String, qty: int, _float_prefix: String, _float_col: Color) -> bool:
 	var safe_id := item_id if item_id != "" else "crop_0"
 	var safe_qty := maxi(1, qty)
 	var accepted := GameManager.add_to_stall(safe_id, safe_qty)
-	if accepted > 0:
-		EventBus.spawn_floating_text.emit(position + Vector2(0.0, -48.0), float_prefix + str(accepted), float_col)
 	var rem := safe_qty - accepted
 	if rem > 0:
 		# Route any stall-cap overflow back into the home buffer so no items are lost and workers never loiter at the stall counter
@@ -4036,8 +4152,6 @@ func _update_chef_work_step() -> void:
 			if w_node != null:
 				w_node.crafted_count += 1
 				w_node.set_chef_progress(chef_slot_key, 0.0, false)
-			var mult_txt := "52x绮剧偧+1" if home_island == 3 else ("12x鐢橀湶+1" if is_penguin else "3.5x缇庨+1")
-			EventBus.spawn_floating_text.emit(position + Vector2(0.0, -48.0), mult_txt, Color("#FFE066"))
 			worker_step = 0
 			state_timer = 0.0
 
@@ -4473,7 +4587,7 @@ func _draw() -> void:
 z_index = 20
 script = ExtResource("1_ft")
 
-=== FILE: D:\project\maple-isle-idle\src\ui\HUD.gd (24668 bytes) ===
+=== FILE: D:\project\maple-isle-idle\src\ui\HUD.gd (25409 bytes) ===
 extends Control
 class_name HUD
 ## Native Label Retro Maple-Style HUD, 3s Auto-Collapse Capsule & Recruit-to-Promote Drawer (`src/ui/HUD.gd`)
@@ -4916,15 +5030,17 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 		0:
 			for b_key in ["soil_1", "mortar", "stall", "cauldron"]:
 				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
+				var req_isl := int(cfg.get("island", 1))
+				var isl_on := bool(GameManager.unlocked_islands.get(req_isl, false))
 				var lv := int(GameManager.building_levels.get(b_key, 1))
 				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), lv)
 				var next_ms := (int(floor(float(lv) / 25.0)) + 1) * 25
 				list.append({
 					"type": "building",
 					"key": b_key,
-					"title": String(cfg["name"]) + " Lv." + str(lv),
-					"sub": "涓嬩釜2x铚曞彉: Lv." + str(next_ms),
-					"cost": "鍗囩骇 " + str(cost) + "G"
+					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (鏈В閿?"),
+					"sub": ("涓嬩釜2x铚曞彉: Lv." + str(next_ms)) if isl_on else ("闇€鍏堝紑鎷撴湪妗ヨВ閿佸矝" + str(req_isl)),
+					"cost": ("鍗囩骇 " + str(cost) + "G") if isl_on else "寰呰В閿佸矝灞?
 				})
 		1:
 			for a_key in ["bunny", "otter", "fox", "shiba", "penguin", "toucan"]:
@@ -4975,22 +5091,24 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			})
 			for b_key in ["soil_2", "soil_3"]:
 				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
+				var req_isl := int(cfg.get("island", 2))
+				var isl_on := bool(GameManager.unlocked_islands.get(req_isl, false))
 				var lv := int(GameManager.building_levels.get(b_key, 1))
 				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), lv)
 				list.append({
 					"type": "building",
 					"key": b_key,
-					"title": String(cfg["name"]) + " Lv." + str(lv),
-					"sub": String(cfg["desc"]).substr(0, 12),
-					"cost": "鍗囩骇 " + str(cost) + "G"
+					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (鏈В閿?"),
+					"sub": String(cfg["desc"]).substr(0, 12) if isl_on else ("闇€鍏堣В閿佷笂鏂规湪妗? + str(req_isl - 1)),
+					"cost": ("鍗囩骇 " + str(cost) + "G") if isl_on else "寰呰В閿佸矝灞?
 				})
 		3:
 			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)
 			var codex_pairs := [
-				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "涓€闃堵锋櫒闇茬敯鍥?},
-				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "浜岄樁路鏋滈鐑樼剻"},
-				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "涓夐樁路瀵嗘灄鏄熼湶"},
-				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "鍥涢樁路浜戞捣鐩涘"}
+				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "涓€闃堵锋櫒闇茬敯鍥?, "c_hint": "???(鍒濆瑙ｉ攣)", "d_hint": "???(鐮旈挼宸ュ潑)"},
+				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "浜岄樁路鏋滈鐑樼剻", "c_hint": "???(鍐滅敯Lv.25)", "d_hint": "???(鐮旈挼Lv.25)"},
+				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "涓夐樁路瀵嗘灄鏄熼湶", "c_hint": "???(瑙ｉ攣宀?)", "d_hint": "???(宀?鍧╁煔)"},
+				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "鍥涢樁路浜戞捣鐩涘", "c_hint": "???(瑙ｉ攣宀?)", "d_hint": "???(宀?鍙屽伐鍧?"}
 			]
 			for cp in codex_pairs:
 				var cid := String(cp["crop"])
@@ -5004,7 +5122,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"type": "codex",
 					"key": str(cp["idx"]),
 					"title": String(cp["tier_name"]) + " (+" + str(bonus_pct) + "%)",
-					"sub": (c_name if c_on else "???(鍗囪嚦Lv.25)") + " | " + (d_name if d_on else "???(宸ュ潑瑙ｉ攣)"),
+					"sub": (c_name if c_on else String(cp["c_hint"])) + " | " + (d_name if d_on else String(cp["d_hint"])),
 					"cost": "宸茬偣浜?" + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 路 姘镐箙鍞环+" + str(bonus_pct) + "%"
 				})
 	return list

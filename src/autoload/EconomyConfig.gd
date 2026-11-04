@@ -161,7 +161,11 @@ func get_frame_region(sheet_key: String, frame_idx: int) -> Rect2:
 	return Rect2(col * cw, row * ch, cw, ch)
 
 func get_evolved_crop_id(base_island: int, building_level: int) -> String:
-	var base_idx := clampi(base_island - 1, 0, 3)
+	var base_idx := 0
+	if base_island == 2:
+		base_idx = 2
+	elif base_island >= 3:
+		base_idx = 3
 	var evo_steps := int(floor(float(maxi(1, building_level)) / 25.0))
 	var final_idx := clampi(base_idx + evo_steps, 0, 3)
 	return "crop_" + str(final_idx)
