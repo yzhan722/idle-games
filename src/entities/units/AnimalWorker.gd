@@ -542,7 +542,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 						_navigate_to(waypoint_graph.get_dock_pos("stall_restock"))
 
 			elif worker_step == 1:
-				facing_left = false
+				facing_left = true
 				if state_timer >= 0.40:
 					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
 					var q := maxi(1, carrying_qty)
@@ -646,8 +646,8 @@ func _update_chef_work_step() -> void:
 		else:
 			w_node = world_ref.mortar_workshop
 
-	# Face toward the center of the workshop (`mortar_chef`/`cauldron_chef` at dx=+10 face left; on Island 3 `fox` at dx=-10 faces right, `penguin` at dx=+16 faces left)
-	facing_left = (home_island != 3) or is_penguin
+	# Face toward the center of the workshop (`fox`/`cauldron_chef` at dx=-20 face right; on Island 3 `penguin` at dx=+18 faces left)
+	facing_left = (home_island == 3 and is_penguin)
 	var chef_slot_key := animal_key + "_" + str(home_island)
 
 	if worker_step == 0:

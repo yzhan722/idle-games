@@ -221,6 +221,15 @@ func _run_all_four_assertions_and_export() -> void:
 				_fail_and_quit("[断言3-产线活体闭环]", "WaypointGraph path backtracked from %.1f to %.1f: %s" % [prev_x, pt.x, str(test_path_b)])
 				return
 			prev_x = pt.x
+		var mortar_chef_dock: Vector2 = world.waypoint_graph.get_dock_pos("mortar_chef")
+		var mortar_out_dock: Vector2 = world.waypoint_graph.get_dock_pos("mortar_output")
+		var cauldron_chef_dock: Vector2 = world.waypoint_graph.get_dock_pos("cauldron_chef")
+		var cauldron_out_dock: Vector2 = world.waypoint_graph.get_dock_pos("cauldron_output")
+		if absf(mortar_chef_dock.x - mortar_out_dock.x) < 40.0 or absf(cauldron_chef_dock.x - cauldron_out_dock.x) < 40.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "Workshop chef and logistics docks are too close (mortar=%.1fpx, cauldron=%.1fpx < 40px)!" % [
+				absf(mortar_chef_dock.x - mortar_out_dock.x), absf(cauldron_chef_dock.x - cauldron_out_dock.x)
+			])
+			return
 
 	if world.camera_controller == null:
 		_fail_and_quit("[断言3-产线活体闭环]", "MainWorld.camera_controller is null!")

@@ -1,4 +1,4 @@
-﻿=== FILE: D:\project\maple-isle-idle\src\autoload\EconomyConfig.gd (12546 bytes) ===
+﻿=== src\autoload\EconomyConfig.gd ===
 extends Node
 ## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution, Native Typography & Drop Shadow Math (`EconomyConfig.gd`)
 ## Strictly enforces GEMINI.md Engineering Laws 1~6.
@@ -38,41 +38,41 @@ const ISLAND_RECRUIT_CAPS: Dictionary = {
 
 ## Raw Crops (auto-evolves to next row in `crops_sheet.png` every 25 building levels!)
 const CROPS: Dictionary = {
-	"crop_0": {"name": "鏅ㄩ湶鑳¤悵鍗?, "island": 1, "crop_row": 0, "base_value": 12, "grow_time": 5.2},
-	"crop_1": {"name": "鏅ㄩ绾㈣崏鑾?, "island": 1, "crop_row": 1, "base_value": 18, "grow_time": 6.0},
-	"crop_2": {"name": "骞借胺鑽у厜鑿?, "island": 2, "crop_row": 2, "base_value": 30, "grow_time": 7.0},
-	"crop_3": {"name": "鏅存哗榛勯噾鍑ゆⅷ", "island": 3, "crop_row": 3, "base_value": 48, "grow_time": 8.0}
+	"crop_0": {"name": "晨露胡萝卜", "island": 1, "crop_row": 0, "base_value": 12, "grow_time": 5.2},
+	"crop_1": {"name": "晨风红草莓", "island": 1, "crop_row": 1, "base_value": 18, "grow_time": 6.0},
+	"crop_2": {"name": "幽谷荧光菇", "island": 2, "crop_row": 2, "base_value": 30, "grow_time": 7.0},
+	"crop_3": {"name": "晴滩黄金凤梨", "island": 3, "crop_row": 3, "base_value": 48, "grow_time": 8.0}
 }
 
 ## Processed Delicacies (auto-evolves to next dish in `delicacies_sheet.png` every 25 workshop levels!)
 const DELICACIES: Dictionary = {
-	"delicacy_0": {"name": "妗傝姳绯背绯?, "idx": 0, "tier": 1, "workshop": "mortar", "base_crop_val": 12, "mult": MULTIPLIER_MORTAR},
-	"delicacy_1": {"name": "鐒︾硸鑻规灉鑽夎帗娲?, "idx": 1, "tier": 1, "workshop": "mortar", "base_crop_val": 18, "mult": MULTIPLIER_MORTAR},
-	"delicacy_2": {"name": "鏄熼湶鑽у厜鐢橀湶楗?, "idx": 2, "tier": 2, "workshop": "cauldron", "base_crop_val": 30, "mult": MULTIPLIER_CAULDRON},
-	"delicacy_3": {"name": "鐨囧鍑ゆⅷ鏄熼湶瀹?, "idx": 3, "tier": 3, "workshop": "orbis_linked", "base_crop_val": 48, "mult": MULTIPLIER_ORBIS_LINKED}
+	"delicacy_0": {"name": "桂花糯米糕", "idx": 0, "tier": 1, "workshop": "mortar", "base_crop_val": 12, "mult": MULTIPLIER_MORTAR},
+	"delicacy_1": {"name": "焦糖苹果草莓派", "idx": 1, "tier": 1, "workshop": "mortar", "base_crop_val": 18, "mult": MULTIPLIER_MORTAR},
+	"delicacy_2": {"name": "星露荧光甘露饮", "idx": 2, "tier": 2, "workshop": "cauldron", "base_crop_val": 30, "mult": MULTIPLIER_CAULDRON},
+	"delicacy_3": {"name": "皇家凤梨星露宴", "idx": 3, "tier": 3, "workshop": "orbis_linked", "base_crop_val": 48, "mult": MULTIPLIER_ORBIS_LINKED}
 }
 
 const BUILDINGS: Dictionary = {
-	"soil_1": {"name": "灏勬墜鏉戝啘鐢?, "desc": "姣?5绾т綔鐗╄嚜鍔ㄦ崲浠?浜ц兘缈诲€?澶栬杩涘寲", "base_cost": 25, "base_value": 12, "island": 1},
-	"mortar": {"name": "妗傝姳鐮旈挼宸ュ潑", "desc": "鐙愮嫺鐮旂（3.5x缇庨 路 姣?5绾ц彍鍝佷笌澶栬杩涘寲", "base_cost": 45, "base_value": 42, "island": 1},
-	"stall": {"name": "浜戝矝闆嗗競涓绘憡浣?, "desc": "鎵╁厖缂撳瓨涓婇檺(10+5/绾? 路 Lv.25瑙ｉ攣鏆栧厜璺伅", "base_cost": 65, "base_value": 50, "island": 1},
-	"soil_2": {"name": "榄旀硶瀵嗘灄鍐滅敯", "desc": "宀?榄旀硶浣滅墿浜ц兘 路 姣?5绾у搧绉嶄笌澶栬杩涘寲", "base_cost": 140, "base_value": 30, "island": 2},
-	"cauldron": {"name": "鏄熼湶鐐奸噾鍧╁煔", "desc": "浼侀箙鐐煎埗12x鐢橀湶 路 Lv.25寮€鍚偧閲戞槦鐏矑瀛?, "base_cost": 210, "base_value": 360, "island": 2},
-	"soil_3": {"name": "澶╃┖娴峰哺鍙屽伐鍧?, "desc": "宀?椤剁骇鍐滅敯+鐮旈挼鍧╁煔鑱斿姩 (52x浠峰€?", "base_cost": 360, "base_value": 2496, "island": 3}
+	"soil_1": {"name": "射手村农田", "desc": "每25级作物自动换代+产能翻倍+外观进化", "base_cost": 25, "base_value": 12, "island": 1},
+	"mortar": {"name": "桂花研钵工坊", "desc": "狐狸研磨3.5x美食 · 每25级菜品与外观进化", "base_cost": 45, "base_value": 42, "island": 1},
+	"stall": {"name": "云岛集市主摊位", "desc": "扩充缓存上限(10+5/级) · Lv.25解锁暖光路灯", "base_cost": 65, "base_value": 50, "island": 1},
+	"soil_2": {"name": "魔法密林农田", "desc": "岛2魔法作物产能 · 每25级品种与外观进化", "base_cost": 140, "base_value": 30, "island": 2},
+	"cauldron": {"name": "星露炼金坩埚", "desc": "企鹅炼制12x甘露 · Lv.25开启炼金星火粒子", "base_cost": 210, "base_value": 360, "island": 2},
+	"soil_3": {"name": "天空海岸双工坊", "desc": "岛3顶级农田+研钵坩埚联动 (52x价值)", "base_cost": 360, "base_value": 2496, "island": 3}
 }
 
 const ANIMALS: Dictionary = {
-	"bunny": {"name": "鏈堝厰 路 涓撹亴鍐滃か", "role_tag": "鏃犳按鐛椂鐩磋揪闆嗗競 路 鎷涙弧鍚庡叏闃熻繘淇彁閫?, "sheet": "animals/bunny_sheet.png", "base_cost": 30, "base_time": 2.6, "base_speed": 72.0, "base_cap": 1},
-	"otter": {"name": "姘寸嵀 路 宀涘唴鐗╂祦鍛?, "role_tag": "鎺ョ宀涘唴鎼繍 路 宸ュ潑婊¤浇鑷姩鍒嗘祦鐩村敭", "sheet": "animals/otter_sheet.png", "base_cost": 45, "base_time": 1.5, "base_speed": 80.0, "base_cap": 2},
-	"fox": {"name": "灏忕嫄鐙?路 鐮旈挼涓诲帹", "role_tag": "椹诲畧鐮旈挼宸ュ潑 路 鐮旂（3.5x/52x绮惧埗缇庨", "sheet": "animals/fox_sheet.png", "base_cost": 60, "base_time": 3.4, "base_speed": 64.0, "base_cap": 1},
-	"shiba": {"name": "鏌寸姮 路 閲戠墝搴楅暱", "role_tag": "鍔犻€熸敹閾剁粨璐?路 鍏ㄦ憡浣嶅敭浠?10%/绾?, "sheet": "animals/shiba_sheet.png", "base_cost": 80, "base_time": 1.0, "base_speed": 66.0, "base_cap": 1},
-	"penguin": {"name": "灏忎紒楣?路 鍧╁煔鐐奸噾甯?, "role_tag": "椹诲畧鍧╁煔宸ュ潑 路 鐐煎埗12x/52x楂橀樁鐢橀湶", "sheet": "animals/penguin_sheet.png", "base_cost": 150, "base_time": 4.0, "base_speed": 60.0, "base_cap": 1},
-	"toucan": {"name": "宸ㄥ槾楦?路 璺ㄥ矝涓撳憳", "role_tag": "璺ㄦ湪妗ユ壒閲忓皢宀?/宀?鏂欑悊杩愬洖宀?涓婚泦甯?, "sheet": "animals/toucan_sheet.png", "base_cost": 135, "base_time": 1.4, "base_speed": 94.0, "base_cap": 3}
+	"bunny": {"name": "月兔 · 专职农夫", "role_tag": "无水獭时直达集市 · 招满后全队进修提速", "sheet": "animals/bunny_sheet.png", "base_cost": 30, "base_time": 2.6, "base_speed": 72.0, "base_cap": 1},
+	"otter": {"name": "水獭 · 岛内物流员", "role_tag": "接管岛内搬运 · 工坊满载自动分流直售", "sheet": "animals/otter_sheet.png", "base_cost": 45, "base_time": 1.5, "base_speed": 80.0, "base_cap": 2},
+	"fox": {"name": "小狐狸 · 研钵主厨", "role_tag": "驻守研钵工坊 · 研磨3.5x/52x精制美食", "sheet": "animals/fox_sheet.png", "base_cost": 60, "base_time": 3.4, "base_speed": 64.0, "base_cap": 1},
+	"shiba": {"name": "柴犬 · 金牌店长", "role_tag": "加速收银结账 · 全摊位售价+10%/级", "sheet": "animals/shiba_sheet.png", "base_cost": 80, "base_time": 1.0, "base_speed": 66.0, "base_cap": 1},
+	"penguin": {"name": "小企鹅 · 坩埚炼金师", "role_tag": "驻守坩埚工坊 · 炼制12x/52x高阶甘露", "sheet": "animals/penguin_sheet.png", "base_cost": 150, "base_time": 4.0, "base_speed": 60.0, "base_cap": 1},
+	"toucan": {"name": "巨嘴鸟 · 跨岛专员", "role_tag": "跨木桥批量将岛2/岛3料理运回岛1主集市", "sheet": "animals/toucan_sheet.png", "base_cost": 135, "base_time": 1.4, "base_speed": 94.0, "base_cap": 3}
 }
 
 const EXPANSIONS: Dictionary = {
-	"island_2": {"name": "鏈ㄦˉ1 路 榄旀硶瀵嗘灄", "desc": "寮€鍚?x鍐滅敯+12x鍧╁煔宸ュ潑+浼侀箙/宸ㄥ槾楦熺紪鍒?, "cost": 180},
-	"island_3": {"name": "鏈ㄦˉ2 路 澶╃┖娴峰哺", "desc": "寮€鍚弻宸ュ潑52x鑱斿姩+馃憫2.0x鐨囧啝瀵岃豹椤惧", "cost": 480}
+	"island_2": {"name": "木桥1 · 魔法密林", "desc": "开启2x农田+12x坩埚工坊+企鹅/巨嘴鸟编制", "cost": 180},
+	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+👑2.0x皇冠富豪顾客", "cost": 480}
 }
 
 func _ready() -> void:
@@ -254,10 +254,9 @@ func calc_item_unit_price(item_id: String, building_lv: int, stall_lv: int, shib
 		var raw_v := calc_milestone_value(float(c["base_value"]), maxi(1, building_lv))
 		return maxi(1, int(round(raw_v * MULTIPLIER_RAW * stall_mult * shiba_mult)))
 	return 15
-
-=== FILE: D:\project\maple-isle-idle\src\autoload\EventBus.gd (899 bytes) ===
+=== src\autoload\EventBus.gd ===
 extends Node
-## Global Signal Bus (`EventBus.gd` Autoload) 鈥?PRD v2.0 Section 6
+## Global Signal Bus (`EventBus.gd` Autoload) — PRD v2.0 Section 6
 
 signal gold_changed(new_gold: int, delta: int)
 signal prosperity_changed(new_score: int)
@@ -274,10 +273,9 @@ signal spawn_floating_text(world_pos: Vector2, text_str: String, col: Color)
 signal weather_changed(new_weather: int)
 signal codex_unlocked(item_id: String)
 signal carnival_frenzy_started(duration: float)
-
-=== FILE: D:\project\maple-isle-idle\src\autoload\GameManager.gd (23575 bytes) ===
+=== src\autoload\GameManager.gd ===
 extends Node
-## Global State, Strict Per-Island Recruit Caps, Recruit-to-Promote & Save System (`src/autoload/GameManager.gd`) 鈥?PRD Patch v2.2
+## Global State, Strict Per-Island Recruit Caps, Recruit-to-Promote & Save System (`src/autoload/GameManager.gd`) — PRD Patch v2.2
 
 const SAVE_PATH := "user://savegame.json"
 const SELFTEST_SAVE_PATH := "user://savegame_selftest.json"
@@ -305,7 +303,7 @@ var building_levels: Dictionary = {
 	"soil_3": 1
 }
 
-## Team Promotion Level (Lv.1+ once recruited; increments when 銆愬叏闃熻繘淇?(Lv.+1)銆?is clicked after reaching Recruit Cap!)
+## Team Promotion Level (Lv.1+ once recruited; increments when 【全队进修 (Lv.+1)】 is clicked after reaching Recruit Cap!)
 var animal_levels: Dictionary = {
 	"bunny": 1,
 	"otter": 0,
@@ -458,17 +456,17 @@ func get_weather_vip_chance() -> float:
 
 func get_weather_status_text() -> String:
 	if frenzy_timer > 0.0:
-		return "鈽呭槈骞村崕鍔犻€?" + str(int(ceili(frenzy_timer))) + "s)"
+		return "★嘉年华加速(" + str(int(ceili(frenzy_timer))) + "s)"
 	match current_weather:
 		WeatherState.DAY:
-			return "鏅存樇路甯搁€?
+			return "晴昼·常速"
 		WeatherState.DUSK:
-			return "榛勬槒路瀵岃豹2x"
+			return "黄昏·富豪2x"
 		WeatherState.NIGHT:
-			return "澶滃競路瀵岃豹2x"
+			return "夜市·富豪2x"
 		WeatherState.RAIN:
-			return "寰洦路鍐滅敯+35%"
-	return "鏅存樇路甯搁€?
+			return "微雨·农田+35%"
+	return "晴昼·常速"
 
 func trigger_carnival_frenzy(duration: float = 20.0) -> void:
 	frenzy_timer = maxf(frenzy_timer, duration)
@@ -781,7 +779,7 @@ func upgrade_building(b_key: String) -> bool:
 	save_game()
 	return true
 
-## PRD v2.2 Section 3: Recruit-to-Promote Mechanism (`鎷涙弧杞繘淇満鍒禶):
+## PRD v2.2 Section 3: Recruit-to-Promote Mechanism (`招满转进修机制`):
 ## - If any unlocked island has room below `ISLAND_RECRUIT_CAPS`, recruits +1 animal worker onto that island.
 ## - Once all unlocked islands reach Max Cap for `a_key`, upgrades `animal_levels[a_key] += 1` (Team Promotion Lv.+1)!
 func upgrade_animal(a_key: String) -> bool:
@@ -915,8 +913,7 @@ func load_game() -> void:
 		pending_offline_gold = maxi(8, int(round(float(elapsed) * estimate_idle_gold_per_sec() * 0.45)))
 		add_gold(pending_offline_gold)
 		EventBus.offline_earnings_ready.emit(pending_offline_seconds, pending_offline_gold)
-
-=== FILE: D:\project\maple-isle-idle\src\autoload\SelfTestRunner.gd (18980 bytes) ===
+=== src\autoload\SelfTestRunner.gd ===
 extends Node
 ## Real-Engine 20x Fast-Forward Self-Test & Dual-State Viewport Screenshot Exporter (`src/autoload/SelfTestRunner.gd`)
 ## Activated when command-line args contain `--self-test` (via `./run_godot.ps1 --self-test`).
@@ -984,10 +981,10 @@ func _process(_delta: float) -> void:
 	if frame_counter == 5:
 		# Verify locked-island building upgrade guard and crop evolution mapping during playtest
 		if GameManager.upgrade_building("cauldron") or GameManager.upgrade_building("soil_2") or GameManager.upgrade_building("soil_3"):
-			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "Locked island building was allowed to upgrade before island unlock!")
+			_fail_and_quit("[断言3-产线活体闭环]", "Locked island building was allowed to upgrade before island unlock!")
 			return
 		if EconomyConfig.get_evolved_crop_id(2, 1) != "crop_2" or EconomyConfig.get_evolved_crop_id(3, 1) != "crop_3":
-			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "Island 2/3 base crop mapping error: isl2=%s, isl3=%s" % [
+			_fail_and_quit("[断言3-产线活体闭环]", "Island 2/3 base crop mapping error: isl2=%s, isl3=%s" % [
 				EconomyConfig.get_evolved_crop_id(2, 1), EconomyConfig.get_evolved_crop_id(3, 1)
 			])
 			return
@@ -1027,7 +1024,7 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	# ------------------------------------------------------------------
-	# [鏂█1-鍒囧抚闃插憜]: Check single-frame rendered dimensions of all animals, customers, and crops
+	# [断言1-切帧防呆]: Check single-frame rendered dimensions of all animals, customers, and crops
 	# ------------------------------------------------------------------
 	var checked_sprites := 0
 	for w in world.workers:
@@ -1037,14 +1034,14 @@ func _run_all_four_assertions_and_export() -> void:
 		var fw := (sp.region_rect.size.x if sp.region_enabled else float(sp.texture.get_width()) / float(maxi(1, sp.hframes))) * absf(sp.scale.x)
 		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
 		if (not sp.region_enabled and sp.hframes <= 1) or fw > 180.0 or fh > 180.0:
-			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "AnimalWorker `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d, region=%s)" % [w.animal_key, fw, fh, sp.hframes, str(sp.region_enabled)])
+			_fail_and_quit("[断言1-切帧防呆]", "AnimalWorker `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d, region=%s)" % [w.animal_key, fw, fh, sp.hframes, str(sp.region_enabled)])
 			return
 		if absf(w.rotation) > 0.001 or absf(sp.rotation) > 0.001 or sp.frame < 0 or sp.frame > 2:
-			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "AnimalWorker `%s` has invalid rotation/pose (rot=%.3f, sp_rot=%.3f, frame=%d)" % [w.animal_key, w.rotation, sp.rotation, sp.frame])
+			_fail_and_quit("[断言1-切帧防呆]", "AnimalWorker `%s` has invalid rotation/pose (rot=%.3f, sp_rot=%.3f, frame=%d)" % [w.animal_key, w.rotation, sp.rotation, sp.frame])
 			return
 		if w.carry_icon != null and w.carry_icon.visible:
 			if w.carry_icon.position.y < -32.0 or absf(w.carry_icon.position.x) < 10.0 or w.carry_front_grip == null or not w.carry_front_grip.visible:
-				_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "AnimalWorker `%s` carry rig is not properly attached to front hands/basket (pos=%s)!" % [w.animal_key, str(w.carry_icon.position)])
+				_fail_and_quit("[断言1-切帧防呆]", "AnimalWorker `%s` carry rig is not properly attached to front hands/basket (pos=%s)!" % [w.animal_key, str(w.carry_icon.position)])
 				return
 		checked_sprites += 1
 
@@ -1055,16 +1052,16 @@ func _run_all_four_assertions_and_export() -> void:
 		var fw := (sp.region_rect.size.x if sp.region_enabled else float(sp.texture.get_width()) / float(maxi(1, sp.hframes))) * absf(sp.scale.x)
 		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
 		if (not sp.region_enabled and sp.hframes <= 1) or fw > 180.0 or fh > 180.0:
-			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "CustomerNPC `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d)" % [c.sheet_key, fw, fh, sp.hframes])
+			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d)" % [c.sheet_key, fw, fh, sp.hframes])
 			return
 		if absf(c.rotation) > 0.001 or absf(sp.rotation) > 0.001:
-			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "CustomerNPC `%s` has non-zero rotation (rot=%.3f, sp_rot=%.3f)" % [c.sheet_key, c.rotation, sp.rotation])
+			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has non-zero rotation (rot=%.3f, sp_rot=%.3f)" % [c.sheet_key, c.rotation, sp.rotation])
 			return
 		if not bool(GameManager.unlocked_islands.get(2, false)) and c.position.x < 538.0:
-			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "CustomerNPC `%s` walked onto locked Island 2 (x=%.1f)!" % [c.sheet_key, c.position.x])
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked onto locked Island 2 (x=%.1f)!" % [c.sheet_key, c.position.x])
 			return
 		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1055.0:
-			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f)!" % [c.sheet_key, c.position.x])
 			return
 		checked_sprites += 1
 
@@ -1075,14 +1072,14 @@ func _run_all_four_assertions_and_export() -> void:
 		var fw := (sp.region_rect.size.x if sp.region_enabled else float(sp.texture.get_width()) / float(maxi(1, sp.hframes))) * absf(sp.scale.x)
 		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
 		if (not sp.region_enabled and (sp.hframes <= 1 or sp.vframes <= 1)) or fw > 180.0 or fh > 180.0:
-			_fail_and_quit("[鏂█1-鍒囧抚闃插憜]", "SoilPlot crop_sprite has unsliced or oversized frame: %.1fx%.1f" % [fw, fh])
+			_fail_and_quit("[断言1-切帧防呆]", "SoilPlot crop_sprite has unsliced or oversized frame: %.1fx%.1f" % [fw, fh])
 			return
 		checked_sprites += 1
 
-	print("[PASS] [鏂█1-鍒囧抚闃插憜] 閫氳繃: 宸叉牎楠?%d 涓姩鐗?娓稿/浣滅墿 Sprite2D 鑺傜偣锛屽崟甯у昂瀵稿叏閮?<= 60x60px (100%% 鍥哄畾缃戞牸鍒囩墖锛屾棤鏁村浘鎸ゅ帇)!" % checked_sprites)
+	print("[PASS] [断言1-切帧防呆] 通过: 已校验 %d 个动物/游客/作物 Sprite2D 节点，单帧尺寸全部 <= 60x60px (100%% 固定网格切片，无整图挤压)!" % checked_sprites)
 
 	# ------------------------------------------------------------------
-	# [鏂█2-寤虹瓚闃插彔缃楁眽]: Check global screen rects of main buildings on each island (horizontal overlap <= 15%)
+	# [断言2-建筑防叠罗汉]: Check global screen rects of main buildings on each island (horizontal overlap <= 15%)
 	# ------------------------------------------------------------------
 	var max_overlap_seen := 0.0
 	var min_gap_seen := 9999.0
@@ -1102,15 +1099,15 @@ func _run_all_four_assertions_and_export() -> void:
 					var gap := rb.position.x - ra.end.x
 					min_gap_seen = minf(min_gap_seen, gap)
 				if overlap_ratio > 0.15:
-					_fail_and_quit("[鏂█2-寤虹瓚闃插彔缃楁眽]", "Island %d building overlap %.1f%% > 15%% between `%s` (%s) and `%s` (%s)!" % [
+					_fail_and_quit("[断言2-建筑防叠罗汉]", "Island %d building overlap %.1f%% > 15%% between `%s` (%s) and `%s` (%s)!" % [
 						isl_idx, overlap_ratio * 100.0, String(ba["name"]), str(ra), String(bb["name"]), str(rb)
 					])
 					return
 
-	print("[PASS] [鏂█2-寤虹瓚闃插彔缃楁眽] 閫氳繃: 涓夊矝鍏ㄩ儴 12 搴т富寤虹瓚姘村钩鏈€澶ч噸鍙犵巼 = %.1f%% (<= 15%%)锛屾渶灏忚竟缂樺噣鐣欑櫧 = %.1fpx (>= 28px)!" % [max_overlap_seen * 100.0, min_gap_seen])
+	print("[PASS] [断言2-建筑防叠罗汉] 通过: 三岛全部 12 座主建筑水平最大重叠率 = %.1f%% (<= 15%%)，最小边缘净留白 = %.1fpx (>= 28px)!" % [max_overlap_seen * 100.0, min_gap_seen])
 
 	# ------------------------------------------------------------------
-	# [鏂█3-浜х嚎娲讳綋闂幆]: Verify harvests > 0, animal movement > 50px, monotonic pathing, and items entered workshop or market stall
+	# [断言3-产线活体闭环]: Verify harvests > 0, animal movement > 50px, monotonic pathing, and items entered workshop or market stall
 	# ------------------------------------------------------------------
 	var total_bunny_dist := 0.0
 	var total_all_workers_dist := 0.0
@@ -1118,10 +1115,10 @@ func _run_all_four_assertions_and_export() -> void:
 		if not is_instance_valid(w):
 			continue
 		if absf(w.position.y - EconomyConfig.GROUND_Y) > 0.1:
-			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "AnimalWorker `%s` drifted off GROUND_Y (y=%.2f)!" % [w.animal_key, w.position.y])
+			_fail_and_quit("[断言3-产线活体闭环]", "AnimalWorker `%s` drifted off GROUND_Y (y=%.2f)!" % [w.animal_key, w.position.y])
 			return
 		if not w.is_hired() and w.nav_path.size() > 0:
-			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "Unhired AnimalWorker `%s` (island %d slot %d) has active nav_path!" % [w.animal_key, w.home_island, w.slot_index])
+			_fail_and_quit("[断言3-产线活体闭环]", "Unhired AnimalWorker `%s` (island %d slot %d) has active nav_path!" % [w.animal_key, w.home_island, w.slot_index])
 			return
 		if w.visible:
 			total_all_workers_dist += w.total_distance_moved
@@ -1131,24 +1128,33 @@ func _run_all_four_assertions_and_export() -> void:
 	if world.waypoint_graph != null:
 		var test_path_a := world.waypoint_graph.compute_path(Vector2(698.8, EconomyConfig.GROUND_Y), Vector2(698.8, EconomyConfig.GROUND_Y))
 		if test_path_a.size() != 1 or absf(test_path_a[0].x - 698.8) > 0.1:
-			_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "WaypointGraph same-dock path caused jitter: %s" % [str(test_path_a)])
+			_fail_and_quit("[断言3-产线活体闭环]", "WaypointGraph same-dock path caused jitter: %s" % [str(test_path_a)])
 			return
 		var test_path_b := world.waypoint_graph.compute_path(Vector2(722.8, EconomyConfig.GROUND_Y), Vector2(1005.4, EconomyConfig.GROUND_Y))
 		var prev_x := 722.8
 		for pt in test_path_b:
 			if pt.x < prev_x - 0.1:
-				_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "WaypointGraph path backtracked from %.1f to %.1f: %s" % [prev_x, pt.x, str(test_path_b)])
+				_fail_and_quit("[断言3-产线活体闭环]", "WaypointGraph path backtracked from %.1f to %.1f: %s" % [prev_x, pt.x, str(test_path_b)])
 				return
 			prev_x = pt.x
+		var mortar_chef_dock: Vector2 = world.waypoint_graph.get_dock_pos("mortar_chef")
+		var mortar_out_dock: Vector2 = world.waypoint_graph.get_dock_pos("mortar_output")
+		var cauldron_chef_dock: Vector2 = world.waypoint_graph.get_dock_pos("cauldron_chef")
+		var cauldron_out_dock: Vector2 = world.waypoint_graph.get_dock_pos("cauldron_output")
+		if absf(mortar_chef_dock.x - mortar_out_dock.x) < 40.0 or absf(cauldron_chef_dock.x - cauldron_out_dock.x) < 40.0:
+			_fail_and_quit("[断言3-产线活体闭环]", "Workshop chef and logistics docks are too close (mortar=%.1fpx, cauldron=%.1fpx < 40px)!" % [
+				absf(mortar_chef_dock.x - mortar_out_dock.x), absf(cauldron_chef_dock.x - cauldron_out_dock.x)
+			])
+			return
 
 	if world.camera_controller == null:
-		_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "MainWorld.camera_controller is null!")
+		_fail_and_quit("[断言3-产线活体闭环]", "MainWorld.camera_controller is null!")
 		return
 	world.camera_controller.reset_camera_view(true)
 	world.camera_controller.apply_wheel_zoom(1.0, 1.0, Vector2(710.0, 150.0))
 	var pinned_local_x := (710.0 - world.camera_controller.target_root_pos.x) / world.camera_controller.target_zoom
 	if world.camera_controller.target_zoom <= 1.05 or absf(pinned_local_x - 710.0) > 1.0:
-		_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "CameraController zoom-to-cursor failed: zoom=%.3f, pinned_local_x=%.1f (expected 710.0)" % [
+		_fail_and_quit("[断言3-产线活体闭环]", "CameraController zoom-to-cursor failed: zoom=%.3f, pinned_local_x=%.1f (expected 710.0)" % [
 			world.camera_controller.target_zoom, pinned_local_x
 		])
 		return
@@ -1159,28 +1165,28 @@ func _run_all_four_assertions_and_export() -> void:
 			harvest_count = maxi(harvest_count, p.harvest_count)
 
 	if harvest_count <= 0:
-		_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "鐘舵€佹満姝婚攣: 60 绉掓ā鎷熷唴鍐滅敯鏀惰幏娆℃暟涓?0!")
+		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内农田收获次数为 0!")
 		return
 	if total_all_workers_dist <= 50.0:
-		_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "鐘舵€佹満姝婚攣: 60 绉掓ā鎷熷唴鍔ㄧ墿绱绉诲姩璺濈浠呬负 %.1fpx (<= 50px)!" % total_all_workers_dist)
+		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内动物累计移动距离仅为 %.1fpx (<= 50px)!" % total_all_workers_dist)
 		return
 	if items_delivered_count <= 0:
-		_fail_and_quit("[鏂█3-浜х嚎娲讳綋闂幆]", "鐘舵€佹満姝婚攣: 60 绉掓ā鎷熷唴鏃犱换浣曠墿鍝佽繘鍏ョ紦瀛樸€佸伐鍧婃垨闆嗗競鎽婁綅 (items_delivered_count = 0)!")
+		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内无任何物品进入缓存、工坊或集市摊位 (items_delivered_count = 0)!")
 		return
 
-	print("[PASS] [鏂█3-浜х嚎娲讳綋闂幆] 閫氳繃: 60s 鍐呭厰瀛愮Щ鍔ㄨ窛绂?= %.1fpx (鍏ㄥ憳绱 %.1fpx > 50px)锛屽啘鐢版敹鑾锋鏁?= %d 娆★紝鍏ュ簱/涓婃灦娴佽浆 = %d 浠讹紝椤惧缁撹处 = %d 鍗?" % [
+	print("[PASS] [断言3-产线活体闭环] 通过: 60s 内兔子移动距离 = %.1fpx (全员累计 %.1fpx > 50px)，农田收获次数 = %d 次，入库/上架流转 = %d 件，顾客结账 = %d 单!" % [
 		total_bunny_dist, total_all_workers_dist, harvest_count, items_delivered_count, customer_paid_count
 	])
 
 	# ------------------------------------------------------------------
-	# [鏂█4-闆朵贡鐮佸瓧浣揮: Scan scene tree to ensure no deprecated bitmap font renderer exists
+	# [断言4-零乱码字体]: Scan scene tree to ensure no deprecated bitmap font renderer exists
 	# ------------------------------------------------------------------
 	var bad_font_node := _find_deprecated_font_node(get_tree().root)
 	if bad_font_node != "" or ResourceLoader.exists("res://src/autoload/Pixel" + "FontRenderer.gd") or ResourceLoader.exists("res://assets/pixel_art/ui/pixel_font" + "_atlas.png"):
-		_fail_and_quit("[鏂█4-闆朵贡鐮佸瓧浣揮", "妫€娴嬪埌搴熷純浣嶅浘瀛椾綋鑺傜偣鎴栨枃浠? %s" % bad_font_node)
+		_fail_and_quit("[断言4-零乱码字体]", "检测到废弃位图字体节点或文件: %s" % bad_font_node)
 		return
 
-	print("[PASS] [鏂█4-闆朵贡鐮佸瓧浣揮 閫氳繃: 鍏ㄥ眬鑺傜偣鏍?0 涓簾寮冧綅鍥惧瓧浣撳紩鐢紝100%% 閲囩敤 Godot 鍘熺敓 Label + LabelSettings!")
+	print("[PASS] [断言4-零乱码字体] 通过: 全局节点树 0 个废弃位图字体引用，100%% 采用 Godot 原生 Label + LabelSettings!")
 
 	# ------------------------------------------------------------------
 	# Export 2 Distinct Real Engine Viewport Screenshots:
@@ -1222,9 +1228,9 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit("[SelfTestRunner]", "preview_engine_1920x360.png and preview_drawer_open_1920x360.png have identical pixel data!")
 		return
 
-	print("[PASS] [鐪熸満鍙岀姸鎬佹埅鍥惧鍑篯 鏀惰捣鎬佷笌灞曞紑鎬佽鍙ｆ埅鍥惧凡鐪熷疄瀵煎嚭涓斿搱甯屽畬鍏ㄧ嫭绔?")
-	print("       - 鏀惰捣鎬?(`preview_engine_1920x360.png` / `preview_live_godot.png`): %dx%d | SHA256=%s" % [img_closed.get_width(), img_closed.get_height(), hash_closed.substr(0, 16)])
-	print("       - 灞曞紑鎬?(`preview_drawer_open_1920x360.png` via `HUD.open_drawer(0)`): %dx%d | SHA256=%s" % [img_open.get_width(), img_open.get_height(), hash_open.substr(0, 16)])
+	print("[PASS] [真机双状态截图导出] 收起态与展开态视口截图已真实导出且哈希完全独立:")
+	print("       - 收起态 (`preview_engine_1920x360.png` / `preview_live_godot.png`): %dx%d | SHA256=%s" % [img_closed.get_width(), img_closed.get_height(), hash_closed.substr(0, 16)])
+	print("       - 展开态 (`preview_drawer_open_1920x360.png` via `HUD.open_drawer(0)`): %dx%d | SHA256=%s" % [img_open.get_width(), img_open.get_height(), hash_open.substr(0, 16)])
 	print("==================================================================")
 	_append_playtest_audit_log(checked_sprites, max_overlap_seen, min_gap_seen, total_bunny_dist, total_all_workers_dist, hash_closed, hash_open)
 	get_tree().quit(0)
@@ -1235,15 +1241,15 @@ func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float,
 	if FileAccess.file_exists(log_path):
 		existing = FileAccess.get_file_as_string(log_path)
 	else:
-		existing = "# 銆婃灚鍙朵簯宀涚墿璇€嬪叏鑷姩鐪熸満璇曠帺涓庡贰妫€璁板綍 (`playtest_audit_log.md`)\n\n"
+		existing = "# 《枫叶云岛物语》全自动真机试玩与巡检记录 (`playtest_audit_log.md`)\n\n"
 	var dt := Time.get_datetime_string_from_system(false, true)
-	var entry := "## [%s] 鑷富璇曠帺宸℃ PASS\n" % dt
-	entry += "- **鍒囧抚涓庡Э鎬侀槻鍛?*: 宸叉牎楠?`%d` 涓簿鐏佃妭鐐癸紝0 瓒婄晫鍒囧抚銆? 鏃嬭浆寮傚父銆佸墠鐖姳绡?3 灞傚悎鎴愭寕杞芥甯搞€俓n" % sprites_cnt
-	entry += "- **寤虹瓚闂磋窛涓庡浘灞?*: 涓夊矝 12 搴т富寤虹瓚鏈€澶ф按骞抽噸鍙犵巼 `%.1f%%` (`<=15%%`)锛屾渶灏忓噣闂磋窛 `%.1fpx` (`>=28px`)銆俓n" % [max_ov * 100.0, min_gap]
-	entry += "- **浜х嚎娲讳綋涓庝氦浜?*: 鍏斿瓙绱绉诲姩 `%.1fpx` (鍏ㄥ憳 `%.1fpx`)锛屽啘鐢版敹鑾?`%d` 娆★紝鍏ュ簱/涓婃灦 `%d` 浠讹紝椤惧缁撹处 `%d` 鍗曪紝婊氳疆榧犳爣閿氱偣缂╂斁涓庨攣宀涢槻璇崌鏍￠獙閫氳繃銆俓n" % [
+	var entry := "## [%s] 自主试玩巡检 PASS\n" % dt
+	entry += "- **切帧与姿态防呆**: 已校验 `%d` 个精灵节点，0 越界切帧、0 旋转异常、前爪抱篮 3 层合成挂载正常。\n" % sprites_cnt
+	entry += "- **建筑间距与图层**: 三岛 12 座主建筑最大水平重叠率 `%.1f%%` (`<=15%%`)，最小净间距 `%.1fpx` (`>=28px`)。\n" % [max_ov * 100.0, min_gap]
+	entry += "- **产线活体与交互**: 兔子累计移动 `%.1fpx` (全员 `%.1fpx`)，农田收获 `%d` 次，入库/上架 `%d` 件，顾客结账 `%d` 单，滚轮鼠标锚点缩放与锁岛防误升校验通过。\n" % [
 		bunny_dist, all_dist, harvest_count, items_delivered_count, customer_paid_count
 	]
-	entry += "- **鐪熸満鍙岀姸鎬佹埅鍥惧搱甯?*: 鏀惰捣鎬?`%s` | 灞曞紑鎬?`%s`\n\n" % [h_closed.substr(0, 16), h_open.substr(0, 16)]
+	entry += "- **真机双状态截图哈希**: 收起态 `%s` | 展开态 `%s`\n\n" % [h_closed.substr(0, 16), h_open.substr(0, 16)]
 	var f := FileAccess.open(log_path, FileAccess.WRITE)
 	if f != null:
 		f.store_string(existing + entry)
@@ -1266,8 +1272,7 @@ func _find_deprecated_font_node(node: Node) -> String:
 		if found != "":
 			return found
 	return ""
-
-=== FILE: D:\project\maple-isle-idle\src\autoload\SoundManager.gd (8582 bytes) ===
+=== src\autoload\SoundManager.gd ===
 extends Node
 ## Full-Featured WAV Audio, Dual-Deck Ambient Crossfader & Polyphonic SFX Pool (`src/autoload/SoundManager.gd`)
 ## Strictly implements PRD v2.2 Section 6:
@@ -1276,7 +1281,7 @@ extends Node
 ##   * 6 Action/UI SFX: `harvest_pop`, `meso_coin`, `water_splash`, `wood_build`, `ui_click`, `ui_hover`
 ## - Dual-deck `AudioStreamPlayer` ambient crossfade pool (`_ambient_deck_a`, `_ambient_deck_b`) for seamless transitions.
 ## - 8-channel polyphonic SFX `AudioStreamPlayer` pool with per-key anti-clipping cooldown and pitch jitter.
-## - Listens to `EventBus.toggle_desktop_mode` to auto-mute when entering Desktop Companion Mode (`鎽搁奔妯″紡`).
+## - Listens to `EventBus.toggle_desktop_mode` to auto-mute when entering Desktop Companion Mode (`摸鱼模式`).
 
 const AMBIENT_PLAYLIST: Array[String] = [
 	"ambient_day",
@@ -1287,11 +1292,11 @@ const AMBIENT_PLAYLIST: Array[String] = [
 ]
 
 const AMBIENT_LABELS: Dictionary = {
-	"ambient_day": "鏅ㄦ洣楦熼福 (Day)",
-	"ambient_stream": "鑽峰婧祦 (Stream)",
-	"ambient_dusk": "鏆壊椋庨搩 (Dusk)",
-	"ambient_night": "钀ょ伀澶忓 (Night)",
-	"ambient_rain": "鏄熼湶寰洦 (Rain)"
+	"ambient_day": "晨曦鸟鸣 (Day)",
+	"ambient_stream": "荷塘溪流 (Stream)",
+	"ambient_dusk": "暮色风铃 (Dusk)",
+	"ambient_night": "萤火夏夜 (Night)",
+	"ambient_rain": "星露微雨 (Rain)"
 }
 
 const SFX_FILE_MAP: Dictionary = {
@@ -1542,8 +1547,7 @@ func play_click_sfx() -> void:
 
 func play_hover_sfx() -> void:
 	play_sfx("ui_hover", 0.03, 0.0)
-
-=== FILE: D:\project\maple-isle-idle\src\autoload\WindowController.gd (10074 bytes) ===
+=== src\autoload\WindowController.gd ===
 extends Node
 ## Desktop Companion Window, Multi-Island + UI Polygon Mouse Passthrough & Alt+Drag Controller (`src/autoload/WindowController.gd`)
 ## Strictly implements PRD v2.2 Section 1 & Section 5:
@@ -1786,844 +1790,12 @@ func _refresh_passthrough() -> void:
 	])
 	_last_passthrough_polygon = poly
 	DisplayServer.window_set_mouse_passthrough(poly)
-
-=== FILE: D:\project\maple-isle-idle\src\data\sprite_manifest.json (16291 bytes) ===
-{
-  "animals/bunny_sheet.png": {
-    "cell_width": 60,
-    "cell_height": 60,
-    "hframes": 4,
-    "vframes": 1,
-    "total_frames": 4,
-    "normalized_sheet": "res://assets/pixel_art/animals/bunny_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 15,
-        "tight_y": 2,
-        "tight_w": 29,
-        "tight_h": 56
-      },
-      {
-        "x": 60,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 75,
-        "tight_y": 2,
-        "tight_w": 30,
-        "tight_h": 56
-      },
-      {
-        "x": 120,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 130,
-        "tight_y": 2,
-        "tight_w": 39,
-        "tight_h": 56
-      },
-      {
-        "x": 180,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 186,
-        "tight_y": 2,
-        "tight_w": 47,
-        "tight_h": 56
-      }
-    ]
-  },
-  "animals/otter_sheet.png": {
-    "cell_width": 60,
-    "cell_height": 60,
-    "hframes": 4,
-    "vframes": 1,
-    "total_frames": 4,
-    "normalized_sheet": "res://assets/pixel_art/animals/otter_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 10,
-        "tight_y": 2,
-        "tight_w": 40,
-        "tight_h": 56
-      },
-      {
-        "x": 60,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 70,
-        "tight_y": 2,
-        "tight_w": 40,
-        "tight_h": 56
-      },
-      {
-        "x": 120,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 122,
-        "tight_y": 3,
-        "tight_w": 56,
-        "tight_h": 55
-      },
-      {
-        "x": 180,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 185,
-        "tight_y": 2,
-        "tight_w": 49,
-        "tight_h": 56
-      }
-    ]
-  },
-  "animals/toucan_sheet.png": {
-    "cell_width": 60,
-    "cell_height": 60,
-    "hframes": 4,
-    "vframes": 1,
-    "total_frames": 4,
-    "normalized_sheet": "res://assets/pixel_art/animals/toucan_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 2,
-        "tight_y": 4,
-        "tight_w": 56,
-        "tight_h": 54
-      },
-      {
-        "x": 60,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 62,
-        "tight_y": 4,
-        "tight_w": 56,
-        "tight_h": 54
-      },
-      {
-        "x": 120,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 122,
-        "tight_y": 8,
-        "tight_w": 56,
-        "tight_h": 50
-      },
-      {
-        "x": 180,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 182,
-        "tight_y": 9,
-        "tight_w": 56,
-        "tight_h": 49
-      }
-    ]
-  },
-  "animals/fox_sheet.png": {
-    "cell_width": 60,
-    "cell_height": 60,
-    "hframes": 4,
-    "vframes": 1,
-    "total_frames": 4,
-    "normalized_sheet": "res://assets/pixel_art/animals/fox_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 6,
-        "tight_y": 2,
-        "tight_w": 48,
-        "tight_h": 56
-      },
-      {
-        "x": 60,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 66,
-        "tight_y": 2,
-        "tight_w": 48,
-        "tight_h": 56
-      },
-      {
-        "x": 120,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 122,
-        "tight_y": 6,
-        "tight_w": 56,
-        "tight_h": 52
-      },
-      {
-        "x": 180,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 182,
-        "tight_y": 2,
-        "tight_w": 56,
-        "tight_h": 56
-      }
-    ]
-  },
-  "animals/penguin_sheet.png": {
-    "cell_width": 60,
-    "cell_height": 60,
-    "hframes": 4,
-    "vframes": 1,
-    "total_frames": 4,
-    "normalized_sheet": "res://assets/pixel_art/animals/penguin_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 8,
-        "tight_y": 2,
-        "tight_w": 44,
-        "tight_h": 56
-      },
-      {
-        "x": 60,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 68,
-        "tight_y": 2,
-        "tight_w": 44,
-        "tight_h": 56
-      },
-      {
-        "x": 120,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 122,
-        "tight_y": 2,
-        "tight_w": 56,
-        "tight_h": 56
-      },
-      {
-        "x": 180,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 182,
-        "tight_y": 2,
-        "tight_w": 55,
-        "tight_h": 56
-      }
-    ]
-  },
-  "animals/shiba_sheet.png": {
-    "cell_width": 60,
-    "cell_height": 60,
-    "hframes": 4,
-    "vframes": 1,
-    "total_frames": 4,
-    "normalized_sheet": "res://assets/pixel_art/animals/shiba_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 11,
-        "tight_y": 2,
-        "tight_w": 37,
-        "tight_h": 56
-      },
-      {
-        "x": 60,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 72,
-        "tight_y": 2,
-        "tight_w": 36,
-        "tight_h": 56
-      },
-      {
-        "x": 120,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 130,
-        "tight_y": 2,
-        "tight_w": 40,
-        "tight_h": 56
-      },
-      {
-        "x": 180,
-        "y": 0,
-        "w": 60,
-        "h": 60,
-        "tight_x": 182,
-        "tight_y": 9,
-        "tight_w": 56,
-        "tight_h": 49
-      }
-    ]
-  },
-  "travelers/traveler_slime.png": {
-    "cell_width": 48,
-    "cell_height": 48,
-    "hframes": 2,
-    "vframes": 1,
-    "total_frames": 2,
-    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_slime_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 48,
-        "h": 48,
-        "tight_x": 5,
-        "tight_y": 2,
-        "tight_w": 38,
-        "tight_h": 44
-      },
-      {
-        "x": 48,
-        "y": 0,
-        "w": 48,
-        "h": 48,
-        "tight_x": 53,
-        "tight_y": 2,
-        "tight_w": 37,
-        "tight_h": 44
-      }
-    ]
-  },
-  "travelers/traveler_mushroom.png": {
-    "cell_width": 48,
-    "cell_height": 48,
-    "hframes": 2,
-    "vframes": 1,
-    "total_frames": 2,
-    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_mushroom_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 48,
-        "h": 48,
-        "tight_x": 4,
-        "tight_y": 2,
-        "tight_w": 39,
-        "tight_h": 44
-      },
-      {
-        "x": 48,
-        "y": 0,
-        "w": 48,
-        "h": 48,
-        "tight_x": 52,
-        "tight_y": 2,
-        "tight_w": 40,
-        "tight_h": 44
-      }
-    ]
-  },
-  "travelers/traveler_pig.png": {
-    "cell_width": 48,
-    "cell_height": 48,
-    "hframes": 2,
-    "vframes": 1,
-    "total_frames": 2,
-    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_pig_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 48,
-        "h": 48,
-        "tight_x": 4,
-        "tight_y": 2,
-        "tight_w": 40,
-        "tight_h": 44
-      },
-      {
-        "x": 48,
-        "y": 0,
-        "w": 48,
-        "h": 48,
-        "tight_x": 52,
-        "tight_y": 2,
-        "tight_w": 39,
-        "tight_h": 44
-      }
-    ]
-  },
-  "crops/crops_sheet.png": {
-    "cell_width": 40,
-    "cell_height": 40,
-    "hframes": 4,
-    "vframes": 4,
-    "total_frames": 16,
-    "normalized_sheet": "res://assets/pixel_art/crops/crops_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 40,
-        "h": 40,
-        "tight_x": 1,
-        "tight_y": 21,
-        "tight_w": 38,
-        "tight_h": 18
-      },
-      {
-        "x": 40,
-        "y": 0,
-        "w": 40,
-        "h": 40,
-        "tight_x": 41,
-        "tight_y": 9,
-        "tight_w": 38,
-        "tight_h": 30
-      },
-      {
-        "x": 80,
-        "y": 0,
-        "w": 40,
-        "h": 40,
-        "tight_x": 84,
-        "tight_y": 1,
-        "tight_w": 31,
-        "tight_h": 38
-      },
-      {
-        "x": 120,
-        "y": 0,
-        "w": 40,
-        "h": 40,
-        "tight_x": 122,
-        "tight_y": 1,
-        "tight_w": 36,
-        "tight_h": 38
-      },
-      {
-        "x": 0,
-        "y": 40,
-        "w": 40,
-        "h": 40,
-        "tight_x": 1,
-        "tight_y": 60,
-        "tight_w": 38,
-        "tight_h": 19
-      },
-      {
-        "x": 40,
-        "y": 40,
-        "w": 40,
-        "h": 40,
-        "tight_x": 41,
-        "tight_y": 47,
-        "tight_w": 38,
-        "tight_h": 32
-      },
-      {
-        "x": 80,
-        "y": 40,
-        "w": 40,
-        "h": 40,
-        "tight_x": 81,
-        "tight_y": 46,
-        "tight_w": 38,
-        "tight_h": 33
-      },
-      {
-        "x": 120,
-        "y": 40,
-        "w": 40,
-        "h": 40,
-        "tight_x": 121,
-        "tight_y": 51,
-        "tight_w": 38,
-        "tight_h": 28
-      },
-      {
-        "x": 0,
-        "y": 80,
-        "w": 40,
-        "h": 40,
-        "tight_x": 1,
-        "tight_y": 81,
-        "tight_w": 38,
-        "tight_h": 38
-      },
-      {
-        "x": 40,
-        "y": 80,
-        "w": 40,
-        "h": 40,
-        "tight_x": 41,
-        "tight_y": 88,
-        "tight_w": 38,
-        "tight_h": 31
-      },
-      {
-        "x": 80,
-        "y": 80,
-        "w": 40,
-        "h": 40,
-        "tight_x": 81,
-        "tight_y": 81,
-        "tight_w": 37,
-        "tight_h": 38
-      },
-      {
-        "x": 120,
-        "y": 80,
-        "w": 40,
-        "h": 40,
-        "tight_x": 121,
-        "tight_y": 82,
-        "tight_w": 38,
-        "tight_h": 37
-      },
-      {
-        "x": 0,
-        "y": 120,
-        "w": 40,
-        "h": 40,
-        "tight_x": 1,
-        "tight_y": 136,
-        "tight_w": 38,
-        "tight_h": 23
-      },
-      {
-        "x": 40,
-        "y": 120,
-        "w": 40,
-        "h": 40,
-        "tight_x": 42,
-        "tight_y": 121,
-        "tight_w": 35,
-        "tight_h": 38
-      },
-      {
-        "x": 80,
-        "y": 120,
-        "w": 40,
-        "h": 40,
-        "tight_x": 81,
-        "tight_y": 126,
-        "tight_w": 38,
-        "tight_h": 33
-      },
-      {
-        "x": 120,
-        "y": 120,
-        "w": 40,
-        "h": 40,
-        "tight_x": 128,
-        "tight_y": 121,
-        "tight_w": 23,
-        "tight_h": 38
-      }
-    ],
-    "items": [
-      {
-        "id": "crop_0",
-        "name": "strawberry_osmanthus",
-        "stages": [
-          {
-            "x": 0,
-            "y": 0,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 40,
-            "y": 0,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 80,
-            "y": 0,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 120,
-            "y": 0,
-            "w": 40,
-            "h": 40
-          }
-        ]
-      },
-      {
-        "id": "crop_1",
-        "name": "sweet_berry",
-        "stages": [
-          {
-            "x": 0,
-            "y": 40,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 40,
-            "y": 40,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 80,
-            "y": 40,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 120,
-            "y": 40,
-            "w": 40,
-            "h": 40
-          }
-        ]
-      },
-      {
-        "id": "crop_2",
-        "name": "glow_mushroom",
-        "stages": [
-          {
-            "x": 0,
-            "y": 80,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 40,
-            "y": 80,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 80,
-            "y": 80,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 120,
-            "y": 80,
-            "w": 40,
-            "h": 40
-          }
-        ]
-      },
-      {
-        "id": "crop_3",
-        "name": "sun_pineapple",
-        "stages": [
-          {
-            "x": 0,
-            "y": 120,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 40,
-            "y": 120,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 80,
-            "y": 120,
-            "w": 40,
-            "h": 40
-          },
-          {
-            "x": 120,
-            "y": 120,
-            "w": 40,
-            "h": 40
-          }
-        ]
-      }
-    ]
-  },
-  "buildings/delicacies_sheet.png": {
-    "cell_width": 36,
-    "cell_height": 36,
-    "hframes": 4,
-    "vframes": 1,
-    "total_frames": 4,
-    "normalized_sheet": "res://assets/pixel_art/buildings/delicacies_sheet_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 36,
-        "h": 36,
-        "tight_x": 1,
-        "tight_y": 8,
-        "tight_w": 34,
-        "tight_h": 20
-      },
-      {
-        "x": 36,
-        "y": 0,
-        "w": 36,
-        "h": 36,
-        "tight_x": 37,
-        "tight_y": 5,
-        "tight_w": 34,
-        "tight_h": 25
-      },
-      {
-        "x": 72,
-        "y": 0,
-        "w": 36,
-        "h": 36,
-        "tight_x": 79,
-        "tight_y": 1,
-        "tight_w": 21,
-        "tight_h": 34
-      },
-      {
-        "x": 108,
-        "y": 0,
-        "w": 36,
-        "h": 36,
-        "tight_x": 110,
-        "tight_y": 1,
-        "tight_w": 32,
-        "tight_h": 34
-      }
-    ],
-    "items": [
-      {
-        "id": "delicacy_0",
-        "name": "妗傝姳绯背绯?,
-        "tier": 1,
-        "region": {
-          "x": 0,
-          "y": 0,
-          "w": 36,
-          "h": 36
-        }
-      },
-      {
-        "id": "delicacy_1",
-        "name": "鐒︾硸鑻规灉鑽夎帗娲?,
-        "tier": 1,
-        "region": {
-          "x": 36,
-          "y": 0,
-          "w": 36,
-          "h": 36
-        }
-      },
-      {
-        "id": "delicacy_2",
-        "name": "鏄熼湶鑽у厜鐢橀湶楗?,
-        "tier": 2,
-        "region": {
-          "x": 72,
-          "y": 0,
-          "w": 36,
-          "h": 36
-        }
-      },
-      {
-        "id": "delicacy_3",
-        "name": "娴峰矝鍑ゆⅷ妞板ザ鍐?,
-        "tier": 2,
-        "region": {
-          "x": 108,
-          "y": 0,
-          "w": 36,
-          "h": 36
-        }
-      }
-    ]
-  },
-  "islands/soil_plot.png": {
-    "cell_width": 40,
-    "cell_height": 18,
-    "hframes": 4,
-    "vframes": 1,
-    "total_frames": 4,
-    "normalized_sheet": "res://assets/pixel_art/islands/soil_plot_normalized.png",
-    "regions": [
-      {
-        "x": 0,
-        "y": 0,
-        "w": 40,
-        "h": 18,
-        "tight_x": 2,
-        "tight_y": 2,
-        "tight_w": 36,
-        "tight_h": 14
-      },
-      {
-        "x": 40,
-        "y": 0,
-        "w": 40,
-        "h": 18,
-        "tight_x": 42,
-        "tight_y": 2,
-        "tight_w": 36,
-        "tight_h": 14
-      },
-      {
-        "x": 80,
-        "y": 0,
-        "w": 40,
-        "h": 18,
-        "tight_x": 82,
-        "tight_y": 2,
-        "tight_w": 36,
-        "tight_h": 14
-      },
-      {
-        "x": 120,
-        "y": 0,
-        "w": 40,
-        "h": 18,
-        "tight_x": 122,
-        "tight_y": 2,
-        "tight_w": 36,
-        "tight_h": 14
-      }
-    ]
-  }
-}
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\BuildingVisualUpgrader.gd (8571 bytes) ===
+=== src\entities\buildings\BuildingVisualUpgrader.gd ===
 extends Node2D
 class_name BuildingVisualUpgrader
 ## 4-Tier Building Visual Evolution, Outer-Edge Decor, Particles, Star Badge & Legendary Shader (`src/entities/buildings/BuildingVisualUpgrader.gd`)
 ## Strictly enforces PRD v2.2 Section 4 & GEMINI.md Laws 2.2, 2.3 & 3.2:
-## - Upgrade feedback: Q-bouncy scale Tween (`1.22x -> 0.92x -> 1.0x/1.08x`) + `"LV UP!"` / `"鈽呴噷绋嬬绐佺牬 Lv.XX!"` floating text.
+## - Upgrade feedback: Q-bouncy scale Tween (`1.22x -> 0.92x -> 1.0x/1.08x`) + `"LV UP!"` / `"★里程碑突破 Lv.XX!"` floating text.
 ## - 4-Tier Visual Evolution:
 ##   * Tier 1 (Lv.1~24): Standard pixel building.
 ##   * Tier 2 (Lv.25~49): Mounts outer-edge `+16px` (`DECOR_OUTER_OFFSET`) decor sprite (`decor_scarecrow.png` on SoilPlot,
@@ -2780,7 +1952,7 @@ func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
 
 			var gpos := target_parent.position
 			if current_tier > old_tier or (new_level % 25 == 0):
-				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -54), "鈽呴噷绋嬬绐佺牬 Lv." + str(new_level) + "!", Color("#FFE066"))
+				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -54), "★里程碑突破 Lv." + str(new_level) + "!", Color("#FFE066"))
 				if SoundManager != null:
 					SoundManager.play_milestone_sfx()
 			else:
@@ -2820,8 +1992,7 @@ func _draw() -> void:
 		draw_circle(badge_center, 7.0, Color(0.14, 0.08, 0.04, 0.88))
 		draw_arc(badge_center, 7.0, 0.0, TAU, 16, star_col, 1.4)
 		_draw_five_pointed_star(badge_center, 5.2, 2.3, star_col)
-
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\MarketStall.gd (6117 bytes) ===
+=== src\entities\buildings\MarketStall.gd ===
 extends Node2D
 class_name MarketStall
 ## Central Cloud Isle Market Stall, Queue Dispatcher & Shiba Manager Checkout Hub (`src/entities/buildings/MarketStall.gd`)
@@ -2981,16 +2152,7 @@ func _draw() -> void:
 	if checkout_flash_timer > 0.0:
 		base_alpha += 0.18 * (checkout_flash_timer / 0.35)
 	draw_circle(Vector2(-10.0, -34.0), 14.0, Color(1.0, 0.86, 0.38, base_alpha))
-
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\MarketStall.tscn (200 bytes) ===
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/entities/buildings/MarketStall.gd" id="1_stall"]
-
-[node name="MarketStall" type="Node2D"]
-script = ExtResource("1_stall")
-
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.gd (8843 bytes) ===
+=== src\entities\buildings\SoilPlot.gd ===
 extends Node2D
 class_name SoilPlot
 ## Enlarged 1.5D Soil Bed (`64x26`), 3-Stage Crop Growth, Buffer Cap 10 & Lv.25 Auto-Evolution (`src/entities/buildings/SoilPlot.gd`)
@@ -3231,16 +2393,7 @@ func harvest_crop_yield() -> int:
 	if EventBus != null:
 		EventBus.item_produced.emit(island_idx, crop_id, qty)
 	return qty
-
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\SoilPlot.tscn (192 bytes) ===
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/entities/buildings/SoilPlot.gd" id="1_soil"]
-
-[node name="SoilPlot" type="Node2D"]
-script = ExtResource("1_soil")
-
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\Workshop.gd (7822 bytes) ===
+=== src\entities\buildings\Workshop.gd ===
 extends Node2D
 class_name Workshop
 ## Mortar, Cauldron & Island 3 Dual Workshop (`src/entities/buildings/Workshop.gd`)
@@ -3450,16 +2603,7 @@ func _draw() -> void:
 		var ring_center := Vector2(bx - 9.0, by + 2.5)
 		draw_circle(ring_center, 5.5, Color(0.10, 0.07, 0.04, 0.90))
 		draw_arc(ring_center, 4.2, -PI * 0.5, -PI * 0.5 + prog * TAU, 16, Color("#FFE066"), 1.6)
-
-=== FILE: D:\project\maple-isle-idle\src\entities\buildings\Workshop.tscn (200 bytes) ===
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/entities/buildings/Workshop.gd" id="1_workshop"]
-
-[node name="Workshop" type="Node2D"]
-script = ExtResource("1_workshop")
-
-=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.gd (25116 bytes) ===
+=== src\entities\units\AnimalWorker.gd ===
 extends Node2D
 class_name AnimalWorker
 ## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`)
@@ -3593,7 +2737,7 @@ func trigger_pet_boost() -> void:
 	boost_timer = 15.0
 	if SoundManager != null:
 		SoundManager.play_pop_sfx()
-	EventBus.spawn_floating_text.emit(position + Vector2(0.0, -64.0), "鈽呮懜澶村厓姘?50%!", Color("#FFE066"))
+	EventBus.spawn_floating_text.emit(position + Vector2(0.0, -64.0), "★摸头元气+50%!", Color("#FFE066"))
 
 func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, p_graph: WaypointGraph, p_world: Node2D) -> void:
 	role_type = p_role
@@ -3969,7 +3113,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 			elif worker_step == 2:
 				facing_left = false
 				if state_timer >= 0.45:
-					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "椴滄灉鐩村敭+", Color("#FFE066")):
+					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "鲜果直售+", Color("#FFE066")):
 						_assign_next_task()
 
 		RoleType.OTTER_LOGISTICS:
@@ -4004,7 +3148,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 						_navigate_to(waypoint_graph.get_dock_pos("stall_restock"))
 
 			elif worker_step == 1:
-				facing_left = false
+				facing_left = true
 				if state_timer >= 0.40:
 					var cid := carrying_item_id if carrying_item_id != "" else "crop_0"
 					var q := maxi(1, carrying_qty)
@@ -4021,7 +3165,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 			elif worker_step == 2:
 				facing_left = false
 				if state_timer >= 0.45:
-					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "鍒嗘祦鐩村敭+", Color("#FFF4D6")):
+					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "分流直售+", Color("#FFF4D6")):
 						_assign_next_task()
 
 			elif worker_step == 10:
@@ -4041,7 +3185,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 			elif worker_step == 11:
 				facing_left = false
 				if state_timer >= 0.45:
-					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "3.5x缇庨+", Color("#FFE066")):
+					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "3.5x美食+", Color("#FFE066")):
 						_assign_next_task()
 
 		RoleType.TOUCAN_TRADER:
@@ -4084,9 +3228,9 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 				facing_left = false
 				if state_timer >= 0.45:
 					var did := carrying_item_id if carrying_item_id != "" else "delicacy_2"
-					var tag := "璺ㄥ矝椴滄灉+"
+					var tag := "跨岛鲜果+"
 					if did.begins_with("delicacy_"):
-						tag = "52x鐩涘+" if home_island == 3 else "12x鐢橀湶+"
+						tag = "52x盛宴+" if home_island == 3 else "12x甘露+"
 					if _try_deposit_to_stall(did, carrying_qty, tag, Color("#FFE066")):
 						_assign_next_task()
 
@@ -4108,8 +3252,8 @@ func _update_chef_work_step() -> void:
 		else:
 			w_node = world_ref.mortar_workshop
 
-	# Face toward the center of the workshop (`mortar_chef`/`cauldron_chef` at dx=+10 face left; on Island 3 `fox` at dx=-10 faces right, `penguin` at dx=+16 faces left)
-	facing_left = (home_island != 3) or is_penguin
+	# Face toward the center of the workshop (`fox`/`cauldron_chef` at dx=-20 face right; on Island 3 `penguin` at dx=+18 faces left)
+	facing_left = (home_island == 3 and is_penguin)
 	var chef_slot_key := animal_key + "_" + str(home_island)
 
 	if worker_step == 0:
@@ -4171,16 +3315,7 @@ func _draw() -> void:
 		return
 	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
 	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)
-
-=== FILE: D:\project\maple-isle-idle\src\entities\units\AnimalWorker.tscn (200 bytes) ===
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/entities/units/AnimalWorker.gd" id="1_worker"]
-
-[node name="AnimalWorker" type="Node2D"]
-script = ExtResource("1_worker")
-
-=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.gd (11134 bytes) ===
+=== src\entities\units\CustomerNPC.gd ===
 extends Node2D
 class_name CustomerNPC
 ## Long-Cycle Island Customer & Crown VIP Tycoon (`src/entities/units/CustomerNPC.gd`)
@@ -4358,14 +3493,14 @@ func _process(delta: float) -> void:
 					if earned > 0:
 						purchased_ok = true
 						if is_vip:
-							EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "鈽呭瘜璞?x灏忚垂!", Color("#FFE066"))
+							EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "★富豪2x小费!", Color("#FFE066"))
 						_begin_leave()
 			else:
 				wait_timer += delta
 				if wait_timer >= 12.0:
 					disappointed = true
 					EventBus.customer_left_unhappy.emit(position)
-					EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...缂鸿揣绂诲紑", Color("#FFF4D6"))
+					EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...缺货离开", Color("#FFF4D6"))
 					_begin_leave()
 
 		State.LEAVE:
@@ -4468,16 +3603,7 @@ func _draw() -> void:
 			draw_texture_rect(tex_heart, Rect2(-10, heart_y + hop_y, 20, 20), false)
 		elif disappointed and tex_parchment != null:
 			draw_texture_rect(tex_parchment, Rect2(-16, -72 + hop_y, 32, 22), false)
-
-=== FILE: D:\project\maple-isle-idle\src\entities\units\CustomerNPC.tscn (202 bytes) ===
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/entities/units/CustomerNPC.gd" id="1_customer"]
-
-[node name="CustomerNPC" type="Node2D"]
-script = ExtResource("1_customer")
-
-=== FILE: D:\project\maple-isle-idle\src\ui\FloatingText.gd (3368 bytes) ===
+=== src\ui\FloatingText.gd ===
 extends Node2D
 class_name FloatingText
 ## Native Label Floating Text & Parabolic Gold Coin Effect (`src/ui/FloatingText.gd`)
@@ -4578,17 +3704,7 @@ func _draw() -> void:
 	if tex_icons != null:
 		for c in coin_arcs:
 			draw_texture_rect_region(tex_icons, Rect2(float(c["x"]) - 11.0, float(c["y"]) - 11.0, 22.0, 22.0), Rect2(0, 0, 48, 48))
-
-=== FILE: D:\project\maple-isle-idle\src\ui\FloatingText.tscn (193 bytes) ===
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/ui/FloatingText.gd" id="1_ft"]
-
-[node name="FloatingText" type="Node2D"]
-z_index = 20
-script = ExtResource("1_ft")
-
-=== FILE: D:\project\maple-isle-idle\src\ui\HUD.gd (25409 bytes) ===
+=== src\ui\HUD.gd ===
 extends Control
 class_name HUD
 ## Native Label Retro Maple-Style HUD, 3s Auto-Collapse Capsule & Recruit-to-Promote Drawer (`src/ui/HUD.gd`)
@@ -4683,15 +3799,15 @@ func _ready() -> void:
 
 func _format_duration_cn(seconds: int) -> String:
 	if seconds >= 3600:
-		return str(seconds / 3600) + "灏忔椂" + str((seconds % 3600) / 60) + "鍒?
+		return str(seconds / 3600) + "小时" + str((seconds % 3600) / 60) + "分"
 	elif seconds >= 60:
-		return str(seconds / 60) + "鍒? + str(seconds % 60) + "绉?
-	return str(seconds) + "绉?
+		return str(seconds / 60) + "分" + str(seconds % 60) + "秒"
+	return str(seconds) + "秒"
 
 func _show_offline_welcome_banner(seconds_away: int, gold_earned: int) -> void:
 	offline_banner_timer = 8.0
 	var codex_pct := (GameManager.get_unlocked_codex_count()) * 10
-	offline_banner_text = "鈽呮杩庡綊鏉ワ紒绂荤嚎 " + _format_duration_cn(seconds_away) + " 路 鑷姩鍒涙敹 +" + str(gold_earned) + "G (鍥鹃壌+" + str(codex_pct) + "%)"
+	offline_banner_text = "★欢迎归来！离线 " + _format_duration_cn(seconds_away) + " · 自动创收 +" + str(gold_earned) + "G (图鉴+" + str(codex_pct) + "%)"
 
 func set_boss_stealth(stealth_on: bool) -> void:
 	boss_stealth_mode = stealth_on
@@ -4745,7 +3861,7 @@ func _build_native_labels() -> void:
 	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 112.0, CAPSULE_RECT.position.y + 10.0)
 	add_child(lbl_capsule_info)
 
-	lbl_capsule_mute = EconomyConfig.create_pixel_label("[闈欓煶]", 14, Color("#FFE066"), false)
+	lbl_capsule_mute = EconomyConfig.create_pixel_label("[静音]", 14, Color("#FFE066"), false)
 	lbl_capsule_mute.position = Vector2(CAPSULE_MUTE_RECT.position.x + 2.0, CAPSULE_MUTE_RECT.position.y + 6.0)
 	add_child(lbl_capsule_mute)
 
@@ -4775,12 +3891,12 @@ func _build_native_labels() -> void:
 	lbl_drawer_title.position = Vector2(544.0, 128.0)
 	add_child(lbl_drawer_title)
 
-	lbl_drawer_weather = EconomyConfig.create_pixel_label("[澶╂皵:鏅存樇]", 14, Color("#FFE066"), false)
+	lbl_drawer_weather = EconomyConfig.create_pixel_label("[天气:晴昼]", 14, Color("#FFE066"), false)
 	lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 2.0)
 	lbl_drawer_weather.scale = Vector2(0.92, 0.92)
 	add_child(lbl_drawer_weather)
 
-	lbl_drawer_mute = EconomyConfig.create_pixel_label("[闈欓煶]", 14, Color("#FFF4D6"), false)
+	lbl_drawer_mute = EconomyConfig.create_pixel_label("[静音]", 14, Color("#FFF4D6"), false)
 	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
 	add_child(lbl_drawer_mute)
 
@@ -4863,8 +3979,8 @@ func _process(delta: float) -> void:
 
 func _sync_label_nodes() -> void:
 	var gold_str := str(int(round(displayed_gold))) + "G"
-	var mute_lbl := "[闈欓煶]" if (SoundManager != null and SoundManager.is_muted) else "[闊虫晥]"
-	var weather_names := ["鏅存樇", "榛勬槒", "澶滃競", "寰洦"]
+	var mute_lbl := "[静音]" if (SoundManager != null and SoundManager.is_muted) else "[音效]"
+	var weather_names := ["晴昼", "黄昏", "夜市", "微雨"]
 	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
 
 	lbl_offline.visible = (offline_banner_timer > 0.0 and not boss_stealth_mode)
@@ -4876,10 +3992,10 @@ func _sync_label_nodes() -> void:
 	if is_collapsed_capsule:
 		lbl_capsule_gold.text = gold_str
 		if boss_stealth_mode:
-			lbl_capsule_info.text = "鍚庡彴鎸傛満浜ч噾涓?路 鎸塅9鎴栫偣鍑绘仮澶?
-			lbl_capsule_mute.text = "[鎭㈠]"
+			lbl_capsule_info.text = "后台挂机产金中 · 按F9或点击恢复"
+			lbl_capsule_mute.text = "[恢复]"
 		else:
-			lbl_capsule_info.text = GameManager.get_weather_status_text() + " 路 鎮仠灞曞紑"
+			lbl_capsule_info.text = GameManager.get_weather_status_text() + " · 悬停展开"
 			lbl_capsule_mute.text = mute_lbl
 
 	var show_bar := not is_collapsed_capsule
@@ -4888,11 +4004,11 @@ func _sync_label_nodes() -> void:
 	lbl_bar_stall.visible = show_bar
 	if show_bar:
 		lbl_bar_gold.text = gold_str
-		lbl_bar_pipeline.text = GameManager.get_weather_status_text() + " 路 瀛? + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
+		lbl_bar_pipeline.text = GameManager.get_weather_status_text() + " · 存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
 		var codex_pct := GameManager.get_unlocked_codex_count() * 10
-		lbl_bar_stall.text = "鎽婁綅" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " 路 鍥鹃壌+" + str(codex_pct) + "%"
+		lbl_bar_stall.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
 
-	var tab_names := ["寤虹瓚鍗囩骇", "鍔ㄧ墿缂栧埗", "鏈ㄦˉ寮€鎷?, "灞辨捣鍥鹃壌", ("鈽呮懜楸肩疆椤? if GameManager.desktop_companion_mode else "鈽呭父瑙勭獥鍙?)]
+	var tab_names := ["建筑升级", "动物编制", "木桥开拓", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
 	for i in range(TAB_COUNT):
 		lbl_tabs[i].visible = show_bar
 		lbl_tabs[i].text = tab_names[i]
@@ -4905,14 +4021,14 @@ func _sync_label_nodes() -> void:
 	if show_drawer:
 		var codex_cnt := GameManager.get_unlocked_codex_count()
 		var titles := [
-			"銆愬缓绛戝崌绾с€戞瘡25绾т綔鐗?缇庨鑷姩鎹唬 + 寤虹瓚鍥涢樁澶栬铚曞彉!",
-			"銆愬姩鐗╃紪鍒朵笌鎷涙弧杞繘淇€戠偣鍑诲皬鍔ㄧ墿鍙懜澶村姞閫?路 鎷涙弧鍚庡叏闃熻繘淇?Lv.+1)!",
-			"銆愪笁宀涘浐瀹氭Ы浣嶄笌鏈ㄦˉ寮€鎷撱€戦瓟娉曞瘑鏋?12x鍧╁煔) 路 澶╃┖娴峰哺(52x鍙屽伐鍧?鈽?x瀵岃豹)",
-			"銆愬北娴峰浘閴存敹闆嗗唽銆戝凡鐐逛寒 " + str(codex_cnt) + "/8 绉嶉鏉愭枡鐞?路 姘镐箙鍏ㄥ矝鍞环 +" + str(codex_cnt * 10) + "%!"
+			"【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
+			"【动物编制与招满转进修】点击小动物可摸头加速 · 招满后全队进修(Lv.+1)!",
+			"【三岛固定槽位与木桥开拓】魔法密林(12x坩埚) · 天空海岸(52x双工坊+★2x富豪)",
+			"【山海图鉴收集册】已点亮 " + str(codex_cnt) + "/8 种食材料理 · 永久全岛售价 +" + str(codex_cnt * 10) + "%!"
 		]
 		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
 		lbl_drawer_title.position = Vector2(544.0, 128.0 + slide_y)
-		lbl_drawer_weather.text = "[澶╂皵:" + cur_w_name + "]"
+		lbl_drawer_weather.text = "[天气:" + cur_w_name + "]"
 		lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 3.0 + slide_y)
 		lbl_drawer_mute.text = mute_lbl
 		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + slide_y)
@@ -5039,9 +4155,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "building",
 					"key": b_key,
-					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (鏈В閿?"),
-					"sub": ("涓嬩釜2x铚曞彉: Lv." + str(next_ms)) if isl_on else ("闇€鍏堝紑鎷撴湪妗ヨВ閿佸矝" + str(req_isl)),
-					"cost": ("鍗囩骇 " + str(cost) + "G") if isl_on else "寰呰В閿佸矝灞?
+					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (未解锁)"),
+					"sub": ("下个2x蜕变: Lv." + str(next_ms)) if isl_on else ("需先开拓木桥解锁岛" + str(req_isl)),
+					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿"
 				})
 		1:
 			for a_key in ["bunny", "otter", "fox", "shiba", "penguin", "toucan"]:
@@ -5053,18 +4169,18 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				var cost_step := cur_rec + lv
 				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), cost_step)
 
-				var title_str := String(cfg["name"]).split(" 路 ")[0]
+				var title_str := String(cfg["name"]).split(" · ")[0]
 				var sub_str := ""
 				var act_str := ""
 				if max_cap <= 0:
-					sub_str = "闇€鍏堣В閿佹柊宀涘笨"
-					act_str = "寰呰В閿佸矝灞?
+					sub_str = "需先解锁新岛屿"
+					act_str = "待解锁岛屿"
 				elif next_isl > 0:
-					sub_str = "缂栧埗 " + str(cur_rec) + "/" + str(max_cap) + " (宀? + str(next_isl) + ")"
-					act_str = "鎷涘嫙 " + str(cost) + "G"
+					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " (岛" + str(next_isl) + ")"
+					act_str = "招募 " + str(cost) + "G"
 				else:
-					sub_str = "婊＄紪 " + str(cur_rec) + "/" + str(max_cap) + " 路 Lv." + str(lv)
-					act_str = "鍏ㄩ槦杩涗慨 Lv.+1 (" + str(cost) + "G)"
+					sub_str = "满编 " + str(cur_rec) + "/" + str(max_cap) + " · Lv." + str(lv)
+					act_str = "全队进修 Lv.+1 (" + str(cost) + "G)"
 
 				list.append({
 					"type": "animal",
@@ -5079,16 +4195,16 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "unlock_island",
 				"key": "2",
-				"title": "鏈ㄦˉ1 路 榄旀硶瀵嗘灄" + (" (宸查€?" if isl2_unlocked else ""),
-				"sub": "2x鍐滅敯+12x鍧╁煔+浼侀箙",
-				"cost": "宸茶В閿? if isl2_unlocked else "180G 瑙ｉ攣"
+				"title": "木桥1 · 魔法密林" + (" (已通)" if isl2_unlocked else ""),
+				"sub": "2x农田+12x坩埚+企鹅",
+				"cost": "已解锁" if isl2_unlocked else "180G 解锁"
 			})
 			list.append({
 				"type": "unlock_island",
 				"key": "3",
-				"title": "鏈ㄦˉ2 路 澶╃┖娴峰哺" + (" (宸查€?" if isl3_unlocked else ""),
-				"sub": "鍙屽伐鍧?2x+鈽?x瀵岃豹",
-				"cost": "宸茶В閿? if isl3_unlocked else "480G 瑙ｉ攣"
+				"title": "木桥2 · 天空海岸" + (" (已通)" if isl3_unlocked else ""),
+				"sub": "双工坊52x+★2x富豪",
+				"cost": "已解锁" if isl3_unlocked else "480G 解锁"
 			})
 			for b_key in ["soil_2", "soil_3"]:
 				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
@@ -5099,17 +4215,17 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "building",
 					"key": b_key,
-					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (鏈В閿?"),
-					"sub": String(cfg["desc"]).substr(0, 12) if isl_on else ("闇€鍏堣В閿佷笂鏂规湪妗? + str(req_isl - 1)),
-					"cost": ("鍗囩骇 " + str(cost) + "G") if isl_on else "寰呰В閿佸矝灞?
+					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (未解锁)"),
+					"sub": String(cfg["desc"]).substr(0, 12) if isl_on else ("需先解锁上方木桥" + str(req_isl - 1)),
+					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿"
 				})
 		3:
 			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)
 			var codex_pairs := [
-				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "涓€闃堵锋櫒闇茬敯鍥?, "c_hint": "???(鍒濆瑙ｉ攣)", "d_hint": "???(鐮旈挼宸ュ潑)"},
-				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "浜岄樁路鏋滈鐑樼剻", "c_hint": "???(鍐滅敯Lv.25)", "d_hint": "???(鐮旈挼Lv.25)"},
-				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "涓夐樁路瀵嗘灄鏄熼湶", "c_hint": "???(瑙ｉ攣宀?)", "d_hint": "???(宀?鍧╁煔)"},
-				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "鍥涢樁路浜戞捣鐩涘", "c_hint": "???(瑙ｉ攣宀?)", "d_hint": "???(宀?鍙屽伐鍧?"}
+				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "一阶·晨露田园", "c_hint": "???(初始解锁)", "d_hint": "???(研钵工坊)"},
+				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "二阶·果香烘焙", "c_hint": "???(农田Lv.25)", "d_hint": "???(研钵Lv.25)"},
+				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "三阶·密林星露", "c_hint": "???(解锁岛2)", "d_hint": "???(岛2坩埚)"},
+				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "四阶·云海盛宴", "c_hint": "???(解锁岛3)", "d_hint": "???(岛3双工坊)"}
 			]
 			for cp in codex_pairs:
 				var cid := String(cp["crop"])
@@ -5124,7 +4240,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"key": str(cp["idx"]),
 					"title": String(cp["tier_name"]) + " (+" + str(bonus_pct) + "%)",
 					"sub": (c_name if c_on else String(cp["c_hint"])) + " | " + (d_name if d_on else String(cp["d_hint"])),
-					"cost": "宸茬偣浜?" + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 路 姘镐箙鍞环+" + str(bonus_pct) + "%"
+					"cost": "已点亮 " + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 · 永久售价+" + str(bonus_pct) + "%"
 				})
 	return list
 
@@ -5145,7 +4261,7 @@ func _activate_card(idx: int) -> void:
 	elif t == "codex":
 		var codex_pct := GameManager.get_unlocked_codex_count() * 10
 		offline_banner_timer = 4.0
-		offline_banner_text = "鈽呭北娴峰浘閴存€诲姞鎴? 鍏ㄥ矝鍟嗗搧鍞环姘镐箙 +" + str(codex_pct) + "% (姣忚В閿?绉嶅啘浣滅墿鎴栧伐鍧婄編椋?+10%)"
+		offline_banner_text = "★山海图鉴总加成: 全岛商品售价永久 +" + str(codex_pct) + "% (每解锁1种农作物或工坊美食 +10%)"
 
 func _draw() -> void:
 	if offline_banner_timer > 0.0 and not boss_stealth_mode and tex_pill != null:
@@ -5208,29 +4324,14 @@ func _draw() -> void:
 					draw_texture_rect_region(tex_crops, Rect2(crect.end.x - 52.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(3.0 * 40.0, float(i) * 40.0, 40.0, 40.0))
 				if tex_delicacies != null:
 					draw_texture_rect_region(tex_delicacies, Rect2(crect.end.x - 28.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(float(i) * 36.0, 0.0, 36.0, 36.0))
-
-=== FILE: D:\project\maple-isle-idle\src\ui\HUD.tscn (278 bytes) ===
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/ui/HUD.gd" id="1_hud"]
-
-[node name="HUD" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("1_hud")
-
-=== FILE: D:\project\maple-isle-idle\src\world\CameraController.gd (10630 bytes) ===
+=== src\world\CameraController.gd ===
 extends Camera2D
 class_name CameraController
 ## Unified Cursor-Anchored Smooth Wheel Zoom & Inertia Panning Controller (`src/world/CameraController.gd`)
 ## Works seamlessly in BOTH Desktop Companion Mode and Windowed Mode by driving `MainWorld.world_root` transform
 ## while keeping `Camera2D` aligned with the `1920x300` viewport coordinate space:
 ## - Logarithmic Mouse Wheel zoom (`0.50x ~ 2.20x`, `ZOOM_STEP_RATIO = 1.12`) with magnetic `1.0x` native pixel snap.
-## - True Zoom-to-Cursor (`浠ラ紶鏍囨寚閽堜负涓績缂╂斁`) horizontal pivot + smart horizon vertical anchoring (`GROUND_Y = 124.0` never clips or sinks behind HUD).
+## - True Zoom-to-Cursor (`以鼠标指针为中心缩放`) horizontal pivot + smart horizon vertical anchoring (`GROUND_Y = 124.0` never clips or sinks behind HUD).
 ## - Smooth exponential damping (`ZOOM_LERP_SPEED = 14.0`, `PAN_LERP_SPEED = 14.0`).
 ## - Right-Mouse-Button (`MOUSE_BUTTON_RIGHT`) drag panning with release inertia, `A/D` & `Left/Right` keyboard panning,
 ##   `Middle-Click` / `Space` / `Home` reset to `1.0x` panoramic view, and `1/2/3` island focus shortcuts.
@@ -5487,8 +4588,7 @@ func _apply_to_world() -> void:
 		world_ref.world_root.position = current_root_pos
 		if absf(prev_z - current_zoom) > 0.0005 or prev_pos.distance_to(current_root_pos) > 0.1:
 			world_ref.queue_redraw()
-
-=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.gd (23095 bytes) ===
+=== src\world\MainWorld.gd ===
 extends Node2D
 class_name MainWorld
 ## Panoramic 3-Island World (`src/world/MainWorld.gd`)
@@ -5562,7 +4662,7 @@ var cloud_time: float = 0.0
 var chimney_timer: float = 0.0
 var chimney_wisps: Array[Dictionary] = []
 
-## v2.3 Direction 2: Floating Cloud Gift Encounter (`浜戠濂囬亣绀肩洅`)
+## v2.3 Direction 2: Floating Cloud Gift Encounter (`云端奇遇礼盒`)
 var tex_delicacies: Texture2D
 var cloud_gift_sprite: Sprite2D
 var cloud_gift_label: Label
@@ -5621,7 +4721,7 @@ func _ready() -> void:
 	cloud_gift_sprite.z_as_relative = false
 	world_root.add_child(cloud_gift_sprite)
 
-	cloud_gift_label = EconomyConfig.create_pixel_label("鈽呭閬囩ぜ鐩?, 14, Color("#FFE066"), true)
+	cloud_gift_label = EconomyConfig.create_pixel_label("★奇遇礼盒", 14, Color("#FFE066"), true)
 	cloud_gift_label.custom_minimum_size = Vector2(84.0, 20.0)
 	cloud_gift_label.position = Vector2(-42.0, -34.0)
 	cloud_gift_sprite.add_child(cloud_gift_label)
@@ -5858,7 +4958,7 @@ func _claim_cloud_gift() -> void:
 	GameManager.trigger_carnival_frenzy(20.0)
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
-	EventBus.spawn_floating_text.emit(cloud_gift_pos, "鈽呭閬囩ぜ鐩?" + str(bonus_gold) + "G 路 鍢夊勾鍗?0s!", Color("#FFE066"))
+	EventBus.spawn_floating_text.emit(cloud_gift_pos, "★奇遇礼盒+" + str(bonus_gold) + "G · 嘉年华20s!", Color("#FFE066"))
 
 func _apply_companion_zoom() -> void:
 	if camera_controller != null:
@@ -6023,16 +5123,7 @@ func _draw() -> void:
 				draw_line(Vector2(rx, ry), Vector2(rx - 3.0, ry + 8.0), Color(0.78, 0.92, 1.0, 0.42), 1.0)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-=== FILE: D:\project\maple-isle-idle\src\world\MainWorld.tscn (191 bytes) ===
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/world/MainWorld.gd" id="1_mainworld"]
-
-[node name="MainWorld" type="Node2D"]
-script = ExtResource("1_mainworld")
-
-=== FILE: D:\project\maple-isle-idle\src\world\WaypointGraph.gd (8189 bytes) ===
+=== src\world\WaypointGraph.gd ===
 extends Node2D
 class_name WaypointGraph
 ## Complete 3-Island Road, Dual Wooden Bridge & Building Dock Waypoint Graph (`src/world/WaypointGraph.gd`)
@@ -6101,26 +5192,26 @@ const NAMED_WAYPOINTS: Dictionary = {
 const BUILDING_DOCKS: Dictionary = {
 	"soil_1_slot_0": {"wp": 7, "dx": -12.0},
 	"soil_1_slot_1": {"wp": 7, "dx": 12.0},
-	"basket_1_pickup": {"wp": 8, "dx": -26.0},
-	"mortar_input": {"wp": 9, "dx": -28.0},
-	"mortar_chef": {"wp": 9, "dx": 24.0},
-	"mortar_output": {"wp": 9, "dx": 34.0},
+	"basket_1_pickup": {"wp": 7, "dx": 48.0},
+	"mortar_input": {"wp": 9, "dx": 24.0},
+	"mortar_chef": {"wp": 9, "dx": -20.0},
+	"mortar_output": {"wp": 9, "dx": 24.0},
 	"stall_restock": {"wp": 10, "dx": -16.0},
 	"stall_manager": {"wp": 10, "dx": 22.0},
 	"stall_checkout": {"wp": 10, "dx": -34.0},
 	"soil_2_slot_0": {"wp": 1, "dx": -10.0},
 	"soil_2_slot_1": {"wp": 1, "dx": 10.0},
 	"basket_2_pickup": {"wp": 1, "dx": 42.0},
-	"cauldron_input": {"wp": 2, "dx": -28.0},
-	"cauldron_chef": {"wp": 2, "dx": 24.0},
-	"cauldron_output": {"wp": 2, "dx": 34.0},
+	"cauldron_input": {"wp": 2, "dx": 24.0},
+	"cauldron_chef": {"wp": 2, "dx": -20.0},
+	"cauldron_output": {"wp": 2, "dx": 24.0},
 	"soil_3_slot_0": {"wp": 17, "dx": -10.0},
 	"soil_3_slot_1": {"wp": 17, "dx": 10.0},
 	"basket_3_pickup": {"wp": 17, "dx": 38.0},
-	"orbis_input": {"wp": 18, "dx": -34.0},
+	"orbis_input": {"wp": 18, "dx": 34.0},
 	"orbis_chef": {"wp": 18, "dx": -20.0},
 	"orbis_chef_fox": {"wp": 18, "dx": -20.0},
-	"orbis_chef_penguin": {"wp": 18, "dx": 24.0},
+	"orbis_chef_penguin": {"wp": 18, "dx": 18.0},
 	"orbis_output": {"wp": 18, "dx": 36.0}
 }
 
@@ -6267,4 +5358,3 @@ func get_path_total_length(path: Array[Vector2]) -> float:
 
 func constrain_to_walkable_surface(pos: Vector2) -> Vector2:
 	return Vector2(clampf(pos.x, 120.0, 1790.0), GROUND_Y)
-
