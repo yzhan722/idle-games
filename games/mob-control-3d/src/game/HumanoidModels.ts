@@ -395,60 +395,85 @@ export function createAnimatedHumanoidMaterial(options: {
       #include <begin_vertex>
       float walkPhase = aAnim.x;
       float speedAmt = clamp(aAnim.y, 0.0, 1.4);
+      float activeAmt = max(0.68, speedAmt);
       float atk = clamp(aAnim.z, 0.0, 1.0);
       vFlash = aAnim.w;
 
-      float stride = sin(walkPhase) * 0.78 * speedAmt;
-      float bounce = abs(sin(walkPhase)) * 0.105 * speedAmt;
-      float jellySquash = sin(walkPhase * 2.0) * 0.045 * speedAmt;
+      float stride = sin(walkPhase) * 0.98 * activeAmt;
+      float hopWave = abs(sin(walkPhase));
+      float bounce = hopWave * 0.22 * activeAmt;
+      float jellySquash = cos(walkPhase * 2.0) * 0.14 * activeAmt;
       float atkSwing = sin(atk * 3.14159265);
-      float wingFlap = sin(walkPhase * 1.7) * 0.34 * max(0.35, speedAmt) + atkSwing * 0.42;
+      float wingFlap = sin(walkPhase * 2.4) * 0.52 * activeAmt + atkSwing * 0.55;
 
       if (aPartId > 3.5 && aPartId < 4.5) {
         vec3 local = transformed - vec3(-0.14, ${hipY.toFixed(2)}, 0.0);
         local = rotateX(local, stride);
+        local = rotateZ(local, sin(walkPhase) * 0.12 * activeAmt);
         transformed = local + vec3(-0.14, ${hipY.toFixed(2)}, 0.0);
+        transformed.y += max(0.0, sin(walkPhase)) * 0.14 * activeAmt;
       } else if (aPartId > 4.5 && aPartId < 5.5) {
         vec3 local = transformed - vec3(0.14, ${hipY.toFixed(2)}, 0.0);
         local = rotateX(local, -stride);
+        local = rotateZ(local, -sin(walkPhase) * 0.12 * activeAmt);
         transformed = local + vec3(0.14, ${hipY.toFixed(2)}, 0.0);
+        transformed.y += max(0.0, -sin(walkPhase)) * 0.14 * activeAmt;
       } else if (aPartId > 5.5 && aPartId < 6.5) {
         vec3 pivot = vec3(-0.16, ${(shoulderY + 0.08).toFixed(2)}, -0.16);
         vec3 local = transformed - pivot;
         local = rotateY(local, wingFlap);
-        local = rotateZ(local, wingFlap * 0.42);
+        local = rotateZ(local, wingFlap * 0.52);
         transformed = local + pivot;
       } else if (aPartId > 6.5) {
         vec3 pivot = vec3(0.16, ${(shoulderY + 0.08).toFixed(2)}, -0.16);
         vec3 local = transformed - pivot;
         local = rotateY(local, -wingFlap);
-        local = rotateZ(local, -wingFlap * 0.42);
+        local = rotateZ(local, -wingFlap * 0.52);
         transformed = local + pivot;
       } else if (aPartId > 1.5 && aPartId < 2.5) {
         vec3 local = transformed - vec3(-0.28, ${shoulderY.toFixed(2)}, 0.0);
-        local = rotateX(local, -stride * 0.72 - atkSwing * 0.55);
-        local = rotateZ(local, sin(walkPhase) * 0.18 * speedAmt);
+        local = rotateX(local, -stride * 1.05 - atkSwing * 0.85);
+        local = rotateZ(local, (sin(walkPhase) * 0.34 - 0.12) * activeAmt - atkSwing * 0.28);
+        local = rotateY(local, cos(walkPhase) * 0.22 * activeAmt);
         transformed = local + vec3(-0.28, ${shoulderY.toFixed(2)}, 0.0);
       } else if (aPartId > 2.5 && aPartId < 3.5) {
         vec3 local = transformed - vec3(0.28, ${shoulderY.toFixed(2)}, 0.0);
-        local = rotateX(local, stride * 0.72 - atkSwing * 1.35);
-        local = rotateZ(local, -sin(walkPhase) * 0.18 * speedAmt);
+        local = rotateX(local, stride * 1.05 - atkSwing * 1.55);
+        local = rotateZ(local, (-sin(walkPhase) * 0.34 + 0.12) * activeAmt + atkSwing * 0.32);
+        local = rotateY(local, -cos(walkPhase) * 0.22 * activeAmt);
         transformed = local + vec3(0.28, ${shoulderY.toFixed(2)}, 0.0);
       } else if (aPartId > 0.5 && aPartId < 1.5) {
-        vec3 local = transformed - vec3(0.0, ${(shoulderY + 0.12).toFixed(2)}, 0.0);
-        local = rotateY(local, cos(walkPhase) * 0.1 * speedAmt);
-        transformed = local + vec3(0.0, ${(shoulderY + 0.12).toFixed(2)}, 0.0);
+        vec3 headPivot = vec3(0.0, ${(shoulderY + 0.12).toFixed(2)}, 0.0);
+        vec3 local = transformed - headPivot;
+        local = rotateY(local, cos(walkPhase) * 0.25 * activeAmt);
+        local = rotateZ(local, -sin(walkPhase) * 0.16 * activeAmt);
+        local = rotateX(local, sin(walkPhase * 2.0 - 0.5) * 0.15 * activeAmt - atkSwing * 0.22);
+        if (local.y > 0.18) {
+          float tipFactor = clamp((local.y - 0.18) * 1.8, 0.0, 1.2);
+          local.x += sin(walkPhase * 2.0 - 1.1) * 0.09 * tipFactor * activeAmt;
+          local.z += cos(walkPhase * 2.0 - 1.1) * 0.08 * tipFactor * activeAmt;
+        }
+        transformed = local + headPivot;
+      } else if (aPartId < 0.5) {
+        vec3 bodyPivot = vec3(0.0, ${hipY.toFixed(2)}, 0.0);
+        vec3 local = transformed - bodyPivot;
+        local = rotateZ(local, sin(walkPhase) * 0.11 * activeAmt);
+        local = rotateY(local, cos(walkPhase) * 0.14 * activeAmt);
+        local = rotateX(local, sin(walkPhase * 2.0) * 0.08 * activeAmt + atkSwing * 0.2);
+        transformed = local + bodyPivot;
       }
 
-      // Soft Q-elastic jelly squash & stretch on body + vertical cheer bounce
+      // Soft Q-elastic jelly squash & stretch + secondary follow-through wave on body & head
       if (aPartId < 3.5 || aPartId > 5.5) {
-        if (aTintMask > 0.5 && aPartId < 1.5) {
-          transformed.x *= (1.0 - jellySquash * 0.65);
-          transformed.z *= (1.0 - jellySquash * 0.65);
-          transformed.y *= (1.0 + jellySquash * 0.85);
+        if (aPartId < 1.5) {
+          float squashAmt = (aTintMask > 0.5 ? 1.0 : 0.6) * jellySquash;
+          float bellyWave = sin(walkPhase * 2.0 - transformed.y * 2.5) * 0.055 * activeAmt;
+          transformed.x *= (1.0 + squashAmt * 0.85 + bellyWave);
+          transformed.z *= (1.0 + squashAmt * 0.85 - bellyWave);
+          transformed.y *= max(0.72, 1.0 - squashAmt * 1.15);
         }
         transformed.y += bounce;
-        transformed.z += atkSwing * 0.16;
+        transformed.z += atkSwing * 0.22;
       }
       vHeight = clamp(transformed.y, 0.0, 2.2);
       `

@@ -5841,7 +5841,10 @@ body.screen-quake-active #app {
   border: none !important;
   box-shadow: none !important;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.62)) !important;
-  transform: translateX(10px) translateY(6px) !important;
+  margin-left: 10px !important;
+  margin-top: 6px !important;
+  transform-origin: 50% 85% !important;
+  animation: heroCannonBreathe 2.1s cubic-bezier(0.36, 0, 0.64, 1) infinite !important;
 }
 
 .hero-mascot-box {
@@ -5854,7 +5857,34 @@ body.screen-quake-active #app {
   border-radius: 0 !important;
   padding: 0 !important;
   overflow: visible !important;
-  transform: translateX(-8px) translateY(4px) !important;
+  margin-left: -8px !important;
+  margin-top: 4px !important;
+  transform-origin: 50% 88% !important;
+  animation: heroMascotJellyHop 1.75s cubic-bezier(0.34, 1.56, 0.64, 1) infinite !important;
+}
+
+@keyframes heroCannonBreathe {
+  0%, 100% {
+    transform: translateY(0) scale(1.03, 0.97) rotate(-1.5deg);
+  }
+  45% {
+    transform: translateY(-7px) scale(0.97, 1.04) rotate(2deg);
+  }
+  70% {
+    transform: translateY(-2px) scale(1.05, 0.96) rotate(-0.8deg);
+  }
+}
+
+@keyframes heroMascotJellyHop {
+  0%, 100% {
+    transform: translateY(0) scale(1.08, 0.92) rotate(-4deg);
+  }
+  35% {
+    transform: translateY(-14px) scale(0.93, 1.09) rotate(4.5deg);
+  }
+  65% {
+    transform: translateY(-4px) scale(1.04, 0.96) rotate(-2deg);
+  }
 }
 
 .hero-mascot-box::before,
@@ -6519,6 +6549,13 @@ body.screen-quake-active #app {
   border-radius: 0 !important;
   box-shadow: none !important;
   filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.6)) !important;
+  transform-origin: 50% 86% !important;
+  animation: heroMascotJellyHop 2.2s ease-in-out infinite !important;
+}
+
+.kr-branch-pedestal.active .race-art-img {
+  transform-origin: 50% 85% !important;
+  animation: heroMascotJellyHop 1.6s ease-in-out infinite !important;
 }
 
 .skin-body {
@@ -7537,13 +7574,15 @@ img,
 .hero-cannon-stage-img {
   width: 210px !important;
   height: 210px !important;
-  transform: translateX(10px) translateY(10px) !important;
+  margin-left: 10px !important;
+  margin-top: 10px !important;
 }
 
 .hero-mascot-box {
   width: 186px !important;
   height: 186px !important;
-  transform: translateX(-8px) translateY(8px) !important;
+  margin-left: -8px !important;
+  margin-top: 8px !important;
 }
 
 /* Giant Glowing Golden Battle Button (Matches 重锤跃击 100% Super Bar in Battle!) */

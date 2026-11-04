@@ -232,6 +232,11 @@ export class World3D {
   private turretGroup = new THREE.Group();
   private mascotGroup = new THREE.Group();
   private mascotLeftArm?: THREE.Group;
+  private mascotPeak?: THREE.Mesh;
+  private mascotMegaphone?: THREE.Mesh;
+  private turretWheels: THREE.Mesh[] = [];
+  private turretGears: THREE.Mesh[] = [];
+  private prevTurretX = -7.8;
   private turretGaugeNeedle?: THREE.Group;
   private turretGroundRingMat?: THREE.MeshBasicMaterial;
   private turretBodyMat!: THREE.MeshStandardMaterial;
@@ -280,6 +285,8 @@ export class World3D {
 
   private bossGroup = new THREE.Group();
   private bossHead!: THREE.Group;
+  private bossWrenchGroup?: THREE.Group;
+  private bossForearms: THREE.Mesh[] = [];
   private megaBossCrownGroup = new THREE.Group();
   private megaBossHalo?: THREE.Mesh;
   private bossPortalMat!: THREE.ShaderMaterial;
@@ -1357,6 +1364,8 @@ export class World3D {
       })
     );
 
+    this.turretWheels = [];
+    this.turretGears = [];
     for (const side of [-1, 1]) {
       const wheel = new THREE.Mesh(
         new THREE.CylinderGeometry(0.62, 0.62, 0.36, 22),
@@ -1366,6 +1375,7 @@ export class World3D {
       wheel.position.set(side * 1.04, 0.6, -0.05);
       wheel.castShadow = true;
       this.turretGroup.add(wheel);
+      this.turretWheels.push(wheel);
 
       const hubCap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.42, 14), brassMat);
       hubCap.rotation.z = Math.PI / 2;
@@ -1385,6 +1395,7 @@ export class World3D {
       sideGear.rotation.z = Math.PI / 2;
       sideGear.position.set(side * 0.9, 0.88, 0.34);
       this.turretGroup.add(sideGear);
+      this.turretGears.push(sideGear);
     }
 
     const candyPinkGearMat = stylizeMaterialAs2DIllustration(
@@ -1401,6 +1412,7 @@ export class World3D {
     pinkGear.rotation.z = Math.PI / 2;
     pinkGear.position.set(0.92, 0.56, 0.52);
     this.turretGroup.add(pinkGear);
+    this.turretGears.push(pinkGear);
 
     // Carriage Base Plate
     this.turretBodyMat = new THREE.MeshStandardMaterial({
@@ -1647,6 +1659,7 @@ export class World3D {
     const slimePeak = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.48, 16), slimeBodyMat);
     slimePeak.position.set(0, 1.12, 0);
     slimePivot.add(slimePeak);
+    this.mascotPeak = slimePeak;
 
     // Red Warrior Headband around Slime Forehead
     const headbandMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.35 });
@@ -1671,6 +1684,7 @@ export class World3D {
     megaphone.rotation.z = Math.PI / 2;
     megaphone.position.set(0.72, 0.56, 0.32);
     slimePivot.add(megaphone);
+    this.mascotMegaphone = megaphone;
 
     this.mascotLeftArm = slimePivot;
     this.mascotGroup.add(slimePivot);
@@ -1900,6 +1914,7 @@ export class World3D {
     this.bossHead.add(backTank);
 
     // Muscular Boiler Arms
+    this.bossForearms = [];
     for (const side of [-1, 1]) {
       const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.88, 12, 10), boilerOrangeMat);
       shoulder.position.set(side * 2.15, 0.45, 0.25);
@@ -1910,6 +1925,7 @@ export class World3D {
       forearm.rotation.z = side * 0.28;
       forearm.rotation.x = 0.42;
       this.bossHead.add(forearm);
+      this.bossForearms.push(forearm);
     }
 
     // Dark-Iron Dome Helmet + Glowing Golden-Yellow Round Goggle Eyes!
@@ -1940,6 +1956,7 @@ export class World3D {
     wrenchHead.position.set(0, 1.85, 0);
     wrenchHead.rotation.z = 0.65;
     wrenchGroup.add(wrenchHead);
+    this.bossWrenchGroup = wrenchGroup;
     this.bossHead.add(wrenchGroup);
 
     this.bossGroup.add(this.bossHead);
@@ -5211,13 +5228,34 @@ export class World3D {
       this.turretTargetX = Math.min(TRACK_HALF_W - 1.2, this.turretTargetX + keySpeed * clampedDt);
     }
 
+    const prevX = this.turretX;
     this.turretX = THREE.MathUtils.lerp(this.turretX, this.turretTargetX, Math.min(1, clampedDt * 22));
+    const turretDX = this.turretX - prevX;
+    this.prevTurretX = this.turretX;
     this.turretGroup.position.x = this.turretX;
 
-    // Bubble Cannon recoil recovery, Brass Pressure Gauge Needle & Chibi Idol Cheerleader animation!
+    // Bubble Cannon recoil recovery, rolling peppermint wheels, spinning candy gears & lively Q-Slime Gunner!
     this.turretRecoil = Math.max(0, this.turretRecoil - clampedDt * 8);
-    this.turretBarrel.position.z = -0.62 + this.turretRecoil * 0.36;
+    this.turretGroup.position.y =
+      Math.abs(Math.sin(this.elapsedTime * 6.5)) * 0.045 + this.turretRecoil * 0.09;
+    this.turretGroup.rotation.z = THREE.MathUtils.clamp(-turretDX * 1.6, -0.14, 0.14);
+    this.turretBarrel.position.z = -0.62 + this.turretRecoil * 0.42;
+    this.turretBarrel.scale.set(
+      1 + this.turretRecoil * 0.14,
+      1 + this.turretRecoil * 0.14,
+      1 - this.turretRecoil * 0.18
+    );
     this.turretMuzzleLight.intensity = this.turretRecoil * 6.5;
+
+    for (const wheel of this.turretWheels) {
+      wheel.rotation.x += turretDX * 1.85 + clampedDt * (this.isHoldingFireInput() ? 5.2 : 1.4);
+    }
+    for (let gIdx = 0; gIdx < this.turretGears.length; gIdx++) {
+      const gearDir = gIdx % 2 === 0 ? 1 : -1;
+      this.turretGears[gIdx].rotation.x +=
+        gearDir * clampedDt * (3.6 + this.turretRecoil * 14.0);
+    }
+
     if (this.turretGaugeNeedle) {
       this.turretGaugeNeedle.rotation.z =
         -0.45 + this.turretRecoil * 1.15 + Math.sin(this.elapsedTime * 16) * 0.08;
@@ -5230,16 +5268,40 @@ export class World3D {
         targetMascotX,
         Math.min(1, clampedDt * 11)
       );
-      const cheerTempo = this.state.championCharge >= 100 ? 11.5 : 7.5;
+      const cheerTempo = this.state.championCharge >= 100 ? 12.5 : 8.5;
+      const mascotPhase = this.elapsedTime * cheerTempo;
+      const mascotHop = Math.abs(Math.sin(mascotPhase));
+      const mascotSquash =
+        Math.cos(mascotPhase * 2.0) * 0.15 +
+        this.turretRecoil * 0.18 +
+        Math.sin(Math.min(1, this.mascotCheerBoost) * Math.PI) * 0.16;
       this.mascotGroup.position.y =
         0.02 +
-        Math.abs(Math.sin(this.elapsedTime * cheerTempo)) * 0.08 +
-        Math.sin(Math.min(1, this.mascotCheerBoost) * Math.PI) * 0.34;
-      this.mascotGroup.rotation.y = 0;
-    }
-    if (this.mascotLeftArm) {
-      this.mascotLeftArm.rotation.z =
-        Math.sin(this.elapsedTime * 7.5) * 0.05 + this.mascotCheerBoost * 0.12;
+        mascotHop * 0.24 +
+        Math.sin(Math.min(1, this.mascotCheerBoost) * Math.PI) * 0.42 +
+        this.turretRecoil * 0.16;
+      this.mascotGroup.rotation.y =
+        Math.sin(mascotPhase * 0.5) * 0.24 - THREE.MathUtils.clamp(turretDX * 3.5, -0.35, 0.35);
+
+      if (this.mascotLeftArm) {
+        this.mascotLeftArm.rotation.z =
+          Math.sin(mascotPhase) * 0.16 + this.mascotCheerBoost * 0.24;
+        this.mascotLeftArm.rotation.x =
+          -0.58 + Math.sin(mascotPhase * 2.0) * 0.12 - this.turretRecoil * 0.22;
+        this.mascotLeftArm.scale.set(
+          1.0 + mascotSquash * 0.78,
+          Math.max(0.74, 1.0 - mascotSquash),
+          1.0 + mascotSquash * 0.78
+        );
+      }
+      if (this.mascotPeak) {
+        this.mascotPeak.rotation.z = Math.sin(mascotPhase * 2.0 - 0.9) * 0.26;
+        this.mascotPeak.rotation.x = Math.cos(mascotPhase * 2.0 - 0.9) * 0.18;
+      }
+      if (this.mascotMegaphone) {
+        this.mascotMegaphone.rotation.z =
+          Math.PI / 2 + Math.sin(mascotPhase * 1.5) * 0.28 + this.turretRecoil * 0.35;
+      }
     }
     if (this.turretEvoHalo && this.currentTurretEvoTier >= 2) {
       this.turretEvoHalo.rotation.z = this.elapsedTime * 3.8;
@@ -5522,9 +5584,30 @@ export class World3D {
       }
     }
 
-    // Factory Boss Foreman idle, Golden Cogwheel Crest spin & Sunlit Motes
-    this.bossHead.position.y = 2.75 + Math.sin(this.elapsedTime * 2.6) * 0.14;
-    this.bossHead.rotation.z = Math.sin(this.elapsedTime * 1.5) * 0.04;
+    // Factory Boss Foreman lively breathing, battlefield scanning, wrench brandishing & Golden Cogwheel spin!
+    const bossBreath = Math.sin(this.elapsedTime * 3.4);
+    const bossSwagger = Math.sin(this.elapsedTime * 1.85);
+    this.bossHead.position.y = 2.75 + Math.abs(bossBreath) * 0.24 + this.bossHitFlash * 0.22;
+    this.bossHead.rotation.z = bossSwagger * 0.09 - this.bossHitFlash * 0.12;
+    this.bossHead.rotation.y = Math.sin(this.elapsedTime * 1.35) * 0.22;
+    this.bossHead.rotation.x = Math.cos(this.elapsedTime * 3.4) * 0.07 - this.bossHitFlash * 0.18;
+    this.bossHead.scale.set(
+      1.0 + bossBreath * 0.045 + this.bossHitFlash * 0.08,
+      1.0 - bossBreath * 0.05 - this.bossHitFlash * 0.06,
+      1.0 + bossBreath * 0.045 + this.bossHitFlash * 0.08
+    );
+    if (this.bossWrenchGroup) {
+      this.bossWrenchGroup.rotation.z =
+        -0.58 + Math.sin(this.elapsedTime * 3.4) * 0.28 + this.bossHitFlash * 0.45;
+      this.bossWrenchGroup.rotation.x = Math.cos(this.elapsedTime * 1.7) * 0.2;
+    }
+    for (let fIdx = 0; fIdx < this.bossForearms.length; fIdx++) {
+      const side = fIdx === 0 ? -1 : 1;
+      this.bossForearms[fIdx].rotation.x =
+        0.42 + Math.sin(this.elapsedTime * 3.4 + side * 0.8) * 0.22;
+      this.bossForearms[fIdx].rotation.z =
+        side * 0.28 + Math.cos(this.elapsedTime * 1.85) * 0.12;
+    }
     this.bossPortalRing.rotation.z = this.elapsedTime * 1.4;
     if (this.bossPortalMat?.uniforms) {
       this.bossPortalMat.uniforms.uTime.value = this.elapsedTime;
@@ -7058,11 +7141,12 @@ export class World3D {
         }
       }
 
-      // Smoothly update humanoid facing yaw, cornering bank (turnRate), and distance-matched stride phase!
+      // Smoothly update humanoid facing yaw, cornering bank (turnRate), and lively stride/brawl cadence!
       const moveDX = u.x - prevX;
       const moveDZ = u.z - prevZ;
       const actualSpeed = Math.hypot(moveDX, moveDZ) / Math.max(0.001, dt);
-      u.walkPhase += Math.max(1.8, actualSpeed * 3.3) * dt;
+      const combatCadence = u.attackAnim > 0 ? 5.5 : 0;
+      u.walkPhase += (5.2 + actualSpeed * 3.8 + combatCadence) * dt;
 
       const velMag = Math.hypot(u.vx, u.vz);
       const desiredYaw = velMag > 0.25 ? Math.atan2(u.vx, u.vz) : u.team === 'blue' ? Math.PI : 0;
@@ -8613,6 +8697,9 @@ export class World3D {
       this.unitShadowInst.setMatrixAt(shadowIdx++, this.dummy.matrix);
 
       if (u.team === 'blue') {
+        const hopCycle = Math.abs(Math.sin(u.walkPhase));
+        const squashWave = Math.cos(u.walkPhase * 2.0);
+        const atkJump = Math.sin(u.attackAnim * Math.PI);
         if (u.kind === 'champion' && champIdx < 120) {
           const titanScale =
             ultEvo.mechaScaleMult *
@@ -8620,10 +8707,17 @@ export class World3D {
               this.state.getSkillNodeRank('titan_t1') * 0.08 +
               this.state.getSkillNodeRank('titan_t3') * 0.06);
           const champDisplayYaw =
-            Math.sin(u.walkPhase * 0.45) * 0.14 - THREE.MathUtils.clamp(u.vx * 0.04, -0.32, 0.32);
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 0.35, champDisplayYaw, bankRoll * 0.5);
-          this.dummy.scale.set(titanScale, titanScale, titanScale);
+            Math.sin(u.walkPhase * 0.5) * 0.22 - THREE.MathUtils.clamp(u.vx * 0.055, -0.38, 0.38);
+          const champRoll = bankRoll * 0.65 + Math.sin(u.walkPhase) * 0.12;
+          const champStretchY = 1.0 - squashWave * 0.12 + atkJump * 0.15;
+          const champSquashXZ = 1.0 / Math.sqrt(Math.max(0.74, champStretchY));
+          this.dummy.position.set(u.x, hopY + hopCycle * 0.22 + atkJump * 0.28, u.z);
+          this.dummy.rotation.set(forwardPitch * 0.45, champDisplayYaw, champRoll);
+          this.dummy.scale.set(
+            titanScale * champSquashXZ,
+            titanScale * champStretchY,
+            titanScale * champSquashXZ
+          );
           this.dummy.updateMatrix();
           this.championInst.setMatrixAt(champIdx, this.dummy.matrix);
 
@@ -8644,14 +8738,16 @@ export class World3D {
                 ? 1.85
                 : (u.kind === 'charged' ? 1.18 : 1.0 + u.spawnHop * 0.12) * swarmSpec.scaleMult;
           const scale = baseUnitScale * evoScale;
-          // 2.5D Illustration Facing: Blue Bubble Slimes face toward the camera (+Z) so their cute eyes,
-          // rosy cheeks, white headband knot, and upper-left white oval highlight dot are always visible!
+          // 2.5D Illustration Facing + organic Q-jelly hop & squash-and-stretch!
           const displayYaw =
-            Math.sin(u.walkPhase * 0.5) * 0.16 - THREE.MathUtils.clamp(u.vx * 0.045, -0.35, 0.35);
-          const waddleRoll = bankRoll + Math.sin(u.walkPhase) * 0.08;
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 0.35, displayYaw, waddleRoll);
-          this.dummy.scale.set(scale, scale, scale);
+            Math.sin(u.walkPhase * 0.5) * 0.24 - THREE.MathUtils.clamp(u.vx * 0.065, -0.45, 0.45);
+          const waddleRoll = bankRoll + Math.sin(u.walkPhase) * 0.15;
+          const stretchY = 1.0 - squashWave * 0.14 + atkJump * 0.16;
+          const squashXZ = 1.0 / Math.sqrt(Math.max(0.72, stretchY));
+          const slimeHopY = hopY + hopCycle * 0.16 * Math.min(1.5, scale) + atkJump * 0.24;
+          this.dummy.position.set(u.x, slimeHopY, u.z);
+          this.dummy.rotation.set(forwardPitch * 0.42, displayYaw, waddleRoll);
+          this.dummy.scale.set(scale * squashXZ, scale * stretchY, scale * squashXZ);
           this.dummy.updateMatrix();
           this.blueBodyInst.setMatrixAt(blueIdx, this.dummy.matrix);
 
@@ -8673,10 +8769,17 @@ export class World3D {
           blueIdx++;
         }
       } else {
+        const redHop = Math.abs(Math.sin(u.walkPhase));
+        const redSquash = Math.cos(u.walkPhase * 2.0);
+        const redAtkJump = Math.sin(u.attackAnim * Math.PI);
+        const redSwaggerYaw = u.yaw + Math.sin(u.walkPhase * 0.5) * 0.16;
+        const redSwaggerRoll = bankRoll + Math.sin(u.walkPhase) * 0.12;
+        const redStretchY = 1.0 - redSquash * 0.1 + redAtkJump * 0.14;
+        const redSquashXZ = 1.0 / Math.sqrt(Math.max(0.76, redStretchY));
         if (u.kind === 'brute' && bruteIdx < 120) {
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 0.7, u.yaw, bankRoll * 0.5);
-          this.dummy.scale.set(1, 1, 1);
+          this.dummy.position.set(u.x, hopY + redHop * 0.16 + redAtkJump * 0.22, u.z);
+          this.dummy.rotation.set(forwardPitch * 0.7, redSwaggerYaw, redSwaggerRoll * 0.75);
+          this.dummy.scale.set(redSquashXZ, redStretchY, redSquashXZ);
           this.dummy.updateMatrix();
           this.bruteInst.setMatrixAt(bruteIdx, this.dummy.matrix);
 
@@ -8687,10 +8790,18 @@ export class World3D {
           this.bruteAnimData[br4 + 3] = 0;
           bruteIdx++;
         } else if (u.kind === 'baneling' && banelingIdx < 180) {
-          const pulseScale = 1 + Math.sin(this.elapsedTime * 12 + u.id) * 0.08;
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 1.1, u.yaw, bankRoll);
-          this.dummy.scale.set(pulseScale, pulseScale, pulseScale);
+          const pulseScale = 1 + Math.sin(this.elapsedTime * 14 + u.id) * 0.11;
+          this.dummy.position.set(u.x, hopY + redHop * 0.18, u.z);
+          this.dummy.rotation.set(
+            forwardPitch * 1.1,
+            redSwaggerYaw,
+            bankRoll + Math.sin(u.walkPhase * 1.5) * 0.18
+          );
+          this.dummy.scale.set(
+            pulseScale * redSquashXZ,
+            pulseScale * redStretchY,
+            pulseScale * redSquashXZ
+          );
           this.dummy.updateMatrix();
           this.banelingInst.setMatrixAt(banelingIdx, this.dummy.matrix);
 
@@ -8701,9 +8812,9 @@ export class World3D {
           this.banelingAnimData[bn4 + 3] = 0.25;
           banelingIdx++;
         } else if (u.kind === 'shaman' && shamanIdx < 120) {
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch * 0.6, u.yaw, bankRoll * 0.5);
-          this.dummy.scale.set(1.12, 1.12, 1.12);
+          this.dummy.position.set(u.x, hopY + redHop * 0.14 + redAtkJump * 0.18, u.z);
+          this.dummy.rotation.set(forwardPitch * 0.6, redSwaggerYaw, redSwaggerRoll * 0.7);
+          this.dummy.scale.set(1.12 * redSquashXZ, 1.12 * redStretchY, 1.12 * redSquashXZ);
           this.dummy.updateMatrix();
           this.shamanInst.setMatrixAt(shamanIdx, this.dummy.matrix);
 
@@ -8714,9 +8825,9 @@ export class World3D {
           this.shamanAnimData[sh4 + 3] = 0.15;
           shamanIdx++;
         } else {
-          this.dummy.position.set(u.x, hopY, u.z);
-          this.dummy.rotation.set(forwardPitch, u.yaw, bankRoll);
-          this.dummy.scale.set(1, 1, 1);
+          this.dummy.position.set(u.x, hopY + redHop * 0.14 + redAtkJump * 0.2, u.z);
+          this.dummy.rotation.set(forwardPitch, redSwaggerYaw, redSwaggerRoll);
+          this.dummy.scale.set(redSquashXZ, redStretchY, redSquashXZ);
           this.dummy.updateMatrix();
           this.redBodyInst.setMatrixAt(redIdx, this.dummy.matrix);
 
