@@ -9,16 +9,16 @@
 } from './State';
 
 const skillImg = (id: string): string =>
-  `<img class="art-icon-img skill-art-img" src="/assets/icons/${id}.png?v=17" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img skill-art-img" src="/assets/icons/${id}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const raceImg = (id: string, cls = 'race-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/icons/race_${id}.png?v=17" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/icons/race_${id}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const metaImg = (id: string): string =>
-  `<img class="art-icon-img meta-art-img" src="/assets/icons/${id}.png?v=17" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img meta-art-img" src="/assets/icons/${id}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const hudImg = (file: string, cls = 'hud-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=17" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 /**
  * 28 AI-Generated Kingdom-Rush / Brawl-Stars Style 2D Thick-Painted Skill Icons

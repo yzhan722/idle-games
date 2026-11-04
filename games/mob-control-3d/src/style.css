@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --cream-hi: #fffdf8;
   --cream-mid: #fbf0dc;
   --cream-lo: #f3e1c0;
@@ -5188,7 +5188,7 @@ body.screen-quake-active #app {
       rgba(15, 23, 42, 0.0) 76%,
       rgba(15, 23, 42, 0.55) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=17') center center / cover no-repeat;
+    url('/assets/icons/title_splash_bg.jpg?v=18') center center / cover no-repeat;
   image-rendering: auto;
   animation: none !important;
   transform: none !important;
@@ -7432,7 +7432,7 @@ img,
       rgba(15, 28, 64, 0.05) 70%,
       rgba(20, 12, 6, 0.62) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=17') center center / cover no-repeat !important;
+    url('/assets/icons/title_splash_bg.jpg?v=18') center center / cover no-repeat !important;
 }
 
 .title-center-emblem {
@@ -8358,11 +8358,36 @@ img,
   transform: scale(1.12) !important;
 }
 
+.hero-cannon-stage-img {
+  display: none !important;
+}
+
+.hero-duo-stage-models {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.hero-mascot-box {
+  width: 224px !important;
+  height: 224px !important;
+  margin: 0 auto 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.hero-mascot-box .race-art-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
 .hero-pedestal-base {
   display: block !important;
-  width: 340px !important;
-  height: 58px !important;
-  margin: -24px auto 0 !important;
+  width: 260px !important;
+  height: 52px !important;
+  margin: -22px auto 0 !important;
   border-radius: 50% !important;
   background:
     radial-gradient(ellipse 72% 48% at 50% 32%, #fef9c3 0%, #facc15 48%, #d97706 82%, #92400e 100%) !important;
