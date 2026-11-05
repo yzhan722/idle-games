@@ -186,8 +186,8 @@ func _process(delta: float) -> void:
 		var c_cfg: Dictionary = EconomyConfig.CROPS.get(crop_id, EconomyConfig.CROPS["crop_0"])
 		var base_dur := float(c_cfg.get("grow_time", 5.2))
 		var b_lv := get_building_level()
-		var weather_mult := GameManager.get_weather_crop_growth_multiplier() if GameManager != null else 1.0
-		var speed_mult := (1.35 if watered else 1.0) * (1.0 + 0.06 * float(b_lv - 1)) * weather_mult
+		var growth_mult := GameManager.get_crop_growth_multiplier(island_idx) if GameManager != null else 1.0
+		var speed_mult := (1.35 if watered else 1.0) * (1.0 + 0.06 * float(b_lv - 1)) * growth_mult
 		growth = minf(1.0, growth + (delta * speed_mult) / maxf(1.0, base_dur))
 
 	current_stage = _compute_growth_stage(growth)

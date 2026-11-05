@@ -106,6 +106,18 @@ var unlocked_codex: Dictionary = {
 	"delicacy_3": false
 }
 
+## v2.5-1: Secondary Currency (Amber 晨露琥珀) & Airship Royal Contracts
+var amber: int = 0
+var total_amber_earned: int = 0
+var active_contract: Dictionary = {}
+
+## v2.5-2: Island Landscape Decorations & Passive Buffs
+var unlocked_landscapes: Dictionary = {
+	"bee_hive": false,
+	"wind_chime": false,
+	"tiki_torch": false
+}
+
 func _ready() -> void:
 	var all_args := OS.get_cmdline_args()
 	all_args.append_array(OS.get_cmdline_user_args())
@@ -117,12 +129,23 @@ func _ready() -> void:
 			break
 	if not is_automated_test_mode:
 		load_game()
+	if active_contract.is_empty():
+		generate_next_contract()
 	_sync_codex_from_progression()
 
 func reset_for_playtest_state() -> void:
 	gold = 120
 	total_gold_earned = 120
 	desktop_companion_mode = true
+	amber = 0
+	total_amber_earned = 0
+	active_contract.clear()
+	unlocked_landscapes = {
+		"bee_hive": false,
+		"wind_chime": false,
+		"tiki_torch": false
+	}
+	generate_next_contract()
 	unlocked_islands = {1: true, 2: false, 3: false}
 	building_levels = {"soil_1": 1, "mortar": 1, "stall": 1, "soil_2": 1, "cauldron": 1, "soil_3": 1}
 	animal_levels = {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
@@ -349,6 +372,148 @@ func spend_gold(cost: int) -> bool:
 	EventBus.gold_changed.emit(gold, -cost)
 	return true
 
+## ==================================================================
+## v2.5-1: Secondary Currency (Amber 晨露琥珀) & Airship Royal Contracts
+## ==================================================================
+func add_amber(amount: int) -> void:
+	if amount <= 0:
+		return
+	amber += amount
+	total_amber_earned += amount
+	EventBus.amber_changed.emit(amber, amount)
+
+func spend_amber(cost: int) -> bool:
+	if cost <= 0:
+		return true
+	if amber < cost:
+		return false
+	amber -= cost
+	EventBus.amber_changed.emit(amber, -cost)
+	return true
+
+func get_amber() -> int:
+	return amber
+
+func generate_next_contract() -> Dictionary:
+	var available_items: Array[String] = ["crop_0", "delicacy_0"]
+	if bool(unlocked_codex.get("crop_1", false)) or int(building_levels.get("soil_1", 1)) >= 25:
+		available_items.append("crop_1")
+		available_items.append("delicacy_1")
+	if bool(unlocked_islands.get(2, false)):
+		available_items.append("crop_2")
+		available_items.append("delicacy_2")
+	if bool(unlocked_islands.get(3, false)):
+		available_items.append("crop_3")
+		available_items.append("delicacy_3")
+
+	var prev_idx: int = int(active_contract.get("contract_index", 0))
+	var next_idx: int = prev_idx + 1
+	var chosen_item: String = available_items[next_idx % available_items.size()]
+	var item_name: String = chosen_item
+	if EconomyConfig.CROPS.has(chosen_item):
+		item_name = String(EconomyConfig.CROPS[chosen_item].get("name", chosen_item))
+	elif EconomyConfig.DELICACIES.has(chosen_item):
+		item_name = String(EconomyConfig.DELICACIES[chosen_item].get("name", chosen_item))
+
+	var req_cnt: int = 3 + (next_idx % 4)
+	var rew_gold: int = 120 + req_cnt * 25
+	var rew_amber: int = 1 + (next_idx % 3)
+
+	active_contract = {
+		"id": "contract_" + str(next_idx),
+		"contract_index": next_idx,
+		"target_item": chosen_item,
+		"target_name": item_name,
+		"required_count": req_cnt,
+		"current_count": 0,
+		"reward_gold": rew_gold,
+		"reward_amber": rew_amber
+	}
+	EventBus.contract_updated.emit(active_contract)
+	return active_contract
+
+func progress_contract(item_id: String, amount: int = 1) -> bool:
+	if active_contract.is_empty():
+		generate_next_contract()
+	if String(active_contract.get("target_item", "")) != item_id:
+		return false
+	var cur := int(active_contract.get("current_count", 0)) + amount
+	var req := int(active_contract.get("required_count", 5))
+	active_contract["current_count"] = cur
+	EventBus.contract_progressed.emit(item_id, cur, req)
+	if cur >= req:
+		complete_active_contract()
+		return true
+	return false
+
+func complete_active_contract() -> Dictionary:
+	if active_contract.is_empty():
+		return {}
+	var completed := active_contract.duplicate(true)
+	var rew_gold := int(completed.get("reward_gold", 150))
+	var rew_amber := int(completed.get("reward_amber", 2))
+	add_gold(rew_gold)
+	add_amber(rew_amber)
+	EventBus.contract_completed.emit(completed)
+	EventBus.spawn_floating_text.emit(
+		Vector2(1013.4, EconomyConfig.GROUND_Y - 40.0),
+		"★皇家契约完成! +" + str(rew_gold) + "G +" + str(rew_amber) + "琥珀",
+		Color("#FFE066")
+	)
+	generate_next_contract()
+	save_game()
+	return completed
+
+func get_active_contract() -> Dictionary:
+	if active_contract.is_empty():
+		generate_next_contract()
+	return active_contract
+
+## ==================================================================
+## v2.5-2: Island Landscape Decorations & Passive Buffs
+## ==================================================================
+func unlock_landscape(landscape_id: String) -> bool:
+	if bool(unlocked_landscapes.get(landscape_id, false)):
+		return false
+	if not EconomyConfig.ISLAND_LANDSCAPES.has(landscape_id):
+		return false
+	var cfg: Dictionary = EconomyConfig.ISLAND_LANDSCAPES[landscape_id]
+	var cost := int(cfg.get("cost_amber", 3))
+	if not spend_amber(cost):
+		return false
+	unlocked_landscapes[landscape_id] = true
+	save_game()
+	var isl := int(cfg.get("island", 1))
+	EventBus.landscape_unlocked.emit(isl, landscape_id)
+	EventBus.spawn_floating_text.emit(
+		Vector2(float(cfg.get("x_pos", 660.0)), EconomyConfig.GROUND_Y - 30.0),
+		"✨解锁造景【" + String(cfg.get("name", landscape_id)) + "】!",
+		Color("#FFE066")
+	)
+	return true
+
+func is_landscape_unlocked(landscape_id: String) -> bool:
+	return bool(unlocked_landscapes.get(landscape_id, false))
+
+func get_crop_growth_multiplier(island: int = 1) -> float:
+	var mult := get_weather_crop_growth_multiplier()
+	if island == 1 and bool(unlocked_landscapes.get("bee_hive", false)):
+		mult *= 1.20
+	return mult
+
+func get_workshop_speed_multiplier(island: int = 2) -> float:
+	var mult := 1.0
+	if island == 2 and bool(unlocked_landscapes.get("wind_chime", false)):
+		mult *= 1.20
+	return mult
+
+func get_customer_tip_multiplier(is_vip: bool, island: int = 3) -> float:
+	var mult := EconomyConfig.VIP_TIP_MULTIPLIER if is_vip else 1.0
+	if bool(unlocked_landscapes.get("tiki_torch", false)):
+		mult *= 1.20
+	return mult
+
+
 func get_prosperity_score() -> int:
 	var score := 0
 	for k in building_levels.keys():
@@ -541,10 +706,11 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 		shiba_lv
 	)
 	var total_earned := int(round(float(unit_price * bought) * get_codex_price_multiplier()))
-	if is_vip:
-		total_earned = int(round(float(total_earned) * EconomyConfig.VIP_TIP_MULTIPLIER))
+	var tip_mult := get_customer_tip_multiplier(is_vip, 3)
+	total_earned = int(round(float(total_earned) * tip_mult))
 
 	add_gold(total_earned)
+	progress_contract(target_id, bought)
 	if SoundManager != null:
 		SoundManager.play_coin_sfx()
 	EventBus.inventory_changed.emit()
@@ -697,7 +863,11 @@ func save_game() -> void:
 		},
 		"stall_inventory": stall_inventory,
 		"unlocked_codex": unlocked_codex,
-		"pomodoro_completed_count": pomodoro_completed_count
+		"pomodoro_completed_count": pomodoro_completed_count,
+		"amber": amber,
+		"total_amber_earned": total_amber_earned,
+		"active_contract": active_contract,
+		"unlocked_landscapes": unlocked_landscapes
 	}
 	var json_str := JSON.stringify(data, "\t")
 	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
@@ -751,6 +921,16 @@ func load_game() -> void:
 			if unlocked_codex.has(String(ck)):
 				unlocked_codex[String(ck)] = bool(parsed["unlocked_codex"][ck])
 	pomodoro_completed_count = int(parsed.get("pomodoro_completed_count", 0))
+	amber = int(parsed.get("amber", 0))
+	total_amber_earned = int(parsed.get("total_amber_earned", amber))
+	if parsed.has("active_contract") and parsed["active_contract"] is Dictionary:
+		active_contract = parsed["active_contract"]
+	else:
+		generate_next_contract()
+	if parsed.has("unlocked_landscapes") and parsed["unlocked_landscapes"] is Dictionary:
+		var ul: Dictionary = parsed["unlocked_landscapes"]
+		for lk in unlocked_landscapes.keys():
+			unlocked_landscapes[lk] = bool(ul.get(lk, false))
 
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())

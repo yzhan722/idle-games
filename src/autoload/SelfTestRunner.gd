@@ -482,6 +482,114 @@ func _run_all_four_assertions_and_export() -> void:
 	print("[PASS] [断言7-番茄钟专注伴侣与礼盒结算] 通过: 25分钟专注计时器流转、原生倒计时格式化、礼盒结算(+500G & 30s全岛狂欢加速)与横幅播报校验 PASS!")
 
 	# ------------------------------------------------------------------
+	# [断言8-v2.5-1晨露琥珀与皇家契约系统]: Amber currency, airship contract progression & reward payout
+	# ------------------------------------------------------------------
+	var init_amb := GameManager.get_amber()
+	GameManager.add_amber(10)
+	if GameManager.get_amber() != init_amb + 10:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "add_amber(10) failed! expected %d, got %d" % [init_amb + 10, GameManager.get_amber()])
+		return
+	var spend_ok := GameManager.spend_amber(4)
+	if not spend_ok or GameManager.get_amber() != init_amb + 6:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "spend_amber(4) failed! expected %d, got %d" % [init_amb + 6, GameManager.get_amber()])
+		return
+	var overspend := GameManager.spend_amber(9999)
+	if overspend or GameManager.get_amber() != init_amb + 6:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "spend_amber(9999) overspend guard failed!")
+		return
+
+	var c_active := GameManager.get_active_contract()
+	if c_active.is_empty() or not c_active.has("target_item") or not c_active.has("required_count"):
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "active_contract is empty or missing fields: %s" % str(c_active))
+		return
+	var prev_c_idx := int(c_active.get("contract_index", 1))
+	var c_item := String(c_active.get("target_item", "crop_0"))
+	var c_req := int(c_active.get("required_count", 5))
+	var rew_g := int(c_active.get("reward_gold", 150))
+	var rew_a := int(c_active.get("reward_amber", 2))
+
+	var pre_con_gold := GameManager.gold
+	var pre_con_amber := GameManager.get_amber()
+	var completed_ok := GameManager.progress_contract(c_item, c_req)
+	if not completed_ok:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "progress_contract(%s, %d) failed to trigger completion!" % [c_item, c_req])
+		return
+	if GameManager.gold != pre_con_gold + rew_g:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "Contract gold payout mismatch: expected +%d, got %d -> %d" % [rew_g, pre_con_gold, GameManager.gold])
+		return
+	if GameManager.get_amber() != pre_con_amber + rew_a:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "Contract amber payout mismatch: expected +%d, got %d -> %d" % [rew_a, pre_con_amber, GameManager.get_amber()])
+		return
+
+	var next_c := GameManager.get_active_contract()
+	if int(next_c.get("contract_index", 0)) != prev_c_idx + 1:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "Contract index did not increment to %d (got %d)!" % [prev_c_idx + 1, int(next_c.get("contract_index", 0))])
+		return
+
+	world.hud._sync_label_nodes()
+	if world.hud.lbl_bar_pipeline == null or world.hud.lbl_bar_pipeline.text.find("📜") == -1:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "HUD status text missing contract scroll icon `📜`!")
+		return
+	print("[PASS] [断言8-晨露琥珀与皇家契约系统] 通过: 琥珀二级货币收支边界、皇家订单自动推进、奖金与琥珀结算、循环刷单与 HUD 状态显示校验 PASS!")
+
+	# ------------------------------------------------------------------
+	# [断言9-v2.5-2微缩造景与三岛被动增益]: Functional Landscapes, Amber unlock & 1.20x passive buffs
+	# ------------------------------------------------------------------
+	var base_crop_mult := GameManager.get_crop_growth_multiplier(1)
+	var base_ws_mult := GameManager.get_workshop_speed_multiplier(2)
+	var base_tip_mult := GameManager.get_customer_tip_multiplier(false, 3)
+
+	# 1. 蜜蜂花箱 (Island 1)
+	GameManager.add_amber(10)
+	var unlock_bee := GameManager.unlock_landscape("bee_hive")
+	if not unlock_bee or not GameManager.is_landscape_unlocked("bee_hive"):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "unlock_landscape(`bee_hive`) failed!")
+		return
+	var new_crop_mult := GameManager.get_crop_growth_multiplier(1)
+	if absf(new_crop_mult - base_crop_mult * 1.20) > 0.01:
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "Bee hive +20%% crop growth buff failed: base=%.3f, new=%.3f" % [base_crop_mult, new_crop_mult])
+		return
+	if not world.landscape_nodes.has("bee_hive") or not is_instance_valid(world.landscape_nodes["bee_hive"]):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "MainWorld missing Landscape_BeeHive_1 node!")
+		return
+
+	# 2. 荧光风铃 (Island 2)
+	GameManager.add_amber(10)
+	var unlock_chime := GameManager.unlock_landscape("wind_chime")
+	if not unlock_chime or not GameManager.is_landscape_unlocked("wind_chime"):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "unlock_landscape(`wind_chime`) failed!")
+		return
+	var new_ws_mult := GameManager.get_workshop_speed_multiplier(2)
+	if absf(new_ws_mult - base_ws_mult * 1.20) > 0.01:
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "Wind chime +20%% workshop speed buff failed: base=%.3f, new=%.3f" % [base_ws_mult, new_ws_mult])
+		return
+	if not world.landscape_nodes.has("wind_chime") or not is_instance_valid(world.landscape_nodes["wind_chime"]):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "MainWorld missing Landscape_WindChime_2 node!")
+		return
+
+	# 3. 招财提基灯 (Island 3)
+	GameManager.add_amber(10)
+	var unlock_tiki := GameManager.unlock_landscape("tiki_torch")
+	if not unlock_tiki or not GameManager.is_landscape_unlocked("tiki_torch"):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "unlock_landscape(`tiki_torch`) failed!")
+		return
+	var new_tip_mult := GameManager.get_customer_tip_multiplier(false, 3)
+	if absf(new_tip_mult - base_tip_mult * 1.20) > 0.01:
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "Tiki torch +20%% tip buff failed: base=%.3f, new=%.3f" % [base_tip_mult, new_tip_mult])
+		return
+	if not world.landscape_nodes.has("tiki_torch") or not is_instance_valid(world.landscape_nodes["tiki_torch"]):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "MainWorld missing Landscape_TikiTorch_3 node!")
+		return
+
+	world._sync_landscape_nodes()
+	if not world.landscape_nodes["bee_hive"].visible:
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "Unlocked bee_hive node is not visible!")
+		return
+
+	print("[PASS] [断言9-微缩造景与三岛被动增益] 通过: 三岛专属微缩造景消耗琥珀解锁、农田生长+20%、工坊制作+20%、顾客小费+20%与实体显隐同步校验 PASS!")
+
+
+	# ------------------------------------------------------------------
 	# Export 2 Distinct Real Engine Viewport Screenshots:
 	#   State A (Drawer Collapsed): `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
 	#   State B (Drawer Expanded via `HUD.open_drawer(0)`): `res://preview_drawer_open_1920x360.png`

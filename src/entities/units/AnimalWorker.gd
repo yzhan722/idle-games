@@ -668,10 +668,12 @@ func _update_chef_work_step() -> void:
 		state_timer = 0.0
 
 	elif worker_step == 1:
-		var prog := clampf(state_timer / maxf(0.5, work_duration), 0.0, 1.0)
+		var w_speed_mult := GameManager.get_workshop_speed_multiplier(home_island) if GameManager != null else 1.0
+		var eff_duration := maxf(0.4, work_duration / w_speed_mult)
+		var prog := clampf(state_timer / eff_duration, 0.0, 1.0)
 		if w_node != null:
 			w_node.set_chef_progress(chef_slot_key, prog, true)
-		if state_timer >= work_duration:
+		if state_timer >= eff_duration:
 			worker_step = 2
 			state_timer = 0.0
 

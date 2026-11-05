@@ -313,10 +313,17 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _sync_label_nodes() -> void:
-	var gold_str := str(int(round(displayed_gold))) + "G"
+	var amber_cnt := GameManager.get_amber() if GameManager != null else 0
+	var gold_str := str(int(round(displayed_gold))) + "G 💎" + str(amber_cnt)
 	var mute_lbl := "[静音]" if (SoundManager != null and SoundManager.is_muted) else "[音效]"
 	var weather_names := ["晴昼", "黄昏", "夜市", "微雨"]
 	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
+
+	var contract: Dictionary = GameManager.get_active_contract() if GameManager != null else {}
+	var c_target: String = String(contract.get("target_name", "作物"))
+	var c_cur: int = int(contract.get("current_count", 0))
+	var c_req: int = int(contract.get("required_count", 5))
+	var c_amb: int = int(contract.get("reward_amber", 2))
 
 	lbl_offline.visible = (offline_banner_timer > 0.0 and not boss_stealth_mode)
 	lbl_offline.text = offline_banner_text
@@ -331,7 +338,7 @@ func _sync_label_nodes() -> void:
 			lbl_capsule_mute.text = "[恢复]"
 		else:
 			var p_prefix := ("🍅" + GameManager.get_pomodoro_formatted_time() + " · ") if (GameManager != null and GameManager.pomodoro_active) else ""
-			lbl_capsule_info.text = p_prefix + GameManager.get_weather_status_text() + " · 悬停展开"
+			lbl_capsule_info.text = p_prefix + "📜" + c_target + str(c_cur) + "/" + str(c_req) + " · 悬停展开"
 			lbl_capsule_mute.text = mute_lbl
 
 	var show_bar := not is_collapsed_capsule
@@ -341,7 +348,7 @@ func _sync_label_nodes() -> void:
 	lbl_bar_pomodoro.visible = show_bar
 	if show_bar:
 		lbl_bar_gold.text = gold_str
-		lbl_bar_pipeline.text = GameManager.get_weather_status_text() + " · 存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
+		lbl_bar_pipeline.text = "📜" + c_target + " " + str(c_cur) + "/" + str(c_req) + "(+" + str(c_amb) + "💎) · 存" + str(GameManager.get_island_basket_total(1))
 		var codex_pct := GameManager.get_unlocked_codex_count() * 10
 		lbl_bar_stall.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
 		if GameManager != null and GameManager.pomodoro_active:
@@ -349,7 +356,7 @@ func _sync_label_nodes() -> void:
 		else:
 			lbl_bar_pomodoro.text = "🍅专注"
 
-	var tab_names := ["建筑升级", "动物编制", "木桥开拓", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
+	var tab_names := ["建筑升级", "动物编制", "开拓造景", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
 	for i in range(TAB_COUNT):
 		lbl_tabs[i].visible = show_bar
 		lbl_tabs[i].text = tab_names[i]
@@ -367,7 +374,7 @@ func _sync_label_nodes() -> void:
 		var titles := [
 			"【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
 			"【动物编制与招满转进修】点击小动物可摸头加速 · 招满后全队进修(Lv.+1)!",
-			"【三岛固定槽位与木桥开拓】魔法密林(12x坩埚) · 天空海岸(52x双工坊+★2x富豪)",
+			"【开拓与造景】开拓跨岛木桥 · 消耗晨露琥珀点亮三岛专属增益造景!",
 			"【山海图鉴收集册】已点亮 " + str(codex_cnt) + "/8 种食材料理 · 永久全岛售价 +" + str(codex_cnt * 10) + "%!"
 		]
 		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
@@ -535,7 +542,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
 	match active_tab:
 		0:
-			for b_key in ["soil_1", "mortar", "stall", "cauldron"]:
+			for b_key in ["soil_1", "mortar", "stall", "cauldron", "soil_2", "soil_3"]:
 				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
 				var req_isl := int(cfg.get("island", 1))
 				var isl_on := bool(GameManager.unlocked_islands.get(req_isl, false))
@@ -596,18 +603,18 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				"sub": "双工坊52x+★2x富豪",
 				"cost": "已解锁" if isl3_unlocked else "480G 解锁"
 			})
-			for b_key in ["soil_2", "soil_3"]:
-				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
-				var req_isl := int(cfg.get("island", 2))
-				var isl_on := bool(GameManager.unlocked_islands.get(req_isl, false))
-				var lv := int(GameManager.building_levels.get(b_key, 1))
-				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), lv)
+			for lk in ["bee_hive", "wind_chime", "tiki_torch"]:
+				var cfg: Dictionary = EconomyConfig.ISLAND_LANDSCAPES[lk]
+				var isl := int(cfg.get("island", 1))
+				var isl_open := bool(GameManager.unlocked_islands.get(isl, false))
+				var is_unlocked := GameManager.is_landscape_unlocked(lk)
+				var cost_amb := int(cfg.get("cost_amber", 3))
 				list.append({
-					"type": "building",
-					"key": b_key,
-					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (未解锁)"),
-					"sub": String(cfg["desc"]).substr(0, 12) if isl_on else ("需先解锁上方木桥" + str(req_isl - 1)),
-					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿"
+					"type": "landscape",
+					"key": lk,
+					"title": String(cfg.get("name", lk)) + (" (已点亮)" if is_unlocked else " (未建造)"),
+					"sub": String(cfg.get("desc", "")) if isl_open else ("需先解锁岛屿" + str(isl)),
+					"cost": "已点亮生效" if is_unlocked else (str(cost_amb) + " 琥珀 解锁" if isl_open else "待解锁岛屿")
 				})
 		3:
 			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)
@@ -652,6 +659,11 @@ func _activate_card(idx: int) -> void:
 		var codex_pct := GameManager.get_unlocked_codex_count() * 10
 		offline_banner_timer = 4.0
 		offline_banner_text = "★山海图鉴总加成: 全岛商品售价永久 +" + str(codex_pct) + "% (每解锁1种农作物或工坊美食 +10%)"
+	elif t == "landscape":
+		if not GameManager.unlock_landscape(k):
+			var req_cost := int(EconomyConfig.ISLAND_LANDSCAPES.get(k, {}).get("cost_amber", 3))
+			offline_banner_timer = 3.5
+			offline_banner_text = "晨露琥珀不足 (需 " + str(req_cost) + " 琥珀)，请完成飞艇皇家订单获取!"
 
 func _draw() -> void:
 	if offline_banner_timer > 0.0 and not boss_stealth_mode and tex_pill != null:

@@ -63,6 +63,7 @@ var cot_1_node: Sprite2D
 var left_hut_node: Sprite2D
 var tree_3_node: Sprite2D
 var right_tiki_node: Sprite2D
+var landscape_nodes: Dictionary = {}
 
 var customer_spawn_timer: float = 4.0
 var vip_customer_timer: float = 38.0
@@ -249,6 +250,33 @@ func _build_landmarks_and_buildings() -> void:
 	market_stall.position = Vector2(1013.4, GROUND_Y)
 	ysort_layer.add_child(market_stall)
 
+	# Functional Miniature Landscapes (v2.5-2)
+	# Island 1: Bee Hive (x=660.0)
+	var tex_beehive: Texture2D = load("res://assets/pixel_art/buildings/decor_beehive.png") if ResourceLoader.exists("res://assets/pixel_art/buildings/decor_beehive.png") else tex_tree
+	var node_beehive := _make_grounded_prop(tex_beehive, 660.0, 52, 0.72)
+	node_beehive.name = "Landscape_BeeHive_1"
+	node_beehive.visible = false
+	ysort_layer.add_child(node_beehive)
+	landscape_nodes["bee_hive"] = node_beehive
+
+	# Island 2: Wind Chime (x=210.0)
+	var tex_windchime: Texture2D = load("res://assets/pixel_art/buildings/decor_windchime.png") if ResourceLoader.exists("res://assets/pixel_art/buildings/decor_windchime.png") else tex_left_hut
+	var node_windchime := _make_grounded_prop(tex_windchime, 210.0, 58, 0.72)
+	node_windchime.name = "Landscape_WindChime_2"
+	node_windchime.visible = false
+	ysort_layer.add_child(node_windchime)
+	island2_props.append(node_windchime)
+	landscape_nodes["wind_chime"] = node_windchime
+
+	# Island 3: Tiki Torch (x=1705.0)
+	var tex_torch: Texture2D = load("res://assets/pixel_art/buildings/decor_lamp.png")
+	var node_torch := _make_grounded_prop(tex_torch, 1705.0, 66, 0.72)
+	node_torch.name = "Landscape_TikiTorch_3"
+	node_torch.visible = false
+	ysort_layer.add_child(node_torch)
+	island3_props.append(node_torch)
+	landscape_nodes["tiki_torch"] = node_torch
+
 func get_island_main_building_rects() -> Dictionary:
 	var oy := world_root.position.y
 	var p1_rect := soil_plots[0].get_screen_rect() if soil_plots.size() > 0 else Rect2(710.8 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
@@ -375,8 +403,21 @@ func _apply_companion_zoom() -> void:
 	world_root.scale = Vector2(companion_zoom, companion_zoom)
 	queue_redraw()
 
+func _sync_landscape_nodes() -> void:
+	if GameManager == null:
+		return
+	if landscape_nodes.has("bee_hive") and is_instance_valid(landscape_nodes["bee_hive"]):
+		landscape_nodes["bee_hive"].visible = GameManager.is_landscape_unlocked("bee_hive")
+	if landscape_nodes.has("wind_chime") and is_instance_valid(landscape_nodes["wind_chime"]):
+		var isl2_open: bool = bool(GameManager.unlocked_islands.get(2, false))
+		landscape_nodes["wind_chime"].visible = isl2_open and GameManager.is_landscape_unlocked("wind_chime")
+	if landscape_nodes.has("tiki_torch") and is_instance_valid(landscape_nodes["tiki_torch"]):
+		var isl3_open: bool = bool(GameManager.unlocked_islands.get(3, false))
+		landscape_nodes["tiki_torch"].visible = isl3_open and GameManager.is_landscape_unlocked("tiki_torch")
+
 func _process(delta: float) -> void:
 	cloud_time += delta
+	_sync_landscape_nodes()
 
 	# v2.3 Direction 1: Weather & Time-of-Day ambient lighting interpolation
 	var target_tint := Color.WHITE

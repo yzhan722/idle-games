@@ -74,6 +74,46 @@ const EXPANSIONS: Dictionary = {
 	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+👑2.0x皇冠富豪顾客", "cost": 480}
 }
 
+## v2.5-2: Functional Island Miniature Landscapes & Global Passive Buffs
+const ISLAND_LANDSCAPES: Dictionary = {
+	"bee_hive": {
+		"id": "bee_hive",
+		"name": "蜜蜂花箱",
+		"island": 1,
+		"cost_amber": 3,
+		"desc": "1号岛蜜蜂授粉 · 农田作物生长速度 +20%",
+		"buff_type": "crop_growth",
+		"buff_val": 0.20,
+		"x_pos": 660.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_beehive.png",
+		"frame_h": 52
+	},
+	"wind_chime": {
+		"id": "wind_chime",
+		"name": "荧光风铃",
+		"island": 2,
+		"cost_amber": 5,
+		"desc": "2号岛灵气共鸣 · 工坊加工制作速度 +20%",
+		"buff_type": "workshop_speed",
+		"buff_val": 0.20,
+		"x_pos": 210.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_windchime.png",
+		"frame_h": 58
+	},
+	"tiki_torch": {
+		"id": "tiki_torch",
+		"name": "招财提基灯",
+		"island": 3,
+		"cost_amber": 8,
+		"desc": "3号岛金穗庇佑 · 顾客全岛小费收益 +20%",
+		"buff_type": "tip_bonus",
+		"buff_val": 0.20,
+		"x_pos": 1705.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_lamp.png",
+		"frame_h": 66
+	}
+}
+
 func _ready() -> void:
 	_init_unit_circle()
 	_load_sprite_manifest()
