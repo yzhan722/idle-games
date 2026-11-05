@@ -251,9 +251,9 @@ func _build_landmarks_and_buildings() -> void:
 	ysort_layer.add_child(market_stall)
 
 	# Functional Miniature Landscapes (v2.5-2)
-	# Island 1: Bee Hive (x=660.0)
+	# Island 1: Bee Hive (x=662.0)
 	var tex_beehive: Texture2D = load("res://assets/pixel_art/buildings/decor_beehive.png") if ResourceLoader.exists("res://assets/pixel_art/buildings/decor_beehive.png") else tex_tree
-	var node_beehive := _make_grounded_prop(tex_beehive, 660.0, 52, 0.72)
+	var node_beehive := _make_grounded_prop(tex_beehive, 662.0, 52, 0.50)
 	node_beehive.name = "Landscape_BeeHive_1"
 	node_beehive.visible = false
 	ysort_layer.add_child(node_beehive)
@@ -261,7 +261,7 @@ func _build_landmarks_and_buildings() -> void:
 
 	# Island 2: Wind Chime (x=210.0)
 	var tex_windchime: Texture2D = load("res://assets/pixel_art/buildings/decor_windchime.png") if ResourceLoader.exists("res://assets/pixel_art/buildings/decor_windchime.png") else tex_left_hut
-	var node_windchime := _make_grounded_prop(tex_windchime, 210.0, 58, 0.72)
+	var node_windchime := _make_grounded_prop(tex_windchime, 210.0, 58, 0.58)
 	node_windchime.name = "Landscape_WindChime_2"
 	node_windchime.visible = false
 	ysort_layer.add_child(node_windchime)
@@ -270,7 +270,7 @@ func _build_landmarks_and_buildings() -> void:
 
 	# Island 3: Tiki Torch (x=1705.0)
 	var tex_torch: Texture2D = load("res://assets/pixel_art/buildings/decor_lamp.png")
-	var node_torch := _make_grounded_prop(tex_torch, 1705.0, 66, 0.72)
+	var node_torch := _make_grounded_prop(tex_torch, 1705.0, 66, 0.58)
 	node_torch.name = "Landscape_TikiTorch_3"
 	node_torch.visible = false
 	ysort_layer.add_child(node_torch)

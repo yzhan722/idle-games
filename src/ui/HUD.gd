@@ -68,12 +68,12 @@ const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
 const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
 
-const TOP_RIGHT_FPS_RECT := Rect2(924.0, 130.0, 66.0, 24.0)
-const TOP_RIGHT_OPACITY_RECT := Rect2(994.0, 130.0, 72.0, 24.0)
-const TOP_RIGHT_DOCK_RECT := Rect2(1070.0, 130.0, 96.0, 24.0)
-const TOP_RIGHT_WEATHER_RECT := Rect2(1170.0, 130.0, 92.0, 24.0)
-const TOP_RIGHT_MUTE_RECT := Rect2(1266.0, 130.0, 58.0, 24.0)
-const POMODORO_RECT := Rect2(946.0, 239.0, 96.0, 36.0)
+const TOP_RIGHT_FPS_RECT := Rect2(1004.0, 128.0, 62.0, 23.0)
+const TOP_RIGHT_OPACITY_RECT := Rect2(1070.0, 128.0, 68.0, 23.0)
+const TOP_RIGHT_DOCK_RECT := Rect2(1142.0, 128.0, 88.0, 23.0)
+const TOP_RIGHT_WEATHER_RECT := Rect2(1234.0, 128.0, 86.0, 23.0)
+const TOP_RIGHT_MUTE_RECT := Rect2(1324.0, 128.0, 58.0, 23.0)
+const POMODORO_RECT := Rect2(952.0, 239.0, 90.0, 36.0)
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
@@ -180,22 +180,25 @@ func _build_native_labels() -> void:
 	add_child(lbl_capsule_mute)
 
 	lbl_bar_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
-	lbl_bar_gold.position = Vector2(526.0, 247.0)
+	lbl_bar_gold.position = Vector2(518.0, 248.0)
+	lbl_bar_gold.scale = Vector2(0.88, 0.88)
 	add_child(lbl_bar_gold)
 
 	lbl_bar_pipeline = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), true)
-	lbl_bar_pipeline.position = Vector2(618.0, 247.0)
-	lbl_bar_pipeline.custom_minimum_size = Vector2(164.0, 24.0)
+	lbl_bar_pipeline.position = Vector2(628.0, 248.0)
+	lbl_bar_pipeline.custom_minimum_size = Vector2(188.0, 22.0)
+	lbl_bar_pipeline.scale = Vector2(0.84, 0.84)
 	add_child(lbl_bar_pipeline)
 
 	lbl_bar_stall = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-	lbl_bar_stall.position = Vector2(790.0, 247.0)
-	lbl_bar_stall.custom_minimum_size = Vector2(150.0, 24.0)
+	lbl_bar_stall.position = Vector2(806.0, 248.0)
+	lbl_bar_stall.custom_minimum_size = Vector2(162.0, 22.0)
+	lbl_bar_stall.scale = Vector2(0.84, 0.84)
 	add_child(lbl_bar_stall)
 
-	lbl_bar_pomodoro = EconomyConfig.create_pixel_label("🍅 25:00", 14, Color("#FFE066"), true)
-	lbl_bar_pomodoro.position = Vector2(POMODORO_RECT.position.x + 2.0, POMODORO_RECT.position.y + 6.0)
-	lbl_bar_pomodoro.custom_minimum_size = Vector2(POMODORO_RECT.size.x - 4.0, 24.0)
+	lbl_bar_pomodoro = EconomyConfig.create_pixel_label("[番茄专注]", 14, Color("#FFE066"), false)
+	lbl_bar_pomodoro.position = Vector2(POMODORO_RECT.position.x + 24.0, POMODORO_RECT.position.y + 9.0)
+	lbl_bar_pomodoro.scale = Vector2(0.84, 0.84)
 	add_child(lbl_bar_pomodoro)
 
 	for i in range(TAB_COUNT):
@@ -207,31 +210,33 @@ func _build_native_labels() -> void:
 		lbl_tabs.append(tl)
 
 	lbl_drawer_title = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
-	lbl_drawer_title.position = Vector2(544.0, 128.0)
+	lbl_drawer_title.position = Vector2(540.0, 128.0)
+	lbl_drawer_title.scale = Vector2(0.88, 0.88)
 	add_child(lbl_drawer_title)
 
 	lbl_drawer_fps = EconomyConfig.create_pixel_label("[60FPS]", 14, Color("#FFE066"), false)
 	lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0)
-	lbl_drawer_fps.scale = Vector2(0.92, 0.92)
+	lbl_drawer_fps.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_fps)
 
 	lbl_drawer_opacity = EconomyConfig.create_pixel_label("[100%透]", 14, Color("#FFE066"), false)
 	lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0)
-	lbl_drawer_opacity.scale = Vector2(0.92, 0.92)
+	lbl_drawer_opacity.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_opacity)
 
 	lbl_drawer_dock = EconomyConfig.create_pixel_label("[贴合任务栏]", 14, Color("#FFE066"), false)
 	lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0)
-	lbl_drawer_dock.scale = Vector2(0.92, 0.92)
+	lbl_drawer_dock.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_dock)
 
 	lbl_drawer_weather = EconomyConfig.create_pixel_label("[天气:晴昼]", 14, Color("#FFE066"), false)
 	lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 2.0)
-	lbl_drawer_weather.scale = Vector2(0.92, 0.92)
+	lbl_drawer_weather.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_weather)
 
 	lbl_drawer_mute = EconomyConfig.create_pixel_label("[静音]", 14, Color("#FFF4D6"), false)
 	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
+	lbl_drawer_mute.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_mute)
 
 	for i in range(6):
@@ -314,7 +319,7 @@ func _process(delta: float) -> void:
 
 func _sync_label_nodes() -> void:
 	var amber_cnt := GameManager.get_amber() if GameManager != null else 0
-	var gold_str := str(int(round(displayed_gold))) + "G 💎" + str(amber_cnt)
+	var gold_str := str(int(round(displayed_gold))) + "G·珀" + str(amber_cnt)
 	var mute_lbl := "[静音]" if (SoundManager != null and SoundManager.is_muted) else "[音效]"
 	var weather_names := ["晴昼", "黄昏", "夜市", "微雨"]
 	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
@@ -337,8 +342,8 @@ func _sync_label_nodes() -> void:
 			lbl_capsule_info.text = "后台挂机产金中 · 按F9或点击恢复"
 			lbl_capsule_mute.text = "[恢复]"
 		else:
-			var p_prefix := ("🍅" + GameManager.get_pomodoro_formatted_time() + " · ") if (GameManager != null and GameManager.pomodoro_active) else ""
-			lbl_capsule_info.text = p_prefix + "📜" + c_target + str(c_cur) + "/" + str(c_req) + " · 悬停展开"
+			var p_prefix := ("专注" + GameManager.get_pomodoro_formatted_time() + " · ") if (GameManager != null and GameManager.pomodoro_active) else ""
+			lbl_capsule_info.text = p_prefix + "契约:" + c_target + str(c_cur) + "/" + str(c_req) + " · 悬停展开"
 			lbl_capsule_mute.text = mute_lbl
 
 	var show_bar := not is_collapsed_capsule
@@ -346,15 +351,14 @@ func _sync_label_nodes() -> void:
 	lbl_bar_pipeline.visible = show_bar
 	lbl_bar_stall.visible = show_bar
 	lbl_bar_pomodoro.visible = show_bar
-	if show_bar:
-		lbl_bar_gold.text = gold_str
-		lbl_bar_pipeline.text = "📜" + c_target + " " + str(c_cur) + "/" + str(c_req) + "(+" + str(c_amb) + "💎) · 存" + str(GameManager.get_island_basket_total(1))
-		var codex_pct := GameManager.get_unlocked_codex_count() * 10
-		lbl_bar_stall.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
-		if GameManager != null and GameManager.pomodoro_active:
-			lbl_bar_pomodoro.text = "🍅" + GameManager.get_pomodoro_formatted_time()
-		else:
-			lbl_bar_pomodoro.text = "🍅专注"
+	lbl_bar_gold.text = gold_str
+	lbl_bar_pipeline.text = "契约:" + c_target + " " + str(c_cur) + "/" + str(c_req) + "(+" + str(c_amb) + "珀)"
+	var codex_pct := GameManager.get_unlocked_codex_count() * 10
+	lbl_bar_stall.text = "存" + str(GameManager.get_island_basket_total(1)) + " · 摊" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
+	if GameManager != null and GameManager.pomodoro_active:
+		lbl_bar_pomodoro.text = GameManager.get_pomodoro_formatted_time()
+	else:
+		lbl_bar_pomodoro.text = "[专注25m]"
 
 	var tab_names := ["建筑升级", "动物编制", "开拓造景", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
 	for i in range(TAB_COUNT):
@@ -373,12 +377,12 @@ func _sync_label_nodes() -> void:
 		var codex_cnt := GameManager.get_unlocked_codex_count()
 		var titles := [
 			"【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
-			"【动物编制与招满转进修】点击小动物可摸头加速 · 招满后全队进修(Lv.+1)!",
-			"【开拓与造景】开拓跨岛木桥 · 消耗晨露琥珀点亮三岛专属增益造景!",
-			"【山海图鉴收集册】已点亮 " + str(codex_cnt) + "/8 种食材料理 · 永久全岛售价 +" + str(codex_cnt * 10) + "%!"
+			"【动物编制与特质】点击摸头加速 · Lv.10/25/50激活专精特质!",
+			"【开拓与造景】开拓跨岛木桥 · 晨露琥珀点亮三岛专属增益造景!",
+			"【山海图鉴】已点亮 " + str(codex_cnt) + "/8 种食材料理 · 永久售价 +" + str(codex_cnt * 10) + "%!"
 		]
 		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
-		lbl_drawer_title.position = Vector2(544.0, 128.0 + slide_y)
+		lbl_drawer_title.position = Vector2(540.0, 129.0 + slide_y)
 
 		var cur_fps: int = WindowController.get_eco_fps() if WindowController != null else 60
 		var cur_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
@@ -567,16 +571,17 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), cost_step)
 
 				var title_str := String(cfg["name"]).split(" · ")[0]
+				var trait_tag := EconomyConfig.get_animal_trait_tag(a_key, lv)
 				var sub_str := ""
 				var act_str := ""
 				if max_cap <= 0:
 					sub_str = "需先解锁新岛屿"
 					act_str = "待解锁岛屿"
 				elif next_isl > 0:
-					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " (岛" + str(next_isl) + ")"
+					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " · " + trait_tag
 					act_str = "招募 " + str(cost) + "G"
 				else:
-					sub_str = "满编 " + str(cur_rec) + "/" + str(max_cap) + " · Lv." + str(lv)
+					sub_str = "Lv." + str(lv) + " · " + trait_tag
 					act_str = "全队进修 Lv.+1 (" + str(cost) + "G)"
 
 				list.append({
@@ -680,13 +685,15 @@ func _draw() -> void:
 		draw_texture_rect(tex_panel, FULL_BAR_RECT, false)
 
 	if tex_pill != null:
-		draw_texture_rect(tex_pill, Rect2(488.0, 239.0, 124.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(616.0, 239.0, 168.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(788.0, 239.0, 154.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(486.0, 239.0, 134.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(624.0, 239.0, 174.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(802.0, 239.0, 146.0, 36.0), false)
 		draw_texture_rect(tex_pill, POMODORO_RECT, false)
 
 	if tex_icons != null:
-		draw_texture_rect_region(tex_icons, Rect2(494.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+		draw_texture_rect_region(tex_icons, Rect2(492.0, 243.0, 26.0, 26.0), Rect2(0, 0, 48, 48))
+	if tex_crops != null:
+		draw_texture_rect_region(tex_crops, Rect2(POMODORO_RECT.position.x + 4.0, POMODORO_RECT.position.y + 7.0, 20.0, 20.0), Rect2(120.0, 40.0, 40.0, 40.0))
 
 	var icon_indices := [6, 3, 4, 2, 7]
 	for i in range(TAB_COUNT):

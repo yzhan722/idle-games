@@ -45,6 +45,15 @@ func _release_pooled_label(lbl: Label) -> void:
 	else:
 		lbl.queue_free()
 
+func clear_all() -> void:
+	for item in active_labels:
+		var lbl: Label = item.get("node", null)
+		if is_instance_valid(lbl):
+			_release_pooled_label(lbl)
+	active_labels.clear()
+	coin_arcs.clear()
+	queue_redraw()
+
 func _on_spawn_floating_text(world_pos: Vector2, text_str: String, col: Color) -> void:
 	var is_gold := text_str.begins_with("+") and text_str.ends_with("G")
 	var final_col := Color("#FFE066") if is_gold else col

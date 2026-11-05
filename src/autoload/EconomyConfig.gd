@@ -71,7 +71,17 @@ const ANIMALS: Dictionary = {
 
 const EXPANSIONS: Dictionary = {
 	"island_2": {"name": "木桥1 · 魔法密林", "desc": "开启2x农田+12x坩埚工坊+企鹅/巨嘴鸟编制", "cost": 180},
-	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+👑2.0x皇冠富豪顾客", "cost": 480}
+	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+★2.0x皇冠富豪顾客", "cost": 480}
+}
+
+## v2.5-3: Animal Promotion Milestone Traits (Activated at Lv.10 / Lv.25 / Lv.50)
+const ANIMAL_TRAITS: Dictionary = {
+	"bunny": {"name": "丰收巧爪", "desc": "收获产量+1/阶", "type": "harvest_bonus"},
+	"otter": {"name": "疾风步履", "desc": "移速+20%/阶", "type": "speed_mult"},
+	"fox": {"name": "匠心巧艺", "desc": "加工耗时-15%/阶", "type": "work_duration_mult"},
+	"shiba": {"name": "招财金算", "desc": "小费率+15%/阶", "type": "tip_bonus"},
+	"penguin": {"name": "极地秘传", "desc": "炼制耗时-15%/阶", "type": "work_duration_mult"},
+	"toucan": {"name": "顺风羽翼", "desc": "跨岛移速+20%/阶", "type": "speed_mult"}
 }
 
 ## v2.5-2: Functional Island Miniature Landscapes & Global Passive Buffs
@@ -253,11 +263,48 @@ func calc_milestone_value(base_value: float, level: int) -> float:
 	var milestone_pow := int(floor(float(lv) / 25.0))
 	return base_value * float(lv) * pow(2.0, float(milestone_pow))
 
+func get_animal_trait_tier_count(level: int) -> int:
+	var cnt := 0
+	if level >= 10:
+		cnt += 1
+	if level >= 25:
+		cnt += 1
+	if level >= 50:
+		cnt += 1
+	return cnt
+
+func get_animal_trait_tag(animal_key: String, level: int) -> String:
+	var t_cfg: Dictionary = ANIMAL_TRAITS.get(animal_key, ANIMAL_TRAITS["bunny"])
+	var t_name := String(t_cfg.get("name", "专精"))
+	var tiers := get_animal_trait_tier_count(level)
+	if tiers <= 0:
+		return "Lv.10解锁[" + t_name + "]"
+	var roman: String = String(["I", "II", "III"][clampi(tiers - 1, 0, 2)])
+	return "★" + t_name + roman
+
+func calc_bunny_harvest_trait_bonus(level: int) -> int:
+	return get_animal_trait_tier_count(level)
+
+func calc_logistics_speed_trait_mult(level: int) -> float:
+	return 1.0 + 0.20 * float(get_animal_trait_tier_count(level))
+
+func calc_chef_duration_trait_mult(level: int) -> float:
+	var tiers := get_animal_trait_tier_count(level)
+	if tiers <= 0:
+		return 1.0
+	return pow(0.85, float(tiers))
+
+func calc_shiba_tip_trait_bonus(level: int) -> float:
+	return 0.15 * float(get_animal_trait_tier_count(level))
+
 func calc_work_duration(animal_key: String, level: int) -> float:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["bunny"])
 	var base_t := float(a_cfg.get("base_time", 2.6))
 	var lv := maxi(1, level)
-	return maxf(0.8, base_t * pow(0.96, float(lv - 1)))
+	var raw_dur := base_t * pow(0.96, float(lv - 1))
+	if animal_key == "fox" or animal_key == "penguin":
+		raw_dur *= calc_chef_duration_trait_mult(lv)
+	return maxf(0.45, raw_dur)
 
 func calc_carry_capacity(animal_key: String, level: int) -> int:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
@@ -269,7 +316,10 @@ func calc_move_speed(animal_key: String, level: int) -> float:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
 	var base_spd := float(a_cfg.get("base_speed", 72.0))
 	var lv := maxi(1, level)
-	return base_spd * (1.0 + 0.03 * float(lv - 1))
+	var spd := base_spd * (1.0 + 0.03 * float(lv - 1))
+	if animal_key == "otter" or animal_key == "toucan":
+		spd *= calc_logistics_speed_trait_mult(lv)
+	return spd
 
 func calc_shiba_price_bonus(shiba_level: int) -> float:
 	if shiba_level <= 0:

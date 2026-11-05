@@ -174,6 +174,9 @@ func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, 
 func get_level() -> int:
 	return maxi(1, int(GameManager.animal_levels.get(animal_key, 1)))
 
+func get_effective_harvest_bonus() -> int:
+	return EconomyConfig.calc_bunny_harvest_trait_bonus(get_level())
+
 func is_hired() -> bool:
 	if not bool(GameManager.unlocked_islands.get(home_island, false)):
 		return false
@@ -479,6 +482,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 					if is_instance_valid(target_plot):
 						crop_got = target_plot.crop_id
 						qty_got = target_plot.harvest_crop_yield()
+					qty_got += get_effective_harvest_bonus()
 
 					_set_carry_visual(crop_got, qty_got)
 					if home_island == 1 and not GameManager.is_island_otter_hired(1):

@@ -453,8 +453,8 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	world.hud._sync_label_nodes()
-	if world.hud.lbl_bar_pomodoro == null or not world.hud.lbl_bar_pomodoro.text.begins_with("🍅"):
-		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "HUD pomodoro ticker label is null or missing tomato icon prefix!")
+	if world.hud.lbl_bar_pomodoro == null or world.hud.lbl_bar_pomodoro.text != "25:00":
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "HUD pomodoro ticker label is null or mismatch (`%s`)!" % [world.hud.lbl_bar_pomodoro.text if world.hud.lbl_bar_pomodoro != null else "null"])
 		return
 
 	var pre_pomo_gold: int = GameManager.gold
@@ -527,8 +527,8 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	world.hud._sync_label_nodes()
-	if world.hud.lbl_bar_pipeline == null or world.hud.lbl_bar_pipeline.text.find("📜") == -1:
-		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "HUD status text missing contract scroll icon `📜`!")
+	if world.hud.lbl_bar_pipeline == null or world.hud.lbl_bar_pipeline.text.find("契约:") == -1:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "HUD status text missing `契约:` prefix!")
 		return
 	print("[PASS] [断言8-晨露琥珀与皇家契约系统] 通过: 琥珀二级货币收支边界、皇家订单自动推进、奖金与琥珀结算、循环刷单与 HUD 状态显示校验 PASS!")
 
@@ -587,6 +587,43 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	print("[PASS] [断言9-微缩造景与三岛被动增益] 通过: 三岛专属微缩造景消耗琥珀解锁、农田生长+20%、工坊制作+20%、顾客小费+20%与实体显隐同步校验 PASS!")
+
+	# ------------------------------------------------------------------
+	# [断言10-v2.5-3小动物进修特质词条系统]: Verify Lv.10 / Lv.25 / Lv.50 milestone traits
+	# ------------------------------------------------------------------
+	if EconomyConfig.calc_bunny_harvest_trait_bonus(1) != 0 or EconomyConfig.calc_bunny_harvest_trait_bonus(10) != 1 or EconomyConfig.calc_bunny_harvest_trait_bonus(25) != 2 or EconomyConfig.calc_bunny_harvest_trait_bonus(50) != 3:
+		_fail_and_quit("[断言10-动物进修特质]", "Bunny harvest trait bonus mismatch across Lv.1/10/25/50!")
+		return
+	if absf(EconomyConfig.calc_logistics_speed_trait_mult(10) - 1.20) > 0.01 or absf(EconomyConfig.calc_logistics_speed_trait_mult(25) - 1.40) > 0.01:
+		_fail_and_quit("[断言10-动物进修特质]", "Otter/Toucan speed trait multiplier mismatch at Lv.10/25!")
+		return
+	if absf(EconomyConfig.calc_chef_duration_trait_mult(10) - 0.85) > 0.01 or absf(EconomyConfig.calc_chef_duration_trait_mult(25) - 0.7225) > 0.01:
+		_fail_and_quit("[断言10-动物进修特质]", "Fox/Penguin work duration trait multiplier mismatch at Lv.10/25!")
+		return
+	var saved_shiba_lv := int(GameManager.animal_levels.get("shiba", 0))
+	GameManager.animal_levels["shiba"] = 1
+	var tip_lv1 := GameManager.get_customer_tip_multiplier(false, 1)
+	GameManager.animal_levels["shiba"] = 10
+	var tip_lv10 := GameManager.get_customer_tip_multiplier(false, 1)
+	GameManager.animal_levels["shiba"] = saved_shiba_lv
+	if absf(tip_lv10 - tip_lv1 * 1.15) > 0.01:
+		_fail_and_quit("[断言10-动物进修特质]", "Shiba Lv.10 tip trait (+15%%) failed: lv1=%.3f, lv10=%.3f" % [tip_lv1, tip_lv10])
+		return
+	if EconomyConfig.get_animal_trait_tag("bunny", 10) != "★丰收巧爪I" or EconomyConfig.get_animal_trait_tag("fox", 25) != "★匠心巧艺II":
+		_fail_and_quit("[断言10-动物进修特质]", "Trait tag formatting mismatch: `%s` / `%s`" % [EconomyConfig.get_animal_trait_tag("bunny", 10), EconomyConfig.get_animal_trait_tag("fox", 25)])
+		return
+	print("[PASS] [断言10-小动物进修特质词条系统] 通过: Lv.10/25/50 专精特质激活(兔子产量+1~+3、水獭/巨嘴鸟移速+20%%、狐狸/企鹅耗时-15%%、柴犬小费+15%%)与面板标签校验 PASS!")
+
+	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
+	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": false, "tiki_torch": false}
+	GameManager.amber = 5
+	world._sync_landscape_nodes()
+	if world.floating_text != null and world.floating_text.has_method("clear_all"):
+		world.floating_text.clear_all()
+	if world.hud != null:
+		world.hud.offline_banner_timer = 0.0
+		world.hud._sync_label_nodes()
+	GameManager.save_game()
 
 
 	# ------------------------------------------------------------------

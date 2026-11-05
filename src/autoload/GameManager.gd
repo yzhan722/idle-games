@@ -487,7 +487,7 @@ func unlock_landscape(landscape_id: String) -> bool:
 	EventBus.landscape_unlocked.emit(isl, landscape_id)
 	EventBus.spawn_floating_text.emit(
 		Vector2(float(cfg.get("x_pos", 660.0)), EconomyConfig.GROUND_Y - 30.0),
-		"✨解锁造景【" + String(cfg.get("name", landscape_id)) + "】!",
+		"★解锁造景【" + String(cfg.get("name", landscape_id)) + "】!",
 		Color("#FFE066")
 	)
 	return true
@@ -511,6 +511,9 @@ func get_customer_tip_multiplier(is_vip: bool, island: int = 3) -> float:
 	var mult := EconomyConfig.VIP_TIP_MULTIPLIER if is_vip else 1.0
 	if bool(unlocked_landscapes.get("tiki_torch", false)):
 		mult *= 1.20
+	var shiba_lv := int(animal_levels.get("shiba", 0))
+	if shiba_lv >= 10:
+		mult *= (1.0 + EconomyConfig.calc_shiba_tip_trait_bonus(shiba_lv))
 	return mult
 
 

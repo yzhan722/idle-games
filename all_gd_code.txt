@@ -72,7 +72,57 @@ const ANIMALS: Dictionary = {
 
 const EXPANSIONS: Dictionary = {
 	"island_2": {"name": "木桥1 · 魔法密林", "desc": "开启2x农田+12x坩埚工坊+企鹅/巨嘴鸟编制", "cost": 180},
-	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+👑2.0x皇冠富豪顾客", "cost": 480}
+	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+★2.0x皇冠富豪顾客", "cost": 480}
+}
+
+## v2.5-3: Animal Promotion Milestone Traits (Activated at Lv.10 / Lv.25 / Lv.50)
+const ANIMAL_TRAITS: Dictionary = {
+	"bunny": {"name": "丰收巧爪", "desc": "收获产量+1/阶", "type": "harvest_bonus"},
+	"otter": {"name": "疾风步履", "desc": "移速+20%/阶", "type": "speed_mult"},
+	"fox": {"name": "匠心巧艺", "desc": "加工耗时-15%/阶", "type": "work_duration_mult"},
+	"shiba": {"name": "招财金算", "desc": "小费率+15%/阶", "type": "tip_bonus"},
+	"penguin": {"name": "极地秘传", "desc": "炼制耗时-15%/阶", "type": "work_duration_mult"},
+	"toucan": {"name": "顺风羽翼", "desc": "跨岛移速+20%/阶", "type": "speed_mult"}
+}
+
+## v2.5-2: Functional Island Miniature Landscapes & Global Passive Buffs
+const ISLAND_LANDSCAPES: Dictionary = {
+	"bee_hive": {
+		"id": "bee_hive",
+		"name": "蜜蜂花箱",
+		"island": 1,
+		"cost_amber": 3,
+		"desc": "1号岛蜜蜂授粉 · 农田作物生长速度 +20%",
+		"buff_type": "crop_growth",
+		"buff_val": 0.20,
+		"x_pos": 660.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_beehive.png",
+		"frame_h": 52
+	},
+	"wind_chime": {
+		"id": "wind_chime",
+		"name": "荧光风铃",
+		"island": 2,
+		"cost_amber": 5,
+		"desc": "2号岛灵气共鸣 · 工坊加工制作速度 +20%",
+		"buff_type": "workshop_speed",
+		"buff_val": 0.20,
+		"x_pos": 210.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_windchime.png",
+		"frame_h": 58
+	},
+	"tiki_torch": {
+		"id": "tiki_torch",
+		"name": "招财提基灯",
+		"island": 3,
+		"cost_amber": 8,
+		"desc": "3号岛金穗庇佑 · 顾客全岛小费收益 +20%",
+		"buff_type": "tip_bonus",
+		"buff_val": 0.20,
+		"x_pos": 1705.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_lamp.png",
+		"frame_h": 66
+	}
 }
 
 func _ready() -> void:
@@ -214,11 +264,48 @@ func calc_milestone_value(base_value: float, level: int) -> float:
 	var milestone_pow := int(floor(float(lv) / 25.0))
 	return base_value * float(lv) * pow(2.0, float(milestone_pow))
 
+func get_animal_trait_tier_count(level: int) -> int:
+	var cnt := 0
+	if level >= 10:
+		cnt += 1
+	if level >= 25:
+		cnt += 1
+	if level >= 50:
+		cnt += 1
+	return cnt
+
+func get_animal_trait_tag(animal_key: String, level: int) -> String:
+	var t_cfg: Dictionary = ANIMAL_TRAITS.get(animal_key, ANIMAL_TRAITS["bunny"])
+	var t_name := String(t_cfg.get("name", "专精"))
+	var tiers := get_animal_trait_tier_count(level)
+	if tiers <= 0:
+		return "Lv.10解锁[" + t_name + "]"
+	var roman: String = String(["I", "II", "III"][clampi(tiers - 1, 0, 2)])
+	return "★" + t_name + roman
+
+func calc_bunny_harvest_trait_bonus(level: int) -> int:
+	return get_animal_trait_tier_count(level)
+
+func calc_logistics_speed_trait_mult(level: int) -> float:
+	return 1.0 + 0.20 * float(get_animal_trait_tier_count(level))
+
+func calc_chef_duration_trait_mult(level: int) -> float:
+	var tiers := get_animal_trait_tier_count(level)
+	if tiers <= 0:
+		return 1.0
+	return pow(0.85, float(tiers))
+
+func calc_shiba_tip_trait_bonus(level: int) -> float:
+	return 0.15 * float(get_animal_trait_tier_count(level))
+
 func calc_work_duration(animal_key: String, level: int) -> float:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["bunny"])
 	var base_t := float(a_cfg.get("base_time", 2.6))
 	var lv := maxi(1, level)
-	return maxf(0.8, base_t * pow(0.96, float(lv - 1)))
+	var raw_dur := base_t * pow(0.96, float(lv - 1))
+	if animal_key == "fox" or animal_key == "penguin":
+		raw_dur *= calc_chef_duration_trait_mult(lv)
+	return maxf(0.45, raw_dur)
 
 func calc_carry_capacity(animal_key: String, level: int) -> int:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
@@ -230,7 +317,10 @@ func calc_move_speed(animal_key: String, level: int) -> float:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
 	var base_spd := float(a_cfg.get("base_speed", 72.0))
 	var lv := maxi(1, level)
-	return base_spd * (1.0 + 0.03 * float(lv - 1))
+	var spd := base_spd * (1.0 + 0.03 * float(lv - 1))
+	if animal_key == "otter" or animal_key == "toucan":
+		spd *= calc_logistics_speed_trait_mult(lv)
+	return spd
 
 func calc_shiba_price_bonus(shiba_level: int) -> float:
 	if shiba_level <= 0:
@@ -274,6 +364,14 @@ signal spawn_floating_text(world_pos: Vector2, text_str: String, col: Color)
 signal weather_changed(new_weather: int)
 signal codex_unlocked(item_id: String)
 signal carnival_frenzy_started(duration: float)
+signal pomodoro_state_changed(is_active: bool, remaining_sec: float)
+signal pomodoro_completed(gold_reward: int, frenzy_sec: float)
+signal amber_changed(new_amber: int, delta: int)
+signal contract_updated(contract_dict: Dictionary)
+signal contract_progressed(item_id: String, cur_count: int, req_count: int)
+signal contract_completed(contract_dict: Dictionary)
+signal landscape_unlocked(island_idx: int, landscape_id: String)
+
 
 === FILE: D:/project/maple-isle-idle/src/autoload/GameManager.gd ===
 extends Node
@@ -363,6 +461,15 @@ var current_weather: int = WeatherState.DAY
 var weather_timer: float = 0.0
 var frenzy_timer: float = 0.0
 
+## v2.4-4: Pomodoro Focus Timer Companion (25min / 1500s) & Gift Box Reward
+const POMODORO_DURATION: float = 1500.0
+const POMODORO_REWARD_GOLD: int = 500
+const POMODORO_FRENZY_DURATION: float = 30.0
+
+var pomodoro_active: bool = false
+var pomodoro_time_remaining: float = 0.0
+var pomodoro_completed_count: int = 0
+
 ## v2.3 Direction 4: Mountain & Sea Collection Codex (4 Crops + 4 Delicacies -> +10% global sale price per unlocked entry)
 var unlocked_codex: Dictionary = {
 	"crop_0": true,
@@ -373,6 +480,18 @@ var unlocked_codex: Dictionary = {
 	"delicacy_1": false,
 	"delicacy_2": false,
 	"delicacy_3": false
+}
+
+## v2.5-1: Secondary Currency (Amber 晨露琥珀) & Airship Royal Contracts
+var amber: int = 0
+var total_amber_earned: int = 0
+var active_contract: Dictionary = {}
+
+## v2.5-2: Island Landscape Decorations & Passive Buffs
+var unlocked_landscapes: Dictionary = {
+	"bee_hive": false,
+	"wind_chime": false,
+	"tiki_torch": false
 }
 
 func _ready() -> void:
@@ -386,12 +505,23 @@ func _ready() -> void:
 			break
 	if not is_automated_test_mode:
 		load_game()
+	if active_contract.is_empty():
+		generate_next_contract()
 	_sync_codex_from_progression()
 
 func reset_for_playtest_state() -> void:
 	gold = 120
 	total_gold_earned = 120
 	desktop_companion_mode = true
+	amber = 0
+	total_amber_earned = 0
+	active_contract.clear()
+	unlocked_landscapes = {
+		"bee_hive": false,
+		"wind_chime": false,
+		"tiki_torch": false
+	}
+	generate_next_contract()
 	unlocked_islands = {1: true, 2: false, 3: false}
 	building_levels = {"soil_1": 1, "mortar": 1, "stall": 1, "soil_2": 1, "cauldron": 1, "soil_3": 1}
 	animal_levels = {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
@@ -426,6 +556,9 @@ func reset_for_playtest_state() -> void:
 	pending_offline_seconds = 0
 	pending_offline_gold = 0
 	last_offline_report = {}
+	pomodoro_active = false
+	pomodoro_time_remaining = 0.0
+	pomodoro_completed_count = 0
 	_sync_codex_from_progression()
 
 func _process(delta: float) -> void:
@@ -436,6 +569,11 @@ func _process(delta: float) -> void:
 
 	if frenzy_timer > 0.0:
 		frenzy_timer = maxf(0.0, frenzy_timer - delta)
+
+	if pomodoro_active:
+		pomodoro_time_remaining -= delta
+		if pomodoro_time_remaining <= 0.0:
+			complete_pomodoro()
 
 	weather_timer += delta
 	if weather_timer >= 42.0:
@@ -477,6 +615,51 @@ func get_weather_status_text() -> String:
 func trigger_carnival_frenzy(duration: float = 20.0) -> void:
 	frenzy_timer = maxf(frenzy_timer, duration)
 	EventBus.carnival_frenzy_started.emit(frenzy_timer)
+
+func start_pomodoro(duration: float = POMODORO_DURATION) -> void:
+	pomodoro_active = true
+	pomodoro_time_remaining = maxf(1.0, duration)
+	EventBus.pomodoro_state_changed.emit(true, pomodoro_time_remaining)
+
+func stop_pomodoro() -> void:
+	pomodoro_active = false
+	pomodoro_time_remaining = 0.0
+	EventBus.pomodoro_state_changed.emit(false, 0.0)
+
+func toggle_pomodoro() -> bool:
+	if pomodoro_active:
+		stop_pomodoro()
+		return false
+	else:
+		start_pomodoro()
+		return true
+
+func complete_pomodoro() -> Dictionary:
+	pomodoro_active = false
+	pomodoro_time_remaining = 0.0
+	pomodoro_completed_count += 1
+	add_gold(POMODORO_REWARD_GOLD)
+	trigger_carnival_frenzy(POMODORO_FRENZY_DURATION)
+	var report := {
+		"gold": POMODORO_REWARD_GOLD,
+		"frenzy_sec": POMODORO_FRENZY_DURATION,
+		"completed_count": pomodoro_completed_count
+	}
+	EventBus.pomodoro_completed.emit(POMODORO_REWARD_GOLD, POMODORO_FRENZY_DURATION)
+	save_game()
+	return report
+
+func fast_forward_pomodoro(seconds: float) -> void:
+	if pomodoro_active:
+		pomodoro_time_remaining -= seconds
+		if pomodoro_time_remaining <= 0.0:
+			complete_pomodoro()
+
+func get_pomodoro_formatted_time() -> String:
+	var total_sec := int(ceilf(pomodoro_time_remaining)) if pomodoro_active else int(POMODORO_DURATION)
+	var m := total_sec / 60
+	var s := total_sec % 60
+	return "%02d:%02d" % [m, s]
 
 func unlock_codex_entry(item_id: String) -> void:
 	if unlocked_codex.has(item_id) and not bool(unlocked_codex[item_id]):
@@ -564,6 +747,151 @@ func spend_gold(cost: int) -> bool:
 	gold -= cost
 	EventBus.gold_changed.emit(gold, -cost)
 	return true
+
+## ==================================================================
+## v2.5-1: Secondary Currency (Amber 晨露琥珀) & Airship Royal Contracts
+## ==================================================================
+func add_amber(amount: int) -> void:
+	if amount <= 0:
+		return
+	amber += amount
+	total_amber_earned += amount
+	EventBus.amber_changed.emit(amber, amount)
+
+func spend_amber(cost: int) -> bool:
+	if cost <= 0:
+		return true
+	if amber < cost:
+		return false
+	amber -= cost
+	EventBus.amber_changed.emit(amber, -cost)
+	return true
+
+func get_amber() -> int:
+	return amber
+
+func generate_next_contract() -> Dictionary:
+	var available_items: Array[String] = ["crop_0", "delicacy_0"]
+	if bool(unlocked_codex.get("crop_1", false)) or int(building_levels.get("soil_1", 1)) >= 25:
+		available_items.append("crop_1")
+		available_items.append("delicacy_1")
+	if bool(unlocked_islands.get(2, false)):
+		available_items.append("crop_2")
+		available_items.append("delicacy_2")
+	if bool(unlocked_islands.get(3, false)):
+		available_items.append("crop_3")
+		available_items.append("delicacy_3")
+
+	var prev_idx: int = int(active_contract.get("contract_index", 0))
+	var next_idx: int = prev_idx + 1
+	var chosen_item: String = available_items[next_idx % available_items.size()]
+	var item_name: String = chosen_item
+	if EconomyConfig.CROPS.has(chosen_item):
+		item_name = String(EconomyConfig.CROPS[chosen_item].get("name", chosen_item))
+	elif EconomyConfig.DELICACIES.has(chosen_item):
+		item_name = String(EconomyConfig.DELICACIES[chosen_item].get("name", chosen_item))
+
+	var req_cnt: int = 3 + (next_idx % 4)
+	var rew_gold: int = 120 + req_cnt * 25
+	var rew_amber: int = 1 + (next_idx % 3)
+
+	active_contract = {
+		"id": "contract_" + str(next_idx),
+		"contract_index": next_idx,
+		"target_item": chosen_item,
+		"target_name": item_name,
+		"required_count": req_cnt,
+		"current_count": 0,
+		"reward_gold": rew_gold,
+		"reward_amber": rew_amber
+	}
+	EventBus.contract_updated.emit(active_contract)
+	return active_contract
+
+func progress_contract(item_id: String, amount: int = 1) -> bool:
+	if active_contract.is_empty():
+		generate_next_contract()
+	if String(active_contract.get("target_item", "")) != item_id:
+		return false
+	var cur := int(active_contract.get("current_count", 0)) + amount
+	var req := int(active_contract.get("required_count", 5))
+	active_contract["current_count"] = cur
+	EventBus.contract_progressed.emit(item_id, cur, req)
+	if cur >= req:
+		complete_active_contract()
+		return true
+	return false
+
+func complete_active_contract() -> Dictionary:
+	if active_contract.is_empty():
+		return {}
+	var completed := active_contract.duplicate(true)
+	var rew_gold := int(completed.get("reward_gold", 150))
+	var rew_amber := int(completed.get("reward_amber", 2))
+	add_gold(rew_gold)
+	add_amber(rew_amber)
+	EventBus.contract_completed.emit(completed)
+	EventBus.spawn_floating_text.emit(
+		Vector2(1013.4, EconomyConfig.GROUND_Y - 40.0),
+		"★皇家契约完成! +" + str(rew_gold) + "G +" + str(rew_amber) + "琥珀",
+		Color("#FFE066")
+	)
+	generate_next_contract()
+	save_game()
+	return completed
+
+func get_active_contract() -> Dictionary:
+	if active_contract.is_empty():
+		generate_next_contract()
+	return active_contract
+
+## ==================================================================
+## v2.5-2: Island Landscape Decorations & Passive Buffs
+## ==================================================================
+func unlock_landscape(landscape_id: String) -> bool:
+	if bool(unlocked_landscapes.get(landscape_id, false)):
+		return false
+	if not EconomyConfig.ISLAND_LANDSCAPES.has(landscape_id):
+		return false
+	var cfg: Dictionary = EconomyConfig.ISLAND_LANDSCAPES[landscape_id]
+	var cost := int(cfg.get("cost_amber", 3))
+	if not spend_amber(cost):
+		return false
+	unlocked_landscapes[landscape_id] = true
+	save_game()
+	var isl := int(cfg.get("island", 1))
+	EventBus.landscape_unlocked.emit(isl, landscape_id)
+	EventBus.spawn_floating_text.emit(
+		Vector2(float(cfg.get("x_pos", 660.0)), EconomyConfig.GROUND_Y - 30.0),
+		"★解锁造景【" + String(cfg.get("name", landscape_id)) + "】!",
+		Color("#FFE066")
+	)
+	return true
+
+func is_landscape_unlocked(landscape_id: String) -> bool:
+	return bool(unlocked_landscapes.get(landscape_id, false))
+
+func get_crop_growth_multiplier(island: int = 1) -> float:
+	var mult := get_weather_crop_growth_multiplier()
+	if island == 1 and bool(unlocked_landscapes.get("bee_hive", false)):
+		mult *= 1.20
+	return mult
+
+func get_workshop_speed_multiplier(island: int = 2) -> float:
+	var mult := 1.0
+	if island == 2 and bool(unlocked_landscapes.get("wind_chime", false)):
+		mult *= 1.20
+	return mult
+
+func get_customer_tip_multiplier(is_vip: bool, island: int = 3) -> float:
+	var mult := EconomyConfig.VIP_TIP_MULTIPLIER if is_vip else 1.0
+	if bool(unlocked_landscapes.get("tiki_torch", false)):
+		mult *= 1.20
+	var shiba_lv := int(animal_levels.get("shiba", 0))
+	if shiba_lv >= 10:
+		mult *= (1.0 + EconomyConfig.calc_shiba_tip_trait_bonus(shiba_lv))
+	return mult
+
 
 func get_prosperity_score() -> int:
 	var score := 0
@@ -757,10 +1085,11 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 		shiba_lv
 	)
 	var total_earned := int(round(float(unit_price * bought) * get_codex_price_multiplier()))
-	if is_vip:
-		total_earned = int(round(float(total_earned) * EconomyConfig.VIP_TIP_MULTIPLIER))
+	var tip_mult := get_customer_tip_multiplier(is_vip, 3)
+	total_earned = int(round(float(total_earned) * tip_mult))
 
 	add_gold(total_earned)
+	progress_contract(target_id, bought)
 	if SoundManager != null:
 		SoundManager.play_coin_sfx()
 	EventBus.inventory_changed.emit()
@@ -912,7 +1241,12 @@ func save_game() -> void:
 			"3": island_recruited[3]
 		},
 		"stall_inventory": stall_inventory,
-		"unlocked_codex": unlocked_codex
+		"unlocked_codex": unlocked_codex,
+		"pomodoro_completed_count": pomodoro_completed_count,
+		"amber": amber,
+		"total_amber_earned": total_amber_earned,
+		"active_contract": active_contract,
+		"unlocked_landscapes": unlocked_landscapes
 	}
 	var json_str := JSON.stringify(data, "\t")
 	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
@@ -965,6 +1299,17 @@ func load_game() -> void:
 		for ck in parsed["unlocked_codex"].keys():
 			if unlocked_codex.has(String(ck)):
 				unlocked_codex[String(ck)] = bool(parsed["unlocked_codex"][ck])
+	pomodoro_completed_count = int(parsed.get("pomodoro_completed_count", 0))
+	amber = int(parsed.get("amber", 0))
+	total_amber_earned = int(parsed.get("total_amber_earned", amber))
+	if parsed.has("active_contract") and parsed["active_contract"] is Dictionary:
+		active_contract = parsed["active_contract"]
+	else:
+		generate_next_contract()
+	if parsed.has("unlocked_landscapes") and parsed["unlocked_landscapes"] is Dictionary:
+		var ul: Dictionary = parsed["unlocked_landscapes"]
+		for lk in unlocked_landscapes.keys():
+			unlocked_landscapes[lk] = bool(ul.get(lk, false))
 
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())
@@ -1361,6 +1706,247 @@ func _run_all_four_assertions_and_export() -> void:
 	print("[PASS] [断言5-防坏档与离线结算] 通过: 主存档损坏自动从 `.bak` 无损恢复并修复，模拟 600s 离线结算 (+%dG / 收获 %d 件) 与欢迎横幅校验 PASS!" % [off_gold, off_items])
 
 	# ------------------------------------------------------------------
+	# [断言6-v2.4任务栏贴合与帧率透明度锁]: WindowController Eco-FPS limit, opacity clamp & taskbar docking
+	# ------------------------------------------------------------------
+	if WindowController == null:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "WindowController autoload singleton is null!")
+		return
+
+	var fps30 := WindowController.set_eco_fps(30)
+	if fps30 != 30 or Engine.max_fps != 30 or WindowController.get_eco_fps() != 30:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Failed to set eco FPS to 30! Engine.max_fps=%d, get_eco_fps=%d" % [Engine.max_fps, WindowController.get_eco_fps()])
+		return
+
+	var fps60 := WindowController.set_eco_fps(60)
+	if fps60 != 60 or Engine.max_fps != 60 or WindowController.get_eco_fps() != 60:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Failed to set eco FPS to 60! Engine.max_fps=%d, get_eco_fps=%d" % [Engine.max_fps, WindowController.get_eco_fps()])
+		return
+
+	var fps_toggled := WindowController.toggle_eco_fps()
+	if fps_toggled != 30 or Engine.max_fps != 30:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "toggle_eco_fps() failed to cycle from 60 to 30!")
+		return
+	WindowController.set_eco_fps(60)
+
+	var op80 := WindowController.set_window_opacity(0.80)
+	if absf(op80 - 0.80) > 0.01 or absf(WindowController.get_window_opacity() - 0.80) > 0.01:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "set_window_opacity(0.80) failed! Value=%.2f" % WindowController.get_window_opacity())
+		return
+
+	var op_clamped_low := WindowController.set_window_opacity(0.20)
+	if absf(op_clamped_low - 0.60) > 0.01:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Window opacity lower clamp (60%%) failed: %.2f" % op_clamped_low)
+		return
+
+	var op_clamped_high := WindowController.set_window_opacity(1.50)
+	if absf(op_clamped_high - 1.0) > 0.01:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Window opacity upper clamp (100%%) failed: %.2f" % op_clamped_high)
+		return
+
+	WindowController.snap_to_taskbar()
+	if WindowController.custom_pos_active != false or WindowController.current_dock != WindowController.DockPosition.BOTTOM_STRIP:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "snap_to_taskbar() failed to dock window to bottom usable rect!")
+		return
+
+	if world.hud == null or world.hud.lbl_drawer_fps == null or world.hud.lbl_drawer_opacity == null or world.hud.lbl_drawer_dock == null:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "HUD drawer control labels for FPS, Opacity or Dock are missing!")
+		return
+
+	print("[PASS] [断言6-任务栏贴合与帧率透明度锁] 通过: 节能 30/60 FPS 双向锁、60%%~100%% 整体透明度安全边界与任务栏贴合停靠校验 PASS!")
+
+	# ------------------------------------------------------------------
+	# [断言7-v2.4番茄钟专注伴侣与礼盒结算]: Pomodoro 25min timer, UI formatted ticker & frenzy gift box
+	# ------------------------------------------------------------------
+	GameManager.stop_pomodoro()
+	if GameManager.pomodoro_active != false or GameManager.pomodoro_time_remaining != 0.0:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Failed to stop/reset pomodoro state!")
+		return
+
+	GameManager.start_pomodoro(1500.0)
+	if GameManager.pomodoro_active != true or absf(GameManager.pomodoro_time_remaining - 1500.0) > 0.1:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "start_pomodoro(1500.0) failed to activate timer!")
+		return
+
+	var fmt_time := GameManager.get_pomodoro_formatted_time()
+	if fmt_time != "25:00":
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "get_pomodoro_formatted_time() expected `25:00`, got `%s`!" % fmt_time)
+		return
+
+	world.hud._sync_label_nodes()
+	if world.hud.lbl_bar_pomodoro == null or world.hud.lbl_bar_pomodoro.text != "25:00":
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "HUD pomodoro ticker label is null or mismatch (`%s`)!" % [world.hud.lbl_bar_pomodoro.text if world.hud.lbl_bar_pomodoro != null else "null"])
+		return
+
+	var pre_pomo_gold: int = GameManager.gold
+	var pre_pomo_count: int = GameManager.pomodoro_completed_count
+	var pomo_box := GameManager.complete_pomodoro()
+	var box_gold := int(pomo_box.get("gold", 0))
+	var box_frenzy := float(pomo_box.get("frenzy_sec", 0.0))
+
+	if GameManager.pomodoro_active != false or GameManager.gold != pre_pomo_gold + box_gold or box_gold != 500:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro box gold payout error: expected +500G, got %d (gold before=%d, after=%d)" % [box_gold, pre_pomo_gold, GameManager.gold])
+		return
+	if GameManager.frenzy_timer < 29.0:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro box carnival frenzy buff not activated! frenzy_timer=%.2f" % GameManager.frenzy_timer)
+		return
+	if GameManager.pomodoro_completed_count != pre_pomo_count + 1:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro completed count did not increment: %d -> %d" % [pre_pomo_count, GameManager.pomodoro_completed_count])
+		return
+	if world.hud.offline_banner_text.find("专注晨露礼盒") == -1:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "HUD banner missing `专注晨露礼盒` message: `%s`" % world.hud.offline_banner_text)
+		return
+
+	world.hud.offline_banner_timer = 0.0
+	world.hud._sync_label_nodes()
+	GameManager.save_game()
+	print("[PASS] [断言7-番茄钟专注伴侣与礼盒结算] 通过: 25分钟专注计时器流转、原生倒计时格式化、礼盒结算(+500G & 30s全岛狂欢加速)与横幅播报校验 PASS!")
+
+	# ------------------------------------------------------------------
+	# [断言8-v2.5-1晨露琥珀与皇家契约系统]: Amber currency, airship contract progression & reward payout
+	# ------------------------------------------------------------------
+	var init_amb := GameManager.get_amber()
+	GameManager.add_amber(10)
+	if GameManager.get_amber() != init_amb + 10:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "add_amber(10) failed! expected %d, got %d" % [init_amb + 10, GameManager.get_amber()])
+		return
+	var spend_ok := GameManager.spend_amber(4)
+	if not spend_ok or GameManager.get_amber() != init_amb + 6:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "spend_amber(4) failed! expected %d, got %d" % [init_amb + 6, GameManager.get_amber()])
+		return
+	var overspend := GameManager.spend_amber(9999)
+	if overspend or GameManager.get_amber() != init_amb + 6:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "spend_amber(9999) overspend guard failed!")
+		return
+
+	var c_active := GameManager.get_active_contract()
+	if c_active.is_empty() or not c_active.has("target_item") or not c_active.has("required_count"):
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "active_contract is empty or missing fields: %s" % str(c_active))
+		return
+	var prev_c_idx := int(c_active.get("contract_index", 1))
+	var c_item := String(c_active.get("target_item", "crop_0"))
+	var c_req := int(c_active.get("required_count", 5))
+	var rew_g := int(c_active.get("reward_gold", 150))
+	var rew_a := int(c_active.get("reward_amber", 2))
+
+	var pre_con_gold := GameManager.gold
+	var pre_con_amber := GameManager.get_amber()
+	var completed_ok := GameManager.progress_contract(c_item, c_req)
+	if not completed_ok:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "progress_contract(%s, %d) failed to trigger completion!" % [c_item, c_req])
+		return
+	if GameManager.gold != pre_con_gold + rew_g:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "Contract gold payout mismatch: expected +%d, got %d -> %d" % [rew_g, pre_con_gold, GameManager.gold])
+		return
+	if GameManager.get_amber() != pre_con_amber + rew_a:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "Contract amber payout mismatch: expected +%d, got %d -> %d" % [rew_a, pre_con_amber, GameManager.get_amber()])
+		return
+
+	var next_c := GameManager.get_active_contract()
+	if int(next_c.get("contract_index", 0)) != prev_c_idx + 1:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "Contract index did not increment to %d (got %d)!" % [prev_c_idx + 1, int(next_c.get("contract_index", 0))])
+		return
+
+	world.hud._sync_label_nodes()
+	if world.hud.lbl_bar_pipeline == null or world.hud.lbl_bar_pipeline.text.find("契约:") == -1:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "HUD status text missing `契约:` prefix!")
+		return
+	print("[PASS] [断言8-晨露琥珀与皇家契约系统] 通过: 琥珀二级货币收支边界、皇家订单自动推进、奖金与琥珀结算、循环刷单与 HUD 状态显示校验 PASS!")
+
+	# ------------------------------------------------------------------
+	# [断言9-v2.5-2微缩造景与三岛被动增益]: Functional Landscapes, Amber unlock & 1.20x passive buffs
+	# ------------------------------------------------------------------
+	var base_crop_mult := GameManager.get_crop_growth_multiplier(1)
+	var base_ws_mult := GameManager.get_workshop_speed_multiplier(2)
+	var base_tip_mult := GameManager.get_customer_tip_multiplier(false, 3)
+
+	# 1. 蜜蜂花箱 (Island 1)
+	GameManager.add_amber(10)
+	var unlock_bee := GameManager.unlock_landscape("bee_hive")
+	if not unlock_bee or not GameManager.is_landscape_unlocked("bee_hive"):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "unlock_landscape(`bee_hive`) failed!")
+		return
+	var new_crop_mult := GameManager.get_crop_growth_multiplier(1)
+	if absf(new_crop_mult - base_crop_mult * 1.20) > 0.01:
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "Bee hive +20%% crop growth buff failed: base=%.3f, new=%.3f" % [base_crop_mult, new_crop_mult])
+		return
+	if not world.landscape_nodes.has("bee_hive") or not is_instance_valid(world.landscape_nodes["bee_hive"]):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "MainWorld missing Landscape_BeeHive_1 node!")
+		return
+
+	# 2. 荧光风铃 (Island 2)
+	GameManager.add_amber(10)
+	var unlock_chime := GameManager.unlock_landscape("wind_chime")
+	if not unlock_chime or not GameManager.is_landscape_unlocked("wind_chime"):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "unlock_landscape(`wind_chime`) failed!")
+		return
+	var new_ws_mult := GameManager.get_workshop_speed_multiplier(2)
+	if absf(new_ws_mult - base_ws_mult * 1.20) > 0.01:
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "Wind chime +20%% workshop speed buff failed: base=%.3f, new=%.3f" % [base_ws_mult, new_ws_mult])
+		return
+	if not world.landscape_nodes.has("wind_chime") or not is_instance_valid(world.landscape_nodes["wind_chime"]):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "MainWorld missing Landscape_WindChime_2 node!")
+		return
+
+	# 3. 招财提基灯 (Island 3)
+	GameManager.add_amber(10)
+	var unlock_tiki := GameManager.unlock_landscape("tiki_torch")
+	if not unlock_tiki or not GameManager.is_landscape_unlocked("tiki_torch"):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "unlock_landscape(`tiki_torch`) failed!")
+		return
+	var new_tip_mult := GameManager.get_customer_tip_multiplier(false, 3)
+	if absf(new_tip_mult - base_tip_mult * 1.20) > 0.01:
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "Tiki torch +20%% tip buff failed: base=%.3f, new=%.3f" % [base_tip_mult, new_tip_mult])
+		return
+	if not world.landscape_nodes.has("tiki_torch") or not is_instance_valid(world.landscape_nodes["tiki_torch"]):
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "MainWorld missing Landscape_TikiTorch_3 node!")
+		return
+
+	world._sync_landscape_nodes()
+	if not world.landscape_nodes["bee_hive"].visible:
+		_fail_and_quit("[断言9-微缩造景与三岛增益]", "Unlocked bee_hive node is not visible!")
+		return
+
+	print("[PASS] [断言9-微缩造景与三岛被动增益] 通过: 三岛专属微缩造景消耗琥珀解锁、农田生长+20%、工坊制作+20%、顾客小费+20%与实体显隐同步校验 PASS!")
+
+	# ------------------------------------------------------------------
+	# [断言10-v2.5-3小动物进修特质词条系统]: Verify Lv.10 / Lv.25 / Lv.50 milestone traits
+	# ------------------------------------------------------------------
+	if EconomyConfig.calc_bunny_harvest_trait_bonus(1) != 0 or EconomyConfig.calc_bunny_harvest_trait_bonus(10) != 1 or EconomyConfig.calc_bunny_harvest_trait_bonus(25) != 2 or EconomyConfig.calc_bunny_harvest_trait_bonus(50) != 3:
+		_fail_and_quit("[断言10-动物进修特质]", "Bunny harvest trait bonus mismatch across Lv.1/10/25/50!")
+		return
+	if absf(EconomyConfig.calc_logistics_speed_trait_mult(10) - 1.20) > 0.01 or absf(EconomyConfig.calc_logistics_speed_trait_mult(25) - 1.40) > 0.01:
+		_fail_and_quit("[断言10-动物进修特质]", "Otter/Toucan speed trait multiplier mismatch at Lv.10/25!")
+		return
+	if absf(EconomyConfig.calc_chef_duration_trait_mult(10) - 0.85) > 0.01 or absf(EconomyConfig.calc_chef_duration_trait_mult(25) - 0.7225) > 0.01:
+		_fail_and_quit("[断言10-动物进修特质]", "Fox/Penguin work duration trait multiplier mismatch at Lv.10/25!")
+		return
+	var saved_shiba_lv := int(GameManager.animal_levels.get("shiba", 0))
+	GameManager.animal_levels["shiba"] = 1
+	var tip_lv1 := GameManager.get_customer_tip_multiplier(false, 1)
+	GameManager.animal_levels["shiba"] = 10
+	var tip_lv10 := GameManager.get_customer_tip_multiplier(false, 1)
+	GameManager.animal_levels["shiba"] = saved_shiba_lv
+	if absf(tip_lv10 - tip_lv1 * 1.15) > 0.01:
+		_fail_and_quit("[断言10-动物进修特质]", "Shiba Lv.10 tip trait (+15%%) failed: lv1=%.3f, lv10=%.3f" % [tip_lv1, tip_lv10])
+		return
+	if EconomyConfig.get_animal_trait_tag("bunny", 10) != "★丰收巧爪I" or EconomyConfig.get_animal_trait_tag("fox", 25) != "★匠心巧艺II":
+		_fail_and_quit("[断言10-动物进修特质]", "Trait tag formatting mismatch: `%s` / `%s`" % [EconomyConfig.get_animal_trait_tag("bunny", 10), EconomyConfig.get_animal_trait_tag("fox", 25)])
+		return
+	print("[PASS] [断言10-小动物进修特质词条系统] 通过: Lv.10/25/50 专精特质激活(兔子产量+1~+3、水獭/巨嘴鸟移速+20%%、狐狸/企鹅耗时-15%%、柴犬小费+15%%)与面板标签校验 PASS!")
+
+	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
+	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": false, "tiki_torch": false}
+	GameManager.amber = 5
+	world._sync_landscape_nodes()
+	if world.floating_text != null and world.floating_text.has_method("clear_all"):
+		world.floating_text.clear_all()
+	if world.hud != null:
+		world.hud.offline_banner_timer = 0.0
+		world.hud._sync_label_nodes()
+	GameManager.save_game()
+
+
+	# ------------------------------------------------------------------
 	# Export 2 Distinct Real Engine Viewport Screenshots:
 	#   State A (Drawer Collapsed): `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
 	#   State B (Drawer Expanded via `HUD.open_drawer(0)`): `res://preview_drawer_open_1920x360.png`
@@ -1753,6 +2339,8 @@ var custom_pos: Vector2i = Vector2i.ZERO
 
 var is_dragging: bool = false
 var boss_stealth_active: bool = false
+var target_fps: int = 60
+var window_opacity: float = 1.0
 var _drag_start_mouse: Vector2i = Vector2i.ZERO
 var _drag_start_win_pos: Vector2i = Vector2i.ZERO
 
@@ -1805,11 +2393,52 @@ func _input(event: InputEvent) -> void:
 func toggle_boss_stealth() -> bool:
 	boss_stealth_active = not boss_stealth_active
 	if _world_ref != null and "world_root" in _world_ref and _world_ref.world_root != null:
-		_world_ref.world_root.modulate.a = 0.0 if boss_stealth_active else 1.0
+		_world_ref.world_root.modulate.a = 0.0 if boss_stealth_active else window_opacity
 	if _hud_ref != null and _hud_ref.has_method("set_boss_stealth"):
 		_hud_ref.call("set_boss_stealth", boss_stealth_active)
 	_refresh_passthrough()
 	return boss_stealth_active
+
+func set_eco_fps(fps: int) -> int:
+	target_fps = 30 if fps <= 30 else 60
+	Engine.max_fps = target_fps
+	return target_fps
+
+func toggle_eco_fps() -> int:
+	return set_eco_fps(30 if target_fps == 60 else 60)
+
+func get_eco_fps() -> int:
+	return target_fps
+
+func set_window_opacity(alpha: float) -> float:
+	window_opacity = clampf(alpha, 0.60, 1.0)
+	_apply_window_opacity()
+	return window_opacity
+
+func cycle_window_opacity() -> float:
+	if window_opacity >= 0.95:
+		return set_window_opacity(0.80)
+	elif window_opacity >= 0.75:
+		return set_window_opacity(0.60)
+	else:
+		return set_window_opacity(1.0)
+
+func get_window_opacity() -> float:
+	return window_opacity
+
+func _apply_window_opacity() -> void:
+	if boss_stealth_active:
+		return
+	if _world_ref != null and "world_root" in _world_ref and _world_ref.world_root != null:
+		_world_ref.world_root.modulate.a = window_opacity
+	elif _world_ref != null:
+		_world_ref.modulate.a = window_opacity
+	if _hud_ref != null and "hud_opacity" in _hud_ref:
+		_hud_ref.modulate.a = _hud_ref.hud_opacity * window_opacity
+
+func snap_to_taskbar() -> void:
+	custom_pos_active = false
+	snap_window_to_desktop(DockPosition.BOTTOM_STRIP)
 
 func _process(_delta: float) -> void:
 	if not is_dragging:
@@ -1841,6 +2470,7 @@ func setup(world: Node = null, hud: Node = null) -> void:
 		_world_ref = world
 	if hud is Control:
 		_hud_ref = hud
+	_apply_window_opacity()
 	_refresh_passthrough()
 
 func begin_window_drag() -> void:
@@ -2520,8 +3150,8 @@ func _process(delta: float) -> void:
 		var c_cfg: Dictionary = EconomyConfig.CROPS.get(crop_id, EconomyConfig.CROPS["crop_0"])
 		var base_dur := float(c_cfg.get("grow_time", 5.2))
 		var b_lv := get_building_level()
-		var weather_mult := GameManager.get_weather_crop_growth_multiplier() if GameManager != null else 1.0
-		var speed_mult := (1.35 if watered else 1.0) * (1.0 + 0.06 * float(b_lv - 1)) * weather_mult
+		var growth_mult := GameManager.get_crop_growth_multiplier(island_idx) if GameManager != null else 1.0
+		var speed_mult := (1.35 if watered else 1.0) * (1.0 + 0.06 * float(b_lv - 1)) * growth_mult
 		growth = minf(1.0, growth + (delta * speed_mult) / maxf(1.0, base_dur))
 
 	current_stage = _compute_growth_stage(growth)
@@ -2961,6 +3591,9 @@ func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, 
 func get_level() -> int:
 	return maxi(1, int(GameManager.animal_levels.get(animal_key, 1)))
 
+func get_effective_harvest_bonus() -> int:
+	return EconomyConfig.calc_bunny_harvest_trait_bonus(get_level())
+
 func is_hired() -> bool:
 	if not bool(GameManager.unlocked_islands.get(home_island, false)):
 		return false
@@ -3266,6 +3899,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 					if is_instance_valid(target_plot):
 						crop_got = target_plot.crop_id
 						qty_got = target_plot.harvest_crop_yield()
+					qty_got += get_effective_harvest_bonus()
 
 					_set_carry_visual(crop_got, qty_got)
 					if home_island == 1 and not GameManager.is_island_otter_hired(1):
@@ -3455,10 +4089,12 @@ func _update_chef_work_step() -> void:
 		state_timer = 0.0
 
 	elif worker_step == 1:
-		var prog := clampf(state_timer / maxf(0.5, work_duration), 0.0, 1.0)
+		var w_speed_mult := GameManager.get_workshop_speed_multiplier(home_island) if GameManager != null else 1.0
+		var eff_duration := maxf(0.4, work_duration / w_speed_mult)
+		var prog := clampf(state_timer / eff_duration, 0.0, 1.0)
 		if w_node != null:
 			w_node.set_chef_progress(chef_slot_key, prog, true)
-		if state_timer >= work_duration:
+		if state_timer >= eff_duration:
 			worker_step = 2
 			state_timer = 0.0
 
@@ -3834,6 +4470,15 @@ func _release_pooled_label(lbl: Label) -> void:
 	else:
 		lbl.queue_free()
 
+func clear_all() -> void:
+	for item in active_labels:
+		var lbl: Label = item.get("node", null)
+		if is_instance_valid(lbl):
+			_release_pooled_label(lbl)
+	active_labels.clear()
+	coin_arcs.clear()
+	queue_redraw()
+
 func _on_spawn_floating_text(world_pos: Vector2, text_str: String, col: Color) -> void:
 	var is_gold := text_str.begins_with("+") and text_str.ends_with("G")
 	var final_col := Color("#FFE066") if is_gold else col
@@ -3943,8 +4588,12 @@ var lbl_bar_stall: Label
 var lbl_tabs: Array[Label] = []
 
 var lbl_drawer_title: Label
+var lbl_drawer_fps: Label
+var lbl_drawer_opacity: Label
+var lbl_drawer_dock: Label
 var lbl_drawer_weather: Label
 var lbl_drawer_mute: Label
+var lbl_bar_pomodoro: Label
 var lbl_card_titles: Array[Label] = []
 var lbl_card_subs: Array[Label] = []
 var lbl_card_costs: Array[Label] = []
@@ -3954,8 +4603,13 @@ const CAPSULE_RECT := Rect2(770.0, 232.0, 380.0, 40.0)
 const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
 const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
-const TOP_RIGHT_WEATHER_RECT := Rect2(1240.0, 130.0, 86.0, 24.0)
-const TOP_RIGHT_MUTE_RECT := Rect2(1332.0, 130.0, 58.0, 24.0)
+
+const TOP_RIGHT_FPS_RECT := Rect2(1004.0, 128.0, 62.0, 23.0)
+const TOP_RIGHT_OPACITY_RECT := Rect2(1070.0, 128.0, 68.0, 23.0)
+const TOP_RIGHT_DOCK_RECT := Rect2(1142.0, 128.0, 88.0, 23.0)
+const TOP_RIGHT_WEATHER_RECT := Rect2(1234.0, 128.0, 86.0, 23.0)
+const TOP_RIGHT_MUTE_RECT := Rect2(1324.0, 128.0, 58.0, 23.0)
+const POMODORO_RECT := Rect2(952.0, 239.0, 90.0, 36.0)
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
@@ -3978,8 +4632,17 @@ func _ready() -> void:
 		_show_offline_welcome_banner(GameManager.pending_offline_seconds, GameManager.pending_offline_gold)
 	if EventBus != null:
 		EventBus.offline_earnings_ready.connect(_show_offline_welcome_banner)
+		EventBus.pomodoro_completed.connect(_on_pomodoro_completed)
 
 	_build_native_labels()
+
+func _on_pomodoro_completed(gold_reward: int, frenzy_sec: float) -> void:
+	offline_banner_timer = 6.0
+	offline_banner_text = "★专注达成！开启「★专注晨露礼盒」: 获得 +" + str(gold_reward) + "G & 全岛2.0x狂欢加速 " + str(int(round(frenzy_sec))) + "s!"
+	if SoundManager != null:
+		SoundManager.play_click_sfx()
+	_sync_label_nodes()
+	queue_redraw()
 
 func _format_duration_cn(seconds: int) -> String:
 	if seconds >= 3600:
@@ -4053,18 +4716,26 @@ func _build_native_labels() -> void:
 	add_child(lbl_capsule_mute)
 
 	lbl_bar_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
-	lbl_bar_gold.position = Vector2(530.0, 247.0)
+	lbl_bar_gold.position = Vector2(518.0, 248.0)
+	lbl_bar_gold.scale = Vector2(0.88, 0.88)
 	add_child(lbl_bar_gold)
 
 	lbl_bar_pipeline = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), true)
-	lbl_bar_pipeline.position = Vector2(648.0, 247.0)
-	lbl_bar_pipeline.custom_minimum_size = Vector2(196.0, 24.0)
+	lbl_bar_pipeline.position = Vector2(628.0, 248.0)
+	lbl_bar_pipeline.custom_minimum_size = Vector2(188.0, 22.0)
+	lbl_bar_pipeline.scale = Vector2(0.84, 0.84)
 	add_child(lbl_bar_pipeline)
 
 	lbl_bar_stall = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-	lbl_bar_stall.position = Vector2(848.0, 247.0)
-	lbl_bar_stall.custom_minimum_size = Vector2(196.0, 24.0)
+	lbl_bar_stall.position = Vector2(806.0, 248.0)
+	lbl_bar_stall.custom_minimum_size = Vector2(162.0, 22.0)
+	lbl_bar_stall.scale = Vector2(0.84, 0.84)
 	add_child(lbl_bar_stall)
+
+	lbl_bar_pomodoro = EconomyConfig.create_pixel_label("[番茄专注]", 14, Color("#FFE066"), false)
+	lbl_bar_pomodoro.position = Vector2(POMODORO_RECT.position.x + 24.0, POMODORO_RECT.position.y + 9.0)
+	lbl_bar_pomodoro.scale = Vector2(0.84, 0.84)
+	add_child(lbl_bar_pomodoro)
 
 	for i in range(TAB_COUNT):
 		var tl := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
@@ -4075,16 +4746,33 @@ func _build_native_labels() -> void:
 		lbl_tabs.append(tl)
 
 	lbl_drawer_title = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
-	lbl_drawer_title.position = Vector2(544.0, 128.0)
+	lbl_drawer_title.position = Vector2(540.0, 128.0)
+	lbl_drawer_title.scale = Vector2(0.88, 0.88)
 	add_child(lbl_drawer_title)
+
+	lbl_drawer_fps = EconomyConfig.create_pixel_label("[60FPS]", 14, Color("#FFE066"), false)
+	lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0)
+	lbl_drawer_fps.scale = Vector2(0.86, 0.86)
+	add_child(lbl_drawer_fps)
+
+	lbl_drawer_opacity = EconomyConfig.create_pixel_label("[100%透]", 14, Color("#FFE066"), false)
+	lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0)
+	lbl_drawer_opacity.scale = Vector2(0.86, 0.86)
+	add_child(lbl_drawer_opacity)
+
+	lbl_drawer_dock = EconomyConfig.create_pixel_label("[贴合任务栏]", 14, Color("#FFE066"), false)
+	lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0)
+	lbl_drawer_dock.scale = Vector2(0.86, 0.86)
+	add_child(lbl_drawer_dock)
 
 	lbl_drawer_weather = EconomyConfig.create_pixel_label("[天气:晴昼]", 14, Color("#FFE066"), false)
 	lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 2.0)
-	lbl_drawer_weather.scale = Vector2(0.92, 0.92)
+	lbl_drawer_weather.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_weather)
 
 	lbl_drawer_mute = EconomyConfig.create_pixel_label("[静音]", 14, Color("#FFF4D6"), false)
 	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
+	lbl_drawer_mute.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_mute)
 
 	for i in range(6):
@@ -4139,7 +4827,8 @@ func _process(delta: float) -> void:
 
 	if not force_pin_open and not boss_stealth_mode:
 		drawer_anim_t = lerpf(drawer_anim_t, 1.0 if drawer_expanded else 0.0, minf(1.0, delta * 10.0))
-	modulate.a = hud_opacity
+	var win_alpha: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+	modulate.a = (0.25 if boss_stealth_mode else hud_opacity) * win_alpha
 
 	hovered_tab = -1
 	hovered_card = -1
@@ -4165,10 +4854,17 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _sync_label_nodes() -> void:
-	var gold_str := str(int(round(displayed_gold))) + "G"
+	var amber_cnt := GameManager.get_amber() if GameManager != null else 0
+	var gold_str := str(int(round(displayed_gold))) + "G·珀" + str(amber_cnt)
 	var mute_lbl := "[静音]" if (SoundManager != null and SoundManager.is_muted) else "[音效]"
 	var weather_names := ["晴昼", "黄昏", "夜市", "微雨"]
 	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
+
+	var contract: Dictionary = GameManager.get_active_contract() if GameManager != null else {}
+	var c_target: String = String(contract.get("target_name", "作物"))
+	var c_cur: int = int(contract.get("current_count", 0))
+	var c_req: int = int(contract.get("required_count", 5))
+	var c_amb: int = int(contract.get("reward_amber", 2))
 
 	lbl_offline.visible = (offline_banner_timer > 0.0 and not boss_stealth_mode)
 	lbl_offline.text = offline_banner_text
@@ -4182,20 +4878,25 @@ func _sync_label_nodes() -> void:
 			lbl_capsule_info.text = "后台挂机产金中 · 按F9或点击恢复"
 			lbl_capsule_mute.text = "[恢复]"
 		else:
-			lbl_capsule_info.text = GameManager.get_weather_status_text() + " · 悬停展开"
+			var p_prefix := ("专注" + GameManager.get_pomodoro_formatted_time() + " · ") if (GameManager != null and GameManager.pomodoro_active) else ""
+			lbl_capsule_info.text = p_prefix + "契约:" + c_target + str(c_cur) + "/" + str(c_req) + " · 悬停展开"
 			lbl_capsule_mute.text = mute_lbl
 
 	var show_bar := not is_collapsed_capsule
 	lbl_bar_gold.visible = show_bar
 	lbl_bar_pipeline.visible = show_bar
 	lbl_bar_stall.visible = show_bar
-	if show_bar:
-		lbl_bar_gold.text = gold_str
-		lbl_bar_pipeline.text = GameManager.get_weather_status_text() + " · 存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
-		var codex_pct := GameManager.get_unlocked_codex_count() * 10
-		lbl_bar_stall.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
+	lbl_bar_pomodoro.visible = show_bar
+	lbl_bar_gold.text = gold_str
+	lbl_bar_pipeline.text = "契约:" + c_target + " " + str(c_cur) + "/" + str(c_req) + "(+" + str(c_amb) + "珀)"
+	var codex_pct := GameManager.get_unlocked_codex_count() * 10
+	lbl_bar_stall.text = "存" + str(GameManager.get_island_basket_total(1)) + " · 摊" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
+	if GameManager != null and GameManager.pomodoro_active:
+		lbl_bar_pomodoro.text = GameManager.get_pomodoro_formatted_time()
+	else:
+		lbl_bar_pomodoro.text = "[专注25m]"
 
-	var tab_names := ["建筑升级", "动物编制", "木桥开拓", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
+	var tab_names := ["建筑升级", "动物编制", "开拓造景", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
 	for i in range(TAB_COUNT):
 		lbl_tabs[i].visible = show_bar
 		lbl_tabs[i].text = tab_names[i]
@@ -4203,18 +4904,31 @@ func _sync_label_nodes() -> void:
 	var show_drawer := show_bar and drawer_expanded
 	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 	lbl_drawer_title.visible = show_drawer
+	lbl_drawer_fps.visible = show_drawer
+	lbl_drawer_opacity.visible = show_drawer
+	lbl_drawer_dock.visible = show_drawer
 	lbl_drawer_weather.visible = show_drawer
 	lbl_drawer_mute.visible = show_drawer
 	if show_drawer:
 		var codex_cnt := GameManager.get_unlocked_codex_count()
 		var titles := [
 			"【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
-			"【动物编制与招满转进修】点击小动物可摸头加速 · 招满后全队进修(Lv.+1)!",
-			"【三岛固定槽位与木桥开拓】魔法密林(12x坩埚) · 天空海岸(52x双工坊+★2x富豪)",
-			"【山海图鉴收集册】已点亮 " + str(codex_cnt) + "/8 种食材料理 · 永久全岛售价 +" + str(codex_cnt * 10) + "%!"
+			"【动物编制与特质】点击摸头加速 · Lv.10/25/50激活专精特质!",
+			"【开拓与造景】开拓跨岛木桥 · 晨露琥珀点亮三岛专属增益造景!",
+			"【山海图鉴】已点亮 " + str(codex_cnt) + "/8 种食材料理 · 永久售价 +" + str(codex_cnt * 10) + "%!"
 		]
 		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
-		lbl_drawer_title.position = Vector2(544.0, 128.0 + slide_y)
+		lbl_drawer_title.position = Vector2(540.0, 129.0 + slide_y)
+
+		var cur_fps: int = WindowController.get_eco_fps() if WindowController != null else 60
+		var cur_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+		lbl_drawer_fps.text = "[" + str(cur_fps) + "FPS]"
+		lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_opacity.text = "[" + str(int(round(cur_op * 100.0))) + "%透]"
+		lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_dock.text = "[贴合任务栏]"
+		lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0 + slide_y)
+
 		lbl_drawer_weather.text = "[天气:" + cur_w_name + "]"
 		lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 3.0 + slide_y)
 		lbl_drawer_mute.text = mute_lbl
@@ -4258,7 +4972,7 @@ func _gui_input(event: InputEvent) -> void:
 				WindowController.begin_window_drag()
 				accept_event()
 				return
-			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
+			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos) or TOP_RIGHT_FPS_RECT.has_point(mpos) or TOP_RIGHT_OPACITY_RECT.has_point(mpos) or TOP_RIGHT_DOCK_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)) or (not is_collapsed_capsule and POMODORO_RECT.has_point(mpos))
 			if hovered_tab == -1 and hovered_card == -1 and not hitting_top_btns and _get_interactive_zone().has_point(mpos):
 				if WindowController != null:
 					WindowController.begin_window_drag()
@@ -4279,6 +4993,33 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
+			if drawer_expanded and TOP_RIGHT_FPS_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if WindowController != null:
+					WindowController.toggle_eco_fps()
+				_sync_label_nodes()
+				accept_event()
+				return
+
+			if drawer_expanded and TOP_RIGHT_OPACITY_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if WindowController != null:
+					WindowController.cycle_window_opacity()
+				_sync_label_nodes()
+				accept_event()
+				return
+
+			if drawer_expanded and TOP_RIGHT_DOCK_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if WindowController != null:
+					WindowController.snap_to_taskbar()
+				_sync_label_nodes()
+				accept_event()
+				return
+
 			if drawer_expanded and TOP_RIGHT_WEATHER_RECT.has_point(mpos):
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
@@ -4289,6 +5030,15 @@ func _gui_input(event: InputEvent) -> void:
 			if (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)):
 				if SoundManager != null:
 					SoundManager.toggle_mute()
+				accept_event()
+				return
+
+			if not is_collapsed_capsule and POMODORO_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if GameManager != null:
+					GameManager.toggle_pomodoro()
+				_sync_label_nodes()
 				accept_event()
 				return
 
@@ -4332,7 +5082,7 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
 	match active_tab:
 		0:
-			for b_key in ["soil_1", "mortar", "stall", "cauldron"]:
+			for b_key in ["soil_1", "mortar", "stall", "cauldron", "soil_2", "soil_3"]:
 				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
 				var req_isl := int(cfg.get("island", 1))
 				var isl_on := bool(GameManager.unlocked_islands.get(req_isl, false))
@@ -4357,16 +5107,17 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), cost_step)
 
 				var title_str := String(cfg["name"]).split(" · ")[0]
+				var trait_tag := EconomyConfig.get_animal_trait_tag(a_key, lv)
 				var sub_str := ""
 				var act_str := ""
 				if max_cap <= 0:
 					sub_str = "需先解锁新岛屿"
 					act_str = "待解锁岛屿"
 				elif next_isl > 0:
-					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " (岛" + str(next_isl) + ")"
+					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " · " + trait_tag
 					act_str = "招募 " + str(cost) + "G"
 				else:
-					sub_str = "满编 " + str(cur_rec) + "/" + str(max_cap) + " · Lv." + str(lv)
+					sub_str = "Lv." + str(lv) + " · " + trait_tag
 					act_str = "全队进修 Lv.+1 (" + str(cost) + "G)"
 
 				list.append({
@@ -4393,18 +5144,18 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				"sub": "双工坊52x+★2x富豪",
 				"cost": "已解锁" if isl3_unlocked else "480G 解锁"
 			})
-			for b_key in ["soil_2", "soil_3"]:
-				var cfg: Dictionary = EconomyConfig.BUILDINGS[b_key]
-				var req_isl := int(cfg.get("island", 2))
-				var isl_on := bool(GameManager.unlocked_islands.get(req_isl, false))
-				var lv := int(GameManager.building_levels.get(b_key, 1))
-				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), lv)
+			for lk in ["bee_hive", "wind_chime", "tiki_torch"]:
+				var cfg: Dictionary = EconomyConfig.ISLAND_LANDSCAPES[lk]
+				var isl := int(cfg.get("island", 1))
+				var isl_open := bool(GameManager.unlocked_islands.get(isl, false))
+				var is_unlocked := GameManager.is_landscape_unlocked(lk)
+				var cost_amb := int(cfg.get("cost_amber", 3))
 				list.append({
-					"type": "building",
-					"key": b_key,
-					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (未解锁)"),
-					"sub": String(cfg["desc"]).substr(0, 12) if isl_on else ("需先解锁上方木桥" + str(req_isl - 1)),
-					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿"
+					"type": "landscape",
+					"key": lk,
+					"title": String(cfg.get("name", lk)) + (" (已点亮)" if is_unlocked else " (未建造)"),
+					"sub": String(cfg.get("desc", "")) if isl_open else ("需先解锁岛屿" + str(isl)),
+					"cost": "已点亮生效" if is_unlocked else (str(cost_amb) + " 琥珀 解锁" if isl_open else "待解锁岛屿")
 				})
 		3:
 			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)
@@ -4449,6 +5200,11 @@ func _activate_card(idx: int) -> void:
 		var codex_pct := GameManager.get_unlocked_codex_count() * 10
 		offline_banner_timer = 4.0
 		offline_banner_text = "★山海图鉴总加成: 全岛商品售价永久 +" + str(codex_pct) + "% (每解锁1种农作物或工坊美食 +10%)"
+	elif t == "landscape":
+		if not GameManager.unlock_landscape(k):
+			var req_cost := int(EconomyConfig.ISLAND_LANDSCAPES.get(k, {}).get("cost_amber", 3))
+			offline_banner_timer = 3.5
+			offline_banner_text = "晨露琥珀不足 (需 " + str(req_cost) + " 琥珀)，请完成飞艇皇家订单获取!"
 
 func _draw() -> void:
 	if offline_banner_timer > 0.0 and not boss_stealth_mode and tex_pill != null:
@@ -4465,12 +5221,15 @@ func _draw() -> void:
 		draw_texture_rect(tex_panel, FULL_BAR_RECT, false)
 
 	if tex_pill != null:
-		draw_texture_rect(tex_pill, Rect2(492.0, 239.0, 152.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(648.0, 239.0, 196.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(848.0, 239.0, 196.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(486.0, 239.0, 134.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(624.0, 239.0, 174.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(802.0, 239.0, 146.0, 36.0), false)
+		draw_texture_rect(tex_pill, POMODORO_RECT, false)
 
 	if tex_icons != null:
-		draw_texture_rect_region(tex_icons, Rect2(498.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+		draw_texture_rect_region(tex_icons, Rect2(492.0, 243.0, 26.0, 26.0), Rect2(0, 0, 48, 48))
+	if tex_crops != null:
+		draw_texture_rect_region(tex_crops, Rect2(POMODORO_RECT.position.x + 4.0, POMODORO_RECT.position.y + 7.0, 20.0, 20.0), Rect2(120.0, 40.0, 40.0, 40.0))
 
 	var icon_indices := [6, 3, 4, 2, 7]
 	for i in range(TAB_COUNT):
@@ -4492,9 +5251,15 @@ func _draw() -> void:
 		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
 		draw_texture_rect(tex_drawer, d_rect, false)
 
+		var fps_rect := Rect2(TOP_RIGHT_FPS_RECT.position.x, TOP_RIGHT_FPS_RECT.position.y + slide_y, TOP_RIGHT_FPS_RECT.size.x, TOP_RIGHT_FPS_RECT.size.y)
+		var op_rect := Rect2(TOP_RIGHT_OPACITY_RECT.position.x, TOP_RIGHT_OPACITY_RECT.position.y + slide_y, TOP_RIGHT_OPACITY_RECT.size.x, TOP_RIGHT_OPACITY_RECT.size.y)
+		var dock_rect := Rect2(TOP_RIGHT_DOCK_RECT.position.x, TOP_RIGHT_DOCK_RECT.position.y + slide_y, TOP_RIGHT_DOCK_RECT.size.x, TOP_RIGHT_DOCK_RECT.size.y)
 		var w_rect := Rect2(TOP_RIGHT_WEATHER_RECT.position.x, TOP_RIGHT_WEATHER_RECT.position.y + slide_y, TOP_RIGHT_WEATHER_RECT.size.x, TOP_RIGHT_WEATHER_RECT.size.y)
 		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
 		if tex_pill != null:
+			draw_texture_rect(tex_pill, fps_rect, false)
+			draw_texture_rect(tex_pill, op_rect, false)
+			draw_texture_rect(tex_pill, dock_rect, false)
 			draw_texture_rect(tex_pill, w_rect, false)
 			draw_texture_rect(tex_pill, m_rect, false)
 
@@ -4843,6 +5608,7 @@ var cot_1_node: Sprite2D
 var left_hut_node: Sprite2D
 var tree_3_node: Sprite2D
 var right_tiki_node: Sprite2D
+var landscape_nodes: Dictionary = {}
 
 var customer_spawn_timer: float = 4.0
 var vip_customer_timer: float = 38.0
@@ -5029,6 +5795,33 @@ func _build_landmarks_and_buildings() -> void:
 	market_stall.position = Vector2(1013.4, GROUND_Y)
 	ysort_layer.add_child(market_stall)
 
+	# Functional Miniature Landscapes (v2.5-2)
+	# Island 1: Bee Hive (x=662.0)
+	var tex_beehive: Texture2D = load("res://assets/pixel_art/buildings/decor_beehive.png") if ResourceLoader.exists("res://assets/pixel_art/buildings/decor_beehive.png") else tex_tree
+	var node_beehive := _make_grounded_prop(tex_beehive, 662.0, 52, 0.50)
+	node_beehive.name = "Landscape_BeeHive_1"
+	node_beehive.visible = false
+	ysort_layer.add_child(node_beehive)
+	landscape_nodes["bee_hive"] = node_beehive
+
+	# Island 2: Wind Chime (x=210.0)
+	var tex_windchime: Texture2D = load("res://assets/pixel_art/buildings/decor_windchime.png") if ResourceLoader.exists("res://assets/pixel_art/buildings/decor_windchime.png") else tex_left_hut
+	var node_windchime := _make_grounded_prop(tex_windchime, 210.0, 58, 0.58)
+	node_windchime.name = "Landscape_WindChime_2"
+	node_windchime.visible = false
+	ysort_layer.add_child(node_windchime)
+	island2_props.append(node_windchime)
+	landscape_nodes["wind_chime"] = node_windchime
+
+	# Island 3: Tiki Torch (x=1705.0)
+	var tex_torch: Texture2D = load("res://assets/pixel_art/buildings/decor_lamp.png")
+	var node_torch := _make_grounded_prop(tex_torch, 1705.0, 66, 0.58)
+	node_torch.name = "Landscape_TikiTorch_3"
+	node_torch.visible = false
+	ysort_layer.add_child(node_torch)
+	island3_props.append(node_torch)
+	landscape_nodes["tiki_torch"] = node_torch
+
 func get_island_main_building_rects() -> Dictionary:
 	var oy := world_root.position.y
 	var p1_rect := soil_plots[0].get_screen_rect() if soil_plots.size() > 0 else Rect2(710.8 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
@@ -5155,8 +5948,21 @@ func _apply_companion_zoom() -> void:
 	world_root.scale = Vector2(companion_zoom, companion_zoom)
 	queue_redraw()
 
+func _sync_landscape_nodes() -> void:
+	if GameManager == null:
+		return
+	if landscape_nodes.has("bee_hive") and is_instance_valid(landscape_nodes["bee_hive"]):
+		landscape_nodes["bee_hive"].visible = GameManager.is_landscape_unlocked("bee_hive")
+	if landscape_nodes.has("wind_chime") and is_instance_valid(landscape_nodes["wind_chime"]):
+		var isl2_open: bool = bool(GameManager.unlocked_islands.get(2, false))
+		landscape_nodes["wind_chime"].visible = isl2_open and GameManager.is_landscape_unlocked("wind_chime")
+	if landscape_nodes.has("tiki_torch") and is_instance_valid(landscape_nodes["tiki_torch"]):
+		var isl3_open: bool = bool(GameManager.unlocked_islands.get(3, false))
+		landscape_nodes["tiki_torch"].visible = isl3_open and GameManager.is_landscape_unlocked("tiki_torch")
+
 func _process(delta: float) -> void:
 	cloud_time += delta
+	_sync_landscape_nodes()
 
 	# v2.3 Direction 1: Weather & Time-of-Day ambient lighting interpolation
 	var target_tint := Color.WHITE
@@ -5168,7 +5974,8 @@ func _process(delta: float) -> void:
 				target_tint = Color(0.88, 0.92, 1.0, 1.0)
 			3:
 				target_tint = Color(0.92, 0.96, 1.0, 1.0)
-	var target_alpha := 0.0 if (WindowController != null and WindowController.boss_stealth_active) else 1.0
+	var win_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+	var target_alpha := 0.0 if (WindowController != null and WindowController.boss_stealth_active) else win_op
 	target_tint.a = target_alpha
 	world_root.modulate = world_root.modulate.lerp(target_tint, minf(1.0, delta * 3.5))
 	world_root.modulate.a = target_alpha
