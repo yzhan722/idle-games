@@ -162,3 +162,14 @@
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
 
+## [2026-11-05T14:24:40.623Z] Autonomous Playtest — PASS
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `archetypes (见识三种森林怪物)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
+
+## [2026-11-05T14:45:55.379Z] Autonomous Playtest — PASS
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `archetypes (见识三种森林怪物)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Visual Audit & Fix: Resolved mobile 390x844 revive-info box vertical overflow where 32px countdown-text pushed the "停止战斗" button behind the bottom navigation bar. Added responsive sizing and padding; re-tested and verified 100% visible and unclipped.
+- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow, all 247 tests PASS.
+
