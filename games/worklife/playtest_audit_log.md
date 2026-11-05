@@ -132,3 +132,13 @@
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
 
+## [2026-11-05T04:32:13.693Z] Autonomous Playtest — PASS
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `chest (穿上木制胸甲)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
+
+## [2026-11-05T04:39:59.377Z] Autonomous Playtest — PASS
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `archetypes (见识三种森林怪物)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
+

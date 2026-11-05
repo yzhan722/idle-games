@@ -1974,6 +1974,11 @@ export default function NewGameInterface() {
           }
           if (chapterGoal.tab === "character") {
             setActiveTab("character")
+            if (chapterGoal.id === "equip_sword") {
+              openEquipSelector("mainhand")
+            } else if (chapterGoal.id === "chest") {
+              openEquipSelector("chest")
+            }
             return
           }
           setActiveTab(chapterGoal.tab)
@@ -2158,7 +2163,11 @@ export default function NewGameInterface() {
               const dur = itemId ? playerState.equipment?.durability?.[itemId] : undefined
               const maxDur = itemId ? (playerState.equipment?.maxDurability?.[itemId] || 100) : 100
               const durRecorded = typeof dur === 'number' && Number.isFinite(dur)
-              const durabilityPct = durRecorded ? Math.max(0, Math.min(100, Math.round((dur / maxDur) * 1000) / 10)) : undefined
+              const durabilityPct = itemId
+                ? durRecorded
+                  ? Math.max(0, Math.min(100, Math.round((dur / maxDur) * 1000) / 10))
+                  : 100
+                : undefined
               const broken = durRecorded && dur <= 0
               const repairCost = durRecorded ? Math.ceil((maxDur - Math.max(0, dur)) * 0.5) : undefined
               return {

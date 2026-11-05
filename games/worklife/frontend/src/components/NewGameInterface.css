@@ -3073,7 +3073,11 @@
 }
 .gather-quantity .qty-custom { width: 68px !important; text-align: center; }
 .equip-selector-modal .equippable-items-grid { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; gap: 12px !important; }
-.equip-selector-modal .equippable-item { flex: 0 1 168px; min-width: 148px; }
+.equip-selector-modal .equippable-item { flex: 0 1 168px; min-width: 148px; padding: 12px 14px; }
+.equip-selector-modal .equippable-item .item-icon-large { width: 68px; height: 68px; display: flex; align-items: center; justify-content: center; }
+.equip-selector-modal .equippable-item .item-icon-large img { width: 100%; height: 100%; object-fit: contain; }
+.equip-selector-modal .modal-actions { display: flex !important; flex-direction: row !important; justify-content: center !important; gap: 10px !important; }
+.equip-selector-modal .modal-actions > button { flex: 1 1 0; max-width: 160px; }
 .modal-content.profession-modal { max-width: 560px !important; }
 .profession-perk-box {
   margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: rgba(212, 154, 72, 0.08);

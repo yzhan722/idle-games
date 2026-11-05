@@ -155,16 +155,23 @@ async function main() {
       await page.locator("button.next-goal-go").first().click().catch(() => {});
       await page.waitForTimeout(800);
 
-      // If NextGoalBar navigated to character sheet to equip chest/sword
-      const equipSlotBtn = page.locator(".sheet-slot:has-text('主手'), .sheet-slot:has-text('上衣'), .cs-slot:has-text('主手'), .cs-slot:has-text('上衣')").first();
-      if (await equipSlotBtn.isVisible().catch(() => false)) {
+      // If NextGoalBar navigated to character sheet to equip chest/sword (or opened equip selector modal directly)
+      const targetSlotText = goalId === "chest" ? "上衣" : "主手";
+      const modalOpen = await page.locator(".equip-selector-modal").first().isVisible().catch(() => false);
+      const equipSlotBtn = page.locator(`.sheet-slot:has-text('${targetSlotText}'), .cs-slot:has-text('${targetSlotText}')`).first();
+      if (!modalOpen && (await equipSlotBtn.isVisible().catch(() => false))) {
         await equipSlotBtn.click().catch(() => {});
         await page.waitForTimeout(600);
-        const eqItem = page.locator(".equippable-item:not(.equipped)").first();
+      }
+      if (await page.locator(".equip-selector-modal").first().isVisible().catch(() => false)) {
+        await checkBrokenImages(page, "Desktop-EquipModal", issues);
+        const eqItem = page.locator(".equip-selector-modal .equippable-item:not(.equipped)").first();
         if (await eqItem.isVisible().catch(() => false)) {
-          await checkBrokenImages(page, "Desktop-EquipModal", issues);
           await eqItem.click().catch(() => {});
           await page.waitForTimeout(1000);
+        } else {
+          await page.locator(".equip-selector-modal .modal-close-btn").first().click().catch(() => {});
+          await page.waitForTimeout(400);
         }
       } else {
         // In woodworking or logging: start the ready action/recipe, or fallback to materials/logging if short
@@ -223,16 +230,36 @@ async function main() {
     await checkBrokenImages(page, "Desktop-Main", issues);
     await page.screenshot({ path: outDesktop, fullPage: false });
 
-    // 6. Open Adventure / Combat view and start fighting Slime to inspect Combat UI
+    // Re-read current goal after step 5 actions (e.g. equipping chest advances goal to 'archetypes')
+    const updatedGoalId = (await goalBar.getAttribute("data-goal-id").catch(() => "")) || goalId;
+    const updatedGoalTitle = (await page.locator(".next-goal-title").first().textContent().catch(() => "")) || updatedGoalId;
+    goalSummary = `${updatedGoalId} (${updatedGoalTitle.trim()})`;
+
+    // 6. Open Adventure / Combat view and start fighting target monster to inspect Combat UI
     const advNav = page.locator("[data-nav-id='adventure'], nav.skill-sidebar button:has-text('冒险'), nav.skill-sidebar button:has-text('耐力')").first();
     if (await advNav.isVisible().catch(() => false)) {
       await advNav.click().catch(() => {});
       await page.waitForTimeout(1000);
     }
 
-    const slimeCard = page.locator(".monster-card:has-text('果冻史莱姆')").first();
-    if (await slimeCard.isVisible().catch(() => false)) {
-      await slimeCard.click().catch(() => {});
+    // Choose monster based on Chapter 1 objective
+    let targetMonsterName = "果冻史莱姆";
+    if (updatedGoalId === "archetypes") {
+      // Fight Crab or Monkey to complete the 3 forest archetypes
+      const crabCard = page.locator(".monster-card:has-text('铁壳寄居蟹')").first();
+      const monkeyCard = page.locator(".monster-card:has-text('捣蛋小猴')").first();
+      if (await crabCard.isVisible().catch(() => false)) {
+        targetMonsterName = (Math.floor(Date.now() / 60000) % 2 === 0) ? "铁壳寄居蟹" : "捣蛋小猴";
+      } else if (await monkeyCard.isVisible().catch(() => false)) {
+        targetMonsterName = "捣蛋小猴";
+      }
+    } else if (updatedGoalId === "boss") {
+      targetMonsterName = "森林管家";
+    }
+
+    const monsterCard = page.locator(`.monster-card:has-text('${targetMonsterName}')`).first();
+    if (await monsterCard.isVisible().catch(() => false)) {
+      await monsterCard.click().catch(() => {});
       await page.waitForTimeout(700);
       await checkBrokenImages(page, "Desktop-MonsterModal", issues);
       const startFightBtn = page.locator(".modal-actions button.btn-action").first();
@@ -258,8 +285,8 @@ async function main() {
       issues.push(`Mobile horizontal overflow detected: +${overflowPx}px`);
     }
 
-    // 8. If current Chapter 1 goal requires gathering/crafting, resume that life action before closing
-    if (goalId === "chop" || goalId === "board" || goalId === "sword" || goalId === "chest") {
+    // 8. If current Chapter 1 goal still requires gathering/crafting, resume that life action before closing
+    if (updatedGoalId === "chop" || updatedGoalId === "board" || updatedGoalId === "sword" || updatedGoalId === "chest") {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.waitForTimeout(400);
       const stopBtn = page.locator("button.stop-activity-btn-center, button.btn-stop-small, button.btn-stop-large").first();
