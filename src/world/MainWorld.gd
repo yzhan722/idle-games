@@ -388,7 +388,8 @@ func _process(delta: float) -> void:
 				target_tint = Color(0.88, 0.92, 1.0, 1.0)
 			3:
 				target_tint = Color(0.92, 0.96, 1.0, 1.0)
-	var target_alpha := 0.0 if (WindowController != null and WindowController.boss_stealth_active) else 1.0
+	var win_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+	var target_alpha := 0.0 if (WindowController != null and WindowController.boss_stealth_active) else win_op
 	target_tint.a = target_alpha
 	world_root.modulate = world_root.modulate.lerp(target_tint, minf(1.0, delta * 3.5))
 	world_root.modulate.a = target_alpha

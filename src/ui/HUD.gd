@@ -52,8 +52,12 @@ var lbl_bar_stall: Label
 var lbl_tabs: Array[Label] = []
 
 var lbl_drawer_title: Label
+var lbl_drawer_fps: Label
+var lbl_drawer_opacity: Label
+var lbl_drawer_dock: Label
 var lbl_drawer_weather: Label
 var lbl_drawer_mute: Label
+var lbl_bar_pomodoro: Label
 var lbl_card_titles: Array[Label] = []
 var lbl_card_subs: Array[Label] = []
 var lbl_card_costs: Array[Label] = []
@@ -63,8 +67,13 @@ const CAPSULE_RECT := Rect2(770.0, 232.0, 380.0, 40.0)
 const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
 const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
-const TOP_RIGHT_WEATHER_RECT := Rect2(1240.0, 130.0, 86.0, 24.0)
-const TOP_RIGHT_MUTE_RECT := Rect2(1332.0, 130.0, 58.0, 24.0)
+
+const TOP_RIGHT_FPS_RECT := Rect2(924.0, 130.0, 66.0, 24.0)
+const TOP_RIGHT_OPACITY_RECT := Rect2(994.0, 130.0, 72.0, 24.0)
+const TOP_RIGHT_DOCK_RECT := Rect2(1070.0, 130.0, 96.0, 24.0)
+const TOP_RIGHT_WEATHER_RECT := Rect2(1170.0, 130.0, 92.0, 24.0)
+const TOP_RIGHT_MUTE_RECT := Rect2(1266.0, 130.0, 58.0, 24.0)
+const POMODORO_RECT := Rect2(946.0, 239.0, 96.0, 36.0)
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
@@ -87,8 +96,17 @@ func _ready() -> void:
 		_show_offline_welcome_banner(GameManager.pending_offline_seconds, GameManager.pending_offline_gold)
 	if EventBus != null:
 		EventBus.offline_earnings_ready.connect(_show_offline_welcome_banner)
+		EventBus.pomodoro_completed.connect(_on_pomodoro_completed)
 
 	_build_native_labels()
+
+func _on_pomodoro_completed(gold_reward: int, frenzy_sec: float) -> void:
+	offline_banner_timer = 6.0
+	offline_banner_text = "★专注达成！开启「★专注晨露礼盒」: 获得 +" + str(gold_reward) + "G & 全岛2.0x狂欢加速 " + str(int(round(frenzy_sec))) + "s!"
+	if SoundManager != null:
+		SoundManager.play_click_sfx()
+	_sync_label_nodes()
+	queue_redraw()
 
 func _format_duration_cn(seconds: int) -> String:
 	if seconds >= 3600:
@@ -162,18 +180,23 @@ func _build_native_labels() -> void:
 	add_child(lbl_capsule_mute)
 
 	lbl_bar_gold = EconomyConfig.create_pixel_label("120G", 14, Color("#FFE066"), false)
-	lbl_bar_gold.position = Vector2(530.0, 247.0)
+	lbl_bar_gold.position = Vector2(526.0, 247.0)
 	add_child(lbl_bar_gold)
 
 	lbl_bar_pipeline = EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), true)
-	lbl_bar_pipeline.position = Vector2(648.0, 247.0)
-	lbl_bar_pipeline.custom_minimum_size = Vector2(196.0, 24.0)
+	lbl_bar_pipeline.position = Vector2(618.0, 247.0)
+	lbl_bar_pipeline.custom_minimum_size = Vector2(164.0, 24.0)
 	add_child(lbl_bar_pipeline)
 
 	lbl_bar_stall = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
-	lbl_bar_stall.position = Vector2(848.0, 247.0)
-	lbl_bar_stall.custom_minimum_size = Vector2(196.0, 24.0)
+	lbl_bar_stall.position = Vector2(790.0, 247.0)
+	lbl_bar_stall.custom_minimum_size = Vector2(150.0, 24.0)
 	add_child(lbl_bar_stall)
+
+	lbl_bar_pomodoro = EconomyConfig.create_pixel_label("🍅 25:00", 14, Color("#FFE066"), true)
+	lbl_bar_pomodoro.position = Vector2(POMODORO_RECT.position.x + 2.0, POMODORO_RECT.position.y + 6.0)
+	lbl_bar_pomodoro.custom_minimum_size = Vector2(POMODORO_RECT.size.x - 4.0, 24.0)
+	add_child(lbl_bar_pomodoro)
 
 	for i in range(TAB_COUNT):
 		var tl := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), true)
@@ -186,6 +209,21 @@ func _build_native_labels() -> void:
 	lbl_drawer_title = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
 	lbl_drawer_title.position = Vector2(544.0, 128.0)
 	add_child(lbl_drawer_title)
+
+	lbl_drawer_fps = EconomyConfig.create_pixel_label("[60FPS]", 14, Color("#FFE066"), false)
+	lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0)
+	lbl_drawer_fps.scale = Vector2(0.92, 0.92)
+	add_child(lbl_drawer_fps)
+
+	lbl_drawer_opacity = EconomyConfig.create_pixel_label("[100%透]", 14, Color("#FFE066"), false)
+	lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0)
+	lbl_drawer_opacity.scale = Vector2(0.92, 0.92)
+	add_child(lbl_drawer_opacity)
+
+	lbl_drawer_dock = EconomyConfig.create_pixel_label("[贴合任务栏]", 14, Color("#FFE066"), false)
+	lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0)
+	lbl_drawer_dock.scale = Vector2(0.92, 0.92)
+	add_child(lbl_drawer_dock)
 
 	lbl_drawer_weather = EconomyConfig.create_pixel_label("[天气:晴昼]", 14, Color("#FFE066"), false)
 	lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 2.0)
@@ -248,7 +286,8 @@ func _process(delta: float) -> void:
 
 	if not force_pin_open and not boss_stealth_mode:
 		drawer_anim_t = lerpf(drawer_anim_t, 1.0 if drawer_expanded else 0.0, minf(1.0, delta * 10.0))
-	modulate.a = hud_opacity
+	var win_alpha: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+	modulate.a = (0.25 if boss_stealth_mode else hud_opacity) * win_alpha
 
 	hovered_tab = -1
 	hovered_card = -1
@@ -291,18 +330,24 @@ func _sync_label_nodes() -> void:
 			lbl_capsule_info.text = "后台挂机产金中 · 按F9或点击恢复"
 			lbl_capsule_mute.text = "[恢复]"
 		else:
-			lbl_capsule_info.text = GameManager.get_weather_status_text() + " · 悬停展开"
+			var p_prefix := ("🍅" + GameManager.get_pomodoro_formatted_time() + " · ") if (GameManager != null and GameManager.pomodoro_active) else ""
+			lbl_capsule_info.text = p_prefix + GameManager.get_weather_status_text() + " · 悬停展开"
 			lbl_capsule_mute.text = mute_lbl
 
 	var show_bar := not is_collapsed_capsule
 	lbl_bar_gold.visible = show_bar
 	lbl_bar_pipeline.visible = show_bar
 	lbl_bar_stall.visible = show_bar
+	lbl_bar_pomodoro.visible = show_bar
 	if show_bar:
 		lbl_bar_gold.text = gold_str
 		lbl_bar_pipeline.text = GameManager.get_weather_status_text() + " · 存" + str(GameManager.get_island_basket_total(1)) + "/" + str(GameManager.get_raw_basket_max_cap(1))
 		var codex_pct := GameManager.get_unlocked_codex_count() * 10
 		lbl_bar_stall.text = "摊位" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
+		if GameManager != null and GameManager.pomodoro_active:
+			lbl_bar_pomodoro.text = "🍅" + GameManager.get_pomodoro_formatted_time()
+		else:
+			lbl_bar_pomodoro.text = "🍅专注"
 
 	var tab_names := ["建筑升级", "动物编制", "木桥开拓", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
 	for i in range(TAB_COUNT):
@@ -312,6 +357,9 @@ func _sync_label_nodes() -> void:
 	var show_drawer := show_bar and drawer_expanded
 	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 	lbl_drawer_title.visible = show_drawer
+	lbl_drawer_fps.visible = show_drawer
+	lbl_drawer_opacity.visible = show_drawer
+	lbl_drawer_dock.visible = show_drawer
 	lbl_drawer_weather.visible = show_drawer
 	lbl_drawer_mute.visible = show_drawer
 	if show_drawer:
@@ -324,6 +372,16 @@ func _sync_label_nodes() -> void:
 		]
 		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
 		lbl_drawer_title.position = Vector2(544.0, 128.0 + slide_y)
+
+		var cur_fps: int = WindowController.get_eco_fps() if WindowController != null else 60
+		var cur_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+		lbl_drawer_fps.text = "[" + str(cur_fps) + "FPS]"
+		lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_opacity.text = "[" + str(int(round(cur_op * 100.0))) + "%透]"
+		lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_dock.text = "[贴合任务栏]"
+		lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0 + slide_y)
+
 		lbl_drawer_weather.text = "[天气:" + cur_w_name + "]"
 		lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 3.0 + slide_y)
 		lbl_drawer_mute.text = mute_lbl
@@ -367,7 +425,7 @@ func _gui_input(event: InputEvent) -> void:
 				WindowController.begin_window_drag()
 				accept_event()
 				return
-			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos))
+			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos) or TOP_RIGHT_FPS_RECT.has_point(mpos) or TOP_RIGHT_OPACITY_RECT.has_point(mpos) or TOP_RIGHT_DOCK_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)) or (not is_collapsed_capsule and POMODORO_RECT.has_point(mpos))
 			if hovered_tab == -1 and hovered_card == -1 and not hitting_top_btns and _get_interactive_zone().has_point(mpos):
 				if WindowController != null:
 					WindowController.begin_window_drag()
@@ -388,6 +446,33 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
+			if drawer_expanded and TOP_RIGHT_FPS_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if WindowController != null:
+					WindowController.toggle_eco_fps()
+				_sync_label_nodes()
+				accept_event()
+				return
+
+			if drawer_expanded and TOP_RIGHT_OPACITY_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if WindowController != null:
+					WindowController.cycle_window_opacity()
+				_sync_label_nodes()
+				accept_event()
+				return
+
+			if drawer_expanded and TOP_RIGHT_DOCK_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if WindowController != null:
+					WindowController.snap_to_taskbar()
+				_sync_label_nodes()
+				accept_event()
+				return
+
 			if drawer_expanded and TOP_RIGHT_WEATHER_RECT.has_point(mpos):
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
@@ -398,6 +483,15 @@ func _gui_input(event: InputEvent) -> void:
 			if (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)):
 				if SoundManager != null:
 					SoundManager.toggle_mute()
+				accept_event()
+				return
+
+			if not is_collapsed_capsule and POMODORO_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				if GameManager != null:
+					GameManager.toggle_pomodoro()
+				_sync_label_nodes()
 				accept_event()
 				return
 
@@ -574,12 +668,13 @@ func _draw() -> void:
 		draw_texture_rect(tex_panel, FULL_BAR_RECT, false)
 
 	if tex_pill != null:
-		draw_texture_rect(tex_pill, Rect2(492.0, 239.0, 152.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(648.0, 239.0, 196.0, 36.0), false)
-		draw_texture_rect(tex_pill, Rect2(848.0, 239.0, 196.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(488.0, 239.0, 124.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(616.0, 239.0, 168.0, 36.0), false)
+		draw_texture_rect(tex_pill, Rect2(788.0, 239.0, 154.0, 36.0), false)
+		draw_texture_rect(tex_pill, POMODORO_RECT, false)
 
 	if tex_icons != null:
-		draw_texture_rect_region(tex_icons, Rect2(498.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
+		draw_texture_rect_region(tex_icons, Rect2(494.0, 242.0, 28.0, 28.0), Rect2(0, 0, 48, 48))
 
 	var icon_indices := [6, 3, 4, 2, 7]
 	for i in range(TAB_COUNT):
@@ -601,9 +696,15 @@ func _draw() -> void:
 		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
 		draw_texture_rect(tex_drawer, d_rect, false)
 
+		var fps_rect := Rect2(TOP_RIGHT_FPS_RECT.position.x, TOP_RIGHT_FPS_RECT.position.y + slide_y, TOP_RIGHT_FPS_RECT.size.x, TOP_RIGHT_FPS_RECT.size.y)
+		var op_rect := Rect2(TOP_RIGHT_OPACITY_RECT.position.x, TOP_RIGHT_OPACITY_RECT.position.y + slide_y, TOP_RIGHT_OPACITY_RECT.size.x, TOP_RIGHT_OPACITY_RECT.size.y)
+		var dock_rect := Rect2(TOP_RIGHT_DOCK_RECT.position.x, TOP_RIGHT_DOCK_RECT.position.y + slide_y, TOP_RIGHT_DOCK_RECT.size.x, TOP_RIGHT_DOCK_RECT.size.y)
 		var w_rect := Rect2(TOP_RIGHT_WEATHER_RECT.position.x, TOP_RIGHT_WEATHER_RECT.position.y + slide_y, TOP_RIGHT_WEATHER_RECT.size.x, TOP_RIGHT_WEATHER_RECT.size.y)
 		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
 		if tex_pill != null:
+			draw_texture_rect(tex_pill, fps_rect, false)
+			draw_texture_rect(tex_pill, op_rect, false)
+			draw_texture_rect(tex_pill, dock_rect, false)
 			draw_texture_rect(tex_pill, w_rect, false)
 			draw_texture_rect(tex_pill, m_rect, false)
 

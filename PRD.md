@@ -251,8 +251,8 @@ AI 助手必须严格按以下 4 个阶段顺序执行，每阶段完成后验�
 #### 【阶段一（v2.4）：桌面挂机人体工学、防坏档与专注伴侣】
 - [x] [v2.4-1] 双备份防坏档存档系统 (`GameManager.gd`)：`save_game()` 写入 `user://savegame.json` 前自动备份上一份有效存档至 `user://savegame.json.bak`（测试模式下为 `user://savegame_selftest.json.bak`），`load_game()` 遇主存档解析失败时自动从 `.bak` 恢复；在 `SelfTestRunner.gd` 增加双备份存档生成与恢复校验断言
 - [x] [v2.4-2] 离线收益结算与欢迎回归播报 (`GameManager.gd` + `HUD.gd`)：新增 `calculate_and_apply_offline_earnings(elapsed_sec: int) -> Dictionary` 计算离线时长（`60s ~ 86400s`）并发放离线金币与预估收获件数，重开游戏时通过 `HUD` 飘字/状态提示展示离线账单；在 `SelfTestRunner.gd` 增加模拟 `600s` 离线收益计算与金币到账断言
-- [ ] [v2.4-3] 任务栏智能贴合、节能帧率锁与窗口透明度调节 (`WindowController.gd` + `HUD.gd`)：使用 `DisplayServer.screen_get_usable_rect()` 自动避让系统任务栏贴底停靠，新增节能帧率切换（`30 / 60 FPS`）与窗口整体透明度调节（`60% ~ 100%`）；在 `SelfTestRunner.gd` 增加帧率锁与透明度接口校验断言
-- [ ] [v2.4-4] 内置像素「番茄钟专注伴侣 (Pomodoro Focus Timer)」(`GameManager.gd` + `HUD.gd`)：实装 `25分钟专注 (1500s)` 计时器开关與状态显示，专注完成时自动发放「★专注晨露礼盒」（额外金币奖励 + 触发 `30s` 全岛 `2.0x` 狂欢加速）；在 `SelfTestRunner.gd` 增加番茄钟启动、快进完成与礼盒奖励结算断言
+- [x] [v2.4-3] 任务栏智能贴合、节能帧率锁与窗口透明度调节 (`WindowController.gd` + `HUD.gd`)：使用 `DisplayServer.screen_get_usable_rect()` 自动避让系统任务栏贴底停靠，新增节能帧率切换（`30 / 60 FPS`）与窗口整体透明度调节（`60% ~ 100%`）；在 `SelfTestRunner.gd` 增加帧率锁与透明度接口校验断言
+- [x] [v2.4-4] 内置像素「番茄钟专注伴侣 (Pomodoro Focus Timer)」(`GameManager.gd` + `HUD.gd`)：实装 `25分钟专注 (1500s)` 计时器开关與状态显示，专注完成时自动发放「★专注晨露礼盒」（额外金币奖励 + 触发 `30s` 全岛 `2.0x` 狂欢加速）；在 `SelfTestRunner.gd` 增加番茄钟启动、快进完成与礼盒奖励结算断言
 
 #### 【阶段二（v2.5）：中后期玩法深度、皇家契约与岛屿造景增益】
 - [ ] [v2.5-1] 飞艇皇家订单与二级货币「晨露琥珀」系统 (`GameManager.gd` + `HUD.gd`)：新增 `amber: int`（晨露琥珀）与循环刷新的皇家订单 `active_contract`（提交/售出指定数量作物或料理后自动完成订单，奖励金币 + `1~3` 颗晨露琥珀并刷新下一单）；在 `HUD.gd` 展示琥珀与订单进度，并在 `SelfTestRunner.gd` 增加订单完成与琥珀发放断言

@@ -27,6 +27,8 @@ var custom_pos: Vector2i = Vector2i.ZERO
 
 var is_dragging: bool = false
 var boss_stealth_active: bool = false
+var target_fps: int = 60
+var window_opacity: float = 1.0
 var _drag_start_mouse: Vector2i = Vector2i.ZERO
 var _drag_start_win_pos: Vector2i = Vector2i.ZERO
 
@@ -79,11 +81,52 @@ func _input(event: InputEvent) -> void:
 func toggle_boss_stealth() -> bool:
 	boss_stealth_active = not boss_stealth_active
 	if _world_ref != null and "world_root" in _world_ref and _world_ref.world_root != null:
-		_world_ref.world_root.modulate.a = 0.0 if boss_stealth_active else 1.0
+		_world_ref.world_root.modulate.a = 0.0 if boss_stealth_active else window_opacity
 	if _hud_ref != null and _hud_ref.has_method("set_boss_stealth"):
 		_hud_ref.call("set_boss_stealth", boss_stealth_active)
 	_refresh_passthrough()
 	return boss_stealth_active
+
+func set_eco_fps(fps: int) -> int:
+	target_fps = 30 if fps <= 30 else 60
+	Engine.max_fps = target_fps
+	return target_fps
+
+func toggle_eco_fps() -> int:
+	return set_eco_fps(30 if target_fps == 60 else 60)
+
+func get_eco_fps() -> int:
+	return target_fps
+
+func set_window_opacity(alpha: float) -> float:
+	window_opacity = clampf(alpha, 0.60, 1.0)
+	_apply_window_opacity()
+	return window_opacity
+
+func cycle_window_opacity() -> float:
+	if window_opacity >= 0.95:
+		return set_window_opacity(0.80)
+	elif window_opacity >= 0.75:
+		return set_window_opacity(0.60)
+	else:
+		return set_window_opacity(1.0)
+
+func get_window_opacity() -> float:
+	return window_opacity
+
+func _apply_window_opacity() -> void:
+	if boss_stealth_active:
+		return
+	if _world_ref != null and "world_root" in _world_ref and _world_ref.world_root != null:
+		_world_ref.world_root.modulate.a = window_opacity
+	elif _world_ref != null:
+		_world_ref.modulate.a = window_opacity
+	if _hud_ref != null and "hud_opacity" in _hud_ref:
+		_hud_ref.modulate.a = _hud_ref.hud_opacity * window_opacity
+
+func snap_to_taskbar() -> void:
+	custom_pos_active = false
+	snap_window_to_desktop(DockPosition.BOTTOM_STRIP)
 
 func _process(_delta: float) -> void:
 	if not is_dragging:
@@ -115,6 +158,7 @@ func setup(world: Node = null, hud: Node = null) -> void:
 		_world_ref = world
 	if hud is Control:
 		_hud_ref = hud
+	_apply_window_opacity()
 	_refresh_passthrough()
 
 func begin_window_drag() -> void:

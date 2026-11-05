@@ -386,6 +386,102 @@ func _run_all_four_assertions_and_export() -> void:
 	print("[PASS] [断言5-防坏档与离线结算] 通过: 主存档损坏自动从 `.bak` 无损恢复并修复，模拟 600s 离线结算 (+%dG / 收获 %d 件) 与欢迎横幅校验 PASS!" % [off_gold, off_items])
 
 	# ------------------------------------------------------------------
+	# [断言6-v2.4任务栏贴合与帧率透明度锁]: WindowController Eco-FPS limit, opacity clamp & taskbar docking
+	# ------------------------------------------------------------------
+	if WindowController == null:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "WindowController autoload singleton is null!")
+		return
+
+	var fps30 := WindowController.set_eco_fps(30)
+	if fps30 != 30 or Engine.max_fps != 30 or WindowController.get_eco_fps() != 30:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Failed to set eco FPS to 30! Engine.max_fps=%d, get_eco_fps=%d" % [Engine.max_fps, WindowController.get_eco_fps()])
+		return
+
+	var fps60 := WindowController.set_eco_fps(60)
+	if fps60 != 60 or Engine.max_fps != 60 or WindowController.get_eco_fps() != 60:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Failed to set eco FPS to 60! Engine.max_fps=%d, get_eco_fps=%d" % [Engine.max_fps, WindowController.get_eco_fps()])
+		return
+
+	var fps_toggled := WindowController.toggle_eco_fps()
+	if fps_toggled != 30 or Engine.max_fps != 30:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "toggle_eco_fps() failed to cycle from 60 to 30!")
+		return
+	WindowController.set_eco_fps(60)
+
+	var op80 := WindowController.set_window_opacity(0.80)
+	if absf(op80 - 0.80) > 0.01 or absf(WindowController.get_window_opacity() - 0.80) > 0.01:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "set_window_opacity(0.80) failed! Value=%.2f" % WindowController.get_window_opacity())
+		return
+
+	var op_clamped_low := WindowController.set_window_opacity(0.20)
+	if absf(op_clamped_low - 0.60) > 0.01:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Window opacity lower clamp (60%%) failed: %.2f" % op_clamped_low)
+		return
+
+	var op_clamped_high := WindowController.set_window_opacity(1.50)
+	if absf(op_clamped_high - 1.0) > 0.01:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Window opacity upper clamp (100%%) failed: %.2f" % op_clamped_high)
+		return
+
+	WindowController.snap_to_taskbar()
+	if WindowController.custom_pos_active != false or WindowController.current_dock != WindowController.DockPosition.BOTTOM_STRIP:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "snap_to_taskbar() failed to dock window to bottom usable rect!")
+		return
+
+	if world.hud == null or world.hud.lbl_drawer_fps == null or world.hud.lbl_drawer_opacity == null or world.hud.lbl_drawer_dock == null:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "HUD drawer control labels for FPS, Opacity or Dock are missing!")
+		return
+
+	print("[PASS] [断言6-任务栏贴合与帧率透明度锁] 通过: 节能 30/60 FPS 双向锁、60%%~100%% 整体透明度安全边界与任务栏贴合停靠校验 PASS!")
+
+	# ------------------------------------------------------------------
+	# [断言7-v2.4番茄钟专注伴侣与礼盒结算]: Pomodoro 25min timer, UI formatted ticker & frenzy gift box
+	# ------------------------------------------------------------------
+	GameManager.stop_pomodoro()
+	if GameManager.pomodoro_active != false or GameManager.pomodoro_time_remaining != 0.0:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Failed to stop/reset pomodoro state!")
+		return
+
+	GameManager.start_pomodoro(1500.0)
+	if GameManager.pomodoro_active != true or absf(GameManager.pomodoro_time_remaining - 1500.0) > 0.1:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "start_pomodoro(1500.0) failed to activate timer!")
+		return
+
+	var fmt_time := GameManager.get_pomodoro_formatted_time()
+	if fmt_time != "25:00":
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "get_pomodoro_formatted_time() expected `25:00`, got `%s`!" % fmt_time)
+		return
+
+	world.hud._sync_label_nodes()
+	if world.hud.lbl_bar_pomodoro == null or not world.hud.lbl_bar_pomodoro.text.begins_with("🍅"):
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "HUD pomodoro ticker label is null or missing tomato icon prefix!")
+		return
+
+	var pre_pomo_gold: int = GameManager.gold
+	var pre_pomo_count: int = GameManager.pomodoro_completed_count
+	var pomo_box := GameManager.complete_pomodoro()
+	var box_gold := int(pomo_box.get("gold", 0))
+	var box_frenzy := float(pomo_box.get("frenzy_sec", 0.0))
+
+	if GameManager.pomodoro_active != false or GameManager.gold != pre_pomo_gold + box_gold or box_gold != 500:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro box gold payout error: expected +500G, got %d (gold before=%d, after=%d)" % [box_gold, pre_pomo_gold, GameManager.gold])
+		return
+	if GameManager.frenzy_timer < 29.0:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro box carnival frenzy buff not activated! frenzy_timer=%.2f" % GameManager.frenzy_timer)
+		return
+	if GameManager.pomodoro_completed_count != pre_pomo_count + 1:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro completed count did not increment: %d -> %d" % [pre_pomo_count, GameManager.pomodoro_completed_count])
+		return
+	if world.hud.offline_banner_text.find("专注晨露礼盒") == -1:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "HUD banner missing `专注晨露礼盒` message: `%s`" % world.hud.offline_banner_text)
+		return
+
+	world.hud.offline_banner_timer = 0.0
+	world.hud._sync_label_nodes()
+	GameManager.save_game()
+	print("[PASS] [断言7-番茄钟专注伴侣与礼盒结算] 通过: 25分钟专注计时器流转、原生倒计时格式化、礼盒结算(+500G & 30s全岛狂欢加速)与横幅播报校验 PASS!")
+
+	# ------------------------------------------------------------------
 	# Export 2 Distinct Real Engine Viewport Screenshots:
 	#   State A (Drawer Collapsed): `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
 	#   State B (Drawer Expanded via `HUD.open_drawer(0)`): `res://preview_drawer_open_1920x360.png`

@@ -85,6 +85,15 @@ var current_weather: int = WeatherState.DAY
 var weather_timer: float = 0.0
 var frenzy_timer: float = 0.0
 
+## v2.4-4: Pomodoro Focus Timer Companion (25min / 1500s) & Gift Box Reward
+const POMODORO_DURATION: float = 1500.0
+const POMODORO_REWARD_GOLD: int = 500
+const POMODORO_FRENZY_DURATION: float = 30.0
+
+var pomodoro_active: bool = false
+var pomodoro_time_remaining: float = 0.0
+var pomodoro_completed_count: int = 0
+
 ## v2.3 Direction 4: Mountain & Sea Collection Codex (4 Crops + 4 Delicacies -> +10% global sale price per unlocked entry)
 var unlocked_codex: Dictionary = {
 	"crop_0": true,
@@ -148,6 +157,9 @@ func reset_for_playtest_state() -> void:
 	pending_offline_seconds = 0
 	pending_offline_gold = 0
 	last_offline_report = {}
+	pomodoro_active = false
+	pomodoro_time_remaining = 0.0
+	pomodoro_completed_count = 0
 	_sync_codex_from_progression()
 
 func _process(delta: float) -> void:
@@ -158,6 +170,11 @@ func _process(delta: float) -> void:
 
 	if frenzy_timer > 0.0:
 		frenzy_timer = maxf(0.0, frenzy_timer - delta)
+
+	if pomodoro_active:
+		pomodoro_time_remaining -= delta
+		if pomodoro_time_remaining <= 0.0:
+			complete_pomodoro()
 
 	weather_timer += delta
 	if weather_timer >= 42.0:
@@ -199,6 +216,51 @@ func get_weather_status_text() -> String:
 func trigger_carnival_frenzy(duration: float = 20.0) -> void:
 	frenzy_timer = maxf(frenzy_timer, duration)
 	EventBus.carnival_frenzy_started.emit(frenzy_timer)
+
+func start_pomodoro(duration: float = POMODORO_DURATION) -> void:
+	pomodoro_active = true
+	pomodoro_time_remaining = maxf(1.0, duration)
+	EventBus.pomodoro_state_changed.emit(true, pomodoro_time_remaining)
+
+func stop_pomodoro() -> void:
+	pomodoro_active = false
+	pomodoro_time_remaining = 0.0
+	EventBus.pomodoro_state_changed.emit(false, 0.0)
+
+func toggle_pomodoro() -> bool:
+	if pomodoro_active:
+		stop_pomodoro()
+		return false
+	else:
+		start_pomodoro()
+		return true
+
+func complete_pomodoro() -> Dictionary:
+	pomodoro_active = false
+	pomodoro_time_remaining = 0.0
+	pomodoro_completed_count += 1
+	add_gold(POMODORO_REWARD_GOLD)
+	trigger_carnival_frenzy(POMODORO_FRENZY_DURATION)
+	var report := {
+		"gold": POMODORO_REWARD_GOLD,
+		"frenzy_sec": POMODORO_FRENZY_DURATION,
+		"completed_count": pomodoro_completed_count
+	}
+	EventBus.pomodoro_completed.emit(POMODORO_REWARD_GOLD, POMODORO_FRENZY_DURATION)
+	save_game()
+	return report
+
+func fast_forward_pomodoro(seconds: float) -> void:
+	if pomodoro_active:
+		pomodoro_time_remaining -= seconds
+		if pomodoro_time_remaining <= 0.0:
+			complete_pomodoro()
+
+func get_pomodoro_formatted_time() -> String:
+	var total_sec := int(ceilf(pomodoro_time_remaining)) if pomodoro_active else int(POMODORO_DURATION)
+	var m := total_sec / 60
+	var s := total_sec % 60
+	return "%02d:%02d" % [m, s]
 
 func unlock_codex_entry(item_id: String) -> void:
 	if unlocked_codex.has(item_id) and not bool(unlocked_codex[item_id]):
@@ -634,7 +696,8 @@ func save_game() -> void:
 			"3": island_recruited[3]
 		},
 		"stall_inventory": stall_inventory,
-		"unlocked_codex": unlocked_codex
+		"unlocked_codex": unlocked_codex,
+		"pomodoro_completed_count": pomodoro_completed_count
 	}
 	var json_str := JSON.stringify(data, "\t")
 	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
@@ -687,6 +750,7 @@ func load_game() -> void:
 		for ck in parsed["unlocked_codex"].keys():
 			if unlocked_codex.has(String(ck)):
 				unlocked_codex[String(ck)] = bool(parsed["unlocked_codex"][ck])
+	pomodoro_completed_count = int(parsed.get("pomodoro_completed_count", 0))
 
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())
