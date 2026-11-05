@@ -146,40 +146,59 @@ async function main() {
     const goalTitle = (await page.locator(".next-goal-title").first().textContent().catch(() => "")) || goalId;
     goalSummary = `${goalId} (${goalTitle.trim()})`;
 
-    if (goalId === "board" || goalId === "sword") {
-      await page.locator("button.next-goal-go").first().click().catch(() => {});
-      await page.waitForTimeout(800);
-      if (goalId === "sword") {
-        const wepTab = page.locator("button:has-text('武器')").first();
-        if (await wepTab.isVisible().catch(() => false)) {
-          await wepTab.click().catch(() => {});
-          await page.waitForTimeout(500);
-        }
-      }
-      const readyQuick = page.locator(".craft-row.ready .sar-quick:not(.stop)").first();
-      if (await readyQuick.isVisible().catch(() => false)) {
-        await readyQuick.click().catch(() => {});
-        await page.waitForTimeout(800);
-      }
-    } else if (goalId === "equip_sword" || goalId === "chest") {
-      const stopBattleBtn = page.locator("button.stop-activity-btn-center").first();
-      if (goalId === "chest" && (await stopBattleBtn.isVisible().catch(() => false))) {
+    if (goalId === "board" || goalId === "sword" || goalId === "chest") {
+      const stopBattleBtn = page.locator("button.stop-activity-btn-center, button.btn-stop-small, button.btn-stop-large").first();
+      if (await stopBattleBtn.isVisible().catch(() => false)) {
         await stopBattleBtn.click().catch(() => {});
         await page.waitForTimeout(800);
       }
       await page.locator("button.next-goal-go").first().click().catch(() => {});
       await page.waitForTimeout(800);
-      const armorTab = page.locator("button:has-text('防具')").first();
-      if (goalId === "chest" && (await armorTab.isVisible().catch(() => false))) {
-        await armorTab.click().catch(() => {});
-        await page.waitForTimeout(500);
-        const readyQuick = page.locator(".craft-row.ready .sar-quick:not(.stop)").first();
+
+      // If NextGoalBar navigated to character sheet to equip chest/sword
+      const equipSlotBtn = page.locator(".sheet-slot:has-text('主手'), .sheet-slot:has-text('上衣'), .cs-slot:has-text('主手'), .cs-slot:has-text('上衣')").first();
+      if (await equipSlotBtn.isVisible().catch(() => false)) {
+        await equipSlotBtn.click().catch(() => {});
+        await page.waitForTimeout(600);
+        const eqItem = page.locator(".equippable-item:not(.equipped)").first();
+        if (await eqItem.isVisible().catch(() => false)) {
+          await checkBrokenImages(page, "Desktop-EquipModal", issues);
+          await eqItem.click().catch(() => {});
+          await page.waitForTimeout(1000);
+        }
+      } else {
+        // In woodworking or logging: start the ready action/recipe, or fallback to materials/logging if short
+        let readyQuick = page.locator(".craft-row.ready .sar-quick:not(.stop), .skill-action-row .sar-quick:not(.stop)").first();
+        if (!(await readyQuick.isVisible().catch(() => false))) {
+          const matTab = page.locator("button.category-btn:has-text('材料')").first();
+          if (await matTab.isVisible().catch(() => false)) {
+            await matTab.click().catch(() => {});
+            await page.waitForTimeout(500);
+          }
+          readyQuick = page.locator(".craft-row.ready .sar-quick:not(.stop)").first();
+        }
+        if (!(await readyQuick.isVisible().catch(() => false))) {
+          const logNav = page.locator("[data-nav-id='logging'], nav.skill-sidebar button:has-text('伐木')").first();
+          if (await logNav.isVisible().catch(() => false)) {
+            await logNav.click().catch(() => {});
+            await page.waitForTimeout(600);
+          }
+          readyQuick = page.locator(".skill-action-row .sar-quick:not(.stop)").first();
+        }
         if (await readyQuick.isVisible().catch(() => false)) {
           await readyQuick.click().catch(() => {});
           await page.waitForTimeout(800);
         }
       }
-      const equipSlotBtn = page.locator("button:has-text('装备'), button:has-text('穿戴'), .cs-slot:has-text('主手'), .cs-slot:has-text('上衣')").first();
+    } else if (goalId === "equip_sword") {
+      const stopBattleBtn = page.locator("button.stop-activity-btn-center, button.btn-stop-small, button.btn-stop-large").first();
+      if (await stopBattleBtn.isVisible().catch(() => false)) {
+        await stopBattleBtn.click().catch(() => {});
+        await page.waitForTimeout(800);
+      }
+      await page.locator("button.next-goal-go").first().click().catch(() => {});
+      await page.waitForTimeout(800);
+      const equipSlotBtn = page.locator(".sheet-slot:has-text('主手'), .cs-slot:has-text('主手'), button:has-text('装备'), button:has-text('穿戴')").first();
       if (await equipSlotBtn.isVisible().catch(() => false)) {
         await equipSlotBtn.click().catch(() => {});
         await page.waitForTimeout(600);
@@ -204,7 +223,7 @@ async function main() {
     await checkBrokenImages(page, "Desktop-Main", issues);
     await page.screenshot({ path: outDesktop, fullPage: false });
 
-    // 6. Open Adventure / Combat view and start fighting Slime if ready
+    // 6. Open Adventure / Combat view and start fighting Slime to inspect Combat UI
     const advNav = page.locator("[data-nav-id='adventure'], nav.skill-sidebar button:has-text('冒险'), nav.skill-sidebar button:has-text('耐力')").first();
     if (await advNav.isVisible().catch(() => false)) {
       await advNav.click().catch(() => {});
@@ -237,6 +256,40 @@ async function main() {
     });
     if (overflowPx > 8) {
       issues.push(`Mobile horizontal overflow detected: +${overflowPx}px`);
+    }
+
+    // 8. If current Chapter 1 goal requires gathering/crafting, resume that life action before closing
+    if (goalId === "chop" || goalId === "board" || goalId === "sword" || goalId === "chest") {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.waitForTimeout(400);
+      const stopBtn = page.locator("button.stop-activity-btn-center, button.btn-stop-small, button.btn-stop-large").first();
+      if (await stopBtn.isVisible().catch(() => false)) {
+        await stopBtn.click().catch(() => {});
+        await page.waitForTimeout(700);
+      }
+      await page.locator("button.next-goal-go").first().click().catch(() => {});
+      await page.waitForTimeout(700);
+      let resumeQuick = page.locator(".craft-row.ready .sar-quick:not(.stop), .skill-action-row .sar-quick:not(.stop)").first();
+      if (!(await resumeQuick.isVisible().catch(() => false))) {
+        const matTab = page.locator("button.category-btn:has-text('材料')").first();
+        if (await matTab.isVisible().catch(() => false)) {
+          await matTab.click().catch(() => {});
+          await page.waitForTimeout(400);
+        }
+        resumeQuick = page.locator(".craft-row.ready .sar-quick:not(.stop)").first();
+      }
+      if (!(await resumeQuick.isVisible().catch(() => false))) {
+        const logNav = page.locator("[data-nav-id='logging'], nav.skill-sidebar button:has-text('伐木')").first();
+        if (await logNav.isVisible().catch(() => false)) {
+          await logNav.click().catch(() => {});
+          await page.waitForTimeout(500);
+        }
+        resumeQuick = page.locator(".skill-action-row .sar-quick:not(.stop)").first();
+      }
+      if (await resumeQuick.isVisible().catch(() => false)) {
+        await resumeQuick.click().catch(() => {});
+        await page.waitForTimeout(800);
+      }
     }
   } finally {
     await browser.close();

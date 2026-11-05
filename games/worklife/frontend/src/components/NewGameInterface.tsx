@@ -1969,6 +1969,9 @@ export default function NewGameInterface() {
             setProgPanel("achievements")
             return
           }
+          if (chapterGoal.craftCategory) {
+            setCraftCategory(chapterGoal.craftCategory)
+          }
           if (chapterGoal.tab === "character") {
             setActiveTab("character")
             return

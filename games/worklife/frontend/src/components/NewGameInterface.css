@@ -3114,7 +3114,7 @@
   .adventure-layout.combat-open .battle-entity .hp-numbers, .adventure-layout.combat-open .battle-entity .cast-label, .adventure-layout.combat-open .battle-entity .cast-time { font-size: 11px !important; }
 }
 .mwi-potion-bar.icon-only {
-  position: relative; display: inline-flex; flex-direction: column; align-items: center;
+  position: relative; display: flex; flex-direction: column; align-items: center;
   margin: 8px auto; padding: 6px 10px; background: linear-gradient(180deg, rgba(24, 20, 16, 0.92) 0%, rgba(14, 12, 9, 0.95) 100%); border: 1px solid rgba(212, 163, 89, 0.38);
   border-radius: 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.05); width: fit-content; max-width: 100%;
   z-index: 30;
@@ -3402,7 +3402,8 @@
   .adventure-layout.combat-open .player-entity .entity-avatar, .adventure-layout.combat-open .enemy-entity .entity-avatar { width: 68px !important; height: 68px !important; }
   .adventure-layout.combat-open .enemy-entity .entity-avatar.is-boss-art { width: 80px !important; height: 80px !important; }
   .adventure-layout.combat-open .battle-entity .hp-bar, .adventure-layout.combat-open .battle-entity .mp-bar, .adventure-layout.combat-open .battle-entity .cast-bar { max-width: 136px !important; }
-  .ability-bar { width: 100%; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px !important; }
+  .ability-bar:not(.ability-icon-bar) { width: 100%; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px !important; }
+  .ability-bar.ability-icon-bar { width: auto !important; display: flex !important; align-items: center; justify-content: center; gap: 8px !important; margin: 2px 0 !important; }
   .btn-action.skill-action.ability-btn { min-width: 0 !important; min-height: 40px !important; padding: 6px 8px !important; }
   .character-sheet { display: flex !important; flex-direction: column !important; gap: 10px !important; padding: 8px 4px 24px !important; }
   .character-sheet > .section-title { order: 1; margin-bottom: 0 !important; }

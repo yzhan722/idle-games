@@ -38,7 +38,27 @@ describe("chapter 1 next goal", () => {
       stats: { totalKills: 1, killsByMonster: { slime: 1 } },
     };
     assert.equal(nextChapter1Goal(base).id, "build");
-    assert.equal(nextChapter1Goal({ ...base, chapter1Build: "thick_bark" }).id, "chest");
+    const chestNoWood = nextChapter1Goal({ ...base, chapter1Build: "thick_bark" });
+    assert.equal(chestNoWood.id, "chest");
+    assert.equal(chestNoWood.tab, "logging");
+    const chestWithWood = nextChapter1Goal({
+      ...base,
+      inventory: { ...base.inventory, wood_1: 4, lumber_1: 2 },
+      chapter1Build: "thick_bark",
+      skills: { skill_woodworking: { level: 3 } },
+    });
+    assert.equal(chestWithWood.id, "chest");
+    assert.equal(chestWithWood.tab, "woodworking");
+    assert.equal(chestWithWood.craftCategory, "materials");
+    const chestReadyToCraft = nextChapter1Goal({
+      ...base,
+      inventory: { ...base.inventory, lumber_1: 6 },
+      chapter1Build: "thick_bark",
+      skills: { skill_woodworking: { level: 3 } },
+    });
+    assert.equal(chestReadyToCraft.id, "chest");
+    assert.equal(chestReadyToCraft.tab, "woodworking");
+    assert.equal(chestReadyToCraft.craftCategory, "equipment");
     assert.equal(
       nextChapter1Goal({
         inventory: { weapon_wooden_sword: 1, armor_wood_chest: 1 },
