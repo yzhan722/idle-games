@@ -1,4 +1,4 @@
-﻿=== src\autoload\EconomyConfig.gd ===
+﻿=== FILE: D:/project/maple-isle-idle/src/autoload/EconomyConfig.gd ===
 extends Node
 ## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution, Native Typography & Drop Shadow Math (`EconomyConfig.gd`)
 ## Strictly enforces GEMINI.md Engineering Laws 1~6.
@@ -254,7 +254,8 @@ func calc_item_unit_price(item_id: String, building_lv: int, stall_lv: int, shib
 		var raw_v := calc_milestone_value(float(c["base_value"]), maxi(1, building_lv))
 		return maxi(1, int(round(raw_v * MULTIPLIER_RAW * stall_mult * shiba_mult)))
 	return 15
-=== src\autoload\EventBus.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/autoload/EventBus.gd ===
 extends Node
 ## Global Signal Bus (`EventBus.gd` Autoload) — PRD v2.0 Section 6
 
@@ -273,7 +274,8 @@ signal spawn_floating_text(world_pos: Vector2, text_str: String, col: Color)
 signal weather_changed(new_weather: int)
 signal codex_unlocked(item_id: String)
 signal carnival_frenzy_started(duration: float)
-=== src\autoload\GameManager.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/autoload/GameManager.gd ===
 extends Node
 ## Global State, Strict Per-Island Recruit Caps, Recruit-to-Promote & Save System (`src/autoload/GameManager.gd`) — PRD Patch v2.2
 
@@ -353,6 +355,7 @@ var stall_inventory: Dictionary = {
 var save_timer: float = 0.0
 var pending_offline_seconds: int = 0
 var pending_offline_gold: int = 0
+var last_offline_report: Dictionary = {}
 
 ## v2.3 Direction 1 & 2: Dynamic Weather/Time-of-Day Cycle & Carnival Frenzy Buff
 enum WeatherState { DAY = 0, DUSK = 1, NIGHT = 2, RAIN = 3 }
@@ -420,6 +423,9 @@ func reset_for_playtest_state() -> void:
 		"crop_0": true, "crop_1": false, "crop_2": false, "crop_3": false,
 		"delicacy_0": false, "delicacy_1": false, "delicacy_2": false, "delicacy_3": false
 	}
+	pending_offline_seconds = 0
+	pending_offline_gold = 0
+	last_offline_report = {}
 	_sync_codex_from_progression()
 
 func _process(delta: float) -> void:
@@ -841,7 +847,52 @@ func estimate_idle_gold_per_sec() -> float:
 		base_rate += float(get_total_recruited(k)) * 1.6
 	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0))) * get_codex_price_multiplier()
 
+func get_backup_save_path() -> String:
+	return active_save_path + ".bak"
+
+func _parse_valid_save_dict(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var txt := FileAccess.get_file_as_string(path).strip_edges()
+	if txt.length() < 2 or not txt.begins_with("{") or not txt.ends_with("}"):
+		return {}
+	var parsed = JSON.parse_string(txt)
+	if not (parsed is Dictionary):
+		return {}
+	if int(parsed.get("version", 0)) != SAVE_VERSION:
+		return {}
+	return parsed
+
+func calculate_and_apply_offline_earnings(elapsed_sec: int) -> Dictionary:
+	var clamped_sec := clampi(elapsed_sec, 0, 86400)
+	if clamped_sec < 60:
+		return {"seconds": clamped_sec, "gold": 0, "items": 0}
+	var gold_earned := maxi(8, int(round(float(clamped_sec) * estimate_idle_gold_per_sec() * 0.45)))
+	var total_workers := 0
+	for k in animal_levels.keys():
+		total_workers += get_total_recruited(String(k))
+	var ws_lv := int(building_levels.get("mortar", 1)) + int(building_levels.get("cauldron", 1))
+	var items_est := maxi(1, int(round(float(clamped_sec) / 10.0 * (float(maxi(1, total_workers)) * 0.6 + float(ws_lv) * 0.2))))
+	pending_offline_seconds = clamped_sec
+	pending_offline_gold = gold_earned
+	last_offline_report = {
+		"seconds": clamped_sec,
+		"gold": gold_earned,
+		"items": items_est
+	}
+	add_gold(gold_earned)
+	EventBus.offline_earnings_ready.emit(clamped_sec, gold_earned)
+	return last_offline_report
+
 func save_game() -> void:
+	var prev_valid := _parse_valid_save_dict(active_save_path)
+	if not prev_valid.is_empty():
+		var prev_txt := FileAccess.get_file_as_string(active_save_path)
+		var f_bak := FileAccess.open(get_backup_save_path(), FileAccess.WRITE)
+		if f_bak != null:
+			f_bak.store_string(prev_txt)
+			f_bak.close()
+
 	var data := {
 		"version": SAVE_VERSION,
 		"timestamp": int(Time.get_unix_time_from_system()),
@@ -863,18 +914,28 @@ func save_game() -> void:
 		"stall_inventory": stall_inventory,
 		"unlocked_codex": unlocked_codex
 	}
+	var json_str := JSON.stringify(data, "\t")
 	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
 	if f != null:
-		f.store_string(JSON.stringify(data, "\t"))
+		f.store_string(json_str)
+		f.close()
+	if not FileAccess.file_exists(get_backup_save_path()):
+		var f_init_bak := FileAccess.open(get_backup_save_path(), FileAccess.WRITE)
+		if f_init_bak != null:
+			f_init_bak.store_string(json_str)
+			f_init_bak.close()
 
 func load_game() -> void:
-	if not FileAccess.file_exists(active_save_path):
-		return
-	var txt := FileAccess.get_file_as_string(active_save_path)
-	var parsed = JSON.parse_string(txt)
-	if not (parsed is Dictionary):
-		return
-	if int(parsed.get("version", 0)) != SAVE_VERSION:
+	var parsed := _parse_valid_save_dict(active_save_path)
+	if parsed.is_empty():
+		parsed = _parse_valid_save_dict(get_backup_save_path())
+		if not parsed.is_empty():
+			var bak_txt := FileAccess.get_file_as_string(get_backup_save_path())
+			var f_repair := FileAccess.open(active_save_path, FileAccess.WRITE)
+			if f_repair != null:
+				f_repair.store_string(bak_txt)
+				f_repair.close()
+	if parsed.is_empty():
 		return
 	gold = int(parsed.get("gold", gold))
 	total_gold_earned = int(parsed.get("total_gold_earned", total_gold_earned))
@@ -908,12 +969,10 @@ func load_game() -> void:
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())
 	var elapsed := clampi(now_ts - last_ts, 0, 86400)
-	if elapsed >= 30:
-		pending_offline_seconds = elapsed
-		pending_offline_gold = maxi(8, int(round(float(elapsed) * estimate_idle_gold_per_sec() * 0.45)))
-		add_gold(pending_offline_gold)
-		EventBus.offline_earnings_ready.emit(pending_offline_seconds, pending_offline_gold)
-=== src\autoload\SelfTestRunner.gd ===
+	if elapsed >= 60:
+		calculate_and_apply_offline_earnings(elapsed)
+
+=== FILE: D:/project/maple-isle-idle/src/autoload/SelfTestRunner.gd ===
 extends Node
 ## Real-Engine 20x Fast-Forward Self-Test & Dual-State Viewport Screenshot Exporter (`src/autoload/SelfTestRunner.gd`)
 ## Activated when command-line args contain `--self-test` (via `./run_godot.ps1 --self-test`).
@@ -1268,6 +1327,40 @@ func _run_all_four_assertions_and_export() -> void:
 	print("[PASS] [断言4-零乱码字体] 通过: 全局节点树 0 个废弃位图字体引用，100%% 采用 Godot 原生 Label + LabelSettings!")
 
 	# ------------------------------------------------------------------
+	# [断言5-v2.4防坏档双备份与离线收益结算]: Verify .bak save rotation/recovery & 600s offline settlement
+	# ------------------------------------------------------------------
+	var saved_gold_anchor: int = GameManager.gold
+	GameManager.save_game()
+	GameManager.save_game()
+	if not FileAccess.file_exists(GameManager.get_backup_save_path()):
+		_fail_and_quit("[断言5-防坏档与离线结算]", "Backup save file `%s` was not created by save_game()!" % GameManager.get_backup_save_path())
+		return
+	var f_corrupt := FileAccess.open(GameManager.active_save_path, FileAccess.WRITE)
+	if f_corrupt != null:
+		f_corrupt.store_string("{corrupted_json_payload")
+		f_corrupt.close()
+	GameManager.gold = 1
+	GameManager.load_game()
+	if GameManager.gold != saved_gold_anchor or GameManager._parse_valid_save_dict(GameManager.active_save_path).is_empty():
+		_fail_and_quit("[断言5-防坏档与离线结算]", "Failed to recover corrupted primary save from .bak! Expected gold=%d, got=%d" % [saved_gold_anchor, GameManager.gold])
+		return
+
+	var pre_offline_gold: int = GameManager.gold
+	var off_rep: Dictionary = GameManager.calculate_and_apply_offline_earnings(600)
+	var off_gold := int(off_rep.get("gold", 0))
+	var off_items := int(off_rep.get("items", 0))
+	if off_gold <= 0 or off_items <= 0 or GameManager.gold != pre_offline_gold + off_gold:
+		_fail_and_quit("[断言5-防坏档与离线结算]", "Offline earnings (600s) invalid: gold=%d, items=%d" % [off_gold, off_items])
+		return
+	if world.hud == null or world.hud.offline_banner_timer <= 0.0 or world.hud.offline_banner_text.find("收获") == -1:
+		_fail_and_quit("[断言5-防坏档与离线结算]", "HUD offline welcome banner did not trigger or missing item count: `%s`" % [world.hud.offline_banner_text if world.hud != null else "null"])
+		return
+	world.hud.offline_banner_timer = 0.0
+	world.hud._sync_label_nodes()
+	GameManager.save_game()
+	print("[PASS] [断言5-防坏档与离线结算] 通过: 主存档损坏自动从 `.bak` 无损恢复并修复，模拟 600s 离线结算 (+%dG / 收获 %d 件) 与欢迎横幅校验 PASS!" % [off_gold, off_items])
+
+	# ------------------------------------------------------------------
 	# Export 2 Distinct Real Engine Viewport Screenshots:
 	#   State A (Drawer Collapsed): `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
 	#   State B (Drawer Expanded via `HUD.open_drawer(0)`): `res://preview_drawer_open_1920x360.png`
@@ -1353,7 +1446,8 @@ func _find_deprecated_font_node(node: Node) -> String:
 		if found != "":
 			return found
 	return ""
-=== src\autoload\SoundManager.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/autoload/SoundManager.gd ===
 extends Node
 ## Full-Featured WAV Audio, Dual-Deck Ambient Crossfader & Polyphonic SFX Pool (`src/autoload/SoundManager.gd`)
 ## Strictly implements PRD v2.2 Section 6:
@@ -1628,7 +1722,8 @@ func play_click_sfx() -> void:
 
 func play_hover_sfx() -> void:
 	play_sfx("ui_hover", 0.03, 0.0)
-=== src\autoload\WindowController.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/autoload/WindowController.gd ===
 extends Node
 ## Desktop Companion Window, Multi-Island + UI Polygon Mouse Passthrough & Alt+Drag Controller (`src/autoload/WindowController.gd`)
 ## Strictly implements PRD v2.2 Section 1 & Section 5:
@@ -1871,7 +1966,8 @@ func _refresh_passthrough() -> void:
 	])
 	_last_passthrough_polygon = poly
 	DisplayServer.window_set_mouse_passthrough(poly)
-=== src\entities\buildings\BuildingVisualUpgrader.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/entities/buildings/BuildingVisualUpgrader.gd ===
 extends Node2D
 class_name BuildingVisualUpgrader
 ## 4-Tier Building Visual Evolution, Outer-Edge Decor, Particles, Star Badge & Legendary Shader (`src/entities/buildings/BuildingVisualUpgrader.gd`)
@@ -2073,7 +2169,8 @@ func _draw() -> void:
 		draw_circle(badge_center, 7.0, Color(0.14, 0.08, 0.04, 0.88))
 		draw_arc(badge_center, 7.0, 0.0, TAU, 16, star_col, 1.4)
 		_draw_five_pointed_star(badge_center, 5.2, 2.3, star_col)
-=== src\entities\buildings\MarketStall.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/entities/buildings/MarketStall.gd ===
 extends Node2D
 class_name MarketStall
 ## Central Cloud Isle Market Stall, Queue Dispatcher & Shiba Manager Checkout Hub (`src/entities/buildings/MarketStall.gd`)
@@ -2233,7 +2330,8 @@ func _draw() -> void:
 	if checkout_flash_timer > 0.0:
 		base_alpha += 0.18 * (checkout_flash_timer / 0.35)
 	draw_circle(Vector2(-10.0, -34.0), 14.0, Color(1.0, 0.86, 0.38, base_alpha))
-=== src\entities\buildings\SoilPlot.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/entities/buildings/SoilPlot.gd ===
 extends Node2D
 class_name SoilPlot
 ## Enlarged 1.5D Soil Bed (`64x26`), 3-Stage Crop Growth, Buffer Cap 10 & Lv.25 Auto-Evolution (`src/entities/buildings/SoilPlot.gd`)
@@ -2474,7 +2572,8 @@ func harvest_crop_yield() -> int:
 	if EventBus != null:
 		EventBus.item_produced.emit(island_idx, crop_id, qty)
 	return qty
-=== src\entities\buildings\Workshop.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/entities/buildings/Workshop.gd ===
 extends Node2D
 class_name Workshop
 ## Mortar, Cauldron & Island 3 Dual Workshop (`src/entities/buildings/Workshop.gd`)
@@ -2684,7 +2783,8 @@ func _draw() -> void:
 		var ring_center := Vector2(bx - 9.0, by + 2.5)
 		draw_circle(ring_center, 5.5, Color(0.10, 0.07, 0.04, 0.90))
 		draw_arc(ring_center, 4.2, -PI * 0.5, -PI * 0.5 + prog * TAU, 16, Color("#FFE066"), 1.6)
-=== src\entities\units\AnimalWorker.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/entities/units/AnimalWorker.gd ===
 extends Node2D
 class_name AnimalWorker
 ## Per-Island Multi-Slot Specialized Pipeline Animal Worker (`src/entities/units/AnimalWorker.gd`)
@@ -3396,7 +3496,8 @@ func _draw() -> void:
 		return
 	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
 	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)
-=== src\entities\units\CustomerNPC.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/entities/units/CustomerNPC.gd ===
 extends Node2D
 class_name CustomerNPC
 ## Long-Cycle Island Customer & Crown VIP Tycoon (`src/entities/units/CustomerNPC.gd`)
@@ -3684,7 +3785,8 @@ func _draw() -> void:
 			draw_texture_rect(tex_heart, Rect2(-10, heart_y + hop_y, 20, 20), false)
 		elif disappointed and tex_parchment != null:
 			draw_texture_rect(tex_parchment, Rect2(-16, -72 + hop_y, 32, 22), false)
-=== src\ui\FloatingText.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/ui/FloatingText.gd ===
 extends Node2D
 class_name FloatingText
 ## Native Label Floating Text & Parabolic Gold Coin Effect (`src/ui/FloatingText.gd`)
@@ -3785,7 +3887,8 @@ func _draw() -> void:
 	if tex_icons != null:
 		for c in coin_arcs:
 			draw_texture_rect_region(tex_icons, Rect2(float(c["x"]) - 11.0, float(c["y"]) - 11.0, 22.0, 22.0), Rect2(0, 0, 48, 48))
-=== src\ui\HUD.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/ui/HUD.gd ===
 extends Control
 class_name HUD
 ## Native Label Retro Maple-Style HUD, 3s Auto-Collapse Capsule & Recruit-to-Promote Drawer (`src/ui/HUD.gd`)
@@ -3888,7 +3991,10 @@ func _format_duration_cn(seconds: int) -> String:
 func _show_offline_welcome_banner(seconds_away: int, gold_earned: int) -> void:
 	offline_banner_timer = 8.0
 	var codex_pct := (GameManager.get_unlocked_codex_count()) * 10
-	offline_banner_text = "★欢迎归来！离线 " + _format_duration_cn(seconds_away) + " · 自动创收 +" + str(gold_earned) + "G (图鉴+" + str(codex_pct) + "%)"
+	var items_cnt := int(GameManager.last_offline_report.get("items", maxi(1, seconds_away / 12)))
+	offline_banner_text = "★欢迎归来！离线 " + _format_duration_cn(seconds_away) + " · 收获 " + str(items_cnt) + " 件 · 自动创收 +" + str(gold_earned) + "G (图鉴+" + str(codex_pct) + "%)"
+	_sync_label_nodes()
+	queue_redraw()
 
 func set_boss_stealth(stealth_on: bool) -> void:
 	boss_stealth_mode = stealth_on
@@ -4405,7 +4511,8 @@ func _draw() -> void:
 					draw_texture_rect_region(tex_crops, Rect2(crect.end.x - 52.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(3.0 * 40.0, float(i) * 40.0, 40.0, 40.0))
 				if tex_delicacies != null:
 					draw_texture_rect_region(tex_delicacies, Rect2(crect.end.x - 28.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(float(i) * 36.0, 0.0, 36.0, 36.0))
-=== src\world\CameraController.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/world/CameraController.gd ===
 extends Camera2D
 class_name CameraController
 ## Unified Cursor-Anchored Smooth Wheel Zoom & Inertia Panning Controller (`src/world/CameraController.gd`)
@@ -4669,7 +4776,8 @@ func _apply_to_world() -> void:
 		world_ref.world_root.position = current_root_pos
 		if absf(prev_z - current_zoom) > 0.0005 or prev_pos.distance_to(current_root_pos) > 0.1:
 			world_ref.queue_redraw()
-=== src\world\MainWorld.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/world/MainWorld.gd ===
 extends Node2D
 class_name MainWorld
 ## Panoramic 3-Island World (`src/world/MainWorld.gd`)
@@ -5202,7 +5310,8 @@ func _draw() -> void:
 				draw_line(Vector2(rx, ry), Vector2(rx - 3.0, ry + 8.0), Color(0.78, 0.92, 1.0, 0.42), 1.0)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-=== src\world\WaypointGraph.gd ===
+
+=== FILE: D:/project/maple-isle-idle/src/world/WaypointGraph.gd ===
 extends Node2D
 class_name WaypointGraph
 ## Complete 3-Island Road, Dual Wooden Bridge & Building Dock Waypoint Graph (`src/world/WaypointGraph.gd`)
@@ -5437,3 +5546,4 @@ func get_path_total_length(path: Array[Vector2]) -> float:
 
 func constrain_to_walkable_surface(pos: Vector2) -> Vector2:
 	return Vector2(clampf(pos.x, 120.0, 1790.0), GROUND_Y)
+

@@ -77,6 +77,7 @@ var stall_inventory: Dictionary = {
 var save_timer: float = 0.0
 var pending_offline_seconds: int = 0
 var pending_offline_gold: int = 0
+var last_offline_report: Dictionary = {}
 
 ## v2.3 Direction 1 & 2: Dynamic Weather/Time-of-Day Cycle & Carnival Frenzy Buff
 enum WeatherState { DAY = 0, DUSK = 1, NIGHT = 2, RAIN = 3 }
@@ -144,6 +145,9 @@ func reset_for_playtest_state() -> void:
 		"crop_0": true, "crop_1": false, "crop_2": false, "crop_3": false,
 		"delicacy_0": false, "delicacy_1": false, "delicacy_2": false, "delicacy_3": false
 	}
+	pending_offline_seconds = 0
+	pending_offline_gold = 0
+	last_offline_report = {}
 	_sync_codex_from_progression()
 
 func _process(delta: float) -> void:
@@ -565,7 +569,52 @@ func estimate_idle_gold_per_sec() -> float:
 		base_rate += float(get_total_recruited(k)) * 1.6
 	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0))) * get_codex_price_multiplier()
 
+func get_backup_save_path() -> String:
+	return active_save_path + ".bak"
+
+func _parse_valid_save_dict(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var txt := FileAccess.get_file_as_string(path).strip_edges()
+	if txt.length() < 2 or not txt.begins_with("{") or not txt.ends_with("}"):
+		return {}
+	var parsed = JSON.parse_string(txt)
+	if not (parsed is Dictionary):
+		return {}
+	if int(parsed.get("version", 0)) != SAVE_VERSION:
+		return {}
+	return parsed
+
+func calculate_and_apply_offline_earnings(elapsed_sec: int) -> Dictionary:
+	var clamped_sec := clampi(elapsed_sec, 0, 86400)
+	if clamped_sec < 60:
+		return {"seconds": clamped_sec, "gold": 0, "items": 0}
+	var gold_earned := maxi(8, int(round(float(clamped_sec) * estimate_idle_gold_per_sec() * 0.45)))
+	var total_workers := 0
+	for k in animal_levels.keys():
+		total_workers += get_total_recruited(String(k))
+	var ws_lv := int(building_levels.get("mortar", 1)) + int(building_levels.get("cauldron", 1))
+	var items_est := maxi(1, int(round(float(clamped_sec) / 10.0 * (float(maxi(1, total_workers)) * 0.6 + float(ws_lv) * 0.2))))
+	pending_offline_seconds = clamped_sec
+	pending_offline_gold = gold_earned
+	last_offline_report = {
+		"seconds": clamped_sec,
+		"gold": gold_earned,
+		"items": items_est
+	}
+	add_gold(gold_earned)
+	EventBus.offline_earnings_ready.emit(clamped_sec, gold_earned)
+	return last_offline_report
+
 func save_game() -> void:
+	var prev_valid := _parse_valid_save_dict(active_save_path)
+	if not prev_valid.is_empty():
+		var prev_txt := FileAccess.get_file_as_string(active_save_path)
+		var f_bak := FileAccess.open(get_backup_save_path(), FileAccess.WRITE)
+		if f_bak != null:
+			f_bak.store_string(prev_txt)
+			f_bak.close()
+
 	var data := {
 		"version": SAVE_VERSION,
 		"timestamp": int(Time.get_unix_time_from_system()),
@@ -587,18 +636,28 @@ func save_game() -> void:
 		"stall_inventory": stall_inventory,
 		"unlocked_codex": unlocked_codex
 	}
+	var json_str := JSON.stringify(data, "\t")
 	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
 	if f != null:
-		f.store_string(JSON.stringify(data, "\t"))
+		f.store_string(json_str)
+		f.close()
+	if not FileAccess.file_exists(get_backup_save_path()):
+		var f_init_bak := FileAccess.open(get_backup_save_path(), FileAccess.WRITE)
+		if f_init_bak != null:
+			f_init_bak.store_string(json_str)
+			f_init_bak.close()
 
 func load_game() -> void:
-	if not FileAccess.file_exists(active_save_path):
-		return
-	var txt := FileAccess.get_file_as_string(active_save_path)
-	var parsed = JSON.parse_string(txt)
-	if not (parsed is Dictionary):
-		return
-	if int(parsed.get("version", 0)) != SAVE_VERSION:
+	var parsed := _parse_valid_save_dict(active_save_path)
+	if parsed.is_empty():
+		parsed = _parse_valid_save_dict(get_backup_save_path())
+		if not parsed.is_empty():
+			var bak_txt := FileAccess.get_file_as_string(get_backup_save_path())
+			var f_repair := FileAccess.open(active_save_path, FileAccess.WRITE)
+			if f_repair != null:
+				f_repair.store_string(bak_txt)
+				f_repair.close()
+	if parsed.is_empty():
 		return
 	gold = int(parsed.get("gold", gold))
 	total_gold_earned = int(parsed.get("total_gold_earned", total_gold_earned))
@@ -632,8 +691,5 @@ func load_game() -> void:
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())
 	var elapsed := clampi(now_ts - last_ts, 0, 86400)
-	if elapsed >= 30:
-		pending_offline_seconds = elapsed
-		pending_offline_gold = maxi(8, int(round(float(elapsed) * estimate_idle_gold_per_sec() * 0.45)))
-		add_gold(pending_offline_gold)
-		EventBus.offline_earnings_ready.emit(pending_offline_seconds, pending_offline_gold)
+	if elapsed >= 60:
+		calculate_and_apply_offline_earnings(elapsed)

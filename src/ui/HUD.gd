@@ -100,7 +100,10 @@ func _format_duration_cn(seconds: int) -> String:
 func _show_offline_welcome_banner(seconds_away: int, gold_earned: int) -> void:
 	offline_banner_timer = 8.0
 	var codex_pct := (GameManager.get_unlocked_codex_count()) * 10
-	offline_banner_text = "★欢迎归来！离线 " + _format_duration_cn(seconds_away) + " · 自动创收 +" + str(gold_earned) + "G (图鉴+" + str(codex_pct) + "%)"
+	var items_cnt := int(GameManager.last_offline_report.get("items", maxi(1, seconds_away / 12)))
+	offline_banner_text = "★欢迎归来！离线 " + _format_duration_cn(seconds_away) + " · 收获 " + str(items_cnt) + " 件 · 自动创收 +" + str(gold_earned) + "G (图鉴+" + str(codex_pct) + "%)"
+	_sync_label_nodes()
+	queue_redraw()
 
 func set_boss_stealth(stealth_on: bool) -> void:
 	boss_stealth_mode = stealth_on

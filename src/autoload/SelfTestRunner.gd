@@ -352,6 +352,40 @@ func _run_all_four_assertions_and_export() -> void:
 	print("[PASS] [断言4-零乱码字体] 通过: 全局节点树 0 个废弃位图字体引用，100%% 采用 Godot 原生 Label + LabelSettings!")
 
 	# ------------------------------------------------------------------
+	# [断言5-v2.4防坏档双备份与离线收益结算]: Verify .bak save rotation/recovery & 600s offline settlement
+	# ------------------------------------------------------------------
+	var saved_gold_anchor: int = GameManager.gold
+	GameManager.save_game()
+	GameManager.save_game()
+	if not FileAccess.file_exists(GameManager.get_backup_save_path()):
+		_fail_and_quit("[断言5-防坏档与离线结算]", "Backup save file `%s` was not created by save_game()!" % GameManager.get_backup_save_path())
+		return
+	var f_corrupt := FileAccess.open(GameManager.active_save_path, FileAccess.WRITE)
+	if f_corrupt != null:
+		f_corrupt.store_string("{corrupted_json_payload")
+		f_corrupt.close()
+	GameManager.gold = 1
+	GameManager.load_game()
+	if GameManager.gold != saved_gold_anchor or GameManager._parse_valid_save_dict(GameManager.active_save_path).is_empty():
+		_fail_and_quit("[断言5-防坏档与离线结算]", "Failed to recover corrupted primary save from .bak! Expected gold=%d, got=%d" % [saved_gold_anchor, GameManager.gold])
+		return
+
+	var pre_offline_gold: int = GameManager.gold
+	var off_rep: Dictionary = GameManager.calculate_and_apply_offline_earnings(600)
+	var off_gold := int(off_rep.get("gold", 0))
+	var off_items := int(off_rep.get("items", 0))
+	if off_gold <= 0 or off_items <= 0 or GameManager.gold != pre_offline_gold + off_gold:
+		_fail_and_quit("[断言5-防坏档与离线结算]", "Offline earnings (600s) invalid: gold=%d, items=%d" % [off_gold, off_items])
+		return
+	if world.hud == null or world.hud.offline_banner_timer <= 0.0 or world.hud.offline_banner_text.find("收获") == -1:
+		_fail_and_quit("[断言5-防坏档与离线结算]", "HUD offline welcome banner did not trigger or missing item count: `%s`" % [world.hud.offline_banner_text if world.hud != null else "null"])
+		return
+	world.hud.offline_banner_timer = 0.0
+	world.hud._sync_label_nodes()
+	GameManager.save_game()
+	print("[PASS] [断言5-防坏档与离线结算] 通过: 主存档损坏自动从 `.bak` 无损恢复并修复，模拟 600s 离线结算 (+%dG / 收获 %d 件) 与欢迎横幅校验 PASS!" % [off_gold, off_items])
+
+	# ------------------------------------------------------------------
 	# Export 2 Distinct Real Engine Viewport Screenshots:
 	#   State A (Drawer Collapsed): `res://preview_live_godot.png` & `res://preview_engine_1920x360.png`
 	#   State B (Drawer Expanded via `HUD.open_drawer(0)`): `res://preview_drawer_open_1920x360.png`
