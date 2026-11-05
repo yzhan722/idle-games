@@ -116,6 +116,7 @@ export function EquipSelectorModal({
                         )}
                       </div>
                       {!equipped &&
+                        Boolean(currentEqId) &&
                         selectedEquipSlot !== 'tool' &&
                         (atkDiff !== 0 || magDiff !== 0 || defDiff !== 0 || hpDiff !== 0) && (
                           <div className="equip-delta-row">

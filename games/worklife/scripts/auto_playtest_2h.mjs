@@ -125,13 +125,19 @@ async function main() {
     if (!inGame) {
       issues.push("Failed to enter in-game main layout (still on login or character creation screen).");
     }
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(2000);
 
-    // 4. Dismiss tutorial guide after player state loads
+    // 4. Dismiss tutorial guide or Chapter 1 build modal after player state loads
     const skipBtn = page.locator("button.tg-skip").first();
     if (await skipBtn.isVisible().catch(() => false)) {
       await skipBtn.click().catch(() => {});
       await page.waitForTimeout(600);
+    }
+    const buildOptBtn = page.locator(".build-modal button.build-option").first();
+    if (await buildOptBtn.isVisible().catch(() => false)) {
+      await checkBrokenImages(page, "Desktop-BuildModal", issues);
+      await buildOptBtn.click().catch(() => {});
+      await page.waitForTimeout(1000);
     }
 
     // 5. Advance Chapter 1 progression based on NextGoalBar
@@ -155,13 +161,34 @@ async function main() {
         await readyQuick.click().catch(() => {});
         await page.waitForTimeout(800);
       }
-    } else if (goalId === "equip_sword") {
+    } else if (goalId === "equip_sword" || goalId === "chest") {
+      const stopBattleBtn = page.locator("button.stop-activity-btn-center").first();
+      if (goalId === "chest" && (await stopBattleBtn.isVisible().catch(() => false))) {
+        await stopBattleBtn.click().catch(() => {});
+        await page.waitForTimeout(800);
+      }
       await page.locator("button.next-goal-go").first().click().catch(() => {});
       await page.waitForTimeout(800);
-      const equipBtn = page.locator("button:has-text('装备'), button:has-text('穿戴')").first();
-      if (await equipBtn.isVisible().catch(() => false)) {
-        await equipBtn.click().catch(() => {});
-        await page.waitForTimeout(800);
+      const armorTab = page.locator("button:has-text('防具')").first();
+      if (goalId === "chest" && (await armorTab.isVisible().catch(() => false))) {
+        await armorTab.click().catch(() => {});
+        await page.waitForTimeout(500);
+        const readyQuick = page.locator(".craft-row.ready .sar-quick:not(.stop)").first();
+        if (await readyQuick.isVisible().catch(() => false)) {
+          await readyQuick.click().catch(() => {});
+          await page.waitForTimeout(800);
+        }
+      }
+      const equipSlotBtn = page.locator("button:has-text('装备'), button:has-text('穿戴'), .cs-slot:has-text('主手'), .cs-slot:has-text('上衣')").first();
+      if (await equipSlotBtn.isVisible().catch(() => false)) {
+        await equipSlotBtn.click().catch(() => {});
+        await page.waitForTimeout(600);
+      }
+      const eqItem = page.locator(".equippable-item:not(.equipped)").first();
+      if (await eqItem.isVisible().catch(() => false)) {
+        await checkBrokenImages(page, "Desktop-EquipModal", issues);
+        await eqItem.click().catch(() => {});
+        await page.waitForTimeout(1000);
       }
     } else {
       const quickStartBtn = page.locator(".sar-quick:not(.stop)").first();
@@ -177,24 +204,23 @@ async function main() {
     await checkBrokenImages(page, "Desktop-Main", issues);
     await page.screenshot({ path: outDesktop, fullPage: false });
 
-    // 6. Open Adventure / Combat view and inspect Ability Loadout panel
-    const staminaNav = page.locator("nav.skill-sidebar button:has-text('耐力'), [data-nav-id='stamina']").first();
-    if (await staminaNav.isVisible().catch(() => false)) {
-      await staminaNav.click().catch(() => {});
+    // 6. Open Adventure / Combat view and start fighting Slime if ready
+    const advNav = page.locator("[data-nav-id='adventure'], nav.skill-sidebar button:has-text('冒险'), nav.skill-sidebar button:has-text('耐力')").first();
+    if (await advNav.isVisible().catch(() => false)) {
+      await advNav.click().catch(() => {});
       await page.waitForTimeout(1000);
-    } else {
-      const advTab = page.locator("[data-nav-id='adventure'], button:has-text('冒险')").first();
-      if (await advTab.isVisible().catch(() => false)) {
-        await advTab.click().catch(() => {});
-        await page.waitForTimeout(1000);
-      }
     }
 
-    const configSkillBtn = page.locator("button:has-text('配置技能')").first();
-    if (await configSkillBtn.isVisible().catch(() => false)) {
-      await configSkillBtn.click().catch(() => {});
-      await page.waitForTimeout(600);
-      await checkBrokenImages(page, "Desktop-AbilityLoadout", issues);
+    const slimeCard = page.locator(".monster-card:has-text('果冻史莱姆')").first();
+    if (await slimeCard.isVisible().catch(() => false)) {
+      await slimeCard.click().catch(() => {});
+      await page.waitForTimeout(700);
+      await checkBrokenImages(page, "Desktop-MonsterModal", issues);
+      const startFightBtn = page.locator(".modal-actions button.btn-action").first();
+      if (await startFightBtn.isVisible().catch(() => false)) {
+        await startFightBtn.click().catch(() => {});
+        await page.waitForTimeout(1200);
+      }
     }
 
     await checkBrokenImages(page, "Desktop-Combat", issues);
@@ -230,7 +256,7 @@ async function main() {
     `- Target: \`${targetUrl}\` | Chapter Goal: \`${goalSummary}\``,
     `- Screenshots: \`playtest_live_desktop.png\`, \`playtest_live_combat.png\`, \`playtest_live_mobile.png\``,
     issues.length === 0
-      ? `- Result: Entered in-game views (Main + Combat + AbilityLoadout + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.`
+      ? `- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.`
       : `- Issues:\n${issues.map((i) => `  - ${i}`).join("\n")}`,
     "",
   ].join("\n");
