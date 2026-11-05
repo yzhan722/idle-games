@@ -240,11 +240,37 @@ AI 助手必须严格按以下 4 个阶段顺序执行，每阶段完成后验�
 >   2. 每 2 小时定时巡检任务唤醒（或您手动触发）时，AI 会首先读取本节内容：若发现任何 `- [ ]` 待办项或文档规范更新，立即在 `src/` 中原地编码实现、在 `SelfTestRunner.gd` 中补充对应验证断言、运行 `./run_godot.ps1 --self-test` 并审视真机截图，验证 100% 通过后将 `- [ ]` 自动更新为 `- [x]` 并记录至 `playtest_audit_log.md`。
 
 ### 11.2 持续迭代待办清单 (`[ ]` 待开发/待同步 | `[x]` 已实装并纳入巡检)
+
+#### 【基座与产线防呆（已完成）】
 - [x] 隔离自动化试玩存档路径 (`user://savegame_selftest.json`)，防止 `--self-test` 污染玩家真实存档
 - [x] 未解锁岛屿（岛屿 2/3）的建筑禁止提前升级，且山海图鉴不会在 `soil_1 < Lv.25` 时提前解锁 `crop_1`
 - [x] 鼠标滚轮支持以光标所在像素点为锚点的平滑缩放 (`Zoom-to-Cursor`) 与 `1.0x` 磁吸复位
 - [x] 全岛五段式顺向交接动线（原料筐左交右取、工坊左投中厨右出、顾客右侧步道排队买单，零交叉重叠）
 - [x] `SelfTestRunner.gd` 实时解析 `PRD.md` 的 `[SPEC-ASSERTIONS]` 动态参数表与 `11.2` 待办清单
+
+#### 【阶段一（v2.4）：桌面挂机人体工学、防坏档与专注伴侣】
+- [ ] [v2.4-1] 双备份防坏档存档系统 (`GameManager.gd`)：`save_game()` 写入 `user://savegame.json` 前自动备份上一份有效存档至 `user://savegame.json.bak`（测试模式下为 `user://savegame_selftest.json.bak`），`load_game()` 遇主存档解析失败时自动从 `.bak` 恢复；在 `SelfTestRunner.gd` 增加双备份存档生成与恢复校验断言
+- [ ] [v2.4-2] 离线收益结算与欢迎回归播报 (`GameManager.gd` + `HUD.gd`)：新增 `calculate_and_apply_offline_earnings(elapsed_sec: int) -> Dictionary` 计算离线时长（`60s ~ 86400s`）并发放离线金币与预估收获件数，重开游戏时通过 `HUD` 飘字/状态提示展示离线账单；在 `SelfTestRunner.gd` 增加模拟 `600s` 离线收益计算与金币到账断言
+- [ ] [v2.4-3] 任务栏智能贴合、节能帧率锁与窗口透明度调节 (`WindowController.gd` + `HUD.gd`)：使用 `DisplayServer.screen_get_usable_rect()` 自动避让系统任务栏贴底停靠，新增节能帧率切换（`30 / 60 FPS`）与窗口整体透明度调节（`60% ~ 100%`）；在 `SelfTestRunner.gd` 增加帧率锁与透明度接口校验断言
+- [ ] [v2.4-4] 内置像素「番茄钟专注伴侣 (Pomodoro Focus Timer)」(`GameManager.gd` + `HUD.gd`)：实装 `25分钟专注 (1500s)` 计时器开关與状态显示，专注完成时自动发放「★专注晨露礼盒」（额外金币奖励 + 触发 `30s` 全岛 `2.0x` 狂欢加速）；在 `SelfTestRunner.gd` 增加番茄钟启动、快进完成与礼盒奖励结算断言
+
+#### 【阶段二（v2.5）：中后期玩法深度、皇家契约与岛屿造景增益】
+- [ ] [v2.5-1] 飞艇皇家订单与二级货币「晨露琥珀」系统 (`GameManager.gd` + `HUD.gd`)：新增 `amber: int`（晨露琥珀）与循环刷新的皇家订单 `active_contract`（提交/售出指定数量作物或料理后自动完成订单，奖励金币 + `1~3` 颗晨露琥珀并刷新下一单）；在 `HUD.gd` 展示琥珀与订单进度，并在 `SelfTestRunner.gd` 增加订单完成与琥珀发放断言
+- [ ] [v2.5-2] 浮岛功能性微缩造景与全局被动增益 (`EconomyConfig.gd` + `GameManager.gd` + `MainWorld.gd`)：支持消耗「晨露琥珀」解锁 3 座岛屿专属增益造景（1号岛【蜜蜂花箱】农田生长 `+20%`、2号岛【荧光风铃】工坊加工 `+20%`、3号岛【招财提基灯】顾客小费 `+20%`）；在 `SelfTestRunner.gd` 增加造景解锁与倍率生效断言
+- [ ] [v2.5-3] 小动物进修特质词条系统 (`EconomyConfig.gd` + `AnimalWorker.gd` + `HUD.gd`)：小动物达到 `Lv.10 / Lv.25 / Lv.50` 时自动激活专属进修特质（兔子收获产量 `+1`、水獭/巨嘴鸟移速 `+20%`、狐狸/企鹅加工耗时 `-15%`、柴犬小费率 `+15%`），在动物面板显示特质标签并在 `SelfTestRunner.gd` 校验特质数值生效
+
+#### 【阶段三（v2.6）：视听质感、环境白噪音与像素生态微剧场】
+- [ ] [v2.6-1] 程序化自然白噪音合成器 (`SoundManager.gd` + `HUD.gd`)：扩展基于平滑噪声合成的轻柔环境白噪音（晴昼微风、微雨雨声、夜市虫鸣），随天气切换并支持独立开关与静音联动；在 `SelfTestRunner.gd` 校验白噪音状态接口
+- [ ] [v2.6-2] 荷花池游动像素锦鲤与林间生态微动画 (`MainWorld.gd`)：在 1 号岛荷花池（`x: 1100..1280`）绘制悠闲游动的橙白像素小锦鲤与动态水纹互动；在 `SelfTestRunner.gd` 校验锦鲤坐标严格限制在荷花池水域内不越界
+
+#### 【阶段四（v2.7）：Steam 商业级基建（成就系统、多语言本地化、统计看板）】
+- [ ] [v2.7-1] 应用内 Steam 成就系统与解锁播报 (`EconomyConfig.gd` + `GameManager.gd` + `HUD.gd`)：定义并实装 16 项核心成就（初入云岛、第一桶金、研钵飘香、密林开拓者、黄金海岸、山海全席、专注达人、皇家供货商等），达成时触发成就解锁提示并持久化存档；在 `SelfTestRunner.gd` 校验成就自动解锁逻辑
+- [ ] [v2.7-2] 多语言国际化字典与一键切换 (`EconomyConfig.gd` + `HUD.gd`)：支持 `zh_CN`（简中）/ `en_US`（English）/ `ja_JP`（日本語）核心 UI 文本一键实时切换；在 `SelfTestRunner.gd` 校验多语言切换后 UI 文本非空且无乱码
+- [ ] [v2.7-3] 云岛经营生涯统计与星级声望 (`GameManager.gd` + `HUD.gd`)：统计累计收获作物、累计制作料理、累计服务顾客、累计完成皇家订单数，并计算“云岛星级声望（1星~5星）”；在 `SelfTestRunner.gd` 校验统计计数器单调递增与声望星级计算
+
+#### 【阶段五（v3.0）：Steam 发行就绪与三岛终局压力巡检】
+- [ ] [v3.0-1] 全三岛满编高负载压力自检 (`SelfTestRunner.gd`)：在自动化自检中覆盖解锁岛屿 2 与岛屿 3、招募企鹅与巨嘴鸟跨木桥运输及双工坊联动的端到端断言，确保三岛全开 0 死锁、0 穿模
+- [ ] [v3.0-2] Steamworks API 抽象桥接层 (`src/autoload/SteamBridge.gd` + `project.godot`)：提供无外部 DLL 依赖时自动优雅降级、挂载 `GodotSteam` 时自动同步成就与云存档的桥接单例，并纳入 `SelfTestRunner.gd` 断言
 
 <!-- 在下方直接添加 `- [ ] 您的新需求或检测规则`，下一次巡检/开发将自动读取并落地验证： -->
 

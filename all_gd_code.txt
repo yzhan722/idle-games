@@ -1001,8 +1001,8 @@ func _ready() -> void:
 	print("[PASS] [断言0-PRD文档同步] 已动态读取 `PRD.md` 巡检契约 (%d 项动态阈值 | 已完成 Backlog: %d 项 | 待开发 Backlog: %d 项)" % [
 		spec_rules.size(), completed_prd_tasks_count, pending_prd_tasks.size()
 	])
-	for pt in pending_prd_tasks:
-		print("       [PRD-BACKLOG-PENDING] 待开发/待同步项: %s" % pt)
+	for i in range(mini(2, pending_prd_tasks.size())):
+		print("       [NEXT-DEV-TARGET #%d] %s" % [i + 1, pending_prd_tasks[i]])
 	print("==================================================================")
 	Engine.time_scale = 20.0
 
@@ -1324,7 +1324,7 @@ func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float,
 	var dt := Time.get_datetime_string_from_system(false, true)
 	var entry := "## [%s] 自主试玩巡检 PASS (PRD契约已同步: 完成 %d 项 | 待办 %d 项)\n" % [dt, completed_prd_tasks_count, pending_prd_tasks.size()]
 	if pending_prd_tasks.size() > 0:
-		entry += "- **PRD.md 待开发/待同步项**: `%s`\n" % [", ".join(pending_prd_tasks)]
+		entry += "- **下一轮自动开发目标 (`NEXT-DEV-TARGET`)**: `%s`\n" % [pending_prd_tasks[0]]
 	entry += "- **切帧与姿态防呆**: 已校验 `%d` 个精灵节点，0 越界切帧、0 旋转异常、前爪抱篮 3 层合成挂载正常。\n" % sprites_cnt
 	entry += "- **建筑间距与图层**: 三岛 12 座主建筑最大水平重叠率 `%.1f%%` (`<=15%%`)，最小净间距 `%.1fpx` (`>=28px`)。\n" % [max_ov * 100.0, min_gap]
 	entry += "- **产线活体与交互**: 兔子累计移动 `%.1fpx` (全员 `%.1fpx`)，农田收获 `%d` 次，入库/上架 `%d` 件，顾客结账 `%d` 单，滚轮鼠标锚点缩放与锁岛防误升校验通过。\n" % [
