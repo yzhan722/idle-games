@@ -15,6 +15,57 @@ var harvest_count: int = 0
 var items_delivered_count: int = 0
 var customer_paid_count: int = 0
 
+var spec_rules: Dictionary = {
+	"max_sprite_frame_px": 180.0,
+	"max_building_overlap_pct": 15.0,
+	"min_building_gap_px": 28.0,
+	"min_workshop_dock_gap_px": 40.0,
+	"customer_min_x": 1035.0,
+	"customer_locked_isl3_max_x": 1080.0,
+	"min_60s_worker_move_px": 50.0,
+	"min_60s_harvest_count": 15.0,
+	"min_60s_items_delivered": 30.0,
+	"min_60s_customer_checkouts": 1.0
+}
+var pending_prd_tasks: Array[String] = []
+var completed_prd_tasks_count: int = 0
+
+func _load_spec_from_prd() -> void:
+	pending_prd_tasks.clear()
+	completed_prd_tasks_count = 0
+	var prd_path := "res://PRD.md"
+	if not FileAccess.file_exists(prd_path):
+		return
+	var text := FileAccess.get_file_as_string(prd_path)
+	var in_assertions := false
+	var in_section_11 := false
+	for raw_line in text.split("\n"):
+		var line := raw_line.strip_edges()
+		if line.begins_with("## 11."):
+			in_section_11 = true
+		elif line.begins_with("## ") and in_section_11 and not line.begins_with("## 11."):
+			in_section_11 = false
+		if line == "[SPEC-ASSERTIONS]":
+			in_assertions = true
+			continue
+		elif line == "[/SPEC-ASSERTIONS]":
+			in_assertions = false
+			continue
+		if in_assertions:
+			if line == "" or line.begins_with("#"):
+				continue
+			var eq := line.find("=")
+			if eq > 0:
+				var k := line.substr(0, eq).strip_edges()
+				var v := line.substr(eq + 1).strip_edges()
+				if v.is_valid_float():
+					spec_rules[k] = v.to_float()
+		elif in_section_11:
+			if line.begins_with("- [ ] "):
+				pending_prd_tasks.append(line.substr(6).strip_edges())
+			elif line.begins_with("- [x] ") or line.begins_with("- [X] "):
+				completed_prd_tasks_count += 1
+
 func _ready() -> void:
 	var all_args := OS.get_cmdline_args()
 	all_args.append_array(OS.get_cmdline_user_args())
@@ -30,6 +81,12 @@ func _ready() -> void:
 
 	print("==================================================================")
 	print("[SelfTestRunner] Activated `--self-test` / `--playtest`: Engine.time_scale = 20.0 (180 frames / ~60s simulation)")
+	_load_spec_from_prd()
+	print("[PASS] [断言0-PRD文档同步] 已动态读取 `PRD.md` 巡检契约 (%d 项动态阈值 | 已完成 Backlog: %d 项 | 待开发 Backlog: %d 项)" % [
+		spec_rules.size(), completed_prd_tasks_count, pending_prd_tasks.size()
+	])
+	for pt in pending_prd_tasks:
+		print("       [PRD-BACKLOG-PENDING] 待开发/待同步项: %s" % pt)
 	print("==================================================================")
 	Engine.time_scale = 20.0
 
@@ -110,6 +167,9 @@ func _run_all_four_assertions_and_export() -> void:
 	# ------------------------------------------------------------------
 	# [断言1-切帧防呆]: Check single-frame rendered dimensions of all animals, customers, and crops
 	# ------------------------------------------------------------------
+	var max_frame_px := float(spec_rules.get("max_sprite_frame_px", 180.0))
+	var min_cust_x := float(spec_rules.get("customer_min_x", 1035.0))
+	var max_cust_locked_x := float(spec_rules.get("customer_locked_isl3_max_x", 1080.0))
 	var checked_sprites := 0
 	for w in world.workers:
 		if not is_instance_valid(w) or w.body_sprite == null or w.body_sprite.texture == null:
@@ -117,7 +177,7 @@ func _run_all_four_assertions_and_export() -> void:
 		var sp: Sprite2D = w.body_sprite
 		var fw := (sp.region_rect.size.x if sp.region_enabled else float(sp.texture.get_width()) / float(maxi(1, sp.hframes))) * absf(sp.scale.x)
 		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
-		if (not sp.region_enabled and sp.hframes <= 1) or fw > 180.0 or fh > 180.0:
+		if (not sp.region_enabled and sp.hframes <= 1) or fw > max_frame_px or fh > max_frame_px:
 			_fail_and_quit("[断言1-切帧防呆]", "AnimalWorker `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d, region=%s)" % [w.animal_key, fw, fh, sp.hframes, str(sp.region_enabled)])
 			return
 		if absf(w.rotation) > 0.001 or absf(sp.rotation) > 0.001 or sp.frame < 0 or sp.frame > 2:
@@ -135,17 +195,17 @@ func _run_all_four_assertions_and_export() -> void:
 		var sp: Sprite2D = c.body_sprite
 		var fw := (sp.region_rect.size.x if sp.region_enabled else float(sp.texture.get_width()) / float(maxi(1, sp.hframes))) * absf(sp.scale.x)
 		var fh := (sp.region_rect.size.y if sp.region_enabled else float(sp.texture.get_height()) / float(maxi(1, sp.vframes))) * absf(sp.scale.y)
-		if (not sp.region_enabled and sp.hframes <= 1) or fw > 180.0 or fh > 180.0:
+		if (not sp.region_enabled and sp.hframes <= 1) or fw > max_frame_px or fh > max_frame_px:
 			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has unsliced or oversized frame: %.1fx%.1f (hframes=%d)" % [c.sheet_key, fw, fh, sp.hframes])
 			return
 		if absf(c.rotation) > 0.001 or absf(sp.rotation) > 0.001:
 			_fail_and_quit("[断言1-切帧防呆]", "CustomerNPC `%s` has non-zero rotation (rot=%.3f, sp_rot=%.3f)" % [c.sheet_key, c.rotation, sp.rotation])
 			return
-		if c.position.x < 1035.0:
-			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into worker production zone left of MarketStall (x=%.1f < 1035.0)!" % [c.sheet_key, c.position.x])
+		if c.position.x < min_cust_x:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into worker production zone left of MarketStall (x=%.1f < %.1f)!" % [c.sheet_key, c.position.x, min_cust_x])
 			return
-		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > 1080.0:
-			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f > 1080.0)!" % [c.sheet_key, c.position.x])
+		if not bool(GameManager.unlocked_islands.get(3, false)) and c.position.x > max_cust_locked_x:
+			_fail_and_quit("[断言3-产线活体闭环]", "CustomerNPC `%s` walked into Lotus Pond or locked Island 3 (x=%.1f > %.1f)!" % [c.sheet_key, c.position.x, max_cust_locked_x])
 			return
 		checked_sprites += 1
 
@@ -165,6 +225,8 @@ func _run_all_four_assertions_and_export() -> void:
 	# ------------------------------------------------------------------
 	# [断言2-建筑防叠罗汉]: Check global screen rects of main buildings on each island (horizontal overlap <= 15%)
 	# ------------------------------------------------------------------
+	var max_ov_limit := float(spec_rules.get("max_building_overlap_pct", 15.0)) / 100.0
+	var min_gap_limit := float(spec_rules.get("min_building_gap_px", 28.0))
 	var max_overlap_seen := 0.0
 	var min_gap_seen := 9999.0
 	var buildings_by_island: Dictionary = world.get_island_main_building_rects()
@@ -182,13 +244,18 @@ func _run_all_four_assertions_and_export() -> void:
 				if j == i + 1:
 					var gap := rb.position.x - ra.end.x
 					min_gap_seen = minf(min_gap_seen, gap)
-				if overlap_ratio > 0.15:
-					_fail_and_quit("[断言2-建筑防叠罗汉]", "Island %d building overlap %.1f%% > 15%% between `%s` (%s) and `%s` (%s)!" % [
-						isl_idx, overlap_ratio * 100.0, String(ba["name"]), str(ra), String(bb["name"]), str(rb)
+				if overlap_ratio > max_ov_limit:
+					_fail_and_quit("[断言2-建筑防叠罗汉]", "Island %d building overlap %.1f%% > %.1f%% between `%s` (%s) and `%s` (%s)!" % [
+						isl_idx, overlap_ratio * 100.0, max_ov_limit * 100.0, String(ba["name"]), str(ra), String(bb["name"]), str(rb)
 					])
 					return
+	if min_gap_seen < min_gap_limit - 0.5:
+		_fail_and_quit("[断言2-建筑防叠罗汉]", "Building minimum edge gap %.1fpx < %.1fpx (from PRD.md)!" % [min_gap_seen, min_gap_limit])
+		return
 
-	print("[PASS] [断言2-建筑防叠罗汉] 通过: 三岛全部 12 座主建筑水平最大重叠率 = %.1f%% (<= 15%%)，最小边缘净留白 = %.1fpx (>= 28px)!" % [max_overlap_seen * 100.0, min_gap_seen])
+	print("[PASS] [断言2-建筑防叠罗汉] 通过: 三岛全部 12 座主建筑水平最大重叠率 = %.1f%% (<= %.1f%%)，最小边缘净留白 = %.1fpx (>= %.1fpx)!" % [
+		max_overlap_seen * 100.0, max_ov_limit * 100.0, min_gap_seen, min_gap_limit
+	])
 
 	# ------------------------------------------------------------------
 	# [断言3-产线活体闭环]: Verify harvests > 0, animal movement > 50px, monotonic pathing, and items entered workshop or market stall
@@ -221,13 +288,14 @@ func _run_all_four_assertions_and_export() -> void:
 				_fail_and_quit("[断言3-产线活体闭环]", "WaypointGraph path backtracked from %.1f to %.1f: %s" % [prev_x, pt.x, str(test_path_b)])
 				return
 			prev_x = pt.x
+		var min_ws_gap := float(spec_rules.get("min_workshop_dock_gap_px", 40.0))
 		var mortar_chef_dock: Vector2 = world.waypoint_graph.get_dock_pos("mortar_chef")
 		var mortar_out_dock: Vector2 = world.waypoint_graph.get_dock_pos("mortar_output")
 		var cauldron_chef_dock: Vector2 = world.waypoint_graph.get_dock_pos("cauldron_chef")
 		var cauldron_out_dock: Vector2 = world.waypoint_graph.get_dock_pos("cauldron_output")
-		if absf(mortar_chef_dock.x - mortar_out_dock.x) < 40.0 or absf(cauldron_chef_dock.x - cauldron_out_dock.x) < 40.0:
-			_fail_and_quit("[断言3-产线活体闭环]", "Workshop chef and logistics docks are too close (mortar=%.1fpx, cauldron=%.1fpx < 40px)!" % [
-				absf(mortar_chef_dock.x - mortar_out_dock.x), absf(cauldron_chef_dock.x - cauldron_out_dock.x)
+		if absf(mortar_chef_dock.x - mortar_out_dock.x) < min_ws_gap or absf(cauldron_chef_dock.x - cauldron_out_dock.x) < min_ws_gap:
+			_fail_and_quit("[断言3-产线活体闭环]", "Workshop chef and logistics docks are too close (mortar=%.1fpx, cauldron=%.1fpx < %.1fpx)!" % [
+				absf(mortar_chef_dock.x - mortar_out_dock.x), absf(cauldron_chef_dock.x - cauldron_out_dock.x), min_ws_gap
 			])
 			return
 
@@ -248,17 +316,22 @@ func _run_all_four_assertions_and_export() -> void:
 		if is_instance_valid(p):
 			harvest_count = maxi(harvest_count, p.harvest_count)
 
-	if harvest_count <= 0:
-		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内农田收获次数为 0!")
+	var min_harvests := int(spec_rules.get("min_60s_harvest_count", 15.0))
+	var min_move_px := float(spec_rules.get("min_60s_worker_move_px", 50.0))
+	var min_deliveries := int(spec_rules.get("min_60s_items_delivered", 30.0))
+	var min_checkouts := int(spec_rules.get("min_60s_customer_checkouts", 1.0))
+
+	if harvest_count < min_harvests:
+		_fail_and_quit("[断言3-产线活体闭环]", "60 秒模拟内农田收获次数 %d < %d (PRD.md 阈值)!" % [harvest_count, min_harvests])
 		return
-	if total_all_workers_dist <= 50.0:
-		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内动物累计移动距离仅为 %.1fpx (<= 50px)!" % total_all_workers_dist)
+	if total_all_workers_dist <= min_move_px:
+		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内动物累计移动距离仅为 %.1fpx (<= %.1fpx)!" % [total_all_workers_dist, min_move_px])
 		return
-	if items_delivered_count <= 0:
-		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内无任何物品进入缓存、工坊或集市摊位 (items_delivered_count = 0)!")
+	if items_delivered_count < min_deliveries:
+		_fail_and_quit("[断言3-产线活体闭环]", "60 秒模拟内入库/上架流转件数 %d < %d (PRD.md 阈值)!" % [items_delivered_count, min_deliveries])
 		return
-	if customer_paid_count <= 0:
-		_fail_and_quit("[断言3-产线活体闭环]", "状态机死锁: 60 秒模拟内顾客结账次数为 0!")
+	if customer_paid_count < min_checkouts:
+		_fail_and_quit("[断言3-产线活体闭环]", "60 秒模拟内顾客结账次数 %d < %d (PRD.md 阈值)!" % [customer_paid_count, min_checkouts])
 		return
 	if int(GameManager.building_levels.get("soil_1", 1)) < 25 and bool(GameManager.unlocked_codex.get("crop_1", false)):
 		_fail_and_quit("[断言3-产线活体闭环]", "Codex `crop_1` unlocked prematurely before soil_1 reached Lv.25!")
@@ -333,7 +406,9 @@ func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float,
 	else:
 		existing = "# 《枫叶云岛物语》全自动真机试玩与巡检记录 (`playtest_audit_log.md`)\n\n"
 	var dt := Time.get_datetime_string_from_system(false, true)
-	var entry := "## [%s] 自主试玩巡检 PASS\n" % dt
+	var entry := "## [%s] 自主试玩巡检 PASS (PRD契约已同步: 完成 %d 项 | 待办 %d 项)\n" % [dt, completed_prd_tasks_count, pending_prd_tasks.size()]
+	if pending_prd_tasks.size() > 0:
+		entry += "- **PRD.md 待开发/待同步项**: `%s`\n" % [", ".join(pending_prd_tasks)]
 	entry += "- **切帧与姿态防呆**: 已校验 `%d` 个精灵节点，0 越界切帧、0 旋转异常、前爪抱篮 3 层合成挂载正常。\n" % sprites_cnt
 	entry += "- **建筑间距与图层**: 三岛 12 座主建筑最大水平重叠率 `%.1f%%` (`<=15%%`)，最小净间距 `%.1fpx` (`>=28px`)。\n" % [max_ov * 100.0, min_gap]
 	entry += "- **产线活体与交互**: 兔子累计移动 `%.1fpx` (全员 `%.1fpx`)，农田收获 `%d` 次，入库/上架 `%d` 件，顾客结账 `%d` 单，滚轮鼠标锚点缩放与锁岛防误升校验通过。\n" % [
