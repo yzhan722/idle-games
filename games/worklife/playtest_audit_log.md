@@ -173,3 +173,26 @@
 - Visual Audit & Fix: Resolved mobile 390x844 revive-info box vertical overflow where 32px countdown-text pushed the "停止战斗" button behind the bottom navigation bar. Added responsive sizing and padding; re-tested and verified 100% visible and unclipped.
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow, all 247 tests PASS.
 
+## [2026-11-05T16:24:59.014Z] Autonomous Playtest — ISSUES_FOUND (4)
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `archetypes (见识三种森林怪物)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Issues:
+  - Failed to enter in-game main layout (still on login or character creation screen).
+  - [Desktop-Main] Broken images detected (25): /assets/nav-woodworking-CsExXSsG.webp, /assets/nav-smithing-gcUilltW.webp, /assets/nav-husbandry-0Wj_5Crc.webp, /assets/nav-cooking-tn_rXXjw.webp, /assets/nav-tailoring-CH2fpHdl.webp
+  - [Desktop-Combat] Broken images detected (25): /assets/nav-woodworking-CsExXSsG.webp, /assets/nav-smithing-gcUilltW.webp, /assets/nav-husbandry-0Wj_5Crc.webp, /assets/nav-cooking-tn_rXXjw.webp, /assets/nav-tailoring-CH2fpHdl.webp
+  - [Mobile-390x844] Broken images detected (9): /assets/nav-woodworking-CsExXSsG.webp, /assets/nav-adventure-C6aTdP7K.webp, /assets/nav-character-CNTitx2y.webp, /assets/nav-more-CXDVN3uK.webp, /assets/chat-9bwVFuTr.webp
+
+## [2026-11-05T16:51:21.240Z] Autonomous Playtest — ISSUES_FOUND (4)
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `archetypes (见识三种森林怪物)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Issues:
+  - [Desktop-Main] Broken images detected (18): /assets/nav-party-HC0f_rYP.webp, /assets/tea_spirit-DH6w4-9c.webp, /assets/potion_craft_focus-C26Z27sE.webp, /assets/potion_scholar-CmnlRtmH.webp, /assets/potion_fortune-D3QUy-ic.webp
+  - [Desktop-MonsterModal] Broken images detected (8): /assets/woodcutter-YfUyDbcS.webp, /assets/monkey-CpAq8rc_.webp, /assets/heavy_chop-CpBzXRTH.webp, /assets/potion_hp_t1-C-GgtUNr.webp, /assets/potion_mp_t1-Dg4ac8SS.webp
+  - [Desktop-Combat] Broken images detected (8): /assets/woodcutter-YfUyDbcS.webp, /assets/monkey-CpAq8rc_.webp, /assets/heavy_chop-CpBzXRTH.webp, /assets/potion_hp_t1-C-GgtUNr.webp, /assets/potion_mp_t1-Dg4ac8SS.webp
+  - [Mobile-390x844] Broken images detected (8): /assets/woodcutter-YfUyDbcS.webp, /assets/monkey-CpAq8rc_.webp, /assets/heavy_chop-CpBzXRTH.webp, /assets/potion_hp_t1-C-GgtUNr.webp, /assets/potion_mp_t1-Dg4ac8SS.webp
+
+## [2026-11-05T16:56:16.534Z] Autonomous Playtest — PASS
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `boss (挑战森林管家)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
+

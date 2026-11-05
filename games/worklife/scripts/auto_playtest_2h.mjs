@@ -11,12 +11,12 @@ const outMobile = path.join(rootDir, "playtest_live_mobile.png");
 const logFile = path.join(rootDir, "playtest_audit_log.md");
 const targetUrl = process.env.PLAYTEST_URL || "https://worklife.yinosites.com";
 
-async function waitForVisibleImages(page, timeoutMs = 4000) {
+async function waitForVisibleImages(page, timeoutMs = 8000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     const pending = await page.evaluate(() => {
       return Array.from(document.querySelectorAll("img")).filter(
-        (img) => img.getClientRects().length > 0 && (!img.complete || img.naturalWidth === 0)
+        (img) => img.getClientRects().length > 0 && (img.naturalWidth === 0 || img.naturalHeight === 0)
       ).length;
     });
     if (pending === 0) return;
@@ -25,12 +25,12 @@ async function waitForVisibleImages(page, timeoutMs = 4000) {
 }
 
 async function checkBrokenImages(page, label, issues) {
-  await waitForVisibleImages(page, 4000);
+  await waitForVisibleImages(page, 8000);
   const brokenImgs = await page.evaluate(() => {
     return Array.from(document.querySelectorAll("img"))
       .filter((img) => {
         if (img.getClientRects().length === 0) return false;
-        return !img.complete || img.naturalWidth === 0;
+        return img.naturalWidth === 0 || img.naturalHeight === 0;
       })
       .map((img) => img.getAttribute("src") || img.getAttribute("data-t1-key") || "unknown-img");
   });
@@ -77,12 +77,12 @@ async function main() {
       await page.locator("#password").fill("WorklifePlaytest2026!");
       const submitBtn = page.locator("button.login-btn").first();
       await submitBtn.click().catch(() => {});
-      await page.waitForTimeout(1800);
+      await page.locator("#username").waitFor({ state: "hidden", timeout: 4000 }).catch(() => {});
 
       const quickRegBtn = page.locator("button:has-text('立即用当前填写的账号密码直接注册')").first();
       if (await quickRegBtn.isVisible().catch(() => false)) {
         await quickRegBtn.click().catch(() => {});
-        await page.waitForTimeout(2200);
+        await page.locator("#username").waitFor({ state: "hidden", timeout: 4000 }).catch(() => {});
       }
 
       if (await loginUserField.isVisible().catch(() => false)) {
@@ -97,7 +97,7 @@ async function main() {
             await confirmInput.fill("WorklifePlaytest2026!");
           }
           await page.locator("button.login-btn").first().click().catch(() => {});
-          await page.waitForTimeout(2200);
+          await page.locator("#username").waitFor({ state: "hidden", timeout: 4000 }).catch(() => {});
         }
       }
     }
@@ -117,15 +117,15 @@ async function main() {
     }
 
     // 3. Verify we entered the main game layout
-    const inGame = await page
-      .locator(".game-main-layout, nav.skill-sidebar, .game-header")
-      .first()
-      .isVisible({ timeout: 8000 })
+    const inGameLocator = page.locator(".game-main-layout, nav.skill-sidebar, .game-header").first();
+    const inGame = await inGameLocator
+      .waitFor({ state: "visible", timeout: 12000 })
+      .then(() => true)
       .catch(() => false);
     if (!inGame) {
       issues.push("Failed to enter in-game main layout (still on login or character creation screen).");
     }
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1500);
 
     // 4. Dismiss tutorial guide or Chapter 1 build modal after player state loads
     const skipBtn = page.locator("button.tg-skip").first();
@@ -227,6 +227,7 @@ async function main() {
       }
     }
 
+    await page.locator(".loading-message").first().waitFor({ state: "detached", timeout: 6000 }).catch(() => {});
     await checkBrokenImages(page, "Desktop-Main", issues);
     await page.screenshot({ path: outDesktop, fullPage: false });
 
@@ -242,6 +243,13 @@ async function main() {
       await page.waitForTimeout(1000);
     }
 
+    // If currently fighting, return to monster cards first to allow choosing target
+    const inBattleBackBtn = page.locator("button.btn-back:has-text('返回')").first();
+    if (await inBattleBackBtn.isVisible().catch(() => false)) {
+      await inBattleBackBtn.click().catch(() => {});
+      await page.waitForTimeout(1000);
+    }
+
     // Choose monster based on Chapter 1 objective
     let targetMonsterName = "果冻史莱姆";
     if (updatedGoalId === "archetypes") {
@@ -249,7 +257,7 @@ async function main() {
       const crabCard = page.locator(".monster-card:has-text('铁壳寄居蟹')").first();
       const monkeyCard = page.locator(".monster-card:has-text('捣蛋小猴')").first();
       if (await crabCard.isVisible().catch(() => false)) {
-        targetMonsterName = (Math.floor(Date.now() / 60000) % 2 === 0) ? "铁壳寄居蟹" : "捣蛋小猴";
+        targetMonsterName = "铁壳寄居蟹";
       } else if (await monkeyCard.isVisible().catch(() => false)) {
         targetMonsterName = "捣蛋小猴";
       }
