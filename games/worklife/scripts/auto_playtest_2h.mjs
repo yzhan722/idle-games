@@ -11,26 +11,26 @@ const outMobile = path.join(rootDir, "playtest_live_mobile.png");
 const logFile = path.join(rootDir, "playtest_audit_log.md");
 const targetUrl = process.env.PLAYTEST_URL || "https://worklife.yinosites.com";
 
-async function waitForVisibleImages(page, timeoutMs = 8000) {
+async function waitForVisibleImages(page, timeoutMs = 15000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const pending = await page.evaluate(() => {
+    const inFlight = await page.evaluate(() => {
       return Array.from(document.querySelectorAll("img")).filter(
-        (img) => img.getClientRects().length > 0 && (img.naturalWidth === 0 || img.naturalHeight === 0)
+        (img) => img.getClientRects().length > 0 && !img.complete
       ).length;
     });
-    if (pending === 0) return;
-    await page.waitForTimeout(200);
+    if (inFlight === 0) return;
+    await page.waitForTimeout(300);
   }
 }
 
 async function checkBrokenImages(page, label, issues) {
-  await waitForVisibleImages(page, 8000);
+  await waitForVisibleImages(page, 15000);
   const brokenImgs = await page.evaluate(() => {
     return Array.from(document.querySelectorAll("img"))
       .filter((img) => {
         if (img.getClientRects().length === 0) return false;
-        return img.naturalWidth === 0 || img.naturalHeight === 0;
+        return img.complete && (img.naturalWidth === 0 || img.naturalHeight === 0);
       })
       .map((img) => img.getAttribute("src") || img.getAttribute("data-t1-key") || "unknown-img");
   });
@@ -49,7 +49,8 @@ async function main() {
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
-    page.setDefaultTimeout(3000);
+    page.setDefaultNavigationTimeout(45000);
+    page.setDefaultTimeout(6000);
 
     page.on("pageerror", (err) => consoleErrors.push(`PAGEERROR: ${err.message}`));
     page.on("console", (msg) => {
@@ -66,9 +67,14 @@ async function main() {
         failedRequests.push(`${req.method()} ${url} -> ${req.failure()?.errorText || "failed"}`);
       }
     });
+    page.on("response", (res) => {
+      if (res.status() >= 400 && res.url().includes("/assets/")) {
+        issues.push(`Asset HTTP ${res.status()}: ${res.url()}`);
+      }
+    });
 
-    await page.goto(targetUrl, { waitUntil: "networkidle", timeout: 30000 });
-    await page.waitForTimeout(1200);
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+    await page.waitForTimeout(2000);
 
     // 1. Complete login or auto-register
     const loginUserField = page.locator("#username");
@@ -139,6 +145,11 @@ async function main() {
       await buildOptBtn.click().catch(() => {});
       await page.waitForTimeout(1000);
     }
+
+    // Ensure content pack & initial game data are fully loaded before progressing
+    await page.locator(".loading-message").first().waitFor({ state: "detached", timeout: 15000 }).catch(() => {});
+    await page.locator(".skill-action-row, .craft-row, .monster-card, .tab-btn").first().waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(600);
 
     // 5. Advance Chapter 1 progression based on NextGoalBar
     const goalBar = page.locator(".next-goal-bar").first();
