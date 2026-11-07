@@ -2,7 +2,7 @@
    WorkLife 全局样式 - 统一设计系统
    风格：黄昏工坊放置 RPG（墨底 + 暖纸 + 琥珀）
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+/* 采用跨平台高质量系统字体栈与本地思源字体优先，免除外部字体网络依赖与超时风险 */
 
 /* ============================================================
    1. 设计令牌（Design Tokens）
@@ -109,23 +109,36 @@
    ============================================================ */
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
-  font-size: 16px;
+  font-size: 16px !important;
   -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  background: var(--bg-base);
 }
 
 body {
   margin: 0;
   padding: 0;
+  height: 100%;
   min-height: 100vh;
+  overflow: hidden;
+  overscroll-behavior-y: none;
   background: var(--bg-base);
   color: var(--text-primary);
   font-size: 14px;
   line-height: 1.6;
-  overflow-x: hidden;
+}
+
+#root {
+  height: 100%;
 }
 
 body::before {
