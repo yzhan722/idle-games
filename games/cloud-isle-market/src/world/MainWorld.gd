@@ -1,11 +1,35 @@
 extends Node2D
 class_name MainWorld
-## Panoramic 3-Island World with 110px~140px Spacious Building Layout (`src/world/MainWorld.gd`) — Visual Polish Patch
-## Calibrated X-Coordinates (110px~140px clean spacing, zero overlap):
-## - Island 1 (Henesys): AppleTree (596, 112), SoilPlots (692, 128) & (760, 128), Cottage (796, 110),
-##   Mortar Workshop (912, 122), MarketStall (1038, 118)
-## - Island 2 (Ellinia): Left Hut (128, 118), SoilPlots (246, 126) & (312, 126), Cauldron Workshop (422, 124)
-## - Island 3 (Orbis Coast): AppleTree (1432, 110), SoilPlots (1518, 116) & (1582, 116), Dual Workshop (1668, 116), Right Tiki (1782, 118)
+## Panoramic 3-Island World (`src/world/MainWorld.gd`)
+## Strictly enforces GEMINI.md Laws 1~6:
+## - Unified `GROUND_Y = 124.0` (`EconomyConfig.GROUND_Y`) across all islands.
+## - Bottom-center grounding pivot (`centered = true`, `offset = Vector2(0.0, -float(frame_h) * 0.5)`) on all buildings & props.
+## - Strict `z_index` layering (`Z_SKY = -100`, `Z_TERRAIN = -20`, `Z_SHADOW = -5`, `Z_SOIL_BASE = -2`, `Z_BUILDING = 0`, `Z_CROP = 1`, `Z_UNIT = 10`, `Z_CARRY_EMOTE = 20`, `Z_FLOATING_UI = 50`).
+## - 1D Slot Allocator & Anti-Overlap Assertion (`|X_A - X_B| >= (W_A + W_B)/2 + 28px`, 0% horizontal overlap).
+
+const GROUND_Y := 124.0
+
+## GEMINI.md Law 3.1 & 3.2: 1D Slot Definitions (every adjacent pair satisfies `|X_A - X_B| >= (W_A + W_B)/2 + 28.0`)
+const ISLAND_SLOTS: Dictionary = {
+	1: [
+		{"id": "apple_tree_1", "x": 612.4, "tex_w": 112.0, "tex_h": 120.0, "scale": 0.65},
+		{"id": "soil_plot_1",  "x": 710.8, "tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00},
+		{"id": "cottage_1",    "x": 811.2, "tex_w": 118.0, "tex_h": 114.0, "scale": 0.65},
+		{"id": "mortar_1",     "x": 908.4, "tex_w": 68.0,  "tex_h": 58.0,  "scale": 0.85},
+		{"id": "stall_1",      "x": 1013.4,"tex_w": 128.0, "tex_h": 104.0, "scale": 0.72}
+	],
+	2: [
+		{"id": "left_hut_2",   "x": 144.0, "tex_w": 112.0, "tex_h": 108.0, "scale": 0.68},
+		{"id": "soil_plot_2",  "x": 272.0, "tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00},
+		{"id": "cauldron_2",   "x": 397.0, "tex_w": 68.0,  "tex_h": 62.0,  "scale": 0.85}
+	],
+	3: [
+		{"id": "apple_tree_3", "x": 1462.0,"tex_w": 112.0, "tex_h": 120.0, "scale": 0.65},
+		{"id": "soil_plot_3",  "x": 1562.4,"tex_w": 64.0,  "tex_h": 26.0,  "scale": 1.00},
+		{"id": "orbis_work_3", "x": 1655.3,"tex_w": 68.0,  "tex_h": 58.0,  "scale": 0.85},
+		{"id": "right_tiki_3", "x": 1755.6,"tex_w": 116.0, "tex_h": 108.0, "scale": 0.68}
+	]
+}
 
 var tex_henesys: Texture2D
 var tex_ellinia: Texture2D
@@ -21,8 +45,8 @@ var camera_controller: CameraController
 var hud: HUD
 var floating_text: FloatingText
 
-@onready var world_root: Node2D = Node2D.new()
-@onready var ysort_layer: Node2D = Node2D.new()
+var world_root: Node2D = Node2D.new()
+var ysort_layer: Node2D = Node2D.new()
 
 var soil_plots: Array[SoilPlot] = []
 var mortar_workshop: Workshop
@@ -34,6 +58,12 @@ var customers: Array[CustomerNPC] = []
 
 var island2_props: Array[Node2D] = []
 var island3_props: Array[Node2D] = []
+var tree_1_node: Sprite2D
+var cot_1_node: Sprite2D
+var left_hut_node: Sprite2D
+var tree_3_node: Sprite2D
+var right_tiki_node: Sprite2D
+var landscape_nodes: Dictionary = {}
 
 var customer_spawn_timer: float = 4.0
 var vip_customer_timer: float = 38.0
@@ -42,7 +72,18 @@ var cloud_time: float = 0.0
 var chimney_timer: float = 0.0
 var chimney_wisps: Array[Dictionary] = []
 
+## v2.3 Direction 2: Floating Cloud Gift Encounter (`云端奇遇礼盒`)
+var tex_delicacies: Texture2D
+var cloud_gift_sprite: Sprite2D
+var cloud_gift_label: Label
+var cloud_gift_active: bool = false
+var cloud_gift_timer: float = 22.0
+var cloud_gift_pos: Vector2 = Vector2(560.0, 34.0)
+
 func _ready() -> void:
+	z_index = EconomyConfig.Z_TERRAIN
+	z_as_relative = false
+
 	tex_henesys = load("res://assets/pixel_art/islands/island_henesys.png")
 	tex_ellinia = load("res://assets/pixel_art/islands/island_ellinia.png")
 	tex_orbis = load("res://assets/pixel_art/islands/island_orbis_coast.png")
@@ -51,6 +92,9 @@ func _ready() -> void:
 	tex_cottage = load("res://assets/pixel_art/buildings/cottage_mushroom.png")
 	tex_left_hut = load("res://assets/pixel_art/buildings/landmark_left_hut.png")
 	tex_right_tiki = load("res://assets/pixel_art/buildings/landmark_right_tiki.png")
+	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+
+	_assert_1d_slot_layout()
 
 	world_root.name = "WorldOffsetRoot"
 	world_root.position = Vector2(0.0, 36.0)
@@ -67,10 +111,30 @@ func _ready() -> void:
 	camera_controller = CameraController.new()
 	camera_controller.name = "CameraController"
 	add_child(camera_controller)
+	camera_controller.setup_world(self)
 
 	floating_text = FloatingText.new()
 	floating_text.name = "FloatingText"
 	world_root.add_child(floating_text)
+
+	cloud_gift_sprite = Sprite2D.new()
+	cloud_gift_sprite.name = "CloudGiftSprite"
+	cloud_gift_sprite.texture = tex_delicacies
+	cloud_gift_sprite.region_enabled = false
+	cloud_gift_sprite.hframes = 4
+	cloud_gift_sprite.vframes = 1
+	cloud_gift_sprite.frame = 3
+	cloud_gift_sprite.centered = true
+	cloud_gift_sprite.scale = Vector2(0.85, 0.85)
+	cloud_gift_sprite.visible = false
+	cloud_gift_sprite.z_index = EconomyConfig.Z_CARRY_EMOTE
+	cloud_gift_sprite.z_as_relative = false
+	world_root.add_child(cloud_gift_sprite)
+
+	cloud_gift_label = EconomyConfig.create_pixel_label("★奇遇礼盒", 14, Color("#FFE066"), true)
+	cloud_gift_label.custom_minimum_size = Vector2(84.0, 20.0)
+	cloud_gift_label.position = Vector2(-42.0, -34.0)
+	cloud_gift_sprite.add_child(cloud_gift_label)
 
 	var canvas_layer := CanvasLayer.new()
 	canvas_layer.layer = 10
@@ -91,6 +155,30 @@ func _ready() -> void:
 	EventBus.toggle_desktop_mode.connect(_on_toggle_desktop_mode)
 	_apply_desktop_mode(GameManager.desktop_companion_mode)
 
+func _assert_1d_slot_layout() -> void:
+	for isl_idx in ISLAND_SLOTS.keys():
+		var slots: Array = ISLAND_SLOTS[isl_idx]
+		for i in range(slots.size() - 1):
+			var a: Dictionary = slots[i]
+			var b: Dictionary = slots[i + 1]
+			var wa := float(a["tex_w"]) * float(a["scale"])
+			var wb := float(b["tex_w"]) * float(b["scale"])
+			var dist := absf(float(b["x"]) - float(a["x"]))
+			var min_req := (wa + wb) * 0.5 + EconomyConfig.MIN_BUILDING_PADDING
+			assert(dist >= min_req - 0.5, "Building Overlap Detected on Island %d between %s and %s!" % [isl_idx, str(a["id"]), str(b["id"])])
+
+func _make_grounded_prop(tex: Texture2D, slot_x: float, frame_h: int, sc: float) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	# GEMINI.md Law 2.2: Bottom-Center Pivot (`centered = true`, `offset = Vector2(0.0, -float(frame_h) * 0.5)`)
+	sp.centered = true
+	sp.offset = Vector2(0.0, -float(frame_h) * 0.5)
+	sp.scale = Vector2(sc, sc)
+	sp.position = Vector2(slot_x, GROUND_Y)
+	sp.z_index = EconomyConfig.Z_BUILDING
+	sp.z_as_relative = false
+	return sp
+
 func _on_toggle_desktop_mode(enabled: bool) -> void:
 	_apply_desktop_mode(enabled)
 
@@ -107,123 +195,164 @@ func _apply_desktop_mode(enabled: bool) -> void:
 	queue_redraw()
 
 func get_active_island_bounds() -> Rect2:
-	return Rect2(40.0, 0.0, 1840.0, 300.0)
+	var z := maxf(0.1, companion_zoom)
+	var rx := clampf(world_root.position.x + 40.0 * z, 0.0, 1880.0)
+	var ry := clampf(world_root.position.y + 8.0 * z, 0.0, 260.0)
+	var rw := clampf(1840.0 * z, 200.0, 1920.0 - rx)
+	var rh := clampf(230.0 * z, 100.0, 300.0 - ry)
+	return Rect2(rx, ry, rw, rh)
 
 func _build_landmarks_and_buildings() -> void:
-	# Island 1 (Henesys) — Spacious 110px~140px building spacing:
-	# Apple Tree at x=596 -> SoilPlots at x=692..760 -> Cottage at x=796 -> Mortar at x=912 -> Market Stall at x=1038
-	var tree_1 := Sprite2D.new()
-	tree_1.texture = tex_tree
-	tree_1.centered = false
-	tree_1.position = Vector2(596.0, 112.0)
-	tree_1.offset = Vector2(-58.0, -114.0)
-	ysort_layer.add_child(tree_1)
+	# Island 1 (Henesys): AppleTree (x=612.4), SoilPlot (x=710.8), Cottage (x=811.2), Mortar (x=908.4), Stall (x=1013.4)
+	# GEMINI.md Law 3.3: `apple_tree.png` & `cottage_mushroom.png` have built-in grass base shadows -> NO procedural shadow!
+	tree_1_node = _make_grounded_prop(tex_tree, 612.4, 120, 0.65)
+	tree_1_node.name = "AppleTree_1"
+	ysort_layer.add_child(tree_1_node)
 
-	var cot_1 := Sprite2D.new()
-	cot_1.texture = tex_cottage
-	cot_1.centered = false
-	cot_1.position = Vector2(796.0, 110.0)
-	cot_1.offset = Vector2(-62.0, -112.0)
-	ysort_layer.add_child(cot_1)
+	cot_1_node = _make_grounded_prop(tex_cottage, 811.2, 114, 0.65)
+	cot_1_node.name = "MushroomCottage_1"
+	ysort_layer.add_child(cot_1_node)
 
-	# Island 2 (Ellinia): Left Landmark Hut (x=128) -> SoilPlots (x=246..312) -> Cauldron Workshop (x=422)
-	var left_sp := Sprite2D.new()
-	left_sp.texture = tex_left_hut
-	left_sp.centered = false
-	left_sp.position = Vector2(128.0, 118.0)
-	left_sp.offset = Vector2(-58.0, -108.0)
-	ysort_layer.add_child(left_sp)
-	island2_props.append(left_sp)
+	# Island 2 (Ellinia): Left Hut (x=144.0), SoilPlot (x=272.0), Cauldron (x=397.0)
+	left_hut_node = _make_grounded_prop(tex_left_hut, 144.0, 108, 0.68)
+	left_hut_node.name = "LeftHut_2"
+	ysort_layer.add_child(left_hut_node)
+	island2_props.append(left_hut_node)
 
-	# Island 3 (Orbis Coast): Apple Tree (x=1432) -> SoilPlots (x=1518..1582) -> Dual Workshop (x=1668) -> Right Tiki (x=1782)
-	var tree_3 := Sprite2D.new()
-	tree_3.texture = tex_tree
-	tree_3.centered = false
-	tree_3.position = Vector2(1432.0, 110.0)
-	tree_3.offset = Vector2(-58.0, -114.0)
-	ysort_layer.add_child(tree_3)
-	island3_props.append(tree_3)
+	# Island 3 (Orbis Coast): AppleTree (x=1462.0), SoilPlot (x=1562.4), Dual Workshop (x=1655.3), Right Tiki (x=1755.6)
+	tree_3_node = _make_grounded_prop(tex_tree, 1462.0, 120, 0.65)
+	tree_3_node.name = "AppleTree_3"
+	ysort_layer.add_child(tree_3_node)
+	island3_props.append(tree_3_node)
 
-	var right_sp := Sprite2D.new()
-	right_sp.texture = tex_right_tiki
-	right_sp.centered = false
-	right_sp.position = Vector2(1782.0, 118.0)
-	right_sp.offset = Vector2(-60.0, -108.0)
-	ysort_layer.add_child(right_sp)
-	island3_props.append(right_sp)
+	right_tiki_node = _make_grounded_prop(tex_right_tiki, 1755.6, 108, 0.68)
+	right_tiki_node.name = "RightTiki_3"
+	ysort_layer.add_child(right_tiki_node)
+	island3_props.append(right_tiki_node)
 
-	# Island 1 Mortar Workshop (x=912, 116px right of Cottage and 126px left of Market Stall!)
 	mortar_workshop = Workshop.new()
-	mortar_workshop.setup_workshop("mortar", 1, Vector2(912.0, 122.0), Vector2(-34.0, -52.0))
+	mortar_workshop.name = "MortarWorkshop_1"
+	mortar_workshop.setup_workshop("mortar", 1, Vector2(908.4, GROUND_Y))
 	ysort_layer.add_child(mortar_workshop)
 
-	# Island 2 Cauldron Workshop (x=422, 110px right of SoilPlots)
 	cauldron_workshop = Workshop.new()
-	cauldron_workshop.setup_workshop("cauldron", 2, Vector2(422.0, 124.0), Vector2(-34.0, -56.0))
+	cauldron_workshop.name = "CauldronWorkshop_2"
+	cauldron_workshop.setup_workshop("cauldron", 2, Vector2(397.0, GROUND_Y))
 	ysort_layer.add_child(cauldron_workshop)
 
-	# Island 3 Dual Mortar + Cauldron Linked Workshop (x=1668, 114px left of Right Tiki)
 	orbis_linked_workshop = Workshop.new()
-	orbis_linked_workshop.setup_workshop("orbis_linked", 3, Vector2(1668.0, 116.0), Vector2(-34.0, -52.0))
+	orbis_linked_workshop.name = "OrbisWorkshop_3"
+	orbis_linked_workshop.setup_workshop("orbis_linked", 3, Vector2(1655.3, GROUND_Y))
 	ysort_layer.add_child(orbis_linked_workshop)
 
-	# Island 1 Main Market Stall (x=1038, 126px right of Mortar Workshop — zero overlap!)
 	market_stall = MarketStall.new()
-	market_stall.position = Vector2(1038.0, 118.0)
+	market_stall.name = "MarketStall_1"
+	market_stall.position = Vector2(1013.4, GROUND_Y)
 	ysort_layer.add_child(market_stall)
 
+	# Functional Miniature Landscapes (v2.5-2)
+	# Island 1: Bee Hive (x=662.0)
+	var tex_beehive: Texture2D = load("res://assets/pixel_art/buildings/decor_beehive.png") if ResourceLoader.exists("res://assets/pixel_art/buildings/decor_beehive.png") else tex_tree
+	var node_beehive := _make_grounded_prop(tex_beehive, 662.0, 52, 0.50)
+	node_beehive.name = "Landscape_BeeHive_1"
+	node_beehive.visible = false
+	ysort_layer.add_child(node_beehive)
+	landscape_nodes["bee_hive"] = node_beehive
+
+	# Island 2: Wind Chime (x=210.0)
+	var tex_windchime: Texture2D = load("res://assets/pixel_art/buildings/decor_windchime.png") if ResourceLoader.exists("res://assets/pixel_art/buildings/decor_windchime.png") else tex_left_hut
+	var node_windchime := _make_grounded_prop(tex_windchime, 210.0, 58, 0.58)
+	node_windchime.name = "Landscape_WindChime_2"
+	node_windchime.visible = false
+	ysort_layer.add_child(node_windchime)
+	island2_props.append(node_windchime)
+	landscape_nodes["wind_chime"] = node_windchime
+
+	# Island 3: Tiki Torch (x=1705.0)
+	var tex_torch: Texture2D = load("res://assets/pixel_art/buildings/decor_lamp.png")
+	var node_torch := _make_grounded_prop(tex_torch, 1705.0, 66, 0.58)
+	node_torch.name = "Landscape_TikiTorch_3"
+	node_torch.visible = false
+	ysort_layer.add_child(node_torch)
+	island3_props.append(node_torch)
+	landscape_nodes["tiki_torch"] = node_torch
+
+func get_island_main_building_rects() -> Dictionary:
+	var oy := world_root.position.y
+	var p1_rect := soil_plots[0].get_screen_rect() if soil_plots.size() > 0 else Rect2(710.8 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	var p2_rect := soil_plots[1].get_screen_rect() if soil_plots.size() > 1 else Rect2(272.0 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	var p3_rect := soil_plots[2].get_screen_rect() if soil_plots.size() > 2 else Rect2(1562.4 - 32.0, GROUND_Y - 26.0, 64.0, 26.0)
+	return {
+		1: [
+			{"name": "AppleTree_1",       "rect": _sprite_global_rect(tree_1_node, oy)},
+			{"name": "SoilPlot_1",        "rect": Rect2(p1_rect.position + Vector2(0, oy), p1_rect.size)},
+			{"name": "MushroomCottage_1", "rect": _sprite_global_rect(cot_1_node, oy)},
+			{"name": "MortarWorkshop_1",  "rect": Rect2(mortar_workshop.get_screen_rect().position + Vector2(0, oy), mortar_workshop.get_screen_rect().size)},
+			{"name": "MarketStall_1",     "rect": Rect2(market_stall.get_screen_rect().position + Vector2(0, oy), market_stall.get_screen_rect().size)}
+		],
+		2: [
+			{"name": "LeftHut_2",         "rect": _sprite_global_rect(left_hut_node, oy)},
+			{"name": "SoilPlot_2",        "rect": Rect2(p2_rect.position + Vector2(0, oy), p2_rect.size)},
+			{"name": "CauldronWorkshop_2","rect": Rect2(cauldron_workshop.get_screen_rect().position + Vector2(0, oy), cauldron_workshop.get_screen_rect().size)}
+		],
+		3: [
+			{"name": "AppleTree_3",       "rect": _sprite_global_rect(tree_3_node, oy)},
+			{"name": "SoilPlot_3",        "rect": Rect2(p3_rect.position + Vector2(0, oy), p3_rect.size)},
+			{"name": "OrbisWorkshop_3",   "rect": Rect2(orbis_linked_workshop.get_screen_rect().position + Vector2(0, oy), orbis_linked_workshop.get_screen_rect().size)},
+			{"name": "RightTiki_3",       "rect": _sprite_global_rect(right_tiki_node, oy)}
+		]
+	}
+
+func _sprite_global_rect(sp: Sprite2D, oy: float) -> Rect2:
+	if sp == null or sp.texture == null:
+		return Rect2()
+	var w := float(sp.texture.get_width()) * absf(sp.scale.x)
+	var h := float(sp.texture.get_height()) * absf(sp.scale.y)
+	return Rect2(sp.position.x - w * 0.5, sp.position.y + oy - h, w, h)
+
 func _build_soil_plots() -> void:
-	# Island 1 (Henesys): 2x SoilPlot (64x26 enlarged beds)
-	var isl1_coords := [Vector2(692.0, 128.0), Vector2(760.0, 132.0)]
-	for i in range(2):
-		var p := SoilPlot.new()
-		p.setup_plot(1, i, "crop_0", isl1_coords[i])
-		ysort_layer.add_child(p)
-		soil_plots.append(p)
+	var p1 := SoilPlot.new()
+	p1.setup_plot(1, 0, "crop_0", Vector2(710.8, GROUND_Y))
+	ysort_layer.add_child(p1)
+	soil_plots.append(p1)
 
-	# Island 2 (Ellinia): 2x SoilPlot
-	var isl2_coords := [Vector2(246.0, 126.0), Vector2(312.0, 130.0)]
-	for i in range(2):
-		var p := SoilPlot.new()
-		p.setup_plot(2, i, "crop_2", isl2_coords[i])
-		ysort_layer.add_child(p)
-		soil_plots.append(p)
+	var p2 := SoilPlot.new()
+	p2.setup_plot(2, 0, "crop_2", Vector2(272.0, GROUND_Y))
+	ysort_layer.add_child(p2)
+	soil_plots.append(p2)
 
-	# Island 3 (Orbis Coast Dry Sand): 2x SoilPlot
-	var isl3_coords := [Vector2(1518.0, 114.0), Vector2(1582.0, 118.0)]
-	for i in range(2):
-		var p := SoilPlot.new()
-		p.setup_plot(3, i, "crop_3", isl3_coords[i])
-		ysort_layer.add_child(p)
-		soil_plots.append(p)
+	var p3 := SoilPlot.new()
+	p3.setup_plot(3, 0, "crop_3", Vector2(1562.4, GROUND_Y))
+	ysort_layer.add_child(p3)
+	soil_plots.append(p3)
 
 func _spawn_all_roster_slots() -> void:
 	var roster_defs := [
 		# Island 1 (Henesys): Bunny Max 2, Otter Max 2, Fox Max 1, Shiba Max 1
-		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 0, Vector2(692.0, 132.0)],
-		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 1, Vector2(760.0, 134.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 0, Vector2(822.0, 136.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 1, Vector2(856.0, 136.0)],
-		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 1, 0, Vector2(892.0, 128.0)],
-		[AnimalWorker.RoleType.SHIBA_MANAGER, 1, 0, Vector2(1058.0, 136.0)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 0, Vector2(698.0, GROUND_Y)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 1, 1, Vector2(724.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 0, Vector2(852.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 1, 1, Vector2(868.0, GROUND_Y)],
+		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 1, 0, Vector2(890.0, GROUND_Y)],
+		[AnimalWorker.RoleType.SHIBA_MANAGER, 1, 0, Vector2(1036.0, GROUND_Y)],
 
 		# Island 2 (Ellinia): Bunny Max 2, Otter Max 1, Penguin Max 1, Toucan Max 2
-		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 0, Vector2(246.0, 130.0)],
-		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 1, Vector2(312.0, 132.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 2, 0, Vector2(352.0, 132.0)],
-		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 2, 0, Vector2(400.0, 128.0)],
-		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 0, Vector2(442.0, 132.0)],
-		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 1, Vector2(468.0, 132.0)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 0, Vector2(262.0, GROUND_Y)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 2, 1, Vector2(282.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 2, 0, Vector2(335.0, GROUND_Y)],
+		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 2, 0, Vector2(378.0, GROUND_Y)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 0, Vector2(426.0, GROUND_Y)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 2, 1, Vector2(448.0, GROUND_Y)],
 
 		# Island 3 (Orbis Coast): Bunny Max 2, Otter Max 2, Fox Max 1, Penguin Max 1, Toucan Max 2
-		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 0, Vector2(1518.0, 118.0)],
-		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 1, Vector2(1582.0, 120.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 0, Vector2(1612.0, 118.0)],
-		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 1, Vector2(1632.0, 118.0)],
-		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 3, 0, Vector2(1646.0, 118.0)],
-		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 3, 0, Vector2(1690.0, 118.0)],
-		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 0, Vector2(1716.0, 118.0)],
-		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 1, Vector2(1742.0, 118.0)]
+		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 0, Vector2(1552.0, GROUND_Y)],
+		[AnimalWorker.RoleType.BUNNY_FARMER, 3, 1, Vector2(1572.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 0, Vector2(1608.0, GROUND_Y)],
+		[AnimalWorker.RoleType.OTTER_LOGISTICS, 3, 1, Vector2(1624.0, GROUND_Y)],
+		[AnimalWorker.RoleType.FOX_MORTAR_CHEF, 3, 0, Vector2(1638.0, GROUND_Y)],
+		[AnimalWorker.RoleType.PENGUIN_ALCHEMIST, 3, 0, Vector2(1674.0, GROUND_Y)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 0, Vector2(1702.0, GROUND_Y)],
+		[AnimalWorker.RoleType.TOUCAN_TRADER, 3, 1, Vector2(1722.0, GROUND_Y)]
 	]
 	for rd in roster_defs:
 		var w := AnimalWorker.new()
@@ -233,10 +362,7 @@ func _spawn_all_roster_slots() -> void:
 
 func find_best_plot_for_island(isl_idx: int) -> SoilPlot:
 	for p in soil_plots:
-		if p.island_idx == isl_idx and p.is_plot_active() and not p.reserved_by_worker and p.growth >= 0.85:
-			return p
-	for p in soil_plots:
-		if p.island_idx == isl_idx and p.is_plot_active() and not p.reserved_by_worker:
+		if p.island_idx == isl_idx and p.is_plot_active():
 			return p
 	return null
 
@@ -249,21 +375,81 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif not event.pressed and WindowController != null and WindowController.is_dragging:
 				WindowController.end_window_drag()
 				return
-		elif event.pressed and GameManager.desktop_companion_mode:
-			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				companion_zoom = clampf(companion_zoom + 0.08, 0.4, 1.5)
-				_apply_companion_zoom()
-			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				companion_zoom = clampf(companion_zoom - 0.08, 0.4, 1.5)
-				_apply_companion_zoom()
+			elif event.pressed:
+				var local_pos: Vector2 = (event.position - world_root.position) / maxf(0.1, companion_zoom)
+				if cloud_gift_active and cloud_gift_sprite != null and local_pos.distance_to(cloud_gift_sprite.position) <= 36.0:
+					_claim_cloud_gift()
+					return
+				for w in workers:
+					if is_instance_valid(w) and w.visible and w.get_pet_hit_rect().has_point(local_pos):
+						w.trigger_pet_boost()
+						return
+
+func _claim_cloud_gift() -> void:
+	cloud_gift_active = false
+	if cloud_gift_sprite != null:
+		cloud_gift_sprite.visible = false
+	cloud_gift_timer = randf_range(55.0, 85.0)
+	var bonus_gold := maxi(60, int(round(GameManager.estimate_idle_gold_per_sec() * 25.0)))
+	GameManager.add_gold(bonus_gold)
+	GameManager.trigger_carnival_frenzy(20.0)
+	if SoundManager != null:
+		SoundManager.play_milestone_sfx()
+	EventBus.spawn_floating_text.emit(cloud_gift_pos, "★奇遇礼盒+" + str(bonus_gold) + "G · 嘉年华20s!", Color("#FFE066"))
 
 func _apply_companion_zoom() -> void:
+	if camera_controller != null:
+		camera_controller.target_zoom = clampf(companion_zoom, CameraController.MIN_ZOOM, CameraController.MAX_ZOOM)
 	world_root.scale = Vector2(companion_zoom, companion_zoom)
-	world_root.position = Vector2(960.0 * (1.0 - companion_zoom), 36.0 + 200.0 * (1.0 - companion_zoom))
 	queue_redraw()
+
+func _sync_landscape_nodes() -> void:
+	if GameManager == null:
+		return
+	if landscape_nodes.has("bee_hive") and is_instance_valid(landscape_nodes["bee_hive"]):
+		landscape_nodes["bee_hive"].visible = GameManager.is_landscape_unlocked("bee_hive")
+	if landscape_nodes.has("wind_chime") and is_instance_valid(landscape_nodes["wind_chime"]):
+		var isl2_open: bool = bool(GameManager.unlocked_islands.get(2, false))
+		landscape_nodes["wind_chime"].visible = isl2_open and GameManager.is_landscape_unlocked("wind_chime")
+	if landscape_nodes.has("tiki_torch") and is_instance_valid(landscape_nodes["tiki_torch"]):
+		var isl3_open: bool = bool(GameManager.unlocked_islands.get(3, false))
+		landscape_nodes["tiki_torch"].visible = isl3_open and GameManager.is_landscape_unlocked("tiki_torch")
 
 func _process(delta: float) -> void:
 	cloud_time += delta
+	_sync_landscape_nodes()
+
+	# v2.3 Direction 1: Weather & Time-of-Day ambient lighting interpolation
+	var target_tint := Color.WHITE
+	if GameManager != null:
+		match GameManager.current_weather:
+			1:
+				target_tint = Color(1.0, 0.94, 0.86, 1.0)
+			2:
+				target_tint = Color(0.88, 0.92, 1.0, 1.0)
+			3:
+				target_tint = Color(0.92, 0.96, 1.0, 1.0)
+	var win_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+	var target_alpha := 0.0 if (WindowController != null and WindowController.boss_stealth_active) else win_op
+	target_tint.a = target_alpha
+	world_root.modulate = world_root.modulate.lerp(target_tint, minf(1.0, delta * 3.5))
+	world_root.modulate.a = target_alpha
+
+	# v2.3 Direction 2: Floating Cloud Gift hovering over the open Lotus Pond (`x: 1120..1250`)
+	if cloud_gift_active:
+		cloud_gift_pos.x = 1188.0 + sin(cloud_time * 0.85) * 48.0
+		cloud_gift_pos.y = 42.0 + sin(cloud_time * 2.6) * 4.0
+		if cloud_gift_sprite != null:
+			cloud_gift_sprite.visible = true
+			cloud_gift_sprite.position = cloud_gift_pos
+	else:
+		cloud_gift_timer -= delta
+		if cloud_gift_timer <= 0.0:
+			cloud_gift_active = true
+			cloud_gift_pos = Vector2(1188.0, 42.0)
+			if cloud_gift_sprite != null:
+				cloud_gift_sprite.visible = true
+				cloud_gift_sprite.position = cloud_gift_pos
 
 	var isl2_on := bool(GameManager.unlocked_islands.get(2, false))
 	var isl3_on := bool(GameManager.unlocked_islands.get(3, false))
@@ -275,7 +461,7 @@ func _process(delta: float) -> void:
 	chimney_timer += delta
 	if chimney_timer >= 1.4:
 		chimney_timer = 0.0
-		chimney_wisps.append({"x": 820.0, "y": 58.0, "r": 3.5, "alpha": 0.55})
+		chimney_wisps.append({"x": 796.0, "y": 54.0, "r": 3.5, "alpha": 0.55})
 	for i in range(chimney_wisps.size() - 1, -1, -1):
 		chimney_wisps[i]["y"] = float(chimney_wisps[i]["y"]) - 7.5 * delta
 		chimney_wisps[i]["x"] = float(chimney_wisps[i]["x"]) + sin(cloud_time + float(i)) * 4.0 * delta
@@ -292,7 +478,8 @@ func _process(delta: float) -> void:
 	if customer_spawn_timer <= 0.0:
 		customer_spawn_timer = randf_range(18.0, 30.0)
 		if customers.size() < 4:
-			_spawn_customer(false)
+			var roll_vip := randf() < GameManager.get_weather_vip_chance()
+			_spawn_customer(roll_vip)
 
 	if isl3_on:
 		vip_customer_timer -= delta
@@ -302,17 +489,16 @@ func _process(delta: float) -> void:
 				_spawn_customer(true)
 
 	if WindowController != null and hud != null:
-		WindowController.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect())
+		var active_drawer_rect := HUD.DRAWER_RECT if hud.drawer_expanded else Rect2()
+		WindowController.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect(), active_drawer_rect)
 
 	queue_redraw()
 
 func _spawn_customer(as_vip: bool) -> void:
 	var c := CustomerNPC.new()
-	var sp := Vector2(610.0, 140.0)
-	if as_vip:
+	var sp := Vector2(1075.0, GROUND_Y)
+	if bool(GameManager.unlocked_islands.get(3, false)):
 		sp = waypoint_graph.get_named_pos("spawn_right")
-	elif bool(GameManager.unlocked_islands.get(2, false)):
-		sp = waypoint_graph.get_named_pos("spawn_left")
 	c.setup_customer(sp, waypoint_graph, market_stall, as_vip)
 	ysort_layer.add_child(c)
 	customers.append(c)
@@ -369,5 +555,20 @@ func _draw() -> void:
 
 	for wisp in chimney_wisps:
 		draw_circle(Vector2(float(wisp["x"]), float(wisp["y"])), float(wisp["r"]), Color(0.98, 0.96, 0.92, float(wisp["alpha"])))
+
+	# v2.3 Direction 1: Dusk/Night lotus pond pixel fireflies; Rain diagonal droplets (no sky circles behind roofs)
+	if GameManager != null and not (WindowController != null and WindowController.boss_stealth_active):
+		var w_state := GameManager.current_weather
+		if w_state == 1 or w_state == 2:
+			for fi in range(6):
+				var fx := 1104.0 + float(fi) * 34.0 + sin(cloud_time * 1.8 + float(fi) * 1.3) * 8.0
+				var fy := oy + 126.0 + cos(cloud_time * 2.3 + float(fi) * 0.9) * 6.0
+				var fa := 0.55 + 0.40 * sin(cloud_time * 4.0 + float(fi))
+				draw_rect(Rect2(fx, fy, 3.0, 3.0), Color(1.0, 0.94, 0.42, fa), true)
+		elif w_state == 3:
+			for ri in range(14):
+				var rx := fmod(580.0 + float(ri) * 52.0 + cloud_time * 95.0, 720.0) + 580.0
+				var ry := oy + fmod(float(ri) * 23.0 + cloud_time * 160.0, 75.0) + 72.0
+				draw_line(Vector2(rx, ry), Vector2(rx - 3.0, ry + 8.0), Color(0.78, 0.92, 1.0, 0.42), 1.0)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

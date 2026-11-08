@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Generates crisp 16-bit PCM .wav sound effects and 4 distinct time-of-day/weather
-ambient nature loops for Cloud Isle Market (Phase 3):
-- harvest_pop.wav (plucky pop when harvesting crops / eating snacks)
-- meso_coin.wav (bright metallic dual-tone coin chime)
-- water_splash.wav (soft bubbly water droplet chime)
-- wood_build.wav (warm wooden mallet tap + upgrade arpeggio)
-- ui_click.wav & ui_hover.wav (wooden button click/hover)
-- ambient_day.wav (sunny morning birdsong chirps + babbling brook)
-- ambient_dusk.wav (warm sunset breeze + soft wooden wind chime)
-- ambient_night.wav (gentle night crickets + mystic forest pad)
-- ambient_rain.wav (pitter-patter magic rain + crystalline bell chime)
+Generates crisp 16-bit PCM .wav sound effects and 5 distinct ambient nature loops
+for Cloud Isle Market (PRD v2.2):
+- harvest_pop.wav    (plucky pop when harvesting crops)
+- meso_coin.wav      (bright metallic dual-tone coin chime)
+- water_splash.wav   (soft bubbly water droplet chime)
+- wood_build.wav     (warm wooden mallet tap + upgrade arpeggio)
+- ui_click.wav       (wooden button click)
+- ui_hover.wav       (subtle wooden button hover)
+- ambient_day.wav    (3.2s sunny morning birdsong chirps + gentle breeze)
+- ambient_dusk.wav   (3.4s warm sunset breeze + pentatonic wooden wind chime)
+- ambient_night.wav  (3.6s gentle night crickets + mystic forest pad)
+- ambient_rain.wav   (3.8s pitter-patter magic rain + crystalline bell chime)
+- ambient_stream.wav (4.0s babbling lotus brook + water droplet harmonics)
 """
 
 import math
@@ -146,7 +148,7 @@ def gen_ui_hover() -> list[float]:
 
 
 def gen_ambient_day() -> list[float]:
-    # Sunny Day: Babbling stream + gentle morning bird chirps at t=0.6s and t=2.1s
+    # Sunny Day (3.2s): Morning meadow breeze + cheerful bird chirps
     dur = 3.2
     n = int(SAMPLE_RATE * dur)
     out = []
@@ -158,30 +160,30 @@ def gen_ambient_day() -> list[float]:
         raw = rng.random() * 2.0 - 1.0
         lp1 = lp1 * 0.95 + raw * 0.05
         lp2 = lp2 * 0.91 + lp1 * 0.09
-        water = lp2 * (0.65 + 0.35 * math.sin(2.0 * math.pi * 0.625 * t)) * 0.08
+        meadow = lp2 * (0.65 + 0.35 * math.sin(2.0 * math.pi * 0.625 * t)) * 0.075
         bird = 0.0
         for bt in (0.55, 0.72, 2.10, 2.28):
             if bt <= t < bt + 0.11:
                 lt = t - bt
                 bf = 1650.0 + 550.0 * math.sin(lt * 45.0)
-                bird += math.sin(2.0 * math.pi * bf * lt) * math.sin(math.pi * lt / 0.11) * 0.045
-        out.append(water + bird)
+                bird += math.sin(2.0 * math.pi * bf * lt) * math.sin(math.pi * lt / 0.11) * 0.048
+        out.append(meadow + bird)
     return out
 
 
 def gen_ambient_dusk() -> list[float]:
-    # Sunset Dusk: Soft warm breeze + warm wooden/pentatonic wind chime
-    dur = 3.2
+    # Sunset Dusk (3.4s): Soft warm breeze + pentatonic wooden wind chime
+    dur = 3.4
     n = int(SAMPLE_RATE * dur)
     out = []
     rng = random.Random(202)
     lp = 0.0
-    chime_notes = [(0.3, 523.25), (1.1, 659.25), (1.9, 783.99), (2.5, 587.33)]
+    chime_notes = [(0.3, 523.25), (1.1, 659.25), (1.9, 783.99), (2.6, 587.33)]
     for i in range(n):
         t = i / SAMPLE_RATE
         raw = rng.random() * 2.0 - 1.0
         lp = lp * 0.975 + raw * 0.025
-        breeze = lp * (0.5 + 0.5 * math.sin(2.0 * math.pi * 0.3125 * t)) * 0.09
+        breeze = lp * (0.5 + 0.5 * math.sin(2.0 * math.pi * 0.294 * t)) * 0.09
         chime = 0.0
         for ct, cf in chime_notes:
             if t >= ct:
@@ -192,8 +194,8 @@ def gen_ambient_dusk() -> list[float]:
 
 
 def gen_ambient_night() -> list[float]:
-    # Firefly Night: Gentle rhythmic cricket trill + soft twilight harmonic pad
-    dur = 3.2
+    # Firefly Night (3.6s): Gentle rhythmic cricket trill + soft twilight harmonic pad
+    dur = 3.6
     n = int(SAMPLE_RATE * dur)
     out = []
     for i in range(n):
@@ -203,7 +205,7 @@ def gen_ambient_night() -> list[float]:
             + math.sin(2.0 * math.pi * 440.00 * t) * 0.012
         )
         cricket = 0.0
-        for ct in (0.2, 0.5, 1.4, 1.7, 2.6):
+        for ct in (0.2, 0.5, 1.4, 1.7, 2.6, 3.0):
             if ct <= t < ct + 0.18:
                 lt = t - ct
                 pulse = 0.5 + 0.5 * math.sin(2.0 * math.pi * 38.0 * lt)
@@ -213,13 +215,13 @@ def gen_ambient_night() -> list[float]:
 
 
 def gen_ambient_rain() -> list[float]:
-    # Rainbow / Magic Rain: Soft pitter-patter rain + crystalline wind chime
-    dur = 3.2
+    # Rainbow / Magic Rain (3.8s): Soft pitter-patter rain + crystalline wind chime
+    dur = 3.8
     n = int(SAMPLE_RATE * dur)
     out = []
     rng = random.Random(303)
     lp = 0.0
-    bells = [(0.2, 1046.5), (0.9, 1174.7), (1.6, 1318.5), (2.3, 1568.0)]
+    bells = [(0.2, 1046.5), (0.9, 1174.7), (1.7, 1318.5), (2.5, 1568.0), (3.2, 1318.5)]
     for i in range(n):
         t = i / SAMPLE_RATE
         raw = rng.random() * 2.0 - 1.0
@@ -234,6 +236,39 @@ def gen_ambient_rain() -> list[float]:
     return out
 
 
+def gen_ambient_stream() -> list[float]:
+    # Lotus Brook Stream (4.0s): Continuous multi-band flowing water + resonant droplet plinks
+    dur = 4.0
+    n = int(SAMPLE_RATE * dur)
+    out = []
+    rng = random.Random(404)
+    band_low = 0.0
+    band_mid = 0.0
+    droplets = [
+        (0.35, 740.0),
+        (0.92, 880.0),
+        (1.48, 660.0),
+        (2.15, 990.0),
+        (2.84, 784.0),
+        (3.45, 840.0),
+    ]
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        raw = rng.random() * 2.0 - 1.0
+        band_low = band_low * 0.965 + raw * 0.035
+        band_mid = band_mid * 0.89 + (raw - band_low) * 0.11
+        mod = 0.60 + 0.40 * math.sin(2.0 * math.pi * 0.50 * t + 0.8 * math.sin(2.0 * math.pi * 0.25 * t))
+        stream_flow = (band_low * 0.065 + band_mid * 0.035) * mod
+        plink = 0.0
+        for dt, df in droplets:
+            if dt <= t < dt + 0.14:
+                lt = t - dt
+                sweep_f = df + 240.0 * (lt / 0.14)
+                plink += math.sin(2.0 * math.pi * sweep_f * lt) * math.exp(-lt * 26.0) * 0.038
+        out.append(stream_flow + plink)
+    return out
+
+
 def main() -> None:
     write_wav("harvest_pop.wav", gen_harvest_pop())
     write_wav("meso_coin.wav", gen_meso_coin())
@@ -241,12 +276,12 @@ def main() -> None:
     write_wav("wood_build.wav", gen_wood_build())
     write_wav("ui_click.wav", gen_ui_click())
     write_wav("ui_hover.wav", gen_ui_hover())
-    write_wav("ambient_stream.wav", gen_ambient_day())
     write_wav("ambient_day.wav", gen_ambient_day())
     write_wav("ambient_dusk.wav", gen_ambient_dusk())
     write_wav("ambient_night.wav", gen_ambient_night())
     write_wav("ambient_rain.wav", gen_ambient_rain())
-    print("Generated all Phase 3 SFX & 4 weather ambient loops in:", SFX_DIR)
+    write_wav("ambient_stream.wav", gen_ambient_stream())
+    print("Generated all 11 unique SFX & ambient loops in:", SFX_DIR)
 
 
 if __name__ == "__main__":

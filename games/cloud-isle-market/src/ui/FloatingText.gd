@@ -1,24 +1,64 @@
 extends Node2D
 class_name FloatingText
-## Native Label Floating Text & Parabolic Gold Coin Effect (`src/ui/FloatingText.gd`) — Visual Polish Patch
-## - Uses native Godot `Label` nodes with `LabelSettings` (`font_size = 14`, `#FFE066` / pure white, `outline_size = 2`, `outline_color = Color.BLACK`).
+## Native Label Floating Text & Parabolic Gold Coin Effect (`src/ui/FloatingText.gd`)
+## Strictly enforces GEMINI.md Law 2.3 (`z_index = 50`) & Law 5 (`EconomyConfig.create_pixel_label`).
+
+const MAX_POOL_SIZE := 24
 
 var active_labels: Array[Dictionary] = []
+var _label_pool: Array[Label] = []
 var coin_arcs: Array[Dictionary] = []
 var tex_icons: Texture2D
 
 func _ready() -> void:
+	z_index = EconomyConfig.Z_FLOATING_UI
+	z_as_relative = false
 	tex_icons = load("res://assets/pixel_art/ui/icons_ui.png")
 	EventBus.spawn_floating_text.connect(_on_spawn_floating_text)
 	EventBus.customer_paid.connect(_on_customer_paid)
 
+func _acquire_pooled_label(text_str: String, final_col: Color) -> Label:
+	var lbl: Label = null
+	while _label_pool.size() > 0 and lbl == null:
+		var cand: Label = _label_pool.pop_back()
+		if is_instance_valid(cand):
+			lbl = cand
+	if lbl == null:
+		lbl = EconomyConfig.create_pixel_label(text_str, 14, final_col, true)
+		lbl.custom_minimum_size = Vector2(120.0, 22.0)
+		lbl.z_index = EconomyConfig.Z_FLOATING_UI
+		lbl.z_as_relative = false
+		add_child(lbl)
+	else:
+		lbl.text = text_str
+		lbl.label_settings = EconomyConfig.make_pixel_label_settings(14, final_col)
+		lbl.visible = true
+	lbl.modulate.a = 1.0
+	return lbl
+
+func _release_pooled_label(lbl: Label) -> void:
+	if not is_instance_valid(lbl):
+		return
+	if _label_pool.size() < MAX_POOL_SIZE:
+		lbl.visible = false
+		_label_pool.append(lbl)
+	else:
+		lbl.queue_free()
+
+func clear_all() -> void:
+	for item in active_labels:
+		var lbl: Label = item.get("node", null)
+		if is_instance_valid(lbl):
+			_release_pooled_label(lbl)
+	active_labels.clear()
+	coin_arcs.clear()
+	queue_redraw()
+
 func _on_spawn_floating_text(world_pos: Vector2, text_str: String, col: Color) -> void:
 	var is_gold := text_str.begins_with("+") and text_str.ends_with("G")
 	var final_col := Color("#FFE066") if is_gold else col
-	var lbl := PixelFontRenderer.create_label(text_str, 14, final_col, true)
+	var lbl := _acquire_pooled_label(text_str, final_col)
 	lbl.position = world_pos + Vector2(-60.0, 0.0)
-	lbl.custom_minimum_size = Vector2(120.0, 22.0)
-	add_child(lbl)
 	active_labels.append({
 		"node": lbl,
 		"ttl": 1.8
@@ -45,7 +85,7 @@ func _process(delta: float) -> void:
 			lbl.position.y -= 15.0 * delta
 			lbl.modulate.a = clampf(ttl / 0.6, 0.0, 1.0)
 			if ttl <= 0.0:
-				lbl.queue_free()
+				_release_pooled_label(lbl)
 				active_labels.remove_at(i)
 		else:
 			active_labels.remove_at(i)
