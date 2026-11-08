@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cmkgtsbachkj"
-path="res://.godot/imported/raw_crops_atlas_transparent.png-eaf31973bccd2b3e3885e44875c9963e.ctex"
+uid="uid://d1ltc78ikuhh7"
+path="res://.godot/imported/decor_beehive.png-1dcbd67d8e3ca8315179e2bae4e6e312.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/pixel_art/ui/raw_crops_atlas_transparent.png"
-dest_files=["res://.godot/imported/raw_crops_atlas_transparent.png-eaf31973bccd2b3e3885e44875c9963e.ctex"]
+source_file="res://assets/pixel_art/buildings/decor_beehive.png"
+dest_files=["res://.godot/imported/decor_beehive.png-1dcbd67d8e3ca8315179e2bae4e6e312.ctex"]
 
 [params]
 
