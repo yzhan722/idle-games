@@ -1,5 +1,20 @@
 extends Node
-## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution & Sprite Manifest (`EconomyConfig.gd`) — PRD Patch v2.2
+## Pure Idle Economy Math, Recruit Caps, Lv.25 Auto-Evolution, Native Typography & Drop Shadow Math (`EconomyConfig.gd`)
+## Strictly enforces GEMINI.md Engineering Laws 1~6.
+
+const GROUND_Y := 124.0
+const MIN_BUILDING_PADDING := 28.0
+const DECOR_OUTER_OFFSET := 16.0
+
+const Z_SKY := -100
+const Z_TERRAIN := -20
+const Z_SHADOW := -5
+const Z_SOIL_BASE := -2
+const Z_BUILDING := 0
+const Z_CROP := 1
+const Z_UNIT := 10
+const Z_CARRY_EMOTE := 20
+const Z_FLOATING_UI := 50
 
 const MULTIPLIER_RAW := 1.0
 const MULTIPLIER_MORTAR := 3.5
@@ -9,6 +24,9 @@ const VIP_TIP_MULTIPLIER := 2.0
 const DEFAULT_BUFFER_CAP := 10
 
 var sprite_manifest: Dictionary = {}
+var _label_settings_cache: Dictionary = {}
+var _shadow_polygon_cache: Dictionary = {}
+var _unit_circle_pts: PackedVector2Array = PackedVector2Array()
 
 ## PRD v2.2 Section 3: Strict Per-Island Animal Recruit Caps
 const ISLAND_RECRUIT_CAPS: Dictionary = {
@@ -53,11 +71,68 @@ const ANIMALS: Dictionary = {
 
 const EXPANSIONS: Dictionary = {
 	"island_2": {"name": "木桥1 · 魔法密林", "desc": "开启2x农田+12x坩埚工坊+企鹅/巨嘴鸟编制", "cost": 180},
-	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+👑2.0x皇冠富豪顾客", "cost": 480}
+	"island_3": {"name": "木桥2 · 天空海岸", "desc": "开启双工坊52x联动+★2.0x皇冠富豪顾客", "cost": 480}
+}
+
+## v2.5-3: Animal Promotion Milestone Traits (Activated at Lv.10 / Lv.25 / Lv.50)
+const ANIMAL_TRAITS: Dictionary = {
+	"bunny": {"name": "丰收巧爪", "desc": "收获产量+1/阶", "type": "harvest_bonus"},
+	"otter": {"name": "疾风步履", "desc": "移速+20%/阶", "type": "speed_mult"},
+	"fox": {"name": "匠心巧艺", "desc": "加工耗时-15%/阶", "type": "work_duration_mult"},
+	"shiba": {"name": "招财金算", "desc": "小费率+15%/阶", "type": "tip_bonus"},
+	"penguin": {"name": "极地秘传", "desc": "炼制耗时-15%/阶", "type": "work_duration_mult"},
+	"toucan": {"name": "顺风羽翼", "desc": "跨岛移速+20%/阶", "type": "speed_mult"}
+}
+
+## v2.5-2: Functional Island Miniature Landscapes & Global Passive Buffs
+const ISLAND_LANDSCAPES: Dictionary = {
+	"bee_hive": {
+		"id": "bee_hive",
+		"name": "蜜蜂花箱",
+		"island": 1,
+		"cost_amber": 3,
+		"desc": "1号岛蜜蜂授粉 · 农田作物生长速度 +20%",
+		"buff_type": "crop_growth",
+		"buff_val": 0.20,
+		"x_pos": 660.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_beehive.png",
+		"frame_h": 52
+	},
+	"wind_chime": {
+		"id": "wind_chime",
+		"name": "荧光风铃",
+		"island": 2,
+		"cost_amber": 5,
+		"desc": "2号岛灵气共鸣 · 工坊加工制作速度 +20%",
+		"buff_type": "workshop_speed",
+		"buff_val": 0.20,
+		"x_pos": 210.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_windchime.png",
+		"frame_h": 58
+	},
+	"tiki_torch": {
+		"id": "tiki_torch",
+		"name": "招财提基灯",
+		"island": 3,
+		"cost_amber": 8,
+		"desc": "3号岛金穗庇佑 · 顾客全岛小费收益 +20%",
+		"buff_type": "tip_bonus",
+		"buff_val": 0.20,
+		"x_pos": 1705.0,
+		"sprite_tex": "res://assets/pixel_art/buildings/decor_lamp.png",
+		"frame_h": 66
+	}
 }
 
 func _ready() -> void:
+	_init_unit_circle()
 	_load_sprite_manifest()
+
+func _init_unit_circle() -> void:
+	_unit_circle_pts.resize(24)
+	for i in range(24):
+		var ang := float(i) * TAU / 24.0
+		_unit_circle_pts[i] = Vector2(cos(ang), sin(ang))
 
 func _load_sprite_manifest() -> void:
 	var path := "res://src/data/sprite_manifest.json"
@@ -66,6 +141,55 @@ func _load_sprite_manifest() -> void:
 		var parsed = JSON.parse_string(txt)
 		if parsed is Dictionary:
 			sprite_manifest = parsed
+
+## GEMINI.md Law 5.2: Native Typography Helper (`make_pixel_label_settings`) with Resource Caching
+func make_pixel_label_settings(size: int = 14, color: Color = Color("#FFF4D6")) -> LabelSettings:
+	var cache_key := "%d_%s" % [size, color.to_html(true)]
+	if _label_settings_cache.has(cache_key):
+		return _label_settings_cache[cache_key]
+	var ls := LabelSettings.new()
+	ls.font_size = size
+	ls.font_color = color
+	ls.outline_size = 2
+	ls.outline_color = Color("#1A120B")
+	ls.shadow_size = 1
+	ls.shadow_color = Color(0.0, 0.0, 0.0, 0.6)
+	ls.shadow_offset = Vector2(1.0, 1.0)
+	_label_settings_cache[cache_key] = ls
+	return ls
+
+func create_pixel_label(text_str: String = "", size: int = 14, color: Color = Color("#FFF4D6"), center_align: bool = false) -> Label:
+	var lbl := Label.new()
+	lbl.text = text_str
+	lbl.label_settings = make_pixel_label_settings(size, color)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if center_align:
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return lbl
+
+## GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow (`shadow_width = w * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`)
+## Optimized with polygon caching to eliminate per-frame trigonometry and array allocations.
+func draw_drop_shadow(canvas: CanvasItem, entity_visual_width: float, center: Vector2 = Vector2.ZERO) -> void:
+	var w_key := int(roundf(entity_visual_width * 10.0))
+	var c_key := Vector2i(int(roundf(center.x)), int(roundf(center.y)))
+	var cache_key := Vector3i(w_key, c_key.x, c_key.y)
+	var pts: PackedVector2Array
+	if _shadow_polygon_cache.has(cache_key):
+		pts = _shadow_polygon_cache[cache_key]
+	else:
+		if _unit_circle_pts.size() != 24:
+			_init_unit_circle()
+		var shadow_width := entity_visual_width * 0.55
+		var shadow_height := shadow_width * 0.18
+		var rx := shadow_width * 0.5
+		var ry := shadow_height * 0.5
+		pts = PackedVector2Array()
+		pts.resize(24)
+		for i in range(24):
+			var u := _unit_circle_pts[i]
+			pts[i] = center + Vector2(u.x * rx, u.y * ry)
+		_shadow_polygon_cache[cache_key] = pts
+	canvas.draw_colored_polygon(pts, Color(0.0, 0.0, 0.0, 0.20))
 
 func get_manifest_entry(sheet_key: String) -> Dictionary:
 	if sprite_manifest.has(sheet_key):
@@ -86,14 +210,16 @@ func get_frame_region(sheet_key: String, frame_idx: int) -> Rect2:
 	var row := clampi(frame_idx, 0, hf - 1) / hf
 	return Rect2(col * cw, row * ch, cw, ch)
 
-## PRD v2.2 Section 4.1: Every 25 levels, crop automatically evolves to the next high-tier variety in `crops_sheet.png`!
 func get_evolved_crop_id(base_island: int, building_level: int) -> String:
-	var base_idx := clampi(base_island - 1, 0, 3)
+	var base_idx := 0
+	if base_island == 2:
+		base_idx = 2
+	elif base_island >= 3:
+		base_idx = 3
 	var evo_steps := int(floor(float(maxi(1, building_level)) / 25.0))
 	var final_idx := clampi(base_idx + evo_steps, 0, 3)
 	return "crop_" + str(final_idx)
 
-## PRD v2.2 Section 4.1: Every 25 levels, workshop delicacy automatically evolves to the next dish in `delicacies_sheet.png`!
 func get_evolved_delicacy_id(workshop_id: String, workshop_level: int) -> String:
 	var base_idx := 0
 	if workshop_id == "cauldron":
@@ -137,11 +263,48 @@ func calc_milestone_value(base_value: float, level: int) -> float:
 	var milestone_pow := int(floor(float(lv) / 25.0))
 	return base_value * float(lv) * pow(2.0, float(milestone_pow))
 
+func get_animal_trait_tier_count(level: int) -> int:
+	var cnt := 0
+	if level >= 10:
+		cnt += 1
+	if level >= 25:
+		cnt += 1
+	if level >= 50:
+		cnt += 1
+	return cnt
+
+func get_animal_trait_tag(animal_key: String, level: int) -> String:
+	var t_cfg: Dictionary = ANIMAL_TRAITS.get(animal_key, ANIMAL_TRAITS["bunny"])
+	var t_name := String(t_cfg.get("name", "专精"))
+	var tiers := get_animal_trait_tier_count(level)
+	if tiers <= 0:
+		return "Lv.10解锁[" + t_name + "]"
+	var roman: String = String(["I", "II", "III"][clampi(tiers - 1, 0, 2)])
+	return "★" + t_name + roman
+
+func calc_bunny_harvest_trait_bonus(level: int) -> int:
+	return get_animal_trait_tier_count(level)
+
+func calc_logistics_speed_trait_mult(level: int) -> float:
+	return 1.0 + 0.20 * float(get_animal_trait_tier_count(level))
+
+func calc_chef_duration_trait_mult(level: int) -> float:
+	var tiers := get_animal_trait_tier_count(level)
+	if tiers <= 0:
+		return 1.0
+	return pow(0.85, float(tiers))
+
+func calc_shiba_tip_trait_bonus(level: int) -> float:
+	return 0.15 * float(get_animal_trait_tier_count(level))
+
 func calc_work_duration(animal_key: String, level: int) -> float:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["bunny"])
 	var base_t := float(a_cfg.get("base_time", 2.6))
 	var lv := maxi(1, level)
-	return maxf(0.8, base_t * pow(0.96, float(lv - 1)))
+	var raw_dur := base_t * pow(0.96, float(lv - 1))
+	if animal_key == "fox" or animal_key == "penguin":
+		raw_dur *= calc_chef_duration_trait_mult(lv)
+	return maxf(0.45, raw_dur)
 
 func calc_carry_capacity(animal_key: String, level: int) -> int:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
@@ -153,7 +316,10 @@ func calc_move_speed(animal_key: String, level: int) -> float:
 	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["otter"])
 	var base_spd := float(a_cfg.get("base_speed", 72.0))
 	var lv := maxi(1, level)
-	return base_spd * (1.0 + 0.03 * float(lv - 1))
+	var spd := base_spd * (1.0 + 0.03 * float(lv - 1))
+	if animal_key == "otter" or animal_key == "toucan":
+		spd *= calc_logistics_speed_trait_mult(lv)
+	return spd
 
 func calc_shiba_price_bonus(shiba_level: int) -> float:
 	if shiba_level <= 0:

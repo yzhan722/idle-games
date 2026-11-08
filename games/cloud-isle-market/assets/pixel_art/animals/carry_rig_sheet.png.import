@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vrdukiafveyy"
-path="res://.godot/imported/raw_islands_atlas_transparent.png-3ceef3316be718a3adb47e3f26b72a6a.ctex"
+uid="uid://chi5ulqh6bebn"
+path="res://.godot/imported/carry_rig_sheet.png-080aa0b8c86856d52a9dd2f9d60545dc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/pixel_art/ui/raw_islands_atlas_transparent.png"
-dest_files=["res://.godot/imported/raw_islands_atlas_transparent.png-3ceef3316be718a3adb47e3f26b72a6a.ctex"]
+source_file="res://assets/pixel_art/animals/carry_rig_sheet.png"
+dest_files=["res://.godot/imported/carry_rig_sheet.png-080aa0b8c86856d52a9dd2f9d60545dc.ctex"]
 
 [params]
 

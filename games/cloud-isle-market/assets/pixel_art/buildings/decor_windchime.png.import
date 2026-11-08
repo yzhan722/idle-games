@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c3f7fwxeh7xrk"
-path="res://.godot/imported/pixel_font_atlas.png-9bfaa1f7da5e229cd316dd0370403c3e.ctex"
+uid="uid://cqs0qmtjwmtrc"
+path="res://.godot/imported/decor_windchime.png-274154f18c9303e141f76d5920731b99.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/pixel_art/ui/pixel_font_atlas.png"
-dest_files=["res://.godot/imported/pixel_font_atlas.png-9bfaa1f7da5e229cd316dd0370403c3e.ctex"]
+source_file="res://assets/pixel_art/buildings/decor_windchime.png"
+dest_files=["res://.godot/imported/decor_windchime.png-274154f18c9303e141f76d5920731b99.ctex"]
 
 [params]
 
