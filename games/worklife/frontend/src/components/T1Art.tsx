@@ -96,7 +96,7 @@ export function PlayerAvatarIcon(props: { avatar?: string | null; gender?: strin
 export function T1Art(props: Props) {
   const key = t1KeyFor(props.kind, props.id);
   const src = key ? t1Url(key) : undefined;
-  const profile = profileForKey(key);
+  const profile = key ? profileForKey(key) : "item";
   if (src) {
     return (
       <img

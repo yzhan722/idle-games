@@ -74,6 +74,24 @@ P1 MISSING 0
 - `skills/group_heal` PRODUCTION (webp)
 - `skills/meteor_storm` PRODUCTION (webp)
 - `skills/war_aura` PRODUCTION (webp)
+- `skills/quick_shot` PLACEHOLDER (svg)
+- `skills/spore_ward` PLACEHOLDER (svg)
+- `skills/shield_bash` PLACEHOLDER (svg)
+- `skills/mana_pulse` PLACEHOLDER (svg)
+- `skills/venom_fang` PLACEHOLDER (svg)
+- `skills/soul_drain` PLACEHOLDER (svg)
+- `skills/frost_nova` PLACEHOLDER (svg)
+- `skills/glacial_snipe` PLACEHOLDER (svg)
+- `skills/flame_burst` PLACEHOLDER (svg)
+- `skills/phoenix_blessing` PLACEHOLDER (svg)
+- `skills/void_rift` PLACEHOLDER (svg)
+- `skills/abyssal_pact` PLACEHOLDER (svg)
+- `skills/holy_judgment` PLACEHOLDER (svg)
+- `skills/seraph_aegis` PLACEHOLDER (svg)
+- `skills/chrono_overload` PLACEHOLDER (svg)
+- `skills/hellfire_cataclysm` PLACEHOLDER (svg)
+- `skills/genesis_sanctuary` PLACEHOLDER (svg)
+- `skills/omega_annihilation` PLACEHOLDER (svg)
 - `materials/ore_1` PRODUCTION (webp)
 - `materials/ingot_1` PRODUCTION (webp)
 - `materials/fiber_1` PRODUCTION (webp)
@@ -450,6 +468,24 @@ P1 MISSING 0
 - `materials/book_group_heal` PRODUCTION (webp)
 - `materials/book_meteor_storm` PRODUCTION (webp)
 - `materials/book_war_aura` PRODUCTION (webp)
+- `materials/book_quick_shot` PLACEHOLDER (svg)
+- `materials/book_spore_ward` PLACEHOLDER (svg)
+- `materials/book_shield_bash` PLACEHOLDER (svg)
+- `materials/book_mana_pulse` PLACEHOLDER (svg)
+- `materials/book_venom_fang` PLACEHOLDER (svg)
+- `materials/book_soul_drain` PLACEHOLDER (svg)
+- `materials/book_frost_nova` PLACEHOLDER (svg)
+- `materials/book_glacial_snipe` PLACEHOLDER (svg)
+- `materials/book_flame_burst` PLACEHOLDER (svg)
+- `materials/book_phoenix_blessing` PLACEHOLDER (svg)
+- `materials/book_void_rift` PLACEHOLDER (svg)
+- `materials/book_abyssal_pact` PLACEHOLDER (svg)
+- `materials/book_holy_judgment` PLACEHOLDER (svg)
+- `materials/book_seraph_aegis` PLACEHOLDER (svg)
+- `materials/book_chrono_overload` PLACEHOLDER (svg)
+- `materials/book_hellfire_cataclysm` PLACEHOLDER (svg)
+- `materials/book_genesis_sanctuary` PLACEHOLDER (svg)
+- `materials/book_omega_annihilation` PLACEHOLDER (svg)
 - `trees/copper` PRODUCTION (webp)
 - `trees/cotton` PRODUCTION (webp)
 - `trees/river` PRODUCTION (webp)
@@ -615,9 +651,9 @@ P1 MISSING 0
 - `ui/avatar_animal_cat` PRODUCTION (webp)
 
 ```
-P2 REQUIRED 565
+P2 REQUIRED 601
 P2 PRODUCTION 565
-P2 PLACEHOLDER 0
+P2 PLACEHOLDER 36
 P2 MISSING 0
 ```
 

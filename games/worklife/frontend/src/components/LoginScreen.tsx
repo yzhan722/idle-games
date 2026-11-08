@@ -186,7 +186,7 @@ export default function LoginScreen() {
               id="username"
               type="text"
               className="input"
-              placeholder="输入账号名（支持中文、字母、数字、邮箱等）"
+              placeholder="输入账号名（支持中文、字母、数字）"
               autoComplete="username"
               maxLength={32}
               value={username}
