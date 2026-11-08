@@ -3,6 +3,7 @@ export type ChapterGoal = {
   title: string;
   detail: string;
   tab: "logging" | "woodworking" | "adventure" | "character";
+  craftCategory?: "materials" | "weapons" | "equipment";
 };
 
 type State = {
@@ -56,7 +57,8 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       id: "board",
       title: "锯出第一块木板",
       detail: "两根原木可以做一块标准木板。去木工。",
-      tab: "woodworking",
+      tab: wood < 2 ? "logging" : "woodworking",
+      craftCategory: "materials",
     };
   }
   if (!achieved.sword && sword < 1) {
@@ -64,7 +66,8 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
       id: "sword",
       title: "做出木头短剑",
       detail: "三块木板做成短剑。没有武器，森林里站不住。",
-      tab: "woodworking",
+      tab: lumber < 3 && wood < 2 ? "logging" : "woodworking",
+      craftCategory: lumber < 3 ? "materials" : "weapons",
     };
   }
   if (!achieved.equip_sword && !eq.main_hand) {
@@ -92,11 +95,14 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
     };
   }
   if (!achieved.chest && (chest < 1 || !eq.chest)) {
+    const needBoards = chest < 1 && (lumber < 6 || wc < 3);
+    const needLogs = needBoards && wood < 2;
     return {
       id: "chest",
-      title: wc < 3 ? "把木工升到 3 级并做木甲" : "穿上木制胸甲",
+      title: wc < 3 ? "把木工升到 3 级并做木甲" : chest < 1 ? "制作并穿上木制胸甲" : "穿上木制胸甲",
       detail: "小猴出手快、寄居蟹壳硬，上衣空着打不过。做好木甲凑齐木工两件套再去闯林子。",
-      tab: chest < 1 ? "woodworking" : "character",
+      tab: chest >= 1 ? "character" : needLogs ? "logging" : "woodworking",
+      craftCategory: chest >= 1 ? undefined : needBoards ? "materials" : "equipment",
     };
   }
   const archetypes =
