@@ -1036,7 +1036,7 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false) {
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(8, 20, 46, 0.85)';
     ctx.lineWidth = 3;
-    const codeTxt = Math.sin(now * 0.006) > 0 ? '💻 敲代码中 </>' : '⚡ AI 产币中 +🪙';
+    const codeTxt = Math.sin(now * 0.006) > 0 ? '💻 敲代码中 </>' : '⚡ AI 产币中 +金币';
     ctx.strokeText(codeTxt, 0, floatY);
     ctx.fillStyle = '#56e8ff';
     ctx.fillText(codeTxt, 0, floatY);
@@ -1135,7 +1135,7 @@ export function drawEnemySprite(ctx, e, now, playerX) {
     ctx.fillStyle = '#ffd700';
     ctx.font = '900 11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🪙招财', 0, -size * 0.55);
+    ctx.fillText('✨招财', 0, -size * 0.55);
   }
 
   ctx.restore();

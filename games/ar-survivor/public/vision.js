@@ -211,19 +211,7 @@ export class ARVisionEngine {
   }
 
   buildSimulatedDesk(W, H) {
-    const ox = this.simCamX;
-    this.semanticObjects = [
-      {
-        id: 'sim-center-pad',
-        role: 'tech',
-        color: '#00f3ff',
-        x: W * 0.38 + ox,
-        y: H * 0.53,
-        w: W * 0.24,
-        h: H * 0.12,
-        ttl: 999
-      }
-    ];
+    this.semanticObjects = [];
     this.edgePlatforms = [];
   }
 
@@ -875,7 +863,7 @@ export class ARVisionEngine {
       });
     }
 
-    const centerFloorY = H * 0.56;
+    const centerFloorY = H * 0.68;
     list.push({
       x1: -200,
       x2: W + 200,
@@ -898,7 +886,7 @@ export class ARVisionEngine {
     ctx.save();
     if (!this.simBgImg) {
       this.simBgImg = new Image();
-      this.simBgImg.src = './assets/bg_healing_room.webp?v=hd6';
+      this.simBgImg.src = './assets/bg_healing_room.webp?v=hd8';
     }
     if (this.simBgImg.complete && this.simBgImg.naturalWidth > 0) {
       ctx.drawImage(this.simBgImg, 0, 0, W, H);

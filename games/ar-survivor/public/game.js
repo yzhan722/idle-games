@@ -1,6 +1,6 @@
 // game.js — DeepSeek娘桌面宠物级实景交互（抓边爬台 / 蹲伏戳物体 / 坐边缘晃腿 / 摸头傲娇 / 物理轨迹回归中心）
 
-import { ARVisionEngine } from './vision.js';
+import { ARVisionEngine } from './vision.js?v=hd7';
 import {
   drawHeroSprite,
   drawEnemySprite,
@@ -11,8 +11,8 @@ import {
   drawInteractionVfx,
   images,
   isReady
-} from './sprites.js';
-import { petAudio } from './audio.js';
+} from './sprites.js?v=hd7';
+import { petAudio } from './audio.js?v=hd7';
 
 const stageEl = document.getElementById('game-stage');
 const canvas = document.getElementById('game-canvas');
@@ -27,6 +27,8 @@ let dpr = Math.min(2, window.devicePixelRatio || 1.5);
 let preferCCW = false;
 
 function updateOrientationLayout() {
+  const prevW = W;
+  const prevH = H;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   dpr = Math.min(2, window.devicePixelRatio || 1.5);
@@ -49,6 +51,25 @@ function updateOrientationLayout() {
   ctx.imageSmoothingQuality = 'medium';
   if (vision.mode === 'sim') {
     vision.buildSimulatedDesk(W, H);
+  }
+  if (prevW > 0 && prevH > 0 && (W !== prevW || H !== prevH)) {
+    const sx = W / prevW;
+    const sy = H / prevH;
+    try {
+      player.x *= sx;
+      if (player.onGround || Math.abs(player.y + 25 - prevH * 0.68) < 20) {
+        player.y = H * 0.68 - 25;
+        player.vy = 0;
+        player.onGround = true;
+      } else {
+        player.y *= sy;
+      }
+      for (const furn of furnitureList) {
+        furn.x *= sx;
+        furn.y = H * 0.68 - 2;
+        furn.vy = 0;
+      }
+    } catch {}
   }
 }
 
@@ -115,7 +136,7 @@ let gameMode = 'pet';
 
 const player = {
   x: W * 0.5,
-  y: H * 0.48,
+  y: H * 0.62,
   vx: 0,
   vy: 0,
   w: 36,
@@ -282,7 +303,7 @@ function addCoins(amount, x, y, labelPrefix = '') {
     y: (y ?? player.y) - 34,
     vx: (Math.random() - 0.5) * 24,
     vy: -58,
-    text: `${labelPrefix}+${finalCoins} 🪙`,
+    text: `${labelPrefix}+${finalCoins} 金币`,
     color: '#ffd700',
     scale: 1.15,
     life: 0.85
@@ -389,7 +410,7 @@ function syncPlacedFurniture() {
         furnitureList.push({
           key: sp.key,
           x: Math.max(54, Math.min(W - 54, (conf.xRatio || sp.defaultX) * W)),
-          y: H * 0.56 - 2,
+          y: H * 0.68 - 2,
           vy: 0,
           manualOn: conf.manualOn !== undefined ? conf.manualOn : true,
           working: false,
@@ -1145,7 +1166,7 @@ const DRESS_CATALOG = [
     ico: '💻',
     img: './assets/furn_pc.webp?v=hd4',
     name: '深海码农工位',
-    desc: '摆在桌面 · 自动敲代码持续产🪙',
+    desc: '摆在桌面 · 自动敲代码持续产金币',
     price: 55
   },
   {
@@ -1370,7 +1391,7 @@ function renderDrawerItems() {
       `;
       bindCardTap(card, () => {
         if (player.coins < item.price) {
-          setPlayerEmote('🪙 金币不够啦，去『幸存者打工』赚金币吧!', 2.2);
+          setPlayerEmote('✨ 金币不够啦，去『幸存者打工』赚金币吧!', 2.2);
           return;
         }
         if (item.price > 0) {
@@ -1408,7 +1429,7 @@ function renderDrawerItems() {
       bindCardTap(card, () => {
         if (!owned) {
           if (player.coins < item.price) {
-            setPlayerEmote('🪙 金币不足，快去『⚔️幸存者』或『接美食』赚金币~', 2.2);
+            setPlayerEmote('✨ 金币不足，快去『⚔️幸存者』或『接美食』赚金币~', 2.2);
             return;
           }
           player.coins -= item.price;
@@ -1478,7 +1499,7 @@ function renderDrawerItems() {
       `;
       bindCardTap(card, () => {
         if (player.coins < cost) {
-          setPlayerEmote('🪙 金币不够升级，先去『⚔️幸存者』赚一波吧!', 2.2);
+          setPlayerEmote('✨ 金币不够升级，先去『⚔️幸存者』赚一波吧!', 2.2);
           return;
         }
         player.coins -= cost;
@@ -1503,7 +1524,7 @@ document.querySelectorAll('.drawer-tab').forEach((tabBtn) => {
   });
 });
 
-// 顶部三模式切换（🐾 养成 | ⭐ 摘星 | ⚔️ 幸存者赚🪙）
+// 顶部三模式切换（🐾 养成 | ⭐ 摘星 | ⚔️ 幸存者赚金币）
 const wishPillEl = document.getElementById('hud-wish-pill');
 function switchMode(newMode) {
   if (!newMode) return;
@@ -2253,7 +2274,7 @@ function spawnEnemy(forceBoss = false) {
   const isFlyer = !isBoss && !isGoldTreasure && Math.random() < 0.35;
   const isElite = !isBoss && !isGoldTreasure && player.kills > 8 && Math.random() < 0.16;
   const scale = 1 + player.level * 0.14;
-  const centerFloorY = H * 0.56;
+  const centerFloorY = H * 0.68;
   const hpVal = (isBoss ? 340 : isGoldTreasure ? 65 : isElite ? 85 : isFlyer ? 20 : 26) * scale;
 
   enemies.push({
@@ -2284,12 +2305,12 @@ function spawnEnemy(forceBoss = false) {
 (async function autoBoot() {
   updateOrientationLayout();
   player.x = W * 0.5;
-  player.y = H * 0.48;
+  player.y = H * 0.62;
   vision.enableSimMode(W, H);
   if (gameMode !== 'pet') placeStarOnBestTarget();
   await vision.startCamera('environment', W, H);
   player.x = W * 0.5;
-  player.y = H * 0.48;
+  player.y = H * 0.62;
   if (gameMode !== 'pet') placeStarOnBestTarget();
 })();
 
@@ -2368,7 +2389,7 @@ function updateGameplay(dt, flow) {
     }
     if (flowMag > 1.8 && Math.abs(player.vx) < 30 && player.climbState === 'none' && player.palmState === 'none') {
       player.recenterDelay = Math.max(player.recenterDelay, 0.24);
-      if (Math.hypot(player.x - W * 0.5, player.y - H * 0.48) > 95 && player.emoteTimer <= 0) {
+      if (Math.hypot(player.x - W * 0.5, player.y - H * 0.62) > 95 && player.emoteTimer <= 0) {
         setPlayerEmote('🏃‍♀️ 等等我呀~', 1.2);
       }
     }
@@ -2388,7 +2409,7 @@ function updateGameplay(dt, flow) {
   }
 
   const platforms = vision.getAllWalkablePlatforms(W, H);
-  const centerFloorY = H * 0.56;
+  const centerFloorY = H * 0.68;
 
   // 环境暗光感应与桌面微缩家具物理/挂机产币更新
   if (vision.isDarkRoom !== lastDarkRoomState) {
@@ -3446,7 +3467,7 @@ function updateGameplay(dt, flow) {
         player.hp = player.maxHp;
         // 幸存者打工体力耗尽时，携带赚到的全部金币安全返回养成模式干饭休息
         switchMode('pet');
-        setPlayerEmote('🪙 打工收工！带金币回来吃大餐咯~', 2.6);
+        setPlayerEmote('✨ 打工收工！带金币回来吃大餐咯~', 2.6);
         break;
       }
     }
