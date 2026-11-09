@@ -105,3 +105,33 @@
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
+### [2026-11-09 19:11:19] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+- ✅ **Title Screen Visible**: `visible=True`
+- ✅ **Character Click No Jump**: `launch_active=True`
+- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官8678 · 未上榜 (0 关) · 每周一刷新（剩6天4时）`
+- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
+- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
+- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
+- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **Zero Page Exceptions**: `[]`
+- ✅ **Zero Console Errors**: `[]`
+- ✅ **Zero Failed Asset Requests**: `[]`
+
+### [2026-11-09 19:35:01] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+- ✅ **Title Screen Visible**: `visible=True`
+- ✅ **Character Click No Jump**: `launch_active=True`
+- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官3751 · 未上榜 (0 关) · 每周一刷新（剩6天4时）`
+- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
+- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
+- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
+- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 15/25出兵 / 1/30攻城`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **Zero Page Exceptions**: `[]`
+- ✅ **Zero Console Errors**: `[]`
+- ✅ **Zero Failed Asset Requests**: `[]`
+
