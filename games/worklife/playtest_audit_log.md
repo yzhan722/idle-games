@@ -470,7 +470,20 @@
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
 
-## [2026-11-09T10:24:38.632Z] Autonomous Playtest — PASS
+## [2026-11-09T10:34:23.990Z] Autonomous Playtest — PASS
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `boss (挑战森林管家)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
+
+## [2026-11-09T10:37:19.267Z] Autonomous Playtest — ISSUES_FOUND (1)
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `boss (挑战森林管家)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Issues:
+  - CONSOLE_ERROR: Failed to start battle: Error: 战斗等级不足，需要 10 级
+    at p (https://worklife.yinosites.com/assets/index-CvlqW_P6.js:10:4288)
+    at async Kn (https://worklife.yinosites.com/assets/NewGameInterface-Dg_CaEVQ.js:6:281308)
+
+## [2026-11-09T10:54:12.731Z] Autonomous Playtest — PASS
 - Target: `https://worklife.yinosites.com` | Chapter Goal: `boss (挑战森林管家)`
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.

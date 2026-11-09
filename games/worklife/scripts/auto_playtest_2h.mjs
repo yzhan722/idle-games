@@ -292,6 +292,11 @@ async function main() {
         await startFightBtn.click().catch(() => {});
         await page.waitForTimeout(1200);
       }
+      const raidStartBtn = page.locator(`.party-boss-dungeon-card:has-text("${targetMonsterName}") button`).first();
+      if (await raidStartBtn.isVisible().catch(() => false)) {
+        await raidStartBtn.click().catch(() => {});
+        await page.waitForTimeout(1800);
+      }
     }
 
     await checkBrokenImages(page, "Desktop-Combat", issues);

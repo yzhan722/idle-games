@@ -370,27 +370,44 @@ export function GameEntityDetailModal({
               ))}
             </div>
             <div className="modal-actions">
-              {selectedItem.isBoss ? (
-                <>
-                  <button className="btn-action" onClick={() => void startBattle(selectedItem)} disabled={actionLoading}>
-                    {actionLoading ? '准备中...' : '⚔️ 单人挑战'}
-                  </button>
+              {(() => {
+                const reqLv = Number(selectedItem.level || 1)
+                const curCombatLv = Number(playerState?.combatLevel || 1)
+                const canSolo = curCombatLv >= reqLv
+                if (selectedItem.isBoss) {
+                  return (
+                    <>
+                      <button
+                        className="btn-action"
+                        onClick={() => {
+                          setPartyTargetStageId(selectedMap)
+                          close()
+                          setActiveTab('party')
+                        }}
+                      >
+                        👥 组队讨伐
+                      </button>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => void startBattle(selectedItem)}
+                        disabled={actionLoading || !canSolo}
+                        title={!canSolo ? `单人挑战需要战斗等级 Lv.${reqLv}（当前 Lv.${curCombatLv}）` : "单人直接挑战首领"}
+                      >
+                        {actionLoading ? '准备中...' : canSolo ? '⚔️ 单人挑战' : `🔒 单人需 Lv.${reqLv}`}
+                      </button>
+                    </>
+                  )
+                }
+                return (
                   <button
-                    className="btn-secondary"
-                    onClick={() => {
-                      setPartyTargetStageId(selectedMap)
-                      close()
-                      setActiveTab('party')
-                    }}
+                    className="btn-action"
+                    onClick={() => void startBattle(selectedItem)}
+                    disabled={actionLoading || !canSolo}
                   >
-                    👥 组队讨伐
+                    {actionLoading ? '准备中...' : canSolo ? '开始战斗' : `🔒 需战斗 Lv.${reqLv}`}
                   </button>
-                </>
-              ) : (
-                <button className="btn-action" onClick={() => void startBattle(selectedItem)} disabled={actionLoading}>
-                  {actionLoading ? '准备中...' : '开始战斗'}
-                </button>
-              )}
+                )
+              })()}
             </div>
           </>
         )}
