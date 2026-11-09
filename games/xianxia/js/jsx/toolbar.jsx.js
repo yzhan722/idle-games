@@ -147,7 +147,7 @@ WToolbarPollution = React.createClass({
 
     getPollutionMod: function(){
         var game = this.props.game;
-        return game.getDisplayValueExt((game.bld.cathPollution / game.bld.getPollutionLevelBase())*100) + "ppm";
+        return game.getDisplayValueExt((game.bld.cathPollution / game.bld.getPollutionLevelBase())*100) + " 浊度";
     }
 });
 
