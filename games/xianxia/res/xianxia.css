@@ -1570,7 +1570,7 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 	line-height: 16px;
 }
 .xx-guide-nav:hover { color: var(--xx-gold-hi); border-color: var(--xx-gold); }
-.xx-guide-prog { font-size: 12px; color: var(--xx-mute); margin-left: 6px; }
+.xx-guide-prog { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; letter-spacing: 0; font-variant-numeric: tabular-nums; color: var(--xx-mute); margin-left: 6px; }
 .xx-guide-more { font-size: 12px; color: var(--xx-mute); padding-top: 3px; }
 .xx-guide-next { color: var(--xx-gold-hi); }
 .xx-guide-next::before { content: "▶ "; color: var(--xx-gold); }

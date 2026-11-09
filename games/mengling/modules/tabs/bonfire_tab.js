@@ -259,12 +259,13 @@ function spawnGatherFloatText(anchorEl, text, combo = 0) {
   try {
     const rect = anchorEl.getBoundingClientRect();
     if (!rect || (rect.width === 0 && rect.height === 0)) return;
+    const spawnBelow = rect.top < 80;
     const floater = document.createElement("div");
-    floater.className = `gather-float${combo >= 3 ? " gather-float--combo" : ""}`;
+    floater.className = `gather-float${combo >= 3 ? " gather-float--combo" : ""}${spawnBelow ? " gather-float--below" : ""}`;
     floater.textContent = combo >= 2 ? `${text} · 连击x${combo}!` : text;
     const jitterX = (Math.random() - 0.5) * 26;
     floater.style.left = `${Math.round(rect.left + rect.width / 2 + jitterX)}px`;
-    floater.style.top = `${Math.round(rect.top - 6)}px`;
+    floater.style.top = `${Math.round(spawnBelow ? rect.bottom + 8 : rect.top - 6)}px`;
     document.body.appendChild(floater);
     setTimeout(() => {
       try { floater.remove(); } catch {}

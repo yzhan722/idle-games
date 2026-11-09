@@ -371,16 +371,21 @@ export function GameEntityDetailModal({
             </div>
             <div className="modal-actions">
               {selectedItem.isBoss ? (
-                <button
-                  className="btn-action"
-                  onClick={() => {
-                    setPartyTargetStageId(selectedMap)
-                    close()
-                    setActiveTab('party')
-                  }}
-                >
-                  👥 前往组队讨伐首领
-                </button>
+                <>
+                  <button className="btn-action" onClick={() => void startBattle(selectedItem)} disabled={actionLoading}>
+                    {actionLoading ? '准备中...' : '⚔️ 单人挑战'}
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => {
+                      setPartyTargetStageId(selectedMap)
+                      close()
+                      setActiveTab('party')
+                    }}
+                  >
+                    👥 组队讨伐
+                  </button>
+                </>
               ) : (
                 <button className="btn-action" onClick={() => void startBattle(selectedItem)} disabled={actionLoading}>
                   {actionLoading ? '准备中...' : '开始战斗'}
