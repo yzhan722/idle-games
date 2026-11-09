@@ -9322,14 +9322,74 @@ img,
   }
 
   .meta-portrait-well {
-    width: 48px !important;
-    height: 48px !important;
+    width: 56px !important;
+    height: 52px !important;
     border-radius: 12px;
   }
 
   .meta-portrait-well .meta-art-img {
-    width: 36px !important;
-    height: 36px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  #menu-panel-meta.menu-panel.active,
+  #menu-panel-skins.menu-panel.active {
+    border-left-width: 6px !important;
+    border-right-width: 6px !important;
+    padding: 8px 8px 10px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .meta-upgrades-grid,
+  .skins-shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: auto !important;
+    grid-auto-rows: auto !important;
+    gap: 8px 8px !important;
+    flex: 1 0 auto !important;
+  }
+
+  .meta-card,
+  .skin-card {
+    padding: 8px 8px !important;
+    gap: 5px !important;
+    min-height: 184px !important;
+  }
+
+  .meta-card-top,
+  .meta-info {
+    flex: 1 1 auto !important;
+    min-height: auto !important;
+  }
+
+  .meta-title-row strong,
+  .skin-title {
+    font-size: 14px !important;
+  }
+
+  .meta-desc {
+    display: none !important;
+  }
+
+  .meta-cur,
+  .skin-bonus {
+    font-size: 11px !important;
+    padding: 3px 6px !important;
+  }
+
+  .skin-shard-row {
+    font-size: 11px !important;
+    gap: 4px !important;
+    justify-content: space-between !important;
+  }
+
+  .meta-buy-btn,
+  .skin-action-btn {
+    min-height: 34px !important;
+    height: 34px !important;
+    font-size: 13px !important;
+    padding: 4px 8px !important;
   }
 
   .skin-swatch {

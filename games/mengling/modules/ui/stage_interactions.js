@@ -477,7 +477,7 @@ export function initStageInteractions({
     // 14. 挑战页 PvE：点击中央 VS 战徽立即开战
     if (act === "pve-quick-fight") {
       ev.preventDefault();
-      const startBtn = document.querySelector("#pveList [data-pve-start]");
+      const startBtn = document.querySelector("#pveList [data-pve-fight], #pveList [data-pve-start]");
       if (startBtn && !startBtn.disabled) {
         spawnStageFloat(btn, "⚔️ 星穹试炼开战！", "gold");
         spawnStageParticles(btn, ["⚔️", "🔥", "⚡", "💥"]);

@@ -128,6 +128,9 @@ export function createRenderPve({
       chapterPre?.stages?.find((st) => isStageUnlocked(st.id, progress) && !progress[st.id]) ||
       chapterPre?.stages?.[0] ||
       null;
+    if ((!ui.pveStage || !chapterPre?.stages?.some((st) => st.id === ui.pveStage)) && stageObjPre?.id) {
+      ui.pveStage = stageObjPre.id;
+    }
     const selTeamIdsPre = Array.isArray(state.pve.selectedIds) ? state.pve.selectedIds : [];
     const teamMonsPre =
       selTeamIdsPre.length > 0

@@ -121,34 +121,16 @@ export function getMonCurrentStats(mon, getBeastDataByDex) {
   const bSpe = typeof bonus.spe === "number" && Number.isFinite(bonus.spe) ? bonus.spe : 0;
 
   const api = typeof getBeastDataByDex === "function" ? getBeastDataByDex(mon.dex) : null;
-  const base = api?.baseStats;
-  if (base && typeof base === "object") {
-    const iv = mon.iv && typeof mon.iv === "object" ? mon.iv : {};
-    const ev4 = 0;
-    const hp = Math.floor(((2 * base.hp + (iv.hp ?? 0) + ev4) * lvl) / 100) + lvl + 10;
-    const atk = Math.floor(((2 * base.atk + (iv.atk ?? 0) + ev4) * lvl) / 100) + 5;
-    const def = Math.floor(((2 * base.def + (iv.def ?? 0) + ev4) * lvl) / 100) + 5;
-    const spa = Math.floor(((2 * base.spa + (iv.spa ?? 0) + ev4) * lvl) / 100) + 5;
-    const spd = Math.floor(((2 * base.spd + (iv.spd ?? 0) + ev4) * lvl) / 100) + 5;
-    const spe = Math.floor(((2 * base.spe + (iv.spe ?? 0) + ev4) * lvl) / 100) + 5;
-    return {
-      hp:  Math.max(1, Math.floor(hp  * totalMul) + bHp),
-      atk: Math.max(1, Math.floor(atk * totalMul * getNatureMul(natureId, "atk")) + bAtk),
-      def: Math.max(1, Math.floor(def * totalMul * getNatureMul(natureId, "def")) + bDef),
-      spa: Math.max(1, Math.floor(spa * totalMul * getNatureMul(natureId, "spa")) + bSpa),
-      spd: Math.max(1, Math.floor(spd * totalMul * getNatureMul(natureId, "spd")) + bSpd),
-      spe: Math.max(1, Math.floor(spe * totalMul * getNatureMul(natureId, "spe")) + bSpe),
-    };
-  }
-
+  const base = api?.baseStats && typeof api.baseStats === "object" ? api.baseStats : mon.baseStats;
+  const iv = mon.iv && typeof mon.iv === "object" ? mon.iv : {};
   const mul = 1 + (lvl - 1) * 0.03;
   return {
-    hp:  Math.max(1, Math.floor((mon.baseStats.hp  + mon.iv.hp)  * mul * totalMul) + bHp),
-    atk: Math.max(1, Math.floor((mon.baseStats.atk + mon.iv.atk) * mul * totalMul * getNatureMul(natureId, "atk")) + bAtk),
-    def: Math.max(1, Math.floor((mon.baseStats.def + mon.iv.def) * mul * totalMul * getNatureMul(natureId, "def")) + bDef),
-    spa: Math.max(1, Math.floor((mon.baseStats.spa + mon.iv.spa) * mul * totalMul * getNatureMul(natureId, "spa")) + bSpa),
-    spd: Math.max(1, Math.floor((mon.baseStats.spd + mon.iv.spd) * mul * totalMul * getNatureMul(natureId, "spd")) + bSpd),
-    spe: Math.max(1, Math.floor((mon.baseStats.spe + mon.iv.spe) * mul * totalMul * getNatureMul(natureId, "spe")) + bSpe),
+    hp:  Math.max(1, Math.floor(((base?.hp ?? 30)  + (iv.hp ?? 0))  * mul * totalMul) + bHp),
+    atk: Math.max(1, Math.floor(((base?.atk ?? 25) + (iv.atk ?? 0)) * mul * totalMul * getNatureMul(natureId, "atk")) + bAtk),
+    def: Math.max(1, Math.floor(((base?.def ?? 25) + (iv.def ?? 0)) * mul * totalMul * getNatureMul(natureId, "def")) + bDef),
+    spa: Math.max(1, Math.floor(((base?.spa ?? 25) + (iv.spa ?? 0)) * mul * totalMul * getNatureMul(natureId, "spa")) + bSpa),
+    spd: Math.max(1, Math.floor(((base?.spd ?? 25) + (iv.spd ?? 0)) * mul * totalMul * getNatureMul(natureId, "spd")) + bSpd),
+    spe: Math.max(1, Math.floor(((base?.spe ?? 25) + (iv.spe ?? 0)) * mul * totalMul * getNatureMul(natureId, "spe")) + bSpe),
   };
 }
 
