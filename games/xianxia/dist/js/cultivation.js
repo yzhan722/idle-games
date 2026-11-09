@@ -915,8 +915,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		{key: "break2",   nav: "Cultivation", done: function(c){ return c.getStage("lianqi_1").researched; },
 			info: function(c, g){
 				var prices = c.getStage("lianqi_1").prices;
+				var mult = c.getBreakCostMult ? c.getBreakCostMult() : ((c.getRoot() && c.getRoot().priceMult) || 1);
 				for (var i = 0; i < prices.length; i++){
-					if (prices[i].name == "xiuwei"){ return [g.resPool.get("xiuwei").value, prices[i].val]; }
+					if (prices[i].name == "xiuwei"){ return [g.resPool.get("xiuwei").value, prices[i].val * mult]; }
 				}
 			}},
 		{key: "wander",   nav: "Cultivation", done: function(c){ return c.stats.wander > 0; }},
