@@ -238,11 +238,11 @@ body::before {
   color: #2a1d10;
   box-shadow: var(--shadow-md);
 }
-.btn-primary:hover { box-shadow: var(--shadow-lg), var(--glow-brand); transform: translateY(-2px); }
+.btn-primary:hover { background: var(--grad-brand); border-color: transparent; color: #2a1d10; box-shadow: var(--shadow-lg), var(--glow-brand); transform: translateY(-2px); }
 
-.btn-success { background: var(--grad-green); border-color: transparent; color: #fff; box-shadow: var(--shadow-md); }
-.btn-warning { background: var(--grad-gold); border-color: transparent; color: #3a2c0a; box-shadow: var(--shadow-md); }
-.btn-danger  { background: var(--grad-red); border-color: transparent; color: #fff; box-shadow: var(--shadow-md); }
+.btn-success, .btn-success:hover { background: var(--grad-green); border-color: transparent; color: #fff; box-shadow: var(--shadow-md); }
+.btn-warning, .btn-warning:hover { background: var(--grad-gold); border-color: transparent; color: #3a2c0a; box-shadow: var(--shadow-md); }
+.btn-danger, .btn-danger:hover  { background: var(--grad-red); border-color: transparent; color: #fff; box-shadow: var(--shadow-md); }
 
 /* ============================================================
    5. 卡片

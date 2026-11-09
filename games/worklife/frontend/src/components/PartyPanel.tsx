@@ -396,9 +396,12 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
       return sortedMembers.map((m, idx) => {
         const isSelf = m.userId === userId;
         const lv = isSelf ? playerLv : Math.max(playerLv, Number(m.combatLevel || 12));
-        const maxHp = isSelf ? playerMaxHp : Math.max(90, Math.round(playerMaxHp * (0.88 + (idx % 3) * 0.12)));
-        const atk = isSelf ? playerAtk : Math.max(9, Math.round(playerAtk * (0.78 + (idx % 3) * 0.1)));
-        const def = isSelf ? playerDef : Math.max(3, Math.round(playerDef * 0.85));
+        const baseLvHp = 70 + lv * 14;
+        const baseLvAtk = 8 + Math.round(lv * 2.4);
+        const baseLvDef = 2 + Math.round(lv * 0.85);
+        const maxHp = isSelf ? playerMaxHp : Math.max(90, baseLvHp, Math.round(playerMaxHp * (0.88 + (idx % 3) * 0.12)));
+        const atk = isSelf ? playerAtk : Math.max(9, baseLvAtk, Math.round(playerAtk * (0.78 + (idx % 3) * 0.1)));
+        const def = isSelf ? playerDef : Math.max(3, baseLvDef, Math.round(playerDef * 0.85));
         const intervalMs = isSelf ? playerInterval : 1950 + (idx % 3) * 260;
         return {
           userId: m.userId,
@@ -455,8 +458,9 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
           const gapSec = Math.max(0, Math.floor((Date.now() - savedLastAt) / 1000));
           const extraKills = Math.floor(gapSec / 6);
           const extraWaves = Math.floor(extraKills / 3);
-          restoredWave = startWave + extraWaves;
-          const extraBossKills = Math.max(0, Math.floor((restoredWave - 1) / 10) - Math.floor((startWave - 1) / 10));
+          const rawWave = startWave + extraWaves;
+          restoredWave = ((rawWave - 1) % 10) + 1;
+          const extraBossKills = Math.max(0, Math.floor((rawWave - 1) / 10) - Math.floor((startWave - 1) / 10));
           const avgMinion = activeDungeon.minions[0] || activeDungeon.boss;
           restoredStats = {
             startedAt: trueStartedAt,
@@ -478,7 +482,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
       const elapsedSecFromStart = Math.max(0, Math.floor((Date.now() - trueStartedAt) / 1000));
       const initialKills = Math.floor(elapsedSecFromStart / 6);
       const initialWaves = Math.floor(initialKills / 3);
-      restoredWave = 1 + initialWaves;
+      restoredWave = (initialWaves % 10) + 1;
       const avgMinion = activeDungeon.minions[0] || activeDungeon.boss;
       restoredStats = {
         startedAt: trueStartedAt,
@@ -490,6 +494,16 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         gold: initialKills * Math.max(2, Number(avgMinion.gold || 6)),
         loot: {},
       };
+    }
+
+    if (
+      restoredStats.bossKills > 0 &&
+      (playerState?.stats?.killsByMonster?.[activeDungeon.boss.id] || 0) === 0
+    ) {
+      void apiClient
+        .partyWaveClear(party.id, activeDungeon.id, 10, {})
+        .then(() => refreshPlayerState())
+        .catch(() => undefined);
     }
 
     const initialAllies = buildAlliesFormation(party);

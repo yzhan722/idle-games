@@ -488,8 +488,19 @@
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
 
-## [2026-11-09T12:24:41.531Z] Autonomous Playtest — PASS
+## [2026-11-09T12:51:49.299Z] Autonomous Playtest — ISSUES_FOUND (1)
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `chop (chop)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Issues:
+  - Failed to enter in-game main layout (still on login or character creation screen).
+
+## [2026-11-09T12:56:34.664Z] Autonomous Playtest — PASS
 - Target: `https://worklife.yinosites.com` | Chapter Goal: `boss (挑战森林管家)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
+
+## [2026-11-09T13:09:24.132Z] Autonomous Playtest — PASS
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `complete (第一章完成)`
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
 
