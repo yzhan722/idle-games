@@ -2328,6 +2328,12 @@ function gameLoop(now) {
 
   updateGameplay(dt, flow);
   renderEntities(now);
+  if (pendingPhotoSnapTimer > 0) {
+    pendingPhotoSnapTimer -= dt;
+    if (pendingPhotoSnapTimer <= 0) {
+      captureArPolaroid();
+    }
+  }
   updateHUD();
 }
 
@@ -2358,12 +2364,6 @@ function updateGameplay(dt, flow) {
   player.climbCooldown = Math.max(0, player.climbCooldown - dt);
   player.dropThroughTimer = Math.max(0, player.dropThroughTimer - dt);
   photoAutoCooldown = Math.max(0, photoAutoCooldown - dt);
-  if (pendingPhotoSnapTimer > 0) {
-    pendingPhotoSnapTimer -= dt;
-    if (pendingPhotoSnapTimer <= 0) {
-      captureArPolaroid();
-    }
-  }
   updateRpsGame(dt);
   starTarget.comboTimer = Math.max(0, (starTarget.comboTimer || 0) - dt);
   if (starTarget.comboTimer <= 0) starTarget.combo = 0;
