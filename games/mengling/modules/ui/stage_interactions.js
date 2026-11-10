@@ -507,7 +507,7 @@ export function initStageInteractions({
       return;
     }
 
-    // 14. 挑战页 PvE：点击中央 VS 战徽立即开战
+    // 14. 挑战页 PvE：点击中央 VS 战徽立即开战（无灵兽时直达捕捉猎场，未编队时直达编队弹窗）
     if (act === "pve-quick-fight") {
       ev.preventDefault();
       const startBtn = document.querySelector("#pveList [data-pve-fight], #pveList [data-pve-start]");
@@ -515,8 +515,16 @@ export function initStageInteractions({
         spawnStageFloat(btn, "星穹试炼开战！", "gold", "pve");
         spawnStageParticles(btn, ["pve", "fire", "sparkle"]);
         startBtn.click();
+      } else if (btn.classList.contains("arena-vs__badge--prep")) {
+        const capTab = document.querySelector('.tab[data-tab="capture"], [data-more-tab="capture"]');
+        if (capTab) capTab.click();
       } else {
-        spawnStageFloat(btn, "请在下方勾选出战灵兽编队后开战", "cyan", "pve");
+        const teamBtn = document.querySelector("#pveList [data-pve-team-open]");
+        if (teamBtn && !teamBtn.disabled) {
+          teamBtn.click();
+        } else {
+          spawnStageFloat(btn, "请在下方勾选出战灵兽编队后开战", "cyan", "pve");
+        }
       }
       return;
     }

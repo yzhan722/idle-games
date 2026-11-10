@@ -1765,6 +1765,36 @@
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 8px 16px; background: var(--bg-surface, #2a221c); border-bottom: 1px solid var(--border, #5a4638); min-height: 48px;
 }
+.next-goal-bar[data-goal-id="complete"] {
+  min-height: 38px;
+  padding: 5px 16px;
+}
+.next-goal-bar[data-goal-id="complete"] .next-goal-copy {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.next-goal-bar[data-goal-id="complete"] .next-goal-label {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(218, 175, 105, 0.35);
+  background: rgba(218, 175, 105, 0.12);
+}
+.next-goal-bar[data-goal-id="complete"] .next-goal-title {
+  flex-shrink: 0;
+  font-size: 13.5px;
+}
+.next-goal-bar[data-goal-id="complete"] .next-goal-detail {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.84;
+}
+.next-goal-bar[data-goal-id="complete"] .next-goal-go {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
 .next-goal-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .next-goal-label { font-size: 11px; letter-spacing: 0.08em; color: #c4a574; text-transform: uppercase; }
 .next-goal-title { font-size: 15px; color: #f3e6c8; }

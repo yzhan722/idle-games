@@ -756,7 +756,7 @@ export function renderPveStageHtml({
         `,
         )
         .join("")
-    : `<div class="diorama-empty">先在下方勾选出战阵容</div>`;
+    : `<div class="diorama-empty">先去【捕捉】结识首只出战伙伴</div>`;
 
   const enemiesHtml = enemies.length
     ? enemies
@@ -788,7 +788,11 @@ export function renderPveStageHtml({
           <div class="arena-side__fighters">${alliesHtml}</div>
         </div>
         <div class="arena-vs">
-          <button type="button" class="arena-vs__badge arena-vs__badge--btn" data-stage-act="pve-quick-fight" title="点击立即发起试炼对决！">${renderUiIcon("tab_pve", 16)} 开战</button>
+          ${
+            allies.length > 0
+              ? `<button type="button" class="arena-vs__badge arena-vs__badge--btn" data-stage-act="pve-quick-fight" title="点击立即发起试炼对决！">${renderUiIcon("tab_pve", 16)} 开战</button>`
+              : `<button type="button" class="arena-vs__badge arena-vs__badge--btn arena-vs__badge--prep" data-stage-act="pve-quick-fight" title="尚未拥有出战灵兽，点击前往【捕捉】猎场">${renderUiIcon("tab_capture", 16)} 去捕捉</button>`
+          }
           <div class="arena-vs__stage">${escapeHtml(stage?.name || "选择关卡")}</div>
           ${recHtml ? `<div class="arena-vs__rec">推荐克制：${recHtml}</div>` : ""}
         </div>

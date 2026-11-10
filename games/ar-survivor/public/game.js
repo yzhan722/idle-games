@@ -349,13 +349,17 @@ function addAffectionXp(amount, labelText) {
   player.xp += finalAmount;
   player.hp = Math.min(player.maxHp, player.hp + 15);
   pulseHudElement('hud-avatar-btn');
-  const xpSide = player.x > W * 0.55 ? -92 : 92;
+  const textStr = labelText || `+${finalAmount} 亲密`;
+  const halfTextW = Math.min(96, Math.max(38, textStr.length * 8.5));
+  const clearance = Math.max(98, 60 + halfTextW);
+  const xpSide = player.x > W * 0.55 ? -clearance : clearance;
+  const xPad = halfTextW + 14;
   floatingTexts.push({
-    x: Math.max(62, Math.min(W - 62, player.x + xpSide)),
-    y: player.y - 34,
+    x: Math.max(xPad, Math.min(W - xPad, player.x + xpSide)),
+    y: player.y - 38,
     vx: 0,
     vy: -34,
-    text: labelText || `+${finalAmount} 亲密`,
+    text: textStr,
     color: '#ff9ec7',
     scale: 1.08,
     life: 0.85

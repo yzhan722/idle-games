@@ -3884,9 +3884,13 @@ body.screen-quake-active #app {
     padding: 6px 14px !important;
   }
 
-  #app:has(#result-modal:not(.hidden)) .global-toast,
-  #app:has(#main-menu:not(.hidden)) .global-toast {
+  #app:has(#result-modal:not(.hidden)) .global-toast {
     top: max(10px, env(safe-area-inset-top)) !important;
+  }
+
+  #app:has(#main-menu:not(.hidden)) .global-toast {
+    top: max(132px, calc(env(safe-area-inset-top) + 124px)) !important;
+    max-width: min(92vw, 356px) !important;
   }
 
   .center-banner {
@@ -9542,9 +9546,13 @@ img,
     padding: 6px 14px !important;
   }
 
-  #app:has(#result-modal:not(.hidden)) .global-toast,
-  #app:has(#main-menu:not(.hidden)) .global-toast {
+  #app:has(#result-modal:not(.hidden)) .global-toast {
     top: max(10px, env(safe-area-inset-top)) !important;
+  }
+
+  #app:has(#main-menu:not(.hidden)) .global-toast {
+    top: max(132px, calc(env(safe-area-inset-top) + 124px)) !important;
+    max-width: min(92vw, 356px) !important;
   }
 
   .center-banner {
