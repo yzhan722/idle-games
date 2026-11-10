@@ -90,6 +90,7 @@ export function createTabController({
     const isMobileNarrow = typeof window !== "undefined" && window.innerWidth <= 640;
     const activePrimarySet = isMobileNarrow ? MOBILE_PRIMARY_TABS : PRIMARY_TABS;
     const items = [];
+    let activeFoldedInMore = false;
     elTabs.querySelectorAll(".tab[data-tab]").forEach((tabEl) => {
       const name = tabEl.getAttribute("data-tab");
       if (!name) return;
@@ -97,21 +98,23 @@ export function createTabController({
       const isPrimary = activePrimarySet.has(name);
       const isActive = ui.activeTab === name;
 
-      if (!unlocked) {
+      if (!unlocked && !isActive) {
         tabEl.style.setProperty("display", "none", "important");
         return;
       }
 
-      // Primary always in bar; secondary only when active (so 更多 stays short)
-      if (isPrimary || isActive) {
+      // On desktop, active secondary tab surfaces in bar; on narrow mobile, keep secondary tabs inside 更多 so bar never overflows
+      if (isPrimary || (!isMobileNarrow && isActive)) {
         tabEl.style.removeProperty("display");
       } else {
         tabEl.style.setProperty("display", "none", "important");
-        items.push({ name, label: (tabEl.textContent || name).trim() });
+        items.push({ name, label: (tabEl.textContent || name).trim(), isActive });
+        if (isActive) activeFoldedInMore = true;
       }
     });
 
-    if (moreMenu) {
+    if (moreMenu && moreBtn) {
+      moreBtn.classList.toggle("is-active", activeFoldedInMore);
       if (items.length === 0) {
         moreBtn.style.setProperty("display", "none", "important");
         closeMoreMenu();
@@ -121,7 +124,7 @@ export function createTabController({
         moreMenu.innerHTML = items
           .map(
             (it) =>
-              `<button type="button" class="tabsMoreMenu__item" data-more-tab="${it.name}">${it.label}</button>`
+              `<button type="button" class="tabsMoreMenu__item${it.isActive ? " is-active" : ""}" data-more-tab="${it.name}">${it.label}</button>`
           )
           .join("");
         moreMenu.querySelectorAll("[data-more-tab]").forEach((btn) => {

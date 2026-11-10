@@ -2408,20 +2408,22 @@ body.screen-quake-active #app {
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 120;
+  z-index: 260;
   background: linear-gradient(180deg, #fffdf7 0%, #f7e4be 100%);
   border: 2.2px solid var(--border-tan);
   color: var(--ink-dark);
   font-size: 13.5px;
   font-weight: 900;
-  padding: 8px 18px;
-  border-radius: 999px;
+  line-height: 1.35;
+  text-align: center;
+  padding: 7px 16px;
+  border-radius: 18px;
   box-shadow: 0 3.5px 0 var(--border-lip), 0 10px 26px rgba(48, 26, 8, 0.35);
   pointer-events: none;
-  white-space: nowrap;
-  max-width: 92vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  max-width: min(92vw, 520px);
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .global-toast.hidden {
@@ -3878,6 +3880,13 @@ body.screen-quake-active #app {
 
   .global-toast {
     top: 122px !important;
+    font-size: 12.5px !important;
+    padding: 6px 14px !important;
+  }
+
+  #app:has(#result-modal:not(.hidden)) .global-toast,
+  #app:has(#main-menu:not(.hidden)) .global-toast {
+    top: max(10px, env(safe-area-inset-top)) !important;
   }
 
   .center-banner {
@@ -9529,6 +9538,13 @@ img,
 
   .global-toast {
     top: 122px !important;
+    font-size: 12.5px !important;
+    padding: 6px 14px !important;
+  }
+
+  #app:has(#result-modal:not(.hidden)) .global-toast,
+  #app:has(#main-menu:not(.hidden)) .global-toast {
+    top: max(10px, env(safe-area-inset-top)) !important;
   }
 
   .center-banner {

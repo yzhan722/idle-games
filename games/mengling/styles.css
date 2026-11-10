@@ -835,6 +835,12 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.tabsMoreMenu__item.is-active {
+  color: #fde68a;
+  background: rgba(250, 204, 21, 0.14);
+  font-weight: 700;
+}
+
 .bulletin__eng {
   margin-top: 6px;
   opacity: 0.75;

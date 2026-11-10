@@ -1319,9 +1319,24 @@ function toggleDrawer(tab) {
   }
 }
 
-document.getElementById('btn-drawer-close')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+function bindHudTap(el, callback) {
+  if (!el) return;
+  let lastTriggerAt = 0;
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    lastTriggerAt = performance.now();
+    callback(e);
+  });
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (performance.now() - lastTriggerAt < 400) return;
+    lastTriggerAt = performance.now();
+    callback(e);
+  });
+}
+
+bindHudTap(document.getElementById('btn-drawer-close'), () => {
   closeDrawer();
 });
 
@@ -1334,6 +1349,7 @@ function bindCardTap(card, callback) {
   let startX = 0;
   let startY = 0;
   let isDown = false;
+  let lastFireAt = 0;
   card.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     startX = e.clientX;
@@ -1345,11 +1361,18 @@ function bindCardTap(card, callback) {
     if (!isDown) return;
     isDown = false;
     if (Math.hypot(e.clientX - startX, e.clientY - startY) < 14) {
+      lastFireAt = performance.now();
       callback();
     }
   });
   card.addEventListener('pointercancel', () => {
     isDown = false;
+  });
+  card.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (performance.now() - lastFireAt < 400) return;
+    lastFireAt = performance.now();
+    callback();
   });
 }
 
@@ -1618,9 +1641,7 @@ document.getElementById('hud-avatar-btn')?.addEventListener('pointerdown', (e) =
 const btnSoundToggle = document.getElementById('btn-sound-toggle');
 if (btnSoundToggle) {
   btnSoundToggle.classList.toggle('muted', petAudio.muted);
-  btnSoundToggle.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  bindHudTap(btnSoundToggle, () => {
     const soundOn = petAudio.toggleMute();
     btnSoundToggle.classList.toggle('muted', !soundOn);
     setPlayerEmote(
@@ -1789,21 +1810,15 @@ function captureArPolaroid() {
   completeWish('take_photo');
 }
 
-document.getElementById('btn-photo-snap')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-photo-snap'), () => {
   triggerPolaroidSequence(false);
 });
 
-document.getElementById('btn-polaroid-close')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-polaroid-close'), () => {
   polaroidCardEl?.classList.add('hidden');
 });
 
-document.getElementById('btn-polaroid-save')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-polaroid-save'), () => {
   if (!latestPolaroidUrl) return;
   const link = document.createElement('a');
   link.href = latestPolaroidUrl;
@@ -1971,9 +1986,7 @@ function updateRpsGame(dt) {
   }
 }
 
-document.getElementById('btn-rps')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-rps'), () => {
   if (palmCatchGame.active) cancelPalmCatchGame();
   startRpsGame(false);
 });
@@ -2130,16 +2143,12 @@ function updatePalmCatchGame(dt, centerFloorY) {
   }
 }
 
-document.getElementById('btn-palm-catch')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-palm-catch'), () => {
   startPalmCatchGame();
 });
 
 for (const btn of rpsChoiceBtns) {
-  btn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  bindHudTap(btn, () => {
     const chosen = btn.dataset.rps;
     if (!chosen) return;
     rpsGame.lockedMove = chosen;
@@ -2148,24 +2157,18 @@ for (const btn of rpsChoiceBtns) {
 }
 
 // 点击左上角金币胶囊可快捷打开商店
-document.getElementById('hud-coins-btn')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('hud-coins-btn'), () => {
   if (gameMode !== 'pet') switchMode('pet');
   toggleDrawer('dress');
 });
 
 // 养成互动按钮 1：🍚 喂食（再次点击即可顺畅关闭抽屉！）
-document.getElementById('btn-feed').addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-feed'), () => {
   toggleDrawer('food');
 });
 
 // 养成互动按钮 4：🛒 商店（点击展开/收起装扮与强化小铺）
-document.getElementById('btn-shop').addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-shop'), () => {
   if (!drawerEl.classList.contains('hidden') && activeDrawerTab !== 'food') {
     closeDrawer();
   } else {
@@ -2229,9 +2232,7 @@ function throwOrPassToy() {
 }
 
 // 养成互动按钮 2：🐋 抛出/垫传实景玩具球
-document.getElementById('btn-toy').addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-toy'), () => {
   if (!drawerEl.classList.contains('hidden')) closeDrawer();
   setNapping(false);
   player.recenterDelay = 0; player.tsundereTimer = 0; player.happyTimer = 0; player.cheerTimer = 0;
@@ -2239,9 +2240,7 @@ document.getElementById('btn-toy').addEventListener('pointerdown', (e) => {
 });
 
 // 左上角心愿胶囊：点击自动引导完成心愿
-document.getElementById('hud-wish-pill')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('hud-wish-pill'), () => {
   if (!currentWish) return;
   if (currentWish.actionHint === 'palm') {
     closeDrawer();
@@ -2275,9 +2274,7 @@ document.getElementById('hud-wish-pill')?.addEventListener('pointerdown', (e) =>
 });
 
 // 养成互动按钮 3：💤 抱大尾巴摸鱼小憩（支持一键睡下与一键唤醒切换）
-document.getElementById('btn-nap').addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-nap'), () => {
   if (!drawerEl.classList.contains('hidden')) closeDrawer();
   playSfx('pat');
   if (player.isNapping || player.idleTime > 5.2) {
@@ -2308,18 +2305,14 @@ document.getElementById('btn-nap').addEventListener('pointerdown', (e) => {
 });
 
 // 顶部 🎯 实景精准重扫按钮
-document.getElementById('btn-rescan').addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-rescan'), () => {
   if (!drawerEl.classList.contains('hidden')) closeDrawer();
   vision.triggerRescan(W, H);
   playSfx('star');
   setPlayerEmote('正在精准扫描桌面物体边缘!', 1.6);
 });
 
-document.getElementById('btn-flip-side').addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('btn-flip-side'), () => {
   preferCCW = !preferCCW;
   updateOrientationLayout();
 });

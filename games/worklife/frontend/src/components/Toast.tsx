@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import './Toast.css';
 import { logger } from '../utils/logger';
+import { T1Art } from './T1Art';
 
 export type ToastType = 'success' | 'error' | 'info' | 'reward';
 
@@ -27,11 +28,11 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-const DEFAULT_ICON: Record<ToastType, string> = {
-  success: '✅',
-  error: '⚠️',
-  info: 'ℹ️',
-  reward: '🎁'
+const DEFAULT_TOAST_ART: Record<ToastType, string> = {
+  success: 'nav-adventure',
+  error: 'nav-enhance',
+  info: 'nav-tasks',
+  reward: 'gold'
 };
 
 let toastNotificationsEnabled = true;
@@ -53,7 +54,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const id = ++idRef.current;
-      const item: ToastItem = { id, type, message, icon: icon || DEFAULT_ICON[type] };
+      const item: ToastItem = { id, type, message, icon };
       setToasts((prev) => [...prev, item]);
       // 自动消失
       const duration = type === 'error' ? 4200 : 3000;
@@ -80,7 +81,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             className={`toast-item toast-${t.type}`}
             onClick={() => remove(t.id)}
           >
-            <span className="toast-icon">{t.icon}</span>
+            <span className="toast-icon">
+              {t.icon ? t.icon : <T1Art kind="ui" id={DEFAULT_TOAST_ART[t.type]} className="gold-inline" alt="" />}
+            </span>
             <span className="toast-msg">{t.message}</span>
           </div>
         ))}

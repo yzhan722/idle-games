@@ -167,7 +167,7 @@ export function AdventurePanel({
 
           <div className="adventure-tactical-dock">
             <div className="tactical-dock-group tactical-potions-group">
-              <span className="tactical-dock-label">🧪 战斗补给</span>
+              <span className="tactical-dock-label"><T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 战斗补给</span>
               <CombatPotionBar
                 loadout={playerState.combatLoadout}
                 items={contentPack?.items as any}
@@ -746,7 +746,7 @@ export function AdventurePanel({
             />
 
             <div className="battle-log-center">
-              <h4>📜 战斗记录</h4>
+              <h4><T1Art kind="ui" id="nav-tasks" className="gold-inline" alt="" /> 战斗记录</h4>
               <div className="log-content">
                 {battleState.battleLog.map((log: string, index: number) => {
                   const mechanic = mechanicLogMatcher(
