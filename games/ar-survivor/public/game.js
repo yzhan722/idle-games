@@ -490,7 +490,7 @@ function placeStarOnBestTarget() {
   if (vision.semanticObjects.length > 0) {
     const candidates = vision.semanticObjects.filter((o) => o.id !== lastStarObjId);
     const pool = candidates.length > 0 ? candidates : vision.semanticObjects;
-    pool.sort((a, b) => Math.abs(a.x + a.w * 0.5 - W * 0.5) - Math.abs(b.x + b.w * 0.5 - W * 0.5));
+    pool.sort((a, b) => Math.abs(Math.abs(a.x + a.w * 0.5 - player.x) - 180) - Math.abs(Math.abs(b.x + b.w * 0.5 - player.x) - 180));
     const chosen = pool[0];
     lastStarObjId = chosen.id;
     starTarget.targetObjId = chosen.id;
@@ -510,7 +510,7 @@ function placeStarOnBestTarget() {
   }
 
   starTarget.targetObjId = null;
-  starTarget.x = W * (0.38 + Math.random() * 0.24);
+  starTarget.x = Math.random() < 0.5 ? W * (0.22 + Math.random() * 0.12) : W * (0.66 + Math.random() * 0.12);
   starTarget.y = H * (0.24 + Math.random() * 0.12);
   starTarget.active = true;
 }
@@ -1359,7 +1359,7 @@ function spawnFoodDrop(foodSpec) {
   setNapping(false);
   player.idleTime = 0;
   player.petAction = 'idle';
-  player.recenterDelay = 0;
+  player.recenterDelay = 0; player.tsundereTimer = 0; player.happyTimer = 0; player.cheerTimer = 0;
   player.wanderTargetX = dropX;
   setPlayerEmote(`看到${foodSpec.name}啦!`, 1.6);
 }
@@ -1545,7 +1545,7 @@ function switchMode(newMode) {
   player.isCrouching = false;
   player.crouchTime = 0;
   player.wanderTargetX = null;
-  player.recenterDelay = 0;
+  player.recenterDelay = 0; player.tsundereTimer = 0; player.happyTimer = 0; player.cheerTimer = 0;
 
   if (gameMode === 'pet') {
     enemies.length = 0;
@@ -1564,7 +1564,7 @@ function switchMode(newMode) {
   } else if (gameMode === 'survivor') {
     careBarEl.style.display = 'none';
     if (wishPillEl) wishPillEl.style.display = 'none';
-    enemySpawnTimer = 0.15;
+    enemySpawnTimer = 0.15; if (enemies.length === 0) { spawnEnemy(true); spawnEnemy(false); }
     placeStarOnBestTarget();
     setPlayerEmote('开启幸存者打工！打怪爆金币咯~', 2.0);
   }
@@ -2192,7 +2192,7 @@ document.getElementById('btn-toy').addEventListener('pointerdown', (e) => {
   e.stopPropagation();
   if (!drawerEl.classList.contains('hidden')) closeDrawer();
   setNapping(false);
-  player.recenterDelay = 0;
+  player.recenterDelay = 0; player.tsundereTimer = 0; player.happyTimer = 0; player.cheerTimer = 0;
   throwOrPassToy();
 });
 
@@ -2481,7 +2481,7 @@ function updateGameplay(dt, flow) {
   // 1.5 最高优先级：中心区域出现手掌时（且未被手指拎起），第一时间飞跃跳上手掌并展开深度掌上互动！
   if (!player.isPickedUp && palm && palm.active && palm.inCenterZone) {
     setNapping(false);
-    player.recenterDelay = 0;
+    player.recenterDelay = 0; player.tsundereTimer = 0; player.happyTimer = 0; player.cheerTimer = 0;
     player.wanderTargetX = null;
     player.climbState = 'none';
 
@@ -2742,7 +2742,7 @@ function updateGameplay(dt, flow) {
     } else if (gs && gs.ttl > 0 && gs.type === 'point_finger' && !rpsGame.active) {
       setNapping(false);
       player.fingerChaseActive = true;
-      player.recenterDelay = 0;
+      player.recenterDelay = 0; player.tsundereTimer = 0; player.happyTimer = 0; player.cheerTimer = 0;
       player.idleTime = 0;
       player.wanderTargetX = null;
       fingerSparkle.active = true;
@@ -2797,7 +2797,7 @@ function updateGameplay(dt, flow) {
       }
       anchorX = Math.max(W * 0.14, Math.min(W * 0.86, nearestIt.x));
       anchorY = nearestIt.y - 20;
-      player.recenterDelay = 0;
+      player.recenterDelay = 0; player.tsundereTimer = 0; player.happyTimer = 0; player.cheerTimer = 0;
       player.idleTime = 0;
     } else if (player.isNapping) {
       // 小憩状态下保持原地安睡，不被自动回中拉走
