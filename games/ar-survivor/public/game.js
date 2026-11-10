@@ -202,7 +202,7 @@ const player = {
   palmComboTimer: 0,
   sleepZzzTick: 0,
   activeToy: savedPet.activeToy || 'whale',
-  emote: '🍚 今天也在桌面陪主人~',
+  emote: '今天也在桌面陪主人~',
   emoteMood: 'happy',
   emoteTimer: 2.4,
   hp: 100,
@@ -344,7 +344,7 @@ function addAffectionXp(amount, labelText) {
     y: player.y - 38,
     vx: 0,
     vy: -52,
-    text: labelText || `+${finalAmount} 💗`,
+    text: labelText || `+${finalAmount} 亲密`,
     color: '#ff9ec7',
     scale: 1.1,
     life: 0.85
@@ -360,7 +360,7 @@ function addAffectionXp(amount, labelText) {
       y: player.y - 54,
       vx: 0,
       vy: -60,
-      text: `💗 亲密 LV.${player.level}!`,
+      text: `亲密 LV.${player.level}!`,
       color: '#ffd700',
       scale: 1.3,
       life: 1.1
@@ -430,7 +430,7 @@ const WISH_POOL = [
   { id: 'palm_hold', text: '伸出手掌让我跳上去玩~', actionHint: 'palm' },
   { id: 'palm_catch', text: '托着我玩一把『接美食』!', actionHint: 'catch_food' },
   { id: 'play_rps', text: '和我玩一把石头剪刀布!', actionHint: 'rps' },
-  { id: 'take_photo', text: '比耶✌️拍一张纪念拍立得', actionHint: 'photo' },
+  { id: 'take_photo', text: '比耶拍一张纪念拍立得', actionHint: 'photo' },
   { id: 'eat_rice', text: '想吃一碗热乎白米饭', actionHint: 'feed_rice' },
   { id: 'play_rally', text: '陪我顶球连击 3 次', actionHint: 'throw_ball' },
   { id: 'headpat', text: '想让主人摸摸头~', actionHint: 'headpat' }
@@ -443,8 +443,8 @@ function completeWish(wishId) {
   playSfx('star');
   petAudio.haptic('win');
   petAudio.speakVoice('太棒啦，委托达成！', 'cheer', true);
-  addCoins(25, player.x, player.y - 45, '🎉 委托达成 ');
-  addAffectionXp(35, '🎉 委托 +35💗');
+  addCoins(25, player.x, player.y - 45, '委托达成 ');
+  addAffectionXp(35, '委托 +35 亲密');
   player.happyTimer = 2.0;
   player.cheerTimer = 1.8;
   for (let i = 0; i < 14; i++) {
@@ -519,7 +519,7 @@ function applySeamlessUpgrade() {
   playSfx('star');
   player.happyTimer = 1.6;
   player.proudTimer = 1.4;
-  setPlayerEmote('🍚 吃到星星啦 ^w^', 2.0);
+  setPlayerEmote('吃到星星啦 ^w^', 2.0);
   const keys = ['blaster', 'teaBlade', 'boots'];
   const key = keys[Math.floor(Math.random() * keys.length)];
   player.weapons[key] = (player.weapons[key] || 0) + 1;
@@ -533,8 +533,8 @@ function triggerJump() {
     player.spinTimer = 0.36;
     player.happyTimer = 1.6;
     playSfx('jump');
-    setPlayerEmote('✨ 在主人手心里蹦蹦跳~ ♪', 1.5);
-    addAffectionXp(8, '+8 💗 掌心欢跃');
+    setPlayerEmote('在主人手心里蹦蹦跳~ ', 1.5);
+    addAffectionXp(8, '+8 亲密 掌心欢跃');
     return;
   }
 
@@ -543,7 +543,7 @@ function triggerJump() {
     player.climbState = 'none';
     player.vy = -490;
     player.onGround = false;
-    setPlayerEmote('✨ 翻身跳!', 1.0);
+    setPlayerEmote('翻身跳!', 1.0);
     playSfx('jump');
     return;
   }
@@ -563,7 +563,7 @@ function triggerJump() {
     // 蹲伏蓄力大跳！
     if (player.isCrouching && player.crouchTime > 0.25) {
       jumpPower *= 1.28;
-      setPlayerEmote('🚀 蓄力超级跳!', 1.2);
+      setPlayerEmote('蓄力超级跳!', 1.2);
     }
 
     player.vy = -jumpPower;
@@ -589,23 +589,23 @@ function triggerJump() {
 
 // 点击/摸头/戳脸颊/捏蓝鲸大尾巴 的部位差异化桌面宠物互动
 const TSUNDERE_LINES = [
-  '💢 才不是蓝色大肥鱼!',
+  '才不是蓝色大肥鱼!',
   '>///< 别戳啦，在干活了!',
-  '🍚 再摸要交一碗白米饭!',
-  '🐟 干活中，拒绝摸鱼指控!',
-  '✨ 呆毛会被摸乱的 >_<'
+  '再摸要交一碗白米饭!',
+  '干活中，拒绝摸鱼指控!',
+  '呆毛会被摸乱的 >_<'
 ];
 
 const CHEEK_POKE_LINES = [
   '>///< 别戳脸颊啦，脸要变圆了!',
-  '💢 呜~ 软乎乎也不准乱捏!',
+  '呜~ 软乎乎也不准乱捏!',
   '>_< 脸蛋不是糯米团子啦!'
 ];
 
 const TAIL_TICKLE_LINES = [
-  '🐟 呀！！蓝鲸大尾巴最怕痒啦 >w<!',
+  '呀！！蓝鲸大尾巴最怕痒啦 >w<!',
   '>///< 不准偷捏我的大尾巴!!',
-  '🌊 尾巴一甩会把主人拍飞哦 >_<!'
+  '尾巴一甩会把主人拍飞哦 >_<!'
 ];
 
 function triggerPetHeadpat(zone = 'head') {
@@ -664,17 +664,17 @@ function handleDownPress() {
     player.dropThroughTimer = 0.28;
     player.onGround = false;
     player.vy = 90;
-    setPlayerEmote('💫 跳下台阶~', 1.0);
+    setPlayerEmote('跳下台阶~', 1.0);
   } else if (player.onGround) {
     const roleEmotes = {
-      tech: '✨ 戳戳这上面是什么~',
-      drink: '☕ 蹲下来闻闻茶香~',
-      spring: '📚 蹲在上面软乎乎~',
-      food: '🍚 发现好吃的气息!',
-      edge: '👀 蹲下悄悄观察~',
-      floor: '👀 蹲伏蓄力中...'
+      tech: '戳戳这上面是什么~',
+      drink: '蹲下来闻闻茶香~',
+      spring: '蹲在上面软乎乎~',
+      food: '发现好吃的气息!',
+      edge: '蹲下悄悄观察~',
+      floor: '蹲伏蓄力中...'
     };
-    setPlayerEmote(roleEmotes[player.currentRole] || '👀 蹲伏观察~', 1.5);
+    setPlayerEmote(roleEmotes[player.currentRole] || '蹲伏观察~', 1.5);
   }
   lastDownTapTime = now;
 }
@@ -837,7 +837,7 @@ canvas.addEventListener('pointerdown', (e) => {
           y: it.y - 28,
           vx: 0,
           vy: -55,
-          text: `🤚 传球 x${it.rallyCount}!`,
+          text: `传球 x${it.rallyCount}!`,
           color: '#00f3ff',
           scale: 1.08,
           life: 0.65
@@ -850,7 +850,7 @@ canvas.addEventListener('pointerdown', (e) => {
         it.vx = 0;
         it.vy = 0;
         setNapping(false);
-        setPlayerEmote('😮 主人拿起了好吃的！快喂到我嘴边~ 啊——', 2.0, 'eat');
+        setPlayerEmote('主人拿起了好吃的！快喂到我嘴边~ 啊——', 2.0, 'eat');
         return;
       }
     }
@@ -877,7 +877,7 @@ canvas.addEventListener('pointerdown', (e) => {
     const baseXp = zone === 'tail' ? 11 : zone === 'cheek' ? 9 : 8;
     const xpGain = player.equipped.bow ? baseXp * 2 : baseXp;
     const zoneTag = zone === 'tail' ? '捏大尾巴' : zone === 'cheek' ? '戳脸颊' : '摸摸头';
-    addAffectionXp(xpGain, `+${xpGain} 💗 ${zoneTag}`);
+    addAffectionXp(xpGain, `+${xpGain} 亲密 ${zoneTag}`);
     completeWish('headpat');
     return;
   }
@@ -905,10 +905,10 @@ canvas.addEventListener('pointerdown', (e) => {
     player.wanderTargetX = Math.max(W * 0.12, Math.min(W * 0.88, pt.x));
     player.idleTime = 0;
     if (pt.y < player.y - 36) triggerJump();
-    setPlayerEmote('🐾 收到召唤，跑过去看看~', 1.5, 'happy');
+    setPlayerEmote('收到召唤，跑过去看看~', 1.5, 'happy');
   } else {
     placeStarOnBestTarget();
-    setPlayerEmote('🎯 已精准锁定该目标!', 1.5);
+    setPlayerEmote('已精准锁定该目标!', 1.5);
     playSfx('star');
   }
 });
@@ -995,17 +995,17 @@ canvas.addEventListener('pointermove', (e) => {
 
       const purrLines = [
         '>///< 呜…顺毛手法还挺舒服的嘛…',
-        '💗 呼噜呼噜~ 再多摸一会儿嘛 ♪',
-        '^w^ 好舒服~ 呆毛都开心得晃起来啦 ♪',
-        '✨ 最喜欢主人温柔摸头啦 >w<'
+        '呼噜呼噜~ 再多摸一会儿嘛 ',
+        '^w^ 好舒服~ 呆毛都开心得晃起来啦 ',
+        '最喜欢主人温柔摸头啦 >w<'
       ];
       const msg = purrLines[Math.min(purrLines.length - 1, Math.floor((petTouch.rubCombo - 1) / 2))];
       setPlayerEmote(msg, 1.9, 'happy', petTouch.rubCombo === 2);
 
       const bonusXp = player.equipped.bow ? 12 : 6;
-      addAffectionXp(bonusXp, `💗 顺毛 x${petTouch.rubCombo} +${bonusXp}`);
+      addAffectionXp(bonusXp, `顺毛 x${petTouch.rubCombo} +${bonusXp}`);
       if (petTouch.rubCombo % 3 === 0) {
-        addCoins(6, player.x, player.y - 42, '💗顺毛呼噜 ');
+        addCoins(6, player.x, player.y - 42, '顺毛呼噜 ');
       }
     }
   }
@@ -1029,7 +1029,7 @@ function finishCanvasTouch() {
         playSfx('star');
         spawnInteractVfx(furn.x, furn.y - 42, 'sparkle', 7);
         setPlayerEmote(
-          furn.manualOn ? '🌙 星海蓝鲸小夜灯点亮啦~ 暖洋洋 ♪' : '🌙 小夜灯已调为环境光自动感应模式~',
+          furn.manualOn ? '星海蓝鲸小夜灯点亮啦~ 暖洋洋 ' : '小夜灯已调为环境光自动感应模式~',
           2.0,
           'happy'
         );
@@ -1038,12 +1038,12 @@ function finishCanvasTouch() {
         player.wanderTargetX = furn.x;
         player.idleTime = 0;
         playSfx('boop');
-        setPlayerEmote('💻 收到！马上到码农工位写代码赚金币咯~', 2.0, 'happy', true);
+        setPlayerEmote('收到！马上到码农工位写代码赚金币咯~', 2.0, 'happy', true);
       } else if (furn.key === 'tree') {
         setNapping(false);
         player.wanderTargetX = furn.x;
         if (player.onGround) triggerJump();
-        setPlayerEmote('🐾 跳上蓝鲸猫爬架软垫咯~', 1.8, 'happy');
+        setPlayerEmote('跳上蓝鲸猫爬架软垫咯~', 1.8, 'happy');
       }
     }
     savePetState();
@@ -1068,13 +1068,13 @@ function finishCanvasTouch() {
         playSfx('pat');
         petAudio.haptic('palm_land');
         spawnInteractVfx(player.x, player.y - 16, 'love', 10);
-        setPlayerEmote('^w^ 被主人亲手放到掌心里啦~ ♪', 2.2, 'happy', true);
+        setPlayerEmote('^w^ 被主人亲手放到掌心里啦~ ', 2.2, 'happy', true);
         completeWish('palm_hold');
       } else {
         player.vx = Math.max(-340, Math.min(340, player.dragVx * 0.42));
         player.vy = Math.max(-420, Math.min(180, player.dragVy * 0.36 - 95));
         player.onGround = false;
-        setPlayerEmote('✨ 嘿咻~ 安全着陆!', 1.4, 'happy');
+        setPlayerEmote('嘿咻~ 安全着陆!', 1.4, 'happy');
       }
       player.dragVx = 0;
       player.dragVy = 0;
@@ -1092,7 +1092,7 @@ window.addEventListener('pointercancel', finishCanvasTouch);
 const FOOD_CATALOG = [
   {
     id: 'rice',
-    ico: '🍚',
+    ico: '',
     img: './assets/food_rice.webp?v=hd2',
     name: '大碗白米饭',
     desc: '饱食+25 · 亲密+18',
@@ -1102,11 +1102,11 @@ const FOOD_CATALOG = [
     hp: 15,
     buffMult: 1,
     buffSec: 0,
-    emote: '🍚 白米饭最香啦 ^w^!'
+    emote: '白米饭最香啦 ^w^!'
   },
   {
     id: 'tea',
-    ico: '🍵',
+    ico: '',
     img: './assets/food_tea.webp?v=hd2',
     name: '冰镇乌龙茶',
     desc: '饱食+20 · 体力+40',
@@ -1116,11 +1116,11 @@ const FOOD_CATALOG = [
     hp: 40,
     buffMult: 1.2,
     buffSec: 45,
-    emote: '🍵 吨吨吨~ 清爽回神!'
+    emote: '吨吨吨~ 清爽回神!'
   },
   {
     id: 'bento',
-    ico: '🍤',
+    ico: '',
     img: './assets/food_bento.webp?v=hd2',
     name: '黄金炸虾便当',
     desc: '饱食+50 · 打工收益x1.5',
@@ -1130,11 +1130,11 @@ const FOOD_CATALOG = [
     hp: 50,
     buffMult: 1.5,
     buffSec: 60,
-    emote: '🍤 哇！豪华炸虾便当!!'
+    emote: '哇！豪华炸虾便当!!'
   },
   {
     id: 'cake',
-    ico: '🍰',
+    ico: '',
     img: './assets/food_cake.webp?v=hd2',
     name: '海盐芝士蛋糕',
     desc: '全状态恢复 · 打工x2.0',
@@ -1144,7 +1144,7 @@ const FOOD_CATALOG = [
     hp: 100,
     buffMult: 2.0,
     buffSec: 90,
-    emote: '🍰 幸福感爆棚 >w< ♪'
+    emote: '幸福感爆棚 >w< '
   }
 ];
 
@@ -1153,7 +1153,7 @@ const DRESS_CATALOG = [
     id: 'furn_lamp',
     isFurniture: true,
     furnKey: 'lamp',
-    ico: '🌙',
+    ico: '',
     img: './assets/furn_lamp.webp?v=hd4',
     name: '星海感应小夜灯',
     desc: '暗光自动点亮 · 亲密+25% · 可拖拽',
@@ -1163,7 +1163,7 @@ const DRESS_CATALOG = [
     id: 'furn_pc',
     isFurniture: true,
     furnKey: 'pc',
-    ico: '💻',
+    ico: '',
     img: './assets/furn_pc.webp?v=hd4',
     name: '深海码农工位',
     desc: '摆在桌面 · 自动敲代码持续产金币',
@@ -1173,7 +1173,7 @@ const DRESS_CATALOG = [
     id: 'furn_tree',
     isFurniture: true,
     furnKey: 'tree',
-    ico: '🐾',
+    ico: '',
     img: './assets/furn_tree.webp?v=hd4',
     name: '蓝鲸云端猫爬架',
     desc: '摆在桌面 · 真实可攀爬双层跳台',
@@ -1183,7 +1183,7 @@ const DRESS_CATALOG = [
     id: 'toy_yarn',
     isToy: true,
     toyKey: 'yarn',
-    ico: '🧶',
+    ico: '',
     img: './assets/toy_yarn.webp?v=hd2',
     name: '猫薄荷毛线球',
     desc: '彩虹尾迹 · 追球移速+35%',
@@ -1193,7 +1193,7 @@ const DRESS_CATALOG = [
     id: 'toy_duck',
     isToy: true,
     toyKey: 'duck',
-    ico: '🐥',
+    ico: '',
     img: './assets/toy_duck.webp?v=hd2',
     name: '水手小黄鸭',
     desc: '嘎嘎音波 · 弹跳震飞小怪',
@@ -1201,7 +1201,7 @@ const DRESS_CATALOG = [
   },
   {
     id: 'cushion',
-    ico: '🛋️',
+    ico: '',
     img: './assets/prop_cushion.webp?v=hd2',
     name: '蓝鲸软垫窝',
     desc: '休息时铺垫 · 回血加速',
@@ -1209,7 +1209,7 @@ const DRESS_CATALOG = [
   },
   {
     id: 'bow',
-    ico: '🎀',
+    ico: '',
     img: './assets/item_bow.webp?v=hd6',
     name: '樱粉蝴蝶结',
     desc: '头顶发饰 · 摸头亲密翻倍',
@@ -1217,7 +1217,7 @@ const DRESS_CATALOG = [
   },
   {
     id: 'crown',
-    ico: '👑',
+    ico: '',
     img: './assets/item_crown.webp?v=hd6',
     name: '迷你小皇冠',
     desc: '头顶皇冠 · 打工金币+25%',
@@ -1225,7 +1225,7 @@ const DRESS_CATALOG = [
   },
   {
     id: 'aura',
-    ico: '🎐',
+    ico: '',
     img: './assets/item_aura.webp?v=hd6',
     name: '星光光环',
     desc: '足底光阵 · 全屏吸金币',
@@ -1236,7 +1236,7 @@ const DRESS_CATALOG = [
 const UPGRADE_CATALOG = [
   {
     id: 'blaster',
-    ico: '💧',
+    ico: '',
     img: './assets/upg_blaster.webp?v=hd6',
     name: '水弹连发',
     desc: '提升幸存者水弹威力与弹道',
@@ -1244,7 +1244,7 @@ const UPGRADE_CATALOG = [
   },
   {
     id: 'teaBlade',
-    ico: '🍃',
+    ico: '',
     img: './assets/upg_blade.webp?v=hd6',
     name: '茶刃护体',
     desc: '增加环绕飞叶数量与伤害',
@@ -1252,7 +1252,7 @@ const UPGRADE_CATALOG = [
   },
   {
     id: 'magnet',
-    ico: '🧲',
+    ico: '',
     img: './assets/upg_magnet.webp?v=hd6',
     name: '招财磁铁',
     desc: '幸存者爆金币收益+15%/级',
@@ -1260,7 +1260,7 @@ const UPGRADE_CATALOG = [
   },
   {
     id: 'boots',
-    ico: '👟',
+    ico: '',
     img: './assets/upg_boots.webp?v=hd6',
     name: '轻巧跑鞋',
     desc: '提升移动速度与连跳次数',
@@ -1391,7 +1391,7 @@ function renderDrawerItems() {
       `;
       bindCardTap(card, () => {
         if (player.coins < item.price) {
-          setPlayerEmote('✨ 金币不够啦，去『幸存者打工』赚金币吧!', 2.2);
+          setPlayerEmote('金币不够啦，去『幸存者打工』赚金币吧!', 2.2);
           return;
         }
         if (item.price > 0) {
@@ -1429,7 +1429,7 @@ function renderDrawerItems() {
       bindCardTap(card, () => {
         if (!owned) {
           if (player.coins < item.price) {
-            setPlayerEmote('✨ 金币不足，快去『⚔️幸存者』或『接美食』赚金币~', 2.2);
+            setPlayerEmote('金币不足，快去『幸存者』或『接美食』赚金币~', 2.2);
             return;
           }
           player.coins -= item.price;
@@ -1448,19 +1448,19 @@ function renderDrawerItems() {
           }
           playSfx('star');
           player.happyTimer = 1.8;
-          addAffectionXp(35, `${item.ico} 新礼物 +35💗`);
-          setPlayerEmote(`✨ 收到${item.name}啦，可以拖到桌面任意位置摆放哦 ^w^`, 2.4, 'happy', true);
+          addAffectionXp(35, `${item.ico} 新礼物 +35 亲密`);
+          setPlayerEmote(`收到${item.name}啦，可以拖到桌面任意位置摆放哦 ^w^`, 2.4, 'happy', true);
         } else {
           if (item.isFurniture) {
             if (player.placedFurniture[item.furnKey]) {
               delete player.placedFurniture[item.furnKey];
-              setPlayerEmote(`📦 已将 ${item.name} 收回背包`, 1.5);
+              setPlayerEmote(`已将 ${item.name} 收回背包`, 1.5);
             } else {
               player.placedFurniture[item.furnKey] = {
                 xRatio: item.furnKey === 'pc' ? 0.74 : item.furnKey === 'tree' ? 0.32 : 0.24,
                 manualOn: true
               };
-              setPlayerEmote(`🏠 已在桌面摆放 ${item.name}（可按住拖拽位置）!`, 1.8, 'happy');
+              setPlayerEmote(`已在桌面摆放 ${item.name}（可按住拖拽位置）!`, 1.8, 'happy');
             }
             syncPlacedFurniture();
             playSfx('pat');
@@ -1468,12 +1468,12 @@ function renderDrawerItems() {
             player.activeToy = player.activeToy === item.toyKey ? 'whale' : item.toyKey;
             updateToyBtnLabel();
             playSfx('pat');
-            setPlayerEmote(`🧶 已切换玩具：${player.activeToy === 'whale' ? '蓝鲸沙滩球' : item.name}`, 1.5);
+            setPlayerEmote(`已切换玩具：${player.activeToy === 'whale' ? '蓝鲸沙滩球' : item.name}`, 1.5);
           } else {
             player.equipped[item.id] = !player.equipped[item.id];
             playSfx('pat');
             setPlayerEmote(
-              player.equipped[item.id] ? `✨ 已穿戴 ${item.name}!` : `已收起 ${item.name}`,
+              player.equipped[item.id] ? `已穿戴 ${item.name}!` : `已收起 ${item.name}`,
               1.5
             );
           }
@@ -1499,7 +1499,7 @@ function renderDrawerItems() {
       `;
       bindCardTap(card, () => {
         if (player.coins < cost) {
-          setPlayerEmote('✨ 金币不够升级，先去『⚔️幸存者』赚一波吧!', 2.2);
+          setPlayerEmote('金币不够升级，先去『幸存者』赚一波吧!', 2.2);
           return;
         }
         player.coins -= cost;
@@ -1507,7 +1507,7 @@ function renderDrawerItems() {
         player.maxJumps = 3 + (player.weapons.boots > 0 ? 1 : 0);
         playSfx('star');
         player.proudTimer = 1.4;
-        setPlayerEmote(`💪 ${item.name}升到 Lv.${lv + 1}！打工更猛了!`, 2.0);
+        setPlayerEmote(`${item.name}升到 Lv.${lv + 1}！打工更猛了!`, 2.0);
         savePetState();
         renderDrawerItems();
       });
@@ -1553,7 +1553,7 @@ function switchMode(newMode) {
     starTarget.active = false;
     careBarEl.style.display = 'flex';
     if (wishPillEl) wishPillEl.style.display = 'inline-flex';
-    setPlayerEmote('🐾 回到日常桌面养成模式~', 1.8);
+    setPlayerEmote('回到日常桌面养成模式~', 1.8);
   } else if (gameMode === 'parkour') {
     enemies.length = 0;
     bullets.length = 0;
@@ -1566,7 +1566,7 @@ function switchMode(newMode) {
     if (wishPillEl) wishPillEl.style.display = 'none';
     enemySpawnTimer = 0.15;
     placeStarOnBestTarget();
-    setPlayerEmote('⚔️ 开启幸存者打工！打怪爆金币咯~', 2.0);
+    setPlayerEmote('开启幸存者打工！打怪爆金币咯~', 2.0);
   }
 }
 
@@ -1590,7 +1590,7 @@ document.getElementById('hud-avatar-btn')?.addEventListener('pointerdown', (e) =
   if (!drawerEl.classList.contains('hidden')) closeDrawer();
   triggerPetHeadpat();
   const xpGain = player.equipped.bow ? 16 : 8;
-  addAffectionXp(xpGain, `+${xpGain} 💗 摸头`);
+  addAffectionXp(xpGain, `+${xpGain} 亲密 摸头`);
   completeWish('headpat');
 });
 
@@ -1604,7 +1604,7 @@ if (btnSoundToggle) {
     const soundOn = petAudio.toggleMute();
     btnSoundToggle.classList.toggle('muted', !soundOn);
     setPlayerEmote(
-      soundOn ? '🎵 八音盒 BGM 与少女语音已开启~' : '🔇 已切换为静音模式',
+      soundOn ? '八音盒 BGM 与少女语音已开启~' : '已切换为静音模式',
       1.6,
       soundOn ? 'happy' : null
     );
@@ -1628,13 +1628,15 @@ function triggerPolaroidSequence(fromGesture = false) {
   if (pendingPhotoSnapTimer > 0) return;
   if (!drawerEl.classList.contains('hidden')) closeDrawer();
   setNapping(false);
+  cancelRpsGame();
+  cancelPalmCatchGame();
   photoAutoCooldown = 4.6;
   player.photoPoseTimer = 1.75;
   player.happyTimer = 1.8;
   player.idleTime = 0;
   pendingPhotoSnapTimer = 0.24; // 先让角色摆出比耶眨眼 Pose 渲染上屏，0.24秒后咔嚓定格！
   setPlayerEmote(
-    fromGesture ? '✌️ 看到主人比耶啦！一、二、茄子~' : '📸 准备拍纪念照咯！茄子~ ✌️',
+    fromGesture ? '看到主人比耶啦！一、二、茄子~' : '准备拍纪念照咯！茄子~ ',
     1.8,
     'happy'
   );
@@ -1702,14 +1704,14 @@ function captureArPolaroid() {
   pCtx.fillStyle = '#1d3258';
   pCtx.font = '900 20px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif';
   pCtx.textAlign = 'left';
-  pCtx.fillText('✌️ DeepSeek娘 · AR 纪念拍立得', fx + 4, fy + fh + 36);
+  pCtx.fillText('DeepSeek娘 · AR 纪念拍立得', fx + 4, fy + fh + 36);
 
   pCtx.fillStyle = '#7385a6';
   pCtx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   pCtx.fillText(`AR Desktop Pet Memory · ${dateStr}`, fx + 6, fy + fh + 60);
 
   // 右下角粉色亲密等级印章胶囊
-  const stampText = `💗 亲密 LV.${player.level}`;
+  const stampText = `亲密 LV.${player.level}`;
   pCtx.fillStyle = '#ffe5f0';
   pCtx.strokeStyle = '#ff7eb3';
   pCtx.lineWidth = 2;
@@ -1754,8 +1756,8 @@ function captureArPolaroid() {
       life: 0.55
     });
   }
-  addAffectionXp(20, '📸 纪念合影 +20💗');
-  setPlayerEmote('📸 咔嚓！拍得超可爱 ^w^ ✌️', 2.4, 'cheer', true);
+  addAffectionXp(20, '纪念合影 +20 亲密');
+  setPlayerEmote('咔嚓！拍得超可爱 ^w^ ', 2.4, 'cheer', true);
   completeWish('take_photo');
 }
 
@@ -1782,14 +1784,14 @@ document.getElementById('btn-polaroid-save')?.addEventListener('pointerdown', (e
   link.click();
   link.remove();
   playSfx('star');
-  setPlayerEmote('💝 相片已保存到主人的相册下载啦~', 2.0, 'happy');
+  setPlayerEmote('相片已保存到主人的相册下载啦~', 2.0, 'happy');
 });
 
 // ================= 实景石头剪刀布（猜拳）小游戏（握拳✊手势或底部猜拳键触发） =================
 const rpsHudEl = document.getElementById('rps-hud');
 const rpsStatusEl = document.getElementById('rps-status-text');
 const rpsChoiceBtns = Array.from(document.querySelectorAll('.rps-choice-btn'));
-const RPS_LABELS = { rock: '✊石头', scissors: '✌️剪刀', paper: '🖐️布' };
+const RPS_LABELS = { rock: '石头', scissors: '剪刀', paper: '布' };
 
 const rpsGame = {
   active: false,
@@ -1851,7 +1853,7 @@ function startRpsGame(fromGesture = false) {
   }
   playSfx('rps_tick', 1);
   setPlayerEmote(
-    fromGesture ? '✊ 收到猜拳挑战！石头剪刀布~' : '✊✌️🖐️ 石头剪刀布！准备出拳咯~',
+    fromGesture ? '收到猜拳挑战！石头剪刀布~' : '石头剪刀布！准备出拳咯~',
     2.2,
     'happy',
     true
@@ -1874,26 +1876,26 @@ function resolveRpsRound(userMove) {
     player.happyTimer = 1.7;
     playSfx('pat');
     petAudio.haptic('tap');
-    addCoins(8, player.x, player.y - 36, '🤝默契 ');
-    addAffectionXp(15, '🤝 心有灵犀 +15💗');
+    addCoins(8, player.x, player.y - 36, '默契 ');
+    addAffectionXp(15, '心有灵犀 +15 亲密');
     setPlayerEmote(`^w^ 我也是${RPS_LABELS[petMove]}！和主人超有默契~`, 2.4, 'happy', true);
   } else if (winsAgainst[userMove] === petMove) {
-    banner = `你出 ${RPS_LABELS[userMove]} vs DeepSeek娘 ${RPS_LABELS[petMove]} · 主人获胜 🎉`;
+    banner = `你出 ${RPS_LABELS[userMove]} vs DeepSeek娘 ${RPS_LABELS[petMove]} · 主人获胜 `;
     player.tsundereTimer = 1.7;
     playSfx('star');
     petAudio.haptic('win');
-    addCoins(18, player.x, player.y - 36, '🎉猜拳胜 ');
-    addAffectionXp(24, '🎉 猜拳获胜 +24💗');
-    setPlayerEmote(`💢 呜~ 我出${RPS_LABELS[petMove]}输啦，主人好厉害!`, 2.5, 'tsundere', true);
+    addCoins(18, player.x, player.y - 36, '猜拳胜 ');
+    addAffectionXp(24, '猜拳获胜 +24 亲密');
+    setPlayerEmote(`呜~ 我出${RPS_LABELS[petMove]}输啦，主人好厉害!`, 2.5, 'tsundere', true);
   } else {
-    banner = `你出 ${RPS_LABELS[userMove]} vs DeepSeek娘 ${RPS_LABELS[petMove]} · DeepSeek娘赢咯 ✌️`;
+    banner = `你出 ${RPS_LABELS[userMove]} vs DeepSeek娘 ${RPS_LABELS[petMove]} · DeepSeek娘赢咯 `;
     player.cheerTimer = 2.0;
     player.happyTimer = 1.9;
     playSfx('bounce', 3);
     petAudio.haptic('headpat');
-    addCoins(10, player.x, player.y - 36, '🐟陪玩奖 ');
-    addAffectionXp(18, '✨ 猜拳互动 +18💗');
-    setPlayerEmote(`✌️ 耶！我出${RPS_LABELS[petMove]}赢咯~ 奖励白米饭!`, 2.5, 'cheer', true);
+    addCoins(10, player.x, player.y - 36, '陪玩奖 ');
+    addAffectionXp(18, '猜拳互动 +18 亲密');
+    setPlayerEmote(`耶！我出${RPS_LABELS[petMove]}赢咯~ 奖励白米饭!`, 2.5, 'cheer', true);
   }
 
   if (rpsStatusEl) rpsStatusEl.textContent = banner;
@@ -1983,10 +1985,10 @@ function startPalmCatchGame() {
   rpsHudEl?.classList.remove('hidden');
   document.getElementById('btn-palm-catch')?.classList.add('active');
   if (rpsStatusEl) {
-    rpsStatusEl.textContent = '🤲 掌心接美食！伸出手掌左右移动（或滑动摇杆） · 16s';
+    rpsStatusEl.textContent = '掌心接美食！伸出手掌左右移动（或滑动摇杆） · 16s';
   }
   playSfx('star');
-  setPlayerEmote('🍚 天降白米饭大作战！快用手掌托着我左右接美食咯~', 2.4, 'cheer', true);
+  setPlayerEmote('天降白米饭大作战！快用手掌托着我左右接美食咯~', 2.4, 'cheer', true);
 }
 
 function updatePalmCatchGame(dt, centerFloorY) {
@@ -2030,7 +2032,7 @@ function updatePalmCatchGame(dt, centerFloorY) {
           scale: 1.15,
           life: 0.7
         });
-        setPlayerEmote('💢 讨厌加班闹钟！只接白米饭和炸虾!', 1.5, 'tsundere');
+        setPlayerEmote('讨厌加班闹钟！只接白米饭和炸虾!', 1.5, 'tsundere');
       } else {
         palmCatchGame.catches++;
         palmCatchGame.combo++;
@@ -2042,7 +2044,7 @@ function updatePalmCatchGame(dt, centerFloorY) {
         petAudio.haptic('finger_boop');
         spawnInteractVfx(player.x, player.y - 20, 'eat', 5);
         if (ci.kind === 'coin') {
-          addCoins(6, player.x, player.y - 36, '🤲接金币 ');
+          addCoins(6, player.x, player.y - 36, '接金币 ');
         } else {
           player.hunger = Math.min(player.maxHunger, player.hunger + 6);
           floatingTexts.push({
@@ -2050,7 +2052,7 @@ function updatePalmCatchGame(dt, centerFloorY) {
             y: player.y - 40,
             vx: 0,
             vy: -58,
-            text: `🍚 接住 x${palmCatchGame.combo} (+${pts})`,
+            text: `接住 x${palmCatchGame.combo} (+${pts})`,
             color: '#ffd700',
             scale: 1.12,
             life: 0.65
@@ -2068,7 +2070,7 @@ function updatePalmCatchGame(dt, centerFloorY) {
   }
 
   if (rpsStatusEl) {
-    rpsStatusEl.textContent = `🤲 掌心接美食 · 得分 ${palmCatchGame.score} (连击x${palmCatchGame.combo}) · 剩余 ${Math.ceil(palmCatchGame.timer)}s`;
+    rpsStatusEl.textContent = `掌心接美食 · 得分 ${palmCatchGame.score} (连击x${palmCatchGame.combo}) · 剩余 ${Math.ceil(palmCatchGame.timer)}s`;
   }
 
   if (palmCatchGame.timer <= 0) {
@@ -2080,9 +2082,9 @@ function updatePalmCatchGame(dt, centerFloorY) {
     player.happyTimer = 2.0;
     playSfx('star');
     petAudio.haptic('win');
-    addCoins(rewardCoins, player.x, player.y - 44, '🎉接饭大奖 ');
-    addAffectionXp(rewardXp, `🎉 掌心接饭 ${finalScore}分 +${rewardXp}💗`);
-    setPlayerEmote(`🎉 掌心接美食大丰收！共得 ${finalScore} 分，吃得好饱 ^w^`, 2.6, 'cheer', true);
+    addCoins(rewardCoins, player.x, player.y - 44, '接饭大奖 ');
+    addAffectionXp(rewardXp, `掌心接饭 ${finalScore}分 +${rewardXp} 亲密`);
+    setPlayerEmote(`掌心接美食大丰收！共得 ${finalScore} 分，吃得好饱 ^w^`, 2.6, 'cheer', true);
   }
 }
 
@@ -2181,7 +2183,7 @@ function throwOrPassToy() {
   });
   player.idleTime = 0;
   const toyNames = { whale: '蓝鲸沙滩球', yarn: '猫薄荷毛线球', duck: '水手小黄鸭' };
-  setPlayerEmote(`✨ 接好${toyNames[tid] || '球球'}咯~ ♪`, 1.6);
+  setPlayerEmote(`接好${toyNames[tid] || '球球'}咯~ `, 1.6);
 }
 
 // 养成互动按钮 2：🐋 抛出/垫传实景玩具球
@@ -2201,7 +2203,7 @@ document.getElementById('hud-wish-pill')?.addEventListener('pointerdown', (e) =>
   if (!currentWish) return;
   if (currentWish.actionHint === 'palm') {
     closeDrawer();
-    setPlayerEmote('🤲 把手掌伸到镜头中间，我马上跳上去~', 2.2, 'happy');
+    setPlayerEmote('把手掌伸到镜头中间，我马上跳上去~', 2.2, 'happy');
   } else if (currentWish.actionHint === 'catch_food') {
     closeDrawer();
     startPalmCatchGame();
@@ -2222,7 +2224,7 @@ document.getElementById('hud-wish-pill')?.addEventListener('pointerdown', (e) =>
   } else if (currentWish.actionHint === 'headpat') {
     closeDrawer();
     triggerPetHeadpat();
-    addAffectionXp(10, '+10 💗 摸头');
+    addAffectionXp(10, '+10 亲密 摸头');
     completeWish('headpat');
   } else if (currentWish.actionHint === 'jump') {
     closeDrawer();
@@ -2241,7 +2243,7 @@ document.getElementById('btn-nap').addEventListener('pointerdown', (e) => {
     player.idleTime = 0;
     player.petAction = 'idle';
     player.happyTimer = 1.2;
-    setPlayerEmote('☀️ 睡饱满血复活!', 1.8, 'happy', true);
+    setPlayerEmote('睡饱满血复活!', 1.8, 'happy', true);
   } else {
     setNapping(true);
     player.vx = 0;
@@ -2249,7 +2251,7 @@ document.getElementById('btn-nap').addEventListener('pointerdown', (e) => {
     player.idleTime = 6.0;
     player.petAction = 'sleep';
     player.hp = Math.min(player.maxHp, player.hp + 30);
-    addAffectionXp(10, '+10 💗 小憩');
+    addAffectionXp(10, '+10 亲密 小憩');
     setPlayerEmote('-w- 抱尾巴睡午觉zzZ', 2.8, 'sleep', true);
   }
 });
@@ -2261,7 +2263,7 @@ document.getElementById('btn-rescan').addEventListener('pointerdown', (e) => {
   if (!drawerEl.classList.contains('hidden')) closeDrawer();
   vision.triggerRescan(W, H);
   playSfx('star');
-  setPlayerEmote('🎯 正在精准扫描桌面物体边缘!', 1.6);
+  setPlayerEmote('正在精准扫描桌面物体边缘!', 1.6);
 });
 
 document.getElementById('btn-flip-side').addEventListener('pointerdown', (e) => {
@@ -2303,7 +2305,7 @@ function spawnEnemy(forceBoss = false) {
   if (isBoss) {
     playSfx('star');
     petAudio.haptic('shutter');
-    setPlayerEmote('👑 警告！深海摸鱼大魔王登场，快击败它爆金币雨!', 2.6, 'tsundere', true);
+    setPlayerEmote('警告！深海摸鱼大魔王登场，快击败它爆金币雨!', 2.6, 'tsundere', true);
   }
 }
 
@@ -2395,7 +2397,7 @@ function updateGameplay(dt, flow) {
     if (flowMag > 1.8 && Math.abs(player.vx) < 30 && player.climbState === 'none' && player.palmState === 'none') {
       player.recenterDelay = Math.max(player.recenterDelay, 0.24);
       if (Math.hypot(player.x - W * 0.5, player.y - H * 0.62) > 95 && player.emoteTimer <= 0) {
-        setPlayerEmote('🏃‍♀️ 等等我呀~', 1.2);
+        setPlayerEmote('等等我呀~', 1.2);
       }
     }
   }
@@ -2420,7 +2422,7 @@ function updateGameplay(dt, flow) {
   if (vision.isDarkRoom !== lastDarkRoomState) {
     lastDarkRoomState = vision.isDarkRoom;
     if (vision.isDarkRoom && furnitureList.some((f) => f.key === 'lamp')) {
-      setPlayerEmote('🌙 环境变暗啦，星海蓝鲸小夜灯已自动点亮守护主人~', 2.4, 'happy', true);
+      setPlayerEmote('环境变暗啦，星海蓝鲸小夜灯已自动点亮守护主人~', 2.4, 'happy', true);
     }
   }
 
@@ -2465,8 +2467,8 @@ function updateGameplay(dt, flow) {
         furn.workTimer = (furn.workTimer || 0) + dt;
         if (furn.workTimer >= 4.0) {
           furn.workTimer = 0;
-          addCoins(6, furn.x, furn.y - 54, '💻码农产币 ');
-          addAffectionXp(8, '💻 努力打工 +8💗');
+          addCoins(6, furn.x, furn.y - 54, '码农产币 ');
+          addAffectionXp(8, '努力打工 +8 亲密');
           spawnInteractVfx(furn.x, furn.y - 44, 'sparkle', 5);
         }
       }
@@ -2492,7 +2494,7 @@ function updateGameplay(dt, flow) {
       player.palmBoardTimer = player.palmBoardDuration;
       player.facing = palm.x >= player.x ? 1 : -1;
       playSfx('jump');
-      setPlayerEmote('✨ 发现主人的手掌！跳上去咯~', 1.5, 'happy');
+      setPlayerEmote('发现主人的手掌！跳上去咯~', 1.5, 'happy');
       spawnInteractVfx(player.x, player.y + 8, 'sparkle', 6);
     } else if (player.palmState === 'boarding') {
       player.palmBoardTimer -= dt;
@@ -2523,8 +2525,8 @@ function updateGameplay(dt, flow) {
         player.proudTimer = 1.2;
         playSfx('pat');
         petAudio.haptic('palm_land');
-        setPlayerEmote('^w^ 跳上主人手心啦~ 好暖和 ♪', 2.4, 'happy', true);
-        addAffectionXp(15, '+15 💗 跃上掌心');
+        setPlayerEmote('^w^ 跳上主人手心啦~ 好暖和 ', 2.4, 'happy', true);
+        addAffectionXp(15, '+15 亲密 跃上掌心');
         completeWish('palm_hold');
         spawnInteractVfx(player.x, player.y - 14, 'love', 10);
       }
@@ -2580,8 +2582,8 @@ function updateGameplay(dt, flow) {
         petAudio.haptic('finger_boop');
         spawnInteractVfx(player.x, player.y - 18, 'sparkle', 8);
         const comboTxt = player.palmCombo >= 2 ? ` x${player.palmCombo}` : '';
-        setPlayerEmote(`🌊 哇~ 手心举高高${comboTxt}咯!!`, 1.8, 'cheer', player.palmCombo === 2);
-        addCoins(7 + player.palmCombo * 2, player.x, player.y - 30, `🤲举高高${comboTxt} `);
+        setPlayerEmote(`哇~ 手心举高高${comboTxt}咯!!`, 1.8, 'cheer', player.palmCombo === 2);
+        addCoins(7 + player.palmCombo * 2, player.x, player.y - 30, `举高高${comboTxt} `);
       }
       // 掌心互动 2：主人左右摇晃手掌 -> 手心冲浪互动
       else if (Math.abs(palm.vx) > 105 && player.palmBounceCd <= 0) {
@@ -2589,8 +2591,8 @@ function updateGameplay(dt, flow) {
         player.facing = palm.vx > 0 ? 1 : -1;
         player.happyTimer = 1.5;
         spawnInteractVfx(player.x, player.y - 12, 'sparkle', 5);
-        setPlayerEmote('🏄‍♀️ 手心冲浪~ 稳住稳住!', 1.6, 'happy');
-        addAffectionXp(10, '+10 💗 掌心摇晃');
+        setPlayerEmote('手心冲浪~ 稳住稳住!', 1.6, 'happy');
+        addAffectionXp(10, '+10 亲密 掌心摇晃');
       }
       // 掌心互动 3：动动手指挠痒痒/捏捏 -> 傲娇害羞跳动
       else if (palm.isTickling && player.palmTickleCd <= 0) {
@@ -2601,11 +2603,11 @@ function updateGameplay(dt, flow) {
         petAudio.haptic('headpat');
         const tickleLines = [
           '>///< 手指挠痒痒好痒呀~',
-          '💗 蹭蹭主人的大拇指~',
-          '✨ 在手心里被摸头好幸福!'
+          '蹭蹭主人的大拇指~',
+          '在手心里被摸头好幸福!'
         ];
         setPlayerEmote(tickleLines[Math.floor(Math.random() * tickleLines.length)], 2.0, 'tsundere');
-        addAffectionXp(12, '+12 💗 掌心挠痒');
+        addAffectionXp(12, '+12 亲密 掌心挠痒');
         spawnInteractVfx(player.x, player.y - 16, 'love', 7);
       }
 
@@ -2616,9 +2618,9 @@ function updateGameplay(dt, flow) {
         player.petAction = palmAct;
         if (player.emoteTimer <= 0) {
           const actLines = {
-            sit: '♪ 坐在主人手心里晃jiojio~',
-            poke: '✨ 戳戳主人的掌纹~',
-            rice: '🍚 在手心里干饭最香啦 ^w^',
+            sit: '坐在主人手心里晃jiojio~',
+            poke: '戳戳主人的掌纹~',
+            rice: '在手心里干饭最香啦 ^w^',
             proud: '=w= 我是主人的掌上DeepSeek娘!'
           };
           setPlayerEmote(actLines[palmAct], 2.0);
@@ -2628,8 +2630,8 @@ function updateGameplay(dt, flow) {
       // 持续托举手掌每 4.2 秒额外奖励亲密度与金币
       if (player.palmRewardTimer >= 4.2) {
         player.palmRewardTimer = 0;
-        addCoins(6, player.x, player.y - 28, '🤲掌上陪伴 ');
-        addAffectionXp(10, '+10 💗 掌心温暖');
+        addCoins(6, player.x, player.y - 28, '掌上陪伴 ');
+        addAffectionXp(10, '+10 亲密 掌心温暖');
       }
     }
   } else if (player.palmState !== 'none') {
@@ -2639,7 +2641,7 @@ function updateGameplay(dt, flow) {
     player.onGround = false;
     player.vy = -135;
     player.recenterDelay = 0.12;
-    setPlayerEmote('🐾 手掌收走啦~ 我回中间乖乖等你!', 1.8);
+    setPlayerEmote('手掌收走啦~ 我回中间乖乖等你!', 1.8);
   }
 
   // 2. 处理「被拎起悬空 / 手掌互动 / 抓边悬吊翻身爬平台」动作序列
@@ -2774,11 +2776,11 @@ function updateGameplay(dt, flow) {
         }
         playSfx('boop');
         petAudio.haptic('finger_boop');
-        const cTag = player.fingerCombo >= 2 ? ` x${player.fingerCombo}!` : '~ 蹭蹭 ♪';
-        setPlayerEmote(`✨ 指尖贴贴${cTag}`, 1.8, player.fingerCombo >= 3 ? 'cheer' : 'happy');
-        addAffectionXp(8 + player.fingerCombo * 2, `+${8 + player.fingerCombo * 2} 💗 指尖贴贴`);
+        const cTag = player.fingerCombo >= 2 ? ` x${player.fingerCombo}!` : '~ 蹭蹭 ';
+        setPlayerEmote(`指尖贴贴${cTag}`, 1.8, player.fingerCombo >= 3 ? 'cheer' : 'happy');
+        addAffectionXp(8 + player.fingerCombo * 2, `+${8 + player.fingerCombo * 2} 亲密 指尖贴贴`);
         if (player.fingerCombo % 3 === 0) {
-          addCoins(8, gs.fingerX, gs.fingerY - 20, `✨指尖x${player.fingerCombo} `);
+          addCoins(8, gs.fingerX, gs.fingerY - 20, `指尖x${player.fingerCombo} `);
         }
         spawnInteractVfx(gs.fingerX, gs.fingerY, 'love', 9);
       }
@@ -2994,7 +2996,7 @@ function updateGameplay(dt, flow) {
         if (player.petAction !== 'sit') {
           player.petAction = 'sit';
           player.facing = Math.abs(player.x - plat.x1) < Math.abs(player.x - plat.x2) ? -1 : 1;
-          setPlayerEmote('^w^ 坐边边晃jio~ ♪', 2.0);
+          setPlayerEmote('^w^ 坐边边晃jio~ ', 2.0);
         }
       } else if (player.idleTime > 5.2) {
         if (player.petAction !== 'sleep') {
@@ -3007,13 +3009,13 @@ function updateGameplay(dt, flow) {
           const nextAct = cycle === 0 ? 'poke' : cycle === 1 ? 'sit' : 'rice';
           if (player.petAction !== nextAct) {
             player.petAction = nextAct;
-            if (nextAct === 'poke' && player.emoteTimer <= 0) setPlayerEmote('✨ 帮主人敲键盘~', 1.8);
+            if (nextAct === 'poke' && player.emoteTimer <= 0) setPlayerEmote('帮主人敲键盘~', 1.8);
           }
         } else if (player.currentRole === 'drink' || player.currentRole === 'food') {
           const nextAct = cycle === 0 ? 'rice' : 'sit';
           if (player.petAction !== nextAct) {
             player.petAction = nextAct;
-            if (nextAct === 'rice' && player.emoteTimer <= 0) setPlayerEmote('🍚 配茶吃白米饭~', 1.8);
+            if (nextAct === 'rice' && player.emoteTimer <= 0) setPlayerEmote('配茶吃白米饭~', 1.8);
           }
         } else {
           const nextAct = cycle === 0 ? 'proud' : cycle === 1 ? 'poke' : 'sit';
@@ -3045,7 +3047,7 @@ function updateGameplay(dt, flow) {
   player.foodBuffTimer = Math.max(0, player.foodBuffTimer - dt);
   player.hunger = Math.max(10, player.hunger - 0.55 * dt);
   if (player.hunger < 25 && player.emoteTimer <= 0 && Math.random() < 0.01) {
-    setPlayerEmote('🍙 肚子有点饿啦，想吃白米饭~', 2.0);
+    setPlayerEmote('肚子有点饿啦，想吃白米饭~', 2.0);
   }
 
   // Live2D 视线焦点实时追踪（看向手中拖拽的美食 / 指尖萤火 / 最近的弹力球） & 睡眠呼吸 Zzz 气泡
@@ -3193,14 +3195,14 @@ function updateGameplay(dt, flow) {
         petAudio.haptic('tap');
         spawnInteractVfx(player.x, player.y - 20, 'love', 10);
         setPlayerEmote(
-          isHandHeldFood ? `💗 主人亲手喂的${spec.name}更香啦 ^w^!` : spec.emote,
+          isHandHeldFood ? `主人亲手喂的${spec.name}更香啦 ^w^!` : spec.emote,
           2.3,
           'eat',
           true
         );
         addAffectionXp(
           finalXp,
-          `${spec.ico} ${isHandHeldFood ? '亲手投喂 ' : ''}饱食+${spec.hunger} 💗+${finalXp}`
+          `${spec.ico} ${isHandHeldFood ? '亲手投喂 ' : ''}饱食+${spec.hunger} 亲密+${finalXp}`
         );
         if (spec.id === 'rice') completeWish('eat_rice');
         if (spec.id === 'tea') completeWish('eat_tea');
@@ -3232,18 +3234,18 @@ function updateGameplay(dt, flow) {
         player.happyTimer = 1.2;
         player.spinTimer = it.rallyCount >= 3 ? 0.36 : 0;
 
-        const comboMsg = it.rallyCount >= 2 ? `🔥 颠球 x${it.rallyCount}!` : '^w^ 顶球球~ ♪';
+        const comboMsg = it.rallyCount >= 2 ? `颠球 x${it.rallyCount}!` : '^w^ 顶球球~ ';
         setPlayerEmote(comboMsg, 1.5);
-        addAffectionXp(8 + it.rallyCount * 2, `🐋 颠球 x${it.rallyCount} +💗`);
+        addAffectionXp(8 + it.rallyCount * 2, `颠球 x${it.rallyCount} +`);
 
         if (it.rallyCount % 2 === 0) {
-          addCoins(3 + it.rallyCount, it.x, it.y - 24, `🔥x${it.rallyCount} `);
+          addCoins(3 + it.rallyCount, it.x, it.y - 24, `x${it.rallyCount} `);
         }
         if (it.rallyCount >= 3) {
           completeWish('play_rally');
         }
         if (it.bounces >= 8) {
-          addCoins(12, it.x, it.y - 24, '🎉 满贯 ');
+          addCoins(12, it.x, it.y - 24, '满贯 ');
           petItems.splice(i, 1);
           continue;
         }
@@ -3263,7 +3265,7 @@ function updateGameplay(dt, flow) {
         starTarget.comboTimer = 9.5;
         player.starsCollected++;
         const starBounty = 16 + starTarget.combo * 6;
-        addAffectionXp(24 + starTarget.combo * 4, `⭐ 摘星 x${starTarget.combo} +💗`);
+        addAffectionXp(24 + starTarget.combo * 4, `⭐ 摘星 x${starTarget.combo} +`);
         addCoins(starBounty, starTarget.x, starTarget.y, `⭐ 星链x${starTarget.combo} `);
         shockwaves.push({
           x: starTarget.x,
@@ -3472,7 +3474,7 @@ function updateGameplay(dt, flow) {
         player.hp = player.maxHp;
         // 幸存者打工体力耗尽时，携带赚到的全部金币安全返回养成模式干饭休息
         switchMode('pet');
-        setPlayerEmote('✨ 打工收工！带金币回来吃大餐咯~', 2.6);
+        setPlayerEmote('打工收工！带金币回来吃大餐咯~', 2.6);
         break;
       }
     }
@@ -3511,8 +3513,8 @@ function updateGameplay(dt, flow) {
         playSfx('star');
         petAudio.haptic('win');
         player.cheerTimer = 1.8;
-        addAffectionXp(45, '👑 讨伐大魔王 +45💗');
-        setPlayerEmote('👑 耶！成功击败深海摸鱼大魔王，满屏金币雨咯 ^w^!', 2.6, 'cheer', true);
+        addAffectionXp(45, '讨伐大魔王 +45 亲密');
+        setPlayerEmote('耶！成功击败深海摸鱼大魔王，满屏金币雨咯 ^w^!', 2.6, 'cheer', true);
       } else if (player.kills % 10 === 0) {
         spawnEnemy(true);
       }
@@ -3526,7 +3528,7 @@ function updateGameplay(dt, flow) {
           color: '#00f3ff',
           life: 0.48
         });
-        setPlayerEmote('🌊 巨鲸潮汐觉醒冲击!', 1.5, 'cheer');
+        setPlayerEmote('巨鲸潮汐觉醒冲击!', 1.5, 'cheer');
         for (const other of enemies) {
           if (other !== e && Math.hypot(other.x - player.x, other.y - player.y) < 230) {
             other.hp -= 65;
