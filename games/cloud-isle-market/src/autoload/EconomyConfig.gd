@@ -329,6 +329,85 @@ func calc_shiba_price_bonus(shiba_level: int) -> float:
 func calc_buffer_capacity(level: int) -> int:
 	return DEFAULT_BUFFER_CAP + maxi(0, level - 1) * 5
 
+## v2.7-1: 16 In-App & Steam Core Achievements
+const ACHIEVEMENTS: Dictionary = {
+	"ach_welcome": {"id": "ach_welcome", "name": "初入云岛", "desc": "开启云岛集市经营之旅"},
+	"ach_first_gold": {"id": "ach_first_gold", "name": "第一桶金", "desc": "累计赚取 500 金币"},
+	"ach_mortar_chef": {"id": "ach_mortar_chef", "name": "研钵飘香", "desc": "制作第 1 份桂花研钵美食"},
+	"ach_island_2": {"id": "ach_island_2", "name": "密林开拓者", "desc": "修复木桥解锁 2 号岛【魔法密林】"},
+	"ach_island_3": {"id": "ach_island_3", "name": "黄金海岸", "desc": "修复木桥解锁 3 号岛【天空海岸】"},
+	"ach_codex_all": {"id": "ach_codex_all", "name": "山海全席", "desc": "点亮山海图鉴全部 8 种食材料理"},
+	"ach_pomodoro": {"id": "ach_pomodoro", "name": "专注达人", "desc": "完成 1 次 25 分钟番茄钟专注"},
+	"ach_contract": {"id": "ach_contract", "name": "皇家供货商", "desc": "完成第 1 份飞艇皇家契约订单"},
+	"ach_amber_rich": {"id": "ach_amber_rich", "name": "琥珀收藏家", "desc": "累计获得 5 颗晨露琥珀"},
+	"ach_landscape_all": {"id": "ach_landscape_all", "name": "微缩造景师", "desc": "点亮全部 3 座岛屿专属增益造景"},
+	"ach_animal_lv10": {"id": "ach_animal_lv10", "name": "王牌进修生", "desc": "任意小动物小队进修达到 Lv.10"},
+	"ach_animal_lv25": {"id": "ach_animal_lv25", "name": "金牌匠师团", "desc": "任意小动物小队进修达到 Lv.25"},
+	"ach_building_lv25": {"id": "ach_building_lv25", "name": "产业蜕变", "desc": "任意主建筑升级达到 Lv.25"},
+	"ach_harvest_50": {"id": "ach_harvest_50", "name": "晨露丰收季", "desc": "累计收获 50 份农田作物"},
+	"ach_customer_20": {"id": "ach_customer_20", "name": "宾至如归", "desc": "累计服务 20 位登岛顾客"},
+	"ach_star_5": {"id": "ach_star_5", "name": "五星云岛名宿", "desc": "云岛经营星级声望达到 5 星"}
+}
+
+## v2.7-2: Multi-language Internationalization Dictionary (`zh_CN` / `en_US` / `ja_JP`)
+const SUPPORTED_LANGS: Array[String] = ["zh_CN", "en_US", "ja_JP"]
+var current_lang: String = "zh_CN"
+
+const I18N_DICT: Dictionary = {
+	"zh_CN": {
+		"lang_badge": "[简中]",
+		"tab_build": "建筑升级",
+		"tab_animal": "动物编制",
+		"tab_expand": "开拓造景",
+		"tab_codex": "山海图鉴",
+		"tab_companion": "★摸鱼置顶",
+		"tab_window": "★常规窗口",
+		"drawer_build": "【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
+		"drawer_animal": "【动物编制与特质】点击摸头加速 · Lv.10/25/50激活专精特质!",
+		"drawer_expand": "【开拓与造景】开拓跨岛木桥 · 晨露琥珀点亮三岛专属增益造景!",
+		"drawer_codex": "【山海图鉴】已点亮 %d/8 种食材料理 · 永久售价 +%d%%!"
+	},
+	"en_US": {
+		"lang_badge": "[EN]",
+		"tab_build": "Buildings",
+		"tab_animal": "Workers",
+		"tab_expand": "Islands",
+		"tab_codex": "Codex",
+		"tab_companion": "★Desk Pin",
+		"tab_window": "★Windowed",
+		"drawer_build": "[Buildings] Auto-evolves every 25 levels + 4-Tier visual upgrade!",
+		"drawer_animal": "[Animal Crew] Click to pet (+50% spd) · Unlock traits at Lv.10/25/50!",
+		"drawer_expand": "[Expansion] Build island bridges & unlock Amber passive landscapes!",
+		"drawer_codex": "[Collection Codex] Unlocked %d/8 delicacies · Global price +%d%%!"
+	},
+	"ja_JP": {
+		"lang_badge": "[日本語]",
+		"tab_build": "施設強化",
+		"tab_animal": "動物編成",
+		"tab_expand": "開拓造景",
+		"tab_codex": "山海図鑑",
+		"tab_companion": "★デスクトップ",
+		"tab_window": "★通常窓",
+		"drawer_build": "【施設強化】25Lv毎に作物と料理が進化＋外観4段階変化！",
+		"drawer_animal": "【動物編成】撫でて加速・Lv.10/25/50で専門特性解放！",
+		"drawer_expand": "【開拓造景】木橋を修復し、琥珀で三島の特別造景を解放！",
+		"drawer_codex": "【山海図鑑】%d/8 種の食材と料理を解放・販売価格 +%d%%！"
+	}
+}
+
+func set_language(lang_code: String) -> void:
+	if SUPPORTED_LANGS.has(lang_code):
+		current_lang = lang_code
+
+func cycle_language() -> String:
+	var idx := SUPPORTED_LANGS.find(current_lang)
+	current_lang = SUPPORTED_LANGS[(idx + 1) % SUPPORTED_LANGS.size()]
+	return current_lang
+
+func tr_key(key: String) -> String:
+	var table: Dictionary = I18N_DICT.get(current_lang, I18N_DICT["zh_CN"])
+	return String(table.get(key, I18N_DICT["zh_CN"].get(key, key)))
+
 func calc_item_unit_price(item_id: String, building_lv: int, stall_lv: int, shiba_lv: int) -> int:
 	var shiba_mult := calc_shiba_price_bonus(shiba_lv)
 	var stall_mult := 1.0 + 0.08 * float(maxi(1, stall_lv) - 1)

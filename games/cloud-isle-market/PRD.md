@@ -264,13 +264,13 @@ AI 助手必须严格按以下 4 个阶段顺序执行，每阶段完成后验�
 - [x] [v2.6-2] 荷花池游动像素锦鲤与林间生态微动画 (`MainWorld.gd`)：在 1 号岛荷花池（`x: 1100..1280`）绘制悠闲游动的橙白像素小锦鲤与动态水纹互动；在 `SelfTestRunner.gd` 校验锦鲤坐标严格限制在荷花池水域内不越界
 
 #### 【阶段四（v2.7）：Steam 商业级基建（成就系统、多语言本地化、统计看板）】
-- [ ] [v2.7-1] 应用内 Steam 成就系统与解锁播报 (`EconomyConfig.gd` + `GameManager.gd` + `HUD.gd`)：定义并实装 16 项核心成就（初入云岛、第一桶金、研钵飘香、密林开拓者、黄金海岸、山海全席、专注达人、皇家供货商等），达成时触发成就解锁提示并持久化存档；在 `SelfTestRunner.gd` 校验成就自动解锁逻辑
-- [ ] [v2.7-2] 多语言国际化字典与一键切换 (`EconomyConfig.gd` + `HUD.gd`)：支持 `zh_CN`（简中）/ `en_US`（English）/ `ja_JP`（日本語）核心 UI 文本一键实时切换；在 `SelfTestRunner.gd` 校验多语言切换后 UI 文本非空且无乱码
-- [ ] [v2.7-3] 云岛经营生涯统计与星级声望 (`GameManager.gd` + `HUD.gd`)：统计累计收获作物、累计制作料理、累计服务顾客、累计完成皇家订单数，并计算“云岛星级声望（1星~5星）”；在 `SelfTestRunner.gd` 校验统计计数器单调递增与声望星级计算
+- [x] [v2.7-1] 应用内 Steam 成就系统与解锁播报 (`EconomyConfig.gd` + `GameManager.gd` + `HUD.gd`)：定义并实装 16 项核心成就（初入云岛、第一桶金、研钵飘香、密林开拓者、黄金海岸、山海全席、专注达人、皇家供货商等），达成时触发成就解锁提示并持久化存档；在 `SelfTestRunner.gd` 校验成就自动解锁逻辑
+- [x] [v2.7-2] 多语言国际化字典与一键切换 (`EconomyConfig.gd` + `HUD.gd`)：支持 `zh_CN`（简中）/ `en_US`（English）/ `ja_JP`（日本語）核心 UI 文本一键实时切换；在 `SelfTestRunner.gd` 校验多语言切换后 UI 文本非空且无乱码
+- [x] [v2.7-3] 云岛经营生涯统计与星级声望 (`GameManager.gd` + `HUD.gd`)：统计累计收获作物、累计制作料理、累计服务顾客、累计完成皇家订单数，并计算“云岛星级声望（1星~5星）”；在 `SelfTestRunner.gd` 校验统计计数器单调递增与声望星级计算
 
 #### 【阶段五（v3.0）：Steam 发行就绪与三岛终局压力巡检】
-- [ ] [v3.0-1] 全三岛满编高负载压力自检 (`SelfTestRunner.gd`)：在自动化自检中覆盖解锁岛屿 2 与岛屿 3、招募企鹅与巨嘴鸟跨木桥运输及双工坊联动的端到端断言，确保三岛全开 0 死锁、0 穿模
-- [ ] [v3.0-2] Steamworks API 抽象桥接层 (`src/autoload/SteamBridge.gd` + `project.godot`)：提供无外部 DLL 依赖时自动优雅降级、挂载 `GodotSteam` 时自动同步成就与云存档的桥接单例，并纳入 `SelfTestRunner.gd` 断言
+- [x] [v3.0-1] 全三岛满编高负载压力自检 (`SelfTestRunner.gd`)：在自动化自检中覆盖解锁岛屿 2 与岛屿 3、招募企鹅与巨嘴鸟跨木桥运输及双工坊联动的端到端断言，确保三岛全开 0 死锁、0 穿模
+- [x] [v3.0-2] Steamworks API 抽象桥接层 (`src/autoload/SteamBridge.gd` + `project.godot`)：提供无外部 DLL 依赖时自动优雅降级、挂载 `GodotSteam` 时自动同步成就与云存档的桥接单例，并纳入 `SelfTestRunner.gd` 断言
 
 <!-- 在下方直接添加 `- [ ] 您的新需求或检测规则`，下一次巡检/开发将自动读取并落地验证： -->
 

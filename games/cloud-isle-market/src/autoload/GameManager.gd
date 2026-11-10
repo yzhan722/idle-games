@@ -118,6 +118,17 @@ var unlocked_landscapes: Dictionary = {
 	"tiki_torch": false
 }
 
+## v2.7-1: 16 In-App & Steam Achievements
+var unlocked_achievements: Dictionary = {}
+
+## v2.7-3: Career Statistics & Star Reputation (1~5 Stars)
+var career_stats: Dictionary = {
+	"harvests": 0,
+	"crafts": 0,
+	"customers": 0,
+	"contracts": 0
+}
+
 func _ready() -> void:
 	var all_args := OS.get_cmdline_args()
 	all_args.append_array(OS.get_cmdline_user_args())
@@ -132,6 +143,7 @@ func _ready() -> void:
 	if active_contract.is_empty():
 		generate_next_contract()
 	_sync_codex_from_progression()
+	evaluate_achievements()
 
 func reset_for_playtest_state() -> void:
 	gold = 120
@@ -183,7 +195,10 @@ func reset_for_playtest_state() -> void:
 	pomodoro_active = false
 	pomodoro_time_remaining = 0.0
 	pomodoro_completed_count = 0
+	unlocked_achievements = {}
+	career_stats = {"harvests": 0, "crafts": 0, "customers": 0, "contracts": 0}
 	_sync_codex_from_progression()
+	evaluate_achievements()
 
 func _process(delta: float) -> void:
 	save_timer += delta
@@ -450,6 +465,7 @@ func complete_active_contract() -> Dictionary:
 	if active_contract.is_empty():
 		return {}
 	var completed := active_contract.duplicate(true)
+	career_stats["contracts"] = int(career_stats.get("contracts", 0)) + 1
 	var rew_gold := int(completed.get("reward_gold", 150))
 	var rew_amber := int(completed.get("reward_amber", 2))
 	add_gold(rew_gold)
@@ -461,6 +477,7 @@ func complete_active_contract() -> Dictionary:
 		Color("#FFE066")
 	)
 	generate_next_contract()
+	evaluate_achievements()
 	save_game()
 	return completed
 
@@ -517,6 +534,98 @@ func get_customer_tip_multiplier(is_vip: bool, island: int = 3) -> float:
 	return mult
 
 
+## ==================================================================
+## v2.7-1 & v2.7-3: In-App Steam Achievements, Career Stats & 1~5 Star Reputation
+## ==================================================================
+func get_star_reputation() -> int:
+	var score := get_prosperity_score()
+	score += int(career_stats.get("harvests", 0)) * 2
+	score += int(career_stats.get("crafts", 0)) * 5
+	score += int(career_stats.get("customers", 0)) * 12
+	score += int(career_stats.get("contracts", 0)) * 45
+	score += get_unlocked_codex_count() * 40
+	if score >= 1600:
+		return 5
+	elif score >= 900:
+		return 4
+	elif score >= 450:
+		return 3
+	elif score >= 180:
+		return 2
+	return 1
+
+func get_career_summary_text() -> String:
+	return "★%d星 · 收%d · 制%d · 客%d · 契%d" % [
+		get_star_reputation(),
+		int(career_stats.get("harvests", 0)),
+		int(career_stats.get("crafts", 0)),
+		int(career_stats.get("customers", 0)),
+		int(career_stats.get("contracts", 0))
+	]
+
+func unlock_achievement(ach_id: String) -> bool:
+	if not EconomyConfig.ACHIEVEMENTS.has(ach_id):
+		return false
+	if bool(unlocked_achievements.get(ach_id, false)):
+		return false
+	unlocked_achievements[ach_id] = true
+	if SteamBridge != null and SteamBridge.has_method("set_achievement"):
+		SteamBridge.set_achievement(ach_id)
+	var cfg: Dictionary = EconomyConfig.ACHIEVEMENTS[ach_id]
+	EventBus.spawn_floating_text.emit(
+		Vector2(908.4, EconomyConfig.GROUND_Y - 46.0),
+		"🏆成就解锁【" + String(cfg.get("name", ach_id)) + "】!",
+		Color("#FFE066")
+	)
+	return true
+
+func get_unlocked_achievement_count() -> int:
+	var c := 0
+	for k in unlocked_achievements.keys():
+		if bool(unlocked_achievements[k]):
+			c += 1
+	return c
+
+func evaluate_achievements() -> Array[String]:
+	var newly: Array[String] = []
+	if unlock_achievement("ach_welcome"):
+		newly.append("ach_welcome")
+	if total_gold_earned >= 500 and unlock_achievement("ach_first_gold"):
+		newly.append("ach_first_gold")
+	if (int(career_stats.get("crafts", 0)) >= 1 or bool(unlocked_codex.get("delicacy_0", false))) and unlock_achievement("ach_mortar_chef"):
+		newly.append("ach_mortar_chef")
+	if bool(unlocked_islands.get(2, false)) and unlock_achievement("ach_island_2"):
+		newly.append("ach_island_2")
+	if bool(unlocked_islands.get(3, false)) and unlock_achievement("ach_island_3"):
+		newly.append("ach_island_3")
+	if get_unlocked_codex_count() >= 8 and unlock_achievement("ach_codex_all"):
+		newly.append("ach_codex_all")
+	if pomodoro_completed_count >= 1 and unlock_achievement("ach_pomodoro"):
+		newly.append("ach_pomodoro")
+	if int(career_stats.get("contracts", 0)) >= 1 and unlock_achievement("ach_contract"):
+		newly.append("ach_contract")
+	if total_amber_earned >= 5 and unlock_achievement("ach_amber_rich"):
+		newly.append("ach_amber_rich")
+	if bool(unlocked_landscapes.get("bee_hive", false)) and bool(unlocked_landscapes.get("wind_chime", false)) and bool(unlocked_landscapes.get("tiki_torch", false)):
+		if unlock_achievement("ach_landscape_all"):
+			newly.append("ach_landscape_all")
+	for ak in animal_levels.keys():
+		var alv := int(animal_levels[ak])
+		if alv >= 10 and unlock_achievement("ach_animal_lv10"):
+			newly.append("ach_animal_lv10")
+		if alv >= 25 and unlock_achievement("ach_animal_lv25"):
+			newly.append("ach_animal_lv25")
+	for bk in building_levels.keys():
+		if int(building_levels[bk]) >= 25 and unlock_achievement("ach_building_lv25"):
+			newly.append("ach_building_lv25")
+	if int(career_stats.get("harvests", 0)) >= 50 and unlock_achievement("ach_harvest_50"):
+		newly.append("ach_harvest_50")
+	if int(career_stats.get("customers", 0)) >= 20 and unlock_achievement("ach_customer_20"):
+		newly.append("ach_customer_20")
+	if get_star_reputation() >= 5 and unlock_achievement("ach_star_5"):
+		newly.append("ach_star_5")
+	return newly
+
 func get_prosperity_score() -> int:
 	var score := 0
 	for k in building_levels.keys():
@@ -554,7 +663,9 @@ func add_to_raw_basket(island_idx: int, crop_id: String, qty: int) -> int:
 	var room := maxi(0, get_raw_basket_max_cap(island_idx) - get_island_basket_total(island_idx))
 	var added := mini(qty, room)
 	if added > 0:
+		career_stats["harvests"] = int(career_stats.get("harvests", 0)) + added
 		raw_baskets[island_idx][crop_id] = int(raw_baskets[island_idx].get(crop_id, 0)) + added
+		evaluate_achievements()
 		if SoundManager != null:
 			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
@@ -631,7 +742,9 @@ func add_to_workshop_output(workshop_id: String, delicacy_id: String, qty: int) 
 	var room := maxi(0, get_workshop_buffer_cap(workshop_id) - get_workshop_output_total(workshop_id))
 	var added := mini(qty, room)
 	if added > 0:
+		career_stats["crafts"] = int(career_stats.get("crafts", 0)) + added
 		workshop_outputs[workshop_id][delicacy_id] = int(workshop_outputs[workshop_id].get(delicacy_id, 0)) + added
+		evaluate_achievements()
 		if SoundManager != null:
 			SoundManager.play_pop_sfx()
 		EventBus.inventory_changed.emit()
@@ -712,8 +825,10 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 	var tip_mult := get_customer_tip_multiplier(is_vip, 3)
 	total_earned = int(round(float(total_earned) * tip_mult))
 
+	career_stats["customers"] = int(career_stats.get("customers", 0)) + 1
 	add_gold(total_earned)
 	progress_contract(target_id, bought)
+	evaluate_achievements()
 	if SoundManager != null:
 		SoundManager.play_coin_sfx()
 	EventBus.inventory_changed.emit()
@@ -870,13 +985,17 @@ func save_game() -> void:
 		"amber": amber,
 		"total_amber_earned": total_amber_earned,
 		"active_contract": active_contract,
-		"unlocked_landscapes": unlocked_landscapes
+		"unlocked_landscapes": unlocked_landscapes,
+		"unlocked_achievements": unlocked_achievements,
+		"career_stats": career_stats
 	}
 	var json_str := JSON.stringify(data, "\t")
 	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
 	if f != null:
 		f.store_string(json_str)
 		f.close()
+	if SteamBridge != null and SteamBridge.has_method("cloud_write"):
+		SteamBridge.cloud_write("savegame_cloud.json", json_str)
 	if not FileAccess.file_exists(get_backup_save_path()):
 		var f_init_bak := FileAccess.open(get_backup_save_path(), FileAccess.WRITE)
 		if f_init_bak != null:
@@ -934,6 +1053,12 @@ func load_game() -> void:
 		var ul: Dictionary = parsed["unlocked_landscapes"]
 		for lk in unlocked_landscapes.keys():
 			unlocked_landscapes[lk] = bool(ul.get(lk, false))
+	if parsed.has("unlocked_achievements") and parsed["unlocked_achievements"] is Dictionary:
+		for ak in parsed["unlocked_achievements"].keys():
+			unlocked_achievements[String(ak)] = bool(parsed["unlocked_achievements"][ak])
+	if parsed.has("career_stats") and parsed["career_stats"] is Dictionary:
+		for sk in career_stats.keys():
+			career_stats[sk] = int(parsed["career_stats"].get(sk, career_stats[sk]))
 
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())

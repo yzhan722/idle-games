@@ -52,6 +52,7 @@ var lbl_bar_stall: Label
 var lbl_tabs: Array[Label] = []
 
 var lbl_drawer_title: Label
+var lbl_drawer_lang: Label
 var lbl_drawer_fps: Label
 var lbl_drawer_opacity: Label
 var lbl_drawer_dock: Label
@@ -69,6 +70,7 @@ const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
 const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
 
+const TOP_RIGHT_LANG_RECT := Rect2(862.0, 128.0, 58.0, 23.0)
 const TOP_RIGHT_NOISE_RECT := Rect2(924.0, 128.0, 76.0, 23.0)
 const TOP_RIGHT_FPS_RECT := Rect2(1004.0, 128.0, 62.0, 23.0)
 const TOP_RIGHT_OPACITY_RECT := Rect2(1070.0, 128.0, 68.0, 23.0)
@@ -216,6 +218,11 @@ func _build_native_labels() -> void:
 	lbl_drawer_title.scale = Vector2(0.88, 0.88)
 	add_child(lbl_drawer_title)
 
+	lbl_drawer_lang = EconomyConfig.create_pixel_label("[简中]", 14, Color("#FFE066"), false)
+	lbl_drawer_lang.position = Vector2(TOP_RIGHT_LANG_RECT.position.x + 6.0, TOP_RIGHT_LANG_RECT.position.y + 2.0)
+	lbl_drawer_lang.scale = Vector2(0.84, 0.84)
+	add_child(lbl_drawer_lang)
+
 	lbl_drawer_noise = EconomyConfig.create_pixel_label("[白噪:关]", 14, Color("#FFE066"), false)
 	lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0)
 	lbl_drawer_noise.scale = Vector2(0.84, 0.84)
@@ -326,7 +333,8 @@ func _process(delta: float) -> void:
 
 func _sync_label_nodes() -> void:
 	var amber_cnt := GameManager.get_amber() if GameManager != null else 0
-	var gold_str := str(int(round(displayed_gold))) + "G·珀" + str(amber_cnt)
+	var star_rep := GameManager.get_star_reputation() if GameManager != null else 1
+	var gold_str := str(int(round(displayed_gold))) + "G·珀" + str(amber_cnt) + "·★" + str(star_rep)
 	var mute_lbl := "[静音]" if (SoundManager != null and SoundManager.is_muted) else "[音效]"
 	var weather_names := ["晴昼", "黄昏", "夜市", "微雨"]
 	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
@@ -367,7 +375,13 @@ func _sync_label_nodes() -> void:
 	else:
 		lbl_bar_pomodoro.text = "[专注25m]"
 
-	var tab_names := ["建筑升级", "动物编制", "开拓造景", "山海图鉴", ("★摸鱼置顶" if GameManager.desktop_companion_mode else "★常规窗口")]
+	var tab_names := [
+		EconomyConfig.tr_key("tab_build"),
+		EconomyConfig.tr_key("tab_animal"),
+		EconomyConfig.tr_key("tab_expand"),
+		EconomyConfig.tr_key("tab_codex"),
+		(EconomyConfig.tr_key("tab_companion") if GameManager.desktop_companion_mode else EconomyConfig.tr_key("tab_window"))
+	]
 	for i in range(TAB_COUNT):
 		lbl_tabs[i].visible = show_bar
 		lbl_tabs[i].text = tab_names[i]
@@ -375,6 +389,7 @@ func _sync_label_nodes() -> void:
 	var show_drawer := show_bar and drawer_expanded
 	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 	lbl_drawer_title.visible = show_drawer
+	lbl_drawer_lang.visible = show_drawer
 	lbl_drawer_noise.visible = show_drawer
 	lbl_drawer_fps.visible = show_drawer
 	lbl_drawer_opacity.visible = show_drawer
@@ -384,16 +399,18 @@ func _sync_label_nodes() -> void:
 	if show_drawer:
 		var codex_cnt := GameManager.get_unlocked_codex_count()
 		var titles := [
-			"【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
-			"【动物编制与特质】点击摸头加速 · Lv.10/25/50激活专精特质!",
-			"【开拓与造景】开拓跨岛木桥 · 晨露琥珀点亮三岛专属增益造景!",
-			"【山海图鉴】已点亮 " + str(codex_cnt) + "/8 种食材料理 · 永久售价 +" + str(codex_cnt * 10) + "%!"
+			EconomyConfig.tr_key("drawer_build"),
+			EconomyConfig.tr_key("drawer_animal"),
+			EconomyConfig.tr_key("drawer_expand"),
+			EconomyConfig.tr_key("drawer_codex") % [codex_cnt, codex_cnt * 10]
 		]
 		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
 		lbl_drawer_title.position = Vector2(540.0, 129.0 + slide_y)
 
 		var cur_fps: int = WindowController.get_eco_fps() if WindowController != null else 60
 		var cur_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+		lbl_drawer_lang.text = EconomyConfig.tr_key("lang_badge")
+		lbl_drawer_lang.position = Vector2(TOP_RIGHT_LANG_RECT.position.x + 6.0, TOP_RIGHT_LANG_RECT.position.y + 2.0 + slide_y)
 		lbl_drawer_noise.text = SoundManager.get_white_noise_status_label() if SoundManager != null else "[白噪:关]"
 		lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0 + slide_y)
 		lbl_drawer_fps.text = "[" + str(cur_fps) + "FPS]"
@@ -420,12 +437,16 @@ func _sync_label_nodes() -> void:
 			var crect := _get_card_rect(i, cards.size())
 			crect.position.y += slide_y
 			var cdata: Dictionary = cards[i]
+			var is_dense := cards.size() >= 5
+			lbl_card_titles[i].scale = Vector2(0.80, 0.80) if (active_tab == 3 and i < 4) else (Vector2(0.88, 0.88) if is_dense else Vector2(0.95, 0.95))
+			lbl_card_subs[i].scale = Vector2(0.78, 0.78) if is_dense else Vector2(0.85, 0.85)
+			lbl_card_costs[i].scale = Vector2(0.82, 0.82) if is_dense else Vector2(0.90, 0.90)
 			lbl_card_titles[i].text = String(cdata["title"])
-			lbl_card_titles[i].position = crect.position + Vector2(8.0, 3.0)
+			lbl_card_titles[i].position = crect.position + Vector2(6.0, 4.0)
 			lbl_card_subs[i].text = String(cdata["sub"])
-			lbl_card_subs[i].position = crect.position + Vector2(8.0, 22.0)
+			lbl_card_subs[i].position = crect.position + Vector2(6.0, 22.0)
 			lbl_card_costs[i].text = String(cdata["cost"])
-			lbl_card_costs[i].position = crect.position + Vector2(8.0, 38.0)
+			lbl_card_costs[i].position = crect.position + Vector2(6.0, 38.0)
 
 func _get_interactive_zone() -> Rect2:
 	if drawer_expanded:
@@ -446,7 +467,7 @@ func _gui_input(event: InputEvent) -> void:
 				WindowController.begin_window_drag()
 				accept_event()
 				return
-			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_NOISE_RECT.has_point(mpos) or TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos) or TOP_RIGHT_FPS_RECT.has_point(mpos) or TOP_RIGHT_OPACITY_RECT.has_point(mpos) or TOP_RIGHT_DOCK_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)) or (not is_collapsed_capsule and POMODORO_RECT.has_point(mpos))
+			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_LANG_RECT.has_point(mpos) or TOP_RIGHT_NOISE_RECT.has_point(mpos) or TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos) or TOP_RIGHT_FPS_RECT.has_point(mpos) or TOP_RIGHT_OPACITY_RECT.has_point(mpos) or TOP_RIGHT_DOCK_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)) or (not is_collapsed_capsule and POMODORO_RECT.has_point(mpos))
 			if hovered_tab == -1 and hovered_card == -1 and not hitting_top_btns and _get_interactive_zone().has_point(mpos):
 				if WindowController != null:
 					WindowController.begin_window_drag()
@@ -464,6 +485,14 @@ func _gui_input(event: InputEvent) -> void:
 					WindowController.toggle_boss_stealth()
 				else:
 					set_boss_stealth(false)
+				accept_event()
+				return
+
+			if drawer_expanded and TOP_RIGHT_LANG_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				EconomyConfig.cycle_language()
+				_sync_label_nodes()
 				accept_event()
 				return
 
@@ -554,9 +583,9 @@ func _get_tab_button_rect(idx: int) -> Rect2:
 	return Rect2(1050.0 + float(idx) * 74.0, 235.0, 68.0, 44.0)
 
 func _get_card_rect(idx: int, total: int) -> Rect2:
-	var w := 196.0 if total <= 4 else 132.0
+	var w := 196.0 if total <= 4 else (160.0 if total == 5 else 132.0)
 	var gap := 12.0 if total <= 4 else 8.0
-	var start_x := 548.0 if total <= 4 else 538.0
+	var start_x := 548.0 if total <= 4 else (542.0 if total == 5 else 538.0)
 	return Rect2(start_x + float(idx) * (w + gap), 156.0, w, 58.0)
 
 func _get_current_tab_cards() -> Array[Dictionary]:
@@ -657,10 +686,19 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "codex",
 					"key": str(cp["idx"]),
-					"title": String(cp["tier_name"]) + " (+" + str(bonus_pct) + "%)",
-					"sub": (c_name if c_on else String(cp["c_hint"])) + " | " + (d_name if d_on else String(cp["d_hint"])),
-					"cost": "已点亮 " + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 · 永久售价+" + str(bonus_pct) + "%"
+					"title": String(cp["tier_name"]) + "(+" + str(bonus_pct) + "%)",
+					"sub": (c_name if c_on else "???(待解锁)") + " · " + (d_name if d_on else "???(待研发)"),
+					"cost": "点亮 " + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 · 售价+" + str(bonus_pct) + "%"
 				})
+			var ach_done := GameManager.get_unlocked_achievement_count()
+			var ach_tot := EconomyConfig.ACHIEVEMENTS.size()
+			list.append({
+				"type": "career",
+				"key": "achievements",
+				"title": "★成就看板 (" + str(ach_done) + "/" + str(ach_tot) + ")",
+				"sub": GameManager.get_career_summary_text(),
+				"cost": "岛屿声望 ★" + str(GameManager.get_star_reputation()) + "星"
+			})
 	return list
 
 func _activate_card(idx: int) -> void:
@@ -677,6 +715,9 @@ func _activate_card(idx: int) -> void:
 			GameManager.upgrade_animal(k)
 	elif t == "unlock_island":
 		GameManager.unlock_island(int(k))
+	elif t == "career":
+		offline_banner_timer = 4.5
+		offline_banner_text = "★岛屿生涯荣誉: 已达成 " + str(GameManager.get_unlocked_achievement_count()) + "/" + str(EconomyConfig.ACHIEVEMENTS.size()) + " 项成就 · " + GameManager.get_career_summary_text()
 	elif t == "codex":
 		var codex_pct := GameManager.get_unlocked_codex_count() * 10
 		offline_banner_timer = 4.0
@@ -732,6 +773,7 @@ func _draw() -> void:
 		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
 		draw_texture_rect(tex_drawer, d_rect, false)
 
+		var lang_rect := Rect2(TOP_RIGHT_LANG_RECT.position.x, TOP_RIGHT_LANG_RECT.position.y + slide_y, TOP_RIGHT_LANG_RECT.size.x, TOP_RIGHT_LANG_RECT.size.y)
 		var noise_rect := Rect2(TOP_RIGHT_NOISE_RECT.position.x, TOP_RIGHT_NOISE_RECT.position.y + slide_y, TOP_RIGHT_NOISE_RECT.size.x, TOP_RIGHT_NOISE_RECT.size.y)
 		var fps_rect := Rect2(TOP_RIGHT_FPS_RECT.position.x, TOP_RIGHT_FPS_RECT.position.y + slide_y, TOP_RIGHT_FPS_RECT.size.x, TOP_RIGHT_FPS_RECT.size.y)
 		var op_rect := Rect2(TOP_RIGHT_OPACITY_RECT.position.x, TOP_RIGHT_OPACITY_RECT.position.y + slide_y, TOP_RIGHT_OPACITY_RECT.size.x, TOP_RIGHT_OPACITY_RECT.size.y)
@@ -739,6 +781,7 @@ func _draw() -> void:
 		var w_rect := Rect2(TOP_RIGHT_WEATHER_RECT.position.x, TOP_RIGHT_WEATHER_RECT.position.y + slide_y, TOP_RIGHT_WEATHER_RECT.size.x, TOP_RIGHT_WEATHER_RECT.size.y)
 		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
 		if tex_pill != null:
+			draw_texture_rect(tex_pill, lang_rect, false)
 			draw_texture_rect(tex_pill, noise_rect, false)
 			draw_texture_rect(tex_pill, fps_rect, false)
 			draw_texture_rect(tex_pill, op_rect, false)
@@ -756,6 +799,6 @@ func _draw() -> void:
 			# Draw real pixel-art crop & delicacy icons inside Codex cards (Tab 3)
 			if active_tab == 3 and i < 4:
 				if tex_crops != null:
-					draw_texture_rect_region(tex_crops, Rect2(crect.end.x - 52.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(3.0 * 40.0, float(i) * 40.0, 40.0, 40.0))
+					draw_texture_rect_region(tex_crops, Rect2(crect.end.x - 40.0, crect.position.y + 3.0, 18.0, 18.0), Rect2(3.0 * 40.0, float(i) * 40.0, 40.0, 40.0))
 				if tex_delicacies != null:
-					draw_texture_rect_region(tex_delicacies, Rect2(crect.end.x - 28.0, crect.position.y + 4.0, 22.0, 22.0), Rect2(float(i) * 36.0, 0.0, 36.0, 36.0))
+					draw_texture_rect_region(tex_delicacies, Rect2(crect.end.x - 21.0, crect.position.y + 3.0, 18.0, 18.0), Rect2(float(i) * 36.0, 0.0, 36.0, 36.0))

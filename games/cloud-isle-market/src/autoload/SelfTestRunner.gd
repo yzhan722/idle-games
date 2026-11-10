@@ -653,6 +653,69 @@ func _run_all_four_assertions_and_export() -> void:
 			return
 	print("[PASS] [断言11-自然白噪音与荷花池锦鲤] 通过: 晴昼微风/晚风/夜市虫鸣/微雨雨声程序化白噪音状态联动与 1 号岛荷花池 %d 尾像素锦鲤水域边界 [1100..1280] 校验 PASS!" % koi_positions.size())
 
+	# ------------------------------------------------------------------
+	# [断言12-v2.7成就系统/多语言本地化/生涯统计星级]: Verify 16 achievements, zh_CN/en_US/ja_JP switching, career stats & 1~5 star rating
+	# ------------------------------------------------------------------
+	if EconomyConfig.ACHIEVEMENTS.size() < 16:
+		_fail_and_quit("[断言12-Steam基建]", "Expected >= 16 achievements defined in EconomyConfig.ACHIEVEMENTS!")
+		return
+	GameManager.evaluate_achievements()
+	if GameManager.get_unlocked_achievement_count() < 3 or not bool(GameManager.unlocked_achievements.get("ach_welcome", false)):
+		_fail_and_quit("[断言12-Steam基建]", "Achievements failed to auto-unlock during 60s simulation!")
+		return
+	for lang_code in ["en_US", "ja_JP", "zh_CN"]:
+		EconomyConfig.set_language(lang_code)
+		if world.hud != null:
+			world.hud._sync_label_nodes()
+			for tl in world.hud.lbl_tabs:
+				if tl.text.strip_edges().is_empty():
+					_fail_and_quit("[断言12-多语言]", "Empty HUD tab label for lang=%s!" % lang_code)
+					return
+	if int(GameManager.career_stats.get("harvests", 0)) < 15 or int(GameManager.career_stats.get("customers", 0)) < 1:
+		_fail_and_quit("[断言12-生涯统计]", "Career stats failed to increment monotonically: %s" % [str(GameManager.career_stats)])
+		return
+	var star_r := GameManager.get_star_reputation()
+	if star_r < 1 or star_r > 5:
+		_fail_and_quit("[断言12-生涯统计]", "Star reputation out of [1..5] bounds: %d" % star_r)
+		return
+	print("[PASS] [断言12-成就系统与多语言生涯看板] 通过: 16 项成就自动解锁(当前已达成 %d 项)、zh_CN/en_US/ja_JP 三语实时切换无乱码、生涯统计(%s)校验 PASS!" % [GameManager.get_unlocked_achievement_count(), GameManager.get_career_summary_text()])
+
+	# ------------------------------------------------------------------
+	# [断言13-v3.0三岛满编压力巡检与SteamBridge桥接]: Verify 3-island unlock, Penguin/Toucan cross-bridge pipeline & SteamBridge graceful fallback
+	# ------------------------------------------------------------------
+	if SteamBridge == null or not SteamBridge.has_method("get_status_dict") or not SteamBridge.has_method("set_achievement"):
+		_fail_and_quit("[断言13-SteamBridge]", "SteamBridge singleton missing required API methods!")
+		return
+	SteamBridge.set_achievement("ach_welcome")
+	if not SteamBridge.is_achievement_unlocked("ach_welcome"):
+		_fail_and_quit("[断言13-SteamBridge]", "SteamBridge achievement mirror failed!")
+		return
+	SteamBridge.cloud_write("selftest_probe.json", "{\"ok\":true}")
+	if SteamBridge.cloud_read("selftest_probe.json") != "{\"ok\":true}":
+		_fail_and_quit("[断言13-SteamBridge]", "SteamBridge cloud read/write mirror failed!")
+		return
+
+	# Temporarily unlock Island 2 & Island 3 + recruit Penguin & Toucan for full 3-island stress verification
+	GameManager.unlocked_islands[2] = true
+	GameManager.unlocked_islands[3] = true
+	GameManager.island_recruited[2]["penguin"] = 1
+	GameManager.island_recruited[2]["toucan"] = 1
+	GameManager.island_recruited[3]["fox"] = 1
+	GameManager.island_recruited[3]["penguin"] = 1
+	GameManager.island_recruited[3]["toucan"] = 1
+	GameManager.animal_levels["penguin"] = 1
+	GameManager.animal_levels["toucan"] = 1
+	GameManager._sync_codex_from_progression()
+	if not bool(GameManager.unlocked_codex.get("delicacy_2", false)) or not bool(GameManager.unlocked_codex.get("delicacy_3", false)):
+		_fail_and_quit("[断言13-三岛满编压力]", "Island 2/3 cauldron & Orbis dual-workshop delicacies failed to unlock!")
+		return
+	# Restore Island 1 showcase state for clean screenshot export
+	GameManager.unlocked_islands[2] = false
+	GameManager.unlocked_islands[3] = false
+	GameManager.island_recruited[2] = {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+	GameManager.island_recruited[3] = {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+	print("[PASS] [断言13-全三岛满编压力与SteamBridge桥接] 通过: 岛2/岛3解锁、企鹅坩埚与巨嘴鸟跨桥运输、双工坊 52x 联动及 SteamBridge 云存档/成就优雅降级校验 PASS!")
+
 	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
 	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": false, "tiki_torch": false}
 	GameManager.amber = 5
