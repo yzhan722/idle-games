@@ -8433,7 +8433,7 @@ export class World3D {
           this.turretChargeTextEl.innerHTML = isFull
             ? isHolding
               ? `${spec.icon} 满能 · 松手召唤!`
-              : `${spec.icon} 满能 · 空格/点击召唤`
+              : window.innerWidth <= 900 ? `${spec.icon} 满能 · 点击召唤` : `${spec.icon} 满能 · 空格/点击召唤`
             : `${UI_ART.bolt} 蓄能 ${cPct}%`;
         }
       } else {

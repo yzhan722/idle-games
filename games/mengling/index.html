@@ -362,7 +362,7 @@
         };
         window.showToast = function(msg, type, ttl) {
           var s = String(msg || '');
-          if (!s || s === '冒险开始。' || s.indexOf('去排行榜') !== -1 || s.indexOf('去「排行榜」') !== -1) return;
+          if (!s || s === '冒险开始。' || s.indexOf('每日登录奖励') !== -1 || s.indexOf('去排行榜') !== -1 || s.indexOf('去「排行榜」') !== -1) return;
           type = type || 'info';
           ttl = typeof ttl === 'number' ? ttl : (type === 'shiny' ? 4200 : 2200);
           if (window.GameAudio && window.GameAudio.playOutcomeSfxFromText) {
@@ -390,7 +390,7 @@
         var panels = null;
         function getPanels() { if (!panels) panels = document.querySelector('.panels'); return panels; }
         document.addEventListener('click', function(e) {
-          var tab = e.target.closest('.tab');
+          var tab = e.target.closest('.tab'); document.querySelectorAll('.toast-container .toast').forEach(function(t) { t.remove(); });
           if (!tab) return;
           var p = getPanels(); if (!p) return;
           var activePanel = p.querySelector('.panel.is-active');

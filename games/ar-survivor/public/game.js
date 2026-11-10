@@ -481,7 +481,7 @@ function placeStarOnBestTarget() {
   if (vision.pinnedTarget) {
     const t = vision.pinnedTarget;
     starTarget.x = t.x + t.w * 0.5;
-    starTarget.y = Math.max(H * 0.18, t.y - 30);
+    starTarget.x = Math.max(275, Math.min(W - 140, t.x + t.w * 0.5)); starTarget.y = Math.max(138, H * 0.35, t.y - 30);
     starTarget.targetObjId = t.id;
     starTarget.active = true;
     return;
@@ -495,7 +495,7 @@ function placeStarOnBestTarget() {
     lastStarObjId = chosen.id;
     starTarget.targetObjId = chosen.id;
     starTarget.x = chosen.x + chosen.w * 0.5;
-    starTarget.y = Math.max(H * 0.18, chosen.y - 30);
+    starTarget.x = Math.max(275, Math.min(W - 140, chosen.x + chosen.w * 0.5)); starTarget.y = Math.max(138, H * 0.35, chosen.y - 30);
     starTarget.active = true;
     return;
   }
@@ -504,14 +504,14 @@ function placeStarOnBestTarget() {
     const topEdge = vision.edgePlatforms[0];
     starTarget.targetObjId = null;
     starTarget.x = (topEdge.x1 + topEdge.x2) * 0.5;
-    starTarget.y = Math.max(H * 0.18, topEdge.y - 30);
+    starTarget.x = Math.max(275, Math.min(W - 140, (topEdge.x1 + topEdge.x2) * 0.5)); starTarget.y = Math.max(138, H * 0.35, topEdge.y - 30);
     starTarget.active = true;
     return;
   }
 
   starTarget.targetObjId = null;
   starTarget.x = Math.random() < 0.5 ? W * (0.22 + Math.random() * 0.12) : W * (0.66 + Math.random() * 0.12);
-  starTarget.y = H * (0.24 + Math.random() * 0.12);
+  starTarget.x = Math.random() < 0.5 ? W * (0.31 + Math.random() * 0.09) : W * (0.62 + Math.random() * 0.12); starTarget.y = Math.max(138, H * (0.35 + Math.random() * 0.10));
   starTarget.active = true;
 }
 
@@ -1274,7 +1274,7 @@ const drawerItemsEl = document.getElementById('drawer-items');
 let activeDrawerTab = 'food';
 
 function dismissPolaroid() {
-  pendingPhotoSnapTimer = 0;
+  pendingPhotoSnapTimer = 0; player.photoPoseTimer = 0;
   if (polaroidHideTimer) {
     clearTimeout(polaroidHideTimer);
     polaroidHideTimer = null;
@@ -1545,6 +1545,13 @@ function switchMode(newMode) {
   closeDrawer();
 
   // 切换模式时清理挂起状态，保证动作瞬间响应不卡顿
+  dismissPolaroid();
+  if (newMode !== 'pet' && player.standingPlat && !player.standingPlat.isFloor && !player.standingPlat.ref) {
+    player.y = H * 0.68 - 25;
+    player.vy = 0;
+    player.onGround = true;
+    player.standingPlat = null;
+  }
   setNapping(false);
   cancelRpsGame();
   cancelPalmCatchGame();
