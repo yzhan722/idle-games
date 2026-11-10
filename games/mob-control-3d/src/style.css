@@ -9421,6 +9421,21 @@ img,
     height: 52px !important;
   }
 
+  .skill-tree-topbar {
+    padding: 5px 6px !important;
+    gap: 4px !important;
+  }
+
+  .sp-sub {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  .skill-action-btn {
+    padding: 4px 6px !important;
+    font-size: 10.5px !important;
+  }
+
   #result-modal .modal-card {
     padding: 12px 12px 10px !important;
     gap: 6px !important;

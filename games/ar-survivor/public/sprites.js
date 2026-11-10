@@ -611,7 +611,7 @@ export function drawHeroSprite(ctx, p, now) {
   ctx.restore();
 
   if (p.emote && p.emoteTimer > 0) {
-    drawPetEmoteBubble(ctx, p.emote, p.emoteTimer, now, p.emoteMood || 'normal');
+    drawPetEmoteBubble(ctx, p.emote, p.emoteTimer, now, p.emoteMood || 'normal', p.x, p.y);
   }
 
   ctx.restore();
@@ -811,7 +811,7 @@ function drawVectorSparkle(ctx, x, y, size, rot) {
   ctx.restore();
 }
 
-function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal') {
+function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py = 240) {
   ctx.save();
   const isTsundere = mood === 'tsundere';
   const isLove = mood === 'happy' || mood === 'cheer' || mood === 'love';
@@ -827,7 +827,8 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal') {
   ctx.font = '900 12.5px "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif';
   const tw = ctx.measureText(text).width + 26;
   const th = 29;
-  const rx = -tw * 0.5;
+  const shiftX = py + by < 126 && px - tw * 0.5 < 246 ? Math.max(0, 246 - (px - tw * 0.5)) : 0;
+  const rx = -tw * 0.5 + shiftX;
   const ry = -th * 0.5;
 
   ctx.fillStyle = 'rgba(10, 24, 52, 0.24)';
@@ -889,7 +890,7 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal') {
   ctx.fillStyle = '#12284c';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, 0, 0.5);
+  ctx.fillText(text, shiftX, 0.5);
   ctx.restore();
 }
 

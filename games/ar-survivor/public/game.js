@@ -11,7 +11,7 @@ import {
   drawInteractionVfx,
   images,
   isReady
-} from './sprites.js?v=hd8';
+} from './sprites.js?v=hd9';
 import { petAudio } from './audio.js?v=hd7';
 
 const stageEl = document.getElementById('game-stage');
@@ -1273,7 +1273,16 @@ const drawerEl = document.getElementById('pet-drawer');
 const drawerItemsEl = document.getElementById('drawer-items');
 let activeDrawerTab = 'food';
 
-function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame();
+function dismissPolaroid() {
+  pendingPhotoSnapTimer = 0;
+  if (polaroidHideTimer) {
+    clearTimeout(polaroidHideTimer);
+    polaroidHideTimer = null;
+  }
+  document.getElementById('polaroid-card')?.classList.add('hidden');
+}
+
+function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame(); dismissPolaroid();
   activeDrawerTab = tab;
   drawerEl.classList.remove('hidden');
   document.querySelectorAll('.drawer-tab').forEach((t) => {
@@ -1632,6 +1641,13 @@ function triggerPolaroidSequence(fromGesture = false) {
   cancelPalmCatchGame();
   photoAutoCooldown = 4.6;
   player.photoPoseTimer = 1.75;
+  player.vx = 0;
+  if (!player.onGround) {
+    const standPlat = platforms.find((p) => !p.isFloor && player.x >= p.x1 - 16 && player.x <= p.x2 + 16);
+    player.y = (standPlat ? standPlat.y : H * 0.68) - 25;
+    player.vy = 0;
+    player.onGround = true;
+  }
   player.happyTimer = 1.8;
   player.idleTime = 0;
   pendingPhotoSnapTimer = 0.24; // 先让角色摆出比耶眨眼 Pose 渲染上屏，0.24秒后咔嚓定格！
@@ -1732,6 +1748,7 @@ function captureArPolaroid() {
   latestPolaroidUrl = pCanvas.toDataURL('image/png');
   if (polaroidImgEl) polaroidImgEl.src = latestPolaroidUrl;
   if (polaroidCardEl) {
+    polaroidCardEl.classList.toggle('polaroid-left', player.x > W * 0.56);
     polaroidCardEl.classList.remove('hidden');
     if (polaroidHideTimer) clearTimeout(polaroidHideTimer);
     polaroidHideTimer = setTimeout(() => {
@@ -1823,7 +1840,7 @@ function cancelRpsGame() {
   document.getElementById('btn-rps')?.classList.remove('active');
 }
 
-function startRpsGame(fromGesture = false) { if (palmCatchGame.active) cancelPalmCatchGame(); if (rpsChoicesEl) rpsChoicesEl.style.display = 'flex';
+function startRpsGame(fromGesture = false) { dismissPolaroid(); if (palmCatchGame.active) cancelPalmCatchGame(); if (rpsChoicesEl) rpsChoicesEl.style.display = 'flex';
   if (rpsGame.active) {
     cancelRpsGame();
     return;
@@ -1963,7 +1980,7 @@ function cancelPalmCatchGame() {
   document.getElementById('btn-palm-catch')?.classList.remove('active');
 }
 
-function startPalmCatchGame() {
+function startPalmCatchGame() { dismissPolaroid();
   if (palmCatchGame.active) {
     cancelPalmCatchGame();
     return;
@@ -2827,6 +2844,8 @@ function updateGameplay(dt, flow) {
       }
       if (player.wanderTargetX !== null) {
         anchorX = player.wanderTargetX;
+        const matchPlat = platforms.find((p) => !p.isFloor && anchorX >= p.x1 - 12 && anchorX <= p.x2 + 12);
+        anchorY = matchPlat ? matchPlat.y - 25 : centerFloorY - 25;
         if (Math.abs(player.x - anchorX) < 10) {
           player.wanderTargetX = null;
         }
@@ -2851,7 +2870,7 @@ function updateGameplay(dt, flow) {
     let desiredVx = 0;
     player.autoJumpCd = Math.max(0, player.autoJumpCd - dt);
 
-    if (player.isCrouching || player.isNapping) {
+    if (player.isCrouching || player.isNapping || player.photoPoseTimer > 0 || pendingPhotoSnapTimer > 0) {
       desiredVx = 0;
     } else if (Math.abs(moveDir) > 0.08) {
       setNapping(false);
@@ -2873,7 +2892,7 @@ function updateGameplay(dt, flow) {
         desiredVx = dir * MAX_RUN_SPEED;
       }
 
-      if (player.onGround && player.recenterDelay <= 0 && player.y > anchorY + 34 && player.autoJumpCd <= 0) {
+      if (player.onGround && drawerEl.classList.contains('hidden') && player.photoPoseTimer <= 0 && pendingPhotoSnapTimer <= 0 && player.recenterDelay <= 0 && player.y > anchorY + 34 && Math.abs(player.x - anchorX) < 84 && player.autoJumpCd <= 0) {
         triggerJump();
         player.autoJumpCd = 0.45;
       }
