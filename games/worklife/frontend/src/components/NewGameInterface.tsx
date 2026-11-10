@@ -63,6 +63,7 @@ import {
   type CurrentActivity,
 } from '../gameplay/gameConstants'
 import { AlchemyCoinifyPanel, ProductionTeaBar } from './ProductionExtras'
+import { GoldIcon, T1ItemIcon } from './T1Art'
 import { AdventurePanel } from './AdventurePanel'
 import { TradingMarketView } from './TradingMarketView'
 import {
@@ -1292,7 +1293,10 @@ export default function NewGameInterface() {
         </div>
         {isCombatLock && (
           <div className="combat-lock-banner">
-            ⚔️ 当前正在战斗中，所有生产与生活技能已锁定置灰（请先在顶部停止战斗）
+            <T1ItemIcon itemId="weapon_iron_sword" className="gold-inline" alt="" /> 当前正在战斗中，所有生产与生活技能已锁定置灰
+            <button type="button" className="btn-secondary" style={{ marginLeft: 10, padding: '2px 10px', fontSize: 12 }} onClick={() => void stopBattle()}>
+              立即停止战斗
+            </button>
           </div>
         )}
         <ProductionTeaBar playerState={playerState} refreshPlayerState={refreshPlayerState} />
@@ -1343,7 +1347,10 @@ export default function NewGameInterface() {
         </div>
         {isCombatLock && (
           <div className="combat-lock-banner">
-            ⚔️ 当前正在战斗中，所有生产与生活技能已锁定置灰（请先在顶部停止战斗）
+            <T1ItemIcon itemId="weapon_iron_sword" className="gold-inline" alt="" /> 当前正在战斗中，所有生产与生活技能已锁定置灰
+            <button type="button" className="btn-secondary" style={{ marginLeft: 10, padding: '2px 10px', fontSize: 12 }} onClick={() => void stopBattle()}>
+              立即停止战斗
+            </button>
           </div>
         )}
         <ProductionTeaBar playerState={playerState} refreshPlayerState={refreshPlayerState} />
@@ -1356,7 +1363,7 @@ export default function NewGameInterface() {
               className={`alchemy-branch-tab ${alchemyBranch === 'recipes' ? 'active' : ''}`}
               onClick={() => setAlchemyBranch('recipes')}
             >
-              🧪 药剂与炼金制作
+              <T1ItemIcon itemId="weapon_alchemy_bottle_t1" className="gold-inline" alt="" /> 药剂与炼金制作
             </button>
             <button
               type="button"
@@ -1365,7 +1372,7 @@ export default function NewGameInterface() {
               className={`alchemy-branch-tab ${alchemyBranch === 'coinify' ? 'active' : ''}`}
               onClick={() => setAlchemyBranch('coinify')}
             >
-              ✨ 点石成金（Coinify 转化金币）
+              <GoldIcon /> 点石成金（Coinify 转化金币）
             </button>
           </div>
         )}
@@ -2314,7 +2321,10 @@ export default function NewGameInterface() {
           <div className={headerBattleActive ? 'combat-disabled-page' : undefined}>
             {headerBattleActive && (
               <div className="combat-lock-banner" role="status">
-                ⚔️ 当前正在战斗中，生产与生活技能已锁定（请先在顶部停止战斗）
+                <T1ItemIcon itemId="weapon_iron_sword" className="gold-inline" alt="" /> 当前正在战斗中，生产与生活技能已锁定
+                <button type="button" className="btn-secondary" style={{ marginLeft: 10, padding: '2px 10px', fontSize: 12 }} onClick={() => void stopBattle()}>
+                  立即停止战斗
+                </button>
               </div>
             )}
             <EnhancementPanel 

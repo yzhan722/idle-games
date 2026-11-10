@@ -639,8 +639,8 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 		if (ach.starUnlocked) {className += " starUnlocked";}
 		var span = dojo.create("span", {
 			className: className,
-			title: ach.unlocked ? ach.description : "???",
-			innerHTML : ach.unlocked ? ach.title : "???"
+			title: ach.description || ach.title,
+			innerHTML : ach.unlocked ? (ach.title + " · " + ach.description) : (ach.title + "（未达成：" + ach.description + "）")
 		}, container);
 
 		this.achievementsMap[ach.name] = span;
@@ -648,7 +648,7 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 			dojo.create("div", {
 				className: "star",
 				innerHTML: ach.starUnlocked ? "&#9733;" : "&#9734;",
-				title: ach.starUnlocked ? ach.starDescription : "???"
+				title: ach.starDescription || ach.description
 			}, span);
 		}
 
@@ -675,11 +675,11 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 		if (span.className != desiredClassName) {
 			span.className = desiredClassName;
 		}
-		var desiredTitle = ach.unlocked ? ach.description : "???";
+		var desiredTitle = ach.description || ach.title;
 		if (span.title != desiredTitle) {
 			span.title = desiredTitle;
 		}
-		var desiredContent = ach.unlocked ? ach.title : "???";
+		var desiredContent = ach.unlocked ? (ach.title + " · " + ach.description) : (ach.title + "（未达成：" + ach.description + "）");
 		if (span.firstChild.nodeValue != desiredContent) {
 			span.firstChild.nodeValue = desiredContent;
 		}
@@ -692,7 +692,7 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 			if (star.innerHTML != desiredInnerHTMLForCompare) {
 				star.innerHTML = desiredInnerHTML;
 			}
-			desiredTitle = ach.starUnlocked ? ach.starDescription : "???";
+			desiredTitle = ach.starDescription || ach.description;
 			if (star.title != desiredTitle) {
 				star.title = desiredTitle;
 			}

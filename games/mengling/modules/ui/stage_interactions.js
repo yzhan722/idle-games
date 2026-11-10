@@ -31,12 +31,17 @@ export function spawnStageFloat(anchorEl, text, tone = "gold", iconKey = "sparkl
   const rect = anchorEl.getBoundingClientRect?.();
   if (!rect || (rect.width === 0 && rect.height === 0)) return;
 
-  const cleanText = String(text || "").replace(/^[^\u4e00-\u9fa5A-Za-z0-9【]+/, "").trim();
+  document.querySelectorAll(".stage-float").forEach((node) => {
+    try { node.remove(); } catch {}
+  });
+
+  const cleanText = String(text || "").replace(/^[^\u4e00-\u9fa5A-Za-z0-9【+-]+/, "").trim();
   const el = document.createElement("div");
   el.className = `stage-float stage-float--${tone}`;
   el.innerHTML = `${iconImgHtml(iconKey, 15)} <span>${cleanText}</span>`;
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + Math.min(28, rect.height / 3);
+  const vw = typeof window !== "undefined" ? window.innerWidth || 390 : 390;
+  const cx = Math.max(92, Math.min(vw - 92, rect.left + rect.width / 2));
+  const cy = Math.max(108, rect.top + Math.min(24, rect.height / 3));
   el.style.left = `${Math.round(cx)}px`;
   el.style.top = `${Math.round(cy)}px`;
   document.body.appendChild(el);

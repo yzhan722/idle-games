@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiClient } from '../services/api'
-import { T1ItemIcon } from './T1Art'
+import { GoldIcon, T1Art, T1ItemIcon } from './T1Art'
 import { playGameSound } from '../gameplay/sound'
 import { useToast } from './Toast'
 import {
@@ -24,7 +24,7 @@ export function ProductionTeaBar({
   return (
     <div className="production-tea-bar" role="region" aria-label="生产茶饮补给栏">
       <div className="production-tea-head">
-        <span className="production-tea-title">🍵 生产茶饮与药剂席</span>
+        <span className="production-tea-title"><T1ItemIcon itemId="drink_herbal_tonic" className="gold-inline" alt="" /> 生产茶饮与药剂席</span>
         <small className="production-tea-sub">通过【烹饪 / 炼金】生产技能制作后可在此直接饮用（重复饮用叠加持续时间）</small>
       </div>
       <div className="production-tea-grid">
@@ -50,7 +50,7 @@ export function ProductionTeaBar({
                 </div>
                 <div className="production-tea-meta">
                   {remText ? (
-                    <span className="tea-buff-active">⏳ 生效中 {remText} · 库存 ×{count}</span>
+                    <span className="tea-buff-active">生效中 {remText} · 库存 ×{count}</span>
                   ) : (
                     <span>库存 ×{count} · {tea.craftSource}</span>
                   )}
@@ -66,7 +66,7 @@ export function ProductionTeaBar({
                         apiClient.clearCache()
                         const res: any = await apiClient.consumeItem(tea.id)
                         await refreshPlayerState()
-                        toast.success(`🍵 已饮用「${tea.name}」（${res?.buff?.name || tea.tag}）`)
+                        toast.success(`已饮用「${tea.name}」（${res?.buff?.name || tea.tag}）`)
                       } catch (e: any) {
                         toast.error(e?.message || '饮用失败')
                       }
@@ -168,7 +168,7 @@ export function AlchemyCoinifyPanel({
       await refreshPlayerState()
       const critMsg = res?.critCount > 0 ? ` · 触发 ${res.critCount} 次双倍暴击！` : ''
       const lvMsg = res?.leveledTo ? ` · 炼金升至 Lv.${res.leveledTo}！` : ''
-      toast.success(`✨ 点石成金：获得 +${res?.goldGained || 0} 金币、+${res?.xpGained || 0} 炼金经验${critMsg}${lvMsg}`)
+      toast.success(`点石成金：获得 +${res?.goldGained || 0} 金币、+${res?.xpGained || 0} 炼金经验${critMsg}${lvMsg}`)
     } catch (e: any) {
       toast.error(e?.message || '点石成金失败')
     } finally {
@@ -216,7 +216,7 @@ export function AlchemyCoinifyPanel({
 
       {candidates.length === 0 ? (
         <div className="no-favorites">
-          <div className="empty-icon">✨</div>
+          <div className="empty-icon"><T1ItemIcon itemId="crystal_2" alt="" /></div>
           <p>当前分类下没有可点化的闲置物品</p>
           <p className="hint-text">去采集、制作或打怪获取材料与战利品后再来点石成金</p>
         </div>
@@ -237,8 +237,8 @@ export function AlchemyCoinifyPanel({
               </div>
               <div className="coinify-compare-row">
                 <span>商店贱卖：{selected.shopSellVal} 金/件</span>
-                <span className="coinify-gold-highlight">✨ 点石成金：{selected.coinifyVal} 金/件（暴击 {selected.coinifyVal * 2} 金）</span>
-                <span className="coinify-xp-highlight">🧪 +{selected.xpEach} 炼金XP/件</span>
+                <span className="coinify-gold-highlight"><GoldIcon /> 点石成金：{selected.coinifyVal} 金/件（暴击 {selected.coinifyVal * 2} 金）</span>
+                <span className="coinify-xp-highlight"><T1ItemIcon itemId="weapon_alchemy_bottle_t1" className="gold-inline" alt="" /> +{selected.xpEach} 炼金XP/件</span>
               </div>
               <div className="coinify-action-btns">
                 {[1, 10, 50].map((n) => (
@@ -249,7 +249,7 @@ export function AlchemyCoinifyPanel({
                     disabled={coinifyBusy || selected.spareCount < n}
                     onClick={() => void runCoinify(selected.id, n)}
                   >
-                    ✨ 点化 ×{n} (+{selected.coinifyVal * n}💰)
+                    <GoldIcon /> 点化 ×{n} (+{selected.coinifyVal * n} 金)
                   </button>
                 ))}
                 <button
@@ -258,7 +258,7 @@ export function AlchemyCoinifyPanel({
                   disabled={coinifyBusy || selected.spareCount < 1}
                   onClick={() => void runCoinify(selected.id, selected.spareCount)}
                 >
-                  全部点化 ×{selected.spareCount} (+{selected.coinifyVal * selected.spareCount}💰)
+                  全部点化 ×{selected.spareCount} (+{selected.coinifyVal * selected.spareCount} 金)
                 </button>
               </div>
             </div>
@@ -283,7 +283,7 @@ export function AlchemyCoinifyPanel({
                     </div>
                   </div>
                   <div className="coinify-item-bottom">
-                    <span className="coinify-gold-tag">✨ {item.coinifyVal}💰</span>
+                    <span className="coinify-gold-tag"><GoldIcon /> {item.coinifyVal} 金</span>
                     <span className="coinify-xp-tag">+{item.xpEach} XP</span>
                     <button
                       type="button"
@@ -337,7 +337,7 @@ export function CombatHpChip({
   return (
     <div className="page-info combat-hp-chip" title="战斗血量会跨场保留；脱战后约 1 分钟回满">
       <p>
-        ❤️ 生命值 <b>{cur}</b> / {maxHp} ({Math.floor(pct)}%) · 回血中（约 {secsLeft}s 回满）
+        <T1Art kind="ui" id="stat-hp" className="gold-inline" alt="" /> 生命值 <b>{cur}</b> / {maxHp} ({Math.floor(pct)}%) · 回血中（约 {secsLeft}s 回满）
       </p>
       <div className="combat-hp-chip-bar" aria-hidden="true">
         <div className="combat-hp-chip-fill" style={{ width: `${pct.toFixed(1)}%` }} />

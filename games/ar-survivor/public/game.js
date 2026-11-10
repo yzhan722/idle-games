@@ -298,14 +298,16 @@ function addCoins(amount, x, y, labelPrefix = '') {
   player.coins += finalCoins;
   playSfx('coin');
   pulseHudElement('hud-coins-btn');
+  const baseX = x ?? player.x;
+  const sideOffset = Math.abs(baseX - player.x) < 32 ? (player.x > W * 0.55 ? 66 : -66) : 0;
   floatingTexts.push({
-    x: x ?? player.x,
-    y: (y ?? player.y) - 34,
-    vx: (Math.random() - 0.5) * 24,
-    vy: -58,
+    x: Math.max(54, Math.min(W - 54, baseX + sideOffset)),
+    y: (y ?? player.y) - 28,
+    vx: (Math.random() - 0.5) * 14,
+    vy: -36,
     text: `${labelPrefix}+${finalCoins} 金币`,
     color: '#ffd700',
-    scale: 1.15,
+    scale: 1.12,
     life: 0.85
   });
   savePetState();
@@ -339,14 +341,15 @@ function addAffectionXp(amount, labelText) {
   player.xp += finalAmount;
   player.hp = Math.min(player.maxHp, player.hp + 15);
   pulseHudElement('hud-avatar-btn');
+  const xpSide = player.x > W * 0.55 ? -68 : 68;
   floatingTexts.push({
-    x: player.x,
-    y: player.y - 38,
+    x: Math.max(58, Math.min(W - 58, player.x + xpSide)),
+    y: player.y - 26,
     vx: 0,
-    vy: -52,
+    vy: -34,
     text: labelText || `+${finalAmount} 亲密`,
     color: '#ff9ec7',
-    scale: 1.1,
+    scale: 1.08,
     life: 0.85
   });
   if (player.xp >= player.xpNext) {
@@ -356,13 +359,13 @@ function addAffectionXp(amount, labelText) {
     applySeamlessUpgrade();
     spawnInteractVfx(player.x, player.y - 24, 'love', 12);
     floatingTexts.push({
-      x: player.x,
-      y: player.y - 54,
+      x: Math.max(64, Math.min(W - 64, player.x - xpSide)),
+      y: player.y - 46,
       vx: 0,
-      vy: -60,
+      vy: -38,
       text: `亲密 LV.${player.level}!`,
       color: '#ffd700',
-      scale: 1.3,
+      scale: 1.24,
       life: 1.1
     });
   }
@@ -1295,6 +1298,7 @@ function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame(); dismissPolaro
 
 function closeDrawer() {
   drawerEl.classList.add('hidden');
+  player.drawerOpen = false;
   document.getElementById('btn-feed').classList.remove('active');
   document.getElementById('btn-shop').classList.remove('active');
 }
@@ -2284,6 +2288,15 @@ document.getElementById('btn-nap').addEventListener('pointerdown', (e) => {
     setPlayerEmote('睡饱满血复活!', 1.8, 'happy', true);
   } else {
     setNapping(true); cancelRpsGame(); cancelPalmCatchGame(); player.vy = Math.max(0, player.vy);
+    if (player.y < H * 0.68 - 26) {
+      player.y = H * 0.68 - 25;
+      player.vy = 0;
+      player.onGround = true;
+      player.standingPlat = null;
+    }
+    if (furnitureList.some((f) => Math.abs(player.x - f.x) < 58)) {
+      player.x = W * 0.54;
+    }
     player.vx = 0;
     player.wanderTargetX = null;
     player.idleTime = 6.0;
