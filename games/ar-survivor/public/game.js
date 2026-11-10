@@ -1576,6 +1576,11 @@ document.querySelectorAll('.mode-btn').forEach((btn) => {
     e.stopPropagation();
     switchMode(btn.dataset.mode);
   });
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (gameMode !== btn.dataset.mode) switchMode(btn.dataset.mode);
+  });
 });
 
 // 点击左上角头像环可随时触发摸头互动
