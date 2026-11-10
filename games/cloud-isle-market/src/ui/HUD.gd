@@ -55,6 +55,7 @@ var lbl_drawer_title: Label
 var lbl_drawer_fps: Label
 var lbl_drawer_opacity: Label
 var lbl_drawer_dock: Label
+var lbl_drawer_noise: Label
 var lbl_drawer_weather: Label
 var lbl_drawer_mute: Label
 var lbl_bar_pomodoro: Label
@@ -68,6 +69,7 @@ const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
 const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
 
+const TOP_RIGHT_NOISE_RECT := Rect2(924.0, 128.0, 76.0, 23.0)
 const TOP_RIGHT_FPS_RECT := Rect2(1004.0, 128.0, 62.0, 23.0)
 const TOP_RIGHT_OPACITY_RECT := Rect2(1070.0, 128.0, 68.0, 23.0)
 const TOP_RIGHT_DOCK_RECT := Rect2(1142.0, 128.0, 88.0, 23.0)
@@ -213,6 +215,11 @@ func _build_native_labels() -> void:
 	lbl_drawer_title.position = Vector2(540.0, 128.0)
 	lbl_drawer_title.scale = Vector2(0.88, 0.88)
 	add_child(lbl_drawer_title)
+
+	lbl_drawer_noise = EconomyConfig.create_pixel_label("[白噪:关]", 14, Color("#FFE066"), false)
+	lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0)
+	lbl_drawer_noise.scale = Vector2(0.84, 0.84)
+	add_child(lbl_drawer_noise)
 
 	lbl_drawer_fps = EconomyConfig.create_pixel_label("[60FPS]", 14, Color("#FFE066"), false)
 	lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0)
@@ -368,6 +375,7 @@ func _sync_label_nodes() -> void:
 	var show_drawer := show_bar and drawer_expanded
 	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 	lbl_drawer_title.visible = show_drawer
+	lbl_drawer_noise.visible = show_drawer
 	lbl_drawer_fps.visible = show_drawer
 	lbl_drawer_opacity.visible = show_drawer
 	lbl_drawer_dock.visible = show_drawer
@@ -386,6 +394,8 @@ func _sync_label_nodes() -> void:
 
 		var cur_fps: int = WindowController.get_eco_fps() if WindowController != null else 60
 		var cur_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
+		lbl_drawer_noise.text = SoundManager.get_white_noise_status_label() if SoundManager != null else "[白噪:关]"
+		lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0 + slide_y)
 		lbl_drawer_fps.text = "[" + str(cur_fps) + "FPS]"
 		lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0 + slide_y)
 		lbl_drawer_opacity.text = "[" + str(int(round(cur_op * 100.0))) + "%透]"
@@ -436,7 +446,7 @@ func _gui_input(event: InputEvent) -> void:
 				WindowController.begin_window_drag()
 				accept_event()
 				return
-			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos) or TOP_RIGHT_FPS_RECT.has_point(mpos) or TOP_RIGHT_OPACITY_RECT.has_point(mpos) or TOP_RIGHT_DOCK_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)) or (not is_collapsed_capsule and POMODORO_RECT.has_point(mpos))
+			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_NOISE_RECT.has_point(mpos) or TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos) or TOP_RIGHT_FPS_RECT.has_point(mpos) or TOP_RIGHT_OPACITY_RECT.has_point(mpos) or TOP_RIGHT_DOCK_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)) or (not is_collapsed_capsule and POMODORO_RECT.has_point(mpos))
 			if hovered_tab == -1 and hovered_card == -1 and not hitting_top_btns and _get_interactive_zone().has_point(mpos):
 				if WindowController != null:
 					WindowController.begin_window_drag()
@@ -454,6 +464,13 @@ func _gui_input(event: InputEvent) -> void:
 					WindowController.toggle_boss_stealth()
 				else:
 					set_boss_stealth(false)
+				accept_event()
+				return
+
+			if drawer_expanded and TOP_RIGHT_NOISE_RECT.has_point(mpos):
+				if SoundManager != null:
+					SoundManager.toggle_white_noise()
+				_sync_label_nodes()
 				accept_event()
 				return
 
@@ -715,12 +732,14 @@ func _draw() -> void:
 		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
 		draw_texture_rect(tex_drawer, d_rect, false)
 
+		var noise_rect := Rect2(TOP_RIGHT_NOISE_RECT.position.x, TOP_RIGHT_NOISE_RECT.position.y + slide_y, TOP_RIGHT_NOISE_RECT.size.x, TOP_RIGHT_NOISE_RECT.size.y)
 		var fps_rect := Rect2(TOP_RIGHT_FPS_RECT.position.x, TOP_RIGHT_FPS_RECT.position.y + slide_y, TOP_RIGHT_FPS_RECT.size.x, TOP_RIGHT_FPS_RECT.size.y)
 		var op_rect := Rect2(TOP_RIGHT_OPACITY_RECT.position.x, TOP_RIGHT_OPACITY_RECT.position.y + slide_y, TOP_RIGHT_OPACITY_RECT.size.x, TOP_RIGHT_OPACITY_RECT.size.y)
 		var dock_rect := Rect2(TOP_RIGHT_DOCK_RECT.position.x, TOP_RIGHT_DOCK_RECT.position.y + slide_y, TOP_RIGHT_DOCK_RECT.size.x, TOP_RIGHT_DOCK_RECT.size.y)
 		var w_rect := Rect2(TOP_RIGHT_WEATHER_RECT.position.x, TOP_RIGHT_WEATHER_RECT.position.y + slide_y, TOP_RIGHT_WEATHER_RECT.size.x, TOP_RIGHT_WEATHER_RECT.size.y)
 		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
 		if tex_pill != null:
+			draw_texture_rect(tex_pill, noise_rect, false)
 			draw_texture_rect(tex_pill, fps_rect, false)
 			draw_texture_rect(tex_pill, op_rect, false)
 			draw_texture_rect(tex_pill, dock_rect, false)

@@ -12,6 +12,10 @@ if (-not (Test-Path $GodotConsole)) {
     exit 1
 }
 
+if (-not (Test-Path (Join-Path $ProjectDir ".godot\imported"))) {
+    & $GodotConsole --headless --import --path $ProjectDir
+}
+
 if ($PassThruArgs -contains "--self-test") {
     & $GodotConsole --path $ProjectDir -- --self-test
     exit $LASTEXITCODE

@@ -72,6 +72,15 @@ var cloud_time: float = 0.0
 var chimney_timer: float = 0.0
 var chimney_wisps: Array[Dictionary] = []
 
+## v2.6-2: Lotus Pond Swimming Pixel Koi (`x: 1100..1280`) & Eco Micro-Animation
+const POND_KOI_MIN_X := 1108.0
+const POND_KOI_MAX_X := 1272.0
+var pond_koi: Array[Dictionary] = [
+	{"x": 1134.0, "y": 106.0, "speed": 13.5, "dir": 1.0, "phase": 0.0, "variant": 0},
+	{"x": 1192.0, "y": 112.0, "speed": 11.0, "dir": -1.0, "phase": 2.1, "variant": 1},
+	{"x": 1244.0, "y": 108.0, "speed": 12.5, "dir": 1.0, "phase": 4.2, "variant": 0}
+]
+
 ## v2.3 Direction 2: Floating Cloud Gift Encounter (`云端奇遇礼盒`)
 var tex_delicacies: Texture2D
 var cloud_gift_sprite: Sprite2D
@@ -458,6 +467,18 @@ func _process(delta: float) -> void:
 	for n in island3_props:
 		n.visible = isl3_on
 
+	# v2.6-2: Update lotus pond koi strictly within [POND_KOI_MIN_X, POND_KOI_MAX_X] (`1100..1280`)
+	for k in pond_koi:
+		var kx := float(k["x"]) + float(k["speed"]) * float(k["dir"]) * delta
+		if kx >= POND_KOI_MAX_X:
+			kx = POND_KOI_MAX_X
+			k["dir"] = -1.0
+		elif kx <= POND_KOI_MIN_X:
+			kx = POND_KOI_MIN_X
+			k["dir"] = 1.0
+		k["x"] = clampf(kx, POND_KOI_MIN_X, POND_KOI_MAX_X)
+		k["phase"] = float(k["phase"]) + delta * 5.0
+
 	chimney_timer += delta
 	if chimney_timer >= 1.4:
 		chimney_timer = 0.0
@@ -545,6 +566,19 @@ func _draw() -> void:
 		draw_texture(tex_henesys, Vector2(560.0, oy + 70.0))
 
 	var ripple_alpha := 0.30 + 0.18 * sin(cloud_time * 1.6)
+	# v2.6-2: Draw swimming orange-white pixel koi & dynamic wake ripples inside Lotus Pond (`x: 1100..1280`)
+	for k in pond_koi:
+		var kx := roundf(float(k["x"]))
+		var ky := roundf(oy + float(k["y"]) + sin(float(k["phase"]) * 0.5) * 1.5)
+		var kdir := float(k["dir"])
+		var tail_wag := roundf(sin(float(k["phase"])) * 1.0)
+		var wake_r := 3.5 + fmod(float(k["phase"]) * 0.9, 3.5)
+		draw_arc(Vector2(kx - kdir * 4.0, ky + 1.0), wake_r, 0.0, PI * 2.0, 12, Color(0.88, 0.99, 1.0, ripple_alpha * 0.65), 1.0)
+		var c_orange := Color("#FF6B2B") if int(k["variant"]) == 0 else Color("#FF8533")
+		var c_white := Color("#FFF8EE")
+		draw_rect(Rect2(kx - 4.0, ky - 2.0, 8.0, 4.0), c_orange, true)
+		draw_rect(Rect2(kx + (1.0 if kdir > 0.0 else -4.0), ky - 2.0, 3.0, 3.0), c_white, true)
+		draw_rect(Rect2(kx - kdir * 6.0, ky - 1.0 + tail_wag, 3.0, 3.0), c_orange, true)
 	for px in [1096.0, 1188.0, 1284.0]:
 		var ring_r := 6.0 + fmod(cloud_time * 4.5 + px * 0.1, 5.0) + pond_sag * 1.5
 		draw_arc(Vector2(px, oy + 146.0), ring_r, 0.0, PI * 2.0, 16, Color(0.88, 0.99, 1.0, ripple_alpha * 0.85), 1.0)
@@ -572,3 +606,9 @@ func _draw() -> void:
 				draw_line(Vector2(rx, ry), Vector2(rx - 3.0, ry + 8.0), Color(0.78, 0.92, 1.0, 0.42), 1.0)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func get_pond_koi_positions() -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for k in pond_koi:
+		out.append(Vector2(float(k["x"]), float(k["y"])))
+	return out

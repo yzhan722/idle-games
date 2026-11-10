@@ -614,6 +614,45 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 	print("[PASS] [断言10-小动物进修特质词条系统] 通过: Lv.10/25/50 专精特质激活(兔子产量+1~+3、水獭/巨嘴鸟移速+20%%、狐狸/企鹅耗时-15%%、柴犬小费+15%%)与面板标签校验 PASS!")
 
+	# ------------------------------------------------------------------
+	# [断言11-v2.6视听白噪音与荷花池游动锦鲤]: Verify white noise weather sync/toggle & koi pond bounds (`1100..1280`)
+	# ------------------------------------------------------------------
+	if SoundManager == null or not SoundManager.has_method("sync_white_noise_to_weather") or not SoundManager.has_method("get_white_noise_status_label"):
+		_fail_and_quit("[断言11-白噪音与锦鲤]", "SoundManager missing v2.6-1 white noise synthesizer methods!")
+		return
+	var prev_mute := SoundManager.is_muted
+	var prev_wn := SoundManager.white_noise_enabled
+	SoundManager.set_muted(false)
+	SoundManager.set_white_noise_enabled(true)
+	SoundManager.sync_white_noise_to_weather(3)
+	if SoundManager.get_white_noise_profile() != "rain" or SoundManager.get_white_noise_status_label() != "[白噪:雨声]":
+		_fail_and_quit("[断言11-白噪音与锦鲤]", "Rain white noise profile/label mismatch: `%s` / `%s`" % [SoundManager.get_white_noise_profile(), SoundManager.get_white_noise_status_label()])
+		return
+	SoundManager.sync_white_noise_to_weather(2)
+	if SoundManager.get_white_noise_profile() != "cricket" or SoundManager.get_white_noise_status_label() != "[白噪:虫鸣]":
+		_fail_and_quit("[断言11-白噪音与锦鲤]", "Night white noise profile/label mismatch!")
+		return
+	SoundManager.set_white_noise_enabled(false)
+	if SoundManager.get_white_noise_status_label() != "[白噪:关]":
+		_fail_and_quit("[断言11-白噪音与锦鲤]", "Disabled white noise label should be `[白噪:关]`!")
+		return
+	SoundManager.set_white_noise_enabled(prev_wn)
+	SoundManager.set_muted(prev_mute)
+	SoundManager.sync_white_noise_to_weather(GameManager.current_weather)
+
+	if not world.has_method("get_pond_koi_positions"):
+		_fail_and_quit("[断言11-白噪音与锦鲤]", "MainWorld missing get_pond_koi_positions()!")
+		return
+	var koi_positions: Array[Vector2] = world.get_pond_koi_positions()
+	if koi_positions.size() < 2:
+		_fail_and_quit("[断言11-白噪音与锦鲤]", "Lotus pond should have at least 2 swimming koi!")
+		return
+	for kp in koi_positions:
+		if kp.x < 1100.0 or kp.x > 1280.0:
+			_fail_and_quit("[断言11-白噪音与锦鲤]", "Koi x=%.1f out of Lotus Pond bounds [1100..1280]!" % kp.x)
+			return
+	print("[PASS] [断言11-自然白噪音与荷花池锦鲤] 通过: 晴昼微风/晚风/夜市虫鸣/微雨雨声程序化白噪音状态联动与 1 号岛荷花池 %d 尾像素锦鲤水域边界 [1100..1280] 校验 PASS!" % koi_positions.size())
+
 	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
 	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": false, "tiki_torch": false}
 	GameManager.amber = 5

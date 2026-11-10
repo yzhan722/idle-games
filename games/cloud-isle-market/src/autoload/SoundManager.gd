@@ -79,6 +79,22 @@ var _rr_cursor: int = 0
 var _ambient_deck_a: AudioStreamPlayer
 var _ambient_deck_b: AudioStreamPlayer
 
+## v2.6-1: Procedural Natural White Noise Synthesizer (Breeze / Dusk / Cricket / Rain)
+const WHITE_NOISE_PROFILES: Array[String] = ["breeze", "dusk_chime", "cricket", "rain"]
+const WHITE_NOISE_CN_LABELS: Dictionary = {
+	"breeze": "微风",
+	"dusk_chime": "晚风",
+	"cricket": "虫鸣",
+	"rain": "雨声"
+}
+var white_noise_enabled: bool = true
+var current_noise_profile: String = "breeze"
+var _noise_player: AudioStreamPlayer
+var _noise_playback: AudioStreamGeneratorPlayback
+var _noise_lp_state: float = 0.0
+var _noise_phase: float = 0.0
+var _last_synced_weather: int = -1
+
 func _ready() -> void:
 	_load_all_wav_streams()
 	_build_audio_pools()
@@ -119,6 +135,16 @@ func _build_audio_pools() -> void:
 	_ambient_deck_b.bus = "Master"
 	_ambient_deck_b.volume_db = -60.0
 	add_child(_ambient_deck_b)
+
+	_noise_player = AudioStreamPlayer.new()
+	_noise_player.name = "ProceduralWhiteNoisePlayer"
+	_noise_player.bus = "Master"
+	_noise_player.volume_db = -21.0
+	var gen := AudioStreamGenerator.new()
+	gen.mix_rate = 22050.0
+	gen.buffer_length = 0.12
+	_noise_player.stream = gen
+	add_child(_noise_player)
 
 func _on_toggle_desktop_mode(enabled: bool) -> void:
 	if enabled:
@@ -195,10 +221,14 @@ func _process(delta: float) -> void:
 			if out_deck != null:
 				out_deck.stop()
 
+	if GameManager != null and GameManager.current_weather != _last_synced_weather:
+		sync_white_noise_to_weather(GameManager.current_weather)
+
 	if not is_muted:
 		var active_deck := _ambient_deck_a if _active_deck_is_a else _ambient_deck_b
 		if active_deck != null and active_deck.stream != null and not active_deck.playing:
 			active_deck.play()
+		_pump_procedural_white_noise(delta)
 
 func set_muted(mute: bool) -> void:
 	is_muted = mute
@@ -210,6 +240,8 @@ func set_muted(mute: bool) -> void:
 		for p in _sfx_players:
 			if p.playing:
 				p.stop()
+		if _noise_player != null and _noise_player.playing:
+			_noise_player.stop()
 	else:
 		var active_deck := _ambient_deck_a if _active_deck_is_a else _ambient_deck_b
 		if active_deck != null and active_deck.stream != null:
@@ -272,3 +304,65 @@ func play_click_sfx() -> void:
 
 func play_hover_sfx() -> void:
 	play_sfx("ui_hover", 0.03, 0.0)
+
+## v2.6-1 Procedural White Noise Synthesizer API
+func sync_white_noise_to_weather(weather_id: int) -> void:
+	_last_synced_weather = clampi(weather_id, 0, 3)
+	current_noise_profile = WHITE_NOISE_PROFILES[_last_synced_weather]
+
+func set_white_noise_enabled(enabled: bool) -> void:
+	white_noise_enabled = enabled
+	if not white_noise_enabled and _noise_player != null and _noise_player.playing:
+		_noise_player.stop()
+
+func toggle_white_noise() -> bool:
+	set_white_noise_enabled(not white_noise_enabled)
+	if white_noise_enabled and is_muted:
+		set_muted(false)
+	play_click_sfx()
+	return white_noise_enabled
+
+func get_white_noise_profile() -> String:
+	return current_noise_profile
+
+func is_white_noise_active() -> bool:
+	return white_noise_enabled and not is_muted
+
+func get_white_noise_status_label() -> String:
+	if not white_noise_enabled or is_muted:
+		return "[白噪:关]"
+	var prof := get_white_noise_profile()
+	return "[白噪:" + String(WHITE_NOISE_CN_LABELS.get(prof, "微风")) + "]"
+
+func _pump_procedural_white_noise(delta: float) -> void:
+	if not white_noise_enabled or is_muted or _noise_player == null:
+		return
+	if not _noise_player.playing:
+		_noise_player.play()
+		_noise_playback = _noise_player.get_stream_playback() as AudioStreamGeneratorPlayback
+	if _noise_playback == null:
+		return
+	var frames := mini(_noise_playback.get_frames_available(), 512)
+	if frames <= 0:
+		return
+	var alpha := 0.08
+	var amp := 0.045
+	match current_noise_profile:
+		"breeze":
+			alpha = 0.06
+			amp = 0.040 * (0.75 + 0.25 * sin(_noise_phase * 1.4))
+		"dusk_chime":
+			alpha = 0.08
+			amp = 0.045 * (0.80 + 0.20 * sin(_noise_phase * 1.9))
+		"cricket":
+			alpha = 0.14
+			amp = 0.038 * (0.65 + 0.35 * absf(sin(_noise_phase * 6.5)))
+		"rain":
+			alpha = 0.22
+			amp = 0.055
+	_noise_phase += delta
+	for _i in range(frames):
+		var raw := randf_range(-1.0, 1.0)
+		_noise_lp_state = lerpf(_noise_lp_state, raw, alpha)
+		var sample := _noise_lp_state * amp
+		_noise_playback.push_frame(Vector2(sample, sample))
