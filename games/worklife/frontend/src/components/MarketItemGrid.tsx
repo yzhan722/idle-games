@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiClient } from "../services/api";
-import { T1ItemIcon } from "./T1Art";
+import { T1Art, T1ItemIcon } from "./T1Art";
+import "./T1UiIcons.css";
 
 type MarketItem = { id: string; name: string; type?: string; tier?: number; value?: number };
 export type MarketQuote = { ask?: number; askQty: number; bid?: number; bidQty: number };
 
 type Props = {
-  groups: Array<{ id: string; title: string; emoji: string; items: MarketItem[] }>;
+  groups: Array<{ id: string; title: string; iconId: string; items: MarketItem[] }>;
   inventory: Record<string, number>;
   iconOf: (itemId: string) => string;
   onPick: (itemId: string) => void;
@@ -86,14 +87,14 @@ export function MarketItemGrid(props: Props) {
           </button>
           {props.groups.map((g) => (
             <button key={g.id} type="button" role="tab" aria-selected={group === g.id} className={`qty-chip${group === g.id ? " active" : ""}`} onClick={() => setGroup(g.id)}>
-              {g.emoji} {g.title} {g.items.length}
+              <T1Art kind="ui" id={g.iconId} fallback="" alt="" /> {g.title} {g.items.length}
             </button>
           ))}
         </div>
       </div>
       {owned.length > 0 && !q && group === "all" && (
         <section className="inv-group" aria-label="我能卖的">
-          <h3 className="inv-group-title">🎒 我能卖的 <small>{owned.length}</small></h3>
+          <h3 className="inv-group-title"><T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> 我能卖的 <small>{owned.length}</small></h3>
           <div className="inv-grid market-grid">
             {owned.map((i) => (
               <button type="button" className="inv-tile" key={`own-${i.id}`} data-item-id={i.id} onClick={() => props.onPick(i.id)}>
@@ -106,10 +107,10 @@ export function MarketItemGrid(props: Props) {
           </div>
         </section>
       )}
-      {groups.length === 0 && <div className="inventory-empty inv-page-empty"><div className="empty-icon">📭</div><p>没有匹配的物品</p></div>}
+      {groups.length === 0 && <div className="inventory-empty inv-page-empty"><div className="empty-icon"><T1Art kind="ui" id="nav-trading" fallback="" alt="" /></div><p>没有匹配的物品</p></div>}
       {groups.map((g) => (
         <section className="inv-group" key={g.id} aria-label={g.title}>
-          <h3 className="inv-group-title">{g.emoji} {g.title} <small>{g.items.length}</small></h3>
+          <h3 className="inv-group-title"><T1Art kind="ui" id={g.iconId} fallback="" alt="" /> {g.title} <small>{g.items.length}</small></h3>
           <div className="inv-grid market-grid">
             {g.items.map((i) => (
               <button type="button" className="inv-tile" key={i.id} data-item-id={i.id} onClick={() => props.onPick(i.id)}>

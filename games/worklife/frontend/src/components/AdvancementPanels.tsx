@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { apiClient } from '../services/api';
 import { useToast } from './Toast';
+import { T1Art } from './T1Art';
 import './ProgressionPanels.css';
 import './SystemPanels.css';
 import './AdvancementPanels.css';
+import './T1UiIcons.css';
 
 // ============ 通用弹窗外壳（与 SystemPanels 保持一致）============
 function PanelModal({
@@ -13,7 +15,7 @@ function PanelModal({
   children
 }: {
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -97,7 +99,7 @@ export function PrestigePanel({
   };
 
   return (
-    <PanelModal title="转生" icon="♻️" onClose={onClose}>
+    <PanelModal title="转生" icon={<T1Art kind="ui" id="nav-crystal" fallback="" alt="" />} onClose={onClose}>
       {loading || !info ? (
         <div className="prog-loading">加载中…</div>
       ) : (
@@ -152,7 +154,7 @@ export function PrestigePanel({
           ) : (
             <div className="prestige-confirm">
               <div className="prestige-confirm-text">
-                ⚠️ 确认转生？战斗/职业等级与背包装备将被清空，此操作不可撤销。
+                <T1Art kind="ui" id="nav-adventure" fallback="" alt="" /> 确认转生？战斗/职业等级与背包装备将被清空，此操作不可撤销。
               </div>
               <div className="prestige-confirm-btns">
                 <button className="prog-filter-btn" disabled={busy} onClick={() => setConfirming(false)}>

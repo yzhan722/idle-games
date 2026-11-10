@@ -6,7 +6,7 @@ import { questLabel } from "./era.js";
 const COMPANION_MOODS = [
   "正在篝火旁烤甜灵果 ♪",
   "伴着噼啪火光打了个小哈欠~",
-  "好奇地拨弄着地上的火星 ✨",
+  "好奇地拨弄着地上的点点火星",
   "精神饱满，随时准备出发探险！",
   "把收集到的灵果整齐码在篮子里",
   "正对着夜空数萤火虫呢",
@@ -49,7 +49,7 @@ export function computeNewbieCompass(state) {
       badge: "新手第 1/7 步",
       title: "采集 30 颗灵果，点燃营地第一把火",
       desc: "连点几次【采集】或右侧快捷按钮即可攒够 30 灵果，用来研发第一项核心科技。",
-      whyText: "💡 灵果是一切研究与建造的基础燃料，前几次点击采集收益丰厚！",
+      whyText: "灵果是一切研究与建造的基础燃料，前几次点击采集收益丰厚！",
       progressCur: cur,
       progressMax: 30,
       pct: Math.round((cur / 30) * 100),
@@ -70,7 +70,7 @@ export function computeNewbieCompass(state) {
       desc: researchingBall
         ? "研究完成后将立即获赠 5 颗灵球，并解锁【捕捉】与【萌灵】面板！"
         : "打开上方「研究」标签，花费 20 灵果启动【灵球基础】（仅需约 10 秒，完成立送 5 颗灵球）。",
-      whyText: "💡 研发「灵球基础」后即可免费拿到首批灵球，去草甸抓第一只伙伴！",
+      whyText: "研发「灵球基础」后即可免费拿到首批灵球，去草甸抓第一只伙伴！",
       progressCur: cur,
       progressMax: 1,
       pct: researchingBall ? 60 : 15,
@@ -89,7 +89,7 @@ export function computeNewbieCompass(state) {
       badge: "新手第 3/7 步",
       title: "前往「捕捉 · 芽芽草甸」收服第 1 只萌灵",
       desc: `你手头已有 ${balls} 颗灵球！进入「捕捉」页点击【遭遇】，再点【投球捕捉】即可迎来第一位营地伙伴。`,
-      whyText: "💡 每抓到一种新萌灵都会永久提升全资源产出倍率，伙伴还能在篝火旁陪你！",
+      whyText: "每抓到一种新萌灵都会永久提升全资源产出倍率，伙伴还能在篝火旁陪你！",
       progressCur: 0,
       progressMax: 1,
       pct: 20,
@@ -109,7 +109,7 @@ export function computeNewbieCompass(state) {
       badge: "新手第 4/7 步",
       title: `扩建营地：建造「${nextBld}」开启自动产线`,
       desc: "在下方建筑列表中依次建造【灵木小屋 → 伐木场 → 制球工坊】，让灵木与灵球源源不断产出。",
-      whyText: "💡 有了制球工坊和灵木产线，就不用只靠手动攒球，真正开启轻松挂机！",
+      whyText: "有了制球工坊和灵木产线，就不用只靠手动攒球，真正开启轻松挂机！",
       progressCur: infraScore,
       progressMax: 3,
       pct: Math.round((infraScore / 3) * 100),
@@ -131,7 +131,7 @@ export function computeNewbieCompass(state) {
         trainOwned < 1
           ? "建造功能建筑【训练场】后，你的萌灵就能在后台自动获得经验升级与进化。"
           : "打开「功能」标签，把抓到的主力萌灵放进训练位，挂机也能持续变强！",
-      whyText: "💡 萌灵达到指定等级即可进化为二阶/三阶形态，立绘造型与战力都会大幅蜕变！",
+      whyText: "萌灵达到指定等级即可进化为二阶/三阶形态，立绘造型与战力都会大幅蜕变！",
       progressCur: stepDone,
       progressMax: 2,
       pct: Math.round((stepDone / 2) * 100),
@@ -153,7 +153,7 @@ export function computeNewbieCompass(state) {
       desc: needDex
         ? "再去「捕捉」多抓几种不同编号的萌灵，集满 5 种图鉴即可开启 8 章 50 关【挑战】巡礼！"
         : "挑战面板已解锁！选好出战队伍击败第 1 关守卫，赢取稀有养成道具与未来币。",
-      whyText: "💡 挑战巡礼会掉落蜕变石、历练糖丸与大量未来币，是检验队伍实力的核心舞台！",
+      whyText: "挑战巡礼会掉落蜕变石、历练糖丸与大量未来币，是检验队伍实力的核心舞台！",
       progressCur: cur,
       progressMax: 6,
       pct: Math.round((cur / 6) * 100),
@@ -179,7 +179,7 @@ export function computeNewbieCompass(state) {
     badge: `时代征途 · ${eraDef.name}`,
     title: allDone ? `「${eraDef.name}」主线已全清！可前往捕捉页迈入下一时代` : `当前主线：${nextLabel}`,
     desc: `${eraDef.blurb || "跟随时代目标稳步扩张营地与图鉴。"}（已完成 ${doneCount}/${totalQ} 项时代主线）`,
-    whyText: `💡 累计采集 ${clicks} 次 · 图鉴已点亮 ${dexUnique}/160 种 · 完成全部时代主线可升入新纪元并最终开启轮回转生！`,
+    whyText: `累计采集 ${clicks} 次 · 图鉴已点亮 ${dexUnique}/160 种 · 完成全部时代主线可升入新纪元并最终开启轮回转生！`,
     progressCur: doneCount,
     progressMax: totalQ,
     pct: Math.round((doneCount / totalQ) * 100),

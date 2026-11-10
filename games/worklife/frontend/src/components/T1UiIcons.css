@@ -22,6 +22,83 @@
   margin: 0 auto;
 }
 
+.inline-t1-icon,
+.inv-sum .t1-art,
+.qty-chip .t1-art,
+.inv-group-title .t1-art,
+.party-boss-name .t1-art,
+.party-boss-reward-line .t1-art,
+.boss-skill-chip .t1-art,
+.party-boss-card-actions .t1-art,
+.party-id-row .t1-art,
+.trading-detail-actions .t1-art,
+.orders-header .t1-art,
+.order-price .t1-art,
+.btn-quick-buy .t1-art,
+.btn-quick-sell .t1-art,
+.summary-value .t1-art,
+.modal-title .t1-art,
+.prog-title-icon .t1-art,
+.ach-reward .t1-art,
+.checkin-reward-gold .t1-art,
+.settings-label .t1-art,
+.settings-export-btn .t1-art,
+.prestige-confirm-text .t1-art {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 3px;
+  object-fit: contain;
+}
+
+.inv-page-empty .empty-icon .t1-art {
+  width: 40px;
+  height: 40px;
+  opacity: 0.72;
+}
+
+.ach-icon .t1-art,
+.daily-icon .t1-art {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.ach-reward,
+.checkin-reward-gold,
+.order-price,
+.summary-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ach-reward .t1-art,
+.checkin-reward-gold .t1-art,
+.order-price .t1-art,
+.summary-value .t1-art {
+  margin-right: 0;
+  vertical-align: 0;
+}
+
+.party-status-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.party-status-dot.online {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.7);
+}
+.party-status-dot.offline {
+  background: rgba(168, 162, 158, 0.55);
+}
+
 @media (max-width: 768px) {
   .sheet-stat-label .t1-art-icon,
   .sheet-stat-label .t1-art {

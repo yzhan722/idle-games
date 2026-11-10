@@ -7678,6 +7678,8 @@ details.cloudRecoverHint > summary .tag {
 }
 
 .tab--more::before { background-image: url("./assets/ui_icons/commandCenter.webp"); }
+.tabsMoreMenu__item[data-more-tab="mons"]::before { background-image: url("./assets/ui_icons/tab_mons.webp"); }
+.tabsMoreMenu__item[data-more-tab="functions"]::before { background-image: url("./assets/ui_icons/expeditionPost.webp"); }
 .tabsMoreMenu__item[data-more-tab="future"]::before { background-image: url("./assets/ui_icons/tab_future.webp"); }
 .tabsMoreMenu__item[data-more-tab="dex"]::before { background-image: url("./assets/ui_icons/tab_dex.webp"); }
 .tabsMoreMenu__item[data-more-tab="pve"]::before { background-image: url("./assets/ui_icons/tab_pve.webp"); }

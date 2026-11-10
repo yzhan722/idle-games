@@ -5,7 +5,18 @@ import { useAuth } from '../hooks/useAuth';
 import { useGame } from '../contexts/GameContext';
 import { encryptSaveEnvelope, decryptSaveEnvelope } from '../utils/saveCrypto';
 import { useToast, setToastNotificationsEnabled } from './Toast';
+import { GoldIcon, T1Art } from './T1Art';
 import './ProgressionPanels.css';
+import './T1UiIcons.css';
+
+const ACH_CATEGORY_ICON: Record<string, string> = {
+  gathering: 'nav-logging',
+  crafting: 'nav-smithing',
+  combat: 'nav-melee',
+  wealth: 'gold',
+  progression: 'nav-enhance',
+  misc: 'nav-tasks'
+};
 
 // ============ 通用弹窗外壳 ============
 function PanelModal({
@@ -15,7 +26,7 @@ function PanelModal({
   children
 }: {
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -107,7 +118,7 @@ export function AchievementsPanel({ onClose, onGoldChange }: { onClose: () => vo
   const categories = ['all', 'gathering', 'crafting', 'combat', 'wealth', 'progression', 'misc'];
 
   return (
-    <PanelModal title="成就" icon="🏆" onClose={onClose}>
+    <PanelModal title="成就" icon={<T1Art kind="ui" id="nav-tasks" fallback="" alt="" />} onClose={onClose}>
       <div className="prog-summary">
         已达成 <b>{unlockedCount}</b> / {list.length}
         {claimableCount > 0 && <span className="prog-badge">{claimableCount} 个可领取</span>}
@@ -138,7 +149,9 @@ export function AchievementsPanel({ onClose, onGoldChange }: { onClose: () => vo
                 key={a.id}
                 className={`ach-card ${a.unlocked ? 'unlocked' : 'locked'} ${a.claimed ? 'claimed' : ''}`}
               >
-                <div className="ach-icon">{a.icon}</div>
+                <div className="ach-icon">
+                  <T1Art kind="ui" id={ACH_CATEGORY_ICON[a.category] || 'nav-tasks'} fallback="" alt="" />
+                </div>
                 <div className="ach-info">
                   <div className="ach-name">
                     {a.name}
@@ -152,7 +165,7 @@ export function AchievementsPanel({ onClose, onGoldChange }: { onClose: () => vo
                     <span className="ach-count">
                       {Math.min(a.current, a.target)} / {a.target} ({pct}%)
                     </span>
-                    <span className="ach-reward">💰 {a.reward.gold || 0}</span>
+                    <span className="ach-reward"><GoldIcon /> {a.reward.gold || 0}</span>
                   </div>
                 </div>
                 {a.unlocked && !a.claimed && (
@@ -228,7 +241,7 @@ export function DailyQuestsPanel({ onClose, onGoldChange }: { onClose: () => voi
   };
 
   return (
-    <PanelModal title="每日任务" icon="📅" onClose={onClose}>
+    <PanelModal title="每日任务" icon={<T1Art kind="ui" id="nav-adventure" fallback="" alt="" />} onClose={onClose}>
       <div className="prog-summary">
         刷新日期：{date || '—'}（每日 0 点刷新）
       </div>
@@ -245,7 +258,7 @@ export function DailyQuestsPanel({ onClose, onGoldChange }: { onClose: () => voi
             const pct = Math.min(100, Math.max(0, Math.floor((q.progress / Math.max(1, q.target)) * 100)));
             return (
               <div key={q.id} className={`daily-card ${q.completed ? 'completed' : ''} ${q.claimed ? 'claimed' : ''}`}>
-                <div className="daily-icon">{q.icon}</div>
+                <div className="daily-icon"><T1Art kind="ui" id="nav-tasks" fallback="" alt="" /></div>
                 <div className="daily-info">
                   <div className="daily-name">{q.name}</div>
                   <div className="daily-desc">{q.description}</div>
@@ -254,7 +267,7 @@ export function DailyQuestsPanel({ onClose, onGoldChange }: { onClose: () => voi
                   </div>
                   <div className="ach-meta">
                     <span className="ach-count">{q.progress} / {q.target} ({pct}%)</span>
-                    <span className="ach-reward">💰 {q.reward.gold}{q.reward.xp ? ` · ⭐ ${q.reward.xp} 经验` : ''}</span>
+                    <span className="ach-reward"><GoldIcon /> {q.reward.gold}{q.reward.xp ? <> · <T1Art kind="ui" id="nav-crystal" fallback="" alt="" /> {q.reward.xp} 经验</> : ''}</span>
                   </div>
                 </div>
                 {q.claimed ? (
@@ -321,7 +334,7 @@ function BindAccountSection() {
   return (
     <div className="settings-bind">
       <div className="settings-text" style={{ marginBottom: 8 }}>
-        <div className="settings-label">🔐 游戏账号</div>
+        <div className="settings-label"><T1Art kind="ui" id="nav-character" fallback="" alt="" /> 游戏账号</div>
         <div className="settings-desc">{activeAccount ? `当前登录账号：${activeAccount}（云端实时存档，支持跨设备登录）` : '绑定后可用账号密码在任何设备登录这个存档'}</div>
       </div>
       {activeAccount ? (
@@ -331,7 +344,7 @@ function BindAccountSection() {
             className="settings-export-btn"
             onClick={() => logout()}
           >
-            🚪 退出登录 / 切换账号
+            退出登录 / 切换账号
           </button>
         </div>
       ) : (
@@ -522,7 +535,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <PanelModal title="设置" icon="⚙️" onClose={onClose}>
+    <PanelModal title="设置" icon={<T1Art kind="ui" id="nav-enhance" fallback="" alt="" />} onClose={onClose}>
       {loading || !settings ? (
         <div className="prog-loading">加载中…</div>
       ) : (
@@ -547,12 +560,12 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           <BindAccountSection />
           <div className="settings-save-section">
             <div className="settings-text" style={{ marginBottom: 8 }}>
-              <div className="settings-label">🛡️ 加密存档备份与恢复</div>
+              <div className="settings-label"><T1Art kind="ui" id="stat-def" fallback="" alt="" /> 加密存档备份与恢复</div>
               <div className="settings-desc">存档采用 AES-256-GCM 认证加密（.wlsave），防篡改且不支持明文 JSON 导入</div>
             </div>
             <div className="settings-save-buttons">
               <button className="settings-export-btn" disabled={saveBusy} onClick={() => void exportData()}>
-                {saveBusy ? '处理中…' : '📤 导出加密存档 (.wlsave)'}
+                {saveBusy ? '处理中…' : <><T1Art kind="ui" id="nav-trading" fallback="" alt="" /> 导出加密存档 (.wlsave)</>}
               </button>
               <button
                 type="button"
@@ -560,7 +573,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 disabled={saveBusy}
                 onClick={() => fileInputRef.current?.click()}
               >
-                📂 选择加密存档文件导入
+                <T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> 选择加密存档文件导入
               </button>
               <input
                 ref={fileInputRef}
@@ -594,7 +607,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 disabled={saveBusy || !importCode.trim()}
                 onClick={() => void handleImportSaveCode(importCode)}
               >
-                📥 导入存档
+                导入存档
               </button>
             </div>
           </div>
