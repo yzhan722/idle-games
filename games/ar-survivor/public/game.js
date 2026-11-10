@@ -1287,7 +1287,7 @@ function dismissPolaroid() {
 
 function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame(); dismissPolaroid(); player.wanderTargetX = null; if (player.y < H * 0.68 - 26) { player.y = H * 0.68 - 25; player.vy = 0; player.onGround = true; player.standingPlat = null; }
   activeDrawerTab = tab;
-  drawerEl.classList.remove('hidden');
+  drawerEl.classList.remove('hidden'); document.getElementById('hud-wish-pill')?.classList.add('hidden');
   document.querySelectorAll('.drawer-tab').forEach((t) => {
     t.classList.toggle('active', t.dataset.tab === tab);
   });
@@ -1297,7 +1297,7 @@ function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame(); dismissPolaro
 }
 
 function closeDrawer() {
-  drawerEl.classList.add('hidden');
+  drawerEl.classList.add('hidden'); if (gameMode === 'pet' && currentWish) document.getElementById('hud-wish-pill')?.classList.remove('hidden');
   player.drawerOpen = false;
   document.getElementById('btn-feed').classList.remove('active');
   document.getElementById('btn-shop').classList.remove('active');

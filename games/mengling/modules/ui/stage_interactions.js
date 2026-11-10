@@ -133,6 +133,9 @@ export function initStageInteractions({
       const gatherBtn = document.getElementById("btnGather");
       if (gatherBtn && !gatherBtn.disabled) {
         gatherBtn.click();
+        document.querySelectorAll(".gather-float").forEach((n) => {
+          try { n.remove(); } catch {}
+        });
       } else {
         addRes("catnip", 2);
       }

@@ -3,19 +3,19 @@ import { renderBuildingSvg, renderResSvg, renderUiIcon } from "./rpg_svg_icons.j
 const BUILDING_MAX_LEVEL = 50;
 
 const BUILDING_VISUALS = {
-  field: { icon: "🍓", tone: "emerald", tag: "自动产果", perLvl: "灵果 +0.15/秒" },
-  granary: { icon: "🏺", tone: "emerald", tag: "果仓扩容", perLvl: "灵果上限 +35" },
-  berryPress: { icon: "🍷", tone: "emerald", tag: "精酿增产", perLvl: "灵果 +0.11/秒" },
-  hut: { icon: "🌲", tone: "amber", tag: "伐木营地", perLvl: "灵木 +0.025/秒 · 上限 +10" },
-  storehouse: { icon: "🛖", tone: "amber", tag: "原木仓储", perLvl: "灵木上限 +50" },
-  lumberYard: { icon: "🪓", tone: "amber", tag: "重型锯木", perLvl: "灵木 +0.045/秒 · 上限 +15" },
-  workshop: { icon: "🔮", tone: "cyan", tag: "晶石精炼", perLvl: "灵晶 +0.03/秒" },
-  mineralSilo: { icon: "💎", tone: "cyan", tag: "晶簇秘库", perLvl: "灵晶上限 +50" },
-  researchLab: { icon: "🔭", tone: "violet", tag: "星轨科研", perLvl: "科研耗时 -2%" },
-  ballBench: { icon: "🔴", tone: "rose", tag: "制球工台", perLvl: "灵球上限 +5" },
-  trainingGround: { icon: "🥋", tone: "gold", tag: "演武圣域", perLvl: "训练槽位 +1" },
-  breedingHouse: { icon: "🥚", tone: "gold", tag: "温养灵巢", perLvl: "孵蛋效率提升" },
-  expeditionPost: { icon: "🧭", tone: "gold", tag: "星门远征", perLvl: "解锁高阶远征" },
+  field: { tone: "emerald", tag: "自动产果", perLvl: "灵果 +0.15/秒" },
+  granary: { tone: "emerald", tag: "果仓扩容", perLvl: "灵果上限 +35" },
+  berryPress: { tone: "emerald", tag: "精酿增产", perLvl: "灵果 +0.11/秒" },
+  hut: { tone: "amber", tag: "伐木营地", perLvl: "灵木 +0.025/秒 · 上限 +10" },
+  storehouse: { tone: "amber", tag: "原木仓储", perLvl: "灵木上限 +50" },
+  lumberYard: { tone: "amber", tag: "重型锯木", perLvl: "灵木 +0.045/秒 · 上限 +15" },
+  workshop: { tone: "cyan", tag: "晶石精炼", perLvl: "灵晶 +0.03/秒" },
+  mineralSilo: { tone: "cyan", tag: "晶簇秘库", perLvl: "灵晶上限 +50" },
+  researchLab: { tone: "violet", tag: "星轨科研", perLvl: "科研耗时 -2%" },
+  ballBench: { tone: "rose", tag: "制球工台", perLvl: "灵球上限 +5" },
+  trainingGround: { tone: "gold", tag: "演武圣域", perLvl: "训练槽位 +1" },
+  breedingHouse: { tone: "gold", tag: "温养灵巢", perLvl: "孵蛋效率提升" },
+  expeditionPost: { tone: "gold", tag: "星门远征", perLvl: "解锁高阶远征" },
 };
 
 const CATEGORY_META = {
@@ -27,15 +27,7 @@ const CATEGORY_META = {
   "功能建筑": { icon: renderBuildingSvg("trainingGround", 22), sub: "解锁萌灵特训、繁育生蛋与跨界秘境远征" },
 };
 
-const RES_ICONS = {
-  catnip: "🍓",
-  wood: "🌲",
-  minerals: "💎",
-  science: "🔬",
-  pokeball: "🔴",
-  futurecoin: "🪙",
-  stardust: "✨",
-};
+
 
 export function createRenderBuildings({ elBuildings, defs, canAfford, getBuildingCost, getState }) {
   let lastBuildingsSig = "";
@@ -70,7 +62,7 @@ export function createRenderBuildings({ elBuildings, defs, canAfford, getBuildin
       const ok = !isMax && canAfford(cost);
       const pct = isMax ? 100 : Math.min(100, Math.round((owned / maxLvl) * 100));
 
-      const vis = BUILDING_VISUALS[bid] || { icon: "🏛️", tone: "gold", tag: bdef.category || "建筑", perLvl: bdef.desc };
+      const vis = BUILDING_VISUALS[bid] || { tone: "gold", tag: bdef.category || "建筑", perLvl: bdef.desc };
       const chipStates = [];
       const costChipsHtml = Object.entries(cost)
         .map(([rid, v]) => {

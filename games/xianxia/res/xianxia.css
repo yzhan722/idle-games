@@ -3171,20 +3171,21 @@ input, select, textarea, button { font-family: inherit; }
 	}
 	.tabsContainer::-webkit-scrollbar { display: none; }
 	#game .tabsContainer .tab {
-		flex: 1 0 auto;
+		flex: 1 1 0;
+		min-width: 0;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0 10px;
+		padding: 0 3px;
 		border-left: none;
 		border-bottom: none;
 		border-top: 3px solid transparent;
 		border-radius: 0;
-		font-size: 14px;
-		letter-spacing: 1px;
+		font-size: 12px;
+		letter-spacing: 0;
 		white-space: nowrap !important;
 	}
-	#game .tabsContainer .tab:hover { padding-left: 10px; }
+	#game .tabsContainer .tab:hover { padding-left: 3px; }
 	#game .tabsContainer .tab.activeTab {
 		border-left-color: transparent;
 		border-top-color: var(--xx-jade);

@@ -22,13 +22,7 @@ function renderCampStageSvg(fireTier) {
     <div class="camp-stage__artWrap" aria-hidden="true">
       <img class="camp-stage__bgImg" src="./assets/ui/camp_stage_night.jpg" alt="" loading="eager" decoding="async" />
       <div class="camp-stage__fireGlow" style="--fire-glow-opacity:${glowOpacity}"></div>
-      <svg class="camp-stage__sparksSvg" viewBox="0 0 680 210" xmlns="http://www.w3.org/2000/svg">
-        <circle class="camp-spark camp-spark--1" cx="332" cy="118" r="2.6" fill="#fde047"/>
-        <circle class="camp-spark camp-spark--2" cx="354" cy="108" r="2.2" fill="#fb923c"/>
-        <circle class="camp-spark camp-spark--3" cx="340" cy="92" r="2.0" fill="#fef08a"/>
-        <circle class="camp-spark camp-spark--4" cx="228" cy="134" r="2.4" fill="#86efac" opacity="0.88"/>
-        <circle class="camp-spark camp-spark--5" cx="468" cy="126" r="2.4" fill="#86efac" opacity="0.88"/>
-      </svg>
+
     </div>
   `;
 }
@@ -259,17 +253,21 @@ function spawnGatherFloatText(anchorEl, text, combo = 0) {
   try {
     const rect = anchorEl.getBoundingClientRect();
     if (!rect || (rect.width === 0 && rect.height === 0)) return;
-    const spawnBelow = rect.top < 80;
+    document.querySelectorAll(".gather-float").forEach((n) => {
+      try { n.remove(); } catch {}
+    });
     const floater = document.createElement("div");
-    floater.className = `gather-float${combo >= 3 ? " gather-float--combo" : ""}${spawnBelow ? " gather-float--below" : ""}`;
+    floater.className = `gather-float${combo >= 3 ? " gather-float--combo" : ""}`;
     floater.textContent = combo >= 2 ? `${text} · 连击x${combo}!` : text;
-    const jitterX = (Math.random() - 0.5) * 26;
-    floater.style.left = `${Math.round(rect.left + rect.width / 2 + jitterX)}px`;
-    floater.style.top = `${Math.round(spawnBelow ? rect.bottom + 8 : rect.top - 6)}px`;
+    const vw = typeof window !== "undefined" ? window.innerWidth || 390 : 390;
+    const cx = Math.max(58, Math.min(vw - 58, rect.left + rect.width / 2));
+    const cy = Math.max(18, rect.top + 2);
+    floater.style.left = `${Math.round(cx)}px`;
+    floater.style.top = `${Math.round(cy)}px`;
     document.body.appendChild(floater);
     setTimeout(() => {
       try { floater.remove(); } catch {}
-    }, 950);
+    }, 850);
   } catch {}
 }
 
