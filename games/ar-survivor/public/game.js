@@ -1627,9 +1627,7 @@ document.querySelectorAll('.mode-btn').forEach((btn) => {
 });
 
 // 点击左上角头像环可随时触发摸头互动
-document.getElementById('hud-avatar-btn')?.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+bindHudTap(document.getElementById('hud-avatar-btn'), () => {
   if (!drawerEl.classList.contains('hidden')) closeDrawer();
   triggerPetHeadpat();
   const xpGain = player.equipped.bow ? 16 : 8;

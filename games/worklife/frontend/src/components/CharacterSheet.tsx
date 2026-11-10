@@ -127,6 +127,20 @@ export type EquipSlotView = {
   repairCost?: number;
 };
 
+/** Empty-slot hand-painted silhouettes so empty gear slots never fall back to raw system emojis. */
+const EMPTY_SLOT_EQUIPMENT_ID: Record<string, string> = {
+  mainhand: "weapon_iron_sword",
+  chest: "armor_cloth_chest",
+  legs: "armor_cloth_legs",
+  feet: "armor_cloth_boots",
+  hands: "armor_cloth_gloves",
+  tool: "weapon_logging_axe_t1",
+  offhand: "offhand_wooden_shield",
+  head: "armor_arcane_sage_hood",
+  accessory1: "accessory_frost_ring",
+  accessory2: "accessory_arcane_pendant",
+};
+
 /** Flashes the value and shows a "+N" chip for ~1.2s whenever a stat changes. */
 function StatBox(props: {
   icon: "stat-hp" | "stat-mp" | "stat-atk" | "stat-def" | "stat-spd";
@@ -150,14 +164,9 @@ function StatBox(props: {
     <div className={`sheet-stat${delta !== null ? (isPositiveGood ? " stat-up" : " stat-down") : ""}`}>
       <span className="sheet-stat-label">
         {props.icon === "stat-mp" ? (
-          <svg className="t1-art t1-art-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12 3 C12 3 6 10.5 6 15 A6 6 0 0 0 18 15 C18 10.5 12 3 12 3 Z" fill="#4a8fd9" stroke="#8a6238" strokeWidth="1.5" />
-            <path d="M9.5 15.5 A2.5 2.5 0 0 0 12 18" stroke="#bfe0ff" strokeWidth="1.3" strokeLinecap="round" />
-          </svg>
+          <T1Art kind="item" id="potion_mp_t1" className="t1-art-icon" alt="" />
         ) : props.icon === "stat-spd" ? (
-          <svg className="t1-art t1-art-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M13 3 L5 14 H12 L11 21 L19 10 H12 L13 3 Z" fill="#e0b252" stroke="#8a6238" strokeWidth="1.5" strokeLinejoin="round" />
-          </svg>
+          <T1Art kind="ui" id="nav-ranged" className="t1-art-icon" alt="" />
         ) : (
           <T1Art kind="ui" id={props.icon} alt="" />
         )}
@@ -311,10 +320,10 @@ export function CharacterSheet(props: Props) {
                         {a.equipped ? "已装备" : "未装备"}
                       </span>
                       <span className="sheet-ability-meta">
-                        <span>⏱️ 冷却 {cdSec}s{mastery.cdReductionPct > 0 ? ` (-${mastery.cdReductionPct}%)` : ""}</span>
-                        <span>💧 {mpCost > 0 ? `${mpCost} 魔力` : "无消耗"}</span>
-                        <span>🔥 等级威力 +{bonusPct}%</span>
-                        {a.equipped && <span>⚡ 触发：{a.triggerText || "冷却好了就放"}</span>}
+                        <span>冷却 {cdSec}s{mastery.cdReductionPct > 0 ? ` (-${mastery.cdReductionPct}%)` : ""}</span>
+                        <span><T1Art kind="item" id="potion_mp_t1" className="gold-inline" alt="" /> {mpCost > 0 ? `${mpCost} 魔力` : "无消耗"}</span>
+                        <span><T1Art kind="ui" id="nav-enhance" className="gold-inline" alt="" /> 等级威力 +{bonusPct}%</span>
+                        {a.equipped && <span><T1Art kind="ui" id="nav-ranged" className="gold-inline" alt="" /> 触发：{a.triggerText || "冷却好了就放"}</span>}
                       </span>
                     </div>
                     <div className="sheet-ability-xp-row">
@@ -356,9 +365,9 @@ export function CharacterSheet(props: Props) {
           >
             <span>{s.name}{s.available ? <em className="slot-hint">背包里有可装备的</em> : null}</span>
             {s.itemId ? (
-              <T1Art kind="equipment" id={s.itemId} fallback={s.id === "tool" ? "🪓" : "◈"} alt="" />
-            ) : s.icon ? (
-              <span className="slot-empty-icon" aria-hidden="true">{s.icon}</span>
+              <T1Art kind="equipment" id={s.itemId} fallback="◈" alt="" />
+            ) : EMPTY_SLOT_EQUIPMENT_ID[s.id] ? (
+              <T1Art kind="equipment" id={EMPTY_SLOT_EQUIPMENT_ID[s.id]} className="slot-empty-art" fallback="◈" alt="" />
             ) : null}
             <strong>{s.itemName || "空"}</strong>
             {(s.effect || s.hint) && <small className="slot-effect">{s.itemId ? s.effect : s.hint}</small>}
@@ -381,7 +390,7 @@ export function CharacterSheet(props: Props) {
               onClick={() => props.onRepairAll?.()}
               aria-label="一键修理全部受损装备"
             >
-              🔧 一键全修 ({damagedSlots.length} 件 · {totalRepairCost} 金)
+              <T1Art kind="ui" id="nav-smithing" className="gold-inline" alt="" /> 一键全修 ({damagedSlots.length} 件 · {totalRepairCost} 金)
             </button>
           )}
           {damagedSlots.map((s) => (
@@ -393,7 +402,7 @@ export function CharacterSheet(props: Props) {
               onClick={() => props.onRepairItem?.(s.itemId!)}
               aria-label={`修理 ${s.itemName}`}
             >
-              {s.broken ? "🔧 修理" : "🔧"} {s.itemName} · {Math.round(s.durabilityPct!)}% → {s.repairCost ?? 0} 金
+              <T1Art kind="ui" id="nav-smithing" className="gold-inline" alt="" /> {s.broken ? "修理 " : ""}{s.itemName} · {Math.round(s.durabilityPct!)}% → {s.repairCost ?? 0} 金
             </button>
           ))}
         </div>

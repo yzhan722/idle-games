@@ -1,4 +1,5 @@
 // 新手引导：前 30 分钟核心路径（采集→球→捕捉→看世界→云账号）
+import { renderResSvg } from "./render/rpg_svg_icons.js";
 
 const GUIDE_KEY = "mengling_idle_guide_done_v1";
 const HANDOFF_CATCH_KEY = "mengling_idle_handoff_catch_v1";
@@ -122,10 +123,10 @@ export function initGuideSystem({ getState, activateTab, addLog } = {}) {
       (_, i) => `<span class="guideBubble__dot ${i === idx ? "is-active" : i < idx ? "is-done" : ""}"></span>`
     ).join("");
     bubbleEl.innerHTML = `
-      <div class="guideBubble__eyebrow">🔥 营地新手指引 (${idx + 1}/${GUIDE_STEPS.length}) <span class="guideBubble__dots">${stepDots}</span></div>
+      <div class="guideBubble__eyebrow"><img src="./assets/ui_icons/tab_bonfire.webp" width="15" height="15" alt="" style="vertical-align:-2px;margin-right:4px" />营地新手指引 (${idx + 1}/${GUIDE_STEPS.length}) <span class="guideBubble__dots">${stepDots}</span></div>
       <div class="guideBubble__title">${step.title}</div>
       <div class="guideBubble__desc">${step.desc}</div>
-      <div class="guideBubble__tip">💡 引导结束后，随时可在「篝火」首屏的【主线罗盘】查看当前目标与一键直达按钮。</div>
+      <div class="guideBubble__tip">${renderResSvg("searchFlare", 14)} 引导结束后，随时可在「篝火」首屏的【主线罗盘】查看当前目标与一键直达按钮。</div>
       <div class="guideBubble__footer">
         <button class="guideBubble__btn" id="guideBtnSkip" type="button">我知道了（看罗盘）</button>
         <button class="guideBubble__btn guideBubble__btn--primary" id="guideBtnNext" type="button">${

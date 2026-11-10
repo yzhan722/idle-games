@@ -1,11 +1,18 @@
 /* Hosting sizes for the P1 UI icons (ui/stat-*, ui/chat). Kept out of NewGameInterface.css so
    art hosting can land independently of the main stylesheet. Sizes follow contract.ts. */
-.sheet-stat-label .t1-art-icon {
+.sheet-stat-label .t1-art-icon,
+.sheet-stat-label .t1-art {
   display: inline-block;
   width: 18px;
   height: 18px;
   vertical-align: -4px;
   margin-right: 6px;
+  object-fit: contain;
+}
+
+.sheet-slot .slot-empty-art {
+  opacity: 0.34;
+  filter: grayscale(0.45) brightness(0.92);
 }
 
 .chat-fab .t1-art-icon {
@@ -16,7 +23,8 @@
 }
 
 @media (max-width: 768px) {
-  .sheet-stat-label .t1-art-icon {
+  .sheet-stat-label .t1-art-icon,
+  .sheet-stat-label .t1-art {
     width: 16px;
     height: 16px;
     vertical-align: -3px;
