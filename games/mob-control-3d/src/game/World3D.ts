@@ -4861,7 +4861,7 @@ export class World3D {
       }
     }
 
-    if (this.isStageEnded || this.isPaused) {
+    if (this.isStageEnded || this.isPaused) { if (this.turretChargeEl) this.turretChargeEl.style.display = 'none';
       if (this.isStageEnded && !this.isPaused && this.lastStageVictory) {
         // Animate Boss sinking & tilting into the abyss during Victory Climax!
         if (this.victoryClimaxTimer > 0) {

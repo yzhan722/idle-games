@@ -610,7 +610,7 @@ export function drawHeroSprite(ctx, p, now) {
 
   ctx.restore();
 
-  if (p.emote && p.emoteTimer > 0) {
+  if (p.emote && p.emoteTimer > 0 && !p.drawerOpen) {
     drawPetEmoteBubble(ctx, p.emote, p.emoteTimer, now, p.emoteMood || 'normal', p.x, p.y, Boolean(p.rpsHudOpen));
   }
 

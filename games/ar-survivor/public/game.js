@@ -1282,7 +1282,7 @@ function dismissPolaroid() {
   document.getElementById('polaroid-card')?.classList.add('hidden');
 }
 
-function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame(); dismissPolaroid();
+function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame(); dismissPolaroid(); player.wanderTargetX = null; if (player.y < H * 0.68 - 26) { player.y = H * 0.68 - 25; player.vy = 0; player.onGround = true; player.standingPlat = null; }
   activeDrawerTab = tab;
   drawerEl.classList.remove('hidden');
   document.querySelectorAll('.drawer-tab').forEach((t) => {
@@ -2486,7 +2486,7 @@ function updateGameplay(dt, flow) {
     }
 
     // 蓝鲸云端猫爬架顶层软垫作为真实可攀爬/可站立的双层实景跳台！
-    if (furn.key === 'tree' && gameMode === 'pet') {
+    if (furn.key === 'tree' && gameMode === 'pet' && !palmCatchGame.active && !rpsGame.active) {
       platforms.unshift({
         x1: furn.x - 38,
         x2: furn.x + 38,
@@ -2843,7 +2843,21 @@ function updateGameplay(dt, flow) {
       anchorY = player.y;
       player.idleTime = Math.max(6.0, player.idleTime);
       player.petAction = 'sleep';
-    } else if (gameMode === 'pet') {
+    } else if (palmCatchGame.active) {
+      const nonAlarm = catchItems.filter((ci) => ci.kind !== 'alarm' && ci.y < player.y + 10);
+      if (nonAlarm.length > 0) {
+        nonAlarm.sort((a, b) => b.y - a.y);
+        anchorX = Math.max(W * 0.14, Math.min(W * 0.86, nonAlarm[0].x));
+      } else {
+        anchorX = W * 0.5;
+      }
+      anchorY = centerFloorY - 25;
+      player.wanderTargetX = null;
+    } else if (rpsGame.active) {
+      anchorX = W * 0.5;
+      anchorY = centerFloorY - 25;
+      player.wanderTargetX = null;
+    } else if (gameMode === 'pet' && drawerEl.classList.contains('hidden')) {
       player.wanderTimer -= dt;
       if (player.wanderTimer <= 0) {
         player.wanderTimer = 5.5 + Math.random() * 4.5;
@@ -3789,7 +3803,7 @@ function renderEntities(now) {
     }
   }
 
-  player.rpsHudOpen = Boolean(rpsHudEl && !rpsHudEl.classList.contains('hidden'));
+  player.rpsHudOpen = Boolean(rpsHudEl && !rpsHudEl.classList.contains('hidden')); player.drawerOpen = Boolean(drawerEl && !drawerEl.classList.contains('hidden'));
   drawHeroSprite(ctx, player, now);
 
   for (const e of enemies) {
