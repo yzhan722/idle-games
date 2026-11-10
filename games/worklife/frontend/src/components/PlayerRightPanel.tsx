@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T1Art, T1ItemIcon, characterArtId, PlayerAvatarIcon } from "./T1Art";
+import { T1Art, T1ItemIcon, GoldIcon, characterArtId, PlayerAvatarIcon } from "./T1Art";
 import { getProfessionPerk } from "../gameplay/professionPerks";
 
 type EquipSlot = { id: string; name: string; icon: string; type: string };
@@ -131,7 +131,7 @@ export function PlayerRightPanel(props: Props) {
               </div>
             </div>
             <span className="status-player-class" title={`【${getProfessionPerk(props.profession.id).traitName}】${getProfessionPerk(props.profession.id).combatAndUtilityDesc}`}>
-              {props.profession.icon} {props.profession.name} · <small style={{ opacity: 0.85 }}>{getProfessionPerk(props.profession.id).traitName}</small>
+              {props.profession.name} · <small style={{ opacity: 0.85 }}>{getProfessionPerk(props.profession.id).traitName}</small>
             </span>
           </div>
 
@@ -289,15 +289,15 @@ export function PlayerRightPanel(props: Props) {
             <div className="inventory-panel">
               <div className="inventory-header-compact">
                 <div className="inventory-info">
-                  <span>💰 {props.gold || 0}</span>
+                  <span><GoldIcon /> {props.gold || 0}</span>
                   <span title="背包没有格数上限；这里是当前筛选下的物品种类数">
-                    📦 {props.inventoryItems.length === props.inventoryKindCount
+                    <T1Art kind="ui" id="nav-inventory" className="gold-inline" alt="" /> {props.inventoryItems.length === props.inventoryKindCount
                       ? `${props.inventoryKindCount} 种物品`
                       : `${props.inventoryItems.length} / ${props.inventoryKindCount} 种`}
                   </span>
                 </div>
                 <button className="btn-organize" onClick={props.onOrganize} title="整理背包">
-                  🔄
+                  整理
                 </button>
               </div>
 
@@ -327,25 +327,25 @@ export function PlayerRightPanel(props: Props) {
                   className={`filter-btn ${props.inventoryFilter === "material" ? "active" : ""}`}
                   onClick={() => props.onFilter("material")}
                 >
-                  📦 材料
+                  <T1Art kind="ui" id="nav-inventory" className="gold-inline" alt="" /> 材料
                 </button>
                 <button
                   className={`filter-btn ${props.inventoryFilter === "weapon" ? "active" : ""}`}
                   onClick={() => props.onFilter("weapon")}
                 >
-                  ⚔️ 武器
+                  <T1Art kind="ui" id="nav-melee" className="gold-inline" alt="" /> 武器
                 </button>
                 <button
                   className={`filter-btn ${props.inventoryFilter === "armor" ? "active" : ""}`}
                   onClick={() => props.onFilter("armor")}
                 >
-                  🛡️ 防具
+                  <T1Art kind="ui" id="stat-def" className="gold-inline" alt="" /> 防具
                 </button>
                 <button
                   className={`filter-btn ${props.inventoryFilter === "consumable" ? "active" : ""}`}
                   onClick={() => props.onFilter("consumable")}
                 >
-                  🍖 消耗
+                  <T1Art kind="ui" id="nav-cooking" className="gold-inline" alt="" /> 消耗
                 </button>
               </div>
 
@@ -366,7 +366,7 @@ export function PlayerRightPanel(props: Props) {
               <div className="inventory-grid-compact">
                 {props.inventoryItems.length === 0 ? (
                   <div className="inventory-empty">
-                    <div className="empty-icon">📭</div>
+                    <div className="empty-icon"><T1Art kind="ui" id="nav-inventory" alt="" /></div>
                     <p>没有找到物品</p>
                   </div>
                 ) : (

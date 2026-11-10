@@ -820,19 +820,21 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py
 
   const popScale = Math.min(1, timer * 5.4) * (1 + Math.sin(now * 0.013) * 0.038);
   const jitterX = isTsundere && timer > 1.85 ? Math.sin(now * 0.09) * 2.5 : 0;
-  const by = (rpsHudOpen ? -64 : -108) + Math.sin(now * (isSleep ? 0.0045 : 0.0085)) * 3.4;
+  const rawBy = (rpsHudOpen ? -64 : -108) + Math.sin(now * (isSleep ? 0.0045 : 0.0085)) * 3.4;
+  const by = Math.max(78 - py, rawBy);
   ctx.translate(jitterX, by);
   ctx.scale(popScale, popScale);
 
   ctx.font = '900 12.5px "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif';
   const tw = ctx.measureText(text).width + 26;
   const th = 29;
+  const ceilingDodge = by > rawBy + 18 ? (px > 480 ? -(tw * 0.5 + 52) : tw * 0.5 + 52) : 0;
   const shiftX = rpsHudOpen
     ? Math.min(182, Math.max(126, tw * 0.5 + 68))
     : py + by < 126 && px - tw * 0.5 < 246
       ? Math.max(0, 246 - (px - tw * 0.5))
       : 0;
-  const rx = -tw * 0.5 + shiftX;
+  const rx = -tw * 0.5 + (ceilingDodge || shiftX);
   const ry = -th * 0.5;
 
   ctx.fillStyle = 'rgba(10, 24, 52, 0.24)';
@@ -895,7 +897,7 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py
   ctx.fillStyle = '#12284c';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, shiftX, 0.5);
+  ctx.fillText(text, rx + tw * 0.5, 0.5);
   ctx.restore();
 }
 

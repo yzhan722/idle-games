@@ -11,7 +11,7 @@ import {
   drawInteractionVfx,
   images,
   isReady
-} from './sprites.js?v=hd11';
+} from './sprites.js?v=hd13';
 import { petAudio } from './audio.js?v=hd7';
 
 const stageEl = document.getElementById('game-stage');
@@ -299,10 +299,10 @@ function addCoins(amount, x, y, labelPrefix = '') {
   playSfx('coin');
   pulseHudElement('hud-coins-btn');
   const baseX = x ?? player.x;
-  const sideOffset = Math.abs(baseX - player.x) < 32 ? (player.x > W * 0.55 ? 66 : -66) : 0;
+  const sideOffset = Math.abs(baseX - player.x) < 82 ? (player.x > W * 0.55 ? 92 : -92) : 0;
   floatingTexts.push({
-    x: Math.max(54, Math.min(W - 54, baseX + sideOffset)),
-    y: (y ?? player.y) - 28,
+    x: Math.max(58, Math.min(W - 58, baseX + sideOffset)),
+    y: (y ?? player.y) - 34,
     vx: (Math.random() - 0.5) * 14,
     vy: -36,
     text: `${labelPrefix}+${finalCoins} 金币`,
@@ -341,10 +341,10 @@ function addAffectionXp(amount, labelText) {
   player.xp += finalAmount;
   player.hp = Math.min(player.maxHp, player.hp + 15);
   pulseHudElement('hud-avatar-btn');
-  const xpSide = player.x > W * 0.55 ? -68 : 68;
+  const xpSide = player.x > W * 0.55 ? -92 : 92;
   floatingTexts.push({
-    x: Math.max(58, Math.min(W - 58, player.x + xpSide)),
-    y: player.y - 26,
+    x: Math.max(62, Math.min(W - 62, player.x + xpSide)),
+    y: player.y - 34,
     vx: 0,
     vy: -34,
     text: labelText || `+${finalAmount} 亲密`,
@@ -3294,7 +3294,8 @@ function updateGameplay(dt, flow) {
 
         const comboMsg = it.rallyCount >= 2 ? `颠球 x${it.rallyCount}!` : '^w^ 顶球球~ ';
         setPlayerEmote(comboMsg, 1.5);
-        addAffectionXp(8 + it.rallyCount * 2, `颠球 x${it.rallyCount} +`);
+        const rallyXp = 8 + it.rallyCount * 2;
+        addAffectionXp(rallyXp, `颠球 x${it.rallyCount} +${rallyXp} 亲密`);
 
         if (it.rallyCount % 2 === 0) {
           addCoins(3 + it.rallyCount, it.x, it.y - 24, `x${it.rallyCount} `);
@@ -3323,7 +3324,8 @@ function updateGameplay(dt, flow) {
         starTarget.comboTimer = 9.5;
         player.starsCollected++;
         const starBounty = 16 + starTarget.combo * 6;
-        addAffectionXp(24 + starTarget.combo * 4, `摘星 x${starTarget.combo} +`);
+        const starXp = 24 + starTarget.combo * 4;
+        addAffectionXp(starXp, `摘星 x${starTarget.combo} +${starXp} 亲密`);
         addCoins(starBounty, starTarget.x, starTarget.y, `星链x${starTarget.combo} `);
         shockwaves.push({
           x: starTarget.x,

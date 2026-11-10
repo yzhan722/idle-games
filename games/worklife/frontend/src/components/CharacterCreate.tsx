@@ -6,10 +6,10 @@ import './CharacterCreate.css'
 
 export type ClassOption = { id: string; name: string; icon: string; gatherName: string; craftName: string }
 
-const GENDERS: Array<{ id: PlayerGender; label: string; icon: string }> = [
-  { id: 'male', label: '男', icon: '♂' },
-  { id: 'female', label: '女', icon: '♀' },
-  { id: 'animal', label: '动物', icon: '🐾' },
+const GENDERS: Array<{ id: PlayerGender; label: string }> = [
+  { id: 'male', label: '男' },
+  { id: 'female', label: '女' },
+  { id: 'animal', label: '兽族' },
 ]
 
 /**
@@ -87,7 +87,7 @@ export function CharacterCreate(props: {
                 type="button"
                 className={`cc-gender ${gender === g.id ? 'sel' : ''}`}
                 onClick={() => handleSelectGender(g.id)}
-              >{g.icon} {g.label}</button>
+              >{g.label}</button>
             ))}
           </div>
         </div>
@@ -122,9 +122,9 @@ export function CharacterCreate(props: {
                 onClick={() => setClassId(c.id)}
               >
                 <span className="cc-class-art">
-                  <T1Art kind="character" id={characterArtId(c.id, gender)} fallback={c.icon} alt={c.name} />
+                  <T1Art kind="character" id={characterArtId(c.id, gender)} fallback="" alt={c.name} />
                 </span>
-                <span className="cc-class-name">{c.icon} {c.name}</span>
+                <span className="cc-class-name">{c.name}</span>
                 <span className="cc-class-desc">{c.gatherName} · {c.craftName}</span>
                 <span className="cc-class-perk">{getProfessionPerk(c.id).shortTag}</span>
               </button>
@@ -133,7 +133,7 @@ export function CharacterCreate(props: {
           {classId && (
             <div className="cc-perk-detail">
               <div><strong>【{getProfessionPerk(classId).traitName}】</strong>{getProfessionPerk(classId).combatAndUtilityDesc}</div>
-              <div className="cc-perk-sub">✨ {getProfessionPerk(classId).masteryDesc}</div>
+              <div className="cc-perk-sub">{getProfessionPerk(classId).masteryDesc}</div>
             </div>
           )}
         </div>

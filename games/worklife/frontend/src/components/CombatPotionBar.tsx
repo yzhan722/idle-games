@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { T1ItemIcon } from "./T1Art";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { T1Art, T1ItemIcon } from "./T1Art";
 import type { CombatLoadout } from "./CombatLoadoutPanel";
 import { slotCounts } from "./CombatLoadoutPanel";
 
@@ -278,7 +278,7 @@ export function CombatPotionBar(props: Props) {
   const slotDescriptors: Array<{
     key: ActiveSlotKey;
     roleClass: string;
-    placeholderIcon: string;
+    placeholderIcon: ReactNode;
     itemId?: string;
     ownedQty: number;
     barPct: number;
@@ -302,7 +302,7 @@ export function CombatPotionBar(props: Props) {
   slotDescriptors.push({
     key: { kind: "hp", index: 0 },
     roleClass: "hp-slot",
-    placeholderIcon: "❤️",
+    placeholderIcon: <T1ItemIcon itemId="potion_hp_t1" fallback="HP" alt="" />,
     itemId: hp0,
     ownedQty: hpOwned0,
     barPct: hpPct0,
@@ -326,7 +326,7 @@ export function CombatPotionBar(props: Props) {
   slotDescriptors.push({
     key: { kind: "mp", index: 0 },
     roleClass: "mp-slot",
-    placeholderIcon: "💧",
+    placeholderIcon: <T1ItemIcon itemId="potion_mp_t1" fallback="MP" alt="" />,
     itemId: mp0,
     ownedQty: mpOwned0,
     barPct: mpPct0,
@@ -346,7 +346,7 @@ export function CombatPotionBar(props: Props) {
     slotDescriptors.push({
       key: { kind: "status", index: idx },
       roleClass: "status-slot",
-      placeholderIcon: "⚡",
+      placeholderIcon: <T1ItemIcon itemId="potion_battle_fury" fallback="+" alt="" />,
       itemId: stItem,
       ownedQty: stItem ? props.inventory[stItem] || 0 : 0,
       barPct: buffPct,
@@ -373,7 +373,7 @@ export function CombatPotionBar(props: Props) {
       slotDescriptors.push({
         key: { kind: "hp", index: extraIdx },
         roleClass: "hp-slot extra-slot",
-        placeholderIcon: "🎒",
+        placeholderIcon: <T1Art kind="ui" id="nav-inventory" fallback="+" alt="" />,
         itemId: fItem,
         ownedQty: fOwned,
         barPct: pct,
@@ -491,18 +491,20 @@ export function CombatPotionBar(props: Props) {
               <button
                 type="button"
                 className="mwi-icon-act-btn drink"
+                title="立即饮用"
                 disabled={currentPickerSlot.ownedQty < 1 || busyItem === currentPickerSlot.itemId}
                 onClick={() => {
                   void handleDrinkNow(currentPickerSlot.itemId!);
                   setOpenSlot(null);
                 }}
               >
-                <span aria-hidden="true">🧪</span>
+                <T1Art kind="ui" id="nav-alchemy" fallback="饮" alt="饮用" />
               </button>
               {props.onQuickBuyPotion && (
                 <button
                   type="button"
                   className="mwi-icon-act-btn buy"
+                  title="快捷补货 +1"
                   disabled={busyItem === currentPickerSlot.itemId}
                   onClick={async () => {
                     const id = currentPickerSlot.itemId!;
@@ -514,12 +516,13 @@ export function CombatPotionBar(props: Props) {
                     }
                   }}
                 >
-                  <span aria-hidden="true">🛒</span>
+                  <T1Art kind="ui" id="nav-trading" fallback="买" alt="补货" />
                 </button>
               )}
               <button
                 type="button"
                 className="mwi-icon-act-btn clear"
+                title="清空槽位"
                 onClick={() => {
                   if (openSlot.kind === "hp") setHpSlot(openSlot.index, "");
                   else if (openSlot.kind === "mp") setMpSlot("");
@@ -527,7 +530,7 @@ export function CombatPotionBar(props: Props) {
                   setOpenSlot(null);
                 }}
               >
-                <span aria-hidden="true">🚫</span>
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
           )}

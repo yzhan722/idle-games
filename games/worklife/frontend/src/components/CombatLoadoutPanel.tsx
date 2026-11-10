@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { T1ItemIcon } from "./T1Art";
+import { T1Art, T1ItemIcon } from "./T1Art";
 
 type PackItem = {
   id: string;
@@ -124,7 +124,7 @@ export function CombatLoadoutPanel(props: Props) {
     <section className={`combat-loadout${props.compact ? " compact" : ""}`} aria-label="战斗配置">
       <div className="loadout-slot">
         <div className="loadout-slot-head">
-          <span className="loadout-slot-title">❤️ 生命药剂 / 食物槽 <small>{counts.food}/{SLOT_CAP}</small></span>
+          <span className="loadout-slot-title"><T1Art kind="ui" id="stat-hp" className="gold-inline" alt="" /> 生命药剂 / 食物槽 <small>{counts.food}/{SLOT_CAP}</small></span>
           <span className="loadout-slot-sub">缺血到阈值就喝，每格 30 秒一次{counts.food < SLOT_CAP ? " · 布袋饰品可加格" : ""}</span>
         </div>
         <div className="loadout-slot-body">
@@ -182,7 +182,7 @@ export function CombatLoadoutPanel(props: Props) {
 
       <div className="loadout-slot">
         <div className="loadout-slot-head">
-          <span className="loadout-slot-title">💧 魔力药剂槽 <small>1/1</small></span>
+          <span className="loadout-slot-title"><T1ItemIcon itemId="potion_mp_t1" className="gold-inline" alt="" /> 魔力药剂槽 <small>1/1</small></span>
           <span className="loadout-slot-sub">缺蓝达到阈值自动补充魔力（20秒冷却）</span>
         </div>
         <div className="loadout-slot-body">
@@ -227,7 +227,7 @@ export function CombatLoadoutPanel(props: Props) {
 
       <div className="loadout-slot">
         <div className="loadout-slot-head">
-          <span className="loadout-slot-title">🧪 状态药剂槽 <small>3/{SLOT_CAP}</small></span>
+          <span className="loadout-slot-title"><T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 状态药剂槽 <small>3/{SLOT_CAP}</small></span>
           <span className="loadout-slot-sub">进入战斗或增益到期时自动续杯（狂战 / 铁壁 / 奥术涌流 / 守护战意）</span>
         </div>
         <div className="loadout-slot-body">

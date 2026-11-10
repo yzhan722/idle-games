@@ -62,7 +62,7 @@ export function EquipSelectorModal({
         <div className="equip-selector-content">
           {getEquippableItems(selectedEquipSlot).length === 0 ? (
             <div className="no-equipment">
-              <div className="no-equipment-icon">📦</div>
+              <div className="no-equipment-icon"><T1Art kind="ui" id="nav-inventory" alt="" /></div>
               <p>背包中没有可装备的物品</p>
               <p className="hint-text">通过制作或战斗获取装备</p>
             </div>
@@ -339,7 +339,7 @@ export function GameEntityDetailModal({
                       }}
                     >
                       <T1ItemIcon itemId={rare.id} fallback={getItemIcon(rare.id)} alt="" />
-                      {rare.name} ({Math.round(selectedItem.rareChance * 1000) / 10}%) 🔍
+                      {rare.name} ({Math.round(selectedItem.rareChance * 1000) / 10}%) ▸
                     </span>
                   </div>
                 ) : null
@@ -364,7 +364,7 @@ export function GameEntityDetailModal({
                     }}
                   >
                     <T1ItemIcon itemId={d.itemId} fallback={getItemIcon(d.itemId)} alt="" />
-                    {getItemNameById(d.itemId)} ({Math.round(d.chance * 1000) / 10}%) 🔍
+                    {getItemNameById(d.itemId)} ({Math.round(d.chance * 1000) / 10}%) ▸
                   </span>
                 </div>
               ))}
@@ -385,7 +385,7 @@ export function GameEntityDetailModal({
                           setActiveTab('party')
                         }}
                       >
-                        👥 组队讨伐
+                        <T1Art kind="ui" id="nav-party" className="gold-inline" alt="" /> 组队讨伐
                       </button>
                       <button
                         className="btn-secondary"
@@ -393,7 +393,7 @@ export function GameEntityDetailModal({
                         disabled={actionLoading || !canSolo}
                         title={!canSolo ? `单人挑战需要战斗等级 Lv.${reqLv}（当前 Lv.${curCombatLv}）` : "单人直接挑战首领"}
                       >
-                        {actionLoading ? '准备中...' : canSolo ? '⚔️ 单人挑战' : `🔒 单人需 Lv.${reqLv}`}
+                        {actionLoading ? '准备中...' : canSolo ? <><T1Art kind="ui" id="nav-adventure" className="gold-inline" alt="" /> 单人挑战</> : `单人需 Lv.${reqLv}`}
                       </button>
                     </>
                   )
@@ -404,7 +404,7 @@ export function GameEntityDetailModal({
                     onClick={() => void startBattle(selectedItem)}
                     disabled={actionLoading || !canSolo}
                   >
-                    {actionLoading ? '准备中...' : canSolo ? '开始战斗' : `🔒 需战斗 Lv.${reqLv}`}
+                    {actionLoading ? '准备中...' : canSolo ? '开始战斗' : `需战斗 Lv.${reqLv}`}
                   </button>
                 )
               })()}
@@ -641,7 +641,7 @@ export function GameEntityDetailModal({
                         <span className="material-icon item-icon-compact">
                           <T1ItemIcon itemId={requiredItemId} fallback={getItemIcon(requiredItemId)} alt="" />
                         </span>
-                        {getItemNameById(requiredItemId)} 🔍
+                        {getItemNameById(requiredItemId)} ▸
                       </span>
                       <span className="material-count">
                         {available}/{needed} {hasEnough ? '✓' : '✗'}
@@ -803,11 +803,11 @@ export function GameEntityDetailModal({
                     <div className="craft-hint">
                       {!hasLevel && (
                         <p>
-                          🎯 提升{getCurrentProfession().craftName}等级到{selectedItem.level} 级
+                          提升{getCurrentProfession().craftName}等级到 {selectedItem.level} 级
                         </p>
                       )}
                       {hasLevel && !hasMaterials && (
-                        <p>📦 材料不够时可以先加入队列，等前面的采集/制作把材料做出来</p>
+                        <p>材料不够时可以先加入队列，等前面的采集/制作把材料做出来</p>
                       )}
                     </div>
                   )}
@@ -1167,13 +1167,13 @@ export function GameEntityDetailModal({
                       {(monsterSources.length > 0 || gatherSources.length > 0) && (
                         <div className="codex-block">
                           <div className="codex-block-title">
-                            📍 获取来源 ({monsterSources.length + gatherSources.length})
+                            <T1Art kind="ui" id="nav-gathering" className="gold-inline" alt="" /> 获取来源 ({monsterSources.length + gatherSources.length})
                           </div>
                           <div className="codex-list">
                             {gatherSources.map((g) => (
                               <div key={g.actionId} className="codex-row">
                                 <span className="codex-row-main">
-                                  ⛏️ <b>{g.actionName}</b> <small>({g.skillLabel} Lv.{g.reqLevel})</small>
+                                  <T1Art kind="ui" id="nav-mining" className="gold-inline" alt="" /> <b>{g.actionName}</b> <small>({g.skillLabel} Lv.{g.reqLevel})</small>
                                 </span>
                                 <button
                                   type="button"
@@ -1190,7 +1190,7 @@ export function GameEntityDetailModal({
                             {monsterSources.slice(0, 6).map((ms) => (
                               <div key={`${ms.stageId}-${ms.monsterId}`} className="codex-row">
                                 <span className="codex-row-main">
-                                  {ms.isBoss ? '👹' : '👾'} <b>{ms.monsterName}</b>{' '}
+                                  <T1Art kind="monster" id={ms.monsterId} className="gold-inline" fallback="" alt="" /> <b>{ms.monsterName}</b>{' '}
                                   <small>({ms.stageName} · 掉率 {ms.chancePct}%)</small>
                                 </span>
                                 <button
@@ -1217,7 +1217,7 @@ export function GameEntityDetailModal({
 
                       {recipeUses.length > 0 && (
                         <div className="codex-block">
-                          <div className="codex-block-title">🔨 制作用途 ({recipeUses.length} 个配方需要此材料)</div>
+                          <div className="codex-block-title"><T1Art kind="ui" id="nav-smithing" className="gold-inline" alt="" /> 制作用途 ({recipeUses.length} 个配方需要此材料)</div>
                           <div className="codex-list">
                             {recipeUses.slice(0, 8).map((r) => (
                               <div key={r.actionId} className="codex-row">

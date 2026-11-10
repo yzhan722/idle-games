@@ -520,9 +520,9 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     setRunStats(restoredStats);
     const bossSkills = getBossSignatureSkills(activeDungeon.boss.id);
     setBattleLog([
-      `🚩 组队首领副本【${activeDungeon.name}】开启！我方 ${initialAllies.length} 人小队集结，敌方随小队规模出动 ${initialEnemies.length} 只魔物！`,
-      `👹 首领【${activeDungeon.boss.name}】独门秘技：${bossSkills.map((s) => `《${s.name}》(${s.tag})`).join("、")}！`,
-      `🌊 第 ${restoredWave} 波来袭：${initialEnemies.map((e) => e.name).join("、")} 同时出战！`,
+      `【出征】组队首领副本【${activeDungeon.name}】开启！我方 ${initialAllies.length} 人小队集结，敌方随小队规模出动 ${initialEnemies.length} 只魔物！`,
+      `【首领】${activeDungeon.boss.name} 独门秘技：${bossSkills.map((s) => `《${s.name}》(${s.tag})`).join("、")}！`,
+      `【敌袭】第 ${restoredWave} 波来袭：${initialEnemies.map((e) => e.name).join("、")} 同时出战！`,
     ]);
     setWaveBanner(`第 ${restoredWave} 波`);
     const t = window.setTimeout(() => setWaveBanner(null), 1600);
@@ -574,7 +574,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
             slotKey: `${u.slotKey}-reinforce-${Date.now()}-${idx}`,
           }));
           if (extra.length > 0) {
-            appendBattleLog(`🌊 小队人数扩编至 ${fresh.length} 人，敌方增援【${extra.map((e) => e.name).join("、")}】加入战场！`);
+            appendBattleLog(`【敌援】小队人数扩编至 ${fresh.length} 人，敌方增援【${extra.map((e) => e.name).join("、")}】加入战场！`);
           }
           return [...prevEnemies, ...extra];
         });
@@ -629,23 +629,23 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         const dropText = drops.length > 0 ? ` · 掉落：${drops.map((d) => `${d.name}×${d.qty}`).join("、")}` : "";
         appendBattleLog(
           isBossWave
-            ? `🏆 【第 ${clearedWave} 波 · 首领击破】全队合力斩杀 ${activeDungeon.boss.name}！获得 +${xpGained} 经验、+${goldGained} 金币${dropText}！`
-            : `✨ 【第 ${clearedWave} 波清剿完成】击溃全部魔物！获得 +${xpGained} 经验、+${goldGained} 金币${dropText}`
+            ? `【第 ${clearedWave} 波 · 首领击破】全队合力斩杀 ${activeDungeon.boss.name}！获得 +${xpGained} 经验、+${goldGained} 金币${dropText}！`
+            : `【第 ${clearedWave} 波清剿完成】击溃全部魔物！获得 +${xpGained} 经验、+${goldGained} 金币${dropText}`
         );
         for (const lu of abilityLevelUps) {
-          appendBattleLog(`🎉 【技能升级】「${lu.name}」熟练度突破，升至 Lv.${lu.level}！`);
+          appendBattleLog(`【技能升级】「${lu.name}」熟练度突破，升至 Lv.${lu.level}！`);
         }
         void refreshPlayerState();
       } catch {
         // Fallback local log if network hiccups
-        appendBattleLog(`✨ 第 ${clearedWave} 波清剿完成！准备迎接下一波敌人！`);
+        appendBattleLog(`第 ${clearedWave} 波清剿完成！准备迎接下一波敌人！`);
       }
 
       const nextWave = clearedWave + 1;
       const nextIsBoss = nextWave % 10 === 0;
       setWaveBanner(
         nextIsBoss
-          ? `🔥 第 ${nextWave} 波 · BOSS`
+          ? `第 ${nextWave} 波 · BOSS`
           : `第 ${nextWave} 波`
       );
 
@@ -667,8 +667,8 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         });
         appendBattleLog(
           nextIsBoss
-            ? `👹 警报！第 ${nextWave} 波区域首领【${activeDungeon.boss.name}】登场！`
-            : `🌊 第 ${nextWave} 波出现 ${nextEnemies.length} 只敌人：${nextEnemies.map((e) => e.name).join("、")}！`
+            ? `【首领登场】警报！第 ${nextWave} 波区域首领【${activeDungeon.boss.name}】登场！`
+            : `【敌袭】第 ${nextWave} 波出现 ${nextEnemies.length} 只敌人：${nextEnemies.map((e) => e.name).join("、")}！`
         );
         waveTransitionRef.current = false;
         scheduleTransitionTimeout(() => setWaveBanner(null), 1400);
@@ -682,8 +682,8 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     (failedWave: number) => {
       if (!party || !activeDungeon || waveTransitionRef.current) return;
       waveTransitionRef.current = true;
-      setWaveBanner(`💀 第 ${failedWave} 波团灭！重整旗鼓退回第 1 波...`);
-      appendBattleLog(`💀 【全队覆没】第 ${failedWave} 波小队全员力竭阵亡，讨伐失败！正在休整并退回第 1 波重新挑战...`);
+      setWaveBanner(`第 ${failedWave} 波团灭！重整旗鼓退回第 1 波...`);
+      appendBattleLog(`【全队覆没】第 ${failedWave} 波小队全员力竭阵亡，讨伐失败！正在休整并退回第 1 波重新挑战...`);
 
       scheduleTransitionTimeout(() => {
         const resetAllies = buildAlliesFormation(party);
@@ -694,7 +694,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         setAllies(resetAllies);
         setEnemies(wave1Enemies);
         setPlayerMp(fullMp);
-        appendBattleLog(`🔄 小队已在营地重整完毕，重新从第 1 波发起讨伐！`);
+        appendBattleLog(`【重整】小队已在营地重整完毕，重新从第 1 波发起讨伐！`);
         waveTransitionRef.current = false;
         scheduleTransitionTimeout(() => setWaveBanner(null), 1200);
       }, 2200);
@@ -760,7 +760,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     isHeal: true,
                     tag: "满状态复活",
                   });
-                  appendBattleLog(`✨ 【${ally.name}】复活倒计时结束，已满状态复活重返战场！`);
+                  appendBattleLog(`【复活】【${ally.name}】复活倒计时结束，已满状态复活重返战场！`);
                 }
               }
               continue;
@@ -833,7 +833,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       a.hp = Math.min(a.maxHp, a.hp + healAmt);
                       pushFloat(`ally-${a.userId}`, healAmt, { isHeal: true, tag: def.name });
                     }
-                    appendBattleLog(`💚 自动释放【${def.name} Lv.${slot.level || 1}】，为全体存活队友恢复生命值（+${castXp} 技能经验）！`);
+                    appendBattleLog(`【治疗】自动释放【${def.name} Lv.${slot.level || 1}】，为全体存活队友恢复生命值（+${castXp} 技能经验）！`);
                     break;
                   } else if (def.damageMult && def.damageMult > 0) {
                     playerMpRef.current = Math.max(0, playerMpRef.current - mpCost);
@@ -878,7 +878,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       const shieldMult = now < target.shieldUntil && !def.breaksGuard ? 0.55 : 1;
                       if (now < target.shieldUntil && def.breaksGuard) {
                         target.shieldUntil = 0;
-                        appendBattleLog(`💥 【${ally.name}】施展【${def.name} Lv.${slot.level || 1}】直接震碎了 ${target.name} 的护盾壁障！`);
+                        appendBattleLog(`【破盾】【${ally.name}】施展【${def.name} Lv.${slot.level || 1}】直接震碎了 ${target.name} 的护盾壁障！`);
                       }
                       const skillDmg = Math.max(
                         6,
@@ -905,12 +905,12 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                         : "";
                     if (hitTargets.length > 1) {
                       appendBattleLog(
-                        `☄️ 自动释放群攻【${def.name} Lv.${slot.level || 1}】横扫 ${hitTargets.length} 名敌人，合计造成 ${totalSkillDmg} 点伤害${auraNote}${killedNames.length ? `（击倒 ${killedNames.join("、")}）` : ""}（+${castXp} 技能经验）！`
+                        `【群攻】自动释放群攻【${def.name} Lv.${slot.level || 1}】横扫 ${hitTargets.length} 名敌人，合计造成 ${totalSkillDmg} 点伤害${auraNote}${killedNames.length ? `（击倒 ${killedNames.join("、")}）` : ""}（+${castXp} 技能经验）！`
                       );
                     } else if (killedNames.length > 0) {
-                      appendBattleLog(`🪓 自动释放【${def.name} Lv.${slot.level || 1}】击倒了 ${killedNames[0]}（-${totalSkillDmg}${auraNote} · +${castXp} 技能经验）！`);
+                      appendBattleLog(`【战技】自动释放【${def.name} Lv.${slot.level || 1}】击倒了 ${killedNames[0]}（-${totalSkillDmg}${auraNote} · +${castXp} 技能经验）！`);
                     } else {
-                      appendBattleLog(`🪓 自动释放【${def.name} Lv.${slot.level || 1}】命中 ${hitTargets[0].name}，造成 ${totalSkillDmg} 点伤害${auraNote}（+${castXp} 技能经验）！`);
+                      appendBattleLog(`【战技】自动释放【${def.name} Lv.${slot.level || 1}】命中 ${hitTargets[0].name}，造成 ${totalSkillDmg} 点伤害${auraNote}（+${castXp} 技能经验）！`);
                     }
                     break;
                   } else if (def.guardMult) {
@@ -927,10 +927,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     if (def.tauntDurationMs) {
                       selfTauntUntilRef.current = now + Number(def.tauntDurationMs);
                       appendBattleLog(
-                        `🎯 自动释放【${def.name} Lv.${slot.level || 1}】，减伤 ${Math.round(reduce * 100)}% 并强制吸引敌方绝大部分仇恨保护队友（+${castXp} 技能经验）！`
+                        `【嘲讽】自动释放【${def.name} Lv.${slot.level || 1}】，减伤 ${Math.round(reduce * 100)}% 并强制吸引敌方绝大部分仇恨保护队友（+${castXp} 技能经验）！`
                       );
                     } else {
-                      appendBattleLog(`🛡️ 自动释放【${def.name} Lv.${slot.level || 1}】，提升自身防护与前排仇恨（+${castXp} 技能经验）！`);
+                      appendBattleLog(`【防护】自动释放【${def.name} Lv.${slot.level || 1}】，提升自身防护与前排仇恨（+${castXp} 技能经验）！`);
                     }
                     break;
                   }
@@ -981,9 +981,9 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     xp: prev.xp + preferred.xp,
                     gold: prev.gold + preferred.gold,
                   }));
-                  appendBattleLog(`💥 【${ally.name}】击倒了 ${preferred.name}（-${rawDmg}${isCrit ? " 暴击" : ""}）！`);
+                  appendBattleLog(`【击倒】【${ally.name}】击倒了 ${preferred.name}（-${rawDmg}${isCrit ? " 暴击" : ""}）！`);
                 } else if (ally.isSelf || Math.random() < 0.35) {
-                  appendBattleLog(`⚔️ 【${ally.name}】攻击 ${preferred.name}，造成 ${rawDmg} 点伤害${isCrit ? "（暴击！）" : ""}`);
+                  appendBattleLog(`【普攻】【${ally.name}】攻击 ${preferred.name}，造成 ${rawDmg} 点伤害${isCrit ? "（暴击！）" : ""}`);
                 }
               }
             }
@@ -1000,7 +1000,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
             if (enemy.isBoss && !enemy.enraged && enemy.hp <= enemy.maxHp * 0.45) {
               enemy.enraged = true;
               enemy.intervalMs = Math.max(1350, Math.round(enemy.intervalMs * 0.72));
-              appendBattleLog(`🔥 【狂暴觉醒】${enemy.name} 生命降至 45% 以下，进入狂暴状态，攻速与秘技频率大幅飙升！`);
+              appendBattleLog(`【狂暴觉醒】${enemy.name} 生命降至 45% 以下，进入狂暴状态，攻速与秘技频率大幅飙升！`);
             }
             enemy.castMs += TICK_MS;
             if (enemy.castMs >= enemy.intervalMs) {
@@ -1043,10 +1043,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     if (Math.random() * 100 < evaPct) {
                       pushFloat(`ally-${targetAlly.userId}`, 0, {
                         isHeal: true,
-                        tag: "💨闪避",
+                        tag: "闪避",
                       });
                       if (targetAlly.isSelf || enemy.isBoss) {
-                        appendBattleLog(`💨 【${targetAlly.name}】灵巧闪避了 ${enemy.name} 的攻击！`);
+                        appendBattleLog(`【闪避】【${targetAlly.name}】灵巧闪避了 ${enemy.name} 的攻击！`);
                       }
                       return 0;
                     }
@@ -1073,8 +1073,8 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     const survivorsLeft = nextAllies.some((a) => a.hp > 0);
                     appendBattleLog(
                       survivorsLeft
-                        ? `💀 ${enemy.name}${opts?.skillName ? `【${opts.skillName}】` : ""}重创【${targetAlly.name}】（-${finalDmg}）！【${targetAlly.name}】进入 ${(totalRevive / 1000).toFixed(0)} 秒复活倒计时...`
-                        : `💀 ${enemy.name}${opts?.skillName ? `【${opts.skillName}】` : ""}击倒了最后一名队员【${targetAlly.name}】（-${finalDmg}）！`
+                        ? `【重创】${enemy.name}${opts?.skillName ? `【${opts.skillName}】` : ""}重创【${targetAlly.name}】（-${finalDmg}）！【${targetAlly.name}】进入 ${(totalRevive / 1000).toFixed(0)} 秒复活倒计时...`
+                        : `【阵亡】${enemy.name}${opts?.skillName ? `【${opts.skillName}】` : ""}击倒了最后一名队员【${targetAlly.name}】（-${finalDmg}）！`
                     );
                   }
                   return finalDmg;
@@ -1107,10 +1107,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                         return drained;
                       });
                     }
-                    setWaveBanner(`💥 ${enemy.name} 施展全屏秘技：《${skill.name}》！`);
+                    setWaveBanner(`${enemy.name} 施展全屏秘技：《${skill.name}》！`);
                     scheduleTransitionTimeout(() => setWaveBanner(null), 1600);
                     appendBattleLog(
-                      `🌋 【首领全屏秘技】${enemy.name} 释放《${skill.name}》（${skill.tag}），横扫我方全体 ${livingAllies.length} 名队员，合计造成 ${totalAoeDmg} 点毁灭伤害！`
+                      `【首领全屏秘技】${enemy.name} 释放《${skill.name}》（${skill.tag}），横扫我方全体 ${livingAllies.length} 名队员，合计造成 ${totalAoeDmg} 点毁灭伤害！`
                     );
                   } else if (skill.kind === "cleave") {
                     // Multi-Target Cleave + Lifesteal Signature Skill
@@ -1135,7 +1135,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       healLog = `，并汲取 ${healVal} 点生命值`;
                     }
                     appendBattleLog(
-                      `⚡ 【首领独门秘技】${enemy.name} 施展《${skill.name}》，同时重创 ${targets.map((t) => t.name).join("、")}（合计 -${totalCleaveDmg}${healLog}）！`
+                      `【首领独门秘技】${enemy.name} 施展《${skill.name}》，同时重创 ${targets.map((t) => t.name).join("、")}（合计 -${totalCleaveDmg}${healLog}）！`
                     );
                   } else {
                     // Tactical Shockwave AOE + Boss Shield + Enrage + Elite Guard Summon
@@ -1186,7 +1186,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       });
                     }
                     appendBattleLog(
-                      `🛡️ 【首领秘技·${skill.tag}】${enemy.name} 施展《${skill.name}》震击全队${skill.shieldMs ? "，展开护盾减免 45% 伤害" : ""}${summonedName ? `，并召唤【${summonedName}】助战` : ""}！`
+                      `【首领秘技·${skill.tag}】${enemy.name} 施展《${skill.name}》震击全队${skill.shieldMs ? "，展开护盾减免 45% 伤害" : ""}${summonedName ? `，并召唤【${summonedName}】助战` : ""}！`
                     );
                   }
                 } else if (!enemy.isBoss && (enemy.isEliteGuard || nextAllies.length >= 4) && enemy.attackCount % 3 === 0 && livingAllies.length >= 2) {
@@ -1198,7 +1198,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     applyHitToAlly(allyUnit, dmg, { skillName: "狂暴顺劈", isCrit: true });
                   }
                   appendBattleLog(
-                    `👾 ${enemy.name} 发动【狂暴顺劈】，同时斩击 ${cleaveTargets.map((t) => t.name).join("、")}！`
+                    `【顺劈】${enemy.name} 发动【狂暴顺劈】，同时斩击 ${cleaveTargets.map((t) => t.name).join("、")}！`
                   );
                 } else {
                   const targetAlly = pickThreatWeightedAlly(livingAllies);
@@ -1209,7 +1209,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   });
                   if (dealt > 0 && targetAlly.hp > 0 && (enemy.isBoss || targetAlly.isSelf)) {
                     appendBattleLog(
-                      `${enemy.isBoss ? "👹" : "👾"} ${enemy.name} 攻击【${targetAlly.name}】，造成 ${dealt} 点伤害`
+                      `${enemy.isBoss ? "【首领】" : "【敌击】"}${enemy.name} 攻击【${targetAlly.name}】，造成 ${dealt} 点伤害`
                     );
                   }
                 }
@@ -1314,7 +1314,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                 {activeDungeon.name} · {activeDungeon.boss.name}
               </h3>
               <span className={`party-wave-pill ${isBossWaveNow ? "is-boss-wave" : ""}`}>
-                {isBossWaveNow ? `🔥 第 ${currentWave} 波 · 首领` : `第 ${currentWave} 波`}
+                {isBossWaveNow ? `第 ${currentWave} 波 · 首领` : `第 ${currentWave} 波`}
               </span>
             </div>
 
@@ -1326,7 +1326,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   disabled={busy}
                   onClick={() => run(() => apiClient.recruitPartyBot(party.id))}
                 >
-                  🤖 增援队友 ({party.members.length}/6)
+                  <T1Art kind="ui" id="nav-party" className="gold-inline" alt="" /> 增援队友 ({party.members.length}/6)
                 </button>
               )}
               <button
@@ -1334,7 +1334,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                 className="header-menu-btn"
                 onClick={() => setShowLobbyDetails((v) => !v)}
               >
-                {showLobbyDetails ? "收起小队编成" : `👥 小队编成 (${party.members.length}/6)`}
+                {showLobbyDetails ? "收起小队编成" : <><T1Art kind="ui" id="nav-character" className="gold-inline" alt="" /> 小队编成 ({party.members.length}/6)</>}
               </button>
               <button
                 type="button"
@@ -1346,7 +1346,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   })
                 }
               >
-                🛑 结束副本
+                结束副本
               </button>
             </div>
           </div>
@@ -1407,8 +1407,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       className={`battle-entity party-unit-card ally-unit-card${ally.isSelf ? " is-self-unit" : ""}${isDead ? " is-defeated-unit is-reviving-unit" : ""}${shaking ? " entity-hit" : ""}${attacking ? " unit-attacking-right" : ""}`}
                     >
                       <div className="party-unit-top">
-                        <span className="entity-name">
-                          {ally.isSelf ? "👑 " : ally.isBot ? "🤖 " : "🧑 "}
+                        <span className="entity-name" title={ally.name}>
                           {ally.name}
                         </span>
                         <span className="entity-level">Lv.{ally.level}</span>
@@ -1416,13 +1415,13 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       <div className="party-unit-role-tag">
                         {ally.title}
                         {ally.isSelf && nowTs < selfTauntUntilRef.current
-                          ? " · 🎯嘲讽主坦"
+                          ? " · 嘲讽主坦"
                           : ally.isSelf && nowTs < selfGuardRef.current.until
-                          ? " · 🛡️坚守减伤"
+                          ? " · 坚守减伤"
                           : ally.classId === "blacksmith" || ally.role === "tank"
-                          ? " · 🛡️前排高仇恨"
+                          ? " · 前排高仇恨"
                           : ""}
-                        {nowTs < teamAuraRef.current.until ? " · 🚩战神光环" : ""}
+                        {nowTs < teamAuraRef.current.until ? " · 战神光环" : ""}
                       </div>
 
                       <div className={`entity-avatar party-unit-avatar${shaking ? " avatar-shake" : ""}`}>
@@ -1542,8 +1541,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       className={`battle-entity party-unit-card enemy-unit-card${enemy.isBoss ? " is-boss-unit" : ""}${isDead ? " is-defeated-unit" : ""}${shaking ? " entity-hit" : ""}${attacking ? " unit-attacking-left" : ""}`}
                     >
                       <div className="party-unit-top">
-                        <span className="entity-name">
-                          {enemy.isBoss ? "👑 " : enemy.isEliteGuard ? "🛡️ " : ""}
+                        <span className="entity-name" title={enemy.name}>
                           {enemy.name}
                         </span>
                         <span className="entity-level">Lv.{enemy.level}</span>
@@ -1553,8 +1551,8 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                         {enemy.isBoss ? (
                           <span>
                             首领
-                            {shieldActive ? " · 🛡️护盾减伤" : ""}
-                            {enemy.enraged ? " · 🔥狂暴" : ""}
+                            {shieldActive ? " · 护盾减伤" : ""}
+                            {enemy.enraged ? " · 狂暴" : ""}
                           </span>
                         ) : enemy.isEliteGuard ? (
                           "首领亲卫"
@@ -1578,7 +1576,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                                 className={`boss-skill-chip${sk.kind === "aoe" ? " is-aoe" : ""}${isNext ? " is-charging" : ""}`}
                                 title={`${sk.name}（${sk.tag}）：${sk.desc}`}
                               >
-                                {isNext ? "⚡" : sk.kind === "aoe" ? "🌋" : "✦"} {sk.name}
+                                {isNext ? "▸" : sk.kind === "aoe" ? "◈" : "✦"} {sk.name}
                               </span>
                             );
                           })}
@@ -1631,7 +1629,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                           {isDead
                             ? "已击倒"
                             : isSkillTurnNext && nextBossSkill && castPct >= 45
-                            ? `⚠️ 蓄力秘技：《${nextBossSkill.name}》(${nextBossSkill.tag})`
+                            ? `蓄力秘技：《${nextBossSkill.name}》(${nextBossSkill.tag})`
                             : `${(enemy.castMs / 1000).toFixed(1)}s / ${(enemy.intervalMs / 1000).toFixed(1)}s`}
                         </div>
                       </div>

@@ -221,7 +221,7 @@ export function AdventurePanel({
             <div className="tactical-dock-divider" aria-hidden="true" />
 
             <div className="tactical-dock-group tactical-skills-group">
-              <span className="tactical-dock-label">✨ 自动技能</span>
+              <span className="tactical-dock-label"><T1Art kind="ui" id="nav-magic" className="gold-inline" alt="" /> 自动技能</span>
               <div className="tactical-skill-chain">
                 {equippedAbilities.length > 0 ? (
                   equippedAbilities.map((a, idx) => (
@@ -245,7 +245,7 @@ export function AdventurePanel({
                 aria-expanded={showCombatConfig}
                 onClick={() => setShowCombatConfig((v) => !v)}
               >
-                {showCombatConfig ? '收起技能' : '⚙️ 配置技能'}
+                {showCombatConfig ? '收起技能' : '配置技能'}
               </button>
             </div>
           </div>
@@ -591,7 +591,7 @@ export function AdventurePanel({
                             const def = abilityCatalog?.find((a) => a.id === abId)
                             return (
                               <span className="xp-chip ability-xp" key={`ab-${abId}`}>
-                                ✨ {def?.name || abId} +{abXp} 技能经验
+                                <T1Art kind="skills" id={abId} className="gold-inline" fallback="" alt="" /> {def?.name || abId} +{abXp} 技能经验
                               </span>
                             )
                           })}

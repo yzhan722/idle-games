@@ -457,7 +457,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
           <h3 className="inv-group-title">可强化装备 <small>{items.length}</small></h3>
           {items.length === 0 ? (
             <div className="inventory-empty inv-page-empty">
-              <div className="empty-icon">✨</div>
+              <div className="empty-icon"><T1Art kind="ui" id="nav-enhance" alt="" /></div>
               <p>背包和装备栏里还没有可强化的装备。</p>
             </div>
           ) : (
@@ -721,7 +721,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
             providers.map((p) => (
               <div key={p.userId} className="svc-row">
                 <div className="task-copy">
-                  <strong>{p.isOnline ? "🟢" : "⚫"} 强化师 {p.userId.slice(0, 8)}… · Lv.{p.skillLevel}</strong>
+                  <strong><span className={`party-status-dot ${p.isOnline ? "online" : "offline"}`} aria-hidden="true" /> 强化师 {p.userId.slice(0, 8)}… · Lv.{p.skillLevel}</strong>
                   <small>
                     服务费 {p.serviceFee} 金 · 已完成 {p.completedServices} 单 · 评分 {p.rating.toFixed(1)}
                     {p.isOnline ? " · 在线" : ""}
