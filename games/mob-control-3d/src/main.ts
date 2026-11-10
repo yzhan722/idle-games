@@ -1360,14 +1360,17 @@ let currentCleanseCost = 50;
 
 (window as unknown as Record<string, unknown>).__triggerVictoryModal = () => {
   world.stageCombatTime = 7.8;
+  world.isStageEnded = true;
   world.onStageEnd?.(true);
 };
 (window as unknown as Record<string, unknown>).__triggerDefeatModal = () => {
+  world.isStageEnded = true;
   world.onStageEnd?.(false);
 };
 
 world.onStageEnd = (victory: boolean) => {
   topToolsDrawer?.classList.add('hidden');
+  centerBanner.classList.add('hidden');
   resultModal.classList.remove('hidden');
   resultModal.classList.toggle('victory-mode', victory);
   statTotalSpawned.textContent = `${state.stageClonesSpawned}`;

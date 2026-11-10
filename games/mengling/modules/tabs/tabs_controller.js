@@ -1,4 +1,5 @@
 const PRIMARY_TABS = new Set(["bonfire", "science", "capture", "mons", "functions", "future", "dex"]);
+const MOBILE_PRIMARY_TABS = new Set(["bonfire", "science", "capture", "mons", "functions"]);
 
 const TAB_TITLES = {
   bonfire: "萌灵放置冒险 · 星火营地",
@@ -86,35 +87,37 @@ export function createTabController({
     if (!elTabs) return;
     ensureMoreChrome();
 
+    const isMobileNarrow = typeof window !== "undefined" && window.innerWidth <= 640;
+    const activePrimarySet = isMobileNarrow ? MOBILE_PRIMARY_TABS : PRIMARY_TABS;
     const items = [];
     elTabs.querySelectorAll(".tab[data-tab]").forEach((tabEl) => {
       const name = tabEl.getAttribute("data-tab");
       if (!name) return;
       const unlocked = tabEl.getAttribute("data-unlocked") !== "0";
-      const isPrimary = PRIMARY_TABS.has(name);
+      const isPrimary = activePrimarySet.has(name);
       const isActive = ui.activeTab === name;
 
       if (!unlocked) {
-        tabEl.style.display = "none";
+        tabEl.style.setProperty("display", "none", "important");
         return;
       }
 
       // Primary always in bar; secondary only when active (so 更多 stays short)
       if (isPrimary || isActive) {
-        tabEl.style.display = "";
+        tabEl.style.removeProperty("display");
       } else {
-        tabEl.style.display = "none";
+        tabEl.style.setProperty("display", "none", "important");
         items.push({ name, label: (tabEl.textContent || name).trim() });
       }
     });
 
     if (moreMenu) {
       if (items.length === 0) {
-        moreBtn.style.display = "none";
+        moreBtn.style.setProperty("display", "none", "important");
         closeMoreMenu();
         moreMenu.innerHTML = "";
       } else {
-        moreBtn.style.display = "";
+        moreBtn.style.removeProperty("display");
         moreMenu.innerHTML = items
           .map(
             (it) =>
@@ -228,6 +231,9 @@ export function createTabController({
       });
     });
     ensureMoreChrome();
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", () => refreshTabChrome());
+    }
   }
 
   return { activateTab, refreshTabChrome, PRIMARY_TABS };

@@ -514,7 +514,7 @@ function placeStarOnBestTarget() {
 
   starTarget.targetObjId = null;
   starTarget.x = Math.random() < 0.5 ? W * (0.22 + Math.random() * 0.12) : W * (0.66 + Math.random() * 0.12);
-  starTarget.x = Math.random() < 0.5 ? W * (0.31 + Math.random() * 0.09) : W * (0.62 + Math.random() * 0.12); starTarget.y = Math.max(138, H * (0.35 + Math.random() * 0.10));
+  starTarget.x = Math.random() < 0.5 ? W * (0.17 + Math.random() * 0.07) : W * (0.76 + Math.random() * 0.08); starTarget.y = Math.max(148, H * (0.38 + Math.random() * 0.10));
   starTarget.active = true;
 }
 

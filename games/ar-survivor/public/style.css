@@ -314,6 +314,10 @@ html, body {
   transform: scale(0.94);
 }
 
+.wish-pill.hidden {
+  display: none !important;
+}
+
 .wish-tag {
   background: linear-gradient(135deg, #6bc5ff, #429ef5);
   color: #fff;
