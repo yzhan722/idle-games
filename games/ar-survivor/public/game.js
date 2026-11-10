@@ -11,7 +11,7 @@ import {
   drawInteractionVfx,
   images,
   isReady
-} from './sprites.js?v=hd7';
+} from './sprites.js?v=hd8';
 import { petAudio } from './audio.js?v=hd7';
 
 const stageEl = document.getElementById('game-stage');
@@ -1361,7 +1361,7 @@ function spawnFoodDrop(foodSpec) {
   player.petAction = 'idle';
   player.recenterDelay = 0;
   player.wanderTargetX = dropX;
-  setPlayerEmote(`${foodSpec.ico} 看到${foodSpec.name}啦!`, 1.6);
+  setPlayerEmote(`看到${foodSpec.name}啦!`, 1.6);
 }
 
 function renderThumbHtml(item) {
@@ -3202,7 +3202,7 @@ function updateGameplay(dt, flow) {
         );
         addAffectionXp(
           finalXp,
-          `${spec.ico} ${isHandHeldFood ? '亲手投喂 ' : ''}饱食+${spec.hunger} 亲密+${finalXp}`
+          `${isHandHeldFood ? '亲手投喂 ' : ''}饱食+${spec.hunger} 亲密+${finalXp}`
         );
         if (spec.id === 'rice') completeWish('eat_rice');
         if (spec.id === 'tea') completeWish('eat_tea');
@@ -3719,7 +3719,7 @@ function renderEntities(now) {
   // 渲染实景桌面 DIY 微缩家具（小夜灯 / 码农工位 / 蓝鲸猫爬架）
   if (gameMode === 'pet') {
     for (const furn of furnitureList) {
-      drawFurnitureItem(ctx, furn, now, vision.isDarkRoom);
+      drawFurnitureItem(ctx, furn, now, vision.isDarkRoom, Boolean(drawerEl && !drawerEl.classList.contains('hidden')));
     }
   }
 

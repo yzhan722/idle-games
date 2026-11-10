@@ -782,7 +782,7 @@ export function drawToyItem(ctx, it, now) {
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
     ctx.lineWidth = 3;
-    const txt = `🔥 x${it.rallyCount}`;
+    const txt = `连击 x${it.rallyCount}`;
     ctx.strokeText(txt, 0, 0);
     ctx.fillStyle = '#ffd700';
     ctx.fillText(txt, 0, 0);
@@ -958,7 +958,7 @@ export function drawInteractionVfx(ctx, particles, touchRipples, fingerSparkle, 
   }
 }
 
-export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false) {
+export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel = false) {
   ctx.save();
   ctx.translate(furn.x, furn.y);
 
@@ -1030,22 +1030,22 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false) {
   }
   ctx.restore();
 
-  if (furn.key === 'pc' && furn.working) {
+  if (!hideLabel && furn.key === 'pc' && furn.working) {
     const floatY = -76 + Math.sin(now * 0.012) * 4;
     ctx.font = '900 11px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(8, 20, 46, 0.85)';
     ctx.lineWidth = 3;
-    const codeTxt = Math.sin(now * 0.006) > 0 ? '💻 敲代码中 </>' : '⚡ AI 产币中 +金币';
+    const codeTxt = Math.sin(now * 0.006) > 0 ? '敲代码中 </>' : 'AI 产币中 +金币';
     ctx.strokeText(codeTxt, 0, floatY);
     ctx.fillStyle = '#56e8ff';
     ctx.fillText(codeTxt, 0, floatY);
-  } else if (isLampLit) {
+  } else if (!hideLabel && isLampLit) {
     ctx.font = '900 10.5px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(8, 20, 46, 0.8)';
     ctx.lineWidth = 2.8;
-    const lampTxt = isDarkRoom ? '🌙 暗光感应守护 +25%💗' : '✨ 星海夜灯已点亮';
+    const lampTxt = isDarkRoom ? '暗光感应守护 +25% 亲密' : '星海夜灯已点亮';
     ctx.strokeText(lampTxt, 0, -76);
     ctx.fillStyle = '#ffe57f';
     ctx.fillText(lampTxt, 0, -76);
@@ -1129,13 +1129,13 @@ export function drawEnemySprite(ctx, e, now, playerX) {
     ctx.lineWidth = 3;
     ctx.font = '900 11.5px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
-    ctx.strokeText('👑 摸鱼大魔王', 0, -size * 0.62 - 16);
-    ctx.fillText('👑 摸鱼大魔王', 0, -size * 0.62 - 16);
+    ctx.strokeText('摸鱼大魔王', 0, -size * 0.62 - 16);
+    ctx.fillText('摸鱼大魔王', 0, -size * 0.62 - 16);
   } else if (e.isGoldTreasure) {
     ctx.fillStyle = '#ffd700';
     ctx.font = '900 11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('✨招财', 0, -size * 0.55);
+    ctx.fillText('招财', 0, -size * 0.55);
   }
 
   ctx.restore();
