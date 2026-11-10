@@ -220,7 +220,7 @@ const player = {
   ownedDress: savedPet.ownedDress || { furn_lamp: true },
   equipped: savedPet.equipped || {},
   placedFurniture: savedPet.placedFurniture || {
-    lamp: { xRatio: 0.24, manualOn: true }
+    lamp: { xRatio: 0.20, manualOn: true }
   },
   weapons: savedPet.weapons || {
     blaster: 1,
@@ -398,9 +398,9 @@ let lastDarkRoomState = false;
 
 function syncPlacedFurniture() {
   const specs = [
-    { key: 'lamp', defaultX: 0.24 },
+    { key: 'lamp', defaultX: 0.20 },
     { key: 'pc', defaultX: 0.76 },
-    { key: 'tree', defaultX: 0.32 }
+    { key: 'tree', defaultX: 0.36 }
   ];
   for (const sp of specs) {
     const conf = player.placedFurniture && player.placedFurniture[sp.key];
@@ -1436,7 +1436,7 @@ function renderDrawerItems() {
           player.ownedDress[item.id] = true;
           if (item.isFurniture) {
             player.placedFurniture[item.furnKey] = {
-              xRatio: item.furnKey === 'pc' ? 0.74 : item.furnKey === 'tree' ? 0.32 : 0.24,
+              xRatio: item.furnKey === 'pc' ? 0.76 : item.furnKey === 'tree' ? 0.36 : 0.20,
               manualOn: true
             };
             syncPlacedFurniture();
@@ -1457,7 +1457,7 @@ function renderDrawerItems() {
               setPlayerEmote(`已将 ${item.name} 收回背包`, 1.5);
             } else {
               player.placedFurniture[item.furnKey] = {
-                xRatio: item.furnKey === 'pc' ? 0.74 : item.furnKey === 'tree' ? 0.32 : 0.24,
+                xRatio: item.furnKey === 'pc' ? 0.76 : item.furnKey === 'tree' ? 0.36 : 0.20,
                 manualOn: true
               };
               setPlayerEmote(`已在桌面摆放 ${item.name}（可按住拖拽位置）!`, 1.8, 'happy');

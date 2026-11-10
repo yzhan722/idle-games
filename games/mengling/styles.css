@@ -6893,7 +6893,10 @@ button.capture-wanderer:hover {
     gap: 6px !important;
     overflow: visible !important;
   }
+  .topbar__identity:has(.trainerLevel[open]) { flex-wrap: wrap !important; }
+  .topbar__trainer:has(.trainerLevel[open]) { order: 3 !important; flex: 0 0 100% !important; width: 100% !important; height: auto !important; }
   .topbar__trainer .trainerLevel[open] {
+    width: 100% !important; max-width: 100% !important; box-sizing: border-box !important;
     border-radius: 12px !important;
     padding: 2px 10px 6px !important;
     background: rgba(15, 23, 42, 0.96) !important;

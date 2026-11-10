@@ -1651,6 +1651,11 @@ body.screen-quake-active #app {
 }
 
 .penalty-debuff-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 10.5px;
   background: #e0534d;
   padding: 1.5px 7px;

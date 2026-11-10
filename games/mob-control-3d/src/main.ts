@@ -1362,6 +1362,9 @@ let currentCleanseCost = 50;
   world.stageCombatTime = 7.8;
   world.onStageEnd?.(true);
 };
+(window as unknown as Record<string, unknown>).__triggerDefeatModal = () => {
+  world.onStageEnd?.(false);
+};
 
 world.onStageEnd = (victory: boolean) => {
   topToolsDrawer?.classList.add('hidden');
