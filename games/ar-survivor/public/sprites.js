@@ -611,7 +611,7 @@ export function drawHeroSprite(ctx, p, now) {
   ctx.restore();
 
   if (p.emote && p.emoteTimer > 0) {
-    drawPetEmoteBubble(ctx, p.emote, p.emoteTimer, now, p.emoteMood || 'normal', p.x, p.y);
+    drawPetEmoteBubble(ctx, p.emote, p.emoteTimer, now, p.emoteMood || 'normal', p.x, p.y, Boolean(p.rpsHudOpen));
   }
 
   ctx.restore();
@@ -811,7 +811,7 @@ function drawVectorSparkle(ctx, x, y, size, rot) {
   ctx.restore();
 }
 
-function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py = 240) {
+function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py = 240, rpsHudOpen = false) {
   ctx.save();
   const isTsundere = mood === 'tsundere';
   const isLove = mood === 'happy' || mood === 'cheer' || mood === 'love';
@@ -820,14 +820,18 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py
 
   const popScale = Math.min(1, timer * 5.4) * (1 + Math.sin(now * 0.013) * 0.038);
   const jitterX = isTsundere && timer > 1.85 ? Math.sin(now * 0.09) * 2.5 : 0;
-  const by = -108 + Math.sin(now * (isSleep ? 0.0045 : 0.0085)) * 3.4;
+  const by = (rpsHudOpen ? -64 : -108) + Math.sin(now * (isSleep ? 0.0045 : 0.0085)) * 3.4;
   ctx.translate(jitterX, by);
   ctx.scale(popScale, popScale);
 
   ctx.font = '900 12.5px "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif';
   const tw = ctx.measureText(text).width + 26;
   const th = 29;
-  const shiftX = py + by < 126 && px - tw * 0.5 < 246 ? Math.max(0, 246 - (px - tw * 0.5)) : 0;
+  const shiftX = rpsHudOpen
+    ? Math.min(182, Math.max(126, tw * 0.5 + 68))
+    : py + by < 126 && px - tw * 0.5 < 246
+      ? Math.max(0, 246 - (px - tw * 0.5))
+      : 0;
   const rx = -tw * 0.5 + shiftX;
   const ry = -th * 0.5;
 
@@ -868,9 +872,10 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.moveTo(-5, ry + th - 1);
-  ctx.lineTo(0, ry + th + 6);
-  ctx.lineTo(5, ry + th - 1);
+  const tailX = Math.max(rx + 15, Math.min(rx + tw - 15, 0));
+  ctx.moveTo(tailX - 5, ry + th - 1);
+  ctx.lineTo(tailX, ry + th + 6);
+  ctx.lineTo(tailX + 5, ry + th - 1);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();

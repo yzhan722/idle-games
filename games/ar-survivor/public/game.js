@@ -11,7 +11,7 @@ import {
   drawInteractionVfx,
   images,
   isReady
-} from './sprites.js?v=hd9';
+} from './sprites.js?v=hd11';
 import { petAudio } from './audio.js?v=hd7';
 
 const stageEl = document.getElementById('game-stage');
@@ -1855,6 +1855,13 @@ function startRpsGame(fromGesture = false) { dismissPolaroid(); if (palmCatchGam
   }
 
   rpsGame.active = true;
+  player.x = W * 0.5;
+  player.y = H * 0.68 - 25;
+  player.vx = 0;
+  player.vy = 0;
+  player.onGround = true;
+  player.standingPlat = null;
+  player.wanderTargetX = W * 0.5;
   rpsGame.timer = 2.55;
   rpsGame.lastTickSec = 4;
   rpsGame.lockedMove = null;
@@ -1991,6 +1998,13 @@ function startPalmCatchGame() { dismissPolaroid();
   setNapping(false);
 
   palmCatchGame.active = true;
+  player.x = W * 0.5;
+  player.y = H * 0.68 - 25;
+  player.vx = 0;
+  player.vy = 0;
+  player.onGround = true;
+  player.standingPlat = null;
+  player.wanderTargetX = W * 0.5;
   palmCatchGame.timer = 16.0;
   palmCatchGame.spawnTick = 0.25;
   palmCatchGame.score = 0;
@@ -2711,7 +2725,7 @@ function updateGameplay(dt, flow) {
     const centerPlatforms = platforms.filter(
       (p) => !p.isFloor && Math.abs((p.x1 + p.x2) * 0.5 - W * 0.5) < W * 0.24
     );
-    if (centerPlatforms.length > 0) {
+    if (centerPlatforms.length > 0 && rpsHudEl?.classList.contains('hidden')) {
       centerPlatforms.sort(
         (a, b) => Math.abs((a.x1 + a.x2) * 0.5 - W * 0.5) - Math.abs((b.x1 + b.x2) * 0.5 - W * 0.5)
       );
@@ -3768,6 +3782,7 @@ function renderEntities(now) {
     }
   }
 
+  player.rpsHudOpen = Boolean(rpsHudEl && !rpsHudEl.classList.contains('hidden'));
   drawHeroSprite(ctx, player, now);
 
   for (const e of enemies) {

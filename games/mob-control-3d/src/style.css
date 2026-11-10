@@ -3838,6 +3838,55 @@ body.screen-quake-active #app {
     flex-shrink: 0;
   }
 
+  .leaderboard-list {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+    padding: 5px 6px !important;
+  }
+
+  .lb-row,
+  .lb-row.lb-active-mode {
+    flex: 0 0 auto !important;
+    min-height: 28px !important;
+    height: 28px !important;
+    padding: 2px 8px !important;
+  }
+
+  #btn-stage-theme.stage-picker {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 4px 8px !important;
+  }
+
+  #stage-badge {
+    font-size: 14px !important;
+  }
+
+  #stage-plaque-sub {
+    font-size: 9.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .top-actions {
+    flex: 0 0 auto !important;
+    gap: 5px !important;
+  }
+
+  .global-toast {
+    top: 122px !important;
+  }
+
+  .upg-cost {
+    font-size: 9.5px !important;
+    padding: 2px 2px !important;
+    gap: 2px !important;
+    white-space: nowrap !important;
+  }
+
   .skill-tree-topbar {
     padding: 5px 9px;
     gap: 6px;
@@ -9419,6 +9468,55 @@ img,
   .skin-art-portrait {
     width: 52px !important;
     height: 52px !important;
+  }
+
+  .leaderboard-list {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+    padding: 5px 6px !important;
+  }
+
+  .lb-row,
+  .lb-row.lb-active-mode {
+    flex: 0 0 auto !important;
+    min-height: 28px !important;
+    height: 28px !important;
+    padding: 2px 8px !important;
+  }
+
+  #btn-stage-theme.stage-picker {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 4px 8px !important;
+  }
+
+  #stage-badge {
+    font-size: 14px !important;
+  }
+
+  #stage-plaque-sub {
+    font-size: 9.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .top-actions {
+    flex: 0 0 auto !important;
+    gap: 5px !important;
+  }
+
+  .global-toast {
+    top: 122px !important;
+  }
+
+  .upg-cost {
+    font-size: 9.5px !important;
+    padding: 2px 2px !important;
+    gap: 2px !important;
+    white-space: nowrap !important;
   }
 
   .skill-tree-topbar {
