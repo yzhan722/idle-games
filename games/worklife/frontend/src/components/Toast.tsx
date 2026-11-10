@@ -55,10 +55,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       }
       const id = ++idRef.current;
       const item: ToastItem = { id, type, message, icon };
-      setToasts((prev) => [...prev, item]);
-      // 自动消失
-      const duration = type === 'error' ? 4200 : 3000;
-      window.setTimeout(() => remove(id), duration);
+      let added = false;
+      setToasts((prev) => {
+        if (prev.some((t) => t.message === message && t.type === type)) {
+          return prev;
+        }
+        added = true;
+        return [...prev.slice(-3), item];
+      });
+      if (added || true) {
+        const duration = type === 'error' ? 4200 : 3000;
+        window.setTimeout(() => remove(id), duration);
+      }
     },
     [remove]
   );

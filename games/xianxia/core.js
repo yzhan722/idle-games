@@ -2906,6 +2906,9 @@ dojo.declare("com.nuclearunicorn.game.ui.tab", [com.nuclearunicorn.game.ui.Conte
  */
 var UIUtils = {
 	attachTooltip: function(game, container, topPosition, leftPosition, htmlProvider) {
+		if (!container) {
+			return htmlProvider;
+		}
 		var gameNode = dojo.byId("game");
 		var tooltip = dojo.byId("tooltip");
 

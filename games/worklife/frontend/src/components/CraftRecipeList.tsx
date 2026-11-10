@@ -115,7 +115,7 @@ export function CraftRecipeList(props: Props) {
                       Lv.{r.level}
                     </span>
                   ) : (
-                    <span className="sar-req sar-locked">🔒 再升 {r.level - props.skillLevel} 级</span>
+                    <span className="sar-req sar-locked">Lv.{r.level} · 差 {r.level - props.skillLevel} 级</span>
                   )}
                   <span
                     role="button"

@@ -300,9 +300,17 @@ function addCoins(amount, x, y, labelPrefix = '') {
   pulseHudElement('hud-coins-btn');
   const baseX = x ?? player.x;
   const sideOffset = Math.abs(baseX - player.x) < 82 ? (player.x > W * 0.55 ? 92 : -92) : 0;
+  const spawnX = Math.max(58, Math.min(W - 58, baseX + sideOffset));
+  let spawnY = (y ?? player.y) - 34;
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    if (ft && ft.life > 0.2 && Math.abs(ft.x - spawnX) < 76 && Math.abs(ft.y - spawnY) < 24) {
+      spawnY = ft.y - 24;
+    }
+  }
   floatingTexts.push({
-    x: Math.max(58, Math.min(W - 58, baseX + sideOffset)),
-    y: (y ?? player.y) - 34,
+    x: spawnX,
+    y: Math.max(76, spawnY),
     vx: (Math.random() - 0.5) * 14,
     vy: -36,
     text: `${labelPrefix}+${finalCoins} 金币`,

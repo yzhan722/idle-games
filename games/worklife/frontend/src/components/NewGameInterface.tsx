@@ -1835,21 +1835,7 @@ export default function NewGameInterface() {
   const sidebarLocked = new Set<string>()
   if (!hasFirstGather) sidebarLocked.add("woodworking")
   if (!hasSwordOn) sidebarLocked.add("adventure")
-  if (headerBattleActive) {
-    for (const s of SKILL_NAV) {
-      if (s.group === "gathering" || s.group === "production") {
-        sidebarLocked.add(s.id)
-      }
-    }
-  }
   const onNavLocked = (id: string) => {
-    if (headerBattleActive) {
-      const navItem = SKILL_NAV.find((s) => s.id === id)
-      if (navItem && (navItem.group === "gathering" || navItem.group === "production")) {
-        toast.info("当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）")
-        return
-      }
-    }
     if (id === "woodworking") toast.info("先砍到第一根木头，制作才会打开")
     if (id === "adventure") toast.info("先穿上木头短剑，再进森林")
   }

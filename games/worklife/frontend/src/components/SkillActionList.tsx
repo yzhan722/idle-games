@@ -79,7 +79,7 @@ export function SkillActionList(props: Props) {
                     Lv.{row.requiredLevel}
                   </span>
                 ) : (
-                  <span className="sar-req sar-locked">🔒 再升 {row.levelsToGo} 级</span>
+                  <span className="sar-req sar-locked">Lv.{row.requiredLevel} · 差 {row.levelsToGo} 级</span>
                 )}
               </span>
               <span className="sar-meta">

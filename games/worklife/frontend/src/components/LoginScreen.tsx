@@ -268,7 +268,7 @@ export default function LoginScreen() {
                   void handleSubmit('register')
                 }}
               >
-                ✨ 立即用当前填写的账号密码直接注册并进入游戏
+                立即用当前填写的账号密码直接注册并进入游戏
               </button>
             )}
             {errorCode === 'username_taken' && tab === 'register' && (
@@ -282,7 +282,7 @@ export default function LoginScreen() {
                   void handleSubmit('login')
                 }}
               >
-                🔑 切换到「账号登录」并用当前密码登录
+                切换到「账号登录」并用当前密码登录
               </button>
             )}
           </div>

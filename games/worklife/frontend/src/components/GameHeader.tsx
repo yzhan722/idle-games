@@ -84,11 +84,11 @@ export function GameHeader(props: Props) {
   useEffect(() => {
     const base = "异世界の打工生活 · 奇幻放置冒险与工坊";
     if (props.battleActive && props.battleMonsterName) {
-      document.title = `⚔️ 讨伐·${props.battleMonsterName} | ${base}`;
+      document.title = `[讨伐] ${props.battleMonsterName} | ${base}`;
     } else if (enhancing && props.enhanceRun) {
-      document.title = `🔨 强化·${props.enhanceRun.itemName} +${props.enhanceRun.level} | ${base}`;
+      document.title = `[强化] ${props.enhanceRun.itemName} +${props.enhanceRun.level} | ${base}`;
     } else if (props.currentActivity && props.playerMode === "life_action") {
-      document.title = `⛏️ ${props.currentActivity.name} | ${base}`;
+      document.title = `[作业] ${props.currentActivity.name} | ${base}`;
     } else {
       document.title = `${base} RPG`;
     }
@@ -158,7 +158,13 @@ export function GameHeader(props: Props) {
           className={`activity-status-center${props.cycleCompleteFlash ? " cycle-complete" : ""}${showActivity ? "" : " activity-idle"}`}
         >
           <div className="activity-icon-animated">
-            {props.battleActive ? "战" : enhancing ? "强" : props.currentActivity?.mark || activityLabel(props.activeTab)}
+            {props.battleActive ? (
+              <T1Art kind="ui" id="nav-adventure" alt="" className="header-gold-art" />
+            ) : enhancing ? (
+              <T1Art kind="ui" id="nav-enhance" alt="" className="header-gold-art" />
+            ) : (
+              props.currentActivity?.mark || activityLabel(props.activeTab)
+            )}
           </div>
           {((props.currentActivity && !props.battleActive) || enhancing) && (
             <div className="activity-progress-ring">
