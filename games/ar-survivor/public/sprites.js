@@ -1169,7 +1169,7 @@ export function drawStarGoal(ctx, starTarget, player, now) {
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
     ctx.lineWidth = 3;
-    const txt = `⭐ 星链 x${starTarget.combo}`;
+    const txt = `星链 x${starTarget.combo}`;
     ctx.strokeText(txt, sx, sy - 38);
     ctx.fillStyle = '#00f3ff';
     ctx.fillText(txt, sx, sy - 38);

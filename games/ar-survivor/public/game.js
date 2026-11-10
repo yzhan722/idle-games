@@ -1273,7 +1273,7 @@ const drawerEl = document.getElementById('pet-drawer');
 const drawerItemsEl = document.getElementById('drawer-items');
 let activeDrawerTab = 'food';
 
-function openDrawer(tab) {
+function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame();
   activeDrawerTab = tab;
   drawerEl.classList.remove('hidden');
   document.querySelectorAll('.drawer-tab').forEach((t) => {
@@ -1448,7 +1448,7 @@ function renderDrawerItems() {
           }
           playSfx('star');
           player.happyTimer = 1.8;
-          addAffectionXp(35, `${item.ico} 新礼物 +35 亲密`);
+          addAffectionXp(35, '新礼物 +35 亲密');
           setPlayerEmote(`收到${item.name}啦，可以拖到桌面任意位置摆放哦 ^w^`, 2.4, 'happy', true);
         } else {
           if (item.isFurniture) {
@@ -1560,7 +1560,7 @@ function switchMode(newMode) {
     careBarEl.style.display = 'none';
     if (wishPillEl) wishPillEl.style.display = 'none';
     placeStarOnBestTarget();
-    setPlayerEmote('⭐ 跳上实景物体摘星拿赏金!', 1.8);
+    setPlayerEmote('跳上实景物体摘星拿赏金!', 1.8);
   } else if (gameMode === 'survivor') {
     careBarEl.style.display = 'none';
     if (wishPillEl) wishPillEl.style.display = 'none';
@@ -1823,7 +1823,7 @@ function cancelRpsGame() {
   document.getElementById('btn-rps')?.classList.remove('active');
 }
 
-function startRpsGame(fromGesture = false) {
+function startRpsGame(fromGesture = false) { if (palmCatchGame.active) cancelPalmCatchGame(); if (rpsChoicesEl) rpsChoicesEl.style.display = 'flex';
   if (rpsGame.active) {
     cancelRpsGame();
     return;
@@ -2027,7 +2027,7 @@ function updatePalmCatchGame(dt, centerFloorY) {
           y: player.y - 42,
           vx: 0,
           vy: -60,
-          text: '⏰ 加班闹钟 -10!',
+          text: '加班闹钟 -10!',
           color: '#ff4d79',
           scale: 1.15,
           life: 0.7
@@ -2245,7 +2245,7 @@ document.getElementById('btn-nap').addEventListener('pointerdown', (e) => {
     player.happyTimer = 1.2;
     setPlayerEmote('睡饱满血复活!', 1.8, 'happy', true);
   } else {
-    setNapping(true);
+    setNapping(true); cancelRpsGame(); cancelPalmCatchGame(); player.vy = Math.max(0, player.vy);
     player.vx = 0;
     player.wanderTargetX = null;
     player.idleTime = 6.0;
@@ -2784,7 +2784,7 @@ function updateGameplay(dt, flow) {
         }
         spawnInteractVfx(gs.fingerX, gs.fingerY, 'love', 9);
       }
-    } else if (petItems.length > 0 && gameMode === 'pet') {
+    } else if (!player.isNapping && petItems.length > 0 && gameMode === 'pet') {
       setNapping(false);
       let nearestIt = petItems[0];
       let bestD = Math.abs(nearestIt.x - player.x);
@@ -2873,7 +2873,7 @@ function updateGameplay(dt, flow) {
         desiredVx = dir * MAX_RUN_SPEED;
       }
 
-      if (player.recenterDelay <= 0 && player.y > anchorY + 34 && player.autoJumpCd <= 0) {
+      if (player.onGround && player.recenterDelay <= 0 && player.y > anchorY + 34 && player.autoJumpCd <= 0) {
         triggerJump();
         player.autoJumpCd = 0.45;
       }
@@ -3265,8 +3265,8 @@ function updateGameplay(dt, flow) {
         starTarget.comboTimer = 9.5;
         player.starsCollected++;
         const starBounty = 16 + starTarget.combo * 6;
-        addAffectionXp(24 + starTarget.combo * 4, `⭐ 摘星 x${starTarget.combo} +`);
-        addCoins(starBounty, starTarget.x, starTarget.y, `⭐ 星链x${starTarget.combo} `);
+        addAffectionXp(24 + starTarget.combo * 4, `摘星 x${starTarget.combo} +`);
+        addCoins(starBounty, starTarget.x, starTarget.y, `星链x${starTarget.combo} `);
         shockwaves.push({
           x: starTarget.x,
           y: starTarget.y,
