@@ -38,11 +38,11 @@ const SPRITE_FILES = {
   heroPoseRps: './assets/hero_pose_rps.webp?v=hd5',
   heroPoseCheer: './assets/hero_pose_cheer.webp?v=hd5',
 
-  slime: './assets/mon_slime.webp?v=hd2',
-  bat: './assets/mon_bat.webp?v=hd2',
-  elite: './assets/mon_elite.webp?v=hd2',
+  slime: './assets/mon_slime.webp?v=hd8',
+  bat: './assets/mon_bat.webp?v=hd8',
+  elite: './assets/mon_elite.webp?v=hd8',
   boss: './assets/mon_boss.webp?v=hd4',
-  star: './assets/star_goal.webp?v=hd2',
+  star: './assets/star_goal.webp?v=hd8',
   foodRice: './assets/food_rice.webp?v=hd2',
   foodTea: './assets/food_tea.webp?v=hd2',
   foodBento: './assets/food_bento.webp?v=hd2',
@@ -610,8 +610,8 @@ export function drawHeroSprite(ctx, p, now) {
 
   ctx.restore();
 
-  if (p.emote && p.emoteTimer > 0) {
-    drawPetEmoteBubble(ctx, p.emote, p.emoteTimer, now, p.emoteMood || 'normal');
+  if (p.emote && p.emoteTimer > 0 && !p.drawerOpen) {
+    drawPetEmoteBubble(ctx, p.emote, p.emoteTimer, now, p.emoteMood || 'normal', p.x, p.y, Boolean(p.rpsHudOpen));
   }
 
   ctx.restore();
@@ -782,7 +782,7 @@ export function drawToyItem(ctx, it, now) {
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
     ctx.lineWidth = 3;
-    const txt = `🔥 x${it.rallyCount}`;
+    const txt = `连击 x${it.rallyCount}`;
     ctx.strokeText(txt, 0, 0);
     ctx.fillStyle = '#ffd700';
     ctx.fillText(txt, 0, 0);
@@ -811,7 +811,7 @@ function drawVectorSparkle(ctx, x, y, size, rot) {
   ctx.restore();
 }
 
-function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal') {
+function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py = 240, rpsHudOpen = false) {
   ctx.save();
   const isTsundere = mood === 'tsundere';
   const isLove = mood === 'happy' || mood === 'cheer' || mood === 'love';
@@ -820,14 +820,21 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal') {
 
   const popScale = Math.min(1, timer * 5.4) * (1 + Math.sin(now * 0.013) * 0.038);
   const jitterX = isTsundere && timer > 1.85 ? Math.sin(now * 0.09) * 2.5 : 0;
-  const by = -108 + Math.sin(now * (isSleep ? 0.0045 : 0.0085)) * 3.4;
+  const rawBy = (rpsHudOpen ? -64 : -108) + Math.sin(now * (isSleep ? 0.0045 : 0.0085)) * 3.4;
+  const by = Math.max(78 - py, rawBy);
   ctx.translate(jitterX, by);
   ctx.scale(popScale, popScale);
 
   ctx.font = '900 12.5px "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif';
   const tw = ctx.measureText(text).width + 26;
   const th = 29;
-  const rx = -tw * 0.5;
+  const ceilingDodge = by > rawBy + 18 ? (px > 480 ? -(tw * 0.5 + 52) : tw * 0.5 + 52) : 0;
+  const shiftX = rpsHudOpen
+    ? Math.min(182, Math.max(126, tw * 0.5 + 68))
+    : py + by < 126 && px - tw * 0.5 < 246
+      ? Math.max(0, 246 - (px - tw * 0.5))
+      : 0;
+  const rx = -tw * 0.5 + (ceilingDodge || shiftX);
   const ry = -th * 0.5;
 
   ctx.fillStyle = 'rgba(10, 24, 52, 0.24)';
@@ -867,9 +874,10 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal') {
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.moveTo(-5, ry + th - 1);
-  ctx.lineTo(0, ry + th + 6);
-  ctx.lineTo(5, ry + th - 1);
+  const tailX = Math.max(rx + 15, Math.min(rx + tw - 15, 0));
+  ctx.moveTo(tailX - 5, ry + th - 1);
+  ctx.lineTo(tailX, ry + th + 6);
+  ctx.lineTo(tailX + 5, ry + th - 1);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
@@ -889,7 +897,7 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal') {
   ctx.fillStyle = '#12284c';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, 0, 0.5);
+  ctx.fillText(text, rx + tw * 0.5, 0.5);
   ctx.restore();
 }
 
@@ -958,7 +966,7 @@ export function drawInteractionVfx(ctx, particles, touchRipples, fingerSparkle, 
   }
 }
 
-export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false) {
+export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel = false) {
   ctx.save();
   ctx.translate(furn.x, furn.y);
 
@@ -1030,22 +1038,22 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false) {
   }
   ctx.restore();
 
-  if (furn.key === 'pc' && furn.working) {
+  if (!hideLabel && furn.key === 'pc' && furn.working) {
     const floatY = -76 + Math.sin(now * 0.012) * 4;
     ctx.font = '900 11px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(8, 20, 46, 0.85)';
     ctx.lineWidth = 3;
-    const codeTxt = Math.sin(now * 0.006) > 0 ? '💻 敲代码中 </>' : '⚡ AI 产币中 +🪙';
+    const codeTxt = Math.sin(now * 0.006) > 0 ? '敲代码中 </>' : 'AI 产币中 +金币';
     ctx.strokeText(codeTxt, 0, floatY);
     ctx.fillStyle = '#56e8ff';
     ctx.fillText(codeTxt, 0, floatY);
-  } else if (isLampLit) {
+  } else if (!hideLabel && isLampLit) {
     ctx.font = '900 10.5px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(8, 20, 46, 0.8)';
     ctx.lineWidth = 2.8;
-    const lampTxt = isDarkRoom ? '🌙 暗光感应守护 +25%💗' : '✨ 星海夜灯已点亮';
+    const lampTxt = isDarkRoom ? '暗光感应守护 +25% 亲密' : '星海夜灯已点亮';
     ctx.strokeText(lampTxt, 0, -76);
     ctx.fillStyle = '#ffe57f';
     ctx.fillText(lampTxt, 0, -76);
@@ -1129,13 +1137,13 @@ export function drawEnemySprite(ctx, e, now, playerX) {
     ctx.lineWidth = 3;
     ctx.font = '900 11.5px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
-    ctx.strokeText('👑 摸鱼大魔王', 0, -size * 0.62 - 16);
-    ctx.fillText('👑 摸鱼大魔王', 0, -size * 0.62 - 16);
+    ctx.strokeText('摸鱼大魔王', 0, -size * 0.62 - 16);
+    ctx.fillText('摸鱼大魔王', 0, -size * 0.62 - 16);
   } else if (e.isGoldTreasure) {
     ctx.fillStyle = '#ffd700';
     ctx.font = '900 11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🪙招财', 0, -size * 0.55);
+    ctx.fillText('招财', 0, -size * 0.55);
   }
 
   ctx.restore();
@@ -1169,7 +1177,7 @@ export function drawStarGoal(ctx, starTarget, player, now) {
     ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
     ctx.lineWidth = 3;
-    const txt = `⭐ 星链 x${starTarget.combo}`;
+    const txt = `星链 x${starTarget.combo}`;
     ctx.strokeText(txt, sx, sy - 38);
     ctx.fillStyle = '#00f3ff';
     ctx.fillText(txt, sx, sy - 38);
