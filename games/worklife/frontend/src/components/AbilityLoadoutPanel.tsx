@@ -106,7 +106,7 @@ export function AbilityLoadoutPanel(props: Props) {
   return (
     <section className={`ability-loadout${props.compact ? " compact" : ""}`} aria-label="技能配置">
       <div className="loadout-slot-head">
-        <span className="loadout-slot-title">✨ 技能槽 <small>{Math.min(slots.length, totalSlots)}/{totalSlots}</small></span>
+        <span className="loadout-slot-title"><T1Art kind="ui" id="nav-magic" className="gold-inline" alt="" /> 技能槽 <small>{Math.min(slots.length, totalSlots)}/{totalSlots}</small></span>
         <span className="loadout-slot-sub">从左到右按顺序自动释放；条件满足、冷却好了、魔力够就放。智力每 10 级多一格。</span>
       </div>
       <div className="ability-slots">
@@ -119,7 +119,7 @@ export function AbilityLoadoutPanel(props: Props) {
           if (locked) {
             return (
               <div className="ability-slot locked" key={`slot-${i}`} data-slot-index={i}>
-                <span className="ability-slot-lock">🔒</span>
+                <span className="ability-slot-lock">未解锁</span>
                 <span className="ability-slot-copy">智力 {slotUnlockLevel(i)} 级解锁（当前 {props.intelligenceLevel}）</span>
               </div>
             );
@@ -209,7 +209,7 @@ export function AbilityLoadoutPanel(props: Props) {
       </div>
       <div className="ability-mastery-roster">
         <div className="ability-roster-head">
-          <span>📖 技能等级与熟练度体系</span>
+          <span><T1Art kind="ui" id="nav-tasks" className="gold-inline" alt="" /> 技能等级与熟练度体系</span>
           <small>战斗释放增长经验 · 重读技能书固定 +{BOOK_REREAD_XP} EXP · 每升 1 级威力 +5%，每 5 级突破缩短 2.5% 冷却</small>
         </div>
         <div className="ability-roster-grid">

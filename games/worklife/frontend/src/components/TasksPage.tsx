@@ -117,10 +117,10 @@ export function TasksPage(props: Props) {
   };
 
   const iconFor = (t: TaskView) => {
-    if (t.kind === "kill" && t.monsterId) return <T1Art kind="monster" id={t.monsterId} fallback="👾" alt="" />;
+    if (t.kind === "kill" && t.monsterId) return <T1Art kind="monster" id={t.monsterId} fallback="◈" alt="" />;
     const a = props.actions?.find((x) => x.id === t.actionId);
     const out = a?.yields?.[0]?.itemId;
-    return out ? <T1ItemIcon itemId={out} fallback={props.iconOf(out)} alt="" /> : <span>📋</span>;
+    return out ? <T1ItemIcon itemId={out} fallback="◈" alt="" /> : <T1Art kind="ui" id="nav-tasks" alt="" />;
   };
 
   if (!board) {
@@ -147,14 +147,14 @@ export function TasksPage(props: Props) {
       </div>
 
       <div className="tasks-summary">
-        <span className="inv-sum" title="任务代币">🎟️ 代币 <strong>{board.tokens}</strong></span>
+        <span className="inv-sum" title="任务代币"><T1Art kind="ui" id="nav-crystal" className="gold-inline" alt="" /> 代币 <strong>{board.tokens}</strong></span>
         <span className="inv-sum" title="下一个任务">
-          ⏳ {boardFull ? "任务栏已满，完成或丢弃一个才会发新任务" : `下一个任务：${fmtCountdown(remaining)}`}
+          {boardFull ? "任务栏已满，完成或丢弃一个才会发新任务" : `下一个任务：${fmtCountdown(remaining)}`}
           <small className="tasks-cooldown"> · 间隔 {Math.round((board.cooldownMs / 3600_000) * 10) / 10} 小时</small>
         </span>
-        <span className="inv-sum" title="累计完成">✅ 已完成 <strong>{board.completed}</strong></span>
+        <span className="inv-sum" title="累计完成"><T1Art kind="ui" id="nav-adventure" className="gold-inline" alt="" /> 已完成 <strong>{board.completed}</strong></span>
         <span className={`inv-sum tasks-gift${board.giftReady ? " ready" : ""}`} title="每 50 任务点一份礼物">
-          🎁 小紫牛的礼物
+          <T1Art kind="ui" id="nav-husbandry" className="gold-inline" alt="" /> 小紫牛的礼物
           <span className="tasks-gift-bar" aria-hidden="true"><span style={{ width: `${board.giftReady ? 100 : giftPct}%` }} /></span>
           {board.giftReady ? (
             <button type="button" className="qty-chip active" disabled={!!busy} onClick={() => run("gift", () => apiClient.claimTaskGift(), (r) => `礼物：金币 +${r.gold}，代币 +${r.tokens}${r.book ? "，还有一本技能书" : ""}`)}>
@@ -182,7 +182,7 @@ export function TasksPage(props: Props) {
                 <span className="skill-xp-bar" aria-hidden="true"><span className="skill-xp-fill" style={{ width: `${pct}%` }} /></span>
                 <small>{t.progress}/{t.target} ({Math.floor(pct)}%){t.completed ? " · 已完成" : ""}</small>
               </div>
-              <div className="task-reward"><GoldIcon /> {t.reward.gold} · 🎟️ {t.reward.tokens}</div>
+              <div className="task-reward"><GoldIcon /> {t.reward.gold} · <T1Art kind="ui" id="nav-crystal" className="gold-inline" alt="" /> {t.reward.tokens}</div>
               <div className="task-actions">
                 {t.completed ? (
                   <button type="button" className="btn-action craftable task-claim" disabled={busy === t.id} onClick={() => run(t.id, () => apiClient.claimTask(t.id), (r) => `任务完成：金币 +${r.gold}，代币 +${r.tokens}${r.giftReady ? "，礼物可以领了！" : ""}`)}>
@@ -233,7 +233,7 @@ export function TasksPage(props: Props) {
                 disabled={item.soldOut || board.tokens < item.cost || busy === item.id}
                 onClick={() => run(item.id, () => apiClient.buyTaskShop(item.id), (r) => (r.gained?.gold ? `宝箱：金币 +${r.gained.gold}` : `已购买「${item.name}」`))}
               >
-                {item.soldOut ? "已满" : `🎟️ ${item.cost}`}
+                {item.soldOut ? "已满" : <><T1Art kind="ui" id="nav-crystal" className="gold-inline" alt="" /> {item.cost}</>}
               </button>
             </div>
           ))}
@@ -252,7 +252,7 @@ export function TasksPage(props: Props) {
                     disabled={busy === `block-${s.id}` || (!on && board.blockedSkills.length >= board.blockSlots)}
                     onClick={() => run(`block-${s.id}`, () => apiClient.setTaskBlock(s.id, !on), () => (on ? `已恢复 ${s.name} 的任务` : `已屏蔽 ${s.name} 的任务`))}
                   >
-                    {on ? "🚫 " : ""}{s.name}
+                    {on ? "已屏蔽 · " : ""}{s.name}
                   </button>
                 );
               })}

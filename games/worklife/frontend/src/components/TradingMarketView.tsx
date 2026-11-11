@@ -1,8 +1,9 @@
-import { T1ItemIcon } from './T1Art'
+import { GoldIcon, T1Art, T1ItemIcon } from './T1Art'
 import { MarketItemGrid } from './MarketItemGrid'
 import { MarketMyOrders } from './MarketMyOrders'
 import { getItemIcon, getTierName, resolveItemInfo } from '../gameplay/gameConstants'
 import type { PlayerState } from '../types/game'
+import './T1UiIcons.css'
 
 export interface TradingMarketViewProps {
   playerState: PlayerState
@@ -75,7 +76,7 @@ export function TradingMarketView({
     <div className="trading-layout">
       {itemsLoading ? (
         <div className="loading-screen">
-          <div>⏳ 加载道具数据中...</div>
+          <div><T1Art kind="ui" id="nav-trading" fallback="" alt="" className="inline-t1-icon" /> 加载道具数据中...</div>
         </div>
       ) : !selectedTradingItem ? (
         <>
@@ -87,12 +88,12 @@ export function TradingMarketView({
           </div>
           <MarketItemGrid
             groups={[
-              { id: 'materials', title: '材料', emoji: '📦', items: allItems?.materials || [] },
-              { id: 'weapons', title: '武器', emoji: '⚔️', items: allItems?.weapons || [] },
+              { id: 'materials', title: '材料', iconId: 'nav-woodworking', items: allItems?.materials || [] },
+              { id: 'weapons', title: '武器', iconId: 'nav-melee', items: allItems?.weapons || [] },
               {
                 id: 'armor',
                 title: '防具',
-                emoji: '🛡️',
+                iconId: 'stat-def',
                 items: [
                   ...(allItems?.armor || []),
                   ...((allItems?.all || []).filter(
@@ -102,10 +103,10 @@ export function TradingMarketView({
                   )),
                 ],
               },
-              { id: 'accessories', title: '饰品', emoji: '💍', items: (allItems?.all || []).filter((i: any) => i.type === 'accessory') },
-              { id: 'tools', title: '工具', emoji: '🪓', items: (allItems?.all || []).filter((i: any) => !!i.toolFor) },
-              { id: 'consumables', title: '消耗品', emoji: '🍖', items: allItems?.consumables || [] },
-              { id: 'books', title: '技能书', emoji: '📖', items: (allItems?.all || []).filter((i: any) => i.type === 'book') },
+              { id: 'accessories', title: '饰品', iconId: 'nav-crystal', items: (allItems?.all || []).filter((i: any) => i.type === 'accessory') },
+              { id: 'tools', title: '工具', iconId: 'nav-logging', items: (allItems?.all || []).filter((i: any) => !!i.toolFor) },
+              { id: 'consumables', title: '消耗品', iconId: 'nav-cooking', items: allItems?.consumables || [] },
+              { id: 'books', title: '技能书', iconId: 'nav-magic', items: (allItems?.all || []).filter((i: any) => i.type === 'book') },
             ]}
             inventory={playerState.inventory}
             iconOf={getItemIcon}
@@ -162,7 +163,7 @@ export function TradingMarketView({
                   setShowSellModal(true)
                 }}
               >
-                📤 挂出售单
+                <T1Art kind="ui" id="nav-trading" fallback="" alt="" /> 挂出售单
               </button>
               <button
                 className="btn-create-order buy"
@@ -176,7 +177,7 @@ export function TradingMarketView({
                   setShowSellModal(true)
                 }}
               >
-                📥 挂收购单
+                <T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> 挂收购单
               </button>
             </div>
           </div>
@@ -184,7 +185,7 @@ export function TradingMarketView({
           <div className="trading-orders-container">
             <div className="orders-column">
               <div className="orders-header sell">
-                <h3>📤 出售单</h3>
+                <h3><T1Art kind="ui" id="nav-trading" fallback="" alt="" /> 出售单</h3>
                 <span className="orders-hint">价格从低到高</span>
               </div>
               <div className="orders-list">
@@ -204,7 +205,7 @@ export function TradingMarketView({
                               <small style={{ marginLeft: 6, opacity: 0.72, fontSize: '0.75rem' }}>商会预设</small>
                             )}
                           </span>
-                          <span className="order-price">{order.price} 💰</span>
+                          <span className="order-price">{order.price} <GoldIcon /></span>
                         </div>
                       ))}
                     {tradingOrders.filter((order) => order.type === 'sell').length === 0 && (
@@ -226,7 +227,7 @@ export function TradingMarketView({
                           }
                         }}
                       >
-                        💰 购买
+                        <GoldIcon /> 购买
                       </button>
                     )}
                   </>
@@ -236,7 +237,7 @@ export function TradingMarketView({
 
             <div className="orders-column">
               <div className="orders-header buy">
-                <h3>📥 收购单</h3>
+                <h3><T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> 收购单</h3>
                 <span className="orders-hint">价格从高到低</span>
               </div>
               <div className="orders-list">
@@ -256,7 +257,7 @@ export function TradingMarketView({
                               <small style={{ marginLeft: 6, opacity: 0.72, fontSize: '0.75rem' }}>商会预设</small>
                             )}
                           </span>
-                          <span className="order-price">{order.price} 💰</span>
+                          <span className="order-price">{order.price} <GoldIcon /></span>
                         </div>
                       ))}
                     {tradingOrders.filter((order) => order.type === 'buy').length === 0 && (
@@ -278,7 +279,7 @@ export function TradingMarketView({
                           }
                         }}
                       >
-                        📦 出售
+                        <T1Art kind="ui" id="nav-trading" fallback="" alt="" /> 出售
                       </button>
                     )}
                   </>
@@ -310,7 +311,7 @@ export function TradingMarketView({
               ✕
             </button>
             <h3 className="modal-title">
-              {orderType === 'sell' ? '📤 挂出售单' : '📥 挂收购单'}
+              <T1Art kind="ui" id={orderType === 'sell' ? 'nav-trading' : 'nav-inventory'} fallback="" alt="" /> {orderType === 'sell' ? '挂出售单' : '挂收购单'}
               {selectedTradingItem && ` - ${getItemInfo(selectedTradingItem).name}`}
             </h3>
             <div className="sell-form">
@@ -439,18 +440,18 @@ export function TradingMarketView({
               <div className="sell-summary">
                 <div className="summary-row">
                   <span>总{orderType === 'sell' ? '价' : '金额'}</span>
-                  <span className="summary-value gold">{sellQuantity * sellPrice} 💰</span>
+                  <span className="summary-value gold">{sellQuantity * sellPrice} <GoldIcon /></span>
                 </div>
                 {orderType === 'sell' && (
                   <>
                     <div className="summary-row">
                       <span>手续费(5%)</span>
-                      <span className="summary-value">{Math.floor(sellQuantity * sellPrice * 0.05)} 💰</span>
+                      <span className="summary-value">{Math.floor(sellQuantity * sellPrice * 0.05)} <GoldIcon /></span>
                     </div>
                     <div className="summary-row total">
                       <span>实际收入</span>
                       <span className="summary-value gold">
-                        {sellQuantity * sellPrice - Math.floor(sellQuantity * sellPrice * 0.05)} 💰
+                        {sellQuantity * sellPrice - Math.floor(sellQuantity * sellPrice * 0.05)} <GoldIcon />
                       </span>
                     </div>
                   </>
@@ -458,7 +459,7 @@ export function TradingMarketView({
                 {orderType === 'buy' && (
                   <div className="summary-row total">
                     <span>需要支付</span>
-                    <span className="summary-value gold">{sellQuantity * sellPrice} 💰</span>
+                    <span className="summary-value gold">{sellQuantity * sellPrice} <GoldIcon /></span>
                   </div>
                 )}
               </div>
@@ -505,7 +506,7 @@ export function TradingMarketView({
         >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">
-              {selectedOrder.type === 'sell' ? '💰 购买物品' : '📦 出售物品'}
+              {selectedOrder.type === 'sell' ? <><GoldIcon /> 购买物品</> : <><T1Art kind="ui" id="nav-trading" fallback="" alt="" /> 出售物品</>}
               {selectedTradingItem && ` - ${getItemInfo(selectedTradingItem).name}`}
             </h3>
             <div className="sell-form">
@@ -541,17 +542,17 @@ export function TradingMarketView({
               <div className="sell-summary">
                 <div className="summary-row">
                   <span>单价</span>
-                  <span className="summary-value">{selectedOrder.price} 💰</span>
+                  <span className="summary-value">{selectedOrder.price} <GoldIcon /></span>
                 </div>
                 {selectedOrder.type === 'buy' && (
                   <>
                     <div className="summary-row">
                       <span>总价</span>
-                      <span className="summary-value gold">{purchaseQuantity * selectedOrder.price} 💰</span>
+                      <span className="summary-value gold">{purchaseQuantity * selectedOrder.price} <GoldIcon /></span>
                     </div>
                     <div className="summary-row">
                       <span>手续费(5%)</span>
-                      <span className="summary-value">{Math.floor(purchaseQuantity * selectedOrder.price * 0.05)} 💰</span>
+                      <span className="summary-value">{Math.floor(purchaseQuantity * selectedOrder.price * 0.05)} <GoldIcon /></span>
                     </div>
                   </>
                 )}
@@ -562,7 +563,7 @@ export function TradingMarketView({
                       ? purchaseQuantity * selectedOrder.price
                       : purchaseQuantity * selectedOrder.price -
                         Math.floor(purchaseQuantity * selectedOrder.price * 0.05)}{' '}
-                    💰
+                    <GoldIcon />
                   </span>
                 </div>
               </div>

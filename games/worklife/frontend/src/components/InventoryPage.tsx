@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { GoldIcon, T1ItemIcon } from "./T1Art";
+import { GoldIcon, T1Art, T1ItemIcon } from "./T1Art";
 import { enhancementStatMultiplier } from "../gameplay/enhancement";
+import "./T1UiIcons.css";
 
 export type InventoryRow = {
   itemId: string;
@@ -38,12 +39,12 @@ type Props = {
 type GroupId = "equipment" | "tools" | "consumables" | "books" | "materials";
 type SortId = "tier" | "count" | "value" | "name";
 
-const GROUPS: Array<{ id: GroupId; title: string; emoji: string }> = [
-  { id: "equipment", title: "装备", emoji: "⚔️" },
-  { id: "tools", title: "工具", emoji: "🪓" },
-  { id: "consumables", title: "消耗品", emoji: "🍖" },
-  { id: "books", title: "技能书", emoji: "📖" },
-  { id: "materials", title: "材料", emoji: "📦" },
+const GROUPS: Array<{ id: GroupId; title: string; iconId: string }> = [
+  { id: "equipment", title: "装备", iconId: "nav-melee" },
+  { id: "tools", title: "工具", iconId: "nav-logging" },
+  { id: "consumables", title: "消耗品", iconId: "nav-cooking" },
+  { id: "books", title: "技能书", iconId: "nav-magic" },
+  { id: "materials", title: "材料", iconId: "nav-woodworking" },
 ];
 
 export function groupOf(row: InventoryRow, pack: PackItem | undefined): GroupId {
@@ -142,8 +143,8 @@ export function InventoryPage(props: Props) {
       </div>
       <div className="inventory-page-summary">
         <span className="inv-sum" title="金币"><GoldIcon /> <strong>{formatGold(props.gold)}</strong> 金币</span>
-        <span className="inv-sum" title="物品种类">📦 <strong>{kinds}</strong> 种物品</span>
-        <span className="inv-sum" title="按商店售价估算">💰 商店估值 <strong>{formatGold(totalValue)}</strong></span>
+        <span className="inv-sum" title="物品种类"><T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> <strong>{kinds}</strong> 种物品</span>
+        <span className="inv-sum" title="按商店售价估算"><GoldIcon /> 商店估值 <strong>{formatGold(totalValue)}</strong></span>
       </div>
       <div className="inventory-page-tools">
         <input
@@ -168,7 +169,7 @@ export function InventoryPage(props: Props) {
               onClick={() => setGroup(g.id)}
               disabled={(unfilteredCounts.get(g.id) || 0) === 0 && group !== g.id}
             >
-              {g.emoji} {g.title} {search.trim() ? (grouped.get(g.id)?.length || 0) : (unfilteredCounts.get(g.id) || 0)}
+              <T1Art kind="ui" id={g.iconId} fallback="" alt="" /> {g.title} {search.trim() ? (grouped.get(g.id)?.length || 0) : (unfilteredCounts.get(g.id) || 0)}
             </button>
           ))}
         </div>
@@ -192,14 +193,14 @@ export function InventoryPage(props: Props) {
       </div>
       {visibleGroups.length === 0 && (
         <div className="inventory-empty inv-page-empty">
-          <div className="empty-icon">📭</div>
+          <div className="empty-icon"><T1Art kind="ui" id="nav-inventory" fallback="" alt="" /></div>
           <p>{search ? "没有匹配的物品" : kinds > 0 ? "该分类下暂无物品" : "背包还是空的。去砍第一棵小白杨。"}</p>
         </div>
       )}
       {visibleGroups.map((g) => (
         <section className="inv-group" key={g.id} aria-label={g.title}>
           <h3 className="inv-group-title">
-            {g.emoji} {g.title} <small>{grouped.get(g.id)!.length}</small>
+            <T1Art kind="ui" id={g.iconId} fallback="" alt="" /> {g.title} <small>{grouped.get(g.id)!.length}</small>
           </h3>
           <div className="inv-grid">
             {grouped.get(g.id)!.map((r) => {

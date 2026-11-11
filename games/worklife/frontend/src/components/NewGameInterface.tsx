@@ -63,6 +63,7 @@ import {
   type CurrentActivity,
 } from '../gameplay/gameConstants'
 import { AlchemyCoinifyPanel, ProductionTeaBar } from './ProductionExtras'
+import { GoldIcon, T1ItemIcon } from './T1Art'
 import { AdventurePanel } from './AdventurePanel'
 import { TradingMarketView } from './TradingMarketView'
 import {
@@ -1292,7 +1293,10 @@ export default function NewGameInterface() {
         </div>
         {isCombatLock && (
           <div className="combat-lock-banner">
-            ⚔️ 当前正在战斗中，所有生产与生活技能已锁定置灰（请先在顶部停止战斗）
+            <T1ItemIcon itemId="weapon_iron_sword" className="gold-inline" alt="" /> 当前正在战斗中，所有生产与生活技能已锁定置灰
+            <button type="button" className="btn-secondary" style={{ marginLeft: 10, padding: '2px 10px', fontSize: 12 }} onClick={() => void stopBattle()}>
+              立即停止战斗
+            </button>
           </div>
         )}
         <ProductionTeaBar playerState={playerState} refreshPlayerState={refreshPlayerState} />
@@ -1343,7 +1347,10 @@ export default function NewGameInterface() {
         </div>
         {isCombatLock && (
           <div className="combat-lock-banner">
-            ⚔️ 当前正在战斗中，所有生产与生活技能已锁定置灰（请先在顶部停止战斗）
+            <T1ItemIcon itemId="weapon_iron_sword" className="gold-inline" alt="" /> 当前正在战斗中，所有生产与生活技能已锁定置灰
+            <button type="button" className="btn-secondary" style={{ marginLeft: 10, padding: '2px 10px', fontSize: 12 }} onClick={() => void stopBattle()}>
+              立即停止战斗
+            </button>
           </div>
         )}
         <ProductionTeaBar playerState={playerState} refreshPlayerState={refreshPlayerState} />
@@ -1356,7 +1363,7 @@ export default function NewGameInterface() {
               className={`alchemy-branch-tab ${alchemyBranch === 'recipes' ? 'active' : ''}`}
               onClick={() => setAlchemyBranch('recipes')}
             >
-              🧪 药剂与炼金制作
+              <T1ItemIcon itemId="weapon_alchemy_bottle_t1" className="gold-inline" alt="" /> 药剂与炼金制作
             </button>
             <button
               type="button"
@@ -1365,7 +1372,7 @@ export default function NewGameInterface() {
               className={`alchemy-branch-tab ${alchemyBranch === 'coinify' ? 'active' : ''}`}
               onClick={() => setAlchemyBranch('coinify')}
             >
-              ✨ 点石成金（Coinify 转化金币）
+              <GoldIcon /> 点石成金（Coinify 转化金币）
             </button>
           </div>
         )}
@@ -1828,21 +1835,7 @@ export default function NewGameInterface() {
   const sidebarLocked = new Set<string>()
   if (!hasFirstGather) sidebarLocked.add("woodworking")
   if (!hasSwordOn) sidebarLocked.add("adventure")
-  if (headerBattleActive) {
-    for (const s of SKILL_NAV) {
-      if (s.group === "gathering" || s.group === "production") {
-        sidebarLocked.add(s.id)
-      }
-    }
-  }
   const onNavLocked = (id: string) => {
-    if (headerBattleActive) {
-      const navItem = SKILL_NAV.find((s) => s.id === id)
-      if (navItem && (navItem.group === "gathering" || navItem.group === "production")) {
-        toast.info("当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）")
-        return
-      }
-    }
     if (id === "woodworking") toast.info("先砍到第一根木头，制作才会打开")
     if (id === "adventure") toast.info("先穿上木头短剑，再进森林")
   }
@@ -1898,7 +1891,7 @@ export default function NewGameInterface() {
     : playerState.hpCombat?.outcome === 'loss' && playerState.hpCombat?.nextFightAt
       ? '重伤休整 · 准备再战'
       : playerState.hpCombat?.outcome === 'win' && playerState.hpCombat?.nextFightAt
-        ? '连续自动战斗 · 索敌中'
+        ? '自动连战 · 索敌中'
         : '连续自动战斗'
 
   const runningAction = playerState.mode === 'life_action' && playerState.lifeActionState && !headerBattleActive
@@ -2314,7 +2307,10 @@ export default function NewGameInterface() {
           <div className={headerBattleActive ? 'combat-disabled-page' : undefined}>
             {headerBattleActive && (
               <div className="combat-lock-banner" role="status">
-                ⚔️ 当前正在战斗中，生产与生活技能已锁定（请先在顶部停止战斗）
+                <T1ItemIcon itemId="weapon_iron_sword" className="gold-inline" alt="" /> 当前正在战斗中，生产与生活技能已锁定
+                <button type="button" className="btn-secondary" style={{ marginLeft: 10, padding: '2px 10px', fontSize: 12 }} onClick={() => void stopBattle()}>
+                  立即停止战斗
+                </button>
               </div>
             )}
             <EnhancementPanel 
