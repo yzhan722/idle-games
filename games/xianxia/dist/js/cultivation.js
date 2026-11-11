@@ -291,13 +291,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		},
 		{
 			key: "fierce",
-			label: "🔥 武火催丹",
+			label: "✦ 武火催丹",
 			tag: "35%~55% 一炉双丹",
 			desc: "引地肺赤炎猛催药力：开炉有 35%（随丹道造诣最高达 55%）概率触发【一炉双丹】，单份药材凝成 2 枚灵丹！"
 		},
 		{
 			key: "azure",
-			label: "💠 乾蓝灵火",
+			label: "◈ 乾蓝灵火",
 			tag: "30%~50% 凝出丹纹",
 			desc: "借乾蓝冰焰与青莲地火交融淬髓：开炉有 30%（随丹道造诣最高达 50%）概率凝成【✦丹纹灵丹】，服之药效与时长 +40%、丹毒减半！"
 		}
@@ -2185,7 +2185,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 			nextPreviewHtml =
 				"<div class=\"xxSynNextBar\">" +
-					"<span class=\"xxSynNextTag\">🔒 下一大境预告 · 突破【" + nextSyn.title + "】开启</span>" +
+					"<span class=\"xxSynNextTag\">◈ 下一大境预告 · 突破【" + nextSyn.title + "】开启</span>" +
 					"<span class=\"xxSynNextDetail\">" +
 						"唯一核心灵材：<b>" + nextSyn.resTitle + "</b>" +
 						(nextBlds.length ? " ｜ 解锁洞府灵筑：<b>" + nextBlds.join("、") + "</b>" : "") +
@@ -2217,15 +2217,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			spineHtml +
 			"<div class=\"xxSynModules\">" +
 				"<div class=\"xxSynModCol" + (tabId === "Bonfire" ? " active" : "") + "\">" +
-					"<span class=\"xxSynModLbl\">🏯 本境核心洞府 (" + curSyn.coreBlds.length + ")</span>" +
+					"<span class=\"xxSynModLbl\">◈ 本境核心洞府 (" + curSyn.coreBlds.length + ")</span>" +
 					"<div class=\"xxSynChipList\">" + (bldLabels.join("") || "<span class=\"xxSynIdle\">九境洞府已圆满</span>") + "</div>" +
 				"</div>" +
 				"<div class=\"xxSynModCol" + (tabId === "Science" ? " active" : "") + "\">" +
-					"<span class=\"xxSynModLbl\">📜 本境问道功法</span>" +
+					"<span class=\"xxSynModLbl\">◈ 本境问道功法</span>" +
 					"<div class=\"xxSynChipList\">" + (techLabels.join("") || "<span class=\"xxSynIdle\">万法通玄</span>") + "</div>" +
 				"</div>" +
 				"<div class=\"xxSynModCol" + (tabId === "Workshop" ? " active" : "") + "\">" +
-					"<span class=\"xxSynModLbl\">🔥 本境百艺技艺</span>" +
+					"<span class=\"xxSynModLbl\">◈ 本境百艺技艺</span>" +
 					"<div class=\"xxSynChipList\">" + (artLabels.join("") || "<span class=\"xxSynIdle\">百艺化境</span>") + "</div>" +
 				"</div>" +
 			"</div>" +
@@ -3662,7 +3662,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	COMBAT_SKILLS: [
 		{
 			key: "strike",
-			label: "🗡 御剑斩",
+			label: "⚔ 御剑斩",
 			cost: 0,
 			gainMp: 25,
 			tag: "回气 +25",
@@ -3678,7 +3678,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		},
 		{
 			key: "guard",
-			label: "🛡 玄水灵盾",
+			label: "☯ 玄水灵盾",
 			cost: 0,
 			gainMp: 15,
 			tag: "回气 +15",
@@ -3698,7 +3698,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		viper: {
 			key: "viper",
 			name: "赤练妖蟒",
-			icon: "🐍",
+			icon: "蟒",
 			tier: "秘境妖兽",
 			traitTitle: "剧毒噬灵",
 			traitDesc: "毒牙噬咬附加2回合【蛇毒】(每回合损血6%并噬减15真元)；惧怕纯阳法宝，受【法宝镇压】伤害+25%",
@@ -3711,7 +3711,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		puppet: {
 			key: "puppet",
 			name: "铁甲尸傀",
-			icon: "🛡",
+			icon: "傀",
 			tier: "古修机关",
 			traitTitle: "玄铁重甲",
 			traitDesc: "入场自带35%玄铁护盾，有盾时减免35%普通剑伤；护盾被击碎时核心反噬自损10%气血并陷入2回合【破绽】",
@@ -3724,7 +3724,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		wraith: {
 			key: "wraith",
 			name: "阴冥鬼母",
-			icon: "👻",
+			icon: "鬼",
 			tier: "幽冥凶魂",
 			traitTitle: "摄魂魔音",
 			traitDesc: "鬼爪攻击无视50%护盾直伤气血并吸取真元；受纯阳【法宝镇压】额外加深35%伤害",
@@ -3737,7 +3737,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		mantis: {
 			key: "mantis",
 			name: "金背妖螂",
-			icon: "🦗",
+			icon: "螂",
 			tier: "嗜血荒兽",
 			traitTitle: "嗜血狂暴",
 			traitDesc: "双镰疾斩连击；气血低于50%时触发【嗜血狂暴】，攻击力暴涨+45%、防御力降低30%",
@@ -3750,7 +3750,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		frostwyrm: {
 			key: "frostwyrm",
 			name: "双首寒蛟",
-			icon: "🐉",
+			icon: "蛟",
 			tier: "寒潭大妖",
 			traitTitle: "极寒龙息",
 			traitDesc: "吐息附加2回合【寒霜】使修士真元获取减半，并可凝结寒冰龙鳞护盾",
@@ -3763,7 +3763,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		bloodcult: {
 			key: "bloodcult",
 			name: "血禁邪修",
-			icon: "🩸",
+			icon: "魔",
 			tier: "守关统领",
 			traitTitle: "化血魔功",
 			traitDesc: "攻击将45%伤害化为自身气血；蓄力【血煞魔雷】若被【玄水灵盾】反震则魔功反噬自损15%气血",
@@ -3781,7 +3781,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			key: "mojiaowang",
 			name: "千年墨蛟王",
 			zone: "血色禁地·环形山",
-			icon: "🐉",
+			icon: "蛟",
 			tier: "镇狱妖王",
 			traitTitle: "毒沼再生 · 墨毒狂澜",
 			traitDesc: "每回合再生5%气血并侵染剧毒；蓄力【墨毒狂澜】若被【玄水灵盾】反震则破防受创+40%",
@@ -3796,7 +3796,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			key: "jinjia",
 			name: "金甲镇殿傀儡",
 			zone: "虚天内殿·冰火道",
-			icon: "🗿",
+			icon: "甲",
 			tier: "太古机关王",
 			traitTitle: "不灭金身 · 元磁极光",
 			traitDesc: "入场自带45%金罡护盾且有盾减伤35%；护盾被【青元剑阵】击碎时陷入【核心过载】受创+50%",
@@ -3811,7 +3811,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			key: "yinlang",
 			name: "双首银狼王",
 			zone: "昆吾仙山·镇魔渊",
-			icon: "🐺",
+			icon: "狼",
 			tier: "天狼妖圣",
 			traitTitle: "月华双生 · 天狼啸月",
 			traitDesc: "双首连击无视35%护盾；半血以下触发【月华狂暴】攻击+40%且每回合恢复4%气血",
@@ -3826,7 +3826,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			key: "gumo",
 			name: "古魔血影",
 			zone: "坠魔古渊·血焰坛",
-			icon: "👹",
+			icon: "魔",
 			tier: "域外古魔",
 			traitTitle: "魔魂夺魄 · 天魔血爆",
 			traitDesc: "攻击汲取45%气血并侵染魔毒；蓄力【天魔血爆】被【玄水灵盾】反震时反噬自身12%气血",
@@ -3841,7 +3841,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			key: "zhenxian",
 			name: "真仙法则化身",
 			zone: "真仙界缝·混沌墟",
-			icon: "👁",
+			icon: "仙",
 			tier: "法则真灵",
 			traitTitle: "万法归墟 · 仙罡天罚",
 			traitDesc: "每回合恢复5%气血并凝结12%仙罡护盾；蓄力【九天仙罚】唯有【玄水灵盾】反震可破",
@@ -3897,16 +3897,16 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var hDmg = Math.round(atk * 1.65);
 			return {
 				key: "heavy",
-				title: "🔥 蓄力杀招",
+				title: "✦ 蓄力杀招",
 				desc: "预计轰出 ~" + iFmt(hDmg) + " 点狂暴重击",
-				counter: "破招：施展【🛡 玄水灵盾】触发太极反震！"
+				counter: "破招：施展【☯ 玄水灵盾】触发太极反震！"
 			};
 		}
 		if (intent === "guard"){
 			var sGain = Math.round((enemy.maxHp || 100) * 0.28);
 			return {
 				key: "guard",
-				title: "🛡 妖罡凝盾",
+				title: "◈ 妖罡凝盾",
 				desc: "凝结 ~" + iFmt(sGain) + " 点护盾并反击",
 				counter: "破招：施展【⚡ 青元剑阵】2.5倍破盾碎甲！"
 			};
@@ -3925,7 +3925,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			key: "strike",
 			title: "⚔ 凶煞扑击",
 			desc: "预计造成 ~" + iFmt(sDmg) + " 点扑击伤害",
-			counter: "应对：【🗡 御剑斩】聚气或【⚡ 青元剑阵】压制"
+			counter: "应对：【⚔ 御剑斩】聚气或【⚡ 青元剑阵】压制"
 		};
 	},
 
@@ -3957,7 +3957,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return {
 			key: def.key,
 			name: def.name,
-			icon: def.icon || "👹",
+			icon: def.icon || "妖",
 			tier: def.tier || "秘境妖兽",
 			traitTitle: def.traitTitle,
 			traitDesc: def.traitDesc,
@@ -4157,7 +4157,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				ev.pDmgDealt += crushDmg;
 				e.expose = Math.max(e.expose, 2);
 				if (e.key === "jinjia"){ e.overloaded = true; }
-				turnNotes.push("💥 击碎【" + e.traitTitle + "】护盾！核心反噬再创 " + crushDmg + " 并陷入【破绽】！");
+				turnNotes.push("✦ 击碎【" + e.traitTitle + "】护盾！核心反噬再创 " + crushDmg + " 并陷入【破绽】！");
 			}
 			return dmg;
 		};
@@ -4166,7 +4166,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var hasShieldSyn = p.shield > 0;
 			var strikeRaw = atkEff * (hasShieldSyn ? 1.45 : 1.10);
 			var sDealt = applyDamageToEnemy(strikeRaw, 1.0, false);
-			turnNotes.push("🗡 施展【御剑斩】" + (hasShieldSyn ? "(剑盾齐鸣+35%)" : "") + "斩落 " + sDealt + " 点伤害");
+			turnNotes.push("⚔ 施展【御剑斩】" + (hasShieldSyn ? "(剑盾齐鸣+35%)" : "") + "斩落 " + sDealt + " 点伤害");
 		} else if (sk.key === "skill"){
 			e.armorBreak = Math.max(e.armorBreak, 2);
 			var skillRaw = atkEff * 1.75;
@@ -4177,7 +4177,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			p.shield += shieldAdd;
 			ev.pShieldGain = shieldAdd;
 			p.counterStance = true;
-			turnNotes.push("🛡 祭起【玄水灵盾】凝盾 +" + shieldAdd + "，立下【太极反震】剑势！");
+			turnNotes.push("☯ 祭起【玄水灵盾】凝盾 +" + shieldAdd + "，立下【太极反震】剑势！");
 		} else if (sk.key === "ult"){
 			var traitWeakBonus = (e.key === "viper" ? 1.25 : (e.key === "wraith" ? 1.35 : 1.0));
 			var ultRaw = atkEff * 2.45 * traitWeakBonus;
@@ -4202,7 +4202,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		// 检查妖兽半血狂暴特征 (金背妖螂 / 双首银狼王)
 		if (!e.enraged && (e.key === "mantis" || e.key === "yinlang") && e.hp <= e.maxHp * 0.5){
 			e.enraged = true;
-			turnNotes.push("🔥 " + e.name + "气血过半，触发【" + e.traitTitle + "】攻击暴涨！");
+			turnNotes.push("✦ " + e.name + "气血过半，触发【" + e.traitTitle + "】攻击暴涨！");
 		}
 
 		// 4. 妖兽回合结算
@@ -4215,9 +4215,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				var sRegen = Math.round(e.maxHp * 0.12);
 				e.shield += sRegen;
 				ev.eShieldGain += sRegen;
-				turnNotes.push("👁 【万法归墟】法则流转，恢复 " + regenHp + " 气血并凝盾 +" + sRegen);
+				turnNotes.push("◈ 【万法归墟】法则流转，恢复 " + regenHp + " 气血并凝盾 +" + sRegen);
 			} else {
-				turnNotes.push("🐉 【" + e.traitTitle + "】再生恢复 " + regenHp + " 气血");
+				turnNotes.push("◈ 【" + e.traitTitle + "】再生恢复 " + regenHp + " 气血");
 			}
 		}
 
@@ -4263,7 +4263,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				}
 			} else {
 				var hLost = applyDamageToPlayer(eAtk * 1.65, (e.key === "wraith" ? 0.50 : (e.key === "yinlang" ? 0.35 : 0)));
-				turnNotes.push("🔥 " + e.name + "轰出【蓄力杀招】造成 " + hLost + " 点气血重创！");
+				turnNotes.push("✦ " + e.name + "轰出【蓄力杀招】造成 " + hLost + " 点气血重创！");
 				if (e.key === "bloodcult" || e.key === "gumo"){
 					var vamp = Math.round(hLost * 0.45);
 					if (vamp > 0){ e.hp = Math.min(e.maxHp, e.hp + vamp); }
@@ -4280,7 +4280,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			e.shield += eShieldAdd;
 			ev.eShieldGain += eShieldAdd;
 			var gLost = applyDamageToPlayer(eAtk * 0.65, 0);
-			turnNotes.push("🛡 " + e.name + "凝结 " + eShieldAdd + " 点妖罡护盾并反扑造成 " + gLost + " 点伤害");
+			turnNotes.push("◈ " + e.name + "凝结 " + eShieldAdd + " 点妖罡护盾并反扑造成 " + gLost + " 点伤害");
 		} else if (intent === "curse"){
 			var cLost = applyDamageToPlayer(eAtk * 0.85, (e.key === "wraith" ? 0.50 : 0));
 			if (e.key === "viper" || e.key === "mojiaowang" || e.key === "gumo"){
@@ -4292,7 +4292,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			} else {
 				p.mp = Math.max(0, p.mp - 20);
 				p.weak = Math.max(p.weak, 2);
-				turnNotes.push("👻 " + e.name + "施展摄魂妖术造成 " + cLost + " 伤，吸干 20 真元并附加【虚弱】！");
+				turnNotes.push("☠ " + e.name + "施展摄魂妖术造成 " + cLost + " 伤，吸干 20 真元并附加【虚弱】！");
 			}
 		} else {
 			// strike
@@ -4302,10 +4302,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			if (e.key === "bloodcult" || e.key === "gumo"){
 				var leech = Math.round(stLost * 0.45);
 				if (leech > 0){ e.hp = Math.min(e.maxHp, e.hp + leech); }
-				turnNotes.push("🩸 " + e.name + "施展【化血魔功】斩击 " + stLost + " 伤并吸血 +" + leech);
+				turnNotes.push("※ " + e.name + "施展【化血魔功】斩击 " + stLost + " 伤并吸血 +" + leech);
 			} else if (e.key === "viper"){
 				p.poison = Math.max(p.poison, 2);
-				turnNotes.push("🐍 " + e.name + "毒牙扑击造成 " + stLost + " 伤并附带【蛇毒】");
+				turnNotes.push("☠ " + e.name + "毒牙扑击造成 " + stLost + " 伤并附带【蛇毒】");
 			} else {
 				turnNotes.push("⚔ " + e.name + (isDouble ? "双锋连斩" : "凶煞扑击") + "造成 " + stLost + " 点伤害");
 			}
@@ -6145,10 +6145,10 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 
 						var statusRightHtml = "";
 						if (toxInfo.val > 0){
-							statusRightHtml += "<a href=\"#!\" class=\"xxToxPurgeBtn\" data-alc-act=\"purge\">💧 运功逼毒</a>";
+							statusRightHtml += "<a href=\"#!\" class=\"xxToxPurgeBtn\" data-alc-act=\"purge\">☯ 运功逼毒</a>";
 						}
 						if (dewShow){
-							statusRightHtml += "<a href=\"#!\" class=\"xxAlcDewBtn" + (dewCnt <= 0 ? " disabled" : "") + "\" data-alc-act=\"dew\">🧪 绿液催丹 (" + dewCnt + "/5)</a>";
+							statusRightHtml += "<a href=\"#!\" class=\"xxAlcDewBtn" + (dewCnt <= 0 ? " disabled" : "") + "\" data-alc-act=\"dew\">✦ 绿液催丹 (" + dewCnt + "/5)</a>";
 						}
 
 						var topBarHtml =
@@ -6357,7 +6357,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 									"<div class=\"xxCombatQuickActions\">" +
 										"<a href=\"#!\" class=\"xxCombatActBtn flow\" data-battle-act=\"flow\"></a>" +
 										"<a href=\"#!\" class=\"xxCombatActBtn auto\" data-battle-act=\"auto\">⚡ 速战结算</a>" +
-										"<a href=\"#!\" class=\"xxCombatActBtn flee\" data-battle-act=\"flee\">💨 携宝遁走</a>" +
+										"<a href=\"#!\" class=\"xxCombatActBtn flee\" data-battle-act=\"flee\">◈ 携宝遁走</a>" +
 									"</div>" +
 								"</div>" +
 								"<div class=\"xxFighterArena\">" +
@@ -6517,7 +6517,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 					cdm.pSub.textContent = realmLabel + " · 攻 " + cFmt(p.atk) + " / 防 " + cFmt(p.def);
 					if (p.shield > 0){
 						cdm.pShield.style.display = "";
-						cdm.pShield.textContent = "🛡 灵盾 " + cFmt(p.shield);
+						cdm.pShield.textContent = "◈ 灵盾 " + cFmt(p.shield);
 					} else {
 						cdm.pShield.style.display = "none";
 					}
@@ -6531,7 +6531,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 					if (p.counterStance){ pStatuses.push("<span class=\"xxStChip buff\">☯ 反震剑势</span>"); }
 					if (p.poison > 0){ pStatuses.push("<span class=\"xxStChip debuff\">☠ 蛇毒(" + p.poison + ")</span>"); }
 					if (p.chill > 0){ pStatuses.push("<span class=\"xxStChip debuff\">❄ 寒霜(" + p.chill + ")</span>"); }
-					if (p.weak > 0){ pStatuses.push("<span class=\"xxStChip debuff\">💫 虚弱(" + p.weak + ")</span>"); }
+					if (p.weak > 0){ pStatuses.push("<span class=\"xxStChip debuff\">※ 虚弱(" + p.weak + ")</span>"); }
 					if (!pStatuses.length){ pStatuses.push("<span class=\"xxStChip neutral\">道心澄明</span>"); }
 					cdm.pStatus.innerHTML = pStatuses.join("");
 
@@ -6539,7 +6539,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 					cdm.eSub.textContent = e.tier + " · 攻 " + cFmt(e.atk) + " / 防 " + cFmt(e.def);
 					if (e.shield > 0){
 						cdm.eShield.style.display = "";
-						cdm.eShield.textContent = "🛡 护盾 " + cFmt(e.shield);
+						cdm.eShield.textContent = "◈ 护盾 " + cFmt(e.shield);
 					} else {
 						cdm.eShield.style.display = "none";
 					}
@@ -6550,10 +6550,10 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 					cdm.eTraitText.textContent = e.traitDesc;
 
 					var eStatuses = [];
-					if (e.enraged){ eStatuses.push("<span class=\"xxStChip rage\">🔥 狂暴(攻+42%)</span>"); }
-					if (e.armorBreak > 0){ eStatuses.push("<span class=\"xxStChip vuln\">💥 破甲+30%(" + e.armorBreak + ")</span>"); }
+					if (e.enraged){ eStatuses.push("<span class=\"xxStChip rage\">✦ 狂暴(攻+42%)</span>"); }
+					if (e.armorBreak > 0){ eStatuses.push("<span class=\"xxStChip vuln\">⚔ 破甲+30%(" + e.armorBreak + ")</span>"); }
 					if (e.expose > 0){ eStatuses.push("<span class=\"xxStChip vuln\">⚡ 破绽+40%(" + e.expose + ")</span>"); }
-					if (e.overloaded){ eStatuses.push("<span class=\"xxStChip vuln\">💫 核心过载(+50%)</span>"); }
+					if (e.overloaded){ eStatuses.push("<span class=\"xxStChip vuln\">⚡ 核心过载(+50%)</span>"); }
 					cdm.eStatus.innerHTML = eStatuses.join("");
 
 					cdm.eIntentBox.className = "xxIntentBox " + intentInfo.key;
@@ -6579,7 +6579,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 									(isRec ? " rec" : "") +
 									"\" data-battle-skill=\"" + skDef.key + "\">" +
 									"<div class=\"xxSkillHd\">" +
-										"<span class=\"xxSkillName\">" + skIco + skLabel + "</span>" +
+										"<span class=\"xxSkillName\">" + skIco + skLabel + (isRec ? "<em class=\"xxSkillRecBadge\">荐</em>" : "") + "</span>" +
 										"<span class=\"xxSkillCost " + (skDef.cost > 0 ? "spend" : "gain") + "\">" + skDef.tag + "</span>" +
 									"</div>" +
 									"<div class=\"xxSkillDesc\">" + skDef.desc + "</div>" +
@@ -6628,7 +6628,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 								triggerAnimCls(cdm.pVfx, "xx-vfx-burst");
 							}
 							if (ev.pShieldGain > 0){
-								spawnSplat(cdm.pFloat, "🛡 +" + ev.pShieldGain, "shield");
+								spawnSplat(cdm.pFloat, "灵盾 +" + ev.pShieldGain, "shield");
 							}
 						} else {
 							if (artMgr){
@@ -6638,11 +6638,11 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 							triggerAnimCls(cdm.eSprite, "xx-anim-hit");
 						}
 						if (ev.pDmgDealt > 0){
-							var dmgTxt = (ev.counterHit ? "☯ 反震 -" : (ev.shieldBroken ? "💥 破盾 -" : "-")) + ev.pDmgDealt;
+							var dmgTxt = (ev.counterHit ? "☯ 反震 -" : (ev.shieldBroken ? "✦ 破盾 -" : "-")) + ev.pDmgDealt;
 							spawnSplat(cdm.eFloat, dmgTxt, ev.counterHit || ev.skillKey === "ult" ? "crit" : "dmg");
 						}
 						if (ev.pHeal > 0){
-							spawnSplat(cdm.pFloat, "💚 +" + ev.pHeal, "heal");
+							spawnSplat(cdm.pFloat, "回春 +" + ev.pHeal, "heal");
 						}
 
 						// 妖兽反击动作与受击飘字
@@ -6652,7 +6652,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 							spawnSplat(cdm.pFloat, "-" + ev.eDmgDealt, "enemy-dmg");
 						}
 						if (ev.eShieldGain > 0){
-							spawnSplat(cdm.eFloat, "🛡 +" + ev.eShieldGain, "shield");
+							spawnSplat(cdm.eFloat, "护盾 +" + ev.eShieldGain, "shield");
 						}
 					}
 				} else {

@@ -3469,15 +3469,25 @@
   .inventory-page-tools { gap: 8px !important; margin-bottom: 12px !important; }
   .inv-search { flex: 1 1 100% !important; width: 100% !important; font-size: 16px !important; }
   .inv-group-chips {
-    flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    flex-wrap: wrap !important; overflow-x: visible !important; gap: 6px !important;
     width: 100%; padding-bottom: 2px;
   }
   .inv-group-chips::-webkit-scrollbar { display: none; }
-  .inv-group-chips .qty-chip { flex-shrink: 0; white-space: nowrap; }
+  .inv-group-chips .qty-chip { flex-shrink: 0; white-space: nowrap; padding: 5px 9px !important; font-size: 12px !important; }
   .inv-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
-  .inv-tile { padding: 8px 6px 6px !important; }
-  .inv-tile-icon { width: 48px !important; height: 48px !important; }
+  .inv-tile { padding: 8px 6px 6px !important; border-radius: 12px !important; box-shadow: inset 0 1px 0 rgba(255, 244, 214, 0.12), 0 4px 12px rgba(0, 0, 0, 0.34); transition: transform 0.14s ease-out, border-color 0.14s ease-out, box-shadow 0.14s ease-out; }
+  .inv-tile:active { transform: scale(0.96); }
+  .inv-tile-icon { width: 48px !important; height: 48px !important; border-radius: 8px; }
   .inv-tile-name { font-size: 12px !important; line-height: 1.25; }
+}
+.header-gold,
+.combat-power-badge,
+.qty-chip,
+.inv-tile-qty,
+.action-timer,
+.xp-text,
+.stat-val {
+  font-variant-numeric: tabular-nums;
 }
 @media (max-width: 360px) {
   .inv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }

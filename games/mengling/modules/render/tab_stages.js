@@ -215,7 +215,9 @@ export function renderCaptureStageHtml({
   const nbVal = Math.max(0, Math.floor(state.res?.netball?.value ?? 0));
   const dbVal = Math.max(0, Math.floor(state.res?.duskball?.value ?? 0));
   const mbVal = Math.max(0, Math.floor(state.res?.masterball?.value ?? 0));
-  const selectedBall = ui?.selectedBallType || "pokeball";
+  const ballCounts = { pokeball: pbVal, ultraball: ubVal, quickball: qbVal, luxuryball: lbVal, netball: nbVal, duskball: dbVal };
+  const rawSelBall = ui?.selectedBallType || "pokeball";
+  const selectedBall = (ballCounts[rawSelBall] ?? 0) > 0 ? rawSelBall : (Object.keys(ballCounts).find((k) => ballCounts[k] > 0) || rawSelBall);
 
   const lureStacks = Math.max(0, Math.floor(ui?.lureStacks || 0));
   const baitStacks = Math.max(0, Math.floor(ui?.encounterBaitStacks || 0));
@@ -330,9 +332,9 @@ export function renderCaptureStageHtml({
             ${typeBadges}
           </div>
           <div class="tab-stage__desc">${escapeHtml(enc.desc || "栖息于秘境深处的奇异灵兽。")}</div>
-          <div class="capture-chance-meter">
+          <div class="capture-chance-meter ${pct >= 65 ? "is-high" : pct >= 35 ? "is-mid" : "is-low"}">
             <div class="capture-chance-meter__top">
-              <span>${renderOrbSvg(selectedBall, 14)} 综合捕获率预估：<strong>${pct}%</strong>（缩圈完美命中可再 +15%）</span>
+              <span>${renderOrbSvg(selectedBall, 14)} 综合捕获率预估：<strong>${pct}%</strong> <em class="capture-chance-tier">${pct >= 65 ? "稳操胜券" : pct >= 35 ? "时机成熟" : "可投浆果增幅"}</em></span>
               <span>当前球种：${renderOrbSvg(selectedBall, 14)} ${selectedBall === "pokeball" ? "灵球" : selectedBall === "ultraball" ? "高级灵球" : selectedBall === "quickball" ? "迅捷灵球" : selectedBall === "luxuryball" ? "豪华灵球" : selectedBall === "netball" ? "捕灵球" : "暗夜灵球"}</span>
             </div>
             <div class="capture-chance-meter__bar">

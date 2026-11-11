@@ -1515,34 +1515,46 @@ function refreshUpgradeUI(): void {
   // Fire Rate (controlled by in-run Combat Time seconds — never costs meta gold!)
   const costFR = state.getFireRateCost();
   const curTime = Math.floor(state.runCombatTimePool);
+  const frPct = Math.max(0, Math.min(100, Math.round((curTime / Math.max(1, costFR)) * 100)));
   lvlFireRate.textContent = `Lv.${state.fireRateLevel}`;
   if (statFireRate) statFireRate.textContent = `${state.getFireRatePerSec().toFixed(1)}/s`;
   costFireRate.textContent = `${Math.min(curTime, costFR)}/${costFR}秒`;
   upgFireRate.disabled = curTime < costFR;
+  upgFireRate.style.setProperty('--upg-pct', `${frPct}%`);
+  upgFireRate.classList.toggle('is-ready', curTime >= costFR);
 
   // Power (controlled by in-run Kills — never costs meta gold!)
   const costPwr = state.getPowerCost();
   const curKills = Math.floor(state.runKillsPool);
+  const pwrPct = Math.max(0, Math.min(100, Math.round((curKills / Math.max(1, costPwr)) * 100)));
   lvlPower.textContent = `Lv.${state.powerLevel}`;
   if (statPower) statPower.textContent = `×${state.getPowerMultiplier().toFixed(2)}`;
   costPower.textContent = `${Math.min(curKills, costPwr)}/${costPwr}击杀`;
   upgPower.disabled = curKills < costPwr;
+  upgPower.style.setProperty('--upg-pct', `${pwrPct}%`);
+  upgPower.classList.toggle('is-ready', curKills >= costPwr);
 
   // Champion (controlled by in-run Spawns — never costs meta gold!)
   const costChamp = state.getChampionCost();
   const curSpawns = Math.floor(state.runSpawnsPool);
+  const champPct = Math.max(0, Math.min(100, Math.round((curSpawns / Math.max(1, costChamp)) * 100)));
   lvlChampion.textContent = `Lv.${state.championLevel}`;
   if (statChampion) statChampion.textContent = `×${state.getChampionMultiplier().toFixed(2)}`;
   costChampion.textContent = `${Math.min(curSpawns, costChamp)}/${costChamp}出兵`;
   upgChampion.disabled = curSpawns < costChamp;
+  upgChampion.style.setProperty('--upg-pct', `${champPct}%`);
+  upgChampion.classList.toggle('is-ready', curSpawns >= costChamp);
 
   // Loot (controlled by in-run Siege Damage — never costs meta gold!)
   const costLt = state.getLootCost();
   const curSiege = Math.floor(state.runSiegePool);
+  const ltPct = Math.max(0, Math.min(100, Math.round((curSiege / Math.max(1, costLt)) * 100)));
   lvlLoot.textContent = `Lv.${state.lootLevel}`;
   if (statLoot) statLoot.textContent = `+${Math.round((state.getLootMultiplier() - 1) * 100)}%`;
   costLoot.textContent = `${Math.min(curSiege, costLt)}/${costLt}攻城`;
   upgLoot.disabled = curSiege < costLt;
+  upgLoot.style.setProperty('--upg-pct', `${ltPct}%`);
+  upgLoot.classList.toggle('is-ready', curSiege >= costLt);
 }
 
 let lastBerserkState = false;

@@ -2127,7 +2127,7 @@ dojo.declare("com.nuclearunicorn.game.ui.UpgradeButtonController", com.nuclearun
 			var cult = this.game.cultivation;
 			var gate = cult.getItemRealmGate("upgrade", meta.name);
 			if (gate && !cult.isItemRealmUnlocked("upgrade", meta.name)){
-				name += " <span class=\"xxRealmGateBadge locked\">🔒 " + gate.title + "</span>";
+				name += " <span class=\"xxRealmGateBadge locked\">◈ " + gate.title + "</span>";
 			}
 		}
 		return name;
@@ -2230,7 +2230,7 @@ dojo.declare("com.nuclearunicorn.game.ui.CraftButtonController", com.nuclearunic
 			var cult = this.game.cultivation;
 			var gate = cult.getItemRealmGate("craft", craft.name);
 			if (gate && !cult.isItemRealmUnlocked("craft", craft.name)){
-				baseName += " <span class=\"xxRealmGateBadge locked\">🔒 " + gate.title + "</span>";
+				baseName += " <span class=\"xxRealmGateBadge locked\">◈ " + gate.title + "</span>";
 			}
 		}
 		return baseName;

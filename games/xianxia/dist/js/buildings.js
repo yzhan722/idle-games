@@ -2193,7 +2193,7 @@ dojo.declare("classes.ui.btn.BuildingBtnModernController", com.nuclearunicorn.ga
 			var cult = this.game.cultivation;
 			var gate = cult.getItemRealmGate("building", meta.name);
 			if (gate && !cult.isItemRealmUnlocked("building", meta.name)){
-				name += " <span class=\"xxRealmGateBadge locked\">🔒 " + gate.title + "</span>";
+				name += " <span class=\"xxRealmGateBadge locked\">◈ " + gate.title + "</span>";
 			}
 		}
 		return name;

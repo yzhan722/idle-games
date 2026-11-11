@@ -5932,16 +5932,40 @@ input, select, textarea, button { font-family: inherit; }
 	background: rgba(12, 20, 31, .92);
 	border: 1px solid rgba(79, 209, 165, .32);
 	text-decoration: none !important;
-	transition: all .15s ease;
+	transition: transform .15s ease-out, border-color .15s ease-out, box-shadow .15s ease-out, background-color .15s ease-out;
 }
 .xxSkillBtn:hover:not(.disabled) {
 	transform: translateY(-1px);
 	border-color: var(--xx-gold);
 	background: rgba(22, 34, 49, .95);
 }
+.xxSkillBtn:active:not(.disabled) {
+	transform: scale(0.97);
+}
 .xxSkillBtn.rec {
 	border-color: var(--xx-gold-hi);
-	box-shadow: 0 0 12px rgba(212, 176, 106, .28), inset 0 0 8px rgba(212, 176, 106, .12);
+	background: linear-gradient(165deg, rgba(28, 44, 58, .96) 0%, rgba(14, 24, 36, .95) 100%);
+	box-shadow: 0 0 14px rgba(212, 176, 106, .32), inset 0 1px 0 rgba(255, 244, 214, .22);
+}
+.xxSkillRecBadge {
+	font-style: normal;
+	display: inline-flex;
+	align-items: center;
+	padding: 0 5px;
+	height: 16px;
+	border-radius: 4px;
+	font-size: 10px;
+	font-weight: 700;
+	background: linear-gradient(180deg, #f3d28b 0%, #c9963b 100%);
+	color: #1c1306;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+.res-row,
+.xxFighterSub,
+.xxBarVal,
+.xxSkillCost,
+.xxSynKeyResVal {
+	font-variant-numeric: tabular-nums;
 }
 .xxSkillBtn.disabled {
 	opacity: .42;

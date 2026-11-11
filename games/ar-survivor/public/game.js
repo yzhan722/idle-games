@@ -1,6 +1,6 @@
 // game.js — DeepSeek娘桌面宠物级实景交互（抓边爬台 / 蹲伏戳物体 / 坐边缘晃腿 / 摸头傲娇 / 物理轨迹回归中心）
 
-import { ARVisionEngine } from './vision.js?v=hd7';
+import { ARVisionEngine } from './vision.js?v=hd9';
 import {
   drawHeroSprite,
   drawEnemySprite,
@@ -983,7 +983,8 @@ canvas.addEventListener('pointermove', (e) => {
     player.dragVx = player.dragVx * 0.6 + instVx * 0.4;
     player.dragVy = player.dragVy * 0.6 + instVy * 0.4;
     player.x = Math.max(30, Math.min(W - 30, pt.x));
-    player.y = Math.max(44, Math.min(H * 0.82 - 25, pt.y + 22));
+    const minDragBodyY = Math.abs(player.x - W * 0.5) < 195 ? 144 : 96;
+    player.y = Math.max(minDragBodyY, Math.min(H * 0.82 - 25, pt.y + 22));
     player.vx = 0;
     player.vy = 0;
     if (Math.abs(player.dragVx) > 35) {
@@ -2973,8 +2974,9 @@ function updateGameplay(dt, flow) {
     player.y += player.vy * dt;
 
     player.x = Math.max(28, Math.min(W - 28, player.x));
-    if (player.y < 36) {
-      player.y = 36;
+    const minSafeBodyY = (gameMode === 'pet' && Math.abs(player.x - W * 0.5) < 195) ? 144 : 88;
+    if (player.y < minSafeBodyY) {
+      player.y = minSafeBodyY;
       if (player.vy < 0) player.vy = 0;
     }
 
