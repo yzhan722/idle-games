@@ -314,6 +314,10 @@ html, body {
   transform: scale(0.94);
 }
 
+.wish-pill.hidden {
+  display: none !important;
+}
+
 .wish-tag {
   background: linear-gradient(135deg, #6bc5ff, #429ef5);
   color: #fff;
@@ -368,8 +372,21 @@ html, body {
   padding: 5px 12px;
   border-radius: 99px;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
   white-space: nowrap;
+}
+
+.mode-btn:active,
+.care-btn:active,
+.action-btn:active {
+  transform: translateY(1px) scale(0.95);
+}
+
+#hud-coins,
+#hud-pet-lv,
+.wish-reward,
+.shop-price {
+  font-variant-numeric: tabular-nums;
 }
 
 .mode-ico {
@@ -452,7 +469,7 @@ html, body {
   transform: translateX(-50%);
   z-index: 25;
   width: min(560px, 84%);
-  background: linear-gradient(180deg, rgba(255, 252, 246, 0.95) 0%, rgba(242, 249, 255, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.97) 0%, rgba(244, 250, 255, 0.97) 100%);
   border: 3px solid #ffffff;
   outline: 2px solid rgba(145, 202, 250, 0.6);
   border-radius: 24px;
@@ -526,28 +543,32 @@ html, body {
 }
 
 .drawer-items {
-  display: flex;
-  align-items: stretch;
-  gap: 9px;
-  overflow-x: auto;
-  padding-bottom: 3px;
-  scrollbar-width: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  max-height: 122px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 2px 4px;
+  scrollbar-width: thin;
 }
 
 .drawer-items::-webkit-scrollbar {
-  display: none;
+  width: 4px;
+  height: 4px;
 }
 
 .shop-card {
-  flex: 0 0 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 6px;
   background: linear-gradient(145deg, #ffffff 0%, #f2f9ff 100%);
   border: 2px solid #ffffff;
   outline: 1.5px solid rgba(155, 208, 250, 0.55);
-  border-radius: 16px;
-  padding: 6px 11px 6px 7px;
+  border-radius: 14px;
+  padding: 5px 8px 5px 6px;
   cursor: pointer;
   color: #35496e;
   box-shadow:
@@ -590,24 +611,32 @@ html, body {
 }
 
 .shop-info {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  line-height: 1.25;
+  line-height: 1.22;
 }
 
 .shop-name {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 900;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
   color: #2f4366;
 }
 
 .shop-desc {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   color: #6a85ad;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .shop-price {
@@ -629,6 +658,52 @@ html, body {
   background: linear-gradient(180deg, #98f5d5 0%, #4cd6a8 100%);
   border-color: #ffffff;
   color: #0e4a35;
+}
+
+.shop-card.owned-idle {
+  outline-color: rgba(125, 211, 252, 0.82);
+  background: linear-gradient(145deg, #f8fcff 0%, #eaf6ff 100%);
+}
+
+.shop-card.owned-idle .shop-price {
+  background: linear-gradient(180deg, #dff2ff 0%, #bae6fd 100%);
+  border-color: #ffffff;
+  color: #1e4b7a;
+}
+
+.shop-card.unaffordable {
+  outline-color: rgba(203, 213, 225, 0.72);
+  background: linear-gradient(145deg, #fcfcfd 0%, #f1f5f9 100%);
+}
+
+.shop-card.unaffordable .shop-price {
+  background: linear-gradient(180deg, #ffe9ee 0%, #fecdd3 100%);
+  border-color: #ffffff;
+  color: #9f1239;
+  box-shadow: 0 2px 5px rgba(190, 24, 93, 0.14);
+}
+
+.shop-price {
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-tag-pill {
+  display: inline-block;
+  font-style: normal;
+  font-size: 8.5px;
+  font-weight: 900;
+  padding: 0.5px 5px;
+  margin-left: 3px;
+  border-radius: 99px;
+  background: rgba(255, 228, 238, 0.92);
+  color: #be185d;
+  vertical-align: 1px;
+}
+
+.shop-tag-pill.shop-tag-lv {
+  background: rgba(224, 242, 254, 0.95);
+  color: #0369a1;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ================= 底部触控层：手绘珍珠贝壳摇杆、奶油船坞与云朵动作键 ================= */
@@ -833,16 +908,16 @@ html, body {
 /* ================= 实景石头剪刀布（猜拳）治愈手绘交互条 ================= */
 .rps-hud {
   position: absolute;
-  top: 64px;
+  top: 56px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 26;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
-  padding: 9px 16px 11px;
-  border-radius: 22px;
+  gap: 4px;
+  padding: 6px 14px 7px;
+  border-radius: 18px;
   background: linear-gradient(180deg, rgba(255, 253, 247, 0.95) 0%, rgba(242, 250, 255, 0.94) 100%);
   border: 2.5px solid #ffffff;
   outline: 1.5px solid rgba(255, 188, 92, 0.68);
@@ -880,9 +955,9 @@ html, body {
   border: 2px solid #ffffff;
   outline: 1.2px solid rgba(145, 202, 250, 0.6);
   color: #384d70;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 900;
-  padding: 4px 12px 4px 8px;
+  padding: 3px 10px 3px 7px;
   border-radius: 99px;
   cursor: pointer;
   box-shadow: 0 3px 8px rgba(75, 118, 172, 0.15);
@@ -890,8 +965,8 @@ html, body {
 }
 
 .rps-ico {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
 }
 
@@ -937,8 +1012,15 @@ html, body {
   transition: opacity 0.22s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.polaroid-card.polaroid-left {
+  right: auto;
+  left: 16px;
+  transform: rotate(-2.2deg);
+}
+
 .polaroid-card.hidden {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
   transform: translateY(-12px) scale(0.88) rotate(6deg);
 }
@@ -992,3 +1074,125 @@ html, body {
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(60, 164, 244, 0.35);
 }
+
+/* Round 32 Commercial Polish: Mini-Game Scoreboard Chips & Wish Guidance Glow */
+.wish-reward,
+#hud-coins,
+.mg-chip {
+  font-variant-numeric: tabular-nums;
+}
+
+.wish-pill.is-guiding {
+  outline: 2px solid #fbbf24;
+  box-shadow:
+    0 0 0 4px rgba(251, 191, 36, 0.28),
+    0 6px 16px rgba(245, 158, 11, 0.28);
+}
+
+.mg-hud-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.mg-hud-title {
+  color: #433563;
+  font-weight: 900;
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+.mg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 11px;
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.mg-chip-score {
+  background: linear-gradient(180deg, #fff8dc 0%, #fde68a 100%);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  color: #92400e;
+}
+
+.mg-chip-score b {
+  font-weight: 900;
+  color: #78350f;
+}
+
+.mg-chip-combo {
+  background: rgba(224, 242, 254, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.42);
+  color: #0369a1;
+}
+
+.mg-chip-combo.is-hot {
+  background: linear-gradient(180deg, #ffe4e6 0%, #fecdd3 100%);
+  border-color: rgba(244, 63, 94, 0.5);
+  color: #be123c;
+}
+
+.mg-chip-time {
+  background: rgba(241, 245, 249, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  color: #334155;
+  min-width: 36px;
+  justify-content: center;
+}
+
+.mg-chip-time.is-urgent {
+  background: linear-gradient(180deg, #fee2e2 0%, #fecaca 100%);
+  border-color: rgba(239, 68, 68, 0.65);
+  color: #b91c1c;
+  animation: mgUrgentPulse 0.55s ease-in-out infinite alternate;
+}
+
+@keyframes mgUrgentPulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
+
+/* Round 33: Survivor Live Shift Pill & RPS Countdown Chips */
+.survivor-hud {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 26;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 251, 243, 0.92);
+  border: 2px solid rgba(251, 191, 36, 0.65);
+  box-shadow:
+    0 6px 18px rgba(30, 41, 59, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.survivor-hud.hidden {
+  display: none !important;
+}
+
+.parkour-hud {
+  border-color: rgba(56, 189, 248, 0.72);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.95) 0%, rgba(239, 248, 255, 0.95) 100%);
+}
+
+.parkour-hud .mg-chip-combo.is-hot {
+  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 100%);
+  color: #451a03;
+  border-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+}
+
+

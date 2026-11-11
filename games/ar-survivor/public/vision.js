@@ -211,19 +211,7 @@ export class ARVisionEngine {
   }
 
   buildSimulatedDesk(W, H) {
-    const ox = this.simCamX;
-    this.semanticObjects = [
-      {
-        id: 'sim-center-pad',
-        role: 'tech',
-        color: '#00f3ff',
-        x: W * 0.38 + ox,
-        y: H * 0.53,
-        w: W * 0.24,
-        h: H * 0.12,
-        ttl: 999
-      }
-    ];
+    this.semanticObjects = [];
     this.edgePlatforms = [];
   }
 
@@ -854,17 +842,16 @@ export class ARVisionEngine {
       list.push({
         x1: this.palmTarget.x - halfW,
         x2: this.palmTarget.x + halfW,
-        y: this.palmTarget.surfaceY,
+        y: Math.max(Math.min(H * 0.62, Math.max(198, H * 0.28)), this.palmTarget.surfaceY),
         role: 'palm',
         isPalm: true,
         ref: this.palmTarget
       });
     }
 
-    const allObjs = [...this.semanticObjects];
-    if (this.pinnedTarget) allObjs.push(this.pinnedTarget);
-
-    for (const obj of allObjs) {
+    const minSafePlatY = Math.min(H * 0.62, Math.max(198, H * 0.28));
+    for (const obj of this.semanticObjects) {
+      if (obj.y < minSafePlatY) continue;
       list.push({
         x1: obj.x - 4,
         x2: obj.x + obj.w + 4,
@@ -874,8 +861,20 @@ export class ARVisionEngine {
         ref: obj
       });
     }
+    if (this.pinnedTarget) {
+      const clampedY = Math.max(minSafePlatY, this.pinnedTarget.y);
+      this.pinnedTarget.y = clampedY;
+      list.push({
+        x1: this.pinnedTarget.x - 4,
+        x2: this.pinnedTarget.x + this.pinnedTarget.w + 4,
+        y: clampedY,
+        role: this.pinnedTarget.role,
+        objId: this.pinnedTarget.id,
+        ref: this.pinnedTarget
+      });
+    }
 
-    const centerFloorY = H * 0.56;
+    const centerFloorY = H * 0.68;
     list.push({
       x1: -200,
       x2: W + 200,
@@ -898,7 +897,7 @@ export class ARVisionEngine {
     ctx.save();
     if (!this.simBgImg) {
       this.simBgImg = new Image();
-      this.simBgImg.src = './assets/bg_healing_room.webp?v=hd6';
+      this.simBgImg.src = './assets/bg_healing_room.webp?v=hd8';
     }
     if (this.simBgImg.complete && this.simBgImg.naturalWidth > 0) {
       ctx.drawImage(this.simBgImg, 0, 0, W, H);
