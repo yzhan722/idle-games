@@ -2067,3 +2067,57 @@ test("1-Resource-Per-Realm & Shared-Storage-Building Architecture: 10 single-out
     }
 });
 
+test("XX-1: high-realm sects (sect7-sect9) gate progression, resource costs, zhenyuan conversion & rift damage", () => {
+    const game = makeGame();
+    const cult = game.cultivation;
+    const ctrl = new classes.ui.RealmBtnController(game);
+
+    const s7 = cult.getSect("sect7");
+    const s8 = cult.getSect("sect8");
+    const s9 = cult.getSect("sect9");
+    expect(s7 && s7.gate).toBe("heti_0");
+    expect(s8 && s8.gate).toBe("dacheng_0");
+    expect(s9 && s9.gate).toBe("dujie_0");
+
+    expect(s7.prices.map(p => p.name)).toEqual(["relic", "xiuwei"]);
+    expect(s8.prices.map(p => p.name)).toEqual(["timeCrystal", "xiuwei"]);
+    expect(s9.prices.map(p => p.name)).toEqual(["timeCrystal", "xiuwei"]);
+
+    // Unlock up to heti_0 and sect1..sect6: sect7 becomes visible, sect8 stays hidden
+    for (const st of cult.stages) {
+        st.researched = true;
+        if (st.name === "heti_0") break;
+    }
+    for (let i = 0; i < 6; i++) cult.sects[i].researched = true;
+    expect(ctrl.fetchModel({ id: "sect7" }).visible).toBe(true);
+    expect(ctrl.fetchModel({ id: "sect8" }).visible).toBe(false);
+
+    // Baseline combat & cultivation before sect7..sect9
+    game.updateCaches();
+    game.calculateAllEffects();
+    const baseCp = cult.getCombatPower();
+    const baseXwBase = game.getEffect("xiuweiPerTickBase");
+
+    // Promote through sect7 -> sect8 -> sect9 at dujie_0
+    for (const st of cult.stages) st.researched = true;
+    s7.researched = true;
+    s8.researched = true;
+    s9.researched = true;
+    game.updateCaches();
+    game.calculateAllEffects();
+
+    const zy = game.getEffect("zhenyuanRatio");
+    const rd = game.getEffect("riftDamageRatio");
+    expect(zy).toBeCloseTo(0.20 + 0.35 + 0.50);
+    expect(rd).toBeCloseTo(0.18 + 0.30 + 0.45);
+    expect(game.getEffect("xiuweiPerTickBase")).toBeGreaterThan(baseXwBase);
+    expect(cult.getCombatPower()).toBeGreaterThan(baseCp);
+
+    // Rift battle inherits expanded zhenyuan MP pool & rift damage bonus
+    cult.riftKeys = 2;
+    expect(cult.startRiftBattle("greater")).toBe(true);
+    expect(cult.battle.player.maxMp).toBe(Math.round(100 * (1 + zy)));
+    expect(cult.battle.player.mp).toBe(Math.round(60 * (1 + zy)));
+});
+
+

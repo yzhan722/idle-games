@@ -1615,6 +1615,14 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 			"seclusionMundaneRatio":{
 				title: $I("effectsMgr.statics.seclusionMundaneRatio.title"),
 				type: "ratio"
+			},
+			"zhenyuanRatio":{
+				title: $I("effectsMgr.statics.zhenyuanRatio.title"),
+				type: "ratio"
+			},
+			"riftDamageRatio":{
+				title: $I("effectsMgr.statics.riftDamageRatio.title"),
+				type: "ratio"
 			}
 		}
 	}

@@ -44,7 +44,7 @@
 
 > **特别约束**：严守 `games/xianxia` 原有 Dojo / ES5 语法规范（`js/*.js` 内使用 `var` 与 `function(){}`），每次修改后运行 `node tools/dev/build-dist.cjs` 同步 `dist/` 并自增 `build.version.json`。
 
-- [ ] **XX-1｜补齐合体～渡劫高阶宗门位阶（`sect7`～`sect9`）**
+- [x] **XX-1｜补齐合体～渡劫高阶宗门位阶（`sect7`～`sect9`）** ✅ *(Round 4 已完成：接续 `sect6` 实装 `sect7` 圣皇宫·太上长老 / `sect8` 天渊城·一宗道主 / `sect9` 灵界之巅·人间道祖，打通 `zhenyuanRatio` 真元转化与 `riftDamageRatio` 秘境加伤属性、中英双语词条、`cultivation.test.js` 单测及 `dist/` 构建 `rev 71`)*
   - **目标源码**：`js/cultivation.js`（`sects` 数组与 UI 控制器）、`locale/zh.json`（及相关语言表）。
   - **具体要求**：
     1. 接续当前止步于 `lianxu_0` 的 `sect6`，新增 `sect7`（`heti_0` 太上长老，消耗上古遗宝+修为）、`sect8`（`dacheng_0` 一宗道主，消耗岁月仙晶+修为）、`sect9`（`dujie_0` 人间道祖），赋予契合大后期的修为倍率、真元转化与秘境加伤属性。
@@ -121,7 +121,7 @@
 
 > **特别约束**：严禁使用 Emoji 或 SVG 图标！所有新增技能卡图标、超武特效贴图、相册边框、新家具与新房间背景必须调用 `image-generator` 生成奶油手账治愈风 `.webp` 贴图并递增 HTML/CSS/JS 的 `?v=` 版本号。
 
-- [ ] **AR-1｜幸存者打工 2.0（局内升级肉鸽三选一技能卡 + 蓝鲸超武进化 + 班次首领）**
+- [x] **AR-1｜幸存者打工 2.0（局内升级肉鸽三选一技能卡 + 蓝鲸超武进化 + 班次首领）** ✅ *(Round 4 已完成：奶油手账风暂停保护局内三选一秘技卡 + 8 枚手绘去底 `.webp` 贴图 +「深海蓝鲸巨浪 / 星海茶刃风暴」双超武共鸣觉醒 + 每 12 击退班次首领血条战 + 个人最高班次纪录徽章持久化)*
   - **目标源码**：`public/game.js`、`public/index.html`、`public/style.css`。
   - **具体要求**：
     1. 在 `survivor` 打工模式中，拾取经验宝石升级时弹出奶油手账风 **「局内三选一技能卡」**（如冰泡凝滞、猫爪闪电链、饭团急救、星光幻影、暴击护符等）。
@@ -223,7 +223,7 @@
 | ✅ 第 1 批 | `WL-1`（WorkLife 第 2～3 章主线与流派） + `WH-1`（历史地图：帝国国祚与疆域面积兴衰对比曲线 + 克制博物图志规范） *(Round 1 已完成)* | `worklife`, `world-history-atlas` |
 | ✅ 第 2 批 | `MC-1`（波波充能翻转门 + 巨化/护盾门） + `CI-1`（云岛抚摸动物与热气球彩蛋） *(Round 2 已完成)* | `mob-control-3d`, `cloud-isle-market` |
 | ✅ 第 3 批 | `ML-1`（萌灵优生孵蛋 2.0） + `WH-2`（历史地图：丝绸之路/海上丝路/大航海贸易航线考据与内敛航迹） *(Round 3 已完成)* | `mengling`, `world-history-atlas` |
-| 第 4 批 | `AR-1`（AR 幸存者局内肉鸽三选一 + 蓝鲸超武） + `XX-1`（修仙宗门 `sect7~9`） | `ar-survivor`, `xianxia` |
+| ✅ 第 4 批 | `AR-1`（AR 幸存者局内肉鸽三选一 + 蓝鲸超武） + `XX-1`（修仙宗门 `sect7~9`） *(Round 4 已完成)* | `ar-survivor`, `xianxia` |
 | 第 5 批 | `PC-1`（千纸鹤证物查验 + 双线索拼合） + `WL-2`（WorkLife 第 4 章主线与流派） | `paper-crane-detective`, `worklife` |
 | 第 6 批 | `MC-2`（波波多阶段机关 Boss 副塔与横扫） + `ML-2`（萌灵无尽试炼塔 + 天气词缀） | `mob-control-3d`, `mengling` |
 | 第 7 批 | `WH-3`（历史地图：五千年史实关键帧加密 + 迁都/官制兵制/条约深度考据） + `CI-2`（云岛评论家/行商 + 夜间花火灯会） | `world-history-atlas`, `cloud-isle-market` |

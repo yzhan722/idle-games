@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>AR DeepSeek娘 · 实景桌宠养成</title>
   <link rel="icon" type="image/webp" href="./assets/hero_idle2.webp?v=hd5" />
-  <link rel="stylesheet" href="./style.css?v=hd14" />
+  <link rel="stylesheet" href="./style.css?v=hd15" />
 </head>
 <body>
   <!-- 底层全屏实景摄像头 -->
@@ -98,9 +98,27 @@
 
     <!-- 幸存者打工实时班次战报胶囊（仅在 survivor 模式显示） -->
     <div id="survivor-hud" class="survivor-hud hidden" aria-live="polite">
-      <span class="mg-chip mg-chip-combo" id="surv-lv-chip">Lv.1</span>
+      <span class="mg-chip mg-chip-combo surv-lv-wrap">
+        <span id="surv-lv-chip">班次 Lv.1</span>
+        <span class="surv-xp-mini"><i class="surv-xp-mini-fill" id="surv-xp-mini-fill"></i></span>
+      </span>
       <span class="mg-chip mg-chip-time" id="surv-kill-chip">击退 0</span>
       <span class="mg-chip mg-chip-score">本班 <b id="surv-coin-val">+0</b> <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></span>
+      <span class="mg-chip-record" id="surv-record-chip" title="个人最高打工班次纪录">
+        <img src="./assets/ui_badge_shift.webp?v=hd15" alt="" class="surv-badge-ico" />
+        <b id="surv-record-val">纪录 0</b>
+      </span>
+    </div>
+    <div id="surv-skill-strip" class="surv-skill-strip hidden" aria-hidden="true"></div>
+    <div id="survivor-boss-bar" class="survivor-boss-bar hidden" aria-live="polite">
+      <img src="./assets/mon_boss.webp?v=hd4" alt="" class="boss-bar-ico" />
+      <div class="boss-bar-main">
+        <div class="boss-bar-top">
+          <span class="boss-bar-name" id="surv-boss-name">班次首领 · 深海摸鱼大魔王</span>
+          <span class="boss-bar-hp-text" id="surv-boss-hp-text">100%</span>
+        </div>
+        <div class="boss-bar-track"><div class="boss-bar-fill" id="surv-boss-fill"></div></div>
+      </div>
     </div>
 
     <!-- 实景摘星实时星链悬赏胶囊（仅在 parkour 模式显示） -->
@@ -137,6 +155,20 @@
       <div class="polaroid-actions">
         <span class="polaroid-caption">AR 纪念拍立得</span>
         <button id="btn-polaroid-save" class="polaroid-save-btn">保存相片</button>
+      </div>
+    </div>
+
+    <!-- 幸存者打工 2.0：奶油手账风局内三选一肉鸽技能卡与超武进化弹窗 -->
+    <div id="survivor-skill-modal" class="survivor-skill-modal hidden" role="dialog" aria-modal="true" aria-labelledby="surv-modal-title">
+      <div class="surv-modal-panel">
+        <div class="surv-modal-header">
+          <img src="./assets/ui_badge_shift.webp?v=hd15" alt="" class="surv-modal-badge-ico" />
+          <div class="surv-modal-headings">
+            <span class="surv-modal-kicker" id="surv-modal-kicker">打工班次升级 · 暂停保护中</span>
+            <h3 class="surv-modal-title" id="surv-modal-title">选择一项手账打工秘技</h3>
+          </div>
+        </div>
+        <div class="surv-card-grid" id="surv-card-grid"></div>
       </div>
     </div>
 
@@ -202,6 +234,6 @@
     </div>
   </div>
 
-  <script type="module" src="./game.js?v=hd36"></script>
+  <script type="module" src="./game.js?v=hd40"></script>
 </body>
 </html>

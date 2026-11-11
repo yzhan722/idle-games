@@ -11,7 +11,7 @@ import {
   drawInteractionVfx,
   images,
   isReady
-} from './sprites.js?v=hd13';
+} from './sprites.js?v=hd16';
 import { petAudio } from './audio.js?v=hd7';
 
 const stageEl = document.getElementById('game-stage');
@@ -125,7 +125,8 @@ function savePetState() {
         equipped: player.equipped,
         placedFurniture: player.placedFurniture,
         activeToy: player.activeToy,
-        weapons: player.weapons
+        weapons: player.weapons,
+        bestShiftRecord: player.bestShiftRecord
       })
     );
   } catch (e) {}
@@ -227,6 +228,12 @@ const player = {
     teaBlade: 1,
     magnet: 1,
     boots: 0
+  },
+  bestShiftRecord: {
+    bestKills: Math.max(0, Number(savedPet.bestShiftRecord?.bestKills) || 0),
+    bestCoins: Math.max(0, Number(savedPet.bestShiftRecord?.bestCoins) || 0),
+    bestShiftLv: Math.max(1, Number(savedPet.bestShiftRecord?.bestShiftLv) || 1),
+    bossesDefeated: Math.max(0, Number(savedPet.bestShiftRecord?.bossesDefeated) || 0)
   }
 };
 
@@ -293,6 +300,427 @@ function spawnInteractVfx(x, y, preset = 'love', count = 7) {
 let survivorSessionCoins = 0;
 let survivorSessionKills = 0;
 let lastParkourHudKey = '';
+const survivorVfxBursts = [];
+
+const SURVIVOR_SKILL_POOL = [
+  {
+    id: 'blaster',
+    name: '鲸鱼水炮',
+    img: './assets/upg_blaster.webp?v=hd6',
+    maxLv: 3,
+    desc: '强化水弹连发数量、追踪弹速与单发威力。',
+    synergy: '满级+冰泡凝滞 → 深海蓝鲸巨浪'
+  },
+  {
+    id: 'teaBlade',
+    name: '茗香茶刃',
+    img: './assets/upg_blade.webp?v=hd6',
+    maxLv: 3,
+    desc: '增加环绕乌龙茶刃飞叶数量、转速与切割伤害。',
+    synergy: '满级+猫爪闪电链 → 星海茶刃风暴'
+  },
+  {
+    id: 'frostBubble',
+    name: '冰泡凝滞',
+    img: './assets/sk_frost_bubble.webp?v=hd15',
+    maxLv: 3,
+    desc: '周期发射寒霜冰泡弹，命中绽放冰雾大幅减速周围怪物。',
+    synergy: '共鸣核心：鲸鱼水炮'
+  },
+  {
+    id: 'catLightning',
+    name: '猫爪闪电链',
+    img: './assets/sk_cat_lightning.webp?v=hd15',
+    maxLv: 3,
+    desc: '攻击与茶刃触发萌爪星雷跳跃，在多只怪物间弹射雷伤。',
+    synergy: '共鸣核心：茗香茶刃'
+  },
+  {
+    id: 'onigiriHeal',
+    name: '饭团急救',
+    img: './assets/sk_onigiri_heal.webp?v=hd15',
+    maxLv: 3,
+    desc: '立即恢复35体力与饱食，每秒持续回血并扩大吸宝距离。',
+    synergy: '打工续航 · 经验磁吸'
+  },
+  {
+    id: 'starPhantom',
+    name: '星光幻影',
+    img: './assets/sk_star_phantom.webp?v=hd15',
+    maxLv: 3,
+    desc: '移速与闪避减伤提升12%/级，移动时放飞追踪星影弹。',
+    synergy: '灵巧身法 · 星影追击'
+  },
+  {
+    id: 'critCharm',
+    name: '暴击护符',
+    img: './assets/sk_crit_charm.webp?v=hd15',
+    maxLv: 3,
+    desc: '暴击率+12%/级、暴击伤害+30%/级，暴击概率爆额外金币。',
+    synergy: '会心爆发 · 招财福袋'
+  }
+];
+
+const SURVIVOR_EVOLUTIONS = [
+  {
+    id: 'superWhale',
+    isEvolution: true,
+    reqWeapon: 'blaster',
+    reqPassive: 'frostBubble',
+    name: '深海蓝鲸巨浪',
+    img: './assets/upg_super_whale.webp?v=hd15',
+    desc: '超武觉醒！水炮进化为贯通巨浪幼鲸，并周期掀起全屏深海潮汐。',
+    synergy: '鲸鱼水炮 × 冰泡凝滞 共鸣完成'
+  },
+  {
+    id: 'superTeablade',
+    isEvolution: true,
+    reqWeapon: 'teaBlade',
+    reqPassive: 'catLightning',
+    name: '星海茶刃风暴',
+    img: './assets/upg_super_teablade.webp?v=hd15',
+    desc: '超武觉醒！双环六叶翠玉茶刃极速旋切，高频引爆猫爪星雷链。',
+    synergy: '茗香茶刃 × 猫爪闪电链 共鸣完成'
+  }
+];
+
+const SURVIVOR_BOSS_NAMES = [
+  '加班狂魔 · 章鱼主管',
+  '死线催命 · 摸鱼大魔王',
+  '终极考勤 · 深渊KPI巨兽'
+];
+
+const survivorRun = {
+  shiftLv: 1,
+  shiftXp: 0,
+  shiftXpNext: 16,
+  skills: {
+    blaster: 1,
+    teaBlade: 1,
+    frostBubble: 0,
+    catLightning: 0,
+    onigiriHeal: 0,
+    starPhantom: 0,
+    critCharm: 0
+  },
+  evolved: {
+    superWhale: false,
+    superTeablade: false
+  },
+  overclockBonus: 0,
+  choosingSkill: false,
+  queuedModals: [],
+  currentChoices: [],
+  nextBossKills: 12,
+  bossWave: 0,
+  frostTimer: 1.3,
+  phantomTimer: 1.0,
+  tsunamiTimer: 3.6,
+  lightningIcd: 0,
+  isNewKillRecord: false
+};
+
+function getShiftBadgeTitle(bestKills) {
+  if (bestKills >= 80) return '深海王牌店长';
+  if (bestKills >= 45) return '星海金牌销冠';
+  if (bestKills >= 20) return '元气熟练工';
+  if (bestKills >= 5) return '勤勉实习生';
+  return '新晋打工人';
+}
+
+function updateBestShiftRecord() {
+  const rec = player.bestShiftRecord;
+  let dirty = false;
+  if (survivorSessionKills > rec.bestKills) {
+    rec.bestKills = survivorSessionKills;
+    survivorRun.isNewKillRecord = true;
+    dirty = true;
+  }
+  if (survivorSessionCoins > rec.bestCoins) {
+    rec.bestCoins = survivorSessionCoins;
+    dirty = true;
+  }
+  if (survivorRun.shiftLv > rec.bestShiftLv) {
+    rec.bestShiftLv = survivorRun.shiftLv;
+    dirty = true;
+  }
+  if (dirty) savePetState();
+}
+
+function resetSurvivorRun() {
+  survivorRun.shiftLv = 1;
+  survivorRun.shiftXp = 0;
+  survivorRun.shiftXpNext = 16;
+  survivorRun.skills = {
+    blaster: 1,
+    teaBlade: 1,
+    frostBubble: 0,
+    catLightning: 0,
+    onigiriHeal: 0,
+    starPhantom: 0,
+    critCharm: 0
+  };
+  survivorRun.evolved = {
+    superWhale: false,
+    superTeablade: false
+  };
+  survivorRun.overclockBonus = 0;
+  survivorRun.choosingSkill = false;
+  survivorRun.queuedModals = [];
+  survivorRun.currentChoices = [];
+  survivorRun.nextBossKills = 12;
+  survivorRun.bossWave = 0;
+  survivorRun.frostTimer = 1.2;
+  survivorRun.phantomTimer = 0.9;
+  survivorRun.tsunamiTimer = 3.5;
+  survivorRun.lightningIcd = 0;
+  survivorRun.isNewKillRecord = false;
+  survivorVfxBursts.length = 0;
+  document.getElementById('survivor-skill-modal')?.classList.add('hidden');
+}
+
+function syncSurvivorSkillStrip() {
+  const stripEl = document.getElementById('surv-skill-strip');
+  if (!stripEl) return;
+  if (gameMode !== 'survivor') {
+    stripEl.classList.add('hidden');
+    return;
+  }
+  const badges = [];
+  for (const evo of SURVIVOR_EVOLUTIONS) {
+    if (survivorRun.evolved[evo.id]) {
+      badges.push({ img: evo.img, tag: 'MAX', isSuper: true, title: evo.name });
+    }
+  }
+  for (const sk of SURVIVOR_SKILL_POOL) {
+    const lv = survivorRun.skills[sk.id] || 0;
+    if (lv <= 0) continue;
+    if (sk.id === 'blaster' && survivorRun.evolved.superWhale) continue;
+    if (sk.id === 'teaBlade' && survivorRun.evolved.superTeablade) continue;
+    badges.push({ img: sk.img, tag: `Lv${lv}`, isSuper: false, title: sk.name });
+  }
+  if (badges.length === 0) {
+    stripEl.classList.add('hidden');
+    return;
+  }
+  stripEl.classList.remove('hidden');
+  stripEl.innerHTML = badges
+    .map(
+      (b) =>
+        `<span class="surv-strip-pill ${b.isSuper ? 'is-super' : ''}" title="${b.title}"><img src="${b.img}" alt="" /><i class="surv-strip-lv">${b.tag}</i></span>`
+    )
+    .join('');
+}
+
+function syncSurvivorBossBar() {
+  const barEl = document.getElementById('survivor-boss-bar');
+  if (!barEl) return;
+  if (gameMode !== 'survivor') {
+    barEl.classList.add('hidden');
+    return;
+  }
+  const boss = enemies.find((e) => e.isBoss && e.hp > 0);
+  if (!boss) {
+    barEl.classList.add('hidden');
+    return;
+  }
+  barEl.classList.remove('hidden');
+  const pct = Math.max(0, Math.min(100, Math.round((boss.hp / Math.max(1, boss.maxHp)) * 100)));
+  const nameEl = document.getElementById('surv-boss-name');
+  const hpTextEl = document.getElementById('surv-boss-hp-text');
+  const fillEl = document.getElementById('surv-boss-fill');
+  if (nameEl) nameEl.textContent = `班次首领 · ${boss.bossName || '深海摸鱼大魔王'}`;
+  if (hpTextEl) hpTextEl.textContent = `${pct}%`;
+  if (fillEl) fillEl.style.width = `${pct}%`;
+}
+
+function rollSurvivorChoices() {
+  const result = [];
+  for (const evo of SURVIVOR_EVOLUTIONS) {
+    if (
+      !survivorRun.evolved[evo.id] &&
+      (survivorRun.skills[evo.reqWeapon] || 0) >= 3 &&
+      (survivorRun.skills[evo.reqPassive] || 0) >= 3
+    ) {
+      result.push({
+        id: evo.id,
+        isEvolution: true,
+        tagLabel: '超武觉醒',
+        name: evo.name,
+        img: evo.img,
+        desc: evo.desc,
+        synergy: evo.synergy
+      });
+    }
+  }
+
+  const candidates = SURVIVOR_SKILL_POOL.filter((sk) => (survivorRun.skills[sk.id] || 0) < sk.maxLv);
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+
+  for (const sk of candidates) {
+    if (result.length >= 3) break;
+    const curLv = survivorRun.skills[sk.id] || 0;
+    const nextLv = curLv + 1;
+    result.push({
+      id: sk.id,
+      isEvolution: false,
+      tagLabel: curLv === 0 ? '新秘技 · Lv.1' : `Lv.${curLv} → Lv.${nextLv}${nextLv >= sk.maxLv ? ' 满级' : ''}`,
+      name: sk.name,
+      img: sk.img,
+      desc: sk.desc,
+      synergy: sk.synergy
+    });
+  }
+
+  const fallbackPool = [
+    {
+      id: 'supply_heal',
+      isEvolution: false,
+      tagLabel: '班次补给',
+      name: '暖心饭团便当',
+      img: './assets/sk_onigiri_heal.webp?v=hd15',
+      desc: '立即恢复全部体力与饱食度，并获得护体元气。',
+      synergy: '即时满血续航'
+    },
+    {
+      id: 'supply_coins',
+      isEvolution: false,
+      tagLabel: '班次奖金',
+      name: '深海绩效红包',
+      img: './assets/ui_badge_shift.webp?v=hd15',
+      desc: '立即发放 +45 打工金币奖励，计入本班绩效。',
+      synergy: '即时金币赏金'
+    },
+    {
+      id: 'supply_overclock',
+      isEvolution: false,
+      tagLabel: '全武超载',
+      name: '星耀火力增幅',
+      img: './assets/sk_crit_charm.webp?v=hd15',
+      desc: '本班次全武器与超武最终伤害永久提升 +18%。',
+      synergy: '无限叠加强化'
+    }
+  ];
+  for (const fb of fallbackPool) {
+    if (result.length >= 3) break;
+    result.push(fb);
+  }
+  return result.slice(0, 3);
+}
+
+function openSurvivorSkillModal(kickerText = '打工班次升级 · 暂停保护中') {
+  if (gameMode !== 'survivor') return;
+  if (survivorRun.choosingSkill) {
+    survivorRun.queuedModals.push(kickerText);
+    return;
+  }
+  const modalEl = document.getElementById('survivor-skill-modal');
+  const gridEl = document.getElementById('surv-card-grid');
+  const kickerEl = document.getElementById('surv-modal-kicker');
+  const titleEl = document.getElementById('surv-modal-title');
+  if (!modalEl || !gridEl) return;
+
+  const choices = rollSurvivorChoices();
+  survivorRun.currentChoices = choices;
+  survivorRun.choosingSkill = true;
+  if (kickerEl) kickerEl.textContent = kickerText;
+  if (titleEl) {
+    const hasEvo = choices.some((c) => c.isEvolution);
+    titleEl.textContent = hasEvo
+      ? `班次 Lv.${survivorRun.shiftLv} · 超武共鸣觉醒！`
+      : `班次 Lv.${survivorRun.shiftLv} · 三选一手账秘技`;
+  }
+
+  gridEl.innerHTML = '';
+  choices.forEach((ch) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `surv-skill-card ${ch.isEvolution ? 'is-evolution' : ''}`.trim();
+    btn.dataset.skillId = ch.id;
+    btn.innerHTML = `
+      <span class="surv-card-tag">${ch.tagLabel}</span>
+      <img src="${ch.img}" alt="" class="surv-card-thumb" />
+      <span class="surv-card-name">${ch.name}</span>
+      <span class="surv-card-desc">${ch.desc}</span>
+      <span class="surv-card-synergy">${ch.synergy}</span>
+    `;
+    const onSelect = (ev) => {
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      applySurvivorSkillChoice(ch.id);
+    };
+    btn.addEventListener('pointerup', onSelect);
+    btn.addEventListener('click', onSelect);
+    gridEl.appendChild(btn);
+  });
+
+  modalEl.classList.remove('hidden');
+  playSfx('star');
+}
+
+function applySurvivorSkillChoice(skillId) {
+  if (!survivorRun.choosingSkill) return;
+  const chosen = survivorRun.currentChoices.find((c) => c.id === skillId) || survivorRun.currentChoices[0];
+  if (!chosen) return;
+
+  if (skillId === 'superWhale') {
+    survivorRun.evolved.superWhale = true;
+    survivorRun.tsunamiTimer = 0.25;
+    player.cheerTimer = 2.0;
+    setPlayerEmote('超武觉醒：深海蓝鲸巨浪！横扫全场咯~', 2.6, 'cheer', true);
+  } else if (skillId === 'superTeablade') {
+    survivorRun.evolved.superTeablade = true;
+    player.cheerTimer = 2.0;
+    setPlayerEmote('超武觉醒：星海茶刃风暴！双环飞叶全开~', 2.6, 'cheer', true);
+  } else if (skillId === 'supply_heal') {
+    player.hp = player.maxHp;
+    player.hunger = player.maxHunger;
+    setPlayerEmote('吃饱暖心饭团，体力全满继续冲!', 2.0, 'happy', true);
+  } else if (skillId === 'supply_coins') {
+    addCoins(45, player.x, player.y - 30);
+    setPlayerEmote('领到深海绩效红包 +45 金币!', 2.0, 'happy', true);
+  } else if (skillId === 'supply_overclock') {
+    survivorRun.overclockBonus += 0.18;
+    setPlayerEmote('星耀火力超载 +18%!', 2.0, 'proud', true);
+  } else if (skillId in survivorRun.skills) {
+    survivorRun.skills[skillId] = Math.min(3, (survivorRun.skills[skillId] || 0) + 1);
+    if (skillId === 'onigiriHeal') {
+      player.hp = Math.min(player.maxHp, player.hp + 35);
+      player.hunger = Math.min(player.maxHunger, player.hunger + 25);
+    }
+    player.happyTimer = 1.4;
+    setPlayerEmote(`习得『${chosen.name}』Lv.${survivorRun.skills[skillId]}!`, 2.0, 'happy', true);
+  }
+
+  playSfx('star');
+  spawnInteractVfx(player.x, player.y - 24, 'sparkle', 9);
+  survivorRun.choosingSkill = false;
+  survivorRun.currentChoices = [];
+  document.getElementById('survivor-skill-modal')?.classList.add('hidden');
+  syncSurvivorHud();
+  syncSurvivorSkillStrip();
+
+  if (survivorRun.queuedModals.length > 0 && gameMode === 'survivor') {
+    const nextKicker = survivorRun.queuedModals.shift();
+    openSurvivorSkillModal(nextKicker);
+  }
+}
+
+document.getElementById('survivor-skill-modal')?.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (!survivorRun.choosingSkill || gameMode !== 'survivor') return;
+  if (e.key === '1' && survivorRun.currentChoices[0]) applySurvivorSkillChoice(survivorRun.currentChoices[0].id);
+  if (e.key === '2' && survivorRun.currentChoices[1]) applySurvivorSkillChoice(survivorRun.currentChoices[1].id);
+  if (e.key === '3' && survivorRun.currentChoices[2]) applySurvivorSkillChoice(survivorRun.currentChoices[2].id);
+});
 
 function syncParkourHud() {
   const hudEl = document.getElementById('parkour-hud');
@@ -325,15 +753,32 @@ function syncSurvivorHud() {
   if (!hudEl) return;
   if (gameMode !== 'survivor') {
     hudEl.classList.add('hidden');
+    syncSurvivorSkillStrip();
+    syncSurvivorBossBar();
     return;
   }
   hudEl.classList.remove('hidden');
+  updateBestShiftRecord();
   const lvEl = document.getElementById('surv-lv-chip');
+  const xpFillEl = document.getElementById('surv-xp-mini-fill');
   const killEl = document.getElementById('surv-kill-chip');
   const coinEl = document.getElementById('surv-coin-val');
-  if (lvEl) lvEl.textContent = `打工 Lv.${player.level}`;
+  const recChipEl = document.getElementById('surv-record-chip');
+  const recValEl = document.getElementById('surv-record-val');
+  if (lvEl) lvEl.textContent = `班次 Lv.${survivorRun.shiftLv}`;
+  if (xpFillEl) {
+    const pct = Math.max(0, Math.min(100, Math.round((survivorRun.shiftXp / Math.max(1, survivorRun.shiftXpNext)) * 100)));
+    xpFillEl.style.width = `${pct}%`;
+  }
   if (killEl) killEl.textContent = `击退 ${survivorSessionKills}`;
   if (coinEl) coinEl.textContent = `+${survivorSessionCoins}`;
+  if (recValEl) {
+    const best = player.bestShiftRecord.bestKills || 0;
+    recValEl.textContent = survivorRun.isNewKillRecord ? `新纪录 ${best}` : `纪录 ${best}`;
+  }
+  if (recChipEl) {
+    recChipEl.classList.toggle('is-new-best', Boolean(survivorRun.isNewKillRecord));
+  }
 }
 
 function addCoins(amount, x, y, labelPrefix = '') {
@@ -1598,6 +2043,18 @@ function renderDrawerItems() {
       drawerItemsEl.appendChild(card);
     }
   } else if (activeDrawerTab === 'upgrade') {
+    const rec = player.bestShiftRecord;
+    const badgeCard = document.createElement('div');
+    badgeCard.className = 'shift-record-banner';
+    badgeCard.innerHTML = `
+      <img src="./assets/ui_badge_shift.webp?v=hd15" alt="最高班次纪录徽章" />
+      <div class="shift-record-meta">
+        <span class="shift-record-title">班次荣誉徽章 · ${getShiftBadgeTitle(rec.bestKills)}</span>
+        <span>最高击退 ${rec.bestKills} · 单班最高 +${rec.bestCoins} 金币 · 班次 Lv.${rec.bestShiftLv} · 讨伐首领 ${rec.bossesDefeated}</span>
+      </div>
+    `;
+    drawerItemsEl.appendChild(badgeCard);
+
     for (const item of UPGRADE_CATALOG) {
       const lv = player.weapons[item.id] || 0;
       const cost = Math.round(item.basePrice * Math.pow(1.45, lv));
@@ -1639,10 +2096,16 @@ document.querySelectorAll('.drawer-tab').forEach((tabBtn) => {
   });
 });
 
-// 顶部三模式切换（🐾 养成 | ⭐ 摘星 | ⚔️ 幸存者赚金币）
+// 顶部三模式切换（养成 | 摘星 | 幸存者赚金币）
 const wishPillEl = document.getElementById('hud-wish-pill');
 function switchMode(newMode) {
   if (!newMode) return;
+  if (gameMode === 'survivor' && newMode !== 'survivor') {
+    updateBestShiftRecord();
+    survivorRun.choosingSkill = false;
+    survivorRun.queuedModals = [];
+    document.getElementById('survivor-skill-modal')?.classList.add('hidden');
+  }
   gameMode = newMode;
   vision.activeGameMode = newMode;
   document.querySelectorAll('.mode-btn').forEach((b) => {
@@ -1678,6 +2141,7 @@ function switchMode(newMode) {
     coinsList.length = 0;
     gems.length = 0;
     shockwaves.length = 0;
+    survivorVfxBursts.length = 0;
     starTarget.active = false;
     careBarEl.style.display = 'flex';
     if (wishPillEl) wishPillEl.style.display = 'inline-flex';
@@ -1690,6 +2154,8 @@ function switchMode(newMode) {
     coinsList.length = 0;
     gems.length = 0;
     shockwaves.length = 0;
+    survivorVfxBursts.length = 0;
+    starTarget.active = false;
     careBarEl.style.display = 'none';
     if (wishPillEl) wishPillEl.style.display = 'none';
     syncSurvivorHud();
@@ -1700,12 +2166,20 @@ function switchMode(newMode) {
     starTarget.active = false;
     survivorSessionCoins = 0;
     survivorSessionKills = 0;
+    enemies.length = 0;
+    bullets.length = 0;
+    gems.length = 0;
+    resetSurvivorRun();
     careBarEl.style.display = 'none';
     if (wishPillEl) wishPillEl.style.display = 'none';
-    enemySpawnTimer = 0.15; if (enemies.length === 0) { spawnEnemy(true); spawnEnemy(false); }
+    enemySpawnTimer = 0.15;
+    spawnEnemy(false);
+    spawnEnemy(false);
     syncSurvivorHud();
+    syncSurvivorSkillStrip();
+    syncSurvivorBossBar();
     syncParkourHud();
-    setPlayerEmote('开启幸存者打工！打怪爆金币咯~', 2.0);
+    setPlayerEmote('开启幸存者打工 2.0！拾取宝石升级抽秘技卡~', 2.2);
   }
 }
 
@@ -2430,10 +2904,13 @@ function spawnEnemy(forceBoss = false) {
   const isBoss = Boolean(forceBoss && !hasBoss);
   const isGoldTreasure = !isBoss && Math.random() < 0.16;
   const isFlyer = !isBoss && !isGoldTreasure && Math.random() < 0.35;
-  const isElite = !isBoss && !isGoldTreasure && player.kills > 8 && Math.random() < 0.16;
-  const scale = 1 + player.level * 0.14;
+  const isElite = !isBoss && !isGoldTreasure && survivorSessionKills > 6 && Math.random() < 0.18;
+  const scale = 1 + (player.level - 1) * 0.10 + (survivorRun.shiftLv - 1) * 0.12;
   const centerFloorY = H * 0.68;
-  const hpVal = (isBoss ? 340 : isGoldTreasure ? 65 : isElite ? 85 : isFlyer ? 20 : 26) * scale;
+  const hpVal = (isBoss ? 420 + survivorRun.bossWave * 110 : isGoldTreasure ? 65 : isElite ? 85 : isFlyer ? 20 : 26) * scale;
+  const bossTitle = isBoss
+    ? SURVIVOR_BOSS_NAMES[Math.max(0, survivorRun.bossWave - 1) % SURVIVOR_BOSS_NAMES.length]
+    : '';
 
   enemies.push({
     x: side,
@@ -2443,20 +2920,22 @@ function spawnEnemy(forceBoss = false) {
     r: isBoss ? 36 : isElite || isGoldTreasure ? 22 : 15,
     hp: hpVal,
     maxHp: hpVal,
-    speed: (isBoss ? 64 : isGoldTreasure ? 115 : isElite ? 70 : isFlyer ? 105 : 90) + Math.random() * 14,
+    speed: (isBoss ? 68 : isGoldTreasure ? 115 : isElite ? 72 : isFlyer ? 105 : 90) + Math.random() * 14,
     isBoss,
+    bossName: bossTitle,
     isFlyer,
     isElite,
     isGoldTreasure,
     slowTimer: 0,
-    bossSkillCd: 3.2,
+    bossSkillCd: 3.0,
     jumpCd: Math.random() * 1.2
   });
 
   if (isBoss) {
     playSfx('star');
     petAudio.haptic('shutter');
-    setPlayerEmote('警告！深海摸鱼大魔王登场，快击败它爆金币雨!', 2.6, 'tsundere', true);
+    syncSurvivorBossBar();
+    setPlayerEmote(`班次首领登场：${bossTitle}！击败领超武与金币雨~`, 2.8, 'tsundere', true);
   }
 }
 
@@ -2496,6 +2975,11 @@ function gameLoop(now) {
 }
 
 function updateGameplay(dt, flow) {
+  if (gameMode === 'survivor' && survivorRun.choosingSkill) {
+    syncSurvivorHud();
+    syncSurvivorBossBar();
+    return;
+  }
   // 更新各类动画与表情计时器
   player.spinTimer = Math.max(0, player.spinTimer - dt);
   player.landAnimTimer = Math.max(0, player.landAnimTimer - dt);
@@ -2834,7 +3318,8 @@ function updateGameplay(dt, flow) {
     // 3. 常规与自动回归运动：加速 → 固定最高移速 → 减速 → 停止
     const auraBoost = player.equipped.aura ? 1.15 : 1;
     const yarnBoost = petItems.some((i) => i.type === 'ball' && i.toyId === 'yarn') ? 1.35 : 1;
-    const MAX_RUN_SPEED = 240 * (1 + player.weapons.boots * 0.12) * auraBoost * yarnBoost;
+    const phantomBoost = gameMode === 'survivor' ? 1 + (survivorRun.skills.starPhantom || 0) * 0.12 : 1;
+    const MAX_RUN_SPEED = 240 * (1 + player.weapons.boots * 0.12) * auraBoost * yarnBoost * phantomBoost;
     const ACCEL = 760;
     const DECEL = 920;
     const SLOW_RADIUS = 76;
@@ -3472,63 +3957,240 @@ function updateGameplay(dt, flow) {
     }
   }
 
-  const fireInterval = Math.max(0.14, 0.42 / (1 + (player.weapons.blaster - 1) * 0.35)) * (onTech ? 0.65 : 1);
+  const skBlasterLv = gameMode === 'survivor' ? Math.max(1, survivorRun.skills.blaster || 1) : 1;
+  const skTeaLv = gameMode === 'survivor' ? Math.max(1, survivorRun.skills.teaBlade || 1) : 1;
+  const skFrostLv = gameMode === 'survivor' ? survivorRun.skills.frostBubble || 0 : 0;
+  const skCatLv = gameMode === 'survivor' ? survivorRun.skills.catLightning || 0 : 0;
+  const skOnigiriLv = gameMode === 'survivor' ? survivorRun.skills.onigiriHeal || 0 : 0;
+  const skPhantomLv = gameMode === 'survivor' ? survivorRun.skills.starPhantom || 0 : 0;
+  const skCritLv = gameMode === 'survivor' ? survivorRun.skills.critCharm || 0 : 0;
+  const dmgMult = 1 + (gameMode === 'survivor' ? survivorRun.overclockBonus : 0);
+
+  if (gameMode === 'survivor') {
+    survivorRun.lightningIcd = Math.max(0, survivorRun.lightningIcd - dt);
+    if (skOnigiriLv > 0 && player.hp < player.maxHp) {
+      player.hp = Math.min(player.maxHp, player.hp + skOnigiriLv * 2.2 * dt);
+    }
+
+    // 冰泡凝滞：周期发射寒霜冰泡弹
+    if (skFrostLv > 0 && nearestEnemy) {
+      survivorRun.frostTimer -= dt;
+      if (survivorRun.frostTimer <= 0) {
+        survivorRun.frostTimer = Math.max(0.85, 2.2 - skFrostLv * 0.35);
+        const ang = Math.atan2(nearestEnemy.y - player.y, nearestEnemy.x - player.x);
+        bullets.push({
+          kind: 'frost',
+          x: player.x + Math.cos(ang) * 18,
+          y: player.y + Math.sin(ang) * 18,
+          vx: Math.cos(ang) * 430,
+          vy: Math.sin(ang) * 430,
+          dmg: Math.round((28 + skFrostLv * 14 + player.level * 2) * dmgMult),
+          pierce: 2,
+          life: 1.5
+        });
+      }
+    }
+
+    // 星光幻影：移动或作战时放飞追踪星影弹
+    if (skPhantomLv > 0 && nearestEnemy) {
+      survivorRun.phantomTimer -= dt * (Math.abs(player.vx) > 25 ? 1.5 : 0.85);
+      if (survivorRun.phantomTimer <= 0) {
+        survivorRun.phantomTimer = Math.max(0.65, 1.65 - skPhantomLv * 0.25);
+        const ang = Math.atan2(nearestEnemy.y - player.y, nearestEnemy.x - player.x) + (Math.random() - 0.5) * 0.4;
+        bullets.push({
+          kind: 'phantom',
+          x: player.x,
+          y: player.y - 12,
+          vx: Math.cos(ang) * 560,
+          vy: Math.sin(ang) * 560,
+          dmg: Math.round((24 + skPhantomLv * 12 + player.level * 2) * dmgMult),
+          pierce: 1,
+          life: 1.4
+        });
+      }
+    }
+
+    // 超武「深海蓝鲸巨浪」：周期掀起横扫全屏的深海潮汐巨浪
+    if (survivorRun.evolved.superWhale && enemies.length > 0) {
+      survivorRun.tsunamiTimer -= dt;
+      if (survivorRun.tsunamiTimer <= 0) {
+        survivorRun.tsunamiTimer = 3.8;
+        shockwaves.push({
+          x: player.x,
+          y: player.y,
+          r: 22,
+          maxR: 310,
+          color: '#38bdf8',
+          life: 0.55
+        });
+        survivorVfxBursts.push({
+          kind: 'superWhale',
+          x: player.x,
+          y: player.y - 18,
+          vx: player.facing * 95,
+          vy: -24,
+          size: 74,
+          life: 0.65,
+          maxLife: 0.65
+        });
+        for (const foe of enemies) {
+          if (Math.hypot(foe.x - player.x, foe.y - player.y) < 320) {
+            const waveDmg = Math.round((92 + player.weapons.blaster * 14) * dmgMult);
+            foe.hp -= waveDmg;
+            foe.slowTimer = 2.6;
+            foe.vy = -240;
+            floatingTexts.push({
+              x: foe.x,
+              y: foe.y - 24,
+              vx: 0,
+              vy: -64,
+              text: `-${waveDmg}!`,
+              color: '#38bdf8',
+              scale: 1.2,
+              life: 0.55
+            });
+          }
+        }
+      }
+    }
+  }
+
+  function triggerCatChainLightning(originEnemy, baseHitDmg) {
+    if (skCatLv <= 0 || survivorRun.lightningIcd > 0) return;
+    survivorRun.lightningIcd = survivorRun.evolved.superTeablade ? 0.22 : 0.42;
+    const jumps = 1 + skCatLv + (survivorRun.evolved.superTeablade ? 2 : 0);
+    const lDmg = Math.max(10, Math.round((baseHitDmg * 0.55 + skCatLv * 11) * dmgMult));
+    const pool = enemies
+      .filter((other) => other.hp > 0 && Math.hypot(other.x - originEnemy.x, other.y - originEnemy.y) < 260)
+      .slice(0, jumps);
+    for (const target of pool) {
+      target.hp -= lDmg;
+      survivorVfxBursts.push({
+        kind: 'catLightning',
+        x: target.x,
+        y: target.y - 14,
+        vx: 0,
+        vy: -18,
+        size: 38,
+        life: 0.36,
+        maxLife: 0.36
+      });
+      floatingTexts.push({
+        x: target.x + (Math.random() - 0.5) * 16,
+        y: target.y - 24,
+        vx: 0,
+        vy: -62,
+        text: `-${lDmg}`,
+        color: '#facc15',
+        scale: 1.05,
+        life: 0.48
+      });
+    }
+  }
+
+  const effBlasterLv = player.weapons.blaster + skBlasterLv - 1;
+  const fireInterval =
+    Math.max(0.13, 0.42 / (1 + (effBlasterLv - 1) * 0.28)) *
+    (onTech ? 0.65 : 1) *
+    (survivorRun.evolved.superWhale ? 0.88 : 1);
   shootTimer -= dt;
   if (gameMode === 'survivor' && shootTimer <= 0 && nearestEnemy && player.climbState === 'none') {
     shootTimer = fireInterval;
     player.attackAnimTimer = 0.15;
     const baseAng = Math.atan2(nearestEnemy.y - player.y, nearestEnemy.x - player.x);
-    const count = Math.min(3, player.weapons.blaster);
+    const isSuperWhale = survivorRun.evolved.superWhale;
+    const count = isSuperWhale ? 3 : Math.min(4, Math.max(1, skBlasterLv));
     for (let i = 0; i < count; i++) {
-      const spread = (i - (count - 1) * 0.5) * 0.14;
+      const spread = (i - (count - 1) * 0.5) * (isSuperWhale ? 0.18 : 0.14);
       bullets.push({
+        kind: isSuperWhale ? 'superWhale' : 'blaster',
         x: player.x + Math.cos(baseAng) * 18,
         y: player.y + Math.sin(baseAng) * 18,
-        vx: Math.cos(baseAng + spread) * 650,
-        vy: Math.sin(baseAng + spread) * 650,
-        dmg: 22 + player.weapons.blaster * 6 + player.level * 2,
+        vx: Math.cos(baseAng + spread) * (isSuperWhale ? 590 : 650),
+        vy: Math.sin(baseAng + spread) * (isSuperWhale ? 590 : 650),
+        dmg: Math.round((22 + effBlasterLv * 7 + player.level * 2 + (isSuperWhale ? 26 : 0)) * dmgMult),
+        pierce: isSuperWhale ? 4 : 1,
+        hitSet: new Set(),
         color: onTech ? '#ff007f' : '#00f3ff',
-        life: 1.2
+        life: isSuperWhale ? 1.45 : 1.2
       });
     }
     playSfx('shoot');
   }
 
-  bladeAngle += dt * 4.8;
-  const bladeCount = gameMode === 'survivor' ? Math.min(4, player.weapons.teaBlade + (onDrink ? 1 : 0)) : 0;
+  bladeAngle += dt * (survivorRun.evolved.superTeablade ? 7.2 : 4.8 + skTeaLv * 0.4);
+  const bladeCount =
+    gameMode === 'survivor'
+      ? survivorRun.evolved.superTeablade
+        ? 6
+        : Math.min(5, Math.max(player.weapons.teaBlade, skTeaLv) + (onDrink ? 1 : 0))
+      : 0;
   const bladeRadius = 64;
+
+  const critChance = Math.min(0.75, 0.18 + skCritLv * 0.12);
+  const critMult = 1.5 + skCritLv * 0.3;
 
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
-    // 觉醒追踪代码水弹：Lv.2 以上水弹自动微调弹道追踪最近怪物/Boss
-    if (player.weapons.blaster >= 2 && nearestEnemy) {
+    if ((effBlasterLv >= 2 || b.kind === 'phantom' || b.kind === 'frost') && nearestEnemy) {
       const targetAng = Math.atan2(nearestEnemy.y - b.y, nearestEnemy.x - b.x);
-      const spd = Math.hypot(b.vx, b.vy) || 650;
-      b.vx = b.vx * 0.9 + Math.cos(targetAng) * spd * 0.1;
-      b.vy = b.vy * 0.9 + Math.sin(targetAng) * spd * 0.1;
+      const spd = Math.hypot(b.vx, b.vy) || 600;
+      const turnRate = b.kind === 'phantom' ? 0.16 : 0.1;
+      b.vx = b.vx * (1 - turnRate) + Math.cos(targetAng) * spd * turnRate;
+      b.vy = b.vy * (1 - turnRate) + Math.sin(targetAng) * spd * turnRate;
     }
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.life -= dt;
 
-    let hit = false;
+    let hitRadiusBonus = b.kind === 'superWhale' ? 24 : b.kind === 'frost' ? 18 : 12;
+    let shouldRemove = false;
     for (const e of enemies) {
-      if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + 12) {
-        const isCrit = Math.random() < 0.22;
-        const dmg = Math.round(b.dmg * (isCrit ? 1.5 : 1));
+      if (b.hitSet && b.hitSet.has(e)) continue;
+      if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + hitRadiusBonus) {
+        if (b.hitSet) b.hitSet.add(e);
+        const isCrit = Math.random() < critChance;
+        const dmg = Math.round(b.dmg * (isCrit ? critMult : 1));
         e.hp -= dmg;
-        hit = true;
+
+        if (b.kind === 'frost' || b.kind === 'superWhale' || skFrostLv > 0) {
+          e.slowTimer = Math.max(e.slowTimer || 0, b.kind === 'superWhale' ? 2.4 : 1.4 + skFrostLv * 0.45);
+          if (b.kind === 'frost') {
+            survivorVfxBursts.push({
+              kind: 'frost',
+              x: e.x,
+              y: e.y,
+              vx: 0,
+              vy: -10,
+              size: 48,
+              life: 0.4,
+              maxLife: 0.4
+            });
+            for (const near of enemies) {
+              if (near !== e && Math.hypot(near.x - e.x, near.y - e.y) < 95) {
+                near.hp -= Math.round(dmg * 0.55);
+                near.slowTimer = Math.max(near.slowTimer || 0, 1.8);
+              }
+            }
+          }
+        }
+
+        if (skCatLv > 0 && Math.random() < 0.45) {
+          triggerCatChainLightning(e, dmg);
+        }
+
         floatingTexts.push({
           x: e.x + (Math.random() - 0.5) * 14,
           y: e.y - 18,
           vx: (Math.random() - 0.5) * 36,
           vy: -68,
           text: isCrit ? `-${dmg}!` : `-${dmg}`,
-          color: isCrit ? '#ffd700' : '#ffffff',
+          color: isCrit ? '#ffd700' : b.kind === 'superWhale' ? '#7dd3fc' : '#ffffff',
           scale: isCrit ? 1.25 : 1,
           life: 0.55
         });
-        if (e.isGoldTreasure && Math.random() < 0.5) {
+
+        if ((e.isGoldTreasure && Math.random() < 0.5) || (isCrit && skCritLv > 0 && Math.random() < 0.22)) {
           coinsList.push({
             x: e.x,
             y: e.y - 12,
@@ -3539,26 +4201,33 @@ function updateGameplay(dt, flow) {
             magnet: false
           });
         }
-        break;
+
+        b.pierce = (b.pierce || 1) - 1;
+        if (b.pierce <= 0) {
+          shouldRemove = true;
+          break;
+        }
       }
     }
-    if (hit || b.life <= 0 || b.x < -50 || b.x > W + 50 || b.y > H + 50) {
+    if (shouldRemove || b.life <= 0 || b.x < -60 || b.x > W + 60 || b.y > H + 60) {
       bullets.splice(i, 1);
     }
   }
 
   if (gameMode === 'survivor') {
     enemySpawnTimer -= dt;
-    if (enemySpawnTimer <= 0 && enemies.length < 14) {
-      enemySpawnTimer = Math.max(0.65, 1.5 - player.level * 0.05);
+    if (enemySpawnTimer <= 0 && enemies.length < 16) {
+      enemySpawnTimer = Math.max(0.42, 0.92 - survivorRun.shiftLv * 0.05);
       spawnEnemy();
     }
   }
 
+  const dmgTakenMult = Math.max(0.52, 1 - skPhantomLv * 0.12);
+
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     e.slowTimer = Math.max(0, (e.slowTimer || 0) - dt);
-    const slowMult = e.slowTimer > 0 ? 0.52 : 1;
+    const slowMult = e.slowTimer > 0 ? 0.46 : 1;
     const dx = player.x - e.x;
     const dy = player.y - e.y;
     const dist = Math.hypot(dx, dy) || 1;
@@ -3566,16 +4235,17 @@ function updateGameplay(dt, flow) {
     if (e.isBoss) {
       e.bossSkillCd = (e.bossSkillCd || 3.2) - dt;
       if (e.bossSkillCd <= 0) {
-        e.bossSkillCd = 3.6;
-        e.vy = -320;
+        e.bossSkillCd = 3.4;
+        e.vy = -330;
         shockwaves.push({
           x: e.x,
           y: e.y,
           r: 18,
-          maxR: 155,
-          color: '#a855f7',
-          life: 0.4
+          maxR: 165,
+          color: '#fb7185',
+          life: 0.42
         });
+        if (enemies.length < 12) spawnEnemy(false);
       }
     }
 
@@ -3613,26 +4283,31 @@ function updateGameplay(dt, flow) {
     }
 
     e.bladeTick = (e.bladeTick || 0) - dt;
+    const isSuperTea = survivorRun.evolved.superTeablade;
     for (let b = 0; b < bladeCount; b++) {
-      const ang = bladeAngle + (b / bladeCount) * Math.PI * 2;
-      const bx = player.x + Math.cos(ang) * bladeRadius;
-      const by = player.y + Math.sin(ang) * bladeRadius;
-      if (Math.hypot(bx - e.x, by - e.y) < e.r + 18) {
-        const bladeDmg = (65 + player.weapons.teaBlade * 15) * dt;
+      const ringRadius = isSuperTea ? (b % 2 === 0 ? 62 : 96) : bladeRadius;
+      const ang = (isSuperTea && b % 2 === 1 ? -bladeAngle * 0.85 : bladeAngle) + (b / bladeCount) * Math.PI * 2;
+      const bx = player.x + Math.cos(ang) * ringRadius;
+      const by = player.y + Math.sin(ang) * ringRadius;
+      if (Math.hypot(bx - e.x, by - e.y) < e.r + (isSuperTea ? 24 : 18)) {
+        const effTea = player.weapons.teaBlade + skTeaLv - 1;
+        const bladeDmg = (68 + effTea * 18 + (isSuperTea ? 48 : 0)) * dmgMult * dt;
         e.hp -= bladeDmg;
-        if (player.weapons.teaBlade >= 2) {
-          e.slowTimer = 1.8; // 觉醒冰镇乌龙茶刃：减速冰冻怪物！
+        if (effTea >= 2 || skFrostLv > 0) {
+          e.slowTimer = Math.max(e.slowTimer || 0, 1.6);
         }
         if (e.bladeTick <= 0) {
-          e.bladeTick = 0.24;
+          e.bladeTick = isSuperTea ? 0.18 : 0.24;
+          const tickVal = Math.round((16 + effTea * 5 + (isSuperTea ? 12 : 0)) * dmgMult);
+          if (skCatLv > 0) triggerCatChainLightning(e, tickVal * 1.4);
           floatingTexts.push({
             x: e.x + (Math.random() - 0.5) * 14,
             y: e.y - 16,
             vx: (Math.random() - 0.5) * 30,
             vy: -58,
-            text: `-${Math.round(16 + player.weapons.teaBlade * 4)}`,
-            color: '#00ff9d',
-            scale: 0.95,
+            text: `-${tickVal}`,
+            color: isSuperTea ? '#34d399' : '#00ff9d',
+            scale: isSuperTea ? 1.08 : 0.95,
             life: 0.45
           });
         }
@@ -3640,61 +4315,77 @@ function updateGameplay(dt, flow) {
     }
 
     if (dist < e.r + 18) {
-      player.hp -= 14 * dt;
+      player.hp -= 14 * dmgTakenMult * dt;
       if (player.hp <= 0) {
         player.hp = player.maxHp;
+        updateBestShiftRecord();
         // 幸存者打工体力耗尽时，携带赚到的全部金币安全返回养成模式干饭休息
         switchMode('pet');
-        setPlayerEmote('打工收工！带金币回来吃大餐咯~', 2.6);
+        setPlayerEmote('打工收工！带金币与班次勋章回来吃大餐咯~', 2.6);
         break;
       }
     }
 
     if (e.hp <= 0) {
+      const defeatedBoss = Boolean(e.isBoss);
+      const defeatedBossName = e.bossName || '深海摸鱼大魔王';
       player.kills++;
       if (gameMode === 'survivor') {
         survivorSessionKills++;
         syncSurvivorHud();
       }
-      const dropCount = e.isElite ? 3 : 1;
+      const dropCount = defeatedBoss ? 5 : e.isElite ? 3 : 1;
       for (let d = 0; d < dropCount; d++) {
-        const isHeal = Math.random() < 0.16;
+        const isHeal = !defeatedBoss && Math.random() < 0.15;
         gems.push({
-          x: e.x + (Math.random() - 0.5) * 12,
+          x: e.x + (Math.random() - 0.5) * 16,
           y: e.y - 6,
-          vx: (Math.random() - 0.5) * 130,
-          vy: -170 - Math.random() * 80,
+          vx: (Math.random() - 0.5) * 140,
+          vy: -175 - Math.random() * 80,
           age: 0,
           isHeal,
-          val: e.isElite ? 18 : 10,
-          color: isHeal ? '#ff2a7a' : e.isElite ? '#ffd700' : '#00f3ff',
-          magnet: false
+          val: defeatedBoss ? 24 : e.isElite ? 22 : 14,
+          color: isHeal ? '#ff2a7a' : defeatedBoss || e.isElite ? '#ffd700' : '#00f3ff',
+          magnet: defeatedBoss
         });
       }
-      // 幸存者作为赚金币小游戏：击败怪物爆出物理弹跳金币（摸鱼大魔王爆出 18 枚黄金喷泉！）
-      const coinDrops = e.isBoss ? 18 : e.isGoldTreasure ? 8 : e.isElite ? 5 : 2;
+      // 幸存者作为赚金币小游戏：击败怪物爆出物理弹跳金币（班次首领爆出 18 枚黄金喷泉！）
+      const coinDrops = defeatedBoss ? 18 : e.isGoldTreasure ? 8 : e.isElite ? 5 : 2;
       for (let c = 0; c < coinDrops; c++) {
         coinsList.push({
           x: e.x + (Math.random() - 0.5) * 24,
           y: e.y - 12,
-          vx: (Math.random() - 0.5) * (e.isBoss ? 280 : 190),
-          vy: -230 - Math.random() * (e.isBoss ? 160 : 100),
+          vx: (Math.random() - 0.5) * (defeatedBoss ? 280 : 190),
+          vy: -230 - Math.random() * (defeatedBoss ? 160 : 100),
           age: 0,
-          val: e.isBoss ? 12 : e.isGoldTreasure ? 9 : e.isElite ? 8 : 4,
-          magnet: Boolean(e.isBoss)
+          val: defeatedBoss ? 12 : e.isGoldTreasure ? 9 : e.isElite ? 8 : 4,
+          magnet: defeatedBoss
         });
       }
-      if (e.isBoss) {
+
+      enemies.splice(i, 1);
+
+      if (defeatedBoss) {
         playSfx('star');
         petAudio.haptic('win');
         player.cheerTimer = 1.8;
-        addAffectionXp(45, '讨伐大魔王 +45 亲密');
-        setPlayerEmote('耶！成功击败深海摸鱼大魔王，满屏金币雨咯 ^w^!', 2.6, 'cheer', true);
-      } else if (player.kills % 10 === 0) {
+        player.hp = Math.min(player.maxHp, player.hp + 30);
+        player.bestShiftRecord.bossesDefeated = (player.bestShiftRecord.bossesDefeated || 0) + 1;
+        savePetState();
+        syncSurvivorBossBar();
+        addAffectionXp(45, '讨伐班次首领 +45 亲密');
+        setPlayerEmote(`成功击败${defeatedBossName}！满屏金币雨咯 ^w^!`, 2.6, 'cheer', true);
+        if (gameMode === 'survivor') {
+          openSurvivorSkillModal(`讨伐首领『${defeatedBossName}』大捷 · 奖励秘技`);
+        }
+      } else if (gameMode === 'survivor' && survivorSessionKills >= survivorRun.nextBossKills) {
+        survivorRun.bossWave++;
+        survivorRun.nextBossKills += 12;
         spawnEnemy(true);
       }
-      // 每击败 6 只怪物自动释放一次「🌊 巨鲸潮汐觉醒冲击波」清场爆金币
-      if (player.kills % 6 === 0) {
+
+      // 每击败 8 只怪物自动释放一次「巨鲸潮汐觉醒冲击波」清场爆金币
+      if (player.kills % 8 === 0) {
         shockwaves.push({
           x: player.x,
           y: player.y,
@@ -3703,21 +4394,24 @@ function updateGameplay(dt, flow) {
           color: '#00f3ff',
           life: 0.48
         });
-        setPlayerEmote('巨鲸潮汐觉醒冲击!', 1.5, 'cheer');
         for (const other of enemies) {
-          if (other !== e && Math.hypot(other.x - player.x, other.y - player.y) < 230) {
+          if (Math.hypot(other.x - player.x, other.y - player.y) < 230) {
             other.hp -= 65;
             other.vy = -260;
             other.slowTimer = 1.5;
           }
         }
       }
-      enemies.splice(i, 1);
     }
   }
 
+  if (gameMode === 'survivor') {
+    syncSurvivorBossBar();
+  }
+
   // 更新幸存者掉落的物理金币
-  const magnetRange = player.equipped.aura ? 450 : 155 + (player.weapons.magnet || 1) * 35;
+  const magnetRange =
+    (player.equipped.aura ? 450 : 155 + (player.weapons.magnet || 1) * 35) + skOnigiriLv * 45;
   for (let i = coinsList.length - 1; i >= 0; i--) {
     const c = coinsList[i];
     c.age += dt;
@@ -3748,6 +4442,7 @@ function updateGameplay(dt, flow) {
     }
   }
 
+  const gemMagnetRange = 175 + skOnigiriLv * 55;
   for (let i = gems.length - 1; i >= 0; i--) {
     const g = gems[i];
     g.age += dt;
@@ -3755,10 +4450,10 @@ function updateGameplay(dt, flow) {
     const dy = player.y - g.y;
     const dist = Math.hypot(dx, dy) || 1;
 
-    if (g.age > 0.38 && (dist < 165 || g.age > 0.95 || g.magnet)) {
+    if (g.age > 0.34 && (dist < gemMagnetRange || g.age > 0.9 || g.magnet)) {
       g.magnet = true;
-      g.x += (dx / dist) * 460 * dt;
-      g.y += (dy / dist) * 460 * dt;
+      g.x += (dx / dist) * 480 * dt;
+      g.y += (dy / dist) * 480 * dt;
     } else {
       g.vy += 680 * dt;
       g.x += g.vx * dt;
@@ -3770,7 +4465,7 @@ function updateGameplay(dt, flow) {
       }
     }
 
-    if (dist < 28 && g.age > 0.2) {
+    if (dist < 28 && g.age > 0.18) {
       if (g.isHeal) {
         player.hp = Math.min(player.maxHp, player.hp + 18);
         floatingTexts.push({
@@ -3785,26 +4480,53 @@ function updateGameplay(dt, flow) {
         });
       } else {
         player.xp += g.val;
+        if (gameMode === 'survivor') {
+          survivorRun.shiftXp += g.val;
+        }
       }
       gems.splice(i, 1);
+
       if (player.xp >= player.xpNext) {
         player.xp -= player.xpNext;
         player.level++;
         player.xpNext = Math.round(player.xpNext * 1.35);
-        player.hp = Math.min(player.maxHp, player.hp + 25);
-        applySeamlessUpgrade();
-        floatingTexts.push({
-          x: player.x,
-          y: player.y - 44,
-          vx: 0,
-          vy: -60,
-          text: `LV.${player.level} UP!`,
-          color: '#ffd700',
-          scale: 1.3,
-          life: 0.9
-        });
+        player.hp = Math.min(player.maxHp, player.hp + 20);
+        savePetState();
+      }
+
+      if (gameMode === 'survivor') {
+        let leveledShift = false;
+        while (survivorRun.shiftXp >= survivorRun.shiftXpNext) {
+          survivorRun.shiftXp -= survivorRun.shiftXpNext;
+          survivorRun.shiftLv++;
+          survivorRun.shiftXpNext = Math.round(survivorRun.shiftXpNext * 1.18 + 4);
+          player.hp = Math.min(player.maxHp, player.hp + 20);
+          leveledShift = true;
+          openSurvivorSkillModal(`打工班次升至 Lv.${survivorRun.shiftLv} · 暂停保护中`);
+        }
+        syncSurvivorHud();
+        if (leveledShift) {
+          floatingTexts.push({
+            x: player.x,
+            y: player.y - 44,
+            vx: 0,
+            vy: -60,
+            text: `班次 LV.${survivorRun.shiftLv}!`,
+            color: '#ffd700',
+            scale: 1.3,
+            life: 0.9
+          });
+        }
       }
     }
+  }
+
+  for (let i = survivorVfxBursts.length - 1; i >= 0; i--) {
+    const vb = survivorVfxBursts[i];
+    vb.x += (vb.vx || 0) * dt;
+    vb.y += (vb.vy || 0) * dt;
+    vb.life -= dt;
+    if (vb.life <= 0) survivorVfxBursts.splice(i, 1);
   }
 
   for (let i = shockwaves.length - 1; i >= 0; i--) {
@@ -3855,16 +4577,26 @@ function renderEntities(now) {
   }
 
   const onDrink = player.onGround && player.currentRole === 'drink';
-  const bladeCount = gameMode === 'survivor' ? Math.min(4, player.weapons.teaBlade + (onDrink ? 1 : 0)) : 0;
+  const isSuperTea = gameMode === 'survivor' && survivorRun.evolved.superTeablade;
+  const skTeaLv = gameMode === 'survivor' ? Math.max(1, survivorRun.skills.teaBlade || 1) : 1;
+  const bladeCount =
+    gameMode === 'survivor'
+      ? isSuperTea
+        ? 6
+        : Math.min(5, Math.max(player.weapons.teaBlade, skTeaLv) + (onDrink ? 1 : 0))
+      : 0;
+  const bladeImg = isSuperTea && isReady(images.upgSuperTeablade) ? images.upgSuperTeablade : images.upgBlade;
+  const bladeDrawSz = isSuperTea ? 40 : 32;
   for (let b = 0; b < bladeCount; b++) {
-    const ang = bladeAngle + (b / bladeCount) * Math.PI * 2;
-    const bx = player.x + Math.cos(ang) * 64;
-    const by = player.y + Math.sin(ang) * 64;
+    const ringR = isSuperTea ? (b % 2 === 0 ? 62 : 96) : 64;
+    const ang = (isSuperTea && b % 2 === 1 ? -bladeAngle * 0.85 : bladeAngle) + (b / bladeCount) * Math.PI * 2;
+    const bx = player.x + Math.cos(ang) * ringR;
+    const by = player.y + Math.sin(ang) * ringR;
     ctx.save();
     ctx.translate(bx, by);
-    ctx.rotate(ang + now * 0.01);
-    if (isReady(images.upgBlade)) {
-      ctx.drawImage(images.upgBlade, -16, -16, 32, 32);
+    ctx.rotate(ang + now * (isSuperTea ? 0.016 : 0.01));
+    if (isReady(bladeImg)) {
+      ctx.drawImage(bladeImg, -bladeDrawSz * 0.5, -bladeDrawSz * 0.5, bladeDrawSz, bladeDrawSz);
     }
     ctx.restore();
   }
@@ -3881,7 +4613,7 @@ function renderEntities(now) {
     ctx.restore();
   }
 
-  // 渲染冲击波光环（🌊 鲸跃浪潮 / 🐥 小黄鸭音波）
+  // 渲染冲击波光环
   for (const sw of shockwaves) {
     ctx.save();
     ctx.strokeStyle = sw.color;
@@ -3942,8 +4674,39 @@ function renderEntities(now) {
   for (const b of bullets) {
     ctx.save();
     ctx.translate(b.x, b.y);
-    if (isReady(images.upgBlaster)) {
-      ctx.drawImage(images.upgBlaster, -12, -12, 24, 24);
+    let bImg = images.upgBlaster;
+    let bSz = 24;
+    if (b.kind === 'superWhale' && isReady(images.upgSuperWhale)) {
+      bImg = images.upgSuperWhale;
+      bSz = 40;
+      if (b.vx < 0) ctx.scale(-1, 1);
+    } else if (b.kind === 'frost' && isReady(images.skFrostBubble)) {
+      bImg = images.skFrostBubble;
+      bSz = 30;
+    } else if (b.kind === 'phantom' && isReady(images.skStarPhantom)) {
+      bImg = images.skStarPhantom;
+      bSz = 28;
+      ctx.rotate(Math.atan2(b.vy, b.vx));
+    }
+    if (isReady(bImg)) {
+      ctx.drawImage(bImg, -bSz * 0.5, -bSz * 0.5, bSz, bSz);
+    }
+    ctx.restore();
+  }
+
+  for (const vb of survivorVfxBursts) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, vb.life / Math.max(0.01, vb.maxLife)));
+    ctx.translate(vb.x, vb.y);
+    const vImg =
+      vb.kind === 'superWhale'
+        ? images.upgSuperWhale
+        : vb.kind === 'frost'
+          ? images.skFrostBubble
+          : images.skCatLightning;
+    if (isReady(vImg)) {
+      const s = vb.size || 36;
+      ctx.drawImage(vImg, -s * 0.5, -s * 0.5, s, s);
     }
     ctx.restore();
   }

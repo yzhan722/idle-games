@@ -70,7 +70,17 @@ const SPRITE_FILES = {
   vfxNote: './assets/vfx_note.webp?v=hd6',
   vfxZzz: './assets/vfx_zzz.webp?v=hd6',
   vfxAngry: './assets/vfx_angry.webp?v=hd6',
-  vfxGem: './assets/vfx_gem.webp?v=hd6'
+  vfxGem: './assets/vfx_gem.webp?v=hd6',
+
+  // AR-1 幸存者打工 2.0：奶油手账风肉鸽技能卡、蓝鲸/茶刃超武与最高班次徽章贴图
+  skFrostBubble: './assets/sk_frost_bubble.webp?v=hd15',
+  skCatLightning: './assets/sk_cat_lightning.webp?v=hd15',
+  skOnigiriHeal: './assets/sk_onigiri_heal.webp?v=hd15',
+  skStarPhantom: './assets/sk_star_phantom.webp?v=hd15',
+  skCritCharm: './assets/sk_crit_charm.webp?v=hd15',
+  upgSuperWhale: './assets/upg_super_whale.webp?v=hd15',
+  upgSuperTeablade: './assets/upg_super_teablade.webp?v=hd15',
+  uiBadgeShift: './assets/ui_badge_shift.webp?v=hd15'
 };
 
 export const images = {};
@@ -1137,8 +1147,9 @@ export function drawEnemySprite(ctx, e, now, playerX) {
     ctx.lineWidth = 3;
     ctx.font = '900 11.5px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
-    ctx.strokeText('摸鱼大魔王', 0, -size * 0.62 - 16);
-    ctx.fillText('摸鱼大魔王', 0, -size * 0.62 - 16);
+    const bossLabel = e.bossName ? e.bossName.split('·').pop().trim() : '摸鱼大魔王';
+    ctx.strokeText(bossLabel, 0, -size * 0.62 - 16);
+    ctx.fillText(bossLabel, 0, -size * 0.62 - 16);
   } else if (e.isGoldTreasure) {
     ctx.fillStyle = '#ffd700';
     ctx.font = '900 11px sans-serif';

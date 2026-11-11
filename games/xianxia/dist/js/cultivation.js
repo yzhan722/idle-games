@@ -867,6 +867,30 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		prices: [{name:"unobtainium", val:40}, {name:"xiuwei", val:880000}],
 		effects: {"xiuweiRatio": 0.95, "realmProductionRatio": 0.28},
 		chance: 1.0, researched: false
+	},{
+		name: "sect7",
+		label: $I("cultivation.sect.7.label"),
+		description: $I("cultivation.sect.7.desc"),
+		gate: "heti_0",
+		prices: [{name:"relic", val:18}, {name:"xiuwei", val:2800000}],
+		effects: {"xiuweiRatio": 1.35, "realmProductionRatio": 0.38, "zhenyuanRatio": 0.20, "riftDamageRatio": 0.18},
+		chance: 1.0, researched: false
+	},{
+		name: "sect8",
+		label: $I("cultivation.sect.8.label"),
+		description: $I("cultivation.sect.8.desc"),
+		gate: "dacheng_0",
+		prices: [{name:"timeCrystal", val:12}, {name:"xiuwei", val:7800000}],
+		effects: {"xiuweiRatio": 1.85, "realmProductionRatio": 0.52, "zhenyuanRatio": 0.35, "riftDamageRatio": 0.30},
+		chance: 1.0, researched: false
+	},{
+		name: "sect9",
+		label: $I("cultivation.sect.9.label"),
+		description: $I("cultivation.sect.9.desc"),
+		gate: "dujie_0",
+		prices: [{name:"timeCrystal", val:45}, {name:"xiuwei", val:26000000}],
+		effects: {"xiuweiRatio": 2.60, "realmProductionRatio": 0.72, "zhenyuanRatio": 0.50, "riftDamageRatio": 0.45},
+		chance: 1.0, researched: false
 	}],
 
 	stages: null,
@@ -1584,6 +1608,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	getStage: function(name){
 		return this.getMeta(name, this.stages);
+	},
+
+	getSect: function(name){
+		return this.getMeta(name, this.sects);
 	},
 
 	getRealm: function(name){	//compat: resolves any button meta by name
@@ -2312,6 +2340,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (sealBonus.combatMult > 1){ mult *= sealBonus.combatMult; }	//玄天古印加持
 		var origin = this.getOrigin();
 		if (origin && origin.powerMult){ mult *= origin.powerMult; }	//猎户之后
+		var riftDmgBonus = this.game.getEffect("riftDamageRatio") || 0;
+		if (riftDmgBonus > 0){ mult *= (1 + riftDmgBonus * 0.5); }	//高阶宗门镇宗秘境神通
 		mult *= Math.max(0.3, 1 - this.heartDemon * 0.005);	//心魔蚀骨
 		return Math.max(1, base * mult);
 	},
@@ -4004,6 +4034,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 		var nArt = this.natalArtifact ? this.getArtifact(this.natalArtifact) : null;
 		var natalName = (nArt && nArt.researched) ? nArt.label : "青竹蜂云剑";
+		var zyRatio = Math.max(0, this.game.getEffect("zhenyuanRatio") || 0);
+		var pMaxMp = Math.round(100 * (1 + zyRatio));
+		var pStartMp = Math.min(pMaxMp, Math.round(60 * (1 + zyRatio)));
 
 		var openLog = (bMode === "greater")
 			? "【上古大秘境 · 第 " + floor + " 层】「" + enemy.name + "」（特征：" + enemy.traitTitle + "）镇守阵眼，斗法开始！"
@@ -4027,8 +4060,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			player: {
 				hp: maxHp,
 				maxHp: maxHp,
-				mp: 60,
-				maxMp: 100,
+				mp: pStartMp,
+				maxMp: pMaxMp,
 				shield: 0,
 				atk: atk,
 				def: pDef,
@@ -4117,12 +4150,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		// 2. 消耗/恢复真元
 		p.mp = Math.max(0, p.mp - sk.cost);
 		if (sk.gainMp > 0){
-			var mpGain = p.chill > 0 ? Math.ceil(sk.gainMp * 0.5) : sk.gainMp;
+			var zyGainMult = 1 + Math.max(0, this.game.getEffect("zhenyuanRatio") || 0);
+			var rawGainMp = Math.round(sk.gainMp * zyGainMult);
+			var mpGain = p.chill > 0 ? Math.ceil(rawGainMp * 0.5) : rawGainMp;
 			p.mp = Math.min(p.maxMp, p.mp + mpGain);
 		}
 
 		// 3. 玩家施展神通
-		var atkEff = p.atk * (p.weak > 0 ? 0.80 : 1.0);
+		var riftDmgMult = 1 + Math.max(0, this.game.getEffect("riftDamageRatio") || 0);
+		var atkEff = p.atk * (p.weak > 0 ? 0.80 : 1.0) * riftDmgMult;
 		var vulnMult = 1.0 + (e.armorBreak > 0 ? 0.30 : 0) + (e.expose > 0 ? 0.40 : 0) + (e.overloaded ? 0.50 : 0);
 
 		var applyDamageToEnemy = function(rawDmg, shieldBonusMult, ignoreDefAndTrait){
@@ -5059,6 +5095,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		if (sealBonus.realmProductionRatio > 0){
 			add("realmProductionRatio", sealBonus.realmProductionRatio);
+		}
+		var zyEff = g["zhenyuanRatio"] || 0;
+		if (zyEff > 0 && g["xiuweiPerTickBase"] > 0){
+			add("xiuweiPerTickBase", g["xiuweiPerTickBase"] * zyEff * 0.25);	//高阶宗门周天真元转化修为底数
 		}
 	},
 
