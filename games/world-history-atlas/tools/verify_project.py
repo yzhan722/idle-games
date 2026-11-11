@@ -84,9 +84,17 @@ def main():
                     fail(f"Undefined Empire in timeline_keyframes.js: '{emp_clean}' not found in empires_db.js")
 
     # Check trade-route references in timeline vs TRADE_ROUTES keys in regions_geo.js
-    route_keys = set(re.findall(r'^\s{2}([a-zA-Z0-9_]+):\s*\{', reg_text.split("window.HistoryAtlas.TRADE_ROUTES")[1].split("window.HistoryAtlas.THEATERS")[0], re.MULTILINE))
-    if not route_keys:
-        fail("No trade routes parsed from regions_geo.js TRADE_ROUTES block!")
+    routes_block = reg_text.split("window.HistoryAtlas.TRADE_ROUTES")[1].split("window.HistoryAtlas.THEATERS")[0]
+    route_keys = set(re.findall(r'^\s{2}([a-zA-Z0-9_]+):\s*\{', routes_block, re.MULTILINE))
+    if len(route_keys) < 7:
+        fail(f"Expected >= 7 historical trade routes in TRADE_ROUTES, got {len(route_keys)}: {sorted(route_keys)}")
+    for req_field in ("active_span:", "commodities:", "historical_impact:", "hubs:"):
+        if routes_block.count(req_field) < len(route_keys):
+            fail(f"Some TRADE_ROUTES entries are missing scholarly metadata field '{req_field}'!")
+    for hub_reg in re.findall(r'regionId:\s*"([^"]+)"', routes_block):
+        if hub_reg not in region_ids:
+            fail(f"Dangling hub regionId in TRADE_ROUTES: '{hub_reg}' not found in regions_geo.js!")
+    print(f"[OK] Loaded {len(route_keys)} scholarly historical trade routes & verified all entrepot hub regionIds")
     route_refs = set()
     for arr in re.findall(r'routes:\s*\[([^\]]*)\]', tl_text):
         route_refs.update(re.findall(r'"([^"]+)"', arr))

@@ -13,6 +13,7 @@
   let isPlaying = true;
   let speed = 1;
   let selectedRegionId = "guanzhong";
+  let selectedRouteId = null;
   let lastKeyframeYear = null;
   let lastToastText = "";
   let dwellTicks = 0;
@@ -20,12 +21,29 @@
   let activeTheaterId = "world";
 
   const svgEl = document.getElementById("world-map");
-  const renderer = new MapRenderer(svgEl, REGIONS, RIVERS, TRADE_ROUTES, EMPIRES, (regionId) => {
-    audio.playClickPop();
-    selectedRegionId = regionId;
-    renderer.setHighlightEmpire(null);
-    updateView();
-  });
+  const renderer = new MapRenderer(
+    svgEl,
+    REGIONS,
+    RIVERS,
+    TRADE_ROUTES,
+    EMPIRES,
+    (regionId) => {
+      audio.playClickPop();
+      selectedRegionId = regionId;
+      renderer.setHighlightEmpire(null);
+      updateView();
+    },
+    (routeId, hub) => {
+      audio.playClickPop();
+      selectedRouteId = routeId;
+      if (hub && hub.regionId) {
+        selectedRegionId = hub.regionId;
+      }
+      renderer.setFocusedRoute(selectedRouteId);
+      renderer.setHighlightEmpire(null);
+      updateView();
+    }
+  );
 
   function formatYear(y) {
     return y < 0 ? `公元前 ${Math.abs(y)} 年` : `公元 ${y} 年`;
@@ -268,7 +286,7 @@
     box.style.display = "";
     const strokeColor = readableInkColor(traj.color);
     if (summaryEl) {
-      summaryEl.textContent = `国祚约 ${traj.duration} 年 · 点击曲线跳转`;
+      summaryEl.textContent = `国祚约 ${traj.duration} 年 · 点击跳转`;
     }
 
     const W = 276;
@@ -385,6 +403,74 @@
         histContainer.appendChild(div);
       });
     }
+
+    renderInspectorRoutes(state, regionId);
+  }
+
+  function renderInspectorRoutes(state, regionId) {
+    const pillsEl = document.getElementById("card-routes-pills");
+    const detailEl = document.getElementById("card-route-detail");
+    const countEl = document.getElementById("card-routes-count");
+    if (!pillsEl || !detailEl) return;
+
+    const activeIds = (state.routes || []).filter(id => Boolean(TRADE_ROUTES[id]));
+    if (countEl) {
+      countEl.textContent = activeIds.length > 0 ? `通行 ${activeIds.length} 条干线` : "跨洲干线未通";
+    }
+
+    if (activeIds.length === 0) {
+      if (selectedRouteId) {
+        selectedRouteId = null;
+        renderer.setFocusedRoute(null);
+      }
+      pillsEl.innerHTML = `
+        <button class="traj-ms-chip" onclick="AtlasApp.jumpToYear(-119)"><span class="ms-tag">凿空西域</span>前119</button>
+        <button class="traj-ms-chip" onclick="AtlasApp.jumpToYear(750)"><span class="ms-tag">盛唐海陆</span>750</button>
+        <button class="traj-ms-chip" onclick="AtlasApp.jumpToYear(1572)"><span class="ms-tag">白银帆船</span>1572</button>
+      `;
+      detailEl.innerHTML = `<div class="route-empty-note">当前处于远古区域物产交换时期，跨大陆驼道与季风远洋航线尚未贯通。</div>`;
+      return;
+    }
+
+    let activeRouteId = selectedRouteId && activeIds.includes(selectedRouteId) ? selectedRouteId : null;
+    if (!activeRouteId) {
+      const regMatch = activeIds.find(rid => (TRADE_ROUTES[rid].hubs || []).some(h => h.regionId === regionId));
+      activeRouteId = regMatch || activeIds[0];
+    }
+
+    pillsEl.innerHTML = activeIds.map(rid => {
+      const rt = TRADE_ROUTES[rid];
+      const isFocused = rid === activeRouteId;
+      const isPinned = rid === selectedRouteId;
+      return `
+        <button class="route-pill-btn${isFocused ? " active" : ""}" onclick="AtlasApp.selectRoute('${rid}')" title="${rt.name}">
+          <i class="peer-dot" style="background:${rt.color || "#cfa55a"}"></i>
+          <span>${rt.short_name || rt.name}</span>
+          ${isPinned ? '<span class="route-pin-mark">·定</span>' : ""}
+        </button>
+      `;
+    }).join("");
+
+    const rt = TRADE_ROUTES[activeRouteId];
+    if (!rt) {
+      detailEl.innerHTML = "";
+      return;
+    }
+    const hubsHtml = (rt.hubs || []).map((h, idx) => `
+      <button class="route-hub-chip${h.regionId === regionId ? " is-here" : ""}" onclick="AtlasApp.focusRouteHub('${activeRouteId}', ${idx})" title="${h.role} · ${h.goods}">
+        ◎ ${h.name}
+      </button>
+    `).join("");
+
+    detailEl.innerHTML = `
+      <div class="route-meta-head">
+        <span class="route-cat-tag" style="border-color:${rt.color || "#cfa55a"};color:${rt.color || "#cfa55a"}">${rt.category || "跨洲商道"}</span>
+        <span class="route-span-txt">${rt.active_span || ""}</span>
+      </div>
+      <div class="route-goods-line"><strong>流通货殖：</strong>${rt.commodities || "-"}</div>
+      <div class="route-hubs-wrap">${hubsHtml}</div>
+      <div class="route-impact-note">${rt.historical_impact || ""}</div>
+    `;
   }
 
   // Initialize Comparison Selectors (2 required + 1 optional contemporary polity)
@@ -476,6 +562,32 @@
       if (btn) btn.classList.toggle("active", on);
       updateView();
     },
+    toggleRoutes() {
+      audio.playClickPop();
+      const on = renderer.toggleRoutes();
+      const btn = document.getElementById("btn-routes");
+      if (btn) btn.classList.toggle("active", on);
+      updateView();
+    },
+    selectRoute(routeId) {
+      audio.playClickPop();
+      selectedRouteId = selectedRouteId === routeId ? null : routeId;
+      renderer.setFocusedRoute(selectedRouteId);
+      updateView();
+    },
+    focusRouteHub(routeId, hubIndex) {
+      audio.playClickPop();
+      const rt = TRADE_ROUTES[routeId];
+      const hub = rt && rt.hubs ? rt.hubs[hubIndex] : null;
+      selectedRouteId = routeId;
+      renderer.setFocusedRoute(routeId);
+      renderer.setHighlightEmpire(null);
+      if (hub) {
+        if (hub.regionId) selectedRegionId = hub.regionId;
+        renderer.focusOnPoint(hub.x, hub.y, 1.95);
+      }
+      updateView();
+    },
     resetCamera() {
       audio.playClickPop();
       activeTheaterId = "world";
@@ -510,6 +622,11 @@
           dd.style.display = "none";
           if (typeof h.year === "number") {
             currentYear = h.year;
+            yearFloat = h.year;
+          }
+          if (h.routeId) {
+            selectedRouteId = h.routeId;
+            renderer.setFocusedRoute(h.routeId);
           }
           if (h.empireName) {
             renderer.setHighlightEmpire(h.empireName);

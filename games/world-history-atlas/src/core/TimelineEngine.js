@@ -416,7 +416,33 @@ class TimelineEngine {
       }
     }
 
-    // 4. Search Regions
+    // 4. Search Historical Trade Routes & Entrepot Hubs
+    const tradeRoutes = window.HistoryAtlas.TRADE_ROUTES || {};
+    for (const [routeId, rt] of Object.entries(tradeRoutes)) {
+      const matchedHub = (rt.hubs || []).find(
+        h => h.name.toLowerCase().includes(q) || (h.goods && h.goods.toLowerCase().includes(q))
+      );
+      const matchedRoute =
+        rt.name.toLowerCase().includes(q) ||
+        (rt.short_name && rt.short_name.toLowerCase().includes(q)) ||
+        (rt.commodities && rt.commodities.toLowerCase().includes(q));
+      if (matchedHub || matchedRoute) {
+        const anchorHub = matchedHub || (rt.hubs && rt.hubs[0]) || null;
+        const openYr = typeof rt.open_year === "number" ? rt.open_year : 750;
+        results.push({
+          type: matchedHub ? "商埠" : "商路",
+          title: matchedHub ? `${matchedHub.name}（${rt.short_name || rt.name}）` : rt.name,
+          sub: `${rt.category || "跨洲商道"} · ${rt.active_span || ""}`,
+          year: openYr,
+          routeId,
+          regionId: anchorHub ? anchorHub.regionId : null,
+          x: anchorHub ? anchorHub.x : null,
+          y: anchorHub ? anchorHub.y : null
+        });
+      }
+    }
+
+    // 5. Search Regions
     for (const r of this.regions) {
       if (r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q)) {
         results.push({

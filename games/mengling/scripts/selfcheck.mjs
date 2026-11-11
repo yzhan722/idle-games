@@ -502,6 +502,93 @@ assert(win.winner === 1 && win.rounds > 0, "pvp strong wins");
   assert(fallbackHtml.includes("data:image/svg+xml;utf8,"), "svg fallback icon when BEAST_FORCE_SVG=true");
 }
 
+// ML-1 Eugenics Breeding 2.0: high-IV / star / locked-ability inheritance + dynamic shiny odds & pity
+{
+  const {
+    hatchEgg,
+    computeBreedingShinyInfo,
+    computeBreedingPreview,
+    sumMonIv,
+    SHINY_PITY_CAP,
+  } = await import("../modules/systems/breeding.js");
+  const { createMonInstance } = await import("../modules/mons.js");
+  const { migrateSave } = await import("../modules/state.js");
+
+  const highParentA = {
+    id: 101,
+    pid: "p001",
+    dex: 1,
+    name: "青萝幼龙",
+    stars: 4,
+    isShiny: true,
+    ability: "hugePower",
+    iv: { hp: 31, atk: 31, def: 30, spa: 31, spd: 30, spe: 31 },
+  };
+  const highParentB = {
+    id: 102,
+    pid: "p001",
+    dex: 1,
+    name: "青萝幼龙",
+    stars: 3,
+    isShiny: true,
+    ability: "compoundEyes",
+    iv: { hp: 29, atk: 30, def: 31, spa: 28, spd: 31, spe: 30 },
+  };
+
+  const caught120 = {};
+  for (let i = 1; i <= 120; i += 1) caught120[`p${String(i).padStart(3, "0")}`] = true;
+
+  const baseInfo = computeBreedingShinyInfo({ breeding: { shinyPity: 0 } }, { isShiny: false }, { isShiny: false });
+  assert(Math.abs(baseInfo.rate - 1 / 4096) < 1e-12 && baseInfo.oddsDenom === 4096, "ML-1 baseline shiny rate 1/4096");
+
+  const boostedState = {
+    buildings: { breedingHouse: { owned: 8 } },
+    dex: { caught: caught120 },
+    shinyCharmRemainingSec: 3600,
+    breeding: { on: true, aId: 101, bId: 102, abilityLock: "b", shinyPity: 45 },
+    mons: { nextId: 200, list: [highParentA, highParentB] },
+  };
+  const boostedInfo = computeBreedingShinyInfo(boostedState, highParentA, highParentB, { shinyChanceMul: 1.15 });
+  // rolls = 1 (base) + 3 (120 dex) + 3 (charm) + 8 (2 shiny parents) + 3 (45 pity) = 18
+  assert(boostedInfo.totalRolls === 18 && boostedInfo.rate > 18 / 4096, "ML-1 dynamic shiny rolls stack properly");
+
+  const preview = computeBreedingPreview(boostedState, highParentA, highParentB, {
+    getSpeciesByPid: () => ({ id: "p001", dex: 1, name: "青萝幼龙", tier: "common" }),
+  });
+  assert(preview.eligible && preview.inheritedIvCount === 5 && preview.starBounds.guaranteedStars === 2, "ML-1 preview 5-IV & 2-star floor");
+  assert(preview.abilityPreviewText.includes("复眼"), "ML-1 preview reflects locked parent B ability");
+
+  // Hatch with locked ability B and non-shiny roll (0.99) -> increments pity & inherits high IV + stars + compoundEyes
+  const ok1 = hatchEgg(boostedState, {
+    mons: boostedState.mons.list,
+    getSpeciesByPid: () => ({ id: "p001", dex: 1, name: "青萝幼龙", tier: "common" }),
+    createMonInstance: (sp, opts) => createMonInstance(sp, { idOverride: 201, ...opts }),
+    randFloat: () => 0.5,
+  });
+  const child1 = boostedState.mons.list.find((m) => m.id === 201);
+  assert(ok1 && child1 && child1.ability === "compoundEyes", "ML-1 abilityLock=b deterministically inherits parent B ability");
+  assert(sumMonIv(child1) >= 165 && child1.stars >= 2, "ML-1 eugenics offspring inherits high IVs and star floor");
+  assert(boostedState.breeding.shinyPity === 46, "ML-1 non-shiny hatch increments shinyPity");
+
+  // Hard pity at SHINY_PITY_CAP guarantees shiny and resets shinyPity to 0
+  boostedState.breeding.abilityLock = "a";
+  boostedState.breeding.shinyPity = SHINY_PITY_CAP;
+  const ok2 = hatchEgg(boostedState, {
+    mons: boostedState.mons.list,
+    getSpeciesByPid: () => ({ id: "p001", dex: 1, name: "青萝幼龙", tier: "common" }),
+    createMonInstance: (sp, opts) => createMonInstance(sp, { idOverride: 202, ...opts }),
+    randFloat: () => 0.999,
+  });
+  const child2 = boostedState.mons.list.find((m) => m.id === 202);
+  assert(ok2 && child2 && child2.isShiny === true && child2.ability === "hugePower", "ML-1 hard pity shiny + abilityLock=a");
+  assert(boostedState.breeding.shinyPity === 0, "ML-1 shiny hatch resets shinyPity to 0");
+
+  if (typeof migrateSave === "function") {
+    const hydrated = migrateSave({ breeding: { on: true, aId: 1, bId: 2, abilityLock: "b", shinyPity: 77 } });
+    assert(hydrated.breeding.abilityLock === "b" && hydrated.breeding.shinyPity === 77, "ML-1 save hydration preserves abilityLock & shinyPity");
+  }
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const era = spawnSync(process.execPath, [path.join(__dirname, "era-selfcheck.mjs")], { stdio: "inherit" });
 if (era.status !== 0) failed += 1;

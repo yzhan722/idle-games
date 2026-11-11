@@ -268,13 +268,13 @@ body {
   border-top: 1px solid rgba(216, 179, 101, 0.18);
 }
 .traj-head-row {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;
+  display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 5px;
 }
 .traj-head-row h4 {
   font-family: "Songti SC", "Noto Serif SC", serif;
-  font-size: 11.5px; color: var(--gold); letter-spacing: 0.3px;
+  font-size: 11.2px; color: var(--gold); letter-spacing: 0.2px; white-space: nowrap;
 }
-.traj-summary-tag { font-size: 10px; color: #9c9383; }
+.traj-summary-tag { font-size: 9.8px; color: #9c9383; white-space: nowrap; }
 #card-trajectory-svg {
   width: 100%; height: 78px;
   background: linear-gradient(180deg, rgba(28, 25, 20, 0.72) 0%, rgba(16, 15, 13, 0.85) 100%);
@@ -315,16 +315,90 @@ body {
 .peer-chip:hover { border-color: var(--gold); color: var(--gold); }
 .peer-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
 
+/* Historical Trade Routes & Entrepot Inspector inside Right Card */
+.routes-inspector-box {
+  margin-top: 8px; padding-top: 7px;
+  border-top: 1px solid rgba(216, 179, 101, 0.18);
+}
+.routes-pills-row {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px;
+}
+.route-pill-btn {
+  background: rgba(24, 22, 18, 0.72);
+  border: 1px solid rgba(216, 179, 101, 0.22);
+  color: #d9ceba;
+  border-radius: 4px; padding: 2px 6px;
+  font-size: 10px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+.route-pill-btn:hover,
+.route-pill-btn.active {
+  background: rgba(216, 179, 101, 0.16);
+  border-color: rgba(216, 179, 101, 0.56);
+  color: #f2e7d0;
+}
+.route-pin-mark { font-size: 9px; color: var(--gold); }
+.route-detail-card {
+  background: rgba(15, 16, 19, 0.62);
+  border: 1px solid rgba(216, 179, 101, 0.16);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.route-meta-head {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.route-cat-tag {
+  font-size: 9.5px; padding: 0.5px 5px; border-radius: 3px;
+  border: 1px solid rgba(207, 165, 90, 0.45);
+  background: rgba(207, 165, 90, 0.08);
+  font-weight: 600; white-space: nowrap;
+}
+.route-span-txt {
+  font-size: 10px; color: #b5aa96; line-height: 1.3;
+}
+.route-goods-line {
+  font-size: 10.5px; color: #ddd2be; line-height: 1.42; margin-bottom: 5px;
+}
+.route-goods-line strong { color: #cbb996; font-weight: 600; }
+.route-hubs-wrap {
+  display: flex; flex-wrap: wrap; gap: 3.5px; margin-bottom: 4px;
+}
+.route-hub-chip {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(216, 179, 101, 0.20);
+  color: #d6cab4;
+  border-radius: 3px; padding: 1px 5px;
+  font-size: 9.8px; cursor: pointer;
+}
+.route-hub-chip:hover,
+.route-hub-chip.is-here {
+  border-color: var(--gold);
+  background: rgba(216, 179, 101, 0.15);
+  color: #f4ead2;
+}
+.route-impact-note {
+  font-size: 10px; color: #a79d8b; line-height: 1.44;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height 0.24s ease, opacity 0.22s ease, margin 0.22s ease;
+}
+#info-card:hover .route-impact-note {
+  max-height: 220px; opacity: 1; margin-top: 4px;
+}
+.route-empty-note {
+  font-size: 10px; color: #9c9383; line-height: 1.4;
+}
+
 #info-card p,
 #info-card .history-box {
   max-height: 0; opacity: 0; overflow: hidden; margin: 0; padding: 0; border: none;
-  transition: max-height 0.38s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+  transition: max-height 0.26s ease, opacity 0.22s ease, margin 0.22s ease, padding 0.22s ease;
 }
 #info-card:hover p {
-  max-height: 120px; opacity: 1; font-size: 11.5px; line-height: 1.5; color: #ddd3c0; margin-bottom: 8px;
+  max-height: 240px; opacity: 1; font-size: 11.5px; line-height: 1.5; color: #ddd3c0; margin-bottom: 8px;
 }
 #info-card:hover .history-box {
-  max-height: 180px; opacity: 1; margin-top: 9px; border-top: 1px solid rgba(216, 179, 101, 0.16); padding-top: 6px;
+  max-height: 220px; opacity: 1; margin-top: 9px; border-top: 1px solid rgba(216, 179, 101, 0.16); padding-top: 6px;
 }
 .history-box h4 {
   font-family: "Songti SC", "Noto Serif SC", serif;
@@ -476,19 +550,81 @@ svg#world-map { width: 100%; height: 100%; }
 
 .trade-route-group {
   opacity: 0;
-  transition: opacity 1.4s ease;
+  transition: opacity 0.85s ease;
+  pointer-events: none;
+}
+.trade-route-group.is-active .trade-route-hit {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.trade-route-group.is-active .route-hub-group {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.trade-route-casing {
+  fill: none;
+  stroke: rgba(12, 14, 18, 0.42);
+  stroke-width: 2.6;
   pointer-events: none;
 }
 .trade-route {
-  fill: none; stroke-width: 1.75;
-  stroke-dasharray: 6 6; opacity: 0.72;
-  animation: routeFlow 36s linear infinite;
+  fill: none;
+  stroke-width: 1.35;
+  stroke-dasharray: 5 4.5;
+  opacity: 0.76;
+  animation: routeFlow 46s linear infinite;
+  pointer-events: none;
+  transition: stroke-width 0.22s ease, opacity 0.22s ease;
+}
+.trade-route-group.is-hovered .trade-route,
+.trade-route-group.is-selected .trade-route {
+  stroke-width: 1.95;
+  opacity: 0.96;
+}
+.trade-route-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 6.5;
   pointer-events: none;
 }
 .route-caravan {
-  filter: drop-shadow(0 0 3px rgba(255, 235, 160, 0.85));
+  opacity: 0.82;
+  pointer-events: none;
 }
-@keyframes routeFlow { to { stroke-dashoffset: -240; } }
+.route-hub-group {
+  pointer-events: none;
+}
+.route-hub-hit {
+  fill: transparent;
+}
+.route-hub-ring {
+  fill: rgba(16, 18, 22, 0.86);
+  stroke-width: 1.05;
+  transition: r 0.18s ease, stroke-width 0.18s ease;
+}
+.route-hub-core {
+  fill: #efe3c8;
+  pointer-events: none;
+}
+.route-hub-group:hover .route-hub-ring {
+  r: 3.7;
+  stroke-width: 1.45;
+}
+.route-hub-label {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Microsoft YaHei", serif;
+  font-size: 8.1px;
+  fill: #e8dac0;
+  text-anchor: middle;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.94), 0 0 5px rgba(0,0,0,0.85);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+.trade-route-group.is-hovered .route-hub-label,
+.trade-route-group.is-selected .route-hub-label {
+  opacity: 0.92;
+}
+@keyframes routeFlow { to { stroke-dashoffset: -220; } }
 
 .campaign-arrow {
   fill: none;

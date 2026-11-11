@@ -2,7 +2,7 @@
 window.HistoryAtlas = window.HistoryAtlas || {};
 
 class MapRenderer {
-  constructor(svgElement, regions, rivers, tradeRoutes, empires, onSelectRegion) {
+  constructor(svgElement, regions, rivers, tradeRoutes, empires, onSelectRegion, onSelectRoute) {
     this.svg = svgElement;
     this.regions = regions;
     this.rivers = rivers;
@@ -11,6 +11,7 @@ class MapRenderer {
     this.tradeRoutes = tradeRoutes;
     this.empires = empires;
     this.onSelectRegion = onSelectRegion;
+    this.onSelectRoute = onSelectRoute || null;
 
     this.scale = 1.0;
     this.panX = 0;
@@ -24,6 +25,8 @@ class MapRenderer {
     this._lastState = null;
     this._lastSelectedId = null;
     this.showCampaigns = true;
+    this.showRoutes = true;
+    this.focusedRouteId = null;
     this._animFrame = null;
     this._prevOwners = {};
     this._empireGradMap = {};
@@ -102,6 +105,47 @@ class MapRenderer {
       </div>
       <div class="lt-title" style="color:${titleColor}">${owner || regShort}</div>
       <div class="lt-desc">${capStr}</div>
+    `;
+    this.tooltipEl.style.display = "block";
+    this._moveTooltip(e);
+  }
+
+  _showRouteTooltip(e, rt) {
+    if (!this.tooltipEl) return;
+    const yr = this._lastState ? this._lastState.year : 0;
+    const yrStr = yr < 0 ? `公元前 ${Math.abs(yr)} 年` : `公元 ${yr} 年`;
+    const hubsStr = (rt.hubs || []).map(h => h.name).join(" → ");
+    this.tooltipEl.innerHTML = `
+      <div class="lt-head">
+        <span class="lt-badge">${rt.category || "跨洲商道"}</span>
+        <span class="lt-year">${yrStr}</span>
+      </div>
+      <div class="lt-title" style="color:${rt.color || "#cfa55a"}">${rt.name}</div>
+      <div class="lt-desc">
+        <div style="color:#c8bca6;margin-bottom:3px;"><strong>兴衰纪年：</strong>${rt.active_span || "-"}</div>
+        <div style="color:#d8ceb8;margin-bottom:3px;"><strong>枢纽脉络：</strong>${hubsStr}</div>
+        <div style="color:#bfb49f;"><strong>大宗货殖：</strong>${rt.commodities || "-"}</div>
+      </div>
+    `;
+    this.tooltipEl.style.display = "block";
+    this._moveTooltip(e);
+  }
+
+  _showHubTooltip(e, rt, hub) {
+    if (!this.tooltipEl) return;
+    const state = this._lastState;
+    const owner = state && hub.regionId ? state.owners[hub.regionId] : null;
+    const ownerTag = owner ? `当世辖属：${owner}` : (rt.short_name || rt.name);
+    this.tooltipEl.innerHTML = `
+      <div class="lt-head">
+        <span class="lt-badge">商路重镇 · ${rt.short_name || rt.name}</span>
+        <span class="lt-year">${hub.role || "枢纽商埠"}</span>
+      </div>
+      <div class="lt-title" style="color:${rt.color || "#cfa55a"}">◎ ${hub.name}</div>
+      <div class="lt-desc">
+        <div style="color:#d8ceb8;margin-bottom:3px;"><strong>集散货殖：</strong>${hub.goods || rt.commodities || "-"}</div>
+        <div style="color:#aba08c;">${ownerTag} · 点击定位并查阅右侧考据卡</div>
+      </div>
     `;
     this.tooltipEl.style.display = "block";
     this._moveTooltip(e);
@@ -289,14 +333,19 @@ class MapRenderer {
     });
     this.viewport.appendChild(this.riversLayer);
 
-    // 4. Trade Routes & Animated Caravan Light-Beads Layer
+    // 4. Trade Routes, Subtle Copperplate Entrepot Hubs & Gentle Caravan Pearls Layer
     this.routesLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
     for (const [routeId, rt] of Object.entries(this.tradeRoutes)) {
       const grp = document.createElementNS("http://www.w3.org/2000/svg", "g");
       grp.setAttribute("id", "route-" + routeId);
       grp.setAttribute("class", "trade-route-group");
 
-      const color = rt.color || "#f5c542";
+      const color = rt.color || "#cfa55a";
+      const casing = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      casing.setAttribute("d", rt.d);
+      casing.setAttribute("class", "trade-route-casing");
+      grp.appendChild(casing);
+
       const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
       p.setAttribute("id", "rpath-" + routeId);
       p.setAttribute("d", rt.d);
@@ -304,22 +353,100 @@ class MapRenderer {
       p.style.stroke = color;
       grp.appendChild(p);
 
-      // Add 2 gentle gliding caravan/ship light-pearls along the first subpath
-      const firstSubpath = "M " + rt.d.split("M ").filter(Boolean)[0];
-      [0, 11].forEach((beginSec) => {
-        const bead = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        bead.setAttribute("r", "2.6");
-        bead.setAttribute("fill", "#fff9e6");
-        bead.setAttribute("stroke", color);
-        bead.setAttribute("stroke-width", "1.4");
-        bead.setAttribute("class", "route-caravan");
-        const anim = document.createElementNS("http://www.w3.org/2000/svg", "animateMotion");
-        anim.setAttribute("path", firstSubpath);
-        anim.setAttribute("dur", "22s");
-        anim.setAttribute("begin", `${beginSec}s`);
-        anim.setAttribute("repeatCount", "indefinite");
-        bead.appendChild(anim);
-        grp.appendChild(bead);
+      const hitPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hitPath.setAttribute("d", rt.d);
+      hitPath.setAttribute("class", "trade-route-hit");
+      hitPath.addEventListener("mouseenter", (e) => {
+        grp.classList.add("is-hovered");
+        this._showRouteTooltip(e, rt);
+      });
+      hitPath.addEventListener("mousemove", (e) => this._moveTooltip(e));
+      hitPath.addEventListener("mouseleave", () => {
+        grp.classList.remove("is-hovered");
+        this._hideTooltip();
+      });
+      hitPath.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.setFocusedRoute(routeId);
+        if (this.onSelectRoute) this.onSelectRoute(routeId, null);
+      });
+      grp.appendChild(hitPath);
+
+      // Gentle low-key caravan/ship micro-pearls along primary subpaths
+      const subpaths = rt.d.split("M ").filter(Boolean).map(seg => "M " + seg.trim());
+      subpaths.slice(0, 2).forEach((subD, sIdx) => {
+        const offsets = sIdx === 0 ? [0, 14] : [7];
+        offsets.forEach((beginSec) => {
+          const bead = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          bead.setAttribute("r", "1.95");
+          bead.setAttribute("fill", "#f4ead2");
+          bead.setAttribute("stroke", color);
+          bead.setAttribute("stroke-width", "1.1");
+          bead.setAttribute("class", "route-caravan");
+          const anim = document.createElementNS("http://www.w3.org/2000/svg", "animateMotion");
+          anim.setAttribute("path", subD);
+          anim.setAttribute("dur", "28s");
+          anim.setAttribute("begin", `${beginSec}s`);
+          anim.setAttribute("repeatCount", "indefinite");
+          bead.appendChild(anim);
+          grp.appendChild(bead);
+        });
+      });
+
+      // Historical Entrepot / Hub Micro-Ring Nodes (labels stay quiet until hover/focus)
+      (rt.hubs || []).forEach((hub) => {
+        const hg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        hg.setAttribute("class", "route-hub-group");
+
+        const hHit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        hHit.setAttribute("cx", hub.x);
+        hHit.setAttribute("cy", hub.y);
+        hHit.setAttribute("r", "7");
+        hHit.setAttribute("class", "route-hub-hit");
+
+        const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        ring.setAttribute("cx", hub.x);
+        ring.setAttribute("cy", hub.y);
+        ring.setAttribute("r", "2.75");
+        ring.setAttribute("class", "route-hub-ring");
+        ring.style.stroke = color;
+
+        const core = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        core.setAttribute("cx", hub.x);
+        core.setAttribute("cy", hub.y);
+        core.setAttribute("r", "1.05");
+        core.setAttribute("class", "route-hub-core");
+
+        const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        lbl.setAttribute("x", hub.x);
+        lbl.setAttribute("y", hub.y - 5.2);
+        lbl.setAttribute("class", "route-hub-label");
+        lbl.textContent = hub.name.split("·")[0];
+
+        hg.appendChild(hHit);
+        hg.appendChild(ring);
+        hg.appendChild(core);
+        hg.appendChild(lbl);
+
+        hg.addEventListener("mouseenter", (e) => {
+          grp.classList.add("is-hovered");
+          this._showHubTooltip(e, rt, hub);
+        });
+        hg.addEventListener("mousemove", (e) => this._moveTooltip(e));
+        hg.addEventListener("mouseleave", () => {
+          grp.classList.remove("is-hovered");
+          this._hideTooltip();
+        });
+        hg.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.setFocusedRoute(routeId);
+          if (this.onSelectRoute) {
+            this.onSelectRoute(routeId, hub);
+          } else if (hub.regionId) {
+            this.onSelectRegion(hub.regionId);
+          }
+        });
+        grp.appendChild(hg);
       });
 
       this.routesLayer.appendChild(grp);
@@ -464,6 +591,40 @@ class MapRenderer {
   toggleCampaigns() {
     this.showCampaigns = !this.showCampaigns;
     return this.showCampaigns;
+  }
+
+  toggleRoutes() {
+    this.showRoutes = !this.showRoutes;
+    return this.showRoutes;
+  }
+
+  setFocusedRoute(routeId) {
+    this.focusedRouteId = routeId || null;
+    if (this._lastState) {
+      this._syncRouteVisibility(this._lastState);
+    }
+  }
+
+  _syncRouteVisibility(state) {
+    const activeList = (this.showRoutes && state && state.routes) ? state.routes : [];
+    const hasFocusedActive = Boolean(this.focusedRouteId && activeList.includes(this.focusedRouteId));
+    for (const routeId of Object.keys(this.tradeRoutes)) {
+      const routeEl = document.getElementById("route-" + routeId);
+      if (!routeEl) continue;
+      const isActive = activeList.includes(routeId);
+      const isSelected = isActive && this.focusedRouteId === routeId;
+      routeEl.classList.toggle("is-active", isActive);
+      routeEl.classList.toggle("is-selected", isSelected);
+      if (!isActive) {
+        routeEl.style.opacity = "0";
+      } else if (isSelected) {
+        routeEl.style.opacity = "0.95";
+      } else if (hasFocusedActive) {
+        routeEl.style.opacity = "0.46";
+      } else {
+        routeEl.style.opacity = "0.74";
+      }
+    }
   }
 
   renderState(state, selectedRegionId) {
@@ -654,13 +815,8 @@ class MapRenderer {
 
     this._applyHoverState();
 
-    // 3. Update Trade Routes Visibility
-    for (const routeId of Object.keys(this.tradeRoutes)) {
-      const routeEl = document.getElementById("route-" + routeId);
-      if (routeEl) {
-        routeEl.style.opacity = state.routes.includes(routeId) ? "0.82" : "0";
-      }
-    }
+    // 3. Update Trade Routes Visibility & Focus State
+    this._syncRouteVisibility(state);
 
     // 3.5 Render Dynamic Conquest Campaign Arrows (Only rebuild when changed)
     const campaignsSig = this.showCampaigns ? JSON.stringify(state.campaigns || []) : "off";

@@ -12,6 +12,14 @@ import {
 } from "../systems/expedition.js";
 import { expeditionNatureTimeMul, natureTrainExpMul, expeditionDailyProgress, markExpeditionDailyClaimed, localDateStr } from "../systems/gameplay_fun.js";
 import { seasonRelicLines } from "../systems/collection_fun.js";
+import {
+  computeBreedingPreview,
+  ensureBreedingState,
+  ivGradeTag,
+  normalizeAbilityLock,
+  resolveParentAbilityId,
+  sumMonIv,
+} from "../systems/breeding.js";
 import { getAbilityInfo, monPassive } from "../abilities.js";
 import { beastZone, ZONE_IDS, ZONE_LABELS } from "../beast_defs.js";
 import { renderFunctionsStageHtml, setHtmlPreservingStage } from "../render/tab_stages.js";
@@ -22,6 +30,8 @@ export function createRenderFunctions({
   ui,
   TYPE_ZH,
   getBeastDataByDex,
+  getSpeciesByPid,
+  computeTechEffects,
   clamp,
   escapeHtml,
   fmtDuration,
@@ -227,10 +237,74 @@ export function createRenderFunctions({
     `);
 
     const breedingUnlocked = (state.buildings?.breedingHouse?.owned ?? 0) > 0;
-    if (!state.breeding || typeof state.breeding !== "object") {
-      state.breeding = { on: false, aId: null, bId: null, eggRemainingSec: 0, eggTotalSec: 0 };
-    }
+    ensureBreedingState(state);
     const breedingOn = Boolean(state.breeding.on);
+    const techEffForBreed = typeof computeTechEffects === "function" ? computeTechEffects(state) : null;
+    const shinyChanceMulForBreed =
+      typeof techEffForBreed?.shinyChanceMul === "number" && Number.isFinite(techEffForBreed.shinyChanceMul)
+        ? techEffForBreed.shinyChanceMul
+        : 1;
+
+    const renderAbilityLockControls = (abInfoA, abInfoB, curLock) => {
+      const lock = normalizeAbilityLock(curLock);
+      const labelA = abInfoA ? `锁定 A·${escapeHtml(abInfoA.name)}` : "锁定伙伴 A";
+      const labelB = abInfoB ? `锁定 B·${escapeHtml(abInfoB.name)}` : "锁定伙伴 B";
+      return `
+        <div class="breed-lock-group" role="group" aria-label="被动特性遗传锁定">
+          <button type="button" class="btn btn--small ${lock === "auto" ? "btn--primary" : "btn--ghost"}" data-breed-ability-lock="auto">双亲优选 (70%)</button>
+          <button type="button" class="btn btn--small ${lock === "a" ? "btn--primary" : "btn--ghost"}" data-breed-ability-lock="a">${labelA}</button>
+          <button type="button" class="btn btn--small ${lock === "b" ? "btn--primary" : "btn--ghost"}" data-breed-ability-lock="b">${labelB}</button>
+        </div>
+      `;
+    };
+
+    const renderEugenicsPreviewCard = (pA, pB, contextLabel = "优生孵蛋 2.0 · 遗传预览与虹光提率") => {
+      const prev = computeBreedingPreview(state, pA, pB, {
+        getSpeciesByPid,
+        shinyChanceMul: shinyChanceMulForBreed,
+      });
+      const si = prev.shinyInfo;
+      const charmBadge = si.charmActive ? "虹彩护符 +3判" : "虹彩护符 未启用";
+      const parentBadge = si.shinyParentsCount > 0 ? `异色亲代 ×${si.shinyParentsCount} (+${si.parentRolls}判)` : "常色亲代 (+0判)";
+      const pityBadge = `孵化保底 ${si.pity}/${si.pityCap} (+${si.pityRolls}判${si.softPityActive ? "·高热提升" : ""})`;
+
+      let geneticsLine = "配对同进化链双亲（或与幻彩星泥配对）后，自动开启高个体潜力与星级成长底子优生继承。";
+      if (prev.hasPair) {
+        if (!prev.eligible) {
+          geneticsLine = "当前两只萌灵不属于同一进化链且不含幻彩星泥，仅享受经验×50温养，不会产蛋。";
+        } else {
+          const spName = prev.offspringSpecies?.name ? escapeHtml(prev.offspringSpecies.name) : escapeHtml(prev.basePid || "子代萌灵");
+          const starPart =
+            prev.starBounds.maxStarsOut > 0
+              ? `星级底子 ${prev.starBounds.guaranteedStars === prev.starBounds.maxStarsOut ? `必承 ${prev.starBounds.guaranteedStars}星` : `保底 ${prev.starBounds.guaranteedStars}星 / 最高 ${prev.starBounds.maxStarsOut}星`}`
+              : "星级底子 0星（提升亲代星级可直承至3星）";
+          geneticsLine = `子代：${spName} · 优选遗传 ${prev.inheritedIvCount}/6 项高个体（预计潜力 ${prev.expectedMinIvSum}~${prev.expectedMaxIvSum}/186） · ${starPart}`;
+        }
+      }
+
+      return `
+        <div class="row breed-eugenics-card">
+          <div class="row__left">
+            <div class="row__title row__titleLine">
+              ${renderResSvg("eugenicsCharm", 18)}
+              <span>${escapeHtml(contextLabel)}</span>
+              <span class="tag breed-shiny-odds-tag">${renderResSvg("shinyCharm", 13)} 实际闪光率 1/${si.oddsDenom}（${si.pctText}%）</span>
+            </div>
+            <div class="row__desc">${geneticsLine}</div>
+            <div class="breed-pills-row">
+              <span class="breed-meta-pill">图鉴虹印：${escapeHtml(si.dexTier.label)}</span>
+              <span class="breed-meta-pill ${si.charmActive ? "is-active" : ""}">${charmBadge}</span>
+              <span class="breed-meta-pill ${si.shinyParentsCount > 0 ? "is-active" : ""}">${parentBadge}</span>
+              <span class="breed-meta-pill ${si.pity > 0 ? "is-active" : ""}">${pityBadge}</span>
+            </div>
+            <div class="row__desc breed-ability-line">特性血脉规则：${escapeHtml(prev.abilityPreviewText)}</div>
+          </div>
+          <div class="row__right">
+            ${renderAbilityLockControls(prev.abInfoA, prev.abInfoB, prev.abilityLock)}
+          </div>
+        </div>
+      `;
+    };
 
     if (!hideBreeding) {
       if (!breedingUnlocked) {
@@ -256,8 +330,8 @@ export function createRenderFunctions({
           rows.push(`
             <div class="row">
               <div class="row__left">
-                <div class="row__title row__titleLine">${renderResSvg("luckyEgg", 18)}<span>选择饲养萌灵</span><span class="tag">双亲配对</span></div>
-                <div class="row__desc">选择两只萌灵开始饲养（同进化链或百变怪会自动生蛋）。</div>
+                <div class="row__title row__titleLine">${renderResSvg("luckyEgg", 18)}<span>选择饲养萌灵</span><span class="tag">双亲优生配对</span></div>
+                <div class="row__desc">选择两只萌灵开始饲养（同进化链或幻彩星泥会自动温养产蛋，高概率承袭双亲高潜力与指定特性）。</div>
               </div>
               <div class="row__right">
                 <button class="btn btn--primary" data-breed-open>选择饲养萌灵</button>
@@ -271,13 +345,15 @@ export function createRenderFunctions({
         const aMon = typeof aId === "number" ? list.find((m) => m && m.id === aId) ?? null : null;
         const bMon = typeof bId === "number" ? list.find((m) => m && m.id === bId) ?? null : null;
 
+        rows.push(renderEugenicsPreviewCard(breedingOn ? aMon : null, breedingOn ? bMon : null));
+
         if (breedingOn) {
           const rem =
             typeof state.breeding.eggRemainingSec === "number" && Number.isFinite(state.breeding.eggRemainingSec)
               ? Math.max(0, state.breeding.eggRemainingSec)
               : 0;
           const lvl = clamp(state.buildings?.breedingHouse?.owned ?? 0, 0, 10);
-          const eggText = rem > 0 ? `正在生蛋：剩余 ${fmtDuration(rem)}（育灵屋 Lv.${lvl}）` : "双亲温养中 · 尚未产蛋";
+          const eggText = rem > 0 ? `正在温养灵蛋：剩余 ${fmtDuration(rem)}（育灵屋 Lv.${lvl}）` : "双亲温养中 · 尚未产蛋";
 
           rows.push(`
         <div class="row">
@@ -295,11 +371,14 @@ export function createRenderFunctions({
             const expA = Math.max(0, Math.floor(typeof aMon.exp === "number" && Number.isFinite(aMon.exp) ? aMon.exp : 0));
             const needExpA = aMon.lvl >= 100 ? 0 : Math.max(0, Math.floor(expNeedForLevel0(aMon.lvl)));
             const expTextA = needExpA > 0 ? `${expA}/${needExpA}` : `${expA}/MAX`;
+            const ivA = sumMonIv(aMon);
+            const abA = getAbilityInfo(resolveParentAbilityId(aMon));
+            const starTagA = (aMon.stars ?? 0) > 0 ? `<span class="tag">${aMon.stars}星</span>` : "";
             rows.push(`
           <div class="row func-mon-row">
             <div class="row__left">
-              <div class="row__title row__titleLine">${renderBeastIcon(aMon.dex, aMon.name, Boolean(aMon.isShiny))}<span>饲养伙伴 A：${escapeHtml(aMon.name)}</span> <span class="tag">Lv.${aMon.lvl}</span></div>
-              <div class="row__desc">经验进度：${expTextA}</div>
+              <div class="row__title row__titleLine">${renderBeastIcon(aMon.dex, aMon.name, Boolean(aMon.isShiny))}<span>饲养伙伴 A：${escapeHtml(aMon.name)}</span> <span class="tag">Lv.${aMon.lvl}</span>${starTagA}<span class="tag">潜力 ${ivA}/186 (${ivGradeTag(ivA)})</span></div>
+              <div class="row__desc">经验进度：${expTextA}${abA ? ` · 特性「${escapeHtml(abA.name)}」（${escapeHtml(abA.desc)}）` : ""}</div>
             </div>
             <div class="row__right">
               <button class="btn btn--danger btn--small" data-breed-cancel="1">取消饲养</button>
@@ -311,11 +390,14 @@ export function createRenderFunctions({
             const expB = Math.max(0, Math.floor(typeof bMon.exp === "number" && Number.isFinite(bMon.exp) ? bMon.exp : 0));
             const needExpB = bMon.lvl >= 100 ? 0 : Math.max(0, Math.floor(expNeedForLevel0(bMon.lvl)));
             const expTextB = needExpB > 0 ? `${expB}/${needExpB}` : `${expB}/MAX`;
+            const ivB = sumMonIv(bMon);
+            const abB = getAbilityInfo(resolveParentAbilityId(bMon));
+            const starTagB = (bMon.stars ?? 0) > 0 ? `<span class="tag">${bMon.stars}星</span>` : "";
             rows.push(`
           <div class="row func-mon-row">
             <div class="row__left">
-              <div class="row__title row__titleLine">${renderBeastIcon(bMon.dex, bMon.name, Boolean(bMon.isShiny))}<span>饲养伙伴 B：${escapeHtml(bMon.name)}</span> <span class="tag">Lv.${bMon.lvl}</span></div>
-              <div class="row__desc">经验进度：${expTextB}</div>
+              <div class="row__title row__titleLine">${renderBeastIcon(bMon.dex, bMon.name, Boolean(bMon.isShiny))}<span>饲养伙伴 B：${escapeHtml(bMon.name)}</span> <span class="tag">Lv.${bMon.lvl}</span>${starTagB}<span class="tag">潜力 ${ivB}/186 (${ivGradeTag(ivB)})</span></div>
+              <div class="row__desc">经验进度：${expTextB}${abB ? ` · 特性「${escapeHtml(abB.name)}」（${escapeHtml(abB.desc)}）` : ""}</div>
             </div>
             <div class="row__right">
               <button class="btn btn--danger btn--small" data-breed-cancel="1">取消饲养</button>
@@ -345,11 +427,12 @@ export function createRenderFunctions({
       return types.filter((x) => typeof x === "string");
     };
     const sortMons = (arr, sortKey, dir0) => {
-      const k = sortKey === "lvl" || sortKey === "dex" || sortKey === "power" ? sortKey : "power";
+      const k = sortKey === "lvl" || sortKey === "dex" || sortKey === "iv" || sortKey === "power" ? sortKey : "power";
       const dir = dir0 === "asc" || dir0 === "desc" ? dir0 : "desc";
       const dirMul = dir === "asc" ? 1 : -1;
-      const withPower = arr.map((m) => ({ m, p: monPower(m) }));
+      const withPower = arr.map((m) => ({ m, p: monPower(m), iv: sumMonIv(m) }));
       const cmpAsc = (a, b) => {
+        if (k === "iv") return (a.iv ?? 0) - (b.iv ?? 0) || (a.p ?? 0) - (b.p ?? 0) || (a.m.lvl ?? 0) - (b.m.lvl ?? 0);
         if (k === "dex") return (a.m.dex ?? 0) - (b.m.dex ?? 0) || (a.p ?? 0) - (b.p ?? 0) || (a.m.lvl ?? 0) - (b.m.lvl ?? 0);
         if (k === "lvl") return (a.m.lvl ?? 0) - (b.m.lvl ?? 0) || (a.p ?? 0) - (b.p ?? 0) || (a.m.dex ?? 0) - (b.m.dex ?? 0);
         return (a.p ?? 0) - (b.p ?? 0) || (a.m.lvl ?? 0) - (b.m.lvl ?? 0) || (a.m.dex ?? 0) - (b.m.dex ?? 0);
@@ -514,7 +597,7 @@ export function createRenderFunctions({
       const type0 = typeof ui.breedingModalType === "string" ? ui.breedingModalType : "all";
       const type = type0 === "all" || TYPE_KEYS_UI.includes(type0) ? type0 : "all";
       const sort0 = typeof ui.breedingModalSort === "string" ? ui.breedingModalSort : "power";
-      const sort = ["power", "lvl", "dex"].includes(sort0) ? sort0 : "power";
+      const sort = ["power", "lvl", "dex", "iv"].includes(sort0) ? sort0 : "power";
 
       const dir0 = typeof ui.breedingModalSortDir === "string" ? ui.breedingModalSortDir : "";
       const dir = dir0 === "asc" || dir0 === "desc" ? dir0 : sort === "dex" ? "asc" : "desc";
@@ -536,6 +619,8 @@ export function createRenderFunctions({
       const sel0 = Array.isArray(ui.breedingModalSelectedIds) ? ui.breedingModalSelectedIds : [];
       const sel = sel0.filter((id) => aliveSet.has(id)).slice(0, 2);
       ui.breedingModalSelectedIds = sel;
+      const selMonA = typeof sel[0] === "number" ? allCandidates.find((m) => m.id === sel[0]) ?? null : null;
+      const selMonB = typeof sel[1] === "number" ? allCandidates.find((m) => m.id === sel[1]) ?? null : null;
 
       const regionOptions = [
         { k: "all", n: "全部区域" },
@@ -558,6 +643,7 @@ export function createRenderFunctions({
 
       const sortOptions = [
         `<option value="power" ${sort === "power" ? "selected" : ""}>战力</option>`,
+        `<option value="iv" ${sort === "iv" ? "selected" : ""}>潜力</option>`,
         `<option value="lvl" ${sort === "lvl" ? "selected" : ""}>等级</option>`,
         `<option value="dex" ${sort === "dex" ? "selected" : ""}>图鉴</option>`,
       ].join("");
@@ -571,14 +657,17 @@ export function createRenderFunctions({
         .map((m) => {
           const checked = sel.includes(m.id);
           const pow = monPower(m);
+          const ivSum = sumMonIv(m);
+          const abInfo = getAbilityInfo(resolveParentAbilityId(m));
           const types = getMonTypesSimple(m);
           const typeText = types.map((t) => TYPE_ZH_MAP[t] ?? t).join("/");
           const reg = regionLabel(monRegionByDex(m.dex));
+          const starBadge = (m.stars ?? 0) > 0 ? `<span class="tag">${m.stars}星</span>` : "";
           return `
             <div class="row func-mon-row">
               <div class="row__left">
-                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span><span class="tag">Lv.${m.lvl}</span></div>
-                <div class="row__desc">${escapeHtml(reg)} · ${escapeHtml(typeText || "-")} · 战力 ${Math.floor(pow)}</div>
+                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span><span class="tag">Lv.${m.lvl}</span>${starBadge}<span class="tag">潜力 ${ivSum}/186</span></div>
+                <div class="row__desc">${escapeHtml(reg)} · ${escapeHtml(typeText || "-")} · 战力 ${Math.floor(pow)}${abInfo ? ` · 特性「${escapeHtml(abInfo.name)}」` : ""}</div>
               </div>
               <div class="row__right">
                 <input class="chk" type="checkbox" data-breed-modal-check="${m.id}" ${checked ? "checked" : ""} ${sel.length >= 2 && !checked ? "disabled" : ""} />
@@ -589,7 +678,7 @@ export function createRenderFunctions({
         .join("");
 
       const title = `饲养：选择萌灵（需要 2 只）`;
-      const sub = `支持筛选/排序与多选（最多 2 只），远征中的萌灵不会出现。点击“开始饲养”后会直接开始。`;
+      const sub = `支持按潜力/战力筛选排序（最多选 2 只），勾选双亲可实时预览优生子代潜力、闪光概率并锁定遗传特性。`;
       const empty = sorted.length === 0 ? `<div class="row"><div class="row__left"><div class="row__desc muted">暂无可选萌灵</div></div></div>` : "";
       const canConfirm = sel.length === 2;
 
@@ -608,7 +697,7 @@ export function createRenderFunctions({
               <div class="row modal-filter-row">
                 <div class="row__left">
                   <div class="row__title row__titleLine">${renderResSvg("searchFlare", 18)}<span>筛选 / 排序</span><span class="tag">已选 ${sel.length}/2</span></div>
-                  <div class="row__desc">同进化链双亲配对可温养灵蛋</div>
+                  <div class="row__desc">同进化链双亲或幻彩星泥配对可温养产蛋</div>
                 </div>
                 <div class="row__right">
                   <select class="input" data-breed-modal-region>${regionOptions}</select>
@@ -618,6 +707,7 @@ export function createRenderFunctions({
                   <input class="input" type="text" inputmode="search" placeholder="搜索：图鉴编号或名称" value="${escapeHtml(q)}" data-breed-modal-q />
                 </div>
               </div>
+              ${renderEugenicsPreviewCard(selMonA, selMonB, "配对优生预览 · 闪光提率与特性遗传")}
               ${empty}
               ${candidateRows}
             </div>
@@ -1351,11 +1441,23 @@ export function initFunctionsTab({
       render();
     }
 
+    const breedLockBtn = ev.target?.closest?.("button[data-breed-ability-lock]");
+    if (breedLockBtn && elFunctionsTraining.contains(breedLockBtn)) {
+      const bState = ensureBreedingState(state);
+      const nextLock = normalizeAbilityLock(breedLockBtn.getAttribute("data-breed-ability-lock"));
+      if (bState.abilityLock !== nextLock) {
+        bState.abilityLock = nextLock;
+        const lockLabel = nextLock === "a" ? "锁定伙伴 A 特性" : nextLock === "b" ? "锁定伙伴 B 特性" : "双亲优选遗传";
+        addLog(`优生特性规则：${lockLabel}`, true);
+        markFunctionsDirty();
+        render();
+      }
+      return;
+    }
+
     const breedOpenBtn = ev.target?.closest?.("button[data-breed-open]");
     if (breedOpenBtn && elFunctionsTraining.contains(breedOpenBtn)) {
-      if (!state.breeding || typeof state.breeding !== "object") {
-        state.breeding = { on: false, aId: null, bId: null, eggRemainingSec: 0, eggTotalSec: 0 };
-      }
+      ensureBreedingState(state);
       if (Boolean(state.breeding.on)) return;
       ui.breedingModalOpen = true;
       ui.breedingModalSelectedIds = [];
@@ -1389,9 +1491,7 @@ export function initFunctionsTab({
     }
     const breedConfirmBtn = ev.target?.closest?.("button[data-breed-modal-confirm]");
     if (breedConfirmBtn && elFunctionsTraining.contains(breedConfirmBtn)) {
-      if (!state.breeding || typeof state.breeding !== "object") {
-        state.breeding = { on: false, aId: null, bId: null, eggRemainingSec: 0, eggTotalSec: 0 };
-      }
+      ensureBreedingState(state);
       if (Boolean(state.breeding.on)) return;
       const sel0 = Array.isArray(ui.breedingModalSelectedIds) ? ui.breedingModalSelectedIds : [];
       const alive = state.mons?.list ?? [];

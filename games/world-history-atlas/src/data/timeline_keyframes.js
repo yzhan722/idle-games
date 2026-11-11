@@ -391,7 +391,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -500, era: "古典轴心时代：波斯帝国极盛与百家争鸣", theme: "era-ancient",
     toast: "公元前500年：大流士一世建立横跨亚非欧三大洲的波斯阿契美尼德帝国；孔子周游列国、释迦牟尼创立佛教、雅典确立克里斯提尼民主。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 739, y: 194, title: "波斯波利斯万国门与皇家御道", icon: "奇观", desc: "大流士一世划分二十行省、统一达利克金币，修筑全长2700公里的皇家驿道。" },
       { x: 1018, y: 164, title: "曲阜杏坛讲学与稷下学宫", icon: "制度", desc: "儒、道、墨、法诸子百家争鸣，奠定中华思想哲学之源。" }
@@ -412,7 +412,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -480, era: "希波战争温泉关/萨拉米斯与三家分晋前夜", theme: "era-ancient",
     toast: "公元前480年：波斯薛西斯一世率大军远征希腊，斯巴达三百勇士血战温泉关，雅典海军在萨拉米斯海战大破波斯舰队。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 613, y: 152, title: "萨拉米斯海战与雅典卫城帕特农", icon: "战役", desc: "雅典三列桨战舰击败波斯舰队，随后开启伯里克利黄金时代。" }
     ],
@@ -423,7 +423,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -453, era: "晋阳之战“三家分晋”、越王勾践灭吴与战国时代拉开帷幕", theme: "era-ancient",
     toast: "公元前453年：韩、赵、魏三家于晋阳之战合灭智伯，瓜分晋国疆土（三家分晋），历史正式由春秋跨入兼并惨烈的战国时代；此前越王勾践卧薪尝胆灭吴成为春秋末代霸主。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 1012, y: 141, title: "前453年晋阳之战：韩赵魏三家分晋", icon: "制度", desc: "司马光《资治通鉴》以三家分晋作为战国七雄时代的开篇标志。" }
     ],
@@ -436,7 +436,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -431, era: "伯罗奔尼撒战争爆发、雅典帕特农神庙落成与魏文侯李悝变法", theme: "era-ancient",
     toast: "公元前431年：以雅典为首的提洛同盟与以斯巴达为首的伯罗奔尼撒同盟爆发全面战争，古希腊城邦由极盛走向内耗；东方魏文侯任用李悝编纂《法经》、吴起创立“魏武卒”率先称雄战国。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 616, y: 118, title: "雅典卫城帕特农神庙与修昔底德《伯罗奔尼撒战争史》", icon: "奇观", desc: "伯里克利黄金时代建筑与历史学巅峰，揭示“修昔底德陷阱”。" }
     ],
@@ -450,7 +450,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -403, era: "三家分晋战国七雄开启与苏格拉底/柏拉图学派", theme: "era-ancient",
     toast: "公元前403年：周威烈王正式册封韩、赵、魏三家为诸侯，战国时代全面开启，魏文侯任用李悝变法；雅典柏拉图创立阿卡德米学园。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 1014, y: 154, title: "三家分晋与李悝《法经》变法", icon: "制度", desc: "礼崩乐坏下各国纷纷推行官僚郡县与军功法治，战国七雄兼并战争升级。" }
     ],
@@ -459,7 +459,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -356, era: "商鞅变法秦国崛起与马其顿腓力二世改革", theme: "era-ancient",
     toast: "公元前356年：秦孝公任用商鞅实行变法，“废井田、开阡陌、奖励耕战”，秦国一跃成为战国最强霸主；马其顿腓力二世创立萨里沙长枪方阵。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 983, y: 171, title: "咸阳商鞅徙木立信与军功爵制", icon: "制度", desc: "彻底打破世卿世禄制，建立二十等军功爵与严密什伍连坐耕战体系。" }
     ],
@@ -471,7 +471,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -323, era: "希腊化时代：亚历山大帝国极盛", theme: "era-ancient",
     toast: "公元前323年：亚历山大大帝经伊苏斯、高加米拉决战灭亡波斯，东征直抵印度河流域，建立横跨欧亚非三洲的希腊化大帝国！",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 703, y: 180, title: "高加米拉决战与巴比伦王宫", icon: "战役", desc: "亚历山大率伙伴骑兵楔形突击大破大流士三世，改写古典西方与中东历史。" },
       { x: 640, y: 187, title: "亚历山大港灯塔与大图书馆", icon: "奇观", desc: "汇聚欧几里得、阿基米德等学者，成为地中海希腊化科学艺术中心。" }
@@ -493,7 +493,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -307, era: "赵武灵王“胡服骑射”、秦司马错灭巴蜀与齐国稷下学宫", theme: "era-ancient",
     toast: "公元前307年：赵武灵王力排众议推行“胡服骑射”组建中原首支精锐骑兵，北破林胡、楼烦并修筑赵北长城；前316年秦惠文王派司马错灭亡巴蜀，秦国坐拥天府之国战略大后方！",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 1016, y: 141, title: "邯郸赵武灵王“胡服骑射”军事革命", icon: "制度", desc: "打破传统车战束缚，使赵国一跃成为唯一能与强秦正面对决的东方军事强国。" },
       { x: 953, y: 191, title: "秦灭巴蜀置蜀郡与巴蜀战略粮仓开发", icon: "奇观", desc: "秦并巴蜀后沃野千里，都江堰无坝引水工程滋养成都平原两千余年。" }
@@ -511,7 +511,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -301, era: "伊普苏斯战役：希腊化继业者帝国三分", theme: "era-ancient",
     toast: "公元前301年：亚历山大帝国分裂为塞琉古帝国、托勒密埃及与马其顿王国；月护王建立印度孔雀王朝。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 655, y: 145, title: "伊普苏斯战象决战与继业者分疆", icon: "战役", desc: "塞琉古一世引进五百头印度战象击败安提柯，确立希腊化世界三足鼎立格局。" }
     ],
@@ -532,7 +532,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -260, era: "阿育王统一南亚与秦赵长平之战", theme: "era-ancient",
     toast: "公元前260年：孔雀王朝阿育王征服羯陵伽后统一南亚次大陆并立石柱弘扬佛教；秦将白起于长平之战大破赵军四十万；李冰父子修筑都江堰。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 1001, y: 163, title: "长平之战：秦一统天下奠基战", icon: "战役", desc: "白起采取佯败诱敌、分割包围战术歼灭赵国主力，六国再无力单独抗秦。" },
       { x: 962, y: 190, title: "李冰父子修筑都江堰水利工程", icon: "奇观", desc: "鱼嘴分水、飞沙堰溢洪、宝瓶口引水，使成都平原成为“水旱从人，不知饥馑”的天府之国。" },
@@ -552,7 +552,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -221, era: "六王毕四海一：秦始皇一统天下与书同文车同轨", theme: "era-ancient",
     toast: "公元前221年：秦王嬴政先后灭韩、赵、魏、楚、燕、齐六国，首创皇帝制度，废分封行郡县，书同文、车同轨、统一度量衡与货币。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 1002, y: 182, title: "咸阳宫秦始皇登基：书同文车同轨", icon: "都城", desc: "秦始皇创立皇帝制度与三公九卿郡县制，奠定中国两千余年大一统政治格局。" },
       { x: 1012, y: 134, title: "蒙恬北击匈奴收复河南地与修筑万里长城", icon: "要塞", desc: "秦将蒙恬率三十万大军北逐匈奴七百里，连接秦赵燕旧长城筑成万里防线。" }
@@ -573,7 +573,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -206, era: "霸王入关：秦朝覆灭、项羽戏下分封十八诸侯与楚汉争霸开启", theme: "era-ancient",
     toast: "公元前206年：刘邦先入关中破咸阳废除秦苛法“约法三章”；项羽巨鹿之战破釜沉舟歼灭秦军主力后入关，自立为西楚霸王并分封十八路诸侯，刘邦自汉中暗度陈仓定三秦，楚汉争霸全面爆发！",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 993, y: 165, title: "鸿门宴、韩信拜将与“明修栈道暗度陈仓”", icon: "战役", desc: "汉王刘邦拜韩信为大将，定三秦、出函谷，与西楚霸王项羽展开拉锯决战。" }
     ],
@@ -589,7 +589,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -202, era: "楚汉相争垓下决战、大汉立国与扎马战役", theme: "era-ancient",
     toast: "公元前202年：刘邦与韩信在垓下之战击败西楚霸王项羽，于长安建立大汉帝国；同年西庇阿在扎马战役击败汉尼拔，罗马称霸西地中海。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 1001, y: 199, title: "垓下之战：十面埋伏与大汉立国", icon: "战役", desc: "韩信率三十万汉军合围项羽于垓下，终结秦末战乱，开启四百年两汉大一统基业。" },
       { x: 564, y: 132, title: "扎马战役：罗马击败迦太基", icon: "战役", desc: "大西庇阿击败汉尼拔战象军团，迦太基丧失海外领地与舰队。" }
@@ -608,7 +608,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -146, era: "罗马称霸地中海与安息帝国崛起", theme: "era-ancient",
     toast: "公元前146年：罗马同年摧毁迦太基城与希腊科林斯，将马其顿与希腊并入行省；安息(帕提亚)帝国夺取两河流域泰西封。",
-    routes: [],
+    routes: ["steppe_fur"],
     landmarks: [
       { x: 564, y: 132, title: "罗马征服希腊与地中海霸权确立", icon: "战役", desc: "罗马在军事上征服希腊，而希腊文学艺术与哲学全面润泽罗马精英阶层。" }
     ],
@@ -629,7 +629,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -119, era: "漠北之战：卫青霍去病封狼居胥、汉置河西四郡与元鼎平南越", theme: "era-ancient",
     toast: "公元前119年（元狩四年）：汉武帝集结十万骑兵发动漠北决战，大将军卫青大破伊稚斜单于、骠骑将军霍去病千里奔袭封狼居胥山，匈奴远遁“漠南无王庭”！西汉设武威、张掖、酒泉、敦煌河西四郡并收复南越。",
-    routes: ["silk_road"],
+    routes: ["silk_road", "steppe_fur"],
     landmarks: [
       { x: 965, y: 110, title: "前119年霍去病漠北封狼居胥与卫青破单于", icon: "战役", desc: "彻底扭转农耕华夏与草原游牧的战略攻守态势。" },
       { x: 966, y: 164, title: "河西四郡设置与丝绸之路咽喉打通", icon: "都城", desc: "“断匈奴右臂”，将河西走廊正式纳入中原王朝郡县版图。" }
@@ -649,7 +649,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -100, era: "汉武盛世：卫霍北击匈奴与张骞凿空西域", theme: "era-ancient",
     toast: "公元前100年：汉武帝刘彻派卫青、霍去病深入漠北封狼居胥，张骞出使西域打通河西走廊，陆上丝绸之路正式贯通东西方！",
-    routes: ["silk_road"],
+    routes: ["silk_road", "steppe_fur"],
     landmarks: [
       { x: 957, y: 105, title: "漠北之战与霍去病封狼居胥", icon: "战役", desc: "汉军精骑千里奔袭大破匈奴王庭，“漠南无王庭”，彻底扭转汉匈战略态势。" },
       { x: 883, y: 136, title: "张骞凿空西域与河西四郡设立", icon: "航海", desc: "设立武威、张掖、酒泉、敦煌四郡，丝绸、铁器与良马葡萄在亚欧大陆双向奔流。" }
@@ -669,7 +669,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: -60, era: "西汉设西域都护府与凯撒征服高卢", theme: "era-ancient",
     toast: "公元前60年（神爵二年）：汉宣帝命郑吉为首任西域都护，天山南北正式纳入中国中央政府管辖；尤利乌斯·凯撒征服高卢全境。",
-    routes: ["silk_road"],
+    routes: ["silk_road", "steppe_fur"],
     landmarks: [
       { x: 883, y: 136, title: "乌垒城西域都护府正式设立", icon: "制度", desc: "西汉设西域都护统辖天山南北三十六国，颁行汉朝号令与屯田戊己校尉。" },
       { x: 520, y: 107, title: "阿莱西亚之战：凯撒平定高卢", icon: "战役", desc: "凯撒筑双层环形工事击败维钦托利高卢联军，随后跨过卢比孔河进军罗马。" }
@@ -747,7 +747,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 89, era: "燕然勒功：窦宪大破北匈奴、班超定西域与蔡伦改进造纸术", theme: "era-ancient",
     toast: "公元89年（永元元年）：东汉车骑将军窦宪率汉军与南匈奴出塞三千里，于稽落山大破北匈奴，登燕然山由班固撰文刻石记功，北匈奴被迫西迁欧洲；97年班超派甘英出使大秦（罗马）抵波斯湾，105年蔡伦改进造纸术。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 965, y: 110, title: "公元89年窦宪《封燕然山铭》与北匈奴西迁", icon: "战役", desc: "终结长达三百年的汉匈战争，引发欧亚草原游牧民族向西大迁徙连锁反应。" },
       { x: 999, y: 162, title: "班超定西域三十一年与甘英出使大秦", icon: "科技", desc: "东汉定远侯班超经营西域五十余国，遣副使甘英西行抵达波斯湾（条支海）。" }
@@ -772,7 +772,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 117, era: "古典双璧：罗马图拉真极盛与东汉班超定西域", theme: "era-ancient",
     toast: "公元117年：罗马帝国在图拉真皇帝治下达到500万平方公里极盛，地中海彻底成为罗马内湖；东汉班超、甘英经略西域直抵波斯湾，蔡伦改进造纸术。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 564, y: 132, title: "罗马万神殿、斗兽场与图拉真纪功柱", icon: "奇观", desc: "罗马帝国疆域横跨不列颠哈德良长城至两河流域底格里斯河口。" },
       { x: 1014, y: 154, title: "蔡伦改进造纸术与张衡浑天仪", icon: "科技", desc: "东汉洛阳蔡伦用树皮麻头造出轻便廉价的“蔡侯纸”，引发人类信息载体革命。" },
@@ -1022,7 +1022,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 445, era: "南北朝对峙、北魏统一北方与阿提拉匈人狂飙", theme: "era-ancient",
     toast: "公元445年：北魏太武帝拓跋焘统一黄河流域，与南方刘宋开启“元嘉草草”南北对峙；“上帝之鞭”阿提拉率匈人铁骑席卷多瑙河与高卢。",
-    routes: ["silk_road"],
+    routes: ["silk_road", "steppe_fur"],
     landmarks: [
       { x: 564, y: 132, title: "沙隆战役：罗马与西哥特阻击阿提拉", icon: "战役", desc: "阿提拉匈人联军深入高卢，与西罗马名将埃提乌斯展开古典时代末期最惨烈会战。" },
       { x: 1014, y: 154, title: "大同云冈石窟皇家开凿", icon: "奇观", desc: "北魏皇家集全国巧匠开凿昙曜五窟，展现气势恢宏的中西交融佛教造像。" }
@@ -1076,7 +1076,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 555, era: "查士丁尼拜占庭复兴与突厥汗国称霸草原", theme: "era-medieval",
     toast: "公元555年：拜占庭皇帝查士丁尼一世派名将贝利撒留收复意大利、北非与西班牙南部，编纂《查士丁尼民法大全》；阿史那氏建立突厥汗国横跨草原。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 635, y: 137, title: "君士坦丁堡圣索菲亚大教堂与《民法大全》", icon: "奇观", desc: "直径31米的巨型悬空穹顶教堂落成，《民法大全》成为近现代大陆法系之源。" },
       { x: 965, y: 110, title: "突厥汗国击败柔然称霸万里草原", icon: "制度", desc: "土门可汗与室点密西破嚈哒、东邻辽海，控制草原丝绸之路。" }
@@ -1112,7 +1112,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 577, era: "南北朝 · 周武帝灭齐与南陈太建北伐", theme: "era-medieval",
     toast: "公元577年：北周武帝宇文邕攻灭北齐统一北方，南陈宣帝发起太建北伐，北方突厥汗国与意大利伦巴第王国并立",
-    routes: ["silk_road"],
+    routes: ["silk_road", "steppe_fur"],
     landmarks: [
       { x: 1475, y: 392, title: "北周灭北齐统一北方", icon: "⚔️", desc: "周武帝宇文邕亲征攻克邺城灭亡北齐，结束北方东西分裂，为隋朝大一统奠基。" },
       { x: 1558, y: 432, title: "南陈太建北伐", icon: "🛡️", desc: "陈宣帝遣大将吴明彻北伐收复淮南之地，南陈王朝与北周划江淮对峙。" }
@@ -1132,7 +1132,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 589, era: "大隋一统天下：开皇之治与大运河贯通", theme: "era-medieval",
     toast: "公元589年：隋文帝杨坚派韩擒虎、贺若弼渡江攻克建康灭陈，终结自西晋永嘉之乱以来近三百年的南北分裂！随后开创科举制并开凿京杭大运河。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 1001, y: 199, title: "589年隋灭陈之战与南北重归一统", icon: "战役", desc: "隋军水陆五十万大军渡过长江天险，华夏大地重归大一统中央集权。" },
       { x: 1029, y: 181, title: "京杭大运河开凿与进士科创立", icon: "奇观", desc: "以洛阳为中心贯通永济渠、通济渠、邗沟与江南河，连接黄河与长江两大经济动脉。" }
@@ -1153,7 +1153,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 618, era: "晋阳起兵：大唐帝国建立与拜占庭-萨珊终局决战", theme: "era-medieval",
     toast: "公元618年：李渊、李世民父子晋阳起兵入长安建立大唐帝国，随后虎牢关之战一战擒双王平定天下；拜占庭与萨珊波斯爆发二十六年毁灭性大战。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 983, y: 171, title: "618年长安建唐与虎牢关一战擒双王", icon: "战役", desc: "秦王李世民率玄甲精骑于虎牢关同日击败窦建德与王世充，奠定大唐统一基业。" }
     ],
@@ -1172,7 +1172,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 630, era: "贞观盛世：唐太宗李世民灭东突厥获尊“天可汗”与穆罕默德统一阿拉伯", theme: "era-medieval",
     toast: "公元630年（贞观四年）：唐太宗李世民派名将李靖率三千铁骑夜袭定襄、阴山大破颉利可汗，东突厥汗国覆灭，西北诸族君长齐聚长安尊唐太宗为“天可汗”；同年先知穆罕默德光复麦加统一阿拉伯半岛。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 993, y: 165, title: "630年李靖阴山破突厥与万国来朝“天可汗”", icon: "都城", desc: "贞观之治开启，玄奘西行取经自长安出发前往天竺那烂陀寺。" },
       { x: 678, y: 209, title: "麦加光复与阿拉伯半岛一统", icon: "制度", desc: "伊斯兰共同体（乌玛）完成阿拉伯半岛政治与宗教统一。" }
@@ -1197,7 +1197,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 650, era: "贞观天可汗威服四海与阿拉伯正统哈里发狂飙", theme: "era-medieval",
     toast: "公元650年：唐太宗李世民开创贞观之治，破东突厥被各族尊为“天可汗”；阿拉伯军团在雅尔穆克与卡迪西亚大捷后席卷叙利亚、埃及并灭亡萨珊波斯。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 983, y: 171, title: "长安太极宫与万国尊奉“天可汗”", icon: "都城", desc: "大唐击败东突厥与薛延陀，打通参天可汗道，玄奘自天竺取经归长安译经。" },
       { x: 906, y: 195, title: "拉萨布达拉宫始建与文成公主入藏", icon: "会盟", desc: "松赞干布统一吐蕃迎娶唐文成公主，传入中原农耕纺织与历算医药。" }
@@ -1226,7 +1226,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 663, era: "大唐极盛：苏定方灭西突厥至咸海、白江口海战大捷与灭高句丽", theme: "era-medieval",
     toast: "公元663年：唐高宗时期，苏定方早已平定西突厥将大唐版图推至咸海与阿姆河（设安西、昆陵、濛池都护府）；刘仁轨于白江口海战四战四捷焚毁倭国水师四百艘，668年李勣、薛仁贵攻克平壤灭高句丽，大唐疆域达1237万km²历史极盛！",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 1066, y: 162, title: "663年白江口海战大捷与668年平定高句丽", icon: "战役", desc: "奠定东亚未来千年地缘格局，日本随即全面派遣遣唐使学习盛唐文明。" },
       { x: 781, y: 142, title: "安西大都护府与龙朔西域极盛疆域", icon: "都城", desc: "大唐西境远达咸海与波斯疾陵城，丝绸之路全线畅通。" }
@@ -1258,7 +1258,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 690, era: "武周神都洛阳盛世与倭马亚王朝圆顶清真寺", theme: "era-medieval",
     toast: "公元690年：武则天改唐为周定都神都洛阳，开创殿试与武举，王孝杰收复安西四镇；倭马亚哈里发阿卜杜勒-马利克在耶路撒冷建成金色岩石圆顶寺。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
     landmarks: [
       { x: 999, y: 170, title: "神都洛阳明堂天堂与武周科举革新", icon: "都城", desc: "武则天广开科举取士打破门阀垄断，狄仁杰、张柬之、姚崇、宋璟等名臣辈出。" }
     ],
@@ -1273,7 +1273,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 715, era: "武周至开元盛世开启、倭马亚帝国横跨三洲", theme: "era-medieval",
     toast: "公元715年：经历武则天“贞观遗风”后唐玄宗开创开元盛世，安西与北庭都护府威震中亚；阿拉伯倭马亚王朝西渡直布罗陀征服伊比利亚，东抵河中与印度河。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 983, y: 171, title: "大明宫含元殿与开元盛世", icon: "奇观", desc: "“稻米流脂粟米白，公私仓廪俱丰实”，大唐国力达到古典帝国巅峰。" },
       { x: 490, y: 142, title: "塔里克横渡直布罗陀与安达卢斯开辟", icon: "战役", desc: "阿拉伯-柏柏尔大军灭亡西哥特王国，科尔多瓦成为西欧最繁华的学术与建筑都会。" }
@@ -1293,7 +1293,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 750, era: "盛唐天宝极盛、阿拔斯革命与怛罗斯之战", theme: "era-medieval",
     toast: "公元750年：黑衣大食（阿拔斯王朝）取代倭马亚；751年大唐高仙芝与阿拉伯军团在中亚怛罗斯激战，中国造纸术由此西传阿拉伯与欧洲。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 820, y: 127, title: "安西节度使高仙芝远征中亚与东西帝国交锋", icon: "战役", desc: "两大世界帝国在中亚正面对决，被俘唐朝造纸工匠在撒马尔罕建立首座中亚造纸作坊。" },
       { x: 702, y: 176, title: "巴格达圆形城与智慧宫(Bayt al-Hikma)", icon: "奇观", desc: "阿拔斯哈里发在底格里斯河畔营建新都巴格达，开启伊斯兰科学哲学百年翻译运动。" }
@@ -1323,7 +1323,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 755, era: "渔阳鼙鼓动地来：安史之乱爆发、回鹘汗国与海东盛国渤海", theme: "era-medieval",
     toast: "公元755年（天宝十四载）：身兼范阳、平卢、河东三镇节度使的安禄山起兵十五万南下，洛阳、长安相继失守，唐玄宗奔蜀、唐肃宗灵武即位，郭子仪、李光弼借回鹘骑兵苦战八年始平叛乱，盛唐由此转入藩镇割据；东北渤海国与西南南诏并立。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "trans_saharan"],
     landmarks: [
       { x: 993, y: 165, title: "755年安史之乱与睢阳张巡保卫战", icon: "战役", desc: "张巡、许远死守睢阳十月屏障江淮财赋命脉，确保大唐国祚延续百五十年。" }
     ],
@@ -1350,7 +1350,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 763, era: "安史之乱平定、吐蕃帝国极盛与藩镇割据", theme: "era-medieval",
     toast: "公元763年：持续八年的安史之乱平定，大唐由盛转衰进入藩镇割据；吐蕃赤松德赞乘虚席卷河西陇右与西域，甚至一度攻入长安十五日。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "trans_saharan"],
     landmarks: [
       { x: 1014, y: 154, title: "安史之乱与郭子仪收复两京", icon: "战役", desc: "安禄山自范阳起兵引发八年战乱，北方经济遭受重创，中国经济重心加速南移长江流域。" },
       { x: 906, y: 195, title: "赤松德赞桑耶寺与吐蕃陇右扩张", icon: "奇观", desc: "吐蕃攻占河西走廊与敦煌，隔断大唐与安西四镇陆路联系，白发唐兵孤守西域数十年。" }
@@ -1367,7 +1367,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 800, era: "查理曼加冕西欧皇帝與维京长船时代", theme: "era-medieval",
     toast: "公元800年：圣诞节法兰克国王查理曼在罗马由教皇加冕为“罗马人的皇帝”，开启加洛林文艺复兴；北欧维京海盗驾驶龙头长船袭击不列颠与西欧。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "trans_saharan"],
     landmarks: [
       { x: 564, y: 132, title: "亚琛宫廷与查理曼罗马加冕", icon: "都城", desc: "查理曼统一高卢、日耳曼与北意大利，被称为“欧洲之父”（Pater Europae）。" },
       { x: 571, y: 48, title: "维京龙头长船远航与丹麦法区", icon: "航海", desc: "斯堪的纳维亚维京人纵横北海、波罗的海与伏尔加河商路。" }
@@ -1385,7 +1385,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 843, era: "凡尔登条约三分法兰克与吐蕃归义军起义", theme: "era-medieval",
     toast: "公元843年：查理曼三个孙子签署《凡尔登条约》将帝国三分，奠定近代法兰西、德意志与意大利三国版图雏形；848年张议潮率沙州义军驱逐吐蕃归唐。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 520, y: 107, title: "843年《凡尔登条约》西欧三分", icon: "条约", desc: "西法兰克、中法兰克与东法兰克分立，奠定近代西欧地缘政治骨架。" },
       { x: 921, y: 141, title: "敦煌张议潮归义军收复河西", icon: "起义", desc: "张议潮率敦煌民众起义克复瓜沙十一州，遣使长安献捷，莫高窟第156窟绘制《张议潮统军出行图》。" }
@@ -1399,7 +1399,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 875, era: "冲天香阵透长安：王仙芝黄巢大起义、吴哥帝国崛起与阿拔斯分权", theme: "era-medieval",
     toast: "公元875年：唐末土地兼并与藩镇混战引发王仙芝、黄巢大起义，黄巢率军转战万里南下广州、北破洛阳与长安建立大齐政权，彻底摧毁延续六百年的门阀世族体系；中南半岛高棉吴哥帝国兴建庞大水利都城。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 993, y: 165, title: "黄巢《不第后赋菊》与攻入长安门阀终结", icon: "起义", desc: "“我花开后百花杀”，魏晋以来世家大族门阀谱牒在唐末战火中彻底瓦解。" },
       { x: 952, y: 257, title: "耶输跋摩一世营建吴哥巴肯山王城", icon: "奇观", desc: "高棉帝国成为中南半岛霸主。" }
@@ -1411,7 +1411,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 907, era: "五代十国分裂、契丹崛起与基辅罗斯建国", theme: "era-medieval",
     toast: "公元907年：朱温废唐哀帝建立后梁，中国进入五代十国分裂期；耶律阿保机统一契丹八部；奥列格统一诺夫哥罗德与基辅建立基辅罗斯。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1001, y: 199, title: "金陵南唐词坛与《韩熙载夜宴图》", icon: "都城", desc: "北方五代兵燹频仍之际，江南南唐、吴越与巴蜀前蜀后蜀保持经济文化繁荣。" }
     ],
@@ -1432,7 +1432,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 936, era: "石敬瑭割让燕云十六州与高丽王建统一朝鲜半岛", theme: "era-medieval",
     toast: "公元936年：河东节度使石敬瑭为夺取后唐皇位，认小自己十岁的契丹太宗耶律德光为“父皇帝”，并将险要的“燕云十六州”割让给契丹大辽，导致中原王朝此后四百年痛失北方长城防线；同年王建统一朝鲜半岛后三国建立高丽王朝。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1016, y: 141, title: "936年燕云十六州割让：中原北方门户洞开", icon: "条约", desc: "幽蓟长城防线落入契丹铁骑之手，成为北宋两百年地缘战略最大梦魇。" },
       { x: 1066, y: 162, title: "高丽太祖王建统一后三国定都开京", icon: "都城", desc: "高丽王朝延续四百七十余年，确立半岛科举文官体制。" }
@@ -1453,7 +1453,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 962, era: "陈桥兵变北宋立国与奥托一世神圣罗马加冕", theme: "era-medieval",
     toast: "公元962年：宋太祖赵匡胤陈桥兵变建立北宋，通过“杯酒释兵权”终结唐末以来藩镇割据；同年德意志奥托一世在罗马加冕，神圣罗马帝国正式诞生。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1007, y: 169, title: "汴京陈桥兵变与杯酒释兵权", icon: "制度", desc: "宋太祖确立重文抑武与文官通判制度，依“先南后北”方略逐步削平十国。" },
       { x: 564, y: 132, title: "奥托一世加冕神圣罗马帝国皇帝", icon: "制度", desc: "开启延续844年的神圣罗马帝国（第一帝国）历史。" }
@@ -1476,7 +1476,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1005, era: "澶渊之盟：北宋与契丹大辽百年和平与咸平之治", theme: "era-medieval",
     toast: "公元1005年：北宋与契丹大辽缔结《澶渊之盟》，开启宋辽百余年边境和平与榷场贸易；成都交子成为世界最早纸币。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1007, y: 169, title: "1005年《澶渊之盟》与汴京夜市", icon: "条约", desc: "宋辽约为兄弟之国并在边境设立榷场互市，北宋GDP与城市化率冠绝全球。" },
       { x: 962, y: 190, title: "益州交子务：人类历史上最早纸币", icon: "科技", desc: "四川商民与官府发行纸币“交子”，比欧洲纸币早六百余年。" }
@@ -1498,7 +1498,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1038, era: "李元昊称帝建西夏：宋、辽、西夏三国鼎足对峙与庆历新政", theme: "era-medieval",
     toast: "公元1038年：党项族首领李元昊在兴庆府（银川）正式称帝，国号“大白高国”（西夏），创制西夏文并在三川口、好水川、定川寨三战击败宋军；范仲淹、韩琦经略西北，1044年宋夏达成“庆历和议”，宋、辽、西夏三足鼎立正式定型！",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 966, y: 164, title: "1038年李元昊建西夏与范仲淹经略延州", icon: "都城", desc: "“浊酒一杯家万里，燕然未勒归无计”，范仲淹主持庆历新政倡言“先天下之忧而忧”。" }
     ],
@@ -1518,7 +1518,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1066, era: "诺曼征服英格兰、王安石变法与塞尔柱突厥崛起", theme: "era-medieval",
     toast: "公元1066年：诺曼底公爵威廉在黑斯廷斯战役击败哈罗德，加冕英格兰国王；1071年塞尔柱突厥在曼齐刻尔特大败拜占庭；北宋王安石推行熙宁变法。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 509, y: 83, title: "1066年黑斯廷斯战役与伦敦塔", icon: "战役", desc: "诺曼征服将法国封建骑士制度与法语词汇引入不列颠，编纂《末日审判书》土地清册。" },
       { x: 635, y: 137, title: "曼齐刻尔特战役：突厥入主小亚细亚", icon: "战役", desc: "阿尔普·阿尔斯兰俘虏拜占庭皇帝罗曼努斯四世，安纳托利亚开启突厥化进程。" }
@@ -1536,7 +1536,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1099, era: "北宋毕昇活字印刷、《梦溪笔谈》与第一次十字军东征", theme: "era-medieval",
     toast: "公元1099年：北宋沈括著《梦溪笔谈》记载毕昇胶泥活字印刷术与指南针磁偏角，苏轼开创豪放词派；西欧第一次十字军东征攻占耶路撒冷。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1007, y: 169, title: "毕昇活字印刷术、水运仪象台与《清明上河图》", icon: "科技", desc: "苏颂主持建造世界最早天文钟水运仪象台，张择端绘就汴京百万市民繁华长卷。" }
     ],
@@ -1549,7 +1549,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1115, era: "完颜阿骨打起兵反辽建女真大金王朝与宋金“海上之盟”", theme: "era-medieval",
     toast: "公元1115年：女真完颜部首领完颜阿骨打在白山黑水间起兵反辽，于宁江州、出河店以不满万之众大破十万辽军，在会宁府称帝建立大金王朝；1120年北宋与金朝跨越渤海缔结“海上之盟”联手攻辽。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1084, y: 88, title: "1115年完颜阿骨打建金与“满万不可敌”", icon: "都城", desc: "创立猛安谋克军政合一制，短短十年间灭亡延续二百余年的契丹大辽。" }
     ],
@@ -1561,7 +1561,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1127, era: "靖康之变北宋覆亡、赵构建立南宋与李纲宗泽东京保卫战", theme: "era-medieval",
     toast: "公元1127年（靖康二年）：金太宗完颜晟派完颜宗望、完颜宗翰两路南下攻陷北宋都城东京汴梁，掳走宋徽宗、宋钦宗二帝及宗室百工，北宋灭亡（靖康之耻）；康王赵构在应天府（商丘）即位宋高宗重建南宋，李纲、宗泽、韩世忠、岳飞掀起了悲壮的抗金浪潮。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1016, y: 141, title: "1127年靖康之变与宗泽三呼“过河”", icon: "战役", desc: "中原沦入金朝之手，中国经济文化重心彻底完成向江南的第二次大南移。" }
     ],
@@ -1579,7 +1579,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1141, era: "靖康之变后：南宋与女真金朝划淮而治、西辽称霸中亚", theme: "era-medieval",
     toast: "公元1141年：女真完颜部灭辽破宋后，岳飞堰城大捷北伐中原，南宋与金朝最终达成《绍兴和议》以秦岭-淮河划界；耶律大石在卡特万大捷建立西辽。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1014, y: 154, title: "岳飞堰城大捷与《绍兴和议》", icon: "战役", desc: "岳家军背嵬军大破金兀术铁浮屠与拐子马，宋金最终确立东自淮水、西至大散关南北对峙线。" },
       { x: 781, y: 142, title: "1141年卡特万之战：耶律大石建西辽", icon: "战役", desc: "耶律大石率辽军余部大破塞尔柱苏丹桑贾尔十万联军，西辽威震河中与西域。" }
@@ -1599,7 +1599,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1187, era: "萨拉丁收复耶路撒冷与日本镰仓幕府建立", theme: "era-medieval",
     toast: "公元1187年：阿尤布苏丹萨拉丁在哈丁战役全歼十字军主力收复耶路撒冷，引发第三次十字军东征；源赖朝在坛之浦海战灭平氏建立镰仓幕府。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 645, y: 193, title: "1187年哈丁战役与萨拉丁收复圣城", icon: "战役", desc: "萨拉丁重夺耶路撒冷并与狮心王理查对决，以宽容与骑士风度载入史册。" }
     ],
@@ -1615,7 +1615,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1204, era: "第四次十字军洗劫君士坦丁堡、威尼斯称霸东地中海与铁木真统一草原前夜", theme: "era-medieval",
     toast: "公元1204年：在威尼斯总督恩里科·丹多洛引导下，第四次十字军调转矛头攻陷并洗劫了东正教盟友拜占庭帝国首都君士坦丁堡，建立拉丁帝国，威尼斯共和国垄断爱琴海与东地中海商路；漠北铁木真击灭乃蛮部完成蒙古统一。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 616, y: 118, title: "1204年君士坦丁堡浩劫与威尼斯海洋帝国", icon: "战役", desc: "千年古都遭十字军洗劫，拜占庭从此一蹶不振，威尼斯跃升地中海头号金融海权。" }
     ],
@@ -1633,7 +1633,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1206, era: "苍狼白鹿：成吉思汗统一蒙古与德里苏丹国建立", theme: "era-medieval",
     toast: "1206年：铁木真统一漠北草原诸部，于斡难河源忽里勒台大会即位成吉思汗建立大蒙古国；库特卜丁·艾伊拜克在北印度建立德里苏丹国。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 965, y: 110, title: "斡难河源九斿白纛：成吉思汗建大蒙古国", icon: "会盟", desc: "创立千户军政合一制与怯薛军，颁布《大扎撒》，草原铁骑即将席卷欧亚大陆。" },
       { x: 845, y: 200, title: "德里库特卜高塔与德里苏丹国", icon: "奇观", desc: "开启突厥-阿富汗苏丹统治北印度三百年纪元。" }
@@ -1652,7 +1652,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1227, era: "第一次蒙古西征：成吉思汗灭西辽、花剌子模与西夏", theme: "era-medieval",
     toast: "1227年：成吉思汗率蒙古铁骑西征灭亡西辽与花剌子模，哲别、速不台偏师越过太和岭击溃钦察-罗斯联军，回师途中灭亡党项西夏。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 801, y: 144, title: "撒马尔罕攻坚与第一次蒙古西征", icon: "战役", desc: "成吉思汗灵活运用迂回包抄与汉地攻城火器，一举荡平中亚花剌子模帝国。" }
     ],
@@ -1672,7 +1672,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1234, era: "蔡州之战蒙宋联军灭亡金朝、“端平入洛”与四十五年宋蒙大战爆发", theme: "era-medieval",
     toast: "公元1234年：窝阔台汗派速不台与南宋孟珙联军攻破蔡州，金哀宗自缢，延续119年的女真金朝灭亡；同年南宋发动“端平入洛”试图收复三京受挫，长达45年、人类冷兵器史上最惨烈的宋蒙（宋元）全面战争正式打响！",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1016, y: 141, title: "1234年蔡州灭金与襄阳—四川山城防线开启", icon: "战役", desc: "南宋军民依托长江、汉水与川蜀山城体系顽强抵抗蒙古铁骑近半个世纪。" }
     ],
@@ -1693,7 +1693,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1241, era: "拔都长子西征：里格尼茨与莫希大捷横扫东欧、钦察汗国（金帐汗国）建立", theme: "era-medieval",
     toast: "公元1241年：拔都与速不台统帅蒙古西征军攻陷基辅后兵分两路，在波兰里格尼茨战役击溃波兰-条顿联军，在匈牙利莫希战役全歼匈牙利王军，前锋直抵维也纳与威尼斯近郊！因窝阔台汗病逝班师，于伏尔加河下游萨莱建立钦察汗国（金帐汗国）。",
-    routes: ["silk_road"],
+    routes: ["silk_road", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 626, y: 78, title: "1241年里格尼茨与莫希之战：蒙古铁骑震动欧洲", icon: "战役", desc: "拔都建立统治罗斯与钦察草原两百四十年的金帐汗国。" }
     ],
@@ -1711,7 +1711,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1258, era: "蒙古灭金、拔都建金帐汗国与旭烈兀攻陷巴格达", theme: "era-medieval",
     toast: "1258年：蒙古早已联宋灭金（1234蔡州之战），拔都西征建立钦察汗国（金帐汗国），旭烈兀攻陷巴格达灭亡阿拔斯王朝；蒙哥汗亲征南宋受阻于合州钓鱼城。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 702, y: 176, title: "1258年巴格达陷落与阿拔斯王朝终结", icon: "战役", desc: "旭烈兀大军攻克巴格达建立伊尔汗国，伊斯兰黄金时代学术中心转移至开罗。" },
       { x: 953, y: 191, title: "合州钓鱼城保卫战：折断上帝之鞭", icon: "战役", desc: "南宋守将王坚、张珏率军民依托山城防御体系坚守钓鱼城三十六年，蒙哥大汗殒命城下。" }
@@ -1743,7 +1743,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1260, era: "忽必烈开平即位、钓鱼城折鞭与阿音札鲁特战役蒙古西征止步", theme: "era-medieval",
     toast: "公元1260年：蒙哥汗于前一年殒命合州钓鱼城下，忽必烈在开平（上都）即大汗位建年号“中统”，与幼弟阿里不哥爆发四年汗位争夺战；同年埃及马穆鲁克苏丹忽秃思与拜巴尔在阿音札鲁特战役击败蒙古怯的不花军，蒙古向非洲扩张止步。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 665, y: 191, title: "1260年阿音札鲁特战役与四大汗国分立", icon: "战役", desc: "蒙古帝国由单一汗廷走向大元朝廷与四大汗国分治的新阶段。" }
     ],
@@ -1769,7 +1769,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1271, era: "大哉乾元：忽必烈建国号“大元”、襄樊六年血战与马可·波罗启程", theme: "era-medieval",
     toast: "公元1271年（至元八年）：忽必烈采纳刘秉忠建议，取《易经》“大哉乾元”之意正式改国号为“大元”，次年定都大都（北京）；元军使用回回炮围攻南宋柱石襄阳、樊城长达六年（1267-1273），吕文焕力竭降元，南宋长江防线门户洞开。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1004, y: 200, title: "1267-1273年襄樊保卫战与回回炮攻城", icon: "战役", desc: "襄阳守军孤城抗战六年，城破后伯颜水陆大军顺汉水入长江直指临安。" }
     ],
@@ -1800,7 +1800,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1279, era: "蒙古世界帝国极盛：大元一统与四大汗国", theme: "era-medieval",
     toast: "1279年：忽必烈定国号“大元”，经襄阳之战与崖山海战灭亡南宋完成大一统！大元帝国与钦察、伊尔、察合台、窝阔台四大汗国疆域横跨太平洋至多瑙河。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1016, y: 142, title: "元大都建成、行省制创立与马可·波罗东游", icon: "都城", desc: "忽必烈创立中书省与行中书省制度，设宣政院直接管辖西藏、澎湖巡检司管辖台湾。" },
       { x: 1001, y: 234, title: "1279年崖山海战：陆秀夫负帝蹈海", icon: "战役", desc: "张弘范与李恒合围宋军于广东崖山，左丞相陆秀夫背负八岁少帝赵昺投海殉国，十万军民殉难。" }
@@ -1838,7 +1838,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1337, era: "中世纪晚期大转折：百年战争与元末前夜 (EU5开局)", theme: "era-medieval",
     toast: "1337年：英格兰爱德华三世宣称法国王位，英法百年战争爆发；马里帝国曼萨·穆萨黄金闪耀西非；大元顺帝朝政日衰，辽东女真各部蓄势。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 520, y: 107, title: "1337年英法百年战争与克雷西长弓阵", icon: "战役", desc: "英格兰威尔士长弓手击败法国重装封建骑士，推动西欧向火药常备军与民族国家演进。" },
       { x: 496, y: 260, title: "廷巴克图桑科雷大学与曼萨·穆萨黄金朝觐", icon: "奇观", desc: "马里帝国控制撒哈拉黄金与食盐商路，成为中世纪财富之巅。" }
@@ -1863,7 +1863,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1356, era: "元末红巾军大起义：朱元璋、陈友谅与张士诚群雄逐鹿", theme: "era-medieval",
     toast: "1356年（至正十六年）：“石人一只眼，挑动黄河天下反”，红巾军席卷全国！朱元璋渡江攻占集庆改名应天府（南京），与湖广陈友谅、浙西张士诚展开江南大决战。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1001, y: 199, title: "朱元璋定鼎应天与鄱阳湖水战", icon: "战役", desc: "朱元璋采纳“高筑墙、广积粮、缓称王”策，后于鄱阳湖以火攻大破陈友谅六十万巨舰水师。" },
       { x: 558, y: 122, title: "佛罗伦萨人文主义与文艺复兴萌芽", icon: "制度", desc: "黑死病重创欧洲旧封建秩序后，但丁、彼特拉克与薄伽丘在意大利掀起文艺复兴。" }
@@ -1882,7 +1882,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1368, era: "日月重光：朱元璋北伐建大明与帖木儿帝国崛起", theme: "era-medieval",
     toast: "1368年（洪武元年）：朱元璋于应天称帝建立大明，徐达、常遇春率北伐军攻克元大都，终结蒙元统治；帖木儿在中亚撒马尔罕加冕建立帖木儿帝国。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1026, y: 183, title: "1368年南京明故宫与徐达北伐克大都", icon: "都城", desc: "明太祖废丞相设六部、编纂《大明律》与鱼鳞图册，恢复汉唐衣冠制度。" },
       { x: 801, y: 144, title: "撒马尔罕雷吉斯坦广场与帖木儿王陵", icon: "奇观", desc: "帖木儿征服波斯、两河与北印度，将工匠学者汇聚首都撒马尔罕。" }
@@ -1910,7 +1910,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1392, era: "明太祖洪武之治、李成桂建立朝鲜王朝与波兰立陶宛克雷沃联合", theme: "era-medieval",
     toast: "公元1392年（洪武二十五年）：明太祖朱元璋早已北逐残元（1388捕鱼儿海大捷藍玉全歼北元王廷）、编纂《大明律》与鱼鳞图册；高丽大将李成桂威化岛回军建立朝鲜王朝，朱元璋赐国号“朝鲜”；日本足利义满统一南北朝，欧洲波兰与立陶宛完成君合联合。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1066, y: 162, title: "1392年李成桂建朝鲜王朝并迁都汉阳(首尔)", icon: "都城", desc: "开启延续五百一十八年的李氏朝鲜王朝。" },
       { x: 626, y: 78, title: "波兰-立陶宛联合与1410格伦瓦尔德大捷", icon: "制度", desc: "波兰立陶宛崛起为东欧最大领土强权。" }
@@ -1937,7 +1937,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1405, era: "永乐盛世：郑和首下西洋与安卡拉之战", theme: "era-medieval",
     toast: "1405年（永乐三年）：明成祖朱棣命郑和率两万七千余人、六十二艘巨型宝船自刘家港启航首下西洋；帖木儿在安卡拉之战生擒奥斯曼苏丹巴耶济德一世。",
-    routes: ["silk_road", "maritime_spice"],
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 985, y: 226, title: "1405年郑和宝船队首航西洋", icon: "航海", desc: "当时人类规模最庞大的远洋船队，满载瓷器丝绸遍历东南亚、印度洋、波斯湾、红海与东非海岸。" },
       { x: 635, y: 137, title: "安卡拉之战：帖木儿击败奥斯曼", icon: "战役", desc: "帖木儿大军在小亚细亚击溃奥斯曼主力，为残存的拜占庭君士坦丁堡延续五十年国祚。" }
@@ -1950,7 +1950,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1420, era: "明成祖迁都北京、紫禁城落成与美洲印加/阿兹特克崛起", theme: "era-medieval",
     toast: "1420年：北京紫禁城建成，明成祖正式迁都北京“天子守国门”，编纂《永乐大典》；中美洲阿兹特克三方同盟与安第斯山脉印加帝国步入鼎盛。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1016, y: 142, title: "北京紫禁城落成与《永乐大典》编纂", icon: "奇观", desc: "营建世界现存最大木结构宫殿群，解缙等两千余学者编成22877卷旷世类书《永乐大典》。" },
       { x: 297, y: 391, title: "马丘比丘天空之城与印加王道", icon: "奇观", desc: "印加帝国帕查库特克在安第斯高山之巅修筑巨石城堡与全长四万公里的高原驿道。" }
@@ -1963,7 +1963,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1449, era: "土木堡之变与于谦北京保卫战、古腾堡铅活字印刷术问世", theme: "era-medieval",
     toast: "公元1449年（正统十四年）：蒙古瓦剌太师也先南侵，明英宗在王振怂恿下御驾亲征于土木堡全军覆没被俘；危急存亡之际兵部尚书于谦力排南迁之议，拥立景泰帝并指挥二十二万军民赢得北京保卫战大捷，“粉骨碎身浑不怕，要留清白在人间”！同年欧洲古腾堡发明金属活字印刷机。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 1016, y: 141, title: "1449年于谦北京保卫战：社稷为重君为轻", icon: "战役", desc: "于谦以神机营火器与京营劲旅击退瓦剌大军，挽救大明两百年国运。" }
     ],
@@ -1977,7 +1977,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1453, era: "君士坦丁堡陷落、百年战争结束与土木堡/北京保卫战", theme: "era-medieval",
     toast: "1453年：21岁的奥斯曼苏丹穆罕默德二世动用乌尔班巨炮轰开君士坦丁堡城墙，千年东罗马帝国灭亡；同年英法百年战争结束，古腾堡发明铅活字印刷机。",
-    routes: ["maritime_spice"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
     landmarks: [
       { x: 635, y: 137, title: "1453年君士坦丁堡陷落与乌尔班巨炮", icon: "战役", desc: "奥斯曼陆上拖船绕过金角湾铁链攻克君士坦丁堡，传统商路受阻直接催生西欧大航海时代。" },
       { x: 551, y: 84, title: "美因茨古腾堡金属活字印刷机", icon: "科技", desc: "古腾堡印制《四十二行圣经》，使书籍成本暴跌90%，点燃欧洲科学革命与宗教改革。" }
@@ -1992,7 +1992,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1492, era: "哥伦布发现美洲新大陆与西班牙收复失地完成", theme: "era-medieval",
     toast: "1492年：卡斯蒂利亚女王伊莎贝拉与阿拉贡国王斐迪南攻克格拉纳达完成西班牙统一，同年资助哥伦布率三艘帆船横渡大西洋抵达加勒比海巴哈马群岛！",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "transatlantic"],
     landmarks: [
       { x: 269, y: 231, title: "1492年哥伦布圣玛利亚号抵达新大陆", icon: "航海", desc: "开启“哥伦布大交换”，玉米、马铃薯、番茄、白银与旧大陆牛马、小麦实现全球物种大融合。" },
       { x: 493, y: 140, title: "阿尔罕布拉宫投降与西班牙统一", icon: "战役", desc: "长达七百余年的伊比利亚收复失地运动（Reconquista）落幕。" }
@@ -2007,7 +2007,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1500, era: "达·伽马直航印度、葡萄牙开拓巴西与萨法维波斯建立", theme: "era-medieval",
     toast: "1500年：葡萄牙达·伽马绕过好望角打通印度洋香料航线，卡布拉尔船队抵达巴西；伊斯玛仪一世建立萨法维波斯帝国，三大火药帝国格局初现。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 590, y: 478, title: "好望角航线贯通与印度洋香料垄断", icon: "航海", desc: "葡萄牙舰队绕过非洲南端直抵印度卡里卡特，打破威尼斯与马穆鲁克对东方香料的垄断。" }
     ],
@@ -2023,7 +2023,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1526, era: "麦哲伦环球航行、莫卧儿帝国建立与马丁·路德宗教改革", theme: "era-medieval",
     toast: "1526年：西班牙科尔特斯征服阿兹特克，麦哲伦船队完成人类首次环球航行；巴布尔在帕尼帕特战役用火绳枪与野战炮击败德里苏丹，建立莫卧儿帝国。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 845, y: 200, title: "帕尼帕特战役：巴布尔建莫卧儿帝国", icon: "战役", desc: "巴布尔运用奥斯曼式车阵与火炮以一万二千军击溃十万大军，开启莫卧儿统治印度时代。" },
       { x: 644, y: 253, title: "奥斯曼灭亡马穆鲁克并晋位哈里发", icon: "战役", desc: "塞利姆一世征服叙利亚、埃及与麦加圣地，奥斯曼苏丹兼领伊斯兰世界哈里发。" }
@@ -2050,7 +2050,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1556, era: "火药帝国极盛：哈布斯堡西班牙、苏莱曼奥斯曼与嘉靖抗倭", theme: "era-medieval",
     toast: "1556年：西班牙皮萨罗征服印加，波托西银山与马尼拉大帆船将全球白银输入大明；苏莱曼大帝将奥斯曼推向极盛；伊凡四世加冕首位俄罗斯沙皇。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 319, y: 464, title: "波托西银矿与马尼拉大帆船贸易", icon: "航海", desc: "美洲年产白银占全球80%，经太平洋马尼拉航线与中国丝绸瓷器交换，促成张居正一条鞭法。" },
       { x: 1001, y: 199, title: "戚继光戚家军鸳鸯阵平定东南倭患", icon: "战役", desc: "戚继光在台州、福建九战九捷荡平倭寇，后镇守蓟州重修明长城。" }
@@ -2069,7 +2069,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1572, era: "万历新政张居正“一条鞭法”、隆庆开关全球白银流入与勒班陀海战", theme: "era-medieval",
     toast: "公元1572年（隆庆六年/万历元年）：内阁首辅张居正开启长达十年的万历维新，推行考成法、清丈全国土地并全面实施“一条鞭法”（赋役折银）；自1567年隆庆开关后，美洲与日本白银经马尼拉大帆船源源不断流入大明；1571年神圣同盟在勒班陀海战击败奥斯曼舰队。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 1016, y: 141, title: "1572年张居正“一条鞭法”与太仓粟支十年", icon: "制度", desc: "将田赋、徭役及杂税合并折算为白银征收，大明财政与江南商业臻于极盛。" },
       { x: 1044, y: 219, title: "隆庆开关与月港太平洋大帆船白银贸易", icon: "战役", desc: "明廷开放福建漳州月港准许商民出海贸易，全球大部分白银经马尼拉大帆船汇入中国。" }
@@ -2083,7 +2083,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1588, era: "英国击败西班牙无敌舰队、张居正改革与万历援朝", theme: "era-medieval",
     toast: "1588年：伊丽莎白一世英国海军在格拉沃利讷海战击败西班牙“无敌舰队”，大西洋海权开始向西北欧转移；大明张居正推行“一条鞭法”国库充盈。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 503, y: 76, title: "1588年英吉利海峡击败无敌舰队", icon: "战役", desc: "德雷克利用火攻船与高速盖伦帆船重创西班牙无敌舰队，开启英格兰海洋崛起序幕。" }
     ],
@@ -2095,7 +2095,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1603, era: "德川家康建立江户幕府、荷英东印度公司与科学革命", theme: "era-medieval",
     toast: "1603年：德川家康在关原合战获胜后开创江户幕府；荷兰联合东印度公司（VOC）成立并夺取南洋巴达维亚香料霸权；伽利略将天文望远镜指向星空。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 1117, y: 164, title: "德川家康受封征夷大将军开创江户幕府", icon: "制度", desc: "德川家康终结持续百余年的日本战国乱世，确立延续265年的江户幕藩体制。" },
       { x: 952, y: 257, title: "巴达维亚城与荷兰东印度公司(VOC)", icon: "航海", desc: "人类历史上第一家发行股票的跨国股份制公司，拥有私人舰队与铸币条约权。" }
@@ -2110,7 +2110,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1618, era: "努尔哈赤“七大恨”萨尔浒大破明军与欧洲三十年战争爆发", theme: "era-medieval",
     toast: "公元1618年（万历四十六年）：后金汗努尔哈赤发布“七大恨”誓师伐明，1619年在萨尔浒之战采取“凭尔几路来，我只一路去”集中优势兵力各个击破明军四路大军；同年布拉格掷出窗外事件引爆欧洲三十年战争，瑞典“北方雄狮”古斯塔夫二世崛起。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 1084, y: 88, title: "努尔哈赤发布“七大恨”誓师伐明攻克抚顺", icon: "战役", desc: "努尔哈赤五日内连破明军三路，随后攻占沈阳、辽阳迁都盛京。" },
       { x: 579, y: 99, title: "1618年布拉格掷出窗外事件与三十年战争", icon: "战役", desc: "欧洲全境卷入宗教与霸权大战，瑞典帝国称霸波罗的海。" }
@@ -2123,7 +2123,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1644, era: "甲申明清易代与沙俄哥萨克横跨西伯利亚", theme: "era-medieval",
     toast: "1644年：李自成大顺军攻入北京，随后多尔衮率八旗清军经山海关大战入关定鼎北京；沙俄哥萨克探险队越过乌拉尔山开拓整个西伯利亚直抵太平洋。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 1016, y: 142, title: "1644年山海关大战与清军定鼎北京", icon: "战役", desc: "清军联合吴三桂关宁铁骑在一片石击败李自成大顺军，清廷迁都北京开启统一全国战争。" }
     ],
@@ -2139,7 +2139,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1648, era: "三十年战争终结：《威斯特伐利亚和约》确立现代国际法体系", theme: "era-medieval",
     toast: "1648年：欧洲列强签署《威斯特伐利亚和约》，结束惨烈的三十年宗教战争，承认荷兰与瑞士独立，正式确立主权国家平等与欧洲均势原则！",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 551, y: 84, title: "1648年《威斯特伐利亚和约》签署", icon: "条约", desc: "现代国际关系史的起点，确立领土主权、内政不干涉与常驻外交使团制度。" },
       { x: 845, y: 200, title: "阿格拉泰姬陵落成与莫卧儿极盛", icon: "奇观", desc: "沙贾汗倾举国工匠耗资数千万卢比修筑纯白大理石泰姬陵，奥朗则布随后将疆域推至南印。" }
@@ -2159,7 +2159,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1661, era: "郑成功横渡鹿耳门驱荷复台、康熙玄烨即位与法国路易十四亲政", theme: "era-medieval",
     toast: "公元1661年：南明延平王郑成功亲率两万五千将士、数百艘战船自金门横渡台湾海峡，由鹿耳门登陆围攻荷兰东印度公司盘踞38年的热兰遮城，于1662年2月迫使荷督揆一签字投降，台湾重回祖国怀抱！同年康熙帝即位，法国“太阳王”路易十四宣布亲政。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 1035, y: 226, title: "1661-1662年郑成功驱逐荷兰殖民者收复台湾", icon: "战役", desc: "“开辟荆榛逐荷夷，十年始克复先基”，郑成功设承天府大力屯田开发宝岛。" },
       { x: 520, y: 107, title: "1661年法国“太阳王”路易十四亲政与凡尔赛宫", icon: "都城", desc: "法兰西绝对君主制达到巅峰，法语与法国文化成为欧洲宫廷标准。" }
@@ -2174,7 +2174,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1683, era: "施琅统一台湾设台湾府、平定三藩之乱与1683年维也纳解围之战", theme: "era-medieval",
     toast: "公元1683年（康熙二十二年）：康熙帝平定吴三桂等持续八年的“三藩之乱”后，派福建水师提督施琅于澎湖海战击败明郑水师统一台湾，次年正式设立台湾府（隶属福建省）；同年奥斯曼二十万大军围攻维也纳，波兰国王扬·索别斯基率翼骑兵冲锋解围，奥斯曼由攻转守。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 1035, y: 226, title: "1683年清廷统一台湾并设台湾府与台厦道", icon: "制度", desc: "康熙帝采纳施琅《恭陈台湾弃留疏》，“台湾虽设一府，延袤千里，实东南数省之藩篱”。" },
       { x: 579, y: 99, title: "1683年维也纳之战：波兰翼骑兵卡伦山冲锋", icon: "战役", desc: "哈布斯堡奥地利与波兰联军彻底终结奥斯曼帝国向中欧的扩张。" }
@@ -2192,7 +2192,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1689, era: "英国光荣革命、牛顿《自然哲学的数学原理》与康熙盛世", theme: "era-medieval",
     toast: "1689年：英国爆发光荣革命并通过《权利法案》确立君主立宪制，牛顿发表万有引力与三大运动定律；康熙帝收复台湾并与沙俄签署《尼布楚条约》。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 503, y: 76, title: "1689年英国《权利法案》与牛顿经典力学", icon: "制度", desc: "议会主权取代君权神授，英格兰银行创立，科学革命与现代金融制度同步奠基。" },
       { x: 1046, y: 133, title: "雅克萨之战与《中俄尼布楚条约》", icon: "条约", desc: "中俄以格尔必齐河、额尔古纳河和外兴安岭至海为界，从国际法上明确黑龙江流域归属中国。" }
@@ -2207,7 +2207,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1721, era: "彼得大帝宣告俄罗斯帝国成立与雍正军机处集权", theme: "era-medieval",
     toast: "1721年：彼得大帝赢得长达21年的大北方战争击败瑞典，迁都圣彼得堡并加冕为全俄罗斯皇帝；大清雍正帝设立军机处并推行“摊丁入亩、火耗归公”。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 641, y: 51, title: "圣彼得堡夏宫落成与波罗的海出海口", icon: "都城", desc: "彼得大帝在涅瓦河口营建面向西欧的窗口圣彼得堡，打造近代俄国陆海军。" }
     ],
@@ -2220,7 +2220,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1760, era: "乾隆平定西域、七年战争大英霸权与瓦特蒸汽机引爆工业革命", theme: "era-victoria",
     toast: "1760年：乾隆帝平定准噶尔与大小和卓，新疆正式纳入大清版图（1316万km²）；英国在七年战争击败法国夺取北美与孟加拉，瓦特改良冷凝器蒸汽机开启工业革命！",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 509, y: 83, title: "瓦特改良蒸汽机与曼彻斯特珍妮纺纱机", icon: "科技", desc: "煤炭与蒸汽动力取代人力水力，人类生产力首次突破马尔萨斯农业天花板。" },
       { x: 883, y: 136, title: "伊犁将军设立：大清一统天山南北", icon: "制度", desc: "大清彻底解决北方游牧边患，奠定近代中国疆域版图。" }
@@ -2243,7 +2243,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1776, era: "北美《独立宣言》：美利坚合众国诞生与《国富论》发表", theme: "era-victoria",
     toast: "1776年7月4日：大陆会议在费城通过杰斐逊起草的《独立宣言》，华盛顿率大陆军开启独立战争；同年亚当·斯密发表现代经济学基石《国富论》。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 287, y: 142, title: "1776年费城独立厅《独立宣言》", icon: "制度", desc: "宣告北美十三州脱离英国殖民统治，1787年制定世界首部成文联邦宪法（三权分立）。" }
     ],
@@ -2256,7 +2256,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1789, era: "法国大革命攻占巴士底狱与《人权宣言》", theme: "era-victoria",
     toast: "1789年7月14日：巴黎市民攻占巴士底狱，制宪议会颁布《人权和公民权宣言》，“自由、平等、博爱”思潮彻底震撼欧洲封建君主秩序！",
-    routes: ["transatlantic"],
+    routes: ["manila_galleon", "transatlantic"],
     landmarks: [
       { x: 520, y: 96, title: "1789年攻占巴士底狱与《人权宣言》", icon: "起义", desc: "废除封建特权与什一税，开启改变近代世界政治走向的法兰西大革命。" }
     ],
@@ -2267,7 +2267,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1804, era: "拿破仑加冕法兰西第一帝国皇帝、《拿破仑法典》与奥斯特里茨三皇会战", theme: "era-victoria",
     toast: "1804年：拿破仑·波拿巴在巴黎圣母院加冕为法兰西第一帝国皇帝，颁布影响全世界的《法国民法典》（拿破仑法典）；1805年于奥斯特里茨“三皇会战”粉碎俄奥联军，1806年正式终结存在844年的神圣罗马帝国，普鲁士王国在耶拿惨败后开启施泰因-沙恩霍斯特改革。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 520, y: 107, title: "1804年《拿破仑法典》颁布与凯旋门", icon: "制度", desc: "拿破仑：“我真正的光荣并非打了四十次胜仗，滑铁卢抹去了一切，但我的民法典将永垂不朽。”" },
       { x: 579, y: 99, title: "巴黎圣母院拿破仑加冕与《拿破仑法典》颁行", icon: "战役", desc: "拿破仑军事艺术最高杰作，瓦解第三次反法同盟并建立莱茵邦联。" }
@@ -2285,7 +2285,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1812, era: "拿破仑帝国极盛：法兰西铁骑横扫欧洲与远征莫斯科", theme: "era-victoria",
     toast: "1812年：拿破仑·波拿巴经奥斯特里茨“三皇会战”解散神圣罗马帝国，将《拿破仑法典》推广全欧，率六十万“大军团”远征沙俄莫斯科；美国完成路易斯安那购地。",
-    routes: ["transatlantic"],
+    routes: ["manila_galleon", "transatlantic"],
     landmarks: [
       { x: 520, y: 96, title: "巴黎凯旋门与《拿破仑民法典》", icon: "制度", desc: "拿破仑说：“我真正的光荣并非打了四十次胜仗，滑铁卢会抹去这一切，但我的民法典将永垂不朽。”" },
       { x: 673, y: 61, title: "1812年博罗季诺战役与莫斯科大火", icon: "战役", desc: "库图佐夫采取坚壁清野战略，严冬与焦土令拿破仑六十万大军团折戟俄罗斯平原。" }
@@ -2306,7 +2306,7 @@ window.HistoryAtlas.TIMELINE = [
   {
     year: 1815, era: "滑铁卢决战与维也纳会议欧洲均势重建", theme: "era-victoria",
     toast: "1815年：威灵顿公爵与布吕歇尔在滑铁卢战役击败百日王朝拿破仑；欧洲列强召开维也纳会议重建正统与均势秩序，大英帝国确立全球海洋霸权。",
-    routes: ["maritime_spice", "transatlantic"],
+    routes: ["maritime_spice", "manila_galleon", "transatlantic"],
     landmarks: [
       { x: 581, y: 100, title: "1815年滑铁卢战役与维也纳体系", icon: "战役", desc: "终结持续二十余年的拿破仑战争，欧洲迎来百年相对和平（Pax Britannica）。" }
     ],

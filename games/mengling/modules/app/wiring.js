@@ -268,6 +268,8 @@ export function initGameUi(ctx) {
     ui,
     TYPE_ZH: ctx.TYPE_ZH,
     getBeastDataByDex,
+    getSpeciesByPid,
+    computeTechEffects,
     clamp,
     escapeHtml,
     fmtDuration,

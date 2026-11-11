@@ -276,6 +276,10 @@ export const defaultState = () => ({
 
     eggTotalSec: 0,
 
+    abilityLock: "auto",
+
+    shinyPity: 0,
+
   },
 
   expedition: {
@@ -1113,7 +1117,7 @@ export function loadFromRaw(raw) {
 
 
 
-  s.breeding = { on: false, aId: null, bId: null, eggRemainingSec: 0, eggTotalSec: 0 };
+  s.breeding = { on: false, aId: null, bId: null, eggRemainingSec: 0, eggTotalSec: 0, abilityLock: "auto", shinyPity: 0 };
 
   if (data.breeding && typeof data.breeding === "object") {
 
@@ -1134,6 +1138,13 @@ export function loadFromRaw(raw) {
     if (typeof er === "number" && Number.isFinite(er)) s.breeding.eggRemainingSec = Math.max(0, er);
 
     if (typeof et === "number" && Number.isFinite(et)) s.breeding.eggTotalSec = Math.max(0, et);
+
+    if (data.breeding.abilityLock === "a" || data.breeding.abilityLock === "b" || data.breeding.abilityLock === "auto") {
+      s.breeding.abilityLock = data.breeding.abilityLock;
+    }
+
+    const sp = data.breeding.shinyPity;
+    if (typeof sp === "number" && Number.isFinite(sp)) s.breeding.shinyPity = Math.max(0, Math.floor(sp));
 
   }
 

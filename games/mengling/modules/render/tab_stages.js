@@ -4,6 +4,7 @@
 
 import { pad3 } from "../utils.js";
 import { renderOrbSvg, renderResSvg, renderBuildingSvg, renderUiIcon } from "./rpg_svg_icons.js";
+import { computeBreedingShinyInfo } from "../systems/breeding.js";
 
 /**
  * 将全景舞台 (stageHtml) 与列表内容 (rowsHtml) 挂载到容器，
@@ -516,12 +517,21 @@ export function renderFunctionsStageHtml({
     ? trainSamples.map((m) => `<div class="diorama-mini-mon">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>Lv.${m.lvl}</span></div>`).join("")
     : `<div class="diorama-empty">${renderBuildingSvg("trainingGround", 14)} 暂无受训灵兽</div>`;
 
-  // 2) Breeding Diorama
+  // 2) Breeding Diorama (Eugenics 2.0 telemetry)
   const breedLvl = Math.max(0, Math.floor(state.buildings?.breedingHouse?.owned ?? 0));
   const eggOn = Boolean(state.breeding?.on) && (state.breeding?.eggRemainingSec ?? 0) > 0;
   const eggRem = eggOn ? Math.max(0, state.breeding.eggRemainingSec) : 0;
   const eggTotal = eggOn && (state.breeding?.eggTotalSec ?? 0) > 0 ? state.breeding.eggTotalSec : 900;
   const eggPct = eggOn ? Math.max(4, Math.min(99, Math.round(((eggTotal - eggRem) / eggTotal) * 100))) : 0;
+  const monListForBreed = state.mons?.list ?? [];
+  const breedMonA = typeof state.breeding?.aId === "number" ? monListForBreed.find((m) => m && m.id === state.breeding.aId) ?? null : null;
+  const breedMonB = typeof state.breeding?.bId === "number" ? monListForBreed.find((m) => m && m.id === state.breeding.bId) ?? null : null;
+  const breedShiny = computeBreedingShinyInfo(state, breedMonA, breedMonB);
+  const breedStageSub = eggOn
+    ? `剩余 ${escapeHtml(fmtDuration(eggRem))} · 闪光 1/${breedShiny.oddsDenom} · 保底 ${breedShiny.pity}/${breedShiny.pityCap}`
+    : breedLvl > 0
+      ? `优生遗传 · 闪光 1/${breedShiny.oddsDenom}（保底 ${breedShiny.pity}/${breedShiny.pityCap}）`
+      : "建造「育灵屋」后开启";
 
   // 3) Expedition Diorama
   const expLvl = Math.max(0, Math.floor(state.buildings?.expeditionPost?.owned ?? 0));
@@ -575,7 +585,7 @@ export function renderFunctionsStageHtml({
             <span class="badge ${eggOn ? "badge--ok" : breedLvl > 0 ? "" : "badge--muted"}">${eggOn ? `孵化 ${eggPct}%` : breedLvl > 0 ? `Lv.${breedLvl}` : "未建造"}</span>
           </div>
           <div class="sanctuary-diorama__foot">
-            <span>${eggOn ? `剩余 ${escapeHtml(fmtDuration(eggRem))}` : breedLvl > 0 ? "双亲配对继承高个体值" : "建造「育灵屋」后开启"}</span>
+            <span>${breedStageSub}</span>
             ${breedLvl > 0
               ? `<button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="egg-warm">${renderResSvg("luckyEgg", 14)} 灵温抚育</button>`
               : `<button type="button" class="btn btn--small sanctuary-diorama__btn sanctuary-diorama__btn--locked" data-stage-act="goto-bonfire">${renderUiIcon("tab_bonfire", 14)} 去营地建造</button>`}

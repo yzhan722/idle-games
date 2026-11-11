@@ -8243,3 +8243,55 @@ details.capture-tools[open] > summary.capture-tools__summary {
 
 
 
+
+/* v0.7.41 ML-1 Eugenics Breeding 2.0: Genetics Preview, Shiny Odds & Ability Lock */
+.breed-eugenics-card {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.09), rgba(250, 204, 21, 0.08));
+  border: 1px solid rgba(250, 204, 21, 0.28) !important;
+  align-items: flex-start !important;
+  gap: 12px;
+}
+.breed-shiny-odds-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(250, 204, 21, 0.16) !important;
+  border-color: rgba(250, 204, 21, 0.42) !important;
+  color: #fde68a !important;
+}
+.breed-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.breed-meta-pill {
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  color: #cbd5e1;
+}
+.breed-meta-pill.is-active {
+  background: rgba(52, 211, 153, 0.16);
+  border-color: rgba(52, 211, 153, 0.45);
+  color: #a7f3d0;
+}
+.breed-ability-line {
+  margin-top: 5px;
+  color: #fde68a !important;
+}
+.breed-lock-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+@media (max-width: 720px) {
+  .breed-lock-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

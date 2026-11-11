@@ -19,6 +19,7 @@ import {
 } from "./systems/gameplay_fun.js";
 import { noteSeasonRelic, rollSeasonRelic } from "./systems/collection_fun.js";
 import { hatchEgg as hatchEggCore } from "./systems/breeding.js";
+import { computeTechEffects } from "./systems/effects.js";
 
 export function createTick(ctx) {
   const ui = ctx.ui;
@@ -231,6 +232,11 @@ export function createTick(ctx) {
   }
 
   function hatchEgg(state, mons, monById) {
+    const techEff = typeof computeTechEffects === "function" ? computeTechEffects(state) : null;
+    const shinyChanceMul =
+      typeof techEff?.shinyChanceMul === "number" && Number.isFinite(techEff.shinyChanceMul)
+        ? techEff.shinyChanceMul
+        : 1;
     return hatchEggCore(state, {
       mons,
       monById,
@@ -243,6 +249,7 @@ export function createTick(ctx) {
       addLog,
       addRes,
       ui,
+      shinyChanceMul,
     });
   }
 

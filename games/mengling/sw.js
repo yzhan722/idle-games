@@ -1,7 +1,7 @@
-// Service Worker v0.7.40
+// Service Worker v0.7.41
 // 策略：HTML/JS/CSS Network First（确保F5刷新时强制获取最新版本），数据文件 Cache First
 
-const CACHE_VERSION = 'mengling-v0.7.40';
+const CACHE_VERSION = 'mengling-v0.7.41';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DATA_CACHE = `${CACHE_VERSION}-data`;
 
