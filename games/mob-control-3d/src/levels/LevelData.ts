@@ -1,6 +1,8 @@
 import { THEME_ORDER, ThemeId } from '../game/SceneThemes';
 
-export type GateOp = 'add' | 'mul' | 'sub' | 'div';
+export type GateOp = 'add' | 'mul' | 'sub' | 'div' | 'giant_jelly' | 'frost_shield';
+
+export type GateStyle = 'blue' | 'gold' | 'mega' | 'hazard' | 'jelly' | 'frost';
 
 export interface GateConfig {
   id: string;
@@ -9,7 +11,7 @@ export interface GateConfig {
   width: number;
   op: GateOp;
   value: number;
-  style: 'blue' | 'gold' | 'mega' | 'hazard';
+  style: GateStyle;
   moveRangeX?: number;
   moveSpeed?: number;
   movePhase?: number;
@@ -292,7 +294,7 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
   const baseGearHp = Math.min(20, Math.round(5 + safeStage * 0.8));
   const baseNestHp = Math.round((110 + (safeStage - 1) * 24) * Math.pow(1.07, Math.min(safeStage - 1, 25)));
   const baseNestGold = Math.round(75 * difficultyScale);
-  const hazSubVal = Math.min(4, 2 + Math.floor((safeStage - 1) / 4));
+  const hazSubVal = Math.min(8, 6 + Math.floor((safeStage - 1) / 5));
 
   const pfx = `s${safeStage}_${seed % 1000}`;
 
@@ -1489,6 +1491,117 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
   const isMegaBoss = safeStage % 10 === 0;
   const isMiniBoss = safeStage % 10 === 5;
   const isMilestoneBoss = isMegaBoss || isMiniBoss || safeStage % 4 === 0;
+
+  // MC-1: Inject Tactical Functional Gates ("果冻巨化门" & "糖霜护盾门") with automatic clearance validation
+  const isClearForSpecialGate = (gx: number, gz: number, gw: number, moveRange = 0.8): boolean => {
+    for (const g of gates) {
+      const zGap = Math.abs(gz - g.z);
+      const xSpan = (gw + g.width) * 0.5 + moveRange + (g.moveRangeX || 0) + 0.75;
+      if (zGap < 2.25 && Math.abs(gx - g.x) < xSpan) return false;
+    }
+    for (const w of walls) {
+      const padX = (w.moveRangeX || 0) + gw * 0.5 + 0.65;
+      const minX = Math.min(w.x1, w.x2) - padX;
+      const maxX = Math.max(w.x1, w.x2) + padX;
+      const minZ = Math.min(w.z1, w.z2) - 1.0;
+      const maxZ = Math.max(w.z1, w.z2) + 1.0;
+      if (gx >= minX && gx <= maxX && gz >= minZ && gz <= maxZ) return false;
+    }
+    for (const gr of gears) {
+      const padX = (gr.moveRangeX || 0) + gr.radius + gw * 0.5 + 0.65;
+      if (Math.abs(gx - gr.x) < padX && Math.abs(gz - gr.z) < gr.radius + 1.15) return false;
+    }
+    for (const bm of bumpers) {
+      if (Math.abs(gz - bm.z) < bm.radius + 1.1 && Math.abs(gx - bm.x) < bm.radius + gw * 0.5 + 0.6) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const jellyCandidateSlots: Array<[number, number]> = [
+    [-3.8 * mirror, 8.6],
+    [3.8 * mirror, 8.6],
+    [-5.2 * mirror, 6.8],
+    [5.2 * mirror, 6.8],
+    [0, 7.6],
+    [-4.6 * mirror, 0.2],
+    [4.6 * mirror, 0.2],
+    [-6.2 * mirror, 9.6],
+  ];
+  for (const [jx, jz] of jellyCandidateSlots) {
+    if (isClearForSpecialGate(jx, jz, 3.8, 0.75)) {
+      gates.push({
+        id: `${pfx}_jelly_giant`,
+        x: Number(jx.toFixed(2)),
+        z: jz,
+        width: 3.8,
+        op: 'giant_jelly',
+        value: 2,
+        style: 'jelly',
+        moveRangeX: 0.75,
+        moveSpeed: 1.28,
+        movePhase: 0.6,
+      });
+      break;
+    }
+  }
+  if (!gates.some((g) => g.op === 'giant_jelly')) {
+    gates.push({
+      id: `${pfx}_jelly_giant`,
+      x: Number((-5.8 * mirror).toFixed(2)),
+      z: 9.8,
+      width: 3.6,
+      op: 'giant_jelly',
+      value: 2,
+      style: 'jelly',
+      moveRangeX: 0.6,
+      moveSpeed: 1.25,
+      movePhase: 0.6,
+    });
+  }
+
+  const frostCandidateSlots: Array<[number, number]> = [
+    [3.8 * mirror, 6.6],
+    [-3.8 * mirror, 6.6],
+    [5.2 * mirror, 3.2],
+    [-5.2 * mirror, 3.2],
+    [0, 2.8],
+    [4.8 * mirror, -5.8],
+    [-4.8 * mirror, -5.8],
+    [6.2 * mirror, 9.6],
+  ];
+  for (const [fx, fz] of frostCandidateSlots) {
+    if (isClearForSpecialGate(fx, fz, 3.8, 0.75)) {
+      gates.push({
+        id: `${pfx}_frost_shield`,
+        x: Number(fx.toFixed(2)),
+        z: fz,
+        width: 3.8,
+        op: 'frost_shield',
+        value: 1,
+        style: 'frost',
+        moveRangeX: 0.75,
+        moveSpeed: 1.32,
+        movePhase: 2.1,
+      });
+      break;
+    }
+  }
+  if (!gates.some((g) => g.op === 'frost_shield')) {
+    gates.push({
+      id: `${pfx}_frost_shield`,
+      x: Number((5.8 * mirror).toFixed(2)),
+      z: 6.2,
+      width: 3.6,
+      op: 'frost_shield',
+      value: 1,
+      style: 'frost',
+      moveRangeX: 0.6,
+      moveSpeed: 1.3,
+      movePhase: 2.1,
+    });
+  }
   const finalRewardGold = isMegaBoss
     ? Math.round(rewardGold * 2.5)
     : isMiniBoss

@@ -716,6 +716,85 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.island_recruited[3] = {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
 	print("[PASS] [断言13-全三岛满编压力与SteamBridge桥接] 通过: 岛2/岛3解锁、企鹅坩埚与巨嘴鸟跨桥运输、双工坊 52x 联动及 SteamBridge 云存档/成就优雅降级校验 PASS!")
 
+	# ------------------------------------------------------------------
+	# [断言14-CI-1抚摸动物加速与天空热气球礼袋]: Verify 6-role petting jump + 8s buff + anti-spam cooldown & sky balloon passthrough + reward
+	# ------------------------------------------------------------------
+	GameManager.unlocked_islands[2] = true
+	GameManager.unlocked_islands[3] = true
+	GameManager.island_recruited[1]["shiba"] = maxi(1, int(GameManager.island_recruited[1].get("shiba", 0)))
+	GameManager.island_recruited[2]["penguin"] = 1
+	GameManager.island_recruited[2]["toucan"] = 1
+	var verified_pet_roles: Dictionary = {}
+	for w in world.workers:
+		if not is_instance_valid(w):
+			continue
+		if verified_pet_roles.has(w.animal_key):
+			continue
+		if not w.is_hired():
+			continue
+		w.visible = true
+		w.pet_cooldown_timer = 0.0
+		w.boost_timer = 0.0
+		var pet_ok := w.trigger_pet_boost()
+		if not pet_ok or absf(w.boost_timer - AnimalWorker.PET_BOOST_DURATION) > 0.05 or w.pet_jump_timer <= 0.0:
+			_fail_and_quit("[断言14-抚摸动物与热气球]", "Petting `%s` failed to activate 8s buff & jump!" % w.animal_key)
+			return
+		w._process(0.05)
+		if absf(w.position.y - EconomyConfig.GROUND_Y) > 0.01:
+			_fail_and_quit("[断言14-抚摸动物与热气球]", "Petting jump mutated root GROUND_Y on `%s`: y=%.2f" % [w.animal_key, w.position.y])
+			return
+		if w.heart_icon == null or not w.heart_icon.visible or w.heart_icon.texture == null:
+			_fail_and_quit("[断言14-抚摸动物与热气球]", "HeartIcon (`emote_heart.png`) not visible on `%s`!" % w.animal_key)
+			return
+		if w.trigger_pet_boost():
+			_fail_and_quit("[断言14-抚摸动物与热气球]", "Anti-spam pet cooldown failed on `%s`!" % w.animal_key)
+			return
+		w.boost_timer = 0.0
+		w.pet_cooldown_timer = 0.0
+		w.pet_jump_timer = 0.0
+		w._process(0.01)
+		verified_pet_roles[w.animal_key] = true
+	if verified_pet_roles.size() < 6:
+		_fail_and_quit("[断言14-抚摸动物与热气球]", "Expected all 6 animal roles verified for petting, got %d: %s" % [verified_pet_roles.size(), str(verified_pet_roles.keys())])
+		return
+
+	GameManager.unlocked_islands[2] = false
+	GameManager.unlocked_islands[3] = false
+	GameManager.island_recruited[2] = {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+	GameManager.island_recruited[3] = {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
+
+	if world.tex_sky_balloon == null or world.cloud_gift_sprite == null or world.cloud_gift_sprite.texture != world.tex_sky_balloon:
+		_fail_and_quit("[断言14-抚摸动物与热气球]", "Sky balloon texture `sky_balloon_gift.png` failed to load on CloudGiftSprite!")
+		return
+	var prev_companion := GameManager.desktop_companion_mode
+	GameManager.desktop_companion_mode = true
+	world.spawn_sky_balloon_at(1160.0)
+	var bal_screen_rect := world.get_sky_balloon_screen_rect()
+	WindowController.update_passthrough_polygon(
+		world.get_active_island_bounds(),
+		world.hud.get_hud_Hit_rect() if world.hud != null else Rect2(480.0, 230.0, 960.0, 58.0),
+		Rect2(),
+		bal_screen_rect
+	)
+	var bal_center := bal_screen_rect.get_center()
+	if not WindowController.is_logical_point_interactive(bal_center):
+		_fail_and_quit("[断言14-抚摸动物与热气球]", "Sky balloon center %s is NOT inside WindowController passthrough hit polygon!" % str(bal_center))
+		return
+	if WindowController.is_logical_point_interactive(Vector2(200.0, 14.0)):
+		_fail_and_quit("[断言14-抚摸动物与热气球]", "Empty upper-left sky (200, 14) should pass through to desktop!")
+		return
+	var pre_bal_gold := GameManager.gold
+	var pre_bal_amber := GameManager.amber
+	var claim_res := world.claim_sky_balloon()
+	if not bool(claim_res.get("claimed", false)) or GameManager.gold <= pre_bal_gold or GameManager.amber != pre_bal_amber + 1 or GameManager.frenzy_timer <= 0.0:
+		_fail_and_quit("[断言14-抚摸动物与热气球]", "Sky balloon claim reward settlement failed: %s" % str(claim_res))
+		return
+	GameManager.desktop_companion_mode = prev_companion
+	GameManager.frenzy_timer = 0.0
+	# Re-place scenic sky balloon over open Lotus Pond sky for live viewport screenshot audit
+	world.spawn_sky_balloon_at(1156.0)
+	print("[PASS] [断言14-CI-1抚摸动物加速与天空热气球礼袋] 通过: 全 6 类执勤动物欢快跳跃+像素爱心+8s干劲加速+防鬼畜冷却、天空热气球防穿透多边形命中与礼袋金币/琥珀/狂欢结算校验 PASS!")
+
 	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
 	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": false, "tiki_torch": false}
 	GameManager.amber = 5

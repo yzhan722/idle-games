@@ -269,6 +269,7 @@ const btnModalNext = document.getElementById('btn-modal-next') as HTMLButtonElem
 const globalToastEl = document.getElementById('global-toast') as HTMLElement | null;
 
 const world = new World3D(canvas, labelsContainer, state);
+(window as unknown as Record<string, unknown>).__mc3dWorld = world;
 
 let toastTimeout: number | undefined;
 function showGlobalToast(text: string): void {

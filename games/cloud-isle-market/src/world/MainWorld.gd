@@ -81,13 +81,17 @@ var pond_koi: Array[Dictionary] = [
 	{"x": 1244.0, "y": 108.0, "speed": 12.5, "dir": 1.0, "phase": 4.2, "variant": 0}
 ]
 
-## v2.3 Direction 2: Floating Cloud Gift Encounter (`云端奇遇礼盒`)
+## CI-1: Drifting Sky Hot-Air Balloon / Wishing Gift Bag (`云端热气球 / 许愿礼袋`)
+const SKY_BALLOON_MIN_X := 590.0
+const SKY_BALLOON_MAX_X := 1320.0
 var tex_delicacies: Texture2D
+var tex_sky_balloon: Texture2D
 var cloud_gift_sprite: Sprite2D
 var cloud_gift_label: Label
 var cloud_gift_active: bool = false
-var cloud_gift_timer: float = 22.0
-var cloud_gift_pos: Vector2 = Vector2(560.0, 34.0)
+var cloud_gift_timer: float = 6.0
+var cloud_gift_dir: float = 1.0
+var cloud_gift_pos: Vector2 = Vector2(1150.0, -4.0)
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_TERRAIN
@@ -102,6 +106,7 @@ func _ready() -> void:
 	tex_left_hut = load("res://assets/pixel_art/buildings/landmark_left_hut.png")
 	tex_right_tiki = load("res://assets/pixel_art/buildings/landmark_right_tiki.png")
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
+	tex_sky_balloon = _load_sky_balloon_texture()
 
 	_assert_1d_slot_layout()
 
@@ -128,21 +133,21 @@ func _ready() -> void:
 
 	cloud_gift_sprite = Sprite2D.new()
 	cloud_gift_sprite.name = "CloudGiftSprite"
-	cloud_gift_sprite.texture = tex_delicacies
+	cloud_gift_sprite.texture = tex_sky_balloon if tex_sky_balloon != null else tex_delicacies
 	cloud_gift_sprite.region_enabled = false
-	cloud_gift_sprite.hframes = 4
+	cloud_gift_sprite.hframes = 1 if tex_sky_balloon != null else 4
 	cloud_gift_sprite.vframes = 1
-	cloud_gift_sprite.frame = 3
+	cloud_gift_sprite.frame = 0 if tex_sky_balloon != null else 3
 	cloud_gift_sprite.centered = true
-	cloud_gift_sprite.scale = Vector2(0.85, 0.85)
+	cloud_gift_sprite.scale = Vector2(0.72, 0.72) if tex_sky_balloon != null else Vector2(0.85, 0.85)
 	cloud_gift_sprite.visible = false
 	cloud_gift_sprite.z_index = EconomyConfig.Z_CARRY_EMOTE
 	cloud_gift_sprite.z_as_relative = false
 	world_root.add_child(cloud_gift_sprite)
 
-	cloud_gift_label = EconomyConfig.create_pixel_label("★奇遇礼盒", 14, Color("#FFE066"), true)
-	cloud_gift_label.custom_minimum_size = Vector2(84.0, 20.0)
-	cloud_gift_label.position = Vector2(-42.0, -34.0)
+	cloud_gift_label = EconomyConfig.create_pixel_label("★许愿礼袋", 13, Color("#FFE066"), false)
+	cloud_gift_label.custom_minimum_size = Vector2(76.0, 18.0)
+	cloud_gift_label.position = Vector2(30.0, -9.0)
 	cloud_gift_sprite.add_child(cloud_gift_label)
 
 	var canvas_layer := CanvasLayer.new()
@@ -386,25 +391,74 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			elif event.pressed:
 				var local_pos: Vector2 = (event.position - world_root.position) / maxf(0.1, companion_zoom)
-				if cloud_gift_active and cloud_gift_sprite != null and local_pos.distance_to(cloud_gift_sprite.position) <= 36.0:
-					_claim_cloud_gift()
+				if cloud_gift_active and cloud_gift_sprite != null and get_sky_balloon_local_hit_rect().has_point(local_pos):
+					claim_sky_balloon()
 					return
 				for w in workers:
 					if is_instance_valid(w) and w.visible and w.get_pet_hit_rect().has_point(local_pos):
 						w.trigger_pet_boost()
 						return
 
-func _claim_cloud_gift() -> void:
+func _load_sky_balloon_texture() -> Texture2D:
+	var res_path := "res://assets/pixel_art/ui/sky_balloon_gift.png"
+	if ResourceLoader.exists(res_path):
+		var loaded := load(res_path) as Texture2D
+		if loaded != null:
+			return loaded
+	var abs_path := ProjectSettings.globalize_path(res_path)
+	if FileAccess.file_exists(abs_path):
+		var img := Image.load_from_file(abs_path)
+		if img != null and not img.is_empty():
+			return ImageTexture.create_from_image(img)
+	return null
+
+func spawn_sky_balloon_at(x_pos: float = 1160.0) -> void:
+	cloud_gift_active = true
+	cloud_gift_pos = Vector2(clampf(x_pos, SKY_BALLOON_MIN_X, SKY_BALLOON_MAX_X), -4.0)
+	if cloud_gift_sprite != null:
+		cloud_gift_sprite.visible = true
+		cloud_gift_sprite.position = cloud_gift_pos
+
+func get_sky_balloon_local_hit_rect() -> Rect2:
+	if not cloud_gift_active:
+		return Rect2()
+	return Rect2(cloud_gift_pos.x - 28.0, cloud_gift_pos.y - 26.0, 110.0, 54.0)
+
+func get_sky_balloon_screen_rect() -> Rect2:
+	if not cloud_gift_active:
+		return Rect2()
+	var z := maxf(0.1, companion_zoom)
+	var center := world_root.position + cloud_gift_pos * z
+	return Rect2(
+		clampf(center.x - 30.0 * z, 0.0, 1900.0),
+		clampf(center.y - 26.0 * z, 0.0, 260.0),
+		114.0 * z,
+		56.0 * z
+	)
+
+func claim_sky_balloon() -> Dictionary:
+	if not cloud_gift_active:
+		return {"claimed": false, "gold": 0, "amber": 0}
 	cloud_gift_active = false
 	if cloud_gift_sprite != null:
 		cloud_gift_sprite.visible = false
-	cloud_gift_timer = randf_range(55.0, 85.0)
-	var bonus_gold := maxi(60, int(round(GameManager.estimate_idle_gold_per_sec() * 25.0)))
+	cloud_gift_timer = randf_range(38.0, 62.0)
+	var bonus_gold := maxi(65, int(round(GameManager.estimate_idle_gold_per_sec() * 25.0)))
+	var bonus_amber := 1
 	GameManager.add_gold(bonus_gold)
-	GameManager.trigger_carnival_frenzy(20.0)
+	GameManager.add_amber(bonus_amber)
+	GameManager.trigger_carnival_frenzy(15.0)
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
-	EventBus.spawn_floating_text.emit(cloud_gift_pos, "★奇遇礼盒+" + str(bonus_gold) + "G · 嘉年华20s!", Color("#FFE066"))
+	EventBus.spawn_floating_text.emit(
+		Vector2(cloud_gift_pos.x, maxf(18.0, cloud_gift_pos.y + 20.0)),
+		"★许愿礼袋+" + str(bonus_gold) + "G +" + str(bonus_amber) + "琥珀 · 狂欢15s!",
+		Color("#FFE066")
+	)
+	return {"claimed": true, "gold": bonus_gold, "amber": bonus_amber}
+
+func _claim_cloud_gift() -> void:
+	claim_sky_balloon()
 
 func _apply_companion_zoom() -> void:
 	if camera_controller != null:
@@ -444,21 +498,24 @@ func _process(delta: float) -> void:
 	world_root.modulate = world_root.modulate.lerp(target_tint, minf(1.0, delta * 3.5))
 	world_root.modulate.a = target_alpha
 
-	# v2.3 Direction 2: Floating Cloud Gift hovering over the open Lotus Pond (`x: 1120..1250`)
+	# CI-1: Drifting Sky Hot-Air Balloon / Wishing Gift Bag (`x: 590..1320`, `screen y ~ 32`)
 	if cloud_gift_active:
-		cloud_gift_pos.x = 1188.0 + sin(cloud_time * 0.85) * 48.0
-		cloud_gift_pos.y = 42.0 + sin(cloud_time * 2.6) * 4.0
+		cloud_gift_pos.x += cloud_gift_dir * 26.0 * delta
+		if cloud_gift_pos.x >= SKY_BALLOON_MAX_X:
+			cloud_gift_pos.x = SKY_BALLOON_MAX_X
+			cloud_gift_dir = -1.0
+		elif cloud_gift_pos.x <= SKY_BALLOON_MIN_X:
+			cloud_gift_pos.x = SKY_BALLOON_MIN_X
+			cloud_gift_dir = 1.0
+		cloud_gift_pos.y = -4.0 + sin(cloud_time * 2.2) * 3.2
 		if cloud_gift_sprite != null:
 			cloud_gift_sprite.visible = true
 			cloud_gift_sprite.position = cloud_gift_pos
 	else:
 		cloud_gift_timer -= delta
 		if cloud_gift_timer <= 0.0:
-			cloud_gift_active = true
-			cloud_gift_pos = Vector2(1188.0, 42.0)
-			if cloud_gift_sprite != null:
-				cloud_gift_sprite.visible = true
-				cloud_gift_sprite.position = cloud_gift_pos
+			spawn_sky_balloon_at(SKY_BALLOON_MIN_X + 40.0)
+			cloud_gift_dir = 1.0
 
 	var isl2_on := bool(GameManager.unlocked_islands.get(2, false))
 	var isl3_on := bool(GameManager.unlocked_islands.get(3, false))
@@ -511,7 +568,12 @@ func _process(delta: float) -> void:
 
 	if WindowController != null and hud != null:
 		var active_drawer_rect := HUD.DRAWER_RECT if hud.drawer_expanded else Rect2()
-		WindowController.update_passthrough_polygon(get_active_island_bounds(), hud.get_hud_Hit_rect(), active_drawer_rect)
+		WindowController.update_passthrough_polygon(
+			get_active_island_bounds(),
+			hud.get_hud_Hit_rect(),
+			active_drawer_rect,
+			get_sky_balloon_screen_rect()
+		)
 
 	queue_redraw()
 

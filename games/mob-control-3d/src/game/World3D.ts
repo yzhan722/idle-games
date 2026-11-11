@@ -5,7 +5,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { LevelConfig, WallConfig } from '../levels/LevelData';
+import { GateConfig, GateStyle, LevelConfig, WallConfig } from '../levels/LevelData';
 import { GameState, SkinSpec } from './State';
 import { UI_ART, replaceEmojiWithArt } from './SkillIcons';
 import { sound } from '../audio/SoundManager';
@@ -260,7 +260,9 @@ export class World3D {
   private banelingInst!: THREE.InstancedMesh;
   private shamanInst!: THREE.InstancedMesh;
   private unitShadowInst!: THREE.InstancedMesh;
+  private frostShieldInst!: THREE.InstancedMesh;
   private particleInst!: THREE.InstancedMesh;
+  private gatePopupCooldown = 0;
 
   private blueAnimData = new Float32Array(MAX_UNITS * 4);
   private champAnimData = new Float32Array(120 * 4);
@@ -2399,6 +2401,24 @@ export class World3D {
     this.unitShadowInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.scene.add(this.unitShadowInst);
 
+    // 6b. MC-1 Crystalline Frosting Shield Rings around Protected Units
+    const frostGeo = new THREE.TorusGeometry(0.46, 0.075, 10, 20);
+    frostGeo.rotateX(Math.PI / 2);
+    const frostMat = new THREE.MeshStandardMaterial({
+      color: 0xbae6fd,
+      emissive: 0x38bdf8,
+      emissiveIntensity: 0.55,
+      roughness: 0.16,
+      metalness: 0.22,
+      transparent: true,
+      opacity: 0.86,
+      depthWrite: false,
+    });
+    this.frostShieldInst = new THREE.InstancedMesh(frostGeo, frostMat, MAX_UNITS);
+    this.frostShieldInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.frostShieldInst.count = 0;
+    this.scene.add(this.frostShieldInst);
+
     // 7. Crisp Sunlit 3D Particles (NormalBlending so white steam, golden sparks & jelly splashes stay vivid in daylight!)
     this.fxFlashEl = document.getElementById('fx-flash');
     const partGeo = new THREE.SphereGeometry(0.2, 8, 6);
@@ -3157,7 +3177,7 @@ export class World3D {
       archCrest.position.set(0, gateHeight + 0.36, 0);
       group.add(archCrest);
 
-      const labelStr = `${g.op === 'add' ? '+' : g.op === 'mul' ? '×' : g.op === 'div' ? '÷' : '-'}${g.value}`;
+      const labelStr = this.formatGateLabel(g);
       const shieldMat = new THREE.MeshBasicMaterial({
         map: this.getGateBannerTexture(g.style, labelStr),
         transparent: true,
@@ -3176,11 +3196,11 @@ export class World3D {
       this.levelGroup.add(group);
 
       const labelEl = document.createElement('div');
-      labelEl.className = `gate-label ${g.style === 'mega' ? 'mega-gate' : g.style === 'gold' ? 'gold-gate' : g.style === 'hazard' ? 'hazard-gate' : ''}`;
+      labelEl.className = 'gate-label';
       labelEl.textContent = labelStr;
       this.labelsContainer.appendChild(labelEl);
 
-      this.gates.push({
+      const gateRuntime: GateRuntime = {
         cfg: { ...g },
         group,
         pillarMat,
@@ -3189,8 +3209,12 @@ export class World3D {
         pulseTimer: 0,
         addCooldown: 0,
         chargeHits: 0,
+        initialHazardValue: g.op === 'sub' ? Math.max(1, g.value) : g.op === 'div' ? 4 : undefined,
+        flippedFromHazard: false,
         labelEl,
-      });
+      };
+      this.syncGateVisualStyle(gateRuntime);
+      this.gates.push(gateRuntime);
     }
 
     // Gate T4 Keystone: Truth Alchemy Gate automatically transmutes 1 Red Hazard Gate into a Blue Gate at stage start!
@@ -3544,23 +3568,9 @@ export class World3D {
     }
 
     // 5. Pre-warm vanguard of Red Clockwork Tin Robots & Blue Water-Drop Slimes + Caramel Pudding Champion
-    // Ensures the live diagonal bridge matches the exact composition of media_1793638759030_d260e1c4.jpg!
-    if (this.gates.length >= 2) {
-      this.gates[0].cfg.op = 'add';
-      this.gates[0].cfg.value = 4;
-      this.gates[0].cfg.style = 'blue';
-      this.gates[0].cfg.x = -5.4;
-      this.gates[0].cfg.z = -1.6;
-      this.gates[0].cfg.width = 5.2;
-      this.gates[0].currentX = -5.4;
-
-      this.gates[1].cfg.op = 'mul';
-      this.gates[1].cfg.value = 3;
-      this.gates[1].cfg.style = 'blue';
-      this.gates[1].cfg.x = 3.8;
-      this.gates[1].cfg.z = -4.2;
-      this.gates[1].cfg.width = 5.4;
-      this.gates[1].currentX = 3.8;
+    // Preserves every procedural & tactical MC-1 gate at its exact 3D mesh coordinate!
+    for (const g of this.gates) {
+      this.syncGateVisualStyle(g);
     }
 
     // Spawn the 2 distinct Red Clockwork Tin Robots marching down from the Steampunk Red Furnace Tank Boss
@@ -3600,7 +3610,7 @@ export class World3D {
   }
 
   private getGateBannerTexture(
-    style: 'blue' | 'gold' | 'mega' | 'hazard',
+    style: GateStyle,
     labelText: string
   ): THREE.CanvasTexture {
     const key = `${style}_${labelText}`;
@@ -3943,6 +3953,8 @@ export class World3D {
     slot.kind = kind;
     slot.mechaType = kind === 'champion' ? this.state.mechaMode : undefined;
     slot.isMiniGiant = isMiniGiant || Boolean(giantSpec?.isGiantMode && kind !== 'champion');
+    slot.jellyGiant = false;
+    slot.frostShield = false;
     const rolledStartTier =
       giantSpec?.isGiantMode && giantSpec.t4DirectTier2Chance > 0 && Math.random() < giantSpec.t4DirectTier2Chance
         ? 2
@@ -5202,6 +5214,7 @@ export class World3D {
     }
 
     // 4. Update Dynamic Gates & Boilers & Boss Animation & Side Nests
+    this.gatePopupCooldown = Math.max(0, this.gatePopupCooldown - clampedDt);
     for (const g of this.gates) {
       if (g.addCooldown > 0) {
         g.addCooldown = Math.max(0, g.addCooldown - clampedDt);
@@ -5803,26 +5816,164 @@ export class World3D {
     this.onBanner?.('🛡️ 堡垒基石【荆棘电磁反推】触发！', '前排红军震退 · 4名黄金禁卫军紧急参战！');
   }
 
+  private formatGateLabel(cfg: GateConfig): string {
+    if (cfg.op === 'giant_jelly') return '巨化×2';
+    if (cfg.op === 'frost_shield') return '糖霜盾';
+    const prefix = cfg.op === 'add' ? '+' : cfg.op === 'mul' ? '×' : cfg.op === 'div' ? '÷' : '-';
+    return `${prefix}${cfg.value}`;
+  }
+
+  private syncGateVisualStyle(g: GateRuntime): void {
+    const { op, value } = g.cfg;
+    if (op === 'giant_jelly') {
+      g.cfg.style = 'jelly';
+      const labelStr = '巨化×2';
+      g.labelEl.textContent = labelStr;
+      g.labelEl.className = 'gate-label gold-gate';
+      g.pillarMat.color.setHex(0xfb7185);
+      g.pillarMat.emissive.setHex(0x881337);
+      g.shieldMat.map = this.getGateBannerTexture('jelly', labelStr);
+      g.shieldMat.needsUpdate = true;
+      return;
+    }
+    if (op === 'frost_shield') {
+      g.cfg.style = 'frost';
+      const labelStr = '糖霜盾';
+      g.labelEl.textContent = labelStr;
+      g.labelEl.className = 'gate-label';
+      g.pillarMat.color.setHex(0x38bdf8);
+      g.pillarMat.emissive.setHex(0x0c4a6e);
+      g.shieldMat.map = this.getGateBannerTexture('frost', labelStr);
+      g.shieldMat.needsUpdate = true;
+      return;
+    }
+    if (op === 'sub' || op === 'div') {
+      g.cfg.style = 'hazard';
+      const labelStr = this.formatGateLabel(g.cfg);
+      g.labelEl.textContent = labelStr;
+      g.labelEl.className = 'gate-label hazard-gate';
+      const initVal = Math.max(1, g.initialHazardValue || value || 6);
+      const stepReq = op === 'div' ? 8 : 3;
+      const weakenedRatio =
+        op === 'div'
+          ? THREE.MathUtils.clamp(g.chargeHits / stepReq, 0, 1)
+          : THREE.MathUtils.clamp(
+              (initVal - value + THREE.MathUtils.clamp(g.chargeHits / stepReq, 0, 0.99)) / initVal,
+              0,
+              1
+            );
+      const cCrimsonToCyan = new THREE.Color(0xe11d48).lerp(new THREE.Color(0x38bdf8), weakenedRatio * 0.85);
+      g.pillarMat.color.copy(cCrimsonToCyan);
+      g.pillarMat.emissive.setHex(weakenedRatio >= 0.55 ? 0x1e3a8a : 0x4c0519);
+      g.shieldMat.map = this.getGateBannerTexture('hazard', labelStr);
+      g.shieldMat.needsUpdate = true;
+      return;
+    }
+    if (op === 'mul') {
+      const labelStr = `×${value}`;
+      g.labelEl.textContent = labelStr;
+      const style: GateStyle = value >= 3 ? 'mega' : 'gold';
+      g.cfg.style = style;
+      g.pillarMat.color.setHex(style === 'mega' ? 0xe879f9 : 0xe8ad38);
+      g.pillarMat.emissive.setHex(style === 'mega' ? 0x4a044e : 0x3b2306);
+      g.shieldMat.map = this.getGateBannerTexture(style, labelStr);
+      g.shieldMat.needsUpdate = true;
+      g.labelEl.className = style === 'mega' ? 'gate-label mega-gate' : 'gate-label gold-gate';
+      return;
+    }
+    this.syncBlueGateVisualStyle(g);
+  }
+
   private syncBlueGateVisualStyle(g: GateRuntime): void {
     const labelStr = `+${g.cfg.value}`;
     g.labelEl.textContent = labelStr;
-    g.pillarMat.color.setHex(0xe8ad38);
-    g.pillarMat.emissive.setHex(0x3b2306);
     if (g.cfg.value >= 6) {
       g.cfg.style = 'mega';
+      g.pillarMat.color.setHex(0xe879f9);
+      g.pillarMat.emissive.setHex(0x4a044e);
       g.shieldMat.map = this.getGateBannerTexture('mega', labelStr);
       g.shieldMat.needsUpdate = true;
       g.labelEl.className = 'gate-label mega-gate';
     } else if (g.cfg.value >= 5) {
       g.cfg.style = 'gold';
+      g.pillarMat.color.setHex(0xfbbf24);
+      g.pillarMat.emissive.setHex(0x451a03);
       g.shieldMat.map = this.getGateBannerTexture('gold', labelStr);
       g.shieldMat.needsUpdate = true;
       g.labelEl.className = 'gate-label gold-gate';
     } else {
       g.cfg.style = 'blue';
+      g.pillarMat.color.setHex(g.flippedFromHazard ? 0x38bdf8 : 0xe8ad38);
+      g.pillarMat.emissive.setHex(g.flippedFromHazard ? 0x0c4a6e : 0x3b2306);
       g.shieldMat.map = this.getGateBannerTexture('blue', labelStr);
       g.shieldMat.needsUpdate = true;
       g.labelEl.className = 'gate-label';
+    }
+  }
+
+  public chargeGate(g: GateRuntime, hitPower: number, silent = false): void {
+    if (hitPower <= 0) return;
+    if (g.cfg.op === 'sub') {
+      g.chargeHits += hitPower;
+      g.pulseTimer = Math.max(g.pulseTimer, 0.75);
+      const stepHits = 3;
+      let changed = false;
+      while (g.cfg.op === 'sub' && g.chargeHits >= stepHits) {
+        g.chargeHits -= stepHits;
+        if (g.cfg.value <= 1) {
+          this.flipHazardGateToBlue(g, silent);
+          return;
+        }
+        g.cfg.value -= 1;
+        changed = true;
+      }
+      this.syncGateVisualStyle(g);
+      if (changed && !silent && this.gatePopupCooldown <= 0) {
+        this.gatePopupCooldown = 0.16;
+        this.spawnShockwave(g.currentX, g.cfg.z, 0xfacc15, 2.5, 0.28);
+        this.spawnFloatingPopup(g.currentX, 1.9, g.cfg.z, `门脉充能 -${g.cfg.value}`, '#facc15');
+      }
+      return;
+    }
+
+    if (g.cfg.op === 'div') {
+      g.chargeHits += hitPower;
+      g.pulseTimer = Math.max(g.pulseTimer, 0.75);
+      if (g.chargeHits >= 8) {
+        this.flipHazardGateToBlue(g, silent);
+        return;
+      }
+      this.syncGateVisualStyle(g);
+      return;
+    }
+
+    if (g.cfg.op === 'add') {
+      const maxCap = Math.max(5, this.state.getMaxBlueGateCap());
+      if (g.cfg.value >= maxCap) return;
+      g.chargeHits += hitPower;
+      g.pulseTimer = Math.max(g.pulseTimer, 0.65);
+      const req = g.flippedFromHazard ? 6 : 22 + g.cfg.value * 8;
+      let upgraded = false;
+      while (g.chargeHits >= req && g.cfg.value < maxCap) {
+        g.chargeHits -= req;
+        const stepAdd = g.flippedFromHazard && g.cfg.value < 5 ? 2 : 1;
+        g.cfg.value = Math.min(maxCap, g.cfg.value + stepAdd);
+        upgraded = true;
+      }
+      if (upgraded) {
+        this.syncGateVisualStyle(g);
+        if (!silent) {
+          this.spawnSkyPillar(g.currentX, g.cfg.z, g.cfg.value >= 5 ? 0xfbbf24 : 0x38bdf8, 1.45, 0.34);
+          this.spawnShockwave(g.currentX, g.cfg.z, 0xfacc15, 3.1, 0.34);
+          this.spawnFloatingPopup(
+            g.currentX,
+            2.0,
+            g.cfg.z,
+            g.cfg.value >= 5 ? `蓄力满阶 +${g.cfg.value}!` : `蓄力升阶 +${g.cfg.value}!`,
+            g.cfg.value >= 5 ? '#fde047' : '#38bdf8'
+          );
+        }
+      }
     }
   }
 
@@ -5868,8 +6019,7 @@ export class World3D {
     // Also charge any Gate along the railgun beams!
     for (const g of this.gates) {
       if (lanes.some((lx) => Math.abs(g.currentX - lx) <= g.cfg.width * 0.6)) {
-        g.chargeHits += 4;
-        g.pulseTimer = 0.9;
+        this.chargeGate(g, 4);
         this.spawnBurstParticles(g.currentX, 1.2, g.cfg.z, 0xfacc15, 10);
       }
     }
@@ -5973,6 +6123,21 @@ export class World3D {
       this.addCameraShake(0.06);
     } else if (this.currentTurretEvoTier === 2 && Math.random() < 0.35) {
       this.spawnShockwave(this.turretX, PLAYER_Z - 1.5, 0xfacc15, 1.8, 0.22);
+    }
+
+    // MC-1: Cannon kinetic resonance charges aligned forward gate pillars/banners!
+    let nearestAlignedGate: GateRuntime | null = null;
+    for (const g of this.gates) {
+      if (g.cfg.op !== 'sub' && g.cfg.op !== 'div' && g.cfg.op !== 'add') continue;
+      if (g.cfg.z < -6.0) continue;
+      if (Math.abs(g.currentX - this.turretX) <= g.cfg.width * 0.56) {
+        if (!nearestAlignedGate || g.cfg.z > nearestAlignedGate.cfg.z) {
+          nearestAlignedGate = g;
+        }
+      }
+    }
+    if (nearestAlignedGate) {
+      this.chargeGate(nearestAlignedGate, 0.75);
     }
 
     const critChance = this.state.getChargedCritChance();
@@ -6371,30 +6536,13 @@ export class World3D {
         const g1 = this.state.getSkillNodeRank('gate_t1');
         const g2 = this.state.getSkillNodeRank('gate_t2');
         const g3 = this.state.getSkillNodeRank('gate_t3');
-        const maxGateCap = this.state.getMaxBlueGateCap();
         for (const g of this.gates) {
           g.pulseTimer = 1.0;
           this.spawnShockwave(g.currentX, g.cfg.z, 0x22d3ee, 3.2, 0.35);
           if (g.cfg.op === 'sub' || g.cfg.op === 'div') {
-            g.chargeHits += 6 + g1 * 3;
-            if (g.chargeHits >= 18) {
-              g.chargeHits = 0;
-              if (g.cfg.op === 'div' || g.cfg.value <= 1) {
-                this.flipHazardGateToBlue(g);
-              } else {
-                g.cfg.value -= 1;
-                g.labelEl.textContent = `-${g.cfg.value}`;
-              }
-            }
+            this.chargeGate(g, 3 + g1 * 2);
           } else if (g.cfg.op === 'add') {
-            g.chargeHits += 8 + g2 * 5;
-            const req = 42 + g.cfg.value * 16;
-            if (g.chargeHits >= req && g.cfg.value < maxGateCap) {
-              g.chargeHits = 0;
-              g.cfg.value += 1;
-              this.syncBlueGateVisualStyle(g);
-              this.spawnFloatingPopup(g.currentX, 2.0, g.cfg.z, `⬆️ 矩阵共振充能锤 +${g.cfg.value}!`, '#22d3ee');
-            }
+            this.chargeGate(g, 4 + g2 * 3);
             if (g3 > 0) {
               for (let c = 0; c < g3; c++) {
                 this.spawnUnit(
@@ -6966,7 +7114,17 @@ export class World3D {
             const praetorianRank = this.state.getSkillNodeRank('bastion_t3');
             const dodgeChance = praetorianRank * 0.15;
             const uTier = u.fusionTier || 0;
-            if (u.kind === 'champion') {
+            const consumedFrost = Boolean(u.frostShield);
+            if (consumedFrost) {
+              u.frostShield = false;
+              u.spawnHop = 0.78;
+              u.z = gr.cfg.z - gr.cfg.radius - u.radius - 0.16;
+              this.spawnBurstParticles(u.x, 0.85, u.z, 0x7dd3fc, 14);
+              if (this.gatePopupCooldown <= 0) {
+                this.gatePopupCooldown = 0.18;
+                this.spawnFloatingPopup(u.x, 1.85, u.z, '糖霜护盾 抵挡齿轮!', '#7dd3fc');
+              }
+            } else if (u.kind === 'champion') {
               u.hp = Math.max(1, u.hp - u.maxHp * 0.25);
             } else if (uTier >= 2) {
               u.hp -= u.maxHp * 0.42;
@@ -7019,7 +7177,16 @@ export class World3D {
           const dist = Math.hypot(dx, dz);
           if (dist < 0.78 + u.radius) {
             const uTier = u.fusionTier || 0;
-            if (u.kind !== 'champion' && uTier < 2) {
+            if (u.frostShield) {
+              u.frostShield = false;
+              u.spawnHop = 0.72;
+              u.z = br.cfg.z - 0.85 - u.radius;
+              this.spawnBurstParticles(u.x, 0.9, u.z, 0x7dd3fc, 14);
+              if (this.gatePopupCooldown <= 0) {
+                this.gatePopupCooldown = 0.18;
+                this.spawnFloatingPopup(u.x, 1.85, u.z, '糖霜护盾 抵挡爆破!', '#7dd3fc');
+              }
+            } else if (u.kind !== 'champion' && uTier < 2) {
               u.active = false;
             } else if (u.kind !== 'champion') {
               u.hp -= u.maxHp * 0.45;
@@ -7082,12 +7249,22 @@ export class World3D {
         }
       }
 
-      // Blue Unit vs Clone/Hazard Gates (+N, xN, -N, ÷2)
+      // Blue Unit vs Clone/Hazard/Functional Gates (+N, xN, -N, ÷2, 巨化×2, 糖霜盾) + Pillar Charging!
       if (u.team === 'blue') {
         for (const g of this.gates) {
           if (u.passedGates.has(g.cfg.id)) continue;
-          const crossedZ = (prevZ >= g.cfg.z && u.z <= g.cfg.z) || Math.abs(u.z - g.cfg.z) < 0.42;
-          if (crossedZ && Math.abs(u.x - g.currentX) <= g.cfg.width * 0.52) {
+          const crossedZ = (prevZ >= g.cfg.z && u.z <= g.cfg.z) || Math.abs(u.z - g.cfg.z) < 0.44;
+          if (!crossedZ) continue;
+          const relX = Math.abs(u.x - g.currentX);
+          const halfW = g.cfg.width * 0.5;
+          if (Math.abs(relX - halfW) <= 0.46 && (g.cfg.op === 'sub' || g.cfg.op === 'div' || g.cfg.op === 'add')) {
+            u.passedGates.add(g.cfg.id);
+            u.spawnHop = Math.max(u.spawnHop, 0.52);
+            this.spawnBurstParticles(u.x, 0.9, g.cfg.z, 0x38bdf8, 8);
+            this.chargeGate(g, 1.6);
+            continue;
+          }
+          if (relX <= g.cfg.width * 0.52) {
             u.passedGates.add(g.cfg.id);
             g.pulseTimer = 1.0;
             this.applyGateEffect(u, g);
@@ -7830,31 +8007,31 @@ export class World3D {
     }
   }
 
-  private flipHazardGateToBlue(g: GateRuntime): void {
+  private flipHazardGateToBlue(g: GateRuntime, silent = false): void {
     g.cfg.op = 'add';
     g.cfg.value = 1;
     g.cfg.style = 'blue';
     g.chargeHits = 0;
+    g.flippedFromHazard = true;
     g.pulseTimer = 1.4;
-    g.pillarMat.color.setHex(0xe8ad38);
-    g.pillarMat.emissive.setHex(0x3b2306);
-    g.shieldMat.map = this.getGateBannerTexture('blue', '+1');
-    g.shieldMat.needsUpdate = true;
-    g.labelEl.className = 'gate-label';
-    g.labelEl.textContent = '+1';
+    this.syncGateVisualStyle(g);
 
-    sound.playCloneGate(3);
-    this.addCameraShake(0.45);
-    this.spawnSkyPillar(g.currentX, g.cfg.z, 0x28c7fa, 1.9, 0.45);
-    this.spawnShockwave(g.currentX, g.cfg.z, 0x28c7fa, 4.2, 0.42);
-    this.spawnBurstParticles(g.currentX, 1.2, g.cfg.z, 0x28c7fa, 42);
-    this.spawnFloatingPopup(g.currentX, 2.2, g.cfg.z, '✨ 应援旗翻蓝! 变为 +1', '#38bdf8');
+    if (!silent) {
+      sound.playCloneGate(3);
+      this.addCameraShake(0.45);
+      this.spawnSkyPillar(g.currentX, g.cfg.z, 0x28c7fa, 1.9, 0.45);
+      this.spawnShockwave(g.currentX, g.cfg.z, 0x28c7fa, 4.2, 0.42);
+      this.spawnBurstParticles(g.currentX, 1.2, g.cfg.z, 0x28c7fa, 42);
+      this.spawnFloatingPopup(g.currentX, 2.2, g.cfg.z, '门脉翻蓝! 变为 +1', '#38bdf8');
+    }
 
     // Gate T4 Keystone: Truth Alchemy Gate (reversing a Red Gate triggers a full-screen heal, knockback & upgrades all Blue gates +1!)
     if (this.state.getSkillNodeRank('gate_t4') > 0) {
-      const maxGateCap = this.state.getMaxBlueGateCap();
-      this.triggerScreenFlash('#22d3ee', 0.65);
-      this.spawnShockwave(g.currentX, g.cfg.z, 0x22d3ee, 14.5, 0.58);
+      const maxGateCap = Math.max(5, this.state.getMaxBlueGateCap());
+      if (!silent) {
+        this.triggerScreenFlash('#22d3ee', 0.65);
+        this.spawnShockwave(g.currentX, g.cfg.z, 0x22d3ee, 14.5, 0.58);
+      }
       for (const otherG of this.gates) {
         if (otherG.cfg.op === 'add' && otherG.cfg.value < maxGateCap) {
           otherG.cfg.value += 1;
@@ -7873,8 +8050,140 @@ export class World3D {
           ru.spawnHop = 1.1;
         }
       }
-      this.spawnFloatingPopup(g.currentX, 2.9, g.cfg.z, '👑 真理炼金脉冲! 全蓝门+1 & 全军满血!', '#22d3ee');
+      if (!silent) {
+        this.spawnFloatingPopup(g.currentX, 2.9, g.cfg.z, '真理炼金脉冲! 全蓝门+1 & 全军满血!', '#22d3ee');
+      }
     }
+  }
+
+  public runMc1SelfCheck(): {
+    ok: boolean;
+    hasJellyGate: boolean;
+    hasFrostGate: boolean;
+    chargeProgression: string[];
+    frameColorChanged: boolean;
+    jellyDoubled: boolean;
+    frostBlockedGear: boolean;
+    frostBlockedBarrel: boolean;
+  } {
+    const hasJellyGate = this.gates.some((g) => g.cfg.op === 'giant_jelly');
+    const hasFrostGate = this.gates.some((g) => g.cfg.op === 'frost_shield');
+
+    // 1. Test dynamic GateRuntime.chargeHits: -6 -> ... -> +1 -> +3 -> +5 & pillar color transition
+    const testGate = this.gates[0];
+    const savedCfg = { ...testGate.cfg };
+    const savedCharge = testGate.chargeHits;
+    const savedInitHaz = testGate.initialHazardValue;
+    const savedFlipped = testGate.flippedFromHazard;
+
+    testGate.cfg.op = 'sub';
+    testGate.cfg.value = 6;
+    testGate.initialHazardValue = 6;
+    testGate.flippedFromHazard = false;
+    testGate.chargeHits = 0;
+    this.syncGateVisualStyle(testGate);
+    const startHex = testGate.pillarMat.color.getHexString();
+    const prog: string[] = [this.formatGateLabel(testGate.cfg)];
+    for (let step = 0; step < 12; step++) {
+      const prevLbl = this.formatGateLabel(testGate.cfg);
+      this.chargeGate(testGate, 3, true);
+      const curLbl = this.formatGateLabel(testGate.cfg);
+      if (curLbl !== prevLbl) prog.push(curLbl);
+    }
+    const endHex = testGate.pillarMat.color.getHexString();
+    const frameColorChanged = startHex !== endHex;
+
+    // Restore gate state
+    testGate.cfg = savedCfg;
+    testGate.chargeHits = savedCharge;
+    testGate.initialHazardValue = savedInitHaz;
+    testGate.flippedFromHazard = savedFlipped;
+    this.syncGateVisualStyle(testGate);
+
+    // 2. Test Giant Jelly Gate: doubles HP & DMG and sets jellyGiant = true
+    const jellyGate = this.gates.find((g) => g.cfg.op === 'giant_jelly');
+    const frostGate = this.gates.find((g) => g.cfg.op === 'frost_shield');
+    const probe = this.spawnUnit('blue', 'normal', 0, 10.0, 0, -6.0);
+    let jellyDoubled = false;
+    let frostBlockedGear = false;
+    let frostBlockedBarrel = false;
+    if (probe && jellyGate && frostGate) {
+      const hp0 = probe.maxHp;
+      const dmg0 = probe.dmg;
+      this.applyGateEffect(probe, jellyGate);
+      jellyDoubled =
+        Boolean(probe.jellyGiant) &&
+        Math.abs(probe.maxHp - hp0 * 2) < 0.01 &&
+        Math.abs(probe.dmg - dmg0 * 2) < 0.01;
+
+      // 3. Test Frosting Shield Gate vs Grinder Gear & Explosive Barrel
+      this.applyGateEffect(probe, frostGate);
+      const hpBeforeHazards = probe.hp;
+      if (probe.frostShield) {
+        // Simulate gear hit check
+        probe.frostShield = false;
+        frostBlockedGear = probe.active && Math.abs(probe.hp - hpBeforeHazards) < 0.01;
+      }
+      this.applyGateEffect(probe, frostGate);
+      if (probe.frostShield && this.barrels.length >= 0) {
+        // Real update tick collision against a temporary test gear & barrel
+        const savedGears = [...this.gears];
+        const dummyGroup = new THREE.Group();
+        const dummyLabel = document.createElement('div');
+        this.gears.push({
+          cfg: { id: '_mc1_test_gear', x: probe.x, z: probe.z, radius: 1.2, hp: 99 },
+          mesh: dummyGroup,
+          baseX: probe.x,
+          hp: 99,
+          alive: true,
+          hitFlash: 0,
+          labelEl: dummyLabel,
+        });
+        probe.spawnHop = 0;
+        this.update(0.016);
+        frostBlockedGear = probe.active && !probe.frostShield && Math.abs(probe.hp - hpBeforeHazards) < 0.01;
+        this.gears = savedGears;
+
+        // Now re-grant frost shield and test real update tick against temporary barrel
+        this.applyGateEffect(probe, frostGate);
+        const savedBarrels = [...this.barrels];
+        this.barrels.push({
+          cfg: { id: '_mc1_test_barrel', x: probe.x, z: probe.z, hp: 99 },
+          mesh: dummyGroup,
+          hp: 99,
+          alive: true,
+          labelEl: dummyLabel,
+        });
+        probe.spawnHop = 0;
+        this.update(0.016);
+        frostBlockedBarrel = probe.active && !probe.frostShield && Math.abs(probe.hp - hpBeforeHazards) < 0.01;
+        this.barrels = savedBarrels;
+      }
+      probe.active = false;
+    }
+
+    const reachedPlus1 = prog.includes('+1');
+    const reachedPlus3 = prog.includes('+3');
+    const reachedPlus5 = prog.includes('+5');
+    return {
+      ok:
+        hasJellyGate &&
+        hasFrostGate &&
+        reachedPlus1 &&
+        reachedPlus3 &&
+        reachedPlus5 &&
+        frameColorChanged &&
+        jellyDoubled &&
+        frostBlockedGear &&
+        frostBlockedBarrel,
+      hasJellyGate,
+      hasFrostGate,
+      chargeProgression: prog,
+      frameColorChanged,
+      jellyDoubled,
+      frostBlockedGear,
+      frostBlockedBarrel,
+    };
   }
 
   private applyGateEffect(u: Unit, g: GateRuntime): void {
@@ -7885,27 +8194,56 @@ export class World3D {
     const giantSpec = this.state.getGiantTrooperSpec();
     const swarmSpec = this.state.getSwarmTrooperSpec();
     const uTier = u.fusionTier || 0;
+
+    if (op === 'giant_jelly') {
+      if (!u.jellyGiant) {
+        u.jellyGiant = true;
+        u.maxHp *= 2.0;
+        u.hp *= 2.0;
+        u.dmg *= 2.0;
+        u.radius = Math.min(0.72, u.radius * 1.32);
+        u.spawnHop = Math.max(u.spawnHop, 0.62);
+      }
+      sound.playCloneGate(2);
+      this.spawnBurstParticles(u.x, 0.9, g.cfg.z, 0xfb7185, 12);
+      if (this.gatePopupCooldown <= 0) {
+        this.gatePopupCooldown = 0.28;
+        this.spawnFloatingPopup(u.x, 1.9, g.cfg.z, '果冻巨化 血攻×2!', '#fda4af');
+      }
+      return;
+    }
+
+    if (op === 'frost_shield') {
+      u.frostShield = true;
+      u.spawnHop = Math.max(u.spawnHop, 0.45);
+      sound.playCloneGate(2);
+      this.spawnBurstParticles(u.x, 0.9, g.cfg.z, 0x7dd3fc, 12);
+      if (this.gatePopupCooldown <= 0) {
+        this.gatePopupCooldown = 0.28;
+        this.spawnFloatingPopup(u.x, 1.9, g.cfg.z, '糖霜护盾 免疫1次!', '#7dd3fc');
+      }
+      return;
+    }
+
     if (op === 'sub') {
+      let hitGain = reverseHitGain;
       if (u.kind === 'champion') {
         u.hp = Math.max(1, u.hp - u.maxHp * 0.28 * hazardDmgMult);
-        g.chargeHits += 2 * reverseHitGain;
-      } else if (uTier >= 2) {
+        hitGain = 2 * reverseHitGain;
+      } else if (uTier >= 2 || u.jellyGiant) {
         u.hp -= u.maxHp * 0.42 * hazardDmgMult;
         if (u.hp <= 0) u.active = false;
-        g.chargeHits += 2 * reverseHitGain;
+        hitGain = 2 * reverseHitGain;
       } else if (uTier === 1) {
         u.hp -= u.maxHp * 0.65 * hazardDmgMult;
         if (u.hp <= 0) u.active = false;
-        g.chargeHits += 1.5 * reverseHitGain;
+        hitGain = 1.5 * reverseHitGain;
       } else {
         if (gateRank1 > 0 && Math.random() < gateRank1 * 0.14) {
-          // Gate T1 Phase Shield allows trooper to pass through Red Gate without being vaporized!
           u.hp = Math.max(1, u.hp * 0.65);
         } else {
           u.active = false;
         }
-        g.chargeHits += reverseHitGain;
-        // A "-N" Hazard Gate vaporizes the touching unit (and up to 1 immediate neighbor if value >= 3 and gate_t1 == 0)
         if (value >= 3 && gateRank1 === 0) {
           for (const idx of this.activeBlueIndices) {
             const ally = this.units[idx];
@@ -7922,42 +8260,24 @@ export class World3D {
       this.state.championCharge = Math.max(0, this.state.championCharge - 0.8 * hazardDmgMult);
       sound.playGearGrind();
       this.spawnBurstParticles(u.x, 0.6, u.z, 0xff2a55, 6);
-
-      // Every 18 Blue trooper hits weakens the Red -N gate by 1, and flips it into a Blue +1 gate at 0!
-      if (g.chargeHits >= 18) {
-        g.chargeHits = 0;
-        if (g.cfg.value <= 1) {
-          this.flipHazardGateToBlue(g);
-        } else {
-          g.cfg.value -= 1;
-          g.pulseTimer = 1.1;
-          const nextLabel = `-${g.cfg.value}`;
-          g.labelEl.textContent = nextLabel;
-          g.shieldMat.map = this.getGateBannerTexture('hazard', nextLabel);
-          g.shieldMat.needsUpdate = true;
-          this.spawnShockwave(g.currentX, g.cfg.z, 0xfacc15, 2.6, 0.3);
-          this.spawnFloatingPopup(g.currentX, 1.9, g.cfg.z, `⚡ 红门削弱 -${g.cfg.value}`, '#facc15');
-        }
-      } else if (Math.random() < 0.35) {
-        this.spawnShockwave(u.x, g.cfg.z, 0xff2a55, 1.8, 0.25);
-      }
+      this.chargeGate(g, hitGain);
       return;
     }
 
     if (op === 'div') {
+      let hitGain = reverseHitGain;
       if (u.kind === 'champion') {
         u.hp = Math.max(1, u.hp - u.maxHp * 0.32 * hazardDmgMult);
-        g.chargeHits += 2 * reverseHitGain;
-      } else if (uTier >= 2) {
+        hitGain = 2 * reverseHitGain;
+      } else if (uTier >= 2 || u.jellyGiant) {
         u.hp -= u.maxHp * 0.45 * hazardDmgMult;
         if (u.hp <= 0) u.active = false;
-        g.chargeHits += 2 * reverseHitGain;
+        hitGain = 2 * reverseHitGain;
       } else if (uTier === 1) {
         u.hp -= u.maxHp * 0.55 * hazardDmgMult;
         if (u.hp <= 0) u.active = false;
-        g.chargeHits += 1.5 * reverseHitGain;
+        hitGain = 1.5 * reverseHitGain;
       } else {
-        g.chargeHits += reverseHitGain;
         if (u.id % Math.max(2, value) !== 0 && !(gateRank1 > 0 && Math.random() < gateRank1 * 0.14)) {
           u.active = false;
           sound.playGearGrind();
@@ -7968,9 +8288,7 @@ export class World3D {
         }
       }
       this.state.championCharge = Math.max(0, this.state.championCharge - 0.6 * hazardDmgMult);
-      if (g.chargeHits >= 28) {
-        this.flipHazardGateToBlue(g);
-      }
+      this.chargeGate(g, hitGain);
       return;
     }
 
@@ -7986,24 +8304,8 @@ export class World3D {
       if (g.addCooldown > 0) return;
       g.addCooldown = 0.09;
       const gateRank2 = this.state.getSkillNodeRank('gate_t2');
-      const maxGateCap = this.state.getMaxBlueGateCap();
-      g.chargeHits += (uTier >= 2 ? 1.5 : 1) + gateRank1 * 0.4 + gateRank2 * 0.55;
-      // Progressive threshold to level up a +N gate (up to +4 base, or +5/+6/+7 with Gate T2)!
-      const requiredHits = 42 + g.cfg.value * 16;
-      if (g.chargeHits >= requiredHits && g.cfg.value < maxGateCap) {
-        g.chargeHits = 0;
-        g.cfg.value += 1;
-        this.syncBlueGateVisualStyle(g);
-        this.spawnSkyPillar(g.currentX, g.cfg.z, g.cfg.value >= 6 ? 0xd946ef : 0x00f0ff, 1.5, 0.35);
-        this.spawnShockwave(g.currentX, g.cfg.z, 0xfacc15, 3.2, 0.35);
-        this.spawnFloatingPopup(
-          g.currentX,
-          2.0,
-          g.cfg.z,
-          g.cfg.value >= 6 ? `👑 矩阵超载 +${g.cfg.value}(×2)!` : `⬆️ 门脉升级 +${g.cfg.value}!`,
-          g.cfg.value >= 6 ? '#f0abfc' : '#facc15'
-        );
-      }
+      const addHit = (uTier >= 2 ? 1.5 : 1) + gateRank1 * 0.4 + gateRank2 * 0.55;
+      this.chargeGate(g, addHit);
     } else if (op === 'mul') {
       if (g.addCooldown > 0) return;
       g.addCooldown = 0.02;
@@ -8061,10 +8363,22 @@ export class World3D {
         Boolean(u.isMiniGiant),
         giantSpec.isGiantMode ? 1 : u.fusionTier
       );
-      if (clone && gateRank3 > 0) {
-        clone.maxHp *= phaseShieldMult;
-        clone.hp = clone.maxHp;
-        clone.dmg *= phaseDmgMult;
+      if (clone) {
+        if (gateRank3 > 0) {
+          clone.maxHp *= phaseShieldMult;
+          clone.hp = clone.maxHp;
+          clone.dmg *= phaseDmgMult;
+        }
+        if (u.jellyGiant) {
+          clone.jellyGiant = true;
+          clone.maxHp *= 2.0;
+          clone.hp *= 2.0;
+          clone.dmg *= 2.0;
+          clone.radius = Math.min(0.72, clone.radius * 1.32);
+        }
+        if (u.frostShield) {
+          clone.frostShield = true;
+        }
       }
     }
 
@@ -8500,6 +8814,7 @@ export class World3D {
         if (u.kind === 'champion' && champIdx < 120) {
           const titanScale =
             ultEvo.mechaScaleMult *
+            (u.jellyGiant ? 1.28 : 1.0) *
             (1 +
               this.state.getSkillNodeRank('titan_t1') * 0.08 +
               this.state.getSkillNodeRank('titan_t3') * 0.06);
@@ -8534,7 +8849,7 @@ export class World3D {
               : u.isMiniGiant
                 ? 1.85
                 : (u.kind === 'charged' ? 1.18 : 1.0 + u.spawnHop * 0.12) * swarmSpec.scaleMult;
-          const scale = baseUnitScale * evoScale;
+          const scale = baseUnitScale * evoScale * (u.jellyGiant ? 1.48 : 1.0);
           // 2.5D Illustration Facing + organic Q-jelly hop & squash-and-stretch!
           const displayYaw =
             Math.sin(u.walkPhase * 0.5) * 0.24 - THREE.MathUtils.clamp(u.vx * 0.065, -0.45, 0.45);
@@ -8550,7 +8865,7 @@ export class World3D {
 
           // Per-instance cheerful Candy-Jelly Slime palette (Sky-Blue, Apple-Green, Coral-Pink + Golden Supercharged!)
           const tintCol =
-            uTier >= 3
+            uTier >= 3 || u.jellyGiant
               ? this.candyAmber
               : uTier >= 2 || u.kind === 'charged'
                 ? this.candyGold
@@ -8562,7 +8877,7 @@ export class World3D {
           this.blueAnimData[b4 + 1] = speedRatio;
           this.blueAnimData[b4 + 2] = u.attackAnim;
           this.blueAnimData[b4 + 3] =
-            uTier >= 2 ? 0.36 : uTier === 1 || u.isMiniGiant || u.kind === 'charged' ? 0.22 : 0.0;
+            uTier >= 2 || u.jellyGiant ? 0.36 : uTier === 1 || u.isMiniGiant || u.kind === 'charged' ? 0.22 : 0.0;
           blueIdx++;
         }
       } else {
@@ -8645,6 +8960,20 @@ export class World3D {
     this.banelingInst.count = banelingIdx;
     this.shamanInst.count = shamanIdx;
     this.unitShadowInst.count = shadowIdx;
+
+    let frostIdx = 0;
+    for (const bUnitIdx of this.activeBlueIndices) {
+      const fu = this.units[bUnitIdx];
+      if (!fu.active || !fu.frostShield) continue;
+      const ringScale = fu.kind === 'champion' ? 1.65 : fu.jellyGiant || fu.isMiniGiant ? 1.38 : 1.0;
+      this.dummy.position.set(fu.x, 0.48 + Math.sin(this.elapsedTime * 5.2 + fu.id) * 0.06, fu.z);
+      this.dummy.rotation.set(0.18 * Math.sin(this.elapsedTime * 3.0 + fu.id), this.elapsedTime * 2.4 + fu.id, 0);
+      this.dummy.scale.set(ringScale, ringScale, ringScale);
+      this.dummy.updateMatrix();
+      this.frostShieldInst.setMatrixAt(frostIdx++, this.dummy.matrix);
+    }
+    this.frostShieldInst.count = frostIdx;
+    this.frostShieldInst.instanceMatrix.needsUpdate = true;
 
     this.blueBodyInst.instanceMatrix.needsUpdate = true;
     if (this.blueBodyInst.instanceColor) {

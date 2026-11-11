@@ -91,7 +91,7 @@
 
 > **特别约束**：改动后执行 `npm run build` 与 `python scripts/auto_playtest.py`，确保 13+ 项自动化试玩断言及移动端 `390×844` / 桌面端 `2560×1278` 零溢出零报错。
 
-- [ ] **MC-1｜倍增门机制大升级（红门打翻变蓝门 / 倍率充能递增 + 果冻巨化门 & 糖霜护盾门）**
+- [x] **MC-1｜倍增门机制大升级（红门打翻变蓝门 / 倍率充能递增 + 果冻巨化门 & 糖霜护盾门）** ✅ *(Round 2 已完成：`GateRuntime.chargeHits` 红门 `-6→+1→+3→+5` 动态翻蓝与门框渐变 + 果冻巨化门 2×血攻放大 + 糖霜护盾门晶莹护盾圈抵挡齿轮/爆桶 + `auto_playtest.py` 16/16 PASS)*
   - **目标源码**：`src/levels/LevelData.ts`、`src/game/WorldTypes.ts`、`src/game/World3D.ts`。
   - **具体要求**：
     1. 激活 `GateRuntime.chargeHits` 动态充能门机制：兵团撞击或弹幕命中可充能门柱，将负面红门（如 `-6`）逐步打翻转为正面蓝门（`+1 → +3 → +5`），呈现清晰的门框变色与跳字动效。
@@ -145,7 +145,7 @@
 
 > **特别约束**：100% 遵守 `games/cloud-isle-market/GEMINI.md` 六大工程铁律（`GROUND_Y = 124.0` 底部中心锚点、相邻建筑安全间距 `>= 28px`、Godot 原生 `LabelSettings` 零乱码），每次改动后必须执行 `./run_godot.ps1 --headless --self-test` 全部断言 PASS 并用 `read_file` 审视 `preview_live_godot.png`。
 
-- [ ] **CI-1｜摸鱼微交互彩蛋：轻点抚摸打工小动物冒心加速 + 天空偶遇像素热气球礼袋**
+- [x] **CI-1｜摸鱼微交互彩蛋：轻点抚摸打工小动物冒心加速 + 天空偶遇像素热气球礼袋** ✅ *(Round 2 已完成：全 6 类执勤动物欢快跳跃 + `emote_heart.png` 爱心气泡 + 8s 干劲加速与防鬼畜冷却 + `sky_balloon_gift.png` 漂浮热气球防穿透热区注册与金币/琥珀/狂欢结算 + `SelfTestRunner` 15/15 断言 PASS)*
   - **目标源码**：`src/entities/units/AnimalWorker.gd`、`src/world/MainWorld.gd`、`src/autoload/WindowController.gd`、`src/autoload/SelfTestRunner.gd`。
   - **具体要求**：
     1. 支持鼠标左键轻点正在岛上工作的六类小动物，触发可爱的跳跃回弹、头顶像素爱心粒子/音效，并赋予该小动物 8 秒「干劲满满」移速与作业加速（内置合理冷却防连点鬼畜）。
@@ -221,7 +221,7 @@
 | 批次 | 建议组合（每轮深耕 2 项） | 涉及项目 |
 | :---: | :--- | :--- |
 | ✅ 第 1 批 | `WL-1`（WorkLife 第 2～3 章主线与流派） + `WH-1`（历史地图：帝国国祚与疆域面积兴衰对比曲线 + 克制博物图志规范） *(Round 1 已完成)* | `worklife`, `world-history-atlas` |
-| 第 2 批 | `MC-1`（波波充能翻转门 + 巨化/护盾门） + `CI-1`（云岛抚摸动物与热气球彩蛋） | `mob-control-3d`, `cloud-isle-market` |
+| ✅ 第 2 批 | `MC-1`（波波充能翻转门 + 巨化/护盾门） + `CI-1`（云岛抚摸动物与热气球彩蛋） *(Round 2 已完成)* | `mob-control-3d`, `cloud-isle-market` |
 | 第 3 批 | `ML-1`（萌灵优生孵蛋 2.0） + `WH-2`（历史地图：丝绸之路/海上丝路/大航海贸易航线考据与内敛航迹） | `mengling`, `world-history-atlas` |
 | 第 4 批 | `AR-1`（AR 幸存者局内肉鸽三选一 + 蓝鲸超武） + `XX-1`（修仙宗门 `sect7~9`） | `ar-survivor`, `xianxia` |
 | 第 5 批 | `PC-1`（千纸鹤证物查验 + 双线索拼合） + `WL-2`（WorkLife 第 4 章主线与流派） | `paper-crane-detective`, `worklife` |

@@ -42,6 +42,8 @@ export interface Unit {
   attackCooldown: number;
   specialTimer: number;
   isMiniGiant?: boolean;
+  jellyGiant?: boolean;
+  frostShield?: boolean;
   fusionTier?: number;
   fusionCooldown?: number;
   empTimer?: number;
@@ -57,6 +59,8 @@ export interface GateRuntime {
   pulseTimer: number;
   addCooldown: number;
   chargeHits: number;
+  initialHazardValue?: number;
+  flippedFromHazard?: boolean;
   labelEl: HTMLDivElement;
 }
 

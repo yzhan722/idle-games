@@ -84,7 +84,13 @@ try:
                 if "chrome.exe" in files:
                     exe_path = os.path.join(root, "chrome.exe")
                     break
-        browser = p.chromium.launch(headless=True, executable_path=exe_path) if exe_path else p.chromium.launch(headless=True)
+        if exe_path:
+            browser = p.chromium.launch(headless=True, executable_path=exe_path)
+        else:
+            try:
+                browser = p.chromium.launch(headless=True)
+            except Exception:
+                browser = p.chromium.launch(headless=True, channel="msedge")
         context = browser.new_context(viewport={"width": 2560, "height": 1278}, device_scale_factor=1)
         page = context.new_page()
 
@@ -281,11 +287,67 @@ try:
         ]
         add_check("Zero NaN/Undefined in DOM Text", len(bad_tokens) == 0, f"bad_tokens={bad_tokens}")
 
+        mc1_result = page.evaluate(
+            """() => {
+            const w = window.__mc3dWorld;
+            if (!w || typeof w.runMc1SelfCheck !== 'function') {
+                return { ok: false, reason: 'missing __mc3dWorld.runMc1SelfCheck' };
+            }
+            return w.runMc1SelfCheck();
+        }"""
+        )
+        add_check(
+            "MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition",
+            bool(mc1_result.get("frameColorChanged"))
+            and "+1" in mc1_result.get("chargeProgression", [])
+            and "+3" in mc1_result.get("chargeProgression", [])
+            and "+5" in mc1_result.get("chargeProgression", []),
+            f"prog={mc1_result.get('chargeProgression')}, colorChanged={mc1_result.get('frameColorChanged')}",
+        )
+        add_check(
+            "MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)",
+            bool(mc1_result.get("hasJellyGate"))
+            and bool(mc1_result.get("hasFrostGate"))
+            and bool(mc1_result.get("jellyDoubled"))
+            and bool(mc1_result.get("frostBlockedGear"))
+            and bool(mc1_result.get("frostBlockedBarrel")),
+            json.dumps(
+                {
+                    "hasJelly": mc1_result.get("hasJellyGate"),
+                    "hasFrost": mc1_result.get("hasFrostGate"),
+                    "jelly2x": mc1_result.get("jellyDoubled"),
+                    "blockGear": mc1_result.get("frostBlockedGear"),
+                    "blockBarrel": mc1_result.get("frostBlockedBarrel"),
+                },
+                ensure_ascii=False,
+            ),
+        )
+
         page.screenshot(
             path=os.path.join(BRAIN_DIR, "scratch", "verify_auto_playtest_battle_2560.jpg"),
             type="jpeg",
             quality=90,
         )
+
+        # Mobile 390x844 Portrait Viewport Check (Zero Horizontal Overflow)
+        mob_ctx = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2)
+        mob_page = mob_ctx.new_page()
+        mob_page.goto(f"http://127.0.0.1:{port}/", wait_until="domcontentloaded", timeout=10000)
+        mob_page.wait_for_timeout(120)
+        mob_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
+        mob_page.wait_for_timeout(100)
+        mob_page.evaluate("document.getElementById('btn-start-battle')?.click()")
+        mob_page.wait_for_timeout(220)
+        mob_overflow = mob_page.evaluate(
+            "document.documentElement.scrollWidth - window.innerWidth"
+        )
+        add_check("Mobile 390x844 Zero Horizontal Overflow", mob_overflow <= 1, f"overflow={mob_overflow}px")
+        mob_page.screenshot(
+            path=os.path.join(BRAIN_DIR, "scratch", "verify_auto_playtest_mobile_390.jpg"),
+            type="jpeg",
+            quality=90,
+        )
+        mob_ctx.close()
 
         add_check("Zero Page Exceptions", len(report["page_errors"]) == 0, str(report["page_errors"]))
         add_check("Zero Console Errors", len(report["console_errors"]) == 0, str(report["console_errors"]))
@@ -340,5 +402,11 @@ except Exception as e:
 
     traceback.print_exc()
     exit_code = 1
+finally:
+    try:
+        httpd.shutdown()
+        httpd.server_close()
+    except Exception:
+        pass
 
 sys.exit(exit_code)

@@ -56,7 +56,13 @@ var carrying_item_id: String = ""
 var carrying_qty: int = 0
 var cooking_crop_id: String = ""
 var target_plot: SoilPlot = null
+const PET_BOOST_DURATION := 8.0
+const PET_COOLDOWN_DURATION := 4.5
+const PET_JUMP_DURATION := 0.48
 var boost_timer: float = 0.0
+var pet_cooldown_timer: float = 0.0
+var pet_jump_timer: float = 0.0
+var pet_motes: Array[Sprite2D] = []
 var total_distance_moved: float = 0.0
 var _was_hired: bool = false
 
@@ -122,16 +128,36 @@ func _ready() -> void:
 	heart_icon.z_as_relative = false
 	add_child(heart_icon)
 
+	for mi in range(2):
+		var mote := Sprite2D.new()
+		mote.name = "HeartMote_" + str(mi)
+		mote.texture = tex_heart
+		mote.visible = false
+		mote.centered = true
+		mote.scale = Vector2(0.32, 0.32)
+		mote.z_index = EconomyConfig.Z_CARRY_EMOTE + 1
+		mote.z_as_relative = false
+		add_child(mote)
+		pet_motes.append(mote)
+
 func get_pet_hit_rect() -> Rect2:
 	return Rect2(position.x - 24.0, position.y - 54.0, 48.0, 56.0)
 
-func trigger_pet_boost() -> void:
-	if not visible:
-		return
-	boost_timer = 15.0
+func can_be_petted() -> bool:
+	return visible and is_hired() and pet_cooldown_timer <= 0.0
+
+func trigger_pet_boost() -> bool:
+	if not visible or not is_hired():
+		return false
+	if pet_cooldown_timer > 0.0:
+		return false
+	boost_timer = PET_BOOST_DURATION
+	pet_cooldown_timer = PET_COOLDOWN_DURATION
+	pet_jump_timer = PET_JUMP_DURATION
 	if SoundManager != null:
 		SoundManager.play_pop_sfx()
-	EventBus.spawn_floating_text.emit(position + Vector2(0.0, -64.0), "★摸头元气+50%!", Color("#FFE066"))
+	EventBus.spawn_floating_text.emit(position + Vector2(0.0, -64.0), "★干劲满满 加速8s!", Color("#FFE066"))
+	return true
 
 func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, p_graph: WaypointGraph, p_world: Node2D) -> void:
 	role_type = p_role
@@ -324,10 +350,14 @@ func _process(delta: float) -> void:
 	anim_time += delta
 	if boost_timer > 0.0:
 		boost_timer = maxf(0.0, boost_timer - delta)
+	if pet_cooldown_timer > 0.0:
+		pet_cooldown_timer = maxf(0.0, pet_cooldown_timer - delta)
+	if pet_jump_timer > 0.0:
+		pet_jump_timer = maxf(0.0, pet_jump_timer - delta)
 
 	var haste_mult := 1.0
 	if boost_timer > 0.0:
-		haste_mult *= 1.5
+		haste_mult *= 1.55
 	if GameManager != null and GameManager.frenzy_timer > 0.0:
 		haste_mult *= 1.5
 
@@ -374,6 +404,13 @@ func _process(delta: float) -> void:
 		scale_x = 1.0 + breath * 0.02
 		scale_y = 1.0 - breath * 0.02
 
+	if pet_jump_timer > 0.0:
+		var jump_t := 1.0 - clampf(pet_jump_timer / PET_JUMP_DURATION, 0.0, 1.0)
+		var bounce_arc := absf(sin(jump_t * PI * 2.0))
+		hop_y -= bounce_arc * 9.5
+		scale_x *= (1.0 - bounce_arc * 0.06)
+		scale_y *= (1.0 + bounce_arc * 0.09)
+
 	rotation = 0.0
 	if body_sprite != null and tex_sheet != null:
 		body_sprite.frame = clampi(pose_idx, 0, 2)
@@ -388,8 +425,22 @@ func _process(delta: float) -> void:
 	if heart_icon != null:
 		heart_icon.visible = (boost_timer > 0.0)
 		if heart_icon.visible:
+			var pulse_s := 0.55 + (0.14 if pet_jump_timer > 0.0 else 0.03 * sin(anim_time * 7.0))
+			heart_icon.scale = Vector2(pulse_s, pulse_s)
 			heart_icon.position = Vector2(0.0, -62.0 + hop_y + sin(anim_time * 6.0) * 2.0)
 			heart_icon.rotation = 0.0
+
+	for mi in range(pet_motes.size()):
+		var mote := pet_motes[mi]
+		if mote == null:
+			continue
+		mote.visible = (pet_jump_timer > 0.0)
+		if mote.visible:
+			var prog := 1.0 - clampf(pet_jump_timer / PET_JUMP_DURATION, 0.0, 1.0)
+			var side_dir := -1.0 if mi == 0 else 1.0
+			mote.position = Vector2(side_dir * (10.0 + prog * 8.0), -54.0 - prog * 20.0 + hop_y * 0.5)
+			mote.modulate.a = clampf(1.15 - prog, 0.0, 1.0)
+			mote.rotation = 0.0
 
 	if sleep_label != null:
 		sleep_label.visible = is_sleeping_full and (boost_timer <= 0.0)
