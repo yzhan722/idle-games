@@ -21,6 +21,18 @@ init python:
             return "陌生的搭档"
         return "初次相遇"
 
+    def alice_bond_title(v):
+        """根据艾丽丝信任度返回万事屋搭档称谓"""
+        if v >= 80:
+            return "生死相托"
+        elif v >= 60:
+            return "默契共犯"
+        elif v >= 35:
+            return "可靠后盾"
+        elif v >= 15:
+            return "正式社员"
+        return "试用搭档"
+
 
 ################################################################################
 ## 线索栏 + 羁绊 HUD —— 随时可调出查看
@@ -80,11 +92,20 @@ screen evidence_book():
         elif _cur_bg in ("oldbuilding", "memory_storeroom", "memory_corridor", "memory_gate"):
             add Solid("#07040e55") xsize 1280 ysize 24 yalign 0.0 at atmos_fade_in
             add Solid("#07040e55") xsize 1280 ysize 24 yalign 1.0 at atmos_fade_in
-        # 右上角一行紧凑的"证据"与"羁绊"按钮（高度 40px，不与立绘头部、选项块重叠）
+        # 右上角一行紧凑的"直觉"、"证据"与"羁绊"状态芯片（高度 40px，不与立绘头部、选项块重叠）
         hbox:
             at hud_fade
             align (0.99, 0.02)
             spacing 8
+            frame:
+                background Frame("gui/hud_chip.png", 12, 12)
+                padding (12, 0)
+                ysize 40
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    text _("直觉") style "hud_chip_text"
+                    text ("[intuition]/3") size 18 bold True color ("#fca5a5" if (intuition <= 0 or fail_count >= 1) else "#f4ce78") outlines [(2, "#1c1208", 0, 0)] yalign 0.5
             button:
                 style "hud_chip_button"
                 at hud_chip_fx
@@ -148,10 +169,10 @@ style hud_bond_bar is bar:
 
 transform toast_in:
     on show:
-        alpha 0.0 xoffset -24
-        easeout 0.3 alpha 1.0 xoffset 0
+        alpha 0.0 xoffset -24 zoom 0.96
+        easeout 0.28 alpha 1.0 xoffset 0 zoom 1.0
     on hide:
-        easein 0.35 alpha 0.0
+        easein 0.3 alpha 0.0 xoffset -10
 
 screen clue_toast(name, kicker=_("线索入手")):
     zorder 150
@@ -163,8 +184,8 @@ screen clue_toast(name, kicker=_("线索入手")):
             yalign 0.5
             add "gui/icon_evidence.png" yalign 0.5
             vbox:
-                spacing 1
-                text kicker style "clue_toast_kicker"
+                spacing 2
+                text ("✦ " + kicker) style "clue_toast_kicker"
                 text name style "clue_toast_text"
     timer 3.4 action Hide("clue_toast")
 
@@ -173,29 +194,31 @@ style clue_toast_frame is default:
     xpos 30
     ypos 12
     background Frame("gui/hud_chip.png", 12, 12)
-    padding (16, 8)
+    padding (18, 9)
     xmaximum 560
 
 style clue_toast_kicker is text:
-    size 14
-    color "#9a86b8"
+    font gui.bold_font
+    size 13
+    color "#e8c98a"
     kerning 3
 
 style clue_toast_text is text:
     size 20
     color "#f2ecf8"
+    outlines [(2, "#0d0919", 0, 0)]
 
 transform favor_float:
-    alpha 0.0 yoffset 10
-    easeout 0.25 alpha 1.0 yoffset 0
-    pause 0.9
-    easein 0.5 alpha 0.0 yoffset -16
+    alpha 0.0 yoffset 12 zoom 0.92
+    easeout 0.24 alpha 1.0 yoffset 0 zoom 1.0
+    pause 0.95
+    easein 0.48 alpha 0.0 yoffset -16
 
 screen favor_pop(amount):
     zorder 150
-    text ("羁绊 +%d" % amount if amount > 0 else "羁绊 %d" % amount):
+    text ("✦ 羁绊 +%d" % amount if amount > 0 else "羁绊 %d" % amount):
         style "favor_pop_text"
-        color ("#f0c8ff" if amount > 0 else "#9aa6c8")
+        color ("#f5d0ff" if amount > 0 else "#9aa6c8")
         at favor_float
     timer 1.7 action Hide("favor_pop")
 
@@ -204,7 +227,7 @@ style favor_pop_text is text:
     size 20
     xalign 0.985
     ypos 62
-    outlines [(2, "#0a0714", 0, 0)]
+    outlines [(3, "#0a0714", 0, 0), (1, "#2a1b3d", 0, 1)]
 
 
 ## 弹出面板的通用外壳：暗化遮罩 + 居中卡片 + 标题带 + 右上角关闭；点击遮罩也能关闭
@@ -295,7 +318,10 @@ screen bond_panel():
                         hbox:
                             xfill True
                             text _("墨墨") style "bond_name" color "#e2c8ff"
-                            text "[mo_bond_title(mo_favor)]" style "bond_stage" xalign 1.0
+                            frame:
+                                style "bond_stage_pill"
+                                xalign 1.0
+                                text "[mo_bond_title(mo_favor)]" style "bond_stage"
                         bar:
                             value AnimatedValue(mo_favor, 100, delay=0.8)
                             style "bond_bar_mo"
@@ -311,14 +337,17 @@ screen bond_panel():
                     spacing 18
                     frame:
                         style "bond_avatar"
-                        add Transform("images/chara_alice_neutral.png", fit="cover", xysize=(72, 72), crop_relative=True, crop=(0.22, 0.0, 0.56, 0.44)) align (0.5, 0.0)
+                        add Transform("images/chara_alice_happy.png" if alice_favor >= 60 else ("images/chara_alice_smile.png" if alice_favor >= ALICE_HINT_THRESHOLD else "images/chara_alice_neutral.png"), fit="cover", xysize=(72, 72), crop_relative=True, crop=(0.22, 0.0, 0.56, 0.44)) align (0.5, 0.0)
                     vbox:
                         spacing 6
                         yalign 0.5
                         hbox:
                             xfill True
                             text _("艾丽丝") style "bond_name" color "#f3d78e"
-                            text _("万事屋的信任") style "bond_stage" xalign 1.0
+                            frame:
+                                style "bond_stage_pill"
+                                xalign 1.0
+                                text "[alice_bond_title(alice_favor)]" style "bond_stage" color "#f7e3a8"
                         bar:
                             value AnimatedValue(alice_favor, 100, delay=0.8)
                             style "bond_bar_alice"
@@ -378,10 +407,15 @@ style bond_name is text:
     size 24
     kerning 2
 
+style bond_stage_pill is default:
+    background Frame("gui/panel_dark.png", 12, 12)
+    padding (10, 3)
+    yalign 0.5
+
 style bond_stage is text:
-    size 18
-    color "#c9b8e2"
-    yalign 0.6
+    size 16
+    color "#dcd0f5"
+    yalign 0.5
 
 style bond_meta is text:
     size 16
@@ -610,10 +644,24 @@ screen evidence_list():
                                         xfill True
                                         if kako_clue >= frag_idx:
                                             text frag_title style "bond_name" size 20 color "#f2d8ff"
-                                            text frag_src style "bond_meta" xalign 1.0 yalign 0.5
+                                            hbox:
+                                                spacing 8
+                                                xalign 1.0
+                                                yalign 0.5
+                                                text frag_src style "bond_meta" yalign 0.5
+                                                frame:
+                                                    style "bond_stage_pill"
+                                                    text _("✦ 已拼合") size 13 color "#86efac" bold True
                                         else:
                                             text ("碎片 %d · ？？？" % frag_idx) style "bond_name" size 20 color "#6a5c80"
-                                            text frag_src style "bond_meta" xalign 1.0 yalign 0.5
+                                            hbox:
+                                                spacing 8
+                                                xalign 1.0
+                                                yalign 0.5
+                                                text frag_src style "bond_meta" yalign 0.5
+                                                frame:
+                                                    style "bond_stage_pill"
+                                                    text _("待追忆") size 13 color "#94a3b8"
                                     if kako_clue >= frag_idx:
                                         text frag_desc style "evidence_text" size 17 color "#dcd0ec" xmaximum 680
                                     else:
@@ -644,13 +692,17 @@ screen evidence_list():
                                         hbox:
                                             xfill True
                                             text (player_name if ch_key == "mc" else ch_name) style "bond_name" size 20 color "#f2e6ff"
-                                            text ch_role style "bond_meta" xalign 1.0 yalign 0.5
+                                            frame:
+                                                style "bond_stage_pill"
+                                                xalign 1.0
+                                                yalign 0.5
+                                                text ch_role style "bond_meta" color "#e9d5ff"
                                         text ch_bio style "evidence_text" size 16 color "#cfc0e4" xmaximum 600
 
 style evidence_card is default:
     xfill True
     background Frame("gui/panel_card.png", 16, 16)
-    padding (12, 10)
+    padding (16, 12)
 
 style evidence_badge is default:
     xsize 40
