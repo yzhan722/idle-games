@@ -1651,6 +1651,11 @@ body.screen-quake-active #app {
 }
 
 .penalty-debuff-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 10.5px;
   background: #e0534d;
   padding: 1.5px 7px;
@@ -2403,20 +2408,22 @@ body.screen-quake-active #app {
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 120;
+  z-index: 260;
   background: linear-gradient(180deg, #fffdf7 0%, #f7e4be 100%);
   border: 2.2px solid var(--border-tan);
   color: var(--ink-dark);
   font-size: 13.5px;
   font-weight: 900;
-  padding: 8px 18px;
-  border-radius: 999px;
+  line-height: 1.35;
+  text-align: center;
+  padding: 7px 16px;
+  border-radius: 18px;
   box-shadow: 0 3.5px 0 var(--border-lip), 0 10px 26px rgba(48, 26, 8, 0.35);
   pointer-events: none;
-  white-space: nowrap;
-  max-width: 92vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  max-width: min(92vw, 520px);
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .global-toast.hidden {
@@ -3833,6 +3840,87 @@ body.screen-quake-active #app {
     flex-shrink: 0;
   }
 
+  .leaderboard-list {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+    padding: 5px 6px !important;
+  }
+
+  .lb-row,
+  .lb-row.lb-active-mode {
+    flex: 0 0 auto !important;
+    min-height: 28px !important;
+    height: 28px !important;
+    padding: 2px 8px !important;
+  }
+
+  #btn-stage-theme.stage-picker {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 5px 12px !important;
+  }
+
+  #stage-badge {
+    font-size: 14px !important;
+  }
+
+  #stage-plaque-sub {
+    font-size: 8.8px !important;
+    max-width: 100% !important;
+    padding: 0 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .top-actions {
+    flex: 0 0 auto !important;
+    gap: 5px !important;
+  }
+
+  .global-toast {
+    top: 122px !important;
+    font-size: 12.5px !important;
+    padding: 6px 14px !important;
+  }
+
+  #app:has(#result-modal:not(.hidden)) .global-toast {
+    top: max(10px, env(safe-area-inset-top)) !important;
+  }
+
+  #app:has(#main-menu:not(.hidden)) .global-toast {
+    top: max(132px, calc(env(safe-area-inset-top) + 124px)) !important;
+    max-width: min(92vw, 356px) !important;
+  }
+
+  .center-banner {
+    top: 120px !important;
+    transform: translate(-50%, 0) scale(0.76) !important;
+  }
+  .drawer-tools-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+  .drawer-tool-btn {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    padding: 5px 2px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  .upg-cost {
+    font-size: 9.5px !important;
+    padding: 2px 2px !important;
+    gap: 2px !important;
+    white-space: nowrap !important;
+  }
+
   .skill-tree-topbar {
     padding: 5px 9px;
     gap: 6px;
@@ -4528,11 +4616,27 @@ body.screen-quake-active #app {
 #btn-title-sound span,
 .kbd-hint,
 .commander-rank-tag,
-.hero-race-perk,
 .launch-btn-sub,
 .panel-subtitle,
 .menu-brand {
   display: none !important;
+}
+
+#home-race-perk.hero-race-perk {
+  display: inline-block !important;
+  margin-top: 3px !important;
+  padding: 2px 10px !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #fef08a !important;
+  background: rgba(8, 22, 54, 0.82) !important;
+  border: 1.5px solid rgba(250, 204, 21, 0.45) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85) !important;
+  white-space: nowrap !important;
+  max-width: min(92vw, 338px) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .title-topbar {
@@ -7219,14 +7323,53 @@ body.screen-quake-active #app {
   justify-content: space-between !important;
   text-align: center !important;
   overflow: visible !important;
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out !important;
   box-shadow:
     0 5px 0 #1c1108,
     0 10px 18px rgba(0, 0, 0, 0.5) !important;
 }
 
-.upgrade-card:not(:disabled):hover {
+.upgrade-card:not(:disabled) {
   border-color: #fde047 !important;
+  box-shadow:
+    0 5px 0 #1c1108,
+    0 0 16px rgba(250, 204, 21, 0.55),
+    0 10px 18px rgba(0, 0, 0, 0.5) !important;
+  animation: upgReadyPulse 1.5s ease-in-out infinite;
+}
+
+.upgrade-card:not(:disabled)::after {
+  content: "UP!";
+  position: absolute;
+  top: -8px;
+  right: -5px;
+  z-index: 6;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 100%);
+  border: 1.5px solid #ffffff;
+  outline: 1.5px solid #451a03;
+  color: #451a03;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+@keyframes upgReadyPulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+
+.upgrade-card:not(:disabled):hover {
+  border-color: #fef08a !important;
   transform: translateY(-4px) !important;
+}
+
+.upgrade-card:not(:disabled):active {
+  transform: translateY(1px) scale(0.96) !important;
 }
 
 .upgrade-card .upg-top {
@@ -7335,10 +7478,24 @@ body.screen-quake-active #app {
 }
 
 .upgrade-card:disabled .upg-cost {
-  background: linear-gradient(180deg, #57453a 0%, #382b23 100%) !important;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(56, 189, 248, 0.42) 0%,
+      rgba(37, 99, 235, 0.48) var(--upg-pct, 0%),
+      rgba(56, 43, 35, 0.92) var(--upg-pct, 0%),
+      rgba(42, 31, 25, 0.96) 100%
+    ) !important;
   color: #f8fafc !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
   text-shadow: 0 1.5px 0 #1c1108 !important;
+}
+
+#gold-amount,
+#orbital-pct,
+#champion-pct,
+.upg-cost span {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ==========================================================================
@@ -7999,9 +8156,24 @@ img,
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5) !important;
 }
 
+.stat-box span {
+  color: #fde68a !important;
+  text-shadow: 0 1.5px 0 #1f1209 !important;
+}
+
 .stat-box strong {
   color: #ffffff !important;
   text-shadow: 0 2px 0 #241811 !important;
+}
+
+.speed-skip-banner #speed-skip-text {
+  color: #fffbeb !important;
+  text-shadow: 0 1.5px 0 #451a03 !important;
+}
+
+.reward-card .reward-title {
+  color: #ffffff !important;
+  text-shadow: 0 2px 0 #07193f, 0 3px 6px rgba(0, 0, 0, 0.55) !important;
 }
 
 .reward-header {
@@ -8708,11 +8880,27 @@ img,
 #btn-title-sound span,
 .kbd-hint,
 .commander-rank-tag,
-.hero-race-perk,
 .launch-btn-sub,
 .panel-subtitle,
 .menu-brand {
   display: none !important;
+}
+
+#home-race-perk.hero-race-perk {
+  display: inline-block !important;
+  margin-top: 3px !important;
+  padding: 2px 10px !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #fef08a !important;
+  background: rgba(8, 22, 54, 0.82) !important;
+  border: 1.5px solid rgba(250, 204, 21, 0.45) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85) !important;
+  white-space: nowrap !important;
+  max-width: min(92vw, 338px) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .title-topbar {
@@ -9067,9 +9255,183 @@ img,
   }
 
   #menu-panel-launch.menu-panel.active {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .launch-left-col,
+  .leaderboard-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .home-hero-stage {
+    padding: 2px 4px !important;
+  }
+
+  .hero-stage-center {
+    padding: 0 4px !important;
+    gap: 8px !important;
+    margin-top: 0 !important;
+  }
+
+  .hero-carousel-arrow {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 16px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hero-pedestal-wrap {
+    transform: none !important;
+  }
+
+  .hero-mascot-box {
+    width: 118px !important;
+    height: 118px !important;
+  }
+
+  .hero-pedestal-base {
+    width: 152px !important;
+    height: 30px !important;
+    margin: -14px auto 0 !important;
+  }
+
+  .hero-stage-ribbon {
+    min-width: 0 !important;
+    max-width: 240px !important;
+    padding: 4px 14px !important;
+    margin: -12px auto 4px !important;
+  }
+
+  #btn-start-battle,
+  .btn-launch-battle {
+    width: min(92%, 300px) !important;
+    min-height: 52px !important;
+    padding: 6px 16px !important;
+  }
+
+  .btn-launch-battle .launch-btn-main,
+  .launch-btn-main {
+    font-size: 20px !important;
+  }
+
+  .leaderboard-box {
+    border-left-width: 6px !important;
+    border-right-width: 6px !important;
+    padding: 8px 8px !important;
+  }
+
+  .lb-self-bar {
+    flex-wrap: wrap !important;
+    padding: 4px 8px !important;
+    gap: 4px !important;
+  }
+
+  #leaderboard-self-status {
+    font-size: 11.5px !important;
+  }
+
+  .skill-tree-viewport {
+    border-left-width: 6px !important;
+    border-right-width: 6px !important;
+    padding: 6px 4px !important;
+    flex: 1 1 auto !important;
+    min-height: 200px !important;
+  }
+
+  .kr-branch-col {
+    min-width: 0 !important;
+    padding: 2px 1px !important;
+  }
+
+  .tree-node,
+  .tree-node.selected {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .tree-node-medallion {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 9px !important;
+    padding: 3px !important;
+  }
+
+  .kr-branch-pedestal {
+    width: 40px !important;
+    height: 36px !important;
+  }
+
+  .kr-branch-pedestal .race-art-img,
+  .kr-pedestal-icon .race-art-img {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .skill-inspector-bar {
+    border-left-width: 6px !important;
+    border-right-width: 6px !important;
+    padding: 6px !important;
+  }
+
+  .kr-parchment-sheet {
+    flex-direction: column !important;
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+
+  .sib-icon-box {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 12px !important;
+  }
+
+  .sib-icon-box .skill-art-img {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .kr-parchment-body {
+    align-items: center !important;
+    text-align: center !important;
+    gap: 4px !important;
+  }
+
+  .kr-title-line {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+  }
+
+  .sib-name {
+    font-size: 15px !important;
+  }
+
+  .sib-desc {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    padding: 5px 8px !important;
+  }
+
+  .sib-stat {
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+    white-space: normal !important;
+  }
+
+  .sib-upgrade-btn {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    font-size: 14px !important;
+    padding: 6px 12px !important;
   }
 
   .main-menu-card > .menu-tabs {
@@ -9086,6 +9448,47 @@ img,
     width: 100% !important;
     max-width: 100% !important;
     gap: 12px !important;
+    padding: 0 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  .base-emblem,
+  .hud-emblem-img {
+    width: 44px !important;
+    height: 48px !important;
+  }
+
+  .player-base-bar .base-emblem {
+    left: -12px !important;
+  }
+
+  .enemy-base-bar .base-emblem {
+    right: -12px !important;
+  }
+
+  .hud-bottom {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: min(96vw, 420px) !important;
+    gap: 6px !important;
+  }
+
+  .tactical-row {
+    width: 98% !important;
+    gap: 8px !important;
+  }
+
+  .upgrade-dock {
+    border-left-width: 8px !important;
+    border-right-width: 8px !important;
+    padding: 7px 8px 6px !important;
+    gap: 6px !important;
+  }
+
+  .upgrade-dock::before,
+  .upgrade-dock::after {
+    display: none !important;
   }
 
   .upg-icon-tile {
@@ -9097,15 +9500,84 @@ img,
     height: 40px !important;
   }
 
+  .upg-title {
+    font-size: 10.5px !important;
+  }
+
+  .upg-cost {
+    font-size: 10.5px !important;
+    padding: 2px 2px !important;
+  }
+
   .meta-portrait-well {
-    width: 48px !important;
-    height: 48px !important;
+    width: 56px !important;
+    height: 52px !important;
     border-radius: 12px;
   }
 
   .meta-portrait-well .meta-art-img {
-    width: 36px !important;
-    height: 36px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  #menu-panel-meta.menu-panel.active,
+  #menu-panel-skins.menu-panel.active {
+    border-left-width: 6px !important;
+    border-right-width: 6px !important;
+    padding: 8px 8px 10px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .meta-upgrades-grid,
+  .skins-shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: auto !important;
+    grid-auto-rows: auto !important;
+    gap: 8px 8px !important;
+    flex: 1 0 auto !important;
+  }
+
+  .meta-card,
+  .skin-card {
+    padding: 8px 8px !important;
+    gap: 5px !important;
+    min-height: 184px !important;
+  }
+
+  .meta-card-top,
+  .meta-info {
+    flex: 1 1 auto !important;
+    min-height: auto !important;
+  }
+
+  .meta-title-row strong,
+  .skin-title {
+    font-size: 14px !important;
+  }
+
+  .meta-desc {
+    display: none !important;
+  }
+
+  .meta-cur,
+  .skin-bonus {
+    font-size: 11px !important;
+    padding: 3px 6px !important;
+  }
+
+  .skin-shard-row {
+    font-size: 11px !important;
+    gap: 4px !important;
+    justify-content: space-between !important;
+  }
+
+  .meta-buy-btn,
+  .skin-action-btn {
+    min-height: 34px !important;
+    height: 34px !important;
+    font-size: 13px !important;
+    padding: 4px 8px !important;
   }
 
   .skin-swatch {
@@ -9116,7 +9588,419 @@ img,
     width: 52px !important;
     height: 52px !important;
   }
+
+  .leaderboard-list {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+    padding: 5px 6px !important;
+  }
+
+  .lb-row,
+  .lb-row.lb-active-mode {
+    flex: 0 0 auto !important;
+    min-height: 28px !important;
+    height: 28px !important;
+    padding: 2px 8px !important;
+  }
+
+  #btn-stage-theme.stage-picker {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 5px 12px !important;
+  }
+
+  #stage-badge {
+    font-size: 14px !important;
+  }
+
+  #stage-plaque-sub {
+    font-size: 8.8px !important;
+    max-width: 100% !important;
+    padding: 0 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .top-actions {
+    flex: 0 0 auto !important;
+    gap: 5px !important;
+  }
+
+  .global-toast {
+    top: 122px !important;
+    font-size: 12.5px !important;
+    padding: 6px 14px !important;
+  }
+
+  #app:has(#result-modal:not(.hidden)) .global-toast {
+    top: max(10px, env(safe-area-inset-top)) !important;
+  }
+
+  #app:has(#main-menu:not(.hidden)) .global-toast {
+    top: max(132px, calc(env(safe-area-inset-top) + 124px)) !important;
+    max-width: min(92vw, 356px) !important;
+  }
+
+  .center-banner {
+    top: 120px !important;
+    transform: translate(-50%, 0) scale(0.76) !important;
+  }
+  .drawer-tools-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+  .drawer-tool-btn {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    padding: 5px 2px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  .upg-cost {
+    font-size: 9.5px !important;
+    padding: 2px 2px !important;
+    gap: 2px !important;
+    white-space: nowrap !important;
+  }
+
+  .skill-tree-topbar {
+    padding: 5px 6px !important;
+    gap: 4px !important;
+  }
+
+  .sp-sub {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  .skill-action-btn {
+    padding: 4px 6px !important;
+    font-size: 10.5px !important;
+  }
+
+  #result-modal .modal-card {
+    padding: 12px 12px 10px !important;
+    gap: 6px !important;
+    max-height: 94vh !important;
+  }
+
+  #result-modal .modal-stats {
+    gap: 6px !important;
+    margin: 2px 0 !important;
+  }
+
+  #result-modal .stat-box {
+    padding: 5px 6px !important;
+  }
+
+  #result-modal .speed-skip-banner {
+    padding: 6px 10px !important;
+    margin-bottom: 4px !important;
+  }
+
+  #result-modal .reward-cards {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  #result-modal .reward-card {
+    flex-direction: row !important;
+    align-items: center !important;
+    text-align: left !important;
+    padding: 7px 10px !important;
+    gap: 10px !important;
+    min-height: auto !important;
+  }
+
+  #result-modal .reward-card .reward-art-img {
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  #result-modal .reward-text-wrap {
+    flex: 1 1 auto !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    gap: 3px !important;
+  }
+
+  #result-modal .reward-title {
+    font-size: 14px !important;
+  }
+
+  #result-modal .reward-effect-box {
+    padding: 3px 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #result-modal .modal-actions {
+    gap: 6px !important;
+    margin-top: 4px !important;
+  }
+
+  #result-modal .modal-actions button {
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+  }
 }
+
+/* Round 32 Commercial Polish: High-Contrast Carved Wood-Gold Battle Banner & Result Modal Ceremony */
+.center-banner {
+  background: linear-gradient(180deg, rgba(68, 43, 27, 0.97) 0%, rgba(38, 23, 14, 0.98) 100%) !important;
+  border: 2.5px solid #facc15 !important;
+  outline: 2px solid #241811 !important;
+  border-radius: 18px !important;
+  padding: 7px 18px !important;
+  opacity: 1 !important;
+  box-shadow:
+    0 4px 0 #241811,
+    0 10px 24px rgba(15, 8, 3, 0.55),
+    inset 0 1.5px 0 rgba(255, 250, 205, 0.35) !important;
+  animation: bannerPopSolid 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.center-banner .banner-title {
+  color: #fef08a !important;
+  text-shadow: 0 2px 0 #1f1209, 0 3px 8px rgba(0, 0, 0, 0.65) !important;
+}
+
+.center-banner .banner-sub {
+  color: #fde68a !important;
+  text-shadow: 0 1.5px 0 #1f1209 !important;
+  opacity: 0.96 !important;
+}
+
+@keyframes bannerPopSolid {
+  from { opacity: 0.92; transform: translate(-50%, -4px) scale(0.8); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(0.84); }
+}
+
+@media (max-width: 640px) {
+  @keyframes bannerPopSolid {
+    from { opacity: 0.92; transform: translate(-50%, -4px) scale(0.72); }
+    to { opacity: 1; transform: translate(-50%, 0) scale(0.76); }
+  }
+}
+
+.stat-box strong,
+.reward-gold-balance,
+#btn-reroll-rewards,
+.champion-pct {
+  font-variant-numeric: tabular-nums !important;
+}
+
+@keyframes rewardCardEntrance {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+#result-modal:not(.hidden) .reward-card {
+  animation: rewardCardEntrance 0.28s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+#result-modal:not(.hidden) .reward-card:nth-child(2) {
+  animation-delay: 0.05s;
+}
+#result-modal:not(.hidden) .reward-card:nth-child(3) {
+  animation-delay: 0.1s;
+}
+#result-modal .modal-actions button {
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
+}
+#result-modal .modal-actions button:active {
+  transform: translateY(2px) scale(0.97) !important;
+}
+
+/* Round 33: Mobile Skill Toolbar Anti-Truncation, Skin Shard High-Contrast Track & Meta Sheen */
+#skill-active-keystone {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.meta-progress-text,
+.meta-cur,
+.skin-bonus,
+.skin-shard-row,
+#btn-buy-talent,
+#btn-reset-skills {
+  font-variant-numeric: tabular-nums !important;
+}
+
+.skin-bonus {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.skin-shard-box {
+  background: rgba(7, 19, 48, 0.62) !important;
+  border: 1.5px solid rgba(125, 211, 252, 0.28) !important;
+  border-radius: 9px !important;
+  padding: 5px 7px !important;
+}
+
+.skin-shard-count {
+  color: #e2e8f0 !important;
+  font-weight: 800 !important;
+}
+
+.skin-shard-count.is-ready {
+  color: #86efac !important;
+}
+
+.skin-shard-cost {
+  color: #fde68a !important;
+  font-weight: 900 !important;
+}
+
+.skin-shard-cost.is-short {
+  color: #fca5a5 !important;
+}
+
+.skin-shard-cost.is-max {
+  color: #fcd34d !important;
+}
+
+.skin-shard-track {
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: rgba(4, 10, 26, 0.88) !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.28) !important;
+  overflow: hidden !important;
+}
+
+.meta-progress-fill {
+  background: linear-gradient(90deg, #22c55e 0%, #86efac 60%, #fde047 100%) !important;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.35) !important;
+}
+
+/* Round 34 Commercial Polish: Vivid In-Battle Upgrade Charge Gauge & Near-Ready Glow */
+.upgrade-card:disabled {
+  opacity: 0.94 !important;
+  filter: none !important;
+}
+
+.upgrade-card:disabled .upg-cost {
+  background:
+    linear-gradient(
+      90deg,
+      #0284c7 0%,
+      #38bdf8 var(--upg-pct, 0%),
+      #1a1410 var(--upg-pct, 0%),
+      #120d0a 100%
+    ) !important;
+  color: #f8fafc !important;
+  border-top: 1.5px solid rgba(125, 211, 252, 0.38) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+
+.upgrade-card.is-near-ready:disabled {
+  outline-color: #facc15 !important;
+  box-shadow:
+    0 4px 0 #1c1108,
+    0 0 12px rgba(250, 204, 21, 0.45) !important;
+}
+
+.upgrade-card.is-near-ready:disabled .upg-cost {
+  background:
+    linear-gradient(
+      90deg,
+      #d97706 0%,
+      #facc15 var(--upg-pct, 0%),
+      #1a1410 var(--upg-pct, 0%),
+      #120d0a 100%
+    ) !important;
+  color: #fffbeb !important;
+}
+
+/* Round 35 Commercial Polish: Self-Rank Telemetry Chips, Unaffordable Rename State & Clean Speed-Skip Banner */
+#result-modal {
+  z-index: 80 !important;
+}
+
+.speed-skip-banner {
+  background: linear-gradient(135deg, #92400e 0%, #b45309 55%, #d97706 100%) !important;
+  box-shadow:
+    0 4px 0 #451a03,
+    inset 0 1px 0 rgba(254, 243, 199, 0.45) !important;
+}
+
+.speed-skip-info {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 3px !important;
+  text-align: left !important;
+}
+
+#leaderboard-self-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.lb-self-name {
+  color: #fffbeb;
+  font-weight: 900;
+}
+
+.lb-self-rank-pill,
+.lb-self-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.lb-self-rank-pill {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: #cbd5e1;
+}
+
+.lb-self-rank-pill.is-ranked {
+  background: linear-gradient(180deg, #fde047 0%, #d97706 100%);
+  border-color: #fef9c3;
+  color: #451a03;
+  text-shadow: none;
+}
+
+.lb-self-metric-pill {
+  background: rgba(14, 116, 144, 0.55);
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  color: #e0f2fe;
+}
+
+.lb-self-reset {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(254, 240, 138, 0.78);
+  white-space: nowrap;
+}
+
+.lb-edit-btn.is-unaffordable {
+  background: linear-gradient(180deg, #64748b 0%, #334155 100%) !important;
+  border-color: rgba(203, 213, 225, 0.48) !important;
+  outline-color: #0f172a !important;
+  color: #cbd5e1 !important;
+  opacity: 0.86 !important;
+}
+
+
 
 
 
