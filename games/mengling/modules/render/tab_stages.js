@@ -556,36 +556,42 @@ export function renderFunctionsStageHtml({
           </div>
           <div class="scene-actor-group">${expIcons}</div>
         </div>
-        <div class="sanctuary-diorama">
+        <div class="sanctuary-diorama ${slotSize > 0 ? "" : "is-unbuilt"}">
           <div class="sanctuary-diorama__head">
             <span class="sanctuary-diorama__title">${renderBuildingSvg("trainingGround", 20)} 灵兽训练场</span>
-            <span class="badge">${activeTrain.length}/${slotSize} 槽</span>
+            <span class="badge ${slotSize > 0 ? "" : "badge--muted"}">${slotSize > 0 ? `${activeTrain.length}/${slotSize} 槽` : "未建造"}</span>
           </div>
           <div class="sanctuary-diorama__foot">
             <span>${slotSize > 0 ? "受训灵兽经验获取 ×10" : "建造「训练场」后开启"}</span>
-            <button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="train-cheer">${renderUiIcon("tab_pve", 14)} 擂鼓助威</button>
+            ${slotSize > 0
+              ? `<button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="train-cheer">${renderUiIcon("tab_pve", 14)} 擂鼓助威</button>`
+              : `<button type="button" class="btn btn--small sanctuary-diorama__btn sanctuary-diorama__btn--locked" data-stage-act="goto-bonfire">${renderUiIcon("tab_bonfire", 14)} 去营地建造</button>`}
           </div>
         </div>
 
-        <div class="sanctuary-diorama">
+        <div class="sanctuary-diorama ${breedLvl > 0 ? "" : "is-unbuilt"}">
           <div class="sanctuary-diorama__head">
             <span class="sanctuary-diorama__title">${renderBuildingSvg("breedingHouse", 20)} 星露育灵屋</span>
-            <span class="badge ${eggOn ? "badge--ok" : ""}">${eggOn ? `孵化 ${eggPct}%` : breedLvl > 0 ? `Lv.${breedLvl}` : "未建造"}</span>
+            <span class="badge ${eggOn ? "badge--ok" : breedLvl > 0 ? "" : "badge--muted"}">${eggOn ? `孵化 ${eggPct}%` : breedLvl > 0 ? `Lv.${breedLvl}` : "未建造"}</span>
           </div>
           <div class="sanctuary-diorama__foot">
             <span>${eggOn ? `剩余 ${escapeHtml(fmtDuration(eggRem))}` : breedLvl > 0 ? "双亲配对继承高个体值" : "建造「育灵屋」后开启"}</span>
-            <button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="egg-warm">${renderResSvg("luckyEgg", 14)} 灵温抚育</button>
+            ${breedLvl > 0
+              ? `<button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="egg-warm">${renderResSvg("luckyEgg", 14)} 灵温抚育</button>`
+              : `<button type="button" class="btn btn--small sanctuary-diorama__btn sanctuary-diorama__btn--locked" data-stage-act="goto-bonfire">${renderUiIcon("tab_bonfire", 14)} 去营地建造</button>`}
           </div>
         </div>
 
-        <div class="sanctuary-diorama">
+        <div class="sanctuary-diorama ${expLvl > 0 ? "" : "is-unbuilt"}">
           <div class="sanctuary-diorama__head">
             <span class="sanctuary-diorama__title">${renderBuildingSvg("expeditionPost", 20)} 次元远征门</span>
-            <span class="badge ${expOn ? "badge--ok" : ""}">${expOn ? "远征中" : expLvl > 0 ? `Lv.${expLvl}` : "未建造"}</span>
+            <span class="badge ${expOn ? "badge--ok" : expLvl > 0 ? "" : "badge--muted"}">${expOn ? "远征中" : expLvl > 0 ? `Lv.${expLvl}` : "未建造"}</span>
           </div>
           <div class="sanctuary-diorama__foot">
             <span>${expOn ? `归来剩余 ${escapeHtml(fmtDuration(expRem))}` : expLvl > 0 ? "派遣编队赢取未来币与经验" : "建造「远征所」后开启"}</span>
-            <button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="exp-boost">${renderUiIcon("tab_capture", 14)} 星门共鸣</button>
+            ${expLvl > 0
+              ? `<button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="exp-boost">${renderUiIcon("tab_capture", 14)} 星门共鸣</button>`
+              : `<button type="button" class="btn btn--small sanctuary-diorama__btn sanctuary-diorama__btn--locked" data-stage-act="goto-bonfire">${renderUiIcon("tab_bonfire", 14)} 去营地建造</button>`}
           </div>
         </div>
       </div>

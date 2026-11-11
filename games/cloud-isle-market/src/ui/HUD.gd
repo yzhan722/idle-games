@@ -368,13 +368,20 @@ func _sync_label_nodes() -> void:
 	lbl_bar_pomodoro.visible = show_bar
 	lbl_bar_gold.text = gold_str
 	lbl_bar_pipeline.text = "契约:" + c_target + " " + str(c_cur) + "/" + str(c_req) + "(+" + str(c_amb) + "珀)"
+	if lbl_bar_pipeline.label_settings != null:
+		lbl_bar_pipeline.label_settings.font_color = Color("#FFE066") if (c_req > 0 and c_cur * 5 >= c_req * 4) else Color("#FFF4D6")
 	var codex_pct := GameManager.get_unlocked_codex_count() * 10
 	lbl_bar_stall.text = "存" + str(GameManager.get_island_basket_total(1)) + " · 摊" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
 	if GameManager != null and GameManager.pomodoro_active:
 		lbl_bar_pomodoro.text = GameManager.get_pomodoro_formatted_time()
+		if lbl_bar_pomodoro.label_settings != null:
+			lbl_bar_pomodoro.label_settings.font_color = Color("#8CE99A")
 	else:
 		lbl_bar_pomodoro.text = "[专注25m]"
+		if lbl_bar_pomodoro.label_settings != null:
+			lbl_bar_pomodoro.label_settings.font_color = Color("#FFE066")
 
+	var show_drawer := show_bar and drawer_expanded
 	var tab_names := [
 		EconomyConfig.tr_key("tab_build"),
 		EconomyConfig.tr_key("tab_animal"),
@@ -383,10 +390,13 @@ func _sync_label_nodes() -> void:
 		(EconomyConfig.tr_key("tab_companion") if GameManager.desktop_companion_mode else EconomyConfig.tr_key("tab_window"))
 	]
 	for i in range(TAB_COUNT):
+		var is_cur_tab := show_drawer and i == active_tab
 		lbl_tabs[i].visible = show_bar
-		lbl_tabs[i].text = tab_names[i]
+		lbl_tabs[i].text = ("★" + tab_names[i]) if is_cur_tab else tab_names[i]
+		lbl_tabs[i].scale = Vector2(0.96, 0.96) if is_cur_tab else Vector2(0.92, 0.92)
+		if lbl_tabs[i].label_settings != null:
+			lbl_tabs[i].label_settings.font_color = Color("#FFF9DB") if is_cur_tab else Color("#FFE066")
 
-	var show_drawer := show_bar and drawer_expanded
 	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
 	lbl_drawer_title.visible = show_drawer
 	lbl_drawer_lang.visible = show_drawer

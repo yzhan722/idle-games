@@ -290,12 +290,35 @@ function spawnInteractVfx(x, y, preset = 'love', count = 7) {
   }
 }
 
+let survivorSessionCoins = 0;
+let survivorSessionKills = 0;
+
+function syncSurvivorHud() {
+  const hudEl = document.getElementById('survivor-hud');
+  if (!hudEl) return;
+  if (gameMode !== 'survivor') {
+    hudEl.classList.add('hidden');
+    return;
+  }
+  hudEl.classList.remove('hidden');
+  const lvEl = document.getElementById('surv-lv-chip');
+  const killEl = document.getElementById('surv-kill-chip');
+  const coinEl = document.getElementById('surv-coin-val');
+  if (lvEl) lvEl.textContent = `打工 Lv.${player.level}`;
+  if (killEl) killEl.textContent = `击退 ${survivorSessionKills}`;
+  if (coinEl) coinEl.textContent = `+${survivorSessionCoins}`;
+}
+
 function addCoins(amount, x, y, labelPrefix = '') {
   const crownBonus = player.equipped.crown ? 1.25 : 1;
   const magnetBonus = 1 + ((player.weapons.magnet || 1) - 1) * 0.15;
   const buffBonus = player.foodBuffTimer > 0 ? player.foodCoinMult : 1;
   const finalCoins = Math.max(1, Math.round(amount * crownBonus * magnetBonus * buffBonus));
   player.coins += finalCoins;
+  if (gameMode === 'survivor') {
+    survivorSessionCoins += finalCoins;
+    syncSurvivorHud();
+  }
   playSfx('coin');
   pulseHudElement('hud-coins-btn');
   const baseX = x ?? player.x;
@@ -1603,25 +1626,39 @@ function switchMode(newMode) {
   player.wanderTargetX = null;
   player.recenterDelay = 0; player.tsundereTimer = 0; player.happyTimer = 0; player.cheerTimer = 0;
 
+  starTarget.combo = 0;
+  starTarget.comboTimer = 0;
+
   if (gameMode === 'pet') {
     enemies.length = 0;
     bullets.length = 0;
+    coinsList.length = 0;
+    gems.length = 0;
+    shockwaves.length = 0;
     starTarget.active = false;
     careBarEl.style.display = 'flex';
     if (wishPillEl) wishPillEl.style.display = 'inline-flex';
+    syncSurvivorHud();
     setPlayerEmote('回到日常桌面养成模式~', 1.8);
   } else if (gameMode === 'parkour') {
     enemies.length = 0;
     bullets.length = 0;
+    coinsList.length = 0;
+    gems.length = 0;
+    shockwaves.length = 0;
     careBarEl.style.display = 'none';
     if (wishPillEl) wishPillEl.style.display = 'none';
+    syncSurvivorHud();
     placeStarOnBestTarget();
     setPlayerEmote('跳上实景物体摘星拿赏金!', 1.8);
   } else if (gameMode === 'survivor') {
+    starTarget.active = false;
+    survivorSessionCoins = 0;
+    survivorSessionKills = 0;
     careBarEl.style.display = 'none';
     if (wishPillEl) wishPillEl.style.display = 'none';
     enemySpawnTimer = 0.15; if (enemies.length === 0) { spawnEnemy(true); spawnEnemy(false); }
-    placeStarOnBestTarget();
+    syncSurvivorHud();
     setPlayerEmote('开启幸存者打工！打怪爆金币咯~', 2.0);
   }
 }
@@ -1910,7 +1947,7 @@ function startRpsGame(fromGesture = false) { dismissPolaroid(); if (palmCatchGam
   rpsHudEl?.classList.remove('hidden');
   document.getElementById('btn-rps')?.classList.add('active');
   if (rpsStatusEl) {
-    rpsStatusEl.textContent = '对镜头伸出手势出拳（或点击按钮）！倒计时 3';
+    rpsStatusEl.innerHTML = `<span class="mg-hud-row"><span class="mg-hud-title">实景猜拳</span><span class="mg-chip mg-chip-combo">伸手或点选出拳</span><span class="mg-chip mg-chip-time">3s</span></span>`;
   }
   playSfx('rps_tick', 1);
   setPlayerEmote(
@@ -1985,9 +2022,10 @@ function updateRpsGame(dt) {
     playSfx('rps_tick', 4 - sec);
   }
   if (rpsStatusEl) {
-    rpsStatusEl.textContent = detectedMove
-      ? `镜头已识别：${RPS_LABELS[detectedMove]} · 倒计时 ${sec}`
-      : `对镜头伸出手势出拳（或点击按钮）！倒计时 ${sec}`;
+    const moveChip = detectedMove
+      ? `<span class="mg-chip mg-chip-score">已锁定 <b>${RPS_LABELS[detectedMove]}</b></span>`
+      : `<span class="mg-chip mg-chip-combo">伸手或点选出拳</span>`;
+    rpsStatusEl.innerHTML = `<span class="mg-hud-row"><span class="mg-hud-title">实景猜拳</span>${moveChip}<span class="mg-chip mg-chip-time${sec <= 1 ? ' is-urgent' : ''}">${sec}s</span></span>`;
   }
 
   if (rpsGame.timer <= 0) {
@@ -3340,7 +3378,7 @@ function updateGameplay(dt, flow) {
     if (it.life <= 0) petItems.splice(i, 1);
   }
 
-  if (gameMode !== 'pet') {
+  if (gameMode === 'parkour') {
     if (starTarget.active) {
       const distToStar = Math.hypot(player.x - starTarget.x, player.y - starTarget.y);
       if (distToStar < starTarget.radius + 32) {
@@ -3567,6 +3605,10 @@ function updateGameplay(dt, flow) {
 
     if (e.hp <= 0) {
       player.kills++;
+      if (gameMode === 'survivor') {
+        survivorSessionKills++;
+        syncSurvivorHud();
+      }
       const dropCount = e.isElite ? 3 : 1;
       for (let d = 0; d < dropCount; d++) {
         const isHeal = Math.random() < 0.16;
@@ -3751,7 +3793,9 @@ function updateGameplay(dt, flow) {
 function renderEntities(now) {
   ctx.save();
 
-  drawStarGoal(ctx, starTarget, player, now);
+  if (gameMode === 'parkour') {
+    drawStarGoal(ctx, starTarget, player, now);
+  }
 
   for (const g of gems) {
     ctx.save();

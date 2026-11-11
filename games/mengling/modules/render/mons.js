@@ -552,12 +552,12 @@ export function createRenderMons({
 
     const baseBadges = base
       ? `
-        <div class="badge">HP ${base.hp}</div>
-        <div class="badge">Atk ${base.atk}</div>
-        <div class="badge">Def ${base.def}</div>
-        <div class="badge">SpA ${base.spa}</div>
-        <div class="badge">SpD ${base.spd}</div>
-        <div class="badge">Spe ${base.spe}</div>
+        <div class="badge">生命 ${base.hp}</div>
+        <div class="badge">物攻 ${base.atk}</div>
+        <div class="badge">物防 ${base.def}</div>
+        <div class="badge">灵攻 ${base.spa}</div>
+        <div class="badge">灵防 ${base.spd}</div>
+        <div class="badge">速度 ${base.spe}</div>
       `
       : `<div class="badge badge--muted">种族值加载中</div>`;
     const evo = getEvoMap();
@@ -631,18 +631,25 @@ export function createRenderMons({
         </div>
       </div>
 
-      <div class="row">
+      <div class="row row--mon-stats">
         <div class="row__left">
           <div class="row__title row__titleLine">${renderResSvg("energyDrink", 18)}<span>能力值</span><span class="tag">当前六维</span></div>
-          <div class="row__desc">HP/攻击/防御/特攻/特防/速度</div>
+          <div class="row__desc">生命 / 物攻 / 物防 / 灵攻 / 灵防 / 速度</div>
         </div>
-        <div class="row__right">
-          <span class="tag">HP ${s.hp}</span>
-          <span class="tag">Atk ${s.atk}</span>
-          <span class="tag">Def ${s.def}</span>
-          <span class="tag">SpA ${s.spa}</span>
-          <span class="tag">SpD ${s.spd}</span>
-          <span class="tag">Spe ${s.spe}</span>
+        <div class="row__right mon-stat-grid">
+          ${[
+            ["生命", s.hp, "hp"],
+            ["物攻", s.atk, "atk"],
+            ["物防", s.def, "def"],
+            ["灵攻", s.spa, "spa"],
+            ["灵防", s.spd, "spd"],
+            ["速度", s.spe, "spe"],
+          ]
+            .map(([lbl, val, key]) => {
+              const pct = Math.max(10, Math.min(100, Math.round((Number(val || 0) / 160) * 100)));
+              return `<div class="mon-stat-cell mon-stat-cell--${key}"><div class="mon-stat-cell__head"><span>${lbl}</span><strong>${val}</strong></div><div class="mon-stat-cell__bar"><i style="width:${pct}%"></i></div></div>`;
+            })
+            .join("")}
         </div>
       </div>
 

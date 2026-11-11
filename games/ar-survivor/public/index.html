@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>AR DeepSeek娘 · 实景桌宠养成</title>
   <link rel="icon" type="image/webp" href="./assets/hero_idle2.webp?v=hd5" />
-  <link rel="stylesheet" href="./style.css?v=hd11" />
+  <link rel="stylesheet" href="./style.css?v=hd12" />
 </head>
 <body>
   <!-- 底层全屏实景摄像头 -->
@@ -95,6 +95,13 @@
         </button>
       </div>
     </header>
+
+    <!-- 幸存者打工实时班次战报胶囊（仅在 survivor 模式显示） -->
+    <div id="survivor-hud" class="survivor-hud hidden" aria-live="polite">
+      <span class="mg-chip mg-chip-combo" id="surv-lv-chip">Lv.1</span>
+      <span class="mg-chip mg-chip-time" id="surv-kill-chip">击退 0</span>
+      <span class="mg-chip mg-chip-score">本班 <b id="surv-coin-val">+0</b> <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></span>
+    </div>
 
     <!-- 实景石头剪刀布（猜拳）轻量互动条：支持摄像头真实手势识别或触屏点击出拳 -->
     <div id="rps-hud" class="rps-hud hidden">
@@ -188,6 +195,6 @@
     </div>
   </div>
 
-  <script type="module" src="./game.js?v=hd32"></script>
+  <script type="module" src="./game.js?v=hd33"></script>
 </body>
 </html>

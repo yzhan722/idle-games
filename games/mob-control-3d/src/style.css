@@ -9784,6 +9784,70 @@ img,
   transform: translateY(2px) scale(0.97) !important;
 }
 
+/* Round 33: Mobile Skill Toolbar Anti-Truncation, Skin Shard High-Contrast Track & Meta Sheen */
+#skill-active-keystone {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.meta-progress-text,
+.meta-cur,
+.skin-bonus,
+.skin-shard-row,
+#btn-buy-talent,
+#btn-reset-skills {
+  font-variant-numeric: tabular-nums !important;
+}
+
+.skin-bonus {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.skin-shard-box {
+  background: rgba(7, 19, 48, 0.62) !important;
+  border: 1.5px solid rgba(125, 211, 252, 0.28) !important;
+  border-radius: 9px !important;
+  padding: 5px 7px !important;
+}
+
+.skin-shard-count {
+  color: #e2e8f0 !important;
+  font-weight: 800 !important;
+}
+
+.skin-shard-count.is-ready {
+  color: #86efac !important;
+}
+
+.skin-shard-cost {
+  color: #fde68a !important;
+  font-weight: 900 !important;
+}
+
+.skin-shard-cost.is-short {
+  color: #fca5a5 !important;
+}
+
+.skin-shard-cost.is-max {
+  color: #fcd34d !important;
+}
+
+.skin-shard-track {
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: rgba(4, 10, 26, 0.88) !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.28) !important;
+  overflow: hidden !important;
+}
+
+.meta-progress-fill {
+  background: linear-gradient(90deg, #22c55e 0%, #86efac 60%, #fde047 100%) !important;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.35) !important;
+}
+
+
 
 
 

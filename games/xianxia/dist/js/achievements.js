@@ -556,6 +556,12 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 			className: "star",
 			innerHTML: this.generateStarText(completedStars, uncompletedStars)
 		}, this.achievementsHeader);
+		var initPct = Math.max(0, Math.min(100, Math.round((completedAchievements / Math.max(1, totalAchievements)) * 100)));
+		var progWrap = dojo.create("div", { className: "xxAchProgWrap" }, this.achievementsHeader);
+		this.achievementsProgFill = dojo.create("div", {
+			className: "xxAchProgFill",
+			style: "width:" + initPct + "%"
+		}, progWrap);
 	},
 
 	update: function () {
@@ -619,6 +625,13 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 		if (this.achievementsHeader.firstElementChild.innerHTML != starTextForCompare) {
 			this.achievementsHeader.firstElementChild.innerHTML = desiredStarText;
 		}
+		if (this.achievementsProgFill) {
+			var curPct = Math.max(0, Math.min(100, Math.round((completedAchievements / Math.max(1, totalAchievements)) * 100)));
+			var desiredWidth = curPct + "%";
+			if (this.achievementsProgFill.style.width !== desiredWidth) {
+				this.achievementsProgFill.style.width = desiredWidth;
+			}
+		}
 	},
 
 	//Creates a string composed of filled stars & unfilled stars:
@@ -637,11 +650,14 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 		if (ach.unlocked && ach.unethical) {className += " unethical";}
 		if (ach.unlocked) {className += " unlocked";}
 		if (ach.starUnlocked) {className += " starUnlocked";}
+		var descText = ach.description || ach.title || "";
 		var span = dojo.create("span", {
 			className: className,
-			title: ach.description || ach.title,
-			innerHTML : ach.unlocked ? (ach.title + " · " + ach.description) : (ach.title + "（未达成：" + ach.description + "）")
+			title: descText,
+			innerHTML : ach.title
 		}, container);
+		span.setAttribute("data-desc", descText);
+		span.setAttribute("data-state", ach.unlocked ? "✦ 已证道" : "待证道");
 
 		this.achievementsMap[ach.name] = span;
 		if (ach.starCondition) {
@@ -675,11 +691,18 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 		if (span.className != desiredClassName) {
 			span.className = desiredClassName;
 		}
-		var desiredTitle = ach.description || ach.title;
+		var desiredTitle = ach.description || ach.title || "";
 		if (span.title != desiredTitle) {
 			span.title = desiredTitle;
 		}
-		var desiredContent = ach.unlocked ? (ach.title + " · " + ach.description) : (ach.title + "（未达成：" + ach.description + "）");
+		if (span.getAttribute("data-desc") !== desiredTitle) {
+			span.setAttribute("data-desc", desiredTitle);
+		}
+		var desiredState = ach.unlocked ? "✦ 已证道" : "待证道";
+		if (span.getAttribute("data-state") !== desiredState) {
+			span.setAttribute("data-state", desiredState);
+		}
+		var desiredContent = ach.title;
 		if (span.firstChild.nodeValue != desiredContent) {
 			span.firstChild.nodeValue = desiredContent;
 		}

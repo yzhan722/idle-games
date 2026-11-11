@@ -21,6 +21,18 @@ init python:
             return "陌生的搭档"
         return "初次相遇"
 
+    def alice_bond_title(v):
+        """根据艾丽丝信任度返回万事屋搭档称谓"""
+        if v >= 80:
+            return "生死相托"
+        elif v >= 60:
+            return "默契共犯"
+        elif v >= 35:
+            return "可靠后盾"
+        elif v >= 15:
+            return "正式社员"
+        return "试用搭档"
+
 
 ################################################################################
 ## 线索栏 + 羁绊 HUD —— 随时可调出查看
@@ -297,7 +309,10 @@ screen bond_panel():
                         hbox:
                             xfill True
                             text _("墨墨") style "bond_name" color "#e2c8ff"
-                            text "[mo_bond_title(mo_favor)]" style "bond_stage" xalign 1.0
+                            frame:
+                                style "bond_stage_pill"
+                                xalign 1.0
+                                text "[mo_bond_title(mo_favor)]" style "bond_stage"
                         bar:
                             value AnimatedValue(mo_favor, 100, delay=0.8)
                             style "bond_bar_mo"
@@ -313,14 +328,17 @@ screen bond_panel():
                     spacing 18
                     frame:
                         style "bond_avatar"
-                        add Transform("images/chara_alice_neutral.png", fit="cover", xysize=(72, 72), crop_relative=True, crop=(0.22, 0.0, 0.56, 0.44)) align (0.5, 0.0)
+                        add Transform("images/chara_alice_happy.png" if alice_favor >= 60 else ("images/chara_alice_smile.png" if alice_favor >= ALICE_HINT_THRESHOLD else "images/chara_alice_neutral.png"), fit="cover", xysize=(72, 72), crop_relative=True, crop=(0.22, 0.0, 0.56, 0.44)) align (0.5, 0.0)
                     vbox:
                         spacing 6
                         yalign 0.5
                         hbox:
                             xfill True
                             text _("艾丽丝") style "bond_name" color "#f3d78e"
-                            text _("万事屋的信任") style "bond_stage" xalign 1.0
+                            frame:
+                                style "bond_stage_pill"
+                                xalign 1.0
+                                text "[alice_bond_title(alice_favor)]" style "bond_stage" color "#f7e3a8"
                         bar:
                             value AnimatedValue(alice_favor, 100, delay=0.8)
                             style "bond_bar_alice"
@@ -380,10 +398,15 @@ style bond_name is text:
     size 24
     kerning 2
 
+style bond_stage_pill is default:
+    background Frame("gui/panel_dark.png", 12, 12)
+    padding (10, 3)
+    yalign 0.5
+
 style bond_stage is text:
-    size 18
-    color "#c9b8e2"
-    yalign 0.6
+    size 16
+    color "#dcd0f5"
+    yalign 0.5
 
 style bond_meta is text:
     size 16

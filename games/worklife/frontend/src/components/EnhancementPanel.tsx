@@ -528,10 +528,19 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
               ) : (
                 <>
                   <div className="enhancement-rate-card">
-                    <div className="enhancement-rate-main">
-                      <span>本次成功率</span>
-                      <strong>{formatPct(info.successRate)}</strong>
-                    </div>
+                    {(() => {
+                      const ratePct = Math.max(0, Math.min(100, info.successRate * 100));
+                      const rateTier = ratePct >= 70 ? "high" : ratePct >= 40 ? "mid" : "low";
+                      return (
+                        <div className="enhancement-rate-main">
+                          <span>本次成功率</span>
+                          <strong>{formatPct(info.successRate)}</strong>
+                          <span className={`enhancement-rate-meter ${rateTier}`} aria-hidden="true">
+                            <span className="enhancement-rate-meter-fill" style={{ width: `${ratePct}%` }} />
+                          </span>
+                        </div>
+                      );
+                    })()}
                     <div className="enhancement-rate-breakdown">
                       <span>+{info.currentLevel + 1} 基础 {formatPct(info.baseSuccessRate)}</span>
                       <span>

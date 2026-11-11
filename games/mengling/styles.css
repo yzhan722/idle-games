@@ -8000,6 +8000,86 @@ details.capture-tools[open] > summary.capture-tools__summary {
   box-shadow: 0 0 8px rgba(250, 204, 21, 0.22);
 }
 
+/* v0.7.38 Round 33 Commercial Polish: 3x2 Chinese Stat Bar Grid & Sanctuary Unbuilt Guide CTA */
+.row--mon-stats {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+}
+
+.row--mon-stats > .row__left,
+.row--mon-stats > .row__right {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.mon-stat-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.mon-stat-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mon-stat-cell__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
+
+.mon-stat-cell__head strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.mon-stat-cell__bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.75);
+  overflow: hidden;
+}
+
+.mon-stat-cell__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+}
+
+.mon-stat-cell--hp .mon-stat-cell__bar i { background: linear-gradient(90deg, #10b981, #6ee7b7); }
+.mon-stat-cell--atk .mon-stat-cell__bar i { background: linear-gradient(90deg, #f97316, #fdba74); }
+.mon-stat-cell--def .mon-stat-cell__bar i { background: linear-gradient(90deg, #eab308, #fde047); }
+.mon-stat-cell--spa .mon-stat-cell__bar i { background: linear-gradient(90deg, #8b5cf6, #c4b5fd); }
+.mon-stat-cell--spd .mon-stat-cell__bar i { background: linear-gradient(90deg, #06b6d4, #67e8f9); }
+.mon-stat-cell--spe .mon-stat-cell__bar i { background: linear-gradient(90deg, #ec4899, #f9a8d4); }
+
+.sanctuary-diorama.is-unbuilt {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.sanctuary-diorama__btn--locked {
+  border-color: rgba(251, 191, 36, 0.36) !important;
+  background: rgba(30, 41, 59, 0.78) !important;
+  color: #fde68a !important;
+}
+
+
 
 
 

@@ -419,6 +419,14 @@ export function initStageInteractions({
       return;
     }
 
+    // 9b. 未建造圣域建筑一键前往营地建造
+    if (act === "goto-bonfire") {
+      ev.preventDefault();
+      spawnStageFloat(btn, "已前往星火营地，可在下方建造对应建筑", "gold", "fire");
+      document.querySelector('.tab[data-tab="bonfire"]')?.click();
+      return;
+    }
+
     // 10. 功能页训练场：擂鼓助威
     if (act === "train-cheer") {
       ev.preventDefault();

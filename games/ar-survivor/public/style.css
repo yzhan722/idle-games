@@ -1111,3 +1111,30 @@ html, body {
   to { transform: scale(1.06); }
 }
 
+/* Round 33: Survivor Live Shift Pill & RPS Countdown Chips */
+.survivor-hud {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 26;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 251, 243, 0.92);
+  border: 2px solid rgba(251, 191, 36, 0.65);
+  box-shadow:
+    0 6px 18px rgba(30, 41, 59, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.survivor-hud.hidden {
+  display: none !important;
+}
+
+

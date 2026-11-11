@@ -613,18 +613,18 @@ function renderMainMenu(): void {
 
       const bonusLine = isOwned
         ? nextRank
-          ? `${s.statLabel} ${s.statValueAtRank(curRank.index)} → ${s.statValueAtRank(nextRank.index)}`
+          ? `${s.statLabel} ${s.statValueAtRank(curRank.index)}→${s.statValueAtRank(nextRank.index)}`
           : `${UI_ART.crown} ${s.statLabel} ${s.statValueAtRank(curRank.index)} (满阶)`
-        : `${s.statLabel} ${s.statValueAtRank(0)} ~ ${s.statValueAtRank(5)}`;
+        : `${s.statLabel} ${s.statValueAtRank(0)}~${s.statValueAtRank(5)}`;
 
       const shardSectionHtml = isOwned
         ? `
           <div class="skin-shard-box">
             <div class="skin-shard-row">
-              <span style="color: ${asc.isMaxRank || asc.hasEnoughShards ? '#2e8b22' : '#78583a'}">
+              <span class="skin-shard-count ${asc.isMaxRank || asc.hasEnoughShards ? 'is-ready' : ''}">
                 ${UI_ART.shard} ${asc.isMaxRank ? `余 ${asc.currentShards}` : `${asc.currentShards}/${asc.requiredShards}`}
               </span>
-              <strong style="color: ${asc.isMaxRank ? '#9a3412' : asc.hasEnoughGold ? '#b4690e' : '#c8372d'}">
+              <strong class="skin-shard-cost ${asc.isMaxRank ? 'is-max' : asc.hasEnoughGold ? 'is-ok' : 'is-short'}">
                 ${asc.isMaxRank ? `${UI_ART.crown} SSS满阶` : `${UI_ART.coin} ${asc.requiredGold.toLocaleString()}`}
               </strong>
             </div>
@@ -928,16 +928,21 @@ function renderSkillTreePanel(): void {
   const activeRace = state.getActiveRaceBranch();
   const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
+  const fmtCompactGold = (val: number): string => {
+    if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (val >= 1_000) return `${Math.round(val / 1_000)}k`;
+    return `${val}`;
+  };
   if (skillAvailablePointsEl) {
     skillAvailablePointsEl.textContent = `${avail}`;
   }
   if (skillActiveKeystoneEl) {
-    skillActiveKeystoneEl.innerHTML = `${activeRace.icon} ${activeRace.raceName} · 已生效 ${activeRacePts}/16`;
+    skillActiveKeystoneEl.innerHTML = `${activeRace.icon} ${activeRace.raceName} · <span class="desktop-only-text">已生效 </span>${activeRacePts}/16`;
   }
   if (btnBuyTalent) {
     const buyCheck = state.canBuyBonusTalentPoint();
     const buyCost = state.getBonusTalentPointCost();
-    const shortBuyCost = buyCost >= 1000 ? `${Math.round(buyCost / 1000)}k` : `${buyCost}`;
+    const shortBuyCost = fmtCompactGold(buyCost);
     btnBuyTalent.innerHTML = `+${UI_ART.star} <small>${shortBuyCost}${UI_ART.coin}</small>`;
     btnBuyTalent.disabled = !buyCheck.ok;
     btnBuyTalent.title = `${buyCheck.reason} [B]`;
@@ -949,7 +954,7 @@ function renderSkillTreePanel(): void {
     const shortReset =
       resetCost === 0
         ? `${UI_ART.refresh} 免费`
-        : `${UI_ART.refresh} ${resetCost >= 1000 ? `${Math.round(resetCost / 1000)}k` : resetCost}`;
+        : `${UI_ART.refresh} ${fmtCompactGold(resetCost)}`;
     btnResetSkills.innerHTML = shortReset;
     btnResetSkills.title =
       spent <= 0
