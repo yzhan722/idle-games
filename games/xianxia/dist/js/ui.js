@@ -360,18 +360,22 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         // listeners don't ever get un-attached, which can cause noticeable lag when thousands of event listeners fire
         // simultaneously.  Un-attaching event listeners is hard because we're implementing them using anonymous functions.)
         //It needs to be created AFTER the game is created, so it can't happen in the DesktopUI#constructor.
-        UIUtils.attachTooltip(game, $("#undoBtn")[0], -30, -30, function() {
-            var undoState = game.undoChange;
-            if (undoState) {
-                return undoState.getEventDescription(undoState.events[0]);
-            }
-            //Else, undoState doesn't exist currently:
-            return "";
-        });
+        if ($("#undoBtn")[0]) {
+            UIUtils.attachTooltip(game, $("#undoBtn")[0], -30, -30, function() {
+                var undoState = game.undoChange;
+                if (undoState) {
+                    return undoState.getEventDescription(undoState.events[0]);
+                }
+                //Else, undoState doesn't exist currently:
+                return "";
+            });
+        }
 
-        UIUtils.attachTooltip(game, $("#schemeTip")[0], 0, 20, function() {
-            return "<div class='option-tooltip'>" + $I("ui.option.scheme.tip") + "</div>";
-        });
+        if ($("#schemeTip")[0]) {
+            UIUtils.attachTooltip(game, $("#schemeTip")[0], 0, 20, function() {
+                return "<div class='option-tooltip'>" + $I("ui.option.scheme.tip") + "</div>";
+            });
+        }
     },
 
     render: function(){
@@ -397,6 +401,11 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         game.calendar.render();
 
         var visibleTabs = [];
+
+        var staleTooltip = dojo.byId("tooltip");
+        if (staleTooltip) {
+            dojo.style(staleTooltip, "display", "none");
+        }
 
         for (var i = 0; i < game.tabs.length; i++){
             var tab = game.tabs[i];
@@ -438,6 +447,11 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
             if (i < visibleTabs.length - 1){
                 dojo.create("span", {innerHTML:" | "}, tabNavigationDiv);
             }
+        }
+
+        var staleTooltip = dojo.byId("tooltip");
+        if (staleTooltip) {
+            dojo.style(staleTooltip, "display", "none");
         }
 
         for (var i = 0; i < game.tabs.length; i++){
@@ -666,7 +680,10 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
 		// its onmouseout handler does not fire, so the highlights/tooltips
 		// would get stuck.
 		if (this.game.tooltipOwnerDomNode) {
-			if (!document.contains(this.game.tooltipOwnerDomNode)) {
+			if (
+				!document.contains(this.game.tooltipOwnerDomNode) ||
+				(this.game.tooltipOwnerDomNode.getClientRects && this.game.tooltipOwnerDomNode.getClientRects().length === 0)
+			) {
 				UIUtils.hideTooltip(this.game);
 			}
 		}

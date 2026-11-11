@@ -999,8 +999,12 @@ dojo.declare("com.nuclearunicorn.game.ui.TechButtonController", com.nuclearunico
 			var cult = this.game.cultivation;
 			var gate = cult.getItemRealmGate("tech", meta.name);
 			if (gate && !cult.isItemRealmUnlocked("tech", meta.name)){
-				name += " <span class=\"xxRealmGateBadge locked\">🔒 " + gate.title + "</span>";
+				name += " <span class=\"xxRealmGateBadge locked\">◈ " + gate.title + "</span>";
 			}
+		}
+		if (meta && meta.effectDesc && !meta.researched){
+			var brief = String(meta.effectDesc).replace(/。$/, "");
+			name += "<span class=\"xxTechHint\">" + brief + "</span>";
 		}
 		return name;
 	},

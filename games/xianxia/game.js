@@ -4588,8 +4588,11 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 
 		if (floatVal != 0) {
 			var absVal = Math.abs(floatVal);
-			if (absVal < 0.01 && precision == 2 || absVal < 0.001 && precision == 3) {
-				mantisa = "(...)";
+			if (absVal < 0.001) {
+				return plusSign + (floatVal < 0 ? "-<0.001" : "<0.001");
+			}
+			if (absVal < 0.01 && precision == 2) {
+				precision = 3;
 			}
 		}
 
