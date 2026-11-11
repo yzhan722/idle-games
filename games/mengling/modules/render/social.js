@@ -174,7 +174,7 @@ export function createRenderSocial({ ui, escapeHtml, socialSystem, formatTime, g
       switch (achievement.achievement_type) {
         case "rare_catch":
           content = `捕获了稀有萌灵 <strong>${escapeHtml(data.name)}</strong>`;
-          if (data.isShiny) content += " ✨";
+          if (data.isShiny) content += ' <img src="./assets/ui_icons/shinyCharm.webp" class="ui-inline-icon" width="15" height="15" alt="闪光" />';
           break;
         case "dex_milestone":
           content = `图鉴达到 <strong>${data.count}</strong> 种`;
@@ -319,7 +319,7 @@ export function createRenderSocial({ ui, escapeHtml, socialSystem, formatTime, g
       `;
 
       for (const mon of profile.mons) {
-        const shinyIcon = mon.isShiny ? "✨" : "";
+        const shinyIcon = mon.isShiny ? '<img src="./assets/ui_icons/shinyCharm.webp" class="ui-inline-icon" width="15" height="15" alt="闪光" />' : "";
         html += `
           <div class="row">
             <div class="row__left">

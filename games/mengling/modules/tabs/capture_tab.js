@@ -358,7 +358,15 @@ export function initCaptureTab({
         if (!p) return false;
         // 幻灵/闪光遭遇不自动投球，让玩家手动决策
         if (p.tier === "epic" || Boolean(ui.encounterIsShiny)) return false;
-        const ballType = ui.selectedBallType || "pokeball";
+        const THROWABLE_BALLS = ["pokeball", "ultraball", "quickball", "luxuryball", "netball", "duskball"];
+        let ballType = ui.selectedBallType || "pokeball";
+        if ((state.res[ballType]?.value ?? 0) < 1) {
+          const fallback = THROWABLE_BALLS.find((k) => (state.res[k]?.value ?? 0) >= 1);
+          if (fallback) {
+            ballType = fallback;
+            ui.selectedBallType = fallback;
+          }
+        }
         if ((state.res[ballType]?.value ?? 0) < 1) return false;
         state.res[ballType].value = Math.max(0, (state.res[ballType]?.value ?? 0) - 1);
         refundBallIfSaved(state, ballType);
@@ -610,7 +618,15 @@ export function initCaptureTab({
         const p = pid ? getSpeciesByPid(pid) : null;
         if (!p) return;
         
-        const ballType = ui.selectedBallType || "pokeball";
+        const THROWABLE_BALLS = ["pokeball", "ultraball", "quickball", "luxuryball", "netball", "duskball"];
+        let ballType = ui.selectedBallType || "pokeball";
+        if ((state.res[ballType]?.value ?? 0) < 1) {
+          const fallback = THROWABLE_BALLS.find((k) => (state.res[k]?.value ?? 0) >= 1);
+          if (fallback) {
+            ballType = fallback;
+            ui.selectedBallType = fallback;
+          }
+        }
         if ((state.res[ballType]?.value ?? 0) < 1) return;
         state.res[ballType].value = Math.max(0, (state.res[ballType]?.value ?? 0) - 1);
         refundBallIfSaved(state, ballType);

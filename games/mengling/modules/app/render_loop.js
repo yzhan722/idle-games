@@ -19,7 +19,11 @@ export function createRenderLoop({ ui, getState, computeDerived, renders, elLog,
         const caught = state.dex?.caught ?? {};
         let unique = 0;
         for (const v of Object.values(caught)) if (typeof v === "number" && v > 0) unique++;
-        const pokeballUnlocked = Boolean(state.unlocks?.pokeball);
+        const pokeballUnlocked =
+          Boolean(state.unlocks?.pokeball) ||
+          ["pokeball", "ultraball", "quickball", "luxuryball", "netball", "duskball", "masterball"].some(
+            (k) => (state.res?.[k]?.value ?? 0) >= 1
+          );
         const hasMons = (state.mons?.list?.length ?? 0) > 0;
         const tabRules = {
           capture:     true,
