@@ -6,11 +6,15 @@ import threading
 import http.server
 from playwright.sync_api import sync_playwright
 
-DIST_DIR = r"d:\project\idle-games\games\mob-control-3d\dist"
-BRAIN_DIR = r"C:\Users\alex\.gemini\antigravity\brain\d0bebaac-7659-47fb-8c43-831d624e0096"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIST_DIR = os.path.join(BASE_DIR, "dist")
+BRAIN_DIR = os.environ.get(
+    "BRAIN_DIR",
+    r"C:\Users\Administrator\.gemini\antigravity\brain\f0a47ec2-076b-461b-813c-e7e05661e2b9"
+)
 REPORT_JSON = os.path.join(BRAIN_DIR, "scratch", "last_playtest_report.json")
 LOG_MD_BRAIN = os.path.join(BRAIN_DIR, "playtest_log.md")
-LOG_MD_REPO = r"d:\project\idle-games\games\mob-control-3d\PLAYTEST_LOG.md"
+LOG_MD_REPO = os.path.join(BASE_DIR, "PLAYTEST_LOG.md")
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -73,7 +77,14 @@ def add_check(name, ok, detail=""):
 exit_code = 0
 try:
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        ms_pw = os.path.join(os.environ.get("LOCALAPPDATA", ""), "ms-playwright")
+        exe_path = None
+        if os.path.isdir(ms_pw):
+            for root, _, files in os.walk(ms_pw):
+                if "chrome.exe" in files:
+                    exe_path = os.path.join(root, "chrome.exe")
+                    break
+        browser = p.chromium.launch(headless=True, executable_path=exe_path) if exe_path else p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 2560, "height": 1278}, device_scale_factor=1)
         page = context.new_page()
 

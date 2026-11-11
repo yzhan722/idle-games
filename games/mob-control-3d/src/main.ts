@@ -613,18 +613,18 @@ function renderMainMenu(): void {
 
       const bonusLine = isOwned
         ? nextRank
-          ? `${s.statLabel} ${s.statValueAtRank(curRank.index)} → ${s.statValueAtRank(nextRank.index)}`
+          ? `${s.statLabel} ${s.statValueAtRank(curRank.index)}→${s.statValueAtRank(nextRank.index)}`
           : `${UI_ART.crown} ${s.statLabel} ${s.statValueAtRank(curRank.index)} (满阶)`
-        : `${s.statLabel} ${s.statValueAtRank(0)} ~ ${s.statValueAtRank(5)}`;
+        : `${s.statLabel} ${s.statValueAtRank(0)}~${s.statValueAtRank(5)}`;
 
       const shardSectionHtml = isOwned
         ? `
           <div class="skin-shard-box">
             <div class="skin-shard-row">
-              <span style="color: ${asc.isMaxRank || asc.hasEnoughShards ? '#2e8b22' : '#78583a'}">
+              <span class="skin-shard-count ${asc.isMaxRank || asc.hasEnoughShards ? 'is-ready' : ''}">
                 ${UI_ART.shard} ${asc.isMaxRank ? `余 ${asc.currentShards}` : `${asc.currentShards}/${asc.requiredShards}`}
               </span>
-              <strong style="color: ${asc.isMaxRank ? '#9a3412' : asc.hasEnoughGold ? '#b4690e' : '#c8372d'}">
+              <strong class="skin-shard-cost ${asc.isMaxRank ? 'is-max' : asc.hasEnoughGold ? 'is-ok' : 'is-short'}">
                 ${asc.isMaxRank ? `${UI_ART.crown} SSS满阶` : `${UI_ART.coin} ${asc.requiredGold.toLocaleString()}`}
               </strong>
             </div>
@@ -727,11 +727,24 @@ function renderMainMenu(): void {
       ? state.getTop10ActiveLeaderboard()
       : state.getTop10Leaderboard();
     if (leaderboardSelfStatusEl) {
-      const rankStr = selfRank && selfRank <= 10 ? `#${selfRank}` : '未上榜';
+      const isRanked = Boolean(selfRank && selfRank <= 10);
+      const rankStr = isRanked ? `#${selfRank}` : '未上榜';
+      const metricStr = isActiveMode
+        ? state.formatPlayTime(state.weeklyPlayTimeSeconds)
+        : `${state.weeklyBestStage} 关`;
       const resetHint = state.getWeeklyResetCountdownText();
-      leaderboardSelfStatusEl.innerHTML = isActiveMode
-        ? `${state.playerName} · ${rankStr} (${state.formatPlayTime(state.weeklyPlayTimeSeconds)}) · ${resetHint}`
-        : `${state.playerName} · ${rankStr} (${state.weeklyBestStage} 关) · ${resetHint}`;
+      leaderboardSelfStatusEl.innerHTML =
+        `<span class="lb-self-name">${state.playerName}</span>` +
+        `<span class="lb-self-rank-pill ${isRanked ? 'is-ranked' : ''}">${rankStr}</span>` +
+        `<span class="lb-self-metric-pill">${metricStr}</span>` +
+        `<span class="lb-self-reset">${resetHint}</span>`;
+    }
+    if (btnEditName) {
+      const canAffordRename = state.gold >= RENAME_GOLD_COST;
+      btnEditName.classList.toggle('is-unaffordable', !canAffordRename);
+      btnEditName.title = canAffordRename
+        ? '花费 100,000 金币修改指挥官昵称 [N]'
+        : `改名需 100,000 金币（还差 ${Math.max(0, RENAME_GOLD_COST - Math.floor(state.gold)).toLocaleString()} 金币）`;
     }
 
     leaderboardListEl.innerHTML = '';
@@ -928,16 +941,21 @@ function renderSkillTreePanel(): void {
   const activeRace = state.getActiveRaceBranch();
   const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
+  const fmtCompactGold = (val: number): string => {
+    if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (val >= 1_000) return `${Math.round(val / 1_000)}k`;
+    return `${val}`;
+  };
   if (skillAvailablePointsEl) {
     skillAvailablePointsEl.textContent = `${avail}`;
   }
   if (skillActiveKeystoneEl) {
-    skillActiveKeystoneEl.innerHTML = `${activeRace.icon} ${activeRace.raceName} · 已生效 ${activeRacePts}/16`;
+    skillActiveKeystoneEl.innerHTML = `${activeRace.icon} ${activeRace.raceName} · <span class="desktop-only-text">已生效 </span>${activeRacePts}/16`;
   }
   if (btnBuyTalent) {
     const buyCheck = state.canBuyBonusTalentPoint();
     const buyCost = state.getBonusTalentPointCost();
-    const shortBuyCost = buyCost >= 1000 ? `${Math.round(buyCost / 1000)}k` : `${buyCost}`;
+    const shortBuyCost = fmtCompactGold(buyCost);
     btnBuyTalent.innerHTML = `+${UI_ART.star} <small>${shortBuyCost}${UI_ART.coin}</small>`;
     btnBuyTalent.disabled = !buyCheck.ok;
     btnBuyTalent.title = `${buyCheck.reason} [B]`;
@@ -949,7 +967,7 @@ function renderSkillTreePanel(): void {
     const shortReset =
       resetCost === 0
         ? `${UI_ART.refresh} 免费`
-        : `${UI_ART.refresh} ${resetCost >= 1000 ? `${Math.round(resetCost / 1000)}k` : resetCost}`;
+        : `${UI_ART.refresh} ${fmtCompactGold(resetCost)}`;
     btnResetSkills.innerHTML = shortReset;
     btnResetSkills.title =
       spent <= 0
@@ -1360,11 +1378,17 @@ let currentCleanseCost = 50;
 
 (window as unknown as Record<string, unknown>).__triggerVictoryModal = () => {
   world.stageCombatTime = 7.8;
+  world.isStageEnded = true;
   world.onStageEnd?.(true);
+};
+(window as unknown as Record<string, unknown>).__triggerDefeatModal = () => {
+  world.isStageEnded = true;
+  world.onStageEnd?.(false);
 };
 
 world.onStageEnd = (victory: boolean) => {
   topToolsDrawer?.classList.add('hidden');
+  centerBanner.classList.add('hidden');
   resultModal.classList.remove('hidden');
   resultModal.classList.toggle('victory-mode', victory);
   statTotalSpawned.textContent = `${state.stageClonesSpawned}`;
@@ -1509,34 +1533,50 @@ function refreshUpgradeUI(): void {
   // Fire Rate (controlled by in-run Combat Time seconds — never costs meta gold!)
   const costFR = state.getFireRateCost();
   const curTime = Math.floor(state.runCombatTimePool);
+  const frPct = Math.max(0, Math.min(100, Math.round((curTime / Math.max(1, costFR)) * 100)));
   lvlFireRate.textContent = `Lv.${state.fireRateLevel}`;
   if (statFireRate) statFireRate.textContent = `${state.getFireRatePerSec().toFixed(1)}/s`;
   costFireRate.textContent = `${Math.min(curTime, costFR)}/${costFR}秒`;
   upgFireRate.disabled = curTime < costFR;
+  upgFireRate.style.setProperty('--upg-pct', `${frPct}%`);
+  upgFireRate.classList.toggle('is-near-ready', curTime < costFR && frPct >= 75);
+  upgFireRate.classList.toggle('is-ready', curTime >= costFR);
 
   // Power (controlled by in-run Kills — never costs meta gold!)
   const costPwr = state.getPowerCost();
   const curKills = Math.floor(state.runKillsPool);
+  const pwrPct = Math.max(0, Math.min(100, Math.round((curKills / Math.max(1, costPwr)) * 100)));
   lvlPower.textContent = `Lv.${state.powerLevel}`;
   if (statPower) statPower.textContent = `×${state.getPowerMultiplier().toFixed(2)}`;
   costPower.textContent = `${Math.min(curKills, costPwr)}/${costPwr}击杀`;
   upgPower.disabled = curKills < costPwr;
+  upgPower.style.setProperty('--upg-pct', `${pwrPct}%`);
+  upgPower.classList.toggle('is-near-ready', curKills < costPwr && pwrPct >= 75);
+  upgPower.classList.toggle('is-ready', curKills >= costPwr);
 
   // Champion (controlled by in-run Spawns — never costs meta gold!)
   const costChamp = state.getChampionCost();
   const curSpawns = Math.floor(state.runSpawnsPool);
+  const champPct = Math.max(0, Math.min(100, Math.round((curSpawns / Math.max(1, costChamp)) * 100)));
   lvlChampion.textContent = `Lv.${state.championLevel}`;
   if (statChampion) statChampion.textContent = `×${state.getChampionMultiplier().toFixed(2)}`;
   costChampion.textContent = `${Math.min(curSpawns, costChamp)}/${costChamp}出兵`;
   upgChampion.disabled = curSpawns < costChamp;
+  upgChampion.style.setProperty('--upg-pct', `${champPct}%`);
+  upgChampion.classList.toggle('is-near-ready', curSpawns < costChamp && champPct >= 75);
+  upgChampion.classList.toggle('is-ready', curSpawns >= costChamp);
 
   // Loot (controlled by in-run Siege Damage — never costs meta gold!)
   const costLt = state.getLootCost();
   const curSiege = Math.floor(state.runSiegePool);
+  const ltPct = Math.max(0, Math.min(100, Math.round((curSiege / Math.max(1, costLt)) * 100)));
   lvlLoot.textContent = `Lv.${state.lootLevel}`;
   if (statLoot) statLoot.textContent = `+${Math.round((state.getLootMultiplier() - 1) * 100)}%`;
   costLoot.textContent = `${Math.min(curSiege, costLt)}/${costLt}攻城`;
   upgLoot.disabled = curSiege < costLt;
+  upgLoot.style.setProperty('--upg-pct', `${ltPct}%`);
+  upgLoot.classList.toggle('is-near-ready', curSiege < costLt && ltPct >= 75);
+  upgLoot.classList.toggle('is-ready', curSiege >= costLt);
 }
 
 let lastBerserkState = false;
