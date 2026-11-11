@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>世界历史疆域演化沙盒 (World History Evolution Atlas)</title>
+  <link rel="stylesheet" href="src/styles/main.css?v=14" />
+</head>
+<body class="era-ancient">
+
+  <!-- 顶部纪年、全局历史搜索框与关键历史节点书签 -->
+  <div id="topbar">
+    <div class="year-box">
+      <div class="year-head-row">
+        <div id="year-text">公元前 3000 年</div>
+        <span id="pace-badge" class="pace-badge">25年/秒 · 远古加速</span>
+      </div>
+      <div id="era-text">青铜曙光：大河文明诞生</div>
+    </div>
+
+    <!-- 全局即时搜索框与朝代对比/编年史大库按钮 -->
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="搜索 638 条编年史 / 244 国家与王朝 / 战役 / 年份..." autocomplete="off" oninput="AtlasApp.onSearchInput(this.value)" />
+      <div id="search-dropdown"></div>
+      <button class="era-btn compare-trigger-btn" id="btn-open-chronicle" onclick="AtlasApp.openChronicleModal()">❖ 编年史大库 (638)</button>
+      <button class="era-btn compare-trigger-btn" onclick="AtlasApp.openCompareModal()">◈ 帝国巅峰对比</button>
+    </div>
+
+    <div class="era-bookmarks">
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(-3000)">前3000 大河文明</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(-500)">前500 波斯与轴心</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(-221)">前221 大秦一统</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(117)">117 汉与罗马极盛</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(750)">750 盛唐与阿拉伯</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(1279)">1279 蒙古世界帝国</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(1356)">1356 元末群雄</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(1556)">1556 大航海与火药</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(1871)">1871 维多利亚时代</button>
+      <button class="era-btn" onclick="AtlasApp.jumpToYear(2026)">2026 现代世界</button>
+    </div>
+  </div>
+
+  <!-- 顶部编年史大事件字幕 -->
+  <div id="event-banner">正在加载五千年人类历史疆域沙盘...</div>
+
+  <!-- 左侧上：当世列强疆域排行榜 -->
+  <div id="left-panel">
+    <div class="panel-title">
+      <span>◆ 当世列强版图榜</span>
+      <span style="font-size:11px; color:#9aa5b1;">点击高亮</span>
+    </div>
+    <div id="leaderboard-list"></div>
+  </div>
+
+  <!-- 左侧下：文明科技树与人口/东西方比重演化曲线图 -->
+  <div id="macro-panel">
+    <div class="panel-title">
+      <span>❖ 文明科技与人口演化</span>
+      <span id="macro-pop-badge" style="font-size:11px; color:var(--gold);">1400 万</span>
+    </div>
+    <div id="macro-tech-text" class="macro-tech-box">青铜冶炼 · 楔形/象形文字 · 太阳历</div>
+    <div class="macro-chart-wrap">
+      <div class="macro-chart-legend">
+        <span><i class="leg-dot" style="background:#f5c542;"></i>东方比重</span>
+        <span><i class="leg-dot" style="background:#38bdf8;"></i>西方比重</span>
+        <span style="color:#64748b;">点击曲线跳转</span>
+      </div>
+      <svg id="macro-chart-svg" viewBox="0 0 210 68"></svg>
+    </div>
+  </div>
+
+  <!-- 右侧：帝国鼎盛百科与地区兴替抽屉 -->
+  <div id="info-card">
+    <div class="card-head-row">
+      <h3 id="card-empire">夏王朝</h3>
+      <button class="mini-compare-btn" onclick="AtlasApp.compareCurrentEmpire()">+ 对比</button>
+    </div>
+    <div class="sub" id="card-region">东亚 · 中原与关中</div>
+    <p id="card-desc">点击地图上的任意历史地理区块，即可查阅该地区当前统治帝国的详情与历代朝代更替。</p>
+    <div class="stat-row"><span>统治中心 / 首都：</span><strong id="card-capital">-</strong></div>
+    <div class="stat-row"><span>政体制度：</span><strong id="card-regime">-</strong></div>
+    <div class="stat-row"><span>鼎盛版图规模：</span><strong id="card-area">-</strong></div>
+    <div class="stat-row"><span>国祚延续时期：</span><strong id="card-span">-</strong></div>
+    <div class="history-box">
+      <h4>§ 本地区历代政权更替履历</h4>
+      <div id="card-history-list"></div>
+    </div>
+  </div>
+
+  <!-- 中央：可拖拽缩放的全球历史矢量地图 -->
+  <div id="map-container">
+    <svg id="world-map" viewBox="-145 -22 1530 625" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+  <!-- 区域聚焦镜头快捷切换栏 (Regional Theater Camera Bar) -->
+  <div id="theater-bar">
+    <span class="theater-label">战区镜头：</span>
+    <div id="theater-buttons"></div>
+  </div>
+
+  <!-- 底部：播放控制与全历史时间轴滑块 -->
+  <div id="bottom-controls">
+    <button class="ctrl-btn active" id="btn-play" onclick="AtlasApp.togglePlay()">II 暂停演化</button>
+    <button class="ctrl-btn" id="btn-0.5x" onclick="AtlasApp.setSpeed(0.5)">0.5x 静谧</button>
+    <button class="ctrl-btn active" id="btn-1x" onclick="AtlasApp.setSpeed(1)">1x 悠闲</button>
+    <button class="ctrl-btn" id="btn-2x" onclick="AtlasApp.setSpeed(2)">2x 漫步</button>
+    <button class="ctrl-btn" id="btn-5x" onclick="AtlasApp.setSpeed(5)">5x 纵览</button>
+    <input type="range" id="timeline-slider" min="0" max="1000" value="0" step="1" oninput="AtlasApp.onSliderInput(this.value)" />
+    <button class="ctrl-btn" id="btn-drift" onclick="AtlasApp.toggleIdleDrift()">✧ 挂机漫游</button>
+    <button class="ctrl-btn active" id="btn-campaigns" onclick="AtlasApp.toggleCampaigns()">⇄ 进军线</button>
+    <button class="ctrl-btn" onclick="AtlasApp.resetCamera()">⊕ 复位视野</button>
+    <button class="ctrl-btn" id="btn-mute" onclick="AtlasApp.toggleMute()">♪ 音效：开</button>
+  </div>
+
+  <!-- 朝代/帝国巅峰并排对比模态窗 (Dynasty Comparison Modal) -->
+  <div id="compare-modal" class="modal-backdrop" style="display:none;" onclick="AtlasApp.closeCompareModal(event)">
+    <div class="compare-dialog" onclick="event.stopPropagation()">
+      <div class="compare-header">
+        <h3>◈ 两大历史帝国鼎盛国力对比沙盘</h3>
+        <button class="modal-close-btn" onclick="AtlasApp.closeCompareModal()">× 关闭</button>
+      </div>
+      <div class="compare-selectors">
+        <select id="cmp-select-a" onchange="AtlasApp.renderComparison()"></select>
+        <span class="vs-badge">VS</span>
+        <select id="cmp-select-b" onchange="AtlasApp.renderComparison()"></select>
+      </div>
+      <div id="compare-body"></div>
+    </div>
+  </div>
+
+  <!-- 全量五千年历史编年史大数据库模态窗 (Massive Chronicle Database Modal) -->
+  <div id="chronicle-modal" class="modal-backdrop" style="display:none;" onclick="AtlasApp.closeChronicleModal(event)">
+    <div class="chronicle-dialog" onclick="event.stopPropagation()">
+      <div class="compare-header">
+        <div>
+          <h3>❖ 世界五千年历史推演·全量编年史大数据库 (BC 3000 — AD 2026)</h3>
+          <div class="chr-subtitle">涵盖 638 个核心历史纪年节点 · 244 个主权国家与王朝 · 152 个疆域演化关键帧 · 点击任意条目即可精准穿越并定位战区</div>
+        </div>
+        <button class="modal-close-btn" onclick="AtlasApp.closeChronicleModal()">× 关闭大库</button>
+      </div>
+      <div class="chronicle-filters">
+        <select id="chr-era-filter" onchange="AtlasApp.renderChronicleList()">
+          <option value="ALL">全部历史时期 (BC 3000 - AD 2026)</option>
+          <option value="远古与青铜 (-3000~-500)">远古与青铜 (-3000~-500)</option>
+          <option value="古典与轴心 (-500~500)">古典与轴心 (-500~500)</option>
+          <option value="中古与隋唐宋元 (500~1368)">中古与隋唐宋元 (500~1368)</option>
+          <option value="大航海与明清火药 (1368~1760)">大航海与明清火药 (1368~1760)</option>
+          <option value="工业革命与近代风云 (1760~1945)">工业革命与近代风云 (1760~1945)</option>
+          <option value="现代世界与信息时代 (1945~2026)">现代世界与信息时代 (1945~2026)</option>
+        </select>
+        <select id="chr-theater-filter" onchange="AtlasApp.renderChronicleList()">
+          <option value="ALL">全部文明战区</option>
+          <option value="东亚·中华">东亚·中华</option>
+          <option value="欧洲·地中海">欧洲·地中海</option>
+          <option value="西亚·北非">西亚·北非</option>
+          <option value="中亚·草原">中亚·草原</option>
+          <option value="南亚·东南亚">南亚·东南亚</option>
+          <option value="美洲·全球">美洲·全球</option>
+        </select>
+        <select id="chr-cat-filter" onchange="AtlasApp.renderChronicleList()">
+          <option value="ALL">全部事件类型</option>
+          <option value="决定性战役">◆ 决定性战役</option>
+          <option value="王朝更替">◆ 王朝更替</option>
+          <option value="变法与制度">◆ 变法与制度</option>
+          <option value="条约与外交">◆ 条约与外交</option>
+          <option value="科技与文明">◆ 科技与文明</option>
+          <option value="航海与边疆">◆ 航海与边疆</option>
+        </select>
+        <input type="text" id="chr-search-input" placeholder="检索年份、帝王、战役、条约或地名..." oninput="AtlasApp.renderChronicleList()" />
+        <span id="chr-count-badge" class="chr-count-badge">638 条记录</span>
+      </div>
+      <div id="chronicle-list" class="chronicle-list"></div>
+    </div>
+  </div>
+
+  <!-- 模块化脚本按序加载（兼容本地直接双击 file:// 与 HTTP 服务器） -->
+  <script src="src/data/regions_geo.js?v=14"></script>
+  <script src="src/data/empires_db.js?v=14"></script>
+  <script src="src/data/timeline_keyframes.js?v=14"></script>
+  <script src="src/data/chronicle_annals_db.js?v=14"></script>
+  <script src="src/core/TimelineEngine.js?v=14"></script>
+  <script src="src/ui/AudioSynthesizer.js?v=14"></script>
+  <script src="src/ui/MapRenderer.js?v=14"></script>
+  <script src="src/main.js?v=14"></script>
+</body>
+</html>

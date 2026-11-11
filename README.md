@@ -13,6 +13,7 @@
 | `games/mob-control-3d` | 波波应援团：蒸汽糖果工坊（3D Pixar 倍增闯关放置） | TS / Three.js + Canvas 2.5D / Vite / Cloudflare Workers+Assets | 本地直建 `mob-control-3d` | 全量源码与精模资产 |
 | `games/ar-survivor` | AR 幸存者（网页割草） | JS / Cloudflare Workers+Assets | 本地直建 `ar-survivor`（原先无 git） | 快照 |
 | `games/paper-crane-detective` | 沉默侦探：千纸鹤的约定（校园推理 AVG） | Ren'Py 8.5.3 / .rpy | 本地 `avg/` 改名迁入（原先无 git） | 快照（不含引擎 SDK） |
+| `games/world-history-atlas` | 世界历史疆域演化沙盒（BC 3000～AD 2026 博物历史图志） | HTML5 / Natural Earth 50m SVG / Vanilla ES6 | 本地 `apps/world-history-atlas` 迁入 | 快照（含全量编年史与校验器） |
 
 ## 共享包
 
