@@ -167,7 +167,7 @@ export function AdventurePanel({
 
           <div className="adventure-tactical-dock">
             <div className="tactical-dock-group tactical-potions-group">
-              <span className="tactical-dock-label">🧪 战斗补给</span>
+              <span className="tactical-dock-label"><T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 战斗补给</span>
               <CombatPotionBar
                 loadout={playerState.combatLoadout}
                 items={contentPack?.items as any}
@@ -221,7 +221,7 @@ export function AdventurePanel({
             <div className="tactical-dock-divider" aria-hidden="true" />
 
             <div className="tactical-dock-group tactical-skills-group">
-              <span className="tactical-dock-label">✨ 自动技能</span>
+              <span className="tactical-dock-label"><T1Art kind="ui" id="nav-magic" className="gold-inline" alt="" /> 自动技能</span>
               <div className="tactical-skill-chain">
                 {equippedAbilities.length > 0 ? (
                   equippedAbilities.map((a, idx) => (
@@ -245,7 +245,7 @@ export function AdventurePanel({
                 aria-expanded={showCombatConfig}
                 onClick={() => setShowCombatConfig((v) => !v)}
               >
-                {showCombatConfig ? '收起技能' : '⚙️ 配置技能'}
+                {showCombatConfig ? '收起技能' : '配置技能'}
               </button>
             </div>
           </div>
@@ -377,6 +377,14 @@ export function AdventurePanel({
                   </div>
                 )}
                 <div className={`cast-bar${battleState.isActive && battleState.playerCastTime / battleState.playerCastDuration > 0.8 ? ' cast-nearly-ready' : ''}`}>
+                  <div className="cast-label-row">
+                    <span>攻击蓄力</span>
+                    <span>
+                      {battleState.isActive
+                        ? `${Math.min(100, Math.floor((battleState.playerCastTime / Math.max(1, battleState.playerCastDuration)) * 100))}%`
+                        : '待机'}
+                    </span>
+                  </div>
                   <div className="cast-container">
                     <div
                       className="cast-fill player-cast"
@@ -440,10 +448,10 @@ export function AdventurePanel({
                       style={{
                         color:
                           battleState.enemyHp / battleState.enemyMaxHp > 0.5
-                            ? '#f44336'
+                            ? '#4CAF50'
                             : battleState.enemyHp / battleState.enemyMaxHp > 0.2
-                            ? '#FF9800'
-                            : '#4CAF50',
+                            ? '#FFC107'
+                            : '#f44336',
                       }}
                     >
                       {Math.round((battleState.enemyHp / battleState.enemyMaxHp) * 100)}%
@@ -456,10 +464,10 @@ export function AdventurePanel({
                         width: `${Math.max(0, (battleState.enemyHp / battleState.enemyMaxHp) * 100)}%`,
                         background:
                           battleState.enemyHp / battleState.enemyMaxHp > 0.5
-                            ? 'linear-gradient(90deg, #f44336 0%, #EF5350 100%)'
+                            ? 'linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%)'
                             : battleState.enemyHp / battleState.enemyMaxHp > 0.2
-                            ? 'linear-gradient(90deg, #FF9800 0%, #FFB74D 100%)'
-                            : 'linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%)',
+                            ? 'linear-gradient(90deg, #FFC107 0%, #FFD54F 100%)'
+                            : 'linear-gradient(90deg, #f44336 0%, #EF5350 100%)',
                       }}
                     />
                   </div>
@@ -468,6 +476,14 @@ export function AdventurePanel({
                   </div>
                 </div>
                 <div className={`cast-bar${battleState.isActive && battleState.enemyCastTime / battleState.enemyCastDuration > 0.8 ? ' cast-nearly-ready' : ''}`}>
+                  <div className="cast-label-row">
+                    <span>敌方蓄力</span>
+                    <span>
+                      {battleState.isActive
+                        ? `${Math.min(100, Math.floor((battleState.enemyCastTime / Math.max(1, battleState.enemyCastDuration)) * 100))}%`
+                        : '已停止'}
+                    </span>
+                  </div>
                   <div className="cast-container">
                     <div
                       className="cast-fill enemy-cast"
@@ -591,7 +607,7 @@ export function AdventurePanel({
                             const def = abilityCatalog?.find((a) => a.id === abId)
                             return (
                               <span className="xp-chip ability-xp" key={`ab-${abId}`}>
-                                ✨ {def?.name || abId} +{abXp} 技能经验
+                                <T1Art kind="skills" id={abId} className="gold-inline" fallback="" alt="" /> {def?.name || abId} +{abXp} 技能经验
                               </span>
                             )
                           })}
@@ -746,7 +762,7 @@ export function AdventurePanel({
             />
 
             <div className="battle-log-center">
-              <h4>📜 战斗记录</h4>
+              <h4><T1Art kind="ui" id="nav-tasks" className="gold-inline" alt="" /> 战斗记录</h4>
               <div className="log-content">
                 {battleState.battleLog.map((log: string, index: number) => {
                   const mechanic = mechanicLogMatcher(

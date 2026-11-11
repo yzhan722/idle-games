@@ -1,6 +1,7 @@
 import { apiClient } from "../services/api";
-import { T1Art } from "./T1Art";
+import { GoldIcon, T1Art } from "./T1Art";
 import { MonsterSceneBackdrop } from "./MonsterSceneBackdrop";
+import "./T1UiIcons.css";
 import {
   getBossSignatureSkills,
   normalizeStageId,
@@ -75,16 +76,16 @@ export function PartyLobbyView({
                 <div className="party-boss-card-top">
                   <div className="party-boss-avatar">
                     <MonsterSceneBackdrop monsterId={dungeon.boss.id} mapId={dungeon.id} isBoss variant="card" />
-                    <T1Art kind="monster" id={dungeon.boss.id} fallback={dungeon.boss.icon || "👹"} alt={dungeon.boss.name} />
+                    <T1Art kind="monster" id={dungeon.boss.id} fallback="" alt={dungeon.boss.name} />
                   </div>
                   <div className="party-boss-meta">
                     <div className="party-boss-stage-name">{dungeon.name}</div>
                     <div className="party-boss-name">
-                      👑 {dungeon.boss.name} <small>Lv.{dungeon.boss.level}</small>
+                      <T1Art kind="ui" id="nav-enhance" fallback="" alt="" /> {dungeon.boss.name} <small>Lv.{dungeon.boss.level}</small>
                     </div>
                     <div className="party-boss-reward-line">
-                      <span>✨ +{dungeon.boss.xp} 经验</span>
-                      <span>💰 +{dungeon.boss.gold} 金币</span>
+                      <span><T1Art kind="ui" id="nav-crystal" fallback="" alt="" /> +{dungeon.boss.xp} 经验</span>
+                      <span><GoldIcon /> +{dungeon.boss.gold} 金币</span>
                     </div>
                     <div className="boss-skill-strip card-skill-strip">
                       {bossSkills.map((sk) => (
@@ -93,7 +94,7 @@ export function PartyLobbyView({
                           className={`boss-skill-chip${sk.kind === "aoe" ? " is-aoe" : ""}`}
                           title={`${sk.name}（${sk.tag}）：${sk.desc}`}
                         >
-                          {sk.kind === "aoe" ? "🌋" : "⚡"} {sk.name}
+                          <T1Art kind="skills" id={sk.kind === "aoe" ? "meteor_storm" : "heavy_chop"} fallback="" alt="" /> {sk.name}
                         </span>
                       ))}
                     </div>
@@ -111,7 +112,7 @@ export function PartyLobbyView({
                       void quickStartBossDungeon(dungeon.id);
                     }}
                   >
-                    {party ? "⚔️ 开启讨伐" : "⚡ 组队讨伐"}
+                    <T1Art kind="ui" id={party ? "nav-melee" : "nav-party"} fallback="" alt="" /> {party ? "开启讨伐" : "组队讨伐"}
                   </button>
                 </div>
               </div>
@@ -179,12 +180,12 @@ export function PartyLobbyView({
                         <span> · {p.memberCount}/6 人</span>
                         {targetDungeon && (
                           <span style={{ marginLeft: 8, fontSize: 12, color: "#fbbf24" }}>
-                            🎯 目标：{targetDungeon.name} · {targetDungeon.boss.name}
+                            <T1Art kind="ui" id="nav-ranged" fallback="" alt="" /> 目标：{targetDungeon.name} · {targetDungeon.boss.name}
                           </span>
                         )}
                         {p.isBotParty && (
                           <span style={{ marginLeft: 6, fontSize: 12, color: "var(--accent, #6ee7b7)" }}>
-                            🤖 队员已准备
+                            <T1Art kind="ui" id="nav-character" fallback="" alt="" /> 队员已准备
                           </span>
                         )}
                       </span>
@@ -206,7 +207,7 @@ export function PartyLobbyView({
                           disabled={busy}
                           onClick={() => onQuickJoinAndStart(p)}
                         >
-                          ⚔️ 加入并直接开战
+                          <T1Art kind="ui" id="nav-melee" fallback="" alt="" /> 加入并直接开战
                         </button>
                       </div>
                     </li>
@@ -244,7 +245,7 @@ export function PartyLobbyView({
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               {party.members.length < 6 && (
                 <button type="button" className="header-menu-btn" disabled={busy} onClick={() => run(() => apiClient.recruitPartyBot(party.id))}>
-                  🤖 招募队友
+                  <T1Art kind="ui" id="nav-character" fallback="" alt="" /> 招募队友
                 </button>
               )}
               <button
@@ -268,7 +269,12 @@ export function PartyLobbyView({
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}
               >
                 <span>
-                  {m.isBot ? "🤖" : m.isOnline ? "🟢" : "⚫"} <b>{m.role === "leader" ? "队长" : "队员"}</b> ·{" "}
+                  {m.isBot ? (
+                    <T1Art kind="ui" id="nav-character" fallback="" alt="" />
+                  ) : (
+                    <span className={`party-status-dot ${m.isOnline ? "online" : "offline"}`} aria-hidden="true" />
+                  )}{" "}
+                  <b>{m.role === "leader" ? "队长" : "队员"}</b> ·{" "}
                   <span>{m.displayName || "神秘冒险者"}</span>
                   {m.title && <small style={{ marginLeft: 6, opacity: 0.75 }}>[{m.title}]</small>}
                   {m.combatLevel && <small style={{ marginLeft: 6, opacity: 0.8 }}>Lv.{m.combatLevel}</small>}

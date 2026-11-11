@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { apiClient } from '../services/api';
 import { useToast } from './Toast';
+import { GoldIcon, T1Art } from './T1Art';
 import { getItemName } from '../utils/itemNames';
 import './ProgressionPanels.css';
 import './SystemPanels.css';
+import './T1UiIcons.css';
 
 // ============ 通用弹窗外壳（复用 prog 样式）============
 function PanelModal({
@@ -13,7 +15,7 @@ function PanelModal({
   children
 }: {
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -101,7 +103,7 @@ export function CheckInModal({
   };
 
   return (
-    <PanelModal title="每日签到" icon="🎁" onClose={onClose}>
+    <PanelModal title="每日签到" icon={<T1Art kind="ui" id="gold" fallback="" alt="" />} onClose={onClose}>
       {loading || !info ? (
         <div className="prog-loading">加载中…</div>
       ) : (
@@ -127,7 +129,7 @@ export function CheckInModal({
                   className={`checkin-cell ${isToday ? 'today' : ''} ${claimed ? 'claimed' : ''}`}
                 >
                   <div className="checkin-day">第{r.day}天</div>
-                  <div className="checkin-reward-gold">💰{r.gold}</div>
+                  <div className="checkin-reward-gold"><GoldIcon />{r.gold}</div>
                   <div className="checkin-reward-items">
                     {Object.entries(r.items || {}).map(([k, v]) => (
                       <span key={k} className="checkin-item">{getItemName(k)}×{v}</span>

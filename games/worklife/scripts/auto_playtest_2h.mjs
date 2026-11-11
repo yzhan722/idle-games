@@ -227,6 +227,12 @@ async function main() {
         await eqItem.click().catch(() => {});
         await page.waitForTimeout(1000);
       }
+    } else if (goalId === "boss" || goalId === "archetypes" || goalId === "slime") {
+      const stopLifeBtn = page.locator("button.sar-quick.stop").first();
+      if (await stopLifeBtn.isVisible().catch(() => false)) {
+        await stopLifeBtn.click().catch(() => {});
+        await page.waitForTimeout(600);
+      }
     } else {
       const quickStartBtn = page.locator(".sar-quick:not(.stop)").first();
       if (await quickStartBtn.isVisible().catch(() => false)) {
@@ -285,6 +291,11 @@ async function main() {
       if (await startFightBtn.isVisible().catch(() => false)) {
         await startFightBtn.click().catch(() => {});
         await page.waitForTimeout(1200);
+      }
+      const raidStartBtn = page.locator(`.party-boss-dungeon-card:has-text("${targetMonsterName}") button`).first();
+      if (await raidStartBtn.isVisible().catch(() => false)) {
+        await raidStartBtn.click().catch(() => {});
+        await page.waitForTimeout(1800);
       }
     }
 
