@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>世界历史疆域演化沙盒 (World History Evolution Atlas)</title>
-  <link rel="stylesheet" href="src/styles/main.css?v=14" />
+  <link rel="stylesheet" href="src/styles/main.css?v=15" />
 </head>
 <body class="era-ancient">
 
@@ -20,10 +20,10 @@
 
     <!-- 全局即时搜索框与朝代对比/编年史大库按钮 -->
     <div class="search-wrap">
-      <input type="text" id="search-input" placeholder="搜索 638 条编年史 / 244 国家与王朝 / 战役 / 年份..." autocomplete="off" oninput="AtlasApp.onSearchInput(this.value)" />
+      <input type="text" id="search-input" placeholder="搜索 638 条编年史 / 252 国家与王朝 / 战役 / 年份..." autocomplete="off" oninput="AtlasApp.onSearchInput(this.value)" />
       <div id="search-dropdown"></div>
       <button class="era-btn compare-trigger-btn" id="btn-open-chronicle" onclick="AtlasApp.openChronicleModal()">❖ 编年史大库 (638)</button>
-      <button class="era-btn compare-trigger-btn" onclick="AtlasApp.openCompareModal()">◈ 帝国巅峰对比</button>
+      <button class="era-btn compare-trigger-btn" onclick="AtlasApp.openCompareModal()">◈ 帝国兴衰图志</button>
     </div>
 
     <div class="era-bookmarks">
@@ -61,26 +61,35 @@
     <div id="macro-tech-text" class="macro-tech-box">青铜冶炼 · 楔形/象形文字 · 太阳历</div>
     <div class="macro-chart-wrap">
       <div class="macro-chart-legend">
-        <span><i class="leg-dot" style="background:#f5c542;"></i>东方比重</span>
-        <span><i class="leg-dot" style="background:#38bdf8;"></i>西方比重</span>
-        <span style="color:#64748b;">点击曲线跳转</span>
+        <span><i class="leg-dot" style="background:#d8b365;"></i>东方比重</span>
+        <span><i class="leg-dot" style="background:#7aa6c9;"></i>西方比重</span>
+        <span style="color:#7c8794;">点击曲线跳转</span>
       </div>
       <svg id="macro-chart-svg" viewBox="0 0 210 68"></svg>
     </div>
   </div>
 
-  <!-- 右侧：帝国鼎盛百科与地区兴替抽屉 -->
+  <!-- 右侧：帝国鼎盛百科、国祚兴衰曲线与地区兴替抽屉 -->
   <div id="info-card">
     <div class="card-head-row">
       <h3 id="card-empire">夏王朝</h3>
-      <button class="mini-compare-btn" onclick="AtlasApp.compareCurrentEmpire()">+ 对比</button>
+      <button class="mini-compare-btn" onclick="AtlasApp.compareCurrentEmpire()">+ 同代对比</button>
     </div>
     <div class="sub" id="card-region">东亚 · 中原与关中</div>
-    <p id="card-desc">点击地图上的任意历史地理区块，即可查阅该地区当前统治帝国的详情与历代朝代更替。</p>
+    <p id="card-desc">点击地图上的任意历史地理区块，即可查阅该地区当前统治主权政权的详情、国祚版图兴衰曲线与历代更替。</p>
     <div class="stat-row"><span>统治中心 / 首都：</span><strong id="card-capital">-</strong></div>
     <div class="stat-row"><span>政体制度：</span><strong id="card-regime">-</strong></div>
     <div class="stat-row"><span>鼎盛版图规模：</span><strong id="card-area">-</strong></div>
     <div class="stat-row"><span>国祚延续时期：</span><strong id="card-span">-</strong></div>
+    <div class="trajectory-box" id="card-trajectory-box">
+      <div class="traj-head-row">
+        <h4>§ 国祚与版图兴衰图谱</h4>
+        <span id="card-traj-summary" class="traj-summary-tag">点击曲线跳转纪年</span>
+      </div>
+      <svg id="card-trajectory-svg" viewBox="0 0 276 82" preserveAspectRatio="none"></svg>
+      <div id="card-milestones-row" class="traj-milestones-row"></div>
+      <div id="card-peers-row" class="traj-peers-row"></div>
+    </div>
     <div class="history-box">
       <h4>§ 本地区历代政权更替履历</h4>
       <div id="card-history-list"></div>
@@ -109,20 +118,32 @@
     <button class="ctrl-btn" id="btn-drift" onclick="AtlasApp.toggleIdleDrift()">✧ 挂机漫游</button>
     <button class="ctrl-btn active" id="btn-campaigns" onclick="AtlasApp.toggleCampaigns()">⇄ 进军线</button>
     <button class="ctrl-btn" onclick="AtlasApp.resetCamera()">⊕ 复位视野</button>
-    <button class="ctrl-btn" id="btn-mute" onclick="AtlasApp.toggleMute()">♪ 音效：开</button>
+    <button class="ctrl-btn" onclick="AtlasApp.toggleMute()">♪ 音效：开</button>
   </div>
 
-  <!-- 朝代/帝国巅峰并排对比模态窗 (Dynasty Comparison Modal) -->
+  <!-- 朝代/帝国国祚与疆域兴衰对比图志模态窗 (Dynasty Trajectory & Comparison Modal) -->
   <div id="compare-modal" class="modal-backdrop" style="display:none;" onclick="AtlasApp.closeCompareModal(event)">
     <div class="compare-dialog" onclick="event.stopPropagation()">
       <div class="compare-header">
-        <h3>◈ 两大历史帝国鼎盛国力对比沙盘</h3>
-        <button class="modal-close-btn" onclick="AtlasApp.closeCompareModal()">× 关闭</button>
+        <div>
+          <h3>◈ 历代主权帝国国祚延续与版图兴衰对比图志</h3>
+          <div class="chr-subtitle">支持 2～3 个东西方主权政权同轴叠加 · 标注肇基/极盛/中兴/终结节点 · 点击曲线任意位置即可穿越至对应历史纪年</div>
+        </div>
+        <button class="modal-close-btn" onclick="AtlasApp.closeCompareModal()">× 关闭图志</button>
+      </div>
+      <div class="compare-presets">
+        <span class="preset-label">史学同代参照：</span>
+        <button class="preset-pill" onclick="AtlasApp.applyComparePreset('大汉帝国','罗马帝国','安息帝国')">古典轴心 · 汉 / 罗马 / 安息</button>
+        <button class="preset-pill" onclick="AtlasApp.applyComparePreset('大唐帝国','阿拔斯王朝','拜占庭帝国')">中古双璧 · 唐 / 阿拔斯 / 拜占庭</button>
+        <button class="preset-pill" onclick="AtlasApp.applyComparePreset('大明帝国','奥斯曼帝国','西班牙帝国')">火药航海 · 明 / 奥斯曼 / 西班牙</button>
+        <button class="preset-pill" onclick="AtlasApp.applyComparePreset('大清帝国','俄罗斯帝国','大英帝国')">近代列强 · 清 / 俄罗斯 / 大英</button>
       </div>
       <div class="compare-selectors">
         <select id="cmp-select-a" onchange="AtlasApp.renderComparison()"></select>
         <span class="vs-badge">VS</span>
         <select id="cmp-select-b" onchange="AtlasApp.renderComparison()"></select>
+        <span class="vs-badge vs-badge-muted">叠加</span>
+        <select id="cmp-select-c" onchange="AtlasApp.renderComparison()"></select>
       </div>
       <div id="compare-body"></div>
     </div>
@@ -134,7 +155,7 @@
       <div class="compare-header">
         <div>
           <h3>❖ 世界五千年历史推演·全量编年史大数据库 (BC 3000 — AD 2026)</h3>
-          <div class="chr-subtitle">涵盖 638 个核心历史纪年节点 · 244 个主权国家与王朝 · 152 个疆域演化关键帧 · 点击任意条目即可精准穿越并定位战区</div>
+          <div class="chr-subtitle">涵盖 638 个核心历史纪年节点 · 252 个主权国家与王朝 · 153 个疆域演化关键帧 · 点击任意条目即可精准穿越并定位战区</div>
         </div>
         <button class="modal-close-btn" onclick="AtlasApp.closeChronicleModal()">× 关闭大库</button>
       </div>
@@ -174,13 +195,13 @@
   </div>
 
   <!-- 模块化脚本按序加载（兼容本地直接双击 file:// 与 HTTP 服务器） -->
-  <script src="src/data/regions_geo.js?v=14"></script>
-  <script src="src/data/empires_db.js?v=14"></script>
-  <script src="src/data/timeline_keyframes.js?v=14"></script>
-  <script src="src/data/chronicle_annals_db.js?v=14"></script>
-  <script src="src/core/TimelineEngine.js?v=14"></script>
-  <script src="src/ui/AudioSynthesizer.js?v=14"></script>
-  <script src="src/ui/MapRenderer.js?v=14"></script>
-  <script src="src/main.js?v=14"></script>
+  <script src="src/data/regions_geo.js?v=15"></script>
+  <script src="src/data/empires_db.js?v=15"></script>
+  <script src="src/data/timeline_keyframes.js?v=15"></script>
+  <script src="src/data/chronicle_annals_db.js?v=15"></script>
+  <script src="src/core/TimelineEngine.js?v=15"></script>
+  <script src="src/ui/AudioSynthesizer.js?v=15"></script>
+  <script src="src/ui/MapRenderer.js?v=15"></script>
+  <script src="src/main.js?v=15"></script>
 </body>
 </html>

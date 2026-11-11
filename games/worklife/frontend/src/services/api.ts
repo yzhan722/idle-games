@@ -428,7 +428,15 @@ class ApiClient {
   async moveQueuedAction(id: string, direction: 'up' | 'down') {
     return this.post('/actions/queue/move', { id, direction });
   }
-  async chooseChapterBuild(id: 'sharpened_edge' | 'thick_bark') {
+  async chooseChapterBuild(
+    id:
+      | 'sharpened_edge'
+      | 'thick_bark'
+      | 'heavy_sunder'
+      | 'quenched_thorns'
+      | 'gale_flurry'
+      | 'relic_hunter'
+  ) {
     return this.post('/combat/hp/build', { id });
   }
   async setCombatLoadout(loadout: {

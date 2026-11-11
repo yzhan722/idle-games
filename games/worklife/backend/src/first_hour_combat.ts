@@ -13,6 +13,10 @@ export type Combatant = {
   /** Player only: MWI mana pool and regen per basic-attack tick. */
   mp?: number;
   mpRegenPerTick?: number;
+  /** Chapter 2 build (heavy_sunder): fraction of defender DEF ignored on hit. */
+  armorPenPct?: number;
+  /** Chapter 2 build (quenched_thorns): fraction of player DEF reflected when hit. */
+  thornsDefRatio?: number;
 };
 
 export type FightResult = {
@@ -28,22 +32,32 @@ export type FightResult = {
 export function playerCombatant(
   state: EnhancedPlayerState,
   contentPack: EnhancedContentPack,
-  extras?: { atk?: number; hp?: number; def?: number }
+  extras?: {
+    atk?: number;
+    hp?: number;
+    def?: number;
+    armorPenPct?: number;
+    thornsDefRatio?: number;
+    intervalMult?: number;
+  }
 ): Combatant {
   // Skill levels first, then gear, then build / buff extras — mirrored by frontend combatSheet.ts.
   // The equipped weapon decides which damage skill (melee / ranged / magic) feeds ATK.
   const skills = combatSkillContribution(ensureCombatSkills(state), mainCombatSkill(state));
   const gear = getEquippedCombatStats(state, contentPack);
+  const intervalMult = extras?.intervalMult && extras.intervalMult > 0 ? extras.intervalMult : 1;
   return {
     name: "player",
     hp: skills.hp + (extras?.hp || 0),
     atk: skills.atk + gear.atk + (extras?.atk || 0),
     def: skills.def + gear.def + (extras?.def || 0),
-    intervalMs: skills.intervalMs,
+    intervalMs: intervalMult !== 1 ? Math.max(800, Math.round(skills.intervalMs * intervalMult)) : skills.intervalMs,
     incomingDamageMult: 1,
     outgoingDamageMult: 1,
     mp: skills.mp,
     mpRegenPerTick: skills.mpRegenPerTick,
+    armorPenPct: extras?.armorPenPct || 0,
+    thornsDefRatio: extras?.thornsDefRatio || 0,
   };
 }
 
@@ -79,7 +93,8 @@ export function mitigatedDamage(atk: number, def: number): number {
 }
 
 export function hitDamage(attacker: Combatant, defender: Combatant): number {
-  const raw = mitigatedDamage(attacker.atk * attacker.outgoingDamageMult, defender.def);
+  const effDef = attacker.armorPenPct ? Math.floor(defender.def * (1 - attacker.armorPenPct)) : defender.def;
+  const raw = mitigatedDamage(attacker.atk * attacker.outgoingDamageMult, effDef);
   return Math.max(1, Math.floor(raw * defender.incomingDamageMult));
 }
 

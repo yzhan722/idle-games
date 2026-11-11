@@ -245,7 +245,7 @@ async function main() {
       (state.equipment as any).main_hand = "weapon_wooden_sword";
       (state.equipment as any).chest = "armor_wood_chest";
       const body = (req.body || {}) as { scene?: string };
-      if (body.scene === "chapter-complete") {
+      if (body.scene === "chapter-complete" || body.scene === "chapter2-build") {
         state.chapter1Build = state.chapter1Build || "thick_bark";
         const stats = (state.stats ?? {}) as NonNullable<typeof state.stats>;
         state.stats = stats;
@@ -258,6 +258,17 @@ async function main() {
           monkey: Math.max(stats.killsByMonster?.monkey || 0, 1),
           forest_boss: Math.max(stats.killsByMonster?.forest_boss || 0, 1),
         };
+        if (body.scene === "chapter2-build") {
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.ore_1 = Math.max(state.inventory.ore_1 || 0, 4);
+          state.inventory.ingot_1 = Math.max(state.inventory.ingot_1 || 0, 4);
+          state.inventory.weapon_iron_sword = Math.max(state.inventory.weapon_iron_sword || 0, 1);
+          (state.equipment as any).main_hand = "weapon_iron_sword";
+        }
       }
       ensureProgression(state, new Date());
       const saved = await storage.savePlayerState(userId, state);

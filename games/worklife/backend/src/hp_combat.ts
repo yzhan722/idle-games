@@ -1,4 +1,4 @@
-import type { BossMechanicDef, EnhancedContentPack, EnhancedPlayerState, HpCombatState } from "./types";
+import type { AllChapterBuildId, BossMechanicDef, EnhancedContentPack, EnhancedPlayerState, HpCombatState } from "./types";
 import { appendLog, applyDurabilityWear, getBuffEffects, getRareFindMultiplier, isDurabilityBroken } from "./storage";
 import { hitDamage, monsterCombatant, playerCombatant } from "./first_hour_combat";
 import { syncAchievements } from "./progression";
@@ -123,11 +123,61 @@ export const ENRAGE_MAX_STACKS = 10;
 
 export const BUILD_EDGE = { atk: 4, hp: 0, def: 0 };
 export const BUILD_BARK = { atk: 0, hp: 20, def: 4 };
+export const BUILD_HEAVY_SUNDER = { atk: 6, hp: 0, def: 0, armorPenPct: 0.25 };
+export const BUILD_QUENCHED_THORNS = { atk: 0, hp: 35, def: 8, thornsDefRatio: 0.45 };
+export const BUILD_GALE_FLURRY = { atk: 5, hp: 0, def: 0, intervalMult: 0.85 };
+export const BUILD_RELIC_HUNTER = { atk: 0, hp: 25, def: 4, goldMult: 1.25, dropMult: 1.3 };
+
+export type CombinedBuildExtras = {
+  atk: number;
+  hp: number;
+  def: number;
+  armorPenPct: number;
+  thornsDefRatio: number;
+  intervalMult: number;
+  goldMult: number;
+  dropMult: number;
+};
 
 export function buildExtras(build?: EnhancedPlayerState["chapter1Build"]) {
   if (build === "sharpened_edge") return BUILD_EDGE;
   if (build === "thick_bark") return BUILD_BARK;
   return { atk: 0, hp: 0, def: 0 };
+}
+
+export function playerBuildExtras(
+  player?: Pick<EnhancedPlayerState, "chapter1Build" | "chapter2Build" | "chapter3Build"> | null
+): CombinedBuildExtras {
+  const ch1 = buildExtras(player?.chapter1Build);
+  let atk = ch1.atk;
+  let hp = ch1.hp;
+  let def = ch1.def;
+  let armorPenPct = 0;
+  let thornsDefRatio = 0;
+  let intervalMult = 1;
+  let goldMult = 1;
+  let dropMult = 1;
+
+  if (player?.chapter2Build === "heavy_sunder") {
+    atk += BUILD_HEAVY_SUNDER.atk;
+    armorPenPct = BUILD_HEAVY_SUNDER.armorPenPct;
+  } else if (player?.chapter2Build === "quenched_thorns") {
+    hp += BUILD_QUENCHED_THORNS.hp;
+    def += BUILD_QUENCHED_THORNS.def;
+    thornsDefRatio = BUILD_QUENCHED_THORNS.thornsDefRatio;
+  }
+
+  if (player?.chapter3Build === "gale_flurry") {
+    atk += BUILD_GALE_FLURRY.atk;
+    intervalMult = BUILD_GALE_FLURRY.intervalMult;
+  } else if (player?.chapter3Build === "relic_hunter") {
+    hp += BUILD_RELIC_HUNTER.hp;
+    def += BUILD_RELIC_HUNTER.def;
+    goldMult = BUILD_RELIC_HUNTER.goldMult;
+    dropMult = BUILD_RELIC_HUNTER.dropMult;
+  }
+
+  return { atk, hp, def, armorPenPct, thornsDefRatio, intervalMult, goldMult, dropMult };
 }
 
 function monsterById(pack: EnhancedContentPack, id: string) {
@@ -138,7 +188,7 @@ function monsterById(pack: EnhancedContentPack, id: string) {
 
 /** Build extras + active buff stats (狂战药剂 atk etc.) capped at +40% of unbuffed stats so low-level players don't one-shot monsters. */
 function playerExtras(player: EnhancedPlayerState, now: Date, pack?: EnhancedContentPack) {
-  const build = buildExtras(player.chapter1Build);
+  const build = playerBuildExtras(player);
   const buffs = getBuffEffects(player, now);
   let buffAtk = buffs.atk || 0;
   let buffDef = buffs.def || 0;
@@ -147,7 +197,14 @@ function playerExtras(player: EnhancedPlayerState, now: Date, pack?: EnhancedCon
     buffAtk = Math.min(buffAtk, Math.max(2, Math.floor(basePc.atk * 0.4)));
     buffDef = Math.min(buffDef, Math.max(2, Math.floor(basePc.def * 0.4 + 4)));
   }
-  return { atk: build.atk + buffAtk, hp: build.hp, def: build.def + buffDef };
+  return {
+    atk: build.atk + buffAtk,
+    hp: build.hp,
+    def: build.def + buffDef,
+    armorPenPct: build.armorPenPct,
+    thornsDefRatio: build.thornsDefRatio,
+    intervalMult: build.intervalMult,
+  };
 }
 
 /**
@@ -576,8 +633,9 @@ function grantWin(
   const buffEff = getBuffEffects(player, new Date(enc.startedAt || Date.now()));
   const repBuffs = getReputationBonuses(player);
   const prestigeMul = getPrestigeMultiplier(player);
+  const buildAll = playerBuildExtras(player);
   const isForestMonster = ["slime", "caterpillar", "monkey", "mushroom", "bee", "crab", "forest_boss"].includes(enc.monsterId);
-  const goldMul = (player.activeClassId === "woodcutter" && player.settings?.characterCreated && isForestMonster ? 1.15 : 1) * (buffEff.goldGain || 1) * repBuffs.goldGain * prestigeMul;
+  const goldMul = (player.activeClassId === "woodcutter" && player.settings?.characterCreated && isForestMonster ? 1.15 : 1) * (buffEff.goldGain || 1) * repBuffs.goldGain * prestigeMul * buildAll.goldMult;
   const gold = Math.round(Number(m.gold || 0) * goldMul);
   // MWI house: 训练场 adds +1% combat XP per level.
   const trainingLevel = houseLevelForSkill(player, "skill_combat");
@@ -585,7 +643,7 @@ function grantWin(
   player.inventory.gold = (player.inventory.gold || 0) + gold;
   const rare = rareDropFor(pack, m);
   enc.drops = [];
-  const rareFind = getRareFindMultiplier(player, pack);
+  const rareFind = getRareFindMultiplier(player, pack) * buildAll.dropMult;
   const rareChance = rare ? Math.min(1, rare.chance * rareFind) : 0;
   if (rare && rng() < rareChance) {
     player.inventory[rare.itemId] = (player.inventory[rare.itemId] || 0) + 1;
@@ -745,12 +803,18 @@ function tickOneFight(
       enc.playerHp = Math.max(0, enc.playerHp - dmg);
       enc.enemyCooldownMs = 0;
       pushLog(enc, `${enc.monsterName} 造成 ${dmg} 伤害${braced < 1 ? "（坚守中）" : ""}${charged ? `（${charged.label}）` : ""}`);
+      if (enc.playerHp > 0 && enc.enemyHp > 0 && playerAtk.thornsDefRatio && playerAtk.thornsDefRatio > 0) {
+        const thornsDmg = Math.max(1, Math.floor(playerAtk.def * playerAtk.thornsDefRatio));
+        enc.enemyHp = Math.max(0, enc.enemyHp - thornsDmg);
+        pushLog(enc, `淬火反伤回敬 ${thornsDmg} 伤害`);
+        maybePhases(enc, monster, pack);
+      }
       const warning = chargeTelegraph(mechDefs, hitNumber);
       if (warning) pushLog(enc, warning);
       onBossHit(enc, mechDefs);
     }
     // Timed damage (miasma tick, eruption) resolves after the swings of the same instant.
-    if (enc.playerHp > 0) runMechanicEvents(enc, mechDefs, simMs, "damage", braceNow, pushLog);
+    if (enc.playerHp > 0 && enc.enemyHp > 0) runMechanicEvents(enc, mechDefs, simMs, "damage", braceNow, pushLog);
   }
 
   if (enc.enemyHp <= 0 && enc.playerHp > 0) {
@@ -917,10 +981,35 @@ export function setCombatLoadout(
 
 export function chooseBuild(
   player: EnhancedPlayerState,
-  id: "sharpened_edge" | "thick_bark"
+  id: AllChapterBuildId
 ): { ok: boolean; error?: string } {
-  if (player.chapter1Build) return { ok: false, error: "already_chosen" };
-  player.chapter1Build = id;
-  appendLog(player, id === "sharpened_edge" ? "你选择了开刃：攻击提升。" : "你选择了厚树皮：生命与防御提升。");
-  return { ok: true };
+  if (id === "sharpened_edge" || id === "thick_bark") {
+    if (player.chapter1Build) return { ok: false, error: "already_chosen" };
+    player.chapter1Build = id;
+    appendLog(player, id === "sharpened_edge" ? "你选择了开刃：攻击提升。" : "你选择了厚树皮：生命与防御提升。");
+    return { ok: true };
+  }
+  if (id === "heavy_sunder" || id === "quenched_thorns") {
+    if (player.chapter2Build) return { ok: false, error: "already_chosen" };
+    player.chapter2Build = id;
+    appendLog(
+      player,
+      id === "heavy_sunder"
+        ? "你铭刻了矿山流派「重锤破甲」：攻击 +6，无视敌人 25% 防御。"
+        : "你铭刻了矿山流派「淬火反伤」：生命 +35、防御 +8，受击反射 45% 防御伤害。"
+    );
+    return { ok: true };
+  }
+  if (id === "gale_flurry" || id === "relic_hunter") {
+    if (player.chapter3Build) return { ok: false, error: "already_chosen" };
+    player.chapter3Build = id;
+    appendLog(
+      player,
+      id === "gale_flurry"
+        ? "你领悟了沼泽流派「疾风连击」：攻击 +5，普攻间隔缩短 15%。"
+        : "你领悟了沼泽流派「寻宝猎人」：生命 +25、防御 +4，战斗金币 +25%、掉落率 +30%。"
+    );
+    return { ok: true };
+  }
+  return { ok: false, error: "invalid_build" };
 }

@@ -1439,21 +1439,89 @@ export function ProfessionSwitchModal({
 export function FirstBladeBuildModal({
   playerState,
   buildModalDelayDone,
+  activeBuildChapter,
   actionLoading,
   setActionLoading,
   refreshPlayerState,
 }: {
   playerState: PlayerState
   buildModalDelayDone: boolean
+  activeBuildChapter?: 1 | 2 | 3
   actionLoading: boolean
   setActionLoading: (b: boolean) => void
   refreshPlayerState: () => Promise<void>
 }) {
   const toast = useToast()
-  if (!((playerState?.stats?.totalKills ?? 0) >= 1 && !playerState?.chapter1Build && buildModalDelayDone)) {
+  const charReady = Boolean(playerState?.settings?.characterCreated)
+  const ch1Pending = charReady && (playerState?.stats?.totalKills ?? 0) >= 1 && !playerState?.chapter1Build && buildModalDelayDone
+  const ch2Pending = charReady && activeBuildChapter === 2 && !playerState?.chapter2Build && buildModalDelayDone
+  const ch3Pending = charReady && activeBuildChapter === 3 && !playerState?.chapter3Build && buildModalDelayDone
+  const targetChapter: 1 | 2 | 3 | null = ch1Pending ? 1 : ch2Pending ? 2 : ch3Pending ? 3 : null
+
+  if (!targetChapter) {
     return null
   }
-  const choose = async (buildId: 'sharpened_edge' | 'thick_bark') => {
+
+  type BuildChoiceItem = {
+    id: 'sharpened_edge' | 'thick_bark' | 'heavy_sunder' | 'quenched_thorns' | 'gale_flurry' | 'relic_hunter'
+    title: string
+    desc: string
+  }
+
+  const MODAL_META: Record<1 | 2 | 3, { heading: string; sub: string; options: [BuildChoiceItem, BuildChoiceItem] }> = {
+    1: {
+      heading: '选择你的第一刀（第一章 · 森林流派）',
+      sub: '这一选择会永久强化你的基础战力，只能选一次。',
+      options: [
+        {
+          id: 'sharpened_edge',
+          title: '开刃 — 攻击 +4',
+          desc: '进攻型：显著提升普攻与重劈伤害，加快清怪节奏',
+        },
+        {
+          id: 'thick_bark',
+          title: '厚树皮 — 生命 +20 · 防御 +4',
+          desc: '稳健型：提升生命上限与防御减伤，面对强敌更耐打',
+        },
+      ],
+    },
+    2: {
+      heading: '铁砧铭刻（第二章 · 矿山铁匠流派）',
+      sub: '矿道强敌身披重甲。选择你的永久锻造战技方向，只能选一次。',
+      options: [
+        {
+          id: 'heavy_sunder',
+          title: '重锤破甲 — 攻击 +6 · 无视 25% 防御',
+          desc: '破甲型：重击穿透岩石与钢铁甲壳，对高防首领伤害显著提升',
+        },
+        {
+          id: 'quenched_thorns',
+          title: '淬火反伤 — 生命 +35 · 防御 +8 · 45% 防御反伤',
+          desc: '堡垒型：每次受击向敌人回敬自身 45% 防御值的淬火震击伤害',
+        },
+      ],
+    },
+    3: {
+      heading: '林泽秘传（第三章 · 沼泽游侠流派）',
+      sub: '轻装已成。选择你在沼泽及远征中的永久专精路线，只能选一次。',
+      options: [
+        {
+          id: 'gale_flurry',
+          title: '疾风连击 — 攻击 +5 · 普攻间隔缩短 15%',
+          desc: '极速型：身轻如燕高频出刀，加快回蓝与技能循环节奏',
+        },
+        {
+          id: 'relic_hunter',
+          title: '寻宝猎人 — 生命 +25 · 防御 +4 · 金币+25% / 掉率+30%',
+          desc: '收获型：稳固生存的同时大幅提升战斗金币与稀有秘宝掉落率',
+        },
+      ],
+    },
+  }
+
+  const meta = MODAL_META[targetChapter]
+
+  const choose = async (buildId: BuildChoiceItem['id']) => {
     if (actionLoading) return
     setActionLoading(true)
     try {
@@ -1470,31 +1538,23 @@ export function FirstBladeBuildModal({
   return (
     <div className="modal-overlay">
       <div className="modal-content build-modal" onClick={(e) => e.stopPropagation()}>
-        <h3 className="modal-title">选择你的第一刀</h3>
-        <p className="modal-desc">这一选择会改变之后的森林战斗，只能选一次。</p>
-        <button
-          className="btn-action skill-action build-option"
-          disabled={actionLoading}
-          onClick={() => void choose('sharpened_edge')}
-        >
-          <T1Art kind="skills" id="sharpened_edge" alt="" />
-          <span className="build-copy">
-            <strong>开刃 — 攻击 +4</strong>
-            <small>进攻型：显著提升普攻与重劈伤害，加快清怪节奏</small>
-          </span>
-        </button>
-        <button
-          className="btn-action skill-action build-option"
-          style={{ marginTop: 8 }}
-          disabled={actionLoading}
-          onClick={() => void choose('thick_bark')}
-        >
-          <T1Art kind="skills" id="thick_bark" alt="" />
-          <span className="build-copy">
-            <strong>厚树皮 — 生命 +20 · 防御 +4</strong>
-            <small>稳健型：提升生命上限与防御减伤，面对强敌更耐打</small>
-          </span>
-        </button>
+        <h3 className="modal-title">{meta.heading}</h3>
+        <p className="modal-desc">{meta.sub}</p>
+        {meta.options.map((opt, idx) => (
+          <button
+            key={opt.id}
+            className="btn-action skill-action build-option"
+            style={idx > 0 ? { marginTop: 8 } : undefined}
+            disabled={actionLoading}
+            onClick={() => void choose(opt.id)}
+          >
+            <T1Art kind="skills" id={opt.id} alt="" />
+            <span className="build-copy">
+              <strong>{opt.title}</strong>
+              <small>{opt.desc}</small>
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   )

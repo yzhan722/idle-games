@@ -454,18 +454,298 @@ class TimelineEngine {
     });
   }
 
-  // Compare two empires side-by-side
-  getEmpireComparison(empA, empB) {
+  // Lazily index per-keyframe sovereign region counts & primary continents for trajectory curves
+  _ensureFrameIndex() {
+    if (this._frameCounts) return;
+    this._frameCounts = [];
+    this._empireContinents = {};
+    this._trajectoryCache = {};
+    const running = {};
+    const contTallies = {};
+
+    for (const frame of this.timeline) {
+      if (frame.owners) {
+        for (const [regId, empName] of Object.entries(frame.owners)) {
+          if (empName === null) delete running[regId];
+          else running[regId] = empName;
+        }
+      }
+      const counts = {};
+      for (const [regId, empName] of Object.entries(running)) {
+        if (!empName || !this._isEmpireAlive(empName, frame.year)) continue;
+        counts[empName] = (counts[empName] || 0) + 1;
+        const reg = this.regionMap[regId];
+        if (reg && reg.continent) {
+          if (!contTallies[empName]) contTallies[empName] = {};
+          contTallies[empName][reg.continent] = (contTallies[empName][reg.continent] || 0) + 1;
+        }
+      }
+      this._frameCounts.push({ year: frame.year, counts });
+    }
+
+    for (const [empName, tally] of Object.entries(contTallies)) {
+      let bestCont = "全球";
+      let bestScore = -1;
+      for (const [cont, cnt] of Object.entries(tally)) {
+        if (cnt > bestScore) {
+          bestScore = cnt;
+          bestCont = cont;
+        }
+      }
+      this._empireContinents[empName] = bestCont;
+    }
+  }
+
+  // Compute full chronological territorial rise-and-fall curve + scholarly milestones for a sovereign polity
+  getEmpireTrajectory(empName) {
+    this._ensureFrameIndex();
+    if (!empName || !this.empires[empName]) return null;
+    if (this._trajectoryCache[empName]) return this._trajectoryCache[empName];
+
+    const info = this.empires[empName];
+    const pk = this._empirePeaks[empName] || { peakYear: 0, maxRegions: 1, peakRegions: [] };
+    const areaMatch = (info.peak_area || "0").match(/([\d.]+)/);
+    const peakAreaNum = areaMatch ? parseFloat(areaMatch[1]) : Math.max(10, pk.maxRegions * 25);
+    const maxRegions = Math.max(1, pk.maxRegions || 1);
+    const isAliveToday = (info.era_span || "").includes("至今");
+
+    const activeFrames = this._frameCounts.filter(fc => (fc.counts[empName] || 0) > 0);
+    const b = this._bounds[empName];
+    const startY = b ? b.startY : (activeFrames[0] ? activeFrames[0].year : pk.peakYear - 50);
+    const endY = b ? b.rawEnd : (activeFrames.length ? activeFrames[activeFrames.length - 1].year : pk.peakYear + 50);
+    const duration = Math.max(1, endY - startY);
+
+    const scaleArea = (regs) => {
+      if (regs <= 0) return 0;
+      if (regs >= maxRegions) return peakAreaNum;
+      return Math.round(peakAreaNum * Math.pow(regs / maxRegions, 0.88) * 10) / 10;
+    };
+
+    const rawPoints = [];
+    for (const fc of this._frameCounts) {
+      if (fc.year < startY - 8 || fc.year > endY + 8) continue;
+      const regs = fc.counts[empName] || 0;
+      if (regs > 0 || (fc.year >= startY && fc.year <= endY)) {
+        rawPoints.push({
+          year: fc.year,
+          regions: regs,
+          area: scaleArea(regs)
+        });
+      }
+    }
+
+    if (rawPoints.length === 0) {
+      const midY = Math.round((startY + endY) / 2);
+      rawPoints.push(
+        { year: startY, regions: 1, area: Math.round(peakAreaNum * 0.45 * 10) / 10 },
+        { year: pk.peakYear >= startY && pk.peakYear <= endY ? pk.peakYear : midY, regions: maxRegions, area: peakAreaNum }
+      );
+    } else {
+      const firstPositive = rawPoints.find(p => p.regions > 0);
+      if (rawPoints[0].year > startY) {
+        const initRegs = firstPositive ? Math.max(0.6, Math.min(firstPositive.regions, 1)) : 1;
+        rawPoints.unshift({
+          year: startY,
+          regions: Math.round(initRegs * 10) / 10,
+          area: Math.max(Math.round(peakAreaNum * 0.28 * 10) / 10, scaleArea(initRegs) * 0.65)
+        });
+      } else if (rawPoints[0].year === startY && rawPoints[0].regions === 0 && firstPositive) {
+        rawPoints[0].regions = 0.6;
+        rawPoints[0].area = Math.round(peakAreaNum * 0.25 * 10) / 10;
+      }
+    }
+
+    // Ensure peak year is explicitly represented on the curve
+    const clampedPeakYear = Math.max(startY, Math.min(endY, pk.peakYear));
+    const existingPeak = rawPoints.find(p => p.year === clampedPeakYear);
+    if (existingPeak) {
+      existingPeak.regions = Math.max(existingPeak.regions, maxRegions);
+      existingPeak.area = Math.max(existingPeak.area, peakAreaNum);
+    } else {
+      rawPoints.push({ year: clampedPeakYear, regions: maxRegions, area: peakAreaNum });
+    }
+
+    // Add terminal point at endY
+    const lastPt = rawPoints[rawPoints.length - 1];
+    if (!isAliveToday) {
+      if (!lastPt || lastPt.year < endY) {
+        rawPoints.push({ year: endY, regions: 0, area: 0 });
+      } else if (lastPt.year === endY && duration >= 15 && rawPoints.length > 2) {
+        lastPt.regions = 0;
+        lastPt.area = 0;
+      }
+    } else if (!lastPt || lastPt.year < 2026) {
+      const curRegs = lastPt ? Math.max(1, lastPt.regions) : 1;
+      rawPoints.push({ year: 2026, regions: curRegs, area: scaleArea(curRegs) });
+    }
+
+    rawPoints.sort((a, bPt) => a.year - bPt.year);
+    const points = [];
+    for (const pt of rawPoints) {
+      if (points.length && points[points.length - 1].year === pt.year) {
+        if (pt.area > points[points.length - 1].area) {
+          points[points.length - 1] = pt;
+        }
+      } else {
+        points.push({
+          year: pt.year,
+          regions: pt.regions,
+          area: Math.round(pt.area * 10) / 10
+        });
+      }
+    }
+
+    // Detect authentic historical revival ("中兴") if territory dipped significantly then rebounded
+    let revivalNode = null;
+    if (points.length >= 5) {
+      let seenHigh = points[0];
+      let trough = null;
+      for (let i = 1; i < points.length - 1; i++) {
+        const pt = points[i];
+        if (pt.area >= seenHigh.area) {
+          if (trough && seenHigh.area > 0 && trough.area <= seenHigh.area * 0.72 && pt.area >= trough.area * 1.28 && pt.year !== clampedPeakYear) {
+            revivalNode = pt;
+            break;
+          }
+          seenHigh = pt;
+          trough = null;
+        } else if (!trough || pt.area < trough.area) {
+          trough = pt;
+        }
+      }
+      if (!revivalNode) {
+        // Also check post-peak secondary rebound (e.g., Eastern Han, Mid-Tang, Macedonian/Komnenian Byzantium)
+        const peakIdx = points.findIndex(p => p.year === clampedPeakYear);
+        if (peakIdx >= 0 && peakIdx < points.length - 3) {
+          let postTrough = points[peakIdx + 1];
+          for (let j = peakIdx + 1; j < points.length - 1; j++) {
+            if (points[j].area < postTrough.area) {
+              postTrough = points[j];
+            } else if (postTrough.area <= peakAreaNum * 0.75 && points[j].area >= postTrough.area * 1.25 && points[j].area >= peakAreaNum * 0.42) {
+              revivalNode = points[j];
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    const milestones = [
+      { phase: "founding", label: "肇基", year: points[0].year, area: points[0].area }
+    ];
+    if (clampedPeakYear !== points[0].year && clampedPeakYear !== points[points.length - 1].year) {
+      milestones.push({ phase: "peak", label: "极盛", year: clampedPeakYear, area: peakAreaNum });
+    } else if (milestones.length === 1) {
+      milestones.push({ phase: "peak", label: "极盛", year: clampedPeakYear, area: peakAreaNum });
+    }
+    if (revivalNode && milestones.every(m => Math.abs(m.year - revivalNode.year) >= Math.max(12, duration * 0.08))) {
+      milestones.push({ phase: "revival", label: "中兴", year: revivalNode.year, area: revivalNode.area });
+    }
+    const endPt = points[points.length - 1];
+    if (endPt.year !== points[0].year) {
+      milestones.push({
+        phase: isAliveToday ? "present" : "fall",
+        label: isAliveToday ? "存续" : "终结",
+        year: endPt.year,
+        area: endPt.area
+      });
+    }
+    milestones.sort((a, bM) => a.year - bM.year);
+
+    const result = {
+      name: empName,
+      color: info.color || "#c7a45c",
+      continent: this._empireContinents[empName] || "全球",
+      startY,
+      endY,
+      duration,
+      isAliveToday,
+      peakYear: clampedPeakYear,
+      peakAreaNum,
+      peak_area: info.peak_area || `${peakAreaNum} 万 km²`,
+      maxRegions,
+      points,
+      milestones
+    };
+    this._trajectoryCache[empName] = result;
+    return result;
+  }
+
+  // Return contemporary major sovereign powers (preferring cross-regional East/West peers)
+  getContemporaryPeers(empName, refYear = null, limit = 3) {
+    this._ensureFrameIndex();
+    const selfTraj = this.getEmpireTrajectory(empName);
+    if (!selfTraj) return [];
+    const candidates = [];
+
+    for (const otherName of Object.keys(this.empires)) {
+      if (otherName === empName) continue;
+      const otherTraj = this.getEmpireTrajectory(otherName);
+      if (!otherTraj) continue;
+
+      const overlapStart = Math.max(selfTraj.startY, otherTraj.startY);
+      const overlapEnd = Math.min(selfTraj.endY, otherTraj.endY);
+      const overlapYears = overlapEnd - overlapStart;
+      if (overlapYears <= 0) continue;
+
+      const minSpan = Math.max(1, Math.min(selfTraj.duration, otherTraj.duration));
+      const overlapRatio = overlapYears / minSpan;
+      const aliveAtRef = typeof refYear === "number" && refYear >= otherTraj.startY && refYear <= otherTraj.endY;
+      if (overlapRatio < 0.15 && !aliveAtRef) continue;
+
+      const diffContinent = otherTraj.continent !== selfTraj.continent;
+      const score =
+        otherTraj.maxRegions * 11 +
+        Math.min(25, otherTraj.peakAreaNum / 85) +
+        overlapRatio * 18 +
+        (aliveAtRef ? 22 : 0) +
+        (diffContinent ? 26 : 0);
+
+      candidates.push({
+        name: otherName,
+        color: otherTraj.color,
+        continent: otherTraj.continent,
+        peakYear: otherTraj.peakYear,
+        peak_area: otherTraj.peak_area,
+        overlapYears,
+        diffContinent,
+        score
+      });
+    }
+
+    candidates.sort((a, bC) => bC.score - a.score);
+    const chosen = [];
+    const seenContinents = new Set([selfTraj.continent]);
+    for (const c of candidates) {
+      if (chosen.length >= limit) break;
+      if (!seenContinents.has(c.continent)) {
+        chosen.push(c);
+        seenContinents.add(c.continent);
+      }
+    }
+    for (const c of candidates) {
+      if (chosen.length >= limit) break;
+      if (!chosen.includes(c)) chosen.push(c);
+    }
+    return chosen;
+  }
+
+  // Compare 2 or 3 sovereign empires side-by-side with unified chronological trajectories
+  getEmpireComparison(empA, empB, empC = "") {
+    this._ensureFrameIndex();
     const buildStats = (name) => {
+      if (!name || !this.empires[name]) return null;
       const info = this.empires[name] || {};
       const pk = this._empirePeaks[name] || { peakYear: 0, maxRegions: 1, peakRegions: [] };
-      const b = this._bounds[name] || { startY: 0, rawEnd: 100 };
+      const traj = this.getEmpireTrajectory(name);
+      const b = this._bounds[name] || { startY: traj ? traj.startY : 0, rawEnd: traj ? traj.endY : 100 };
       const areaMatch = (info.peak_area || "0").match(/([\d.]+)/);
       const areaNum = areaMatch ? parseFloat(areaMatch[1]) : 0;
       const duration = Math.max(1, b.rawEnd - b.startY);
       return {
         name,
         color: info.color || "#888",
+        continent: this._empireContinents[name] || "全球",
         capital: info.capital || "-",
         regime: info.regime || "-",
         era_span: info.era_span || "-",
@@ -473,14 +753,34 @@ class TimelineEngine {
         desc: info.desc || "",
         areaNum,
         duration,
+        startY: b.startY,
+        endY: b.rawEnd,
         peakYear: pk.peakYear,
         maxRegions: pk.maxRegions,
-        peakRegions: pk.peakRegions
+        peakRegions: pk.peakRegions,
+        trajectory: traj
       };
     };
+    const a = buildStats(empA);
+    const b = buildStats(empB);
+    const c = empC && empC !== empA && empC !== empB ? buildStats(empC) : null;
+    const list = [a, b, c].filter(Boolean);
+    let minYear = -500;
+    let maxYear = 500;
+    if (list.length > 0) {
+      minYear = Math.min(...list.map(d => d.startY));
+      maxYear = Math.max(...list.map(d => d.endY));
+      if (maxYear - minYear < 40) {
+        minYear -= 20;
+        maxYear += 20;
+      }
+    }
     return {
-      a: buildStats(empA),
-      b: buildStats(empB)
+      a,
+      b,
+      c,
+      list,
+      domain: [minYear, maxYear]
     };
   }
 }

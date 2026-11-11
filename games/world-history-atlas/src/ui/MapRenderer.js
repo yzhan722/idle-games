@@ -680,12 +680,14 @@ class MapRenderer {
       }
     }
 
-    // 4. Render Historical Event & Wonder Landmarks with Hover Details (Only rebuild when changed)
+    // 4. Render Historical Event & Wonder Landmarks with Anti-Collision Placement
     const landmarksSig = JSON.stringify(state.landmarks || []);
     if (landmarksSig !== this._lastLandmarksSig) {
       this._lastLandmarksSig = landmarksSig;
       this.landmarksLayer.innerHTML = "";
-      (state.landmarks || []).forEach((lm, idx) => {
+      const placedLandmarkBoxes = [];
+
+      (state.landmarks || []).forEach((lm) => {
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         g.setAttribute("class", "landmark-group");
 
@@ -695,7 +697,7 @@ class MapRenderer {
         const pulse = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         pulse.setAttribute("cx", lx);
         pulse.setAttribute("cy", ly);
-        pulse.setAttribute("r", 7.5);
+        pulse.setAttribute("r", 6.2);
         pulse.setAttribute("class", "landmark-pulse");
 
         const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -707,33 +709,65 @@ class MapRenderer {
         const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         dot.setAttribute("cx", lx);
         dot.setAttribute("cy", ly);
-        dot.setAttribute("r", 3.2);
+        dot.setAttribute("r", 2.9);
         dot.setAttribute("class", "landmark-dot");
 
+        const shortTitle = lm.title.length > 9 ? lm.title.slice(0, 9) + "…" : lm.title;
+        const prefix = lm.icon ? `〔${lm.icon}〕` : "◆ ";
+        const labelText = prefix + shortTitle;
+        const estHalfW = labelText.length * 4.7 + 6;
+        const estHalfH = 6.5;
+
         const tag = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        const candidateOffsets = [13, -8, 22, -16];
-        let chosenOffset = null;
-        for (const offY of candidateOffsets) {
-          const ty = ly + offY;
-          const collides = Object.values(empireClusters).some(cl => {
-            const ecx = cl.sumX / cl.count;
-            const ecy = cl.sumY / cl.count - 4;
-            return Math.abs(lx - ecx) < 68 && Math.abs(ty - ecy) < 18;
-          });
-          if (!collides) {
-            chosenOffset = offY;
+        const candidateAnchors = [
+          { dx: 0, dy: 13, anchor: "middle" },
+          { dx: 0, dy: -9, anchor: "middle" },
+          { dx: 0, dy: 23, anchor: "middle" },
+          { dx: 0, dy: -19, anchor: "middle" },
+          { dx: 10, dy: 4, anchor: "start" },
+          { dx: -10, dy: 4, anchor: "end" }
+        ];
+        let chosen = null;
+        for (const cand of candidateAnchors) {
+          const boxCx =
+            cand.anchor === "start"
+              ? lx + cand.dx + estHalfW
+              : cand.anchor === "end"
+              ? lx + cand.dx - estHalfW
+              : lx + cand.dx;
+          const boxCy = ly + cand.dy - 3;
+
+          const hitsBanner = layoutItems.some(it =>
+            Math.abs(boxCx - it.cx) < it.halfW + estHalfW + 4 &&
+            Math.abs(boxCy - it.cy) < it.halfH + estHalfH + 3
+          );
+          const hitsLandmark = placedLandmarkBoxes.some(pb =>
+            Math.abs(boxCx - pb.cx) < pb.halfW + estHalfW + 5 &&
+            Math.abs(boxCy - pb.cy) < pb.halfH + estHalfH + 3
+          );
+          const hitsOtherPin = (state.landmarks || []).some(other =>
+            other !== lm &&
+            Math.abs(boxCx - other.x) < estHalfW + 5 &&
+            Math.abs(boxCy - (other.y + 4)) < estHalfH + 5
+          );
+          if (!hitsBanner && !hitsLandmark && !hitsOtherPin) {
+            chosen = { ...cand, boxCx, boxCy };
             break;
           }
         }
-        tag.setAttribute("x", lx);
-        tag.setAttribute("y", ly + (chosenOffset !== null ? chosenOffset : 13));
-        tag.setAttribute("class", "landmark-label");
-        if (chosenOffset === null) {
-          tag.style.display = "none";
+
+        if (chosen) {
+          placedLandmarkBoxes.push({ cx: chosen.boxCx, cy: chosen.boxCy, halfW: estHalfW, halfH: estHalfH });
+          tag.setAttribute("x", lx + chosen.dx);
+          tag.setAttribute("y", ly + chosen.dy);
+          tag.style.textAnchor = chosen.anchor;
+        } else {
+          tag.setAttribute("x", lx);
+          tag.setAttribute("y", ly + 13);
+          tag.classList.add("is-crowded");
         }
-        const shortTitle = lm.title.length > 9 ? lm.title.slice(0, 9) + "…" : lm.title;
-        const prefix = lm.icon ? `[${lm.icon}] ` : "◆ ";
-        tag.textContent = prefix + shortTitle;
+        tag.setAttribute("class", chosen ? "landmark-label" : "landmark-label is-crowded");
+        tag.textContent = labelText;
 
         g.appendChild(pulse);
         g.appendChild(hit);

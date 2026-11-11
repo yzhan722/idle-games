@@ -81,6 +81,25 @@ export async function progressionRoutes(
     return reply.send({ stats: next.stats, playtimeSeconds: next.stats?.playtimeSeconds || 0 });
   });
 
+  // 主线章节里程碑与章节流派进度
+  app.get("/progression/chapters", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
+    return reply.send({
+      completedChapters: next.progression?.completedChapters || {},
+      completedMilestones: next.progression?.completedMilestones || {},
+      builds: {
+        chapter1: next.chapter1Build ?? null,
+        chapter2: next.chapter2Build ?? null,
+        chapter3: next.chapter3Build ?? null,
+      },
+      stateRevision: next.stateRevision,
+    });
+  });
+
   // 成就列表（含定义 + 个人进度）
   app.get("/progression/achievements", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;

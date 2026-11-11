@@ -507,11 +507,26 @@ describe("woodcutter HP combat", () => {
     await storage.close();
   });
 
-  it("locks the build choice to a single pick", async () => {
+  it("locks the build choice to a single pick per chapter and applies Ch2/Ch3 combat mechanics", async () => {
     const { storage, state } = await armedWoodcutter();
     assert.equal(chooseBuild(state, "sharpened_edge").ok, true);
     assert.equal(chooseBuild(state, "thick_bark").ok, false);
     assert.equal(state.chapter1Build, "sharpened_edge");
+
+    assert.equal(chooseBuild(state, "quenched_thorns").ok, true);
+    assert.equal(chooseBuild(state, "heavy_sunder").ok, false);
+    assert.equal(state.chapter2Build, "quenched_thorns");
+
+    assert.equal(chooseBuild(state, "gale_flurry").ok, true);
+    assert.equal(chooseBuild(state, "relic_hunter").ok, false);
+    assert.equal(state.chapter3Build, "gale_flurry");
+
+    const t0 = new Date("2026-09-02T00:00:00.000Z");
+    state.hpCombat = startHpCombat(state, packNoGate, "crab", t0);
+    assert.equal(state.hpCombat.playerMaxHp, 50 + 35);
+    assert.ok(state.hpCombat.playerIntervalMs < 3000, "gale_flurry shortens attack interval");
+    tickHpCombat(state, packNoGate, new Date(t0.getTime() + 20_000), 20_000);
+    assert.ok(state.hpCombat.log.some((l) => l.includes("淬火反伤")), "quenched_thorns reflects damage in combat log");
     await storage.close();
   });
 });

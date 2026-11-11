@@ -242,6 +242,107 @@
     }
   }
 
+  function formatShortYear(y) {
+    return y < 0 ? `前${Math.abs(y)}` : `${y}`;
+  }
+
+  function readableInkColor(hex) {
+    const darkColors = ["#222629", "#2f3640", "#1e272e", "#2c3e50", "#1b2631"];
+    if (!hex || darkColors.includes(hex.toLowerCase())) return "#d8c7a8";
+    return hex;
+  }
+
+  function renderInspectorTrajectory(ownerName) {
+    const box = document.getElementById("card-trajectory-box");
+    const svg = document.getElementById("card-trajectory-svg");
+    const summaryEl = document.getElementById("card-traj-summary");
+    const msRow = document.getElementById("card-milestones-row");
+    const peersRow = document.getElementById("card-peers-row");
+    if (!box || !svg || !msRow || !peersRow) return;
+
+    const traj = ownerName ? engine.getEmpireTrajectory(ownerName) : null;
+    if (!traj || !traj.points || traj.points.length === 0) {
+      box.style.display = "none";
+      return;
+    }
+    box.style.display = "";
+    const strokeColor = readableInkColor(traj.color);
+    if (summaryEl) {
+      summaryEl.textContent = `国祚约 ${traj.duration} 年 · 点击曲线跳转`;
+    }
+
+    const W = 276;
+    const H = 82;
+    const padL = 8;
+    const padR = 8;
+    const padT = 12;
+    const padB = 15;
+    const minY = traj.startY;
+    const maxY = Math.max(minY + 1, traj.endY);
+    const maxArea = Math.max(10, traj.peakAreaNum);
+
+    const toX = (yr) => padL + ((yr - minY) / (maxY - minY)) * (W - padL - padR);
+    const toY = (area) => (H - padB) - (Math.min(maxArea, Math.max(0, area)) / maxArea) * (H - padT - padB);
+
+    const pts = traj.points.map(p => `${toX(p.year).toFixed(1)},${toY(p.area).toFixed(1)}`);
+    const areaPoly = `${toX(traj.points[0].year).toFixed(1)},${(H - padB).toFixed(1)} ${pts.join(" ")} ${toX(traj.points[traj.points.length - 1].year).toFixed(1)},${(H - padB).toFixed(1)}`;
+    const curClamped = Math.max(minY, Math.min(maxY, currentYear));
+    const curX = toX(curClamped).toFixed(1);
+    const inEra = currentYear >= minY && currentYear <= maxY;
+
+    const msDots = traj.milestones.map(m => {
+      const mx = toX(m.year).toFixed(1);
+      const my = toY(m.area).toFixed(1);
+      const isPeak = m.phase === "peak";
+      return `
+        <circle cx="${mx}" cy="${my}" r="${isPeak ? 3.2 : 2.3}" fill="#171411" stroke="${isPeak ? "#e5c67b" : strokeColor}" stroke-width="${isPeak ? 1.6 : 1.2}" />
+      `;
+    }).join("");
+
+    svg.innerHTML = `
+      <line x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}" stroke="rgba(216,179,101,0.12)" stroke-dasharray="2 2" stroke-width="0.7" />
+      <line x1="${padL}" y1="${((padT + H - padB) / 2).toFixed(1)}" x2="${W - padR}" y2="${((padT + H - padB) / 2).toFixed(1)}" stroke="rgba(216,179,101,0.10)" stroke-dasharray="2 2" stroke-width="0.7" />
+      <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="rgba(216,179,101,0.24)" stroke-width="0.8" />
+      <polygon points="${areaPoly}" fill="${strokeColor}" fill-opacity="0.16" />
+      <polyline points="${pts.join(" ")}" fill="none" stroke="${strokeColor}" stroke-width="1.55" stroke-linejoin="round" stroke-linecap="round" />
+      ${inEra ? `<line x1="${curX}" y1="${padT - 3}" x2="${curX}" y2="${H - padB}" stroke="#e5c67b" stroke-width="1" stroke-dasharray="2 1.5" />` : ""}
+      ${msDots}
+      <text x="${padL}" y="${H - 3}" fill="#8e8577" font-size="8.5">${formatShortYear(minY)}</text>
+      <text x="${(W / 2).toFixed(0)}" y="${H - 3}" fill="#b7aa93" font-size="8.5" text-anchor="middle">极盛 ${formatShortYear(traj.peakYear)} (${traj.peak_area})</text>
+      <text x="${W - padR}" y="${H - 3}" fill="#8e8577" font-size="8.5" text-anchor="end">${traj.isAliveToday ? "至今" : formatShortYear(maxY)}</text>
+    `;
+
+    svg.onclick = (e) => {
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width) return;
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const targetYr = Math.round(minY + ratio * (maxY - minY));
+      window.AtlasApp.jumpToYear(Math.max(-3000, Math.min(2026, targetYr)));
+    };
+
+    msRow.innerHTML = traj.milestones.map(m => `
+      <button class="traj-ms-chip" onclick="AtlasApp.jumpToYear(${Math.min(2026, m.year)})" title="跳转至 ${formatYear(m.year)}">
+        <span class="ms-tag">${m.label}</span><span>${formatShortYear(m.year)}</span>
+      </button>
+    `).join("");
+
+    const peers = engine.getContemporaryPeers(ownerName, currentYear, 2);
+    if (peers.length > 0) {
+      const p1 = peers[0];
+      const p2 = peers[1] || null;
+      peersRow.innerHTML = `
+        <span class="peers-label">同代列国：</span>
+        ${peers.map(p => `
+          <button class="peer-chip" onclick="AtlasApp.openCompareModal('${ownerName.replace(/'/g, "\\'")}', '${p.name.replace(/'/g, "\\'")}', '${p2 && p2.name !== p.name ? p2.name.replace(/'/g, "\\'") : (p1.name !== p.name ? p1.name.replace(/'/g, "\\'") : "")}')">
+            <i class="peer-dot" style="background:${readableInkColor(p.color)}"></i>${p.name}
+          </button>
+        `).join("")}
+      `;
+    } else {
+      peersRow.innerHTML = "";
+    }
+  }
+
   function renderInspector(regionId, state) {
     const regObj = REGIONS.find(r => r.id === regionId);
     if (!regObj) return;
@@ -253,13 +354,13 @@
       const emp = EMPIRES[ownerName];
       const count = Object.values(state.owners).filter(v => v === ownerName).length;
       document.getElementById("card-empire").textContent = ownerName;
-      const darkColors = ["#222629", "#2f3640", "#1e272e", "#2c3e50"];
-      document.getElementById("card-empire").style.color = darkColors.includes((emp.color || "").toLowerCase()) ? "#e2e8f0" : emp.color;
+      document.getElementById("card-empire").style.color = readableInkColor(emp.color);
       document.getElementById("card-desc").textContent = emp.desc;
       document.getElementById("card-capital").textContent = emp.capital;
       document.getElementById("card-regime").textContent = emp.regime;
       document.getElementById("card-area").textContent = `${emp.peak_area} (当前统辖 ${count} 区)`;
       document.getElementById("card-span").textContent = emp.era_span;
+      renderInspectorTrajectory(ownerName);
     } else {
       document.getElementById("card-empire").textContent = "远古早期古国";
       document.getElementById("card-empire").style.color = "#9aa5b1";
@@ -268,6 +369,7 @@
       document.getElementById("card-regime").textContent = "早期古国王制";
       document.getElementById("card-area").textContent = "1 个独立地理区";
       document.getElementById("card-span").textContent = "远古 - 古典";
+      renderInspectorTrajectory(null);
     }
 
     const historyList = engine.getRegionHistory(regionId, currentYear);
@@ -285,7 +387,7 @@
     }
   }
 
-  // Initialize Comparison Selectors
+  // Initialize Comparison Selectors (2 required + 1 optional contemporary polity)
   function resolveEmpireKey(query, fallback) {
     const names = Object.keys(EMPIRES);
     if (!query) return fallback || names[0];
@@ -297,15 +399,21 @@
     return tokHit || fallback || names[0];
   }
 
-  function initCompareSelectors(defaultA = "大唐帝国", defaultB = "阿拔斯王朝") {
+  function initCompareSelectors(defaultA = "大唐帝国", defaultB = "阿拔斯王朝", defaultC = "拜占庭帝国") {
     const selA = document.getElementById("cmp-select-a");
     const selB = document.getElementById("cmp-select-b");
+    const selC = document.getElementById("cmp-select-c");
     if (!selA || !selB) return;
     const names = Object.keys(EMPIRES);
-    selA.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join("");
-    selB.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join("");
+    const optsHtml = names.map(n => `<option value="${n}">${n}</option>`).join("");
+    selA.innerHTML = optsHtml;
+    selB.innerHTML = optsHtml;
     selA.value = resolveEmpireKey(defaultA, names[0]);
     selB.value = resolveEmpireKey(defaultB, names[1]);
+    if (selC) {
+      selC.innerHTML = `<option value="">（不叠加第三政权 · 仅双国对比）</option>${optsHtml}`;
+      selC.value = defaultC ? resolveEmpireKey(defaultC, "") : "";
+    }
   }
 
   // Close search dropdown when clicking outside
@@ -418,17 +526,28 @@
       });
       dd.style.display = "block";
     },
-    openCompareModal(empA, empB) {
+    openCompareModal(empA, empB, empC) {
       audio.playClickPop();
-      initCompareSelectors(empA || "大汉帝国", empB || "罗马共和国 / 罗马帝国");
+      initCompareSelectors(
+        empA || "大汉帝国",
+        empB || "罗马帝国",
+        typeof empC === "string" ? empC : "安息帝国"
+      );
       document.getElementById("compare-modal").style.display = "flex";
+      this.renderComparison();
+    },
+    applyComparePreset(empA, empB, empC = "") {
+      audio.playClickPop();
+      initCompareSelectors(empA, empB, empC);
       this.renderComparison();
     },
     compareCurrentEmpire() {
       const state = engine.getStateAtYear(currentYear);
       const curEmp = state.owners[selectedRegionId] || "大唐帝国";
-      const secondEmp = curEmp === "罗马共和国 / 罗马帝国" ? "大汉帝国" : "罗马共和国 / 罗马帝国";
-      this.openCompareModal(curEmp, secondEmp);
+      const peers = engine.getContemporaryPeers(curEmp, currentYear, 2);
+      const secondEmp = peers[0] ? peers[0].name : (curEmp === "罗马帝国" ? "大汉帝国" : "罗马帝国");
+      const thirdEmp = peers[1] ? peers[1].name : "";
+      this.openCompareModal(curEmp, secondEmp, thirdEmp);
     },
     closeCompareModal() {
       document.getElementById("compare-modal").style.display = "none";
@@ -436,35 +555,162 @@
     renderComparison() {
       const empA = document.getElementById("cmp-select-a").value;
       const empB = document.getElementById("cmp-select-b").value;
-      const cmp = engine.getEmpireComparison(empA, empB);
-      const maxArea = Math.max(100, cmp.a.areaNum, cmp.b.areaNum);
-      const maxRegs = Math.max(1, cmp.a.maxRegions, cmp.b.maxRegions);
-      const maxDur = Math.max(50, cmp.a.duration, cmp.b.duration);
+      const selC = document.getElementById("cmp-select-c");
+      const empC = selC ? selC.value : "";
+      const cmp = engine.getEmpireComparison(empA, empB, empC);
+      const items = cmp.list;
+      if (!items.length) return;
 
-      const renderCol = (d) => `
-        <div class="cmp-col">
-          <div class="cmp-title" style="color:${d.color}">${d.name}</div>
-          <div class="cmp-sub">${d.era_span} · 首都：${d.capital}</div>
-          <div class="cmp-metric">
-            <div class="cmp-metric-head"><span>鼎盛疆域面积</span><strong>${d.peak_area}</strong></div>
-            <div class="cmp-bar-bg"><div class="cmp-bar-fill" style="width:${Math.round((d.areaNum / maxArea) * 100)}%; background:${d.color}"></div></div>
+      const maxArea = Math.max(80, ...items.map(d => d.areaNum));
+      const maxRegs = Math.max(1, ...items.map(d => d.maxRegions));
+      const maxDur = Math.max(50, ...items.map(d => d.duration));
+      const [minYear, maxYear] = cmp.domain;
+      const spanYears = Math.max(1, maxYear - minYear);
+
+      // Build unified multi-polity chronological copperplate chart
+      const W = 796;
+      const H = 186;
+      const padL = 46;
+      const padR = 18;
+      const padT = 34;
+      const padB = 24;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const toX = (yr) => padL + ((yr - minYear) / spanYears) * plotW;
+      const toY = (area) => (H - padB) - (Math.min(maxArea, Math.max(0, area)) / maxArea) * plotH;
+
+      const dashStyles = ["", "5 2.5", "2 2"];
+      const tickCount = 6;
+      let gridSvg = "";
+      for (let t = 0; t <= tickCount; t++) {
+        const ty = minYear + Math.round((spanYears * t) / tickCount);
+        const tx = toX(ty).toFixed(1);
+        gridSvg += `
+          <line x1="${tx}" y1="${padT}" x2="${tx}" y2="${H - padB}" stroke="rgba(216,179,101,0.10)" stroke-width="0.8" stroke-dasharray="2 3" />
+          <text x="${tx}" y="${H - 7}" fill="#948a78" font-size="10" text-anchor="${t === 0 ? "start" : t === tickCount ? "end" : "middle"}">${formatShortYear(ty)}</text>
+        `;
+      }
+      [0, 0.5, 1].forEach((ratio) => {
+        const gy = (H - padB - ratio * plotH).toFixed(1);
+        const val = Math.round(maxArea * ratio);
+        gridSvg += `
+          <line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="rgba(216,179,101,${ratio === 0 ? "0.28" : "0.11"})" stroke-width="0.8" />
+          <text x="${padL - 6}" y="${(parseFloat(gy) + 3.5).toFixed(1)}" fill="#8e8577" font-size="9.5" text-anchor="end">${val}</text>
+        `;
+      });
+
+      const placedPeakLabels = [];
+      const seriesSvg = items.map((d, idx) => {
+        const traj = d.trajectory;
+        if (!traj || !traj.points.length) return "";
+        const col = readableInkColor(d.color);
+        const pts = traj.points.map(p => `${toX(p.year).toFixed(1)},${toY(p.area).toFixed(1)}`);
+        const areaPoly = `${toX(traj.points[0].year).toFixed(1)},${(H - padB).toFixed(1)} ${pts.join(" ")} ${toX(traj.points[traj.points.length - 1].year).toFixed(1)},${(H - padB).toFixed(1)}`;
+        const spanY = 10 + idx * 7.5;
+        const sx1 = toX(traj.startY).toFixed(1);
+        const sx2 = toX(traj.endY).toFixed(1);
+        const pkXNum = toX(traj.peakYear);
+        const pkYNum = toY(traj.peakAreaNum);
+        const dashAttr = dashStyles[idx] ? `stroke-dasharray="${dashStyles[idx]}"` : "";
+
+        let lblY = Math.max(padT + 9, pkYNum - 7);
+        let lblAnchor = pkXNum < padL + 58 ? "start" : pkXNum > W - padR - 58 ? "end" : "middle";
+        for (let pass = 0; pass < 3; pass++) {
+          const hit = placedPeakLabels.find(pl => Math.abs(pl.x - pkXNum) < 118 && Math.abs(pl.y - lblY) < 12);
+          if (!hit) break;
+          lblY = Math.min(H - padB - 8, hit.y + 13);
+        }
+        placedPeakLabels.push({ x: pkXNum, y: lblY });
+
+        const msMarkers = traj.milestones.map(m => {
+          const mx = toX(m.year).toFixed(1);
+          const my = toY(m.area).toFixed(1);
+          return `<circle cx="${mx}" cy="${my}" r="${m.phase === "peak" ? 3.5 : 2.3}" fill="#161411" stroke="${col}" stroke-width="1.4" />`;
+        }).join("");
+
+        return `
+          <line x1="${sx1}" y1="${spanY}" x2="${sx2}" y2="${spanY}" stroke="${col}" stroke-width="2.4" stroke-linecap="round" opacity="0.72" />
+          <polygon points="${areaPoly}" fill="${col}" fill-opacity="0.10" />
+          <polyline points="${pts.join(" ")}" fill="none" stroke="${col}" stroke-width="1.9" ${dashAttr} stroke-linejoin="round" stroke-linecap="round" />
+          ${msMarkers}
+          <text x="${pkXNum.toFixed(1)}" y="${lblY.toFixed(1)}" fill="${col}" font-size="9.5" font-weight="bold" text-anchor="${lblAnchor}">${d.name}·极盛(${formatShortYear(traj.peakYear)})</text>
+        `;
+      }).join("");
+
+      const curInDomain = currentYear >= minYear && currentYear <= maxYear;
+      const curLineSvg = curInDomain
+        ? `<line x1="${toX(currentYear).toFixed(1)}" y1="${padT - 4}" x2="${toX(currentYear).toFixed(1)}" y2="${H - padB}" stroke="#e5c67b" stroke-width="1" stroke-dasharray="3 2" />`
+        : "";
+
+      const legendHtml = items.map((d) => {
+        const col = readableInkColor(d.color);
+        const msText = (d.trajectory ? d.trajectory.milestones : [])
+          .map(m => `${m.label}:${formatShortYear(m.year)}`)
+          .join(" · ");
+        return `
+          <div class="cmp-leg-item">
+            <span class="cmp-leg-swatch" style="background:${col}"></span>
+            <strong>${d.name}</strong>
+            <span class="cmp-leg-ms">(${msText})</span>
           </div>
-          <div class="cmp-metric">
-            <div class="cmp-metric-head"><span>沙盘最大统辖区块</span><strong>${d.maxRegions} 个核心区</strong></div>
-            <div class="cmp-bar-bg"><div class="cmp-bar-fill" style="width:${Math.round((d.maxRegions / maxRegs) * 100)}%; background:${d.color}"></div></div>
+        `;
+      }).join("");
+
+      const renderCol = (d) => {
+        const col = readableInkColor(d.color);
+        return `
+          <div class="cmp-col">
+            <div class="cmp-title" style="color:${col}">${d.name}</div>
+            <div class="cmp-sub">${d.era_span} · ${d.continent} · 首都：${d.capital}</div>
+            <div class="cmp-metric">
+              <div class="cmp-metric-head"><span>鼎盛疆域面积</span><strong>${d.peak_area}</strong></div>
+              <div class="cmp-bar-bg"><div class="cmp-bar-fill" style="width:${Math.round((d.areaNum / maxArea) * 100)}%; background:${col}"></div></div>
+            </div>
+            <div class="cmp-metric">
+              <div class="cmp-metric-head"><span>沙盘最大统辖区块</span><strong>${d.maxRegions} 个核心区</strong></div>
+              <div class="cmp-bar-bg"><div class="cmp-bar-fill" style="width:${Math.round((d.maxRegions / maxRegs) * 100)}%; background:${col}"></div></div>
+            </div>
+            <div class="cmp-metric">
+              <div class="cmp-metric-head"><span>国祚延续跨度</span><strong>约 ${d.duration} 年 (${d.regime})</strong></div>
+              <div class="cmp-bar-bg"><div class="cmp-bar-fill" style="width:${Math.round((d.duration / maxDur) * 100)}%; background:${col}"></div></div>
+            </div>
+            <div class="cmp-desc">${d.desc}</div>
+            <button class="cmp-jump-btn" onclick="AtlasApp.jumpToEmpirePeak('${d.name.replace(/'/g, "\\'")}', ${d.peakYear})">
+              ▶ 跳转至其极盛年 (${formatYear(d.peakYear)}) 并高亮版图
+            </button>
           </div>
-          <div class="cmp-metric">
-            <div class="cmp-metric-head"><span>政权延续跨度</span><strong>约 ${d.duration} 年 (${d.regime})</strong></div>
-            <div class="cmp-bar-bg"><div class="cmp-bar-fill" style="width:${Math.round((d.duration / maxDur) * 100)}%; background:${d.color}"></div></div>
+        `;
+      };
+
+      document.getElementById("compare-body").innerHTML = `
+        <div class="cmp-trajectory-panel">
+          <div class="cmp-traj-top">
+            <div class="cmp-leg-list">${legendHtml}</div>
+            <span class="cmp-axis-note">纵轴：万 km² · 点击图谱任意纪年即刻穿越</span>
           </div>
-          <div class="cmp-desc">${d.desc}</div>
-          <button class="cmp-jump-btn" onclick="AtlasApp.jumpToEmpirePeak('${d.name}', ${d.peakYear})">
-            ▶ 跳转至其鼎盛年 (${formatYear(d.peakYear)}) 并高亮版图
-          </button>
+          <svg id="cmp-overlay-svg" viewBox="0 0 ${W} ${H}">
+            ${gridSvg}
+            ${seriesSvg}
+            ${curLineSvg}
+          </svg>
+        </div>
+        <div class="cmp-grid ${items.length === 3 ? "cmp-grid-3" : ""}">
+          ${items.map(renderCol).join("")}
         </div>
       `;
 
-      document.getElementById("compare-body").innerHTML = `<div class="cmp-grid">${renderCol(cmp.a)}${renderCol(cmp.b)}</div>`;
+      const overlaySvg = document.getElementById("cmp-overlay-svg");
+      if (overlaySvg) {
+        overlaySvg.onclick = (e) => {
+          const rect = overlaySvg.getBoundingClientRect();
+          if (!rect.width) return;
+          const svgX = ((e.clientX - rect.left) / rect.width) * W;
+          const ratio = Math.max(0, Math.min(1, (svgX - padL) / plotW));
+          const targetYr = Math.max(-3000, Math.min(2026, Math.round(minYear + ratio * spanYears)));
+          this.closeCompareModal();
+          this.jumpToYear(targetYr);
+        };
+      }
     },
     jumpToEmpirePeak(empName, peakYear) {
       this.closeCompareModal();

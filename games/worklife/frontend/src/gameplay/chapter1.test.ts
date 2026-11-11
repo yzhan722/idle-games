@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { nextChapter1Goal } from "./chapter1";
+import { nextChapter1Goal, nextChapterGoal } from "./chapter1";
 
 describe("chapter 1 next goal", () => {
   it("keeps a forest veteran complete after selling starter gear and changing weapons", () => {
@@ -93,5 +93,76 @@ describe("chapter 1 next goal", () => {
       }).id,
       "complete"
     );
+  });
+
+  it("seamlessly chains Chapter 2 (Mine/Smithing) and Chapter 3 (Swamp/Tailoring) after forest_boss", () => {
+    const ch1Veteran = {
+      inventory: { weapon_wooden_sword: 1, armor_wood_chest: 1 },
+      equipment: { main_hand: "weapon_wooden_sword", chest: "armor_wood_chest" },
+      chapter1Build: "sharpened_edge",
+      stats: { totalKills: 6, totalBossKills: 1, killsByMonster: { forest_boss: 1 } },
+    };
+    const gMine = nextChapterGoal(ch1Veteran);
+    assert.equal(gMine.chapter, 2);
+    assert.equal(gMine.id, "ch2_mine_ore");
+    assert.equal(gMine.tab, "mining");
+
+    const gSmelt = nextChapterGoal({ ...ch1Veteran, inventory: { ...ch1Veteran.inventory, ore_2: 4 } });
+    assert.equal(gSmelt.id, "ch2_smelt_ingot");
+    assert.equal(gSmelt.tab, "smithing");
+
+    const gForgeWep = nextChapterGoal({ ...ch1Veteran, inventory: { ...ch1Veteran.inventory, ingot_2: 4 } });
+    assert.equal(gForgeWep.id, "ch2_forge_weapon");
+
+    const gCh2Build = nextChapterGoal({
+      ...ch1Veteran,
+      inventory: { ...ch1Veteran.inventory, ingot_2: 4, weapon_iron_sword: 1 },
+    });
+    assert.equal(gCh2Build.id, "ch2_build");
+    assert.equal(gCh2Build.buildChapter, 2);
+
+    const gMineBoss = nextChapterGoal({
+      ...ch1Veteran,
+      chapter2Build: "heavy_sunder",
+      inventory: { ...ch1Veteran.inventory, weapon_iron_sword: 1, armor_iron_chest: 1 },
+      stats: {
+        totalKills: 12,
+        totalBossKills: 1,
+        killsByMonster: { forest_boss: 1, rock_golem: 1, crystal_bat: 1, ore_rat: 1 },
+      },
+    });
+    assert.equal(gMineBoss.id, "ch2_boss");
+    assert.equal(gMineBoss.adventureZone, "mine");
+
+    const ch2Veteran = {
+      ...ch1Veteran,
+      chapter2Build: "heavy_sunder",
+      stats: {
+        totalKills: 15,
+        totalBossKills: 2,
+        killsByMonster: { forest_boss: 1, mine_boss: 1 },
+      },
+    };
+    const gCh3Start = nextChapterGoal(ch2Veteran);
+    assert.equal(gCh3Start.chapter, 3);
+    assert.equal(gCh3Start.id, "ch3_gather_fiber");
+
+    const gCh3Build = nextChapterGoal({
+      ...ch2Veteran,
+      inventory: { ...ch2Veteran.inventory, fiber_1: 2, yarn_1: 2, armor_cloth_chest: 1, armor_cloth_boots: 1 },
+    });
+    assert.equal(gCh3Build.id, "ch3_build");
+    assert.equal(gCh3Build.buildChapter, 3);
+
+    const gCh3Done = nextChapterGoal({
+      ...ch2Veteran,
+      chapter3Build: "relic_hunter",
+      stats: {
+        totalKills: 25,
+        totalBossKills: 3,
+        killsByMonster: { forest_boss: 1, mine_boss: 1, swamp_boss: 1 },
+      },
+    });
+    assert.equal(gCh3Done.id, "ch3_complete");
   });
 });

@@ -114,4 +114,36 @@ describe("combat sheet from content pack", () => {
     assert.equal(sheet.def, 4);
     assert.equal(sheet.atk, 10);
   });
+
+  it("stacks Chapter 2 and Chapter 3 builds symmetrically with backend", () => {
+    const offensive = combatSheetFromPack(
+      {
+        combatLevel: 1,
+        chapter1Build: "sharpened_edge",
+        chapter2Build: "heavy_sunder",
+        chapter3Build: "gale_flurry",
+        equipment: { main_hand: "weapon_wooden_sword" },
+      },
+      items
+    );
+    assert.equal(offensive.atk, 10 + 4 + 6 + 5);
+    assert.equal(offensive.armorPenPct, 0.25);
+    assert.equal(offensive.intervalMs, Math.round(3000 * 0.85));
+
+    const defensiveLoot = combatSheetFromPack(
+      {
+        combatLevel: 1,
+        chapter1Build: "thick_bark",
+        chapter2Build: "quenched_thorns",
+        chapter3Build: "relic_hunter",
+        equipment: { main_hand: "weapon_wooden_sword" },
+      },
+      items
+    );
+    assert.equal(defensiveLoot.hp, 50 + 20 + 35 + 25);
+    assert.equal(defensiveLoot.def, 4 + 8 + 4);
+    assert.equal(defensiveLoot.thornsDefRatio, 0.45);
+    assert.equal(defensiveLoot.goldMult, 1.25);
+    assert.equal(defensiveLoot.dropMult, 1.3);
+  });
 });

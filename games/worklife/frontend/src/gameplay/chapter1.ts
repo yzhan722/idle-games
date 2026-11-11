@@ -2,16 +2,38 @@ export type ChapterGoal = {
   id: string;
   title: string;
   detail: string;
-  tab: "logging" | "woodworking" | "adventure" | "character";
+  tab: "logging" | "woodworking" | "mining" | "smithing" | "gathering" | "tailoring" | "adventure" | "character";
   craftCategory?: "materials" | "weapons" | "equipment";
+  chapter?: 1 | 2 | 3;
+  stepIndex?: number;
+  stepTotal?: number;
+  buildChapter?: 1 | 2 | 3;
+  adventureZone?: "forest" | "mine" | "swamp";
 };
 
 type State = {
   progression?: { completedMilestones: Record<string, unknown>; completedChapters: Record<string, unknown> };
   inventory?: Record<string, number>;
-  equipment?: { main_hand?: string; chest?: string };
+  equipment?: {
+    main_hand?: string;
+    off_hand?: string;
+    head?: string;
+    chest?: string;
+    legs?: string;
+    feet?: string;
+    hands?: string;
+    accessory1?: string;
+    accessory2?: string;
+  };
   chapter1Build?: string;
-  stats?: { totalKills?: number; totalBossKills?: number; killsByMonster?: Record<string, number> };
+  chapter2Build?: string;
+  chapter3Build?: string;
+  stats?: {
+    totalKills?: number;
+    totalBossKills?: number;
+    killsByMonster?: Record<string, number>;
+    actionsById?: Record<string, number>;
+  };
   skills?: Record<string, { level?: number }>;
 };
 
@@ -26,6 +48,26 @@ export const CHAPTER1_OBJECTIVES = [
   "archetypes",
   "boss",
   "complete",
+] as const;
+
+export const CHAPTER2_OBJECTIVES = [
+  "ch2_mine_ore",
+  "ch2_smelt_ingot",
+  "ch2_forge_weapon",
+  "ch2_build",
+  "ch2_forge_armor",
+  "ch2_mine_scouts",
+  "ch2_boss",
+] as const;
+
+export const CHAPTER3_OBJECTIVES = [
+  "ch3_gather_fiber",
+  "ch3_spin_yarn",
+  "ch3_craft_garb",
+  "ch3_build",
+  "ch3_swamp_scouts",
+  "ch3_boss",
+  "ch3_complete",
 ] as const;
 
 export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
@@ -133,4 +175,331 @@ export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
 
 export function chapter1Complete(state: State | null | undefined): boolean {
   return nextChapter1Goal(state).id === "complete";
+}
+
+function enrichGoal(
+  goal: ChapterGoal,
+  chapter: 1 | 2 | 3,
+  objectives: readonly string[]
+): ChapterGoal {
+  const idx = objectives.indexOf(goal.id);
+  return {
+    ...goal,
+    chapter,
+    stepIndex: idx >= 0 ? idx + 1 : 1,
+    stepTotal: objectives.length,
+  };
+}
+
+/**
+ * Multi-chapter cross-profession mainline state machine (Chapters 1 -> 2 -> 3).
+ * Preserves `nextChapter1Goal` for legacy Chapter 1 callers while seamlessly advancing
+ * forest veterans into Chapter 2 (Mine & Blacksmithing) and Chapter 3 (Swamp & Tailoring).
+ */
+export function nextChapterGoal(state: State | null | undefined): ChapterGoal {
+  const ch1 = nextChapter1Goal(state);
+  if (ch1.id !== "complete") {
+    return enrichGoal(
+      {
+        ...ch1,
+        buildChapter: ch1.id === "build" ? 1 : undefined,
+        adventureZone: ch1.tab === "adventure" ? "forest" : undefined,
+      },
+      1,
+      CHAPTER1_OBJECTIVES
+    );
+  }
+
+  const achieved = state?.progression?.completedMilestones || {};
+  const completedChapters = state?.progression?.completedChapters || {};
+  const inv = state?.inventory || {};
+  const eq = state?.equipment || {};
+  const kills = state?.stats?.killsByMonster || {};
+  const actions = state?.stats?.actionsById || {};
+
+  // Chapter 2: Mine & Blacksmithing
+  const isCh2Done = Boolean(completedChapters.mine || (kills.mine_boss || 0) > 0);
+  if (!isCh2Done) {
+    const oreCount = (inv.ore_1 || 0) + (inv.ore_2 || 0);
+    const ingotCount = (inv.ingot_1 || 0) + (inv.ingot_2 || 0);
+    const hasIronWeapon = Boolean(
+      achieved.ch2_forge_weapon ||
+        (inv.weapon_iron_sword || 0) > 0 ||
+        (inv.weapon_steel_axe || 0) > 0 ||
+        eq.main_hand === "weapon_iron_sword" ||
+        eq.main_hand === "weapon_steel_axe" ||
+        (actions.act_forge_iron_sword || 0) > 0 ||
+        (actions.act_forge_steel_axe || 0) > 0
+    );
+    const hasCh2Build = Boolean(achieved.ch2_build || state?.chapter2Build);
+    const hasHeavyChest = Boolean(
+      achieved.ch2_forge_armor ||
+        (inv.armor_iron_chest || 0) > 0 ||
+        (inv.armor_steel_chest || 0) > 0 ||
+        eq.chest === "armor_iron_chest" ||
+        eq.chest === "armor_steel_chest" ||
+        (actions.act_forge_iron_chest || 0) > 0 ||
+        (actions.act_forge_steel_chest || 0) > 0
+    );
+    const hasMined = Boolean(
+      achieved.ch2_mine_ore ||
+        oreCount > 0 ||
+        ingotCount > 0 ||
+        hasIronWeapon ||
+        hasCh2Build ||
+        hasHeavyChest ||
+        (actions.act_mine_ore_t1 || 0) > 0 ||
+        (actions.act_mine_ore_t2 || 0) > 0
+    );
+    if (!hasMined) {
+      return enrichGoal(
+        {
+          id: "ch2_mine_ore",
+          title: "深入矿道开采铜矿或铁矿",
+          detail: "森林管家已倒下，矿山大门正式敞开。先去「采矿」挖出第一批金属原矿。",
+          tab: "mining",
+        },
+        2,
+        CHAPTER2_OBJECTIVES
+      );
+    }
+
+    const hasSmelted = Boolean(
+      achieved.ch2_smelt_ingot ||
+        ingotCount > 0 ||
+        hasIronWeapon ||
+        hasCh2Build ||
+        hasHeavyChest ||
+        (actions.act_smelt_ingot_t1 || 0) > 0 ||
+        (actions.act_smelt_ingot_t2 || 0) > 0
+    );
+    if (!hasSmelted) {
+      return enrichGoal(
+        {
+          id: "ch2_smelt_ingot",
+          title: "高炉冶炼金属锭",
+          detail: "原矿需要送进熔炉提纯。前往「锻造·材料」将铜矿或铁矿冶炼成金属锭。",
+          tab: oreCount >= 2 ? "smithing" : "mining",
+          craftCategory: "materials",
+        },
+        2,
+        CHAPTER2_OBJECTIVES
+      );
+    }
+
+    if (!hasIronWeapon) {
+      return enrichGoal(
+        {
+          id: "ch2_forge_weapon",
+          title: "锻造铁剑或钢斧",
+          detail: "矿山傀儡护甲极厚，木剑已难破防。收集铁锭在「锻造·武器」打造一把金属兵刃。",
+          tab: ingotCount >= 2 ? "smithing" : oreCount >= 2 ? "smithing" : "mining",
+          craftCategory: ingotCount >= 2 ? "weapons" : "materials",
+        },
+        2,
+        CHAPTER2_OBJECTIVES
+      );
+    }
+
+    if (!hasCh2Build) {
+      return enrichGoal(
+        {
+          id: "ch2_build",
+          title: "择定矿山铁匠流派：重锤破甲 / 淬火反伤",
+          detail: "铁砧淬炼已成。在「重锤破甲（攻击+6·无视25%防御）」与「淬火反伤（生命+35·防御+8·受击反伤）」间择一永久铭刻。",
+          tab: "adventure",
+          adventureZone: "mine",
+          buildChapter: 2,
+        },
+        2,
+        CHAPTER2_OBJECTIVES
+      );
+    }
+
+    if (!hasHeavyChest) {
+      return enrichGoal(
+        {
+          id: "ch2_forge_armor",
+          title: "锻造铁制或钢制重型胸甲",
+          detail: "矿山霸主的落石重击极具威胁，在「锻造·装备」打造一件金属胸甲护身。",
+          tab: ingotCount >= 3 ? "smithing" : oreCount >= 2 ? "smithing" : "mining",
+          craftCategory: ingotCount >= 3 ? "equipment" : "materials",
+        },
+        2,
+        CHAPTER2_OBJECTIVES
+      );
+    }
+
+    const mineScoutCount = [
+      "rock_golem",
+      "crystal_bat",
+      "ore_rat",
+      "magma_worm",
+      "iron_spider",
+      "gem_thief",
+    ].reduce((sum, id) => sum + ((kills[id] || 0) > 0 ? 1 : 0), 0);
+    if (!achieved.ch2_mine_scouts && mineScoutCount < 3) {
+      return enrichGoal(
+        {
+          id: "ch2_mine_scouts",
+          title: `肃清 3 种矿山魔物 (${mineScoutCount}/3)`,
+          detail: "前往「冒险·矿山」，击败碎石傀儡、水晶蝙蝠、矿石鼠等至少 3 种矿道魔物熟悉战局。",
+          tab: "adventure",
+          adventureZone: "mine",
+        },
+        2,
+        CHAPTER2_OBJECTIVES
+      );
+    }
+
+    return enrichGoal(
+      {
+        id: "ch2_boss",
+        title: "决战矿山霸主",
+        detail: "矿道深处的领主已现身！穿好金属重装并备齐恢复补给，攻克矿山霸主开启沼泽航道。",
+        tab: "adventure",
+        adventureZone: "mine",
+      },
+      2,
+      CHAPTER2_OBJECTIVES
+    );
+  }
+
+  // Chapter 3: Swamp & Tailoring
+  const isCh3Done = Boolean(completedChapters.swamp || (kills.swamp_boss || 0) > 0);
+  if (!isCh3Done) {
+    const fiberCount = (inv.fiber_1 || 0) + (inv.fiber_2 || 0) + (inv.fiber_3 || 0);
+    const yarnCount = (inv.yarn_1 || 0) + (inv.yarn_2 || 0) + (inv.yarn_3 || 0);
+    const eqValues = new Set(Object.values(eq).filter((v): v is string => typeof v === "string"));
+    const tailorGarbCount = [
+      "armor_cloth_chest",
+      "armor_cloth_legs",
+      "armor_cloth_boots",
+      "armor_cloth_gloves",
+      "armor_leather_chest",
+      "armor_leather_legs",
+      "armor_leather_boots",
+      "armor_leather_gloves",
+      "armor_tailor_leather_chest",
+    ].reduce((sum, id) => sum + ((inv[id] || 0) > 0 || eqValues.has(id) ? 1 : 0), 0);
+    const hasCh3Build = Boolean(achieved.ch3_build || state?.chapter3Build);
+
+    const hasGatheredFiber = Boolean(
+      achieved.ch3_gather_fiber ||
+        fiberCount > 0 ||
+        yarnCount > 0 ||
+        tailorGarbCount > 0 ||
+        hasCh3Build ||
+        (actions.act_gather_fiber_t1 || 0) > 0 ||
+        (actions.act_gather_fiber_t2 || 0) > 0
+    );
+    if (!hasGatheredFiber) {
+      return enrichGoal(
+        {
+          id: "ch3_gather_fiber",
+          title: "前往草甸沼泽采集织物纤维",
+          detail: "沼泽湿气腐蚀生铁，轻便灵巧的织物皮甲不可或缺。先去「采集」收获棉花或亚麻。",
+          tab: "gathering",
+        },
+        3,
+        CHAPTER3_OBJECTIVES
+      );
+    }
+
+    const hasSpunYarn = Boolean(
+      achieved.ch3_spin_yarn ||
+        yarnCount > 0 ||
+        tailorGarbCount > 0 ||
+        hasCh3Build ||
+        (actions.act_spin_yarn_t1 || 0) > 0 ||
+        (actions.act_spin_yarn_t2 || 0) > 0
+    );
+    if (!hasSpunYarn) {
+      return enrichGoal(
+        {
+          id: "ch3_spin_yarn",
+          title: "纺制棉线或亚麻线",
+          detail: "前往「缝纫·材料」将采集的植物纤维纺成坚韧丝线，为裁剪套装做准备。",
+          tab: fiberCount >= 2 ? "tailoring" : "gathering",
+          craftCategory: "materials",
+        },
+        3,
+        CHAPTER3_OBJECTIVES
+      );
+    }
+
+    if (!achieved.ch3_craft_garb && tailorGarbCount < 2) {
+      return enrichGoal(
+        {
+          id: "ch3_craft_garb",
+          title: `缝制 2 件裁缝防具套装 (${tailorGarbCount}/2)`,
+          detail: "在「缝纫·装备」制作至少 2 件布甲或皮甲部件（长袍、护腿、靴子或手套），凑齐轻装防瘴底子。",
+          tab: yarnCount >= 2 ? "tailoring" : fiberCount >= 2 ? "tailoring" : "gathering",
+          craftCategory: yarnCount >= 2 ? "equipment" : "materials",
+        },
+        3,
+        CHAPTER3_OBJECTIVES
+      );
+    }
+
+    if (!achieved.ch3_build && !state?.chapter3Build) {
+      return enrichGoal(
+        {
+          id: "ch3_build",
+          title: "择定沼泽游侠流派：疾风连击 / 寻宝猎人",
+          detail: "轻装已就绪。在「疾风连击（攻击+5·攻速提升15%）」与「寻宝猎人（生命+25·防御+4·金币+25%·掉率+30%）」间择一铭刻。",
+          tab: "adventure",
+          adventureZone: "swamp",
+          buildChapter: 3,
+        },
+        3,
+        CHAPTER3_OBJECTIVES
+      );
+    }
+
+    const swampScoutCount = [
+      "poison_frog",
+      "swamp_zombie",
+      "mud_elemental",
+      "vine_snake",
+      "ghost_light",
+      "swamp_troll",
+    ].reduce((sum, id) => sum + ((kills[id] || 0) > 0 ? 1 : 0), 0);
+    if (!achieved.ch3_swamp_scouts && swampScoutCount < 3) {
+      return enrichGoal(
+        {
+          id: "ch3_swamp_scouts",
+          title: `驱散 3 种沼泽魔物 (${swampScoutCount}/3)`,
+          detail: "前往「冒险·沼泽」，击败毒雾青蛙、沼泽僵尸、泥浆元素等至少 3 种魔物摸清瘴气规律。",
+          tab: "adventure",
+          adventureZone: "swamp",
+        },
+        3,
+        CHAPTER3_OBJECTIVES
+      );
+    }
+
+    return enrichGoal(
+      {
+        id: "ch3_boss",
+        title: "讨伐沼泽之王",
+        detail: "沼泽深处的瘴气领主正在苏醒！备好解毒回血料理或治疗技能，一举击败沼泽之王。",
+        tab: "adventure",
+        adventureZone: "swamp",
+      },
+      3,
+      CHAPTER3_OBJECTIVES
+    );
+  }
+
+  return enrichGoal(
+    {
+      id: "ch3_complete",
+      title: "第三章完成 · 雪山与火山前路已开",
+      detail: "森林、矿山与沼泽三大战区悉数平定！可前往生涯领取里程碑赏金，或继续向冰原雪山进发。",
+      tab: "adventure",
+    },
+    3,
+    CHAPTER3_OBJECTIVES
+  );
 }

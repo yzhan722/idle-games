@@ -15,6 +15,13 @@ export type CombatSheet = {
   evasionPct?: number;
   critRatePct?: number;
   critDmgPct?: number;
+  /** Chapter 2 build (heavy_sunder): fraction of defender DEF ignored on hit. */
+  armorPenPct?: number;
+  /** Chapter 2 build (quenched_thorns): fraction of player DEF reflected onto attacker. */
+  thornsDefRatio?: number;
+  /** Chapter 3 build (relic_hunter): combat gold & rare drop multipliers. */
+  goldMult?: number;
+  dropMult?: number;
 };
 
 type PackItem = {
@@ -42,6 +49,8 @@ type State = {
   combatLevel?: number;
   combatSkills?: SkillLevels;
   chapter1Build?: "sharpened_edge" | "thick_bark";
+  chapter2Build?: "heavy_sunder" | "quenched_thorns";
+  chapter3Build?: "gale_flurry" | "relic_hunter";
   equipment?: Equipment;
   inventory?: Record<string, number>;
   activeBuffs?: Array<{
@@ -103,6 +112,36 @@ const BUILD = {
   thick_bark: { atk: 0, hp: 20, def: 4 },
 } as const;
 
+function combinedBuildFromState(state: State | null | undefined) {
+  const ch1 = (state?.chapter1Build && BUILD[state.chapter1Build]) || { atk: 0, hp: 0, def: 0 };
+  let atk = ch1.atk;
+  let hp = ch1.hp;
+  let def = ch1.def;
+  let armorPenPct = 0;
+  let thornsDefRatio = 0;
+  let intervalMult = 1;
+  let goldMult = 1;
+  let dropMult = 1;
+  if (state?.chapter2Build === "heavy_sunder") {
+    atk += 6;
+    armorPenPct = 0.25;
+  } else if (state?.chapter2Build === "quenched_thorns") {
+    hp += 35;
+    def += 8;
+    thornsDefRatio = 0.45;
+  }
+  if (state?.chapter3Build === "gale_flurry") {
+    atk += 5;
+    intervalMult = 0.85;
+  } else if (state?.chapter3Build === "relic_hunter") {
+    hp += 25;
+    def += 4;
+    goldMult = 1.25;
+    dropMult = 1.3;
+  }
+  return { atk, hp, def, armorPenPct, thornsDefRatio, intervalMult, goldMult, dropMult };
+}
+
 export type PackEquipmentSet = {
   id: string;
   name?: string;
@@ -151,7 +190,7 @@ export function combatSheetFromPack(
   sets?: PackEquipmentSet[] | undefined
 ): CombatSheet {
   const skills = skillContribution(state);
-  const extras = (state?.chapter1Build && BUILD[state.chapter1Build]) || { atk: 0, hp: 0, def: 0 };
+  const extras = combinedBuildFromState(state);
   let gearAtk = 0;
   let gearDef = 0;
   let gearHp = 0;
@@ -202,17 +241,25 @@ export function combatSheetFromPack(
   const evasionPct = Math.min(45, Math.round((6 + (defLv - 1) * 0.32 + Math.floor(finalDef / 24)) * 10) / 10);
   const critRatePct = Math.min(65, Math.round((14 + (atkLv - 1) * 0.25 + (intLv - 1) * 0.15 + Math.floor(finalAtk / 28)) * 10) / 10);
   const critDmgPct = Math.min(300, Math.round(160 + (atkLv - 1) * 0.75 + Math.floor(finalAtk / 14)));
+  const finalIntervalMs =
+    extras.intervalMult !== 1
+      ? Math.max(800, Math.round(skills.intervalMs * extras.intervalMult))
+      : skills.intervalMs;
   return {
     hp: skills.hp + Math.round(gearHp) + extras.hp,
     atk: finalAtk,
     def: finalDef,
-    intervalMs: skills.intervalMs,
+    intervalMs: finalIntervalMs,
     mp: skills.mp,
     mpRegenPerTick: skills.mpRegenPerTick,
     accuracyPct,
     evasionPct,
     critRatePct,
     critDmgPct,
+    ...(extras.armorPenPct > 0 ? { armorPenPct: extras.armorPenPct } : {}),
+    ...(extras.thornsDefRatio > 0 ? { thornsDefRatio: extras.thornsDefRatio } : {}),
+    ...(extras.goldMult !== 1 ? { goldMult: extras.goldMult } : {}),
+    ...(extras.dropMult !== 1 ? { dropMult: extras.dropMult } : {}),
   };
 }
 

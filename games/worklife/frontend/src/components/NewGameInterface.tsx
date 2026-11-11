@@ -27,7 +27,7 @@ import { NextGoalBar } from './NextGoalBar'
 import { ActionQueueBar } from './ActionQueueBar'
 import { CharacterSheet } from './CharacterSheet'
 import { encounterStages } from '../gameplay/encounters'
-import { nextChapter1Goal, chapter1Complete } from '../gameplay/chapter1'
+import { nextChapterGoal, chapter1Complete } from '../gameplay/chapter1'
 import { CHAPTER1_MONSTERS } from '../gameplay/ia'
 import { COMBAT_SKILL_KEYS, abilitySlotCount, activeSetBonuses, combatSheetFromPack, equippedWeaponAtk, mainCombatSkill } from '../gameplay/combatSheet'
 import { enhancementStatMultiplier, toolEffectLine } from '../gameplay/enhancement'
@@ -1764,7 +1764,7 @@ export default function NewGameInterface() {
     )
   }
 
-  const chapterGoal = nextChapter1Goal(playerState)
+  const chapterGoal = nextChapterGoal(playerState)
   const chapterDone = chapter1Complete(playerState)
   const hasFirstGather = Boolean(
     chapterDone ||
@@ -1956,14 +1956,23 @@ export default function NewGameInterface() {
       />
       <NextGoalBar
         goal={chapterGoal}
-        goLabel={chapterGoal.id === "complete" ? (claimableCount > 0 ? `领工钱 ${claimableCount}` : "看成就") : undefined}
+        goLabel={
+          chapterGoal.id === "complete" || chapterGoal.id === "ch3_complete"
+            ? (claimableCount > 0 ? `领工钱 ${claimableCount}` : "看成就")
+            : chapterGoal.buildChapter
+              ? "选流派"
+              : undefined
+        }
         onGo={() => {
-          if (chapterGoal.id === "complete") {
+          if (chapterGoal.id === "complete" || chapterGoal.id === "ch3_complete") {
             setProgPanel("achievements")
             return
           }
           if (chapterGoal.craftCategory) {
             setCraftCategory(chapterGoal.craftCategory)
+          }
+          if (chapterGoal.adventureZone) {
+            setSelectedMap(chapterGoal.adventureZone)
           }
           if (chapterGoal.tab === "character") {
             setActiveTab("character")
@@ -2494,6 +2503,7 @@ export default function NewGameInterface() {
       <FirstBladeBuildModal
         playerState={playerState}
         buildModalDelayDone={buildModalDelayDone}
+        activeBuildChapter={chapterGoal.buildChapter}
         actionLoading={actionLoading}
         setActionLoading={setActionLoading}
         refreshPlayerState={refreshPlayerState}

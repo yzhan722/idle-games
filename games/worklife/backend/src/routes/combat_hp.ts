@@ -193,7 +193,17 @@ export async function combatHpRoutes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     const body = z
-      .object({ id: z.enum(["sharpened_edge", "thick_bark"]), ...revisionSchema })
+      .object({
+        id: z.enum([
+          "sharpened_edge",
+          "thick_bark",
+          "heavy_sunder",
+          "quenched_thorns",
+          "gale_flurry",
+          "relic_hunter",
+        ]),
+        ...revisionSchema,
+      })
       .strict()      .parse((req.body ?? {}) as unknown);
     try {
       const outcome = await storage.executePlayerCommand({

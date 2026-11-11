@@ -116,6 +116,8 @@ export interface PlayerState {
     stats?: Record<string, number>;
   }>;
   chapter1Build?: "sharpened_edge" | "thick_bark";
+  chapter2Build?: "heavy_sunder" | "quenched_thorns";
+  chapter3Build?: "gale_flurry" | "relic_hunter";
   /** 玩家偏好/角色档案（建角屏写入；老存档可能整体缺失） */
   settings?: {
     soundEnabled?: boolean;

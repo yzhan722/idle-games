@@ -227,6 +227,7 @@ const P2_SKILL_ICONS: Array<[string, string]> = [
   ["skills/glacial_snipe","极寒穿云箭"], ["skills/flame_burst","熔岩爆裂"], ["skills/phoenix_blessing","浴火圣歌"], ["skills/void_rift","虚空裂斩"],
   ["skills/abyssal_pact","深渊噬魂契"], ["skills/holy_judgment","天罚圣裁"], ["skills/seraph_aegis","炽天圣盾"], ["skills/chrono_overload","时空超载"],
   ["skills/hellfire_cataclysm","炼狱浩劫"], ["skills/genesis_sanctuary","创世神恩"], ["skills/omega_annihilation","万界终焉"],
+  ["skills/heavy_sunder","重锤破甲"], ["skills/quenched_thorns","淬火反伤"], ["skills/gale_flurry","疾风连击"], ["skills/relic_hunter","寻宝猎人"],
 ];
 for (const [key, name] of P2_SKILL_ICONS) {
   T1_ASSET_CONTRACT.push(

@@ -175,6 +175,10 @@ export type AbilityTrigger =
   | { type: "enemy_guard" };
 
 export type AbilitySlot = { abilityId: string; trigger: AbilityTrigger };
+export type Chapter1BuildId = "sharpened_edge" | "thick_bark";
+export type Chapter2BuildId = "heavy_sunder" | "quenched_thorns";
+export type Chapter3BuildId = "gale_flurry" | "relic_hunter";
+export type AllChapterBuildId = Chapter1BuildId | Chapter2BuildId | Chapter3BuildId;
 
 // 增强的玩家状态结构
 export type EnhancedPlayerState = PlayerState & {
@@ -246,7 +250,9 @@ export type EnhancedPlayerState = PlayerState & {
   /** Wall-clock ms when combatHp was last written; out-of-combat regen accrues from here. */
   combatHpAt?: number;
   progression?: import('./progression_state').ProgressionState;
-  chapter1Build?: "sharpened_edge" | "thick_bark";
+  chapter1Build?: Chapter1BuildId;
+  chapter2Build?: Chapter2BuildId;
+  chapter3Build?: Chapter3BuildId;
 
   /** MWI combat skills; `combatLevel` is derived from these (see combat_skills.ts). */
   combatSkills?: CombatSkills;
