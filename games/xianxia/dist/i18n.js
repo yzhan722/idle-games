@@ -121,16 +121,7 @@ dojo.declare("com.nuclearunicorn.i18n.Lang", null, {
 					}).fail(function(){
 						console.warn("no legacy locale ", "'" + lang + "'", " found, skipping...");
 					}).always(function(){
-						// crowdin base, then re-apply primary res/i18n/<lang>.json so canonical xianxia strings always win
-						console.log("trying to load crowdin locale system");
-						$.getJSON( "res/i18n/crowdin/" + lang + ".json?_=" + timestamp).then(function(crowdinLocale){
-							console.log("loaded crowdin locale for lang", lang, crowdinLocale);
-							$.extend(self.messages, crowdinLocale, self._primaryLocale || {});
-							self._deferred.resolve();
-						}).fail(function(){
-							console.warn("no crowdin locale ", "'" + lang + "'", " found, skipping...");
-							self._deferred.resolve();
-						});
+						self._deferred.resolve();
 					});
 			} else {
 				self._deferred.resolve();
