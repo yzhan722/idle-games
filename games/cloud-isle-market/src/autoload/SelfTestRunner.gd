@@ -794,7 +794,17 @@ func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float,
 	entry += "- **真机双状态截图哈希**: 收起态 `%s` | 展开态 `%s`\n\n" % [h_closed.substr(0, 16), h_open.substr(0, 16)]
 	var f := FileAccess.open(log_path, FileAccess.WRITE)
 	if f != null:
-		f.store_string(existing + entry)
+		var combined := existing + "\n" + entry
+		var parts := combined.split("\n## [")
+		var kept_blocks: Array[String] = []
+		for idx in range(1, parts.size()):
+			var blk := ("## [" + parts[idx]).strip_edges()
+			if blk != "":
+				kept_blocks.append(blk)
+		if kept_blocks.size() > 10:
+			kept_blocks = kept_blocks.slice(kept_blocks.size() - 10)
+		var out_header := "# 《枫叶云岛物语》全自动真机试玩与巡检记录 (`playtest_audit_log.md`)\n\n> 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。\n\n"
+		f.store_string(out_header + "\n\n".join(kept_blocks) + "\n")
 
 func _sha256_bytes(buf: PackedByteArray) -> String:
 	var hc := HashingContext.new()

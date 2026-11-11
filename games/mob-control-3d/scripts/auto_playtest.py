@@ -208,8 +208,9 @@ try:
             json.dumps(multi_branch_result, ensure_ascii=False),
         )
 
+        os.makedirs(os.path.join(BRAIN_DIR, "scratch"), exist_ok=True)
         page.screenshot(
-            path=os.path.join(BRAIN_DIR, "verify_auto_playtest_lobby_2560.jpg"),
+            path=os.path.join(BRAIN_DIR, "scratch", "verify_auto_playtest_lobby_2560.jpg"),
             type="jpeg",
             quality=90,
         )
@@ -281,7 +282,7 @@ try:
         add_check("Zero NaN/Undefined in DOM Text", len(bad_tokens) == 0, f"bad_tokens={bad_tokens}")
 
         page.screenshot(
-            path=os.path.join(BRAIN_DIR, "verify_auto_playtest_battle_2560.jpg"),
+            path=os.path.join(BRAIN_DIR, "scratch", "verify_auto_playtest_battle_2560.jpg"),
             type="jpeg",
             quality=90,
         )
@@ -303,16 +304,28 @@ try:
         md_entry += f"- {icon} **{c['name']}**: `{c['detail']}`\n"
     md_entry += "\n"
 
-    for md_path in [LOG_MD_BRAIN, LOG_MD_REPO]:
-        header = "# 波波应援团 (Mob Control 3D) 每2小时自主试玩与自动修复巡检日志\n\n"
-        existing = ""
-        if os.path.exists(md_path):
-            with open(md_path, "r", encoding="utf-8") as f:
-                existing = f.read()
-        if not existing.startswith("# "):
-            existing = header + existing
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write(existing + md_entry)
+    import gzip, re
+    existing = ""
+    if os.path.exists(LOG_MD_REPO):
+        with open(LOG_MD_REPO, "r", encoding="utf-8") as f:
+            existing = f.read()
+    blocks = [b.strip() for b in re.split(r"(?m)(?=^### \[)", existing) if b.strip().startswith("### [")]
+    blocks.append(md_entry.strip())
+    if len(blocks) > 10:
+        overflow = blocks[:-10]
+        blocks = blocks[-10:]
+        gz_path = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "docs", "archives", "playtest_logs_archive.md.gz"))
+        os.makedirs(os.path.dirname(gz_path), exist_ok=True)
+        old_gz = ""
+        if os.path.exists(gz_path):
+            with gzip.open(gz_path, "rt", encoding="utf-8", errors="replace") as gf:
+                old_gz = gf.read()
+        chunk = f"# [games/mob-control-3d/PLAYTEST_LOG.md] Archived {len(overflow)} entries at {report['timestamp']}\n\n" + "\n\n".join(overflow) + "\n"
+        with gzip.open(gz_path, "wt", encoding="utf-8", compresslevel=9) as gf:
+            gf.write((old_gz.rstrip() + "\n\n" if old_gz.strip() else "") + chunk)
+    header = "# 波波应援团 (Mob Control 3D) 自主试玩巡检日志\n\n> 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。\n\n"
+    with open(LOG_MD_REPO, "w", encoding="utf-8") as f:
+        f.write(header + "\n\n".join(blocks) + "\n")
 
     print(
         f"PLAYTEST_STATUS={report['status']} checks={len(report['checks'])} issues={len(report['issues_found'])}",
