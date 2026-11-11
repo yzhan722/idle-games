@@ -1891,7 +1891,7 @@ export default function NewGameInterface() {
     : playerState.hpCombat?.outcome === 'loss' && playerState.hpCombat?.nextFightAt
       ? '重伤休整 · 准备再战'
       : playerState.hpCombat?.outcome === 'win' && playerState.hpCombat?.nextFightAt
-        ? '连续自动战斗 · 索敌中'
+        ? '自动连战 · 索敌中'
         : '连续自动战斗'
 
   const runningAction = playerState.mode === 'life_action' && playerState.lifeActionState && !headerBattleActive

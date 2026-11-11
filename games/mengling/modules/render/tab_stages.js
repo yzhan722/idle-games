@@ -779,6 +779,17 @@ export function renderPveStageHtml({
         .join("")
     : `<div class="diorama-empty">选择关卡查看守关首领</div>`;
 
+  const powerRatio = enemyPower > 0 ? allyPower / enemyPower : 1;
+  const allySharePct = Math.max(12, Math.min(88, Math.round((allyPower / Math.max(1, allyPower + enemyPower)) * 100)));
+  const powerVerdict =
+    allies.length === 0
+      ? { cls: "prep", text: "尚未编入出战灵兽 · 先去捕捉伙伴" }
+      : powerRatio >= 1.12
+        ? { cls: "adv", text: `战力压制 (${Math.round(powerRatio * 100)}%) · 胜算极高` }
+        : powerRatio >= 0.85
+          ? { cls: "even", text: `势均力敌 (${Math.round(powerRatio * 100)}%) · 善用属性克制` }
+          : { cls: "warn", text: `越级挑战 (${Math.round(powerRatio * 100)}%) · 建议先升星或克制出战` };
+
   return `
     <div class="tab-stage tab-stage--pve" aria-label="星穹试炼竞技场">
       <div class="tab-stage__artWrap">
@@ -807,6 +818,16 @@ export function renderPveStageHtml({
         <div class="arena-side arena-side--enemy">
           <div class="arena-side__title">${renderUiIcon("tab_bonfire", 14)} 守关阵容 · 预估 ${enemyPower}</div>
           <div class="arena-side__fighters">${enemiesHtml}</div>
+        </div>
+        <div class="arena-power-bar arena-power-bar--${powerVerdict.cls}">
+          <div class="arena-power-bar__meta">
+            <span class="arena-power-bar__ally">我方 ${allyPower}</span>
+            <span class="arena-power-bar__verdict">${powerVerdict.text}</span>
+            <span class="arena-power-bar__enemy">守关 ${enemyPower}</span>
+          </div>
+          <div class="arena-power-bar__track" role="img" aria-label="战力对比">
+            <span class="arena-power-bar__fill" style="width:${allySharePct}%"></span>
+          </div>
         </div>
       </div>
     </div>

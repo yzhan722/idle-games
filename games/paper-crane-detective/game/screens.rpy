@@ -463,7 +463,16 @@ screen choice(items):
 
     vbox:
         for idx, i in enumerate(items):
-            textbutton i.caption action i.action at choice_in(idx)
+            textbutton i.caption action i.action at choice_in(idx), choice_hover_fx
+
+
+transform choice_hover_fx:
+    on idle:
+        ease 0.12 zoom 1.0 yoffset 0
+    on hover:
+        ease 0.12 zoom 1.02 yoffset -2
+    on selected_hover:
+        ease 0.12 zoom 1.02 yoffset -2
 
 
 style window:

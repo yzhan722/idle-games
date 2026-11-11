@@ -457,6 +457,19 @@ func _sync_label_nodes() -> void:
 			lbl_card_subs[i].position = crect.position + Vector2(6.0, 22.0)
 			lbl_card_costs[i].text = String(cdata["cost"])
 			lbl_card_costs[i].position = crect.position + Vector2(6.0, 38.0)
+			if lbl_card_costs[i].label_settings != null:
+				var cstate := String(cdata.get("cost_state", "normal"))
+				match cstate:
+					"affordable":
+						lbl_card_costs[i].label_settings.font_color = Color("#8CE99A")
+					"unlocked":
+						lbl_card_costs[i].label_settings.font_color = Color("#FFE066")
+					"short":
+						lbl_card_costs[i].label_settings.font_color = Color("#FFA8A8")
+					"locked":
+						lbl_card_costs[i].label_settings.font_color = Color("#CBD5E1")
+					_:
+						lbl_card_costs[i].label_settings.font_color = Color("#FFF4D6")
 
 func _get_interactive_zone() -> Rect2:
 	if drawer_expanded:
@@ -614,7 +627,8 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"key": b_key,
 					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (未解锁)"),
 					"sub": ("下个2x蜕变: Lv." + str(next_ms)) if isl_on else ("需先开拓木桥解锁岛" + str(req_isl)),
-					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿"
+					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿",
+					"cost_state": ("affordable" if GameManager.gold >= cost else "short") if isl_on else "locked"
 				})
 		1:
 			for a_key in ["bunny", "otter", "fox", "shiba", "penguin", "toucan"]:
@@ -630,22 +644,26 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				var trait_tag := EconomyConfig.get_animal_trait_tag(a_key, lv)
 				var sub_str := ""
 				var act_str := ""
+				var c_state := "locked"
 				if max_cap <= 0:
 					sub_str = "需先解锁新岛屿"
 					act_str = "待解锁岛屿"
 				elif next_isl > 0:
 					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " · " + trait_tag
 					act_str = "招募 " + str(cost) + "G"
+					c_state = "affordable" if GameManager.gold >= cost else "short"
 				else:
 					sub_str = "Lv." + str(lv) + " · " + trait_tag
 					act_str = "全队进修 Lv.+1 (" + str(cost) + "G)"
+					c_state = "affordable" if GameManager.gold >= cost else "short"
 
 				list.append({
 					"type": "animal",
 					"key": a_key,
 					"title": title_str,
 					"sub": sub_str,
-					"cost": act_str
+					"cost": act_str,
+					"cost_state": c_state
 				})
 		2:
 			var isl2_unlocked := bool(GameManager.unlocked_islands.get(2, false))
@@ -655,14 +673,16 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				"key": "2",
 				"title": "木桥1 · 魔法密林" + (" (已通)" if isl2_unlocked else ""),
 				"sub": "2x农田+12x坩埚+企鹅",
-				"cost": "已解锁" if isl2_unlocked else "180G 解锁"
+				"cost": "已解锁" if isl2_unlocked else "180G 解锁",
+				"cost_state": "unlocked" if isl2_unlocked else ("affordable" if GameManager.gold >= 180 else "short")
 			})
 			list.append({
 				"type": "unlock_island",
 				"key": "3",
 				"title": "木桥2 · 天空海岸" + (" (已通)" if isl3_unlocked else ""),
 				"sub": "双工坊52x+★2x富豪",
-				"cost": "已解锁" if isl3_unlocked else "480G 解锁"
+				"cost": "已解锁" if isl3_unlocked else "480G 解锁",
+				"cost_state": "unlocked" if isl3_unlocked else ("affordable" if GameManager.gold >= 480 else "short")
 			})
 			for lk in ["bee_hive", "wind_chime", "tiki_torch"]:
 				var cfg: Dictionary = EconomyConfig.ISLAND_LANDSCAPES[lk]
@@ -675,7 +695,8 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"key": lk,
 					"title": String(cfg.get("name", lk)) + (" (已点亮)" if is_unlocked else " (未建造)"),
 					"sub": String(cfg.get("desc", "")) if isl_open else ("需先解锁岛屿" + str(isl)),
-					"cost": "已点亮生效" if is_unlocked else (str(cost_amb) + " 琥珀 解锁" if isl_open else "待解锁岛屿")
+					"cost": "已点亮生效" if is_unlocked else (str(cost_amb) + " 琥珀 解锁" if isl_open else "待解锁岛屿"),
+					"cost_state": "unlocked" if is_unlocked else (("affordable" if GameManager.get_amber() >= cost_amb else "short") if isl_open else "locked")
 				})
 		3:
 			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)

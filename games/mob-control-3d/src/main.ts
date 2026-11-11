@@ -1526,6 +1526,7 @@ function refreshUpgradeUI(): void {
   costFireRate.textContent = `${Math.min(curTime, costFR)}/${costFR}秒`;
   upgFireRate.disabled = curTime < costFR;
   upgFireRate.style.setProperty('--upg-pct', `${frPct}%`);
+  upgFireRate.classList.toggle('is-near-ready', curTime < costFR && frPct >= 75);
   upgFireRate.classList.toggle('is-ready', curTime >= costFR);
 
   // Power (controlled by in-run Kills — never costs meta gold!)
@@ -1537,6 +1538,7 @@ function refreshUpgradeUI(): void {
   costPower.textContent = `${Math.min(curKills, costPwr)}/${costPwr}击杀`;
   upgPower.disabled = curKills < costPwr;
   upgPower.style.setProperty('--upg-pct', `${pwrPct}%`);
+  upgPower.classList.toggle('is-near-ready', curKills < costPwr && pwrPct >= 75);
   upgPower.classList.toggle('is-ready', curKills >= costPwr);
 
   // Champion (controlled by in-run Spawns — never costs meta gold!)
@@ -1548,6 +1550,7 @@ function refreshUpgradeUI(): void {
   costChampion.textContent = `${Math.min(curSpawns, costChamp)}/${costChamp}出兵`;
   upgChampion.disabled = curSpawns < costChamp;
   upgChampion.style.setProperty('--upg-pct', `${champPct}%`);
+  upgChampion.classList.toggle('is-near-ready', curSpawns < costChamp && champPct >= 75);
   upgChampion.classList.toggle('is-ready', curSpawns >= costChamp);
 
   // Loot (controlled by in-run Siege Damage — never costs meta gold!)
@@ -1559,6 +1562,7 @@ function refreshUpgradeUI(): void {
   costLoot.textContent = `${Math.min(curSiege, costLt)}/${costLt}攻城`;
   upgLoot.disabled = curSiege < costLt;
   upgLoot.style.setProperty('--upg-pct', `${ltPct}%`);
+  upgLoot.classList.toggle('is-near-ready', curSiege < costLt && ltPct >= 75);
   upgLoot.classList.toggle('is-ready', curSiege >= costLt);
 }
 

@@ -375,11 +375,22 @@ function addAffectionXp(amount, labelText) {
   const textStr = labelText || `+${finalAmount} 亲密`;
   const halfTextW = Math.min(96, Math.max(38, textStr.length * 8.5));
   const clearance = Math.max(98, 60 + halfTextW);
-  const xpSide = player.x > W * 0.55 ? -clearance : clearance;
+  const polaroidEl = document.getElementById('polaroid-card');
+  const polaroidOpenRight =
+    polaroidEl && !polaroidEl.classList.contains('hidden') && !polaroidEl.classList.contains('polaroid-left');
+  const polaroidOpenLeft =
+    polaroidEl && !polaroidEl.classList.contains('hidden') && polaroidEl.classList.contains('polaroid-left');
+  const xpSide = polaroidOpenRight
+    ? -clearance
+    : polaroidOpenLeft
+      ? clearance
+      : player.x > W * 0.55
+        ? -clearance
+        : clearance;
   const xPad = halfTextW + 14;
   floatingTexts.push({
     x: Math.max(xPad, Math.min(W - xPad, player.x + xpSide)),
-    y: player.y - 38,
+    y: polaroidOpenRight || polaroidOpenLeft ? player.y - 74 : player.y - 38,
     vx: 0,
     vy: -34,
     text: textStr,
@@ -1195,7 +1206,7 @@ const DRESS_CATALOG = [
     ico: '',
     img: './assets/furn_lamp.webp?v=hd4',
     name: '星海感应小夜灯',
-    desc: '暗光自动点亮 · 亲密+25% · 可拖拽',
+    desc: '暗光自亮 · 亲密获取+25%',
     price: 45
   },
   {
@@ -1447,8 +1458,9 @@ function renderDrawerItems() {
   drawerItemsEl.innerHTML = '';
   if (activeDrawerTab === 'food') {
     for (const item of FOOD_CATALOG) {
+      const canAffordFood = item.price <= 0 || player.coins >= item.price;
       const card = document.createElement('button');
-      card.className = 'shop-card';
+      card.className = `shop-card ${canAffordFood ? '' : 'unaffordable'}`.trim();
       const priceLabel =
         item.price === 0
           ? '免费投喂'
@@ -1456,7 +1468,7 @@ function renderDrawerItems() {
       card.innerHTML = `
         ${renderThumbHtml(item)}
         <div class="shop-info">
-          <span class="shop-name">${item.name}</span>
+          <span class="shop-name">${item.name} <em class="shop-tag-pill">饱食+${item.hunger}</em></span>
           <span class="shop-desc">${item.desc}</span>
         </div>
         <span class="shop-price">${priceLabel}</span>
@@ -1483,12 +1495,15 @@ function renderDrawerItems() {
         : item.isToy
           ? player.activeToy === item.toyKey
           : !!player.equipped[item.id];
+      const canAffordDress = owned || player.coins >= item.price;
       const card = document.createElement('button');
-      card.className = `shop-card ${owned ? 'owned' : ''}`;
+      card.className = `shop-card ${owned ? (equipped ? 'owned' : 'owned-idle') : canAffordDress ? '' : 'unaffordable'}`.trim();
+      const activeVerb = item.isFurniture ? '已摆放' : item.isToy ? '使用中' : '穿戴中';
+      const standbyVerb = item.isFurniture ? '摆放桌面' : item.isToy ? '切换玩具' : '穿戴装扮';
       const statusText = owned
         ? equipped
-          ? '已摆放/穿戴'
-          : '可摆放/切换'
+          ? activeVerb
+          : standbyVerb
         : `${item.price} <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" />`;
       card.innerHTML = `
         ${renderThumbHtml(item)}
@@ -1559,12 +1574,13 @@ function renderDrawerItems() {
     for (const item of UPGRADE_CATALOG) {
       const lv = player.weapons[item.id] || 0;
       const cost = Math.round(item.basePrice * Math.pow(1.45, lv));
+      const canAffordUpg = player.coins >= cost;
       const card = document.createElement('button');
-      card.className = 'shop-card';
+      card.className = `shop-card ${canAffordUpg ? '' : 'unaffordable'}`.trim();
       card.innerHTML = `
         ${renderThumbHtml(item)}
         <div class="shop-info">
-          <span class="shop-name">${item.name} Lv.${lv}</span>
+          <span class="shop-name">${item.name} <em class="shop-tag-pill shop-tag-lv">Lv.${lv}</em></span>
           <span class="shop-desc">${item.desc}</span>
         </div>
         <span class="shop-price">${cost} <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></span>

@@ -377,6 +377,14 @@ export function AdventurePanel({
                   </div>
                 )}
                 <div className={`cast-bar${battleState.isActive && battleState.playerCastTime / battleState.playerCastDuration > 0.8 ? ' cast-nearly-ready' : ''}`}>
+                  <div className="cast-label-row">
+                    <span>攻击蓄力</span>
+                    <span>
+                      {battleState.isActive
+                        ? `${Math.min(100, Math.floor((battleState.playerCastTime / Math.max(1, battleState.playerCastDuration)) * 100))}%`
+                        : '待机'}
+                    </span>
+                  </div>
                   <div className="cast-container">
                     <div
                       className="cast-fill player-cast"
@@ -440,10 +448,10 @@ export function AdventurePanel({
                       style={{
                         color:
                           battleState.enemyHp / battleState.enemyMaxHp > 0.5
-                            ? '#f44336'
+                            ? '#4CAF50'
                             : battleState.enemyHp / battleState.enemyMaxHp > 0.2
-                            ? '#FF9800'
-                            : '#4CAF50',
+                            ? '#FFC107'
+                            : '#f44336',
                       }}
                     >
                       {Math.round((battleState.enemyHp / battleState.enemyMaxHp) * 100)}%
@@ -456,10 +464,10 @@ export function AdventurePanel({
                         width: `${Math.max(0, (battleState.enemyHp / battleState.enemyMaxHp) * 100)}%`,
                         background:
                           battleState.enemyHp / battleState.enemyMaxHp > 0.5
-                            ? 'linear-gradient(90deg, #f44336 0%, #EF5350 100%)'
+                            ? 'linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%)'
                             : battleState.enemyHp / battleState.enemyMaxHp > 0.2
-                            ? 'linear-gradient(90deg, #FF9800 0%, #FFB74D 100%)'
-                            : 'linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%)',
+                            ? 'linear-gradient(90deg, #FFC107 0%, #FFD54F 100%)'
+                            : 'linear-gradient(90deg, #f44336 0%, #EF5350 100%)',
                       }}
                     />
                   </div>
@@ -468,6 +476,14 @@ export function AdventurePanel({
                   </div>
                 </div>
                 <div className={`cast-bar${battleState.isActive && battleState.enemyCastTime / battleState.enemyCastDuration > 0.8 ? ' cast-nearly-ready' : ''}`}>
+                  <div className="cast-label-row">
+                    <span>敌方蓄力</span>
+                    <span>
+                      {battleState.isActive
+                        ? `${Math.min(100, Math.floor((battleState.enemyCastTime / Math.max(1, battleState.enemyCastDuration)) * 100))}%`
+                        : '已停止'}
+                    </span>
+                  </div>
                   <div className="cast-container">
                     <div
                       className="cast-fill enemy-cast"

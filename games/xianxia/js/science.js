@@ -1002,6 +1002,10 @@ dojo.declare("com.nuclearunicorn.game.ui.TechButtonController", com.nuclearunico
 				name += " <span class=\"xxRealmGateBadge locked\">◈ " + gate.title + "</span>";
 			}
 		}
+		if (meta && meta.effectDesc && !meta.researched){
+			var brief = String(meta.effectDesc).replace(/。$/, "");
+			name += "<span class=\"xxTechHint\">" + brief + "</span>";
+		}
 		return name;
 	},
 

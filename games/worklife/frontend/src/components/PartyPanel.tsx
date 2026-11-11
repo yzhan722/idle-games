@@ -1597,7 +1597,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                           <span>HP</span>
                           <span
                             className="hp-percentage"
-                            style={{ color: hpPct > 50 ? "#f44336" : hpPct > 20 ? "#FF9800" : "#4CAF50" }}
+                            style={{ color: hpPct > 50 ? "#4CAF50" : hpPct > 20 ? "#FFC107" : "#f44336" }}
                           >
                             {hpPct}%
                           </span>
@@ -1609,10 +1609,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                               width: `${hpPct}%`,
                               background:
                                 hpPct > 50
-                                  ? "linear-gradient(90deg, #f44336 0%, #EF5350 100%)"
+                                  ? "linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%)"
                                   : hpPct > 20
-                                  ? "linear-gradient(90deg, #FF9800 0%, #FFB74D 100%)"
-                                  : "linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%)",
+                                  ? "linear-gradient(90deg, #FFC107 0%, #FFD54F 100%)"
+                                  : "linear-gradient(90deg, #f44336 0%, #EF5350 100%)",
                             }}
                           />
                         </div>

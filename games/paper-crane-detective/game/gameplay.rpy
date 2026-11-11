@@ -635,10 +635,24 @@ screen evidence_list():
                                         xfill True
                                         if kako_clue >= frag_idx:
                                             text frag_title style "bond_name" size 20 color "#f2d8ff"
-                                            text frag_src style "bond_meta" xalign 1.0 yalign 0.5
+                                            hbox:
+                                                spacing 8
+                                                xalign 1.0
+                                                yalign 0.5
+                                                text frag_src style "bond_meta" yalign 0.5
+                                                frame:
+                                                    style "bond_stage_pill"
+                                                    text _("✦ 已拼合") size 13 color "#86efac" bold True
                                         else:
                                             text ("碎片 %d · ？？？" % frag_idx) style "bond_name" size 20 color "#6a5c80"
-                                            text frag_src style "bond_meta" xalign 1.0 yalign 0.5
+                                            hbox:
+                                                spacing 8
+                                                xalign 1.0
+                                                yalign 0.5
+                                                text frag_src style "bond_meta" yalign 0.5
+                                                frame:
+                                                    style "bond_stage_pill"
+                                                    text _("待追忆") size 13 color "#94a3b8"
                                     if kako_clue >= frag_idx:
                                         text frag_desc style "evidence_text" size 17 color "#dcd0ec" xmaximum 680
                                     else:
@@ -669,7 +683,11 @@ screen evidence_list():
                                         hbox:
                                             xfill True
                                             text (player_name if ch_key == "mc" else ch_name) style "bond_name" size 20 color "#f2e6ff"
-                                            text ch_role style "bond_meta" xalign 1.0 yalign 0.5
+                                            frame:
+                                                style "bond_stage_pill"
+                                                xalign 1.0
+                                                yalign 0.5
+                                                text ch_role style "bond_meta" color "#e9d5ff"
                                         text ch_bio style "evidence_text" size 16 color "#cfc0e4" xmaximum 600
 
 style evidence_card is default:

@@ -7943,22 +7943,117 @@ details.capture-tools[open] > summary.capture-tools__summary {
     white-space: nowrap !important;
   }
 
-  /* v0.7.30: Mobile PvE & Social Arena HUD Stat Pill Framing */
+  /* v0.7.30 + v0.7.39: Symmetric Mobile PvE Arena Grid & Power Comparison Bar */
+  .tab-stage__body--arena {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
   .tab-stage__body--arena .arena-side {
-    background: rgba(15, 23, 42, 0.66) !important;
+    background: rgba(15, 23, 42, 0.72) !important;
     border: 1px solid rgba(250, 204, 21, 0.22) !important;
     border-radius: 10px !important;
-    padding: 8px 10px !important;
+    padding: 8px 9px !important;
     justify-content: center !important;
+    align-items: flex-start !important;
+    min-width: 0 !important;
   }
 
   .tab-stage__body--arena .arena-side--ally {
-    border-color: rgba(56, 189, 248, 0.28) !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    border-color: rgba(56, 189, 248, 0.34) !important;
   }
 
   .tab-stage__body--arena .arena-side--enemy {
-    border-color: rgba(248, 113, 113, 0.28) !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    align-items: flex-end !important;
+    text-align: right !important;
+    border-color: rgba(248, 113, 113, 0.34) !important;
   }
+
+  .tab-stage__body--arena .arena-vs {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 6px 10px !important;
+    border-radius: 10px !important;
+    background: rgba(15, 23, 42, 0.62) !important;
+    border: 1px solid rgba(250, 204, 21, 0.22) !important;
+  }
+
+  .tab-stage__body--arena .arena-power-bar {
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+  }
+}
+
+.arena-power-bar {
+  width: 100%;
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(9, 14, 26, 0.76);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-power-bar__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.arena-power-bar__ally {
+  color: #7dd3fc;
+}
+
+.arena-power-bar__enemy {
+  color: #fda4af;
+}
+
+.arena-power-bar__verdict {
+  color: #fde68a;
+  text-align: center;
+  font-weight: 800;
+}
+
+.arena-power-bar--adv .arena-power-bar__verdict {
+  color: #86efac;
+}
+
+.arena-power-bar--warn .arena-power-bar__verdict {
+  color: #fca5a5;
+}
+
+.arena-power-bar__track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(244, 63, 94, 0.38), rgba(225, 29, 72, 0.62));
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.arena-power-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 60%, #6ee7b7 100%);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.45);
 }
 
 /* v0.7.37 Round 32 Commercial Polish: Collector-RPG Rarity Frames & Evolution-Ready Badges */
