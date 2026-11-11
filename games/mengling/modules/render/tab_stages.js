@@ -215,7 +215,9 @@ export function renderCaptureStageHtml({
   const nbVal = Math.max(0, Math.floor(state.res?.netball?.value ?? 0));
   const dbVal = Math.max(0, Math.floor(state.res?.duskball?.value ?? 0));
   const mbVal = Math.max(0, Math.floor(state.res?.masterball?.value ?? 0));
-  const selectedBall = ui?.selectedBallType || "pokeball";
+  const ballCounts = { pokeball: pbVal, ultraball: ubVal, quickball: qbVal, luxuryball: lbVal, netball: nbVal, duskball: dbVal };
+  const rawSelBall = ui?.selectedBallType || "pokeball";
+  const selectedBall = (ballCounts[rawSelBall] ?? 0) > 0 ? rawSelBall : (Object.keys(ballCounts).find((k) => ballCounts[k] > 0) || rawSelBall);
 
   const lureStacks = Math.max(0, Math.floor(ui?.lureStacks || 0));
   const baitStacks = Math.max(0, Math.floor(ui?.encounterBaitStacks || 0));
@@ -330,9 +332,9 @@ export function renderCaptureStageHtml({
             ${typeBadges}
           </div>
           <div class="tab-stage__desc">${escapeHtml(enc.desc || "栖息于秘境深处的奇异灵兽。")}</div>
-          <div class="capture-chance-meter">
+          <div class="capture-chance-meter ${pct >= 65 ? "is-high" : pct >= 35 ? "is-mid" : "is-low"}">
             <div class="capture-chance-meter__top">
-              <span>${renderOrbSvg(selectedBall, 14)} 综合捕获率预估：<strong>${pct}%</strong>（缩圈完美命中可再 +15%）</span>
+              <span>${renderOrbSvg(selectedBall, 14)} 综合捕获率预估：<strong>${pct}%</strong> <em class="capture-chance-tier">${pct >= 65 ? "稳操胜券" : pct >= 35 ? "时机成熟" : "可投浆果增幅"}</em></span>
               <span>当前球种：${renderOrbSvg(selectedBall, 14)} ${selectedBall === "pokeball" ? "灵球" : selectedBall === "ultraball" ? "高级灵球" : selectedBall === "quickball" ? "迅捷灵球" : selectedBall === "luxuryball" ? "豪华灵球" : selectedBall === "netball" ? "捕灵球" : "暗夜灵球"}</span>
             </div>
             <div class="capture-chance-meter__bar">
@@ -554,36 +556,42 @@ export function renderFunctionsStageHtml({
           </div>
           <div class="scene-actor-group">${expIcons}</div>
         </div>
-        <div class="sanctuary-diorama">
+        <div class="sanctuary-diorama ${slotSize > 0 ? "" : "is-unbuilt"}">
           <div class="sanctuary-diorama__head">
             <span class="sanctuary-diorama__title">${renderBuildingSvg("trainingGround", 20)} 灵兽训练场</span>
-            <span class="badge">${activeTrain.length}/${slotSize} 槽</span>
+            <span class="badge ${slotSize > 0 ? "" : "badge--muted"}">${slotSize > 0 ? `${activeTrain.length}/${slotSize} 槽` : "未建造"}</span>
           </div>
           <div class="sanctuary-diorama__foot">
             <span>${slotSize > 0 ? "受训灵兽经验获取 ×10" : "建造「训练场」后开启"}</span>
-            <button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="train-cheer">${renderUiIcon("tab_pve", 14)} 擂鼓助威</button>
+            ${slotSize > 0
+              ? `<button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="train-cheer">${renderUiIcon("tab_pve", 14)} 擂鼓助威</button>`
+              : `<button type="button" class="btn btn--small sanctuary-diorama__btn sanctuary-diorama__btn--locked" data-stage-act="goto-bonfire">${renderUiIcon("tab_bonfire", 14)} 去营地建造</button>`}
           </div>
         </div>
 
-        <div class="sanctuary-diorama">
+        <div class="sanctuary-diorama ${breedLvl > 0 ? "" : "is-unbuilt"}">
           <div class="sanctuary-diorama__head">
             <span class="sanctuary-diorama__title">${renderBuildingSvg("breedingHouse", 20)} 星露育灵屋</span>
-            <span class="badge ${eggOn ? "badge--ok" : ""}">${eggOn ? `孵化 ${eggPct}%` : breedLvl > 0 ? `Lv.${breedLvl}` : "未建造"}</span>
+            <span class="badge ${eggOn ? "badge--ok" : breedLvl > 0 ? "" : "badge--muted"}">${eggOn ? `孵化 ${eggPct}%` : breedLvl > 0 ? `Lv.${breedLvl}` : "未建造"}</span>
           </div>
           <div class="sanctuary-diorama__foot">
             <span>${eggOn ? `剩余 ${escapeHtml(fmtDuration(eggRem))}` : breedLvl > 0 ? "双亲配对继承高个体值" : "建造「育灵屋」后开启"}</span>
-            <button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="egg-warm">${renderResSvg("luckyEgg", 14)} 灵温抚育</button>
+            ${breedLvl > 0
+              ? `<button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="egg-warm">${renderResSvg("luckyEgg", 14)} 灵温抚育</button>`
+              : `<button type="button" class="btn btn--small sanctuary-diorama__btn sanctuary-diorama__btn--locked" data-stage-act="goto-bonfire">${renderUiIcon("tab_bonfire", 14)} 去营地建造</button>`}
           </div>
         </div>
 
-        <div class="sanctuary-diorama">
+        <div class="sanctuary-diorama ${expLvl > 0 ? "" : "is-unbuilt"}">
           <div class="sanctuary-diorama__head">
             <span class="sanctuary-diorama__title">${renderBuildingSvg("expeditionPost", 20)} 次元远征门</span>
-            <span class="badge ${expOn ? "badge--ok" : ""}">${expOn ? "远征中" : expLvl > 0 ? `Lv.${expLvl}` : "未建造"}</span>
+            <span class="badge ${expOn ? "badge--ok" : expLvl > 0 ? "" : "badge--muted"}">${expOn ? "远征中" : expLvl > 0 ? `Lv.${expLvl}` : "未建造"}</span>
           </div>
           <div class="sanctuary-diorama__foot">
             <span>${expOn ? `归来剩余 ${escapeHtml(fmtDuration(expRem))}` : expLvl > 0 ? "派遣编队赢取未来币与经验" : "建造「远征所」后开启"}</span>
-            <button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="exp-boost">${renderUiIcon("tab_capture", 14)} 星门共鸣</button>
+            ${expLvl > 0
+              ? `<button type="button" class="btn btn--small sanctuary-diorama__btn" data-stage-act="exp-boost">${renderUiIcon("tab_capture", 14)} 星门共鸣</button>`
+              : `<button type="button" class="btn btn--small sanctuary-diorama__btn sanctuary-diorama__btn--locked" data-stage-act="goto-bonfire">${renderUiIcon("tab_bonfire", 14)} 去营地建造</button>`}
           </div>
         </div>
       </div>
@@ -756,7 +764,7 @@ export function renderPveStageHtml({
         `,
         )
         .join("")
-    : `<div class="diorama-empty">先在下方勾选出战阵容</div>`;
+    : `<div class="diorama-empty">先去【捕捉】结识首只出战伙伴</div>`;
 
   const enemiesHtml = enemies.length
     ? enemies
@@ -770,6 +778,17 @@ export function renderPveStageHtml({
         )
         .join("")
     : `<div class="diorama-empty">选择关卡查看守关首领</div>`;
+
+  const powerRatio = enemyPower > 0 ? allyPower / enemyPower : 1;
+  const allySharePct = Math.max(12, Math.min(88, Math.round((allyPower / Math.max(1, allyPower + enemyPower)) * 100)));
+  const powerVerdict =
+    allies.length === 0
+      ? { cls: "prep", text: "尚未编入出战灵兽 · 先去捕捉伙伴" }
+      : powerRatio >= 1.12
+        ? { cls: "adv", text: `战力压制 (${Math.round(powerRatio * 100)}%) · 胜算极高` }
+        : powerRatio >= 0.85
+          ? { cls: "even", text: `势均力敌 (${Math.round(powerRatio * 100)}%) · 善用属性克制` }
+          : { cls: "warn", text: `越级挑战 (${Math.round(powerRatio * 100)}%) · 建议先升星或克制出战` };
 
   return `
     <div class="tab-stage tab-stage--pve" aria-label="星穹试炼竞技场">
@@ -788,13 +807,27 @@ export function renderPveStageHtml({
           <div class="arena-side__fighters">${alliesHtml}</div>
         </div>
         <div class="arena-vs">
-          <button type="button" class="arena-vs__badge arena-vs__badge--btn" data-stage-act="pve-quick-fight" title="点击立即发起试炼对决！">${renderUiIcon("tab_pve", 16)} 开战</button>
+          ${
+            allies.length > 0
+              ? `<button type="button" class="arena-vs__badge arena-vs__badge--btn" data-stage-act="pve-quick-fight" title="点击立即发起试炼对决！">${renderUiIcon("tab_pve", 16)} 开战</button>`
+              : `<button type="button" class="arena-vs__badge arena-vs__badge--btn arena-vs__badge--prep" data-stage-act="pve-quick-fight" title="尚未拥有出战灵兽，点击前往【捕捉】猎场">${renderUiIcon("tab_capture", 16)} 去捕捉</button>`
+          }
           <div class="arena-vs__stage">${escapeHtml(stage?.name || "选择关卡")}</div>
           ${recHtml ? `<div class="arena-vs__rec">推荐克制：${recHtml}</div>` : ""}
         </div>
         <div class="arena-side arena-side--enemy">
           <div class="arena-side__title">${renderUiIcon("tab_bonfire", 14)} 守关阵容 · 预估 ${enemyPower}</div>
           <div class="arena-side__fighters">${enemiesHtml}</div>
+        </div>
+        <div class="arena-power-bar arena-power-bar--${powerVerdict.cls}">
+          <div class="arena-power-bar__meta">
+            <span class="arena-power-bar__ally">我方 ${allyPower}</span>
+            <span class="arena-power-bar__verdict">${powerVerdict.text}</span>
+            <span class="arena-power-bar__enemy">守关 ${enemyPower}</span>
+          </div>
+          <div class="arena-power-bar__track" role="img" aria-label="战力对比">
+            <span class="arena-power-bar__fill" style="width:${allySharePct}%"></span>
+          </div>
         </div>
       </div>
     </div>

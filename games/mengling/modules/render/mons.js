@@ -421,11 +421,17 @@ export function createRenderMons({
           const mTitle = globalThis.BEAST_TITLE?.[mPid] || "";
           const mOrder = globalThis.BEAST_ORDER?.[mPid] || m.dex;
           const mTitleHtml = mTitle ? `<span class="beast-title-tag">【${escapeHtml(mTitle)}】</span>` : "";
-          const cardExtraCls = `${m.isShiny ? " row--shiny-mon" : ""}${m.tier === "epic" ? " row--mythic-mon" : ""}`;
+          const evoOuts = Array.isArray(evoMap[m.pid]) ? evoMap[m.pid] : [];
+          const isEvoReady = evoOuts.some((toPid) => {
+            const reqLvl = typeof getEvoReqLevel === "function" ? getEvoReqLevel(m.pid, toPid) : 0;
+            return (m.lvl || 0) >= (reqLvl || 0);
+          });
+          const evoBadgeHtml = isEvoReady ? `<span class="badge badge--evo-ready">✦ 可进化</span>` : "";
+          const cardExtraCls = `${m.isShiny ? " row--shiny-mon" : ""}${m.tier === "epic" ? " row--mythic-mon" : m.tier === "rare" ? " row--rare-mon" : m.tier === "uncommon" ? " row--uncommon-mon" : ""}${isEvoReady ? " row--evo-ready" : ""}`;
           rows.push(`
             <div class="row mon-card${cardExtraCls}">
               <div class="row__left">
-                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
+                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}${evoBadgeHtml}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
                 <div class="row__desc">Lv.${m.lvl} · 战力 ${power} · 性格 ${escapeHtml(natureName)} · 特性 ${escapeHtml(ab?.name || "—")} · 亲密 ${aff}/100${"caughtWith" in m && m.caughtWith && m.caughtWith !== "pokeball" ? " · " + ({"pokeball":"灵球","ultraball":"高级灵球","quickball":"迅捷灵球","luxuryball":"豪华灵球","masterball":"究极灵球","netball":"捕灵球","duskball":"暗夜灵球"}[m.caughtWith] ?? m.caughtWith) : ""}</div>
               </div>
               <div class="row__right">
@@ -546,12 +552,12 @@ export function createRenderMons({
 
     const baseBadges = base
       ? `
-        <div class="badge">HP ${base.hp}</div>
-        <div class="badge">Atk ${base.atk}</div>
-        <div class="badge">Def ${base.def}</div>
-        <div class="badge">SpA ${base.spa}</div>
-        <div class="badge">SpD ${base.spd}</div>
-        <div class="badge">Spe ${base.spe}</div>
+        <div class="badge">生命 ${base.hp}</div>
+        <div class="badge">物攻 ${base.atk}</div>
+        <div class="badge">物防 ${base.def}</div>
+        <div class="badge">灵攻 ${base.spa}</div>
+        <div class="badge">灵防 ${base.spd}</div>
+        <div class="badge">速度 ${base.spe}</div>
       `
       : `<div class="badge badge--muted">种族值加载中</div>`;
     const evo = getEvoMap();
@@ -625,18 +631,25 @@ export function createRenderMons({
         </div>
       </div>
 
-      <div class="row">
+      <div class="row row--mon-stats">
         <div class="row__left">
           <div class="row__title row__titleLine">${renderResSvg("energyDrink", 18)}<span>能力值</span><span class="tag">当前六维</span></div>
-          <div class="row__desc">HP/攻击/防御/特攻/特防/速度</div>
+          <div class="row__desc">生命 / 物攻 / 物防 / 灵攻 / 灵防 / 速度</div>
         </div>
-        <div class="row__right">
-          <span class="tag">HP ${s.hp}</span>
-          <span class="tag">Atk ${s.atk}</span>
-          <span class="tag">Def ${s.def}</span>
-          <span class="tag">SpA ${s.spa}</span>
-          <span class="tag">SpD ${s.spd}</span>
-          <span class="tag">Spe ${s.spe}</span>
+        <div class="row__right mon-stat-grid">
+          ${[
+            ["生命", s.hp, "hp"],
+            ["物攻", s.atk, "atk"],
+            ["物防", s.def, "def"],
+            ["灵攻", s.spa, "spa"],
+            ["灵防", s.spd, "spd"],
+            ["速度", s.spe, "spe"],
+          ]
+            .map(([lbl, val, key]) => {
+              const pct = Math.max(10, Math.min(100, Math.round((Number(val || 0) / 160) * 100)));
+              return `<div class="mon-stat-cell mon-stat-cell--${key}"><div class="mon-stat-cell__head"><span>${lbl}</span><strong>${val}</strong></div><div class="mon-stat-cell__bar"><i style="width:${pct}%"></i></div></div>`;
+            })
+            .join("")}
         </div>
       </div>
 

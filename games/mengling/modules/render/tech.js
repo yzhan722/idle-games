@@ -8,16 +8,6 @@ import { renderTechSvg, renderResSvg } from "./rpg_svg_icons.js";
 const TECH_PACING_BLURB =
   "研究耗时随投入分档：起步科技约数秒～半分钟，中期扩产约 1 分钟，后期飞跃链显著更长；建研究所可缩短耗时。";
 
-const RES_ICONS = {
-  catnip: "🍓",
-  wood: "🌲",
-  minerals: "💎",
-  science: "🔬",
-  pokeball: "🔴",
-  futurecoin: "🪙",
-  stardust: "✨",
-};
-
 function getTechVisualMeta(tid, tdef, stg) {
   const id = String(tid || "").toLowerCase();
   const nm = String(tdef?.name || "");
@@ -172,7 +162,7 @@ export function createRenderTech({ elTech, elAutoResearchToggle, elAutoResearchM
             <div class="bcard__head">
               <div class="bcard__emblem bcard__emblem--${vis.tone}" aria-hidden="true">
                 <span class="bcard__icon">${renderTechSvg(vis.svgKind, 34)}</span>
-                <span class="bcard__lvlBadge">⏱${timeText}</span>
+                <span class="bcard__lvlBadge">${timeText}</span>
               </div>
               <div class="bcard__titleWrap">
                 <div class="bcard__titleLine">
@@ -249,7 +239,7 @@ export function createRenderTech({ elTech, elAutoResearchToggle, elAutoResearchM
       recommendHtml = `
         <div class="row row--researching tech-recommend-banner">
           <div class="row__left">
-            <div class="row__title row__titleLine">${renderResSvg("science", 18)}<span>⏳ 正在研究：${tdef.name}</span><span class="tag">${theater.pct}%</span></div>
+            <div class="row__title row__titleLine">${renderResSvg("science", 18)}<span>正在研究：${tdef.name}</span><span class="tag">${theater.pct}%</span></div>
             <div class="row__desc">${theater.label} · 点击上方星盘可手动凝星加速</div>
             <div class="dex-progress" aria-label="研究进度 ${theater.pct}%"><div class="dex-progress__fill" style="width:${theater.pct}%"></div></div>
           </div>
@@ -272,7 +262,7 @@ export function createRenderTech({ elTech, elAutoResearchToggle, elAutoResearchM
       const rows = byStage.get(stage) ?? [];
       if (rows.length === 0) continue;
       const label = TECH_STAGE_LABELS[stage] ?? stage;
-      const meta = STAGE_ICONS[stage] || { icon: "🔭", sub: "", done: 0, total: rows.length };
+      const meta = STAGE_ICONS[stage] || { icon: renderTechSvg("science", 22), sub: "", done: 0, total: rows.length };
       sections.push(`
         <div class="building-section tech-section" data-tech-stage-group="${stage}" role="group" aria-label="${label}">
           <div class="building-section__title">

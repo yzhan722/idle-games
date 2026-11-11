@@ -264,6 +264,12 @@ export function createRenderCapture({
     const stageAdd = (typeof stageTechEff.catchChanceAdd === "number" ? stageTechEff.catchChanceAdd : 0) + abilityCatchRateAdd(state);
     const stageFails = typeof state.rng?.catchFails === "number" ? state.rng.catchFails : 0;
     const stagePity = Math.min(0.02 * Math.max(0, Math.floor(stageFails)), 0.2);
+    const THROWABLE_BALLS = ["pokeball", "ultraball", "quickball", "luxuryball", "netball", "duskball"];
+    const hasAnyThrowableBall = THROWABLE_BALLS.some((k) => (state.res?.[k]?.value ?? 0) >= 1);
+    const hasAnyBall = hasAnyThrowableBall || (state.res?.masterball?.value ?? 0) >= 1;
+    if ((state.res?.[ui.selectedBallType || "pokeball"]?.value ?? 0) < 1 && hasAnyThrowableBall) {
+      ui.selectedBallType = THROWABLE_BALLS.find((k) => (state.res?.[k]?.value ?? 0) >= 1) || "pokeball";
+    }
     const stageBall = ui.selectedBallType || "pokeball";
     const stageCaughtN = stageEnc && caughtMap && typeof caughtMap[stageEnc.id] === "number" ? caughtMap[stageEnc.id] : 0;
     const stageBallMult = ballCatchMult(stageBall, { types: stageEncTypes, caughtCount: stageCaughtN });
@@ -280,10 +286,10 @@ export function createRenderCapture({
     const stageEncCharges = Math.max(0, Math.min(100, Math.floor(typeof state.encounterCharges === "number" ? state.encounterCharges : 100)));
     const stageAdvMax = 10 + (typeof state.permanentBoosts?.encPlusMax === "number" ? Math.max(0, Math.min(20, Math.floor(state.permanentBoosts.encPlusMax))) : 0);
     const stageAdvCharges = Math.max(0, Math.min(stageAdvMax, Math.floor(typeof state.encounterPlusCharges === "number" ? state.encounterPlusCharges : 1)));
-    const stageCanMakeBall = Boolean(state.unlocks?.pokeball);
+    const stageCanMakeBall = Boolean(state.unlocks?.pokeball) || hasAnyBall;
     const stageEncOk = stageCanMakeBall && !stageEnc && stageEncCharges > 0 && pool.length > 0;
     const stageAdvOk = stageCanMakeBall && !stageEnc && stageAdvCharges > 0 && pool.length > 0;
-    const stageThrowOk = stageCanMakeBall && Boolean(stageEnc) && (state.res?.[stageBall]?.value ?? 0) >= 1;
+    const stageThrowOk = stageCanMakeBall && Boolean(stageEnc) && ((state.res?.[stageBall]?.value ?? 0) >= 1 || (state.res?.masterball?.value ?? 0) >= 1);
 
     const stageHeroHtml = renderCaptureStageHtml({
       state,
@@ -348,94 +354,95 @@ export function createRenderCapture({
     );
 
     const rows = [];
-    const canMakeBall = state.unlocks.pokeball;
+    const canMakeBall = Boolean(state.unlocks?.pokeball) || hasAnyBall;
     if (canMakeBall) {
-      const auto = state.auto && typeof state.auto === "object" ? state.auto : null;
-      const autoBallOn = Boolean(auto && auto.autoBallOn);
-      const autoBallUnlocked = Boolean(state.unlocks?.autoBall);
-
-      const makeQtyWanted = typeof ui.makeBallQty === "number" ? Math.floor(ui.makeBallQty) : 1;
-      const space = Math.max(0, (state.res.pokeball.cap ?? 0) - (state.res.pokeball.value ?? 0));
-      const makeQty = clamp(makeQtyWanted, 1, 1000);
-      const makeQtyEff = Math.max(0, Math.min(makeQty, space));
-
-      const makeCost = getPokeballMakeCost(makeQtyEff);
-
-      const makeOk = makeQtyEff > 0 && canAfford(makeCost);
-      const makeCostText = Object.entries(makeCost)
-        .map(([rid, v]) => `${defs.resources[rid].name}${v}`)
-        .join(" / ");
-
-      const pbNow = Math.max(0, Math.floor(state.res.pokeball.value ?? 0));
-      const oneCost = getPokeballMakeCost(1);
-      const oneOk = pbNow === 0 && space >= 1 && canAfford(oneCost);
-      const oneCostText = Object.entries(oneCost)
-        .map(([rid, v]) => `${defs.resources[rid].name}${v}`)
-        .join(" / ");
-
       const encPidEarly = typeof ui.encounterPid === "string" ? ui.encounterPid : null;
       const encEarly = encPidEarly ? getSpeciesByPid(encPidEarly) : null;
       const toolRows = [];
+      if (state.unlocks?.pokeball) {
+        const auto = state.auto && typeof state.auto === "object" ? state.auto : null;
+        const autoBallOn = Boolean(auto && auto.autoBallOn);
+        const autoBallUnlocked = Boolean(state.unlocks?.autoBall);
 
-      if (pbNow === 0) {
+        const makeQtyWanted = typeof ui.makeBallQty === "number" ? Math.floor(ui.makeBallQty) : 1;
+        const space = Math.max(0, (state.res.pokeball.cap ?? 0) - (state.res.pokeball.value ?? 0));
+        const makeQty = clamp(makeQtyWanted, 1, 1000);
+        const makeQtyEff = Math.max(0, Math.min(makeQty, space));
+
+        const makeCost = getPokeballMakeCost(makeQtyEff);
+
+        const makeOk = makeQtyEff > 0 && canAfford(makeCost);
+        const makeCostText = Object.entries(makeCost)
+          .map(([rid, v]) => `${defs.resources[rid].name}${v}`)
+          .join(" / ");
+
+        const pbNow = Math.max(0, Math.floor(state.res.pokeball.value ?? 0));
+        const oneCost = getPokeballMakeCost(1);
+        const oneOk = pbNow === 0 && space >= 1 && canAfford(oneCost);
+        const oneCostText = Object.entries(oneCost)
+          .map(([rid, v]) => `${defs.resources[rid].name}${v}`)
+          .join(" / ");
+
+        if (pbNow === 0) {
+          toolRows.push(`
+            <div class="row">
+              <div class="row__left">
+                <div class="row__title row__titleLine">${renderOrbSvg("pokeball", 18)}<span>球空了</span><span class="tag">应急补给</span></div>
+                <div class="row__desc">快捷制作 1 个灵球（花费：${oneCostText || "-"}）。</div>
+              </div>
+              <div class="row__right">
+                <button class="btn btn--primary" data-capture-action="makeBall1" ${oneOk ? "" : "disabled"}>制作1个灵球</button>
+              </div>
+            </div>
+          `);
+        }
+
         toolRows.push(`
           <div class="row">
             <div class="row__left">
-              <div class="row__title row__titleLine">${renderOrbSvg("pokeball", 18)}<span>球空了</span><span class="tag">应急补给</span></div>
-              <div class="row__desc">快捷制作 1 个灵球（花费：${oneCostText || "-"}）。</div>
+              <div class="row__title row__titleLine">${renderBuildingSvg("ballBench", 18)}<span>制作灵球</span><span class="tag">批量合成</span></div>
+              <div class="row__desc">消耗资源制作灵球（可批量）。</div>
             </div>
             <div class="row__right">
-              <button class="btn btn--primary" data-capture-action="makeBall1" ${oneOk ? "" : "disabled"}>制作1个灵球</button>
+              <select class="input" data-capture-qty>
+                <option value="1" ${makeQtyWanted === 1 ? "selected" : ""}>×1</option>
+                <option value="10" ${makeQtyWanted === 10 ? "selected" : ""}>×10</option>
+                <option value="100" ${makeQtyWanted === 100 ? "selected" : ""}>×100</option>
+              </select>
+              <div class="badge">花费：${makeCostText}</div>
+              <button class="btn btn--primary" data-capture-action="makeBall" ${makeOk ? "" : "disabled"}>制作${makeQtyEff > 1 ? `×${makeQtyEff}` : ""}</button>
             </div>
           </div>
         `);
-      }
 
-      toolRows.push(`
-        <div class="row">
-          <div class="row__left">
-            <div class="row__title row__titleLine">${renderBuildingSvg("ballBench", 18)}<span>制作灵球</span><span class="tag">批量合成</span></div>
-            <div class="row__desc">消耗资源制作灵球（可批量）。</div>
-          </div>
-          <div class="row__right">
-            <select class="input" data-capture-qty>
-              <option value="1" ${makeQtyWanted === 1 ? "selected" : ""}>×1</option>
-              <option value="10" ${makeQtyWanted === 10 ? "selected" : ""}>×10</option>
-              <option value="100" ${makeQtyWanted === 100 ? "selected" : ""}>×100</option>
-            </select>
-            <div class="badge">花费：${makeCostText}</div>
-            <button class="btn btn--primary" data-capture-action="makeBall" ${makeOk ? "" : "disabled"}>制作${makeQtyEff > 1 ? `×${makeQtyEff}` : ""}</button>
-          </div>
-        </div>
-      `);
-
-      if (autoBallUnlocked) {
-        toolRows.push(`
-          <div class="row">
-            <div class="row__left">
-              <div class="row__title row__titleLine">${renderBuildingSvg("ballFactory", 18)}<span>自动搓球</span><span class="tag">${autoBallOn ? "运行中" : "已就绪"}</span></div>
-              <div class="row__desc">灵木满时自动制作 1 个灵球，直到灵球满。</div>
+        if (autoBallUnlocked) {
+          toolRows.push(`
+            <div class="row">
+              <div class="row__left">
+                <div class="row__title row__titleLine">${renderBuildingSvg("ballFactory", 18)}<span>自动搓球</span><span class="tag">${autoBallOn ? "运行中" : "已就绪"}</span></div>
+                <div class="row__desc">灵木满时自动制作 1 个灵球，直到灵球满。</div>
+              </div>
+              <div class="row__right">
+                <label class="check">
+                  <input type="checkbox" data-auto-ball-toggle ${autoBallOn ? "checked" : ""} />
+                  <span>开启</span>
+                </label>
+              </div>
             </div>
-            <div class="row__right">
-              <label class="check">
-                <input type="checkbox" data-auto-ball-toggle ${autoBallOn ? "checked" : ""} />
-                <span>开启</span>
-              </label>
+          `);
+        } else {
+          toolRows.push(`
+            <div class="row is-locked">
+              <div class="row__left">
+                <div class="row__title row__titleLine">${renderBuildingSvg("ballFactory", 18)}<span>自动搓球</span><span class="tag">未来币商店解锁</span></div>
+                <div class="row__desc">在“未来币商店”解锁后可用。</div>
+              </div>
+              <div class="row__right">
+                <div class="badge badge--muted">未解锁</div>
+              </div>
             </div>
-          </div>
-        `);
-      } else {
-        toolRows.push(`
-          <div class="row is-locked">
-            <div class="row__left">
-              <div class="row__title row__titleLine">${renderBuildingSvg("ballFactory", 18)}<span>自动搓球</span><span class="tag">未来币商店解锁</span></div>
-              <div class="row__desc">在“未来币商店”解锁后可用。</div>
-            </div>
-            <div class="row__right">
-              <div class="badge badge--muted">未解锁</div>
-            </div>
-          </div>
-        `);
+          `);
+        }
       }
 
       if (!encEarly) {

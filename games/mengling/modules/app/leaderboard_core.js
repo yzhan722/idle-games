@@ -41,22 +41,31 @@ export function initLeaderboardIdentity(ui) {
 
 export function lbBaseUrl() {
   try {
+    if (typeof window !== "undefined" && typeof window.ML_API_BASE === "string" && window.ML_API_BASE.trim()) {
+      return window.ML_API_BASE.trim().replace(/\/$/, "");
+    }
     const loc = window.location;
     const host = loc && typeof loc.hostname === "string" ? loc.hostname : "";
+    const port = loc && typeof loc.port === "string" ? loc.port : "";
     const origin = loc && typeof loc.origin === "string" ? loc.origin : "";
 
-    if (!host) return "http://127.0.0.1:8080";
-    if (host === "localhost" || host === "127.0.0.1") return "http://127.0.0.1:8080";
+    if (!host) return "";
+    if (host === "localhost" || host === "127.0.0.1") {
+      return port === "8080" ? "http://127.0.0.1:8080" : "";
+    }
 
     // 默认同源（适配 ngrok/反代：同一个域名同时提供页面与 /api）
     if (origin) return origin;
   } catch {
   }
-  return "http://127.0.0.1:8080";
+  return "";
 }
 
 export function createLbFetchJson({ getToken }) {
   return async function lbFetchJson(url, opts = null) {
+    if (!url || (typeof url === "string" && url.startsWith("/api/") && !lbBaseUrl())) {
+      throw new Error("LOCAL_STATIC_OFFLINE");
+    }
     const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
     const id = window.setTimeout(() => {
       try {
