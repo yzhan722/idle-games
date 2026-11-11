@@ -1082,10 +1082,22 @@ input::selection {
 	margin: 10px 0 6px;
 }
 #optionsDiv #optionMore {
-	display: inline-block;
-	margin: 2px 0 6px;
+	display: inline-flex;
+	align-items: center;
+	padding: 5px 12px;
+	margin: 4px 8px 6px 0;
+	border-radius: 6px;
+	border: 1px solid rgba(212, 176, 106, .36);
+	background: rgba(212, 176, 106, .08);
 	color: var(--xx-gold-hi);
+	font-size: 12.5px;
 	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+}
+#optionsDiv #optionMore:hover {
+	border-color: var(--xx-gold);
+	background: rgba(212, 176, 106, .16);
 }
 #optionsDiv .optsExtra {
 	margin: 2px 0 8px;
@@ -1193,10 +1205,29 @@ input::selection {
 #optionsDiv label:hover {
 	color: var(--xx-gold-hi);
 }
+#optionsDiv input[type="checkbox"] + label:before,
 #optionsDiv input[type="checkbox"] + label::before {
-	margin-right: 7px;
+	content: "" !important;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	width: 15px !important;
+	height: 15px !important;
+	margin: 0 8px 0 2px !important;
+	vertical-align: -2px;
+	border-radius: 4px;
+	border: 1px solid rgba(79, 209, 165, .38);
+	background: rgba(12, 20, 28, .85);
 	color: var(--xx-jade);
-	font-weight: 700;
+	font: 800 11px/1 sans-serif !important;
+	transition: background .15s, border-color .15s, box-shadow .15s;
+}
+#optionsDiv input[type="checkbox"]:checked + label:before,
+#optionsDiv input[type="checkbox"]:checked + label::before {
+	content: "✓" !important;
+	border-color: var(--xx-jade);
+	background: rgba(79, 209, 165, .22);
+	box-shadow: 0 0 8px rgba(79, 209, 165, .28);
 }
 .dialog input[type="button"] {
 	background: linear-gradient(180deg, rgba(34, 48, 66, .95), rgba(20, 30, 44, .95)) !important;
@@ -2784,8 +2815,9 @@ input, select, textarea, button { font-family: inherit; }
 		border-bottom: 1px solid var(--xx-line);
 	}
 	#leftColumn.xx-res-open {
-		max-height: 56dvh;
+		max-height: 34dvh;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 	}
 	#leftColumn .xx-treasury-hd,
 	#leftColumn:not(.xx-res-open) .xx-res-sec-hd,
@@ -2803,7 +2835,6 @@ input, select, textarea, button { font-family: inherit; }
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 4px;
 	}
-	#leftColumn.xx-res-open .res-table,
 	#leftColumn .res-table.craftTable {
 		grid-template-columns: minmax(0, 1fr);
 	}
