@@ -112,6 +112,35 @@ export function AchievementsPanel({ onClose, onGoldChange }: { onClose: () => vo
     }
   };
 
+  const claimAll = async () => {
+    const ready = list.filter((a) => a.unlocked && !a.claimed);
+    if (claiming || ready.length === 0) return;
+    setClaiming('__all__');
+    let totalGold = 0;
+    let latestBalance: number | undefined;
+    let okCount = 0;
+    try {
+      apiClient.clearCache();
+      for (const item of ready) {
+        try {
+          const res: any = await apiClient.claimAchievement(item.id);
+          totalGold += Number(res.goldGained || 0);
+          if (typeof res.gold === 'number') latestBalance = res.gold;
+          okCount += 1;
+        } catch {
+          // continue claiming remaining unlocked achievements
+        }
+      }
+      if (typeof latestBalance === 'number') onGoldChange?.(latestBalance);
+      if (okCount > 0) {
+        toast.reward(`一键领取 ${okCount} 项成就奖励 +${totalGold} 金币`);
+      }
+      await load();
+    } finally {
+      setClaiming(null);
+    }
+  };
+
   const filtered = filter === 'all' ? list : list.filter((a) => a.category === filter);
   const unlockedCount = list.filter((a) => a.unlocked).length;
   const claimableCount = list.filter((a) => a.unlocked && !a.claimed).length;
@@ -120,8 +149,18 @@ export function AchievementsPanel({ onClose, onGoldChange }: { onClose: () => vo
   return (
     <PanelModal title="成就" icon={<T1Art kind="ui" id="nav-tasks" fallback="" alt="" />} onClose={onClose}>
       <div className="prog-summary">
-        已达成 <b>{unlockedCount}</b> / {list.length}
+        <span>已达成 <b>{unlockedCount}</b> / {list.length}</span>
         {claimableCount > 0 && <span className="prog-badge">{claimableCount} 个可领取</span>}
+        {claimableCount > 1 && (
+          <button
+            type="button"
+            className="prog-claim-all-btn"
+            disabled={claiming !== null}
+            onClick={claimAll}
+          >
+            {claiming === '__all__' ? '领取中…' : `一键领取 (${claimableCount})`}
+          </button>
+        )}
       </div>
 
       <div className="prog-filters">
@@ -144,10 +183,11 @@ export function AchievementsPanel({ onClose, onGoldChange }: { onClose: () => vo
         <div className="ach-grid">
           {filtered.map((a) => {
             const pct = Math.min(100, Math.max(0, Math.floor((a.progress / Math.max(1, a.target)) * 100)));
+            const isClaimable = a.unlocked && !a.claimed;
             return (
               <div
                 key={a.id}
-                className={`ach-card ${a.unlocked ? 'unlocked' : 'locked'} ${a.claimed ? 'claimed' : ''}`}
+                className={`ach-card ${a.unlocked ? 'unlocked' : 'locked'} ${isClaimable ? 'claimable' : ''} ${a.claimed ? 'claimed' : ''}`}
               >
                 <div className="ach-icon">
                   <T1Art kind="ui" id={ACH_CATEGORY_ICON[a.category] || 'nav-tasks'} fallback="" alt="" />

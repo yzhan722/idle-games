@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>AR DeepSeek娘 · 实景桌宠养成</title>
   <link rel="icon" type="image/webp" href="./assets/hero_idle2.webp?v=hd5" />
-  <link rel="stylesheet" href="./style.css?v=hd13" />
+  <link rel="stylesheet" href="./style.css?v=hd14" />
 </head>
 <body>
   <!-- 底层全屏实景摄像头 -->
@@ -103,6 +103,13 @@
       <span class="mg-chip mg-chip-score">本班 <b id="surv-coin-val">+0</b> <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></span>
     </div>
 
+    <!-- 实景摘星实时星链悬赏胶囊（仅在 parkour 模式显示） -->
+    <div id="parkour-hud" class="survivor-hud parkour-hud hidden" aria-live="polite">
+      <span class="mg-chip mg-chip-score" id="parkour-total-chip">摘星 0</span>
+      <span class="mg-chip mg-chip-combo" id="parkour-combo-chip">星链 ×0</span>
+      <span class="mg-chip mg-chip-time">下颗 <b id="parkour-bounty-val">+22</b> <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></span>
+    </div>
+
     <!-- 实景石头剪刀布（猜拳）轻量互动条：支持摄像头真实手势识别或触屏点击出拳 -->
     <div id="rps-hud" class="rps-hud hidden">
       <div class="rps-title" id="rps-status-text">对镜头伸出手势出拳！倒计时 3</div>
@@ -195,6 +202,6 @@
     </div>
   </div>
 
-  <script type="module" src="./game.js?v=hd35"></script>
+  <script type="module" src="./game.js?v=hd36"></script>
 </body>
 </html>

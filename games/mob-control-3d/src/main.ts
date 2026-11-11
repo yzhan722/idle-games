@@ -727,11 +727,24 @@ function renderMainMenu(): void {
       ? state.getTop10ActiveLeaderboard()
       : state.getTop10Leaderboard();
     if (leaderboardSelfStatusEl) {
-      const rankStr = selfRank && selfRank <= 10 ? `#${selfRank}` : '未上榜';
+      const isRanked = Boolean(selfRank && selfRank <= 10);
+      const rankStr = isRanked ? `#${selfRank}` : '未上榜';
+      const metricStr = isActiveMode
+        ? state.formatPlayTime(state.weeklyPlayTimeSeconds)
+        : `${state.weeklyBestStage} 关`;
       const resetHint = state.getWeeklyResetCountdownText();
-      leaderboardSelfStatusEl.innerHTML = isActiveMode
-        ? `${state.playerName} · ${rankStr} (${state.formatPlayTime(state.weeklyPlayTimeSeconds)}) · ${resetHint}`
-        : `${state.playerName} · ${rankStr} (${state.weeklyBestStage} 关) · ${resetHint}`;
+      leaderboardSelfStatusEl.innerHTML =
+        `<span class="lb-self-name">${state.playerName}</span>` +
+        `<span class="lb-self-rank-pill ${isRanked ? 'is-ranked' : ''}">${rankStr}</span>` +
+        `<span class="lb-self-metric-pill">${metricStr}</span>` +
+        `<span class="lb-self-reset">${resetHint}</span>`;
+    }
+    if (btnEditName) {
+      const canAffordRename = state.gold >= RENAME_GOLD_COST;
+      btnEditName.classList.toggle('is-unaffordable', !canAffordRename);
+      btnEditName.title = canAffordRename
+        ? '花费 100,000 金币修改指挥官昵称 [N]'
+        : `改名需 100,000 金币（还差 ${Math.max(0, RENAME_GOLD_COST - Math.floor(state.gold)).toLocaleString()} 金币）`;
     }
 
     leaderboardListEl.innerHTML = '';

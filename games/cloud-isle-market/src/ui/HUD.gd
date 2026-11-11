@@ -421,12 +421,19 @@ func _sync_label_nodes() -> void:
 		var cur_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
 		lbl_drawer_lang.text = EconomyConfig.tr_key("lang_badge")
 		lbl_drawer_lang.position = Vector2(TOP_RIGHT_LANG_RECT.position.x + 6.0, TOP_RIGHT_LANG_RECT.position.y + 2.0 + slide_y)
-		lbl_drawer_noise.text = SoundManager.get_white_noise_status_label() if SoundManager != null else "[白噪:关]"
+		var noise_txt := SoundManager.get_white_noise_status_label() if SoundManager != null else "[白噪:关]"
+		lbl_drawer_noise.text = noise_txt
 		lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0 + slide_y)
+		if lbl_drawer_noise.label_settings != null:
+			lbl_drawer_noise.label_settings.font_color = Color("#8CE99A") if not noise_txt.contains("关") else Color("#FFE066")
 		lbl_drawer_fps.text = "[" + str(cur_fps) + "FPS]"
 		lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0 + slide_y)
+		if lbl_drawer_fps.label_settings != null:
+			lbl_drawer_fps.label_settings.font_color = Color("#8CE99A") if cur_fps <= 30 else Color("#FFE066")
 		lbl_drawer_opacity.text = "[" + str(int(round(cur_op * 100.0))) + "%透]"
 		lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0 + slide_y)
+		if lbl_drawer_opacity.label_settings != null:
+			lbl_drawer_opacity.label_settings.font_color = Color("#8CE99A") if cur_op < 0.99 else Color("#FFE066")
 		lbl_drawer_dock.text = "[贴合任务栏]"
 		lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0 + slide_y)
 
@@ -434,6 +441,8 @@ func _sync_label_nodes() -> void:
 		lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 3.0 + slide_y)
 		lbl_drawer_mute.text = mute_lbl
 		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + slide_y)
+		if lbl_drawer_mute.label_settings != null:
+			lbl_drawer_mute.label_settings.font_color = Color("#FFA8A8") if (SoundManager != null and SoundManager.is_muted) else Color("#FFF4D6")
 
 	var cards: Array[Dictionary] = []
 	if show_drawer:
@@ -714,12 +723,14 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				var c_on := bool(GameManager.unlocked_codex.get(cid, false))
 				var d_on := bool(GameManager.unlocked_codex.get(did, false))
 				var bonus_pct := (10 if c_on else 0) + (10 if d_on else 0)
+				var codex_state := "unlocked" if bonus_pct >= 20 else ("affordable" if bonus_pct >= 10 else "locked")
 				list.append({
 					"type": "codex",
 					"key": str(cp["idx"]),
 					"title": String(cp["tier_name"]) + "(+" + str(bonus_pct) + "%)",
 					"sub": (c_name if c_on else "???(待解锁)") + " · " + (d_name if d_on else "???(待研发)"),
-					"cost": "点亮 " + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 · 售价+" + str(bonus_pct) + "%"
+					"cost": "点亮 " + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2 · 售价+" + str(bonus_pct) + "%",
+					"cost_state": codex_state
 				})
 			var ach_done := GameManager.get_unlocked_achievement_count()
 			var ach_tot := EconomyConfig.ACHIEVEMENTS.size()
@@ -728,7 +739,8 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				"key": "achievements",
 				"title": "★成就看板 (" + str(ach_done) + "/" + str(ach_tot) + ")",
 				"sub": GameManager.get_career_summary_text(),
-				"cost": "岛屿声望 ★" + str(GameManager.get_star_reputation()) + "星"
+				"cost": "岛屿声望 ★" + str(GameManager.get_star_reputation()) + "星",
+				"cost_state": "unlocked" if ach_done > 0 else "affordable"
 			})
 	return list
 
@@ -827,6 +839,11 @@ func _draw() -> void:
 			var ctex := tex_card_hover if hovered_card == i else tex_card
 			if ctex != null:
 				draw_texture_rect(ctex, crect, false)
+			var c_state := String(cards[i].get("cost_state", "neutral"))
+			if c_state == "affordable":
+				draw_rect(crect.grow(-1.0), Color(0.55, 0.91, 0.60, 0.46), false, 1.0)
+			elif c_state == "unlocked":
+				draw_rect(crect.grow(-1.0), Color(1.0, 0.88, 0.40, 0.42), false, 1.0)
 			# Draw real pixel-art crop & delicacy icons inside Codex cards (Tab 3)
 			if active_tab == 3 and i < 4:
 				if tex_crops != null:

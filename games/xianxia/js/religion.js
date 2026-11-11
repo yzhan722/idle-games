@@ -1173,12 +1173,23 @@ dojo.declare("com.nuclearunicorn.game.ui.ZigguratBtnController", com.nuclearunic
     },
 
     getName: function(model){
+		var name;
 		if (model.metadata.name == "marker" && model.metadata.val > 0){
 			var progress = this.game.toDisplayPercentage(this.game.religion.corruption, 0, true);
-			return model.metadata.label + " [" + progress + "%] (" + model.metadata.val + ")";
+			name = model.metadata.label + " [" + progress + "%] (" + model.metadata.val + ")";
 		} else {
-			return this.inherited("getName", arguments);
+			name = this.inherited("getName", arguments);
 		}
+		if (model.metadata && model.metadata.description){
+			var brief = String(model.metadata.description).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().replace(/。$/, "");
+			if (brief.indexOf("——") >= 0){
+				brief = brief.split("——").pop().trim();
+			}
+			if (brief){
+				name += "<span class=\"xxTechHint\">" + brief + "</span>";
+			}
+		}
+		return name;
 	},
 
 	//zigguratIvoryPriceRatio applies an additive modifier to the price ratio, but only for ivory
@@ -1238,6 +1249,20 @@ dojo.declare("com.nuclearunicorn.game.ui.ReligionBtnController", com.nuclearunic
         }
         return model.metaCached;
     },
+
+	getName: function(model){
+		var name = this.inherited("getName", arguments);
+		if (model.metadata && model.metadata.description){
+			var brief = String(model.metadata.description).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().replace(/。$/, "");
+			if (brief.indexOf("——") >= 0){
+				brief = brief.split("——").pop().trim();
+			}
+			if (brief){
+				name += "<span class=\"xxTechHint\">" + brief + "</span>";
+			}
+		}
+		return name;
+	},
 
     hasSellLink: function(model){
 		return !this.game.opts.hideSell && !model.metadata.noStackable && model.metadata.val > 1;

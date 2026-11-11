@@ -126,15 +126,30 @@ export function PrestigePanel({
 
           <div className="sys-section-title" style={{ marginTop: 16 }}>转生条件</div>
           <div className="prestige-cond">
-            <div className="prestige-cond-row">
-              <span>战斗等级</span>
-              <span className={info.currentCombatLevel >= info.minCombatLevel ? 'ok' : 'no'}>
-                {info.currentCombatLevel} / {info.minCombatLevel}
-              </span>
+            <div className="prestige-cond-row prestige-cond-row--progress">
+              <div className="prestige-cond-line">
+                <span>战斗等级</span>
+                <span className={info.currentCombatLevel >= info.minCombatLevel ? 'ok' : 'no'}>
+                  {info.currentCombatLevel} / {info.minCombatLevel} ({Math.min(100, Math.round((info.currentCombatLevel / Math.max(1, info.minCombatLevel)) * 100))}%)
+                </span>
+              </div>
+              <div className="prestige-lv-track">
+                <div
+                  className={`prestige-lv-fill ${info.currentCombatLevel >= info.minCombatLevel ? 'is-ready' : ''}`}
+                  style={{ width: `${Math.min(100, Math.max(2, Math.round((info.currentCombatLevel / Math.max(1, info.minCombatLevel)) * 100)))}%` }}
+                />
+              </div>
             </div>
-            <div className="prestige-cond-row">
-              <span>本次可获转生点</span>
-              <span className="ok">+{info.pointsOnPrestige}</span>
+            <div className="prestige-cond-row prestige-cond-row--progress">
+              <div className="prestige-cond-line">
+                <span>本次可获转生点</span>
+                <span className="ok">+{info.pointsOnPrestige}</span>
+              </div>
+              {info.pointsOnPrestige <= 0 && (
+                <div className="prestige-cond-subhint">
+                  满 {info.minCombatLevel} 级立得 +1 转生点 · 永久全局收益 +{info.bonusPerPoint}%
+                </div>
+              )}
             </div>
           </div>
 

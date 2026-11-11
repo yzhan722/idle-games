@@ -205,14 +205,14 @@ export function CharacterSheet(props: Props) {
           <T1Art kind="character" id={characterArtId(props.activeClassId, normalizedGender)} alt={props.activeClassName || "伐木工"} />
         </div>
         <div className="sheet-identity-wrap">
-          <p className="sheet-identity" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <p className="sheet-identity" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontVariantNumeric: "tabular-nums" }}>
             <span className="sheet-avatar-badge" style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", display: "inline-flex", flexShrink: 0, border: "1px solid var(--border-brand, #d9a04a)" }}>
               <PlayerAvatarIcon avatar={currentAvatarId} gender={normalizedGender} />
             </span>
-            <span>
-              {props.playerName}
-              {props.activeClassName ? ` · ${props.activeClassName}` : ""} · 总等级 {props.totalLevel} · 战斗 Lv.{props.combatLevel}
-            </span>
+            <strong style={{ whiteSpace: "nowrap" }}>{props.playerName}</strong>
+            {props.activeClassName && <span style={{ whiteSpace: "nowrap", padding: "1px 7px", borderRadius: 999, background: "rgba(217, 160, 74, 0.16)", border: "1px solid rgba(217, 160, 74, 0.36)", fontSize: 12, color: "#f3d299" }}>{props.activeClassName}</span>}
+            <span style={{ whiteSpace: "nowrap", fontSize: 12.5, color: "var(--text-secondary)" }}>总等级 {props.totalLevel}</span>
+            <span style={{ whiteSpace: "nowrap", fontSize: 12.5, color: "var(--text-secondary)" }}>· 战斗 Lv.{props.combatLevel}</span>
           </p>
           <p className="sheet-class-perk" style={{ fontSize: 12, color: "var(--text-secondary)", margin: "2px 0 6px" }}>
             <strong>【{getProfessionPerk(props.activeClassId).traitName}】</strong>{getProfessionPerk(props.activeClassId).combatAndUtilityDesc}

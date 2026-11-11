@@ -292,6 +292,33 @@ function spawnInteractVfx(x, y, preset = 'love', count = 7) {
 
 let survivorSessionCoins = 0;
 let survivorSessionKills = 0;
+let lastParkourHudKey = '';
+
+function syncParkourHud() {
+  const hudEl = document.getElementById('parkour-hud');
+  if (!hudEl) return;
+  if (gameMode !== 'parkour') {
+    hudEl.classList.add('hidden');
+    lastParkourHudKey = '';
+    return;
+  }
+  hudEl.classList.remove('hidden');
+  const totalStars = player.starsCollected || 0;
+  const combo = starTarget.combo || 0;
+  const nextBounty = 16 + (combo + 1) * 6;
+  const key = `${totalStars}|${combo}|${nextBounty}`;
+  if (key === lastParkourHudKey) return;
+  lastParkourHudKey = key;
+  const totalEl = document.getElementById('parkour-total-chip');
+  const comboEl = document.getElementById('parkour-combo-chip');
+  const bountyEl = document.getElementById('parkour-bounty-val');
+  if (totalEl) totalEl.textContent = `摘星 ${totalStars}`;
+  if (comboEl) {
+    comboEl.textContent = combo > 0 ? `星链 ×${combo}` : '星链 待触发';
+    comboEl.classList.toggle('is-hot', combo >= 2);
+  }
+  if (bountyEl) bountyEl.textContent = `+${nextBounty}`;
+}
 
 function syncSurvivorHud() {
   const hudEl = document.getElementById('survivor-hud');
@@ -1145,7 +1172,7 @@ const FOOD_CATALOG = [
     ico: '',
     img: './assets/food_rice.webp?v=hd2',
     name: '大碗白米饭',
-    desc: '饱食+25 · 亲密+18',
+    desc: '亲密+18 · 体力+15 免费管饱',
     price: 0,
     hunger: 25,
     xp: 18,
@@ -1159,7 +1186,7 @@ const FOOD_CATALOG = [
     ico: '',
     img: './assets/food_tea.webp?v=hd2',
     name: '冰镇乌龙茶',
-    desc: '饱食+20 · 体力+40',
+    desc: '体力+40 · 打工×1.2 (45s)',
     price: 15,
     hunger: 20,
     xp: 28,
@@ -1173,7 +1200,7 @@ const FOOD_CATALOG = [
     ico: '',
     img: './assets/food_bento.webp?v=hd2',
     name: '黄金炸虾便当',
-    desc: '饱食+50 · 打工收益x1.5',
+    desc: '亲密+52 · 打工×1.5 (60s)',
     price: 35,
     hunger: 50,
     xp: 52,
@@ -1187,7 +1214,7 @@ const FOOD_CATALOG = [
     ico: '',
     img: './assets/food_cake.webp?v=hd2',
     name: '海盐芝士蛋糕',
-    desc: '全状态恢复 · 打工x2.0',
+    desc: '全满恢复 · 打工×2.0 (90s)',
     price: 60,
     hunger: 75,
     xp: 95,
@@ -1655,6 +1682,7 @@ function switchMode(newMode) {
     careBarEl.style.display = 'flex';
     if (wishPillEl) wishPillEl.style.display = 'inline-flex';
     syncSurvivorHud();
+    syncParkourHud();
     setPlayerEmote('回到日常桌面养成模式~', 1.8);
   } else if (gameMode === 'parkour') {
     enemies.length = 0;
@@ -1665,6 +1693,7 @@ function switchMode(newMode) {
     careBarEl.style.display = 'none';
     if (wishPillEl) wishPillEl.style.display = 'none';
     syncSurvivorHud();
+    syncParkourHud();
     placeStarOnBestTarget();
     setPlayerEmote('跳上实景物体摘星拿赏金!', 1.8);
   } else if (gameMode === 'survivor') {
@@ -1675,6 +1704,7 @@ function switchMode(newMode) {
     if (wishPillEl) wishPillEl.style.display = 'none';
     enemySpawnTimer = 0.15; if (enemies.length === 0) { spawnEnemy(true); spawnEnemy(false); }
     syncSurvivorHud();
+    syncParkourHud();
     setPlayerEmote('开启幸存者打工！打怪爆金币咯~', 2.0);
   }
 }
@@ -3427,6 +3457,7 @@ function updateGameplay(dt, flow) {
         placeStarOnBestTarget();
       }
     }
+    syncParkourHud();
   } else {
     starTarget.active = false;
   }

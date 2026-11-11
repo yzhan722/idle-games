@@ -402,6 +402,11 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
 
         var visibleTabs = [];
 
+        var staleTooltip = dojo.byId("tooltip");
+        if (staleTooltip) {
+            dojo.style(staleTooltip, "display", "none");
+        }
+
         for (var i = 0; i < game.tabs.length; i++){
             var tab = game.tabs[i];
             tab.domNode = null;
@@ -442,6 +447,11 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
             if (i < visibleTabs.length - 1){
                 dojo.create("span", {innerHTML:" | "}, tabNavigationDiv);
             }
+        }
+
+        var staleTooltip = dojo.byId("tooltip");
+        if (staleTooltip) {
+            dojo.style(staleTooltip, "display", "none");
         }
 
         for (var i = 0; i < game.tabs.length; i++){

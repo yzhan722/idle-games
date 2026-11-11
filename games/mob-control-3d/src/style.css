@@ -9922,6 +9922,84 @@ img,
   color: #fffbeb !important;
 }
 
+/* Round 35 Commercial Polish: Self-Rank Telemetry Chips, Unaffordable Rename State & Clean Speed-Skip Banner */
+#result-modal {
+  z-index: 80 !important;
+}
+
+.speed-skip-banner {
+  background: linear-gradient(135deg, #92400e 0%, #b45309 55%, #d97706 100%) !important;
+  box-shadow:
+    0 4px 0 #451a03,
+    inset 0 1px 0 rgba(254, 243, 199, 0.45) !important;
+}
+
+.speed-skip-info {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 3px !important;
+  text-align: left !important;
+}
+
+#leaderboard-self-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.lb-self-name {
+  color: #fffbeb;
+  font-weight: 900;
+}
+
+.lb-self-rank-pill,
+.lb-self-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.lb-self-rank-pill {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: #cbd5e1;
+}
+
+.lb-self-rank-pill.is-ranked {
+  background: linear-gradient(180deg, #fde047 0%, #d97706 100%);
+  border-color: #fef9c3;
+  color: #451a03;
+  text-shadow: none;
+}
+
+.lb-self-metric-pill {
+  background: rgba(14, 116, 144, 0.55);
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  color: #e0f2fe;
+}
+
+.lb-self-reset {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(254, 240, 138, 0.78);
+  white-space: nowrap;
+}
+
+.lb-edit-btn.is-unaffordable {
+  background: linear-gradient(180deg, #64748b 0%, #334155 100%) !important;
+  border-color: rgba(203, 213, 225, 0.48) !important;
+  outline-color: #0f172a !important;
+  color: #cbd5e1 !important;
+  opacity: 0.86 !important;
+}
+
 
 
 

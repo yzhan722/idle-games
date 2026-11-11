@@ -92,11 +92,20 @@ screen evidence_book():
         elif _cur_bg in ("oldbuilding", "memory_storeroom", "memory_corridor", "memory_gate"):
             add Solid("#07040e55") xsize 1280 ysize 24 yalign 0.0 at atmos_fade_in
             add Solid("#07040e55") xsize 1280 ysize 24 yalign 1.0 at atmos_fade_in
-        # 右上角一行紧凑的"证据"与"羁绊"按钮（高度 40px，不与立绘头部、选项块重叠）
+        # 右上角一行紧凑的"直觉"、"证据"与"羁绊"状态芯片（高度 40px，不与立绘头部、选项块重叠）
         hbox:
             at hud_fade
             align (0.99, 0.02)
             spacing 8
+            frame:
+                background Frame("gui/hud_chip.png", 12, 12)
+                padding (12, 0)
+                ysize 40
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    text _("直觉") style "hud_chip_text"
+                    text ("[intuition]/3") size 18 bold True color ("#fca5a5" if (intuition <= 0 or fail_count >= 1) else "#f4ce78") outlines [(2, "#1c1208", 0, 0)] yalign 0.5
             button:
                 style "hud_chip_button"
                 at hud_chip_fx

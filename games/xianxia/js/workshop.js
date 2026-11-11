@@ -2130,6 +2130,15 @@ dojo.declare("com.nuclearunicorn.game.ui.UpgradeButtonController", com.nuclearun
 				name += " <span class=\"xxRealmGateBadge locked\">◈ " + gate.title + "</span>";
 			}
 		}
+		if (meta && meta.description && !meta.researched){
+			var brief = String(meta.description).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().replace(/。$/, "");
+			if (brief.indexOf("——") >= 0){
+				brief = brief.split("——").pop().trim();
+			}
+			if (brief){
+				name += "<span class=\"xxTechHint\">" + brief + "</span>";
+			}
+		}
 		return name;
 	},
 

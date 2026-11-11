@@ -469,7 +469,7 @@ html, body {
   transform: translateX(-50%);
   z-index: 25;
   width: min(560px, 84%);
-  background: linear-gradient(180deg, rgba(255, 252, 246, 0.95) 0%, rgba(242, 249, 255, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.97) 0%, rgba(244, 250, 255, 0.97) 100%);
   border: 3px solid #ffffff;
   outline: 2px solid rgba(145, 202, 250, 0.6);
   border-radius: 24px;
@@ -1181,6 +1181,18 @@ html, body {
 
 .survivor-hud.hidden {
   display: none !important;
+}
+
+.parkour-hud {
+  border-color: rgba(56, 189, 248, 0.72);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.95) 0%, rgba(239, 248, 255, 0.95) 100%);
+}
+
+.parkour-hud .mg-chip-combo.is-hot {
+  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 100%);
+  color: #451a03;
+  border-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
 
 

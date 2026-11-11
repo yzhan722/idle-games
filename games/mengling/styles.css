@@ -7023,8 +7023,8 @@ button.capture-wanderer:hover {
     height: 42px !important;
     min-height: 42px !important;
     max-height: 42px !important;
-    padding: 3px 7px !important;
-    gap: 4px !important;
+    padding: 3px 5px !important;
+    gap: 3px !important;
   }
 
   .resources--top .resrow__icon {
@@ -7033,16 +7033,23 @@ button.capture-wanderer:hover {
 
   .resources--top .resrow__head {
     gap: 2px !important;
+    min-width: 0 !important;
   }
 
   .resources--top .resrow__k {
-    font-size: 11px !important;
+    font-size: 10.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
   }
 
   .resources--top .resrow__meta {
-    font-size: 9px !important;
-    padding: 0 4px !important;
+    font-size: 8.5px !important;
+    padding: 0 3px !important;
     flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-variant-numeric: tabular-nums !important;
   }
 
   .resources--top .resrow__v {
@@ -8172,6 +8179,52 @@ details.capture-tools[open] > summary.capture-tools__summary {
   border-color: rgba(251, 191, 36, 0.36) !important;
   background: rgba(30, 41, 59, 0.78) !important;
   color: #fde68a !important;
+}
+
+/* v0.7.40 Round 35 Commercial Polish: Mobile Compass Stack, Hall-of-Fame Stage Card & Tabular Telemetry */
+.compass-card__badge {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.tab-stage__title,
+.tab-stage__pill,
+.compass-bar__label {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .compass-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    min-height: 0 !important;
+    padding: 12px !important;
+  }
+
+  .compass-card > .row__left,
+  .compass-card > .row__right {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .compass-card__cta {
+    width: 100% !important;
+  }
+
+  .tab-stage--leaderboard .tab-stage__body--arena {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .tab-stage--leaderboard .tab-stage__focal,
+  .tab-stage--leaderboard .arena-side--ally {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }
 
 
