@@ -2,11 +2,6 @@
 
 > 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。
 
-## [2026-11-10T22:28:08.638Z] Autonomous Playtest — PASS
-- Target: `https://worklife.yinosites.com` | Chapter Goal: `complete (第一章完成)`
-- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
-- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
-
 ## [2026-11-10T23:28:02.009Z] Autonomous Playtest — PASS
 - Target: `https://worklife.yinosites.com` | Chapter Goal: `complete (第一章完成)`
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
@@ -48,6 +43,11 @@
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
 
 ## [2026-11-11T20:24:41.579Z] Autonomous Playtest — PASS
+- Target: `https://worklife.yinosites.com` | Chapter Goal: `complete (第一章完成)`
+- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
+- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
+
+## [2026-11-11T22:26:39.171Z] Autonomous Playtest — PASS
 - Target: `https://worklife.yinosites.com` | Chapter Goal: `complete (第一章完成)`
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
