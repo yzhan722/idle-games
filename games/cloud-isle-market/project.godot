@@ -23,6 +23,7 @@ EventBus="*res://src/autoload/EventBus.gd"
 EconomyConfig="*res://src/autoload/EconomyConfig.gd"
 WindowController="*res://src/autoload/WindowController.gd"
 SoundManager="*res://src/autoload/SoundManager.gd"
+SteamBridge="*res://src/autoload/SteamBridge.gd"
 GameManager="*res://src/autoload/GameManager.gd"
 SelfTestRunner="*res://src/autoload/SelfTestRunner.gd"
 
