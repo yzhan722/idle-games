@@ -4274,18 +4274,37 @@ body.screen-quake-active #app {
 }
 
 .barrel-label,
-.lootbug-label {
+.lootbug-label,
+.subtower-label {
   display: inline-flex;
   align-items: center;
   gap: 3px;
 }
 
 .barrel-label .inline-art-img,
-.lootbug-label .inline-art-img {
+.lootbug-label .inline-art-img,
+.subtower-label .inline-art-img {
   width: 18px;
   height: 18px;
   border-radius: 5px;
   margin-right: 0;
+}
+
+.subtower-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #0ea5e9 0%, #0369a1 100%);
+  border: 2px solid #fde68a;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  justify-content: center;
+  text-shadow: 0 1px 2px rgba(12, 34, 62, 0.9);
+  box-shadow: 0 2px 8px rgba(8, 47, 73, 0.45);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ==========================================================================

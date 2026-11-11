@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   BarrelConfig,
+  BossSubTowerConfig,
   BumperConfig,
   GateConfig,
   GearConfig,
@@ -114,6 +115,33 @@ export interface NestRuntime {
   alive: boolean;
   hitFlash: number;
   labelEl: HTMLDivElement;
+}
+
+export interface BossSubTowerRuntime {
+  cfg: BossSubTowerConfig;
+  group: THREE.Group;
+  coreMesh: THREE.Mesh;
+  valveRing: THREE.Mesh;
+  beamMesh: THREE.Mesh;
+  beamMat: THREE.MeshBasicMaterial;
+  hp: number;
+  maxHp: number;
+  alive: boolean;
+  hitFlash: number;
+  labelEl: HTMLDivElement;
+}
+
+export interface BossSteamSweepRuntime {
+  phase: 'idle' | 'telegraph' | 'sweeping';
+  lane: 'left' | 'right';
+  timer: number;
+  maxTimer: number;
+  cooldown: number;
+  waveZ: number;
+  telegraphGroup: THREE.Group;
+  telegraphFillMat: THREE.MeshBasicMaterial;
+  telegraphBorderMat: THREE.MeshBasicMaterial;
+  waveGroup: THREE.Group;
 }
 
 export interface Particle {

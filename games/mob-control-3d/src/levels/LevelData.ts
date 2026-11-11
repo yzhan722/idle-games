@@ -73,6 +73,16 @@ export interface BarrelConfig {
   hp: number;
 }
 
+export interface BossSubTowerConfig {
+  id: string;
+  side: 'left' | 'right';
+  name: string;
+  x: number;
+  z: number;
+  hp: number;
+  rewardGold: number;
+}
+
 export type MapArchetype =
   | 'cascade_scurve'
   | 'grinder_gauntlet'
@@ -110,6 +120,7 @@ export interface LevelConfig {
   barrels: BarrelConfig[];
   zones: TerrainZoneConfig[];
   bumpers: BumperConfig[];
+  bossSubTowers: BossSubTowerConfig[];
 }
 
 export const TOTAL_SELECTABLE_STAGES = 50;
@@ -1673,6 +1684,40 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
     }
   }
 
+  const scaledBossMaxHp = isMegaBoss
+    ? Math.round(bossMaxHp * 1.9)
+    : isMiniBoss
+      ? Math.round(bossMaxHp * 1.42)
+      : isMilestoneBoss
+        ? Math.round(bossMaxHp * 1.2)
+        : bossMaxHp;
+
+  const bossSubTowers: BossSubTowerConfig[] = [];
+  if (isMegaBoss || isMiniBoss) {
+    const subHp = Math.max(85, Math.round(scaledBossMaxHp * (isMegaBoss ? 0.24 : 0.2)));
+    const subGold = Math.max(25, Math.round(finalRewardGold * 0.16));
+    bossSubTowers.push(
+      {
+        id: `subtower_left_${safeStage}`,
+        side: 'left',
+        name: '左翼蒸汽护盾塔',
+        x: -6.2,
+        z: -13.8,
+        hp: subHp,
+        rewardGold: subGold,
+      },
+      {
+        id: `subtower_right_${safeStage}`,
+        side: 'right',
+        name: '右翼蒸汽护盾塔',
+        x: 6.2,
+        z: -13.8,
+        hp: subHp,
+        rewardGold: subGold,
+      }
+    );
+  }
+
   return {
     id: safeStage,
     seed,
@@ -1695,13 +1740,7 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
         : `第 ${safeStage} 关：${info.title}`,
     subtitle: `[随机地形 #${seed % 10000}] ${info.desc}`,
     bossName: resolvedBossName,
-    bossMaxHp: isMegaBoss
-      ? Math.round(bossMaxHp * 1.9)
-      : isMiniBoss
-        ? Math.round(bossMaxHp * 1.42)
-        : isMilestoneBoss
-          ? Math.round(bossMaxHp * 1.2)
-          : bossMaxHp,
+    bossMaxHp: scaledBossMaxHp,
     enemySpawnInterval: isMegaBoss
       ? Number(Math.max(0.36, enemySpawnInterval * 0.82).toFixed(3))
       : isMiniBoss
@@ -1722,5 +1761,6 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
     barrels,
     zones,
     bumpers,
+    bossSubTowers,
   };
 }

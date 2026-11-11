@@ -56,6 +56,7 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       spaPotion: "使用：特攻 永久 +5（单项上限 +50）",
       spdPotion: "使用：特防 永久 +5（单项上限 +50）",
       spePotion: "使用：速度 永久 +5（单项上限 +50）",
+      seasonMark: "无尽试炼塔里程碑荣誉印记，可在挑战页试炼军需处兑换灵晶石、跃级糖丸与金桂冠",
     };
 
     if (!elItems.dataset.itemsInited) {
@@ -333,6 +334,7 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       { rid: "ultraball", category: "捕捉" },
       { rid: "masterball", category: "捕捉" },
       { rid: "futurecoin", category: "货币" },
+      { rid: "seasonMark", category: "货币" },
       { rid: "evolutionStone", category: "进化" },
       { rid: "megaStone", category: "进化" },
       { rid: "linkRope", category: "进化" },

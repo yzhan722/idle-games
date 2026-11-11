@@ -747,6 +747,7 @@ export function renderPveStageHtml({
   teamMons,
   tower,
   towerDone,
+  weatherAffix,
   TYPE_ZH,
   renderBeastIcon,
   monPower,
@@ -809,7 +810,7 @@ export function renderPveStageHtml({
       </div>
       <div class="tab-stage__header">
         <span class="camp-stage__badge">${renderUiIcon("tab_pve", 16)} 星穹试炼竞技场 · ${escapeHtml(chapter?.name || "试炼巡礼")}</span>
-        <span class="camp-stage__sub">${renderBuildingSvg("commandCenter", 14)} 每周试炼塔：${towerDone ? "已通关" : `第 ${tower?.floor || 1} 层`} · 最佳 ${tower?.best || 0}F</span>
+        <span class="camp-stage__sub">${renderResSvg("towerWeather", 14)} 试炼塔：${tower?.floor > 8 ? `无尽 ${tower.floor}F` : `第 ${tower?.floor || 1} 层`}（最佳 ${tower?.best || 0}F）${weatherAffix?.name ? ` · 天象【${escapeHtml(weatherAffix.name)}】` : ""}</span>
       </div>
       <div class="tab-stage__body tab-stage__body--arena">
         <div class="arena-side arena-side--ally">

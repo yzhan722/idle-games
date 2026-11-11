@@ -25,7 +25,8 @@ const ENSURE_RESOURCES = [
   "ultraball", "quickball", "luxuryball",
   "affectionTreat", "friendshipBracelet",
   "shinyCharm", "luckyEgg",
-  "bottleCap", "goldBottleCap"
+  "bottleCap", "goldBottleCap",
+  "seasonMark"
 ];
 
 function ensureResourceDefaults(state) {

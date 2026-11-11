@@ -65,6 +65,8 @@ const RES_ICON_MAP = {
   dragonscale: "megaStone",
   everstone: "defPotion",
   eugenicscharm: "eugenicsCharm",
+  seasonmark: "seasonMark",
+  towerweather: "towerWeather",
 };
 
 const BUILDING_ICON_MAP = {
@@ -100,7 +102,7 @@ const TECH_ICON_MAP = {
 function renderIconImg(iconFileKey, size = 24, extraClass = "") {
   const s = Number(size) || 24;
   const cls = ["rpg-ai-icon", extraClass].filter(Boolean).join(" ");
-  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.41" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
+  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.42" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
 }
 
 export function renderOrbSvg(ballId = "pokeball", size = 24) {

@@ -125,13 +125,14 @@ export function computeStaticItemCaps(defs) {
     advSearchCell: cap("advSearchCell", 99),
     sootheBell: cap("sootheBell", 99),
     expCandyS: cap("expCandyS", 999),
+    seasonMark: cap("seasonMark", 9999),
   };
 }
 
 /** 必须存在的核心资源 id（始终写 cap） */
 const CORE_ALWAYS = new Set([
   "rareCandy", "futurecoin", "evolutionEnergy", "evolutionStone", "linkRope",
-  "bigBerry", "hugeBerry", "megaStone", "masterball",
+  "bigBerry", "hugeBerry", "megaStone", "masterball", "seasonMark",
   "hpPotion", "atkPotion", "defPotion", "spaPotion", "spdPotion", "spePotion",
 ]);
 

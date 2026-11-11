@@ -8295,3 +8295,94 @@ details.capture-tools[open] > summary.capture-tools__summary {
     justify-content: flex-start;
   }
 }
+
+/* v0.7.42 ML-2 Endless Trial Tower, Weekly Weather Affixes & Season Munitions */
+.pve-tower-card {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.09), rgba(168, 85, 247, 0.1), rgba(250, 204, 21, 0.07));
+  border: 1px solid rgba(125, 211, 252, 0.34) !important;
+  align-items: flex-start !important;
+  gap: 12px;
+}
+.pve-tower-floor-tag {
+  background: rgba(168, 85, 247, 0.22) !important;
+  border-color: rgba(192, 132, 252, 0.48) !important;
+  color: #e9d5ff !important;
+}
+.pve-tower-wx-tag {
+  background: rgba(56, 189, 248, 0.2) !important;
+  border-color: rgba(125, 211, 252, 0.48) !important;
+  color: #bae6fd !important;
+}
+.pve-tower-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+.pve-tower-pill {
+  font-size: 11px;
+  line-height: 1.38;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  color: #cbd5e1;
+}
+.pve-tower-pill.is-wx {
+  background: rgba(14, 116, 144, 0.22);
+  border-color: rgba(56, 189, 248, 0.42);
+  color: #e0f2fe;
+}
+.pve-tower-pill.is-resonant {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(52, 211, 153, 0.48);
+  color: #a7f3d0;
+}
+.pve-tower-pill.is-mile {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(251, 191, 36, 0.44);
+  color: #fde68a;
+}
+.pve-tower-floor-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.pve-tower-exchange-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.22);
+}
+.pve-tower-exchange-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fde68a;
+}
+.pve-tower-exchange-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pve-tower-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+@media (max-width: 720px) {
+  .pve-tower-actions {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+}

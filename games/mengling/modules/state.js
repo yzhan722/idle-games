@@ -151,6 +151,7 @@ export const defaultState = () => ({
     advSearchCell: { value: 0, cap: 0 },
     sootheBell: { value: 0, cap: 0 },
     expCandyS: { value: 0, cap: 0 },
+    seasonMark: { value: 0, cap: 0 },
 
   },
 

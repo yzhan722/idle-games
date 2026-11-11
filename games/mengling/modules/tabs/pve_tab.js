@@ -4,7 +4,18 @@ import { simulateBattle, recommendedTypes, typeMatchScore, estimateStageEnemyPow
 import { getEraDefById } from "../defs_eras.js";
 import { natureIncomingDamageMul, abilityOutgoingDamageMul, bumpPveWinStreak, resetPveWinStreak, pveDailyFirstWinMul, bumpSessionPveWin, localDateStr } from "../systems/gameplay_fun.js";
 import { ensureEra } from "../systems/era.js";
-import { ensureTowerState, getTowerFloor, isTowerCleared, PVE_TOWER_FLOORS } from "../systems/pve_tower.js";
+import {
+  ensureTowerState,
+  getTowerFloor,
+  isTowerCleared,
+  isEndlessTowerUnlocked,
+  getWeeklyTowerAffix,
+  unitMatchesWeather,
+  countWeatherResonantMons,
+  getNextTowerMilestone,
+  TOWER_SEASON_EXCHANGES,
+  PVE_TOWER_FLOORS,
+} from "../systems/pve_tower.js";
 import { renderPveStageHtml, setHtmlPreservingStage } from "../render/tab_stages.js";
 import { renderResSvg, renderUiIcon } from "../render/rpg_svg_icons.js";
 
@@ -119,6 +130,8 @@ export function createRenderPve({
 
     const tower = ensureTowerState(state);
     const towerDone = isTowerCleared(tower);
+    const weatherAffix = getWeeklyTowerAffix(tower.week);
+    const floorDef = getTowerFloor(tower.floor, tower.week);
 
     const selChapterPre = typeof ui.pveChapter === "string" ? ui.pveChapter : PVE_CHAPTERS[0]?.id ?? "";
     const chapterPre = PVE_CHAPTERS.find((c) => c.id === selChapterPre) ?? PVE_CHAPTERS[0];
@@ -144,6 +157,7 @@ export function createRenderPve({
         teamMons: teamMonsPre,
         tower,
         towerDone,
+        weatherAffix,
         TYPE_ZH: typeMap,
         renderBeastIcon,
         monPower,
@@ -152,6 +166,75 @@ export function createRenderPve({
         escapeHtml,
       }),
     );
+
+    // 星穹无尽试炼塔 + 每周天象场地词缀 + 赛季军需兑换
+    if (floorDef) {
+      const towerUnlocked = dexCount >= 10;
+      const endlessActive = isEndlessTowerUnlocked(tower) || Boolean(floorDef.isEndless);
+      const selectedMonsTower = selTeamIdsPre.slice(0, 6).map((id) => list.find((m) => m && m.id === id)).filter(Boolean);
+      const wxResonant = countWeatherResonantMons(selectedMonsTower, getMonTypes, weatherAffix);
+      const wxBoostLabels = (weatherAffix?.boostTypes || []).map((t) => `${typeMap[t] ?? t}系`).join(" / ");
+      const towerRecTypes = recommendedTypes(floorDef.type);
+      const towerRecText = towerRecTypes.map((t) => typeMap[t] ?? t).join("、") || "自由搭配";
+      const floorTypeZh = typeMap[floorDef.type] ?? floorDef.type;
+      const floorRw = floorDef.rewards || {};
+      const rwPreviewParts = [];
+      if (floorRw.futurecoin) rwPreviewParts.push(`未来币 +${floorRw.futurecoin}`);
+      if (floorRw.evolutionStone) rwPreviewParts.push(`灵晶石 +${floorRw.evolutionStone}`);
+      if (floorRw.rareCandy) rwPreviewParts.push(`跃级糖丸 +${floorRw.rareCandy}`);
+      if (floorRw.seasonMark) rwPreviewParts.push(`赛季印记 +${floorRw.seasonMark}`);
+      if (floorRw.linkRope) rwPreviewParts.push(`灵契绳 +${floorRw.linkRope}`);
+      if (floorRw.exp) rwPreviewParts.push(`经验 +${floorRw.exp}`);
+      const nextMile = getNextTowerMilestone(floorDef.floor, tower.week);
+      const mileRw = nextMile?.rewards || {};
+      const mileSummary = nextMile
+        ? `${nextMile.floor}F 里程碑：灵晶石 +${mileRw.evolutionStone || 1} · 跃级糖丸 +${mileRw.rareCandy || 1} · 赛季印记 +${mileRw.seasonMark || 1}${mileRw.linkRope ? ` · 灵契绳 +${mileRw.linkRope}` : ""}`
+        : "";
+      const canTowerFight = towerUnlocked && selectedMonsTower.length > 0;
+      const towerBtnLabel = !towerUnlocked
+        ? `需 10 图鉴（${dexCount}/10）`
+        : !selectedMonsTower.length
+          ? "请先编队"
+          : `挑战 ${floorDef.floor}F`;
+      const seasonMarkOwned = Math.max(0, Math.floor(state.res?.seasonMark?.value ?? 0));
+      const exchangeBtnsHtml = TOWER_SEASON_EXCHANGES.map((ex) => {
+        const affordable = seasonMarkOwned >= ex.cost;
+        return `<button type="button" class="btn btn--small" data-tower-exchange="${escapeHtml(ex.id)}" ${affordable ? "" : "disabled"} title="消耗 ${ex.cost} 枚赛季印记兑换 ${escapeHtml(ex.label)}">${escapeHtml(ex.label)}（${ex.cost}印记）</button>`;
+      }).join("");
+      const towerEnemyIcons = floorDef.enemies.slice(0, 3).map((e) => renderBeastIcon(e.dex, e.name)).join("");
+
+      rows.push(`
+        <div class="row pve-tower-card">
+          <div class="row__left">
+            <div class="row__title row__titleLine">
+              ${renderResSvg("towerWeather", 20)}
+              <span>星穹无尽试炼塔</span>
+              <span class="tag pve-tower-floor-tag">${endlessActive && floorDef.floor > 8 ? `无尽 ${floorDef.floor}F` : `经典 ${floorDef.floor}/8F`}</span>
+              <span class="tag pve-tower-wx-tag">天象 · ${escapeHtml(weatherAffix?.name || "晴空")}</span>
+              <span class="tag">周最佳 ${tower.best || 0}F${(tower.allTimeBest || 0) > (tower.best || 0) ? ` · 历史 ${tower.allTimeBest}F` : ""}</span>
+            </div>
+            <div class="pve-tower-pills">
+              <span class="pve-tower-pill is-wx">${escapeHtml(weatherAffix?.desc || "")}（增益：${escapeHtml(wxBoostLabels)}）</span>
+              <span class="pve-tower-pill ${wxResonant > 0 ? "is-resonant" : ""}">天象共鸣队员 ${wxResonant}/${selectedMonsTower.length || 0}</span>
+              ${mileSummary ? `<span class="pve-tower-pill is-mile">${escapeHtml(mileSummary)}</span>` : ""}
+            </div>
+            <div class="row__desc pve-tower-floor-line">
+              ${towerEnemyIcons}
+              <span>当前守层：<strong>${escapeHtml(floorDef.name)}</strong>（${escapeHtml(floorTypeZh)}系 · 推荐克制：${escapeHtml(towerRecText)}） · 守卫：${floorDef.enemies.map((e) => `${escapeHtml(e.name)} Lv.${e.lvl}${e.stars ? ` ★${e.stars}` : ""}`).join("、")}</span>
+            </div>
+            <div class="row__desc muted">本层通关掉落：${escapeHtml(rwPreviewParts.join("、") || "未来币与经验")}（不消耗每日主线挑战次数，突破 8F 解锁无限轮换层）</div>
+            <div class="pve-tower-exchange-bar">
+              <span class="pve-tower-exchange-label">${renderResSvg("seasonMark", 16)} <span>赛季军需库</span> <span class="tag">赛季印记 ${seasonMarkOwned}</span></span>
+              <div class="pve-tower-exchange-actions">${exchangeBtnsHtml}</div>
+            </div>
+          </div>
+          <div class="row__right pve-tower-actions">
+            <button type="button" class="btn btn--small" data-pve-tower-auto ${list.length > 0 ? "" : "disabled"} title="按守层属性克制 + 本周天象共鸣自动编入最多 6 只萌灵">天象克制编队</button>
+            <button type="button" class="btn btn--primary btn--small" data-pve-tower-fight ${canTowerFight ? "" : "disabled"}>${escapeHtml(towerBtnLabel)}</button>
+          </div>
+        </div>
+      `);
+    }
 
     // 当前选中的章节/关卡
     const selChapter = typeof ui.pveChapter === "string" ? ui.pveChapter : PVE_CHAPTERS[0]?.id ?? "";
@@ -634,8 +717,9 @@ export function createRenderPve({
   function doTowerFight(state) {
     ensurePveState(state);
     const tower = ensureTowerState(state);
-    const floorDef = getTowerFloor(tower.floor);
+    const floorDef = getTowerFloor(tower.floor, tower.week);
     if (!floorDef) return;
+    const weatherAffix = getWeeklyTowerAffix(tower.week);
     const dexCount = typeof dexCaughtUnique === "function" ? dexCaughtUnique() : 0;
     if (dexCount < 10) return;
 
@@ -658,10 +742,12 @@ export function createRenderPve({
       typeof state.skills?.darkPveDamageBoostRemainingSec === "number" &&
       Number.isFinite(state.skills.darkPveDamageBoostRemainingSec) &&
       state.skills.darkPveDamageBoostRemainingSec > 0;
+    const hpScale = floorDef.floor <= 8 ? 1 + (floorDef.floor - 1) * 0.05 : 1.35 + (floorDef.floor - 8) * 0.04;
     const result = simulateBattle(team, floorDef.enemies, floorDef.type, {
       playerDamageMul: (darkBoostOn ? 1.5 : 1) * abilityOutgoingDamageMul(state),
       incomingDamageMul: natureIncomingDamageMul(state),
-      enemyHpMul: 1 + (floorDef.floor - 1) * 0.05,
+      enemyHpMul: hpScale,
+      weatherAffix,
     });
     result.stageType = floorDef.type;
     result.stageName = floorDef.name;
@@ -680,6 +766,18 @@ export function createRenderPve({
         addRes("evolutionStone", rw.evolutionStone);
         parts.push(`灵晶石 +${rw.evolutionStone}`);
       }
+      if (rw.rareCandy && typeof addRes === "function") {
+        addRes("rareCandy", rw.rareCandy);
+        parts.push(`跃级糖丸 +${rw.rareCandy}`);
+      }
+      if (rw.seasonMark && typeof addRes === "function") {
+        addRes("seasonMark", rw.seasonMark);
+        parts.push(`赛季印记 +${rw.seasonMark}`);
+      }
+      if (rw.linkRope && typeof addRes === "function") {
+        addRes("linkRope", rw.linkRope);
+        parts.push(`灵契绳 +${rw.linkRope}`);
+      }
       if (rw.exp) {
         for (const m of selectedMons) {
           if (typeof addExpToMon === "function") addExpToMon(m, rw.exp);
@@ -688,16 +786,21 @@ export function createRenderPve({
       }
       result.rewardText = parts.join("、") || "通关";
       tower.best = Math.max(tower.best || 0, floorDef.floor);
-      if (tower.floor >= PVE_TOWER_FLOORS.length) tower.cleared = true;
-      else tower.floor += 1;
+      tower.allTimeBest = Math.max(tower.allTimeBest || 0, tower.best);
+      if (floorDef.floor >= PVE_TOWER_FLOORS.length) {
+        tower.cleared = true;
+      }
+      tower.floor = floorDef.floor + 1;
       result.winStreak = 0;
       bumpSessionPveWin(state);
-      if (typeof addLog === "function") addLog(`试炼塔通关：${floorDef.name} → ${tower.floor}F`, true);
+      if (typeof addLog === "function") {
+        addLog(`试炼塔通关：${floorDef.name} → 晋升 ${tower.floor}F（${result.rewardText}）`, true);
+      }
       if (typeof onPveWin === "function") onPveWin();
     } else {
       result.rewardText = "";
       result.winStreak = 0;
-      if (typeof addLog === "function") addLog(`试炼塔失败：${floorDef.name}`);
+      if (typeof addLog === "function") addLog(`试炼塔受阻：${floorDef.name}（天象：${weatherAffix?.name || "晴空"}）`);
     }
 
     ui.pveBattleResult = result;
@@ -834,6 +937,48 @@ export function createRenderPve({
 
     el.querySelectorAll("[data-pve-tower-fight]").forEach((btn) => {
       btn.addEventListener("click", () => doTowerFight(state));
+    });
+
+    el.querySelectorAll("[data-pve-tower-auto]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        ensurePveState(state);
+        const tower = ensureTowerState(state);
+        const floorDef = getTowerFloor(tower.floor, tower.week);
+        const weatherAffix = getWeeklyTowerAffix(tower.week);
+        const mons = Array.isArray(state.mons?.list) ? state.mons.list : [];
+        const sorted = mons
+          .filter(Boolean)
+          .map((m) => {
+            const types = getMonTypes(m);
+            const match = typeMatchScore(types, floorDef?.type ?? null);
+            const wxBonus = unitMatchesWeather(types, weatherAffix) ? 65 : 0;
+            return { m, p: monPower(m), totalScore: match.score + wxBonus };
+          })
+          .sort((a, b) => b.totalScore - a.totalScore || b.p - a.p);
+        state.pve.selectedIds = sorted.slice(0, 6).map((x) => x.m.id);
+        if (typeof addLog === "function") {
+          addLog(`试炼塔编队已按【${weatherAffix?.name || "天象"}】与守层克制自动优化`);
+        }
+        ui.pveDirty = true;
+        if (typeof render === "function") render();
+      });
+    });
+
+    el.querySelectorAll("[data-tower-exchange]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const exId = btn.getAttribute("data-tower-exchange");
+        const ex = TOWER_SEASON_EXCHANGES.find((x) => x.id === exId);
+        if (!ex || typeof addRes !== "function") return;
+        const owned = Math.max(0, Math.floor(state.res?.seasonMark?.value ?? 0));
+        if (owned < ex.cost) return;
+        addRes("seasonMark", -ex.cost);
+        addRes(ex.rid, ex.amount);
+        if (typeof addLog === "function") {
+          addLog(`赛季军需兑换：消耗 ${ex.cost} 枚赛季印记，获得 ${ex.label}`, true);
+        }
+        ui.pveDirty = true;
+        if (typeof render === "function") render();
+      });
     });
 
     // 结果弹窗关闭

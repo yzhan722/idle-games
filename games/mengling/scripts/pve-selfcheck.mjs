@@ -11,6 +11,17 @@ import {
   pveFightModifiers,
 } from "../modules/pve_battle.js";
 import { PVE_CHAPTERS } from "../modules/pve_defs.js";
+import {
+  PVE_TOWER_FLOORS,
+  TOWER_WEATHER_AFFIXES,
+  TOWER_SEASON_EXCHANGES,
+  ensureTowerState,
+  getTowerFloor,
+  getWeeklyTowerAffix,
+  getNextTowerMilestone,
+  unitMatchesWeather,
+  isEndlessTowerUnlocked,
+} from "../modules/systems/pve_tower.js";
 
 let failed = 0;
 function assert(cond, msg) {
@@ -174,6 +185,80 @@ try {
   assert(stageTotal === 50, `50 stages expected (2x), got ${stageTotal}`);
   const ch8 = PVE_CHAPTERS.find((c) => c.id === "8");
   assert(ch8 && ch8.stages.at(-1).enemies.some((e) => e.dex === 150), "8-5 梦蚀尊 finale boss present");
+
+  // ML-2: Endless Trial Tower (9F+), Weekly Weather Affixes & Milestone Drops
+  assert(PVE_TOWER_FLOORS.length === 8, "classic tower keeps 8 base floors");
+  assert(TOWER_WEATHER_AFFIXES.length >= 6, "6+ weekly weather affixes defined");
+  assert(TOWER_SEASON_EXCHANGES.length >= 3, "season munitions exchange entries present");
+
+  const towerSave = { meta: {} };
+  const tState = ensureTowerState(towerSave, "2026-W45");
+  assert(tState.floor === 1 && !isEndlessTowerUnlocked(tState), "fresh tower starts at 1F");
+  tState.best = 8;
+  tState.floor = 8;
+  ensureTowerState(towerSave, "2026-W45");
+  assert(tState.floor === 9 && tState.cleared === true && isEndlessTowerUnlocked(tState), "8F clear unlocks 9F endless tower");
+
+  const f9a = getTowerFloor(9, "2026-W45");
+  const f9b = getTowerFloor(9, "2026-W45");
+  assert(f9a.isEndless && f9a.name === f9b.name && f9a.type === f9b.type, "endless floor 9F deterministic within ISO week");
+  const f10 = getTowerFloor(10, "2026-W45");
+  const f15 = getTowerFloor(15, "2026-W45");
+  const f30 = getTowerFloor(30, "2026-W45");
+  assert(
+    f10.isMajorBoss && f10.rewards.evolutionStone >= 2 && f10.rewards.rareCandy >= 2 && f10.rewards.seasonMark >= 3 && f10.rewards.linkRope === 1,
+    "10F major boss milestone drops evolutionStone, rareCandy, seasonMark & linkRope",
+  );
+  assert(
+    f15.isMilestone && !f15.isMajorBoss && f15.rewards.evolutionStone >= 1 && f15.rewards.rareCandy >= 1 && f15.rewards.seasonMark >= 1,
+    "15F elite milestone drops evolutionStone, rareCandy & seasonMark",
+  );
+  assert(f30.enemies.every((e) => e.statMul > 1 && e.lvl === 100), "deep endless 30F scales past Lv.100 via statMul");
+  assert(getNextTowerMilestone(9, "2026-W45").floor === 10 && getNextTowerMilestone(11, "2026-W45").floor === 15, "next milestone helper finds 10F / 15F");
+
+  // Weekly reset preserves allTimeBest while resetting weekly floor to 1
+  const tNextWeek = ensureTowerState(towerSave, "2026-W46");
+  assert(tNextWeek.floor === 1 && tNextWeek.allTimeBest === 8, "weekly reset keeps allTimeBest");
+  const wx45 = getWeeklyTowerAffix("2026-W45");
+  const wx46 = getWeeklyTowerAffix("2026-W46");
+  assert(wx45.id !== wx46.id, "adjacent ISO weeks rotate weather affix");
+
+  // Weather affix combat modifier (+28% outgoing / -18% incoming for resonant player units)
+  const solarWx = TOWER_WEATHER_AFFIXES.find((w) => w.id === "solar_flare");
+  assert(unitMatchesWeather(["fire"], solarWx) && !unitMatchesWeather(["water"], solarWx), "unitMatchesWeather checks boostTypes");
+  const noWxOut = calcDamage(
+    { side: "player", types: ["fire"], atk: 100, spa: 100 },
+    { side: "enemy", types: ["wind"], def: 60, spd: 60 },
+    "wind",
+  );
+  const solarOut = calcDamage(
+    { side: "player", types: ["fire"], atk: 100, spa: 100 },
+    { side: "enemy", types: ["wind"], def: 60, spd: 60 },
+    "wind",
+    { weatherAffix: solarWx },
+  );
+  assert(solarOut.damage > noWxOut.damage && solarOut.weatherMul === 1.28, "weather affix boosts resonant player outgoing damage");
+
+  const noWxIn = calcDamage(
+    { side: "enemy", types: ["wind"], atk: 100, spa: 100 },
+    { side: "player", types: ["fire"], def: 60, spd: 60 },
+    "wind",
+  );
+  const solarIn = calcDamage(
+    { side: "enemy", types: ["wind"], atk: 100, spa: 100 },
+    { side: "player", types: ["fire"], def: 60, spd: 60 },
+    "wind",
+    { weatherAffix: solarWx },
+  );
+  assert(solarIn.damage < noWxIn.damage && solarIn.weatherMul === 0.82, "weather affix reduces resonant player incoming damage");
+
+  const wxBattle = simulateBattle(
+    [{ name: "赤焰先锋", types: ["fire"], stats: { hp: 260, atk: 90, def: 70, spa: 110, spd: 70, spe: 80 } }],
+    [{ dex: 16, name: "云羽雏雀", lvl: 25, stars: 1 }],
+    "wind",
+    { weatherAffix: solarWx },
+  );
+  assert(wxBattle.win && wxBattle.log.some((l) => l.includes("烈日晴空")), "simulateBattle logs active weather affix");
 } finally {
   Math.random = realRandom;
 }

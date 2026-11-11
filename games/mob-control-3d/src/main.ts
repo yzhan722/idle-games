@@ -1210,6 +1210,25 @@ function renderActiveBuffsBar(): void {
     );
   }
 
+  const aliveSubTowers = world.getAliveSubTowerCount();
+  if (aliveSubTowers > 0) {
+    const drPct = aliveSubTowers >= 2 ? 76 : 42;
+    pills.push(
+      `<span class="buff-pill rarity-epic" title="双侧蒸汽护盾副塔正为母巢供能减伤 ${drPct}%！向左右侧翼发射兵潮优先拔除副塔可破盾重创母巢">${UI_ART.shield} 蒸汽副塔(${aliveSubTowers}/2 · 减伤${drPct}%)</span>`
+    );
+  }
+
+  if (world.bossSteamSweep && world.bossSteamSweep.phase !== 'idle') {
+    const laneName = world.bossSteamSweep.lane === 'left' ? '左半桥' : '右半桥';
+    const statusLabel =
+      world.bossSteamSweep.phase === 'telegraph'
+        ? `${laneName}蒸汽预警(${Math.max(0.1, world.bossSteamSweep.timer).toFixed(1)}s)`
+        : `${laneName}高压横扫中`;
+    pills.push(
+      `<span class="buff-pill debuff-pill" title="母巢正在向${laneName}喷射高压蒸汽波，立即拖动炮车切换至另一侧半桥规避！">${UI_ART.warning} ${statusLabel}</span>`
+    );
+  }
+
   if (world.bossBerserkTriggered) {
     pills.push(`<span class="buff-pill debuff-pill" title="母巢狂暴阶段">${UI_ART.warning} 狂暴</span>`);
   }
@@ -1513,12 +1532,12 @@ function startLevel(idx: number): void {
   if (lvl.isMegaBoss) {
     showBanner(
       `${UI_ART.warning} 第 ${stageNum} 关 · ${lvl.bossName}`,
-      `${UI_ART.flame} 闪避陨石 · ${UI_ART.boom} 炸桶破除虚空护盾`
+      `${UI_ART.shield} 拔除双侧护盾副塔 · ${UI_ART.warning} 换道规避高压蒸汽`
     );
   } else if (lvl.isMiniBoss) {
     showBanner(
       `${UI_ART.sword} 第 ${stageNum} 关 · ${lvl.bossName}`,
-      `${UI_ART.warning} 闪避红圈 · ${UI_ART.shield} 50%血量破盾`
+      `${UI_ART.shield} 侧翼破除蒸汽副塔 · ${UI_ART.warning} 闪避半桥蒸汽横扫`
     );
   } else {
     centerBanner.classList.add('hidden');

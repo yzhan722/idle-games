@@ -151,4 +151,8 @@ export const RESOURCE_DEFS = {
     name: "历练糖丸S",
     baseCap: 999,
   },
+  seasonMark: {
+    name: "赛季印记",
+    baseCap: 9999,
+  },
 };

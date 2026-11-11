@@ -323,6 +323,52 @@ try:
             ),
         )
 
+        mc2_result = page.evaluate(
+            """() => {
+            const w = window.__mc3dWorld;
+            if (!w || typeof w.runMc2SelfCheck !== 'function') {
+                return { ok: false, reason: 'missing __mc3dWorld.runMc2SelfCheck' };
+            }
+            return w.runMc2SelfCheck();
+        }"""
+        )
+        add_check(
+            "MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)",
+            bool(mc2_result.get("stage5SubTowers") == 2)
+            and bool(mc2_result.get("stage10SubTowers") == 2)
+            and bool(mc2_result.get("bossOverloadDamaged"))
+            and abs(float(mc2_result.get("multTwoAlive", 0)) - 0.24) < 0.01
+            and abs(float(mc2_result.get("multOneAlive", 0)) - 0.58) < 0.01
+            and abs(float(mc2_result.get("multZeroAlive", 0)) - 1.0) < 0.01,
+            json.dumps(
+                {
+                    "s5": mc2_result.get("stage5SubTowers"),
+                    "s10": mc2_result.get("stage10SubTowers"),
+                    "mults": [
+                        mc2_result.get("multTwoAlive"),
+                        mc2_result.get("multOneAlive"),
+                        mc2_result.get("multZeroAlive"),
+                    ],
+                    "overload": mc2_result.get("bossOverloadDamaged"),
+                },
+                ensure_ascii=False,
+            ),
+        )
+        add_check(
+            "MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation",
+            bool(mc2_result.get("telegraphVisible"))
+            and bool(mc2_result.get("sweptLaneHit"))
+            and bool(mc2_result.get("safeLaneUnharmed")),
+            json.dumps(
+                {
+                    "telegraph": mc2_result.get("telegraphVisible"),
+                    "sweptHit": mc2_result.get("sweptLaneHit"),
+                    "safeLane": mc2_result.get("safeLaneUnharmed"),
+                },
+                ensure_ascii=False,
+            ),
+        )
+
         page.screenshot(
             path=os.path.join(BRAIN_DIR, "scratch", "verify_auto_playtest_battle_2560.jpg"),
             type="jpeg",

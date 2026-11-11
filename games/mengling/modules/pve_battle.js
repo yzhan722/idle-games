@@ -60,8 +60,10 @@ function makeEnemyStats(enemy, stageType) {
   const baseSpd = 38 + ((dexBase * 5) % 36) + tierBonus;
   const baseSpe = 42 + (dexBase % 38) + tierBonus;
   const starMul = getStarBonusMul(enemy.stars ?? 0);
+  const extraStatMul =
+    typeof enemy.statMul === "number" && Number.isFinite(enemy.statMul) && enemy.statMul > 0 ? enemy.statMul : 1;
   // 略缓于旧版 0.035，减轻终盘血牛拖回合
-  const lvlMul = (1 + (lvl - 1) * 0.032) * starMul;
+  const lvlMul = (1 + (lvl - 1) * 0.032) * starMul * extraStatMul;
   return {
     hp: Math.max(1, Math.floor(baseHp * lvlMul)),
     atk: Math.max(1, Math.floor((baseAtk + (specialLean ? -3 : 5)) * lvlMul)),
@@ -128,11 +130,33 @@ export function calcDamage(attacker, defender, stageType, opts = {}) {
   ) {
     damage = Math.max(1, Math.floor(damage * Math.max(0, opts.incomingDamageMul)));
   }
+
+  let weatherOutMul = 1;
+  let weatherInMul = 1;
+  const wx = opts?.weatherAffix;
+  if (wx && Array.isArray(wx.boostTypes) && wx.boostTypes.length > 0) {
+    const atkMatches = (attacker.types ?? []).some((t) => wx.boostTypes.includes(t));
+    if (atkMatches) {
+      if (attacker.side === "player") {
+        weatherOutMul = typeof wx.outMul === "number" && Number.isFinite(wx.outMul) ? wx.outMul : 1.28;
+      } else if (attacker.side === "enemy") {
+        weatherOutMul = typeof wx.enemyOutMul === "number" && Number.isFinite(wx.enemyOutMul) ? wx.enemyOutMul : 1.12;
+      }
+    }
+    if (defender.side === "player" && (defender.types ?? []).some((t) => wx.boostTypes.includes(t))) {
+      weatherInMul = typeof wx.inMul === "number" && Number.isFinite(wx.inMul) ? wx.inMul : 0.82;
+    }
+    if (weatherOutMul !== 1 || weatherInMul !== 1) {
+      damage = Math.max(1, Math.floor(damage * weatherOutMul * weatherInMul));
+    }
+  }
+
   return {
     damage,
     typeMul,
     immune: false,
     pressureMul,
+    weatherMul: Number((weatherOutMul * weatherInMul).toFixed(3)),
     category: isSpecial ? "special" : "physical",
   };
 }
@@ -161,7 +185,8 @@ export function simulateBattle(team, enemies, stageType, opts = {}) {
     typeof opts?.enemyHpMul === "number" && Number.isFinite(opts.enemyHpMul)
       ? Math.max(0.1, opts.enemyHpMul)
       : 1;
-  const dmgOpts = { playerDamageMul, incomingDamageMul };
+  const weatherAffix = opts?.weatherAffix && typeof opts.weatherAffix === "object" ? opts.weatherAffix : null;
+  const dmgOpts = { playerDamageMul, incomingDamageMul, weatherAffix };
 
   const playerUnits = team.map((m, i) => ({
     side: "player",
@@ -218,6 +243,9 @@ export function simulateBattle(team, enemies, stageType, opts = {}) {
   }
 
   log.push(`— 战斗开始 —`);
+  if (weatherAffix?.name) {
+    log.push(`— 天象场地：【${weatherAffix.name}】${weatherAffix.desc ? `（${weatherAffix.desc}）` : ""} —`);
+  }
   log.push(`派出 ${playerUnits[pIdx].name}！`);
   log.push(`对手派出 ${enemyUnits[eIdx].name}！`);
 
@@ -310,5 +338,5 @@ export function simulateBattle(team, enemies, stageType, opts = {}) {
   else if (win && endReason === "decision") log.push(`— 战斗胜利！（判定 ${stars}星）—`);
   else log.push(`— 战斗失败 —`);
 
-  return { win, stars, rounds, log, teamHpPct, enemyHpPct, superEffectiveHits, endReason };
+  return { win, stars, rounds, log, teamHpPct, enemyHpPct, superEffectiveHits, endReason, weatherAffix };
 }

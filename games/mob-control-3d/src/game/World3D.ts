@@ -5,7 +5,13 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { GateConfig, GateStyle, LevelConfig, WallConfig } from '../levels/LevelData';
+import {
+  GateConfig,
+  GateStyle,
+  LevelConfig,
+  WallConfig,
+  generateDynamicLevel,
+} from '../levels/LevelData';
 import { GameState, SkinSpec } from './State';
 import { UI_ART, replaceEmojiWithArt } from './SkillIcons';
 import { sound } from '../audio/SoundManager';
@@ -44,6 +50,8 @@ import {
 import {
   BOSS_GATE_Z,
   BarrelRuntime,
+  BossSteamSweepRuntime,
+  BossSubTowerRuntime,
   BumperRuntime,
   CombatLightRuntime,
   GateRuntime,
@@ -179,6 +187,10 @@ export class World3D {
   private megaBossSlamTimer = 8.8;
   private miniBossWarCryTimer = 7.2;
   private meteorTelegraphs: MeteorTelegraphRuntime[] = [];
+  public bossSubTowers: BossSubTowerRuntime[] = [];
+  private bossSteamBarrierMesh!: THREE.Mesh;
+  private bossSteamBarrierMat!: THREE.MeshBasicMaterial;
+  public bossSteamSweep!: BossSteamSweepRuntime;
 
   // Theme & Environment Materials / Lights
   public currentTheme: ThemeConfig = THEMES.wasteland;
@@ -1770,6 +1782,120 @@ export class World3D {
         mat,
       });
     }
+
+    // MC-2: Dual Lateral Steam Shield Barrier Dome + Half-Bridge Steam Sweep Telegraph & Wave
+    const barrierGeo = new THREE.SphereGeometry(4.35, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.56);
+    this.bossSteamBarrierMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.34,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    this.bossSteamBarrierMesh = new THREE.Mesh(barrierGeo, this.bossSteamBarrierMat);
+    this.bossSteamBarrierMesh.position.set(0, 0.15, BOSS_GATE_Z - 0.25);
+    this.bossSteamBarrierMesh.visible = false;
+    this.scene.add(this.bossSteamBarrierMesh);
+
+    const laneW = TRACK_HALF_W - 0.9; // ~10.3m half-bridge lane
+    const laneLen = PLAYER_Z - BOSS_GATE_Z - 4.4; // spans bridge deck cleanly
+    const laneCenterZ = (BOSS_GATE_Z + 2.2 + (PLAYER_Z - 2.2)) * 0.5;
+
+    const telegraphGroup = new THREE.Group();
+    telegraphGroup.position.set(-5.35, 0.12, laneCenterZ);
+    telegraphGroup.visible = false;
+
+    const telegraphFillMat = new THREE.MeshBasicMaterial({
+      color: 0xef4444,
+      transparent: true,
+      opacity: 0.28,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const fillGeo = new THREE.PlaneGeometry(laneW, laneLen);
+    fillGeo.rotateX(-Math.PI / 2);
+    telegraphGroup.add(new THREE.Mesh(fillGeo, telegraphFillMat));
+
+    const telegraphBorderMat = new THREE.MeshBasicMaterial({
+      color: 0xfb923c,
+      transparent: true,
+      opacity: 0.82,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const railGeo = new THREE.PlaneGeometry(0.28, laneLen);
+    railGeo.rotateX(-Math.PI / 2);
+    const railL = new THREE.Mesh(railGeo, telegraphBorderMat);
+    railL.position.set(-laneW * 0.5, 0.02, 0);
+    const railR = new THREE.Mesh(railGeo, telegraphBorderMat);
+    railR.position.set(laneW * 0.5, 0.02, 0);
+    telegraphGroup.add(railL, railR);
+
+    const stripeGeo = new THREE.PlaneGeometry(laneW * 0.88, 0.55);
+    stripeGeo.rotateX(-Math.PI / 2);
+    for (let sIdx = 0; sIdx < 6; sIdx++) {
+      const stMesh = new THREE.Mesh(stripeGeo, telegraphBorderMat);
+      stMesh.position.set(0, 0.025, -laneLen * 0.4 + (sIdx * laneLen * 0.8) / 5);
+      telegraphGroup.add(stMesh);
+    }
+    this.scene.add(telegraphGroup);
+
+    const waveGroup = new THREE.Group();
+    waveGroup.visible = false;
+    const manifoldMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        emissive: 0x7c2d12,
+        emissiveIntensity: 0.35,
+        roughness: 0.3,
+        metalness: 0.55,
+      }),
+      0.8
+    );
+    const steamCloudMat = new THREE.MeshBasicMaterial({
+      color: 0xfff7ed,
+      transparent: true,
+      opacity: 0.86,
+      depthWrite: false,
+    });
+    const coreGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xf97316,
+      transparent: true,
+      opacity: 0.72,
+      depthWrite: false,
+    });
+    const pipeGeo = new THREE.CylinderGeometry(0.28, 0.28, laneW, 12);
+    pipeGeo.rotateZ(Math.PI / 2);
+    const pipeMesh = new THREE.Mesh(pipeGeo, manifoldMat);
+    pipeMesh.position.y = 0.75;
+    waveGroup.add(pipeMesh);
+
+    const puffGeo = new THREE.SphereGeometry(0.95, 12, 10);
+    for (let pIdx = 0; pIdx < 7; pIdx++) {
+      const px = -laneW * 0.44 + (pIdx * laneW * 0.88) / 6;
+      const puff = new THREE.Mesh(puffGeo, steamCloudMat);
+      puff.position.set(px, 1.05 + (pIdx % 2) * 0.22, 0.35);
+      puff.scale.set(1.15, 0.88, 0.95);
+      waveGroup.add(puff);
+      const glow = new THREE.Mesh(puffGeo, coreGlowMat);
+      glow.position.set(px, 0.62, -0.1);
+      glow.scale.set(0.75, 0.52, 0.65);
+      waveGroup.add(glow);
+    }
+    this.scene.add(waveGroup);
+
+    this.bossSteamSweep = {
+      phase: 'idle',
+      lane: 'left',
+      timer: 0,
+      maxTimer: 2.3,
+      cooldown: 4.2,
+      waveZ: BOSS_GATE_Z + 1.6,
+      telegraphGroup,
+      telegraphFillMat,
+      telegraphBorderMat,
+      waveGroup,
+    };
   }
 
   public applyTheme(themeId: ThemeId): ThemeConfig {
@@ -2566,6 +2692,14 @@ export class World3D {
       mt.active = false;
       mt.mesh.visible = false;
     }
+    if (this.bossSteamSweep) {
+      this.bossSteamSweep.phase = 'idle';
+      this.bossSteamSweep.lane = level.seed % 2 === 0 ? 'left' : 'right';
+      this.bossSteamSweep.timer = 0;
+      this.bossSteamSweep.cooldown = level.isMegaBoss ? 3.2 : 4.0;
+      this.bossSteamSweep.telegraphGroup.visible = false;
+      this.bossSteamSweep.waveGroup.visible = false;
+    }
     this.playerBaseMaxHp = Math.round(480 * this.state.getPowerMultiplier() * this.state.getBaseHpMultiplier());
     this.playerBaseHp = this.playerBaseMaxHp;
     this.lastKnownBaseHp = this.playerBaseMaxHp;
@@ -2633,6 +2767,7 @@ export class World3D {
     this.gates = [];
     this.gears = [];
     this.nests = [];
+    this.bossSubTowers = [];
     this.barrels = [];
     this.wallRuntimes = [];
     this.zones = [];
@@ -3481,6 +3616,110 @@ export class World3D {
         hitFlash: 0,
         labelEl,
       });
+    }
+
+    // 4a-bis. MC-2: Build Dual Lateral Steampunk Shield Sub-Towers on 5/10 Boss Stages
+    const towerBaseMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        roughness: 0.48,
+        metalness: 0.35,
+      }),
+      0.78
+    );
+    const towerBrassMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        emissive: 0x451a03,
+        emissiveIntensity: 0.22,
+        roughness: 0.28,
+        metalness: 0.56,
+      }),
+      0.8
+    );
+    const towerCoreMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.85,
+        roughness: 0.16,
+        metalness: 0.2,
+      }),
+      0.85
+    );
+
+    for (const st of level.bossSubTowers || []) {
+      const tGroup = new THREE.Group();
+      tGroup.position.set(st.x, 0, st.z);
+
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.22, 1.42, 0.65, 8), towerBaseMat);
+      plinth.position.y = 0.32;
+      plinth.castShadow = true;
+      plinth.receiveShadow = true;
+      tGroup.add(plinth);
+
+      const boiler = new THREE.Mesh(new THREE.CylinderGeometry(0.86, 0.96, 1.55, 12), towerBrassMat);
+      boiler.position.y = 1.38;
+      boiler.castShadow = true;
+      tGroup.add(boiler);
+
+      const coreMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.62, 1), towerCoreMat);
+      coreMesh.position.y = 2.48;
+      tGroup.add(coreMesh);
+
+      const valveRing = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.11, 8, 20), towerBrassMat);
+      valveRing.rotation.x = Math.PI / 2;
+      valveRing.position.y = 2.48;
+      tGroup.add(valveRing);
+
+      const capDome = new THREE.Mesh(new THREE.ConeGeometry(0.68, 0.58, 10), towerBrassMat);
+      capDome.position.y = 3.25;
+      tGroup.add(capDome);
+
+      this.levelGroup.add(tGroup);
+
+      // Energy tether beam linking sub-tower core to central Boss Steam Barrier
+      const pStart = new THREE.Vector3(st.x, 2.48, st.z);
+      const pEnd = new THREE.Vector3(0, 2.75, BOSS_GATE_Z - 0.2);
+      const beamVec = new THREE.Vector3().subVectors(pEnd, pStart);
+      const beamLen = Math.max(0.5, beamVec.length());
+      const beamGeo = new THREE.CylinderGeometry(0.13, 0.18, beamLen, 8);
+      const beamMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.62,
+        depthWrite: false,
+      });
+      const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+      beamMesh.position.copy(pStart).addScaledVector(beamVec, 0.5);
+      beamMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), beamVec.clone().normalize());
+      this.levelGroup.add(beamMesh);
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'subtower-label';
+      labelEl.dataset.hp = `${st.hp}`;
+      labelEl.innerHTML = `${UI_ART.shield}<span>${st.hp}</span>`;
+      this.labelsContainer.appendChild(labelEl);
+
+      this.bossSubTowers.push({
+        cfg: st,
+        group: tGroup,
+        coreMesh,
+        valveRing,
+        beamMesh,
+        beamMat,
+        hp: st.hp,
+        maxHp: st.hp,
+        alive: true,
+        hitFlash: 0,
+        labelEl,
+      });
+    }
+
+    if (this.bossSteamBarrierMesh) {
+      const aliveCount = this.getAliveSubTowerCount();
+      this.bossSteamBarrierMesh.visible = aliveCount > 0;
+      this.bossSteamBarrierMat.opacity = aliveCount >= 2 ? 0.36 : 0.2;
     }
 
     // 4b. Build Steampunk Firework Powder Kegs (Shootable/Touchable Chain-Reaction Barrels!)
@@ -5325,6 +5564,27 @@ export class World3D {
       }
     }
 
+    for (const st of this.bossSubTowers) {
+      if (!st.alive) continue;
+      st.coreMesh.rotation.y = this.elapsedTime * 2.6;
+      st.coreMesh.position.y = 2.48 + Math.sin(this.elapsedTime * 4.2 + (st.cfg.side === 'left' ? 0 : 1.5)) * 0.12;
+      st.valveRing.rotation.z = this.elapsedTime * (st.cfg.side === 'left' ? 1.9 : -1.9);
+      st.beamMat.opacity = 0.45 + 0.25 * Math.abs(Math.sin(this.elapsedTime * 6.5));
+      if (st.hitFlash > 0) {
+        st.hitFlash = Math.max(0, st.hitFlash - clampedDt * 6);
+        const s = 1 + st.hitFlash * 0.16;
+        st.group.scale.set(s, s, s);
+      } else {
+        st.group.scale.set(1, 1, 1);
+      }
+    }
+    if (this.bossSteamBarrierMesh?.visible) {
+      const aliveCount = this.getAliveSubTowerCount();
+      const bScale = 1 + Math.sin(this.elapsedTime * 5.2) * 0.035;
+      this.bossSteamBarrierMesh.scale.set(bScale, bScale, bScale);
+      this.bossSteamBarrierMat.opacity = (aliveCount >= 2 ? 0.34 : 0.19) + 0.06 * Math.sin(this.elapsedTime * 7.0);
+    }
+
     // Factory Boss Foreman lively breathing, battlefield scanning, wrench brandishing & Golden Cogwheel spin!
     const bossBreath = Math.sin(this.elapsedTime * 3.4);
     const bossSwagger = Math.sin(this.elapsedTime * 1.85);
@@ -6899,6 +7159,39 @@ export class World3D {
           }
         }
 
+        // 1b. MC-2: Check if near an alive Lateral Steam Shield Sub-Tower on the flank
+        if (!handledByNestOrGate && this.bossSubTowers.length > 0) {
+          for (const st of this.bossSubTowers) {
+            if (!st.alive) continue;
+            const onSameFlank = st.cfg.side === 'left' ? u.x < -1.4 : u.x > 1.4;
+            const dx = st.cfg.x - u.x;
+            const dz = st.cfg.z - u.z;
+            const dist = Math.hypot(dx, dz);
+            if ((onSameFlank && u.z < -7.2 && dist < 8.4) || dist < 4.6) {
+              handledByNestOrGate = true;
+              if (dist < 2.25) {
+                targetVX = 0;
+                targetVZ = 0;
+                if (u.attackCooldown <= 0) {
+                  u.attackCooldown = 0.4;
+                  u.attackAnim = 1.0;
+                  const siegeMult = this.state.getSiegeDamageMultiplier();
+                  st.hp = Math.max(0, st.hp - u.dmg * 0.72 * siegeMult);
+                  st.hitFlash = 1.0;
+                  this.spawnBurstParticles(u.x, 1.4, u.z, 0x38bdf8, 6);
+                  if (st.hp <= 0 && st.alive) {
+                    this.destroyBossSubTower(st);
+                  }
+                }
+              } else {
+                targetVX = (dx / Math.max(0.2, dist)) * effSpeed;
+                targetVZ = (dz / Math.max(0.2, dist)) * effSpeed;
+              }
+              break;
+            }
+          }
+        }
+
         // 2. Tactical Blue Steering:
         // - Engage nearby unblocked Red units (within 11.5m, or 14.5m if Red is threatening our base at z > 5.0).
         // - If in the front assault zone (u.z < -9.5) and no Red unit is within 8.5m, converge on the Boss Gate!
@@ -7285,6 +7578,11 @@ export class World3D {
             u.kind === 'charged' ? 1 + this.state.getSkillNodeRank('plasma_t3') * 0.18 : 1.0;
           const uTier = u.fusionTier || 0;
           let dmg = (u.kind === 'champion' ? u.dmg * 0.55 : u.dmg * 0.25) * siegeMult * plasmaBossMult;
+          const subTowerMult = this.getSubTowerBossDamageMultiplier();
+          if (subTowerMult < 1.0) {
+            dmg *= subTowerMult;
+            this.spawnBurstParticles(u.x, 1.6, BOSS_GATE_Z + 0.85, 0x38bdf8, 4);
+          }
 
           if (this.bossShieldActive) {
             dmg *= 0.12;
@@ -7753,6 +8051,17 @@ export class World3D {
         this.spawnFloatingPopup(n.cfg.x, 2.2, n.cfg.z, '💥 爆破波及巢穴 -30%!', '#f97316');
       }
     }
+    for (const st of this.bossSubTowers) {
+      if (!st.alive) continue;
+      if ((st.cfg.x - br.cfg.x) ** 2 + (st.cfg.z - br.cfg.z) ** 2 <= 7.2 * 7.2) {
+        st.hp = Math.max(0, st.hp - st.maxHp * 0.35);
+        st.hitFlash = 1.0;
+        this.spawnFloatingPopup(st.cfg.x, 2.4, st.cfg.z, '爆破重创护盾副塔 -35%!', '#38bdf8');
+        if (st.hp <= 0) {
+          this.destroyBossSubTower(st);
+        }
+      }
+    }
 
     const bonusGold = this.state.addGold(15 + blasted * 2);
     this.spawnFloatingPopup(
@@ -7845,9 +8154,179 @@ export class World3D {
     this.spawnFloatingPopup(g.currentX, 2.2, g.cfg.z, '⚠️ 应援旗被染红! 快冲锋翻旗!', '#f96e80');
   }
 
+  public getAliveSubTowerCount(): number {
+    let count = 0;
+    for (const st of this.bossSubTowers) {
+      if (st.alive) count += 1;
+    }
+    return count;
+  }
+
+  public getSubTowerBossDamageMultiplier(): number {
+    const alive = this.getAliveSubTowerCount();
+    if (alive >= 2) return 0.24;
+    if (alive === 1) return 0.58;
+    return 1.0;
+  }
+
+  public destroyBossSubTower(st: BossSubTowerRuntime, silent = false): void {
+    if (!st.alive) return;
+    st.alive = false;
+    st.hp = 0;
+    st.group.visible = false;
+    st.beamMesh.visible = false;
+    st.labelEl.style.display = 'none';
+
+    const remaining = this.getAliveSubTowerCount();
+    if (this.bossSteamBarrierMesh) {
+      this.bossSteamBarrierMesh.visible = remaining > 0;
+      this.bossSteamBarrierMat.opacity = remaining >= 2 ? 0.36 : 0.2;
+    }
+
+    const gold = this.state.addGold(st.cfg.rewardGold);
+    this.state.championCharge = Math.min(100, this.state.championCharge + 35);
+
+    if (!silent) {
+      sound.playExplosion();
+      this.triggerScreenFlash('#38bdf8', 0.52);
+      this.addCameraShake(0.68);
+      this.spawnSkyPillar(st.cfg.x, st.cfg.z, 0x38bdf8, 2.4, 0.55);
+      this.spawnShockwave(st.cfg.x, st.cfg.z, 0x38bdf8, 6.8, 0.55);
+      this.spawnBurstParticles(st.cfg.x, 2.0, st.cfg.z, 0x38bdf8, 65);
+      this.spawnBurstParticles(st.cfg.x, 1.6, st.cfg.z, 0xfacc15, 32);
+      this.spawnFloatingPopup(st.cfg.x, 2.7, st.cfg.z, `${st.cfg.name}击破! +${gold}`, '#38bdf8');
+    }
+
+    if (remaining === 0) {
+      const shatterDmg = Math.max(1, Math.round(this.bossMaxHp * 0.12));
+      this.bossHp = Math.max(1, this.bossHp - shatterDmg);
+      if (!silent) {
+        this.spawnSkyPillar(0, BOSS_GATE_Z + 0.8, 0x38bdf8, 3.2, 0.65);
+        this.spawnShockwave(0, BOSS_GATE_Z + 0.8, 0xfacc15, 12.0, 0.62);
+        this.spawnFloatingPopup(0, 3.3, BOSS_GATE_Z + 1.0, `双侧护盾塔全破! 母巢过载 -${shatterDmg}!`, '#38bdf8');
+        this.onBanner?.('双侧蒸汽护盾塔全破！', `母巢护盾彻底瓦解，承受过载反噬 -${shatterDmg} HP！`);
+      }
+    } else if (!silent) {
+      this.onBanner?.(`击破${st.cfg.name}！`, '母巢护盾减伤已削弱，分兵拔除另一侧副塔即可彻底破防！');
+    }
+  }
+
+  public startBossSteamSweep(forcedLane?: 'left' | 'right', silent = false): void {
+    if (!this.bossSteamSweep) return;
+    let lane: 'left' | 'right';
+    if (forcedLane) {
+      lane = forcedLane;
+    } else {
+      let leftBlues = 0;
+      let rightBlues = 0;
+      for (const bIdx of this.activeBlueIndices) {
+        const bu = this.units[bIdx];
+        if (!bu.active) continue;
+        if (bu.x < 0) leftBlues += 1;
+        else rightBlues += 1;
+      }
+      if (leftBlues !== rightBlues) {
+        lane = leftBlues > rightBlues ? 'left' : 'right';
+      } else {
+        lane = this.bossSteamSweep.lane === 'left' ? 'right' : 'left';
+      }
+    }
+    this.bossSteamSweep.phase = 'telegraph';
+    this.bossSteamSweep.lane = lane;
+    this.bossSteamSweep.maxTimer = 2.3;
+    this.bossSteamSweep.timer = 2.3;
+    this.bossSteamSweep.waveZ = BOSS_GATE_Z + 1.6;
+    const laneCenterX = lane === 'left' ? -5.35 : 5.35;
+    this.bossSteamSweep.telegraphGroup.position.x = laneCenterX;
+    this.bossSteamSweep.telegraphGroup.visible = true;
+    this.bossSteamSweep.waveGroup.visible = false;
+
+    if (!silent) {
+      const warnMsg =
+        lane === 'left' ? '左路高压蒸汽预警 · 换右路!' : '右路高压蒸汽预警 · 换左路!';
+      const popupX = lane === 'left' ? -1.8 : 1.8;
+      this.spawnFloatingPopup(popupX, 2.2, 3.5, warnMsg, '#fb923c');
+    }
+  }
+
+  private updateBossSteamSweep(dt: number, isMega: boolean): void {
+    const sw = this.bossSteamSweep;
+    if (!sw) return;
+
+    if (sw.phase === 'idle') {
+      sw.cooldown -= dt;
+      if (sw.cooldown <= 0) {
+        this.startBossSteamSweep();
+      }
+      return;
+    }
+
+    if (sw.phase === 'telegraph') {
+      sw.timer -= dt;
+      const pulse = Math.abs(Math.sin(this.elapsedTime * 12));
+      sw.telegraphFillMat.opacity = 0.2 + 0.24 * pulse;
+      sw.telegraphBorderMat.opacity = 0.52 + 0.44 * pulse;
+      if (sw.timer <= 0) {
+        sw.phase = 'sweeping';
+        sw.telegraphGroup.visible = false;
+        sw.maxTimer = 0.9;
+        sw.timer = 0.9;
+        sw.waveZ = BOSS_GATE_Z + 1.6;
+        const laneX = sw.lane === 'left' ? -5.35 : 5.35;
+        sw.waveGroup.position.set(laneX, 0, sw.waveZ);
+        sw.waveGroup.visible = true;
+        this.addCameraShake(0.45);
+        this.spawnBurstParticles(laneX, 1.3, BOSS_GATE_Z + 2.0, 0xfb923c, 36);
+      }
+      return;
+    }
+
+    if (sw.phase === 'sweeping') {
+      sw.timer -= dt;
+      const progress = 1 - Math.max(0, sw.timer) / Math.max(0.01, sw.maxTimer);
+      const prevZ = sw.waveZ;
+      sw.waveZ = THREE.MathUtils.lerp(BOSS_GATE_Z + 1.6, PLAYER_Z - 2.2, progress);
+      const laneX = sw.lane === 'left' ? -5.35 : 5.35;
+      sw.waveGroup.position.set(laneX, 0, sw.waveZ);
+
+      if (Math.random() < 0.65) {
+        this.spawnBurstParticles(laneX + (Math.random() - 0.5) * 7.5, 1.0, sw.waveZ, 0xfed7aa, 6);
+      }
+
+      const minSweepZ = Math.min(prevZ, sw.waveZ) - 1.6;
+      const maxSweepZ = Math.max(prevZ, sw.waveZ) + 1.6;
+      for (const bIdx of this.activeBlueIndices) {
+        const bu = this.units[bIdx];
+        if (!bu.active) continue;
+        const inLane = sw.lane === 'left' ? bu.x < -0.15 : bu.x > 0.15;
+        if (!inLane) continue;
+        if (bu.z >= minSweepZ && bu.z <= maxSweepZ) {
+          bu.z = Math.min(PLAYER_Z - 2.0, bu.z + 3.4);
+          bu.vz = Math.max(bu.vz, 6.2);
+          bu.spawnHop = Math.max(bu.spawnHop, 0.45);
+          const scaldRatio = bu.kind === 'champion' ? 0.14 : 0.65;
+          bu.hp -= bu.maxHp * scaldRatio;
+          if (bu.hp <= 0) {
+            bu.active = false;
+          }
+        }
+      }
+
+      if (sw.timer <= 0) {
+        sw.phase = 'idle';
+        sw.waveGroup.visible = false;
+        sw.cooldown = isMega ? 6.6 : 8.2;
+      }
+    }
+  }
+
   private updateMegaBossMechanics(dt: number): void {
     const isMega = Boolean(this.currentLevel?.isMegaBoss);
     const isMini = Boolean(this.currentLevel?.isMiniBoss);
+
+    if (isMega || isMini) {
+      this.updateBossSteamSweep(dt, isMega);
+    }
 
     if (this.bossShieldActive) {
       this.bossHp = Math.min(this.bossMaxHp, this.bossHp + this.bossMaxHp * 0.006 * dt);
@@ -8120,44 +8599,78 @@ export class World3D {
       this.applyGateEffect(probe, frostGate);
       const hpBeforeHazards = probe.hp;
       if (probe.frostShield) {
-        // Simulate gear hit check
-        probe.frostShield = false;
-        frostBlockedGear = probe.active && Math.abs(probe.hp - hpBeforeHazards) < 0.01;
-      }
-      this.applyGateEffect(probe, frostGate);
-      if (probe.frostShield && this.barrels.length >= 0) {
-        // Real update tick collision against a temporary test gear & barrel
+        // Real update tick collision against a temporary test gear & barrel (isolate from stage hazards/units)
+        const savedActiveIndices: number[] = [];
+        for (let i = 0; i < this.units.length; i++) {
+          if (this.units[i] !== probe && this.units[i].active) {
+            savedActiveIndices.push(i);
+            this.units[i].active = false;
+          }
+        }
+        const savedGates = this.gates;
+        const savedZones = this.zones;
+        const savedBumpers = this.bumpers;
+        const savedWalls = this.walls;
+        const savedNests = this.nests;
         const savedGears = [...this.gears];
+        const savedBarrels = [...this.barrels];
+        const savedLootBugActive = this.lootBug.active;
+        this.gates = [];
+        this.zones = [];
+        this.bumpers = [];
+        this.walls = [];
+        this.nests = [];
+        this.lootBug.active = false;
+        this.barrels = [];
+
         const dummyGroup = new THREE.Group();
         const dummyLabel = document.createElement('div');
-        this.gears.push({
-          cfg: { id: '_mc1_test_gear', x: probe.x, z: probe.z, radius: 1.2, hp: 99 },
-          mesh: dummyGroup,
-          baseX: probe.x,
-          hp: 99,
-          alive: true,
-          hitFlash: 0,
-          labelEl: dummyLabel,
-        });
+        probe.vx = 0;
+        probe.vz = 0;
         probe.spawnHop = 0;
+        this.gears = [
+          {
+            cfg: { id: '_mc1_test_gear', x: probe.x, z: probe.z, radius: 1.2, hp: 99 },
+            mesh: dummyGroup,
+            baseX: probe.x,
+            hp: 99,
+            alive: true,
+            hitFlash: 0,
+            labelEl: dummyLabel,
+          },
+        ];
         this.update(0.016);
         frostBlockedGear = probe.active && !probe.frostShield && Math.abs(probe.hp - hpBeforeHazards) < 0.01;
-        this.gears = savedGears;
 
         // Now re-grant frost shield and test real update tick against temporary barrel
         this.applyGateEffect(probe, frostGate);
-        const savedBarrels = [...this.barrels];
-        this.barrels.push({
-          cfg: { id: '_mc1_test_barrel', x: probe.x, z: probe.z, hp: 99 },
-          mesh: dummyGroup,
-          hp: 99,
-          alive: true,
-          labelEl: dummyLabel,
-        });
+        this.gears = [];
+        probe.vx = 0;
+        probe.vz = 0;
         probe.spawnHop = 0;
+        this.barrels = [
+          {
+            cfg: { id: '_mc1_test_barrel', x: probe.x, z: probe.z, hp: 99 },
+            mesh: dummyGroup,
+            hp: 99,
+            alive: true,
+            labelEl: dummyLabel,
+          },
+        ];
         this.update(0.016);
         frostBlockedBarrel = probe.active && !probe.frostShield && Math.abs(probe.hp - hpBeforeHazards) < 0.01;
+
         this.barrels = savedBarrels;
+        this.gears = savedGears;
+        this.nests = savedNests;
+        this.walls = savedWalls;
+        this.bumpers = savedBumpers;
+        this.zones = savedZones;
+        this.gates = savedGates;
+        this.lootBug.active = savedLootBugActive;
+        for (const idx of savedActiveIndices) {
+          this.units[idx].active = true;
+        }
       }
       probe.active = false;
     }
@@ -8183,6 +8696,104 @@ export class World3D {
       jellyDoubled,
       frostBlockedGear,
       frostBlockedBarrel,
+    };
+  }
+
+  public loadStageByNumber(stageNumber: number): LevelConfig {
+    const lvl = generateDynamicLevel(stageNumber);
+    this.loadLevel(lvl);
+    return lvl;
+  }
+
+  public runMc2SelfCheck(): {
+    ok: boolean;
+    stage5SubTowers: number;
+    stage10SubTowers: number;
+    multTwoAlive: number;
+    multOneAlive: number;
+    multZeroAlive: number;
+    bossOverloadDamaged: boolean;
+    telegraphVisible: boolean;
+    sweptLaneHit: boolean;
+    safeLaneUnharmed: boolean;
+  } {
+    const savedLevel = this.currentLevel || generateDynamicLevel(1);
+
+    const lvl5 = generateDynamicLevel(5);
+    const lvl10 = generateDynamicLevel(10);
+    const stage5SubTowers = lvl5.bossSubTowers.length;
+    const stage10SubTowers = lvl10.bossSubTowers.length;
+
+    this.loadLevel(lvl5);
+    const multTwoAlive = this.getSubTowerBossDamageMultiplier();
+    const hpBeforeBreak = this.bossHp;
+    if (this.bossSubTowers[0]) {
+      this.destroyBossSubTower(this.bossSubTowers[0], true);
+    }
+    const multOneAlive = this.getSubTowerBossDamageMultiplier();
+    if (this.bossSubTowers[1]) {
+      this.destroyBossSubTower(this.bossSubTowers[1], true);
+    }
+    const multZeroAlive = this.getSubTowerBossDamageMultiplier();
+    const bossOverloadDamaged = this.bossHp < hpBeforeBreak && !this.bossSteamBarrierMesh.visible;
+
+    // Test Ground Half-Bridge Telegraph & High-Pressure Steam Sweep lane isolation
+    for (const u of this.units) u.active = false;
+    this.activeBlueIndices = [];
+    this.activeRedIndices = [];
+
+    this.startBossSteamSweep('left', true);
+    const telegraphVisible =
+      this.bossSteamSweep.phase === 'telegraph' && this.bossSteamSweep.telegraphGroup.visible;
+
+    const leftProbe = this.spawnUnit('blue', 'normal', -5.2, -3.0, 0, 0);
+    const rightProbe = this.spawnUnit('blue', 'normal', 5.2, -3.0, 0, 0);
+    let sweptLaneHit = false;
+    let safeLaneUnharmed = false;
+
+    if (leftProbe && rightProbe) {
+      leftProbe.spawnHop = 0;
+      rightProbe.spawnHop = 0;
+      const lIdx = this.units.indexOf(leftProbe);
+      const rIdx = this.units.indexOf(rightProbe);
+      if (lIdx >= 0) this.activeBlueIndices.push(lIdx);
+      if (rIdx >= 0) this.activeBlueIndices.push(rIdx);
+      const leftStartHp = leftProbe.hp;
+      const leftStartZ = leftProbe.z;
+      const rightStartHp = rightProbe.hp;
+
+      // Advance past 2.3s telegraph + 0.9s full-bridge steam sweep
+      for (let i = 0; i < 42; i++) {
+        this.updateBossSteamSweep(0.08, false);
+      }
+
+      sweptLaneHit = !leftProbe.active || leftProbe.hp < leftStartHp || leftProbe.z > leftStartZ + 1.5;
+      safeLaneUnharmed = rightProbe.active && Math.abs(rightProbe.hp - rightStartHp) < 0.01;
+      leftProbe.active = false;
+      rightProbe.active = false;
+    }
+
+    this.loadLevel(savedLevel);
+    return {
+      ok:
+        stage5SubTowers === 2 &&
+        stage10SubTowers === 2 &&
+        Math.abs(multTwoAlive - 0.24) < 0.01 &&
+        Math.abs(multOneAlive - 0.58) < 0.01 &&
+        Math.abs(multZeroAlive - 1.0) < 0.01 &&
+        bossOverloadDamaged &&
+        telegraphVisible &&
+        sweptLaneHit &&
+        safeLaneUnharmed,
+      stage5SubTowers,
+      stage10SubTowers,
+      multTwoAlive,
+      multOneAlive,
+      multZeroAlive,
+      bossOverloadDamaged,
+      telegraphVisible,
+      sweptLaneHit,
+      safeLaneUnharmed,
     };
   }
 
@@ -8691,6 +9302,22 @@ export class World3D {
         n.labelEl.style.top = `${p.y}px`;
         const hpStr = `${Math.ceil(n.hp)}`;
         if (n.labelEl.textContent !== hpStr) n.labelEl.textContent = hpStr;
+      }
+    }
+
+    for (const st of this.bossSubTowers) {
+      if (!st.alive) continue;
+      const p = this.projectToScreen(st.cfg.x, 3.65, st.cfg.z);
+      const inSafeViewport = p.visible && p.y >= safeTopY && p.y <= safeBottomY;
+      st.labelEl.style.display = inSafeViewport ? 'inline-flex' : 'none';
+      if (inSafeViewport) {
+        st.labelEl.style.left = `${p.x}px`;
+        st.labelEl.style.top = `${p.y}px`;
+        const hpStr = `${Math.ceil(st.hp)}`;
+        if (st.labelEl.dataset.hp !== hpStr) {
+          st.labelEl.dataset.hp = hpStr;
+          st.labelEl.innerHTML = `${UI_ART.shield}<span>${hpStr}</span>`;
+        }
       }
     }
 
