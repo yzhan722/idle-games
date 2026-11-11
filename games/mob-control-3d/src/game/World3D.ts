@@ -4793,10 +4793,27 @@ export class World3D {
   private spawnFloatingPopup(worldX: number, worldY: number, worldZ: number, text: string, color: string): void {
     const pos = this.projectToScreen(worldX, worldY, worldZ);
     if (!pos.visible) return;
+    let targetY = pos.y;
+    const existing = this.labelsContainer.querySelectorAll<HTMLElement>('.float-popup');
+    for (let pass = 0; pass < 4; pass++) {
+      let collided = false;
+      for (let i = 0; i < existing.length; i++) {
+        const px = Number(existing[i].dataset.px || -9999);
+        const py = Number(existing[i].dataset.py || -9999);
+        if (Math.abs(px - pos.x) < 136 && Math.abs(py - targetY) < 32) {
+          targetY = Math.max(96, targetY - 32);
+          collided = true;
+          break;
+        }
+      }
+      if (!collided || targetY <= 96) break;
+    }
     const el = document.createElement('div');
     el.className = 'float-popup';
+    el.dataset.px = `${Math.round(pos.x)}`;
+    el.dataset.py = `${Math.round(targetY)}`;
     el.style.left = `${pos.x}px`;
-    el.style.top = `${pos.y}px`;
+    el.style.top = `${targetY}px`;
     el.style.color = color;
     el.innerHTML = replaceEmojiWithArt(text);
     this.labelsContainer.appendChild(el);

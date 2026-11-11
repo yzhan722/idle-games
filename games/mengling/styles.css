@@ -7961,6 +7961,46 @@ details.capture-tools[open] > summary.capture-tools__summary {
   }
 }
 
+/* v0.7.37 Round 32 Commercial Polish: Collector-RPG Rarity Frames & Evolution-Ready Badges */
+.mon-card .row__desc,
+.mons-toolbar-row .row__desc strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.mon-card.row--uncommon-mon {
+  border-color: rgba(52, 211, 153, 0.34);
+  box-shadow: inset 0 1px 0 rgba(110, 231, 183, 0.16);
+}
+
+.mon-card.row--rare-mon {
+  border-color: rgba(56, 189, 248, 0.46);
+  background: linear-gradient(165deg, rgba(14, 34, 62, 0.78) 0%, rgba(15, 23, 42, 0.88) 100%);
+  box-shadow:
+    0 4px 14px rgba(14, 165, 233, 0.14),
+    inset 0 1px 0 rgba(186, 230, 253, 0.24);
+}
+
+.mon-card.row--evo-ready {
+  border-color: rgba(250, 204, 21, 0.52);
+  box-shadow:
+    0 4px 16px rgba(234, 179, 8, 0.14),
+    inset 0 1px 0 rgba(254, 240, 138, 0.28);
+}
+
+.badge--evo-ready {
+  display: inline-flex;
+  align-items: center;
+  padding: 1.5px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fef08a;
+  background: linear-gradient(180deg, rgba(161, 98, 7, 0.55) 0%, rgba(113, 63, 18, 0.72) 100%);
+  border: 1px solid rgba(250, 204, 21, 0.65);
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.22);
+}
+
+
 
 
 

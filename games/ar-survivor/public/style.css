@@ -1028,3 +1028,86 @@ html, body {
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(60, 164, 244, 0.35);
 }
+
+/* Round 32 Commercial Polish: Mini-Game Scoreboard Chips & Wish Guidance Glow */
+.wish-reward,
+#hud-coins,
+.mg-chip {
+  font-variant-numeric: tabular-nums;
+}
+
+.wish-pill.is-guiding {
+  outline: 2px solid #fbbf24;
+  box-shadow:
+    0 0 0 4px rgba(251, 191, 36, 0.28),
+    0 6px 16px rgba(245, 158, 11, 0.28);
+}
+
+.mg-hud-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.mg-hud-title {
+  color: #433563;
+  font-weight: 900;
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+.mg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 11px;
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.mg-chip-score {
+  background: linear-gradient(180deg, #fff8dc 0%, #fde68a 100%);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  color: #92400e;
+}
+
+.mg-chip-score b {
+  font-weight: 900;
+  color: #78350f;
+}
+
+.mg-chip-combo {
+  background: rgba(224, 242, 254, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.42);
+  color: #0369a1;
+}
+
+.mg-chip-combo.is-hot {
+  background: linear-gradient(180deg, #ffe4e6 0%, #fecdd3 100%);
+  border-color: rgba(244, 63, 94, 0.5);
+  color: #be123c;
+}
+
+.mg-chip-time {
+  background: rgba(241, 245, 249, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  color: #334155;
+  min-width: 36px;
+  justify-content: center;
+}
+
+.mg-chip-time.is-urgent {
+  background: linear-gradient(180deg, #fee2e2 0%, #fecaca 100%);
+  border-color: rgba(239, 68, 68, 0.65);
+  color: #b91c1c;
+  animation: mgUrgentPulse 0.55s ease-in-out infinite alternate;
+}
+
+@keyframes mgUrgentPulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
+

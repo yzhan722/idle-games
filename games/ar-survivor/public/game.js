@@ -2136,7 +2136,12 @@ function updatePalmCatchGame(dt, centerFloorY) {
   }
 
   if (rpsStatusEl) {
-    rpsStatusEl.textContent = `掌心接美食 · 得分 ${palmCatchGame.score} (连击x${palmCatchGame.combo}) · 剩余 ${Math.ceil(palmCatchGame.timer)}s`;
+    const remSec = Math.max(0, Math.ceil(palmCatchGame.timer));
+    rpsStatusEl.innerHTML =
+      `<span class="mg-hud-row"><span class="mg-hud-title">掌心接美食</span>` +
+      `<span class="mg-chip mg-chip-score">得分 <b>${palmCatchGame.score}</b></span>` +
+      `<span class="mg-chip mg-chip-combo${palmCatchGame.combo >= 3 ? ' is-hot' : ''}">连击 ×${palmCatchGame.combo}</span>` +
+      `<span class="mg-chip mg-chip-time${remSec <= 5 ? ' is-urgent' : ''}">${remSec}s</span></span>`;
   }
 
   if (palmCatchGame.timer <= 0) {
@@ -2253,6 +2258,13 @@ bindHudTap(document.getElementById('btn-toy'), () => {
 // 左上角心愿胶囊：点击自动引导完成心愿
 bindHudTap(document.getElementById('hud-wish-pill'), () => {
   if (!currentWish) return;
+  const pill = document.getElementById('hud-wish-pill');
+  if (pill) {
+    pill.classList.remove('is-guiding');
+    void pill.offsetWidth;
+    pill.classList.add('is-guiding');
+    setTimeout(() => pill.classList.remove('is-guiding'), 1800);
+  }
   if (currentWish.actionHint === 'palm') {
     closeDrawer();
     setPlayerEmote('把手掌伸到镜头中间，我马上跳上去~', 2.2, 'happy');
@@ -3792,8 +3804,14 @@ function renderEntities(now) {
 
   // 渲染实景桌面 DIY 微缩家具（小夜灯 / 码农工位 / 蓝鲸猫爬架）
   if (gameMode === 'pet') {
+    const hideFurnLabel = Boolean(
+      (drawerEl && !drawerEl.classList.contains('hidden')) ||
+      palmCatchGame.active ||
+      rpsGame.active ||
+      petItems.some((i) => i.type === 'ball')
+    );
     for (const furn of furnitureList) {
-      drawFurnitureItem(ctx, furn, now, vision.isDarkRoom, Boolean(drawerEl && !drawerEl.classList.contains('hidden')));
+      drawFurnitureItem(ctx, furn, now, vision.isDarkRoom, hideFurnLabel);
     }
   }
 

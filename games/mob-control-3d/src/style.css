@@ -9718,6 +9718,73 @@ img,
   }
 }
 
+/* Round 32 Commercial Polish: High-Contrast Carved Wood-Gold Battle Banner & Result Modal Ceremony */
+.center-banner {
+  background: linear-gradient(180deg, rgba(68, 43, 27, 0.97) 0%, rgba(38, 23, 14, 0.98) 100%) !important;
+  border: 2.5px solid #facc15 !important;
+  outline: 2px solid #241811 !important;
+  border-radius: 18px !important;
+  padding: 7px 18px !important;
+  opacity: 1 !important;
+  box-shadow:
+    0 4px 0 #241811,
+    0 10px 24px rgba(15, 8, 3, 0.55),
+    inset 0 1.5px 0 rgba(255, 250, 205, 0.35) !important;
+  animation: bannerPopSolid 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.center-banner .banner-title {
+  color: #fef08a !important;
+  text-shadow: 0 2px 0 #1f1209, 0 3px 8px rgba(0, 0, 0, 0.65) !important;
+}
+
+.center-banner .banner-sub {
+  color: #fde68a !important;
+  text-shadow: 0 1.5px 0 #1f1209 !important;
+  opacity: 0.96 !important;
+}
+
+@keyframes bannerPopSolid {
+  from { opacity: 0.92; transform: translate(-50%, -4px) scale(0.8); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(0.84); }
+}
+
+@media (max-width: 640px) {
+  @keyframes bannerPopSolid {
+    from { opacity: 0.92; transform: translate(-50%, -4px) scale(0.72); }
+    to { opacity: 1; transform: translate(-50%, 0) scale(0.76); }
+  }
+}
+
+.stat-box strong,
+.reward-gold-balance,
+#btn-reroll-rewards,
+.champion-pct {
+  font-variant-numeric: tabular-nums !important;
+}
+
+@keyframes rewardCardEntrance {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+#result-modal:not(.hidden) .reward-card {
+  animation: rewardCardEntrance 0.28s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+#result-modal:not(.hidden) .reward-card:nth-child(2) {
+  animation-delay: 0.05s;
+}
+#result-modal:not(.hidden) .reward-card:nth-child(3) {
+  animation-delay: 0.1s;
+}
+#result-modal .modal-actions button {
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
+}
+#result-modal .modal-actions button:active {
+  transform: translateY(2px) scale(0.97) !important;
+}
+
+
 
 
 

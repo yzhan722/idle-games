@@ -654,12 +654,7 @@
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
 
-## [2026-11-11T04:24:44.248Z] Autonomous Playtest — PASS
-- Target: `https://worklife.yinosites.com` | Chapter Goal: `complete (第一章完成)`
-- Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
-- Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.
-
-## [2026-11-11T06:24:41.067Z] Autonomous Playtest — PASS
+## [2026-11-11T03:21:25.041Z] Autonomous Playtest — PASS
 - Target: `https://worklife.yinosites.com` | Chapter Goal: `complete (第一章完成)`
 - Screenshots: `playtest_live_desktop.png`, `playtest_live_combat.png`, `playtest_live_mobile.png`
 - Result: Entered in-game views (Main + Combat + Mobile 390x844). Zero console errors, zero broken images, zero layout overflow.

@@ -4124,3 +4124,39 @@
 .production-tea-icon .t1-art, .production-tea-icon .t1-art-item { width: 32px !important; height: 32px !important; object-fit: contain; }
 .coinify-spotlight-icon { width: 36px; height: 36px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
 .coinify-spotlight-icon .t1-art, .coinify-spotlight-icon .t1-art-item { width: 36px !important; height: 36px !important; object-fit: contain; }
+
+/* Round 32 Commercial Polish: Top Activity Art Slot, Tabular Counters & Market Sellable Card Framing */
+.activity-icon-animated .header-gold-art,
+.activity-icon-animated .t1-art {
+  width: 24px !important;
+  height: 24px !important;
+  object-fit: contain !important;
+}
+
+.activity-countdown,
+.header-gold-value,
+.header-total-level-value,
+.inv-tile-count,
+.inv-tile-meta {
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-tile-sellable {
+  border-color: rgba(234, 179, 8, 0.42) !important;
+  background: linear-gradient(180deg, rgba(46, 36, 20, 0.88) 0%, rgba(28, 23, 17, 0.94) 100%) !important;
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(254, 240, 138, 0.22) !important;
+}
+
+.inv-tile .inv-tile-count {
+  background: rgba(15, 19, 26, 0.86);
+  border: 1px solid rgba(250, 204, 21, 0.34);
+  border-radius: 999px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fef08a;
+  line-height: 1.35;
+}
+

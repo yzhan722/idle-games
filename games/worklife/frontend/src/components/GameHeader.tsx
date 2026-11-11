@@ -49,15 +49,29 @@ type Props = {
   chapterComplete?: boolean;
 };
 
-function activityLabel(tab: string) {
-  if (tab === "logging") return "伐";
-  if (tab === "mining") return "矿";
-  if (tab === "farming") return "农";
-  if (tab === "fishing") return "渔";
-  if (tab === "gathering") return "采";
-  if (tab === "crystal_mining") return "晶";
-  if (tab === "enhance" || tab.includes("craft") || tab === "cooking" || tab === "smithing" || tab === "tailoring" || tab === "alchemy") return "制";
-  return "工";
+function activityArtId(tab: string, activityName?: string): string {
+  const n = activityName || "";
+  if (tab === "logging" || /伐|原木|树/.test(n)) return "nav-logging";
+  if (tab === "mining" || /矿|挖/.test(n)) return "nav-mining";
+  if (tab === "farming" || /农|种|麦/.test(n)) return "nav-farming";
+  if (tab === "fishing" || /钓|鱼/.test(n)) return "nav-fishing";
+  if (tab === "gathering" || /采|草|果/.test(n)) return "nav-gathering";
+  if (tab === "crystal_mining" || /晶/.test(n)) return "nav-crystal";
+  if (tab === "husbandry" || /牧|养/.test(n)) return "nav-husbandry";
+  if (tab === "cooking" || /烹|烤|汤/.test(n)) return "nav-cooking";
+  if (tab === "smithing" || /锻|锭|剑|甲/.test(n)) return "nav-smithing";
+  if (tab === "tailoring" || /缝|布|袍/.test(n)) return "nav-tailoring";
+  if (tab === "alchemy" || /炼|药/.test(n)) return "nav-alchemy";
+  if (tab === "woodworking" || tab.includes("craft") || /木板|木工/.test(n)) return "nav-woodworking";
+  if (tab === "enhance") return "nav-enhance";
+  if (tab === "trading") return "nav-trading";
+  if (tab === "inventory") return "nav-inventory";
+  if (tab === "character") return "nav-character";
+  if (tab === "tasks") return "nav-tasks";
+  if (tab === "houses") return "nav-houses";
+  if (tab === "party") return "nav-party";
+  if (tab === "adventure" || tab === "combat") return "nav-adventure";
+  return "logo";
 }
 
 const fmtSec = (s: number) => (Number.isInteger(s) ? `${s}` : s.toFixed(1));
@@ -163,7 +177,7 @@ export function GameHeader(props: Props) {
             ) : enhancing ? (
               <T1Art kind="ui" id="nav-enhance" alt="" className="header-gold-art" />
             ) : (
-              props.currentActivity?.mark || activityLabel(props.activeTab)
+              <T1Art kind="ui" id={activityArtId(props.activeTab, props.currentActivity?.name)} alt="" className="header-gold-art" />
             )}
           </div>
           {((props.currentActivity && !props.battleActive) || enhancing) && (
@@ -201,8 +215,8 @@ export function GameHeader(props: Props) {
                 : enhancing
                   ? `下一次尝试 ${(enhanceRemainingMs / 1000).toFixed(1)}/${fmtSec(props.enhanceRun!.intervalMs / 1000)}秒 (${Math.floor(enhancePct)}%)`
                   : props.currentActivity
-                    ? `${((props.currentActivity.duration * Math.max(0, 100 - activePct)) / 100).toFixed(1)}/${fmtSec(props.currentActivity.duration)}秒 (${Math.floor(activePct)}%)` +
-                      ((props.batchTotal ?? 1) > 1 && typeof props.batchRemaining === "number" ? ` · 还剩 ${props.batchRemaining} 件` : "")
+                    ? `${((props.currentActivity.duration * Math.max(0, 100 - activePct)) / 100).toFixed(1)}/${fmtSec(props.currentActivity.duration)}秒 (${Math.floor(activePct)}%) · 约${Math.round(3600 / Math.max(0.5, props.currentActivity.duration))}/时` +
+                      ((props.batchTotal ?? 1) > 1 && typeof props.batchRemaining === "number" ? ` · 剩 ${props.batchRemaining} 件` : "")
                     : "选择技能开始采集、制作或冒险"}
             </div>
           </div>

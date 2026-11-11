@@ -140,6 +140,7 @@ export function createTabController({
 
   function activateTab(rawName) {
     if (!elTabs || !elPanels) return;
+    closeMoreMenu();
 
     const name =
       rawName === "items"

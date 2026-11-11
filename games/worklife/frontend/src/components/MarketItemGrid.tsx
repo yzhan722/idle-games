@@ -97,7 +97,7 @@ export function MarketItemGrid(props: Props) {
           <h3 className="inv-group-title"><T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> 我能卖的 <small>{owned.length}</small></h3>
           <div className="inv-grid market-grid">
             {owned.map((i) => (
-              <button type="button" className="inv-tile" key={`own-${i.id}`} data-item-id={i.id} onClick={() => props.onPick(i.id)}>
+              <button type="button" className="inv-tile inv-tile-sellable" key={`own-${i.id}`} data-item-id={i.id} onClick={() => props.onPick(i.id)}>
                 <span className="inv-tile-icon"><T1ItemIcon itemId={i.id} fallback={props.iconOf(i.id)} alt="" /></span>
                 <span className="inv-tile-count">×{props.inventory[i.id]}</span>
                 <span className="inv-tile-name">{i.name}</span>

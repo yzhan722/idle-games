@@ -421,11 +421,17 @@ export function createRenderMons({
           const mTitle = globalThis.BEAST_TITLE?.[mPid] || "";
           const mOrder = globalThis.BEAST_ORDER?.[mPid] || m.dex;
           const mTitleHtml = mTitle ? `<span class="beast-title-tag">【${escapeHtml(mTitle)}】</span>` : "";
-          const cardExtraCls = `${m.isShiny ? " row--shiny-mon" : ""}${m.tier === "epic" ? " row--mythic-mon" : ""}`;
+          const evoOuts = Array.isArray(evoMap[m.pid]) ? evoMap[m.pid] : [];
+          const isEvoReady = evoOuts.some((toPid) => {
+            const reqLvl = typeof getEvoReqLevel === "function" ? getEvoReqLevel(m.pid, toPid) : 0;
+            return (m.lvl || 0) >= (reqLvl || 0);
+          });
+          const evoBadgeHtml = isEvoReady ? `<span class="badge badge--evo-ready">✦ 可进化</span>` : "";
+          const cardExtraCls = `${m.isShiny ? " row--shiny-mon" : ""}${m.tier === "epic" ? " row--mythic-mon" : m.tier === "rare" ? " row--rare-mon" : m.tier === "uncommon" ? " row--uncommon-mon" : ""}${isEvoReady ? " row--evo-ready" : ""}`;
           rows.push(`
             <div class="row mon-card${cardExtraCls}">
               <div class="row__left">
-                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
+                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}${evoBadgeHtml}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
                 <div class="row__desc">Lv.${m.lvl} · 战力 ${power} · 性格 ${escapeHtml(natureName)} · 特性 ${escapeHtml(ab?.name || "—")} · 亲密 ${aff}/100${"caughtWith" in m && m.caughtWith && m.caughtWith !== "pokeball" ? " · " + ({"pokeball":"灵球","ultraball":"高级灵球","quickball":"迅捷灵球","luxuryball":"豪华灵球","masterball":"究极灵球","netball":"捕灵球","duskball":"暗夜灵球"}[m.caughtWith] ?? m.caughtWith) : ""}</div>
               </div>
               <div class="row__right">

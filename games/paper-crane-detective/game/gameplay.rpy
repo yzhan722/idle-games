@@ -148,10 +148,10 @@ style hud_bond_bar is bar:
 
 transform toast_in:
     on show:
-        alpha 0.0 xoffset -24
-        easeout 0.3 alpha 1.0 xoffset 0
+        alpha 0.0 xoffset -24 zoom 0.96
+        easeout 0.28 alpha 1.0 xoffset 0 zoom 1.0
     on hide:
-        easein 0.35 alpha 0.0
+        easein 0.3 alpha 0.0 xoffset -10
 
 screen clue_toast(name, kicker=_("线索入手")):
     zorder 150
@@ -163,8 +163,8 @@ screen clue_toast(name, kicker=_("线索入手")):
             yalign 0.5
             add "gui/icon_evidence.png" yalign 0.5
             vbox:
-                spacing 1
-                text kicker style "clue_toast_kicker"
+                spacing 2
+                text ("✦ " + kicker) style "clue_toast_kicker"
                 text name style "clue_toast_text"
     timer 3.4 action Hide("clue_toast")
 
@@ -173,29 +173,31 @@ style clue_toast_frame is default:
     xpos 30
     ypos 12
     background Frame("gui/hud_chip.png", 12, 12)
-    padding (16, 8)
+    padding (18, 9)
     xmaximum 560
 
 style clue_toast_kicker is text:
-    size 14
-    color "#9a86b8"
+    font gui.bold_font
+    size 13
+    color "#e8c98a"
     kerning 3
 
 style clue_toast_text is text:
     size 20
     color "#f2ecf8"
+    outlines [(2, "#0d0919", 0, 0)]
 
 transform favor_float:
-    alpha 0.0 yoffset 10
-    easeout 0.25 alpha 1.0 yoffset 0
-    pause 0.9
-    easein 0.5 alpha 0.0 yoffset -16
+    alpha 0.0 yoffset 12 zoom 0.92
+    easeout 0.24 alpha 1.0 yoffset 0 zoom 1.0
+    pause 0.95
+    easein 0.48 alpha 0.0 yoffset -16
 
 screen favor_pop(amount):
     zorder 150
-    text ("羁绊 +%d" % amount if amount > 0 else "羁绊 %d" % amount):
+    text ("✦ 羁绊 +%d" % amount if amount > 0 else "羁绊 %d" % amount):
         style "favor_pop_text"
-        color ("#f0c8ff" if amount > 0 else "#9aa6c8")
+        color ("#f5d0ff" if amount > 0 else "#9aa6c8")
         at favor_float
     timer 1.7 action Hide("favor_pop")
 
@@ -204,7 +206,7 @@ style favor_pop_text is text:
     size 20
     xalign 0.985
     ypos 62
-    outlines [(2, "#0a0714", 0, 0)]
+    outlines [(3, "#0a0714", 0, 0), (1, "#2a1b3d", 0, 1)]
 
 
 ## 弹出面板的通用外壳：暗化遮罩 + 居中卡片 + 标题带 + 右上角关闭；点击遮罩也能关闭
@@ -650,7 +652,7 @@ screen evidence_list():
 style evidence_card is default:
     xfill True
     background Frame("gui/panel_card.png", 16, 16)
-    padding (12, 10)
+    padding (16, 12)
 
 style evidence_badge is default:
     xsize 40

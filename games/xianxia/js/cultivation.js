@@ -1346,18 +1346,18 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		for (var i = 0; i < show; i++){
 			var step = guide.pending[i];
-			gh += "<div class=\"xx-guide-step" + (i == 0 ? " xx-guide-next" : "") + "\">" +
+			var pr = step.info ? step.info(this, this.game) : null;
+			var isStepReady = !!(pr && pr[1] > 0 && pr[0] >= pr[1]);
+			gh += "<div class=\"xx-guide-step" + (i == 0 ? " xx-guide-next" : "") + (isStepReady ? " is-ready" : "") + "\">" +
 				$I("cultivation.guide." + step.key);
 			var navTab = step.nav && this.game.getTab(step.nav.toLowerCase());
 			if (navTab && navTab.visible){
-				gh += " <span class=\"xx-guide-nav\" data-tab=\"" + step.nav + "\">&gt; " + navTab.tabName + "</span>";
+				gh += " <span class=\"xx-guide-nav" + (isStepReady ? " is-ready" : "") + "\" data-tab=\"" + step.nav + "\">&gt; " + navTab.tabName + "</span>";
 			}
-			if (step.info){
-				var pr = step.info(this, this.game);
-				if (pr && pr[1] > 0){
-					gh += " <span class=\"xx-guide-prog\">" +
-						this.game.getDisplayValueExt(pr[0]) + "/" + this.game.getDisplayValueExt(pr[1]) + "</span>";
-				}
+			if (pr && pr[1] > 0){
+				var progTxt = this.game.getDisplayValueExt(pr[0]) + "/" + this.game.getDisplayValueExt(pr[1]);
+				gh += " <span class=\"xx-guide-prog" + (isStepReady ? " is-ready" : "") + "\">" +
+					(isStepReady ? ("✦ 资粮已足 (" + progTxt + ")") : progTxt) + "</span>";
 			}
 			gh += "</div>";
 		}
