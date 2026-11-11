@@ -1,9 +1,10 @@
 import { CHAPTER1_OBJECTIVES, type ChapterGoal } from "../gameplay/chapter1";
 
-const CHAPTER_LABELS: Record<1 | 2 | 3, string> = {
+const CHAPTER_LABELS: Record<1 | 2 | 3 | 4, string> = {
   1: "第一章 · 森林伐木",
   2: "第二章 · 矿山铁匠",
   3: "第三章 · 沼泽裁缝",
+  4: "第四章 · 雪山火山与百味秘药",
 };
 
 export function NextGoalBar(props: { goal: ChapterGoal; onGo: () => void; goLabel?: string }) {

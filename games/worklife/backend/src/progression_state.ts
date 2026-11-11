@@ -113,4 +113,78 @@ export function ensureProgression(player: EnhancedPlayerState, now: Date, source
   if (p.completedMilestones.ch3_boss && !p.completedChapters.swamp) {
     p.completedChapters.swamp = { ...p.completedMilestones.ch3_boss };
   }
+
+  // Chapter 4: Snow & Volcano — Farming/Fishing -> Cooking -> Crystal/Alchemy -> Dual Bosses
+  mark(
+    'ch4_farm_fish',
+    (inv.fish_river || 0) > 0 ||
+      (inv.fish_sea || 0) > 0 ||
+      (inv.fish_lake || 0) > 0 ||
+      (inv.fish_deepsea || 0) > 0 ||
+      (actions.act_fish_river_t1 || 0) > 0 ||
+      (actions.act_fish_sea_t2 || 0) > 0 ||
+      (actions.act_fish_shrimp_t1 || 0) > 0 ||
+      (actions.act_plant_cotton_t1 || 0) > 0 ||
+      (actions.act_plant_flax_t2 || 0) > 0 ||
+      (actions.act_plant_silk_t3 || 0) > 0 ||
+      (actions.act_plant_magic_t4 || 0) > 0 ||
+      (actions.act_raise_sheep_t1 || 0) > 0 ||
+      (actions.act_raise_cattle_t2 || 0) > 0 ||
+      (actions.act_raise_chicken_t1 || 0) > 0
+  );
+  mark(
+    'ch4_cook_feast',
+    (inv.food_simple || 0) > 0 ||
+      (inv.food_fine || 0) > 0 ||
+      (inv.food_hearty_stew || 0) > 0 ||
+      (inv.food_master_feast || 0) > 0 ||
+      (inv.food_royal_banquet || 0) > 0 ||
+      (actions.act_cook_food_t1 || 0) > 0 ||
+      (actions.act_cook_food_t2 || 0) > 0 ||
+      (actions.act_cook_food_hearty_stew || 0) > 0 ||
+      (actions.act_cook_food_master_feast || 0) > 0 ||
+      (actions.act_cook_dish_grilled_lake || 0) > 0 ||
+      (actions.act_cook_dish_frost_sashimi || 0) > 0 ||
+      (actions.act_cook_dish_deepsea_stew || 0) > 0
+  );
+  mark(
+    'ch4_mine_crystal',
+    (inv.crystal_1 || 0) > 0 ||
+      (inv.crystal_2 || 0) > 0 ||
+      (inv.crystal_3 || 0) > 0 ||
+      (inv.crystal_4 || 0) > 0 ||
+      (actions.act_mine_crystal_t1 || 0) > 0 ||
+      (actions.act_mine_crystal_t2 || 0) > 0 ||
+      (actions.act_mine_crystal_t3 || 0) > 0
+  );
+  mark(
+    'ch4_brew_elixir',
+    (inv.potion_hp_t1 || 0) > 0 ||
+      (inv.potion_hp_t2 || 0) > 0 ||
+      (inv.potion_hp_t3 || 0) > 0 ||
+      (inv.potion_mp_t1 || 0) > 0 ||
+      (inv.potion_mp_t2 || 0) > 0 ||
+      (inv.potion_battle_fury || 0) > 0 ||
+      (inv.potion_guardian_elixir || 0) > 0 ||
+      (inv.potion_iron_skin || 0) > 0 ||
+      (inv.potion_arcane_surge || 0) > 0 ||
+      (actions.act_brew_potion_hp_t1 || 0) > 0 ||
+      (actions.act_brew_potion_hp_t2 || 0) > 0 ||
+      (actions.act_brew_potion_hp_t3 || 0) > 0 ||
+      (actions.act_brew_potion_mp_t1 || 0) > 0 ||
+      (actions.act_brew_potion_mp_t2 || 0) > 0 ||
+      (actions.act_brew_potion_battle_fury || 0) > 0 ||
+      (actions.act_brew_potion_guardian_elixir || 0) > 0 ||
+      (actions.act_brew_potion_iron_skin || 0) > 0 ||
+      (actions.act_brew_potion_arcane_surge || 0) > 0
+  );
+  mark('ch4_build', !!player.chapter4Build);
+  mark('ch4_snow_boss', (kills.snow_boss || 0) > 0);
+  if (p.completedMilestones.ch4_snow_boss && !p.completedChapters.snow) {
+    p.completedChapters.snow = { ...p.completedMilestones.ch4_snow_boss };
+  }
+  mark('ch4_volcano_boss', (kills.volcano_boss || 0) > 0);
+  if (p.completedMilestones.ch4_volcano_boss && !p.completedChapters.volcano) {
+    p.completedChapters.volcano = { ...p.completedMilestones.ch4_volcano_boss };
+  }
 }

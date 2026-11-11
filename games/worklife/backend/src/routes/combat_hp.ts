@@ -201,6 +201,8 @@ export async function combatHpRoutes(
           "quenched_thorns",
           "gale_flurry",
           "relic_hunter",
+          "elixir_frenzy",
+          "feast_vitality",
         ]),
         ...revisionSchema,
       })

@@ -145,5 +145,34 @@ describe("combat sheet from content pack", () => {
     assert.equal(defensiveLoot.thornsDefRatio, 0.45);
     assert.equal(defensiveLoot.goldMult, 1.25);
     assert.equal(defensiveLoot.dropMult, 1.3);
+
+    const ch4Elixir = combatSheetFromPack(
+      {
+        combatLevel: 10,
+        chapter4Build: "elixir_frenzy",
+        equipment: { main_hand: "weapon_wooden_sword" },
+        activeBuffs: [
+          {
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+            stats: { atk: 6, def: 4 },
+          },
+        ],
+      },
+      items
+    );
+    assert.equal(ch4Elixir.potionBuffMult, 1.5);
+    assert.equal(ch4Elixir.atk, 14 + 5 + 8 + 9);
+
+    const ch4Feast = combatSheetFromPack(
+      {
+        combatLevel: 1,
+        chapter4Build: "feast_vitality",
+        equipment: { main_hand: "weapon_wooden_sword" },
+      },
+      items
+    );
+    assert.equal(ch4Feast.hp, 50 + 55);
+    assert.equal(ch4Feast.def, 8);
+    assert.equal(ch4Feast.foodHealMult, 1.35);
   });
 });

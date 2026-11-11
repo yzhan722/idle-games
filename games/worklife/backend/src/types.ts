@@ -178,7 +178,8 @@ export type AbilitySlot = { abilityId: string; trigger: AbilityTrigger };
 export type Chapter1BuildId = "sharpened_edge" | "thick_bark";
 export type Chapter2BuildId = "heavy_sunder" | "quenched_thorns";
 export type Chapter3BuildId = "gale_flurry" | "relic_hunter";
-export type AllChapterBuildId = Chapter1BuildId | Chapter2BuildId | Chapter3BuildId;
+export type Chapter4BuildId = "elixir_frenzy" | "feast_vitality";
+export type AllChapterBuildId = Chapter1BuildId | Chapter2BuildId | Chapter3BuildId | Chapter4BuildId;
 
 // 增强的玩家状态结构
 export type EnhancedPlayerState = PlayerState & {
@@ -253,6 +254,7 @@ export type EnhancedPlayerState = PlayerState & {
   chapter1Build?: Chapter1BuildId;
   chapter2Build?: Chapter2BuildId;
   chapter3Build?: Chapter3BuildId;
+  chapter4Build?: Chapter4BuildId;
 
   /** MWI combat skills; `combatLevel` is derived from these (see combat_skills.ts). */
   combatSkills?: CombatSkills;

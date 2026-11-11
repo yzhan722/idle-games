@@ -245,7 +245,7 @@ async function main() {
       (state.equipment as any).main_hand = "weapon_wooden_sword";
       (state.equipment as any).chest = "armor_wood_chest";
       const body = (req.body || {}) as { scene?: string };
-      if (body.scene === "chapter-complete" || body.scene === "chapter2-build") {
+      if (body.scene === "chapter-complete" || body.scene === "chapter2-build" || body.scene === "chapter4-build") {
         state.chapter1Build = state.chapter1Build || "thick_bark";
         const stats = (state.stats ?? {}) as NonNullable<typeof state.stats>;
         state.stats = stats;
@@ -258,7 +258,7 @@ async function main() {
           monkey: Math.max(stats.killsByMonster?.monkey || 0, 1),
           forest_boss: Math.max(stats.killsByMonster?.forest_boss || 0, 1),
         };
-        if (body.scene === "chapter2-build") {
+        if (body.scene === "chapter2-build" || body.scene === "chapter4-build") {
           state.settings = {
             ...(state.settings || {}),
             characterCreated: true,
@@ -268,6 +268,37 @@ async function main() {
           state.inventory.ingot_1 = Math.max(state.inventory.ingot_1 || 0, 4);
           state.inventory.weapon_iron_sword = Math.max(state.inventory.weapon_iron_sword || 0, 1);
           (state.equipment as any).main_hand = "weapon_iron_sword";
+        }
+        if (body.scene === "chapter4-build") {
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.chapter3Build = state.chapter3Build || "gale_flurry";
+          (state as any).combatSkills = defaultCombatSkills(32);
+          ensureCombatSkills(state as any);
+          stats.totalKills = Math.max(stats.totalKills || 0, 16);
+          stats.totalBossKills = Math.max(stats.totalBossKills || 0, 3);
+          stats.killsByMonster = {
+            ...stats.killsByMonster,
+            rock_golem: 1,
+            crystal_bat: 1,
+            ore_rat: 1,
+            mine_boss: 1,
+            poison_frog: 1,
+            swamp_zombie: 1,
+            mud_elemental: 1,
+            swamp_boss: 1,
+          };
+          state.inventory.armor_iron_chest = Math.max(state.inventory.armor_iron_chest || 0, 1);
+          state.inventory.armor_leather_legs = Math.max(state.inventory.armor_leather_legs || 0, 1);
+          state.inventory.armor_leather_boots = Math.max(state.inventory.armor_leather_boots || 0, 1);
+          (state.equipment as any).chest = "armor_iron_chest";
+          (state.equipment as any).legs = "armor_leather_legs";
+          (state.equipment as any).boots = "armor_leather_boots";
+          state.inventory.fish_river = Math.max(state.inventory.fish_river || 0, 6);
+          state.inventory.food_hearty_stew = Math.max(state.inventory.food_hearty_stew || 0, 6);
+          state.inventory.crystal_1 = Math.max(state.inventory.crystal_1 || 0, 6);
+          state.inventory.potion_battle_fury = Math.max(state.inventory.potion_battle_fury || 0, 4);
+          state.inventory.potion_hp_t2 = Math.max(state.inventory.potion_hp_t2 || 0, 6);
+          state.inventory.potion_mp_t1 = Math.max(state.inventory.potion_mp_t1 || 0, 6);
         }
       }
       ensureProgression(state, new Date());

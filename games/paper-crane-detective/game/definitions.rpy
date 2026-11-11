@@ -93,6 +93,14 @@ define ALICE_HINT_THRESHOLD = 8
 
 # 线索栏（证据库）
 default evidence = []
+default inspected_evidence  = []        # 已翻面查验过背面细节的证物列表
+default expanded_evidence   = ""        # 当前在调查手册中翻开查验的证物名
+default unlocked_deductions = []        # 已通过双线索拼合推导出的破局结论 ID 列表
+default combine_slot_a      = ""        # 双线索逻辑拼合：槽位 A
+default combine_slot_b      = ""        # 双线索逻辑拼合：槽位 B
+default combine_feedback    = ""        # 拼合结果或艾丽丝吐槽提示文案
+default combine_feedback_kind = "idle"  # "idle" | "wrong" | "solved"
+default combine_solved_title  = ""      # 当前拼合达成的破局标题
 
 ################################################################################
 ## 二·补 persistent 跨周目进度（章节选择 / 结局收集画廊读取）
@@ -157,6 +165,285 @@ init python:
         """累计一次推理失误"""
         global fail_count
         fail_count += 1
+
+    # —— PC-1：证物翻面隐藏细节数据库（覆盖主线全部关键证物，支持番外 DLC 动态注册扩展）——
+    EVIDENCE_DETAILS = {
+        "监控：仅一人持水桶拖把进过办公室": (
+            "墨墨（牛皮纸批注）",
+            "监控时间戳显示清洁工进出前后共 15 分钟无人靠近，排除了外人趁乱潜入办公室偷换书单的可能。"
+        ),
+        "柜子是“被关上”的（主角自述出于好心关柜）": (
+            "陈默（现场回忆）",
+            "我进门时铁皮柜半掩着，顺手推门时听见清脆的弹簧锁舌咬合声——也就是说，在我关门之前锁舌根本没扣死。"
+        ),
+        "吕芙待借的书单（送到了柜台）": (
+            "墨墨（牛皮纸批注）",
+            "便签背面压着一道浅浅的纸箱瓦楞折痕，说明这张待借单曾和待报废装箱的旧书叠放在同一处台面上。"
+        ),
+        "Joker 比所有人晚到": (
+            "陈默（现场勘验）",
+            "他冲进走廊时呼吸急促、裤脚沾着操场红土，时间上根本赶不上图书装箱封口的那一刻。"
+        ),
+        "小林：装箱书单与吕芙待借书都送到过柜台": (
+            "墨墨（牛皮纸批注）",
+            "两摞书在柜台右侧交汇过三分钟。只要最上面那本滑落半寸，就会被当成待封箱书一并贴上磁条。"
+        ),
+        "王老师：交接匆忙没听见锁扣声，包裹贴着磁条": (
+            "墨墨（牛皮纸批注）",
+            "既然贴了防盗磁条却没有触发门口警报，说明那本书从头到尾都没离开过图书馆内部！"
+        ),
+        "向言亲笔签名的《美丽新世界》": (
+            "墨墨（牛皮纸批注）",
+            "扉页钢笔墨迹用的是深海蓝防水墨水，顿笔处带着向言习惯性的短促回锋，绝非代签或印刷品。"
+        ),
+        "张子谦：三班新来的转学生，第一天就打听墨墨": (
+            "陈默（搭档手记）",
+            "打听的措辞不是好奇八卦，而是精准问了「她是不是还不说话」——对方认识四年前的墨墨。"
+        ),
+        "剪报来自《城市晚报》四年前的旧报纸": (
+            "墨墨（牛皮纸批注）",
+            "纸张边缘呈氧化微黄，裁切线笔直锐利，是用美工刀垫着尺子裁下来的；翻过来能看见社会版残留的半截铅字。"
+        ),
+        "班长称“是有人塞纸条让她找转学生顶班”": (
+            "墨墨（牛皮纸批注）",
+            "那张传话便签折成了整齐的方块，字迹刻意用左手压扁，真正目的只是把我（或转学生）引到那张课桌前。"
+        ),
+        "信被人塞进班长抽屉，无人目击": (
+            "陈默（现场勘验）",
+            "抽屉内侧没有灰尘擦痕，投信人极为熟悉三班午休时前排空置、后门视线盲区的规律。"
+        ),
+        "小林：图书馆合订本里，四年前《城市晚报》某一期被整版剪走": (
+            "墨墨（牛皮纸批注）",
+            "被裁走的是四年前十一月十七日第 B2 版——那正是当年刊登「天才小侦探」连续报道与仓库事故的一期。"
+        ),
+        "Joker：昨天有人在天台水箱后撕旧报纸，碎片与恐吓信同源": (
+            "墨墨（牛皮纸批注）",
+            "水箱缝隙捡到的残片背面印着半个「还」字偏旁，与恐吓信剪报背面恰好能严丝合缝地拼回同一版面。"
+        ),
+        "Joker 的预告函会署名+画心，恐吓信没有": (
+            "陈默（现场勘验）",
+            "Joker 用的樱花粉铜版纸带淡淡香精味，而恐吓信散发着旧报刊室特有的樟脑与陈年油墨味。"
+        ),
+        "周可：墨墨小学好友，刚转学回三班": (
+            "墨墨（牛皮纸批注）",
+            "她便当盒里的胡萝卜切成了五角星——四年前周叔叔还在世时，每次给我们做焖饭都会这样切。"
+        ),
+        "班长：纸条出现的中午，教室后门有一个卷发女生站了二十分钟": (
+            "陈默（现场勘验）",
+            "后门磨砂玻璃高约一米五五，站在门外恰好能看清班长座位与讲台的值日表。"
+        ),
+        "门锁完好，只有社长和吕芙有钥匙": (
+            "墨墨（牛皮纸批注）",
+            "锁芯下方垫白纸轻叩无任何黄铜碎屑，叶片锁无拨动擦痕，可以彻底排除开门潜入或私配钥匙。"
+        ),
+        "换气窗的插销有新鲜刮痕，曾被打开过": (
+            "墨墨（牛皮纸批注）",
+            "老式铁插销下沿有一道亮银色新刮痕，窗框积灰被长条硬物蹭开了一道两指宽的凹槽。"
+        ),
+        "社团活动中途有 2 分钟全员去食堂买饮料": (
+            "陈默（现场勘验）",
+            "往返小卖部整整一百二十秒，活动室彻底空无一人——足够窗外早已守候的人完成一次精准钩取。"
+        ),
+        "失窃相册属于谁，无人知晓，凭空出现在社团": (
+            "墨墨（牛皮纸批注）",
+            "布面相册边角磨损发白，并非社团采购物品；更像是有人先把它混进活动室，再制造一场不得不查的失窃。"
+        ),
+        "张子谦：案发前后有个瘦小身影在活动室窗外徘徊": (
+            "陈默（现场勘验）",
+            "窗外墙根正好装有一台废弃空调外机铁架，踩上去就能平视两米高的换气窗！"
+        ),
+        "排队顺序：吕芙身后紧跟着一个独自排队、戴鸭舌帽的男生": (
+            "墨墨（牛皮纸批注）",
+            "帽檐压得很低，手里攥着一本未拆塑封的同款纪念版，视线却一直盯着前面吕芙递书的手。"
+        ),
+        "限量纪念版一百本外观完全相同，只有扉页的签名能分出是谁的": (
+            "陈默（现场勘验）",
+            "封面与腰封一模一样，只要在合上书页交接的那半秒钟顺手掉包，当事人回座前根本察觉不到。"
+        ),
+        "许编辑：吕芙身后那人说“小票忘在座位上”，离队后再没回来": (
+            "墨墨（牛皮纸批注）",
+            "借口找小票退场时，他怀里抱着的已经是签好「赠小芙」扉页的那一本真书了。"
+        ),
+        "班长：三周前周可曾问“旧楼三楼仓库是不是还锁着”，并说“那就好”": (
+            "墨墨（牛皮纸批注）",
+            "她在确认舞台是否还保持着封闭状态——就像四年前那间堆满杂物的社区仓库一样。"
+        ),
+        "校长：表彰奖牌源自一封匿名剪报拼贴信，附四年前旧报": (
+            "墨墨（牛皮纸批注）",
+            "奖牌、恐吓信、旧相册……所有碎片都在复刻四年前的案发现场，终点只可能是旧教学楼三楼仓库。"
+        ),
+    }
+
+    def register_evidence_detail(name, observer, detail):
+        """供番外篇 DLC 或新章节动态注册证物翻面细节。"""
+        EVIDENCE_DETAILS[name] = (observer, detail)
+
+    def get_evidence_detail(name):
+        """读取证物翻面批注；若未专门定义则生成符合万事屋风格的严谨通用批注。"""
+        if name in EVIDENCE_DETAILS:
+            return EVIDENCE_DETAILS[name]
+        return ("万事屋勘验批注", "已核对时间线与现场痕迹：「%s」与证人证言之间存在可交叉印证的细节锁链。" % name)
+
+    def uninspected_evidence_count():
+        """返回当前已收集但尚未翻面查验的证物数量。"""
+        return sum(1 for ev in evidence if ev not in inspected_evidence)
+
+    def toggle_evidence_flip(name):
+        """点击证物卡片展开或收起背面细节；首次翻阅自动播放翻页音效并记录高亮状态。"""
+        global expanded_evidence
+        if name not in inspected_evidence:
+            inspected_evidence.append(name)
+            renpy.sound.play("audio/sfx_page.ogg")
+        else:
+            renpy.sound.play("audio/sfx_click.ogg")
+        if expanded_evidence == name:
+            expanded_evidence = ""
+        else:
+            expanded_evidence = name
+
+    # —— PC-1：双线索逻辑拼合题库（覆盖序章～第五章核心诡计，亦可传入自定义 target_pair 供 DLC 调用）——
+    CASE_DEDUCTION_PUZZLES = [
+        {
+            "id": "ded_ch0_magnetic",
+            "chapter": "序章 · 图书馆疑云",
+            "pair": frozenset([
+                "小林：装箱书单与吕芙待借书都送到过柜台",
+                "王老师：交接匆忙没听见锁扣声，包裹贴着磁条",
+            ]),
+            "title": "破局推论：错装入箱的待借书",
+            "body": "包裹贴着防盗磁条却未触发门禁警报，说明它根本没出馆；两份书单曾在柜台交叠，吕芙待借的那本书是被误封进了待报废纸箱！",
+        },
+        {
+            "id": "ded_ch1_cabinet",
+            "chapter": "第一章 · 十五分钟盲区",
+            "pair": frozenset([
+                "监控：仅一人持水桶拖把进过办公室",
+                "柜子是“被关上”的（主角自述出于好心关柜）",
+            ]),
+            "title": "破局推论：好心关柜制造的锁死假象",
+            "body": "监控证实无人潜入作案；铁皮柜原本就没有锁死，是陈默进屋时顺手推门才让弹簧锁舌咔哒咬合，造成「事先上锁」的错觉。",
+        },
+        {
+            "id": "ded_ch2_clipping",
+            "chapter": "第二章 · 旧报剪贴信",
+            "pair": frozenset([
+                "剪报来自《城市晚报》四年前的旧报纸",
+                "小林：图书馆合订本里，四年前《城市晚报》某一期被整版剪走",
+            ]),
+            "title": "破局推论：醉翁之意不在正面文字",
+            "body": "恶作剧根本不必专程去裁四年前特定一期的《城市晚报》——寄信人真正想传递的讯息，藏在剪报碎片背面四年前的报道残字里！",
+        },
+        {
+            "id": "ded_ch3_transom",
+            "chapter": "第三章 · 活动室伪密室",
+            "pair": frozenset([
+                "换气窗的插销有新鲜刮痕，曾被打开过",
+                "社团活动中途有 2 分钟全员去食堂买饮料",
+            ]),
+            "title": "破局推论：两分钟换气窗长杆钓物",
+            "body": "门锁完好并非真正密室！守在窗外空调架上的人趁全员买饮料的 2 分钟空档拨开换气窗插销，用带钩长杆直接勾走了桌上的桌游与相册。",
+        },
+        {
+            "id": "ded_ch4_bookswap",
+            "chapter": "第四章 · 签售会掉包计",
+            "pair": frozenset([
+                "限量纪念版一百本外观完全相同，只有扉页的签名能分出是谁的",
+                "许编辑：吕芙身后那人说“小票忘在座位上”，离队后再没回来",
+            ]),
+            "title": "破局推论：同款纪念版顺手换书",
+            "body": "紧挨在吕芙身后的鸭舌帽男生利用一百本纪念版外观完全相同的盲点，在桌边交接瞬间用空白新书换走了签名本，随后借口找小票金蝉脱壳。",
+        },
+        {
+            "id": "ded_ch5_warehouse",
+            "chapter": "第五章 · 四年前的终幕舞台",
+            "pair": frozenset([
+                "班长：三周前周可曾问“旧楼三楼仓库是不是还锁着”，并说“那就好”",
+                "校长：表彰奖牌源自一封匿名剪报拼贴信，附四年前旧报",
+            ]),
+            "title": "破局推论：旧教学楼三楼仓库重现",
+            "body": "从匿名奖牌到剪报恐吓信，每一步都在把墨墨推回四年前的仓库事故；周可提前三周确认旧楼三楼仓库上锁，那里就是她布置的最终现场！",
+        },
+    ]
+
+    ALICE_WRONG_QUIPS = [
+        "唔——这两条线索凑一块儿，连本万事屋社长的账本都算不出因果关系哦！再换一条试试？",
+        "方向偏啦，大侦探的「嘴」先生！仔细翻翻证物背面的时间点和物理痕迹，找真正咬合的那一对。",
+        "噗，强行把这两条绑在一起的话，墨墨又要在本子上给你画大叉叉了。冷静看清楚矛盾点！",
+        "差一点点灵光！想想「现场怎么实现的」和「时间空档在哪里」，选最直接印证彼此的两条线索。",
+    ]
+
+    def reset_combine_state():
+        global combine_slot_a, combine_slot_b, combine_feedback, combine_feedback_kind, combine_solved_title
+        combine_slot_a = ""
+        combine_slot_b = ""
+        combine_feedback = ""
+        combine_feedback_kind = "idle"
+        combine_solved_title = ""
+
+    def pick_combine_clue(ev):
+        """在双线索拼合面板中点击某条证物：装入空槽或从已装槽位卸下。"""
+        global combine_slot_a, combine_slot_b, combine_feedback_kind, combine_feedback
+        renpy.sound.play("audio/sfx_click.ogg")
+        if combine_slot_a == ev:
+            combine_slot_a = ""
+        elif combine_slot_b == ev:
+            combine_slot_b = ""
+        elif not combine_slot_a:
+            combine_slot_a = ev
+        else:
+            combine_slot_b = ev
+        if combine_feedback_kind == "wrong":
+            combine_feedback_kind = "idle"
+            combine_feedback = ""
+
+    def evaluate_deduction_pair(target_pair=None, conclusion_title=None, conclusion_body=None, wrong_hints=None):
+        """执行双线索碰撞校验：匹配成功则播放破局演出并产出新结论，不匹配则给出艾丽丝吐槽提示且绝不卡死。"""
+        global combine_feedback, combine_feedback_kind, combine_solved_title
+        if not combine_slot_a or not combine_slot_b or combine_slot_a == combine_slot_b:
+            combine_feedback_kind = "wrong"
+            combine_feedback = "请先从下方已收集的线索中挑选两条不同的证物放入槽位 I 与槽位 II 哦。"
+            renpy.sound.play("audio/sfx_hover.ogg")
+            return
+
+        chosen = frozenset([combine_slot_a, combine_slot_b])
+
+        # 模式 1：剧本 / DLC 指定目标线索对
+        if target_pair is not None:
+            expected = frozenset(target_pair)
+            if chosen == expected:
+                combine_feedback_kind = "solved"
+                combine_solved_title = conclusion_title or "破局新结论已导出！"
+                combine_feedback = conclusion_body or "两条表面孤立的线索在此刻彻底咬合，揭开了现场真正的手法。"
+                renpy.sound.play("audio/sfx_correct.ogg")
+                renpy.show_screen("deduction_cutin", headline=_("逻辑拼合成功 ——！"), subline="CLUE SYNTHESIS")
+                return
+            hint_msg = None
+            if wrong_hints:
+                hint_msg = wrong_hints.get(chosen) or wrong_hints.get(combine_slot_a) or wrong_hints.get(combine_slot_b) or wrong_hints.get("default")
+            if not hint_msg:
+                idx = (len(combine_slot_a) + len(combine_slot_b)) % len(ALICE_WRONG_QUIPS)
+                hint_msg = ALICE_WRONG_QUIPS[idx]
+            combine_feedback_kind = "wrong"
+            combine_feedback = hint_msg
+            renpy.sound.play("audio/sfx_hover.ogg")
+            return
+
+        # 模式 2：自由手册思维拼合台（自动匹配序章～第五章 6 组核心破局推论）
+        for puz in CASE_DEDUCTION_PUZZLES:
+            if chosen == puz["pair"]:
+                if puz["id"] not in unlocked_deductions:
+                    unlocked_deductions.append(puz["id"])
+                combine_feedback_kind = "solved"
+                combine_solved_title = puz["title"]
+                combine_feedback = puz["body"]
+                renpy.sound.play("audio/sfx_correct.ogg")
+                renpy.show_screen("deduction_cutin", headline=_("逻辑拼合成功 ——！"), subline="CLUE SYNTHESIS")
+                return
+
+        idx = (len(combine_slot_a) + len(combine_slot_b)) % len(ALICE_WRONG_QUIPS)
+        combine_feedback_kind = "wrong"
+        combine_feedback = ALICE_WRONG_QUIPS[idx]
+        renpy.sound.play("audio/sfx_hover.ogg")
 
 
 # 结局判定（终章调用）

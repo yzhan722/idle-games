@@ -1446,7 +1446,7 @@ export function FirstBladeBuildModal({
 }: {
   playerState: PlayerState
   buildModalDelayDone: boolean
-  activeBuildChapter?: 1 | 2 | 3
+  activeBuildChapter?: 1 | 2 | 3 | 4
   actionLoading: boolean
   setActionLoading: (b: boolean) => void
   refreshPlayerState: () => Promise<void>
@@ -1456,19 +1456,28 @@ export function FirstBladeBuildModal({
   const ch1Pending = charReady && (playerState?.stats?.totalKills ?? 0) >= 1 && !playerState?.chapter1Build && buildModalDelayDone
   const ch2Pending = charReady && activeBuildChapter === 2 && !playerState?.chapter2Build && buildModalDelayDone
   const ch3Pending = charReady && activeBuildChapter === 3 && !playerState?.chapter3Build && buildModalDelayDone
-  const targetChapter: 1 | 2 | 3 | null = ch1Pending ? 1 : ch2Pending ? 2 : ch3Pending ? 3 : null
+  const ch4Pending = charReady && activeBuildChapter === 4 && !playerState?.chapter4Build && buildModalDelayDone
+  const targetChapter: 1 | 2 | 3 | 4 | null = ch1Pending ? 1 : ch2Pending ? 2 : ch3Pending ? 3 : ch4Pending ? 4 : null
 
   if (!targetChapter) {
     return null
   }
 
   type BuildChoiceItem = {
-    id: 'sharpened_edge' | 'thick_bark' | 'heavy_sunder' | 'quenched_thorns' | 'gale_flurry' | 'relic_hunter'
+    id:
+      | 'sharpened_edge'
+      | 'thick_bark'
+      | 'heavy_sunder'
+      | 'quenched_thorns'
+      | 'gale_flurry'
+      | 'relic_hunter'
+      | 'elixir_frenzy'
+      | 'feast_vitality'
     title: string
     desc: string
   }
 
-  const MODAL_META: Record<1 | 2 | 3, { heading: string; sub: string; options: [BuildChoiceItem, BuildChoiceItem] }> = {
+  const MODAL_META: Record<1 | 2 | 3 | 4, { heading: string; sub: string; options: [BuildChoiceItem, BuildChoiceItem] }> = {
     1: {
       heading: '选择你的第一刀（第一章 · 森林流派）',
       sub: '这一选择会永久强化你的基础战力，只能选一次。',
@@ -1514,6 +1523,22 @@ export function FirstBladeBuildModal({
           id: 'relic_hunter',
           title: '寻宝猎人 — 生命 +25 · 防御 +4 · 金币+25% / 掉率+30%',
           desc: '收获型：稳固生存的同时大幅提升战斗金币与稀有秘宝掉落率',
+        },
+      ],
+    },
+    4: {
+      heading: '冰火秘传（第四章 · 农厨与炼金流派）',
+      sub: '佳肴与秘药齐备。选择你征战冰封雪山与熔岩深渊的永久共鸣流派，只能选一次。',
+      options: [
+        {
+          id: 'elixir_frenzy',
+          title: '秘药狂热 — 攻击 +8 · 药剂增益 +50% · 回蓝 +35%',
+          desc: '爆发型：大幅放大炼金药剂攻击/防御增益上限并提升魔力药水恢复效率',
+        },
+        {
+          id: 'feast_vitality',
+          title: '盛宴生机 — 生命 +55 · 防御 +8 · 进食回血+35% & 活力盾',
+          desc: '续航型：战斗中每次自动进食额外恢复 35% 生命并展开 4.5 秒减伤护盾',
         },
       ],
     },

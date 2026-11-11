@@ -167,7 +167,15 @@ export function AdventurePanel({
 
           <div className="adventure-tactical-dock">
             <div className="tactical-dock-group tactical-potions-group">
-              <span className="tactical-dock-label"><T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 战斗补给</span>
+              <span className="tactical-dock-label">
+                <T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 战斗补给
+                {playerState.chapter4Build && (
+                  <span className="ch4-build-chip" style={{ marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.92 }}>
+                    · <T1Art kind="skills" id={playerState.chapter4Build} className="gold-inline" alt="" />
+                    {playerState.chapter4Build === 'elixir_frenzy' ? '秘药狂热 (+50%药效)' : '盛宴生机 (+35%食疗护盾)'}
+                  </span>
+                )}
+              </span>
               <CombatPotionBar
                 loadout={playerState.combatLoadout}
                 items={contentPack?.items as any}

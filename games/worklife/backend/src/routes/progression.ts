@@ -95,6 +95,7 @@ export async function progressionRoutes(
         chapter1: next.chapter1Build ?? null,
         chapter2: next.chapter2Build ?? null,
         chapter3: next.chapter3Build ?? null,
+        chapter4: next.chapter4Build ?? null,
       },
       stateRevision: next.stateRevision,
     });

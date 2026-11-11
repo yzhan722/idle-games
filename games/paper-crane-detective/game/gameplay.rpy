@@ -110,13 +110,27 @@ screen evidence_book():
                 style "hud_chip_button"
                 at hud_chip_fx
                 action Show("evidence_list")
-                tooltip _("查看已收集的线索")
+                tooltip _("查看已收集的线索与翻面批注")
                 hbox:
                     spacing 8
                     yalign 0.5
                     add "gui/icon_evidence.png" yalign 0.5
                     text _("证据") style "hud_chip_text"
                     text "[len(evidence)]" style "hud_chip_num"
+                    if uninspected_evidence_count() > 0:
+                        text "✦" size 16 color "#f4ce78" bold True yalign 0.5
+            button:
+                style "hud_chip_button"
+                at hud_chip_fx
+                action [Function(reset_combine_state), Show("deduction_combine", allow_close=True)]
+                tooltip _("双线索逻辑拼合推导")
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "gui/crane_particle.png" zoom 0.28 yalign 0.5
+                    text _("拼合") style "hud_chip_text"
+                    if unlocked_deductions:
+                        text "[len(unlocked_deductions)]" style "hud_chip_num" color "#f4ce78"
             button:
                 style "hud_chip_button"
                 at hud_chip_fx
@@ -577,15 +591,21 @@ init python:
 
 screen evidence_list():
     $ _dossiers = get_dossier_list()
-    use popup_panel(_("调查手册"), _("已收集证物 [len(evidence)] 条 · 过去碎片 [kako_clue]/4"), Hide("evidence_list"), width=800, height=580):
+    $ _uninspected = uninspected_evidence_count()
+    use popup_panel(_("调查手册"), _("已收集证物 [len(evidence)] 条（待翻面查验 [_uninspected] 条） · 思维拼合 [len(unlocked_deductions)]/[len(CASE_DEDUCTION_PUZZLES)]"), Hide("evidence_list"), width=860, height=600):
         vbox:
             spacing 12
             hbox:
-                spacing 10
+                spacing 8
+                xfill True
                 textbutton _("案件证物 ([len(evidence)])"):
                     style "pill_button"
                     selected (evidence_tab == "clues")
                     action SetVariable("evidence_tab", "clues")
+                textbutton _("思维拼合 ([len(unlocked_deductions)])"):
+                    style "pill_button"
+                    selected (evidence_tab == "combine")
+                    action SetVariable("evidence_tab", "combine")
                 textbutton _("过去的碎片 ([kako_clue]/4)"):
                     style "pill_button"
                     selected (evidence_tab == "kako")
@@ -597,24 +617,62 @@ screen evidence_list():
 
             if evidence_tab == "clues":
                 if evidence:
+                    hbox:
+                        xfill True
+                        text _("轻点任意证物卡片即可「翻面查验」墨墨与陈默记录的现场勘验批注。") size 15 color "#b9a6d4" yalign 0.5
+                        textbutton _("✦ 开启双线索拼合"):
+                            style "pill_button"
+                            xalign 1.0
+                            ysize 32
+                            action [Hide("evidence_list"), Function(reset_combine_state), Show("deduction_combine", allow_close=True)]
                     viewport:
                         xfill True
-                        ysize 360
+                        ysize 340
                         scrollbars "vertical"
                         mousewheel True
                         draggable True
-                        yinitial 1.0
+                        yinitial 0.0
                         vbox:
                             spacing 8
                             for idx, ev in enumerate(evidence):
-                                frame:
-                                    style "evidence_card"
-                                    hbox:
-                                        spacing 14
-                                        frame:
-                                            style "evidence_badge"
-                                            text "%02d" % (idx + 1) style "evidence_badge_text" align (0.5, 0.5)
-                                        text ev style "evidence_text" yalign 0.5
+                                $ _is_inspected = (ev in inspected_evidence)
+                                $ _is_expanded = (expanded_evidence == ev)
+                                $ _obs, _detail = get_evidence_detail(ev)
+                                button:
+                                    style "evidence_flip_button"
+                                    xfill True
+                                    action Function(toggle_evidence_flip, ev)
+                                    vbox:
+                                        spacing 8
+                                        xfill True
+                                        hbox:
+                                            xfill True
+                                            spacing 12
+                                            frame:
+                                                style "evidence_badge"
+                                                text "%02d" % (idx + 1) style "evidence_badge_text" align (0.5, 0.5)
+                                            text ev style "evidence_text" xmaximum 540 yalign 0.5
+                                            frame:
+                                                style "bond_stage_pill"
+                                                xalign 1.0
+                                                yalign 0.5
+                                                if _is_expanded:
+                                                    text _("▲ 收起背面") size 13 color "#f4ce78" bold True
+                                                elif _is_inspected:
+                                                    text _("✦ 已查验") size 13 color "#86efac" bold True
+                                                else:
+                                                    text _("● 翻面查验") size 13 color "#f4ce78" bold True
+                                        if _is_expanded:
+                                            frame:
+                                                style "evidence_detail_box"
+                                                vbox:
+                                                    spacing 4
+                                                    hbox:
+                                                        xfill True
+                                                        text ("✎ " + _obs) size 14 color "#6b4c2a" bold True
+                                                        text _("REVERSE INSPECTION · 物证背面细节") size 12 color "#8c6d46" xalign 1.0 yalign 0.5
+                                                    add Solid("#a6845855") xfill True ysize 1
+                                                    text _detail size 16 color "#2b1d12" line_spacing 4
                 else:
                     vbox:
                         xalign 0.5
@@ -625,6 +683,47 @@ screen evidence_list():
                         add "gui/slot_empty.png" xalign 0.5
                         text _("目前还没有收集到线索") style "evidence_none"
                         text _("在调查场景中选择「查看 / 询问」类选项即可获得线索") style "evidence_none_hint"
+
+            elif evidence_tab == "combine":
+                hbox:
+                    xfill True
+                    text _("将两条存在隐藏因果或物理呼应的证物碰撞拼合，推导案件关键破局结论。") size 15 color "#b9a6d4" yalign 0.5
+                    textbutton _("✦ 进入拼合推导台"):
+                        style "pill_button"
+                        xalign 1.0
+                        ysize 34
+                        action [Hide("evidence_list"), Function(reset_combine_state), Show("deduction_combine", allow_close=True)]
+                viewport:
+                    xfill True
+                    ysize 340
+                    scrollbars "vertical"
+                    mousewheel True
+                    draggable True
+                    vbox:
+                        spacing 10
+                        for puz in CASE_DEDUCTION_PUZZLES:
+                            $ _p_done = (puz["id"] in unlocked_deductions)
+                            frame:
+                                style "evidence_card"
+                                vbox:
+                                    spacing 4
+                                    hbox:
+                                        xfill True
+                                        if _p_done:
+                                            text puz["title"] style "bond_name" size 19 color "#f4ce78"
+                                        else:
+                                            text (_("待推导命题 · ") + puz["chapter"]) style "bond_name" size 19 color "#8a7aa6"
+                                        frame:
+                                            style "bond_stage_pill"
+                                            xalign 1.0
+                                            if _p_done:
+                                                text _("✦ 已破局") size 13 color "#86efac" bold True
+                                            else:
+                                                text _("待拼合") size 13 color "#94a3b8"
+                                    if _p_done:
+                                        text puz["body"] style "evidence_text" size 16 color "#e2d6f4" xmaximum 740
+                                    else:
+                                        text _("收集齐本章关键证物后，在「拼合推导台」中挑选两条关联线索即可碰撞解锁。") style "evidence_none_hint" xalign 0.0
 
             elif evidence_tab == "kako":
                 viewport:
@@ -703,6 +802,198 @@ style evidence_card is default:
     xfill True
     background Frame("gui/panel_card.png", 16, 16)
     padding (16, 12)
+
+style evidence_flip_button is default:
+    xfill True
+    background Frame("gui/panel_card.png", 16, 16)
+    hover_background Frame("gui/panel_card_hover.png", 16, 16)
+    padding (16, 12)
+
+style evidence_detail_box is default:
+    xfill True
+    background "#f3e7d2f2"
+    padding (14, 10, 14, 12)
+
+
+################################################################################
+## PC-1：通用可复用本格推理 Screen —— 双线索逻辑拼合（deduction_combine）
+## 支持两种调用方式：
+##   1. 自由手册模式：Show("deduction_combine", allow_close=True)
+##   2. 剧本/DLC 强制破局模式：call run_deduction_combine(target_pair, title, body, wrong_hints, clues_pool)
+################################################################################
+
+screen deduction_combine(clues_pool=None, target_pair=None, conclusion_title=None, conclusion_body=None, wrong_hints=None, allow_close=True):
+    modal True
+    zorder 205
+    $ _pool = clues_pool if clues_pool is not None else evidence
+    add "#0a0714" alpha 0.78
+    if allow_close:
+        button:
+            xfill True
+            yfill True
+            background None
+            action Hide("deduction_combine")
+
+    button:
+        style "popup_frame"
+        action NullAction()
+        xsize 900
+        ysize 620
+        at panel_pop
+        vbox:
+            spacing 10
+            hbox:
+                xfill True
+                vbox:
+                    spacing 2
+                    text _("双线索逻辑拼合") style "popup_title"
+                    text (_("挑选两条存在隐藏关联的证物碰撞推导 · 选错不会卡死流程") if target_pair else _("从已收集的证物中任选两条碰撞，推导各章核心诡计")) style "popup_subtitle"
+                if allow_close:
+                    textbutton _("关闭"):
+                        style "popup_close_button"
+                        xalign 1.0
+                        yalign 0.0
+                        action Hide("deduction_combine")
+            add Frame("gui/title_band.png", 0, 0) xsize 340 ysize 3
+
+            ## 顶部双槽碰撞区
+            hbox:
+                xfill True
+                spacing 12
+                yalign 0.5
+                frame:
+                    style "combine_slot_frame"
+                    vbox:
+                        spacing 3
+                        text _("线索槽 I") size 13 color "#f4ce78" bold True
+                        if combine_slot_a:
+                            text combine_slot_a size 16 color "#f6eeff" line_spacing 2
+                        else:
+                            text _("（点击下方证物装入槽位 I）") size 15 color "#7e6d99"
+                text "×" size 30 color "#f4ce78" bold True yalign 0.5
+                frame:
+                    style "combine_slot_frame"
+                    vbox:
+                        spacing 3
+                        text _("线索槽 II") size 13 color "#cfa6f0" bold True
+                        if combine_slot_b:
+                            text combine_slot_b size 16 color "#f6eeff" line_spacing 2
+                        else:
+                            text _("（点击下方证物装入槽位 II）") size 15 color "#7e6d99"
+                vbox:
+                    spacing 6
+                    yalign 0.5
+                    textbutton _("✦ 碰撞推导"):
+                        style "pill_button"
+                        xminimum 138
+                        ysize 40
+                        action Function(evaluate_deduction_pair, target_pair=target_pair, conclusion_title=conclusion_title, conclusion_body=conclusion_body, wrong_hints=wrong_hints)
+                    textbutton _("清空重选"):
+                        style "pill_button"
+                        xminimum 138
+                        ysize 30
+                        action Function(reset_combine_state)
+
+            ## 中部候选线索池
+            if len(_pool) >= 2:
+                viewport:
+                    xfill True
+                    ysize 235
+                    scrollbars "vertical"
+                    mousewheel True
+                    draggable True
+                    vbox:
+                        spacing 6
+                        for idx, ev in enumerate(_pool):
+                            $ _in_a = (combine_slot_a == ev)
+                            $ _in_b = (combine_slot_b == ev)
+                            button:
+                                style "evidence_flip_button"
+                                padding (12, 8)
+                                action Function(pick_combine_clue, ev)
+                                hbox:
+                                    xfill True
+                                    spacing 10
+                                    frame:
+                                        style "evidence_badge"
+                                        ysize 28
+                                        if _in_a:
+                                            text "I" style "evidence_badge_text" color "#f4ce78" align (0.5, 0.5)
+                                        elif _in_b:
+                                            text "II" style "evidence_badge_text" color "#e9d5ff" align (0.5, 0.5)
+                                        else:
+                                            text "%02d" % (idx + 1) style "evidence_badge_text" align (0.5, 0.5)
+                                    text ev size 18 color ("#f4ce78" if (_in_a or _in_b) else "#ebe2f8") xmaximum 690 yalign 0.5
+                                    if _in_a or _in_b:
+                                        text _("已装填") size 14 color "#86efac" bold True xalign 1.0 yalign 0.5
+            else:
+                frame:
+                    style "evidence_card"
+                    ysize 235
+                    vbox:
+                        align (0.5, 0.5)
+                        spacing 8
+                        text _("当前已收集的证物不足 2 条") style "evidence_none"
+                        text _("请先在现场调查中搜集至少两条证物，再来尝试双线索逻辑拼合。") style "evidence_none_hint"
+
+            ## 底部反馈栏：艾丽丝吐槽提示 / 墨墨破局新结论
+            frame:
+                style "bond_card"
+                ysize 122
+                if combine_feedback_kind == "wrong":
+                    hbox:
+                        spacing 14
+                        yalign 0.5
+                        frame:
+                            style "bond_avatar"
+                            xsize 68
+                            ysize 68
+                            add Transform("images/chara_alice_smile.png", fit="cover", xysize=(68, 68), crop_relative=True, crop=(0.22, 0.0, 0.56, 0.44)) align (0.5, 0.0)
+                        vbox:
+                            spacing 4
+                            yalign 0.5
+                            text _("艾丽丝的吐槽提示") size 17 color "#f3d78e" bold True
+                            text combine_feedback size 16 color "#e8dcf6" xmaximum 710 line_spacing 3
+                elif combine_feedback_kind == "solved":
+                    hbox:
+                        spacing 14
+                        xfill True
+                        yalign 0.5
+                        frame:
+                            style "bond_avatar"
+                            xsize 68
+                            ysize 68
+                            add Transform("images/chara_mo_smile.png", fit="cover", xysize=(68, 68), crop_relative=True, crop=(0.22, 0.0, 0.56, 0.44)) align (0.5, 0.0)
+                        vbox:
+                            spacing 4
+                            yalign 0.5
+                            text ("✦ " + combine_solved_title) size 18 color "#86efac" bold True
+                            text combine_feedback size 15 color "#f2ecf8" xmaximum (550 if not allow_close else 710) line_spacing 3
+                        if not allow_close:
+                            textbutton _("锁定结论 ▶"):
+                                style "pill_button"
+                                xalign 1.0
+                                yalign 0.5
+                                xminimum 132
+                                ysize 42
+                                action Return("solved")
+                else:
+                    hbox:
+                        spacing 14
+                        yalign 0.5
+                        add "gui/icon_evidence.png" yalign 0.5
+                        text _("操作指引：依次点击两条有逻辑咬合关系的线索装入上方槽位，点击「✦ 碰撞推导」即可检验你的推理。") size 16 color "#b4a2cc" yalign 0.5
+
+style combine_slot_frame is default:
+    xsize 322
+    ysize 84
+    background Frame("gui/panel_card.png", 16, 16)
+    padding (14, 10)
+
+label run_deduction_combine(target_pair, conclusion_title, conclusion_body, wrong_hints=None, clues_pool=None):
+    $ reset_combine_state()
+    call screen deduction_combine(clues_pool=clues_pool, target_pair=target_pair, conclusion_title=conclusion_title, conclusion_body=conclusion_body, wrong_hints=wrong_hints, allow_close=False)
+    return
 
 style evidence_badge is default:
     xsize 40

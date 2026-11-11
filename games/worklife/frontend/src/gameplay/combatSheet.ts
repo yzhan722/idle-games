@@ -22,6 +22,9 @@ export type CombatSheet = {
   /** Chapter 3 build (relic_hunter): combat gold & rare drop multipliers. */
   goldMult?: number;
   dropMult?: number;
+  /** Chapter 4 builds (elixir_frenzy / feast_vitality): potion & food combat multipliers. */
+  potionBuffMult?: number;
+  foodHealMult?: number;
 };
 
 type PackItem = {
@@ -51,6 +54,7 @@ type State = {
   chapter1Build?: "sharpened_edge" | "thick_bark";
   chapter2Build?: "heavy_sunder" | "quenched_thorns";
   chapter3Build?: "gale_flurry" | "relic_hunter";
+  chapter4Build?: "elixir_frenzy" | "feast_vitality";
   equipment?: Equipment;
   inventory?: Record<string, number>;
   activeBuffs?: Array<{
@@ -122,6 +126,8 @@ function combinedBuildFromState(state: State | null | undefined) {
   let intervalMult = 1;
   let goldMult = 1;
   let dropMult = 1;
+  let potionBuffMult = 1;
+  let foodHealMult = 1;
   if (state?.chapter2Build === "heavy_sunder") {
     atk += 6;
     armorPenPct = 0.25;
@@ -139,7 +145,15 @@ function combinedBuildFromState(state: State | null | undefined) {
     goldMult = 1.25;
     dropMult = 1.3;
   }
-  return { atk, hp, def, armorPenPct, thornsDefRatio, intervalMult, goldMult, dropMult };
+  if (state?.chapter4Build === "elixir_frenzy") {
+    atk += 8;
+    potionBuffMult = 1.5;
+  } else if (state?.chapter4Build === "feast_vitality") {
+    hp += 55;
+    def += 8;
+    foodHealMult = 1.35;
+  }
+  return { atk, hp, def, armorPenPct, thornsDefRatio, intervalMult, goldMult, dropMult, potionBuffMult, foodHealMult };
 }
 
 export type PackEquipmentSet = {
@@ -230,8 +244,11 @@ export function combatSheetFromPack(
       buffDef += Number(b.stats?.def || 0);
     }
   }
-  if (buffAtk > 0) buffAtk = Math.min(buffAtk, Math.max(2, Math.floor(unbuffedAtk * 0.4)));
-  if (buffDef > 0) buffDef = Math.min(buffDef, Math.max(2, Math.floor(unbuffedDef * 0.4 + 4)));
+  buffAtk = Math.round(buffAtk * extras.potionBuffMult);
+  buffDef = Math.round(buffDef * extras.potionBuffMult);
+  const buffCapRatio = extras.potionBuffMult > 1 ? 0.55 : 0.4;
+  if (buffAtk > 0) buffAtk = Math.min(buffAtk, Math.max(2, Math.floor(unbuffedAtk * buffCapRatio)));
+  if (buffDef > 0) buffDef = Math.min(buffDef, Math.max(2, Math.floor(unbuffedDef * buffCapRatio + 4)));
   const finalAtk = unbuffedAtk + buffAtk;
   const finalDef = unbuffedDef + buffDef;
   const atkLv = state?.combatSkills?.attack?.level || state?.combatLevel || 1;
@@ -260,6 +277,8 @@ export function combatSheetFromPack(
     ...(extras.thornsDefRatio > 0 ? { thornsDefRatio: extras.thornsDefRatio } : {}),
     ...(extras.goldMult !== 1 ? { goldMult: extras.goldMult } : {}),
     ...(extras.dropMult !== 1 ? { dropMult: extras.dropMult } : {}),
+    ...(extras.potionBuffMult !== 1 ? { potionBuffMult: extras.potionBuffMult } : {}),
+    ...(extras.foodHealMult !== 1 ? { foodHealMult: extras.foodHealMult } : {}),
   };
 }
 

@@ -521,12 +521,20 @@ describe("woodcutter HP combat", () => {
     assert.equal(chooseBuild(state, "relic_hunter").ok, false);
     assert.equal(state.chapter3Build, "gale_flurry");
 
+    assert.equal(chooseBuild(state, "feast_vitality").ok, true);
+    assert.equal(chooseBuild(state, "elixir_frenzy").ok, false);
+    assert.equal(state.chapter4Build, "feast_vitality");
+
+    state.inventory.food_simple = 3;
+    setCombatLoadout(state, contentPack, { food: [{ itemId: "food_simple", triggerMissingHp: 5 }] });
+
     const t0 = new Date("2026-09-02T00:00:00.000Z");
     state.hpCombat = startHpCombat(state, packNoGate, "crab", t0);
-    assert.equal(state.hpCombat.playerMaxHp, 50 + 35);
+    assert.equal(state.hpCombat.playerMaxHp, 50 + 35 + 55);
     assert.ok(state.hpCombat.playerIntervalMs < 3000, "gale_flurry shortens attack interval");
     tickHpCombat(state, packNoGate, new Date(t0.getTime() + 20_000), 20_000);
     assert.ok(state.hpCombat.log.some((l) => l.includes("淬火反伤")), "quenched_thorns reflects damage in combat log");
+    assert.ok(state.hpCombat.log.some((l) => l.includes("盛宴生机")), "feast_vitality boosts food heal and grants shield");
     await storage.close();
   });
 });

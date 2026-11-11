@@ -127,6 +127,8 @@ export const BUILD_HEAVY_SUNDER = { atk: 6, hp: 0, def: 0, armorPenPct: 0.25 };
 export const BUILD_QUENCHED_THORNS = { atk: 0, hp: 35, def: 8, thornsDefRatio: 0.45 };
 export const BUILD_GALE_FLURRY = { atk: 5, hp: 0, def: 0, intervalMult: 0.85 };
 export const BUILD_RELIC_HUNTER = { atk: 0, hp: 25, def: 4, goldMult: 1.25, dropMult: 1.3 };
+export const BUILD_ELIXIR_FRENZY = { atk: 8, hp: 0, def: 0, potionBuffMult: 1.5, mpRestoreMult: 1.35 };
+export const BUILD_FEAST_VITALITY = { atk: 0, hp: 55, def: 8, foodHealMult: 1.35, foodGuardMs: 4500, foodGuardMult: 0.72 };
 
 export type CombinedBuildExtras = {
   atk: number;
@@ -137,6 +139,10 @@ export type CombinedBuildExtras = {
   intervalMult: number;
   goldMult: number;
   dropMult: number;
+  potionBuffMult: number;
+  mpRestoreMult: number;
+  foodHealMult: number;
+  foodGuardMs: number;
 };
 
 export function buildExtras(build?: EnhancedPlayerState["chapter1Build"]) {
@@ -146,7 +152,7 @@ export function buildExtras(build?: EnhancedPlayerState["chapter1Build"]) {
 }
 
 export function playerBuildExtras(
-  player?: Pick<EnhancedPlayerState, "chapter1Build" | "chapter2Build" | "chapter3Build"> | null
+  player?: Pick<EnhancedPlayerState, "chapter1Build" | "chapter2Build" | "chapter3Build" | "chapter4Build"> | null
 ): CombinedBuildExtras {
   const ch1 = buildExtras(player?.chapter1Build);
   let atk = ch1.atk;
@@ -157,6 +163,10 @@ export function playerBuildExtras(
   let intervalMult = 1;
   let goldMult = 1;
   let dropMult = 1;
+  let potionBuffMult = 1;
+  let mpRestoreMult = 1;
+  let foodHealMult = 1;
+  let foodGuardMs = 0;
 
   if (player?.chapter2Build === "heavy_sunder") {
     atk += BUILD_HEAVY_SUNDER.atk;
@@ -177,7 +187,31 @@ export function playerBuildExtras(
     dropMult = BUILD_RELIC_HUNTER.dropMult;
   }
 
-  return { atk, hp, def, armorPenPct, thornsDefRatio, intervalMult, goldMult, dropMult };
+  if (player?.chapter4Build === "elixir_frenzy") {
+    atk += BUILD_ELIXIR_FRENZY.atk;
+    potionBuffMult = BUILD_ELIXIR_FRENZY.potionBuffMult;
+    mpRestoreMult = BUILD_ELIXIR_FRENZY.mpRestoreMult;
+  } else if (player?.chapter4Build === "feast_vitality") {
+    hp += BUILD_FEAST_VITALITY.hp;
+    def += BUILD_FEAST_VITALITY.def;
+    foodHealMult = BUILD_FEAST_VITALITY.foodHealMult;
+    foodGuardMs = BUILD_FEAST_VITALITY.foodGuardMs;
+  }
+
+  return {
+    atk,
+    hp,
+    def,
+    armorPenPct,
+    thornsDefRatio,
+    intervalMult,
+    goldMult,
+    dropMult,
+    potionBuffMult,
+    mpRestoreMult,
+    foodHealMult,
+    foodGuardMs,
+  };
 }
 
 function monsterById(pack: EnhancedContentPack, id: string) {
@@ -190,12 +224,13 @@ function monsterById(pack: EnhancedContentPack, id: string) {
 function playerExtras(player: EnhancedPlayerState, now: Date, pack?: EnhancedContentPack) {
   const build = playerBuildExtras(player);
   const buffs = getBuffEffects(player, now);
-  let buffAtk = buffs.atk || 0;
-  let buffDef = buffs.def || 0;
+  let buffAtk = Math.round((buffs.atk || 0) * build.potionBuffMult);
+  let buffDef = Math.round((buffs.def || 0) * build.potionBuffMult);
+  const capRatio = build.potionBuffMult > 1 ? 0.55 : 0.4;
   if (pack && (buffAtk > 0 || buffDef > 0)) {
     const basePc = playerCombatant(player, pack, build);
-    buffAtk = Math.min(buffAtk, Math.max(2, Math.floor(basePc.atk * 0.4)));
-    buffDef = Math.min(buffDef, Math.max(2, Math.floor(basePc.def * 0.4 + 4)));
+    buffAtk = Math.min(buffAtk, Math.max(2, Math.floor(basePc.atk * capRatio)));
+    buffDef = Math.min(buffDef, Math.max(2, Math.floor(basePc.def * capRatio + 4)));
   }
   return {
     atk: build.atk + buffAtk,
@@ -280,7 +315,8 @@ function maybeDrinkMp(player: EnhancedPlayerState, pack: EnhancedContentPack, en
     if (mpHeal <= 0) return;
     const res = consumeItem(player, pack, slot.itemId, new Date(atMs));
     if (!res.ok) return;
-    const actualMp = res.healed?.mp ?? mpHeal;
+    const mpMult = player.chapter4Build === "elixir_frenzy" ? BUILD_ELIXIR_FRENZY.mpRestoreMult : 1;
+    const actualMp = Math.round((res.healed?.mp ?? mpHeal) * mpMult);
     enc.playerMp = Math.min(enc.playerMaxMp || 0, (enc.playerMp || 0) + actualMp);
     if (Number(def?.effect?.hp) > 0) {
       enc.playerHp = Math.min(enc.playerMaxHp, enc.playerHp + (res.healed?.hp ?? Number(def.effect.hp)));
@@ -295,6 +331,7 @@ function maybeDrinkMp(player: EnhancedPlayerState, pack: EnhancedContentPack, en
 function maybeEat(player: EnhancedPlayerState, pack: EnhancedContentPack, enc: HpCombatState, atMs: number, mechDefs: BossMechanicDef[] = []) {
   const slots = player.combatLoadout?.food || [];
   if (!enc.foodReadyAt) enc.foodReadyAt = [];
+  const hasFeast = player.chapter4Build === "feast_vitality";
   slots.slice(0, combatSlotCounts(player, pack).food).forEach((slot, i) => {
     if (!slot?.itemId) return;
     if ((enc.foodReadyAt![i] || 0) > atMs) return;
@@ -307,14 +344,19 @@ function maybeEat(player: EnhancedPlayerState, pack: EnhancedContentPack, enc: H
     const res = consumeItem(player, pack, slot.itemId, new Date(atMs));
     if (!res.ok) return;
     const beforeHp = enc.playerHp;
-    const actualHeal = res.healed?.hp ?? heal;
+    const baseHeal = res.healed?.hp ?? heal;
+    const actualHeal = hasFeast ? Math.round(baseHeal * BUILD_FEAST_VITALITY.foodHealMult) : baseHeal;
     enc.playerHp = Math.min(enc.playerMaxHp, enc.playerHp + actualHeal);
     if (Number(def?.effect?.mp) > 0) {
       enc.playerMp = Math.min(enc.playerMaxMp || 0, (enc.playerMp || 0) + (res.healed?.mp ?? Number(def.effect.mp)));
     }
+    if (hasFeast) {
+      enc.braceUntil = Math.max(enc.braceUntil || 0, atMs + BUILD_FEAST_VITALITY.foodGuardMs);
+      enc.braceMult = Math.min(enc.braceMult ?? 1, BUILD_FEAST_VITALITY.foodGuardMult);
+    }
     enc.foodReadyAt![i] = atMs + FOOD_COOLDOWN_MS;
     recordConsumed(enc, slot.itemId, res.itemName);
-    pushLog(enc, `吃了 ${res.itemName}，恢复 ${actualHeal} 生命`);
+    pushLog(enc, hasFeast ? `吃了 ${res.itemName}，盛宴生机恢复 ${actualHeal} 生命并展开活力护盾` : `吃了 ${res.itemName}，恢复 ${actualHeal} 生命`);
     if (enc.playerHp > beforeHp) {
       cleanseMiasma(enc, mechDefs, `吃下${res.itemName}`, pushLog);
     }
@@ -1008,6 +1050,17 @@ export function chooseBuild(
       id === "gale_flurry"
         ? "你领悟了沼泽流派「疾风连击」：攻击 +5，普攻间隔缩短 15%。"
         : "你领悟了沼泽流派「寻宝猎人」：生命 +25、防御 +4，战斗金币 +25%、掉落率 +30%。"
+    );
+    return { ok: true };
+  }
+  if (id === "elixir_frenzy" || id === "feast_vitality") {
+    if (player.chapter4Build) return { ok: false, error: "already_chosen" };
+    player.chapter4Build = id;
+    appendLog(
+      player,
+      id === "elixir_frenzy"
+        ? "你觉醒了雪山火山流派「秘药狂热」：攻击 +8，战斗药剂增益放大 50%、回蓝提升 35%。"
+        : "你觉醒了雪山火山流派「盛宴生机」：生命 +55、防御 +8，战斗进食额外回血 35% 并获得活力护盾。"
     );
     return { ok: true };
   }

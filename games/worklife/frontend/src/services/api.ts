@@ -436,6 +436,8 @@ class ApiClient {
       | 'quenched_thorns'
       | 'gale_flurry'
       | 'relic_hunter'
+      | 'elixir_frenzy'
+      | 'feast_vitality'
   ) {
     return this.post('/combat/hp/build', { id });
   }

@@ -96,6 +96,8 @@ P1 MISSING 0
 - `skills/quenched_thorns` PRODUCTION (webp)
 - `skills/gale_flurry` PRODUCTION (webp)
 - `skills/relic_hunter` PRODUCTION (webp)
+- `skills/elixir_frenzy` PRODUCTION (webp)
+- `skills/feast_vitality` PRODUCTION (webp)
 - `materials/ore_1` PRODUCTION (webp)
 - `materials/ingot_1` PRODUCTION (webp)
 - `materials/fiber_1` PRODUCTION (webp)
@@ -655,8 +657,8 @@ P1 MISSING 0
 - `ui/avatar_animal_cat` PRODUCTION (webp)
 
 ```
-P2 REQUIRED 605
-P2 PRODUCTION 605
+P2 REQUIRED 607
+P2 PRODUCTION 607
 P2 PLACEHOLDER 0
 P2 MISSING 0
 ```

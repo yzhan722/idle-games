@@ -2,13 +2,26 @@ export type ChapterGoal = {
   id: string;
   title: string;
   detail: string;
-  tab: "logging" | "woodworking" | "mining" | "smithing" | "gathering" | "tailoring" | "adventure" | "character";
+  tab:
+    | "logging"
+    | "woodworking"
+    | "mining"
+    | "smithing"
+    | "gathering"
+    | "tailoring"
+    | "farming"
+    | "fishing"
+    | "cooking"
+    | "crystal_mining"
+    | "alchemy"
+    | "adventure"
+    | "character";
   craftCategory?: "materials" | "weapons" | "equipment";
-  chapter?: 1 | 2 | 3;
+  chapter?: 1 | 2 | 3 | 4;
   stepIndex?: number;
   stepTotal?: number;
-  buildChapter?: 1 | 2 | 3;
-  adventureZone?: "forest" | "mine" | "swamp";
+  buildChapter?: 1 | 2 | 3 | 4;
+  adventureZone?: "forest" | "mine" | "swamp" | "snow" | "volcano";
 };
 
 type State = {
@@ -28,6 +41,8 @@ type State = {
   chapter1Build?: string;
   chapter2Build?: string;
   chapter3Build?: string;
+  chapter4Build?: string;
+  activeClassId?: string;
   stats?: {
     totalKills?: number;
     totalBossKills?: number;
@@ -67,7 +82,17 @@ export const CHAPTER3_OBJECTIVES = [
   "ch3_build",
   "ch3_swamp_scouts",
   "ch3_boss",
-  "ch3_complete",
+] as const;
+
+export const CHAPTER4_OBJECTIVES = [
+  "ch4_farm_fish",
+  "ch4_cook_feast",
+  "ch4_mine_crystal",
+  "ch4_brew_elixir",
+  "ch4_build",
+  "ch4_snow_boss",
+  "ch4_volcano_boss",
+  "ch4_complete",
 ] as const;
 
 export function nextChapter1Goal(state: State | null | undefined): ChapterGoal {
@@ -179,7 +204,7 @@ export function chapter1Complete(state: State | null | undefined): boolean {
 
 function enrichGoal(
   goal: ChapterGoal,
-  chapter: 1 | 2 | 3,
+  chapter: 1 | 2 | 3 | 4,
   objectives: readonly string[]
 ): ChapterGoal {
   const idx = objectives.indexOf(goal.id);
@@ -492,14 +517,193 @@ export function nextChapterGoal(state: State | null | undefined): ChapterGoal {
     );
   }
 
+  // Chapter 4: Snow & Volcano — Farming/Fishing -> Cooking -> Crystal/Alchemy -> Dual Bosses
+  const isSnowDone = Boolean(completedChapters.snow || (kills.snow_boss || 0) > 0);
+  const isVolcanoDone = Boolean(completedChapters.volcano || (kills.volcano_boss || 0) > 0);
+  if (!isSnowDone || !isVolcanoDone) {
+    const rawIngredientCount =
+      (inv.fish_river || 0) +
+      (inv.fish_sea || 0) +
+      (inv.fish_lake || 0) +
+      (inv.fish_deepsea || 0);
+    const cookedMealCount =
+      (inv.food_simple || 0) +
+      (inv.food_fine || 0) +
+      (inv.food_hearty_stew || 0) +
+      (inv.food_master_feast || 0) +
+      (inv.food_royal_banquet || 0);
+    const crystalCount =
+      (inv.crystal_1 || 0) +
+      (inv.crystal_2 || 0) +
+      (inv.crystal_3 || 0) +
+      (inv.crystal_4 || 0);
+    const elixirCount =
+      (inv.potion_hp_t1 || 0) +
+      (inv.potion_hp_t2 || 0) +
+      (inv.potion_hp_t3 || 0) +
+      (inv.potion_mp_t1 || 0) +
+      (inv.potion_mp_t2 || 0) +
+      (inv.potion_battle_fury || 0) +
+      (inv.potion_guardian_elixir || 0) +
+      (inv.potion_iron_skin || 0) +
+      (inv.potion_arcane_surge || 0);
+    const hasCh4Build = Boolean(achieved.ch4_build || state?.chapter4Build);
+
+    const hasCookedFeast = Boolean(
+      achieved.ch4_cook_feast ||
+        cookedMealCount > 0 ||
+        hasCh4Build ||
+        (actions.act_cook_food_t1 || 0) > 0 ||
+        (actions.act_cook_food_t2 || 0) > 0 ||
+        (actions.act_cook_food_hearty_stew || 0) > 0 ||
+        (actions.act_cook_food_master_feast || 0) > 0 ||
+        (actions.act_cook_dish_grilled_lake || 0) > 0 ||
+        (actions.act_cook_dish_frost_sashimi || 0) > 0 ||
+        (actions.act_cook_dish_deepsea_stew || 0) > 0
+    );
+
+    const hasFarmedOrFished = Boolean(
+      achieved.ch4_farm_fish ||
+        rawIngredientCount > 0 ||
+        hasCookedFeast ||
+        (actions.act_fish_river_t1 || 0) > 0 ||
+        (actions.act_fish_sea_t2 || 0) > 0 ||
+        (actions.act_fish_shrimp_t1 || 0) > 0 ||
+        (actions.act_plant_cotton_t1 || 0) > 0 ||
+        (actions.act_plant_flax_t2 || 0) > 0 ||
+        (actions.act_plant_silk_t3 || 0) > 0 ||
+        (actions.act_plant_magic_t4 || 0) > 0 ||
+        (actions.act_raise_sheep_t1 || 0) > 0 ||
+        (actions.act_raise_cattle_t2 || 0) > 0 ||
+        (actions.act_raise_chicken_t1 || 0) > 0
+    );
+
+    if (!hasFarmedOrFished) {
+      return enrichGoal(
+        {
+          id: "ch4_farm_fish",
+          title: "农牧耕作或江海垂钓储备食材",
+          detail: "极寒雪山与熔岩深渊消耗剧烈！先去「钓鱼」捕获鲜鱼或前往「种植」收获农牧作物。",
+          tab: state?.activeClassId === "farmer" ? "farming" : "fishing",
+        },
+        4,
+        CHAPTER4_OBJECTIVES
+      );
+    }
+
+    if (!hasCookedFeast) {
+      return enrichGoal(
+        {
+          id: "ch4_cook_feast",
+          title: "烹制远征续航料理",
+          detail: "前往「烹饪」烹调料理并装入战斗食物槽，自动抵御雪山严寒与持续消耗。",
+          tab: "cooking",
+        },
+        4,
+        CHAPTER4_OBJECTIVES
+      );
+    }
+
+    const hasBrewedElixir = Boolean(
+      achieved.ch4_brew_elixir ||
+        elixirCount > 0 ||
+        hasCh4Build ||
+        (actions.act_brew_potion_hp_t1 || 0) > 0 ||
+        (actions.act_brew_potion_hp_t2 || 0) > 0 ||
+        (actions.act_brew_potion_hp_t3 || 0) > 0 ||
+        (actions.act_brew_potion_mp_t1 || 0) > 0 ||
+        (actions.act_brew_potion_mp_t2 || 0) > 0 ||
+        (actions.act_brew_potion_battle_fury || 0) > 0 ||
+        (actions.act_brew_potion_guardian_elixir || 0) > 0 ||
+        (actions.act_brew_potion_iron_skin || 0) > 0 ||
+        (actions.act_brew_potion_arcane_surge || 0) > 0
+    );
+
+    const hasMinedCrystal = Boolean(
+      achieved.ch4_mine_crystal ||
+        crystalCount > 0 ||
+        hasBrewedElixir ||
+        (actions.act_mine_crystal_t1 || 0) > 0 ||
+        (actions.act_mine_crystal_t2 || 0) > 0 ||
+        (actions.act_mine_crystal_t3 || 0) > 0
+    );
+
+    if (!hasMinedCrystal) {
+      return enrichGoal(
+        {
+          id: "ch4_mine_crystal",
+          title: "开采微光与辉光魔晶",
+          detail: "炼金药剂离不开高纯度魔力晶簇。前往「水晶」矿脉采集微光水晶或辉光水晶。",
+          tab: "crystal_mining",
+        },
+        4,
+        CHAPTER4_OBJECTIVES
+      );
+    }
+
+    if (!hasBrewedElixir) {
+      return enrichGoal(
+        {
+          id: "ch4_brew_elixir",
+          title: "调配炼金战斗秘药",
+          detail: "前往「炼金」萃取生命/魔力药水或狂战/铁壁药剂，挂载至战斗补给栏提升爆发。",
+          tab: "alchemy",
+        },
+        4,
+        CHAPTER4_OBJECTIVES
+      );
+    }
+
+    if (!hasCh4Build) {
+      return enrichGoal(
+        {
+          id: "ch4_build",
+          title: "择定冰火远征流派：秘药狂热 / 盛宴生机",
+          detail: "六艺俱备！在「秘药狂热（攻击+8·药剂增益+50%·回蓝+35%）」与「盛宴生机（生命+55·防御+8·进食回血+35%并结盾）」间择一觉醒。",
+          tab: "adventure",
+          adventureZone: "snow",
+          buildChapter: 4,
+        },
+        4,
+        CHAPTER4_OBJECTIVES
+      );
+    }
+
+    if (!isSnowDone) {
+      return enrichGoal(
+        {
+          id: "ch4_snow_boss",
+          title: "踏破冰封雪山 · 讨伐霜冠雪魔",
+          detail: "备齐料理与炼金秘药，前往「冒险·冰封雪山」，击穿霜冠雪魔的寒冰护甲！",
+          tab: "adventure",
+          adventureZone: "snow",
+        },
+        4,
+        CHAPTER4_OBJECTIVES
+      );
+    }
+
+    return enrichGoal(
+      {
+        id: "ch4_volcano_boss",
+        title: "决战熔岩深渊 · 讨伐烈焰魔君",
+        detail: "向炽热地心进军！注意烈焰魔君喷发预警与坚守减伤，平定熔岩深渊霸主。",
+        tab: "adventure",
+        adventureZone: "volcano",
+      },
+      4,
+      CHAPTER4_OBJECTIVES
+    );
+  }
+
   return enrichGoal(
     {
-      id: "ch3_complete",
-      title: "第三章完成 · 雪山与火山前路已开",
-      detail: "森林、矿山与沼泽三大战区悉数平定！可前往生涯领取里程碑赏金，或继续向冰原雪山进发。",
+      id: "ch4_complete",
+      title: "第四章完成 · 六艺贯通与深渊远征",
+      detail: "森林、矿山、沼泽、雪山、火山五大疆域全部平定，六大职业百炼贯通！向幽影深渊与神域更高峰进发吧。",
       tab: "adventure",
     },
-    3,
-    CHAPTER3_OBJECTIVES
+    4,
+    CHAPTER4_OBJECTIVES
   );
 }

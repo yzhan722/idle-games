@@ -1957,14 +1957,14 @@ export default function NewGameInterface() {
       <NextGoalBar
         goal={chapterGoal}
         goLabel={
-          chapterGoal.id === "complete" || chapterGoal.id === "ch3_complete"
+          chapterGoal.id === "complete" || chapterGoal.id === "ch3_complete" || chapterGoal.id === "ch4_complete"
             ? (claimableCount > 0 ? `领工钱 ${claimableCount}` : "看成就")
             : chapterGoal.buildChapter
               ? "选流派"
               : undefined
         }
         onGo={() => {
-          if (chapterGoal.id === "complete" || chapterGoal.id === "ch3_complete") {
+          if (chapterGoal.id === "complete" || chapterGoal.id === "ch3_complete" || chapterGoal.id === "ch4_complete") {
             setProgPanel("achievements")
             return
           }
