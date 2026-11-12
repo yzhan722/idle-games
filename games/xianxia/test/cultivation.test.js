@@ -28,7 +28,7 @@ afterEach(() => {
 //--------------------------------
 test("Stages are generated from realm defs and lianqi_1 starts researched", () => {
     const cult = game.cultivation;
-    expect(cult.stages.length).toBe(32);	//10 + 3*7 + 1
+    expect(cult.stages.length).toBe(38);	//10 + 3*7 + 1 + 3*2
     expect(cult.getStage("lianqi_0").researched).toBe(true);
     expect(cult.getStage("lianqi_0").prices.length).toBe(0);	//free onboarding
     expect(cult.getStage("lianqi_1").researched).toBe(false);
@@ -1351,7 +1351,9 @@ test("Unified Realm-Module Interlock & One Key Resource per Major Realm (九境�
         lianxu: "unobtainium",
         heti: "relic",
         dacheng: "timeCrystal",
-        dujie: "timeCrystal"
+        dujie: "timeCrystal",
+        zhenxian: "xianyuan",
+        jinxian: "xianyuan"
     };
     for (const st of cult.stages) {
         const expectedRes = expectedRealmRes[st.realm];
@@ -1383,6 +1385,7 @@ test("Unified Realm-Module Interlock & One Key Resource per Major Realm (九境�
     expect(cult.isCoreRealmResource("unobtainium")).toBe(true);
     expect(cult.isCoreRealmResource("relic")).toBe(true);
     expect(cult.isCoreRealmResource("timeCrystal")).toBe(true);
+    expect(cult.isCoreRealmResource("xianyuan")).toBe(true);
     expect(cult.isCoreRealmResource("coal")).toBe(false);
 
     // 3. Realm gates interlock Buildings, Science Techs, and Hundred-Arts (Crafts & Upgrades)
@@ -1714,9 +1717,9 @@ test("Full-system resource integrity & unobstructed progression route: zero refe
     const activeResSet = new Set(
         game.resPool.resources.filter(r => r.visible || r.craftable).map(r => r.name)
     );
-    expect(activeResSet.size).toBe(26);
+    expect(activeResSet.size).toBe(27);
 
-    // 1. Every price across all game systems only references the 26 active visible/craftable resources
+    // 1. Every price across all game systems only references the 27 active visible/craftable resources
     const assertPricesValid = (items) => {
         for (const it of (items || [])) {
             const prices = it.prices || (it.stages && it.stages[0].prices) || [];
@@ -1768,10 +1771,14 @@ test("Full-system resource integrity & unobstructed progression route: zero refe
         }
     }
 
-    // 3. End-to-end realm-by-realm progression simulation (Lianqi -> Dujie): zero deadlocks
-    const realms = ["lianqi", "zhuji", "jiedan", "yuanying", "huashen", "lianxu", "heti", "dacheng", "dujie"];
+    // 3. End-to-end realm-by-realm progression simulation (Lianqi -> Jinxian): zero deadlocks
+    const realms = ["lianqi", "zhuji", "jiedan", "yuanying", "huashen", "lianxu", "heti", "dacheng", "dujie", "zhenxian", "jinxian"];
     for (let r = 0; r < realms.length; r++) {
         game.resetState();
+        if (r >= 8) {
+            game.cultivation.immortalAscended = true;
+            game.cultivation.riftFloor = 35;
+        }
         for (const st of game.cultivation.stages) {
             if (realms.indexOf(st.realm) <= r) {
                 st.researched = true;
@@ -2119,5 +2126,115 @@ test("XX-1: high-realm sects (sect7-sect9) gate progression, resource costs, zhe
     expect(cult.battle.player.maxMp).toBe(Math.round(100 * (1 + zy)));
     expect(cult.battle.player.mp).toBe(Math.round(60 * (1 + zy)));
 });
+
+test("XX-2: Immortal Ascension ceremony, Zhenxian/Jinxian stages, Immortal Qi conversion cycle, and 26F-35F Greater Rift bosses", () => {
+    const cult = game.cultivation;
+    const xy = game.resPool.get("xianyuan");
+    const tc = game.resPool.get("timeCrystal");
+    const xw = game.resPool.get("xiuwei");
+    expect(xy).toBeTruthy();
+
+    // 1. Pre-ascension gates: requires both dujie_0 researched AND riftFloor >= 25
+    expect(cult.canAscendImmortal()).toBe(false);
+    expect(cult.ascendToImmortalRealm()).toBe(false);
+
+    for (const st of cult.stages) {
+        if (st.realm !== "zhenxian" && st.realm !== "jinxian") {
+            st.researched = true;
+        }
+    }
+    cult.riftFloor = 24;
+    expect(cult.canAscendImmortal()).toBe(false);
+    expect(cult.checkGate(cult.getStage("zhenxian_0"))).toBe(false);
+
+    cult.riftFloor = 25;
+    cult.heartDemon = 42;
+    cult.pillToxicity = 35;
+    expect(cult.canAscendImmortal()).toBe(true);
+    // Still locked before completing the ascension ceremony
+    expect(cult.checkGate(cult.getStage("zhenxian_0"))).toBe(false);
+
+    // 2. Execute Immortal Ascension (non-resetting ceremony, distinct from reincarnation)
+    expect(cult.ascendToImmortalRealm()).toBe(true);
+    expect(cult.immortalAscended).toBe(true);
+    expect(cult.canAscendImmortal()).toBe(false);
+    expect(cult.heartDemon).toBe(0);
+    expect(cult.pillToxicity).toBe(0);
+    expect(cult.daoyun).toBe(1);
+    expect(xy.unlocked).toBe(true);
+    expect(xy.value).toBeCloseTo(25);
+    expect(cult.getStage("dujie_0").researched).toBe(true);
+    expect(cult.checkGate(cult.getStage("zhenxian_0"))).toBe(true);
+
+    // 3. Breakthrough into Zhenxian & Jinxian + Immortal Essence passive rate
+    game.updateCaches();
+    game.calculateAllEffects();
+    const preZhenxianRate = game.calcResourcePerTick("xianyuan");
+    expect(preZhenxianRate).toBeGreaterThan(0);
+
+    // zhenxian_0 costs only xiuwei so players never hit a resource deadlock right after ascending
+    const zx0 = cult.getStage("zhenxian_0");
+    expect(zx0.prices.length).toBe(1);
+    expect(zx0.prices[0].name).toBe("xiuwei");
+
+    zx0.researched = true;
+    cult.getStage("zhenxian_1").researched = true;
+    cult.getStage("zhenxian_2").researched = true;
+    game.updateCaches();
+    game.calculateAllEffects();
+    expect(game.calcResourcePerTick("xianyuan")).toBeGreaterThan(preZhenxianRate);
+
+    // Jinxian requires riftFloor >= 30
+    expect(cult.checkGate(cult.getStage("jinxian_0"))).toBe(false);
+    cult.riftFloor = 30;
+    expect(cult.checkGate(cult.getStage("jinxian_0"))).toBe(true);
+
+    // 4. Immortal Qi conversion cycle: infuseImmortalQi (10 timeCrystal -> 18 xianyuan) & comprehendDaoLaw
+    tc.unlocked = true;
+    tc.value = 9;
+    expect(cult.infuseImmortalQi()).toBe(false);
+    tc.value = 15;
+    const beforeInfuseXy = xy.value;
+    expect(cult.infuseImmortalQi()).toBe(true);
+    expect(tc.value).toBeCloseTo(5);
+    expect(xy.value).toBeCloseTo(beforeInfuseXy + 18);
+
+    const firstLawCost = cult.getDaoyunCost();
+    xy.value = firstLawCost - 1;
+    expect(cult.comprehendDaoLaw()).toBe(false);
+    xy.value = firstLawCost + 10;
+    const cpBeforeLaw = cult.getCombatPower();
+    expect(cult.comprehendDaoLaw()).toBe(true);
+    expect(cult.daoyun).toBe(2);
+    expect(xy.value).toBeCloseTo(10);
+    expect(cult.getCombatPower()).toBeGreaterThan(cpBeforeLaw);
+
+    // 5. Greater Rift 26F-35F Immortal Demon Bosses & xianyuan drops + art bindings
+    expect(cult.GRIFT_BOSSES.length).toBeGreaterThanOrEqual(7);
+    cult.riftFloor = 26;
+    cult.riftKeys = 3;
+    expect(cult.startRiftBattle("greater")).toBe(true);
+    expect(cult.battle.enemy.key).toBe("yaoxian");
+    cult.battle = null;
+
+    // Save / load / resetState persistence & reincarnation reset
+    const saveBlob = {};
+    cult.save(saveBlob);
+    expect(saveBlob.cultivation.immortalAscended).toBe(true);
+    expect(saveBlob.cultivation.daoyun).toBe(2);
+
+    cult.resetState();
+    expect(cult.immortalAscended).toBe(false);
+    expect(cult.daoyun).toBe(0);
+
+    cult.load(saveBlob);
+    expect(cult.immortalAscended).toBe(true);
+    expect(cult.daoyun).toBe(2);
+
+    expect(classes.ui.XianxiaArt.PORTRAIT_ART.zhenxian).toBe("res/art/portrait_zhenxian.jpg");
+    expect(classes.ui.XianxiaArt.RES_ART.xianyuan).toBe("res/art/res_xianyuan.jpg");
+    expect(classes.ui.XianxiaArt.MONSTER_ART.yaoxian).toBe("res/art/monster_yaoxian.jpg");
+});
+
 
 

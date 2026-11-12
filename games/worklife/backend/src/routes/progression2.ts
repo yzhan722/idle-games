@@ -11,7 +11,9 @@ import {
   claimBounty,
   rerollBounties,
   getPrestigeInfo,
-  doPrestige
+  doPrestige,
+  upgradeAstrolabeNode,
+  respecAstrolabe
 } from "../progression2";
 
 /**
@@ -154,5 +156,56 @@ export async function progression2Routes(
         stateRevision: outcome.state.stateRevision
       });
     } catch (error) { return commandFail(reply, error); }
+  });
+
+  app.post("/progression2/prestige/astrolabe", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const body = z
+      .object({ nodeId: z.string().min(1), ...revisionSchema })
+      .strict()
+      .parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await runCommand(userId, body, (state) => {
+        const res = upgradeAstrolabeNode(state, body.nodeId);
+        if (!res.ok) throw new PlayerCommandRejected(res.reason || "astrolabe_upgrade_rejected");
+        return res;
+      });
+      return reply.send({
+        ok: true,
+        nodeId: outcome.result.nodeId,
+        newRank: outcome.result.newRank,
+        cost: outcome.result.cost,
+        prestige: getPrestigeInfo(outcome.state),
+        playerPre: outcome.state.prestige,
+        stateRevision: outcome.state.stateRevision,
+      });
+    } catch (error) {
+      return commandFail(reply, error);
+    }
+  });
+
+  app.post("/progression2/prestige/astrolabe/respec", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const body = z.object({ ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await runCommand(userId, body, (state) => {
+        const res = respecAstrolabe(state);
+        if (!res.ok) throw new PlayerCommandRejected(res.reason || "astrolabe_respec_rejected");
+        return res;
+      });
+      return reply.send({
+        ok: true,
+        refundedPoints: outcome.result.refundedPoints,
+        prestige: getPrestigeInfo(outcome.state),
+        playerPre: outcome.state.prestige,
+        stateRevision: outcome.state.stateRevision,
+      });
+    } catch (error) {
+      return commandFail(reply, error);
+    }
   });
 }

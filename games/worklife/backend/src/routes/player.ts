@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
-import { ACTION_QUEUE_MAX, getActionRates, getRareFindMultiplier, yieldChance, queuedActionBlocker, startNextQueuedAction, startLifeActionNow, type Storage } from "../storage";
+import { ACTION_QUEUE_MAX, getActionQueueMax, getActionRates, getRareFindMultiplier, yieldChance, queuedActionBlocker, startNextQueuedAction, startLifeActionNow, type Storage } from "../storage";
 import type { EnhancedContentPack, EnhancedPlayerState } from "../types";
 import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
 import { taskSummary } from "../tasks";
@@ -216,8 +216,9 @@ export async function playerRoutes(
           if (!action) throw new PlayerCommandRejected('unknown_action');
           if (String(action.id).startsWith('act_combat_')) throw new PlayerCommandRejected('combat_not_queueable');
           if (!Array.isArray(state.activityQueue)) state.activityQueue = [];
-          if (state.activityQueue.length >= ACTION_QUEUE_MAX) {
-            throw new PlayerCommandRejected('queue_full');
+          const queueMax = getActionQueueMax(state);
+          if (state.activityQueue.length >= queueMax) {
+            throw new PlayerCommandRejected(`queue_full:${queueMax}`);
           }
           // 等级不够的动作现在就拒绝；材料不够的允许排队（前面的动作可能会把材料做出来）
           const blocker = queuedActionBlocker(state, contentPack, body.actionId);
@@ -237,7 +238,10 @@ export async function playerRoutes(
       return commandFail(reply, error, (code, r) => {
         if (code === 'unknown_action') return r.status(400).send({ error: code, message: '未知的动作' });
         if (code === 'combat_not_queueable') return r.status(400).send({ error: code, message: '战斗不能加入队列' });
-        if (code === 'queue_full') return r.status(400).send({ error: code, message: `队列最多 ${ACTION_QUEUE_MAX} 项` });
+        if (code === 'queue_full' || code.startsWith('queue_full:')) {
+          const cap = code.includes(':') ? Number(code.split(':')[1]) || ACTION_QUEUE_MAX : ACTION_QUEUE_MAX;
+          return r.status(400).send({ error: 'queue_full', message: `队列最多 ${cap} 项` });
+        }
         if (code.startsWith('skill_level_required')) {
           return r.status(400).send({ error: 'skill_level_required', message: `技能等级不足，需要 ${code.split(':')[1]} 级` });
         }

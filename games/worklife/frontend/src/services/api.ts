@@ -376,6 +376,8 @@ class ApiClient {
   async rerollBounties() { return this.post('/progression2/bounties/reroll', {}); }
   async getPrestige() { return this.get('/progression2/prestige'); }
   async doPrestige() { return this.post('/progression2/prestige', {}); }
+  async upgradeAstrolabeNode(nodeId: string) { return this.post('/progression2/prestige/astrolabe', { nodeId }); }
+  async respecAstrolabe() { return this.post('/progression2/prestige/astrolabe/respec', {}); }
 
   async startHpCombat(monsterId: string) {
     return this.post('/combat/hp/start', { monsterId, autoRepeat: true });

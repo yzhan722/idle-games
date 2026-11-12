@@ -1,6 +1,7 @@
 import type { EnhancedContentPack, EnhancedPlayerState } from "./types";
 import { appendLog, ensurePlayerExtensions, GATHER_SKILL_FOR_CRAFT } from "./storage";
 import { syncAchievements } from "./progression";
+import { getAstrolabeBonuses } from "./progression2";
 
 /**
  * MWI 房屋 (Houses): one room per skill. Every level costs gold plus that skill's own materials
@@ -111,6 +112,7 @@ export function upgradeRoom(
 
 export function houseView(player: EnhancedPlayerState, pack: EnhancedContentPack) {
   ensureHouse(player);
+  const houseBonusMult = getAstrolabeBonuses(player).houseBonusMult;
   const names = new Map((pack.items as Array<{ id: string; name?: string }>).map((i) => [i.id, i.name || i.id]));
   return {
     totalLevel: totalHouseLevel(player),
@@ -123,8 +125,14 @@ export function houseView(player: EnhancedPlayerState, pack: EnhancedContentPack
         level,
         bonus:
           r.skillId === "skill_combat"
-            ? { combatXpPct: level * HOUSE_XP_PER_LEVEL * 100, rareFindPct: level * HOUSE_RARE_FIND_PER_LEVEL }
-            : { xpPct: level * HOUSE_XP_PER_LEVEL * 100, efficiencyPct: level * HOUSE_EFFICIENCY_PER_LEVEL },
+            ? {
+                combatXpPct: Math.round(level * HOUSE_XP_PER_LEVEL * 100 * houseBonusMult * 10) / 10,
+                rareFindPct: Math.round(level * HOUSE_RARE_FIND_PER_LEVEL * houseBonusMult * 10) / 10,
+              }
+            : {
+                xpPct: Math.round(level * HOUSE_XP_PER_LEVEL * 100 * houseBonusMult * 10) / 10,
+                efficiencyPct: Math.round(level * HOUSE_EFFICIENCY_PER_LEVEL * houseBonusMult * 10) / 10,
+              },
         nextCost: next
           ? {
               gold: next.gold,

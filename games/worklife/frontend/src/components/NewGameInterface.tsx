@@ -1465,8 +1465,9 @@ export default function NewGameInterface() {
     return () => { cancelled = true; };
   }, [previewActionId, playerState?.skills, playerState?.equipment]);
 
-  // ---- 行动队列（银河奶牛式）----
-  const ACTION_QUEUE_MAX = 5;
+  // ---- 行动队列（银河奶牛式，受传承星盘「行囊统筹」动态扩充）----
+  const ACTION_QUEUE_MAX =
+    5 + Math.min(3, Math.max(0, Math.floor(Number((playerState as any)?.prestige?.astrolabe?.astro_queue_cap || 0))));
   const [gatherQuantity, setGatherQuantity] = useState<number | null>(null); // null = 无限
   const actionNameOf = (actionId: string) =>
     contentPack?.actions?.find((a: any) => a.id === actionId)?.name || actionId;
@@ -2517,10 +2518,12 @@ export default function NewGameInterface() {
       {progPanel === 'prestige' && (
         <PrestigePanel
           onClose={() => setProgPanel(null)}
-          onChange={() => {
+          onChange={(mode) => {
             apiClient.clearCache();
-            setCurrentActivity(null);
-            setBattleState(null);
+            if (mode !== 'astrolabe') {
+              setCurrentActivity(null);
+              setBattleState(null);
+            }
             void refreshPlayerState();
           }}
         />

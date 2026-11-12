@@ -2,7 +2,7 @@ import type { AllChapterBuildId, BossMechanicDef, EnhancedContentPack, EnhancedP
 import { appendLog, applyDurabilityWear, getBuffEffects, getRareFindMultiplier, isDurabilityBroken } from "./storage";
 import { hitDamage, monsterCombatant, playerCombatant } from "./first_hour_combat";
 import { syncAchievements } from "./progression";
-import { getPrestigeMultiplier, getReputationBonuses } from "./progression2";
+import { getPrestigeMultiplier, getReputationBonuses, getAstrolabeBonuses } from "./progression2";
 import { e2eFastCombatInterval, e2eFastHeavyChopCdMs } from "./e2e_fast";
 import { consumeItem } from "./systems";
 import { COMBAT_SKILL_NAMES, grantCombatXp } from "./combat_skills";
@@ -152,11 +152,12 @@ export function buildExtras(build?: EnhancedPlayerState["chapter1Build"]) {
 }
 
 export function playerBuildExtras(
-  player?: Pick<EnhancedPlayerState, "chapter1Build" | "chapter2Build" | "chapter3Build" | "chapter4Build"> | null
+  player?: Pick<EnhancedPlayerState, "chapter1Build" | "chapter2Build" | "chapter3Build" | "chapter4Build" | "prestige"> | null
 ): CombinedBuildExtras {
   const ch1 = buildExtras(player?.chapter1Build);
-  let atk = ch1.atk;
-  let hp = ch1.hp;
+  const astro = getAstrolabeBonuses(player);
+  let atk = ch1.atk + astro.bonusAtk;
+  let hp = ch1.hp + astro.bonusHp;
   let def = ch1.def;
   let armorPenPct = 0;
   let thornsDefRatio = 0;
@@ -679,9 +680,10 @@ function grantWin(
   const isForestMonster = ["slime", "caterpillar", "monkey", "mushroom", "bee", "crab", "forest_boss"].includes(enc.monsterId);
   const goldMul = (player.activeClassId === "woodcutter" && player.settings?.characterCreated && isForestMonster ? 1.15 : 1) * (buffEff.goldGain || 1) * repBuffs.goldGain * prestigeMul * buildAll.goldMult;
   const gold = Math.round(Number(m.gold || 0) * goldMul);
-  // MWI house: 训练场 adds +1% combat XP per level.
+  // MWI house: 训练场 adds +1% combat XP per level (amplified by astro_house_keep & astro_battle_vigor).
+  const astro = getAstrolabeBonuses(player);
   const trainingLevel = houseLevelForSkill(player, "skill_combat");
-  const xp = Math.round(Number(m.xp || 0) * (1 + trainingLevel * HOUSE_XP_PER_LEVEL) * (buffEff.xpGain || 1) * repBuffs.xpGain * prestigeMul * 10) / 10;
+  const xp = Math.round(Number(m.xp || 0) * (1 + trainingLevel * HOUSE_XP_PER_LEVEL * astro.houseBonusMult) * (buffEff.xpGain || 1) * repBuffs.xpGain * prestigeMul * astro.combatXpMult * 10) / 10;
   player.inventory.gold = (player.inventory.gold || 0) + gold;
   const rare = rareDropFor(pack, m);
   enc.drops = [];

@@ -165,7 +165,171 @@
 }
 .prestige-stat-value { font-size: 26px; font-weight: 700; color: #d8e6f2; line-height: 1; }
 .prestige-stat.highlight .prestige-stat-value { color: #c084fc; }
+.prestige-stat.astrolabe-dust {
+  background: linear-gradient(135deg, rgba(245, 197, 94, 0.14), rgba(56, 189, 248, 0.05));
+  border-color: rgba(245, 197, 94, 0.42);
+}
+.prestige-stat.astrolabe-dust .prestige-stat-value { color: #fcd34d; }
 .prestige-stat-label { font-size: 12px; color: #9aa8b6; margin-top: 6px; }
+
+/* 异世界传承星盘 */
+.astrolabe-section {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(192, 132, 252, 0.12), transparent 55%),
+    radial-gradient(circle at 85% 85%, rgba(245, 197, 94, 0.10), transparent 55%),
+    rgba(13, 19, 32, 0.72);
+  border: 1px solid rgba(212, 176, 106, 0.28);
+}
+.astrolabe-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.astrolabe-sub {
+  font-size: 12px;
+  color: #a8b7c9;
+  margin-top: 3px;
+}
+.astrolabe-respec-btn {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-color: rgba(245, 197, 94, 0.35) !important;
+  color: #fcd34d !important;
+}
+.astrolabe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.astrolabe-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.astrolabe-card.is-lit {
+  border-color: rgba(245, 197, 94, 0.48);
+  background: linear-gradient(160deg, rgba(245, 197, 94, 0.08), rgba(192, 132, 252, 0.05));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.astrolabe-card.is-max {
+  border-color: rgba(192, 132, 252, 0.65);
+}
+.astrolabe-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.astrolabe-icon-wrap {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: radial-gradient(circle, rgba(252, 211, 77, 0.16), rgba(15, 23, 42, 0.85));
+  border: 1px solid rgba(245, 197, 94, 0.32);
+}
+.astrolabe-node-icon {
+  width: 40px !important;
+  height: 40px !important;
+  object-fit: contain;
+}
+.astrolabe-meta {
+  flex: 1;
+  min-width: 0;
+}
+.astrolabe-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.astrolabe-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.astrolabe-constellation {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: #fcd34d;
+  background: rgba(245, 197, 94, 0.14);
+  border: 1px solid rgba(245, 197, 94, 0.28);
+  white-space: nowrap;
+}
+.astrolabe-pips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+}
+.astrolabe-pip {
+  width: 14px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.24);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+.astrolabe-pip.on {
+  background: linear-gradient(90deg, #f59e0b, #fde047);
+  border-color: #fde047;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.55);
+}
+.astrolabe-rank-text {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-left: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.astrolabe-summary {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+.astrolabe-effect-cur {
+  font-size: 12px;
+  color: #86efac;
+  line-height: 1.4;
+}
+.astrolabe-effect-next {
+  font-size: 11.5px;
+  color: #fcd34d;
+  line-height: 1.4;
+}
+.astrolabe-upgrade-btn {
+  margin-top: auto;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: rgba(30, 41, 59, 0.7);
+  color: #94a3b8;
+  cursor: not-allowed;
+  transition: transform 0.12s ease, background 0.2s ease;
+}
+.astrolabe-upgrade-btn.ready {
+  cursor: pointer;
+  color: #1e1b4b;
+  border-color: #fcd34d;
+  background: linear-gradient(135deg, #fde047, #f59e0b);
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+}
+.astrolabe-upgrade-btn.ready:hover {
+  transform: translateY(-1px);
+}
 
 .prestige-desc {
   font-size: 13px;
@@ -245,4 +409,6 @@
   .bounty-list { grid-template-columns: 1fr; }
   .rep-tier-card { grid-template-columns: 1fr auto; }
   .rep-tier-mid { display: none; }
+  .prestige-hero { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .astrolabe-grid { grid-template-columns: 1fr; }
 }

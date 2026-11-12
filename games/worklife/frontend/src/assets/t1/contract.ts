@@ -229,6 +229,10 @@ const P2_SKILL_ICONS: Array<[string, string]> = [
   ["skills/hellfire_cataclysm","炼狱浩劫"], ["skills/genesis_sanctuary","创世神恩"], ["skills/omega_annihilation","万界终焉"],
   ["skills/heavy_sunder","重锤破甲"], ["skills/quenched_thorns","淬火反伤"], ["skills/gale_flurry","疾风连击"], ["skills/relic_hunter","寻宝猎人"],
   ["skills/elixir_frenzy","秘药狂热"], ["skills/feast_vitality","盛宴生机"],
+  ["skills/astro_house_keep","灵居恒存"], ["skills/astro_queue_cap","行囊统筹"],
+  ["skills/astro_boss_fortune","猎首星辉"], ["skills/astro_starter_kit","传世行装"],
+  ["skills/astro_gather_crit","丰饶双星"], ["skills/astro_craft_eff","巧匠星轨"],
+  ["skills/astro_battle_vigor","战神宿命"],
 ];
 for (const [key, name] of P2_SKILL_ICONS) {
   T1_ASSET_CONTRACT.push(

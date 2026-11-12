@@ -25,7 +25,7 @@ import type { PlayerCommand, PlayerCommandResult } from './player_commands';
 // 声望/转生：永久被动加成与全局倍率，接入 simulateToNow 在线结算。
 // 注：progression2 也会从本模块导入 appendLog/ensurePlayerExtensions，
 // 二者均仅在函数体内（运行时）相互引用，故此循环依赖在求值期是安全的。
-import { getReputationBonuses, getPrestigeMultiplier } from "./progression2";
+import { getReputationBonuses, getPrestigeMultiplier, getAstrolabeBonuses } from "./progression2";
 import { enhancementStatMultiplier } from "./enhancement_math";
 import { ensureProgression } from './progression_state';
 import { professionMasteryBonuses } from './profession_perks';
@@ -940,13 +940,23 @@ export function getActionRates(
     if (gearEff > 0) efficiencySources.push({ label: "装备", pct: Math.round(gearEff * 10) / 10 });
     const buffEffPct = Number((buffEff as any).efficiency || 0);
     if (buffEffPct > 0) efficiencySources.push({ label: "增益", pct: buffEffPct });
-    if (houseLevel > 0) efficiencySources.push({ label: `房屋 · ${houseRoomName}`, pct: houseLevel * HOUSE_EFFICIENCY_PER_LEVEL });
+    const astro = getAstrolabeBonuses(player);
+    if (houseLevel > 0) {
+      efficiencySources.push({
+        label: `房屋 · ${houseRoomName}`,
+        pct: Math.round(houseLevel * HOUSE_EFFICIENCY_PER_LEVEL * astro.houseBonusMult * 10) / 10,
+      });
+    }
     if (mastery.efficiencyPct > 0) efficiencySources.push({ label: "本职专精", pct: mastery.efficiencyPct });
+    if (astro.lifeEfficiencyPct > 0) {
+      efficiencySources.push({ label: "传承星盘 · 巧匠星轨", pct: astro.lifeEfficiencyPct });
+    }
     efficiencyPct = efficiencySources.reduce((s, x) => s + x.pct, 0);
   }
 
   // MWI house: the skill's room adds +1% XP per level (combat XP goes through hp_combat instead).
-  const houseXpMul = !isCombatAct && houseLevel > 0 ? 1 + houseLevel * HOUSE_XP_PER_LEVEL : 1;
+  const astroForXp = getAstrolabeBonuses(player);
+  const houseXpMul = !isCombatAct && houseLevel > 0 ? 1 + houseLevel * HOUSE_XP_PER_LEVEL * astroForXp.houseBonusMult : 1;
   const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul;
   // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成
   const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul;
@@ -961,11 +971,12 @@ export function getActionRates(
 export function getRareFindMultiplier(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date = new Date()): number {
   const gear = equippedStatSum(player, pack, "rareFind");
   const buffs = getBuffEffects(player, now) as unknown as { rareFind?: number };
-  // MWI house: 训练场 adds +1% rare find per level.
+  const astro = getAstrolabeBonuses(player);
+  // MWI house: 训练场 adds +1% rare find per level (amplified by astro_house_keep).
   const { houseLevelForSkill, HOUSE_RARE_FIND_PER_LEVEL } = require("./houses") as typeof import("./houses");
-  const house = houseLevelForSkill(player, "skill_combat") * HOUSE_RARE_FIND_PER_LEVEL;
+  const house = houseLevelForSkill(player, "skill_combat") * HOUSE_RARE_FIND_PER_LEVEL * astro.houseBonusMult;
   const tailorBonus = player.activeClassId === "tailor" ? 15 : 0;
-  const total = gear + Number(buffs.rareFind || 0) + house + tailorBonus;
+  const total = gear + Number(buffs.rareFind || 0) + house + tailorBonus + astro.rareFindPct;
   return Math.max(0, 1 + total / 100);
 }
 
@@ -985,6 +996,10 @@ export function efficiencyRepeats(efficiencyPct: number, rng: () => number = Mat
 }
 
 export const ACTION_QUEUE_MAX = 5;
+
+export function getActionQueueMax(player?: Pick<EnhancedPlayerState, "prestige"> | null): number {
+  return ACTION_QUEUE_MAX + getAstrolabeBonuses(player).extraQueueSlots;
+}
 
 /**
  * Why a queued action cannot start right now (undefined = it can).
@@ -1390,11 +1405,15 @@ function simulateWindow(input: SimulationInput): SimulateResult {
               
               const chance = yieldChance(yield_.chance, rareFindMul);
               if (rng() < chance) {
-                // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成
+                const gatherDoubleChance = !isCombat && !hasConsumes && yield_.itemId !== 'gold'
+                  ? getAstrolabeBonuses(next).gatherDoubleChance
+                  : 0;
+                const critMult = gatherDoubleChance > 0 && rng() < gatherDoubleChance ? 2 : 1;
+                // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成；采集物可受丰饶双星暴击翻倍
                 const baseQty =
                   yield_.itemId === 'gold'
                     ? Math.round(yield_.qty * rates.goldMul)
-                    : yield_.qty;
+                    : yield_.qty * critMult;
                 const addAmount = Math.min(baseQty, MAX_ITEM_OUTPUT - currentTotal);
                 const currentAmount = next.inventory[yield_.itemId] || 0;
                 next.inventory[yield_.itemId] = currentAmount + addAmount;

@@ -383,6 +383,8 @@ export type BountyState = {
 export type PrestigeState = {
   count: number;          // 已转生次数
   points: number;         // 累计转生点数（决定永久全局倍率）
+  spentPoints?: number;   // 已投入传承星盘的转生点数（不影响全局基础倍率）
+  astrolabe?: Record<string, number>; // 异世界传承星盘节点等级 (nodeId -> rank)
   lastPrestigeAt?: string;
 };
 

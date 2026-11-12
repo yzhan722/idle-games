@@ -187,6 +187,16 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 		color: "#26e6a6",
 		calculatePerTick: true
 	},{
+		name : "xianyuan",
+		title: $I("resources.xianyuan.title"),
+		type : "exotic",
+		category: "treasure",
+		transient: true,
+		visible: true,
+		persists: false,
+		color: "#ffd97d",
+		calculatePerTick: true
+	},{
 		name : "relic",
 		title: $I("resources.relic.title"),
 		type : "exotic",
@@ -528,13 +538,13 @@ dojo.declare("classes.managers.ResourceManager", com.nuclearunicorn.core.TabMana
 				}
 			}
 
-			if (res.name == "xiuwei" && res.calculatePerTick) {
-				res.perTickCached = game.fixFloatPointNumber(game.calcResourcePerTick("xiuwei"));
+			if ((res.name == "xiuwei" || res.name == "xianyuan") && res.calculatePerTick) {
+				res.perTickCached = game.fixFloatPointNumber(game.calcResourcePerTick(res.name));
 			}
 			var resPerTick = game.getResourcePerTick(res.name, false);
 			this.addResPerTick(res.name, resPerTick);
-			if (res.name == "xiuwei" && res.calculatePerTick) {
-				res.perTickCached = game.fixFloatPointNumber(game.calcResourcePerTick("xiuwei"));
+			if ((res.name == "xiuwei" || res.name == "xianyuan") && res.calculatePerTick) {
+				res.perTickCached = game.fixFloatPointNumber(game.calcResourcePerTick(res.name));
 			}
 
 		}

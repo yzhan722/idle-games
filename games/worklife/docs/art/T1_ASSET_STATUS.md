@@ -98,6 +98,13 @@ P1 MISSING 0
 - `skills/relic_hunter` PRODUCTION (webp)
 - `skills/elixir_frenzy` PRODUCTION (webp)
 - `skills/feast_vitality` PRODUCTION (webp)
+- `skills/astro_house_keep` PRODUCTION (webp)
+- `skills/astro_queue_cap` PRODUCTION (webp)
+- `skills/astro_boss_fortune` PRODUCTION (webp)
+- `skills/astro_starter_kit` PRODUCTION (webp)
+- `skills/astro_gather_crit` PRODUCTION (webp)
+- `skills/astro_craft_eff` PRODUCTION (webp)
+- `skills/astro_battle_vigor` PRODUCTION (webp)
 - `materials/ore_1` PRODUCTION (webp)
 - `materials/ingot_1` PRODUCTION (webp)
 - `materials/fiber_1` PRODUCTION (webp)
@@ -657,8 +664,8 @@ P1 MISSING 0
 - `ui/avatar_animal_cat` PRODUCTION (webp)
 
 ```
-P2 REQUIRED 607
-P2 PRODUCTION 607
+P2 REQUIRED 614
+P2 PRODUCTION 614
 P2 PLACEHOLDER 0
 P2 MISSING 0
 ```

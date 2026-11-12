@@ -90,7 +90,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	//realm defs; stages are generated from these
 	//战力底数表——index 与 REALM_DEFS 对齐,境内每层再乘 (1+i*0.5)
-	COMBAT_BASE: [2, 25, 100, 400, 1600, 6400, 25000, 100000, 400000],
+	COMBAT_BASE: [2, 25, 100, 400, 1600, 6400, 25000, 100000, 400000, 1600000, 6400000],
 	REALM_DEFS: [
 		//lianqi layers are guaranteed successes — the onboarding slope
 		//xiuwei costs are tuned against simulate-cultivation.js: each layer should
@@ -107,8 +107,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		{key:"huashen", layers:3,  base:{xiuwei:280000, faith:2200},       mul:1.48, bonus:0.20,  chance:0.36, life:3200,   keyRes:"faith",       gate:{riftFloor:9}},
 		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50},   mul:1.52, bonus:0.35,  chance:0.30, life:8000,   keyRes:"unobtainium", gate:{riftFloor:12}},
 		{key:"heti",    layers:3,  base:{xiuwei:2600000, relic:20},        mul:1.60, bonus:0.60,  chance:0.25, life:20000,  keyRes:"relic",       gate:{riftFloor:15}},
-		{key:"dacheng", layers:3,  base:{xiuwei:7200000, timeCrystal:15},  mul:1.50, bonus:1.00,  chance:0.20, life:60000,  keyRes:"timeCrystal", gate:{riftFloor:20}},
-		{key:"dujie",   layers:1,  base:{xiuwei:24000000, timeCrystal:50}, mul:1,    bonus:1.60,  chance:0.10, life:100000, keyRes:"timeCrystal", gate:{riftFloor:25}}
+		{key:"dacheng", layers:3,  base:{xiuwei:7200000, timeCrystal:15},   mul:1.50, bonus:1.00,  chance:0.20, life:60000,  keyRes:"timeCrystal", gate:{riftFloor:20}},
+		{key:"dujie",   layers:1,  base:{xiuwei:24000000, timeCrystal:50},  mul:1,    bonus:1.60,  chance:0.10, life:100000, keyRes:"timeCrystal", gate:{riftFloor:25}},
+		{key:"zhenxian",layers:3,  base:{xiuwei:85000000, xianyuan:35},     mul:1.65, bonus:2.80,  chance:0.16, life:300000, keyRes:"xianyuan",    gate:{riftFloor:25, immortal:true}},
+		{key:"jinxian", layers:3,  base:{xiuwei:320000000, xianyuan:180},   mul:1.75, bonus:5.00,  chance:0.12, life:900000, keyRes:"xianyuan",    gate:{riftFloor:30, immortal:true}}
 	],
 
 	//四座共享储灵建筑 — 每 2~3 种有上限的核心灵材共享一座提升上限的储灵建筑
@@ -264,6 +266,38 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			techs: ["metaphysics", "artificialGravity", "terraformation", "hydroponics", "exogeophysics", "antimatter", "blackchain", "quantumCryptography"],
 			crafts: [],
 			upgrades: ["longRangeSpaceships", "spiceNavigation", "thoriumEngine"]
+		},
+		{
+			realmIdx: 9,
+			key: "zhenxian",
+			stageKey: "zhenxian_0",
+			title: "真仙期",
+			shortTitle: "真仙",
+			res: "xianyuan",
+			resTitle: "仙元",
+			resBadge: "真仙核",
+			resDesc: "渡九九紫霄雷劫破界飞升，脱尽凡胎引九天仙灵化为仙元，与天地同寿",
+			coreBlds: [],
+			auxBlds: [],
+			techs: [],
+			crafts: [],
+			upgrades: []
+		},
+		{
+			realmIdx: 10,
+			key: "jinxian",
+			stageKey: "jinxian_0",
+			title: "金仙期",
+			shortTitle: "金仙",
+			res: "xianyuan",
+			resTitle: "仙元",
+			resBadge: "金仙核",
+			resDesc: "参悟诸天法则道韵，凝铸万劫不磨的不朽金仙道果",
+			coreBlds: [],
+			auxBlds: [],
+			techs: [],
+			crafts: [],
+			upgrades: []
 		}
 	],
 
@@ -1128,6 +1162,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.supremePills = {};
 		this.pillCraftCount = {};
 		this.lastAlchemyNote = null;
+		this.immortalAscended = false;
+		this.daoyun = 0;
 		this.tale = {};
 		this.taleLog = [];
 		this.stages = this.buildStages();
@@ -1159,12 +1195,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				var prices = [];
 				for (var res in def.base){
 					if (r == 0 && i == 0){ continue; }	//炼气一层 is the free starting stage
-					if (r >= 1 && r <= 7 && i == 0 && res != "xiuwei"){
-						//大境界初破(初期 _0): 破入新境方才解锁本境核心灵筑(如筑基开矿脉、结丹开炼器室、化神筑玄坛、炼虚布地火阵、合体起极光阵、大乘祭轮回盘);
-						//故初入大境唯验修为道行与秘境生死大关,本境核心灵材自中期(_1)、后期(_2)起正式入药淬炼,彻底消除先有鸡还是先有蛋的卡关死锁!
+					if (((r >= 1 && r <= 7) || r == 9) && i == 0 && res != "xiuwei"){
+						//大境界初破(初期 _0): 破入新境方才解锁本境核心灵材自生(含真仙初期凝练仙体始生仙元);
+						//故初入大境唯验修为道行与秘境/飞升大关,本境核心灵材自中期(_1)、后期(_2)起正式入药淬炼,消除死锁!
 						continue;
 					}
-					var expIdx = (r >= 1 && r <= 7 && res != "xiuwei") ? (i - 1) : i;
+					var expIdx = (((r >= 1 && r <= 7) || r == 9) && res != "xiuwei") ? (i - 1) : i;
 					var val = def.base[res] * Math.pow(def.mul, expIdx);
 					val = this.roundNice(val);
 					prices.push({name: res, val: val});
@@ -1173,24 +1209,23 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					//一境一核心灵材: 炼气期全程唯以【灵木(wood)】为破境核心灵材
 					prices.push({name: "wood", val: this.roundNice(25 * Math.pow(1.65, i - 4))});
 				}
+				var stEffects = {
+					"realmProductionRatio": def.bonus,
+					"realmStorageRatio": (r == 0 && i == 0) ? 0 : def.bonus * 2.0,
+					"xiuweiRatio": def.bonus * 0.35,
+					"xiuweiPerTickBase": (r == 0 && i == 0) ? 0 : def.bonus,
+					"combatPower": this.COMBAT_BASE[r] * (1 + i * 0.5)
+				};
+				if (r >= 9){
+					stEffects["xianyuanPerTickBase"] = (r == 9 ? 0.08 : 0.25) * (1 + i * 0.5);
+				}
 				stages.push({
 					name: def.key + "_" + i,
 					realm: def.key,
 					label: (def.layers > 1) ? realmLabel + "·" + $I("cultivation.layer." + layerKey) : realmLabel,
 					description: $I("cultivation.realm." + def.key + ".desc"),
 					prices: prices,
-					effects: {
-						"realmProductionRatio": def.bonus,
-						"realmStorageRatio": (r == 0 && i == 0) ? 0 : def.bonus * 2.0,
-						//was xiuweiJobRatio — dead since the disciple system was
-						//removed; now a direct multiplier on xiuwei production
-						"xiuweiRatio": def.bonus * 0.35,
-						//凡人修仙传: 初始凡人态(lianqi_0)尚未引气入体,基础修为增速恒为 0;
-						//须先筑起神手竹庐或突破炼气二层后方有周天灵气自生
-						"xiuweiPerTickBase": (r == 0 && i == 0) ? 0 : def.bonus,
-						//战力底数——境界即道行;每境底数约翻四倍,境内层层渐涨
-						"combatPower": this.COMBAT_BASE[r] * (1 + i * 0.5)
-					},
+					effects: stEffects,
 					chance: (def.chance >= 1) ? 1 : Math.max(0.05, def.chance - i * 0.04),
 					lifespan: def.life,	//寿元随大境界走——突破永远延寿,绝不减寿
 					gate: (i == 0 && def.gate) ? def.gate : null,	//大关瓶颈只守首层
@@ -1713,12 +1748,19 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//(sect meta 另有 gate 字段是关卡名字符串,typeof 挡之)
 	checkGate: function(stage){
 		var g = stage.gate;
-		if (!g || typeof g != "object" || g.riftFloor == null){ return {ok: true}; }
+		if (!g || typeof g != "object"){ return {ok: true}; }
+		if (g.immortal && !this.immortalAscended){
+			return {ok: false, kind: "immortal", need: g.riftFloor || 25, have: this.riftFloor};
+		}
+		if (g.riftFloor == null){ return {ok: true}; }
 		return {ok: this.riftFloor >= g.riftFloor, kind: "rift", need: g.riftFloor, have: this.riftFloor};
 	},
 
 	gateLabel: function(stage){
 		var chk = this.checkGate(stage);
+		if (chk.kind == "immortal"){
+			return $I("cultivation.gate.immortal", [chk.need, chk.have]);
+		}
 		return $I("cultivation.gate.rift", [chk.need, chk.have]);
 	},
 
@@ -2342,6 +2384,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (origin && origin.powerMult){ mult *= origin.powerMult; }	//猎户之后
 		var riftDmgBonus = this.game.getEffect("riftDamageRatio") || 0;
 		if (riftDmgBonus > 0){ mult *= (1 + riftDmgBonus * 0.5); }	//高阶宗门镇宗秘境神通
+		if (this.immortalAscended){ mult *= 1.35; }					//仙躯蜕凡
+		if (this.daoyun > 0){ mult *= (1 + this.daoyun * 0.15); }	//诸天法则道韵加持
 		mult *= Math.max(0.3, 1 - this.heartDemon * 0.005);	//心魔蚀骨
 		return Math.max(1, base * mult);
 	},
@@ -2349,7 +2393,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//秘境守关战力天梯——门槛层锚定「上一境界圆满×0.9」,档内几何插值;
 	//战力每境约翻四倍,故跨档急升:同一境界内越阶越深,守关者越不可力敌
 	RIFT_POWER: [
-		[0, 40], [3, 160], [6, 565], [9, 2185], [12, 8665], [15, 34585], [20, 135835], [25, 540835]
+		[0, 40], [3, 160], [6, 565], [9, 2185], [12, 8665], [15, 34585], [20, 135835], [25, 540835], [30, 2150000], [35, 8600000]
 	],
 	floorPower: function(floor){
 		var L = this.RIFT_POWER;
@@ -3340,14 +3384,17 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		{key: "gravity",  label: "元磁禁空", counter: "sword",   desc: "元磁神光压制飞遁，凭【青元剑阵】沛然剑意强行破开禁空"}
 	],
 
-	//六枚玄天古印:通关指定大秘境层数永久点亮,加持修为、万产与战力
+	//九枚玄天与真仙道印:通关指定大秘境层数永久点亮,加持修为、万产与战力
 	RIFT_SEALS: [
 		{floor: 3,  key: "xuejin",   label: "血禁灵印", desc: "修为吐纳 +15%", xiuweiRatio: 0.15},
 		{floor: 6,  key: "xutian",   label: "虚天丹印", desc: "洞府万产 +15%", realmProductionRatio: 0.15},
 		{floor: 9,  key: "kunwu",    label: "昆吾剑印", desc: "斗法战力 +20%", combatMult: 0.20},
 		{floor: 12, key: "zhuimo",   label: "坠魔元印", desc: "修为吐纳 +30%", xiuweiRatio: 0.30},
 		{floor: 15, key: "xuantian", label: "玄天真印", desc: "万产+30% · 战力+30%", realmProductionRatio: 0.30, combatMult: 0.30},
-		{floor: 20, key: "jiemian",  label: "界面道印", desc: "修为吐纳 +50%", xiuweiRatio: 0.50}
+		{floor: 20, key: "jiemian",  label: "界面道印", desc: "修为吐纳 +50%", xiuweiRatio: 0.50},
+		{floor: 25, key: "feisheng", label: "飞升仙印", desc: "万产+40% · 战力+40%", realmProductionRatio: 0.40, combatMult: 0.40},
+		{floor: 30, key: "taiyi",    label: "太乙道印", desc: "修为+80% · 战力+50%", xiuweiRatio: 0.80, combatMult: 0.50},
+		{floor: 35, key: "hunyuan",  label: "混元金印", desc: "修为+120% · 万产+60% · 战力+80%", xiuweiRatio: 1.20, realmProductionRatio: 0.60, combatMult: 0.80}
 	],
 
 	//秘境探幽六大奇遇房(前两重随机轮转,第三重必入「核心祭坛·虚天古宝匣」)
@@ -3431,7 +3478,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (f <= 6){ return {name: "虚天内殿·冰火道", boss: $I("cultivation.grift.boss.2")}; }
 		if (f <= 9){ return {name: "昆吾仙山·镇魔渊", boss: $I("cultivation.grift.boss.3")}; }
 		if (f <= 15){ return {name: "坠魔古渊·血焰坛", boss: $I("cultivation.grift.boss.4")}; }
-		return {name: "真仙界缝·混沌墟", boss: $I("cultivation.grift.boss.5")};
+		if (f <= 25){ return {name: "真仙界缝·混沌墟", boss: $I("cultivation.grift.boss.5")}; }
+		if (f <= 30){ return {name: "九幽冥仙界·法则断层", boss: $I("cultivation.grift.boss.6")}; }
+		return {name: "三十三天外·紫霄雷池", boss: $I("cultivation.grift.boss.7")};
 	},
 
 	getRiftSealBonuses: function(){
@@ -3867,7 +3916,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			pattern: ["curse", "heavy", "strike", "heavy"]
 		},
 		{
-			maxFloor: 999,
+			maxFloor: 25,
 			key: "zhenxian",
 			name: "真仙法则化身",
 			zone: "真仙界缝·混沌墟",
@@ -3880,6 +3929,36 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			defMult: 1.15,
 			startShieldRatio: 0.35,
 			pattern: ["heavy", "guard", "curse", "heavy"]
+		},
+		{
+			maxFloor: 30,
+			key: "yaoxian",
+			name: "太乙蚀道妖仙",
+			zone: "九幽冥仙界·法则断层",
+			icon: "妖",
+			tier: "上界妖仙",
+			traitTitle: "蚀道仙煞 · 万古妖罡",
+			traitDesc: "攻击附加蚀道魔煞并凝结30%妖仙罡盾；蓄力【太乙灭仙击】唯有【玄水灵盾】反震可破",
+			hpMult: 1.28,
+			atkMult: 1.24,
+			defMult: 1.18,
+			startShieldRatio: 0.40,
+			pattern: ["heavy", "curse", "strike", "heavy"]
+		},
+		{
+			maxFloor: 999,
+			key: "yaoxian",
+			name: "混元天魔仙尊",
+			zone: "三十三天外·紫霄雷池",
+			icon: "尊",
+			tier: "仙界霸主",
+			traitTitle: "紫霄寂灭 · 诸天沉沦",
+			traitDesc: "每回合恢复6%仙躯并穿透护甲；蓄力【混元寂灭劫】被【玄水灵盾】反震时承受天道反噬",
+			hpMult: 1.35,
+			atkMult: 1.30,
+			defMult: 1.22,
+			startShieldRatio: 0.45,
+			pattern: ["curse", "heavy", "guard", "heavy"]
 		}
 	],
 
@@ -4439,6 +4518,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var tc = Math.max(1, Math.round((floor - 10) * 0.8));
 			addRes("timeCrystal", tc);
 		}
+		var xyGain = 0;
+		if (floor >= 26){
+			xyGain = Math.max(3, Math.round((floor - 24) * 3.5));
+			var xyRes = this.game.resPool.get("xianyuan");
+			if (xyRes){ xyRes.unlocked = true; }
+			addRes("xianyuan", xyGain);
+		}
 		var floorScale = scale * (1 + floor * 0.25);
 		var artOdds = Math.min(0.65, 0.18 + floor * 0.03);
 		var gArtDropped = false;
@@ -4448,7 +4534,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		b.active = false;
 		b.result = "win";
 		var gWinMsg = "【上古大秘境破关】成功斩杀第 " + floor + " 层妖王【" + b.enemy.name + "】！修为 +" + fmt(gAmt) +
-			"，上古遗宝 +" + relics + (gArtDropped ? "，更夺得上古法宝！" : "！");
+			"，上古遗宝 +" + relics + (xyGain > 0 ? "，仙元 +" + xyGain : "") + (gArtDropped ? "，更夺得上古法宝！" : "！");
 		b.logs.unshift((turnSummary ? turnSummary + " — " : "") + gWinMsg);
 		this.lastBattleReport = this.buildBattleReport(floor, true, this.getCombatPower(), this.floorPower(floor));
 		this.setLastAction("ok", gWinMsg);
@@ -4533,7 +4619,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	//建造三合斗法战报——依玩家当前本命法宝、青竹剑阵、奇虫灵兽与守关古妖动态成篇
 	buildBattleReport: function(floor, win, power, need){
-		var bossKey = floor <= 3 ? "1" : (floor <= 6 ? "2" : (floor <= 9 ? "3" : (floor <= 15 ? "4" : "5")));
+		var bossKey = floor <= 3 ? "1" : (floor <= 6 ? "2" : (floor <= 9 ? "3" : (floor <= 15 ? "4" : (floor <= 25 ? "5" : (floor <= 30 ? "6" : "7")))));
 		var boss = $I("cultivation.grift.boss." + bossKey);
 		var nArt = this.natalArtifact ? this.getArtifact(this.natalArtifact) : null;
 		if (!nArt || !nArt.researched){
@@ -4600,6 +4686,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				var tc = Math.max(1, Math.round((floor - 10) * 0.8));
 				addRes("timeCrystal", tc);
 			}
+			if (floor >= 26){
+				var xy = Math.max(2, Math.round((floor - 24) * 2.5));
+				var xyObj = this.game.resPool.get("xianyuan");
+				if (xyObj){ xyObj.unlocked = true; }
+				addRes("xianyuan", xy);
+			}
 			if (gInfo.countered && this.riftStance === "stealth"){
 				this.heartDemon = Math.max(0, this.heartDemon - 6);
 			}
@@ -4648,12 +4740,19 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (floor >= 12){
 			addRes("timeCrystal", Math.max(1, Math.round((floor - 10) * 0.6)));
 		}
+		var sweepXy = 0;
+		if (floor >= 26){
+			sweepXy = Math.max(2, Math.round((floor - 24) * 1.8));
+			var sXyObj = this.game.resPool.get("xianyuan");
+			if (sXyObj){ sXyObj.unlocked = true; }
+			addRes("xianyuan", sweepXy);
+		}
 		var dropped = false;
 		if (Math.random() < Math.min(0.55, 0.14 + floor * 0.025 + (this.riftStance === "array" ? 0.08 : 0))){
 			dropped = this.rollArtifactDrop(floorScale);
 			if (dropped && this.game.render){ this.game.render(); }
 		}
-		var text = "清剿上古秘境第 " + floor + " 层凯旋：修为 +" + fmt(amt) + "，上古遗宝 +" + relics + (dropped ? "，更获古宝机缘！" : "");
+		var text = "清剿上古秘境第 " + floor + " 层凯旋：修为 +" + fmt(amt) + "，上古遗宝 +" + relics + (sweepXy > 0 ? "，仙元 +" + sweepXy : "") + (dropped ? "，更获古宝机缘！" : "");
 		this.game.msg("【秘境清剿】" + text, "important");
 		this.setLastAction("ok", text);
 		this.lastBattleReport = this.buildBattleReport(floor, true, this.getCombatPower(), this.floorPower(floor));
@@ -4709,6 +4808,77 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return true;
 	},
 
+	// ---------------- XX-2 渡九九雷劫 · 飞升真仙界与仙灵气循环 ----------------
+
+	canAscendImmortal: function(){
+		var dujie = this.getStage("dujie_0");
+		return !!(dujie && dujie.researched && this.riftFloor >= 25 && !this.immortalAscended);
+	},
+
+	ascendToImmortalRealm: function(){
+		if (!this.canAscendImmortal()){ return false; }
+		this.immortalAscended = true;
+		this.heartDemon = 0;
+		this.pillToxicity = 0;
+		this.daoyun = (this.daoyun || 0) + 1;
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+		this.game.resPool.addResEvent("xianyuan", 25);
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playTribulation){
+			classes.ui.XianxiaAudio.playTribulation(this.game);
+		}
+		this.syncRealmUnlocks();
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var msg = $I("cultivation.feisheng.done", [25, 1]);
+		this.setLastAction("ok", msg);
+		this.game.msg(msg, "important");
+		if (this.game.render){ this.game.render(); }
+		return true;
+	},
+
+	getDaoyunCost: function(){
+		var d = Math.max(0, Math.floor(this.daoyun || 0));
+		return this.roundNice(25 * Math.pow(1.45, d));
+	},
+
+	infuseImmortalQi: function(){
+		if (!this.immortalAscended){ return false; }
+		var tc = this.game.resPool.get("timeCrystal");
+		if (!tc || tc.value < 10){
+			this.game.msg($I("cultivation.immortal.msg.notc"), "alert");
+			return false;
+		}
+		this.game.resPool.addResEvent("timeCrystal", -10);
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+		this.game.resPool.addResEvent("xianyuan", 18);
+		this.game.msg($I("cultivation.immortal.msg.infuse", [18]), "notice");
+		return true;
+	},
+
+	comprehendDaoLaw: function(){
+		if (!this.immortalAscended){ return false; }
+		var cost = this.getDaoyunCost();
+		var xy = this.game.resPool.get("xianyuan");
+		if (!xy || xy.value < cost){
+			this.game.msg($I("cultivation.immortal.msg.noxy", [cost]), "alert");
+			return false;
+		}
+		this.game.resPool.addResEvent("xianyuan", -cost);
+		this.daoyun = Math.max(0, Math.floor(this.daoyun || 0)) + 1;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(
+			$I("cultivation.immortal.msg.law", [
+				this.daoyun,
+				Math.round(this.daoyun * 18),
+				Math.round(this.daoyun * 12),
+				Math.round(this.daoyun * 15)
+			]),
+			"important"
+		);
+		return true;
+	},
+
 	// ---------------- lifecycle ----------------
 
 	save: function(saveData){
@@ -4750,6 +4920,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			alchemyExp: this.alchemyExp || 0,
 			supremePills: this.supremePills || {},
 			pillCraftCount: this.pillCraftCount || {},
+			immortalAscended: !!this.immortalAscended,
+			daoyun: this.daoyun || 0,
 			soundMuted: !!this.soundMuted,
 			demonWarned: this.demonWarned,
 			sihuaCount: this.sihuaCount,
@@ -4876,6 +5048,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		if (c.pillCraftCount && typeof c.pillCraftCount == "object"){
 			this.pillCraftCount = c.pillCraftCount;
+		}
+		if (typeof c.immortalAscended == "boolean"){
+			this.immortalAscended = c.immortalAscended;
+		}
+		if (typeof c.daoyun == "number"){
+			this.daoyun = Math.max(0, Math.floor(c.daoyun));
 		}
 		if (typeof c.soundMuted == "boolean"){ this.soundMuted = c.soundMuted; }
 		if (typeof c.demonWarned == "boolean"){ this.demonWarned = c.demonWarned; }
@@ -5096,6 +5274,16 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (sealBonus.realmProductionRatio > 0){
 			add("realmProductionRatio", sealBonus.realmProductionRatio);
 		}
+		if (this.immortalAscended){
+			add("xiuweiRatio", 0.50);
+			add("realmProductionRatio", 0.30);
+			add("xianyuanPerTickBase", 0.05);
+		}
+		if (this.daoyun > 0){
+			add("xiuweiRatio", this.daoyun * 0.18);
+			add("realmProductionRatio", this.daoyun * 0.12);
+			add("xianyuanPerTickBase", this.daoyun * 0.03);
+		}
 		var zyEff = g["zhenyuanRatio"] || 0;
 		if (zyEff > 0 && g["xiuweiPerTickBase"] > 0){
 			add("xiuweiPerTickBase", g["xiuweiPerTickBase"] * zyEff * 0.25);	//高阶宗门周天真元转化修为底数
@@ -5167,6 +5355,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.supremePills = {};
 		this.pillCraftCount = {};
 		this.lastAlchemyNote = null;
+		this.immortalAscended = false;
+		this.daoyun = 0;
 		this.lastLotYear = this.game.calendar.year;	//转世不立刻抽签,来年再说
 		this.demonWarned = false;
 		this.pendingOrigin = false;	//标记由转世存档带来,不入内存态重置
@@ -5872,6 +6062,32 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		//⑧ 仙途纪事——你走过的路,皆成道途;回看用,沉到页底
 		this.chronicleEl = dojo.create("details", {className: "xxChronicle"}, tabContainer);
 		this._chronicleLen = -1;	//rebuild only when the log grows
+
+		//⑨ XX-2 真仙界飞升大典与仙灵法则循环仙台
+		this.immortalPanelEl = dojo.create("div", {
+			className: "xxImmortalBox",
+			style: { display: "none" }
+		}, tabContainer);
+		this._immortalSig = "";
+		dojo.connect(this.immortalPanelEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalPanelEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-immortal");
+				if (act){
+					if (act === "ascend"){
+						cult.ascendToImmortalRealm();
+					} else if (act === "infuse"){
+						cult.infuseImmortalQi();
+					} else if (act === "law"){
+						cult.comprehendDaoLaw();
+					}
+					self._immortalSig = "";
+					self.update();
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
 
 		var ascendRow = dojo.create("div", { className: "xxAscendRow" }, tabContainer);
 		this.ascendBtn = dojo.create("div", {
@@ -6809,6 +7025,72 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			}
 		}
 
+		if (this.immortalPanelEl){
+			var dujieSt = cult.getStage("dujie_0");
+			var showImmortal = !!(dujieSt && dujieSt.researched);
+			this.immortalPanelEl.style.display = showImmortal ? "block" : "none";
+			if (showImmortal){
+				dojo.toggleClass(this.immortalPanelEl, "is-ascended", !!cult.immortalAscended);
+				var tcObj = this.game.resPool.get("timeCrystal");
+				var xyObj = this.game.resPool.get("xianyuan");
+				var tcVal = tcObj ? Math.floor(tcObj.value) : 0;
+				var xyVal = xyObj ? Math.floor(xyObj.value) : 0;
+				var xyRate = this.game.calcResourcePerTick("xianyuan") * (this.game.getTicksPerSecondUI ? this.game.getTicksPerSecondUI() : 5);
+				var lawCost = cult.getDaoyunCost();
+				var iSig = (cult.immortalAscended ? "A:" : "P:") + cult.riftFloor + ":" +
+					(cult.daoyun || 0) + ":" + (tcVal >= 10 ? 1 : 0) + ":" +
+					(xyVal >= lawCost ? 1 : 0) + ":" + Math.round(xyVal) + ":" + Math.round(xyRate * 100);
+				if (this._immortalSig !== iSig){
+					this._immortalSig = iSig;
+					var fmtV = this.game.getDisplayValueExt.bind(this.game);
+					if (!cult.immortalAscended){
+						var canFly = cult.canAscendImmortal();
+						this.immortalPanelEl.innerHTML =
+							"<div class=\"xxImmortalHd\">" +
+								"<div class=\"xxImmortalArt\"><img src=\"res/art/portrait_zhenxian.jpg\" alt=\"\"/></div>" +
+								"<div class=\"xxImmortalMeta\">" +
+									"<span class=\"xxImmortalBadge\">" + $I("cultivation.feisheng.badge") + "</span>" +
+									"<div class=\"xxImmortalTitle\">" + $I("cultivation.feisheng.title") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxImmortalDesc\">" + $I("cultivation.feisheng.desc") + "</div>" +
+							"<div class=\"xxImmortalStats\">" +
+								"<span class=\"xxImmortalPill\">渡劫道果：已圆满</span>" +
+								"<span class=\"xxImmortalPill\">上古秘境：" + cult.riftFloor + " / 25 层</span>" +
+							"</div>" +
+							"<div class=\"xxImmortalActions\">" +
+								"<div class=\"xxImmortalBtn" + (canFly ? "" : " is-disabled") + "\" data-xx-immortal=\"ascend\">" +
+									(canFly ? $I("cultivation.feisheng.btn.ready") : $I("cultivation.feisheng.btn.wait", [cult.riftFloor])) +
+								"</div>" +
+							"</div>";
+					} else {
+						var dy = cult.daoyun || 0;
+						this.immortalPanelEl.innerHTML =
+							"<div class=\"xxImmortalHd\">" +
+								"<div class=\"xxImmortalArt\"><img src=\"res/art/portrait_zhenxian.jpg\" alt=\"\"/></div>" +
+								"<div class=\"xxImmortalMeta\">" +
+									"<span class=\"xxImmortalBadge\">" + $I("cultivation.immortal.badge") + "</span>" +
+									"<div class=\"xxImmortalTitle\">" + $I("cultivation.immortal.title") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxImmortalDesc\">" + $I("cultivation.immortal.desc") + "</div>" +
+							"<div class=\"xxImmortalStats\">" +
+								"<span class=\"xxImmortalPill\"><img src=\"res/art/res_xianyuan.jpg\" alt=\"\"/>仙元：" + fmtV(xyObj ? xyObj.value : 0) + " (+" + fmtV(xyRate) + "/秒)</span>" +
+								"<span class=\"xxImmortalPill\">法则道韵：" + dy + " 重（吐纳+" + Math.round(50 + dy * 18) + "% · 万产+" + Math.round(30 + dy * 12) + "% · 战力+" + Math.round(35 + dy * 15) + "%）</span>" +
+							"</div>" +
+							"<div class=\"xxImmortalActions\">" +
+								"<div class=\"xxImmortalBtn" + (tcVal >= 10 ? "" : " is-disabled") + "\" data-xx-immortal=\"infuse\">" +
+									$I("cultivation.immortal.infuse.btn") +
+								"</div>" +
+								"<div class=\"xxImmortalBtn" + (xyVal >= lawCost ? "" : " is-disabled") + "\" data-xx-immortal=\"law\">" +
+									$I("cultivation.immortal.law.btn", [fmtV(lawCost)]) +
+								"</div>" +
+							"</div>";
+					}
+				}
+			}
+		}
+
 		if (this.ascendBtn){
 			var dujie = cult.getStage("dujie_0");
 			this.ascendBtn.style.display = (dujie && dujie.researched) ? "block" : "none";
@@ -6944,7 +7226,9 @@ classes.ui.XianxiaArt = {
 		lianxu:   {pri: "#6fd3ff", sec: "#c6f0ff", glow: "rgba(111,211,255,.48)"},
 		heti:     {pri: "#e5a4ff", sec: "#ffe39e", glow: "rgba(229,164,255,.52)"},
 		dacheng:  {pri: "#ffd97d", sec: "#ffffff", glow: "rgba(255,217,125,.58)"},
-		dujie:    {pri: "#ff5e7e", sec: "#7ee8ff", glow: "rgba(255,94,126,.62)"}
+		dujie:    {pri: "#ff5e7e", sec: "#7ee8ff", glow: "rgba(255,94,126,.62)"},
+		zhenxian: {pri: "#ffe082", sec: "#7ef9d4", glow: "rgba(255,224,130,.66)"},
+		jinxian:  {pri: "#ffca28", sec: "#fff8e1", glow: "rgba(255,202,40,.75)"}
 	},
 
 	PORTRAIT_ART: {
@@ -6956,7 +7240,9 @@ classes.ui.XianxiaArt = {
 		lianxu:   "res/art/portrait_immortal.jpg",
 		heti:     "res/art/portrait_dacheng.jpg",
 		dacheng:  "res/art/portrait_dacheng.jpg",
-		dujie:    "res/art/portrait_dacheng.jpg"
+		dujie:    "res/art/portrait_dacheng.jpg",
+		zhenxian: "res/art/portrait_zhenxian.jpg",
+		jinxian:  "res/art/portrait_zhenxian.jpg"
 	},
 
 	SCENE_BANNER_ART: {
@@ -7023,6 +7309,7 @@ classes.ui.XianxiaArt = {
 		spice:        "res/art/res_spice.jpg",
 		relic:        "res/art/res_relic.jpg",
 		timeCrystal:  "res/art/res_timeCrystal.jpg",
+		xianyuan:     "res/art/res_xianyuan.jpg",
 		karma:        "res/art/res_karma.jpg",
 		paragon:      "res/art/res_paragon.jpg",
 		beam:         "res/art/res_beam.jpg",
@@ -7052,7 +7339,8 @@ classes.ui.XianxiaArt = {
 		jinjia:     "res/art/monster_jinjia.jpg",
 		yinlang:    "res/art/monster_yinlang.jpg",
 		gumo:       "res/art/monster_gumo.jpg",
-		zhenxian:   "res/art/monster_zhenxian.jpg"
+		zhenxian:   "res/art/monster_zhenxian.jpg",
+		yaoxian:    "res/art/monster_yaoxian.jpg"
 	},
 
 	VFX_ART: {
@@ -7076,7 +7364,7 @@ classes.ui.XianxiaArt = {
 		var bgHref = "res/art/banner_cultivation.jpg";
 		if (realmKey == "huashen" || realmKey == "lianxu"){
 			bgHref = "res/art/banner_spacetime.jpg";
-		} else if (realmKey == "heti" || realmKey == "dacheng" || realmKey == "dujie"){
+		} else if (realmKey == "heti" || realmKey == "dacheng" || realmKey == "dujie" || realmKey == "zhenxian" || realmKey == "jinxian"){
 			bgHref = "res/art/banner_time.jpg";
 		}
 		return "<svg viewBox=\"0 0 600 180\" preserveAspectRatio=\"xMidYMid slice\" class=\"xx-cult-bg-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
