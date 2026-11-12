@@ -369,6 +369,56 @@ try:
             ),
         )
 
+        mc3_result = page.evaluate(
+            """() => {
+            const w = window.__mc3dWorld;
+            if (!w || typeof w.runMc3SelfCheck !== 'function') {
+                return { ok: false, reason: 'missing __mc3dWorld.runMc3SelfCheck' };
+            }
+            const res = w.runMc3SelfCheck();
+            const endlessBtn = document.getElementById('btn-start-endless');
+            return { ...res, hasEndlessLobbyBtn: Boolean(endlessBtn) };
+        }"""
+        )
+        add_check(
+            "MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)",
+            bool(mc3_result.get("bonusVaultCount", 0) >= 5)
+            and bool(mc3_result.get("bonusDuration") == 25)
+            and bool(mc3_result.get("bonusZeroRedSpawn"))
+            and bool(mc3_result.get("vaultBroken"))
+            and bool(mc3_result.get("bonusGoldDelta", 0) >= 400)
+            and bool(mc3_result.get("bonusShardsEarned", 0) >= 1),
+            json.dumps(
+                {
+                    "vaults": mc3_result.get("bonusVaultCount"),
+                    "dur": mc3_result.get("bonusDuration"),
+                    "zeroRed": mc3_result.get("bonusZeroRedSpawn"),
+                    "broken": mc3_result.get("vaultBroken"),
+                    "goldDelta": mc3_result.get("bonusGoldDelta"),
+                    "shards": mc3_result.get("bonusShardsEarned"),
+                },
+                ensure_ascii=False,
+            ),
+        )
+        add_check(
+            "MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)",
+            bool(mc3_result.get("hasEndlessLobbyBtn"))
+            and bool(mc3_result.get("endlessWaveReached", 0) >= 3)
+            and bool(mc3_result.get("endlessBrutesSpawned", 0) >= 2)
+            and bool(mc3_result.get("persistedBestWave", 0) >= 3)
+            and bool(mc3_result.get("medalTitle")),
+            json.dumps(
+                {
+                    "lobbyBtn": mc3_result.get("hasEndlessLobbyBtn"),
+                    "wave": mc3_result.get("endlessWaveReached"),
+                    "brutes": mc3_result.get("endlessBrutesSpawned"),
+                    "bestWave": mc3_result.get("persistedBestWave"),
+                    "medal": mc3_result.get("medalTitle"),
+                },
+                ensure_ascii=False,
+            ),
+        )
+
         page.screenshot(
             path=os.path.join(BRAIN_DIR, "scratch", "verify_auto_playtest_battle_2560.jpg"),
             type="jpeg",

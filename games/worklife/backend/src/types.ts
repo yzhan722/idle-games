@@ -336,7 +336,14 @@ export type EnhanceRun = {
 // ===== 声望系统 =====
 export type ReputationState = {
   total: number;          // 累计获得的声望点数（只增不减，决定声望等级）
-  spent: number;          // 已消耗的声望（预留：声望商店）
+  spent: number;          // 已消耗的声望（声望军需官商店兑换累计消耗）
+  dailyPurchases?: {
+    date: string;         // YYYY-MM-DD（按本地日切重置每日限购）
+    counts: Record<string, number>;
+  };
+  activeScrolls?: Record<string, number>; // scrollId -> 到期时间戳 epoch ms
+  unlockedTitles?: string[];              // 已永久解锁的专属名号徽章 ID 列表
+  equippedTitle?: string | null;          // 当前佩戴的专属名号徽章 ID
 };
 
 // 声望等级定义（静态）

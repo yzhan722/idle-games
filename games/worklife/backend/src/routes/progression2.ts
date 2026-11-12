@@ -6,6 +6,8 @@ import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '
 import { syncAchievements } from "../progression";
 import {
   getReputationInfo,
+  buyQuartermasterItem,
+  equipReputationTitle,
   getBountyInfo,
   acceptBounty,
   claimBounty,
@@ -47,9 +49,57 @@ export async function progression2Routes(
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
+    const now = new Date();
     const state = await storage.getOrCreatePlayerState(userId, ver);
-    const next = await storage.simulateToNow({ userId, state, now: new Date(), contentPack });
-    return reply.send({ ...getReputationInfo(next), stateRevision: next.stateRevision });
+    const next = await storage.simulateToNow({ userId, state, now, contentPack });
+    return reply.send({ ...getReputationInfo(next, now), stateRevision: next.stateRevision });
+  });
+
+  app.post("/progression2/reputation/buy", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const body = z.object({ itemId: z.string().min(1), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await runCommand(userId, body, (state) => {
+        const res = buyQuartermasterItem(state, contentPack, body.itemId, new Date());
+        if (!res.ok) throw new PlayerCommandRejected(res.reason || "quartermaster_buy_rejected");
+        return res;
+      });
+      return reply.send({
+        ok: true,
+        purchase: outcome.result,
+        reputation: getReputationInfo(outcome.state, new Date()),
+        inventory: outcome.state.inventory,
+        stateRevision: outcome.state.stateRevision,
+      });
+    } catch (error) {
+      return commandFail(reply, error);
+    }
+  });
+
+  app.post("/progression2/reputation/title", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const body = z
+      .object({ titleId: z.string().min(1).nullable(), ...revisionSchema })
+      .strict()
+      .parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await runCommand(userId, body, (state) => {
+        const res = equipReputationTitle(state, body.titleId);
+        if (!res.ok) throw new PlayerCommandRejected(res.reason || "quartermaster_title_rejected");
+        return res;
+      });
+      return reply.send({
+        ok: true,
+        reputation: getReputationInfo(outcome.state, new Date()),
+        stateRevision: outcome.state.stateRevision,
+      });
+    } catch (error) {
+      return commandFail(reply, error);
+    }
   });
 
   /* ----------------------- 赏金契约 ----------------------- */

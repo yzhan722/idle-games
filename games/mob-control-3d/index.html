@@ -565,14 +565,30 @@
                 </div>
               </div>
 
-              <button id="btn-start-battle" type="button" class="btn-launch-battle">
-                <div class="launch-btn-main">
-                  <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sword.png?v=18" alt="" draggable="false" />
-                  <span>开始战斗</span>
-                  <kbd class="kbd-hint">Space</kbd>
-                </div>
-                <span id="launch-btn-sub" class="launch-btn-sub">第 1 关 · 晴空齿轮城 · 10秒极速连跳开启</span>
-              </button>
+              <div class="launch-actions-stack">
+                <button id="btn-start-battle" type="button" class="btn-launch-battle">
+                  <div class="launch-btn-main">
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sword.png?v=18" alt="" draggable="false" />
+                    <span>开始战斗</span>
+                    <kbd class="kbd-hint">Space</kbd>
+                  </div>
+                  <span id="launch-btn-sub" class="launch-btn-sub">第 1 关 · 晴空齿轮城 · 10秒极速连跳开启</span>
+                </button>
+
+                <button id="btn-start-endless" type="button" class="btn-endless-defense">
+                  <div class="endless-btn-left">
+                    <img class="art-icon-img endless-shield-img" src="/assets/icons/ui_endless_shield.png?v=19" alt="" draggable="false" />
+                    <div class="endless-btn-copy">
+                      <span class="endless-btn-title">无尽工坊保卫战</span>
+                      <span class="endless-btn-desc">抵御红军与突变巨汉无尽波次 · 零战败损耗</span>
+                    </div>
+                  </div>
+                  <span id="endless-best-badge" class="endless-best-badge">
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_endless_medal.png?v=19" alt="" draggable="false" />
+                    <span id="endless-best-text">最佳 0 波 · 新锐守卫</span>
+                  </span>
+                </button>
+              </div>
 
               <!-- Non-Intrusive Update Announcement Card -->
               <section id="update-notice-card" class="update-notice-card is-collapsed" aria-label="版本更新公告">

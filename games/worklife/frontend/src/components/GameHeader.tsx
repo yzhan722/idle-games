@@ -7,12 +7,14 @@ export type ProgPanelId =
   | "daily"
   | "settings"
   | "checkin"
+  | "reputation"
   | "prestige";
 
 const LABELS: Record<ProgPanelId, string> = {
   daily: "每日任务",
   achievements: "成就",
   checkin: "签到",
+  reputation: "声望军需",
   prestige: "转生",
   settings: "设置",
 };
@@ -47,6 +49,7 @@ type Props = {
   /** MWI-style total level (sum of skill levels incl. combat); hidden in chapter 1. */
   totalLevel?: number;
   chapterComplete?: boolean;
+  equippedTitle?: { titleLabel: string; iconId: string } | null;
 };
 
 function activityArtId(tab: string, activityName?: string): string {
@@ -164,6 +167,17 @@ export function GameHeader(props: Props) {
             <span className="header-total-level-label">总等级</span>
             <span className="header-total-level-value">{props.totalLevel}</span>
           </div>
+        )}
+        {props.equippedTitle && (
+          <button
+            type="button"
+            className="header-rep-title-pill"
+            onClick={() => props.onOpenProg("reputation")}
+            title="声望专属名号（点击打开声望军需官商店）"
+          >
+            <T1Art kind="skills" id={props.equippedTitle.iconId} alt="" className="header-rep-title-icon" />
+            <span>{props.equippedTitle.titleLabel}</span>
+          </button>
         )}
       </div>
 

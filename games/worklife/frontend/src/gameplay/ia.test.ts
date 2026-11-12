@@ -14,6 +14,7 @@ describe("desktop IA", () => {
   it("keeps career entries in grouped secondary menus", () => {
     const flat = CAREER_GROUPS.flatMap((g) => g.items);
     assert.ok(flat.includes("settings"));
+    assert.ok(flat.includes("reputation"));
     assert.ok(!flat.includes("party" as never));
     assert.ok(!flat.includes("trading" as never));
     assert.equal(CAREER_GROUPS.length, 4);

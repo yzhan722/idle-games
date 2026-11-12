@@ -673,8 +673,9 @@ function grantWin(
   enc.rewardsGranted = true;
   wearCombatGear(player, 0);
   const m = monsterById(pack, enc.monsterId);
-  const buffEff = getBuffEffects(player, new Date(enc.startedAt || Date.now()));
-  const repBuffs = getReputationBonuses(player);
+  const combatNow = new Date(enc.startedAt || Date.now());
+  const buffEff = getBuffEffects(player, combatNow);
+  const repBuffs = getReputationBonuses(player, combatNow);
   const prestigeMul = getPrestigeMultiplier(player);
   const buildAll = playerBuildExtras(player);
   const isForestMonster = ["slime", "caterpillar", "monkey", "mushroom", "bee", "crab", "forest_boss"].includes(enc.monsterId);

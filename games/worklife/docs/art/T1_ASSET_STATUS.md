@@ -105,6 +105,12 @@ P1 MISSING 0
 - `skills/astro_gather_crit` PRODUCTION (webp)
 - `skills/astro_craft_eff` PRODUCTION (webp)
 - `skills/astro_battle_vigor` PRODUCTION (webp)
+- `skills/qm_supply_chest` PRODUCTION (webp)
+- `skills/qm_scroll_artisan` PRODUCTION (webp)
+- `skills/qm_scroll_vanguard` PRODUCTION (webp)
+- `skills/qm_title_warder` PRODUCTION (webp)
+- `skills/qm_title_dragonslayer` PRODUCTION (webp)
+- `skills/qm_title_grandmaster` PRODUCTION (webp)
 - `materials/ore_1` PRODUCTION (webp)
 - `materials/ingot_1` PRODUCTION (webp)
 - `materials/fiber_1` PRODUCTION (webp)
@@ -664,8 +670,8 @@ P1 MISSING 0
 - `ui/avatar_animal_cat` PRODUCTION (webp)
 
 ```
-P2 REQUIRED 614
-P2 PRODUCTION 614
+P2 REQUIRED 620
+P2 PRODUCTION 620
 P2 PLACEHOLDER 0
 P2 MISSING 0
 ```

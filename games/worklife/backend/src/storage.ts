@@ -884,7 +884,7 @@ export function getActionRates(
   const atkSpeedMul = isCombatAct ? Math.min(3, 1 + equipStats.atk * 0.005) : 1;
   const defGoldMul = isCombatAct ? Math.min(2.5, 1 + equipStats.def * 0.004) : 1;
   const setBuffs = getEquippedProductionBuffs(player, pack);
-  const repBuffs = getReputationBonuses(player);
+  const repBuffs = getReputationBonuses(player, now);
   const prestigeMul = getPrestigeMultiplier(player);
   const lane = isCombatAct ? "combatSpeed" : hasConsumesAct ? "craftSpeed" : "gatherSpeed";
   const buffSpeed = (buffEff as any)[lane] as number;

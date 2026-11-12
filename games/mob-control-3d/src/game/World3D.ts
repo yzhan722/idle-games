@@ -10,7 +10,9 @@ import {
   GateStyle,
   LevelConfig,
   WallConfig,
+  generateCandyVaultBonusLevel,
   generateDynamicLevel,
+  generateEndlessDefenseLevel,
 } from '../levels/LevelData';
 import { GameState, SkinSpec } from './State';
 import { UI_ART, replaceEmojiWithArt } from './SkillIcons';
@@ -53,6 +55,7 @@ import {
   BossSteamSweepRuntime,
   BossSubTowerRuntime,
   BumperRuntime,
+  CandyVaultRuntime,
   CombatLightRuntime,
   GateRuntime,
   GearRuntime,
@@ -253,6 +256,12 @@ export class World3D {
   private wallRuntimes: WallRuntime[] = [];
   private gears: GearRuntime[] = [];
   private nests: NestRuntime[] = [];
+  public candyVaults: CandyVaultRuntime[] = [];
+  public bonusHeistTimeLeft = 0;
+  public bonusHeistShardsEarned = 0;
+  public bonusVaultsBroken = 0;
+  public endlessWave = 1;
+  public endlessWaveTimer = 0;
   private barrels: BarrelRuntime[] = [];
   private zones: ZoneRuntime[] = [];
   private bumpers: BumperRuntime[] = [];
@@ -2687,6 +2696,22 @@ export class World3D {
       }
       this.bossArmorMat.color.setHex(0x9e3b2c);
       this.bossSecondaryMat.color.setHex(0xd89e32);
+    } else if (level.isBonusHeist) {
+      this.bossEyeMat.color.setHex(0xfef08a);
+      if (this.bossPortalMat?.uniforms) {
+        this.bossPortalMat.uniforms.uCoreColor.value.setHex(0xfacc15);
+        this.bossPortalMat.uniforms.uRingColor.value.setHex(0xf472b6);
+      }
+      this.bossArmorMat.color.setHex(0xd97706);
+      this.bossSecondaryMat.color.setHex(0xfde047);
+    } else if (level.isEndlessDefense) {
+      this.bossEyeMat.color.setHex(0xf472b6);
+      if (this.bossPortalMat?.uniforms) {
+        this.bossPortalMat.uniforms.uCoreColor.value.setHex(0x7c3aed);
+        this.bossPortalMat.uniforms.uRingColor.value.setHex(0xf43f5e);
+      }
+      this.bossArmorMat.color.setHex(0x312e81);
+      this.bossSecondaryMat.color.setHex(0xe11d48);
     }
     for (const mt of this.meteorTelegraphs) {
       mt.active = false;
@@ -2767,6 +2792,15 @@ export class World3D {
     this.gates = [];
     this.gears = [];
     this.nests = [];
+    this.candyVaults = [];
+    this.bonusHeistTimeLeft = level.bonusHeistDurationSec || 25;
+    this.bonusHeistShardsEarned = 0;
+    this.bonusVaultsBroken = 0;
+    this.endlessWave = 1;
+    this.endlessWaveTimer = 0;
+    if (level.isEndlessDefense) {
+      this.state.recordEndlessWave(1);
+    }
     this.bossSubTowers = [];
     this.barrels = [];
     this.wallRuntimes = [];
@@ -3618,6 +3652,106 @@ export class World3D {
       });
     }
 
+    // 4a-mc3. Build 3D Golden Candy Vault Towers for 25s Bonus Heist Stages
+    if (level.candyVaults && level.candyVaults.length > 0) {
+      const vaultGoldMat = stylizeMaterialAs2DIllustration(
+        new THREE.MeshStandardMaterial({
+          color: 0xf59e0b,
+          roughness: 0.24,
+          metalness: 0.52,
+        }),
+        0.8
+      );
+      const vaultCreamMat = stylizeMaterialAs2DIllustration(
+        new THREE.MeshStandardMaterial({
+          color: 0xfef3c7,
+          roughness: 0.35,
+          metalness: 0.12,
+        }),
+        0.82
+      );
+      const vaultCandyPinkMat = stylizeMaterialAs2DIllustration(
+        new THREE.MeshStandardMaterial({
+          color: 0xec4899,
+          roughness: 0.22,
+          metalness: 0.18,
+          emissive: 0x831843,
+          emissiveIntensity: 0.35,
+        }),
+        0.82
+      );
+      const vaultCyanGemMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+      for (const v of level.candyVaults) {
+        const group = new THREE.Group();
+        group.position.set(v.x, 0, v.z);
+        const scale = v.isGrand ? 1.18 : 1.0;
+        group.scale.set(scale, scale, scale);
+
+        const basePlinth = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.95, 0.62, 18), vaultGoldMat);
+        basePlinth.position.set(0, 0.31, 0);
+        basePlinth.castShadow = true;
+        group.add(basePlinth);
+
+        const safeBody = new THREE.Mesh(new THREE.BoxGeometry(2.35, 2.05, 2.15), vaultCreamMat);
+        safeBody.position.set(0, 1.62, 0);
+        safeBody.castShadow = true;
+        group.add(safeBody);
+
+        const goldFrame = new THREE.Mesh(new THREE.BoxGeometry(2.48, 0.32, 2.28), vaultGoldMat);
+        goldFrame.position.set(0, 2.66, 0);
+        group.add(goldFrame);
+
+        const frostingDome = new THREE.Mesh(
+          new THREE.SphereGeometry(1.18, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.52),
+          vaultCandyPinkMat
+        );
+        frostingDome.position.set(0, 2.74, 0);
+        group.add(frostingDome);
+
+        const doorWheel = new THREE.Group();
+        doorWheel.position.set(0, 1.62, 1.14);
+        const wheelRing = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.11, 8, 18), vaultGoldMat);
+        doorWheel.add(wheelRing);
+        for (let sp = 0; sp < 4; sp++) {
+          const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.18, 6), vaultGoldMat);
+          spoke.rotation.z = (sp * Math.PI) / 4;
+          doorWheel.add(spoke);
+        }
+        const hubGem = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 10), vaultCyanGemMat);
+        hubGem.position.set(0, 0, 0.08);
+        doorWheel.add(hubGem);
+        group.add(doorWheel);
+
+        const gemCrown = new THREE.Mesh(
+          new THREE.OctahedronGeometry(v.isGrand ? 0.56 : 0.44, 0),
+          v.isGrand ? vaultCandyPinkMat : vaultCyanGemMat
+        );
+        gemCrown.position.set(0, 3.68, 0);
+        group.add(gemCrown);
+
+        this.levelGroup.add(group);
+
+        const labelEl = document.createElement('div');
+        labelEl.className = 'nest-label candy-vault-label';
+        labelEl.dataset.hp = `${v.hp}`;
+        labelEl.innerHTML = `${UI_ART.candyVault}<span>${v.hp}</span>`;
+        this.labelsContainer.appendChild(labelEl);
+
+        this.candyVaults.push({
+          cfg: v,
+          group,
+          doorWheel,
+          gemCrown,
+          hp: v.hp,
+          maxHp: v.hp,
+          alive: true,
+          hitFlash: 0,
+          labelEl,
+        });
+      }
+    }
+
     // 4a-bis. MC-2: Build Dual Lateral Steampunk Shield Sub-Towers on 5/10 Boss Stages
     const towerBaseMat = stylizeMaterialAs2DIllustration(
       new THREE.MeshStandardMaterial({
@@ -3813,14 +3947,16 @@ export class World3D {
     }
 
     // Spawn the 2 distinct Red Clockwork Tin Robots marching down from the Steampunk Red Furnace Tank Boss
-    // Robot 1 (between Pudding & x3 gate: rx=638, ry=172) & Robot 2 (right of x3 gate in front of Boss: rx=802, ry=192)
-    const redCoords: Array<[number, number]> = [
-      [-6.0, -11.6],
-      [6.8, -10.6],
-    ];
-    for (const [rx, rz] of redCoords) {
-      const rUnit = this.spawnUnit('red', 'normal', rx, rz, 0, 2.2);
-      if (rUnit) rUnit.spawnHop = 0;
+    // (Skipped in 25s Candy Vault Bonus Heist so Bonus stages have strictly ZERO Red enemy interference!)
+    if (!level.isBonusHeist) {
+      const redCoords: Array<[number, number]> = [
+        [-6.0, -11.6],
+        [6.8, -10.6],
+      ];
+      for (const [rx, rz] of redCoords) {
+        const rUnit = this.spawnUnit('red', 'normal', rx, rz, 0, 2.2);
+        if (rUnit) rUnit.spawnHop = 0;
+      }
     }
 
     // Spawn the Giant Crowned Caramel Custard Pudding Champion right in the center (rx=540, ry=258)!
@@ -5357,13 +5493,77 @@ export class World3D {
     }
 
     // 3. Spawn Enemy Red Waves, Acid Banelings, Hive Shamans & Giant Yellow Brutes across lanes
-    if (!this.isOverrunFrenzy) {
-      const stage = Math.max(1, this.currentLevel?.id || 1);
+    if (this.currentLevel?.isBonusHeist) {
+      this.bonusHeistTimeLeft = Math.max(0, this.bonusHeistTimeLeft - clampedDt);
+      if (this.bonusHeistTimeLeft <= 0) {
+        this.finishStage(true);
+        return;
+      }
+    } else if (!this.isOverrunFrenzy) {
+      if (this.currentLevel?.isEndlessDefense) {
+        this.endlessWaveTimer += clampedDt;
+        if (this.endlessWaveTimer >= 11.0) {
+          this.endlessWaveTimer -= 11.0;
+          this.endlessWave += 1;
+          this.state.recordEndlessWave(this.endlessWave);
+          const waveGold = this.state.addGold(85 + this.endlessWave * 35);
+          let shardBonusText = '';
+          if (this.endlessWave % 3 === 0) {
+            const sr = this.state.grantBonusSkinShards(1);
+            if (sr.amount > 0) {
+              shardBonusText = ` · 时装碎片 +${sr.amount}`;
+            }
+          }
+          const scaleMult = 1 + (this.endlessWave - 1) * 0.16;
+          const surgeCount = Math.min(20, 4 + this.endlessWave * 2);
+          const laneCenters = [-4.8, 0, 4.8];
+          for (let i = 0; i < surgeCount; i++) {
+            const laneX = laneCenters[i % 3];
+            const spreadX = laneX + (Math.random() - 0.5) * 2.8;
+            const spawnZ = BOSS_GATE_Z + 0.8 + Math.random() * 1.6;
+            const uKind = i % 5 === 0 ? 'baneling' : 'normal';
+            const ru = this.spawnUnit('red', uKind, spreadX, spawnZ, (Math.random() - 0.5) * 0.6, 3.4);
+            if (ru) {
+              ru.maxHp *= scaleMult;
+              ru.hp = ru.maxHp;
+              ru.dmg *= scaleMult;
+            }
+          }
+          const bruteCount = 1 + Math.floor(this.endlessWave / 2);
+          for (let b = 0; b < bruteCount; b++) {
+            const bx = (b - (bruteCount - 1) * 0.5) * 3.6 + (Math.random() - 0.5) * 1.2;
+            const bu = this.spawnUnit('red', 'brute', bx, BOSS_GATE_Z + 1.3, 0, 3.1);
+            if (bu) {
+              bu.maxHp *= scaleMult;
+              bu.hp = bu.maxHp;
+              bu.dmg *= scaleMult;
+            }
+          }
+          this.onBanner?.(
+            `无尽工坊保卫战 · 第 ${this.endlessWave} 波冲击！`,
+            `坚守赏金 +${waveGold} 金币${shardBonusText} · 突变巨汉 ×${bruteCount} 压境`
+          );
+        }
+      }
+
+      const stage = this.currentLevel?.isEndlessDefense
+        ? Math.max(1, this.endlessWave)
+        : Math.max(1, this.currentLevel?.id || 1);
       const berserkSpeedMult = this.bossBerserkTriggered ? 1.2 : 1.0;
+      const effSpawnInterval = this.currentLevel.isEndlessDefense
+        ? Math.max(0.75, this.currentLevel.enemySpawnInterval - (this.endlessWave - 1) * 0.11)
+        : this.currentLevel.enemySpawnInterval;
+      const effBurstCount = this.currentLevel.isEndlessDefense
+        ? Math.min(14, this.currentLevel.enemyBurstCount + Math.floor(this.endlessWave * 0.8))
+        : this.currentLevel.enemyBurstCount;
+      const endlessStatMult = this.currentLevel.isEndlessDefense
+        ? 1 + (this.endlessWave - 1) * 0.14
+        : 1.0;
+
       this.enemySpawnTimer += clampedDt * berserkSpeedMult;
-      if (this.enemySpawnTimer >= this.currentLevel.enemySpawnInterval) {
+      if (this.enemySpawnTimer >= effSpawnInterval) {
         this.enemySpawnTimer = 0;
-        const burst = this.currentLevel.enemyBurstCount;
+        const burst = effBurstCount;
         const laneCenters = [-4.8, 0, 4.8];
         for (let i = 0; i < burst; i++) {
           const laneX = laneCenters[i % 3];
@@ -5373,7 +5573,12 @@ export class World3D {
             ? 0.18
             : Math.min(0.16, 0.06 + (stage - 1) * 0.01);
           const unitKind = Math.random() < banelingChance ? 'baneling' : 'normal';
-          this.spawnUnit('red', unitKind, spreadX, spawnZ, (Math.random() - 0.5) * 0.6, 3.3);
+          const ru = this.spawnUnit('red', unitKind, spreadX, spawnZ, (Math.random() - 0.5) * 0.6, 3.3);
+          if (ru && endlessStatMult > 1.0) {
+            ru.maxHp *= endlessStatMult;
+            ru.hp = ru.maxHp;
+            ru.dmg *= endlessStatMult;
+          }
         }
       }
 
@@ -5383,16 +5588,28 @@ export class World3D {
         if (this.shamanSpawnTimer >= 12.0) {
           this.shamanSpawnTimer = 0;
           const sx = (Math.random() - 0.5) * 9.5;
-          this.spawnUnit('red', 'shaman', sx, BOSS_GATE_Z + 1.1, 0, 2.9);
+          const su = this.spawnUnit('red', 'shaman', sx, BOSS_GATE_Z + 1.1, 0, 2.9);
+          if (su && endlessStatMult > 1.0) {
+            su.maxHp *= endlessStatMult;
+            su.hp = su.maxHp;
+          }
         }
       }
 
       if (this.currentLevel.bruteSpawnInterval > 0) {
+        const effBruteInterval = this.currentLevel.isEndlessDefense
+          ? Math.max(3.6, this.currentLevel.bruteSpawnInterval - (this.endlessWave - 1) * 0.32)
+          : this.currentLevel.bruteSpawnInterval;
         this.bruteSpawnTimer += clampedDt * berserkSpeedMult;
-        if (this.bruteSpawnTimer >= this.currentLevel.bruteSpawnInterval) {
+        if (this.bruteSpawnTimer >= effBruteInterval) {
           this.bruteSpawnTimer = 0;
           const bx = (Math.random() - 0.5) * 9.5;
-          this.spawnUnit('red', 'brute', bx, BOSS_GATE_Z + 1.2, 0, 3.0);
+          const bu = this.spawnUnit('red', 'brute', bx, BOSS_GATE_Z + 1.2, 0, 3.0);
+          if (bu && endlessStatMult > 1.0) {
+            bu.maxHp *= endlessStatMult;
+            bu.hp = bu.maxHp;
+            bu.dmg *= endlessStatMult;
+          }
         }
       }
 
@@ -5561,6 +5778,21 @@ export class World3D {
         } else {
           n.monsterMesh.scale.set(1, 1, 1);
         }
+      }
+    }
+
+    for (const v of this.candyVaults) {
+      if (!v.alive) continue;
+      v.doorWheel.rotation.z = this.elapsedTime * 2.8;
+      v.gemCrown.rotation.y = this.elapsedTime * 3.1;
+      v.gemCrown.position.y = 3.68 + Math.sin(this.elapsedTime * 4.6 + v.cfg.x) * 0.14;
+      const baseScale = v.cfg.isGrand ? 1.18 : 1.0;
+      if (v.hitFlash > 0) {
+        v.hitFlash = Math.max(0, v.hitFlash - clampedDt * 6);
+        const s = baseScale * (1 + v.hitFlash * 0.14);
+        v.group.scale.set(s, s, s);
+      } else {
+        v.group.scale.set(baseScale, baseScale, baseScale);
       }
     }
 
@@ -7159,6 +7391,65 @@ export class World3D {
           }
         }
 
+        // 1a-mc3. Check if near an alive 3D Candy Vault Tower in Bonus Heist Mode
+        if (!handledByNestOrGate && this.candyVaults.length > 0) {
+          for (const v of this.candyVaults) {
+            if (!v.alive) continue;
+            const dx = v.cfg.x - u.x;
+            const dz = v.cfg.z - u.z;
+            const dist = Math.hypot(dx, dz);
+            if (dist < 4.9 && dz < 2.2) {
+              handledByNestOrGate = true;
+              if (dist < 2.35) {
+                targetVX = 0;
+                targetVZ = 0;
+                if (u.attackCooldown <= 0) {
+                  u.attackCooldown = 0.34;
+                  u.attackAnim = 1.0;
+                  const siegeMult = this.state.getSiegeDamageMultiplier();
+                  v.hp = Math.max(0, v.hp - u.dmg * 0.95 * siegeMult);
+                  v.hitFlash = 1.0;
+                  this.state.addGold(3);
+                  this.spawnBurstParticles(u.x, 1.4, u.z, 0xfacc15, 7);
+                  if (v.hp <= 0 && v.alive) {
+                    v.alive = false;
+                    v.group.visible = false;
+                    v.labelEl.style.display = 'none';
+                    this.bonusVaultsBroken += 1;
+                    sound.playExplosion();
+                    this.triggerScreenFlash('#fde047', 0.55);
+                    this.addCameraShake(0.68);
+                    this.spawnSkyPillar(v.cfg.x, v.cfg.z, 0xfacc15, 2.5, 0.56);
+                    this.spawnShockwave(v.cfg.x, v.cfg.z, 0xfacc15, 6.8, 0.55);
+                    this.spawnShockwave(v.cfg.x, v.cfg.z, 0xec4899, 4.4, 0.42);
+                    const gold = this.state.addGold(v.cfg.rewardGold);
+                    const shardRes = this.state.grantBonusSkinShards(v.cfg.rewardShards);
+                    this.bonusHeistShardsEarned += shardRes.amount;
+                    this.spawnBurstParticles(v.cfg.x, 2.0, v.cfg.z, 0xfacc15, 75);
+                    this.spawnBurstParticles(v.cfg.x, 1.6, v.cfg.z, 0xf472b6, 40);
+                    this.spawnFloatingPopup(
+                      v.cfg.x,
+                      2.8,
+                      v.cfg.z,
+                      `+${gold} 金币 · 碎片 +${shardRes.amount}!`,
+                      '#fde047'
+                    );
+                    this.onBanner?.(
+                      `击破 ${v.cfg.name}！`,
+                      `狂爆 +${gold} 金币 · 时装碎片 +${shardRes.amount}`
+                    );
+                    this.state.championCharge = Math.min(100, this.state.championCharge + 45);
+                  }
+                }
+              } else {
+                targetVX = (dx / Math.max(0.2, dist)) * effSpeed;
+                targetVZ = (dz / Math.max(0.2, dist)) * effSpeed;
+              }
+              break;
+            }
+          }
+        }
+
         // 1b. MC-2: Check if near an alive Lateral Steam Shield Sub-Tower on the flank
         if (!handledByNestOrGate && this.bossSubTowers.length > 0) {
           for (const st of this.bossSubTowers) {
@@ -7599,40 +7890,60 @@ export class World3D {
             }
           }
 
-          this.bossHp = Math.max(0, this.bossHp - dmg);
-          this.state.runSiegePool += dmg;
-          this.bossHitFlash = 1.0;
-          if (Math.random() < 0.25) {
-            this.state.addGold(1);
-          }
-
-          // Mega Boss (Stage 10/20/30...) 70% & 35% HP Void Shield Phase triggers!
-          if (this.currentLevel?.isMegaBoss && this.bossHp > 0) {
-            if (!this.bossShield70Triggered && this.bossHp <= this.bossMaxHp * 0.7) {
-              this.bossShield70Triggered = true;
-              this.activateBossShieldPhase(false);
-            } else if (!this.bossShield35Triggered && this.bossHp <= this.bossMaxHp * 0.35) {
-              this.bossShield35Triggered = true;
-              this.activateBossShieldPhase(false);
+          if (this.currentLevel?.isEndlessDefense) {
+            this.state.runSiegePool += dmg;
+            this.bossHitFlash = 1.0;
+            if (Math.random() < 0.35) {
+              this.state.addGold(2);
             }
-          }
-
-          // Mini-Boss (Stage 5/15/25/35...) 50% HP Vanguard Shield + Blitz trigger!
-          if (this.currentLevel?.isMiniBoss && this.bossHp > 0) {
-            if (!this.bossShield50Triggered && this.bossHp <= this.bossMaxHp * 0.5) {
-              this.bossShield50Triggered = true;
-              this.activateBossShieldPhase(true);
+          } else {
+            this.bossHp = Math.max(0, this.bossHp - dmg);
+            this.state.runSiegePool += dmg;
+            this.bossHitFlash = 1.0;
+            if (this.currentLevel?.isBonusHeist) {
+              this.state.addGold(4);
+              this.spawnBurstParticles(u.x, 1.8, BOSS_GATE_Z + 0.5, 0xfacc15, 5);
+            } else if (Math.random() < 0.25) {
+              this.state.addGold(1);
             }
-          }
 
-          // Check Boss 50% HP Berserk Phase trigger!
-          if (!this.bossBerserkTriggered && this.bossHp > 0 && this.bossHp <= this.bossMaxHp * 0.5) {
-            this.triggerBossBerserkPhase();
-          }
+            // Mega Boss (Stage 10/20/30...) 70% & 35% HP Void Shield Phase triggers!
+            if (this.currentLevel?.isMegaBoss && this.bossHp > 0) {
+              if (!this.bossShield70Triggered && this.bossHp <= this.bossMaxHp * 0.7) {
+                this.bossShield70Triggered = true;
+                this.activateBossShieldPhase(false);
+              } else if (!this.bossShield35Triggered && this.bossHp <= this.bossMaxHp * 0.35) {
+                this.bossShield35Triggered = true;
+                this.activateBossShieldPhase(false);
+              }
+            }
 
-          if (this.bossHp <= 0) {
-            this.finishStage(true);
-            return;
+            // Mini-Boss (Stage 5/15/25/35...) 50% HP Vanguard Shield + Blitz trigger!
+            if (this.currentLevel?.isMiniBoss && this.bossHp > 0) {
+              if (!this.bossShield50Triggered && this.bossHp <= this.bossMaxHp * 0.5) {
+                this.bossShield50Triggered = true;
+                this.activateBossShieldPhase(true);
+              }
+            }
+
+            // Check Boss 50% HP Berserk Phase trigger!
+            if (
+              !this.currentLevel?.isBonusHeist &&
+              !this.bossBerserkTriggered &&
+              this.bossHp > 0 &&
+              this.bossHp <= this.bossMaxHp * 0.5
+            ) {
+              this.triggerBossBerserkPhase();
+            }
+
+            if (this.bossHp <= 0) {
+              if (this.currentLevel?.isBonusHeist) {
+                const jp = this.state.grantBonusSkinShards(2);
+                this.bonusHeistShardsEarned += jp.amount;
+              }
+              this.finishStage(true);
+              return;
+            }
           }
         }
       }
@@ -8797,6 +9108,100 @@ export class World3D {
     };
   }
 
+  public runMc3SelfCheck(): {
+    ok: boolean;
+    bonusVaultCount: number;
+    bonusDuration: number;
+    bonusZeroRedSpawn: boolean;
+    vaultBroken: boolean;
+    bonusGoldDelta: number;
+    bonusShardsEarned: number;
+    endlessWaveReached: number;
+    endlessBrutesSpawned: number;
+    persistedBestWave: number;
+    medalTitle: string;
+  } {
+    const prevLevel = this.currentLevel;
+    const prevPaused = this.isPaused;
+    this.isPaused = false;
+
+    // 1. Verify 25s Candy Vault Bonus Heist (Zero Red Enemies + 3D Candy Vault Gold & Skin Shard Burst)
+    const bonusLvl = generateCandyVaultBonusLevel(5);
+    this.loadLevel(bonusLvl);
+    const bonusVaultCount = this.candyVaults.length;
+    const bonusDuration = Math.round(this.bonusHeistTimeLeft);
+    const goldBefore = this.state.gold;
+
+    // Step 1.2s and confirm zero Red units ever spawn in Bonus Heist
+    for (let i = 0; i < 30; i++) {
+      this.update(0.04);
+    }
+    const bonusZeroRedSpawn = this.activeRedCount === 0 && this.bonusHeistTimeLeft < 25;
+
+    // Place a squad of high-power Blue champions right next to the first Candy Vault to smash it
+    const targetVault = this.candyVaults[0];
+    if (targetVault) {
+      targetVault.hp = 12;
+      for (let k = 0; k < 4; k++) {
+        const bu = this.spawnUnit('blue', 'champion', targetVault.cfg.x, targetVault.cfg.z + 1.0, 0, -4.0);
+        if (bu) {
+          bu.dmg = 45;
+          bu.attackCooldown = 0;
+        }
+      }
+      for (let i = 0; i < 15; i++) {
+        this.update(0.04);
+      }
+    }
+    const vaultBroken = this.bonusVaultsBroken >= 1 && Boolean(targetVault && !targetVault.alive);
+    const bonusGoldDelta = Math.round(this.state.gold - goldBefore);
+    const bonusShardsEarned = this.bonusHeistShardsEarned;
+
+    // 2. Verify Endless Workshop Defense (Escalating Waves + Mutant Giant Brute Spawns + Best Wave Medal)
+    const endlessLvl = generateEndlessDefenseLevel();
+    this.loadLevel(endlessLvl);
+    this.endlessWaveTimer = 10.96;
+    this.update(0.05); // Triggers Wave 2
+    this.endlessWaveTimer = 10.96;
+    this.update(0.05); // Triggers Wave 3 (+1 skin shard milestone & multiple Mutant Giants)
+
+    const endlessWaveReached = this.endlessWave;
+    const endlessBrutesSpawned = this.units.filter(
+      (u) => u.active && u.team === 'red' && u.kind === 'brute'
+    ).length;
+    const persistedBestWave = this.state.bestEndlessWave;
+    const medalTitle = this.state.getEndlessMedalInfo(persistedBestWave).label;
+
+    if (prevLevel) {
+      this.loadLevel(prevLevel);
+    }
+    this.isPaused = prevPaused;
+
+    return {
+      ok:
+        bonusVaultCount >= 5 &&
+        bonusDuration === 25 &&
+        bonusZeroRedSpawn &&
+        vaultBroken &&
+        bonusGoldDelta >= 400 &&
+        bonusShardsEarned >= 1 &&
+        endlessWaveReached >= 3 &&
+        endlessBrutesSpawned >= 2 &&
+        persistedBestWave >= 3 &&
+        Boolean(medalTitle),
+      bonusVaultCount,
+      bonusDuration,
+      bonusZeroRedSpawn,
+      vaultBroken,
+      bonusGoldDelta,
+      bonusShardsEarned,
+      endlessWaveReached,
+      endlessBrutesSpawned,
+      persistedBestWave,
+      medalTitle,
+    };
+  }
+
   private applyGateEffect(u: Unit, g: GateRuntime): void {
     const { op, value } = g.cfg;
     const gateRank1 = this.state.getSkillNodeRank('gate_t1');
@@ -9302,6 +9707,22 @@ export class World3D {
         n.labelEl.style.top = `${p.y}px`;
         const hpStr = `${Math.ceil(n.hp)}`;
         if (n.labelEl.textContent !== hpStr) n.labelEl.textContent = hpStr;
+      }
+    }
+
+    for (const v of this.candyVaults) {
+      if (!v.alive) continue;
+      const p = this.projectToScreen(v.cfg.x, 3.85, v.cfg.z);
+      const inSafeViewport = p.visible && p.y >= safeTopY && p.y <= safeBottomY;
+      v.labelEl.style.display = inSafeViewport ? 'inline-flex' : 'none';
+      if (inSafeViewport) {
+        v.labelEl.style.left = `${p.x}px`;
+        v.labelEl.style.top = `${p.y}px`;
+        const hpStr = `${Math.ceil(v.hp)}`;
+        if (v.labelEl.dataset.hp !== hpStr) {
+          v.labelEl.dataset.hp = hpStr;
+          v.labelEl.innerHTML = `${UI_ART.candyVault}<span>${hpStr}</span>`;
+        }
       }
     }
 

@@ -1,4 +1,8 @@
-import { generateDynamicLevel } from './levels/LevelData';
+import {
+  generateCandyVaultBonusLevel,
+  generateDynamicLevel,
+  generateEndlessDefenseLevel,
+} from './levels/LevelData';
 import {
   ALL_SKILL_NODES,
   GameState,
@@ -90,7 +94,12 @@ const menuStatBounty = document.getElementById('menu-stat-bounty') as HTMLElemen
 const metaUpgradesGrid = document.getElementById('meta-upgrades-grid') as HTMLElement;
 const skinsShopGrid = document.getElementById('skins-shop-grid') as HTMLElement;
 const btnStartBattle = document.getElementById('btn-start-battle') as HTMLButtonElement;
+const btnStartEndless = document.getElementById('btn-start-endless') as HTMLButtonElement | null;
+const endlessBestTextEl = document.getElementById('endless-best-text') as HTMLElement | null;
+const endlessBestBadgeEl = document.getElementById('endless-best-badge') as HTMLElement | null;
 const btnModalHome = document.getElementById('btn-modal-home') as HTMLButtonElement;
+let pendingBonusHeistStage = 0;
+let pendingNextCampaignIdx = 0;
 const leaderboardListEl = document.getElementById('leaderboard-list') as HTMLElement | null;
 const leaderboardSelfStatusEl = document.getElementById('leaderboard-self-status') as HTMLElement | null;
 const btnLbPeak = document.getElementById('btn-lb-peak') as HTMLButtonElement | null;
@@ -517,6 +526,14 @@ function renderMainMenu(): void {
   }
   if (launchBtnSubEl && world.currentTheme) {
     launchBtnSubEl.textContent = `第 1 关起航 · ${world.currentTheme.badge}【${world.currentTheme.perkTitle}】· ${activeRace.raceName}出阵`;
+  }
+  const endlessMedal = state.getEndlessMedalInfo();
+  if (endlessBestTextEl) {
+    endlessBestTextEl.textContent = `最佳 ${state.bestEndlessWave} 波 · ${endlessMedal.label}`;
+  }
+  if (endlessBestBadgeEl) {
+    endlessBestBadgeEl.style.borderColor = endlessMedal.color;
+    endlessBestBadgeEl.style.color = endlessMedal.color;
   }
 
   if (menuActiveKeystonePill) {
@@ -1184,6 +1201,7 @@ function openMainMenu(): void {
 
 function launchBattle(): void {
   topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
   state.resetRunProgression();
   mainMenu.classList.add('hidden');
   if (hudTop) hudTop.style.display = 'flex';
@@ -1194,9 +1212,84 @@ function launchBattle(): void {
   startLevel(0);
 }
 
+function launchEndlessDefense(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const lvl = generateEndlessDefenseLevel();
+  world.loadLevel(lvl);
+  if (stageBadge) {
+    stageBadge.textContent = `无尽保卫 · 第 1 波`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = '死守泡泡站 · 波次递增出击红军与突变巨汉 · 零战败损耗';
+  }
+  bossNameEl.innerHTML = `${UI_ART.endlessShield} 深渊突变裂隙`;
+  showBanner(
+    `${UI_ART.endlessShield} 无尽工坊保卫战开启！`,
+    `${UI_ART.endlessMedal} 抵御红军狂潮与突变巨汉 · 冲击个人最佳勋章`
+  );
+  refreshMechaUI();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+function startBonusHeist(milestoneStage: number, nextCampaignIdx: number): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  pendingNextCampaignIdx = Math.max(0, nextCampaignIdx);
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const lvl = generateCandyVaultBonusLevel(milestoneStage);
+  world.loadLevel(lvl);
+  if (stageBadge) {
+    stageBadge.textContent = `糖果金库 · 25s`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = '25秒零红军暴爽狂欢 · 轰碎糖果金库塔狂爆金币与时装碎片！';
+  }
+  bossNameEl.innerHTML = `${UI_ART.candyVault} 至尊糖果总金库`;
+  showBanner(
+    `${UI_ART.candyVault} 糖果金库大劫案（25s 暴爽奖励关）`,
+    `零红军干扰！穿过高倍门轰碎 5 座糖果金库塔，狂爆金币与时装碎片！`
+  );
+  refreshMechaUI();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchEndless = () => launchEndlessDefense();
+(window as unknown as Record<string, unknown>).__mc3dStartBonusHeist = (stage = 5) =>
+  startBonusHeist(stage, stage);
+
 function renderActiveBuffsBar(): void {
   if (!activeBuffsBar || !world.currentLevel) return;
   const pills: string[] = [];
+
+  if (world.currentLevel.isBonusHeist) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary">${UI_ART.candyVault} 糖果大劫案 ${Math.ceil(world.bonusHeistTimeLeft)}s · 金库 ${world.bonusVaultsBroken}/${world.candyVaults.length}</span>`
+    );
+  } else if (world.currentLevel.isEndlessDefense) {
+    const medal = state.getEndlessMedalInfo();
+    pills.push(
+      `<span class="buff-pill rarity-epic">${UI_ART.endlessShield} 无尽第 ${world.endlessWave} 波 · ${UI_ART.endlessMedal} 最佳 ${state.bestEndlessWave} 波(${medal.label})</span>`
+    );
+  }
 
   if (world.currentTheme) {
     pills.push(
@@ -1284,11 +1377,18 @@ function updateRewardModalHeaderUI(): void {
   if (opt) {
     rewardPromptText.innerHTML = `${UI_ART.check} 已选「${opt.title}」${mult > 1 ? ' (×3倍生效)' : ''}`;
     btnModalNext.disabled = false;
-    btnModalNext.innerHTML = `${mult > 1 ? `${UI_ART.bolt} 跳2关 → 第 ${stageNum + 3} 关` : `${UI_ART.rocket} 下一关`}<kbd class="kbd-hint">Space</kbd>`;
+    if (pendingBonusHeistStage > 0) {
+      btnModalNext.classList.add('btn-bonus-heist-cta');
+      btnModalNext.innerHTML = `${UI_ART.candyVault} 开启糖果金库大劫案 (25s)<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      btnModalNext.classList.remove('btn-bonus-heist-cta');
+      btnModalNext.innerHTML = `${mult > 1 ? `${UI_ART.bolt} 跳2关 → 第 ${stageNum + 3} 关` : `${UI_ART.rocket} 下一关`}<kbd class="kbd-hint">Space</kbd>`;
+    }
   } else {
     const tierLabel = currentRewardOptions[0]?.rarityLabel || '普通强化';
     rewardPromptText.innerHTML = `${UI_ART.gift} 战利品三选一 · 【${tierLabel}】`;
     btnModalNext.disabled = true;
+    btnModalNext.classList.remove('btn-bonus-heist-cta');
     btnModalNext.innerHTML = `请选择上方强化<kbd class="kbd-hint">1-3</kbd>`;
   }
 }
@@ -1410,11 +1510,53 @@ world.onStageEnd = (victory: boolean) => {
   topToolsDrawer?.classList.add('hidden');
   centerBanner.classList.add('hidden');
   resultModal.classList.remove('hidden');
-  resultModal.classList.toggle('victory-mode', victory);
   statTotalSpawned.textContent = `${state.stageClonesSpawned}`;
   statTotalKills.textContent = `${state.stageMutantsKilled}`;
   statStageGold.innerHTML = `+${state.stageGoldEarned} ${UI_ART.coin}`;
   const stageNum = state.currentLevelIndex + 1;
+
+  // Reset modal button defaults before branching by mode
+  btnModalReplay.style.display = 'inline-block';
+  btnModalReplay.innerHTML = `<img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=18" alt="" draggable="false" /><span>重玩</span><kbd class="kbd-hint">P</kbd>`;
+  btnModalNext.classList.remove('btn-bonus-heist-cta');
+
+  if (world.currentLevel?.isBonusHeist) {
+    resultModal.classList.add('victory-mode');
+    world.triggerScreenFlash('#fde047', 0.72);
+    modalBadge.innerHTML = `${UI_ART.candyVault} CANDY VAULT JACKPOT`;
+    modalTitle.innerHTML = `${UI_ART.candyVault} 糖果金库大劫案满载而归！`;
+    modalDesc.innerHTML = `共轰碎金库塔 ${world.bonusVaultsBroken}/${world.candyVaults.length} 座 · 狂揽 +${state.stageGoldEarned} ${UI_ART.coin} · 时装碎片 +${world.bonusHeistShardsEarned} ${UI_ART.shard}`;
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    btnModalReplay.style.display = 'none';
+    btnModalNext.disabled = false;
+    btnModalNext.style.display = 'inline-block';
+    btnModalNext.innerHTML = `${UI_ART.rocket} 继续第 ${pendingNextCampaignIdx + 1} 关<kbd class="kbd-hint">Space</kbd>`;
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isEndlessDefense) {
+    resultModal.classList.add('victory-mode');
+    const rec = state.recordEndlessWave(world.endlessWave);
+    const medal = state.getEndlessMedalInfo(state.bestEndlessWave);
+    modalBadge.innerHTML = `${UI_ART.endlessMedal} ENDLESS DEFENSE · ${medal.label}`;
+    modalTitle.innerHTML = `${UI_ART.endlessShield} 无尽工坊保卫战 · 坚守 ${world.endlessWave} 波！`;
+    modalDesc.innerHTML = `${rec.isNewRecord ? `${UI_ART.sparkle} 刷新个人最高波次纪录！` : `个人最佳纪录：第 ${state.bestEndlessWave} 波`} · 荣获【${medal.label}】勋章 · 零战败损耗`;
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    btnModalNext.style.display = 'none';
+    btnModalReplay.innerHTML = `${UI_ART.endlessShield} <span>再战无尽</span><kbd class="kbd-hint">P</kbd>`;
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  resultModal.classList.toggle('victory-mode', victory);
 
   if (victory) {
     world.triggerScreenFlash('#facc15', 0.68);
@@ -1426,6 +1568,7 @@ world.onStageEnd = (victory: boolean) => {
     stageRewardRerollCount = 0;
     isSpeedSkipEligible = clearSec < 10.0;
     isSpeedSkipActive = isSpeedSkipEligible;
+    pendingBonusHeistStage = stageNum % 5 === 0 ? stageNum : 0;
 
     modalBadge.innerHTML = isSpeedSkipEligible
       ? `${UI_ART.bolt} SPEED CLEAR ${clearSec.toFixed(1)}s (<10s)`
@@ -1436,6 +1579,9 @@ world.onStageEnd = (victory: boolean) => {
     const parts: string[] = [
       `${UI_ART.clock} 用时 ${clearSec.toFixed(1)}s${isSpeedSkipEligible ? ` (${UI_ART.bolt}跳2关+奖励×3)` : ''}`,
     ];
+    if (pendingBonusHeistStage > 0) {
+      parts.push(`${UI_ART.candyVault} 已解锁 25s 糖果金库大劫案`);
+    }
     if (shardDrop) {
       parts.push(`${UI_ART.shard} ${shardDrop.skinName} +${shardDrop.amount}`);
     }
@@ -1449,6 +1595,7 @@ world.onStageEnd = (victory: boolean) => {
     presentRewardChoices(stageNum);
     renderActiveBuffsBar();
   } else {
+    pendingBonusHeistStage = 0;
     if (btnModalShare) btnModalShare.style.display = 'none';
     const report = state.applyDefeatPenalty(stageNum);
     state.recordBattleStats(0, state.stageMutantsKilled);
@@ -1610,6 +1757,8 @@ let lastHudChampPct = -1;
 let lastHudChampHolding = false;
 let lastHudOrbitalPct = -1;
 let lastUpgLevelsKey = '';
+let lastBonusSecHud = -1;
+let lastEndlessWaveHud = -1;
 
 function updateLiveHUD(): void {
   if (world.activeBlueCount !== lastHudBlue) {
@@ -1629,12 +1778,41 @@ function updateLiveHUD(): void {
     refreshUpgradeUI();
   }
 
-  const hp = Math.ceil(world.bossHp);
-  if (hp !== lastHudBossHp) {
-    lastHudBossHp = hp;
-    bossHpTextEl.textContent = `${hp}`;
-    const pct = Math.max(0, Math.min(100, (world.bossHp / world.bossMaxHp) * 100));
-    bossBarFillEl.style.width = `${pct}%`;
+  if (world.currentLevel?.isBonusHeist) {
+    const secLeft = Math.ceil(world.bonusHeistTimeLeft);
+    const hp = Math.ceil(world.bossHp);
+    if (secLeft !== lastBonusSecHud || hp !== lastHudBossHp) {
+      lastBonusSecHud = secLeft;
+      lastHudBossHp = hp;
+      if (stageBadge) {
+        stageBadge.textContent = `糖果金库 · 剩余 ${secLeft}s`;
+      }
+      bossHpTextEl.textContent = `${secLeft}s · 金库 ${world.bonusVaultsBroken}/${world.candyVaults.length}`;
+      const pct = Math.max(0, Math.min(100, (world.bonusHeistTimeLeft / 25) * 100));
+      bossBarFillEl.style.width = `${pct}%`;
+      renderActiveBuffsBar();
+    }
+  } else if (world.currentLevel?.isEndlessDefense) {
+    const nextSec = Math.max(1, Math.ceil(11.0 - world.endlessWaveTimer));
+    const waveKey = world.endlessWave * 100 + nextSec;
+    if (waveKey !== lastEndlessWaveHud) {
+      lastEndlessWaveHud = waveKey;
+      if (stageBadge) {
+        stageBadge.textContent = `无尽保卫 · 第 ${world.endlessWave} 波`;
+      }
+      bossHpTextEl.textContent = `第 ${world.endlessWave} 波 (${nextSec}s后增援)`;
+      const pct = Math.max(0, Math.min(100, ((11.0 - world.endlessWaveTimer) / 11.0) * 100));
+      bossBarFillEl.style.width = `${pct}%`;
+      renderActiveBuffsBar();
+    }
+  } else {
+    const hp = Math.ceil(world.bossHp);
+    if (hp !== lastHudBossHp) {
+      lastHudBossHp = hp;
+      bossHpTextEl.textContent = `${hp}`;
+      const pct = Math.max(0, Math.min(100, (world.bossHp / world.bossMaxHp) * 100));
+      bossBarFillEl.style.width = `${pct}%`;
+    }
   }
 
   const pHp = Math.ceil(world.playerBaseHp);
@@ -1686,6 +1864,13 @@ if (btnStartBattle) {
   btnStartBattle.addEventListener('click', () => {
     sound.playUpgrade();
     launchBattle();
+  });
+}
+
+if (btnStartEndless) {
+  btnStartEndless.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchEndlessDefense();
   });
 }
 
@@ -2025,6 +2210,10 @@ if (btnModalHome) {
 }
 
 btnModalReplay.addEventListener('click', () => {
+  if (world.currentLevel?.isEndlessDefense) {
+    launchEndlessDefense();
+    return;
+  }
   if (!rewardSection.classList.contains('hidden') && !hasClaimedStageReward) {
     if (isSpeedSkipEligible && isSpeedSkipActive) {
       isSpeedSkipActive = false;
@@ -2033,20 +2222,29 @@ btnModalReplay.addEventListener('click', () => {
     }
     if (!commitStageReward()) return;
   }
+  pendingBonusHeistStage = 0;
   startLevel(state.currentLevelIndex);
 });
 
 btnModalNext.addEventListener('click', () => {
+  if (world.currentLevel?.isBonusHeist) {
+    startLevel(pendingNextCampaignIdx);
+    return;
+  }
   if (!rewardSection.classList.contains('hidden') && !hasClaimedStageReward) {
     if (!commitStageReward()) return;
   }
+  let nextIdx = state.currentLevelIndex + 1;
   if (isSpeedSkipEligible && isSpeedSkipActive) {
     const stageNum = state.currentLevelIndex + 1;
     state.creditSkippedStages(stageNum + 2, 2);
-    startLevel(state.currentLevelIndex + 3);
-  } else {
-    startLevel(state.currentLevelIndex + 1);
+    nextIdx = state.currentLevelIndex + 3;
   }
+  if (pendingBonusHeistStage > 0) {
+    startBonusHeist(pendingBonusHeistStage, nextIdx);
+    return;
+  }
+  startLevel(nextIdx);
 });
 
 // Preload 3D stage background & open Title Cover Screen on startup

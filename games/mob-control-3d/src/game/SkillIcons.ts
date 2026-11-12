@@ -20,6 +20,9 @@ const metaImg = (id: string): string =>
 const hudImg = (file: string, cls = 'hud-art-img'): string =>
   `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
 
+const hudImgV19 = (file: string, cls = 'inline-art-img'): string =>
+  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=19" alt="" loading="eager" decoding="async" draggable="false" />`;
+
 /**
  * 28 AI-Generated Kingdom-Rush / Brawl-Stars Style 2D Thick-Painted Skill Icons
  */
@@ -167,6 +170,9 @@ export const UI_ART = {
   note: hudImg('hud_music_note', 'inline-art-img'),
   megaphone: hudImg('ui_megaphone', 'inline-art-img'),
   boom: hudImg('ui_boom', 'inline-art-img'),
+  candyVault: hudImgV19('ui_candy_vault', 'inline-art-img'),
+  endlessShield: hudImgV19('ui_endless_shield', 'inline-art-img'),
+  endlessMedal: hudImgV19('ui_endless_medal', 'inline-art-img'),
 };
 
 /**

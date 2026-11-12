@@ -370,6 +370,8 @@ class ApiClient {
 
   // 进阶系统：声望 / 赏金契约 / 转生
   async getReputation() { return this.get('/progression2/reputation'); }
+  async buyQuartermasterItem(itemId: string) { return this.post('/progression2/reputation/buy', { itemId }); }
+  async equipReputationTitle(titleId: string | null) { return this.post('/progression2/reputation/title', { titleId }); }
   async getBounties() { return this.get('/progression2/bounties'); }
   async acceptBounty(bountyId: string) { return this.post('/progression2/bounties/accept', { bountyId }); }
   async claimBounty(bountyId: string) { return this.post('/progression2/bounties/claim', { bountyId }); }

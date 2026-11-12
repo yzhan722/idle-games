@@ -233,6 +233,9 @@ const P2_SKILL_ICONS: Array<[string, string]> = [
   ["skills/astro_boss_fortune","猎首星辉"], ["skills/astro_starter_kit","传世行装"],
   ["skills/astro_gather_crit","丰饶双星"], ["skills/astro_craft_eff","巧匠星轨"],
   ["skills/astro_battle_vigor","战神宿命"],
+  ["skills/qm_supply_chest","军需稀有配方材料箱"], ["skills/qm_scroll_artisan","百工神速长效卷轴"],
+  ["skills/qm_scroll_vanguard","讨伐先锋长效战卷"], ["skills/qm_title_warder","名号徽章·星辉军需官"],
+  ["skills/qm_title_dragonslayer","名号徽章·讨魔先锋"], ["skills/qm_title_grandmaster","名号徽章·万匠宗师"],
 ];
 for (const [key, name] of P2_SKILL_ICONS) {
   T1_ASSET_CONTRACT.push(

@@ -3,6 +3,7 @@ import {
   BarrelConfig,
   BossSubTowerConfig,
   BumperConfig,
+  CandyVaultConfig,
   GateConfig,
   GearConfig,
   SideNestConfig,
@@ -110,6 +111,18 @@ export interface NestRuntime {
   cfg: SideNestConfig;
   group: THREE.Group;
   monsterMesh: THREE.Group;
+  hp: number;
+  maxHp: number;
+  alive: boolean;
+  hitFlash: number;
+  labelEl: HTMLDivElement;
+}
+
+export interface CandyVaultRuntime {
+  cfg: CandyVaultConfig;
+  group: THREE.Group;
+  doorWheel: THREE.Object3D;
+  gemCrown: THREE.Object3D;
   hp: number;
   maxHp: number;
   alive: boolean;

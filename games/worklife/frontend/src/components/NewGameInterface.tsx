@@ -19,7 +19,7 @@ import { logger } from '../utils/logger'
 import { getItemName, registerItemNames } from '../utils/itemNames'
 import { AchievementsPanel, DailyQuestsPanel, SettingsPanel } from './ProgressionPanels'
 import { CheckInModal } from './SystemPanels'
-import { PrestigePanel } from './AdvancementPanels'
+import { PrestigePanel, ReputationPanel } from './AdvancementPanels'
 import { useToast } from './Toast'
 import { CharacterCreate } from './CharacterCreate'
 import { TutorialGuide } from './TutorialGuide'
@@ -126,8 +126,8 @@ export default function NewGameInterface() {
   }, [refreshPlayerState])
   const [activeTab, setActiveTab] = useState<ActiveTab>('logging')
 
-  // 进度系统弹窗：成就 / 每日任务 / 设置 / 签到 / 转生
-  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'prestige'>(null)
+  // 进度系统弹窗：成就 / 每日任务 / 设置 / 签到 / 声望军需 / 转生
+  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'reputation' | 'prestige'>(null)
   // 顶栏角标：可领取数量
   const [claimableCount, setClaimableCount] = useState(0)
   // 顶栏角标：今日是否可签到
@@ -1954,6 +1954,17 @@ export default function NewGameInterface() {
         gold={playerState.inventory.gold || 0}
         totalLevel={totalLevel}
         chapterComplete={chapter1Complete(playerState)}
+        equippedTitle={(() => {
+          const eq = (playerState as any)?.reputation?.equippedTitle as string | undefined | null
+          const unlocked = ((playerState as any)?.reputation?.unlockedTitles || []) as string[]
+          if (!eq || !unlocked.includes(eq)) return null
+          const map: Record<string, { titleLabel: string; iconId: string }> = {
+            qm_title_warder: { titleLabel: '星辉军需官', iconId: 'qm_title_warder' },
+            qm_title_dragonslayer: { titleLabel: '讨魔先锋', iconId: 'qm_title_dragonslayer' },
+            qm_title_grandmaster: { titleLabel: '万匠宗师', iconId: 'qm_title_grandmaster' },
+          }
+          return map[eq] || null
+        })()}
       />
       <NextGoalBar
         goal={chapterGoal}
@@ -2513,6 +2524,16 @@ export default function NewGameInterface() {
         <CheckInModal
           onClose={() => { setProgPanel(null); void refreshClaimable(); }}
           onChange={() => { void refreshPlayerState(); void refreshClaimable(); }}
+        />
+      )}
+      {progPanel === 'reputation' && (
+        <ReputationPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
         />
       )}
       {progPanel === 'prestige' && (

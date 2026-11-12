@@ -1032,6 +1032,7 @@ export interface SaveState {
   playerId?: string;
   playerName?: string;
   bestStageCleared?: number;
+  bestEndlessWave?: number;
   totalMatchesPlayed?: number;
   lifetimeKills?: number;
   playTimeSeconds?: number;
@@ -1122,6 +1123,7 @@ export class GameState {
   public playerId = `cmd_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
   public playerName = `指挥官${Math.floor(1000 + Math.random() * 9000)}`;
   public bestStageCleared = 0;
+  public bestEndlessWave = 0;
   public totalMatchesPlayed = 0;
   public lifetimeKills = 0;
   public playTimeSeconds = 0;
@@ -1197,6 +1199,9 @@ export class GameState {
       }
       if (typeof parsed.bestStageCleared === 'number') {
         this.bestStageCleared = Math.max(0, parsed.bestStageCleared);
+      }
+      if (typeof parsed.bestEndlessWave === 'number') {
+        this.bestEndlessWave = Math.max(0, Math.floor(parsed.bestEndlessWave));
       }
       if (typeof parsed.totalMatchesPlayed === 'number') {
         this.totalMatchesPlayed = Math.max(this.bestStageCleared, parsed.totalMatchesPlayed);
@@ -1298,6 +1303,7 @@ export class GameState {
         playerId: this.playerId,
         playerName: this.playerName,
         bestStageCleared: this.bestStageCleared,
+        bestEndlessWave: this.bestEndlessWave,
         totalMatchesPlayed: this.totalMatchesPlayed,
         lifetimeKills: this.lifetimeKills,
         playTimeSeconds: Math.floor(this.playTimeSeconds),
@@ -1750,6 +1756,38 @@ export class GameState {
       rankSpec: check.currentRank,
       canAscendNow: check.ok,
     };
+  }
+
+  public grantBonusSkinShards(amount: number): { skinId: SkinId; skinName: string; amount: number } {
+    const cleanAmt = Math.max(1, Math.floor(amount));
+    const pool = this.ownedSkins.length > 0 ? this.ownedSkins : (['azure'] as SkinId[]);
+    const chosenId =
+      pool.includes(this.equippedSkin) && Math.random() < 0.55
+        ? this.equippedSkin
+        : pool[Math.floor(Math.random() * pool.length)];
+    this.skinShards[chosenId] = (this.skinShards[chosenId] || 0) + cleanAmt;
+    this.save();
+    const spec = SKINS_CATALOG.find((s) => s.id === chosenId) || SKINS_CATALOG[0];
+    return { skinId: chosenId, skinName: spec.name, amount: cleanAmt };
+  }
+
+  public recordEndlessWave(waveReached: number): { isNewRecord: boolean; bestWave: number } {
+    const cleanWave = Math.max(1, Math.floor(waveReached));
+    const isNewRecord = cleanWave > this.bestEndlessWave;
+    if (isNewRecord) {
+      this.bestEndlessWave = cleanWave;
+      this.save();
+    }
+    return { isNewRecord, bestWave: this.bestEndlessWave };
+  }
+
+  public getEndlessMedalInfo(wave = this.bestEndlessWave): { tier: string; label: string; color: string } {
+    if (wave >= 15) return { tier: 'SSS', label: '不朽圣盾勋章', color: '#facc15' };
+    if (wave >= 10) return { tier: 'SS', label: '璀璨钻石勋章', color: '#38bdf8' };
+    if (wave >= 6) return { tier: 'S', label: '皇家黄金勋章', color: '#f59e0b' };
+    if (wave >= 3) return { tier: 'A', label: '秘银壁垒勋章', color: '#cbd5e1' };
+    if (wave >= 1) return { tier: 'B', label: '青铜守卫勋章', color: '#d97706' };
+    return { tier: '—', label: '待铸首枚勋章', color: '#94a3b8' };
   }
 
   public buyOrEquipSkin(id: SkinId): 'equipped' | 'bought' | 'insufficient' {

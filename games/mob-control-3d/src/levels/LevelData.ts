@@ -83,6 +83,17 @@ export interface BossSubTowerConfig {
   rewardGold: number;
 }
 
+export interface CandyVaultConfig {
+  id: string;
+  x: number;
+  z: number;
+  hp: number;
+  rewardGold: number;
+  rewardShards: number;
+  name: string;
+  isGrand?: boolean;
+}
+
 export type MapArchetype =
   | 'cascade_scurve'
   | 'grinder_gauntlet'
@@ -104,6 +115,10 @@ export interface LevelConfig {
   isMilestoneBoss: boolean;
   isMiniBoss: boolean;
   isMegaBoss: boolean;
+  isBonusHeist?: boolean;
+  bonusHeistDurationSec?: number;
+  candyVaults?: CandyVaultConfig[];
+  isEndlessDefense?: boolean;
   name: string;
   subtitle: string;
   bossName: string;
@@ -1762,5 +1777,142 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
     zones,
     bumpers,
     bossSubTowers,
+  };
+}
+
+export function generateCandyVaultBonusLevel(milestoneStage: number): LevelConfig {
+  const safeMilestone = Math.max(5, Math.floor(milestoneStage));
+  const tier = Math.max(1, Math.floor(safeMilestone / 5));
+  const themeId = THEME_ORDER[(tier - 1) % THEME_ORDER.length];
+  const candyVaults: CandyVaultConfig[] = [
+    {
+      id: 'vault_left_front',
+      x: -5.6,
+      z: -7.0,
+      hp: 150 + tier * 45,
+      rewardGold: 420 + tier * 140,
+      rewardShards: 1,
+      name: '焦糖储蓄金库',
+    },
+    {
+      id: 'vault_center_front',
+      x: 0,
+      z: -6.4,
+      hp: 180 + tier * 55,
+      rewardGold: 520 + tier * 160,
+      rewardShards: 1,
+      name: '皇家蜂蜜金库',
+    },
+    {
+      id: 'vault_right_front',
+      x: 5.6,
+      z: -7.0,
+      hp: 150 + tier * 45,
+      rewardGold: 420 + tier * 140,
+      rewardShards: 1,
+      name: '焦糖储蓄金库',
+    },
+    {
+      id: 'vault_left_grand',
+      x: -3.8,
+      z: -12.0,
+      hp: 230 + tier * 70,
+      rewardGold: 680 + tier * 200,
+      rewardShards: 2,
+      name: '太妃至尊金库塔',
+      isGrand: true,
+    },
+    {
+      id: 'vault_right_grand',
+      x: 3.8,
+      z: -12.0,
+      hp: 230 + tier * 70,
+      rewardGold: 680 + tier * 200,
+      rewardShards: 2,
+      name: '星糖至尊金库塔',
+      isGrand: true,
+    },
+  ];
+
+  return {
+    id: safeMilestone,
+    seed: 77700 + safeMilestone,
+    themeId,
+    archetype: 'chaos_overdrive',
+    archetypeName: '25s 限时暴爽奖励关 · 零红军干扰',
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    isBonusHeist: true,
+    bonusHeistDurationSec: 25,
+    candyVaults,
+    name: `糖果金库大劫案（第 ${safeMilestone} 关奖励）`,
+    subtitle: '25 秒零红军暴爽狂欢！穿过高倍门轰碎糖果金库塔，狂爆金币与时装碎片！',
+    bossName: '至尊糖果总金库',
+    bossMaxHp: 720 + tier * 240,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: 850 + tier * 250,
+    gates: [
+      { id: 'bh_g1', x: -4.2, z: 9.2, width: 4.8, op: 'mul', value: 3, style: 'gold', moveRangeX: 2.6, moveSpeed: 1.45, movePhase: 0 },
+      { id: 'bh_g2', x: 4.2, z: 9.2, width: 4.8, op: 'add', value: 8, style: 'blue', moveRangeX: 2.6, moveSpeed: 1.45, movePhase: Math.PI },
+      { id: 'bh_g3', x: -3.8, z: 3.4, width: 4.6, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 2.8, moveSpeed: 1.3, movePhase: 0.7 },
+      { id: 'bh_g4', x: 3.8, z: 3.4, width: 4.8, op: 'mul', value: 4, style: 'mega', moveRangeX: 2.8, moveSpeed: 1.3, movePhase: 3.84 },
+      { id: 'bh_g5', x: 0, z: -1.8, width: 5.8, op: 'mul', value: 3, style: 'gold', moveRangeX: 4.2, moveSpeed: 1.65, movePhase: 1.57 },
+    ],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [
+      { id: 'bh_belt_l', type: 'speed_belt', x: -3.6, z: 6.3, width: 4.8, length: 4.2 },
+      { id: 'bh_belt_r', type: 'speed_belt', x: 3.6, z: 6.3, width: 4.8, length: 4.2 },
+    ],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+export function generateEndlessDefenseLevel(): LevelConfig {
+  return {
+    id: 1,
+    seed: 88888,
+    themeId: THEME_ORDER[0],
+    archetype: 'trilane_siege',
+    archetypeName: '无尽工坊保卫战 · 波次递增生存',
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    isEndlessDefense: true,
+    name: '无尽工坊保卫战',
+    subtitle: '死守底部泡泡站防线！抵御红军狂潮与突变巨汉无尽波次，刷新个人最佳勋章！',
+    bossName: '深渊突变裂隙',
+    bossMaxHp: 999999,
+    enemySpawnInterval: 2.0,
+    enemyBurstCount: 4,
+    initialRedPrewarm: 6,
+    bruteSpawnInterval: 7.2,
+    rewardGold: 0,
+    gates: [
+      { id: 'ed_g1', x: -4.4, z: 10.2, width: 4.4, op: 'mul', value: 2, style: 'gold', moveRangeX: 2.4, moveSpeed: 1.25, movePhase: 0 },
+      { id: 'ed_g2', x: 4.4, z: 10.2, width: 4.4, op: 'add', value: 6, style: 'blue', moveRangeX: 2.4, moveSpeed: 1.25, movePhase: Math.PI },
+      { id: 'ed_g3', x: -4.2, z: 3.2, width: 4.4, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 2.6, moveSpeed: 1.15, movePhase: 0.9 },
+      { id: 'ed_g4', x: 4.2, z: 3.2, width: 4.4, op: 'frost_shield', value: 1, style: 'frost', moveRangeX: 2.6, moveSpeed: 1.15, movePhase: 4.04 },
+      { id: 'ed_g5', x: 0, z: -3.2, width: 5.0, op: 'sub', value: 5, style: 'hazard', moveRangeX: 4.0, moveSpeed: 1.4, movePhase: 1.57 },
+    ],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [
+      { id: 'ed_br_l', x: -5.4, z: -0.4, hp: 18 },
+      { id: 'ed_br_r', x: 5.4, z: -0.4, hp: 18 },
+    ],
+    zones: [
+      { id: 'ed_heal', type: 'heal_sanctuary', x: 0, z: 6.8, width: 5.4, length: 3.6 },
+    ],
+    bumpers: [],
+    bossSubTowers: [],
   };
 }
