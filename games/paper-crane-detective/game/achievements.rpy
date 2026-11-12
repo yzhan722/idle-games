@@ -25,6 +25,8 @@ init -1 python:
         ("ach_perfect", "零失误",         "从序章一路推理到结局，一次也没有答错。",           False),
         ("ach_bond",    "最近的距离",     "一个完整周目结束时，与墨墨的羁绊达到 100。",       False),
         ("ach_cg",      "全部的记忆",     "解锁画廊里的全部 CG。",                            False),
+        ("ach_dlc_alice", "账本里的温度", "完成番外短篇《艾丽丝的代价账本》。",               False),
+        ("ach_dlc_mo",    "第三只千纸鹤", "完成番外后日谈《旧书街与第三只千纸鹤》。",         False),
     ]
     ACH_TITLE = {a[0]: a[1] for a in ACH_LIST}
 
@@ -97,7 +99,7 @@ screen extras_achievements():
         spacing 12
         text "已解锁 %d / %d" % (ach_count(), len(ACH_LIST)):
             style "extras_section_text"
-        grid 2 7:
+        grid 2 ((len(ACH_LIST) + 1) // 2):
             spacing 12
             for aid, title, desc, hidden in ACH_LIST:
                 $ got = achievement.has(aid)

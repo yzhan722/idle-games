@@ -130,6 +130,28 @@ init python:
 ################################################################################
 
 init python:
+    # 番外短篇 DLC：(跳转 label, 角标, 标题, 简介, 缩略图, 完成标记字段, 是否建议通关真结局后游玩)
+    DLC_LIST = [
+        (
+            "dlc_alice_ledger",
+            "番外一",
+            "艾丽丝的代价账本",
+            "桌游社镇社骑士棋子离奇失踪，现场只留下一张写着「抵万事屋账本第 47 页」的撕角借据。",
+            "cg alice_sunset",
+            "dlc_alice_done",
+            False,
+        ),
+        (
+            "dlc_mo_bookstreet",
+            "番外二",
+            "旧书街与第三只千纸鹤",
+            "【TRUE END 后日谈】周六午后的梧桐旧书街与太阳雨，重新开口说话的墨墨与你合折第三只千纸鹤。",
+            "cg secondcrane",
+            "dlc_mo_done",
+            True,
+        ),
+    ]
+
     # 章节卡片上的一句话简介（label -> 简介）
     CHAPTER_BLURBS = {
         "prologue":   "转学第一天，被十字固按在图书馆地板上的人，只能求助万事屋。",
@@ -167,6 +189,52 @@ screen chapter_select():
         vbox:
             xsize 722
             spacing 10
+
+            hbox:
+                spacing 10
+                yalign 0.5
+                text _("✦ 番外短篇（DLC）") style "extras_section_text" color "#f4d98a" yalign 0.5
+                text _("独立短篇剧本 · 不影响主线存档与好感") size 14 color "#a892c2" yalign 0.5
+
+            for dlc_lbl, dlc_badge, dlc_name, dlc_blurb, dlc_thumb, dlc_done_key, dlc_need_te in DLC_LIST:
+                $ _dlc_done = getattr(persistent, dlc_done_key, False)
+                $ _dlc_prompt = (
+                    "开启番外后日谈「%s」？\n（本篇包含 TRUE END 后续剧透，建议达成真结局后体验；亦可直接进入）" % dlc_name
+                    if (dlc_need_te and not persistent.te_cleared)
+                    else "开启独立番外短篇「%s」？\n（独立剧情，不会改动主线章节进度）" % dlc_name
+                )
+                button:
+                    style "chapter_card"
+                    at card_hover_fx
+                    action Show("confirm",
+                                message=_dlc_prompt,
+                                yes_action=[Hide("confirm"), Hide("chapter_select"), Start(dlc_lbl)],
+                                no_action=Hide("confirm"))
+                    hbox:
+                        spacing 16
+                        yalign 0.5
+                        frame:
+                            style "chapter_thumb"
+                            add dlc_thumb:
+                                crop_relative True
+                                crop (0.0, 0.056, 1.0, 0.888)
+                                xysize (152, 76)
+                                fit "contain"
+                        vbox:
+                            spacing 4
+                            yalign 0.5
+                            hbox:
+                                spacing 10
+                                frame:
+                                    style "chapter_badge"
+                                    text dlc_badge style "chapter_badge_text" xalign 0.5 yalign 0.5
+                                text dlc_name style "chapter_name_text" yalign 0.5
+                                if _dlc_done:
+                                    text _("✓ 已读完") size 14 color "#86efac" bold True yalign 0.5
+                            text dlc_blurb style "chapter_blurb_text"
+
+            null height 8
+            text _("✦ 本篇章节回溯") style "extras_section_text"
 
             for idx, (lbl, title, need) in enumerate(CHAPTER_LIST):
                 $ parts = title.split(" · ", 1)

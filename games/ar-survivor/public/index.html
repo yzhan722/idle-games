@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>AR DeepSeek娘 · 实景桌宠养成</title>
   <link rel="icon" type="image/webp" href="./assets/hero_idle2.webp?v=hd5" />
-  <link rel="stylesheet" href="./style.css?v=hd15" />
+  <link rel="stylesheet" href="./style.css?v=hd17" />
 </head>
 <body>
   <!-- 底层全屏实景摄像头 -->
@@ -79,10 +79,14 @@
         </button>
       </div>
 
-      <!-- 右上角治愈系手绘工具栏：拍立得合影 + BGM/语音开关 + 实景重扫 + 屏幕翻转 -->
+      <!-- 右上角治愈系手绘工具栏：拍立得合影 + 纪念相册墙 + BGM/语音开关 + 实景重扫 + 屏幕翻转 -->
       <div class="hud-right">
         <button id="btn-photo-snap" class="icon-btn" title="AR拍立得合影（也可对镜头比耶自动触发）" aria-label="AR拍立得合影">
           <img src="./assets/ui_btn_camera.webp?v=hd6" alt="" class="top-tool-ico" />
+        </button>
+        <button id="btn-album-open" class="icon-btn icon-btn-album" title="打开拍立得纪念相册集邮墙" aria-label="拍立得纪念相册">
+          <img src="./assets/ui_btn_album.webp?v=hd17" alt="" class="top-tool-ico" />
+          <span id="hud-album-count" class="tool-count-badge hidden">0</span>
         </button>
         <button id="btn-sound-toggle" class="icon-btn" title="开关BGM与角色语音" aria-label="开关声音">
           <img src="./assets/ui_btn_sound.webp?v=hd6" alt="" class="top-tool-ico" />
@@ -153,8 +157,50 @@
       <button id="btn-polaroid-close" class="polaroid-close" aria-label="关闭相片">×</button>
       <img id="polaroid-img" class="polaroid-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="AR拍立得合影" />
       <div class="polaroid-actions">
-        <span class="polaroid-caption">AR 纪念拍立得</span>
-        <button id="btn-polaroid-save" class="polaroid-save-btn">保存相片</button>
+        <button id="btn-polaroid-wall" class="polaroid-wall-btn">已收相册</button>
+        <button id="btn-polaroid-save" class="polaroid-save-btn">下载原图</button>
+      </div>
+    </div>
+
+    <!-- AR-2 日常话题轻对话多选气泡卡（奶油手账贴纸风，非阻塞悬浮） -->
+    <aside id="pet-topic-card" class="pet-topic-card hidden" aria-live="polite">
+      <div class="topic-card-header">
+        <div class="topic-card-title-wrap">
+          <img src="./assets/ui_btn_chat.webp?v=hd17" alt="" class="topic-head-ico" />
+          <span class="topic-kicker" id="topic-kicker">日常小话题</span>
+        </div>
+        <div class="topic-head-actions">
+          <button id="btn-topic-next" class="topic-mini-btn" title="换个话题">换一题</button>
+          <button id="btn-topic-close" class="topic-close-btn" aria-label="收起话题">×</button>
+        </div>
+      </div>
+      <p class="topic-prompt-text" id="topic-prompt-text">主人今天敲代码累不累呀？要不要休息两分钟陪我说说话~</p>
+      <div class="topic-options-list" id="topic-options-list"></div>
+    </aside>
+
+    <!-- AR-2 拍立得纪念相册大图检视弹窗 -->
+    <div id="album-lightbox" class="album-lightbox hidden" role="dialog" aria-modal="true" aria-label="拍立得纪念相片预览">
+      <div class="album-lightbox-panel">
+        <button id="btn-album-lb-close" class="drawer-close-btn album-lb-close" aria-label="关闭相片预览">×</button>
+        <div class="album-lb-photo-wrap">
+          <img id="album-lb-img" class="album-lb-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="纪念拍立得大图" />
+          <img id="album-lb-pin-stamp" class="album-lb-pin-stamp hidden" src="./assets/ui_pin_star.webp?v=hd17" alt="已置顶纪念" />
+        </div>
+        <div class="album-lb-meta">
+          <div class="album-lb-meta-top">
+            <span class="album-lb-date" id="album-lb-date">2026.11.12 15:00</span>
+            <span class="album-lb-outfit" id="album-lb-outfit">亲密 LV.1 · 清爽日常装</span>
+          </div>
+          <p class="album-lb-note" id="album-lb-note">「今天也在桌面陪主人~」</p>
+          <div class="album-lb-actions">
+            <button id="btn-album-lb-pin" class="album-act-btn album-act-pin">
+              <img src="./assets/ui_pin_star.webp?v=hd17" alt="" class="album-act-ico" />
+              <span id="album-lb-pin-text">置顶纪念</span>
+            </button>
+            <button id="btn-album-lb-dl" class="album-act-btn album-act-dl">下载相片</button>
+            <button id="btn-album-lb-del" class="album-act-btn album-act-del">删除</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -172,13 +218,14 @@
       </div>
     </div>
 
-    <!-- 治愈系奶油手账抽屉面板（鲸鱼食堂 / 玩具装扮 / 打工武装） -->
+    <!-- 治愈系奶油手账抽屉面板（鲸鱼食堂 / 玩具装扮 / 打工武装 / 纪念相册） -->
     <div id="pet-drawer" class="pet-drawer hidden">
       <div class="drawer-header">
         <div class="drawer-tabs">
           <button class="drawer-tab active" data-tab="food">食堂投喂</button>
           <button class="drawer-tab" data-tab="dress">家具与装扮</button>
           <button class="drawer-tab" data-tab="upgrade">打工武装</button>
+          <button class="drawer-tab" data-tab="album">纪念相册</button>
         </div>
         <button id="btn-drawer-close" class="drawer-close-btn" aria-label="关闭面板">×</button>
       </div>
@@ -211,6 +258,10 @@
           <img src="./assets/hero_pose_rps.webp?v=hd5" alt="" class="care-thumb" />
           <span class="care-label">猜拳</span>
         </button>
+        <button id="btn-chat-topic" class="care-btn care-btn-chat" aria-label="轻对话话题互动">
+          <img src="./assets/ui_btn_chat.webp?v=hd17" alt="" class="care-thumb" />
+          <span class="care-label">聊聊天</span>
+        </button>
         <button id="btn-nap" class="care-btn" aria-label="摸鱼小憩">
           <img src="./assets/prop_cushion.webp?v=hd2" alt="" class="care-thumb" />
           <span class="care-label" id="btn-nap-label">小憩</span>
@@ -234,6 +285,6 @@
     </div>
   </div>
 
-  <script type="module" src="./game.js?v=hd40"></script>
+  <script type="module" src="./game.js?v=hd41"></script>
 </body>
 </html>
