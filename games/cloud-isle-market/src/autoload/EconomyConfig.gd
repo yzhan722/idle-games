@@ -196,6 +196,18 @@ func get_manifest_entry(sheet_key: String) -> Dictionary:
 		return sprite_manifest[sheet_key]
 	return {"cell_width": 60, "cell_height": 60, "hframes": 4, "vframes": 1, "total_frames": 4, "regions": []}
 
+func load_pixel_texture(res_path: String) -> Texture2D:
+	if ResourceLoader.exists(res_path):
+		var loaded := load(res_path) as Texture2D
+		if loaded != null:
+			return loaded
+	var abs_path := ProjectSettings.globalize_path(res_path)
+	if FileAccess.file_exists(abs_path):
+		var img := Image.load_from_file(abs_path)
+		if img != null and not img.is_empty():
+			return ImageTexture.create_from_image(img)
+	return null
+
 func get_frame_region(sheet_key: String, frame_idx: int) -> Rect2:
 	var entry := get_manifest_entry(sheet_key)
 	var regions: Array = entry.get("regions", [])

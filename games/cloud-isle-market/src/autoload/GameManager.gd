@@ -79,11 +79,18 @@ var pending_offline_seconds: int = 0
 var pending_offline_gold: int = 0
 var last_offline_report: Dictionary = {}
 
-## v2.3 Direction 1 & 2: Dynamic Weather/Time-of-Day Cycle & Carnival Frenzy Buff
+## v2.3 Direction 1 & 2 + CI-2: Dynamic Weather/Time-of-Day Cycle, Carnival Frenzy, Gourmet Acclaim & Night Lantern Festival
 enum WeatherState { DAY = 0, DUSK = 1, NIGHT = 2, RAIN = 3 }
+const GOURMET_ACCLAIM_DURATION: float = 36.0
+const GOURMET_PRICE_BONUS_MULT: float = 1.25
+const GOURMET_TIP_BONUS_MULT: float = 1.20
+const LANTERN_FESTIVAL_DURATION: float = 42.0
+
 var current_weather: int = WeatherState.DAY
 var weather_timer: float = 0.0
 var frenzy_timer: float = 0.0
+var gourmet_acclaim_timer: float = 0.0
+var lantern_festival_timer: float = 0.0
 
 ## v2.4-4: Pomodoro Focus Timer Companion (25min / 1500s) & Gift Box Reward
 const POMODORO_DURATION: float = 1500.0
@@ -195,6 +202,8 @@ func reset_for_playtest_state() -> void:
 	pomodoro_active = false
 	pomodoro_time_remaining = 0.0
 	pomodoro_completed_count = 0
+	gourmet_acclaim_timer = 0.0
+	lantern_festival_timer = 0.0
 	unlocked_achievements = {}
 	career_stats = {"harvests": 0, "crafts": 0, "customers": 0, "contracts": 0}
 	_sync_codex_from_progression()
@@ -208,6 +217,13 @@ func _process(delta: float) -> void:
 
 	if frenzy_timer > 0.0:
 		frenzy_timer = maxf(0.0, frenzy_timer - delta)
+	if gourmet_acclaim_timer > 0.0:
+		gourmet_acclaim_timer = maxf(0.0, gourmet_acclaim_timer - delta)
+	if lantern_festival_timer > 0.0:
+		if current_weather != WeatherState.NIGHT:
+			lantern_festival_timer = 0.0
+		else:
+			lantern_festival_timer = maxf(0.0, lantern_festival_timer - delta)
 
 	if pomodoro_active:
 		pomodoro_time_remaining -= delta
@@ -221,9 +237,31 @@ func _process(delta: float) -> void:
 
 func set_weather(next_weather: int) -> void:
 	current_weather = clampi(next_weather, 0, 3)
+	if current_weather == WeatherState.NIGHT:
+		if lantern_festival_timer <= 0.0 and randf() < 0.68:
+			start_lantern_festival(LANTERN_FESTIVAL_DURATION)
+	else:
+		lantern_festival_timer = 0.0
 	if SoundManager != null and SoundManager.has_method("crossfade_to_ambient"):
 		SoundManager.crossfade_to_ambient(current_weather)
 	EventBus.weather_changed.emit(current_weather)
+
+func start_lantern_festival(duration: float = LANTERN_FESTIVAL_DURATION) -> void:
+	if current_weather != WeatherState.NIGHT:
+		current_weather = WeatherState.NIGHT
+		EventBus.weather_changed.emit(current_weather)
+	lantern_festival_timer = maxf(lantern_festival_timer, duration)
+	EventBus.lantern_festival_started.emit(lantern_festival_timer)
+
+func is_lantern_festival_active() -> bool:
+	return current_weather == WeatherState.NIGHT and lantern_festival_timer > 0.0
+
+func trigger_gourmet_acclaim(duration: float = GOURMET_ACCLAIM_DURATION) -> void:
+	gourmet_acclaim_timer = maxf(gourmet_acclaim_timer, duration)
+	EventBus.gourmet_acclaim_started.emit(gourmet_acclaim_timer)
+
+func is_gourmet_acclaim_active() -> bool:
+	return gourmet_acclaim_timer > 0.0
 
 func get_weather_crop_growth_multiplier() -> float:
 	var mult := 1.35 if current_weather == WeatherState.RAIN else 1.0
@@ -233,6 +271,8 @@ func get_weather_crop_growth_multiplier() -> float:
 
 func get_weather_vip_chance() -> float:
 	var base_c := 0.36 if (current_weather == WeatherState.DUSK or current_weather == WeatherState.NIGHT) else 0.18
+	if is_lantern_festival_active():
+		base_c = maxf(base_c, 0.58)
 	if frenzy_timer > 0.0:
 		base_c = maxf(base_c, 0.50)
 	return base_c
@@ -240,6 +280,10 @@ func get_weather_vip_chance() -> float:
 func get_weather_status_text() -> String:
 	if frenzy_timer > 0.0:
 		return "★嘉年华加速(" + str(int(ceili(frenzy_timer))) + "s)"
+	if is_lantern_festival_active():
+		return "★花火灯会(" + str(int(ceili(lantern_festival_timer))) + "s)"
+	if gourmet_acclaim_timer > 0.0:
+		return "★金牌口碑(" + str(int(ceili(gourmet_acclaim_timer))) + "s)"
 	match current_weather:
 		WeatherState.DAY:
 			return "晴昼·常速"
@@ -326,7 +370,10 @@ func get_unlocked_codex_count() -> int:
 	return cnt
 
 func get_codex_price_multiplier() -> float:
-	return 1.0 + 0.10 * float(get_unlocked_codex_count())
+	var mult := 1.0 + 0.10 * float(get_unlocked_codex_count())
+	if gourmet_acclaim_timer > 0.0:
+		mult *= GOURMET_PRICE_BONUS_MULT
+	return mult
 
 func is_animal_hired(animal_key: String) -> bool:
 	return get_total_recruited(animal_key) >= 1
@@ -531,7 +578,110 @@ func get_customer_tip_multiplier(is_vip: bool, island: int = 3) -> float:
 	var shiba_lv := int(animal_levels.get("shiba", 0))
 	if shiba_lv >= 10:
 		mult *= (1.0 + EconomyConfig.calc_shiba_tip_trait_bonus(shiba_lv))
+	if gourmet_acclaim_timer > 0.0:
+		mult *= GOURMET_TIP_BONUS_MULT
 	return mult
+
+## ==================================================================
+## CI-2: Gourmet Critic Tasting & Caravan Merchant Surplus Crop Barter
+## ==================================================================
+func has_surplus_crops_for_merchant() -> bool:
+	for isl in [1, 2, 3]:
+		if raw_baskets.has(isl):
+			var b: Dictionary = raw_baskets[isl]
+			for ck in ["crop_3", "crop_2", "crop_1", "crop_0"]:
+				if int(b.get(ck, 0)) > 0:
+					return true
+	for ck in ["crop_3", "crop_2", "crop_1", "crop_0"]:
+		if int(stall_inventory.get(ck, 0)) > 0:
+			return true
+	return false
+
+func try_merchant_acquire_surplus_crops(desired_qty: int, world_pos: Vector2) -> Dictionary:
+	var rem := maxi(1, desired_qty)
+	var taken := 0
+	var chosen_crop := ""
+	for isl in [1, 2, 3]:
+		if rem <= 0:
+			break
+		if not raw_baskets.has(isl):
+			continue
+		var b: Dictionary = raw_baskets[isl]
+		for ck in ["crop_3", "crop_2", "crop_1", "crop_0"]:
+			var av := int(b.get(ck, 0))
+			if av > 0:
+				var grab := mini(av, rem)
+				b[ck] = av - grab
+				rem -= grab
+				taken += grab
+				if chosen_crop == "":
+					chosen_crop = ck
+				if rem <= 0:
+					break
+	if rem > 0:
+		for ck in ["crop_3", "crop_2", "crop_1", "crop_0"]:
+			var av := int(stall_inventory.get(ck, 0))
+			if av > 0:
+				var grab := mini(av, rem)
+				stall_inventory[ck] = av - grab
+				rem -= grab
+				taken += grab
+				if chosen_crop == "":
+					chosen_crop = ck
+				if rem <= 0:
+					break
+	if taken <= 0:
+		return {"taken": 0, "amber": 0, "gold": 0, "item_id": ""}
+	var amber_gain := maxi(1, int(ceilf(float(taken) / 2.0)))
+	var gold_gain := taken * 36
+	career_stats["customers"] = int(career_stats.get("customers", 0)) + 1
+	add_amber(amber_gain)
+	add_gold(gold_gain)
+	progress_contract(chosen_crop, taken)
+	evaluate_achievements()
+	if SoundManager != null:
+		SoundManager.play_coin_sfx()
+	EventBus.inventory_changed.emit()
+	EventBus.customer_paid.emit(chosen_crop, taken, gold_gain, world_pos)
+	EventBus.merchant_barter_completed.emit(chosen_crop, taken, amber_gain, gold_gain)
+	return {"taken": taken, "amber": amber_gain, "gold": gold_gain, "item_id": chosen_crop}
+
+func has_delicacy_or_stall_stock_for_critic() -> bool:
+	for dk in ["delicacy_3", "delicacy_2", "delicacy_1", "delicacy_0"]:
+		if int(stall_inventory.get(dk, 0)) > 0:
+			return true
+		for wid in ["orbis_linked", "cauldron", "mortar"]:
+			if workshop_outputs.has(wid) and int(workshop_outputs[wid].get(dk, 0)) > 0:
+				return true
+	return get_total_stall_count() > 0
+
+func try_critic_taste_delicacy(preferred_id: String, qty: int, world_pos: Vector2) -> int:
+	var target_del := ""
+	if preferred_id.begins_with("delicacy_") and int(stall_inventory.get(preferred_id, 0)) > 0:
+		target_del = preferred_id
+	else:
+		for dk in ["delicacy_3", "delicacy_2", "delicacy_1", "delicacy_0"]:
+			if int(stall_inventory.get(dk, 0)) > 0:
+				target_del = dk
+				break
+	if target_del == "":
+		for wid in ["orbis_linked", "cauldron", "mortar"]:
+			if not workshop_outputs.has(wid):
+				continue
+			for dk in ["delicacy_3", "delicacy_2", "delicacy_1", "delicacy_0"]:
+				var wav := int(workshop_outputs[wid].get(dk, 0))
+				if wav > 0:
+					var move_n := mini(wav, maxi(1, qty))
+					workshop_outputs[wid][dk] = wav - move_n
+					stall_inventory[dk] = int(stall_inventory.get(dk, 0)) + move_n
+					target_del = dk
+					break
+			if target_del != "":
+				break
+	var earned := try_purchase_from_stall(target_del if target_del != "" else preferred_id, maxi(1, qty), world_pos, true)
+	if earned > 0:
+		trigger_gourmet_acclaim(GOURMET_ACCLAIM_DURATION)
+	return earned
 
 
 ## ==================================================================

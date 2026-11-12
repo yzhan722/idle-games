@@ -55,8 +55,13 @@ def main():
         emp_text = f.read()
     empire_names = set(re.findall(r'"([^"]+)"\s*:\s*\{', emp_text))
     print(f"[OK] Loaded {len(empire_names)} historical empires from empires_db.js")
-    if len(empire_names) < 60:
-        fail(f"Too few empires ({len(empire_names)} < 60). Anti-stubbing rule triggered.")
+    if len(empire_names) < 275:
+        fail(f"Too few empires ({len(empire_names)} < 275). WH-3 requires 275+ pure sovereign polities.")
+    for req_emp_field in ("capital_evol:", "institutions:", "fiscal_tax:", "peak_demography:", "treaties_campaigns:"):
+        cnt = emp_text.count(req_emp_field)
+        if cnt < len(empire_names):
+            fail(f"Scholarly dossier field '{req_emp_field}' present on only {cnt}/{len(empire_names)} polities!")
+    print(f"[OK] Verified 5-dimension scholarly institutional dossiers across all {len(empire_names)} polities")
 
     # Parse Timeline keyframes and check all region & empire references
     with open(os.path.join(ROOT, "src/data/timeline_keyframes.js"), "r", encoding="utf-8") as f:
@@ -64,8 +69,8 @@ def main():
 
     years = [int(y) for y in re.findall(r'year:\s*(-?\d+)', tl_text)]
     print(f"[OK] Loaded {len(years)} timeline keyframes spanning {min(years)} to {max(years)}")
-    if len(years) < 85:
-        fail(f"Too few timeline keyframes ({len(years)} < 85). Task 1 requires 85+ high-density keyframes.")
+    if len(years) < 185:
+        fail(f"Too few timeline keyframes ({len(years)} < 185). WH-3 requires 185+ high-density keyframes.")
     if years != sorted(years):
         fail("Timeline keyframes are NOT sorted in ascending chronological order!")
     if len(years) != len(set(years)):
@@ -114,8 +119,8 @@ def main():
     chr_years = [int(y) for y in re.findall(r'"year":\s*(-?\d+)', chr_text)]
     chr_regions = re.findall(r'"regionId":\s*"([^"]+)"', chr_text)
     print(f"[OK] Loaded {len(chr_years)} chronological historical events from chronicle_annals_db.js")
-    if len(chr_years) < 600:
-        fail(f"Too few chronological events ({len(chr_years)} < 600) in chronicle_annals_db.js!")
+    if len(chr_years) < 800:
+        fail(f"Too few chronological events ({len(chr_years)} < 800) in chronicle_annals_db.js! WH-3 requires 800+.")
     if chr_years != sorted(chr_years):
         fail("Chronicle events in chronicle_annals_db.js are NOT sorted in ascending chronological order!")
     for rid in chr_regions:

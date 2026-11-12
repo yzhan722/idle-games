@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
   <title>世界历史疆域演化沙盒 (World History Evolution Atlas)</title>
-  <link rel="stylesheet" href="src/styles/main.css?v=16" />
+  <link rel="stylesheet" href="src/styles/main.css?v=18" />
 </head>
 <body class="era-ancient">
 
@@ -20,9 +21,9 @@
 
     <!-- 全局即时搜索框与朝代对比/编年史大库按钮 -->
     <div class="search-wrap">
-      <input type="text" id="search-input" placeholder="搜索 638 条编年史 / 252 国家与王朝 / 丝路商埠 / 年份..." autocomplete="off" oninput="AtlasApp.onSearchInput(this.value)" />
+      <input type="text" id="search-input" placeholder="搜索 813 条编年史 / 280 主权政权 / 典章兵制 / 丝路商埠 / 年份..." autocomplete="off" oninput="AtlasApp.onSearchInput(this.value)" />
       <div id="search-dropdown"></div>
-      <button class="era-btn compare-trigger-btn" id="btn-open-chronicle" onclick="AtlasApp.openChronicleModal()">❖ 编年史大库 (638)</button>
+      <button class="era-btn compare-trigger-btn" id="btn-open-chronicle" onclick="AtlasApp.openChronicleModal()">❖ 编年史大库 (813)</button>
       <button class="era-btn compare-trigger-btn" onclick="AtlasApp.openCompareModal()">◈ 帝国兴衰图志</button>
     </div>
 
@@ -81,6 +82,17 @@
     <div class="stat-row"><span>政体制度：</span><strong id="card-regime">-</strong></div>
     <div class="stat-row"><span>鼎盛版图规模：</span><strong id="card-area">-</strong></div>
     <div class="stat-row"><span>国祚延续时期：</span><strong id="card-span">-</strong></div>
+    <div class="scholarly-dossier-box" id="card-scholarly-box">
+      <div class="traj-head-row">
+        <h4>§ 典章制度 · 迁都与疆界考据</h4>
+        <span class="traj-summary-tag">史志辑要</span>
+      </div>
+      <div class="sch-item"><span class="sch-lbl">历代迁都</span><div id="card-cap-evol" class="sch-val">-</div></div>
+      <div class="sch-item"><span class="sch-lbl">官制兵制</span><div id="card-inst" class="sch-val">-</div></div>
+      <div class="sch-item"><span class="sch-lbl">赋役财政</span><div id="card-fiscal" class="sch-val">-</div></div>
+      <div class="sch-item"><span class="sch-lbl">人口四至</span><div id="card-demog" class="sch-val">-</div></div>
+      <div class="sch-item"><span class="sch-lbl">会盟战役</span><div id="card-treaties" class="sch-val">-</div></div>
+    </div>
     <div class="trajectory-box" id="card-trajectory-box">
       <div class="traj-head-row">
         <h4>§ 国祚与版图兴衰图谱</h4>
@@ -164,7 +176,7 @@
       <div class="compare-header">
         <div>
           <h3>❖ 世界五千年历史推演·全量编年史大数据库 (BC 3000 — AD 2026)</h3>
-          <div class="chr-subtitle">涵盖 638 个核心历史纪年节点 · 252 个主权国家与王朝 · 153 个疆域演化关键帧 · 点击任意条目即可精准穿越并定位战区</div>
+          <div class="chr-subtitle">涵盖 813 个核心历史纪年节点 · 280 个主权国家与王朝 · 193 个疆域演化关键帧 · 点击任意条目即可精准穿越并定位战区</div>
         </div>
         <button class="modal-close-btn" onclick="AtlasApp.closeChronicleModal()">× 关闭大库</button>
       </div>
@@ -197,20 +209,20 @@
           <option value="航海与边疆">◆ 航海与边疆</option>
         </select>
         <input type="text" id="chr-search-input" placeholder="检索年份、帝王、战役、条约或地名..." oninput="AtlasApp.renderChronicleList()" />
-        <span id="chr-count-badge" class="chr-count-badge">638 条记录</span>
+        <span id="chr-count-badge" class="chr-count-badge">813 条记录</span>
       </div>
       <div id="chronicle-list" class="chronicle-list"></div>
     </div>
   </div>
 
   <!-- 模块化脚本按序加载（兼容本地直接双击 file:// 与 HTTP 服务器） -->
-  <script src="src/data/regions_geo.js?v=16"></script>
-  <script src="src/data/empires_db.js?v=16"></script>
-  <script src="src/data/timeline_keyframes.js?v=16"></script>
-  <script src="src/data/chronicle_annals_db.js?v=16"></script>
-  <script src="src/core/TimelineEngine.js?v=16"></script>
-  <script src="src/ui/AudioSynthesizer.js?v=16"></script>
-  <script src="src/ui/MapRenderer.js?v=16"></script>
-  <script src="src/main.js?v=16"></script>
+  <script src="src/data/regions_geo.js?v=18"></script>
+  <script src="src/data/empires_db.js?v=18"></script>
+  <script src="src/data/timeline_keyframes.js?v=18"></script>
+  <script src="src/data/chronicle_annals_db.js?v=18"></script>
+  <script src="src/core/TimelineEngine.js?v=18"></script>
+  <script src="src/ui/AudioSynthesizer.js?v=18"></script>
+  <script src="src/ui/MapRenderer.js?v=18"></script>
+  <script src="src/main.js?v=18"></script>
 </body>
 </html>

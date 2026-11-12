@@ -795,6 +795,78 @@ func _run_all_four_assertions_and_export() -> void:
 	world.spawn_sky_balloon_at(1156.0)
 	print("[PASS] [断言14-CI-1抚摸动物加速与天空热气球礼袋] 通过: 全 6 类执勤动物欢快跳跃+像素爱心+8s干劲加速+防鬼畜冷却、天空热气球防穿透多边形命中与礼袋金币/琥珀/狂欢结算校验 PASS!")
 
+	# ------------------------------------------------------------------
+	# [断言15-CI-2美食评论家与云游行商及云端花火灯会]:
+	#   1) Gourmet Critic (`traveler_critic_normalized.png`, 48x48x2) tastes delicacy -> activates `gourmet_acclaim_timer` (+25% price & +20% tip) + medal badge;
+	#   2) Caravan Merchant (`traveler_merchant_normalized.png`, 48x48x2) acquires surplus crops from `raw_baskets` -> grants `amber` + gold;
+	#   3) Night Cloud Firework & Lantern Festival (`start_lantern_festival`) activates `fest_lantern_garland.png`, boosts VIP chance >= 0.58, and spawns pixel firework bursts.
+	# ------------------------------------------------------------------
+	GameManager.gourmet_acclaim_timer = 0.0
+	var pre_codex_mult := GameManager.get_codex_price_multiplier()
+	var pre_tip_mult := GameManager.get_customer_tip_multiplier(false, 3)
+	GameManager.add_to_stall("delicacy_0", 2)
+	var critic := world.spawn_special_visitor(CustomerNPC.VisitorRole.GOURMET_CRITIC)
+	if critic == null or critic.body_sprite == null or critic.body_sprite.texture == null:
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Gourmet Critic failed to load `traveler_critic_normalized.png`!")
+		return
+	var critic_fw := float(critic.body_sprite.texture.get_width()) / float(maxi(1, critic.body_sprite.hframes))
+	var critic_fh := float(critic.body_sprite.texture.get_height()) / float(maxi(1, critic.body_sprite.vframes))
+	if critic.body_sprite.hframes != 2 or absf(critic_fw - 48.0) > 0.5 or absf(critic_fh - 48.0) > 0.5 or critic.tex_gourmet_medal == null:
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Gourmet Critic invalid slicing/medal: fw=%.1f fh=%.1f hframes=%d medal=%s" % [
+			critic_fw, critic_fh, critic.body_sprite.hframes, str(critic.tex_gourmet_medal != null)
+		])
+		return
+	var pre_critic_gold := GameManager.gold
+	var critic_earned := GameManager.try_critic_taste_delicacy("delicacy_0", 1, critic.position)
+	if critic_earned <= 0 or GameManager.gold <= pre_critic_gold or not GameManager.is_gourmet_acclaim_active():
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Gourmet Critic checkout failed to settle delicacy & activate Gourmet Acclaim!")
+		return
+	if GameManager.get_codex_price_multiplier() <= pre_codex_mult + 0.05 or GameManager.get_customer_tip_multiplier(false, 3) <= pre_tip_mult + 0.05:
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Gourmet Acclaim failed to boost price & tip multipliers!")
+		return
+
+	GameManager.raw_baskets[1]["crop_0"] = maxi(3, int(GameManager.raw_baskets[1].get("crop_0", 0)) + 3)
+	var merchant := world.spawn_special_visitor(CustomerNPC.VisitorRole.CARAVAN_MERCHANT)
+	if merchant == null or merchant.body_sprite == null or merchant.body_sprite.texture == null:
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Caravan Merchant failed to load `traveler_merchant_normalized.png`!")
+		return
+	var merch_fw := float(merchant.body_sprite.texture.get_width()) / float(maxi(1, merchant.body_sprite.hframes))
+	var merch_fh := float(merchant.body_sprite.texture.get_height()) / float(maxi(1, merchant.body_sprite.vframes))
+	if merchant.body_sprite.hframes != 2 or absf(merch_fw - 48.0) > 0.5 or absf(merch_fh - 48.0) > 0.5:
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Caravan Merchant invalid slicing: fw=%.1f fh=%.1f hframes=%d" % [
+			merch_fw, merch_fh, merchant.body_sprite.hframes
+		])
+		return
+	var pre_merch_amber := GameManager.amber
+	var pre_merch_gold := GameManager.gold
+	var barter_res := GameManager.try_merchant_acquire_surplus_crops(3, merchant.position)
+	if int(barter_res.get("taken", 0)) <= 0 or GameManager.amber <= pre_merch_amber or GameManager.gold <= pre_merch_gold:
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Caravan Merchant surplus crop barter failed: %s" % str(barter_res))
+		return
+
+	if world.tex_lantern_garland == null:
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Festival lantern garland texture `fest_lantern_garland.png` failed to load!")
+		return
+	GameManager.start_lantern_festival(38.0)
+	world._process(0.15)
+	world.spawn_festival_firework_burst(948.0, 34.0)
+	world.spawn_festival_firework_burst(1096.0, 28.0)
+	world._process(0.25)
+	if not GameManager.is_lantern_festival_active() or GameManager.get_weather_vip_chance() < 0.57 or world.fest_fireworks.size() == 0:
+		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Night Cloud Firework & Lantern Festival failed to activate VIP boost & pixel fireworks!")
+		return
+	# Position Critic (front checkout) & satisfied Merchant (strolling with heart emote) cleanly without bubble overlap
+	critic.position = Vector2(1041.4, EconomyConfig.GROUND_Y)
+	critic.facing_left = true
+	critic._process(0.02)
+	merchant.position = Vector2(1075.0, EconomyConfig.GROUND_Y)
+	merchant.state = CustomerNPC.State.LEAVE
+	merchant.purchased_ok = true
+	merchant.nav_path.clear()
+	merchant.facing_left = true
+	merchant._process(0.02)
+	print("[PASS] [断言15-CI-2美食评论家与云游行商及云端花火灯会] 通过: 美食评论家品鉴触发36s金牌口碑(售价+25%%&小费+20%%)、云游行商收购田头富余作物换琥珀、夜间花火灯会彩灯串与像素烟花校验 PASS!")
+
 	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
 	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": false, "tiki_torch": false}
 	GameManager.amber = 5

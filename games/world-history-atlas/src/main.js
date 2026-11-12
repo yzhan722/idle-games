@@ -378,6 +378,11 @@
       document.getElementById("card-regime").textContent = emp.regime;
       document.getElementById("card-area").textContent = `${emp.peak_area} (当前统辖 ${count} 区)`;
       document.getElementById("card-span").textContent = emp.era_span;
+      document.getElementById("card-cap-evol").textContent = emp.capital_evol || emp.capital || "-";
+      document.getElementById("card-inst").textContent = emp.institutions || emp.regime || "-";
+      document.getElementById("card-fiscal").textContent = emp.fiscal_tax || "-";
+      document.getElementById("card-demog").textContent = emp.peak_demography || emp.peak_area || "-";
+      document.getElementById("card-treaties").textContent = emp.treaties_campaigns || "-";
       renderInspectorTrajectory(ownerName);
     } else {
       document.getElementById("card-empire").textContent = "远古早期古国";
@@ -387,6 +392,11 @@
       document.getElementById("card-regime").textContent = "早期古国王制";
       document.getElementById("card-area").textContent = "1 个独立地理区";
       document.getElementById("card-span").textContent = "远古 - 古典";
+      document.getElementById("card-cap-evol").textContent = `${regObj.name}早期城邑聚落群`;
+      document.getElementById("card-inst").textContent = "氏族长老议事与早期神权祭祀王制";
+      document.getElementById("card-fiscal").textContent = "公社贡赋与早期实物纳贡";
+      document.getElementById("card-demog").textContent = `局限于${regObj.name}河谷绿洲聚落带`;
+      document.getElementById("card-treaties").textContent = "城邑营建与早期区域礼器铜石交换";
       renderInspectorTrajectory(null);
     }
 
@@ -791,6 +801,11 @@
               <div class="cmp-metric-head"><span>国祚延续跨度</span><strong>约 ${d.duration} 年 (${d.regime})</strong></div>
               <div class="cmp-bar-bg"><div class="cmp-bar-fill" style="width:${Math.round((d.duration / maxDur) * 100)}%; background:${col}"></div></div>
             </div>
+            <div class="cmp-scholarly-meta">
+              <div><span>官制兵制：</span>${d.institutions}</div>
+              <div><span>赋役财政：</span>${d.fiscal_tax}</div>
+              <div><span>人口四至：</span>${d.peak_demography}</div>
+            </div>
             <div class="cmp-desc">${d.desc}</div>
             <button class="cmp-jump-btn" onclick="AtlasApp.jumpToEmpirePeak('${d.name.replace(/'/g, "\\'")}', ${d.peakYear})">
               ▶ 跳转至其极盛年 (${formatYear(d.peakYear)}) 并高亮版图
@@ -905,6 +920,10 @@
   };
 
   initTheaterBar();
+  const chrBtnEl = document.getElementById("btn-open-chronicle");
+  if (chrBtnEl && window.HistoryAtlas.CHRONICLE_ANNALS) {
+    chrBtnEl.textContent = `❖ 编年史大库 (${window.HistoryAtlas.CHRONICLE_ANNALS.length})`;
+  }
 
   // Non-Linear Idle-Game Evolution Loop (Fast in early antiquity -> Progressively slower toward modernity)
   setInterval(() => {

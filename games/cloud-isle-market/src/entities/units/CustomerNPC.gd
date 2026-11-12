@@ -18,6 +18,13 @@ enum State {
 	LEAVE
 }
 
+enum VisitorRole {
+	REGULAR = 0,
+	VIP = 1,
+	GOURMET_CRITIC = 2,
+	CARAVAN_MERCHANT = 3
+}
+
 const TRAVELER_KEYS: Array[String] = [
 	"travelers/traveler_slime.png",
 	"travelers/traveler_mushroom.png",
@@ -30,7 +37,13 @@ const TRAVELER_NORMALIZED_PATHS: Array[String] = [
 	"res://assets/pixel_art/travelers/traveler_pig_normalized.png"
 ]
 
+const CRITIC_SHEET_KEY := "travelers/traveler_critic.png"
+const CRITIC_NORMALIZED_PATH := "res://assets/pixel_art/travelers/traveler_critic_normalized.png"
+const MERCHANT_SHEET_KEY := "travelers/traveler_merchant.png"
+const MERCHANT_NORMALIZED_PATH := "res://assets/pixel_art/travelers/traveler_merchant_normalized.png"
+
 var state: State = State.SPAWN_AND_STROLL
+var visitor_role: int = VisitorRole.REGULAR
 var is_vip: bool = false
 var sheet_key: String = "travelers/traveler_slime.png"
 var tex_sheet: Texture2D
@@ -38,6 +51,7 @@ var tex_parchment: Texture2D
 var tex_delicacies: Texture2D
 var tex_crops: Texture2D
 var tex_heart: Texture2D
+var tex_gourmet_medal: Texture2D
 
 var body_sprite: Sprite2D = Sprite2D.new()
 var bubble_label: Label
@@ -86,17 +100,30 @@ func _ready() -> void:
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
 	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
+	tex_gourmet_medal = EconomyConfig.load_pixel_texture("res://assets/pixel_art/ui/badge_gourmet_medal.png")
 
-func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketStall, p_is_vip: bool = false) -> void:
+func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketStall, p_is_vip: bool = false, p_role: int = -1) -> void:
 	waypoint_graph = p_graph
 	stall_ref = p_stall
-	is_vip = p_is_vip
+	if p_role < 0:
+		visitor_role = VisitorRole.VIP if p_is_vip else VisitorRole.REGULAR
+	else:
+		visitor_role = p_role
+	is_vip = (visitor_role == VisitorRole.VIP or visitor_role == VisitorRole.GOURMET_CRITIC)
 	spawn_pos = Vector2(p_spawn.x, EconomyConfig.GROUND_Y)
 	position = spawn_pos
 
-	var t_idx := 2 if is_vip else (randi() % TRAVELER_KEYS.size())
-	sheet_key = TRAVELER_KEYS[t_idx]
-	tex_sheet = load(TRAVELER_NORMALIZED_PATHS[t_idx])
+	if visitor_role == VisitorRole.GOURMET_CRITIC:
+		sheet_key = CRITIC_SHEET_KEY
+		tex_sheet = EconomyConfig.load_pixel_texture(CRITIC_NORMALIZED_PATH)
+	elif visitor_role == VisitorRole.CARAVAN_MERCHANT:
+		sheet_key = MERCHANT_SHEET_KEY
+		tex_sheet = EconomyConfig.load_pixel_texture(MERCHANT_NORMALIZED_PATH)
+	else:
+		var t_idx := 2 if visitor_role == VisitorRole.VIP else (randi() % TRAVELER_KEYS.size())
+		sheet_key = TRAVELER_KEYS[t_idx]
+		tex_sheet = load(TRAVELER_NORMALIZED_PATHS[t_idx])
+
 	if body_sprite != null:
 		body_sprite.texture = tex_sheet
 		body_sprite.region_enabled = false
@@ -105,7 +132,26 @@ func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketSta
 		body_sprite.frame = 0
 		body_sprite.offset = Vector2(0.0, -float(FRAME_H) * 0.5)
 
-	if is_vip:
+	if visitor_role == VisitorRole.GOURMET_CRITIC:
+		var del_pool: Array[String] = []
+		for dk in ["delicacy_3", "delicacy_2", "delicacy_1", "delicacy_0"]:
+			if bool(GameManager.unlocked_codex.get(dk, false)):
+				del_pool.append(dk)
+		if del_pool.is_empty():
+			if GameManager.is_animal_hired("fox"):
+				del_pool.append(EconomyConfig.get_evolved_delicacy_id("mortar", int(GameManager.building_levels.get("mortar", 1))))
+			else:
+				del_pool.append("delicacy_0")
+		desired_item_id = del_pool[0]
+		desired_qty = randi_range(1, 2)
+	elif visitor_role == VisitorRole.CARAVAN_MERCHANT:
+		var crop_pool: Array[String] = []
+		for ck in ["crop_3", "crop_2", "crop_1", "crop_0"]:
+			if bool(GameManager.unlocked_codex.get(ck, false)):
+				crop_pool.append(ck)
+		desired_item_id = crop_pool[0] if not crop_pool.is_empty() else "crop_0"
+		desired_qty = randi_range(2, 4)
+	elif visitor_role == VisitorRole.VIP:
 		if bool(GameManager.unlocked_islands.get(3, false)) and (GameManager.get_island_recruited_count(3, "fox") >= 1 or GameManager.get_island_recruited_count(3, "penguin") >= 1):
 			desired_item_id = "delicacy_3"
 		elif bool(GameManager.unlocked_islands.get(2, false)) and GameManager.get_island_recruited_count(2, "penguin") >= 1:
@@ -126,7 +172,7 @@ func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketSta
 		desired_qty = randi_range(1, 3)
 
 	state = State.SPAWN_AND_STROLL
-	var approach_dest := waypoint_graph.get_dock_pos("stall_checkout") if waypoint_graph != null else Vector2(997.4, EconomyConfig.GROUND_Y)
+	var approach_dest := waypoint_graph.get_dock_pos("stall_checkout") if waypoint_graph != null else Vector2(1041.4, EconomyConfig.GROUND_Y)
 	nav_path = waypoint_graph.compute_path(position, approach_dest) if waypoint_graph != null else [approach_dest]
 
 func _exit_tree() -> void:
@@ -165,25 +211,73 @@ func _process(delta: float) -> void:
 					_move_directly_toward(front_pos, delta, 38.0)
 				else:
 					facing_left = (position.x > stall_ref.position.x)
-			var has_stock := stall_ref.has_available_stock() if stall_ref != null else (GameManager.get_total_stall_count() > 0)
-			if has_stock:
-				var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
-				interact_timer += delta * frenzy_mult
-				var req_time := stall_ref.get_checkout_duration() if stall_ref != null else (1.0 if GameManager.is_animal_hired("shiba") else 1.8)
-				if interact_timer >= req_time:
-					var earned := stall_ref.execute_customer_checkout(desired_item_id, desired_qty, position, is_vip) if stall_ref != null else GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
-					if earned > 0:
-						purchased_ok = true
-						if is_vip:
-							EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "★富豪2x小费!", Color("#FFE066"))
+
+			if visitor_role == VisitorRole.CARAVAN_MERCHANT:
+				var has_crops := GameManager != null and GameManager.has_surplus_crops_for_merchant()
+				if has_crops:
+					var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
+					interact_timer += delta * frenzy_mult
+					var req_time := stall_ref.get_checkout_duration() if stall_ref != null else 1.2
+					if interact_timer >= req_time:
+						var barter := GameManager.try_merchant_acquire_surplus_crops(desired_qty, position)
+						if int(barter.get("taken", 0)) > 0:
+							purchased_ok = true
+							EventBus.spawn_floating_text.emit(
+								position + Vector2(0, -76),
+								"★行商收购x%d +%d琥珀 +%dG!" % [int(barter["taken"]), int(barter["amber"]), int(barter["gold"])],
+								Color("#FFD43B")
+							)
+							_begin_leave()
+				else:
+					wait_timer += delta
+					if wait_timer >= 12.0:
+						disappointed = true
+						EventBus.customer_left_unhappy.emit(position)
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...暂无富余作物", Color("#FFF4D6"))
+						_begin_leave()
+			elif visitor_role == VisitorRole.GOURMET_CRITIC:
+				var has_tasting_stock := GameManager != null and GameManager.has_delicacy_or_stall_stock_for_critic()
+				if has_tasting_stock:
+					var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
+					interact_timer += delta * frenzy_mult
+					var req_time := stall_ref.get_checkout_duration() if stall_ref != null else 1.2
+					if interact_timer >= req_time:
+						var earned := GameManager.try_critic_taste_delicacy(desired_item_id, desired_qty, position)
+						if earned > 0:
+							purchased_ok = true
+							EventBus.spawn_floating_text.emit(
+								position + Vector2(0, -78),
+								"★美食家盛赞！金牌口碑售价&小费UP!",
+								Color("#FFE066")
+							)
+							_begin_leave()
+				else:
+					wait_timer += delta
+					if wait_timer >= 12.0:
+						disappointed = true
+						EventBus.customer_left_unhappy.emit(position)
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...待料理出炉", Color("#FFF4D6"))
 						_begin_leave()
 			else:
-				wait_timer += delta
-				if wait_timer >= 12.0:
-					disappointed = true
-					EventBus.customer_left_unhappy.emit(position)
-					EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...缺货离开", Color("#FFF4D6"))
-					_begin_leave()
+				var has_stock := stall_ref.has_available_stock() if stall_ref != null else (GameManager.get_total_stall_count() > 0)
+				if has_stock:
+					var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
+					interact_timer += delta * frenzy_mult
+					var req_time := stall_ref.get_checkout_duration() if stall_ref != null else (1.0 if GameManager.is_animal_hired("shiba") else 1.8)
+					if interact_timer >= req_time:
+						var earned := stall_ref.execute_customer_checkout(desired_item_id, desired_qty, position, is_vip) if stall_ref != null else GameManager.try_purchase_from_stall(desired_item_id, desired_qty, position, is_vip)
+						if earned > 0:
+							purchased_ok = true
+							if is_vip:
+								EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "★富豪2x小费!", Color("#FFE066"))
+							_begin_leave()
+				else:
+					wait_timer += delta
+					if wait_timer >= 12.0:
+						disappointed = true
+						EventBus.customer_left_unhappy.emit(position)
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...缺货离开", Color("#FFF4D6"))
+						_begin_leave()
 
 		State.LEAVE:
 			if _follow_path(delta, 42.0):
@@ -203,11 +297,15 @@ func _process(delta: float) -> void:
 		body_sprite.position = Vector2(0.0, hop_y)
 		body_sprite.rotation = 0.0
 
+	var q_stagger_y := 0.0
+	if state == State.QUEUE_AT_STALL and stall_ref != null and not stall_ref.is_front_of_queue(self):
+		q_stagger_y = -26.0
+
 	if bubble_label != null:
 		if state == State.SPAWN_AND_STROLL or state == State.QUEUE_AT_STALL or state == State.PURCHASE:
 			bubble_label.visible = true
 			bubble_label.text = "x" + str(desired_qty)
-			bubble_label.position = Vector2(2.0, -78.0 + hop_y)
+			bubble_label.position = Vector2(2.0, -78.0 + hop_y + q_stagger_y)
 		elif state == State.LEAVE and disappointed:
 			bubble_label.visible = true
 			bubble_label.text = "..."
@@ -267,18 +365,25 @@ func _draw() -> void:
 	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
 	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)
 
-	if is_vip:
+	if visitor_role == VisitorRole.GOURMET_CRITIC and tex_gourmet_medal != null:
+		var medal_pos := Vector2(18.0, -86.0 + hop_y) if (state != State.LEAVE) else Vector2(-9.0, -66.0 + hop_y)
+		draw_texture_rect(tex_gourmet_medal, Rect2(medal_pos.x, medal_pos.y, 18.0, 18.0), false)
+	elif visitor_role == VisitorRole.VIP:
 		_draw_vip_crown(-46.0 + hop_y)
+
+	var q_stagger_y := 0.0
+	if state == State.QUEUE_AT_STALL and stall_ref != null and not stall_ref.is_front_of_queue(self):
+		q_stagger_y = -26.0
 
 	if state == State.SPAWN_AND_STROLL or state == State.QUEUE_AT_STALL or state == State.PURCHASE:
 		if tex_parchment != null:
-			draw_texture_rect(tex_parchment, Rect2(-24, -78 + hop_y, 54, 26), false)
+			draw_texture_rect(tex_parchment, Rect2(-24, -78 + hop_y + q_stagger_y, 54, 26), false)
 		if desired_item_id.begins_with("delicacy_") and tex_delicacies != null:
 			var d_reg := EconomyConfig.get_delicacy_region(desired_item_id)
-			draw_texture_rect_region(tex_delicacies, Rect2(-20, -75 + hop_y, 20, 20), d_reg)
+			draw_texture_rect_region(tex_delicacies, Rect2(-20, -75 + hop_y + q_stagger_y, 20, 20), d_reg)
 		elif tex_crops != null:
 			var c_reg := EconomyConfig.get_crop_stage_region(desired_item_id, 3)
-			draw_texture_rect_region(tex_crops, Rect2(-20, -75 + hop_y, 20, 20), c_reg)
+			draw_texture_rect_region(tex_crops, Rect2(-20, -75 + hop_y + q_stagger_y, 20, 20), c_reg)
 	elif state == State.LEAVE:
 		if purchased_ok and tex_heart != null:
 			var heart_y := -80.0 if is_vip else -68.0

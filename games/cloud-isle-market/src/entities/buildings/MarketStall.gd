@@ -124,7 +124,10 @@ func unregister_from_queue(cust: Node2D) -> void:
 
 func get_queue_slot_pos(cust: Node2D) -> Vector2:
 	var idx := clampi(register_in_queue(cust), 0, MAX_VISIBLE_QUEUE)
-	return Vector2(position.x + QUEUE_BASE_OFFSET_X + float(idx) * QUEUE_SPACING_X, EconomyConfig.GROUND_Y)
+	var slot_x := position.x + QUEUE_BASE_OFFSET_X + float(idx) * QUEUE_SPACING_X
+	if GameManager != null and not bool(GameManager.unlocked_islands.get(3, false)):
+		slot_x = minf(slot_x, 1078.0)
+	return Vector2(slot_x, EconomyConfig.GROUND_Y)
 
 func is_front_of_queue(cust: Node2D) -> bool:
 	_cleanup_queue()

@@ -103,7 +103,16 @@ window.HistoryAtlas.getDisplayEmpireName = function (empName, year) {
     "百乘王朝": "百乘王朝",
     "伦巴第王国": "伦巴第国",
     "泰诺王国": "泰诺王国",
-    "瓦里帝国": "瓦里帝国"
+    "瓦里帝国": "瓦里帝国",
+    "大哥伦比亚共和国": "大哥伦比亚",
+    "刚果民主共和国": "刚果(金)",
+    "暹罗却克里王朝": "暹罗王朝",
+    "缅甸贡榜王朝": "贡榜缅甸",
+    "马拉塔帝国": "马拉塔",
+    "阿根廷共和国": "阿根廷",
+    "海地共和国": "海地",
+    "加纳共和国": "加纳",
+    "肯尼亚共和国": "肯尼亚"
   };
   if (SHORT_MAP[empName]) return SHORT_MAP[empName];
   return empName.split(" ")[0].split("(")[0];
@@ -357,14 +366,28 @@ class TimelineEngine {
     if (!q) return [];
     const results = [];
 
-    // 1. Search Empires
+    // 1. Search Empires & Institutional Dossiers
     for (const [empName, info] of Object.entries(this.empires)) {
-      if (empName.toLowerCase().includes(q) || (info.capital && info.capital.toLowerCase().includes(q))) {
+      const matchCore = empName.toLowerCase().includes(q) || (info.capital && info.capital.toLowerCase().includes(q));
+      const dossierFields = [
+        info.capital_evol,
+        info.institutions,
+        info.fiscal_tax,
+        info.peak_demography,
+        info.treaties_campaigns
+      ];
+      const matchedDossier = !matchCore
+        ? dossierFields.find(txt => txt && txt.toLowerCase().includes(q))
+        : null;
+      if (matchCore || matchedDossier) {
         const pk = this._empirePeaks[empName] || { peakYear: 0, maxRegions: 1 };
+        const snippet = matchedDossier
+          ? `典章考据：${matchedDossier.slice(0, 34)}${matchedDossier.length > 34 ? "…" : ""}`
+          : `鼎盛：${pk.peakYear < 0 ? "前" + Math.abs(pk.peakYear) : pk.peakYear}年 · ${info.peak_area}`;
         results.push({
           type: "帝国",
           title: empName,
-          sub: `鼎盛：${pk.peakYear < 0 ? "前" + Math.abs(pk.peakYear) : pk.peakYear}年 · ${info.peak_area}`,
+          sub: snippet,
           year: pk.peakYear,
           empireName: empName,
           regionId: pk.peakRegions && pk.peakRegions[0] ? pk.peakRegions[0] : null
@@ -776,6 +799,11 @@ class TimelineEngine {
         regime: info.regime || "-",
         era_span: info.era_span || "-",
         peak_area: info.peak_area || "-",
+        capital_evol: info.capital_evol || info.capital || "-",
+        institutions: info.institutions || info.regime || "-",
+        fiscal_tax: info.fiscal_tax || "-",
+        peak_demography: info.peak_demography || info.peak_area || "-",
+        treaties_campaigns: info.treaties_campaigns || "-",
         desc: info.desc || "",
         areaNum,
         duration,

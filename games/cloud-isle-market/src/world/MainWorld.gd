@@ -86,12 +86,18 @@ const SKY_BALLOON_MIN_X := 590.0
 const SKY_BALLOON_MAX_X := 1320.0
 var tex_delicacies: Texture2D
 var tex_sky_balloon: Texture2D
+var tex_lantern_garland: Texture2D
 var cloud_gift_sprite: Sprite2D
 var cloud_gift_label: Label
 var cloud_gift_active: bool = false
 var cloud_gift_timer: float = 6.0
 var cloud_gift_dir: float = 1.0
 var cloud_gift_pos: Vector2 = Vector2(1150.0, -4.0)
+
+## CI-2: Night Cloud Firework & Lantern Festival (`云端花火灯会`) & Special Visitors
+var fest_fireworks: Array[Dictionary] = []
+var fest_firework_timer: float = 0.0
+var special_visitor_timer: float = 24.0
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_TERRAIN
@@ -107,6 +113,7 @@ func _ready() -> void:
 	tex_right_tiki = load("res://assets/pixel_art/buildings/landmark_right_tiki.png")
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 	tex_sky_balloon = _load_sky_balloon_texture()
+	tex_lantern_garland = EconomyConfig.load_pixel_texture("res://assets/pixel_art/ui/fest_lantern_garland.png")
 
 	_assert_1d_slot_layout()
 
@@ -552,18 +559,45 @@ func _process(delta: float) -> void:
 		if not is_instance_valid(customers[i]):
 			customers.remove_at(i)
 
-	customer_spawn_timer -= delta
+	var fest_active := GameManager != null and GameManager.is_lantern_festival_active()
+	var max_cust_cap := 4 if isl3_on else 3
+	var spawn_rate_mult := 1.80 if fest_active else 1.0
+
+	if fest_active:
+		fest_firework_timer -= delta
+		if fest_firework_timer <= 0.0:
+			fest_firework_timer = randf_range(1.1, 2.2)
+			spawn_festival_firework_burst(
+				randf_range(680.0, 1230.0),
+				randf_range(22.0, 62.0)
+			)
+	for fi in range(fest_fireworks.size() - 1, -1, -1):
+		var fw: Dictionary = fest_fireworks[fi]
+		fw["age"] = float(fw["age"]) + delta
+		if float(fw["age"]) >= float(fw["life"]):
+			fest_fireworks.remove_at(fi)
+
+	customer_spawn_timer -= delta * spawn_rate_mult
 	if customer_spawn_timer <= 0.0:
 		customer_spawn_timer = randf_range(18.0, 30.0)
-		if customers.size() < 4:
+		if customers.size() < max_cust_cap:
 			var roll_vip := randf() < GameManager.get_weather_vip_chance()
 			_spawn_customer(roll_vip)
 
+	special_visitor_timer -= delta * (1.55 if fest_active else 1.0)
+	if special_visitor_timer <= 0.0:
+		special_visitor_timer = randf_range(28.0, 44.0)
+		if customers.size() < max_cust_cap:
+			if GameManager.has_surplus_crops_for_merchant() and randf() < 0.52:
+				spawn_special_visitor(CustomerNPC.VisitorRole.CARAVAN_MERCHANT)
+			else:
+				spawn_special_visitor(CustomerNPC.VisitorRole.GOURMET_CRITIC)
+
 	if isl3_on:
-		vip_customer_timer -= delta
+		vip_customer_timer -= delta * (1.35 if fest_active else 1.0)
 		if vip_customer_timer <= 0.0:
 			vip_customer_timer = randf_range(35.0, 50.0)
-			if customers.size() < 4:
+			if customers.size() < max_cust_cap:
 				_spawn_customer(true)
 
 	if WindowController != null and hud != null:
@@ -577,14 +611,35 @@ func _process(delta: float) -> void:
 
 	queue_redraw()
 
-func _spawn_customer(as_vip: bool) -> void:
+func _spawn_customer(as_vip: bool) -> CustomerNPC:
+	var role := CustomerNPC.VisitorRole.VIP if as_vip else CustomerNPC.VisitorRole.REGULAR
+	return spawn_special_visitor(role)
+
+func spawn_special_visitor(role: int) -> CustomerNPC:
 	var c := CustomerNPC.new()
 	var sp := Vector2(1075.0, GROUND_Y)
 	if bool(GameManager.unlocked_islands.get(3, false)):
 		sp = waypoint_graph.get_named_pos("spawn_right")
-	c.setup_customer(sp, waypoint_graph, market_stall, as_vip)
+	c.setup_customer(sp, waypoint_graph, market_stall, role == CustomerNPC.VisitorRole.VIP, role)
 	ysort_layer.add_child(c)
 	customers.append(c)
+	return c
+
+func spawn_festival_firework_burst(cx: float = 960.0, cy: float = 38.0) -> void:
+	var palette: Array[Color] = [
+		Color("#FFE066"),
+		Color("#FF922B"),
+		Color("#FFA8A8"),
+		Color("#8CE99A")
+	]
+	fest_fireworks.append({
+		"x": cx,
+		"y": cy,
+		"age": 0.0,
+		"life": 1.35,
+		"radius": randf_range(16.0, 26.0),
+		"color": palette[randi() % palette.size()]
+	})
 
 func _get_bridge_weight_sag(min_x: float, max_x: float) -> float:
 	var mid_x := (min_x + max_x) * 0.5
@@ -652,7 +707,7 @@ func _draw() -> void:
 	for wisp in chimney_wisps:
 		draw_circle(Vector2(float(wisp["x"]), float(wisp["y"])), float(wisp["r"]), Color(0.98, 0.96, 0.92, float(wisp["alpha"])))
 
-	# v2.3 Direction 1: Dusk/Night lotus pond pixel fireflies; Rain diagonal droplets (no sky circles behind roofs)
+	# v2.3 Direction 1 + CI-2: Dusk/Night lotus pond pixel fireflies; Night Lantern Festival garlands & pixel fireworks
 	if GameManager != null and not (WindowController != null and WindowController.boss_stealth_active):
 		var w_state := GameManager.current_weather
 		if w_state == 1 or w_state == 2:
@@ -666,6 +721,28 @@ func _draw() -> void:
 				var rx := fmod(580.0 + float(ri) * 52.0 + cloud_time * 95.0, 720.0) + 580.0
 				var ry := oy + fmod(float(ri) * 23.0 + cloud_time * 160.0, 75.0) + 72.0
 				draw_line(Vector2(rx, ry), Vector2(rx - 3.0, ry + 8.0), Color(0.78, 0.92, 1.0, 0.42), 1.0)
+
+		if GameManager.is_lantern_festival_active():
+			if tex_lantern_garland != null:
+				var sway := roundf(sin(cloud_time * 2.1) * 1.5)
+				for gx in [634.0, 834.0, 966.0, 1112.0]:
+					draw_texture_rect(tex_lantern_garland, Rect2(gx, oy + 18.0 + sway, 84.0, 33.0), false)
+			for fw in fest_fireworks:
+				var prog := clampf(float(fw["age"]) / maxf(0.1, float(fw["life"])), 0.0, 1.0)
+				var fcx := float(fw["x"])
+				var fcy := oy + float(fw["y"])
+				var max_r := float(fw["radius"])
+				var cur_r := max_r * (1.0 - pow(1.0 - prog, 2.0))
+				var fcol: Color = fw["color"]
+				var falpha := clampf(1.15 - prog * 1.15, 0.0, 1.0)
+				for ray in range(8):
+					var ang := float(ray) * PI * 0.25 + prog * 0.25
+					var sx := roundf(fcx + cos(ang) * cur_r)
+					var sy := roundf(fcy + sin(ang) * cur_r + prog * prog * 6.0)
+					draw_rect(Rect2(sx - 1.5, sy - 1.5, 3.0, 3.0), Color(fcol.r, fcol.g, fcol.b, falpha), true)
+					var tx := roundf(fcx + cos(ang) * cur_r * 0.58)
+					var ty := roundf(fcy + sin(ang) * cur_r * 0.58 + prog * prog * 3.0)
+					draw_rect(Rect2(tx - 1.0, ty - 1.0, 2.0, 2.0), Color(1.0, 0.96, 0.78, falpha * 0.75), true)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 

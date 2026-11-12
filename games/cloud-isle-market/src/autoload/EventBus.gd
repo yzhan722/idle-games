@@ -23,4 +23,7 @@ signal contract_updated(contract_dict: Dictionary)
 signal contract_progressed(item_id: String, cur_count: int, req_count: int)
 signal contract_completed(contract_dict: Dictionary)
 signal landscape_unlocked(island_idx: int, landscape_id: String)
+signal gourmet_acclaim_started(duration: float)
+signal lantern_festival_started(duration: float)
+signal merchant_barter_completed(crop_id: String, qty: int, amber_gained: int, gold_gained: int)
 

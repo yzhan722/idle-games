@@ -272,6 +272,7 @@ AI 助手必须严格按以下 4 个阶段顺序执行，每阶段完成后验�
 - [x] [v3.0-1] 全三岛满编高负载压力自检 (`SelfTestRunner.gd`)：在自动化自检中覆盖解锁岛屿 2 与岛屿 3、招募企鹅与巨嘴鸟跨木桥运输及双工坊联动的端到端断言，确保三岛全开 0 死锁、0 穿模
 - [x] [v3.0-2] Steamworks API 抽象桥接层 (`src/autoload/SteamBridge.gd` + `project.godot`)：提供无外部 DLL 依赖时自动优雅降级、挂载 `GodotSteam` 时自动同步成就与云存档的桥接单例，并纳入 `SelfTestRunner.gd` 断言
 - [x] [CI-1] 摸鱼微互动——抚摸动物加速与天空热气球礼袋 (`AnimalWorker.gd` + `MainWorld.gd` + `WindowController.gd` + `SelfTestRunner.gd`)：左键点击岛上任意 6 类执勤动物触发欢快跳跃、像素爱心气泡与音效并获得 `8s`“干劲满满”移速与采集加速 Buff（带内置防鬼畜冷却）；天空定期飘过像素「云端热气球 / 许愿礼袋」（`sky_balloon_gift.png`），同步注册进 `WindowController.gd` 鼠标防穿透多边形热区，点击掉落额外金币 + 晨露琥珀并触发集市狂欢，纳入 `SelfTestRunner.gd` 自动化断言
+- [x] [CI-2] 特殊访客与节庆夜市——美食评论家、云游行商与夜间「云端花火灯会」庆典 (`CustomerNPC.gd` + `GameManager.gd` + `MainWorld.gd` + `HUD.gd` + `SelfTestRunner.gd`)：新增专属像素访客「美食评论家」（指定品鉴高阶料理，满意后触发 `36s`「金牌口碑」全岛售价与小费加成并佩戴金星勋章）與「云游行商」（收购果园田头富余初级作物换取晨露琥珀与金币）；夜晚概率开启「云端花火灯会」庆典（悬挂暖金像素彩灯串 `fest_lantern_garland.png`、绽放像素烟花微粒子、客流刷新提速与富豪到访率提升），纳入 `SelfTestRunner.gd` 自动化断言
 
 <!-- 在下方直接添加 `- [ ] 您的新需求或检测规则`，下一次巡检/开发将自动读取并落地验证： -->
 

@@ -262,6 +262,38 @@ body {
 .stat-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; padding: 2px 0; color: #b8b0a2; }
 .stat-row strong { color: #efe5d2; text-align: right; font-weight: 600; }
 
+/* Scholarly Institutional & Historical Geography Dossier inside Right Inspector */
+.scholarly-dossier-box {
+  margin-top: 7px; padding: 6px 8px 5px;
+  background: rgba(16, 15, 13, 0.56);
+  border: 1px solid rgba(216, 179, 101, 0.18);
+  border-radius: 6px;
+}
+.sch-item {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 6px;
+  align-items: baseline;
+  padding: 2px 0;
+  border-top: 1px dashed rgba(216, 179, 101, 0.10);
+}
+.sch-item:first-of-type {
+  border-top: none;
+}
+.sch-lbl {
+  font-family: "Songti SC", "Noto Serif SC", serif;
+  font-size: 10px;
+  color: #cbb996;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.sch-val {
+  font-size: 10.2px;
+  line-height: 1.38;
+  color: #ddd2be;
+  word-break: break-word;
+}
+
 /* Dynasty Trajectory Sparkline inside Right Inspector */
 .trajectory-box {
   margin-top: 8px; padding-top: 7px;
@@ -861,6 +893,15 @@ svg#world-map { width: 100%; height: 100%; }
 .cmp-metric-head { display: flex; justify-content: space-between; margin-bottom: 3px; color: #cfc5b3; }
 .cmp-bar-bg { height: 5px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
 .cmp-bar-fill { height: 100%; border-radius: 4px; }
+.cmp-scholarly-meta {
+  margin-top: 6px; padding: 6px 8px;
+  background: rgba(16, 15, 13, 0.52);
+  border: 1px solid rgba(216, 179, 101, 0.15);
+  border-radius: 6px;
+  font-size: 10.5px; line-height: 1.42; color: #cfc5b3;
+}
+.cmp-scholarly-meta div + div { margin-top: 3px; }
+.cmp-scholarly-meta span { color: #cbb996; font-family: "Songti SC", "Noto Serif SC", serif; }
 .cmp-desc { font-size: 11.5px; color: #d5cbb8; line-height: 1.48; margin-top: 6px; flex: 1; }
 .cmp-jump-btn {
   margin-top: 10px; width: 100%;
@@ -971,4 +1012,58 @@ svg#world-map { width: 100%; height: 100%; }
 }
 .chr-empty {
   text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 13px;
+}
+
+/* Responsive Portrait Mobile & Compact Tablet Layout */
+@media (max-width: 900px) {
+  #topbar {
+    top: 8px; left: 8px; right: 8px;
+    flex-wrap: wrap; gap: 5px;
+  }
+  .year-box {
+    min-width: 0; max-width: none; width: 100%;
+    padding: 5px 10px; border-radius: 9px;
+  }
+  #year-text { font-size: 16px; }
+  .search-wrap {
+    width: 100%; display: flex; gap: 5px;
+  }
+  #search-input, #search-input:focus {
+    flex: 1; min-width: 0; width: auto; font-size: 11px; padding: 5px 8px;
+  }
+  .compare-trigger-btn {
+    padding: 4px 7px; font-size: 10.5px;
+  }
+  .era-bookmarks,
+  #left-panel,
+  #macro-panel,
+  #theater-bar {
+    display: none;
+  }
+  #event-banner {
+    top: 96px; left: 8px; right: 8px; transform: none;
+    max-width: none; font-size: 10.5px; padding: 3px 10px;
+  }
+  #map-container {
+    align-items: flex-start;
+    padding-top: 118px;
+    padding-bottom: 340px;
+  }
+  #info-card,
+  #info-card:hover {
+    left: 8px; right: 8px; top: auto; bottom: 104px;
+    width: auto; max-height: 34vh;
+    opacity: 0.95;
+    background: rgba(18, 20, 24, 0.94);
+    padding: 8px 10px;
+  }
+  #bottom-controls {
+    bottom: 8px; left: 8px; right: 8px;
+    padding: 5px 8px; gap: 4px; flex-wrap: wrap; opacity: 0.95;
+  }
+  .ctrl-btn { padding: 3px 6px; font-size: 10px; }
+  #timeline-slider { min-width: 90px; }
+  .cmp-grid, .cmp-grid.cmp-grid-3 { grid-template-columns: 1fr; }
+  .chr-row { flex-direction: column; gap: 6px; }
+  .chr-left { width: auto; flex-direction: row; align-items: center; gap: 8px; }
 }

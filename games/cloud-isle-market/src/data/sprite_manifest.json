@@ -389,6 +389,66 @@
       }
     ]
   },
+  "travelers/traveler_critic.png": {
+    "cell_width": 48,
+    "cell_height": 48,
+    "hframes": 2,
+    "vframes": 1,
+    "total_frames": 2,
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_critic_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 4,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 44
+      },
+      {
+        "x": 48,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 52,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 44
+      }
+    ]
+  },
+  "travelers/traveler_merchant.png": {
+    "cell_width": 48,
+    "cell_height": 48,
+    "hframes": 2,
+    "vframes": 1,
+    "total_frames": 2,
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_merchant_normalized.png",
+    "regions": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 4,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 44
+      },
+      {
+        "x": 48,
+        "y": 0,
+        "w": 48,
+        "h": 48,
+        "tight_x": 52,
+        "tight_y": 2,
+        "tight_w": 40,
+        "tight_h": 44
+      }
+    ]
+  },
   "crops/crops_sheet.png": {
     "cell_width": 40,
     "cell_height": 40,

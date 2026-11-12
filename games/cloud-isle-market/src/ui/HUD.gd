@@ -101,8 +101,22 @@ func _ready() -> void:
 	if EventBus != null:
 		EventBus.offline_earnings_ready.connect(_show_offline_welcome_banner)
 		EventBus.pomodoro_completed.connect(_on_pomodoro_completed)
+		EventBus.gourmet_acclaim_started.connect(_on_gourmet_acclaim_started)
+		EventBus.lantern_festival_started.connect(_on_lantern_festival_started)
 
 	_build_native_labels()
+
+func _on_gourmet_acclaim_started(duration: float) -> void:
+	offline_banner_timer = 5.0
+	offline_banner_text = "★美食评论家盛赞！「金牌口碑」激活 " + str(int(round(duration))) + "s: 全岛商品售价+25% & 小费+20%!"
+	_sync_label_nodes()
+	queue_redraw()
+
+func _on_lantern_festival_started(duration: float) -> void:
+	offline_banner_timer = 5.5
+	offline_banner_text = "★云端花火灯会开启 (" + str(int(round(duration))) + "s)！彩灯高悬、客流涌动，富豪与特殊行商到访率大幅提升!"
+	_sync_label_nodes()
+	queue_redraw()
 
 func _on_pomodoro_completed(gold_reward: int, frenzy_sec: float) -> void:
 	offline_banner_timer = 6.0
@@ -338,6 +352,10 @@ func _sync_label_nodes() -> void:
 	var mute_lbl := "[静音]" if (SoundManager != null and SoundManager.is_muted) else "[音效]"
 	var weather_names := ["晴昼", "黄昏", "夜市", "微雨"]
 	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
+	if GameManager != null and GameManager.is_lantern_festival_active():
+		cur_w_name = "花火夜"
+	elif GameManager != null and GameManager.is_gourmet_acclaim_active():
+		cur_w_name = "口碑" + cur_w_name
 
 	var contract: Dictionary = GameManager.get_active_contract() if GameManager != null else {}
 	var c_target: String = String(contract.get("target_name", "作物"))

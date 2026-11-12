@@ -1,4 +1,4 @@
-// Deterministic Historical Keyframes (-3000 BC to 2026 AD, 153 High-Density Chronological Snapshots)
+// Deterministic Historical Keyframes (-3000 BC to 2026 AD, 193 High-Density Chronological Snapshots)
 window.HistoryAtlas = window.HistoryAtlas || {};
 
 window.HistoryAtlas.TIMELINE = [
@@ -316,6 +316,19 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: -651, era: "葵丘会盟：齐桓公任管仲“尊王攘夷”首霸春秋", theme: "era-ancient",
+    toast: "公元前651年：齐桓公召集鲁、宋、卫、郑、许、曹诸国于葵丘会盟，周襄王遣宰孔赐文武胙肉，春秋霸主秩序正式确立。",
+    routes: [],
+    landmarks: [
+      { x: 1030, y: 144, title: "葵丘会盟与临淄霸业", icon: "条约", desc: "齐桓公申明五命“毋雍泉、毋讫籴”，管仲相地衰征使齐国富甲海岱。" }
+    ],
+    owners: {
+      north_china: "齐国",
+      guanzhong: "秦国",
+      jiangnan: "楚国"
+    }
+  },
+  {
     year: -632, era: "晋楚城濮之战：晋文公退避三舍践土称霸与秦穆公独霸西戎", theme: "era-ancient",
     toast: "公元前632年：晋文公重耳率晋军于城濮之战实现“退避三舍”诺言，大破楚军并主持践土之盟成为中原霸主；西方秦穆公任用百里奚、蹇叔“益国十二，开地千里”独霸西戎。",
     routes: [],
@@ -389,6 +402,19 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: -506, era: "柏举之战：吴王阖闾拜孙武伍子胥五战入郢", theme: "era-ancient",
+    toast: "公元前506年：吴王阖闾以孙武为将、伍子胥为谋，千里奔袭于柏举大破楚军攻入楚都郢城，《孙子兵法》威震华夏。",
+    routes: [],
+    landmarks: [
+      { x: 1004, y: 196, title: "柏举之战吴师入郢", icon: "战役", desc: "孙武以三万吴军千里奇袭五战五捷攻克纪南郢都，创古典运动歼灭战典范。" }
+    ],
+    owners: {
+      jiangnan: "吴国",
+      north_china: "东周王朝",
+      guanzhong: "秦国"
+    }
+  },
+  {
     year: -500, era: "古典轴心时代：波斯帝国极盛与百家争鸣", theme: "era-ancient",
     toast: "公元前500年：大流士一世建立横跨亚非欧三大洲的波斯阿契美尼德帝国；孔子周游列国、释迦牟尼创立佛教、雅典确立克里斯提尼民主。",
     routes: ["steppe_fur"],
@@ -406,7 +432,10 @@ window.HistoryAtlas.TIMELINE = [
       transoxiana: "波斯阿契美尼德帝国",
       bactria: "波斯阿契美尼德帝国",
       indus: "波斯阿契美尼德帝国",
-      syria: "波斯阿契美尼德帝国"
+      syria: "波斯阿契美尼德帝国",
+      jiangnan: "楚国",
+      north_china: "东周王朝",
+      guanzhong: "秦国"
     }
   },
   {
@@ -421,6 +450,18 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: -473, era: "卧薪尝胆：越王勾践灭吴北上琅琊称霸江淮", theme: "era-ancient",
+    toast: "公元前473年：越王勾践十年生聚、十年教训，攻破姑苏灭亡吴国，随后迁都琅琊与晋齐诸侯会盟，获周元王命为伯。",
+    routes: ["steppe_fur"],
+    landmarks: [
+      { x: 1024, y: 202, title: "勾践灭吴与琅琊会盟", icon: "都城", desc: "越军水陆并进围克姑苏，勾践横行江淮号为春秋末代霸主。" }
+    ],
+    owners: {
+      jiangnan: "越国",
+      lingnan: "越国"
+    }
+  },
+  {
     year: -453, era: "晋阳之战“三家分晋”、越王勾践灭吴与战国时代拉开帷幕", theme: "era-ancient",
     toast: "公元前453年：韩、赵、魏三家于晋阳之战合灭智伯，瓜分晋国疆土（三家分晋），历史正式由春秋跨入兼并惨烈的战国时代；此前越王勾践卧薪尝胆灭吴成为春秋末代霸主。",
     routes: ["steppe_fur"],
@@ -430,7 +471,8 @@ window.HistoryAtlas.TIMELINE = [
     owners: {
       north_china: "魏国",
       guanzhong: "秦国",
-      jiangnan: "楚国"
+      jiangnan: "楚国",
+      lingnan: "百越古国"
     }
   },
   {
@@ -469,6 +511,19 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: -341, era: "马陵之战：孙膑减灶诱敌破魏与齐秦并称东西帝前声", theme: "era-ancient",
+    toast: "公元前341年：齐威王拜田忌为将、孙膑为师，于马陵道减灶设伏万弩齐发大破庞涓魏武卒，中原霸权由魏转入齐秦争衡。",
+    routes: ["steppe_fur"],
+    landmarks: [
+      { x: 1018, y: 148, title: "马陵道万弩伏击", icon: "战役", desc: "继桂陵围魏救赵后，孙膑再于马陵全歼魏军主力十万，魏国霸业由此衰落。" }
+    ],
+    owners: {
+      north_china: "齐国",
+      guanzhong: "秦国",
+      jiangnan: "楚国"
+    }
+  },
+  {
     year: -323, era: "希腊化时代：亚历山大帝国极盛", theme: "era-ancient",
     toast: "公元前323年：亚历山大大帝经伊苏斯、高加米拉决战灭亡波斯，东征直抵印度河流域，建立横跨欧亚非三洲的希腊化大帝国！",
     routes: ["steppe_fur"],
@@ -487,7 +542,10 @@ window.HistoryAtlas.TIMELINE = [
       transoxiana: "亚历山大帝国",
       bactria: "亚历山大帝国",
       indus: "亚历山大帝国",
-      syria: "亚历山大帝国"
+      syria: "亚历山大帝国",
+      north_china: "魏国",
+      guanzhong: "秦国",
+      jiangnan: "楚国"
     }
   },
   {
@@ -530,6 +588,21 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: -284, era: "济西大捷：燕上将军乐毅统五国联军连下齐国七十余城", theme: "era-ancient",
+    toast: "公元前284年：燕昭王筑黄金台拜乐毅为上将军，合燕、秦、韩、赵、魏五国之师济西破齐，攻克临淄连下齐城七十余座。",
+    routes: ["steppe_fur"],
+    landmarks: [
+      { x: 1026, y: 138, title: "乐毅伐齐下七十余城", icon: "战役", desc: "燕军攻占齐都临淄尽取齐宝入蓟，齐仅余莒与即墨两城坚守待田单复国。" }
+    ],
+    owners: {
+      manchuria: "燕国",
+      north_china: "燕国",
+      guanzhong: "秦国",
+      bashu: "秦国",
+      jiangnan: "楚国"
+    }
+  },
+  {
     year: -260, era: "阿育王统一南亚与秦赵长平之战", theme: "era-ancient",
     toast: "公元前260年：孔雀王朝阿育王征服羯陵伽后统一南亚次大陆并立石柱弘扬佛教；秦将白起于长平之战大破赵军四十万；李冰父子修筑都江堰。",
     routes: ["steppe_fur"],
@@ -546,7 +619,27 @@ window.HistoryAtlas.TIMELINE = [
       italy: "罗马共和国",
       bengal: "孔雀王朝",
       balkans: "马其顿安提柯王朝",
-      caucasus: "塞琉古帝国"
+      caucasus: "塞琉古帝国",
+      manchuria: "肃慎古国",
+      north_china: "赵国",
+      guanzhong: "秦国",
+      bashu: "秦国",
+      jiangnan: "楚国"
+    }
+  },
+  {
+    year: -230, era: "秦灭六国序幕：内史腾灭韩置颍川郡与统一战争全面打响", theme: "era-ancient",
+    toast: "公元前230年：秦王政遣内史腾渡河攻韩，俘韩王安尽入其地置颍川郡；秦国远交近攻、横扫关东六国的十年一统决战正式开启。",
+    routes: ["steppe_fur"],
+    landmarks: [
+      { x: 1005, y: 158, title: "秦灭韩国置颍川郡", icon: "战役", desc: "战国七雄之中韩国首亡，秦军打开东出函谷席卷中原之门户。" }
+    ],
+    owners: {
+      guanzhong: "秦国",
+      bashu: "秦国",
+      north_china: "赵国",
+      manchuria: "燕国",
+      jiangnan: "楚国"
     }
   },
   {
@@ -567,7 +660,21 @@ window.HistoryAtlas.TIMELINE = [
       italy: "罗马共和国",
       guanzhong: "大秦帝国",
       hexizoulang: "匈奴单于国",
-      balkans: "马其顿安提柯王朝"
+      balkans: "马其顿安提柯王朝",
+      manchuria: "肃慎古国"
+    }
+  },
+  {
+    year: -209, era: "大泽乡惊雷：陈胜吴广揭竿起义“王侯将相宁有种乎”", theme: "era-ancient",
+    toast: "公元前209年：陈胜、吴广于蕲县大泽乡斩木为兵、揭竿为旗发动中国历史上第一次大规模农民大起义，项梁刘邦相继响应反秦。",
+    routes: ["steppe_fur"],
+    landmarks: [
+      { x: 1012, y: 172, title: "大泽乡起义与张楚立号", icon: "起义", desc: "戍卒九百人冒雨起义攻克陈县建“张楚”政权，六国旧地群雄并起。" }
+    ],
+    owners: {
+      north_china: "大秦帝国",
+      guanzhong: "大秦帝国",
+      jiangnan: "西楚王国"
     }
   },
   {
@@ -606,6 +713,20 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: -154, era: "文景削藩与周亚夫三个月平定吴楚七国之乱", theme: "era-ancient",
+    toast: "公元前154年：汉景帝采晁错《削藩策》，吴王刘濞联合楚赵等七国举兵；太尉周亚夫坚守昌邑绝吴楚粮道，三月平叛巩固中央集权。",
+    routes: ["steppe_fur"],
+    landmarks: [
+      { x: 1015, y: 162, title: "周亚夫平定七国之乱", icon: "战役", desc: "平叛后汉景帝收夺诸侯王任官治民权，诸侯惟食租税，为汉武盛世奠基。" }
+    ],
+    owners: {
+      north_china: "大汉帝国",
+      guanzhong: "大汉帝国",
+      jiangnan: "大汉帝国",
+      bashu: "大汉帝国"
+    }
+  },
+  {
     year: -146, era: "罗马称霸地中海与安息帝国崛起", theme: "era-ancient",
     toast: "公元前146年：罗马同年摧毁迦太基城与希腊科林斯，将马其顿与希腊并入行省；安息(帕提亚)帝国夺取两河流域泰西封。",
     routes: ["steppe_fur"],
@@ -623,7 +744,11 @@ window.HistoryAtlas.TIMELINE = [
       bengal: "巽伽王朝",
       deccan: "巽伽王朝",
       iberia: "罗马共和国",
-      maghreb: "罗马共和国"
+      maghreb: "罗马共和国",
+      north_china: "大汉帝国",
+      guanzhong: "大汉帝国",
+      jiangnan: "大汉帝国",
+      bashu: "大汉帝国"
     }
   },
   {
@@ -725,6 +850,20 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 23, era: "昆阳之战：刘秀以少胜多大破新莽四十二万主力与绿林入长安", theme: "era-ancient",
+    toast: "公元23年：刘秀率数千敢死士于昆阳城外猛冲王寻、王邑新莽四十二万大军中坚，新朝主力土崩瓦解，同年更始军攻入长安。",
+    routes: ["silk_road"],
+    landmarks: [
+      { x: 1006, y: 162, title: "昆阳决战新朝覆亡", icon: "战役", desc: "中国古典战史以少胜多巅峰之战，两年后刘秀于鄗城称帝开创东汉光武中兴。" }
+    ],
+    owners: {
+      north_china: "大汉帝国",
+      jiangnan: "大汉帝国",
+      guanzhong: "大汉帝国",
+      bashu: "大汉帝国"
+    }
+  },
+  {
     year: 25, era: "光武中兴：刘秀重建东汉与贵霜帝国兴起", theme: "era-ancient",
     toast: "公元25年：汉光武帝刘秀在昆阳之战以少胜多后定都洛阳重建东汉（光武中兴）；大月氏丘就却统一五翕侯建立横跨中亚与北印的贵霜帝国。",
     routes: ["silk_road", "maritime_spice"],
@@ -823,6 +962,19 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 200, era: "官渡之战：曹操奇袭乌巢火烧袁绍粮营奠定统一北方大局", theme: "era-ancient",
+    toast: "公元200年：曹操与袁绍相持官渡，曹仁荀彧固守本阵、曹操亲率轻骑夜袭乌巢焚毁袁军万车粮草，一举奠定曹魏统一北方根基。",
+    routes: ["silk_road"],
+    landmarks: [
+      { x: 1012, y: 152, title: "官渡乌巢火烧粮营", icon: "战役", desc: "曹操以两万精兵击败袁绍十万大军，逐步统一黄河流域与河北幽冀。" }
+    ],
+    owners: {
+      north_china: "曹魏帝国",
+      guanzhong: "曹魏帝国",
+      jiangnan: "东吴帝国"
+    }
+  },
+  {
     year: 208, era: "赤壁鏖兵：天下三分格局初定", theme: "era-ancient",
     toast: "公元208年：曹操统一北方后挥师南下，孙权、刘备联军于赤壁火攻大破曹军八十万号称之众，奠定天下三分雏形。",
     routes: ["silk_road"],
@@ -836,6 +988,21 @@ window.HistoryAtlas.TIMELINE = [
       lingnan: "东吴帝国",
       guanzhong: "曹魏帝国",
       mongolia: "鲜卑汗国"
+    }
+  },
+  {
+    year: 219, era: "汉中之战与水淹七军：刘备进位汉中王、魏蜀吴鼎足成形", theme: "era-ancient",
+    toast: "公元219年：黄忠定军山斩夏侯渊，刘备自称汉中王；关羽北伐襄樊水淹七军威震华夏，吕蒙白衣渡江袭取荆州，三国边界至此定型。",
+    routes: ["silk_road"],
+    landmarks: [
+      { x: 968, y: 176, title: "定军山大捷与汉中称王", icon: "战役", desc: "刘备跨有益州与汉中咽喉，曹、刘、孙三家分据中原、巴蜀与江东。" }
+    ],
+    owners: {
+      north_china: "曹魏帝国",
+      guanzhong: "曹魏帝国",
+      bashu: "蜀汉帝国",
+      jiangnan: "东吴帝国",
+      lingnan: "东吴帝国"
     }
   },
   {
@@ -905,6 +1072,21 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 304, era: "五胡十六国开启：刘渊建汉赵、李雄于成都称王建成汉与河西前凉", theme: "era-ancient",
+    toast: "公元304年：西晋八王之乱耗尽国力，南匈奴刘渊于左国城建汉（前赵）、巴氐李雄据成都建大成（成汉），凉州张轨保境护存河西文脉。",
+    routes: ["silk_road", "maritime_spice"],
+    landmarks: [
+      { x: 1000, y: 150, title: "刘渊起兵与成汉立国", icon: "都城", desc: "北方进入长达百三十余年的十六国民族大融合与政权演替时期。" }
+    ],
+    owners: {
+      north_china: "前赵王朝",
+      bashu: "成汉帝国",
+      hexizoulang: "前凉王国",
+      guanzhong: "西晋王朝",
+      jiangnan: "西晋王朝"
+    }
+  },
+  {
     year: 317, era: "永嘉之乱与衣冠南渡：东晋建康立国、北方五胡十六国开启", theme: "era-ancient",
     toast: "公元317年：西晋历经八王之乱元气大伤，匈奴刘曜攻陷洛阳与长安（永嘉之祸），晋室南渡，琅琊王司马睿在王导、王敦辅佐下于建康（南京）重建东晋，“王与马，共天下”，北方进入五胡十六国纷争。",
     routes: ["maritime_spice"],
@@ -948,6 +1130,22 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 351, era: "关东关中争雄：苻健入长安建前秦、慕容儁灭冉魏建前燕与桓温北伐", theme: "era-ancient",
+    toast: "公元351年：氐族苻健据关中称天王建前秦，次年鲜卑慕容儁灭冉魏入主中原迁都邺城，北方形成前秦、前燕、前凉与南朝东晋并立格局。",
+    routes: ["silk_road", "maritime_spice"],
+    landmarks: [
+      { x: 993, y: 165, title: "前秦定都长安与前燕据邺", icon: "都城", desc: "关中前秦与关东前燕东西对峙，直至王猛辅佐苻坚一统北方。" }
+    ],
+    owners: {
+      guanzhong: "前秦帝国",
+      north_china: "前燕帝国",
+      manchuria: "前燕帝国",
+      hexizoulang: "前凉王国",
+      jiangnan: "东晋王朝",
+      bashu: "东晋王朝"
+    }
+  },
+  {
     year: 383, era: "淝水之战：东晋以少胜多破前秦与民族大迁徙", theme: "era-ancient",
     toast: "公元383年：前秦天王苻坚统一北方后率八十万大军南下，谢安、谢玄指挥八万东晋北府兵于淝水之战大破前秦；匈人西进引发欧洲日耳曼大迁徙。",
     routes: ["silk_road"],
@@ -965,7 +1163,8 @@ window.HistoryAtlas.TIMELINE = [
       hexizoulang: "前秦帝国",
       transoxiana: "萨珊波斯帝国",
       crimea: "匈人帝国",
-      mongolia: "鲜卑汗国"
+      mongolia: "鲜卑汗国",
+      manchuria: "高句丽王国"
     }
   },
   {
@@ -996,6 +1195,37 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 409, era: "拓跋珪奠基北魏平城、姚兴后秦弘法长安与刘裕灭南燕气吞万里", theme: "era-ancient",
+    toast: "公元409年：北魏道武帝拓跋珪与明元帝巩固平城基业；关中后秦姚兴迎鸠摩罗什译经；东晋刘裕挥师北伐攻克广固灭亡南燕。",
+    routes: ["silk_road", "maritime_spice"],
+    landmarks: [
+      { x: 993, y: 165, title: "长安草堂译经与刘裕北伐", icon: "奇观", desc: "鸠摩罗什在长安译出《金刚经》《法华经》，刘裕整军准备收复洛阳长安。" }
+    ],
+    owners: {
+      north_china: "北魏王朝",
+      mongolia: "柔然汗国",
+      guanzhong: "后秦帝国",
+      manchuria: "高句丽王国",
+      jiangnan: "东晋王朝",
+      bashu: "东晋王朝"
+    }
+  },
+  {
+    year: 417, era: "刘裕北伐收复洛阳长安灭后秦与欧洲西哥特立国图卢兹", theme: "era-ancient",
+    toast: "公元417年：东晋太尉刘裕率北府水陆大军溯河西进，连克洛阳与长安灭亡后秦，创衣冠南渡百年间南朝北伐最大武功。",
+    routes: ["silk_road", "maritime_spice"],
+    landmarks: [
+      { x: 993, y: 165, title: "刘裕克复长安洛阳", icon: "战役", desc: "王镇恶率蒙冲舰队溯渭水破长安，三年后刘裕代晋建立南朝刘宋。" }
+    ],
+    owners: {
+      guanzhong: "东晋王朝",
+      jiangnan: "东晋王朝",
+      bashu: "东晋王朝",
+      north_china: "北魏王朝",
+      iberia: "西哥特王国"
+    }
+  },
+  {
     year: 420, era: "刘裕气吞万里如虎建刘宋：中国正式进入南北朝对峙时代", theme: "era-ancient",
     toast: "公元420年：北府兵名将刘裕灭南燕、亡后秦，一度收复洛阳与长安，回师代晋建立南朝刘宋（元嘉之治）；439年北魏太武帝拓跋焘灭北凉统一北方，南北朝划淮对峙格局正式确立，漠北柔然汗国崛起。",
     routes: ["silk_road", "maritime_spice"],
@@ -1016,7 +1246,8 @@ window.HistoryAtlas.TIMELINE = [
       tarim: "北魏王朝",
       netherlands: "西罗马帝国",
       austria_bohemia: "西罗马帝国",
-      andes: "瓦里帝国"
+      andes: "瓦里帝国",
+      manchuria: "高句丽王国"
     }
   },
   {
@@ -1074,6 +1305,22 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 534, era: "北魏东西分裂：高欢建东魏迁都邺城、宇文泰据长安立西魏与南梁大同盛世", theme: "era-medieval",
+    toast: "公元534年：北魏孝武帝西奔长安投宇文泰，高欢另立孝静帝迁都邺城，北方分裂为东魏与西魏，与江南梁武帝萧衍形成三国鼎峙。",
+    routes: ["silk_road", "maritime_spice"],
+    landmarks: [
+      { x: 993, y: 165, title: "宇文泰创西魏府兵制", icon: "都城", desc: "西魏以寡敌众于沙苑大破高欢，创立八柱国十二大将军府兵体系。" }
+    ],
+    owners: {
+      north_china: "东魏王朝",
+      guanzhong: "西魏王朝",
+      hexizoulang: "西魏王朝",
+      jiangnan: "南梁王朝",
+      bashu: "南梁王朝",
+      lingnan: "南梁王朝"
+    }
+  },
+  {
     year: 555, era: "查士丁尼拜占庭复兴与突厥汗国称霸草原", theme: "era-medieval",
     toast: "公元555年：拜占庭皇帝查士丁尼一世派名将贝利撒留收复意大利、北非与西班牙南部，编纂《查士丁尼民法大全》；阿史那氏建立突厥汗国横跨草原。",
     routes: ["silk_road", "maritime_spice", "steppe_fur"],
@@ -1107,6 +1354,22 @@ window.HistoryAtlas.TIMELINE = [
       bengal: "戒日帝国",
       deccan: "朱罗帝国",
       indochina: "真腊王国"
+    }
+  },
+  {
+    year: 557, era: "北周南陈并立：宇文觉代西魏建北周、陈霸先建南陈与北齐鼎足而三", theme: "era-medieval",
+    toast: "公元557年：宇文护拥宇文觉代西魏建北周（已先取巴蜀），江南陈霸先平定侯景乱局后代梁建陈，与邺城高洋北齐呈北周、北齐、南陈鼎立。",
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
+    landmarks: [
+      { x: 1004, y: 200, title: "建康南陈立国与周齐争雄", icon: "都城", desc: "北周蓄力关陇巴蜀，周武帝宇文邕随后整军经武于577年东进灭齐。" }
+    ],
+    owners: {
+      north_china: "北齐王朝",
+      guanzhong: "北周王朝",
+      bashu: "北周王朝",
+      hexizoulang: "北周王朝",
+      jiangnan: "南陈王朝",
+      lingnan: "南陈王朝"
     }
   },
   {
@@ -1256,6 +1519,21 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 682, era: "后突厥汗国复立漠北、新罗统一大同江以南与吐蕃高原争锋", theme: "era-medieval",
+    toast: "公元682年：阿史那骨咄禄于漠北重建后突厥汗国并留阙特勤碑铭；唐高宗与武后经营西域河陇，朝鲜半岛进入统一新罗与大唐安东并立时期。",
+    routes: ["silk_road", "maritime_spice", "steppe_fur"],
+    landmarks: [
+      { x: 965, y: 110, title: "鄂尔浑河突厥碑铭", icon: "奇观", desc: "后突厥暾欲谷与毗伽可汗立古突厥文石碑，记载草原与大唐战和往来。" }
+    ],
+    owners: {
+      mongolia: "突厥汗国",
+      korea: "新罗王国",
+      north_china: "大唐帝国",
+      guanzhong: "大唐帝国",
+      tarim: "大唐帝国"
+    }
+  },
+  {
     year: 690, era: "武周神都洛阳盛世与倭马亚王朝圆顶清真寺", theme: "era-medieval",
     toast: "公元690年：武则天改唐为周定都神都洛阳，开创殿试与武举，王孝杰收复安西四镇；倭马亚哈里发阿卜杜勒-马利克在耶路撒冷建成金色岩石圆顶寺。",
     routes: ["silk_road", "maritime_spice", "steppe_fur"],
@@ -1267,7 +1545,11 @@ window.HistoryAtlas.TIMELINE = [
       hexizoulang: "大唐帝国",
       bactria: "倭马亚王朝",
       caucasus: "倭马亚王朝",
-      kipchak: "可萨汗国"
+      kipchak: "可萨汗国",
+      mongolia: "大唐帝国",
+      korea: "大唐帝国",
+      north_china: "大唐帝国",
+      guanzhong: "大唐帝国"
     }
   },
   {
@@ -1383,6 +1665,22 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 822, era: "长庆唐蕃会盟立碑拉萨大昭寺前与韩愈古文运动、白居易元和诗篇", theme: "era-medieval",
+    toast: "公元822年：唐穆宗长庆二年，唐使刘元鼎赴逻些（拉萨）与吐蕃赞普热巴巾正式会盟，立《唐蕃会盟碑》铭刻“患难相恤，暴掠不作”。",
+    routes: ["maritime_spice", "trans_saharan"],
+    landmarks: [
+      { x: 893, y: 182, title: "拉萨大昭寺唐蕃会盟碑", icon: "条约", desc: "汉藏双语镌刻盟辞，成为唐蕃甥舅和好与西部疆界和平的千年历史丰碑。" }
+    ],
+    owners: {
+      tibet: "吐蕃帝国",
+      north_china: "大唐帝国",
+      guanzhong: "大唐帝国",
+      jiangnan: "大唐帝国",
+      mongolia: "回鹘汗国",
+      manchuria: "渤海国"
+    }
+  },
+  {
     year: 843, era: "凡尔登条约三分法兰克与吐蕃归义军起义", theme: "era-medieval",
     toast: "公元843年：查理曼三个孙子签署《凡尔登条约》将帝国三分，奠定近代法兰西、德意志与意大利三国版图雏形；848年张议潮率沙州义军驱逐吐蕃归唐。",
     routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
@@ -1393,7 +1691,12 @@ window.HistoryAtlas.TIMELINE = [
     owners: {
       tarim: "大唐帝国",
       hexizoulang: "大唐帝国",
-      tibet: "古格王朝"
+      tibet: "古格王朝",
+      north_china: "大唐帝国",
+      guanzhong: "大唐帝国",
+      jiangnan: "大唐帝国",
+      mongolia: "回鹘汗国",
+      manchuria: "渤海国"
     }
   },
   {
@@ -1430,6 +1733,21 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 923, era: "沙陀李存勖奇袭灭后梁建后唐定都洛阳与钱镠吴越保境安民", theme: "era-medieval",
+    toast: "公元923年：晋王李存勖于魏州称帝建后唐，名将李嗣源日夜兼程奇袭攻克汴州灭亡后梁，后唐迁都洛阳并灭前蜀，版图冠于五代。",
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 998, y: 162, title: "李存勖灭梁定都洛阳", icon: "都城", desc: "后唐统一黄河流域并平前蜀，江浙吴越王钱镠修筑捍海石塘富庶江南。" }
+    ],
+    owners: {
+      north_china: "后唐王朝",
+      guanzhong: "后唐王朝",
+      bashu: "后唐王朝",
+      jiangnan: "吴越王国",
+      mongolia: "契丹大辽"
+    }
+  },
+  {
     year: 936, era: "石敬瑭割让燕云十六州与高丽王建统一朝鲜半岛", theme: "era-medieval",
     toast: "公元936年：河东节度使石敬瑭为夺取后唐皇位，认小自己十岁的契丹太宗耶律德光为“父皇帝”，并将险要的“燕云十六州”割让给契丹大辽，导致中原王朝此后四百年痛失北方长城防线；同年王建统一朝鲜半岛后三国建立高丽王朝。",
     routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
@@ -1448,6 +1766,37 @@ window.HistoryAtlas.TIMELINE = [
       lingnan: "南唐王国",
       tarim: "喀喇汗王朝",
       hexizoulang: "党项西夏王朝"
+    }
+  },
+  {
+    year: 947, era: "耶律德光入汴改国号“大辽”与刘知远太原起兵建立后汉收复中原", theme: "era-medieval",
+    toast: "公元947年：契丹太宗耶律德光南下灭后晋，于开封穿汉服受百官朝贺正式建国号为“大辽”；契丹北归后河东节度使刘知远入汴建立后汉。",
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 1016, y: 148, title: "大辽定号与刘知远建后汉", icon: "都城", desc: "契丹正式确立“大辽”国号，中原旋即为后汉刘知远收复。" }
+    ],
+    owners: {
+      north_china: "后汉王朝",
+      guanzhong: "后汉王朝",
+      mongolia: "契丹大辽",
+      manchuria: "契丹大辽",
+      jiangnan: "南唐王国",
+      bashu: "后蜀王国"
+    }
+  },
+  {
+    year: 954, era: "高平之战：后周世宗柴荣亲征破北汉辽联军，开启结束五代乱世先声", theme: "era-medieval",
+    toast: "公元954年：后周世宗柴荣即位伊始亲冒矢石赢得高平大捷，随后整肃殿前司禁军、均定田赋，三征南唐尽取江北十四州、北伐收复燕云三关。",
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 1008, y: 152, title: "高平大捷与柴荣改革", icon: "战役", desc: "柴荣南征北战扫清统一障碍，殿前都点检赵匡胤由此崛起开创北宋。" }
+    ],
+    owners: {
+      north_china: "后周王朝",
+      guanzhong: "后周王朝",
+      jiangnan: "南唐王国",
+      bashu: "后蜀王国",
+      mongolia: "契丹大辽"
     }
   },
   {
@@ -1470,7 +1819,26 @@ window.HistoryAtlas.TIMELINE = [
       east_africa: "埃塞俄比亚帝国",
       poland_lithuania: "波兰王国",
       tarim: "喀喇汗王朝",
-      hexizoulang: "党项西夏王朝"
+      hexizoulang: "党项西夏王朝",
+      mongolia: "契丹大辽",
+      manchuria: "契丹大辽"
+    }
+  },
+  {
+    year: 979, era: "宋太宗灭北汉结束五代十国分裂与高梁河宋辽争锋", theme: "era-medieval",
+    toast: "公元979年：继吴越钱俶纳土归宋后，宋太宗赵光义亲征攻克太原灭亡北汉，彻底终结安史之乱以来藩镇与五代十国割据，宋辽全面对峙开启。",
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 1006, y: 145, title: "太原平北汉十国归一", icon: "战役", desc: "中原与江南十国尽归大宋版图，北宋随即挥师幽州与辽军激战高梁河。" }
+    ],
+    owners: {
+      north_china: "大宋帝国",
+      guanzhong: "大宋帝国",
+      bashu: "大宋帝国",
+      jiangnan: "大宋帝国",
+      lingnan: "大宋帝国",
+      mongolia: "契丹大辽",
+      manchuria: "契丹大辽"
     }
   },
   {
@@ -1516,6 +1884,21 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1044, era: "庆历和议：北宋与西夏议和定边、范仲淹《岳阳楼记》与宋辽夏三国均势", theme: "era-medieval",
+    toast: "公元1044年：历经三川口、好水川与河曲之战，西夏元昊上表称臣，北宋册封夏国王并赐岁币茶绢（庆历和议），宋、辽、西夏百余年均势成型。",
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 966, y: 164, title: "庆历和议与保安军榷场", icon: "条约", desc: "宋夏重开保安军、高平寨榷场互市，西北边陲恢复和平商贸。" }
+    ],
+    owners: {
+      hexizoulang: "党项西夏王朝",
+      north_china: "大宋帝国",
+      guanzhong: "大宋帝国",
+      mongolia: "契丹大辽",
+      manchuria: "契丹大辽"
+    }
+  },
+  {
     year: 1066, era: "诺曼征服英格兰、王安石变法与塞尔柱突厥崛起", theme: "era-medieval",
     toast: "公元1066年：诺曼底公爵威廉在黑斯廷斯战役击败哈罗德，加冕英格兰国王；1071年塞尔柱突厥在曼齐刻尔特大败拜占庭；北宋王安石推行熙宁变法。",
     routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
@@ -1530,7 +1913,12 @@ window.HistoryAtlas.TIMELINE = [
       anatolia: "塞尔柱突厥帝国",
       levant: "塞尔柱突厥帝国",
       transoxiana: "塞尔柱突厥帝国",
-      syria: "塞尔柱突厥帝国"
+      syria: "塞尔柱突厥帝国",
+      hexizoulang: "党项西夏王朝",
+      north_china: "大宋帝国",
+      guanzhong: "大宋帝国",
+      mongolia: "契丹大辽",
+      manchuria: "契丹大辽"
     }
   },
   {
@@ -1559,6 +1947,21 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1125, era: "金太宗灭亡契丹大辽、耶律大石西征建西辽与金军南下前夜", theme: "era-medieval",
+    toast: "公元1125年：女真金朝名将完颜娄室于应州俘获辽天祚帝，享国二百一十年的契丹大辽灭亡；皇族耶律大石率部西进中亚创立西辽帝国（哈剌契丹）。",
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 1040, y: 118, title: "女真灭辽与耶律大石西行", icon: "战役", desc: "金朝尽取辽五京之地，旋即分东、西两路铁骑南下围攻北宋汴京。" }
+    ],
+    owners: {
+      manchuria: "女真金朝",
+      mongolia: "女真金朝",
+      tarim: "西辽帝国",
+      north_china: "大宋帝国",
+      jiangnan: "大宋帝国"
+    }
+  },
+  {
     year: 1127, era: "靖康之变北宋覆亡、赵构建立南宋与李纲宗泽东京保卫战", theme: "era-medieval",
     toast: "公元1127年（靖康二年）：金太宗完颜晟派完颜宗望、完颜宗翰两路南下攻陷北宋都城东京汴梁，掳走宋徽宗、宋钦宗二帝及宗室百工，北宋灭亡（靖康之耻）；康王赵构在应天府（商丘）即位宋高宗重建南宋，李纲、宗泽、韩世忠、岳飞掀起了悲壮的抗金浪潮。",
     routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
@@ -1573,7 +1976,8 @@ window.HistoryAtlas.TIMELINE = [
       jiangnan: "大宋帝国",
       lingnan: "大宋帝国",
       hexizoulang: "党项西夏王朝",
-      tarim: "西辽帝国"
+      tarim: "西辽帝国",
+      mongolia: "女真金朝"
     }
   },
   {
@@ -1650,6 +2054,20 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1215, era: "成吉思汗攻克金中都（北京）、金宣宗南迁汴京与英国《大宪章》签署", theme: "era-medieval",
+    toast: "公元1215年：野狐岭决战后蒙古铁骑攻陷金朝中都大兴府，金宣宗被迫南迁开封；同年英格兰贵族迫使约翰王在兰尼米德签署《大宪章》。",
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 1020, y: 136, title: "蒙古克金中都与《大宪章》", icon: "战役", desc: "华北平原渐入大蒙古国统治，英国《大宪章》确立“王在法下”宪政源流。" }
+    ],
+    owners: {
+      mongolia: "大蒙古国",
+      manchuria: "大蒙古国",
+      north_china: "女真金朝",
+      britain: "英格兰王国"
+    }
+  },
+  {
     year: 1227, era: "第一次蒙古西征：成吉思汗灭西辽、花剌子模与西夏", theme: "era-medieval",
     toast: "1227年：成吉思汗率蒙古铁骑西征灭亡西辽与花剌子模，哲别、速不台偏师越过太和岭击溃钦察-罗斯联军，回师途中灭亡党项西夏。",
     routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
@@ -1666,7 +2084,10 @@ window.HistoryAtlas.TIMELINE = [
       persia: "大蒙古国",
       anatolia: "拜占庭帝国",
       deccan: "德里苏丹国",
-      japan: "日本镰仓幕府"
+      japan: "日本镰仓幕府",
+      mongolia: "大蒙古国",
+      north_china: "女真金朝",
+      britain: "英格兰王国"
     }
   },
   {
@@ -1908,6 +2329,22 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1370, era: "帖木儿巴里黑称埃米尔定都撒马尔罕、大明洪武废丞相开科举前夕", theme: "era-medieval",
+    toast: "公元1370年：帖木儿于阿姆河畔巴里黑加冕，定都河中名城撒马尔罕开启三十五年征战，营建雷吉斯坦广场与比比·哈内姆清真寺复兴丝路建筑。",
+    routes: ["silk_road", "maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 781, y: 142, title: "撒马尔罕蓝色穹顶帝都", icon: "都城", desc: "帖木儿汇聚波斯中亚工匠学者建设撒马尔罕，开创帖木儿文艺复兴。" }
+    ],
+    owners: {
+      transoxiana: "帖木儿帝国",
+      bactria: "帖木儿帝国",
+      north_china: "大明帝国",
+      guanzhong: "大明帝国",
+      jiangnan: "大明帝国",
+      mongolia: "北元汗国"
+    }
+  },
+  {
     year: 1392, era: "明太祖洪武之治、李成桂建立朝鲜王朝与波兰立陶宛克雷沃联合", theme: "era-medieval",
     toast: "公元1392年（洪武二十五年）：明太祖朱元璋早已北逐残元（1388捕鱼儿海大捷藍玉全歼北元王廷）、编纂《大明律》与鱼鳞图册；高丽大将李成桂威化岛回军建立朝鲜王朝，朱元璋赐国号“朝鲜”；日本足利义满统一南北朝，欧洲波兰与立陶宛完成君合联合。",
     routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
@@ -1931,7 +2368,25 @@ window.HistoryAtlas.TIMELINE = [
       tarim: "察合台汗国",
       mongolia: "北元汗国",
       kipchak: "金帐汗国",
-      taiwan: "大明帝国"
+      taiwan: "大明帝国",
+      transoxiana: "帖木儿帝国",
+      bactria: "帖木儿帝国"
+    }
+  },
+  {
+    year: 1402, era: "安卡拉之战：帖木儿击败奥斯曼苏丹“雷霆”巴耶济德一世与靖难之役", theme: "era-medieval",
+    toast: "公元1402年：帖木儿大军于安卡拉会战重创奥斯曼帝国并俘获苏丹巴耶济德一世，使君士坦丁堡延续五十年国祚；东方燕王朱棣入京即位改元永乐。",
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan"],
+    landmarks: [
+      { x: 657, y: 145, title: "安卡拉会战两大火药雄主决战", icon: "战役", desc: "帖木儿战象与铁骑击败奥斯曼主力，白羊王朝在东安纳托利亚乘势崛起。" }
+    ],
+    owners: {
+      persia: "帖木儿帝国",
+      mesopotamia: "帖木儿帝国",
+      transoxiana: "帖木儿帝国",
+      caucasus: "白羊王朝",
+      balkans: "奥斯曼帝国",
+      north_china: "大明帝国"
     }
   },
   {
@@ -1944,7 +2399,13 @@ window.HistoryAtlas.TIMELINE = [
     ],
     owners: {
       mongolia: "大明帝国",
-      manchuria: "大明帝国"
+      manchuria: "大明帝国",
+      persia: "帖木儿帝国",
+      mesopotamia: "帖木儿帝国",
+      transoxiana: "帖木儿帝国",
+      caucasus: "帖木儿帝国",
+      balkans: "奥斯曼帝国",
+      north_china: "大明帝国"
     }
   },
   {
@@ -2021,6 +2482,35 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1501, era: "伊斯梅尔一世大不里士加冕建立萨法维波斯帝国与三大火药帝国并立", theme: "era-medieval",
+    toast: "公元1501年：年仅十四岁的伊斯梅尔一世击败白羊王朝进入大不里士加冕为伊朗沙阿，建立萨法维波斯帝国，与奥斯曼、莫卧儿构成近代早期三大火药帝国。",
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
+    landmarks: [
+      { x: 749, y: 182, title: "大不里士萨法维立国", icon: "都城", desc: "萨法维王朝重新统一伊朗高原，后迁都伊斯法罕博得“伊斯法罕半天下”美誉。" }
+    ],
+    owners: {
+      persia: "萨法维波斯帝国",
+      caucasus: "萨法维波斯帝国",
+      mesopotamia: "白羊王朝"
+    }
+  },
+  {
+    year: 1517, era: "塞利姆一世灭马穆鲁克苏丹国：奥斯曼横跨亚非欧三洲并领两圣地监护权", theme: "era-medieval",
+    toast: "公元1517年：继查尔迪兰火炮大破波斯后，奥斯曼苏丹塞利姆一世攻克大马士革与开罗灭亡马穆鲁克王朝，将埃及、叙利亚与麦加麦地那纳入版图；同年马丁·路德发表《九十五条论纲》。",
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
+    landmarks: [
+      { x: 644, y: 253, title: "里达尼亚之战奥斯曼并埃及", icon: "战役", desc: "奥斯曼帝国掌控红海与东地中海全部贸易门户，国力迈向苏莱曼极盛期。" }
+    ],
+    owners: {
+      egypt: "奥斯曼帝国",
+      levant: "奥斯曼帝国",
+      syria: "奥斯曼帝国",
+      hejaz: "奥斯曼帝国",
+      anatolia: "奥斯曼帝国",
+      balkans: "奥斯曼帝国"
+    }
+  },
+  {
     year: 1526, era: "麦哲伦环球航行、莫卧儿帝国建立与马丁·路德宗教改革", theme: "era-medieval",
     toast: "1526年：西班牙科尔特斯征服阿兹特克，麦哲伦船队完成人类首次环球航行；巴布尔在帕尼帕特战役用火绳枪与野战炮击败德里苏丹，建立莫卧儿帝国。",
     routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
@@ -2044,7 +2534,24 @@ window.HistoryAtlas.TIMELINE = [
       transoxiana: "布哈拉汗国",
       mesopotamia: "萨法维波斯帝国",
       scandinavia: "瑞典王国",
-      maghreb: "奥斯曼帝国"
+      maghreb: "奥斯曼帝国",
+      persia: "萨法维波斯帝国",
+      caucasus: "萨法维波斯帝国",
+      anatolia: "奥斯曼帝国",
+      balkans: "奥斯曼帝国"
+    }
+  },
+  {
+    year: 1555, era: "《奥格斯堡宗教和约》确立“教随国定”原则与哈布斯堡西奥分治前夜", theme: "era-medieval",
+    toast: "公元1555年：神圣罗马帝国查理五世与路德宗诸侯签署《奥格斯堡和约》确立“教随国定”，次年查理五世退位将哈布斯堡领地分为西班牙与奥地利两支；东方戚继光赴浙抗倭。",
+    routes: ["maritime_spice", "steppe_fur", "trans_saharan", "manila_galleon", "transatlantic"],
+    landmarks: [
+      { x: 550, y: 84, title: "奥格斯堡和约与哈布斯堡分家", icon: "条约", desc: "承认路德宗在德意志诸邦合法地位，重塑欧洲近代早期地缘均势。" }
+    ],
+    owners: {
+      iberia: "西班牙帝国",
+      austria_bohemia: "奥地利大公国",
+      germania: "神圣罗马帝国"
     }
   },
   {
@@ -2063,7 +2570,10 @@ window.HistoryAtlas.TIMELINE = [
       kipchak: "俄罗斯沙皇国",
       netherlands: "西班牙帝国",
       deccan: "莫卧儿帝国",
-      transoxiana: "布哈拉汗国"
+      transoxiana: "布哈拉汗国",
+      iberia: "西班牙帝国",
+      austria_bohemia: "奥地利大公国",
+      germania: "神圣罗马帝国"
     }
   },
   {
@@ -2121,6 +2631,19 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1632, era: "吕岑会战：“北方雄狮”瑞典古斯塔夫二世线列火枪炮兵革新近代战术", theme: "era-medieval",
+    toast: "公元1632年：三十年战争高潮，瑞典国王古斯塔夫二世·阿道夫率新式轻炮与线列步骑联军于吕岑会战击败华伦斯坦帝国军（古斯塔夫阵亡），瑞典跃升波罗的海霸主。",
+    routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
+    landmarks: [
+      { x: 556, y: 82, title: "吕岑会战与近代线列战术", icon: "战役", desc: "瑞典三十年战争改革开创近代参谋、轻型团属火炮与三排轮射步兵标准。" }
+    ],
+    owners: {
+      scandinavia: "瑞典王国",
+      germania: "神圣罗马帝国",
+      manchuria: "后金汗国"
+    }
+  },
+  {
     year: 1644, era: "甲申明清易代与沙俄哥萨克横跨西伯利亚", theme: "era-medieval",
     toast: "1644年：李自成大顺军攻入北京，随后多尔衮率八旗清军经山海关大战入关定鼎北京；沙俄哥萨克探险队越过乌拉尔山开拓整个西伯利亚直抵太平洋。",
     routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
@@ -2133,7 +2656,9 @@ window.HistoryAtlas.TIMELINE = [
       mongolia: "大清帝国",
       siberia: "俄罗斯沙皇国",
       na_east: "英格兰王国",
-      guanzhong: "大清帝国"
+      guanzhong: "大清帝国",
+      scandinavia: "瑞典王国",
+      germania: "神圣罗马帝国"
     }
   },
   {
@@ -2205,6 +2730,20 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1707, era: "莫卧儿奥朗则布驾崩、马拉塔帝国崛起德干与英苏合并成立大不列颠王国", theme: "era-medieval",
+    toast: "公元1707年：莫卧儿第六代皇帝奥朗则布在南征军营去世，印度教马拉塔帝国迅速席卷德干高原与中印度；同年英格兰与苏格兰通过《联合法案》合并为大不列颠。",
+    routes: ["maritime_spice", "steppe_fur", "manila_galleon", "transatlantic"],
+    landmarks: [
+      { x: 843, y: 256, title: "马拉塔崛起与不列颠联合法案", icon: "王朝", desc: "马拉塔佩什瓦骑兵逐步取代莫卧儿成为18世纪南亚最强本土政权。" }
+    ],
+    owners: {
+      deccan: "马拉塔帝国",
+      britain: "大英帝国",
+      indus: "莫卧儿帝国",
+      ganges: "莫卧儿帝国"
+    }
+  },
+  {
     year: 1721, era: "彼得大帝宣告俄罗斯帝国成立与雍正军机处集权", theme: "era-medieval",
     toast: "1721年：彼得大帝赢得长达21年的大北方战争击败瑞典，迁都圣彼得堡并加冕为全俄罗斯皇帝；大清雍正帝设立军机处并推行“摊丁入亩、火耗归公”。",
     routes: ["maritime_spice", "manila_galleon", "transatlantic"],
@@ -2214,7 +2753,25 @@ window.HistoryAtlas.TIMELINE = [
     owners: {
       rus: "俄罗斯帝国",
       britain: "大英帝国",
-      na_east: "大英帝国"
+      na_east: "大英帝国",
+      deccan: "莫卧儿帝国",
+      indus: "莫卧儿帝国",
+      ganges: "莫卧儿帝国"
+    }
+  },
+  {
+    year: 1727, era: "《恰克图界约》划定清俄中段蒙古边界与晋商万里茶道贯通欧亚", theme: "era-medieval",
+    toast: "公元1727年（雍正五年）：大清图理琛、策凌与沙俄萨瓦签订《布连斯奇界约》与《恰克图界约》，勘定自额尔古纳河至沙毕纳依岭清俄边界并开辟恰克图万里茶道互市。",
+    routes: ["maritime_spice", "manila_galleon", "transatlantic"],
+    landmarks: [
+      { x: 965, y: 95, title: "恰克图界约与万里茶道", icon: "条约", desc: "继《尼布楚条约》后划定清俄中段国界，福建两湖砖茶经张家口库伦恰克图远销莫斯科。" }
+    ],
+    owners: {
+      mongolia: "大清帝国",
+      siberia: "俄罗斯帝国",
+      north_china: "大清帝国",
+      guanzhong: "大清帝国",
+      indochina: "缅甸贡榜王朝"
     }
   },
   {
@@ -2237,7 +2794,11 @@ window.HistoryAtlas.TIMELINE = [
       bactria: "阿富汗杜兰尼王朝",
       maghreb: "摩洛哥阿拉维王朝",
       kipchak: "俄罗斯帝国",
-      siberia: "俄罗斯帝国"
+      siberia: "俄罗斯帝国",
+      mongolia: "大清帝国",
+      north_china: "大清帝国",
+      guanzhong: "大清帝国",
+      indochina: "大越王朝"
     }
   },
   {
@@ -2320,6 +2881,20 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1821, era: "拉丁美洲独立高潮：玻利瓦尔大哥伦比亚、圣马丁解放秘鲁与墨西哥阿根廷独立", theme: "era-victoria",
+    toast: "公元1821年：西蒙·玻利瓦尔赢得卡拉沃沃大捷巩固大哥伦比亚共和国，何塞·德·圣马丁率军进入利马宣告秘鲁独立，墨西哥同步摆脱西班牙殖民统治。",
+    routes: ["maritime_spice", "manila_galleon", "transatlantic"],
+    landmarks: [
+      { x: 319, y: 320, title: "玻利瓦尔与圣马丁会师南美解放", icon: "起义", desc: "拉美独立革命摧毁西班牙三百年美洲殖民体系，诞生一批主权共和国。" }
+    ],
+    owners: {
+      mesoamerica: "墨西哥合众国",
+      andes: "大哥伦比亚共和国",
+      caribbean: "海地共和国",
+      indochina: "暹罗却克里王朝"
+    }
+  },
+  {
     year: 1836, era: "维多利亚时代开局：蒸汽铁路网与拉美独立浪潮 (Vic3开局)", theme: "era-victoria",
     toast: "1836年：斯蒂芬森蒸汽机车开启全球铁路狂潮；在玻利瓦尔与圣马丁领导下，拉丁美洲摆脱西葡三百年殖民统治纷纷独立建国。",
     routes: ["transatlantic", "trans_eurasian_rail"],
@@ -2332,7 +2907,9 @@ window.HistoryAtlas.TIMELINE = [
       mesoamerica: "墨西哥合众国",
       andes: "秘鲁共和国",
       brazil: "巴西帝国",
-      gaul: "法兰西共和国"
+      gaul: "法兰西共和国",
+      caribbean: "西班牙帝国",
+      indochina: "大越王朝"
     }
   },
   {
@@ -2375,6 +2952,22 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1858, era: "《瑷珲条约》近代边疆危机与印度民族大起义后英王直接统治印度", theme: "era-victoria",
+    toast: "公元1858年：沙俄乘第二次鸦片战争与太平天国战局迫签《瑷珲条约》；印度土兵民族大起义震动英伦，英国议会废除东印度公司改设印度总督直辖。",
+    routes: ["maritime_spice", "transatlantic"],
+    landmarks: [
+      { x: 862, y: 220, title: "印度大起义与清近代边疆警钟", icon: "条约", desc: "末代莫卧儿巴哈杜尔·沙二世被废，南亚全面转入英属印度殖民时期。" }
+    ],
+    owners: {
+      indus: "大英帝国",
+      ganges: "大英帝国",
+      deccan: "大英帝国",
+      bengal: "大英帝国",
+      jiangnan: "太平天国",
+      north_china: "大清帝国"
+    }
+  },
+  {
     year: 1865, era: "美国南北战争林肯废奴、俄国农奴制改革与洋务运动", theme: "era-victoria",
     toast: "1865年：林肯总统领导联邦军赢得美国南北战争，颁布《解放黑人奴隶宣言》维护国家统一；沙俄废除农奴制并向中亚河中扩张；中国开启自强求富的洋务运动。",
     routes: ["transatlantic", "trans_eurasian_rail"],
@@ -2384,7 +2977,12 @@ window.HistoryAtlas.TIMELINE = [
     ],
     owners: {
       transoxiana: "俄罗斯帝国",
-      jiangnan: "大清帝国"
+      jiangnan: "大清帝国",
+      indus: "大英帝国",
+      ganges: "大英帝国",
+      deccan: "大英帝国",
+      bengal: "大英帝国",
+      north_china: "大清帝国"
     }
   },
   {
@@ -2406,6 +3004,20 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1878, era: "1878柏林会议重划巴尔干独立版图与左宗棠抬棺出关收复新疆全境", theme: "era-victoria",
+    toast: "公元1878年：左宗棠采“先北后南、缓进急战”方略粉碎阿古柏割据收复除伊犁外新疆全境；同年俾斯麦主持柏林会议，罗马尼亚、塞尔维亚、黑山正式获国际承认独立。",
+    routes: ["transatlantic", "trans_eurasian_rail"],
+    landmarks: [
+      { x: 883, y: 136, title: "左宗棠收复新疆与柏林条约", icon: "战役", desc: "刘锦棠精兵疾进克复南疆八城，1884年清廷正式设立新疆行省拱卫西北。" }
+    ],
+    owners: {
+      tarim: "大清帝国",
+      hexizoulang: "大清帝国",
+      germania: "德意志帝国",
+      balkans: "奥斯曼帝国"
+    }
+  },
+  {
     year: 1885, era: "柏林会议：欧洲列强瓜分非洲与第二次工业革命电气时代", theme: "era-victoria",
     toast: "1885年：十四国列强召开柏林会议，确立“有效占领”原则掀起瓜分非洲狂潮（英纵贯南北、法横跨东西）；左宗棠抬棺西征全面收复新疆并建省；爱迪生与特斯拉开启电气时代。",
     routes: ["transatlantic", "trans_eurasian_rail"],
@@ -2420,7 +3032,11 @@ window.HistoryAtlas.TIMELINE = [
       indochina: "法兰西共和国",
       caribbean: "美利坚合众国",
       bactria: "阿富汗杜兰尼王朝",
-      alaska_canada: "加拿大联邦"
+      alaska_canada: "加拿大联邦",
+      tarim: "大清帝国",
+      hexizoulang: "大清帝国",
+      germania: "德意志帝国",
+      balkans: "奥斯曼帝国"
     }
   },
   {
@@ -2712,6 +3328,19 @@ window.HistoryAtlas.TIMELINE = [
     }
   },
   {
+    year: 1957, era: "加纳独立揭开撒哈拉以南非洲解放序幕、人类首颗人造卫星与武汉长江大桥通车", theme: "era-modern",
+    toast: "公元1957年：恩克鲁玛领导加纳率先独立点燃黑非洲民族解放火炬；中国“一五”计划超额完成、天堑变通途武汉长江大桥通车；苏联发射斯普特尼克1号开启太空时代。",
+    routes: ["transatlantic", "trans_eurasian_rail"],
+    landmarks: [
+      { x: 483, y: 266, title: "加纳独立与一五工业奠基", icon: "都城", desc: "英属黄金海岸独立改名加纳共和国，三年后迎来十七国独立的1960非洲年。" }
+    ],
+    owners: {
+      west_africa: "加纳共和国",
+      north_china: "中华人民共和国",
+      jiangnan: "中华人民共和国"
+    }
+  },
+  {
     year: 1960, era: "亚非拉民族独立浪潮“非洲独立年”与人类迈入太空时代", theme: "era-modern",
     toast: "1960年：这一年有17个非洲国家宣告独立，被称为“非洲独立年”，延续四百年的西方全球殖民体系彻底崩塌！新中国建成独立完整工业体系；加加林成为进入太空第一人。",
     routes: ["transatlantic", "trans_eurasian_rail"],
@@ -2727,7 +3356,21 @@ window.HistoryAtlas.TIMELINE = [
       east_africa: "埃塞俄比亚帝国",
       south_africa: "南非共和国",
       indochina: "越南社会主义共和国",
-      malacca: "印度尼西亚共和国"
+      malacca: "印度尼西亚共和国",
+      north_china: "中华人民共和国",
+      jiangnan: "中华人民共和国"
+    }
+  },
+  {
+    year: 1962, era: "《埃维昂协议》阿尔及利亚浴血独立与战后亚非民族国家体系扩展", theme: "era-modern",
+    toast: "公元1962年：历经八年反殖独立战争，《埃维昂协议》签署，阿尔及利亚正式宣告独立建国；乌干达、卢旺达、牙买加等亚非加勒比国家同年赢得主权独立。",
+    routes: ["transatlantic", "trans_eurasian_rail"],
+    landmarks: [
+      { x: 525, y: 199, title: "阿尔及利亚独立建国", icon: "条约", desc: "北非马格里布全面终结殖民统治，不结盟运动在国际舞台蓬勃兴起。" }
+    ],
+    owners: {
+      maghreb: "阿尔及利亚共和国",
+      west_africa: "尼日利亚联邦共和国"
     }
   },
   {
@@ -2740,7 +3383,21 @@ window.HistoryAtlas.TIMELINE = [
     ],
     owners: {
       north_china: "中华人民共和国",
-      guanzhong: "中华人民共和国"
+      guanzhong: "中华人民共和国",
+      maghreb: "阿尔及利亚共和国",
+      west_africa: "尼日利亚联邦共和国"
+    }
+  },
+  {
+    year: 1975, era: "越南南北统一、葡属非洲安哥拉莫桑比克独立与《赫尔辛基最后文件》", theme: "era-modern",
+    toast: "公元1975年：越南战争结束实现南北统一；安哥拉、莫桑比克独立标志着葡萄牙五百年海外殖民帝国瓦解；欧安会35国签署《赫尔辛基协定》；中国成功返回式遥感卫星升空。",
+    routes: ["transatlantic", "trans_eurasian_rail"],
+    landmarks: [
+      { x: 952, y: 257, title: "越南统一与非洲去殖民化收官", icon: "战役", desc: "20世纪下半叶亚非拉反殖民族独立历史进程基本完成现代主权版图重塑。" }
+    ],
+    owners: {
+      indochina: "越南社会主义共和国",
+      east_africa: "肯尼亚共和国"
     }
   },
   {
@@ -2755,7 +3412,8 @@ window.HistoryAtlas.TIMELINE = [
       iberia: "西班牙王国",
       scandinavia: "瑞典王国",
       bactria: "阿富汗共和国",
-      east_africa: "埃塞俄比亚联邦共和国"
+      east_africa: "埃塞俄比亚联邦共和国",
+      indochina: "越南社会主义共和国"
     }
   },
   {
