@@ -4,6 +4,7 @@
 
 import { natureResProdMul } from "./gameplay_fun.js";
 import { legacyProdMul } from "./rebirth.js";
+import { computeShinyShowcaseAura } from "./collection_fun.js";
 
 /**
  * 建筑 effects 汇总为产量/上限/解锁字段
@@ -240,7 +241,8 @@ export function finalizeProductionRates(eff, state, serverProdMul) {
   eff.woodPerSec *= sb;
   eff.mineralsPerSec *= sb;
 
-  const permProdMul = permanentBoostMul(state?.permanentBoosts?.production) * legacyProdMul(state);
+  const showcaseProdMul = computeShinyShowcaseAura(state).prodMul;
+  const permProdMul = permanentBoostMul(state?.permanentBoosts?.production) * legacyProdMul(state) * showcaseProdMul;
   if (permProdMul > 1) {
     eff.catnipPerSec *= permProdMul;
     eff.woodPerSec *= permProdMul;

@@ -17,7 +17,8 @@ import {
   natureTrainExpMul,
   noteExpeditionDailyDone,
 } from "./systems/gameplay_fun.js";
-import { noteSeasonRelic, rollSeasonRelic } from "./systems/collection_fun.js";
+import { computeShinyShowcaseAura, noteSeasonRelic, rollSeasonRelic } from "./systems/collection_fun.js";
+import { legacyBreedTimeMul } from "./systems/rebirth.js";
 import { hatchEgg as hatchEggCore } from "./systems/breeding.js";
 import { computeTechEffects } from "./systems/effects.js";
 
@@ -220,7 +221,7 @@ export function createTick(ctx) {
     }
 
     if ((state.breeding.eggRemainingSec ?? 0) > 0) return;
-    let t = breedingEggTotalSec(lvl) * natureBreedTimeMul(state);
+    let t = breedingEggTotalSec(lvl) * natureBreedTimeMul(state) * legacyBreedTimeMul(state);
     let basePid = null;
     if (a.pid === dittoPid && b.pid !== dittoPid) basePid = getBasePid(b.pid);
     else if (b.pid === dittoPid && a.pid !== dittoPid) basePid = getBasePid(a.pid);
@@ -810,8 +811,9 @@ export function createTick(ctx) {
         if (sat1 >= 0) {
           const carry0 = typeof m.autoExpCarry === "number" && Number.isFinite(m.autoExpCarry) ? Math.max(0, m.autoExpCarry) : 0;
           const natureMul = isTraining ? natureTrainExpMul(m, trainingIds.length) : 1;
+          const showcaseTrainMul = isTraining ? computeShinyShowcaseAura(state).trainExpMul : 1;
           const satBonus = sat1 >= 50 ? 1.25 : 1;
-          const expMul = (isBreeding ? 50 : isTraining ? trainExpMul * natureMul : 1) * satBonus;
+          const expMul = (isBreeding ? 50 : isTraining ? trainExpMul * showcaseTrainMul * natureMul : 1) * satBonus;
           const carry1 = carry0 + (dtSec / 300) * expMul;
           const add = Math.floor(carry1);
           m.autoExpCarry = carry1 - add;

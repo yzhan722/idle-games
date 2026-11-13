@@ -21,6 +21,10 @@ export function busyMonIds(state) {
   if (breed && typeof breed === "object") {
     for (const id of breed.parentIds || breed.parents || []) if (id != null) ids.add(id);
   }
+  const natalId = state?.meta?.natalBondMonId;
+  if (typeof natalId === "number" && Number.isFinite(natalId) && natalId > 0) {
+    ids.add(Math.floor(natalId));
+  }
   return ids;
 }
 

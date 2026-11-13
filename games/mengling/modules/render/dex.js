@@ -1,5 +1,7 @@
 import {
   buildShinyShareText,
+  computeShinyShowcaseAura,
+  SHINY_SHOWCASE_MAX,
   shinyGalleryEntries,
   shinyUniqueCount,
   syncShinyGalleryFromMons,
@@ -88,22 +90,63 @@ export function createRenderDex({
       }
     }
 
-    const gallery = shinyGalleryEntries(state, 16);
+    const gallery = shinyGalleryEntries(state, 24);
     const shareText = buildShinyShareText(state);
+    const tierByPid = (pid) => defs.beasts.find((b) => b.id === pid)?.tier || "common";
+    const showcaseAura = computeShinyShowcaseAura(state, tierByPid);
+    const showcasedSet = new Set(showcaseAura.pids);
+    const pedestalSlotsHtml = Array.from({ length: SHINY_SHOWCASE_MAX }, (_, idx) => {
+      const slotEntry = showcaseAura.entries[idx];
+      if (slotEntry) {
+        return `
+          <button type="button" class="shiny-pedestal-slot is-filled tier-${escapeHtml(slotEntry.tier)}" data-dex-showcase-toggle="${escapeHtml(slotEntry.pid)}" title="点击撤下「${escapeHtml(slotEntry.name)}」（${escapeHtml(slotEntry.tierLabel)}星座）">
+            <span class="shiny-pedestal-slot__art">${renderBeastIcon(slotEntry.dex, slotEntry.name, true)}</span>
+            <span class="shiny-pedestal-slot__name">${escapeHtml(slotEntry.name)}</span>
+            <span class="shiny-pedestal-slot__tier">${escapeHtml(slotEntry.tierLabel)}</span>
+          </button>`;
+      }
+      return `
+        <div class="shiny-pedestal-slot is-empty">
+          <span class="shiny-pedestal-slot__art">${renderResSvg("shinyHall", 22)}</span>
+          <span class="shiny-pedestal-slot__name">空置圣座 #${idx + 1}</span>
+          <span class="shiny-pedestal-slot__tier">待供奉</span>
+        </div>`;
+    }).join("");
+
+    const showcaseRackHtml = `
+      <div class="shiny-showcase-rack">
+        <div class="shiny-showcase-rack__head">
+          <div class="shiny-showcase-rack__title">
+            ${renderResSvg("shinyHall", 18)}
+            <span>闪光殿堂展柜（${showcaseAura.count}/${SHINY_SHOWCASE_MAX} 席）</span>
+            ${showcaseAura.fullResonance ? `<span class="badge badge--ok">✦ 六席星芒共鸣生效</span>` : `<span class="tag">满 6 席激活星芒共鸣</span>`}
+          </div>
+          <div class="shiny-showcase-rack__actions">
+            ${gallery.length > 0 ? `<button type="button" class="btn btn--small btn--primary" data-dex-showcase-autofill="1">一键优选满配</button>` : ""}
+            ${gallery.length > 0 ? `<button type="button" class="btn btn--small btn--ghost" data-dex-shiny-showcase="all">${renderResSvg("shinyCharm", 14)}<span>全屏殿堂调配</span></button>` : ""}
+          </div>
+        </div>
+        <div class="shiny-showcase-rack__auras">
+          <span class="shiny-aura-pill ${showcaseAura.prodAdd > 0 ? "is-on" : ""}">全资源产出 +${Math.round(showcaseAura.prodAdd * 1000) / 10}%</span>
+          <span class="shiny-aura-pill ${showcaseAura.trainExpAdd > 0 ? "is-on" : ""}">训练经验 +${Math.round(showcaseAura.trainExpAdd * 1000) / 10}%</span>
+          <span class="shiny-aura-pill ${showcaseAura.catchAdd > 0 ? "is-on" : ""}">全局捕获率 +${Math.round(showcaseAura.catchAdd * 1000) / 10}%</span>
+        </div>
+        <div class="shiny-pedestal-grid">${pedestalSlotsHtml}</div>
+      </div>`;
+
     const galleryHtml =
       gallery.length > 0
-        ? `<div class="row__desc" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px">
+        ? `<div class="row__desc" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px">
             ${gallery
               .map(
                 (e) =>
-                  `<button type="button" class="shiny-gallery-chip" data-dex-shiny-showcase="${escapeHtml(String(e.dex))}" title="点击全屏鉴赏 ${escapeHtml(e.name)}">${renderBeastIcon(e.dex, e.name, true)}<span class="shiny-gallery-chip__name">${escapeHtml(e.name)}</span></button>`
+                  `<button type="button" class="shiny-gallery-chip ${showcasedSet.has(e.pid) ? "is-showcased" : ""}" data-dex-showcase-toggle="${escapeHtml(e.pid)}" title="${showcasedSet.has(e.pid) ? "已在展柜供奉 · 点击撤下" : "点击供奉至闪光展柜"}">${renderBeastIcon(e.dex, e.name, true)}<span class="shiny-gallery-chip__name">${escapeHtml(e.name)}${showcasedSet.has(e.pid) ? " ★展" : ""}</span></button>`
               )
               .join("")}
-            <button type="button" class="btn btn--small btn--primary" data-dex-shiny-showcase="all">${renderResSvg("shinyCharm", 14)}<span>全屏陈列秀</span></button>
             <button type="button" class="btn btn--small btn--ghost" data-dex-shiny-share data-share="${escapeHtml(shareText)}">${renderUiIcon("tab_social", 14)}<span>复制分享</span></button>
             <button type="button" class="btn btn--small btn--ghost" data-dex-shiny-card>${renderUiIcon("tab_dex", 14)}<span>保存分享卡</span></button>
           </div>`
-        : `<div class="row__desc muted">闪光馆空空如也 — 捕捉或孵出闪光后会出现在这里，并可开启全屏星芒陈列秀。</div>`;
+        : `<div class="row__desc muted">闪光馆空空如也 — 捕捉或孵出闪光后即可点亮图鉴并供奉至 6 席星芒展柜，永久提供全队产出、训练经验与捕获率光环。</div>`;
 
     const dexStageHtml = renderDexStageHtml({
       state,
@@ -131,6 +174,7 @@ export function createRenderDex({
             ${shinyUnique > 0 ? `<span class="tag">闪光 ${shinyUnique}</span>` : ""}
           </div>
           ${regionGoalHtml}
+          ${showcaseRackHtml}
           ${galleryHtml}
         </div>
         <div class="row__right">

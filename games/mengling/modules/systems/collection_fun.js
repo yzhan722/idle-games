@@ -1,6 +1,7 @@
 /** Collection dopamine — shiny gallery + season relics (non-FC unique loot). */
 
 import { REMOTE_CONFIG_DEFAULTS } from "../remote_config.js";
+import { getBeastTier } from "../beast_defs.js";
 
 /** Season relics: unique named loot (existing item grants), not another FC daily. */
 export const SEASON_RELIC_TABLE = Object.freeze({
@@ -69,6 +70,7 @@ export function noteShinySpecies(state, species, { silent = false } = {}) {
   shiny[pid] = {
     dex: typeof species.dex === "number" ? species.dex : 0,
     name: typeof species.name === "string" ? species.name : String(pid),
+    tier: typeof species.tier === "string" && species.tier ? species.tier : undefined,
     at: Date.now(),
   };
   if (!wasNew || silent) return null;
@@ -120,7 +122,7 @@ export function syncShinyGalleryFromMons(state) {
   for (const m of list) {
     if (!m || !m.isShiny || !m.pid) continue;
     const before = shinyUniqueCount(state);
-    noteShinySpecies(state, { id: m.pid, dex: m.dex, name: m.name }, { silent: true });
+    noteShinySpecies(state, { id: m.pid, dex: m.dex, name: m.name, tier: m.tier }, { silent: true });
     if (shinyUniqueCount(state) > before) added += 1;
   }
   return added;
@@ -147,4 +149,158 @@ export function shinyShareCardPayload(state) {
     name: e.name,
   }));
   return { unique, entries, title: "闪光馆", game: "萌灵放置冒险" };
+}
+
+/** ML-3 闪光殿堂展柜：最多供奉 6 种已点亮闪光物种，按稀有度与六席共鸣提供全局光环。 */
+export const SHINY_SHOWCASE_MAX = 6;
+
+export const SHINY_PEDESTAL_AURA = Object.freeze({
+  common:   { prodAdd: 0.03,  trainExpAdd: 0.04, catchAdd: 0.008, label: "常见" },
+  uncommon: { prodAdd: 0.045, trainExpAdd: 0.06, catchAdd: 0.012, label: "少见" },
+  rare:     { prodAdd: 0.065, trainExpAdd: 0.09, catchAdd: 0.018, label: "稀有" },
+  epic:     { prodAdd: 0.10,  trainExpAdd: 0.14, catchAdd: 0.025, label: "史诗" },
+});
+
+export const SHINY_FULL_RESONANCE = Object.freeze({
+  prodAdd: 0.12,
+  trainExpAdd: 0.18,
+  catchAdd: 0.03,
+});
+
+const SHOWCASE_TIER_WEIGHT = { epic: 4, rare: 3, uncommon: 2, common: 1 };
+
+function resolveShinyEntryTier(pid, entry, getTierByPid) {
+  if (typeof entry?.tier === "string" && SHINY_PEDESTAL_AURA[entry.tier]) return entry.tier;
+  if (typeof getTierByPid === "function") {
+    const custom = getTierByPid(pid);
+    if (typeof custom === "string" && SHINY_PEDESTAL_AURA[custom]) return custom;
+  }
+  const dexNum =
+    typeof entry?.dex === "number" && entry.dex > 0
+      ? entry.dex
+      : Number(String(pid || "").replace(/^p/i, "")) || 0;
+  const derived = dexNum > 0 ? getBeastTier(dexNum) : "common";
+  return SHINY_PEDESTAL_AURA[derived] ? derived : "common";
+}
+
+/** Non-mutating read of valid showcased shiny pids (safe for pure effect functions). */
+export function readShinyShowcasePids(state) {
+  const raw = state?.meta?.shinyShowcase;
+  const shinyMap = state?.dex?.shiny;
+  if (!Array.isArray(raw) || !shinyMap || typeof shinyMap !== "object") return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of raw) {
+    const pid = typeof item === "string" ? item.trim() : "";
+    if (!pid || seen.has(pid) || !shinyMap[pid]) continue;
+    seen.add(pid);
+    out.push(pid);
+    if (out.length >= SHINY_SHOWCASE_MAX) break;
+  }
+  return out;
+}
+
+export function ensureShinyShowcase(state) {
+  if (!state || typeof state !== "object") return [];
+  if (!state.meta || typeof state.meta !== "object") state.meta = {};
+  const valid = readShinyShowcasePids(state);
+  state.meta.shinyShowcase = valid;
+  return valid;
+}
+
+export function toggleShinyShowcasePid(state, pid) {
+  const cleanPid = typeof pid === "string" ? pid.trim() : "";
+  if (!cleanPid || !state?.dex?.shiny?.[cleanPid]) {
+    return { ok: false, reason: "not_unlocked", pids: readShinyShowcasePids(state) };
+  }
+  const cur = ensureShinyShowcase(state);
+  const idx = cur.indexOf(cleanPid);
+  if (idx >= 0) {
+    cur.splice(idx, 1);
+    return { ok: true, action: "removed", pid: cleanPid, pids: cur.slice() };
+  }
+  if (cur.length >= SHINY_SHOWCASE_MAX) {
+    return { ok: false, reason: "full", max: SHINY_SHOWCASE_MAX, pids: cur.slice() };
+  }
+  cur.push(cleanPid);
+  return { ok: true, action: "added", pid: cleanPid, pids: cur.slice() };
+}
+
+export function autofillShinyShowcase(state, getTierByPid) {
+  if (!state || typeof state !== "object") return { ok: false, pids: [] };
+  if (!state.meta || typeof state.meta !== "object") state.meta = {};
+  const shinyMap = state?.dex?.shiny;
+  if (!shinyMap || typeof shinyMap !== "object") {
+    state.meta.shinyShowcase = [];
+    return { ok: true, pids: [] };
+  }
+  const ranked = Object.entries(shinyMap)
+    .map(([pid, entry]) => {
+      const tier = resolveShinyEntryTier(pid, entry, getTierByPid);
+      return {
+        pid,
+        weight: SHOWCASE_TIER_WEIGHT[tier] || 1,
+        at: typeof entry?.at === "number" ? entry.at : 0,
+      };
+    })
+    .sort((a, b) => b.weight - a.weight || b.at - a.at || a.pid.localeCompare(b.pid));
+  const picked = ranked.slice(0, SHINY_SHOWCASE_MAX).map((x) => x.pid);
+  state.meta.shinyShowcase = picked;
+  return { ok: true, pids: picked.slice() };
+}
+
+export function computeShinyShowcaseAura(state, getTierByPid) {
+  const pids = readShinyShowcasePids(state);
+  if (!pids.length) {
+    return {
+      count: 0,
+      max: SHINY_SHOWCASE_MAX,
+      pids: [],
+      entries: [],
+      prodAdd: 0,
+      trainExpAdd: 0,
+      catchAdd: 0,
+      prodMul: 1,
+      trainExpMul: 1,
+      fullResonance: false,
+    };
+  }
+  const shinyMap = state?.dex?.shiny || {};
+  let prodAdd = 0;
+  let trainExpAdd = 0;
+  let catchAdd = 0;
+  const entries = [];
+  for (const pid of pids) {
+    const rawEntry = shinyMap[pid] || {};
+    const tier = resolveShinyEntryTier(pid, rawEntry, getTierByPid);
+    const cfg = SHINY_PEDESTAL_AURA[tier] || SHINY_PEDESTAL_AURA.common;
+    prodAdd += cfg.prodAdd;
+    trainExpAdd += cfg.trainExpAdd;
+    catchAdd += cfg.catchAdd;
+    entries.push({
+      pid,
+      dex: typeof rawEntry.dex === "number" ? rawEntry.dex : Number(String(pid).replace(/^p/i, "")) || 0,
+      name: typeof rawEntry.name === "string" ? rawEntry.name : pid,
+      tier,
+      tierLabel: cfg.label,
+    });
+  }
+  const fullResonance = entries.length >= SHINY_SHOWCASE_MAX;
+  if (fullResonance) {
+    prodAdd += SHINY_FULL_RESONANCE.prodAdd;
+    trainExpAdd += SHINY_FULL_RESONANCE.trainExpAdd;
+    catchAdd += SHINY_FULL_RESONANCE.catchAdd;
+  }
+  return {
+    count: entries.length,
+    max: SHINY_SHOWCASE_MAX,
+    pids,
+    entries,
+    prodAdd,
+    trainExpAdd,
+    catchAdd,
+    prodMul: 1 + prodAdd,
+    trainExpMul: 1 + trainExpAdd,
+    fullResonance,
+  };
 }

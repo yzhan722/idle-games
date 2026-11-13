@@ -6,13 +6,25 @@
 import { dexCaughtCount } from "./effects.js";
 
 export const LEGACY_PERKS = {
-  prod:      { name: "轮回余泽", desc: "全资源产出 +12%/级", max: 10, baseCost: 8 },
-  catch:     { name: "轮回灵契", desc: "捕获率 +4%/级", max: 10, baseCost: 8 },
-  cap:       { name: "轮回仓廪", desc: "资源上限 +15%/级", max: 10, baseCost: 8 },
-  startTech: { name: "轮回开物", desc: "转生后开局自带「灵果培育」「灵球基础」科技", max: 1, baseCost: 60 },
-  starterMon:{ name: "轮回之缘", desc: "转生后开局赠一只稀有萌灵入队", max: 1, baseCost: 90 },
+  prod:             { name: "轮回余泽", desc: "全资源产出 +12%/级", max: 10, baseCost: 8, icon: "shinyCharm" },
+  catch:            { name: "轮回灵契", desc: "捕获率 +4%/级", max: 10, baseCost: 8, icon: "luxuryball" },
+  cap:              { name: "轮回仓廪", desc: "资源上限 +15%/级", max: 10, baseCost: 8, icon: "mineralSilo" },
+  startTech:        { name: "轮回开物", desc: "转生后开局自带「灵果培育」「灵球基础」科技", max: 1, baseCost: 60, icon: "science" },
+  starterMon:       { name: "轮回之缘", desc: "转生后开局赠一只稀有萌灵入队", max: 1, baseCost: 90, icon: "affectionTreat" },
+  natalBond:        { name: "本命灵契", desc: "转生时保留 1 只缔契本命萌灵跨周目随行（重置为 Lv.1，保留闪光/星级/个体值/性格/特性/亲密）", max: 1, baseCost: 120, icon: "natalBond" },
+  swiftHatch:       { name: "极速孵育", desc: "育灵屋孵蛋耗时 -12%/级（最高 -60%），破壳初始亲密 +6/级", max: 5, baseCost: 25, icon: "swiftHatch" },
+  expeditionMaster: { name: "远征达人", desc: "次元远征耗时 -8%/级（最高 -40%），远征经验与未来币收益 +15%/级", max: 5, baseCost: 25, icon: "expeditionMaster" },
 };
-export const LEGACY_PERK_ORDER = ["prod", "catch", "cap", "startTech", "starterMon"];
+export const LEGACY_PERK_ORDER = [
+  "prod",
+  "catch",
+  "cap",
+  "startTech",
+  "starterMon",
+  "natalBond",
+  "swiftHatch",
+  "expeditionMaster",
+];
 
 /** 转生仪式门槛：需拥有至少 1 只闪光萌灵（图鉴门槛由悖梦主线 dex_unique 150 隐含）。 */
 export const REBIRTH_SHINY_REQ = 1;
@@ -90,4 +102,100 @@ export function legacyCatchAdd(state) {
 
 export function legacyCapMul(state) {
   return 1 + 0.15 * perkLevel(state, "cap");
+}
+
+export function legacyBreedTimeMul(state) {
+  return Math.max(0.4, 1 - 0.12 * perkLevel(state, "swiftHatch"));
+}
+
+export function legacyHatchAffectionAdd(state) {
+  return 6 * perkLevel(state, "swiftHatch");
+}
+
+export function legacyExpeditionTimeMul(state) {
+  return Math.max(0.6, 1 - 0.08 * perkLevel(state, "expeditionMaster"));
+}
+
+export function legacyExpeditionRewardMul(state) {
+  return 1 + 0.15 * perkLevel(state, "expeditionMaster");
+}
+
+export function getNatalBondMonId(state) {
+  const id = state?.meta?.natalBondMonId;
+  return typeof id === "number" && Number.isFinite(id) && id > 0 ? Math.floor(id) : null;
+}
+
+export function setNatalBondMonId(state, monId) {
+  if (!state || typeof state !== "object") return null;
+  if (!state.meta || typeof state.meta !== "object") state.meta = {};
+  if (typeof monId === "number" && Number.isFinite(monId) && monId > 0) {
+    state.meta.natalBondMonId = Math.floor(monId);
+    return state.meta.natalBondMonId;
+  }
+  state.meta.natalBondMonId = null;
+  return null;
+}
+
+const TIER_RANK = { epic: 4, legendary: 4, rare: 3, uncommon: 2, common: 1 };
+
+export function resolveNatalBondCandidate(state) {
+  const list = Array.isArray(state?.mons?.list) ? state.mons.list.filter(Boolean) : [];
+  if (!list.length) return null;
+  const lockedId = getNatalBondMonId(state);
+  if (lockedId != null) {
+    const exact = list.find((m) => m.id === lockedId);
+    if (exact) return exact;
+  }
+  const ranked = list.slice().sort((a, b) => {
+    const sa =
+      (a.isShiny ? 1e6 : 0) +
+      Math.max(0, Math.floor(a.stars || 0)) * 1e4 +
+      (TIER_RANK[a.tier] || 0) * 1e3 +
+      Math.max(1, Math.floor(a.lvl || a.level || 1));
+    const sb =
+      (b.isShiny ? 1e6 : 0) +
+      Math.max(0, Math.floor(b.stars || 0)) * 1e4 +
+      (TIER_RANK[b.tier] || 0) * 1e3 +
+      Math.max(1, Math.floor(b.lvl || b.level || 1));
+    return sb - sa || (a.id || 0) - (b.id || 0);
+  });
+  return ranked[0] || null;
+}
+
+export function cloneMonForNatalRebirth(mon, newId = 1) {
+  if (!mon || typeof mon !== "object") return null;
+  const copyObj = (src) => (src && typeof src === "object" ? { ...src } : undefined);
+  const out = {
+    id: Math.max(1, Math.floor(newId || 1)),
+    pid: mon.pid || "p001",
+    dex: typeof mon.dex === "number" ? mon.dex : 1,
+    name: mon.name || "本命萌灵",
+    tier: mon.tier || "common",
+    lvl: 1,
+    exp: 0,
+    autoExpCarry: 0,
+    satiety: 100,
+    isShiny: Boolean(mon.isShiny),
+    stars: Math.max(0, Math.min(5, Math.floor(mon.stars || 0))),
+    affection: typeof mon.affection === "number" && Number.isFinite(mon.affection) ? Math.max(0, Math.min(100, mon.affection)) : 20,
+    affectionCarry: 0,
+    affectionDecayCarry: 0,
+    skillCdRemainingSec: 0,
+    skillActiveType: null,
+    skillActiveRemainingSec: 0,
+  };
+  if (mon.nature) out.nature = mon.nature;
+  if (mon.ability) out.ability = mon.ability;
+  if (mon.caughtWith) out.caughtWith = mon.caughtWith;
+  out.baseStats =
+    mon.baseStats && typeof mon.baseStats === "object"
+      ? copyObj(mon.baseStats)
+      : { hp: 55, atk: 55, def: 50, spa: 55, spd: 50, spe: 55 };
+  out.iv =
+    mon.iv && typeof mon.iv === "object"
+      ? copyObj(mon.iv)
+      : { hp: 15, atk: 15, def: 15, spa: 15, spd: 15, spe: 15 };
+  if (mon.statBonus && typeof mon.statBonus === "object") out.statBonus = copyObj(mon.statBonus);
+  out.created = typeof mon.created === "number" && Number.isFinite(mon.created) ? mon.created : Date.now();
+  return out;
 }

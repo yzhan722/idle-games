@@ -5247,14 +5247,18 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		}
 
 		//转世只渡一缕魂——道号性别与坐化之数随魂,境界仙缘法宝皆归尘土;
-		//来世出身落地再择(pendingOrigin 触发「转世择身」卡)
+		//来世出身落地再择(pendingOrigin 触发「转世择身」卡);若已预择来世先天命格则随魂携入新世
 		var prevCult = lsData.cultivation;
 		if (prevCult && prevCult.identity){
-			saveData.cultivation = {
+			var soulObj = {
 				identity: {name: prevCult.identity.name, gender: prevCult.identity.gender},
 				sihuaCount: prevCult.sihuaCount || 0,
 				pendingOrigin: true
 			};
+			if (prevCult.pendingMingge && prevCult.pendingMingge.length){
+				soulObj.mingge = prevCult.pendingMingge.slice(0, 3);
+			}
+			saveData.cultivation = soulObj;
 		}
 
 		var preparedSaveData = this._prepareSaveData(saveData);

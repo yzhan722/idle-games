@@ -1076,6 +1076,82 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 	],
 
+	//XX-3 轮回重修「先天命格 / 特殊灵体」多周目 Build 词条池(≥8 种差异化流派,随轮回世数/功德解锁 1~3 槽)
+	MINGGE_DEFS: [
+		{
+			key: "dandao",
+			label: "丹道圣体",
+			tag: "丹毒减半·双丹造诣",
+			art: "alchemy",
+			desc: "服丹经脉丹毒累积减半(×0.50)；开炉炼丹 55% 几率额外多成 1 丹且丹道造诣翻倍；灵谷产出 +20%",
+			effects: {catnipRatio: 0.20}
+		},
+		{
+			key: "jiangu",
+			label: "剑骨通明",
+			tag: "剑心暴击·反震破招",
+			art: "sword",
+			desc: "斗法总战力 ×1.28；秘境回合斗法 35% 触发【剑心通明】暴击(×1.65 伤)；【太极反震】破招伤害 +75%",
+			effects: {}
+		},
+		{
+			key: "changsheng",
+			label: "长生道胎",
+			tag: "寿元绵长·道心澄明",
+			art: "longevity",
+			desc: "全境界寿元上限 +60%；心魔与丹毒自然消退翻倍(×2.0)；闭关吐纳时额外获得修为速率 +25%",
+			effects: {}
+		},
+		{
+			key: "qiyun",
+			label: "气运之子",
+			tag: "游历翻倍·逢凶化吉",
+			art: "wheel",
+			desc: "红尘游历修为与灵材收获翻倍(×2.0)且免疫劫修伏击(反夺灵石修为)；秘境探幽秘境令与古宝掉率 +25%",
+			effects: {}
+		},
+		{
+			key: "baiyi",
+			label: "百艺宗师",
+			tag: "器阵双绝·百工造化",
+			art: "alchemy",
+			desc: "炼器百工打造效率 +45%(craftRatio)；琅嬛书阁推演感悟 +25%；黄金与玄铁产出 +20%",
+			effects: {craftRatio: 0.45, scienceRatio: 0.25, goldRatio: 0.20, ironRatio: 0.20}
+		},
+		{
+			key: "tianling",
+			label: "鸿蒙道体",
+			tag: "破境天成·道基稳固",
+			art: "wheel",
+			desc: "大境界突破成功率额外 +8%；破境消耗 -15%；破境后【道基震荡】平复年限缩短一半；修为吐纳 +15%",
+			effects: {xiuweiRatio: 0.15}
+		},
+		{
+			key: "xuanmai",
+			label: "太初灵脉体",
+			tag: "洞天福地·万物滋长",
+			art: "longevity",
+			desc: "洞府境界全局产出 +25%；灵谷、灵木、灵石、黄金基础产出各 +30%",
+			effects: {realmProductionRatio: 0.25, catnipRatio: 0.30, woodRatio: 0.30, mineralsRatio: 0.30, goldRatio: 0.30}
+		},
+		{
+			key: "huanggu",
+			label: "荒古战躯",
+			tag: "不灭金身·气血自愈",
+			art: "sword",
+			desc: "斗法总战力 ×1.20；秘境斗法最大气血 +45%、护体防御 +35%，每回合初自愈 4% 最大气血",
+			effects: {}
+		},
+		{
+			key: "zhenyan",
+			label: "宙光星瞳",
+			tag: "调息缩减·岁首双露",
+			art: "wheel",
+			desc: "游历/闭关/秘境共享调息冷却缩短 25%；岁首凝露瓶绿液凝聚额外 +1 滴；修为与香火愿力各 +18%",
+			effects: {xiuweiRatio: 0.18, faithRatio: 0.18}
+		}
+	],
+
 	//随机道号池 — 姓氏与男女名分列,roll 时按性别取
 	NAME_SURNAMES: [
 		"韩", "厉", "南宫", "墨", "陈", "王", "李", "张", "刘", "杨", "赵", "黄",
@@ -1121,12 +1197,104 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return $I(k + ".desc");
 	},
 
-	//破境消耗倍率: 灵根底子(伪灵根多系同修×1.35 / 天灵根一脉通明×0.80) × 出身加成(商贾×0.90 / 遗孤×1.10)
+	//破境消耗倍率: 灵根底子(伪灵根多系同修×1.35 / 天灵根一脉通明×0.80) × 出身加成(商贾×0.90 / 遗孤×1.10) × 鸿蒙道体(×0.85)
 	getBreakCostMult: function(){
 		var rootMult = (this.getRoot() && this.getRoot().priceMult) || 1;
 		var origin = this.getOrigin();
 		var originMult = (origin && origin.breakCostMult) || 1;
-		return rootMult * originMult;
+		var mgMult = this.hasMingge("tianling") ? 0.85 : 1;
+		return rootMult * originMult * mgMult;
+	},
+
+	getMinggeDef: function(key){
+		for (var i = 0; i < this.MINGGE_DEFS.length; i++){
+			if (this.MINGGE_DEFS[i].key === key){ return this.MINGGE_DEFS[i]; }
+		}
+		return null;
+	},
+
+	hasMingge: function(key){
+		if (!this.mingge || !this.mingge.length){ return false; }
+		for (var i = 0; i < this.mingge.length; i++){
+			if (this.mingge[i] === key){ return true; }
+		}
+		return false;
+	},
+
+	getMinggeSlotCap: function(forNextLife){
+		var lives = this.getPastLives() + (forNextLife ? 1 : 0);
+		var karmaRes = (this.game && this.game.resPool) ? this.game.resPool.get("karma") : null;
+		var karma = karmaRes ? (karmaRes.value || 0) : 0;
+		var cap = 1;
+		if (lives >= 3 || karma >= 8){ cap = 2; }
+		if (lives >= 6 || karma >= 25){ cap = 3; }
+		return cap;
+	},
+
+	normalizeMinggeList: function(list, maxSlots){
+		var cap = (typeof maxSlots === "number" && maxSlots > 0) ? maxSlots : 3;
+		var out = [];
+		if (!list || !list.length){ return out; }
+		for (var i = 0; i < list.length; i++){
+			var k = list[i];
+			if (!this.getMinggeDef(k)){ continue; }
+			var dup = false;
+			for (var j = 0; j < out.length; j++){
+				if (out[j] === k){ dup = true; break; }
+			}
+			if (!dup){
+				out.push(k);
+				if (out.length >= cap){ break; }
+			}
+		}
+		return out;
+	},
+
+	setMingge: function(keys){
+		this.mingge = this.normalizeMinggeList(keys, 3);
+		this.applyOrigin();
+		if (this.game && this.game.updateCaches){ this.game.updateCaches(); }
+		return this.mingge;
+	},
+
+	setPendingMingge: function(keys){
+		var cap = this.getMinggeSlotCap(true);
+		this.pendingMingge = this.normalizeMinggeList(keys, cap);
+		return this.pendingMingge;
+	},
+
+	togglePendingMingge: function(key){
+		if (!this.getMinggeDef(key)){ return false; }
+		var cap = this.getMinggeSlotCap(true);
+		var cur = this.normalizeMinggeList(this.pendingMingge || [], cap);
+		for (var i = 0; i < cur.length; i++){
+			if (cur[i] === key){
+				cur.splice(i, 1);
+				this.pendingMingge = cur;
+				return true;
+			}
+		}
+		if (cur.length >= cap){
+			if (cap === 1){
+				cur = [key];
+				this.pendingMingge = cur;
+				return true;
+			}
+			return false;
+		}
+		cur.push(key);
+		this.pendingMingge = cur;
+		return true;
+	},
+
+	getActiveMinggeDefs: function(){
+		var out = [];
+		if (!this.mingge || !this.mingge.length){ return out; }
+		for (var i = 0; i < this.mingge.length; i++){
+			var d = this.getMinggeDef(this.mingge[i]);
+			if (d){ out.push(d); }
+		}
+		return out;
 	},
 
 	setIdentity: function(name, gender, originKey){
@@ -1139,10 +1307,19 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	},
 
 	//effectsBase 是 manager 常驻乘区,updateEffectCached 每 tick 自动纳入;
-	//但键名得先在 effectsCachedExisting 白名单里,出身键构造时还不存在,这里补注册
+	//但键名得先在 effectsCachedExisting 白名单里,出身与先天命格键在此一并补注册
 	applyOrigin: function(){
 		var def = this.getOrigin();
-		this.effectsBase = (def && def.effects) ? dojo.clone(def.effects) : {};
+		var base = (def && def.effects) ? dojo.clone(def.effects) : {};
+		var mgs = this.getActiveMinggeDefs();
+		for (var i = 0; i < mgs.length; i++){
+			var eff = mgs[i].effects;
+			if (!eff){ continue; }
+			for (var k in eff){
+				base[k] = (base[k] || 0) + eff[k];
+			}
+		}
+		this.effectsBase = base;
 		this.setEffectsCachedExisting();
 	},
 
@@ -1163,6 +1340,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.pillCraftCount = {};
 		this.lastAlchemyNote = null;
 		this.immortalAscended = false;
+		this.mingge = [];
+		this.pendingMingge = [];
 		this.daoyun = 0;
 		this.tale = {};
 		this.taleLog = [];
@@ -2386,6 +2565,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (riftDmgBonus > 0){ mult *= (1 + riftDmgBonus * 0.5); }	//高阶宗门镇宗秘境神通
 		if (this.immortalAscended){ mult *= 1.35; }					//仙躯蜕凡
 		if (this.daoyun > 0){ mult *= (1 + this.daoyun * 0.15); }	//诸天法则道韵加持
+		if (this.hasMingge("jiangu")){ mult *= 1.28; }				//剑骨通明 ×1.28
+		if (this.hasMingge("huanggu")){ mult *= 1.20; }				//荒古战躯 ×1.20
 		mult *= Math.max(0.3, 1 - this.heartDemon * 0.005);	//心魔蚀骨
 		return Math.max(1, base * mult);
 	},
@@ -2412,6 +2593,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		c += (origin && origin.chanceBonus) || 0;	//散修遗孤,道心早砺
 		if (stage.chance != null && stage.chance < 1){
 			c += this.getLegacyBonus().chanceBonus;	//轮回印记前尘悟道
+			if (this.hasMingge("tianling")){ c += 0.08; }	//鸿蒙道体破境天成
 		}
 		c -= this.heartDemon * 0.006;	//心魔噬心,道念不纯则破境愈艰
 		if (stage.chance != null && stage.chance < 1 && (this.pillToxicity || 0) >= 40){
@@ -2436,10 +2618,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (this.lastBreakYear == null){ return 1; }
 		//game.ticks 不入档——读档归零会让 elapsed 转负、余威暴胀出上界。
 		//改用持久化的历法纪年,trueYear() 含日/季/年的小数推进。
+		var surgeYears = this.BREAK_SURGE_YEARS * (this.hasMingge("tianling") ? 0.5 : 1);
 		var elapsed = this.game.calendar.trueYear() - this.lastBreakYear;
-		if (elapsed >= this.BREAK_SURGE_YEARS){ return 1; }
+		if (elapsed >= surgeYears){ return 1; }
 		if (elapsed < 0){ elapsed = 0; }
-		return 1 + (this.BREAK_SURGE_MAX - 1) * (1 - elapsed / this.BREAK_SURGE_YEARS);
+		return 1 + (this.BREAK_SURGE_MAX - 1) * (1 - elapsed / surgeYears);
 	},
 
 	rollBreakOmen: function(){
@@ -2484,10 +2667,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var realm = this.getCurrentRealm();
 		var base = (realm && realm.lifespan) || 80;
 		var origin = this.getOrigin();
-		if (origin && origin.lifespanMult){
-			return Math.round(base * origin.lifespanMult);
-		}
-		return base;
+		var mult = (origin && origin.lifespanMult) ? origin.lifespanMult : 1;
+		if (this.hasMingge("changsheng")){ mult *= 1.60; }	//长生道胎寿元绵长 +60%
+		return Math.round(base * mult);
 	},
 
 	getLifespanRemaining: function(){
@@ -2582,6 +2764,54 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			dojo.connect(oCards[o.key], "onclick", function(){ selOrigin = o.key; markO(); });
 		});
 
+		//XX-3 转世择身时同步展示「先天命格·特殊灵体」择取盘(1~3 槽)
+		var selMingge = self.normalizeMinggeList(self.mingge || [], self.getMinggeSlotCap(false));
+		if (originOnly){
+			var mgCap = self.getMinggeSlotCap(false);
+			var mgHdr = dojo.create("div", {
+				className: "xxIdLbl xxIdLblTop xxMgPromptHdr"
+			}, card);
+			var mgCards = {};
+			var refreshMgHdr = function(){
+				mgHdr.innerHTML = "☯ 先天命格 · 特殊灵体 <span class=\"xxMgSlotBadge\">已择 " + selMingge.length + "/" + mgCap + " 槽</span>" +
+					"<span class=\"xxMgUnlockHint\">（3世/8功德开2槽 · 6世/25功德开3槽）</span>";
+				for (var mk in mgCards){
+					var on = false;
+					for (var mi = 0; mi < selMingge.length; mi++){
+						if (selMingge[mi] === mk){ on = true; break; }
+					}
+					mgCards[mk].className = "xxMgCard" + (on ? " xx-sel" : "");
+				}
+			};
+			var mgGrid = dojo.create("div", {className: "xxMgGrid"}, card);
+			this.MINGGE_DEFS.forEach(function(mg){
+				var ico = (classes.ui && classes.ui.XianxiaArt && classes.ui.XianxiaArt.minggeIcon) ?
+					"<i class=\"xxMgIco\" aria-hidden=\"true\">" + classes.ui.XianxiaArt.minggeIcon(mg.art) + "</i>" : "";
+				mgCards[mg.key] = dojo.create("div", {
+					className: "xxMgCard",
+					"data-mg": mg.key,
+					innerHTML: ico + "<div class=\"xxMgBody\">" +
+						"<div class=\"xxMgTitleRow\"><b>" + mg.label + "</b><span class=\"xxMgTag\">" + mg.tag + "</span></div>" +
+						"<span class=\"xxMgDesc\">" + mg.desc + "</span></div>"
+				}, mgGrid);
+				dojo.connect(mgCards[mg.key], "onclick", function(){
+					var idx = -1;
+					for (var j = 0; j < selMingge.length; j++){
+						if (selMingge[j] === mg.key){ idx = j; break; }
+					}
+					if (idx >= 0){
+						selMingge.splice(idx, 1);
+					} else if (selMingge.length < mgCap){
+						selMingge.push(mg.key);
+					} else if (mgCap === 1){
+						selMingge = [mg.key];
+					}
+					refreshMgHdr();
+				});
+			});
+			refreshMgHdr();
+		}
+
 		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0}, card);
 		var btnContent = dojo.create("div", {className: "btnContent"}, btn);
 		dojo.create("span", {
@@ -2589,13 +2819,17 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}, btnContent);
 		dojo.connect(btn, "onclick", function(){
 			if (originOnly){
-				//转世择身——魂还是那缕魂,只换这一世的出身
+				//转世择身——魂还是那缕魂,换这一世的出身并凝定先天命格
 				self.identity.origin = selOrigin;
-				self.applyOrigin();
+				self.setMingge(selMingge);
 				self.pendingOrigin = false;
 				self.identityPending = false;
 				dojo.destroy(overlay);
-				self.game.msg($I("identity.rebirthed", [self.getOriginLabel()]), "important");
+				var mgNames = [];
+				var activeMgs = self.getActiveMinggeDefs();
+				for (var mi = 0; mi < activeMgs.length; mi++){ mgNames.push("【" + activeMgs[mi].label + "】"); }
+				var originSummary = self.getOriginLabel() + (mgNames.length ? " · 身负" + mgNames.join("") : "");
+				self.game.msg($I("identity.rebirthed", [originSummary]), "important");
 				self.game.render();
 				return;
 			}
@@ -2658,6 +2892,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			innerHTML: $I("cultivation.msg.lifespan.end",
 				[this.getCurrentRealm().label, Math.floor(this.age), karmaText])
 		}, card);
+		this.renderMinggePickerInto(card, true);
 		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0}, card);
 		var btnContent = dojo.create("div", {className: "btnContent"}, btn);
 		dojo.create("span", {
@@ -2669,6 +2904,110 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			self.applyReincarnation(bonus);
 		});
 		btn.focus();
+	},
+
+	//渲染「来世先天命格轮回盘」交互选择面板(供坐化弹层与主动轮回重修弹窗共用)
+	renderMinggePickerInto: function(parentNode, isNextLife){
+		var self = this;
+		var cap = this.getMinggeSlotCap(isNextLife !== false);
+		if ((!this.pendingMingge || !this.pendingMingge.length) && this.mingge && this.mingge.length){
+			this.pendingMingge = this.normalizeMinggeList(this.mingge, cap);
+		} else {
+			this.pendingMingge = this.normalizeMinggeList(this.pendingMingge || [], cap);
+		}
+		var box = dojo.create("div", {className: "xxMgPickerBox"}, parentNode);
+		var hdr = dojo.create("div", {className: "xxMgPickerHdr"}, box);
+		var grid = dojo.create("div", {className: "xxMgGrid"}, box);
+		var cardMap = {};
+		var refresh = function(){
+			var cur = self.pendingMingge || [];
+			hdr.innerHTML = "<span class=\"xxMgPickerTitle\">☯ 来世先天命格择取</span>" +
+				"<span class=\"xxMgSlotBadge\">已择 " + cur.length + "/" + cap + " 槽</span>" +
+				"<span class=\"xxMgUnlockHint\">累计 3世/8功德开2槽 · 6世/25功德开3槽</span>";
+			for (var k in cardMap){
+				var picked = false;
+				for (var i = 0; i < cur.length; i++){
+					if (cur[i] === k){ picked = true; break; }
+				}
+				cardMap[k].className = "xxMgCard" + (picked ? " xx-sel" : "");
+			}
+		};
+		for (var i = 0; i < this.MINGGE_DEFS.length; i++){
+			(function(mg){
+				var ico = (classes.ui && classes.ui.XianxiaArt && classes.ui.XianxiaArt.minggeIcon) ?
+					"<i class=\"xxMgIco\" aria-hidden=\"true\">" + classes.ui.XianxiaArt.minggeIcon(mg.art) + "</i>" : "";
+				var el = dojo.create("div", {
+					className: "xxMgCard",
+					"data-mg": mg.key,
+					innerHTML: ico + "<div class=\"xxMgBody\">" +
+						"<div class=\"xxMgTitleRow\"><b>" + mg.label + "</b><span class=\"xxMgTag\">" + mg.tag + "</span></div>" +
+						"<span class=\"xxMgDesc\">" + mg.desc + "</span></div>"
+				}, grid);
+				cardMap[mg.key] = el;
+				dojo.connect(el, "onclick", function(){
+					self.togglePendingMingge(mg.key);
+					refresh();
+				});
+			})(this.MINGGE_DEFS[i]);
+		}
+		refresh();
+		return box;
+	},
+
+	//主动打开「六道轮回 · 先天命格盘」弹窗(可预设来世命格,亦可直接兵解/飞升轮回重修)
+	showReincarnationOverlay: function(){
+		var self = this;
+		var existing = dojo.query(".xxMinggeModalOverlay");
+		if (existing && existing.length){
+			existing.forEach(function(n){ dojo.destroy(n); });
+		}
+		var host = dojo.byId("gamePageContainer") || dojo.body();
+		var overlay = dojo.create("div", {className: "xxFateOverlay xxMinggeModalOverlay"}, host);
+		var card = dojo.create("div", {
+			className: "dialog xxFateCard xxMinggeModalCard",
+			role: "dialog",
+			"aria-modal": "true",
+			"aria-label": "六道轮回 · 先天命格盘"
+		}, overlay);
+		var wheelBanner = "<div class=\"xxMgBanner\"><img src=\"res/art/mingge_wheel.jpg\" alt=\"\" class=\"xxMgBannerImg\"/>" +
+			"<div class=\"xxMgBannerText\">" +
+				"<div class=\"xxMgBannerTitle\">☯ 六道轮回 · 先天命格盘</div>" +
+				"<div class=\"xxMgBannerSub\">已历 " + this.getPastLives() + " 世轮回 · 来世可携 " + this.getMinggeSlotCap(true) + " 道先天灵体入世重修</div>" +
+			"</div></div>";
+		dojo.create("div", {innerHTML: wheelBanner}, card);
+
+		var curActive = this.getActiveMinggeDefs();
+		var curNames = [];
+		for (var i = 0; i < curActive.length; i++){ curNames.push("【" + curActive[i].label + "】"); }
+		dojo.create("div", {
+			className: "xxMgCurrentBar",
+			innerHTML: "此世命格：" + (curNames.length ? "<b>" + curNames.join(" ") + "</b>" : "<span class=\"xxMgMuted\">凡胎俗骨（转世重修后凝定先天灵体）</span>")
+		}, card);
+
+		this.renderMinggePickerInto(card, true);
+
+		var btnRow = dojo.create("div", {className: "xxMgModalActions"}, card);
+		var saveBtn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxMgSaveBtn", tabIndex: 0}, btnRow);
+		dojo.create("div", {
+			className: "btnContent",
+			innerHTML: "<span class=\"btnTitle\"><b>封存来世命格预设</b></span>"
+		}, saveBtn);
+		dojo.connect(saveBtn, "onclick", function(){
+			dojo.destroy(overlay);
+			var p = self.pendingMingge || [];
+			self.game.msg(p.length ? ("已铭刻来世先天命格（" + p.length + " 道），待坐化或转世重修时自动凝成！") : "已清空来世命格预设。", "notice");
+			if (self.game.render){ self.game.render(); }
+		});
+
+		var resetBtn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone xxMgRebirthBtn", tabIndex: 0}, btnRow);
+		dojo.create("div", {
+			className: "btnContent",
+			innerHTML: "<span class=\"btnTitle\"><b>携此命格 · 轮回重修</b></span>"
+		}, resetBtn);
+		dojo.connect(resetBtn, "onclick", function(){
+			dojo.destroy(overlay);
+			self.game.reset();
+		});
 	},
 
 	//并入坐化业果并走标准转生——与按钮解耦,便于测试与别处复用
@@ -2872,6 +3211,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (!this.supremePills){ this.supremePills = {}; }
 
 		this.craftPill(name);
+		var hasDandao = this.hasMingge("dandao");
+		if (hasDandao){
+			this.alchemyExp = (this.alchemyExp || 0) + 1;	//丹道圣体:丹道造诣翻倍
+			if (Math.random() < 0.55){
+				pill.val = (pill.val || 0) + 1;				//丹道圣体:55% 额外多产 1 枚同阶灵丹
+			}
+		}
 		var fire = this.getCauldronFire();
 		var rankInfo = this.getAlchemyRank();
 		var note = "";
@@ -2984,7 +3330,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var durMult = (isSupreme ? 1.4 : 1.0) * toxStatus.effMult;
 		var baseDur = Math.max(300, Math.round(1500 * durMult));
 		var fire = this.getCauldronFire();
-		var toxMult = (fire.key === "gentle" ? 0.70 : 1.0) * (isSupreme ? 0.50 : 1.0);
+		var toxMult = (fire.key === "gentle" ? 0.70 : 1.0) * (isSupreme ? 0.50 : 1.0) * (this.hasMingge("dandao") ? 0.50 : 1.0);
 
 		if (name == "juqi"){
 			this.buffs.juqi = baseDur;	//标准 1500 ticks (~5 min), 丹纹 2100 ticks
@@ -3249,7 +3595,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//出关散功间也不可径入秘境。actionCd 是四者共同的冷却。
 
 	setActionCd: function(ticks){
-		this.actionCd = this.actionCdMax = ticks;
+		var cdMult = this.hasMingge("zhenyan") ? 0.75 : 1;
+		var effTicks = Math.max(1, Math.round(ticks * cdMult));
+		this.actionCd = this.actionCdMax = effTicks;
 	},
 
 	canAct: function(){
@@ -3289,13 +3637,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	resolveWander: function(){
 		var realmIdx = this.getCurrentRealmIndex();
 		var hasSwords = this.getFate("fengyun").researched;
-		var scale = (1 + realmIdx * 0.8) * (hasSwords ? 1.5 : 1);
+		var hasQiyun = this.hasMingge("qiyun");
+		var qiyunMult = hasQiyun ? 2.0 : 1.0;
+		var scale = (1 + realmIdx * 0.8) * (hasSwords ? 1.5 : 1) * qiyunMult;
 		var ambushMin = hasSwords ? 88 : 83;	//蜂云剑护体:伏击窗口进一步收窄
 		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 
 		//行脚吐纳保底——每次游历归来必有一份修为感悟入账,绝不空手而归
-		var baseXw = this.applyXiuweiSoftCap(Math.max(1, Math.round(this.breakPayout(this.WANDER_PAY * 0.35 * (hasSwords ? 1.5 : 1)))));
+		var baseXw = this.applyXiuweiSoftCap(Math.max(1, Math.round(this.breakPayout(this.WANDER_PAY * 0.35 * (hasSwords ? 1.5 : 1) * qiyunMult))));
 		addRes("xiuwei", baseXw);
 
 		var roll = Math.random() * 100;
@@ -3309,7 +3659,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			addRes("catnip", this.roundNice(30 * scale));
 			this.game.msg($I("cultivation.msg.wander.spice", [fmt(amt)]), "notice");
 		} else if (roll < 64){
-			var amt = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY * (hasSwords ? 1.5 : 1)));
+			var amt = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY * (hasSwords ? 1.5 : 1) * qiyunMult));
 			addRes("xiuwei", amt);
 			this.game.msg($I("cultivation.msg.wander.xiuwei", [fmt(amt + baseXw)]), "notice");
 		} else if (roll < 75){
@@ -3321,10 +3671,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			addRes("relic", amt);
 			this.game.msg($I("cultivation.msg.wander.relic", [amt]), "important");
 		} else if (roll < 92){
-			//炼气新手保护——凡尘初历不遇劫修,偶得山间灵泉顿悟
-			if (realmIdx === 0){
-				var spXw = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY));
+			//炼气新手保护 / 气运之子逢凶化吉——不遇劫修折损,反得奇遇造化
+			if (realmIdx === 0 || hasQiyun){
+				var spXw = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY * qiyunMult));
 				addRes("xiuwei", spXw);
+				addRes("minerals", this.roundNice(20 * scale));
 				addRes("wood", 2);
 				this.game.msg($I("cultivation.msg.wander.xiuwei", [fmt(spXw + baseXw)]), "notice");
 			} else {
@@ -3597,7 +3948,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 		} else {
 			//进取/夺宝路线 (optA)
-			var keyChance = 0.30 + (stance.keyBonus || 0);
+			var qiyunBonus = this.hasMingge("qiyun") ? 0.25 : 0;
+			var keyChance = 0.30 + (stance.keyBonus || 0) + qiyunBonus;
+			var artDropMult = (stance.artifactMult || 1) + qiyunBonus;
 			if (roomKey === "herb"){
 				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * 1.25));
 				addRes("catnip", this.roundNice(45 * scale));
@@ -3605,20 +3958,20 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				note = "剑斩赤练妖蟒夺取千年血线蛟藤！修为 +" + fmt(xwGain) + (keyGain ? "，斩获妖丹【秘境令】×1！" : "");
 			} else if (roomKey === "cave"){
 				relicGain = (stance.key === "array" ? 2 : 1);
-				if (Math.random() < 0.25 * (stance.artifactMult || 1)){
+				if (Math.random() < 0.25 * artDropMult){
 					artDropped = this.rollArtifactDrop(scale);
 				}
 				note = "神识推演破开古修禁制！修为 +" + fmt(xwGain) + "，获【上古遗宝】×" + relicGain + (artDropped ? "，更得古宝认主！" : "");
 			} else if (roomKey === "ambush"){
 				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * 1.2));
-				if (Math.random() < Math.min(0.75, keyChance + 0.20)){ keyGain = 1; }
+				if (Math.random() < Math.min(0.85, keyChance + 0.20)){ keyGain = 1; }
 				minGain = this.roundNice(25 * scale);
 				note = "黄雀在后雷霆出手！修为 +" + fmt(xwGain) + (keyGain ? "，夺得【秘境令】×1！" : "，缴获灵石 +" + fmt(minGain));
 			} else if (roomKey === "spring"){
 				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * (stance.key === "sword" ? 1.55 : 1.35)));
 				note = "盘膝泉眼鲸吞万年灵乳，周天轰鸣！修为暴涨 +" + fmt(xwGain) + "！";
 			} else if (roomKey === "fog"){
-				if (Math.random() < 0.38 * (stance.artifactMult || 1)){
+				if (Math.random() < 0.38 * artDropMult){
 					artDropped = this.rollArtifactDrop(scale);
 				} else {
 					relicGain = 1;
@@ -4103,9 +4456,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 
 		var cp = Math.max(10, this.getCombatPower());
-		var maxHp = Math.max(120, Math.round(cp * 4.5));
+		var hasHuanggu = this.hasMingge("huanggu");
+		var maxHp = Math.max(120, Math.round(cp * 4.5 * (hasHuanggu ? 1.45 : 1)));
 		var atk = Math.max(24, Math.round(cp * 0.92));
-		var pDef = Math.max(8, Math.round(cp * 0.24));
+		var pDef = Math.max(8, Math.round(cp * 0.24 * (hasHuanggu ? 1.35 : 1)));
 		var floor = (bMode === "greater") ? (this.riftFloor + 1) : (this.riftFloor || 1);
 		var seed = (this.stats.rift || 1) + (this.actionSeq || 0);
 		var waveKeys = this.getNextMonsterWaveKeys(seed);
@@ -4217,7 +4571,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		b.animSeq = ev.seq;
 		b.lastEvent = ev;
 
-		// 1. 玩家回合初状态结算 (蛇毒)
+		// 1. 玩家回合初状态结算 (荒古战躯自愈 & 蛇毒)
+		if (this.hasMingge("huanggu") && p.hp < p.maxHp){
+			var hgHeal = Math.max(4, Math.round(p.maxHp * 0.04));
+			p.hp = Math.min(p.maxHp, p.hp + hgHeal);
+			ev.pHeal += hgHeal;
+		}
 		if (p.poison > 0){
 			var pTick = Math.max(2, Math.round(p.maxHp * 0.06));
 			p.hp = Math.max(1, p.hp - pTick);
@@ -4238,6 +4597,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		// 3. 玩家施展神通
 		var riftDmgMult = 1 + Math.max(0, this.game.getEffect("riftDamageRatio") || 0);
 		var atkEff = p.atk * (p.weak > 0 ? 0.80 : 1.0) * riftDmgMult;
+		var swordCrit = false;
+		if (this.hasMingge("jiangu") && sk.key !== "guard" && Math.random() < 0.35){
+			atkEff *= 1.65;
+			swordCrit = true;
+		}
 		var vulnMult = 1.0 + (e.armorBreak > 0 ? 0.30 : 0) + (e.expose > 0 ? 0.40 : 0) + (e.overloaded ? 0.50 : 0);
 
 		var applyDamageToEnemy = function(rawDmg, shieldBonusMult, ignoreDefAndTrait){
@@ -4281,12 +4645,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var hasShieldSyn = p.shield > 0;
 			var strikeRaw = atkEff * (hasShieldSyn ? 1.45 : 1.10);
 			var sDealt = applyDamageToEnemy(strikeRaw, 1.0, false);
-			turnNotes.push("⚔ 施展【御剑斩】" + (hasShieldSyn ? "(剑盾齐鸣+35%)" : "") + "斩落 " + sDealt + " 点伤害");
+			turnNotes.push("⚔ 施展【御剑斩】" + (swordCrit ? "(剑心通明暴击!)" : "") + (hasShieldSyn ? "(剑盾齐鸣+35%)" : "") + "斩落 " + sDealt + " 点伤害");
 		} else if (sk.key === "skill"){
 			e.armorBreak = Math.max(e.armorBreak, 2);
 			var skillRaw = atkEff * 1.75;
 			var kDealt = applyDamageToEnemy(skillRaw, 2.5, false);
-			turnNotes.push("⚡ 催动【青元剑阵】绞杀 " + kDealt + " 点伤害，附加2回合【破甲】！");
+			turnNotes.push("⚡ 催动【青元剑阵】" + (swordCrit ? "(剑心通明暴击!)" : "") + "绞杀 " + kDealt + " 点伤害，附加2回合【破甲】！");
 		} else if (sk.key === "guard"){
 			var shieldAdd = Math.max(25, Math.round(p.atk * 1.45));
 			p.shield += shieldAdd;
@@ -4303,7 +4667,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			p.poison = 0;
 			p.chill = 0;
 			p.weak = 0;
-			turnNotes.push("✨ 祭出本命【" + (b.natalName || "法宝") + "】镇压轰出 " + uDealt + " 点纯阳真伤，气血 +" + healAmt + " 并涤净全异常！");
+			turnNotes.push("✨ 祭出本命【" + (b.natalName || "法宝") + "】" + (swordCrit ? "(剑心通明暴击!)" : "") + "镇压轰出 " + uDealt + " 点纯阳真伤，气血 +" + healAmt + " 并涤净全异常！");
 		}
 
 		if (p.chill > 0){ p.chill--; }
@@ -4361,9 +4725,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 		if (intent === "heavy"){
 			if (p.counterStance){
-				// 太极反震破招！
+				// 太极反震破招！(剑骨通明反震伤害 +75%)
 				var reducedDmg = applyDamageToPlayer(eAtk * 1.65 * 0.25, 0);
-				var counterDmg = Math.max(15, Math.round(p.atk * 1.45 * vulnMult));
+				var counterMult = this.hasMingge("jiangu") ? 1.75 : 1.0;
+				var counterDmg = Math.max(15, Math.round(p.atk * 1.45 * vulnMult * counterMult));
 				if (e.key === "bloodcult" || e.key === "gumo"){
 					var backlash = Math.round(e.maxHp * 0.14);
 					counterDmg += backlash;
@@ -4932,6 +5297,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			taleLog: this.taleLog,
 			identity: this.identity,
 			pendingOrigin: this.pendingOrigin || undefined,
+			mingge: (this.mingge && this.mingge.length) ? this.mingge.slice(0, 3) : undefined,
+			pendingMingge: (this.pendingMingge && this.pendingMingge.length) ? this.pendingMingge.slice(0, 3) : undefined,
 			sects: this.filterMetadata(this.sects, ["name", "researched"]),
 			pills: this.filterMetadata(this.pills, ["name", "val"]),
 			fates: this.filterMetadata(this.fates, ["name", "researched", "choiceKey"]),
@@ -4989,7 +5356,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (typeof c.riftKeys == "number"){ this.riftKeys = Math.max(0, c.riftKeys); }
 		if (typeof c.riftFloor == "number"){ this.riftFloor = Math.max(0, c.riftFloor); }
 		if (c.tale){ this.tale = c.tale; }
-		if (c.identity){ this.identity = c.identity; this.applyOrigin(); }
+		this.mingge = (c.mingge && c.mingge.length) ? this.normalizeMinggeList(c.mingge, 3) : [];
+		this.pendingMingge = (c.pendingMingge && c.pendingMingge.length) ? this.normalizeMinggeList(c.pendingMingge, 3) : [];
+		if (c.identity){ this.identity = c.identity; }
+		this.applyOrigin();
 		if (c.pendingOrigin){ this.pendingOrigin = c.pendingOrigin; }
 		if (c.taleLog){ this.taleLog = c.taleLog; }
 		if (typeof c.heartDemon == "number"){ this.heartDemon = Math.min(100, Math.max(0, c.heartDemon)); }
@@ -5122,14 +5492,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.demonWarned = true;
 			this.game.msg($I("cultivation.msg.demon.warn"), "alert");
 		}
+		var csDecayMult = this.hasMingge("changsheng") ? 2 : 1;
 		if (this.heartDemon > 0){
 			var decay = 0.03 * (this.getFate("nangong").researched ? 3 : 1);
 			var lamp = this.getArtifact("yanghun");
 			if (lamp && lamp.researched){ decay += 0.02 * lamp.rank; }
-			this.heartDemon = Math.max(0, this.heartDemon - decay);
+			this.heartDemon = Math.max(0, this.heartDemon - decay * csDecayMult);
 		}
 		if (this.pillToxicity > 0){
-			var toxDecay = 0.02 * (this.getAlchemyRank().detoxMult || 1) * (this.secluded ? 2 : 1);
+			var toxDecay = 0.02 * (this.getAlchemyRank().detoxMult || 1) * (this.secluded ? 2 : 1) * csDecayMult;
 			this.pillToxicity = Math.max(0, this.pillToxicity - toxDecay);
 		}
 		//fates fire once when their stage is reached (and any cond passes);
@@ -5225,7 +5596,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		};
 		add("xiuweiRatio", this.getRoot().xiuweiMult - 1);
 		if (this.secluded){
-			add("xiuweiRatio", this.SECLUSION_XIUWEI);
+			add("xiuweiRatio", this.SECLUSION_XIUWEI + (this.hasMingge("changsheng") ? 0.25 : 0));
 			add("seclusionMundaneRatio", this.SECLUSION_MUNDANE);	//只压凡俗,不伤修为
 		}
 		if (this.buffs.juqi > 0){
@@ -5292,10 +5663,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	//天机阁·每日一卦——每跨一年摇一签,纯手气,图个念想
 	drawLot: function(){
-		//凝露瓶每跨一年自动凝聚1滴绿液(上限5滴)
+		//凝露瓶每跨一年自动凝聚1滴绿液(上限5滴;宙光星瞳命格额外+1滴)
 		var bottle = this.getFate("bottle");
 		if (bottle && bottle.researched && (this.bottleDew || 0) < 5){
-			this.bottleDew = Math.min(5, (this.bottleDew || 0) + 1);
+			var dewGain = this.hasMingge("zhenyan") ? 2 : 1;
+			this.bottleDew = Math.min(5, (this.bottleDew || 0) + dewGain);
 		}
 		var roll = Math.random() * 100;
 		if (roll < 5){	//上上签
@@ -5357,6 +5729,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.lastAlchemyNote = null;
 		this.immortalAscended = false;
 		this.daoyun = 0;
+		this.mingge = [];
+		this.pendingMingge = [];
+		this.applyOrigin();
 		this.lastLotYear = this.game.calendar.year;	//转世不立刻抽签,来年再说
 		this.demonWarned = false;
 		this.pendingOrigin = false;	//标记由转世存档带来,不入内存态重置
@@ -5739,6 +6114,11 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				self.update();
 				return;
 			}
+			var mgBtn = el.closest ? el.closest(".xx-mingge-open") : (el.className && el.className.indexOf("xx-mingge-open") >= 0 ? el : null);
+			if (mgBtn){
+				cult.showReincarnationOverlay();
+				return;
+			}
 			var artChip = el.closest ? el.closest(".xx-art") : null;
 			if (artChip && artChip.getAttribute("data-art")){
 				cult.setNatalArtifact(artChip.getAttribute("data-art"));
@@ -6108,7 +6488,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			innerHTML: "<span class=\"xx-ci ok\"><i>" + $I("cultivation.ascend.desc") + "</i></span>"
 		}, ascendContent);
 		dojo.connect(this.ascendBtn, "onclick", function(){
-			self.game.reset();
+			cult.showReincarnationOverlay();
 		});
 
 		this.update();
@@ -6189,6 +6569,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		var heroBg = artMgr ? "<div class=\"xx-hero-bg\" aria-hidden=\"true\">" + artMgr.cultivationBgSVG(realm.realm || "lianqi") + "</div>" : "";
 		var sndChip = "<span class=\"xx-chip xx-sound-toggle\" title=\"" + $I("cultivation.sound.tip") + "\">" +
 			$I(cult.soundMuted ? "cultivation.sound.off" : "cultivation.sound.on") + "</span>";
+		var showMgBtn = (cult.getPastLives() > 0 || cult.getCurrentRealmIndex() >= 1 || (cult.mingge && cult.mingge.length > 0) || (cult.pendingMingge && cult.pendingMingge.length > 0));
+		var mgChip = showMgBtn ? "<span class=\"xx-chip xx-mingge-open\" title=\"开启六道轮回先天命格盘：预设来世特殊灵体或主动兵解重修\">☯ 先天命盘</span>" : "";
 		var phenomBanner = "";
 		if (cult.lastBreakPhenomenon && (Date.now() - cult.lastBreakPhenomenon.ts < 2400)){
 			var pMaj = cult.lastBreakPhenomenon.major;
@@ -6204,6 +6586,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						"<span class=\"xx-realm-big" + (isMortal ? " xx-realm-mortal" : "") + "\">" + realmLabel + "</span>" +
 						"<span class=\"xx-chip xx-daotitle" + (isMortal ? " xx-daotitle-mortal" : "") + "\">" + daoTitle + "</span>" +
 						(cult.secluded ? "<span class=\"xx-chip xx-secl\">" + $I("cultivation.header.secluded") + "</span>" : "") +
+						mgChip +
 						sndChip +
 					"</div>" +
 				"</div>" +
@@ -6257,6 +6640,19 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		}
 		if (extras.length){
 			html += "<div class=\"xx-hd-extra\"><span>" + extras.join("</span><span>") + "</span></div>";
+		}
+
+		//XX-3 先天命格 / 特殊灵体常驻铭牌
+		var activeMgs = cult.getActiveMinggeDefs ? cult.getActiveMinggeDefs() : [];
+		if (activeMgs.length){
+			html += "<div class=\"xx-hd-fates xx-hd-mingge\"><span class=\"xx-fate-lbl\">先天命格</span>";
+			for (var mi = 0; mi < activeMgs.length; mi++){
+				var md = activeMgs[mi];
+				var mgIco = (artMgr && artMgr.minggeIcon) ? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.minggeIcon(md.art) + "</i>" : "";
+				var mgTip = String(md.desc || "").replace(/"/g, "&quot;");
+				html += "<span class=\"xx-chip xx-fate xx-mingge-chip xx-mingge-open\" title=\"" + mgTip + "\">" + mgIco + md.label + " · " + md.tag + "</span>";
+			}
+			html += "</div>";
 		}
 
 		//fate roster — collected characters & artifacts, story on hover
@@ -7265,6 +7661,13 @@ classes.ui.XianxiaArt = {
 		orphan:  "res/art/origin_orphan.jpg"
 	},
 
+	MINGGE_ART: {
+		wheel:     "res/art/mingge_wheel.jpg",
+		alchemy:   "res/art/mingge_alchemy.jpg",
+		sword:     "res/art/mingge_sword.jpg",
+		longevity: "res/art/mingge_longevity.jpg"
+	},
+
 	ACTION_ART: {
 		"游":    "res/art/act_wander.jpg",
 		wander:  "res/art/act_wander.jpg",
@@ -7436,6 +7839,13 @@ classes.ui.XianxiaArt = {
 	originIcon: function(key){
 		var href = this.ORIGIN_ART[key] || this.ORIGIN_ART.farmer;
 		return "<svg viewBox=\"0 0 32 32\" class=\"xx-orig-svg xx-origin-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"32\" height=\"32\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
+	},
+
+	minggeIcon: function(kind){
+		var href = this.MINGGE_ART[kind] || this.MINGGE_ART.wheel;
+		return "<svg viewBox=\"0 0 32 32\" class=\"xx-orig-svg xx-mingge-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
 			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"32\" height=\"32\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 		"</svg>";
 	},

@@ -44,7 +44,7 @@ import { createBoot } from "./modules/app/boot.js";
 
 (() => {
   setupGlobalErrorHandling();
-  const analytics = createAnalytics({ gameVersion: "0.7.42" });
+  const analytics = createAnalytics({ gameVersion: "0.7.43" });
 
   installSpriteHandlers();
   installGlobalAudioWiring();

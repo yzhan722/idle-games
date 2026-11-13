@@ -2236,5 +2236,96 @@ test("XX-2: Immortal Ascension ceremony, Zhenxian/Jinxian stages, Immortal Qi co
     expect(classes.ui.XianxiaArt.MONSTER_ART.yaoxian).toBe("res/art/monster_yaoxian.jpg");
 });
 
+test("XX-3 reincarnation natal spirit bodies: 9 build traits, 1-3 dynamic slots, combat/alchemy/lifespan/craft hooks, and rebirth handoff", () => {
+    const cult = game.cultivation;
+    cult.setIdentity("韩立", "m", "farmer");
+
+    // 1. Trait pool >= 8 & dynamic 1~3 slot unlocking by past lives / karma
+    expect(cult.MINGGE_DEFS.length).toBeGreaterThanOrEqual(8);
+    expect(cult.getMinggeSlotCap(true)).toBe(1);
+    cult.sihuaCount = 2; // +1 upcoming life = 3 lives -> 2 slots
+    expect(cult.getMinggeSlotCap(true)).toBe(2);
+    cult.sihuaCount = 5; // +1 upcoming life = 6 lives -> 3 slots
+    expect(cult.getMinggeSlotCap(true)).toBe(3);
+
+    // Karma fallback unlock
+    cult.sihuaCount = 0;
+    game.resPool.get("karma").value = 8;
+    expect(cult.getMinggeSlotCap(false)).toBe(2);
+    game.resPool.get("karma").value = 25;
+    expect(cult.getMinggeSlotCap(false)).toBe(3);
+
+    // 2. Dandao (丹道圣体): halved pill toxicity & 2x alchemyExp
+    cult.setMingge(["dandao"]);
+    const juqi = cult.getPill("juqi");
+    juqi.val = 2;
+    cult.cauldronFire = "fierce";
+    expect(cult.usePill("juqi")).toBe(true);
+    expect(cult.pillToxicity).toBe(9); // base 18 * 0.50 = 9
+
+    // 3. Jiangu (剑骨通明) + Huanggu (荒古战躯): combat power & counter-stance +75% & HP/DEF boost
+    cult.getStage("lianqi_0").researched = true;
+    cult.getStage("zhuji_0").researched = true;
+    cult.setMingge([]);
+    const baseCp = cult.getCombatPower();
+    cult.setMingge(["jiangu"]);
+    expect(cult.getCombatPower()).toBeCloseTo(baseCp * 1.28, 3);
+
+    cult.riftFloor = 1;
+    cult.startRiftBattle("lesser", true, 0);
+    const hpNoHg = cult.battle.player.maxHp;
+    cult.battle = null;
+
+    cult.setMingge(["jiangu", "huanggu"]);
+    expect(cult.getCombatPower()).toBeCloseTo(baseCp * 1.28 * 1.20, 3);
+    cult.startRiftBattle("lesser", true, 0);
+    expect(cult.battle.player.maxHp).toBeGreaterThan(Math.round(hpNoHg * 1.4));
+    cult.battle.enemy.intent = "heavy";
+    cult.battle.enemy.hp = 99999;
+    cult.battle.enemy.maxHp = 99999;
+    cult.executeBattleTurn("guard");
+    expect(cult.battle.lastEvent.counterHit).toBe(true);
+    cult.battle = null;
+
+    // 4. Changsheng (长生道胎): +60% lifespan & seclusion +0.25 xiuweiRatio
+    cult.setMingge([]);
+    const lifeBase = cult.getLifespan();
+    cult.setMingge(["changsheng"]);
+    expect(cult.getLifespan()).toBe(Math.round(lifeBase * 1.60));
+    cult.secluded = true;
+    game.updateCaches();
+    game.calculateAllEffects();
+    const xwSeclCs = game.getEffect("xiuweiRatio");
+    cult.setMingge([]);
+    game.updateCaches();
+    game.calculateAllEffects();
+    expect(xwSeclCs - game.getEffect("xiuweiRatio")).toBeCloseTo(0.25, 4);
+    cult.secluded = false;
+
+    // 5. Baiyi (百艺宗师) & Tianling (鸿蒙道体) & Zhenyan (宙光星瞳)
+    cult.setMingge(["baiyi", "tianling", "zhenyan"]);
+    game.updateCaches();
+    game.calculateAllEffects();
+    expect(game.getEffect("craftRatio")).toBeCloseTo(0.45, 4);
+    expect(cult.getBreakCostMult()).toBeLessThan(1.0);
+    cult.setActionCd(100);
+    expect(cult.actionCd).toBe(75);
+
+    // 6. Reincarnation handoff via pendingMingge -> _resetInternal -> load
+    cult.sihuaCount = 6;
+    cult.setPendingMingge(["dandao", "jiangu", "changsheng"]);
+    expect(cult.pendingMingge).toEqual(["dandao", "jiangu", "changsheng"]);
+    game.save();
+    const resetBlob = game._resetInternal();
+    expect(resetBlob.cultivation.pendingOrigin).toBe(true);
+    expect(resetBlob.cultivation.mingge).toEqual(["dandao", "jiangu", "changsheng"]);
+
+    cult.resetState();
+    expect(cult.mingge).toEqual([]);
+    cult.load(resetBlob);
+    expect(cult.mingge).toEqual(["dandao", "jiangu", "changsheng"]);
+    expect(classes.ui.XianxiaArt.MINGGE_ART.wheel).toBe("res/art/mingge_wheel.jpg");
+});
+
 
 

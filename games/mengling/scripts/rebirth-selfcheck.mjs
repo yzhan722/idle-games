@@ -23,8 +23,21 @@ import {
   legacyProdMul,
   legacyCatchAdd,
   legacyCapMul,
+  legacyBreedTimeMul,
+  legacyHatchAffectionAdd,
+  legacyExpeditionTimeMul,
+  legacyExpeditionRewardMul,
+  setNatalBondMonId,
   REBIRTH_SHINY_REQ,
 } from "../modules/systems/rebirth.js";
+import {
+  autofillShinyShowcase,
+  computeShinyShowcaseAura,
+  noteShinySpecies,
+  SHINY_SHOWCASE_MAX,
+  toggleShinyShowcasePid,
+} from "../modules/systems/collection_fun.js";
+import { busyMonIds } from "../modules/systems/mon_release.js";
 import { ERA_DEFS, getEraDefByIndex } from "../modules/defs_eras.js";
 
 let failed = 0;
@@ -174,6 +187,83 @@ function clearedState(overrides = {}) {
   assert(n.perks.catch === 0, "non-number perk → 0");
   const n2 = normalizeLegacy(null);
   assert(n2.essence === 0 && n2.perks.prod === 0, "null legacy → defaults");
+}
+
+// ── ML-3：本命灵契 / 极速孵育 / 远征达人 / 闪光殿堂展柜 ─────
+{
+  const state = clearedState({
+    mons: {
+      list: [
+        { id: 10, pid: "p004", dex: 4, name: "普通火幼兽", tier: "common", lvl: 42, isShiny: false, stars: 0 },
+        {
+          id: 25,
+          pid: "p150",
+          dex: 150,
+          name: "星辉本命兽",
+          tier: "epic",
+          lvl: 88,
+          exp: 999,
+          isShiny: true,
+          stars: 4,
+          nature: "adamant",
+          ability: "blaze",
+          affection: 96,
+          iv: { hp: 31, atk: 31, def: 30, spa: 31, spd: 29, spe: 31 },
+        },
+      ],
+      nextId: 26,
+    },
+  });
+  ensureLegacy(state);
+  state.meta.legacy.essence = 2000;
+  assert(buyPerk(state, "natalBond").ok === true, "ML-3 buy natalBond");
+  assert(buyPerk(state, "starterMon").ok === true, "ML-3 buy starterMon");
+  for (let i = 0; i < 5; i += 1) {
+    assert(buyPerk(state, "swiftHatch").ok === true, `ML-3 buy swiftHatch ${i + 1}`);
+    assert(buyPerk(state, "expeditionMaster").ok === true, `ML-3 buy expeditionMaster ${i + 1}`);
+  }
+  assert(Math.abs(legacyBreedTimeMul(state) - 0.4) < 1e-9, "swiftHatch max -60% breed time");
+  assert(legacyHatchAffectionAdd(state) === 30, "swiftHatch max +30 initial affection");
+  assert(Math.abs(legacyExpeditionTimeMul(state) - 0.6) < 1e-9, "expeditionMaster max -40% time");
+  assert(Math.abs(legacyExpeditionRewardMul(state) - 1.75) < 1e-9, "expeditionMaster max +75% reward");
+
+  setNatalBondMonId(state, 25);
+  assert(busyMonIds(state).has(25), "natalBond mon protected in busyMonIds");
+
+  const res = confirmPrestige(state, {
+    addLog: () => {},
+    starterMonFactory: () => ({ id: 1, pid: "p025", dex: 25, name: "轮回赠礼兽", lvl: 5 }),
+  });
+  assert(res.ok === true, "ML-3 confirmPrestige with natalBond + starterMon");
+  assert(state.mons.list.length === 2, "ML-3 keeps 1 natal pet + 1 starter gift pet");
+  const carried = state.mons.list.find((m) => m.pid === "p150");
+  const gift = state.mons.list.find((m) => m.pid === "p025");
+  assert(Boolean(carried) && Boolean(gift) && carried.id !== gift.id, "ML-3 distinct ids for natal + gift");
+  assert(carried.lvl === 1 && carried.exp === 0, "ML-3 natal pet reset to Lv.1 exp 0");
+  assert(carried.isShiny === true && carried.stars === 4 && carried.iv?.atk === 31 && carried.affection === 96,
+    "ML-3 natal pet preserves shiny/stars/IV/affection");
+  assert(state.meta.natalBondMonId === carried.id, "ML-3 natalBondMonId rebound to carried pet id");
+
+  // 闪光殿堂 6 席展柜 + 六席共鸣
+  for (let i = 1; i <= 7; i += 1) {
+    noteShinySpecies(
+      state,
+      { id: `p00${i}`, dex: i, name: `星芒兽${i}`, tier: i <= 2 ? "epic" : i <= 4 ? "rare" : "uncommon" },
+      { silent: true }
+    );
+  }
+  assert(computeShinyShowcaseAura(state).prodMul === 1, "empty showcase → 1.0x aura");
+  const t1 = toggleShinyShowcasePid(state, "p001");
+  assert(t1.ok && t1.action === "added", "toggle add shiny showcase");
+  assert(computeShinyShowcaseAura(state).prodMul > 1.09, "1 epic shiny showcase boosts prod > +9%");
+  const af = autofillShinyShowcase(state);
+  assert(af.ok && af.pids.length === SHINY_SHOWCASE_MAX, "autofill fills 6 pedestals");
+  const fullAura = computeShinyShowcaseAura(state);
+  assert(fullAura.fullResonance === true, "6/6 shiny pedestals trigger full resonance");
+  assert(fullAura.prodAdd > 0.5 && fullAura.trainExpAdd > 0.7 && fullAura.catchAdd > 0.1,
+    "6/6 shiny showcase grants prod + trainExp + catch auras");
+  const overflow = toggleShinyShowcasePid(state, "p007");
+  assert(overflow.ok === false && overflow.reason === "full", "7th shiny blocked when 6 pedestals full");
 }
 
 if (failed) {

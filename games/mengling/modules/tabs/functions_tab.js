@@ -11,6 +11,12 @@ import {
   resolveSeasonId,
 } from "../systems/expedition.js";
 import { expeditionNatureTimeMul, natureTrainExpMul, expeditionDailyProgress, markExpeditionDailyClaimed, localDateStr } from "../systems/gameplay_fun.js";
+import {
+  legacyBreedTimeMul,
+  legacyHatchAffectionAdd,
+  legacyExpeditionRewardMul,
+  legacyExpeditionTimeMul,
+} from "../systems/rebirth.js";
 import { seasonRelicLines } from "../systems/collection_fun.js";
 import {
   computeBreedingPreview,
@@ -353,7 +359,13 @@ export function createRenderFunctions({
               ? Math.max(0, state.breeding.eggRemainingSec)
               : 0;
           const lvl = clamp(state.buildings?.breedingHouse?.owned ?? 0, 0, 10);
-          const eggText = rem > 0 ? `正在温养灵蛋：剩余 ${fmtDuration(rem)}（育灵屋 Lv.${lvl}）` : "双亲温养中 · 尚未产蛋";
+          const breedTimeMul = legacyBreedTimeMul(state);
+          const hatchAffAdd = legacyHatchAffectionAdd(state);
+          const swiftNote =
+            breedTimeMul < 0.999
+              ? ` · 极速孵育 -${Math.round((1 - breedTimeMul) * 100)}%（破壳亲密 +${hatchAffAdd}）`
+              : "";
+          const eggText = rem > 0 ? `正在温养灵蛋：剩余 ${fmtDuration(rem)}（育灵屋 Lv.${lvl}${swiftNote}）` : `双亲温养中 · 尚未产蛋${swiftNote}`;
 
           rows.push(`
         <div class="row">
@@ -885,22 +897,28 @@ export function createRenderFunctions({
         const baseSec = 7200;
         const excessPct = canStartExp ? Math.max(0, (effPower - lvlDef.req) / lvlDef.req) : 0;
         const natureTimeMul = expeditionNatureTimeMul(selectedMons);
+        const expPerkTimeMul = legacyExpeditionTimeMul(state);
+        const expPerkRewardMul = legacyExpeditionRewardMul(state);
         const totalSec = canStartExp
-          ? Math.max(60, Math.ceil((baseSec / Math.pow(1.01, excessPct * 100)) * natureTimeMul))
-          : baseSec;
+          ? Math.max(60, Math.ceil((baseSec / Math.pow(1.01, excessPct * 100)) * natureTimeMul * expPerkTimeMul))
+          : Math.max(60, Math.ceil(baseSec * expPerkTimeMul));
         const rewardMul = expeditionRewardMul(selectedMons, dungeonType);
         const natureHint =
           natureTimeMul < 0.999
             ? ` · 性格加速 ×${(1 / natureTimeMul).toFixed(2)}`
             : "";
-        const rewardExp = Math.floor(lvlDef.exp * rewardMul);
-        const rewardCoin = Math.floor(lvlDef.coin * rewardMul);
+        const perkHint =
+          expPerkTimeMul < 0.999
+            ? ` · 远征达人 -${Math.round((1 - expPerkTimeMul) * 100)}%耗时/+${Math.round((expPerkRewardMul - 1) * 100)}%收益`
+            : "";
+        const rewardExp = Math.floor(lvlDef.exp * rewardMul * expPerkRewardMul);
+        const rewardCoin = Math.floor(lvlDef.coin * rewardMul * expPerkRewardMul);
 
         rows.push(`
       <div class="row">
         <div class="row__left">
           <div class="row__title row__titleLine">${renderUiIcon("tab_mons", 18)}<span>远征队伍</span><span class="tag">已选 ${selectedMons.length}/20</span><span class="tag">战力 ${Math.floor(effPower)}/${lvlDef.req}</span></div>
-          <div class="row__desc">预计用时：${fmtDuration(totalSec)}${natureHint} · 属性相性 x${rewardMul.toFixed(2)}</div>
+          <div class="row__desc">预计用时：${fmtDuration(totalSec)}${natureHint}${perkHint} · 属性相性 x${rewardMul.toFixed(2)}</div>
         </div>
         <div class="row__right">
           <button class="btn btn--small" data-exp-team-open ${expOn ? "disabled" : ""}>选择队员</button>
@@ -1641,7 +1659,9 @@ export function initFunctionsTab({
       const baseSec = 7200;
       const excessPct = Math.max(0, (effPower - lvlDef.req) / lvlDef.req);
       const natureTimeMul = expeditionNatureTimeMul(selMonsSorted);
-      const totalSec0 = Math.max(60, Math.ceil((baseSec / Math.pow(1.01, excessPct * 100)) * natureTimeMul));
+      const expPerkTimeMul = legacyExpeditionTimeMul(state);
+      const expPerkRewardMul = legacyExpeditionRewardMul(state);
+      const totalSec0 = Math.max(60, Math.ceil((baseSec / Math.pow(1.01, excessPct * 100)) * natureTimeMul * expPerkTimeMul));
       const quick = Boolean(ui.expeditionQuick);
       const totalSec = applyQuickExpeditionDuration(totalSec0, quick);
       const rewardMul0 = selMonsSorted.reduce((acc, m) => acc + typeMul(m, d.type), 0) / selMonsSorted.length;
@@ -1653,8 +1673,8 @@ export function initFunctionsTab({
       state.expedition.totalSec = totalSec;
       state.expedition.quick = quick;
       state.expedition.milestonesFired = {};
-      state.expedition.rewardExp = applyQuickExpeditionReward(Math.floor(lvlDef.exp * rewardMul), quick);
-      state.expedition.rewardCoin = applyQuickExpeditionReward(Math.floor(lvlDef.coin * rewardMul), quick);
+      state.expedition.rewardExp = applyQuickExpeditionReward(Math.floor(lvlDef.exp * rewardMul * expPerkRewardMul), quick);
+      state.expedition.rewardCoin = applyQuickExpeditionReward(Math.floor(lvlDef.coin * rewardMul * expPerkRewardMul), quick);
       state.expedition.rewardPotionTotal = applyQuickExpeditionReward(lvlDef.pot, quick);
       state.expedition.dungeonType = d.type;
       const impishN = selMonsSorted.filter((m) => monPassive(m)?.key === "expeditionTimeBonus").length;

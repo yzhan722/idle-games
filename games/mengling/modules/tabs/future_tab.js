@@ -1,5 +1,5 @@
 import { canClaimDailySpin, localDateStr, markDailySpinClaimed, rollDailySpin } from "../systems/gameplay_fun.js";
-import { buyPerk, LEGACY_PERKS } from "../systems/rebirth.js";
+import { buyPerk, LEGACY_PERKS, resolveNatalBondCandidate, setNatalBondMonId } from "../systems/rebirth.js";
 
 export function initFutureTab({ elFutureShop, ui, defs, getState, addRes, addLog, render }) {
   if (!elFutureShop) return;
@@ -76,8 +76,37 @@ export function initFutureTab({ elFutureShop, ui, defs, getState, addRes, addLog
       if (result.ok) {
         addLog(`轮回加成升级：${LEGACY_PERKS[legacyBtn.getAttribute("data-legacy-perk")]?.name || ""} Lv.${result.level}（灵珀 -${result.cost}）`, true);
         ui.futureDirty = true;
+        ui.monsDirty = true;
+        ui.functionsDirty = true;
         render();
       }
+      return;
+    }
+
+    const natalAutoBtn = ev.target?.closest?.("button[data-natal-autopick]");
+    if (natalAutoBtn && elFutureShop.contains(natalAutoBtn)) {
+      if (natalAutoBtn.disabled) return;
+      const state = getState();
+      setNatalBondMonId(state, null);
+      const cand = resolveNatalBondCandidate(state);
+      if (cand) {
+        setNatalBondMonId(state, cand.id);
+        addLog(`已锁定本命灵契随行伙伴：${cand.isShiny ? "★" : ""}${cand.name || cand.pid}`, true);
+        ui.futureDirty = true;
+        ui.monsDirty = true;
+        render();
+      }
+      return;
+    }
+
+    const natalClearBtn = ev.target?.closest?.("button[data-natal-clear]");
+    if (natalClearBtn && elFutureShop.contains(natalClearBtn)) {
+      const state = getState();
+      setNatalBondMonId(state, null);
+      addLog("已解除手动锁定的本命灵契伙伴");
+      ui.futureDirty = true;
+      ui.monsDirty = true;
+      render();
       return;
     }
 

@@ -67,6 +67,10 @@ const RES_ICON_MAP = {
   eugenicscharm: "eugenicsCharm",
   seasonmark: "seasonMark",
   towerweather: "towerWeather",
+  natalbond: "natalBond",
+  swifthatch: "swiftHatch",
+  expeditionmaster: "expeditionMaster",
+  shinyhall: "shinyHall",
 };
 
 const BUILDING_ICON_MAP = {
@@ -102,7 +106,7 @@ const TECH_ICON_MAP = {
 function renderIconImg(iconFileKey, size = 24, extraClass = "") {
   const s = Number(size) || 24;
   const cls = ["rpg-ai-icon", extraClass].filter(Boolean).join(" ");
-  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.42" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
+  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.43" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
 }
 
 export function renderOrbSvg(ballId = "pokeball", size = 24) {
@@ -151,6 +155,10 @@ const UI_ICON_MAP = {
   observatory: "researchLab",
   shinySparkle: "shinyCharm",
   speciesTag: "tab_dex",
+  natalBond: "natalBond",
+  swiftHatch: "swiftHatch",
+  expeditionMaster: "expeditionMaster",
+  shinyHall: "shinyHall",
 };
 
 export function renderUiIcon(iconKey = "tab_bonfire", size = 20) {

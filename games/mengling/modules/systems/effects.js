@@ -8,6 +8,7 @@
 import { clamp } from "../utils.js";
 import { applyMutatorsToEff } from "./era.js";
 import { legacyCatchAdd } from "./rebirth.js";
+import { computeShinyShowcaseAura } from "./collection_fun.js";
 import { natureDexBonusMul } from "./gameplay_fun.js";
 import { serverBuffPct, serverBuffResearchTimeMul as _serverBuffResearchTimeMul } from "./server_buffs.js";
 
@@ -120,6 +121,7 @@ export function computeTechEffects(state, defs, ui) {
     eff.catchChanceAdd += permCaptureLvl * 0.05;
   }
   eff.catchChanceAdd += legacyCatchAdd(state);
+  eff.catchChanceAdd += computeShinyShowcaseAura(state).catchAdd;
 
   // 限时捕获率提升（未来币商店）
   const captureBoostRem =

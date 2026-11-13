@@ -3,6 +3,7 @@ import {
   pickWeakMonIds,
   releaseMonIds,
 } from "../systems/mon_release.js";
+import { getNatalBondMonId, perkLevel, setNatalBondMonId } from "../systems/rebirth.js";
 import {
   BATCH_ONCE_SKILL_TYPES,
   isSkillImplemented,
@@ -781,10 +782,39 @@ export function initMonsTab({
         return;
       }
 
+      const natalBtn = ev.target?.closest?.("button[data-mon-natal]");
+      if (natalBtn && elMonList.contains(natalBtn)) {
+        const id = Number(natalBtn.getAttribute("data-mon-natal"));
+        if (!Number.isFinite(id)) return;
+        const m = (state.mons?.list ?? []).find((x) => x && x.id === id);
+        if (!m) return;
+        if (getNatalBondMonId(state) === id) {
+          setNatalBondMonId(state, null);
+          addLog(`已解除「${m.name || "萌灵"}」的本命灵契锁定`, true);
+        } else {
+          setNatalBondMonId(state, id);
+          const hasPerk = perkLevel(state, "natalBond") > 0;
+          addLog(
+            hasPerk
+              ? `已缔结本命灵契：「${m.name || "萌灵"}」将在转生时随行保留至下一周目`
+              : `已预选本命伙伴「${m.name || "萌灵"}」（在未来商店点亮「本命灵契」后跨周目随行生效）`,
+            true
+          );
+        }
+        ui.futureDirty = true;
+        markMonListDirty(false);
+        render();
+        return;
+      }
+
       const releaseBtn = ev.target?.closest?.("button[data-mon-release]");
       if (releaseBtn && elMonList.contains(releaseBtn)) {
         const id = Number(releaseBtn.getAttribute("data-mon-release"));
         if (!Number.isFinite(id)) return;
+        if (getNatalBondMonId(state) === id) {
+          addLog("放生拦截：该萌灵已缔结本命灵契，请先解除缔契再放生", true);
+          return;
+        }
         const mIdx = (state.mons?.list ?? []).findIndex((x) => x.id === id);
         if (mIdx < 0) return;
         const m = state.mons.list[mIdx];

@@ -3,7 +3,15 @@ import { ERA_DEFS, ERA_MUTATORS, getEraDefById, getEraDefByIndex } from "../defs
 export const DISTORTION_OPENER_BLURB =
   "时空已扭曲：遭遇更不可预测，图鉴与永久加成是你的锚点。完成时代主线可再次扭曲，每层扭曲保留图鉴与永久科技。";
 import { dexCaughtCount } from "./effects.js";
-import { computeEssence, ensureLegacy, perkLevel, REBIRTH_SHINY_REQ } from "./rebirth.js";
+import {
+  cloneMonForNatalRebirth,
+  computeEssence,
+  ensureLegacy,
+  perkLevel,
+  REBIRTH_SHINY_REQ,
+  resolveNatalBondCandidate,
+  setNatalBondMonId,
+} from "./rebirth.js";
 
 const ERA_COUNTER_DEFAULTS = {
   catch_count: 0,
@@ -208,6 +216,11 @@ export function confirmPrestige(state, { addLog, getCaptureAreas, starterMonFact
   if (state.tech && typeof state.tech === "object") {
     for (const k of Object.keys(state.tech)) state.tech[k] = false;
   }
+  let natalCarriedMon = null;
+  if (perkLevel(state, "natalBond") > 0) {
+    const cand = resolveNatalBondCandidate(state);
+    if (cand) natalCarriedMon = cloneMonForNatalRebirth(cand, 1);
+  }
   if (state.mons && Array.isArray(state.mons.list)) state.mons.list.length = 0;
   if (state.auto && typeof state.auto === "object") {
     for (const k of Object.keys(state.auto)) state.auto[k] = false;
@@ -235,13 +248,31 @@ export function confirmPrestige(state, { addLog, getCaptureAreas, starterMonFact
       state.tech.pokeballBasics = true;
     }
   }
+  let nextMonId = 1;
+  if (natalCarriedMon && state.mons && Array.isArray(state.mons.list)) {
+    natalCarriedMon.id = nextMonId++;
+    state.mons.list.push(natalCarriedMon);
+    setNatalBondMonId(state, natalCarriedMon.id);
+  } else if (state?.meta?.natalBondMonId != null) {
+    setNatalBondMonId(state, null);
+  }
   if (perkLevel(state, "starterMon") > 0 && typeof opts.starterMonFactory === "function") {
     const mon = opts.starterMonFactory();
-    if (mon && state.mons && Array.isArray(state.mons.list)) state.mons.list.push(mon);
+    if (mon && state.mons && Array.isArray(state.mons.list)) {
+      if (natalCarriedMon && mon.id === natalCarriedMon.id) {
+        mon.id = Math.max(nextMonId, (mon.id || 1) + 1);
+      }
+      nextMonId = Math.max(nextMonId, (typeof mon.id === "number" ? mon.id : 1) + 1);
+      state.mons.list.push(mon);
+    }
+  }
+  if (state.mons && typeof state.mons === "object" && Array.isArray(state.mons.list)) {
+    state.mons.nextId = Math.max(nextMonId, state.mons.list.length + 1);
   }
 
   if (typeof addLog === "function") {
-    addLog(`时空歪曲：第 ${preview.prestigeCountAfter} 次扭曲开始（图鉴与永久加成保留，灵珀 +${preview.essence}）`, true);
+    const natalSuffix = natalCarriedMon ? ` · 本命随行「${natalCarriedMon.name || natalCarriedMon.pid}」` : "";
+    addLog(`时空歪曲：第 ${preview.prestigeCountAfter} 次扭曲开始（图鉴与永久加成保留，灵珀 +${preview.essence}${natalSuffix}）`, true);
   }
   syncEraQuests(state, getCaptureAreas);
   return { ok: true, preview };

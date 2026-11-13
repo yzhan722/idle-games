@@ -2,6 +2,7 @@
 
 import { pickBreedEventCard } from "./expedition.js";
 import { noteShinySpecies } from "./collection_fun.js";
+import { legacyHatchAffectionAdd } from "./rebirth.js";
 import { ABILITIES, ensureMonAbility, getAbilityInfo, LEGACY_NATURE_TO_ABILITY } from "../abilities.js";
 import { clampStar } from "../stars.js";
 
@@ -391,6 +392,11 @@ export function hatchEgg(state, deps = {}) {
     mon.iv = traits.iv;
     if (traits.stars > 0) mon.stars = traits.stars;
     if (traits.ability && ABILITIES[traits.ability]) mon.ability = traits.ability;
+    const affAdd = legacyHatchAffectionAdd(state);
+    if (affAdd > 0) {
+      const baseAff = typeof mon.affection === "number" && Number.isFinite(mon.affection) ? mon.affection : 0;
+      mon.affection = Math.min(100, baseAff + affAdd);
+    }
   }
 
   const shinyInfo = computeBreedingShinyInfo(state, a, b, {
