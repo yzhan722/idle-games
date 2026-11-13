@@ -123,7 +123,7 @@ screen say(who, what):
     if not renpy.variant("small"):
         add SideImage() xpos 155 ypos 613 anchor (0.5, 0.5)
 
-    use quick_menu
+    use quick_menu(cur_who=who, cur_what=what)
 
 
 transform mo_note_card_in:
@@ -534,10 +534,11 @@ style choice_button_text is button_text:
 ## 快捷菜单 quick_menu
 ################################################################################
 
-screen quick_menu():
+screen quick_menu(cur_who=None, cur_what=None):
     zorder 100
     if quick_menu and not main_menu:
         ## 一条整体的半透明横条，按钮悬停微上浮，分组间以星芒分隔；"自动/跳过"开启时按钮保持高亮
+        $ _bm_active = is_quote_bookmarked(cur_who, cur_what)
         frame:
             style "quick_bar"
             xalign 0.5
@@ -553,6 +554,16 @@ screen quick_menu():
                 text "✦" style "quick_sep"
                 textbutton _("证据") action Show('evidence_list') at quick_btn_fx
                 textbutton _("羁绊") action Show('bond_panel') at quick_btn_fx
+                button:
+                    style "quick_button"
+                    at quick_btn_fx
+                    selected _bm_active
+                    action Function(add_or_toggle_quote_bookmark, cur_who, cur_what)
+                    hbox:
+                        spacing 4
+                        yalign 0.5
+                        add "images/ui/icon_crane_bookmark.png" xysize (18, 18) yalign 0.5
+                        text _("书签") style "quick_button_text" yalign 0.5
                 text "✦" style "quick_sep"
                 textbutton _("存档") action ShowMenu('save') at quick_btn_fx
                 textbutton _("读档") action ShowMenu('load') at quick_btn_fx
@@ -1201,7 +1212,7 @@ screen preferences():
                             textbutton _("重置初始进度"):
                                 style "pill_button"
                                 action Show("confirm",
-                                            message=_("确定要清空所有存档、已解锁 CG、结局与成就，\n恢复为全新初始试玩状态吗？"),
+                                            message=_("确定要清空所有存档、已解锁 CG、结局、成就与折纸书签，\n恢复为全新初始试玩状态吗？"),
                                             yes_action=[Hide("confirm"), Function(reset_all_progress)],
                                             no_action=Hide("confirm"))
                     hbox:

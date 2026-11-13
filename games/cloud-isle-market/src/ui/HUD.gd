@@ -20,12 +20,16 @@ var tex_delicacies: Texture2D
 var tex_btn_normal: Texture2D
 var tex_btn_hover: Texture2D
 var tex_btn_pressed: Texture2D
+var tex_promo_tiers: Array[Texture2D] = [null, null, null, null]
+var tex_medals: Array[Texture2D] = [null, null, null]
 
 var active_tab: int = 0
 var hovered_tab: int = -1
 var hovered_card: int = -1
+var hovered_emp_card: int = -1
 var prev_hovered_tab: int = -1
 var prev_hovered_card: int = -1
+var prev_hovered_emp_card: int = -1
 var is_pressing_btn: bool = false
 var displayed_gold: float = 120.0
 
@@ -63,12 +67,16 @@ var lbl_bar_pomodoro: Label
 var lbl_card_titles: Array[Label] = []
 var lbl_card_subs: Array[Label] = []
 var lbl_card_costs: Array[Label] = []
+var lbl_emp_names: Array[Label] = []
+var lbl_emp_titles: Array[Label] = []
+var lbl_emp_progress: Array[Label] = []
 
 const TAB_COUNT := 5
 const CAPSULE_RECT := Rect2(770.0, 232.0, 380.0, 40.0)
 const CAPSULE_MUTE_RECT := Rect2(1088.0, 236.0, 54.0, 32.0)
 const FULL_BAR_RECT := Rect2(480.0, 230.0, 960.0, 58.0)
 const DRAWER_RECT := Rect2(520.0, 122.0, 880.0, 106.0)
+const CODEX_DRAWER_RECT := Rect2(520.0, 66.0, 880.0, 162.0)
 
 const TOP_RIGHT_LANG_RECT := Rect2(862.0, 128.0, 58.0, 23.0)
 const TOP_RIGHT_NOISE_RECT := Rect2(924.0, 128.0, 76.0, 23.0)
@@ -94,6 +102,14 @@ func _ready() -> void:
 	tex_btn_normal = load("res://assets/pixel_art/ui/btn_normal.png")
 	tex_btn_hover = load("res://assets/pixel_art/ui/btn_hover.png")
 	tex_btn_pressed = load("res://assets/pixel_art/ui/btn_pressed.png")
+	for t_idx in range(1, EconomyConfig.PROMOTION_TIERS.size()):
+		var t_cfg: Dictionary = EconomyConfig.PROMOTION_TIERS[t_idx]
+		var acc_p := String(t_cfg.get("accessory_tex", ""))
+		var med_p := String(t_cfg.get("medal_tex", ""))
+		if acc_p != "":
+			tex_promo_tiers[t_idx] = EconomyConfig.load_pixel_texture(acc_p)
+		if med_p != "":
+			tex_medals[t_idx - 1] = EconomyConfig.load_pixel_texture(med_p)
 
 	displayed_gold = float(GameManager.gold)
 	if GameManager.pending_offline_gold > 0:
@@ -280,6 +296,23 @@ func _build_native_labels() -> void:
 		lbl_card_subs.append(cs)
 		lbl_card_costs.append(cc)
 
+	for i in range(6):
+		var en := EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
+		var et := EconomyConfig.create_pixel_label("", 14, Color("#FFF4D6"), false)
+		var ep := EconomyConfig.create_pixel_label("", 14, Color("#8CE99A"), false)
+		en.scale = Vector2(0.84, 0.84)
+		et.scale = Vector2(0.76, 0.76)
+		ep.scale = Vector2(0.76, 0.76)
+		en.visible = false
+		et.visible = false
+		ep.visible = false
+		add_child(en)
+		add_child(et)
+		add_child(ep)
+		lbl_emp_names.append(en)
+		lbl_emp_titles.append(et)
+		lbl_emp_progress.append(ep)
+
 func _process(delta: float) -> void:
 	displayed_gold = lerpf(displayed_gold, float(GameManager.gold), minf(1.0, delta * 9.0))
 	if absf(displayed_gold - float(GameManager.gold)) < 0.6:
@@ -324,6 +357,7 @@ func _process(delta: float) -> void:
 
 	hovered_tab = -1
 	hovered_card = -1
+	hovered_emp_card = -1
 	if not is_collapsed_capsule:
 		for i in range(TAB_COUNT):
 			if _get_tab_button_rect(i).has_point(mpos):
@@ -335,12 +369,18 @@ func _process(delta: float) -> void:
 				if _get_card_rect(i, cards.size()).has_point(mpos):
 					hovered_card = i
 					break
+			if active_tab == 3:
+				for i in range(EconomyConfig.ANIMAL_ORDER.size()):
+					if _get_emp_card_rect(i).has_point(mpos):
+						hovered_emp_card = i
+						break
 
-	if (hovered_tab != -1 and hovered_tab != prev_hovered_tab) or (hovered_card != -1 and hovered_card != prev_hovered_card):
+	if (hovered_tab != -1 and hovered_tab != prev_hovered_tab) or (hovered_card != -1 and hovered_card != prev_hovered_card) or (hovered_emp_card != -1 and hovered_emp_card != prev_hovered_emp_card):
 		if SoundManager != null:
 			SoundManager.play_hover_sfx()
 	prev_hovered_tab = hovered_tab
 	prev_hovered_card = hovered_card
+	prev_hovered_emp_card = hovered_emp_card
 
 	_sync_label_nodes()
 	queue_redraw()
@@ -416,6 +456,7 @@ func _sync_label_nodes() -> void:
 			lbl_tabs[i].label_settings.font_color = Color("#FFF9DB") if is_cur_tab else Color("#FFE066")
 
 	var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
+	var top_dy := _get_top_btn_offset() + slide_y
 	lbl_drawer_title.visible = show_drawer
 	lbl_drawer_lang.visible = show_drawer
 	lbl_drawer_noise.visible = show_drawer
@@ -426,39 +467,40 @@ func _sync_label_nodes() -> void:
 	lbl_drawer_mute.visible = show_drawer
 	if show_drawer:
 		var codex_cnt := GameManager.get_unlocked_codex_count()
+		var medal_sum := EconomyConfig.get_total_honor_medals_unlocked(GameManager.animal_levels)
 		var titles := [
 			EconomyConfig.tr_key("drawer_build"),
 			EconomyConfig.tr_key("drawer_animal"),
 			EconomyConfig.tr_key("drawer_expand"),
-			EconomyConfig.tr_key("drawer_codex") % [codex_cnt, codex_cnt * 10]
+			EconomyConfig.tr_key("drawer_codex_full") % [codex_cnt, codex_cnt * 10, int(medal_sum["unlocked"]), int(medal_sum["total"])]
 		]
 		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
-		lbl_drawer_title.position = Vector2(540.0, 129.0 + slide_y)
+		lbl_drawer_title.position = Vector2(540.0, 129.0 + top_dy)
 
 		var cur_fps: int = WindowController.get_eco_fps() if WindowController != null else 60
 		var cur_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
 		lbl_drawer_lang.text = EconomyConfig.tr_key("lang_badge")
-		lbl_drawer_lang.position = Vector2(TOP_RIGHT_LANG_RECT.position.x + 6.0, TOP_RIGHT_LANG_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_lang.position = Vector2(TOP_RIGHT_LANG_RECT.position.x + 6.0, TOP_RIGHT_LANG_RECT.position.y + 2.0 + top_dy)
 		var noise_txt := SoundManager.get_white_noise_status_label() if SoundManager != null else "[白噪:关]"
 		lbl_drawer_noise.text = noise_txt
-		lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0 + top_dy)
 		if lbl_drawer_noise.label_settings != null:
 			lbl_drawer_noise.label_settings.font_color = Color("#8CE99A") if not noise_txt.contains("关") else Color("#FFE066")
 		lbl_drawer_fps.text = "[" + str(cur_fps) + "FPS]"
-		lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0 + top_dy)
 		if lbl_drawer_fps.label_settings != null:
 			lbl_drawer_fps.label_settings.font_color = Color("#8CE99A") if cur_fps <= 30 else Color("#FFE066")
 		lbl_drawer_opacity.text = "[" + str(int(round(cur_op * 100.0))) + "%透]"
-		lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0 + top_dy)
 		if lbl_drawer_opacity.label_settings != null:
 			lbl_drawer_opacity.label_settings.font_color = Color("#8CE99A") if cur_op < 0.99 else Color("#FFE066")
 		lbl_drawer_dock.text = "[贴合任务栏]"
-		lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0 + top_dy)
 
 		lbl_drawer_weather.text = "[天气:" + cur_w_name + "]"
-		lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 3.0 + slide_y)
+		lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 3.0 + top_dy)
 		lbl_drawer_mute.text = mute_lbl
-		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + slide_y)
+		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + top_dy)
 		if lbl_drawer_mute.label_settings != null:
 			lbl_drawer_mute.label_settings.font_color = Color("#FFA8A8") if (SoundManager != null and SoundManager.is_muted) else Color("#FFF4D6")
 
@@ -476,14 +518,14 @@ func _sync_label_nodes() -> void:
 			var cdata: Dictionary = cards[i]
 			var is_dense := cards.size() >= 5
 			lbl_card_titles[i].scale = Vector2(0.80, 0.80) if (active_tab == 3 and i < 4) else (Vector2(0.88, 0.88) if is_dense else Vector2(0.95, 0.95))
-			lbl_card_subs[i].scale = Vector2(0.78, 0.78) if is_dense else Vector2(0.85, 0.85)
-			lbl_card_costs[i].scale = Vector2(0.82, 0.82) if is_dense else Vector2(0.90, 0.90)
+			lbl_card_subs[i].scale = Vector2(0.76, 0.76) if active_tab == 3 else (Vector2(0.78, 0.78) if is_dense else Vector2(0.85, 0.85))
+			lbl_card_costs[i].scale = Vector2(0.80, 0.80) if active_tab == 3 else (Vector2(0.82, 0.82) if is_dense else Vector2(0.90, 0.90))
 			lbl_card_titles[i].text = String(cdata["title"])
-			lbl_card_titles[i].position = crect.position + Vector2(6.0, 4.0)
+			lbl_card_titles[i].position = crect.position + Vector2(6.0, 3.0 if active_tab == 3 else 4.0)
 			lbl_card_subs[i].text = String(cdata["sub"])
-			lbl_card_subs[i].position = crect.position + Vector2(6.0, 22.0)
+			lbl_card_subs[i].position = crect.position + Vector2(6.0, 19.0 if active_tab == 3 else 22.0)
 			lbl_card_costs[i].text = String(cdata["cost"])
-			lbl_card_costs[i].position = crect.position + Vector2(6.0, 38.0)
+			lbl_card_costs[i].position = crect.position + Vector2(6.0, 34.0 if active_tab == 3 else 38.0)
 			if lbl_card_costs[i].label_settings != null:
 				var cstate := String(cdata.get("cost_state", "normal"))
 				match cstate:
@@ -498,8 +540,61 @@ func _sync_label_nodes() -> void:
 					_:
 						lbl_card_costs[i].label_settings.font_color = Color("#FFF4D6")
 
+	var show_emp_codex := show_drawer and active_tab == 3
+	for i in range(6):
+		var emp_vis := show_emp_codex and i < EconomyConfig.ANIMAL_ORDER.size()
+		if i < lbl_emp_names.size():
+			lbl_emp_names[i].visible = emp_vis
+		if i < lbl_emp_titles.size():
+			lbl_emp_titles[i].visible = emp_vis
+		if i < lbl_emp_progress.size():
+			lbl_emp_progress[i].visible = emp_vis
+		if emp_vis:
+			var ak := EconomyConfig.ANIMAL_ORDER[i]
+			var lv := int(GameManager.animal_levels.get(ak, 0))
+			var info := EconomyConfig.get_animal_promotion_info(ak, lv)
+			var tier := int(info["tier"])
+			var erect := _get_emp_card_rect(i)
+			erect.position.y += slide_y
+			lbl_emp_names[i].text = String(info["short_name"]) + (" Lv." + str(lv) if lv > 0 else " (未招募)")
+			lbl_emp_names[i].position = erect.position + Vector2(6.0, 3.0)
+			if lbl_emp_names[i].label_settings != null:
+				lbl_emp_names[i].label_settings.font_color = Color("#FFE066") if lv > 0 else Color("#CBD5E1")
+
+			lbl_emp_titles[i].text = String(info["tier_title"])
+			lbl_emp_titles[i].position = erect.position + Vector2(6.0, 20.0)
+			if lbl_emp_titles[i].label_settings != null:
+				match tier:
+					3:
+						lbl_emp_titles[i].label_settings.font_color = Color("#FFD43B")
+					2:
+						lbl_emp_titles[i].label_settings.font_color = Color("#8CE99A")
+					1:
+						lbl_emp_titles[i].label_settings.font_color = Color("#74C0FC")
+					_:
+						lbl_emp_titles[i].label_settings.font_color = Color("#CBD5E1")
+
+			lbl_emp_progress[i].text = EconomyConfig.tr_key("medal_prog") % [int(info["medals_unlocked"]), int(info["medals_total"])]
+			lbl_emp_progress[i].position = erect.position + Vector2(56.0, 38.0)
+			if lbl_emp_progress[i].label_settings != null:
+				lbl_emp_progress[i].label_settings.font_color = Color("#FFE066") if tier >= 3 else (Color("#8CE99A") if tier >= 1 else Color("#CBD5E1"))
+
+func _get_drawer_rect() -> Rect2:
+	return CODEX_DRAWER_RECT if active_tab == 3 else DRAWER_RECT
+
+func _get_top_btn_offset() -> float:
+	return _get_drawer_rect().position.y - DRAWER_RECT.position.y
+
+func _get_top_rect(base_rect: Rect2, slide_y: float = 0.0) -> Rect2:
+	return Rect2(base_rect.position.x, base_rect.position.y + _get_top_btn_offset() + slide_y, base_rect.size.x, base_rect.size.y)
+
+func _get_emp_card_rect(idx: int) -> Rect2:
+	return Rect2(538.0 + float(idx) * 140.0, 159.0, 132.0, 60.0)
+
 func _get_interactive_zone() -> Rect2:
 	if drawer_expanded:
+		if active_tab == 3:
+			return Rect2(476.0, 62.0, 968.0, 230.0)
 		return Rect2(476.0, 118.0, 968.0, 174.0)
 	if is_collapsed_capsule:
 		return CAPSULE_RECT.grow(8.0)
@@ -507,6 +602,9 @@ func _get_interactive_zone() -> Rect2:
 
 func get_hud_Hit_rect() -> Rect2:
 	return _get_interactive_zone()
+
+func get_active_drawer_rect() -> Rect2:
+	return _get_drawer_rect() if drawer_expanded else Rect2()
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -517,8 +615,8 @@ func _gui_input(event: InputEvent) -> void:
 				WindowController.begin_window_drag()
 				accept_event()
 				return
-			var hitting_top_btns := (drawer_expanded and (TOP_RIGHT_LANG_RECT.has_point(mpos) or TOP_RIGHT_NOISE_RECT.has_point(mpos) or TOP_RIGHT_MUTE_RECT.has_point(mpos) or TOP_RIGHT_WEATHER_RECT.has_point(mpos) or TOP_RIGHT_FPS_RECT.has_point(mpos) or TOP_RIGHT_OPACITY_RECT.has_point(mpos) or TOP_RIGHT_DOCK_RECT.has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)) or (not is_collapsed_capsule and POMODORO_RECT.has_point(mpos))
-			if hovered_tab == -1 and hovered_card == -1 and not hitting_top_btns and _get_interactive_zone().has_point(mpos):
+			var hitting_top_btns := (drawer_expanded and (_get_top_rect(TOP_RIGHT_LANG_RECT).has_point(mpos) or _get_top_rect(TOP_RIGHT_NOISE_RECT).has_point(mpos) or _get_top_rect(TOP_RIGHT_MUTE_RECT).has_point(mpos) or _get_top_rect(TOP_RIGHT_WEATHER_RECT).has_point(mpos) or _get_top_rect(TOP_RIGHT_FPS_RECT).has_point(mpos) or _get_top_rect(TOP_RIGHT_OPACITY_RECT).has_point(mpos) or _get_top_rect(TOP_RIGHT_DOCK_RECT).has_point(mpos))) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)) or (not is_collapsed_capsule and POMODORO_RECT.has_point(mpos))
+			if hovered_tab == -1 and hovered_card == -1 and hovered_emp_card == -1 and not hitting_top_btns and _get_interactive_zone().has_point(mpos):
 				if WindowController != null:
 					WindowController.begin_window_drag()
 					accept_event()
@@ -538,7 +636,7 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
-			if drawer_expanded and TOP_RIGHT_LANG_RECT.has_point(mpos):
+			if drawer_expanded and _get_top_rect(TOP_RIGHT_LANG_RECT).has_point(mpos):
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
 				EconomyConfig.cycle_language()
@@ -546,14 +644,14 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
-			if drawer_expanded and TOP_RIGHT_NOISE_RECT.has_point(mpos):
+			if drawer_expanded and _get_top_rect(TOP_RIGHT_NOISE_RECT).has_point(mpos):
 				if SoundManager != null:
 					SoundManager.toggle_white_noise()
 				_sync_label_nodes()
 				accept_event()
 				return
 
-			if drawer_expanded and TOP_RIGHT_FPS_RECT.has_point(mpos):
+			if drawer_expanded and _get_top_rect(TOP_RIGHT_FPS_RECT).has_point(mpos):
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
 				if WindowController != null:
@@ -562,7 +660,7 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
-			if drawer_expanded and TOP_RIGHT_OPACITY_RECT.has_point(mpos):
+			if drawer_expanded and _get_top_rect(TOP_RIGHT_OPACITY_RECT).has_point(mpos):
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
 				if WindowController != null:
@@ -571,7 +669,7 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
-			if drawer_expanded and TOP_RIGHT_DOCK_RECT.has_point(mpos):
+			if drawer_expanded and _get_top_rect(TOP_RIGHT_DOCK_RECT).has_point(mpos):
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
 				if WindowController != null:
@@ -580,14 +678,14 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
-			if drawer_expanded and TOP_RIGHT_WEATHER_RECT.has_point(mpos):
+			if drawer_expanded and _get_top_rect(TOP_RIGHT_WEATHER_RECT).has_point(mpos):
 				if SoundManager != null:
 					SoundManager.play_click_sfx()
 				GameManager.set_weather((GameManager.current_weather + 1) % 4)
 				accept_event()
 				return
 
-			if (drawer_expanded and TOP_RIGHT_MUTE_RECT.has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)):
+			if (drawer_expanded and _get_top_rect(TOP_RIGHT_MUTE_RECT).has_point(mpos)) or (is_collapsed_capsule and CAPSULE_MUTE_RECT.has_point(mpos)):
 				if SoundManager != null:
 					SoundManager.toggle_mute()
 				accept_event()
@@ -623,6 +721,25 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 				return
 
+			if drawer_expanded and active_tab == 3 and hovered_emp_card >= 0 and hovered_emp_card < EconomyConfig.ANIMAL_ORDER.size():
+				if SoundManager != null:
+					SoundManager.play_click_sfx()
+				var ak := EconomyConfig.ANIMAL_ORDER[hovered_emp_card]
+				var lv := int(GameManager.animal_levels.get(ak, 0))
+				var info := EconomyConfig.get_animal_promotion_info(ak, lv)
+				offline_banner_timer = 4.2
+				offline_banner_text = "%s (%s) · 特质【%s】%s · 勋章 %d/3 (Lv.10/25/50晋升)" % [
+					String(info["short_name"]),
+					String(info["tier_title"]),
+					String(info["trait_name"]),
+					String(info["trait_desc"]),
+					int(info["medals_unlocked"])
+				]
+				mouse_outside_timer = 0.0
+				_sync_label_nodes()
+				accept_event()
+				return
+
 func _toggle_companion_mode() -> void:
 	GameManager.desktop_companion_mode = not GameManager.desktop_companion_mode
 	drawer_expanded = not GameManager.desktop_companion_mode
@@ -636,7 +753,9 @@ func _get_card_rect(idx: int, total: int) -> Rect2:
 	var w := 196.0 if total <= 4 else (160.0 if total == 5 else 132.0)
 	var gap := 12.0 if total <= 4 else 8.0
 	var start_x := 548.0 if total <= 4 else (542.0 if total == 5 else 538.0)
-	return Rect2(start_x + float(idx) * (w + gap), 156.0, w, 58.0)
+	var y_pos := 100.0 if active_tab == 3 else 156.0
+	var h_val := 54.0 if active_tab == 3 else 58.0
+	return Rect2(start_x + float(idx) * (w + gap), y_pos, w, h_val)
 
 func _get_current_tab_cards() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
@@ -831,16 +950,17 @@ func _draw() -> void:
 
 	if drawer_expanded and tex_drawer != null:
 		var slide_y := lerpf(40.0, 0.0, drawer_anim_t)
-		var d_rect := Rect2(DRAWER_RECT.position.x, DRAWER_RECT.position.y + slide_y, DRAWER_RECT.size.x, DRAWER_RECT.size.y)
+		var base_drect := _get_drawer_rect()
+		var d_rect := Rect2(base_drect.position.x, base_drect.position.y + slide_y, base_drect.size.x, base_drect.size.y)
 		draw_texture_rect(tex_drawer, d_rect, false)
 
-		var lang_rect := Rect2(TOP_RIGHT_LANG_RECT.position.x, TOP_RIGHT_LANG_RECT.position.y + slide_y, TOP_RIGHT_LANG_RECT.size.x, TOP_RIGHT_LANG_RECT.size.y)
-		var noise_rect := Rect2(TOP_RIGHT_NOISE_RECT.position.x, TOP_RIGHT_NOISE_RECT.position.y + slide_y, TOP_RIGHT_NOISE_RECT.size.x, TOP_RIGHT_NOISE_RECT.size.y)
-		var fps_rect := Rect2(TOP_RIGHT_FPS_RECT.position.x, TOP_RIGHT_FPS_RECT.position.y + slide_y, TOP_RIGHT_FPS_RECT.size.x, TOP_RIGHT_FPS_RECT.size.y)
-		var op_rect := Rect2(TOP_RIGHT_OPACITY_RECT.position.x, TOP_RIGHT_OPACITY_RECT.position.y + slide_y, TOP_RIGHT_OPACITY_RECT.size.x, TOP_RIGHT_OPACITY_RECT.size.y)
-		var dock_rect := Rect2(TOP_RIGHT_DOCK_RECT.position.x, TOP_RIGHT_DOCK_RECT.position.y + slide_y, TOP_RIGHT_DOCK_RECT.size.x, TOP_RIGHT_DOCK_RECT.size.y)
-		var w_rect := Rect2(TOP_RIGHT_WEATHER_RECT.position.x, TOP_RIGHT_WEATHER_RECT.position.y + slide_y, TOP_RIGHT_WEATHER_RECT.size.x, TOP_RIGHT_WEATHER_RECT.size.y)
-		var m_rect := Rect2(TOP_RIGHT_MUTE_RECT.position.x, TOP_RIGHT_MUTE_RECT.position.y + slide_y, TOP_RIGHT_MUTE_RECT.size.x, TOP_RIGHT_MUTE_RECT.size.y)
+		var lang_rect := _get_top_rect(TOP_RIGHT_LANG_RECT, slide_y)
+		var noise_rect := _get_top_rect(TOP_RIGHT_NOISE_RECT, slide_y)
+		var fps_rect := _get_top_rect(TOP_RIGHT_FPS_RECT, slide_y)
+		var op_rect := _get_top_rect(TOP_RIGHT_OPACITY_RECT, slide_y)
+		var dock_rect := _get_top_rect(TOP_RIGHT_DOCK_RECT, slide_y)
+		var w_rect := _get_top_rect(TOP_RIGHT_WEATHER_RECT, slide_y)
+		var m_rect := _get_top_rect(TOP_RIGHT_MUTE_RECT, slide_y)
 		if tex_pill != null:
 			draw_texture_rect(tex_pill, lang_rect, false)
 			draw_texture_rect(tex_pill, noise_rect, false)
@@ -868,3 +988,31 @@ func _draw() -> void:
 					draw_texture_rect_region(tex_crops, Rect2(crect.end.x - 40.0, crect.position.y + 3.0, 18.0, 18.0), Rect2(3.0 * 40.0, float(i) * 40.0, 40.0, 40.0))
 				if tex_delicacies != null:
 					draw_texture_rect_region(tex_delicacies, Rect2(crect.end.x - 21.0, crect.position.y + 3.0, 18.0, 18.0), Rect2(float(i) * 36.0, 0.0, 36.0, 36.0))
+
+		if active_tab == 3:
+			for i in range(EconomyConfig.ANIMAL_ORDER.size()):
+				var ak := EconomyConfig.ANIMAL_ORDER[i]
+				var lv := int(GameManager.animal_levels.get(ak, 0))
+				var tier := EconomyConfig.get_animal_trait_tier_count(lv)
+				var erect := _get_emp_card_rect(i)
+				erect.position.y += slide_y
+				var ectex := tex_card_hover if hovered_emp_card == i else tex_card
+				if ectex != null:
+					draw_texture_rect(ectex, erect, false)
+				if tier >= 3:
+					draw_rect(erect.grow(-1.0), Color(1.0, 0.84, 0.24, 0.56), false, 1.0)
+				elif tier >= 1:
+					draw_rect(erect.grow(-1.0), Color(0.55, 0.91, 0.60, 0.44), false, 1.0)
+				# Rank tier icon at top-right of employee card
+				var rank_rect := Rect2(erect.end.x - 23.0, erect.position.y + 3.0, 18.0, 18.0)
+				if tier >= 1 and tier < tex_promo_tiers.size() and tex_promo_tiers[tier] != null:
+					draw_texture_rect(tex_promo_tiers[tier], rank_rect, false)
+				elif tex_icons != null:
+					draw_texture_rect_region(tex_icons, rank_rect, Rect2(3.0 * 48.0, 0.0, 48.0, 48.0), Color(0.75, 0.72, 0.68, 0.55))
+				# 3 Honor Medal slots at bottom-left of employee card
+				for m_idx in range(3):
+					var medal_rect := Rect2(erect.position.x + 6.0 + float(m_idx) * 16.0, erect.position.y + 39.0, 14.0, 14.0)
+					var m_tex := tex_medals[m_idx] if m_idx < tex_medals.size() else null
+					if m_tex != null:
+						var m_mod := Color.WHITE if tier >= (m_idx + 1) else Color(0.28, 0.24, 0.22, 0.40)
+						draw_texture_rect(m_tex, medal_rect, false, m_mod)

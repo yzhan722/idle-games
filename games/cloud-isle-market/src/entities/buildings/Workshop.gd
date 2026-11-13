@@ -198,7 +198,7 @@ func _draw() -> void:
 		var bar_w := 36.0
 		var bar_h := 5.0
 		var bx := -bar_w * 0.5
-		var by := -VISUAL_HEIGHT - 10.0
+		var by := -VISUAL_HEIGHT - 26.0
 		draw_rect(Rect2(bx - 1.0, by - 1.0, bar_w + 2.0, bar_h + 2.0), Color(0.10, 0.07, 0.04, 0.92), true)
 		var fill_col := Color(0.45, 0.95, 0.42, 0.96) if workshop_id == "mortar" else Color(0.42, 0.88, 1.0, 0.96)
 		draw_rect(Rect2(bx, by, bar_w * prog, bar_h), fill_col, true)

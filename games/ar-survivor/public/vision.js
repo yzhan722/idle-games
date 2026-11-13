@@ -85,8 +85,31 @@ export class ARVisionEngine {
 
     this.simCamX = 0;
     this.simTargetCamX = 0;
+    this.roomTheme = 'cream_study';
+    this.simBgImgs = {};
+    this.simBgImg = null;
 
     this.initMediaPipe();
+  }
+
+  setRoomTheme(themeKey = 'cream_study') {
+    const validKey = themeKey === 'star_aquarium' ? 'star_aquarium' : 'cream_study';
+    this.roomTheme = validKey;
+    const srcMap = {
+      cream_study: './assets/bg_healing_room.webp?v=hd18',
+      star_aquarium: './assets/bg_aquarium_room.webp?v=hd18'
+    };
+    if (!this.simBgImgs[validKey]) {
+      const img = new Image();
+      img.src = srcMap[validKey];
+      this.simBgImgs[validKey] = img;
+    }
+    this.simBgImg = this.simBgImgs[validKey];
+    return this.roomTheme;
+  }
+
+  getRoomTheme() {
+    return this.roomTheme;
   }
 
   async initMediaPipe() {
@@ -896,17 +919,23 @@ export class ARVisionEngine {
   renderSimulatedDeskScene(ctx, W, H) {
     ctx.save();
     if (!this.simBgImg) {
-      this.simBgImg = new Image();
-      this.simBgImg.src = './assets/bg_healing_room.webp?v=hd8';
+      this.setRoomTheme(this.roomTheme || 'cream_study');
     }
-    if (this.simBgImg.complete && this.simBgImg.naturalWidth > 0) {
+    if (this.simBgImg && this.simBgImg.complete && this.simBgImg.naturalWidth > 0) {
       ctx.drawImage(this.simBgImg, 0, 0, W, H);
     } else {
       const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, '#dff2ff');
-      grad.addColorStop(0.55, '#fff8ec');
-      grad.addColorStop(0.56, '#e8c396');
-      grad.addColorStop(1, '#d4a373');
+      if (this.roomTheme === 'star_aquarium') {
+        grad.addColorStop(0, '#c8ecff');
+        grad.addColorStop(0.55, '#e8f9ff');
+        grad.addColorStop(0.56, '#d9b58e');
+        grad.addColorStop(1, '#b88e66');
+      } else {
+        grad.addColorStop(0, '#dff2ff');
+        grad.addColorStop(0.55, '#fff8ec');
+        grad.addColorStop(0.56, '#e8c396');
+        grad.addColorStop(1, '#d4a373');
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
     }

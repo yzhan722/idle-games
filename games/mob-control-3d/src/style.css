@@ -647,6 +647,31 @@ body.screen-quake-active #app {
   white-space: nowrap;
 }
 
+.airdrop-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e0f2fe 0%, #38bdf8 100%);
+  border: 2px solid #fffbeb;
+  color: #0c2c4a;
+  font-weight: 900;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(12, 44, 74, 0.36);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.airdrop-label .inline-art-img {
+  width: 19px;
+  height: 19px;
+  margin-right: 0;
+}
+
 .zone-label {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -892,6 +917,16 @@ body.screen-quake-active #app {
   font-weight: 900;
   color: var(--ink-dark);
   white-space: nowrap;
+}
+
+.weapon-mode-btn.is-scatter {
+  background: linear-gradient(180deg, #e0f7ff 0%, #99e5ff 100%);
+  border-color: #0ea5e9;
+}
+
+.weapon-mode-btn.is-rainbow {
+  background: linear-gradient(180deg, #fdf2f8 0%, #fbcfe8 52%, #ddd6fe 100%);
+  border-color: #db2777;
 }
 
 /* Shared Skill Button Reset */
@@ -3484,16 +3519,16 @@ body.screen-quake-active #app {
   }
 
   .mecha-mode-btn {
-    padding: 4px 7px;
-    border-radius: 13px;
+    padding: 4px 6px;
+    border-radius: 12px;
   }
 
   .mecha-mode-btn .mm-icon {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .mecha-mode-btn .mm-label {
-    font-size: 10.5px;
+    font-size: 10px;
   }
 
   .champion-btn {

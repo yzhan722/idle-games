@@ -8,9 +8,10 @@ import {
   REWARD_BUFF_ART,
   SKILL_NODE_SVGS,
   UI_ART,
+  WEAPON_MODE_ART,
 } from './SkillIcons';
 
-export type WeaponMode = 'gatling' | 'twin' | 'plasma';
+export type WeaponMode = 'gatling' | 'twin' | 'plasma' | 'scatter' | 'rainbow';
 
 export type MechaMode = 'hammer' | 'pyro' | 'aegis';
 
@@ -409,6 +410,72 @@ export const MECHA_SPECS: Record<MechaMode, MechaSpec> = {
 };
 
 export const MECHA_ORDER: MechaMode[] = ['hammer', 'pyro', 'aegis'];
+
+export interface WeaponSpec {
+  id: WeaponMode;
+  icon: string;
+  name: string;
+  shortName: string;
+  desc: string;
+  bannerDesc: string;
+  fireRateMult: number;
+  accentColor: number;
+}
+
+export const WEAPON_SPECS: Record<WeaponMode, WeaponSpec> = {
+  gatling: {
+    id: 'gatling',
+    icon: WEAPON_MODE_ART.gatling,
+    name: '速射连发炮',
+    shortName: '速射',
+    desc: '经典高射速蒸汽连发泡泡炮',
+    bannerDesc: '经典高射速蒸汽炮 · 稳定连发稳健推线',
+    fireRateMult: 1.0,
+    accentColor: 0x38bdf8,
+  },
+  scatter: {
+    id: 'scatter',
+    icon: WEAPON_MODE_ART.scatter,
+    name: '弹射散弹泡泡炮',
+    shortName: '散弹',
+    desc: '三向扇形弹幕 + 路缘二次弹射压制',
+    bannerDesc: '弹射散弹泡泡炮 · 三发扇形齐射并可弹墙折射穿插倍率门',
+    fireRateMult: 0.78,
+    accentColor: 0x22d3ee,
+  },
+  rainbow: {
+    id: 'rainbow',
+    icon: WEAPON_MODE_ART.rainbow,
+    name: '蓄力彩虹贯通炮',
+    shortName: '彩虹',
+    desc: '每4发蓄力释放贯穿全线的彩虹光束与精英泡泡',
+    bannerDesc: '蓄力彩虹贯通炮 · 周期贯穿彩虹光束击穿红军并充能倍率门',
+    fireRateMult: 0.88,
+    accentColor: 0xf472b6,
+  },
+  twin: {
+    id: 'twin',
+    icon: WEAPON_MODE_ART.twin,
+    name: '双管脉冲炮',
+    shortName: '双管',
+    desc: '双发并行脉冲速射压制两翼',
+    bannerDesc: '双管脉冲炮 · 左右并行发射覆盖宽阔门阵',
+    fireRateMult: 0.9,
+    accentColor: 0x60a5fa,
+  },
+  plasma: {
+    id: 'plasma',
+    icon: WEAPON_MODE_ART.plasma,
+    name: '高能等离子炮',
+    shortName: '等离子',
+    desc: '高伤重装泡泡弹 + 强化倍率充能',
+    bannerDesc: '高能等离子炮 · 发射高攻重装波波并加快能量积累',
+    fireRateMult: 0.8,
+    accentColor: 0xc084fc,
+  },
+};
+
+export const WEAPON_ORDER: WeaponMode[] = ['gatling', 'scatter', 'rainbow', 'twin', 'plasma'];
 
 export type SkillBranchId = 'swarm' | 'titan' | 'gate' | 'plasma' | 'orbital' | 'bastion' | 'tycoon';
 
@@ -1023,6 +1090,7 @@ export interface SaveState {
   powerLevel: number;
   championLevel: number;
   lootLevel: number;
+  weapon?: WeaponMode;
   mechaMode?: MechaMode;
   metaLevels?: Partial<Record<MetaUpgradeId, number>>;
   ownedSkins?: SkinId[];
@@ -1173,6 +1241,9 @@ export class GameState {
       this.lootLevel = 1;
       this.buffStacks = {};
       this.activeDebuffs = [];
+      if (parsed.weapon && WEAPON_SPECS[parsed.weapon]) {
+        this.weapon = parsed.weapon;
+      }
       if (parsed.mechaMode && MECHA_SPECS[parsed.mechaMode]) {
         this.mechaMode = parsed.mechaMode;
       }
@@ -1294,6 +1365,7 @@ export class GameState {
         powerLevel: 1,
         championLevel: 1,
         lootLevel: 1,
+        weapon: this.weapon,
         mechaMode: this.mechaMode,
         metaLevels: this.metaLevels,
         ownedSkins: this.ownedSkins,
@@ -2124,6 +2196,25 @@ export class GameState {
     return this.getMechaSpec();
   }
 
+  public getWeaponSpec(): WeaponSpec {
+    return WEAPON_SPECS[this.weapon] || WEAPON_SPECS.gatling;
+  }
+
+  public setWeaponMode(mode: WeaponMode): WeaponSpec {
+    if (WEAPON_SPECS[mode]) {
+      this.weapon = mode;
+      this.save();
+    }
+    return this.getWeaponSpec();
+  }
+
+  public cycleWeaponMode(): WeaponSpec {
+    const idx = WEAPON_ORDER.indexOf(this.weapon);
+    this.weapon = WEAPON_ORDER[(idx + 1) % WEAPON_ORDER.length];
+    this.save();
+    return this.getWeaponSpec();
+  }
+
   public getBuffStack(id: BuffId): number {
     return this.buffStacks[id] || 0;
   }
@@ -2146,7 +2237,8 @@ export class GameState {
     const buffMult = 1 + this.getBuffStack('rapid_fire') * 0.05;
     const debuffMult = this.hasDebuff('barrel_overheat') ? 0.85 : 1.0;
     const sceneMult = this.activeSceneThemeId === 'wasteland' ? 1.18 : 1.0;
-    return base * metaMult * swarmSkillMult * titanHeavySlowMult * skinMult * buffMult * debuffMult * sceneMult;
+    const weaponMult = this.getWeaponSpec().fireRateMult;
+    return base * metaMult * swarmSkillMult * titanHeavySlowMult * skinMult * buffMult * debuffMult * sceneMult * weaponMult;
   }
 
   public getSwarmTrooperSpec(): {

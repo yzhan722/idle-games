@@ -12,6 +12,17 @@ const FRAME_W := 60
 const FRAME_H := 60
 const VISUAL_WIDTH := 44.0
 
+## CI-3: Per-animal pixel-measured head anchors above ears/hats to prevent any CarryIcon overlap
+const PROMO_HEAD_ANCHORS: Dictionary = {
+	"bunny":   {"x": 0.0,  "y": -53.0, "work_dy": 0.0},
+	"otter":   {"x": 0.0,  "y": -53.0, "work_dy": 1.0},
+	"fox":     {"x": 1.0,  "y": -53.0, "work_dy": 3.0},
+	"shiba":   {"x": 0.0,  "y": -53.0, "work_dy": 0.0},
+	"penguin": {"x": -1.0, "y": -54.0, "work_dy": 1.0},
+	"toucan":  {"x": -4.0, "y": -52.0, "work_dy": 3.0}
+}
+const PROMO_TARGET_HEIGHTS: Array[float] = [0.0, 15.0, 18.0, 17.0]
+
 enum RoleType {
 	BUNNY_FARMER,
 	OTTER_LOGISTICS,
@@ -33,12 +44,15 @@ var tex_crops: Texture2D
 var tex_delicacies: Texture2D
 var tex_carry_rig: Texture2D
 var tex_heart: Texture2D
+var tex_promo_tiers: Array[Texture2D] = [null, null, null, null]
 
 var body_sprite: Sprite2D = Sprite2D.new()
+var promo_accessory: Sprite2D = Sprite2D.new()
 var carry_icon: Sprite2D = Sprite2D.new()
 var carry_front_grip: Sprite2D = Sprite2D.new()
 var heart_icon: Sprite2D = Sprite2D.new()
 var sleep_label: Label
+var _last_promo_tier: int = -1
 
 var waypoint_graph: WaypointGraph
 var world_ref: Node2D
@@ -96,6 +110,18 @@ func _ready() -> void:
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 	tex_carry_rig = load("res://assets/pixel_art/animals/carry_rig_sheet.png")
 	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
+	for t_idx in range(1, EconomyConfig.PROMOTION_TIERS.size()):
+		var t_path := String(EconomyConfig.PROMOTION_TIERS[t_idx].get("accessory_tex", ""))
+		if t_path != "":
+			tex_promo_tiers[t_idx] = EconomyConfig.load_pixel_texture(t_path)
+
+	promo_accessory.name = "PromoAccessory"
+	promo_accessory.visible = false
+	promo_accessory.centered = true
+	promo_accessory.z_index = EconomyConfig.Z_CARRY_EMOTE
+	promo_accessory.z_as_relative = false
+	add_child(promo_accessory)
+	sync_promotion_visual(0.0, 0, 1.0, 1.0)
 
 	carry_front_grip.name = "CarryFrontGrip"
 	carry_front_grip.texture = tex_carry_rig
@@ -194,11 +220,54 @@ func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, 
 	anim_time = randf() * 3.14
 	_was_hired = is_hired()
 	visible = _was_hired
+	_last_promo_tier = -1
+	sync_promotion_visual(0.0, 0, 1.0, 1.0)
 	if _was_hired:
 		_assign_next_task()
 
 func get_level() -> int:
 	return maxi(1, int(GameManager.animal_levels.get(animal_key, 1)))
+
+func get_promotion_tier() -> int:
+	return EconomyConfig.get_animal_trait_tier_count(get_level())
+
+func sync_promotion_visual(hop_y: float = 0.0, pose_idx: int = 0, scale_x: float = 1.0, scale_y: float = 1.0) -> void:
+	if promo_accessory == null:
+		return
+	var tier := get_promotion_tier()
+	if tier <= 0 or tier >= tex_promo_tiers.size():
+		promo_accessory.visible = false
+		_last_promo_tier = tier
+		return
+	var tex := tex_promo_tiers[tier]
+	if tex == null:
+		var t_path := String(EconomyConfig.PROMOTION_TIERS[tier].get("accessory_tex", ""))
+		if t_path != "":
+			tex = EconomyConfig.load_pixel_texture(t_path)
+			tex_promo_tiers[tier] = tex
+	if tex == null:
+		promo_accessory.visible = false
+		return
+	if _last_promo_tier != tier or promo_accessory.texture != tex:
+		promo_accessory.texture = tex
+		_last_promo_tier = tier
+	var tw := maxf(1.0, float(tex.get_width()))
+	var th := maxf(1.0, float(tex.get_height()))
+	var target_h := PROMO_TARGET_HEIGHTS[clampi(tier, 1, PROMO_TARGET_HEIGHTS.size() - 1)]
+	var base_s := target_h / th
+	if tw * base_s > 26.0:
+		base_s = 26.0 / tw
+	var anchor: Dictionary = PROMO_HEAD_ANCHORS.get(animal_key, PROMO_HEAD_ANCHORS["bunny"])
+	var dir_sign := -1.0 if facing_left else 1.0
+	var ax := float(anchor.get("x", 0.0)) * dir_sign
+	var ay := float(anchor.get("y", -53.0)) + (float(anchor.get("work_dy", 0.0)) if pose_idx == 2 else 0.0)
+	promo_accessory.visible = true
+	promo_accessory.centered = true
+	promo_accessory.offset = Vector2(0.0, -0.5 * th)
+	promo_accessory.flip_h = facing_left
+	promo_accessory.rotation = 0.0
+	promo_accessory.scale = Vector2(base_s * scale_x, base_s * scale_y)
+	promo_accessory.position = Vector2(ax, ay * scale_y + hop_y)
 
 func get_effective_harvest_bonus() -> int:
 	return EconomyConfig.calc_bunny_harvest_trait_bonus(get_level())
@@ -422,12 +491,15 @@ func _process(delta: float) -> void:
 	if carry_icon != null and carry_icon.visible:
 		_sync_carry_rig_transform(hop_y)
 
+	sync_promotion_visual(hop_y, pose_idx, scale_x, scale_y)
+
+	var promo_headroom := -14.0 if (promo_accessory != null and promo_accessory.visible) else 0.0
 	if heart_icon != null:
 		heart_icon.visible = (boost_timer > 0.0)
 		if heart_icon.visible:
 			var pulse_s := 0.55 + (0.14 if pet_jump_timer > 0.0 else 0.03 * sin(anim_time * 7.0))
 			heart_icon.scale = Vector2(pulse_s, pulse_s)
-			heart_icon.position = Vector2(0.0, -62.0 + hop_y + sin(anim_time * 6.0) * 2.0)
+			heart_icon.position = Vector2(0.0, -62.0 + promo_headroom + hop_y + sin(anim_time * 6.0) * 2.0)
 			heart_icon.rotation = 0.0
 
 	for mi in range(pet_motes.size()):
@@ -438,14 +510,14 @@ func _process(delta: float) -> void:
 		if mote.visible:
 			var prog := 1.0 - clampf(pet_jump_timer / PET_JUMP_DURATION, 0.0, 1.0)
 			var side_dir := -1.0 if mi == 0 else 1.0
-			mote.position = Vector2(side_dir * (10.0 + prog * 8.0), -54.0 - prog * 20.0 + hop_y * 0.5)
+			mote.position = Vector2(side_dir * (10.0 + prog * 8.0), -54.0 + promo_headroom - prog * 20.0 + hop_y * 0.5)
 			mote.modulate.a = clampf(1.15 - prog, 0.0, 1.0)
 			mote.rotation = 0.0
 
 	if sleep_label != null:
 		sleep_label.visible = is_sleeping_full and (boost_timer <= 0.0)
 		if sleep_label.visible:
-			sleep_label.position = Vector2(-30.0, -68.0 + sin(anim_time * 2.5) * 2.0)
+			sleep_label.position = Vector2(-30.0, -68.0 + promo_headroom + sin(anim_time * 2.5) * 2.0)
 
 func _assign_next_task() -> void:
 	state_timer = 0.0

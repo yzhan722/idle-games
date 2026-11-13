@@ -1,4 +1,6 @@
-export class SoundManager {
+import type { WeaponMode } from '../game/State';
+
+class SoundManager {
   private ctx: AudioContext | null = null;
   public enabled = true;
   private lastCloneSoundTime = 0;
@@ -86,7 +88,7 @@ export class SoundManager {
     }, 190);
   }
 
-  public playShoot(weapon: 'gatling' | 'twin' | 'plasma'): void {
+  public playShoot(weapon: WeaponMode): void {
     const ctx = this.ensureContext();
     if (!ctx) return;
 
@@ -94,7 +96,20 @@ export class SoundManager {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    if (weapon === 'plasma') {
+    if (weapon === 'rainbow') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(640, now);
+      osc.frequency.exponentialRampToValueAtTime(1180, now + 0.055);
+      osc.frequency.exponentialRampToValueAtTime(460, now + 0.11);
+      gain.gain.setValueAtTime(0.065, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    } else if (weapon === 'scatter') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(480, now);
+      osc.frequency.exponentialRampToValueAtTime(195, now + 0.07);
+      gain.gain.setValueAtTime(0.07, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+    } else if (weapon === 'plasma') {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(520, now);
       osc.frequency.exponentialRampToValueAtTime(140, now + 0.085);
@@ -117,7 +132,45 @@ export class SoundManager {
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.095);
+    osc.stop(now + 0.125);
+  }
+
+  public playAirdropDrop(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(760, now);
+    osc.frequency.exponentialRampToValueAtTime(360, now + 0.24);
+    gain.gain.setValueAtTime(0.07, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.27);
+  }
+
+  public playAirdropOpen(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+      const t = now + idx * 0.045;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.19);
+    });
   }
 
   public playCloneGate(multiplierOrAdd: number): void {

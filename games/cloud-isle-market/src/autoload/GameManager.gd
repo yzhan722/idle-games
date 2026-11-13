@@ -1035,6 +1035,7 @@ func upgrade_animal(a_key: String) -> bool:
 		EventBus.upgrade_purchased.emit("animal", a_key, animal_levels[a_key])
 
 	_sync_codex_from_progression()
+	evaluate_achievements()
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
 	return true

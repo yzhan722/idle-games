@@ -49,6 +49,7 @@ export interface Unit {
   fusionTier?: number;
   fusionCooldown?: number;
   empTimer?: number;
+  scatterBounceLeft?: number;
   passedGates: Set<string>;
 }
 
@@ -206,4 +207,25 @@ export interface MeteorTelegraphRuntime {
   isTurretLock: boolean;
   mesh: THREE.Mesh;
   mat: THREE.MeshBasicMaterial;
+}
+
+export type TacticalAirdropBuffId = 'dual_volley' | 'freeze_reds' | 'frontline_giants';
+
+export interface TacticalAirdropRuntime {
+  active: boolean;
+  phase: 'falling' | 'landed';
+  x: number;
+  y: number;
+  z: number;
+  hp: number;
+  maxHp: number;
+  bobPhase: number;
+  lifeTimer: number;
+  group: THREE.Group;
+  parachuteGroup: THREE.Group;
+  crateMesh: THREE.Mesh;
+  crateMat: THREE.MeshStandardMaterial;
+  haloMesh: THREE.Mesh;
+  haloMat: THREE.MeshBasicMaterial;
+  labelEl: HTMLDivElement | null;
 }

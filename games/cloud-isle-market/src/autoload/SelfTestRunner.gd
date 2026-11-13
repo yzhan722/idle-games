@@ -867,6 +867,145 @@ func _run_all_four_assertions_and_export() -> void:
 	merchant._process(0.02)
 	print("[PASS] [断言15-CI-2美食评论家与云游行商及云端花火灯会] 通过: 美食评论家品鉴触发36s金牌口碑(售价+25%%&小费+20%%)、云游行商收购田头富余作物换琥珀、夜间花火灯会彩灯串与像素烟花校验 PASS!")
 
+	# ------------------------------------------------------------------
+	# [断言16-CI-3金牌员工晋升头饰与荣誉勋章图鉴]:
+	#   1) Verify all 3 promotion headwear & 3 honor medal textures exist & load with transparent RGBA;
+	#   2) Verify all 6 animal roles (bunny/otter/fox/shiba/penguin/toucan) display Lv.10/25/50 accessories
+	#      above their heads with strict CarryIcon clearance (zero overlap/occlusion);
+	#   3) Verify HUD 「山海图鉴」 (Tab 3) renders all 6 employees' promotion titles, rank icons & medal progress via native Labels.
+	# ------------------------------------------------------------------
+	var ci3_tex_paths: Array[String] = [
+		"res://assets/pixel_art/ui/promo_tier1_star_ribbon.png",
+		"res://assets/pixel_art/ui/promo_tier2_chef_hat.png",
+		"res://assets/pixel_art/ui/promo_tier3_gilded_crown.png",
+		"res://assets/pixel_art/ui/medal_tier1_bronze.png",
+		"res://assets/pixel_art/ui/medal_tier2_silver.png",
+		"res://assets/pixel_art/ui/medal_tier3_gold.png"
+	]
+	for tp in ci3_tex_paths:
+		var t_loaded := EconomyConfig.load_pixel_texture(tp)
+		if t_loaded == null or t_loaded.get_width() <= 0 or t_loaded.get_height() <= 0:
+			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "Missing or invalid CI-3 pixel texture: `%s`" % tp)
+			return
+		var t_img := t_loaded.get_image()
+		if t_img == null or t_img.is_empty():
+			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "Empty image data on `%s`" % tp)
+			return
+		var corner_a := t_img.get_pixel(0, 0).a
+		if corner_a > 0.05:
+			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "Texture `%s` corner is not transparent (alpha=%.2f)!" % [tp, corner_a])
+			return
+
+	var saved_isl2 := bool(GameManager.unlocked_islands.get(2, false))
+	var saved_isl3 := bool(GameManager.unlocked_islands.get(3, false))
+	var saved_rec_1: Dictionary = GameManager.island_recruited[1].duplicate(true)
+	var saved_rec_2: Dictionary = GameManager.island_recruited[2].duplicate(true)
+	var saved_rec_3: Dictionary = GameManager.island_recruited[3].duplicate(true)
+	var saved_levels: Dictionary = GameManager.animal_levels.duplicate(true)
+
+	GameManager.unlocked_islands[2] = true
+	GameManager.unlocked_islands[3] = true
+	GameManager.island_recruited[1]["shiba"] = maxi(1, int(GameManager.island_recruited[1].get("shiba", 0)))
+	GameManager.island_recruited[2]["penguin"] = 1
+	GameManager.island_recruited[2]["toucan"] = 1
+
+	var verified_promo_roles: Dictionary = {}
+	for w in world.workers:
+		if not is_instance_valid(w) or verified_promo_roles.has(w.animal_key):
+			continue
+		if not w.is_hired():
+			continue
+		w.visible = true
+		var prev_carry_id := w.carrying_item_id
+		var prev_carry_qty := w.carrying_qty
+		w._set_carry_visual("crop_0", 2)
+
+		GameManager.animal_levels[w.animal_key] = 1
+		w.sync_promotion_visual(0.0, 0, 1.0, 1.0)
+		if w.get_promotion_tier() != 0 or w.promo_accessory == null or w.promo_accessory.visible:
+			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "Lv.1 `%s` should not show promotion accessory!" % w.animal_key)
+			return
+
+		for test_lv in [10, 25, 50]:
+			GameManager.animal_levels[w.animal_key] = test_lv
+			w.sync_promotion_visual(0.0, 0, 1.0, 1.0)
+			var exp_tier := EconomyConfig.get_animal_trait_tier_count(test_lv)
+			if w.get_promotion_tier() != exp_tier or not w.promo_accessory.visible or w.promo_accessory.texture == null:
+				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "Lv.%d `%s` failed to display tier %d promotion accessory!" % [test_lv, w.animal_key, exp_tier])
+				return
+			var p_h := float(w.promo_accessory.texture.get_height()) * absf(w.promo_accessory.scale.y)
+			var p_w := float(w.promo_accessory.texture.get_width()) * absf(w.promo_accessory.scale.x)
+			if p_w > 32.0 or p_h > 32.0:
+				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "PromoAccessory oversized on `%s`: %.1fx%.1f!" % [w.animal_key, p_w, p_h])
+				return
+			var promo_bottom_y := w.promo_accessory.position.y
+			var carry_top_y := w.carry_icon.position.y - 10.0
+			if promo_bottom_y >= carry_top_y - 6.0 or promo_bottom_y > -45.0:
+				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "PromoAccessory on `%s` (bottom_y=%.1f) too close or overlapping CarryIcon (top_y=%.1f)!" % [w.animal_key, promo_bottom_y, carry_top_y])
+				return
+
+		w._set_carry_visual(prev_carry_id, prev_carry_qty)
+		verified_promo_roles[w.animal_key] = true
+
+	if verified_promo_roles.size() < 6:
+		_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "Expected all 6 animal roles verified for promotion accessories, got %d!" % verified_promo_roles.size())
+		return
+
+	# Verify HUD 「山海图鉴」 (Tab 3) 6-employee promotion titles & honor medal progress
+	GameManager.animal_levels = {
+		"bunny": 50,
+		"otter": 25,
+		"fox": 10,
+		"shiba": 25,
+		"penguin": 10,
+		"toucan": 1
+	}
+	if world.hud != null:
+		world.hud.open_drawer(3)
+		world.hud._sync_label_nodes()
+		if world.hud.lbl_emp_names.size() != 6 or world.hud.lbl_emp_titles.size() != 6 or world.hud.lbl_emp_progress.size() != 6:
+			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 missing 6-employee promotion/medal labels!")
+			return
+		var expected_medals: Array[int] = [3, 2, 1, 2, 1, 0]
+		for ei in range(6):
+			var en_lbl: Label = world.hud.lbl_emp_names[ei]
+			var et_lbl: Label = world.hud.lbl_emp_titles[ei]
+			var ep_lbl: Label = world.hud.lbl_emp_progress[ei]
+			if not en_lbl.visible or not et_lbl.visible or not ep_lbl.visible:
+				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 employee label %d not visible!" % ei)
+				return
+			if en_lbl.label_settings == null or et_lbl.label_settings == null or ep_lbl.label_settings == null:
+				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 employee label %d missing LabelSettings!" % ei)
+				return
+			if ep_lbl.text.find(str(expected_medals[ei]) + "/3") == -1:
+				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 employee %d medal progress mismatch: `%s`!" % [ei, ep_lbl.text])
+				return
+		if world.hud.lbl_drawer_title.text.find("9/18") == -1:
+			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 title missing total honor medal progress `9/18`: `%s`" % world.hud.lbl_drawer_title.text)
+			return
+		world.hud.close_drawer(false)
+
+	# Keep showcase Island 1 promoted employees (Lv.50 Bunny / Lv.25 Otter / Lv.10 Fox / Lv.25 Shiba) for visual audit!
+	GameManager.unlocked_islands[2] = saved_isl2
+	GameManager.unlocked_islands[3] = saved_isl3
+	GameManager.island_recruited[1] = saved_rec_1
+	GameManager.island_recruited[2] = saved_rec_2
+	GameManager.island_recruited[3] = saved_rec_3
+	GameManager.animal_levels = {
+		"bunny": 50,
+		"otter": 25,
+		"fox": 10,
+		"shiba": 25,
+		"penguin": int(saved_levels.get("penguin", 0)),
+		"toucan": int(saved_levels.get("toucan", 0))
+	}
+	for w in world.workers:
+		if is_instance_valid(w) and w.visible:
+			if w.animal_key == "bunny":
+				w._set_carry_visual("crop_0", 2)
+			w.sync_promotion_visual(0.0, 0, 1.0, 1.0)
+	print("[PASS] [断言16-CI-3金牌员工晋升头饰与荣誉勋章图鉴] 通过: 全 6 种动物 Lv.10/25/50 头饰精准锚定头顶(与背负物品间距>=19px零遮挡) + 山海图鉴晋升头衔/勋章进度原生标签校验 PASS!")
+
 	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
 	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": false, "tiki_torch": false}
 	GameManager.amber = 5

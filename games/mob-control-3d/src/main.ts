@@ -79,6 +79,9 @@ const homeHeroStageEl = document.getElementById('home-hero-stage') as HTMLElemen
 const btnHomeMecha = document.getElementById('btn-home-mecha') as HTMLButtonElement | null;
 const homeMechaIconEl = document.getElementById('home-mecha-icon') as HTMLElement | null;
 const homeMechaLabelEl = document.getElementById('home-mecha-label') as HTMLElement | null;
+const btnHomeWeapon = document.getElementById('btn-home-weapon') as HTMLButtonElement | null;
+const homeWeaponIconEl = document.getElementById('home-weapon-icon') as HTMLElement | null;
+const homeWeaponLabelEl = document.getElementById('home-weapon-label') as HTMLElement | null;
 const btnHomePrevRace = document.getElementById('btn-home-prev-race') as HTMLButtonElement | null;
 const btnHomeNextRace = document.getElementById('btn-home-next-race') as HTMLButtonElement | null;
 const homeMascotArtEl = document.getElementById('home-mascot-art') as HTMLElement | null;
@@ -226,6 +229,9 @@ const championDesc = document.getElementById('champion-desc') as HTMLElement | n
 const btnMechaMode = document.getElementById('btn-mecha-mode') as HTMLButtonElement;
 const mechaModeIcon = document.getElementById('mecha-mode-icon') as HTMLElement | null;
 const mechaModeLabel = document.getElementById('mecha-mode-label') as HTMLElement | null;
+const btnWeaponMode = document.getElementById('btn-weapon-mode') as HTMLButtonElement | null;
+const weaponModeIcon = document.getElementById('weapon-mode-icon') as HTMLElement | null;
+const weaponModeLabel = document.getElementById('weapon-mode-label') as HTMLElement | null;
 
 const btnOrbital = document.getElementById('btn-orbital') as HTMLButtonElement;
 const orbitalFill = document.getElementById('orbital-fill') as HTMLElement;
@@ -394,7 +400,24 @@ function getActiveRewardMultiplier(): number {
   return isSpeedSkipEligible && isSpeedSkipActive ? 3 : 1;
 }
 
+function refreshWeaponUI(): void {
+  const wSpec = state.getWeaponSpec();
+  if (weaponModeIcon) weaponModeIcon.innerHTML = wSpec.icon;
+  if (weaponModeLabel) weaponModeLabel.textContent = wSpec.shortName;
+  if (btnWeaponMode) {
+    btnWeaponMode.title = `当前主炮：${wSpec.name}（点击或按[F]切换）· ${wSpec.desc}`;
+    btnWeaponMode.classList.toggle('is-scatter', wSpec.id === 'scatter');
+    btnWeaponMode.classList.toggle('is-rainbow', wSpec.id === 'rainbow');
+  }
+  if (homeWeaponIconEl) homeWeaponIconEl.innerHTML = wSpec.icon;
+  if (homeWeaponLabelEl) homeWeaponLabelEl.textContent = wSpec.shortName;
+  if (btnHomeWeapon) {
+    btnHomeWeapon.title = `当前主炮：${wSpec.name}（点击切换）· ${wSpec.desc}`;
+  }
+}
+
 function refreshMechaUI(): void {
+  refreshWeaponUI();
   const spec = state.getMechaSpec();
   const committed = state.getCommittedSkillBranch();
   const ultEvo = state.getUltimateEvolutionSpec();
@@ -510,6 +533,7 @@ function renderMainMenu(): void {
   if (homeMechaLabelEl) {
     homeMechaLabelEl.textContent = committedBranch ? committedBranch.hammerMorphName : mechaSpec.shortName;
   }
+  refreshWeaponUI();
   if (homeMascotArtEl) {
     homeMascotArtEl.innerHTML = activeRace.icon;
   }
@@ -1332,6 +1356,22 @@ function renderActiveBuffsBar(): void {
     );
   }
 
+  if (world.dualVolleyTimer > 0) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary" title="空投增益：双倍连射齐发">${UI_ART.tacticalAirdrop} 双倍连射 ${Math.ceil(world.dualVolleyTimer)}s</span>`
+    );
+  }
+  if (world.freezeRedsTimer > 0) {
+    pills.push(
+      `<span class="buff-pill rarity-epic" title="空投增益：冰霜缓敌72%">${UI_ART.tacticalAirdrop} 冰霜缓敌 ${Math.ceil(world.freezeRedsTimer)}s</span>`
+    );
+  }
+  if (world.frontlineGiantsTimer > 0) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary" title="空投增益：前线全军小巨人阵">${UI_ART.tacticalAirdrop} 前线巨人阵 ${Math.ceil(world.frontlineGiantsTimer)}s</span>`
+    );
+  }
+
   const badges = state.getActiveBuffBadges();
   for (const b of badges) {
     pills.push(`<span class="buff-pill rarity-${b.rarity}">${b.icon} ${b.text}</span>`);
@@ -1748,6 +1788,7 @@ function refreshUpgradeUI(): void {
 
 let lastBerserkState = false;
 let lastAdrenalineActive = false;
+let lastAirdropBuffActive = false;
 let lastHudBlue = -1;
 let lastHudRed = -1;
 let lastHudGold = -1;
@@ -1846,9 +1887,18 @@ function updateLiveHUD(): void {
   }
 
   const curAdrenaline = world.adrenalineTimer > 0;
-  if (world.bossBerserkTriggered !== lastBerserkState || curAdrenaline !== lastAdrenalineActive || curAdrenaline) {
+  const curAirdropBuff =
+    world.dualVolleyTimer > 0 || world.freezeRedsTimer > 0 || world.frontlineGiantsTimer > 0;
+  if (
+    world.bossBerserkTriggered !== lastBerserkState ||
+    curAdrenaline !== lastAdrenalineActive ||
+    curAdrenaline ||
+    curAirdropBuff !== lastAirdropBuffActive ||
+    curAirdropBuff
+  ) {
     lastBerserkState = world.bossBerserkTriggered;
     lastAdrenalineActive = curAdrenaline;
+    lastAirdropBuffActive = curAirdropBuff;
     renderActiveBuffsBar();
   }
 }
@@ -1966,6 +2016,17 @@ if (btnHomeMecha) {
     sound.playUpgrade();
     refreshMechaUI();
     spawnMenuUpgradeBurst(btnHomeMecha, `主打歌：${nextSpec.name}`, '#ec4899');
+    renderMainMenu();
+  });
+}
+
+if (btnHomeWeapon) {
+  btnHomeWeapon.addEventListener('click', () => {
+    const nextW = state.cycleWeaponMode();
+    sound.playUpgrade();
+    world.syncTurretEvolution(false);
+    refreshWeaponUI();
+    spawnMenuUpgradeBurst(btnHomeWeapon, `主炮：${nextW.name}`, '#38bdf8');
     renderMainMenu();
   });
 }
@@ -2117,6 +2178,17 @@ btnMechaMode.addEventListener('click', () => {
   renderActiveBuffsBar();
   showBanner(`${nextSpec.icon} ${nextSpec.name}`);
 });
+
+if (btnWeaponMode) {
+  btnWeaponMode.addEventListener('click', () => {
+    const nextW = state.cycleWeaponMode();
+    sound.playUpgrade();
+    world.syncTurretEvolution(false);
+    refreshWeaponUI();
+    renderActiveBuffsBar();
+    showBanner(`${nextW.icon} ${nextW.name}`, nextW.bannerDesc);
+  });
+}
 
 btnChampion.addEventListener('click', () => {
   world.deployChampion();
@@ -2657,6 +2729,9 @@ window.addEventListener('keydown', (e) => {
   } else if (e.code === 'KeyE' || e.code === 'Tab') {
     e.preventDefault();
     btnMechaMode.click();
+  } else if (e.code === 'KeyF') {
+    e.preventDefault();
+    btnWeaponMode?.click();
   } else if (e.code === 'Escape' || e.code === 'KeyH') {
     e.preventDefault();
     btnHome.click();

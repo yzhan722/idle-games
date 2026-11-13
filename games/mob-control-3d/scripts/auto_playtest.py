@@ -419,6 +419,85 @@ try:
             ),
         )
 
+        # MC-4 Verification: Scatter & Rainbow Weapons + Tactical Airdrop + 3 Buffs + Bonus Heist Skip
+        mc4_hud = page.evaluate(
+            """async () => {
+            const btn = document.getElementById('btn-weapon-mode');
+            const label = document.getElementById('weapon-mode-label');
+            if (!btn || !label) return { ok: false, reason: 'missing weapon switcher' };
+            const labels = [label.textContent.trim()];
+            btn.click();
+            labels.push(label.textContent.trim());
+            const scatterImg = btn.querySelector('img');
+            const scatterLoaded = Boolean(scatterImg && scatterImg.src.includes('icon_weapon_scatter.png?v=20'));
+            btn.click();
+            labels.push(label.textContent.trim());
+            const rainbowImg = btn.querySelector('img');
+            const rainbowLoaded = Boolean(rainbowImg && rainbowImg.src.includes('icon_weapon_rainbow.png?v=20'));
+            const hasInlineSvg = Boolean(btn.querySelector('svg'));
+            // Cycle back to default gatling
+            btn.click(); btn.click(); btn.click();
+            // Probe all 3 MC-4 RGBA PNGs
+            const urls = [
+                '/assets/icon_weapon_scatter.png?v=20',
+                '/assets/icon_weapon_rainbow.png?v=20',
+                '/assets/icon_tactical_airdrop.png?v=20',
+            ];
+            const imgChecks = await Promise.all(urls.map((u) => new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img.naturalWidth > 0 && img.naturalHeight > 0);
+                img.onerror = () => resolve(false);
+                img.src = u;
+            })));
+            const w = window.__mc3dWorld;
+            const sim = w && typeof w.runMc4SelfCheck === 'function' ? w.runMc4SelfCheck() : { ok: false };
+            return { labels, scatterLoaded, rainbowLoaded, hasInlineSvg, imgChecks, sim };
+        }"""
+        )
+        mc4_sim = mc4_hud.get("sim") or {}
+        add_check(
+            "MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)",
+            bool(mc4_hud.get("scatterLoaded"))
+            and bool(mc4_hud.get("rainbowLoaded"))
+            and not bool(mc4_hud.get("hasInlineSvg"))
+            and all(mc4_hud.get("imgChecks", [False]))
+            and bool(mc4_sim.get("scatterFanCount", 0) >= 3)
+            and bool(mc4_sim.get("scatterBounced"))
+            and bool(mc4_sim.get("rainbowBeamHitRed")),
+            json.dumps(
+                {
+                    "labels": mc4_hud.get("labels"),
+                    "imgs": mc4_hud.get("imgChecks"),
+                    "fan": mc4_sim.get("scatterFanCount"),
+                    "bounced": mc4_sim.get("scatterBounced"),
+                    "rainbowHit": mc4_sim.get("rainbowBeamHitRed"),
+                },
+                ensure_ascii=False,
+            ),
+        )
+        add_check(
+            "MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)",
+            bool(mc4_sim.get("airdropSpawned"))
+            and bool(mc4_sim.get("airdropCollected"))
+            and bool(mc4_sim.get("dualVolleyActiveAndDoubles"))
+            and bool(mc4_sim.get("freezeRedsSlowed"))
+            and bool(mc4_sim.get("frontlineGiantsPromoted"))
+            and bool(mc4_sim.get("cleanResetOnLoad"))
+            and bool(mc4_sim.get("bonusHeistSkippedAirdrop")),
+            json.dumps(
+                {
+                    "drop": mc4_sim.get("airdropSpawned"),
+                    "collect": mc4_sim.get("airdropCollected"),
+                    "dual": mc4_sim.get("dualVolleyActiveAndDoubles"),
+                    "freeze": mc4_sim.get("freezeRedsSlowed"),
+                    "giants": mc4_sim.get("frontlineGiantsPromoted"),
+                    "reset": mc4_sim.get("cleanResetOnLoad"),
+                    "skipBonus": mc4_sim.get("bonusHeistSkippedAirdrop"),
+                },
+                ensure_ascii=False,
+            ),
+        )
+
         page.screenshot(
             path=os.path.join(BRAIN_DIR, "scratch", "verify_auto_playtest_battle_2560.jpg"),
             type="jpeg",

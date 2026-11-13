@@ -11,6 +11,8 @@
 ## 一、进度自动记录（label 进入回调）
 ################################################################################
 
+default current_chapter_label = "prologue"
+
 init python:
 
     # label 名 -> 章节序号
@@ -35,6 +37,11 @@ init python:
         "ending_hidden": "end_hidden",
     }
 
+    _DLC_LABELS = {
+        "dlc_alice_ledger":  "番外一 · 艾丽丝的代价账本",
+        "dlc_mo_bookstreet": "番外二 · 旧书街与第三只千纸鹤",
+    }
+
     # 结局 label -> 成就 id
     _ENDING_TO_ACH = {
         "ending_te":     "ach_te",
@@ -48,6 +55,10 @@ init python:
         # 从标题"开始游戏"进来的完整周目（章节选择 / 重温结局不会经过 start）
         if name == "start":
             store.full_run = True
+            store.current_chapter_label = "prologue"
+        # 记录当前所在章节/番外/结局入口 label，供折纸书签跳转定位
+        if name in _LABEL_TO_CHAPTER or name in _LABEL_TO_ENDING or name in _DLC_LABELS:
+            store.current_chapter_label = name
         # 记录已到达的最高章节
         if name in _LABEL_TO_CHAPTER:
             n = _LABEL_TO_CHAPTER[name]
@@ -339,18 +350,22 @@ style chapter_blurb_locked_text is text:
 
 
 ################################################################################
-## 四、鉴赏（Extras）总页：结局 / 画廊 / 音乐室 / 成就 四个分页共用一张菜单页
+## 四、鉴赏（Extras）总页：结局 / 画廊 / 音乐室 / 成就 / 真相档案 / 折纸书签
 ##   分页状态存在 persistent.extras_tab，下次打开回到上次看的分页
 ################################################################################
 
 default persistent.extras_tab = "endings"
+default persistent.truth_spoiler_confirmed = False
+default persistent.quote_bookmarks = []
 
 init python:
     EXTRAS_TABS = [
-        ("endings", "结局"),
-        ("cg",      "画廊"),
-        ("music",   "音乐室"),
-        ("ach",     "成就"),
+        ("endings",   "结局"),
+        ("cg",        "画廊"),
+        ("music",     "音乐室"),
+        ("ach",       "成就"),
+        ("truth",     "真相档案"),
+        ("bookmarks", "折纸书签"),
     ]
 
     def extras_count_text():
@@ -361,9 +376,11 @@ init python:
         return "(%d/%d)" % (got, total)
 
     def reset_all_progress():
-        """一键清空全部存档、已解锁 CG、结局、章节与成就，恢复全新初始状态"""
+        """一键清空全部存档、已解锁 CG、结局、章节、成就与折纸书签，恢复全新初始状态"""
         persistent.chapter_reached = 0
         persistent.te_cleared = False
+        persistent.truth_spoiler_confirmed = False
+        persistent.quote_bookmarks = []
         persistent.last_player_name = None
         for end_field, _t, _s, _cg, _lbl in ENDING_LIST:
             setattr(persistent, end_field, False)
@@ -379,7 +396,7 @@ init python:
             except Exception:
                 pass
         renpy.save_persistent()
-        renpy.notify("已恢复初始状态：存档、CG、结局与成就已全部清空")
+        renpy.notify("已恢复初始状态：存档、CG、结局、成就与书签已全部清空")
 
 screen extras():
     tag menu
@@ -391,12 +408,12 @@ screen extras():
     on "hide" action Play("music", config.main_menu_music, fadein=1.0, if_changed=True)
     on "replaced" action Play("music", config.main_menu_music, fadein=1.0, if_changed=True)
 
-    use game_menu(_("鉴赏"), subtitle=_("结局 · 画廊 · 音乐室 · 成就")):
+    use game_menu(_("鉴赏"), subtitle=_("结局 · 画廊 · 音乐室 · 成就 · 真相 · 书签")):
 
         vbox:
             spacing 14
             hbox:
-                spacing 10
+                spacing 8
                 for key, label in EXTRAS_TABS:
                     textbutton label:
                         style "extras_tab_button"
@@ -418,14 +435,21 @@ screen extras():
                         use extras_cg
                     elif cur == "music":
                         use extras_music
-                    else:
+                    elif cur == "ach":
                         use extras_achievements
+                    elif cur == "truth":
+                        use extras_truth
+                    elif cur == "bookmarks":
+                        use extras_bookmarks
+                    else:
+                        use extras_endings
 
 style extras_tab_button is pill_button:
-    xminimum 120
+    xminimum 96
     ysize 38
+    padding (14, 0)
 style extras_tab_button_text is pill_button_text:
-    size 19
+    size 18
 
 style extras_section_text is text:
     size 17
@@ -816,3 +840,503 @@ style music_title_locked is music_title:
     color "#6a5c80"
 style music_src_locked is music_src:
     color "#5e5070"
+
+
+################################################################################
+## ---- 分页 5：真相档案（旧案—今案双线时间轴 + 防剧透开关）----
+################################################################################
+
+init python:
+    import re
+    import time
+
+    # (编号标题, 旧案时间, 旧案表层记载, 旧案深层真相, 今案时间, 今案表层事件, 今案深层因果, 伏笔闭环说明)
+    TRUTH_TIMELINE = [
+        (
+            "01 · 成名与失约",
+            "七年前 · 秋（9岁）",
+            "「小雪侦探」在校园里屡次找回失物而走红，随后被《城市晚报》报道并登上电视台推理节目《小小神探》。",
+            "镜子前那句没有播出的「我想回家」被忙碌谈合同的父母忽略；邻居周明远（周叔叔）送给她第一本牛皮纸本，嘱咐「先写下来，再决定要不要说」。",
+            "10月21日 · 序章～第一章",
+            "转学生陈默在图书馆撞翻书架背上黑锅，在墨墨的便签指引下拆穿磁条与纸箱错位之谜，并在校门口送出一只歪翅膀白纸鹤。",
+            "引导陈默替补图书馆值日的匿名纸条，实为刚暗中返校踩点的周可递给班长——她想试探墨墨是否还会用聪明把新人拖入险境。",
+            "周叔叔的「先写再说」化作墨墨至今不离身的牛皮纸笔记；那只歪翅膀纸鹤则重新接续了四年前没折完的约定。"
+        ),
+        (
+            "02 · 造假与风波",
+            "五年前～四年前 · 冬前",
+            "电视节目因新鲜感退去而停播，社区附近却接连出现多起离奇小案，全部由「小雪侦探」在短时间内顺利侦破。",
+            "橘猫失踪、划车、便利店失窃、快递失踪全由父母（墨承远、陆嫣）暗中布置；小雪从雨靴泥印看破造假，却因害怕被抛弃而用沉默配合谎言。",
+            "10月23日 · 第二章",
+            "三班教室出现剪报拼贴恐吓信「你也会有报应的」，经查剪自四年前《城市晚报》B2 版，纸背隐约残存「还回来」三字。",
+            "周可借班长之手投放旧报剪贴，并特意在便当盒里放上五角星切法的胡萝卜，试探墨墨是否还记得四年前周叔叔做焖饭的模样。",
+            "四年前被报纸反复消费的「天才小侦探」头衔，在四年后化作裁纸刀剪下的铅字，反向刺向当事人的餐桌与课桌。"
+        ),
+        (
+            "03 · 停格的储物间",
+            "四年前 · 11月17日夜",
+            "老小区社区活动室储物间突发旧货架坍塌事故，热心邻居周某不幸遇难；不久后，「小雪侦探」彻底淡出公众视野。",
+            "父母以「真人秀拍摄」骗周明远独自搬箱，货架坍塌后为伪造撬锁假象延误 8 分钟才拨打急救电话；小雪当众指认亲生父母，随即因巨大内疚失声。",
+            "10月26日 · 第三章",
+            "门锁完好的桌游社活动室凭空出现一本无主旧相册，随后又在众人眼皮底下不翼而飞，里面夹着十年前的两个女孩与纸鹤。",
+            "周可趁社团全员去买饮料的两分钟，借窗外空调铁架自换气窗钩走相册；陈默在黄昏校门对周可说出怀疑，成为开启 TRUE END 暗线的唯一钥匙。",
+            "当年用假脚印与撬痕掩盖的储物间真相，如今通过桌游社「伪密室」与相册合影被一点点倒推重现。"
+        ),
+        (
+            "04 · 消散的地址",
+            "四年前 · 11月21日",
+            "事故发生后不久，小雪随外婆搬离旧居并改名「墨墨」；楼下那户姓周的人家也悄然北迁，两家从此断了音讯。",
+            "事后第四天，墨墨曾去周可家门口敲门至天黑，却只从邻居手中接过周可留下的旧粉色纸鹤；周可母亲两年后积郁病逝，临终留下未寄出的信。",
+            "10月30日 · 第四章",
+            "作家向言来校讲座并在图书馆侧厅签售《美丽新世界》，赠与吕芙的签名书险些遭人掉包；傍晚在外婆家巷口首次揭晓旧名「墨雪」。",
+            "生父向言当众代陈默发言的反差，刺痛也点醒了陈默「不能永远代替她说话」；墨墨也在外婆家的鞋盒里重新拿起了那只发黄的旧纸鹤。",
+            "外婆收存的那只四年前「事故前一天」纸鹤，与向言扉页划掉的旧稿一起，把过去和现在的沉默串联成线。"
+        ),
+        (
+            "05 · 复刻的舞台",
+            "三个月前～三周前",
+            "云溪高中校长室收到一封匿名信，建议在全校表彰大会上表彰「四年前那位见义勇为的小侦探」，并附上了当年的旧剪报。",
+            "周可办妥转学手续并提前潜入旧教学楼踩点——旧楼三楼那间长年上锁的仓库，正是当年老小区拆迁后划归学校的原社区储物间。",
+            "10月31日 · 第五章",
+            "墨墨早自习未在万事屋公告板画雪花，只留下「不要找我」四字失联；后勤师傅推开旧楼三楼仓库，发现里面被一比一还原成四年前。",
+            "发小张子谦摸清周可旧居行踪，外婆交付「墨雪与周可」儿童节合影：墨墨并非被绑架，而是主动回应了「两点半，只见你」的旧约。",
+            "「表彰奖牌」与「旧楼三楼仓库」同时收束：所有校园诡计都不是为了炫技，而是把所有人引回四年前那个没有走出的房间。"
+        ),
+        (
+            "06 · 千纸鹤的约定",
+            "四年前的明天 → 此刻",
+            "两个曾约好周末去河堤折纸鹤的女孩，把一句没来得及说出口的告别与遗憾留在了那个冬天。",
+            "墨墨书包里装着每年三封、共十二封写给周可却无处寄出的信；周可虽搭建噩梦舞台，却偷偷在布下留了电暖器、拧松水瓶并把货架用钢索钉死。",
+            "10月31日傍晚 · 终章",
+            "陈默与张子谦赶到旧楼三楼仓库；根据好感度、四片过去线索与真相暗线抉择，走向五种截然不同的命运终点。",
+            "在 TRUE END「重新发声」中，墨墨直面八分钟的阴影亲口说出名字，与周可、艾丽丝、陈默一同走出停滞的四年；番外篇更合折出第三只淡紫千纸鹤。",
+            "「发现真相不是为了证明聪明，而是为了让疼的人知道，有人看见了。」——周明远留下的这句话，最终在两人之间完成闭环。"
+        ),
+    ]
+
+    def truth_spoiler_unlocked():
+        return bool(persistent.te_cleared or persistent.truth_spoiler_confirmed)
+
+screen extras_truth():
+    $ _unlocked = truth_spoiler_unlocked()
+    vbox:
+        spacing 12
+        frame:
+            style "truth_banner_card"
+            hbox:
+                xfill True
+                yalign 0.5
+                spacing 10
+                vbox:
+                    spacing 3
+                    xsize 520
+                    if persistent.te_cleared:
+                        text _("✦ TRUE END 已通关 · 双轨真相档案全解锁") style "truth_banner_title" color "#f4d98a"
+                        text _("四年前「小雪侦探」旧案与云溪高中五桩校园事件的因果链条已完整解密。") style "truth_banner_sub"
+                    elif persistent.truth_spoiler_confirmed:
+                        text _("⚠ 已手动开启剧透档案（尚未通关 TRUE END）") style "truth_banner_title" color "#f0a4b8"
+                        text _("当前展示完整剧透时间轴；建议体验 TRUE END 后再回味细节。") style "truth_banner_sub"
+                    else:
+                        text _("✦ 防剧透保护已开启 · 仅展示公开案件脉络") style "truth_banner_title" color "#cbb0e6"
+                        text _("涉及核心真凶与四年前八分钟真相的深层推论已自动加密遮罩，通关 TRUE END 后自动解锁。") style "truth_banner_sub"
+                if not persistent.te_cleared:
+                    if persistent.truth_spoiler_confirmed:
+                        textbutton _("恢复遮罩"):
+                            style "pill_button"
+                            xminimum 116
+                            ysize 34
+                            text_size 15
+                            xalign 1.0
+                            yalign 0.5
+                            action [SetField(persistent, "truth_spoiler_confirmed", False), Function(renpy.save_persistent)]
+                    else:
+                        textbutton _("解锁剧透"):
+                            style "pill_button"
+                            xminimum 116
+                            ysize 34
+                            text_size 15
+                            xalign 1.0
+                            yalign 0.5
+                            action Show("confirm",
+                                        message=_("尚未通关 TRUE END，确定提前揭晓「真相档案」中的核心剧透内容吗？"),
+                                        yes_action=[Hide("confirm"), SetField(persistent, "truth_spoiler_confirmed", True), Function(renpy.save_persistent)],
+                                        no_action=Hide("confirm"))
+
+        for idx, (era, old_t, old_pub, old_deep, new_t, new_pub, new_deep, link_txt) in enumerate(TRUTH_TIMELINE):
+            frame:
+                style "truth_pair_card"
+                vbox:
+                    spacing 8
+                    hbox:
+                        xfill True
+                        frame:
+                            style "truth_era_badge"
+                            text era style "truth_era_text" yalign 0.5
+                        text ("旧案 [old_t]  ⇄  今案 [new_t]") style "truth_pair_times" xalign 1.0 yalign 0.5
+
+                    hbox:
+                        spacing 10
+                        frame:
+                            style "truth_track_old"
+                            vbox:
+                                spacing 5
+                                text _("旧案轨 · 过去（墨雪 / 周家）") style "truth_track_label_old"
+                                text old_pub style "truth_body_text"
+                                if _unlocked:
+                                    add Solid("#f4d98a33") xfill True ysize 1
+                                    text old_deep style "truth_deep_text"
+                                else:
+                                    add Solid("#6a5c8044") xfill True ysize 1
+                                    text _("██ 核心内幕已加密（通关 TRUE END 后揭示）") style "truth_masked_text"
+                        frame:
+                            style "truth_track_new"
+                            vbox:
+                                spacing 5
+                                text _("今案轨 · 云溪校园（万事屋）") style "truth_track_label_new"
+                                text new_pub style "truth_body_text"
+                                if _unlocked:
+                                    add Solid("#86d6a233") xfill True ysize 1
+                                    text new_deep style "truth_deep_text"
+                                else:
+                                    add Solid("#6a5c8044") xfill True ysize 1
+                                    text _("██ 幕后关联已加密（通关 TRUE END 后揭示）") style "truth_masked_text"
+
+                    if _unlocked:
+                        frame:
+                            style "truth_link_box"
+                            text ("✦ 伏笔闭环 · " + link_txt) style "truth_link_text"
+                    else:
+                        frame:
+                            style "truth_lock_box"
+                            text _("✦ 伏笔闭环 · 【防剧透遮罩中：请达成 TRUE END 或点击右上角解锁查看】") style "truth_masked_text"
+
+style truth_banner_card is default:
+    xfill True
+    padding (16, 12)
+    background Frame("gui/hud_chip.png", 12, 12)
+style truth_banner_title is text:
+    font gui.name_text_font
+    size 18
+    kerning 1
+style truth_banner_sub is text:
+    size 14
+    color "#b39bd0"
+
+style truth_pair_card is default:
+    xfill True
+    padding (14, 12)
+    background Frame("gui/panel_card.png", 16, 16)
+style truth_era_badge is default:
+    padding (10, 3)
+    background Frame("gui/pill_selected.png", 18, 18)
+style truth_era_text is text:
+    size 14
+    color "#ffffff"
+    bold True
+style truth_pair_times is text:
+    size 13
+    color "#9a86b8"
+
+style truth_track_old is default:
+    xsize 342
+    padding (12, 10)
+    background "#140e20cc"
+style truth_track_new is default:
+    xsize 342
+    padding (12, 10)
+    background "#101822cc"
+style truth_track_label_old is text:
+    font gui.name_text_font
+    size 15
+    color "#f4d98a"
+style truth_track_label_new is text:
+    font gui.name_text_font
+    size 15
+    color "#86d6a2"
+style truth_body_text is text:
+    size 14
+    color "#e8def5"
+    line_spacing 3
+style truth_deep_text is text:
+    size 14
+    color "#f2e6ff"
+    line_spacing 3
+style truth_masked_text is text:
+    size 13
+    color "#7e6e96"
+
+style truth_link_box is default:
+    xfill True
+    padding (10, 7)
+    background "#1e162eee"
+style truth_link_text is text:
+    size 14
+    color "#f4d98a"
+    line_spacing 2
+style truth_lock_box is default:
+    xfill True
+    padding (10, 7)
+    background "#100c1acc"
+
+
+################################################################################
+## ---- 分页 6：折纸书签（台词收藏 · 跳转重温 · 删除管理）----
+################################################################################
+
+init python:
+    _SPEAKER_COLOR_MAP = {
+        "陈默": "#8cc0e6",
+        "墨墨": "#cfa6f0",
+        "墨墨（笔记）": "#b99ad8",
+        "艾丽丝": "#f0c060",
+        "张子谦": "#86d6a2",
+        "吕芙": "#dcb488",
+        "周可": "#f0a4b8",
+        "王老师": "#c0c0cc",
+        "小林": "#a8cfe0",
+        "Joker": "#f0665a",
+        "向言": "#b0b0d8",
+        "班长": "#d2bc9a",
+        "校长": "#bdbdc4",
+        "外婆": "#c9b8a0",
+        "旁白": "#cbb0e6",
+    }
+
+    def _clean_bm_text(s):
+        if s is None:
+            return ""
+        txt = str(s)
+        try:
+            txt = renpy.substitute(txt)
+        except Exception:
+            pass
+        txt = re.sub(r"\{/?[^{}]*\}", "", txt)
+        return txt.strip()
+
+    def _resolve_bm_pair(cur_who=None, cur_what=None):
+        if cur_what is None:
+            raw_what = getattr(store, "_last_say_what", "") or ""
+            if _history_list:
+                raw_who = _history_list[-1].who
+                if not raw_what:
+                    raw_what = _history_list[-1].what
+            else:
+                raw_who = cur_who
+        else:
+            raw_who = cur_who
+            raw_what = cur_what
+        clean_who = "旁白" if raw_who is None else (_clean_bm_text(raw_who) or "旁白")
+        clean_what = _clean_bm_text(raw_what)
+        return clean_who, clean_what
+
+    def _resolve_speaker_color(clean_who):
+        if _history_list:
+            last = _history_list[-1]
+            if last.who and _clean_bm_text(last.who) == clean_who:
+                c = last.who_args.get("color") if isinstance(last.who_args, dict) else None
+                if c:
+                    return c
+        return _SPEAKER_COLOR_MAP.get(clean_who, "#cbb0e6")
+
+    def _resolve_chapter_source():
+        lbl = getattr(store, "current_chapter_label", None) or "prologue"
+        title = getattr(store, "save_name", None) or ""
+        if not title:
+            for c_lbl, c_title, _need in CHAPTER_LIST:
+                if c_lbl == lbl:
+                    title = c_title
+                    break
+        if not title and lbl in _DLC_LABELS:
+            title = _DLC_LABELS[lbl]
+        if not title:
+            for _f, e_title, _s, _cg, e_lbl in ENDING_LIST:
+                if e_lbl == lbl:
+                    title = e_title
+                    break
+        return lbl, (title or "云溪高中 · 主线")
+
+    def is_quote_bookmarked(cur_who=None, cur_what=None):
+        bms = persistent.quote_bookmarks or []
+        if not bms:
+            return False
+        clean_who, clean_what = _resolve_bm_pair(cur_who, cur_what)
+        if not clean_what:
+            return False
+        return any(b.get("who") == clean_who and b.get("what") == clean_what for b in bms)
+
+    def add_or_toggle_quote_bookmark(cur_who=None, cur_what=None):
+        if persistent.quote_bookmarks is None:
+            persistent.quote_bookmarks = []
+        clean_who, clean_what = _resolve_bm_pair(cur_who, cur_what)
+        if not clean_what:
+            renpy.notify("当前暂无可收藏的台词")
+            return
+        bms = list(persistent.quote_bookmarks)
+        for idx, b in enumerate(bms):
+            if b.get("who") == clean_who and b.get("what") == clean_what:
+                del bms[idx]
+                persistent.quote_bookmarks = bms
+                renpy.save_persistent()
+                renpy.sound.play("audio/sfx_click.ogg")
+                renpy.notify("已移出折纸书签")
+                return
+        lbl, chapter_title = _resolve_chapter_source()
+        entry = {
+            "id": "%d_%d" % (int(time.time() * 1000), len(bms)),
+            "who": clean_who,
+            "what": clean_what,
+            "color": _resolve_speaker_color(clean_who),
+            "chapter": chapter_title,
+            "label": lbl,
+            "saved_at": time.strftime("%Y-%m-%d %H:%M"),
+        }
+        bms.insert(0, entry)
+        persistent.quote_bookmarks = bms
+        renpy.save_persistent()
+        renpy.sound.play("audio/sfx_page.ogg")
+        renpy.notify("已折入折纸书签")
+
+    def remove_quote_bookmark(bm_id):
+        bms = [b for b in (persistent.quote_bookmarks or []) if b.get("id") != bm_id]
+        persistent.quote_bookmarks = bms
+        renpy.save_persistent()
+        renpy.sound.play("audio/sfx_click.ogg")
+        renpy.notify("已删除该折纸书签")
+
+    def clear_all_quote_bookmarks():
+        persistent.quote_bookmarks = []
+        renpy.save_persistent()
+        renpy.sound.play("audio/sfx_click.ogg")
+        renpy.notify("已清空全部折纸书签")
+
+    def bookmark_jump_action(bm):
+        lbl = bm.get("label") or "prologue"
+        if not renpy.has_label(lbl):
+            lbl = "prologue"
+        if lbl in _LABEL_TO_ENDING:
+            return Replay(lbl, scope={"player_name": persistent.last_player_name or "陈默"}, locked=False)
+        chap_name = bm.get("chapter") or lbl
+        return Show("confirm",
+                    message="从书签所在章节「%s」开始重温？\n（当前未保存的剧情进度将会重置）" % chap_name,
+                    yes_action=[Hide("confirm"), Hide("extras"), Start(lbl)],
+                    no_action=Hide("confirm"))
+
+screen extras_bookmarks():
+    $ _bms = persistent.quote_bookmarks or []
+    vbox:
+        spacing 12
+        frame:
+            style "truth_banner_card"
+            hbox:
+                xfill True
+                yalign 0.5
+                spacing 10
+                hbox:
+                    spacing 10
+                    yalign 0.5
+                    add "images/ui/icon_crane_bookmark.png" xysize (28, 28) yalign 0.5
+                    vbox:
+                        spacing 2
+                        text ("已收藏 %d 条折纸书签" % len(_bms)) style "truth_banner_title" color "#e8def5"
+                        text _("对话时点击底部快捷栏「书签」纸鹤按钮，即可把心动瞬间折页留存。") style "truth_banner_sub"
+                if _bms:
+                    textbutton _("清空书签"):
+                        style "pill_button"
+                        xminimum 108
+                        ysize 34
+                        text_size 15
+                        xalign 1.0
+                        yalign 0.5
+                        action Show("confirm",
+                                    message=_("确定要清空全部 %d 条折纸书签吗？") % len(_bms),
+                                    yes_action=[Hide("confirm"), Function(clear_all_quote_bookmarks)],
+                                    no_action=Hide("confirm"))
+
+        if not _bms:
+            frame:
+                style "bookmark_empty_card"
+                vbox:
+                    xalign 0.5
+                    yalign 0.5
+                    spacing 10
+                    add "images/ui/icon_crane_bookmark.png" xysize (56, 56) xalign 0.5 alpha 0.85
+                    text _("还没有收藏任何折纸书签") style "bookmark_empty_title" xalign 0.5
+                    text _("在剧情对话中随时点击底部快捷栏的「书签」，即可记录说话人、章节出处与台词。") style "bookmark_empty_sub" xalign 0.5
+        else:
+            for bm in _bms:
+                frame:
+                    style "bookmark_card"
+                    vbox:
+                        spacing 8
+                        hbox:
+                            xfill True
+                            yalign 0.5
+                            hbox:
+                                spacing 10
+                                yalign 0.5
+                                add "images/ui/icon_crane_bookmark.png" xysize (20, 20) yalign 0.5
+                                text (bm.get("who") or "旁白"):
+                                    style "bookmark_who_text"
+                                    color (bm.get("color") or "#cbb0e6")
+                                    substitute False
+                                frame:
+                                    style "bookmark_chap_badge"
+                                    text (bm.get("chapter") or "云溪高中"):
+                                        style "bookmark_chap_text"
+                                        substitute False
+                            text (bm.get("saved_at") or "") style "bookmark_time_text" xalign 1.0 yalign 0.5
+
+                        text ("「%s」" % (bm.get("what") or "")):
+                            style "bookmark_quote_text"
+                            substitute False
+
+                        hbox:
+                            xalign 1.0
+                            spacing 8
+                            textbutton _("跳转重温"):
+                                style "pill_button"
+                                xminimum 108
+                                ysize 32
+                                text_size 15
+                                action bookmark_jump_action(bm)
+                            textbutton _("删除"):
+                                style "pill_button"
+                                xminimum 78
+                                ysize 32
+                                text_size 15
+                                action Function(remove_quote_bookmark, bm.get("id"))
+
+style bookmark_empty_card is default:
+    xfill True
+    ysize 240
+    padding (28, 30)
+    background Frame("gui/panel_card.png", 16, 16)
+style bookmark_empty_title is text:
+    font gui.name_text_font
+    size 20
+    color "#cbb0e6"
+style bookmark_empty_sub is text:
+    size 15
+    color "#8a7aa0"
+    text_align 0.5
+
+style bookmark_card is default:
+    xfill True
+    padding (16, 12)
+    background Frame("gui/panel_card.png", 16, 16)
+style bookmark_who_text is text:
+    font gui.name_text_font
+    size 19
+style bookmark_chap_badge is default:
+    padding (10, 2)
+    background Frame("gui/hud_chip.png", 12, 12)
+style bookmark_chap_text is text:
+    size 13
+    color "#b39bd0"
+style bookmark_time_text is text:
+    size 13
+    color "#7d6b99"
+style bookmark_quote_text is text:
+    size 17
+    color "#f2ecf8"
+    line_spacing 4

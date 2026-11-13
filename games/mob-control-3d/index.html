@@ -166,6 +166,17 @@
             </button>
 
             <button
+              id="btn-weapon-mode"
+              class="mecha-mode-btn weapon-mode-btn"
+              type="button"
+              title="切换主炮弹幕模式（速射 / 散弹 / 彩虹 / 双管 / 等离子）[F]"
+            >
+              <span class="mm-icon" id="weapon-mode-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/ui_rocket.png?v=18" alt="" draggable="false" /></span>
+              <span class="mm-label" id="weapon-mode-label">速射</span>
+              <kbd class="kbd-hint">F</kbd>
+            </button>
+
+            <button
               id="btn-champion"
               class="skill-btn champion-btn"
               type="button"
@@ -500,7 +511,11 @@
                 </div>
 
                 <div class="hero-stage-topbar">
-                  <button type="button" id="btn-home-mecha" class="hero-quick-pill" title="点击切换本局主打应援大招 [E]">
+                  <button type="button" id="btn-home-weapon" class="hero-quick-pill hero-Quick-pill" title="点击切换主炮弹幕模式 [F]">
+                    <span id="home-weapon-icon" class="hero-pill-icon"><img class="art-icon-img inline-art-img" src="/assets/icons/ui_rocket.png?v=18" alt="" draggable="false" /></span>
+                    <span id="home-weapon-label">速射</span>
+                  </button>
+                  <button type="button" id="btn-home-mecha" class="hero-quick-pill hero-Quick-pill" title="点击切换本局主打应援大招 [E]">
                     <span id="home-mecha-icon" class="hero-pill-icon"><img class="art-icon-img inline-art-img" src="/assets/icons/hud_hammer.png?v=18" alt="" draggable="false" /></span>
                     <span id="home-mecha-label">安可大招</span>
                   </button>

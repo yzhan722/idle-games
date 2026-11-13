@@ -6,6 +6,7 @@
   SkillBranchId,
   SkillNodeId,
   SkinId,
+  WeaponMode,
 } from './State';
 
 const skillImg = (id: string): string =>
@@ -22,6 +23,9 @@ const hudImg = (file: string, cls = 'hud-art-img'): string =>
 
 const hudImgV19 = (file: string, cls = 'inline-art-img'): string =>
   `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=19" alt="" loading="eager" decoding="async" draggable="false" />`;
+
+const rootAssetImgV20 = (file: string, cls = 'inline-art-img'): string =>
+  `<img class="art-icon-img ${cls}" src="/assets/${file}.png?v=20" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 /**
  * 28 AI-Generated Kingdom-Rush / Brawl-Stars Style 2D Thick-Painted Skill Icons
@@ -89,6 +93,14 @@ export const MECHA_MODE_ART: Record<MechaMode, string> = {
   hammer: hudImg('hud_hammer'),
   pyro: hudImg('hud_pyro'),
   aegis: hudImg('hud_aegis'),
+};
+
+export const WEAPON_MODE_ART: Record<WeaponMode, string> = {
+  gatling: hudImg('ui_rocket', 'hud-art-img'),
+  twin: hudImg('ui_bolt', 'hud-art-img'),
+  plasma: hudImg('ui_sparkle', 'hud-art-img'),
+  scatter: rootAssetImgV20('icon_weapon_scatter', 'hud-art-img'),
+  rainbow: rootAssetImgV20('icon_weapon_rainbow', 'hud-art-img'),
 };
 
 /**
@@ -173,6 +185,9 @@ export const UI_ART = {
   candyVault: hudImgV19('ui_candy_vault', 'inline-art-img'),
   endlessShield: hudImgV19('ui_endless_shield', 'inline-art-img'),
   endlessMedal: hudImgV19('ui_endless_medal', 'inline-art-img'),
+  weaponScatter: rootAssetImgV20('icon_weapon_scatter', 'inline-art-img'),
+  weaponRainbow: rootAssetImgV20('icon_weapon_rainbow', 'inline-art-img'),
+  tacticalAirdrop: rootAssetImgV20('icon_tactical_airdrop', 'inline-art-img'),
 };
 
 /**

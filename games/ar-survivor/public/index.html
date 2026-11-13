@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>AR DeepSeek娘 · 实景桌宠养成</title>
   <link rel="icon" type="image/webp" href="./assets/hero_idle2.webp?v=hd5" />
-  <link rel="stylesheet" href="./style.css?v=hd17" />
+  <link rel="stylesheet" href="./style.css?v=hd18" />
 </head>
 <body>
   <!-- 底层全屏实景摄像头 -->
@@ -79,7 +79,7 @@
         </button>
       </div>
 
-      <!-- 右上角治愈系手绘工具栏：拍立得合影 + 纪念相册墙 + BGM/语音开关 + 实景重扫 + 屏幕翻转 -->
+      <!-- 右上角治愈系手绘工具栏：拍立得合影 + 纪念相册墙 + 房间主题切换 + BGM/语音开关 + 实景重扫 + 屏幕翻转 -->
       <div class="hud-right">
         <button id="btn-photo-snap" class="icon-btn" title="AR拍立得合影（也可对镜头比耶自动触发）" aria-label="AR拍立得合影">
           <img src="./assets/ui_btn_camera.webp?v=hd6" alt="" class="top-tool-ico" />
@@ -87,6 +87,9 @@
         <button id="btn-album-open" class="icon-btn icon-btn-album" title="打开拍立得纪念相册集邮墙" aria-label="拍立得纪念相册">
           <img src="./assets/ui_btn_album.webp?v=hd17" alt="" class="top-tool-ico" />
           <span id="hud-album-count" class="tool-count-badge hidden">0</span>
+        </button>
+        <button id="btn-room-theme" class="icon-btn icon-btn-theme" title="切换治愈房间主题（晴空奶油书房 / 深海星梦水族馆）" aria-label="切换房间主题">
+          <img src="./assets/ui_btn_theme.webp?v=hd18" alt="" class="top-tool-ico" />
         </button>
         <button id="btn-sound-toggle" class="icon-btn" title="开关BGM与角色语音" aria-label="开关声音">
           <img src="./assets/ui_btn_sound.webp?v=hd6" alt="" class="top-tool-ico" />
@@ -161,6 +164,19 @@
         <button id="btn-polaroid-save" class="polaroid-save-btn">下载原图</button>
       </div>
     </div>
+
+    <!-- AR-3 亲密里程碑解锁提示卡（奶油手账风，非阻塞） -->
+    <aside id="milestone-toast" class="milestone-toast hidden" aria-live="polite">
+      <div class="milestone-toast-thumb-wrap">
+        <img id="milestone-toast-img" class="milestone-toast-img" src="./assets/item_shell_clip.webp?v=hd18" alt="" />
+      </div>
+      <div class="milestone-toast-body">
+        <span class="milestone-toast-badge" id="milestone-toast-badge">亲密 LV.3 里程碑解锁</span>
+        <strong class="milestone-toast-title" id="milestone-toast-title">星海贝壳发卡</strong>
+        <span class="milestone-toast-desc" id="milestone-toast-desc">已自动解锁限定奖励~</span>
+      </div>
+      <button id="btn-milestone-toast-close" class="milestone-toast-close" aria-label="关闭里程碑提示">×</button>
+    </aside>
 
     <!-- AR-2 日常话题轻对话多选气泡卡（奶油手账贴纸风，非阻塞悬浮） -->
     <aside id="pet-topic-card" class="pet-topic-card hidden" aria-live="polite">
@@ -285,6 +301,6 @@
     </div>
   </div>
 
-  <script type="module" src="./game.js?v=hd41"></script>
+  <script type="module" src="./game.js?v=hd42"></script>
 </body>
 </html>

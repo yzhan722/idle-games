@@ -75,6 +75,8 @@ const EXPANSIONS: Dictionary = {
 }
 
 ## v2.5-3: Animal Promotion Milestone Traits (Activated at Lv.10 / Lv.25 / Lv.50)
+const ANIMAL_ORDER: Array[String] = ["bunny", "otter", "fox", "shiba", "penguin", "toucan"]
+
 const ANIMAL_TRAITS: Dictionary = {
 	"bunny": {"name": "丰收巧爪", "desc": "收获产量+1/阶", "type": "harvest_bonus"},
 	"otter": {"name": "疾风步履", "desc": "移速+20%/阶", "type": "speed_mult"},
@@ -83,6 +85,46 @@ const ANIMAL_TRAITS: Dictionary = {
 	"penguin": {"name": "极地秘传", "desc": "炼制耗时-15%/阶", "type": "work_duration_mult"},
 	"toucan": {"name": "顺风羽翼", "desc": "跨岛移速+20%/阶", "type": "speed_mult"}
 }
+
+## CI-3: Golden Employee Promotion Tiers, Headwear Accessories & Honor Medals (Lv.10 / Lv.25 / Lv.50)
+const PROMOTION_TIERS: Array[Dictionary] = [
+	{
+		"tier": 0,
+		"min_level": 1,
+		"title_zh": "见习萌芽",
+		"title_en": "Apprentice",
+		"title_ja": "見習い",
+		"accessory_tex": "",
+		"medal_tex": ""
+	},
+	{
+		"tier": 1,
+		"min_level": 10,
+		"title_zh": "★新星学徒",
+		"title_en": "★Rising Star",
+		"title_ja": "★新星見習",
+		"accessory_tex": "res://assets/pixel_art/ui/promo_tier1_star_ribbon.png",
+		"medal_tex": "res://assets/pixel_art/ui/medal_tier1_bronze.png"
+	},
+	{
+		"tier": 2,
+		"min_level": 25,
+		"title_zh": "★匠心大师",
+		"title_en": "★Artisan Chef",
+		"title_ja": "★匠マイスター",
+		"accessory_tex": "res://assets/pixel_art/ui/promo_tier2_chef_hat.png",
+		"medal_tex": "res://assets/pixel_art/ui/medal_tier2_silver.png"
+	},
+	{
+		"tier": 3,
+		"min_level": 50,
+		"title_zh": "★金冠宗师",
+		"title_en": "★Gilded Crown",
+		"title_ja": "★金冠宗師",
+		"accessory_tex": "res://assets/pixel_art/ui/promo_tier3_gilded_crown.png",
+		"medal_tex": "res://assets/pixel_art/ui/medal_tier3_gold.png"
+	}
+]
 
 ## v2.5-2: Functional Island Miniature Landscapes & Global Passive Buffs
 const ISLAND_LANDSCAPES: Dictionary = {
@@ -294,6 +336,41 @@ func get_animal_trait_tag(animal_key: String, level: int) -> String:
 	var roman: String = String(["I", "II", "III"][clampi(tiers - 1, 0, 2)])
 	return "★" + t_name + roman
 
+func get_animal_promotion_info(animal_key: String, level: int) -> Dictionary:
+	var lv := maxi(0, level)
+	var tier := get_animal_trait_tier_count(lv)
+	var tier_cfg: Dictionary = PROMOTION_TIERS[clampi(tier, 0, PROMOTION_TIERS.size() - 1)]
+	var title_key := "title_zh"
+	if current_lang == "en_US":
+		title_key = "title_en"
+	elif current_lang == "ja_JP":
+		title_key = "title_ja"
+	var a_cfg: Dictionary = ANIMALS.get(animal_key, ANIMALS["bunny"])
+	var short_name := String(a_cfg.get("name", animal_key)).split(" · ")[0]
+	var t_cfg: Dictionary = ANIMAL_TRAITS.get(animal_key, ANIMAL_TRAITS["bunny"])
+	var next_lv := 10 if tier == 0 else (25 if tier == 1 else (50 if tier == 2 else 50))
+	return {
+		"animal_key": animal_key,
+		"short_name": short_name,
+		"level": lv,
+		"tier": tier,
+		"tier_title": String(tier_cfg.get(title_key, "见习萌芽")),
+		"trait_name": String(t_cfg.get("name", "专精")),
+		"trait_desc": String(t_cfg.get("desc", "")),
+		"medals_unlocked": tier,
+		"medals_total": 3,
+		"next_milestone_lv": next_lv,
+		"accessory_tex": String(tier_cfg.get("accessory_tex", "")),
+		"medal_tex": String(tier_cfg.get("medal_tex", ""))
+	}
+
+func get_total_honor_medals_unlocked(animal_levels: Dictionary) -> Dictionary:
+	var unlocked := 0
+	var total := ANIMAL_ORDER.size() * 3
+	for ak in ANIMAL_ORDER:
+		unlocked += get_animal_trait_tier_count(int(animal_levels.get(ak, 0)))
+	return {"unlocked": unlocked, "total": total}
+
 func calc_bunny_harvest_trait_bonus(level: int) -> int:
 	return get_animal_trait_tier_count(level)
 
@@ -377,7 +454,9 @@ const I18N_DICT: Dictionary = {
 		"drawer_build": "【建筑升级】每25级作物/美食自动换代 + 建筑四阶外观蜕变!",
 		"drawer_animal": "【动物编制与特质】点击摸头加速 · Lv.10/25/50激活专精特质!",
 		"drawer_expand": "【开拓与造景】开拓跨岛木桥 · 晨露琥珀点亮三岛专属增益造景!",
-		"drawer_codex": "【山海图鉴】已点亮 %d/8 种食材料理 · 永久售价 +%d%%!"
+		"drawer_codex": "【山海图鉴】已点亮 %d/8 种食材料理 · 永久售价 +%d%%!",
+		"drawer_codex_full": "【山海图鉴】料理 %d/8(+%d%%) · 员工荣誉勋章 %d/%d",
+		"medal_prog": "勋章 %d/%d"
 	},
 	"en_US": {
 		"lang_badge": "[EN]",
@@ -390,7 +469,9 @@ const I18N_DICT: Dictionary = {
 		"drawer_build": "[Buildings] Auto-evolves every 25 levels + 4-Tier visual upgrade!",
 		"drawer_animal": "[Animal Crew] Click to pet (+50% spd) · Unlock traits at Lv.10/25/50!",
 		"drawer_expand": "[Expansion] Build island bridges & unlock Amber passive landscapes!",
-		"drawer_codex": "[Collection Codex] Unlocked %d/8 delicacies · Global price +%d%%!"
+		"drawer_codex": "[Collection Codex] Unlocked %d/8 delicacies · Global price +%d%%!",
+		"drawer_codex_full": "[Codex] Dishes %d/8(+%d%%) · Honor Medals %d/%d",
+		"medal_prog": "Medals %d/%d"
 	},
 	"ja_JP": {
 		"lang_badge": "[日本語]",
@@ -403,7 +484,9 @@ const I18N_DICT: Dictionary = {
 		"drawer_build": "【施設強化】25Lv毎に作物と料理が進化＋外観4段階変化！",
 		"drawer_animal": "【動物編成】撫でて加速・Lv.10/25/50で専門特性解放！",
 		"drawer_expand": "【開拓造景】木橋を修復し、琥珀で三島の特別造景を解放！",
-		"drawer_codex": "【山海図鑑】%d/8 種の食材と料理を解放・販売価格 +%d%%！"
+		"drawer_codex": "【山海図鑑】%d/8 種の食材と料理を解放・販売価格 +%d%%！",
+		"drawer_codex_full": "【山海図鑑】料理 %d/8(+%d%%) · 名誉勲章 %d/%d",
+		"medal_prog": "勲章 %d/%d"
 	}
 }
 

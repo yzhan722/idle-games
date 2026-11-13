@@ -1,5 +1,59 @@
 // audio.js — 商业级二次元声效、萌系角色语音合成、治愈八音盒 BGM 与手机触觉震动引擎
 
+const BGM_TRACKS = [
+  {
+    id: 'kalimba',
+    name: '晴空卡林巴',
+    stepMs: 240,
+    melody: [
+      523.25, 659.25, 783.99, 987.77, 783.99, 659.25, 587.33, 0,
+      440.00, 523.25, 659.25, 880.00, 783.99, 659.25, 523.25, 0,
+      349.23, 440.00, 523.25, 698.46, 659.25, 523.25, 440.00, 523.25,
+      392.00, 493.88, 587.33, 783.99, 659.25, 587.33, 523.25, 0
+    ],
+    bass: [
+      261.63, 0, 0, 0, 392.00, 0, 0, 0,
+      220.00, 0, 0, 0, 329.63, 0, 0, 0,
+      174.61, 0, 0, 0, 261.63, 0, 0, 0,
+      196.00, 0, 0, 0, 293.66, 0, 0, 0
+    ]
+  },
+  {
+    id: 'lullaby',
+    name: '星海摇篮曲',
+    stepMs: 270,
+    melody: [
+      698.46, 880.00, 1046.50, 0, 880.00, 783.99, 698.46, 0,
+      659.25, 783.99, 987.77, 0, 783.99, 659.25, 587.33, 0,
+      523.25, 659.25, 880.00, 0, 783.99, 659.25, 523.25, 0,
+      587.33, 698.46, 880.00, 783.99, 659.25, 587.33, 523.25, 0
+    ],
+    bass: [
+      174.61, 0, 0, 0, 261.63, 0, 0, 0,
+      164.81, 0, 0, 0, 246.94, 0, 0, 0,
+      220.00, 0, 0, 0, 329.63, 0, 0, 0,
+      196.00, 0, 0, 0, 293.66, 0, 0, 0
+    ]
+  },
+  {
+    id: 'teatime',
+    name: '奶油下午茶',
+    stepMs: 220,
+    melody: [
+      783.99, 987.77, 1174.66, 987.77, 880.00, 783.99, 659.25, 0,
+      659.25, 783.99, 987.77, 880.00, 783.99, 659.25, 587.33, 0,
+      523.25, 659.25, 783.99, 1046.50, 987.77, 783.99, 659.25, 0,
+      587.33, 783.99, 880.00, 1174.66, 987.77, 880.00, 783.99, 0
+    ],
+    bass: [
+      196.00, 0, 0, 0, 293.66, 0, 0, 0,
+      164.81, 0, 0, 0, 246.94, 0, 0, 0,
+      130.81, 0, 0, 0, 261.63, 0, 0, 0,
+      146.83, 0, 0, 0, 293.66, 0, 0, 0
+    ]
+  }
+];
+
 class PetAudioAndHaptics {
   constructor() {
     this.ctx = null;
@@ -8,6 +62,7 @@ class PetAudioAndHaptics {
     this.voiceEnabled = true;
     this.bgmTimer = null;
     this.bgmStep = 0;
+    this.trackIndex = 0;
     this.zhVoice = null;
     this.lastVoiceTime = 0;
 
@@ -17,9 +72,49 @@ class PetAudioAndHaptics {
         this.muted = true;
         this.bgmEnabled = false;
       }
+      const savedTrack = Number(localStorage.getItem('ar_deepseek_bgm_track'));
+      if (Number.isInteger(savedTrack) && savedTrack >= 0 && savedTrack < BGM_TRACKS.length) {
+        this.trackIndex = savedTrack;
+      }
     } catch (e) {}
 
     this.initSpeechVoices();
+  }
+
+  getTrackInfo() {
+    const t = BGM_TRACKS[this.trackIndex % BGM_TRACKS.length] || BGM_TRACKS[0];
+    return { index: this.trackIndex % BGM_TRACKS.length, id: t.id, name: t.name, total: BGM_TRACKS.length };
+  }
+
+  setBgmTrack(index) {
+    const safeIdx = ((Number(index) || 0) % BGM_TRACKS.length + BGM_TRACKS.length) % BGM_TRACKS.length;
+    this.trackIndex = safeIdx;
+    this.bgmStep = 0;
+    try {
+      localStorage.setItem('ar_deepseek_bgm_track', String(safeIdx));
+    } catch (e) {}
+    if (this.bgmTimer) {
+      this.stopBgmLoop();
+      if (!this.muted && this.bgmEnabled) {
+        this.startBgmLoop();
+      }
+    }
+    return this.getTrackInfo();
+  }
+
+  cycleBgmTrack() {
+    const next = (this.trackIndex + 1) % BGM_TRACKS.length;
+    const info = this.setBgmTrack(next);
+    if (this.muted) {
+      this.muted = false;
+      this.bgmEnabled = true;
+      try {
+        localStorage.setItem('ar_deepseek_muted', '0');
+      } catch (e) {}
+    }
+    this.ensureContext();
+    this.playSfx('star');
+    return info;
   }
 
   ensureContext() {
@@ -106,28 +201,19 @@ class PetAudioAndHaptics {
     } catch (e) {}
   }
 
-  // 轻快治愈系八音盒 / 卡林巴琴休闲养成 BGM 循环（纯 WebAudio 零流量实时合成）
+  // 轻快治愈系八音盒 / 卡林巴琴休闲养成 BGM 循环（支持多首治愈曲目切换）
   startBgmLoop() {
     if (this.bgmTimer || this.muted) return;
-    // Cmaj7 -> Am7 -> Fmaj7 -> G6 治愈五声调式旋律 (Hz)
-    const melody = [
-      523.25, 659.25, 783.99, 987.77, 783.99, 659.25, 587.33, 0,
-      440.00, 523.25, 659.25, 880.00, 783.99, 659.25, 523.25, 0,
-      349.23, 440.00, 523.25, 698.46, 659.25, 523.25, 440.00, 523.25,
-      392.00, 493.88, 587.33, 783.99, 659.25, 587.33, 523.25, 0
-    ];
-    const bass = [
-      261.63, 0, 0, 0, 392.00, 0, 0, 0,
-      220.00, 0, 0, 0, 329.63, 0, 0, 0,
-      174.61, 0, 0, 0, 261.63, 0, 0, 0,
-      196.00, 0, 0, 0, 293.66, 0, 0, 0
-    ];
+    const activeTrack = BGM_TRACKS[this.trackIndex % BGM_TRACKS.length] || BGM_TRACKS[0];
 
     this.bgmTimer = setInterval(() => {
       if (this.muted || !this.bgmEnabled || document.hidden) return;
       const ctx = this.ctx;
       if (!ctx || ctx.state !== 'running') return;
 
+      const track = BGM_TRACKS[this.trackIndex % BGM_TRACKS.length] || BGM_TRACKS[0];
+      const melody = track.melody;
+      const bass = track.bass;
       const idx = this.bgmStep % melody.length;
       this.bgmStep++;
       const now = ctx.currentTime;
@@ -173,7 +259,7 @@ class PetAudioAndHaptics {
         bOsc.start(now);
         bOsc.stop(now + 0.68);
       }
-    }, 240);
+    }, activeTrack.stepMs || 240);
   }
 
   stopBgmLoop() {

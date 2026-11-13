@@ -1,6 +1,6 @@
 // game.js — DeepSeek娘桌面宠物级实景交互（抓边爬台 / 蹲伏戳物体 / 坐边缘晃腿 / 摸头傲娇 / 物理轨迹回归中心）
 
-import { ARVisionEngine } from './vision.js?v=hd9';
+import { ARVisionEngine } from './vision.js?v=hd18';
 import {
   drawHeroSprite,
   drawEnemySprite,
@@ -11,8 +11,8 @@ import {
   drawInteractionVfx,
   images,
   isReady
-} from './sprites.js?v=hd16';
-import { petAudio } from './audio.js?v=hd7';
+} from './sprites.js?v=hd18';
+import { petAudio } from './audio.js?v=hd18';
 
 const stageEl = document.getElementById('game-stage');
 const canvas = document.getElementById('game-canvas');
@@ -65,7 +65,9 @@ function updateOrientationLayout() {
         player.y *= sy;
       }
       for (const furn of furnitureList) {
-        furn.x *= sx;
+        const conf = player.placedFurniture && player.placedFurniture[furn.key];
+        const ratioX = conf && typeof conf.xRatio === 'number' ? conf.xRatio * W : furn.x * sx;
+        furn.x = Math.max(56, Math.min(W - 56, ratioX));
         furn.y = H * 0.68 - 2;
         furn.vy = 0;
       }
@@ -125,6 +127,8 @@ function savePetState() {
         equipped: player.equipped,
         placedFurniture: player.placedFurniture,
         activeToy: player.activeToy,
+        roomTheme: player.roomTheme,
+        musicTrack: petAudio.getTrackInfo().index,
         weapons: player.weapons,
         bestShiftRecord: player.bestShiftRecord,
         topicsChatted: player.topicsChatted
@@ -225,6 +229,7 @@ const player = {
   placedFurniture: savedPet.placedFurniture || {
     lamp: { xRatio: 0.20, manualOn: true }
   },
+  roomTheme: savedPet.roomTheme === 'star_aquarium' ? 'star_aquarium' : 'cream_study',
   weapons: savedPet.weapons || {
     blaster: 1,
     teaBlade: 1,
@@ -238,6 +243,169 @@ const player = {
     bossesDefeated: Math.max(0, Number(savedPet.bestShiftRecord?.bossesDefeated) || 0)
   }
 };
+
+const ROOM_THEMES = [
+  {
+    id: 'cream_study',
+    name: '晴空奶油书房',
+    subtitle: '暖阳海风木桌',
+    thumb: './assets/bg_healing_room.webp?v=hd18'
+  },
+  {
+    id: 'star_aquarium',
+    name: '深海星梦水族馆',
+    subtitle: '星光水母与蓝鲸穹顶',
+    thumb: './assets/bg_aquarium_room.webp?v=hd18'
+  }
+];
+
+const INTIMACY_MILESTONES = [
+  {
+    level: 3,
+    itemId: 'shell_clip',
+    kind: 'headwear',
+    name: '星海贝壳发卡',
+    img: './assets/item_shell_clip.webp?v=hd18',
+    desc: '亲密 LV.3 解锁 · 互动亲密经验 +20%',
+    toastDesc: '已自动佩戴限定头饰，每次互动亲密经验 +20%'
+  },
+  {
+    level: 5,
+    itemId: 'furn_musicbox',
+    furnKey: 'musicbox',
+    kind: 'furniture',
+    name: '星梦八音盒唱片机',
+    img: './assets/furn_musicbox.webp?v=hd18',
+    desc: '亲密 LV.5 解锁 · 轻点切换3首治愈八音盒曲目',
+    toastDesc: '已自动摆上桌面，轻点唱片机可切换治愈曲目~'
+  },
+  {
+    level: 8,
+    itemId: 'star_wreath',
+    kind: 'headwear',
+    name: '深海星梦花环',
+    img: './assets/item_star_wreath.webp?v=hd18',
+    desc: '亲密 LV.8 解锁 · 打工金币与亲密收益 +15%',
+    toastDesc: '已自动佩戴典藏头饰，打工金币与亲密收益 +15%'
+  }
+];
+
+vision.setRoomTheme(player.roomTheme);
+if (typeof savedPet.musicTrack === 'number') {
+  petAudio.setBgmTrack(savedPet.musicTrack);
+}
+
+let milestoneToastTimer = null;
+const milestoneToastQueue = [];
+
+function hideMilestoneToast() {
+  if (milestoneToastTimer) {
+    clearTimeout(milestoneToastTimer);
+    milestoneToastTimer = null;
+  }
+  const toastEl = document.getElementById('milestone-toast');
+  if (toastEl) toastEl.classList.add('hidden');
+  if (milestoneToastQueue.length > 0) {
+    const next = milestoneToastQueue.shift();
+    setTimeout(() => showMilestoneToast(next), 180);
+  }
+}
+
+function showMilestoneToast(milestone) {
+  if (!milestone) return;
+  const toastEl = document.getElementById('milestone-toast');
+  if (!toastEl) return;
+  if (!toastEl.classList.contains('hidden')) {
+    milestoneToastQueue.push(milestone);
+    return;
+  }
+  const imgEl = document.getElementById('milestone-toast-img');
+  const badgeEl = document.getElementById('milestone-toast-badge');
+  const titleEl = document.getElementById('milestone-toast-title');
+  const descEl = document.getElementById('milestone-toast-desc');
+  if (imgEl) imgEl.src = milestone.img;
+  if (badgeEl) badgeEl.textContent = `亲密 LV.${milestone.level} 里程碑解锁`;
+  if (titleEl) titleEl.textContent = milestone.name;
+  if (descEl) descEl.textContent = milestone.toastDesc || milestone.desc;
+  toastEl.classList.remove('hidden');
+  if (milestoneToastTimer) clearTimeout(milestoneToastTimer);
+  milestoneToastTimer = setTimeout(() => {
+    hideMilestoneToast();
+  }, 4600);
+}
+
+function setRoomTheme(themeId, announce = true) {
+  const valid = ROOM_THEMES.some((t) => t.id === themeId) ? themeId : 'cream_study';
+  player.roomTheme = valid;
+  vision.setRoomTheme(valid);
+  const themeSpec = ROOM_THEMES.find((t) => t.id === valid) || ROOM_THEMES[0];
+  const btnTheme = document.getElementById('btn-room-theme');
+  if (btnTheme) {
+    btnTheme.dataset.theme = valid;
+    btnTheme.title = `当前房间主题：${themeSpec.name}（点击切换）`;
+  }
+  savePetState();
+  if (announce) {
+    playSfx('star');
+    spawnInteractVfx(player.x, player.y - 26, 'sparkle', 8);
+    if (vision.mode === 'camera') {
+      setPlayerEmote(`已记住房间主题「${themeSpec.name}」，关闭摄像头即可欣赏~`, 2.2, 'happy');
+    } else {
+      setPlayerEmote(`切换治愈房间主题：「${themeSpec.name}」~`, 2.0, 'happy', true);
+    }
+  }
+  const petDrawer = document.getElementById('pet-drawer');
+  if (petDrawer && !petDrawer.classList.contains('hidden') && typeof renderDrawerItems === 'function') {
+    const dressTabActive = document.querySelector('.drawer-tab[data-tab="dress"]')?.classList.contains('active');
+    if (dressTabActive) renderDrawerItems();
+  }
+}
+
+function reconcileIntimacyMilestones({ showToast = true } = {}) {
+  let changed = false;
+  let newlyUnlocked = null;
+  for (const m of INTIMACY_MILESTONES) {
+    if (player.level >= m.level && !player.ownedDress[m.itemId]) {
+      player.ownedDress[m.itemId] = true;
+      if (m.furnKey) {
+        if (!player.placedFurniture[m.furnKey]) {
+          player.placedFurniture[m.furnKey] = {
+            xRatio: 0.62,
+            manualOn: true
+          };
+        }
+        if (typeof syncPlacedFurniture === 'function') {
+          syncPlacedFurniture();
+        }
+      } else {
+        player.equipped[m.itemId] = true;
+      }
+      changed = true;
+      newlyUnlocked = m;
+      if (showToast) {
+        showMilestoneToast(m);
+      }
+    }
+  }
+  if (changed) {
+    if (showToast && newlyUnlocked) {
+      playSfx('star');
+      spawnInteractVfx(player.x, player.y - 30, 'love', 14);
+      setPlayerEmote(`亲密 LV.${newlyUnlocked.level} 达成！解锁「${newlyUnlocked.name}」~`, 2.6, 'cheer', true);
+    }
+    savePetState();
+    const petDrawer = document.getElementById('pet-drawer');
+    if (petDrawer && !petDrawer.classList.contains('hidden') && typeof renderDrawerItems === 'function') {
+      const dressTabActive = document.querySelector('.drawer-tab[data-tab="dress"]')?.classList.contains('active');
+      if (dressTabActive) renderDrawerItems();
+    }
+  }
+  return changed;
+}
+
+function onPlayerLevelUp() {
+  reconcileIntimacyMilestones({ showToast: true });
+}
 
 function pulseHudElement(id) {
   const el = document.getElementById(id);
@@ -785,9 +953,10 @@ function syncSurvivorHud() {
 
 function addCoins(amount, x, y, labelPrefix = '') {
   const crownBonus = player.equipped.crown ? 1.25 : 1;
+  const wreathBonus = player.equipped.star_wreath ? 1.15 : 1;
   const magnetBonus = 1 + ((player.weapons.magnet || 1) - 1) * 0.15;
   const buffBonus = player.foodBuffTimer > 0 ? player.foodCoinMult : 1;
-  const finalCoins = Math.max(1, Math.round(amount * crownBonus * magnetBonus * buffBonus));
+  const finalCoins = Math.max(1, Math.round(amount * crownBonus * wreathBonus * magnetBonus * buffBonus));
   player.coins += finalCoins;
   if (gameMode === 'survivor') {
     survivorSessionCoins += finalCoins;
@@ -842,7 +1011,9 @@ function setPlayerEmote(text, duration = 1.8, voiceMood = null, speakTts = false
 function addAffectionXp(amount, labelText) {
   const lampFurn = furnitureList.find((f) => f.key === 'lamp');
   const lampBonus = lampFurn && (vision.isDarkRoom || lampFurn.manualOn) ? 1.25 : 1;
-  const finalAmount = Math.max(1, Math.round(amount * lampBonus));
+  const shellBonus = player.equipped.shell_clip ? 1.2 : 1;
+  const wreathBonus = player.equipped.star_wreath ? 1.15 : 1;
+  const finalAmount = Math.max(1, Math.round(amount * lampBonus * shellBonus * wreathBonus));
   player.xp += finalAmount;
   player.hp = Math.min(player.maxHp, player.hp + 15);
   pulseHudElement('hud-avatar-btn');
@@ -872,10 +1043,12 @@ function addAffectionXp(amount, labelText) {
     scale: 1.08,
     life: 0.85
   });
-  if (player.xp >= player.xpNext) {
+  let leveledUp = false;
+  while (player.xp >= player.xpNext) {
     player.xp -= player.xpNext;
     player.level++;
     player.xpNext = Math.round(player.xpNext * 1.3);
+    leveledUp = true;
     applySeamlessUpgrade();
     spawnInteractVfx(player.x, player.y - 24, 'love', 12);
     floatingTexts.push({
@@ -888,6 +1061,9 @@ function addAffectionXp(amount, labelText) {
       scale: 1.24,
       life: 1.1
     });
+  }
+  if (leveledUp) {
+    onPlayerLevelUp();
   }
   savePetState();
 }
@@ -913,7 +1089,7 @@ const touchRipples = []; // 指尖点触柔和樱粉星光水波
 const fingerSparkle = { active: false, x: 0, y: 0 }; // AR食指逗宠星光萤火点
 const floatingTexts = [];
 const petItems = []; // 养成模式投喂的美食 ('food') 与弹力玩具 ('ball')
-const furnitureList = []; // 实景桌面微缩家具 ('lamp' | 'pc' | 'tree')
+const furnitureList = []; // 实景桌面微缩家具 ('lamp' | 'pc' | 'tree' | 'musicbox')
 const catchItems = []; // 实景手掌托举接白米饭小游戏掉落物
 let draggedItem = null;
 let draggedFurniture = null;
@@ -923,21 +1099,27 @@ function syncPlacedFurniture() {
   const specs = [
     { key: 'lamp', defaultX: 0.20 },
     { key: 'pc', defaultX: 0.76 },
-    { key: 'tree', defaultX: 0.36 }
+    { key: 'tree', defaultX: 0.36 },
+    { key: 'musicbox', defaultX: 0.62 }
   ];
   for (const sp of specs) {
     const conf = player.placedFurniture && player.placedFurniture[sp.key];
     const existingIdx = furnitureList.findIndex((f) => f.key === sp.key);
     if (conf) {
+      const clampedX = Math.max(56, Math.min(W - 56, (typeof conf.xRatio === 'number' ? conf.xRatio : sp.defaultX) * W));
       if (existingIdx === -1) {
         furnitureList.push({
           key: sp.key,
-          x: Math.max(54, Math.min(W - 54, (conf.xRatio || sp.defaultX) * W)),
+          x: clampedX,
           y: H * 0.68 - 2,
           vy: 0,
           manualOn: conf.manualOn !== undefined ? conf.manualOn : true,
           working: false,
           workTimer: 0,
+          noteTimer: 1.8,
+          isPlaying: !petAudio.muted,
+          trackName: petAudio.getTrackInfo().name,
+          isDragging: false,
           squashTimer: 0.2
         });
       }
@@ -947,6 +1129,8 @@ function syncPlacedFurniture() {
   }
 }
 syncPlacedFurniture();
+reconcileIntimacyMilestones({ showToast: false });
+setRoomTheme(player.roomTheme, false);
 
 // ================= 桌宠实时小心愿系统（Mini Wishes） =================
 const WISH_POOL = [
@@ -1406,16 +1590,23 @@ canvas.addEventListener('pointerdown', (e) => {
     return;
   }
 
-  // 检测是否点击或按住拖拽桌面上的 AR 微缩家具（小夜灯 / 码农工位 / 猫爬架）
+  // 检测是否点击或长按横向拖拽桌面上的 AR 微缩家具（小夜灯 / 码农工位 / 猫爬架 / 八音盒唱片机）
   if (gameMode === 'pet') {
     for (let i = furnitureList.length - 1; i >= 0; i--) {
       const furn = furnitureList[i];
-      if (Math.hypot(pt.x - furn.x, pt.y - (furn.y - 34)) < 52) {
+      if (Math.hypot(pt.x - furn.x, pt.y - (furn.y - 34)) < 54) {
         draggedFurniture = furn;
+        furn.isDragging = true;
+        furn.dragPointerId = e.pointerId;
+        furn.dragOffsetX = furn.x - pt.x;
         furn.dragStartX = pt.x;
         furn.dragStartY = pt.y;
         furn.movedDist = 0;
+        furn.holdTime = 0;
         furn.squashTimer = 0.2;
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch (err) {}
         return;
       }
     }
@@ -1439,10 +1630,14 @@ canvas.addEventListener('pointerdown', (e) => {
 
 canvas.addEventListener('pointermove', (e) => {
   if (draggedFurniture) {
+    if (draggedFurniture.dragPointerId != null && e.pointerId !== draggedFurniture.dragPointerId) return;
     const pt = clientToStage(e.clientX, e.clientY);
-    draggedFurniture.movedDist += Math.hypot(pt.x - draggedFurniture.x, pt.y - draggedFurniture.y);
-    draggedFurniture.x = Math.max(48, Math.min(W - 48, pt.x));
-    draggedFurniture.y = Math.max(85, Math.min(H * 0.78, pt.y));
+    draggedFurniture.movedDist = Math.max(
+      draggedFurniture.movedDist || 0,
+      Math.hypot(pt.x - draggedFurniture.dragStartX, pt.y - draggedFurniture.dragStartY)
+    );
+    draggedFurniture.x = Math.max(56, Math.min(W - 56, pt.x + (draggedFurniture.dragOffsetX || 0)));
+    draggedFurniture.y = H * 0.68 - 2;
     draggedFurniture.vy = 0;
     return;
   }
@@ -1536,16 +1731,28 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 
-function finishCanvasTouch() {
+function finishCanvasTouch(e) {
   if (draggedFurniture) {
     const furn = draggedFurniture;
     draggedFurniture = null;
+    furn.isDragging = false;
+    if (e && e.pointerId != null) {
+      try {
+        if (canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) {
+          canvas.releasePointerCapture(e.pointerId);
+        }
+      } catch (err) {}
+    }
+    furn.dragPointerId = null;
+    furn.x = Math.max(56, Math.min(W - 56, furn.x));
+    furn.y = H * 0.68 - 2;
+    furn.vy = 0;
     furn.squashTimer = 0.2;
     if (player.placedFurniture && player.placedFurniture[furn.key]) {
-      player.placedFurniture[furn.key].xRatio = furn.x / Math.max(1, W);
+      player.placedFurniture[furn.key].xRatio = Number((furn.x / Math.max(1, W)).toFixed(4));
     }
     // 轻点家具（未大幅拖动）触发专属家具互动！
-    if ((furn.movedDist || 0) < 18) {
+    if ((furn.movedDist || 0) < 16) {
       if (furn.key === 'lamp') {
         furn.manualOn = !furn.manualOn;
         if (player.placedFurniture[furn.key]) {
@@ -1569,7 +1776,18 @@ function finishCanvasTouch() {
         player.wanderTargetX = furn.x;
         if (player.onGround) triggerJump();
         setPlayerEmote('跳上蓝鲸猫爬架软垫咯~', 1.8, 'happy');
+      } else if (furn.key === 'musicbox') {
+        const track = petAudio.cycleBgmTrack();
+        furn.trackName = track.name;
+        furn.isPlaying = !petAudio.muted;
+        const soundBtn = document.getElementById('btn-sound-toggle');
+        if (soundBtn) soundBtn.classList.toggle('muted', petAudio.muted);
+        spawnInteractVfx(furn.x, furn.y - 44, 'purr', 8);
+        setPlayerEmote(`♪ 八音盒切换曲目：「${track.name}」~`, 2.2, 'happy', true);
       }
+    } else {
+      playSfx('pat');
+      spawnInteractVfx(furn.x, furn.y - 26, 'sparkle', 5);
     }
     savePetState();
   }
@@ -1705,6 +1923,17 @@ const DRESS_CATALOG = [
     price: 65
   },
   {
+    id: 'furn_musicbox',
+    isFurniture: true,
+    furnKey: 'musicbox',
+    milestoneLv: 5,
+    ico: '',
+    img: './assets/furn_musicbox.webp?v=hd18',
+    name: '星梦八音盒唱片机',
+    desc: 'LV.5 解锁 · 轻点切换3首治愈八音盒曲目',
+    price: 0
+  },
+  {
     id: 'toy_yarn',
     isToy: true,
     toyKey: 'yarn',
@@ -1755,6 +1984,24 @@ const DRESS_CATALOG = [
     name: '星光光环',
     desc: '足底光阵 · 全屏吸金币',
     price: 220
+  },
+  {
+    id: 'shell_clip',
+    milestoneLv: 3,
+    ico: '',
+    img: './assets/item_shell_clip.webp?v=hd18',
+    name: '星海贝壳发卡',
+    desc: 'LV.3 解锁 · 互动亲密经验+20%',
+    price: 0
+  },
+  {
+    id: 'star_wreath',
+    milestoneLv: 8,
+    ico: '',
+    img: './assets/item_star_wreath.webp?v=hd18',
+    name: '深海星梦花环',
+    desc: 'LV.8 解锁 · 打工金币与亲密+15%',
+    price: 0
   }
 ];
 
@@ -1966,33 +2213,100 @@ function renderDrawerItems() {
       drawerItemsEl.appendChild(card);
     }
   } else if (activeDrawerTab === 'dress') {
+    const themeBlock = document.createElement('div');
+    themeBlock.className = 'drawer-section-block';
+    themeBlock.innerHTML = `
+      <div class="drawer-section-head">
+        <span class="drawer-section-title">治愈房间主题 DIY</span>
+        <span class="drawer-section-hint">点击切换手绘背景 · 桌面家具可左右拖拽摆位</span>
+      </div>
+      <div class="room-theme-grid"></div>
+    `;
+    const themeGrid = themeBlock.querySelector('.room-theme-grid');
+    for (const th of ROOM_THEMES) {
+      const isCurrent = player.roomTheme === th.id;
+      const tBtn = document.createElement('button');
+      tBtn.type = 'button';
+      tBtn.className = `room-theme-card ${isCurrent ? 'active' : ''}`.trim();
+      tBtn.dataset.themeId = th.id;
+      tBtn.innerHTML = `
+        <img src="${th.thumb}" alt="${th.name}" class="room-theme-thumb" />
+        <div class="room-theme-meta">
+          <span class="room-theme-name">${th.name}</span>
+          <span class="room-theme-sub">${th.subtitle}</span>
+        </div>
+        <span class="room-theme-state">${isCurrent ? '使用中' : '切换'}</span>
+      `;
+      bindCardTap(tBtn, () => {
+        setRoomTheme(th.id, true);
+      });
+      themeGrid.appendChild(tBtn);
+    }
+    drawerItemsEl.appendChild(themeBlock);
+
+    const milestoneBlock = document.createElement('div');
+    milestoneBlock.className = 'drawer-section-block';
+    milestoneBlock.innerHTML = `
+      <div class="drawer-section-head">
+        <span class="drawer-section-title">亲密等级里程碑（当前 LV.${player.level}）</span>
+        <span class="drawer-section-hint">达标自动解锁专属互动家具与限定头饰</span>
+      </div>
+      <div class="milestone-strip"></div>
+    `;
+    const milestoneStrip = milestoneBlock.querySelector('.milestone-strip');
+    for (const ms of INTIMACY_MILESTONES) {
+      const unlocked = Boolean(player.ownedDress[ms.itemId] || player.level >= ms.level);
+      const pill = document.createElement('div');
+      pill.className = `milestone-pill ${unlocked ? 'unlocked' : ''}`.trim();
+      pill.dataset.milestoneLv = String(ms.level);
+      pill.innerHTML = `
+        <img src="${ms.img}" alt="${ms.name}" class="milestone-pill-ico" />
+        <div class="milestone-pill-text">
+          <span class="milestone-pill-lv">LV.${ms.level} · ${unlocked ? '已解锁' : '待达成'}</span>
+          <span class="milestone-pill-name">${ms.name}</span>
+        </div>
+      `;
+      milestoneStrip.appendChild(pill);
+    }
+    drawerItemsEl.appendChild(milestoneBlock);
+
     for (const item of DRESS_CATALOG) {
       const owned = !!player.ownedDress[item.id];
+      const isMilestoneLocked = Boolean(item.milestoneLv && !owned && player.level < item.milestoneLv);
       const equipped = item.isFurniture
         ? !!(player.placedFurniture && player.placedFurniture[item.furnKey])
         : item.isToy
           ? player.activeToy === item.toyKey
           : !!player.equipped[item.id];
-      const canAffordDress = owned || player.coins >= item.price;
+      const canAffordDress = owned || (!isMilestoneLocked && player.coins >= item.price);
       const card = document.createElement('button');
-      card.className = `shop-card ${owned ? (equipped ? 'owned' : 'owned-idle') : canAffordDress ? '' : 'unaffordable'}`.trim();
+      card.className = `shop-card ${owned ? (equipped ? 'owned' : 'owned-idle') : isMilestoneLocked ? 'is-milestone-locked' : canAffordDress ? '' : 'unaffordable'}`.trim();
       const activeVerb = item.isFurniture ? '已摆放' : item.isToy ? '使用中' : '穿戴中';
       const standbyVerb = item.isFurniture ? '摆放桌面' : item.isToy ? '切换玩具' : '穿戴装扮';
       const statusText = owned
         ? equipped
           ? activeVerb
           : standbyVerb
-        : `${item.price} <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" />`;
+        : isMilestoneLocked
+          ? `LV.${item.milestoneLv} 解锁`
+          : `${item.price} <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" />`;
+      const tagHtml = item.milestoneLv
+        ? `<em class="shop-tag-pill shop-tag-milestone">LV.${item.milestoneLv}限定</em>`
+        : '';
       card.innerHTML = `
         ${renderThumbHtml(item)}
         <div class="shop-info">
-          <span class="shop-name">${item.name}</span>
+          <span class="shop-name">${item.name} ${tagHtml}</span>
           <span class="shop-desc">${item.desc}</span>
         </div>
         <span class="shop-price">${statusText}</span>
       `;
       bindCardTap(card, () => {
         if (!owned) {
+          if (isMilestoneLocked) {
+            setPlayerEmote(`亲密度升到 LV.${item.milestoneLv} 就会自动解锁「${item.name}」啦~`, 2.2, 'happy');
+            return;
+          }
           if (player.coins < item.price) {
             setPlayerEmote('金币不足，快去『幸存者』或『接美食』赚金币~', 2.2);
             return;
@@ -2001,7 +2315,7 @@ function renderDrawerItems() {
           player.ownedDress[item.id] = true;
           if (item.isFurniture) {
             player.placedFurniture[item.furnKey] = {
-              xRatio: item.furnKey === 'pc' ? 0.76 : item.furnKey === 'tree' ? 0.36 : 0.20,
+              xRatio: item.furnKey === 'pc' ? 0.76 : item.furnKey === 'tree' ? 0.36 : item.furnKey === 'musicbox' ? 0.62 : 0.20,
               manualOn: true
             };
             syncPlacedFurniture();
@@ -2022,10 +2336,10 @@ function renderDrawerItems() {
               setPlayerEmote(`已将 ${item.name} 收回背包`, 1.5);
             } else {
               player.placedFurniture[item.furnKey] = {
-                xRatio: item.furnKey === 'pc' ? 0.76 : item.furnKey === 'tree' ? 0.36 : 0.20,
+                xRatio: item.furnKey === 'pc' ? 0.76 : item.furnKey === 'tree' ? 0.36 : item.furnKey === 'musicbox' ? 0.62 : 0.20,
                 manualOn: true
               };
-              setPlayerEmote(`已在桌面摆放 ${item.name}（可按住拖拽位置）!`, 1.8, 'happy');
+              setPlayerEmote(`已在桌面摆放 ${item.name}（可按住横向拖拽摆位）!`, 1.8, 'happy');
             }
             syncPlacedFurniture();
             playSfx('pat');
@@ -2212,6 +2526,19 @@ bindHudTap(document.getElementById('hud-avatar-btn'), () => {
   const xpGain = player.equipped.bow ? 16 : 8;
   addAffectionXp(xpGain, `+${xpGain} 亲密 摸头`);
   completeWish('headpat');
+});
+
+// 右上角房间主题一键切换按钮（晴空奶油书房 <-> 深海星梦水族馆）
+const btnRoomTheme = document.getElementById('btn-room-theme');
+if (btnRoomTheme) {
+  bindHudTap(btnRoomTheme, () => {
+    const nextTheme = player.roomTheme === 'cream_study' ? 'star_aquarium' : 'cream_study';
+    setRoomTheme(nextTheme, true);
+  });
+}
+
+bindHudTap(document.getElementById('btn-milestone-toast-close'), () => {
+  hideMilestoneToast();
 });
 
 // 右上角 BGM / 角色语音一键静音开关
@@ -2472,6 +2799,8 @@ function persistPolaroidAlbum() {
 
 function getEquippedOutfitSummary() {
   const parts = [];
+  if (player.equipped?.shell_clip) parts.push('星海贝壳发卡');
+  if (player.equipped?.star_wreath) parts.push('深海星梦花环');
   if (player.equipped?.bow) parts.push('樱粉蝴蝶结');
   if (player.equipped?.crown) parts.push('迷你小皇冠');
   if (player.equipped?.aura) parts.push('星光光环');
@@ -3789,7 +4118,8 @@ function updateGameplay(dt, flow) {
     furn.squashTimer = Math.max(0, (furn.squashTimer || 0) - dt);
     furn.working = false;
     if (furn !== draggedFurniture) {
-      furn.x = Math.max(48, Math.min(W - 48, furn.x + flow.dx));
+      furn.isDragging = false;
+      furn.x = Math.max(56, Math.min(W - 56, furn.x + flow.dx));
       furn.vy = (furn.vy || 0) + 680 * dt;
       const prevFY = furn.y;
       furn.y += furn.vy * dt + flow.dy;
@@ -3803,6 +4133,20 @@ function updateGameplay(dt, flow) {
       if (furn.y > centerFloorY - 2) {
         furn.y = centerFloorY - 2;
         furn.vy = 0;
+      }
+    } else {
+      furn.holdTime = (furn.holdTime || 0) + dt;
+    }
+
+    if (furn.key === 'musicbox') {
+      furn.trackName = petAudio.getTrackInfo().name;
+      furn.isPlaying = !petAudio.muted;
+      if (gameMode === 'pet' && furn.isPlaying) {
+        furn.noteTimer = (furn.noteTimer || 0) - dt;
+        if (furn.noteTimer <= 0) {
+          furn.noteTimer = 2.6;
+          spawnInteractVfx(furn.x, furn.y - 52, 'purr', 1);
+        }
       }
     }
 
@@ -5210,11 +5554,16 @@ function updateGameplay(dt, flow) {
       }
       gems.splice(i, 1);
 
-      if (player.xp >= player.xpNext) {
+      let gemLeveledUp = false;
+      while (player.xp >= player.xpNext) {
         player.xp -= player.xpNext;
         player.level++;
         player.xpNext = Math.round(player.xpNext * 1.35);
         player.hp = Math.min(player.maxHp, player.hp + 20);
+        gemLeveledUp = true;
+      }
+      if (gemLeveledUp) {
+        onPlayerLevelUp();
         savePetState();
       }
 

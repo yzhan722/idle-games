@@ -70,6 +70,8 @@ import {
   ShockwaveRing,
   SkyPillar,
   TRACK_HALF_W,
+  TacticalAirdropBuffId,
+  TacticalAirdropRuntime,
   Unit,
   WallRuntime,
   ZoneRuntime,
@@ -167,6 +169,24 @@ export class World3D {
     spawnTimer: 7.0,
     hitFlash: 0,
   };
+
+  // MC-4: Scatter / Rainbow Weapon State & Mid-Battle Steam Tactical Airdrop Crate
+  public rainbowShotCounter = 0;
+  private rainbowBeamPool: {
+    active: boolean;
+    life: number;
+    maxLife: number;
+    mesh: THREE.Mesh;
+    mat: THREE.MeshBasicMaterial;
+  }[] = [];
+  public airdropSpawnTimer = 11.5;
+  public dualVolleyTimer = 0;
+  public freezeRedsTimer = 0;
+  public frontlineGiantsTimer = 0;
+  public lastAirdropBuff: TacticalAirdropBuffId | null = null;
+  public airdropDropCount = 0;
+  public airdropCollectCount = 0;
+  public airdrop!: TacticalAirdropRuntime;
 
   private bossGroup = new THREE.Group();
   private bossHead!: THREE.Group;
@@ -480,6 +500,7 @@ export class World3D {
         age: 0,
         attackCooldown: 0,
         specialTimer: 0,
+        scatterBounceLeft: 0,
         passedGates: new Set(),
       });
     }
@@ -1387,6 +1408,124 @@ export class World3D {
 
     this.lootBugGroup.visible = false;
     this.scene.add(this.lootBugGroup);
+
+    this.buildTacticalAirdropAndRainbowFX(brassMat);
+  }
+
+  private buildTacticalAirdropAndRainbowFX(brassMat: THREE.MeshStandardMaterial): void {
+    const group = new THREE.Group();
+    const crateMat = new THREE.MeshStandardMaterial({
+      color: 0xf4c87a,
+      emissive: 0x3b2307,
+      emissiveIntensity: 0.25,
+      roughness: 0.35,
+      metalness: 0.22,
+    });
+    const crateMesh = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.96, 1.22), crateMat);
+    crateMesh.position.y = 0.48;
+    crateMesh.castShadow = true;
+    group.add(crateMesh);
+
+    // Brass corner frame & cyan glowing steam pressure gauges
+    const trimMesh = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 1.3), brassMat);
+    trimMesh.position.y = 0.92;
+    group.add(trimMesh);
+    const gaugeMat = new THREE.MeshStandardMaterial({
+      color: 0x22d3ee,
+      emissive: 0x06b6d4,
+      emissiveIntensity: 0.75,
+      roughness: 0.2,
+    });
+    const gaugeFront = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.08, 12), gaugeMat);
+    gaugeFront.rotation.x = Math.PI / 2;
+    gaugeFront.position.set(0, 0.5, 0.62);
+    group.add(gaugeFront);
+
+    // Coral-and-cream parachute dome + 4 rigging struts
+    const parachuteGroup = new THREE.Group();
+    parachuteGroup.position.y = 2.05;
+    const canopyMat = new THREE.MeshStandardMaterial({
+      color: 0xf97362,
+      emissive: 0x7c1d12,
+      emissiveIntensity: 0.2,
+      roughness: 0.45,
+      side: THREE.DoubleSide,
+    });
+    const canopy = new THREE.Mesh(
+      new THREE.SphereGeometry(1.22, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.52),
+      canopyMat
+    );
+    canopy.scale.set(1, 0.85, 1);
+    parachuteGroup.add(canopy);
+    const canopyRing = new THREE.Mesh(new THREE.TorusGeometry(1.16, 0.06, 8, 20), brassMat);
+    canopyRing.rotation.x = Math.PI / 2;
+    parachuteGroup.add(canopyRing);
+    for (const [rx, rz] of [
+      [-0.78, -0.78],
+      [0.78, -0.78],
+      [-0.78, 0.78],
+      [0.78, 0.78],
+    ]) {
+      const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.25, 6), brassMat);
+      rope.position.set(rx * 0.52, -0.58, rz * 0.52);
+      rope.rotation.z = rx * 0.48;
+      rope.rotation.x = -rz * 0.48;
+      parachuteGroup.add(rope);
+    }
+    group.add(parachuteGroup);
+
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.7,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const haloMesh = new THREE.Mesh(new THREE.RingGeometry(0.92, 1.36, 24), haloMat);
+    haloMesh.rotation.x = -Math.PI / 2;
+    haloMesh.position.y = 0.08;
+    group.add(haloMesh);
+
+    group.visible = false;
+    this.scene.add(group);
+
+    this.airdrop = {
+      active: false,
+      phase: 'falling',
+      x: 0,
+      y: 11.5,
+      z: 0,
+      hp: 4,
+      maxHp: 4,
+      bobPhase: 0,
+      lifeTimer: 22,
+      group,
+      parachuteGroup,
+      crateMesh,
+      crateMat,
+      haloMesh,
+      haloMat,
+      labelEl: null,
+    };
+
+    // Pre-allocated pooled rainbow pierce beam cylinders (zero runtime geometry allocations)
+    const beamLen = PLAYER_Z - BOSS_GATE_Z;
+    const beamGeo = new THREE.CylinderGeometry(0.38, 0.66, beamLen, 14, 1, true);
+    beamGeo.rotateX(Math.PI / 2);
+    for (let i = 0; i < 6; i++) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xf472b6,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(beamGeo, mat);
+      mesh.visible = false;
+      this.scene.add(mesh);
+      this.rainbowBeamPool.push({ active: false, life: 0, maxLife: 0.34, mesh, mat });
+    }
   }
 
   private buildIdolCheerleaderMascot(
@@ -2734,6 +2873,7 @@ export class World3D {
     this.scorchedEarthTimer = 0;
     this.scorchedEarthTickTimer = 0;
     this.shotsFiredCounter = 0;
+    this.rainbowShotCounter = 0;
     this.praetorianShotCounter = 0;
     this.baseTurretTimer = 0.6;
     this.baseRegenTimer = 0;
@@ -2820,6 +2960,13 @@ export class World3D {
     lbLabel.style.display = 'none';
     this.labelsContainer.appendChild(lbLabel);
     this.lootBugLabelEl = lbLabel;
+
+    this.resetTacticalAirdrop(true);
+    const adLabel = document.createElement('div');
+    adLabel.className = 'airdrop-label';
+    adLabel.style.display = 'none';
+    this.labelsContainer.appendChild(adLabel);
+    this.airdrop.labelEl = adLabel;
 
     // 3D World-Anchored Turret Hero Charge Bar (Hold to Charge -> Release when Full to Summon Hero!)
     const tcEl = document.createElement('div');
@@ -4321,22 +4468,25 @@ export class World3D {
     const pwr = team === 'blue' ? this.state.getPowerMultiplier() : 1;
     const champMult = this.state.getChampionMultiplier();
     const giantSpec = team === 'blue' ? this.state.getGiantTrooperSpec() : null;
+    const airdropGiantBuff = team === 'blue' && this.frontlineGiantsTimer > 0 && kind !== 'champion';
+    const effectiveMiniGiant = isMiniGiant || airdropGiantBuff;
 
     slot.active = true;
     slot.id = this.nextUnitId++;
     slot.team = team;
     slot.kind = kind;
     slot.mechaType = kind === 'champion' ? this.state.mechaMode : undefined;
-    slot.isMiniGiant = isMiniGiant || Boolean(giantSpec?.isGiantMode && kind !== 'champion');
+    slot.isMiniGiant = effectiveMiniGiant || Boolean(giantSpec?.isGiantMode && kind !== 'champion');
     slot.jellyGiant = false;
     slot.frostShield = false;
+    slot.scatterBounceLeft = 0;
     const rolledStartTier =
       giantSpec?.isGiantMode && giantSpec.t4DirectTier2Chance > 0 && Math.random() < giantSpec.t4DirectTier2Chance
         ? 2
         : giantSpec?.startFusionTier || 1;
     slot.fusionTier =
       team === 'blue' && kind !== 'champion'
-        ? initialFusionTier ?? (giantSpec?.isGiantMode ? rolledStartTier : isMiniGiant ? 1 : 0)
+        ? initialFusionTier ?? (giantSpec?.isGiantMode ? rolledStartTier : effectiveMiniGiant ? 1 : 0)
         : 0;
     slot.fusionCooldown = inheritedGates && inheritedGates.size > 0 ? 1.15 : 0.45;
     slot.empTimer = 0;
@@ -4382,8 +4532,8 @@ export class World3D {
         slot.dmg = tierStats.dmg;
         slot.radius = tierStats.radius;
         slot.speed = (6.6 + tier * 0.14) * speedMult;
-      } else if (isMiniGiant) {
-        // Tycoon T4 / Bastion Guard Mini-Giant
+      } else if (effectiveMiniGiant) {
+        // Tycoon T4 / Bastion Guard / Airdrop Frontline Mini-Giant
         slot.maxHp = 52 * pwr * bastionSpec.trooperHpMult * emeraldHpMult;
         slot.hp = slot.maxHp;
         slot.dmg = 30 * pwr;
@@ -5492,8 +5642,28 @@ export class World3D {
       this.fireTurret();
     }
 
+    // Tick down MC-4 8s Tactical Airdrop Frenzy Buffs
+    if (this.dualVolleyTimer > 0) {
+      this.dualVolleyTimer = Math.max(0, this.dualVolleyTimer - clampedDt);
+    }
+    if (this.freezeRedsTimer > 0) {
+      this.freezeRedsTimer = Math.max(0, this.freezeRedsTimer - clampedDt);
+      if (Math.random() < 0.25 && this.activeRedIndices.length > 0) {
+        const ru = this.units[this.activeRedIndices[Math.floor(Math.random() * this.activeRedIndices.length)]];
+        if (ru && ru.active) {
+          this.spawnBurstParticles(ru.x, 0.7, ru.z, 0x7dd3fc, 2);
+        }
+      }
+    }
+    if (this.frontlineGiantsTimer > 0) {
+      this.frontlineGiantsTimer = Math.max(0, this.frontlineGiantsTimer - clampedDt);
+    }
+
     // 3. Spawn Enemy Red Waves, Acid Banelings, Hive Shamans & Giant Yellow Brutes across lanes
     if (this.currentLevel?.isBonusHeist) {
+      if (this.airdrop?.active) {
+        this.resetTacticalAirdrop(false);
+      }
       this.bonusHeistTimeLeft = Math.max(0, this.bonusHeistTimeLeft - clampedDt);
       if (this.bonusHeistTimeLeft <= 0) {
         this.finishStage(true);
@@ -5660,6 +5830,9 @@ export class World3D {
           this.spawnFloatingPopup(this.lootBug.x, 1.8, this.lootBug.z, '💨 盗宝虫溜走了!', '#94a3b8');
         }
       }
+
+      // MC-4: Steam Tactical Airdrop Crate (Explicitly skipped in Bonus Heist above!)
+      this.updateTacticalAirdrop(clampedDt);
     } else {
       // Base Overrun Frenzy countdown!
       this.overrunTimer -= clampedDt;
@@ -5890,6 +6063,21 @@ export class World3D {
 
     // 5. Simulate Units, Gates, Walls, Gears, Nests & Combat
     this.simulateUnits(clampedDt);
+
+    // Decay pooled MC-4 rainbow pierce beam visuals
+    for (const beam of this.rainbowBeamPool) {
+      if (!beam.active) continue;
+      beam.life -= clampedDt;
+      if (beam.life <= 0) {
+        beam.active = false;
+        beam.mesh.visible = false;
+      } else {
+        const ratio = beam.life / beam.maxLife;
+        beam.mat.opacity = 0.85 * ratio;
+        const s = 0.55 + ratio * 0.65;
+        beam.mesh.scale.set(s, s, 1);
+      }
+    }
 
     // 6. Update Particles & Render
     this.updateParticles(clampedDt);
@@ -6586,33 +6774,272 @@ export class World3D {
     }
   }
 
+  public resetTacticalAirdrop(resetBuffs = true): void {
+    if (this.airdrop) {
+      this.airdrop.active = false;
+      this.airdrop.phase = 'falling';
+      this.airdrop.y = 11.5;
+      this.airdrop.hp = this.airdrop.maxHp;
+      this.airdrop.group.visible = false;
+      this.airdrop.group.rotation.set(0, 0, 0);
+      this.airdrop.parachuteGroup.visible = true;
+      if (this.airdrop.labelEl) {
+        this.airdrop.labelEl.style.display = 'none';
+      }
+    }
+    this.airdropSpawnTimer = 11.5;
+    if (resetBuffs) {
+      this.dualVolleyTimer = 0;
+      this.freezeRedsTimer = 0;
+      this.frontlineGiantsTimer = 0;
+      this.lastAirdropBuff = null;
+      this.airdropDropCount = 0;
+      this.airdropCollectCount = 0;
+      for (const beam of this.rainbowBeamPool) {
+        beam.active = false;
+        beam.mesh.visible = false;
+      }
+    }
+  }
+
+  public spawnTacticalAirdrop(forceX?: number, forceZ?: number): boolean {
+    if (!this.airdrop || this.currentLevel?.isBonusHeist || this.isOverrunFrenzy) {
+      return false;
+    }
+    const ax =
+      typeof forceX === 'number'
+        ? THREE.MathUtils.clamp(forceX, -TRACK_HALF_W + 2.0, TRACK_HALF_W - 2.0)
+        : (Math.random() - 0.5) * 11.6;
+    const az =
+      typeof forceZ === 'number'
+        ? THREE.MathUtils.clamp(forceZ, -7.5, 9.5)
+        : -2.0 + (Math.random() - 0.5) * 6.5;
+
+    this.airdrop.active = true;
+    this.airdrop.phase = 'falling';
+    this.airdrop.x = ax;
+    this.airdrop.y = 11.5;
+    this.airdrop.z = az;
+    this.airdrop.maxHp = 4;
+    this.airdrop.hp = 4;
+    this.airdrop.bobPhase = 0;
+    this.airdrop.lifeTimer = 24.0;
+    this.airdrop.parachuteGroup.visible = true;
+    this.airdrop.group.position.set(ax, 11.5, az);
+    this.airdrop.group.rotation.set(0, 0, 0);
+    this.airdrop.haloMesh.position.y = -11.5 + 0.08;
+    this.airdrop.group.visible = true;
+    this.airdropDropCount++;
+
+    sound.playAirdropDrop();
+    this.spawnShockwave(ax, az, 0x38bdf8, 2.8, 0.35);
+    this.spawnFloatingPopup(ax, 2.2, az, `${UI_ART.tacticalAirdrop} 蒸汽战术空投降落！`, '#38bdf8');
+    return true;
+  }
+
+  private updateTacticalAirdrop(dt: number): void {
+    if (!this.airdrop || this.currentLevel?.isBonusHeist) return;
+    if (!this.airdrop.active) {
+      this.airdropSpawnTimer -= dt;
+      if (this.airdropSpawnTimer <= 0) {
+        this.spawnTacticalAirdrop();
+      }
+      return;
+    }
+
+    if (this.airdrop.phase === 'falling') {
+      this.airdrop.y -= 5.6 * dt;
+      const sway = Math.sin(this.elapsedTime * 4.5) * 0.14;
+      this.airdrop.group.rotation.z = sway;
+      if (this.airdrop.y <= 0) {
+        this.airdrop.y = 0;
+        this.airdrop.phase = 'landed';
+        this.airdrop.parachuteGroup.visible = false;
+        this.airdrop.group.rotation.z = 0;
+        this.airdrop.haloMesh.position.y = 0.08;
+        this.spawnShockwave(this.airdrop.x, this.airdrop.z, 0x38bdf8, 3.8, 0.38);
+        this.spawnBurstParticles(this.airdrop.x, 0.6, this.airdrop.z, 0x38bdf8, 18);
+      } else {
+        this.airdrop.haloMesh.position.y = -this.airdrop.y + 0.08;
+      }
+      this.airdrop.group.position.set(this.airdrop.x, Math.max(0, this.airdrop.y), this.airdrop.z);
+    } else {
+      this.airdrop.bobPhase += dt * 4.2;
+      this.airdrop.lifeTimer -= dt;
+      this.airdrop.group.position.set(
+        this.airdrop.x,
+        Math.abs(Math.sin(this.airdrop.bobPhase)) * 0.12,
+        this.airdrop.z
+      );
+      this.airdrop.haloMesh.rotation.z = this.elapsedTime * 1.6;
+      if (this.airdrop.lifeTimer <= 0) {
+        this.resetTacticalAirdrop(false);
+        this.airdropSpawnTimer = 15.0;
+      }
+    }
+  }
+
+  public hitTacticalAirdrop(dmg = 1, forceBuff?: TacticalAirdropBuffId): boolean {
+    if (!this.airdrop || !this.airdrop.active) return false;
+    this.airdrop.hp = Math.max(0, this.airdrop.hp - Math.max(1, dmg));
+    this.spawnBurstParticles(this.airdrop.x, Math.max(0.6, this.airdrop.y + 0.5), this.airdrop.z, 0x38bdf8, 6);
+    if (this.airdrop.hp <= 0) {
+      this.applyTacticalAirdropBuff(forceBuff);
+      return true;
+    }
+    return false;
+  }
+
+  public applyTacticalAirdropBuff(forceBuff?: TacticalAirdropBuffId): TacticalAirdropBuffId {
+    const pool: TacticalAirdropBuffId[] = ['dual_volley', 'freeze_reds', 'frontline_giants'];
+    const picked: TacticalAirdropBuffId = forceBuff || pool[Math.floor(Math.random() * pool.length)];
+    const ax = this.airdrop?.active ? this.airdrop.x : this.turretX;
+    const az = this.airdrop?.active ? this.airdrop.z : 1.0;
+
+    if (this.airdrop) {
+      this.airdrop.active = false;
+      this.airdrop.group.visible = false;
+      if (this.airdrop.labelEl) this.airdrop.labelEl.style.display = 'none';
+    }
+    this.airdropSpawnTimer = 16.5;
+    this.airdropCollectCount++;
+    this.lastAirdropBuff = picked;
+
+    sound.playAirdropOpen();
+    this.addCameraShake(0.32);
+    this.spawnSkyPillar(ax, az, 0x38bdf8, 2.2, 0.52);
+    this.spawnShockwave(ax, az, 0x38bdf8, 5.2, 0.45);
+    this.spawnBurstParticles(ax, 1.0, az, 0xfacc15, 42);
+
+    if (picked === 'dual_volley') {
+      this.dualVolleyTimer = 8.0;
+      this.spawnFloatingPopup(ax, 2.3, az, `${UI_ART.tacticalAirdrop} 双倍连射狂热 8s!`, '#facc15');
+      this.onBanner?.(`${UI_ART.tacticalAirdrop} 空投激活：双倍连射 8s`, '主炮切换双排并行齐射！');
+    } else if (picked === 'freeze_reds') {
+      this.freezeRedsTimer = 8.0;
+      for (let i = 0; i < MAX_UNITS; i++) {
+        const ru = this.units[i];
+        if (ru.active && ru.team === 'red') {
+          ru.empTimer = Math.max(ru.empTimer || 0, 2.0);
+        }
+      }
+      this.spawnShockwave(0, 0, 0x7dd3fc, 13.0, 0.55);
+      this.spawnFloatingPopup(ax, 2.3, az, `${UI_ART.tacticalAirdrop} 冰霜缓敌全场 8s!`, '#7dd3fc');
+      this.onBanner?.(`${UI_ART.tacticalAirdrop} 空投激活：冰霜缓敌 8s`, '全体红军移速大幅冻结减缓！');
+    } else {
+      this.frontlineGiantsTimer = 8.0;
+      let promoted = 0;
+      for (const bIdx of this.activeBlueIndices) {
+        const bu = this.units[bIdx];
+        if (!bu || !bu.active || bu.kind === 'champion' || bu.isMiniGiant) continue;
+        bu.isMiniGiant = true;
+        bu.fusionTier = Math.max(1, bu.fusionTier || 0);
+        bu.maxHp *= 1.6;
+        bu.hp *= 1.6;
+        bu.dmg *= 1.45;
+        bu.radius = Math.max(bu.radius, 0.46);
+        bu.spawnHop = Math.max(bu.spawnHop, 0.55);
+        promoted++;
+        if (promoted >= 16) break;
+      }
+      this.spawnFloatingPopup(ax, 2.3, az, `${UI_ART.tacticalAirdrop} 前线巨人阵 8s!`, '#4ade80');
+      this.onBanner?.(`${UI_ART.tacticalAirdrop} 空投激活：前线巨人阵 8s`, '前线波波集结进阶为重装小巨人！');
+    }
+    return picked;
+  }
+
+  private triggerRainbowPierceBeam(laneX: number): number {
+    const palette = [0xff4d6d, 0xfacc15, 0x4ade80, 0x38bdf8, 0xc084fc];
+    const col = palette[Math.floor(this.elapsedTime * 8) % palette.length];
+    for (const beam of this.rainbowBeamPool) {
+      if (!beam.active) {
+        beam.active = true;
+        beam.life = beam.maxLife;
+        beam.mat.color.setHex(col);
+        beam.mat.opacity = 0.88;
+        beam.mesh.position.set(laneX, 0.95, (PLAYER_Z + BOSS_GATE_Z) * 0.5);
+        beam.mesh.scale.set(1.15, 1.15, 1);
+        beam.mesh.visible = true;
+        break;
+      }
+    }
+
+    this.addCameraShake(0.24);
+    this.spawnShockwave(laneX, PLAYER_Z - 1.8, col, 3.2, 0.3);
+    for (const zStep of [11, 4, -3, -10]) {
+      this.spawnBurstParticles(laneX, 1.0, zStep, col, 8);
+    }
+
+    const beamDmg = 34 * this.state.getPowerMultiplier();
+    let hitCount = 0;
+    for (let i = 0; i < MAX_UNITS; i++) {
+      const ru = this.units[i];
+      if (!ru.active || ru.team !== 'red') continue;
+      if (Math.abs(ru.x - laneX) <= 2.35) {
+        hitCount++;
+        ru.hp -= beamDmg;
+        ru.z = Math.max(BOSS_GATE_Z + 0.8, ru.z - 0.65);
+        ru.spawnHop = Math.max(ru.spawnHop, 0.55);
+        if (ru.hp <= 0) {
+          ru.active = false;
+          this.onUnitKilled(ru);
+        }
+      }
+    }
+
+    for (const g of this.gates) {
+      if (Math.abs(g.currentX - laneX) <= g.cfg.width * 0.58) {
+        this.chargeGate(g, 3);
+      }
+    }
+
+    if (this.lootBug.active && Math.abs(this.lootBug.x - laneX) <= 1.75) {
+      this.lootBug.hp = Math.max(0, this.lootBug.hp - 2);
+      this.lootBug.hitFlash = 1.0;
+    }
+
+    if (this.airdrop?.active && Math.abs(this.airdrop.x - laneX) <= 1.75) {
+      this.hitTacticalAirdrop(2);
+    }
+
+    return hitCount;
+  }
+
   private fireTurret(): void {
     const giantSpec = this.state.getGiantTrooperSpec();
+    const weapon = this.state.weapon;
     this.turretRecoil = giantSpec.isGiantMode ? 1.68 : 1.35;
-    sound.playShoot(giantSpec.isGiantMode ? 'plasma' : this.state.weapon);
+    sound.playShoot(giantSpec.isGiantMode ? 'plasma' : weapon);
 
     // Every trooper volley fired charges the Hero Energy Bar (supercharged while actively holding!)
     const chargeMult = this.state.getSkillChargeMultiplier() * (giantSpec.isGiantMode ? 1.35 : 1.0);
     const shotCharge =
       (this.isHoldingFireInput() ? 1.5 : this.isSteeringInput() ? 0.85 : 0.52) * chargeMult;
     this.state.championCharge = Math.min(100, this.state.championCharge + shotCharge);
+    const rainbowCols = [0xff4d6d, 0xfacc15, 0x4ade80, 0x38bdf8, 0xc084fc];
     const muzzleCol = giantSpec.isGiantMode
       ? 0xf97316
-      : this.currentTurretEvoTier === 2
-        ? 0xfacc15
-        : this.state.weapon === 'plasma'
-          ? 0xfacc15
-          : 0x00f0ff;
+      : weapon === 'rainbow'
+        ? rainbowCols[this.rainbowShotCounter % rainbowCols.length]
+        : weapon === 'scatter'
+          ? 0x22d3ee
+          : this.currentTurretEvoTier === 2
+            ? 0xfacc15
+            : weapon === 'plasma'
+              ? 0xfacc15
+              : 0x00f0ff;
     this.spawnBurstParticles(
       this.turretX,
       0.9,
       PLAYER_Z - 1.5,
       muzzleCol,
-      giantSpec.isGiantMode ? 12 : this.currentTurretEvoTier >= 1 ? 8 : 5
+      giantSpec.isGiantMode ? 12 : weapon === 'scatter' ? 9 : this.currentTurretEvoTier >= 1 ? 8 : 5
     );
     if (giantSpec.isGiantMode) {
       this.spawnShockwave(this.turretX, PLAYER_Z - 1.5, 0xf97316, 2.2, 0.25);
       this.addCameraShake(0.06);
+    } else if (weapon === 'scatter') {
+      this.spawnShockwave(this.turretX, PLAYER_Z - 1.5, 0x22d3ee, 1.75, 0.2);
     } else if (this.currentTurretEvoTier === 2 && Math.random() < 0.35) {
       this.spawnShockwave(this.turretX, PLAYER_Z - 1.5, 0xfacc15, 1.8, 0.22);
     }
@@ -6638,7 +7065,6 @@ export class World3D {
       this.skillOverdriveTimer > 0 || Math.random() < critChance ? 'charged' : 'normal';
     const rollMiniGiant = (): boolean => miniGiantChance > 0 && Math.random() < miniGiantChance;
 
-    // Fused Twin / Multi-Volley firing (from Swarm T1/T4, Gate T1, Orbital T3 Overdrive, or Split Chamber Buff)
     const extraCloneChance = Math.max(
       this.skillOverdriveTimer > 0 ? 1.0 : 0,
       this.state.getExtraCloneChance()
@@ -6647,35 +7073,105 @@ export class World3D {
     const bonusCount =
       guaranteedBonus + (Math.random() < extraCloneChance - guaranteedBonus ? 1 : 0);
     const totalVolley = 1 + bonusCount;
+    const dualVolleyRows = this.dualVolleyTimer > 0 ? [-0.66, 0.66] : [0];
 
-    if (totalVolley >= 2) {
-      for (let i = 0; i < totalVolley; i++) {
-        const spreadIdx = i - (totalVolley - 1) * 0.5;
-        const offsetX = spreadIdx * 0.88;
+    let triggerRainbowBeamNow = false;
+    if (weapon === 'rainbow') {
+      this.rainbowShotCounter++;
+      if (this.rainbowShotCounter >= 4) {
+        this.rainbowShotCounter = 0;
+        triggerRainbowBeamNow = true;
+      }
+    }
+
+    for (const rowOffset of dualVolleyRows) {
+      const originX = this.turretX + rowOffset;
+      if (weapon === 'scatter') {
+        const fanAngles = [-0.34, 0, 0.34];
+        for (let f = 0; f < fanAngles.length; f++) {
+          const ang = fanAngles[f];
+          const isMG = rollMiniGiant();
+          const unit = this.spawnUnit(
+            'blue',
+            isMG ? 'charged' : resolveKind(),
+            originX + ang * 1.15,
+            PLAYER_Z - 1.4,
+            Math.sin(ang) * 9.8,
+            -Math.cos(ang) * 9.3,
+            undefined,
+            isMG
+          );
+          if (unit) {
+            unit.scatterBounceLeft = 2;
+          }
+        }
+        if (bonusCount > 0) {
+          const extraU = this.spawnUnit(
+            'blue',
+            resolveKind(),
+            originX,
+            PLAYER_Z - 1.4,
+            (Math.random() - 0.5) * 4.0,
+            -9.4,
+            undefined,
+            rollMiniGiant()
+          );
+          if (extraU) extraU.scatterBounceLeft = 2;
+        }
+      } else if (weapon === 'rainbow') {
+        if (triggerRainbowBeamNow) {
+          this.triggerRainbowPierceBeam(originX);
+          this.spawnUnit('blue', 'charged', originX, PLAYER_Z - 1.4, 0, -9.8, undefined, true);
+        } else {
+          for (let i = 0; i < totalVolley; i++) {
+            const spreadIdx = i - (totalVolley - 1) * 0.5;
+            const offsetX = spreadIdx * 0.88;
+            const isMG = rollMiniGiant();
+            this.spawnUnit(
+              'blue',
+              isMG ? 'charged' : resolveKind(),
+              originX + offsetX,
+              PLAYER_Z - 1.4,
+              offsetX * 0.45,
+              -9.3,
+              undefined,
+              isMG
+            );
+          }
+        }
+      } else if (totalVolley >= 2) {
+        for (let i = 0; i < totalVolley; i++) {
+          const spreadIdx = i - (totalVolley - 1) * 0.5;
+          const offsetX = spreadIdx * 0.88;
+          const isMG = rollMiniGiant();
+          this.spawnUnit(
+            'blue',
+            isMG ? 'charged' : resolveKind(),
+            originX + offsetX,
+            PLAYER_Z - 1.4,
+            offsetX * 0.45,
+            -9.25,
+            undefined,
+            isMG
+          );
+        }
+      } else {
         const isMG = rollMiniGiant();
         this.spawnUnit(
           'blue',
           isMG ? 'charged' : resolveKind(),
-          this.turretX + offsetX,
+          originX + (Math.random() - 0.5) * 0.22,
           PLAYER_Z - 1.4,
-          offsetX * 0.45,
-          -9.25,
+          0,
+          -9.2,
           undefined,
           isMG
         );
       }
-    } else {
-      const isMG = rollMiniGiant();
-      this.spawnUnit(
-        'blue',
-        isMG ? 'charged' : resolveKind(),
-        this.turretX + (Math.random() - 0.5) * 0.22,
-        PLAYER_Z - 1.4,
-        0,
-        -9.2,
-        undefined,
-        isMG
-      );
+    }
+
+    if (this.airdrop?.active && this.airdrop.phase === 'landed' && Math.abs(this.turretX - this.airdrop.x) <= 1.45) {
+      this.hitTacticalAirdrop(1);
     }
 
     // Bastion T3: Periodic Praetorian Heavy Guard deployment every (13 - r*2) shots!
@@ -7340,7 +7836,8 @@ export class World3D {
       const prevZ = u.z;
       const empSlow = u.team === 'red' && u.empTimer && u.empTimer > 0 ? 0.4 : 1.0;
       const glacierSlow = u.team === 'red' && this.currentTheme.id === 'glacier' ? 0.78 : 1.0;
-      const effSpeed = u.team === 'blue' ? u.speed * blueSpeedBoost : u.speed * empSlow * glacierSlow;
+      const airdropFreezeSlow = u.team === 'red' && this.freezeRedsTimer > 0 ? 0.28 : 1.0;
+      const effSpeed = u.team === 'blue' ? u.speed * blueSpeedBoost : u.speed * empSlow * glacierSlow * airdropFreezeSlow;
 
       if (u.team === 'blue') {
         let targetVX = 0;
@@ -7657,14 +8154,30 @@ export class World3D {
         }
       }
 
-      // Clamp to outer road curbs
+      // Clamp to outer road curbs (Scatter bubble shots ricochet elastically off curbs!)
       const limitX = TRACK_HALF_W - 0.65 - u.radius;
       if (u.x < -limitX) {
         u.x = -limitX;
-        u.vx = Math.abs(u.vx) * 0.5;
+        if (u.scatterBounceLeft && u.scatterBounceLeft > 0) {
+          u.scatterBounceLeft--;
+          u.vx = Math.max(2.8, Math.abs(u.vx) * 0.95);
+          u.vz = Math.min(u.vz, -7.8);
+          u.spawnHop = Math.max(u.spawnHop, 0.36);
+          this.spawnBurstParticles(u.x, 0.6, u.z, 0x22d3ee, 4);
+        } else {
+          u.vx = Math.abs(u.vx) * 0.5;
+        }
       } else if (u.x > limitX) {
         u.x = limitX;
-        u.vx = -Math.abs(u.vx) * 0.5;
+        if (u.scatterBounceLeft && u.scatterBounceLeft > 0) {
+          u.scatterBounceLeft--;
+          u.vx = -Math.max(2.8, Math.abs(u.vx) * 0.95);
+          u.vz = Math.min(u.vz, -7.8);
+          u.spawnHop = Math.max(u.spawnHop, 0.36);
+          this.spawnBurstParticles(u.x, 0.6, u.z, 0x22d3ee, 4);
+        } else {
+          u.vx = -Math.abs(u.vx) * 0.5;
+        }
       }
 
       // Wall Segment Collision (Grounded units flow around barriers; Jump-Pad airborne units vault over them!)
@@ -7830,6 +8343,17 @@ export class World3D {
             this.onBanner?.(`💰 击破黄金盗宝虫！+${jackpot}🪙`, '双大招立即充能 +45%！');
           }
           if (!u.active) continue;
+        }
+      }
+
+      // Blue Unit vs Steam Tactical Airdrop Crate (Pop/Collect for 8s Frenzy Buff!)
+      if (u.team === 'blue' && this.airdrop?.active && this.airdrop.y <= 3.2) {
+        const adx = u.x - this.airdrop.x;
+        const adz = u.z - this.airdrop.z;
+        if (adx * adx + adz * adz < (1.42 + u.radius) * (1.42 + u.radius)) {
+          this.hitTacticalAirdrop(u.kind === 'champion' ? 4 : 1);
+          u.spawnHop = Math.max(u.spawnHop, 0.45);
+          u.z -= 0.35;
         }
       }
 
@@ -9202,6 +9726,134 @@ export class World3D {
     };
   }
 
+  public runMc4SelfCheck(): {
+    ok: boolean;
+    scatterFanCount: number;
+    scatterBounced: boolean;
+    rainbowBeamHitRed: boolean;
+    airdropSpawned: boolean;
+    airdropCollected: boolean;
+    dualVolleyActiveAndDoubles: boolean;
+    freezeRedsSlowed: boolean;
+    frontlineGiantsPromoted: boolean;
+    bonusHeistSkippedAirdrop: boolean;
+    cleanResetOnLoad: boolean;
+  } {
+    const prevLevel = this.currentLevel;
+    const prevPaused = this.isPaused;
+    const prevWeapon = this.state.weapon;
+    this.isPaused = false;
+
+    // 1. Standard stage: Verify Scatter 3-way fan + curb ricochet bounce
+    this.loadLevel(generateDynamicLevel(1));
+    this.state.setWeaponMode('scatter');
+    this.turretX = -TRACK_HALF_W + 1.3;
+    this.turretTargetX = this.turretX;
+    this.fireTurret();
+    const scatterUnits = this.units.filter((u) => u.active && u.team === 'blue');
+    const scatterFanCount = scatterUnits.length;
+    const bounceProbe = scatterUnits.find((u) => u.vx < -0.5 && (u.scatterBounceLeft || 0) > 0);
+    for (let i = 0; i < 12; i++) {
+      this.simulateUnits(0.05);
+    }
+    const scatterBounced = Boolean(bounceProbe && bounceProbe.vx > 0 && (bounceProbe.scatterBounceLeft || 0) < 2);
+
+    // 2. Verify Rainbow charged piercing beam (every 4th shot)
+    this.loadLevel(generateDynamicLevel(1));
+    this.state.setWeaponMode('rainbow');
+    this.turretX = 0;
+    this.turretTargetX = 0;
+    const redTarget = this.spawnUnit('red', 'normal', 0.1, 2.0, 0, 1.0);
+    const targetId = redTarget ? redTarget.id : -1;
+    const hpBefore = redTarget ? redTarget.hp : 0;
+    const killsBefore = this.state.stageMutantsKilled;
+    for (let s = 0; s < 4; s++) {
+      this.fireTurret();
+    }
+    const rainbowBeamHitRed =
+      this.state.stageMutantsKilled > killsBefore ||
+      Boolean(redTarget && (!redTarget.active || redTarget.id !== targetId || redTarget.hp < hpBefore));
+
+    // 3. Verify Tactical Airdrop spawn, landing, collection & all 3 8s frenzy buffs
+    this.loadLevel(generateDynamicLevel(1));
+    this.airdropSpawnTimer = 0.02;
+    this.update(0.05);
+    const airdropSpawned = this.airdrop.active && this.airdropDropCount >= 1;
+    for (let i = 0; i < 60; i++) {
+      this.update(0.05);
+      if (this.airdrop.phase === 'landed') break;
+    }
+    const collected1 = this.hitTacticalAirdrop(4, 'dual_volley');
+    const airdropCollected = collected1 && !this.airdrop.active && this.airdropCollectCount >= 1;
+    const beforeDualCount = this.units.filter((u) => u.active && u.team === 'blue').length;
+    this.state.setWeaponMode('gatling');
+    this.fireTurret();
+    const afterDualCount = this.units.filter((u) => u.active && u.team === 'blue').length;
+    const dualVolleyActiveAndDoubles = this.dualVolleyTimer > 7.5 && afterDualCount - beforeDualCount >= 2;
+
+    this.loadLevel(generateDynamicLevel(1));
+    this.spawnTacticalAirdrop(0, 0);
+    this.hitTacticalAirdrop(4, 'freeze_reds');
+    const freezeRed = this.spawnUnit('red', 'normal', -5.2, 13.5, 0, 0);
+    const zStart = freezeRed ? freezeRed.z : 0;
+    for (let i = 0; i < 6; i++) {
+      this.simulateUnits(0.05);
+    }
+    const zNormalMove = freezeRed ? freezeRed.speed * 0.3 : 1;
+    const freezeRedsSlowed =
+      this.freezeRedsTimer > 7.5 && Boolean(freezeRed && freezeRed.z - zStart < zNormalMove * 0.55);
+
+    this.spawnUnit('blue', 'normal', 1.5, 4, 0, -6);
+    this.spawnTacticalAirdrop(0, 0);
+    this.hitTacticalAirdrop(4, 'frontline_giants');
+    const giantCount = this.units.filter((u) => u.active && u.team === 'blue' && u.isMiniGiant).length;
+    const frontlineGiantsPromoted = this.frontlineGiantsTimer > 7.5 && giantCount >= 1;
+
+    // 4. Verify clean reset on loadLevel() and explicit skip during 25s Bonus Heist
+    const bonusLvl = generateCandyVaultBonusLevel(5);
+    this.loadLevel(bonusLvl);
+    const cleanResetOnLoad =
+      !this.airdrop.active &&
+      this.dualVolleyTimer === 0 &&
+      this.freezeRedsTimer === 0 &&
+      this.frontlineGiantsTimer === 0 &&
+      this.rainbowShotCounter === 0;
+    for (let i = 0; i < 40; i++) {
+      this.update(0.5);
+    }
+    const bonusHeistSkippedAirdrop = !this.airdrop.active && this.airdropDropCount === 0;
+
+    this.state.setWeaponMode(prevWeapon);
+    if (prevLevel) {
+      this.loadLevel(prevLevel);
+    }
+    this.isPaused = prevPaused;
+
+    return {
+      ok:
+        scatterFanCount >= 3 &&
+        scatterBounced &&
+        rainbowBeamHitRed &&
+        airdropSpawned &&
+        airdropCollected &&
+        dualVolleyActiveAndDoubles &&
+        freezeRedsSlowed &&
+        frontlineGiantsPromoted &&
+        cleanResetOnLoad &&
+        bonusHeistSkippedAirdrop,
+      scatterFanCount,
+      scatterBounced,
+      rainbowBeamHitRed,
+      airdropSpawned,
+      airdropCollected,
+      dualVolleyActiveAndDoubles,
+      freezeRedsSlowed,
+      frontlineGiantsPromoted,
+      bonusHeistSkippedAirdrop,
+      cleanResetOnLoad,
+    };
+  }
+
   private applyGateEffect(u: Unit, g: GateRuntime): void {
     const { op, value } = g.cfg;
     const gateRank1 = this.state.getSkillNodeRank('gate_t1');
@@ -9787,6 +10439,29 @@ export class World3D {
         }
       } else {
         this.lootBugLabelEl.style.display = 'none';
+      }
+    }
+
+    if (this.airdrop?.labelEl) {
+      if (this.airdrop.active) {
+        const p = this.projectToScreen(this.airdrop.x, Math.max(0, this.airdrop.y) + 2.15, this.airdrop.z);
+        const inSafeViewport = p.visible && p.y >= safeTopY && p.y <= safeBottomY;
+        this.airdrop.labelEl.style.display = inSafeViewport ? 'inline-flex' : 'none';
+        if (inSafeViewport) {
+          this.airdrop.labelEl.style.left = `${p.x}px`;
+          this.airdrop.labelEl.style.top = `${p.y}px`;
+          const statusKey =
+            this.airdrop.phase === 'falling' ? 'falling' : `${Math.ceil(this.airdrop.hp)}`;
+          if (this.airdrop.labelEl.dataset.hp !== statusKey) {
+            this.airdrop.labelEl.dataset.hp = statusKey;
+            this.airdrop.labelEl.innerHTML =
+              this.airdrop.phase === 'falling'
+                ? `${UI_ART.tacticalAirdrop}<span>空投降落</span>`
+                : `${UI_ART.tacticalAirdrop}<span>空投 ${statusKey}</span>`;
+          }
+        }
+      } else {
+        this.airdrop.labelEl.style.display = 'none';
       }
     }
 

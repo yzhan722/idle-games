@@ -54,12 +54,15 @@ const SPRITE_FILES = {
   furnPc: './assets/furn_pc.webp?v=hd4',
   furnTree: './assets/furn_tree.webp?v=hd4',
   furnLamp: './assets/furn_lamp.webp?v=hd4',
+  furnMusicbox: './assets/furn_musicbox.webp?v=hd18',
 
   // 治愈系手绘 UI / 装扮发饰 / 武器强化 / 粒子贴纸素材
   uiCoin: './assets/ui_coin.webp?v=hd6',
   itemBow: './assets/item_bow.webp?v=hd6',
   itemCrown: './assets/item_crown.webp?v=hd6',
   itemAura: './assets/item_aura.webp?v=hd6',
+  itemShellClip: './assets/item_shell_clip.webp?v=hd18',
+  itemStarWreath: './assets/item_star_wreath.webp?v=hd18',
   upgBlaster: './assets/upg_blaster.webp?v=hd6',
   upgBlade: './assets/upg_blade.webp?v=hd6',
   upgMagnet: './assets/upg_magnet.webp?v=hd6',
@@ -603,6 +606,13 @@ export function drawHeroSprite(ctx, p, now) {
   const headTopY = (isLowPose ? -88 : -110) + verticalWave * 0.85;
   const hatOffsetX = anim.headSwayX * 0.85;
 
+  if (eq.star_wreath && isReady(images.itemStarWreath)) {
+    ctx.save();
+    ctx.translate(hatOffsetX, headTopY - 1);
+    ctx.rotate(anim.headSwayX * 0.01);
+    ctx.drawImage(images.itemStarWreath, -22, -12, 44, 24);
+    ctx.restore();
+  }
   if (eq.crown && isReady(images.itemCrown)) {
     ctx.save();
     ctx.translate(hatOffsetX, headTopY - 4);
@@ -615,6 +625,13 @@ export function drawHeroSprite(ctx, p, now) {
     ctx.translate(-16 + hatOffsetX, headTopY + 10);
     ctx.rotate(-0.18 + anim.headSwayX * 0.015);
     ctx.drawImage(images.itemBow, -15, -15, 30, 30);
+    ctx.restore();
+  }
+  if (eq.shell_clip && isReady(images.itemShellClip)) {
+    ctx.save();
+    ctx.translate(18 + hatOffsetX, headTopY + 14);
+    ctx.rotate(0.22 + anim.headSwayX * 0.015);
+    ctx.drawImage(images.itemShellClip, -11, -11, 22, 22);
     ctx.restore();
   }
 
@@ -983,13 +1000,22 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
   // 底部柔和落地阴影
   ctx.save();
   ctx.scale(1, 0.28);
-  ctx.fillStyle = 'rgba(10, 20, 42, 0.26)';
+  ctx.fillStyle = furn.isDragging ? 'rgba(255, 178, 92, 0.34)' : 'rgba(10, 20, 42, 0.26)';
   ctx.beginPath();
   ctx.arc(0, 4, furn.key === 'tree' ? 40 : 34, 0, Math.PI * 2);
   ctx.fill();
+  if (furn.isDragging) {
+    ctx.strokeStyle = 'rgba(255, 232, 148, 0.92)';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.arc(0, 4, furn.key === 'tree' ? 46 : 40, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
 
   const isLampLit = furn.key === 'lamp' && (isDarkRoom || furn.manualOn);
+  const isMusicPlaying = furn.key === 'musicbox' && furn.isPlaying !== false;
   if (isLampLit) {
     // 暗光环境或手动点亮时的星海蓝鲸小夜灯温暖柔光光晕
     const pulse = 1 + Math.sin(now * 0.005) * 0.08;
@@ -1018,6 +1044,16 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
       -now * 0.004,
       '#66e3ff'
     );
+  } else if (isMusicPlaying) {
+    const pulse = 1 + Math.sin(now * 0.0045) * 0.07;
+    const mHalo = ctx.createRadialGradient(0, -38, 6, 0, -38, 68 * pulse);
+    mHalo.addColorStop(0, 'rgba(255, 216, 236, 0.36)');
+    mHalo.addColorStop(0.6, 'rgba(138, 216, 255, 0.18)');
+    mHalo.addColorStop(1, 'rgba(138, 216, 255, 0)');
+    ctx.fillStyle = mHalo;
+    ctx.beginPath();
+    ctx.arc(0, -38, 68 * pulse, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   let sx = 1;
@@ -1026,17 +1062,27 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
     const k = furn.squashTimer / 0.2;
     sx = 1 + Math.sin(k * Math.PI) * 0.16;
     sy = 1 - Math.sin(k * Math.PI) * 0.14;
+  } else if (isMusicPlaying) {
+    const beat = Math.sin(now * 0.0065) * 0.025;
+    sx = 1 + beat;
+    sy = 1 - beat * 0.8;
   }
 
   const spriteMap = {
     pc: images.furnPc,
     tree: images.furnTree,
-    lamp: images.furnLamp
+    lamp: images.furnLamp,
+    musicbox: images.furnMusicbox
   };
   const sp = spriteMap[furn.key] || images.furnLamp;
-  const sz = furn.key === 'tree' ? 98 : furn.key === 'pc' ? 88 : 78;
+  const sz = furn.key === 'tree' ? 98 : furn.key === 'pc' ? 88 : furn.key === 'musicbox' ? 84 : 78;
 
   ctx.save();
+  if (furn.isDragging) {
+    ctx.translate(0, -6);
+    sx *= 1.05;
+    sy *= 1.05;
+  }
   ctx.scale(sx, sy);
   if (isReady(sp)) {
     ctx.drawImage(sp, -sz * 0.5, -sz * 0.92, sz, sz);
@@ -1048,7 +1094,16 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
   }
   ctx.restore();
 
-  if (!hideLabel && furn.key === 'pc' && furn.working) {
+  if (furn.isDragging) {
+    ctx.font = '900 10.5px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(58, 75, 110, 0.88)';
+    ctx.lineWidth = 3;
+    const dragTxt = '左右拖动摆位';
+    ctx.strokeText(dragTxt, 0, -sz - 4);
+    ctx.fillStyle = '#fff5cc';
+    ctx.fillText(dragTxt, 0, -sz - 4);
+  } else if (!hideLabel && furn.key === 'pc' && furn.working) {
     const floatY = -76 + Math.sin(now * 0.012) * 4;
     ctx.font = '900 11px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
@@ -1058,6 +1113,16 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
     ctx.strokeText(codeTxt, 0, floatY);
     ctx.fillStyle = '#56e8ff';
     ctx.fillText(codeTxt, 0, floatY);
+  } else if (!hideLabel && furn.key === 'musicbox') {
+    const floatY = -78 + Math.sin(now * 0.008) * 3;
+    ctx.font = '900 10.5px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(58, 75, 110, 0.85)';
+    ctx.lineWidth = 2.8;
+    const trackTxt = `♪ ${furn.trackName || '晴空卡林巴'}`;
+    ctx.strokeText(trackTxt, 0, floatY);
+    ctx.fillStyle = '#ffd9ec';
+    ctx.fillText(trackTxt, 0, floatY);
   } else if (!hideLabel && isLampLit) {
     ctx.font = '900 10.5px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
