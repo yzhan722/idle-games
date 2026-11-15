@@ -25,17 +25,33 @@ init -1 python:
         ("ach_perfect", "零失误",         "从序章一路推理到结局，一次也没有答错。",           False),
         ("ach_bond",    "最近的距离",     "一个完整周目结束时，与墨墨的羁绊达到 100。",       False),
         ("ach_cg",      "全部的记忆",     "解锁画廊里的全部 CG。",                            False),
+        ("ach_dlc_alice", "账本里的温度", "完成番外短篇《艾丽丝的代价账本》。",               False),
+        ("ach_dlc_mo",    "第三只千纸鹤", "完成番外后日谈《旧书街与第三只千纸鹤》。",         False),
+        ("ach_mailbox",   "信箱里的回音", "破解委托信箱里的全部三桩校园推理短案卷。",         False),
+        ("ach_tea_party", "红茶与折纸金章", "完成侦探社午后茶话会的全部三场羁绊问答。",       False),
     ]
     ACH_TITLE = {a[0]: a[1] for a in ACH_LIST}
 
     for _a in ACH_LIST:
         achievement.register(_a[0], steam=_a[0])
 
+    def register_extra_achievement(aid, title, desc, hidden=False):
+        """动态注册扩展番外/鉴赏成就，保持 ACH_LIST / ACH_TITLE 与后端注册一致"""
+        if any(a[0] == aid for a in ACH_LIST):
+            return
+        ACH_LIST.append((aid, title, desc, bool(hidden)))
+        ACH_TITLE[aid] = title
+        achievement.register(aid, steam=aid)
+
     def ach_has(aid):
         return achievement.has(aid)
 
     def ach_count():
         return sum(1 for a in ACH_LIST if achievement.has(a[0]))
+
+    def ach_grid_rows():
+        """按 2 列对称网格计算行数（包含 PC-7 / PC-8 动态扩展后共 2×11 = 22 枚成就）"""
+        return max(1, (len(ACH_LIST) + 1) // 2)
 
     def ach_grant(aid):
         """解锁成就：只在首次解锁时弹提示与音效，并同步 Steam / 平台后端"""
@@ -91,13 +107,13 @@ style ach_toast_text is text:
     color "#fff1d0"
 
 
-## 鉴赏页里的成就分页（由 extra.rpy 的 extras 屏 use）
+## 鉴赏页里的成就分页（由 extra.rpy 的 extras 屏 use，支持 2×11 共 22 枚对称双列网格）
 screen extras_achievements():
     vbox:
         spacing 12
         text "已解锁 %d / %d" % (ach_count(), len(ACH_LIST)):
             style "extras_section_text"
-        grid 2 7:
+        grid 2 ach_grid_rows():
             spacing 12
             for aid, title, desc, hidden in ACH_LIST:
                 $ got = achievement.has(aid)
@@ -119,6 +135,8 @@ screen extras_achievements():
                             else:
                                 text title style "ach_title_locked"
                                 text desc style "ach_desc_locked"
+            if len(ACH_LIST) % 2 == 1:
+                null width 352 height 84
 
 style ach_card is default:
     xsize 352
