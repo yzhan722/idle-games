@@ -123,7 +123,7 @@ screen say(who, what):
     if not renpy.variant("small"):
         add SideImage() xpos 155 ypos 613 anchor (0.5, 0.5)
 
-    use quick_menu
+    use quick_menu(cur_who=who, cur_what=what)
 
 
 transform mo_note_card_in:
@@ -534,10 +534,11 @@ style choice_button_text is button_text:
 ## 快捷菜单 quick_menu
 ################################################################################
 
-screen quick_menu():
+screen quick_menu(cur_who=None, cur_what=None):
     zorder 100
     if quick_menu and not main_menu:
         ## 一条整体的半透明横条，按钮悬停微上浮，分组间以星芒分隔；"自动/跳过"开启时按钮保持高亮
+        $ _bm_active = is_quote_bookmarked(cur_who, cur_what)
         frame:
             style "quick_bar"
             xalign 0.5
@@ -553,6 +554,16 @@ screen quick_menu():
                 text "✦" style "quick_sep"
                 textbutton _("证据") action Show('evidence_list') at quick_btn_fx
                 textbutton _("羁绊") action Show('bond_panel') at quick_btn_fx
+                button:
+                    style "quick_button"
+                    at quick_btn_fx
+                    selected _bm_active
+                    action Function(add_or_toggle_quote_bookmark, cur_who, cur_what)
+                    hbox:
+                        spacing 4
+                        yalign 0.5
+                        add "images/ui/icon_crane_bookmark.png" xysize (18, 18) yalign 0.5
+                        text _("书签") style "quick_button_text" yalign 0.5
                 text "✦" style "quick_sep"
                 textbutton _("存档") action ShowMenu('save') at quick_btn_fx
                 textbutton _("读档") action ShowMenu('load') at quick_btn_fx
@@ -833,6 +844,84 @@ screen main_menu():
             style "main_menu_subtitle"
             xalign 0.5
             at main_title_in(0.55)
+        null height 20
+        hbox:
+            xalign 0.5
+            spacing 10
+            at main_title_in(0.62)
+            button:
+                style "main_menu_cozy_chip"
+                action [SetField(persistent, "extras_tab", "mailbox"), ShowMenu("extras")]
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "images/ui/icon_club_mailbox.png" xysize (18, 18) yalign 0.5
+                    text ("委托信箱 (%d/3)" % mailbox_solved_count()) size 13 color "#f2e6ff" yalign 0.5
+            button:
+                style "main_menu_cozy_chip"
+                action [SetField(persistent, "extras_tab", "teaparty"), ShowMenu("extras")]
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "images/ui/icon_tea_party_cup.png" xysize (18, 18) yalign 0.5
+                    text ("午后茶话会 (%d/3)" % tea_party_cleared_count()) size 13 color "#f2e6ff" yalign 0.5
+            button:
+                style "main_menu_cozy_chip"
+                action [SetField(persistent, "extras_tab", "lexicon"), ShowMenu("extras")]
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "images/ui/icon_mystery_lexicon.png" xysize (18, 18) yalign 0.5
+                    text ("批注辞典 (%d/%d)" % (lexicon_read_count(), len(LEXICON_ENTRIES))) size 13 color "#f2e6ff" yalign 0.5
+            button:
+                style "main_menu_cozy_chip"
+                action [SetField(persistent, "extras_tab", "music"), ShowMenu("extras")]
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "images/ui/icon_gramophone_disc.png" xysize (18, 18) yalign 0.5
+                    text _("雨夜留声机") size 13 color "#f2e6ff" yalign 0.5
+                    if (persistent.gramophone_rain_pct or 0) > 0 and not persistent.gramophone_stop_on_exit:
+                        add "images/ui/icon_rain_ambience.png" xysize (15, 15) yalign 0.5
+                    if (persistent.gramophone_study_pct or 0) > 0 and not persistent.gramophone_stop_on_exit:
+                        add "images/ui/icon_book_ambience.png" xysize (15, 15) yalign 0.5
+        null height 8
+        hbox:
+            xalign 0.5
+            spacing 10
+            at main_title_in(0.68)
+            button:
+                style "main_menu_cozy_chip"
+                action [SetField(persistent, "extras_tab", "restoration"), ShowMenu("extras")]
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "images/ui/icon_book_restoration.png" xysize (18, 18) yalign 0.5
+                    text ("古籍修复台 (%d/3)" % restoration_completed_count()) size 13 color "#f2e6ff" yalign 0.5
+            button:
+                style "main_menu_cozy_chip"
+                action [SetField(persistent, "extras_tab", "letterbox"), ShowMenu("extras")]
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "images/ui/icon_seasonal_letterbox.png" xysize (18, 18) yalign 0.5
+                    text ("四季信笺匣 (%d/4)" % letterbox_seal_count()) size 13 color "#f2e6ff" yalign 0.5
+            button:
+                style "main_menu_cozy_chip"
+                action [SetField(persistent, "extras_tab", "radio"), ShowMenu("extras")]
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "images/ui/icon_radio_booth_mic.png" xysize (18, 18) yalign 0.5
+                    text ("旧广播电台 (%d/3)" % radio_solved_count()) size 13 color "#f2e6ff" yalign 0.5
+            button:
+                style "main_menu_cozy_chip"
+                action [SetField(persistent, "extras_tab", "origami"), ShowMenu("extras")]
+                hbox:
+                    spacing 6
+                    yalign 0.5
+                    add "images/ui/icon_origami_cabinet.png" xysize (18, 18) yalign 0.5
+                    text ("千纸鹤陈列柜 (%d/12)" % origami_inspected_count()) size 13 color "#f2e6ff" yalign 0.5
 
     ## 进度徽记：精致胶囊徽章，让回访玩家一眼看到自己在哪
     if persistent.chapter_reached:
@@ -856,6 +945,14 @@ screen main_menu():
 
 style main_menu_vbox:
     spacing 0
+
+style main_menu_cozy_chip is button:
+    ysize 30
+    padding (12, 0)
+    background Frame("gui/hud_chip.png", 12, 12)
+    hover_background Frame("gui/hud_chip_hover.png", 12, 12)
+    hover_sound "audio/sfx_hover.ogg"
+    activate_sound "audio/sfx_click.ogg"
 
 style main_menu_progress is text:
     size 15
@@ -1201,7 +1298,7 @@ screen preferences():
                             textbutton _("重置初始进度"):
                                 style "pill_button"
                                 action Show("confirm",
-                                            message=_("确定要清空所有存档、已解锁 CG、结局与成就，\n恢复为全新初始试玩状态吗？"),
+                                            message=_("确定要清空所有存档、已解锁 CG、结局、成就与折纸书签，\n恢复为全新初始试玩状态吗？"),
                                             yes_action=[Hide("confirm"), Function(reset_all_progress)],
                                             no_action=Hide("confirm"))
                     hbox:
@@ -1415,10 +1512,10 @@ screen help():
                     vbox:
                         spacing 6
                         text _("鉴赏") style "pref_card_title"
-                        text _("结局：随时重温已达成的结局。") style "help_val"
-                        text _("画廊：全屏查看已解锁的 CG。") style "help_val"
-                        text _("音乐室：自由点播已解锁曲目。") style "help_val"
-                        text _("成就：共 14 项（含隐藏成就）。") style "help_val"
+                        text _("结局 / 画廊 / 音乐室 / 成就：随时回看收集。") style "help_val"
+                        text _("真相档案 / 折纸书签：双线时间轴与台词摘录。") style "help_val"
+                        text _("关系白板：跨案件人物红线与动机伏笔复盘。") style "help_val"
+                        text _("自由剧场：自选场景、色温光效与立绘差分取景。") style "help_val"
 
 style help_card is pref_card:
     padding (18, 10)
