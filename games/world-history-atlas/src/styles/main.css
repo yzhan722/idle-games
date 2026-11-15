@@ -1,0 +1,2086 @@
+/* World History Evolution Atlas - Master Stylesheet */
+:root {
+  --bg-ocean: #16202b;
+  --land-empty: #2c353d;
+  --ui-bg: rgba(19, 21, 26, 0.90);
+  --ui-border: rgba(216, 179, 101, 0.30);
+  --gold: #d8b365;
+  --text-main: #efe5d2;
+}
+
+/* 4 Era Visual Filter Themes - Restrained Museum-Atlas Tones */
+body.era-ancient {
+  --bg-ocean: #1d211e;
+  --land-empty: #37342c;
+  --gold: #d4aa58;
+}
+body.era-medieval {
+  --bg-ocean: #152130;
+  --land-empty: #2a343e;
+  --gold: #d8b365;
+}
+body.era-victoria {
+  --bg-ocean: #131e29;
+  --land-empty: #293239;
+  --gold: #cfa06b;
+}
+body.era-modern {
+  --bg-ocean: #0f1722;
+  --land-empty: #202935;
+  --gold: #7aa6c9;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+body {
+  background: var(--bg-ocean);
+  color: var(--text-main);
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Serif SC", serif;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 1.2s ease;
+}
+
+/* Topbar, Search & Bookmarks */
+#topbar {
+  position: absolute; top: 12px; left: 18px; right: 18px;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; z-index: 45; pointer-events: none;
+}
+.year-box {
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  padding: 7px 14px; border-radius: 12px;
+  pointer-events: auto;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+  min-width: 268px;
+  max-width: 315px;
+  flex-shrink: 0;
+}
+.year-head-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+#year-text { font-size: 20px; font-weight: bold; color: var(--gold); letter-spacing: 0.5px; white-space: nowrap; }
+.pace-badge {
+  font-size: 10px; color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(245, 197, 66, 0.28);
+  padding: 1px 6px; border-radius: 8px; white-space: nowrap;
+}
+#era-text { font-size: 11px; color: #b8c2cc; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.search-wrap {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  pointer-events: auto;
+  flex-shrink: 0;
+}
+#search-input {
+  width: 190px;
+  background: rgba(15, 20, 28, 0.92);
+  border: 1px solid #3d4854;
+  color: #f3ead8;
+  padding: 6px 11px;
+  border-radius: 6px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s, width 0.2s;
+}
+#search-input:focus { border-color: var(--gold); width: 225px; }
+#search-dropdown {
+  position: absolute; top: 34px; left: 0; width: 280px;
+  background: #0e131b;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.8);
+  display: none;
+  max-height: 290px;
+  overflow-y: auto;
+  z-index: 60;
+}
+.s-item {
+  padding: 7px 11px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+}
+.s-item:hover { background: rgba(245, 197, 66, 0.14); }
+.s-title { font-size: 12px; font-weight: bold; color: #fff; }
+.s-sub { font-size: 10.5px; color: #94a3b8; margin-top: 1px; }
+.s-badge {
+  font-size: 10px; padding: 1px 6px; border-radius: 4px;
+  background: rgba(245, 197, 66, 0.18); color: var(--gold); border: 1px solid rgba(245, 197, 66, 0.4);
+}
+.compare-trigger-btn {
+  border-color: rgba(245, 197, 66, 0.5) !important;
+  color: var(--gold) !important;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.era-bookmarks {
+  display: flex; gap: 5px; flex-wrap: wrap; pointer-events: auto; justify-content: flex-end;
+}
+.era-btn {
+  background: var(--ui-bg); color: #d8e0e8; border: 1px solid #3d4854;
+  padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 11.5px;
+  transition: all 0.2s; backdrop-filter: blur(6px);
+}
+.era-btn:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
+
+/* Chronicle Event Banner - Whisper-quiet by default, reveals full detail on hover */
+#event-banner {
+  position: absolute; top: 68px; left: 50%; transform: translateX(-50%);
+  width: auto; max-width: 560px;
+  background: rgba(14, 19, 27, 0.48);
+  border: 1px solid rgba(245, 197, 66, 0.16);
+  border-radius: 20px;
+  padding: 4px 18px; font-size: 11.5px; color: rgba(243, 234, 216, 0.62); text-align: center;
+  z-index: 15; pointer-events: auto; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  backdrop-filter: blur(6px);
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#event-banner:hover {
+  max-width: 820px;
+  white-space: normal;
+  background: rgba(14, 19, 27, 0.92);
+  border-color: rgba(245, 197, 66, 0.48);
+  color: #fff6e0;
+  padding: 7px 24px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.65);
+}
+
+.panel-title {
+  font-family: "Songti SC", "Noto Serif SC", "Microsoft YaHei", serif;
+  font-size: 12.2px; font-weight: bold; color: var(--gold);
+  border-bottom: 1px solid rgba(216, 179, 101, 0.16);
+  padding-bottom: 6px; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 6px; white-space: nowrap;
+}
+/* Left Macro Tech & Population Curve Panel - Restrained Copperplate Styling */
+#macro-panel {
+  position: absolute; left: 18px; top: 122px; width: 236px;
+  background: rgba(18, 20, 24, 0.56); border: 1px solid rgba(216, 179, 101, 0.18);
+  border-radius: 10px; padding: 9px 11px; z-index: 18;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.34);
+  backdrop-filter: blur(6px);
+  opacity: 0.52;
+  transition: opacity 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+}
+#macro-panel:hover {
+  opacity: 0.98;
+  background: var(--ui-bg);
+  border-color: var(--ui-border);
+}
+.macro-tech-box {
+  font-size: 10.2px; color: #dfd6c5;
+  background: rgba(255,255,255,0.03);
+  border-left: 2px solid rgba(216, 179, 101, 0.72);
+  padding: 3px 6px; border-radius: 3px;
+  margin-bottom: 6px; line-height: 1.35;
+}
+.macro-chart-legend {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 4px; font-size: 9.5px; color: #cbc3b4; margin-bottom: 3px;
+}
+.macro-share-readout {
+  color: #b7ad9b; font-size: 9.2px; white-space: nowrap;
+}
+.leg-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 3px; }
+#macro-chart-svg {
+  width: 100%; height: 64px;
+  background: rgba(14, 15, 18, 0.68);
+  border-radius: 5px;
+  border: 1px solid rgba(216, 179, 101, 0.15);
+  cursor: pointer;
+}
+.macro-scope-note {
+  margin-top: 4px;
+  font-size: 9.2px;
+  line-height: 1.32;
+  color: #ada391;
+}
+.macro-source-note {
+  margin-top: 2px;
+  font-size: 8.9px;
+  line-height: 1.3;
+  color: #8c8374;
+}
+
+/* Right Empire Inspector Panel - Restrained Parchment & Copperplate Drawer */
+#info-card {
+  position: absolute; right: 18px; top: 118px; width: 282px;
+  max-height: calc(100vh - 196px);
+  overflow-y: auto;
+  background: rgba(18, 20, 24, 0.58); border: 1px solid rgba(216, 179, 101, 0.20);
+  border-radius: 10px; padding: 11px 13px; z-index: 18;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.36);
+  backdrop-filter: blur(6px);
+  opacity: 0.60;
+  transition: opacity 0.35s ease, background 0.35s ease, border-color 0.35s ease, width 0.35s ease;
+}
+#info-card:hover {
+  opacity: 0.98;
+  width: 318px;
+  background: rgba(20, 21, 25, 0.94);
+  border-color: rgba(216, 179, 101, 0.42);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.65);
+}
+.card-head-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 3px; }
+#info-card h3 {
+  font-family: "Songti SC", "Noto Serif SC", "Microsoft YaHei", serif;
+  font-size: 16.5px; letter-spacing: 0.4px;
+}
+.mini-compare-btn {
+  background: rgba(216, 179, 101, 0.13); color: var(--gold);
+  border: 1px solid rgba(216, 179, 101, 0.42);
+  padding: 2px 8px; border-radius: 5px; font-size: 11px; cursor: pointer; white-space: nowrap;
+}
+.mini-compare-btn:hover { background: var(--gold); color: #161411; }
+#info-card .sub { font-size: 11.5px; color: #a79f91; margin-bottom: 6px; padding-bottom: 5px; border-bottom: 1px solid rgba(216, 179, 101, 0.14); }
+.stat-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; padding: 2px 0; color: #b8b0a2; }
+.stat-row strong { color: #efe5d2; text-align: right; font-weight: 600; }
+
+/* Scholarly Institutional & Historical Geography Dossier inside Right Inspector */
+.scholarly-dossier-box {
+  margin-top: 7px; padding: 6px 8px 5px;
+  background: rgba(16, 15, 13, 0.56);
+  border: 1px solid rgba(216, 179, 101, 0.18);
+  border-radius: 6px;
+}
+.sch-item {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 6px;
+  align-items: baseline;
+  padding: 2px 0;
+  border-top: 1px dashed rgba(216, 179, 101, 0.10);
+}
+.sch-item:first-of-type {
+  border-top: none;
+}
+.sch-lbl {
+  font-family: "Songti SC", "Noto Serif SC", serif;
+  font-size: 10px;
+  color: #cbb996;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.sch-val {
+  font-size: 10.2px;
+  line-height: 1.38;
+  color: #ddd2be;
+  word-break: break-word;
+}
+
+/* Dynasty Trajectory Sparkline inside Right Inspector */
+.trajectory-box {
+  margin-top: 8px; padding-top: 7px;
+  border-top: 1px solid rgba(216, 179, 101, 0.18);
+}
+.traj-head-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 5px;
+}
+.traj-head-row h4 {
+  font-family: "Songti SC", "Noto Serif SC", serif;
+  font-size: 11.2px; color: var(--gold); letter-spacing: 0.2px; white-space: nowrap;
+}
+.traj-summary-tag { font-size: 9.8px; color: #9c9383; white-space: nowrap; }
+#card-trajectory-svg {
+  width: 100%; height: 78px;
+  background: linear-gradient(180deg, rgba(28, 25, 20, 0.72) 0%, rgba(16, 15, 13, 0.85) 100%);
+  border: 1px solid rgba(216, 179, 101, 0.22);
+  border-radius: 6px;
+  cursor: crosshair;
+  display: block;
+}
+.traj-milestones-row {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px;
+}
+.traj-ms-chip {
+  background: rgba(216, 179, 101, 0.08);
+  border: 1px solid rgba(216, 179, 101, 0.24);
+  color: #dfd4be;
+  border-radius: 4px; padding: 1.5px 5px;
+  font-size: 10px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 3px;
+  transition: border-color 0.18s, background 0.18s;
+}
+.traj-ms-chip:hover {
+  background: rgba(216, 179, 101, 0.22);
+  border-color: var(--gold);
+}
+.traj-ms-chip .ms-tag { color: var(--gold); font-weight: bold; }
+.traj-peers-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px;
+}
+.peers-label { font-size: 10.5px; color: #9c9383; }
+.peer-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(216, 179, 101, 0.22);
+  color: #e5dbc7;
+  border-radius: 10px; padding: 1.5px 7px;
+  font-size: 10.5px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.peer-chip:hover { border-color: var(--gold); color: var(--gold); }
+.peer-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+/* Historical Trade Routes & Entrepot Inspector inside Right Card */
+.routes-inspector-box {
+  margin-top: 8px; padding-top: 7px;
+  border-top: 1px solid rgba(216, 179, 101, 0.18);
+}
+.routes-pills-row {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px;
+}
+.route-pill-btn {
+  background: rgba(24, 22, 18, 0.72);
+  border: 1px solid rgba(216, 179, 101, 0.22);
+  color: #d9ceba;
+  border-radius: 4px; padding: 2px 6px;
+  font-size: 10px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+.route-pill-btn:hover,
+.route-pill-btn.active {
+  background: rgba(216, 179, 101, 0.16);
+  border-color: rgba(216, 179, 101, 0.56);
+  color: #f2e7d0;
+}
+.route-pin-mark { font-size: 9px; color: var(--gold); }
+.route-detail-card {
+  background: rgba(15, 16, 19, 0.62);
+  border: 1px solid rgba(216, 179, 101, 0.16);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.route-meta-head {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.route-cat-tag {
+  font-size: 9.5px; padding: 0.5px 5px; border-radius: 3px;
+  border: 1px solid rgba(207, 165, 90, 0.45);
+  background: rgba(207, 165, 90, 0.08);
+  font-weight: 600; white-space: nowrap;
+}
+.route-span-txt {
+  font-size: 10px; color: #b5aa96; line-height: 1.3;
+}
+.route-goods-line {
+  font-size: 10.5px; color: #ddd2be; line-height: 1.42; margin-bottom: 5px;
+}
+.route-goods-line strong { color: #cbb996; font-weight: 600; }
+.route-hubs-wrap {
+  display: flex; flex-wrap: wrap; gap: 3.5px; margin-bottom: 4px;
+}
+.route-hub-chip {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(216, 179, 101, 0.20);
+  color: #d6cab4;
+  border-radius: 3px; padding: 1px 5px;
+  font-size: 9.8px; cursor: pointer;
+}
+.route-hub-chip:hover,
+.route-hub-chip.is-here {
+  border-color: var(--gold);
+  background: rgba(216, 179, 101, 0.15);
+  color: #f4ead2;
+}
+.route-impact-note {
+  font-size: 10px; color: #a79d8b; line-height: 1.44;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height 0.24s ease, opacity 0.22s ease, margin 0.22s ease;
+}
+#info-card:hover .route-impact-note {
+  max-height: 220px; opacity: 1; margin-top: 4px;
+}
+.route-empty-note {
+  font-size: 10px; color: #9c9383; line-height: 1.4;
+}
+
+#info-card p,
+#info-card .history-box {
+  max-height: 0; opacity: 0; overflow: hidden; margin: 0; padding: 0; border: none;
+  transition: max-height 0.26s ease, opacity 0.22s ease, margin 0.22s ease, padding 0.22s ease;
+}
+#info-card:hover p {
+  max-height: 240px; opacity: 1; font-size: 11.5px; line-height: 1.5; color: #ddd3c0; margin-bottom: 8px;
+}
+#info-card:hover .history-box {
+  max-height: 220px; opacity: 1; margin-top: 9px; border-top: 1px solid rgba(216, 179, 101, 0.16); padding-top: 6px;
+}
+.history-box h4 {
+  font-family: "Songti SC", "Noto Serif SC", serif;
+  font-size: 11.5px; color: var(--gold); margin-bottom: 5px;
+}
+.hist-item { display: flex; justify-content: space-between; font-size: 11px; padding: 2.5px 0; color: #d5cbb8; }
+.hist-item.is-stateless { color: #9d968a; font-style: italic; }
+.hist-year { color: #9c9383; }
+
+/* Map Viewport & SVG Elements */
+#map-container {
+  flex: 1; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, rgba(38, 56, 76, 0.55) 0%, rgba(12, 18, 26, 0.95) 100%);
+  cursor: grab;
+}
+#map-container:active { cursor: grabbing; }
+svg#world-map { width: 100%; height: 100%; }
+
+.map-grid line { stroke: rgba(255,255,255,0.035); stroke-width: 1; }
+
+.inland-sea {
+  fill: var(--bg-ocean);
+  stroke: rgba(110, 190, 242, 0.35);
+  stroke-width: 0.7;
+  pointer-events: none;
+}
+.bathymetry-deep {
+  fill: none;
+  stroke: rgba(45, 118, 168, 0.065);
+  stroke-width: 14;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.bathymetry-mid {
+  fill: none;
+  stroke: rgba(72, 165, 215, 0.11);
+  stroke-width: 6.5;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.bathymetry-shore {
+  fill: rgba(4, 10, 18, 0.45);
+  stroke: rgba(140, 214, 248, 0.22);
+  stroke-width: 2.1;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.world-coastline {
+  fill: none;
+  stroke: #0a121a;
+  stroke-width: 1.05;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.sea-label {
+  font-size: 7.5px;
+  fill: rgba(144, 205, 244, 0.35);
+  font-style: italic;
+  text-anchor: middle;
+  pointer-events: none;
+  letter-spacing: 1px;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.mountain-ridge {
+  fill: none;
+  stroke: rgba(185, 165, 135, 0.34);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 2 2.5;
+  pointer-events: none;
+}
+
+.river-path {
+  fill: none;
+  stroke: rgba(88, 208, 232, 0.48);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.river-label {
+  font-size: 7px;
+  fill: rgba(135, 232, 220, 0.42);
+  text-anchor: middle;
+  pointer-events: none;
+  text-shadow: 0 1px 2px #000;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.region {
+  fill: var(--land-empty);
+  stroke: rgba(18, 25, 34, 0.42);
+  stroke-width: 0.55;
+  stroke-linejoin: round;
+  transition: fill 0.7s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.7s ease;
+  cursor: pointer;
+}
+.region.owned {
+  stroke-width: 0.5;
+  stroke-opacity: 0.68;
+}
+.region:hover, .region.empire-hovered { filter: brightness(1.15); stroke: rgba(255, 255, 255, 0.72) !important; stroke-width: 1.15; }
+.region.selected { stroke: var(--gold) !important; stroke-width: 1.45; filter: brightness(1.1); }
+
+/* Region sub-labels hidden by default; gently emerge only on hover/focus */
+.region-sublabel {
+  font-size: 7.2px; fill: rgba(245, 238, 224, 0.75);
+  text-anchor: middle; pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+.region-sublabel.is-focused {
+  opacity: 0.78 !important;
+}
+/* Stateless regions (no state ruled them): culture names stay faintly visible so the early map reads as people, not empty land */
+.region-sublabel.is-stateless {
+  font-style: italic;
+  fill: rgba(220, 208, 182, 0.85);
+}
+svg.map-zoomed .region-sublabel.is-stateless {
+  opacity: 0.6;
+}
+
+/* Empire labels: hidden by default, emerge smoothly when mouse focuses on territory */
+.empire-banner-group {
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+}
+.empire-banner-group.is-watermark {
+  opacity: 0;
+}
+.empire-banner-group.is-focused {
+  opacity: 1 !important;
+}
+.empire-cartouche-bg {
+  fill: rgba(12, 16, 23, 0.68);
+  stroke-width: 0.75;
+  stroke-opacity: 0.65;
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+.empire-banner-group.is-focused .empire-cartouche-bg {
+  opacity: 0.92;
+}
+.empire-macro-label {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", "Microsoft YaHei", serif;
+  fill: rgba(246, 238, 220, 0.95); font-weight: 600; text-anchor: middle;
+  pointer-events: none; letter-spacing: 1.4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.92), 0 0 8px rgba(0,0,0,0.75);
+}
+
+.trade-route-group {
+  opacity: 0;
+  transition: opacity 0.85s ease;
+  pointer-events: none;
+}
+.trade-route-group.is-active .trade-route-hit {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.trade-route-group.is-active .route-hub-group {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.trade-route-casing {
+  fill: none;
+  stroke: rgba(12, 14, 18, 0.42);
+  stroke-width: 2.6;
+  pointer-events: none;
+}
+.trade-route {
+  fill: none;
+  stroke-width: 1.35;
+  stroke-dasharray: 5 4.5;
+  opacity: 0.76;
+  animation: routeFlow 46s linear infinite;
+  pointer-events: none;
+  transition: stroke-width 0.22s ease, opacity 0.22s ease;
+}
+.trade-route-group.is-hovered .trade-route,
+.trade-route-group.is-selected .trade-route {
+  stroke-width: 1.95;
+  opacity: 0.96;
+}
+.trade-route-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 6.5;
+  pointer-events: none;
+}
+.route-caravan {
+  opacity: 0.82;
+  pointer-events: none;
+}
+.route-hub-group {
+  pointer-events: none;
+}
+.route-hub-hit {
+  fill: transparent;
+}
+.route-hub-ring {
+  fill: rgba(16, 18, 22, 0.86);
+  stroke-width: 1.05;
+  transition: r 0.18s ease, stroke-width 0.18s ease;
+}
+.route-hub-core {
+  fill: #efe3c8;
+  pointer-events: none;
+}
+.route-hub-group:hover .route-hub-ring {
+  r: 3.7;
+  stroke-width: 1.45;
+}
+.route-hub-label {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Microsoft YaHei", serif;
+  font-size: 8.1px;
+  fill: #e8dac0;
+  text-anchor: middle;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.94), 0 0 5px rgba(0,0,0,0.85);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+.trade-route-group.is-hovered .route-hub-label,
+.trade-route-group.is-selected .route-hub-label {
+  opacity: 0.92;
+}
+@keyframes routeFlow { to { stroke-dashoffset: -220; } }
+
+.campaign-arrow {
+  fill: none;
+  stroke: #f3dfb6;
+  stroke-width: 1.55;
+  stroke-dasharray: 5 4.5;
+  opacity: 0.76;
+  pointer-events: none;
+}
+
+.toast-fade {
+  animation: toastGentleIn 0.55s ease-out;
+}
+@keyframes toastGentleIn {
+  0% { opacity: 0.65; }
+  100% { opacity: 1; }
+}
+
+.landmark-group { cursor: pointer; }
+.landmark-dot { fill: #f5ebd4; stroke: var(--gold); stroke-width: 1.5; }
+.landmark-group:hover .landmark-dot { fill: var(--gold); r: 4.4; }
+.landmark-pulse {
+  fill: rgba(216, 179, 101, 0.08);
+  stroke: rgba(216, 179, 101, 0.34);
+  stroke-width: 0.85;
+  pointer-events: none;
+}
+.landmark-label {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Microsoft YaHei", serif;
+  font-size: 9.2px; fill: #ebd9ad; font-weight: 600;
+  text-anchor: middle; text-shadow: 0 1px 3px #000, 0 0 5px #000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+.landmark-group:hover .landmark-label {
+  opacity: 1;
+}
+.landmark-label.is-crowded {
+  display: none;
+}
+.landmark-group:hover .landmark-label.is-crowded {
+  display: block;
+  opacity: 1;
+}
+
+/* Interactive Landmark Floating Tooltip */
+.landmark-tooltip {
+  position: fixed;
+  display: none;
+  width: 270px;
+  background: rgba(16, 18, 22, 0.96);
+  border: 1px solid rgba(216, 179, 101, 0.55);
+  border-radius: 9px;
+  padding: 10px 13px;
+  z-index: 50;
+  pointer-events: none;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+}
+.lt-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 5px; font-size: 11px;
+}
+.lt-badge {
+  background: rgba(216, 179, 101, 0.16);
+  color: var(--gold);
+  border: 1px solid rgba(216, 179, 101, 0.42);
+  padding: 1px 7px; border-radius: 4px; font-weight: bold;
+}
+.lt-year { color: #9c9383; }
+.lt-title { font-size: 13.5px; font-weight: bold; color: #f6efe0; margin-bottom: 4px; }
+.lt-desc { font-size: 11.5px; line-height: 1.5; color: #d5cbb8; }
+
+/* Regional Theater Camera Bar */
+#theater-bar {
+  position: absolute; bottom: 68px; left: 50%; transform: translateX(-50%);
+  background: rgba(18, 20, 24, 0.72);
+  border: 1px solid rgba(216, 179, 101, 0.22);
+  padding: 5px 14px; border-radius: 20px;
+  display: flex; align-items: center; gap: 6px;
+  z-index: 20; backdrop-filter: blur(8px);
+  opacity: 0.48;
+  transition: opacity 0.35s ease, background 0.35s ease;
+}
+#theater-bar:hover {
+  opacity: 0.98;
+  background: rgba(18, 20, 24, 0.94);
+}
+.theater-label { font-size: 11px; color: #9c9383; font-weight: bold; }
+#theater-buttons { display: flex; gap: 5px; }
+.theater-pill {
+  background: rgba(255,255,255,0.04); color: #d5cbb8;
+  border: 1px solid #3d434c; padding: 3px 10px; border-radius: 12px;
+  font-size: 11px; cursor: pointer; transition: all 0.2s;
+}
+.theater-pill:hover {
+  border-color: var(--gold); color: var(--gold);
+}
+.theater-pill.active {
+  background: var(--gold); color: #161411; border-color: var(--gold); font-weight: bold;
+}
+
+/* Bottom Timeline Controls */
+#bottom-controls {
+  position: absolute; bottom: 14px; left: 18px; right: 18px;
+  background: var(--ui-bg); border: 1px solid var(--ui-border);
+  padding: 9px 18px; border-radius: 12px;
+  display: flex; align-items: center; gap: 10px; z-index: 20;
+  backdrop-filter: blur(8px);
+  opacity: 0.56;
+  transition: opacity 0.35s ease;
+}
+#bottom-controls:hover {
+  opacity: 0.98;
+}
+.ctrl-btn {
+  background: #232830; color: #e8decb; border: 1px solid #454d58;
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;
+  transition: all 0.15s;
+}
+.ctrl-btn.active, .ctrl-btn:hover { background: var(--gold); color: #161411; border-color: var(--gold); }
+#timeline-slider { flex: 1; accent-color: var(--gold); cursor: pointer; height: 6px; }
+
+/* Dynasty Trajectory & Comparison Modal - Copperplate Museum Atlas */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(9, 11, 14, 0.80);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 80; backdrop-filter: blur(6px);
+}
+.compare-dialog {
+  width: 900px; max-width: 95vw;
+  max-height: 89vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(22, 22, 24, 0.98) 0%, rgba(16, 17, 20, 0.99) 100%);
+  border: 1px solid rgba(216, 179, 101, 0.55);
+  border-radius: 12px; padding: 18px 22px;
+  box-shadow: 0 22px 54px rgba(0,0,0,0.88);
+}
+.compare-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  border-bottom: 1px solid rgba(216, 179, 101, 0.16);
+  padding-bottom: 10px; margin-bottom: 12px;
+}
+.compare-header h3 {
+  font-family: "Songti SC", "Noto Serif SC", "Microsoft YaHei", serif;
+  color: var(--gold); font-size: 18px; letter-spacing: 0.5px;
+}
+.modal-close-btn {
+  background: transparent; color: #a79f91; border: 1px solid #494f58;
+  padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; flex-shrink: 0;
+}
+.modal-close-btn:hover { color: #f6efe0; border-color: var(--gold); }
+
+.compare-presets {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  margin-bottom: 10px;
+}
+.preset-label { font-size: 11.5px; color: #9c9383; font-weight: bold; }
+.preset-pill {
+  background: rgba(216, 179, 101, 0.08);
+  color: #dfd4be;
+  border: 1px solid rgba(216, 179, 101, 0.28);
+  padding: 3.5px 10px; border-radius: 14px;
+  font-size: 11.5px; cursor: pointer;
+  transition: all 0.18s;
+}
+.preset-pill:hover {
+  background: rgba(216, 179, 101, 0.22);
+  border-color: var(--gold);
+  color: #fff6e0;
+}
+
+.compare-selectors {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.compare-selectors select {
+  flex: 1; min-width: 180px;
+  background: #15171c; color: #efe5d2; border: 1px solid #454b54;
+  padding: 7px 10px; border-radius: 7px; font-size: 12.5px; outline: none;
+}
+.compare-selectors select:focus { border-color: var(--gold); }
+.vs-badge {
+  background: var(--gold); color: #161411; font-weight: bold;
+  padding: 3px 9px; border-radius: 14px; font-size: 11.5px;
+}
+.vs-badge-muted {
+  background: rgba(216, 179, 101, 0.16);
+  color: var(--gold);
+  border: 1px solid rgba(216, 179, 101, 0.35);
+}
+
+.cmp-trajectory-panel {
+  background: linear-gradient(180deg, rgba(28, 25, 20, 0.65) 0%, rgba(15, 15, 14, 0.85) 100%);
+  border: 1px solid rgba(216, 179, 101, 0.24);
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.cmp-traj-top {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 8px; margin-bottom: 6px;
+}
+.cmp-leg-list { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11.5px; color: #efe5d2; }
+.cmp-leg-item { display: inline-flex; align-items: center; gap: 5px; }
+.cmp-leg-swatch { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+.cmp-leg-ms { font-size: 10.5px; color: #9c9383; }
+.cmp-axis-note { font-size: 10.5px; color: #9c9383; }
+#cmp-overlay-svg {
+  width: 100%; height: 178px;
+  display: block;
+  cursor: crosshair;
+}
+
+.cmp-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.cmp-grid.cmp-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.cmp-col {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(216, 179, 101, 0.14);
+  border-radius: 9px; padding: 12px;
+  display: flex; flex-direction: column;
+}
+.cmp-title {
+  font-family: "Songti SC", "Noto Serif SC", serif;
+  font-size: 15.5px; font-weight: bold; margin-bottom: 3px;
+}
+.cmp-sub { font-size: 11px; color: #9c9383; margin-bottom: 9px; }
+.cmp-metric { margin-bottom: 8px; font-size: 11.5px; }
+.cmp-metric-head { display: flex; justify-content: space-between; margin-bottom: 3px; color: #cfc5b3; }
+.cmp-bar-bg { height: 5px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
+.cmp-bar-fill { height: 100%; border-radius: 4px; }
+.cmp-scholarly-meta {
+  margin-top: 6px; padding: 6px 8px;
+  background: rgba(16, 15, 13, 0.52);
+  border: 1px solid rgba(216, 179, 101, 0.15);
+  border-radius: 6px;
+  font-size: 10.5px; line-height: 1.42; color: #cfc5b3;
+}
+.cmp-scholarly-meta div + div { margin-top: 3px; }
+.cmp-scholarly-meta span { color: #cbb996; font-family: "Songti SC", "Noto Serif SC", serif; }
+.cmp-desc { font-size: 11.5px; color: #d5cbb8; line-height: 1.48; margin-top: 6px; flex: 1; }
+.cmp-jump-btn {
+  margin-top: 10px; width: 100%;
+  background: rgba(216, 179, 101, 0.12); color: var(--gold);
+  border: 1px solid rgba(216, 179, 101, 0.38);
+  padding: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11.5px;
+}
+.cmp-jump-btn:hover { background: var(--gold); color: #161411; }
+
+/* Massive Chronicle Annals Database Modal */
+.chronicle-dialog {
+  width: 980px; max-width: 95vw;
+  max-height: 86vh;
+  background: rgba(15, 20, 29, 0.98);
+  border: 1px solid var(--gold);
+  border-radius: 14px; padding: 18px 22px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.88);
+  display: flex; flex-direction: column;
+}
+.chr-subtitle {
+  font-size: 11.5px; color: #94a3b8; margin-top: 4px;
+}
+.chronicle-filters {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.chronicle-filters select,
+.chronicle-filters input {
+  background: #131a24; color: #f1f5f9; border: 1px solid #3d4856;
+  padding: 6px 10px; border-radius: 7px; font-size: 12px; outline: none;
+}
+.chronicle-filters select:focus,
+.chronicle-filters input:focus {
+  border-color: var(--gold);
+}
+.chronicle-filters input {
+  flex: 1; min-width: 180px;
+}
+.chr-count-badge {
+  background: rgba(245, 197, 66, 0.16); color: var(--gold);
+  border: 1px solid rgba(245, 197, 66, 0.4);
+  padding: 5px 10px; border-radius: 14px; font-size: 11.5px; font-weight: bold;
+}
+.chronicle-list {
+  flex: 1; overflow-y: auto; padding-right: 6px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.chr-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 9px; padding: 10px 14px;
+  cursor: pointer; transition: all 0.16s ease;
+}
+.chr-row:hover {
+  background: rgba(245, 197, 66, 0.08);
+  border-color: rgba(245, 197, 66, 0.5);
+  transform: translateX(2px);
+}
+.chr-left {
+  width: 132px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.chr-year-badge {
+  display: inline-block;
+  background: rgba(245, 197, 66, 0.16); color: var(--gold);
+  border: 1px solid rgba(245, 197, 66, 0.35);
+  padding: 3px 8px; border-radius: 5px;
+  font-size: 12px; font-weight: bold; text-align: center;
+}
+.chr-region-badge {
+  font-size: 11px; color: #94a3b8; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chr-main {
+  flex: 1; min-width: 0;
+}
+.chr-head-line {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-bottom: 4px; flex-wrap: wrap;
+}
+.chr-title {
+  font-size: 14px; font-weight: bold; color: #f8fafc;
+}
+.chr-tags {
+  display: flex; gap: 6px;
+}
+.chr-tag {
+  font-size: 10.5px; padding: 1px 7px; border-radius: 10px;
+}
+.chr-tag-theater {
+  background: rgba(56, 189, 248, 0.14); color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.chr-tag-cat {
+  background: rgba(168, 85, 247, 0.14); color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+.chr-detail {
+  font-size: 12.2px; color: #cbd5e1; line-height: 1.5;
+}
+.chr-action {
+  align-self: center; flex-shrink: 0;
+  font-size: 11.5px; color: var(--gold); font-weight: bold;
+  padding: 4px 8px; border-radius: 6px;
+  background: rgba(245, 197, 66, 0.1);
+}
+.chr-empty {
+  text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 13px;
+}
+
+/* Responsive Portrait Mobile & Compact Tablet Layout */
+@media (max-width: 900px) {
+  #topbar {
+    top: 8px; left: 8px; right: 8px;
+    flex-wrap: wrap; gap: 5px;
+  }
+  .year-box {
+    min-width: 0; max-width: none; width: 100%;
+    padding: 5px 10px; border-radius: 9px;
+  }
+  #year-text { font-size: 16px; }
+  .search-wrap {
+    width: 100%; display: flex; gap: 5px;
+  }
+  #search-input, #search-input:focus {
+    flex: 1; min-width: 0; width: auto; font-size: 11px; padding: 5px 8px;
+  }
+  .compare-trigger-btn {
+    padding: 4px 7px; font-size: 10.5px;
+  }
+  .era-bookmarks,
+  #macro-panel,
+  #theater-bar {
+    display: none;
+  }
+  #event-banner {
+    top: 96px; left: 8px; right: 8px; transform: none;
+    max-width: none; font-size: 10.5px; padding: 3px 10px;
+  }
+  #map-container {
+    align-items: flex-start;
+    padding-top: 118px;
+    padding-bottom: 340px;
+  }
+  #info-card,
+  #info-card:hover {
+    left: 8px; right: 8px; top: auto; bottom: 104px;
+    width: auto; max-height: 34vh;
+    opacity: 0.95;
+    background: rgba(18, 20, 24, 0.94);
+    padding: 8px 10px;
+  }
+  #bottom-controls {
+    bottom: 8px; left: 8px; right: 8px;
+    padding: 5px 8px; gap: 4px; flex-wrap: wrap; opacity: 0.95;
+  }
+  .ctrl-btn { padding: 3px 6px; font-size: 10px; }
+  #timeline-slider { min-width: 90px; }
+  .cmp-grid, .cmp-grid.cmp-grid-3 { grid-template-columns: 1fr; }
+  .chr-row { flex-direction: column; gap: 6px; }
+  .chr-left { width: auto; flex-direction: row; align-items: center; gap: 8px; }
+}
+
+/* =====================================================================================
+   Layout refinements: keep the map uncovered and readable at every width
+   ===================================================================================== */
+
+/* Era bookmarks: one horizontally scrollable row, so the topbar never wraps down over the side panels */
+.era-bookmarks {
+  flex: 0 1 auto; min-width: 0; margin-left: auto;
+  flex-wrap: nowrap; justify-content: flex-start;
+  overflow-x: auto; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
+  padding-right: 14px;
+}
+.era-bookmarks::-webkit-scrollbar { display: none; }
+.era-btn { white-space: nowrap; flex-shrink: 0; }
+
+/* Chronicle ticker sits between the side panels instead of under them */
+#event-banner { top: 66px; max-width: min(560px, calc(100vw - 640px)); }
+#event-banner:hover { max-width: min(820px, calc(100vw - 80px)); }
+
+/* Side panels start cleanly below the expanded dual-track year-box and stay readable without hovering */
+#macro-panel { opacity: 0.84; background: rgba(18, 20, 24, 0.80); }
+#bottom-controls { opacity: 0.9; }
+.ctrl-btn { white-space: nowrap; flex-shrink: 0; }
+#theater-bar { opacity: 0.82; bottom: 64px; white-space: nowrap; }
+.theater-label, .theater-pill { white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 1180px) and (min-width: 901px) {
+  #bottom-controls { padding: 7px 12px; gap: 6px; width: calc(100vw - 28px); }
+  #bottom-controls .ctrl-btn { padding: 4px 8px; font-size: 11px; }
+  #timeline-slider { min-width: 80px; }
+}
+@media (max-width: 1279px) {
+  #macro-panel { display: none; }
+}
+
+/* Inspector: full content when open (no hover-only text, which touch screens never see) */
+#info-card,
+#info-card:hover {
+  top: 104px; width: 300px;
+  max-height: calc(100vh - 230px);
+  opacity: 0.97;
+  background: rgba(20, 21, 25, 0.93);
+  border-color: rgba(216, 179, 101, 0.36);
+}
+#info-card p,
+#info-card:hover p {
+  max-height: none; opacity: 1; font-size: 11.5px; line-height: 1.5; color: #ddd3c0; margin-bottom: 8px;
+}
+#info-card .history-box,
+#info-card:hover .history-box {
+  max-height: none; opacity: 1; margin-top: 9px; border-top: 1px solid rgba(216, 179, 101, 0.16); padding-top: 6px;
+}
+.card-head-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.card-toggle-btn {
+  background: transparent; color: #b9b1a0;
+  border: 1px solid rgba(185, 177, 160, 0.38);
+  padding: 2px 8px; border-radius: 5px; font-size: 11px; cursor: pointer; white-space: nowrap;
+}
+.card-toggle-btn:hover { color: var(--gold); border-color: var(--gold); }
+
+/* Collapsed inspector: just the title and region, click to open */
+#info-card.is-collapsed,
+#info-card.is-collapsed:hover {
+  width: auto; min-width: 190px; max-width: 300px;
+  padding: 8px 12px; cursor: pointer;
+}
+#info-card.is-collapsed > :not(.card-head-row):not(.sub) { display: none; }
+#info-card.is-collapsed .sub { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+#info-card.is-collapsed .mini-compare-btn { display: none; }
+
+/* Map area clears the top and bottom bars; wide screens also reserve the side panels */
+#map-container {
+  padding: 60px 0 104px;
+  transition: padding 0.35s ease;
+}
+svg#world-map { touch-action: none; }
+@media (min-width: 1500px) {
+  #map-container { padding-left: 262px; }
+  body.inspector-open #map-container { padding-right: 336px; }
+}
+
+/* Main powers are named on the map without hovering; minor single-region states appear when zoomed */
+.empire-banner-group.is-major { opacity: 0.9; }
+.empire-banner-group.is-major .empire-cartouche-bg { opacity: 0.55; }
+.empire-banner-group.is-minor {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+svg.map-zoomed .empire-banner-group.is-minor { opacity: 0.91; }
+svg.map-zoomed .empire-banner-group.is-minor .empire-cartouche-bg { opacity: 0.64; }
+svg.map-zoomed .region.owned { stroke-width: 0.36; stroke-opacity: 0.78; }
+svg.map-zoomed .region-sublabel.is-stateless { font-size: 5.0px; opacity: 0.58; }
+
+/* Phones and narrow tablets */
+@media (max-width: 900px) {
+  .era-bookmarks {
+    display: flex; width: 100%; margin-left: 0;
+    -webkit-mask-image: none; mask-image: none; padding-right: 0;
+  }
+  .era-btn { padding: 4px 8px; font-size: 11px; }
+  #event-banner { top: 128px; max-width: none; }
+  #event-banner:hover { max-width: none; }
+  #map-container { padding: 152px 0 184px; align-items: center; }
+  #theater-bar {
+    display: flex;
+    bottom: 96px; left: 8px; right: 8px; transform: none;
+    padding: 3px 8px; border-radius: 14px;
+    overflow-x: auto; scrollbar-width: none;
+    opacity: 0.94; background: rgba(18, 20, 24, 0.90);
+    z-index: 21;
+  }
+  #theater-bar::-webkit-scrollbar { display: none; }
+  .theater-label { display: none; }
+  #theater-buttons { flex-wrap: nowrap; gap: 4px; }
+  .theater-pill { white-space: nowrap; flex-shrink: 0; padding: 2.5px 8px; font-size: 10.5px; }
+  #info-card,
+  #info-card:hover {
+    top: auto; left: 8px; right: 8px; bottom: 130px;
+    width: auto; max-height: 40vh;
+    z-index: 22;
+  }
+  #info-card.is-collapsed,
+  #info-card.is-collapsed:hover { max-width: none; min-width: 0; }
+}
+
+/* =====================================================================================
+   City-State Markers & Scholarly Confidence Badges (Restrained Copperplate Style)
+   ===================================================================================== */
+
+.card-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.conf-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Microsoft YaHei", serif;
+  font-size: 10px;
+  line-height: 1.3;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: help;
+  flex-shrink: 0;
+}
+.conf-verified {
+  color: #c8d5bd;
+  background: rgba(112, 140, 98, 0.16);
+  border: 1px solid rgba(140, 168, 124, 0.38);
+}
+.conf-inferred {
+  color: #dcc28e;
+  background: rgba(194, 156, 82, 0.15);
+  border: 1px solid rgba(206, 168, 96, 0.38);
+}
+.conf-legend {
+  color: #d8afa2;
+  background: rgba(176, 106, 90, 0.15);
+  border: 1px solid rgba(188, 120, 104, 0.38);
+}
+.conf-badge-inline {
+  vertical-align: baseline;
+  margin-right: 4px;
+  font-size: 9.5px;
+  padding: 0 4px;
+}
+
+.conf-floating-tip {
+  position: fixed;
+  z-index: 95;
+  max-width: 260px;
+  background: rgba(18, 19, 23, 0.96);
+  border: 1px solid rgba(216, 179, 101, 0.45);
+  border-radius: 6px;
+  padding: 7px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.72);
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+.conf-floating-tip .cft-head {
+  font-family: "Songti SC", "Noto Serif SC", serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--gold);
+  margin-bottom: 3px;
+}
+.conf-floating-tip .cft-body {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #dcd2bf;
+}
+
+.chr-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.chr-source {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #a89e8c;
+  font-family: "Songti SC", "Noto Serif SC", "Microsoft YaHei", serif;
+}
+.banner-source {
+  color: #b7ad9b;
+  font-size: 10.5px;
+}
+
+.city-state-group {
+  cursor: pointer;
+}
+.city-state-ring {
+  fill: rgba(18, 20, 24, 0.76);
+  stroke: rgba(214, 188, 138, 0.80);
+  stroke-width: 0.75;
+  transition: r 0.16s ease, stroke-width 0.16s ease;
+}
+.city-state-dot {
+  fill: #ebd9b9;
+  pointer-events: none;
+}
+.city-state-group.is-stateless .city-state-ring {
+  stroke: rgba(226, 198, 142, 0.90);
+}
+.city-state-group:hover .city-state-ring {
+  r: 3.1;
+  stroke: #f0d79e;
+  stroke-width: 1.05;
+}
+.city-state-label {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Microsoft YaHei", serif;
+  font-size: 6.7px;
+  fill: rgba(235, 223, 198, 0.90);
+  letter-spacing: 0.15px;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(12, 15, 20, 0.90);
+  stroke-width: 2.0px;
+  stroke-linejoin: round;
+}
+.city-state-label.is-crowded {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.city-state-group:hover .city-state-label.is-crowded {
+  opacity: 0.96;
+}
+
+/* =====================================================================================
+   WH-CN-1: 中国逐年百科 · 帝王年号+干支双轨纪年控制器与古籍铜版图志面板
+   风格：克制的古籍铜版图志风格（深褐墨底、黄铜双线框、朱砂/赭金印记，无霓虹、无Emoji、无花哨动效）
+   ===================================================================================== */
+
+@media (min-width: 901px) {
+  #topbar {
+    align-items: flex-start;
+  }
+  .year-box {
+    min-width: 326px;
+    max-width: 374px;
+    padding: 6px 12px;
+  }
+  #event-banner {
+    top: 52px;
+    max-width: min(500px, calc(100vw - 830px));
+  }
+}
+
+/* Topbar Dual-Track Reign/Gan-Zhi Strip inside .year-box */
+#cn-reign-bar {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(206, 169, 98, 0.24);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cn-dual-label-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 1px 0;
+  text-align: left;
+  cursor: pointer;
+  color: #ebd9b4;
+  font-family: "Noto Serif SC", "Songti SC", "STSong", "Microsoft YaHei", serif;
+  font-size: 11.5px;
+  line-height: 1.35;
+  letter-spacing: 0.2px;
+}
+.cn-dual-label-btn:hover {
+  color: #f6e7c6;
+}
+.cn-dual-mark {
+  color: #cfa658;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+#cn-reign-dual-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cn-step-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cn-mini-btn {
+  background: rgba(28, 24, 19, 0.85);
+  color: #d7cab2;
+  border: 1px solid rgba(206, 169, 98, 0.30);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  line-height: 1.45;
+  cursor: pointer;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  white-space: nowrap;
+}
+.cn-mini-btn:hover {
+  border-color: rgba(216, 179, 101, 0.72);
+  color: #f5ebd6;
+  background: rgba(206, 169, 98, 0.14);
+}
+.cn-mini-btn.is-active,
+.cn-mini-btn-accent.is-active,
+#btn-open-cn-annals.is-active {
+  background: rgba(188, 146, 68, 0.26);
+  border-color: #d8b365;
+  color: #f7ebd2;
+}
+.cn-mini-btn-accent {
+  margin-left: auto;
+  color: #e4c580;
+  border-color: rgba(216, 179, 101, 0.48);
+}
+
+/* Hide right Empire Inspector when China Annals copperplate drawer is open to prevent overlap */
+body.cn-annals-open #info-card {
+  display: none !important;
+}
+@media (min-width: 1400px) {
+  body.cn-annals-open #map-container {
+    padding-right: 438px;
+  }
+}
+
+/* Copperplate Encyclopedia Drawer (#china-annals-panel) */
+.cn-annals-panel {
+  position: fixed;
+  top: 58px;
+  right: 18px;
+  width: 422px;
+  max-height: calc(100vh - 178px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(24, 21, 17, 0.96);
+  border: 1px solid rgba(206, 169, 98, 0.48);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 2px rgba(24, 21, 17, 0.96),
+    inset 0 0 0 3px rgba(206, 169, 98, 0.16),
+    0 14px 36px rgba(0, 0, 0, 0.68);
+  z-index: 42;
+  color: #ebe0cc;
+  overflow: hidden;
+  pointer-events: auto;
+}
+.cn-annals-panel.is-hidden {
+  display: none;
+}
+
+.cn-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 13px 7px;
+  background: linear-gradient(180deg, rgba(42, 35, 26, 0.85) 0%, rgba(26, 22, 18, 0.85) 100%);
+  border-bottom: 1px solid rgba(206, 169, 98, 0.28);
+  flex-shrink: 0;
+}
+.cn-panel-kicker {
+  font-size: 9.5px;
+  letter-spacing: 1.1px;
+  color: #bda476;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+}
+.cn-panel-title {
+  font-family: "Noto Serif SC", "Songti SC", "STSong", "Microsoft YaHei", serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f0dfb8;
+  letter-spacing: 0.8px;
+  margin-top: 1px;
+}
+.cn-panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cn-head-btn {
+  background: rgba(206, 169, 98, 0.10);
+  color: #dfd0b2;
+  border: 1px solid rgba(206, 169, 98, 0.36);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cn-head-btn:hover {
+  background: rgba(206, 169, 98, 0.24);
+  border-color: #d8b365;
+  color: #fff6e3;
+}
+.cn-head-close {
+  background: transparent;
+  color: #bfb39c;
+  border-color: rgba(191, 179, 156, 0.34);
+}
+
+/* 6-Volume Tab Strip */
+.cn-vol-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+  padding: 5px 10px;
+  background: rgba(18, 15, 12, 0.78);
+  border-bottom: 1px solid rgba(206, 169, 98, 0.20);
+  flex-shrink: 0;
+}
+.cn-vol-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 2px;
+  background: rgba(34, 29, 23, 0.65);
+  border: 1px solid rgba(206, 169, 98, 0.18);
+  border-radius: 3px;
+  color: #a89c86;
+  cursor: pointer;
+}
+.cn-vol-tab:hover {
+  border-color: rgba(206, 169, 98, 0.45);
+  color: #e6d8be;
+}
+.cn-vol-tab.is-active {
+  background: rgba(176, 134, 58, 0.22);
+  border-color: rgba(216, 179, 101, 0.72);
+  color: #f4e3bc;
+}
+.cn-vol-tab.is-planned:not(.is-active) {
+  opacity: 0.72;
+}
+.cn-vol-num {
+  font-size: 9.5px;
+  color: #c8ae7b;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+}
+.cn-vol-name {
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Engraved Reign & Gan-Zhi Plaque */
+.cn-plaque-box {
+  padding: 7px 12px;
+  background: rgba(33, 27, 20, 0.76);
+  border-bottom: 1px solid rgba(206, 169, 98, 0.26);
+  flex-shrink: 0;
+}
+.cn-plaque-main {
+  font-family: "Noto Serif SC", "Songti SC", "STSong", "Microsoft YaHei", serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #f3e1b6;
+  letter-spacing: 0.4px;
+  line-height: 1.35;
+}
+.cn-plaque-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #bcae95;
+  line-height: 1.35;
+}
+
+/* Precision Controls, Year Jump, Search & Quick Chips */
+.cn-controls-box {
+  padding: 6px 10px;
+  background: rgba(20, 17, 14, 0.82);
+  border-bottom: 1px solid rgba(206, 169, 98, 0.24);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.cn-ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cn-step-btn,
+.cn-adj-btn {
+  flex-shrink: 0;
+  background: rgba(36, 31, 24, 0.90);
+  color: #dfd2ba;
+  border: 1px solid rgba(206, 169, 98, 0.30);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cn-step-btn:hover:not(:disabled),
+.cn-adj-btn:hover:not(:disabled) {
+  background: rgba(206, 169, 98, 0.18);
+  border-color: #d8b365;
+  color: #fbf2df;
+}
+.cn-adj-btn:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+.cn-pace-btn.is-active {
+  background: rgba(186, 142, 62, 0.28);
+  border-color: #e0bc70;
+  color: #faeacc;
+}
+.cn-jump-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+#cn-year-jump-input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 54px;
+  background: rgba(13, 11, 9, 0.90);
+  border: 1px solid rgba(206, 169, 98, 0.28);
+  border-radius: 3px;
+  color: #f1e5ce;
+  padding: 3px 6px;
+  font-size: 11px;
+  outline: none;
+  user-select: text;
+}
+#cn-year-jump-input:focus,
+#cn-v1-search-input:focus {
+  border-color: #d8b365;
+}
+.cn-ctrl-row-sub {
+  justify-content: space-between;
+}
+.cn-search-box {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+#cn-v1-search-input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 64px;
+  background: rgba(13, 11, 9, 0.90);
+  border: 1px solid rgba(206, 169, 98, 0.24);
+  border-radius: 3px;
+  color: #efe3cc;
+  padding: 3px 20px 3px 7px;
+  font-size: 11px;
+  outline: none;
+  user-select: text;
+}
+.cn-clear-btn {
+  position: absolute;
+  right: 4px;
+  background: transparent;
+  border: none;
+  color: #b7a88e;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 3px;
+}
+
+.cn-bookmarks-mini {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.cn-bm-lbl {
+  font-size: 10px;
+  color: #a8997e;
+  white-space: nowrap;
+}
+.cn-bm-chip {
+  background: rgba(34, 29, 22, 0.78);
+  color: #cbbba0;
+  border: 1px solid rgba(206, 169, 98, 0.22);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cn-bm-chip:hover,
+.cn-bm-chip.is-active {
+  background: rgba(188, 146, 68, 0.24);
+  border-color: #d8b365;
+  color: #f6e7c6;
+}
+
+/* Scrollable Encyclopedia Body */
+.cn-panel-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 9px 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  user-select: text;
+}
+.cn-panel-body::-webkit-scrollbar {
+  width: 5px;
+}
+.cn-panel-body::-webkit-scrollbar-thumb {
+  background: rgba(206, 169, 98, 0.32);
+  border-radius: 3px;
+}
+
+.cn-sec-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 11.5px;
+  color: #d6bc87;
+  padding-bottom: 3px;
+  border-bottom: 1px dashed rgba(206, 169, 98, 0.24);
+}
+.cn-sec-sub {
+  font-size: 10.5px;
+  color: #a79980;
+}
+
+/* Event Entry Card */
+.cn-event-card {
+  background: rgba(31, 27, 21, 0.88);
+  border: 1px solid rgba(206, 169, 98, 0.26);
+  border-radius: 4px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cn-card-yr-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+  margin-bottom: 1px;
+  border-bottom: 1px solid rgba(206, 169, 98, 0.18);
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 11.5px;
+  color: #e4c992;
+}
+.cn-goto-yr-btn,
+.cn-back-btn {
+  background: rgba(206, 169, 98, 0.13);
+  color: #e7cc94;
+  border: 1px solid rgba(206, 169, 98, 0.40);
+  border-radius: 3px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cn-goto-yr-btn:hover,
+.cn-back-btn:hover {
+  background: rgba(206, 169, 98, 0.28);
+  border-color: #d8b365;
+  color: #fff6e2;
+}
+
+.cn-event-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.cn-cat-tag {
+  font-size: 10px;
+  color: #c9b99c;
+  background: rgba(255, 248, 230, 0.06);
+  border: 1px solid rgba(206, 169, 98, 0.24);
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+.cn-conf-stamp {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.4px;
+}
+.cn-conf-stamp.conf-verified {
+  color: #f0c4ab;
+  background: rgba(154, 54, 38, 0.26);
+  border: 1px solid rgba(198, 84, 64, 0.56);
+}
+.cn-conf-stamp.conf-inferred {
+  color: #e6cb8e;
+  background: rgba(148, 112, 40, 0.24);
+  border: 1px solid rgba(198, 156, 72, 0.52);
+}
+.cn-conf-stamp.conf-legend {
+  color: #c2ced6;
+  background: rgba(78, 94, 108, 0.26);
+  border: 1px solid rgba(132, 150, 166, 0.48);
+}
+.cn-region-btn {
+  margin-left: auto;
+  background: transparent;
+  color: #d5b87c;
+  border: 1px solid rgba(206, 169, 98, 0.34);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.cn-region-btn:hover {
+  background: rgba(206, 169, 98, 0.18);
+  color: #f7e8c8;
+}
+
+.cn-event-title {
+  font-family: "Noto Serif SC", "Songti SC", "STSong", "Microsoft YaHei", serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f3e6cc;
+  line-height: 1.4;
+}
+.cn-event-detail {
+  font-size: 12px;
+  line-height: 1.62;
+  color: #ded3be;
+  user-select: text;
+}
+.cn-source-row {
+  background: rgba(214, 184, 124, 0.06);
+  border-left: 2px solid rgba(206, 169, 98, 0.58);
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #cbbba0;
+}
+.cn-source-lbl {
+  color: #bfa678;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+}
+.cn-source-val {
+  color: #eadbc0;
+}
+
+/* Cross-Reference (refs) Block */
+.cn-refs-block {
+  margin-top: 2px;
+  padding-top: 5px;
+  border-top: 1px dashed rgba(206, 169, 98, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cn-ref-row {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 5px;
+  align-items: baseline;
+}
+.cn-ref-lbl {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 10px;
+  color: #b29f7e;
+  white-space: nowrap;
+}
+.cn-ref-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cn-ref-pill {
+  background: rgba(235, 222, 196, 0.06);
+  color: #dfd3bc;
+  border: 1px solid rgba(206, 169, 98, 0.28);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.cn-ref-pill:hover {
+  background: rgba(206, 169, 98, 0.22);
+  border-color: #d8b365;
+  color: #fff6e3;
+}
+.cn-ref-pill.cn-ref-year {
+  color: #e8c987;
+  border-color: rgba(216, 179, 101, 0.42);
+}
+
+/* Cross-Reference Banner, Quiet Year & Pre-841 Notice */
+.cn-xref-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  background: rgba(44, 36, 26, 0.88);
+  border: 1px solid rgba(206, 169, 98, 0.38);
+  border-radius: 4px;
+  font-size: 11.5px;
+}
+.cn-xref-tag {
+  font-size: 10px;
+  color: #e4c686;
+  border: 1px solid rgba(216, 179, 101, 0.42);
+  padding: 1px 5px;
+  border-radius: 2px;
+  margin-right: 5px;
+}
+.cn-xref-cnt {
+  font-size: 10.5px;
+  color: #b7a88e;
+  margin-left: 4px;
+}
+
+.cn-quiet-box,
+.cn-planned-box,
+.cn-pregonghe-notice {
+  background: rgba(30, 25, 19, 0.86);
+  border: 1px solid rgba(206, 169, 98, 0.26);
+  border-radius: 4px;
+  padding: 10px 11px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #d8ccb6;
+}
+.cn-quiet-head,
+.cn-planned-head,
+.cn-pg-title {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #edd8ad;
+  margin-bottom: 4px;
+}
+.cn-quiet-links,
+.cn-planned-actions {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cn-planned-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.cn-quiet-jump {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  background: rgba(20, 17, 13, 0.78);
+  border: 1px solid rgba(206, 169, 98, 0.28);
+  border-radius: 3px;
+  padding: 5px 8px;
+  cursor: pointer;
+  color: #e6dac4;
+}
+.cn-quiet-jump:hover {
+  border-color: #d8b365;
+  background: rgba(206, 169, 98, 0.14);
+}
+.cn-qj-dir {
+  font-size: 10px;
+  color: #cbb07c;
+}
+.cn-qj-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #f2e5cb;
+}
+.cn-current-reign-card {
+  margin-top: 7px;
+  padding: 7px 9px;
+  background: rgba(18, 15, 12, 0.82);
+  border: 1px solid rgba(206, 169, 98, 0.30);
+  border-radius: 3px;
+}
+.cn-cr-label {
+  font-size: 10px;
+  color: #b7a482;
+}
+.cn-cr-val {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1deb4;
+  margin-top: 2px;
+}
+.cn-cr-sub {
+  font-size: 11px;
+  color: #c5b79d;
+  margin-top: 2px;
+}
+
+/* Mobile & Narrow Viewport Adaptation (390x844 etc.) */
+@media (max-width: 900px) {
+  #cn-reign-bar {
+    margin-top: 3px;
+    padding-top: 3px;
+    gap: 2px;
+  }
+  .cn-dual-label-btn {
+    font-size: 11px;
+  }
+  .cn-mini-btn {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+  #event-banner {
+    top: 168px;
+  }
+  body.cn-annals-open #event-banner {
+    display: none;
+  }
+  #map-container {
+    padding-top: 166px;
+  }
+  .cn-annals-panel {
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: 100px;
+    width: auto;
+    max-height: 49vh;
+  }
+  .cn-panel-header {
+    padding: 5px 9px;
+  }
+  .cn-panel-title {
+    font-size: 14px;
+  }
+  .cn-vol-strip {
+    padding: 3px 7px;
+  }
+  .cn-plaque-box {
+    padding: 4px 9px;
+  }
+  .cn-plaque-main {
+    font-size: 12.5px;
+  }
+  .cn-plaque-sub {
+    font-size: 10px;
+  }
+  .cn-controls-box {
+    padding: 4px 7px;
+    gap: 3px;
+  }
+  .cn-step-btn,
+  .cn-adj-btn {
+    padding: 2px 5px;
+    font-size: 10px;
+  }
+  #cn-year-jump-input,
+  #cn-v1-search-input {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+  .cn-bookmarks-mini {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .cn-bookmarks-mini::-webkit-scrollbar {
+    display: none;
+  }
+  .cn-panel-body {
+    padding: 7px 9px 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  #btn-open-cn-annals {
+    display: none;
+  }
+}
+
+/* Province/state map units: modern borders as a reference layer (strong from 1886, faint for earlier eras) */
+.unit-border-country, .unit-border-province { fill: none; pointer-events: none; vector-effect: non-scaling-stroke; }
+.unit-border-country { stroke: rgba(8, 12, 18, 0.32); stroke-width: 0.7px; }
+.unit-border-province { stroke: rgba(8, 12, 18, 0.14); stroke-width: 0.5px; stroke-dasharray: 2 2; }
+#world-map.units-modern .unit-border-country { stroke: rgba(8, 12, 18, 0.62); stroke-width: 0.9px; }
+#world-map.units-modern .unit-border-province { stroke: rgba(8, 12, 18, 0.3); }
