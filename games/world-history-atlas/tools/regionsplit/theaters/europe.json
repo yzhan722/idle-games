@@ -1,0 +1,4235 @@
+{
+  "theater": "europe",
+  "description": "欧洲战区：12 个粗颗粒度父区块 -> 31 个严丝合缝的历史地理单元（方案 A 欧洲卷）",
+  "parent_to_children": {
+    "britain": [
+      "england",
+      "scotland",
+      "ireland"
+    ],
+    "iberia": [
+      "castile",
+      "aragon",
+      "portugal",
+      "andalusia"
+    ],
+    "gaul": [
+      "ile_de_france",
+      "aquitaine",
+      "burgundy_lorraine"
+    ],
+    "netherlands": [
+      "netherlands"
+    ],
+    "germania": [
+      "rhineland",
+      "saxony",
+      "brandenburg_prussia",
+      "bavaria"
+    ],
+    "austria_bohemia": [
+      "austria",
+      "bohemia",
+      "hungary"
+    ],
+    "italy": [
+      "north_italy",
+      "central_italy",
+      "south_italy"
+    ],
+    "balkans": [
+      "greece",
+      "thrace",
+      "bulgaria",
+      "illyria_serbia"
+    ],
+    "poland_lithuania": [
+      "poland",
+      "lithuania_baltic",
+      "kievan_rus"
+    ],
+    "rus": [
+      "muscovy_rus"
+    ],
+    "scandinavia": [
+      "scandinavia"
+    ],
+    "crimea": [
+      "crimea"
+    ]
+  },
+  "expansion_order": {
+    "britain": [
+      "england",
+      "scotland",
+      "ireland"
+    ],
+    "iberia": [
+      "castile",
+      "aragon",
+      "portugal",
+      "andalusia"
+    ],
+    "gaul": [
+      "ile_de_france",
+      "aquitaine",
+      "burgundy_lorraine"
+    ],
+    "netherlands": [
+      "netherlands"
+    ],
+    "germania": [
+      "rhineland",
+      "saxony",
+      "brandenburg_prussia",
+      "bavaria"
+    ],
+    "austria_bohemia": [
+      "austria",
+      "bohemia",
+      "hungary"
+    ],
+    "italy": [
+      "north_italy",
+      "central_italy",
+      "south_italy"
+    ],
+    "balkans": [
+      "greece",
+      "thrace",
+      "bulgaria",
+      "illyria_serbia"
+    ],
+    "poland_lithuania": [
+      "poland",
+      "lithuania_baltic",
+      "kievan_rus"
+    ],
+    "rus": [
+      "muscovy_rus"
+    ],
+    "scandinavia": [
+      "scandinavia"
+    ],
+    "crimea": [
+      "crimea"
+    ]
+  },
+  "cross_parent_candidates": {
+    "rus": [
+      "kievan_rus"
+    ]
+  },
+  "trade_hub_overrides": {
+    "里斯本": "portugal",
+    "塞维利亚·里斯本": "andalusia"
+  },
+  "legacy_parent_centroids": {
+    "britain": [
+      503,
+      76
+    ],
+    "iberia": [
+      490,
+      142
+    ],
+    "gaul": [
+      520,
+      107
+    ],
+    "netherlands": [
+      531,
+      85
+    ],
+    "germania": [
+      550,
+      84
+    ],
+    "austria_bohemia": [
+      579,
+      99
+    ],
+    "italy": [
+      556,
+      116
+    ],
+    "balkans": [
+      616,
+      118
+    ],
+    "poland_lithuania": [
+      626,
+      78
+    ],
+    "rus": [
+      677,
+      65
+    ],
+    "scandinavia": [
+      571,
+      48
+    ],
+    "crimea": [
+      687,
+      105
+    ]
+  },
+  "children": [
+    {
+      "id": "england",
+      "name": "英格兰与威尔士(伦敦)",
+      "continent": "欧洲",
+      "parent": "britain",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "scotland",
+      "name": "苏格兰高地与群岛(爱丁堡)",
+      "continent": "欧洲",
+      "parent": "britain",
+      "area_weight": 0.35,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "ireland",
+      "name": "爱尔兰岛(都柏林)",
+      "continent": "欧洲",
+      "parent": "britain",
+      "area_weight": 0.35,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "castile",
+      "name": "卡斯蒂利亚与莱昂(托莱多/马德里)",
+      "continent": "欧洲",
+      "parent": "iberia",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "aragon",
+      "name": "阿拉贡与加泰罗尼亚(巴塞罗那)",
+      "continent": "欧洲",
+      "parent": "iberia",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "portugal",
+      "name": "葡萄牙大西洋岸(里斯本)",
+      "continent": "欧洲",
+      "parent": "iberia",
+      "area_weight": 0.35,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "andalusia",
+      "name": "安达卢西亚(科尔多瓦/格拉纳达)",
+      "continent": "欧洲",
+      "parent": "iberia",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "ile_de_france",
+      "name": "法兰西岛与诺曼底(巴黎)",
+      "continent": "欧洲",
+      "parent": "gaul",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "aquitaine",
+      "name": "阿基坦与朗格多克(波尔多/图卢兹)",
+      "continent": "欧洲",
+      "parent": "gaul",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "burgundy_lorraine",
+      "name": "勃艮第·洛林与普罗旺斯(第戎/里昂)",
+      "continent": "欧洲",
+      "parent": "gaul",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "netherlands",
+      "name": "尼德兰低地(阿姆斯特丹/布鲁塞尔)",
+      "continent": "欧洲",
+      "parent": "netherlands",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "rhineland",
+      "name": "莱茵兰与威斯特伐利亚(科隆/美因茨)",
+      "continent": "欧洲",
+      "parent": "germania",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "saxony",
+      "name": "下萨克森与汉萨北海(汉堡/汉诺威)",
+      "continent": "欧洲",
+      "parent": "germania",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "brandenburg_prussia",
+      "name": "勃兰登堡与上萨克森(柏林/莱比锡)",
+      "continent": "欧洲",
+      "parent": "germania",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "bavaria",
+      "name": "巴伐利亚与施瓦本(慕尼黑/苏黎世)",
+      "continent": "欧洲",
+      "parent": "germania",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "austria",
+      "name": "奥地利与东阿尔卑斯(维也纳)",
+      "continent": "欧洲",
+      "parent": "austria_bohemia",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "bohemia",
+      "name": "波希米亚与摩拉维亚(布拉格)",
+      "continent": "欧洲",
+      "parent": "austria_bohemia",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "hungary",
+      "name": "潘诺尼亚与匈牙利(布达佩斯)",
+      "continent": "欧洲",
+      "parent": "austria_bohemia",
+      "area_weight": 0.5,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "north_italy",
+      "name": "北意大利波河平原(米兰/威尼斯)",
+      "continent": "欧洲",
+      "parent": "italy",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "central_italy",
+      "name": "中意大利台伯河与托斯卡纳(罗马/佛罗伦萨)",
+      "continent": "欧洲",
+      "parent": "italy",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "south_italy",
+      "name": "南意大利与西西里(那不勒斯/巴勒莫)",
+      "continent": "欧洲",
+      "parent": "italy",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "greece",
+      "name": "希腊南部与爱琴群岛(雅典/斯巴达)",
+      "continent": "欧洲",
+      "parent": "balkans",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "thrace",
+      "name": "马其顿与色雷斯(佩拉/萨洛尼卡)",
+      "continent": "欧洲",
+      "parent": "balkans",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "bulgaria",
+      "name": "保加利亚与多瑙河下游(索非亚/布加勒斯特)",
+      "continent": "欧洲",
+      "parent": "balkans",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "illyria_serbia",
+      "name": "伊利里亚与塞尔维亚(贝尔格莱德/萨格勒布)",
+      "continent": "欧洲",
+      "parent": "balkans",
+      "area_weight": 0.5,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "poland",
+      "name": "波兰维斯瓦河流域(克拉科夫/华沙)",
+      "continent": "欧洲",
+      "parent": "poland_lithuania",
+      "area_weight": 0.6,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "lithuania_baltic",
+      "name": "立陶宛与波罗的海东岸(维尔纽斯/里加)",
+      "continent": "欧洲",
+      "parent": "poland_lithuania",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "kievan_rus",
+      "name": "南罗斯与第聂伯河(基辅/明斯克)",
+      "continent": "欧洲",
+      "parent": "poland_lithuania",
+      "area_weight": 0.7,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "muscovy_rus",
+      "name": "北罗斯与莫斯科平原(诺夫哥罗德/莫斯科)",
+      "continent": "欧洲",
+      "parent": "rus",
+      "area_weight": 1.0,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "scandinavia",
+      "name": "斯堪的纳维亚半岛(斯德哥尔摩/哥本哈根)",
+      "continent": "欧洲",
+      "parent": "scandinavia",
+      "area_weight": 0.85,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "crimea",
+      "name": "克里米亚与黑海北岸(巴赫奇萨赖/塞瓦斯托波尔)",
+      "continent": "欧洲",
+      "parent": "crimea",
+      "area_weight": 0.6,
+      "cx": null,
+      "cy": null
+    }
+  ],
+  "geometry_ops": [
+    {
+      "op": "split",
+      "comment": "1a. 沿索尔威湾—切维厄特丘陵—特威德河(哈德良长城—英苏历史边界)切分大不列颠主岛为苏格兰与英格兰(含威尔士)",
+      "source": "britain[0]",
+      "start_ll": [
+        -3.176,
+        54.955
+      ],
+      "end_ll": [
+        -2.05,
+        55.77
+      ],
+      "via_ll": [
+        [
+          -2.65,
+          55.35
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "$scot_main",
+        "$eng_main"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "1b. 组装苏格兰高地主陆与赫布里底、奥克尼等北方群岛",
+      "rings": [
+        "$scot_main",
+        "britain[2]",
+        "britain[3]",
+        "britain[5]",
+        "britain[6]",
+        "britain[8]",
+        "britain[9]"
+      ],
+      "into": "scotland"
+    },
+    {
+      "op": "assemble",
+      "comment": "1c. 组装英格兰威尔士主陆与安格尔西、马恩岛、怀特岛",
+      "rings": [
+        "$eng_main",
+        "britain[4]",
+        "britain[7]",
+        "britain[10]"
+      ],
+      "into": "england"
+    },
+    {
+      "op": "copy",
+      "comment": "1d. 爱尔兰岛独立成区",
+      "rings": [
+        "britain[1]"
+      ],
+      "into": "ireland"
+    },
+    {
+      "op": "split",
+      "comment": "2a. 沿米尼奥河—杜罗河峡谷—瓜迪亚纳河切分葡萄牙与西班牙主陆",
+      "source": "iberia[0]",
+      "start_ll": [
+        -8.87,
+        41.87
+      ],
+      "end_ll": [
+        -7.4,
+        37.2
+      ],
+      "via_ll": [
+        [
+          -6.8,
+          41.5
+        ],
+        [
+          -6.95,
+          39.5
+        ],
+        [
+          -7.1,
+          38.2
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "portugal",
+        "$spain_rest"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "2b. 沿莫雷纳山脉(Sierra Morena)切分安达卢西亚与北方西班牙",
+      "source": "$spain_rest",
+      "start_ll": [
+        -7.4,
+        37.2
+      ],
+      "end_ll": [
+        -0.97,
+        37.58
+      ],
+      "via_ll": [
+        [
+          -5.2,
+          38.2
+        ],
+        [
+          -3.2,
+          38.35
+        ],
+        [
+          -1.8,
+          38.0
+        ]
+      ],
+      "select_first": "south",
+      "into": [
+        "andalusia",
+        "$spain_north"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "2c. 沿伊比利亚山脉切分阿拉贡(含加泰罗尼亚/瓦伦西亚)与卡斯蒂利亚",
+      "source": "$spain_north",
+      "start_ll": [
+        -0.72,
+        42.8
+      ],
+      "end_ll": [
+        -0.18,
+        38.59
+      ],
+      "via_ll": [
+        [
+          -1.6,
+          41.5
+        ],
+        [
+          -1.3,
+          40.0
+        ]
+      ],
+      "select_first": "east",
+      "into": [
+        "$aragon_main",
+        "$castile_main"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "2d. 组装阿拉贡主陆与巴利阿里群岛",
+      "rings": [
+        "$aragon_main",
+        "iberia[1]"
+      ],
+      "into": "aragon"
+    },
+    {
+      "op": "assemble",
+      "comment": "2e. 组装卡斯蒂利亚主陆与加那利群岛",
+      "rings": [
+        "$castile_main",
+        "iberia[2:]"
+      ],
+      "into": "castile"
+    },
+    {
+      "op": "split",
+      "comment": "3a. 沿默兹河—索恩河—塞文山脉东麓(843年凡尔登西法兰克与中法兰克走廊界)切分勃艮第·洛林·普罗旺斯与西法兰西",
+      "source": "gaul[0]",
+      "start_ll": [
+        4.67,
+        49.97
+      ],
+      "end_ll": [
+        4.03,
+        43.5
+      ],
+      "via_ll": [
+        [
+          4.3,
+          48.2
+        ],
+        [
+          4.1,
+          46.5
+        ],
+        [
+          3.95,
+          45.0
+        ]
+      ],
+      "select_first": "east",
+      "into": [
+        "$burg_main",
+        "$west_gaul"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "3b. 组装勃艮第·洛林·普罗旺斯主陆与附属海岸环",
+      "rings": [
+        "$burg_main",
+        "gaul[1]"
+      ],
+      "into": "burgundy_lorraine"
+    },
+    {
+      "op": "split",
+      "comment": "3c. 沿卢瓦尔河下游南缘—奥弗涅高地北麓切分法兰西岛(含诺曼底/布列塔尼/奥尔良)与阿基坦(含普瓦图/图卢兹)",
+      "source": "$west_gaul",
+      "start_ll": [
+        -2.16,
+        47.04
+      ],
+      "end_ll": [
+        3.95,
+        45.0
+      ],
+      "via_ll": [
+        [
+          0.2,
+          47.05
+        ],
+        [
+          2.1,
+          46.5
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "ile_de_france",
+        "aquitaine"
+      ]
+    },
+    {
+      "op": "copy",
+      "comment": "3d. 尼德兰低地保持原多边形",
+      "rings": [
+        "netherlands"
+      ],
+      "into": "netherlands"
+    },
+    {
+      "op": "split",
+      "comment": "4a. 沿美因河线(Mainlinie)切分南德意志(巴伐利亚/施瓦本/阿尔萨斯/德语瑞士)与北德意志",
+      "source": "germania[0]",
+      "start_ll": [
+        6.352,
+        49.811
+      ],
+      "end_ll": [
+        11.968,
+        50.277
+      ],
+      "via_ll": [
+        [
+          9.2,
+          49.9
+        ],
+        [
+          10.6,
+          50.05
+        ]
+      ],
+      "select_first": "south",
+      "into": [
+        "bavaria",
+        "$north_germ"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "4b. 沿维斯马湾(吕贝克以东)—易北河中游—萨勒河西缘切分勃兰登堡与上萨克森(东德核心)和西北德意志",
+      "source": "$north_germ",
+      "start_ll": [
+        11.277,
+        53.945
+      ],
+      "end_ll": [
+        11.968,
+        50.277
+      ],
+      "via_ll": [
+        [
+          11.35,
+          52.6
+        ],
+        [
+          11.65,
+          51.3
+        ]
+      ],
+      "select_first": "east",
+      "into": [
+        "$brand_main",
+        "$west_north_germ"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "4c. 组装勃兰登堡与上萨克森主陆及吕根岛",
+      "rings": [
+        "$brand_main",
+        "germania[1]"
+      ],
+      "into": "brandenburg_prussia"
+    },
+    {
+      "op": "split",
+      "comment": "4d. 沿埃姆斯河—条顿堡西缘—威悉/富尔达分水岭切分莱茵兰·威斯特伐利亚与下萨克森·汉萨北海",
+      "source": "$west_north_germ",
+      "start_ll": [
+        6.904,
+        52.393
+      ],
+      "end_ll": [
+        9.2,
+        49.9
+      ],
+      "via_ll": [
+        [
+          8.2,
+          51.5
+        ],
+        [
+          9.2,
+          50.65
+        ]
+      ],
+      "select_first": {
+        "contains_ll": [
+          6.96,
+          50.94
+        ]
+      },
+      "into": [
+        "rhineland",
+        "saxony"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "5a. 沿波希米亚森林南麓—摩拉瓦河口—白喀尔巴阡山切分波希米亚·摩拉维亚与奥匈南半部",
+      "source": "austria_bohemia[0]",
+      "start_ll": [
+        13.69,
+        48.76
+      ],
+      "end_ll": [
+        18.85,
+        49.4
+      ],
+      "via_ll": [
+        [
+          15.2,
+          48.85
+        ],
+        [
+          16.95,
+          48.6
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "bohemia",
+        "$aus_hun"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "5b. 沿莱塔河(Leitha)—布尔根兰东界切分奥地利本邦与潘诺尼亚匈牙利(含斯洛伐克)",
+      "source": "$aus_hun",
+      "start_ll": [
+        16.95,
+        48.6
+      ],
+      "end_ll": [
+        16.46,
+        46.49
+      ],
+      "via_ll": [
+        [
+          16.65,
+          47.6
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "austria",
+        "hungary"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "6a. 沿拉斯佩齐亚—里米尼线(卢比孔河与托斯卡纳北界亚平宁)切分北意大利与中南意大利",
+      "source": "italy[0]",
+      "start_ll": [
+        9.92,
+        44.03
+      ],
+      "end_ll": [
+        12.57,
+        44.01
+      ],
+      "via_ll": [
+        [
+          11.25,
+          44.18
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "$n_it_main",
+        "$cs_it"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "6b. 组装北意大利波河平原与科西嘉岛(热那亚传统属岛)",
+      "rings": [
+        "$n_it_main",
+        "italy[3]"
+      ],
+      "into": "north_italy"
+    },
+    {
+      "op": "split",
+      "comment": "6c. 沿加里利亚诺河—桑格罗河(教皇国与那不勒斯王国千年边界)切分中意大利与南意大利",
+      "source": "$cs_it",
+      "start_ll": [
+        13.62,
+        41.25
+      ],
+      "end_ll": [
+        14.43,
+        42.26
+      ],
+      "via_ll": [
+        [
+          13.98,
+          41.75
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "central_italy",
+        "$s_it_main"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "6d. 组装南意大利与西西里岛、撒丁岛",
+      "rings": [
+        "$s_it_main",
+        "italy[1]",
+        "italy[2]"
+      ],
+      "into": "south_italy"
+    },
+    {
+      "op": "split",
+      "comment": "7a. 沿伊庇鲁斯南缘—奥林匹斯山南麓切分古典希腊南部与北方巴尔干",
+      "source": "balkans[0]",
+      "start_ll": [
+        19.89,
+        39.72
+      ],
+      "end_ll": [
+        22.74,
+        39.81
+      ],
+      "via_ll": [
+        [
+          21.3,
+          39.78
+        ]
+      ],
+      "select_first": "south",
+      "into": [
+        "$gr_main",
+        "$n_balk"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "7b. 组装希腊南部与克里特、优卑亚、莱斯博斯、罗得等爱琴群岛",
+      "rings": [
+        "$gr_main",
+        "balkans[1:]"
+      ],
+      "into": "greece"
+    },
+    {
+      "op": "split",
+      "comment": "7c. 沿德林河口—沙尔山—罗多彼山脉切分马其顿·西色雷斯与多瑙—伊利里亚腹地",
+      "source": "$n_balk",
+      "start_ll": [
+        19.471,
+        41.794
+      ],
+      "end_ll": [
+        26.15,
+        41.72
+      ],
+      "via_ll": [
+        [
+          21.8,
+          41.85
+        ],
+        [
+          24.2,
+          41.65
+        ]
+      ],
+      "select_first": "south",
+      "into": [
+        "thrace",
+        "$nw_ne_balk"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "7d. 沿巴纳特西界—多瑙河铁门峡谷—蒂莫克河切分伊利里亚·塞尔维亚与保加利亚·瓦拉几亚",
+      "source": "$nw_ne_balk",
+      "start_ll": [
+        20.506,
+        46.142
+      ],
+      "end_ll": [
+        21.8,
+        41.85
+      ],
+      "via_ll": [
+        [
+          21.35,
+          44.7
+        ],
+        [
+          22.35,
+          43.3
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "illyria_serbia",
+        "bulgaria"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "8a. 沿维斯瓦沙嘴东—布格河(寇松线地理走廊)—东喀尔巴阡切分波兰维斯瓦河流域与立陶宛·南罗斯",
+      "source": "poland_lithuania[0]",
+      "start_ll": [
+        19.65,
+        54.55
+      ],
+      "end_ll": [
+        22.42,
+        49.03
+      ],
+      "via_ll": [
+        [
+          22.8,
+          54.0
+        ],
+        [
+          23.5,
+          52.1
+        ],
+        [
+          23.1,
+          50.4
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "poland",
+        "$lit_ukr"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "8b. 沿涅曼河南缘—西德维纳河与第聂伯河分水岭切分立陶宛·波罗的海与南罗斯(基辅/明斯克)",
+      "source": "$lit_ukr",
+      "start_ll": [
+        22.8,
+        54.0
+      ],
+      "end_ll": [
+        28.3,
+        55.8
+      ],
+      "via_ll": [
+        [
+          26.2,
+          54.4
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "$lit_main",
+        "kievan_rus"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "8c. 组装立陶宛·波罗的海主陆与爱沙尼亚萨列马岛",
+      "rings": [
+        "$lit_main",
+        "poland_lithuania[1]"
+      ],
+      "into": "lithuania_baltic"
+    },
+    {
+      "op": "copy",
+      "comment": "9. 北罗斯与莫斯科承接原 rus 多边形",
+      "rings": [
+        "rus"
+      ],
+      "into": "muscovy_rus"
+    },
+    {
+      "op": "copy",
+      "comment": "10. 斯堪的纳维亚保持原多边形",
+      "rings": [
+        "scandinavia"
+      ],
+      "into": "scandinavia"
+    },
+    {
+      "op": "copy",
+      "comment": "11. 克里米亚与黑海北岸保持原多边形",
+      "rings": [
+        "crimea"
+      ],
+      "into": "crimea"
+    }
+  ],
+  "capital_checks": [
+    {
+      "name": "伦敦",
+      "ll": [
+        -0.12,
+        51.51
+      ],
+      "expect": "england"
+    },
+    {
+      "name": "约克",
+      "ll": [
+        -1.08,
+        53.96
+      ],
+      "expect": "england"
+    },
+    {
+      "name": "卡迪夫",
+      "ll": [
+        -3.18,
+        51.48
+      ],
+      "expect": "england"
+    },
+    {
+      "name": "爱丁堡",
+      "ll": [
+        -3.19,
+        55.95
+      ],
+      "expect": "scotland"
+    },
+    {
+      "name": "格拉斯哥",
+      "ll": [
+        -4.25,
+        55.86
+      ],
+      "expect": "scotland"
+    },
+    {
+      "name": "都柏林",
+      "ll": [
+        -6.26,
+        53.35
+      ],
+      "expect": "ireland"
+    },
+    {
+      "name": "马德里",
+      "ll": [
+        -3.7,
+        40.42
+      ],
+      "expect": "castile"
+    },
+    {
+      "name": "托莱多",
+      "ll": [
+        -4.02,
+        39.86
+      ],
+      "expect": "castile"
+    },
+    {
+      "name": "布尔戈斯",
+      "ll": [
+        -3.7,
+        42.34
+      ],
+      "expect": "castile"
+    },
+    {
+      "name": "巴塞罗那",
+      "ll": [
+        2.17,
+        41.39
+      ],
+      "expect": "aragon"
+    },
+    {
+      "name": "萨拉戈萨",
+      "ll": [
+        -0.88,
+        41.65
+      ],
+      "expect": "aragon"
+    },
+    {
+      "name": "瓦伦西亚",
+      "ll": [
+        -0.38,
+        39.47
+      ],
+      "expect": "aragon"
+    },
+    {
+      "name": "里斯本",
+      "ll": [
+        -9.14,
+        38.72
+      ],
+      "expect": "portugal"
+    },
+    {
+      "name": "波尔图",
+      "ll": [
+        -8.61,
+        41.15
+      ],
+      "expect": "portugal"
+    },
+    {
+      "name": "科尔多瓦",
+      "ll": [
+        -4.78,
+        37.89
+      ],
+      "expect": "andalusia"
+    },
+    {
+      "name": "塞维利亚",
+      "ll": [
+        -5.98,
+        37.39
+      ],
+      "expect": "andalusia"
+    },
+    {
+      "name": "格拉纳达",
+      "ll": [
+        -3.6,
+        37.18
+      ],
+      "expect": "andalusia"
+    },
+    {
+      "name": "巴黎",
+      "ll": [
+        2.35,
+        48.86
+      ],
+      "expect": "ile_de_france"
+    },
+    {
+      "name": "鲁昂(诺曼底)",
+      "ll": [
+        1.1,
+        49.44
+      ],
+      "expect": "ile_de_france"
+    },
+    {
+      "name": "奥尔良",
+      "ll": [
+        1.9,
+        47.9
+      ],
+      "expect": "ile_de_france"
+    },
+    {
+      "name": "波尔多",
+      "ll": [
+        -0.58,
+        44.84
+      ],
+      "expect": "aquitaine"
+    },
+    {
+      "name": "图卢兹",
+      "ll": [
+        1.44,
+        43.6
+      ],
+      "expect": "aquitaine"
+    },
+    {
+      "name": "普瓦捷",
+      "ll": [
+        0.34,
+        46.58
+      ],
+      "expect": "aquitaine"
+    },
+    {
+      "name": "第戎",
+      "ll": [
+        5.04,
+        47.32
+      ],
+      "expect": "burgundy_lorraine"
+    },
+    {
+      "name": "里昂",
+      "ll": [
+        4.84,
+        45.76
+      ],
+      "expect": "burgundy_lorraine"
+    },
+    {
+      "name": "马赛",
+      "ll": [
+        5.37,
+        43.3
+      ],
+      "expect": "burgundy_lorraine"
+    },
+    {
+      "name": "梅斯(洛林)",
+      "ll": [
+        6.18,
+        49.12
+      ],
+      "expect": "burgundy_lorraine"
+    },
+    {
+      "name": "阿姆斯特丹",
+      "ll": [
+        4.9,
+        52.37
+      ],
+      "expect": "netherlands"
+    },
+    {
+      "name": "布鲁塞尔",
+      "ll": [
+        4.35,
+        50.85
+      ],
+      "expect": "netherlands"
+    },
+    {
+      "name": "科隆",
+      "ll": [
+        6.96,
+        50.94
+      ],
+      "expect": "rhineland"
+    },
+    {
+      "name": "法兰克福",
+      "ll": [
+        8.68,
+        50.11
+      ],
+      "expect": "rhineland"
+    },
+    {
+      "name": "美因茨",
+      "ll": [
+        8.27,
+        50.0
+      ],
+      "expect": "rhineland"
+    },
+    {
+      "name": "汉堡",
+      "ll": [
+        9.99,
+        53.55
+      ],
+      "expect": "saxony"
+    },
+    {
+      "name": "吕贝克",
+      "ll": [
+        10.69,
+        53.87
+      ],
+      "expect": "saxony"
+    },
+    {
+      "name": "汉诺威",
+      "ll": [
+        9.73,
+        52.37
+      ],
+      "expect": "saxony"
+    },
+    {
+      "name": "柏林",
+      "ll": [
+        13.4,
+        52.52
+      ],
+      "expect": "brandenburg_prussia"
+    },
+    {
+      "name": "维滕堡",
+      "ll": [
+        12.65,
+        51.87
+      ],
+      "expect": "brandenburg_prussia"
+    },
+    {
+      "name": "莱比锡",
+      "ll": [
+        12.37,
+        51.34
+      ],
+      "expect": "brandenburg_prussia"
+    },
+    {
+      "name": "德累斯顿",
+      "ll": [
+        13.74,
+        51.05
+      ],
+      "expect": "brandenburg_prussia"
+    },
+    {
+      "name": "慕尼黑",
+      "ll": [
+        11.58,
+        48.14
+      ],
+      "expect": "bavaria"
+    },
+    {
+      "name": "纽伦堡",
+      "ll": [
+        11.08,
+        49.45
+      ],
+      "expect": "bavaria"
+    },
+    {
+      "name": "奥格斯堡",
+      "ll": [
+        10.9,
+        48.37
+      ],
+      "expect": "bavaria"
+    },
+    {
+      "name": "伯尔尼",
+      "ll": [
+        7.45,
+        46.95
+      ],
+      "expect": "bavaria"
+    },
+    {
+      "name": "维也纳",
+      "ll": [
+        16.37,
+        48.21
+      ],
+      "expect": "austria"
+    },
+    {
+      "name": "因斯布鲁克",
+      "ll": [
+        11.4,
+        47.26
+      ],
+      "expect": "austria"
+    },
+    {
+      "name": "布拉格",
+      "ll": [
+        14.42,
+        50.08
+      ],
+      "expect": "bohemia"
+    },
+    {
+      "name": "布尔诺(奥斯特里茨)",
+      "ll": [
+        16.61,
+        49.2
+      ],
+      "expect": "bohemia"
+    },
+    {
+      "name": "布达佩斯",
+      "ll": [
+        19.04,
+        47.5
+      ],
+      "expect": "hungary"
+    },
+    {
+      "name": "布拉迪斯拉发",
+      "ll": [
+        17.11,
+        48.15
+      ],
+      "expect": "hungary"
+    },
+    {
+      "name": "米兰",
+      "ll": [
+        9.19,
+        45.46
+      ],
+      "expect": "north_italy"
+    },
+    {
+      "name": "威尼斯",
+      "ll": [
+        12.32,
+        45.44
+      ],
+      "expect": "north_italy"
+    },
+    {
+      "name": "热那亚",
+      "ll": [
+        8.94,
+        44.41
+      ],
+      "expect": "north_italy"
+    },
+    {
+      "name": "博洛尼亚",
+      "ll": [
+        11.34,
+        44.49
+      ],
+      "expect": "north_italy"
+    },
+    {
+      "name": "罗马",
+      "ll": [
+        12.5,
+        41.9
+      ],
+      "expect": "central_italy"
+    },
+    {
+      "name": "佛罗伦萨",
+      "ll": [
+        11.25,
+        43.77
+      ],
+      "expect": "central_italy"
+    },
+    {
+      "name": "那不勒斯",
+      "ll": [
+        14.27,
+        40.85
+      ],
+      "expect": "south_italy"
+    },
+    {
+      "name": "巴勒莫",
+      "ll": [
+        13.36,
+        38.12
+      ],
+      "expect": "south_italy"
+    },
+    {
+      "name": "叙拉古",
+      "ll": [
+        15.29,
+        37.08
+      ],
+      "expect": "south_italy"
+    },
+    {
+      "name": "雅典",
+      "ll": [
+        23.73,
+        37.98
+      ],
+      "expect": "greece"
+    },
+    {
+      "name": "斯巴达",
+      "ll": [
+        22.43,
+        37.07
+      ],
+      "expect": "greece"
+    },
+    {
+      "name": "克诺索斯(克里特)",
+      "ll": [
+        25.16,
+        35.3
+      ],
+      "expect": "greece"
+    },
+    {
+      "name": "萨洛尼卡(帖撒罗尼迦)",
+      "ll": [
+        22.94,
+        40.64
+      ],
+      "expect": "thrace"
+    },
+    {
+      "name": "佩拉(马其顿)",
+      "ll": [
+        22.52,
+        40.76
+      ],
+      "expect": "thrace"
+    },
+    {
+      "name": "索非亚",
+      "ll": [
+        23.32,
+        42.7
+      ],
+      "expect": "bulgaria"
+    },
+    {
+      "name": "布加勒斯特",
+      "ll": [
+        26.1,
+        44.43
+      ],
+      "expect": "bulgaria"
+    },
+    {
+      "name": "贝尔格莱德",
+      "ll": [
+        20.46,
+        44.82
+      ],
+      "expect": "illyria_serbia"
+    },
+    {
+      "name": "萨格勒布",
+      "ll": [
+        15.98,
+        45.81
+      ],
+      "expect": "illyria_serbia"
+    },
+    {
+      "name": "萨拉热窝",
+      "ll": [
+        18.41,
+        43.86
+      ],
+      "expect": "illyria_serbia"
+    },
+    {
+      "name": "华沙",
+      "ll": [
+        21.01,
+        52.23
+      ],
+      "expect": "poland"
+    },
+    {
+      "name": "克拉科夫",
+      "ll": [
+        19.94,
+        50.06
+      ],
+      "expect": "poland"
+    },
+    {
+      "name": "但泽(格但斯克)",
+      "ll": [
+        18.65,
+        54.35
+      ],
+      "expect": "poland"
+    },
+    {
+      "name": "维尔纽斯",
+      "ll": [
+        25.28,
+        54.69
+      ],
+      "expect": "lithuania_baltic"
+    },
+    {
+      "name": "里加",
+      "ll": [
+        24.11,
+        56.95
+      ],
+      "expect": "lithuania_baltic"
+    },
+    {
+      "name": "柯尼斯堡",
+      "ll": [
+        20.51,
+        54.71
+      ],
+      "expect": "lithuania_baltic"
+    },
+    {
+      "name": "基辅",
+      "ll": [
+        30.52,
+        50.45
+      ],
+      "expect": "kievan_rus"
+    },
+    {
+      "name": "明斯克",
+      "ll": [
+        27.56,
+        53.9
+      ],
+      "expect": "kievan_rus"
+    },
+    {
+      "name": "利沃夫",
+      "ll": [
+        24.03,
+        49.84
+      ],
+      "expect": "kievan_rus"
+    },
+    {
+      "name": "莫斯科",
+      "ll": [
+        37.62,
+        55.75
+      ],
+      "expect": "muscovy_rus"
+    },
+    {
+      "name": "诺夫哥罗德",
+      "ll": [
+        31.27,
+        58.52
+      ],
+      "expect": "muscovy_rus"
+    },
+    {
+      "name": "圣彼得堡",
+      "ll": [
+        30.34,
+        59.93
+      ],
+      "expect": "muscovy_rus"
+    },
+    {
+      "name": "斯德哥尔摩",
+      "ll": [
+        18.07,
+        59.33
+      ],
+      "expect": "scandinavia"
+    },
+    {
+      "name": "哥本哈根",
+      "ll": [
+        12.57,
+        55.68
+      ],
+      "expect": "scandinavia"
+    },
+    {
+      "name": "塞瓦斯托波尔",
+      "ll": [
+        33.52,
+        44.62
+      ],
+      "expect": "crimea"
+    }
+  ],
+  "polity_guards": [
+    {
+      "parent": "britain",
+      "owners": [
+        "罗马帝国",
+        "西罗马帝国",
+        "威塞克斯王国",
+        "丹麦北海帝国"
+      ],
+      "map": {
+        "england": "$owner",
+        "scotland": null,
+        "ireland": null
+      }
+    },
+    {
+      "parent": "britain",
+      "owners": [
+        "英格兰王国"
+      ],
+      "year_max": 1580,
+      "map": {
+        "england": "英格兰王国",
+        "scotland": null,
+        "ireland": null
+      }
+    },
+    {
+      "parent": "britain",
+      "owners": [
+        "英格兰王国"
+      ],
+      "year_min": 1581,
+      "map": {
+        "england": "英格兰王国",
+        "scotland": null,
+        "ireland": "英格兰王国"
+      }
+    },
+    {
+      "parent": "britain",
+      "owners": [
+        "大英帝国"
+      ],
+      "year_min": 1922,
+      "map": {
+        "england": "大英帝国",
+        "scotland": "大英帝国",
+        "ireland": null
+      }
+    },
+    {
+      "parent": "britain",
+      "owners": [
+        "英国"
+      ],
+      "map": {
+        "england": "英国",
+        "scotland": "英国",
+        "ireland": null
+      }
+    },
+    {
+      "parent": "iberia",
+      "owners": [
+        "迦太基帝国"
+      ],
+      "map": {
+        "andalusia": "迦太基帝国",
+        "aragon": null,
+        "castile": null,
+        "portugal": null
+      }
+    },
+    {
+      "parent": "iberia",
+      "owners": [
+        "罗马共和国"
+      ],
+      "year_max": -160,
+      "map": {
+        "andalusia": "罗马共和国",
+        "aragon": "罗马共和国",
+        "castile": null,
+        "portugal": null
+      }
+    },
+    {
+      "parent": "iberia",
+      "owners": [
+        "卡斯蒂利亚王国"
+      ],
+      "map": {
+        "castile": "卡斯蒂利亚王国",
+        "portugal": "葡萄牙王国",
+        "aragon": null,
+        "andalusia": null
+      }
+    },
+    {
+      "parent": "iberia",
+      "owners": [
+        "西班牙帝国"
+      ],
+      "map": {
+        "castile": "西班牙帝国",
+        "aragon": "西班牙帝国",
+        "andalusia": "西班牙帝国",
+        "portugal": "葡萄牙王国"
+      }
+    },
+    {
+      "parent": "iberia",
+      "owners": [
+        "西班牙波旁复辟王国"
+      ],
+      "year_max": 1909,
+      "map": {
+        "castile": "西班牙波旁复辟王国",
+        "aragon": "西班牙波旁复辟王国",
+        "andalusia": "西班牙波旁复辟王国",
+        "portugal": "葡萄牙王国"
+      }
+    },
+    {
+      "parent": "iberia",
+      "owners": [
+        "西班牙第二共和国",
+        "佛朗哥西班牙"
+      ],
+      "map": {
+        "castile": "$owner",
+        "aragon": "$owner",
+        "andalusia": "$owner",
+        "portugal": "葡萄牙新国家政权"
+      }
+    },
+    {
+      "parent": "iberia",
+      "owners": [
+        "西班牙王国"
+      ],
+      "map": {
+        "castile": "西班牙王国",
+        "aragon": "西班牙王国",
+        "andalusia": "西班牙王国",
+        "portugal": "葡萄牙共和国"
+      }
+    },
+    {
+      "parent": "germania",
+      "owners": [
+        "法兰克王国"
+      ],
+      "year_max": 780,
+      "map": {
+        "rhineland": "法兰克王国",
+        "bavaria": "法兰克王国",
+        "saxony": null,
+        "brandenburg_prussia": null
+      }
+    },
+    {
+      "parent": "germania",
+      "owners": [
+        "法兰克王国"
+      ],
+      "year_min": 781,
+      "map": {
+        "rhineland": "法兰克王国",
+        "saxony": "法兰克王国",
+        "bavaria": "法兰克王国",
+        "brandenburg_prussia": null
+      }
+    },
+    {
+      "parent": "germania",
+      "owners": [
+        "普鲁士王国"
+      ],
+      "year_max": 1814,
+      "map": {
+        "brandenburg_prussia": "普鲁士王国",
+        "rhineland": "神圣罗马帝国",
+        "saxony": "神圣罗马帝国",
+        "bavaria": "神圣罗马帝国"
+      }
+    },
+    {
+      "parent": "germania",
+      "owners": [
+        "普鲁士王国"
+      ],
+      "year_min": 1815,
+      "map": {
+        "brandenburg_prussia": "普鲁士王国",
+        "rhineland": "普鲁士王国",
+        "saxony": null,
+        "bavaria": null
+      }
+    },
+    {
+      "parent": "germania",
+      "owners": [
+        "德意志联邦共和国"
+      ],
+      "year_max": 1990,
+      "map": {
+        "rhineland": "德意志联邦共和国",
+        "saxony": "德意志联邦共和国",
+        "bavaria": "德意志联邦共和国",
+        "brandenburg_prussia": null
+      }
+    },
+    {
+      "parent": "austria_bohemia",
+      "owners": [
+        "罗马帝国",
+        "西罗马帝国"
+      ],
+      "map": {
+        "austria": "$owner",
+        "hungary": "$owner",
+        "bohemia": null
+      }
+    },
+    {
+      "parent": "austria_bohemia",
+      "owners": [
+        "匈人帝国"
+      ],
+      "map": {
+        "hungary": "匈人帝国",
+        "austria": "匈人帝国",
+        "bohemia": null
+      }
+    },
+    {
+      "parent": "austria_bohemia",
+      "owners": [
+        "法兰克王国"
+      ],
+      "map": {
+        "austria": "法兰克王国",
+        "bohemia": null,
+        "hungary": null
+      }
+    },
+    {
+      "parent": "austria_bohemia",
+      "owners": [
+        "神圣罗马帝国"
+      ],
+      "map": {
+        "austria": "神圣罗马帝国",
+        "bohemia": "神圣罗马帝国",
+        "hungary": null
+      }
+    },
+    {
+      "parent": "austria_bohemia",
+      "owners": [
+        "奥地利大公国"
+      ],
+      "year_max": 1685,
+      "map": {
+        "austria": "奥地利大公国",
+        "bohemia": "奥地利大公国",
+        "hungary": "奥斯曼帝国"
+      }
+    },
+    {
+      "parent": "austria_bohemia",
+      "owners": [
+        "奥地利共和国"
+      ],
+      "map": {
+        "austria": "奥地利共和国",
+        "bohemia": null,
+        "hungary": null
+      }
+    },
+    {
+      "parent": "italy",
+      "owners": [
+        "伦巴第王国"
+      ],
+      "map": {
+        "north_italy": "伦巴第王国",
+        "central_italy": "拜占庭帝国",
+        "south_italy": "拜占庭帝国"
+      }
+    },
+    {
+      "parent": "italy",
+      "owners": [
+        "西班牙帝国"
+      ],
+      "map": {
+        "south_italy": "西班牙帝国",
+        "north_italy": null,
+        "central_italy": null
+      }
+    },
+    {
+      "parent": "balkans",
+      "owners": [
+        "马其顿安提柯王朝"
+      ],
+      "map": {
+        "thrace": "马其顿安提柯王朝",
+        "greece": "马其顿安提柯王朝",
+        "bulgaria": null,
+        "illyria_serbia": null
+      }
+    },
+    {
+      "parent": "balkans",
+      "owners": [
+        "罗马共和国"
+      ],
+      "map": {
+        "greece": "罗马共和国",
+        "thrace": "罗马共和国",
+        "bulgaria": null,
+        "illyria_serbia": null
+      }
+    },
+    {
+      "parent": "balkans",
+      "owners": [
+        "希腊王国",
+        "希腊第二共和国",
+        "希腊共和国"
+      ],
+      "map": {
+        "greece": "$owner",
+        "thrace": "$owner",
+        "bulgaria": null,
+        "illyria_serbia": null
+      }
+    },
+    {
+      "parent": "poland_lithuania",
+      "owners": [
+        "波兰王国"
+      ],
+      "year_max": 1240,
+      "map": {
+        "poland": "波兰王国",
+        "lithuania_baltic": null,
+        "kievan_rus": "基辅罗斯公国"
+      }
+    },
+    {
+      "parent": "poland_lithuania",
+      "owners": [
+        "波兰王国"
+      ],
+      "year_min": 1241,
+      "map": {
+        "poland": "波兰王国",
+        "lithuania_baltic": null,
+        "kievan_rus": null
+      }
+    },
+    {
+      "parent": "poland_lithuania",
+      "owners": [
+        "波兰第二共和国"
+      ],
+      "map": {
+        "poland": "波兰第二共和国",
+        "lithuania_baltic": null,
+        "kievan_rus": null
+      }
+    },
+    {
+      "parent": "poland_lithuania",
+      "owners": [
+        "波兰人民共和国"
+      ],
+      "map": {
+        "poland": "波兰人民共和国",
+        "lithuania_baltic": "苏维埃社会主义共和国联盟",
+        "kievan_rus": "苏维埃社会主义共和国联盟"
+      }
+    },
+    {
+      "parent": "poland_lithuania",
+      "owners": [
+        "波兰共和国"
+      ],
+      "map": {
+        "poland": "波兰共和国",
+        "lithuania_baltic": null,
+        "kievan_rus": null
+      }
+    }
+  ],
+  "keyframe_overrides": {
+    "-1894": {
+      "greece": "米诺斯王国"
+    },
+    "-1600": {
+      "greece": "迈锡尼王国",
+      "thrace": null,
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "-1180": {
+      "greece": null
+    },
+    "-509": {
+      "central_italy": "罗马共和国"
+    },
+    "-500": {
+      "thrace": "波斯阿契美尼德帝国",
+      "greece": "雅典城邦共和国"
+    },
+    "-480": {
+      "thrace": "波斯阿契美尼德帝国",
+      "greece": "雅典城邦共和国"
+    },
+    "-473": {
+      "thrace": null,
+      "greece": "雅典城邦共和国"
+    },
+    "-431": {
+      "greece": "雅典城邦共和国",
+      "thrace": null,
+      "bulgaria": null,
+      "illyria_serbia": null,
+      "central_italy": "罗马共和国"
+    },
+    "-356": {
+      "greece": "雅典城邦共和国",
+      "thrace": null,
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "-323": {
+      "greece": "亚历山大帝国",
+      "thrace": "亚历山大帝国",
+      "bulgaria": "亚历山大帝国",
+      "illyria_serbia": null
+    },
+    "-301": {
+      "thrace": "马其顿安提柯王朝",
+      "greece": null,
+      "bulgaria": null
+    },
+    "-278": {
+      "central_italy": "罗马共和国",
+      "south_italy": "罗马共和国",
+      "north_italy": null
+    },
+    "-260": {
+      "central_italy": "罗马共和国",
+      "south_italy": "罗马共和国",
+      "north_italy": null,
+      "thrace": "马其顿安提柯王朝",
+      "greece": "马其顿安提柯王朝",
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "-221": {
+      "north_italy": "罗马共和国",
+      "central_italy": "罗马共和国",
+      "south_italy": "罗马共和国"
+    },
+    "-202": {
+      "greece": null
+    },
+    "-146": {
+      "greece": "罗马共和国",
+      "thrace": "罗马共和国",
+      "bulgaria": null,
+      "illyria_serbia": null,
+      "castile": "罗马共和国",
+      "aragon": "罗马共和国",
+      "portugal": "罗马共和国",
+      "andalusia": "罗马共和国"
+    },
+    "-27": {
+      "north_italy": "罗马帝国",
+      "central_italy": "罗马帝国",
+      "south_italy": "罗马帝国",
+      "ile_de_france": "罗马帝国",
+      "aquitaine": "罗马帝国",
+      "burgundy_lorraine": "罗马帝国",
+      "netherlands": "罗马帝国",
+      "rhineland": "罗马帝国",
+      "castile": "罗马帝国",
+      "aragon": "罗马帝国",
+      "portugal": "罗马帝国",
+      "andalusia": "罗马帝国",
+      "greece": "罗马帝国",
+      "thrace": "罗马帝国"
+    },
+    "9": {
+      "rhineland": "罗马帝国",
+      "bavaria": "罗马帝国",
+      "saxony": null,
+      "brandenburg_prussia": null,
+      "austria": "罗马帝国",
+      "hungary": "罗马帝国",
+      "bohemia": null,
+      "greece": "罗马帝国",
+      "thrace": "罗马帝国",
+      "bulgaria": "罗马帝国",
+      "illyria_serbia": "罗马帝国"
+    },
+    "117": {
+      "england": "罗马帝国",
+      "scotland": null,
+      "ireland": null,
+      "rhineland": "罗马帝国",
+      "bavaria": "罗马帝国",
+      "saxony": null,
+      "brandenburg_prussia": null,
+      "austria": "罗马帝国",
+      "hungary": "罗马帝国",
+      "bohemia": null
+    },
+    "395": {
+      "rhineland": "西罗马帝国",
+      "bavaria": "西罗马帝国",
+      "austria": "西罗马帝国",
+      "hungary": "西罗马帝国",
+      "bohemia": null
+    },
+    "417": {
+      "aquitaine": "西哥特王国"
+    },
+    "445": {
+      "rhineland": null,
+      "bavaria": null,
+      "illyria_serbia": "匈人帝国"
+    },
+    "476": {
+      "ile_de_france": "法兰克王国",
+      "aquitaine": "西哥特王国",
+      "burgundy_lorraine": null,
+      "illyria_serbia": "拜占庭帝国"
+    },
+    "494": {
+      "rhineland": "法兰克王国"
+    },
+    "534": {
+      "aquitaine": "法兰克王国",
+      "burgundy_lorraine": "法兰克王国"
+    },
+    "555": {
+      "andalusia": "拜占庭帝国"
+    },
+    "577": {
+      "andalusia": "西哥特王国",
+      "north_italy": "伦巴第王国",
+      "central_italy": "拜占庭帝国",
+      "south_italy": "拜占庭帝国"
+    },
+    "682": {
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "800": {
+      "north_italy": "法兰克王国",
+      "central_italy": "法兰克王国",
+      "south_italy": "拜占庭帝国"
+    },
+    "843": {
+      "england": "威塞克斯王国",
+      "scotland": null,
+      "ireland": null,
+      "ile_de_france": "法兰西王国",
+      "aquitaine": "法兰西王国",
+      "burgundy_lorraine": null,
+      "netherlands": null,
+      "rhineland": null,
+      "saxony": null,
+      "bavaria": null,
+      "brandenburg_prussia": null,
+      "austria": null,
+      "bohemia": null,
+      "hungary": null,
+      "north_italy": null,
+      "central_italy": null,
+      "south_italy": "拜占庭帝国",
+      "greece": "拜占庭帝国",
+      "thrace": "拜占庭帝国",
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "907": {
+      "kievan_rus": "基辅罗斯公国",
+      "muscovy_rus": "基辅罗斯公国",
+      "south_italy": null
+    },
+    "962": {
+      "rhineland": "神圣罗马帝国",
+      "saxony": "神圣罗马帝国",
+      "bavaria": "神圣罗马帝国",
+      "brandenburg_prussia": null,
+      "austria": "神圣罗马帝国",
+      "bohemia": "神圣罗马帝国",
+      "hungary": null,
+      "north_italy": "神圣罗马帝国",
+      "central_italy": "神圣罗马帝国",
+      "south_italy": null,
+      "poland": "波兰王国",
+      "lithuania_baltic": null,
+      "kievan_rus": "基辅罗斯公国"
+    },
+    "1038": {
+      "castile": "卡斯蒂利亚王国",
+      "burgundy_lorraine": "神圣罗马帝国",
+      "greece": "拜占庭帝国",
+      "thrace": "拜占庭帝国",
+      "bulgaria": "拜占庭帝国",
+      "illyria_serbia": "拜占庭帝国"
+    },
+    "1066": {
+      "england": "英格兰王国",
+      "scotland": null,
+      "ireland": null,
+      "castile": "卡斯蒂利亚王国",
+      "portugal": null,
+      "aragon": null,
+      "andalusia": null,
+      "brandenburg_prussia": null
+    },
+    "1099": {
+      "central_italy": null
+    },
+    "1141": {
+      "portugal": "葡萄牙王国"
+    },
+    "1187": {
+      "aquitaine": "英格兰王国",
+      "brandenburg_prussia": "神圣罗马帝国",
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "1204": {
+      "north_italy": null,
+      "central_italy": null,
+      "south_italy": null,
+      "greece": null,
+      "thrace": null,
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "1241": {
+      "kievan_rus": "大蒙古国",
+      "muscovy_rus": "大蒙古国",
+      "crimea": "大蒙古国"
+    },
+    "1260": {
+      "kievan_rus": "金帐汗国",
+      "muscovy_rus": "金帐汗国",
+      "thrace": "拜占庭帝国"
+    },
+    "1337": {
+      "ile_de_france": "法兰西王国",
+      "aquitaine": "英格兰王国",
+      "burgundy_lorraine": "神圣罗马帝国",
+      "castile": "卡斯蒂利亚王国",
+      "portugal": "葡萄牙王国",
+      "aragon": null,
+      "andalusia": null,
+      "austria": "奥地利大公国",
+      "bohemia": "神圣罗马帝国",
+      "hungary": null,
+      "thrace": "拜占庭帝国",
+      "greece": null,
+      "bulgaria": null,
+      "illyria_serbia": null,
+      "poland": "波兰王国",
+      "lithuania_baltic": null,
+      "kievan_rus": "金帐汗国"
+    },
+    "1368": {
+      "thrace": "拜占庭帝国",
+      "kievan_rus": null,
+      "burgundy_lorraine": null
+    },
+    "1392": {
+      "thrace": "奥斯曼帝国",
+      "bulgaria": "奥斯曼帝国",
+      "greece": null,
+      "illyria_serbia": null
+    },
+    "1453": {
+      "aquitaine": "法兰西王国",
+      "greece": "奥斯曼帝国",
+      "thrace": "奥斯曼帝国",
+      "bulgaria": "奥斯曼帝国",
+      "illyria_serbia": "奥斯曼帝国"
+    },
+    "1492": {
+      "burgundy_lorraine": "法兰西王国"
+    },
+    "1648": {
+      "rhineland": "神圣罗马帝国",
+      "saxony": "神圣罗马帝国",
+      "brandenburg_prussia": "神圣罗马帝国",
+      "bavaria": "神圣罗马帝国",
+      "austria": "奥地利大公国",
+      "bohemia": "奥地利大公国",
+      "hungary": "奥斯曼帝国",
+      "south_italy": "西班牙帝国",
+      "north_italy": null,
+      "central_italy": null,
+      "netherlands": "荷兰共和国",
+      "castile": "西班牙帝国",
+      "aragon": "西班牙帝国",
+      "andalusia": "西班牙帝国",
+      "portugal": "葡萄牙王国"
+    },
+    "1689": {
+      "hungary": "奥地利大公国"
+    },
+    "1707": {
+      "brandenburg_prussia": "普鲁士王国"
+    },
+    "1789": {
+      "poland": "波兰立陶宛联邦",
+      "lithuania_baltic": "波兰立陶宛联邦",
+      "kievan_rus": "俄罗斯帝国"
+    },
+    "1804": {
+      "poland": "普鲁士王国",
+      "lithuania_baltic": "俄罗斯帝国",
+      "kievan_rus": "俄罗斯帝国"
+    },
+    "1812": {
+      "ile_de_france": "法兰西第一帝国",
+      "aquitaine": "法兰西第一帝国",
+      "burgundy_lorraine": "法兰西第一帝国",
+      "netherlands": "法兰西第一帝国",
+      "castile": "法兰西第一帝国",
+      "aragon": "法兰西第一帝国",
+      "andalusia": "法兰西第一帝国",
+      "portugal": "葡萄牙王国",
+      "rhineland": "法兰西第一帝国",
+      "saxony": "法兰西第一帝国",
+      "bavaria": "法兰西第一帝国",
+      "brandenburg_prussia": "普鲁士王国",
+      "north_italy": "法兰西第一帝国",
+      "central_italy": "法兰西第一帝国",
+      "south_italy": "法兰西第一帝国",
+      "austria": "奥地利帝国",
+      "bohemia": "奥地利帝国",
+      "hungary": "奥地利帝国",
+      "poland": "法兰西第一帝国",
+      "lithuania_baltic": "俄罗斯帝国",
+      "kievan_rus": "俄罗斯帝国"
+    },
+    "1815": {
+      "brandenburg_prussia": "普鲁士王国",
+      "rhineland": "普鲁士王国",
+      "saxony": null,
+      "bavaria": null,
+      "austria": "奥地利帝国",
+      "bohemia": "奥地利帝国",
+      "hungary": "奥地利帝国",
+      "poland": "俄罗斯帝国",
+      "lithuania_baltic": "俄罗斯帝国",
+      "kievan_rus": "俄罗斯帝国"
+    },
+    "1836": {
+      "greece": "希腊王国",
+      "thrace": "奥斯曼帝国",
+      "bulgaria": "奥斯曼帝国",
+      "illyria_serbia": "奥斯曼帝国"
+    },
+    "1871": {
+      "rhineland": "德意志帝国",
+      "saxony": "德意志帝国",
+      "brandenburg_prussia": "德意志帝国",
+      "bavaria": "德意志帝国",
+      "austria": "奥匈帝国",
+      "bohemia": "奥匈帝国",
+      "hungary": "奥匈帝国",
+      "north_italy": "意大利王国",
+      "central_italy": "意大利王国",
+      "south_italy": "意大利王国",
+      "ile_de_france": "法兰西第三共和国",
+      "aquitaine": "法兰西第三共和国",
+      "burgundy_lorraine": "法兰西第三共和国"
+    },
+    "1878": {
+      "greece": "希腊王国",
+      "thrace": "奥斯曼帝国",
+      "bulgaria": null,
+      "illyria_serbia": null,
+      "castile": "西班牙波旁复辟王国",
+      "aragon": "西班牙波旁复辟王国",
+      "andalusia": "西班牙波旁复辟王国",
+      "portugal": "葡萄牙王国"
+    },
+    "1885": {
+      "greece": "希腊王国",
+      "thrace": "奥斯曼帝国",
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "1912": {
+      "portugal": "葡萄牙第一共和国",
+      "greece": "希腊王国",
+      "thrace": "希腊王国",
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "1914": {
+      "england": "大英帝国",
+      "scotland": "大英帝国",
+      "ireland": "大英帝国",
+      "portugal": "葡萄牙第一共和国",
+      "greece": "希腊王国",
+      "thrace": "希腊王国",
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "1922": {
+      "ireland": null,
+      "kievan_rus": "苏维埃社会主义共和国联盟"
+    },
+    "1939": {
+      "austria": "纳粹德国",
+      "bohemia": "纳粹德国",
+      "hungary": null,
+      "poland": "纳粹德国",
+      "lithuania_baltic": null,
+      "kievan_rus": "苏维埃社会主义共和国联盟"
+    },
+    "1942": {
+      "ile_de_france": "纳粹德国",
+      "aquitaine": "维希法国",
+      "burgundy_lorraine": "维希法国",
+      "netherlands": "纳粹德国",
+      "austria": "纳粹德国",
+      "bohemia": "纳粹德国",
+      "hungary": null,
+      "poland": "纳粹德国",
+      "lithuania_baltic": "纳粹德国",
+      "kievan_rus": "纳粹德国",
+      "crimea": "纳粹德国",
+      "muscovy_rus": "苏维埃社会主义共和国联盟",
+      "greece": "纳粹德国",
+      "thrace": "纳粹德国",
+      "illyria_serbia": "纳粹德国",
+      "bulgaria": null
+    },
+    "1945": {
+      "crimea": "苏维埃社会主义共和国联盟",
+      "poland": "波兰人民共和国",
+      "lithuania_baltic": "苏维埃社会主义共和国联盟",
+      "kievan_rus": "苏维埃社会主义共和国联盟",
+      "austria": "奥地利共和国",
+      "bohemia": null,
+      "hungary": null,
+      "greece": "希腊王国",
+      "thrace": "希腊王国",
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "1975": {
+      "castile": "西班牙王国",
+      "aragon": "西班牙王国",
+      "andalusia": "西班牙王国",
+      "portugal": "葡萄牙共和国",
+      "greece": "希腊共和国",
+      "thrace": "希腊共和国",
+      "bulgaria": null,
+      "illyria_serbia": null
+    },
+    "1991": {
+      "brandenburg_prussia": "德意志联邦共和国",
+      "poland": "波兰共和国",
+      "lithuania_baltic": null,
+      "kievan_rus": null
+    }
+  },
+  "stateless_cultures": {
+    "england": [
+      {
+        "from": -3000,
+        "to": -2500,
+        "kind": "考古学文化",
+        "name": "新石器巨石文化",
+        "note": "长墓、环沟遗迹与巨石阵早期营建"
+      },
+      {
+        "from": -2500,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "巨石阵与钟形杯青铜",
+        "note": "巨石阵主圈落成，钟形杯文化与威塞克斯青铜时代"
+      },
+      {
+        "from": -800,
+        "to": 89,
+        "kind": "部落社会",
+        "name": "不列颠凯尔特诸部",
+        "note": "卡图维劳尼、爱西尼等铁器时代部落；公元43年起罗马征服"
+      },
+      {
+        "from": 417,
+        "to": 843,
+        "kind": "诸国并立",
+        "name": "盎格鲁—撒克逊七国",
+        "note": "罗马撤军后形成威塞克斯、麦西亚、诺森布里亚等七国与威尔士凯尔特诸邦"
+      }
+    ],
+    "scotland": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "奥克尼新石器与青铜",
+        "note": "斯卡拉布雷石构村落与北方巨石圈遗存"
+      },
+      {
+        "from": -800,
+        "to": 417,
+        "kind": "部落社会",
+        "name": "喀里多尼亚与皮克特诸部",
+        "note": "居于哈德良长城以北，长期抗击罗马军团北进"
+      },
+      {
+        "from": 417,
+        "to": 843,
+        "kind": "诸国并立",
+        "name": "皮克特与达尔里阿达诸邦",
+        "note": "皮克特王国、盖尔人达尔里阿达与斯特拉斯克莱德并立"
+      },
+      {
+        "from": 843,
+        "to": 1707,
+        "kind": "诸国并立",
+        "name": "苏格兰王国与高地氏族",
+        "note": "843年肯尼思一世整合阿尔巴王国，历布鲁斯与斯图亚特王朝（1603年与英共主），1707年合并"
+      }
+    ],
+    "ireland": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "纽格兰奇巨石与青铜",
+        "note": "博因河谷通道墓与爱尔兰黄金青铜器传统"
+      },
+      {
+        "from": -800,
+        "to": 432,
+        "kind": "部落社会",
+        "name": "盖尔铁器时代诸图阿特",
+        "note": "从未并入罗马帝国，以图阿特部族小邦与塔拉至高王传统维系"
+      },
+      {
+        "from": 432,
+        "to": 1171,
+        "kind": "诸国并立",
+        "name": "爱尔兰盖尔诸王国",
+        "note": "圣帕特里克传教后修道院学术繁荣，乌伊内尔等诸王争霸并抗击维京海盗"
+      },
+      {
+        "from": 1171,
+        "to": 1588,
+        "kind": "诸国并立",
+        "name": "英王领地与盖尔诸邦",
+        "note": "盎格鲁—诺曼领主控制都柏林周边栅栏区，腹地仍为自治盖尔伯爵与诸部"
+      },
+      {
+        "from": 1922,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "爱尔兰自由邦至共和国",
+        "note": "1922年建立爱尔兰自由邦（1949年正式定名爱尔兰共和国），北方六郡留属英国"
+      }
+    ],
+    "castile": [
+      {
+        "from": -3000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "伊比利亚铜石与早青铜",
+        "note": "中央高原设防聚落与钟形杯陶器传统"
+      },
+      {
+        "from": -1500,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "科戈塔斯青铜文化",
+        "note": "梅塞塔高原牧业与大西洋青铜交换网"
+      },
+      {
+        "from": -800,
+        "to": -146,
+        "kind": "部落社会",
+        "name": "凯尔特伊比利亚诸部",
+        "note": "阿雷瓦西、瓦凯奥伊等部族，努曼西亚顽强抵抗罗马"
+      },
+      {
+        "from": 409,
+        "to": 476,
+        "kind": "诸国并立",
+        "name": "苏维汇、汪达尔与西哥特进军",
+        "note": "蛮族越过比利牛斯山进入半岛，西哥特人逐步代罗马收服腹地"
+      },
+      {
+        "from": 750,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "阿斯图里亚斯—莱昂与科尔多瓦北疆",
+        "note": "北方基督教阿斯图里亚斯、莱昂王国与卡斯蒂利亚伯国南推收复失地"
+      }
+    ],
+    "aragon": [
+      {
+        "from": -3000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "洛斯米利亚雷斯与阿尔加尔",
+        "note": "地中海沿岸早期冶金与等级聚落"
+      },
+      {
+        "from": -1500,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "埃布罗河骨灰瓮田文化",
+        "note": "东北伊比利亚晚期青铜农牧文化"
+      },
+      {
+        "from": -800,
+        "to": -206,
+        "kind": "部落社会",
+        "name": "伊比利亚东岸诸部与希腊商站",
+        "note": "伊比利亚本土部族与恩波里翁、萨贡托等贸易港邑"
+      },
+      {
+        "from": 409,
+        "to": 476,
+        "kind": "诸国并立",
+        "name": "西罗马塔拉戈纳残部与西哥特",
+        "note": "埃布罗河流域为西罗马与西哥特早期争夺走廊"
+      },
+      {
+        "from": 750,
+        "to": 1035,
+        "kind": "诸国并立",
+        "name": "西班牙边区、巴塞罗那与潘普洛纳",
+        "note": "查理曼设立西班牙边区，巴塞罗那伯国、纳瓦拉与上阿拉贡基督教小邦形成"
+      },
+      {
+        "from": 1035,
+        "to": 1492,
+        "kind": "诸国并立",
+        "name": "阿拉贡联合王国与地中海海权",
+        "note": "1137年阿拉贡与巴塞罗那联合，先后并吞瓦伦西亚、巴利阿里与西西里，1479年与卡斯蒂利亚共主"
+      }
+    ],
+    "portugal": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "大西洋巨石与青铜文化",
+        "note": "塔霍河口设防铜石聚落与大西洋锡铜贸易"
+      },
+      {
+        "from": -800,
+        "to": -146,
+        "kind": "部落社会",
+        "name": "卢西塔尼亚与卡斯特罗诸部",
+        "note": "维里阿图斯领导卢西塔尼亚部族抗击罗马扩张"
+      },
+      {
+        "from": 409,
+        "to": 476,
+        "kind": "诸国并立",
+        "name": "苏维汇王国（加利西亚—卢西塔尼亚）",
+        "note": "苏维汇人定都布拉加建立日耳曼王国，后为西哥特兼并"
+      },
+      {
+        "from": 750,
+        "to": 1141,
+        "kind": "诸国并立",
+        "name": "安达卢斯西疆与葡萄牙伯国",
+        "note": "南部属后倭马亚及巴达霍斯泰法，北方葡萄牙伯国自莱昂独立建国"
+      }
+    ],
+    "andalusia": [
+      {
+        "from": -3000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "洛斯米利亚雷斯与阿尔加尔",
+        "note": "瓜达尔基维尔河与东南海岸早期铜石文明"
+      },
+      {
+        "from": -1500,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "塔尔特索斯前身青铜文化",
+        "note": "银锡矿冶与腓尼基加的斯早期商贸接触"
+      },
+      {
+        "from": -800,
+        "to": -230,
+        "kind": "诸国并立",
+        "name": "塔尔特索斯与腓尼基殖民港",
+        "note": "富庶的塔尔特索斯古国与加的斯、马拉加等腓尼基商港"
+      },
+      {
+        "from": 409,
+        "to": 476,
+        "kind": "诸国并立",
+        "name": "汪达尔驻留与西哥特南下",
+        "note": "汪达尔—阿兰人经略贝蒂卡后渡海入非，西哥特继而控制南方"
+      },
+      {
+        "from": 750,
+        "to": 1031,
+        "kind": "诸国并立",
+        "name": "后倭马亚科尔多瓦埃米尔—哈里发国",
+        "note": "756年阿卜杜勒·拉赫曼一世建国，929年称哈里发，科尔多瓦成为西欧最大学术都会"
+      },
+      {
+        "from": 1031,
+        "to": 1238,
+        "kind": "诸国并立",
+        "name": "泰法诸国与穆拉比特·穆瓦希德王朝",
+        "note": "塞维利亚等泰法林立，北非穆拉比特与穆瓦希德王朝先后渡海统合安达卢斯"
+      },
+      {
+        "from": 1238,
+        "to": 1492,
+        "kind": "诸国并立",
+        "name": "格拉纳达纳斯里德王国与西属安达卢西亚",
+        "note": "卡斯蒂利亚收复科尔多瓦与塞维利亚后，格拉纳达埃米尔国营建阿尔罕布拉宫坚守至1492年"
+      }
+    ],
+    "ile_de_france": [
+      {
+        "from": -3000,
+        "to": -2200,
+        "kind": "考古学文化",
+        "name": "卡尔纳克巨石与新石器文化",
+        "note": "布列塔尼巨石列阵与巴黎盆地新石器农耕"
+      },
+      {
+        "from": -2200,
+        "to": -450,
+        "kind": "考古学文化",
+        "name": "大西洋青铜与哈尔施塔特文化",
+        "note": "塞纳—卢瓦尔河青铜交换网与早期铁器王侯墓"
+      },
+      {
+        "from": -450,
+        "to": -60,
+        "kind": "部落社会",
+        "name": "高卢塞纳—卢瓦尔凯尔特诸部",
+        "note": "巴黎西人、卡努特人与阿莫里凯沿海诸部"
+      }
+    ],
+    "aquitaine": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "西欧巨石与大西洋青铜文化",
+        "note": "加龙河至比利牛斯北麓农牧与青铜聚落"
+      },
+      {
+        "from": -800,
+        "to": -60,
+        "kind": "部落社会",
+        "name": "阿基坦人与阿维尔尼凯尔特诸部",
+        "note": "古阿基坦语族群与中央高地阿维尔尼部落联盟"
+      }
+    ],
+    "burgundy_lorraine": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "罗讷河新石器与骨灰瓮田青铜",
+        "note": "罗讷—索恩走廊农耕与阿尔卑斯青铜商道"
+      },
+      {
+        "from": -800,
+        "to": -60,
+        "kind": "部落社会",
+        "name": "埃杜维、塞夸尼高卢诸部与马萨利亚",
+        "note": "维克斯王侯墓葬、高卢大部族及前600年希腊人所建马赛港"
+      },
+      {
+        "from": 476,
+        "to": 534,
+        "kind": "诸国并立",
+        "name": "勃艮第日耳曼王国",
+        "note": "定都里昂与日内瓦统治罗讷—索恩流域，534年并入法兰克王国"
+      },
+      {
+        "from": 843,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "中法兰克洛泰尔王国与阿尔勒勃艮第",
+        "note": "《凡尔登条约》中路走廊分裂为洛林公国与上下勃艮第（阿尔勒王国），1032年后归入神罗"
+      },
+      {
+        "from": 1368,
+        "to": 1492,
+        "kind": "诸国并立",
+        "name": "瓦卢瓦勃艮第公国与普罗旺斯伯国",
+        "note": "勃艮第公爵联结第戎与低地富庶领地抗衡法王，1477—1481年后分归法王与哈布斯堡"
+      }
+    ],
+    "netherlands": [
+      {
+        "from": -3000,
+        "to": -2200,
+        "kind": "考古学文化",
+        "name": "漏斗杯新石器文化",
+        "note": "低地巨石墓与早期农牧聚落"
+      },
+      {
+        "from": -2200,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "钟形杯与骨灰瓮田青铜",
+        "note": "莱茵—默兹河口青铜贸易网"
+      },
+      {
+        "from": -800,
+        "to": -60,
+        "kind": "部落社会",
+        "name": "比尔及、巴达维与弗里斯诸部",
+        "note": "高卢—日耳曼过渡地带善战部族"
+      },
+      {
+        "from": 843,
+        "to": 962,
+        "kind": "诸国并立",
+        "name": "中法兰克下洛林与佛兰德诸伯国",
+        "note": "《凡尔登条约》后划归洛泰尔王国，形成佛兰德、荷兰与弗里西亚诸封建领地"
+      }
+    ],
+    "rhineland": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "线纹陶与钟形杯青铜文化",
+        "note": "莱茵河谷早期农耕与青铜冶铸"
+      },
+      {
+        "from": -800,
+        "to": -27,
+        "kind": "部落社会",
+        "name": "莱茵凯尔特—日耳曼诸部",
+        "note": "特雷维里、乌比伊等部族，凯撒至奥古斯都时期推进至莱茵河防线"
+      },
+      {
+        "from": 445,
+        "to": 494,
+        "kind": "部落社会",
+        "name": "法兰克与阿勒曼尼诸部",
+        "note": "罗马莱茵防线瓦解后里普利安法兰克人与阿勒曼尼人争雄"
+      },
+      {
+        "from": 843,
+        "to": 962,
+        "kind": "诸国并立",
+        "name": "东法兰克王国与洛林—法兰克尼亚公国",
+        "note": "加洛林东法兰克与康拉丁、奥托家族领地，962年建神圣罗马帝国"
+      },
+      {
+        "from": 1945,
+        "to": 1949,
+        "kind": "诸国并立",
+        "name": "英法美西占区管制时期",
+        "note": "二战后莱茵—鲁尔重工业区由英法美分区占领，1949年于波恩成立德意志联邦共和国"
+      }
+    ],
+    "saxony": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "漏斗杯巨石与北欧青铜南缘",
+        "note": "威悉—易北河下游新石器与青铜文化"
+      },
+      {
+        "from": -800,
+        "to": -100,
+        "kind": "考古学文化",
+        "name": "雅斯托夫铁器文化",
+        "note": "原始日耳曼人群形成的核心考古文化圈"
+      },
+      {
+        "from": -100,
+        "to": 800,
+        "kind": "部落社会",
+        "name": "切鲁西与古撒克逊部落联盟",
+        "note": "公元9年阿米尼乌斯于条顿堡歼灭罗马军团；古撒克逊人长期抗拒法兰克直至查理曼征服"
+      },
+      {
+        "from": 843,
+        "to": 962,
+        "kind": "诸国并立",
+        "name": "东法兰克王国与萨克森部落公国",
+        "note": "奥托家族依托萨克森公国崛起执掌东法兰克王权"
+      },
+      {
+        "from": 1815,
+        "to": 1871,
+        "kind": "诸国并立",
+        "name": "德意志邦联北方诸邦与汉萨自由市",
+        "note": "汉诺威王国、不伦瑞克及汉堡、不来梅、吕贝克自由市，1866年后入北德意志邦联"
+      },
+      {
+        "from": 1945,
+        "to": 1949,
+        "kind": "诸国并立",
+        "name": "盟军英国占领区",
+        "note": "1945年纳粹投降后下萨克森与汉堡属英占区，1949年并入联邦德国"
+      }
+    ],
+    "brandenburg_prussia": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "绳纹陶与乌尼蒂采青铜文化",
+        "note": "萨勒—易北河流域内布拉星盘等青铜重器遗存"
+      },
+      {
+        "from": -800,
+        "to": 534,
+        "kind": "部落社会",
+        "name": "苏维汇、森诺内斯与图林根日耳曼诸部",
+        "note": "易北—奥得河间的日耳曼部族，民族大迁徙后期大量西迁"
+      },
+      {
+        "from": 534,
+        "to": 1187,
+        "kind": "部落社会",
+        "name": "易北河东岸西斯拉夫诸部与北方边区",
+        "note": "索布人、柳蒂奇联盟与奥博德里特人定居；12世纪中叶阿斯坎尼家族建勃兰登堡边区推进东向拓殖"
+      },
+      {
+        "from": 1945,
+        "to": 1949,
+        "kind": "诸国并立",
+        "name": "盟军苏联占领区与四国共管柏林",
+        "note": "波茨坦会议后易北—萨勒以东归苏军占领管制，柏林由美苏英法四方分区占领"
+      },
+      {
+        "from": 1949,
+        "to": 1991,
+        "kind": "诸国并立",
+        "name": "两德分治下的民主德国与西柏林",
+        "note": "1949年成立德意志民主共和国（东德）与西柏林飞地对峙，1989年柏林墙开放、1990年10月两德统一"
+      }
+    ],
+    "bavaria": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "阿尔卑斯干栏与骨灰瓮田文化",
+        "note": "湖畔桩屋聚落与多瑙河上游青铜文化"
+      },
+      {
+        "from": -800,
+        "to": 9,
+        "kind": "部落社会",
+        "name": "哈尔施塔特—拉坦诺凯尔特诸部",
+        "note": "海内堡王侯城址与赫尔维蒂、温德利西凯尔特部落"
+      },
+      {
+        "from": 445,
+        "to": 534,
+        "kind": "部落社会",
+        "name": "阿勒曼尼与巴伐利亚部族形成",
+        "note": "罗马雷蒂亚防线撤退后阿勒曼尼人与巴伐利亚部族公国形成"
+      },
+      {
+        "from": 843,
+        "to": 962,
+        "kind": "诸国并立",
+        "name": "东法兰克巴伐利亚与施瓦本公国",
+        "note": "日耳曼人路易定都雷根斯堡，955年奥托一世于奥格斯堡莱希菲尔德大破马扎尔骑兵"
+      },
+      {
+        "from": 1815,
+        "to": 1871,
+        "kind": "诸国并立",
+        "name": "南德诸王国与瑞士联邦",
+        "note": "维也纳会议后巴伐利亚、符腾堡、巴登诸邦独立，瑞士确立永久中立联邦制（1848年）"
+      },
+      {
+        "from": 1945,
+        "to": 1949,
+        "kind": "诸国并立",
+        "name": "美法占领区与中立瑞士",
+        "note": "战后巴伐利亚属美占区、西南德属法占区，1949年参与组建德意志联邦共和国"
+      }
+    ],
+    "austria": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "东阿尔卑斯铜矿与青铜文化",
+        "note": "阿尔卑斯采铜业与多瑙河早期聚落"
+      },
+      {
+        "from": -800,
+        "to": 9,
+        "kind": "部落社会",
+        "name": "哈尔施塔特盐矿文化与诺里库姆王国",
+        "note": "欧洲早期铁器时代命名地；凯尔特诺里库姆铁器王国于前15年和平并入罗马"
+      },
+      {
+        "from": 469,
+        "to": 800,
+        "kind": "诸国并立",
+        "name": "鲁吉、东哥特、巴伐利亚与阿瓦尔边疆",
+        "note": "匈人瓦解及罗马撤离诺里库姆后，鲁吉王国、东哥特等日耳曼部族与斯拉夫、阿瓦尔势力交错"
+      },
+      {
+        "from": 843,
+        "to": 962,
+        "kind": "诸国并立",
+        "name": "东法兰克东方边区与马扎尔冲击",
+        "note": "加洛林巴伐利亚东方边区，955年莱希菲尔德战后重建奥地利边区伯国"
+      }
+    ],
+    "bohemia": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "乌尼蒂采与骨灰瓮田青铜文化",
+        "note": "中欧青铜时代核心冶金区"
+      },
+      {
+        "from": -800,
+        "to": -27,
+        "kind": "部落社会",
+        "name": "凯尔特波伊人部落",
+        "note": "波希米亚（Boiohaemum，波伊人故乡）得名之源，筑有大型设防奥皮杜姆城寨"
+      },
+      {
+        "from": -27,
+        "to": 476,
+        "kind": "部落社会",
+        "name": "马科曼尼与夸迪日耳曼王国",
+        "note": "马罗博杜斯建立马科曼尼联盟，2世纪与马可·奥勒留爆发马科曼尼战争，始终独立于罗马行省之外"
+      },
+      {
+        "from": 476,
+        "to": 830,
+        "kind": "部落社会",
+        "name": "西斯拉夫迁入与萨莫部落联盟",
+        "note": "捷克与摩拉维亚斯拉夫部族定居，7世纪建立抗击阿瓦尔的萨莫公国"
+      },
+      {
+        "from": 830,
+        "to": 962,
+        "kind": "诸国并立",
+        "name": "大摩拉维亚公国与普热米斯尔波希米亚",
+        "note": "西里尔与美多德在大摩拉维亚创制斯拉夫字母传教，随后布拉格普热米斯尔王朝兴起"
+      },
+      {
+        "from": 1918,
+        "to": 1939,
+        "kind": "诸国并立",
+        "name": "捷克斯洛伐克第一共和国",
+        "note": "奥匈帝国解体后马萨里克与贝奈斯在布拉格建立议会民主工业国，1938—1939年遭纳粹肢解吞并"
+      },
+      {
+        "from": 1945,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "战后捷克斯洛伐克至捷克共和国",
+        "note": "历战后捷克斯洛伐克与1989年天鹅绒革命，1993年和平分立为捷克共和国与斯洛伐克"
+      }
+    ],
+    "hungary": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "多瑙河中游铜石与青铜文化",
+        "note": "蒂萨河与多瑙河平原农牧与青铜窖藏"
+      },
+      {
+        "from": -800,
+        "to": 9,
+        "kind": "部落社会",
+        "name": "潘诺尼亚伊利里亚—凯尔特诸部",
+        "note": "潘诺尼亚人与凯尔特埃拉维斯基部落，屋大维时代并入罗马多瑙河防线"
+      },
+      {
+        "from": 469,
+        "to": 895,
+        "kind": "诸国并立",
+        "name": "格皮德、伦巴第与阿瓦尔汗国",
+        "note": "匈人瓦解后日耳曼部族争雄，568年起游牧阿瓦尔汗国统治潘诺尼亚逾二百年，查理曼破之"
+      },
+      {
+        "from": 895,
+        "to": 1526,
+        "kind": "诸国并立",
+        "name": "马扎尔定居与中世纪匈牙利王国",
+        "note": "阿尔帕德率马扎尔人入主盆地，1000年伊什特万一世加冕建基督教匈牙利王国，历安茹、胡尼亚迪与雅盖隆王朝"
+      },
+      {
+        "from": 1918,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "近现代匈牙利与斯洛伐克国家演进",
+        "note": "《特里亚农条约》后匈牙利独立（1946年改行共和、1989年宪政转型），北部斯洛伐克于1993年独立"
+      }
+    ],
+    "north_italy": [
+      {
+        "from": -3000,
+        "to": -900,
+        "kind": "考古学文化",
+        "name": "冰人奥茨铜石与特拉马雷青铜",
+        "note": "阿尔卑斯铜石文化与波河平原设防特拉马雷聚落"
+      },
+      {
+        "from": -900,
+        "to": -221,
+        "kind": "部落社会",
+        "name": "山南高卢凯尔特诸部与维内蒂人",
+        "note": "因苏布雷、波伊等凯尔特部落与东北维内蒂、伊特鲁里亚北支，前222年罗马征服山南高卢"
+      },
+      {
+        "from": 476,
+        "to": 555,
+        "kind": "诸国并立",
+        "name": "奥多亚塞王国与拉文纳东哥特王国",
+        "note": "狄奥多里克大帝定都拉文纳统治意大利，535—554年哥特战争后归东罗马"
+      },
+      {
+        "from": 843,
+        "to": 962,
+        "kind": "诸国并立",
+        "name": "加洛林意大利王国与威尼斯共和国",
+        "note": "中法兰克解体后北意诸侯争夺铁王冠，威尼斯在泻湖崛起为海上商业共和国"
+      },
+      {
+        "from": 1204,
+        "to": 1804,
+        "kind": "诸国并立",
+        "name": "威尼斯、热那亚、米兰与萨伏依诸邦",
+        "note": "文艺复兴自治城市共和国与公国林立，16—18世纪米兰先后归属西、奥哈布斯堡，萨伏依建撒丁王国"
+      },
+      {
+        "from": 1815,
+        "to": 1865,
+        "kind": "诸国并立",
+        "name": "撒丁王国（皮埃蒙特）与奥属伦巴第—威尼托",
+        "note": "维也纳会议后奥地利直辖米兰与威尼斯，都灵萨伏依王室与加富尔主导意大利统一运动"
+      }
+    ],
+    "central_italy": [
+      {
+        "from": -3000,
+        "to": -900,
+        "kind": "考古学文化",
+        "name": "亚平宁青铜与维拉诺瓦早期铁器",
+        "note": "台伯河与托斯卡纳早期铁器火葬墓文化"
+      },
+      {
+        "from": -900,
+        "to": -509,
+        "kind": "城邦林立",
+        "name": "伊特鲁里亚十二城邦与罗马王政时代",
+        "note": "塔尔奎尼亚、维爱等伊特鲁里亚城邦联盟与前753年建城传说后的罗马王政时期"
+      },
+      {
+        "from": 476,
+        "to": 555,
+        "kind": "诸国并立",
+        "name": "奥多亚塞与东哥特治下中意大利",
+        "note": "罗马元老院与教廷在东哥特王权下延续古典市政传统，哥特战争中屡经拉锯"
+      },
+      {
+        "from": 843,
+        "to": 962,
+        "kind": "诸国并立",
+        "name": "早期教皇国与托斯卡纳边区",
+        "note": "丕平献土奠定教皇世俗领地，与斯波莱托公国、托斯卡纳侯国并立"
+      },
+      {
+        "from": 1099,
+        "to": 1804,
+        "kind": "诸国并立",
+        "name": "教皇国与佛罗伦萨—托斯卡纳大公国",
+        "note": "佛罗伦萨、锡耶纳、比萨自治共和国孕育文艺复兴（1569年建托斯卡纳大公国），南接教皇国直辖区"
+      },
+      {
+        "from": 1815,
+        "to": 1865,
+        "kind": "诸国并立",
+        "name": "教皇国与托斯卡纳大公国复兴期",
+        "note": "1860年中意大利公投并入撒丁—意大利王国，1870年意军进驻罗马完成统一"
+      }
+    ],
+    "south_italy": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "南意与西西里西库尔青铜文化",
+        "note": "地中海中部航路交汇的史前岛屿与半岛文化"
+      },
+      {
+        "from": -800,
+        "to": -278,
+        "kind": "城邦林立",
+        "name": "大希腊诸城邦、萨莫奈与迦太基西西里",
+        "note": "叙拉古、塔兰托、那不勒斯等希腊殖民强邦与山地萨莫奈联盟、西西里西端迦太基据点争雄"
+      },
+      {
+        "from": 476,
+        "to": 555,
+        "kind": "诸国并立",
+        "name": "东哥特王国与汪达尔岛屿领地",
+        "note": "东哥特统治南意与西西里，撒丁岛一度属北非汪达尔王国，533—554年俱为查士丁尼收复"
+      },
+      {
+        "from": 907,
+        "to": 1556,
+        "kind": "诸国并立",
+        "name": "诺曼—霍亨斯陶芬西西里与那不勒斯王国",
+        "note": "继拜占庭、伦巴第公国与阿拉伯西西里之后，诺曼人建西西里王国，后演变为安茹那不勒斯与阿拉贡西西里"
+      },
+      {
+        "from": 1713,
+        "to": 1804,
+        "kind": "诸国并立",
+        "name": "波旁那不勒斯—西西里王国与萨伏依撒丁岛",
+        "note": "《乌得勒支和约》后撒丁岛归萨伏依王室，1734年起西班牙波旁支系独立统治那不勒斯与西西里"
+      },
+      {
+        "from": 1815,
+        "to": 1865,
+        "kind": "诸国并立",
+        "name": "两西西里王国",
+        "note": "1816年合并那不勒斯与西西里为两西西里王国，1860年加里波第红衫军“千人远征”后并入意大利王国"
+      }
+    ],
+    "greece": [
+      {
+        "from": -3000,
+        "to": -1894,
+        "kind": "考古学文化",
+        "name": "基克拉泽斯与早米诺斯青铜",
+        "note": "爱琴海大理石雕像与早期航海聚落"
+      },
+      {
+        "from": -1180,
+        "to": -800,
+        "kind": "部落社会",
+        "name": "古希腊黑暗时代（几何陶时期）",
+        "note": "迈锡尼线性文字B宫殿崩溃后铁器普及，荷马史诗口头传唱"
+      },
+      {
+        "from": -800,
+        "to": -500,
+        "kind": "城邦林立",
+        "name": "古风时代希腊诸城邦",
+        "note": "雅典、斯巴达、科林斯、底比斯等城邦形成，推行重装步兵改革、奥林匹亚赛会与泛地中海殖民"
+      },
+      {
+        "from": -301,
+        "to": -260,
+        "kind": "城邦林立",
+        "name": "希腊化早期诸城邦与同盟",
+        "note": "雅典、斯巴达、罗得岛与埃托利亚、亚该亚同盟在继业者间纵横"
+      },
+      {
+        "from": -202,
+        "to": -146,
+        "kind": "城邦林立",
+        "name": "亚该亚同盟与罗马保护期诸邦",
+        "note": "前196年罗马宣布希腊城邦自由，前146年科林斯被毁后并入罗马统治"
+      },
+      {
+        "from": 1204,
+        "to": 1453,
+        "kind": "诸国并立",
+        "name": "十字军法兰克诸公国、威尼斯海岛与摩里亚专制国",
+        "note": "第四次十字军后雅典公国、亚该亚亲王国、威尼斯克里特及拜占庭摩里亚（米斯特拉斯）并立"
+      }
+    ],
+    "thrace": [
+      {
+        "from": -3000,
+        "to": -1200,
+        "kind": "考古学文化",
+        "name": "北爱琴与色雷斯青铜文化",
+        "note": "瓦尔纳传统延续下的色雷斯—马其顿青铜社会"
+      },
+      {
+        "from": -1200,
+        "to": -500,
+        "kind": "部落社会",
+        "name": "古色雷斯诸部与早期马其顿王国",
+        "note": "色雷斯部族与阿吉德王朝马其顿王国早期整合"
+      },
+      {
+        "from": -473,
+        "to": -323,
+        "kind": "诸国并立",
+        "name": "马其顿阿吉德王国与色雷斯奥德里西亚王国",
+        "note": "色雷斯奥德里西亚王国与马其顿并立，前359年起腓力二世改革军政统一马其顿并南下称霸"
+      },
+      {
+        "from": -168,
+        "to": -146,
+        "kind": "诸国并立",
+        "name": "罗马保护下马其顿四共和区",
+        "note": "皮德纳战后罗马废马其顿王制分设四自治共和区，前148—前146年正式改设马其顿行省"
+      },
+      {
+        "from": 1204,
+        "to": 1260,
+        "kind": "诸国并立",
+        "name": "萨洛尼卡十字军王国与伊庇鲁斯—尼西亚争锋",
+        "note": "第四次十字军分封萨洛尼卡王国，旋由伊庇鲁斯专制国与尼西亚帝国收复，1261年重建拜占庭"
+      }
+    ],
+    "bulgaria": [
+      {
+        "from": -3000,
+        "to": -1200,
+        "kind": "考古学文化",
+        "name": "多瑙河下游与喀尔巴阡青铜文化",
+        "note": "传承瓦尔纳黄金冶金与特拉兴文化传统"
+      },
+      {
+        "from": -1200,
+        "to": 9,
+        "kind": "部落社会",
+        "name": "色雷斯—盖塔与达契亚王国",
+        "note": "多瑙河南北的盖塔—达契亚部族（布雷比斯塔曾统一达契亚），公元1世纪起默西亚与达契亚先后入罗马"
+      },
+      {
+        "from": 681,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "保加利亚第一帝国",
+        "note": "681年阿斯巴鲁赫建国，鲍里斯一世与西美昂大帝时代皈依东正教并推行斯拉夫文字，1018年并入拜占庭"
+      },
+      {
+        "from": 1185,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "保加利亚第二帝国与瓦拉几亚·摩尔达维亚公国",
+        "note": "阿森王朝定都大特尔诺沃复兴保加利亚，多瑙河北岸形成瓦拉几亚与摩尔达维亚公国"
+      },
+      {
+        "from": 1878,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "近现代罗马尼亚与保加利亚国家演进",
+        "note": "1878年柏林会议后罗马尼亚独立、保加利亚自治建国，历两次大战、社会主义时期至1989年后宪政转型"
+      }
+    ],
+    "illyria_serbia": [
+      {
+        "from": -3000,
+        "to": -800,
+        "kind": "考古学文化",
+        "name": "武切多尔与西巴尔干青铜文化",
+        "note": "萨瓦河—亚得里亚海铜石与青铜聚落"
+      },
+      {
+        "from": -800,
+        "to": 9,
+        "kind": "部落社会",
+        "name": "伊利里亚与达尔马提亚诸部",
+        "note": "阿尔迪安王国、达尔马提亚人与达尔达尼人，前2世纪至公元9年罗马平定伊利里库姆"
+      },
+      {
+        "from": 680,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "克罗地亚王国与早期塞尔维亚诸邦",
+        "note": "南斯拉夫人定居后建立克罗地亚王国（925年托米斯拉夫称王）与拉什卡、杜克利亚等塞尔维亚邦国"
+      },
+      {
+        "from": 1185,
+        "to": 1453,
+        "kind": "诸国并立",
+        "name": "塞尔维亚尼曼雅帝国、波斯尼亚与威尼斯海岸",
+        "note": "斯特凡·杜尚建立塞尔维亚帝国，与波斯尼亚王国、拉古萨（杜布罗夫尼克）商业共和国并立，1389年后渐次抗击奥斯曼"
+      },
+      {
+        "from": 1878,
+        "to": 1942,
+        "kind": "诸国并立",
+        "name": "塞尔维亚王国至南斯拉夫王国与阿尔巴尼亚",
+        "note": "1878年塞尔维亚、黑山获国际承认独立，1912年阿尔巴尼亚独立，1918年组建南斯拉夫王国"
+      },
+      {
+        "from": 1945,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "南斯拉夫联邦至西巴尔干诸共和国",
+        "note": "战后铁托建立不结盟的南斯拉夫联邦及邻国阿尔巴尼亚，1991年起演变为塞尔维亚、克罗地亚、波黑等独立国家"
+      }
+    ],
+    "poland": [
+      {
+        "from": -3000,
+        "to": -1300,
+        "kind": "考古学文化",
+        "name": "球状双耳罐与乌尼蒂采东北缘",
+        "note": "维斯瓦河与奥得河新石器农牧文化"
+      },
+      {
+        "from": -1300,
+        "to": -500,
+        "kind": "考古学文化",
+        "name": "卢萨蒂亚青铜—早铁文化",
+        "note": "比斯库平湖心木构设防城址"
+      },
+      {
+        "from": -500,
+        "to": 469,
+        "kind": "部落社会",
+        "name": "普热沃尔斯克与维尔巴克文化（琥珀之路）",
+        "note": "卢吉、汪达尔与哥特部族南迁走廊，琥珀贸易连通罗马边境"
+      },
+      {
+        "from": 469,
+        "to": 962,
+        "kind": "部落社会",
+        "name": "波兰人与维斯瓦人等西斯拉夫诸部",
+        "note": "大波兰格涅兹诺的波兰部落与小波兰克拉科夫的维斯瓦部落逐步整合，966年梅什科一世受洗建国"
+      }
+    ],
+    "lithuania_baltic": [
+      {
+        "from": -3000,
+        "to": -500,
+        "kind": "考古学文化",
+        "name": "波罗的海绳纹陶与琥珀青铜文化",
+        "note": "东波罗的海沿岸采集农牧与琥珀交换网络"
+      },
+      {
+        "from": -500,
+        "to": 1200,
+        "kind": "部落社会",
+        "name": "古普鲁士、立陶宛、拉脱维亚与爱沙尼亚诸部",
+        "note": "波罗的语族与芬兰—乌戈尔语族诸部长期保持森林多神信仰与部族自治"
+      },
+      {
+        "from": 1200,
+        "to": 1572,
+        "kind": "诸国并立",
+        "name": "立陶宛大公国与条顿—利沃尼亚骑士团国",
+        "note": "13世纪中叶明道加斯建立立陶宛大公国抗击条顿与利沃尼亚骑士团，1385年与波兰君合，1569年卢布林联合"
+      },
+      {
+        "from": 1918,
+        "to": 1942,
+        "kind": "诸国并立",
+        "name": "战间期波罗的海独立三国（立陶宛/拉脱维亚/爱沙尼亚）",
+        "note": "1918年立陶宛、拉脱维亚、爱沙尼亚宣布独立建国，东普鲁士柯尼斯堡仍属德国飞地，1940年三国并入苏联"
+      },
+      {
+        "from": 1991,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "波罗的海三国复国（立陶宛/拉脱维亚/爱沙尼亚）",
+        "note": "1990—1991年立陶宛、拉脱维亚、爱沙尼亚恢复独立并于2004年加入欧盟，加里宁格勒州属俄罗斯"
+      }
+    ],
+    "kievan_rus": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "特里波利耶彩陶巨型聚落与颜那亚边缘",
+        "note": "第聂伯河右岸库库特尼—特里波利耶大型农耕聚落"
+      },
+      {
+        "from": -2000,
+        "to": -700,
+        "kind": "考古学文化",
+        "name": "森林草原青铜时代文化",
+        "note": "第聂伯河中上游农牧聚落与青铜冶铸"
+      },
+      {
+        "from": -700,
+        "to": 200,
+        "kind": "部落社会",
+        "name": "农耕斯基泰与萨尔马提亚北缘诸部",
+        "note": "第聂伯河中游森林草原定居部族与黑海希腊城邦贸易"
+      },
+      {
+        "from": 200,
+        "to": 375,
+        "kind": "考古学文化",
+        "name": "切尔尼亚霍夫多族群文化",
+        "note": "哥特人与早期斯拉夫、萨尔马提亚人群共生的定居文化"
+      },
+      {
+        "from": 375,
+        "to": 907,
+        "kind": "部落社会",
+        "name": "波利亚涅等东斯拉夫部落联盟",
+        "note": "基辅周边波利亚涅、德列夫利安等东斯拉夫部族兴建木城，打通瓦良格至拜占庭水路"
+      },
+      {
+        "from": 1362,
+        "to": 1572,
+        "kind": "诸国并立",
+        "name": "立陶宛大公国统辖南罗斯与白俄罗斯诸地",
+        "note": "1362年蓝水之战后立陶宛大公国自金帐汗国收复基辅、波多利亚与明斯克，沿用罗斯法典自治，1569年改隶波兰立陶宛联邦"
+      },
+      {
+        "from": 1918,
+        "to": 1922,
+        "kind": "诸国并立",
+        "name": "乌克兰与白俄罗斯内战诸政权",
+        "note": "沙俄解体后乌克兰人民共和国、苏维埃乌克兰与波苏战争反复拉锯，1922年乌、白苏维埃共和国参与组建苏联"
+      },
+      {
+        "from": 1991,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "现代乌克兰与白俄罗斯独立共和国",
+        "note": "1991年《别洛韦日协定》签署、苏联解体后，乌克兰（定都基辅）与白俄罗斯（定都明斯克）成为主权独立国家"
+      }
+    ],
+    "muscovy_rus": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "法季扬诺沃与森林梳纹陶文化",
+        "note": "伏尔加—奥卡河上游早期牧业与森林渔猎"
+      },
+      {
+        "from": -2000,
+        "to": -700,
+        "kind": "考古学文化",
+        "name": "东欧森林地带青铜文化",
+        "note": "木椁墓北缘与塞伊马—图尔宾诺青铜器网络"
+      },
+      {
+        "from": -700,
+        "to": 375,
+        "kind": "部落社会",
+        "name": "佳科沃铁器文化与芬兰—波罗的森林部落",
+        "note": "莫斯科河—上伏尔加河流域设防丘堡聚落"
+      },
+      {
+        "from": 375,
+        "to": 907,
+        "kind": "部落社会",
+        "name": "伊尔门斯拉夫人、克里维奇与留里克诺夫哥罗德",
+        "note": "东斯拉夫北支与芬兰—乌戈尔部族交融，862年留里克驻节诺夫哥罗德，882年南合并基辅"
+      }
+    ],
+    "scandinavia": [
+      {
+        "from": -3000,
+        "to": -1700,
+        "kind": "考古学文化",
+        "name": "漏斗杯与战斧（绳纹陶）新石器文化",
+        "note": "斯堪的纳维亚南部巨石墓与农牧扩散"
+      },
+      {
+        "from": -1700,
+        "to": -500,
+        "kind": "考古学文化",
+        "name": "北欧青铜时代",
+        "note": "塔努姆船形岩画、太阳战车与波罗的海琥珀换铜网络"
+      },
+      {
+        "from": -500,
+        "to": 800,
+        "kind": "部落社会",
+        "name": "北欧铁器时代与温德尔时期诸部",
+        "note": "丹人、斯维亚人、约塔人与诺尔斯部族；乌普萨拉船葬王陵"
+      },
+      {
+        "from": 800,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "维京时代挪威、丹麦与瑞典早期王国",
+        "note": "维京长船远航扩张，金发哈拉尔、蓝牙哈拉尔、奥洛夫·斯科特康努格先后整合三国王权"
+      },
+      {
+        "from": 1042,
+        "to": 1402,
+        "kind": "诸国并立",
+        "name": "丹麦、挪威与瑞典中世纪三国并立",
+        "note": "北海帝国解体后北欧三国各自基督教化并完善王国法典，直至1397年结成卡尔马联合"
+      }
+    ],
+    "crimea": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "颜那亚竖穴墓草原文化",
+        "note": "黑海北岸早期马车游牧文化"
+      },
+      {
+        "from": -2000,
+        "to": -700,
+        "kind": "部落社会",
+        "name": "木椁墓文化与辛梅里安游牧部族",
+        "note": "晚期青铜至早期铁器时代的黑海草原骑马游牧人"
+      },
+      {
+        "from": -200,
+        "to": 383,
+        "kind": "诸国并立",
+        "name": "博斯普鲁斯王国与萨尔马提亚草原",
+        "note": "刻赤海峡希腊—斯基泰混合的博斯普鲁斯王国（罗马保护国）与克里米亚晚期斯基泰王国"
+      },
+      {
+        "from": 469,
+        "to": 1241,
+        "kind": "部落社会",
+        "name": "保加尔、可萨、佩切涅格与钦察草原及拜占庭赫尔松",
+        "note": "黑海北岸草原游牧部族更迭，克里米亚南岸赫尔松（科尔孙）长期为拜占庭军区重镇"
+      },
+      {
+        "from": 1917,
+        "to": 1922,
+        "kind": "诸国并立",
+        "name": "俄国内战黑海与克里米亚战场",
+        "note": "苏俄红军与白卫军邓尼金、弗兰格尔部反复争夺，1920年底红军攻克彼列科普地峡平定克里米亚"
+      }
+    ]
+  },
+  "chronicle_keywords": [
+    {
+      "region": "scotland",
+      "keywords": [
+        "爱丁堡",
+        "格拉斯哥",
+        "苏格兰高地",
+        "斯特灵",
+        "班诺克本"
+      ]
+    },
+    {
+      "region": "ireland",
+      "keywords": [
+        "都柏林",
+        "爱尔兰",
+        "博因河"
+      ]
+    },
+    {
+      "region": "england",
+      "keywords": [
+        "伦敦",
+        "黑斯廷斯",
+        "威斯敏斯特",
+        "林迪斯法恩",
+        "大宪章",
+        "玫瑰战争",
+        "博斯沃思",
+        "无敌舰队",
+        "英吉利海峡",
+        "诺丁汉",
+        "纳斯比",
+        "权利法案",
+        "英格兰银行",
+        "克罗姆福德",
+        "斯托克顿",
+        "达灵顿",
+        "利物浦",
+        "曼彻斯特",
+        "物种起源"
+      ]
+    },
+    {
+      "region": "portugal",
+      "keywords": [
+        "里斯本",
+        "波尔图",
+        "恩里克王子",
+        "休达"
+      ]
+    },
+    {
+      "region": "aragon",
+      "keywords": [
+        "巴塞罗那",
+        "萨拉戈萨",
+        "瓦伦西亚",
+        "加泰罗尼亚"
+      ]
+    },
+    {
+      "region": "andalusia",
+      "keywords": [
+        "直布罗陀",
+        "瓜达莱特",
+        "科尔多瓦",
+        "安达卢斯",
+        "阿尔罕布拉",
+        "格拉纳达",
+        "特拉法加",
+        "塞维利亚"
+      ]
+    },
+    {
+      "region": "castile",
+      "keywords": [
+        "托尔德西里亚斯",
+        "马德里",
+        "托莱多",
+        "布尔戈斯",
+        "腓力二世"
+      ]
+    },
+    {
+      "region": "aquitaine",
+      "keywords": [
+        "图卢兹",
+        "阿基坦",
+        "波尔多",
+        "图尔-普瓦捷",
+        "图尔—普瓦捷",
+        "普瓦捷"
+      ]
+    },
+    {
+      "region": "burgundy_lorraine",
+      "keywords": [
+        "阿莱西亚",
+        "凡尔登条约",
+        "第戎",
+        "里昂",
+        "马赛",
+        "普罗旺斯",
+        "阿维尼翁"
+      ]
+    },
+    {
+      "region": "ile_de_france",
+      "keywords": [
+        "巴黎",
+        "巴士底狱",
+        "凡尔赛",
+        "圣母院",
+        "凯旋门",
+        "沙隆战役",
+        "卡塔劳努姆",
+        "阿金库尔",
+        "奥尔良",
+        "兰斯",
+        "诺曼底",
+        "色当",
+        "索姆河"
+      ]
+    },
+    {
+      "region": "saxony",
+      "keywords": [
+        "条顿堡",
+        "汉堡",
+        "不来梅",
+        "吕贝克",
+        "汉诺威"
+      ]
+    },
+    {
+      "region": "bavaria",
+      "keywords": [
+        "莱希菲尔德",
+        "奥格斯堡",
+        "慕尼黑",
+        "纽伦堡",
+        "金玺诏书",
+        "曼海姆",
+        "爱因斯坦"
+      ]
+    },
+    {
+      "region": "rhineland",
+      "keywords": [
+        "美因茨",
+        "古腾堡",
+        "威斯特伐利亚和约",
+        "明斯特",
+        "科隆",
+        "法兰克福",
+        "波恩",
+        "亚琛"
+      ]
+    },
+    {
+      "region": "brandenburg_prussia",
+      "keywords": [
+        "维滕堡",
+        "九十五条论纲",
+        "布赖滕费尔德",
+        "莱比锡",
+        "吕岑",
+        "普鲁士王国",
+        "柏林",
+        "国会大厦",
+        "柏林墙",
+        "两德正式统一"
+      ]
+    },
+    {
+      "region": "hungary",
+      "keywords": [
+        "莫希",
+        "布达佩斯",
+        "布达",
+        "匈牙利王军"
+      ]
+    },
+    {
+      "region": "bohemia",
+      "keywords": [
+        "布拉格",
+        "掷出窗外",
+        "奥斯特里茨",
+        "摩拉维亚"
+      ]
+    },
+    {
+      "region": "austria",
+      "keywords": [
+        "维也纳",
+        "卡伦山"
+      ]
+    },
+    {
+      "region": "south_italy",
+      "keywords": [
+        "西西里",
+        "叙拉古",
+        "坎尼",
+        "普利亚",
+        "斯巴达克斯",
+        "卡普阿",
+        "维苏威",
+        "庞贝",
+        "赫库兰尼姆",
+        "那不勒斯"
+      ]
+    },
+    {
+      "region": "north_italy",
+      "keywords": [
+        "翻越阿尔卑斯",
+        "特雷比亚",
+        "米兰敕令",
+        "奥多亚塞",
+        "拉文纳",
+        "博洛尼亚大学",
+        "热那亚商船",
+        "威尼斯"
+      ]
+    },
+    {
+      "region": "central_italy",
+      "keywords": [
+        "佛罗伦萨",
+        "人文主义",
+        "罗慕路斯",
+        "台伯河",
+        "十二铜表法",
+        "卢比孔河",
+        "屋大维",
+        "万神殿",
+        "图拉真",
+        "大秦王安敦",
+        "卡拉卡拉",
+        "三世纪危机",
+        "戴克里先",
+        "阿拉里克",
+        "圣彼得大教堂",
+        "奥托一世加冕",
+        "奥托一世罗马加冕"
+      ]
+    },
+    {
+      "region": "thrace",
+      "keywords": [
+        "佩拉",
+        "腓力二世",
+        "皮德纳",
+        "克雷迪昂"
+      ]
+    },
+    {
+      "region": "illyria_serbia",
+      "keywords": [
+        "色米姆",
+        "四帝共治",
+        "萨拉热窝",
+        "贝尔格莱德"
+      ]
+    },
+    {
+      "region": "bulgaria",
+      "keywords": [
+        "阿提拉独掌匈人帝国席卷多瑙河",
+        "索非亚",
+        "布加勒斯特"
+      ]
+    },
+    {
+      "region": "greece",
+      "keywords": [
+        "克里特",
+        "克诺索斯",
+        "米诺斯",
+        "奥林匹亚",
+        "雅典",
+        "梭伦",
+        "马拉松",
+        "萨拉米斯",
+        "温泉关",
+        "伯里克利",
+        "伯罗奔尼撒",
+        "帕特农",
+        "三十僭主",
+        "苏格拉底",
+        "喀罗尼亚",
+        "库诺斯克法莱",
+        "科林斯",
+        "亚克兴",
+        "勒班陀",
+        "帕特雷"
+      ]
+    },
+    {
+      "region": "lithuania_baltic",
+      "keywords": [
+        "克雷沃联合",
+        "奥斯特鲁夫协议",
+        "维尔纽斯",
+        "里加"
+      ]
+    },
+    {
+      "region": "poland",
+      "keywords": [
+        "里格尼茨",
+        "格伦瓦尔德",
+        "坦能堡",
+        "哥白尼",
+        "闪击波兰",
+        "华沙",
+        "克拉科夫"
+      ]
+    },
+    {
+      "region": "kievan_rus",
+      "keywords": [
+        "夺取基辅",
+        "罗斯受洗",
+        "基辅大公",
+        "基辅罗斯大公",
+        "波尔塔瓦"
+      ]
+    },
+    {
+      "region": "muscovy_rus",
+      "keywords": [
+        "留里克入主诺夫哥罗德",
+        "乌格拉河",
+        "莫斯科",
+        "伊凡四世",
+        "圣彼得堡",
+        "彼得格勒",
+        "阿芙乐尔",
+        "博罗季诺",
+        "农奴制",
+        "斯大林格勒",
+        "巴巴罗萨",
+        "斯普特尼克",
+        "加加林",
+        "苏联解体",
+        "克里姆林宫"
+      ]
+    }
+  ],
+  "chronicle_defaults": [
+    {
+      "parent": "britain",
+      "region": "england"
+    },
+    {
+      "parent": "iberia",
+      "year_max": 1250,
+      "region": "andalusia"
+    },
+    {
+      "parent": "iberia",
+      "year_min": 1251,
+      "region": "castile"
+    },
+    {
+      "parent": "gaul",
+      "region": "ile_de_france"
+    },
+    {
+      "parent": "netherlands",
+      "region": "netherlands"
+    },
+    {
+      "parent": "germania",
+      "year_max": 1699,
+      "region": "rhineland"
+    },
+    {
+      "parent": "germania",
+      "year_min": 1700,
+      "region": "brandenburg_prussia"
+    },
+    {
+      "parent": "austria_bohemia",
+      "region": "austria"
+    },
+    {
+      "parent": "italy",
+      "region": "central_italy"
+    },
+    {
+      "parent": "balkans",
+      "region": "greece"
+    },
+    {
+      "parent": "poland_lithuania",
+      "region": "poland"
+    },
+    {
+      "parent": "rus",
+      "region": "muscovy_rus"
+    },
+    {
+      "parent": "scandinavia",
+      "region": "scandinavia"
+    },
+    {
+      "parent": "crimea",
+      "region": "crimea"
+    }
+  ]
+}

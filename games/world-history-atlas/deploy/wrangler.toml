@@ -1,0 +1,11 @@
+name = "world-history-atlas"
+compatibility_date = "2025-01-01"
+
+# Static-assets-only Worker: serves deploy/dist (index.html + src/, built by deploy/build.mjs), no script.
+# Subdomain only; the apex and other yinosites.com services are untouched.
+routes = [
+  { pattern = "atlas.yinosites.com", custom_domain = true }
+]
+
+[assets]
+directory = "./dist"

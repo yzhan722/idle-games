@@ -1,0 +1,3963 @@
+{
+  "theater": "china",
+  "description": "东亚中国与东北战区：9 个粗颗粒度父区块 -> 20 个严丝合缝的历史地理单元（方案 A 第一步）",
+  "parent_to_children": {
+    "manchuria": [
+      "liaodong",
+      "manchuria"
+    ],
+    "north_china": [
+      "youyan",
+      "hebei",
+      "qilu"
+    ],
+    "guanzhong": [
+      "guanzhong",
+      "hedong",
+      "zhongyuan",
+      "huaisi"
+    ],
+    "hexizoulang": [
+      "longyou",
+      "hexi"
+    ],
+    "bashu": [
+      "shu",
+      "ba"
+    ],
+    "jiangnan": [
+      "jingchu",
+      "jiangxi",
+      "jiangdong"
+    ],
+    "lingnan": [
+      "min",
+      "lingnan"
+    ],
+    "yunnan": [
+      "dianqian"
+    ],
+    "taiwan": [
+      "taiwan"
+    ]
+  },
+  "expansion_order": {
+    "manchuria": [
+      "manchuria",
+      "liaodong"
+    ],
+    "north_china": [
+      "youyan",
+      "hebei",
+      "qilu"
+    ],
+    "bashu": [
+      "shu",
+      "ba"
+    ],
+    "jiangnan": [
+      "jingchu",
+      "jiangxi",
+      "jiangdong"
+    ],
+    "lingnan": [
+      "min",
+      "lingnan"
+    ],
+    "guanzhong": [
+      "guanzhong",
+      "hedong",
+      "zhongyuan",
+      "huaisi"
+    ],
+    "hexizoulang": [
+      "longyou",
+      "hexi"
+    ],
+    "yunnan": [
+      "dianqian"
+    ],
+    "taiwan": [
+      "taiwan"
+    ]
+  },
+  "cross_parent_candidates": {
+    "north_china": [
+      "zhongyuan",
+      "hedong",
+      "huaisi",
+      "guanzhong"
+    ],
+    "guanzhong": [
+      "longyou",
+      "shu",
+      "huaisi",
+      "hebei"
+    ],
+    "jiangnan": [
+      "huaisi",
+      "min",
+      "ba"
+    ]
+  },
+  "children": [
+    {
+      "id": "youyan",
+      "name": "幽燕(蓟城/幽州)",
+      "continent": "东亚",
+      "parent": "north_china",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "hebei",
+      "name": "河北(邯郸/邺城)",
+      "continent": "东亚",
+      "parent": "north_china",
+      "area_weight": 0.35,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "qilu",
+      "name": "齐鲁(临淄/曲阜)",
+      "continent": "东亚",
+      "parent": "north_china",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "liaodong",
+      "name": "辽东(襄平/辽阳)",
+      "continent": "东亚",
+      "parent": "manchuria",
+      "area_weight": 0.35,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "manchuria",
+      "name": "白山黑水(肃慎/女真)",
+      "continent": "东亚",
+      "parent": "manchuria",
+      "area_weight": 0.65,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "guanzhong",
+      "name": "关中(咸阳/长安)",
+      "continent": "东亚",
+      "parent": "guanzhong",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "hedong",
+      "name": "河东(晋阳/平阳)",
+      "continent": "东亚",
+      "parent": "guanzhong",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "zhongyuan",
+      "name": "中原(洛阳/新郑)",
+      "continent": "东亚",
+      "parent": "guanzhong",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "huaisi",
+      "name": "淮泗(大梁/彭城)",
+      "continent": "东亚",
+      "parent": "guanzhong",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "longyou",
+      "name": "陇右(天水/陇西)",
+      "continent": "东亚",
+      "parent": "hexizoulang",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "hexi",
+      "name": "河西(凉州/敦煌/兴庆)",
+      "continent": "东亚",
+      "parent": "hexizoulang",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "shu",
+      "name": "蜀地(成都/汉中)",
+      "continent": "东亚",
+      "parent": "bashu",
+      "area_weight": 0.6,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "ba",
+      "name": "巴地(江州/夔门)",
+      "continent": "东亚",
+      "parent": "bashu",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "jingchu",
+      "name": "荆楚(江陵/襄阳/长沙)",
+      "continent": "东亚",
+      "parent": "jiangnan",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "jiangxi",
+      "name": "江西(豫章/庐陵)",
+      "continent": "东亚",
+      "parent": "jiangnan",
+      "area_weight": 0.35,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "jiangdong",
+      "name": "江东(建业/吴郡/临安)",
+      "continent": "东亚",
+      "parent": "jiangnan",
+      "area_weight": 0.6,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "min",
+      "name": "闽中(福州/泉州)",
+      "continent": "东亚",
+      "parent": "lingnan",
+      "area_weight": 0.35,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "lingnan",
+      "name": "岭南(番禺/桂林)",
+      "continent": "东亚",
+      "parent": "lingnan",
+      "area_weight": 0.65,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "dianqian",
+      "name": "滇黔(大理/昆明/贵阳)",
+      "continent": "东亚",
+      "parent": "yunnan",
+      "area_weight": 1.0,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "taiwan",
+      "name": "台湾与澎湖列岛",
+      "continent": "东亚",
+      "parent": "taiwan",
+      "area_weight": 0.6,
+      "cx": null,
+      "cy": null
+    }
+  ],
+  "geometry_ops": [
+    {
+      "op": "split",
+      "comment": "1a. 沿古黄河—漳卫交界切分 north_china 为齐鲁与冀北",
+      "source": "north_china[0]",
+      "start_ll": [
+        115.328,
+        35.7954
+      ],
+      "end_ll": [
+        117.7675,
+        38.3189
+      ],
+      "via_ll": [
+        [
+          116.0,
+          36.8
+        ],
+        [
+          116.9,
+          37.6
+        ]
+      ],
+      "select_first": "east",
+      "into": [
+        "qilu",
+        "$nc_north"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "1b. 沿易水—拒马河（燕赵古界/燕云线）切分冀北为幽燕与河北",
+      "source": "$nc_north",
+      "start_ll": [
+        114.3843,
+        39.1731
+      ],
+      "end_ll": [
+        117.6295,
+        38.8625
+      ],
+      "via_ll": [
+        [
+          115.6,
+          39.1
+        ],
+        [
+          116.6,
+          39.0
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "youyan",
+        "hebei"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "2a. 沿辽东边墙—铁岭—鸭绿江北岸切分东北主陆环为白山黑水与辽东",
+      "source": "manchuria[0]",
+      "start_ll": [
+        122.4166,
+        42.6672
+      ],
+      "end_ll": [
+        126.6053,
+        41.6578
+      ],
+      "via_ll": [
+        [
+          123.6,
+          42.1
+        ],
+        [
+          125.0,
+          41.9
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "$man_north",
+        "liaodong"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "2b. 组装外满洲主陆与库页岛等附属海岛环",
+      "rings": [
+        "$man_north",
+        "manchuria[1:]"
+      ],
+      "into": "manchuria"
+    },
+    {
+      "op": "split",
+      "comment": "3. 沿乌鞘岭—六盘山北麓切分 hexizoulang 为河西(含兴庆府银川)与陇右(天水/平凉)",
+      "source": "hexizoulang[0]",
+      "start_ll": [
+        103.038,
+        36.2225
+      ],
+      "end_ll": [
+        107.641,
+        37.8531
+      ],
+      "via_ll": [
+        [
+          104.3,
+          36.7
+        ],
+        [
+          106.1,
+          37.0
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "hexi",
+        "longyou"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "4a. 沿秦岭主脊（大散关—终南山—武关）从旧 guanzhong 析出汉中盆地",
+      "source": "guanzhong[0]",
+      "start_ll": [
+        105.8918,
+        33.2525
+      ],
+      "end_ll": [
+        110.5409,
+        33.2525
+      ],
+      "via_ll": [
+        [
+          107.0,
+          33.8
+        ],
+        [
+          108.4,
+          33.8
+        ],
+        [
+          109.6,
+          33.6
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "$gz_north",
+        "$hanzhong_piece"
+      ]
+    },
+    {
+      "op": "merge",
+      "comment": "4b. 将秦岭以南汉中盆地无缝并入巴蜀",
+      "sources": [
+        "bashu[0]",
+        "$hanzhong_piece"
+      ],
+      "into": "$bashu_merged"
+    },
+    {
+      "op": "split",
+      "comment": "4c. 沿米仓山—嘉陵江东山脊切分巴蜀为蜀地(成都/汉中)与巴地(江州/夔门)",
+      "source": "$bashu_merged",
+      "start_ll": [
+        108.4,
+        33.8
+      ],
+      "end_ll": [
+        105.6617,
+        28.5936
+      ],
+      "via_ll": [
+        [
+          107.2,
+          32.2
+        ],
+        [
+          106.5,
+          30.8
+        ],
+        [
+          105.9,
+          29.6
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "shu",
+        "ba"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "4d. 沿黄河晋陕峡谷—潼关—崤函切分关中与晋豫",
+      "source": "$gz_north",
+      "start_ll": [
+        111.0472,
+        39.4254
+      ],
+      "end_ll": [
+        110.5409,
+        33.2525
+      ],
+      "via_ll": [
+        [
+          110.7,
+          37.8
+        ],
+        [
+          110.4,
+          36.1
+        ],
+        [
+          110.3,
+          34.6
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "guanzhong",
+        "$shanxi_henan"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "4e. 沿黄河孟津—太行山南麓切分河东(山西)与河南",
+      "source": "$shanxi_henan",
+      "start_ll": [
+        110.3,
+        34.6
+      ],
+      "end_ll": [
+        113.4407,
+        36.7466
+      ],
+      "via_ll": [
+        [
+          111.4,
+          34.8
+        ],
+        [
+          112.5,
+          35.1
+        ],
+        [
+          113.1,
+          35.6
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "hedong",
+        "$henan"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "4f. 沿战国鸿沟水系切分河南为中原(洛阳/新郑)与豫东梁宋(大梁/睢阳)",
+      "source": "$henan",
+      "start_ll": [
+        113.9931,
+        36.3583
+      ],
+      "end_ll": [
+        114.9137,
+        32.9613
+      ],
+      "via_ll": [
+        [
+          114.0,
+          34.9
+        ],
+        [
+          114.2,
+          33.9
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "zhongyuan",
+        "$e_henan"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "5a. 沿淮水干流从旧 jiangnan 析出淮北徐泗",
+      "source": "jiangnan[0]",
+      "start_ll": [
+        114.9137,
+        32.9613
+      ],
+      "end_ll": [
+        120.3222,
+        34.1842
+      ],
+      "via_ll": [
+        [
+          116.2,
+          32.6
+        ],
+        [
+          117.5,
+          32.9
+        ],
+        [
+          118.9,
+          33.5
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "$huai_north",
+        "$jn_south"
+      ]
+    },
+    {
+      "op": "merge",
+      "comment": "5b. 合并豫东大梁与淮北徐州彭城为淮泗历史地理单元",
+      "sources": [
+        "$e_henan",
+        "$huai_north"
+      ],
+      "into": "huaisi"
+    },
+    {
+      "op": "split",
+      "comment": "5c. 沿大别山—九江—幕阜罗霄山脉切分两湖荆楚与赣皖江浙",
+      "source": "$jn_south",
+      "start_ll": [
+        115.374,
+        31.4277
+      ],
+      "end_ll": [
+        114.0161,
+        25.4489
+      ],
+      "via_ll": [
+        [
+          115.5,
+          29.8
+        ],
+        [
+          114.4,
+          28.6
+        ],
+        [
+          113.9,
+          27.0
+        ]
+      ],
+      "select_first": "west",
+      "into": [
+        "jingchu",
+        "$east_jn"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "5d. 沿黄山—怀玉山—武夷北麓切分江东(吴越/淮南)与江西(豫章)",
+      "source": "$east_jn",
+      "start_ll": [
+        115.5,
+        29.8
+      ],
+      "end_ll": [
+        118.3659,
+        28.1083
+      ],
+      "via_ll": [
+        [
+          116.6,
+          29.8
+        ],
+        [
+          117.7,
+          29.3
+        ]
+      ],
+      "select_first": "north",
+      "into": [
+        "jiangdong",
+        "jiangxi"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "6a. 沿武夷山南段—博平岭切分福建闽中与两广主陆",
+      "source": "lingnan[0]",
+      "start_ll": [
+        115.9724,
+        25.3713
+      ],
+      "end_ll": [
+        117.0771,
+        23.5854
+      ],
+      "via_ll": [
+        [
+          116.6,
+          24.5
+        ]
+      ],
+      "select_first": "east",
+      "into": [
+        "min",
+        "$lingnan_main"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "6b. 组装两广主陆与琼州海南岛环",
+      "rings": [
+        "$lingnan_main",
+        "lingnan[1]"
+      ],
+      "into": "lingnan"
+    },
+    {
+      "op": "copy",
+      "comment": "7. 滇黔高原承接原 yunnan 多边形",
+      "rings": [
+        "yunnan"
+      ],
+      "into": "dianqian"
+    },
+    {
+      "op": "copy",
+      "comment": "8. 台湾与澎湖列岛承接原 taiwan 多边形",
+      "rings": [
+        "taiwan"
+      ],
+      "into": "taiwan"
+    }
+  ],
+  "capital_checks": [
+    {
+      "name": "蓟城(北京)",
+      "ll": [
+        116.4,
+        39.9
+      ],
+      "expect": "youyan"
+    },
+    {
+      "name": "邯郸",
+      "ll": [
+        114.48,
+        36.62
+      ],
+      "expect": "hebei"
+    },
+    {
+      "name": "邺城(临漳)",
+      "ll": [
+        114.48,
+        36.34
+      ],
+      "expect": "hebei"
+    },
+    {
+      "name": "临淄",
+      "ll": [
+        118.3,
+        36.82
+      ],
+      "expect": "qilu"
+    },
+    {
+      "name": "曲阜",
+      "ll": [
+        116.98,
+        35.6
+      ],
+      "expect": "qilu"
+    },
+    {
+      "name": "襄平(辽阳)",
+      "ll": [
+        123.17,
+        41.27
+      ],
+      "expect": "liaodong"
+    },
+    {
+      "name": "上京会宁府",
+      "ll": [
+        126.96,
+        45.54
+      ],
+      "expect": "manchuria"
+    },
+    {
+      "name": "咸阳/长安",
+      "ll": [
+        108.94,
+        34.26
+      ],
+      "expect": "guanzhong"
+    },
+    {
+      "name": "晋阳(太原)",
+      "ll": [
+        112.55,
+        37.87
+      ],
+      "expect": "hedong"
+    },
+    {
+      "name": "平阳(临汾)",
+      "ll": [
+        111.52,
+        36.08
+      ],
+      "expect": "hedong"
+    },
+    {
+      "name": "洛阳",
+      "ll": [
+        112.45,
+        34.62
+      ],
+      "expect": "zhongyuan"
+    },
+    {
+      "name": "新郑",
+      "ll": [
+        113.74,
+        34.39
+      ],
+      "expect": "zhongyuan"
+    },
+    {
+      "name": "大梁(开封)",
+      "ll": [
+        114.55,
+        34.79
+      ],
+      "expect": "huaisi"
+    },
+    {
+      "name": "彭城(徐州)",
+      "ll": [
+        117.18,
+        34.26
+      ],
+      "expect": "huaisi"
+    },
+    {
+      "name": "天水(秦州)",
+      "ll": [
+        105.72,
+        34.58
+      ],
+      "expect": "longyou"
+    },
+    {
+      "name": "姑臧(武威)",
+      "ll": [
+        102.64,
+        37.93
+      ],
+      "expect": "hexi"
+    },
+    {
+      "name": "敦煌",
+      "ll": [
+        94.66,
+        40.14
+      ],
+      "expect": "hexi"
+    },
+    {
+      "name": "兴庆府(银川)",
+      "ll": [
+        106.23,
+        38.49
+      ],
+      "expect": "hexi"
+    },
+    {
+      "name": "成都",
+      "ll": [
+        104.06,
+        30.67
+      ],
+      "expect": "shu"
+    },
+    {
+      "name": "南郑(汉中)",
+      "ll": [
+        107.02,
+        33.07
+      ],
+      "expect": "shu"
+    },
+    {
+      "name": "江州(重庆)",
+      "ll": [
+        106.55,
+        29.56
+      ],
+      "expect": "ba"
+    },
+    {
+      "name": "江陵(荆州)",
+      "ll": [
+        112.24,
+        30.33
+      ],
+      "expect": "jingchu"
+    },
+    {
+      "name": "长沙",
+      "ll": [
+        112.94,
+        28.23
+      ],
+      "expect": "jingchu"
+    },
+    {
+      "name": "豫章(南昌)",
+      "ll": [
+        115.86,
+        28.68
+      ],
+      "expect": "jiangxi"
+    },
+    {
+      "name": "建康(南京)",
+      "ll": [
+        118.79,
+        32.06
+      ],
+      "expect": "jiangdong"
+    },
+    {
+      "name": "临安(杭州)",
+      "ll": [
+        120.15,
+        30.27
+      ],
+      "expect": "jiangdong"
+    },
+    {
+      "name": "福州",
+      "ll": [
+        119.3,
+        26.08
+      ],
+      "expect": "min"
+    },
+    {
+      "name": "番禺(广州)",
+      "ll": [
+        113.26,
+        23.13
+      ],
+      "expect": "lingnan"
+    },
+    {
+      "name": "羊苴咩城(大理)",
+      "ll": [
+        100.16,
+        25.69
+      ],
+      "expect": "dianqian"
+    },
+    {
+      "name": "承天府(台南)",
+      "ll": [
+        120.8,
+        23.1
+      ],
+      "expect": "taiwan"
+    }
+  ],
+  "polity_guards": [
+    {
+      "parent": "manchuria",
+      "owners": [
+        "燕国",
+        "秦国",
+        "大秦帝国",
+        "大汉帝国",
+        "曹魏帝国",
+        "西晋王朝",
+        "前燕帝国",
+        "高句丽王国",
+        "大明帝国"
+      ],
+      "map": {
+        "liaodong": "$owner",
+        "manchuria": null
+      }
+    },
+    {
+      "parent": "jiangnan",
+      "owners": [
+        "良渚古国"
+      ],
+      "map": {
+        "jiangdong": "良渚古国",
+        "jingchu": null,
+        "jiangxi": null
+      }
+    },
+    {
+      "parent": "bashu",
+      "owners": [
+        "古蜀国"
+      ],
+      "map": {
+        "shu": "古蜀国",
+        "ba": null
+      }
+    }
+  ],
+  "keyframe_overrides": {
+    "-2070": {
+      "zhongyuan": "夏王朝",
+      "hedong": "夏王朝",
+      "youyan": null,
+      "hebei": null,
+      "qilu": null
+    },
+    "-1894": {
+      "zhongyuan": "夏王朝",
+      "hedong": "夏王朝",
+      "youyan": null,
+      "hebei": null,
+      "qilu": null
+    },
+    "-1600": {
+      "zhongyuan": "商王朝",
+      "hebei": "商王朝",
+      "huaisi": "商王朝",
+      "hedong": "商王朝",
+      "qilu": "商王朝",
+      "youyan": null,
+      "shu": "古蜀国",
+      "ba": null
+    },
+    "-1300": {
+      "zhongyuan": "商王朝",
+      "hebei": "商王朝",
+      "huaisi": "商王朝",
+      "hedong": "商王朝",
+      "qilu": "商王朝",
+      "youyan": null
+    },
+    "-1274": {
+      "zhongyuan": "商王朝",
+      "hebei": "商王朝",
+      "huaisi": "商王朝",
+      "hedong": "商王朝",
+      "qilu": "商王朝",
+      "youyan": null
+    },
+    "-1046": {
+      "guanzhong": "西周王朝",
+      "zhongyuan": "西周王朝",
+      "hedong": "西周王朝",
+      "huaisi": "西周王朝",
+      "hebei": "西周王朝",
+      "youyan": "西周王朝",
+      "qilu": "西周王朝",
+      "shu": "古蜀国",
+      "ba": null
+    },
+    "-841": {
+      "guanzhong": "西周王朝",
+      "zhongyuan": "西周王朝",
+      "hedong": "西周王朝",
+      "huaisi": "西周王朝",
+      "hebei": "西周王朝",
+      "youyan": "西周王朝",
+      "qilu": "西周王朝",
+      "jingchu": "楚国"
+    },
+    "-771": {
+      "guanzhong": null,
+      "zhongyuan": "东周王朝",
+      "hedong": "晋国",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "shu": "古蜀国",
+      "ba": null
+    },
+    "-770": {
+      "guanzhong": null,
+      "zhongyuan": "东周王朝",
+      "hedong": "晋国",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "shu": "古蜀国",
+      "ba": null
+    },
+    "-651": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangxi": null,
+      "jiangdong": null
+    },
+    "-632": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangxi": null,
+      "jiangdong": null
+    },
+    "-597": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangxi": null,
+      "jiangdong": null
+    },
+    "-575": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangdong": "吴国",
+      "jiangxi": null
+    },
+    "-546": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangdong": "吴国",
+      "jiangxi": null
+    },
+    "-506": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangdong": "吴国",
+      "jiangxi": null
+    },
+    "-500": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangdong": "吴国",
+      "jiangxi": null
+    },
+    "-473": {
+      "jiangdong": "越国"
+    },
+    "-453": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangdong": "越国",
+      "jiangxi": null,
+      "min": null,
+      "lingnan": null
+    },
+    "-431": {
+      "guanzhong": "秦国",
+      "hedong": "晋国",
+      "zhongyuan": "东周王朝",
+      "qilu": "齐国",
+      "youyan": "燕国",
+      "hebei": null,
+      "huaisi": null,
+      "jingchu": "楚国",
+      "jiangdong": "越国",
+      "jiangxi": null
+    },
+    "-403": {
+      "guanzhong": "秦国",
+      "hedong": "魏国",
+      "huaisi": "魏国",
+      "zhongyuan": "韩国",
+      "hebei": "赵国",
+      "youyan": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangdong": "越国",
+      "jiangxi": null,
+      "shu": "古蜀国",
+      "ba": null
+    },
+    "-386": {
+      "guanzhong": "秦国",
+      "hedong": "魏国",
+      "huaisi": "魏国",
+      "zhongyuan": "韩国",
+      "hebei": "赵国",
+      "youyan": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangdong": "越国",
+      "jiangxi": null
+    },
+    "-356": {
+      "guanzhong": "秦国",
+      "hedong": "魏国",
+      "huaisi": "魏国",
+      "zhongyuan": "韩国",
+      "hebei": "赵国",
+      "youyan": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangdong": "越国",
+      "jiangxi": null
+    },
+    "-341": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "hedong": "魏国",
+      "huaisi": "魏国",
+      "zhongyuan": "韩国",
+      "hebei": "赵国",
+      "youyan": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "越国"
+    },
+    "-323": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "hedong": "魏国",
+      "huaisi": "魏国",
+      "zhongyuan": "韩国",
+      "hebei": "赵国",
+      "youyan": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "越国"
+    },
+    "-316": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "shu": "秦国",
+      "ba": "秦国",
+      "hedong": "魏国",
+      "huaisi": "魏国",
+      "zhongyuan": "韩国",
+      "hebei": "赵国",
+      "youyan": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "越国",
+      "hexi": "大月氏王国"
+    },
+    "-307": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "shu": "秦国",
+      "ba": "秦国",
+      "hedong": "赵国",
+      "huaisi": "魏国",
+      "zhongyuan": "韩国",
+      "hebei": "赵国",
+      "youyan": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "楚国"
+    },
+    "-301": {
+      "liaodong": "燕国",
+      "manchuria": null,
+      "dianqian": "古滇国"
+    },
+    "-284": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "shu": "秦国",
+      "ba": "秦国",
+      "zhongyuan": "韩国",
+      "huaisi": "魏国",
+      "hebei": "赵国",
+      "hedong": "赵国",
+      "youyan": "燕国",
+      "liaodong": "燕国",
+      "qilu": "燕国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "楚国",
+      "manchuria": null
+    },
+    "-278": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "shu": "秦国",
+      "ba": "秦国",
+      "zhongyuan": "韩国",
+      "huaisi": "魏国",
+      "hebei": "赵国",
+      "hedong": "赵国",
+      "youyan": "燕国",
+      "liaodong": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "楚国",
+      "hexi": "大月氏王国",
+      "manchuria": null
+    },
+    "-260": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "shu": "秦国",
+      "ba": "秦国",
+      "zhongyuan": "韩国",
+      "huaisi": "魏国",
+      "hebei": "赵国",
+      "hedong": "赵国",
+      "youyan": "燕国",
+      "liaodong": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "楚国",
+      "hexi": "大月氏王国",
+      "dianqian": "古滇国",
+      "manchuria": null,
+      "min": null,
+      "lingnan": null,
+      "taiwan": null
+    },
+    "-230": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "shu": "秦国",
+      "ba": "秦国",
+      "zhongyuan": "秦国",
+      "hedong": "秦国",
+      "huaisi": "魏国",
+      "hebei": "赵国",
+      "youyan": "燕国",
+      "liaodong": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "楚国",
+      "manchuria": null
+    },
+    "-225": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "shu": "秦国",
+      "ba": "秦国",
+      "zhongyuan": "秦国",
+      "hedong": "秦国",
+      "hebei": "秦国",
+      "huaisi": "秦国",
+      "youyan": "秦国",
+      "liaodong": "燕国",
+      "qilu": "齐国",
+      "jingchu": "楚国",
+      "jiangxi": "楚国",
+      "jiangdong": "楚国",
+      "hexi": "大月氏王国",
+      "manchuria": null
+    },
+    "-223": {
+      "guanzhong": "秦国",
+      "longyou": "秦国",
+      "shu": "秦国",
+      "ba": "秦国",
+      "zhongyuan": "秦国",
+      "hedong": "秦国",
+      "hebei": "秦国",
+      "huaisi": "秦国",
+      "youyan": "秦国",
+      "liaodong": "秦国",
+      "jingchu": "秦国",
+      "jiangxi": "秦国",
+      "jiangdong": "秦国",
+      "qilu": "齐国",
+      "hexi": "大月氏王国",
+      "manchuria": null
+    },
+    "-221": {
+      "guanzhong": "大秦帝国",
+      "longyou": "大秦帝国",
+      "shu": "大秦帝国",
+      "ba": "大秦帝国",
+      "zhongyuan": "大秦帝国",
+      "hedong": "大秦帝国",
+      "hebei": "大秦帝国",
+      "huaisi": "大秦帝国",
+      "youyan": "大秦帝国",
+      "liaodong": "大秦帝国",
+      "qilu": "大秦帝国",
+      "jingchu": "大秦帝国",
+      "jiangxi": "大秦帝国",
+      "jiangdong": "大秦帝国",
+      "min": "大秦帝国",
+      "lingnan": null,
+      "manchuria": null
+    },
+    "-214": {
+      "min": "大秦帝国",
+      "lingnan": "大秦帝国",
+      "liaodong": "大秦帝国",
+      "manchuria": null
+    },
+    "-206": {
+      "guanzhong": "大汉帝国",
+      "longyou": "大汉帝国",
+      "shu": "大汉帝国",
+      "ba": "大汉帝国",
+      "huaisi": "西楚王国",
+      "jingchu": "西楚王国",
+      "jiangxi": "西楚王国",
+      "jiangdong": "西楚王国",
+      "zhongyuan": null,
+      "hedong": null,
+      "hebei": null,
+      "qilu": null,
+      "youyan": null,
+      "liaodong": null,
+      "min": null,
+      "lingnan": null,
+      "manchuria": null
+    },
+    "-202": {
+      "guanzhong": "大汉帝国",
+      "longyou": "大汉帝国",
+      "shu": "大汉帝国",
+      "ba": "大汉帝国",
+      "zhongyuan": "大汉帝国",
+      "hedong": "大汉帝国",
+      "huaisi": "大汉帝国",
+      "hebei": "大汉帝国",
+      "qilu": "大汉帝国",
+      "youyan": "大汉帝国",
+      "liaodong": "大汉帝国",
+      "jingchu": "大汉帝国",
+      "jiangxi": "大汉帝国",
+      "jiangdong": "大汉帝国",
+      "min": null,
+      "lingnan": "南越国",
+      "manchuria": null
+    },
+    "-154": {
+      "longyou": "大汉帝国",
+      "hexi": "匈奴单于国",
+      "liaodong": "大汉帝国",
+      "manchuria": null
+    },
+    "-121": {
+      "longyou": "大汉帝国",
+      "hexi": "大汉帝国",
+      "min": null,
+      "lingnan": "南越国",
+      "liaodong": "大汉帝国",
+      "manchuria": null
+    },
+    "-111": {
+      "min": "大汉帝国",
+      "lingnan": "大汉帝国",
+      "dianqian": "大汉帝国",
+      "liaodong": "大汉帝国",
+      "manchuria": null
+    },
+    "9": {
+      "liaodong": "新朝",
+      "manchuria": null
+    },
+    "23": {
+      "guanzhong": "大汉帝国",
+      "longyou": "大汉帝国",
+      "hexi": "大汉帝国",
+      "zhongyuan": "大汉帝国",
+      "hedong": "大汉帝国",
+      "huaisi": "大汉帝国",
+      "hebei": "大汉帝国",
+      "qilu": "大汉帝国",
+      "youyan": "大汉帝国",
+      "liaodong": "大汉帝国",
+      "shu": "大汉帝国",
+      "ba": "大汉帝国",
+      "jingchu": "大汉帝国",
+      "jiangxi": "大汉帝国",
+      "jiangdong": "大汉帝国",
+      "min": "大汉帝国",
+      "lingnan": "大汉帝国",
+      "dianqian": "大汉帝国",
+      "manchuria": null
+    },
+    "25": {
+      "shu": "成家帝国",
+      "ba": "成家帝国",
+      "liaodong": "大汉帝国",
+      "manchuria": null
+    },
+    "36": {
+      "shu": "大汉帝国",
+      "ba": "大汉帝国",
+      "liaodong": "大汉帝国",
+      "manchuria": null
+    },
+    "219": {
+      "zhongyuan": "曹魏帝国",
+      "guanzhong": "曹魏帝国",
+      "longyou": "曹魏帝国",
+      "hexi": "曹魏帝国",
+      "hedong": "曹魏帝国",
+      "hebei": "曹魏帝国",
+      "youyan": "曹魏帝国",
+      "liaodong": "曹魏帝国",
+      "qilu": "曹魏帝国",
+      "huaisi": "曹魏帝国",
+      "shu": "蜀汉帝国",
+      "ba": "蜀汉帝国",
+      "dianqian": "蜀汉帝国",
+      "jiangdong": "东吴帝国",
+      "jingchu": "东吴帝国",
+      "jiangxi": "东吴帝国",
+      "min": "东吴帝国",
+      "lingnan": "东吴帝国",
+      "manchuria": null
+    },
+    "225": {
+      "zhongyuan": "曹魏帝国",
+      "guanzhong": "曹魏帝国",
+      "longyou": "曹魏帝国",
+      "hexi": "曹魏帝国",
+      "hedong": "曹魏帝国",
+      "hebei": "曹魏帝国",
+      "youyan": "曹魏帝国",
+      "liaodong": "曹魏帝国",
+      "qilu": "曹魏帝国",
+      "huaisi": "曹魏帝国",
+      "shu": "蜀汉帝国",
+      "ba": "蜀汉帝国",
+      "dianqian": "蜀汉帝国",
+      "jiangdong": "东吴帝国",
+      "jingchu": "东吴帝国",
+      "jiangxi": "东吴帝国",
+      "min": "东吴帝国",
+      "lingnan": "东吴帝国",
+      "manchuria": null
+    },
+    "263": {
+      "zhongyuan": "曹魏帝国",
+      "guanzhong": "曹魏帝国",
+      "longyou": "曹魏帝国",
+      "hexi": "曹魏帝国",
+      "hedong": "曹魏帝国",
+      "hebei": "曹魏帝国",
+      "youyan": "曹魏帝国",
+      "liaodong": "曹魏帝国",
+      "qilu": "曹魏帝国",
+      "huaisi": "曹魏帝国",
+      "shu": "曹魏帝国",
+      "ba": "曹魏帝国",
+      "dianqian": "曹魏帝国",
+      "jiangdong": "东吴帝国",
+      "jingchu": "东吴帝国",
+      "jiangxi": "东吴帝国",
+      "min": "东吴帝国",
+      "lingnan": "东吴帝国",
+      "manchuria": null
+    },
+    "280": {
+      "zhongyuan": "西晋王朝",
+      "guanzhong": "西晋王朝",
+      "longyou": "西晋王朝",
+      "hexi": "西晋王朝",
+      "hedong": "西晋王朝",
+      "hebei": "西晋王朝",
+      "youyan": "西晋王朝",
+      "liaodong": "西晋王朝",
+      "qilu": "西晋王朝",
+      "huaisi": "西晋王朝",
+      "shu": "西晋王朝",
+      "ba": "西晋王朝",
+      "dianqian": "西晋王朝",
+      "jiangdong": "西晋王朝",
+      "jingchu": "西晋王朝",
+      "jiangxi": "西晋王朝",
+      "min": "西晋王朝",
+      "lingnan": "西晋王朝",
+      "manchuria": null
+    },
+    "304": {
+      "hedong": "前赵王朝",
+      "shu": "成汉帝国",
+      "ba": "成汉帝国",
+      "hexi": "前凉王国",
+      "guanzhong": "西晋王朝",
+      "longyou": "西晋王朝",
+      "zhongyuan": "西晋王朝",
+      "huaisi": "西晋王朝",
+      "hebei": "西晋王朝",
+      "qilu": "西晋王朝",
+      "youyan": "西晋王朝",
+      "liaodong": "西晋王朝",
+      "jingchu": "西晋王朝",
+      "jiangxi": "西晋王朝",
+      "jiangdong": "西晋王朝",
+      "min": "西晋王朝",
+      "lingnan": "西晋王朝",
+      "dianqian": "西晋王朝",
+      "manchuria": null
+    },
+    "317": {
+      "hedong": "前赵王朝",
+      "guanzhong": "前赵王朝",
+      "longyou": "前赵王朝",
+      "zhongyuan": "前赵王朝",
+      "hebei": "后赵王朝",
+      "youyan": null,
+      "qilu": null,
+      "liaodong": null,
+      "hexi": "前凉王国",
+      "shu": "成汉帝国",
+      "ba": "成汉帝国",
+      "huaisi": "东晋王朝",
+      "jiangdong": "东晋王朝",
+      "jingchu": "东晋王朝",
+      "jiangxi": "东晋王朝",
+      "min": "东晋王朝",
+      "lingnan": "东晋王朝",
+      "dianqian": "东晋王朝",
+      "manchuria": null
+    },
+    "330": {
+      "hebei": "后赵王朝",
+      "hedong": "后赵王朝",
+      "guanzhong": "后赵王朝",
+      "longyou": "后赵王朝",
+      "zhongyuan": "后赵王朝",
+      "qilu": "后赵王朝",
+      "huaisi": "后赵王朝",
+      "youyan": "后赵王朝",
+      "liaodong": "前燕帝国",
+      "hexi": "前凉王国",
+      "shu": "成汉帝国",
+      "ba": "成汉帝国",
+      "jiangdong": "东晋王朝",
+      "jingchu": "东晋王朝",
+      "jiangxi": "东晋王朝",
+      "min": "东晋王朝",
+      "lingnan": "东晋王朝",
+      "dianqian": "东晋王朝",
+      "manchuria": null
+    },
+    "351": {
+      "guanzhong": "前秦帝国",
+      "longyou": "前秦帝国",
+      "hedong": "前秦帝国",
+      "liaodong": "前燕帝国",
+      "youyan": "前燕帝国",
+      "hebei": "前燕帝国",
+      "qilu": "前燕帝国",
+      "zhongyuan": "东晋王朝",
+      "huaisi": "东晋王朝",
+      "hexi": "前凉王国",
+      "shu": "东晋王朝",
+      "ba": "东晋王朝",
+      "jiangdong": "东晋王朝",
+      "jingchu": "东晋王朝",
+      "jiangxi": "东晋王朝",
+      "min": "东晋王朝",
+      "lingnan": "东晋王朝",
+      "dianqian": "东晋王朝",
+      "manchuria": null
+    },
+    "383": {
+      "guanzhong": "前秦帝国",
+      "longyou": "前秦帝国",
+      "hexi": "前秦帝国",
+      "hedong": "前秦帝国",
+      "zhongyuan": "前秦帝国",
+      "hebei": "前秦帝国",
+      "youyan": "前秦帝国",
+      "qilu": "前秦帝国",
+      "huaisi": "前秦帝国",
+      "shu": "前秦帝国",
+      "ba": "前秦帝国",
+      "jiangdong": "东晋王朝",
+      "jingchu": "东晋王朝",
+      "jiangxi": "东晋王朝",
+      "min": "东晋王朝",
+      "lingnan": "东晋王朝",
+      "dianqian": "东晋王朝",
+      "liaodong": "高句丽王国",
+      "manchuria": null
+    },
+    "395": {
+      "hebei": "后燕帝国",
+      "youyan": "后燕帝国",
+      "qilu": "后燕帝国",
+      "hedong": "北魏王朝",
+      "guanzhong": "后秦帝国",
+      "longyou": null,
+      "hexi": null,
+      "zhongyuan": "东晋王朝",
+      "huaisi": "东晋王朝",
+      "shu": "东晋王朝",
+      "ba": "东晋王朝",
+      "jiangdong": "东晋王朝",
+      "jingchu": "东晋王朝",
+      "jiangxi": "东晋王朝",
+      "min": "东晋王朝",
+      "lingnan": "东晋王朝",
+      "dianqian": "东晋王朝",
+      "liaodong": "高句丽王国",
+      "manchuria": null
+    },
+    "409": {
+      "hedong": "北魏王朝",
+      "hebei": "北魏王朝",
+      "youyan": "北魏王朝",
+      "guanzhong": "后秦帝国",
+      "zhongyuan": "后秦帝国",
+      "longyou": null,
+      "hexi": null,
+      "qilu": "东晋王朝",
+      "huaisi": "东晋王朝",
+      "shu": "东晋王朝",
+      "ba": "东晋王朝",
+      "jiangdong": "东晋王朝",
+      "jingchu": "东晋王朝",
+      "jiangxi": "东晋王朝",
+      "min": "东晋王朝",
+      "lingnan": "东晋王朝",
+      "dianqian": "东晋王朝",
+      "liaodong": "高句丽王国",
+      "manchuria": null
+    },
+    "417": {
+      "hedong": "北魏王朝",
+      "hebei": "北魏王朝",
+      "youyan": "北魏王朝",
+      "guanzhong": "东晋王朝",
+      "zhongyuan": "东晋王朝",
+      "qilu": "东晋王朝",
+      "huaisi": "东晋王朝",
+      "shu": "东晋王朝",
+      "ba": "东晋王朝",
+      "jiangdong": "东晋王朝",
+      "jingchu": "东晋王朝",
+      "jiangxi": "东晋王朝",
+      "min": "东晋王朝",
+      "lingnan": "东晋王朝",
+      "dianqian": "东晋王朝",
+      "longyou": null,
+      "hexi": null,
+      "liaodong": "高句丽王国",
+      "manchuria": null
+    },
+    "420": {
+      "hedong": "北魏王朝",
+      "hebei": "北魏王朝",
+      "youyan": "北魏王朝",
+      "zhongyuan": "北魏王朝",
+      "guanzhong": null,
+      "longyou": null,
+      "hexi": null,
+      "qilu": "刘宋王朝",
+      "huaisi": "刘宋王朝",
+      "shu": "刘宋王朝",
+      "ba": "刘宋王朝",
+      "jiangdong": "刘宋王朝",
+      "jingchu": "刘宋王朝",
+      "jiangxi": "刘宋王朝",
+      "min": "刘宋王朝",
+      "lingnan": "刘宋王朝",
+      "dianqian": "刘宋王朝",
+      "liaodong": "高句丽王国",
+      "manchuria": null
+    },
+    "445": {
+      "guanzhong": "北魏王朝",
+      "longyou": "北魏王朝",
+      "hexi": "北魏王朝",
+      "hedong": "北魏王朝",
+      "hebei": "北魏王朝",
+      "youyan": "北魏王朝",
+      "zhongyuan": "北魏王朝",
+      "qilu": "刘宋王朝",
+      "huaisi": "刘宋王朝"
+    },
+    "476": {
+      "qilu": "北魏王朝",
+      "huaisi": "北魏王朝"
+    },
+    "494": {
+      "youyan": "北魏王朝",
+      "hebei": "北魏王朝",
+      "qilu": "北魏王朝",
+      "hedong": "北魏王朝",
+      "zhongyuan": "北魏王朝",
+      "huaisi": "北魏王朝",
+      "guanzhong": "北魏王朝",
+      "longyou": "北魏王朝",
+      "hexi": "北魏王朝",
+      "shu": "南齐王朝",
+      "ba": "南齐王朝",
+      "jiangdong": "南齐王朝",
+      "jingchu": "南齐王朝",
+      "jiangxi": "南齐王朝",
+      "min": "南齐王朝",
+      "lingnan": "南齐王朝",
+      "dianqian": "南齐王朝"
+    },
+    "534": {
+      "guanzhong": "西魏王朝",
+      "longyou": "西魏王朝",
+      "hexi": "西魏王朝",
+      "hedong": "东魏王朝",
+      "hebei": "东魏王朝",
+      "youyan": "东魏王朝",
+      "qilu": "东魏王朝",
+      "zhongyuan": "东魏王朝",
+      "huaisi": "东魏王朝",
+      "shu": "南梁王朝",
+      "ba": "南梁王朝",
+      "jiangdong": "南梁王朝",
+      "jingchu": "南梁王朝",
+      "jiangxi": "南梁王朝",
+      "min": "南梁王朝",
+      "lingnan": "南梁王朝",
+      "dianqian": "南梁王朝"
+    },
+    "555": {
+      "guanzhong": "西魏王朝",
+      "longyou": "西魏王朝",
+      "hexi": "西魏王朝",
+      "shu": "西魏王朝",
+      "ba": "西魏王朝",
+      "hedong": "北齐王朝",
+      "hebei": "北齐王朝",
+      "youyan": "北齐王朝",
+      "qilu": "北齐王朝",
+      "zhongyuan": "北齐王朝",
+      "huaisi": "北齐王朝",
+      "jiangdong": "南梁王朝",
+      "jingchu": "南梁王朝",
+      "jiangxi": "南梁王朝",
+      "min": "南梁王朝",
+      "lingnan": "南梁王朝",
+      "dianqian": null
+    },
+    "557": {
+      "guanzhong": "北周王朝",
+      "longyou": "北周王朝",
+      "hexi": "北周王朝",
+      "shu": "北周王朝",
+      "ba": "北周王朝",
+      "hedong": "北齐王朝",
+      "hebei": "北齐王朝",
+      "youyan": "北齐王朝",
+      "qilu": "北齐王朝",
+      "zhongyuan": "北齐王朝",
+      "huaisi": "北齐王朝",
+      "jiangdong": "南陈王朝",
+      "jingchu": "南陈王朝",
+      "jiangxi": "南陈王朝",
+      "min": "南陈王朝",
+      "lingnan": "南陈王朝"
+    },
+    "577": {
+      "guanzhong": "北周王朝",
+      "longyou": "北周王朝",
+      "hexi": "北周王朝",
+      "shu": "北周王朝",
+      "ba": "北周王朝",
+      "hedong": "北周王朝",
+      "hebei": "北周王朝",
+      "youyan": "北周王朝",
+      "qilu": "北周王朝",
+      "zhongyuan": "北周王朝",
+      "huaisi": "北周王朝",
+      "jiangdong": "南陈王朝",
+      "jingchu": "南陈王朝",
+      "jiangxi": "南陈王朝",
+      "min": "南陈王朝",
+      "lingnan": "南陈王朝"
+    },
+    "589": {
+      "guanzhong": "大隋帝国",
+      "longyou": "大隋帝国",
+      "hexi": "大隋帝国",
+      "shu": "大隋帝国",
+      "ba": "大隋帝国",
+      "hedong": "大隋帝国",
+      "hebei": "大隋帝国",
+      "youyan": "大隋帝国",
+      "qilu": "大隋帝国",
+      "zhongyuan": "大隋帝国",
+      "huaisi": "大隋帝国",
+      "jiangdong": "大隋帝国",
+      "jingchu": "大隋帝国",
+      "jiangxi": "大隋帝国",
+      "min": "大隋帝国",
+      "lingnan": "大隋帝国",
+      "liaodong": "高句丽王国",
+      "manchuria": null
+    },
+    "663": {
+      "liaodong": "大唐帝国",
+      "manchuria": null
+    },
+    "715": {
+      "manchuria": "渤海国",
+      "liaodong": "大唐帝国"
+    },
+    "763": {
+      "longyou": "吐蕃帝国",
+      "hexi": "吐蕃帝国",
+      "manchuria": "渤海国",
+      "liaodong": "渤海国"
+    },
+    "907": {
+      "zhongyuan": "后梁王朝",
+      "huaisi": "后梁王朝",
+      "qilu": "后梁王朝",
+      "guanzhong": "后梁王朝",
+      "hebei": "后梁王朝",
+      "hedong": null,
+      "youyan": null,
+      "longyou": null,
+      "hexi": null,
+      "shu": null,
+      "ba": null,
+      "jingchu": null,
+      "jiangxi": null,
+      "jiangdong": "吴越王国",
+      "min": null,
+      "lingnan": null,
+      "dianqian": null,
+      "manchuria": "渤海国",
+      "liaodong": "渤海国",
+      "mongolia": "契丹大辽"
+    },
+    "923": {
+      "hedong": "后唐王朝",
+      "youyan": "后唐王朝",
+      "hebei": "后唐王朝",
+      "qilu": "后唐王朝",
+      "zhongyuan": "后唐王朝",
+      "huaisi": "后唐王朝",
+      "guanzhong": "后唐王朝",
+      "longyou": "后唐王朝",
+      "shu": null,
+      "ba": null,
+      "jiangdong": "吴越王国",
+      "jiangxi": null,
+      "jingchu": null,
+      "min": null,
+      "lingnan": null,
+      "dianqian": null,
+      "hexi": null,
+      "manchuria": "渤海国",
+      "liaodong": "渤海国",
+      "mongolia": "契丹大辽"
+    },
+    "936": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "mongolia": "契丹大辽",
+      "hedong": "后晋王朝",
+      "hebei": "后晋王朝",
+      "qilu": "后晋王朝",
+      "zhongyuan": "后晋王朝",
+      "huaisi": "后晋王朝",
+      "guanzhong": "后晋王朝",
+      "longyou": "后晋王朝",
+      "shu": "后蜀王国",
+      "ba": "后蜀王国",
+      "jiangdong": "南唐王国",
+      "jiangxi": "南唐王国",
+      "jingchu": null,
+      "min": null,
+      "lingnan": null,
+      "hexi": null,
+      "dianqian": "大理国"
+    },
+    "947": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "hedong": "后汉王朝",
+      "hebei": "后汉王朝",
+      "qilu": "后汉王朝",
+      "zhongyuan": "后汉王朝",
+      "huaisi": "后汉王朝",
+      "guanzhong": "后汉王朝",
+      "longyou": "后汉王朝",
+      "shu": "后蜀王国",
+      "ba": "后蜀王国",
+      "jiangdong": "南唐王国",
+      "jiangxi": "南唐王国",
+      "jingchu": null
+    },
+    "954": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "hedong": null,
+      "hebei": "后周王朝",
+      "qilu": "后周王朝",
+      "zhongyuan": "后周王朝",
+      "huaisi": "后周王朝",
+      "guanzhong": "后周王朝",
+      "longyou": "后周王朝",
+      "shu": "后蜀王国",
+      "ba": "后蜀王国",
+      "jiangdong": "南唐王国",
+      "jiangxi": "南唐王国",
+      "jingchu": null
+    },
+    "962": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "hedong": null,
+      "hebei": "大宋帝国",
+      "qilu": "大宋帝国",
+      "zhongyuan": "大宋帝国",
+      "huaisi": "大宋帝国",
+      "guanzhong": "大宋帝国",
+      "longyou": "大宋帝国",
+      "shu": "后蜀王国",
+      "ba": "后蜀王国",
+      "jiangxi": "南唐王国",
+      "jiangdong": "吴越王国",
+      "jingchu": null
+    },
+    "979": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "hedong": "大宋帝国",
+      "hebei": "大宋帝国",
+      "qilu": "大宋帝国",
+      "zhongyuan": "大宋帝国",
+      "huaisi": "大宋帝国",
+      "guanzhong": "大宋帝国",
+      "longyou": "大宋帝国",
+      "shu": "大宋帝国",
+      "ba": "大宋帝国",
+      "jingchu": "大宋帝国",
+      "jiangxi": "大宋帝国",
+      "jiangdong": "大宋帝国",
+      "min": "大宋帝国",
+      "lingnan": "大宋帝国",
+      "hexi": null,
+      "dianqian": "大理国"
+    },
+    "1005": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "hebei": "大宋帝国",
+      "hedong": "大宋帝国",
+      "qilu": "大宋帝国",
+      "zhongyuan": "大宋帝国",
+      "huaisi": "大宋帝国",
+      "guanzhong": "大宋帝国",
+      "longyou": "大宋帝国",
+      "shu": "大宋帝国",
+      "ba": "大宋帝国",
+      "jingchu": "大宋帝国",
+      "jiangxi": "大宋帝国",
+      "jiangdong": "大宋帝国",
+      "min": "大宋帝国",
+      "lingnan": "大宋帝国",
+      "hexi": null,
+      "dianqian": "大理国"
+    },
+    "1038": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "hexi": "党项西夏王朝",
+      "longyou": "大宋帝国",
+      "hebei": "大宋帝国",
+      "hedong": "大宋帝国",
+      "qilu": "大宋帝国",
+      "zhongyuan": "大宋帝国",
+      "huaisi": "大宋帝国",
+      "guanzhong": "大宋帝国"
+    },
+    "1044": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "hexi": "党项西夏王朝",
+      "longyou": "大宋帝国",
+      "hebei": "大宋帝国",
+      "hedong": "大宋帝国",
+      "qilu": "大宋帝国",
+      "zhongyuan": "大宋帝国",
+      "huaisi": "大宋帝国",
+      "guanzhong": "大宋帝国"
+    },
+    "1066": {
+      "youyan": "契丹大辽",
+      "liaodong": "契丹大辽",
+      "manchuria": "契丹大辽",
+      "hexi": "党项西夏王朝",
+      "longyou": "大宋帝国",
+      "hebei": "大宋帝国",
+      "hedong": "大宋帝国",
+      "qilu": "大宋帝国",
+      "zhongyuan": "大宋帝国",
+      "huaisi": "大宋帝国",
+      "guanzhong": "大宋帝国"
+    },
+    "1099": {
+      "youyan": "契丹大辽",
+      "hebei": "大宋帝国",
+      "qilu": "大宋帝国",
+      "guanzhong": "大宋帝国",
+      "hedong": "大宋帝国",
+      "zhongyuan": "大宋帝国",
+      "huaisi": "大宋帝国"
+    },
+    "1115": {
+      "manchuria": "女真金朝",
+      "liaodong": "契丹大辽",
+      "youyan": "契丹大辽"
+    },
+    "1125": {
+      "manchuria": "女真金朝",
+      "liaodong": "女真金朝",
+      "youyan": "女真金朝",
+      "hebei": "大宋帝国",
+      "qilu": "大宋帝国"
+    },
+    "1127": {
+      "manchuria": "女真金朝",
+      "liaodong": "女真金朝",
+      "youyan": "女真金朝",
+      "hebei": "女真金朝",
+      "hedong": "女真金朝",
+      "qilu": "女真金朝",
+      "zhongyuan": "女真金朝",
+      "huaisi": "女真金朝",
+      "guanzhong": "大宋帝国",
+      "longyou": "大宋帝国",
+      "shu": "大宋帝国",
+      "ba": "大宋帝国",
+      "jingchu": "大宋帝国",
+      "jiangxi": "大宋帝国",
+      "jiangdong": "大宋帝国",
+      "min": "大宋帝国",
+      "lingnan": "大宋帝国",
+      "hexi": "党项西夏王朝",
+      "dianqian": "大理国"
+    },
+    "1141": {
+      "manchuria": "女真金朝",
+      "liaodong": "女真金朝",
+      "youyan": "女真金朝",
+      "hebei": "女真金朝",
+      "hedong": "女真金朝",
+      "qilu": "女真金朝",
+      "zhongyuan": "女真金朝",
+      "huaisi": "女真金朝",
+      "guanzhong": "女真金朝",
+      "longyou": "女真金朝",
+      "jiangdong": "大宋帝国",
+      "jingchu": "大宋帝国",
+      "jiangxi": "大宋帝国",
+      "shu": "大宋帝国",
+      "ba": "大宋帝国",
+      "min": "大宋帝国",
+      "lingnan": "大宋帝国",
+      "hexi": "党项西夏王朝",
+      "dianqian": "大理国"
+    },
+    "1215": {
+      "manchuria": "大蒙古国",
+      "liaodong": "大蒙古国",
+      "youyan": "大蒙古国",
+      "hebei": "大蒙古国",
+      "hedong": "大蒙古国",
+      "qilu": "女真金朝",
+      "zhongyuan": "女真金朝",
+      "huaisi": "女真金朝",
+      "guanzhong": "女真金朝",
+      "longyou": "女真金朝",
+      "hexi": "党项西夏王朝"
+    },
+    "1227": {
+      "manchuria": "大蒙古国",
+      "liaodong": "大蒙古国",
+      "youyan": "大蒙古国",
+      "hebei": "大蒙古国",
+      "hedong": "大蒙古国",
+      "qilu": "大蒙古国",
+      "guanzhong": "大蒙古国",
+      "longyou": "大蒙古国",
+      "hexi": "大蒙古国",
+      "zhongyuan": "女真金朝",
+      "huaisi": "女真金朝"
+    },
+    "1234": {
+      "manchuria": "大蒙古国",
+      "liaodong": "大蒙古国",
+      "youyan": "大蒙古国",
+      "hebei": "大蒙古国",
+      "hedong": "大蒙古国",
+      "qilu": "大蒙古国",
+      "zhongyuan": "大蒙古国",
+      "huaisi": "大蒙古国",
+      "guanzhong": "大蒙古国",
+      "longyou": "大蒙古国",
+      "hexi": "大蒙古国",
+      "shu": "大宋帝国",
+      "ba": "大宋帝国",
+      "jingchu": "大宋帝国",
+      "jiangxi": "大宋帝国",
+      "jiangdong": "大宋帝国",
+      "min": "大宋帝国",
+      "lingnan": "大宋帝国",
+      "dianqian": "大理国"
+    },
+    "1258": {
+      "dianqian": "大蒙古国"
+    },
+    "1271": {
+      "manchuria": "大元帝国",
+      "liaodong": "大元帝国",
+      "youyan": "大元帝国",
+      "hebei": "大元帝国",
+      "hedong": "大元帝国",
+      "qilu": "大元帝国",
+      "zhongyuan": "大元帝国",
+      "huaisi": "大元帝国",
+      "guanzhong": "大元帝国",
+      "longyou": "大元帝国",
+      "hexi": "大元帝国",
+      "shu": "大元帝国",
+      "dianqian": "大元帝国",
+      "ba": "大宋帝国",
+      "jingchu": "大宋帝国",
+      "jiangxi": "大宋帝国",
+      "jiangdong": "大宋帝国",
+      "min": "大宋帝国",
+      "lingnan": "大宋帝国"
+    },
+    "1279": {
+      "manchuria": "大元帝国",
+      "liaodong": "大元帝国",
+      "youyan": "大元帝国",
+      "hebei": "大元帝国",
+      "hedong": "大元帝国",
+      "qilu": "大元帝国",
+      "zhongyuan": "大元帝国",
+      "huaisi": "大元帝国",
+      "guanzhong": "大元帝国",
+      "longyou": "大元帝国",
+      "hexi": "大元帝国",
+      "shu": "大元帝国",
+      "ba": "大元帝国",
+      "jingchu": "大元帝国",
+      "jiangxi": "大元帝国",
+      "jiangdong": "大元帝国",
+      "min": "大元帝国",
+      "lingnan": "大元帝国",
+      "dianqian": "大元帝国"
+    },
+    "1356": {
+      "jiangdong": "红巾军吴国",
+      "jingchu": "陈汉政权",
+      "jiangxi": "陈汉政权",
+      "shu": null,
+      "ba": null
+    },
+    "1368": {
+      "liaodong": null,
+      "manchuria": null,
+      "shu": null,
+      "ba": null
+    },
+    "1392": {
+      "liaodong": "大明帝国",
+      "manchuria": null
+    },
+    "1618": {
+      "manchuria": "后金汗国",
+      "liaodong": "后金汗国"
+    },
+    "1644": {
+      "manchuria": "大清帝国",
+      "liaodong": "大清帝国",
+      "youyan": "大清帝国",
+      "hebei": "大清帝国",
+      "qilu": "大清帝国",
+      "hedong": "大清帝国",
+      "zhongyuan": "大清帝国",
+      "guanzhong": "大清帝国",
+      "huaisi": "大明帝国"
+    },
+    "1648": {
+      "huaisi": "大清帝国",
+      "longyou": "大清帝国",
+      "hexi": "大清帝国",
+      "shu": "大清帝国",
+      "ba": "大清帝国",
+      "jingchu": "大清帝国",
+      "jiangxi": "大清帝国",
+      "jiangdong": "大清帝国",
+      "min": "大清帝国",
+      "lingnan": "大清帝国",
+      "dianqian": "大清帝国",
+      "taiwan": "荷兰共和国"
+    },
+    "1853": {
+      "jiangdong": "太平天国",
+      "jiangxi": "太平天国",
+      "jingchu": "太平天国",
+      "huaisi": "大清帝国"
+    },
+    "1858": {
+      "jiangdong": "太平天国",
+      "jiangxi": "太平天国",
+      "jingchu": "太平天国",
+      "huaisi": "大清帝国"
+    },
+    "1931": {
+      "manchuria": "大日本帝国",
+      "liaodong": "大日本帝国"
+    },
+    "1937": {
+      "manchuria": "大日本帝国",
+      "liaodong": "大日本帝国",
+      "youyan": "大日本帝国",
+      "hebei": "大日本帝国",
+      "qilu": "中华民国"
+    },
+    "1939": {
+      "manchuria": "大日本帝国",
+      "liaodong": "大日本帝国",
+      "youyan": "大日本帝国",
+      "hebei": "大日本帝国",
+      "qilu": "大日本帝国",
+      "hedong": "大日本帝国",
+      "huaisi": "大日本帝国",
+      "jiangdong": "大日本帝国",
+      "zhongyuan": "中华民国",
+      "guanzhong": "中华民国",
+      "longyou": "中华民国",
+      "hexi": "中华民国",
+      "shu": "中华民国",
+      "ba": "中华民国",
+      "jingchu": "中华民国",
+      "jiangxi": "中华民国",
+      "min": "中华民国",
+      "lingnan": "中华民国",
+      "dianqian": "中华民国"
+    },
+    "1945": {
+      "manchuria": "中华民国",
+      "liaodong": "中华民国",
+      "youyan": "中华民国",
+      "hebei": "中华民国",
+      "qilu": "中华民国",
+      "hedong": "中华民国",
+      "huaisi": "中华民国",
+      "jiangdong": "中华民国",
+      "taiwan": "中华民国"
+    }
+  },
+  "stateless_cultures": {
+    "youyan": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "雪山一期文化",
+        "note": "燕山南北早期农牧交错新石器晚期聚落"
+      },
+      {
+        "from": -2000,
+        "to": -1046,
+        "kind": "考古学文化",
+        "name": "夏家店下层与围坊文化",
+        "note": "燕山南北早期青铜筑城聚落与孤竹、燕亳方国先民"
+      },
+      {
+        "from": -206,
+        "to": -202,
+        "kind": "诸国并立",
+        "name": "楚汉燕代诸王国",
+        "note": "项羽分封臧荼为燕王、韩广为辽东王，旋归附汉朝"
+      },
+      {
+        "from": 317,
+        "to": 330,
+        "kind": "诸国并立",
+        "name": "段部鲜卑",
+        "note": "西晋末王浚败亡后段氏鲜卑驻牧幽州，后并入石勒后赵"
+      },
+      {
+        "from": 907,
+        "to": 923,
+        "kind": "诸国并立",
+        "name": "桀燕割据",
+        "note": "幽州节度使刘仁恭、刘守光父子割据称燕帝，913年为晋王李存勖攻灭"
+      }
+    ],
+    "hebei": [
+      {
+        "from": -3000,
+        "to": -2500,
+        "kind": "考古学文化",
+        "name": "大司空与雪山文化",
+        "note": "太行山东麓新石器晚期彩陶聚落"
+      },
+      {
+        "from": -2500,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "后岗二期龙山文化",
+        "note": "冀南豫北漳卫流域龙山时代城址群"
+      },
+      {
+        "from": -2000,
+        "to": -1600,
+        "kind": "考古学文化",
+        "name": "下七垣先商文化",
+        "note": "漳河流域先商青铜文化聚落，成汤灭夏前商族大本营"
+      },
+      {
+        "from": -771,
+        "to": -403,
+        "kind": "诸国并立",
+        "name": "卫、邢、中山与白狄诸国",
+        "note": "春秋时期太行以东分立卫、邢、晋东阳及鲜虞中山诸国"
+      },
+      {
+        "from": -206,
+        "to": -202,
+        "kind": "诸国并立",
+        "name": "楚汉赵常山诸王国",
+        "note": "赵王歇、常山王张耳争锋，韩信井陉背水一战破赵"
+      }
+    ],
+    "qilu": [
+      {
+        "from": -3000,
+        "to": -2500,
+        "kind": "考古学文化",
+        "name": "大汶口文化晚期",
+        "note": "泰沂山脉周边大型墓地与玉石礼器分化"
+      },
+      {
+        "from": -2500,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "海岱龙山文化",
+        "note": "两城镇、尧王城等大型城址与蛋壳黑陶礼器"
+      },
+      {
+        "from": -2000,
+        "to": -1600,
+        "kind": "考古学文化",
+        "name": "岳石文化与东夷诸部",
+        "note": "海岱地区早期青铜文化与东夷方国先民"
+      },
+      {
+        "from": -206,
+        "to": -202,
+        "kind": "诸国并立",
+        "name": "三齐田氏诸王国",
+        "note": "齐地田荣、田横复立抗楚抗汉，韩信平齐置齐国"
+      },
+      {
+        "from": 317,
+        "to": 330,
+        "kind": "诸国并立",
+        "name": "青州曹嶷割据",
+        "note": "永嘉之乱后曹嶷筑广固城据有齐鲁，323年为后赵石虎攻灭"
+      }
+    ],
+    "liaodong": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "小珠山与偏堡文化",
+        "note": "辽东半岛贝丘与辽河平原新石器聚落"
+      },
+      {
+        "from": -2000,
+        "to": -301,
+        "kind": "部落社会",
+        "name": "夏家店文化与东胡濊貊",
+        "note": "辽河流域曲刃青铜短剑文化与古东北族系，燕昭王时秦开却胡置辽东郡"
+      },
+      {
+        "from": -206,
+        "to": -202,
+        "kind": "诸国并立",
+        "name": "辽东王国割据",
+        "note": "秦末韩广封辽东王，旋并入燕王臧荼"
+      },
+      {
+        "from": 317,
+        "to": 330,
+        "kind": "诸国并立",
+        "name": "慕容鲜卑辽东基业",
+        "note": "慕容廆据棘城统领辽左流民奉东晋正朔，奠定前燕根基"
+      },
+      {
+        "from": 1368,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "故元辽阳行省纳哈出",
+        "note": "元末太尉纳哈出拥兵二十万驻金山辽东，洪武二十年降明置辽东都司"
+      }
+    ],
+    "manchuria": [
+      {
+        "from": -3000,
+        "to": -1000,
+        "kind": "考古学文化",
+        "name": "昂昂溪与莺歌岭文化",
+        "note": "松嫩平原与长白山北麓渔猎新石器文化"
+      },
+      {
+        "from": -1000,
+        "to": 220,
+        "kind": "部落社会",
+        "name": "肃慎、挹娄与夫余",
+        "note": "白山黑水渔猎部族与松嫩平原夫余族系"
+      },
+      {
+        "from": 220,
+        "to": 550,
+        "kind": "部落社会",
+        "name": "挹娄与勿吉七部",
+        "note": "松花江、黑龙江流域勿吉与豆莫娄诸部"
+      },
+      {
+        "from": 550,
+        "to": 715,
+        "kind": "部落社会",
+        "name": "粟末与黑水靺鞨",
+        "note": "靺鞨诸部落联盟，698年大祚荣建震国（渤海）"
+      },
+      {
+        "from": 1368,
+        "to": 1618,
+        "kind": "部落社会",
+        "name": "建州海西野人女真",
+        "note": "松花江至黑龙江女真三部，明廷设奴儿干都司与卫所羁縻"
+      }
+    ],
+    "guanzhong": [
+      {
+        "from": -3000,
+        "to": -2600,
+        "kind": "考古学文化",
+        "name": "仰韶文化晚期",
+        "note": "庙底沟二期与高陵杨官寨大型环壕聚落"
+      },
+      {
+        "from": -2600,
+        "to": -2070,
+        "kind": "考古学文化",
+        "name": "客省庄与石峁文化",
+        "note": "陕西龙山文化与陕北神木石峁巨型皇城台石城"
+      },
+      {
+        "from": -2070,
+        "to": -1600,
+        "kind": "考古学文化",
+        "name": "客省庄晚期青铜聚落",
+        "note": "渭水流域早期青铜农牧聚落，二里头未直接统辖关中"
+      },
+      {
+        "from": -1600,
+        "to": -1046,
+        "kind": "部落社会",
+        "name": "先周与西戎诸部",
+        "note": "古公亶父迁岐山周原兴起先周方国，西北与戎羌杂处"
+      },
+      {
+        "from": -771,
+        "to": -651,
+        "kind": "诸国并立",
+        "name": "秦人与关中西戎",
+        "note": "犬戎破镐京后诸戎分据岐丰，秦自岐西累世东进至秦穆公定关中"
+      },
+      {
+        "from": 420,
+        "to": 445,
+        "kind": "诸国并立",
+        "name": "赫连勃勃胡夏政权",
+        "note": "匈奴铁弗部赫连氏筑统万城并夺取长安，426—431年并入北魏"
+      }
+    ],
+    "hedong": [
+      {
+        "from": -3000,
+        "to": -2500,
+        "kind": "考古学文化",
+        "name": "庙底沟二期文化",
+        "note": "晋南运城垣曲盆地大型农耕聚落"
+      },
+      {
+        "from": -2500,
+        "to": -2070,
+        "kind": "考古学文化",
+        "name": "陶寺文化",
+        "note": "襄汾陶寺大型都邑城址、古观象台与早期礼乐遗存"
+      },
+      {
+        "from": -206,
+        "to": -202,
+        "kind": "诸国并立",
+        "name": "西魏王豹与代国",
+        "note": "魏豹据平阳河东叛汉，韩信木罂渡军虏魏豹置河东郡"
+      },
+      {
+        "from": 907,
+        "to": 923,
+        "kind": "诸国并立",
+        "name": "河东晋国",
+        "note": "沙陀李克用、李存勖父子据太原晋阳奉唐天祐年号，与朱温后梁争霸"
+      },
+      {
+        "from": 954,
+        "to": 979,
+        "kind": "诸国并立",
+        "name": "北汉政权",
+        "note": "刘崇于太原称帝建北汉依附契丹，抗御周宋直至979年宋太宗平晋阳"
+      }
+    ],
+    "zhongyuan": [
+      {
+        "from": -3000,
+        "to": -2550,
+        "kind": "考古学文化",
+        "name": "仰韶晚期双槐树聚落",
+        "note": "巩义双槐树三重环壕大型中心聚落与丝绸遗存"
+      },
+      {
+        "from": -2550,
+        "to": -2070,
+        "kind": "考古学文化",
+        "name": "王湾三期龙山文化",
+        "note": "登封王城岗、禹州瓦店等伊洛颍川龙山城址群"
+      },
+      {
+        "from": -206,
+        "to": -202,
+        "kind": "诸国并立",
+        "name": "楚汉荥阳成皋战区",
+        "note": "河南王申阳、韩王信分立，刘邦与项羽长期相持于荥阳广武涧"
+      }
+    ],
+    "huaisi": [
+      {
+        "from": -3000,
+        "to": -2500,
+        "kind": "考古学文化",
+        "name": "大汶口晚期尉迟寺",
+        "note": "蒙城尉迟寺淮北红烧土排房环壕聚落"
+      },
+      {
+        "from": -2500,
+        "to": -1600,
+        "kind": "考古学文化",
+        "name": "造律台龙山与岳石南缘",
+        "note": "豫东睢阳与泗水流域城址及淮夷先民聚落"
+      },
+      {
+        "from": -771,
+        "to": -403,
+        "kind": "诸国并立",
+        "name": "宋、陈、蔡、曹、徐诸侯",
+        "note": "春秋时期梁宋淮泗平原分立宋、曹、陈、杞、薛、徐诸国"
+      }
+    ],
+    "longyou": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "马家窑彩陶文化",
+        "note": "渭水上游秦安大地湾与洮河流域彩陶聚落"
+      },
+      {
+        "from": -2000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "齐家文化",
+        "note": "甘青地区早期红铜与青铜农牧聚落"
+      },
+      {
+        "from": -1500,
+        "to": -341,
+        "kind": "部落社会",
+        "name": "寺洼文化与陇山西戎",
+        "note": "陇山东西义渠、绵诸、豲、冀戎等西戎部族，战国中晚期入秦"
+      },
+      {
+        "from": 395,
+        "to": 445,
+        "kind": "诸国并立",
+        "name": "西秦与仇池",
+        "note": "鲜卑乞伏国仁、乞伏炽磐建西秦据苑川枹罕，南境杨氏据仇池"
+      },
+      {
+        "from": 907,
+        "to": 923,
+        "kind": "诸国并立",
+        "name": "岐国政权",
+        "note": "李茂贞据凤翔及秦陇渭泾诸州称岐王，与后梁长安防线对峙，924年臣服于后唐"
+      }
+    ],
+    "hexi": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "马家窑马厂文化",
+        "note": "彩陶农耕文化沿河西走廊西渐"
+      },
+      {
+        "from": -2000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "四坝青铜文化",
+        "note": "玉门火烧沟等河西走廊早期畜牧青铜遗存"
+      },
+      {
+        "from": -1500,
+        "to": -316,
+        "kind": "部落社会",
+        "name": "沙井文化与月氏",
+        "note": "河西走廊与贺兰山游牧部族，月氏与乌孙强盛控扼祁连敦煌"
+      },
+      {
+        "from": 395,
+        "to": 445,
+        "kind": "诸国并立",
+        "name": "河西诸凉政权",
+        "note": "淝水战后河西先后并立吕氏后凉、秃发南凉、李暠西凉与沮渠北凉，439年入北魏"
+      },
+      {
+        "from": 907,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "归义军与河西诸部",
+        "note": "沙州曹氏归义军、甘州回鹘、凉州六谷部与灵夏拓跋李氏并立，1038年元昊称帝建西夏"
+      }
+    ],
+    "shu": [
+      {
+        "from": -3000,
+        "to": -2700,
+        "kind": "考古学文化",
+        "name": "营盘山文化",
+        "note": "岷江上游早期农耕聚落"
+      },
+      {
+        "from": -2700,
+        "to": -1600,
+        "kind": "考古学文化",
+        "name": "宝墩文化",
+        "note": "新津宝墩、温江鱼凫村等成都平原大型史前夯土城址群"
+      },
+      {
+        "from": 907,
+        "to": 936,
+        "kind": "诸国并立",
+        "name": "前蜀政权",
+        "note": "907年王建于成都称帝建前蜀，925年底入后唐置西川节度，934年孟知祥复于成都建后蜀"
+      },
+      {
+        "from": 1356,
+        "to": 1370,
+        "kind": "诸国并立",
+        "name": "明夏政权",
+        "note": "红巾军将领明玉珍入蜀，1363年称帝建大夏，1371年归附大明"
+      }
+    ],
+    "ba": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "哨棚嘴与大溪",
+        "note": "三峡与川东江峡新石器晚期渔猎农耕聚落"
+      },
+      {
+        "from": -2000,
+        "to": -316,
+        "kind": "部落社会",
+        "name": "巴方国与廪君蛮",
+        "note": "清江、巫山与嘉陵江流域巴族青铜部族，前316年秦司马错灭巴置巴郡"
+      },
+      {
+        "from": 907,
+        "to": 936,
+        "kind": "诸国并立",
+        "name": "前蜀巴东",
+        "note": "前蜀控制渝州江州与夔门三峡门户，925年底入后唐，934年归后蜀"
+      },
+      {
+        "from": 1356,
+        "to": 1370,
+        "kind": "诸国并立",
+        "name": "明夏政权",
+        "note": "明玉珍定都重庆统辖巴蜀，传子明升至洪武四年平蜀"
+      }
+    ],
+    "jingchu": [
+      {
+        "from": -3000,
+        "to": -2500,
+        "kind": "考古学文化",
+        "name": "屈家岭文化",
+        "note": "江汉平原大型史前水网城址群与稻作农业"
+      },
+      {
+        "from": -2500,
+        "to": -1900,
+        "kind": "考古学文化",
+        "name": "石家河文化",
+        "note": "天门石家河超大型中心城址与精美琢玉神人像"
+      },
+      {
+        "from": -1900,
+        "to": -841,
+        "kind": "诸国并立",
+        "name": "盘龙城与荆楚初兴",
+        "note": "江汉盘龙城青铜文化、曾鄂方国及楚先君筚路蓝缕启山林"
+      },
+      {
+        "from": 907,
+        "to": 979,
+        "kind": "诸国并立",
+        "name": "荆南（南平）与马楚",
+        "note": "高季兴家族据江陵建荆南（南平），马殷据潭州湖南建马楚，963年北宋假道平荆湖"
+      },
+      {
+        "from": 1364,
+        "to": 1368,
+        "kind": "诸国并立",
+        "name": "朱元璋西吴政权",
+        "note": "1364年二月朱元璋平武昌受陈理降、灭陈汉，以吴王名号统辖湖广荆楚，1368年正月建明"
+      }
+    ],
+    "jiangxi": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "樊城堆文化",
+        "note": "赣江鄱阳湖流域新石器晚期樊城堆与拾年山稻作聚落"
+      },
+      {
+        "from": -2000,
+        "to": -1046,
+        "kind": "考古学文化",
+        "name": "吴城青铜文化",
+        "note": "樟树吴城遗址与新干大洋洲高度发达的地方青铜礼器群"
+      },
+      {
+        "from": -1046,
+        "to": -341,
+        "kind": "部落社会",
+        "name": "干越与扬越",
+        "note": "鄱阳湖与赣江流域百越干越支系，战国中期并入楚国"
+      },
+      {
+        "from": 907,
+        "to": 936,
+        "kind": "诸国并立",
+        "name": "杨吴政权",
+        "note": "杨行密、徐温据江淮与洪州豫章，937年徐知诰（李昪）代吴建南唐"
+      },
+      {
+        "from": 1364,
+        "to": 1368,
+        "kind": "诸国并立",
+        "name": "朱元璋西吴政权",
+        "note": "1363年鄱阳湖决战败亡陈友谅后，朱元璋以吴王政权收复洪都与江西诸路，1368年正月建明"
+      }
+    ],
+    "jiangdong": [
+      {
+        "from": -2300,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "马桥文化",
+        "note": "良渚衰落后的环太湖流域广富林与马桥夏商文化"
+      },
+      {
+        "from": -1500,
+        "to": -1046,
+        "kind": "考古学文化",
+        "name": "湖熟文化",
+        "note": "宁镇山脉与太湖会稽几何印纹硬陶与早期青铜吴越先民聚落"
+      },
+      {
+        "from": -1046,
+        "to": -575,
+        "kind": "诸国并立",
+        "name": "句吴与于越",
+        "note": "太伯奔吴与于越、群舒方国并立，前585年寿梦称王始通中原"
+      }
+    ],
+    "min": [
+      {
+        "from": -3000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "昙石山文化",
+        "note": "闽江下游沿海新石器晚期海洋贝丘聚落"
+      },
+      {
+        "from": -1500,
+        "to": -221,
+        "kind": "部落社会",
+        "name": "七闽诸部",
+        "note": "黄土仑印纹陶青铜遗存与武夷山以东七闽、闽越部族"
+      },
+      {
+        "from": -206,
+        "to": -111,
+        "kind": "诸国并立",
+        "name": "闽越与东瓯",
+        "note": "汉初复封无诸为闽越王、摇为东海王，元鼎六年汉武帝平东越迁民江淮"
+      },
+      {
+        "from": 907,
+        "to": 979,
+        "kind": "诸国并立",
+        "name": "王氏闽国",
+        "note": "王审知于福州建闽国，945年后分属吴越福州、南唐建州与泉漳清源军，978年纳土归宋"
+      }
+    ],
+    "lingnan": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "石峡文化",
+        "note": "韶关石峡墓地与珠三角海洋渔猎新石器贝丘聚落"
+      },
+      {
+        "from": -2000,
+        "to": -214,
+        "kind": "部落社会",
+        "name": "南越与西瓯诸部",
+        "note": "五岭以南南越、西瓯、骆越等百越诸族，前214年秦凿灵渠置南海桂林象郡"
+      },
+      {
+        "from": -206,
+        "to": -202,
+        "kind": "诸国并立",
+        "name": "赵佗守番禺",
+        "note": "南海郡尉赵佗于秦末聚兵绝新道并兼桂林象郡，旋称南越武王"
+      },
+      {
+        "from": 907,
+        "to": 979,
+        "kind": "诸国并立",
+        "name": "南汉政权",
+        "note": "刘隐、刘龑据广州兴王府建大越（南汉），971年北宋潘美平南汉"
+      }
+    ],
+    "dianqian": [
+      {
+        "from": -3000,
+        "to": -301,
+        "kind": "部落社会",
+        "name": "西南夷诸部",
+        "note": "滇池贝丘新石器文化与古滇、夜郎、邛都早期青铜部族"
+      },
+      {
+        "from": 555,
+        "to": 750,
+        "kind": "诸国并立",
+        "name": "东西爨与六诏",
+        "note": "西爨白蛮、东爨乌蛮与蒙舍等六诏并立，738年皮罗阁合六诏建南诏"
+      },
+      {
+        "from": 902,
+        "to": 936,
+        "kind": "诸国并立",
+        "name": "大长和政权",
+        "note": "902年郑买嗣灭南诏建大长和国，洱海先后更迭大长和、大天兴、大义宁三朝，937年段思平建大理国"
+      }
+    ],
+    "taiwan": [
+      {
+        "from": -3000,
+        "to": -2500,
+        "kind": "考古学文化",
+        "name": "大坌坑文化",
+        "note": "台湾早期南岛语族绳纹陶新石器文化"
+      },
+      {
+        "from": -2500,
+        "to": 1648,
+        "kind": "部落社会",
+        "name": "台湾南岛诸社",
+        "note": "圆山、卑南、十三行文化及平埔、高山原住民部落；元明设澎湖巡检司，1624年荷兰据大员"
+      }
+    ]
+  },
+  "legacy_parent_centroids": {
+    "north_china": [
+      1016,
+      141
+    ],
+    "guanzhong": [
+      993,
+      165
+    ],
+    "bashu": [
+      962,
+      192
+    ],
+    "jiangnan": [
+      1004,
+      200
+    ],
+    "lingnan": [
+      985,
+      226
+    ],
+    "hexizoulang": [
+      966,
+      164
+    ],
+    "yunnan": [
+      960,
+      218
+    ],
+    "taiwan": [
+      1036,
+      226
+    ],
+    "manchuria": [
+      1084,
+      88
+    ]
+  },
+  "trade_hub_overrides": {
+    "长安": "guanzhong",
+    "敦煌": "hexi",
+    "泉州·广州": "lingnan",
+    "月港·澳门": "lingnan",
+    "连云港·西安": "guanzhong"
+  },
+  "chronicle_keywords": [
+    {
+      "region": "liaodong",
+      "keywords": [
+        "辽东",
+        "辽宁",
+        "襄平",
+        "辽阳",
+        "沈阳",
+        "盛京",
+        "奉天",
+        "旅顺",
+        "大连",
+        "锦州",
+        "宁远",
+        "兴城",
+        "营口",
+        "丹东",
+        "鞍山",
+        "抚顺",
+        "萨尔浒",
+        "松锦",
+        "玄菟"
+      ]
+    },
+    {
+      "region": "manchuria",
+      "keywords": [
+        "黑龙江",
+        "吉林",
+        "宁古塔",
+        "雅克萨",
+        "瑷珲",
+        "会宁府",
+        "上京龙泉",
+        "长春",
+        "哈尔滨",
+        "齐齐哈尔",
+        "牡丹江",
+        "佳木斯",
+        "奴儿干",
+        "尼布楚",
+        "完颜阿骨打",
+        "扶余",
+        "挹娄",
+        "勿吉",
+        "靺鞨"
+      ]
+    },
+    {
+      "region": "qilu",
+      "keywords": [
+        "山东",
+        "临淄",
+        "淄博",
+        "曲阜",
+        "济南",
+        "历下",
+        "青岛",
+        "威海",
+        "烟台",
+        "登州",
+        "莱州",
+        "潍坊",
+        "青州",
+        "兖州",
+        "济宁",
+        "菏泽",
+        "定陶",
+        "巨野",
+        "泰安",
+        "泰山",
+        "封禅",
+        "聊城",
+        "临沂",
+        "琅琊",
+        "日照",
+        "枣庄",
+        "台儿庄",
+        "德州",
+        "胶州",
+        "即墨",
+        "稷下",
+        "马陵",
+        "桂陵",
+        "城濮",
+        "长勺",
+        "艾陵",
+        "大汶口",
+        "齐桓公",
+        "管仲",
+        "鲁隐公",
+        "孔子"
+      ]
+    },
+    {
+      "region": "hedong",
+      "keywords": [
+        "山西",
+        "陶寺",
+        "晋阳",
+        "太原",
+        "平阳",
+        "临汾",
+        "大同",
+        "平城",
+        "云冈",
+        "长治",
+        "上党",
+        "晋城",
+        "长平",
+        "高平之战",
+        "运城",
+        "河东郡",
+        "蒲坂",
+        "蒲州",
+        "安邑",
+        "解池",
+        "闻喜",
+        "曲沃",
+        "新田",
+        "侯马",
+        "翼城",
+        "霍州",
+        "吕梁",
+        "忻州",
+        "朔州",
+        "雁门",
+        "马邑",
+        "代郡",
+        "阳泉",
+        "晋中",
+        "晋文公",
+        "三家分晋"
+      ]
+    },
+    {
+      "region": "huaisi",
+      "keywords": [
+        "大梁",
+        "开封",
+        "汴梁",
+        "汴京",
+        "汴州",
+        "东京保卫战",
+        "陈桥",
+        "商丘",
+        "睢阳",
+        "周口",
+        "淮阳",
+        "陈州",
+        "杞县",
+        "圉县",
+        "兰考",
+        "葵丘",
+        "濮阳",
+        "帝丘",
+        "铁丘",
+        "瓠子",
+        "东郡",
+        "滑县",
+        "封丘",
+        "黄池",
+        "徐州",
+        "彭城",
+        "下邳",
+        "睢宁",
+        "连云港",
+        "海州",
+        "宿迁",
+        "淮安",
+        "淮阴",
+        "垓下",
+        "大泽乡",
+        "宿州",
+        "蕲县",
+        "蕲南",
+        "亳州",
+        "阜阳",
+        "蚌埠",
+        "淮南",
+        "淝水",
+        "寿春",
+        "寿阳",
+        "凤台",
+        "下蔡",
+        "州来",
+        "滁州",
+        "合肥",
+        "庐州",
+        "泗水",
+        "陈胜",
+        "淮海"
+      ]
+    },
+    {
+      "region": "zhongyuan",
+      "keywords": [
+        "二里头",
+        "洛阳",
+        "洛邑",
+        "成周",
+        "王城",
+        "郑州",
+        "新郑",
+        "郑庄公",
+        "繻葛",
+        "许昌",
+        "许都",
+        "阳翟",
+        "禹州",
+        "偃师",
+        "巩义",
+        "双槐树",
+        "荥阳",
+        "荥泽",
+        "成皋",
+        "虎牢",
+        "敖仓",
+        "博浪沙",
+        "原阳",
+        "嵩山",
+        "登封",
+        "平顶山",
+        "漯河",
+        "召陵",
+        "郾城",
+        "驻马店",
+        "汝南",
+        "蔡州",
+        "信阳",
+        "南阳",
+        "宛城",
+        "昆阳",
+        "垂沙",
+        "淅川",
+        "三门峡",
+        "殽山",
+        "崤山",
+        "陕州",
+        "焦作",
+        "沁阳",
+        "野王",
+        "济源",
+        "高平陵",
+        "官渡",
+        "白马津"
+      ]
+    },
+    {
+      "region": "hebei",
+      "keywords": [
+        "安阳",
+        "殷墟",
+        "朝歌",
+        "淇县",
+        "鹤壁",
+        "牧野",
+        "新乡",
+        "盘庚",
+        "妇好",
+        "后母戊",
+        "邯郸",
+        "邺城",
+        "临漳",
+        "邢台",
+        "巨鹿",
+        "沙丘",
+        "柏人",
+        "石家庄",
+        "井陉",
+        "真定",
+        "正定",
+        "常山",
+        "藁城",
+        "肥下",
+        "宜安",
+        "保定",
+        "定州",
+        "中山国",
+        "沧州",
+        "河间",
+        "衡水",
+        "大名",
+        "魏州",
+        "澶渊",
+        "柏乡",
+        "赵武灵王"
+      ]
+    },
+    {
+      "region": "youyan",
+      "keywords": [
+        "北京",
+        "蓟城",
+        "燕下都",
+        "燕京",
+        "幽州",
+        "燕云",
+        "中都",
+        "大都",
+        "顺天",
+        "北平",
+        "紫禁城",
+        "天安门",
+        "卢沟桥",
+        "圆明园",
+        "天津",
+        "大沽",
+        "唐山",
+        "秦皇岛",
+        "山海关",
+        "廊坊",
+        "张家口",
+        "宣化",
+        "怀来",
+        "上谷",
+        "沮阳",
+        "承德",
+        "热河",
+        "渔阳",
+        "范阳",
+        "涿郡",
+        "涿州",
+        "易县",
+        "土木堡"
+      ]
+    },
+    {
+      "region": "guanzhong",
+      "keywords": [
+        "咸阳",
+        "长安",
+        "西安",
+        "镐京",
+        "丰京",
+        "丰镐",
+        "岐山",
+        "周原",
+        "宝鸡",
+        "凤翔",
+        "雍城",
+        "眉县",
+        "汧渭",
+        "半坡",
+        "石峁",
+        "铜川",
+        "延安",
+        "陕北",
+        "榆林",
+        "上郡",
+        "雕阴",
+        "富县",
+        "鄜畤",
+        "渭南",
+        "华州",
+        "华阴",
+        "阴晋",
+        "潼关",
+        "函谷",
+        "新丰",
+        "鸿门",
+        "霸上",
+        "霸王入关",
+        "栎阳",
+        "临潼",
+        "频阳",
+        "富平",
+        "泾阳",
+        "麻隧",
+        "淳化",
+        "甘泉",
+        "云阳",
+        "白水",
+        "彭衙",
+        "韩城",
+        "少梁",
+        "韩原",
+        "临晋",
+        "大荔",
+        "合阳",
+        "商洛",
+        "商邑",
+        "武关",
+        "蓝田",
+        "安康",
+        "五丈原",
+        "陈仓",
+        "渭水",
+        "洛水之阳",
+        "未央宫",
+        "长乐宫",
+        "文景之治",
+        "河套",
+        "河南地",
+        "朔方",
+        "九原",
+        "商鞅",
+        "兵马俑",
+        "玄武门",
+        "大雁塔"
+      ]
+    },
+    {
+      "region": "shu",
+      "keywords": [
+        "成都",
+        "蜀郡",
+        "临邛",
+        "邛崃",
+        "郫县",
+        "三星堆",
+        "金沙",
+        "都江堰",
+        "绵阳",
+        "绵竹",
+        "涪城",
+        "德阳",
+        "广元",
+        "剑门",
+        "剑阁",
+        "乐山",
+        "眉山",
+        "宜宾",
+        "泸州",
+        "自贡",
+        "内江",
+        "雅安",
+        "汉中",
+        "南郑",
+        "勉县",
+        "褒斜",
+        "定军山",
+        "略阳",
+        "大散关",
+        "巴蜀",
+        "司马错"
+      ]
+    },
+    {
+      "region": "ba",
+      "keywords": [
+        "重庆",
+        "江州",
+        "渝州",
+        "巴郡",
+        "钓鱼城",
+        "合川",
+        "白帝",
+        "奉节",
+        "夔门",
+        "巫山",
+        "巫郡",
+        "三峡",
+        "万州",
+        "涪陵",
+        "达州",
+        "广安",
+        "巴中",
+        "南充",
+        "阆中"
+      ]
+    },
+    {
+      "region": "longyou",
+      "keywords": [
+        "兰州",
+        "金城",
+        "允吾",
+        "永靖",
+        "天水",
+        "秦邑",
+        "邽县",
+        "甘谷",
+        "冀县",
+        "礼县",
+        "犬丘",
+        "西垂",
+        "陇南",
+        "定西",
+        "陇西",
+        "临洮",
+        "狄道",
+        "平凉",
+        "庆阳",
+        "北地郡",
+        "临夏",
+        "甘南",
+        "固原",
+        "六盘山",
+        "西宁",
+        "湟水",
+        "青海",
+        "街亭",
+        "祁山",
+        "陇右",
+        "大地湾",
+        "齐家文化"
+      ]
+    },
+    {
+      "region": "hexi",
+      "keywords": [
+        "敦煌",
+        "莫高窟",
+        "玉门",
+        "阳关",
+        "酒泉",
+        "嘉峪关",
+        "张掖",
+        "甘州",
+        "金昌",
+        "武威",
+        "姑臧",
+        "凉州",
+        "居延",
+        "额济纳",
+        "兴庆",
+        "银川",
+        "灵州",
+        "石嘴山",
+        "中卫",
+        "西夏",
+        "霍去病",
+        "河西四郡",
+        "归义军"
+      ]
+    },
+    {
+      "region": "jiangxi",
+      "keywords": [
+        "江西",
+        "南昌",
+        "豫章",
+        "洪州",
+        "景德镇",
+        "庐山",
+        "九江",
+        "浔阳",
+        "鄱阳",
+        "柴桑",
+        "上饶",
+        "抚州",
+        "宜春",
+        "萍乡",
+        "新余",
+        "鹰潭",
+        "井冈山",
+        "瑞金",
+        "庐陵",
+        "吉安",
+        "赣州",
+        "虔州",
+        "吴城"
+      ]
+    },
+    {
+      "region": "jiangdong",
+      "keywords": [
+        "良渚",
+        "河姆渡",
+        "建业",
+        "建康",
+        "南京",
+        "金陵",
+        "天京",
+        "应天",
+        "江宁",
+        "秣陵",
+        "曲阿",
+        "京口",
+        "镇江",
+        "常州",
+        "无锡",
+        "苏州",
+        "姑苏",
+        "吴郡",
+        "吴县",
+        "扬州",
+        "广陵",
+        "江都",
+        "邗沟",
+        "邗城",
+        "泰州",
+        "南通",
+        "上海",
+        "松江",
+        "临安",
+        "杭州",
+        "钱塘",
+        "吴越",
+        "嘉兴",
+        "湖州",
+        "会稽",
+        "绍兴",
+        "余姚",
+        "宁波",
+        "明州",
+        "舟山",
+        "台州",
+        "金华",
+        "衢州",
+        "丽水",
+        "温州",
+        "芜湖",
+        "安庆",
+        "宣城",
+        "徽州",
+        "黄山",
+        "池州",
+        "马鞍山"
+      ]
+    },
+    {
+      "region": "jingchu",
+      "keywords": [
+        "湖北",
+        "湖南",
+        "江陵",
+        "荆州",
+        "南郡",
+        "郢都",
+        "入郢",
+        "纪南",
+        "秭归",
+        "宜昌",
+        "夷陵",
+        "随州",
+        "曾侯乙",
+        "沈鹿",
+        "钟祥",
+        "荆门",
+        "孝感",
+        "云梦",
+        "睡虎地",
+        "黄冈",
+        "蕲春",
+        "咸宁",
+        "赤壁",
+        "乌林",
+        "汉水",
+        "荆楚",
+        "柏举",
+        "襄阳",
+        "隆中",
+        "三顾茅庐",
+        "樊城",
+        "武昌",
+        "夏口",
+        "江夏",
+        "武汉",
+        "汉口",
+        "汉阳",
+        "黄石",
+        "十堰",
+        "恩施",
+        "长沙",
+        "临湘",
+        "潭州",
+        "马王堆",
+        "株洲",
+        "湘潭",
+        "衡阳",
+        "邵阳",
+        "岳阳",
+        "汨罗",
+        "常德",
+        "武陵",
+        "张家界",
+        "益阳",
+        "郴州",
+        "桂阳",
+        "永州",
+        "零陵",
+        "怀化",
+        "娄底",
+        "湘西",
+        "里耶",
+        "黔中",
+        "沅陵",
+        "屈原",
+        "石家河"
+      ]
+    },
+    {
+      "region": "min",
+      "keywords": [
+        "福建",
+        "福州",
+        "冶城",
+        "东冶",
+        "侯官",
+        "泉州",
+        "刺桐",
+        "厦门",
+        "漳州",
+        "月港",
+        "莆田",
+        "三明",
+        "建安郡",
+        "建宁",
+        "建州",
+        "武夷",
+        "龙岩",
+        "古田",
+        "宁德",
+        "闽越",
+        "闽中"
+      ]
+    },
+    {
+      "region": "lingnan",
+      "keywords": [
+        "广东",
+        "广西",
+        "海南",
+        "广州",
+        "番禺",
+        "南海郡",
+        "南越",
+        "虎门",
+        "深圳",
+        "香港",
+        "澳门",
+        "珠海",
+        "佛山",
+        "东莞",
+        "惠州",
+        "汕头",
+        "潮州",
+        "梅州",
+        "韶关",
+        "湛江",
+        "茂名",
+        "肇庆",
+        "江门",
+        "清远",
+        "阳江",
+        "桂林",
+        "始安",
+        "灵渠",
+        "南宁",
+        "邕州",
+        "柳州",
+        "梧州",
+        "苍梧",
+        "北海",
+        "合浦",
+        "钦州",
+        "百色",
+        "玉林",
+        "凭祥",
+        "镇南关",
+        "徐闻",
+        "交趾",
+        "海口",
+        "三亚",
+        "琼州",
+        "儋耳",
+        "珠崖",
+        "崖山",
+        "黄花岗"
+      ]
+    },
+    {
+      "region": "dianqian",
+      "keywords": [
+        "云南",
+        "贵州",
+        "大理",
+        "南诏",
+        "昆明",
+        "滇池",
+        "益州郡",
+        "古滇",
+        "曲靖",
+        "玉溪",
+        "保山",
+        "永昌郡",
+        "昭通",
+        "丽江",
+        "普洱",
+        "临沧",
+        "红河",
+        "西双版纳",
+        "楚雄",
+        "德宏",
+        "贵阳",
+        "遵义",
+        "安顺",
+        "毕节",
+        "铜仁",
+        "六盘水",
+        "牂牁",
+        "夜郎"
+      ]
+    }
+  ],
+  "chronicle_defaults": [
+    {
+      "parent": "north_china",
+      "year_max": -1047,
+      "region": "hebei"
+    },
+    {
+      "parent": "north_china",
+      "year_min": -1046,
+      "year_max": 959,
+      "region": "zhongyuan"
+    },
+    {
+      "parent": "north_china",
+      "year_min": 960,
+      "year_max": 1270,
+      "region": "huaisi"
+    },
+    {
+      "parent": "north_china",
+      "year_min": 1271,
+      "region": "youyan"
+    },
+    {
+      "parent": "guanzhong",
+      "year_max": 906,
+      "region": "guanzhong"
+    },
+    {
+      "parent": "guanzhong",
+      "year_min": 907,
+      "region": "zhongyuan"
+    },
+    {
+      "parent": "bashu",
+      "region": "shu"
+    },
+    {
+      "parent": "jiangnan",
+      "year_max": -220,
+      "region": "jingchu"
+    },
+    {
+      "parent": "jiangnan",
+      "year_min": -219,
+      "region": "jiangdong"
+    },
+    {
+      "parent": "lingnan",
+      "region": "lingnan"
+    },
+    {
+      "parent": "hexizoulang",
+      "region": "hexi"
+    },
+    {
+      "parent": "yunnan",
+      "region": "dianqian"
+    },
+    {
+      "parent": "manchuria",
+      "year_max": 697,
+      "region": "liaodong"
+    },
+    {
+      "parent": "manchuria",
+      "year_min": 698,
+      "region": "manchuria"
+    }
+  ]
+}

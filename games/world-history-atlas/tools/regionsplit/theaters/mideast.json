@@ -1,0 +1,4918 @@
+{
+  "theater": "mideast",
+  "description": "中东、北非与中亚历史地理精细化拆分（13父区 -> 30子区，完整覆盖新月沃地、尼罗河三段、伊朗五区、小亚细亚三区、高加索南北与河中七河诸绿洲）",
+  "parent_to_children": {
+    "egypt": [
+      "lower_egypt",
+      "upper_egypt",
+      "nubia"
+    ],
+    "maghreb": [
+      "maghreb_west",
+      "carthage_tunisia"
+    ],
+    "levant": [
+      "judea"
+    ],
+    "syria": [
+      "phoenicia",
+      "syria"
+    ],
+    "mesopotamia": [
+      "upper_mesopotamia",
+      "lower_mesopotamia"
+    ],
+    "arabia": [
+      "arabia"
+    ],
+    "hejaz": [
+      "hejaz",
+      "yemen"
+    ],
+    "anatolia": [
+      "west_anatolia",
+      "central_anatolia",
+      "armenia"
+    ],
+    "persia": [
+      "media_azerbaijan",
+      "elam_khuzestan",
+      "fars",
+      "khorasan",
+      "sistan_baloch"
+    ],
+    "caucasus": [
+      "north_caucasus",
+      "south_caucasus"
+    ],
+    "kipchak": [
+      "kipchak",
+      "jetisu"
+    ],
+    "transoxiana": [
+      "khwarazm",
+      "transoxiana",
+      "ferghana"
+    ],
+    "bactria": [
+      "bactria",
+      "kabulistan"
+    ]
+  },
+  "expansion_order": {
+    "egypt": [
+      "lower_egypt",
+      "upper_egypt",
+      "nubia"
+    ],
+    "maghreb": [
+      "maghreb_west",
+      "carthage_tunisia"
+    ],
+    "levant": [
+      "judea"
+    ],
+    "syria": [
+      "phoenicia",
+      "syria"
+    ],
+    "mesopotamia": [
+      "upper_mesopotamia",
+      "lower_mesopotamia"
+    ],
+    "arabia": [
+      "arabia"
+    ],
+    "hejaz": [
+      "hejaz",
+      "yemen"
+    ],
+    "anatolia": [
+      "west_anatolia",
+      "central_anatolia",
+      "armenia"
+    ],
+    "persia": [
+      "media_azerbaijan",
+      "elam_khuzestan",
+      "fars",
+      "khorasan",
+      "sistan_baloch"
+    ],
+    "caucasus": [
+      "north_caucasus",
+      "south_caucasus"
+    ],
+    "kipchak": [
+      "kipchak",
+      "jetisu"
+    ],
+    "transoxiana": [
+      "khwarazm",
+      "transoxiana",
+      "ferghana"
+    ],
+    "bactria": [
+      "bactria",
+      "kabulistan"
+    ]
+  },
+  "cross_parent_candidates": {
+    "levant": [
+      "phoenicia",
+      "syria"
+    ],
+    "syria": [
+      "judea"
+    ],
+    "arabia": [
+      "yemen",
+      "hejaz"
+    ],
+    "hejaz": [
+      "arabia"
+    ],
+    "kipchak": [
+      "khwarazm",
+      "transoxiana"
+    ],
+    "transoxiana": [
+      "jetisu",
+      "bactria"
+    ],
+    "bactria": [
+      "sistan_baloch",
+      "khorasan",
+      "transoxiana"
+    ],
+    "caucasus": [
+      "armenia",
+      "media_azerbaijan"
+    ],
+    "anatolia": [
+      "syria",
+      "south_caucasus"
+    ],
+    "persia": [
+      "lower_mesopotamia",
+      "bactria",
+      "kabulistan"
+    ]
+  },
+  "children": [
+    {
+      "id": "lower_egypt",
+      "name": "下埃及(孟斐斯/开罗)",
+      "continent": "非洲",
+      "parent": "egypt",
+      "area_weight": 0.35,
+      "cx": 642,
+      "cy": 193
+    },
+    {
+      "id": "upper_egypt",
+      "name": "上埃及(底比斯)",
+      "continent": "非洲",
+      "parent": "egypt",
+      "area_weight": 0.35,
+      "cx": 646,
+      "cy": 218
+    },
+    {
+      "id": "nubia",
+      "name": "努比亚(库施/麦罗埃)",
+      "continent": "非洲",
+      "parent": "egypt",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "maghreb_west",
+      "name": "西马格里布(非斯/阿尔及尔)",
+      "continent": "非洲",
+      "parent": "maghreb",
+      "area_weight": 0.65,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "carthage_tunisia",
+      "name": "迦太基与突尼斯(阿非利加)",
+      "continent": "非洲",
+      "parent": "maghreb",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "judea",
+      "name": "犹太与巴勒斯坦(耶路撒冷)",
+      "continent": "西亚",
+      "parent": "levant",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "phoenicia",
+      "name": "腓尼基海岸(推罗/贝鲁特)",
+      "continent": "西亚",
+      "parent": "syria",
+      "area_weight": 0.25,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "syria",
+      "name": "叙利亚(大马士革/阿勒颇)",
+      "continent": "西亚",
+      "parent": "syria",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "upper_mesopotamia",
+      "name": "上美索不达米亚(亚述/摩苏尔)",
+      "continent": "西亚",
+      "parent": "mesopotamia",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "lower_mesopotamia",
+      "name": "下美索不达米亚(巴比伦/巴格达)",
+      "continent": "西亚",
+      "parent": "mesopotamia",
+      "area_weight": 0.65,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "hejaz",
+      "name": "汉志红海沿岸(麦加/麦地那)",
+      "continent": "西亚",
+      "parent": "hejaz",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "yemen",
+      "name": "也门与哈德拉毛(萨那/马里卜)",
+      "continent": "西亚",
+      "parent": "hejaz",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "arabia",
+      "name": "内志与阿曼(利雅得/马斯喀特)",
+      "continent": "西亚",
+      "parent": "arabia",
+      "area_weight": 0.7,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "west_anatolia",
+      "name": "西小亚细亚(伊奥尼亚/君士坦丁堡)",
+      "continent": "西亚",
+      "parent": "anatolia",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "central_anatolia",
+      "name": "安纳托利亚高原(安卡拉/科尼亚)",
+      "continent": "西亚",
+      "parent": "anatolia",
+      "area_weight": 0.5,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "armenia",
+      "name": "亚美尼亚高原(凡城/特拉比松)",
+      "continent": "西亚",
+      "parent": "anatolia",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "media_azerbaijan",
+      "name": "米底与阿塞拜疆(哈马丹/大不里士)",
+      "continent": "西亚",
+      "parent": "persia",
+      "area_weight": 0.55,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "elam_khuzestan",
+      "name": "埃兰与胡齐斯坦(苏萨)",
+      "continent": "西亚",
+      "parent": "persia",
+      "area_weight": 0.3,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "fars",
+      "name": "法尔斯与克尔曼(设拉子/波斯波利斯)",
+      "continent": "西亚",
+      "parent": "persia",
+      "area_weight": 0.5,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "khorasan",
+      "name": "呼罗珊(尼沙普尔/图斯)",
+      "continent": "西亚",
+      "parent": "persia",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "sistan_baloch",
+      "name": "锡斯坦与俾路支(扎博勒/马克兰)",
+      "continent": "西亚",
+      "parent": "persia",
+      "area_weight": 0.35,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "north_caucasus",
+      "name": "北高加索(阿兰/得尔奔)",
+      "continent": "中亚",
+      "parent": "caucasus",
+      "area_weight": 0.4,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "south_caucasus",
+      "name": "外高加索(第比利斯/埃里温/巴库)",
+      "continent": "中亚",
+      "parent": "caucasus",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "kipchak",
+      "name": "钦察草原(萨莱/哈萨克)",
+      "continent": "中亚",
+      "parent": "kipchak",
+      "area_weight": 0.85,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "jetisu",
+      "name": "七河流域(碎叶/伊犁/怛罗斯)",
+      "continent": "中亚",
+      "parent": "kipchak",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "khwarazm",
+      "name": "花剌子模与木鹿(玉龙杰赤)",
+      "continent": "中亚",
+      "parent": "transoxiana",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "transoxiana",
+      "name": "河中粟特(撒马尔罕/布哈拉)",
+      "continent": "中亚",
+      "parent": "transoxiana",
+      "area_weight": 0.5,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "ferghana",
+      "name": "费尔干纳盆地(大宛/浩罕)",
+      "continent": "中亚",
+      "parent": "transoxiana",
+      "area_weight": 0.3,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "bactria",
+      "name": "巴克特里亚(巴尔赫/赫拉特)",
+      "continent": "中亚",
+      "parent": "bactria",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    },
+    {
+      "id": "kabulistan",
+      "name": "喀布尔与坎大哈(犍陀罗西缘)",
+      "continent": "中亚",
+      "parent": "bactria",
+      "area_weight": 0.45,
+      "cx": null,
+      "cy": null
+    }
+  ],
+  "geometry_ops": [
+    {
+      "op": "split",
+      "comment": "沿北纬28.3度（西奈半岛南端—苏伊士湾西岸至西部沙漠）切分下埃及（含西奈）与上埃及及努比亚",
+      "source": "egypt[0]",
+      "start_ll": [
+        24.879,
+        28.3
+      ],
+      "end_ll": [
+        33.119,
+        28.225
+      ],
+      "via_ll": [
+        [
+          29.0,
+          28.3
+        ],
+        [
+          31.2,
+          28.3
+        ]
+      ],
+      "snap": "edge",
+      "max_snap_dist": 5.0,
+      "select_first": "north",
+      "into": [
+        "lower_egypt",
+        "$egypt_south"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿北纬22度（第一/第二瀑布过渡带及现代埃苏边界）切分上埃及与努比亚库什",
+      "source": "$egypt_south",
+      "start_ll": [
+        24.879,
+        22.11
+      ],
+      "end_ll": [
+        36.732,
+        22.11
+      ],
+      "via_ll": [
+        [
+          31.3,
+          22.11
+        ]
+      ],
+      "snap": "edge",
+      "max_snap_dist": 5.0,
+      "select_first": "north",
+      "into": [
+        "upper_egypt",
+        "nubia"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿塔巴卡海岸—杰里德盐湖西缘—古达米斯—加特一线切分西马格里布（摩洛哥/阿尔及利亚）与阿非利加（突尼斯/的黎波里/昔兰尼加）",
+      "source": "maghreb[0]",
+      "start_ll": [
+        8.446,
+        36.941
+      ],
+      "end_ll": [
+        11.853,
+        23.527
+      ],
+      "via_ll": [
+        [
+          8.2,
+          34.4
+        ],
+        [
+          9.4,
+          30.2
+        ],
+        [
+          10.2,
+          26.5
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 6.0,
+      "select_first": "west",
+      "into": [
+        "maghreb_west",
+        "carthage_tunisia"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "原版 levant 对应巴勒斯坦与外约旦（犹太/撒玛利亚/佩特拉）",
+      "rings": [
+        "levant[0]"
+      ],
+      "into": "judea"
+    },
+    {
+      "op": "split",
+      "comment": "沿大卡比尔河口—安条克黎巴嫩山脉东脊—黑门山切分腓尼基黎巴嫩海岸与内陆北叙利亚",
+      "source": "syria[0]",
+      "start_ll": [
+        35.88,
+        34.553
+      ],
+      "end_ll": [
+        35.696,
+        33.291
+      ],
+      "via_ll": [
+        [
+          36.12,
+          34.05
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          35.5,
+          33.89
+        ]
+      },
+      "into": [
+        "phoenicia",
+        "syria"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿幼发拉底河阿布凯马勒—萨马拉北—迪亚拉河口切分上美索不达米亚（亚述/贾兹拉）与下美索不达米亚（巴比伦尼亚/苏美尔）",
+      "source": "mesopotamia[0]",
+      "start_ll": [
+        40.898,
+        34.437
+      ],
+      "end_ll": [
+        45.547,
+        34.592
+      ],
+      "via_ll": [
+        [
+          43.2,
+          34.65
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": "north",
+      "into": [
+        "upper_mesopotamia",
+        "lower_mesopotamia"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿阿西尔南缘至奈季兰切分汉志红海沿岸与也门西段高原（萨那/马里卜）",
+      "source": "hejaz[0]",
+      "start_ll": [
+        41.427,
+        18.267
+      ],
+      "end_ll": [
+        44.672,
+        17.548
+      ],
+      "via_ll": [],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": "north",
+      "into": [
+        "hejaz",
+        "$yemen_west"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿奈季兰—鲁卜哈利沙漠南缘—迈赫拉东界切出哈德拉毛（也门东段）与内志阿曼主体",
+      "source": "arabia[0]",
+      "start_ll": [
+        44.672,
+        17.548
+      ],
+      "end_ll": [
+        53.234,
+        16.947
+      ],
+      "via_ll": [
+        [
+          49.0,
+          17.6
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": "north",
+      "into": [
+        "$arabia_main",
+        "$yemen_east"
+      ]
+    },
+    {
+      "op": "merge",
+      "comment": "缝合也门高原（萨那/马里卜）与哈德拉毛海岸",
+      "sources": [
+        "$yemen_west",
+        "$yemen_east"
+      ],
+      "into": "$yemen_main"
+    },
+    {
+      "op": "assemble",
+      "comment": "组装也门主陆环与索科特拉岛（arabia[1]）",
+      "rings": [
+        "$yemen_main",
+        "arabia[1]"
+      ],
+      "into": "yemen"
+    },
+    {
+      "op": "copy",
+      "comment": "输出内志与阿曼主体（arabia）",
+      "rings": [
+        "$arabia_main"
+      ],
+      "into": "arabia"
+    },
+    {
+      "op": "split",
+      "comment": "沿萨卡里亚河东侧至安塔利亚湾切分爱琴海西岸吕底亚/比提尼亚与中东安纳托利亚",
+      "source": "anatolia[0]",
+      "start_ll": [
+        31.162,
+        41.114
+      ],
+      "end_ll": [
+        30.541,
+        36.882
+      ],
+      "via_ll": [
+        [
+          30.2,
+          39.6
+        ],
+        [
+          30.0,
+          38.0
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": "west",
+      "into": [
+        "$west_anatolia_main",
+        "$anatolia_east_rem"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "将东色雷斯欧洲领地环（anatolia[1]，含君士坦丁堡西郊与加里波利）挂入西小亚细亚",
+      "rings": [
+        "$west_anatolia_main",
+        "anatolia[1]"
+      ],
+      "into": "west_anatolia"
+    },
+    {
+      "op": "split",
+      "comment": "沿黑海吉雷松西侧经上幼发拉底河谷至叙北边界切分中安纳托利亚高原与亚美尼亚高原西段/本都",
+      "source": "$anatolia_east_rem",
+      "start_ll": [
+        38.297,
+        40.94
+      ],
+      "end_ll": [
+        38.113,
+        36.902
+      ],
+      "via_ll": [
+        [
+          38.35,
+          39.0
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": "west",
+      "into": [
+        "$central_anatolia_main",
+        "armenia"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "组装中安纳托利亚高原主陆与塞浦路斯岛（anatolia[2]）",
+      "rings": [
+        "$central_anatolia_main",
+        "anatolia[2]"
+      ],
+      "into": "central_anatolia"
+    },
+    {
+      "op": "split",
+      "comment": "沿扎格罗斯山脉西南麓切分埃兰/胡齐斯坦平原与伊朗高原主体",
+      "source": "persia[0]",
+      "start_ll": [
+        45.8,
+        33.621
+      ],
+      "end_ll": [
+        50.587,
+        29.428
+      ],
+      "via_ll": [
+        [
+          48.8,
+          32.7
+        ],
+        [
+          50.2,
+          31.2
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          48.24,
+          32.19
+        ]
+      },
+      "into": [
+        "elam_khuzestan",
+        "$persia_rem1"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿卢特沙漠东缘至贾斯克海岸切出锡斯坦与俾路支（马克兰）",
+      "source": "$persia_rem1",
+      "start_ll": [
+        60.506,
+        33.0
+      ],
+      "end_ll": [
+        57.86,
+        25.701
+      ],
+      "via_ll": [
+        [
+          59.0,
+          30.8
+        ],
+        [
+          58.4,
+          28.0
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          61.5,
+          31.03
+        ]
+      },
+      "into": [
+        "sistan_baloch",
+        "$persia_rem2"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿里海东南角经卡维尔盐漠至南呼罗珊切出呼罗珊（尼沙普尔/图斯/达姆甘）",
+      "source": "$persia_rem2",
+      "start_ll": [
+        53.303,
+        36.882
+      ],
+      "end_ll": [
+        60.506,
+        33.0
+      ],
+      "via_ll": [
+        [
+          54.0,
+          34.5
+        ],
+        [
+          57.0,
+          33.5
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          58.8,
+          36.21
+        ]
+      },
+      "into": [
+        "khorasan",
+        "$persia_rem3"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿伊斯法罕以南、亚兹德以北分水岭切分米底阿塞拜疆（大不里士/哈马丹/伊斯法罕）与法尔斯克尔曼（设拉子/波斯波利斯）",
+      "source": "$persia_rem3",
+      "start_ll": [
+        50.2,
+        31.2
+      ],
+      "end_ll": [
+        57.0,
+        33.5
+      ],
+      "via_ll": [
+        [
+          53.2,
+          31.8
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          48.51,
+          34.8
+        ]
+      },
+      "into": [
+        "media_azerbaijan",
+        "$fars_main"
+      ]
+    },
+    {
+      "op": "assemble",
+      "comment": "组装法尔斯主陆与霍尔木兹海峡格什姆岛（persia[1]）",
+      "rings": [
+        "$fars_main",
+        "persia[1]"
+      ],
+      "into": "fars"
+    },
+    {
+      "op": "split",
+      "comment": "沿大高加索山脉主脊（普索河口—厄尔布鲁士—达里亚尔峡谷—萨穆尔河口得尔奔南）切分北高加索与外高加索",
+      "source": "caucasus[0]",
+      "start_ll": [
+        39.885,
+        43.424
+      ],
+      "end_ll": [
+        48.493,
+        41.852
+      ],
+      "via_ll": [
+        [
+          42.44,
+          43.35
+        ],
+        [
+          44.62,
+          42.75
+        ],
+        [
+          46.6,
+          41.9
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": "north",
+      "into": [
+        "north_caucasus",
+        "south_caucasus"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿阿拉湖—巴尔喀什湖北岸—别特帕克达拉荒原至塔拉斯西侧切出七河流域北段（伊犁/阿拉木图/塔拉斯）",
+      "source": "kipchak[0]",
+      "start_ll": [
+        82.278,
+        45.521
+      ],
+      "end_ll": [
+        70.886,
+        42.26
+      ],
+      "via_ll": [
+        [
+          78.5,
+          46.4
+        ],
+        [
+          74.0,
+          46.2
+        ],
+        [
+          69.6,
+          43.1
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          47.37,
+          47.18
+        ]
+      },
+      "into": [
+        "kipchak",
+        "$jetisu_north"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿塔拉斯阿拉套与费尔干纳山岭切出楚河—伊塞克湖盆地（碎叶/巴拉沙衮/赤谷城）",
+      "source": "transoxiana[0]",
+      "start_ll": [
+        70.886,
+        42.26
+      ],
+      "end_ll": [
+        74.039,
+        40.085
+      ],
+      "via_ll": [
+        [
+          72.2,
+          41.6
+        ],
+        [
+          73.5,
+          41.0
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          75.3,
+          42.83
+        ]
+      },
+      "into": [
+        "$jetisu_south",
+        "$transox_rem1"
+      ]
+    },
+    {
+      "op": "merge",
+      "comment": "跨父区块缝合伊犁—巴尔喀什南岸与楚河—伊塞克湖盆地为完整七河流域（jetisu）",
+      "sources": [
+        "$jetisu_north",
+        "$jetisu_south"
+      ],
+      "into": "jetisu"
+    },
+    {
+      "op": "split",
+      "comment": "沿库拉马山脉与阿赖山脉切出费尔干纳盆地（大宛/苦盏/浩罕/安集延）",
+      "source": "$transox_rem1",
+      "start_ll": [
+        69.62,
+        41.677
+      ],
+      "end_ll": [
+        70.564,
+        38.338
+      ],
+      "via_ll": [
+        [
+          69.25,
+          40.25
+        ],
+        [
+          69.8,
+          39.25
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          70.94,
+          40.53
+        ]
+      },
+      "into": [
+        "ferghana",
+        "$transox_rem2"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿克孜勒库姆沙漠与阿姆河中游切分花剌子模—马尔吉阿纳（玉龙杰赤/希瓦/木鹿）与河中粟特（布哈拉/撒马尔罕/塔什干）",
+      "source": "$transox_rem2",
+      "start_ll": [
+        63.153,
+        43.638
+      ],
+      "end_ll": [
+        63.038,
+        35.834
+      ],
+      "via_ll": [
+        [
+          62.8,
+          40.2
+        ],
+        [
+          63.1,
+          38.0
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          59.15,
+          42.33
+        ]
+      },
+      "into": [
+        "khwarazm",
+        "transoxiana"
+      ]
+    },
+    {
+      "op": "split",
+      "comment": "沿兴都库什山脉主脊—巴巴山脉切分山北巴克特里亚（巴尔赫/赫拉特）与山南喀布尔—阿拉霍西亚（喀布尔/加兹尼/坎大哈）",
+      "source": "bactria[0]",
+      "start_ll": [
+        71.369,
+        35.834
+      ],
+      "end_ll": [
+        60.852,
+        33.524
+      ],
+      "via_ll": [
+        [
+          68.0,
+          35.15
+        ],
+        [
+          64.8,
+          34.3
+        ]
+      ],
+      "snap": "vertex",
+      "max_snap_dist": 5.0,
+      "select_first": {
+        "contains_ll": [
+          66.9,
+          36.76
+        ]
+      },
+      "into": [
+        "bactria",
+        "kabulistan"
+      ]
+    }
+  ],
+  "capital_checks": [
+    {
+      "name": "亚历山大港",
+      "ll": [
+        29.92,
+        31.2
+      ],
+      "expect": "lower_egypt"
+    },
+    {
+      "name": "孟斐斯",
+      "ll": [
+        31.25,
+        29.85
+      ],
+      "expect": "lower_egypt"
+    },
+    {
+      "name": "开罗",
+      "ll": [
+        31.24,
+        30.04
+      ],
+      "expect": "lower_egypt"
+    },
+    {
+      "name": "阿马尔奈",
+      "ll": [
+        30.9,
+        27.65
+      ],
+      "expect": "upper_egypt"
+    },
+    {
+      "name": "底比斯(卢克索)",
+      "ll": [
+        32.64,
+        25.69
+      ],
+      "expect": "upper_egypt"
+    },
+    {
+      "name": "阿斯旺",
+      "ll": [
+        32.9,
+        24.09
+      ],
+      "expect": "upper_egypt"
+    },
+    {
+      "name": "纳帕塔",
+      "ll": [
+        31.82,
+        18.53
+      ],
+      "expect": "nubia"
+    },
+    {
+      "name": "麦罗埃",
+      "ll": [
+        33.75,
+        16.94
+      ],
+      "expect": "nubia"
+    },
+    {
+      "name": "喀土穆",
+      "ll": [
+        32.56,
+        15.5
+      ],
+      "expect": "nubia"
+    },
+    {
+      "name": "非斯",
+      "ll": [
+        -5.0,
+        34.03
+      ],
+      "expect": "maghreb_west"
+    },
+    {
+      "name": "马拉喀什",
+      "ll": [
+        -7.98,
+        31.63
+      ],
+      "expect": "maghreb_west"
+    },
+    {
+      "name": "阿尔及尔",
+      "ll": [
+        3.06,
+        36.75
+      ],
+      "expect": "maghreb_west"
+    },
+    {
+      "name": "锡尔塔(君士坦丁)",
+      "ll": [
+        6.61,
+        36.37
+      ],
+      "expect": "maghreb_west"
+    },
+    {
+      "name": "迦太基",
+      "ll": [
+        10.32,
+        36.85
+      ],
+      "expect": "carthage_tunisia"
+    },
+    {
+      "name": "凯鲁万",
+      "ll": [
+        10.1,
+        35.68
+      ],
+      "expect": "carthage_tunisia"
+    },
+    {
+      "name": "的黎波里",
+      "ll": [
+        13.19,
+        32.89
+      ],
+      "expect": "carthage_tunisia"
+    },
+    {
+      "name": "昔兰尼",
+      "ll": [
+        21.86,
+        32.82
+      ],
+      "expect": "carthage_tunisia"
+    },
+    {
+      "name": "耶路撒冷",
+      "ll": [
+        35.21,
+        31.77
+      ],
+      "expect": "judea"
+    },
+    {
+      "name": "撒玛利亚",
+      "ll": [
+        35.19,
+        32.28
+      ],
+      "expect": "judea"
+    },
+    {
+      "name": "佩特拉",
+      "ll": [
+        35.44,
+        30.33
+      ],
+      "expect": "judea"
+    },
+    {
+      "name": "推罗",
+      "ll": [
+        35.2,
+        33.27
+      ],
+      "expect": "phoenicia"
+    },
+    {
+      "name": "西顿",
+      "ll": [
+        35.37,
+        33.56
+      ],
+      "expect": "phoenicia"
+    },
+    {
+      "name": "贝鲁特",
+      "ll": [
+        35.5,
+        33.89
+      ],
+      "expect": "phoenicia"
+    },
+    {
+      "name": "比布鲁斯",
+      "ll": [
+        35.65,
+        34.12
+      ],
+      "expect": "phoenicia"
+    },
+    {
+      "name": "大马士革",
+      "ll": [
+        36.29,
+        33.51
+      ],
+      "expect": "syria"
+    },
+    {
+      "name": "卡迭石",
+      "ll": [
+        36.52,
+        34.56
+      ],
+      "expect": "syria"
+    },
+    {
+      "name": "乌加里特",
+      "ll": [
+        35.78,
+        35.6
+      ],
+      "expect": "syria"
+    },
+    {
+      "name": "埃勃拉",
+      "ll": [
+        36.8,
+        35.8
+      ],
+      "expect": "syria"
+    },
+    {
+      "name": "阿勒颇",
+      "ll": [
+        37.16,
+        36.2
+      ],
+      "expect": "syria"
+    },
+    {
+      "name": "帕尔米拉",
+      "ll": [
+        38.27,
+        34.55
+      ],
+      "expect": "syria"
+    },
+    {
+      "name": "尼尼微(摩苏尔)",
+      "ll": [
+        43.13,
+        36.36
+      ],
+      "expect": "upper_mesopotamia"
+    },
+    {
+      "name": "亚述城",
+      "ll": [
+        43.26,
+        35.46
+      ],
+      "expect": "upper_mesopotamia"
+    },
+    {
+      "name": "埃尔比勒(高加米拉)",
+      "ll": [
+        44.01,
+        36.19
+      ],
+      "expect": "upper_mesopotamia"
+    },
+    {
+      "name": "萨马拉",
+      "ll": [
+        43.87,
+        34.2
+      ],
+      "expect": "lower_mesopotamia"
+    },
+    {
+      "name": "巴格达",
+      "ll": [
+        44.36,
+        33.31
+      ],
+      "expect": "lower_mesopotamia"
+    },
+    {
+      "name": "泰西封",
+      "ll": [
+        44.58,
+        33.09
+      ],
+      "expect": "lower_mesopotamia"
+    },
+    {
+      "name": "巴比伦",
+      "ll": [
+        44.42,
+        32.54
+      ],
+      "expect": "lower_mesopotamia"
+    },
+    {
+      "name": "乌鲁克",
+      "ll": [
+        45.64,
+        31.32
+      ],
+      "expect": "lower_mesopotamia"
+    },
+    {
+      "name": "乌尔",
+      "ll": [
+        46.1,
+        30.96
+      ],
+      "expect": "lower_mesopotamia"
+    },
+    {
+      "name": "麦地那",
+      "ll": [
+        39.61,
+        24.47
+      ],
+      "expect": "hejaz"
+    },
+    {
+      "name": "麦加",
+      "ll": [
+        39.83,
+        21.42
+      ],
+      "expect": "hejaz"
+    },
+    {
+      "name": "萨那",
+      "ll": [
+        44.21,
+        15.35
+      ],
+      "expect": "yemen"
+    },
+    {
+      "name": "马里卜",
+      "ll": [
+        45.32,
+        15.46
+      ],
+      "expect": "yemen"
+    },
+    {
+      "name": "利雅得(德拉伊耶)",
+      "ll": [
+        46.72,
+        24.69
+      ],
+      "expect": "arabia"
+    },
+    {
+      "name": "马斯喀特",
+      "ll": [
+        58.41,
+        23.59
+      ],
+      "expect": "arabia"
+    },
+    {
+      "name": "特洛伊",
+      "ll": [
+        26.24,
+        39.96
+      ],
+      "expect": "west_anatolia"
+    },
+    {
+      "name": "萨迪斯",
+      "ll": [
+        28.04,
+        38.49
+      ],
+      "expect": "west_anatolia"
+    },
+    {
+      "name": "以弗所",
+      "ll": [
+        27.34,
+        37.94
+      ],
+      "expect": "west_anatolia"
+    },
+    {
+      "name": "米利都",
+      "ll": [
+        27.27,
+        37.53
+      ],
+      "expect": "west_anatolia"
+    },
+    {
+      "name": "尼西亚(伊兹尼克)",
+      "ll": [
+        29.72,
+        40.43
+      ],
+      "expect": "west_anatolia"
+    },
+    {
+      "name": "君士坦丁堡",
+      "ll": [
+        28.98,
+        41.01
+      ],
+      "expect": "west_anatolia"
+    },
+    {
+      "name": "伊普苏斯",
+      "ll": [
+        30.54,
+        38.76
+      ],
+      "expect": "central_anatolia"
+    },
+    {
+      "name": "安卡拉",
+      "ll": [
+        32.85,
+        39.93
+      ],
+      "expect": "central_anatolia"
+    },
+    {
+      "name": "哈图沙",
+      "ll": [
+        34.61,
+        40.02
+      ],
+      "expect": "central_anatolia"
+    },
+    {
+      "name": "科尼亚",
+      "ll": [
+        32.48,
+        37.87
+      ],
+      "expect": "central_anatolia"
+    },
+    {
+      "name": "卡内什(开塞利)",
+      "ll": [
+        35.48,
+        38.73
+      ],
+      "expect": "central_anatolia"
+    },
+    {
+      "name": "安条克",
+      "ll": [
+        36.16,
+        36.2
+      ],
+      "expect": "central_anatolia"
+    },
+    {
+      "name": "特拉比松",
+      "ll": [
+        39.72,
+        41.0
+      ],
+      "expect": "armenia"
+    },
+    {
+      "name": "曼齐刻尔特",
+      "ll": [
+        42.54,
+        39.15
+      ],
+      "expect": "armenia"
+    },
+    {
+      "name": "图什帕(凡城)",
+      "ll": [
+        43.37,
+        38.5
+      ],
+      "expect": "armenia"
+    },
+    {
+      "name": "阿米德(迪亚巴克尔)",
+      "ll": [
+        40.23,
+        37.91
+      ],
+      "expect": "armenia"
+    },
+    {
+      "name": "埃德萨(乌尔法)",
+      "ll": [
+        38.79,
+        37.16
+      ],
+      "expect": "armenia"
+    },
+    {
+      "name": "苏萨",
+      "ll": [
+        48.24,
+        32.19
+      ],
+      "expect": "elam_khuzestan"
+    },
+    {
+      "name": "阿瓦士",
+      "ll": [
+        48.67,
+        31.32
+      ],
+      "expect": "elam_khuzestan"
+    },
+    {
+      "name": "大不里士",
+      "ll": [
+        46.29,
+        38.08
+      ],
+      "expect": "media_azerbaijan"
+    },
+    {
+      "name": "埃克巴坦那(哈马丹)",
+      "ll": [
+        48.51,
+        34.8
+      ],
+      "expect": "media_azerbaijan"
+    },
+    {
+      "name": "德黑兰(雷伊)",
+      "ll": [
+        51.39,
+        35.69
+      ],
+      "expect": "media_azerbaijan"
+    },
+    {
+      "name": "伊斯法罕",
+      "ll": [
+        51.67,
+        32.65
+      ],
+      "expect": "media_azerbaijan"
+    },
+    {
+      "name": "帕萨尔加德",
+      "ll": [
+        53.18,
+        30.2
+      ],
+      "expect": "fars"
+    },
+    {
+      "name": "波斯波利斯",
+      "ll": [
+        52.89,
+        29.93
+      ],
+      "expect": "fars"
+    },
+    {
+      "name": "设拉子",
+      "ll": [
+        52.53,
+        29.59
+      ],
+      "expect": "fars"
+    },
+    {
+      "name": "克尔曼",
+      "ll": [
+        57.08,
+        30.28
+      ],
+      "expect": "fars"
+    },
+    {
+      "name": "霍尔木兹",
+      "ll": [
+        56.46,
+        27.06
+      ],
+      "expect": "fars"
+    },
+    {
+      "name": "赫卡托姆皮洛斯(达姆甘)",
+      "ll": [
+        54.35,
+        36.17
+      ],
+      "expect": "khorasan"
+    },
+    {
+      "name": "尼沙普尔",
+      "ll": [
+        58.8,
+        36.21
+      ],
+      "expect": "khorasan"
+    },
+    {
+      "name": "图斯(马什哈德)",
+      "ll": [
+        59.6,
+        36.3
+      ],
+      "expect": "khorasan"
+    },
+    {
+      "name": "扎博勒(锡斯坦)",
+      "ll": [
+        61.5,
+        31.03
+      ],
+      "expect": "sistan_baloch"
+    },
+    {
+      "name": "恰巴哈尔",
+      "ll": [
+        60.64,
+        25.29
+      ],
+      "expect": "sistan_baloch"
+    },
+    {
+      "name": "得尔奔",
+      "ll": [
+        48.29,
+        42.06
+      ],
+      "expect": "north_caucasus"
+    },
+    {
+      "name": "斯塔夫罗波尔",
+      "ll": [
+        41.97,
+        45.05
+      ],
+      "expect": "north_caucasus"
+    },
+    {
+      "name": "第比利斯",
+      "ll": [
+        44.79,
+        41.72
+      ],
+      "expect": "south_caucasus"
+    },
+    {
+      "name": "埃里温",
+      "ll": [
+        44.51,
+        40.18
+      ],
+      "expect": "south_caucasus"
+    },
+    {
+      "name": "巴库",
+      "ll": [
+        49.87,
+        40.41
+      ],
+      "expect": "south_caucasus"
+    },
+    {
+      "name": "萨莱(阿斯特拉罕北)",
+      "ll": [
+        47.37,
+        47.18
+      ],
+      "expect": "kipchak"
+    },
+    {
+      "name": "阿斯塔纳",
+      "ll": [
+        71.43,
+        51.17
+      ],
+      "expect": "kipchak"
+    },
+    {
+      "name": "突厥斯坦(亚西)",
+      "ll": [
+        68.25,
+        43.3
+      ],
+      "expect": "kipchak"
+    },
+    {
+      "name": "怛罗斯(塔拉兹)",
+      "ll": [
+        71.39,
+        42.9
+      ],
+      "expect": "jetisu"
+    },
+    {
+      "name": "碎叶/巴拉沙衮(托克马克)",
+      "ll": [
+        75.3,
+        42.83
+      ],
+      "expect": "jetisu"
+    },
+    {
+      "name": "阿拉木图",
+      "ll": [
+        76.85,
+        43.22
+      ],
+      "expect": "jetisu"
+    },
+    {
+      "name": "赤谷城(伊塞克湖东南)",
+      "ll": [
+        78.0,
+        42.25
+      ],
+      "expect": "jetisu"
+    },
+    {
+      "name": "玉龙杰赤(库尼亚乌尔根奇)",
+      "ll": [
+        59.15,
+        42.33
+      ],
+      "expect": "khwarazm"
+    },
+    {
+      "name": "希瓦",
+      "ll": [
+        60.36,
+        41.38
+      ],
+      "expect": "khwarazm"
+    },
+    {
+      "name": "木鹿(马雷)",
+      "ll": [
+        62.19,
+        37.66
+      ],
+      "expect": "khwarazm"
+    },
+    {
+      "name": "尼萨(阿什哈巴德)",
+      "ll": [
+        58.38,
+        37.95
+      ],
+      "expect": "khwarazm"
+    },
+    {
+      "name": "布哈拉",
+      "ll": [
+        64.42,
+        39.77
+      ],
+      "expect": "transoxiana"
+    },
+    {
+      "name": "撒马尔罕",
+      "ll": [
+        66.96,
+        39.65
+      ],
+      "expect": "transoxiana"
+    },
+    {
+      "name": "塔什干(石国)",
+      "ll": [
+        69.24,
+        41.3
+      ],
+      "expect": "transoxiana"
+    },
+    {
+      "name": "苦盏(极东亚历山大)",
+      "ll": [
+        69.62,
+        40.28
+      ],
+      "expect": "ferghana"
+    },
+    {
+      "name": "浩罕",
+      "ll": [
+        70.94,
+        40.53
+      ],
+      "expect": "ferghana"
+    },
+    {
+      "name": "安集延(大宛)",
+      "ll": [
+        72.34,
+        40.78
+      ],
+      "expect": "ferghana"
+    },
+    {
+      "name": "赫拉特",
+      "ll": [
+        62.2,
+        34.34
+      ],
+      "expect": "bactria"
+    },
+    {
+      "name": "巴尔赫(蓝氏城)",
+      "ll": [
+        66.9,
+        36.76
+      ],
+      "expect": "bactria"
+    },
+    {
+      "name": "昆都士",
+      "ll": [
+        68.86,
+        36.73
+      ],
+      "expect": "bactria"
+    },
+    {
+      "name": "喀布尔",
+      "ll": [
+        69.17,
+        34.53
+      ],
+      "expect": "kabulistan"
+    },
+    {
+      "name": "加兹尼",
+      "ll": [
+        68.42,
+        33.55
+      ],
+      "expect": "kabulistan"
+    },
+    {
+      "name": "坎大哈",
+      "ll": [
+        65.71,
+        31.62
+      ],
+      "expect": "kabulistan"
+    },
+    {
+      "name": "扎兰季(疾陵城)",
+      "ll": [
+        61.86,
+        31.03
+      ],
+      "expect": "kabulistan"
+    }
+  ],
+  "polity_guards": [
+    {
+      "parent": "egypt",
+      "owners": [
+        "古埃及王国",
+        "亚述帝国",
+        "波斯阿契美尼德帝国",
+        "亚历山大帝国",
+        "托勒密王国",
+        "罗马帝国",
+        "拜占庭帝国",
+        "阿拉伯帝国",
+        "倭马亚王朝",
+        "阿拔斯王朝",
+        "阿尤布王朝",
+        "马穆鲁克苏丹国",
+        "奥斯曼帝国",
+        "埃及王国",
+        "阿拉伯埃及共和国"
+      ],
+      "map": {
+        "lower_egypt": "$owner",
+        "upper_egypt": "$owner",
+        "nubia": null
+      }
+    },
+    {
+      "parent": "maghreb",
+      "owners": [
+        "迦太基帝国",
+        "拜占庭帝国"
+      ],
+      "map": {
+        "maghreb_west": null,
+        "carthage_tunisia": "$owner"
+      }
+    },
+    {
+      "parent": "maghreb",
+      "owners": [
+        "努米底亚王国"
+      ],
+      "map": {
+        "maghreb_west": "努米底亚王国",
+        "carthage_tunisia": "迦太基帝国"
+      }
+    },
+    {
+      "parent": "maghreb",
+      "owners": [
+        "摩洛哥阿拉维王朝"
+      ],
+      "map": {
+        "maghreb_west": "摩洛哥阿拉维王朝",
+        "carthage_tunisia": "奥斯曼帝国"
+      }
+    },
+    {
+      "parent": "syria",
+      "owners": [
+        "埃勃拉王国",
+        "阿卡德帝国"
+      ],
+      "map": {
+        "phoenicia": null,
+        "syria": "$owner"
+      }
+    },
+    {
+      "parent": "hejaz",
+      "owners": [
+        "沙特阿拉伯王国"
+      ],
+      "map": {
+        "hejaz": "沙特阿拉伯王国",
+        "yemen": null
+      }
+    },
+    {
+      "parent": "anatolia",
+      "owners": [
+        "赫梯帝国"
+      ],
+      "map": {
+        "west_anatolia": null,
+        "central_anatolia": "赫梯帝国",
+        "armenia": null
+      }
+    },
+    {
+      "parent": "anatolia",
+      "owners": [
+        "吕底亚王国"
+      ],
+      "map": {
+        "west_anatolia": "吕底亚王国",
+        "central_anatolia": "吕底亚王国",
+        "armenia": "乌拉尔图王国"
+      }
+    },
+    {
+      "parent": "anatolia",
+      "owners": [
+        "亚历山大帝国",
+        "罗马共和国",
+        "罗马帝国"
+      ],
+      "map": {
+        "west_anatolia": "$owner",
+        "central_anatolia": "$owner",
+        "armenia": null
+      }
+    },
+    {
+      "parent": "persia",
+      "owners": [
+        "埃兰王国"
+      ],
+      "map": {
+        "elam_khuzestan": "埃兰王国",
+        "fars": "埃兰王国",
+        "media_azerbaijan": null,
+        "khorasan": null,
+        "sistan_baloch": null
+      }
+    },
+    {
+      "parent": "caucasus",
+      "owners": [
+        "乌拉尔图王国",
+        "波斯阿契美尼德帝国",
+        "萨珊波斯帝国",
+        "倭马亚王朝",
+        "阿拔斯王朝",
+        "白羊王朝",
+        "萨法维波斯帝国",
+        "波斯恺加王朝"
+      ],
+      "map": {
+        "north_caucasus": null,
+        "south_caucasus": "$owner"
+      }
+    },
+    {
+      "parent": "caucasus",
+      "owners": [
+        "亚历山大帝国",
+        "塞琉古帝国",
+        "安息帝国"
+      ],
+      "map": {
+        "north_caucasus": null,
+        "south_caucasus": null
+      }
+    },
+    {
+      "parent": "caucasus",
+      "owners": [
+        "俄罗斯联邦"
+      ],
+      "map": {
+        "north_caucasus": "俄罗斯联邦",
+        "south_caucasus": null
+      }
+    },
+    {
+      "parent": "kipchak",
+      "owners": [
+        "匈人帝国",
+        "可萨汗国",
+        "金帐汗国",
+        "俄罗斯沙皇国"
+      ],
+      "map": {
+        "kipchak": "$owner",
+        "jetisu": null
+      }
+    }
+  ],
+  "keyframe_overrides": {
+    "-1600": {
+      "lower_egypt": null,
+      "upper_egypt": "古埃及王国",
+      "upper_mesopotamia": null,
+      "lower_mesopotamia": "古巴比伦王国"
+    },
+    "-1450": {
+      "lower_egypt": "古埃及王国",
+      "upper_egypt": "古埃及王国",
+      "nubia": "古埃及王国",
+      "judea": "古埃及王国",
+      "phoenicia": "古埃及王国",
+      "syria": "古埃及王国"
+    },
+    "-1300": {
+      "syria": "赫梯帝国",
+      "phoenicia": "古埃及王国",
+      "judea": "古埃及王国"
+    },
+    "-1274": {
+      "nubia": "古埃及王国",
+      "syria": "赫梯帝国",
+      "phoenicia": "古埃及王国",
+      "judea": "古埃及王国"
+    },
+    "-1180": {
+      "nubia": null
+    },
+    "-1046": {
+      "nubia": "库施麦罗埃王国"
+    },
+    "-841": {
+      "phoenicia": "腓尼基推罗王国",
+      "upper_mesopotamia": "亚述帝国",
+      "lower_mesopotamia": null,
+      "armenia": "乌拉尔图王国"
+    },
+    "-814": {
+      "phoenicia": "腓尼基推罗王国",
+      "upper_mesopotamia": "亚述帝国",
+      "lower_mesopotamia": null
+    },
+    "-770": {
+      "upper_egypt": "库施麦罗埃王国",
+      "nubia": "库施麦罗埃王国",
+      "lower_egypt": "古埃及王国",
+      "phoenicia": "腓尼基推罗王国",
+      "syria": "亚述帝国",
+      "upper_mesopotamia": "亚述帝国",
+      "lower_mesopotamia": "亚述帝国",
+      "yemen": "示巴王国",
+      "armenia": "乌拉尔图王国"
+    },
+    "-700": {
+      "lower_egypt": "亚述帝国",
+      "upper_egypt": "库施麦罗埃王国",
+      "nubia": "库施麦罗埃王国",
+      "phoenicia": "腓尼基推罗王国",
+      "judea": "亚述帝国",
+      "syria": "亚述帝国",
+      "armenia": "乌拉尔图王国",
+      "north_caucasus": "斯基泰王国",
+      "kipchak": "斯基泰王国",
+      "yemen": "示巴王国"
+    },
+    "-685": {
+      "west_anatolia": "吕底亚王国"
+    },
+    "-612": {
+      "lower_egypt": "古埃及王国",
+      "upper_egypt": "古埃及王国",
+      "nubia": "库施麦罗埃王国",
+      "phoenicia": "腓尼基推罗王国",
+      "armenia": "乌拉尔图王国"
+    },
+    "-594": {
+      "phoenicia": "腓尼基推罗王国",
+      "armenia": null,
+      "south_caucasus": null
+    },
+    "-550": {
+      "nubia": "库施麦罗埃王国",
+      "yemen": "示巴王国",
+      "north_caucasus": "斯基泰王国",
+      "kipchak": "斯基泰王国",
+      "south_caucasus": null
+    },
+    "-509": {
+      "north_caucasus": "斯基泰王国",
+      "south_caucasus": "波斯阿契美尼德帝国",
+      "jetisu": null
+    },
+    "-500": {
+      "nubia": "库施麦罗埃王国",
+      "north_caucasus": "斯基泰王国",
+      "south_caucasus": "波斯阿契美尼德帝国"
+    },
+    "-323": {
+      "nubia": "库施麦罗埃王国",
+      "armenia": null,
+      "north_caucasus": "斯基泰王国",
+      "south_caucasus": null,
+      "khwarazm": null,
+      "yemen": "示巴王国"
+    },
+    "-301": {
+      "lower_egypt": "托勒密王国",
+      "upper_egypt": "托勒密王国",
+      "nubia": "库施麦罗埃王国",
+      "judea": "托勒密王国",
+      "phoenicia": "托勒密王国",
+      "syria": "塞琉古帝国",
+      "west_anatolia": null,
+      "central_anatolia": "塞琉古帝国",
+      "armenia": null,
+      "north_caucasus": "斯基泰王国",
+      "south_caucasus": null,
+      "sistan_baloch": "孔雀王朝",
+      "kabulistan": "孔雀王朝",
+      "bactria": "塞琉古帝国",
+      "khwarazm": null,
+      "transoxiana": "塞琉古帝国",
+      "ferghana": "塞琉古帝国",
+      "yemen": "示巴王国"
+    },
+    "-260": {
+      "judea": "托勒密王国",
+      "phoenicia": "托勒密王国",
+      "west_anatolia": null,
+      "central_anatolia": "塞琉古帝国",
+      "armenia": null,
+      "north_caucasus": "斯基泰王国",
+      "sistan_baloch": "孔雀王朝",
+      "kabulistan": "孔雀王朝",
+      "bactria": "塞琉古帝国",
+      "khwarazm": null
+    },
+    "-230": {
+      "judea": "托勒密王国",
+      "phoenicia": "托勒密王国",
+      "west_anatolia": null,
+      "central_anatolia": "塞琉古帝国",
+      "armenia": null,
+      "khorasan": "安息帝国",
+      "khwarazm": "安息帝国",
+      "media_azerbaijan": "塞琉古帝国",
+      "elam_khuzestan": "塞琉古帝国",
+      "fars": "塞琉古帝国",
+      "sistan_baloch": "塞琉古帝国",
+      "bactria": "巴克特里亚王国",
+      "kabulistan": "孔雀王朝"
+    },
+    "-202": {
+      "nubia": "库施麦罗埃王国",
+      "maghreb_west": "努米底亚王国",
+      "carthage_tunisia": "迦太基帝国",
+      "judea": "塞琉古帝国",
+      "phoenicia": "塞琉古帝国",
+      "syria": "塞琉古帝国",
+      "west_anatolia": null,
+      "central_anatolia": null,
+      "armenia": null,
+      "media_azerbaijan": "塞琉古帝国",
+      "elam_khuzestan": "塞琉古帝国",
+      "fars": "塞琉古帝国",
+      "sistan_baloch": "塞琉古帝国",
+      "khorasan": "安息帝国",
+      "khwarazm": "安息帝国",
+      "bactria": "巴克特里亚王国",
+      "kabulistan": "巴克特里亚王国",
+      "transoxiana": "巴克特里亚王国",
+      "ferghana": "巴克特里亚王国",
+      "north_caucasus": null,
+      "kipchak": null,
+      "yemen": "示巴王国"
+    },
+    "-154": {
+      "jetisu": "乌孙王国"
+    },
+    "-146": {
+      "maghreb_west": "努米底亚王国",
+      "carthage_tunisia": "罗马共和国",
+      "phoenicia": "塞琉古帝国",
+      "west_anatolia": null,
+      "central_anatolia": null,
+      "armenia": null,
+      "khwarazm": "安息帝国"
+    },
+    "-121": {
+      "west_anatolia": "罗马共和国",
+      "transoxiana": "大月氏王国",
+      "bactria": "大月氏王国",
+      "ferghana": null,
+      "kabulistan": null
+    },
+    "-100": {
+      "judea": null,
+      "phoenicia": null,
+      "west_anatolia": "罗马共和国",
+      "central_anatolia": null,
+      "armenia": null,
+      "transoxiana": null,
+      "bactria": null,
+      "khwarazm": "安息帝国"
+    },
+    "-60": {
+      "maghreb_west": "努米底亚王国",
+      "carthage_tunisia": "罗马共和国",
+      "west_anatolia": "罗马共和国",
+      "central_anatolia": "罗马共和国",
+      "armenia": null,
+      "khwarazm": null
+    },
+    "-27": {
+      "nubia": "库施麦罗埃王国",
+      "maghreb_west": "罗马帝国",
+      "carthage_tunisia": "罗马帝国",
+      "transoxiana": null,
+      "ferghana": null,
+      "khwarazm": null
+    },
+    "25": {
+      "nubia": "库施麦罗埃王国",
+      "yemen": "示巴王国",
+      "jetisu": "乌孙王国"
+    },
+    "117": {
+      "nubia": "库施麦罗埃王国",
+      "armenia": "罗马帝国"
+    },
+    "166": {
+      "armenia": null
+    },
+    "225": {
+      "nubia": "库施麦罗埃王国",
+      "yemen": "示巴王国",
+      "kabulistan": "贵霜帝国",
+      "bactria": "萨珊波斯帝国"
+    },
+    "280": {
+      "yemen": null
+    },
+    "351": {
+      "nubia": null,
+      "kabulistan": null
+    },
+    "383": {
+      "jetisu": "乌孙王国"
+    },
+    "395": {
+      "armenia": "拜占庭帝国"
+    },
+    "445": {
+      "maghreb_west": null,
+      "carthage_tunisia": null,
+      "north_caucasus": "匈人帝国",
+      "jetisu": "柔然汗国"
+    },
+    "476": {
+      "maghreb_west": null,
+      "carthage_tunisia": null,
+      "north_caucasus": null,
+      "jetisu": "柔然汗国"
+    },
+    "494": {
+      "maghreb_west": null,
+      "carthage_tunisia": null
+    },
+    "534": {
+      "maghreb_west": null,
+      "carthage_tunisia": "拜占庭帝国"
+    },
+    "555": {
+      "maghreb_west": null,
+      "carthage_tunisia": "拜占庭帝国",
+      "jetisu": "突厥汗国"
+    },
+    "630": {
+      "yemen": "阿拉伯帝国"
+    },
+    "650": {
+      "yemen": "阿拉伯帝国",
+      "armenia": "阿拉伯帝国",
+      "north_caucasus": "可萨汗国",
+      "south_caucasus": null,
+      "jetisu": "突厥汗国"
+    },
+    "663": {
+      "yemen": "倭马亚王朝",
+      "armenia": "倭马亚王朝",
+      "north_caucasus": "可萨汗国",
+      "jetisu": "大唐帝国",
+      "ferghana": "大唐帝国",
+      "transoxiana": "大唐帝国",
+      "khwarazm": null,
+      "kabulistan": null
+    },
+    "690": {
+      "carthage_tunisia": "倭马亚王朝",
+      "maghreb_west": null,
+      "north_caucasus": "可萨汗国",
+      "jetisu": "大唐帝国",
+      "kabulistan": null
+    },
+    "715": {
+      "maghreb_west": "倭马亚王朝",
+      "carthage_tunisia": "倭马亚王朝",
+      "north_caucasus": "可萨汗国",
+      "khwarazm": "倭马亚王朝",
+      "transoxiana": "倭马亚王朝",
+      "ferghana": "大唐帝国",
+      "jetisu": "大唐帝国",
+      "bactria": "倭马亚王朝",
+      "kabulistan": "大唐帝国"
+    },
+    "750": {
+      "maghreb_west": null,
+      "carthage_tunisia": "阿拔斯王朝",
+      "west_anatolia": "拜占庭帝国",
+      "central_anatolia": "拜占庭帝国",
+      "armenia": "阿拔斯王朝",
+      "north_caucasus": "可萨汗国",
+      "south_caucasus": "阿拔斯王朝",
+      "jetisu": "大唐帝国",
+      "ferghana": "大唐帝国",
+      "transoxiana": "阿拔斯王朝",
+      "khwarazm": "阿拔斯王朝",
+      "bactria": "阿拔斯王朝",
+      "kabulistan": "阿拔斯王朝",
+      "yemen": "阿拔斯王朝"
+    },
+    "755": {
+      "maghreb_west": null,
+      "carthage_tunisia": "阿拔斯王朝",
+      "west_anatolia": "拜占庭帝国",
+      "central_anatolia": "拜占庭帝国",
+      "armenia": "阿拔斯王朝",
+      "north_caucasus": "可萨汗国",
+      "jetisu": null,
+      "ferghana": "阿拔斯王朝"
+    },
+    "843": {
+      "jetisu": "喀喇汗王朝"
+    },
+    "875": {
+      "sistan_baloch": null,
+      "khorasan": null,
+      "kabulistan": null,
+      "yemen": null
+    },
+    "907": {
+      "maghreb_west": null,
+      "carthage_tunisia": null,
+      "yemen": null,
+      "armenia": null,
+      "south_caucasus": null,
+      "transoxiana": null,
+      "ferghana": null,
+      "khwarazm": null,
+      "bactria": null,
+      "kabulistan": null,
+      "jetisu": "喀喇汗王朝"
+    },
+    "936": {
+      "lower_egypt": null,
+      "upper_egypt": null,
+      "maghreb_west": null,
+      "carthage_tunisia": null,
+      "judea": null,
+      "phoenicia": null,
+      "syria": null,
+      "hejaz": null,
+      "yemen": null,
+      "upper_mesopotamia": null,
+      "lower_mesopotamia": "阿拔斯王朝",
+      "west_anatolia": "拜占庭帝国",
+      "central_anatolia": "拜占庭帝国",
+      "armenia": null,
+      "north_caucasus": "可萨汗国",
+      "south_caucasus": null,
+      "kipchak": "可萨汗国",
+      "jetisu": "喀喇汗王朝",
+      "transoxiana": null,
+      "ferghana": null,
+      "khwarazm": null,
+      "bactria": null,
+      "kabulistan": null
+    },
+    "979": {
+      "armenia": "拜占庭帝国",
+      "north_caucasus": null,
+      "south_caucasus": null,
+      "kipchak": null,
+      "jetisu": "喀喇汗王朝"
+    },
+    "1005": {
+      "transoxiana": "喀喇汗王朝",
+      "ferghana": "喀喇汗王朝",
+      "jetisu": "喀喇汗王朝"
+    },
+    "1038": {
+      "sistan_baloch": "塞尔柱突厥帝国",
+      "khorasan": "塞尔柱突厥帝国",
+      "bactria": "塞尔柱突厥帝国"
+    },
+    "1066": {
+      "lower_egypt": null,
+      "upper_egypt": null,
+      "maghreb_west": null,
+      "carthage_tunisia": null,
+      "hejaz": null,
+      "phoenicia": "塞尔柱突厥帝国",
+      "transoxiana": "喀喇汗王朝",
+      "ferghana": "喀喇汗王朝",
+      "khwarazm": "塞尔柱突厥帝国",
+      "jetisu": "喀喇汗王朝",
+      "bactria": "塞尔柱突厥帝国",
+      "kabulistan": null
+    },
+    "1099": {
+      "lower_egypt": null,
+      "upper_egypt": null,
+      "maghreb_west": null,
+      "carthage_tunisia": null,
+      "judea": null,
+      "phoenicia": null,
+      "syria": "塞尔柱突厥帝国",
+      "hejaz": null,
+      "yemen": null,
+      "west_anatolia": "拜占庭帝国",
+      "central_anatolia": "塞尔柱突厥帝国",
+      "armenia": "塞尔柱突厥帝国",
+      "south_caucasus": null,
+      "north_caucasus": null,
+      "khwarazm": "花剌子模帝国",
+      "transoxiana": "喀喇汗王朝",
+      "ferghana": "喀喇汗王朝",
+      "jetisu": "喀喇汗王朝",
+      "bactria": "塞尔柱突厥帝国",
+      "kabulistan": null
+    },
+    "1141": {
+      "judea": null,
+      "phoenicia": null,
+      "west_anatolia": "拜占庭帝国",
+      "khwarazm": "花剌子模帝国",
+      "transoxiana": "西辽帝国",
+      "ferghana": "西辽帝国",
+      "jetisu": "西辽帝国",
+      "bactria": "塞尔柱突厥帝国",
+      "kabulistan": null
+    },
+    "1187": {
+      "lower_egypt": "阿尤布王朝",
+      "upper_egypt": "阿尤布王朝",
+      "maghreb_west": null,
+      "carthage_tunisia": null,
+      "judea": "阿尤布王朝",
+      "phoenicia": "阿尤布王朝",
+      "syria": "阿尤布王朝",
+      "hejaz": "阿尤布王朝",
+      "yemen": "阿尤布王朝",
+      "upper_mesopotamia": "阿尤布王朝",
+      "lower_mesopotamia": "阿拔斯王朝",
+      "west_anatolia": "拜占庭帝国",
+      "central_anatolia": "塞尔柱突厥帝国",
+      "armenia": "塞尔柱突厥帝国",
+      "south_caucasus": null,
+      "fars": null,
+      "sistan_baloch": null,
+      "khorasan": "花剌子模帝国",
+      "khwarazm": "花剌子模帝国",
+      "transoxiana": "西辽帝国",
+      "ferghana": "西辽帝国",
+      "jetisu": "西辽帝国",
+      "bactria": null,
+      "kabulistan": null
+    },
+    "1204": {
+      "upper_mesopotamia": "阿尤布王朝",
+      "lower_mesopotamia": "阿拔斯王朝",
+      "south_caucasus": null,
+      "jetisu": "西辽帝国",
+      "bactria": null,
+      "kabulistan": null
+    },
+    "1215": {
+      "bactria": "花剌子模帝国",
+      "kabulistan": "花剌子模帝国"
+    },
+    "1227": {
+      "upper_mesopotamia": "阿尤布王朝",
+      "lower_mesopotamia": "阿拔斯王朝",
+      "yemen": "阿尤布王朝",
+      "south_caucasus": null,
+      "khwarazm": "大蒙古国",
+      "jetisu": "察合台汗国"
+    },
+    "1241": {
+      "yemen": null,
+      "jetisu": "察合台汗国"
+    },
+    "1258": {
+      "west_anatolia": null,
+      "phoenicia": "阿尤布王朝",
+      "yemen": null,
+      "khwarazm": "大蒙古国",
+      "jetisu": "察合台汗国"
+    },
+    "1260": {
+      "west_anatolia": "拜占庭帝国",
+      "phoenicia": "马穆鲁克苏丹国",
+      "yemen": null,
+      "north_caucasus": "金帐汗国",
+      "south_caucasus": "伊尔汗国",
+      "khwarazm": "金帐汗国",
+      "jetisu": "察合台汗国"
+    },
+    "1271": {
+      "west_anatolia": "拜占庭帝国",
+      "north_caucasus": "金帐汗国",
+      "khwarazm": "金帐汗国",
+      "jetisu": "察合台汗国"
+    },
+    "1279": {
+      "west_anatolia": "拜占庭帝国",
+      "north_caucasus": "金帐汗国",
+      "khwarazm": "金帐汗国",
+      "jetisu": "察合台汗国"
+    },
+    "1337": {
+      "west_anatolia": "拜占庭帝国",
+      "north_caucasus": "金帐汗国",
+      "khwarazm": "金帐汗国",
+      "jetisu": "察合台汗国"
+    },
+    "1356": {
+      "west_anatolia": "奥斯曼帝国",
+      "central_anatolia": null,
+      "armenia": null,
+      "north_caucasus": "金帐汗国",
+      "khwarazm": null,
+      "jetisu": "察合台汗国"
+    },
+    "1368": {
+      "west_anatolia": "奥斯曼帝国"
+    },
+    "1370": {
+      "khwarazm": null,
+      "jetisu": "察合台汗国"
+    },
+    "1392": {
+      "west_anatolia": "奥斯曼帝国",
+      "armenia": "白羊王朝",
+      "north_caucasus": "金帐汗国",
+      "south_caucasus": "帖木儿帝国",
+      "jetisu": "察合台汗国"
+    },
+    "1402": {
+      "west_anatolia": "奥斯曼帝国",
+      "central_anatolia": null,
+      "armenia": "白羊王朝",
+      "north_caucasus": "金帐汗国",
+      "south_caucasus": "帖木儿帝国",
+      "jetisu": "察合台汗国"
+    },
+    "1405": {
+      "west_anatolia": "奥斯曼帝国",
+      "central_anatolia": null,
+      "armenia": "白羊王朝",
+      "north_caucasus": "金帐汗国",
+      "south_caucasus": "帖木儿帝国",
+      "jetisu": "察合台汗国"
+    },
+    "1420": {
+      "west_anatolia": "奥斯曼帝国",
+      "upper_mesopotamia": null,
+      "lower_mesopotamia": null,
+      "north_caucasus": "金帐汗国",
+      "south_caucasus": null
+    },
+    "1453": {
+      "west_anatolia": "奥斯曼帝国",
+      "central_anatolia": "奥斯曼帝国",
+      "armenia": "白羊王朝"
+    },
+    "1492": {
+      "armenia": "白羊王朝",
+      "upper_mesopotamia": "白羊王朝",
+      "lower_mesopotamia": "白羊王朝",
+      "media_azerbaijan": "白羊王朝",
+      "elam_khuzestan": "白羊王朝",
+      "fars": "白羊王朝",
+      "khorasan": "帖木儿帝国",
+      "sistan_baloch": "帖木儿帝国",
+      "north_caucasus": "金帐汗国",
+      "south_caucasus": "白羊王朝"
+    },
+    "1500": {
+      "armenia": "白羊王朝",
+      "upper_mesopotamia": "白羊王朝",
+      "lower_mesopotamia": "白羊王朝",
+      "media_azerbaijan": "白羊王朝",
+      "elam_khuzestan": "白羊王朝",
+      "fars": "白羊王朝",
+      "khorasan": "帖木儿帝国",
+      "sistan_baloch": "帖木儿帝国",
+      "north_caucasus": null,
+      "kipchak": "哈萨克汗国",
+      "jetisu": "察合台汗国",
+      "khwarazm": null,
+      "transoxiana": "布哈拉汗国",
+      "ferghana": "布哈拉汗国"
+    },
+    "1501": {
+      "west_anatolia": "奥斯曼帝国",
+      "central_anatolia": "奥斯曼帝国",
+      "armenia": "萨法维波斯帝国",
+      "upper_mesopotamia": "萨法维波斯帝国",
+      "lower_mesopotamia": "萨法维波斯帝国",
+      "north_caucasus": null,
+      "south_caucasus": "萨法维波斯帝国",
+      "jetisu": "察合台汗国",
+      "khwarazm": null,
+      "bactria": "萨法维波斯帝国",
+      "kabulistan": null,
+      "yemen": null
+    },
+    "1517": {
+      "phoenicia": "奥斯曼帝国",
+      "yemen": null,
+      "armenia": "奥斯曼帝国",
+      "upper_mesopotamia": "奥斯曼帝国",
+      "lower_mesopotamia": "萨法维波斯帝国",
+      "bactria": "萨法维波斯帝国",
+      "kabulistan": null
+    },
+    "1526": {
+      "phoenicia": "奥斯曼帝国",
+      "yemen": null,
+      "upper_mesopotamia": "奥斯曼帝国",
+      "lower_mesopotamia": "萨法维波斯帝国",
+      "khwarazm": null,
+      "bactria": "布哈拉汗国",
+      "kabulistan": "莫卧儿帝国"
+    },
+    "1556": {
+      "yemen": "奥斯曼帝国",
+      "kipchak": "哈萨克汗国",
+      "jetisu": "哈萨克汗国",
+      "khwarazm": null
+    },
+    "1644": {
+      "yemen": null
+    },
+    "1683": {
+      "maghreb_west": "摩洛哥阿拉维王朝",
+      "carthage_tunisia": "奥斯曼帝国",
+      "khwarazm": null,
+      "jetisu": null
+    },
+    "1721": {
+      "ferghana": null
+    },
+    "1760": {
+      "maghreb_west": "摩洛哥阿拉维王朝",
+      "carthage_tunisia": "奥斯曼帝国",
+      "media_azerbaijan": null,
+      "elam_khuzestan": null,
+      "fars": null,
+      "khorasan": null,
+      "sistan_baloch": null,
+      "kipchak": "哈萨克汗国",
+      "jetisu": "大清帝国"
+    },
+    "1789": {
+      "north_caucasus": "俄罗斯帝国",
+      "south_caucasus": "波斯恺加王朝"
+    },
+    "1836": {
+      "nubia": "奥斯曼帝国",
+      "kipchak": "哈萨克汗国",
+      "jetisu": "大清帝国"
+    },
+    "1848": {
+      "maghreb_west": "法兰西第二共和国",
+      "carthage_tunisia": "奥斯曼帝国",
+      "kipchak": "俄罗斯帝国"
+    },
+    "1853": {
+      "maghreb_west": "法兰西第二帝国",
+      "carthage_tunisia": "奥斯曼帝国"
+    },
+    "1865": {
+      "jetisu": "俄罗斯帝国",
+      "khwarazm": null,
+      "transoxiana": "俄罗斯帝国",
+      "ferghana": "俄罗斯帝国"
+    },
+    "1871": {
+      "maghreb_west": "法兰西第三共和国",
+      "carthage_tunisia": "奥斯曼帝国"
+    },
+    "1878": {
+      "yemen": "奥斯曼帝国",
+      "khwarazm": "俄罗斯帝国"
+    },
+    "1885": {
+      "lower_egypt": "大英帝国",
+      "upper_egypt": "大英帝国",
+      "nubia": "大英帝国"
+    },
+    "1912": {
+      "carthage_tunisia": "意大利王国"
+    },
+    "1919": {
+      "lower_egypt": "大英帝国",
+      "upper_egypt": "大英帝国",
+      "nubia": "大英帝国",
+      "maghreb_west": "法兰西第三共和国",
+      "carthage_tunisia": "意大利王国",
+      "judea": "大英帝国",
+      "phoenicia": "法兰西第三共和国",
+      "syria": "法兰西第三共和国",
+      "upper_mesopotamia": "大英帝国",
+      "lower_mesopotamia": "大英帝国",
+      "hejaz": null,
+      "yemen": null,
+      "arabia": null,
+      "north_caucasus": null,
+      "south_caucasus": null,
+      "kipchak": null,
+      "jetisu": "俄罗斯苏维埃联邦社会主义共和国",
+      "transoxiana": "俄罗斯苏维埃联邦社会主义共和国",
+      "ferghana": "俄罗斯苏维埃联邦社会主义共和国",
+      "khwarazm": null
+    },
+    "1922": {
+      "lower_egypt": "埃及王国",
+      "upper_egypt": "埃及王国",
+      "nubia": "大英帝国",
+      "jetisu": "苏维埃社会主义共和国联盟",
+      "khwarazm": "苏维埃社会主义共和国联盟",
+      "transoxiana": "苏维埃社会主义共和国联盟",
+      "ferghana": "苏维埃社会主义共和国联盟"
+    },
+    "1936": {
+      "hejaz": "沙特阿拉伯王国",
+      "arabia": "沙特阿拉伯王国",
+      "yemen": null
+    },
+    "1942": {
+      "maghreb_west": "维希法国",
+      "carthage_tunisia": "意大利王国",
+      "phoenicia": null,
+      "syria": null
+    },
+    "1945": {
+      "maghreb_west": "法兰西共和国",
+      "carthage_tunisia": null,
+      "phoenicia": null,
+      "syria": "叙利亚共和国"
+    },
+    "1949": {
+      "phoenicia": null,
+      "syria": "叙利亚共和国"
+    },
+    "1957": {
+      "lower_egypt": "阿拉伯埃及共和国",
+      "upper_egypt": "阿拉伯埃及共和国",
+      "nubia": null
+    },
+    "1960": {
+      "lower_egypt": "阿拉伯埃及共和国",
+      "upper_egypt": "阿拉伯埃及共和国",
+      "nubia": null
+    },
+    "1962": {
+      "maghreb_west": "阿尔及利亚共和国",
+      "carthage_tunisia": null
+    },
+    "1971": {
+      "maghreb_west": "阿尔及利亚共和国",
+      "carthage_tunisia": null
+    },
+    "1991": {
+      "north_caucasus": "俄罗斯联邦",
+      "south_caucasus": null,
+      "kipchak": "哈萨克斯坦共和国",
+      "jetisu": "哈萨克斯坦共和国",
+      "khwarazm": "乌兹别克斯坦共和国",
+      "transoxiana": "乌兹别克斯坦共和国",
+      "ferghana": "乌兹别克斯坦共和国"
+    }
+  },
+  "stateless_cultures": {
+    "lower_egypt": [
+      {
+        "from": -1600,
+        "to": -1450,
+        "kind": "诸国并立",
+        "name": "喜克索斯王朝",
+        "note": "西亚闪米特系喜克索斯人据三角洲阿瓦里斯建立第十五王朝，将轻便马拉战车与复合弓引入埃及"
+      },
+      {
+        "from": 936,
+        "to": 979,
+        "kind": "诸国并立",
+        "name": "伊赫什德王朝",
+        "note": "突厥裔统帅穆罕默德·本·图格吉据富斯塔特自立，实际统治埃及与巴勒斯坦"
+      },
+      {
+        "from": 979,
+        "to": 1187,
+        "kind": "诸国并立",
+        "name": "法蒂玛王朝",
+        "note": "什叶派伊斯玛仪派法蒂玛哈里发营建开罗新都与爱资哈尔清真寺，统治埃及逾两百年"
+      }
+    ],
+    "upper_egypt": [
+      {
+        "from": 936,
+        "to": 979,
+        "kind": "诸国并立",
+        "name": "伊赫什德王朝",
+        "note": "伊赫什德政权控制上埃及尼罗河谷及红海艾资哈卜商港"
+      },
+      {
+        "from": 979,
+        "to": 1187,
+        "kind": "诸国并立",
+        "name": "法蒂玛王朝",
+        "note": "法蒂玛哈里发统辖上埃及库斯与阿斯旺红海—印度洋香料转口商路"
+      }
+    ],
+    "nubia": [
+      {
+        "from": -3000,
+        "to": -2500,
+        "kind": "考古学文化",
+        "name": "努比亚A组文化",
+        "note": "尼罗河第一至第二瀑布间的早期农牧聚落与彩陶贸易文化"
+      },
+      {
+        "from": -2500,
+        "to": -1450,
+        "kind": "诸国并立",
+        "name": "科尔马古王国",
+        "note": "以第三瀑布科尔马巨型夯土神庙（德富法）为中心的早期库施王国，后为埃及新王国征服"
+      },
+      {
+        "from": -1180,
+        "to": -1046,
+        "kind": "部落社会",
+        "name": "前纳帕塔库施",
+        "note": "晚青铜崩溃后埃及新王国撤出努比亚，博尔戈尔圣山本土库施酋邦逐步复兴"
+      },
+      {
+        "from": 351,
+        "to": 1504,
+        "kind": "诸国并立",
+        "name": "马库里亚诸国",
+        "note": "麦罗埃解体后形成诺巴提亚、马库里亚（定都栋古拉）与阿洛迪亚三大基督教努比亚王国，以《巴克特和约》与埃及保持数百年和平"
+      },
+      {
+        "from": 1504,
+        "to": 1836,
+        "kind": "诸国并立",
+        "name": "森纳尔苏丹国",
+        "note": "丰吉人在蓝尼罗河森纳尔建立伊斯兰苏丹国，与西部达尔富尔苏丹国并立，1821年为穆罕默德·阿里并入埃及"
+      },
+      {
+        "from": 1948,
+        "to": 1956,
+        "kind": "诸国并立",
+        "name": "英埃共管苏丹",
+        "note": "1899年协定确立英埃共管苏丹体制（英国总督驻喀土穆），1953年达成自治自决协议过渡至独立"
+      },
+      {
+        "from": 1956,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "苏丹共和国",
+        "note": "1956年终结英埃共管独立建立苏丹共和国（定都喀土穆），2011年南部独立后领有北苏丹主体"
+      }
+    ],
+    "maghreb_west": [
+      {
+        "from": -3000,
+        "to": -814,
+        "kind": "部落社会",
+        "name": "古柏柏尔诸部",
+        "note": "阿特拉斯山脉与大西洋沿岸古利比亚（阿马齐格/柏柏尔）农牧部落社会"
+      },
+      {
+        "from": -814,
+        "to": -202,
+        "kind": "部落社会",
+        "name": "毛里与努米底亚",
+        "note": "沿海散布腓尼基商站（廷吉斯、利克苏斯），内陆为毛里塔尼亚与西努米底亚柏柏尔部落联盟"
+      },
+      {
+        "from": -46,
+        "to": -27,
+        "kind": "诸国并立",
+        "name": "毛里塔尼亚国",
+        "note": "前46年塔普苏斯战后，博库斯二世与博古德统治毛里塔尼亚王国（前33年后转入屋大维直辖及尤巴二世附庸王过渡）"
+      },
+      {
+        "from": 445,
+        "to": 715,
+        "kind": "诸国并立",
+        "name": "摩尔柏柏尔诸国",
+        "note": "西罗马退出后，阿尔塔瓦王国等基督教—柏柏尔政权统治阿特拉斯与西阿尔及利亚内陆"
+      },
+      {
+        "from": 750,
+        "to": 1066,
+        "kind": "诸国并立",
+        "name": "伊德里斯诸王朝",
+        "note": "740年柏柏尔大起义脱离哈里发直辖，先后兴起非斯伊德里斯王朝、提亚雷特鲁斯塔姆王朝与西吉尔马萨政权"
+      },
+      {
+        "from": 1066,
+        "to": 1260,
+        "kind": "诸国并立",
+        "name": "穆拉比特穆瓦希德",
+        "note": "定都马拉喀什的穆拉比特王朝与穆瓦希德王朝先后统一西马格里布与安达卢斯"
+      },
+      {
+        "from": 1260,
+        "to": 1526,
+        "kind": "诸国并立",
+        "name": "马林与宰扬王朝",
+        "note": "摩洛哥非斯的马林王朝（后继瓦塔斯王朝）与特莱姆森的宰扬王朝并立"
+      }
+    ],
+    "carthage_tunisia": [
+      {
+        "from": -3000,
+        "to": -814,
+        "kind": "部落社会",
+        "name": "东柏柏尔诸部",
+        "note": "突尼斯、的黎波里与昔兰尼加绿洲的早期利比亚—柏柏尔游牧农耕部落"
+      },
+      {
+        "from": 445,
+        "to": 534,
+        "kind": "诸国并立",
+        "name": "汪达尔阿兰王国",
+        "note": "日耳曼汪达尔王盖萨里克于439年攻占迦太基建国，控制西地中海海权直至534年贝利撒留收复"
+      },
+      {
+        "from": 907,
+        "to": 1160,
+        "kind": "诸国并立",
+        "name": "法蒂玛与齐里朝",
+        "note": "909年法蒂玛王朝兴起于凯鲁万与马赫迪耶，迁都开罗后交由柏柏尔齐里王朝统辖阿非利加"
+      },
+      {
+        "from": 1160,
+        "to": 1526,
+        "kind": "诸国并立",
+        "name": "穆瓦希德哈夫斯",
+        "note": "穆瓦希德统一北非后，定都突尼斯城的哈夫斯王朝自1229年起独立统治阿非利加与的黎波里"
+      },
+      {
+        "from": 1945,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "突尼斯与利比亚",
+        "note": "二战后终结殖民统治，利比亚（1951年）与突尼斯（1956年）先后独立建国"
+      }
+    ],
+    "judea": [
+      {
+        "from": -3000,
+        "to": -1450,
+        "kind": "城邦林立",
+        "name": "迦南青铜城邦",
+        "note": "耶利哥、美吉多、夏琐、基色等设防迦南城邦与阿摩利人聚落"
+      },
+      {
+        "from": -1180,
+        "to": -700,
+        "kind": "诸国并立",
+        "name": "以色列与犹大国",
+        "note": "内陆高地形成北方以色列王国（撒玛利亚）与南方犹大王国（耶路撒冷），沿海为非利士五城联盟"
+      },
+      {
+        "from": -100,
+        "to": -60,
+        "kind": "诸国并立",
+        "name": "哈斯蒙尼犹太国",
+        "note": "马加比家族脱离塞琉古建立独立的哈斯蒙尼犹太王国，东南外约旦为定都佩特拉的纳巴泰王国"
+      },
+      {
+        "from": 936,
+        "to": 1066,
+        "kind": "诸国并立",
+        "name": "伊赫什德法蒂玛",
+        "note": "巴勒斯坦先后由埃及伊赫什德王朝与什叶派法蒂玛哈里发国统辖"
+      },
+      {
+        "from": 1099,
+        "to": 1187,
+        "kind": "诸国并立",
+        "name": "耶路撒冷王国",
+        "note": "第一次十字军于1099年建立耶路撒冷拉丁王国，修筑克拉克等骑士团城堡直至1187年哈丁战役"
+      },
+      {
+        "from": 1250,
+        "to": 1260,
+        "kind": "诸国并立",
+        "name": "阿尤布与马穆鲁克",
+        "note": "1250年后叙利亚阿尤布残部与埃及马穆鲁克争夺巴勒斯坦内陆，沿海阿卡等地由十字军据守，1260年阿音札鲁特战后归入马穆鲁克"
+      }
+    ],
+    "phoenicia": [
+      {
+        "from": -3000,
+        "to": -1450,
+        "kind": "城邦林立",
+        "name": "比布鲁斯港邦",
+        "note": "比布鲁斯、西顿、推罗等早期腓尼基海港城邦，向古埃及输出黎巴嫩雪松木材与紫红染料"
+      },
+      {
+        "from": -1180,
+        "to": -841,
+        "kind": "城邦林立",
+        "name": "腓尼基航海城邦",
+        "note": "青铜崩溃后比布鲁斯、西顿与推罗城邦自治繁荣，完善22个辅音腓尼基字母并开拓地中海商路"
+      },
+      {
+        "from": -100,
+        "to": -60,
+        "kind": "城邦林立",
+        "name": "腓尼基自治诸城",
+        "note": "塞琉古晚期推罗、西顿、贝鲁特获得自治铸币权，前64年并入罗马叙利亚行省"
+      },
+      {
+        "from": 936,
+        "to": 1066,
+        "kind": "诸国并立",
+        "name": "法蒂玛沿海诸港",
+        "note": "的黎波里、贝鲁特与推罗诸港在法蒂玛海军与地方埃米尔治下繁盛"
+      },
+      {
+        "from": 1099,
+        "to": 1187,
+        "kind": "诸国并立",
+        "name": "的黎波里伯国",
+        "note": "十字军在黎巴嫩海岸建立的黎波里伯国及西顿、贝鲁特领地"
+      },
+      {
+        "from": 1250,
+        "to": 1260,
+        "kind": "诸国并立",
+        "name": "十字军港邦与阿尤布",
+        "note": "推罗、贝鲁特、西顿与的黎波里由十字军领主据守（路易九世曾驻防修城），内陆与大马士革阿尤布残部及马穆鲁克拉锯"
+      },
+      {
+        "from": 1942,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "黎巴嫩共和国",
+        "note": "1943年脱离法国委任统治宣告独立，定都贝鲁特，形成多教派代议共和体制"
+      }
+    ],
+    "syria": [
+      {
+        "from": -3000,
+        "to": -2400,
+        "kind": "城邦林立",
+        "name": "叙利亚早期城邦",
+        "note": "埃勃拉、马里、乌加里特等青铜时代早期商业城邦兴起"
+      },
+      {
+        "from": -2200,
+        "to": -1450,
+        "kind": "诸国并立",
+        "name": "延哈德与米坦尼",
+        "note": "阿摩利人在阿勒颇建立延哈德王国、在幼发拉底建立马里王国，前16世纪北部兴起胡里特米坦尼王国"
+      },
+      {
+        "from": -1180,
+        "to": -770,
+        "kind": "诸国并立",
+        "name": "亚兰与新赫梯",
+        "note": "大马士革的亚兰王国与北部卡尔凯美什、哈马等卢维—新赫梯城邦并立，后为亚述兼并"
+      },
+      {
+        "from": 936,
+        "to": 1066,
+        "kind": "诸国并立",
+        "name": "哈姆丹与米尔达斯",
+        "note": "赛义夫·道拉在阿勒颇建立哈姆丹王朝抗击拜占庭，11世纪初由米尔达斯王朝继统北叙利亚"
+      },
+      {
+        "from": 1250,
+        "to": 1260,
+        "kind": "诸国并立",
+        "name": "大马士革阿尤布朝",
+        "note": "1250年埃及易代后，萨拉丁曾孙纳绥尔·优素福据阿勒颇与大马士革延续阿尤布统治，1260年阿音札鲁特战后归入马穆鲁克"
+      },
+      {
+        "from": 1942,
+        "to": 1945,
+        "kind": "诸国并立",
+        "name": "自由法国托管期",
+        "note": "盟军击败维希驻军后由自由法国托管，叙利亚于1943—1946年间完成主权独立交接"
+      }
+    ],
+    "upper_mesopotamia": [
+      {
+        "from": -3000,
+        "to": -2334,
+        "kind": "城邦林立",
+        "name": "苏巴尔图诸城邦",
+        "note": "亚述城、尼尼微、纳加尔（布拉克丘）等上两河早期城市中心"
+      },
+      {
+        "from": -2154,
+        "to": -2112,
+        "kind": "诸国并立",
+        "name": "胡里特与库提期",
+        "note": "阿卡德解体后乌尔克什等胡里特城邦与亚述城邦自治过渡期"
+      },
+      {
+        "from": -2004,
+        "to": -1750,
+        "kind": "诸国并立",
+        "name": "古亚述商业王国",
+        "note": "亚述城邦开展远途安纳托利亚锡布贸易，沙姆希阿达德一世建立上两河王国"
+      },
+      {
+        "from": -1600,
+        "to": -1350,
+        "kind": "诸国并立",
+        "name": "米坦尼胡里特国",
+        "note": "定都瓦舒卡尼的米坦尼王国凭借轻便战车称霸上美索不达米亚，与埃及、赫梯鼎立"
+      },
+      {
+        "from": -1350,
+        "to": -841,
+        "kind": "诸国并立",
+        "name": "中亚述与亚兰部",
+        "note": "阿淑尔乌巴里特一世开创中亚述王国，前11世纪后与内陆迁入的亚兰诸邦拉锯"
+      },
+      {
+        "from": 936,
+        "to": 1066,
+        "kind": "诸国并立",
+        "name": "摩苏尔哈姆丹朝",
+        "note": "阿拉伯哈姆丹王朝与乌凯勒王朝相继割据摩苏尔与贾兹拉平原"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "札剌亦儿王朝",
+        "note": "伊儿汗国解体后札剌亦儿王朝与阿尔图格残部统辖上两河"
+      },
+      {
+        "from": 1420,
+        "to": 1492,
+        "kind": "诸国并立",
+        "name": "土库曼黑羊王朝",
+        "note": "黑羊王朝击败帖木儿后裔控制摩苏尔与上两河，1468年后转归白羊王朝"
+      },
+      {
+        "from": 1922,
+        "to": 1960,
+        "kind": "诸国并立",
+        "name": "伊拉克哈希姆国",
+        "note": "1921年费萨尔一世建立伊拉克哈希姆王国（1926年确认摩苏尔归属，1932年正式独立），1958年改建共和国"
+      }
+    ],
+    "lower_mesopotamia": [
+      {
+        "from": -3000,
+        "to": -2334,
+        "kind": "城邦林立",
+        "name": "苏美尔早王朝",
+        "note": "乌鲁克、乌尔、基什、拉格什、温马等苏美尔城邦争霸，创立楔形文字与神庙经济"
+      },
+      {
+        "from": -2154,
+        "to": -2112,
+        "kind": "诸国并立",
+        "name": "古地亚苏美尔复兴",
+        "note": "库提人入侵后，拉格什统治者古地亚兴修水利神庙，开启乌尔第三王朝前夜的苏美尔文化复兴"
+      },
+      {
+        "from": -2004,
+        "to": -1750,
+        "kind": "诸国并立",
+        "name": "伊辛与拉尔萨期",
+        "note": "乌尔第三王朝覆亡后，伊辛、拉尔萨、埃什努那与早期巴比伦诸邦并立争雄"
+      },
+      {
+        "from": -1595,
+        "to": -1155,
+        "kind": "诸国并立",
+        "name": "加喜特巴比伦朝",
+        "note": "加喜特人入主巴比伦建立卡兰杜尼亚什王朝，维持四百年稳定并与埃及法老通好"
+      },
+      {
+        "from": -1155,
+        "to": -770,
+        "kind": "诸国并立",
+        "name": "伊辛二朝迦勒底",
+        "note": "尼布甲尼撒一世伊辛第二王朝及南方沼泽迦勒底诸部与亚述拉锯"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "巴格达札剌亦儿",
+        "note": "伊儿汗国瓦解后蒙古札剌亦儿王朝定都巴格达"
+      },
+      {
+        "from": 1420,
+        "to": 1492,
+        "kind": "诸国并立",
+        "name": "黑羊王朝巴格达",
+        "note": "1410年黑羊王朝攻占巴格达终结札剌亦儿统治，后为白羊王朝取代"
+      },
+      {
+        "from": 1922,
+        "to": 1960,
+        "kind": "诸国并立",
+        "name": "伊拉克哈希姆国",
+        "note": "定都巴格达的伊拉克哈希姆王国与波斯湾口科威特保护国并立，1958年革命建立伊拉克共和国"
+      }
+    ],
+    "hejaz": [
+      {
+        "from": -3000,
+        "to": -500,
+        "kind": "部落社会",
+        "name": "汉志绿洲诸部落",
+        "note": "提马、德丹（欧拉）等乳香商路绿洲聚落与早期北阿拉伯游牧部落"
+      },
+      {
+        "from": -500,
+        "to": 630,
+        "kind": "城邦林立",
+        "name": "利哈扬与麦加商邦",
+        "note": "德丹—利哈扬王国、纳巴泰南境黑格拉及古莱什部落主导的麦加、叶斯里卜（麦地那）商路市集"
+      },
+      {
+        "from": 936,
+        "to": 1187,
+        "kind": "诸国并立",
+        "name": "麦加哈希姆谢里夫",
+        "note": "哈希姆家族建立麦加谢里夫国自治统辖两圣地，尊奉埃及法蒂玛哈里发宗主权"
+      },
+      {
+        "from": 1919,
+        "to": 1936,
+        "kind": "诸国并立",
+        "name": "汉志与内志双王国",
+        "note": "一战后谢里夫侯赛因建立汉志哈希姆王国，1925年伊本·沙特兼并汉志建立内志与汉志王国，1932年定国号沙特阿拉伯"
+      }
+    ],
+    "yemen": [
+      {
+        "from": -3000,
+        "to": -770,
+        "kind": "考古学文化",
+        "name": "南阿拉伯青铜文化",
+        "note": "也门高原梯田灌溉与马里卜、萨那早期乳香没药贸易聚落"
+      },
+      {
+        "from": 275,
+        "to": 630,
+        "kind": "诸国并立",
+        "name": "希木叶尔王国",
+        "note": "希木叶尔王国统一示巴与哈德拉毛，6世纪历经阿克苏姆跨海远征与萨珊波斯驻军"
+      },
+      {
+        "from": 875,
+        "to": 1187,
+        "kind": "诸国并立",
+        "name": "宰德派与苏莱希朝",
+        "note": "萨那与萨达的什叶派宰德派伊玛目、提哈马齐亚德王朝与苏莱希王朝并立"
+      },
+      {
+        "from": 1241,
+        "to": 1556,
+        "kind": "诸国并立",
+        "name": "拉苏尔与塔希尔朝",
+        "note": "定都塔伊兹与亚丁的拉苏尔王朝（1229—1454）及塔希尔王朝开创中世纪也门学术与海贸黄金时代"
+      },
+      {
+        "from": 1644,
+        "to": 1878,
+        "kind": "诸国并立",
+        "name": "卡西姆宰德伊玛目",
+        "note": "宰德派卡西姆王朝于1635年驱逐奥斯曼驻军统一也门并垄断摩卡咖啡贸易；1839年英国占领亚丁港"
+      },
+      {
+        "from": 1919,
+        "to": 1990,
+        "kind": "诸国并立",
+        "name": "南北也门分立期",
+        "note": "北也门穆塔瓦基利亚王国（1962年改建阿拉伯也门共和国）与南也门英属亚丁（1967年独立为民主也门）并立"
+      },
+      {
+        "from": 1990,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "也门共和国",
+        "note": "1990年南北也门合并成立定都萨那的也门共和国（含索科特拉岛）"
+      }
+    ],
+    "arabia": [
+      {
+        "from": -3000,
+        "to": -1000,
+        "kind": "考古学文化",
+        "name": "迪尔蒙与马甘文化",
+        "note": "波斯湾西岸迪尔蒙（巴林/东省）与阿曼马甘铜矿贸易文明，与苏美尔及哈拉帕通商"
+      },
+      {
+        "from": -1000,
+        "to": 630,
+        "kind": "部落社会",
+        "name": "肯德王国与贝都因",
+        "note": "骆驼驯化后内志兴起肯德部落王国，波斯湾与阿曼沿海由阿拉伯部落及波斯商站交错经营"
+      },
+      {
+        "from": 907,
+        "to": 1744,
+        "kind": "诸国并立",
+        "name": "阿曼伊玛目与内志",
+        "note": "东岸卡尔马特派与乌尤尼王朝更迭，阿曼雅鲁巴王朝建立印度洋海上强权，内志绿洲诸埃米尔自治"
+      },
+      {
+        "from": 1744,
+        "to": 1936,
+        "kind": "诸国并立",
+        "name": "德拉伊耶与阿曼国",
+        "note": "内志先后兴起第一、第二沙特国及伊本·沙特第三沙特国，东南沿海为阿曼赛义德王朝与波斯湾休战诸谢赫国"
+      }
+    ],
+    "west_anatolia": [
+      {
+        "from": -3000,
+        "to": -1700,
+        "kind": "考古学文化",
+        "name": "特洛伊早青铜文化",
+        "note": "达达尼尔海峡特洛伊（I—V层）及爱琴海东岸早期青铜设防城堡"
+      },
+      {
+        "from": -1700,
+        "to": -1180,
+        "kind": "诸国并立",
+        "name": "阿尔扎瓦与维卢萨",
+        "note": "以阿帕萨（以弗所）为中心的卢维语阿尔扎瓦诸王国与特洛伊（维卢萨），与赫梯及迈锡尼争雄"
+      },
+      {
+        "from": -1180,
+        "to": -685,
+        "kind": "城邦林立",
+        "name": "伊奥尼亚十二城邦",
+        "note": "米利都、以弗所、士麦拿等爱琴海希腊殖民城邦勃兴，孕育米利都自然哲学学派"
+      },
+      {
+        "from": -301,
+        "to": -121,
+        "kind": "诸国并立",
+        "name": "帕加马与比提尼亚",
+        "note": "继业者利西马科斯王国之后，阿塔罗斯王朝帕加马王国与比提尼亚王国并立，前133年遗赠归入罗马"
+      },
+      {
+        "from": 1204,
+        "to": 1260,
+        "kind": "诸国并立",
+        "name": "尼西亚与拉丁帝国",
+        "note": "1204年第四次十字军占领君士坦丁堡建拉丁帝国，拉斯卡里斯家族在伊兹尼克建立拜占庭流亡政权尼西亚帝国并于1261年光复帝都"
+      }
+    ],
+    "central_anatolia": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "哈梯青铜王侯文化",
+        "note": "阿拉加霍裕克王陵与安纳托利亚高原本土哈梯早期青铜聚落"
+      },
+      {
+        "from": -2000,
+        "to": -1600,
+        "kind": "城邦林立",
+        "name": "卡内什与哈梯城邦",
+        "note": "涅萨（卡内什）商业殖民城邦与库萨拉、哈图沙诸邦林立"
+      },
+      {
+        "from": -1180,
+        "to": -594,
+        "kind": "诸国并立",
+        "name": "弗里吉亚与新赫梯",
+        "note": "定都戈尔迪乌姆的弥达斯弗里吉亚王国与东南卢维—新赫梯诸邦（塔巴尔、奎亚）并立"
+      },
+      {
+        "from": -202,
+        "to": -60,
+        "kind": "诸国并立",
+        "name": "本都卡帕多细亚国",
+        "note": "阿帕米亚和约后，米特里达梯本都王国、卡帕多细亚王国与加拉太凯尔特部族分治高原，直至庞培东征"
+      },
+      {
+        "from": 1194,
+        "to": 1258,
+        "kind": "诸国并立",
+        "name": "科尼亚罗姆苏丹国",
+        "note": "大塞尔柱解体后，定都科尼亚的罗姆苏丹国在凯库巴德一世治下达于鼎盛，1243年克塞山战败后沦为蒙古附庸"
+      },
+      {
+        "from": 1356,
+        "to": 1453,
+        "kind": "诸国并立",
+        "name": "卡拉曼等突厥诸侯",
+        "note": "科尼亚的卡拉曼侯国、埃雷特纳等安纳托利亚突厥贝伊国并立，1402年安卡拉战后由帖木儿复国，15世纪中叶渐次并入奥斯曼"
+      }
+    ],
+    "armenia": [
+      {
+        "from": -3000,
+        "to": -1600,
+        "kind": "考古学文化",
+        "name": "东安纳托利亚青铜",
+        "note": "上幼发拉底河谷与凡湖流域库拉—阿拉克斯及早期胡里特山地聚落"
+      },
+      {
+        "from": -1600,
+        "to": -841,
+        "kind": "部落社会",
+        "name": "哈亚沙与纳伊里部",
+        "note": "亚美尼亚高原哈亚沙—阿齐联盟与凡湖纳伊里诸部，后整合为乌拉尔图王国"
+      },
+      {
+        "from": -594,
+        "to": -550,
+        "kind": "诸国并立",
+        "name": "米底统属亚美尼亚",
+        "note": "乌拉尔图覆亡后早期奥龙特亚美尼亚臣服于米底王国"
+      },
+      {
+        "from": -330,
+        "to": -189,
+        "kind": "诸国并立",
+        "name": "奥龙特亚美尼亚国",
+        "note": "亚历山大东征未入高原腹地，奥龙特王朝与索菲尼、小亚美尼亚保持自治"
+      },
+      {
+        "from": -189,
+        "to": 117,
+        "kind": "诸国并立",
+        "name": "大亚美尼亚王国",
+        "note": "阿塔克夏王朝（提格兰大帝极盛）与阿萨息斯王朝在罗马与安息两大帝国间维持独立缓冲王权"
+      },
+      {
+        "from": 166,
+        "to": 395,
+        "kind": "诸国并立",
+        "name": "阿萨息斯亚美尼亚",
+        "note": "亚美尼亚阿萨息斯王朝于301年率先定基督教为国教，387年由罗马与萨珊波斯划分东西宗主权"
+      },
+      {
+        "from": 907,
+        "to": 979,
+        "kind": "诸国并立",
+        "name": "巴格拉图尼王国",
+        "note": "定都阿尼的巴格拉图尼亚美尼亚王国与凡湖瓦斯普拉坎王国复兴，后渐次被拜占庭兼并"
+      },
+      {
+        "from": 1194,
+        "to": 1204,
+        "kind": "诸国并立",
+        "name": "夏阿美与萨尔图克",
+        "note": "大塞尔柱覆亡后，凡湖阿赫拉特夏阿美王朝、埃尔祖鲁姆萨尔图克侯国与格鲁吉亚扎卡里德家族分据高原"
+      },
+      {
+        "from": 1204,
+        "to": 1258,
+        "kind": "诸国并立",
+        "name": "特拉比松帝国",
+        "note": "黑海沿岸科穆宁家族建立特拉比松帝国，高原腹地由罗姆苏丹国、阿尤布阿赫拉特与格鲁吉亚争夺"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "特拉比松与土库曼",
+        "note": "特拉比松帝国、埃尔津詹侯国与早期黑白羊土库曼部族同盟并立"
+      }
+    ],
+    "media_azerbaijan": [
+      {
+        "from": -3000,
+        "to": -1000,
+        "kind": "部落社会",
+        "name": "古提与卢卢比诸部",
+        "note": "扎格罗斯山脉北部与乌尔米耶湖流域的古提人、卢卢比人与胡里特山地部族"
+      },
+      {
+        "from": -1000,
+        "to": -678,
+        "kind": "部落社会",
+        "name": "曼努亚与早期米底",
+        "note": "乌尔米耶湖南岸曼努亚王国与伊朗系米底六部落联盟兴起"
+      },
+      {
+        "from": -678,
+        "to": -550,
+        "kind": "诸国并立",
+        "name": "米底王国",
+        "note": "定都埃克巴坦那（哈马丹）的米底王国联合新巴比伦攻灭亚述，统一伊朗高原大部直至前550年居鲁士代米底"
+      },
+      {
+        "from": 907,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "白益与萨拉尔王朝",
+        "note": "伊朗间奏期：雷伊与伊斯法罕属什叶派白益王朝与卡库伊王朝，阿塞拜疆先后由萨吉、萨拉尔与拉瓦德王朝统治"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "札剌亦儿穆扎法尔",
+        "note": "大不里士由札剌亦儿王朝与金帐汗国争夺，伊斯法罕属穆扎法尔王朝"
+      },
+      {
+        "from": 1736,
+        "to": 1752,
+        "kind": "诸国并立",
+        "name": "阿夫沙尔王朝",
+        "note": "1736年纳迪尔沙于穆甘草原登基建阿夫沙尔王朝统辖米底与阿塞拜疆，1747年遇刺后转入诸汗争雄"
+      },
+      {
+        "from": 1752,
+        "to": 1789,
+        "kind": "诸国并立",
+        "name": "赞德王朝与诸汗国",
+        "note": "阿夫沙尔衰落后，卡里姆汗赞德王朝统治伊朗中西部，阿塞拜疆各汗国林立直至恺加统一"
+      }
+    ],
+    "elam_khuzestan": [
+      {
+        "from": -3000,
+        "to": -2680,
+        "kind": "考古学文化",
+        "name": "原始埃兰文化",
+        "note": "苏萨卫城高台与原始埃兰象形泥板文字兴起，开启胡齐斯坦城市文明"
+      },
+      {
+        "from": -632,
+        "to": -550,
+        "kind": "诸国并立",
+        "name": "后埃兰与安善王系",
+        "note": "前647年亚述洗劫苏萨后，新埃兰残余政权与早期阿契美尼德波斯王系过渡并存"
+      },
+      {
+        "from": 907,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "白益王朝胡齐斯坦",
+        "note": "白益家族控制阿瓦士与胡齐斯坦甘蔗水利经济，作为连接法尔斯与巴格达的枢纽"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "札剌亦儿穆扎法尔",
+        "note": "胡齐斯坦处于札剌亦儿王朝与法尔斯穆扎法尔王朝拉锯地带"
+      },
+      {
+        "from": 1736,
+        "to": 1752,
+        "kind": "诸国并立",
+        "name": "阿夫沙尔王朝",
+        "note": "纳迪尔沙阿夫沙尔王朝统辖胡齐斯坦并经营波斯湾水师，1747年后巴赫蒂亚里与赞德部争雄"
+      },
+      {
+        "from": 1752,
+        "to": 1789,
+        "kind": "诸国并立",
+        "name": "赞德王朝治下胡齐",
+        "note": "设拉子赞德王朝统辖胡齐斯坦与波斯湾北岸阿拉伯部落谢赫"
+      }
+    ],
+    "fars": [
+      {
+        "from": -3000,
+        "to": -2680,
+        "kind": "考古学文化",
+        "name": "安善与吉罗夫特",
+        "note": "法尔斯马利扬（古安善）与克尔曼吉罗夫特绿洲的早期青铜城市文明"
+      },
+      {
+        "from": -632,
+        "to": -550,
+        "kind": "诸国并立",
+        "name": "早期波斯安善王系",
+        "note": "阿契美尼德家族泰斯帕斯、居鲁士一世至冈比西斯一世世袭安善王位，奠定居鲁士大帝兴起根基"
+      },
+      {
+        "from": 907,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "设拉子白益王朝",
+        "note": "阿杜德·道拉以设拉子为都开创白益王朝鼎盛期，克尔曼由白益分支统辖"
+      },
+      {
+        "from": 1187,
+        "to": 1204,
+        "kind": "诸国并立",
+        "name": "萨尔古尔阿塔贝格",
+        "note": "大塞尔柱衰微后，突厥曼萨尔古尔王朝割据法尔斯设拉子，克尔曼由古兹突厥控制"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "设拉子穆扎法尔朝",
+        "note": "穆扎法尔王朝定都设拉子与克尔曼（大诗人哈菲兹活跃期），1393年为帖木儿攻灭"
+      },
+      {
+        "from": 1736,
+        "to": 1752,
+        "kind": "诸国并立",
+        "name": "阿夫沙尔王朝",
+        "note": "纳迪尔沙阿夫沙尔王朝统治法尔斯与克尔曼，1747年遇刺后经诸部混战至1751年卡里姆汗入主设拉子"
+      },
+      {
+        "from": 1752,
+        "to": 1789,
+        "kind": "诸国并立",
+        "name": "设拉子赞德王朝",
+        "note": "卡里姆汗定都设拉子建立赞德王朝（自称人民代理人Vakil），兴修设拉子巴扎与城堡直至1794年恺加取代"
+      }
+    ],
+    "khorasan": [
+      {
+        "from": -3000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "希萨尔青铜文化",
+        "note": "达姆甘希萨尔丘与戈尔甘平原的青铜冶金及青金石商路聚落"
+      },
+      {
+        "from": -1500,
+        "to": -550,
+        "kind": "部落社会",
+        "name": "早期帕提亚诸部",
+        "note": "早期伊朗语帕提亚人与里海东南岸希尔卡尼亚部族，后归入米底与阿契美尼德"
+      },
+      {
+        "from": 875,
+        "to": 999,
+        "kind": "诸国并立",
+        "name": "萨法尔与萨曼王朝",
+        "note": "塔希尔王朝之后，萨法尔王朝与萨曼王朝统辖尼沙普尔与图斯，催生菲尔多西《列王纪》波斯文艺复兴"
+      },
+      {
+        "from": 999,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "伽色尼王朝呼罗珊",
+        "note": "马哈茂德苏丹将呼罗珊并入伽色尼帝国，1038—1040年丹丹纳干战役后归入塞尔柱突厥"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "萨尔巴达尔政权",
+        "note": "萨卜泽瓦尔的萨尔巴达尔起义政权、图斯蒙古贵族与赫拉特卡尔特王朝分据呼罗珊"
+      },
+      {
+        "from": 1736,
+        "to": 1752,
+        "kind": "诸国并立",
+        "name": "阿夫沙尔帝国",
+        "note": "纳迪尔沙定都马什哈德建立阿夫沙尔帝国并东征德里，1747年遇刺后帝国瓦解、孙沙鲁克偏安呼罗珊"
+      },
+      {
+        "from": 1752,
+        "to": 1789,
+        "kind": "诸国并立",
+        "name": "阿夫沙尔残部政权",
+        "note": "纳迪尔沙遇刺后，其盲孙沙鲁克在马什哈德维持阿夫沙尔残余政权，受阿富汗杜兰尼保护"
+      }
+    ],
+    "sistan_baloch": [
+      {
+        "from": -3000,
+        "to": -1800,
+        "kind": "考古学文化",
+        "name": "沙赫里索赫塔文明",
+        "note": "赫尔曼德河三角洲“焚城”遗址与俾路支库利文化，连接伊朗高原与印度河文明"
+      },
+      {
+        "from": -1800,
+        "to": -550,
+        "kind": "部落社会",
+        "name": "德兰吉亚纳诸部",
+        "note": "锡斯坦湖盆德兰吉亚纳与马克兰海岸鱼食民部落"
+      },
+      {
+        "from": 875,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "锡斯坦萨法尔王朝",
+        "note": "铜匠雅库布·本·莱斯自扎兰季起兵建立萨法尔王朝，10世纪后作为萨曼与伽色尼附庸延续"
+      },
+      {
+        "from": 1187,
+        "to": 1204,
+        "kind": "诸国并立",
+        "name": "纳斯尔王朝与古尔",
+        "note": "锡斯坦纳斯尔马立克王朝臣服于兴都库什古尔王朝"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "米赫拉班王朝",
+        "note": "锡斯坦本土米赫拉班王朝自治，1383年遭帖木儿围攻臣服"
+      },
+      {
+        "from": 1736,
+        "to": 1752,
+        "kind": "诸国并立",
+        "name": "阿夫沙尔与杜兰尼",
+        "note": "1736—1747年属纳迪尔沙阿夫沙尔王朝东征走廊，1747年后转入阿富汗艾哈迈德沙·杜兰尼宗主与卡拉特汗国自治"
+      },
+      {
+        "from": 1752,
+        "to": 1789,
+        "kind": "诸国并立",
+        "name": "卡拉特俾路支汗国",
+        "note": "俾路支卡拉特汗国纳西尔汗一世与锡斯坦地方埃米尔在阿富汗杜兰尼宗主下自治"
+      }
+    ],
+    "north_caucasus": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "迈科普青铜文化",
+        "note": "库班河流域迈科普王室大冢，展现高加索早期青铜与金银器工艺"
+      },
+      {
+        "from": -2000,
+        "to": -700,
+        "kind": "考古学文化",
+        "name": "科班与辛梅里安",
+        "note": "北高加索山地科班青铜战斧文化与黑海北岸辛梅里安骑马游牧部族"
+      },
+      {
+        "from": -202,
+        "to": 445,
+        "kind": "部落社会",
+        "name": "萨尔马提亚与阿兰",
+        "note": "伊朗语系萨尔马提亚人及后继阿兰重装骑兵部族主宰库班—捷列克草原"
+      },
+      {
+        "from": 469,
+        "to": 650,
+        "kind": "部落社会",
+        "name": "阿兰与萨比尔诸部",
+        "note": "匈人西退后，阿兰人、萨比尔人与老保加尔部落联盟游牧于北高加索"
+      },
+      {
+        "from": 969,
+        "to": 1241,
+        "kind": "诸国并立",
+        "name": "阿兰王国与钦察部",
+        "note": "可萨覆灭后基督教阿兰王国定都马加斯，北部草原为钦察—库曼部族联盟"
+      },
+      {
+        "from": 1500,
+        "to": 1789,
+        "kind": "部落社会",
+        "name": "切尔克斯达吉斯坦",
+        "note": "西侧切尔克斯（阿迪格）与卡巴尔达诸部、东侧达吉斯坦沙姆哈尔国与车臣山地公社并立"
+      },
+      {
+        "from": 1919,
+        "to": 1922,
+        "kind": "诸国并立",
+        "name": "北高加索山区共和",
+        "note": "俄国内战期间北高加索山区共和国、邓尼金白军与苏俄红军拉锯，1921年设苏维埃山区自治共和国"
+      }
+    ],
+    "south_caucasus": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "库拉阿拉克斯文化",
+        "note": "库拉河与阿拉克斯河流域黑光陶与早期冶铜农牧聚落"
+      },
+      {
+        "from": -2000,
+        "to": -841,
+        "kind": "考古学文化",
+        "name": "特里亚列季青铜期",
+        "note": "南高加索贵族车葬大冢文化及科尔基斯青铜冶金传统"
+      },
+      {
+        "from": -594,
+        "to": -509,
+        "kind": "诸国并立",
+        "name": "古科尔基斯王国",
+        "note": "黑海东岸科尔基斯王国（金羊毛传说地）与阿拉克斯河谷早期亚美尼亚诸部"
+      },
+      {
+        "from": -330,
+        "to": 225,
+        "kind": "诸国并立",
+        "name": "伊比利亚科尔基斯",
+        "note": "东格鲁吉亚卡特利（伊比利亚）王国、西岸科尔基斯及高加索阿尔巴尼亚诸国并立"
+      },
+      {
+        "from": 650,
+        "to": 663,
+        "kind": "诸国并立",
+        "name": "伊比利亚诸公国",
+        "note": "萨珊波斯覆亡之际格鲁吉亚、阿尔巴尼亚与亚美尼亚诸王公在拜占庭与阿拉伯间自治"
+      },
+      {
+        "from": 907,
+        "to": 1089,
+        "kind": "诸国并立",
+        "name": "阿布哈兹格鲁吉亚",
+        "note": "巴格拉季昂王朝统一阿布哈兹与卡特利建立格鲁吉亚王国，东侧为希尔凡沙阿王朝"
+      },
+      {
+        "from": 1089,
+        "to": 1241,
+        "kind": "诸国并立",
+        "name": "格鲁吉亚黄金时代",
+        "note": "大卫四世（建设者）与塔玛尔女王治下的格鲁吉亚王国威震高加索，直至蒙古入侵"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "格鲁吉亚复兴王国",
+        "note": "乔治五世摆脱伊儿汗国恢复格鲁吉亚统一，阿塞拜疆南境属札剌亦儿与希尔凡"
+      },
+      {
+        "from": 1420,
+        "to": 1492,
+        "kind": "诸国并立",
+        "name": "格鲁吉亚与希尔凡",
+        "note": "格鲁吉亚王国渐次分为卡特利、卡赫季、伊梅列季三王国，东侧巴库希尔凡沙阿繁荣"
+      },
+      {
+        "from": 1736,
+        "to": 1752,
+        "kind": "诸国并立",
+        "name": "阿夫沙尔统属高加索",
+        "note": "1735—1736年纳迪尔沙收复外高加索并册封卡特利—卡赫季王室，1747年遇刺后格鲁吉亚自立、东南诸汗国分立"
+      },
+      {
+        "from": 1752,
+        "to": 1789,
+        "kind": "诸国并立",
+        "name": "卡特利与诸汗国",
+        "note": "埃雷克勒二世统一卡特利—卡赫季王国（1783年《格奥尔基耶夫斯克条约》），东南并立巴库、卡拉巴赫、埃里温诸汗国"
+      },
+      {
+        "from": 1919,
+        "to": 1922,
+        "kind": "诸国并立",
+        "name": "外高加索三共和国",
+        "note": "1918年格鲁吉亚、亚美尼亚、阿塞拜疆三民主共和国独立，1920—1921年并入苏维埃组成外高加索联邦"
+      },
+      {
+        "from": 1991,
+        "to": 2027,
+        "kind": "诸国并立",
+        "name": "外高加索独立三国",
+        "note": "1991年苏联解体后，格鲁吉亚、亚美尼亚、阿塞拜疆恢复独立主权国家地位"
+      }
+    ],
+    "kipchak": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "颜那亚与博泰文化",
+        "note": "乌拉尔—伏尔加草原颜那亚坟冢游牧民与哈萨克北部博泰早期驯马遗址"
+      },
+      {
+        "from": -2000,
+        "to": -700,
+        "kind": "考古学文化",
+        "name": "安德罗诺沃文化",
+        "note": "辛塔什塔辐条轻便战车文化与安德罗诺沃青铜草原游牧文明"
+      },
+      {
+        "from": -202,
+        "to": 383,
+        "kind": "部落社会",
+        "name": "萨尔马提亚与康居",
+        "note": "西部伏尔加—顿河为萨尔马提亚诸部，东部锡尔河中游至哈萨克草原为康居行国"
+      },
+      {
+        "from": 469,
+        "to": 650,
+        "kind": "部落社会",
+        "name": "乌古尔与铁勒诸部",
+        "note": "乌古尔—保加尔、萨比尔及西突厥统属下的铁勒游牧部落主宰草原"
+      },
+      {
+        "from": 969,
+        "to": 1241,
+        "kind": "部落社会",
+        "name": "钦察库曼与乌古斯",
+        "note": "咸海乌古斯叶护国及随后西迁称霸的钦察—库曼（波洛夫齐）游牧汗部联盟，草原由此得名“钦察草原”"
+      },
+      {
+        "from": 1919,
+        "to": 1922,
+        "kind": "诸国并立",
+        "name": "阿拉什自治与内战",
+        "note": "哈萨克阿拉什自治政府、哥萨克白军与苏俄红军激战，1920年设吉尔吉斯（哈萨克）苏维埃自治共和国"
+      }
+    ],
+    "jetisu": [
+      {
+        "from": -3000,
+        "to": -1800,
+        "kind": "考古学文化",
+        "name": "天山阿凡纳谢沃期",
+        "note": "七河与伊犁河谷早期铜石并用畜牧文化"
+      },
+      {
+        "from": -1800,
+        "to": -700,
+        "kind": "考古学文化",
+        "name": "七河安德罗诺沃期",
+        "note": "伊塞克湖与楚河流域青铜时代游牧定居混合聚落"
+      },
+      {
+        "from": -700,
+        "to": -154,
+        "kind": "部落社会",
+        "name": "伊犁尖帽塞人王庭",
+        "note": "伊犁河谷与伊塞克湖塞人（萨卡，出土伊塞克金人武士墓），前2世纪中叶乌孙西迁入主赤谷城"
+      },
+      {
+        "from": 755,
+        "to": 843,
+        "kind": "部落社会",
+        "name": "葛逻禄叶护国",
+        "note": "安史之乱唐军内撤后，突厥葛逻禄部进占碎叶城与怛罗斯建立叶护政权，后成为喀喇汗王朝核心部族"
+      },
+      {
+        "from": 1218,
+        "to": 1227,
+        "kind": "诸国并立",
+        "name": "大蒙古国军管期",
+        "note": "1218年成吉思汗遣哲别灭屈出律西辽，七河与伊犁归入大蒙古国直辖军管，1227年划归察合台汗国封地"
+      },
+      {
+        "from": 1683,
+        "to": 1760,
+        "kind": "诸国并立",
+        "name": "准噶尔汗国伊犁庭",
+        "note": "卫拉特蒙古准噶尔部噶尔丹、策妄阿拉布坦以伊犁河谷为夏牧场王庭称霸天山南北，1755—1757年为清廷平定"
+      }
+    ],
+    "khwarazm": [
+      {
+        "from": -3000,
+        "to": -2300,
+        "kind": "考古学文化",
+        "name": "克尔特米纳尔文化",
+        "note": "阿姆河三角洲与卡拉库姆边缘的新石器—铜石并用渔猎农耕文化"
+      },
+      {
+        "from": -2300,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "马尔吉阿纳绿洲城",
+        "note": "木鹿绿洲戈努尔丘（阿姆河青铜文明BMAC核心）的设防神庙宫城体系"
+      },
+      {
+        "from": -1500,
+        "to": -509,
+        "kind": "部落社会",
+        "name": "塔扎巴格亚布期",
+        "note": "阿姆河下游早期灌溉渠网形成前阿契美尼德花剌子模古国与大益（达赫）游牧部"
+      },
+      {
+        "from": -330,
+        "to": -230,
+        "kind": "诸国并立",
+        "name": "古花剌子模王国",
+        "note": "花剌子模国王法拉斯马内斯在亚历山大东征时保持阿姆河下游独立，卡拉库姆南缘帕尔尼部即将入主帕提亚"
+      },
+      {
+        "from": -60,
+        "to": 305,
+        "kind": "诸国并立",
+        "name": "托普拉克花剌子模",
+        "note": "托普拉克卡拉宏伟王宫遗址代表的花剌子模独立王国，与北方康居相呼应"
+      },
+      {
+        "from": 305,
+        "to": 555,
+        "kind": "诸国并立",
+        "name": "阿夫里格花剌子模",
+        "note": "定都卡特的阿夫里格王朝统治阿姆河三角洲，木鹿重镇由萨珊与嚈哒拉锯"
+      },
+      {
+        "from": 663,
+        "to": 715,
+        "kind": "诸国并立",
+        "name": "阿夫里格绿洲王朝",
+        "note": "阿夫里格花剌子模沙阿保持绿洲自治，直至712年屈底波率倭马亚军征服"
+      },
+      {
+        "from": 907,
+        "to": 1066,
+        "kind": "诸国并立",
+        "name": "萨曼与马蒙王朝",
+        "note": "萨曼王朝宗主下的花剌子模沙阿与古尔干杰马蒙王朝（学者比鲁尼、伊本·西那曾驻留讲学），1017年短暂入伽色尼"
+      },
+      {
+        "from": 1356,
+        "to": 1392,
+        "kind": "诸国并立",
+        "name": "花剌子模苏菲王朝",
+        "note": "弘吉剌部出身的苏菲王朝割据玉龙杰赤，1379—1388年经帖木儿多次征讨臣服"
+      },
+      {
+        "from": 1500,
+        "to": 1878,
+        "kind": "诸国并立",
+        "name": "希瓦汗国",
+        "note": "1511年乌兹别克阿布尔海尔支系建立花剌子模（希瓦）汗国，17世纪迁都希瓦，1873年沦为沙俄保护国"
+      },
+      {
+        "from": 1919,
+        "to": 1922,
+        "kind": "诸国并立",
+        "name": "花剌子模苏维埃",
+        "note": "1920年废黜末代希瓦可汗成立花剌子模人民苏维埃共和国，后并入苏联乌兹别克与土库曼"
+      }
+    ],
+    "transoxiana": [
+      {
+        "from": -3000,
+        "to": -2000,
+        "kind": "考古学文化",
+        "name": "萨拉兹姆铜石文化",
+        "note": "泽拉夫善河上游萨拉兹姆古镇，展现河中最早的绿松石冶金与农耕贸易聚落"
+      },
+      {
+        "from": -2000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "河中青铜绿洲文化",
+        "note": "阿姆河青铜文明（BMAC）向泽拉夫善河与卡什卡河流域扩展的早期聚落"
+      },
+      {
+        "from": -1500,
+        "to": -509,
+        "kind": "部落社会",
+        "name": "早期粟特绿洲城邑",
+        "note": "马拉坎达（撒马尔罕）阿夫拉西阿卜古城兴建，粟特东伊朗语居民开拓河中商路"
+      },
+      {
+        "from": -120,
+        "to": 350,
+        "kind": "城邦林立",
+        "name": "康居与粟特诸城邦",
+        "note": "康居联盟宗主下，撒马尔罕（康国）、布哈拉（安国）、石国等昭武九姓城邦垄断丝路转口贸易"
+      },
+      {
+        "from": 350,
+        "to": 555,
+        "kind": "诸国并立",
+        "name": "寄多罗与嚈哒霸权",
+        "note": "寄多罗匈人与嚈哒（白匈奴）先后统治河中并击败萨珊波斯，粟特城邦保持高度商业自治直至突厥与波斯夹击灭嚈哒"
+      },
+      {
+        "from": 907,
+        "to": 1005,
+        "kind": "诸国并立",
+        "name": "布哈拉萨曼王朝",
+        "note": "波斯裔萨曼王朝定都布哈拉统治河中，培育鲁达基、伊本·西那等学者，999年为喀喇汗王朝攻灭"
+      }
+    ],
+    "ferghana": [
+      {
+        "from": -3000,
+        "to": -1500,
+        "kind": "考古学文化",
+        "name": "费尔干纳早青铜期",
+        "note": "锡尔河上游盆地早期畜牧与山麓灌溉聚落"
+      },
+      {
+        "from": -1500,
+        "to": -509,
+        "kind": "考古学文化",
+        "name": "楚斯特彩陶农耕期",
+        "note": "费尔干纳盆地楚斯特定居设防农耕文化与周缘塞人游牧部落"
+      },
+      {
+        "from": -125,
+        "to": 350,
+        "kind": "城邦林立",
+        "name": "大宛七十余城王国",
+        "note": "《史记·大宛列传》载大宛有城郭七十余座、盛产汗血宝马（贰师城），前101年汉贰师将军李广利远征通好"
+      },
+      {
+        "from": 350,
+        "to": 555,
+        "kind": "诸国并立",
+        "name": "洛那国与嚈哒统属",
+        "note": "北朝史籍称大宛为洛那/破洛那（费尔干纳伊赫什德王统），受嚈哒宗主统辖直至突厥兴起"
+      },
+      {
+        "from": 907,
+        "to": 1005,
+        "kind": "诸国并立",
+        "name": "萨曼王朝费尔干纳",
+        "note": "阿赫西肯特与苦盏在萨曼王朝治下成为银矿、铁器与丝路东道重镇"
+      },
+      {
+        "from": 1721,
+        "to": 1865,
+        "kind": "诸国并立",
+        "name": "浩罕汗国",
+        "note": "乌兹别克明格部沙鲁克比于1709年脱离布哈拉建立浩罕汗国，极盛时兼有塔什干与七河南缘，1876年并入沙俄费尔干纳州"
+      }
+    ],
+    "bactria": [
+      {
+        "from": -3000,
+        "to": -2300,
+        "kind": "考古学文化",
+        "name": "阿姆河南岸铜石期",
+        "note": "兴都库什北麓与哈里河谷早期绿洲农耕聚落"
+      },
+      {
+        "from": -2300,
+        "to": -1600,
+        "kind": "考古学文化",
+        "name": "巴克特里亚青铜期",
+        "note": "达什利绿洲圆形宫庙遗址代表的阿姆河青铜文明（BMAC/奥克苏斯文明）核心区"
+      },
+      {
+        "from": -1600,
+        "to": -550,
+        "kind": "诸国并立",
+        "name": "早期巴克特拉古国",
+        "note": "以巴克特拉（巴尔赫）与阿里亚（赫拉特）为核心的早期东伊朗绿洲政权，为琐罗亚斯德教早期传播重镇"
+      },
+      {
+        "from": -120,
+        "to": 25,
+        "kind": "诸国并立",
+        "name": "大月氏五翕侯",
+        "note": "大月氏定居大夏蓝氏城，分休密、双靡、贵霜、肸顿、都密五翕侯，1世纪初丘就却统一五部建贵霜"
+      },
+      {
+        "from": 383,
+        "to": 560,
+        "kind": "诸国并立",
+        "name": "寄多罗与嚈哒王庭",
+        "note": "寄多罗人、阿尔浑匈人与定都拔底延城（昆都士/巴尔赫一带）的嚈哒帝国核心区"
+      },
+      {
+        "from": 560,
+        "to": 663,
+        "kind": "诸国并立",
+        "name": "吐火罗叶护诸邦",
+        "note": "西突厥击败嚈哒后设吐火罗叶护统领铁门以南二十七小国（玄奘西行途经巴里黑小王舍城）"
+      },
+      {
+        "from": 907,
+        "to": 999,
+        "kind": "诸国并立",
+        "name": "萨曼王朝巴尔赫州",
+        "note": "巴尔赫与赫拉特作为萨曼王朝南境商业学术大都会"
+      },
+      {
+        "from": 999,
+        "to": 1038,
+        "kind": "诸国并立",
+        "name": "伽色尼王朝吐火罗",
+        "note": "马哈茂德苏丹以巴尔赫为北都抗击喀喇汗国，1040年后转归塞尔柱突厥"
+      },
+      {
+        "from": 1187,
+        "to": 1215,
+        "kind": "诸国并立",
+        "name": "菲鲁兹库赫古尔朝",
+        "note": "古尔王朝吉亚斯丁与穆伊兹丁兄弟定都菲鲁兹库赫与赫拉特，西破塞尔柱残部、东平北印度"
+      },
+      {
+        "from": 1356,
+        "to": 1370,
+        "kind": "诸国并立",
+        "name": "赫拉特卡尔特王朝",
+        "note": "赫拉特卡尔特王朝与巴尔赫西察合台埃米尔侯赛因并立，1370年帖木儿于巴尔赫夺权建国"
+      }
+    ],
+    "kabulistan": [
+      {
+        "from": -3000,
+        "to": -1800,
+        "kind": "考古学文化",
+        "name": "蒙迪加克青铜文化",
+        "note": "坎大哈蒙迪加克遗址与喀布尔河谷青铜时代商贸重镇，连接赫尔曼德与印度河"
+      },
+      {
+        "from": -1800,
+        "to": -550,
+        "kind": "部落社会",
+        "name": "高附与阿拉霍西亚",
+        "note": "《梨俱吠陀》所载库巴河（喀布尔河）印度—伊朗雅利安部族与阿拉霍西亚高地聚落"
+      },
+      {
+        "from": -125,
+        "to": 25,
+        "kind": "诸国并立",
+        "name": "印度希腊与塞种王",
+        "note": "兴都库什山南米南德后裔印度—希腊诸王、印度—塞种人与印度—帕提亚冈多法勒斯王朝更迭"
+      },
+      {
+        "from": 351,
+        "to": 560,
+        "kind": "诸国并立",
+        "name": "阿尔浑匈人与嚈哒",
+        "note": "贵霜衰微后，寄多罗与阿尔浑匈人（拉罕王朝）统治喀布尔与扎布尔（巴米扬大佛开凿早期）"
+      },
+      {
+        "from": 560,
+        "to": 715,
+        "kind": "诸国并立",
+        "name": "喀布尔突厥沙阿朝",
+        "note": "崇信佛教与印度教的突厥沙阿王朝定都喀布尔与卡皮萨（迦毕试），顽强阻击阿拉伯东进"
+      },
+      {
+        "from": 875,
+        "to": 977,
+        "kind": "诸国并立",
+        "name": "印度沙阿与萨法尔",
+        "note": "婆罗门印度沙阿王朝守御喀布尔东境，加兹尼与坎大哈由萨法尔及萨曼突厥将领争夺"
+      },
+      {
+        "from": 977,
+        "to": 1186,
+        "kind": "诸国并立",
+        "name": "加兹尼伽色尼王朝",
+        "note": "塞卜克特勤与马哈茂德定都加兹尼建立伽色尼帝国，多次南征印度并赞助学者比鲁尼"
+      },
+      {
+        "from": 1186,
+        "to": 1215,
+        "kind": "诸国并立",
+        "name": "加兹尼古尔王朝",
+        "note": "古尔苏丹穆罕默德以加兹尼为基地赢得塔兰战役，奠定北印度德里苏丹国前身，1215年并入花剌子模"
+      },
+      {
+        "from": 1356,
+        "to": 1370,
+        "kind": "诸国并立",
+        "name": "卡尔特与阿富汗部",
+        "note": "卡尔特王朝南境与苏莱曼山脉普什图（阿富汗）部族自治"
+      },
+      {
+        "from": 1501,
+        "to": 1526,
+        "kind": "诸国并立",
+        "name": "喀布尔巴布尔政权",
+        "note": "帖木儿后裔巴布尔于1504年入主喀布尔建立基地，1526年南下帕尼帕特开创莫卧儿帝国"
+      }
+    ]
+  },
+  "legacy_parent_centroids": {
+    "maghreb": [
+      525,
+      199
+    ],
+    "egypt": [
+      644,
+      253
+    ],
+    "anatolia": [
+      657,
+      145
+    ],
+    "levant": [
+      665,
+      191
+    ],
+    "mesopotamia": [
+      697,
+      177
+    ],
+    "arabia": [
+      724,
+      244
+    ],
+    "persia": [
+      749,
+      182
+    ],
+    "caucasus": [
+      702,
+      121
+    ],
+    "kipchak": [
+      804,
+      95
+    ],
+    "transoxiana": [
+      781,
+      142
+    ],
+    "bactria": [
+      798,
+      173
+    ],
+    "syria": [
+      675,
+      168
+    ],
+    "hejaz": [
+      678,
+      209
+    ]
+  },
+  "trade_hub_overrides": {
+    "撒马尔罕": "transoxiana",
+    "木鹿·泰西封": "lower_mesopotamia",
+    "安条克·君士坦丁堡": "west_anatolia",
+    "霍尔木兹": "fars",
+    "吉达·亚历山大港": "lower_egypt",
+    "萨莱": "kipchak",
+    "塔加扎绿洲盐场": "maghreb_west",
+    "西吉尔马萨·非斯": "maghreb_west",
+    "开罗": "lower_egypt"
+  },
+  "city_state_overrides": {
+    "tyre": "phoenicia",
+    "sidon": "phoenicia",
+    "byblos": "phoenicia"
+  },
+  "chronicle_id_overrides": {
+    "evt_0058": "nubia",
+    "evt_0005": "phoenicia",
+    "evt_0021": "upper_egypt",
+    "evt_0038": "upper_egypt",
+    "evt_0041": "upper_egypt",
+    "evt_0023": "central_anatolia",
+    "evt_0030": "central_anatolia",
+    "evt_0031": "central_anatolia",
+    "evt_0040": "central_anatolia",
+    "evt_0050": "west_anatolia",
+    "evt_0051": "central_anatolia",
+    "evt_0060": "armenia",
+    "evt_0070": "upper_mesopotamia",
+    "evt_0098": "fars",
+    "evt_0105": "media_azerbaijan",
+    "evt_0106": "elam_khuzestan",
+    "evt_0147": "west_anatolia",
+    "evt_0148": "upper_mesopotamia",
+    "evt_0150": "lower_mesopotamia",
+    "evt_0159": "central_anatolia",
+    "evt_0160": "central_anatolia",
+    "evt_0218": "upper_mesopotamia",
+    "evt_0219": "upper_mesopotamia",
+    "evt_0221": "jetisu",
+    "evt_0240": "elam_khuzestan",
+    "evt_0268": "upper_mesopotamia",
+    "evt_0351": "jetisu",
+    "evt_0353": "sistan_baloch",
+    "evt_0371": "jetisu",
+    "evt_0372": "jetisu",
+    "evt_0429": "armenia",
+    "evt_0433": "armenia",
+    "evt_0512": "central_anatolia",
+    "evt_0514": "central_anatolia",
+    "evt_0542": "media_azerbaijan",
+    "evt_0544": "armenia"
+  },
+  "chronicle_keywords": [
+    {
+      "region": "upper_egypt",
+      "keywords": [
+        "底比斯",
+        "卡纳克",
+        "帝王谷",
+        "卢克索",
+        "阿马尔奈",
+        "埃赫塔吞",
+        "阿斯旺"
+      ]
+    },
+    {
+      "region": "nubia",
+      "keywords": [
+        "麦罗埃",
+        "纳帕塔",
+        "库施",
+        "喀土穆"
+      ]
+    },
+    {
+      "region": "lower_egypt",
+      "keywords": [
+        "孟斐斯",
+        "吉萨",
+        "萨卡拉",
+        "金字塔",
+        "亚历山大港",
+        "法罗斯",
+        "阿瓦里斯",
+        "佩卢西姆",
+        "开罗",
+        "苏伊士运河"
+      ]
+    },
+    {
+      "region": "carthage_tunisia",
+      "keywords": [
+        "迦太基",
+        "扎马",
+        "突尼斯",
+        "凯鲁万",
+        "的黎波里",
+        "昔兰尼"
+      ]
+    },
+    {
+      "region": "maghreb_west",
+      "keywords": [
+        "阿尔及利亚",
+        "非斯",
+        "马拉喀什",
+        "摩洛哥",
+        "埃维昂"
+      ]
+    },
+    {
+      "region": "phoenicia",
+      "keywords": [
+        "推罗",
+        "西顿",
+        "比布鲁斯",
+        "贝鲁特",
+        "黎巴嫩"
+      ]
+    },
+    {
+      "region": "judea",
+      "keywords": [
+        "耶路撒冷",
+        "撒玛利亚",
+        "美吉多",
+        "阿音札鲁特",
+        "阿卡",
+        "哈丁",
+        "犹大",
+        "以色列"
+      ]
+    },
+    {
+      "region": "syria",
+      "keywords": [
+        "卡迭石",
+        "大马士革",
+        "阿勒颇",
+        "埃勃拉",
+        "乌加里特",
+        "雅尔穆克",
+        "奥龙特斯"
+      ]
+    },
+    {
+      "region": "upper_mesopotamia",
+      "keywords": [
+        "尼尼微",
+        "亚述城",
+        "高加米拉",
+        "卡莱",
+        "摩苏尔",
+        "埃德萨",
+        "新亚述"
+      ]
+    },
+    {
+      "region": "lower_mesopotamia",
+      "keywords": [
+        "乌鲁克",
+        "乌尔",
+        "拉格什",
+        "基什",
+        "阿卡德",
+        "巴比伦",
+        "汉谟拉比",
+        "泰西封",
+        "巴格达",
+        "萨马拉"
+      ]
+    },
+    {
+      "region": "yemen",
+      "keywords": [
+        "示巴",
+        "马里卜",
+        "萨那",
+        "也门",
+        "哈德拉毛"
+      ]
+    },
+    {
+      "region": "hejaz",
+      "keywords": [
+        "麦加",
+        "麦地那",
+        "希吉拉"
+      ]
+    },
+    {
+      "region": "arabia",
+      "keywords": [
+        "利雅得",
+        "内志",
+        "马斯喀特",
+        "阿曼"
+      ]
+    },
+    {
+      "region": "west_anatolia",
+      "keywords": [
+        "君士坦丁堡",
+        "圣索菲亚",
+        "特洛伊",
+        "萨迪斯",
+        "米利都",
+        "以弗所",
+        "格拉尼库斯",
+        "博斯普鲁斯"
+      ]
+    },
+    {
+      "region": "armenia",
+      "keywords": [
+        "曼齐刻尔特",
+        "查尔迪兰",
+        "凡城",
+        "图什帕",
+        "乌拉尔图",
+        "特拉比松"
+      ]
+    },
+    {
+      "region": "central_anatolia",
+      "keywords": [
+        "哈图沙",
+        "赫梯",
+        "卡内什",
+        "伊普苏斯",
+        "安卡拉",
+        "科尼亚"
+      ]
+    },
+    {
+      "region": "elam_khuzestan",
+      "keywords": [
+        "苏萨",
+        "埃兰"
+      ]
+    },
+    {
+      "region": "media_azerbaijan",
+      "keywords": [
+        "大不里士",
+        "埃克巴坦那",
+        "贝希斯敦",
+        "伊斯法罕",
+        "德黑兰"
+      ]
+    },
+    {
+      "region": "khorasan",
+      "keywords": [
+        "尼沙普尔",
+        "图斯",
+        "达姆甘"
+      ]
+    },
+    {
+      "region": "sistan_baloch",
+      "keywords": [
+        "疾陵城",
+        "扎兰季",
+        "锡斯坦"
+      ]
+    },
+    {
+      "region": "fars",
+      "keywords": [
+        "帕萨尔加德",
+        "波斯波利斯",
+        "设拉子",
+        "霍尔木兹",
+        "萨珊"
+      ]
+    },
+    {
+      "region": "north_caucasus",
+      "keywords": [
+        "得尔奔",
+        "阿兰",
+        "可萨"
+      ]
+    },
+    {
+      "region": "south_caucasus",
+      "keywords": [
+        "第比利斯",
+        "埃里温",
+        "巴库",
+        "格鲁吉亚"
+      ]
+    },
+    {
+      "region": "jetisu",
+      "keywords": [
+        "怛罗斯",
+        "碎叶",
+        "巴拉沙衮",
+        "伊犁",
+        "郅支"
+      ]
+    },
+    {
+      "region": "ferghana",
+      "keywords": [
+        "大宛",
+        "浩罕",
+        "苦盏",
+        "费尔干纳"
+      ]
+    },
+    {
+      "region": "khwarazm",
+      "keywords": [
+        "玉龙杰赤",
+        "希瓦",
+        "木鹿"
+      ]
+    },
+    {
+      "region": "transoxiana",
+      "keywords": [
+        "撒马尔罕",
+        "布哈拉",
+        "塔什干",
+        "卡特万"
+      ]
+    },
+    {
+      "region": "kabulistan",
+      "keywords": [
+        "喀布尔",
+        "加兹尼",
+        "坎大哈",
+        "犍陀罗"
+      ]
+    },
+    {
+      "region": "bactria",
+      "keywords": [
+        "巴尔赫",
+        "巴里黑",
+        "赫拉特",
+        "蓝氏城"
+      ]
+    }
+  ],
+  "chronicle_defaults": [
+    {
+      "parent": "egypt",
+      "region": "lower_egypt"
+    },
+    {
+      "parent": "maghreb",
+      "year_max": 600,
+      "region": "carthage_tunisia"
+    },
+    {
+      "parent": "maghreb",
+      "year_min": 601,
+      "region": "maghreb_west"
+    },
+    {
+      "parent": "levant",
+      "region": "judea"
+    },
+    {
+      "parent": "syria",
+      "region": "syria"
+    },
+    {
+      "parent": "mesopotamia",
+      "region": "lower_mesopotamia"
+    },
+    {
+      "parent": "hejaz",
+      "region": "hejaz"
+    },
+    {
+      "parent": "arabia",
+      "region": "arabia"
+    },
+    {
+      "parent": "anatolia",
+      "year_max": 300,
+      "region": "central_anatolia"
+    },
+    {
+      "parent": "anatolia",
+      "year_min": 301,
+      "year_max": 1900,
+      "region": "west_anatolia"
+    },
+    {
+      "parent": "anatolia",
+      "year_min": 1901,
+      "region": "central_anatolia"
+    },
+    {
+      "parent": "persia",
+      "year_max": 651,
+      "region": "fars"
+    },
+    {
+      "parent": "persia",
+      "year_min": 652,
+      "region": "media_azerbaijan"
+    },
+    {
+      "parent": "caucasus",
+      "region": "south_caucasus"
+    },
+    {
+      "parent": "kipchak",
+      "region": "kipchak"
+    },
+    {
+      "parent": "transoxiana",
+      "region": "transoxiana"
+    },
+    {
+      "parent": "bactria",
+      "region": "bactria"
+    }
+  ]
+}
