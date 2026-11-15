@@ -67,6 +67,23 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	supremePills: null,		//{juqi:0,...} ✦丹纹灵丹库存——乾蓝灵火或掌天绿液淬出,药效+40%且丹毒减半
 	pillCraftCount: null,	//{juqi:0,...} 本世各丹开炉计数——用于丹方药材动态温和递进
 	lastAlchemyNote: null,	//玄天丹鼎最近一次开炉/服丹/洗髓纪要
+	herbGarden: null,		//XX-4 仙界洞府·聚灵药园状态
+	xianqi: null,			//XX-4 本命仙器蕴养祭炼状态
+	immortalImprint: 0,		//XX-4 跨轮回仙界洞府与本命仙器道印(0..10)
+	xianqiImprintKey: null,	//前世祭炼之本命仙器道胎印记
+	starArray: null,		//XX-5 周天星斗护山大阵状态
+	immortalBounty: null,	//XX-5 跨界仙盟奇遇悬赏状态
+	starImprintTier: 0,		//XX-5 跨轮回周天阵印最高推演阶数(0..6)
+	spiritNursery: null,	//XX-6 混沌万灵仙宠育兽苑状态
+	daoSteleForest: null,	//XX-6 大道法则碑林参悟状态
+	beastImprintTier: 0,	//XX-6 跨轮回万灵兽印最高血脉阶数(0..6)
+	starship: null,			//XX-7 诸天星域游历飞舟·太虚星槎状态
+	hongmengAltar: null,	//XX-7 混沌鸿蒙灵宝祭坛状态
+	hongmengImprintTier: 0,	//XX-7 跨轮回鸿蒙道印最高阶数(0..6)
+	zixiaoAltar: null,		//XX-8 混沌紫霄讲道坛状态
+	dharmaIdols: null,		//XX-8 三千大道神通法相状态
+	dharmaImprintTier: 0,	//XX-8 跨轮回法相道印最高阶数(0..6)
+	daoSutras: 0,			//XX-8 三千大道玉简同步镜像
 
 	//突破异象 — 每次冲关掷一次;多数纯叙事,小幅修正当次成败/代价。
 	//w 为百分比权重,合计 82 —— 余下 18% 无异象静默。
@@ -90,7 +107,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	//realm defs; stages are generated from these
 	//战力底数表——index 与 REALM_DEFS 对齐,境内每层再乘 (1+i*0.5)
-	COMBAT_BASE: [2, 25, 100, 400, 1600, 6400, 25000, 100000, 400000],
+	COMBAT_BASE: [2, 25, 100, 400, 1600, 6400, 25000, 100000, 400000, 1600000, 6400000],
 	REALM_DEFS: [
 		//lianqi layers are guaranteed successes — the onboarding slope
 		//xiuwei costs are tuned against simulate-cultivation.js: each layer should
@@ -107,8 +124,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		{key:"huashen", layers:3,  base:{xiuwei:280000, faith:2200},       mul:1.48, bonus:0.20,  chance:0.36, life:3200,   keyRes:"faith",       gate:{riftFloor:9}},
 		{key:"lianxu",  layers:3,  base:{xiuwei:820000, unobtainium:50},   mul:1.52, bonus:0.35,  chance:0.30, life:8000,   keyRes:"unobtainium", gate:{riftFloor:12}},
 		{key:"heti",    layers:3,  base:{xiuwei:2600000, relic:20},        mul:1.60, bonus:0.60,  chance:0.25, life:20000,  keyRes:"relic",       gate:{riftFloor:15}},
-		{key:"dacheng", layers:3,  base:{xiuwei:7200000, timeCrystal:15},  mul:1.50, bonus:1.00,  chance:0.20, life:60000,  keyRes:"timeCrystal", gate:{riftFloor:20}},
-		{key:"dujie",   layers:1,  base:{xiuwei:24000000, timeCrystal:50}, mul:1,    bonus:1.60,  chance:0.10, life:100000, keyRes:"timeCrystal", gate:{riftFloor:25}}
+		{key:"dacheng", layers:3,  base:{xiuwei:7200000, timeCrystal:15},   mul:1.50, bonus:1.00,  chance:0.20, life:60000,  keyRes:"timeCrystal", gate:{riftFloor:20}},
+		{key:"dujie",   layers:1,  base:{xiuwei:24000000, timeCrystal:50},  mul:1,    bonus:1.60,  chance:0.10, life:100000, keyRes:"timeCrystal", gate:{riftFloor:25}},
+		{key:"zhenxian",layers:3,  base:{xiuwei:85000000, xianyuan:35},     mul:1.65, bonus:2.80,  chance:0.16, life:300000, keyRes:"xianyuan",    gate:{riftFloor:25, immortal:true}},
+		{key:"jinxian", layers:3,  base:{xiuwei:320000000, xianyuan:180},   mul:1.75, bonus:5.00,  chance:0.12, life:900000, keyRes:"xianyuan",    gate:{riftFloor:30, immortal:true}}
 	],
 
 	//四座共享储灵建筑 — 每 2~3 种有上限的核心灵材共享一座提升上限的储灵建筑
@@ -264,6 +283,38 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			techs: ["metaphysics", "artificialGravity", "terraformation", "hydroponics", "exogeophysics", "antimatter", "blackchain", "quantumCryptography"],
 			crafts: [],
 			upgrades: ["longRangeSpaceships", "spiceNavigation", "thoriumEngine"]
+		},
+		{
+			realmIdx: 9,
+			key: "zhenxian",
+			stageKey: "zhenxian_0",
+			title: "真仙期",
+			shortTitle: "真仙",
+			res: "xianyuan",
+			resTitle: "仙元",
+			resBadge: "真仙核",
+			resDesc: "渡九九紫霄雷劫破界飞升，脱尽凡胎引九天仙灵化为仙元，与天地同寿",
+			coreBlds: [],
+			auxBlds: [],
+			techs: [],
+			crafts: [],
+			upgrades: []
+		},
+		{
+			realmIdx: 10,
+			key: "jinxian",
+			stageKey: "jinxian_0",
+			title: "金仙期",
+			shortTitle: "金仙",
+			res: "xianyuan",
+			resTitle: "仙元",
+			resBadge: "金仙核",
+			resDesc: "参悟诸天法则道韵，凝铸万劫不磨的不朽金仙道果",
+			coreBlds: [],
+			auxBlds: [],
+			techs: [],
+			crafts: [],
+			upgrades: []
 		}
 	],
 
@@ -867,6 +918,30 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		prices: [{name:"unobtainium", val:40}, {name:"xiuwei", val:880000}],
 		effects: {"xiuweiRatio": 0.95, "realmProductionRatio": 0.28},
 		chance: 1.0, researched: false
+	},{
+		name: "sect7",
+		label: $I("cultivation.sect.7.label"),
+		description: $I("cultivation.sect.7.desc"),
+		gate: "heti_0",
+		prices: [{name:"relic", val:18}, {name:"xiuwei", val:2800000}],
+		effects: {"xiuweiRatio": 1.35, "realmProductionRatio": 0.38, "zhenyuanRatio": 0.20, "riftDamageRatio": 0.18},
+		chance: 1.0, researched: false
+	},{
+		name: "sect8",
+		label: $I("cultivation.sect.8.label"),
+		description: $I("cultivation.sect.8.desc"),
+		gate: "dacheng_0",
+		prices: [{name:"timeCrystal", val:12}, {name:"xiuwei", val:7800000}],
+		effects: {"xiuweiRatio": 1.85, "realmProductionRatio": 0.52, "zhenyuanRatio": 0.35, "riftDamageRatio": 0.30},
+		chance: 1.0, researched: false
+	},{
+		name: "sect9",
+		label: $I("cultivation.sect.9.label"),
+		description: $I("cultivation.sect.9.desc"),
+		gate: "dujie_0",
+		prices: [{name:"timeCrystal", val:45}, {name:"xiuwei", val:26000000}],
+		effects: {"xiuweiRatio": 2.60, "realmProductionRatio": 0.72, "zhenyuanRatio": 0.50, "riftDamageRatio": 0.45},
+		chance: 1.0, researched: false
 	}],
 
 	stages: null,
@@ -1018,6 +1093,82 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 	],
 
+	//XX-3 轮回重修「先天命格 / 特殊灵体」多周目 Build 词条池(≥8 种差异化流派,随轮回世数/功德解锁 1~3 槽)
+	MINGGE_DEFS: [
+		{
+			key: "dandao",
+			label: "丹道圣体",
+			tag: "丹毒减半·双丹造诣",
+			art: "alchemy",
+			desc: "服丹经脉丹毒累积减半(×0.50)；开炉炼丹 55% 几率额外多成 1 丹且丹道造诣翻倍；灵谷产出 +20%",
+			effects: {catnipRatio: 0.20}
+		},
+		{
+			key: "jiangu",
+			label: "剑骨通明",
+			tag: "剑心暴击·反震破招",
+			art: "sword",
+			desc: "斗法总战力 ×1.28；秘境回合斗法 35% 触发【剑心通明】暴击(×1.65 伤)；【太极反震】破招伤害 +75%",
+			effects: {}
+		},
+		{
+			key: "changsheng",
+			label: "长生道胎",
+			tag: "寿元绵长·道心澄明",
+			art: "longevity",
+			desc: "全境界寿元上限 +60%；心魔与丹毒自然消退翻倍(×2.0)；闭关吐纳时额外获得修为速率 +25%",
+			effects: {}
+		},
+		{
+			key: "qiyun",
+			label: "气运之子",
+			tag: "游历翻倍·逢凶化吉",
+			art: "wheel",
+			desc: "红尘游历修为与灵材收获翻倍(×2.0)且免疫劫修伏击(反夺灵石修为)；秘境探幽秘境令与古宝掉率 +25%",
+			effects: {}
+		},
+		{
+			key: "baiyi",
+			label: "百艺宗师",
+			tag: "器阵双绝·百工造化",
+			art: "alchemy",
+			desc: "炼器百工打造效率 +45%(craftRatio)；琅嬛书阁推演感悟 +25%；黄金与玄铁产出 +20%",
+			effects: {craftRatio: 0.45, scienceRatio: 0.25, goldRatio: 0.20, ironRatio: 0.20}
+		},
+		{
+			key: "tianling",
+			label: "鸿蒙道体",
+			tag: "破境天成·道基稳固",
+			art: "wheel",
+			desc: "大境界突破成功率额外 +8%；破境消耗 -15%；破境后【道基震荡】平复年限缩短一半；修为吐纳 +15%",
+			effects: {xiuweiRatio: 0.15}
+		},
+		{
+			key: "xuanmai",
+			label: "太初灵脉体",
+			tag: "洞天福地·万物滋长",
+			art: "longevity",
+			desc: "洞府境界全局产出 +25%；灵谷、灵木、灵石、黄金基础产出各 +30%",
+			effects: {realmProductionRatio: 0.25, catnipRatio: 0.30, woodRatio: 0.30, mineralsRatio: 0.30, goldRatio: 0.30}
+		},
+		{
+			key: "huanggu",
+			label: "荒古战躯",
+			tag: "不灭金身·气血自愈",
+			art: "sword",
+			desc: "斗法总战力 ×1.20；秘境斗法最大气血 +45%、护体防御 +35%，每回合初自愈 4% 最大气血",
+			effects: {}
+		},
+		{
+			key: "zhenyan",
+			label: "宙光星瞳",
+			tag: "调息缩减·岁首双露",
+			art: "wheel",
+			desc: "游历/闭关/秘境共享调息冷却缩短 25%；岁首凝露瓶绿液凝聚额外 +1 滴；修为与香火愿力各 +18%",
+			effects: {xiuweiRatio: 0.18, faithRatio: 0.18}
+		}
+	],
+
 	//随机道号池 — 姓氏与男女名分列,roll 时按性别取
 	NAME_SURNAMES: [
 		"韩", "厉", "南宫", "墨", "陈", "王", "李", "张", "刘", "杨", "赵", "黄",
@@ -1063,12 +1214,104 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return $I(k + ".desc");
 	},
 
-	//破境消耗倍率: 灵根底子(伪灵根多系同修×1.35 / 天灵根一脉通明×0.80) × 出身加成(商贾×0.90 / 遗孤×1.10)
+	//破境消耗倍率: 灵根底子(伪灵根多系同修×1.35 / 天灵根一脉通明×0.80) × 出身加成(商贾×0.90 / 遗孤×1.10) × 鸿蒙道体(×0.85)
 	getBreakCostMult: function(){
 		var rootMult = (this.getRoot() && this.getRoot().priceMult) || 1;
 		var origin = this.getOrigin();
 		var originMult = (origin && origin.breakCostMult) || 1;
-		return rootMult * originMult;
+		var mgMult = this.hasMingge("tianling") ? 0.85 : 1;
+		return rootMult * originMult * mgMult;
+	},
+
+	getMinggeDef: function(key){
+		for (var i = 0; i < this.MINGGE_DEFS.length; i++){
+			if (this.MINGGE_DEFS[i].key === key){ return this.MINGGE_DEFS[i]; }
+		}
+		return null;
+	},
+
+	hasMingge: function(key){
+		if (!this.mingge || !this.mingge.length){ return false; }
+		for (var i = 0; i < this.mingge.length; i++){
+			if (this.mingge[i] === key){ return true; }
+		}
+		return false;
+	},
+
+	getMinggeSlotCap: function(forNextLife){
+		var lives = this.getPastLives() + (forNextLife ? 1 : 0);
+		var karmaRes = (this.game && this.game.resPool) ? this.game.resPool.get("karma") : null;
+		var karma = karmaRes ? (karmaRes.value || 0) : 0;
+		var cap = 1;
+		if (lives >= 3 || karma >= 8){ cap = 2; }
+		if (lives >= 6 || karma >= 25){ cap = 3; }
+		return cap;
+	},
+
+	normalizeMinggeList: function(list, maxSlots){
+		var cap = (typeof maxSlots === "number" && maxSlots > 0) ? maxSlots : 3;
+		var out = [];
+		if (!list || !list.length){ return out; }
+		for (var i = 0; i < list.length; i++){
+			var k = list[i];
+			if (!this.getMinggeDef(k)){ continue; }
+			var dup = false;
+			for (var j = 0; j < out.length; j++){
+				if (out[j] === k){ dup = true; break; }
+			}
+			if (!dup){
+				out.push(k);
+				if (out.length >= cap){ break; }
+			}
+		}
+		return out;
+	},
+
+	setMingge: function(keys){
+		this.mingge = this.normalizeMinggeList(keys, 3);
+		this.applyOrigin();
+		if (this.game && this.game.updateCaches){ this.game.updateCaches(); }
+		return this.mingge;
+	},
+
+	setPendingMingge: function(keys){
+		var cap = this.getMinggeSlotCap(true);
+		this.pendingMingge = this.normalizeMinggeList(keys, cap);
+		return this.pendingMingge;
+	},
+
+	togglePendingMingge: function(key){
+		if (!this.getMinggeDef(key)){ return false; }
+		var cap = this.getMinggeSlotCap(true);
+		var cur = this.normalizeMinggeList(this.pendingMingge || [], cap);
+		for (var i = 0; i < cur.length; i++){
+			if (cur[i] === key){
+				cur.splice(i, 1);
+				this.pendingMingge = cur;
+				return true;
+			}
+		}
+		if (cur.length >= cap){
+			if (cap === 1){
+				cur = [key];
+				this.pendingMingge = cur;
+				return true;
+			}
+			return false;
+		}
+		cur.push(key);
+		this.pendingMingge = cur;
+		return true;
+	},
+
+	getActiveMinggeDefs: function(){
+		var out = [];
+		if (!this.mingge || !this.mingge.length){ return out; }
+		for (var i = 0; i < this.mingge.length; i++){
+			var d = this.getMinggeDef(this.mingge[i]);
+			if (d){ out.push(d); }
+		}
+		return out;
 	},
 
 	setIdentity: function(name, gender, originKey){
@@ -1081,10 +1324,19 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	},
 
 	//effectsBase 是 manager 常驻乘区,updateEffectCached 每 tick 自动纳入;
-	//但键名得先在 effectsCachedExisting 白名单里,出身键构造时还不存在,这里补注册
+	//但键名得先在 effectsCachedExisting 白名单里,出身与先天命格键在此一并补注册
 	applyOrigin: function(){
 		var def = this.getOrigin();
-		this.effectsBase = (def && def.effects) ? dojo.clone(def.effects) : {};
+		var base = (def && def.effects) ? dojo.clone(def.effects) : {};
+		var mgs = this.getActiveMinggeDefs();
+		for (var i = 0; i < mgs.length; i++){
+			var eff = mgs[i].effects;
+			if (!eff){ continue; }
+			for (var k in eff){
+				base[k] = (base[k] || 0) + eff[k];
+			}
+		}
+		this.effectsBase = base;
 		this.setEffectsCachedExisting();
 	},
 
@@ -1104,6 +1356,27 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.supremePills = {};
 		this.pillCraftCount = {};
 		this.lastAlchemyNote = null;
+		this.immortalAscended = false;
+		this.mingge = [];
+		this.pendingMingge = [];
+		this.daoyun = 0;
+		this.immortalImprint = 0;
+		this.xianqiImprintKey = null;
+		this.starImprintTier = 0;
+		this.beastImprintTier = 0;
+		this.hongmengImprintTier = 0;
+		this.dharmaImprintTier = 0;
+		this.daoSutras = 0;
+		this.herbGarden = this.makeDefaultHerbGarden();
+		this.xianqi = this.makeDefaultXianqi();
+		this.starArray = this.makeDefaultStarArray();
+		this.immortalBounty = this.makeDefaultImmortalBounty();
+		this.spiritNursery = this.makeDefaultSpiritNursery();
+		this.daoSteleForest = this.makeDefaultDaoSteleForest();
+		this.starship = this.makeDefaultStarship();
+		this.hongmengAltar = this.makeDefaultHongmengAltar();
+		this.zixiaoAltar = this.makeDefaultZixiaoAltar();
+		this.dharmaIdols = this.makeDefaultDharmaIdols();
 		this.tale = {};
 		this.taleLog = [];
 		this.stages = this.buildStages();
@@ -1135,12 +1408,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				var prices = [];
 				for (var res in def.base){
 					if (r == 0 && i == 0){ continue; }	//炼气一层 is the free starting stage
-					if (r >= 1 && r <= 7 && i == 0 && res != "xiuwei"){
-						//大境界初破(初期 _0): 破入新境方才解锁本境核心灵筑(如筑基开矿脉、结丹开炼器室、化神筑玄坛、炼虚布地火阵、合体起极光阵、大乘祭轮回盘);
-						//故初入大境唯验修为道行与秘境生死大关,本境核心灵材自中期(_1)、后期(_2)起正式入药淬炼,彻底消除先有鸡还是先有蛋的卡关死锁!
+					if (((r >= 1 && r <= 7) || r == 9) && i == 0 && res != "xiuwei"){
+						//大境界初破(初期 _0): 破入新境方才解锁本境核心灵材自生(含真仙初期凝练仙体始生仙元);
+						//故初入大境唯验修为道行与秘境/飞升大关,本境核心灵材自中期(_1)、后期(_2)起正式入药淬炼,消除死锁!
 						continue;
 					}
-					var expIdx = (r >= 1 && r <= 7 && res != "xiuwei") ? (i - 1) : i;
+					var expIdx = (((r >= 1 && r <= 7) || r == 9) && res != "xiuwei") ? (i - 1) : i;
 					var val = def.base[res] * Math.pow(def.mul, expIdx);
 					val = this.roundNice(val);
 					prices.push({name: res, val: val});
@@ -1149,24 +1422,23 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					//一境一核心灵材: 炼气期全程唯以【灵木(wood)】为破境核心灵材
 					prices.push({name: "wood", val: this.roundNice(25 * Math.pow(1.65, i - 4))});
 				}
+				var stEffects = {
+					"realmProductionRatio": def.bonus,
+					"realmStorageRatio": (r == 0 && i == 0) ? 0 : def.bonus * 2.0,
+					"xiuweiRatio": def.bonus * 0.35,
+					"xiuweiPerTickBase": (r == 0 && i == 0) ? 0 : def.bonus,
+					"combatPower": this.COMBAT_BASE[r] * (1 + i * 0.5)
+				};
+				if (r >= 9){
+					stEffects["xianyuanPerTickBase"] = (r == 9 ? 0.08 : 0.25) * (1 + i * 0.5);
+				}
 				stages.push({
 					name: def.key + "_" + i,
 					realm: def.key,
 					label: (def.layers > 1) ? realmLabel + "·" + $I("cultivation.layer." + layerKey) : realmLabel,
 					description: $I("cultivation.realm." + def.key + ".desc"),
 					prices: prices,
-					effects: {
-						"realmProductionRatio": def.bonus,
-						"realmStorageRatio": (r == 0 && i == 0) ? 0 : def.bonus * 2.0,
-						//was xiuweiJobRatio — dead since the disciple system was
-						//removed; now a direct multiplier on xiuwei production
-						"xiuweiRatio": def.bonus * 0.35,
-						//凡人修仙传: 初始凡人态(lianqi_0)尚未引气入体,基础修为增速恒为 0;
-						//须先筑起神手竹庐或突破炼气二层后方有周天灵气自生
-						"xiuweiPerTickBase": (r == 0 && i == 0) ? 0 : def.bonus,
-						//战力底数——境界即道行;每境底数约翻四倍,境内层层渐涨
-						"combatPower": this.COMBAT_BASE[r] * (1 + i * 0.5)
-					},
+					effects: stEffects,
 					chance: (def.chance >= 1) ? 1 : Math.max(0.05, def.chance - i * 0.04),
 					lifespan: def.life,	//寿元随大境界走——突破永远延寿,绝不减寿
 					gate: (i == 0 && def.gate) ? def.gate : null,	//大关瓶颈只守首层
@@ -1586,6 +1858,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return this.getMeta(name, this.stages);
 	},
 
+	getSect: function(name){
+		return this.getMeta(name, this.sects);
+	},
+
 	getRealm: function(name){	//compat: resolves any button meta by name
 		//quiet local scan — getMeta console.errors on every miss, and a
 		//multi-array fallthrough would spam the console on every render
@@ -1685,12 +1961,19 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//(sect meta 另有 gate 字段是关卡名字符串,typeof 挡之)
 	checkGate: function(stage){
 		var g = stage.gate;
-		if (!g || typeof g != "object" || g.riftFloor == null){ return {ok: true}; }
+		if (!g || typeof g != "object"){ return {ok: true}; }
+		if (g.immortal && !this.immortalAscended){
+			return {ok: false, kind: "immortal", need: g.riftFloor || 25, have: this.riftFloor};
+		}
+		if (g.riftFloor == null){ return {ok: true}; }
 		return {ok: this.riftFloor >= g.riftFloor, kind: "rift", need: g.riftFloor, have: this.riftFloor};
 	},
 
 	gateLabel: function(stage){
 		var chk = this.checkGate(stage);
+		if (chk.kind == "immortal"){
+			return $I("cultivation.gate.immortal", [chk.need, chk.have]);
+		}
 		return $I("cultivation.gate.rift", [chk.need, chk.have]);
 	},
 
@@ -2312,6 +2595,17 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (sealBonus.combatMult > 1){ mult *= sealBonus.combatMult; }	//玄天古印加持
 		var origin = this.getOrigin();
 		if (origin && origin.powerMult){ mult *= origin.powerMult; }	//猎户之后
+		var riftDmgBonus = this.game.getEffect("riftDamageRatio") || 0;
+		if (riftDmgBonus > 0){ mult *= (1 + riftDmgBonus * 0.5); }	//高阶宗门镇宗秘境神通
+		if ((this.beastImprintTier || 0) > 0){ mult *= (1 + this.beastImprintTier * 0.04); }	//XX-6 前世万灵兽印护体
+		if ((this.hongmengImprintTier || 0) > 0){ mult *= (1 + this.hongmengImprintTier * 0.05); }	//XX-7 前世鸿蒙道印镇世
+		if ((this.dharmaImprintTier || 0) > 0){ mult *= (1 + this.dharmaImprintTier * 0.06); }	//XX-8 前世法相道印护道
+		if (this.immortalAscended){ mult *= 1.35; }					//仙躯蜕凡
+		if (this.daoyun > 0){ mult *= (1 + this.daoyun * 0.15); }	//诸天法则道韵加持
+		var caveBonus = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		if (caveBonus && caveBonus.combatMult > 1){ mult *= caveBonus.combatMult; }	//XX-4 本命仙器器灵共鸣与轮回仙印
+		if (this.hasMingge("jiangu")){ mult *= 1.28; }				//剑骨通明 ×1.28
+		if (this.hasMingge("huanggu")){ mult *= 1.20; }				//荒古战躯 ×1.20
 		mult *= Math.max(0.3, 1 - this.heartDemon * 0.005);	//心魔蚀骨
 		return Math.max(1, base * mult);
 	},
@@ -2319,7 +2613,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//秘境守关战力天梯——门槛层锚定「上一境界圆满×0.9」,档内几何插值;
 	//战力每境约翻四倍,故跨档急升:同一境界内越阶越深,守关者越不可力敌
 	RIFT_POWER: [
-		[0, 40], [3, 160], [6, 565], [9, 2185], [12, 8665], [15, 34585], [20, 135835], [25, 540835]
+		[0, 40], [3, 160], [6, 565], [9, 2185], [12, 8665], [15, 34585], [20, 135835], [25, 540835], [30, 2150000], [35, 8600000]
 	],
 	floorPower: function(floor){
 		var L = this.RIFT_POWER;
@@ -2338,6 +2632,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		c += (origin && origin.chanceBonus) || 0;	//散修遗孤,道心早砺
 		if (stage.chance != null && stage.chance < 1){
 			c += this.getLegacyBonus().chanceBonus;	//轮回印记前尘悟道
+			if (this.hasMingge("tianling")){ c += 0.08; }	//鸿蒙道体破境天成
 		}
 		c -= this.heartDemon * 0.006;	//心魔噬心,道念不纯则破境愈艰
 		if (stage.chance != null && stage.chance < 1 && (this.pillToxicity || 0) >= 40){
@@ -2362,10 +2657,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (this.lastBreakYear == null){ return 1; }
 		//game.ticks 不入档——读档归零会让 elapsed 转负、余威暴胀出上界。
 		//改用持久化的历法纪年,trueYear() 含日/季/年的小数推进。
+		var surgeYears = this.BREAK_SURGE_YEARS * (this.hasMingge("tianling") ? 0.5 : 1);
 		var elapsed = this.game.calendar.trueYear() - this.lastBreakYear;
-		if (elapsed >= this.BREAK_SURGE_YEARS){ return 1; }
+		if (elapsed >= surgeYears){ return 1; }
 		if (elapsed < 0){ elapsed = 0; }
-		return 1 + (this.BREAK_SURGE_MAX - 1) * (1 - elapsed / this.BREAK_SURGE_YEARS);
+		return 1 + (this.BREAK_SURGE_MAX - 1) * (1 - elapsed / surgeYears);
 	},
 
 	rollBreakOmen: function(){
@@ -2408,12 +2704,16 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//当前境界的寿元上限(随层数渐进,stage meta 上已按 def.life*(i+1)/layers 生成; 农家出身筋骨绵长 ×1.15)
 	getLifespan: function(){
 		var realm = this.getCurrentRealm();
-		var base = (realm && realm.lifespan) || 80;
+		var springB = this.getBeastSpringBonus ? this.getBeastSpringBonus() : null;
+		var caveLife = (this.immortalAscended && this.getImmortalCaveBonuses) ? this.getImmortalCaveBonuses(0) : null;
+		var base = ((realm && realm.lifespan) || 80) +
+			((this.herbGarden && this.herbGarden.immortalLifeBonus) || 0) +
+			((springB && springB.lifespanBonus) || 0) +
+			((caveLife && caveLife.lifespanBonus) || 0);
 		var origin = this.getOrigin();
-		if (origin && origin.lifespanMult){
-			return Math.round(base * origin.lifespanMult);
-		}
-		return base;
+		var mult = (origin && origin.lifespanMult) ? origin.lifespanMult : 1;
+		if (this.hasMingge("changsheng")){ mult *= 1.60; }	//长生道胎寿元绵长 +60%
+		return Math.round(base * mult);
 	},
 
 	getLifespanRemaining: function(){
@@ -2508,6 +2808,54 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			dojo.connect(oCards[o.key], "onclick", function(){ selOrigin = o.key; markO(); });
 		});
 
+		//XX-3 转世择身时同步展示「先天命格·特殊灵体」择取盘(1~3 槽)
+		var selMingge = self.normalizeMinggeList(self.mingge || [], self.getMinggeSlotCap(false));
+		if (originOnly){
+			var mgCap = self.getMinggeSlotCap(false);
+			var mgHdr = dojo.create("div", {
+				className: "xxIdLbl xxIdLblTop xxMgPromptHdr"
+			}, card);
+			var mgCards = {};
+			var refreshMgHdr = function(){
+				mgHdr.innerHTML = "☯ 先天命格 · 特殊灵体 <span class=\"xxMgSlotBadge\">已择 " + selMingge.length + "/" + mgCap + " 槽</span>" +
+					"<span class=\"xxMgUnlockHint\">（3世/8功德开2槽 · 6世/25功德开3槽）</span>";
+				for (var mk in mgCards){
+					var on = false;
+					for (var mi = 0; mi < selMingge.length; mi++){
+						if (selMingge[mi] === mk){ on = true; break; }
+					}
+					mgCards[mk].className = "xxMgCard" + (on ? " xx-sel" : "");
+				}
+			};
+			var mgGrid = dojo.create("div", {className: "xxMgGrid"}, card);
+			this.MINGGE_DEFS.forEach(function(mg){
+				var ico = (classes.ui && classes.ui.XianxiaArt && classes.ui.XianxiaArt.minggeIcon) ?
+					"<i class=\"xxMgIco\" aria-hidden=\"true\">" + classes.ui.XianxiaArt.minggeIcon(mg.art) + "</i>" : "";
+				mgCards[mg.key] = dojo.create("div", {
+					className: "xxMgCard",
+					"data-mg": mg.key,
+					innerHTML: ico + "<div class=\"xxMgBody\">" +
+						"<div class=\"xxMgTitleRow\"><b>" + mg.label + "</b><span class=\"xxMgTag\">" + mg.tag + "</span></div>" +
+						"<span class=\"xxMgDesc\">" + mg.desc + "</span></div>"
+				}, mgGrid);
+				dojo.connect(mgCards[mg.key], "onclick", function(){
+					var idx = -1;
+					for (var j = 0; j < selMingge.length; j++){
+						if (selMingge[j] === mg.key){ idx = j; break; }
+					}
+					if (idx >= 0){
+						selMingge.splice(idx, 1);
+					} else if (selMingge.length < mgCap){
+						selMingge.push(mg.key);
+					} else if (mgCap === 1){
+						selMingge = [mg.key];
+					}
+					refreshMgHdr();
+				});
+			});
+			refreshMgHdr();
+		}
+
 		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0}, card);
 		var btnContent = dojo.create("div", {className: "btnContent"}, btn);
 		dojo.create("span", {
@@ -2515,13 +2863,17 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}, btnContent);
 		dojo.connect(btn, "onclick", function(){
 			if (originOnly){
-				//转世择身——魂还是那缕魂,只换这一世的出身
+				//转世择身——魂还是那缕魂,换这一世的出身并凝定先天命格
 				self.identity.origin = selOrigin;
-				self.applyOrigin();
+				self.setMingge(selMingge);
 				self.pendingOrigin = false;
 				self.identityPending = false;
 				dojo.destroy(overlay);
-				self.game.msg($I("identity.rebirthed", [self.getOriginLabel()]), "important");
+				var mgNames = [];
+				var activeMgs = self.getActiveMinggeDefs();
+				for (var mi = 0; mi < activeMgs.length; mi++){ mgNames.push("【" + activeMgs[mi].label + "】"); }
+				var originSummary = self.getOriginLabel() + (mgNames.length ? " · 身负" + mgNames.join("") : "");
+				self.game.msg($I("identity.rebirthed", [originSummary]), "important");
 				self.game.render();
 				return;
 			}
@@ -2584,6 +2936,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			innerHTML: $I("cultivation.msg.lifespan.end",
 				[this.getCurrentRealm().label, Math.floor(this.age), karmaText])
 		}, card);
+		this.renderMinggePickerInto(card, true);
 		var btn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone", tabIndex: 0}, card);
 		var btnContent = dojo.create("div", {className: "btnContent"}, btn);
 		dojo.create("span", {
@@ -2595,6 +2948,110 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			self.applyReincarnation(bonus);
 		});
 		btn.focus();
+	},
+
+	//渲染「来世先天命格轮回盘」交互选择面板(供坐化弹层与主动轮回重修弹窗共用)
+	renderMinggePickerInto: function(parentNode, isNextLife){
+		var self = this;
+		var cap = this.getMinggeSlotCap(isNextLife !== false);
+		if ((!this.pendingMingge || !this.pendingMingge.length) && this.mingge && this.mingge.length){
+			this.pendingMingge = this.normalizeMinggeList(this.mingge, cap);
+		} else {
+			this.pendingMingge = this.normalizeMinggeList(this.pendingMingge || [], cap);
+		}
+		var box = dojo.create("div", {className: "xxMgPickerBox"}, parentNode);
+		var hdr = dojo.create("div", {className: "xxMgPickerHdr"}, box);
+		var grid = dojo.create("div", {className: "xxMgGrid"}, box);
+		var cardMap = {};
+		var refresh = function(){
+			var cur = self.pendingMingge || [];
+			hdr.innerHTML = "<span class=\"xxMgPickerTitle\">☯ 来世先天命格择取</span>" +
+				"<span class=\"xxMgSlotBadge\">已择 " + cur.length + "/" + cap + " 槽</span>" +
+				"<span class=\"xxMgUnlockHint\">累计 3世/8功德开2槽 · 6世/25功德开3槽</span>";
+			for (var k in cardMap){
+				var picked = false;
+				for (var i = 0; i < cur.length; i++){
+					if (cur[i] === k){ picked = true; break; }
+				}
+				cardMap[k].className = "xxMgCard" + (picked ? " xx-sel" : "");
+			}
+		};
+		for (var i = 0; i < this.MINGGE_DEFS.length; i++){
+			(function(mg){
+				var ico = (classes.ui && classes.ui.XianxiaArt && classes.ui.XianxiaArt.minggeIcon) ?
+					"<i class=\"xxMgIco\" aria-hidden=\"true\">" + classes.ui.XianxiaArt.minggeIcon(mg.art) + "</i>" : "";
+				var el = dojo.create("div", {
+					className: "xxMgCard",
+					"data-mg": mg.key,
+					innerHTML: ico + "<div class=\"xxMgBody\">" +
+						"<div class=\"xxMgTitleRow\"><b>" + mg.label + "</b><span class=\"xxMgTag\">" + mg.tag + "</span></div>" +
+						"<span class=\"xxMgDesc\">" + mg.desc + "</span></div>"
+				}, grid);
+				cardMap[mg.key] = el;
+				dojo.connect(el, "onclick", function(){
+					self.togglePendingMingge(mg.key);
+					refresh();
+				});
+			})(this.MINGGE_DEFS[i]);
+		}
+		refresh();
+		return box;
+	},
+
+	//主动打开「六道轮回 · 先天命格盘」弹窗(可预设来世命格,亦可直接兵解/飞升轮回重修)
+	showReincarnationOverlay: function(){
+		var self = this;
+		var existing = dojo.query(".xxMinggeModalOverlay");
+		if (existing && existing.length){
+			existing.forEach(function(n){ dojo.destroy(n); });
+		}
+		var host = dojo.byId("gamePageContainer") || dojo.body();
+		var overlay = dojo.create("div", {className: "xxFateOverlay xxMinggeModalOverlay"}, host);
+		var card = dojo.create("div", {
+			className: "dialog xxFateCard xxMinggeModalCard",
+			role: "dialog",
+			"aria-modal": "true",
+			"aria-label": "六道轮回 · 先天命格盘"
+		}, overlay);
+		var wheelBanner = "<div class=\"xxMgBanner\"><img src=\"res/art/mingge_wheel.jpg\" alt=\"\" class=\"xxMgBannerImg\"/>" +
+			"<div class=\"xxMgBannerText\">" +
+				"<div class=\"xxMgBannerTitle\">☯ 六道轮回 · 先天命格盘</div>" +
+				"<div class=\"xxMgBannerSub\">已历 " + this.getPastLives() + " 世轮回 · 来世可携 " + this.getMinggeSlotCap(true) + " 道先天灵体入世重修</div>" +
+			"</div></div>";
+		dojo.create("div", {innerHTML: wheelBanner}, card);
+
+		var curActive = this.getActiveMinggeDefs();
+		var curNames = [];
+		for (var i = 0; i < curActive.length; i++){ curNames.push("【" + curActive[i].label + "】"); }
+		dojo.create("div", {
+			className: "xxMgCurrentBar",
+			innerHTML: "此世命格：" + (curNames.length ? "<b>" + curNames.join(" ") + "</b>" : "<span class=\"xxMgMuted\">凡胎俗骨（转世重修后凝定先天灵体）</span>")
+		}, card);
+
+		this.renderMinggePickerInto(card, true);
+
+		var btnRow = dojo.create("div", {className: "xxMgModalActions"}, card);
+		var saveBtn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxMgSaveBtn", tabIndex: 0}, btnRow);
+		dojo.create("div", {
+			className: "btnContent",
+			innerHTML: "<span class=\"btnTitle\"><b>封存来世命格预设</b></span>"
+		}, saveBtn);
+		dojo.connect(saveBtn, "onclick", function(){
+			dojo.destroy(overlay);
+			var p = self.pendingMingge || [];
+			self.game.msg(p.length ? ("已铭刻来世先天命格（" + p.length + " 道），待坐化或转世重修时自动凝成！") : "已清空来世命格预设。", "notice");
+			if (self.game.render){ self.game.render(); }
+		});
+
+		var resetBtn = dojo.create("div", {className: "btn nosel modern xxFateBtn xxFateDone xxMgRebirthBtn", tabIndex: 0}, btnRow);
+		dojo.create("div", {
+			className: "btnContent",
+			innerHTML: "<span class=\"btnTitle\"><b>携此命格 · 轮回重修</b></span>"
+		}, resetBtn);
+		dojo.connect(resetBtn, "onclick", function(){
+			dojo.destroy(overlay);
+			self.game.reset();
+		});
 	},
 
 	//并入坐化业果并走标准转生——与按钮解耦,便于测试与别处复用
@@ -2798,19 +3255,29 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (!this.supremePills){ this.supremePills = {}; }
 
 		this.craftPill(name);
+		var hasDandao = this.hasMingge("dandao");
+		if (hasDandao){
+			this.alchemyExp = (this.alchemyExp || 0) + 1;	//丹道圣体:丹道造诣翻倍
+			if (Math.random() < 0.55){
+				pill.val = (pill.val || 0) + 1;				//丹道圣体:55% 额外多产 1 枚同阶灵丹
+			}
+		}
 		var fire = this.getCauldronFire();
 		var rankInfo = this.getAlchemyRank();
+		var caveAlc = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var extraCrit = (caveAlc && caveAlc.alchemyCritBonus) || 0;
 		var note = "";
 
 		if (fire.key === "gentle"){
 			//文火温养: 额外丹道造诣 + 顺带平复 4 点经脉丹毒
 			this.alchemyExp = (this.alchemyExp || 0) + 1;
 			var beforeTox = this.pillToxicity || 0;
-			this.pillToxicity = Math.max(0, beforeTox - 4);
-			note = "【文火温养】慢火凝成【" + pill.label + "】×1，丹香涤脉（丹毒 -4，造诣 +2）。";
+			var gentleClr = 4 + (caveAlc && caveAlc.gentleDetoxBonus ? caveAlc.gentleDetoxBonus : 0);
+			this.pillToxicity = Math.max(0, beforeTox - gentleClr);
+			note = "【文火温养】慢火凝成【" + pill.label + "】×1，丹香涤脉（丹毒 -" + gentleClr + "，造诣 +2）。";
 		} else if (fire.key === "fierce"){
-			//武火催丹: 35% + 造诣加成 一炉双丹
-			var dblChance = Math.min(0.65, 0.35 + rankInfo.critBonus);
+			//武火催丹: 35% + 造诣加成 + 仙草/仙鼎加成 一炉双丹
+			var dblChance = Math.min(0.85, 0.35 + rankInfo.critBonus + extraCrit);
 			if (Math.random() < dblChance){
 				pill.val = (pill.val || 0) + 1;
 				note = "【武火催丹 · 一炉双丹】赤炎轰鸣，单份药材竟一举凝成【" + pill.label + "】×2！";
@@ -2819,14 +3286,24 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				note = "【武火催丹】烈火淬炼，成功出炉【" + pill.label + "】×1。";
 			}
 		} else if (fire.key === "azure"){
-			//乾蓝灵火: 30% + 造诣加成 凝出丹纹灵丹
-			var supChance = Math.min(0.60, 0.30 + rankInfo.critBonus);
+			//乾蓝灵火: 30% + 造诣加成 + 仙草/仙鼎加成 凝出丹纹灵丹
+			var supChance = Math.min(0.80, 0.30 + rankInfo.critBonus + extraCrit);
 			if (Math.random() < supChance){
 				this.supremePills[name] = (this.supremePills[name] || 0) + 1;
 				note = "【乾蓝灵火 · 丹纹天成】冰焰交融霞光万道，凝出极品【✦丹纹" + pill.label + "】×1（药效+40% · 丹毒减半）！";
 				this.game.msg(note, "important");
 			} else {
 				note = "【乾蓝灵火】冰火淬炼，成功出炉【" + pill.label + "】×1。";
+			}
+		}
+		if (caveAlc){
+			if (caveAlc.alchemyYieldChance > 0 && Math.random() < caveAlc.alchemyYieldChance){
+				pill.val = (pill.val || 0) + 1;
+			}
+			if (caveAlc.alchemyExtraXy > 0){
+				var xyResRef = this.game.resPool.get("xianyuan");
+				if (xyResRef){ xyResRef.unlocked = true; }
+				this.game.resPool.addResEvent("xianyuan", caveAlc.alchemyExtraXy);
 			}
 		}
 		this.lastAlchemyNote = note;
@@ -2907,10 +3384,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			isSupreme = true;
 		}
 
-		var durMult = (isSupreme ? 1.4 : 1.0) * toxStatus.effMult;
+		var cavePill = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var herbPotMult = 1 + ((cavePill && cavePill.pillPotencyBonus) || 0);
+		var herbToxFactor = 1 - ((cavePill && cavePill.toxReduction) || 0);
+		var durMult = (isSupreme ? 1.4 : 1.0) * toxStatus.effMult * herbPotMult;
 		var baseDur = Math.max(300, Math.round(1500 * durMult));
 		var fire = this.getCauldronFire();
-		var toxMult = (fire.key === "gentle" ? 0.70 : 1.0) * (isSupreme ? 0.50 : 1.0);
+		var toxMult = (fire.key === "gentle" ? 0.70 : 1.0) * (isSupreme ? 0.50 : 1.0) * (this.hasMingge("dandao") ? 0.50 : 1.0) * herbToxFactor;
 
 		if (name == "juqi"){
 			this.buffs.juqi = baseDur;	//标准 1500 ticks (~5 min), 丹纹 2100 ticks
@@ -3175,7 +3655,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	//出关散功间也不可径入秘境。actionCd 是四者共同的冷却。
 
 	setActionCd: function(ticks){
-		this.actionCd = this.actionCdMax = ticks;
+		var cdMult = this.hasMingge("zhenyan") ? 0.75 : 1;
+		var effTicks = Math.max(1, Math.round(ticks * cdMult));
+		this.actionCd = this.actionCdMax = effTicks;
 	},
 
 	canAct: function(){
@@ -3215,13 +3697,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	resolveWander: function(){
 		var realmIdx = this.getCurrentRealmIndex();
 		var hasSwords = this.getFate("fengyun").researched;
-		var scale = (1 + realmIdx * 0.8) * (hasSwords ? 1.5 : 1);
+		var hasQiyun = this.hasMingge("qiyun");
+		var qiyunMult = hasQiyun ? 2.0 : 1.0;
+		var scale = (1 + realmIdx * 0.8) * (hasSwords ? 1.5 : 1) * qiyunMult;
 		var ambushMin = hasSwords ? 88 : 83;	//蜂云剑护体:伏击窗口进一步收窄
 		var addRes = this.game.resPool.addResEvent.bind(this.game.resPool);
 		var fmt = this.game.getDisplayValueExt.bind(this.game);
 
 		//行脚吐纳保底——每次游历归来必有一份修为感悟入账,绝不空手而归
-		var baseXw = this.applyXiuweiSoftCap(Math.max(1, Math.round(this.breakPayout(this.WANDER_PAY * 0.35 * (hasSwords ? 1.5 : 1)))));
+		var baseXw = this.applyXiuweiSoftCap(Math.max(1, Math.round(this.breakPayout(this.WANDER_PAY * 0.35 * (hasSwords ? 1.5 : 1) * qiyunMult))));
 		addRes("xiuwei", baseXw);
 
 		var roll = Math.random() * 100;
@@ -3235,7 +3719,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			addRes("catnip", this.roundNice(30 * scale));
 			this.game.msg($I("cultivation.msg.wander.spice", [fmt(amt)]), "notice");
 		} else if (roll < 64){
-			var amt = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY * (hasSwords ? 1.5 : 1)));
+			var amt = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY * (hasSwords ? 1.5 : 1) * qiyunMult));
 			addRes("xiuwei", amt);
 			this.game.msg($I("cultivation.msg.wander.xiuwei", [fmt(amt + baseXw)]), "notice");
 		} else if (roll < 75){
@@ -3247,10 +3731,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			addRes("relic", amt);
 			this.game.msg($I("cultivation.msg.wander.relic", [amt]), "important");
 		} else if (roll < 92){
-			//炼气新手保护——凡尘初历不遇劫修,偶得山间灵泉顿悟
-			if (realmIdx === 0){
-				var spXw = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY));
+			//炼气新手保护 / 气运之子逢凶化吉——不遇劫修折损,反得奇遇造化
+			if (realmIdx === 0 || hasQiyun){
+				var spXw = this.applyXiuweiSoftCap(this.breakPayout(this.WANDER_PAY * qiyunMult));
 				addRes("xiuwei", spXw);
+				addRes("minerals", this.roundNice(20 * scale));
 				addRes("wood", 2);
 				this.game.msg($I("cultivation.msg.wander.xiuwei", [fmt(spXw + baseXw)]), "notice");
 			} else {
@@ -3310,14 +3795,17 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		{key: "gravity",  label: "元磁禁空", counter: "sword",   desc: "元磁神光压制飞遁，凭【青元剑阵】沛然剑意强行破开禁空"}
 	],
 
-	//六枚玄天古印:通关指定大秘境层数永久点亮,加持修为、万产与战力
+	//九枚玄天与真仙道印:通关指定大秘境层数永久点亮,加持修为、万产与战力
 	RIFT_SEALS: [
 		{floor: 3,  key: "xuejin",   label: "血禁灵印", desc: "修为吐纳 +15%", xiuweiRatio: 0.15},
 		{floor: 6,  key: "xutian",   label: "虚天丹印", desc: "洞府万产 +15%", realmProductionRatio: 0.15},
 		{floor: 9,  key: "kunwu",    label: "昆吾剑印", desc: "斗法战力 +20%", combatMult: 0.20},
 		{floor: 12, key: "zhuimo",   label: "坠魔元印", desc: "修为吐纳 +30%", xiuweiRatio: 0.30},
 		{floor: 15, key: "xuantian", label: "玄天真印", desc: "万产+30% · 战力+30%", realmProductionRatio: 0.30, combatMult: 0.30},
-		{floor: 20, key: "jiemian",  label: "界面道印", desc: "修为吐纳 +50%", xiuweiRatio: 0.50}
+		{floor: 20, key: "jiemian",  label: "界面道印", desc: "修为吐纳 +50%", xiuweiRatio: 0.50},
+		{floor: 25, key: "feisheng", label: "飞升仙印", desc: "万产+40% · 战力+40%", realmProductionRatio: 0.40, combatMult: 0.40},
+		{floor: 30, key: "taiyi",    label: "太乙道印", desc: "修为+80% · 战力+50%", xiuweiRatio: 0.80, combatMult: 0.50},
+		{floor: 35, key: "hunyuan",  label: "混元金印", desc: "修为+120% · 万产+60% · 战力+80%", xiuweiRatio: 1.20, realmProductionRatio: 0.60, combatMult: 0.80}
 	],
 
 	//秘境探幽六大奇遇房(前两重随机轮转,第三重必入「核心祭坛·虚天古宝匣」)
@@ -3401,7 +3889,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (f <= 6){ return {name: "虚天内殿·冰火道", boss: $I("cultivation.grift.boss.2")}; }
 		if (f <= 9){ return {name: "昆吾仙山·镇魔渊", boss: $I("cultivation.grift.boss.3")}; }
 		if (f <= 15){ return {name: "坠魔古渊·血焰坛", boss: $I("cultivation.grift.boss.4")}; }
-		return {name: "真仙界缝·混沌墟", boss: $I("cultivation.grift.boss.5")};
+		if (f <= 25){ return {name: "真仙界缝·混沌墟", boss: $I("cultivation.grift.boss.5")}; }
+		if (f <= 30){ return {name: "九幽冥仙界·法则断层", boss: $I("cultivation.grift.boss.6")}; }
+		return {name: "三十三天外·紫霄雷池", boss: $I("cultivation.grift.boss.7")};
 	},
 
 	getRiftSealBonuses: function(){
@@ -3518,7 +4008,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 		} else {
 			//进取/夺宝路线 (optA)
-			var keyChance = 0.30 + (stance.keyBonus || 0);
+			var qiyunBonus = this.hasMingge("qiyun") ? 0.25 : 0;
+			var keyChance = 0.30 + (stance.keyBonus || 0) + qiyunBonus;
+			var artDropMult = (stance.artifactMult || 1) + qiyunBonus;
 			if (roomKey === "herb"){
 				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * 1.25));
 				addRes("catnip", this.roundNice(45 * scale));
@@ -3526,20 +4018,20 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				note = "剑斩赤练妖蟒夺取千年血线蛟藤！修为 +" + fmt(xwGain) + (keyGain ? "，斩获妖丹【秘境令】×1！" : "");
 			} else if (roomKey === "cave"){
 				relicGain = (stance.key === "array" ? 2 : 1);
-				if (Math.random() < 0.25 * (stance.artifactMult || 1)){
+				if (Math.random() < 0.25 * artDropMult){
 					artDropped = this.rollArtifactDrop(scale);
 				}
 				note = "神识推演破开古修禁制！修为 +" + fmt(xwGain) + "，获【上古遗宝】×" + relicGain + (artDropped ? "，更得古宝认主！" : "");
 			} else if (roomKey === "ambush"){
 				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * 1.2));
-				if (Math.random() < Math.min(0.75, keyChance + 0.20)){ keyGain = 1; }
+				if (Math.random() < Math.min(0.85, keyChance + 0.20)){ keyGain = 1; }
 				minGain = this.roundNice(25 * scale);
 				note = "黄雀在后雷霆出手！修为 +" + fmt(xwGain) + (keyGain ? "，夺得【秘境令】×1！" : "，缴获灵石 +" + fmt(minGain));
 			} else if (roomKey === "spring"){
 				xwGain = this.applyXiuweiSoftCap(Math.round(baseXwGain * (stance.key === "sword" ? 1.55 : 1.35)));
 				note = "盘膝泉眼鲸吞万年灵乳，周天轰鸣！修为暴涨 +" + fmt(xwGain) + "！";
 			} else if (roomKey === "fog"){
-				if (Math.random() < 0.38 * (stance.artifactMult || 1)){
+				if (Math.random() < 0.38 * artDropMult){
 					artDropped = this.rollArtifactDrop(scale);
 				} else {
 					relicGain = 1;
@@ -3837,7 +4329,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			pattern: ["curse", "heavy", "strike", "heavy"]
 		},
 		{
-			maxFloor: 999,
+			maxFloor: 25,
 			key: "zhenxian",
 			name: "真仙法则化身",
 			zone: "真仙界缝·混沌墟",
@@ -3850,6 +4342,36 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			defMult: 1.15,
 			startShieldRatio: 0.35,
 			pattern: ["heavy", "guard", "curse", "heavy"]
+		},
+		{
+			maxFloor: 30,
+			key: "yaoxian",
+			name: "太乙蚀道妖仙",
+			zone: "九幽冥仙界·法则断层",
+			icon: "妖",
+			tier: "上界妖仙",
+			traitTitle: "蚀道仙煞 · 万古妖罡",
+			traitDesc: "攻击附加蚀道魔煞并凝结30%妖仙罡盾；蓄力【太乙灭仙击】唯有【玄水灵盾】反震可破",
+			hpMult: 1.28,
+			atkMult: 1.24,
+			defMult: 1.18,
+			startShieldRatio: 0.40,
+			pattern: ["heavy", "curse", "strike", "heavy"]
+		},
+		{
+			maxFloor: 999,
+			key: "yaoxian",
+			name: "混元天魔仙尊",
+			zone: "三十三天外·紫霄雷池",
+			icon: "尊",
+			tier: "仙界霸主",
+			traitTitle: "紫霄寂灭 · 诸天沉沦",
+			traitDesc: "每回合恢复6%仙躯并穿透护甲；蓄力【混元寂灭劫】被【玄水灵盾】反震时承受天道反噬",
+			hpMult: 1.35,
+			atkMult: 1.30,
+			defMult: 1.22,
+			startShieldRatio: 0.45,
+			pattern: ["curse", "heavy", "guard", "heavy"]
 		}
 	],
 
@@ -3994,9 +4516,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 
 		var cp = Math.max(10, this.getCombatPower());
-		var maxHp = Math.max(120, Math.round(cp * 4.5));
+		var hasHuanggu = this.hasMingge("huanggu");
+		var maxHp = Math.max(120, Math.round(cp * 4.5 * (hasHuanggu ? 1.45 : 1)));
 		var atk = Math.max(24, Math.round(cp * 0.92));
-		var pDef = Math.max(8, Math.round(cp * 0.24));
+		var pDef = Math.max(8, Math.round(cp * 0.24 * (hasHuanggu ? 1.35 : 1)));
 		var floor = (bMode === "greater") ? (this.riftFloor + 1) : (this.riftFloor || 1);
 		var seed = (this.stats.rift || 1) + (this.actionSeq || 0);
 		var waveKeys = this.getNextMonsterWaveKeys(seed);
@@ -4004,6 +4527,18 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 		var nArt = this.natalArtifact ? this.getArtifact(this.natalArtifact) : null;
 		var natalName = (nArt && nArt.researched) ? nArt.label : "青竹蜂云剑";
+		var caveStart = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(bMode === "greater" ? floor : 0) : null;
+		if (caveStart && caveStart.riftHpMult && caveStart.riftHpMult > 1){
+			maxHp = Math.max(120, Math.round(maxHp * caveStart.riftHpMult));
+		}
+		if (this.immortalAscended && this.xianqi && this.xianqi.boundKey && this.xianqi.stage > 0){
+			var xqDef = this.getImmortalArtifactDef(this.xianqi.boundKey);
+			if (xqDef){ natalName = $I(xqDef.labelKey); }
+		}
+		var startShield = (caveStart && caveStart.startShieldRatio > 0) ? Math.round(maxHp * caveStart.startShieldRatio) : 0;
+		var zyRatio = Math.max(0, this.game.getEffect("zhenyuanRatio") || 0);
+		var pMaxMp = Math.round(100 * (1 + zyRatio));
+		var pStartMp = Math.min(pMaxMp, Math.round(60 * (1 + zyRatio)));
 
 		var openLog = (bMode === "greater")
 			? "【上古大秘境 · 第 " + floor + " 层】「" + enemy.name + "」（特征：" + enemy.traitTitle + "）镇守阵眼，斗法开始！"
@@ -4019,6 +4554,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			floor: floor,
 			waveKeys: waveKeys,
 			natalName: natalName,
+			nirvanaUsed: false,
 			autoFlow: true,
 			castTick: 0,
 			castMax: 10,
@@ -4027,9 +4563,9 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			player: {
 				hp: maxHp,
 				maxHp: maxHp,
-				mp: 60,
-				maxMp: 100,
-				shield: 0,
+				mp: pStartMp,
+				maxMp: pMaxMp,
+				shield: startShield,
 				atk: atk,
 				def: pDef,
 				counterStance: false,
@@ -4105,7 +4641,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		b.animSeq = ev.seq;
 		b.lastEvent = ev;
 
-		// 1. 玩家回合初状态结算 (蛇毒)
+		// 1. 玩家回合初状态结算 (荒古战躯自愈 & 蛇毒)
+		if (this.hasMingge("huanggu") && p.hp < p.maxHp){
+			var hgHeal = Math.max(4, Math.round(p.maxHp * 0.04));
+			p.hp = Math.min(p.maxHp, p.hp + hgHeal);
+			ev.pHeal += hgHeal;
+		}
 		if (p.poison > 0){
 			var pTick = Math.max(2, Math.round(p.maxHp * 0.06));
 			p.hp = Math.max(1, p.hp - pTick);
@@ -4117,25 +4658,52 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		// 2. 消耗/恢复真元
 		p.mp = Math.max(0, p.mp - sk.cost);
 		if (sk.gainMp > 0){
-			var mpGain = p.chill > 0 ? Math.ceil(sk.gainMp * 0.5) : sk.gainMp;
+			var zyGainMult = 1 + Math.max(0, this.game.getEffect("zhenyuanRatio") || 0);
+			var rawGainMp = Math.round(sk.gainMp * zyGainMult);
+			var mpGain = p.chill > 0 ? Math.ceil(rawGainMp * 0.5) : rawGainMp;
 			p.mp = Math.min(p.maxMp, p.mp + mpGain);
 		}
 
 		// 3. 玩家施展神通
-		var atkEff = p.atk * (p.weak > 0 ? 0.80 : 1.0);
+		var caveB = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(b.mode === "greater" ? b.floor : 0) : null;
+		var xianqiRiftDmgMult = (caveB && caveB.riftDmgMult) ? caveB.riftDmgMult : 1;
+		var riftDmgMult = (1 + Math.max(0, this.game.getEffect("riftDamageRatio") || 0)) * xianqiRiftDmgMult;
+		if (caveB && caveB.dharmaLotusRegenRatio > 0){
+			if (p.hp < p.maxHp){
+				var lotusHeal = Math.max(6, Math.round(p.maxHp * caveB.dharmaLotusRegenRatio));
+				p.hp = Math.min(p.maxHp, p.hp + lotusHeal);
+				ev.pHeal += lotusHeal;
+			}
+			if (p.poison > 0){ p.poison--; }
+			if (this.heartDemon > 0){ this.heartDemon = Math.max(0, this.heartDemon - 0.5); }
+		}
+		var atkEff = p.atk * (p.weak > 0 ? 0.80 : 1.0) * riftDmgMult;
+		var swordCrit = false;
+		var critChance = (this.hasMingge("jiangu") ? 0.35 : 0) + ((caveB && caveB.riftCritChance) ? caveB.riftCritChance : 0);
+		var critMultNow = 1.65 + ((caveB && caveB.riftCritDmgBonus) ? caveB.riftCritDmgBonus : 0);
+		if (critChance > 0 && sk.key !== "guard" && Math.random() < Math.min(0.90, critChance)){
+			atkEff *= critMultNow;
+			swordCrit = true;
+		}
+		if (caveB && (caveB.trueFireBreak > 0 || caveB.dharmaGiantCrushRatio > 0) && sk.key !== "guard"){
+			e.armorBreak = Math.max(e.armorBreak || 0, 2);
+		}
 		var vulnMult = 1.0 + (e.armorBreak > 0 ? 0.30 : 0) + (e.expose > 0 ? 0.40 : 0) + (e.overloaded ? 0.50 : 0);
+		var defIgnoreRatio = (caveB && caveB.riftDefIgnore) ? caveB.riftDefIgnore : 0;
+		var shieldBreakBonus = (caveB && caveB.riftShieldBreakBonus) ? caveB.riftShieldBreakBonus : 0;
 
 		var applyDamageToEnemy = function(rawDmg, shieldBonusMult, ignoreDefAndTrait){
 			var dmg = Math.max(4, Math.round(rawDmg * vulnMult));
 			if (!ignoreDefAndTrait){
-				dmg = Math.max(4, dmg - Math.round(e.def * (e.enraged ? 0.70 : 1.0) * 0.45));
+				var effEDef = e.def * (e.enraged ? 0.70 : 1.0) * (1 - defIgnoreRatio);
+				dmg = Math.max(4, dmg - Math.round(effEDef * 0.45));
 				if (e.shield > 0 && (e.key === "puppet" || e.key === "jinjia") && sk.key === "strike"){
 					dmg = Math.max(4, Math.round(dmg * 0.65)); // 玄铁重甲 / 不灭金身减伤
 				}
 			}
 			var brokeShield = false;
 			if (e.shield > 0 && !ignoreDefAndTrait){
-				var sMult = shieldBonusMult || 1.0;
+				var sMult = (shieldBonusMult || 1.0) + shieldBreakBonus;
 				var effShieldDmg = Math.round(dmg * sMult);
 				if (effShieldDmg >= e.shield){
 					var leftoverRatio = Math.max(0, (effShieldDmg - e.shield) / Math.max(1, effShieldDmg));
@@ -4166,12 +4734,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var hasShieldSyn = p.shield > 0;
 			var strikeRaw = atkEff * (hasShieldSyn ? 1.45 : 1.10);
 			var sDealt = applyDamageToEnemy(strikeRaw, 1.0, false);
-			turnNotes.push("⚔ 施展【御剑斩】" + (hasShieldSyn ? "(剑盾齐鸣+35%)" : "") + "斩落 " + sDealt + " 点伤害");
+			turnNotes.push("⚔ 施展【御剑斩】" + (swordCrit ? "(剑心通明暴击!)" : "") + (hasShieldSyn ? "(剑盾齐鸣+35%)" : "") + "斩落 " + sDealt + " 点伤害");
 		} else if (sk.key === "skill"){
 			e.armorBreak = Math.max(e.armorBreak, 2);
 			var skillRaw = atkEff * 1.75;
 			var kDealt = applyDamageToEnemy(skillRaw, 2.5, false);
-			turnNotes.push("⚡ 催动【青元剑阵】绞杀 " + kDealt + " 点伤害，附加2回合【破甲】！");
+			turnNotes.push("⚡ 催动【青元剑阵】" + (swordCrit ? "(剑心通明暴击!)" : "") + "绞杀 " + kDealt + " 点伤害，附加2回合【破甲】！");
 		} else if (sk.key === "guard"){
 			var shieldAdd = Math.max(25, Math.round(p.atk * 1.45));
 			p.shield += shieldAdd;
@@ -4180,7 +4748,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			turnNotes.push("☯ 祭起【玄水灵盾】凝盾 +" + shieldAdd + "，立下【太极反震】剑势！");
 		} else if (sk.key === "ult"){
 			var traitWeakBonus = (e.key === "viper" ? 1.25 : (e.key === "wraith" ? 1.35 : 1.0));
-			var ultRaw = atkEff * 2.45 * traitWeakBonus;
+			var xianqiUltMult = 1 + ((caveB && caveB.riftUltBonus) || 0);
+			var ultRaw = atkEff * 2.45 * traitWeakBonus * xianqiUltMult;
 			var uDealt = applyDamageToEnemy(ultRaw, 1.0, true);
 			var healAmt = Math.max(18, Math.round(p.maxHp * 0.28));
 			p.hp = Math.min(p.maxHp, p.hp + healAmt);
@@ -4188,11 +4757,39 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			p.poison = 0;
 			p.chill = 0;
 			p.weak = 0;
-			turnNotes.push("✨ 祭出本命【" + (b.natalName || "法宝") + "】镇压轰出 " + uDealt + " 点纯阳真伤，气血 +" + healAmt + " 并涤净全异常！");
+			turnNotes.push("✨ 祭出本命【" + (b.natalName || "法宝") + "】" + (swordCrit ? "(剑心通明暴击!)" : "") + "镇压轰出 " + uDealt + " 点纯阳真伤，气血 +" + healAmt + " 并涤净全异常！");
 		}
 
 		if (p.chill > 0){ p.chill--; }
 		if (p.weak > 0){ p.weak--; }
+
+		// XX-8 法天象地巨灵震击 & 一气化三清三尊道身多段连携
+		if (sk.key !== "guard" && e.hp > 0 && caveB){
+			if (caveB.dharmaGiantCrushRatio > 0){
+				var gCrushRaw = Math.max(10, Math.round(p.maxHp * caveB.dharmaGiantCrushRatio));
+				var gCrushDealt = applyDamageToEnemy(gCrushRaw, 1.35, false);
+				turnNotes.push("【法天象地】巨灵神躯镇压震碎妖罡，追加 " + gCrushDealt + " 点破甲重击");
+			}
+			if (e.hp > 0 && caveB.dharmaCloneStrikeRatio > 0){
+				var cloneRaw = atkEff * caveB.dharmaCloneStrikeRatio;
+				var cStrikeDealt = applyDamageToEnemy(cloneRaw, 1.25, false);
+				turnNotes.push("【一气化三清】玉清·上清·太清三尊道身连携合击，再斩 " + cStrikeDealt + " 点神通伤害");
+			}
+		}
+
+		// XX-7 / XX-8 三宝鸿蒙开天共鸣 & 诛仙剑阵图 26F~35F 残血妖王/魔尊斩决
+		if (b.mode === "greater" && b.floor >= 26 && e.hp > 0 && sk.key !== "guard" && caveB && caveB.riftBossExecuteRatio > 0){
+			if (e.hp <= e.maxHp * caveB.riftBossExecuteRatio){
+				var execHp = e.hp;
+				e.hp = 0;
+				ev.pDmgDealt += execHp;
+				if (caveB.dharmaSwordExecuteRatio > 0){
+					turnNotes.push("【诛仙剑阵·斩仙】诛仙四剑悬空合阵，一剑斩决残血魔尊（斩灭 " + execHp + " 气血）");
+				} else {
+					turnNotes.push("【鸿蒙斩道】三宝开天威压直接斩决残血妖王（斩灭 " + execHp + " 气血）");
+				}
+			}
+		}
 
 		// 检查妖兽是否已被斩杀
 		if (e.hp <= 0){
@@ -4206,16 +4803,16 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 
 		// 4. 妖兽回合结算
-		// 妖王再生特征 (千年墨蛟王 / 双首银狼王狂暴 / 真仙法则化身)
-		if (e.key === "mojiaowang" || e.key === "zhenxian" || (e.key === "yinlang" && e.enraged)){
-			var regenRatio = (e.key === "yinlang") ? 0.04 : 0.05;
+		// 妖王再生特征 (千年墨蛟王 / 双首银狼王狂暴 / 真仙法则化身 / 上界妖仙)
+		if (e.key === "mojiaowang" || e.key === "zhenxian" || e.key === "yaoxian" || (e.key === "yinlang" && e.enraged)){
+			var regenRatio = (e.key === "yinlang") ? 0.04 : (e.key === "yaoxian" ? 0.06 : 0.05);
 			var regenHp = Math.max(5, Math.round(e.maxHp * regenRatio));
 			e.hp = Math.min(e.maxHp, e.hp + regenHp);
-			if (e.key === "zhenxian"){
-				var sRegen = Math.round(e.maxHp * 0.12);
+			if (e.key === "zhenxian" || e.key === "yaoxian"){
+				var sRegen = Math.round(e.maxHp * (e.key === "yaoxian" ? 0.14 : 0.12));
 				e.shield += sRegen;
 				ev.eShieldGain += sRegen;
-				turnNotes.push("◈ 【万法归墟】法则流转，恢复 " + regenHp + " 气血并凝盾 +" + sRegen);
+				turnNotes.push("◈ 【" + e.traitTitle + "】法则流转，恢复 " + regenHp + " 气血并凝盾 +" + sRegen);
 			} else {
 				turnNotes.push("◈ 【" + e.traitTitle + "】再生恢复 " + regenHp + " 气血");
 			}
@@ -4224,9 +4821,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var intent = e.intent || "strike";
 		var eAtk = e.atk * (e.enraged ? 1.42 : 1.0);
 
+		var xianqiMit = (caveB && caveB.riftMitigation) ? caveB.riftMitigation : 0;
+		var xianqiPierceMit = (caveB && caveB.riftPierceMitigation) ? caveB.riftPierceMitigation : 0;
+
 		var applyDamageToPlayer = function(rawEnemyDmg, pierceRatio){
-			var incoming = Math.max(4, Math.round(rawEnemyDmg - p.def * 0.45));
-			var pRatio = pierceRatio || 0;
+			var incoming = Math.max(4, Math.round((rawEnemyDmg - p.def * 0.45) * (1 - xianqiMit)));
+			var pRatio = (pierceRatio || 0) * (1 - xianqiPierceMit);
 			var directHpDmg = Math.round(incoming * pRatio);
 			var shieldableDmg = incoming - directHpDmg;
 			if (p.shield > 0 && shieldableDmg > 0){
@@ -4246,9 +4846,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 		if (intent === "heavy"){
 			if (p.counterStance){
-				// 太极反震破招！
+				// 太极反震破招！(剑骨通明反震伤害 +75% + 本命玄天镜反制加成)
 				var reducedDmg = applyDamageToPlayer(eAtk * 1.65 * 0.25, 0);
-				var counterDmg = Math.max(15, Math.round(p.atk * 1.45 * vulnMult));
+				var counterMult = (this.hasMingge("jiangu") ? 1.75 : 1.0) * (1 + ((caveB && caveB.counterDmgBonus) || 0));
+				if (caveB && caveB.counterMpGain > 0){
+					p.mp = Math.min(p.maxMp, p.mp + caveB.counterMpGain);
+				}
+				var counterDmg = Math.max(15, Math.round(p.atk * 1.45 * vulnMult * counterMult));
 				if (e.key === "bloodcult" || e.key === "gumo"){
 					var backlash = Math.round(e.maxHp * 0.14);
 					counterDmg += backlash;
@@ -4262,7 +4866,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					return this.advanceBattleWaveOrWin(turnNotes.join("；"));
 				}
 			} else {
-				var hLost = applyDamageToPlayer(eAtk * 1.65, (e.key === "wraith" ? 0.50 : (e.key === "yinlang" ? 0.35 : 0)));
+				var hLost = applyDamageToPlayer(eAtk * 1.65, (e.key === "wraith" ? 0.50 : (e.key === "yinlang" ? 0.35 : (e.key === "yaoxian" ? 0.30 : 0))));
 				turnNotes.push("✦ " + e.name + "轰出【蓄力杀招】造成 " + hLost + " 点气血重创！");
 				if (e.key === "bloodcult" || e.key === "gumo"){
 					var vamp = Math.round(hLost * 0.45);
@@ -4282,7 +4886,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var gLost = applyDamageToPlayer(eAtk * 0.65, 0);
 			turnNotes.push("◈ " + e.name + "凝结 " + eShieldAdd + " 点妖罡护盾并反扑造成 " + gLost + " 点伤害");
 		} else if (intent === "curse"){
-			var cLost = applyDamageToPlayer(eAtk * 0.85, (e.key === "wraith" ? 0.50 : 0));
+			var cLost = applyDamageToPlayer(eAtk * 0.85, (e.key === "wraith" ? 0.50 : (e.key === "yaoxian" ? 0.30 : 0)));
 			if (e.key === "viper" || e.key === "mojiaowang" || e.key === "gumo"){
 				p.poison = Math.max(p.poison, 2);
 				turnNotes.push("☠ " + e.name + "喷吐毒瘴造成 " + cLost + " 伤，附加2回合【蛇毒】！");
@@ -4297,7 +4901,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		} else {
 			// strike
 			var isDouble = (e.key === "mantis" || e.key === "yinlang");
-			var pierce = (e.key === "wraith" ? 0.50 : (e.key === "yinlang" ? 0.35 : 0));
+			var pierce = (e.key === "wraith" ? 0.50 : (e.key === "yinlang" ? 0.35 : (e.key === "yaoxian" ? 0.30 : 0)));
 			var stLost = applyDamageToPlayer(eAtk * (isDouble ? 1.25 : 1.0), pierce);
 			if (e.key === "bloodcult" || e.key === "gumo"){
 				var leech = Math.round(stLost * 0.45);
@@ -4323,6 +4927,22 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (b.logs.length > 5){ b.logs.length = 5; }
 
 		if (p.hp <= 0){
+			if (!b.nirvanaUsed && caveB && caveB.dharmaNirvanaRatio > 0){
+				b.nirvanaUsed = true;
+				var nirvHp = Math.max(20, Math.round(p.maxHp * caveB.dharmaNirvanaRatio));
+				var nirvShd = Math.max(16, Math.round(p.maxHp * 0.22));
+				p.hp = nirvHp;
+				p.shield += nirvShd;
+				p.poison = 0;
+				p.chill = 0;
+				p.weak = 0;
+				ev.pHeal += nirvHp;
+				ev.pShieldGain += nirvShd;
+				this.heartDemon = Math.max(0, this.heartDemon - 8);
+				var nirvNote = "【轮回圣莲·涅槃护道】十二品圣莲绽放逆转生死，涅槃重聚气血 " + nirvHp + "、圣莲护盾 +" + nirvShd + " 并涤净诸邪！";
+				b.logs[0] = (b.logs[0] ? b.logs[0] + "；" : "") + nirvNote;
+				return true;
+			}
 			return this.resolveBattleDefeat();
 		}
 		return true;
@@ -4403,6 +5023,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var tc = Math.max(1, Math.round((floor - 10) * 0.8));
 			addRes("timeCrystal", tc);
 		}
+		var xyGain = 0;
+		if (floor >= 26){
+			var winCaveB = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(floor) : null;
+			var xyDropMult = 1 + ((winCaveB && winCaveB.riftXyBonus) || 0);
+			xyGain = Math.max(3, Math.round((floor - 24) * 3.5 * xyDropMult));
+			var xyRes = this.game.resPool.get("xianyuan");
+			if (xyRes){ xyRes.unlocked = true; }
+			addRes("xianyuan", xyGain);
+		}
 		var floorScale = scale * (1 + floor * 0.25);
 		var artOdds = Math.min(0.65, 0.18 + floor * 0.03);
 		var gArtDropped = false;
@@ -4412,7 +5041,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		b.active = false;
 		b.result = "win";
 		var gWinMsg = "【上古大秘境破关】成功斩杀第 " + floor + " 层妖王【" + b.enemy.name + "】！修为 +" + fmt(gAmt) +
-			"，上古遗宝 +" + relics + (gArtDropped ? "，更夺得上古法宝！" : "！");
+			"，上古遗宝 +" + relics + (xyGain > 0 ? "，仙元 +" + xyGain : "") + (gArtDropped ? "，更夺得上古法宝！" : "！");
 		b.logs.unshift((turnSummary ? turnSummary + " — " : "") + gWinMsg);
 		this.lastBattleReport = this.buildBattleReport(floor, true, this.getCombatPower(), this.floorPower(floor));
 		this.setLastAction("ok", gWinMsg);
@@ -4497,7 +5126,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	//建造三合斗法战报——依玩家当前本命法宝、青竹剑阵、奇虫灵兽与守关古妖动态成篇
 	buildBattleReport: function(floor, win, power, need){
-		var bossKey = floor <= 3 ? "1" : (floor <= 6 ? "2" : (floor <= 9 ? "3" : (floor <= 15 ? "4" : "5")));
+		var bossKey = floor <= 3 ? "1" : (floor <= 6 ? "2" : (floor <= 9 ? "3" : (floor <= 15 ? "4" : (floor <= 25 ? "5" : (floor <= 30 ? "6" : "7")))));
 		var boss = $I("cultivation.grift.boss." + bossKey);
 		var nArt = this.natalArtifact ? this.getArtifact(this.natalArtifact) : null;
 		if (!nArt || !nArt.researched){
@@ -4564,6 +5193,12 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				var tc = Math.max(1, Math.round((floor - 10) * 0.8));
 				addRes("timeCrystal", tc);
 			}
+			if (floor >= 26){
+				var xy = Math.max(2, Math.round((floor - 24) * 2.5));
+				var xyObj = this.game.resPool.get("xianyuan");
+				if (xyObj){ xyObj.unlocked = true; }
+				addRes("xianyuan", xy);
+			}
 			if (gInfo.countered && this.riftStance === "stealth"){
 				this.heartDemon = Math.max(0, this.heartDemon - 6);
 			}
@@ -4612,12 +5247,19 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (floor >= 12){
 			addRes("timeCrystal", Math.max(1, Math.round((floor - 10) * 0.6)));
 		}
+		var sweepXy = 0;
+		if (floor >= 26){
+			sweepXy = Math.max(2, Math.round((floor - 24) * 1.8));
+			var sXyObj = this.game.resPool.get("xianyuan");
+			if (sXyObj){ sXyObj.unlocked = true; }
+			addRes("xianyuan", sweepXy);
+		}
 		var dropped = false;
 		if (Math.random() < Math.min(0.55, 0.14 + floor * 0.025 + (this.riftStance === "array" ? 0.08 : 0))){
 			dropped = this.rollArtifactDrop(floorScale);
 			if (dropped && this.game.render){ this.game.render(); }
 		}
-		var text = "清剿上古秘境第 " + floor + " 层凯旋：修为 +" + fmt(amt) + "，上古遗宝 +" + relics + (dropped ? "，更获古宝机缘！" : "");
+		var text = "清剿上古秘境第 " + floor + " 层凯旋：修为 +" + fmt(amt) + "，上古遗宝 +" + relics + (sweepXy > 0 ? "，仙元 +" + sweepXy : "") + (dropped ? "，更获古宝机缘！" : "");
 		this.game.msg("【秘境清剿】" + text, "important");
 		this.setLastAction("ok", text);
 		this.lastBattleReport = this.buildBattleReport(floor, true, this.getCombatPower(), this.floorPower(floor));
@@ -4673,6 +5315,4224 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return true;
 	},
 
+	// ---------------- XX-2 渡九九雷劫 · 飞升真仙界与仙灵气循环 ----------------
+
+	canAscendImmortal: function(){
+		var dujie = this.getStage("dujie_0");
+		return !!(dujie && dujie.researched && this.riftFloor >= 25 && !this.immortalAscended);
+	},
+
+	ascendToImmortalRealm: function(){
+		if (!this.canAscendImmortal()){ return false; }
+		this.immortalAscended = true;
+		this.heartDemon = 0;
+		this.pillToxicity = 0;
+		this.daoyun = (this.daoyun || 0) + 1;
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		if (!this.herbGarden.plots[0].herbKey){
+			this.herbGarden.plots[0] = {herbKey: "xianlan", progress: 40, maxTicks: 120, mature: false};
+		}
+		this.herbGarden.stock.xianlan = (this.herbGarden.stock.xianlan || 0) + 1;
+		this.xianqi = this.normalizeXianqi(this.xianqi);
+		this.starArray = this.normalizeStarArray(this.starArray);
+		if ((this.starArray.totalCoresEarned || 0) === 0 && (this.starArray.cores.ziwei || 0) === 0){
+			this.starArray.cores.ziwei = 1;
+			this.starArray.totalCoresEarned = 1;
+		}
+		this.immortalBounty = this.normalizeImmortalBounty(this.immortalBounty);
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.daoSteleForest = this.normalizeDaoSteleForest(this.daoSteleForest);
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.hongmengImprintTier || 0) > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
+			var ascInitQi = this.getHongmengStartingQi();
+			this.starship.hongmengQi = ascInitQi;
+			this.starship.totalQiHarvested = ascInitQi;
+		}
+		this.hongmengAltar = this.normalizeHongmengAltar(this.hongmengAltar);
+		this.zixiaoAltar = this.normalizeZixiaoAltar(this.zixiaoAltar);
+		if ((this.dharmaImprintTier || 0) > 0 && (this.zixiaoAltar.totalSutrasCondensed || 0) === 0 && (this.zixiaoAltar.daoSutras || 0) === 0){
+			var ascInitSutras = this.getDharmaStartingSutras();
+			this.zixiaoAltar.daoSutras = ascInitSutras;
+			this.zixiaoAltar.totalSutrasCondensed = ascInitSutras;
+		}
+		this.syncDaoSutras();
+		this.dharmaIdols = this.normalizeDharmaIdols(this.dharmaIdols);
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+		this.game.resPool.addResEvent("xianyuan", 25);
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playTribulation){
+			classes.ui.XianxiaAudio.playTribulation(this.game);
+		}
+		this.syncRealmUnlocks();
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var msg = $I("cultivation.feisheng.done", [25, 1]);
+		this.setLastAction("ok", msg);
+		this.game.msg(msg, "important");
+		if (this.game.render){ this.game.render(); }
+		return true;
+	},
+
+	getDaoyunCost: function(){
+		var d = Math.max(0, Math.floor(this.daoyun || 0));
+		var rawCost = 25 * Math.pow(1.45, d);
+		var caveB = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var disc = (caveB && caveB.daoLawDiscount) ? caveB.daoLawDiscount : 0;
+		return Math.max(5, this.roundNice(rawCost * (1 - disc)));
+	},
+
+	infuseImmortalQi: function(){
+		if (!this.immortalAscended){ return false; }
+		var tc = this.game.resPool.get("timeCrystal");
+		if (!tc || tc.value < 10){
+			this.game.msg($I("cultivation.immortal.msg.notc"), "alert");
+			return false;
+		}
+		this.game.resPool.addResEvent("timeCrystal", -10);
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+		var caveB = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var gainXy = 18 + ((caveB && caveB.infuseExtraXy) || 0);
+		this.game.resPool.addResEvent("xianyuan", gainXy);
+		this.game.msg($I("cultivation.immortal.msg.infuse", [gainXy]), "notice");
+		return true;
+	},
+
+	comprehendDaoLaw: function(){
+		if (!this.immortalAscended){ return false; }
+		var cost = this.getDaoyunCost();
+		var xy = this.game.resPool.get("xianyuan");
+		if (!xy || xy.value < cost){
+			this.game.msg($I("cultivation.immortal.msg.noxy", [cost]), "alert");
+			return false;
+		}
+		this.game.resPool.addResEvent("xianyuan", -cost);
+		if (this.herbGarden && this.herbGarden.daoDiscountStacks > 0){
+			this.herbGarden.daoDiscountStacks = 0;
+		}
+		this.daoyun = Math.max(0, Math.floor(this.daoyun || 0)) + 1;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(
+			$I("cultivation.immortal.msg.law", [
+				this.daoyun,
+				Math.round(this.daoyun * 18),
+				Math.round(this.daoyun * 12),
+				Math.round(this.daoyun * 15)
+			]),
+			"important"
+		);
+		return true;
+	},
+
+	// ---------------- XX-4 仙界洞府 · 聚灵药园与本命仙器蕴养祭炼 ----------------
+
+	ART_VER: "77",
+
+	IMMORTAL_HERBS: [
+		{
+			key: "xianlan",
+			labelKey: "cultivation.herb.xianlan.label",
+			descKey: "cultivation.herb.xianlan.desc",
+			art: "res/art/herb_xianlan.webp",
+			growTicks: 120,
+			seedCost: [{name: "catnip", val: 80}],
+			harvestXy: 8,
+			harvestToxClr: 6,
+			harvestAlcExp: 2,
+			harvestLawProg: 0,
+			infuseXy: 12,
+			infuseToxClr: 16,
+			infuseAlcExp: 3
+		},
+		{
+			key: "zizhi",
+			labelKey: "cultivation.herb.zizhi.label",
+			descKey: "cultivation.herb.zizhi.desc",
+			art: "res/art/herb_zizhi.webp",
+			growTicks: 160,
+			seedCost: [{name: "xianyuan", val: 8}],
+			harvestXy: 15,
+			harvestToxClr: 4,
+			harvestAlcExp: 3,
+			harvestLawProg: 0,
+			infuseXy: 22,
+			infuseToxClr: 8,
+			infuseAlcExp: 5
+		},
+		{
+			key: "qinglian",
+			labelKey: "cultivation.herb.qinglian.label",
+			descKey: "cultivation.herb.qinglian.desc",
+			art: "res/art/herb_qinglian.webp",
+			growTicks: 210,
+			seedCost: [{name: "xianyuan", val: 16}],
+			harvestXy: 26,
+			harvestToxClr: 5,
+			harvestAlcExp: 3,
+			harvestLawProg: 0,
+			infuseXy: 38,
+			infuseToxClr: 8,
+			infuseAlcExp: 3
+		},
+		{
+			key: "daoguo",
+			labelKey: "cultivation.herb.daoguo.label",
+			descKey: "cultivation.herb.daoguo.desc",
+			art: "res/art/herb_daoguo.webp",
+			growTicks: 260,
+			seedCost: [{name: "xianyuan", val: 28}, {name: "timeCrystal", val: 5}],
+			harvestXy: 42,
+			harvestToxClr: 8,
+			harvestAlcExp: 4,
+			harvestLawProg: 35,
+			infuseXy: 55,
+			infuseToxClr: 12,
+			infuseAlcExp: 4
+		}
+	],
+
+	IMMORTAL_ARTIFACTS: [
+		{
+			key: "sword",
+			labelKey: "cultivation.xianqi.sword.label",
+			descKey: "cultivation.xianqi.sword.desc",
+			tag: "伐仙剑道 · 破甲诛妖",
+			tagEn: "Sword-Slaying · Pierce & Crush",
+			art: "res/art/xianqi_sword.webp",
+			passives: [
+				{tier: 1, title: "辟邪神雷剑芒", titleEn: "Lightning Sword-Glint", desc: "斗法战力 +25%，上古秘境 26~35 层神通伤害 +18%", descEn: "Combat Power +25%, 26F-35F Rift damage +18%"},
+				{tier: 3, title: "庚金剑阵诛仙", titleEn: "Geng-Metal Immortal Array", desc: "26~35 层无视妖仙 25% 护甲且破盾伤害 +22%，仙元底数 +0.03/tick", descEn: "26F-35F ignores 25% Boss DEF, shield break +22%, Essence +0.03/tick"},
+				{tier: 5, title: "青元剑莲化界", titleEn: "Azure Sword-Lotus Domain", desc: "本命杀招伤害 +35%，斗法战力再 +30%，仙元周天产出 +20%", descEn: "Ultimate strike +35%, Combat Power +30%, Immortal Essence output +20%"}
+			]
+		},
+		{
+			key: "cauldron",
+			labelKey: "cultivation.xianqi.cauldron.label",
+			descKey: "cultivation.xianqi.cauldron.desc",
+			tag: "万妙丹道 · 混元凝丹",
+			tagEn: "Primordial Alchemy · Pill Surge",
+			art: "res/art/xianqi_cauldron.webp",
+			passives: [
+				{tier: 1, title: "乾蓝冰焰控炉", titleEn: "Azure Ice-Flame Control", desc: "炼丹双丹与丹纹率 +15%，服丹经脉丹毒累积 -25%", descEn: "Double-pill & Supreme-vein rate +15%, pill toxicity -25%"},
+				{tier: 3, title: "九转混元丹气", titleEn: "Nine-Turn Pill Qi", desc: "开炉 40% 额外多凝 1 丹并凝仙元 +2，灵丹药效时长 +25%", descEn: "40% extra pill +2 Essence on craft, pill buff duration +25%"},
+				{tier: 5, title: "掌天造化丹界", titleEn: "Heaven-Palm Pill Realm", desc: "聚灵药园生长提速 +30%，洞府万产 +35%，仙元底数 +0.05/tick", descEn: "Herb growth +30%, realm output +35%, Essence +0.05/tick"}
+			]
+		},
+		{
+			key: "mirror",
+			labelKey: "cultivation.xianqi.mirror.label",
+			descKey: "cultivation.xianqi.mirror.desc",
+			tag: "玄天护道 · 阴阳反制",
+			tagEn: "Aegis Ward · Yin-Yang Counter",
+			art: "res/art/xianqi_mirror.webp",
+			passives: [
+				{tier: 1, title: "阴阳玄光护体", titleEn: "Yin-Yang Mystic Ward", desc: "26~35 层受妖仙伤害减免 18%，入战自带气血 20%+ 阴阳仙盾", descEn: "26F-35F Boss dmg taken -18%, opening Yin-Yang shield 20%+ Max HP"},
+				{tier: 3, title: "乾坤溯光反制", titleEn: "Qiankun Light-Counter", desc: "太极反震伤害 +35% 并回气 +12 真元，斗法战力 +28%", descEn: "Counter damage +35% & +12 True Qi, Combat Power +28%"},
+				{tier: 5, title: "玄天不灭洞鉴", titleEn: "Undying Heaven Mirror", desc: "26~35 层总减伤升至 32% 且穿透伤害减半，真元上限 +30%", descEn: "26F-35F mitigation 32% & halves pierce dmg, Max True Qi +30%"}
+			]
+		},
+		{
+			key: "pagoda",
+			labelKey: "cultivation.xianqi.pagoda.label",
+			descKey: "cultivation.xianqi.pagoda.desc",
+			tag: "宙光法则 · 仙元周天",
+			tagEn: "Chrono Law · Essence Cycle",
+			art: "res/art/xianqi_pagoda.webp",
+			passives: [
+				{tier: 1, title: "五色宙光聚仙", titleEn: "Five-Light Essence Gather", desc: "仙元底数 +0.04/tick，引渡仙灵每次额外多凝 +5 仙元", descEn: "Essence +0.04/tick, Immortal Qi infusion grants +5 extra Essence"},
+				{tier: 3, title: "昊天镇魔仙域", titleEn: "Vast-Heaven Demon Suppression", desc: "26~35 层秘境增伤 +16% 且减伤 12%，参悟法则消耗 -15%", descEn: "26F-35F dmg +16% & mitigation 12%, Dao Resonance cost -15%"},
+				{tier: 5, title: "万古岁月道轮", titleEn: "Eternal Kalpa Dao-Wheel", desc: "仙元总产出 +35%，药园生长提速 +25%，斗法战力 +32%", descEn: "Total Essence output +35%, Herb growth +25%, Combat Power +32%"}
+			]
+		}
+	],
+
+	XIANQI_STAGES: [
+		{stage: 0, title: "未祭炼仙胚", titleEn: "Unforged Embryo", xianyuan: 0, herbs: 0, oreRes: null, oreVal: 0, reqDaoyun: 0},
+		{stage: 1, title: "一阶 · 通灵仙胚", titleEn: "Stage 1 · Spirit Embryo", xianyuan: 10, herbs: 0, oreRes: null, oreVal: 0, reqDaoyun: 1},
+		{stage: 2, title: "二阶 · 真仙宝器", titleEn: "Stage 2 · Immortal Relic", xianyuan: 28, herbs: 1, oreRes: "unobtainium", oreVal: 20, reqDaoyun: 1},
+		{stage: 3, title: "三阶 · 太乙灵宝", titleEn: "Stage 3 · Taiyi Treasure", xianyuan: 60, herbs: 2, oreRes: "timeCrystal", oreVal: 18, reqDaoyun: 2},
+		{stage: 4, title: "四阶 · 玄天仙器", titleEn: "Stage 4 · Profound Artifact", xianyuan: 115, herbs: 4, oreRes: "timeCrystal", oreVal: 35, reqDaoyun: 3},
+		{stage: 5, title: "五阶 · 混元道器", titleEn: "Stage 5 · Primordial Vessel", xianyuan: 210, herbs: 6, oreRes: "timeCrystal", oreVal: 60, reqDaoyun: 4},
+		{stage: 6, title: "六阶 · 造化至尊仙器", titleEn: "Stage 6 · Supreme Creation", xianyuan: 360, herbs: 9, oreRes: "timeCrystal", oreVal: 95, reqDaoyun: 6}
+	],
+
+	makeDefaultHerbGarden: function(){
+		return {
+			plotsUnlocked: 2,
+			arrayLevel: 1,
+			autoTend: false,
+			selectedSeed: "xianlan",
+			plots: [
+				{herbKey: null, progress: 0, maxTicks: 0, mature: false},
+				{herbKey: null, progress: 0, maxTicks: 0, mature: false},
+				{herbKey: null, progress: 0, maxTicks: 0, mature: false},
+				{herbKey: null, progress: 0, maxTicks: 0, mature: false}
+			],
+			stock: {xianlan: 0, zizhi: 0, qinglian: 0, daoguo: 0},
+			harvestCount: {xianlan: 0, zizhi: 0, qinglian: 0, daoguo: 0},
+			totalHarvested: 0,
+			daoLawProgress: 0,
+			daoDiscountStacks: 0,
+			immortalLifeBonus: 0,
+			lastNote: null
+		};
+	},
+
+	makeDefaultXianqi: function(){
+		return {
+			boundKey: null,
+			stage: 0,
+			nurtureExp: 0,
+			totalRefines: 0,
+			lastNote: null
+		};
+	},
+
+	getHerbDef: function(key){
+		for (var i = 0; i < this.IMMORTAL_HERBS.length; i++){
+			if (this.IMMORTAL_HERBS[i].key === key){ return this.IMMORTAL_HERBS[i]; }
+		}
+		return null;
+	},
+
+	getImmortalArtifactDef: function(key){
+		for (var i = 0; i < this.IMMORTAL_ARTIFACTS.length; i++){
+			if (this.IMMORTAL_ARTIFACTS[i].key === key){ return this.IMMORTAL_ARTIFACTS[i]; }
+		}
+		return null;
+	},
+
+	normalizeHerbGarden: function(raw){
+		var def = this.makeDefaultHerbGarden();
+		if (!raw || typeof raw !== "object"){ return def; }
+		if (typeof raw.plotsUnlocked === "number" && isFinite(raw.plotsUnlocked)){
+			def.plotsUnlocked = Math.min(4, Math.max(2, Math.floor(raw.plotsUnlocked)));
+		}
+		if (typeof raw.arrayLevel === "number" && isFinite(raw.arrayLevel)){
+			def.arrayLevel = Math.min(5, Math.max(1, Math.floor(raw.arrayLevel)));
+		}
+		if (typeof raw.autoTend === "boolean"){ def.autoTend = raw.autoTend; }
+		if (typeof raw.selectedSeed === "string" && this.getHerbDef(raw.selectedSeed)){
+			def.selectedSeed = raw.selectedSeed;
+		}
+		if (raw.plots && raw.plots.length){
+			for (var i = 0; i < 4; i++){
+				var p = raw.plots[i];
+				if (p && typeof p === "object" && p.herbKey && this.getHerbDef(p.herbKey)){
+					var hDef = this.getHerbDef(p.herbKey);
+					var mTicks = (typeof p.maxTicks === "number" && p.maxTicks > 0) ? Math.floor(p.maxTicks) : hDef.growTicks;
+					var prog = (typeof p.progress === "number" && isFinite(p.progress)) ? Math.max(0, Math.min(mTicks, p.progress)) : 0;
+					def.plots[i] = {
+						herbKey: p.herbKey,
+						progress: prog,
+						maxTicks: mTicks,
+						mature: !!(p.mature || prog >= mTicks)
+					};
+				}
+			}
+		}
+		for (var hi = 0; hi < this.IMMORTAL_HERBS.length; hi++){
+			var hk = this.IMMORTAL_HERBS[hi].key;
+			if (raw.stock && typeof raw.stock[hk] === "number" && isFinite(raw.stock[hk])){
+				def.stock[hk] = Math.max(0, Math.floor(raw.stock[hk]));
+			}
+			if (raw.harvestCount && typeof raw.harvestCount[hk] === "number" && isFinite(raw.harvestCount[hk])){
+				def.harvestCount[hk] = Math.max(0, Math.floor(raw.harvestCount[hk]));
+			}
+		}
+		if (typeof raw.totalHarvested === "number" && isFinite(raw.totalHarvested)){
+			def.totalHarvested = Math.max(0, Math.floor(raw.totalHarvested));
+		}
+		if (typeof raw.daoLawProgress === "number" && isFinite(raw.daoLawProgress)){
+			def.daoLawProgress = Math.max(0, Math.min(99, Math.floor(raw.daoLawProgress)));
+		}
+		if (typeof raw.daoDiscountStacks === "number" && isFinite(raw.daoDiscountStacks)){
+			def.daoDiscountStacks = Math.max(0, Math.min(3, Math.floor(raw.daoDiscountStacks)));
+		}
+		if (typeof raw.immortalLifeBonus === "number" && isFinite(raw.immortalLifeBonus)){
+			def.immortalLifeBonus = Math.max(0, Math.floor(raw.immortalLifeBonus));
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	normalizeXianqi: function(raw){
+		var def = this.makeDefaultXianqi();
+		if (!raw || typeof raw !== "object"){ return def; }
+		if (typeof raw.boundKey === "string" && this.getImmortalArtifactDef(raw.boundKey)){
+			def.boundKey = raw.boundKey;
+		}
+		if (typeof raw.stage === "number" && isFinite(raw.stage)){
+			def.stage = def.boundKey ? Math.min(6, Math.max(0, Math.floor(raw.stage))) : 0;
+		}
+		if (typeof raw.nurtureExp === "number" && isFinite(raw.nurtureExp)){
+			def.nurtureExp = Math.min(100, Math.max(0, Math.floor(raw.nurtureExp)));
+		}
+		if (typeof raw.totalRefines === "number" && isFinite(raw.totalRefines)){
+			def.totalRefines = Math.max(0, Math.floor(raw.totalRefines));
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	isHerbGardenUnlocked: function(){
+		return !!this.immortalAscended;
+	},
+
+	prepareImmortalCaveForTest: function(grantResources){
+		if (!this.identity || !this.identity.name){
+			this.setIdentity("韩立", "m", "farmer");
+		}
+		this.identityPending = false;
+		this.pendingOrigin = false;
+		for (var fi = 0; fi < this.fates.length; fi++){
+			this.fates[fi].researched = true;
+			this.fates[fi].pending = false;
+		}
+		if (typeof dojo !== "undefined" && dojo.query){
+			dojo.query(".xxFateOverlay").forEach(function(n){ dojo.destroy(n); });
+		}
+		for (var i = 0; i < this.stages.length; i++){
+			if (this.stages[i].realm !== "zhenxian" && this.stages[i].realm !== "jinxian"){
+				this.stages[i].researched = true;
+			}
+		}
+		if (this.riftFloor < 26){ this.riftFloor = 26; }
+		if (!this.immortalAscended){
+			this.ascendToImmortalRealm();
+		}
+		if (grantResources){
+			var resList = ["xianyuan", "timeCrystal", "unobtainium", "relic", "catnip", "starchart"];
+			for (var r = 0; r < resList.length; r++){
+				var ro = this.game.resPool.get(resList[r]);
+				if (ro){
+					ro.unlocked = true;
+					ro.value = Math.max(ro.value, 500);
+				}
+			}
+		}
+		this.starArray = this.normalizeStarArray(this.starArray);
+		this.immortalBounty = this.normalizeImmortalBounty(this.immortalBounty);
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.daoSteleForest = this.normalizeDaoSteleForest(this.daoSteleForest);
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.hongmengImprintTier || 0) > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
+			var ascInitQi = this.getHongmengStartingQi();
+			this.starship.hongmengQi = ascInitQi;
+			this.starship.totalQiHarvested = ascInitQi;
+		}
+		this.hongmengAltar = this.normalizeHongmengAltar(this.hongmengAltar);
+		this.zixiaoAltar = this.normalizeZixiaoAltar(this.zixiaoAltar);
+		if ((this.dharmaImprintTier || 0) > 0 && (this.zixiaoAltar.totalSutrasCondensed || 0) === 0 && (this.zixiaoAltar.daoSutras || 0) === 0){
+			var testInitSutras = this.getDharmaStartingSutras();
+			this.zixiaoAltar.daoSutras = testInitSutras;
+			this.zixiaoAltar.totalSutrasCondensed = testInitSutras;
+		}
+		this.syncDaoSutras();
+		this.dharmaIdols = this.normalizeDharmaIdols(this.dharmaIdols);
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
+	},
+
+	getImprintCostMult: function(){
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		return Math.max(0.70, 1 - imp * 0.03);
+	},
+
+	getHerbTotalStock: function(){
+		if (!this.herbGarden || !this.herbGarden.stock){ return 0; }
+		var total = 0;
+		for (var i = 0; i < this.IMMORTAL_HERBS.length; i++){
+			var k = this.IMMORTAL_HERBS[i].key;
+			total += Math.max(0, Math.floor(this.herbGarden.stock[k] || 0));
+		}
+		return total;
+	},
+
+	getGardenGrowthRate: function(){
+		var g = this.herbGarden || this.makeDefaultHerbGarden();
+		var caveB = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var xqSpeed = (caveB && caveB.herbSpeedBonus) ? caveB.herbSpeedBonus : 0;
+		var arrBonus = (Math.max(1, g.arrayLevel) - 1) * 0.25;
+		var dyBonus = Math.min(0.50, Math.max(0, this.daoyun || 0) * 0.05);
+		var seclBonus = this.secluded ? 0.15 : 0;
+		return 1 + arrBonus + dyBonus + seclBonus + xqSpeed;
+	},
+
+	getPlotExpandCost: function(){
+		var g = this.herbGarden || this.makeDefaultHerbGarden();
+		if (g.plotsUnlocked >= 4){ return null; }
+		var mult = this.getImprintCostMult();
+		if (g.plotsUnlocked === 2){
+			return {nextPlot: 3, xianyuan: Math.max(10, Math.round(30 * mult)), timeCrystal: Math.max(5, Math.round(15 * mult))};
+		}
+		return {nextPlot: 4, xianyuan: Math.max(20, Math.round(80 * mult)), timeCrystal: Math.max(10, Math.round(35 * mult))};
+	},
+
+	expandHerbPlot: function(){
+		if (!this.immortalAscended){ return false; }
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		var req = this.getPlotExpandCost();
+		if (!req){ return false; }
+		var xy = this.game.resPool.get("xianyuan");
+		var tc = this.game.resPool.get("timeCrystal");
+		if (!xy || xy.value < req.xianyuan || !tc || tc.value < req.timeCrystal){
+			return false;
+		}
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("timeCrystal", -req.timeCrystal);
+		this.herbGarden.plotsUnlocked = req.nextPlot;
+		var note = "【聚灵药园】仙锄破禁，成功开辟第 " + req.nextPlot + " 方万年仙圃！";
+		this.herbGarden.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	getSpiritArrayCost: function(){
+		var g = this.herbGarden || this.makeDefaultHerbGarden();
+		if (g.arrayLevel >= 5){ return null; }
+		var mult = this.getImprintCostMult();
+		var lv = Math.max(1, g.arrayLevel);
+		return {
+			nextLevel: lv + 1,
+			xianyuan: Math.max(10, this.roundNice(25 * Math.pow(1.75, lv - 1) * mult)),
+			relic: Math.max(4, this.roundNice(12 * lv * mult))
+		};
+	},
+
+	upgradeSpiritArray: function(){
+		if (!this.immortalAscended){ return false; }
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		var req = this.getSpiritArrayCost();
+		if (!req){ return false; }
+		var xy = this.game.resPool.get("xianyuan");
+		var rl = this.game.resPool.get("relic");
+		if (!xy || xy.value < req.xianyuan || !rl || rl.value < req.relic){
+			return false;
+		}
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("relic", -req.relic);
+		this.herbGarden.arrayLevel = req.nextLevel;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var note = "【聚灵仙阵】阵纹升至第 " + req.nextLevel + " 阶，仙草生长速度与双倍采收率大增！";
+		this.herbGarden.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	selectGardenSeed: function(herbKey){
+		if (!this.getHerbDef(herbKey)){ return false; }
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		this.herbGarden.selectedSeed = herbKey;
+		return true;
+	},
+
+	toggleGardenAutoTend: function(){
+		if (!this.immortalAscended){ return false; }
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		this.herbGarden.autoTend = !this.herbGarden.autoTend;
+		return this.herbGarden.autoTend;
+	},
+
+	canAffordHerbSeed: function(herbKey){
+		var def = this.getHerbDef(herbKey);
+		if (!def){ return false; }
+		for (var i = 0; i < def.seedCost.length; i++){
+			var sc = def.seedCost[i];
+			var r = this.game.resPool.get(sc.name);
+			if (!r || r.value < sc.val){ return false; }
+		}
+		return true;
+	},
+
+	plantHerbPlot: function(plotIdx, herbKey){
+		if (!this.immortalAscended){ return false; }
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		var idx = Math.floor(plotIdx);
+		if (idx < 0 || idx >= this.herbGarden.plotsUnlocked){ return false; }
+		var plot = this.herbGarden.plots[idx];
+		if (!plot || plot.herbKey){ return false; }
+		var key = herbKey || this.herbGarden.selectedSeed || "xianlan";
+		var def = this.getHerbDef(key);
+		if (!def || !this.canAffordHerbSeed(key)){ return false; }
+		for (var i = 0; i < def.seedCost.length; i++){
+			var sc = def.seedCost[i];
+			this.game.resPool.addResEvent(sc.name, -sc.val);
+		}
+		this.herbGarden.plots[idx] = {
+			herbKey: key,
+			progress: 0,
+			maxTicks: def.growTicks,
+			mature: false
+		};
+		this.herbGarden.lastNote = "已于第 " + (idx + 1) + " 灵圃种下【" + $I(def.labelKey) + "】仙种。";
+		return true;
+	},
+
+	addDaoLawProgress: function(pts){
+		if (!this.herbGarden || pts <= 0){ return 0; }
+		var gained = 0;
+		var cur = (this.herbGarden.daoLawProgress || 0) + Math.floor(pts);
+		while (cur >= 100){
+			cur -= 100;
+			this.daoyun = Math.max(0, Math.floor(this.daoyun || 0)) + 1;
+			gained++;
+		}
+		this.herbGarden.daoLawProgress = cur;
+		if (gained > 0 && this.game.updateCaches){
+			this.game.updateCaches();
+		}
+		return gained;
+	},
+
+	harvestHerbPlot: function(plotIdx){
+		if (!this.immortalAscended){ return false; }
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		var idx = Math.floor(plotIdx);
+		if (idx < 0 || idx >= this.herbGarden.plotsUnlocked){ return false; }
+		var plot = this.herbGarden.plots[idx];
+		if (!plot || !plot.herbKey || (!plot.mature && plot.progress < plot.maxTicks)){
+			return false;
+		}
+		var def = this.getHerbDef(plot.herbKey);
+		if (!def){ return false; }
+		var caveHarv = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var beastYield = (caveHarv && caveHarv.herbYieldBonus) ? caveHarv.herbYieldBonus : 0;
+		var extraChance = (this.herbGarden.arrayLevel - 1) * 0.18 + beastYield;
+		var qty = 1 + ((this.herbGarden.arrayLevel >= 5 || extraChance >= 1.0 || Math.random() < extraChance) ? 1 : 0);
+		if (extraChance > 1.0 && Math.random() < (extraChance - 1.0)){
+			qty += 1;
+		}
+		this.herbGarden.stock[def.key] = (this.herbGarden.stock[def.key] || 0) + qty;
+		this.herbGarden.harvestCount[def.key] = (this.herbGarden.harvestCount[def.key] || 0) + qty;
+		this.herbGarden.totalHarvested = (this.herbGarden.totalHarvested || 0) + qty;
+		this.herbGarden.plots[idx] = {herbKey: null, progress: 0, maxTicks: 0, mature: false};
+
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+		this.game.resPool.addResEvent("xianyuan", def.harvestXy);
+		this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - def.harvestToxClr);
+		this.alchemyExp = (this.alchemyExp || 0) + def.harvestAlcExp;
+		var lawUp = 0;
+		if (def.harvestLawProg > 0){
+			lawUp = this.addDaoLawProgress(def.harvestLawProg);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var note = "【采收仙草】收获万年【" + $I(def.labelKey) + "】×" + qty +
+			"（仙元 +" + def.harvestXy + " · 丹毒 -" + def.harvestToxClr +
+			(lawUp > 0 ? " · 道韵凝成 +" + lawUp + " 重" : "") + "）！";
+		this.herbGarden.lastNote = note;
+		return true;
+	},
+
+	harvestAllHerbs: function(){
+		if (!this.immortalAscended || !this.herbGarden){ return 0; }
+		var count = 0;
+		for (var i = 0; i < this.herbGarden.plotsUnlocked; i++){
+			if (this.harvestHerbPlot(i)){ count++; }
+		}
+		return count;
+	},
+
+	tickHerbGarden: function(ticksDelta){
+		if (!this.immortalAscended || !this.herbGarden){ return; }
+		var rate = this.getGardenGrowthRate();
+		var step = Math.max(0, (typeof ticksDelta === "number" ? ticksDelta : 1) * rate);
+		if (step <= 0){ return; }
+		for (var i = 0; i < this.herbGarden.plotsUnlocked; i++){
+			var p = this.herbGarden.plots[i];
+			if (!p){ continue; }
+			if (!p.herbKey && this.herbGarden.autoTend){
+				var seedToPlant = this.herbGarden.selectedSeed || "xianlan";
+				if (!this.plantHerbPlot(i, seedToPlant) && seedToPlant !== "xianlan"){
+					this.plantHerbPlot(i, "xianlan");
+				}
+				p = this.herbGarden.plots[i];
+			}
+			if (p && p.herbKey && !p.mature){
+				p.progress = Math.min(p.maxTicks, p.progress + step);
+				if (p.progress >= p.maxTicks){
+					p.mature = true;
+				}
+			}
+			if (p && p.mature && this.herbGarden.autoTend){
+				var prevKey = p.herbKey;
+				if (this.harvestHerbPlot(i)){
+					if (!this.plantHerbPlot(i, prevKey) && prevKey !== "xianlan"){
+						this.plantHerbPlot(i, "xianlan");
+					}
+				}
+			}
+		}
+	},
+
+	getHighestUnlockedPill: function(){
+		for (var i = this.pills.length - 1; i >= 0; i--){
+			if (this.isPillUnlocked(this.pills[i])){ return this.pills[i]; }
+		}
+		return this.pills[0] || null;
+	},
+
+	infuseHerbAlchemy: function(herbKey){
+		if (!this.immortalAscended || !this.herbGarden){ return false; }
+		var def = this.getHerbDef(herbKey);
+		if (!def || (this.herbGarden.stock[herbKey] || 0) <= 0){ return false; }
+		this.herbGarden.stock[herbKey]--;
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+		this.game.resPool.addResEvent("xianyuan", def.infuseXy);
+		this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - def.infuseToxClr);
+		this.alchemyExp = (this.alchemyExp || 0) + def.infuseAlcExp;
+
+		var topPill = this.getHighestUnlockedPill();
+		var extraDesc = "";
+		if (herbKey === "xianlan"){
+			if (topPill){
+				topPill.val = (topPill.val || 0) + 1;
+				if (!this.supremePills){ this.supremePills = {}; }
+				this.supremePills[topPill.name] = (this.supremePills[topPill.name] || 0) + 1;
+				extraDesc = "，淬成丹纹【" + topPill.label + "】×1";
+			}
+		} else if (herbKey === "zizhi"){
+			if (topPill){
+				topPill.val = (topPill.val || 0) + 2;
+				extraDesc = "，成丹【" + topPill.label + "】×2";
+			}
+			this.buffs.herbPotency = Math.max(this.buffs.herbPotency || 0, 1800);
+		} else if (herbKey === "qinglian"){
+			this.herbGarden.daoDiscountStacks = Math.min(3, (this.herbGarden.daoDiscountStacks || 0) + 1);
+			extraDesc = "，下次参悟法则减免 " + (this.herbGarden.daoDiscountStacks * 15) + "% 仙元";
+		} else if (herbKey === "daoguo"){
+			this.herbGarden.immortalLifeBonus = (this.herbGarden.immortalLifeBonus || 0) + 1500;
+			var lawGained = this.addDaoLawProgress(65);
+			extraDesc = "，寿元上限 +1500" + (lawGained > 0 ? "，自凝法则道韵 +" + lawGained + " 重" : "，道韵感悟 +65%");
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var note = "【仙草入丹】炼化万年【" + $I(def.labelKey) + "】：仙元 +" + def.infuseXy +
+			"，涤除丹毒 " + def.infuseToxClr + extraDesc + "！";
+		this.herbGarden.lastNote = note;
+		this.lastAlchemyNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	getBindXianqiCost: function(key){
+		var mult = this.getImprintCostMult();
+		if (!this.xianqi || this.xianqi.stage <= 0){
+			return Math.max(5, Math.round(10 * mult));
+		}
+		if (this.xianqi.boundKey === key){ return 0; }
+		return Math.max(4, Math.round(8 * mult));
+	},
+
+	bindImmortalArtifact: function(key){
+		if (!this.immortalAscended){ return false; }
+		var def = this.getImmortalArtifactDef(key);
+		if (!def){ return false; }
+		this.xianqi = this.normalizeXianqi(this.xianqi);
+		if (this.xianqi.boundKey === key && this.xianqi.stage > 0){ return true; }
+		var cost = this.getBindXianqiCost(key);
+		var xy = this.game.resPool.get("xianyuan");
+		if (!xy || xy.value < cost){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -cost);
+		var wasUnbound = (this.xianqi.stage <= 0);
+		this.xianqi.boundKey = key;
+		if (wasUnbound){
+			this.xianqi.stage = 1;
+			this.xianqi.nurtureExp = 0;
+			this.xianqi.totalRefines = (this.xianqi.totalRefines || 0) + 1;
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.cave.badge") || "").indexOf("Immortal") === 0;
+		var note = wasUnbound
+			? (isEn ? ("Bound Stage 1 Natal Artifact [" + $I(def.labelKey) + "] — Tier 1 Resonance awakened!") : ("【本命仙器认主】精血融仙元，成功熔铸一阶本命仙器【" + $I(def.labelKey) + "】，觉醒首重器灵共鸣！"))
+			: (isEn ? ("Attuned Natal Artifact archetype to [" + $I(def.labelKey) + "]!") : ("【仙器转修】器灵道胎流转，本命仙器已转修为同阶【" + $I(def.labelKey) + "】！"));
+		this.xianqi.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	getNurtureXianqiCost: function(){
+		return Math.max(5, Math.round(10 * this.getImprintCostMult()));
+	},
+
+	nurtureImmortalArtifact: function(){
+		if (!this.immortalAscended || !this.xianqi || !this.xianqi.boundKey || this.xianqi.stage <= 0){
+			return false;
+		}
+		if (this.xianqi.nurtureExp >= 100){ return false; }
+		var cost = this.getNurtureXianqiCost();
+		var xy = this.game.resPool.get("xianyuan");
+		if (!xy || xy.value < cost){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -cost);
+		this.xianqi.nurtureExp = Math.min(100, (this.xianqi.nurtureExp || 0) + 25);
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var def = this.getImmortalArtifactDef(this.xianqi.boundKey);
+		var isEn = String($I("cultivation.cave.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Nurtured [" + (def ? $I(def.labelKey) : "") + "] spirit to " + this.xianqi.nurtureExp + "%!")
+			: ("【仙元温养】灌注仙元滋养【" + (def ? $I(def.labelKey) : "") + "】，器灵温养度升至 " + this.xianqi.nurtureExp + "%！");
+		this.xianqi.lastNote = note;
+		return true;
+	},
+
+	getXianqiRefineReq: function(){
+		if (!this.xianqi || !this.xianqi.boundKey || this.xianqi.stage <= 0 || this.xianqi.stage >= 6){
+			return null;
+		}
+		var nextSt = this.xianqi.stage + 1;
+		var cfg = this.XIANQI_STAGES[nextSt];
+		if (!cfg){ return null; }
+		var impMult = this.getImprintCostMult();
+		var nurtDisc = 1 - Math.min(0.25, ((this.xianqi.nurtureExp || 0) / 100) * 0.25);
+		var xyCost = Math.max(10, this.roundNice(cfg.xianyuan * impMult * nurtDisc));
+		var oreCost = cfg.oreRes ? Math.max(4, this.roundNice(cfg.oreVal * impMult)) : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var oreObj = cfg.oreRes ? this.game.resPool.get(cfg.oreRes) : null;
+		var haveHerbs = this.getHerbTotalStock();
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okHerbs = haveHerbs >= cfg.herbs;
+		var okOre = !cfg.oreRes || !!(oreObj && oreObj.value >= oreCost);
+		var okLaw = (this.daoyun || 0) >= cfg.reqDaoyun;
+		return {
+			nextStage: nextSt,
+			title: cfg.title,
+			titleEn: cfg.titleEn || cfg.title,
+			xianyuan: xyCost,
+			herbs: cfg.herbs,
+			oreRes: cfg.oreRes,
+			oreVal: oreCost,
+			reqDaoyun: cfg.reqDaoyun,
+			okXy: okXy,
+			okHerbs: okHerbs,
+			okOre: okOre,
+			okLaw: okLaw,
+			affordable: !!(okXy && okHerbs && okOre && okLaw)
+		};
+	},
+
+	consumeAnyImmortalHerbs: function(count){
+		if (count <= 0){ return true; }
+		if (this.getHerbTotalStock() < count){ return false; }
+		var rem = count;
+		for (var i = 0; i < this.IMMORTAL_HERBS.length && rem > 0; i++){
+			var k = this.IMMORTAL_HERBS[i].key;
+			var avail = Math.max(0, Math.floor(this.herbGarden.stock[k] || 0));
+			if (avail > 0){
+				var take = Math.min(avail, rem);
+				this.herbGarden.stock[k] = avail - take;
+				rem -= take;
+			}
+		}
+		return rem === 0;
+	},
+
+	refineImmortalArtifact: function(){
+		if (!this.immortalAscended || !this.xianqi || !this.xianqi.boundKey){ return false; }
+		var req = this.getXianqiRefineReq();
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		if (req.oreRes && req.oreVal > 0){
+			this.game.resPool.addResEvent(req.oreRes, -req.oreVal);
+		}
+		this.consumeAnyImmortalHerbs(req.herbs);
+		this.xianqi.stage = req.nextStage;
+		this.xianqi.nurtureExp = 0;
+		this.xianqi.totalRefines = (this.xianqi.totalRefines || 0) + 1;
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var def = this.getImmortalArtifactDef(this.xianqi.boundKey);
+		var isEn = String($I("cultivation.cave.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Refined Natal Artifact [" + (def ? $I(def.labelKey) : "") + "] to [" + (req.titleEn || req.title) + "]!")
+			: ("【仙器祭炼破阶】仙火淬法则，本命仙器【" + (def ? $I(def.labelKey) : "") + "】晋升至【" + req.title + "】！");
+		this.xianqi.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	getActiveResonancePassives: function(){
+		var out = [];
+		if (!this.xianqi || !this.xianqi.boundKey){ return out; }
+		var def = this.getImmortalArtifactDef(this.xianqi.boundKey);
+		if (!def || !def.passives){ return out; }
+		var st = this.xianqi.stage || 0;
+		for (var i = 0; i < def.passives.length; i++){
+			var p = def.passives[i];
+			out.push({
+				tier: p.tier,
+				title: p.title,
+				titleEn: p.titleEn || p.title,
+				desc: p.desc,
+				descEn: p.descEn || p.desc,
+				unlocked: st >= p.tier
+			});
+		}
+		return out;
+	},
+
+	// ---------------- XX-5 周天星斗护山大阵与跨界仙盟奇遇悬赏 ----------------
+
+	STAR_CORES: [
+		{
+			key: "ziwei",
+			labelKey: "cultivation.starcore.ziwei.label",
+			descKey: "cultivation.starcore.ziwei.desc",
+			art: "res/art/starcore_ziwei.webp",
+			condenseXy: 24,
+			auxRes: "starchart",
+			auxVal: 15,
+			xyBase: 0.035,
+			xyRatio: 0.14,
+			xwRatio: 0.18,
+			daoDisc: 0.05,
+			defense: 120
+		},
+		{
+			key: "taiyang",
+			labelKey: "cultivation.starcore.taiyang.label",
+			descKey: "cultivation.starcore.taiyang.desc",
+			art: "res/art/starcore_taiyang.webp",
+			condenseXy: 28,
+			auxRes: "timeCrystal",
+			auxVal: 8,
+			combatMult: 0.16,
+			riftDmg: 0.14,
+			shieldBreak: 0.12,
+			alcCrit: 0.08,
+			alcYield: 0.08,
+			defense: 145
+		},
+		{
+			key: "taiyin",
+			labelKey: "cultivation.starcore.taiyin.label",
+			descKey: "cultivation.starcore.taiyin.desc",
+			art: "res/art/starcore_taiyin.webp",
+			condenseXy: 28,
+			auxRes: "relic",
+			auxVal: 10,
+			riftMit: 0.06,
+			startShield: 0.09,
+			pillPot: 0.12,
+			toxRed: 0.08,
+			herbSpd: 0.15,
+			defense: 135
+		}
+	],
+
+	ZHOUTIAN_TIERS: [
+		{tier: 0, socketsOpen: 0, titleKey: "cultivation.zhoutian.tier.0", xianyuan: 0,   starchart: 0,   auxRes: null,          auxVal: 0,  reqDaoyun: 0, xyBase: 0,    xyRatio: 0,    pillPot: 0,    alcCrit: 0,    alcYield: 0,    riftDmg: 0,    riftMit: 0,    defense: 0},
+		{tier: 1, socketsOpen: 1, titleKey: "cultivation.zhoutian.tier.1", xianyuan: 12,  starchart: 0,   auxRes: null,          auxVal: 0,  reqDaoyun: 1, xyBase: 0.02, xyRatio: 0.08, pillPot: 0.06, alcCrit: 0.04, alcYield: 0.04, riftDmg: 0.08, riftMit: 0.03, defense: 140},
+		{tier: 2, socketsOpen: 2, titleKey: "cultivation.zhoutian.tier.2", xianyuan: 32,  starchart: 20,  auxRes: "relic",       auxVal: 8,  reqDaoyun: 1, xyBase: 0.04, xyRatio: 0.16, pillPot: 0.12, alcCrit: 0.08, alcYield: 0.08, riftDmg: 0.15, riftMit: 0.06, defense: 290},
+		{tier: 3, socketsOpen: 3, titleKey: "cultivation.zhoutian.tier.3", xianyuan: 68,  starchart: 45,  auxRes: "timeCrystal", auxVal: 15, reqDaoyun: 2, xyBase: 0.07, xyRatio: 0.26, pillPot: 0.18, alcCrit: 0.12, alcYield: 0.12, riftDmg: 0.24, riftMit: 0.09, defense: 500},
+		{tier: 4, socketsOpen: 3, titleKey: "cultivation.zhoutian.tier.4", xianyuan: 125, starchart: 90,  auxRes: "timeCrystal", auxVal: 30, reqDaoyun: 3, xyBase: 0.11, xyRatio: 0.38, pillPot: 0.25, alcCrit: 0.16, alcYield: 0.16, riftDmg: 0.34, riftMit: 0.12, defense: 780},
+		{tier: 5, socketsOpen: 3, titleKey: "cultivation.zhoutian.tier.5", xianyuan: 220, starchart: 160, auxRes: "unobtainium", auxVal: 45, reqDaoyun: 4, xyBase: 0.16, xyRatio: 0.52, pillPot: 0.33, alcCrit: 0.20, alcYield: 0.20, riftDmg: 0.45, riftMit: 0.15, defense: 1150},
+		{tier: 6, socketsOpen: 3, titleKey: "cultivation.zhoutian.tier.6", xianyuan: 380, starchart: 280, auxRes: "timeCrystal", auxVal: 85, reqDaoyun: 6, xyBase: 0.22, xyRatio: 0.70, pillPot: 0.42, alcCrit: 0.25, alcYield: 0.25, riftDmg: 0.58, riftMit: 0.18, defense: 1650}
+	],
+
+	ALLIANCE_BOUNTIES: [
+		{
+			key: "starfall_observatory",
+			labelKey: "cultivation.bounty.item.starfall_observatory.label",
+			descKey: "cultivation.bounty.item.starfall_observatory.desc",
+			art: "res/art/bounty_scroll_gold.webp",
+			pillar: "dao",
+			baseTicks: 80,
+			baseXy: 30,
+			baseMerit: 22,
+			coreKey: "ziwei",
+			lawPts: 32
+		},
+		{
+			key: "abyss_demon_hunt",
+			labelKey: "cultivation.bounty.item.abyss_demon_hunt.label",
+			descKey: "cultivation.bounty.item.abyss_demon_hunt.desc",
+			art: "res/art/demon_tianmo_raid.webp",
+			pillar: "combat",
+			baseTicks: 90,
+			baseXy: 36,
+			baseMerit: 26,
+			coreKey: "taiyang",
+			lawPts: 26
+		},
+		{
+			key: "jade_herb_valley",
+			labelKey: "cultivation.bounty.item.jade_herb_valley.label",
+			descKey: "cultivation.bounty.item.jade_herb_valley.desc",
+			art: "res/art/starcore_taiyin.webp",
+			pillar: "herb",
+			baseTicks: 75,
+			baseXy: 28,
+			baseMerit: 20,
+			coreKey: "taiyin",
+			lawPts: 36
+		},
+		{
+			key: "primordial_sword_tomb",
+			labelKey: "cultivation.bounty.item.primordial_sword_tomb.label",
+			descKey: "cultivation.bounty.item.primordial_sword_tomb.desc",
+			art: "res/art/starcore_taiyang.webp",
+			pillar: "xianqi",
+			baseTicks: 95,
+			baseXy: 38,
+			baseMerit: 28,
+			coreKey: "taiyang",
+			lawPts: 30
+		},
+		{
+			key: "celestial_alchemy_convoy",
+			labelKey: "cultivation.bounty.item.celestial_alchemy_convoy.label",
+			descKey: "cultivation.bounty.item.celestial_alchemy_convoy.desc",
+			art: "res/art/bounty_alliance_token.webp",
+			pillar: "alchemy",
+			baseTicks: 85,
+			baseXy: 32,
+			baseMerit: 24,
+			coreKey: "taiyin",
+			lawPts: 34
+		},
+		{
+			key: "zhoutian_astral_beacon",
+			labelKey: "cultivation.bounty.item.zhoutian_astral_beacon.label",
+			descKey: "cultivation.bounty.item.zhoutian_astral_beacon.desc",
+			art: "res/art/starcore_ziwei.webp",
+			pillar: "star",
+			baseTicks: 100,
+			baseXy: 44,
+			baseMerit: 32,
+			coreKey: "ziwei",
+			lawPts: 40
+		}
+	],
+
+	makeDefaultStarArray: function(){
+		return {
+			tier: 0,
+			selectedCore: "ziwei",
+			sockets: [null, null, null],
+			cores: {ziwei: 0, taiyang: 0, taiyin: 0},
+			raidThreat: 0,
+			repelCount: 0,
+			autoRepel: false,
+			totalCoresEarned: 0,
+			lastNote: null
+		};
+	},
+
+	makeDefaultImmortalBounty: function(){
+		return {
+			merit: 0,
+			totalMeritEarned: 0,
+			completedCount: 0,
+			chainChapter: 1,
+			boardKeys: ["starfall_observatory", "abyss_demon_hunt", "jade_herb_valley"],
+			freeRefreshReady: true,
+			active: null,
+			autoDispatch: false,
+			lastNote: null
+		};
+	},
+
+	getStarCoreDef: function(key){
+		for (var i = 0; i < this.STAR_CORES.length; i++){
+			if (this.STAR_CORES[i].key === key){ return this.STAR_CORES[i]; }
+		}
+		return null;
+	},
+
+	getBountyDef: function(key){
+		for (var i = 0; i < this.ALLIANCE_BOUNTIES.length; i++){
+			if (this.ALLIANCE_BOUNTIES[i].key === key){ return this.ALLIANCE_BOUNTIES[i]; }
+		}
+		return null;
+	},
+
+	normalizeStarArray: function(raw){
+		var def = this.makeDefaultStarArray();
+		if (!raw || typeof raw !== "object"){ return def; }
+		if (typeof raw.tier === "number" && isFinite(raw.tier)){
+			def.tier = Math.min(6, Math.max(0, Math.floor(raw.tier)));
+		}
+		if (typeof raw.selectedCore === "string" && this.getStarCoreDef(raw.selectedCore)){
+			def.selectedCore = raw.selectedCore;
+		}
+		var tCfg = this.ZHOUTIAN_TIERS[def.tier] || this.ZHOUTIAN_TIERS[0];
+		if (raw.sockets && raw.sockets.length){
+			for (var i = 0; i < 3; i++){
+				var sk = raw.sockets[i];
+				if (i < tCfg.socketsOpen && typeof sk === "string" && this.getStarCoreDef(sk)){
+					def.sockets[i] = sk;
+				}
+			}
+		}
+		for (var ci = 0; ci < this.STAR_CORES.length; ci++){
+			var ck = this.STAR_CORES[ci].key;
+			if (raw.cores && typeof raw.cores[ck] === "number" && isFinite(raw.cores[ck])){
+				def.cores[ck] = Math.max(0, Math.floor(raw.cores[ck]));
+			}
+		}
+		if (typeof raw.raidThreat === "number" && isFinite(raw.raidThreat)){
+			def.raidThreat = Math.min(100, Math.max(0, raw.raidThreat));
+		}
+		if (typeof raw.repelCount === "number" && isFinite(raw.repelCount)){
+			def.repelCount = Math.max(0, Math.floor(raw.repelCount));
+		}
+		if (typeof raw.autoRepel === "boolean"){ def.autoRepel = raw.autoRepel; }
+		if (typeof raw.totalCoresEarned === "number" && isFinite(raw.totalCoresEarned)){
+			def.totalCoresEarned = Math.max(0, Math.floor(raw.totalCoresEarned));
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	normalizeImmortalBounty: function(raw){
+		var def = this.makeDefaultImmortalBounty();
+		if (!raw || typeof raw !== "object"){ return def; }
+		if (typeof raw.merit === "number" && isFinite(raw.merit)){
+			def.merit = Math.max(0, Math.floor(raw.merit));
+		}
+		if (typeof raw.totalMeritEarned === "number" && isFinite(raw.totalMeritEarned)){
+			def.totalMeritEarned = Math.max(def.merit, Math.floor(raw.totalMeritEarned));
+		}
+		if (typeof raw.completedCount === "number" && isFinite(raw.completedCount)){
+			def.completedCount = Math.max(0, Math.floor(raw.completedCount));
+		}
+		if (typeof raw.chainChapter === "number" && isFinite(raw.chainChapter)){
+			def.chainChapter = Math.max(1, Math.floor(raw.chainChapter));
+		} else {
+			def.chainChapter = 1 + Math.floor(def.completedCount / 3);
+		}
+		if (raw.boardKeys && raw.boardKeys.length){
+			var cleanBoard = [];
+			for (var bi = 0; bi < raw.boardKeys.length && cleanBoard.length < 3; bi++){
+				var bk = raw.boardKeys[bi];
+				if (typeof bk === "string" && this.getBountyDef(bk) && cleanBoard.indexOf(bk) < 0){
+					cleanBoard.push(bk);
+				}
+			}
+			for (var fi = 0; fi < this.ALLIANCE_BOUNTIES.length && cleanBoard.length < 3; fi++){
+				var fk = this.ALLIANCE_BOUNTIES[fi].key;
+				if (cleanBoard.indexOf(fk) < 0){ cleanBoard.push(fk); }
+			}
+			def.boardKeys = cleanBoard;
+		}
+		if (typeof raw.freeRefreshReady === "boolean"){ def.freeRefreshReady = raw.freeRefreshReady; }
+		if (typeof raw.autoDispatch === "boolean"){ def.autoDispatch = raw.autoDispatch; }
+		if (raw.active && typeof raw.active === "object" && typeof raw.active.key === "string" && this.getBountyDef(raw.active.key)){
+			var bDef = this.getBountyDef(raw.active.key);
+			var mTicks = (typeof raw.active.maxTicks === "number" && raw.active.maxTicks > 0) ? Math.floor(raw.active.maxTicks) : bDef.baseTicks;
+			var prog = (typeof raw.active.progress === "number" && isFinite(raw.active.progress)) ? Math.max(0, Math.min(mTicks, raw.active.progress)) : 0;
+			var synM = (typeof raw.active.synergyMult === "number" && isFinite(raw.active.synergyMult)) ? Math.max(1, Math.min(3, raw.active.synergyMult)) : 1;
+			def.active = {
+				key: raw.active.key,
+				progress: prog,
+				maxTicks: mTicks,
+				synergyMult: synM,
+				ready: !!(raw.active.ready || prog >= mTicks)
+			};
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	getStarImprintCostMult: function(){
+		var baseMult = this.getImprintCostMult();
+		var seal = Math.max(0, Math.min(6, Math.floor(this.starImprintTier || 0)));
+		return Math.max(0.62, baseMult * (1 - seal * 0.03));
+	},
+
+	getStarCoreTotalStock: function(){
+		if (!this.starArray || !this.starArray.cores){ return 0; }
+		var sum = 0;
+		for (var i = 0; i < this.STAR_CORES.length; i++){
+			var k = this.STAR_CORES[i].key;
+			sum += Math.max(0, Math.floor(this.starArray.cores[k] || 0));
+		}
+		return sum;
+	},
+
+	getSocketedCoreCount: function(){
+		if (!this.starArray || !this.starArray.sockets){ return 0; }
+		var cnt = 0;
+		for (var i = 0; i < 3; i++){
+			if (this.starArray.sockets[i]){ cnt++; }
+		}
+		return cnt;
+	},
+
+	hasTriStarHarmony: function(){
+		if (!this.starArray || (this.starArray.tier || 0) < 3 || !this.starArray.sockets){
+			return false;
+		}
+		var s0 = this.starArray.sockets[0];
+		var s1 = this.starArray.sockets[1];
+		var s2 = this.starArray.sockets[2];
+		if (!s0 || !s1 || !s2){ return false; }
+		return (s0 !== s1 && s0 !== s2 && s1 !== s2);
+	},
+
+	selectStarCore: function(coreKey){
+		if (!this.getStarCoreDef(coreKey)){ return false; }
+		this.starArray = this.normalizeStarArray(this.starArray);
+		this.starArray.selectedCore = coreKey;
+		return true;
+	},
+
+	getCondenseStarCoreCost: function(coreKey){
+		var def = this.getStarCoreDef(coreKey);
+		if (!def){ return null; }
+		var mult = this.getStarImprintCostMult();
+		var xyCost = Math.max(8, this.roundNice(def.condenseXy * mult));
+		var auxCost = Math.max(4, this.roundNice(def.auxVal * mult));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var auxObj = this.game.resPool.get(def.auxRes);
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okAux = !!(auxObj && auxObj.value >= auxCost);
+		return {
+			coreKey: def.key,
+			xianyuan: xyCost,
+			auxRes: def.auxRes,
+			auxVal: auxCost,
+			affordable: !!(okXy && okAux)
+		};
+	},
+
+	condenseStarCore: function(coreKey){
+		if (!this.immortalAscended){ return false; }
+		this.starArray = this.normalizeStarArray(this.starArray);
+		var key = coreKey || this.starArray.selectedCore || "ziwei";
+		var req = this.getCondenseStarCoreCost(key);
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent(req.auxRes, -req.auxVal);
+		this.starArray.cores[key] = (this.starArray.cores[key] || 0) + 1;
+		this.starArray.totalCoresEarned = (this.starArray.totalCoresEarned || 0) + 1;
+		this.starArray.selectedCore = key;
+		var def = this.getStarCoreDef(key);
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Condensed 1x [" + (def ? $I(def.labelKey) : key) + "] into the Star Treasury!")
+			: ("【凝炼星核】引九天星力入炉，成功凝得一枚【" + (def ? $I(def.labelKey) : key) + "】！");
+		this.starArray.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	socketStarCore: function(slotIdx, coreKeyOpt){
+		if (!this.immortalAscended){ return false; }
+		this.starArray = this.normalizeStarArray(this.starArray);
+		var idx = Math.floor(slotIdx);
+		var tCfg = this.ZHOUTIAN_TIERS[this.starArray.tier || 0] || this.ZHOUTIAN_TIERS[0];
+		if (idx < 0 || idx >= 3 || idx >= tCfg.socketsOpen){ return false; }
+		var targetKey = coreKeyOpt || this.starArray.selectedCore || "ziwei";
+		if (!this.getStarCoreDef(targetKey)){ return false; }
+		var prevKey = this.starArray.sockets[idx];
+		if (prevKey === targetKey && !coreKeyOpt){
+			return this.unsocketStarCore(idx);
+		}
+		if ((this.starArray.cores[targetKey] || 0) <= 0){
+			if (prevKey && !coreKeyOpt){
+				return this.unsocketStarCore(idx);
+			}
+			return false;
+		}
+		this.starArray.cores[targetKey]--;
+		if (prevKey && this.getStarCoreDef(prevKey)){
+			this.starArray.cores[prevKey] = (this.starArray.cores[prevKey] || 0) + 1;
+		}
+		this.starArray.sockets[idx] = targetKey;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var cDef = this.getStarCoreDef(targetKey);
+		var harmony = this.hasTriStarHarmony();
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Socketed [" + $I(cDef.labelKey) + "] into " + $I("cultivation.zhoutian.socket." + idx) + (harmony ? " — Tri-Star Harmony awakened!" : "!"))
+			: ("【阵眼镶嵌】已将【" + $I(cDef.labelKey) + "】嵌入" + $I("cultivation.zhoutian.socket." + idx) + (harmony ? "，激发【三垣日月同辉】共鸣！" : "！"));
+		this.starArray.lastNote = note;
+		return true;
+	},
+
+	unsocketStarCore: function(slotIdx){
+		if (!this.immortalAscended || !this.starArray){ return false; }
+		this.starArray = this.normalizeStarArray(this.starArray);
+		var idx = Math.floor(slotIdx);
+		if (idx < 0 || idx >= 3){ return false; }
+		var prevKey = this.starArray.sockets[idx];
+		if (!prevKey){ return false; }
+		this.starArray.sockets[idx] = null;
+		if (this.getStarCoreDef(prevKey)){
+			this.starArray.cores[prevKey] = (this.starArray.cores[prevKey] || 0) + 1;
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var cDef = this.getStarCoreDef(prevKey);
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		this.starArray.lastNote = isEn
+			? ("Returned [" + (cDef ? $I(cDef.labelKey) : prevKey) + "] from " + $I("cultivation.zhoutian.socket." + idx) + " to Star Treasury.")
+			: ("【起出星核】已自" + $I("cultivation.zhoutian.socket." + idx) + "收回【" + (cDef ? $I(cDef.labelKey) : prevKey) + "】。");
+		return true;
+	},
+
+	getStarArrayDeduceReq: function(){
+		var sa = this.starArray || this.makeDefaultStarArray();
+		if ((sa.tier || 0) >= 6){ return null; }
+		var nextTier = (sa.tier || 0) + 1;
+		var cfg = this.ZHOUTIAN_TIERS[nextTier];
+		if (!cfg){ return null; }
+		var mult = this.getStarImprintCostMult();
+		var xyCost = Math.max(8, this.roundNice(cfg.xianyuan * mult));
+		var scCost = cfg.starchart > 0 ? Math.max(5, this.roundNice(cfg.starchart * mult)) : 0;
+		var auxCost = (cfg.auxRes && cfg.auxVal > 0) ? Math.max(4, this.roundNice(cfg.auxVal * mult)) : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var scObj = scCost > 0 ? this.game.resPool.get("starchart") : null;
+		var auxObj = cfg.auxRes ? this.game.resPool.get(cfg.auxRes) : null;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okSc = scCost <= 0 || !!(scObj && scObj.value >= scCost);
+		var okAux = !cfg.auxRes || auxCost <= 0 || !!(auxObj && auxObj.value >= auxCost);
+		var okLaw = (this.daoyun || 0) >= cfg.reqDaoyun;
+		return {
+			nextTier: nextTier,
+			titleKey: cfg.titleKey,
+			xianyuan: xyCost,
+			starchart: scCost,
+			auxRes: cfg.auxRes,
+			auxVal: auxCost,
+			reqDaoyun: cfg.reqDaoyun,
+			okXy: okXy,
+			okSc: okSc,
+			okAux: okAux,
+			okLaw: okLaw,
+			affordable: !!(okXy && okSc && okAux && okLaw)
+		};
+	},
+
+	deduceStarArrayTier: function(){
+		if (!this.immortalAscended){ return false; }
+		this.starArray = this.normalizeStarArray(this.starArray);
+		var req = this.getStarArrayDeduceReq();
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		if (req.starchart > 0){
+			this.game.resPool.addResEvent("starchart", -req.starchart);
+		}
+		if (req.auxRes && req.auxVal > 0){
+			this.game.resPool.addResEvent(req.auxRes, -req.auxVal);
+		}
+		this.starArray.tier = req.nextTier;
+		if (req.nextTier > (this.starImprintTier || 0)){
+			this.starImprintTier = req.nextTier;
+		}
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Deduced Zhoutian Array to [" + $I(req.titleKey) + "]!")
+			: ("【阵图推演破阶】星盘演化诸天，护山大阵晋升至【" + $I(req.titleKey) + "】！");
+		this.starArray.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	getStarArrayDefensePower: function(){
+		var sa = this.starArray || this.makeDefaultStarArray();
+		if (!this.immortalAscended || (sa.tier || 0) <= 0){ return 0; }
+		var tCfg = this.ZHOUTIAN_TIERS[sa.tier] || this.ZHOUTIAN_TIERS[0];
+		var def = tCfg.defense || 0;
+		for (var i = 0; i < 3; i++){
+			var ck = sa.sockets[i];
+			if (ck){
+				var cDef = this.getStarCoreDef(ck);
+				if (cDef){ def += cDef.defense || 0; }
+			}
+		}
+		if (this.hasTriStarHarmony()){
+			def += 260;
+		}
+		def += Math.max(0, Math.floor(this.daoyun || 0)) * 35;
+		if (this.xianqi && this.xianqi.boundKey && this.xianqi.stage > 0){
+			def += this.xianqi.stage * 40;
+		}
+		if ((this.starImprintTier || 0) > 0){
+			def += this.starImprintTier * 25;
+		}
+		if (this.daoSteleForest && this.daoSteleForest.levels && (this.daoSteleForest.levels.astral || 0) > 0){
+			def += this.daoSteleForest.levels.astral * 55;
+		}
+		if (this.spiritNursery && this.spiritNursery.beasts && this.spiritNursery.beasts.black_tortoise && (this.spiritNursery.beasts.black_tortoise.stage || 0) > 0){
+			def += this.spiritNursery.beasts.black_tortoise.stage * 35;
+		}
+		if (this.starship && (this.starship.vesselTier || 0) > 0){
+			def += this.starship.vesselTier * 40;
+		}
+		if (this.hongmengAltar && this.hongmengAltar.treasures && (this.hongmengAltar.treasures.xuanhuangPagoda || 0) > 0){
+			def += this.hongmengAltar.treasures.xuanhuangPagoda * 45;
+		}
+		return Math.round(def);
+	},
+
+	getNextDemonRaidPower: function(){
+		var sa = this.starArray || this.makeDefaultStarArray();
+		var wave = (sa.repelCount || 0) + 1;
+		var tierFactor = Math.max(1, sa.tier || 1);
+		return Math.round(130 + (tierFactor - 1) * 145 + Math.min(600, (wave - 1) * 28));
+	},
+
+	getDemonRaidLureCost: function(){
+		return Math.max(8, Math.round(14 * this.getStarImprintCostMult()));
+	},
+
+	grantStarCoreDrop: function(coreKey){
+		this.starArray = this.normalizeStarArray(this.starArray);
+		var k = (coreKey && this.getStarCoreDef(coreKey)) ? coreKey : "ziwei";
+		this.starArray.cores[k] = (this.starArray.cores[k] || 0) + 1;
+		this.starArray.totalCoresEarned = (this.starArray.totalCoresEarned || 0) + 1;
+		return k;
+	},
+
+	repelHeavenlyDemonRaid: function(forceLure){
+		if (!this.immortalAscended){ return false; }
+		this.starArray = this.normalizeStarArray(this.starArray);
+		this.immortalBounty = this.normalizeImmortalBounty(this.immortalBounty);
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.daoSteleForest = this.normalizeDaoSteleForest(this.daoSteleForest);
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.hongmengImprintTier || 0) > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
+			var ascInitQi = this.getHongmengStartingQi();
+			this.starship.hongmengQi = ascInitQi;
+			this.starship.totalQiHarvested = ascInitQi;
+		}
+		this.hongmengAltar = this.normalizeHongmengAltar(this.hongmengAltar);
+		if ((this.starArray.tier || 0) <= 0){ return false; }
+		if (this.starArray.raidThreat < 100){
+			if (!forceLure){ return false; }
+			var lureCost = this.getDemonRaidLureCost();
+			var xyObj = this.game.resPool.get("xianyuan");
+			if (!xyObj || xyObj.value < lureCost){ return false; }
+			this.game.resPool.addResEvent("xianyuan", -lureCost);
+		}
+		var ward = this.getStarArrayDefensePower();
+		var threat = this.getNextDemonRaidPower();
+		this.starArray.raidThreat = 0;
+		this.starArray.repelCount = (this.starArray.repelCount || 0) + 1;
+		var waveNum = this.starArray.repelCount;
+		var tier = this.starArray.tier;
+		var baseXy = 24 + tier * 10 + Math.min(36, waveNum * 2);
+		var baseMerit = 18 + tier * 6;
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+
+		if (ward >= threat){
+			this.game.resPool.addResEvent("xianyuan", baseXy);
+			this.immortalBounty.merit = (this.immortalBounty.merit || 0) + baseMerit;
+			this.immortalBounty.totalMeritEarned = (this.immortalBounty.totalMeritEarned || 0) + baseMerit;
+			this.heartDemon = Math.max(0, (this.heartDemon || 0) - 12);
+			this.alchemyExp = (this.alchemyExp || 0) + 3;
+			var lawUp = this.addDaoLawProgress(18 + tier * 3);
+			this.buffs.zhoutianSurge = Math.max(this.buffs.zhoutianSurge || 0, 1200);
+			var droppedCore = null;
+			if (waveNum % 2 === 0 || Math.random() < 0.35){
+				var rotKeys = ["ziwei", "taiyang", "taiyin"];
+				var pickKey = rotKeys[(waveNum - 1) % rotKeys.length];
+				droppedCore = this.grantStarCoreDrop(pickKey);
+			}
+			if (this.game.updateCaches){ this.game.updateCaches(); }
+			var dropDef = droppedCore ? this.getStarCoreDef(droppedCore) : null;
+			var noteWin = isEn
+				? ("Crushed Heavenly Demon Wave #" + waveNum + "! +" + baseXy + " Essence, +" + baseMerit + " Merit" + (dropDef ? (", +1 [" + $I(dropDef.labelKey) + "]") : "") + (lawUp > 0 ? (", +" + lawUp + " Dao Resonance") : "") + "!")
+				: ("【周天诛魔大捷】星斗剑光绞碎第 " + waveNum + " 波域外天魔！获仙元 +" + baseXy + " · 功勋 +" + baseMerit + (dropDef ? (" · 战利【" + $I(dropDef.labelKey) + "】×1") : "") + (lawUp > 0 ? (" · 凝道韵 +" + lawUp + " 重") : "") + "！");
+			this.starArray.lastNote = noteWin;
+			this.game.msg(noteWin, "important");
+		} else {
+			var holdXy = Math.max(10, Math.round(baseXy * 0.55));
+			var holdMerit = Math.max(8, Math.round(baseMerit * 0.55));
+			this.game.resPool.addResEvent("xianyuan", holdXy);
+			this.immortalBounty.merit = (this.immortalBounty.merit || 0) + holdMerit;
+			this.immortalBounty.totalMeritEarned = (this.immortalBounty.totalMeritEarned || 0) + holdMerit;
+			this.heartDemon = Math.max(0, (this.heartDemon || 0) - 5);
+			if (this.game.updateCaches){ this.game.updateCaches(); }
+			var noteHold = isEn
+				? ("Ward held against Demon Wave #" + waveNum + " (+" + holdXy + " Essence, +" + holdMerit + " Merit — socket cores or deduce higher tier for counter-kill bonus!).")
+				: ("【护山固守】大阵勉力抵住第 " + waveNum + " 波天魔冲击（仙元 +" + holdXy + " · 功勋 +" + holdMerit + "；镶嵌星核或推演阵阶可触发诛魔反哺）！");
+			this.starArray.lastNote = noteHold;
+			this.game.msg(noteHold, "notice");
+		}
+		return true;
+	},
+
+	toggleStarAutoRepel: function(){
+		if (!this.immortalAscended){ return false; }
+		this.starArray = this.normalizeStarArray(this.starArray);
+		this.starArray.autoRepel = !this.starArray.autoRepel;
+		return this.starArray.autoRepel;
+	},
+
+	tickStarArray: function(ticksDelta){
+		if (!this.immortalAscended || !this.starArray || (this.starArray.tier || 0) <= 0){ return; }
+		var step = Math.max(0, (typeof ticksDelta === "number" ? ticksDelta : 1) * 0.45);
+		if (step <= 0){ return; }
+		if (this.starArray.raidThreat < 100){
+			this.starArray.raidThreat = Math.min(100, this.starArray.raidThreat + step);
+		}
+		if (this.starArray.raidThreat >= 100 && this.starArray.autoRepel){
+			this.repelHeavenlyDemonRaid(false);
+		}
+	},
+
+	getBountySynergy: function(bountyKey){
+		var def = this.getBountyDef(bountyKey);
+		if (!def){ return {mult: 1, pct: 100}; }
+		var bonus = 0;
+		var p = def.pillar;
+		if (p === "dao"){
+			bonus += Math.min(0.85, Math.max(0, this.daoyun || 0) * 0.12);
+			var jx = this.getStage("jinxian_0");
+			var zx = this.getStage("zhenxian_0");
+			if (jx && jx.researched){ bonus += 0.35; }
+			else if (zx && zx.researched){ bonus += 0.18; }
+		} else if (p === "combat"){
+			var highFloors = Math.max(0, (this.riftFloor || 0) - 25);
+			bonus += Math.min(0.80, highFloors * 0.08);
+			var cp = this.getCombatPower ? this.getCombatPower() : 0;
+			if (cp >= 5000){ bonus += 0.25; }
+			if (cp >= 25000){ bonus += 0.15; }
+		} else if (p === "herb"){
+			var hg = this.herbGarden || this.makeDefaultHerbGarden();
+			bonus += Math.max(0, (hg.arrayLevel || 1) - 1) * 0.14;
+			bonus += Math.min(0.60, (hg.totalHarvested || 0) * 0.04 + this.getHerbTotalStock() * 0.03);
+		} else if (p === "xianqi"){
+			var xq = this.xianqi || this.makeDefaultXianqi();
+			bonus += (xq.stage || 0) * 0.16;
+			bonus += Math.min(0.24, (xq.nurtureExp || 0) * 0.0024);
+		} else if (p === "alchemy"){
+			var ar = this.getAlchemyRank ? this.getAlchemyRank() : {rank: 1};
+			bonus += Math.max(0, (ar.rank || 1) - 1) * 0.18;
+			bonus += Math.min(0.45, this.getHerbTotalStock() * 0.04);
+		} else if (p === "star"){
+			var sa = this.starArray || this.makeDefaultStarArray();
+			bonus += (sa.tier || 0) * 0.14;
+			bonus += this.getSocketedCoreCount() * 0.12;
+			if (this.hasTriStarHarmony()){ bonus += 0.20; }
+		}
+		var mult = Math.min(2.30, 1 + Math.max(0, bonus));
+		return {
+			mult: mult,
+			pct: Math.round(mult * 100)
+		};
+	},
+
+	getBountyRefreshCost: function(){
+		var ib = this.immortalBounty || this.makeDefaultImmortalBounty();
+		if (ib.freeRefreshReady){ return 0; }
+		return Math.max(5, Math.round(8 * this.getStarImprintCostMult()));
+	},
+
+	refreshAllianceBounties: function(){
+		if (!this.immortalAscended){ return false; }
+		this.immortalBounty = this.normalizeImmortalBounty(this.immortalBounty);
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.daoSteleForest = this.normalizeDaoSteleForest(this.daoSteleForest);
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.hongmengImprintTier || 0) > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
+			var ascInitQi = this.getHongmengStartingQi();
+			this.starship.hongmengQi = ascInitQi;
+			this.starship.totalQiHarvested = ascInitQi;
+		}
+		this.hongmengAltar = this.normalizeHongmengAltar(this.hongmengAltar);
+		var cost = this.getBountyRefreshCost();
+		if (cost > 0){
+			var xy = this.game.resPool.get("xianyuan");
+			if (!xy || xy.value < cost){ return false; }
+			this.game.resPool.addResEvent("xianyuan", -cost);
+		} else {
+			this.immortalBounty.freeRefreshReady = false;
+		}
+		var allKeys = [];
+		for (var i = 0; i < this.ALLIANCE_BOUNTIES.length; i++){
+			allKeys.push(this.ALLIANCE_BOUNTIES[i].key);
+		}
+		var curLead = this.immortalBounty.boardKeys[0] || "";
+		var startIdx = (allKeys.indexOf(curLead) + 1) % allKeys.length;
+		if (startIdx < 0){ startIdx = 0; }
+		var nextBoard = [];
+		var stepOff = 1 + ((this.immortalBounty.completedCount || 0) % 2);
+		for (var k = 0; k < allKeys.length && nextBoard.length < 3; k++){
+			var cand = allKeys[(startIdx + k * stepOff) % allKeys.length];
+			if (nextBoard.indexOf(cand) < 0){ nextBoard.push(cand); }
+		}
+		for (var m = 0; m < allKeys.length && nextBoard.length < 3; m++){
+			if (nextBoard.indexOf(allKeys[m]) < 0){ nextBoard.push(allKeys[m]); }
+		}
+		this.immortalBounty.boardKeys = nextBoard;
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		this.immortalBounty.lastNote = isEn
+			? "Rotated Cross-Realm Immortal Alliance commission decrees."
+			: "【仙盟玉榜刷新】跨界接引使已更替三桩诸天奇遇悬赏令。";
+		return true;
+	},
+
+	dispatchAllianceBounty: function(boardIdxOrKey){
+		if (!this.immortalAscended){ return false; }
+		this.immortalBounty = this.normalizeImmortalBounty(this.immortalBounty);
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.daoSteleForest = this.normalizeDaoSteleForest(this.daoSteleForest);
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.hongmengImprintTier || 0) > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
+			var ascInitQi = this.getHongmengStartingQi();
+			this.starship.hongmengQi = ascInitQi;
+			this.starship.totalQiHarvested = ascInitQi;
+		}
+		this.hongmengAltar = this.normalizeHongmengAltar(this.hongmengAltar);
+		if (this.immortalBounty.active){ return false; }
+		var targetKey = null;
+		if (typeof boardIdxOrKey === "number"){
+			var bi = Math.floor(boardIdxOrKey);
+			if (bi >= 0 && bi < this.immortalBounty.boardKeys.length){
+				targetKey = this.immortalBounty.boardKeys[bi];
+			}
+		} else if (typeof boardIdxOrKey === "string"){
+			if (this.immortalBounty.boardKeys.indexOf(boardIdxOrKey) >= 0){
+				targetKey = boardIdxOrKey;
+			} else {
+				var parsed = parseInt(boardIdxOrKey, 10);
+				if (!isNaN(parsed) && parsed >= 0 && parsed < this.immortalBounty.boardKeys.length){
+					targetKey = this.immortalBounty.boardKeys[parsed];
+				}
+			}
+		}
+		var def = targetKey ? this.getBountyDef(targetKey) : null;
+		if (!def){ return false; }
+		var syn = this.getBountySynergy(def.key);
+		var caveBounty = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var beastBountySpd = (caveBounty && caveBounty.bountySpeedBonus) ? caveBounty.bountySpeedBonus : 0;
+		var speedDiv = 1 + Math.min(0.60, (syn.mult - 1) * 0.45) + beastBountySpd;
+		var mTicks = Math.max(15, Math.round(def.baseTicks / speedDiv));
+		this.immortalBounty.active = {
+			key: def.key,
+			progress: 0,
+			maxTicks: mTicks,
+			synergyMult: syn.mult,
+			ready: false
+		};
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		this.immortalBounty.lastNote = isEn
+			? ("Dispatched avatar on [" + $I(def.labelKey) + "] (Synergy " + syn.pct + "%)!")
+			: ("【奉令跨界】元神化身已踏入跨界星门，接办【" + $I(def.labelKey) + "】（契合加成 " + syn.pct + "%）！");
+		return true;
+	},
+
+	getBountyBoostCost: function(){
+		return Math.max(6, Math.round(10 * this.getStarImprintCostMult()));
+	},
+
+	boostAllianceBounty: function(){
+		if (!this.immortalAscended || !this.immortalBounty || !this.immortalBounty.active){
+			return false;
+		}
+		var act = this.immortalBounty.active;
+		if (act.ready || act.progress >= act.maxTicks){ return false; }
+		var cost = this.getBountyBoostCost();
+		var xy = this.game.resPool.get("xianyuan");
+		if (!xy || xy.value < cost){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -cost);
+		act.progress = Math.min(act.maxTicks, act.progress + Math.ceil(act.maxTicks * 0.5));
+		if (act.progress >= act.maxTicks){
+			act.ready = true;
+		}
+		return true;
+	},
+
+	completeAllianceBounty: function(approach){
+		if (!this.immortalAscended || !this.immortalBounty || !this.immortalBounty.active){
+			return false;
+		}
+		this.starArray = this.normalizeStarArray(this.starArray);
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		var act = this.immortalBounty.active;
+		if (!act.ready && act.progress < act.maxTicks){ return false; }
+		var def = this.getBountyDef(act.key);
+		if (!def){
+			this.immortalBounty.active = null;
+			return false;
+		}
+		var syn = this.getBountySynergy(def.key);
+		var mult = Math.max(act.synergyMult || 1, syn.mult);
+		var xyGain = Math.max(12, Math.round(def.baseXy * mult));
+		var meritGain = Math.max(10, Math.round(def.baseMerit * mult));
+		var mode = (approach === "dao") ? "dao" : "core";
+
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+		this.game.resPool.addResEvent("xianyuan", xyGain);
+		this.immortalBounty.merit = (this.immortalBounty.merit || 0) + meritGain;
+		this.immortalBounty.totalMeritEarned = (this.immortalBounty.totalMeritEarned || 0) + meritGain;
+		this.immortalBounty.completedCount = (this.immortalBounty.completedCount || 0) + 1;
+		this.immortalBounty.freeRefreshReady = true;
+		this.immortalBounty.active = null;
+
+		var coreGainedKey = null;
+		var lawGained = 0;
+		if (mode === "core"){
+			coreGainedKey = this.grantStarCoreDrop(def.coreKey);
+			lawGained = this.addDaoLawProgress(Math.round(def.lawPts * 0.35));
+		} else {
+			var daoPts = Math.round(def.lawPts * mult);
+			lawGained = this.addDaoLawProgress(daoPts);
+			this.herbGarden.stock.zizhi = (this.herbGarden.stock.zizhi || 0) + 1;
+			if (mult >= 1.50){
+				coreGainedKey = this.grantStarCoreDrop(def.coreKey);
+			}
+		}
+
+		var bIdx = this.immortalBounty.boardKeys.indexOf(def.key);
+		if (bIdx >= 0){
+			for (var ai = 0; ai < this.ALLIANCE_BOUNTIES.length; ai++){
+				var candKey = this.ALLIANCE_BOUNTIES[(ai + this.immortalBounty.completedCount) % this.ALLIANCE_BOUNTIES.length].key;
+				if (this.immortalBounty.boardKeys.indexOf(candKey) < 0){
+					this.immortalBounty.boardKeys[bIdx] = candKey;
+					break;
+				}
+			}
+		}
+
+		var chapterUp = false;
+		if (this.immortalBounty.completedCount % 3 === 0){
+			this.immortalBounty.chainChapter = (this.immortalBounty.chainChapter || 1) + 1;
+			this.daoyun = Math.max(0, Math.floor(this.daoyun || 0)) + 1;
+			this.game.resPool.addResEvent("xianyuan", 50);
+			this.grantStarCoreDrop(def.coreKey);
+			chapterUp = true;
+		}
+
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var cDef = coreGainedKey ? this.getStarCoreDef(coreGainedKey) : null;
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Completed [" + $I(def.labelKey) + "]: +" + xyGain + " Essence, +" + meritGain + " Merit" +
+				(cDef ? (", +1 [" + $I(cDef.labelKey) + "]") : "") +
+				(lawGained > 0 ? (", +" + lawGained + " Dao Resonance") : "") +
+				(chapterUp ? " — Chapter Coffer: +1 Dao Resonance, +50 Essence & +1 Star Core!" : "!"))
+			: ("【奇遇悬赏圆满】办妥【" + $I(def.labelKey) + "】：仙元 +" + xyGain + " · 功勋 +" + meritGain +
+				(cDef ? (" · 【" + $I(cDef.labelKey) + "】×1") : "") +
+				(lawGained > 0 ? (" · 法则道韵 +" + lawGained + " 重") : "") +
+				(chapterUp ? "；连环三桩圆满，赐仙盟道韵宝匣（道韵+1重 · 仙元+50 · 星核+1）！" : "！"));
+		this.immortalBounty.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	toggleBountyAutoDispatch: function(){
+		if (!this.immortalAscended){ return false; }
+		this.immortalBounty = this.normalizeImmortalBounty(this.immortalBounty);
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.daoSteleForest = this.normalizeDaoSteleForest(this.daoSteleForest);
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.hongmengImprintTier || 0) > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
+			var ascInitQi = this.getHongmengStartingQi();
+			this.starship.hongmengQi = ascInitQi;
+			this.starship.totalQiHarvested = ascInitQi;
+		}
+		this.hongmengAltar = this.normalizeHongmengAltar(this.hongmengAltar);
+		this.immortalBounty.autoDispatch = !this.immortalBounty.autoDispatch;
+		return this.immortalBounty.autoDispatch;
+	},
+
+	tickImmortalBounty: function(ticksDelta){
+		if (!this.immortalAscended || !this.immortalBounty){ return; }
+		var caveStepB = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var spdMult = 1 + ((caveStepB && caveStepB.bountySpeedBonus) ? caveStepB.bountySpeedBonus : 0);
+		var step = Math.max(0, (typeof ticksDelta === "number" ? ticksDelta : 1) * spdMult);
+		if (step <= 0){ return; }
+		if (!this.immortalBounty.active && this.immortalBounty.autoDispatch){
+			this.dispatchAllianceBounty(0);
+		}
+		var act = this.immortalBounty.active;
+		if (act && !act.ready){
+			act.progress = Math.min(act.maxTicks, act.progress + step);
+			if (act.progress >= act.maxTicks){
+				act.ready = true;
+			}
+		}
+		if (this.immortalBounty.active && this.immortalBounty.active.ready && this.immortalBounty.autoDispatch){
+			var pickMode = ((this.immortalBounty.completedCount || 0) % 2 === 0) ? "core" : "dao";
+			this.completeAllianceBounty(pickMode);
+			if (!this.immortalBounty.active){
+				this.dispatchAllianceBounty(0);
+			}
+		}
+	},
+
+	getMeritExchangeCost: function(itemKey){
+		if (itemKey === "core"){ return 55; }
+		if (itemKey === "daoyun"){ return 150; }
+		if (itemKey === "chest"){ return 40; }
+		return 999999;
+	},
+
+	exchangeAllianceMerit: function(itemKey){
+		if (!this.immortalAscended){ return false; }
+		this.immortalBounty = this.normalizeImmortalBounty(this.immortalBounty);
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.daoSteleForest = this.normalizeDaoSteleForest(this.daoSteleForest);
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.hongmengImprintTier || 0) > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
+			var ascInitQi = this.getHongmengStartingQi();
+			this.starship.hongmengQi = ascInitQi;
+			this.starship.totalQiHarvested = ascInitQi;
+		}
+		this.hongmengAltar = this.normalizeHongmengAltar(this.hongmengAltar);
+		this.starArray = this.normalizeStarArray(this.starArray);
+		var cost = this.getMeritExchangeCost(itemKey);
+		if ((this.immortalBounty.merit || 0) < cost){ return false; }
+		this.immortalBounty.merit -= cost;
+		var isEn = String($I("cultivation.sanctum.badge") || "").indexOf("Immortal") === 0;
+		var note = "";
+		if (itemKey === "core"){
+			var ck = this.starArray.selectedCore || "ziwei";
+			this.grantStarCoreDrop(ck);
+			var cDef = this.getStarCoreDef(ck);
+			note = isEn
+				? ("Redeemed 1x [" + (cDef ? $I(cDef.labelKey) : ck) + "] from Alliance Treasury!")
+				: ("【仙盟宝库】耗功勋 " + cost + " 兑换【" + (cDef ? $I(cDef.labelKey) : ck) + "】×1！");
+		} else if (itemKey === "daoyun"){
+			this.daoyun = Math.max(0, Math.floor(this.daoyun || 0)) + 1;
+			if (this.game.updateCaches){ this.game.updateCaches(); }
+			note = isEn
+				? ("Comprehended Alliance Dao Scroll: Dao Resonance +1 (Rank " + this.daoyun + ")!")
+				: ("【仙盟道韵玉简】参透跨界至理，法则道韵提升至第 " + this.daoyun + " 重！");
+		} else if (itemKey === "chest"){
+			var xyRes = this.game.resPool.get("xianyuan");
+			if (xyRes){ xyRes.unlocked = true; }
+			this.game.resPool.addResEvent("xianyuan", 75);
+			this.riftKeys = (this.riftKeys || 0) + 2;
+			note = isEn
+				? "Opened Merit Essence Coffer: +75 Immortal Essence & +2 Rift Keys!"
+				: "【仙盟功勋宝匣】启匣获精纯仙元 +75、上古秘境令 +2！";
+		} else {
+			this.immortalBounty.merit += cost;
+			return false;
+		}
+		this.immortalBounty.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	// ---------------- XX-6 混沌万灵仙宠育兽苑与大道法则碑林参悟 ----------------
+
+	PRIMORDIAL_BEASTS: [
+		{
+			key: "azure_dragon",
+			labelKey: "cultivation.beast.azure_dragon.label",
+			descKey: "cultivation.beast.azure_dragon.desc",
+			art: "res/art/beast_azure_dragon.webp",
+			favHerb: "qinglian",
+			incubateXy: 16,
+			auxRes: "timeCrystal",
+			auxVal: 6
+		},
+		{
+			key: "vermilion_bird",
+			labelKey: "cultivation.beast.vermilion_bird.label",
+			descKey: "cultivation.beast.vermilion_bird.desc",
+			art: "res/art/beast_vermilion_bird.webp",
+			favHerb: "zizhi",
+			incubateXy: 22,
+			auxRes: "relic",
+			auxVal: 8
+		},
+		{
+			key: "black_tortoise",
+			labelKey: "cultivation.beast.black_tortoise.label",
+			descKey: "cultivation.beast.black_tortoise.desc",
+			art: "res/art/beast_black_tortoise.webp",
+			favHerb: "daoguo",
+			incubateXy: 22,
+			auxRes: "starchart",
+			auxVal: 12
+		},
+		{
+			key: "white_tiger",
+			labelKey: "cultivation.beast.white_tiger.label",
+			descKey: "cultivation.beast.white_tiger.desc",
+			art: "res/art/beast_white_tiger.webp",
+			favHerb: "xianlan",
+			incubateXy: 24,
+			auxRes: "unobtainium",
+			auxVal: 10
+		}
+	],
+
+	BEAST_AWAKEN_TIERS: [
+		{stage: 0, titleKey: "cultivation.beast.stage.0", xianyuan: 0,   auxRes: null,          auxVal: 0,  reqDaoyun: 0},
+		{stage: 1, titleKey: "cultivation.beast.stage.1", xianyuan: 0,   auxRes: null,          auxVal: 0,  reqDaoyun: 0},
+		{stage: 2, titleKey: "cultivation.beast.stage.2", xianyuan: 26,  auxRes: "relic",       auxVal: 8,  reqDaoyun: 1},
+		{stage: 3, titleKey: "cultivation.beast.stage.3", xianyuan: 52,  auxRes: "starchart",   auxVal: 22, reqDaoyun: 2},
+		{stage: 4, titleKey: "cultivation.beast.stage.4", xianyuan: 96,  auxRes: "timeCrystal", auxVal: 24, reqDaoyun: 3},
+		{stage: 5, titleKey: "cultivation.beast.stage.5", xianyuan: 175, auxRes: "unobtainium", auxVal: 36, reqDaoyun: 4},
+		{stage: 6, titleKey: "cultivation.beast.stage.6", xianyuan: 310, auxRes: "timeCrystal", auxVal: 65, reqDaoyun: 5}
+	],
+
+	DAO_STELES: [
+		{
+			key: "spacetime",
+			labelKey: "cultivation.stele.item.spacetime.label",
+			descKey: "cultivation.stele.item.spacetime.desc",
+			art: "res/art/stele_dao_monolith.webp",
+			baseXy: 18,
+			auxRes: "timeCrystal",
+			baseAux: 8
+		},
+		{
+			key: "creation",
+			labelKey: "cultivation.stele.item.creation.label",
+			descKey: "cultivation.stele.item.creation.desc",
+			art: "res/art/stele_dao_monolith.webp",
+			baseXy: 18,
+			auxRes: "relic",
+			baseAux: 8
+		},
+		{
+			key: "sword_dao",
+			labelKey: "cultivation.stele.item.sword_dao.label",
+			descKey: "cultivation.stele.item.sword_dao.desc",
+			art: "res/art/stele_dao_monolith.webp",
+			baseXy: 20,
+			auxRes: "starchart",
+			baseAux: 14
+		},
+		{
+			key: "alchemy_origin",
+			labelKey: "cultivation.stele.item.alchemy_origin.label",
+			descKey: "cultivation.stele.item.alchemy_origin.desc",
+			art: "res/art/stele_dao_monolith.webp",
+			baseXy: 20,
+			auxRes: "relic",
+			baseAux: 10
+		},
+		{
+			key: "astral",
+			labelKey: "cultivation.stele.item.astral.label",
+			descKey: "cultivation.stele.item.astral.desc",
+			art: "res/art/stele_dao_monolith.webp",
+			baseXy: 22,
+			auxRes: "starchart",
+			baseAux: 16
+		},
+		{
+			key: "samsara",
+			labelKey: "cultivation.stele.item.samsara.label",
+			descKey: "cultivation.stele.item.samsara.desc",
+			art: "res/art/stele_dao_monolith.webp",
+			baseXy: 24,
+			auxRes: "timeCrystal",
+			baseAux: 10
+		}
+	],
+
+	getBeastDef: function(key){
+		for (var i = 0; i < this.PRIMORDIAL_BEASTS.length; i++){
+			if (this.PRIMORDIAL_BEASTS[i].key === key){ return this.PRIMORDIAL_BEASTS[i]; }
+		}
+		return null;
+	},
+
+	getDaoSteleDef: function(key){
+		for (var i = 0; i < this.DAO_STELES.length; i++){
+			if (this.DAO_STELES[i].key === key){ return this.DAO_STELES[i]; }
+		}
+		return null;
+	},
+
+	makeDefaultSpiritNursery: function(){
+		var beasts = {};
+		for (var i = 0; i < this.PRIMORDIAL_BEASTS.length; i++){
+			var k = this.PRIMORDIAL_BEASTS[i].key;
+			beasts[k] = {
+				incubating: false,
+				incTicks: 0,
+				incMax: 60,
+				stage: 0,
+				exp: 0,
+				totalFeeds: 0
+			};
+		}
+		return {
+			beasts: beasts,
+			selectedBeast: "azure_dragon",
+			battleBeastKey: null,
+			gardenBeastKey: null,
+			autoNurture: false,
+			lastNote: ""
+		};
+	},
+
+	normalizeSpiritNursery: function(raw){
+		var def = this.makeDefaultSpiritNursery();
+		if (!raw || typeof raw !== "object"){ return def; }
+		if (typeof raw.selectedBeast === "string" && this.getBeastDef(raw.selectedBeast)){
+			def.selectedBeast = raw.selectedBeast;
+		}
+		if (typeof raw.autoNurture === "boolean"){ def.autoNurture = raw.autoNurture; }
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		if (raw.beasts && typeof raw.beasts === "object"){
+			for (var i = 0; i < this.PRIMORDIAL_BEASTS.length; i++){
+				var k = this.PRIMORDIAL_BEASTS[i].key;
+				var src = raw.beasts[k];
+				if (src && typeof src === "object"){
+					var stg = (typeof src.stage === "number" && isFinite(src.stage))
+						? Math.min(6, Math.max(0, Math.floor(src.stage)))
+						: 0;
+					var iMax = (typeof src.incMax === "number" && src.incMax > 0) ? Math.floor(src.incMax) : 60;
+					var iTicks = (typeof src.incTicks === "number" && isFinite(src.incTicks))
+						? Math.max(0, Math.min(iMax, src.incTicks))
+						: 0;
+					var inc = stg > 0 ? false : !!src.incubating;
+					var bExp = (typeof src.exp === "number" && isFinite(src.exp))
+						? Math.max(0, Math.min(100, Math.floor(src.exp)))
+						: 0;
+					var feeds = (typeof src.totalFeeds === "number" && isFinite(src.totalFeeds))
+						? Math.max(0, Math.floor(src.totalFeeds))
+						: 0;
+					def.beasts[k] = {
+						incubating: inc,
+						incTicks: stg > 0 ? iMax : iTicks,
+						incMax: iMax,
+						stage: stg,
+						exp: stg >= 6 ? 100 : bExp,
+						totalFeeds: feeds
+					};
+				}
+			}
+		}
+		if (typeof raw.battleBeastKey === "string" && def.beasts[raw.battleBeastKey] && def.beasts[raw.battleBeastKey].stage > 0){
+			def.battleBeastKey = raw.battleBeastKey;
+		}
+		if (typeof raw.gardenBeastKey === "string" && def.beasts[raw.gardenBeastKey] && def.beasts[raw.gardenBeastKey].stage > 0 && raw.gardenBeastKey !== def.battleBeastKey){
+			def.gardenBeastKey = raw.gardenBeastKey;
+		}
+		return def;
+	},
+
+	makeDefaultDaoSteleForest: function(){
+		var levels = {};
+		for (var i = 0; i < this.DAO_STELES.length; i++){
+			levels[this.DAO_STELES[i].key] = 0;
+		}
+		return {
+			levels: levels,
+			totalRubbings: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeDaoSteleForest: function(raw){
+		var def = this.makeDefaultDaoSteleForest();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var sum = 0;
+		if (raw.levels && typeof raw.levels === "object"){
+			for (var i = 0; i < this.DAO_STELES.length; i++){
+				var k = this.DAO_STELES[i].key;
+				var lv = raw.levels[k];
+				if (typeof lv === "number" && isFinite(lv)){
+					def.levels[k] = Math.min(5, Math.max(0, Math.floor(lv)));
+				}
+				sum += def.levels[k];
+			}
+		}
+		def.totalRubbings = (typeof raw.totalRubbings === "number" && isFinite(raw.totalRubbings))
+			? Math.max(sum, Math.floor(raw.totalRubbings))
+			: sum;
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	getBeastImprintCostMult: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.beastImprintTier || 0)));
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		return Math.max(0.58, 1 - seal * 0.055 - imp * 0.015);
+	},
+
+	getBeastSpringBonus: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.beastImprintTier || 0)));
+		if (seal <= 0){
+			return {tier: 0, xiuweiBase: 0, xiuweiRatio: 0, catnipRatio: 0, lifespanBonus: 0};
+		}
+		return {
+			tier: seal,
+			xiuweiBase: seal * 0.15,
+			xiuweiRatio: seal * 0.08,
+			catnipRatio: seal * 0.12,
+			lifespanBonus: seal * 30
+		};
+	},
+
+	getHatchedBeastCount: function(){
+		if (!this.spiritNursery || !this.spiritNursery.beasts){ return 0; }
+		var cnt = 0;
+		for (var i = 0; i < this.PRIMORDIAL_BEASTS.length; i++){
+			var b = this.spiritNursery.beasts[this.PRIMORDIAL_BEASTS[i].key];
+			if (b && (b.stage || 0) >= 1){ cnt++; }
+		}
+		return cnt;
+	},
+
+	getMaxBeastStage: function(){
+		if (!this.spiritNursery || !this.spiritNursery.beasts){ return 0; }
+		var maxSt = 0;
+		for (var i = 0; i < this.PRIMORDIAL_BEASTS.length; i++){
+			var b = this.spiritNursery.beasts[this.PRIMORDIAL_BEASTS[i].key];
+			if (b && (b.stage || 0) > maxSt){ maxSt = b.stage; }
+		}
+		return maxSt;
+	},
+
+	hasFourSymbolsResonance: function(){
+		return this.getHatchedBeastCount() >= 4;
+	},
+
+	getFourSymbolsMinStage: function(){
+		if (!this.spiritNursery || !this.spiritNursery.beasts){ return 0; }
+		var minSt = 99;
+		for (var i = 0; i < this.PRIMORDIAL_BEASTS.length; i++){
+			var b = this.spiritNursery.beasts[this.PRIMORDIAL_BEASTS[i].key];
+			var st = (b && b.stage) ? b.stage : 0;
+			if (st <= 0){ return 0; }
+			if (st < minSt){ minSt = st; }
+		}
+		return minSt === 99 ? 0 : minSt;
+	},
+
+	_autoAssignBeastSlotOnHatch: function(beastKey){
+		if (!this.spiritNursery || !beastKey){ return; }
+		var b = this.spiritNursery.beasts[beastKey];
+		if (!b || (b.stage || 0) <= 0){ return; }
+		if (!this.spiritNursery.battleBeastKey){
+			this.spiritNursery.battleBeastKey = beastKey;
+		} else if (!this.spiritNursery.gardenBeastKey && this.spiritNursery.battleBeastKey !== beastKey){
+			this.spiritNursery.gardenBeastKey = beastKey;
+		}
+		if (b.stage > (this.beastImprintTier || 0)){
+			this.beastImprintTier = b.stage;
+		}
+	},
+
+	getBeastIncubateCost: function(beastKey){
+		var def = this.getBeastDef(beastKey);
+		if (!def){ return null; }
+		var sn = this.spiritNursery || this.makeDefaultSpiritNursery();
+		var b = sn.beasts[beastKey];
+		if (b && (b.stage > 0 || b.incubating)){ return null; }
+		var mult = this.getBeastImprintCostMult();
+		var firstFreeAux = (this.getHatchedBeastCount() === 0 && beastKey === "azure_dragon");
+		var xyVal = Math.max(8, this.roundNice(def.incubateXy * mult));
+		var auxRes = firstFreeAux ? null : def.auxRes;
+		var auxVal = firstFreeAux ? 0 : Math.max(3, this.roundNice(def.auxVal * mult));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var auxObj = auxRes ? this.game.resPool.get(auxRes) : null;
+		var okXy = !!(xyObj && xyObj.value >= xyVal);
+		var okAux = !auxRes || !!(auxObj && auxObj.value >= auxVal);
+		return {
+			xianyuan: xyVal,
+			auxRes: auxRes,
+			auxVal: auxVal,
+			affordable: !!(okXy && okAux)
+		};
+	},
+
+	incubateSpiritBeast: function(beastKey, instantHatch){
+		if (!this.immortalAscended){ return false; }
+		var def = this.getBeastDef(beastKey);
+		if (!def){ return false; }
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		var b = this.spiritNursery.beasts[beastKey];
+		if (!b || b.stage > 0){ return false; }
+		if (!b.incubating){
+			var req = this.getBeastIncubateCost(beastKey);
+			if (!req || !req.affordable){ return false; }
+			this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+			if (req.auxRes && req.auxVal > 0){
+				this.game.resPool.addResEvent(req.auxRes, -req.auxVal);
+			}
+			var sealBonusTicks = Math.min(25, Math.max(0, Math.floor(this.beastImprintTier || 0)) * 5);
+			b.incubating = true;
+			b.incMax = 60;
+			b.incTicks = sealBonusTicks;
+			this.spiritNursery.selectedBeast = beastKey;
+		}
+		if (instantHatch){
+			b.incubating = false;
+			b.incTicks = b.incMax;
+			b.stage = 1;
+			b.exp = 0;
+			this._autoAssignBeastSlotOnHatch(beastKey);
+			if (this.game.updateCaches){ this.game.updateCaches(); }
+		}
+		var isEn = String($I("cultivation.menagerie.badge") || "").indexOf("Immortal") === 0;
+		var note = b.stage >= 1
+			? (isEn ? ("Primordial Spirit [" + $I(def.labelKey) + "] hatched at Stage 1!") : ("【万灵破壳】混沌仙泉翻涌，真灵【" + $I(def.labelKey) + "】破壳而出，觉醒一阶血脉！"))
+			: (isEn ? ("Placed [" + $I(def.labelKey) + "] egg into the Primordial Spirit Pool.") : ("【灵胎入池】已将【" + $I(def.labelKey) + "】灵胎浸入万灵育兽仙池温养。"));
+		this.spiritNursery.lastNote = note;
+		if (b.stage >= 1){ this.game.msg(note, "important"); }
+		return true;
+	},
+
+	getWarmEggCost: function(){
+		return Math.max(5, Math.round(9 * this.getBeastImprintCostMult()));
+	},
+
+	warmBeastEgg: function(beastKey){
+		if (!this.immortalAscended){ return false; }
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		var key = beastKey || this.spiritNursery.selectedBeast;
+		var def = this.getBeastDef(key);
+		var b = key ? this.spiritNursery.beasts[key] : null;
+		if (!def || !b || !b.incubating || b.stage > 0){ return false; }
+		var cost = this.getWarmEggCost();
+		var xy = this.game.resPool.get("xianyuan");
+		if (!xy || xy.value < cost){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -cost);
+		b.incTicks = Math.min(b.incMax, (b.incTicks || 0) + Math.ceil(b.incMax * 0.60));
+		if (b.incTicks >= b.incMax){
+			b.incubating = false;
+			b.stage = 1;
+			b.exp = 0;
+			this._autoAssignBeastSlotOnHatch(key);
+			if (this.game.updateCaches){ this.game.updateCaches(); }
+			var isEn = String($I("cultivation.menagerie.badge") || "").indexOf("Immortal") === 0;
+			var note = isEn
+				? ("Spirit Egg [" + $I(def.labelKey) + "] hatched into Stage 1 Hatchling!")
+				: ("【仙元催破灵胎】霞光冲霄，【" + $I(def.labelKey) + "】破壳化生，晋入一阶幼灵！");
+			this.spiritNursery.lastNote = note;
+			this.game.msg(note, "important");
+		}
+		return true;
+	},
+
+	hatchSpiritBeast: function(beastKey){
+		if (!this.immortalAscended){ return false; }
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		var b = this.spiritNursery.beasts[beastKey];
+		if (!b){ return false; }
+		if (b.stage > 0){ return true; }
+		if (!b.incubating){
+			if (!this.incubateSpiritBeast(beastKey, false)){ return false; }
+		}
+		for (var guard = 0; guard < 5; guard++){
+			b = this.spiritNursery.beasts[beastKey];
+			if (!b || b.stage > 0 || !b.incubating){ break; }
+			if (!this.warmBeastEgg(beastKey)){
+				b = this.spiritNursery.beasts[beastKey];
+				b.incubating = false;
+				b.incTicks = b.incMax;
+				b.stage = 1;
+				b.exp = 0;
+				this._autoAssignBeastSlotOnHatch(beastKey);
+				if (this.game.updateCaches){ this.game.updateCaches(); }
+				break;
+			}
+		}
+		b = this.spiritNursery.beasts[beastKey];
+		return !!(b && b.stage >= 1);
+	},
+
+	selectNurseryBeast: function(beastKey){
+		if (!this.getBeastDef(beastKey)){ return false; }
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.spiritNursery.selectedBeast = beastKey;
+		return true;
+	},
+
+	deploySpiritBeast: function(beastKey, slotType){
+		if (!this.immortalAscended){ return false; }
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		var def = this.getBeastDef(beastKey);
+		var b = beastKey ? this.spiritNursery.beasts[beastKey] : null;
+		if (!def || !b || (b.stage || 0) <= 0){ return false; }
+		if (slotType === "garden"){
+			var prevGarden = this.spiritNursery.gardenBeastKey;
+			if (this.spiritNursery.battleBeastKey === beastKey){
+				this.spiritNursery.battleBeastKey = (prevGarden && prevGarden !== beastKey) ? prevGarden : null;
+			}
+			this.spiritNursery.gardenBeastKey = beastKey;
+		} else {
+			var prevBattle = this.spiritNursery.battleBeastKey;
+			if (this.spiritNursery.gardenBeastKey === beastKey){
+				this.spiritNursery.gardenBeastKey = (prevBattle && prevBattle !== beastKey) ? prevBattle : null;
+			}
+			this.spiritNursery.battleBeastKey = beastKey;
+		}
+		this.spiritNursery.selectedBeast = beastKey;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.menagerie.badge") || "").indexOf("Immortal") === 0;
+		this.spiritNursery.lastNote = isEn
+			? ("Deployed [" + $I(def.labelKey) + "] as " + (slotType === "garden" ? "Garden Companion" : "Main Battle Beast") + ".")
+			: ("【灵兽遣派】已命【" + $I(def.labelKey) + "】担任" + (slotType === "garden" ? "【驻园灵宠】" : "【出战主宠】") + "！");
+		return true;
+	},
+
+	toggleBeastAutoNurture: function(){
+		if (!this.immortalAscended){ return false; }
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.spiritNursery.autoNurture = !this.spiritNursery.autoNurture;
+		return this.spiritNursery.autoNurture;
+	},
+
+	getTotalPillStock: function(){
+		var sum = 0;
+		for (var i = 0; i < (this.pills ? this.pills.length : 0); i++){
+			sum += Math.max(0, Math.floor(this.pills[i].val || 0));
+		}
+		return sum;
+	},
+
+	getBeastFeedXyCost: function(beastKey){
+		var sn = this.spiritNursery || this.makeDefaultSpiritNursery();
+		var b = beastKey && sn.beasts ? sn.beasts[beastKey] : null;
+		var stg = (b && b.stage) ? b.stage : 1;
+		return Math.max(6, Math.round((10 + stg * 4) * this.getBeastImprintCostMult()));
+	},
+
+	feedSpiritBeast: function(beastKey, mode){
+		if (!this.immortalAscended){ return false; }
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		this.herbGarden = this.normalizeHerbGarden(this.herbGarden);
+		var key = beastKey || this.spiritNursery.selectedBeast;
+		var def = this.getBeastDef(key);
+		var b = key ? this.spiritNursery.beasts[key] : null;
+		if (!def || !b || (b.stage || 0) <= 0){ return false; }
+		if (b.stage >= 6 && (b.exp || 0) >= 100){ return false; }
+
+		var feedMode = mode || "herb";
+		var expGain = 0;
+		if (feedMode === "herb"){
+			if (this.getHerbTotalStock() <= 0){ return false; }
+			var fav = def.favHerb;
+			if (fav && (this.herbGarden.stock[fav] || 0) > 0){
+				this.herbGarden.stock[fav]--;
+				expGain = 50;
+			} else {
+				if (!this.consumeAnyImmortalHerbs(1)){ return false; }
+				expGain = 45;
+			}
+			this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - 4);
+			this.heartDemon = Math.max(0, (this.heartDemon || 0) - 3);
+		} else if (feedMode === "pill"){
+			var chosenPill = null;
+			for (var pi = this.pills.length - 1; pi >= 0; pi--){
+				if ((this.pills[pi].val || 0) >= 1){
+					chosenPill = this.pills[pi];
+					break;
+				}
+			}
+			if (!chosenPill){ return false; }
+			chosenPill.val--;
+			expGain = 40;
+		} else {
+			var xyCost = this.getBeastFeedXyCost(key);
+			var xyRes = this.game.resPool.get("xianyuan");
+			if (!xyRes || xyRes.value < xyCost){ return false; }
+			this.game.resPool.addResEvent("xianyuan", -xyCost);
+			expGain = 35;
+		}
+
+		b.totalFeeds = (b.totalFeeds || 0) + 1;
+		b.exp = (b.exp || 0) + expGain;
+		var stageUp = false;
+		if (b.exp >= 100 && b.stage < 6){
+			b.exp = b.stage + 1 >= 6 ? 100 : (b.exp - 100);
+			b.stage += 1;
+			stageUp = true;
+			if (b.stage > (this.beastImprintTier || 0)){
+				this.beastImprintTier = b.stage;
+			}
+		} else if (b.exp > 100){
+			b.exp = 100;
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.menagerie.badge") || "").indexOf("Immortal") === 0;
+		var note = stageUp
+			? (isEn
+				? ("[" + $I(def.labelKey) + "] bloodline awakened to Stage " + b.stage + "!")
+				: ("【血脉返祖觉醒】灵韵贯通周天，【" + $I(def.labelKey) + "】血脉自然蜕变至第 " + b.stage + " 阶！"))
+			: (isEn
+				? ("Fed [" + $I(def.labelKey) + "] (+" + expGain + " Bloodline EXP, now " + b.exp + "/100).")
+				: ("【抚育仙宠】投喂【" + $I(def.labelKey) + "】血脉精粹 +" + expGain + "（当前 " + b.exp + "/100）。"));
+		this.spiritNursery.lastNote = note;
+		if (stageUp){ this.game.msg(note, "important"); }
+		return true;
+	},
+
+	getBeastAwakenReq: function(beastKey){
+		var sn = this.spiritNursery || this.makeDefaultSpiritNursery();
+		var key = beastKey || sn.selectedBeast;
+		var b = key && sn.beasts ? sn.beasts[key] : null;
+		if (!b || (b.stage || 0) <= 0 || b.stage >= 6){ return null; }
+		var nextStage = b.stage + 1;
+		var cfg = this.BEAST_AWAKEN_TIERS[nextStage];
+		if (!cfg){ return null; }
+		var mult = this.getBeastImprintCostMult();
+		var expDisc = 1 - Math.min(0.35, ((b.exp || 0) / 100) * 0.35);
+		var xyVal = Math.max(10, this.roundNice(cfg.xianyuan * mult * expDisc));
+		var auxVal = cfg.auxRes ? Math.max(4, this.roundNice(cfg.auxVal * mult * expDisc)) : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var auxObj = cfg.auxRes ? this.game.resPool.get(cfg.auxRes) : null;
+		var okXy = !!(xyObj && xyObj.value >= xyVal);
+		var okAux = !cfg.auxRes || !!(auxObj && auxObj.value >= auxVal);
+		var okDao = (this.daoyun || 0) >= (cfg.reqDaoyun || 0);
+		return {
+			nextStage: nextStage,
+			titleKey: cfg.titleKey,
+			xianyuan: xyVal,
+			auxRes: cfg.auxRes,
+			auxVal: auxVal,
+			reqDaoyun: cfg.reqDaoyun || 0,
+			affordable: !!(okXy && okAux && okDao)
+		};
+	},
+
+	awakenBeastBloodline: function(beastKey){
+		if (!this.immortalAscended){ return false; }
+		this.spiritNursery = this.normalizeSpiritNursery(this.spiritNursery);
+		var key = beastKey || this.spiritNursery.selectedBeast;
+		var def = this.getBeastDef(key);
+		var b = key ? this.spiritNursery.beasts[key] : null;
+		if (!def || !b || (b.stage || 0) <= 0 || b.stage >= 6){ return false; }
+		var req = this.getBeastAwakenReq(key);
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		if (req.auxRes && req.auxVal > 0){
+			this.game.resPool.addResEvent(req.auxRes, -req.auxVal);
+		}
+		b.stage = req.nextStage;
+		b.exp = req.nextStage >= 6 ? 100 : 0;
+		if (b.stage > (this.beastImprintTier || 0)){
+			this.beastImprintTier = b.stage;
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.menagerie.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Awakened [" + $I(def.labelKey) + "] to [" + $I(req.titleKey) + "]!")
+			: ("【真灵血脉破阶】混沌精血沸腾，【" + $I(def.labelKey) + "】成功觉醒至【" + $I(req.titleKey) + "】！");
+		this.spiritNursery.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	tickSpiritNursery: function(ticksDelta){
+		if (!this.immortalAscended || !this.spiritNursery){ return; }
+		var step = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
+		if (step <= 0){ return; }
+		var sealMult = 1 + Math.max(0, Math.floor(this.beastImprintTier || 0)) * 0.12;
+		var incStep = step * sealMult;
+		var dirty = false;
+		for (var i = 0; i < this.PRIMORDIAL_BEASTS.length; i++){
+			var k = this.PRIMORDIAL_BEASTS[i].key;
+			var b = this.spiritNursery.beasts[k];
+			if (!b){ continue; }
+			if (!b.incubating && b.stage === 0 && this.spiritNursery.autoNurture){
+				this.incubateSpiritBeast(k, false);
+			}
+			if (b.incubating && b.stage === 0){
+				b.incTicks = Math.min(b.incMax, (b.incTicks || 0) + incStep);
+				if (b.incTicks >= b.incMax){
+					b.incubating = false;
+					b.stage = 1;
+					b.exp = 0;
+					this._autoAssignBeastSlotOnHatch(k);
+					dirty = true;
+				}
+			} else if (b.stage > 0 && b.stage < 6 && this.spiritNursery.autoNurture){
+				var isDeployed = (this.spiritNursery.battleBeastKey === k || this.spiritNursery.gardenBeastKey === k);
+				if (isDeployed){
+					b.exp = Math.min(100, (b.exp || 0) + step * 0.08);
+					if (b.exp >= 100){
+						b.exp = b.stage + 1 >= 6 ? 100 : 0;
+						b.stage += 1;
+						if (b.stage > (this.beastImprintTier || 0)){
+							this.beastImprintTier = b.stage;
+						}
+						dirty = true;
+					}
+				}
+			}
+		}
+		if (dirty && this.game.updateCaches){
+			this.game.updateCaches();
+		}
+	},
+
+	getTotalSteleComprehension: function(){
+		if (!this.daoSteleForest || !this.daoSteleForest.levels){ return 0; }
+		var total = 0;
+		for (var i = 0; i < this.DAO_STELES.length; i++){
+			total += Math.max(0, Math.floor(this.daoSteleForest.levels[this.DAO_STELES[i].key] || 0));
+		}
+		return total;
+	},
+
+	getSteleResonanceTier: function(){
+		var total = this.getTotalSteleComprehension();
+		if (total >= 30){ return 3; }
+		if (total >= 15){ return 2; }
+		if (total >= 6){ return 1; }
+		return 0;
+	},
+
+	getDaoSteleRubbingReq: function(steleKey){
+		var def = this.getDaoSteleDef(steleKey);
+		if (!def){ return null; }
+		var sf = this.daoSteleForest || this.makeDefaultDaoSteleForest();
+		var curLv = Math.max(0, Math.floor(sf.levels[steleKey] || 0));
+		if (curLv >= 5){ return null; }
+		var nextLv = curLv + 1;
+		var caveB = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var daoDisc = (caveB && caveB.daoLawDiscount) ? Math.min(0.55, caveB.daoLawDiscount) : 0;
+		var impMult = this.getImprintCostMult();
+		var scale = Math.pow(1.75, curLv);
+		var xyVal = Math.max(8, this.roundNice(def.baseXy * scale * impMult * (1 - daoDisc * 0.5)));
+		var auxVal = Math.max(4, this.roundNice(def.baseAux * Math.pow(1.60, curLv) * impMult));
+		var reqDaoyun = nextLv <= 2 ? 1 : (nextLv - 1);
+		var xyObj = this.game.resPool.get("xianyuan");
+		var auxObj = this.game.resPool.get(def.auxRes);
+		var okXy = !!(xyObj && xyObj.value >= xyVal);
+		var okAux = !!(auxObj && auxObj.value >= auxVal);
+		var okDao = (this.daoyun || 0) >= reqDaoyun;
+		return {
+			nextLv: nextLv,
+			xianyuan: xyVal,
+			auxRes: def.auxRes,
+			auxVal: auxVal,
+			reqDaoyun: reqDaoyun,
+			affordable: !!(okXy && okAux && okDao)
+		};
+	},
+
+	comprehendDaoStele: function(steleKey){
+		if (!this.immortalAscended){ return false; }
+		this.daoSteleForest = this.normalizeDaoSteleForest(this.daoSteleForest);
+		var def = this.getDaoSteleDef(steleKey);
+		if (!def){ return false; }
+		var prevResTier = this.getSteleResonanceTier();
+		var req = this.getDaoSteleRubbingReq(steleKey);
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent(req.auxRes, -req.auxVal);
+		this.daoSteleForest.levels[steleKey] = req.nextLv;
+		this.daoSteleForest.totalRubbings = (this.daoSteleForest.totalRubbings || 0) + 1;
+		this.addDaoLawProgress(20 + req.nextLv * 5);
+		var newResTier = this.getSteleResonanceTier();
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.menagerie.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Comprehended [" + $I(def.labelKey) + "] to Lv." + req.nextLv + " (Total " + this.getTotalSteleComprehension() + "/30)" +
+				(newResTier > prevResTier ? (" — Stele Resonance Tier " + newResTier + " unlocked!") : "!"))
+			: ("【古碑拓印参悟】参透【" + $I(def.labelKey) + "】第 " + req.nextLv + " 重道纹（碑林总悟 " + this.getTotalSteleComprehension() + "/30）" +
+				(newResTier > prevResTier ? ("，激活第 " + newResTier + " 阶【碑林共鸣】！") : "！"));
+		this.daoSteleForest.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	// ---------------- XX-7 诸天星域游历飞舟（太虚星槎）与混沌鸿蒙灵宝祭坛 ----------------
+
+	TAIXU_VESSEL_TIERS: [
+		{tier: 0, titleKey: "cultivation.starship.tier.0", speedMult: 0, cargoMult: 0, shieldBonus: 0, xyBase: 0, xyRatio: 0},
+		{tier: 1, titleKey: "cultivation.starship.tier.1", xianyuan: 18, starchart: 12, auxRes: null, auxVal: 0, reqDaoyun: 0, speedMult: 1.00, cargoMult: 1.00, shieldBonus: 0.06, xyBase: 0.02, xyRatio: 0.08},
+		{tier: 2, titleKey: "cultivation.starship.tier.2", xianyuan: 36, starchart: 24, auxRes: "unobtainium", auxVal: 12, reqDaoyun: 1, speedMult: 1.30, cargoMult: 1.25, shieldBonus: 0.10, xyBase: 0.04, xyRatio: 0.15},
+		{tier: 3, titleKey: "cultivation.starship.tier.3", xianyuan: 68, starchart: 45, auxRes: "timeCrystal", auxVal: 18, reqDaoyun: 1, speedMult: 1.65, cargoMult: 1.55, shieldBonus: 0.15, xyBase: 0.07, xyRatio: 0.24},
+		{tier: 4, titleKey: "cultivation.starship.tier.4", xianyuan: 115, starchart: 75, auxRes: "relic", auxVal: 28, reqDaoyun: 2, speedMult: 2.05, cargoMult: 1.90, shieldBonus: 0.21, xyBase: 0.11, xyRatio: 0.35},
+		{tier: 5, titleKey: "cultivation.starship.tier.5", xianyuan: 180, starchart: 120, auxRes: "timeCrystal", auxVal: 45, reqDaoyun: 2, speedMult: 2.50, cargoMult: 2.35, shieldBonus: 0.28, xyBase: 0.16, xyRatio: 0.48},
+		{tier: 6, titleKey: "cultivation.starship.tier.6", xianyuan: 280, starchart: 180, auxRes: "unobtainium", auxVal: 70, reqDaoyun: 3, speedMult: 3.10, cargoMult: 2.90, shieldBonus: 0.36, xyBase: 0.22, xyRatio: 0.65}
+	],
+
+	STAR_REALMS: [
+		{
+			key: "ziwei",
+			labelKey: "cultivation.starship.realm.ziwei.label",
+			descKey: "cultivation.starship.realm.ziwei.desc",
+			art: "res/art/realm_ziwei_starfield.webp",
+			baseDistance: 80,
+			baseQi: 3,
+			baseIron: 1,
+			bonusXy: 14
+		},
+		{
+			key: "beiju",
+			labelKey: "cultivation.starship.realm.beiju.label",
+			descKey: "cultivation.starship.realm.beiju.desc",
+			art: "res/art/starship_taixu_vessel.webp",
+			baseDistance: 95,
+			baseQi: 2,
+			baseIron: 3,
+			bonusXy: 10
+		},
+		{
+			key: "guixu",
+			labelKey: "cultivation.starship.realm.guixu.label",
+			descKey: "cultivation.starship.realm.guixu.desc",
+			art: "res/art/realm_guixu_abyss.webp",
+			baseDistance: 115,
+			baseQi: 3,
+			baseIron: 3,
+			bonusXy: 18
+		}
+	],
+
+	HONGMENG_TREASURES: [
+		{
+			key: "kaitianSeal",
+			labelKey: "cultivation.hongmeng.item.kaitianSeal.label",
+			descKey: "cultivation.hongmeng.item.kaitianSeal.desc",
+			art: "res/art/treasure_kaitian_seal.webp",
+			baseQi: 2,
+			baseIron: 3,
+			baseXy: 15
+		},
+		{
+			key: "zaohuaJade",
+			labelKey: "cultivation.hongmeng.item.zaohuaJade.label",
+			descKey: "cultivation.hongmeng.item.zaohuaJade.desc",
+			art: "res/art/altar_hongmeng_forge.webp",
+			baseQi: 3,
+			baseIron: 2,
+			baseXy: 15
+		},
+		{
+			key: "xuanhuangPagoda",
+			labelKey: "cultivation.hongmeng.item.xuanhuangPagoda.label",
+			descKey: "cultivation.hongmeng.item.xuanhuangPagoda.desc",
+			art: "res/art/treasure_xuanhuang_pagoda.webp",
+			baseQi: 2,
+			baseIron: 2,
+			baseXy: 18
+		}
+	],
+
+	getVesselTierDef: function(tier){
+		var t = Math.max(0, Math.min(6, Math.floor(tier || 0)));
+		return this.TAIXU_VESSEL_TIERS[t] || this.TAIXU_VESSEL_TIERS[0];
+	},
+
+	getStarRealmDef: function(key){
+		for (var i = 0; i < this.STAR_REALMS.length; i++){
+			if (this.STAR_REALMS[i].key === key){ return this.STAR_REALMS[i]; }
+		}
+		return null;
+	},
+
+	getHongmengTreasureDef: function(key){
+		for (var i = 0; i < this.HONGMENG_TREASURES.length; i++){
+			if (this.HONGMENG_TREASURES[i].key === key){ return this.HONGMENG_TREASURES[i]; }
+		}
+		return null;
+	},
+
+	makeDefaultStarship: function(){
+		var mastery = {};
+		for (var i = 0; i < this.STAR_REALMS.length; i++){
+			mastery[this.STAR_REALMS[i].key] = 0;
+		}
+		return {
+			vesselTier: 0,
+			selectedRealm: "ziwei",
+			voyageProgress: 0,
+			voyageMax: 80,
+			voyageCount: 0,
+			autoVoyage: true,
+			hongmengQi: 0,
+			primordialIron: 0,
+			totalQiHarvested: 0,
+			totalIronHarvested: 0,
+			realmMastery: mastery,
+			lastNote: ""
+		};
+	},
+
+	normalizeStarship: function(raw){
+		var def = this.makeDefaultStarship();
+		if (!raw || typeof raw !== "object"){ return def; }
+		if (typeof raw.vesselTier === "number" && isFinite(raw.vesselTier)){
+			def.vesselTier = Math.min(6, Math.max(0, Math.floor(raw.vesselTier)));
+		}
+		if (typeof raw.selectedRealm === "string" && this.getStarRealmDef(raw.selectedRealm)){
+			def.selectedRealm = raw.selectedRealm;
+		}
+		var rDef = this.getStarRealmDef(def.selectedRealm) || this.STAR_REALMS[0];
+		def.voyageMax = rDef.baseDistance;
+		if (typeof raw.voyageProgress === "number" && isFinite(raw.voyageProgress)){
+			def.voyageProgress = Math.max(0, Math.min(def.voyageMax, raw.voyageProgress));
+		}
+		if (typeof raw.voyageCount === "number" && isFinite(raw.voyageCount)){
+			def.voyageCount = Math.max(0, Math.floor(raw.voyageCount));
+		}
+		if (typeof raw.autoVoyage === "boolean"){
+			def.autoVoyage = raw.autoVoyage;
+		}
+		if (typeof raw.hongmengQi === "number" && isFinite(raw.hongmengQi)){
+			def.hongmengQi = Math.max(0, Math.floor(raw.hongmengQi));
+		}
+		if (typeof raw.primordialIron === "number" && isFinite(raw.primordialIron)){
+			def.primordialIron = Math.max(0, Math.floor(raw.primordialIron));
+		}
+		def.totalQiHarvested = (typeof raw.totalQiHarvested === "number" && isFinite(raw.totalQiHarvested))
+			? Math.max(def.hongmengQi, Math.floor(raw.totalQiHarvested))
+			: def.hongmengQi;
+		def.totalIronHarvested = (typeof raw.totalIronHarvested === "number" && isFinite(raw.totalIronHarvested))
+			? Math.max(def.primordialIron, Math.floor(raw.totalIronHarvested))
+			: def.primordialIron;
+		if (raw.realmMastery && typeof raw.realmMastery === "object"){
+			for (var i = 0; i < this.STAR_REALMS.length; i++){
+				var rk = this.STAR_REALMS[i].key;
+				var mv = raw.realmMastery[rk];
+				if (typeof mv === "number" && isFinite(mv)){
+					def.realmMastery[rk] = Math.min(10, Math.max(0, Math.floor(mv)));
+				}
+			}
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	makeDefaultHongmengAltar: function(){
+		var treasures = {};
+		for (var i = 0; i < this.HONGMENG_TREASURES.length; i++){
+			treasures[this.HONGMENG_TREASURES[i].key] = 0;
+		}
+		return {
+			treasures: treasures,
+			totalForges: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeHongmengAltar: function(raw){
+		var def = this.makeDefaultHongmengAltar();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var sum = 0;
+		if (raw.treasures && typeof raw.treasures === "object"){
+			for (var i = 0; i < this.HONGMENG_TREASURES.length; i++){
+				var tk = this.HONGMENG_TREASURES[i].key;
+				var tv = raw.treasures[tk];
+				if (typeof tv === "number" && isFinite(tv)){
+					def.treasures[tk] = Math.min(6, Math.max(0, Math.floor(tv)));
+				}
+				sum += def.treasures[tk];
+			}
+		}
+		def.totalForges = (typeof raw.totalForges === "number" && isFinite(raw.totalForges))
+			? Math.max(sum, Math.floor(raw.totalForges))
+			: sum;
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	getHongmengImprintCostMult: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.hongmengImprintTier || 0)));
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		return Math.max(0.55, 1 - seal * 0.06 - imp * 0.015);
+	},
+
+	getHongmengStartingQi: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.hongmengImprintTier || 0)));
+		return seal * 4;
+	},
+
+	getHongmengDaoBonus: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.hongmengImprintTier || 0)));
+		if (seal <= 0){
+			return {tier: 0, xiuweiBase: 0, xiuweiRatio: 0};
+		}
+		return {
+			tier: seal,
+			xiuweiBase: seal * 0.20,
+			xiuweiRatio: seal * 0.10
+		};
+	},
+
+	syncHongmengImprintTier: function(){
+		var peak = Math.max(0, Math.floor(this.hongmengImprintTier || 0));
+		if (this.starship && (this.starship.vesselTier || 0) > peak){
+			peak = Math.floor(this.starship.vesselTier);
+		}
+		if (this.hongmengAltar && this.hongmengAltar.treasures){
+			for (var i = 0; i < this.HONGMENG_TREASURES.length; i++){
+				var tk = this.HONGMENG_TREASURES[i].key;
+				var tv = this.hongmengAltar.treasures[tk] || 0;
+				if (tv > peak){ peak = Math.floor(tv); }
+			}
+		}
+		this.hongmengImprintTier = Math.min(6, peak);
+		return this.hongmengImprintTier;
+	},
+
+	getStarshipUpgradeReq: function(){
+		var ss = this.starship || this.makeDefaultStarship();
+		if ((ss.vesselTier || 0) >= 6){ return null; }
+		var nextTier = (ss.vesselTier || 0) + 1;
+		var cfg = this.TAIXU_VESSEL_TIERS[nextTier];
+		if (!cfg){ return null; }
+		var mult = this.getHongmengImprintCostMult();
+		var xyCost = Math.max(8, this.roundNice(cfg.xianyuan * mult));
+		var scCost = cfg.starchart > 0 ? Math.max(5, this.roundNice(cfg.starchart * mult)) : 0;
+		var auxCost = (cfg.auxRes && cfg.auxVal > 0) ? Math.max(4, this.roundNice(cfg.auxVal * mult)) : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var scObj = scCost > 0 ? this.game.resPool.get("starchart") : null;
+		var auxObj = cfg.auxRes ? this.game.resPool.get(cfg.auxRes) : null;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okSc = scCost <= 0 || !!(scObj && scObj.value >= scCost);
+		var okAux = !cfg.auxRes || auxCost <= 0 || !!(auxObj && auxObj.value >= auxCost);
+		var okLaw = (this.daoyun || 0) >= (cfg.reqDaoyun || 0);
+		return {
+			nextTier: nextTier,
+			titleKey: cfg.titleKey,
+			xianyuan: xyCost,
+			starchart: scCost,
+			auxRes: cfg.auxRes,
+			auxVal: auxCost,
+			reqDaoyun: cfg.reqDaoyun || 0,
+			affordable: !!(okXy && okSc && okAux && okLaw)
+		};
+	},
+
+	upgradeStarship: function(){
+		if (!this.immortalAscended){ return false; }
+		this.starship = this.normalizeStarship(this.starship);
+		var req = this.getStarshipUpgradeReq();
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		if (req.starchart > 0){
+			this.game.resPool.addResEvent("starchart", -req.starchart);
+		}
+		if (req.auxRes && req.auxVal > 0){
+			this.game.resPool.addResEvent(req.auxRes, -req.auxVal);
+		}
+		this.starship.vesselTier = req.nextTier;
+		this.syncHongmengImprintTier();
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.cosmos.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Taixu Star-Ark upgraded to [" + $I(req.titleKey) + "]!")
+			: ("【太虚星槎晋阶】仙家龙骨淬炼功成，飞舟晋升至【" + $I(req.titleKey) + "】！");
+		this.starship.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	constructStarship: function(){
+		return this.upgradeStarship();
+	},
+
+	selectStarRealm: function(realmKey){
+		if (!this.immortalAscended){ return false; }
+		var rDef = this.getStarRealmDef(realmKey);
+		if (!rDef){ return false; }
+		this.starship = this.normalizeStarship(this.starship);
+		var prevMax = Math.max(1, this.starship.voyageMax || 80);
+		var ratio = Math.max(0, Math.min(0.99, (this.starship.voyageProgress || 0) / prevMax));
+		this.starship.selectedRealm = realmKey;
+		this.starship.voyageMax = rDef.baseDistance;
+		this.starship.voyageProgress = Math.floor(rDef.baseDistance * ratio);
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.cosmos.badge") || "").indexOf("Immortal") === 0;
+		this.starship.lastNote = isEn
+			? ("Set Star-Ark course toward [" + $I(rDef.labelKey) + "].")
+			: ("【星槎转舵】太虚罗盘已锁定航向【" + $I(rDef.labelKey) + "】。");
+		return true;
+	},
+
+	toggleStarshipAutoVoyage: function(){
+		if (!this.immortalAscended){ return false; }
+		this.starship = this.normalizeStarship(this.starship);
+		this.starship.autoVoyage = !this.starship.autoVoyage;
+		return this.starship.autoVoyage;
+	},
+
+	getStarDriveSurgeCost: function(){
+		return Math.max(6, Math.round(12 * this.getHongmengImprintCostMult()));
+	},
+
+	getStarshipVoyagePreview: function(realmKeyOpt){
+		var ss = this.starship || this.makeDefaultStarship();
+		var rKey = realmKeyOpt || ss.selectedRealm || "ziwei";
+		var rDef = this.getStarRealmDef(rKey) || this.STAR_REALMS[0];
+		var vCfg = this.getVesselTierDef(ss.vesselTier || 0);
+		var zxVoy = this.getZixiaoVoyageBonuses ? this.getZixiaoVoyageBonuses() : {yieldMult: 1, speedMult: 1};
+		var cargoM = Math.max(1, vCfg.cargoMult || 1) * (zxVoy.yieldMult || 1);
+		var mastery = (ss.realmMastery && ss.realmMastery[rDef.key]) ? ss.realmMastery[rDef.key] : 0;
+		var mastMult = 1 + mastery * 0.06;
+		var qiGain = Math.max(1, Math.round(rDef.baseQi * cargoM * mastMult));
+		var ironGain = Math.max(1, Math.round(rDef.baseIron * cargoM * mastMult));
+		var xyGain = Math.max(4, Math.round(rDef.bonusXy * cargoM * mastMult));
+		var sealMult = 1 + Math.max(0, Math.floor(this.hongmengImprintTier || 0)) * 0.08;
+		var speedPerTick = ((ss.vesselTier || 0) > 0) ? (1.25 * (vCfg.speedMult || 1) * sealMult * (zxVoy.speedMult || 1)) : 0;
+		return {
+			realmKey: rDef.key,
+			qiGain: qiGain,
+			ironGain: ironGain,
+			xyGain: xyGain,
+			distance: rDef.baseDistance,
+			speedPerTick: speedPerTick
+		};
+	},
+
+	completeStarshipVoyage: function(fromSurge){
+		this.starship = this.normalizeStarship(this.starship);
+		if (!this.immortalAscended || (this.starship.vesselTier || 0) <= 0){ return null; }
+		var rKey = this.starship.selectedRealm || "ziwei";
+		var rDef = this.getStarRealmDef(rKey) || this.STAR_REALMS[0];
+		var prev = this.getStarshipVoyagePreview(rDef.key);
+		this.starship.hongmengQi = (this.starship.hongmengQi || 0) + prev.qiGain;
+		this.starship.primordialIron = (this.starship.primordialIron || 0) + prev.ironGain;
+		this.starship.totalQiHarvested = (this.starship.totalQiHarvested || 0) + prev.qiGain;
+		this.starship.totalIronHarvested = (this.starship.totalIronHarvested || 0) + prev.ironGain;
+		this.starship.voyageCount = (this.starship.voyageCount || 0) + 1;
+		var curMast = this.starship.realmMastery[rDef.key] || 0;
+		if (curMast < 10){
+			this.starship.realmMastery[rDef.key] = curMast + 1;
+		}
+		var xyRes = this.game.resPool.get("xianyuan");
+		if (xyRes){ xyRes.unlocked = true; }
+		this.game.resPool.addResEvent("xianyuan", prev.xyGain);
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.cosmos.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Voyage across [" + $I(rDef.labelKey) + "] complete! +" + prev.qiGain + " Hongmeng Qi, +" + prev.ironGain + " Primordial Iron, +" + prev.xyGain + " Essence!")
+			: ("【星域巡航凯旋】太虚星槎横渡【" + $I(rDef.labelKey) + "】归来！采得鸿蒙紫气 +" + prev.qiGain + " · 太初神铁 +" + prev.ironGain + " · 仙元 +" + prev.xyGain + "！");
+		this.starship.lastNote = note;
+		if (fromSurge){
+			this.game.msg(note, "notice");
+		}
+		return prev;
+	},
+
+	surgeStarshipVoyage: function(){
+		if (!this.immortalAscended){ return false; }
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.starship.vesselTier || 0) <= 0){ return false; }
+		var cost = this.getStarDriveSurgeCost();
+		var xyObj = this.game.resPool.get("xianyuan");
+		if (!xyObj || xyObj.value < cost){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -cost);
+		var vCfg = this.getVesselTierDef(this.starship.vesselTier);
+		var surgeAmt = Math.max(45, Math.round(55 * (vCfg.speedMult || 1)));
+		this.starship.voyageProgress = (this.starship.voyageProgress || 0) + surgeAmt;
+		var completed = false;
+		var maxDist = Math.max(1, this.starship.voyageMax || 80);
+		while (this.starship.voyageProgress >= maxDist){
+			this.starship.voyageProgress -= maxDist;
+			this.completeStarshipVoyage(true);
+			completed = true;
+		}
+		if (!completed){
+			var pct = Math.min(99, Math.round((this.starship.voyageProgress / maxDist) * 100));
+			var isEn = String($I("cultivation.cosmos.badge") || "").indexOf("Immortal") === 0;
+			this.starship.lastNote = isEn
+				? ("Star-Drive Surge propelled voyage to " + pct + "%!")
+				: ("【催动星槎巡航】仙元灌注风帆，当前星域航程推进至 " + pct + "%！");
+		}
+		return true;
+	},
+
+	tickStarship: function(ticksDelta){
+		if (!this.immortalAscended || !this.starship){ return; }
+		if ((this.starship.vesselTier || 0) <= 0 || !this.starship.autoVoyage){ return; }
+		var dt = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
+		if (dt <= 0){ return; }
+		var prev = this.getStarshipVoyagePreview(this.starship.selectedRealm);
+		if (prev.speedPerTick <= 0){ return; }
+		this.starship.voyageProgress = (this.starship.voyageProgress || 0) + dt * prev.speedPerTick;
+		var maxDist = Math.max(1, this.starship.voyageMax || 80);
+		var guard = 0;
+		while (this.starship.voyageProgress >= maxDist && guard < 8){
+			this.starship.voyageProgress -= maxDist;
+			this.completeStarshipVoyage(false);
+			guard++;
+		}
+		if (this.starship.voyageProgress >= maxDist){
+			this.starship.voyageProgress = maxDist - 1;
+		}
+	},
+
+	getHongmengMaxTier: function(){
+		if (!this.hongmengAltar || !this.hongmengAltar.treasures){ return 0; }
+		var maxT = 0;
+		for (var i = 0; i < this.HONGMENG_TREASURES.length; i++){
+			var t = this.hongmengAltar.treasures[this.HONGMENG_TREASURES[i].key] || 0;
+			if (t > maxT){ maxT = t; }
+		}
+		return maxT;
+	},
+
+	getHongmengMinTier: function(){
+		if (!this.hongmengAltar || !this.hongmengAltar.treasures){ return 0; }
+		var minT = 6;
+		for (var i = 0; i < this.HONGMENG_TREASURES.length; i++){
+			var t = this.hongmengAltar.treasures[this.HONGMENG_TREASURES[i].key] || 0;
+			if (t < minT){ minT = t; }
+		}
+		return minT;
+	},
+
+	getHongmengTotalTier: function(){
+		if (!this.hongmengAltar || !this.hongmengAltar.treasures){ return 0; }
+		var sum = 0;
+		for (var i = 0; i < this.HONGMENG_TREASURES.length; i++){
+			sum += Math.max(0, Math.floor(this.hongmengAltar.treasures[this.HONGMENG_TREASURES[i].key] || 0));
+		}
+		return sum;
+	},
+
+	getHongmengResonanceTier: function(){
+		var minT = this.getHongmengMinTier();
+		if (minT >= 6){ return 3; }
+		if (minT >= 3){ return 2; }
+		if (minT >= 1){ return 1; }
+		return 0;
+	},
+
+	hasTriTreasureResonance: function(){
+		return this.getHongmengResonanceTier() >= 1;
+	},
+
+	getHongmengForgeReq: function(treasureKey){
+		var def = this.getHongmengTreasureDef(treasureKey);
+		if (!def){ return null; }
+		var ha = this.hongmengAltar || this.makeDefaultHongmengAltar();
+		var ss = this.starship || this.makeDefaultStarship();
+		var curTier = ha.treasures[treasureKey] || 0;
+		if (curTier >= 6){ return null; }
+		var nextTier = curTier + 1;
+		var mult = this.getHongmengImprintCostMult();
+		var qiCost = Math.max(1, Math.round((def.baseQi + (nextTier - 1) * 2) * mult));
+		var ironCost = Math.max(1, Math.round((def.baseIron + (nextTier - 1) * 2) * mult));
+		var xyCost = Math.max(8, this.roundNice(def.baseXy * Math.pow(1.42, nextTier - 1) * mult));
+		var reqDaoyun = Math.floor(nextTier / 2);
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okQi = (ss.hongmengQi || 0) >= qiCost;
+		var okIron = (ss.primordialIron || 0) >= ironCost;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okLaw = (this.daoyun || 0) >= reqDaoyun;
+		return {
+			treasureKey: treasureKey,
+			nextTier: nextTier,
+			hongmengQi: qiCost,
+			primordialIron: ironCost,
+			xianyuan: xyCost,
+			reqDaoyun: reqDaoyun,
+			affordable: !!(okQi && okIron && okXy && okLaw)
+		};
+	},
+
+	forgeHongmengTreasure: function(treasureKey){
+		if (!this.immortalAscended){ return false; }
+		this.starship = this.normalizeStarship(this.starship);
+		this.hongmengAltar = this.normalizeHongmengAltar(this.hongmengAltar);
+		var def = this.getHongmengTreasureDef(treasureKey);
+		if (!def){ return false; }
+		var prevRes = this.getHongmengResonanceTier();
+		var req = this.getHongmengForgeReq(treasureKey);
+		if (!req || !req.affordable){ return false; }
+		this.starship.hongmengQi = Math.max(0, (this.starship.hongmengQi || 0) - req.hongmengQi);
+		this.starship.primordialIron = Math.max(0, (this.starship.primordialIron || 0) - req.primordialIron);
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.hongmengAltar.treasures[treasureKey] = req.nextTier;
+		this.hongmengAltar.totalForges = (this.hongmengAltar.totalForges || 0) + 1;
+		this.syncHongmengImprintTier();
+		this.addDaoLawProgress(22 + req.nextTier * 6);
+		var newRes = this.getHongmengResonanceTier();
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.cosmos.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Tempered [" + $I(def.labelKey) + "] to Tier " + req.nextTier + "/6" +
+				(newRes > prevRes ? (" — Tri-Treasure Hongmeng Resonance Tier " + newRes + " awakened!") : "!"))
+			: ("【混沌祭坛淬宝】【" + $I(def.labelKey) + "】晋升至第 " + req.nextTier + "/6 阶" +
+				(newRes > prevRes ? ("，激发第 " + newRes + " 重【三宝鸿蒙开天共鸣】！") : "！"));
+		this.hongmengAltar.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	// ---------------- XX-8 混沌紫霄讲道坛与三千大道神通法相 ----------------
+
+	ZIXIAO_ALTAR_TIERS: [
+		{tier: 0, titleKey: "cultivation.zixiao.tier.0", sutraMult: 0, lectureSpeed: 0, xyBase: 0, xyRatio: 0, herbSpeed: 0, voyageYield: 0},
+		{tier: 1, titleKey: "cultivation.zixiao.tier.1", xianyuan: 20, relic: 12, auxRes: null, auxVal: 0, reqDaoyun: 0, sutraMult: 1.00, lectureSpeed: 1.00, xyBase: 0.03, xyRatio: 0.10, herbSpeed: 0.10, voyageYield: 0.10},
+		{tier: 2, titleKey: "cultivation.zixiao.tier.2", xianyuan: 42, relic: 24, auxRes: "starchart", auxVal: 16, reqDaoyun: 1, sutraMult: 1.30, lectureSpeed: 1.30, xyBase: 0.06, xyRatio: 0.18, herbSpeed: 0.18, voyageYield: 0.18},
+		{tier: 3, titleKey: "cultivation.zixiao.tier.3", xianyuan: 78, relic: 45, auxRes: "timeCrystal", auxVal: 20, reqDaoyun: 1, sutraMult: 1.65, lectureSpeed: 1.65, xyBase: 0.10, xyRatio: 0.28, herbSpeed: 0.28, voyageYield: 0.28},
+		{tier: 4, titleKey: "cultivation.zixiao.tier.4", xianyuan: 130, relic: 72, auxRes: "unobtainium", auxVal: 30, reqDaoyun: 2, sutraMult: 2.05, lectureSpeed: 2.05, xyBase: 0.15, xyRatio: 0.40, herbSpeed: 0.40, voyageYield: 0.40},
+		{tier: 5, titleKey: "cultivation.zixiao.tier.5", xianyuan: 210, relic: 110, auxRes: "timeCrystal", auxVal: 48, reqDaoyun: 2, sutraMult: 2.55, lectureSpeed: 2.50, xyBase: 0.22, xyRatio: 0.55, herbSpeed: 0.54, voyageYield: 0.54},
+		{tier: 6, titleKey: "cultivation.zixiao.tier.6", xianyuan: 320, relic: 165, auxRes: "unobtainium", auxVal: 75, reqDaoyun: 3, sutraMult: 3.20, lectureSpeed: 3.10, xyBase: 0.30, xyRatio: 0.72, herbSpeed: 0.70, voyageYield: 0.70}
+	],
+
+	DHARMA_IDOLS: [
+		{
+			key: "cosmicGiant",
+			labelKey: "cultivation.dharma.item.cosmicGiant.label",
+			descKey: "cultivation.dharma.item.cosmicGiant.desc",
+			art: "res/art/dharma_cosmic_giant.webp",
+			baseSutras: 3,
+			baseXy: 22,
+			baseQi: 1
+		},
+		{
+			key: "threePure",
+			labelKey: "cultivation.dharma.item.threePure.label",
+			descKey: "cultivation.dharma.item.threePure.desc",
+			art: "res/art/dharma_three_pure.webp",
+			baseSutras: 3,
+			baseXy: 22,
+			baseQi: 1
+		},
+		{
+			key: "zhuxianSwords",
+			labelKey: "cultivation.dharma.item.zhuxianSwords.label",
+			descKey: "cultivation.dharma.item.zhuxianSwords.desc",
+			art: "res/art/dharma_zhuxian_swords.webp",
+			baseSutras: 4,
+			baseXy: 26,
+			baseQi: 1
+		},
+		{
+			key: "samsaraLotus",
+			labelKey: "cultivation.dharma.item.samsaraLotus.label",
+			descKey: "cultivation.dharma.item.samsaraLotus.desc",
+			art: "res/art/dharma_samsara_lotus.webp",
+			baseSutras: 3,
+			baseXy: 24,
+			baseQi: 1
+		}
+	],
+
+	getZixiaoAltarTierDef: function(tier){
+		var t = Math.max(0, Math.min(6, Math.floor(tier || 0)));
+		return this.ZIXIAO_ALTAR_TIERS[t] || this.ZIXIAO_ALTAR_TIERS[0];
+	},
+
+	getDharmaIdolDef: function(key){
+		for (var i = 0; i < this.DHARMA_IDOLS.length; i++){
+			if (this.DHARMA_IDOLS[i].key === key){ return this.DHARMA_IDOLS[i]; }
+		}
+		return null;
+	},
+
+	makeDefaultZixiaoAltar: function(){
+		return {
+			tier: 0,
+			daoSutras: 0,
+			totalSutrasCondensed: 0,
+			comprehension: 0,
+			lectureProgress: 0,
+			lectureMax: 100,
+			lectureCount: 0,
+			hongmengLectureCount: 0,
+			autoLecture: true,
+			lastNote: ""
+		};
+	},
+
+	normalizeZixiaoAltar: function(raw){
+		var def = this.makeDefaultZixiaoAltar();
+		if (!raw || typeof raw !== "object"){ return def; }
+		if (typeof raw.tier === "number" && isFinite(raw.tier)){
+			def.tier = Math.min(6, Math.max(0, Math.floor(raw.tier)));
+		}
+		if (typeof raw.daoSutras === "number" && isFinite(raw.daoSutras)){
+			def.daoSutras = Math.max(0, Math.floor(raw.daoSutras));
+		}
+		def.totalSutrasCondensed = (typeof raw.totalSutrasCondensed === "number" && isFinite(raw.totalSutrasCondensed))
+			? Math.max(def.daoSutras, Math.floor(raw.totalSutrasCondensed))
+			: def.daoSutras;
+		if (typeof raw.comprehension === "number" && isFinite(raw.comprehension)){
+			def.comprehension = Math.max(0, Math.floor(raw.comprehension));
+		}
+		if (typeof raw.lectureProgress === "number" && isFinite(raw.lectureProgress)){
+			def.lectureProgress = Math.max(0, Math.min(100, raw.lectureProgress));
+		}
+		if (typeof raw.lectureCount === "number" && isFinite(raw.lectureCount)){
+			def.lectureCount = Math.max(0, Math.floor(raw.lectureCount));
+		}
+		if (typeof raw.hongmengLectureCount === "number" && isFinite(raw.hongmengLectureCount)){
+			def.hongmengLectureCount = Math.max(0, Math.floor(raw.hongmengLectureCount));
+		}
+		if (typeof raw.autoLecture === "boolean"){
+			def.autoLecture = raw.autoLecture;
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	syncDaoSutras: function(){
+		this.daoSutras = (this.zixiaoAltar && typeof this.zixiaoAltar.daoSutras === "number")
+			? Math.max(0, Math.floor(this.zixiaoAltar.daoSutras))
+			: 0;
+		return this.daoSutras;
+	},
+
+	makeDefaultDharmaIdols: function(){
+		var levels = {};
+		for (var i = 0; i < this.DHARMA_IDOLS.length; i++){
+			levels[this.DHARMA_IDOLS[i].key] = 0;
+		}
+		return {
+			levels: levels,
+			primaryKey: null,
+			supportKey: null,
+			totalRefinements: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeDharmaIdols: function(raw){
+		var def = this.makeDefaultDharmaIdols();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var sum = 0;
+		if (raw.levels && typeof raw.levels === "object"){
+			for (var i = 0; i < this.DHARMA_IDOLS.length; i++){
+				var ik = this.DHARMA_IDOLS[i].key;
+				var lv = raw.levels[ik];
+				if (typeof lv === "number" && isFinite(lv)){
+					def.levels[ik] = Math.min(6, Math.max(0, Math.floor(lv)));
+				}
+				sum += def.levels[ik];
+			}
+		}
+		if (typeof raw.primaryKey === "string" && this.getDharmaIdolDef(raw.primaryKey) && def.levels[raw.primaryKey] > 0){
+			def.primaryKey = raw.primaryKey;
+		}
+		if (typeof raw.supportKey === "string" && this.getDharmaIdolDef(raw.supportKey) && def.levels[raw.supportKey] > 0 && raw.supportKey !== def.primaryKey){
+			def.supportKey = raw.supportKey;
+		}
+		def.totalRefinements = (typeof raw.totalRefinements === "number" && isFinite(raw.totalRefinements))
+			? Math.max(sum, Math.floor(raw.totalRefinements))
+			: sum;
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	getDharmaImprintCostMult: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.dharmaImprintTier || 0)));
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		return Math.max(0.55, 1 - seal * 0.06 - imp * 0.015);
+	},
+
+	getDharmaStartingSutras: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.dharmaImprintTier || 0)));
+		return seal * 5;
+	},
+
+	getDharmaDaoBonus: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.dharmaImprintTier || 0)));
+		if (seal <= 0){
+			return {tier: 0, xiuweiBase: 0, xiuweiRatio: 0, zhenyuanRatio: 0};
+		}
+		return {
+			tier: seal,
+			xiuweiBase: seal * 0.25,
+			xiuweiRatio: seal * 0.12,
+			zhenyuanRatio: seal * 0.04
+		};
+	},
+
+	syncDharmaImprintTier: function(){
+		var peak = Math.max(0, Math.floor(this.dharmaImprintTier || 0));
+		if (this.zixiaoAltar && (this.zixiaoAltar.tier || 0) > peak){
+			peak = Math.floor(this.zixiaoAltar.tier);
+		}
+		if (this.dharmaIdols && this.dharmaIdols.levels){
+			for (var i = 0; i < this.DHARMA_IDOLS.length; i++){
+				var ik = this.DHARMA_IDOLS[i].key;
+				var lv = this.dharmaIdols.levels[ik] || 0;
+				if (lv > peak){ peak = Math.floor(lv); }
+			}
+		}
+		this.dharmaImprintTier = Math.min(6, peak);
+		return this.dharmaImprintTier;
+	},
+
+	getZixiaoComprehensionRank: function(){
+		var za = this.zixiaoAltar;
+		if (!za){ return 0; }
+		return Math.min(12, Math.floor((za.comprehension || 0) / 25));
+	},
+
+	getZixiaoAuraBonuses: function(){
+		if (!this.immortalAscended){
+			return {xyBase: 0, xyRatio: 0, xiuweiRatio: 0, herbSpeed: 0, herbYield: 0, voyageYield: 0, voyageSpeed: 0};
+		}
+		var za = this.zixiaoAltar;
+		var tier = (za && za.tier) ? za.tier : 0;
+		var cfg = this.getZixiaoAltarTierDef(tier);
+		var comp = (za && za.comprehension) ? za.comprehension : 0;
+		var compSteps = Math.min(15, comp / 20);
+		var xyBase = (cfg.xyBase || 0) + compSteps * 0.015;
+		var xyRatio = (cfg.xyRatio || 0) + compSteps * 0.05;
+		var xiuweiRatio = tier * 0.14 + compSteps * 0.06;
+		var herbSpeed = (cfg.herbSpeed || 0) + compSteps * 0.045;
+		var herbYield = tier * 0.03 + compSteps * 0.015;
+		var voyageYield = (cfg.voyageYield || 0) + compSteps * 0.045;
+		var voyageSpeed = tier * 0.05;
+
+		var dm = this.dharmaIdols;
+		if (dm && dm.levels){
+			var tpLv = dm.levels.threePure || 0;
+			if (tpLv > 0){
+				voyageSpeed += 0.14 * tpLv * this.getDharmaSlotWeight("threePure");
+			}
+			var dRes = this.getDharmaResonanceTier();
+			if (dRes >= 1){ voyageYield += 0.12; voyageSpeed += 0.12; }
+			if (dRes >= 2){ voyageYield += 0.18; voyageSpeed += 0.18; }
+			if (dRes >= 3){ voyageYield += 0.25; voyageSpeed += 0.25; }
+		}
+		return {
+			xyBase: xyBase,
+			xyRatio: xyRatio,
+			xiuweiRatio: xiuweiRatio,
+			herbSpeed: herbSpeed,
+			herbYield: herbYield,
+			voyageYield: voyageYield,
+			voyageSpeed: voyageSpeed
+		};
+	},
+
+	getZixiaoVoyageBonuses: function(){
+		var aura = this.getZixiaoAuraBonuses();
+		return {
+			yieldBonus: aura.voyageYield,
+			speedBonus: aura.voyageSpeed,
+			yieldMult: 1 + aura.voyageYield,
+			speedMult: 1 + aura.voyageSpeed
+		};
+	},
+
+	getZixiaoUpgradeReq: function(){
+		var za = this.zixiaoAltar || this.makeDefaultZixiaoAltar();
+		if ((za.tier || 0) >= 6){ return null; }
+		var nextTier = (za.tier || 0) + 1;
+		var cfg = this.ZIXIAO_ALTAR_TIERS[nextTier];
+		if (!cfg){ return null; }
+		var mult = this.getDharmaImprintCostMult();
+		var xyCost = Math.max(8, this.roundNice(cfg.xianyuan * mult));
+		var rlCost = cfg.relic > 0 ? Math.max(5, this.roundNice(cfg.relic * mult)) : 0;
+		var auxCost = (cfg.auxRes && cfg.auxVal > 0) ? Math.max(4, this.roundNice(cfg.auxVal * mult)) : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var rlObj = rlCost > 0 ? this.game.resPool.get("relic") : null;
+		var auxObj = cfg.auxRes ? this.game.resPool.get(cfg.auxRes) : null;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okRl = rlCost <= 0 || !!(rlObj && rlObj.value >= rlCost);
+		var okAux = !cfg.auxRes || auxCost <= 0 || !!(auxObj && auxObj.value >= auxCost);
+		var okLaw = (this.daoyun || 0) >= (cfg.reqDaoyun || 0);
+		return {
+			nextTier: nextTier,
+			titleKey: cfg.titleKey,
+			xianyuan: xyCost,
+			relic: rlCost,
+			auxRes: cfg.auxRes,
+			auxVal: auxCost,
+			reqDaoyun: cfg.reqDaoyun || 0,
+			affordable: !!(okXy && okRl && okAux && okLaw)
+		};
+	},
+
+	upgradeZixiaoAltar: function(){
+		if (!this.immortalAscended){ return false; }
+		this.zixiaoAltar = this.normalizeZixiaoAltar(this.zixiaoAltar);
+		var req = this.getZixiaoUpgradeReq();
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		if (req.relic > 0){
+			this.game.resPool.addResEvent("relic", -req.relic);
+		}
+		if (req.auxRes && req.auxVal > 0){
+			this.game.resPool.addResEvent(req.auxRes, -req.auxVal);
+		}
+		this.zixiaoAltar.tier = req.nextTier;
+		this.syncDharmaImprintTier();
+		this.syncDaoSutras();
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.zixiao.panel.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Zixiao Dao Lecture Altar upgraded to [" + $I(req.titleKey) + "]!")
+			: ("【紫霄道坛晋阶】紫气庆云垂拱，讲道圣坛晋升至【" + $I(req.titleKey) + "】！");
+		this.zixiaoAltar.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	constructZixiaoAltar: function(){
+		return this.upgradeZixiaoAltar();
+	},
+
+	toggleZixiaoAutoLecture: function(){
+		if (!this.immortalAscended){ return false; }
+		this.zixiaoAltar = this.normalizeZixiaoAltar(this.zixiaoAltar);
+		this.zixiaoAltar.autoLecture = !this.zixiaoAltar.autoLecture;
+		return this.zixiaoAltar.autoLecture;
+	},
+
+	getDaoLecturePreview: function(mode){
+		var za = this.zixiaoAltar || this.makeDefaultZixiaoAltar();
+		var ss = this.starship || this.makeDefaultStarship();
+		var tier = za.tier || 0;
+		var cfg = this.getZixiaoAltarTierDef(tier);
+		var mult = this.getDharmaImprintCostMult();
+		var compRank = this.getZixiaoComprehensionRank();
+		var sutraScale = Math.max(1, cfg.sutraMult || 1) * (1 + compRank * 0.05);
+		var isHm = (mode === "hongmeng");
+		var xyCost = isHm
+			? Math.max(6, Math.round(14 * mult))
+			: Math.max(8, Math.round(16 * mult));
+		var qiCost = isHm ? Math.max(1, Math.round(2 * mult)) : 0;
+		var sutraGain = isHm
+			? Math.max(5, Math.round(5 * sutraScale))
+			: Math.max(2, Math.round(2 * sutraScale));
+		var compGain = isHm
+			? Math.max(22, Math.round(26 * (cfg.sutraMult || 1)))
+			: Math.max(10, Math.round(12 * (cfg.sutraMult || 1)));
+		var lawProg = isHm ? (34 + tier * 6) : (16 + tier * 4);
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okTier = tier >= 1;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okQi = qiCost <= 0 || ((ss.hongmengQi || 0) >= qiCost);
+		return {
+			mode: isHm ? "hongmeng" : "essence",
+			xianyuan: xyCost,
+			hongmengQi: qiCost,
+			sutraGain: sutraGain,
+			compGain: compGain,
+			lawProg: lawProg,
+			affordable: !!(this.immortalAscended && okTier && okXy && okQi)
+		};
+	},
+
+	holdDaoLecture: function(mode){
+		if (!this.immortalAscended){ return false; }
+		this.zixiaoAltar = this.normalizeZixiaoAltar(this.zixiaoAltar);
+		this.starship = this.normalizeStarship(this.starship);
+		if ((this.zixiaoAltar.tier || 0) <= 0){ return false; }
+		var prev = this.getDaoLecturePreview(mode);
+		if (!prev.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -prev.xianyuan);
+		if (prev.hongmengQi > 0){
+			this.starship.hongmengQi = Math.max(0, (this.starship.hongmengQi || 0) - prev.hongmengQi);
+		}
+		this.zixiaoAltar.daoSutras = (this.zixiaoAltar.daoSutras || 0) + prev.sutraGain;
+		this.zixiaoAltar.totalSutrasCondensed = (this.zixiaoAltar.totalSutrasCondensed || 0) + prev.sutraGain;
+		this.zixiaoAltar.comprehension = (this.zixiaoAltar.comprehension || 0) + prev.compGain;
+		this.zixiaoAltar.lectureCount = (this.zixiaoAltar.lectureCount || 0) + 1;
+		if (prev.mode === "hongmeng"){
+			this.zixiaoAltar.hongmengLectureCount = (this.zixiaoAltar.hongmengLectureCount || 0) + 1;
+		}
+		this.syncDaoSutras();
+		this.addDaoLawProgress(prev.lawProg);
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.zixiao.panel.badge") || "").indexOf("Immortal") === 0;
+		var note = (prev.mode === "hongmeng")
+			? (isEn
+				? ("Hongmeng Symposium complete! Condensed +" + prev.sutraGain + " Jade Sutras & +" + prev.compGain + " Dao Insight!")
+				: ("【鸿蒙论道圆满】紫气演法口吐金莲，凝练三千大道玉简 +" + prev.sutraGain + " · 悟道真解 +" + prev.compGain + "！"))
+			: (isEn
+				? ("Zixiao Dao Lecture complete! Condensed +" + prev.sutraGain + " Jade Sutras & +" + prev.compGain + " Dao Insight!")
+				: ("【开坛讲道功成】道钟三响天花乱坠，凝练三千大道玉简 +" + prev.sutraGain + " · 悟道真解 +" + prev.compGain + "！"));
+		this.zixiaoAltar.lastNote = note;
+		this.game.msg(note, "notice");
+		return true;
+	},
+
+	holdEssenceLecture: function(){
+		return this.holdDaoLecture("essence");
+	},
+
+	holdHongmengLecture: function(){
+		return this.holdDaoLecture("hongmeng");
+	},
+
+	completePassiveZixiaoSermon: function(){
+		if (!this.immortalAscended || !this.zixiaoAltar || (this.zixiaoAltar.tier || 0) <= 0){ return null; }
+		var cfg = this.getZixiaoAltarTierDef(this.zixiaoAltar.tier);
+		var sGain = Math.max(1, Math.round(1.5 * (cfg.sutraMult || 1)));
+		var cGain = Math.max(6, Math.round(7 * (cfg.sutraMult || 1)));
+		this.zixiaoAltar.daoSutras = (this.zixiaoAltar.daoSutras || 0) + sGain;
+		this.zixiaoAltar.totalSutrasCondensed = (this.zixiaoAltar.totalSutrasCondensed || 0) + sGain;
+		this.zixiaoAltar.comprehension = (this.zixiaoAltar.comprehension || 0) + cGain;
+		this.zixiaoAltar.lectureCount = (this.zixiaoAltar.lectureCount || 0) + 1;
+		this.syncDaoSutras();
+		this.addDaoLawProgress(8 + this.zixiaoAltar.tier * 2);
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.zixiao.panel.badge") || "").indexOf("Immortal") === 0;
+		this.zixiaoAltar.lastNote = isEn
+			? ("Zixiao Bell chime sermon condensed +" + sGain + " Jade Sutras & +" + cGain + " Dao Insight.")
+			: ("【紫霄道钟自鸣】庆云流转自演真经，凝得三千大道玉简 +" + sGain + " · 悟道真解 +" + cGain + "。");
+		return {sutraGain: sGain, compGain: cGain};
+	},
+
+	tickZixiaoAltar: function(ticksDelta){
+		if (!this.immortalAscended || !this.zixiaoAltar){ return; }
+		if ((this.zixiaoAltar.tier || 0) <= 0 || !this.zixiaoAltar.autoLecture){ return; }
+		var dt = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
+		if (dt <= 0){ return; }
+		var cfg = this.getZixiaoAltarTierDef(this.zixiaoAltar.tier);
+		var sealMult = 1 + Math.max(0, Math.floor(this.dharmaImprintTier || 0)) * 0.08;
+		var step = dt * 1.15 * (cfg.lectureSpeed || 1) * sealMult;
+		this.zixiaoAltar.lectureProgress = (this.zixiaoAltar.lectureProgress || 0) + step;
+		var maxP = Math.max(1, this.zixiaoAltar.lectureMax || 100);
+		var guard = 0;
+		while (this.zixiaoAltar.lectureProgress >= maxP && guard < 8){
+			this.zixiaoAltar.lectureProgress -= maxP;
+			this.completePassiveZixiaoSermon();
+			guard++;
+		}
+		if (this.zixiaoAltar.lectureProgress >= maxP){
+			this.zixiaoAltar.lectureProgress = maxP - 1;
+		}
+	},
+
+	getDharmaTotalLevel: function(){
+		if (!this.dharmaIdols || !this.dharmaIdols.levels){ return 0; }
+		var sum = 0;
+		for (var i = 0; i < this.DHARMA_IDOLS.length; i++){
+			sum += Math.max(0, Math.floor(this.dharmaIdols.levels[this.DHARMA_IDOLS[i].key] || 0));
+		}
+		return sum;
+	},
+
+	getAwakenedDharmaCount: function(){
+		if (!this.dharmaIdols || !this.dharmaIdols.levels){ return 0; }
+		var cnt = 0;
+		for (var i = 0; i < this.DHARMA_IDOLS.length; i++){
+			if ((this.dharmaIdols.levels[this.DHARMA_IDOLS[i].key] || 0) > 0){ cnt++; }
+		}
+		return cnt;
+	},
+
+	getDharmaMaxLevel: function(){
+		if (!this.dharmaIdols || !this.dharmaIdols.levels){ return 0; }
+		var maxL = 0;
+		for (var i = 0; i < this.DHARMA_IDOLS.length; i++){
+			var lv = this.dharmaIdols.levels[this.DHARMA_IDOLS[i].key] || 0;
+			if (lv > maxL){ maxL = lv; }
+		}
+		return maxL;
+	},
+
+	getDharmaResonanceTier: function(){
+		var totalLv = this.getDharmaTotalLevel();
+		if (totalLv >= 24){ return 3; }
+		if (totalLv >= 12){ return 2; }
+		if (totalLv >= 4){ return 1; }
+		return 0;
+	},
+
+	hasFourDharmaResonance: function(){
+		return this.getDharmaResonanceTier() >= 1;
+	},
+
+	getDharmaSlotWeight: function(idolKey){
+		var dm = this.dharmaIdols;
+		if (!dm || !dm.levels || (dm.levels[idolKey] || 0) <= 0){ return 0; }
+		if (dm.primaryKey === idolKey){ return 1.35; }
+		if (dm.supportKey === idolKey){ return 1.00; }
+		return 0.55;
+	},
+
+	getDharmaRefineReq: function(idolKey){
+		var def = this.getDharmaIdolDef(idolKey);
+		if (!def){ return null; }
+		var dm = this.dharmaIdols || this.makeDefaultDharmaIdols();
+		var za = this.zixiaoAltar || this.makeDefaultZixiaoAltar();
+		var ss = this.starship || this.makeDefaultStarship();
+		var curLv = dm.levels[idolKey] || 0;
+		if (curLv >= 6){ return null; }
+		var nextLv = curLv + 1;
+		var mult = this.getDharmaImprintCostMult();
+		var sutraCost = Math.max(1, Math.round((def.baseSutras + (nextLv - 1) * 2) * mult));
+		var xyCost = Math.max(10, this.roundNice(def.baseXy * Math.pow(1.40, nextLv - 1) * mult));
+		var qiCost = (nextLv >= 4) ? Math.max(1, Math.round(((nextLv - 3) * def.baseQi) * mult)) : 0;
+		var reqDaoyun = Math.floor((nextLv - 1) / 2);
+		var xyObj = this.game.resPool.get("xianyuan");
+		var haveSutras = za.daoSutras || 0;
+		var okSutra = haveSutras >= sutraCost;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okQi = qiCost <= 0 || ((ss.hongmengQi || 0) >= qiCost);
+		var okLaw = (this.daoyun || 0) >= reqDaoyun;
+		return {
+			idolKey: idolKey,
+			nextLv: nextLv,
+			daoSutras: sutraCost,
+			xianyuan: xyCost,
+			hongmengQi: qiCost,
+			reqDaoyun: reqDaoyun,
+			affordable: !!(this.immortalAscended && okSutra && okXy && okQi && okLaw)
+		};
+	},
+
+	refineDharmaIdol: function(idolKey){
+		if (!this.immortalAscended){ return false; }
+		this.zixiaoAltar = this.normalizeZixiaoAltar(this.zixiaoAltar);
+		this.dharmaIdols = this.normalizeDharmaIdols(this.dharmaIdols);
+		this.starship = this.normalizeStarship(this.starship);
+		var def = this.getDharmaIdolDef(idolKey);
+		if (!def){ return false; }
+		var prevRes = this.getDharmaResonanceTier();
+		var req = this.getDharmaRefineReq(idolKey);
+		if (!req || !req.affordable){ return false; }
+		this.zixiaoAltar.daoSutras = Math.max(0, (this.zixiaoAltar.daoSutras || 0) - req.daoSutras);
+		this.syncDaoSutras();
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		if (req.hongmengQi > 0){
+			this.starship.hongmengQi = Math.max(0, (this.starship.hongmengQi || 0) - req.hongmengQi);
+		}
+		this.dharmaIdols.levels[idolKey] = req.nextLv;
+		this.dharmaIdols.totalRefinements = (this.dharmaIdols.totalRefinements || 0) + 1;
+		if (!this.dharmaIdols.primaryKey){
+			this.dharmaIdols.primaryKey = idolKey;
+		} else if (!this.dharmaIdols.supportKey && this.dharmaIdols.primaryKey !== idolKey){
+			this.dharmaIdols.supportKey = idolKey;
+		}
+		if (idolKey === "samsaraLotus"){
+			this.heartDemon = Math.max(0, (this.heartDemon || 0) - 18);
+			this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - 18);
+		}
+		this.syncDharmaImprintTier();
+		this.addDaoLawProgress(20 + req.nextLv * 5);
+		var newRes = this.getDharmaResonanceTier();
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.zixiao.panel.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ((req.nextLv === 1 ? "Awakened [" : "Refined [") + $I(def.labelKey) + "] to Lv." + req.nextLv + "/6" +
+				(newRes > prevRes ? (" — Four-Idol Hunyuan Resonance Tier " + newRes + " awakened!") : "!"))
+			: ((req.nextLv === 1 ? "【神通法相觉醒】【" : "【神通法相淬炼】【") + $I(def.labelKey) + "】凝炼至第 " + req.nextLv + "/6 重" +
+				(newRes > prevRes ? ("，激发第 " + newRes + " 重【四相混元证道共鸣】！") : "！"));
+		this.dharmaIdols.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	awakenDharmaIdol: function(idolKey){
+		return this.refineDharmaIdol(idolKey);
+	},
+
+	equipDharmaIdol: function(idolKey, slotType){
+		if (!this.immortalAscended){ return false; }
+		this.dharmaIdols = this.normalizeDharmaIdols(this.dharmaIdols);
+		var def = this.getDharmaIdolDef(idolKey);
+		if (!def || (this.dharmaIdols.levels[idolKey] || 0) <= 0){ return false; }
+		var role = (slotType === "support") ? "support" : "primary";
+		if (role === "support"){
+			if (this.dharmaIdols.primaryKey === idolKey){
+				this.dharmaIdols.primaryKey = this.dharmaIdols.supportKey || null;
+			}
+			this.dharmaIdols.supportKey = idolKey;
+		} else {
+			if (this.dharmaIdols.supportKey === idolKey){
+				this.dharmaIdols.supportKey = this.dharmaIdols.primaryKey || null;
+			}
+			this.dharmaIdols.primaryKey = idolKey;
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.zixiao.panel.badge") || "").indexOf("Immortal") === 0;
+		this.dharmaIdols.lastNote = isEn
+			? ("Equipped [" + $I(def.labelKey) + "] as " + (role === "primary" ? "Primary" : "Support") + " Dharma Idol.")
+			: ("【法相归位】已将【" + $I(def.labelKey) + "】设为" + (role === "primary" ? "【本命主法相】" : "【护道辅法相】") + "。");
+		return true;
+	},
+
+	cleanseWithSamsaraLotus: function(){
+		if (!this.immortalAscended || !this.dharmaIdols){ return false; }
+		var lv = (this.dharmaIdols.levels && this.dharmaIdols.levels.samsaraLotus) || 0;
+		if (lv <= 0){ return false; }
+		if ((this.heartDemon || 0) <= 0 && (this.pillToxicity || 0) <= 0){ return false; }
+		var clr = 15 + lv * 8;
+		this.heartDemon = Math.max(0, (this.heartDemon || 0) - clr);
+		this.pillToxicity = Math.max(0, (this.pillToxicity || 0) - clr);
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
+	},
+
+	getImmortalCaveBonuses: function(riftFloorOpt){
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		var out = {
+			combatMult: 1 + imp * 0.05,
+			xiuweiRatio: imp * 0.06,
+			realmProductionRatio: 0,
+			zhenyuanRatio: 0,
+			xianyuanBase: 0,
+			xianyuanRatio: 0,
+			toxReduction: 0,
+			detoxSpeed: 0,
+			gentleDetoxBonus: 0,
+			alchemyYieldChance: 0,
+			alchemyCritBonus: 0,
+			alchemyExtraXy: 0,
+			pillPotencyBonus: 0,
+			herbSpeedBonus: 0,
+			herbYieldBonus: 0,
+			infuseExtraXy: 0,
+			daoLawDiscount: 0,
+			riftHpMult: 1,
+			riftDmgMult: 1,
+			riftDefIgnore: 0,
+			riftShieldBreakBonus: 0,
+			riftUltBonus: 0,
+			riftCritChance: 0,
+			riftCritDmgBonus: 0,
+			trueFireBreak: 0,
+			riftMitigation: 0,
+			riftPierceMitigation: 0,
+			riftBossExecuteRatio: 0,
+			dharmaGiantCrushRatio: 0,
+			dharmaCloneStrikeRatio: 0,
+			dharmaSwordExecuteRatio: 0,
+			dharmaLotusRegenRatio: 0,
+			dharmaNirvanaRatio: 0,
+			startShieldRatio: 0,
+			counterDmgBonus: 0,
+			counterMpGain: 0,
+			riftXyBonus: 0,
+			bountySpeedBonus: 0,
+			heartDemonDecayBonus: 0,
+			lifespanBonus: 0
+		};
+		if (!this.immortalAscended){
+			return out;
+		}
+		var g = this.herbGarden;
+		if (g){
+			var arrLv = Math.max(1, g.arrayLevel || 1);
+			out.xianyuanBase += (arrLv - 1) * 0.015;
+			var stXianlan = (g.stock && g.stock.xianlan) || 0;
+			var hvXianlan = (g.harvestCount && g.harvestCount.xianlan) || 0;
+			if (stXianlan > 0 || hvXianlan > 0){
+				out.toxReduction += 0.15;
+				out.detoxSpeed += 0.35;
+				out.gentleDetoxBonus += 3;
+			}
+			var stZizhi = (g.stock && g.stock.zizhi) || 0;
+			var hvZizhi = (g.harvestCount && g.harvestCount.zizhi) || 0;
+			if (stZizhi > 0 || hvZizhi > 0){
+				out.pillPotencyBonus += 0.20;
+				out.alchemyCritBonus += 0.12;
+				out.alchemyYieldChance += 0.10;
+			}
+			if (this.buffs && this.buffs.herbPotency > 0){
+				out.pillPotencyBonus += 0.15;
+				out.alchemyYieldChance += 0.12;
+			}
+			var stQinglian = (g.stock && g.stock.qinglian) || 0;
+			var hvQinglian = (g.harvestCount && g.harvestCount.qinglian) || 0;
+			if (stQinglian > 0 || hvQinglian > 0){
+				out.xianyuanBase += Math.min(0.10, 0.03 + stQinglian * 0.01);
+				out.xiuweiRatio += 0.20;
+			}
+			var stDaoguo = (g.stock && g.stock.daoguo) || 0;
+			var hvDaoguo = (g.harvestCount && g.harvestCount.daoguo) || 0;
+			if (stDaoguo > 0 || hvDaoguo > 0){
+				out.xianyuanBase += 0.05;
+				out.realmProductionRatio += 0.15;
+			}
+			if (g.daoDiscountStacks > 0){
+				out.daoLawDiscount += Math.min(0.45, g.daoDiscountStacks * 0.15);
+			}
+		}
+
+		var xq = this.xianqi;
+		if (xq && xq.boundKey && xq.stage > 0){
+			var stg = xq.stage;
+			var nMult = 1 + Math.min(0.20, (xq.nurtureExp || 0) * 0.002);
+			var isHighRift = (typeof riftFloorOpt === "number" && riftFloorOpt >= 26);
+			var riftScale = isHighRift ? 1.0 : 0.5;
+
+			out.combatMult *= (1 + stg * 0.12 * nMult);
+			out.xianyuanRatio += stg * 0.05 * nMult;
+			out.riftXyBonus += stg * 0.06;
+
+			if (xq.boundKey === "sword"){
+				if (stg >= 1){
+					out.combatMult *= 1.25;
+					out.riftDmgMult *= (1 + 0.18 * riftScale * nMult);
+				}
+				if (stg >= 3){
+					if (isHighRift){ out.riftDefIgnore = 0.25; }
+					out.riftShieldBreakBonus += 0.22;
+					out.xianyuanBase += 0.03;
+				}
+				if (stg >= 5){
+					out.riftUltBonus += 0.35 * riftScale;
+					out.combatMult *= 1.30;
+					out.xianyuanRatio += 0.20;
+				}
+			} else if (xq.boundKey === "cauldron"){
+				if (stg >= 1){
+					out.alchemyCritBonus += 0.15;
+					out.alchemyYieldChance += 0.15;
+					out.toxReduction += 0.25;
+				}
+				if (stg >= 3){
+					out.alchemyYieldChance += 0.25;
+					out.alchemyExtraXy += 2;
+					out.pillPotencyBonus += 0.25;
+				}
+				if (stg >= 5){
+					out.herbSpeedBonus += 0.30;
+					out.realmProductionRatio += 0.35;
+					out.xianyuanBase += 0.05;
+				}
+			} else if (xq.boundKey === "mirror"){
+				if (stg >= 1){
+					out.riftMitigation += 0.18 * riftScale;
+					out.startShieldRatio += 0.18 + stg * 0.02;
+				}
+				if (stg >= 3){
+					out.counterDmgBonus += 0.35;
+					out.counterMpGain += 12;
+					out.combatMult *= 1.28;
+				}
+				if (stg >= 5){
+					out.riftMitigation += 0.14 * riftScale;
+					if (isHighRift){ out.riftPierceMitigation = 0.50; }
+					out.zhenyuanRatio += 0.30;
+					out.xianyuanBase += 0.04;
+				}
+			} else if (xq.boundKey === "pagoda"){
+				if (stg >= 1){
+					out.xianyuanBase += 0.04;
+					out.infuseExtraXy += 5 + stg;
+				}
+				if (stg >= 3){
+					out.riftDmgMult *= (1 + 0.16 * riftScale);
+					out.riftMitigation += 0.12 * riftScale;
+					out.daoLawDiscount += 0.15;
+				}
+				if (stg >= 5){
+					out.xianyuanRatio += 0.35;
+					out.herbSpeedBonus += 0.25;
+					out.combatMult *= 1.32;
+				}
+			}
+		}
+
+		var sa = this.starArray;
+		var isHighRiftForArray = (typeof riftFloorOpt === "number" && riftFloorOpt >= 26);
+		var arrayRiftScale = isHighRiftForArray ? 1.0 : 0.5;
+		if (sa && (sa.tier || 0) > 0){
+			var ztCfg = this.ZHOUTIAN_TIERS[sa.tier] || this.ZHOUTIAN_TIERS[0];
+			out.xianyuanBase += ztCfg.xyBase || 0;
+			out.xianyuanRatio += ztCfg.xyRatio || 0;
+			out.pillPotencyBonus += ztCfg.pillPot || 0;
+			out.alchemyCritBonus += ztCfg.alcCrit || 0;
+			out.alchemyYieldChance += ztCfg.alcYield || 0;
+			out.combatMult *= (1 + sa.tier * 0.08);
+			out.riftDmgMult *= (1 + (ztCfg.riftDmg || 0) * arrayRiftScale);
+			out.riftMitigation += (ztCfg.riftMit || 0) * arrayRiftScale;
+			out.riftXyBonus += sa.tier * 0.05;
+
+			for (var si2 = 0; si2 < 3; si2++){
+				var sKey = sa.sockets && sa.sockets[si2];
+				if (!sKey){ continue; }
+				var scDef = this.getStarCoreDef(sKey);
+				if (!scDef){ continue; }
+				if (scDef.xyBase){ out.xianyuanBase += scDef.xyBase; }
+				if (scDef.xyRatio){ out.xianyuanRatio += scDef.xyRatio; }
+				if (scDef.xwRatio){ out.xiuweiRatio += scDef.xwRatio; }
+				if (scDef.daoDisc){ out.daoLawDiscount += scDef.daoDisc; }
+				if (scDef.combatMult){ out.combatMult *= (1 + scDef.combatMult); }
+				if (scDef.riftDmg){ out.riftDmgMult *= (1 + scDef.riftDmg * arrayRiftScale); }
+				if (scDef.shieldBreak){ out.riftShieldBreakBonus += scDef.shieldBreak; }
+				if (scDef.alcCrit){ out.alchemyCritBonus += scDef.alcCrit; }
+				if (scDef.alcYield){ out.alchemyYieldChance += scDef.alcYield; }
+				if (scDef.riftMit){ out.riftMitigation += scDef.riftMit * arrayRiftScale; }
+				if (scDef.startShield){ out.startShieldRatio += scDef.startShield; }
+				if (scDef.pillPot){ out.pillPotencyBonus += scDef.pillPot; }
+				if (scDef.toxRed){ out.toxReduction += scDef.toxRed; }
+				if (scDef.herbSpd){ out.herbSpeedBonus += scDef.herbSpd; }
+			}
+
+			if (this.hasTriStarHarmony()){
+				out.xianyuanRatio += 0.20;
+				out.combatMult *= 1.20;
+				out.pillPotencyBonus += 0.15;
+				out.riftDmgMult *= (1 + 0.12 * arrayRiftScale);
+			}
+		}
+
+		if (this.buffs && this.buffs.zhoutianSurge > 0){
+			out.xianyuanRatio += 0.25;
+			out.combatMult *= 1.12;
+			out.riftDmgMult *= (1 + 0.15 * arrayRiftScale);
+		}
+
+		var ib = this.immortalBounty;
+		if (ib && (ib.chainChapter || 1) > 1){
+			var chBonus = Math.min(8, (ib.chainChapter || 1) - 1);
+			out.xianyuanBase += chBonus * 0.015;
+			out.xianyuanRatio += chBonus * 0.05;
+			out.combatMult *= (1 + chBonus * 0.04);
+		}
+
+		// XX-6 混沌万灵仙宠育兽苑加成
+		var sn = this.spiritNursery;
+		if (sn && sn.beasts){
+			for (var bi = 0; bi < this.PRIMORDIAL_BEASTS.length; bi++){
+				var bKey = this.PRIMORDIAL_BEASTS[bi].key;
+				var bState = sn.beasts[bKey];
+				var bStg = (bState && bState.stage) ? bState.stage : 0;
+				if (bStg <= 0){ continue; }
+				var isBattleB = (sn.battleBeastKey === bKey);
+				var isGardenB = (sn.gardenBeastKey === bKey);
+				var roleAll = isBattleB ? 1.35 : (isGardenB ? 1.35 : 0.55);
+				var roleBattle = isBattleB ? 1.45 : (isGardenB ? 0.85 : 0.50);
+				var roleGarden = isGardenB ? 1.50 : (isBattleB ? 0.90 : 0.55);
+
+				if (bKey === "azure_dragon"){
+					out.xianyuanBase += 0.025 * bStg * roleGarden;
+					out.xianyuanRatio += 0.09 * bStg * roleAll;
+					out.herbSpeedBonus += 0.12 * bStg * roleGarden;
+					out.herbYieldBonus += 0.08 * bStg * roleGarden;
+				} else if (bKey === "vermilion_bird"){
+					out.pillPotencyBonus += 0.08 * bStg * roleAll;
+					out.alchemyCritBonus += 0.05 * bStg * roleAll;
+					out.alchemyYieldChance += 0.04 * bStg * roleAll;
+					out.riftDefIgnore = Math.min(0.58, out.riftDefIgnore + 0.06 * bStg * roleBattle * arrayRiftScale);
+					out.riftShieldBreakBonus += 0.07 * bStg * roleBattle;
+					out.riftDmgMult *= (1 + 0.05 * bStg * roleBattle * arrayRiftScale);
+					if (isHighRiftForArray && (isBattleB || bStg >= 2)){
+						out.trueFireBreak = 1;
+					}
+				} else if (bKey === "black_tortoise"){
+					out.startShieldRatio += 0.05 * bStg * roleBattle;
+					out.riftMitigation += 0.035 * bStg * roleBattle * arrayRiftScale;
+					if (isHighRiftForArray && bStg >= 3){
+						out.riftPierceMitigation = Math.max(out.riftPierceMitigation, Math.min(0.65, 0.15 + bStg * 0.06));
+					}
+					out.heartDemonDecayBonus += 0.35 * bStg * roleAll;
+					out.lifespanBonus += Math.round(650 * bStg * roleGarden);
+				} else if (bKey === "white_tiger"){
+					out.combatMult *= (1 + 0.085 * bStg * roleBattle);
+					out.riftDmgMult *= (1 + 0.065 * bStg * roleBattle * arrayRiftScale);
+					out.riftCritChance += 0.045 * bStg * roleBattle * arrayRiftScale;
+					out.riftUltBonus += 0.05 * bStg * roleBattle * arrayRiftScale;
+					out.bountySpeedBonus += 0.09 * bStg * roleAll;
+				}
+			}
+
+			var minFourStg = this.getFourSymbolsMinStage();
+			if (minFourStg > 0){
+				out.xianyuanBase += 0.06 + minFourStg * 0.02;
+				out.xianyuanRatio += 0.24 + minFourStg * 0.06;
+				out.combatMult *= (1.20 + minFourStg * 0.05);
+				out.herbSpeedBonus += 0.22 + minFourStg * 0.04;
+				out.herbYieldBonus += 0.15;
+				out.pillPotencyBonus += 0.16 + minFourStg * 0.03;
+				out.riftDmgMult *= (1 + (0.15 + minFourStg * 0.03) * arrayRiftScale);
+				out.riftMitigation += (0.05 + minFourStg * 0.01) * arrayRiftScale;
+				out.bountySpeedBonus += 0.20;
+			}
+		}
+
+		// XX-6 大道法则碑林参悟与碑林共鸣加成
+		var sf = this.daoSteleForest;
+		if (sf && sf.levels){
+			var lvSp = sf.levels.spacetime || 0;
+			if (lvSp > 0){
+				out.xianyuanBase += 0.025 * lvSp;
+				out.xianyuanRatio += 0.08 * lvSp;
+				out.bountySpeedBonus += 0.06 * lvSp;
+			}
+			var lvCr = sf.levels.creation || 0;
+			if (lvCr > 0){
+				out.herbSpeedBonus += 0.10 * lvCr;
+				out.realmProductionRatio += 0.12 * lvCr;
+				out.lifespanBonus += 500 * lvCr;
+			}
+			var lvSw = sf.levels.sword_dao || 0;
+			if (lvSw > 0){
+				out.combatMult *= (1 + 0.09 * lvSw);
+				out.riftDmgMult *= (1 + 0.07 * lvSw * arrayRiftScale);
+				out.riftShieldBreakBonus += 0.06 * lvSw;
+			}
+			var lvAl = sf.levels.alchemy_origin || 0;
+			if (lvAl > 0){
+				out.pillPotencyBonus += 0.09 * lvAl;
+				out.alchemyCritBonus += 0.04 * lvAl;
+				out.toxReduction += 0.04 * lvAl;
+				out.detoxSpeed += 0.12 * lvAl;
+			}
+			var lvAs = sf.levels.astral || 0;
+			if (lvAs > 0){
+				out.xianyuanRatio += 0.07 * lvAs;
+				out.xiuweiRatio += 0.14 * lvAs;
+			}
+			var lvSa = sf.levels.samsara || 0;
+			if (lvSa > 0){
+				out.daoLawDiscount += 0.04 * lvSa;
+				out.heartDemonDecayBonus += 0.22 * lvSa;
+				out.zhenyuanRatio += 0.08 * lvSa;
+				out.combatMult *= (1 + 0.05 * lvSa);
+			}
+
+			var steleTier = this.getSteleResonanceTier();
+			if (steleTier >= 1){
+				out.xianyuanBase += 0.05;
+				out.xianyuanRatio += 0.18;
+				out.combatMult *= 1.16;
+				out.xiuweiRatio += 0.20;
+			}
+			if (steleTier >= 2){
+				out.xianyuanBase += 0.09;
+				out.xianyuanRatio += 0.30;
+				out.combatMult *= 1.24;
+				out.riftDmgMult *= (1 + 0.15 * arrayRiftScale);
+				out.pillPotencyBonus += 0.15;
+			}
+			if (steleTier >= 3){
+				out.xianyuanBase += 0.15;
+				out.xianyuanRatio += 0.48;
+				out.combatMult *= 1.35;
+				out.riftDmgMult *= (1 + 0.22 * arrayRiftScale);
+				out.riftMitigation += 0.08 * arrayRiftScale;
+				out.realmProductionRatio += 0.35;
+			}
+		}
+
+		// XX-7 诸天星域游历飞舟（太虚星槎）与三大太古星域赐福加成
+		var ss = this.starship;
+		if (ss && (ss.vesselTier || 0) > 0){
+			var vTier = ss.vesselTier;
+			var vCfg = this.getVesselTierDef(vTier);
+			out.xianyuanBase += vCfg.xyBase || 0;
+			out.xianyuanRatio += vCfg.xyRatio || 0;
+			out.startShieldRatio += vCfg.shieldBonus || 0;
+			out.combatMult *= (1 + vTier * 0.07);
+			out.bountySpeedBonus += vTier * 0.05;
+
+			var rm = ss.realmMastery || {};
+			var mZw = rm.ziwei || 0;
+			var curZw = (ss.selectedRealm === "ziwei");
+			if (mZw > 0 || curZw){
+				out.xianyuanBase += 0.03 * mZw + (curZw ? 0.04 : 0);
+				out.xianyuanRatio += 0.09 * mZw + (curZw ? 0.14 : 0);
+			}
+			var mBj = rm.beiju || 0;
+			var curBj = (ss.selectedRealm === "beiju");
+			if (mBj > 0 || curBj){
+				out.herbSpeedBonus += 0.11 * mBj + (curBj ? 0.18 : 0);
+				out.herbYieldBonus += 0.04 * mBj + (curBj ? 0.08 : 0);
+				out.realmProductionRatio += 0.06 * mBj;
+			}
+			var mGx = rm.guixu || 0;
+			var curGx = (ss.selectedRealm === "guixu");
+			if (mGx > 0 || curGx){
+				out.combatMult *= (1 + 0.045 * mGx + (curGx ? 0.08 : 0));
+				out.riftDmgMult *= (1 + (0.045 * mGx + (curGx ? 0.10 : 0)) * arrayRiftScale);
+				out.riftDefIgnore = Math.min(0.82, out.riftDefIgnore + (0.02 * mGx + (curGx ? 0.04 : 0)) * arrayRiftScale);
+				out.riftMitigation += (0.018 * mGx + (curGx ? 0.04 : 0)) * arrayRiftScale;
+			}
+		}
+
+		// XX-7 混沌鸿蒙灵宝祭坛与三宝鸿蒙开天共鸣（1 / 3 / 6 阶里程碑）加成
+		var ha = this.hongmengAltar;
+		if (ha && ha.treasures){
+			var tKt = ha.treasures.kaitianSeal || 0;
+			if (tKt > 0){
+				out.combatMult *= (1 + 0.14 * tKt);
+				out.riftDmgMult *= (1 + 0.09 * tKt * arrayRiftScale);
+				out.riftDefIgnore = Math.min(0.82, out.riftDefIgnore + 0.045 * tKt * arrayRiftScale);
+				out.riftShieldBreakBonus += 0.08 * tKt;
+				if (isHighRiftForArray){
+					out.riftBossExecuteRatio += 0.02 * tKt;
+				}
+			}
+			var tZh = ha.treasures.zaohuaJade || 0;
+			if (tZh > 0){
+				out.xiuweiRatio += 0.24 * tZh;
+				out.zhenyuanRatio += 0.06 * tZh;
+				out.xianyuanRatio += 0.11 * tZh;
+				out.xianyuanBase += 0.03 * tZh;
+				out.pillPotencyBonus += 0.10 * tZh;
+				out.alchemyCritBonus += 0.05 * tZh;
+				out.alchemyYieldChance += 0.05 * tZh;
+				out.daoLawDiscount += 0.03 * tZh;
+				out.herbSpeedBonus += 0.08 * tZh;
+			}
+			var tXh = ha.treasures.xuanhuangPagoda || 0;
+			if (tXh > 0){
+				out.riftMitigation += 0.04 * tXh * arrayRiftScale;
+				out.startShieldRatio += 0.06 * tXh;
+				if (isHighRiftForArray){
+					out.riftPierceMitigation = Math.max(out.riftPierceMitigation, Math.min(0.75, 0.18 + 0.07 * tXh));
+				}
+				out.heartDemonDecayBonus += 0.30 * tXh;
+				out.lifespanBonus += 800 * tXh;
+			}
+
+			var hmResTier = this.getHongmengResonanceTier();
+			if (hmResTier >= 1){
+				out.combatMult *= 1.22;
+				out.xiuweiRatio += 0.30;
+				out.xianyuanRatio += 0.22;
+				out.pillPotencyBonus += 0.15;
+				out.alchemyCritBonus += 0.06;
+				out.riftDefIgnore = Math.min(0.82, out.riftDefIgnore + 0.06 * arrayRiftScale);
+				out.riftMitigation += 0.05 * arrayRiftScale;
+				if (isHighRiftForArray){ out.riftBossExecuteRatio += 0.05; }
+			}
+			if (hmResTier >= 2){
+				out.combatMult *= 1.30;
+				out.xiuweiRatio += 0.45;
+				out.xianyuanRatio += 0.35;
+				out.pillPotencyBonus += 0.22;
+				out.alchemyCritBonus += 0.08;
+				out.riftDefIgnore = Math.min(0.82, out.riftDefIgnore + 0.08 * arrayRiftScale);
+				out.riftMitigation += 0.06 * arrayRiftScale;
+				if (isHighRiftForArray){ out.riftBossExecuteRatio += 0.05; }
+			}
+			if (hmResTier >= 3){
+				out.combatMult *= 1.45;
+				out.xiuweiRatio += 0.75;
+				out.xianyuanBase += 0.18;
+				out.xianyuanRatio += 0.55;
+				out.pillPotencyBonus += 0.32;
+				out.alchemyCritBonus += 0.10;
+				out.realmProductionRatio += 0.40;
+				out.riftDefIgnore = Math.min(0.85, out.riftDefIgnore + 0.10 * arrayRiftScale);
+				out.riftMitigation += 0.08 * arrayRiftScale;
+				if (isHighRiftForArray){ out.riftBossExecuteRatio += 0.06; }
+			}
+		}
+
+		// XX-8 混沌紫霄讲道坛悟道真解与三千大道神通法相（主辅法相 + 四相混元证道共鸣 4/12/24）
+		var za = this.zixiaoAltar;
+		if (za && ((za.tier || 0) > 0 || (za.comprehension || 0) > 0)){
+			var zxAura = this.getZixiaoAuraBonuses();
+			out.xianyuanBase += zxAura.xyBase || 0;
+			out.xianyuanRatio += zxAura.xyRatio || 0;
+			out.xiuweiRatio += zxAura.xiuweiRatio || 0;
+			out.herbSpeedBonus += zxAura.herbSpeed || 0;
+			out.herbYieldBonus += zxAura.herbYield || 0;
+			out.daoLawDiscount += (za.tier || 0) * 0.025;
+			out.combatMult *= (1 + (za.tier || 0) * 0.06);
+		}
+
+		var dm = this.dharmaIdols;
+		var dharmaTotalLv = this.getDharmaTotalLevel();
+		var dharmaResTier = this.getDharmaResonanceTier();
+		if (dm && dm.levels && dharmaTotalLv > 0){
+			var lvGiant = dm.levels.cosmicGiant || 0;
+			if (lvGiant > 0){
+				var wGiant = this.getDharmaSlotWeight("cosmicGiant");
+				var eGiant = lvGiant * wGiant;
+				out.combatMult *= (1 + 0.15 * eGiant);
+				out.riftHpMult *= (1 + 0.18 * eGiant);
+				out.riftDefIgnore = Math.min(0.88, out.riftDefIgnore + 0.045 * eGiant * arrayRiftScale);
+				out.riftShieldBreakBonus += 0.10 * eGiant;
+				out.dharmaGiantCrushRatio += 0.045 * eGiant;
+			}
+			var lvPure = dm.levels.threePure || 0;
+			if (lvPure > 0){
+				var wPure = this.getDharmaSlotWeight("threePure");
+				var ePure = lvPure * wPure;
+				out.xiuweiRatio += 0.26 * ePure;
+				out.zhenyuanRatio += 0.07 * ePure;
+				out.pillPotencyBonus += 0.11 * ePure;
+				out.alchemyCritBonus += 0.05 * ePure;
+				out.alchemyYieldChance += 0.06 * ePure;
+				out.detoxSpeed += 0.15 * ePure;
+				out.bountySpeedBonus += 0.09 * ePure;
+				out.dharmaCloneStrikeRatio += 0.16 * ePure;
+			}
+			var lvZhuxian = dm.levels.zhuxianSwords || 0;
+			if (lvZhuxian > 0){
+				var wZhuxian = this.getDharmaSlotWeight("zhuxianSwords");
+				var eZhuxian = lvZhuxian * wZhuxian;
+				out.combatMult *= (1 + 0.16 * eZhuxian);
+				out.riftDmgMult *= (1 + 0.10 * eZhuxian * arrayRiftScale);
+				out.riftCritChance += 0.05 * eZhuxian;
+				out.riftCritDmgBonus += 0.16 * eZhuxian;
+				out.riftUltBonus += 0.08 * eZhuxian * arrayRiftScale;
+				if (isHighRiftForArray){
+					var swordExec = 0.03 * eZhuxian;
+					out.dharmaSwordExecuteRatio += swordExec;
+					out.riftBossExecuteRatio += swordExec;
+				}
+			}
+			var lvLotus = dm.levels.samsaraLotus || 0;
+			if (lvLotus > 0){
+				var wLotus = this.getDharmaSlotWeight("samsaraLotus");
+				var eLotus = lvLotus * wLotus;
+				out.riftMitigation += 0.045 * eLotus * arrayRiftScale;
+				out.startShieldRatio += 0.07 * eLotus;
+				if (isHighRiftForArray){
+					out.riftPierceMitigation = Math.max(out.riftPierceMitigation, Math.min(0.82, 0.20 + 0.07 * eLotus));
+				}
+				out.heartDemonDecayBonus += 0.40 * eLotus;
+				out.lifespanBonus += Math.round(900 * eLotus);
+				out.dharmaLotusRegenRatio += 0.015 * eLotus;
+				out.dharmaNirvanaRatio = Math.min(0.75, 0.24 + 0.06 * eLotus);
+			}
+
+			if (dharmaResTier >= 1){
+				out.combatMult *= 1.24;
+				out.riftHpMult *= 1.15;
+				out.xiuweiRatio += 0.32;
+				out.xianyuanRatio += 0.24;
+				out.herbSpeedBonus += 0.15;
+				out.riftCritDmgBonus += 0.18;
+				out.riftDefIgnore = Math.min(0.88, out.riftDefIgnore + 0.06 * arrayRiftScale);
+				out.riftMitigation += 0.05 * arrayRiftScale;
+				if (isHighRiftForArray){ out.riftBossExecuteRatio += 0.04; }
+				if (out.dharmaNirvanaRatio > 0){ out.dharmaNirvanaRatio = Math.min(0.78, out.dharmaNirvanaRatio + 0.06); }
+			}
+			if (dharmaResTier >= 2){
+				out.combatMult *= 1.32;
+				out.riftHpMult *= 1.20;
+				out.xiuweiRatio += 0.48;
+				out.xianyuanRatio += 0.38;
+				out.herbSpeedBonus += 0.22;
+				out.riftCritDmgBonus += 0.24;
+				out.riftDefIgnore = Math.min(0.88, out.riftDefIgnore + 0.08 * arrayRiftScale);
+				out.riftMitigation += 0.06 * arrayRiftScale;
+				if (isHighRiftForArray){ out.riftBossExecuteRatio += 0.05; }
+				if (out.dharmaNirvanaRatio > 0){ out.dharmaNirvanaRatio = Math.min(0.82, out.dharmaNirvanaRatio + 0.08); }
+			}
+			if (dharmaResTier >= 3){
+				out.combatMult *= 1.48;
+				out.riftHpMult *= 1.28;
+				out.xiuweiRatio += 0.80;
+				out.xianyuanBase += 0.22;
+				out.xianyuanRatio += 0.60;
+				out.realmProductionRatio += 0.45;
+				out.herbSpeedBonus += 0.30;
+				out.riftCritDmgBonus += 0.32;
+				out.riftDefIgnore = Math.min(0.90, out.riftDefIgnore + 0.10 * arrayRiftScale);
+				out.riftMitigation += 0.08 * arrayRiftScale;
+				if (isHighRiftForArray){ out.riftBossExecuteRatio += 0.07; }
+				if (out.dharmaNirvanaRatio > 0){ out.dharmaNirvanaRatio = Math.min(0.85, out.dharmaNirvanaRatio + 0.10); }
+			}
+		}
+
+		var hasHighSanctum = !!((sa && (sa.tier || 0) > 0) || this.getHatchedBeastCount() > 0 || this.getTotalSteleComprehension() > 0 || (ss && (ss.vesselTier || 0) > 0) || this.getHongmengTotalTier() > 0 || (za && (za.tier || 0) > 0) || dharmaTotalLv > 0);
+		var hasHongmengApex = (this.getHongmengResonanceTier() > 0);
+		var hasDharmaApex = (dharmaTotalLv > 0);
+		out.toxReduction = Math.min(hasDharmaApex ? 0.88 : (hasHongmengApex ? 0.85 : (hasHighSanctum ? 0.80 : 0.60)), out.toxReduction);
+		out.riftMitigation = Math.min(hasDharmaApex ? 0.84 : (hasHongmengApex ? 0.78 : (hasHighSanctum ? 0.70 : 0.45)), out.riftMitigation);
+		out.daoLawDiscount = Math.min(hasDharmaApex ? 0.80 : (hasHongmengApex ? 0.75 : (hasHighSanctum ? 0.72 : 0.55)), out.daoLawDiscount);
+		out.riftBossExecuteRatio = Math.min(hasDharmaApex ? 0.48 : 0.32, out.riftBossExecuteRatio);
+		return out;
+	},
+
 	// ---------------- lifecycle ----------------
 
 	save: function(saveData){
@@ -4714,6 +9574,24 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			alchemyExp: this.alchemyExp || 0,
 			supremePills: this.supremePills || {},
 			pillCraftCount: this.pillCraftCount || {},
+			immortalAscended: !!this.immortalAscended,
+			daoyun: this.daoyun || 0,
+			herbGarden: this.herbGarden ? this.normalizeHerbGarden(this.herbGarden) : undefined,
+			xianqi: this.xianqi ? this.normalizeXianqi(this.xianqi) : undefined,
+			starArray: this.starArray ? this.normalizeStarArray(this.starArray) : undefined,
+			immortalBounty: this.immortalBounty ? this.normalizeImmortalBounty(this.immortalBounty) : undefined,
+			spiritNursery: this.spiritNursery ? this.normalizeSpiritNursery(this.spiritNursery) : undefined,
+			daoSteleForest: this.daoSteleForest ? this.normalizeDaoSteleForest(this.daoSteleForest) : undefined,
+			starship: this.starship ? this.normalizeStarship(this.starship) : undefined,
+			hongmengAltar: this.hongmengAltar ? this.normalizeHongmengAltar(this.hongmengAltar) : undefined,
+			zixiaoAltar: this.zixiaoAltar ? this.normalizeZixiaoAltar(this.zixiaoAltar) : undefined,
+			dharmaIdols: this.dharmaIdols ? this.normalizeDharmaIdols(this.dharmaIdols) : undefined,
+			immortalImprint: this.immortalImprint || 0,
+			xianqiImprintKey: this.xianqiImprintKey || undefined,
+			starImprintTier: this.starImprintTier || 0,
+			beastImprintTier: this.beastImprintTier || 0,
+			hongmengImprintTier: this.hongmengImprintTier || 0,
+			dharmaImprintTier: this.dharmaImprintTier || 0,
 			soundMuted: !!this.soundMuted,
 			demonWarned: this.demonWarned,
 			sihuaCount: this.sihuaCount,
@@ -4724,6 +9602,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			taleLog: this.taleLog,
 			identity: this.identity,
 			pendingOrigin: this.pendingOrigin || undefined,
+			mingge: (this.mingge && this.mingge.length) ? this.mingge.slice(0, 3) : undefined,
+			pendingMingge: (this.pendingMingge && this.pendingMingge.length) ? this.pendingMingge.slice(0, 3) : undefined,
 			sects: this.filterMetadata(this.sects, ["name", "researched"]),
 			pills: this.filterMetadata(this.pills, ["name", "val"]),
 			fates: this.filterMetadata(this.fates, ["name", "researched", "choiceKey"]),
@@ -4781,7 +9661,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (typeof c.riftKeys == "number"){ this.riftKeys = Math.max(0, c.riftKeys); }
 		if (typeof c.riftFloor == "number"){ this.riftFloor = Math.max(0, c.riftFloor); }
 		if (c.tale){ this.tale = c.tale; }
-		if (c.identity){ this.identity = c.identity; this.applyOrigin(); }
+		this.mingge = (c.mingge && c.mingge.length) ? this.normalizeMinggeList(c.mingge, 3) : [];
+		this.pendingMingge = (c.pendingMingge && c.pendingMingge.length) ? this.normalizeMinggeList(c.pendingMingge, 3) : [];
+		if (c.identity){ this.identity = c.identity; }
+		this.applyOrigin();
 		if (c.pendingOrigin){ this.pendingOrigin = c.pendingOrigin; }
 		if (c.taleLog){ this.taleLog = c.taleLog; }
 		if (typeof c.heartDemon == "number"){ this.heartDemon = Math.min(100, Math.max(0, c.heartDemon)); }
@@ -4841,6 +9724,51 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (c.pillCraftCount && typeof c.pillCraftCount == "object"){
 			this.pillCraftCount = c.pillCraftCount;
 		}
+		if (typeof c.immortalAscended == "boolean"){
+			this.immortalAscended = c.immortalAscended;
+		}
+		if (typeof c.daoyun == "number"){
+			this.daoyun = Math.max(0, Math.floor(c.daoyun));
+		}
+		this.herbGarden = this.normalizeHerbGarden(c.herbGarden);
+		this.xianqi = this.normalizeXianqi(c.xianqi);
+		this.starArray = this.normalizeStarArray(c.starArray);
+		this.immortalBounty = this.normalizeImmortalBounty(c.immortalBounty);
+		this.spiritNursery = this.normalizeSpiritNursery(c.spiritNursery);
+		this.daoSteleForest = this.normalizeDaoSteleForest(c.daoSteleForest);
+		this.starship = this.normalizeStarship(c.starship);
+		this.hongmengAltar = this.normalizeHongmengAltar(c.hongmengAltar);
+		this.zixiaoAltar = this.normalizeZixiaoAltar(c.zixiaoAltar);
+		this.dharmaIdols = this.normalizeDharmaIdols(c.dharmaIdols);
+		this.immortalImprint = (typeof c.immortalImprint === "number" && isFinite(c.immortalImprint))
+			? Math.min(10, Math.max(0, Math.floor(c.immortalImprint)))
+			: 0;
+		this.xianqiImprintKey = (typeof c.xianqiImprintKey === "string" && this.getImmortalArtifactDef(c.xianqiImprintKey))
+			? c.xianqiImprintKey
+			: null;
+		this.starImprintTier = (typeof c.starImprintTier === "number" && isFinite(c.starImprintTier))
+			? Math.min(6, Math.max(0, Math.floor(c.starImprintTier)))
+			: 0;
+		this.beastImprintTier = (typeof c.beastImprintTier === "number" && isFinite(c.beastImprintTier))
+			? Math.min(6, Math.max(0, Math.floor(c.beastImprintTier)))
+			: 0;
+		this.hongmengImprintTier = (typeof c.hongmengImprintTier === "number" && isFinite(c.hongmengImprintTier))
+			? Math.min(6, Math.max(0, Math.floor(c.hongmengImprintTier)))
+			: 0;
+		this.dharmaImprintTier = (typeof c.dharmaImprintTier === "number" && isFinite(c.dharmaImprintTier))
+			? Math.min(6, Math.max(0, Math.floor(c.dharmaImprintTier)))
+			: 0;
+		if (!c.starship && this.hongmengImprintTier > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
+			var loadStartQi = this.getHongmengStartingQi();
+			this.starship.hongmengQi = loadStartQi;
+			this.starship.totalQiHarvested = loadStartQi;
+		}
+		if (!c.zixiaoAltar && this.dharmaImprintTier > 0 && (this.zixiaoAltar.totalSutrasCondensed || 0) === 0 && (this.zixiaoAltar.daoSutras || 0) === 0){
+			var loadStartSutras = this.getDharmaStartingSutras();
+			this.zixiaoAltar.daoSutras = loadStartSutras;
+			this.zixiaoAltar.totalSutrasCondensed = loadStartSutras;
+		}
+		this.syncDaoSutras();
 		if (typeof c.soundMuted == "boolean"){ this.soundMuted = c.soundMuted; }
 		if (typeof c.demonWarned == "boolean"){ this.demonWarned = c.demonWarned; }
 		if (typeof c.sihuaCount == "number"){ this.sihuaCount = Math.max(0, c.sihuaCount); }
@@ -4908,15 +9836,29 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.demonWarned = true;
 			this.game.msg($I("cultivation.msg.demon.warn"), "alert");
 		}
+		var csDecayMult = this.hasMingge("changsheng") ? 2 : 1;
 		if (this.heartDemon > 0){
 			var decay = 0.03 * (this.getFate("nangong").researched ? 3 : 1);
 			var lamp = this.getArtifact("yanghun");
 			if (lamp && lamp.researched){ decay += 0.02 * lamp.rank; }
-			this.heartDemon = Math.max(0, this.heartDemon - decay);
+			var caveDemon = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+			var demonCalmMult = (1 + ((caveDemon && caveDemon.heartDemonDecayBonus) || 0)) * (1 + Math.max(0, Math.floor(this.dharmaImprintTier || 0)) * 0.08);
+			this.heartDemon = Math.max(0, this.heartDemon - decay * csDecayMult * demonCalmMult);
 		}
 		if (this.pillToxicity > 0){
-			var toxDecay = 0.02 * (this.getAlchemyRank().detoxMult || 1) * (this.secluded ? 2 : 1);
+			var caveDetox = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+			var herbDetoxMult = 1 + ((caveDetox && caveDetox.detoxSpeed) || 0);
+			var toxDecay = 0.02 * (this.getAlchemyRank().detoxMult || 1) * (this.secluded ? 2 : 1) * csDecayMult * herbDetoxMult;
 			this.pillToxicity = Math.max(0, this.pillToxicity - toxDecay);
+		}
+		if (this.immortalAscended){
+			var immortalStep = 1 + this.game.timeAccelerationRatio();
+			this.tickHerbGarden(immortalStep);
+			this.tickStarArray(immortalStep);
+			this.tickImmortalBounty(immortalStep);
+			this.tickSpiritNursery(immortalStep);
+			this.tickStarship(immortalStep);
+			this.tickZixiaoAltar(immortalStep);
 		}
 		//fates fire once when their stage is reached (and any cond passes);
 		//every beat shows as a story card — an open card anywhere in the
@@ -5011,21 +9953,23 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		};
 		add("xiuweiRatio", this.getRoot().xiuweiMult - 1);
 		if (this.secluded){
-			add("xiuweiRatio", this.SECLUSION_XIUWEI);
+			add("xiuweiRatio", this.SECLUSION_XIUWEI + (this.hasMingge("changsheng") ? 0.25 : 0));
 			add("seclusionMundaneRatio", this.SECLUSION_MUNDANE);	//只压凡俗,不伤修为
 		}
+		var caveEff = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
+		var pPot = 1 + ((caveEff && caveEff.pillPotencyBonus) || 0);
 		if (this.buffs.juqi > 0){
-			var juqiMult = (this.buffs.juqiSupreme > 0) ? 1.35 : this.getPillRealmEfficacy("juqi");
+			var juqiMult = ((this.buffs.juqiSupreme > 0) ? 1.35 : this.getPillRealmEfficacy("juqi")) * pPot;
 			add("xiuweiRatio", 1.0 * juqiMult);
 		}
 		if (this.buffs.ziqi > 0){
 			add("xiuweiRatio", 0.5);	//上上签·紫气东来
 		}
 		if (this.buffs.jiangchen > 0){
-			add("xiuweiRatio", 0.35 * this.getPillRealmEfficacy("jiangchen"));	//降尘丹周天运转
+			add("xiuweiRatio", 0.35 * this.getPillRealmEfficacy("jiangchen") * pPot);	//降尘丹周天运转
 		}
 		if (this.buffs.biyan > 0){
-			var byMult = (this.buffs.biyanSupreme > 0) ? 1.25 : 1.0;
+			var byMult = ((this.buffs.biyanSupreme > 0) ? 1.25 : 1.0) * pPot;
 			add("xiuweiRatio", 0.50 * byMult);	//碧焰酒青莲灵火
 			add("realmProductionRatio", 0.25 * byMult);
 		}
@@ -5060,14 +10004,53 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (sealBonus.realmProductionRatio > 0){
 			add("realmProductionRatio", sealBonus.realmProductionRatio);
 		}
+		var springEff = this.getBeastSpringBonus ? this.getBeastSpringBonus() : null;
+		if (springEff && springEff.tier > 0){
+			add("xiuweiPerTickBase", springEff.xiuweiBase);
+			add("xiuweiRatio", springEff.xiuweiRatio);
+			add("catnipRatio", springEff.catnipRatio);
+		}
+		var hmDaoEff = this.getHongmengDaoBonus ? this.getHongmengDaoBonus() : null;
+		if (hmDaoEff && hmDaoEff.tier > 0){
+			add("xiuweiPerTickBase", hmDaoEff.xiuweiBase);
+			add("xiuweiRatio", hmDaoEff.xiuweiRatio);
+		}
+		var dmDaoEff = this.getDharmaDaoBonus ? this.getDharmaDaoBonus() : null;
+		if (dmDaoEff && dmDaoEff.tier > 0){
+			add("xiuweiPerTickBase", dmDaoEff.xiuweiBase);
+			add("xiuweiRatio", dmDaoEff.xiuweiRatio);
+			add("zhenyuanRatio", dmDaoEff.zhenyuanRatio);
+		}
+		if (this.immortalAscended){
+			add("xiuweiRatio", 0.50);
+			add("realmProductionRatio", 0.30);
+			add("xianyuanPerTickBase", 0.05);
+		}
+		if (this.daoyun > 0){
+			add("xiuweiRatio", this.daoyun * 0.18);
+			add("realmProductionRatio", this.daoyun * 0.12);
+			add("xianyuanPerTickBase", this.daoyun * 0.03);
+		}
+		if (caveEff){
+			if (caveEff.xiuweiRatio > 0){ add("xiuweiRatio", caveEff.xiuweiRatio); }
+			if (caveEff.realmProductionRatio > 0){ add("realmProductionRatio", caveEff.realmProductionRatio); }
+			if (caveEff.zhenyuanRatio > 0){ add("zhenyuanRatio", caveEff.zhenyuanRatio); }
+			if (caveEff.xianyuanBase > 0){ add("xianyuanPerTickBase", caveEff.xianyuanBase); }
+			if (caveEff.xianyuanRatio > 0){ add("xianyuanRatio", caveEff.xianyuanRatio); }
+		}
+		var zyEff = g["zhenyuanRatio"] || 0;
+		if (zyEff > 0 && g["xiuweiPerTickBase"] > 0){
+			add("xiuweiPerTickBase", g["xiuweiPerTickBase"] * zyEff * 0.25);	//高阶宗门周天真元转化修为底数
+		}
 	},
 
 	//天机阁·每日一卦——每跨一年摇一签,纯手气,图个念想
 	drawLot: function(){
-		//凝露瓶每跨一年自动凝聚1滴绿液(上限5滴)
+		//凝露瓶每跨一年自动凝聚1滴绿液(上限5滴;宙光星瞳命格额外+1滴)
 		var bottle = this.getFate("bottle");
 		if (bottle && bottle.researched && (this.bottleDew || 0) < 5){
-			this.bottleDew = Math.min(5, (this.bottleDew || 0) + 1);
+			var dewGain = this.hasMingge("zhenyan") ? 2 : 1;
+			this.bottleDew = Math.min(5, (this.bottleDew || 0) + dewGain);
 		}
 		var roll = Math.random() * 100;
 		if (roll < 5){	//上上签
@@ -5127,6 +10110,28 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.supremePills = {};
 		this.pillCraftCount = {};
 		this.lastAlchemyNote = null;
+		this.immortalAscended = false;
+		this.daoyun = 0;
+		this.herbGarden = this.makeDefaultHerbGarden();
+		this.xianqi = this.makeDefaultXianqi();
+		this.starArray = this.makeDefaultStarArray();
+		this.immortalBounty = this.makeDefaultImmortalBounty();
+		this.spiritNursery = this.makeDefaultSpiritNursery();
+		this.daoSteleForest = this.makeDefaultDaoSteleForest();
+		this.starship = this.makeDefaultStarship();
+		this.hongmengAltar = this.makeDefaultHongmengAltar();
+		this.zixiaoAltar = this.makeDefaultZixiaoAltar();
+		this.dharmaIdols = this.makeDefaultDharmaIdols();
+		this.immortalImprint = 0;
+		this.xianqiImprintKey = null;
+		this.starImprintTier = 0;
+		this.beastImprintTier = 0;
+		this.hongmengImprintTier = 0;
+		this.dharmaImprintTier = 0;
+		this.daoSutras = 0;
+		this.mingge = [];
+		this.pendingMingge = [];
+		this.applyOrigin();
 		this.lastLotYear = this.game.calendar.year;	//转世不立刻抽签,来年再说
 		this.demonWarned = false;
 		this.pendingOrigin = false;	//标记由转世存档带来,不入内存态重置
@@ -5509,6 +10514,11 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				self.update();
 				return;
 			}
+			var mgBtn = el.closest ? el.closest(".xx-mingge-open") : (el.className && el.className.indexOf("xx-mingge-open") >= 0 ? el : null);
+			if (mgBtn){
+				cult.showReincarnationOverlay();
+				return;
+			}
 			var artChip = el.closest ? el.closest(".xx-art") : null;
 			if (artChip && artChip.getAttribute("data-art")){
 				cult.setNatalArtifact(artChip.getAttribute("data-art"));
@@ -5833,6 +10843,299 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		this.chronicleEl = dojo.create("details", {className: "xxChronicle"}, tabContainer);
 		this._chronicleLen = -1;	//rebuild only when the log grows
 
+		//⑨ XX-2 真仙界飞升大典与仙灵法则循环仙台
+		this.immortalPanelEl = dojo.create("div", {
+			className: "xxImmortalBox",
+			style: { display: "none" }
+		}, tabContainer);
+		this._immortalSig = "";
+		dojo.connect(this.immortalPanelEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalPanelEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-immortal");
+				if (act){
+					if (act === "ascend"){
+						cult.ascendToImmortalRealm();
+					} else if (act === "infuse"){
+						cult.infuseImmortalQi();
+					} else if (act === "law"){
+						cult.comprehendDaoLaw();
+					}
+					self._immortalSig = "";
+					self._caveSig = "";
+					self.update();
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑩ XX-4 仙界洞府 · 聚灵药园与本命仙器蕴养祭炼
+		this.immortalCaveEl = dojo.create("div", {
+			className: "xxCaveArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._caveSig = "";
+		dojo.connect(this.immortalCaveEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalCaveEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-cave");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (act === "seed"){
+						changed = cult.selectGardenSeed(arg);
+					} else if (act === "plant"){
+						changed = cult.plantHerbPlot(parseInt(arg, 10));
+					} else if (act === "harvest"){
+						changed = cult.harvestHerbPlot(parseInt(arg, 10));
+					} else if (act === "harvestAll"){
+						changed = cult.harvestAllHerbs() > 0;
+					} else if (act === "autoTend"){
+						cult.toggleGardenAutoTend();
+						changed = true;
+					} else if (act === "expand"){
+						changed = cult.expandHerbPlot();
+					} else if (act === "array"){
+						changed = cult.upgradeSpiritArray();
+					} else if (act === "infuseHerb"){
+						changed = cult.infuseHerbAlchemy(arg);
+					} else if (act === "bindXianqi"){
+						changed = cult.bindImmortalArtifact(arg);
+					} else if (act === "nurtureXianqi"){
+						changed = cult.nurtureImmortalArtifact();
+					} else if (act === "refineXianqi"){
+						changed = cult.refineImmortalArtifact();
+					}
+					if (changed){
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._caveSig = "";
+						self._sanctumSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑪ XX-5 周天星斗护山大阵与跨界仙盟奇遇悬赏
+		this.immortalSanctumEl = dojo.create("div", {
+			className: "xxCaveArena xxSanctumArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._sanctumSig = "";
+		dojo.connect(this.immortalSanctumEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalSanctumEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-sanctum");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (act === "selectCore"){
+						changed = cult.selectStarCore(arg);
+					} else if (act === "condenseCore"){
+						changed = cult.condenseStarCore(arg);
+					} else if (act === "socketCore"){
+						changed = cult.socketStarCore(parseInt(arg, 10));
+					} else if (act === "unsocketCore"){
+						changed = cult.unsocketStarCore(parseInt(arg, 10));
+					} else if (act === "deduceArray"){
+						changed = cult.deduceStarArrayTier();
+					} else if (act === "repelRaid"){
+						var saNow = cult.starArray || cult.makeDefaultStarArray();
+						changed = cult.repelHeavenlyDemonRaid((saNow.raidThreat || 0) < 100);
+					} else if (act === "autoRepel"){
+						cult.toggleStarAutoRepel();
+						changed = true;
+					} else if (act === "refreshBounty"){
+						changed = cult.refreshAllianceBounties();
+					} else if (act === "autoBounty"){
+						cult.toggleBountyAutoDispatch();
+						changed = true;
+					} else if (act === "dispatchBounty"){
+						changed = cult.dispatchAllianceBounty(arg);
+					} else if (act === "boostBounty"){
+						changed = cult.boostAllianceBounty();
+					} else if (act === "completeBounty"){
+						changed = cult.completeAllianceBounty(arg);
+					} else if (act === "exchangeMerit"){
+						changed = cult.exchangeAllianceMerit(arg);
+					}
+					if (changed){
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._sanctumSig = "";
+						self._menagerieSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑫ XX-6 混沌万灵仙宠育兽苑与大道法则碑林参悟
+		this.immortalMenagerieEl = dojo.create("div", {
+			className: "xxCaveArena xxMenagerieArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._menagerieSig = "";
+		dojo.connect(this.immortalMenagerieEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalMenagerieEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-menagerie");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (act === "selectBeast"){
+						changed = cult.selectNurseryBeast(arg);
+					} else if (act === "incubateBeast"){
+						changed = cult.incubateSpiritBeast(arg, false);
+					} else if (act === "warmEgg"){
+						changed = cult.warmBeastEgg(arg);
+					} else if (act === "deployBattle"){
+						changed = cult.deploySpiritBeast(arg, "battle");
+					} else if (act === "deployGarden"){
+						changed = cult.deploySpiritBeast(arg, "garden");
+					} else if (act === "autoNurture"){
+						cult.toggleBeastAutoNurture();
+						changed = true;
+					} else if (act === "feedHerb"){
+						changed = cult.feedSpiritBeast(arg, "herb");
+					} else if (act === "feedXy"){
+						changed = cult.feedSpiritBeast(arg, "xianyuan");
+					} else if (act === "feedPill"){
+						changed = cult.feedSpiritBeast(arg, "pill");
+					} else if (act === "awakenBeast"){
+						changed = cult.awakenBeastBloodline(arg);
+					} else if (act === "rubStele"){
+						changed = cult.comprehendDaoStele(arg);
+					}
+					if (changed){
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑬ XX-7 诸天星域游历飞舟（太虚星槎）与混沌鸿蒙灵宝祭坛
+		this.immortalCosmosEl = dojo.create("div", {
+			className: "xxCaveArena xxCosmosArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._cosmosSig = "";
+		dojo.connect(this.immortalCosmosEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalCosmosEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-cosmos");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (act === "upgradeVessel"){
+						changed = cult.upgradeStarship();
+					} else if (act === "selectRealm"){
+						changed = cult.selectStarRealm(arg);
+					} else if (act === "surgeVoyage"){
+						changed = cult.surgeStarshipVoyage();
+					} else if (act === "autoVoyage"){
+						cult.toggleStarshipAutoVoyage();
+						changed = true;
+					} else if (act === "forgeTreasure"){
+						changed = cult.forgeHongmengTreasure(arg);
+					}
+					if (changed){
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑭ XX-8 混沌紫霄讲道坛与三千大道神通法相
+		this.immortalDharmaEl = dojo.create("div", {
+			className: "xxCaveArena xxDharmaArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._dharmaSig = "";
+		dojo.connect(this.immortalDharmaEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalDharmaEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-dharma");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (act === "upgradeAltar"){
+						changed = cult.upgradeZixiaoAltar();
+					} else if (act === "autoLecture"){
+						cult.toggleZixiaoAutoLecture();
+						changed = true;
+					} else if (act === "lectureEssence"){
+						changed = cult.holdDaoLecture("essence");
+					} else if (act === "lectureHongmeng"){
+						changed = cult.holdDaoLecture("hongmeng");
+					} else if (act === "refineIdol"){
+						changed = cult.refineDharmaIdol(arg);
+					} else if (act === "equipPrimary"){
+						changed = cult.equipDharmaIdol(arg, "primary");
+					} else if (act === "equipSupport"){
+						changed = cult.equipDharmaIdol(arg, "support");
+					}
+					if (changed){
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
 		var ascendRow = dojo.create("div", { className: "xxAscendRow" }, tabContainer);
 		this.ascendBtn = dojo.create("div", {
 			className: "btn nosel modern xxAscend xx-has-ico",
@@ -5852,7 +11155,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			innerHTML: "<span class=\"xx-ci ok\"><i>" + $I("cultivation.ascend.desc") + "</i></span>"
 		}, ascendContent);
 		dojo.connect(this.ascendBtn, "onclick", function(){
-			self.game.reset();
+			cult.showReincarnationOverlay();
 		});
 
 		this.update();
@@ -5933,6 +11236,8 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		var heroBg = artMgr ? "<div class=\"xx-hero-bg\" aria-hidden=\"true\">" + artMgr.cultivationBgSVG(realm.realm || "lianqi") + "</div>" : "";
 		var sndChip = "<span class=\"xx-chip xx-sound-toggle\" title=\"" + $I("cultivation.sound.tip") + "\">" +
 			$I(cult.soundMuted ? "cultivation.sound.off" : "cultivation.sound.on") + "</span>";
+		var showMgBtn = (cult.getPastLives() > 0 || cult.getCurrentRealmIndex() >= 1 || (cult.mingge && cult.mingge.length > 0) || (cult.pendingMingge && cult.pendingMingge.length > 0));
+		var mgChip = showMgBtn ? "<span class=\"xx-chip xx-mingge-open\" title=\"开启六道轮回先天命格盘：预设来世特殊灵体或主动兵解重修\">☯ 先天命盘</span>" : "";
 		var phenomBanner = "";
 		if (cult.lastBreakPhenomenon && (Date.now() - cult.lastBreakPhenomenon.ts < 2400)){
 			var pMaj = cult.lastBreakPhenomenon.major;
@@ -5948,6 +11253,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						"<span class=\"xx-realm-big" + (isMortal ? " xx-realm-mortal" : "") + "\">" + realmLabel + "</span>" +
 						"<span class=\"xx-chip xx-daotitle" + (isMortal ? " xx-daotitle-mortal" : "") + "\">" + daoTitle + "</span>" +
 						(cult.secluded ? "<span class=\"xx-chip xx-secl\">" + $I("cultivation.header.secluded") + "</span>" : "") +
+						mgChip +
 						sndChip +
 					"</div>" +
 				"</div>" +
@@ -6001,6 +11307,19 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 		}
 		if (extras.length){
 			html += "<div class=\"xx-hd-extra\"><span>" + extras.join("</span><span>") + "</span></div>";
+		}
+
+		//XX-3 先天命格 / 特殊灵体常驻铭牌
+		var activeMgs = cult.getActiveMinggeDefs ? cult.getActiveMinggeDefs() : [];
+		if (activeMgs.length){
+			html += "<div class=\"xx-hd-fates xx-hd-mingge\"><span class=\"xx-fate-lbl\">先天命格</span>";
+			for (var mi = 0; mi < activeMgs.length; mi++){
+				var md = activeMgs[mi];
+				var mgIco = (artMgr && artMgr.minggeIcon) ? "<i class=\"xx-chip-ico\" aria-hidden=\"true\">" + artMgr.minggeIcon(md.art) + "</i>" : "";
+				var mgTip = String(md.desc || "").replace(/"/g, "&quot;");
+				html += "<span class=\"xx-chip xx-fate xx-mingge-chip xx-mingge-open\" title=\"" + mgTip + "\">" + mgIco + md.label + " · " + md.tag + "</span>";
+			}
+			html += "</div>";
 		}
 
 		//fate roster — collected characters & artifacts, story on hover
@@ -6769,6 +12088,1590 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 			}
 		}
 
+		if (this.immortalPanelEl){
+			var dujieSt = cult.getStage("dujie_0");
+			var showImmortal = !!(dujieSt && dujieSt.researched);
+			this.immortalPanelEl.style.display = showImmortal ? "block" : "none";
+			if (showImmortal){
+				dojo.toggleClass(this.immortalPanelEl, "is-ascended", !!cult.immortalAscended);
+				var tcObj = this.game.resPool.get("timeCrystal");
+				var xyObj = this.game.resPool.get("xianyuan");
+				var tcVal = tcObj ? Math.floor(tcObj.value) : 0;
+				var xyVal = xyObj ? Math.floor(xyObj.value) : 0;
+				var xyRate = this.game.calcResourcePerTick("xianyuan") * (this.game.getTicksPerSecondUI ? this.game.getTicksPerSecondUI() : 5);
+				var lawCost = cult.getDaoyunCost();
+				var iSig = (cult.immortalAscended ? "A:" : "P:") + cult.riftFloor + ":" +
+					(cult.daoyun || 0) + ":" + (tcVal >= 10 ? 1 : 0) + ":" +
+					(xyVal >= lawCost ? 1 : 0) + ":" + Math.round(xyVal) + ":" + Math.round(xyRate * 100);
+				if (this._immortalSig !== iSig){
+					this._immortalSig = iSig;
+					var fmtV = this.game.getDisplayValueExt.bind(this.game);
+					if (!cult.immortalAscended){
+						var canFly = cult.canAscendImmortal();
+						this.immortalPanelEl.innerHTML =
+							"<div class=\"xxImmortalHd\">" +
+								"<div class=\"xxImmortalArt\"><img src=\"res/art/portrait_zhenxian.jpg\" alt=\"\"/></div>" +
+								"<div class=\"xxImmortalMeta\">" +
+									"<span class=\"xxImmortalBadge\">" + $I("cultivation.feisheng.badge") + "</span>" +
+									"<div class=\"xxImmortalTitle\">" + $I("cultivation.feisheng.title") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxImmortalDesc\">" + $I("cultivation.feisheng.desc") + "</div>" +
+							"<div class=\"xxImmortalStats\">" +
+								"<span class=\"xxImmortalPill\">渡劫道果：已圆满</span>" +
+								"<span class=\"xxImmortalPill\">上古秘境：" + cult.riftFloor + " / 25 层</span>" +
+							"</div>" +
+							"<div class=\"xxImmortalActions\">" +
+								"<div class=\"xxImmortalBtn" + (canFly ? "" : " is-disabled") + "\" data-xx-immortal=\"ascend\">" +
+									(canFly ? $I("cultivation.feisheng.btn.ready") : $I("cultivation.feisheng.btn.wait", [cult.riftFloor])) +
+								"</div>" +
+							"</div>";
+					} else {
+						var dy = cult.daoyun || 0;
+						this.immortalPanelEl.innerHTML =
+							"<div class=\"xxImmortalHd\">" +
+								"<div class=\"xxImmortalArt\"><img src=\"res/art/portrait_zhenxian.jpg\" alt=\"\"/></div>" +
+								"<div class=\"xxImmortalMeta\">" +
+									"<span class=\"xxImmortalBadge\">" + $I("cultivation.immortal.badge") + "</span>" +
+									"<div class=\"xxImmortalTitle\">" + $I("cultivation.immortal.title") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxImmortalDesc\">" + $I("cultivation.immortal.desc") + "</div>" +
+							"<div class=\"xxImmortalStats\">" +
+								"<span class=\"xxImmortalPill\"><img src=\"res/art/res_xianyuan.jpg\" alt=\"\"/>仙元：" + fmtV(xyObj ? xyObj.value : 0) + " (+" + fmtV(xyRate) + "/秒)</span>" +
+								"<span class=\"xxImmortalPill\">法则道韵：" + dy + " 重（吐纳+" + Math.round(50 + dy * 18) + "% · 万产+" + Math.round(30 + dy * 12) + "% · 战力+" + Math.round(35 + dy * 15) + "%）</span>" +
+							"</div>" +
+							"<div class=\"xxImmortalActions\">" +
+								"<div class=\"xxImmortalBtn" + (tcVal >= 10 ? "" : " is-disabled") + "\" data-xx-immortal=\"infuse\">" +
+									$I("cultivation.immortal.infuse.btn") +
+								"</div>" +
+								"<div class=\"xxImmortalBtn" + (xyVal >= lawCost ? "" : " is-disabled") + "\" data-xx-immortal=\"law\">" +
+									$I("cultivation.immortal.law.btn", [fmtV(lawCost)]) +
+								"</div>" +
+							"</div>";
+					}
+				}
+			}
+		}
+
+		if (this.immortalCaveEl){
+			var dujieCave = cult.getStage("dujie_0");
+			var showCave = !!(cult.immortalAscended || (dujieCave && dujieCave.researched) || (cult.immortalImprint || 0) > 0);
+			this.immortalCaveEl.style.display = showCave ? "block" : "none";
+			if (showCave){
+				dojo.toggleClass(this.immortalCaveEl, "is-locked", !cult.immortalAscended);
+				var hg = cult.herbGarden || cult.makeDefaultHerbGarden();
+				var xq = cult.xianqi || cult.makeDefaultXianqi();
+				var xyPool = this.game.resPool.get("xianyuan");
+				var tcPool = this.game.resPool.get("timeCrystal");
+				var rlPool = this.game.resPool.get("relic");
+				var uoPool = this.game.resPool.get("unobtainium");
+				var cnPool = this.game.resPool.get("catnip");
+				var xyHave = xyPool ? Math.floor(xyPool.value) : 0;
+				var tcHave = tcPool ? Math.floor(tcPool.value) : 0;
+				var rlHave = rlPool ? Math.floor(rlPool.value) : 0;
+				var uoHave = uoPool ? Math.floor(uoPool.value) : 0;
+				var cnHave = cnPool ? Math.floor(cnPool.value) : 0;
+
+				var plotSigArr = [];
+				for (var psi = 0; psi < 4; psi++){
+					var ps = hg.plots[psi];
+					plotSigArr.push(ps && ps.herbKey ? (ps.herbKey + ":" + Math.floor(ps.progress) + ":" + (ps.mature ? 1 : 0)) : "0");
+				}
+				var caveSig = [
+					cult.immortalAscended ? 1 : 0,
+					cult.daoyun || 0,
+					cult.immortalImprint || 0,
+					hg.plotsUnlocked,
+					hg.arrayLevel,
+					hg.autoTend ? 1 : 0,
+					hg.selectedSeed,
+					hg.daoLawProgress || 0,
+					hg.daoDiscountStacks || 0,
+					hg.stock.xianlan || 0,
+					hg.stock.zizhi || 0,
+					hg.stock.qinglian || 0,
+					hg.stock.daoguo || 0,
+					plotSigArr.join(","),
+					xq.boundKey || "none",
+					xq.stage || 0,
+					xq.nurtureExp || 0,
+					xyHave,
+					tcHave,
+					rlHave,
+					uoHave,
+					cnHave >= 80 ? 1 : 0,
+					hg.lastNote || "",
+					xq.lastNote || ""
+				].join("|");
+
+				if (this._caveSig !== caveSig){
+					this._caveSig = caveSig;
+					var fmtCave = this.game.getDisplayValueExt.bind(this.game);
+					var artV = cult.ART_VER || "77";
+					var isEn = String($I("cultivation.cave.badge") || "").indexOf("Immortal") === 0;
+					var caveBns = cult.getImmortalCaveBonuses(26);
+					var impBadgeHtml = (cult.immortalImprint > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.xianqi.imprint.label", [cult.immortalImprint]) + "</span>"
+						: "";
+					var hdrArtKey = (xq.boundKey && artMgr && artMgr.XIANQI_ART && artMgr.XIANQI_ART[xq.boundKey])
+						? artMgr.XIANQI_ART[xq.boundKey]
+						: "res/art/herb_xianlan.webp";
+
+					var caveTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon\"><img src=\"" + hdrArtKey + "?v=" + artV + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.cave.badge") + "</span>" +
+										impBadgeHtml +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.cave.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.cave.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + (isEn ? ("Spirit Array <b>Lv." + hg.arrayLevel + "</b> (×" + cult.getGardenGrowthRate().toFixed(2) + ")") : ("聚灵阵 <b>" + hg.arrayLevel + " 阶</b> (×" + cult.getGardenGrowthRate().toFixed(2) + ")")) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + (isEn ? ("Herb Stock <b>" + cult.getHerbTotalStock() + "</b>") : ("仙草库藏 <b>" + cult.getHerbTotalStock() + "</b> 株")) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + (isEn ? ("Artifact Power <b>×" + caveBns.combatMult.toFixed(2) + "</b>") : ("器灵战力 <b>×" + caveBns.combatMult.toFixed(2) + "</b>")) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						this.immortalCaveEl.innerHTML = caveTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.cave.locked") + "</div>";
+					} else {
+						var seedCardsHtml = "<div class=\"xxSeedBar\">";
+						for (var hi2 = 0; hi2 < cult.IMMORTAL_HERBS.length; hi2++){
+							var hDef = cult.IMMORTAL_HERBS[hi2];
+							var isSelSeed = (hg.selectedSeed === hDef.key);
+							var stCnt = hg.stock[hDef.key] || 0;
+							var seedCostParts = [];
+							for (var sci = 0; sci < hDef.seedCost.length; sci++){
+								var scObj = hDef.seedCost[sci];
+								var scRes = this.game.resPool.get(scObj.name);
+								seedCostParts.push(scObj.val + " " + ((scRes && scRes.title) || scObj.name));
+							}
+							seedCardsHtml +=
+								"<div class=\"xxSeedCard" + (isSelSeed ? " is-selected" : "") + "\" data-xx-cave=\"seed\" data-xx-arg=\"" + hDef.key + "\" title=\"" + String($I(hDef.descKey)).replace(/"/g, "&quot;") + "\">" +
+									"<div class=\"xxHerbIco\"><img src=\"" + hDef.art + "?v=" + artV + "\" alt=\"\"/></div>" +
+									"<div class=\"xxSeedBody\">" +
+										"<div class=\"xxSeedNameRow\"><span>" + $I(hDef.labelKey) + "</span><span class=\"xxSeedStock\">" + (isEn ? ("×" + stCnt) : ("库×" + stCnt)) + "</span></div>" +
+										"<div class=\"xxSeedSub\">" + (isEn ? "Seed: " : "引种：") + seedCostParts.join(" · ") + "</div>" +
+									"</div>" +
+								"</div>";
+						}
+						seedCardsHtml += "</div>";
+
+						var anyMature = false;
+						var plotGridHtml = "<div class=\"xxPlotGrid\">";
+						for (var pli = 0; pli < 4; pli++){
+							if (pli >= hg.plotsUnlocked){
+								plotGridHtml +=
+									"<div class=\"xxPlotCard is-locked\">" +
+										"<div class=\"xxPlotTitle\">" + (isEn ? ("Plot #" + (pli + 1) + " · Sealed") : ("第 " + (pli + 1) + " 仙圃 · 禁制未辟")) + "</div>" +
+										"<div class=\"xxPlotState\">" + (isEn ? "Unseal with Immortal Essence & Flux Crystals" : "凝练仙元与光阴晶可破除仙禁") + "</div>" +
+									"</div>";
+							} else {
+								var pl = hg.plots[pli];
+								if (pl && pl.herbKey){
+									var plDef = cult.getHerbDef(pl.herbKey);
+									var pct = pl.maxTicks > 0 ? Math.min(100, Math.round((pl.progress / pl.maxTicks) * 100)) : 0;
+									if (pl.mature){ anyMature = true; }
+									plotGridHtml +=
+										"<div class=\"xxPlotCard" + (pl.mature ? " is-mature" : "") + "\">" +
+											"<div class=\"xxPlotTop\">" +
+												"<div class=\"xxHerbIco\"><img src=\"" + (plDef ? plDef.art : "res/art/herb_xianlan.webp") + "?v=" + artV + "\" alt=\"\"/></div>" +
+												"<div class=\"xxSeedBody\">" +
+													"<div class=\"xxPlotTitle\">" + (plDef ? $I(plDef.labelKey) : pl.herbKey) + "</div>" +
+													"<div class=\"xxPlotState\">" + (pl.mature ? (isEn ? "10,000-Year Mature · Ready" : "万年灵韵圆满 · 可采收") : (isEn ? ("Spirit Dew " + pct + "%") : ("灵雾孕育 " + pct + "%"))) + "</div>" +
+												"</div>" +
+											"</div>" +
+											"<div class=\"xxPlotBar\"><i style=\"width:" + pct + "%\"></i></div>" +
+											(pl.mature
+												? "<div class=\"xxCaveMiniBtn gold\" data-xx-cave=\"harvest\" data-xx-arg=\"" + pli + "\">" + (isEn ? ("Harvest (+" + (plDef ? plDef.harvestXy : 8) + " Essence)") : ("采收仙草 (+" + (plDef ? plDef.harvestXy : 8) + " 仙元)")) + "</div>"
+												: "<div class=\"xxCaveMiniBtn is-disabled\">" + (isEn ? "Condensing Spirit Dew..." : "聚灵阵凝露滋养中") + "</div>") +
+										"</div>";
+								} else {
+									var selDef = cult.getHerbDef(hg.selectedSeed || "xianlan");
+									var canPlant = cult.canAffordHerbSeed(hg.selectedSeed || "xianlan");
+									plotGridHtml +=
+										"<div class=\"xxPlotCard\">" +
+											"<div class=\"xxPlotTop\">" +
+												"<div class=\"xxHerbIco\"><img src=\"" + (selDef ? selDef.art : "res/art/herb_xianlan.webp") + "?v=" + artV + "\" alt=\"\"/></div>" +
+												"<div class=\"xxSeedBody\">" +
+													"<div class=\"xxPlotTitle\">" + (isEn ? ("Plot #" + (pli + 1) + " · Fertile") : ("第 " + (pli + 1) + " 仙圃 · 沃土待种")) + "</div>" +
+													"<div class=\"xxPlotState\">" + (isEn ? "Selected: " : "拟种：") + (selDef ? $I(selDef.labelKey) : "") + "</div>" +
+												"</div>" +
+											"</div>" +
+											"<div class=\"xxCaveMiniBtn" + (canPlant ? "" : " is-disabled") + "\" data-xx-cave=\"plant\" data-xx-arg=\"" + pli + "\">" + (isEn ? "Sow Immortal Seed" : "播撒仙种") + "</div>" +
+										"</div>";
+								}
+							}
+						}
+						plotGridHtml += "</div>";
+
+						var expCost = cult.getPlotExpandCost();
+						var arrCost = cult.getSpiritArrayCost();
+						var canExpand = !!(expCost && xyHave >= expCost.xianyuan && tcHave >= expCost.timeCrystal);
+						var canArr = !!(arrCost && xyHave >= arrCost.xianyuan && rlHave >= arrCost.relic);
+
+						var gardenBtnsHtml =
+							"<div class=\"xxCaveMiniBtnRow\">" +
+								"<div class=\"xxCaveMiniBtn\" data-xx-cave=\"autoTend\">" +
+									$I(hg.autoTend ? "cultivation.garden.autotend.on" : "cultivation.garden.autotend.off") +
+								"</div>" +
+								"<div class=\"xxCaveMiniBtn gold" + (anyMature ? "" : " is-disabled") + "\" data-xx-cave=\"harvestAll\">" +
+									$I("cultivation.garden.harvestall") +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveMiniBtnRow\" style=\"margin-top:6px;\">" +
+								(arrCost
+									? "<div class=\"xxCaveMiniBtn" + (canArr ? "" : " is-disabled") + "\" data-xx-cave=\"array\">" + $I("cultivation.garden.array.btn", [fmtCave(arrCost.xianyuan), fmtCave(arrCost.relic)]) + "</div>"
+									: "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.garden.array.max") + "</div>") +
+								(expCost
+									? "<div class=\"xxCaveMiniBtn" + (canExpand ? "" : " is-disabled") + "\" data-xx-cave=\"expand\">" + $I("cultivation.garden.expand.btn", [expCost.nextPlot, fmtCave(expCost.xianyuan), fmtCave(expCost.timeCrystal)]) + "</div>"
+									: "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.garden.expand.max") + "</div>") +
+							"</div>";
+
+						var infuseHtml =
+							"<div class=\"xxInfuseShelf\">" +
+								"<div class=\"xxCaveSecMeta\">" + (isEn ? ("Infuse Herbs into Alchemy & Dao Resonance (" + (hg.daoLawProgress || 0) + "/100)") : ("仙草入丹反哺（炼化库存仙草：涤丹毒 · 凝极品灵丹 · 积道韵感悟 " + (hg.daoLawProgress || 0) + "/100）")) + "</div>" +
+								"<div class=\"xxInfuseRow\">";
+						for (var infi = 0; infi < cult.IMMORTAL_HERBS.length; infi++){
+							var ih = cult.IMMORTAL_HERBS[infi];
+							var ihStock = hg.stock[ih.key] || 0;
+							infuseHtml +=
+								"<div class=\"xxCaveMiniBtn" + (ihStock > 0 ? "" : " is-disabled") + "\" data-xx-cave=\"infuseHerb\" data-xx-arg=\"" + ih.key + "\">" +
+									(isEn ? ("Infuse " + $I(ih.labelKey) + " (×" + ihStock + ")") : ("炼化" + $I(ih.labelKey) + " (×" + ihStock + ")")) +
+								"</div>";
+						}
+						infuseHtml += "</div></div>";
+
+						var gardenColHtml =
+							"<div class=\"xxCaveSection xxCaveColGarden\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\">" + $I("cultivation.garden.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + (isEn ? ("Plots " + hg.plotsUnlocked + "/4 · Harvested " + (hg.totalHarvested || 0)) : ("仙圃 " + hg.plotsUnlocked + "/4 · 累计采收 " + (hg.totalHarvested || 0))) + "</span>" +
+								"</div>" +
+								seedCardsHtml +
+								plotGridHtml +
+								gardenBtnsHtml +
+								infuseHtml +
+								(hg.lastNote ? "<div class=\"xxCaveNote\">" + hg.lastNote + "</div>" : "") +
+							"</div>";
+
+						var xqGridHtml = "<div class=\"xxXianqiGrid\">";
+						for (var xqi = 0; xqi < cult.IMMORTAL_ARTIFACTS.length; xqi++){
+							var xDef = cult.IMMORTAL_ARTIFACTS[xqi];
+							var isBound = (xq.boundKey === xDef.key && xq.stage > 0);
+							var bCost = cult.getBindXianqiCost(xDef.key);
+							var bHint = isBound ? (isEn ? "Natal Bound" : "本命已认主") : ((xq.stage > 0 ? $I("cultivation.xianqi.switch.btn", [bCost]) : $I("cultivation.xianqi.bind.btn", [bCost])));
+							xqGridHtml +=
+								"<div class=\"xxXianqiCard" + (isBound ? " is-bound" : "") + "\" data-xx-cave=\"bindXianqi\" data-xx-arg=\"" + xDef.key + "\" title=\"" + String($I(xDef.descKey)).replace(/"/g, "&quot;") + "\">" +
+									"<div class=\"xxXianqiIco\"><img src=\"" + xDef.art + "?v=" + artV + "\" alt=\"\"/></div>" +
+									"<div class=\"xxXianqiMeta\">" +
+										"<div class=\"xxXianqiName\">" + $I(xDef.labelKey) + "</div>" +
+										"<div class=\"xxXianqiTag\">" + (isEn ? (xDef.tagEn || xDef.tag) : xDef.tag) + "</div>" +
+										"<div class=\"xxPlotState\">" + bHint + "</div>" +
+									"</div>" +
+								"</div>";
+						}
+						xqGridHtml += "</div>";
+
+						var boundDef = xq.boundKey ? cult.getImmortalArtifactDef(xq.boundKey) : null;
+						var curStCfg = cult.XIANQI_STAGES[xq.stage || 0] || cult.XIANQI_STAGES[0];
+						var refReq = cult.getXianqiRefineReq();
+						var nurtCost = cult.getNurtureXianqiCost();
+						var canNurture = !!(boundDef && xq.stage > 0 && xq.nurtureExp < 100 && xyHave >= nurtCost);
+
+						var stageBoxHtml =
+							"<div class=\"xxXianqiStageBox\">" +
+								"<div class=\"xxXianqiStageTop\">" +
+									"<span>" + (boundDef ? ($I(boundDef.labelKey) + " · " + (isEn ? (curStCfg.titleEn || curStCfg.title) : curStCfg.title)) : (isEn ? "Select an Immortal Artifact archetype above to bind" : "请选择上方一尊仙器道胎祭炼认主")) + "</span>" +
+									(boundDef ? "<span>" + (isEn ? ("Nurture " + (xq.nurtureExp || 0) + "%") : ("温养度 " + (xq.nurtureExp || 0) + "%")) + "</span>" : "") +
+								"</div>" +
+								"<div class=\"xxXianqiStageDesc\">" +
+									(boundDef ? $I(boundDef.descKey) : (isEn ? "Bind a Natal Immortal Artifact to refine across 6 stages and awaken 3 Spirit Resonance passives." : "认主本命仙器后，可耗仙元、万年仙草、太虚仙金/光阴晶与法则道韵逐阶祭炼，觉醒三重器灵共鸣被动。")) +
+								"</div>" +
+								(boundDef ? (
+									"<div class=\"xxXianqiNurtureWrap\">" +
+										"<div class=\"xxPlotBar\"><i style=\"width:" + (xq.nurtureExp || 0) + "%\"></i></div>" +
+									"</div>"
+								) : "") +
+							"</div>";
+
+						var passives = cult.getActiveResonancePassives();
+						var passivesHtml = "";
+						if (passives.length){
+							passivesHtml = "<div class=\"xxXianqiPassiveList\">";
+							for (var pvi = 0; pvi < passives.length; pvi++){
+								var pv = passives[pvi];
+								passivesHtml +=
+									"<div class=\"xxXianqiPassiveItem" + (pv.unlocked ? " is-active" : "") + "\">" +
+										"<b>[" + (isEn ? ("Tier " + pv.tier + " · " + (pv.titleEn || pv.title)) : (pv.tier + "阶共鸣 · " + pv.title)) + "]</b> " + (isEn ? (pv.descEn || pv.desc) : pv.desc) +
+									"</div>";
+							}
+							passivesHtml += "</div>";
+						}
+
+						var xqBtnsHtml = "";
+						if (boundDef && xq.stage > 0){
+							var orePart = "";
+							if (refReq && refReq.oreRes && refReq.oreVal > 0){
+								var oreResObj = this.game.resPool.get(refReq.oreRes);
+								orePart = " · " + ((oreResObj && oreResObj.title) || refReq.oreRes) + "×" + fmtCave(refReq.oreVal) + " · " + (isEn ? ("Dao≥" + refReq.reqDaoyun) : ("道韵≥" + refReq.reqDaoyun));
+							}
+							xqBtnsHtml =
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									"<div class=\"xxCaveMiniBtn" + (canNurture ? "" : " is-disabled") + "\" data-xx-cave=\"nurtureXianqi\">" +
+										(xq.nurtureExp >= 100 ? (isEn ? "Spirit Nurtured 100% (-25% Cost)" : "器灵温养已圆满（破阶减耗25%）") : $I("cultivation.xianqi.nurture.btn", [nurtCost])) +
+									"</div>" +
+									(refReq
+										? "<div class=\"xxCaveMiniBtn gold" + (refReq.affordable ? "" : " is-disabled") + "\" data-xx-cave=\"refineXianqi\">" +
+											$I("cultivation.xianqi.refine.btn", [isEn ? (refReq.titleEn || refReq.title) : refReq.title, fmtCave(refReq.xianyuan), refReq.herbs]) + orePart +
+										"</div>"
+										: "<div class=\"xxCaveMiniBtn gold is-disabled\">" + (isEn ? "Stage 6 Supreme Creation · Maxed" : "六阶造化至尊仙器 · 已臻极致") + "</div>") +
+								"</div>";
+						}
+
+						var xianqiColHtml =
+							"<div class=\"xxCaveSection xxCaveColXianqi\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\">" + $I("cultivation.xianqi.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + (isEn ? ("26F-35F Dmg +" + Math.round((caveBns.riftDmgMult - 1) * 100) + "% · Mitig " + Math.round(caveBns.riftMitigation * 100) + "%") : ("26~35层增伤 +" + Math.round((caveBns.riftDmgMult - 1) * 100) + "% · 减伤 " + Math.round(caveBns.riftMitigation * 100) + "%")) + "</span>" +
+								"</div>" +
+								xqGridHtml +
+								stageBoxHtml +
+								passivesHtml +
+								xqBtnsHtml +
+								(xq.lastNote ? "<div class=\"xxCaveNote\">" + xq.lastNote + "</div>" : "") +
+							"</div>";
+
+						this.immortalCaveEl.innerHTML = caveTopHtml +
+							"<div class=\"xxCaveColumns\">" + gardenColHtml + xianqiColHtml + "</div>";
+					}
+				}
+			}
+		}
+
+		if (this.immortalSanctumEl){
+			var dujieSanctum = cult.getStage("dujie_0");
+			var showSanctum = !!(cult.immortalAscended || (dujieSanctum && dujieSanctum.researched) || (cult.immortalImprint || 0) > 0 || (cult.starImprintTier || 0) > 0);
+			this.immortalSanctumEl.style.display = showSanctum ? "block" : "none";
+			if (showSanctum){
+				dojo.toggleClass(this.immortalSanctumEl, "is-locked", !cult.immortalAscended);
+				var saUI = cult.starArray || cult.makeDefaultStarArray();
+				var ibUI = cult.immortalBounty || cult.makeDefaultImmortalBounty();
+				var xyS = this.game.resPool.get("xianyuan");
+				var scS = this.game.resPool.get("starchart");
+				var tcS = this.game.resPool.get("timeCrystal");
+				var rlS = this.game.resPool.get("relic");
+				var uoS = this.game.resPool.get("unobtainium");
+				var xyHaveS = xyS ? Math.floor(xyS.value) : 0;
+				var scHaveS = scS ? Math.floor(scS.value) : 0;
+				var tcHaveS = tcS ? Math.floor(tcS.value) : 0;
+				var rlHaveS = rlS ? Math.floor(rlS.value) : 0;
+				var uoHaveS = uoS ? Math.floor(uoS.value) : 0;
+				var actB = ibUI.active;
+				var actSig = actB ? (actB.key + ":" + Math.floor(actB.progress) + ":" + (actB.ready ? 1 : 0)) : "idle";
+				var surgeTicks = (cult.buffs && cult.buffs.zhoutianSurge > 0) ? Math.floor(cult.buffs.zhoutianSurge / 5) : 0;
+
+				var sanctumSig = [
+					cult.immortalAscended ? 1 : 0,
+					cult.daoyun || 0,
+					cult.riftFloor || 0,
+					cult.starImprintTier || 0,
+					saUI.tier || 0,
+					saUI.selectedCore || "ziwei",
+					(saUI.sockets || []).join(","),
+					saUI.cores.ziwei || 0,
+					saUI.cores.taiyang || 0,
+					saUI.cores.taiyin || 0,
+					Math.floor(saUI.raidThreat || 0),
+					saUI.repelCount || 0,
+					saUI.autoRepel ? 1 : 0,
+					surgeTicks,
+					ibUI.merit || 0,
+					ibUI.completedCount || 0,
+					ibUI.chainChapter || 1,
+					(ibUI.boardKeys || []).join(","),
+					ibUI.freeRefreshReady ? 1 : 0,
+					ibUI.autoDispatch ? 1 : 0,
+					actSig,
+					xyHaveS,
+					scHaveS,
+					tcHaveS,
+					rlHaveS,
+					uoHaveS,
+					saUI.lastNote || "",
+					ibUI.lastNote || ""
+				].join("|");
+
+				if (this._sanctumSig !== sanctumSig){
+					this._sanctumSig = sanctumSig;
+					var fmtSanctum = this.game.getDisplayValueExt.bind(this.game);
+					var artV2 = cult.ART_VER || "77";
+					var caveB2 = cult.getImmortalCaveBonuses(28);
+					var wardPow = cult.getStarArrayDefensePower();
+					var threatPow = cult.getNextDemonRaidPower();
+					var sealBadge = (cult.starImprintTier > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.sanctum.starimprint", [cult.starImprintTier]) + "</span>"
+						: "";
+
+					var sanctumTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxSanctumHdrIco\"><img src=\"res/art/array_zhoutian_core.webp?v=" + artV2 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.sanctum.badge") + "</span>" +
+										sealBadge +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.sanctum.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.sanctum.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.sanctum.chip.array", [saUI.tier || 0, wardPow]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.sanctum.chip.cores", [cult.getStarCoreTotalStock()]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.sanctum.chip.merit", [ibUI.merit || 0, ibUI.chainChapter || 1]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						this.immortalSanctumEl.innerHTML = sanctumTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.sanctum.locked") + "</div>";
+					} else {
+						// 左栏: 周天星斗护山大阵 (星核凝炼选择 + 三垣阵眼镶嵌 + 阵图推演1~6阶 + 域外天魔侵袭迎击)
+						var coreShelfHtml = "<div class=\"xxStarCoreBar\">";
+						for (var sci2 = 0; sci2 < cult.STAR_CORES.length; sci2++){
+							var scDef2 = cult.STAR_CORES[sci2];
+							var isSelCore = (saUI.selectedCore === scDef2.key);
+							var coreCnt = saUI.cores[scDef2.key] || 0;
+							var condReq = cult.getCondenseStarCoreCost(scDef2.key);
+							var auxResObj = (condReq && condReq.auxRes) ? this.game.resPool.get(condReq.auxRes) : null;
+							var condCostTxt = condReq ? (condReq.xianyuan + " " + $I("resources.xianyuan.title") + " · " + condReq.auxVal + " " + ((auxResObj && auxResObj.title) || condReq.auxRes)) : "";
+							coreShelfHtml +=
+								"<div class=\"xxStarCoreCard" + (isSelCore ? " is-selected" : "") + "\" data-xx-sanctum=\"selectCore\" data-xx-arg=\"" + scDef2.key + "\" title=\"" + String($I(scDef2.descKey)).replace(/"/g, "&quot;") + "\">" +
+									"<div class=\"xxStarCoreTop\">" +
+										"<div class=\"xxHerbIco xxStarCoreIco\"><img src=\"" + scDef2.art + "?v=" + artV2 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxSeedNameRow\"><span>" + $I(scDef2.labelKey) + "</span><span class=\"xxSeedStock\">×" + coreCnt + "</span></div>" +
+											"<div class=\"xxSeedSub\">" + $I(scDef2.descKey) + "</div>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtn" + (condReq && condReq.affordable ? "" : " is-disabled") + "\" data-xx-sanctum=\"condenseCore\" data-xx-arg=\"" + scDef2.key + "\">" +
+										$I("cultivation.zhoutian.condense.btn", [$I(scDef2.labelKey), condCostTxt]) +
+									"</div>" +
+								"</div>";
+						}
+						coreShelfHtml += "</div>";
+
+						var curTierCfg = cult.ZHOUTIAN_TIERS[saUI.tier || 0] || cult.ZHOUTIAN_TIERS[0];
+						var selCoreDef = cult.getStarCoreDef(saUI.selectedCore || "ziwei");
+						var socketGridHtml = "<div class=\"xxSocketGrid\">";
+						for (var ski = 0; ski < 3; ski++){
+							var reqTierUnlock = ski + 1;
+							var sockTitle = $I("cultivation.zhoutian.socket." + ski);
+							if (ski >= (curTierCfg.socketsOpen || 0)){
+								socketGridHtml +=
+									"<div class=\"xxSocketCard is-locked\">" +
+										"<div class=\"xxPlotTitle\">" + sockTitle + "</div>" +
+										"<div class=\"xxPlotState\">" + $I("cultivation.zhoutian.socket.locked", [reqTierUnlock]) + "</div>" +
+									"</div>";
+							} else {
+								var inKey = saUI.sockets[ski];
+								var inDef = inKey ? cult.getStarCoreDef(inKey) : null;
+								var canSocketSel = ((saUI.cores[saUI.selectedCore || "ziwei"] || 0) > 0);
+								socketGridHtml +=
+									"<div class=\"xxSocketCard" + (inDef ? " is-socketed" : "") + "\">" +
+										"<div class=\"xxPlotTop\">" +
+											"<div class=\"xxHerbIco xxStarCoreIco\"><img src=\"" + (inDef ? inDef.art : (selCoreDef ? selCoreDef.art : "res/art/starcore_ziwei.webp")) + "?v=" + artV2 + "\" alt=\"\"/></div>" +
+											"<div class=\"xxSeedBody\">" +
+												"<div class=\"xxPlotTitle\">" + sockTitle + "</div>" +
+												"<div class=\"xxPlotState\">" + (inDef ? $I(inDef.labelKey) : $I("cultivation.zhoutian.socket.empty", [selCoreDef ? $I(selCoreDef.labelKey) : ""])) + "</div>" +
+											"</div>" +
+										"</div>" +
+										(inDef
+											? "<div class=\"xxCaveMiniBtnRow\">" +
+												"<div class=\"xxCaveMiniBtn\" data-xx-sanctum=\"socketCore\" data-xx-arg=\"" + ski + "\">" + $I("cultivation.zhoutian.socket.swap") + "</div>" +
+											"</div>"
+											: "<div class=\"xxCaveMiniBtn gold" + (canSocketSel ? "" : " is-disabled") + "\" data-xx-sanctum=\"socketCore\" data-xx-arg=\"" + ski + "\">" + $I("cultivation.zhoutian.socket.inlay") + "</div>") +
+									"</div>";
+							}
+						}
+						socketGridHtml += "</div>";
+
+						var triHarmony = cult.hasTriStarHarmony();
+						var deduceReq = cult.getStarArrayDeduceReq();
+						var deduceCostParts = [];
+						if (deduceReq){
+							deduceCostParts.push(fmtSanctum(deduceReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+							if (deduceReq.starchart > 0){
+								var scObjLbl = this.game.resPool.get("starchart");
+								deduceCostParts.push(fmtSanctum(deduceReq.starchart) + " " + ((scObjLbl && scObjLbl.title) || "starchart"));
+							}
+							if (deduceReq.auxRes && deduceReq.auxVal > 0){
+								var auxObjLbl = this.game.resPool.get(deduceReq.auxRes);
+								deduceCostParts.push(fmtSanctum(deduceReq.auxVal) + " " + ((auxObjLbl && auxObjLbl.title) || deduceReq.auxRes));
+							}
+							if (deduceReq.reqDaoyun > 0){
+								deduceCostParts.push($I("cultivation.zhoutian.req.dao", [deduceReq.reqDaoyun]));
+							}
+						}
+
+						var arrayDiagramHtml =
+							"<div class=\"xxXianqiStageBox xxZhoutianBox\">" +
+								"<div class=\"xxXianqiStageTop\">" +
+									"<span>" + $I(curTierCfg.titleKey) + "</span>" +
+									"<span>" + $I("cultivation.sanctum.chip.array", [saUI.tier || 0, wardPow]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxHarmonyBanner" + (triHarmony ? " is-active" : "") + "\">" +
+									$I(triHarmony ? "cultivation.zhoutian.harmony.on" : "cultivation.zhoutian.harmony.off") +
+								"</div>" +
+								"<div class=\"xxCaveMiniBtnRow\" style=\"margin-top:7px;\">" +
+									(deduceReq
+										? "<div class=\"xxCaveMiniBtn gold" + (deduceReq.affordable ? "" : " is-disabled") + "\" data-xx-sanctum=\"deduceArray\">" +
+											$I("cultivation.zhoutian.deduce.btn", [$I(deduceReq.titleKey), deduceCostParts.join(" · ")]) +
+										"</div>"
+										: "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.zhoutian.deduce.max") + "</div>") +
+								"</div>" +
+							"</div>";
+
+						var threatPct = Math.min(100, Math.round(saUI.raidThreat || 0));
+						var lureCost = cult.getDemonRaidLureCost();
+						var canRepelFree = (saUI.tier > 0 && threatPct >= 100);
+						var canRepelLure = (saUI.tier > 0 && threatPct < 100 && xyHaveS >= lureCost);
+						var raidBtnLabel = (saUI.tier <= 0)
+							? $I("cultivation.raid.repel.needarray")
+							: (threatPct >= 100 ? $I("cultivation.raid.repel.ready") : $I("cultivation.raid.repel.lure", [lureCost]));
+
+						var raidPanelHtml =
+							"<div class=\"xxRaidPanel" + (threatPct >= 100 ? " is-alert" : "") + "\">" +
+								"<div class=\"xxPlotTop\">" +
+									"<div class=\"xxHerbIco xxRaidIco\"><img src=\"res/art/demon_tianmo_raid.webp?v=" + artV2 + "\" alt=\"\"/></div>" +
+									"<div class=\"xxSeedBody\">" +
+										"<div class=\"xxPlotTitle\">" + $I("cultivation.raid.title") + "</div>" +
+										"<div class=\"xxPlotState\">" + $I("cultivation.raid.threat", [threatPct, wardPow, threatPow, saUI.repelCount || 0]) + "</div>" +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxPlotBar xxRaidBar\"><i style=\"width:" + threatPct + "%\"></i></div>" +
+								(cult.buffs && cult.buffs.zhoutianSurge > 0
+									? "<div class=\"xxSurgeTag\">" + $I("cultivation.raid.surge.active", [cult.buffs.zhoutianSurge]) + "</div>"
+									: "") +
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									"<div class=\"xxCaveMiniBtn gold" + ((canRepelFree || canRepelLure) ? "" : " is-disabled") + "\" data-xx-sanctum=\"repelRaid\">" +
+										raidBtnLabel +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtn" + (saUI.tier > 0 ? "" : " is-disabled") + "\" data-xx-sanctum=\"autoRepel\">" +
+										$I(saUI.autoRepel ? "cultivation.raid.auto.on" : "cultivation.raid.auto.off") +
+									"</div>" +
+								"</div>" +
+							"</div>";
+
+						var zhoutianColHtml =
+							"<div class=\"xxCaveSection xxSanctumColArray\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\">" + $I("cultivation.zhoutian.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.zhoutian.meta", [Math.round(caveB2.xianyuanRatio * 100), Math.round((caveB2.riftDmgMult - 1) * 100), Math.round(caveB2.riftMitigation * 100)]) + "</span>" +
+								"</div>" +
+								arrayDiagramHtml +
+								socketGridHtml +
+								coreShelfHtml +
+								raidPanelHtml +
+								(saUI.lastNote ? "<div class=\"xxCaveNote\">" + saUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 跨界仙盟 · 奇遇悬赏榜 (活跃跨界奇遇抉择 + 3选1轮换悬赏榜 + 仙盟功勋宝库)
+						var refCost = cult.getBountyRefreshCost();
+						var canRefresh = (refCost <= 0 || xyHaveS >= refCost);
+						var bountyCtrlHtml =
+							"<div class=\"xxCaveMiniBtnRow\" style=\"margin-bottom:8px;\">" +
+								"<div class=\"xxCaveMiniBtn" + (canRefresh ? "" : " is-disabled") + "\" data-xx-sanctum=\"refreshBounty\">" +
+									(refCost <= 0 ? $I("cultivation.bounty.refresh.free") : $I("cultivation.bounty.refresh.paid", [refCost])) +
+								"</div>" +
+								"<div class=\"xxCaveMiniBtn\" data-xx-sanctum=\"autoBounty\">" +
+									$I(ibUI.autoDispatch ? "cultivation.bounty.auto.on" : "cultivation.bounty.auto.off") +
+								"</div>" +
+							"</div>";
+
+						var activeBountyHtml = "";
+						if (actB){
+							var actDef = cult.getBountyDef(actB.key);
+							var actPct = actB.maxTicks > 0 ? Math.min(100, Math.round((actB.progress / actB.maxTicks) * 100)) : 100;
+							var boostCost = cult.getBountyBoostCost();
+							var canBoost = (!actB.ready && actPct < 100 && xyHaveS >= boostCost);
+							var affCoreDef = actDef ? cult.getStarCoreDef(actDef.coreKey) : null;
+							activeBountyHtml =
+								"<div class=\"xxActiveBountyBox" + (actB.ready ? " is-ready" : "") + "\">" +
+									"<div class=\"xxPlotTop\">" +
+										"<div class=\"xxHerbIco xxBountyIco\"><img src=\"res/art/bounty_scroll_gold.webp?v=" + artV2 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxPlotTitle\">" + (actDef ? $I(actDef.labelKey) : actB.key) + "</div>" +
+											"<div class=\"xxPlotState\">" + $I("cultivation.bounty.active.tag", [actPct]) + " · " + $I("cultivation.bounty.synergy", [Math.round((actB.synergyMult || 1) * 100)]) + "</div>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxPlotBar\"><i style=\"width:" + actPct + "%\"></i></div>" +
+									(actB.ready
+										? "<div class=\"xxCaveMiniBtnRow\">" +
+											"<div class=\"xxCaveMiniBtn gold\" data-xx-sanctum=\"completeBounty\" data-xx-arg=\"core\">" +
+												$I("cultivation.bounty.resolve.core", [affCoreDef ? $I(affCoreDef.labelKey) : ""]) +
+											"</div>" +
+											"<div class=\"xxCaveMiniBtn\" data-xx-sanctum=\"completeBounty\" data-xx-arg=\"dao\">" +
+												$I("cultivation.bounty.resolve.dao") +
+											"</div>" +
+										"</div>"
+										: "<div class=\"xxCaveMiniBtnRow\">" +
+											"<div class=\"xxCaveMiniBtn" + (canBoost ? "" : " is-disabled") + "\" data-xx-sanctum=\"boostBounty\">" +
+												$I("cultivation.bounty.boost.btn", [boostCost]) +
+											"</div>" +
+										"</div>") +
+								"</div>";
+						}
+
+						var boardListHtml = "<div class=\"xxBountyBoard\">";
+						for (var bbi = 0; bbi < ibUI.boardKeys.length; bbi++){
+							var bKey = ibUI.boardKeys[bbi];
+							var bDef2 = cult.getBountyDef(bKey);
+							if (!bDef2){ continue; }
+							var synInfo = cult.getBountySynergy(bKey);
+							var estXy = Math.round(bDef2.baseXy * synInfo.mult);
+							var estMerit = Math.round(bDef2.baseMerit * synInfo.mult);
+							var cAff = cult.getStarCoreDef(bDef2.coreKey);
+							var isRunningThis = !!(actB && actB.key === bKey);
+							boardListHtml +=
+								"<div class=\"xxBountyCard" + (isRunningThis ? " is-active" : "") + "\">" +
+									"<div class=\"xxPlotTop\">" +
+										"<div class=\"xxHerbIco xxBountyIco\"><img src=\"" + bDef2.art + "?v=" + artV2 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<span>" + $I(bDef2.labelKey) + "</span>" +
+												"<span class=\"xxBountySynBadge\">" + $I("cultivation.bounty.synergy", [synInfo.pct]) + "</span>" +
+											"</div>" +
+											"<div class=\"xxBountyDesc\">" + $I(bDef2.descKey) + "</div>" +
+											"<div class=\"xxBountyRewardRow\">" +
+												"<span>+" + estXy + " " + $I("resources.xianyuan.title") + "</span>" +
+												"<span>" + $I("cultivation.bounty.reward.merit", [estMerit]) + "</span>" +
+												"<span>" + (cAff ? $I(cAff.labelKey) : "") + "</span>" +
+											"</div>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtn gold" + (actB ? " is-disabled" : "") + "\" data-xx-sanctum=\"dispatchBounty\" data-xx-arg=\"" + bbi + "\">" +
+										$I("cultivation.bounty.dispatch.btn") +
+									"</div>" +
+								"</div>";
+						}
+						boardListHtml += "</div>";
+
+						var meritHave = ibUI.merit || 0;
+						var costCoreM = cult.getMeritExchangeCost("core");
+						var costDaoM = cult.getMeritExchangeCost("daoyun");
+						var costChestM = cult.getMeritExchangeCost("chest");
+						var shopHtml =
+							"<div class=\"xxMeritShop\">" +
+								"<div class=\"xxPlotTop\" style=\"margin-bottom:6px;\">" +
+									"<div class=\"xxHerbIco xxBountyIco\"><img src=\"res/art/bounty_chest_merit.webp?v=" + artV2 + "\" alt=\"\"/></div>" +
+									"<div class=\"xxSeedBody\">" +
+										"<div class=\"xxPlotTitle\">" + $I("cultivation.bounty.shop.title", [meritHave]) + "</div>" +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxMeritBtnGrid\">" +
+									"<div class=\"xxCaveMiniBtn" + (meritHave >= costCoreM ? "" : " is-disabled") + "\" data-xx-sanctum=\"exchangeMerit\" data-xx-arg=\"core\">" +
+										$I("cultivation.bounty.shop.core", [selCoreDef ? $I(selCoreDef.labelKey) : "", costCoreM]) +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtn gold" + (meritHave >= costDaoM ? "" : " is-disabled") + "\" data-xx-sanctum=\"exchangeMerit\" data-xx-arg=\"daoyun\">" +
+										$I("cultivation.bounty.shop.daoyun", [costDaoM]) +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtn" + (meritHave >= costChestM ? "" : " is-disabled") + "\" data-xx-sanctum=\"exchangeMerit\" data-xx-arg=\"chest\">" +
+										$I("cultivation.bounty.shop.chest", [costChestM]) +
+									"</div>" +
+								"</div>" +
+							"</div>";
+
+						var bountyColHtml =
+							"<div class=\"xxCaveSection xxSanctumColBounty\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/bounty_alliance_token.webp?v=" + artV2 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.bounty.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.bounty.meta", [ibUI.completedCount || 0, (ibUI.completedCount || 0) % 3]) + "</span>" +
+								"</div>" +
+								bountyCtrlHtml +
+								activeBountyHtml +
+								boardListHtml +
+								shopHtml +
+								(ibUI.lastNote ? "<div class=\"xxCaveNote\">" + ibUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						this.immortalSanctumEl.innerHTML = sanctumTopHtml +
+							"<div class=\"xxCaveColumns\">" + zhoutianColHtml + bountyColHtml + "</div>";
+					}
+				}
+			}
+		}
+
+		if (this.immortalMenagerieEl){
+			var dujieMenagerie = cult.getStage("dujie_0");
+			var showMenagerie = !!(cult.immortalAscended || (dujieMenagerie && dujieMenagerie.researched) || (cult.immortalImprint || 0) > 0 || (cult.starImprintTier || 0) > 0 || (cult.beastImprintTier || 0) > 0);
+			this.immortalMenagerieEl.style.display = showMenagerie ? "block" : "none";
+			if (showMenagerie){
+				dojo.toggleClass(this.immortalMenagerieEl, "is-locked", !cult.immortalAscended);
+				var snUI = cult.spiritNursery || cult.makeDefaultSpiritNursery();
+				var sfUI = cult.daoSteleForest || cult.makeDefaultDaoSteleForest();
+				var xyM = this.game.resPool.get("xianyuan");
+				var scM = this.game.resPool.get("starchart");
+				var tcM = this.game.resPool.get("timeCrystal");
+				var rlM = this.game.resPool.get("relic");
+				var uoM = this.game.resPool.get("unobtainium");
+				var xyHaveM = xyM ? Math.floor(xyM.value) : 0;
+				var scHaveM = scM ? Math.floor(scM.value) : 0;
+				var tcHaveM = tcM ? Math.floor(tcM.value) : 0;
+				var rlHaveM = rlM ? Math.floor(rlM.value) : 0;
+				var uoHaveM = uoM ? Math.floor(uoM.value) : 0;
+				var herbStockM = cult.getHerbTotalStock();
+				var pillStockM = cult.getTotalPillStock();
+
+				var beastSigParts = [];
+				for (var bsi = 0; bsi < cult.PRIMORDIAL_BEASTS.length; bsi++){
+					var bsk = cult.PRIMORDIAL_BEASTS[bsi].key;
+					var bso = snUI.beasts[bsk] || {incubating: false, incTicks: 0, stage: 0, exp: 0};
+					beastSigParts.push(bsk + ":" + (bso.incubating ? 1 : 0) + ":" + Math.floor(bso.incTicks || 0) + ":" + (bso.stage || 0) + ":" + Math.floor(bso.exp || 0));
+				}
+				var steleSigParts = [];
+				for (var ssi = 0; ssi < cult.DAO_STELES.length; ssi++){
+					var ssk = cult.DAO_STELES[ssi].key;
+					steleSigParts.push(ssk + ":" + (sfUI.levels[ssk] || 0));
+				}
+
+				var menagerieSig = [
+					cult.immortalAscended ? 1 : 0,
+					cult.daoyun || 0,
+					cult.beastImprintTier || 0,
+					snUI.selectedBeast || "azure_dragon",
+					snUI.battleBeastKey || "",
+					snUI.gardenBeastKey || "",
+					snUI.autoNurture ? 1 : 0,
+					beastSigParts.join(","),
+					steleSigParts.join(","),
+					herbStockM,
+					pillStockM,
+					xyHaveM,
+					scHaveM,
+					tcHaveM,
+					rlHaveM,
+					uoHaveM,
+					snUI.lastNote || "",
+					sfUI.lastNote || ""
+				].join("|");
+
+				if (this._menagerieSig !== menagerieSig){
+					this._menagerieSig = menagerieSig;
+					var fmtMenag = this.game.getDisplayValueExt.bind(this.game);
+					var artV3 = cult.ART_VER || "77";
+					var caveB3 = cult.getImmortalCaveBonuses(30);
+					var hatchedCnt = cult.getHatchedBeastCount();
+					var maxBeastStg = cult.getMaxBeastStage();
+					var totalSteleLv = cult.getTotalSteleComprehension();
+					var steleResTier = cult.getSteleResonanceTier();
+					var battleBDef = snUI.battleBeastKey ? cult.getBeastDef(snUI.battleBeastKey) : null;
+					var gardenBDef = snUI.gardenBeastKey ? cult.getBeastDef(snUI.gardenBeastKey) : null;
+					var beastSealBadge = (cult.beastImprintTier > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.menagerie.imprint", [cult.beastImprintTier]) + "</span>"
+						: "";
+
+					var menagerieTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxMenagerieHdrIco\"><img src=\"res/art/beast_spirit_nursery.webp?v=" + artV3 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.menagerie.badge") + "</span>" +
+										beastSealBadge +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.menagerie.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.menagerie.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.menagerie.chip.beasts", [hatchedCnt, maxBeastStg]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.menagerie.chip.slots", [
+									battleBDef ? $I(battleBDef.labelKey) : $I("cultivation.nursery.slot.none"),
+									gardenBDef ? $I(gardenBDef.labelKey) : $I("cultivation.nursery.slot.none")
+								]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.menagerie.chip.steles", [totalSteleLv, steleResTier]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						this.immortalMenagerieEl.innerHTML = menagerieTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.menagerie.locked") + "</div>";
+					} else {
+						// 左栏: 混沌万灵仙宠育兽苑
+						var fourSynActive = cult.hasFourSymbolsResonance();
+						var fourMinStg = cult.getFourSymbolsMinStage();
+						var nurseryBannerHtml =
+							"<div class=\"xxXianqiStageBox xxMenagerieBox\">" +
+								"<div class=\"xxCaveMiniBtnRow\" style=\"margin-bottom:6px;\">" +
+									"<div class=\"xxCaveMiniBtn" + (snUI.autoNurture ? " is-active" : "") + "\" data-xx-menagerie=\"autoNurture\">" +
+										$I(snUI.autoNurture ? "cultivation.nursery.auto.on" : "cultivation.nursery.auto.off") +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxHarmonyBanner" + (fourSynActive ? " is-active" : "") + "\">" +
+									(fourSynActive
+										? $I("cultivation.nursery.resonance.on", [fourMinStg])
+										: $I("cultivation.nursery.resonance.off", [hatchedCnt])) +
+								"</div>" +
+							"</div>";
+
+						var beastGridHtml = "<div class=\"xxBeastGrid\">";
+						for (var bi2 = 0; bi2 < cult.PRIMORDIAL_BEASTS.length; bi2++){
+							var bDef2 = cult.PRIMORDIAL_BEASTS[bi2];
+							var bSt2 = snUI.beasts[bDef2.key] || {incubating: false, incTicks: 0, incMax: 60, stage: 0, exp: 0};
+							var isSelB = (snUI.selectedBeast === bDef2.key);
+							var isBatSlot = (snUI.battleBeastKey === bDef2.key);
+							var isGarSlot = (snUI.gardenBeastKey === bDef2.key);
+							var slotTagHtml = "";
+							if (bSt2.stage > 0){
+								slotTagHtml = isBatSlot
+									? "<span class=\"xxBeastRoleTag is-battle\">" + $I("cultivation.nursery.slot.battle") + "</span>"
+									: (isGarSlot
+										? "<span class=\"xxBeastRoleTag is-garden\">" + $I("cultivation.nursery.slot.garden") + "</span>"
+										: "<span class=\"xxBeastRoleTag\">" + $I("cultivation.nursery.slot.nursery") + "</span>");
+							}
+							var bActionHtml = "";
+							if (bSt2.stage <= 0){
+								if (bSt2.incubating){
+									var incPct = Math.min(100, Math.round(((bSt2.incTicks || 0) / Math.max(1, bSt2.incMax || 60)) * 100));
+									var warmCost = cult.getWarmEggCost();
+									bActionHtml =
+										"<div class=\"xxPlotBar\"><i style=\"width:" + incPct + "%\"></i></div>" +
+										"<div class=\"xxPlotState\">" + $I("cultivation.beast.incubating", [incPct]) + "</div>" +
+										"<div class=\"xxCaveMiniBtn gold" + (xyHaveM >= warmCost ? "" : " is-disabled") + "\" data-xx-menagerie=\"warmEgg\" data-xx-arg=\"" + bDef2.key + "\">" +
+											$I("cultivation.beast.warm.btn", [warmCost]) +
+										"</div>";
+								} else {
+									var incReq = cult.getBeastIncubateCost(bDef2.key);
+									var incParts = [];
+									if (incReq){
+										incParts.push(fmtMenag(incReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+										if (incReq.auxRes && incReq.auxVal > 0){
+											var incAuxObj = this.game.resPool.get(incReq.auxRes);
+											incParts.push(fmtMenag(incReq.auxVal) + " " + ((incAuxObj && incAuxObj.title) || incReq.auxRes));
+										}
+									}
+									bActionHtml =
+										"<div class=\"xxCaveMiniBtn gold" + (incReq && incReq.affordable ? "" : " is-disabled") + "\" data-xx-menagerie=\"incubateBeast\" data-xx-arg=\"" + bDef2.key + "\">" +
+											$I("cultivation.beast.incubate.btn", [incParts.join(" · ")]) +
+										"</div>";
+								}
+							} else {
+								var expPct = Math.min(100, Math.floor(bSt2.exp || 0));
+								bActionHtml =
+									"<div class=\"xxPlotBar xxBeastExpBar\"><i style=\"width:" + expPct + "%\"></i></div>" +
+									"<div class=\"xxCaveMiniBtnRow\">" +
+										"<div class=\"xxCaveMiniBtn" + (isBatSlot ? " is-active" : "") + "\" data-xx-menagerie=\"deployBattle\" data-xx-arg=\"" + bDef2.key + "\">" +
+											$I("cultivation.beast.deploy.battle") +
+										"</div>" +
+										"<div class=\"xxCaveMiniBtn" + (isGarSlot ? " is-active" : "") + "\" data-xx-menagerie=\"deployGarden\" data-xx-arg=\"" + bDef2.key + "\">" +
+											$I("cultivation.beast.deploy.garden") +
+										"</div>" +
+									"</div>";
+							}
+
+							beastGridHtml +=
+								"<div class=\"xxBeastCard" + (isSelB ? " is-selected" : "") + (bSt2.stage > 0 ? " is-hatched" : "") + "\" data-xx-menagerie=\"selectBeast\" data-xx-arg=\"" + bDef2.key + "\">" +
+									"<div class=\"xxStarCoreTop\">" +
+										"<div class=\"xxHerbIco xxBeastIco\"><img src=\"" + bDef2.art + "?v=" + artV3 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<span>" + $I(bDef2.labelKey) + "</span>" +
+												slotTagHtml +
+											"</div>" +
+											"<div class=\"xxBeastStageLine\">" + $I("cultivation.beast.stage." + (bSt2.stage || 0)) + "</div>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxBountyDesc\">" + $I(bDef2.descKey) + "</div>" +
+									bActionHtml +
+								"</div>";
+						}
+						beastGridHtml += "</div>";
+
+						var selBKey = snUI.selectedBeast || "azure_dragon";
+						var selBDef = cult.getBeastDef(selBKey) || cult.PRIMORDIAL_BEASTS[0];
+						var selBState = snUI.beasts[selBDef.key] || {stage: 0, exp: 0};
+						var selConsoleHtml = "";
+						if ((selBState.stage || 0) > 0){
+							var feedXyCost = cult.getBeastFeedXyCost(selBDef.key);
+							var canFeedMore = (selBState.stage < 6 || (selBState.exp || 0) < 100);
+							var awkReq = cult.getBeastAwakenReq(selBDef.key);
+							var awkCostParts = [];
+							if (awkReq){
+								awkCostParts.push(fmtMenag(awkReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+								if (awkReq.auxRes && awkReq.auxVal > 0){
+									var awkAuxObj = this.game.resPool.get(awkReq.auxRes);
+									awkCostParts.push(fmtMenag(awkReq.auxVal) + " " + ((awkAuxObj && awkAuxObj.title) || awkReq.auxRes));
+								}
+								if (awkReq.reqDaoyun > 0){
+									awkCostParts.push($I("cultivation.beast.req.dao", [awkReq.reqDaoyun]));
+								}
+							}
+							selConsoleHtml =
+								"<div class=\"xxBeastConsole\">" +
+									"<div class=\"xxPlotTitle\">" +
+										$I("cultivation.beast.console.title", [
+											$I(selBDef.labelKey),
+											$I("cultivation.beast.stage." + selBState.stage),
+											Math.floor(selBState.exp || 0)
+										]) +
+									"</div>" +
+									"<div class=\"xxMeritBtnGrid\">" +
+										"<div class=\"xxCaveMiniBtn" + (canFeedMore && herbStockM > 0 ? "" : " is-disabled") + "\" data-xx-menagerie=\"feedHerb\" data-xx-arg=\"" + selBDef.key + "\">" +
+											$I("cultivation.beast.feed.herb", [herbStockM]) +
+										"</div>" +
+										"<div class=\"xxCaveMiniBtn" + (canFeedMore && xyHaveM >= feedXyCost ? "" : " is-disabled") + "\" data-xx-menagerie=\"feedXy\" data-xx-arg=\"" + selBDef.key + "\">" +
+											$I("cultivation.beast.feed.xy", [feedXyCost + " " + $I("resources.xianyuan.title")]) +
+										"</div>" +
+										"<div class=\"xxCaveMiniBtn" + (canFeedMore && pillStockM > 0 ? "" : " is-disabled") + "\" data-xx-menagerie=\"feedPill\" data-xx-arg=\"" + selBDef.key + "\">" +
+											$I("cultivation.beast.feed.pill", [pillStockM]) +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtnRow\" style=\"margin-top:6px;\">" +
+										(awkReq
+											? "<div class=\"xxCaveMiniBtn gold" + (awkReq.affordable ? "" : " is-disabled") + "\" data-xx-menagerie=\"awakenBeast\" data-xx-arg=\"" + selBDef.key + "\">" +
+												$I("cultivation.beast.awaken.btn", [$I(awkReq.titleKey), awkCostParts.join(" · ")]) +
+											"</div>"
+											: "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.beast.awaken.max") + "</div>") +
+									"</div>" +
+								"</div>";
+						}
+
+						var nurseryColHtml =
+							"<div class=\"xxCaveSection xxMenagerieColNursery\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/beast_spirit_nursery.webp?v=" + artV3 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.nursery.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.nursery.meta", [hatchedCnt, Math.round((caveB3.xianyuanRatio || 0) * 100)]) + "</span>" +
+								"</div>" +
+								nurseryBannerHtml +
+								beastGridHtml +
+								selConsoleHtml +
+								(snUI.lastNote ? "<div class=\"xxCaveNote\">" + snUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 大道法则碑林参悟
+						var stelePct = Math.min(100, Math.round((totalSteleLv / 30) * 100));
+						var steleBannerHtml =
+							"<div class=\"xxXianqiStageBox xxSteleResBox\">" +
+								"<div class=\"xxHarmonyBanner" + (steleResTier > 0 ? " is-active" : "") + "\">" +
+									$I("cultivation.stele.res." + steleResTier, [totalSteleLv]) +
+								"</div>" +
+								"<div class=\"xxPlotBar xxSteleTotalBar\" style=\"margin-top:6px;\"><i style=\"width:" + stelePct + "%\"></i></div>" +
+							"</div>";
+
+						var steleGridHtml = "<div class=\"xxSteleGrid\">";
+						for (var sti = 0; sti < cult.DAO_STELES.length; sti++){
+							var stDef = cult.DAO_STELES[sti];
+							var stLv = sfUI.levels[stDef.key] || 0;
+							var rubReq = cult.getDaoSteleRubbingReq(stDef.key);
+							var rubCostParts = [];
+							if (rubReq){
+								rubCostParts.push(fmtMenag(rubReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+								var rubAuxObj = this.game.resPool.get(rubReq.auxRes);
+								rubCostParts.push(fmtMenag(rubReq.auxVal) + " " + ((rubAuxObj && rubAuxObj.title) || rubReq.auxRes));
+								rubCostParts.push($I("cultivation.beast.req.dao", [rubReq.reqDaoyun]));
+							}
+							steleGridHtml +=
+								"<div class=\"xxSteleCard" + (stLv >= 5 ? " is-mastered" : (stLv > 0 ? " is-comprehended" : "")) + "\">" +
+									"<div class=\"xxStarCoreTop\">" +
+										"<div class=\"xxHerbIco xxSteleIco\"><img src=\"" + stDef.art + "?v=" + artV3 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<span>" + $I(stDef.labelKey) + "</span>" +
+												"<span class=\"xxSeedStock\">" + $I("cultivation.stele.lv", [stLv]) + "</span>" +
+											"</div>" +
+											"<div class=\"xxSeedSub\">" + $I(stDef.descKey) + "</div>" +
+										"</div>" +
+									"</div>" +
+									(rubReq
+										? "<div class=\"xxCaveMiniBtn gold" + (rubReq.affordable ? "" : " is-disabled") + "\" data-xx-menagerie=\"rubStele\" data-xx-arg=\"" + stDef.key + "\">" +
+											$I("cultivation.stele.rub.btn", [rubReq.nextLv, rubCostParts.join(" · ")]) +
+										"</div>"
+										: "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.stele.rub.max") + "</div>") +
+								"</div>";
+						}
+						steleGridHtml += "</div>";
+
+						var steleColHtml =
+							"<div class=\"xxCaveSection xxMenagerieColStele\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/stele_dao_monolith.webp?v=" + artV3 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.stele.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.stele.meta", [totalSteleLv, steleResTier]) + "</span>" +
+								"</div>" +
+								steleBannerHtml +
+								steleGridHtml +
+								(sfUI.lastNote ? "<div class=\"xxCaveNote\">" + sfUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						this.immortalMenagerieEl.innerHTML = menagerieTopHtml +
+							"<div class=\"xxCaveColumns\">" + nurseryColHtml + steleColHtml + "</div>";
+					}
+				}
+			}
+		}
+
+		if (this.immortalCosmosEl){
+			var dujieCosmos = cult.getStage("dujie_0");
+			var showCosmos = !!(cult.immortalAscended || (dujieCosmos && dujieCosmos.researched) || (cult.immortalImprint || 0) > 0 || (cult.starImprintTier || 0) > 0 || (cult.beastImprintTier || 0) > 0 || (cult.hongmengImprintTier || 0) > 0);
+			this.immortalCosmosEl.style.display = showCosmos ? "block" : "none";
+			if (showCosmos){
+				dojo.toggleClass(this.immortalCosmosEl, "is-locked", !cult.immortalAscended);
+				var ssUI = cult.starship || cult.makeDefaultStarship();
+				var haUI = cult.hongmengAltar || cult.makeDefaultHongmengAltar();
+				var xyC = this.game.resPool.get("xianyuan");
+				var scC = this.game.resPool.get("starchart");
+				var tcC = this.game.resPool.get("timeCrystal");
+				var rlC = this.game.resPool.get("relic");
+				var uoC = this.game.resPool.get("unobtainium");
+				var xyHaveC = xyC ? Math.floor(xyC.value) : 0;
+				var scHaveC = scC ? Math.floor(scC.value) : 0;
+				var tcHaveC = tcC ? Math.floor(tcC.value) : 0;
+				var rlHaveC = rlC ? Math.floor(rlC.value) : 0;
+				var uoHaveC = uoC ? Math.floor(uoC.value) : 0;
+
+				var rmParts = [];
+				for (var rmi = 0; rmi < cult.STAR_REALMS.length; rmi++){
+					var rmk = cult.STAR_REALMS[rmi].key;
+					rmParts.push(rmk + ":" + ((ssUI.realmMastery && ssUI.realmMastery[rmk]) || 0));
+				}
+				var trParts = [];
+				for (var tri = 0; tri < cult.HONGMENG_TREASURES.length; tri++){
+					var trk = cult.HONGMENG_TREASURES[tri].key;
+					trParts.push(trk + ":" + ((haUI.treasures && haUI.treasures[trk]) || 0));
+				}
+
+				var cosmosSig = [
+					cult.immortalAscended ? 1 : 0,
+					cult.daoyun || 0,
+					cult.hongmengImprintTier || 0,
+					ssUI.vesselTier || 0,
+					ssUI.selectedRealm || "ziwei",
+					Math.floor(ssUI.voyageProgress || 0),
+					ssUI.voyageCount || 0,
+					ssUI.autoVoyage ? 1 : 0,
+					ssUI.hongmengQi || 0,
+					ssUI.primordialIron || 0,
+					rmParts.join(","),
+					trParts.join(","),
+					xyHaveC,
+					scHaveC,
+					tcHaveC,
+					rlHaveC,
+					uoHaveC,
+					ssUI.lastNote || "",
+					haUI.lastNote || ""
+				].join("|");
+
+				if (this._cosmosSig !== cosmosSig){
+					this._cosmosSig = cosmosSig;
+					var fmtCosmos = this.game.getDisplayValueExt.bind(this.game);
+					var artV4 = cult.ART_VER || "77";
+					var caveB4 = cult.getImmortalCaveBonuses(30);
+					var vTierNow = ssUI.vesselTier || 0;
+					var vCfgNow = cult.getVesselTierDef(vTierNow);
+					var hmTotalTier = cult.getHongmengTotalTier();
+					var hmMinTier = cult.getHongmengMinTier();
+					var hmResTier = cult.getHongmengResonanceTier();
+					var hmSealBadge = (cult.hongmengImprintTier > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.cosmos.imprint", [cult.hongmengImprintTier]) + "</span>"
+						: "";
+
+					var cosmosTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxCosmosHdrIco\"><img src=\"res/art/starship_taixu_vessel.webp?v=" + artV4 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.cosmos.badge") + "</span>" +
+										hmSealBadge +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.cosmos.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.cosmos.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.cosmos.chip.vessel", [vTierNow, ssUI.voyageCount || 0]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.cosmos.chip.cargo", [ssUI.hongmengQi || 0, ssUI.primordialIron || 0]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.cosmos.chip.altar", [hmTotalTier, hmResTier]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						this.immortalCosmosEl.innerHTML = cosmosTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.cosmos.locked") + "</div>";
+					} else {
+						// 左栏: 诸天星域游历飞舟 · 太虚星槎
+						var upReq = cult.getStarshipUpgradeReq();
+						var upParts = [];
+						if (upReq){
+							upParts.push(fmtCosmos(upReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+							if (upReq.starchart > 0){
+								var scTitleObj = this.game.resPool.get("starchart");
+								upParts.push(fmtCosmos(upReq.starchart) + " " + ((scTitleObj && scTitleObj.title) || "starchart"));
+							}
+							if (upReq.auxRes && upReq.auxVal > 0){
+								var upAuxObj = this.game.resPool.get(upReq.auxRes);
+								upParts.push(fmtCosmos(upReq.auxVal) + " " + ((upAuxObj && upAuxObj.title) || upReq.auxRes));
+							}
+							if (upReq.reqDaoyun > 0){
+								upParts.push($I("cultivation.beast.req.dao", [upReq.reqDaoyun]));
+							}
+						}
+						var upBtnHtml = "";
+						if (upReq){
+							var upLabel = (vTierNow === 0)
+								? $I("cultivation.starship.build.btn", [upParts.join(" · ")])
+								: $I("cultivation.starship.upgrade.btn", [$I(upReq.titleKey), upParts.join(" · ")]);
+							upBtnHtml = "<div class=\"xxCaveMiniBtn gold" + (upReq.affordable ? "" : " is-disabled") + "\" data-xx-cosmos=\"upgradeVessel\">" + upLabel + "</div>";
+						} else {
+							upBtnHtml = "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.starship.upgrade.max") + "</div>";
+						}
+
+						var curRealmDef = cult.getStarRealmDef(ssUI.selectedRealm || "ziwei") || cult.STAR_REALMS[0];
+						var curPreview = cult.getStarshipVoyagePreview(curRealmDef.key);
+						var maxVoyDist = Math.max(1, ssUI.voyageMax || curRealmDef.baseDistance || 80);
+						var voyPct = (vTierNow > 0) ? Math.min(100, Math.round(((ssUI.voyageProgress || 0) / maxVoyDist) * 100)) : 0;
+						var surgeCost = cult.getStarDriveSurgeCost();
+						var surgeGainPct = Math.min(100, Math.round((Math.max(45, Math.round(55 * (vCfgNow.speedMult || 1))) / maxVoyDist) * 100));
+
+						var surgeBtnHtml = (vTierNow > 0)
+							? "<div class=\"xxCaveMiniBtn gold" + (xyHaveC >= surgeCost ? "" : " is-disabled") + "\" data-xx-cosmos=\"surgeVoyage\">" +
+								$I("cultivation.starship.surge.btn", [surgeGainPct, surgeCost]) +
+							  "</div>"
+							: "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.starship.surge.need") + "</div>";
+
+						var vesselConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxVesselConsole\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + $I(vCfgNow.titleKey) + "</b>" +
+									"<div class=\"xxCaveMiniBtn" + (ssUI.autoVoyage ? " is-active" : "") + "\" data-xx-cosmos=\"autoVoyage\">" +
+										$I(ssUI.autoVoyage ? "cultivation.starship.auto.on" : "cultivation.starship.auto.off") +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.starship.chip.speed", [(vCfgNow.speedMult || 0).toFixed(2)]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.starship.chip.cargo", [(vCfgNow.cargoMult || 0).toFixed(2)]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.starship.chip.shield", [Math.round((vCfgNow.shieldBonus || 0) * 100)]) + "</span>" +
+									"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.starship.chip.qi", [ssUI.hongmengQi || 0]) + "</span>" +
+									"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.starship.chip.iron", [ssUI.primordialIron || 0]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotBar xxVoyageBar\"><i style=\"width:" + voyPct + "%\"></i></div>" +
+								"<div class=\"xxPlotState\" style=\"margin:4px 0 6px;\">" +
+									$I("cultivation.starship.voyage.state", [$I(curRealmDef.labelKey), voyPct, curPreview.qiGain, curPreview.ironGain]) +
+								"</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									surgeBtnHtml +
+									upBtnHtml +
+								"</div>" +
+							"</div>";
+
+						var realmGridHtml = "<div class=\"xxStarRealmGrid\">";
+						for (var sri = 0; sri < cult.STAR_REALMS.length; sri++){
+							var srDef = cult.STAR_REALMS[sri];
+							var isCurR = ((ssUI.selectedRealm || "ziwei") === srDef.key);
+							var srMast = (ssUI.realmMastery && ssUI.realmMastery[srDef.key]) || 0;
+							var srPrev = cult.getStarshipVoyagePreview(srDef.key);
+							realmGridHtml +=
+								"<div class=\"xxStarRealmCard" + (isCurR ? " is-active" : "") + "\" data-xx-cosmos=\"selectRealm\" data-xx-arg=\"" + srDef.key + "\">" +
+									"<div class=\"xxStarCoreTop\">" +
+										"<div class=\"xxHerbIco xxStarRealmIco\"><img src=\"" + srDef.art + "?v=" + artV4 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<span>" + $I(srDef.labelKey) + "</span>" +
+												"<span class=\"xxSeedStock\">" + $I("cultivation.starship.realm.mastery", [srMast]) + "</span>" +
+											"</div>" +
+											"<div class=\"xxBeastStageLine\">" + $I("cultivation.starship.realm.drop", [srPrev.qiGain, srPrev.ironGain, srPrev.xyGain]) + "</div>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxBountyDesc\">" + $I(srDef.descKey) + "</div>" +
+									"<div class=\"xxCaveMiniBtn" + (isCurR ? " is-active" : "") + "\" data-xx-cosmos=\"selectRealm\" data-xx-arg=\"" + srDef.key + "\">" +
+										$I(isCurR ? "cultivation.starship.realm.nav.active" : "cultivation.starship.realm.nav.btn") +
+									"</div>" +
+								"</div>";
+						}
+						realmGridHtml += "</div>";
+
+						var starshipColHtml =
+							"<div class=\"xxCaveSection xxCosmosColStarship\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/starship_taixu_vessel.webp?v=" + artV4 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.starship.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.starship.meta", [
+										Math.round((vCfgNow.shieldBonus || 0) * 100),
+										Math.round((vCfgNow.cargoMult || 0) * 100)
+									]) + "</span>" +
+								"</div>" +
+								vesselConsoleHtml +
+								realmGridHtml +
+								(ssUI.lastNote ? "<div class=\"xxCaveNote\">" + ssUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 混沌鸿蒙灵宝祭坛
+						var hmPct = Math.min(100, Math.round((hmTotalTier / 18) * 100));
+						var execPct = Math.round((caveB4.riftBossExecuteRatio || 0) * 100);
+						var altarBannerHtml =
+							"<div class=\"xxXianqiStageBox xxHongmengResBox\">" +
+								"<div class=\"xxHarmonyBanner" + (hmResTier > 0 ? " is-active" : "") + "\">" +
+									$I("cultivation.hongmeng.res." + hmResTier, [hmMinTier]) +
+								"</div>" +
+								"<div class=\"xxPlotBar xxHongmengBar\" style=\"margin-top:6px;\"><i style=\"width:" + hmPct + "%\"></i></div>" +
+							"</div>";
+
+						var altarGridHtml = "<div class=\"xxHongmengGrid\">";
+						for (var hti = 0; hti < cult.HONGMENG_TREASURES.length; hti++){
+							var htDef = cult.HONGMENG_TREASURES[hti];
+							var htTier = (haUI.treasures && haUI.treasures[htDef.key]) || 0;
+							var fgReq = cult.getHongmengForgeReq(htDef.key);
+							var fgParts = [];
+							if (fgReq){
+								fgParts.push($I("cultivation.hongmeng.req.qi", [fgReq.hongmengQi]));
+								fgParts.push($I("cultivation.hongmeng.req.iron", [fgReq.primordialIron]));
+								fgParts.push(fmtCosmos(fgReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+								if (fgReq.reqDaoyun > 0){
+									fgParts.push($I("cultivation.beast.req.dao", [fgReq.reqDaoyun]));
+								}
+							}
+							altarGridHtml +=
+								"<div class=\"xxHongmengCard" + (htTier >= 6 ? " is-maxed" : (htTier > 0 ? " is-forged" : "")) + "\">" +
+									"<div class=\"xxStarCoreTop\">" +
+										"<div class=\"xxHerbIco xxHongmengIco\"><img src=\"" + htDef.art + "?v=" + artV4 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<span>" + $I(htDef.labelKey) + "</span>" +
+												"<span class=\"xxSeedStock\">" + $I("cultivation.hongmeng.tier", [htTier]) + "</span>" +
+											"</div>" +
+											"<div class=\"xxSeedSub\">" + $I(htDef.descKey) + "</div>" +
+										"</div>" +
+									"</div>" +
+									(fgReq
+										? "<div class=\"xxCaveMiniBtn gold" + (fgReq.affordable ? "" : " is-disabled") + "\" data-xx-cosmos=\"forgeTreasure\" data-xx-arg=\"" + htDef.key + "\">" +
+											$I("cultivation.hongmeng.forge.btn", [fgReq.nextTier, fgParts.join(" · ")]) +
+										  "</div>"
+										: "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.hongmeng.forge.max") + "</div>") +
+								"</div>";
+						}
+						altarGridHtml += "</div>";
+
+						var altarColHtml =
+							"<div class=\"xxCaveSection xxCosmosColAltar\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/altar_hongmeng_forge.webp?v=" + artV4 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.hongmeng.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.hongmeng.meta", [hmMinTier, execPct]) + "</span>" +
+								"</div>" +
+								altarBannerHtml +
+								altarGridHtml +
+								(haUI.lastNote ? "<div class=\"xxCaveNote\">" + haUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						this.immortalCosmosEl.innerHTML = cosmosTopHtml +
+							"<div class=\"xxCaveColumns\">" + starshipColHtml + altarColHtml + "</div>";
+					}
+				}
+			}
+		}
+
+		if (this.immortalDharmaEl){
+			var dujieDharma = cult.getStage("dujie_0");
+			var showDharma = !!(cult.immortalAscended || (dujieDharma && dujieDharma.researched) || (cult.immortalImprint || 0) > 0 || (cult.starImprintTier || 0) > 0 || (cult.beastImprintTier || 0) > 0 || (cult.hongmengImprintTier || 0) > 0 || (cult.dharmaImprintTier || 0) > 0);
+			this.immortalDharmaEl.style.display = showDharma ? "block" : "none";
+			if (showDharma){
+				dojo.toggleClass(this.immortalDharmaEl, "is-locked", !cult.immortalAscended);
+				var zaUI = cult.zixiaoAltar || cult.makeDefaultZixiaoAltar();
+				var dmUI = cult.dharmaIdols || cult.makeDefaultDharmaIdols();
+				var ssRef = cult.starship || cult.makeDefaultStarship();
+				var xyD = this.game.resPool.get("xianyuan");
+				var rlD = this.game.resPool.get("relic");
+				var scD = this.game.resPool.get("starchart");
+				var tcD = this.game.resPool.get("timeCrystal");
+				var uoD = this.game.resPool.get("unobtainium");
+				var xyHaveD = xyD ? Math.floor(xyD.value) : 0;
+				var rlHaveD = rlD ? Math.floor(rlD.value) : 0;
+				var scHaveD = scD ? Math.floor(scD.value) : 0;
+				var tcHaveD = tcD ? Math.floor(tcD.value) : 0;
+				var uoHaveD = uoD ? Math.floor(uoD.value) : 0;
+
+				var dmLvParts = [];
+				for (var dmi = 0; dmi < cult.DHARMA_IDOLS.length; dmi++){
+					var dmk = cult.DHARMA_IDOLS[dmi].key;
+					dmLvParts.push(dmk + ":" + ((dmUI.levels && dmUI.levels[dmk]) || 0));
+				}
+
+				var dharmaSig = [
+					cult.immortalAscended ? 1 : 0,
+					cult.daoyun || 0,
+					cult.dharmaImprintTier || 0,
+					zaUI.tier || 0,
+					zaUI.daoSutras || 0,
+					zaUI.comprehension || 0,
+					Math.floor(zaUI.lectureProgress || 0),
+					zaUI.lectureCount || 0,
+					zaUI.hongmengLectureCount || 0,
+					zaUI.autoLecture ? 1 : 0,
+					ssRef.hongmengQi || 0,
+					dmUI.primaryKey || "",
+					dmUI.supportKey || "",
+					dmLvParts.join(","),
+					xyHaveD,
+					rlHaveD,
+					scHaveD,
+					tcHaveD,
+					uoHaveD,
+					zaUI.lastNote || "",
+					dmUI.lastNote || ""
+				].join("|");
+
+				if (this._dharmaSig !== dharmaSig){
+					this._dharmaSig = dharmaSig;
+					var fmtDharma = this.game.getDisplayValueExt.bind(this.game);
+					var artV5 = cult.ART_VER || "77";
+					var caveB5 = cult.getImmortalCaveBonuses(30);
+					var zxTierNow = zaUI.tier || 0;
+					var zxCfgNow = cult.getZixiaoAltarTierDef(zxTierNow);
+					var zxAuraNow = cult.getZixiaoAuraBonuses();
+					var compRankNow = cult.getZixiaoComprehensionRank();
+					var dmTotalLv = cult.getDharmaTotalLevel();
+					var dmResTier = cult.getDharmaResonanceTier();
+					var dharmaSealBadge = (cult.dharmaImprintTier > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.zixiao.panel.imprint", [cult.dharmaImprintTier]) + "</span>"
+						: "";
+
+					var dharmaTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxDharmaHdrIco\"><img src=\"res/art/altar_zixiao_lecture.webp?v=" + artV5 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.zixiao.panel.badge") + "</span>" +
+										dharmaSealBadge +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.zixiao.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.zixiao.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.zixiao.panel.chip.altar", [zxTierNow, zaUI.lectureCount || 0]) + "</span>" +
+								"<span class=\"xxCaveSumChip\"><img src=\"res/art/scroll_hongmeng_sutra.webp?v=" + artV5 + "\" class=\"xxMiniSutraIco\" alt=\"\"/>" + $I("cultivation.zixiao.panel.chip.sutra", [zaUI.daoSutras || 0, zaUI.comprehension || 0]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.zixiao.panel.chip.dharma", [dmTotalLv, dmResTier]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						this.immortalDharmaEl.innerHTML = dharmaTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.zixiao.panel.locked") + "</div>";
+					} else {
+						// 左栏: 混沌紫霄讲道坛
+						var zxUpReq = cult.getZixiaoUpgradeReq();
+						var zxUpParts = [];
+						if (zxUpReq){
+							zxUpParts.push(fmtDharma(zxUpReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+							if (zxUpReq.relic > 0){
+								var rlTitleObj = this.game.resPool.get("relic");
+								zxUpParts.push(fmtDharma(zxUpReq.relic) + " " + ((rlTitleObj && rlTitleObj.title) || "relic"));
+							}
+							if (zxUpReq.auxRes && zxUpReq.auxVal > 0){
+								var zxAuxObj = this.game.resPool.get(zxUpReq.auxRes);
+								zxUpParts.push(fmtDharma(zxUpReq.auxVal) + " " + ((zxAuxObj && zxAuxObj.title) || zxUpReq.auxRes));
+							}
+							if (zxUpReq.reqDaoyun > 0){
+								zxUpParts.push($I("cultivation.beast.req.dao", [zxUpReq.reqDaoyun]));
+							}
+						}
+						var zxUpBtnHtml = "";
+						if (zxUpReq){
+							var zxUpLabel = (zxTierNow === 0)
+								? $I("cultivation.zixiao.build.btn", [zxUpParts.join(" · ")])
+								: $I("cultivation.zixiao.upgrade.btn", [$I(zxUpReq.titleKey), zxUpParts.join(" · ")]);
+							zxUpBtnHtml = "<div class=\"xxCaveMiniBtn gold" + (zxUpReq.affordable ? "" : " is-disabled") + "\" data-xx-dharma=\"upgradeAltar\">" + zxUpLabel + "</div>";
+						} else {
+							zxUpBtnHtml = "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.zixiao.upgrade.max") + "</div>";
+						}
+
+						var lecEss = cult.getDaoLecturePreview("essence");
+						var lecHm = cult.getDaoLecturePreview("hongmeng");
+						var sermonPct = (zxTierNow > 0) ? Math.min(100, Math.round(((zaUI.lectureProgress || 0) / Math.max(1, zaUI.lectureMax || 100)) * 100)) : 0;
+
+						var lecBtnsHtml = "";
+						if (zxTierNow > 0){
+							lecBtnsHtml =
+								"<div class=\"xxCaveMiniBtn gold" + (lecEss.affordable ? "" : " is-disabled") + "\" data-xx-dharma=\"lectureEssence\">" +
+									$I("cultivation.zixiao.lecture.essence.btn", [lecEss.xianyuan, lecEss.sutraGain, lecEss.compGain]) +
+								"</div>" +
+								"<div class=\"xxCaveMiniBtn gold" + (lecHm.affordable ? "" : " is-disabled") + "\" data-xx-dharma=\"lectureHongmeng\">" +
+									$I("cultivation.zixiao.lecture.hongmeng.btn", [lecHm.xianyuan, lecHm.hongmengQi, lecHm.sutraGain, lecHm.compGain]) +
+								"</div>";
+						} else {
+							lecBtnsHtml = "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.zixiao.lecture.need") + "</div>";
+						}
+
+						var qiBoostPct = Math.round((zxAuraNow.xyRatio || 0) * 100);
+						var herbBoostPct = Math.round((zxAuraNow.herbSpeed || 0) * 100);
+						var arkYieldPct = Math.round((zxAuraNow.voyageYield || 0) * 100);
+						var arkSpeedPct = Math.round((zxAuraNow.voyageSpeed || 0) * 100);
+
+						var zixiaoConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxZixiaoConsole\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + $I(zxCfgNow.titleKey) + "</b>" +
+									"<div class=\"xxCaveMiniBtn" + (zaUI.autoLecture ? " is-active" : "") + "\" data-xx-dharma=\"autoLecture\">" +
+										$I(zaUI.autoLecture ? "cultivation.zixiao.auto.on" : "cultivation.zixiao.auto.off") +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip is-gold\"><img src=\"res/art/scroll_hongmeng_sutra.webp?v=" + artV5 + "\" class=\"xxMiniSutraIco\" alt=\"\"/>" + $I("cultivation.zixiao.chip.sutra", [zaUI.daoSutras || 0]) + "</span>" +
+									"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.zixiao.chip.comp", [zaUI.comprehension || 0, compRankNow]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.zixiao.chip.qi", [qiBoostPct]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.zixiao.chip.herb", [herbBoostPct]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.zixiao.chip.voyage", [arkYieldPct]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotBar xxZixiaoBar\"><i style=\"width:" + sermonPct + "%\"></i></div>" +
+								"<div class=\"xxPlotState\" style=\"margin:4px 0 6px;\">" +
+									$I("cultivation.zixiao.sermon.state", [sermonPct, lecEss.sutraGain, lecEss.compGain, lecHm.sutraGain, lecHm.compGain]) +
+								"</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									lecBtnsHtml +
+									zxUpBtnHtml +
+								"</div>" +
+							"</div>";
+
+						var zixiaoAuraHtml =
+							"<div class=\"xxZixiaoAuraBox\">" +
+								"<div class=\"xxZixiaoAuraTitle\">" +
+									"<img src=\"res/art/scroll_hongmeng_sutra.webp?v=" + artV5 + "\" class=\"xxMiniSutraIco\" alt=\"\"/>" +
+									$I("cultivation.zixiao.aura.title", [zaUI.lectureCount || 0, zaUI.hongmengLectureCount || 0]) +
+								"</div>" +
+								"<div class=\"xxBountyDesc\">" +
+									$I("cultivation.zixiao.aura.desc", [
+										(zxAuraNow.xyBase || 0).toFixed(2),
+										qiBoostPct,
+										herbBoostPct,
+										arkYieldPct,
+										arkSpeedPct
+									]) +
+								"</div>" +
+							"</div>";
+
+						var zixiaoColHtml =
+							"<div class=\"xxCaveSection xxDharmaColZixiao\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/altar_zixiao_lecture.webp?v=" + artV5 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.zixiao.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.zixiao.meta", [qiBoostPct, herbBoostPct, arkYieldPct]) + "</span>" +
+								"</div>" +
+								zixiaoConsoleHtml +
+								zixiaoAuraHtml +
+								(zaUI.lastNote ? "<div class=\"xxCaveNote\">" + zaUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 三千大道神通法相
+						var dmPct = Math.min(100, Math.round((dmTotalLv / 24) * 100));
+						var swordExecPct = Math.round((caveB5.riftBossExecuteRatio || 0) * 100);
+						var nirvPct = Math.round((caveB5.dharmaNirvanaRatio || 0) * 100);
+						var pDefSlot = dmUI.primaryKey ? cult.getDharmaIdolDef(dmUI.primaryKey) : null;
+						var sDefSlot = dmUI.supportKey ? cult.getDharmaIdolDef(dmUI.supportKey) : null;
+						var pSlotLabel = pDefSlot ? $I(pDefSlot.labelKey) : $I("cultivation.dharma.slot.none");
+						var sSlotLabel = sDefSlot ? $I(sDefSlot.labelKey) : $I("cultivation.dharma.slot.none");
+
+						var dharmaBannerHtml =
+							"<div class=\"xxXianqiStageBox xxDharmaResBox\">" +
+								"<div class=\"xxHarmonyBanner" + (dmResTier > 0 ? " is-active" : "") + "\">" +
+									$I("cultivation.dharma.res." + dmResTier, [dmTotalLv]) +
+								"</div>" +
+								"<div class=\"xxPlotBar xxDharmaBar\" style=\"margin-top:6px;\"><i style=\"width:" + dmPct + "%\"></i></div>" +
+								"<div class=\"xxDharmaSlotBar\">" +
+									"<span class=\"xxDharmaSlotChip\">" + $I("cultivation.dharma.slot.primary", [pSlotLabel]) + "</span>" +
+									"<span class=\"xxDharmaSlotChip is-support\">" + $I("cultivation.dharma.slot.support", [sSlotLabel]) + "</span>" +
+								"</div>" +
+							"</div>";
+
+						var dharmaGridHtml = "<div class=\"xxDharmaGrid\">";
+						for (var di = 0; di < cult.DHARMA_IDOLS.length; di++){
+							var dDef = cult.DHARMA_IDOLS[di];
+							var dLv = (dmUI.levels && dmUI.levels[dDef.key]) || 0;
+							var isPrim = (dmUI.primaryKey === dDef.key && dLv > 0);
+							var isSupp = (dmUI.supportKey === dDef.key && dLv > 0);
+							var roleCls = isPrim ? " is-primary" : (isSupp ? " is-support" : "");
+							var roleKey = (dLv <= 0)
+								? "cultivation.dharma.role.locked"
+								: (isPrim ? "cultivation.dharma.role.primary" : (isSupp ? "cultivation.dharma.role.support" : "cultivation.dharma.role.reserve"));
+							var rfReq = cult.getDharmaRefineReq(dDef.key);
+							var rfParts = [];
+							if (rfReq){
+								rfParts.push($I("cultivation.dharma.req.sutra", [rfReq.daoSutras]));
+								rfParts.push(fmtDharma(rfReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+								if (rfReq.hongmengQi > 0){
+									rfParts.push($I("cultivation.hongmeng.req.qi", [rfReq.hongmengQi]));
+								}
+								if (rfReq.reqDaoyun > 0){
+									rfParts.push($I("cultivation.beast.req.dao", [rfReq.reqDaoyun]));
+								}
+							}
+							var cardCls = "xxDharmaCard" +
+								(dLv > 0 ? " is-awakened" : "") +
+								(isPrim ? " is-primary" : (isSupp ? " is-support" : "")) +
+								(dLv >= 6 ? " is-maxed" : "");
+							var rfBtnHtml = "";
+							if (rfReq){
+								var rfBtnText = (dLv === 0)
+									? $I("cultivation.dharma.awaken.btn", [rfParts.join(" · ")])
+									: $I("cultivation.dharma.refine.btn", [rfReq.nextLv, rfParts.join(" · ")]);
+								rfBtnHtml = "<div class=\"xxCaveMiniBtn gold" + (rfReq.affordable ? "" : " is-disabled") + "\" data-xx-dharma=\"refineIdol\" data-xx-arg=\"" + dDef.key + "\">" + rfBtnText + "</div>";
+							} else {
+								rfBtnHtml = "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.dharma.refine.max") + "</div>";
+							}
+							var slotActionHtml = (dLv > 0)
+								? ("<div class=\"xxCaveMiniBtnRow\">" +
+									"<div class=\"xxCaveMiniBtn" + (isPrim ? " is-active" : "") + "\" data-xx-dharma=\"equipPrimary\" data-xx-arg=\"" + dDef.key + "\">" +
+										$I(isPrim ? "cultivation.dharma.equip.primary.on" : "cultivation.dharma.equip.primary") +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtn" + (isSupp ? " is-active" : "") + "\" data-xx-dharma=\"equipSupport\" data-xx-arg=\"" + dDef.key + "\">" +
+										$I(isSupp ? "cultivation.dharma.equip.support.on" : "cultivation.dharma.equip.support") +
+									"</div>" +
+								  "</div>")
+								: "";
+
+							dharmaGridHtml +=
+								"<div class=\"" + cardCls + "\">" +
+									"<div class=\"xxStarCoreTop xxDharmaCardTop\">" +
+										"<div class=\"xxHerbIco xxDharmaIco\"><img src=\"" + dDef.art + "?v=" + artV5 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<span>" + $I(dDef.labelKey) + "</span>" +
+												"<span class=\"xxSeedStock\">" + $I("cultivation.dharma.lv", [dLv]) + "</span>" +
+											"</div>" +
+											"<div class=\"xxDharmaRoleRow\"><span class=\"xxDharmaRoleTag" + roleCls + "\">" + $I(roleKey) + "</span></div>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxSeedSub xxDharmaCardDesc\">" + $I(dDef.descKey) + "</div>" +
+									rfBtnHtml +
+									slotActionHtml +
+								"</div>";
+						}
+						dharmaGridHtml += "</div>";
+
+						var dharmaColHtml =
+							"<div class=\"xxCaveSection xxDharmaColIdols\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/dharma_cosmic_giant.webp?v=" + artV5 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.dharma.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.dharma.meta", [dmTotalLv, swordExecPct, nirvPct]) + "</span>" +
+								"</div>" +
+								dharmaBannerHtml +
+								dharmaGridHtml +
+								(dmUI.lastNote ? "<div class=\"xxCaveNote\">" + dmUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						this.immortalDharmaEl.innerHTML = dharmaTopHtml +
+							"<div class=\"xxCaveColumns\">" + zixiaoColHtml + dharmaColHtml + "</div>";
+					}
+				}
+			}
+		}
+
 		if (this.ascendBtn){
 			var dujie = cult.getStage("dujie_0");
 			this.ascendBtn.style.display = (dujie && dujie.researched) ? "block" : "none";
@@ -6904,7 +13807,9 @@ classes.ui.XianxiaArt = {
 		lianxu:   {pri: "#6fd3ff", sec: "#c6f0ff", glow: "rgba(111,211,255,.48)"},
 		heti:     {pri: "#e5a4ff", sec: "#ffe39e", glow: "rgba(229,164,255,.52)"},
 		dacheng:  {pri: "#ffd97d", sec: "#ffffff", glow: "rgba(255,217,125,.58)"},
-		dujie:    {pri: "#ff5e7e", sec: "#7ee8ff", glow: "rgba(255,94,126,.62)"}
+		dujie:    {pri: "#ff5e7e", sec: "#7ee8ff", glow: "rgba(255,94,126,.62)"},
+		zhenxian: {pri: "#ffe082", sec: "#7ef9d4", glow: "rgba(255,224,130,.66)"},
+		jinxian:  {pri: "#ffca28", sec: "#fff8e1", glow: "rgba(255,202,40,.75)"}
 	},
 
 	PORTRAIT_ART: {
@@ -6916,7 +13821,9 @@ classes.ui.XianxiaArt = {
 		lianxu:   "res/art/portrait_immortal.jpg",
 		heti:     "res/art/portrait_dacheng.jpg",
 		dacheng:  "res/art/portrait_dacheng.jpg",
-		dujie:    "res/art/portrait_dacheng.jpg"
+		dujie:    "res/art/portrait_dacheng.jpg",
+		zhenxian: "res/art/portrait_zhenxian.jpg",
+		jinxian:  "res/art/portrait_zhenxian.jpg"
 	},
 
 	SCENE_BANNER_ART: {
@@ -6937,6 +13844,41 @@ classes.ui.XianxiaArt = {
 		scholar: "res/art/origin_scholar.jpg",
 		trader:  "res/art/origin_trader.jpg",
 		orphan:  "res/art/origin_orphan.jpg"
+	},
+
+	MINGGE_ART: {
+		wheel:     "res/art/mingge_wheel.jpg",
+		alchemy:   "res/art/mingge_alchemy.jpg",
+		sword:     "res/art/mingge_sword.jpg",
+		longevity: "res/art/mingge_longevity.jpg"
+	},
+
+	HERB_ART: {
+		xianlan:  "res/art/herb_xianlan.webp",
+		zizhi:    "res/art/herb_zizhi.webp",
+		qinglian: "res/art/herb_qinglian.webp",
+		daoguo:   "res/art/herb_daoguo.webp"
+	},
+
+	XIANQI_ART: {
+		sword:    "res/art/xianqi_sword.webp",
+		cauldron: "res/art/xianqi_cauldron.webp",
+		mirror:   "res/art/xianqi_mirror.webp",
+		pagoda:   "res/art/xianqi_pagoda.webp"
+	},
+
+	STARCORE_ART: {
+		ziwei:    "res/art/starcore_ziwei.webp",
+		taiyang:  "res/art/starcore_taiyang.webp",
+		taiyin:   "res/art/starcore_taiyin.webp"
+	},
+
+	SANCTUM_ART: {
+		arrayCore:   "res/art/array_zhoutian_core.webp",
+		demonRaid:   "res/art/demon_tianmo_raid.webp",
+		bountyToken: "res/art/bounty_alliance_token.webp",
+		bountyScroll:"res/art/bounty_scroll_gold.webp",
+		meritChest:  "res/art/bounty_chest_merit.webp"
 	},
 
 	ACTION_ART: {
@@ -6983,6 +13925,7 @@ classes.ui.XianxiaArt = {
 		spice:        "res/art/res_spice.jpg",
 		relic:        "res/art/res_relic.jpg",
 		timeCrystal:  "res/art/res_timeCrystal.jpg",
+		xianyuan:     "res/art/res_xianyuan.jpg",
 		karma:        "res/art/res_karma.jpg",
 		paragon:      "res/art/res_paragon.jpg",
 		beam:         "res/art/res_beam.jpg",
@@ -7012,7 +13955,8 @@ classes.ui.XianxiaArt = {
 		jinjia:     "res/art/monster_jinjia.jpg",
 		yinlang:    "res/art/monster_yinlang.jpg",
 		gumo:       "res/art/monster_gumo.jpg",
-		zhenxian:   "res/art/monster_zhenxian.jpg"
+		zhenxian:   "res/art/monster_zhenxian.jpg",
+		yaoxian:    "res/art/monster_yaoxian.jpg"
 	},
 
 	VFX_ART: {
@@ -7036,7 +13980,7 @@ classes.ui.XianxiaArt = {
 		var bgHref = "res/art/banner_cultivation.jpg";
 		if (realmKey == "huashen" || realmKey == "lianxu"){
 			bgHref = "res/art/banner_spacetime.jpg";
-		} else if (realmKey == "heti" || realmKey == "dacheng" || realmKey == "dujie"){
+		} else if (realmKey == "heti" || realmKey == "dacheng" || realmKey == "dujie" || realmKey == "zhenxian" || realmKey == "jinxian"){
 			bgHref = "res/art/banner_time.jpg";
 		}
 		return "<svg viewBox=\"0 0 600 180\" preserveAspectRatio=\"xMidYMid slice\" class=\"xx-cult-bg-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
@@ -7110,6 +14054,28 @@ classes.ui.XianxiaArt = {
 		return "<svg viewBox=\"0 0 32 32\" class=\"xx-orig-svg xx-origin-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
 			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"32\" height=\"32\" preserveAspectRatio=\"xMidYMid slice\"/>" +
 		"</svg>";
+	},
+
+	minggeIcon: function(kind){
+		var href = this.MINGGE_ART[kind] || this.MINGGE_ART.wheel;
+		return "<svg viewBox=\"0 0 32 32\" class=\"xx-orig-svg xx-mingge-svg\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<image href=\"" + href + "\" x=\"0\" y=\"0\" width=\"32\" height=\"32\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+		"</svg>";
+	},
+
+	herbIcon: function(key){
+		var href = this.HERB_ART[key] || this.HERB_ART.xianlan;
+		return "<img src=\"" + href + "?v=77\" class=\"xx-herb-img\" alt=\"\"/>";
+	},
+
+	xianqiIcon: function(key){
+		var href = this.XIANQI_ART[key] || this.XIANQI_ART.sword;
+		return "<img src=\"" + href + "?v=77\" class=\"xx-xianqi-img\" alt=\"\"/>";
+	},
+
+	starCoreIcon: function(key){
+		var href = this.STARCORE_ART[key] || this.STARCORE_ART.ziwei;
+		return "<img src=\"" + href + "?v=77\" class=\"xx-starcore-img\" alt=\"\"/>";
 	},
 
 	actionArt: function(glyph){

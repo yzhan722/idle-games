@@ -1615,6 +1615,14 @@ var EffectsManager = dojo.declare("com.nuclearunicorn.game.EffectsManager", null
 			"seclusionMundaneRatio":{
 				title: $I("effectsMgr.statics.seclusionMundaneRatio.title"),
 				type: "ratio"
+			},
+			"zhenyuanRatio":{
+				title: $I("effectsMgr.statics.zhenyuanRatio.title"),
+				type: "ratio"
+			},
+			"riftDamageRatio":{
+				title: $I("effectsMgr.statics.riftDamageRatio.title"),
+				type: "ratio"
 			}
 		}
 	}
@@ -5239,14 +5247,89 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 		}
 
 		//转世只渡一缕魂——道号性别与坐化之数随魂,境界仙缘法宝皆归尘土;
-		//来世出身落地再择(pendingOrigin 触发「转世择身」卡)
+		//来世出身落地再择(pendingOrigin 触发「转世择身」卡);若已预择来世先天命格则随魂携入新世
 		var prevCult = lsData.cultivation;
 		if (prevCult && prevCult.identity){
-			saveData.cultivation = {
+			var soulObj = {
 				identity: {name: prevCult.identity.name, gender: prevCult.identity.gender},
 				sihuaCount: prevCult.sihuaCount || 0,
 				pendingOrigin: true
 			};
+			if (prevCult.pendingMingge && prevCult.pendingMingge.length){
+				soulObj.mingge = prevCult.pendingMingge.slice(0, 3);
+			}
+			var prevImprint = Math.max(0, Math.floor(prevCult.immortalImprint || 0));
+			var gainedImprint = 0;
+			if (prevCult.xianqi && prevCult.xianqi.stage > 0){
+				gainedImprint = Math.max(1, Math.min(3, Math.floor(prevCult.xianqi.stage)));
+			} else if (prevCult.immortalAscended){
+				gainedImprint = 1;
+			}
+			if (prevCult.starArray && prevCult.starArray.tier >= 3){
+				gainedImprint += 1;
+			}
+			var curBeastTier = 0;
+			if (prevCult.spiritNursery && prevCult.spiritNursery.beasts){
+				var bMap = prevCult.spiritNursery.beasts;
+				for (var bk in bMap){
+					if (bMap.hasOwnProperty(bk) && bMap[bk] && bMap[bk].stage > curBeastTier){
+						curBeastTier = Math.floor(bMap[bk].stage);
+					}
+				}
+			}
+			if (curBeastTier >= 3){
+				gainedImprint += 1;
+			}
+			var curHmTier = (prevCult.starship && prevCult.starship.vesselTier) ? Math.floor(prevCult.starship.vesselTier) : 0;
+			if (prevCult.hongmengAltar && prevCult.hongmengAltar.treasures){
+				var hmMap = prevCult.hongmengAltar.treasures;
+				for (var hmk in hmMap){
+					if (hmMap.hasOwnProperty(hmk) && typeof hmMap[hmk] === "number" && hmMap[hmk] > curHmTier){
+						curHmTier = Math.floor(hmMap[hmk]);
+					}
+				}
+			}
+			if (curHmTier >= 3){
+				gainedImprint += 1;
+			}
+			var curDharmaTier = (prevCult.zixiaoAltar && prevCult.zixiaoAltar.tier) ? Math.floor(prevCult.zixiaoAltar.tier) : 0;
+			if (prevCult.dharmaIdols && prevCult.dharmaIdols.levels){
+				var dmMap = prevCult.dharmaIdols.levels;
+				for (var dmk in dmMap){
+					if (dmMap.hasOwnProperty(dmk) && typeof dmMap[dmk] === "number" && dmMap[dmk] > curDharmaTier){
+						curDharmaTier = Math.floor(dmMap[dmk]);
+					}
+				}
+			}
+			if (curDharmaTier >= 3){
+				gainedImprint += 1;
+			}
+			if (prevImprint + gainedImprint > 0){
+				soulObj.immortalImprint = Math.min(10, prevImprint + gainedImprint);
+				if (prevCult.xianqi && prevCult.xianqi.boundKey){
+					soulObj.xianqiImprintKey = prevCult.xianqi.boundKey;
+				} else if (prevCult.xianqiImprintKey){
+					soulObj.xianqiImprintKey = prevCult.xianqiImprintKey;
+				}
+			}
+			var prevStarSeal = Math.max(0, Math.floor(prevCult.starImprintTier || 0));
+			var curStarTier = (prevCult.starArray && prevCult.starArray.tier) ? Math.floor(prevCult.starArray.tier) : 0;
+			if (Math.max(prevStarSeal, curStarTier) > 0){
+				soulObj.starImprintTier = Math.min(6, Math.max(prevStarSeal, curStarTier));
+			}
+			var prevBeastSeal = Math.max(0, Math.floor(prevCult.beastImprintTier || 0));
+			if (Math.max(prevBeastSeal, curBeastTier) > 0){
+				soulObj.beastImprintTier = Math.min(6, Math.max(prevBeastSeal, curBeastTier));
+			}
+			var prevHmSeal = Math.max(0, Math.floor(prevCult.hongmengImprintTier || 0));
+			if (Math.max(prevHmSeal, curHmTier) > 0){
+				soulObj.hongmengImprintTier = Math.min(6, Math.max(prevHmSeal, curHmTier));
+			}
+			var prevDharmaSeal = Math.max(0, Math.floor(prevCult.dharmaImprintTier || 0));
+			if (Math.max(prevDharmaSeal, curDharmaTier) > 0){
+				soulObj.dharmaImprintTier = Math.min(6, Math.max(prevDharmaSeal, curDharmaTier));
+			}
+			saveData.cultivation = soulObj;
 		}
 
 		var preparedSaveData = this._prepareSaveData(saveData);
