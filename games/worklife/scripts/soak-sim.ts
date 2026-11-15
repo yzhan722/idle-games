@@ -20,6 +20,7 @@ import {
   getEquippedCombatStats,
   appendLog,
   ACTION_QUEUE_MAX,
+  getActionQueueMax,
   queuedActionBlocker,
 } from "../backend/src/storage";
 import {
@@ -192,8 +193,9 @@ function deepScan(state: any, ctx: string) {
   if (Array.isArray(state.logs) && state.logs.length > 201) {
     bug("invariant", "minor", `日志超过 200 上限：${state.logs.length}`, ctx, "log-overflow");
   }
-  if (Array.isArray(state.activityQueue) && state.activityQueue.length > ACTION_QUEUE_MAX) {
-    bug("invariant", "major", `队列超上限：${state.activityQueue.length}>${ACTION_QUEUE_MAX}`, ctx);
+  const queueCap = getActionQueueMax(state);
+  if (Array.isArray(state.activityQueue) && state.activityQueue.length > queueCap) {
+    bug("invariant", "major", `队列超上限：${state.activityQueue.length}>${queueCap}`, ctx);
   }
   for (const [id, lvl] of Object.entries(state.equipment?.enhancementLevels || {}) as any) {
     if (!(lvl >= 0 && lvl <= MAX_ENHANCEMENT_LEVEL)) {

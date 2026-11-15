@@ -175,6 +175,11 @@ export type AbilityTrigger =
   | { type: "enemy_guard" };
 
 export type AbilitySlot = { abilityId: string; trigger: AbilityTrigger };
+export type Chapter1BuildId = "sharpened_edge" | "thick_bark";
+export type Chapter2BuildId = "heavy_sunder" | "quenched_thorns";
+export type Chapter3BuildId = "gale_flurry" | "relic_hunter";
+export type Chapter4BuildId = "elixir_frenzy" | "feast_vitality";
+export type AllChapterBuildId = Chapter1BuildId | Chapter2BuildId | Chapter3BuildId | Chapter4BuildId;
 
 // 增强的玩家状态结构
 export type EnhancedPlayerState = PlayerState & {
@@ -246,7 +251,10 @@ export type EnhancedPlayerState = PlayerState & {
   /** Wall-clock ms when combatHp was last written; out-of-combat regen accrues from here. */
   combatHpAt?: number;
   progression?: import('./progression_state').ProgressionState;
-  chapter1Build?: "sharpened_edge" | "thick_bark";
+  chapter1Build?: Chapter1BuildId;
+  chapter2Build?: Chapter2BuildId;
+  chapter3Build?: Chapter3BuildId;
+  chapter4Build?: Chapter4BuildId;
 
   /** MWI combat skills; `combatLevel` is derived from these (see combat_skills.ts). */
   combatSkills?: CombatSkills;
@@ -290,8 +298,23 @@ export type EnhancedPlayerState = PlayerState & {
   // 声望系统状态（累计声望 -> 等级 -> 永久被动加成）
   reputation?: ReputationState;
 
-  // 赏金契约状态（每日刷新的随机契约板）
+  // 赏金契约状态（每日刷新的词缀讨伐委托板）
   bounties?: BountyState;
+
+  // 异世界公会荣誉与稀有锻造徽记状态（跨日与转生持久保留）
+  guildHonor?: GuildHonorState;
+
+  // 异世界工坊：传世铭纹附魔台与跨职业套装共鸣图鉴（跨装备更换与转生永久保留）
+  heritageWorkshop?: HeritageWorkshopState;
+
+  // 异世界远征商队贸易航路与工坊特批契约柜台（跨日与转生永久保留声望、晶尘与宗师商典）
+  caravanTrade?: CaravanTradeState;
+
+  // 异世界工坊：奇美拉炼金魔药釜与深渊试炼双共鸣药剂槽（跨转生永久保留宗师图谱、等阶与药剂储备）
+  alchemyCauldron?: AlchemyCauldronState;
+
+  // 异世界公会：星界远古遗迹勘探队与传世圣物陈列馆（跨转生永久保留圣物残片、勘探等阶与四大圣物基座）
+  astralRelics?: AstralRelicsState;
 
   // MWI 任务板：按冷却逐个发放的技能任务、任务代币与代币商店
   tasksState?: TaskState;
@@ -328,7 +351,14 @@ export type EnhanceRun = {
 // ===== 声望系统 =====
 export type ReputationState = {
   total: number;          // 累计获得的声望点数（只增不减，决定声望等级）
-  spent: number;          // 已消耗的声望（预留：声望商店）
+  spent: number;          // 已消耗的声望（声望军需官商店兑换累计消耗）
+  dailyPurchases?: {
+    date: string;         // YYYY-MM-DD（按本地日切重置每日限购）
+    counts: Record<string, number>;
+  };
+  activeScrolls?: Record<string, number>; // scrollId -> 到期时间戳 epoch ms
+  unlockedTitles?: string[];              // 已永久解锁的专属名号徽章 ID 列表
+  equippedTitle?: string | null;          // 当前佩戴的专属名号徽章 ID
 };
 
 // 声望等级定义（静态）
@@ -347,8 +377,19 @@ export type ReputationTierDef = {
   };
 };
 
-// ===== 赏金契约系统 =====
+// ===== 赏金契约系统（异世界公会每日词缀讨伐委托板 & 连携赏金） =====
 export type BountyMetric = "gather" | "craft" | "kill";
+
+export type GuildBountyAffixId =
+  | "bountiful_harvest"
+  | "scorching_sunder"
+  | "swift_assault"
+  | "artisan_overdrive"
+  | "gilded_spoils";
+
+export type GuildComboMilestoneId = "chain_2" | "chain_full";
+
+export type GuildHonorShopCategory = "frame" | "forging" | "supply";
 
 export type Bounty = {
   id: string;             // 实例ID
@@ -356,25 +397,200 @@ export type Bounty = {
   name: string;
   description: string;
   icon: string;
+  iconKind?: "skills" | "ui" | "materials";
+  iconId?: string;
+  affixId?: GuildBountyAffixId; // 生态词缀 ID
   metric: BountyMetric;   // 完成判定指标
   target: number;         // 目标数量
   baseline: number;       // 接取时对应 stats 指标的基线值
   accepted: boolean;      // 是否已接取
   claimed: boolean;       // 是否已领奖
   rarity: "common" | "rare" | "epic"; // 稀有度（决定奖励倍率）
+  honorReward?: number;   // 单条契约完成授予的公会荣誉积分
   reward: { gold: number; reputation: number; items?: Record<string, number> };
 };
 
 export type BountyState = {
-  date: string;           // 当前契约板日期 YYYY-MM-DD（UTC）
-  bounties: Bounty[];     // 当日契约列表
+  date: string;           // 当前契约板日期 YYYY-MM-DD（东八区业务日）
+  seedKey?: string;       // 当日确定性种子标识
+  bounties: Bounty[];     // 当日契约列表（默认 4 槽生态词缀委托）
   rerollsUsed: number;    // 当日已使用的刷新次数
+  claimedTodayCount?: number; // 当日已完成领奖契约数（刷新不丢失连携计数）
+  claimedAffixesToday?: GuildBountyAffixId[]; // 当日已完成契约留存的生态余韵词缀
+  comboClaimed?: GuildComboMilestoneId[];     // 当日已领取的连携节点 ID
+};
+
+export type GuildHonorState = {
+  honorPoints: number;          // 当前可用公会荣誉积分
+  totalHonorEarned: number;     // 累计获得的公会荣誉积分
+  forgingEmblems: number;       // 当前可用稀有锻造徽记
+  totalChainsCompleted: number; // 累计领取连携赏金次数
+  fullClears: number;           // 累计达成全板制霸次数
+  unlockedFrames: string[];     // 已永久解锁的专属公会头像边框 ID
+  equippedFrame: string | null; // 当前佩戴的专属公会头像边框 ID
+  dailyPurchases?: {
+    date: string;
+    counts: Record<string, number>;
+  };
+};
+
+// ===== 异世界工坊：传世铭纹附魔台 & 跨职业套装共鸣图鉴 (WL-6) =====
+export type HeritageRuneSlot = "weapon" | "armor" | "tool";
+
+export type HeritageRuneId =
+  | "rune_sunder_edge"
+  | "rune_tempest_fang"
+  | "rune_bastion_ward"
+  | "rune_vital_aegis"
+  | "rune_bountiful_pick"
+  | "rune_artisan_forge";
+
+export type CrossProfResonanceSetId =
+  | "forge_bastion"
+  | "moonloom_weave"
+  | "hearth_bounty"
+  | "arcane_crucible";
+
+export type HeritageWorkshopState = {
+  runeRanks: Partial<Record<HeritageRuneId, number>>;
+  equippedRunes: Partial<Record<HeritageRuneSlot, HeritageRuneId | null>>;
+  emblemSynthesis?: {
+    date: string;
+    count: number;
+  };
+  codexUnlockedItems: string[];
+  claimedCodexMilestones: string[];
+};
+
+// ===== 异世界远征商队贸易航路与工坊特批契约柜台 (WL-7) =====
+export type CaravanRouteId = "frostport" | "emberoasis" | "starfallspire";
+
+export type CaravanCargoCategory =
+  | "lumber_fish_dishes"
+  | "ore_ingot_tools"
+  | "herb_cloth_crystal_alchemy";
+
+export type CaravanWagonSlot = 0 | 1 | 2;
+
+export type CaravanRewardSummary = {
+  gold: number;
+  astralCrystalDust: number;
+  forgingEmblems: number;
+  caravanRep: number;
+};
+
+export type CaravanWagonRun = {
+  slot: CaravanWagonSlot;
+  routeId: CaravanRouteId;
+  cargo: Record<string, number>;
+  startedAt: number;
+  completesAt: number;
+  scarcityMultiplier: number;
+  usedExpressPermit?: boolean;
+  expectedReward: CaravanRewardSummary;
+};
+
+export type WorkshopSupplyContractInstance = {
+  id: string;
+  templateId: string;
+  name: string;
+  description: string;
+  rarity: "standard" | "urgent" | "royal";
+  demands: Record<string, number>;
+  reward: {
+    gold: number;
+    astralCrystalDust: number;
+    forgingEmblems: number;
+    honorPoints: number;
+    expressPermits: number;
+    caravanRep: number;
+  };
+  fulfilled: boolean;
+};
+
+export type CaravanTradeState = {
+  caravanRep: number;
+  astralCrystalDust: number;
+  expressPermits: number;
+  ledgerRank: number;
+  totalRunsCompleted: number;
+  totalContractsFulfilled: number;
+  wagons: Partial<Record<CaravanWagonSlot, CaravanWagonRun | null>>;
+  contractsBoard?: {
+    date: string;
+    rerollsUsed: number;
+    seedKey: string;
+    contracts: WorkshopSupplyContractInstance[];
+  };
+  dailyDustExchanges?: {
+    date: string;
+    counts: Record<string, number>;
+  };
+};
+
+// ===== 异世界工坊：奇美拉炼金魔药釜与深渊试炼双共鸣药剂槽 (WL-8) =====
+export type AlchemicalPotionId =
+  | "dragon_fury"
+  | "elven_bounty"
+  | "dwarven_temper"
+  | "astral_fortune";
+
+export type PotionBrewMode = "essence" | "material" | "astral_dust";
+
+export type RecipeUpgradeMode = "standard" | "astral_dust";
+
+export type ResonanceSlotIndex = 0 | 1;
+
+export type AlchemyCauldronState = {
+  recipeRanks: Record<AlchemicalPotionId, number>;
+  potionCharges: Record<AlchemicalPotionId, number>;
+  alchemicalEssence: number;
+  equippedPotions: [AlchemicalPotionId | null, AlchemicalPotionId | null];
+  totalBrews: number;
+  totalUpgrades: number;
+  cauldronPoints: number;
+  alchemyCauldronRank: number;
+  dailyExtraction?: {
+    date: string;
+    claimedCount: number;
+  };
+};
+
+// ===== 异世界公会：星界远古遗迹勘探队与传世圣物陈列馆 (WL-9) =====
+export type AstralRuinStratumId =
+  | "outpost_ruins"
+  | "obsidian_sanctum"
+  | "primordial_corridor";
+
+export type ExpeditionSurveyMode = "free" | "coin" | "astral_dust";
+
+export type SacredRelicId =
+  | "solar_spear"
+  | "verdant_chalice"
+  | "titan_anvil"
+  | "chimera_censer";
+
+export type RelicUpgradeMode = "standard" | "astral_dust";
+
+export type AstralRelicsState = {
+  ancientRelicShards: number;
+  expeditionXp: number;
+  curatorRank: number;
+  totalSurveys: number;
+  totalRestorations: number;
+  pedestalRanks: Record<SacredRelicId, number>;
+  dailySurvey?: {
+    date: string;
+    claimedCount: number;
+  };
 };
 
 // ===== 转生系统 =====
 export type PrestigeState = {
   count: number;          // 已转生次数
   points: number;         // 累计转生点数（决定永久全局倍率）
+  spentPoints?: number;   // 已投入传承星盘的转生点数（不影响全局基础倍率）
+  astrolabe?: Record<string, number>; // 异世界传承星盘节点等级 (nodeId -> rank)
   lastPrestigeAt?: string;
 };
 

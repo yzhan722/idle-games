@@ -76,7 +76,10 @@ export async function openNav(page: Page, id: NavId) {
   await page.locator(`nav.skill-sidebar [data-nav-id="${id}"]`).click();
 }
 
-export async function seedT1(page: Page, scene?: "chapter-complete" | "combat-levels") {
+export async function seedT1(
+  page: Page,
+  scene?: "chapter-complete" | "combat-levels" | "heritage-workshop" | "caravan-trade" | "alchemy-cauldron" | "astral-relics"
+) {
   const res = await page.evaluate(async ({ sceneName, api }) => {
     const raw = localStorage.getItem("worklife_user");
     if (!raw) throw new Error("missing worklife_user");

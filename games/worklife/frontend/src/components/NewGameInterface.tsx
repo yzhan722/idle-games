@@ -13,13 +13,14 @@ import { skillActionRows, type SkillActionRow } from '../gameplay/skillActions'
 import { t1Url } from '../assets/t1/manifest'
 import { GameHeader } from './GameHeader'
 import { PlayerRightPanel } from './PlayerRightPanel'
+import { resolveEquippedGuildFrame } from './T1Art'
 import { apiClient, type ActionPreview } from '../services/api'
 import { chatWs, ChatMsg } from '../services/websocket'
 import { logger } from '../utils/logger'
 import { getItemName, registerItemNames } from '../utils/itemNames'
 import { AchievementsPanel, DailyQuestsPanel, SettingsPanel } from './ProgressionPanels'
 import { CheckInModal } from './SystemPanels'
-import { PrestigePanel } from './AdvancementPanels'
+import { AlchemyCauldronPanel, AstralRelicsPanel, CaravanTradePanel, HeritageWorkshopPanel, PrestigePanel, ReputationPanel } from './AdvancementPanels'
 import { useToast } from './Toast'
 import { CharacterCreate } from './CharacterCreate'
 import { TutorialGuide } from './TutorialGuide'
@@ -27,7 +28,7 @@ import { NextGoalBar } from './NextGoalBar'
 import { ActionQueueBar } from './ActionQueueBar'
 import { CharacterSheet } from './CharacterSheet'
 import { encounterStages } from '../gameplay/encounters'
-import { nextChapter1Goal, chapter1Complete } from '../gameplay/chapter1'
+import { nextChapterGoal, chapter1Complete } from '../gameplay/chapter1'
 import { CHAPTER1_MONSTERS } from '../gameplay/ia'
 import { COMBAT_SKILL_KEYS, abilitySlotCount, activeSetBonuses, combatSheetFromPack, equippedWeaponAtk, mainCombatSkill } from '../gameplay/combatSheet'
 import { enhancementStatMultiplier, toolEffectLine } from '../gameplay/enhancement'
@@ -63,7 +64,7 @@ import {
   type CurrentActivity,
 } from '../gameplay/gameConstants'
 import { AlchemyCoinifyPanel, ProductionTeaBar } from './ProductionExtras'
-import { GoldIcon, T1ItemIcon } from './T1Art'
+import { GoldIcon, T1Art, T1ItemIcon } from './T1Art'
 import { AdventurePanel } from './AdventurePanel'
 import { TradingMarketView } from './TradingMarketView'
 import {
@@ -126,8 +127,8 @@ export default function NewGameInterface() {
   }, [refreshPlayerState])
   const [activeTab, setActiveTab] = useState<ActiveTab>('logging')
 
-  // 进度系统弹窗：成就 / 每日任务 / 设置 / 签到 / 转生
-  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'prestige'>(null)
+  // 进度系统弹窗：成就 / 每日任务 / 设置 / 签到 / 声望军需 / 转生
+  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'reputation' | 'workshop' | 'caravan' | 'cauldron' | 'relics' | 'prestige'>(null)
   // 顶栏角标：可领取数量
   const [claimableCount, setClaimableCount] = useState(0)
   // 顶栏角标：今日是否可签到
@@ -1355,26 +1356,47 @@ export default function NewGameInterface() {
         )}
         <ProductionTeaBar playerState={playerState} refreshPlayerState={refreshPlayerState} />
         {tab === 'alchemy' && (
-          <div className="alchemy-branch-tabs" role="tablist" aria-label="炼金分支选择">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={alchemyBranch === 'recipes'}
-              className={`alchemy-branch-tab ${alchemyBranch === 'recipes' ? 'active' : ''}`}
-              onClick={() => setAlchemyBranch('recipes')}
-            >
-              <T1ItemIcon itemId="weapon_alchemy_bottle_t1" className="gold-inline" alt="" /> 药剂与炼金制作
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={alchemyBranch === 'coinify'}
-              className={`alchemy-branch-tab ${alchemyBranch === 'coinify' ? 'active' : ''}`}
-              onClick={() => setAlchemyBranch('coinify')}
-            >
-              <GoldIcon /> 点石成金（Coinify 转化金币）
-            </button>
-          </div>
+          <>
+            <section className="alchemy-cauldron-banner" aria-label="奇美拉炼金魔药釜与深渊试炼双共鸣药剂槽">
+              <div className="caravan-trade-banner-left">
+                <T1Art kind="skills" id="alchemy_cauldron_hub" className="caravan-trade-banner-icon" fallback="" alt="" />
+                <div className="caravan-trade-banner-copy">
+                  <strong>奇美拉炼金魔药釜 · 深渊试炼双共鸣药剂槽</strong>
+                  <small>
+                    研习转生永久保留的四大炼金宗师图谱（Lv.1~5），免费萃取炼金原液或投入采集素材炼制魔药充能，双槽并列激活 6 组「炼金双生共鸣」！
+                  </small>
+                </div>
+              </div>
+              <button
+                type="button"
+                data-testid="open-alchemy-cauldron-btn"
+                className="prog-claim-btn"
+                onClick={() => setProgPanel('cauldron')}
+              >
+                开启奇美拉魔药釜
+              </button>
+            </section>
+            <div className="alchemy-branch-tabs" role="tablist" aria-label="炼金分支选择">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={alchemyBranch === 'recipes'}
+                className={`alchemy-branch-tab ${alchemyBranch === 'recipes' ? 'active' : ''}`}
+                onClick={() => setAlchemyBranch('recipes')}
+              >
+                <T1ItemIcon itemId="weapon_alchemy_bottle_t1" className="gold-inline" alt="" /> 药剂与炼金制作
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={alchemyBranch === 'coinify'}
+                className={`alchemy-branch-tab ${alchemyBranch === 'coinify' ? 'active' : ''}`}
+                onClick={() => setAlchemyBranch('coinify')}
+              >
+                <GoldIcon /> 点石成金（Coinify 转化金币）
+              </button>
+            </div>
+          </>
         )}
         {tab === 'alchemy' && alchemyBranch === 'coinify' ? (
           <AlchemyCoinifyPanel
@@ -1465,8 +1487,9 @@ export default function NewGameInterface() {
     return () => { cancelled = true; };
   }, [previewActionId, playerState?.skills, playerState?.equipment]);
 
-  // ---- 行动队列（银河奶牛式）----
-  const ACTION_QUEUE_MAX = 5;
+  // ---- 行动队列（银河奶牛式，受传承星盘「行囊统筹」动态扩充）----
+  const ACTION_QUEUE_MAX =
+    5 + Math.min(3, Math.max(0, Math.floor(Number((playerState as any)?.prestige?.astrolabe?.astro_queue_cap || 0))));
   const [gatherQuantity, setGatherQuantity] = useState<number | null>(null); // null = 无限
   const actionNameOf = (actionId: string) =>
     contentPack?.actions?.find((a: any) => a.id === actionId)?.name || actionId;
@@ -1764,7 +1787,7 @@ export default function NewGameInterface() {
     )
   }
 
-  const chapterGoal = nextChapter1Goal(playerState)
+  const chapterGoal = nextChapterGoal(playerState)
   const chapterDone = chapter1Complete(playerState)
   const hasFirstGather = Boolean(
     chapterDone ||
@@ -1953,17 +1976,41 @@ export default function NewGameInterface() {
         gold={playerState.inventory.gold || 0}
         totalLevel={totalLevel}
         chapterComplete={chapter1Complete(playerState)}
+        equippedTitle={(() => {
+          const eq = (playerState as any)?.reputation?.equippedTitle as string | undefined | null
+          const unlocked = ((playerState as any)?.reputation?.unlockedTitles || []) as string[]
+          if (!eq || !unlocked.includes(eq)) return null
+          const map: Record<string, { titleLabel: string; iconId: string }> = {
+            qm_title_warder: { titleLabel: '星辉军需官', iconId: 'qm_title_warder' },
+            qm_title_dragonslayer: { titleLabel: '讨魔先锋', iconId: 'qm_title_dragonslayer' },
+            qm_title_grandmaster: { titleLabel: '万匠宗师', iconId: 'qm_title_grandmaster' },
+          }
+          return map[eq] || null
+        })()}
+        playerAvatar={playerAvatar}
+        playerGender={playerGender}
+        equippedGuildFrame={resolveEquippedGuildFrame(playerState.guildHonor)}
+        onOpenGuildBounty={() => setActiveTab('adventure')}
       />
       <NextGoalBar
         goal={chapterGoal}
-        goLabel={chapterGoal.id === "complete" ? (claimableCount > 0 ? `领工钱 ${claimableCount}` : "看成就") : undefined}
+        goLabel={
+          chapterGoal.id === "complete" || chapterGoal.id === "ch3_complete" || chapterGoal.id === "ch4_complete"
+            ? (claimableCount > 0 ? `领工钱 ${claimableCount}` : "看成就")
+            : chapterGoal.buildChapter
+              ? "选流派"
+              : undefined
+        }
         onGo={() => {
-          if (chapterGoal.id === "complete") {
+          if (chapterGoal.id === "complete" || chapterGoal.id === "ch3_complete" || chapterGoal.id === "ch4_complete") {
             setProgPanel("achievements")
             return
           }
           if (chapterGoal.craftCategory) {
             setCraftCategory(chapterGoal.craftCategory)
+          }
+          if (chapterGoal.adventureZone) {
+            setSelectedMap(chapterGoal.adventureZone)
           }
           if (chapterGoal.tab === "character") {
             setActiveTab("character")
@@ -2062,6 +2109,7 @@ export default function NewGameInterface() {
             setSelectedMap={setSelectedMap}
             selectedEncounters={selectedEncounters}
             chapterDone={chapterDone}
+            onOpenRelics={() => setProgPanel('relics')}
             chapterGoalId={chapterGoal.id}
             combatSheet={combatSheet}
             combatNow={combatNow}
@@ -2102,6 +2150,7 @@ export default function NewGameInterface() {
             activeClassName={getCurrentProfession().name}
             playerGender={playerGender}
             playerAvatar={playerAvatar}
+            equippedGuildFrame={resolveEquippedGuildFrame(playerState.guildHonor)?.id || null}
             onChangeAvatar={changePlayerAvatar}
             onOpenProfessionModal={chapterDone ? () => setShowProfessionModal(true) : undefined}
             mainSkill={mainCombatSkill(playerState)}
@@ -2318,6 +2367,7 @@ export default function NewGameInterface() {
               contentItems={contentPack?.items}
               combatLocked={headerBattleActive}
               onRefresh={refreshPlayerState}
+              onOpenWorkshop={() => setProgPanel('workshop')}
             />
           </div>
         )}
@@ -2363,6 +2413,7 @@ export default function NewGameInterface() {
             handleBuyOrder={handleBuyOrder}
             getItemNameById={getItemNameById}
             refreshPlayerState={refreshPlayerState}
+            onOpenCaravan={() => setProgPanel('caravan')}
           />
         )}
       </main>
@@ -2373,6 +2424,7 @@ export default function NewGameInterface() {
         playerName={playerName}
         playerAvatar={playerAvatar}
         playerGender={playerGender}
+        equippedGuildFrame={resolveEquippedGuildFrame(playerState.guildHonor)?.id || null}
         onRename={renamePlayer}
         onOpenProfessionModal={() => setShowProfessionModal(true)}
         profession={{ ...getCurrentProfession(), id: currentProfession }}
@@ -2494,6 +2546,7 @@ export default function NewGameInterface() {
       <FirstBladeBuildModal
         playerState={playerState}
         buildModalDelayDone={buildModalDelayDone}
+        activeBuildChapter={chapterGoal.buildChapter}
         actionLoading={actionLoading}
         setActionLoading={setActionLoading}
         refreshPlayerState={refreshPlayerState}
@@ -2504,13 +2557,65 @@ export default function NewGameInterface() {
           onChange={() => { void refreshPlayerState(); void refreshClaimable(); }}
         />
       )}
-      {progPanel === 'prestige' && (
-        <PrestigePanel
+      {progPanel === 'reputation' && (
+        <ReputationPanel
           onClose={() => setProgPanel(null)}
           onChange={() => {
             apiClient.clearCache();
-            setCurrentActivity(null);
-            setBattleState(null);
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'workshop' && (
+        <HeritageWorkshopPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'caravan' && (
+        <CaravanTradePanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'cauldron' && (
+        <AlchemyCauldronPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'relics' && (
+        <AstralRelicsPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'prestige' && (
+        <PrestigePanel
+          onClose={() => setProgPanel(null)}
+          onChange={(mode) => {
+            apiClient.clearCache();
+            if (mode !== 'astrolabe') {
+              setCurrentActivity(null);
+              setBattleState(null);
+            }
             void refreshPlayerState();
           }}
         />

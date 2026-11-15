@@ -2,7 +2,9 @@ import { GoldIcon, T1Art, T1ItemIcon } from './T1Art'
 import { MarketItemGrid } from './MarketItemGrid'
 import { MarketMyOrders } from './MarketMyOrders'
 import { getItemIcon, getTierName, resolveItemInfo } from '../gameplay/gameConstants'
+import { getCaravanRepTier } from '../gameplay/caravanTrade'
 import type { PlayerState } from '../types/game'
+import './AdvancementPanels.css'
 import './T1UiIcons.css'
 
 export interface TradingMarketViewProps {
@@ -36,6 +38,7 @@ export interface TradingMarketViewProps {
   handleBuyOrder: () => Promise<void>
   getItemNameById: (id: string) => string
   refreshPlayerState: () => Promise<void>
+  onOpenCaravan?: () => void
 }
 
 export function TradingMarketView({
@@ -69,8 +72,12 @@ export function TradingMarketView({
   handleBuyOrder,
   getItemNameById,
   refreshPlayerState,
+  onOpenCaravan,
 }: TradingMarketViewProps) {
   const getItemInfo = (id: string) => resolveItemInfo(id, contentPack)
+  const caravanRepInfo = getCaravanRepTier(Number(playerState.caravanTrade?.caravanRep || 0))
+  const caravanDust = Number(playerState.caravanTrade?.astralCrystalDust || 0)
+  const caravanPermits = Number(playerState.caravanTrade?.expressPermits ?? 1)
 
   return (
     <div className="trading-layout">
@@ -86,6 +93,29 @@ export function TradingMarketView({
               <p>玩家之间买卖任何物品：直接吃掉最优挂单，或按自己的价格挂出售单 / 收购单。商会补给站亦常年以高于店价的溢价供应基础资源，保障新手起步循环。成交按卖方所得收 5% 税。</p>
             </div>
           </div>
+          {onOpenCaravan && (
+            <section className="caravan-trade-banner" aria-label="异世界远征商队贸易航路与工坊特批契约柜台">
+              <div className="caravan-trade-banner-left">
+                <T1Art kind="skills" id="caravan_hub_banner" className="caravan-trade-banner-icon" fallback="" alt="" />
+                <div className="caravan-trade-banner-copy">
+                  <strong>
+                    远征商队贸易航路 · 工坊特批契约柜台（商队 Lv.{caravanRepInfo.current.level} {caravanRepInfo.current.title}）
+                  </strong>
+                  <small>
+                    派遣闲置物资前往凛风冰港 / 赤砂绿洲 / 星坠秘塔赚取城镇紧缺溢价（1.15x~1.85x），结算异域星晶尘（当前 {caravanDust}）、稀有锻造徽记与商队永久加成（加急通行证 {caravanPermits} 张）。
+                  </small>
+                </div>
+              </div>
+              <button
+                type="button"
+                data-testid="open-caravan-trade-btn"
+                className="prog-claim-btn"
+                onClick={onOpenCaravan}
+              >
+                打开远征商队与契约柜台
+              </button>
+            </section>
+          )}
           <MarketItemGrid
             groups={[
               { id: 'materials', title: '材料', iconId: 'nav-woodworking', items: allItems?.materials || [] },

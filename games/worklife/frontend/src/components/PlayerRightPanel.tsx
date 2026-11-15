@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T1Art, T1ItemIcon, GoldIcon, characterArtId, PlayerAvatarIcon } from "./T1Art";
+import { T1Art, T1ItemIcon, GoldIcon, characterArtId, PlayerAvatarIcon, GuildFramedAvatar } from "./T1Art";
 import { getProfessionPerk } from "../gameplay/professionPerks";
 
 type EquipSlot = { id: string; name: string; icon: string; type: string };
@@ -23,6 +23,8 @@ type Props = {
   playerAvatar?: string;
   /** 角色性别外观（male / female / animal） */
   playerGender?: string;
+  /** 当前佩戴的公会专属头像边框 ID */
+  equippedGuildFrame?: string | null;
   /** Persists a custom display name (empty string clears back to the derived default). */
   onRename?: (name: string) => void | Promise<void>;
   onOpenProfessionModal: () => void;
@@ -87,7 +89,16 @@ export function PlayerRightPanel(props: Props) {
           <div className="status-player-info">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
               <span className="status-player-avatar" aria-hidden>
-                <PlayerAvatarIcon avatar={props.playerAvatar} gender={props.playerGender} />
+                {props.equippedGuildFrame ? (
+                  <GuildFramedAvatar
+                    avatar={props.playerAvatar}
+                    gender={props.playerGender}
+                    frameId={props.equippedGuildFrame}
+                    size={36}
+                  />
+                ) : (
+                  <PlayerAvatarIcon avatar={props.playerAvatar} gender={props.playerGender} />
+                )}
               </span>
               {editingName ? (
                 <form

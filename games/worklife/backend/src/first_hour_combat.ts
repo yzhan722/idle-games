@@ -13,6 +13,16 @@ export type Combatant = {
   /** Player only: MWI mana pool and regen per basic-attack tick. */
   mp?: number;
   mpRegenPerTick?: number;
+  /** Chapter 2 build (heavy_sunder): fraction of defender DEF ignored on hit. */
+  armorPenPct?: number;
+  /** WL-8 Chimera Alchemy Cauldron: additional fraction of Boss DEF ignored on hit. */
+  bossArmorBreakPct?: number;
+  /** WL-9 Sacred Relic Gallery (曜阳破军圣枪 & 全馆共鸣): deterministic crit-surge hit damage bonus (%). */
+  relicCritAmpPct?: number;
+  /** Monster only: true when defender is a Boss encounter. */
+  isBoss?: boolean;
+  /** Chapter 2 build (quenched_thorns): fraction of player DEF reflected when hit. */
+  thornsDefRatio?: number;
 };
 
 export type FightResult = {
@@ -28,22 +38,42 @@ export type FightResult = {
 export function playerCombatant(
   state: EnhancedPlayerState,
   contentPack: EnhancedContentPack,
-  extras?: { atk?: number; hp?: number; def?: number }
+  extras?: {
+    atk?: number;
+    buffAtk?: number;
+    combatAtkPct?: number;
+    hp?: number;
+    def?: number;
+    armorPenPct?: number;
+    bossArmorBreakPct?: number;
+    relicCritAmpPct?: number;
+    thornsDefRatio?: number;
+    intervalMult?: number;
+  }
 ): Combatant {
   // Skill levels first, then gear, then build / buff extras — mirrored by frontend combatSheet.ts.
   // The equipped weapon decides which damage skill (melee / ranged / magic) feeds ATK.
   const skills = combatSkillContribution(ensureCombatSkills(state), mainCombatSkill(state));
   const gear = getEquippedCombatStats(state, contentPack);
+  const intervalMult = extras?.intervalMult && extras.intervalMult > 0 ? extras.intervalMult : 1;
+  const baseUnbuffedAtk = skills.atk + gear.atk + (extras?.atk || 0);
+  const unbuffedAtk = extras?.combatAtkPct
+    ? Math.round(baseUnbuffedAtk * (1 + extras.combatAtkPct / 100))
+    : baseUnbuffedAtk;
   return {
     name: "player",
     hp: skills.hp + (extras?.hp || 0),
-    atk: skills.atk + gear.atk + (extras?.atk || 0),
+    atk: unbuffedAtk + (extras?.buffAtk || 0),
     def: skills.def + gear.def + (extras?.def || 0),
-    intervalMs: skills.intervalMs,
+    intervalMs: intervalMult !== 1 ? Math.max(800, Math.round(skills.intervalMs * intervalMult)) : skills.intervalMs,
     incomingDamageMult: 1,
     outgoingDamageMult: 1,
     mp: skills.mp,
     mpRegenPerTick: skills.mpRegenPerTick,
+    armorPenPct: extras?.armorPenPct || 0,
+    bossArmorBreakPct: extras?.bossArmorBreakPct || 0,
+    relicCritAmpPct: extras?.relicCritAmpPct || 0,
+    thornsDefRatio: extras?.thornsDefRatio || 0,
   };
 }
 
@@ -60,6 +90,7 @@ export function monsterCombatant(monster: Record<string, unknown>): Combatant {
     intervalMs: Number(monster.attackIntervalMs || (isBoss ? 2200 : 2400)),
     incomingDamageMult: Number(monster.incomingDamageMult || 1),
     outgoingDamageMult: Number(monster.outgoingDamageMult || 1),
+    isBoss,
   };
 }
 
@@ -79,7 +110,12 @@ export function mitigatedDamage(atk: number, def: number): number {
 }
 
 export function hitDamage(attacker: Combatant, defender: Combatant): number {
-  const raw = mitigatedDamage(attacker.atk * attacker.outgoingDamageMult, defender.def);
+  const basePen = attacker.armorPenPct || 0;
+  const bossPen = defender.isBoss && attacker.bossArmorBreakPct ? attacker.bossArmorBreakPct : 0;
+  const totalPen = Math.min(0.85, basePen + bossPen);
+  const effDef = totalPen > 0 ? Math.floor(defender.def * (1 - totalPen)) : defender.def;
+  const critAmp = attacker.relicCritAmpPct ? 1 + attacker.relicCritAmpPct / 100 : 1;
+  const raw = mitigatedDamage(attacker.atk * attacker.outgoingDamageMult, effDef) * critAmp;
   return Math.max(1, Math.floor(raw * defender.incomingDamageMult));
 }
 

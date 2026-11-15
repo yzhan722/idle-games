@@ -1,0 +1,884 @@
+/* 异世界公会：每日词缀讨伐委托板 & 连携赏金系统 + 专属公会头像框 */
+
+.guild-framed-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: radial-gradient(circle at 50% 35%, rgba(62, 46, 30, 0.92), rgba(22, 17, 12, 0.96));
+  border: 1px solid rgba(218, 175, 105, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 206, 0.16), 0 2px 6px rgba(0, 0, 0, 0.36);
+}
+
+.guild-framed-avatar-inner {
+  width: 76%;
+  height: 76%;
+  border-radius: 6px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guild-framed-avatar-inner .player-avatar-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.guild-framed-avatar.has-guild-frame {
+  border-color: transparent;
+  background: radial-gradient(circle at 50% 40%, rgba(74, 48, 28, 0.94), rgba(20, 15, 11, 0.98));
+}
+
+.guild-framed-avatar.has-guild-frame.theme-crimson {
+  box-shadow: 0 0 10px rgba(235, 92, 68, 0.42), inset 0 0 6px rgba(255, 186, 112, 0.22);
+}
+
+.guild-framed-avatar.has-guild-frame.theme-astral {
+  box-shadow: 0 0 12px rgba(108, 182, 255, 0.48), inset 0 0 8px rgba(255, 226, 148, 0.28);
+}
+
+.guild-framed-avatar-overlay {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.header-guild-frame-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px 2px 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 178, 98, 0.45);
+  background: linear-gradient(165deg, rgba(56, 40, 26, 0.92), rgba(28, 20, 14, 0.95));
+  color: #f6ddb0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.16s ease, transform 0.14s ease;
+}
+
+.header-guild-frame-pill:hover {
+  border-color: rgba(245, 204, 126, 0.8);
+  transform: translateY(-1px);
+}
+
+.guild-bounty-shell {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(168deg, rgba(46, 36, 26, 0.94) 0%, rgba(24, 19, 14, 0.97) 100%);
+  border: 1px solid rgba(218, 175, 105, 0.36);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 206, 0.12), 0 6px 18px rgba(0, 0, 0, 0.36);
+  color: #efe3ce;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.guild-bounty-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.guild-bounty-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.guild-header-crest {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.guild-bounty-heading-copy {
+  min-width: 0;
+}
+
+.guild-bounty-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.guild-bounty-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8e4bc;
+  letter-spacing: 0.02em;
+}
+
+.guild-seed-pill {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #d8c39e;
+  background: rgba(218, 175, 105, 0.14);
+  border: 1px solid rgba(218, 175, 105, 0.3);
+  white-space: nowrap;
+}
+
+.guild-equipped-frame-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(218, 92, 68, 0.18);
+  border: 1px solid rgba(238, 128, 96, 0.45);
+  color: #ffd5c8;
+  white-space: nowrap;
+}
+
+.guild-equipped-frame-pill.theme-astral {
+  background: rgba(82, 146, 232, 0.2);
+  border-color: rgba(132, 192, 255, 0.5);
+  color: #d9ecff;
+}
+
+.guild-bounty-sub {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #bcae98;
+  line-height: 1.35;
+}
+
+.guild-bounty-wallet-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.guild-inline-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  vertical-align: -3px;
+  flex-shrink: 0;
+}
+
+.guild-currency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: rgba(20, 15, 11, 0.72);
+  border: 1px solid rgba(218, 175, 105, 0.28);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.guild-currency-chip.emblem {
+  border-color: rgba(232, 132, 92, 0.38);
+}
+
+.guild-currency-label {
+  color: #cbbba2;
+}
+
+.guild-currency-val {
+  color: #f9dfa6;
+  font-size: 13px;
+}
+
+.guild-reroll-btn,
+.guild-collapse-btn,
+.guild-unequip-frame-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(218, 175, 105, 0.36);
+  background: linear-gradient(180deg, rgba(66, 50, 34, 0.92), rgba(40, 30, 20, 0.96));
+  color: #f3dfb8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.guild-reroll-btn:disabled,
+.guild-unequip-frame-btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.guild-active-affix-strip {
+  margin-top: 9px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(28, 38, 30, 0.55);
+  border: 1px solid rgba(122, 198, 142, 0.32);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.guild-strip-tag {
+  color: #cbe8d2;
+  font-weight: 600;
+}
+
+.guild-active-affix-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(18, 24, 20, 0.72);
+  border: 1px solid rgba(218, 175, 105, 0.3);
+  color: #f4e6cc;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.guild-active-affix-chip b {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.guild-active-affix-chip em {
+  font-style: normal;
+  color: #c9d8c5;
+}
+
+/* 4 槽词缀契约网格 */
+.guild-contract-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.guild-contract-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: linear-gradient(168deg, rgba(54, 42, 30, 0.9) 0%, rgba(28, 22, 16, 0.95) 100%);
+  border: 1px solid rgba(218, 175, 105, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 206, 0.08);
+  min-width: 0;
+}
+
+.guild-contract-card.rarity-rare {
+  border-color: rgba(108, 176, 242, 0.44);
+}
+
+.guild-contract-card.rarity-epic {
+  border-color: rgba(218, 138, 246, 0.48);
+}
+
+.guild-contract-card.is-active {
+  box-shadow: 0 0 0 1px rgba(235, 188, 96, 0.45), inset 0 1px 0 rgba(255, 240, 206, 0.14);
+}
+
+.guild-contract-card.is-ready {
+  border-color: rgba(102, 216, 142, 0.65);
+  box-shadow: 0 0 12px rgba(90, 216, 138, 0.2);
+}
+
+.guild-contract-card.is-claimed {
+  opacity: 0.78;
+}
+
+.guild-contract-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.guild-affix-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.guild-affix-art {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.guild-affix-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guild-affix-pill {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.guild-affix-pill.tone-emerald {
+  background: rgba(64, 178, 108, 0.22);
+  border: 1px solid rgba(98, 216, 142, 0.45);
+  color: #a8f4c2;
+}
+
+.guild-affix-pill.tone-crimson {
+  background: rgba(214, 78, 62, 0.24);
+  border: 1px solid rgba(242, 118, 98, 0.48);
+  color: #ffc2b6;
+}
+
+.guild-affix-pill.tone-cyan {
+  background: rgba(64, 162, 216, 0.22);
+  border: 1px solid rgba(108, 198, 246, 0.46);
+  color: #bce8ff;
+}
+
+.guild-affix-pill.tone-amber {
+  background: rgba(218, 142, 56, 0.24);
+  border: 1px solid rgba(244, 178, 92, 0.46);
+  color: #ffe0ae;
+}
+
+.guild-affix-pill.tone-gold {
+  background: rgba(212, 176, 68, 0.24);
+  border: 1px solid rgba(244, 212, 108, 0.48);
+  color: #fff0b8;
+}
+
+.guild-contract-name {
+  font-size: 13px;
+  color: #f6e7cb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guild-contract-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.guild-rarity-chip,
+.guild-metric-chip {
+  font-size: 10.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.guild-rarity-chip.rarity-common {
+  background: rgba(180, 168, 148, 0.16);
+  color: #d6c8b2;
+}
+
+.guild-rarity-chip.rarity-rare {
+  background: rgba(84, 152, 228, 0.22);
+  color: #b9dcff;
+}
+
+.guild-rarity-chip.rarity-epic {
+  background: rgba(186, 104, 228, 0.24);
+  color: #ecc8ff;
+}
+
+.guild-metric-chip {
+  background: rgba(218, 175, 105, 0.12);
+  color: #cdb896;
+}
+
+.guild-affix-effect-line {
+  margin: 6px 0 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #f2cf8d;
+  line-height: 1.3;
+}
+
+.guild-contract-desc {
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  color: #b7a892;
+  line-height: 1.3;
+}
+
+.guild-progress-wrap {
+  margin-bottom: 7px;
+}
+
+.guild-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(14, 11, 8, 0.78);
+  overflow: hidden;
+  border: 1px solid rgba(218, 175, 105, 0.18);
+}
+
+.guild-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #cf9642, #f2c977);
+  transition: width 0.2s ease;
+}
+
+.guild-progress-fill.full {
+  background: linear-gradient(90deg, #4bc87c, #8df0b0);
+}
+
+.guild-progress-nums {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #c8b89f;
+  text-align: right;
+}
+
+.guild-contract-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid rgba(218, 175, 105, 0.14);
+}
+
+.guild-reward-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.guild-reward-item.gold {
+  color: #f2c56b;
+}
+
+.guild-reward-item.rep {
+  color: #cbd9e8;
+}
+
+.guild-reward-item.honor {
+  color: #ffe2a4;
+}
+
+.guild-btn {
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(218, 175, 105, 0.42);
+  background: linear-gradient(180deg, rgba(78, 58, 36, 0.95), rgba(46, 34, 21, 0.98));
+  color: #f7e4be;
+  white-space: nowrap;
+}
+
+.guild-btn.primary {
+  border-color: rgba(240, 194, 104, 0.72);
+  background: linear-gradient(180deg, #c98c32, #8f5d1a);
+  color: #fff8e8;
+}
+
+.guild-btn.claim {
+  border-color: rgba(108, 228, 148, 0.75);
+  background: linear-gradient(180deg, #2f9658, #1f6b3d);
+  color: #f2fff6;
+}
+
+.guild-btn.ghost {
+  background: rgba(218, 175, 105, 0.14);
+  color: #eed6a6;
+}
+
+.guild-btn.disabled,
+.guild-btn:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
+}
+
+.guild-state-done {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #79df9e;
+}
+
+/* 连携奖励赏金进度条 */
+.guild-combo-bar {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: linear-gradient(165deg, rgba(38, 30, 22, 0.92), rgba(22, 17, 13, 0.96));
+  border: 1px solid rgba(228, 178, 96, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.guild-combo-summary {
+  flex: 1 1 230px;
+  min-width: 0;
+}
+
+.guild-combo-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guild-combo-emblem-art {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.guild-combo-title {
+  display: block;
+  font-size: 13px;
+  color: #f7e2b6;
+}
+
+.guild-combo-count {
+  font-size: 11.5px;
+  color: #c8b69b;
+}
+
+.guild-combo-count b {
+  color: #ffd98a;
+}
+
+.guild-combo-meter {
+  margin-top: 6px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(12, 9, 7, 0.82);
+  border: 1px solid rgba(218, 175, 105, 0.22);
+  overflow: hidden;
+}
+
+.guild-combo-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d8943a, #f8d47c, #68de98);
+  transition: width 0.25s ease;
+}
+
+.guild-combo-milestones {
+  flex: 2 1 460px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guild-combo-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(52, 40, 28, 0.68);
+  border: 1px solid rgba(218, 175, 105, 0.24);
+  min-width: 0;
+}
+
+.guild-combo-node.claimable {
+  border-color: rgba(102, 220, 142, 0.68);
+  background: rgba(34, 62, 42, 0.56);
+}
+
+.guild-combo-node.claimed {
+  opacity: 0.78;
+}
+
+.guild-combo-node-art {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.guild-combo-node-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.guild-combo-node-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #f6e5c3;
+}
+
+.guild-combo-req {
+  font-size: 11px;
+  color: #d6c2a2;
+}
+
+.guild-combo-rewards {
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #e9cfa0;
+}
+
+.guild-combo-done {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #7ae29f;
+  white-space: nowrap;
+}
+
+/* 公会荣誉徽记兑换所 */
+.guild-honor-exchange {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(218, 175, 105, 0.2);
+}
+
+.guild-exchange-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.guild-exchange-title {
+  font-size: 13px;
+  color: #f4deb2;
+}
+
+.guild-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guild-shop-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 9px;
+  border-radius: 9px;
+  background: rgba(44, 34, 24, 0.76);
+  border: 1px solid rgba(218, 175, 105, 0.24);
+  min-width: 0;
+}
+
+.guild-shop-card.equipped {
+  border-color: rgba(242, 196, 104, 0.66);
+  box-shadow: inset 0 0 10px rgba(242, 196, 104, 0.12);
+}
+
+.guild-shop-art-box {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guild-shop-icon {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.guild-shop-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.guild-shop-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.guild-shop-name {
+  font-size: 12px;
+  color: #f7e6c4;
+}
+
+.guild-shop-cat {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(218, 175, 105, 0.14);
+  color: #d6c09c;
+  white-space: nowrap;
+}
+
+.guild-shop-effect {
+  margin: 3px 0 6px;
+  font-size: 11px;
+  color: #bfb09a;
+  line-height: 1.3;
+}
+
+.guild-shop-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.guild-shop-costs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #f7dc9c;
+}
+
+.guild-shop-limit {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #b7a68f;
+}
+
+.guild-frame-equipped-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffd884;
+}
+
+@media (max-width: 1220px) {
+  .guild-contract-grid,
+  .guild-shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .guild-bounty-shell {
+    padding: 10px;
+  }
+
+  .guild-contract-grid,
+  .guild-combo-milestones,
+  .guild-shop-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guild-bounty-wallet-bar {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Override global .t1-art { width: 100%; height: 100%; display: block; } loaded after component CSS */
+.guild-framed-avatar-inner .t1-art.player-avatar-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.guild-framed-avatar .t1-art.guild-framed-avatar-overlay {
+  display: block;
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.guild-bounty-shell .t1-art.guild-header-crest {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.guild-bounty-shell .t1-art.guild-inline-icon,
+.guild-bounty-shell .t1-art.gold-inline {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  vertical-align: -3px;
+  flex-shrink: 0;
+}
+
+.guild-bounty-shell .t1-art.guild-affix-art {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.guild-bounty-shell .t1-art.guild-combo-emblem-art {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.guild-bounty-shell .t1-art.guild-combo-node-art {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.guild-bounty-shell .t1-art.guild-shop-icon {
+  display: block;
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex-shrink: 0;
+}

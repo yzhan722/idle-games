@@ -370,12 +370,95 @@ class ApiClient {
 
   // 进阶系统：声望 / 赏金契约 / 转生
   async getReputation() { return this.get('/progression2/reputation'); }
+  async buyQuartermasterItem(itemId: string) { return this.post('/progression2/reputation/buy', { itemId }); }
+  async equipReputationTitle(titleId: string | null) { return this.post('/progression2/reputation/title', { titleId }); }
   async getBounties() { return this.get('/progression2/bounties'); }
   async acceptBounty(bountyId: string) { return this.post('/progression2/bounties/accept', { bountyId }); }
   async claimBounty(bountyId: string) { return this.post('/progression2/bounties/claim', { bountyId }); }
   async rerollBounties() { return this.post('/progression2/bounties/reroll', {}); }
+  async claimBountyCombo(milestoneId: string) { return this.post('/progression2/bounties/combo/claim', { milestoneId }); }
+  async redeemGuildHonor(itemId: string) { return this.post('/progression2/bounties/honor/redeem', { itemId }); }
+  async equipGuildFrame(frameId: string | null) { return this.post('/progression2/bounties/frame', { frameId }); }
   async getPrestige() { return this.get('/progression2/prestige'); }
   async doPrestige() { return this.post('/progression2/prestige', {}); }
+  async upgradeAstrolabeNode(nodeId: string) { return this.post('/progression2/prestige/astrolabe', { nodeId }); }
+  async respecAstrolabe() { return this.post('/progression2/prestige/astrolabe/respec', {}); }
+  async getHeritageWorkshop() { return this.get('/progression2/workshop'); }
+  async engraveHeritageRune(runeId: string) { return this.post('/progression2/workshop/rune/engrave', { runeId }); }
+  async equipHeritageRune(slot: 'weapon' | 'armor' | 'tool', runeId: string | null) {
+    return this.post('/progression2/workshop/rune/equip', { slot, runeId });
+  }
+  async synthesizeForgingEmblem(recipeId: string) {
+    return this.post('/progression2/workshop/emblem/synthesize', { recipeId });
+  }
+  async claimHeritageCodexMilestone(milestoneId: string) {
+    return this.post('/progression2/workshop/codex/claim', { milestoneId });
+  }
+  async getCaravanTrade() {
+    return this.get('/progression2/caravan');
+  }
+  async dispatchCaravanWagon(payload: {
+    wagonSlot: 0 | 1 | 2;
+    routeId: 'frostport' | 'emberoasis' | 'starfallspire';
+    cargo: Record<string, number>;
+    useExpressPermit?: boolean;
+  }) {
+    return this.post('/progression2/caravan/dispatch', payload);
+  }
+  async expediteCaravanWagon(wagonSlot: 0 | 1 | 2) {
+    return this.post('/progression2/caravan/expedite', { wagonSlot });
+  }
+  async claimCaravanWagon(wagonSlot: 0 | 1 | 2) {
+    return this.post('/progression2/caravan/claim', { wagonSlot });
+  }
+  async fulfillWorkshopContract(contractId: string) {
+    return this.post('/progression2/caravan/contracts/fulfill', { contractId });
+  }
+  async rerollWorkshopContracts() {
+    return this.post('/progression2/caravan/contracts/reroll', {});
+  }
+  async redeemAstralDustExchange(offerId: string) {
+    return this.post('/progression2/caravan/exchange', { offerId });
+  }
+  async getAlchemyCauldron() {
+    return this.get('/progression2/cauldron');
+  }
+  async claimAlchemyExtraction() {
+    return this.post('/progression2/cauldron/extract', {});
+  }
+  async brewAlchemicalPotion(payload: {
+    potionId: 'dragon_fury' | 'elven_bounty' | 'dwarven_temper' | 'astral_fortune';
+    mode: 'essence' | 'material' | 'astral_dust';
+  }) {
+    return this.post('/progression2/cauldron/brew', payload);
+  }
+  async upgradeAlchemicalRecipe(payload: {
+    potionId: 'dragon_fury' | 'elven_bounty' | 'dwarven_temper' | 'astral_fortune';
+    mode?: 'standard' | 'astral_dust';
+  }) {
+    return this.post('/progression2/cauldron/upgrade', payload);
+  }
+  async equipAlchemicalPotion(payload: {
+    slotIndex: 0 | 1;
+    potionId: 'dragon_fury' | 'elven_bounty' | 'dwarven_temper' | 'astral_fortune' | null;
+  }) {
+    return this.post('/progression2/cauldron/equip', payload);
+  }
+  async getAstralRelics() {
+    return this.get('/progression2/relics');
+  }
+  async dispatchAstralExpedition(payload: {
+    stratumId: 'outpost_ruins' | 'obsidian_sanctum' | 'primordial_corridor';
+    mode: 'free' | 'coin' | 'astral_dust';
+  }) {
+    return this.post('/progression2/relics/survey', payload);
+  }
+  async upgradeSacredRelicPedestal(payload: {
+    relicId: 'solar_spear' | 'verdant_chalice' | 'titan_anvil' | 'chimera_censer';
+    mode?: 'standard' | 'astral_dust';
+  }) {
+    return this.post('/progression2/relics/upgrade', payload);
+  }
 
   async startHpCombat(monsterId: string) {
     return this.post('/combat/hp/start', { monsterId, autoRepeat: true });
@@ -428,7 +511,17 @@ class ApiClient {
   async moveQueuedAction(id: string, direction: 'up' | 'down') {
     return this.post('/actions/queue/move', { id, direction });
   }
-  async chooseChapterBuild(id: 'sharpened_edge' | 'thick_bark') {
+  async chooseChapterBuild(
+    id:
+      | 'sharpened_edge'
+      | 'thick_bark'
+      | 'heavy_sunder'
+      | 'quenched_thorns'
+      | 'gale_flurry'
+      | 'relic_hunter'
+      | 'elixir_frenzy'
+      | 'feast_vitality'
+  ) {
     return this.post('/combat/hp/build', { id });
   }
   async setCombatLoadout(loadout: {

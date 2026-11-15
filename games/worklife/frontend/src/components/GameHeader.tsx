@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { T1Art } from "./T1Art";
+import { GuildFramedAvatar, T1Art } from "./T1Art";
 import { CAREER_GROUPS } from "../gameplay/ia";
 
 export type ProgPanelId =
@@ -7,12 +7,22 @@ export type ProgPanelId =
   | "daily"
   | "settings"
   | "checkin"
+  | "reputation"
+  | "workshop"
+  | "caravan"
+  | "cauldron"
+  | "relics"
   | "prestige";
 
 const LABELS: Record<ProgPanelId, string> = {
   daily: "每日任务",
   achievements: "成就",
   checkin: "签到",
+  reputation: "声望军需",
+  workshop: "铭纹图鉴",
+  caravan: "远征商队",
+  cauldron: "奇美拉魔药釜",
+  relics: "遗迹圣物馆",
   prestige: "转生",
   settings: "设置",
 };
@@ -47,6 +57,11 @@ type Props = {
   /** MWI-style total level (sum of skill levels incl. combat); hidden in chapter 1. */
   totalLevel?: number;
   chapterComplete?: boolean;
+  equippedTitle?: { titleLabel: string; iconId: string } | null;
+  playerAvatar?: string;
+  playerGender?: string;
+  equippedGuildFrame?: { id: string; label: string } | null;
+  onOpenGuildBounty?: () => void;
 };
 
 function activityArtId(tab: string, activityName?: string): string {
@@ -165,6 +180,33 @@ export function GameHeader(props: Props) {
             <span className="header-total-level-value">{props.totalLevel}</span>
           </div>
         )}
+        {props.equippedTitle && (
+          <button
+            type="button"
+            className="header-rep-title-pill"
+            onClick={() => props.onOpenProg("reputation")}
+            title="声望专属名号（点击打开声望军需官商店）"
+          >
+            <T1Art kind="skills" id={props.equippedTitle.iconId} alt="" className="header-rep-title-icon" />
+            <span>{props.equippedTitle.titleLabel}</span>
+          </button>
+        )}
+        {props.equippedGuildFrame && (
+          <button
+            type="button"
+            className="header-guild-frame-pill"
+            onClick={props.onOpenGuildBounty}
+            title="公会专属边框（点击前往每日词缀讨伐委托板）"
+          >
+            <GuildFramedAvatar
+              avatar={props.playerAvatar}
+              gender={props.playerGender}
+              frameId={props.equippedGuildFrame.id}
+              size={24}
+            />
+            <span>{props.equippedGuildFrame.label}</span>
+          </button>
+        )}
       </div>
 
       <div className="header-center">
@@ -250,6 +292,40 @@ export function GameHeader(props: Props) {
       </div>
 
       <div className="header-right" ref={menuRef}>
+        {props.chapterComplete && (
+          <>
+            <button
+              type="button"
+              data-testid={props.activeTab === "adventure" ? "header-relics-shortcut-btn" : "open-astral-relics-btn"}
+              className="header-relics-pill"
+              onClick={() => props.onOpenProg("relics")}
+              title="星界远古遗迹勘探队与传世圣物陈列馆"
+            >
+              <T1Art kind="skills" id="astral_ruin_compass" alt="" className="header-caravan-pill-icon" />
+              <span>圣物馆</span>
+            </button>
+            <button
+              type="button"
+              data-testid={props.activeTab === "alchemy" ? "header-cauldron-shortcut-btn" : "open-alchemy-cauldron-btn"}
+              className="header-cauldron-pill"
+              onClick={() => props.onOpenProg("cauldron")}
+              title="奇美拉炼金魔药釜与深渊试炼双共鸣药剂槽"
+            >
+              <T1Art kind="skills" id="alchemy_cauldron_hub" alt="" className="header-caravan-pill-icon" />
+              <span>魔药釜</span>
+            </button>
+            <button
+              type="button"
+              data-testid={props.activeTab === "trading" ? "header-caravan-shortcut-btn" : "open-caravan-trade-btn"}
+              className="header-caravan-pill"
+              onClick={() => props.onOpenProg("caravan")}
+              title="远征商队贸易航路与工坊特批契约柜台"
+            >
+              <T1Art kind="skills" id="caravan_hub_banner" alt="" className="header-caravan-pill-icon" />
+              <span>远征商队</span>
+            </button>
+          </>
+        )}
         <button
           className="header-menu-btn"
           onClick={() => setMenuOpen((v) => !v)}

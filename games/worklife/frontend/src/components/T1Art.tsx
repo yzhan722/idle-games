@@ -1,5 +1,13 @@
 import CardArt, { type CardArtKind } from "./CardArt";
 import { t1KeyFor, t1Url, profileForKey } from "../assets/t1/manifest";
+import {
+  GUILD_FRAME_META,
+  T1_ASSET_CACHE_VERSION,
+  resolveEquippedGuildFrame,
+  withAssetCacheVersion,
+} from "../gameplay/guildFrame";
+
+export { GUILD_FRAME_META, T1_ASSET_CACHE_VERSION, resolveEquippedGuildFrame, withAssetCacheVersion };
 
 type Props = {
   kind: CardArtKind | "ui" | "skills" | "equipment" | "materials" | "item";
@@ -93,9 +101,41 @@ export function PlayerAvatarIcon(props: { avatar?: string | null; gender?: strin
   );
 }
 
+export function GuildFramedAvatar(props: {
+  avatar?: string | null;
+  gender?: string | null;
+  frameId?: string | null;
+  size?: number;
+  className?: string;
+  alt?: string;
+}) {
+  const meta = props.frameId ? GUILD_FRAME_META[props.frameId] : undefined;
+  const sz = props.size ?? 34;
+  return (
+    <span
+      className={`guild-framed-avatar${meta ? ` has-guild-frame theme-${meta.theme}` : ""} ${props.className || ""}`.trim()}
+      style={{ width: sz, height: sz }}
+      title={meta ? `专属公会边框：${meta.label}` : undefined}
+    >
+      <span className="guild-framed-avatar-inner">
+        <PlayerAvatarIcon avatar={props.avatar} gender={props.gender} alt={props.alt} />
+      </span>
+      {meta && (
+        <T1Art
+          kind="skills"
+          id={meta.iconId}
+          alt=""
+          className="guild-framed-avatar-overlay"
+        />
+      )}
+    </span>
+  );
+}
+
 export function T1Art(props: Props) {
   const key = t1KeyFor(props.kind, props.id);
-  const src = key ? t1Url(key) : undefined;
+  const rawSrc = key ? t1Url(key) : undefined;
+  const src = rawSrc ? withAssetCacheVersion(rawSrc) : undefined;
   const profile = key ? profileForKey(key) : "item";
   if (src) {
     return (
