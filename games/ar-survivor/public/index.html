@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>AR DeepSeek娘 · 实景桌宠养成</title>
   <link rel="icon" type="image/webp" href="./assets/hero_idle2.webp?v=hd5" />
-  <link rel="stylesheet" href="./style.css?v=hd14" />
+  <link rel="stylesheet" href="./style.css?v=hd23" />
 </head>
 <body>
   <!-- 底层全屏实景摄像头 -->
@@ -60,6 +60,60 @@
           <span class="wish-text" id="hud-wish-text">伸出手掌让我跳上去玩~</span>
           <span class="wish-reward">+25 <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></span>
         </button>
+
+        <!-- AR-4 / AR-5 / AR-6 四季窗景昼夜流转胶囊 + 心情手账周报胶囊 + 番茄钟/下午茶/花房/晚安八音盒微胶囊 -->
+        <div class="hud-ambience-row" id="hud-ambience-row">
+          <button type="button" id="hud-ambience-pill" class="ambience-pill" title="调节四季窗景与昼夜流转">
+            <img id="hud-ambience-ico" src="./assets/vfx_season_spring.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="hud-ambience-label">春樱 · 晨光</span>
+            <em id="hud-ambience-mode" class="ambience-mode-tag">随钟</em>
+          </button>
+          <button type="button" id="btn-weekly-journal" class="weekly-journal-pill" title="打开陪伴心情手账周报与周度礼盒">
+            <img src="./assets/ui_btn_weekly_journal.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="hud-journal-label">心情周报</span>
+            <em id="hud-journal-badge" class="journal-pill-tag">0/7章</em>
+          </button>
+          <button type="button" id="pomodoro-mini-pill" class="pomodoro-mini-pill hidden" title="展开奶油手账番茄钟">
+            <img src="./assets/ui_btn_pomodoro.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="pomodoro-mini-clock">25:00</span>
+            <em id="pomodoro-mini-tag" class="pomo-mini-tag">伴读中</em>
+          </button>
+          <button type="button" id="teatime-buff-pill" class="teatime-buff-pill hidden" title="查看下午茶幸存者打工增益">
+            <img src="./assets/tea_platter_signature.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="teatime-buff-pill-label">茶点增益</span>
+            <em id="teatime-buff-pill-clock" class="teatime-mini-tag">07:00</em>
+          </button>
+          <button type="button" id="terrarium-blessing-pill" class="terrarium-blessing-pill hidden" title="查看微缩绿植花房幸存者打工佑护">
+            <img src="./assets/ui_btn_terrarium.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="terrarium-pill-label">花房佑护</span>
+            <em id="terrarium-pill-tag" class="terrarium-mini-tag">Lv.3</em>
+          </button>
+          <button type="button" id="musicbox-mini-pill" class="musicbox-mini-pill hidden" title="展开晚安助眠星空八音盒">
+            <img src="./assets/ui_btn_musicbox.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="musicbox-mini-clock">30:00</span>
+            <em id="musicbox-mini-tag" class="musicbox-mini-tag">伴眠中</em>
+          </button>
+          <button type="button" id="collage-blessing-pill" class="collage-blessing-pill hidden" title="查看手账贴纸拼贴画框幸存者幸运佑护">
+            <img src="./assets/ui_btn_collage_frame.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="collage-pill-label">手账佑护</span>
+            <em id="collage-pill-tag" class="collage-mini-tag">+30金</em>
+          </button>
+          <button type="button" id="cozy-radio-pill" class="cozy-radio-pill hidden" title="展开窗畔温暖轻电台">
+            <img src="./assets/ui_btn_cozy_radio.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="cozy-radio-pill-label">木吉他轻弦</span>
+            <em id="cozy-radio-pill-tag" class="cozy-radio-mini-tag">播音中</em>
+          </button>
+          <button type="button" id="crochet-guard-pill" class="crochet-guard-pill hidden" title="查看毛线钩针手作篮幸存者暖绒守护">
+            <img src="./assets/ui_btn_crochet_basket.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="crochet-pill-label">暖绒守护</span>
+            <em id="crochet-pill-tag" class="crochet-mini-tag">Lv.1</em>
+          </button>
+          <button type="button" id="hot-cocoa-pill" class="hot-cocoa-pill hidden" title="查看暖冬棉花糖热可可幸存者暖意增益">
+            <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <span id="hot-cocoa-pill-label">暖可可</span>
+            <em id="hot-cocoa-pill-clock" class="cocoa-mini-tag">08:00</em>
+          </button>
+        </div>
       </div>
 
       <!-- 治愈系手绘顶部模式切换坞 -->
@@ -79,10 +133,17 @@
         </button>
       </div>
 
-      <!-- 右上角治愈系手绘工具栏：拍立得合影 + BGM/语音开关 + 实景重扫 + 屏幕翻转 -->
+      <!-- 右上角治愈系手绘工具栏：拍立得合影 + 纪念相册墙 + 房间主题切换 + BGM/语音开关 + 实景重扫 + 屏幕翻转 -->
       <div class="hud-right">
         <button id="btn-photo-snap" class="icon-btn" title="AR拍立得合影（也可对镜头比耶自动触发）" aria-label="AR拍立得合影">
           <img src="./assets/ui_btn_camera.webp?v=hd6" alt="" class="top-tool-ico" />
+        </button>
+        <button id="btn-album-open" class="icon-btn icon-btn-album" title="打开拍立得纪念相册集邮墙" aria-label="拍立得纪念相册">
+          <img src="./assets/ui_btn_album.webp?v=hd17" alt="" class="top-tool-ico" />
+          <span id="hud-album-count" class="tool-count-badge hidden">0</span>
+        </button>
+        <button id="btn-room-theme" class="icon-btn icon-btn-theme" title="切换治愈房间主题（晴空奶油书房 / 深海星梦水族馆）" aria-label="切换房间主题">
+          <img src="./assets/ui_btn_theme.webp?v=hd19" alt="" class="top-tool-ico" />
         </button>
         <button id="btn-sound-toggle" class="icon-btn" title="开关BGM与角色语音" aria-label="开关声音">
           <img src="./assets/ui_btn_sound.webp?v=hd6" alt="" class="top-tool-ico" />
@@ -98,9 +159,27 @@
 
     <!-- 幸存者打工实时班次战报胶囊（仅在 survivor 模式显示） -->
     <div id="survivor-hud" class="survivor-hud hidden" aria-live="polite">
-      <span class="mg-chip mg-chip-combo" id="surv-lv-chip">Lv.1</span>
+      <span class="mg-chip mg-chip-combo surv-lv-wrap">
+        <span id="surv-lv-chip">班次 Lv.1</span>
+        <span class="surv-xp-mini"><i class="surv-xp-mini-fill" id="surv-xp-mini-fill"></i></span>
+      </span>
       <span class="mg-chip mg-chip-time" id="surv-kill-chip">击退 0</span>
       <span class="mg-chip mg-chip-score">本班 <b id="surv-coin-val">+0</b> <img src="./assets/ui_coin.webp?v=hd6" alt="" class="inline-coin-ico" /></span>
+      <span class="mg-chip-record" id="surv-record-chip" title="个人最高打工班次纪录">
+        <img src="./assets/ui_badge_shift.webp?v=hd15" alt="" class="surv-badge-ico" />
+        <b id="surv-record-val">纪录 0</b>
+      </span>
+    </div>
+    <div id="surv-skill-strip" class="surv-skill-strip hidden" aria-hidden="true"></div>
+    <div id="survivor-boss-bar" class="survivor-boss-bar hidden" aria-live="polite">
+      <img src="./assets/mon_boss.webp?v=hd4" alt="" class="boss-bar-ico" />
+      <div class="boss-bar-main">
+        <div class="boss-bar-top">
+          <span class="boss-bar-name" id="surv-boss-name">班次首领 · 深海摸鱼大魔王</span>
+          <span class="boss-bar-hp-text" id="surv-boss-hp-text">100%</span>
+        </div>
+        <div class="boss-bar-track"><div class="boss-bar-fill" id="surv-boss-fill"></div></div>
+      </div>
     </div>
 
     <!-- 实景摘星实时星链悬赏胶囊（仅在 parkour 模式显示） -->
@@ -135,18 +214,790 @@
       <button id="btn-polaroid-close" class="polaroid-close" aria-label="关闭相片">×</button>
       <img id="polaroid-img" class="polaroid-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="AR拍立得合影" />
       <div class="polaroid-actions">
-        <span class="polaroid-caption">AR 纪念拍立得</span>
-        <button id="btn-polaroid-save" class="polaroid-save-btn">保存相片</button>
+        <button id="btn-polaroid-wall" class="polaroid-wall-btn">已收相册</button>
+        <button id="btn-polaroid-collage" class="polaroid-wall-btn">贴纸装裱</button>
+        <button id="btn-polaroid-save" class="polaroid-save-btn">下载原图</button>
       </div>
     </div>
 
-    <!-- 治愈系奶油手账抽屉面板（鲸鱼食堂 / 玩具装扮 / 打工武装） -->
+    <!-- AR-3 亲密里程碑解锁提示卡（奶油手账风，非阻塞） -->
+    <aside id="milestone-toast" class="milestone-toast hidden" aria-live="polite">
+      <div class="milestone-toast-thumb-wrap">
+        <img id="milestone-toast-img" class="milestone-toast-img" src="./assets/item_shell_clip.webp?v=hd19" alt="" />
+      </div>
+      <div class="milestone-toast-body">
+        <span class="milestone-toast-badge" id="milestone-toast-badge">亲密 LV.3 里程碑解锁</span>
+        <strong class="milestone-toast-title" id="milestone-toast-title">星海贝壳发卡</strong>
+        <span class="milestone-toast-desc" id="milestone-toast-desc">已自动解锁限定奖励~</span>
+      </div>
+      <button id="btn-milestone-toast-close" class="milestone-toast-close" aria-label="关闭里程碑提示">×</button>
+    </aside>
+
+    <!-- AR-4 四季窗景昼夜流转手账快调卡（非阻塞奶油手账风） -->
+    <aside id="window-ambience-card" class="window-ambience-card hidden" aria-label="四季窗景昼夜流转调节">
+      <div class="ambience-card-head">
+        <div class="ambience-card-title-wrap">
+          <img id="ambience-head-ico" src="./assets/vfx_season_spring.webp?v=hd19" alt="" class="topic-head-ico" />
+          <span class="ambience-kicker">四季窗景 · 昼夜流转</span>
+        </div>
+        <div class="ambience-head-actions">
+          <button type="button" id="btn-ambience-auto" class="ambience-auto-btn active">随钟流转</button>
+          <button type="button" id="btn-ambience-close" class="topic-close-btn" aria-label="收起窗景面板">×</button>
+        </div>
+      </div>
+      <div class="ambience-section-label">窗外昼夜四时（早 / 午 / 黄昏 / 星空）</div>
+      <div class="ambience-period-grid" id="ambience-period-grid">
+        <button type="button" class="ambience-period-btn" data-period="morning">
+          <img src="./assets/win_morning.webp?v=hd19" alt="" class="ambience-win-thumb" />
+          <span>早 · 晨光</span>
+        </button>
+        <button type="button" class="ambience-period-btn" data-period="noon">
+          <img src="./assets/win_noon.webp?v=hd19" alt="" class="ambience-win-thumb" />
+          <span>午 · 晴昼</span>
+        </button>
+        <button type="button" class="ambience-period-btn" data-period="dusk">
+          <img src="./assets/win_dusk.webp?v=hd19" alt="" class="ambience-win-thumb" />
+          <span>黄昏 · 暖霞</span>
+        </button>
+        <button type="button" class="ambience-period-btn" data-period="starry">
+          <img src="./assets/win_starry.webp?v=hd19" alt="" class="ambience-win-thumb" />
+          <span>星空 · 星夜</span>
+        </button>
+      </div>
+      <div class="ambience-section-label">窗畔四季风物点缀</div>
+      <div class="ambience-season-grid" id="ambience-season-grid">
+        <button type="button" class="ambience-season-btn" data-season="spring">
+          <img src="./assets/vfx_season_spring.webp?v=hd19" alt="" class="ambience-season-ico" />
+          <span>春樱</span>
+        </button>
+        <button type="button" class="ambience-season-btn" data-season="summer">
+          <img src="./assets/vfx_season_summer.webp?v=hd19" alt="" class="ambience-season-ico" />
+          <span>夏风</span>
+        </button>
+        <button type="button" class="ambience-season-btn" data-season="autumn">
+          <img src="./assets/vfx_season_autumn.webp?v=hd19" alt="" class="ambience-season-ico" />
+          <span>秋枫</span>
+        </button>
+        <button type="button" class="ambience-season-btn" data-season="winter">
+          <img src="./assets/vfx_season_winter.webp?v=hd19" alt="" class="ambience-season-ico" />
+          <span>初雪</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- AR-4 奶油手账番茄钟专注陪伴面板（非阻塞伴读手账卡） -->
+    <aside id="pomodoro-card" class="pomodoro-card hidden" aria-label="奶油手账番茄钟专注陪伴">
+      <div class="pomo-card-header">
+        <div class="pomo-title-wrap">
+          <img src="./assets/ui_btn_pomodoro.webp?v=hd19" alt="" class="pomo-head-ico" />
+          <span class="pomo-kicker">奶油手账 · 专注伴读</span>
+        </div>
+        <div class="pomo-head-actions">
+          <button type="button" id="btn-pomo-fold" class="topic-mini-btn hidden" title="折叠为左上角微胶囊">收起伴读</button>
+          <button type="button" id="btn-pomo-close" class="topic-close-btn" aria-label="关闭番茄钟面板">×</button>
+        </div>
+      </div>
+
+      <div class="pomo-timer-box">
+        <div class="pomo-clock-row">
+          <span class="pomo-clock" id="pomodoro-clock">25:00</span>
+          <span class="pomo-state-pill" id="pomodoro-state-pill">准备专注</span>
+        </div>
+        <div class="pomo-progress-track">
+          <div class="pomo-progress-fill" id="pomodoro-progress-fill"></div>
+        </div>
+        <p class="pomo-companion-note" id="pomodoro-companion-note">选好时长与小目标，DeepSeek娘会在桌畔安静翻书陪你~</p>
+      </div>
+
+      <div class="pomo-presets-row" id="pomodoro-presets-row">
+        <button type="button" class="pomo-preset-btn" data-mins="15">15 分钟</button>
+        <button type="button" class="pomo-preset-btn active" data-mins="25">25 分钟</button>
+        <button type="button" class="pomo-preset-btn" data-mins="45">45 分钟</button>
+      </div>
+
+      <div class="pomo-task-block">
+        <div class="pomo-tag-chips" id="pomodoro-tag-chips">
+          <button type="button" class="pomo-tag-chip active" data-tag="敲代码">敲代码</button>
+          <button type="button" class="pomo-tag-chip" data-tag="读书充电">读书充电</button>
+          <button type="button" class="pomo-tag-chip" data-tag="写方案">写方案</button>
+          <button type="button" class="pomo-tag-chip" data-tag="灵感画画">灵感画画</button>
+        </div>
+        <input
+          type="text"
+          id="pomodoro-task-input"
+          class="pomo-task-input"
+          maxlength="18"
+          value="敲代码"
+          placeholder="写下这轮专注小事项~"
+          aria-label="专注事项标签"
+        />
+      </div>
+
+      <div class="pomo-actions-row">
+        <button type="button" id="btn-pomo-start" class="pomo-btn pomo-btn-primary">开启专注伴读</button>
+        <button type="button" id="btn-pomo-pause" class="pomo-btn pomo-btn-secondary hidden">暂停</button>
+        <button type="button" id="btn-pomo-cancel" class="pomo-btn pomo-btn-ghost hidden">结束本轮</button>
+      </div>
+
+      <div class="pomo-stamp-footer">
+        <div class="pomo-stamp-strip" id="pomodoro-stamp-strip" title="专注达成手账印章册"></div>
+        <div class="pomo-stats-row">
+          <span class="pomo-stat-pill">
+            <img src="./assets/ui_stamp_focus.webp?v=hd23" alt="" class="pomo-inline-ico" />
+            印章 <b id="pomo-stat-stamps">0</b>
+          </span>
+          <span class="pomo-stat-pill">连续 <b id="pomo-stat-streak">0</b> 天</span>
+          <span class="pomo-stat-pill">累计 <b id="pomo-stat-mins">0</b> 分</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- AR-5 治愈下午茶甜点手作台（茶底 × 手作甜点特调合成 + 幸存者班次增益） -->
+    <aside id="teatime-card" class="teatime-card hidden" aria-label="治愈下午茶甜点手作台">
+      <div class="teatime-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_teatime.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <span class="teatime-kicker">治愈下午茶 · 甜点手作台</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="teatime-codex-pill" id="teatime-codex-pill">食谱 0/9</span>
+          <button type="button" id="btn-teatime-close" class="topic-close-btn" aria-label="关闭下午茶手作台">×</button>
+        </div>
+      </div>
+
+      <div class="teatime-step-label">1. 挑选鲜萃茶底</div>
+      <div class="teatime-grid-3" id="teatime-base-grid">
+        <button type="button" class="teatime-pick-btn active" data-tea-base="peach_oolong">
+          <img src="./assets/tea_peach_oolong.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">蜜桃乌龙</span>
+          <em class="teatime-pick-sub">清甜白桃</em>
+        </button>
+        <button type="button" class="teatime-pick-btn" data-tea-base="blueberry_foam">
+          <img src="./assets/tea_blueberry_foam.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">海盐奶盖蓝莓</span>
+          <em class="teatime-pick-sub">微咸芝士</em>
+        </button>
+        <button type="button" class="teatime-pick-btn" data-tea-base="osmanthus_milk">
+          <img src="./assets/tea_osmanthus_milk.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">桂花牛乳茶</span>
+          <em class="teatime-pick-sub">丹桂鲜奶</em>
+        </button>
+      </div>
+
+      <div class="teatime-step-label">2. 搭配现烤手作甜点</div>
+      <div class="teatime-grid-3" id="teatime-pastry-grid">
+        <button type="button" class="teatime-pick-btn" data-pastry="souffle">
+          <img src="./assets/pastry_souffle.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">草莓舒芙蕾</span>
+          <em class="teatime-pick-sub">云朵松饼</em>
+        </button>
+        <button type="button" class="teatime-pick-btn active" data-pastry="whale_macaron">
+          <img src="./assets/pastry_whale_macaron.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">蓝鲸马卡龙</span>
+          <em class="teatime-pick-sub">香草杏仁</em>
+        </button>
+        <button type="button" class="teatime-pick-btn" data-pastry="pudding_tart">
+          <img src="./assets/pastry_pudding_tart.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">焦糖布丁挞</span>
+          <em class="teatime-pick-sub">琥珀蛋奶</em>
+        </button>
+      </div>
+
+      <div class="teatime-preview-box" id="teatime-preview-box">
+        <div class="teatime-platter-stage">
+          <img src="./assets/tea_platter_signature.webp?v=hd23" alt="" class="teatime-platter-main" />
+          <div class="teatime-pair-minis">
+            <img id="teatime-prev-tea-ico" src="./assets/tea_peach_oolong.webp?v=hd23" alt="" class="teatime-pair-ico" />
+            <img id="teatime-prev-pastry-ico" src="./assets/pastry_whale_macaron.webp?v=hd23" alt="" class="teatime-pair-ico" />
+          </div>
+        </div>
+        <div class="teatime-preview-info">
+          <div class="teatime-recipe-top">
+            <strong class="teatime-recipe-name" id="teatime-recipe-name">桃汐蓝鲸马卡龙席</strong>
+            <span class="teatime-recipe-status is-new" id="teatime-recipe-status">新食谱 +首创奖</span>
+          </div>
+          <p class="teatime-recipe-note" id="teatime-recipe-note">白桃乌龙茶香映衬胖乎乎蓝鲸马卡龙，品鉴奖励亲密与金币。</p>
+          <div class="teatime-buff-tags" id="teatime-buff-tags"></div>
+        </div>
+      </div>
+
+      <div class="teatime-actions-row">
+        <button type="button" id="btn-teatime-serve" class="pomo-btn teatime-btn-serve">手作端上桌 · 品鉴特调</button>
+        <button type="button" id="btn-teatime-go-shift" class="pomo-btn teatime-btn-shift hidden">带增益去打工</button>
+      </div>
+
+      <div class="teatime-codex-footer">
+        <div class="teatime-active-buff-bar" id="teatime-active-buff-bar">端上特调即可激活 7 分钟「幸存者打工」专属增益~</div>
+        <div class="teatime-codex-grid" id="teatime-codex-grid" title="9款下午茶特调图鉴"></div>
+      </div>
+    </aside>
+
+    <!-- AR-5 陪伴心情手账周报与周度礼盒小组件卡 -->
+    <aside id="weekly-journal-card" class="weekly-journal-card hidden" aria-label="陪伴心情手账周报">
+      <div class="journal-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_weekly_journal.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <span class="journal-kicker">陪伴心情手账 · 七日周报</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="journal-week-pill" id="journal-stamp-summary">近7日 0/7 章</span>
+          <button type="button" id="btn-journal-close" class="topic-close-btn" aria-label="关闭陪伴心情手账周报">×</button>
+        </div>
+      </div>
+
+      <div class="journal-section-head">
+        <span>近 7 日陪伴心情印章栏</span>
+        <div class="journal-mood-picker" id="journal-mood-picker">
+          <button type="button" class="journal-mood-chip active" data-mood-id="bliss">
+            <img src="./assets/ui_mood_blush.webp?v=hd23" alt="" />甜心
+          </button>
+          <button type="button" class="journal-mood-chip" data-mood-id="focus">
+            <img src="./assets/ui_stamp_focus.webp?v=hd23" alt="" />专注
+          </button>
+          <button type="button" class="journal-mood-chip" data-mood-id="cozy">
+            <img src="./assets/ui_btn_teatime.webp?v=hd23" alt="" />茶歇
+          </button>
+          <button type="button" class="journal-mood-chip" data-mood-id="star">
+            <img src="./assets/ui_pin_star.webp?v=hd23" alt="" />星梦
+          </button>
+          <button type="button" class="journal-mood-chip" data-mood-id="goodnight">
+            <img src="./assets/stamp_goodnight_moon.webp?v=hd23" alt="" />好梦
+          </button>
+        </div>
+      </div>
+
+      <div class="journal-7day-strip" id="journal-7day-strip"></div>
+
+      <div class="journal-stamp-action-row">
+        <p class="journal-companion-quote" id="journal-companion-quote">今天也在书桌旁陪着主人，点滴日常都记进手账里啦~</p>
+        <button type="button" id="btn-journal-stamp-today" class="journal-stamp-btn">盖下今日章</button>
+      </div>
+
+      <div class="journal-metrics-grid" id="journal-metrics-grid"></div>
+
+      <div class="journal-section-head journal-gift-head">
+        <span>本周陪伴里程碑礼盒</span>
+        <em class="journal-score-hint" id="journal-score-hint">本周互动热度 0</em>
+      </div>
+      <div class="journal-gift-row" id="journal-gift-row"></div>
+    </aside>
+
+    <!-- AR-6 柔和暖光晚安星空纸灯投影氛围层（奶油手账暖珀柔光，零暗黑赛博） -->
+    <div id="goodnight-starlight-overlay" class="goodnight-starlight-overlay hidden" aria-hidden="true">
+      <div class="goodnight-lantern-glow"></div>
+      <div class="goodnight-star-motes">
+        <img src="./assets/vfx_sparkle.webp?v=hd23" alt="" class="gn-mote gn-mote-1" />
+        <img src="./assets/vfx_note.webp?v=hd23" alt="" class="gn-mote gn-mote-2" />
+        <img src="./assets/vfx_sparkle.webp?v=hd23" alt="" class="gn-mote gn-mote-3" />
+        <img src="./assets/vfx_zzz.webp?v=hd23" alt="" class="gn-mote gn-mote-4" />
+        <img src="./assets/vfx_sparkle.webp?v=hd23" alt="" class="gn-mote gn-mote-5" />
+        <img src="./assets/vfx_note.webp?v=hd23" alt="" class="gn-mote gn-mote-6" />
+      </div>
+    </div>
+
+    <!-- AR-6 治愈桌面微缩绿植花房（浇水日照培育多肉/铃兰/蓝绣球 + 桌面摆设 + 打工佑护） -->
+    <aside id="terrarium-card" class="terrarium-card hidden" aria-label="治愈桌面微缩绿植花房">
+      <div class="terrarium-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_terrarium.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <span class="terrarium-kicker">治愈花房 · 微缩绿植架</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="terrarium-summary-pill" id="terrarium-summary-pill">花架 Lv.3/15</span>
+          <button type="button" id="btn-terrarium-close" class="topic-close-btn" aria-label="关闭绿植花房">×</button>
+        </div>
+      </div>
+
+      <div class="terrarium-grid-3" id="terrarium-plant-grid">
+        <button type="button" class="terrarium-plant-tab active" data-plant-id="peach_succulent">
+          <img src="./assets/plant_peach_succulent.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">蜜桃粉胖多肉</span>
+          <em class="terrarium-tab-stage" id="plant-tab-stage-peach_succulent">萌芽 Lv.1</em>
+        </button>
+        <button type="button" class="terrarium-plant-tab" data-plant-id="star_lily">
+          <img src="./assets/plant_star_lily.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">星露白铃兰</span>
+          <em class="terrarium-tab-stage" id="plant-tab-stage-star_lily">萌芽 Lv.1</em>
+        </button>
+        <button type="button" class="terrarium-plant-tab" data-plant-id="blue_hydrangea">
+          <img src="./assets/plant_blue_hydrangea.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">晴空蓝绣球</span>
+          <em class="terrarium-tab-stage" id="plant-tab-stage-blue_hydrangea">萌芽 Lv.1</em>
+        </button>
+      </div>
+
+      <div class="terrarium-stage-box" id="terrarium-stage-box">
+        <div class="terrarium-pedestal">
+          <img id="terrarium-main-plant-img" src="./assets/plant_peach_succulent.webp?v=hd23" alt="" class="terrarium-main-img" />
+          <span class="terrarium-stage-badge" id="terrarium-stage-badge">萌芽 · Lv.1</span>
+        </div>
+        <div class="terrarium-detail-col">
+          <div class="terrarium-detail-top">
+            <strong class="terrarium-plant-title" id="terrarium-plant-title">蜜桃粉胖多肉</strong>
+            <button type="button" id="btn-plant-display-toggle" class="terrarium-display-btn active">已摆书桌</button>
+          </div>
+          <p class="terrarium-plant-note" id="terrarium-plant-note">奶陶圆盆里胖乎乎的粉尖多肉，吸饱阳光能带来招财好运~</p>
+          <div class="terrarium-growth-row">
+            <div class="terrarium-growth-track"><div class="terrarium-growth-fill" id="terrarium-growth-fill"></div></div>
+            <span class="terrarium-growth-text" id="terrarium-growth-text">0/40 · 下一阶 舒叶</span>
+          </div>
+          <div class="terrarium-meters-row">
+            <div class="terrarium-meter">
+              <span>水分 <b id="terrarium-water-val">60%</b></span>
+              <div class="terrarium-meter-bar"><i class="terrarium-meter-fill is-water" id="terrarium-water-fill"></i></div>
+            </div>
+            <div class="terrarium-meter">
+              <span>日照 <b id="terrarium-sun-val">60%</b></span>
+              <div class="terrarium-meter-bar"><i class="terrarium-meter-fill is-sun" id="terrarium-sun-fill"></i></div>
+            </div>
+          </div>
+          <div class="terrarium-blessing-desc" id="terrarium-blessing-desc">班次佑护：打工金币 +6% · 招财掉宝 +4%</div>
+        </div>
+      </div>
+
+      <div class="terrarium-care-row">
+        <button type="button" id="btn-plant-water" class="terrarium-care-btn is-water">
+          <strong>清泉浇灌</strong>
+          <em>免费 +24生长</em>
+        </button>
+        <button type="button" id="btn-plant-sun" class="terrarium-care-btn is-sun">
+          <strong>暖阳沐浴</strong>
+          <em>免费 +24生长</em>
+        </button>
+        <button type="button" id="btn-plant-nutrient" class="terrarium-care-btn is-nutrient">
+          <strong>花房营养液</strong>
+          <em>12金 +55生长</em>
+        </button>
+        <button type="button" id="btn-plant-harvest-dew" class="terrarium-care-btn is-dew">
+          <strong>采集花露</strong>
+          <em id="terrarium-dew-hint">可采 1 滴</em>
+        </button>
+      </div>
+
+      <div class="terrarium-footer-bar">
+        <span class="terrarium-total-blessing" id="terrarium-total-blessing">花房总佑护：金币+6% · 自愈+0.8/秒 · 磁吸+8% · 暴击+3%</span>
+        <button type="button" id="btn-terrarium-go-shift" class="terrarium-shift-btn">带佑护打工</button>
+      </div>
+    </aside>
+
+    <!-- AR-6 晚安助眠星空八音盒模式（奶油暖光投影 + WebAudio 钢片琴摇篮曲 + 伴眠倒计时 + 好梦火漆章） -->
+    <aside id="goodnight-musicbox-card" class="goodnight-musicbox-card hidden" aria-label="晚安助眠星空八音盒">
+      <div class="musicbox-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_musicbox.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <span class="musicbox-kicker">晚安助眠 · 星空八音盒</span>
+        </div>
+        <div class="teatime-head-actions">
+          <button type="button" id="btn-musicbox-chime-mute" class="musicbox-mute-btn">柔音开启</button>
+          <button type="button" id="btn-musicbox-fold" class="topic-mini-btn hidden" title="收起为左上角伴眠微胶囊">收起</button>
+          <button type="button" id="btn-musicbox-close" class="topic-close-btn" aria-label="关闭晚安八音盒">×</button>
+        </div>
+      </div>
+
+      <div class="musicbox-timer-box">
+        <div class="musicbox-clock-row">
+          <div class="musicbox-clock-left">
+            <img src="./assets/ui_btn_musicbox.webp?v=hd23" alt="" class="musicbox-host-ico" />
+            <span class="musicbox-clock" id="musicbox-clock">30:00</span>
+          </div>
+          <span class="musicbox-state-pill" id="musicbox-state-pill">准备伴眠</span>
+        </div>
+        <div class="musicbox-progress-track">
+          <div class="musicbox-progress-fill" id="musicbox-progress-fill"></div>
+        </div>
+        <p class="musicbox-whisper-note" id="musicbox-whisper-note">旋紧暖光星空八音盒发条，DeepSeek娘会蜷在桌畔轻声哄你入眠~</p>
+      </div>
+
+      <div class="musicbox-step-label">挑选伴眠钢片琴曲调</div>
+      <div class="musicbox-melody-row" id="musicbox-melody-row">
+        <button type="button" class="musicbox-melody-btn active" data-melody="star_lullaby">星摇篮曲</button>
+        <button type="button" class="musicbox-melody-btn" data-melody="rain_chime">雨后风铃</button>
+        <button type="button" class="musicbox-melody-btn" data-melody="cloud_waltz">云端圆舞</button>
+      </div>
+
+      <div class="musicbox-step-label">设定晚安伴眠时长</div>
+      <div class="musicbox-presets-row" id="musicbox-presets-row">
+        <button type="button" class="musicbox-preset-btn" data-sleep-mins="15">15 分钟</button>
+        <button type="button" class="musicbox-preset-btn active" data-sleep-mins="30">30 分钟</button>
+        <button type="button" class="musicbox-preset-btn" data-sleep-mins="45">45 分钟</button>
+      </div>
+
+      <div class="musicbox-actions-row">
+        <button type="button" id="btn-musicbox-start" class="pomo-btn musicbox-btn-start">开启晚安伴眠</button>
+        <button type="button" id="btn-musicbox-pause" class="pomo-btn pomo-btn-secondary hidden">暂停</button>
+        <button type="button" id="btn-musicbox-settle" class="pomo-btn musicbox-btn-settle hidden">安心醒来 · 盖好梦章</button>
+        <button type="button" id="btn-musicbox-cancel" class="pomo-btn pomo-btn-ghost hidden">结束</button>
+      </div>
+
+      <div class="musicbox-stamp-footer">
+        <div class="musicbox-stamp-strip" id="musicbox-stamp-strip" title="晚安好梦火漆纪念章册"></div>
+        <div class="pomo-stats-row">
+          <span class="pomo-stat-pill">
+            <img src="./assets/stamp_goodnight_moon.webp?v=hd23" alt="" class="pomo-inline-ico" />
+            好梦章 <b id="musicbox-stat-stamps">0</b>
+          </span>
+          <span class="pomo-stat-pill">伴眠 <b id="musicbox-stat-sessions">0</b> 夜</span>
+          <span class="pomo-stat-pill">累计 <b id="musicbox-stat-mins">0</b> 分</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- AR-7 奶油手账贴纸拼贴纪念画框（自由拼贴手绘贴纸 + 3款奶油纸相框 + 桌面装裱陈列 + 幸存者幸运佑护） -->
+    <aside id="collage-frame-card" class="collage-frame-card hidden" aria-label="奶油手账贴纸拼贴纪念画框">
+      <div class="collage-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_collage_frame.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <span class="collage-kicker">奶油手账 · 贴纸拼贴画框</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="collage-summary-pill" id="collage-summary-pill">待装裱</span>
+          <button type="button" id="btn-collage-close" class="topic-close-btn" aria-label="关闭贴纸拼贴纪念画框">×</button>
+        </div>
+      </div>
+
+      <div class="collage-frame-style-row" id="collage-frame-style-row">
+        <button type="button" class="collage-style-btn active" data-frame-style="lace_ivory">蕾丝奶白</button>
+        <button type="button" class="collage-style-btn" data-frame-style="honey_kraft">蜜杏牛皮</button>
+        <button type="button" class="collage-style-btn" data-frame-style="sakura_letter">樱粉信笺</button>
+      </div>
+
+      <div class="collage-studio-box">
+        <div class="collage-polaroid-stage is-lace_ivory" id="collage-polaroid-stage" title="可拖拽贴纸自由微调位置">
+          <div class="collage-photo-window">
+            <img id="collage-photo-img" src="./assets/hero_pose_peace.webp?v=hd5" alt="纪念角色肖像" class="collage-photo-img" />
+          </div>
+          <img
+            id="stage-sticker-lace_garland"
+            src="./assets/sticker_lace_garland.webp?v=hd23"
+            alt="奶油蕾丝花边"
+            class="collage-stage-sticker"
+            data-stage-sticker="lace_garland"
+          />
+          <img
+            id="stage-sticker-pressed_daisy"
+            src="./assets/sticker_pressed_daisy.webp?v=hd23"
+            alt="干花书签"
+            class="collage-stage-sticker"
+            data-stage-sticker="pressed_daisy"
+          />
+          <img
+            id="stage-sticker-whale_stamp"
+            src="./assets/sticker_whale_stamp.webp?v=hd23"
+            alt="蓝鲸纪念邮票"
+            class="collage-stage-sticker"
+            data-stage-sticker="whale_stamp"
+          />
+          <span class="collage-polaroid-caption" id="collage-polaroid-caption">晴空书桌 · 温暖合影</span>
+        </div>
+
+        <div class="collage-controls-col">
+          <div class="collage-top-bar">
+            <div class="collage-photo-row" id="collage-photo-row">
+              <button type="button" class="collage-photo-chip active" data-photo-id="peace_snap">比耶照</button>
+              <button type="button" class="collage-photo-chip" data-photo-id="cheer_snap">欢呼照</button>
+              <button type="button" class="collage-photo-chip" data-photo-id="study_snap">伴读照</button>
+            </div>
+            <button type="button" id="btn-collage-display-toggle" class="terrarium-display-btn active">已摆书桌</button>
+          </div>
+
+          <div class="collage-sticker-grid" id="collage-sticker-grid">
+            <button type="button" class="collage-sticker-btn active" data-sticker-id="lace_garland">
+              <img src="./assets/sticker_lace_garland.webp?v=hd23" alt="" class="collage-sticker-ico" />
+              <span>奶油蕾丝花边</span>
+            </button>
+            <button type="button" class="collage-sticker-btn active" data-sticker-id="pressed_daisy">
+              <img src="./assets/sticker_pressed_daisy.webp?v=hd23" alt="" class="collage-sticker-ico" />
+              <span>干花书签</span>
+            </button>
+            <button type="button" class="collage-sticker-btn active" data-sticker-id="whale_stamp">
+              <img src="./assets/sticker_whale_stamp.webp?v=hd23" alt="" class="collage-sticker-ico" />
+              <span>蓝鲸纪念邮票</span>
+            </button>
+          </div>
+
+          <div class="collage-arrange-row">
+            <button type="button" id="btn-collage-arrange" class="collage-arrange-btn">切换贴纸构图</button>
+            <span class="collage-arrange-hint" id="collage-arrange-hint">构图 1/4 · 可拖拽微调</span>
+          </div>
+
+          <div class="collage-blessing-desc" id="collage-blessing-desc">
+            手账幸运佑护：幸运掉宝 +18% · 宝石磁吸 +23% · 开局钱袋 +30金
+          </div>
+        </div>
+      </div>
+
+      <div class="collage-actions-row">
+        <button type="button" id="btn-collage-save" class="pomo-btn collage-btn-save">装裱保存 · 激活佑护</button>
+        <button type="button" id="btn-collage-go-shift" class="pomo-btn collage-btn-shift hidden">带佑护打工</button>
+      </div>
+    </aside>
+
+    <!-- AR-7 窗畔温暖轻电台（3波段 WebAudio 原声木吉他/细雨茶烟/篝火爵士 + 黑胶暖光 + 陪伴轻晃哼歌） -->
+    <aside id="cozy-radio-card" class="cozy-radio-card hidden" aria-label="窗畔温暖轻电台">
+      <div class="cozy-radio-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_cozy_radio.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <span class="cozy-radio-kicker">窗畔轻电台 · 温暖波段</span>
+        </div>
+        <div class="teatime-head-actions">
+          <button type="button" id="btn-radio-fold" class="topic-mini-btn hidden" title="收起至左上角播音微胶囊">后台播音</button>
+          <button type="button" id="btn-cozy-radio-close" class="topic-close-btn" aria-label="关闭窗畔轻电台">×</button>
+        </div>
+      </div>
+
+      <div class="cozy-radio-stage" id="cozy-radio-stage">
+        <div class="cozy-radio-visual">
+          <img src="./assets/ui_btn_cozy_radio.webp?v=hd23" alt="胡桃木轻电台" class="cozy-radio-unit-ico" id="cozy-radio-unit-ico" />
+          <img src="./assets/radio_vinyl_note.webp?v=hd23" alt="温暖黑胶唱针" class="cozy-radio-vinyl-ico" id="cozy-radio-vinyl-ico" />
+        </div>
+        <div class="cozy-radio-info">
+          <div class="cozy-radio-top-line">
+            <strong class="cozy-radio-chan-title" id="cozy-radio-chan-title">CH-01 午后木吉他轻弦</strong>
+            <span class="cozy-radio-state-pill" id="cozy-radio-state-pill">待调频</span>
+          </div>
+          <p class="cozy-radio-note" id="cozy-radio-note">旋开窗畔胡桃木轻电台，DeepSeek娘会随着暖音轻轻晃脑哼歌~</p>
+          <span class="cozy-radio-affection-tag" id="cozy-radio-affection-tag">今日听友心意：调频收听立领 +26亲密 · +20金</span>
+        </div>
+      </div>
+
+      <div class="cozy-radio-channels" id="cozy-radio-channel-list">
+        <button type="button" class="cozy-radio-chan-btn active" data-radio-channel="ch01_guitar">
+          <span class="chan-name">CH-01 午后木吉他轻弦</span>
+          <em class="chan-sub">FM 88.6 · 原木指弹</em>
+        </button>
+        <button type="button" class="cozy-radio-chan-btn" data-radio-channel="ch02_rain_tea">
+          <span class="chan-name">CH-02 屋檐细雨落茶烟</span>
+          <em class="chan-sub">FM 94.2 · 檐雨暖铃</em>
+        </button>
+        <button type="button" class="cozy-radio-chan-btn" data-radio-channel="ch03_hearth_jazz">
+          <span class="chan-name">CH-03 篝火暖茶爵士夜</span>
+          <em class="chan-sub">FM 101.8 · 柴火电钢</em>
+        </button>
+      </div>
+
+      <div class="cozy-radio-actions-row">
+        <button type="button" id="btn-radio-toggle" class="pomo-btn cozy-radio-btn-play">调频收听 · 开启轻电台</button>
+        <button type="button" id="btn-radio-log-journal" class="pomo-btn cozy-radio-btn-journal">记入手账周报</button>
+      </div>
+
+      <div class="cozy-radio-footer">
+        <span class="pomo-stat-pill">
+          <img src="./assets/radio_vinyl_note.webp?v=hd23" alt="" class="pomo-inline-ico" />
+          合成 <b id="radio-stat-notes">0</b> 拍
+        </span>
+        <span class="pomo-stat-pill">收听 <b id="radio-stat-mins">0</b> 分</span>
+        <span class="pomo-stat-pill">心意 <b id="radio-stat-daily">待领</b></span>
+      </div>
+    </aside>
+
+    <!-- AR-8 奶油手账毛线钩针手作篮（收集暖绒毛线团 + 编织升阶3款钩针信物 + 木桌展示 + 暖绒手作守护） -->
+    <aside id="crochet-basket-card" class="crochet-basket-card hidden" aria-label="毛线钩针温暖手作篮">
+      <div class="crochet-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_crochet_basket.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <span class="crochet-kicker">奶油手作 · 毛线钩针篮</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="crochet-summary-pill" id="crochet-summary-pill">暖绒 Lv.0/9</span>
+          <button type="button" id="btn-crochet-close" class="topic-close-btn" aria-label="关闭毛线钩针手作篮">×</button>
+        </div>
+      </div>
+
+      <div class="crochet-yarn-bar">
+        <div class="crochet-yarn-left">
+          <img src="./assets/ui_btn_crochet_basket.webp?v=hd23" alt="" class="crochet-yarn-ico" />
+          <div class="crochet-yarn-meta">
+            <span class="crochet-yarn-title">暖绒毛线团 <b id="crochet-yarn-count">3</b> 团</span>
+            <span class="crochet-yarn-sub" id="crochet-yarn-sub">日常摸头投喂与茶歇照料可额外掉毛线~</span>
+          </div>
+        </div>
+        <div class="crochet-yarn-btns">
+          <button type="button" id="btn-crochet-daily-yarn" class="crochet-yarn-btn is-daily">今日毛线 +4</button>
+          <button type="button" id="btn-crochet-yarn-pack" class="crochet-yarn-btn">添线 10金+3</button>
+        </div>
+      </div>
+
+      <div class="terrarium-grid-3" id="crochet-knit-grid">
+        <button type="button" class="terrarium-plant-tab active" data-knit-id="whale_scarf">
+          <img src="./assets/knit_whale_scarf.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">手织蓝鲸小围巾</span>
+          <em class="terrarium-tab-stage" id="knit-tab-lv-whale_scarf">待起针</em>
+        </button>
+        <button type="button" class="terrarium-plant-tab" data-knit-id="star_coaster">
+          <img src="./assets/knit_star_coaster.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">钩针星芒杯垫</span>
+          <em class="terrarium-tab-stage" id="knit-tab-lv-star_coaster">待起针</em>
+        </button>
+        <button type="button" class="terrarium-plant-tab" data-knit-id="cloud_pillow">
+          <img src="./assets/knit_cloud_pillow.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">绒云晚安抱枕</span>
+          <em class="terrarium-tab-stage" id="knit-tab-lv-cloud_pillow">待起针</em>
+        </button>
+      </div>
+
+      <div class="crochet-stage-box" id="crochet-stage-box">
+        <div class="crochet-pedestal">
+          <img id="crochet-main-knit-img" src="./assets/knit_whale_scarf.webp?v=hd23" alt="" class="crochet-main-img" />
+          <span class="crochet-stage-badge" id="crochet-stage-badge">待起针 · Lv.0</span>
+        </div>
+        <div class="crochet-detail-col">
+          <div class="terrarium-detail-top">
+            <strong class="crochet-knit-title" id="crochet-knit-title">手织蓝鲸小围巾</strong>
+            <button type="button" id="btn-crochet-display-toggle" class="terrarium-display-btn">摆上木桌</button>
+          </div>
+          <p class="crochet-knit-note" id="crochet-knit-note">软糯海盐蓝毛线一针一线织成的小鲸鱼围巾，系上就不怕微凉海风~</p>
+          <span class="crochet-cost-hint" id="crochet-cost-hint">起针消耗 2 团毛线 · 赠予立得亲密与金币</span>
+          <div class="crochet-guard-desc" id="crochet-guard-desc">专属加成：幸存者打工减伤护体 · 满针激活木桌共鸣</div>
+        </div>
+      </div>
+
+      <div class="crochet-actions-row">
+        <button type="button" id="btn-crochet-craft" class="pomo-btn crochet-btn-craft">钩针起针 · 赠予她 (2团)</button>
+        <button type="button" id="btn-crochet-gift" class="pomo-btn crochet-btn-gift" disabled>暖心抚摸</button>
+        <button type="button" id="btn-crochet-go-shift" class="pomo-btn crochet-btn-shift hidden">带守护打工</button>
+      </div>
+
+      <div class="crochet-footer-bar" id="crochet-total-guard">
+        暖绒手作守护：钩针编织任意信物即可激活幸存者「减伤 + 暖绒护盾 + 爱心磁吸」
+      </div>
+    </aside>
+
+    <!-- AR-8 暖冬棉花糖热可可吧台（3款可可基底 × 2款暖香顶料 + 马克杯轻碰铃音 + 周报联动 + 打工攻速财运暖意） -->
+    <aside id="hot-cocoa-card" class="hot-cocoa-card hidden" aria-label="暖冬棉花糖热可可吧台">
+      <div class="cocoa-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <span class="cocoa-kicker">暖冬吧台 · 棉花糖热可可</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="cocoa-codex-pill" id="cocoa-codex-pill">特调 0/6</span>
+          <button type="button" id="btn-cocoa-close" class="topic-close-btn" aria-label="关闭热可可吧台">×</button>
+        </div>
+      </div>
+
+      <div class="teatime-step-label">1. 挑选暖冬热可可基底</div>
+      <div class="teatime-grid-3" id="cocoa-base-grid">
+        <button type="button" class="teatime-pick-btn active" data-cocoa-base="mellow_dark">
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">醇香黑巧基底</span>
+          <em class="teatime-pick-sub">浓醇攻速</em>
+        </button>
+        <button type="button" class="teatime-pick-btn" data-cocoa-base="sea_salt_caramel">
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">海盐焦糖可可</span>
+          <em class="teatime-pick-sub">琥珀财运</em>
+        </button>
+        <button type="button" class="teatime-pick-btn" data-cocoa-base="hazelnut_cream">
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">榛果奶霜可可</span>
+          <em class="teatime-pick-sub">焙香均衡</em>
+        </button>
+      </div>
+
+      <div class="teatime-step-label">2. 点缀暖绒配料罐顶料</div>
+      <div class="cocoa-grid-2" id="cocoa-topping-grid">
+        <button type="button" class="teatime-pick-btn active" data-cocoa-topping="star_marshmallow">
+          <img src="./assets/cocoa_marshmallow_topping.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">烤星芒棉花糖</span>
+          <em class="teatime-pick-sub">微焦绵软 · 财运加倍</em>
+        </button>
+        <button type="button" class="teatime-pick-btn" data-cocoa-topping="cinnamon_stick">
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <span class="teatime-pick-name">肉桂暖香棒</span>
+          <em class="teatime-pick-sub">木质暖香 · 攻速加倍</em>
+        </button>
+      </div>
+
+      <div class="cocoa-preview-box" id="cocoa-preview-box">
+        <div class="cocoa-mug-stage">
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="cocoa-mug-main" />
+          <img id="cocoa-prev-topping-ico" src="./assets/cocoa_marshmallow_topping.webp?v=hd23" alt="" class="cocoa-topping-mini" />
+        </div>
+        <div class="teatime-preview-info">
+          <div class="teatime-recipe-top">
+            <strong class="teatime-recipe-name" id="cocoa-blend-name">星芒烤棉醇黑巧</strong>
+            <span class="teatime-recipe-status is-new" id="cocoa-blend-status">新特调 +首创奖</span>
+          </div>
+          <p class="teatime-recipe-note" id="cocoa-blend-note">微焦星芒棉花糖浮在浓醇黑巧上，捧杯轻抿浑身暖洋洋~</p>
+          <div class="teatime-buff-tags" id="cocoa-buff-tags"></div>
+        </div>
+      </div>
+
+      <div class="cocoa-actions-row">
+        <button type="button" id="btn-cocoa-serve" class="pomo-btn cocoa-btn-serve">热可可端上桌 · 暖心品饮</button>
+        <button type="button" id="btn-cocoa-go-shift" class="pomo-btn cocoa-btn-shift hidden">带暖意去打工</button>
+      </div>
+
+      <div class="teatime-codex-footer">
+        <div class="teatime-active-buff-bar" id="cocoa-active-buff-bar">端上热可可即可激活 8 分钟「幸存者打工」攻速与财运暖意增益~</div>
+        <div class="cocoa-codex-grid" id="cocoa-codex-grid" title="6款暖冬热可可特调图鉴"></div>
+      </div>
+    </aside>
+
+    <!-- AR-2 日常话题轻对话多选气泡卡（奶油手账贴纸风，非阻塞悬浮） -->
+    <aside id="pet-topic-card" class="pet-topic-card hidden" aria-live="polite">
+      <div class="topic-card-header">
+        <div class="topic-card-title-wrap">
+          <img src="./assets/ui_btn_chat.webp?v=hd17" alt="" class="topic-head-ico" />
+          <span class="topic-kicker" id="topic-kicker">日常小话题</span>
+        </div>
+        <div class="topic-head-actions">
+          <button id="btn-topic-next" class="topic-mini-btn" title="换个话题">换一题</button>
+          <button id="btn-topic-close" class="topic-close-btn" aria-label="收起话题">×</button>
+        </div>
+      </div>
+      <p class="topic-prompt-text" id="topic-prompt-text">主人今天敲代码累不累呀？要不要休息两分钟陪我说说话~</p>
+      <div class="topic-options-list" id="topic-options-list"></div>
+    </aside>
+
+    <!-- AR-2 拍立得纪念相册大图检视弹窗 -->
+    <div id="album-lightbox" class="album-lightbox hidden" role="dialog" aria-modal="true" aria-label="拍立得纪念相片预览">
+      <div class="album-lightbox-panel">
+        <button id="btn-album-lb-close" class="drawer-close-btn album-lb-close" aria-label="关闭相片预览">×</button>
+        <div class="album-lb-photo-wrap">
+          <img id="album-lb-img" class="album-lb-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="纪念拍立得大图" />
+          <img id="album-lb-pin-stamp" class="album-lb-pin-stamp hidden" src="./assets/ui_pin_star.webp?v=hd17" alt="已置顶纪念" />
+        </div>
+        <div class="album-lb-meta">
+          <div class="album-lb-meta-top">
+            <span class="album-lb-date" id="album-lb-date">2026.11.12 15:00</span>
+            <span class="album-lb-outfit" id="album-lb-outfit">亲密 LV.1 · 清爽日常装</span>
+          </div>
+          <p class="album-lb-note" id="album-lb-note">「今天也在桌面陪主人~」</p>
+          <div class="album-lb-actions">
+            <button id="btn-album-lb-pin" class="album-act-btn album-act-pin">
+              <img src="./assets/ui_pin_star.webp?v=hd17" alt="" class="album-act-ico" />
+              <span id="album-lb-pin-text">置顶纪念</span>
+            </button>
+            <button id="btn-album-lb-dl" class="album-act-btn album-act-dl">下载相片</button>
+            <button id="btn-album-lb-del" class="album-act-btn album-act-del">删除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 幸存者打工 2.0：奶油手账风局内三选一肉鸽技能卡与超武进化弹窗 -->
+    <div id="survivor-skill-modal" class="survivor-skill-modal hidden" role="dialog" aria-modal="true" aria-labelledby="surv-modal-title">
+      <div class="surv-modal-panel">
+        <div class="surv-modal-header">
+          <img src="./assets/ui_badge_shift.webp?v=hd15" alt="" class="surv-modal-badge-ico" />
+          <div class="surv-modal-headings">
+            <span class="surv-modal-kicker" id="surv-modal-kicker">打工班次升级 · 暂停保护中</span>
+            <h3 class="surv-modal-title" id="surv-modal-title">选择一项手账打工秘技</h3>
+          </div>
+        </div>
+        <div class="surv-card-grid" id="surv-card-grid"></div>
+      </div>
+    </div>
+
+    <!-- 治愈系奶油手账抽屉面板（鲸鱼食堂 / 玩具装扮 / 打工武装 / 纪念相册） -->
     <div id="pet-drawer" class="pet-drawer hidden">
       <div class="drawer-header">
         <div class="drawer-tabs">
           <button class="drawer-tab active" data-tab="food">食堂投喂</button>
           <button class="drawer-tab" data-tab="dress">家具与装扮</button>
           <button class="drawer-tab" data-tab="upgrade">打工武装</button>
+          <button class="drawer-tab" data-tab="album">纪念相册</button>
         </div>
         <button id="btn-drawer-close" class="drawer-close-btn" aria-label="关闭面板">×</button>
       </div>
@@ -179,9 +1030,45 @@
           <img src="./assets/hero_pose_rps.webp?v=hd5" alt="" class="care-thumb" />
           <span class="care-label">猜拳</span>
         </button>
+        <button id="btn-chat-topic" class="care-btn care-btn-chat" aria-label="轻对话话题互动">
+          <img src="./assets/ui_btn_chat.webp?v=hd17" alt="" class="care-thumb" />
+          <span class="care-label">聊聊天</span>
+        </button>
         <button id="btn-nap" class="care-btn" aria-label="摸鱼小憩">
           <img src="./assets/prop_cushion.webp?v=hd2" alt="" class="care-thumb" />
           <span class="care-label" id="btn-nap-label">小憩</span>
+        </button>
+        <button id="btn-pomodoro" class="care-btn care-btn-pomodoro" aria-label="奶油手账番茄钟专注陪伴">
+          <img src="./assets/ui_btn_pomodoro.webp?v=hd23" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-pomodoro-label">专注</span>
+        </button>
+        <button id="btn-teatime" class="care-btn care-btn-teatime" aria-label="治愈下午茶甜点手作台">
+          <img src="./assets/ui_btn_teatime.webp?v=hd23" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-teatime-label">下午茶</span>
+        </button>
+        <button id="btn-terrarium" class="care-btn care-btn-terrarium" aria-label="治愈桌面微缩绿植花房">
+          <img src="./assets/ui_btn_terrarium.webp?v=hd23" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-terrarium-label">花房</span>
+        </button>
+        <button id="btn-musicbox" class="care-btn care-btn-musicbox" aria-label="晚安助眠星空八音盒">
+          <img src="./assets/ui_btn_musicbox.webp?v=hd23" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-musicbox-label">晚安盒</span>
+        </button>
+        <button id="btn-collage-frame" class="care-btn care-btn-collage" aria-label="奶油手账贴纸拼贴纪念画框">
+          <img src="./assets/ui_btn_collage_frame.webp?v=hd23" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-collage-label">拼贴框</span>
+        </button>
+        <button id="btn-cozy-radio" class="care-btn care-btn-radio" aria-label="窗畔温暖轻电台">
+          <img src="./assets/ui_btn_cozy_radio.webp?v=hd23" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-radio-label">轻电台</span>
+        </button>
+        <button id="btn-crochet-basket" class="care-btn care-btn-crochet" aria-label="毛线钩针温暖手作篮">
+          <img src="./assets/ui_btn_crochet_basket.webp?v=hd23" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-crochet-label">手作篮</span>
+        </button>
+        <button id="btn-hot-cocoa" class="care-btn care-btn-cocoa" aria-label="暖冬棉花糖热可可吧台">
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-cocoa-label">热可可</span>
         </button>
         <button id="btn-shop" class="care-btn care-btn-shop" aria-label="打开鲸鱼小铺">
           <img src="./assets/ui_shop.webp?v=hd6" alt="" class="care-thumb" />
@@ -202,6 +1089,6 @@
     </div>
   </div>
 
-  <script type="module" src="./game.js?v=hd36"></script>
+  <script type="module" src="./game.js?v=hd47"></script>
 </body>
 </html>

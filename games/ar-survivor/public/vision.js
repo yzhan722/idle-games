@@ -85,8 +85,111 @@ export class ARVisionEngine {
 
     this.simCamX = 0;
     this.simTargetCamX = 0;
+    this.roomTheme = 'cream_study';
+    this.simBgImgs = {};
+    this.simBgImg = null;
+
+    // AR-4 四季窗景昼夜流转（早 / 午 / 黄昏 / 星空 + 春 / 夏 / 秋 / 冬）
+    this.windowAmbience = {
+      period: 'morning',
+      season: 'spring',
+      autoSync: true
+    };
+    this.prevWindowPeriod = null;
+    this.windowTransition = 1;
+    this.lastAmbienceRenderAt = 0;
+    this.winImgs = {};
+    this.seasonImgs = {};
+    this.sparkleImg = null;
+    this.seasonMotes = Array.from({ length: 7 }, (_, idx) => ({
+      seedU: ((idx * 0.17 + 0.11) % 0.82) + 0.09,
+      seedV: (idx * 0.19 + 0.07) % 1,
+      speed: 0.07 + (idx % 3) * 0.025,
+      swayAmp: 7 + (idx % 4) * 3.5,
+      phase: idx * 1.35,
+      scale: 0.76 + (idx % 3) * 0.14
+    }));
 
     this.initMediaPipe();
+  }
+
+  setRoomTheme(themeKey = 'cream_study') {
+    const validKey = themeKey === 'star_aquarium' ? 'star_aquarium' : 'cream_study';
+    this.roomTheme = validKey;
+    const srcMap = {
+      cream_study: './assets/bg_healing_room.webp?v=hd19',
+      star_aquarium: './assets/bg_aquarium_room.webp?v=hd19'
+    };
+    if (!this.simBgImgs[validKey]) {
+      const img = new Image();
+      img.src = srcMap[validKey];
+      this.simBgImgs[validKey] = img;
+    }
+    this.simBgImg = this.simBgImgs[validKey];
+    return this.roomTheme;
+  }
+
+  getRoomTheme() {
+    return this.roomTheme;
+  }
+
+  ensureWindowAssets(periodKey, seasonKey) {
+    const winSrcMap = {
+      morning: './assets/win_morning.webp?v=hd19',
+      noon: './assets/win_noon.webp?v=hd19',
+      dusk: './assets/win_dusk.webp?v=hd19',
+      starry: './assets/win_starry.webp?v=hd19'
+    };
+    const seasonSrcMap = {
+      spring: './assets/vfx_season_spring.webp?v=hd19',
+      summer: './assets/vfx_season_summer.webp?v=hd19',
+      autumn: './assets/vfx_season_autumn.webp?v=hd19',
+      winter: './assets/vfx_season_winter.webp?v=hd19'
+    };
+    if (winSrcMap[periodKey] && !this.winImgs[periodKey]) {
+      const img = new Image();
+      img.src = winSrcMap[periodKey];
+      this.winImgs[periodKey] = img;
+    }
+    if (seasonSrcMap[seasonKey] && !this.seasonImgs[seasonKey]) {
+      const sImg = new Image();
+      sImg.src = seasonSrcMap[seasonKey];
+      this.seasonImgs[seasonKey] = sImg;
+    }
+    if (!this.sparkleImg) {
+      const sp = new Image();
+      sp.src = './assets/vfx_sparkle.webp?v=hd19';
+      this.sparkleImg = sp;
+    }
+  }
+
+  setWindowAmbience({ period = 'morning', season = 'spring', autoSync = true } = {}) {
+    const validPeriods = ['morning', 'noon', 'dusk', 'starry'];
+    const validSeasons = ['spring', 'summer', 'autumn', 'winter'];
+    const nextPeriod = validPeriods.includes(period) ? period : 'morning';
+    const nextSeason = validSeasons.includes(season) ? season : 'spring';
+    this.ensureWindowAssets(nextPeriod, nextSeason);
+
+    if (this.windowAmbience.period !== nextPeriod && this.winImgs[this.windowAmbience.period]) {
+      this.prevWindowPeriod = this.windowAmbience.period;
+      this.windowTransition = 0;
+    }
+
+    this.windowAmbience = {
+      period: nextPeriod,
+      season: nextSeason,
+      autoSync: Boolean(autoSync)
+    };
+
+    if (this.mode !== 'camera') {
+      this.isDarkRoom = nextPeriod === 'starry';
+      this.ambientBrightness = nextPeriod === 'starry' ? 68 : nextPeriod === 'dusk' ? 116 : 162;
+    }
+    return { ...this.windowAmbience };
+  }
+
+  getWindowAmbience() {
+    return { ...this.windowAmbience };
   }
 
   async initMediaPipe() {
@@ -886,30 +989,196 @@ export class ARVisionEngine {
     return list;
   }
 
-  renderBackgroundAndNeon(ctx, W, H, now) {
+  renderBackgroundAndNeon(ctx, W, H, now = performance.now()) {
     ctx.clearRect(0, 0, W, H);
+    const dtSec =
+      this.lastAmbienceRenderAt > 0
+        ? Math.min(0.08, Math.max(0.001, (now - this.lastAmbienceRenderAt) / 1000))
+        : 0.016;
+    this.lastAmbienceRenderAt = now;
+    if (this.windowTransition < 1) {
+      this.windowTransition = Math.min(1, this.windowTransition + dtSec * 2.2);
+    }
+
     if (this.mode !== 'camera') {
+      this.isDarkRoom = this.windowAmbience.period === 'starry';
       this.renderSimulatedDeskScene(ctx, W, H, now);
+    } else {
+      this.renderAmbientTintOverlay(ctx, W, H, now, 0.48);
     }
   }
 
-  renderSimulatedDeskScene(ctx, W, H) {
+  renderAmbientTintOverlay(ctx, W, H, now, strength = 1) {
+    const period = this.windowAmbience?.period || 'morning';
+    const isAquarium = this.roomTheme === 'star_aquarium';
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    if (period === 'morning') {
+      grad.addColorStop(0, `rgba(255, 233, 196, ${(0.15 * strength).toFixed(3)})`);
+      grad.addColorStop(0.58, `rgba(255, 245, 224, ${(0.08 * strength).toFixed(3)})`);
+      grad.addColorStop(1, `rgba(255, 236, 206, ${(0.05 * strength).toFixed(3)})`);
+    } else if (period === 'noon') {
+      grad.addColorStop(0, `rgba(226, 246, 255, ${(0.11 * strength).toFixed(3)})`);
+      grad.addColorStop(0.6, `rgba(255, 252, 244, ${(0.04 * strength).toFixed(3)})`);
+      grad.addColorStop(1, `rgba(255, 248, 235, ${(0.03 * strength).toFixed(3)})`);
+    } else if (period === 'dusk') {
+      grad.addColorStop(0, `rgba(255, 184, 132, ${(0.21 * strength).toFixed(3)})`);
+      grad.addColorStop(0.55, `rgba(255, 208, 168, ${(0.14 * strength).toFixed(3)})`);
+      grad.addColorStop(1, `rgba(244, 178, 138, ${(0.09 * strength).toFixed(3)})`);
+    } else {
+      // 治愈童话星夜柔光（拒绝生硬死黑与暗黑赛博，保持柔和薰衣草星梦底色）
+      const topAlpha = (isAquarium ? 0.18 : 0.24) * strength;
+      const midAlpha = (isAquarium ? 0.12 : 0.16) * strength;
+      grad.addColorStop(0, `rgba(98, 114, 184, ${topAlpha.toFixed(3)})`);
+      grad.addColorStop(0.58, `rgba(132, 128, 196, ${midAlpha.toFixed(3)})`);
+      grad.addColorStop(1, `rgba(112, 108, 168, ${(0.1 * strength).toFixed(3)})`);
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+
+  renderWindowScenery(ctx, W, H, now = 0) {
+    const period = this.windowAmbience?.period || 'morning';
+    const season = this.windowAmbience?.season || 'spring';
+    this.ensureWindowAssets(period, season);
+
+    const winW = Math.max(136, Math.min(228, W * 0.19));
+    const winH = winW * 0.75;
+    const winCx = W * 0.675 + (this.simCamX || 0) * 0.22;
+    const winCy = Math.max(winH * 0.56 + 52, H * 0.295);
+    const winLeft = winCx - winW * 0.5;
+    const winTop = winCy - winH * 0.5;
+
+    ctx.save();
+
+    // 窗棂投射向桌面的柔和阳光/霞光/星辉光束（纯柔光渐变洗色）
+    const beamGrad = ctx.createRadialGradient(winCx, winCy, winW * 0.1, winCx - winW * 0.22, winCy + winH * 0.7, winW * 1.35);
+    if (period === 'morning') {
+      beamGrad.addColorStop(0, 'rgba(255, 241, 198, 0.34)');
+      beamGrad.addColorStop(1, 'rgba(255, 241, 198, 0)');
+    } else if (period === 'noon') {
+      beamGrad.addColorStop(0, 'rgba(235, 250, 255, 0.28)');
+      beamGrad.addColorStop(1, 'rgba(235, 250, 255, 0)');
+    } else if (period === 'dusk') {
+      beamGrad.addColorStop(0, 'rgba(255, 192, 140, 0.36)');
+      beamGrad.addColorStop(1, 'rgba(255, 192, 140, 0)');
+    } else {
+      beamGrad.addColorStop(0, 'rgba(186, 198, 255, 0.28)');
+      beamGrad.addColorStop(1, 'rgba(186, 198, 255, 0)');
+    }
+    ctx.fillStyle = beamGrad;
+    ctx.fillRect(Math.max(0, winCx - winW * 1.4), Math.max(0, winCy - winH * 0.7), winW * 2.5, winH * 2.3);
+
+    const currImg = this.winImgs[period];
+    const prevImg = this.prevWindowPeriod ? this.winImgs[this.prevWindowPeriod] : null;
+    const alpha = this.windowTransition;
+
+    if (prevImg && prevImg.complete && prevImg.naturalWidth > 0 && alpha < 1) {
+      ctx.save();
+      ctx.globalAlpha = 1 - alpha;
+      ctx.drawImage(prevImg, winLeft, winTop, winW, winH);
+      ctx.restore();
+    }
+
+    if (currImg && currImg.complete && currImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.globalAlpha = prevImg && alpha < 1 ? alpha : 1;
+      ctx.drawImage(currImg, winLeft, winTop, winW, winH);
+      ctx.restore();
+    }
+
+    // 星空时段窗内柔和星芒闪烁（复用手绘 vfx_sparkle.webp）
+    if (period === 'starry' && this.sparkleImg && this.sparkleImg.complete && this.sparkleImg.naturalWidth > 0) {
+      for (let i = 0; i < 3; i++) {
+        const pulse = 0.42 + 0.48 * Math.sin(now * 0.0032 + i * 2.1);
+        const sx = winLeft + winW * (0.3 + i * 0.2);
+        const sy = winTop + winH * (0.28 + (i % 2) * 0.14);
+        const sSz = 14 + (i % 2) * 4;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0.15, pulse * 0.82);
+        ctx.drawImage(this.sparkleImg, sx - sSz * 0.5, sy - sSz * 0.5, sSz, sSz);
+        ctx.restore();
+      }
+    }
+
+    // 四季治愈窗边风物点缀（手绘春樱 / 夏日风铃 / 秋枫 / 初雪 .webp 贴图）
+    const seasonImg = this.seasonImgs[season];
+    if (seasonImg && seasonImg.complete && seasonImg.naturalWidth > 0) {
+      if (season === 'summer') {
+        // 夏日玻璃风铃悬挂在窗檐右上角随微风轻摆
+        const chimeX = winLeft + winW * 0.82;
+        const chimeY = winTop + winH * 0.22;
+        const swing = Math.sin(now * 0.0026) * 0.14;
+        const chimeSz = Math.max(30, winW * 0.2);
+        ctx.save();
+        ctx.translate(chimeX, chimeY);
+        ctx.rotate(swing);
+        ctx.drawImage(seasonImg, -chimeSz * 0.5, -chimeSz * 0.18, chimeSz, chimeSz);
+        ctx.restore();
+      } else {
+        // 春樱 / 秋枫 / 初雪：轻柔飘落窗前的手绘季节微粒 + 窗台角落手账风贴饰
+        const tSec = now * 0.001;
+        for (let i = 0; i < 5; i++) {
+          const mote = this.seasonMotes[i];
+          const progress = (mote.seedV + tSec * mote.speed) % 1;
+          const mx =
+            winLeft +
+            winW * mote.seedU +
+            Math.sin(tSec * 1.5 + mote.phase) * mote.swayAmp;
+          const my = winTop + winH * (0.14 + progress * 0.74);
+          const mSz = Math.max(15, winW * 0.095 * mote.scale);
+          const edgeFade = Math.sin(progress * Math.PI);
+          ctx.save();
+          ctx.globalAlpha = Math.max(0.18, edgeFade * 0.86);
+          ctx.translate(mx, my);
+          ctx.rotate(Math.sin(tSec * 1.1 + mote.phase) * 0.35);
+          ctx.drawImage(seasonImg, -mSz * 0.5, -mSz * 0.5, mSz, mSz);
+          ctx.restore();
+        }
+        // 窗台右下角常驻一枚季节小点缀
+        const cornerSz = Math.max(24, winW * 0.14);
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        ctx.drawImage(
+          seasonImg,
+          winLeft + winW * 0.78 - cornerSz * 0.5,
+          winTop + winH * 0.82 - cornerSz * 0.5,
+          cornerSz,
+          cornerSz
+        );
+        ctx.restore();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  renderSimulatedDeskScene(ctx, W, H, now = 0) {
     ctx.save();
     if (!this.simBgImg) {
-      this.simBgImg = new Image();
-      this.simBgImg.src = './assets/bg_healing_room.webp?v=hd8';
+      this.setRoomTheme(this.roomTheme || 'cream_study');
     }
-    if (this.simBgImg.complete && this.simBgImg.naturalWidth > 0) {
+    if (this.simBgImg && this.simBgImg.complete && this.simBgImg.naturalWidth > 0) {
       ctx.drawImage(this.simBgImg, 0, 0, W, H);
     } else {
       const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, '#dff2ff');
-      grad.addColorStop(0.55, '#fff8ec');
-      grad.addColorStop(0.56, '#e8c396');
-      grad.addColorStop(1, '#d4a373');
+      if (this.roomTheme === 'star_aquarium') {
+        grad.addColorStop(0, '#c8ecff');
+        grad.addColorStop(0.55, '#e8f9ff');
+        grad.addColorStop(0.56, '#d9b58e');
+        grad.addColorStop(1, '#b88e66');
+      } else {
+        grad.addColorStop(0, '#dff2ff');
+        grad.addColorStop(0.55, '#fff8ec');
+        grad.addColorStop(0.56, '#e8c396');
+        grad.addColorStop(1, '#d4a373');
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
     }
+    this.renderWindowScenery(ctx, W, H, now);
+    this.renderAmbientTintOverlay(ctx, W, H, now, 1);
     ctx.restore();
   }
 }
