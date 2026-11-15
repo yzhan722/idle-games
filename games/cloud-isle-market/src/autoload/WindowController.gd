@@ -37,6 +37,13 @@ var _hud_ref: Control = null
 var _last_island_rect: Rect2 = Rect2(40.0, 38.0, 1840.0, 210.0)
 var _last_hud_rect: Rect2 = Rect2(480.0, 230.0, 960.0, 58.0)
 var _last_drawer_rect: Rect2 = Rect2()
+var _last_balloon_rect: Rect2 = Rect2()
+var _last_airship_rect: Rect2 = Rect2()
+var _last_greenhouse_rect: Rect2 = Rect2()
+var _last_hotspring_rect: Rect2 = Rect2()
+var _last_windmill_rect: Rect2 = Rect2()
+var _last_tea_pavilion_rect: Rect2 = Rect2()
+var _last_moon_boat_rect: Rect2 = Rect2()
 var _last_passthrough_polygon: PackedVector2Array = PackedVector2Array()
 
 func _ready() -> void:
@@ -212,17 +219,30 @@ func snap_window_to_desktop(dock: DockPosition) -> void:
 	DisplayServer.window_set_position(Vector2i(pos_x, pos_y))
 	_refresh_passthrough()
 
-func update_passthrough_polygon(logical_island_rect: Rect2, logical_hud_rect: Rect2, logical_drawer_rect: Rect2 = Rect2()) -> void:
-	if _last_island_rect == logical_island_rect and _last_hud_rect == logical_hud_rect and _last_drawer_rect == logical_drawer_rect and not _last_passthrough_polygon.is_empty():
+func update_passthrough_polygon(logical_island_rect: Rect2, logical_hud_rect: Rect2, logical_drawer_rect: Rect2 = Rect2(), logical_balloon_rect: Rect2 = Rect2(), logical_airship_rect: Rect2 = Rect2(), logical_greenhouse_rect: Rect2 = Rect2(), logical_hotspring_rect: Rect2 = Rect2(), logical_windmill_rect: Rect2 = Rect2(), logical_tea_pavilion_rect: Rect2 = Rect2(), logical_moon_boat_rect: Rect2 = Rect2()) -> void:
+	if _last_island_rect == logical_island_rect and _last_hud_rect == logical_hud_rect and _last_drawer_rect == logical_drawer_rect and _last_balloon_rect == logical_balloon_rect and _last_airship_rect == logical_airship_rect and _last_greenhouse_rect == logical_greenhouse_rect and _last_hotspring_rect == logical_hotspring_rect and _last_windmill_rect == logical_windmill_rect and _last_tea_pavilion_rect == logical_tea_pavilion_rect and _last_moon_boat_rect == logical_moon_boat_rect and not _last_passthrough_polygon.is_empty():
 		return
 	_last_island_rect = logical_island_rect
 	_last_hud_rect = logical_hud_rect
 	_last_drawer_rect = logical_drawer_rect
+	_last_balloon_rect = logical_balloon_rect
+	_last_airship_rect = logical_airship_rect
+	_last_greenhouse_rect = logical_greenhouse_rect
+	_last_hotspring_rect = logical_hotspring_rect
+	_last_windmill_rect = logical_windmill_rect
+	_last_tea_pavilion_rect = logical_tea_pavilion_rect
+	_last_moon_boat_rect = logical_moon_boat_rect
 	if not is_dragging:
 		_refresh_passthrough()
 
 func get_current_passthrough_polygon() -> PackedVector2Array:
 	return _last_passthrough_polygon
+
+func is_logical_point_interactive(logical_pt: Vector2) -> bool:
+	if _last_passthrough_polygon.is_empty():
+		return true
+	var s := maxf(0.1, scale_factor)
+	return Geometry2D.is_point_in_polygon(logical_pt * s, _last_passthrough_polygon)
 
 func _compute_active_islands_span() -> Rect2:
 	var span := ISLAND_1_LOCAL_RECT
@@ -267,20 +287,61 @@ func _refresh_passthrough() -> void:
 	var bot_y := minf(VIEWPORT_H, maxf(isl_rect.end.y, ui_rect.end.y))
 	var isl_l := clampf(isl_rect.position.x, 0.0, VIEWPORT_W)
 	var isl_r := clampf(isl_rect.end.x, 0.0, VIEWPORT_W)
+
+	var raw_notches: Array[Dictionary] = []
+	for sky_r in [_last_balloon_rect, _last_airship_rect, _last_greenhouse_rect, _last_hotspring_rect, _last_windmill_rect, _last_tea_pavilion_rect, _last_moon_boat_rect]:
+		if sky_r.size.x > 0.0 and sky_r.size.y > 0.0:
+			var nl := clampf(sky_r.position.x, 0.0, VIEWPORT_W)
+			var nr := clampf(sky_r.end.x, nl + 4.0, VIEWPORT_W)
+			var ntop := clampf(sky_r.position.y, 0.0, top_y)
+			isl_l = minf(isl_l, nl)
+			isl_r = maxf(isl_r, nr)
+			if ntop < top_y - 0.5:
+				raw_notches.append({"l": nl, "r": nr, "top": ntop})
+
+	raw_notches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["l"]) < float(b["l"]))
+	var merged_notches: Array[Dictionary] = []
+	for n in raw_notches:
+		if merged_notches.is_empty():
+			merged_notches.append(n.duplicate())
+		else:
+			var prev: Dictionary = merged_notches[merged_notches.size() - 1]
+			if float(n["l"]) <= float(prev["r"]) + 1.0:
+				prev["r"] = maxf(float(prev["r"]), float(n["r"]))
+				prev["top"] = minf(float(prev["top"]), float(n["top"]))
+			else:
+				merged_notches.append(n.duplicate())
+
 	var ui_l := clampf(ui_rect.position.x, isl_l, VIEWPORT_W)
 	var ui_r := clampf(ui_rect.end.x, 0.0, isl_r)
 	var split_y := clampf(ui_rect.position.y, top_y + 12.0, bot_y - 12.0)
 
-	# 8-vertex stepped polygon tightly wrapping the 3 islands + bottom HUD/drawer panel
-	var poly := PackedVector2Array([
-		Vector2(isl_l * s, top_y * s),
-		Vector2(isl_r * s, top_y * s),
-		Vector2(isl_r * s, split_y * s),
-		Vector2(maxf(isl_r, ui_r) * s, split_y * s),
-		Vector2(maxf(isl_r, ui_r) * s, bot_y * s),
-		Vector2(minf(isl_l, ui_l) * s, bot_y * s),
-		Vector2(minf(isl_l, ui_l) * s, split_y * s),
-		Vector2(isl_l * s, split_y * s)
-	])
+	# Orthogonal stepped polygon tightly wrapping the 3 islands + active sky balloon / harbor airship notches + bottom HUD/drawer panel
+	var poly := PackedVector2Array()
+	if not merged_notches.is_empty():
+		var cursor_x := isl_l
+		for mn in merged_notches:
+			var ml := float(mn["l"])
+			var mr := float(mn["r"])
+			var mtop := float(mn["top"])
+			if ml > cursor_x + 0.5:
+				poly.append(Vector2(cursor_x * s, top_y * s))
+				poly.append(Vector2(ml * s, top_y * s))
+			poly.append(Vector2(ml * s, mtop * s))
+			poly.append(Vector2(mr * s, mtop * s))
+			cursor_x = mr
+		if cursor_x < isl_r - 0.5:
+			poly.append(Vector2(cursor_x * s, top_y * s))
+			poly.append(Vector2(isl_r * s, top_y * s))
+	else:
+		poly.append(Vector2(isl_l * s, top_y * s))
+		poly.append(Vector2(isl_r * s, top_y * s))
+
+	poly.append(Vector2(isl_r * s, split_y * s))
+	poly.append(Vector2(maxf(isl_r, ui_r) * s, split_y * s))
+	poly.append(Vector2(maxf(isl_r, ui_r) * s, bot_y * s))
+	poly.append(Vector2(minf(isl_l, ui_l) * s, bot_y * s))
+	poly.append(Vector2(minf(isl_l, ui_l) * s, split_y * s))
+	poly.append(Vector2(isl_l * s, split_y * s))
 	_last_passthrough_polygon = poly
 	DisplayServer.window_set_mouse_passthrough(poly)

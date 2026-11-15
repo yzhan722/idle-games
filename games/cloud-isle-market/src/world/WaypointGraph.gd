@@ -11,26 +11,30 @@ const GROUND_Y := 124.0
 
 ## Master Waypoint Coordinates along unified `GROUND_Y = 124.0`
 const WAYPOINTS: Array[Vector2] = [
-	Vector2(144.0, GROUND_Y),   # 0: Island 2 Left Hut (Ellinia West Spawn)
-	Vector2(272.0, GROUND_Y),   # 1: Island 2 SoilPlot & Basket Dock
-	Vector2(397.0, GROUND_Y),   # 2: Island 2 Cauldron Workshop Dock
-	Vector2(492.0, GROUND_Y),   # 3: Bridge 1 West Endpoint (Ellinia -> Henesys)
-	Vector2(542.0, GROUND_Y),   # 4: Bridge 1 Center Arch
-	Vector2(586.0, GROUND_Y),   # 5: Bridge 1 East Endpoint
-	Vector2(612.4, GROUND_Y),   # 6: Island 1 Apple Tree
-	Vector2(710.8, GROUND_Y),   # 7: Island 1 SoilPlot & Basket Dock
-	Vector2(811.2, GROUND_Y),   # 8: Island 1 Mushroom Cottage
-	Vector2(908.4, GROUND_Y),   # 9: Island 1 Mortar Workshop Dock
-	Vector2(1013.4, GROUND_Y),  # 10: Island 1 Market Stall Main Counter
-	Vector2(1082.0, GROUND_Y),  # 11: Lotus Pond Bridge West
-	Vector2(1192.0, GROUND_Y),  # 12: Lotus Pond Bridge Center Pier
-	Vector2(1302.0, GROUND_Y),  # 13: Lotus Pond Bridge East
-	Vector2(1358.0, GROUND_Y),  # 14: Bridge 2 Center Arch (Henesys -> Orbis Coast)
-	Vector2(1414.0, GROUND_Y),  # 15: Bridge 2 East Endpoint (Orbis West Landing)
-	Vector2(1462.0, GROUND_Y),  # 16: Island 3 Apple Tree
-	Vector2(1562.4, GROUND_Y),  # 17: Island 3 SoilPlot & Basket Dock
-	Vector2(1655.3, GROUND_Y),  # 18: Island 3 Dual Linked Workshop Dock
-	Vector2(1755.6, GROUND_Y)   # 19: Island 3 Right Tiki Landmark (VIP East Spawn)
+	Vector2(96.2, GROUND_Y),    # 0: Island 2 Left Hut (Ellinia West Spawn)
+	Vector2(186.0, GROUND_Y),   # 1: Island 2 SoilPlot & Basket Dock
+	Vector2(275.6, GROUND_Y),   # 2: Island 2 Cauldron Workshop Dock
+	Vector2(365.7, GROUND_Y),   # 3: Island 2 Cloud Greenhouse Dock
+	Vector2(459.4, GROUND_Y),   # 4: Island 2 Cloud Windmill Bakery Dock
+	Vector2(492.0, GROUND_Y),   # 5: Bridge 1 West Endpoint (Ellinia -> Henesys)
+	Vector2(542.0, GROUND_Y),   # 6: Bridge 1 Center Arch
+	Vector2(586.0, GROUND_Y),   # 7: Bridge 1 East Endpoint
+	Vector2(596.9, GROUND_Y),   # 8: Island 1 Apple Tree
+	Vector2(683.4, GROUND_Y),   # 9: Island 1 SoilPlot & Basket Dock
+	Vector2(770.7, GROUND_Y),   # 10: Island 1 Mushroom Cottage
+	Vector2(849.8, GROUND_Y),   # 11: Island 1 Mortar Workshop Dock
+	Vector2(926.9, GROUND_Y),   # 12: Island 1 Cloud Tea Pavilion Dock
+	Vector2(1013.4, GROUND_Y),  # 13: Island 1 Market Stall Main Counter
+	Vector2(1082.0, GROUND_Y),  # 14: Lotus Pond Bridge West
+	Vector2(1192.0, GROUND_Y),  # 15: Lotus Pond Bridge Center Pier
+	Vector2(1302.0, GROUND_Y),  # 16: Lotus Pond Bridge East
+	Vector2(1358.0, GROUND_Y),  # 17: Bridge 2 Center Arch (Henesys -> Orbis Coast)
+	Vector2(1414.0, GROUND_Y),  # 18: Bridge 2 East Endpoint (Orbis West Landing)
+	Vector2(1445.5, GROUND_Y),  # 19: Island 3 Apple Tree
+	Vector2(1535.2, GROUND_Y),  # 20: Island 3 SoilPlot & Basket Dock
+	Vector2(1624.7, GROUND_Y),  # 21: Island 3 Dual Linked Workshop Dock
+	Vector2(1714.7, GROUND_Y),  # 22: Island 3 Cloud-Sea Hot-Spring Inn Dock
+	Vector2(1805.9, GROUND_Y)   # 23: Island 3 Right Tiki Landmark (VIP East Spawn)
 ]
 
 ## Named Waypoint Node Index Lookup
@@ -40,53 +44,61 @@ const NAMED_WAYPOINTS: Dictionary = {
 	"soil_2": 1,
 	"basket_2": 1,
 	"cauldron": 2,
-	"bridge_1_west": 3,
-	"bridge_1_arch": 4,
-	"bridge_1_east": 5,
-	"apple_tree": 6,
-	"soil_1": 7,
-	"basket_1": 7,
-	"cottage": 8,
-	"mortar": 9,
-	"market_stall": 10,
-	"pond_west": 11,
-	"pond_center": 12,
-	"pond_east": 13,
-	"bridge_2_arch": 14,
-	"bridge_2_east": 15,
-	"apple_tree_3": 16,
-	"soil_3": 17,
-	"basket_3": 17,
-	"orbis_linked": 18,
-	"spawn_right": 19,
-	"right_tiki": 19
+	"greenhouse": 3,
+	"windmill_bakery": 4,
+	"bridge_1_west": 5,
+	"bridge_1_arch": 6,
+	"bridge_1_east": 7,
+	"apple_tree": 8,
+	"soil_1": 9,
+	"basket_1": 9,
+	"cottage": 10,
+	"mortar": 11,
+	"tea_pavilion": 12,
+	"market_stall": 13,
+	"pond_west": 14,
+	"pond_center": 15,
+	"pond_east": 16,
+	"bridge_2_arch": 17,
+	"bridge_2_east": 18,
+	"apple_tree_3": 19,
+	"soil_3": 20,
+	"basket_3": 20,
+	"orbis_linked": 21,
+	"hotspring_inn": 22,
+	"spawn_right": 23,
+	"right_tiki": 23
 }
 
 ## Independent Building Loading / Unloading Dock Offsets (`x` offset relative to building waypoint)
 const BUILDING_DOCKS: Dictionary = {
-	"soil_1_slot_0": {"wp": 7, "dx": -12.0},
-	"soil_1_slot_1": {"wp": 7, "dx": 12.0},
-	"basket_1_pickup": {"wp": 7, "dx": 48.0},
-	"mortar_input": {"wp": 9, "dx": -44.0},
-	"mortar_chef": {"wp": 9, "dx": -18.0},
-	"mortar_output": {"wp": 9, "dx": 24.0},
-	"stall_restock": {"wp": 10, "dx": -16.0},
-	"stall_manager": {"wp": 10, "dx": 4.0},
-	"stall_checkout": {"wp": 10, "dx": 28.0},
+	"soil_1_slot_0": {"wp": 9, "dx": -12.0},
+	"soil_1_slot_1": {"wp": 9, "dx": 12.0},
+	"basket_1_pickup": {"wp": 9, "dx": 42.0},
+	"mortar_input": {"wp": 11, "dx": -38.0},
+	"mortar_chef": {"wp": 11, "dx": -18.0},
+	"mortar_output": {"wp": 11, "dx": 24.0},
+	"tea_pavilion_dock": {"wp": 12, "dx": 0.0},
+	"stall_restock": {"wp": 13, "dx": -16.0},
+	"stall_manager": {"wp": 13, "dx": 4.0},
+	"stall_checkout": {"wp": 13, "dx": 28.0},
 	"soil_2_slot_0": {"wp": 1, "dx": -10.0},
 	"soil_2_slot_1": {"wp": 1, "dx": 10.0},
-	"basket_2_pickup": {"wp": 1, "dx": 42.0},
-	"cauldron_input": {"wp": 2, "dx": -44.0},
+	"basket_2_pickup": {"wp": 1, "dx": 36.0},
+	"cauldron_input": {"wp": 2, "dx": -42.0},
 	"cauldron_chef": {"wp": 2, "dx": -18.0},
 	"cauldron_output": {"wp": 2, "dx": 24.0},
-	"soil_3_slot_0": {"wp": 17, "dx": -10.0},
-	"soil_3_slot_1": {"wp": 17, "dx": 10.0},
-	"basket_3_pickup": {"wp": 17, "dx": 38.0},
-	"orbis_input": {"wp": 18, "dx": -42.0},
-	"orbis_chef": {"wp": 18, "dx": -18.0},
-	"orbis_chef_fox": {"wp": 18, "dx": -18.0},
-	"orbis_chef_penguin": {"wp": 18, "dx": 18.0},
-	"orbis_output": {"wp": 18, "dx": 36.0}
+	"greenhouse_dock": {"wp": 3, "dx": 0.0},
+	"windmill_bakery_dock": {"wp": 4, "dx": 0.0},
+	"soil_3_slot_0": {"wp": 20, "dx": -10.0},
+	"soil_3_slot_1": {"wp": 20, "dx": 10.0},
+	"basket_3_pickup": {"wp": 20, "dx": 38.0},
+	"orbis_input": {"wp": 21, "dx": -42.0},
+	"orbis_chef": {"wp": 21, "dx": -18.0},
+	"orbis_chef_fox": {"wp": 21, "dx": -18.0},
+	"orbis_chef_penguin": {"wp": 21, "dx": 18.0},
+	"orbis_output": {"wp": 21, "dx": 36.0},
+	"hotspring_dock": {"wp": 22, "dx": 0.0}
 }
 
 ## Weighted Graph Adjacency List (`node_idx -> Array[{to: int, cost: float, bridge_id: int}]`)
@@ -108,9 +120,9 @@ func _build_graph_topology() -> void:
 		var b := WAYPOINTS[i + 1]
 		var dist := absf(b.x - a.x)
 		var bridge_id := 0
-		if i >= 2 and i <= 5:
+		if i >= 4 and i <= 7:
 			bridge_id = 1 # Wooden Bridge 1 (Island 2 <-> Island 1)
-		elif i >= 13 and i <= 15:
+		elif i >= 16 and i <= 18:
 			bridge_id = 2 # Wooden Bridge 2 (Island 1 <-> Island 3)
 		_adjacency[i].append({"to": i + 1, "cost": dist, "bridge_id": bridge_id})
 		_adjacency[i + 1].append({"to": i, "cost": dist, "bridge_id": bridge_id})
@@ -231,4 +243,4 @@ func get_path_total_length(path: Array[Vector2]) -> float:
 	return total
 
 func constrain_to_walkable_surface(pos: Vector2) -> Vector2:
-	return Vector2(clampf(pos.x, 120.0, 1790.0), GROUND_Y)
+	return Vector2(clampf(pos.x, 90.0, 1812.0), GROUND_Y)

@@ -8,9 +8,9 @@ class_name MarketStall
 ## - Supports zero-Shiba self-service checkout (`1.8s` duration, `1.0x` price bonus) and Shiba Manager accelerated checkout (`1.0s` duration, `PriceBonus = 1.0 + 0.1 * L`).
 ## - Pure numeric inventory buffer (`GameManager.stall_inventory`, default cap = 10, +5 per building level) with zero icon clutter on the counter.
 
-const BASE_SPRITE_SCALE := 0.72
-const VISUAL_WIDTH := 92.16 # 128 * 0.72
-const VISUAL_HEIGHT := 74.88 # 104 * 0.72
+const BASE_SPRITE_SCALE := 0.52
+const VISUAL_WIDTH := 66.56 # 128 * 0.52
+const VISUAL_HEIGHT := 54.08 # 104 * 0.52
 const QUEUE_BASE_OFFSET_X := 28.0
 const QUEUE_SPACING_X := 16.0
 const MAX_VISIBLE_QUEUE := 5
@@ -72,10 +72,12 @@ func is_shiba_manager_active() -> bool:
 	return GameManager.is_animal_hired("shiba")
 
 func get_checkout_duration() -> float:
+	var aura_mult := GameManager.get_bakery_aura_speed_multiplier() if (GameManager != null and GameManager.has_method("get_bakery_aura_speed_multiplier")) else 1.0
 	if not is_shiba_manager_active():
-		return SELF_SERVICE_CHECKOUT_SEC
+		return maxf(0.45, SELF_SERVICE_CHECKOUT_SEC / maxf(1.0, aura_mult))
 	var shiba_lv := get_shiba_level()
-	return maxf(0.45, SHIBA_MANAGER_CHECKOUT_SEC * pow(0.97, float(shiba_lv - 1)))
+	var base_sec := maxf(0.45, SHIBA_MANAGER_CHECKOUT_SEC * pow(0.97, float(shiba_lv - 1)))
+	return maxf(0.32, base_sec / maxf(1.0, aura_mult))
 
 func get_price_bonus_multiplier() -> float:
 	return EconomyConfig.calc_shiba_price_bonus(get_shiba_level())
@@ -124,7 +126,10 @@ func unregister_from_queue(cust: Node2D) -> void:
 
 func get_queue_slot_pos(cust: Node2D) -> Vector2:
 	var idx := clampi(register_in_queue(cust), 0, MAX_VISIBLE_QUEUE)
-	return Vector2(position.x + QUEUE_BASE_OFFSET_X + float(idx) * QUEUE_SPACING_X, EconomyConfig.GROUND_Y)
+	var slot_x := position.x + QUEUE_BASE_OFFSET_X + float(idx) * QUEUE_SPACING_X
+	if GameManager != null and not bool(GameManager.unlocked_islands.get(3, false)):
+		slot_x = minf(slot_x, 1078.0)
+	return Vector2(slot_x, EconomyConfig.GROUND_Y)
 
 func is_front_of_queue(cust: Node2D) -> bool:
 	_cleanup_queue()
