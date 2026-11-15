@@ -64,6 +64,48 @@ const RES_ICON_MAP = {
   icestone: "minerals",
   dragonscale: "megaStone",
   everstone: "defPotion",
+  eugenicscharm: "eugenicsCharm",
+  seasonmark: "seasonMark",
+  towerweather: "towerWeather",
+  natalbond: "natalBond",
+  swifthatch: "swiftHatch",
+  expeditionmaster: "expeditionMaster",
+  shinyhall: "shinyHall",
+  bondatlas: "bondAtlas",
+  dualsanctum: "dualSanctum",
+  sanctumbadge: "sanctumBadge",
+  duocombo: "duoCombo",
+  tuningmint: "tuningMint",
+  ecocanopy: "ecoCanopy",
+  ecocaldera: "ecoCaldera",
+  ecotidepool: "ecoTidepool",
+  ecoastral: "ecoAstral",
+  ecorelic: "ecoRelic",
+  camptentstar: "campTentStar",
+  campcookingpot: "campCookingPot",
+  dishberrytart: "dishBerryTart",
+  dishflameskewers: "dishFlameSkewers",
+  dishmoonsoup: "dishMoonSoup",
+  camppicnicbasket: "campPicnicBasket",
+  picnicherb: "tuningMint",
+  starberry: "dishBerryTart",
+  camptoken: "campTentStar",
+  boutiquemirrorstar: "boutiqueMirrorStar",
+  accauroracrown: "accAuroraCrown",
+  acccozyscarf: "accCozyScarf",
+  accfairywings: "accFairyWings",
+  leagueelitecrest: "leagueEliteCrest",
+  leaguechampionribbon: "leagueChampionRibbon",
+  shinystarsand: "boutiqueMirrorStar",
+  halloffameribbon: "leagueChampionRibbon",
+  amberfossilgem: "amberFossilGem",
+  ancientgeneamber: "amberFossilGem",
+  amberrevivalpod: "amberRevivalPod",
+  primalclawtotem: "primalClawTotem",
+  primalshelltotem: "primalShellTotem",
+  starcorridorgate: "starCorridorGate",
+  corridorstarcrest: "corridorStarCrest",
+  corridorstarmedals: "corridorStarCrest",
 };
 
 const BUILDING_ICON_MAP = {
@@ -99,7 +141,7 @@ const TECH_ICON_MAP = {
 function renderIconImg(iconFileKey, size = 24, extraClass = "") {
   const s = Number(size) || 24;
   const cls = ["rpg-ai-icon", extraClass].filter(Boolean).join(" ");
-  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
+  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.48" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
 }
 
 export function renderOrbSvg(ballId = "pokeball", size = 24) {
@@ -148,7 +190,41 @@ const UI_ICON_MAP = {
   observatory: "researchLab",
   shinySparkle: "shinyCharm",
   speciesTag: "tab_dex",
+  natalBond: "natalBond",
+  swiftHatch: "swiftHatch",
+  expeditionMaster: "expeditionMaster",
+  shinyHall: "shinyHall",
+  bondAtlas: "bondAtlas",
+  dualSanctum: "dualSanctum",
+  sanctumBadge: "sanctumBadge",
+  duoCombo: "duoCombo",
+  tuningMint: "tuningMint",
+  ecoCanopy: "ecoCanopy",
+  ecoCaldera: "ecoCaldera",
+  ecoTidepool: "ecoTidepool",
+  ecoAstral: "ecoAstral",
+  ecoRelic: "ecoRelic",
+  campTentStar: "campTentStar",
+  campCookingPot: "campCookingPot",
+  dishBerryTart: "dishBerryTart",
+  dishFlameSkewers: "dishFlameSkewers",
+  dishMoonSoup: "dishMoonSoup",
+  campPicnicBasket: "campPicnicBasket",
+  boutiqueMirrorStar: "boutiqueMirrorStar",
+  accAuroraCrown: "accAuroraCrown",
+  accCozyScarf: "accCozyScarf",
+  accFairyWings: "accFairyWings",
+  leagueEliteCrest: "leagueEliteCrest",
+  leagueChampionRibbon: "leagueChampionRibbon",
+  amberFossilGem: "amberFossilGem",
+  amberRevivalPod: "amberRevivalPod",
+  primalClawTotem: "primalClawTotem",
+  primalShellTotem: "primalShellTotem",
+  starCorridorGate: "starCorridorGate",
+  corridorStarCrest: "corridorStarCrest",
 };
+
+export const WEBP_UI_ICONS = Object.freeze({ ...UI_ICON_MAP });
 
 export function renderUiIcon(iconKey = "tab_bonfire", size = 20) {
   const raw = String(iconKey || "tab_bonfire");

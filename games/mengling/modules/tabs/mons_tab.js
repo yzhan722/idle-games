@@ -3,6 +3,9 @@ import {
   pickWeakMonIds,
   releaseMonIds,
 } from "../systems/mon_release.js";
+import { getNatalBondMonId, perkLevel, setNatalBondMonId } from "../systems/rebirth.js";
+import { applyMintTuningToMon, MINT_TUNING_PRESETS } from "../mons.js";
+import { getEcoSandboxBusyIds } from "../systems/collection_fun.js";
 import {
   BATCH_ONCE_SKILL_TYPES,
   isSkillImplemented,
@@ -781,10 +784,43 @@ export function initMonsTab({
         return;
       }
 
+      const natalBtn = ev.target?.closest?.("button[data-mon-natal]");
+      if (natalBtn && elMonList.contains(natalBtn)) {
+        const id = Number(natalBtn.getAttribute("data-mon-natal"));
+        if (!Number.isFinite(id)) return;
+        const m = (state.mons?.list ?? []).find((x) => x && x.id === id);
+        if (!m) return;
+        if (getNatalBondMonId(state) === id) {
+          setNatalBondMonId(state, null);
+          addLog(`已解除「${m.name || "萌灵"}」的本命灵契锁定`, true);
+        } else {
+          setNatalBondMonId(state, id);
+          const hasPerk = perkLevel(state, "natalBond") > 0;
+          addLog(
+            hasPerk
+              ? `已缔结本命灵契：「${m.name || "萌灵"}」将在转生时随行保留至下一周目`
+              : `已预选本命伙伴「${m.name || "萌灵"}」（在未来商店点亮「本命灵契」后跨周目随行生效）`,
+            true
+          );
+        }
+        ui.futureDirty = true;
+        markMonListDirty(false);
+        render();
+        return;
+      }
+
       const releaseBtn = ev.target?.closest?.("button[data-mon-release]");
       if (releaseBtn && elMonList.contains(releaseBtn)) {
         const id = Number(releaseBtn.getAttribute("data-mon-release"));
         if (!Number.isFinite(id)) return;
+        if (getNatalBondMonId(state) === id) {
+          addLog("放生拦截：该萌灵已缔结本命灵契，请先解除缔契再放生", true);
+          return;
+        }
+        if (getEcoSandboxBusyIds(state).has(id)) {
+          addLog("放生拦截：该萌灵正在秘境生态沙盘勘探中，请先撤回或结算后再放生", true);
+          return;
+        }
         const mIdx = (state.mons?.list ?? []).findIndex((x) => x.id === id);
         if (mIdx < 0) return;
         const m = state.mons.list[mIdx];
@@ -936,6 +972,27 @@ export function initMonsTab({
           } else {
             addLog(result.message, true);
           }
+        }
+        return;
+      }
+
+      const mintBtn = ev.target?.closest?.("button[data-mon-mint-preset]");
+      if (mintBtn && elMonDetail.contains(mintBtn)) {
+        if (mintBtn.disabled) return;
+        const monId = Number(mintBtn.getAttribute("data-mon-mint-target"));
+        const presetId = mintBtn.getAttribute("data-mon-mint-preset");
+        const preset = MINT_TUNING_PRESETS.find((p) => p.id === presetId);
+        if (!Number.isFinite(monId) || !preset) return;
+        const res = applyMintTuningToMon(state, monId, { up: preset.up, down: preset.down });
+        if (res.ok) {
+          const targetMon = (state.mons?.list ?? []).find((x) => x && x.id === monId);
+          addLog(`心性调律成功：${targetMon?.name || "萌灵"} 性格偏向更新为「${res.label}」`, true);
+          ui.functionsDirty = true;
+          ui.pveDirty = true;
+          markMonsDirty();
+          render();
+        } else {
+          addLog("心性调律失败：心性调律薄荷不足或已处于相同调律偏向", true);
         }
         return;
       }

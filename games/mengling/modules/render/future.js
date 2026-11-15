@@ -1,4 +1,12 @@
-import { LEGACY_PERK_ORDER, LEGACY_PERKS, canBuyPerk, perkCost, perkLevel } from "../systems/rebirth.js";
+import {
+  LEGACY_PERK_ORDER,
+  LEGACY_PERKS,
+  canBuyPerk,
+  getNatalBondMonId,
+  perkCost,
+  perkLevel,
+  resolveNatalBondCandidate,
+} from "../systems/rebirth.js";
 import { renderFutureStageHtml, setHtmlPreservingStage } from "./tab_stages.js";
 import { renderResSvg } from "./rpg_svg_icons.js";
 
@@ -731,11 +739,34 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
       if (!isFolded("rebirth")) {
         const essence = Math.max(0, Math.floor(state.meta?.legacy?.essence || 0));
         const rebirths = Math.max(0, Math.floor(state.era?.prestigeCount || 0));
+        const natalPerkOn = perkLevel(state, "natalBond") > 0;
+        const lockedNatalId = getNatalBondMonId(state);
+        const natalCand = resolveNatalBondCandidate(state);
+        const natalTitleText = natalCand
+          ? `${natalCand.isShiny ? "★闪光 · " : ""}${natalCand.name || natalCand.pid}${natalCand.stars > 0 ? ` (${natalCand.stars}星)` : ""}`
+          : "暂无可缔契萌灵";
+        const natalSubText = !natalPerkOn
+          ? "点亮下方「本命灵契」后，可在转生时携带 1 只本命萌灵跨周目随行（重置为 Lv.1，完整保留闪光/星级/个体值/性格/特性/亲密）。"
+          : lockedNatalId != null && natalCand && natalCand.id === lockedNatalId
+            ? `已锁定随行本命（ID #${natalCand.id} · Lv.${natalCand.lvl || 1}），批量放生与手动放生均自动免疫保护。`
+            : natalCand
+              ? `尚未手动指定，转生时将自动护送队内最高价值伙伴「${natalCand.name || natalCand.pid}」跨周目随行。`
+              : "捕捉或孵化萌灵后即可在此锁定跨周目随行本命。";
         rows.push(`
           <div class="row row--full">
             <div class="row__left">
               <div class="row__title row__titleLine">${renderResSvg("megaStone", 20)}<span>灵珀 ×${essence}</span><span class="tag">已轮回 ${rebirths} 次</span></div>
-              <div class="row__desc">悖梦主线全清且持有闪光萌灵后，在萌灵页时代面板发起「时空歪曲」。灵珀买轮回加成，永久生效。</div>
+              <div class="row__desc">悖梦主线全清且持有闪光萌灵后，在捕捉页时代面板发起「时空歪曲」。灵珀升级轮回天赋，跨周目永久生效。</div>
+            </div>
+          </div>
+          <div class="row row--full rebirth-natal-card">
+            <div class="row__left">
+              <div class="row__title row__titleLine">${renderResSvg("natalBond", 20)}<span>本命灵契随行槽</span><span class="tag">${natalPerkOn ? "已激活跨周目护送" : "待点亮本命灵契"}</span><span class="tag">${natalTitleText}</span></div>
+              <div class="row__desc">${natalSubText}</div>
+            </div>
+            <div class="row__right">
+              <button class="btn btn--small btn--primary" data-natal-autopick="1" ${natalCand ? "" : "disabled"}>优选锁定</button>
+              ${lockedNatalId != null ? `<button class="btn btn--small btn--ghost" data-natal-clear="1">解除锁定</button>` : ""}
             </div>
           </div>
         `);
@@ -748,7 +779,7 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
           rows.push(`
             <div class="row">
               <div class="row__left">
-                <div class="row__title row__titleLine">${renderResSvg("shinyCharm", 18)}<span>${pdef.name}</span><span class="tag">${lvl}/${pdef.max}</span></div>
+                <div class="row__title row__titleLine">${renderResSvg(pdef.icon || "shinyCharm", 18)}<span>${pdef.name}</span><span class="tag">${lvl}/${pdef.max}</span></div>
                 <div class="row__desc">${pdef.desc}</div>
               </div>
               <div class="row__right">

@@ -10,6 +10,9 @@ import { EXTRA_TECH_FLAGS } from "./tech_defs.js";
 
 import { ensureEraState } from "./systems/era.js";
 import { normalizeLegacy } from "./systems/rebirth.js";
+import { normalizeMintTuning } from "./mons.js";
+import { ensureAmberRevivalState, ensureEcoSandboxState, ensureStarBoutiqueState } from "./systems/collection_fun.js";
+import { ensureChampionLeagueState, ensureStarCorridorState } from "./systems/pve_tower.js";
 
 
 
@@ -151,6 +154,11 @@ export const defaultState = () => ({
     advSearchCell: { value: 0, cap: 0 },
     sootheBell: { value: 0, cap: 0 },
     expCandyS: { value: 0, cap: 0 },
+    seasonMark: { value: 0, cap: 0 },
+    tuningMint: { value: 0, cap: 0 },
+    shinyStarSand: { value: 0, cap: 0 },
+    ancientGeneAmber: { value: 0, cap: 0 },
+    corridorStarMedals: { value: 0, cap: 0 },
 
   },
 
@@ -276,6 +284,10 @@ export const defaultState = () => ({
 
     eggTotalSec: 0,
 
+    abilityLock: "auto",
+
+    shinyPity: 0,
+
   },
 
   expedition: {
@@ -389,6 +401,37 @@ export const defaultState = () => ({
     dailyResetDate: "",
 
     selectedIds: [],
+
+    dualSanctum: {
+      primaryId: null,
+      partnerId: null,
+      selectedTrialId: "sanctum_ember_gale",
+      cleared: {},
+      badges: [],
+      claimedMilestones: {},
+    },
+    championLeague: {
+      squadIds: [],
+      activeStageIdx: 0,
+      carryHpRatioByMon: {},
+      clearedStages: {},
+      hallOfFameTier: 0,
+      championClears: 0,
+      hallOfFameRecords: [],
+      lastRunSummary: null,
+    },
+    starCorridor: {
+      squadIds: [],
+      currentFloor: 1,
+      highestFloorCleared: 0,
+      corridorTier: 0,
+      rotationOffset: 0,
+      totalClears: 0,
+      totalMedalsEarned: 0,
+      clearedFloors: {},
+      records: [],
+      lastRunSummary: null,
+    },
 
   },
 
@@ -1113,7 +1156,7 @@ export function loadFromRaw(raw) {
 
 
 
-  s.breeding = { on: false, aId: null, bId: null, eggRemainingSec: 0, eggTotalSec: 0 };
+  s.breeding = { on: false, aId: null, bId: null, eggRemainingSec: 0, eggTotalSec: 0, abilityLock: "auto", shinyPity: 0 };
 
   if (data.breeding && typeof data.breeding === "object") {
 
@@ -1134,6 +1177,13 @@ export function loadFromRaw(raw) {
     if (typeof er === "number" && Number.isFinite(er)) s.breeding.eggRemainingSec = Math.max(0, er);
 
     if (typeof et === "number" && Number.isFinite(et)) s.breeding.eggTotalSec = Math.max(0, et);
+
+    if (data.breeding.abilityLock === "a" || data.breeding.abilityLock === "b" || data.breeding.abilityLock === "auto") {
+      s.breeding.abilityLock = data.breeding.abilityLock;
+    }
+
+    const sp = data.breeding.shinyPity;
+    if (typeof sp === "number" && Number.isFinite(sp)) s.breeding.shinyPity = Math.max(0, Math.floor(sp));
 
   }
 
@@ -1408,6 +1458,17 @@ export function loadFromRaw(raw) {
 
           nature: typeof it.nature === "string" ? it.nature : "hardy",
 
+          ...(normalizeMintTuning(it.mintTuning) ? { mintTuning: normalizeMintTuning(it.mintTuning) } : {}),
+          ...(typeof it.hallOfFameRibbons === "number" && Number.isFinite(it.hallOfFameRibbons) && it.hallOfFameRibbons > 0
+            ? { hallOfFameRibbons: Math.floor(it.hallOfFameRibbons) }
+            : {}),
+          ...(typeof it.firstHallOfFameAt === "number" && Number.isFinite(it.firstHallOfFameAt) && it.firstHallOfFameAt > 0
+            ? { firstHallOfFameAt: Math.floor(it.firstHallOfFameAt) }
+            : {}),
+          ...(typeof it.ivTrainCarry === "number" && Number.isFinite(it.ivTrainCarry) && it.ivTrainCarry > 0
+            ? { ivTrainCarry: Math.round(it.ivTrainCarry * 1000) / 1000 }
+            : {}),
+
           ability: typeof it.ability === "string" ? it.ability : undefined,
 
           autoExpCarry,
@@ -1450,6 +1511,14 @@ export function loadFromRaw(raw) {
 
     }
 
+  }
+
+  ensureEcoSandboxState(s);
+  if (s.meta?.starBoutique) {
+    ensureStarBoutiqueState(s);
+  }
+  if (s.meta?.amberRevival) {
+    ensureAmberRevivalState(s);
   }
 
 
@@ -1533,6 +1602,53 @@ export function loadFromRaw(raw) {
 
         .filter((x) => typeof x === "number");
 
+    }
+
+    if (data.pve.dualSanctum && typeof data.pve.dualSanctum === "object") {
+      const ds = data.pve.dualSanctum;
+      const pId = typeof ds.primaryId === "number" && Number.isFinite(ds.primaryId) && ds.primaryId > 0 ? Math.floor(ds.primaryId) : null;
+      const sId = typeof ds.partnerId === "number" && Number.isFinite(ds.partnerId) && ds.partnerId > 0 && Math.floor(ds.partnerId) !== pId ? Math.floor(ds.partnerId) : null;
+      const cleared = {};
+      if (ds.cleared && typeof ds.cleared === "object") {
+        for (const [k, v] of Object.entries(ds.cleared)) {
+          if (typeof k === "string" && v) {
+            cleared[k] = typeof v === "object"
+              ? {
+                  stars: Math.max(1, Math.min(3, Math.floor(Number(v.stars) || 1))),
+                  clears: Math.max(1, Math.floor(Number(v.clears) || 1)),
+                  bestRounds: Math.max(1, Math.floor(Number(v.bestRounds) || 1)),
+                }
+              : { stars: 1, clears: 1, bestRounds: 10 };
+          }
+        }
+      }
+      const badges = Array.isArray(ds.badges)
+        ? Array.from(new Set(ds.badges.filter((b) => typeof b === "string" && b.length > 0)))
+        : [];
+      const claimedMilestones = {};
+      if (ds.claimedMilestones && typeof ds.claimedMilestones === "object") {
+        for (const [mk, mv] of Object.entries(ds.claimedMilestones)) {
+          if (mv) claimedMilestones[mk] = true;
+        }
+      }
+      s.pve.dualSanctum = {
+        primaryId: pId,
+        partnerId: sId,
+        selectedTrialId: typeof ds.selectedTrialId === "string" && ds.selectedTrialId ? ds.selectedTrialId : "sanctum_ember_gale",
+        cleared,
+        badges,
+        claimedMilestones,
+      };
+    }
+
+    if (data.pve.championLeague && typeof data.pve.championLeague === "object") {
+      s.pve.championLeague = data.pve.championLeague;
+      ensureChampionLeagueState(s);
+    }
+
+    if (data.pve.starCorridor && typeof data.pve.starCorridor === "object") {
+      s.pve.starCorridor = data.pve.starCorridor;
+      ensureStarCorridorState(s);
     }
 
   }

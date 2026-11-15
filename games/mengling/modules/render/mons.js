@@ -3,7 +3,13 @@ import {
   busyMonIds,
   pickWeakMonIds,
 } from "../systems/mon_release.js";
-import { getNatureInfo } from "../mons.js";
+import {
+  describeMintTuning,
+  formatMonNatureWithTuning,
+  getNatureInfo,
+  MINT_TUNING_PRESETS,
+  normalizeMintTuning,
+} from "../mons.js";
 import { getAbilityInfo } from "../abilities.js";
 import {
   IMPLEMENTED_SKILL_TYPES,
@@ -12,6 +18,7 @@ import {
   listActiveSkillBuffs,
 } from "../type_skills.js";
 import { beastZone, ZONE_INDEX } from "../beast_defs.js";
+import { getMonBoutiqueBonus, getMonPrimalImprintBonus } from "../systems/collection_fun.js";
 import { renderMonsStageHtml, setHtmlPreservingStage } from "./tab_stages.js";
 import { renderResSvg, renderUiIcon } from "./rpg_svg_icons.js";
 
@@ -415,7 +422,7 @@ export function createRenderMons({
           const canStarUp =
             stars < 5 && Number.isFinite(need) && need > 0 && gateOk && validSel.length === need;
 
-          const natureName = getNatureInfo(m.nature)?.name || "—";
+          const natureName = formatMonNatureWithTuning(m, { compact: true }) || "—";
           const ab = getAbilityInfo(m.ability);
           const mPid = `p${pad3(m.dex)}`;
           const mTitle = globalThis.BEAST_TITLE?.[mPid] || "";
@@ -427,11 +434,14 @@ export function createRenderMons({
             return (m.lvl || 0) >= (reqLvl || 0);
           });
           const evoBadgeHtml = isEvoReady ? `<span class="badge badge--evo-ready">✦ 可进化</span>` : "";
+          const isNatalBond = state?.meta?.natalBondMonId === m.id;
+          const showNatalBtn = isNatalBond || (state?.meta?.legacy?.perks?.natalBond ?? 0) > 0 || Boolean(state?.era?.prestigeUnlocked);
+          const natalBadgeHtml = isNatalBond ? `<span class="badge badge--natal">${renderUiIcon("natalBond", 12)}<span>本命灵契</span></span>` : "";
           const cardExtraCls = `${m.isShiny ? " row--shiny-mon" : ""}${m.tier === "epic" ? " row--mythic-mon" : m.tier === "rare" ? " row--rare-mon" : m.tier === "uncommon" ? " row--uncommon-mon" : ""}${isEvoReady ? " row--evo-ready" : ""}`;
           rows.push(`
             <div class="row mon-card${cardExtraCls}">
               <div class="row__left">
-                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}${evoBadgeHtml}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
+                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}${natalBadgeHtml}${evoBadgeHtml}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
                 <div class="row__desc">Lv.${m.lvl} · 战力 ${power} · 性格 ${escapeHtml(natureName)} · 特性 ${escapeHtml(ab?.name || "—")} · 亲密 ${aff}/100${"caughtWith" in m && m.caughtWith && m.caughtWith !== "pokeball" ? " · " + ({"pokeball":"灵球","ultraball":"高级灵球","quickball":"迅捷灵球","luxuryball":"豪华灵球","masterball":"究极灵球","netball":"捕灵球","duskball":"暗夜灵球"}[m.caughtWith] ?? m.caughtWith) : ""}</div>
               </div>
               <div class="row__right">
@@ -439,7 +449,8 @@ export function createRenderMons({
                 <div class="mon-card__btns">
                   <button class="btn btn--small" data-mon-open="${m.id}">查看</button>
                   <button class="btn btn--small" data-mon-starup="${m.id}" ${stars >= 5 ? "disabled" : ""}>升星</button>
-                  <button class="btn btn--small btn--danger" data-mon-release="${m.id}">放生</button>
+                  ${showNatalBtn ? `<button class="btn btn--small${isNatalBond ? " btn--primary" : ""}" data-mon-natal="${m.id}" title="缔结/解除跨周目本命灵契">${isNatalBond ? "★本命" : "缔契"}</button>` : ""}
+                  <button class="btn btn--small btn--danger" data-mon-release="${m.id}" ${isNatalBond ? 'disabled title="本命灵契保护中，解除缔契后方可放生"' : ""}>放生</button>
                 </div>
               </div>
             </div>
@@ -614,20 +625,54 @@ export function createRenderMons({
           <span class="tag">EXP ${selected.exp}/${need}</span>
           <span class="tag">亲密度 ${Math.floor(clamp(typeof selected.affection === "number" ? selected.affection : 0, 0, 100))}/100</span>
           <span class="tag">战力 ${monPower(selected)}</span>
+          ${(() => {
+            const ribbons = Math.max(0, Math.floor(selected.hallOfFameRibbons || 0));
+            const bq = getMonBoutiqueBonus(state, selected.id);
+            const imp = getMonPrimalImprintBonus(state, selected.id);
+            const parts = [];
+            if (ribbons > 0) {
+              parts.push(`<span class="tag tag--hof-ribbon">${renderUiIcon("leagueChampionRibbon", 13)}<span>冠军殿堂绶带 ×${ribbons}</span></span>`);
+            }
+            if (imp.imprintName) {
+              parts.push(`<span class="tag tag--amber-stock">${renderUiIcon(imp.imprintIcon || "amberRevivalPod", 13)}<span>${escapeHtml(imp.imprintName)} Lv.${imp.imprintLevel}</span></span>`);
+            }
+            if (bq.accessoryName) {
+              parts.push(`<span class="tag tag--sand-stock">${renderUiIcon(bq.accessoryIcon || "boutiqueMirrorStar", 13)}<span>${escapeHtml(bq.accessoryName)} Lv.${bq.accessoryLevel}</span></span>`);
+            }
+            if (bq.sheenName) {
+              parts.push(`<span class="tag">${escapeHtml(bq.sheenName)}</span>`);
+            }
+            return parts.join("");
+          })()}
         </div>
       </div>
 
       <div class="row">
         <div class="row__left">
-          <div class="row__title row__titleLine">${renderResSvg("shinyCharm", 18)}<span>性格 / 特性</span><span class="tag">天赋与权能</span></div>
-          <div class="row__desc">性格只影响六维；特性影响挂机/捕捉/挑战等玩法。</div>
+          <div class="row__title row__titleLine">${renderResSvg("tuningMint", 18)}<span>性格与心性调律</span><span class="tag">心性调律薄荷 ×${Math.max(0, Math.floor(state.res?.tuningMint?.value ?? 0))}</span></div>
+          <div class="row__desc">原性格作为纪念标签永久保留；消耗心性调律薄荷可定向重塑六维成长偏向（+10% / -10% 或归元均衡）。</div>
         </div>
         <div class="row__right">
-          <div class="badge badge--nature">性格：${escapeHtml(getNatureInfo(selected.nature)?.name || "—")}</div>
+          <div class="badge badge--nature">性格：${escapeHtml(formatMonNatureWithTuning(selected))}</div>
           <div class="badge">${(() => {
             const ab = getAbilityInfo(selected.ability);
             return ab ? `特性：${escapeHtml(ab.name)} · ${escapeHtml(ab.desc)}` : "特性：—";
           })()}</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row__left">
+          <div class="row__title row__titleLine">${renderResSvg("tuningMint", 18)}<span>快捷薄荷调律</span><span class="tag">${normalizeMintTuning(selected.mintTuning) ? escapeHtml(describeMintTuning(selected.mintTuning)) : "当前未调律"}</span></div>
+          <div class="row__desc">点击下方预设消耗 1 株心性调律薄荷立即生效，或前往「育灵中枢 · 调律工坊」自由组合任意加减项。</div>
+        </div>
+        <div class="row__right">
+          ${MINT_TUNING_PRESETS.map((p) => {
+            const curT = normalizeMintTuning(selected.mintTuning);
+            const isSame = Boolean(curT && curT.up === p.up && curT.down === p.down);
+            const canUse = !isSame && Math.max(0, Math.floor(state.res?.tuningMint?.value ?? 0)) >= 1;
+            return `<button class="btn btn--small${isSame ? " btn--primary" : ""}" data-mon-mint-preset="${escapeHtml(p.id)}" data-mon-mint-target="${selected.id}" title="${escapeHtml(p.desc)}" ${canUse ? "" : "disabled"}>${escapeHtml(p.name)}${isSame ? "（当前）" : ""}</button>`;
+          }).join("")}
         </div>
       </div>
 

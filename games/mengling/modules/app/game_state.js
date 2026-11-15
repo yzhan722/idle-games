@@ -1,10 +1,12 @@
-// 存档初始化：主存档 → 备份 → 新档（SECTION:STATE_INIT 拆出）
+// 存档初始化：主存档 → 备份 → 新档（SECTION:STATE_INIT 拆出 · v0.7.48）
 // 维护者窗口：A
 
 import { defaultState, loadFromRaw } from "../state.js";
 import { getBeastTier } from "../beast_defs.js";
 import { decodeSaveText } from "../save_codec.js";
 import { STORAGE_KEY, STORAGE_BACKUP_KEY, readLocalStorage } from "./storage.js";
+
+export const GAME_STATE_SYNC_VERSION = "0.7.48";
 
 // 迁移：根据最新 capture_rate 规则，重算所有已存在萌灵实例的稀有度
 function migrateMonTiers(state) {
@@ -25,7 +27,8 @@ const ENSURE_RESOURCES = [
   "ultraball", "quickball", "luxuryball",
   "affectionTreat", "friendshipBracelet",
   "shinyCharm", "luckyEgg",
-  "bottleCap", "goldBottleCap"
+  "bottleCap", "goldBottleCap",
+  "seasonMark", "tuningMint", "shinyStarSand", "ancientGeneAmber", "corridorStarMedals"
 ];
 
 function ensureResourceDefaults(state) {
