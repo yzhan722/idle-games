@@ -1,24 +1,38 @@
 ﻿import type {
+  BoboTechBranchId,
   BuffId,
+  CannonCoreModId,
   DebuffId,
   MechaMode,
   MetaUpgradeId,
   SkillBranchId,
   SkillNodeId,
   SkinId,
+  SquadFinishId,
+  TacticalSubWeaponId,
+  WeaponMode,
 } from './State';
 
 const skillImg = (id: string): string =>
-  `<img class="art-icon-img skill-art-img" src="/assets/icons/${id}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img skill-art-img" src="/assets/icons/${id}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const raceImg = (id: string, cls = 'race-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/icons/race_${id}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/icons/race_${id}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const metaImg = (id: string): string =>
-  `<img class="art-icon-img meta-art-img" src="/assets/icons/${id}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img meta-art-img" src="/assets/icons/${id}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const hudImg = (file: string, cls = 'hud-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=18" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+
+const hudImgV19 = (file: string, cls = 'inline-art-img'): string =>
+  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+
+const rootAssetImgV20 = (file: string, cls = 'inline-art-img'): string =>
+  `<img class="art-icon-img ${cls}" src="/assets/${file}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+
+const finishImgV21 = (file: string, cls = 'finish-art-img'): string =>
+  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 /**
  * 28 AI-Generated Kingdom-Rush / Brawl-Stars Style 2D Thick-Painted Skill Icons
@@ -88,6 +102,14 @@ export const MECHA_MODE_ART: Record<MechaMode, string> = {
   aegis: hudImg('hud_aegis'),
 };
 
+export const WEAPON_MODE_ART: Record<WeaponMode, string> = {
+  gatling: hudImg('ui_rocket', 'hud-art-img'),
+  twin: hudImg('ui_bolt', 'hud-art-img'),
+  plasma: hudImg('ui_sparkle', 'hud-art-img'),
+  scatter: rootAssetImgV20('icon_weapon_scatter', 'hud-art-img'),
+  rainbow: rootAssetImgV20('icon_weapon_rainbow', 'hud-art-img'),
+};
+
 /**
  * 10 Post-Stage 3-Choice Buff Illustrations
  */
@@ -114,6 +136,67 @@ export const SKIN_CARD_ART: Record<SkinId, string> = {
   phantom: hudImg('skin_phantom', 'skin-art-img'),
   imperium: hudImg('skin_imperium', 'skin-art-img'),
   nebula: hudImg('skin_nebula', 'skin-art-img'),
+};
+
+export const SQUAD_FINISH_ART: Record<SquadFinishId, string> = {
+  candy_gloss: finishImgV21('finish_candy_gloss', 'finish-art-img'),
+  brass_steam: finishImgV21('finish_brass_steam', 'finish-art-img'),
+  crystal_jelly: finishImgV21('finish_crystal_jelly', 'finish-art-img'),
+  starlight_prism: finishImgV21('finish_starlight_prism', 'finish-art-img'),
+};
+
+export const TACTICAL_SUBWEAPON_ART: Record<TacticalSubWeaponId, string> = {
+  electro_net: finishImgV21('subwpn_electro_net', 'finish-art-img'),
+  syrup_bubble: finishImgV21('subwpn_syrup_bubble', 'finish-art-img'),
+  rally_horn: finishImgV21('subwpn_rally_horn', 'finish-art-img'),
+};
+
+export const TACTICAL_SUBWEAPON_HUD_ART: Record<TacticalSubWeaponId, string> = {
+  electro_net: hudImg('subwpn_electro_net', 'hud-art-img'),
+  syrup_bubble: hudImg('subwpn_syrup_bubble', 'hud-art-img'),
+  rally_horn: hudImg('subwpn_rally_horn', 'hud-art-img'),
+};
+
+export const TACTICAL_SUBWEAPON_INLINE_ART: Record<TacticalSubWeaponId, string> = {
+  electro_net: hudImgV19('subwpn_electro_net', 'inline-art-img'),
+  syrup_bubble: hudImgV19('subwpn_syrup_bubble', 'inline-art-img'),
+  rally_horn: hudImgV19('subwpn_rally_horn', 'inline-art-img'),
+};
+
+export const BOBO_TECH_ART: Record<BoboTechBranchId, string> = {
+  vanguard_charge: finishImgV21('tech_vanguard_charge', 'finish-art-img'),
+  heavy_siege: finishImgV21('tech_heavy_siege', 'finish-art-img'),
+  candy_bombard: finishImgV21('tech_candy_bombard', 'finish-art-img'),
+};
+
+export const BOBO_TECH_HUD_ART: Record<BoboTechBranchId, string> = {
+  vanguard_charge: hudImg('tech_vanguard_charge', 'hud-art-img'),
+  heavy_siege: hudImg('tech_heavy_siege', 'hud-art-img'),
+  candy_bombard: hudImg('tech_candy_bombard', 'hud-art-img'),
+};
+
+export const BOBO_TECH_INLINE_ART: Record<BoboTechBranchId, string> = {
+  vanguard_charge: hudImgV19('tech_vanguard_charge', 'inline-art-img'),
+  heavy_siege: hudImgV19('tech_heavy_siege', 'inline-art-img'),
+  candy_bombard: hudImgV19('tech_candy_bombard', 'inline-art-img'),
+};
+
+export const CANNON_MOD_ART: Record<CannonCoreModId, string> = {
+  overdrive_breech: finishImgV21('mod_overdrive_breech', 'finish-art-img'),
+  prism_splitter: finishImgV21('mod_prism_splitter', 'finish-art-img'),
+  heavy_mortar: finishImgV21('mod_heavy_mortar', 'finish-art-img'),
+};
+
+export const CANNON_MOD_HUD_ART: Record<CannonCoreModId, string> = {
+  overdrive_breech: hudImg('mod_overdrive_breech', 'hud-art-img'),
+  prism_splitter: hudImg('mod_prism_splitter', 'hud-art-img'),
+  heavy_mortar: hudImg('mod_heavy_mortar', 'hud-art-img'),
+};
+
+export const CANNON_MOD_INLINE_ART: Record<CannonCoreModId, string> = {
+  overdrive_breech: hudImgV19('mod_overdrive_breech', 'inline-art-img'),
+  prism_splitter: hudImgV19('mod_prism_splitter', 'inline-art-img'),
+  heavy_mortar: hudImgV19('mod_heavy_mortar', 'inline-art-img'),
 };
 
 /**
@@ -167,6 +250,48 @@ export const UI_ART = {
   note: hudImg('hud_music_note', 'inline-art-img'),
   megaphone: hudImg('ui_megaphone', 'inline-art-img'),
   boom: hudImg('ui_boom', 'inline-art-img'),
+  candyVault: hudImgV19('ui_candy_vault', 'inline-art-img'),
+  endlessShield: hudImgV19('ui_endless_shield', 'inline-art-img'),
+  endlessMedal: hudImgV19('ui_endless_medal', 'inline-art-img'),
+  weaponScatter: rootAssetImgV20('icon_weapon_scatter', 'inline-art-img'),
+  weaponRainbow: rootAssetImgV20('icon_weapon_rainbow', 'inline-art-img'),
+  tacticalAirdrop: rootAssetImgV20('icon_tactical_airdrop', 'inline-art-img'),
+  escortCart: hudImgV19('ui_escort_cart', 'inline-art-img'),
+  barricade: hudImgV19('ui_barricade', 'inline-art-img'),
+  finishCandy: hudImgV19('finish_candy_gloss', 'inline-art-img'),
+  finishBrass: hudImgV19('finish_brass_steam', 'inline-art-img'),
+  finishCrystal: hudImgV19('finish_crystal_jelly', 'inline-art-img'),
+  finishPrism: hudImgV19('finish_starlight_prism', 'inline-art-img'),
+  mechaOverlord: hudImgV19('ui_mecha_overlord', 'inline-art-img'),
+  mechaOverlordHud: hudImg('ui_mecha_overlord', 'hud-art-img'),
+  mechaOverlordArt: finishImgV21('ui_mecha_overlord', 'finish-art-img'),
+  mechaCore: hudImgV19('meta_mecha_core', 'inline-art-img'),
+  mechaCoreArt: finishImgV21('meta_mecha_core', 'finish-art-img'),
+  envTailwind: hudImgV19('env_tailwind_belt', 'inline-art-img'),
+  envEmp: hudImgV19('env_emp_zone', 'inline-art-img'),
+  envFrosting: hudImgV19('env_frosting_pad', 'inline-art-img'),
+  gearTournament: hudImgV19('ui_gear_tournament', 'inline-art-img'),
+  gearTournamentArt: finishImgV21('ui_gear_tournament', 'finish-art-img'),
+  tournamentChest: hudImgV19('ui_tournament_chest', 'inline-art-img'),
+  tournamentChestArt: finishImgV21('ui_tournament_chest', 'finish-art-img'),
+  subwpnElectroNet: hudImgV19('subwpn_electro_net', 'inline-art-img'),
+  subwpnSyrupBubble: hudImgV19('subwpn_syrup_bubble', 'inline-art-img'),
+  subwpnRallyHorn: hudImgV19('subwpn_rally_horn', 'inline-art-img'),
+  clockworkColossus: hudImgV19('ui_clockwork_colossus', 'inline-art-img'),
+  clockworkColossusArt: finishImgV21('ui_clockwork_colossus', 'finish-art-img'),
+  clockworkCore: hudImgV19('ui_clockwork_core', 'inline-art-img'),
+  clockworkCoreArt: finishImgV21('ui_clockwork_core', 'finish-art-img'),
+  techVanguard: hudImgV19('tech_vanguard_charge', 'inline-art-img'),
+  techHeavySiege: hudImgV19('tech_heavy_siege', 'inline-art-img'),
+  techCandyBombard: hudImgV19('tech_candy_bombard', 'inline-art-img'),
+  airshipEscort: hudImgV19('ui_airship_escort', 'inline-art-img'),
+  airshipEscortHud: hudImg('ui_airship_escort', 'hud-art-img'),
+  airshipEscortArt: finishImgV21('ui_airship_escort', 'finish-art-img'),
+  airshipWingMedal: hudImgV19('ui_airship_wing_medal', 'inline-art-img'),
+  airshipWingMedalArt: finishImgV21('ui_airship_wing_medal', 'finish-art-img'),
+  modOverdrive: hudImgV19('mod_overdrive_breech', 'inline-art-img'),
+  modPrism: hudImgV19('mod_prism_splitter', 'inline-art-img'),
+  modHeavyMortar: hudImgV19('mod_heavy_mortar', 'inline-art-img'),
 };
 
 /**

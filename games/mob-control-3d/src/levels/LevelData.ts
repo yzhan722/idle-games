@@ -1,6 +1,8 @@
 import { THEME_ORDER, ThemeId } from '../game/SceneThemes';
 
-export type GateOp = 'add' | 'mul' | 'sub' | 'div';
+export type GateOp = 'add' | 'mul' | 'sub' | 'div' | 'giant_jelly' | 'frost_shield';
+
+export type GateStyle = 'blue' | 'gold' | 'mega' | 'hazard' | 'jelly' | 'frost';
 
 export interface GateConfig {
   id: string;
@@ -9,7 +11,7 @@ export interface GateConfig {
   width: number;
   op: GateOp;
   value: number;
-  style: 'blue' | 'gold' | 'mega' | 'hazard';
+  style: GateStyle;
   moveRangeX?: number;
   moveSpeed?: number;
   movePhase?: number;
@@ -37,7 +39,71 @@ export interface GearConfig {
   movePhase?: number;
 }
 
-export type TerrainZoneType = 'speed_belt' | 'jump_pad' | 'toxic_mire' | 'heal_sanctuary';
+export type TerrainZoneType =
+  | 'speed_belt'
+  | 'jump_pad'
+  | 'toxic_mire'
+  | 'heal_sanctuary'
+  | 'tailwind_belt'
+  | 'emp_zone'
+  | 'frosting_pad';
+
+export type WeatherAffixId = 'gale_tailwind' | 'ion_emp_storm' | 'sugar_snow_updraft';
+
+export interface WeatherAffixConfig {
+  id: WeatherAffixId;
+  name: string;
+  shortBadge: string;
+  desc: string;
+  iconKey: 'envTailwind' | 'envEmp' | 'envFrosting';
+  blueSpeedMult: number;
+  chargeGainMult: number;
+  padVaultMult: number;
+}
+
+export const WEATHER_AFFIX_ORDER: WeatherAffixId[] = [
+  'gale_tailwind',
+  'ion_emp_storm',
+  'sugar_snow_updraft',
+];
+
+export const WEATHER_AFFIX_CATALOG: Record<WeatherAffixId, WeatherAffixConfig> = {
+  gale_tailwind: {
+    id: 'gale_tailwind',
+    name: '顺风季风',
+    shortBadge: '顺风季风·冲锋+16%',
+    desc: '桥面顺风气流助推我方波波团推进移速 +16%，并强化顺风加速带推力',
+    iconKey: 'envTailwind',
+    blueSpeedMult: 1.16,
+    chargeGainMult: 1.05,
+    padVaultMult: 1.0,
+  },
+  ion_emp_storm: {
+    id: 'ion_emp_storm',
+    name: '电磁雷暴',
+    shortBadge: '电磁雷暴·充能+20%',
+    desc: '电离风暴令全军技能与合体机甲充能效率 +20%，桥面电磁干扰区周期性预警放电破盾缓敌',
+    iconKey: 'envEmp',
+    blueSpeedMult: 1.04,
+    chargeGainMult: 1.2,
+    padVaultMult: 1.0,
+  },
+  sugar_snow_updraft: {
+    id: 'sugar_snow_updraft',
+    name: '糖霜暖流',
+    shortBadge: '糖霜暖流·弹跳爆发',
+    desc: '暖甜糖霜上升气流强化糖霜弹跳垫腾空跨障距离，落地赋予糖霜爆发攻速与护盾糖衣',
+    iconKey: 'envFrosting',
+    blueSpeedMult: 1.08,
+    chargeGainMult: 1.08,
+    padVaultMult: 1.18,
+  },
+};
+
+export function pickDeterministicWeatherAffix(stageNumber: number, seed: number): WeatherAffixConfig {
+  const idx = Math.abs(Math.floor(stageNumber - 1) + Math.floor((seed >>> 0) % 3)) % WEATHER_AFFIX_ORDER.length;
+  return WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[idx]];
+}
 
 export interface TerrainZoneConfig {
   id: string;
@@ -71,6 +137,39 @@ export interface BarrelConfig {
   hp: number;
 }
 
+export interface BossSubTowerConfig {
+  id: string;
+  side: 'left' | 'right';
+  name: string;
+  x: number;
+  z: number;
+  hp: number;
+  rewardGold: number;
+}
+
+export interface CandyVaultConfig {
+  id: string;
+  x: number;
+  z: number;
+  hp: number;
+  rewardGold: number;
+  rewardShards: number;
+  name: string;
+  isGrand?: boolean;
+}
+
+export interface EscortBarricadeConfig {
+  id: string;
+  x: number;
+  z: number;
+  width: number;
+  hp: number;
+  rewardGold: number;
+  rewardShards: number;
+  name: string;
+  isHeavy?: boolean;
+}
+
 export type MapArchetype =
   | 'cascade_scurve'
   | 'grinder_gauntlet'
@@ -83,6 +182,19 @@ export type MapArchetype =
   | 'diamond_citadel'
   | 'conveyor_labyrinth';
 
+export interface AntiAirTurretConfig {
+  id: string;
+  name: string;
+  side: 'left' | 'right';
+  x: number;
+  z: number;
+  hp: number;
+  flakDmg: number;
+  fireInterval: number;
+  rewardGold: number;
+  dropChargeBonus: number;
+}
+
 export interface LevelConfig {
   id: number;
   seed: number;
@@ -92,6 +204,34 @@ export interface LevelConfig {
   isMilestoneBoss: boolean;
   isMiniBoss: boolean;
   isMegaBoss: boolean;
+  isBonusHeist?: boolean;
+  bonusHeistDurationSec?: number;
+  candyVaults?: CandyVaultConfig[];
+  isEndlessDefense?: boolean;
+  isPayloadEscort?: boolean;
+  escortBarricades?: EscortBarricadeConfig[];
+  isGearTournament?: boolean;
+  tournamentStage?: 1 | 2 | 3;
+  tournamentStageTitle?: string;
+  tournamentStreakMult?: number;
+  mode?:
+    | 'campaign'
+    | 'bonus_heist'
+    | 'endless_defense'
+    | 'payload_escort'
+    | 'gear_tournament'
+    | 'colossus_raid'
+    | 'airship_escort';
+  isColossusRaid?: boolean;
+  colossusRaidTier?: number;
+  colossusLeftShieldHp?: number;
+  colossusRightCannonHp?: number;
+  isAirshipEscort?: boolean;
+  airshipEscortTier?: number;
+  airshipMaxHp?: number;
+  airshipMaxShield?: number;
+  antiAirTurrets?: AntiAirTurretConfig[];
+  weatherAffix?: WeatherAffixConfig;
   name: string;
   subtitle: string;
   bossName: string;
@@ -108,6 +248,7 @@ export interface LevelConfig {
   barrels: BarrelConfig[];
   zones: TerrainZoneConfig[];
   bumpers: BumperConfig[];
+  bossSubTowers: BossSubTowerConfig[];
 }
 
 export const TOTAL_SELECTABLE_STAGES = 50;
@@ -292,7 +433,7 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
   const baseGearHp = Math.min(20, Math.round(5 + safeStage * 0.8));
   const baseNestHp = Math.round((110 + (safeStage - 1) * 24) * Math.pow(1.07, Math.min(safeStage - 1, 25)));
   const baseNestGold = Math.round(75 * difficultyScale);
-  const hazSubVal = Math.min(4, 2 + Math.floor((safeStage - 1) / 4));
+  const hazSubVal = Math.min(8, 6 + Math.floor((safeStage - 1) / 5));
 
   const pfx = `s${safeStage}_${seed % 1000}`;
 
@@ -1489,6 +1630,117 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
   const isMegaBoss = safeStage % 10 === 0;
   const isMiniBoss = safeStage % 10 === 5;
   const isMilestoneBoss = isMegaBoss || isMiniBoss || safeStage % 4 === 0;
+
+  // MC-1: Inject Tactical Functional Gates ("果冻巨化门" & "糖霜护盾门") with automatic clearance validation
+  const isClearForSpecialGate = (gx: number, gz: number, gw: number, moveRange = 0.8): boolean => {
+    for (const g of gates) {
+      const zGap = Math.abs(gz - g.z);
+      const xSpan = (gw + g.width) * 0.5 + moveRange + (g.moveRangeX || 0) + 0.75;
+      if (zGap < 2.25 && Math.abs(gx - g.x) < xSpan) return false;
+    }
+    for (const w of walls) {
+      const padX = (w.moveRangeX || 0) + gw * 0.5 + 0.65;
+      const minX = Math.min(w.x1, w.x2) - padX;
+      const maxX = Math.max(w.x1, w.x2) + padX;
+      const minZ = Math.min(w.z1, w.z2) - 1.0;
+      const maxZ = Math.max(w.z1, w.z2) + 1.0;
+      if (gx >= minX && gx <= maxX && gz >= minZ && gz <= maxZ) return false;
+    }
+    for (const gr of gears) {
+      const padX = (gr.moveRangeX || 0) + gr.radius + gw * 0.5 + 0.65;
+      if (Math.abs(gx - gr.x) < padX && Math.abs(gz - gr.z) < gr.radius + 1.15) return false;
+    }
+    for (const bm of bumpers) {
+      if (Math.abs(gz - bm.z) < bm.radius + 1.1 && Math.abs(gx - bm.x) < bm.radius + gw * 0.5 + 0.6) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const jellyCandidateSlots: Array<[number, number]> = [
+    [-3.8 * mirror, 8.6],
+    [3.8 * mirror, 8.6],
+    [-5.2 * mirror, 6.8],
+    [5.2 * mirror, 6.8],
+    [0, 7.6],
+    [-4.6 * mirror, 0.2],
+    [4.6 * mirror, 0.2],
+    [-6.2 * mirror, 9.6],
+  ];
+  for (const [jx, jz] of jellyCandidateSlots) {
+    if (isClearForSpecialGate(jx, jz, 3.8, 0.75)) {
+      gates.push({
+        id: `${pfx}_jelly_giant`,
+        x: Number(jx.toFixed(2)),
+        z: jz,
+        width: 3.8,
+        op: 'giant_jelly',
+        value: 2,
+        style: 'jelly',
+        moveRangeX: 0.75,
+        moveSpeed: 1.28,
+        movePhase: 0.6,
+      });
+      break;
+    }
+  }
+  if (!gates.some((g) => g.op === 'giant_jelly')) {
+    gates.push({
+      id: `${pfx}_jelly_giant`,
+      x: Number((-5.8 * mirror).toFixed(2)),
+      z: 9.8,
+      width: 3.6,
+      op: 'giant_jelly',
+      value: 2,
+      style: 'jelly',
+      moveRangeX: 0.6,
+      moveSpeed: 1.25,
+      movePhase: 0.6,
+    });
+  }
+
+  const frostCandidateSlots: Array<[number, number]> = [
+    [3.8 * mirror, 6.6],
+    [-3.8 * mirror, 6.6],
+    [5.2 * mirror, 3.2],
+    [-5.2 * mirror, 3.2],
+    [0, 2.8],
+    [4.8 * mirror, -5.8],
+    [-4.8 * mirror, -5.8],
+    [6.2 * mirror, 9.6],
+  ];
+  for (const [fx, fz] of frostCandidateSlots) {
+    if (isClearForSpecialGate(fx, fz, 3.8, 0.75)) {
+      gates.push({
+        id: `${pfx}_frost_shield`,
+        x: Number(fx.toFixed(2)),
+        z: fz,
+        width: 3.8,
+        op: 'frost_shield',
+        value: 1,
+        style: 'frost',
+        moveRangeX: 0.75,
+        moveSpeed: 1.32,
+        movePhase: 2.1,
+      });
+      break;
+    }
+  }
+  if (!gates.some((g) => g.op === 'frost_shield')) {
+    gates.push({
+      id: `${pfx}_frost_shield`,
+      x: Number((5.8 * mirror).toFixed(2)),
+      z: 6.2,
+      width: 3.6,
+      op: 'frost_shield',
+      value: 1,
+      style: 'frost',
+      moveRangeX: 0.6,
+      moveSpeed: 1.3,
+      movePhase: 2.1,
+    });
+  }
   const finalRewardGold = isMegaBoss
     ? Math.round(rewardGold * 2.5)
     : isMiniBoss
@@ -1560,11 +1812,127 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
     }
   }
 
+  const scaledBossMaxHp = isMegaBoss
+    ? Math.round(bossMaxHp * 1.9)
+    : isMiniBoss
+      ? Math.round(bossMaxHp * 1.42)
+      : isMilestoneBoss
+        ? Math.round(bossMaxHp * 1.2)
+        : bossMaxHp;
+
+  const bossSubTowers: BossSubTowerConfig[] = [];
+  if (isMegaBoss || isMiniBoss) {
+    const subHp = Math.max(85, Math.round(scaledBossMaxHp * (isMegaBoss ? 0.24 : 0.2)));
+    const subGold = Math.max(25, Math.round(finalRewardGold * 0.16));
+    bossSubTowers.push(
+      {
+        id: `subtower_left_${safeStage}`,
+        side: 'left',
+        name: '左翼蒸汽护盾塔',
+        x: -6.2,
+        z: -13.8,
+        hp: subHp,
+        rewardGold: subGold,
+      },
+      {
+        id: `subtower_right_${safeStage}`,
+        side: 'right',
+        name: '右翼蒸汽护盾塔',
+        x: 6.2,
+        z: -13.8,
+        hp: subHp,
+        rewardGold: subGold,
+      }
+    );
+  }
+
+  const weatherAffix = WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeStage - 1 + (seed % 2 === 0 ? 0 : 1)) % WEATHER_AFFIX_ORDER.length]];
+
+  const isZoneSpotClear = (zx: number, zz: number, zw: number, zl: number): boolean => {
+    for (const ez of zones) {
+      if (Math.abs(zx - ez.x) < (zw + ez.width) * 0.5 + 0.55 && Math.abs(zz - ez.z) < (zl + ez.length) * 0.5 + 0.55) {
+        return false;
+      }
+    }
+    for (const w of walls) {
+      const minX = Math.min(w.x1, w.x2) - zw * 0.45 - 0.35;
+      const maxX = Math.max(w.x1, w.x2) + zw * 0.45 + 0.35;
+      const minZ = Math.min(w.z1, w.z2) - zl * 0.45 - 0.35;
+      const maxZ = Math.max(w.z1, w.z2) + zl * 0.45 + 0.35;
+      if (zx >= minX && zx <= maxX && zz >= minZ && zz <= maxZ) return false;
+    }
+    for (const g of gates) {
+      if (Math.abs(zz - g.z) < zl * 0.4 + 0.8 && Math.abs(zx - g.x) < (zw + g.width) * 0.42) {
+        return false;
+      }
+    }
+    for (const bm of bumpers) {
+      if (Math.hypot(zx - bm.x, zz - bm.z) < bm.radius + Math.max(zw, zl) * 0.45 + 0.4) return false;
+    }
+    for (const br of barrels) {
+      if (Math.hypot(zx - br.x, zz - br.z) < Math.max(zw, zl) * 0.45 + 0.55) return false;
+    }
+    return true;
+  };
+
+  const placeAffixZone = (
+    type: 'tailwind_belt' | 'emp_zone' | 'frosting_pad',
+    zw: number,
+    zl: number,
+    candidates: Array<[number, number]>
+  ): void => {
+    if (zones.some((z) => z.type === type)) return;
+    for (const [cx, cz] of candidates) {
+      if (isZoneSpotClear(cx, cz, zw, zl)) {
+        zones.push({
+          id: `${pfx}_${type}_${zones.length}`,
+          type,
+          x: Number(cx.toFixed(2)),
+          z: Number(cz.toFixed(2)),
+          width: zw,
+          length: zl,
+        });
+        return;
+      }
+    }
+    // Fallback flank corridor near player entry / mid-bridge so deterministic affix zones always appear cleanly
+    const fallbackX = type === 'tailwind_belt' ? -7.6 * mirror : type === 'frosting_pad' ? 7.6 * mirror : 0;
+    const fallbackZ = type === 'tailwind_belt' ? 15.2 : type === 'frosting_pad' ? 6.2 : -9.8;
+    zones.push({
+      id: `${pfx}_${type}_fb`,
+      type,
+      x: Number(fallbackX.toFixed(2)),
+      z: Number(fallbackZ.toFixed(2)),
+      width: zw,
+      length: zl,
+    });
+  };
+
+  placeAffixZone('tailwind_belt', 3.4, 3.8, [
+    [-6.2 * mirror, 14.2],
+    [6.2 * mirror, 14.2],
+    [0, 14.4],
+    [-6.6 * mirror, 8.2],
+  ]);
+  placeAffixZone('frosting_pad', 2.8, 2.4, [
+    [5.8 * mirror, 6.4],
+    [-5.8 * mirror, 6.4],
+    [0, 5.8],
+    [6.4 * mirror, 1.4],
+  ]);
+  placeAffixZone('emp_zone', 3.6, 3.6, [
+    [0, -7.8],
+    [-4.8 * mirror, -7.4],
+    [4.8 * mirror, -7.4],
+    [0, -10.4],
+  ]);
+
   return {
     id: safeStage,
     seed,
     themeId,
     archetype,
+    weatherAffix,
     archetypeName: isMegaBoss
       ? `👑十关机制大Boss · ${info.tag}`
       : isMiniBoss
@@ -1582,13 +1950,7 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
         : `第 ${safeStage} 关：${info.title}`,
     subtitle: `[随机地形 #${seed % 10000}] ${info.desc}`,
     bossName: resolvedBossName,
-    bossMaxHp: isMegaBoss
-      ? Math.round(bossMaxHp * 1.9)
-      : isMiniBoss
-        ? Math.round(bossMaxHp * 1.42)
-        : isMilestoneBoss
-          ? Math.round(bossMaxHp * 1.2)
-          : bossMaxHp,
+    bossMaxHp: scaledBossMaxHp,
     enemySpawnInterval: isMegaBoss
       ? Number(Math.max(0.36, enemySpawnInterval * 0.82).toFixed(3))
       : isMiniBoss
@@ -1609,5 +1971,620 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
     barrels,
     zones,
     bumpers,
+    bossSubTowers,
+  };
+}
+
+export function generateCandyVaultBonusLevel(milestoneStage: number): LevelConfig {
+  const safeMilestone = Math.max(5, Math.floor(milestoneStage));
+  const tier = Math.max(1, Math.floor(safeMilestone / 5));
+  const themeId = THEME_ORDER[(tier - 1) % THEME_ORDER.length];
+  const candyVaults: CandyVaultConfig[] = [
+    {
+      id: 'vault_left_front',
+      x: -5.6,
+      z: -7.0,
+      hp: 150 + tier * 45,
+      rewardGold: 420 + tier * 140,
+      rewardShards: 1,
+      name: '焦糖储蓄金库',
+    },
+    {
+      id: 'vault_center_front',
+      x: 0,
+      z: -6.4,
+      hp: 180 + tier * 55,
+      rewardGold: 520 + tier * 160,
+      rewardShards: 1,
+      name: '皇家蜂蜜金库',
+    },
+    {
+      id: 'vault_right_front',
+      x: 5.6,
+      z: -7.0,
+      hp: 150 + tier * 45,
+      rewardGold: 420 + tier * 140,
+      rewardShards: 1,
+      name: '焦糖储蓄金库',
+    },
+    {
+      id: 'vault_left_grand',
+      x: -3.8,
+      z: -12.0,
+      hp: 230 + tier * 70,
+      rewardGold: 680 + tier * 200,
+      rewardShards: 2,
+      name: '太妃至尊金库塔',
+      isGrand: true,
+    },
+    {
+      id: 'vault_right_grand',
+      x: 3.8,
+      z: -12.0,
+      hp: 230 + tier * 70,
+      rewardGold: 680 + tier * 200,
+      rewardShards: 2,
+      name: '星糖至尊金库塔',
+      isGrand: true,
+    },
+  ];
+
+  return {
+    id: safeMilestone,
+    seed: 77700 + safeMilestone,
+    themeId,
+    archetype: 'chaos_overdrive',
+    archetypeName: '25s 限时暴爽奖励关 · 零红军干扰',
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    isBonusHeist: true,
+    bonusHeistDurationSec: 25,
+    candyVaults,
+    weatherAffix: WEATHER_AFFIX_CATALOG.sugar_snow_updraft,
+    name: `糖果金库大劫案（第 ${safeMilestone} 关奖励）`,
+    subtitle: '25 秒零红军暴爽狂欢！穿过高倍门轰碎糖果金库塔，狂爆金币与时装碎片！',
+    bossName: '至尊糖果总金库',
+    bossMaxHp: 720 + tier * 240,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: 850 + tier * 250,
+    gates: [
+      { id: 'bh_g1', x: -4.2, z: 9.2, width: 4.8, op: 'mul', value: 3, style: 'gold', moveRangeX: 2.6, moveSpeed: 1.45, movePhase: 0 },
+      { id: 'bh_g2', x: 4.2, z: 9.2, width: 4.8, op: 'add', value: 8, style: 'blue', moveRangeX: 2.6, moveSpeed: 1.45, movePhase: Math.PI },
+      { id: 'bh_g3', x: -3.8, z: 3.4, width: 4.6, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 2.8, moveSpeed: 1.3, movePhase: 0.7 },
+      { id: 'bh_g4', x: 3.8, z: 3.4, width: 4.8, op: 'mul', value: 4, style: 'mega', moveRangeX: 2.8, moveSpeed: 1.3, movePhase: 3.84 },
+      { id: 'bh_g5', x: 0, z: -1.8, width: 5.8, op: 'mul', value: 3, style: 'gold', moveRangeX: 4.2, moveSpeed: 1.65, movePhase: 1.57 },
+    ],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [
+      { id: 'bh_belt_l', type: 'tailwind_belt', x: -4.2, z: 6.4, width: 4.2, length: 4.0 },
+      { id: 'bh_belt_r', type: 'tailwind_belt', x: 4.2, z: 6.4, width: 4.2, length: 4.0 },
+      { id: 'bh_pad_c', type: 'frosting_pad', x: 0, z: 1.0, width: 3.2, length: 2.6 },
+    ],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+export function generateEndlessDefenseLevel(): LevelConfig {
+  return {
+    id: 1,
+    seed: 88888,
+    themeId: THEME_ORDER[0],
+    archetype: 'trilane_siege',
+    archetypeName: '无尽工坊保卫战 · 波次递增生存',
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    isEndlessDefense: true,
+    weatherAffix: WEATHER_AFFIX_CATALOG.ion_emp_storm,
+    name: '无尽工坊保卫战',
+    subtitle: '死守底部泡泡站防线！抵御红军狂潮与突变巨汉无尽波次，刷新个人最佳勋章！',
+    bossName: '深渊突变裂隙',
+    bossMaxHp: 999999,
+    enemySpawnInterval: 2.0,
+    enemyBurstCount: 4,
+    initialRedPrewarm: 6,
+    bruteSpawnInterval: 7.2,
+    rewardGold: 0,
+    gates: [
+      { id: 'ed_g1', x: -4.4, z: 10.2, width: 4.4, op: 'mul', value: 2, style: 'gold', moveRangeX: 2.4, moveSpeed: 1.25, movePhase: 0 },
+      { id: 'ed_g2', x: 4.4, z: 10.2, width: 4.4, op: 'add', value: 6, style: 'blue', moveRangeX: 2.4, moveSpeed: 1.25, movePhase: Math.PI },
+      { id: 'ed_g3', x: -4.2, z: 3.2, width: 4.4, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 2.6, moveSpeed: 1.15, movePhase: 0.9 },
+      { id: 'ed_g4', x: 4.2, z: 3.2, width: 4.4, op: 'frost_shield', value: 1, style: 'frost', moveRangeX: 2.6, moveSpeed: 1.15, movePhase: 4.04 },
+      { id: 'ed_g5', x: 0, z: -3.2, width: 5.0, op: 'sub', value: 5, style: 'hazard', moveRangeX: 4.0, moveSpeed: 1.4, movePhase: 1.57 },
+    ],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [
+      { id: 'ed_br_l', x: -5.4, z: -0.4, hp: 18 },
+      { id: 'ed_br_r', x: 5.4, z: -0.4, hp: 18 },
+    ],
+    zones: [
+      { id: 'ed_heal', type: 'heal_sanctuary', x: 0, z: 6.8, width: 5.4, length: 3.6 },
+      { id: 'ed_tailwind_l', type: 'tailwind_belt', x: -6.4, z: 13.2, width: 3.2, length: 3.6 },
+      { id: 'ed_pad_r', type: 'frosting_pad', x: 6.4, z: 7.0, width: 2.8, length: 2.4 },
+      { id: 'ed_emp_front', type: 'emp_zone', x: 0, z: -8.6, width: 3.8, length: 3.6 },
+    ],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+export function generatePayloadEscortLevel(tier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.floor(tier));
+  const themeId = THEME_ORDER[(safeTier - 1) % THEME_ORDER.length];
+  const hpMult = 1 + (safeTier - 1) * 0.22;
+  const escortBarricades: EscortBarricadeConfig[] = [
+    {
+      id: 'esc_bar_1',
+      x: 0,
+      z: 9.4,
+      width: 6.2,
+      hp: Math.round(150 * hpMult),
+      rewardGold: 320 + safeTier * 80,
+      rewardShards: 1,
+      name: '前哨铆铁拒马',
+    },
+    {
+      id: 'esc_bar_2',
+      x: 0,
+      z: 3.2,
+      width: 6.6,
+      hp: Math.round(215 * hpMult),
+      rewardGold: 420 + safeTier * 100,
+      rewardShards: 1,
+      name: '双联齿轮路障',
+    },
+    {
+      id: 'esc_bar_3',
+      x: 0,
+      z: -3.2,
+      width: 7.0,
+      hp: Math.round(285 * hpMult),
+      rewardGold: 540 + safeTier * 120,
+      rewardShards: 1,
+      name: '高压蒸汽壁垒',
+      isHeavy: true,
+    },
+    {
+      id: 'esc_bar_4',
+      x: 0,
+      z: -9.6,
+      width: 7.4,
+      hp: Math.round(360 * hpMult),
+      rewardGold: 680 + safeTier * 150,
+      rewardShards: 2,
+      name: '总厂黑铁重闸',
+      isHeavy: true,
+    },
+  ];
+
+  return {
+    id: safeTier,
+    seed: 95500 + safeTier,
+    themeId,
+    archetype: 'trilane_siege',
+    archetypeName: '蒸汽装甲战车护送 · 冲角破障攻坚',
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    isPayloadEscort: true,
+    escortBarricades,
+    weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier - 1) % WEATHER_AFFIX_ORDER.length]],
+    name: '蒸汽装甲战车护送',
+    subtitle: '派遣波波团环绕充能蒸汽装甲战车，沿中路冲撞碾碎 4 道敌方路障直捣黑铁终极据点！',
+    bossName: '黑铁终极据点',
+    bossMaxHp: Math.round(680 * hpMult),
+    enemySpawnInterval: 2.15,
+    enemyBurstCount: 4,
+    initialRedPrewarm: 4,
+    bruteSpawnInterval: 8.5,
+    rewardGold: 1100 + safeTier * 260,
+    gates: [
+      { id: 'esc_g1', x: -5.4, z: 11.2, width: 4.2, op: 'mul', value: 3, style: 'gold', moveRangeX: 1.8, moveSpeed: 1.2, movePhase: 0 },
+      { id: 'esc_g2', x: 5.4, z: 11.2, width: 4.2, op: 'add', value: 7, style: 'blue', moveRangeX: 1.8, moveSpeed: 1.2, movePhase: Math.PI },
+      { id: 'esc_g3', x: -5.5, z: 5.0, width: 4.2, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 1.8, moveSpeed: 1.1, movePhase: 0.8 },
+      { id: 'esc_g4', x: 5.5, z: 5.0, width: 4.2, op: 'frost_shield', value: 1, style: 'frost', moveRangeX: 1.8, moveSpeed: 1.1, movePhase: 3.9 },
+      { id: 'esc_g5', x: -5.4, z: -1.2, width: 4.2, op: 'mul', value: 2, style: 'gold', moveRangeX: 1.6, moveSpeed: 1.25, movePhase: 1.5 },
+      { id: 'esc_g6', x: 5.4, z: -1.2, width: 4.2, op: 'add', value: 8, style: 'blue', moveRangeX: 1.6, moveSpeed: 1.25, movePhase: 4.6 },
+    ],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [
+      { id: 'esc_br_l', x: -6.2, z: -6.2, hp: 16 },
+      { id: 'esc_br_r', x: 6.2, z: -6.2, hp: 16 },
+    ],
+    zones: [
+      { id: 'esc_belt_l', type: 'tailwind_belt', x: -5.4, z: 8.0, width: 3.8, length: 3.8 },
+      { id: 'esc_belt_r', type: 'tailwind_belt', x: 5.4, z: 8.0, width: 3.8, length: 3.8 },
+      { id: 'esc_pad_l', type: 'frosting_pad', x: -5.6, z: 1.8, width: 2.8, length: 2.4 },
+      { id: 'esc_pad_r', type: 'frosting_pad', x: 5.6, z: 1.8, width: 2.8, length: 2.4 },
+      { id: 'esc_emp_flank', type: 'emp_zone', x: -5.8, z: -4.2, width: 3.2, length: 3.2 },
+    ],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the 3-match escalating ladder for MC-7「霓虹齿轮巅峰锦标赛」(Gear Summit Tournament):
+ * - Stage 1 (1.5x): 第 1/3 战 · 铜齿预赛 — Twin brass grinder gauntlet + tailwind belts + bronze vanguard
+ * - Stage 2 (2.2x): 第 2/3 战 · 银齿半决赛 — Cyber gear S-curve + ion EMP zones + twin shielded sub-towers
+ * - Stage 3 (3.5x): 第 3/3 战 · 金齿巅峰决战 — Royal neon gear citadel + frosting updraft pads + heavy elite siege
+ */
+export function generateGearTournamentLevel(stage: 1 | 2 | 3, cupTier = 1): LevelConfig {
+  const safeStage: 1 | 2 | 3 = stage === 2 ? 2 : stage === 3 ? 3 : 1;
+  const safeCup = Math.max(1, Math.min(12, Math.floor(cupTier)));
+  const cupScale = 1 + (safeCup - 1) * 0.14;
+
+  if (safeStage === 1) {
+    return {
+      id: safeCup * 10 + 1,
+      seed: 97100 + safeCup * 10 + 1,
+      themeId: 'wasteland',
+      archetype: 'grinder_gauntlet',
+      archetypeName: '齿轮巅峰锦标赛 · 第 1/3 战 · 铜齿预赛',
+      isMilestoneBoss: false,
+      isMiniBoss: true,
+      isMegaBoss: false,
+      isGearTournament: true,
+      tournamentStage: 1,
+      tournamentStageTitle: '第 1/3 战 · 铜齿预赛',
+      tournamentStreakMult: 1.5,
+      weatherAffix: WEATHER_AFFIX_CATALOG.gale_tailwind,
+      name: '齿轮巅峰锦标赛 · 铜齿预赛',
+      subtitle: '连胜阶梯 1.5x 预赛：突破双铜齿绞盘与顺风带，夺取首胜开启阶梯倍率宝箱！',
+      bossName: '铜齿发条前哨塔',
+      bossMaxHp: Math.round(520 * cupScale),
+      enemySpawnInterval: 2.25,
+      enemyBurstCount: 4,
+      initialRedPrewarm: 5,
+      bruteSpawnInterval: 9.0,
+      rewardGold: Math.round(620 * cupScale),
+      gates: [
+        { id: 'trn1_g1', x: -4.8, z: 11.4, width: 4.3, op: 'mul', value: 3, style: 'gold', moveRangeX: 2.0, moveSpeed: 1.15, movePhase: 0 },
+        { id: 'trn1_g2', x: 4.8, z: 11.4, width: 4.3, op: 'add', value: 7, style: 'blue', moveRangeX: 2.0, moveSpeed: 1.15, movePhase: Math.PI },
+        { id: 'trn1_g3', x: -4.6, z: 3.6, width: 4.2, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 1.8, moveSpeed: 1.2, movePhase: 0.9 },
+        { id: 'trn1_g4', x: 4.6, z: 3.6, width: 4.0, op: 'sub', value: 4, style: 'hazard', moveRangeX: 1.8, moveSpeed: 1.2, movePhase: 4.0 },
+        { id: 'trn1_g5', x: 0, z: -3.4, width: 4.8, op: 'mul', value: 2, style: 'gold', moveRangeX: 2.8, moveSpeed: 1.3, movePhase: 1.6 },
+      ],
+      walls: [],
+      gears: [
+        { id: 'trn1_gear_l', x: -2.8, z: 7.4, radius: 1.45, hp: 14, moveRangeX: 1.4, moveSpeed: 1.1, movePhase: 0 },
+        { id: 'trn1_gear_r', x: 2.8, z: -0.2, radius: 1.45, hp: 16, moveRangeX: 1.4, moveSpeed: 1.15, movePhase: Math.PI },
+      ],
+      nests: [],
+      barrels: [
+        { id: 'trn1_br_l', x: -5.6, z: -6.8, hp: 14 },
+        { id: 'trn1_br_r', x: 5.6, z: -6.8, hp: 14 },
+      ],
+      zones: [
+        { id: 'trn1_tw_l', type: 'tailwind_belt', x: -4.8, z: 7.6, width: 3.8, length: 4.2 },
+        { id: 'trn1_tw_r', type: 'tailwind_belt', x: 4.8, z: 7.6, width: 3.8, length: 4.2 },
+        { id: 'trn1_heal', type: 'heal_sanctuary', x: 0, z: -6.2, width: 4.6, length: 2.8 },
+      ],
+      bumpers: [
+        { id: 'trn1_bmp_c', x: 0, z: 1.0, radius: 1.05 },
+      ],
+      bossSubTowers: [],
+    };
+  }
+
+  if (safeStage === 2) {
+    return {
+      id: safeCup * 10 + 2,
+      seed: 97200 + safeCup * 10 + 2,
+      themeId: 'cyberhive',
+      archetype: 'twin_matrix',
+      archetypeName: '齿轮巅峰锦标赛 · 第 2/3 战 · 银齿半决赛',
+      isMilestoneBoss: true,
+      isMiniBoss: false,
+      isMegaBoss: false,
+      isGearTournament: true,
+      tournamentStage: 2,
+      tournamentStageTitle: '第 2/3 战 · 银齿半决赛',
+      tournamentStreakMult: 2.2,
+      weatherAffix: WEATHER_AFFIX_CATALOG.ion_emp_storm,
+      name: '齿轮巅峰锦标赛 · 银齿半决赛',
+      subtitle: '连胜阶梯 2.2x 半决赛：善用电磁网弹或糖浆泡瓦解双银齿副塔与离子脉冲阵！',
+      bossName: '银齿电磁中枢堡',
+      bossMaxHp: Math.round(740 * cupScale),
+      enemySpawnInterval: 1.95,
+      enemyBurstCount: 5,
+      initialRedPrewarm: 7,
+      bruteSpawnInterval: 7.4,
+      rewardGold: Math.round(880 * cupScale),
+      gates: [
+        { id: 'trn2_g1', x: -5.0, z: 11.6, width: 4.2, op: 'mul', value: 3, style: 'gold', moveRangeX: 2.2, moveSpeed: 1.35, movePhase: 0 },
+        { id: 'trn2_g2', x: 5.0, z: 11.6, width: 4.2, op: 'frost_shield', value: 1, style: 'frost', moveRangeX: 2.2, moveSpeed: 1.35, movePhase: Math.PI },
+        { id: 'trn2_g3', x: -4.8, z: 4.6, width: 4.1, op: 'add', value: 9, style: 'blue', moveRangeX: 2.0, moveSpeed: 1.3, movePhase: 1.1 },
+        { id: 'trn2_g4', x: 4.8, z: 4.6, width: 4.0, op: 'div', value: 2, style: 'hazard', moveRangeX: 2.0, moveSpeed: 1.3, movePhase: 4.2 },
+        { id: 'trn2_g5', x: -4.4, z: -2.4, width: 4.2, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 1.8, moveSpeed: 1.4, movePhase: 2.0 },
+        { id: 'trn2_g6', x: 4.4, z: -2.4, width: 4.2, op: 'mul', value: 2, style: 'gold', moveRangeX: 1.8, moveSpeed: 1.4, movePhase: 5.1 },
+      ],
+      walls: [
+        { x1: -1.8, z1: 8.2, x2: 1.8, z2: 8.2, height: 1.3, moveRangeX: 2.4, moveSpeed: 1.15, movePhase: 0.5 },
+      ],
+      gears: [
+        { id: 'trn2_gear_l', x: -4.2, z: 1.0, radius: 1.55, hp: 18, moveRangeX: 1.6, moveSpeed: 1.3, movePhase: 0 },
+        { id: 'trn2_gear_r', x: 4.2, z: 1.0, radius: 1.55, hp: 18, moveRangeX: 1.6, moveSpeed: 1.3, movePhase: Math.PI },
+      ],
+      nests: [
+        { id: 'trn2_nest_r', x: 5.6, z: -5.5, hp: 120, name: '银齿精英前哨', rewardGold: 160 },
+      ],
+      barrels: [
+        { id: 'trn2_br_c', x: 0, z: -5.8, hp: 18 },
+      ],
+      zones: [
+        { id: 'trn2_emp_c', type: 'emp_zone', x: 0, z: 4.8, width: 3.6, length: 3.4 },
+        { id: 'trn2_tw_l', type: 'tailwind_belt', x: -5.4, z: -5.8, width: 3.4, length: 3.8 },
+        { id: 'trn2_tw_r', type: 'tailwind_belt', x: 5.4, z: -5.8, width: 3.4, length: 3.8 },
+      ],
+      bumpers: [
+        { id: 'trn2_bmp_l', x: -2.4, z: -5.4, radius: 1.0 },
+        { id: 'trn2_bmp_r', x: 2.4, z: -5.4, radius: 1.0 },
+      ],
+      bossSubTowers: [
+        { id: 'trn2_sub_l', side: 'left', name: '左翼银齿护盾塔', x: -5.6, z: -13.6, hp: Math.round(210 * cupScale), rewardGold: 180 },
+        { id: 'trn2_sub_r', side: 'right', name: '右翼银齿护盾塔', x: 5.6, z: -13.6, hp: Math.round(210 * cupScale), rewardGold: 180 },
+      ],
+    };
+  }
+
+  return {
+    id: safeCup * 10 + 3,
+    seed: 97300 + safeCup * 10 + 3,
+    themeId: 'royal',
+    archetype: 'diamond_citadel',
+    archetypeName: '齿轮巅峰锦标赛 · 第 3/3 战 · 金齿巅峰决战',
+    isMilestoneBoss: true,
+    isMiniBoss: false,
+    isMegaBoss: true,
+    isGearTournament: true,
+    tournamentStage: 3,
+    tournamentStageTitle: '第 3/3 战 · 金齿巅峰决战',
+    tournamentStreakMult: 3.5,
+    weatherAffix: WEATHER_AFFIX_CATALOG.sugar_snow_updraft,
+    name: '齿轮巅峰锦标赛 · 金齿巅峰决战',
+    subtitle: '连胜阶梯 3.5x 巅峰决战：击穿霓虹金齿皇冠主堡与精英重卫，赢取巅峰奖杯与 3.5x 满贯宝箱！',
+    bossName: '霓虹金齿皇冠总堡',
+    bossMaxHp: Math.round(980 * cupScale),
+    enemySpawnInterval: 1.75,
+    enemyBurstCount: 6,
+    initialRedPrewarm: 9,
+    bruteSpawnInterval: 6.2,
+    rewardGold: Math.round(1280 * cupScale),
+    gates: [
+      { id: 'trn3_g1', x: -5.0, z: 12.0, width: 4.3, op: 'mul', value: 4, style: 'mega', moveRangeX: 2.3, moveSpeed: 1.45, movePhase: 0 },
+      { id: 'trn3_g2', x: 5.0, z: 12.0, width: 4.3, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 2.3, moveSpeed: 1.45, movePhase: Math.PI },
+      { id: 'trn3_g3', x: 0, z: 6.0, width: 4.5, op: 'frost_shield', value: 2, style: 'frost', moveRangeX: 3.2, moveSpeed: 1.5, movePhase: 1.2 },
+      { id: 'trn3_g4', x: -5.0, z: 0.4, width: 4.2, op: 'mul', value: 3, style: 'gold', moveRangeX: 2.0, moveSpeed: 1.45, movePhase: 2.4 },
+      { id: 'trn3_g5', x: 5.0, z: 0.4, width: 4.0, op: 'div', value: 2, style: 'hazard', moveRangeX: 2.0, moveSpeed: 1.45, movePhase: 5.5 },
+      { id: 'trn3_g6', x: 0, z: -4.8, width: 4.6, op: 'add', value: 12, style: 'blue', moveRangeX: 2.8, moveSpeed: 1.55, movePhase: 0.7 },
+    ],
+    walls: [
+      { x1: -2.2, z1: 3.4, x2: 2.2, z2: 3.4, height: 1.35, moveRangeX: 2.6, moveSpeed: 1.3, movePhase: 1.0 },
+    ],
+    gears: [
+      { id: 'trn3_gear_l', x: -4.5, z: 8.8, radius: 1.6, hp: 20, moveRangeX: 1.5, moveSpeed: 1.4, movePhase: 0 },
+      { id: 'trn3_gear_r', x: 4.5, z: 8.8, radius: 1.6, hp: 20, moveRangeX: 1.5, moveSpeed: 1.4, movePhase: Math.PI },
+      { id: 'trn3_gear_c', x: 0, z: -1.8, radius: 1.65, hp: 22, moveRangeX: 2.4, moveSpeed: 1.5, movePhase: 1.5 },
+    ],
+    nests: [
+      { id: 'trn3_nest_l', x: -5.6, z: -6.4, hp: 140, name: '左翼金齿禁卫巢', rewardGold: 210 },
+      { id: 'trn3_nest_r', x: 5.6, z: -6.4, hp: 140, name: '右翼金齿禁卫巢', rewardGold: 210 },
+    ],
+    barrels: [
+      { id: 'trn3_br_l', x: -5.4, z: -7.6, hp: 20 },
+      { id: 'trn3_br_r', x: 5.4, z: -7.6, hp: 20 },
+    ],
+    zones: [
+      { id: 'trn3_pad_l', type: 'frosting_pad', x: -5.0, z: 3.4, width: 3.0, length: 2.6 },
+      { id: 'trn3_pad_r', type: 'frosting_pad', x: 5.0, z: 3.4, width: 3.0, length: 2.6 },
+      { id: 'trn3_emp_c', type: 'emp_zone', x: 0, z: -7.4, width: 3.8, length: 3.0 },
+      { id: 'trn3_tw_c', type: 'tailwind_belt', x: 0, z: 9.2, width: 4.0, length: 3.4 },
+    ],
+    bumpers: [
+      { id: 'trn3_bmp_l', x: -3.2, z: -4.8, radius: 1.05 },
+      { id: 'trn3_bmp_r', x: 3.2, z: -4.8, radius: 1.05 },
+    ],
+    bossSubTowers: [
+      { id: 'trn3_sub_l', side: 'left', name: '左翼金齿电弧塔', x: -5.8, z: -13.8, hp: Math.round(250 * cupScale), rewardGold: 240 },
+      { id: 'trn3_sub_r', side: 'right', name: '右翼金齿电弧塔', x: 5.8, z: -13.8, hp: Math.round(250 * cupScale), rewardGold: 240 },
+    ],
+  };
+}
+
+/**
+ * Generates the dedicated MC-8「巨型发条玩具首领攻坚战」(Giant Clockwork Toy Colossus Boss Raid) stage:
+ * - Features a towering articulated 3D Clockwork Nutcracker Colossus at the bridge head
+ *   with Left Shield Arm (`左翼发条重盾`) and Right Cannon Arm (`右翼糖衣重炮`) destructible weakpoints.
+ * - Breaking either weakpoint triggers a 6.0s Paralysis Vulnerable Window (`2.5x` Core damage taken).
+ */
+export function generateClockworkColossusRaidLevel(raidTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(raidTier)));
+  const tierScale = 1 + (safeTier - 1) * 0.16;
+  const raidThemes: ThemeId[] = ['royal', 'wasteland', 'cyberhive'];
+  const themeId = raidThemes[(safeTier - 1) % raidThemes.length];
+
+  return {
+    id: 800 + safeTier,
+    seed: 98400 + safeTier * 17,
+    mode: 'colossus_raid',
+    isColossusRaid: true,
+    colossusRaidTier: safeTier,
+    colossusLeftShieldHp: Math.round(230 * tierScale),
+    colossusRightCannonHp: Math.round(230 * tierScale),
+    themeId,
+    archetype: 'trilane_siege',
+    archetypeName: `巨型发条首领攻坚战 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: true,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier - 1) % WEATHER_AFFIX_ORDER.length]],
+    name: `巨型发条首领攻坚战 · 第 ${safeTier} 阶`,
+    subtitle: '分兵击破左翼发条重盾与右翼糖衣重炮，触发 6 秒 2.5x 瘫痪高倍暴击窗口夺取发条核心！',
+    bossName: '巨型发条胡桃夹子统领',
+    bossMaxHp: Math.round(880 * tierScale),
+    enemySpawnInterval: 2.1,
+    enemyBurstCount: 4 + Math.min(3, Math.floor((safeTier - 1) / 2)),
+    initialRedPrewarm: 5,
+    bruteSpawnInterval: 8.2,
+    rewardGold: Math.round(980 * tierScale),
+    gates: [
+      { id: 'col_g1', x: -5.2, z: 11.6, width: 4.3, op: 'mul', value: 3, style: 'gold', moveRangeX: 1.9, moveSpeed: 1.15, movePhase: 0 },
+      { id: 'col_g2', x: 5.2, z: 11.6, width: 4.3, op: 'add', value: 8, style: 'blue', moveRangeX: 1.9, moveSpeed: 1.15, movePhase: Math.PI },
+      { id: 'col_g3', x: -5.0, z: 4.8, width: 4.2, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 1.8, moveSpeed: 1.2, movePhase: 0.9 },
+      { id: 'col_g4', x: 5.0, z: 4.8, width: 4.2, op: 'frost_shield', value: 1, style: 'frost', moveRangeX: 1.8, moveSpeed: 1.2, movePhase: 4.0 },
+      { id: 'col_g5', x: -4.8, z: -2.0, width: 4.1, op: 'add', value: 9, style: 'blue', moveRangeX: 1.6, moveSpeed: 1.25, movePhase: 1.7 },
+      { id: 'col_g6', x: 4.8, z: -2.0, width: 4.1, op: 'mul', value: 2, style: 'gold', moveRangeX: 1.6, moveSpeed: 1.25, movePhase: 4.8 },
+    ],
+    walls: [
+      { x1: -1.7, z1: 8.2, x2: 1.7, z2: 8.2, height: 1.25, moveRangeX: 2.0, moveSpeed: 1.05, movePhase: 0.4 },
+    ],
+    gears: [
+      { id: 'col_gear_c', x: 0, z: 1.4, radius: 1.45, hp: 16, moveRangeX: 2.2, moveSpeed: 1.2, movePhase: 0 },
+    ],
+    nests: [],
+    barrels: [
+      { id: 'col_br_l', x: -5.2, z: -8.6, hp: 14 },
+      { id: 'col_br_r', x: 5.2, z: -8.6, hp: 14 },
+    ],
+    zones: [
+      { id: 'col_tw_l', type: 'tailwind_belt', x: -5.2, z: 8.2, width: 3.8, length: 3.8 },
+      { id: 'col_tw_r', type: 'tailwind_belt', x: 5.2, z: 8.2, width: 3.8, length: 3.8 },
+      { id: 'col_pad_c', type: 'frosting_pad', x: 0, z: -5.2, width: 3.2, length: 2.4 },
+    ],
+    bumpers: [
+      { id: 'col_bmp_l', x: -2.5, z: -4.6, radius: 0.95 },
+      { id: 'col_bmp_r', x: 2.5, z: -4.6, radius: 0.95 },
+    ],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-9「云端飞艇母舰护航战」(Cloud Airship Mothership Escort) stage:
+ * - Escort a 3D toy-craft Steam Airship Mothership hovering down the central lane toward the enemy stronghold.
+ * - Neutralize 4 enemy Anti-Air Flak Sub-Turrets along both flanks and escort blue Bobos under the hull
+ *   to charge the underside Drop-Pod Bay and deploy 3D Super Bobo Drop Pods onto the bridge!
+ */
+export function generateAirshipEscortLevel(escortTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(escortTier)));
+  const tierScale = 1 + (safeTier - 1) * 0.14;
+  const escortThemes: ThemeId[] = ['royal', 'emerald', 'cyberhive'];
+  const themeId = escortThemes[(safeTier - 1) % escortThemes.length];
+
+  const antiAirTurrets: AntiAirTurretConfig[] = [
+    {
+      id: 'aa_1_l',
+      name: '前哨左翼防空炮',
+      side: 'left',
+      x: -5.4,
+      z: 8.4,
+      hp: Math.round(135 * tierScale),
+      flakDmg: Math.round(15 * tierScale),
+      fireInterval: 2.25,
+      rewardGold: 130 + safeTier * 15,
+      dropChargeBonus: 55,
+    },
+    {
+      id: 'aa_2_r',
+      name: '中段右翼高射塔',
+      side: 'right',
+      x: 5.4,
+      z: 2.6,
+      hp: Math.round(155 * tierScale),
+      flakDmg: Math.round(17 * tierScale),
+      fireInterval: 2.15,
+      rewardGold: 145 + safeTier * 18,
+      dropChargeBonus: 55,
+    },
+    {
+      id: 'aa_3_l',
+      name: '纵深左翼防空炮',
+      side: 'left',
+      x: -5.4,
+      z: -3.4,
+      hp: Math.round(175 * tierScale),
+      flakDmg: Math.round(19 * tierScale),
+      fireInterval: 2.05,
+      rewardGold: 165 + safeTier * 20,
+      dropChargeBonus: 60,
+    },
+    {
+      id: 'aa_4_r',
+      name: '要塞右翼防空塔',
+      side: 'right',
+      x: 5.4,
+      z: -9.2,
+      hp: Math.round(195 * tierScale),
+      flakDmg: Math.round(21 * tierScale),
+      fireInterval: 1.95,
+      rewardGold: 185 + safeTier * 22,
+      dropChargeBonus: 65,
+    },
+  ];
+
+  return {
+    id: 900 + safeTier,
+    seed: 109600 + safeTier * 23,
+    mode: 'airship_escort',
+    isAirshipEscort: true,
+    airshipEscortTier: safeTier,
+    airshipMaxHp: Math.round(520 + (safeTier - 1) * 45),
+    airshipMaxShield: Math.round(220 + (safeTier - 1) * 25),
+    antiAirTurrets,
+    themeId,
+    archetype: 'trilane_siege',
+    archetypeName: `云端飞艇母舰护航战 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: true,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier + 1) % WEATHER_AFFIX_ORDER.length]],
+    name: `云端飞艇母舰护航战 · 第 ${safeTier} 阶`,
+    subtitle: '分兵拔除沿途防空副塔并护卫飞艇母舰充能，投送超级波波空投舱轰破敌方终极要塞！',
+    bossName: '苍穹黑铁防空要塞',
+    bossMaxHp: Math.round(760 * tierScale),
+    enemySpawnInterval: 2.15,
+    enemyBurstCount: 4 + Math.min(3, Math.floor((safeTier - 1) / 2)),
+    initialRedPrewarm: 4,
+    bruteSpawnInterval: 8.5,
+    rewardGold: Math.round(920 * tierScale),
+    gates: [
+      { id: 'air_g1', x: -5.0, z: 12.2, width: 4.3, op: 'mul', value: 3, style: 'gold', moveRangeX: 1.8, moveSpeed: 1.1, movePhase: 0 },
+      { id: 'air_g2', x: 5.0, z: 12.2, width: 4.3, op: 'add', value: 8, style: 'blue', moveRangeX: 1.8, moveSpeed: 1.1, movePhase: Math.PI },
+      { id: 'air_g3', x: -4.8, z: 5.4, width: 4.2, op: 'frost_shield', value: 1, style: 'frost', moveRangeX: 1.7, moveSpeed: 1.15, movePhase: 0.8 },
+      { id: 'air_g4', x: 4.8, z: 5.4, width: 4.2, op: 'giant_jelly', value: 2, style: 'jelly', moveRangeX: 1.7, moveSpeed: 1.15, movePhase: 3.9 },
+      { id: 'air_g5', x: -4.6, z: -1.2, width: 4.1, op: 'add', value: 9, style: 'blue', moveRangeX: 1.6, moveSpeed: 1.2, movePhase: 1.6 },
+      { id: 'air_g6', x: 4.6, z: -1.2, width: 4.1, op: 'mul', value: 2, style: 'gold', moveRangeX: 1.6, moveSpeed: 1.2, movePhase: 4.7 },
+    ],
+    walls: [],
+    gears: [
+      { id: 'air_gear_c', x: 0, z: 0.8, radius: 1.35, hp: 15, moveRangeX: 2.0, moveSpeed: 1.15, movePhase: 0.5 },
+    ],
+    nests: [],
+    barrels: [
+      { id: 'air_br_l', x: -5.1, z: -6.2, hp: 14 },
+      { id: 'air_br_r', x: 5.1, z: -6.2, hp: 14 },
+    ],
+    zones: [
+      { id: 'air_tw_c', type: 'tailwind_belt', x: 0, z: 9.2, width: 4.0, length: 3.8 },
+      { id: 'air_pad_c', type: 'frosting_pad', x: 0, z: -5.4, width: 3.2, length: 2.4 },
+    ],
+    bumpers: [
+      { id: 'air_bmp_l', x: -2.4, z: -4.2, radius: 0.92 },
+      { id: 'air_bmp_r', x: 2.4, z: -4.2, radius: 0.92 },
+    ],
+    bossSubTowers: [],
   };
 }

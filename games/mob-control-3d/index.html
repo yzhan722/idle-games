@@ -45,7 +45,7 @@
           <div class="dual-base-bars">
             <div class="boss-bar-container player-base-bar">
               <div class="base-emblem player-emblem" aria-hidden="true">
-                <img class="art-icon-img hud-emblem-img" src="/assets/icons/hud_player_base.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img hud-emblem-img" src="/assets/icons/hud_player_base.png?v=25" alt="" draggable="false" />
               </div>
               <div class="base-bar-body">
                 <div class="boss-bar-header">
@@ -60,7 +60,7 @@
 
             <div class="boss-bar-container enemy-base-bar">
               <div class="base-emblem enemy-emblem" aria-hidden="true">
-                <img class="art-icon-img hud-emblem-img" src="/assets/icons/hud_enemy_base.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img hud-emblem-img" src="/assets/icons/hud_enemy_base.png?v=25" alt="" draggable="false" />
               </div>
               <div class="base-bar-body">
                 <div class="boss-bar-header">
@@ -77,7 +77,7 @@
           <div class="top-actions">
             <div class="gold-pill" title="星光金币">
               <strong id="gold-amount">160</strong>
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_coin.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_coin.png?v=25" alt="" draggable="false" />
             </div>
 
             <button
@@ -87,7 +87,7 @@
               title="暂停 / 战术工具箱"
               aria-label="暂停与工具菜单"
             >
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_pause.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_pause.png?v=25" alt="" draggable="false" />
             </button>
           </div>
         </div>
@@ -108,32 +108,70 @@
               </div>
             </div>
             <button id="btn-resume-drawer" type="button" class="drawer-resume-btn">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_play.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_play.png?v=25" alt="" draggable="false" />
               <span>继续</span>
             </button>
           </div>
           <div class="drawer-tools-grid">
             <button id="btn-home" type="button" class="drawer-tool-btn" title="返回主菜单 [Esc / H]">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_home.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_home.png?v=25" alt="" draggable="false" />
               <span>主菜单</span>
             </button>
             <button id="btn-reroll-map" type="button" class="drawer-tool-btn" title="随机重随地图 [G]">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=25" alt="" draggable="false" />
               <span>换地图</span>
             </button>
-            <button id="btn-camera" type="button" class="drawer-tool-btn" title="切换视角 [V]">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_camera.png?v=18" alt="" draggable="false" />
+            <button id="btn-camera" type="button" class="drawer-tool-btn" title="切换视角 [B]">
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_camera.png?v=25" alt="" draggable="false" />
               <span>切视角</span>
             </button>
             <button id="btn-sound" type="button" class="drawer-tool-btn" title="音效开关 [M]">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sound_on.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sound_on.png?v=25" alt="" draggable="false" />
               <span>音效</span>
             </button>
             <button id="btn-restart" type="button" class="drawer-tool-btn" title="重开本关 [R]">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_refresh.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_refresh.png?v=25" alt="" draggable="false" />
               <span>重开</span>
             </button>
           </div>
+        </div>
+
+        <!-- MC-8 Clockwork Colossus Raid Sub-Target & Paralysis Vulnerable HUD -->
+        <div id="colossus-raid-hud" class="colossus-raid-hud hidden">
+          <div id="colossus-hud-left" class="colossus-hud-pill is-left">
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_shield.png?v=25" alt="" draggable="false" />
+            <span id="colossus-hud-left-text">左翼重盾 980</span>
+          </div>
+          <div id="colossus-hud-core" class="colossus-hud-pill is-core">
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_clockwork_core.png?v=25" alt="" draggable="false" />
+            <span id="colossus-hud-core-text">击破左右护臂触发 6.0s 瘫痪 2.5x 暴击</span>
+          </div>
+          <div id="colossus-hud-right" class="colossus-hud-pill is-right">
+            <img class="art-icon-img inline-art-img" src="/assets/icons/tech_candy_bombard.png?v=25" alt="" draggable="false" />
+            <span id="colossus-hud-right-text">右翼糖炮 920</span>
+          </div>
+        </div>
+
+        <!-- MC-9 Cloud Airship Mothership Escort Status & Drop-Pod Bay HUD -->
+        <div id="airship-escort-hud" class="colossus-raid-hud airship-escort-hud hidden">
+          <div id="airship-hud-hull" class="colossus-hud-pill is-left">
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_airship_escort.png?v=25" alt="" draggable="false" />
+            <span id="airship-hud-hull-text">母舰耐久 520 · 护盾 220</span>
+          </div>
+          <div id="airship-hud-drop" class="colossus-hud-pill is-core">
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_airship_wing_medal.png?v=25" alt="" draggable="false" />
+            <span id="airship-hud-drop-text">空投充能 0% · 已投 0 舱</span>
+          </div>
+          <div id="airship-hud-aa" class="colossus-hud-pill is-right">
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_boom.png?v=25" alt="" draggable="false" />
+            <span id="airship-hud-aa-text">防空副塔 4/4</span>
+          </div>
+        </div>
+
+        <!-- MC-9 Active Steam Cannon Core Module Battle HUD Badge -->
+        <div id="cannon-mod-hud-badge" class="cannon-mod-hud-badge">
+          <img id="cannon-mod-hud-icon" class="art-icon-img inline-art-img" src="/assets/icons/mod_overdrive_breech.png?v=25" alt="" draggable="false" />
+          <span id="cannon-mod-hud-text">母炮模组：过载双发膛 Lv.1</span>
         </div>
 
         <!-- Active Buff/Debuff Badges -->
@@ -160,9 +198,20 @@
               type="button"
               title="切换领队技能姿态（重锤 / 礼花 / 护盾）[E]"
             >
-              <span class="mm-icon" id="mecha-mode-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/hud_hammer.png?v=18" alt="" draggable="false" /></span>
+              <span class="mm-icon" id="mecha-mode-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/hud_hammer.png?v=25" alt="" draggable="false" /></span>
               <span class="mm-label" id="mecha-mode-label">重锤</span>
               <kbd class="kbd-hint">E</kbd>
+            </button>
+
+            <button
+              id="btn-weapon-mode"
+              class="mecha-mode-btn weapon-mode-btn"
+              type="button"
+              title="切换主炮弹幕模式（速射 / 散弹 / 彩虹 / 双管 / 等离子）[F]"
+            >
+              <span class="mm-icon" id="weapon-mode-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/ui_rocket.png?v=25" alt="" draggable="false" /></span>
+              <span class="mm-label" id="weapon-mode-label">速射</span>
+              <kbd class="kbd-hint">F</kbd>
             </button>
 
             <button
@@ -173,12 +222,12 @@
               title="召唤应援波波王登场（空格键 / 按住蓄力满松手）"
             >
               <div class="concert-avatar-box" aria-hidden="true">
-                <img class="art-icon-img concert-avatar-img" src="/assets/icons/ui_bolt.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img concert-avatar-img" src="/assets/icons/ui_bolt.png?v=25" alt="" draggable="false" />
               </div>
 
               <div class="concert-note-badge" aria-hidden="true">
-                <span id="champion-icon" class="sr-only-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/hud_hammer.png?v=18" alt="" draggable="false" /></span>
-                <img class="art-icon-img inline-art-img" src="/assets/icons/hud_music_note.png?v=18" alt="" draggable="false" />
+                <span id="champion-icon" class="sr-only-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/hud_hammer.png?v=25" alt="" draggable="false" /></span>
+                <img class="art-icon-img inline-art-img" src="/assets/icons/hud_music_note.png?v=25" alt="" draggable="false" />
               </div>
 
               <div class="concert-main-col">
@@ -206,12 +255,51 @@
                 <div class="skill-fill orbital-fill" id="orbital-fill" style="width: 0%"></div>
               </div>
               <div class="orbital-mini-content">
-                <span class="skill-icon" id="orbital-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/hud_pyro.png?v=18" alt="" draggable="false" /></span>
+                <span class="skill-icon" id="orbital-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/hud_pyro.png?v=25" alt="" draggable="false" /></span>
                 <span class="orbital-mini-text">
                   <span id="orbital-name" class="orbital-name-text">全屏礼花</span>
                   <strong id="orbital-pct">0%</strong>
                 </span>
                 <kbd class="kbd-hint">Q</kbd>
+              </div>
+            </button>
+
+            <button
+              id="btn-mecha-overlord"
+              class="skill-btn overlord-btn"
+              type="button"
+              disabled
+              title="双联重炮合体机甲领主召唤（C键）"
+            >
+              <div class="overlord-mini-track">
+                <div class="skill-fill overlord-fill" id="overlord-fill" style="width: 35%"></div>
+              </div>
+              <div class="overlord-mini-content">
+                <span class="skill-icon" id="overlord-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/ui_mecha_overlord.png?v=25" alt="" draggable="false" /></span>
+                <span class="overlord-mini-text">
+                  <span id="overlord-name" class="overlord-name-text">机甲领主</span>
+                  <strong id="overlord-pct">35%</strong>
+                </span>
+                <kbd class="kbd-hint">C</kbd>
+              </div>
+            </button>
+
+            <button
+              id="btn-tactical-subweapon"
+              class="skill-btn subweapon-btn ready"
+              type="button"
+              title="英雄领队战术副武器（V键）"
+            >
+              <div class="subweapon-mini-track">
+                <div class="skill-fill subweapon-fill" id="subweapon-fill" style="width: 100%"></div>
+              </div>
+              <div class="subweapon-mini-content">
+                <span class="skill-icon" id="subweapon-icon"><img class="art-icon-img hud-art-img" src="/assets/icons/subwpn_electro_net.png?v=25" alt="" draggable="false" /></span>
+                <span class="subweapon-mini-text">
+                  <span id="subweapon-name" class="subweapon-name-text">电磁网</span>
+                  <strong id="subweapon-pct">满</strong>
+                </span>
+                <kbd class="kbd-hint">V</kbd>
               </div>
             </button>
           </div>
@@ -223,14 +311,14 @@
             <span class="upg-slot-badge">1</span>
             <div class="upg-top">
               <div class="upg-icon-tile tile-blue" aria-hidden="true">
-                <img class="art-icon-img battle-card-img" src="/assets/icons/upg_card_firerate.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img battle-card-img" src="/assets/icons/upg_card_firerate.png?v=25" alt="" draggable="false" />
               </div>
               <div class="upg-meta">
                 <span class="upg-title">射速 <span class="upg-lvl" id="lvl-firerate">Lv.4</span><kbd class="kbd-hint">1</kbd></span>
               </div>
             </div>
             <div class="upg-cost">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_clock.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_clock.png?v=25" alt="" draggable="false" />
               <span id="cost-firerate">0/8秒</span>
             </div>
           </button>
@@ -239,14 +327,14 @@
             <span class="upg-slot-badge">2</span>
             <div class="upg-top">
               <div class="upg-icon-tile tile-coral" aria-hidden="true">
-                <img class="art-icon-img battle-card-img" src="/assets/icons/upg_card_power.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img battle-card-img" src="/assets/icons/upg_card_power.png?v=25" alt="" draggable="false" />
               </div>
               <div class="upg-meta">
                 <span class="upg-title">战力 <span class="upg-lvl" id="lvl-power">Lv.5</span><kbd class="kbd-hint">2</kbd></span>
               </div>
             </div>
             <div class="upg-cost">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sword.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sword.png?v=25" alt="" draggable="false" />
               <span id="cost-power">0/12击杀</span>
             </div>
           </button>
@@ -255,14 +343,14 @@
             <span class="upg-slot-badge">3</span>
             <div class="upg-top">
               <div class="upg-icon-tile tile-orchid" aria-hidden="true">
-                <img class="art-icon-img battle-card-img" src="/assets/icons/upg_card_champion.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img battle-card-img" src="/assets/icons/upg_card_champion.png?v=25" alt="" draggable="false" />
               </div>
               <div class="upg-meta">
                 <span class="upg-title">大招 <span class="upg-lvl" id="lvl-champion">Lv.3</span><kbd class="kbd-hint">3</kbd></span>
               </div>
             </div>
             <div class="upg-cost">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_bolt.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_bolt.png?v=25" alt="" draggable="false" />
               <span id="cost-champion">0/25出兵</span>
             </div>
           </button>
@@ -271,14 +359,14 @@
             <span class="upg-slot-badge">4</span>
             <div class="upg-top">
               <div class="upg-icon-tile tile-gold" aria-hidden="true">
-                <img class="art-icon-img battle-card-img" src="/assets/icons/upg_card_loot.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img battle-card-img" src="/assets/icons/upg_card_loot.png?v=25" alt="" draggable="false" />
               </div>
               <div class="upg-meta">
                 <span class="upg-title">金币 <span class="upg-lvl" id="lvl-loot">Lv.4</span><kbd class="kbd-hint">4</kbd></span>
               </div>
             </div>
             <div class="upg-cost">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_boom.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_boom.png?v=25" alt="" draggable="false" />
               <span id="cost-loot">0/30攻城</span>
             </div>
           </button>
@@ -303,6 +391,18 @@
             <div class="stat-box gold-box">
               <span>本局赏金</span>
               <strong id="stat-stage-gold">+0</strong>
+            </div>
+          </div>
+
+          <!-- MC-7 Gear Summit Tournament Streak Multiplier Chest Settlement -->
+          <div id="tournament-chest-section" class="tournament-chest-section hidden">
+            <div class="tcs-card">
+              <img class="art-icon-img tcs-chest-img" src="/assets/icons/ui_tournament_chest.png?v=25" alt="" draggable="false" />
+              <div class="tcs-info">
+                <div class="tcs-title" id="modal-chest-title">连胜阶梯倍率宝箱 · 1.5x</div>
+                <div class="tcs-rewards" id="modal-chest-rewards">金币 +780 · 时装碎片 +3 · 齿轮砖块 +54 · 荣誉奖杯 +18</div>
+              </div>
+              <button id="btn-claim-tournament-chest" type="button" class="btn-primary tcs-claim-btn">开启宝箱</button>
             </div>
           </div>
 
@@ -344,15 +444,15 @@
 
           <div class="modal-actions">
             <button id="btn-modal-home" class="btn-secondary">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_home.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_home.png?v=25" alt="" draggable="false" />
               <span>主界面</span><kbd class="kbd-hint">Esc</kbd>
             </button>
             <button id="btn-modal-replay" class="btn-secondary">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=25" alt="" draggable="false" />
               <span>重玩</span><kbd class="kbd-hint">P</kbd>
             </button>
             <button id="btn-modal-share" type="button" class="btn-secondary btn-modal-share">
-              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_share.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img inline-art-img" src="/assets/icons/ui_share.png?v=25" alt="" draggable="false" />
               <span>晒战绩</span><kbd class="kbd-hint">S</kbd>
             </button>
             <button id="btn-modal-next" class="btn-primary">下一关<kbd class="kbd-hint">Space</kbd></button>
@@ -375,25 +475,25 @@
 
         <header class="title-topbar">
           <div class="title-version-pill">
-            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_crown.png?v=18" alt="" draggable="false" />
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_crown.png?v=25" alt="" draggable="false" />
             <span>STEAM CANDY 3D · 全球实时双榜</span>
           </div>
           <button type="button" id="btn-title-sound" class="title-sound-pill" title="音效开关 [M]">
-            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sound_on.png?v=18" alt="" draggable="false" />
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sound_on.png?v=25" alt="" draggable="false" />
             <span>音效</span>
           </button>
         </header>
 
         <div class="title-center-emblem">
           <div class="title-crest-trio" aria-hidden="true">
-            <span class="t-crest c-left"><img class="art-icon-img" src="/assets/icons/race_titan.png?v=18" alt="" draggable="false" /></span>
-            <span class="t-crest c-main"><img class="art-icon-img" src="/assets/icons/race_swarm.png?v=18" alt="" draggable="false" /></span>
-            <span class="t-crest c-right"><img class="art-icon-img" src="/assets/icons/race_gate.png?v=18" alt="" draggable="false" /></span>
+            <span class="t-crest c-left"><img class="art-icon-img" src="/assets/icons/race_titan.png?v=25" alt="" draggable="false" /></span>
+            <span class="t-crest c-main"><img class="art-icon-img" src="/assets/icons/race_swarm.png?v=25" alt="" draggable="false" /></span>
+            <span class="t-crest c-right"><img class="art-icon-img" src="/assets/icons/race_gate.png?v=25" alt="" draggable="false" /></span>
           </div>
           <div class="title-ribbon-badge">
-            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_gear.png?v=18" alt="" draggable="false" />
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_gear.png?v=25" alt="" draggable="false" />
             <span>SWEET STEAM WORKSHOP</span>
-            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_gear.png?v=18" alt="" draggable="false" />
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_gear.png?v=25" alt="" draggable="false" />
           </div>
           <h1 class="title-logo-3d" data-text="波波应援团">波波应援团</h1>
           <div class="title-sub-plaque">
@@ -403,7 +503,7 @@
 
         <footer class="title-bottom-dock">
           <div id="title-welcome-chip" class="title-welcome-chip">
-            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_trophy.png?v=18" alt="" draggable="false" />
+            <img class="art-icon-img inline-art-img" src="/assets/icons/ui_trophy.png?v=25" alt="" draggable="false" />
             <span id="title-welcome-text">欢迎归来，指挥官 · 蒸汽工坊已就绪</span>
           </div>
 
@@ -417,7 +517,7 @@
           <button type="button" id="btn-enter-workshop" class="btn-enter-workshop">
             <span class="enter-btn-sheen" aria-hidden="true"></span>
             <span class="enter-btn-main">
-              <img class="art-icon-img" src="/assets/icons/ui_play.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img" src="/assets/icons/ui_play.png?v=25" alt="" draggable="false" />
               <span>开始游戏</span>
               <kbd class="kbd-hint">Space</kbd>
             </span>
@@ -434,7 +534,7 @@
           <div class="menu-header">
             <div class="menu-brand-cluster">
               <div id="btn-back-to-title" class="brand-crest-shield" role="button" tabindex="0" title="点击返回游戏封面页">
-                <img id="brand-crest-img" class="art-icon-img crest-art-img" src="/assets/icons/race_swarm.png?v=18" alt="" draggable="false" />
+                <img id="brand-crest-img" class="art-icon-img crest-art-img" src="/assets/icons/race_swarm.png?v=25" alt="" draggable="false" />
               </div>
               <div class="menu-brand">
                 <span class="menu-tag">SUPERCELL · SWEET STEAM 3D</span>
@@ -448,12 +548,12 @@
             </div>
             <div class="menu-resources-bar">
               <button type="button" id="btn-header-stars" class="menu-treasury star-treasury" title="可用应援天赋星（点击前往萌族技能树）[F2]">
-                <img class="art-icon-img treasury-art-img" src="/assets/icons/ui_star.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img treasury-art-img" src="/assets/icons/ui_star.png?v=25" alt="" draggable="false" />
                 <strong id="menu-star-amount">1</strong>
                 <span class="treasury-jump-plus">+</span>
               </button>
               <button type="button" id="btn-header-gold" class="menu-treasury" title="星光金币：用于升级应援技能树、泡泡站工坊与糖果时装 [F3]">
-                <img class="art-icon-img treasury-art-img" src="/assets/icons/ui_coin.png?v=18" alt="" draggable="false" />
+                <img class="art-icon-img treasury-art-img" src="/assets/icons/ui_coin.png?v=25" alt="" draggable="false" />
                 <strong id="menu-gold-amount">200</strong>
                 <span class="treasury-jump-plus">+</span>
               </button>
@@ -462,25 +562,25 @@
 
           <nav class="menu-tabs" role="tablist">
             <button type="button" class="menu-tab active" data-tab="launch">
-              <img class="art-icon-img tab-art-img" src="/assets/icons/ui_home.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img tab-art-img" src="/assets/icons/ui_home.png?v=25" alt="" draggable="false" />
               <span>主页</span>
               <kbd class="kbd-hint">F1</kbd>
             </button>
             <button type="button" class="menu-tab" data-tab="skills">
-              <img class="art-icon-img tab-art-img" src="/assets/icons/ui_star.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img tab-art-img" src="/assets/icons/ui_star.png?v=25" alt="" draggable="false" />
               <span><span class="desktop-only-text">萌族/</span>技能树</span>
               <span id="badge-tab-skills" class="tab-notify-badge hidden">0</span>
               <kbd class="kbd-hint">F2</kbd>
             </button>
             <button type="button" class="menu-tab" data-tab="meta">
-              <img class="art-icon-img tab-art-img" src="/assets/icons/ui_gear.png?v=18" alt="" draggable="false" />
+              <img class="art-icon-img tab-art-img" src="/assets/icons/ui_gear.png?v=25" alt="" draggable="false" />
               <span>工坊</span>
               <span id="badge-tab-meta" class="tab-notify-badge hidden">0</span>
               <kbd class="kbd-hint">F3</kbd>
             </button>
             <button type="button" class="menu-tab" data-tab="skins">
-              <img class="art-icon-img tab-art-img" src="/assets/icons/ui_palette.png?v=18" alt="" draggable="false" />
-              <span>糖衣</span>
+              <img class="art-icon-img tab-art-img" src="/assets/icons/ui_palette.png?v=25" alt="" draggable="false" />
+              <span><span class="desktop-only-text">战队</span>涂装</span>
               <span id="badge-tab-skins" class="tab-notify-badge hidden">0</span>
               <kbd class="kbd-hint">F4</kbd>
             </button>
@@ -500,8 +600,12 @@
                 </div>
 
                 <div class="hero-stage-topbar">
-                  <button type="button" id="btn-home-mecha" class="hero-quick-pill" title="点击切换本局主打应援大招 [E]">
-                    <span id="home-mecha-icon" class="hero-pill-icon"><img class="art-icon-img inline-art-img" src="/assets/icons/hud_hammer.png?v=18" alt="" draggable="false" /></span>
+                  <button type="button" id="btn-home-weapon" class="hero-quick-pill hero-Quick-pill" title="点击切换主炮弹幕模式 [F]">
+                    <span id="home-weapon-icon" class="hero-pill-icon"><img class="art-icon-img inline-art-img" src="/assets/icons/ui_rocket.png?v=25" alt="" draggable="false" /></span>
+                    <span id="home-weapon-label">速射</span>
+                  </button>
+                  <button type="button" id="btn-home-mecha" class="hero-quick-pill hero-Quick-pill" title="点击切换本局主打应援大招 [E]">
+                    <span id="home-mecha-icon" class="hero-pill-icon"><img class="art-icon-img inline-art-img" src="/assets/icons/hud_hammer.png?v=25" alt="" draggable="false" /></span>
                     <span id="home-mecha-label">安可大招</span>
                   </button>
                 </div>
@@ -513,7 +617,7 @@
                     <div class="hero-duo-stage-models">
 
                       <div id="home-mascot-art" class="hero-mascot-box">
-                        <img class="art-icon-img race-art-img" src="/assets/icons/race_swarm.png?v=18" alt="" draggable="false" />
+                        <img class="art-icon-img race-art-img" src="/assets/icons/race_swarm.png?v=25" alt="" draggable="false" />
                       </div>
                     </div>
                     <span class="hero-pedestal-base" aria-hidden="true"></span>
@@ -539,7 +643,7 @@
                   <div class="launch-field">
                     <label>出战萌族<span class="desktop-only-text"> / 应援流派</span></label>
                     <button type="button" id="menu-active-keystone-pill" class="equipped-skin-pill keystone-jump-pill">
-                      <img class="art-icon-img inline-art-img" src="/assets/icons/race_swarm.png?v=18" alt="" draggable="false" />
+                      <img class="art-icon-img inline-art-img" src="/assets/icons/race_swarm.png?v=25" alt="" draggable="false" />
                       <span>配置萌族</span><kbd class="kbd-hint">G</kbd>
                     </button>
                   </div>
@@ -547,32 +651,116 @@
 
                 <div class="launch-stats-grid">
                   <div class="launch-stat-item">
-                    <span><img class="art-icon-img stat-mini-img" src="/assets/icons/meta_attack.png?v=18" alt="" draggable="false" /> 战力</span>
+                    <span><img class="art-icon-img stat-mini-img" src="/assets/icons/meta_attack.png?v=25" alt="" draggable="false" /> 战力</span>
                     <strong id="menu-stat-power">×1.00</strong>
                   </div>
                   <div class="launch-stat-item">
-                    <span><img class="art-icon-img stat-mini-img" src="/assets/icons/meta_firerate.png?v=18" alt="" draggable="false" /> 射速</span>
+                    <span><img class="art-icon-img stat-mini-img" src="/assets/icons/meta_firerate.png?v=25" alt="" draggable="false" /> 射速</span>
                     <strong id="menu-stat-firerate">2.8/s</strong>
                   </div>
                   <div class="launch-stat-item">
-                    <span><img class="art-icon-img stat-mini-img" src="/assets/icons/meta_bastion.png?v=18" alt="" draggable="false" /> 泡泡站</span>
+                    <span><img class="art-icon-img stat-mini-img" src="/assets/icons/meta_bastion.png?v=25" alt="" draggable="false" /> 泡泡站</span>
                     <strong id="menu-stat-bastion">+0%</strong>
                   </div>
                   <div class="launch-stat-item">
-                    <span><img class="art-icon-img stat-mini-img" src="/assets/icons/meta_bounty.png?v=18" alt="" draggable="false" /> 赏金</span>
+                    <span><img class="art-icon-img stat-mini-img" src="/assets/icons/meta_bounty.png?v=25" alt="" draggable="false" /> 赏金</span>
                     <strong id="menu-stat-bounty">+0%</strong>
                   </div>
                 </div>
               </div>
 
-              <button id="btn-start-battle" type="button" class="btn-launch-battle">
-                <div class="launch-btn-main">
-                  <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sword.png?v=18" alt="" draggable="false" />
-                  <span>开始战斗</span>
-                  <kbd class="kbd-hint">Space</kbd>
+              <div class="launch-actions-stack">
+                <button id="btn-start-battle" type="button" class="btn-launch-battle">
+                  <div class="launch-btn-main">
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_sword.png?v=25" alt="" draggable="false" />
+                    <span>开始战斗</span>
+                    <kbd class="kbd-hint">Space</kbd>
+                  </div>
+                  <span id="launch-btn-sub" class="launch-btn-sub">第 1 关 · 晴空齿轮城 · 10秒极速连跳开启</span>
+                </button>
+
+                <div class="tournament-launch-group">
+                  <button id="btn-start-tournament" type="button" class="btn-gear-tournament">
+                    <div class="endless-btn-left">
+                      <img class="art-icon-img endless-shield-img tournament-trophy-img" src="/assets/icons/ui_gear_tournament.png?v=25" alt="" draggable="false" />
+                      <div class="endless-btn-copy">
+                        <span class="endless-btn-title tournament-btn-title">霓虹齿轮巅峰锦标赛</span>
+                        <span id="tournament-stage-sub" class="endless-btn-desc">三连战阶梯夺杯 · 奖杯里程碑永久增幅全局射速与兵力</span>
+                      </div>
+                    </div>
+                    <span id="tournament-progress-badge" class="endless-best-badge tournament-progress-badge">
+                      <img class="art-icon-img inline-art-img" src="/assets/icons/ui_gear_tournament.png?v=25" alt="" draggable="false" />
+                      <span id="tournament-progress-text">第 1/3 战 · 铜齿预赛 · 1.5x · 0 奖杯</span>
+                    </span>
+                  </button>
+                  <div id="lobby-tournament-chest-bar" class="tournament-chest-bar">
+                    <div class="tcb-left">
+                      <img class="art-icon-img tcb-chest-img" src="/assets/icons/ui_tournament_chest.png?v=25" alt="" draggable="false" />
+                      <div class="tcb-copy">
+                        <strong id="lobby-chest-title">连胜阶梯倍率宝箱 · 1.5x 铜齿档</strong>
+                        <span id="lobby-chest-desc">夺胜开启倍率宝箱（金币+碎片卡+砖块+荣誉奖杯） · 初阶新秀</span>
+                      </div>
+                    </div>
+                    <button id="btn-lobby-claim-chest" type="button" class="tcb-claim-btn" disabled>待夺胜解锁</button>
+                  </div>
                 </div>
-                <span id="launch-btn-sub" class="launch-btn-sub">第 1 关 · 晴空齿轮城 · 10秒极速连跳开启</span>
-              </button>
+
+                <button id="btn-start-airship-escort" type="button" class="btn-airship-escort">
+                  <div class="endless-btn-left">
+                    <img class="art-icon-img endless-shield-img airship-escort-img" src="/assets/icons/ui_airship_escort.png?v=25" alt="" draggable="false" />
+                    <div class="endless-btn-copy">
+                      <span class="endless-btn-title airship-btn-title">云端飞艇母舰护航战</span>
+                      <span id="airship-escort-sub" class="endless-btn-desc">拔除沿途防空副塔充能空投舱 · 降临超级波波冲击兵突破敌方要塞</span>
+                    </div>
+                  </div>
+                  <span id="airship-escort-badge" class="endless-best-badge airship-escort-badge">
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_airship_wing_medal.png?v=25" alt="" draggable="false" />
+                    <span id="airship-escort-medal-text">飞艇护航徽章 0 · 第 1 阶</span>
+                  </span>
+                </button>
+
+                <button id="btn-start-colossus-raid" type="button" class="btn-colossus-raid">
+                  <div class="endless-btn-left">
+                    <img class="art-icon-img endless-shield-img colossus-raid-img" src="/assets/icons/ui_clockwork_colossus.png?v=25" alt="" draggable="false" />
+                    <div class="endless-btn-copy">
+                      <span class="endless-btn-title colossus-btn-title">巨型发条首领攻坚战</span>
+                      <span id="colossus-raid-sub" class="endless-btn-desc">拆解左翼重盾与右翼糖炮触发 6s 瘫痪 2.5x 暴击 · 赢取发条核心</span>
+                    </div>
+                  </div>
+                  <span id="colossus-raid-badge" class="endless-best-badge colossus-raid-badge">
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_clockwork_core.png?v=25" alt="" draggable="false" />
+                    <span id="colossus-raid-text">第 1 阶 · 库存 0 核心</span>
+                  </span>
+                </button>
+
+                <button id="btn-start-escort" type="button" class="btn-payload-escort">
+                  <div class="endless-btn-left">
+                    <img class="art-icon-img endless-shield-img escort-cart-img" src="/assets/icons/ui_escort_cart.png?v=25" alt="" draggable="false" />
+                    <div class="endless-btn-copy">
+                      <span class="endless-btn-title escort-btn-title">蒸汽装甲战车护送</span>
+                      <span class="endless-btn-desc">波波充能推进战车 · 冲撞碾碎路障直捣终极据点</span>
+                    </div>
+                  </div>
+                  <span id="escort-best-badge" class="endless-best-badge escort-best-badge">
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_trophy.png?v=25" alt="" draggable="false" />
+                    <span id="escort-best-text">最佳 0% · 待发车</span>
+                  </span>
+                </button>
+
+                <button id="btn-start-endless" type="button" class="btn-endless-defense">
+                  <div class="endless-btn-left">
+                    <img class="art-icon-img endless-shield-img" src="/assets/icons/ui_endless_shield.png?v=25" alt="" draggable="false" />
+                    <div class="endless-btn-copy">
+                      <span class="endless-btn-title">无尽工坊保卫战</span>
+                      <span class="endless-btn-desc">抵御红军与突变巨汉无尽波次 · 零战败损耗</span>
+                    </div>
+                  </div>
+                  <span id="endless-best-badge" class="endless-best-badge">
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_endless_medal.png?v=25" alt="" draggable="false" />
+                    <span id="endless-best-text">最佳 0 波 · 新锐守卫</span>
+                  </span>
+                </button>
+              </div>
 
               <!-- Non-Intrusive Update Announcement Card -->
               <section id="update-notice-card" class="update-notice-card is-collapsed" aria-label="版本更新公告">
@@ -580,7 +768,7 @@
                   <div class="un-title-wrap">
                     <span class="un-badge">NEW v3.2</span>
                     <span class="un-title">
-                      <img class="art-icon-img inline-art-img" src="/assets/icons/ui_megaphone.png?v=18" alt="" draggable="false" />
+                      <img class="art-icon-img inline-art-img" src="/assets/icons/ui_megaphone.png?v=25" alt="" draggable="false" />
                       <span>版本更新公告</span>
                     </span>
                   </div>
@@ -606,22 +794,22 @@
               <div class="leaderboard-header">
                 <div class="lb-tabs" role="tablist">
                   <button type="button" id="btn-lb-peak" class="lb-tab-btn active" data-lb-mode="peak">
-                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_trophy.png?v=18" alt="" draggable="false" />
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_trophy.png?v=25" alt="" draggable="false" />
                     <span>巅峰榜</span><kbd class="kbd-hint">1</kbd>
                   </button>
                   <button type="button" id="btn-lb-active" class="lb-tab-btn" data-lb-mode="active">
-                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_clock.png?v=18" alt="" draggable="false" />
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_clock.png?v=25" alt="" draggable="false" />
                     <span>活跃榜</span><kbd class="kbd-hint">2</kbd>
                   </button>
                 </div>
                 <div class="lb-self-bar">
                   <span id="leaderboard-self-status">未上榜</span>
                   <button id="btn-edit-name" type="button" class="lb-edit-btn" title="花费 100,000 金币修改指挥官昵称 [N]">
-                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_edit.png?v=18" alt="" draggable="false" />
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_edit.png?v=25" alt="" draggable="false" />
                     <span>改名 · 10万</span><kbd class="kbd-hint">N</kbd>
                   </button>
                   <button id="btn-share-game" type="button" class="lb-share-btn" title="复制邀请链接，每日首次分享立得 +3,000 金币与 +5 糖衣碎片 [F]">
-                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_gift.png?v=18" alt="" draggable="false" />
+                    <img class="art-icon-img inline-art-img" src="/assets/icons/ui_gift.png?v=25" alt="" draggable="false" />
                     <span>分享</span><kbd class="kbd-hint">F</kbd>
                   </button>
                 </div>
@@ -641,7 +829,7 @@
                 <div class="skill-tree-topbar">
                   <div class="kr-star-counter" title="当前可用应援天赋星数">
                     <span class="kr-star-icon">
-                      <img class="art-icon-img inline-art-img" src="/assets/icons/ui_star.png?v=18" alt="" draggable="false" />
+                      <img class="art-icon-img inline-art-img" src="/assets/icons/ui_star.png?v=25" alt="" draggable="false" />
                     </span>
                     <strong id="skill-available-points">1</strong>
                   </div>
@@ -661,15 +849,71 @@
             </div>
           </div>
 
-          <!-- Tab 3: Out-of-Match Base Attribute Upgrades -->
+          <!-- Tab 3: Out-of-Match Base Attribute Upgrades & Twin-Cannon Steam Mecha Overlord Hangar -->
           <div id="menu-panel-meta" class="menu-panel">
-            <div class="panel-subtitle">永久强化波波应援团与泡泡站基础属性</div>
+            <div class="panel-subtitle">专精改装蒸汽母炮核心模组、波波兵种三系科技树、领队战术副武器槽与双联机甲</div>
+            <section id="cannon-mod-workbench" class="squad-finish-workbench cannon-mod-workbench" aria-label="蒸汽母炮核心模组改装台">
+              <div class="squad-finish-header">
+                <div class="squad-finish-title-row">
+                  <img class="art-icon-img inline-art-img" src="/assets/icons/mod_overdrive_breech.png?v=25" alt="" draggable="false" />
+                  <strong>蒸汽母炮核心模组改装台</strong>
+                  <span id="cannon-mod-active-pill" class="squad-livery-active-pill">当前挂载：过载双发膛 Lv.1</span>
+                </div>
+                <span id="cannon-mod-resources" class="squad-finish-resources">飞艇护航徽章 0 · 护航通关 0 次</span>
+              </div>
+              <div id="cannon-mod-milestone-banner" class="cannon-mod-milestone-banner"></div>
+              <div id="cannon-mod-grid" class="mecha-hangar-grid cannon-mod-grid"></div>
+            </section>
+            <section id="bobo-tech-tree-workbench" class="squad-finish-workbench bobo-tech-tree-workbench" aria-label="波波兵种三系专精科技树">
+              <div class="squad-finish-header">
+                <div class="squad-finish-title-row">
+                  <img class="art-icon-img inline-art-img" src="/assets/icons/ui_clockwork_core.png?v=25" alt="" draggable="false" />
+                  <strong>波波兵种三系专精科技树</strong>
+                  <span id="bobo-tech-active-pill" class="squad-livery-active-pill">当前专精战策：迅捷冲锋营 Lv.0</span>
+                </div>
+                <span id="bobo-tech-resources" class="squad-finish-resources">发条核心 0 · 攻坚讨伐 0 次</span>
+              </div>
+              <div id="bobo-tech-tree-grid" class="mecha-hangar-grid bobo-tech-tree-grid"></div>
+            </section>
+            <section id="tactical-subweapon-workbench" class="squad-finish-workbench tactical-subweapon-workbench" aria-label="英雄领队战术副武器改装槽">
+              <div class="squad-finish-header">
+                <div class="squad-finish-title-row">
+                  <img class="art-icon-img inline-art-img" src="/assets/icons/subwpn_electro_net.png?v=25" alt="" draggable="false" />
+                  <strong>英雄领队战术副武器改装槽</strong>
+                  <span id="subweapon-equipped-pill" class="squad-livery-active-pill">当前挂载：电磁网弹 Lv.1 [V]</span>
+                </div>
+                <span id="subweapon-workbench-stats" class="squad-finish-resources">局内按 [V] 键释放 · 累计施放 0 次</span>
+              </div>
+              <div id="tactical-subweapon-grid" class="mecha-hangar-grid tactical-subweapon-grid"></div>
+            </section>
+            <section id="mecha-hangar-workbench" class="squad-finish-workbench mecha-hangar-workbench" aria-label="双联重炮蒸汽机甲领主机库">
+              <div class="squad-finish-header">
+                <div class="squad-finish-title-row">
+                  <img class="art-icon-img inline-art-img" src="/assets/icons/ui_mecha_overlord.png?v=25" alt="" draggable="false" />
+                  <strong>双联重炮蒸汽机甲机库</strong>
+                  <span id="mecha-hangar-mk-pill" class="squad-livery-active-pill">机甲领主 Mk.I</span>
+                </div>
+                <span id="mecha-hangar-stats" class="squad-finish-resources">累计降临 0 次 · 重炮轰碎 0</span>
+              </div>
+              <div id="mecha-hangar-grid" class="mecha-hangar-grid"></div>
+            </section>
             <div id="meta-upgrades-grid" class="meta-upgrades-grid"></div>
           </div>
 
-          <!-- Tab 4: Candy Skins -->
+          <!-- Tab 4: Bobo Squad Paint & Material Workshop -->
           <div id="menu-panel-skins" class="menu-panel">
-            <div class="panel-subtitle">已解锁糖果涂装加成全部叠加生效 · 闯关掉落糖衣碎片可升阶 C 至 SSS</div>
+            <div class="panel-subtitle">波波战队涂装工坊 · 自由搭配战队色彩与 3D 表面材质（实时同步波波兵、蒸汽主炮与护送战车）</div>
+            <section id="squad-finish-workbench" class="squad-finish-workbench" aria-label="波波战队表面材质工坊">
+              <div class="squad-finish-header">
+                <div class="squad-finish-title-row">
+                  <img class="art-icon-img inline-art-img" src="/assets/icons/ui_palette.png?v=25" alt="" draggable="false" />
+                  <strong>3D 表面材质镀层台</strong>
+                  <span id="squad-livery-active-pill" class="squad-livery-active-pill">海盐汽水糖 · 蜜糖琉璃釉</span>
+                </div>
+                <span id="squad-finish-resources" class="squad-finish-resources">库存碎片 0 · 护送破障 0</span>
+              </div>
+              <div id="squad-finish-grid" class="squad-finish-grid"></div>
+            </section>
             <div id="skins-shop-grid" class="skins-shop-grid"></div>
           </div>
 

@@ -820,7 +820,7 @@ export function createAbyssFloorTexture(theme: ThemeConfig): THREE.CanvasTexture
  * Supports baking the cartoon number (`+2`, `-2`, `×2`, `×3`) directly into the cloth canvas!
  */
 export function createGateForcefieldTexture(
-  style: 'blue' | 'gold' | 'mega' | 'hazard',
+  style: 'blue' | 'gold' | 'mega' | 'hazard' | 'jelly' | 'frost',
   labelText?: string
 ): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
@@ -855,6 +855,18 @@ export function createGateForcefieldTexture(
     botCol = '#9f1239';
     rimGlowCol = '#ffe4e6';
     textStrokeCol = '#4c0519';
+  } else if (style === 'jelly') {
+    topCol = '#fde68a';
+    midCol = '#fb7185';
+    botCol = '#be123c';
+    rimGlowCol = '#ffe4e6';
+    textStrokeCol = '#4c0519';
+  } else if (style === 'frost') {
+    topCol = '#ecfeff';
+    midCol = '#38bdf8';
+    botCol = '#0369a1';
+    rimGlowCol = '#e0f2fe';
+    textStrokeCol = '#082f49';
   }
 
   ctx.clearRect(0, 0, W, H);
@@ -936,10 +948,18 @@ export function createGateForcefieldTexture(
     }
   }
 
-  // 6. Baked 3D Extruded Supercell Number Typography (+4, ×3, -2)
+  // 6. Baked 3D Extruded Supercell Number Typography (+4, ×3, -6, 巨化×2, 糖霜盾)
   if (labelText) {
     ctx.save();
-    ctx.font = '900 138px "Fredoka", "Nunito", "PingFang SC", "Microsoft YaHei", sans-serif';
+    const hasCjk = /[\u4e00-\u9fa5]/.test(labelText);
+    const fontPx = hasCjk
+      ? labelText.length >= 4
+        ? 92
+        : 102
+      : labelText.length >= 3
+        ? 116
+        : 138;
+    ctx.font = `900 ${fontPx}px "Fredoka", "Nunito", "PingFang SC", "Microsoft YaHei", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';

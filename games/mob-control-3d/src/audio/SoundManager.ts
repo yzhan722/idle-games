@@ -1,4 +1,6 @@
-export class SoundManager {
+import type { WeaponMode } from '../game/State';
+
+class SoundManager {
   private ctx: AudioContext | null = null;
   public enabled = true;
   private lastCloneSoundTime = 0;
@@ -86,7 +88,7 @@ export class SoundManager {
     }, 190);
   }
 
-  public playShoot(weapon: 'gatling' | 'twin' | 'plasma'): void {
+  public playShoot(weapon: WeaponMode): void {
     const ctx = this.ensureContext();
     if (!ctx) return;
 
@@ -94,7 +96,20 @@ export class SoundManager {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    if (weapon === 'plasma') {
+    if (weapon === 'rainbow') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(640, now);
+      osc.frequency.exponentialRampToValueAtTime(1180, now + 0.055);
+      osc.frequency.exponentialRampToValueAtTime(460, now + 0.11);
+      gain.gain.setValueAtTime(0.065, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    } else if (weapon === 'scatter') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(480, now);
+      osc.frequency.exponentialRampToValueAtTime(195, now + 0.07);
+      gain.gain.setValueAtTime(0.07, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+    } else if (weapon === 'plasma') {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(520, now);
       osc.frequency.exponentialRampToValueAtTime(140, now + 0.085);
@@ -117,7 +132,45 @@ export class SoundManager {
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.095);
+    osc.stop(now + 0.125);
+  }
+
+  public playAirdropDrop(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(760, now);
+    osc.frequency.exponentialRampToValueAtTime(360, now + 0.24);
+    gain.gain.setValueAtTime(0.07, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.27);
+  }
+
+  public playAirdropOpen(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+      const t = now + idx * 0.045;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.19);
+    });
   }
 
   public playCloneGate(multiplierOrAdd: number): void {
@@ -359,6 +412,188 @@ export class SoundManager {
       gain.connect(ctx.destination);
       osc.start(startT);
       osc.stop(startT + dur + 0.02);
+    });
+  }
+
+  public playMechaOverlordDeploy(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    [130.81, 196.0, 261.63, 392.0, 523.25].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx < 2 ? 'sawtooth' : 'triangle';
+      const startT = t + idx * 0.06;
+      osc.frequency.setValueAtTime(freq * 0.85, startT);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.15, startT + 0.28);
+      gain.gain.setValueAtTime(idx < 2 ? 0.13 : 0.09, startT);
+      gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.34);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startT);
+      osc.stop(startT + 0.36);
+    });
+  }
+
+  public playMechaTwinVolley(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    [0, 0.075].forEach((offset) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(168, t + offset);
+      osc.frequency.exponentialRampToValueAtTime(54, t + offset + 0.16);
+      gain.gain.setValueAtTime(0.11, t + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t + offset);
+      osc.stop(t + offset + 0.19);
+    });
+  }
+
+  public playEmpPulse(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(640, t);
+    osc.frequency.exponentialRampToValueAtTime(140, t + 0.22);
+    gain.gain.setValueAtTime(0.065, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.25);
+  }
+
+  public playElectroNetBurst(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    [720, 960, 480].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx === 2 ? 'sawtooth' : 'square';
+      const startT = t + idx * 0.04;
+      osc.frequency.setValueAtTime(freq, startT);
+      osc.frequency.exponentialRampToValueAtTime(160, startT + 0.2);
+      gain.gain.setValueAtTime(0.08, startT);
+      gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startT);
+      osc.stop(startT + 0.23);
+    });
+  }
+
+  public playSyrupBubblePop(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    [280, 420, 560].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const startT = t + idx * 0.055;
+      osc.frequency.setValueAtTime(freq * 0.85, startT);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.45, startT + 0.16);
+      gain.gain.setValueAtTime(0.09, startT);
+      gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startT);
+      osc.stop(startT + 0.19);
+    });
+  }
+
+  public playRallyHornFanfare(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    [392.0, 523.25, 659.25, 783.99].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx >= 2 ? 'sawtooth' : 'triangle';
+      const startT = t + idx * 0.065;
+      const dur = idx === 3 ? 0.36 : 0.18;
+      osc.frequency.setValueAtTime(freq, startT);
+      gain.gain.setValueAtTime(0.095, startT);
+      gain.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startT);
+      osc.stop(startT + dur + 0.02);
+    });
+  }
+
+  public playClockworkWeakpointBreak(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    [220, 330, 587.33, 880, 1174.66].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx < 2 ? 'sawtooth' : 'triangle';
+      const startT = t + idx * 0.05;
+      const dur = idx === 4 ? 0.42 : 0.2;
+      osc.frequency.setValueAtTime(freq, startT);
+      osc.frequency.exponentialRampToValueAtTime(idx < 2 ? freq * 0.55 : freq * 1.12, startT + dur);
+      gain.gain.setValueAtTime(idx < 2 ? 0.12 : 0.09, startT);
+      gain.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startT);
+      osc.stop(startT + dur + 0.02);
+    });
+  }
+
+  public playColossusCannonVolley(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(190, t);
+    osc.frequency.exponentialRampToValueAtTime(48, t + 0.22);
+    gain.gain.setValueAtTime(0.11, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.25);
+  }
+
+  public playTechUpgradeChime(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      const startT = t + idx * 0.055;
+      osc.frequency.setValueAtTime(freq, startT);
+      gain.gain.setValueAtTime(0.09, startT);
+      gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startT);
+      osc.stop(startT + 0.24);
     });
   }
 }

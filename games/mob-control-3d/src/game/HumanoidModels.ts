@@ -316,7 +316,16 @@ export function createAnimatedHumanoidMaterial(options: {
     envMapIntensity: 0.0,
   });
 
+  const finishUniforms = {
+    uFinishMode: { value: 0.0 },
+    uFinishRimColor: { value: rimCol.clone() },
+    uFinishSpecBoost: { value: 1.0 },
+    uFinishTime: { value: 0.0 },
+  };
+  mat.userData.finishUniforms = finishUniforms;
+
   mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, finishUniforms);
     shader.vertexShader =
       `
       attribute float aPartId;
@@ -448,6 +457,10 @@ export function createAnimatedHumanoidMaterial(options: {
 
     shader.fragmentShader =
       `
+      uniform float uFinishMode;
+      uniform vec3 uFinishRimColor;
+      uniform float uFinishSpecBoost;
+      uniform float uFinishTime;
       varying float vFlash;
       varying float vHeight;
       varying float vTintMask;
@@ -487,11 +500,27 @@ export function createAnimatedHumanoidMaterial(options: {
       vec3 shadowWarmth = mix(vec3(0.95, 0.84, 0.78), vec3(1.0, 1.0, 1.0), celStep);
       vec3 toonCol = diffuseColor.rgb * shadowWarmth * celBand;
 
-      // 2. Soft Translucent Jelly Rim Glow + Hit/Charge Flash
+      // 2. Soft Translucent Jelly Rim Glow + Surface Finish Material Layer + Hit/Charge Flash
       float fresnel2D = pow(1.0 - ndv2D, 2.4);
-      vec3 rimGlow2D = vec3(${rimCol.r.toFixed(3)}, ${rimCol.g.toFixed(3)}, ${rimCol.b.toFixed(3)}) * (fresnel2D * (0.14 + vTintMask * 0.16));
+      vec3 rimGlow2D = uFinishRimColor * (fresnel2D * (0.14 + vTintMask * 0.20) * uFinishSpecBoost);
       vec3 flashGlow2D = vec3(1.0, 0.88, 0.42) * clamp(vFlash, 0.0, 0.65) * 0.45;
       toonCol += rimGlow2D + flashGlow2D;
+
+      if (vTintMask > 0.5) {
+        if (uFinishMode > 0.5 && uFinishMode < 1.5) {
+          // Metallic Brass-Steam Finish: warm burnished copper-gold anisotropic band
+          float metalBand = smoothstep(0.32, 0.78, dot(viewN2D, normalize(vec3(-0.22, 0.82, 0.52))));
+          toonCol = mix(toonCol * 0.88, toonCol * 1.24 + vec3(0.30, 0.20, 0.05), metalBand * 0.72);
+        } else if (uFinishMode >= 1.5 && uFinishMode < 2.5) {
+          // Crystal Jelly Finish: icy aqua subsurface translucency + bright crystal edge
+          float innerGlow = smoothstep(0.15, 0.92, ndv2D) * 0.22;
+          toonCol = mix(toonCol, toonCol * 1.18 + vec3(0.12, 0.26, 0.30), innerGlow + fresnel2D * 0.55);
+        } else if (uFinishMode >= 2.5) {
+          // Starlight Prism Finish: holographic iridescent rainbow-violet-gold prism sheen
+          vec3 prismWave = 0.5 + 0.5 * cos(6.28318 * (ndv2D * 1.35 + vHeight * 0.48 + uFinishTime * 0.35 + vec3(0.0, 0.33, 0.67)));
+          toonCol = mix(toonCol, toonCol * 0.86 + prismWave * 0.44, 0.48 + fresnel2D * 0.36);
+        }
+      }
 
       // 3. Iconic Supercell Vinyl-Toy Dual Specular Catchlights on Jelly Slimes (vTintMask > 0.5)
       if (vTintMask > 0.5 && viewN2D.z > 0.12) {
@@ -503,8 +532,8 @@ export function createAnimatedHumanoidMaterial(options: {
         float subLen = length(subCatchUV);
         float fwSub = max(0.035, fwidth(subLen) * 1.4);
         float subCatchDot = 1.0 - smoothstep(0.07 - fwSub, 0.10 + fwSub, subLen);
-        float vinylGloss = max(catchDot, subCatchDot * 0.85);
-        toonCol = mix(toonCol, vec3(1.0, 1.0, 1.0), vinylGloss * 0.96);
+        float vinylGloss = max(catchDot, subCatchDot * 0.85) * clamp(uFinishSpecBoost, 0.6, 1.35);
+        toonCol = mix(toonCol, vec3(1.0, 1.0, 1.0), clamp(vinylGloss * 0.96, 0.0, 1.0));
       } else {
         // Derivative-antialiased cartoon specular band for crowns, helmets, goggles & weapons
         float specDot = max(0.0, dot(viewN2D, toonLightDir));

@@ -1,6 +1,22 @@
-import { generateDynamicLevel } from './levels/LevelData';
+import {
+  generateAirshipEscortLevel,
+  generateCandyVaultBonusLevel,
+  generateClockworkColossusRaidLevel,
+  generateDynamicLevel,
+  generateEndlessDefenseLevel,
+  generateGearTournamentLevel,
+  generatePayloadEscortLevel,
+} from './levels/LevelData';
 import {
   ALL_SKILL_NODES,
+  BOBO_TECH_BRANCHES,
+  BOBO_TECH_BRANCH_ORDER,
+  BOBO_TECH_MAX_LEVEL,
+  BoboTechBranchId,
+  CANNON_CORE_MODS,
+  CANNON_CORE_MOD_MAX_LEVEL,
+  CANNON_CORE_MOD_ORDER,
+  CannonCoreModId,
   GameState,
   META_UPGRADES,
   MetaUpgradeId,
@@ -8,10 +24,28 @@ import {
   RewardOption,
   SKILL_TREE_BRANCHES,
   SKINS_CATALOG,
+  SQUAD_FINISH_CATALOG,
   SkillNodeId,
   SkinId,
+  SquadFinishId,
+  TACTICAL_SUBWEAPON_MAX_LEVEL,
+  TACTICAL_SUBWEAPON_ORDER,
+  TACTICAL_SUBWEAPONS,
+  TacticalSubWeaponId,
 } from './game/State';
-import { SKIN_CARD_ART, SKILL_NODE_SVGS, UI_ART, replaceEmojiWithArt } from './game/SkillIcons';
+import {
+  BOBO_TECH_ART,
+  CANNON_MOD_ART,
+  CANNON_MOD_INLINE_ART,
+  SKIN_CARD_ART,
+  SKILL_NODE_SVGS,
+  SQUAD_FINISH_ART,
+  TACTICAL_SUBWEAPON_ART,
+  TACTICAL_SUBWEAPON_HUD_ART,
+  TACTICAL_SUBWEAPON_INLINE_ART,
+  UI_ART,
+  replaceEmojiWithArt,
+} from './game/SkillIcons';
 import { World3D } from './game/World3D';
 import { sound } from './audio/SoundManager';
 
@@ -32,6 +66,46 @@ const bossBarFillEl = document.getElementById('boss-bar-fill') as HTMLElement;
 const playerHpTextEl = document.getElementById('player-hp-text') as HTMLElement;
 const playerBarFillEl = document.getElementById('player-bar-fill') as HTMLElement;
 const activeBuffsBar = document.getElementById('active-buffs-bar') as HTMLElement;
+const colossusRaidHudEl = document.getElementById('colossus-raid-hud') as HTMLElement | null;
+const colossusHudLeftEl = document.getElementById('colossus-hud-left') as HTMLElement | null;
+const colossusHudLeftTextEl = document.getElementById('colossus-hud-left-text') as HTMLElement | null;
+const colossusHudCoreEl = document.getElementById('colossus-hud-core') as HTMLElement | null;
+const colossusHudCoreTextEl = document.getElementById('colossus-hud-core-text') as HTMLElement | null;
+const colossusHudRightEl = document.getElementById('colossus-hud-right') as HTMLElement | null;
+const colossusHudRightTextEl = document.getElementById('colossus-hud-right-text') as HTMLElement | null;
+const airshipEscortHudEl = document.getElementById('airship-escort-hud') as HTMLElement | null;
+const airshipHudHullEl = document.getElementById('airship-hud-hull') as HTMLElement | null;
+const airshipHudHullTextEl = document.getElementById('airship-hud-hull-text') as HTMLElement | null;
+const airshipHudDropEl = document.getElementById('airship-hud-drop') as HTMLElement | null;
+const airshipHudDropTextEl = document.getElementById('airship-hud-drop-text') as HTMLElement | null;
+const airshipHudAaEl = document.getElementById('airship-hud-aa') as HTMLElement | null;
+const airshipHudAaTextEl = document.getElementById('airship-hud-aa-text') as HTMLElement | null;
+const cannonModHudBadgeEl = document.getElementById('cannon-mod-hud-badge') as HTMLElement | null;
+const cannonModHudIconEl = document.getElementById('cannon-mod-hud-icon') as HTMLImageElement | null;
+const cannonModHudTextEl = document.getElementById('cannon-mod-hud-text') as HTMLElement | null;
+let lastCannonModHudKey = '';
+
+function syncCannonModHudBadge(): void {
+  const activeModSpec = state.getCannonModSpec(state.activeCannonMod);
+  const activeModLvl = Math.max(1, state.getCannonModLevel(state.activeCannonMod));
+  const key = `${activeModSpec.id}_${activeModLvl}`;
+  if (key === lastCannonModHudKey) return;
+  lastCannonModHudKey = key;
+  const iconMap: Record<CannonCoreModId, string> = {
+    overdrive_breech: '/assets/icons/mod_overdrive_breech.png?v=25',
+    prism_splitter: '/assets/icons/mod_prism_splitter.png?v=25',
+    heavy_mortar: '/assets/icons/mod_heavy_mortar.png?v=25',
+  };
+  if (cannonModHudIconEl) {
+    cannonModHudIconEl.src = iconMap[activeModSpec.id];
+  }
+  if (cannonModHudTextEl) {
+    cannonModHudTextEl.textContent = `母炮模组：${activeModSpec.name} Lv.${activeModLvl}`;
+  }
+  if (cannonModHudBadgeEl) {
+    cannonModHudBadgeEl.title = `蒸汽母炮核心模组：${activeModSpec.statText(activeModLvl)}`;
+  }
+}
 
 const centerBanner = document.getElementById('center-banner') as HTMLElement;
 const bannerTitle = document.getElementById('banner-title') as HTMLElement;
@@ -75,6 +149,9 @@ const homeHeroStageEl = document.getElementById('home-hero-stage') as HTMLElemen
 const btnHomeMecha = document.getElementById('btn-home-mecha') as HTMLButtonElement | null;
 const homeMechaIconEl = document.getElementById('home-mecha-icon') as HTMLElement | null;
 const homeMechaLabelEl = document.getElementById('home-mecha-label') as HTMLElement | null;
+const btnHomeWeapon = document.getElementById('btn-home-weapon') as HTMLButtonElement | null;
+const homeWeaponIconEl = document.getElementById('home-weapon-icon') as HTMLElement | null;
+const homeWeaponLabelEl = document.getElementById('home-weapon-label') as HTMLElement | null;
 const btnHomePrevRace = document.getElementById('btn-home-prev-race') as HTMLButtonElement | null;
 const btnHomeNextRace = document.getElementById('btn-home-next-race') as HTMLButtonElement | null;
 const homeMascotArtEl = document.getElementById('home-mascot-art') as HTMLElement | null;
@@ -88,9 +165,46 @@ const menuStatFireRate = document.getElementById('menu-stat-firerate') as HTMLEl
 const menuStatBastion = document.getElementById('menu-stat-bastion') as HTMLElement;
 const menuStatBounty = document.getElementById('menu-stat-bounty') as HTMLElement;
 const metaUpgradesGrid = document.getElementById('meta-upgrades-grid') as HTMLElement;
+const mechaHangarGrid = document.getElementById('mecha-hangar-grid') as HTMLElement | null;
+const mechaHangarMkPill = document.getElementById('mecha-hangar-mk-pill') as HTMLElement | null;
+const mechaHangarStats = document.getElementById('mecha-hangar-stats') as HTMLElement | null;
+const tacticalSubweaponGrid = document.getElementById('tactical-subweapon-grid') as HTMLElement | null;
+const subweaponEquippedPill = document.getElementById('subweapon-equipped-pill') as HTMLElement | null;
+const subweaponWorkbenchStats = document.getElementById('subweapon-workbench-stats') as HTMLElement | null;
+const boboTechTreeGrid = document.getElementById('bobo-tech-tree-grid') as HTMLElement | null;
+const boboTechActivePill = document.getElementById('bobo-tech-active-pill') as HTMLElement | null;
+const boboTechResources = document.getElementById('bobo-tech-resources') as HTMLElement | null;
+const cannonModGrid = document.getElementById('cannon-mod-grid') as HTMLElement | null;
+const cannonModActivePill = document.getElementById('cannon-mod-active-pill') as HTMLElement | null;
+const cannonModResources = document.getElementById('cannon-mod-resources') as HTMLElement | null;
+const cannonModMilestoneBanner = document.getElementById('cannon-mod-milestone-banner') as HTMLElement | null;
 const skinsShopGrid = document.getElementById('skins-shop-grid') as HTMLElement;
+const squadFinishGrid = document.getElementById('squad-finish-grid') as HTMLElement | null;
+const squadLiveryActivePill = document.getElementById('squad-livery-active-pill') as HTMLElement | null;
+const squadFinishResources = document.getElementById('squad-finish-resources') as HTMLElement | null;
 const btnStartBattle = document.getElementById('btn-start-battle') as HTMLButtonElement;
+const btnStartAirshipEscort = document.getElementById('btn-start-airship-escort') as HTMLButtonElement | null;
+const airshipEscortMedalTextEl = document.getElementById('airship-escort-medal-text') as HTMLElement | null;
+const airshipEscortSubEl = document.getElementById('airship-escort-sub') as HTMLElement | null;
+const airshipEscortBadgeEl = document.getElementById('airship-escort-badge') as HTMLElement | null;
+const btnStartColossusRaid = document.getElementById('btn-start-colossus-raid') as HTMLButtonElement | null;
+const colossusRaidTextEl = document.getElementById('colossus-raid-text') as HTMLElement | null;
+const colossusRaidSubEl = document.getElementById('colossus-raid-sub') as HTMLElement | null;
+const btnStartTournament = document.getElementById('btn-start-tournament') as HTMLButtonElement | null;
+const tournamentProgressTextEl = document.getElementById('tournament-progress-text') as HTMLElement | null;
+const tournamentStageSubEl = document.getElementById('tournament-stage-sub') as HTMLElement | null;
+const lobbyChestTitleEl = document.getElementById('lobby-chest-title') as HTMLElement | null;
+const lobbyChestDescEl = document.getElementById('lobby-chest-desc') as HTMLElement | null;
+const btnLobbyClaimChest = document.getElementById('btn-lobby-claim-chest') as HTMLButtonElement | null;
+const btnStartEscort = document.getElementById('btn-start-escort') as HTMLButtonElement | null;
+const escortBestTextEl = document.getElementById('escort-best-text') as HTMLElement | null;
+const escortBestBadgeEl = document.getElementById('escort-best-badge') as HTMLElement | null;
+const btnStartEndless = document.getElementById('btn-start-endless') as HTMLButtonElement | null;
+const endlessBestTextEl = document.getElementById('endless-best-text') as HTMLElement | null;
+const endlessBestBadgeEl = document.getElementById('endless-best-badge') as HTMLElement | null;
 const btnModalHome = document.getElementById('btn-modal-home') as HTMLButtonElement;
+let pendingBonusHeistStage = 0;
+let pendingNextCampaignIdx = 0;
 const leaderboardListEl = document.getElementById('leaderboard-list') as HTMLElement | null;
 const leaderboardSelfStatusEl = document.getElementById('leaderboard-self-status') as HTMLElement | null;
 const btnLbPeak = document.getElementById('btn-lb-peak') as HTMLButtonElement | null;
@@ -217,11 +331,24 @@ const championDesc = document.getElementById('champion-desc') as HTMLElement | n
 const btnMechaMode = document.getElementById('btn-mecha-mode') as HTMLButtonElement;
 const mechaModeIcon = document.getElementById('mecha-mode-icon') as HTMLElement | null;
 const mechaModeLabel = document.getElementById('mecha-mode-label') as HTMLElement | null;
+const btnWeaponMode = document.getElementById('btn-weapon-mode') as HTMLButtonElement | null;
+const weaponModeIcon = document.getElementById('weapon-mode-icon') as HTMLElement | null;
+const weaponModeLabel = document.getElementById('weapon-mode-label') as HTMLElement | null;
 
 const btnOrbital = document.getElementById('btn-orbital') as HTMLButtonElement;
 const orbitalFill = document.getElementById('orbital-fill') as HTMLElement;
 const orbitalName = document.getElementById('orbital-name') as HTMLElement | null;
 const orbitalPct = document.getElementById('orbital-pct') as HTMLElement;
+
+const btnMechaOverlord = document.getElementById('btn-mecha-overlord') as HTMLButtonElement | null;
+const overlordFill = document.getElementById('overlord-fill') as HTMLElement | null;
+const overlordPct = document.getElementById('overlord-pct') as HTMLElement | null;
+
+const btnTacticalSubweapon = document.getElementById('btn-tactical-subweapon') as HTMLButtonElement | null;
+const subweaponFill = document.getElementById('subweapon-fill') as HTMLElement | null;
+const subweaponIcon = document.getElementById('subweapon-icon') as HTMLElement | null;
+const subweaponName = document.getElementById('subweapon-name') as HTMLElement | null;
+const subweaponPct = document.getElementById('subweapon-pct') as HTMLElement | null;
 
 // Upgrade buttons
 const upgFireRate = document.getElementById('upg-firerate') as HTMLButtonElement;
@@ -260,6 +387,10 @@ const rewardPromptText = document.getElementById('reward-prompt-text') as HTMLEl
 const rewardGoldBalanceEl = document.getElementById('reward-gold-balance') as HTMLElement | null;
 const btnRerollRewards = document.getElementById('btn-reroll-rewards') as HTMLButtonElement | null;
 const rewardCardsContainer = document.getElementById('reward-cards') as HTMLElement;
+const tournamentChestSection = document.getElementById('tournament-chest-section') as HTMLElement | null;
+const modalChestTitleEl = document.getElementById('modal-chest-title') as HTMLElement | null;
+const modalChestRewardsEl = document.getElementById('modal-chest-rewards') as HTMLElement | null;
+const btnClaimTournamentChest = document.getElementById('btn-claim-tournament-chest') as HTMLButtonElement | null;
 const penaltySection = document.getElementById('penalty-section') as HTMLElement;
 const penaltyListEl = document.getElementById('penalty-list') as HTMLElement;
 const btnCleanseDebuff = document.getElementById('btn-cleanse-debuff') as HTMLButtonElement;
@@ -269,6 +400,7 @@ const btnModalNext = document.getElementById('btn-modal-next') as HTMLButtonElem
 const globalToastEl = document.getElementById('global-toast') as HTMLElement | null;
 
 const world = new World3D(canvas, labelsContainer, state);
+(window as unknown as Record<string, unknown>).__mc3dWorld = world;
 
 let toastTimeout: number | undefined;
 function showGlobalToast(text: string): void {
@@ -384,7 +516,24 @@ function getActiveRewardMultiplier(): number {
   return isSpeedSkipEligible && isSpeedSkipActive ? 3 : 1;
 }
 
+function refreshWeaponUI(): void {
+  const wSpec = state.getWeaponSpec();
+  if (weaponModeIcon) weaponModeIcon.innerHTML = wSpec.icon;
+  if (weaponModeLabel) weaponModeLabel.textContent = wSpec.shortName;
+  if (btnWeaponMode) {
+    btnWeaponMode.title = `当前主炮：${wSpec.name}（点击或按[F]切换）· ${wSpec.desc}`;
+    btnWeaponMode.classList.toggle('is-scatter', wSpec.id === 'scatter');
+    btnWeaponMode.classList.toggle('is-rainbow', wSpec.id === 'rainbow');
+  }
+  if (homeWeaponIconEl) homeWeaponIconEl.innerHTML = wSpec.icon;
+  if (homeWeaponLabelEl) homeWeaponLabelEl.textContent = wSpec.shortName;
+  if (btnHomeWeapon) {
+    btnHomeWeapon.title = `当前主炮：${wSpec.name}（点击切换）· ${wSpec.desc}`;
+  }
+}
+
 function refreshMechaUI(): void {
+  refreshWeaponUI();
   const spec = state.getMechaSpec();
   const committed = state.getCommittedSkillBranch();
   const ultEvo = state.getUltimateEvolutionSpec();
@@ -432,10 +581,16 @@ function getCommanderRankTitle(bestStage: number): string {
 
 function updateMenuTabBadges(): void {
   const skillUpgradableCount = ALL_SKILL_NODES.filter((n) => state.canUpgradeSkillNode(n.id).ok).length;
-  const metaUpgradableCount = META_UPGRADES.filter((u) => {
-    const lvl = state.getMetaLevel(u.id);
-    return lvl < u.maxLevel && state.gold >= state.getMetaUpgradeCost(u.id);
+  const boboTechUpgradableCount = BOBO_TECH_BRANCH_ORDER.filter((bId) => {
+    const c = state.getBoboTechUpgradeCost(bId);
+    return !c.isMaxed && (c.canAffordCore || c.canAffordGold);
   }).length;
+  const metaUpgradableCount =
+    boboTechUpgradableCount +
+    META_UPGRADES.filter((u) => {
+      const lvl = state.getMetaLevel(u.id);
+      return lvl < u.maxLevel && state.gold >= state.getMetaUpgradeCost(u.id);
+    }).length;
   const skinActionCount = SKINS_CATALOG.filter((s) => {
     const isOwned = state.ownedSkins.includes(s.id);
     if (!isOwned) return state.gold >= s.cost;
@@ -463,9 +618,10 @@ function renderMainMenu(): void {
   updateMenuTabBadges();
 
   const skin = state.getEquippedSkin();
+  const finish = state.getEquippedFinish();
   const eqRank = state.getSkinRankSpec(skin.id);
   if (menuEquippedSkin) {
-    menuEquippedSkin.innerHTML = `${UI_ART.sparkle} <span>${skin.name} · ${eqRank.tier}阶</span>`;
+    menuEquippedSkin.innerHTML = `${UI_ART.sparkle} <span>${skin.name} · ${finish.name} (${eqRank.tier})</span>`;
     menuEquippedSkin.style.background = skin.previewGradient;
   }
 
@@ -476,7 +632,7 @@ function renderMainMenu(): void {
   const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
   if (brandCrestImgEl) {
-    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=18`;
+    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=25`;
   }
   if (commanderRankTagEl) {
     commanderRankTagEl.textContent = getCommanderRankTitle(state.bestStageCleared);
@@ -500,6 +656,7 @@ function renderMainMenu(): void {
   if (homeMechaLabelEl) {
     homeMechaLabelEl.textContent = committedBranch ? committedBranch.hammerMorphName : mechaSpec.shortName;
   }
+  refreshWeaponUI();
   if (homeMascotArtEl) {
     homeMascotArtEl.innerHTML = activeRace.icon;
   }
@@ -517,6 +674,94 @@ function renderMainMenu(): void {
   if (launchBtnSubEl && world.currentTheme) {
     launchBtnSubEl.textContent = `第 1 关起航 · ${world.currentTheme.badge}【${world.currentTheme.perkTitle}】· ${activeRace.raceName}出阵`;
   }
+  const endlessMedal = state.getEndlessMedalInfo();
+  if (endlessBestTextEl) {
+    endlessBestTextEl.textContent = `最佳 ${state.bestEndlessWave} 波 · ${endlessMedal.label}`;
+  }
+  if (endlessBestBadgeEl) {
+    endlessBestBadgeEl.style.borderColor = endlessMedal.color;
+    endlessBestBadgeEl.style.color = endlessMedal.color;
+  }
+  const escortRank = state.getEscortRankInfo();
+  if (escortBestTextEl) {
+    escortBestTextEl.textContent =
+      state.escortClears > 0
+        ? `通关 ${state.escortClears} 次 · 最快 ${state.bestEscortClearSec.toFixed(1)}s`
+        : `最佳 ${state.bestEscortProgressPct}% · ${escortRank.label}`;
+  }
+  if (escortBestBadgeEl) {
+    escortBestBadgeEl.style.borderColor = escortRank.color;
+    escortBestBadgeEl.style.color = escortRank.color;
+  }
+
+  // MC-7: Update Gear Summit Tournament Lobby Badge & Streak Multiplier Chest Bar
+  const trnSpec = state.getTournamentStageSpec();
+  const trophyBonus = state.getTournamentTrophyBonus();
+  const pendingStageVal = state.pendingTournamentChestStage;
+  const pendingChest = state.getPendingTournamentChestPreview(
+    pendingStageVal !== 0 ? pendingStageVal : state.tournamentStage
+  );
+  if (tournamentProgressTextEl) {
+    tournamentProgressTextEl.textContent = `${trnSpec.badgeText} · ${trnSpec.streakLabel} · ${state.tournamentTrophies} 奖杯`;
+  }
+  if (tournamentStageSubEl) {
+    tournamentStageSubEl.textContent =
+      trophyBonus.trophies > 0
+        ? `当前【${trophyBonus.badgeLabel}】全局射速+${trophyBonus.fireRatePct}% · 全军战力+${trophyBonus.powerPct}% · 砖块 ${state.tournamentBricks}`
+        : '三连战阶梯夺杯（1.5x / 2.2x / 3.5x）· 奖杯永久增幅全局射速与兵力';
+  }
+  if (lobbyChestTitleEl) {
+    lobbyChestTitleEl.textContent =
+      state.pendingTournamentChestStage > 0
+        ? `可领取！${pendingChest.streakLabel} 连胜阶梯倍率宝箱（第 ${pendingChest.stage}/3 战）`
+        : `下一档：${trnSpec.streakLabel} 连胜阶梯倍率宝箱（${trnSpec.shortTitle}）`;
+  }
+  if (lobbyChestDescEl) {
+    lobbyChestDescEl.textContent = `内含 +${pendingChest.coins} 金币 · +${pendingChest.cards} 碎片卡 · +${pendingChest.bricks} 砖块 · +${pendingChest.trophies} 荣誉奖杯`;
+  }
+  if (btnLobbyClaimChest) {
+    const canClaimLobby = state.pendingTournamentChestStage > 0;
+    btnLobbyClaimChest.disabled = !canClaimLobby;
+    btnLobbyClaimChest.classList.toggle('is-ready', canClaimLobby);
+    btnLobbyClaimChest.innerHTML = canClaimLobby
+      ? `${UI_ART.tournamentChest} 立即开启 (${pendingChest.streakLabel})`
+      : `${trnSpec.streakLabel} 待夺胜`;
+  }
+
+  // MC-8: Update Giant Clockwork Colossus Raid Lobby Card
+  const raidSpec = state.getColossusRaidSpec();
+  if (colossusRaidTextEl) {
+    colossusRaidTextEl.textContent =
+      state.colossusRaidClears > 0
+        ? `第 ${raidSpec.raidTier} 阶 · 已讨伐 ${state.colossusRaidClears} 次 · ${state.clockworkCores} 核心`
+        : `第 1 阶 · 库存 ${state.clockworkCores} 核心`;
+  }
+  if (colossusRaidSubEl) {
+    colossusRaidSubEl.textContent =
+      state.bestColossusClearSec > 0
+        ? `最快讨伐 ${state.bestColossusClearSec.toFixed(1)}s · 拆解重盾与糖炮触发 6s 瘫痪 2.5x 暴击`
+        : '拆解左翼重盾与右翼糖炮触发 6s 瘫痪 2.5x 暴击 · 赢取发条核心';
+  }
+
+  // MC-9: Update Cloud Airship Mothership Escort Lobby Card & Wing Medal Counter
+  const airshipSpec = state.getAirshipEscortSpec();
+  const airshipMilestone = state.getAirshipMilestoneBonus();
+  if (airshipEscortMedalTextEl) {
+    airshipEscortMedalTextEl.textContent =
+      state.airshipEscortClears > 0
+        ? `飞艇护航徽章 ${state.airshipWingMedals} · 第 ${airshipSpec.escortTier} 阶`
+        : `飞艇护航徽章 ${state.airshipWingMedals} · 第 1 阶`;
+  }
+  if (airshipEscortSubEl) {
+    airshipEscortSubEl.textContent =
+      state.airshipEscortClears > 0
+        ? `${airshipMilestone.summaryText} · 已护航 ${state.airshipEscortClears} 次`
+        : '拔除沿途防空副塔充能空投舱 · 降临超级波波冲击兵赢取飞艇护航徽章';
+  }
+  if (airshipEscortBadgeEl) {
+    airshipEscortBadgeEl.style.borderColor = airshipMilestone.accentColor;
+  }
+  refreshSubWeaponHUD();
 
   if (menuActiveKeystonePill) {
     const desktopLabel = activeKeystone
@@ -539,6 +784,383 @@ function renderMainMenu(): void {
   if (menuStatBounty) {
     const lPct = Math.round((state.getLootMultiplier() - 1) * 100);
     menuStatBounty.textContent = `+${lPct}%`;
+  }
+
+  // Render MC-9 Steam Cannon Core Module Workbench (#cannon-mod-workbench)
+  const activeCannonModSpec = state.getCannonModSpec(state.activeCannonMod);
+  const activeCannonModLvl = Math.max(1, state.getCannonModLevel(state.activeCannonMod));
+  const airshipBonusInfo = state.getAirshipMilestoneBonus();
+  if (cannonModActivePill) {
+    cannonModActivePill.innerHTML = `${activeCannonModSpec.inlineIcon} 当前挂载：${activeCannonModSpec.name} Lv.${activeCannonModLvl}`;
+  }
+  if (cannonModResources) {
+    cannonModResources.innerHTML = `${UI_ART.airshipWingMedal} 飞艇护航徽章 ${state.airshipWingMedals} · 护航突破 ${state.airshipEscortClears} 次 · 累计空投 ${state.totalAirshipDropPods} 舱`;
+  }
+  if (cannonModMilestoneBanner) {
+    cannonModMilestoneBanner.innerHTML = `<span>${UI_ART.airshipWingMedal} 护航勋阶全局加成：${airshipBonusInfo.summaryText}</span><span>累计拔除防空塔 ${state.totalAntiAirTurretsCleared} 座</span>`;
+  }
+  if (cannonModGrid) {
+    cannonModGrid.innerHTML = '';
+    const modBgMap: Record<CannonCoreModId, string> = {
+      overdrive_breech: 'radial-gradient(circle, #fde047 0%, #b45309 100%)',
+      prism_splitter: 'radial-gradient(circle, #7dd3fc 0%, #0369a1 100%)',
+      heavy_mortar: 'radial-gradient(circle, #fda4af 0%, #9f1239 100%)',
+    };
+    CANNON_CORE_MOD_ORDER.forEach((modId) => {
+      const spec = CANNON_CORE_MODS[modId];
+      const lvl = state.getCannonModLevel(modId);
+      const isUnlocked = lvl >= 1;
+      const isEquipped = state.activeCannonMod === modId && isUnlocked;
+      const costInfo = state.getCannonModUpgradeCost(modId);
+
+      const pipsHtml = Array.from({ length: CANNON_CORE_MOD_MAX_LEVEL })
+        .map((_, idx) => `<span class="bobo-tech-pip ${idx < lvl ? 'is-filled' : ''}"></span>`)
+        .join('');
+
+      const card = document.createElement('div');
+      card.className = `finish-card mecha-mod-card bobo-tech-card cannon-mod-card ${isUnlocked ? 'owned' : 'is-locked-mod'} ${isEquipped ? 'equipped is-equipped-mod' : ''}`;
+      card.dataset.cannonMod = modId;
+      card.innerHTML = `
+        <div class="finish-card-top">
+          <div class="finish-swatch" style="background: ${modBgMap[modId]}">${CANNON_MOD_ART[modId]}</div>
+          <div class="finish-meta">
+            <span class="finish-name">${spec.name} ${isUnlocked ? `Lv.${lvl}/${CANNON_CORE_MOD_MAX_LEVEL}` : '未解锁 (Lv.0)'}</span>
+            <span class="finish-tag" style="color: ${spec.accentColor}">${spec.subtitle}</span>
+            <div class="bobo-tech-pips" aria-hidden="true">${pipsHtml}</div>
+          </div>
+        </div>
+        <div class="finish-bonus">${spec.statText(lvl)}</div>
+        <div class="finish-hint">${spec.desc}</div>
+        <div class="bobo-tech-actions cannon-mod-actions">
+          <button type="button" class="finish-action-btn bobo-tech-doctrine-btn cannon-mod-equip-btn ${isEquipped ? 'btn-equipped' : 'btn-equip'}" data-cannon-mod-equip="${modId}" ${!isUnlocked ? 'disabled' : ''}>
+            ${isEquipped ? `${UI_ART.check} 母炮已挂载生效` : isUnlocked ? '挂载至蒸汽母炮' : `${UI_ART.lock} 解锁后可挂载`}
+          </button>
+          <button type="button" class="finish-action-btn cannon-mod-medal-btn ${costInfo.isMaxed ? 'btn-equipped' : 'btn-buy'}" data-cannon-mod-medal="${modId}" ${!costInfo.canAffordMedal ? 'disabled' : ''}>
+            ${costInfo.isMaxed ? `${UI_ART.check} MAX` : `${UI_ART.airshipWingMedal} ${costInfo.medalCost}徽章 ${isUnlocked ? '升阶' : '解锁'}`}
+          </button>
+          <button type="button" class="finish-action-btn cannon-mod-gold-btn ${costInfo.isMaxed ? 'btn-equipped' : 'btn-buy'}" data-cannon-mod-gold="${modId}" ${!costInfo.canAffordGold ? 'disabled' : ''}>
+            ${costInfo.isMaxed ? `${UI_ART.check} MAX` : `${UI_ART.coin} ${costInfo.goldCost} ${isUnlocked ? '改装' : '解锁'}`}
+          </button>
+        </div>
+      `;
+
+      const equipBtn = card.querySelector('.cannon-mod-equip-btn') as HTMLButtonElement;
+      equipBtn.addEventListener('click', () => {
+        if (state.equipCannonMod(modId)) {
+          world.syncCannonCoreModule3D();
+          sound.playTechUpgradeChime();
+          spawnMenuUpgradeBurst(equipBtn, `挂载【${spec.name}】!`, spec.accentColor);
+          refreshUpgradeUI();
+          renderMainMenu();
+          renderActiveBuffsBar();
+        }
+      });
+
+      const medalBtn = card.querySelector('.cannon-mod-medal-btn') as HTMLButtonElement;
+      medalBtn.addEventListener('click', () => {
+        const res = state.upgradeCannonMod(modId, 'medal');
+        if (res.upgraded) {
+          world.syncCannonCoreModule3D();
+          sound.playTechUpgradeChime();
+          spawnMenuUpgradeBurst(
+            medalBtn,
+            `${spec.name} ${res.wasUnlock ? '已解锁' : `Lv.${res.newLevel}`}!`,
+            spec.accentColor
+          );
+          refreshUpgradeUI();
+          renderMainMenu();
+          renderActiveBuffsBar();
+        }
+      });
+
+      const goldBtn = card.querySelector('.cannon-mod-gold-btn') as HTMLButtonElement;
+      goldBtn.addEventListener('click', () => {
+        const res = state.upgradeCannonMod(modId, 'gold');
+        if (res.upgraded) {
+          world.syncCannonCoreModule3D();
+          sound.playTechUpgradeChime();
+          spawnMenuUpgradeBurst(
+            goldBtn,
+            `${spec.name} ${res.wasUnlock ? '已解锁' : `Lv.${res.newLevel}`}!`,
+            spec.accentColor
+          );
+          refreshUpgradeUI();
+          renderMainMenu();
+          renderActiveBuffsBar();
+        }
+      });
+
+      cannonModGrid.appendChild(card);
+    });
+  }
+
+  // Render MC-8 Bobo 3-Branch Specialization Tech Tree Workbench
+  const activeDoctrineSpec = state.getBoboTechSpec(state.activeBoboTechDoctrine);
+  const activeDoctrineLvl = state.getBoboTechLevel(state.activeBoboTechDoctrine);
+  if (boboTechActivePill) {
+    boboTechActivePill.innerHTML = `${activeDoctrineSpec.inlineIcon} 当前专精战策：${activeDoctrineSpec.name} Lv.${activeDoctrineLvl}`;
+  }
+  if (boboTechResources) {
+    boboTechResources.innerHTML = `${UI_ART.clockworkCore} 发条核心 ${state.clockworkCores} · 攻坚讨伐 ${state.colossusRaidClears} 次 · 累计破拆弱点 ${state.totalColossusWeakpointsBroken}`;
+  }
+  if (boboTechTreeGrid) {
+    boboTechTreeGrid.innerHTML = '';
+    const techBgMap: Record<BoboTechBranchId, string> = {
+      vanguard_charge: 'radial-gradient(circle, #7dd3fc 0%, #0369a1 100%)',
+      heavy_siege: 'radial-gradient(circle, #fde047 0%, #b45309 100%)',
+      candy_bombard: 'radial-gradient(circle, #f9a8d4 0%, #be185d 100%)',
+    };
+    BOBO_TECH_BRANCH_ORDER.forEach((branchId) => {
+      const spec = BOBO_TECH_BRANCHES[branchId];
+      const lvl = state.getBoboTechLevel(branchId);
+      const isDoctrine = state.activeBoboTechDoctrine === branchId;
+      const costInfo = state.getBoboTechUpgradeCost(branchId);
+
+      const pipsHtml = Array.from({ length: BOBO_TECH_MAX_LEVEL })
+        .map((_, idx) => `<span class="bobo-tech-pip ${idx < lvl ? 'is-filled' : ''}"></span>`)
+        .join('');
+
+      const card = document.createElement('div');
+      card.className = `finish-card mecha-mod-card bobo-tech-card owned ${isDoctrine ? 'equipped is-active-doctrine' : ''}`;
+      card.dataset.techBranch = branchId;
+      card.innerHTML = `
+        <div class="finish-card-top">
+          <div class="finish-swatch" style="background: ${techBgMap[branchId]}">${BOBO_TECH_ART[branchId]}</div>
+          <div class="finish-meta">
+            <span class="finish-name">${spec.name} Lv.${lvl}/${BOBO_TECH_MAX_LEVEL}</span>
+            <span class="finish-tag" style="color: ${spec.accentColor}">${spec.subtitle}</span>
+            <div class="bobo-tech-pips" aria-hidden="true">${pipsHtml}</div>
+          </div>
+        </div>
+        <div class="finish-bonus">${spec.statText(lvl, isDoctrine)}</div>
+        <div class="finish-hint">${spec.desc}</div>
+        <div class="bobo-tech-doctrine-note">${spec.doctrineBonusText}</div>
+        <div class="bobo-tech-actions">
+          <button type="button" class="finish-action-btn bobo-tech-doctrine-btn ${isDoctrine ? 'btn-equipped' : 'btn-equip'}" data-tech-doctrine="${branchId}">
+            ${isDoctrine ? `${UI_ART.check} 主战策生效中` : '设为专精战策'}
+          </button>
+          <button type="button" class="finish-action-btn bobo-tech-core-btn ${costInfo.isMaxed ? 'btn-equipped' : 'btn-buy'}" data-tech-upgrade-core="${branchId}" ${!costInfo.canAffordCore ? 'disabled' : ''}>
+            ${costInfo.isMaxed ? `${UI_ART.check} MAX` : `${UI_ART.clockworkCore} ${costInfo.coreCost}核 升阶`}
+          </button>
+          <button type="button" class="finish-action-btn bobo-tech-gold-btn ${costInfo.isMaxed ? 'btn-equipped' : 'btn-buy'}" data-tech-upgrade-gold="${branchId}" ${!costInfo.canAffordGold ? 'disabled' : ''}>
+            ${costInfo.isMaxed ? `${UI_ART.check} MAX` : `${UI_ART.coin} ${costInfo.goldCost} 研发`}
+          </button>
+        </div>
+      `;
+
+      const doctrineBtn = card.querySelector('.bobo-tech-doctrine-btn') as HTMLButtonElement;
+      doctrineBtn.addEventListener('click', () => {
+        state.setActiveBoboTechDoctrine(branchId);
+        sound.playTechUpgradeChime();
+        spawnMenuUpgradeBurst(doctrineBtn, `切换战策【${spec.name}】!`, spec.accentColor);
+        refreshUpgradeUI();
+        renderMainMenu();
+      });
+
+      const coreBtn = card.querySelector('.bobo-tech-core-btn') as HTMLButtonElement;
+      coreBtn.addEventListener('click', () => {
+        const res = state.upgradeBoboTechBranch(branchId, 'core');
+        if (res.upgraded) {
+          sound.playTechUpgradeChime();
+          spawnMenuUpgradeBurst(coreBtn, `${spec.name} Lv.${res.newLevel}!`, spec.accentColor);
+          refreshUpgradeUI();
+          renderMainMenu();
+        }
+      });
+
+      const goldBtn = card.querySelector('.bobo-tech-gold-btn') as HTMLButtonElement;
+      goldBtn.addEventListener('click', () => {
+        const res = state.upgradeBoboTechBranch(branchId, 'gold');
+        if (res.upgraded) {
+          sound.playTechUpgradeChime();
+          spawnMenuUpgradeBurst(goldBtn, `${spec.name} Lv.${res.newLevel}!`, spec.accentColor);
+          refreshUpgradeUI();
+          renderMainMenu();
+        }
+      });
+
+      boboTechTreeGrid.appendChild(card);
+    });
+  }
+
+  // Render MC-7 Leader Tactical Sub-Weapon Workbench (3 Mods, Lv.1-5, Equip + Upgrade)
+  const equippedSwSpec = state.getSubWeaponSpec();
+  const equippedSwLvl = state.getSubWeaponLevel();
+  if (subweaponEquippedPill) {
+    subweaponEquippedPill.innerHTML = `${equippedSwSpec.inlineIcon} 当前挂载：${equippedSwSpec.name} Lv.${equippedSwLvl} [V]`;
+  }
+  if (subweaponWorkbenchStats) {
+    subweaponWorkbenchStats.innerHTML = `${UI_ART.gearTournament} 奖杯 ${state.tournamentTrophies} · 副武器累计施放 ${state.totalSubWeaponCasts} 次`;
+  }
+  if (tacticalSubweaponGrid) {
+    tacticalSubweaponGrid.innerHTML = '';
+    const swBgMap: Record<TacticalSubWeaponId, string> = {
+      electro_net: 'radial-gradient(circle, #67e8f9 0%, #0369a1 100%)',
+      syrup_bubble: 'radial-gradient(circle, #f9a8d4 0%, #be185d 100%)',
+      rally_horn: 'radial-gradient(circle, #fde047 0%, #b45309 100%)',
+    };
+    TACTICAL_SUBWEAPON_ORDER.forEach((swId) => {
+      const spec = TACTICAL_SUBWEAPONS[swId];
+      const lvl = state.getSubWeaponLevel(swId);
+      const isMax = lvl >= TACTICAL_SUBWEAPON_MAX_LEVEL;
+      const isEquipped = state.equippedSubWeapon === swId;
+      const upgCost = state.getSubWeaponUpgradeCost(swId);
+      const canUpg = !isMax && state.gold >= upgCost;
+
+      const card = document.createElement('div');
+      card.className = `finish-card mecha-mod-card subweapon-mod-card subweapon-card owned ${isEquipped ? 'equipped' : ''}`;
+      card.dataset.subweaponId = swId;
+      card.innerHTML = `
+        <div class="finish-card-top">
+          <div class="finish-swatch" style="background: ${swBgMap[swId]}">${TACTICAL_SUBWEAPON_ART[swId]}</div>
+          <div class="finish-meta">
+            <span class="finish-name">${spec.name} Lv.${lvl}/${TACTICAL_SUBWEAPON_MAX_LEVEL}</span>
+            <span class="finish-tag" style="color: ${spec.accentColor}">${spec.subtitle}</span>
+          </div>
+        </div>
+        <div class="finish-bonus">${spec.statText(lvl)}</div>
+        <div class="finish-hint">${spec.desc}</div>
+        <div class="subweapon-card-actions">
+          <button type="button" class="finish-action-btn subwpn-equip-btn ${isEquipped ? 'btn-equipped' : 'btn-equip'}" data-subwpn-equip="${swId}">
+            ${isEquipped ? `${UI_ART.check} 已挂载 [V]` : '挂载出战'}
+          </button>
+          <button type="button" class="finish-action-btn subwpn-upg-btn ${isMax ? 'btn-equipped' : 'btn-buy'}" data-subwpn-upgrade="${swId}" ${!canUpg ? 'disabled' : ''}>
+            ${isMax ? `${UI_ART.check} MAX` : `${UI_ART.coin} ${upgCost.toLocaleString()} 升Lv.${lvl + 1}`}
+          </button>
+        </div>
+      `;
+
+      const equipBtn = card.querySelector('.subwpn-equip-btn') as HTMLButtonElement;
+      equipBtn.addEventListener('click', () => {
+        if (state.equipSubWeapon(swId)) {
+          sound.playUpgrade();
+          spawnMenuUpgradeBurst(equipBtn, `挂载【${spec.name}】!`, spec.accentColor);
+          refreshSubWeaponHUD();
+          renderMainMenu();
+        }
+      });
+
+      const upgBtn = card.querySelector('.subwpn-upg-btn') as HTMLButtonElement;
+      upgBtn.addEventListener('click', () => {
+        if (state.upgradeSubWeapon(swId)) {
+          sound.playUpgrade();
+          spawnMenuUpgradeBurst(
+            upgBtn,
+            `${spec.name} Lv.${state.getSubWeaponLevel(swId)}!`,
+            spec.accentColor
+          );
+          refreshUpgradeUI();
+          refreshSubWeaponHUD();
+          renderMainMenu();
+        }
+      });
+
+      tacticalSubweaponGrid.appendChild(card);
+    });
+  }
+
+  // Render MC-6 Twin-Cannon Steam Mecha Overlord Hangar Workbench
+  const overlordSpec = state.getMechaOverlordSpec();
+  const mechaMs = state.getMechaMilestoneStatus();
+  if (mechaHangarMkPill) {
+    mechaHangarMkPill.innerHTML = `${UI_ART.mechaCore} 双联重炮领主 · ${overlordSpec.mkLabel}`;
+  }
+  if (mechaHangarStats) {
+    mechaHangarStats.innerHTML = `${UI_ART.mechaOverlord} 降临 ${state.totalMechaSummons} 次 · 重炮轰碎 ${state.totalMechaSmashes}`;
+  }
+  if (mechaHangarGrid) {
+    const coreLvl = state.mechaCoreLevel;
+    const coreMax = GameState.MECHA_HANGAR_MAX_LEVEL;
+    const coreCost = state.getMechaCoreUpgradeCost();
+    const canCore = coreLvl < coreMax && state.gold >= coreCost;
+
+    const canLvl = state.mechaCannonLevel;
+    const canMax = GameState.MECHA_HANGAR_MAX_LEVEL;
+    const canCost = state.getMechaCannonUpgradeCost();
+    const canCannon = canLvl < canMax && state.gold >= canCost;
+
+    const msBtnLabel = mechaMs.allClaimed
+      ? `${UI_ART.check} 里程碑全满 (${mechaMs.maxTier}/${mechaMs.maxTier})`
+      : mechaMs.canClaim
+        ? `${UI_ART.trophy} 领取 +${mechaMs.rewardGold}金 +${mechaMs.rewardShards}碎片`
+        : `召唤 ${state.totalMechaSummons}/${mechaMs.nextTargetSummons} 次领奖`;
+
+    mechaHangarGrid.innerHTML = `
+      <div class="finish-card mecha-mod-card ${coreLvl >= coreMax ? 'owned equipped' : ''}" data-mecha-mod="core">
+        <div class="finish-card-top">
+          <div class="finish-swatch" style="background: radial-gradient(circle, #67e8f9 0%, #0369a1 100%)">${UI_ART.mechaCoreArt}</div>
+          <div class="finish-meta">
+            <span class="finish-name">合体超压炉芯 Lv.${coreLvl}/${coreMax}</span>
+            <span class="finish-tag" style="color: #67e8f9">装甲生命 +${Math.round((overlordSpec.hpMult - 1) * 100)}% · 开局充能 ${overlordSpec.startingCharge}%</span>
+          </div>
+        </div>
+        <div class="finish-bonus">每级提升机甲领主装甲 +12% · 初始充能 +4%</div>
+        <button type="button" id="btn-upg-mecha-core" class="finish-action-btn ${coreLvl >= coreMax ? 'btn-equipped' : 'btn-buy'}" ${!canCore ? 'disabled' : ''}>
+          ${coreLvl >= coreMax ? `${UI_ART.check} MAX 满级` : `${UI_ART.coin} ${coreCost.toLocaleString()} 升级炉芯`}
+        </button>
+      </div>
+      <div class="finish-card mecha-mod-card ${canLvl >= canMax ? 'owned equipped' : ''}" data-mecha-mod="cannon">
+        <div class="finish-card-top">
+          <div class="finish-swatch" style="background: radial-gradient(circle, #fde047 0%, #b45309 100%)">${UI_ART.mechaOverlordArt}</div>
+          <div class="finish-meta">
+            <span class="finish-name">双联重炮膛线 Lv.${canLvl}/${canMax}</span>
+            <span class="finish-tag" style="color: #fde047">重炮伤害 +${Math.round((overlordSpec.shellDmgMult - 1) * 100)}% · 齐射 ${overlordSpec.volleyInterval}s</span>
+          </div>
+        </div>
+        <div class="finish-bonus">每级提升双联重炮威力 +12% · 缩短装填间隔</div>
+        <button type="button" id="btn-upg-mecha-cannon" class="finish-action-btn ${canLvl >= canMax ? 'btn-equipped' : 'btn-buy'}" ${!canCannon ? 'disabled' : ''}>
+          ${canLvl >= canMax ? `${UI_ART.check} MAX 满级` : `${UI_ART.coin} ${canCost.toLocaleString()} 强化重炮`}
+        </button>
+      </div>
+      <div class="finish-card mecha-mod-card ${mechaMs.canClaim ? 'owned' : ''} ${mechaMs.allClaimed ? 'equipped' : ''}" data-mecha-mod="milestone">
+        <div class="finish-card-top">
+          <div class="finish-swatch" style="background: radial-gradient(circle, #f5d0fe 0%, #7e22ce 100%)">${UI_ART.mechaOverlordArt}</div>
+          <div class="finish-meta">
+            <span class="finish-name">领主降临勋章 (${mechaMs.tier}/${mechaMs.maxTier})</span>
+            <span class="finish-tag" style="color: #f0abfc">合体增幅 +${Math.round(overlordSpec.fusionPerUnitBonus * 100)}%/兵 · 永久全阶+10%</span>
+          </div>
+        </div>
+        <div class="finish-bonus">累计召唤达 1 / 3 / 6 / 10 次解锁超频赏金与碎片</div>
+        <button type="button" id="btn-claim-mecha-milestone" class="finish-action-btn ${mechaMs.allClaimed ? 'btn-equipped' : mechaMs.canClaim ? 'btn-equip' : 'btn-buy'}" ${!mechaMs.canClaim ? 'disabled' : ''}>
+          ${msBtnLabel}
+        </button>
+      </div>
+    `;
+
+    const btnCore = document.getElementById('btn-upg-mecha-core') as HTMLButtonElement | null;
+    btnCore?.addEventListener('click', () => {
+      if (state.upgradeMechaCore()) {
+        sound.playUpgrade();
+        spawnMenuUpgradeBurst(btnCore, `合体炉芯 Lv.${state.mechaCoreLevel}!`, '#38bdf8');
+        refreshUpgradeUI();
+        renderMainMenu();
+      }
+    });
+
+    const btnCannon = document.getElementById('btn-upg-mecha-cannon') as HTMLButtonElement | null;
+    btnCannon?.addEventListener('click', () => {
+      if (state.upgradeMechaCannon()) {
+        sound.playUpgrade();
+        spawnMenuUpgradeBurst(btnCannon, `双联重炮 Lv.${state.mechaCannonLevel}!`, '#fbbf24');
+        refreshUpgradeUI();
+        renderMainMenu();
+      }
+    });
+
+    const btnMs = document.getElementById('btn-claim-mecha-milestone') as HTMLButtonElement | null;
+    btnMs?.addEventListener('click', () => {
+      const claim = state.claimMechaMilestone();
+      if (claim.claimed) {
+        sound.playUpgrade();
+        spawnMenuUpgradeBurst(
+          btnMs,
+          `领主勋章 +${claim.goldAwarded}金 +${claim.shardsAwarded}碎片!`,
+          '#e879f9'
+        );
+        refreshUpgradeUI();
+        renderMainMenu();
+      }
+    });
   }
 
   // Render Out-of-Match Base Attribute Upgrades
@@ -594,6 +1216,72 @@ function renderMainMenu(): void {
       });
 
       metaUpgradesGrid.appendChild(card);
+    });
+  }
+
+  // Render MC-5 Bobo Squad Surface Material Finish Workbench
+  if (squadLiveryActivePill) {
+    squadLiveryActivePill.innerHTML = `${UI_ART.sparkle} ${skin.name} × ${finish.name}`;
+  }
+  if (squadFinishResources) {
+    squadFinishResources.innerHTML = `${UI_ART.shard} 碎片 ${state.getTotalSkinShards()} · ${UI_ART.escortCart} 破障 ${state.totalBarricadesBroken} · 通关 ${state.escortClears}`;
+  }
+  if (squadFinishGrid) {
+    squadFinishGrid.innerHTML = '';
+    SQUAD_FINISH_CATALOG.forEach((f) => {
+      const check = state.canUnlockFinish(f.id);
+      const isEquipped = state.equippedFinish === f.id;
+      const artHtml = SQUAD_FINISH_ART[f.id] || UI_ART.palette;
+      let btnLabel = '';
+      if (isEquipped) {
+        btnLabel = `${UI_ART.check} 使用中`;
+      } else if (check.isOwned) {
+        btnLabel = `应用材质`;
+      } else if (check.milestoneFree) {
+        btnLabel = `${UI_ART.trophy} 里程碑免费领`;
+      } else if (f.costShards > 0) {
+        const compactG = f.costGold >= 1000 ? `${(f.costGold / 1000).toFixed(1).replace(/\.0$/, '')}k` : `${f.costGold}`;
+        btnLabel = `${UI_ART.coin}${compactG} + ${UI_ART.shard}${f.costShards}`;
+      } else {
+        const compactG = f.costGold >= 1000 ? `${(f.costGold / 1000).toFixed(1).replace(/\.0$/, '')}k` : `${f.costGold}`;
+        btnLabel = `${UI_ART.coin} ${compactG} 解锁`;
+      }
+
+      const fCard = document.createElement('div');
+      fCard.className = `finish-card ${check.isOwned ? 'owned' : ''} ${isEquipped ? 'equipped' : ''}`;
+      fCard.dataset.finishId = f.id;
+      fCard.title = `${f.desc}（${f.milestoneHint}）`;
+      fCard.innerHTML = `
+        <div class="finish-card-top">
+          <div class="finish-swatch" style="background: ${f.previewGradient}">${artHtml}</div>
+          <div class="finish-meta">
+            <span class="finish-name">${f.name}</span>
+            <span class="finish-tag" style="color: ${f.badgeColor}">${f.tag}</span>
+          </div>
+        </div>
+        <div class="finish-bonus">${f.bonusText}</div>
+        <div class="finish-hint">${f.milestoneHint}</div>
+        <button type="button" class="finish-action-btn ${isEquipped ? 'btn-equipped' : check.isOwned ? 'btn-equip' : 'btn-buy'}" ${!check.isOwned && !check.canUnlock ? 'disabled' : ''}>
+          ${btnLabel}
+        </button>
+      `;
+
+      const fBtn = fCard.querySelector('.finish-action-btn') as HTMLButtonElement;
+      fBtn.addEventListener('click', () => {
+        const res = state.unlockOrEquipFinish(f.id as SquadFinishId);
+        if (res === 'unlocked' || res === 'equipped') {
+          sound.playUpgrade();
+          spawnMenuUpgradeBurst(
+            fBtn,
+            res === 'unlocked' ? `解锁材质【${f.name}】!` : `已换装【${f.name}】`,
+            f.badgeColor
+          );
+          world.applySkin(state.getEquippedSkin());
+          refreshUpgradeUI();
+          renderMainMenu();
+        }
+      });
+      squadFinishGrid.appendChild(fCard);
     });
   }
 
@@ -763,7 +1451,7 @@ function renderMainMenu(): void {
       row.style.setProperty('--stagger-i', `${idx}`);
       const lbRaceOrder = ['swarm', 'titan', 'gate', 'plasma', 'orbital', 'bastion', 'tycoon'];
       const avatarRace = lbRaceOrder[idx % lbRaceOrder.length];
-      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=18" alt="" draggable="false" /></div>`;
+      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=25" alt="" draggable="false" /></div>`;
       if (isActiveMode) {
         const timeStr = state.formatPlayTime(entry.playTimeSeconds);
         row.innerHTML = `
@@ -1183,6 +1871,7 @@ function openMainMenu(): void {
 
 function launchBattle(): void {
   topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
   state.resetRunProgression();
   mainMenu.classList.add('hidden');
   if (hudTop) hudTop.style.display = 'flex';
@@ -1193,9 +1882,275 @@ function launchBattle(): void {
   startLevel(0);
 }
 
+function launchEndlessDefense(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const lvl = generateEndlessDefenseLevel();
+  world.loadLevel(lvl);
+  if (stageBadge) {
+    stageBadge.textContent = `无尽保卫 · 第 1 波`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = '死守泡泡站 · 波次递增出击红军与突变巨汉 · 零战败损耗';
+  }
+  bossNameEl.innerHTML = `${UI_ART.endlessShield} 深渊突变裂隙`;
+  showBanner(
+    `${UI_ART.endlessShield} 无尽工坊保卫战开启！`,
+    `${UI_ART.endlessMedal} 抵御红军狂潮与突变巨汉 · 冲击个人最佳勋章`
+  );
+  refreshMechaUI();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+function startBonusHeist(milestoneStage: number, nextCampaignIdx: number): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  pendingNextCampaignIdx = Math.max(0, nextCampaignIdx);
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const lvl = generateCandyVaultBonusLevel(milestoneStage);
+  world.loadLevel(lvl);
+  if (stageBadge) {
+    stageBadge.textContent = `糖果金库 · 25s`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = '25秒零红军暴爽狂欢 · 轰碎糖果金库塔狂爆金币与时装碎片！';
+  }
+  bossNameEl.innerHTML = `${UI_ART.candyVault} 至尊糖果总金库`;
+  showBanner(
+    `${UI_ART.candyVault} 糖果金库大劫案（25s 暴爽奖励关）`,
+    `零红军干扰！穿过高倍门轰碎 5 座糖果金库塔，狂爆金币与时装碎片！`
+  );
+  refreshMechaUI();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+function launchPayloadEscort(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const tier = 1 + Math.min(4, state.escortClears);
+  const lvl = generatePayloadEscortLevel(tier);
+  world.loadLevel(lvl);
+  if (stageBadge) {
+    stageBadge.textContent = `战车护送 · 推进 0%`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = '波波团环绕充能推进蒸汽战车 · 冲角撞碎 4 道敌方路障攻破终极据点！';
+  }
+  bossNameEl.innerHTML = `${UI_ART.escortCart} 战车护送进度`;
+  showBanner(
+    `${UI_ART.escortCart} 蒸汽装甲战车护送发车！`,
+    `${UI_ART.barricade} 派遣波波团环绕战车充能超载 · 冲撞碾碎路障直捣黑铁终极据点`
+  );
+  refreshMechaUI();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+function refreshSubWeaponHUD(): void {
+  const spec = state.getSubWeaponSpec();
+  const lvl = state.getSubWeaponLevel();
+  if (subweaponIcon) {
+    subweaponIcon.innerHTML = TACTICAL_SUBWEAPON_HUD_ART[spec.id];
+  }
+  if (subweaponName) {
+    subweaponName.textContent = spec.shortName;
+  }
+  if (btnTacticalSubweapon) {
+    btnTacticalSubweapon.dataset.subweapon = spec.id;
+    btnTacticalSubweapon.title = `${spec.name} Lv.${lvl}（${spec.subtitle}）[V键]`;
+  }
+}
+
+function launchGearTournament(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  if (state.pendingTournamentChestStage > 0) {
+    state.claimTournamentStreakChest();
+  }
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const stageSpec = state.getTournamentStageSpec();
+  const lvl = generateGearTournamentLevel(stageSpec.stage, state.tournamentCupTier);
+  world.loadLevel(lvl);
+  if (stageBadge) {
+    stageBadge.textContent = `${stageSpec.badgeText} (${stageSpec.streakLabel})`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.gearTournament} ${lvl.bossName}`;
+  showBanner(
+    `${UI_ART.gearTournament} ${stageSpec.badgeText} · 连胜倍率 ${stageSpec.streakLabel}`,
+    `${lvl.subtitle}`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+function launchColossusRaid(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const raidSpec = state.getColossusRaidSpec();
+  const lvl = generateClockworkColossusRaidLevel(raidSpec.raidTier);
+  world.loadLevel(lvl);
+  if (stageBadge) {
+    stageBadge.textContent = `发条攻坚 · 第 ${raidSpec.raidTier} 阶`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.clockworkColossus} ${lvl.bossName}`;
+  colossusRaidHudEl?.classList.remove('hidden');
+  showBanner(
+    `${UI_ART.clockworkColossus} 巨型发条玩具首领攻坚战 · 第 ${raidSpec.raidTier} 阶`,
+    `${UI_ART.clockworkCore} 拆解左翼重盾或右翼糖炮，触发 6.0s 瘫痪 2.5x 高倍暴击窗口！`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+function launchAirshipEscort(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const airSpec = state.getAirshipEscortSpec();
+  const lvl = generateAirshipEscortLevel(airSpec.escortTier);
+  world.loadLevel(lvl);
+  if (stageBadge) {
+    stageBadge.textContent = `飞艇护航 · 推进 0%`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.airshipEscort} 母舰护航进度`;
+  airshipEscortHudEl?.classList.remove('hidden');
+  showBanner(
+    `${UI_ART.airshipEscort} 云端飞艇母舰护航战 · 第 ${airSpec.escortTier} 阶`,
+    `${UI_ART.airshipWingMedal} 拔除防空副塔并护卫母舰充能，投送超级波波空投舱轰破要塞！`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchEndless = () => launchEndlessDefense();
+(window as unknown as Record<string, unknown>).__mc3dLaunchEscort = () => launchPayloadEscort();
+(window as unknown as Record<string, unknown>).__mc3dLaunchTournament = () => launchGearTournament();
+(window as unknown as Record<string, unknown>).__mc3dLaunchColossusRaid = () => launchColossusRaid();
+(window as unknown as Record<string, unknown>).__mc3dLaunchAirshipEscort = () => launchAirshipEscort();
+(window as unknown as Record<string, unknown>).__mc3dStartBonusHeist = (stage = 5) =>
+  startBonusHeist(stage, stage);
+
 function renderActiveBuffsBar(): void {
+  syncCannonModHudBadge();
   if (!activeBuffsBar || !world.currentLevel) return;
   const pills: string[] = [];
+
+  const activeModSpec = state.getCannonModSpec(state.activeCannonMod);
+  const activeModLvl = Math.max(1, state.getCannonModLevel(state.activeCannonMod));
+  pills.push(
+    `<span class="buff-pill rarity-legendary" title="蒸汽母炮核心模组：${activeModSpec.statText(activeModLvl)}">${CANNON_MOD_INLINE_ART[activeModSpec.id]} ${activeModSpec.name} Lv.${activeModLvl}</span>`
+  );
+
+  if (world.currentLevel.isAirshipEscort && world.airshipMothership) {
+    const ship = world.airshipMothership;
+    const pct = world.getAirshipProgressPct();
+    const dropPct = Math.round(ship.dropCharge);
+    const aaLeft = world.getAliveAntiAirTurretCount();
+    pills.push(
+      `<span class="buff-pill rarity-legendary">${UI_ART.airshipEscort} 飞艇护航 ${pct}% · ${world.getAirshipStateLabel()} · 空投充能 ${dropPct}% · 防空塔 ${aaLeft}/${world.antiAirTurrets.length}</span>`
+    );
+  } else if (world.currentLevel.isBonusHeist) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary">${UI_ART.candyVault} 糖果大劫案 ${Math.ceil(world.bonusHeistTimeLeft)}s · 金库 ${world.bonusVaultsBroken}/${world.candyVaults.length}</span>`
+    );
+  } else if (world.currentLevel.isGearTournament) {
+    const stTitle = world.currentLevel.tournamentStageTitle || '齿轮巅峰锦标赛';
+    const stMult = (world.currentLevel.tournamentStreakMult || 1.5).toFixed(1);
+    pills.push(
+      `<span class="buff-pill rarity-legendary">${UI_ART.gearTournament} ${stTitle} · 倍率 ${stMult}x · 奖杯 ${state.tournamentTrophies}</span>`
+    );
+  } else if (world.currentLevel.isColossusRaid && world.colossusBoss) {
+    const cb = world.colossusBoss;
+    if (cb.paralysisTimer > 0) {
+      pills.push(
+        `<span class="buff-pill rarity-legendary">${UI_ART.clockworkCore} 瘫痪高倍暴击窗口 2.5x · 剩余 ${cb.paralysisTimer.toFixed(1)}s</span>`
+      );
+    } else {
+      const intact = (cb.leftShieldAlive ? 1 : 0) + (cb.rightCannonAlive ? 1 : 0);
+      pills.push(
+        `<span class="buff-pill rarity-epic">${UI_ART.clockworkColossus} 发条攻坚第 ${cb.raidTier} 阶 · 剩余弱点臂 ${intact}/2</span>`
+      );
+    }
+  } else if (world.currentLevel.isEndlessDefense) {
+    const medal = state.getEndlessMedalInfo();
+    pills.push(
+      `<span class="buff-pill rarity-epic">${UI_ART.endlessShield} 无尽第 ${world.endlessWave} 波 · ${UI_ART.endlessMedal} 最佳 ${state.bestEndlessWave} 波(${medal.label})</span>`
+    );
+  } else if (world.currentLevel.isPayloadEscort && world.payloadCart) {
+    const pct = world.getEscortProgressPct();
+    const spd = world.payloadCart.speed.toFixed(1);
+    const charge = Math.round(world.payloadCart.steamCharge);
+    pills.push(
+      `<span class="buff-pill rarity-legendary">${UI_ART.escortCart} 护送 ${pct}% · ${world.getEscortStateLabel()} (${spd}m/s · 气压${charge}%) · ${UI_ART.barricade} 破障 ${world.escortBarricadesBroken}/${world.escortBarricades.length}</span>`
+    );
+  }
 
   if (world.currentTheme) {
     pills.push(
@@ -1203,9 +2158,57 @@ function renderActiveBuffsBar(): void {
     );
   }
 
+  if (world.currentLevel.weatherAffix) {
+    const wf = world.currentLevel.weatherAffix;
+    const wfIcon = UI_ART[wf.iconKey] || UI_ART.envTailwind;
+    pills.push(
+      `<span class="buff-pill rarity-epic" title="动态天气机关桥词缀【${wf.name}】：${wf.desc}">${wfIcon} ${wf.shortBadge}</span>`
+    );
+  }
+
+  if (world.mechaOverlord?.active) {
+    const mo = world.mechaOverlord;
+    const spec = state.getMechaOverlordSpec();
+    const hpPct = Math.max(1, Math.round((mo.hp / Math.max(1, mo.maxHp)) * 100));
+    pills.push(
+      `<span class="buff-pill rarity-legendary" title="双联重炮合体机甲领主在场推进中">${UI_ART.mechaOverlord} 机甲${spec.mkLabel} ${hpPct}% · ${Math.ceil(mo.lifeTimer)}s</span>`
+    );
+  }
+
+  if (world.syrupZone?.active) {
+    pills.push(
+      `<span class="buff-pill rarity-epic" title="糖浆减速泡持续迟滞并放大红军所受伤害">${TACTICAL_SUBWEAPON_INLINE_ART.syrup_bubble} 糖浆泡 ${Math.ceil(world.syrupZone.timer)}s</span>`
+    );
+  }
+
+  if (world.rallyAuraFx?.active) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary" title="鼓舞号角光环持续提升全军移速与攻速">${TACTICAL_SUBWEAPON_INLINE_ART.rally_horn} 号角光环 ${Math.ceil(world.rallyAuraFx.timer)}s</span>`
+    );
+  }
+
   if (world.bossShieldActive) {
     pills.push(
       `<span class="buff-pill rarity-epic" title="大Boss虚空力场护盾：减伤88%，需集火${world.bossShieldHitsRemaining}次或用轰炸/炸药桶瞬间击碎">${UI_ART.shield} 虚空护盾(${world.bossShieldHitsRemaining})</span>`
+    );
+  }
+
+  const aliveSubTowers = world.getAliveSubTowerCount();
+  if (aliveSubTowers > 0) {
+    const drPct = aliveSubTowers >= 2 ? 76 : 42;
+    pills.push(
+      `<span class="buff-pill rarity-epic" title="双侧蒸汽护盾副塔正为母巢供能减伤 ${drPct}%！向左右侧翼发射兵潮优先拔除副塔可破盾重创母巢">${UI_ART.shield} 蒸汽副塔(${aliveSubTowers}/2 · 减伤${drPct}%)</span>`
+    );
+  }
+
+  if (world.bossSteamSweep && world.bossSteamSweep.phase !== 'idle') {
+    const laneName = world.bossSteamSweep.lane === 'left' ? '左半桥' : '右半桥';
+    const statusLabel =
+      world.bossSteamSweep.phase === 'telegraph'
+        ? `${laneName}蒸汽预警(${Math.max(0.1, world.bossSteamSweep.timer).toFixed(1)}s)`
+        : `${laneName}高压横扫中`;
+    pills.push(
+      `<span class="buff-pill debuff-pill" title="母巢正在向${laneName}喷射高压蒸汽波，立即拖动炮车切换至另一侧半桥规避！">${UI_ART.warning} ${statusLabel}</span>`
     );
   }
 
@@ -1216,6 +2219,22 @@ function renderActiveBuffsBar(): void {
   if (world.adrenalineTimer > 0) {
     pills.push(
       `<span class="buff-pill rarity-legendary" title="连杀狂暴：全军射速移速+22%">${UI_ART.flame} ${world.adrenalineTimer.toFixed(0)}s</span>`
+    );
+  }
+
+  if (world.dualVolleyTimer > 0) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary" title="空投增益：双倍连射齐发">${UI_ART.tacticalAirdrop} 双倍连射 ${Math.ceil(world.dualVolleyTimer)}s</span>`
+    );
+  }
+  if (world.freezeRedsTimer > 0) {
+    pills.push(
+      `<span class="buff-pill rarity-epic" title="空投增益：冰霜缓敌72%">${UI_ART.tacticalAirdrop} 冰霜缓敌 ${Math.ceil(world.freezeRedsTimer)}s</span>`
+    );
+  }
+  if (world.frontlineGiantsTimer > 0) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary" title="空投增益：前线全军小巨人阵">${UI_ART.tacticalAirdrop} 前线巨人阵 ${Math.ceil(world.frontlineGiantsTimer)}s</span>`
     );
   }
 
@@ -1264,11 +2283,18 @@ function updateRewardModalHeaderUI(): void {
   if (opt) {
     rewardPromptText.innerHTML = `${UI_ART.check} 已选「${opt.title}」${mult > 1 ? ' (×3倍生效)' : ''}`;
     btnModalNext.disabled = false;
-    btnModalNext.innerHTML = `${mult > 1 ? `${UI_ART.bolt} 跳2关 → 第 ${stageNum + 3} 关` : `${UI_ART.rocket} 下一关`}<kbd class="kbd-hint">Space</kbd>`;
+    if (pendingBonusHeistStage > 0) {
+      btnModalNext.classList.add('btn-bonus-heist-cta');
+      btnModalNext.innerHTML = `${UI_ART.candyVault} 开启糖果金库大劫案 (25s)<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      btnModalNext.classList.remove('btn-bonus-heist-cta');
+      btnModalNext.innerHTML = `${mult > 1 ? `${UI_ART.bolt} 跳2关 → 第 ${stageNum + 3} 关` : `${UI_ART.rocket} 下一关`}<kbd class="kbd-hint">Space</kbd>`;
+    }
   } else {
     const tierLabel = currentRewardOptions[0]?.rarityLabel || '普通强化';
     rewardPromptText.innerHTML = `${UI_ART.gift} 战利品三选一 · 【${tierLabel}】`;
     btnModalNext.disabled = true;
+    btnModalNext.classList.remove('btn-bonus-heist-cta');
     btnModalNext.innerHTML = `请选择上方强化<kbd class="kbd-hint">1-3</kbd>`;
   }
 }
@@ -1390,11 +2416,196 @@ world.onStageEnd = (victory: boolean) => {
   topToolsDrawer?.classList.add('hidden');
   centerBanner.classList.add('hidden');
   resultModal.classList.remove('hidden');
-  resultModal.classList.toggle('victory-mode', victory);
   statTotalSpawned.textContent = `${state.stageClonesSpawned}`;
   statTotalKills.textContent = `${state.stageMutantsKilled}`;
   statStageGold.innerHTML = `+${state.stageGoldEarned} ${UI_ART.coin}`;
   const stageNum = state.currentLevelIndex + 1;
+
+  // Reset modal button defaults before branching by mode
+  tournamentChestSection?.classList.add('hidden');
+  btnModalReplay.style.display = 'inline-block';
+  btnModalReplay.innerHTML = `<img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=25" alt="" draggable="false" /><span>重玩</span><kbd class="kbd-hint">P</kbd>`;
+  btnModalNext.classList.remove('btn-bonus-heist-cta');
+
+  if (world.currentLevel?.isAirshipEscort) {
+    const clearSec = Math.max(1.0, world.stageCombatTime);
+    const pct = victory ? 100 : world.getAirshipProgressPct();
+    const rec = state.recordAirshipEscortResult(
+      victory,
+      pct,
+      world.antiAirTurretsCleared,
+      world.airshipDropPodsDeployed,
+      clearSec
+    );
+    const nextAirSpec = state.getAirshipEscortSpec();
+    const milestone = state.getAirshipMilestoneBonus();
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#38bdf8', 0.72);
+      modalBadge.innerHTML = `${UI_ART.airshipEscort} AIRSHIP ESCORT · 第 ${rec.escortTierCleared} 阶护航大捷`;
+      modalTitle.innerHTML = `${UI_ART.airshipWingMedal} 蒸汽飞艇母舰轰破苍穹要塞！`;
+      modalDesc.innerHTML = `拔除防空塔 ${world.antiAirTurretsCleared}/${world.antiAirTurrets.length} · 投送空投舱 ${world.airshipDropPodsDeployed} 舱 · 荣获飞艇护航徽章 +${rec.medalsAwarded} ${UI_ART.airshipWingMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin} · 碎片卡 +${rec.cardsAwarded} ${UI_ART.shard}（${milestone.rankTitle}）`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${UI_ART.modOverdrive} <span>前往母炮改装台</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.airshipEscort} 护航第 ${nextAirSpec.escortTier} 阶航线<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      modalBadge.innerHTML = `${UI_ART.airshipEscort} AIRSHIP ESCORT · 护航重整`;
+      modalTitle.innerHTML = `${UI_ART.warning} 飞艇编队受阻返航 · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.medalsAwarded > 0
+          ? `本局拔除防空塔 ${world.antiAirTurretsCleared} 座，发放护航津贴：飞艇护航徽章 +${rec.medalsAwarded} ${UI_ART.airshipWingMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}！前往工坊改装母炮核心模组再战！`
+          : `推进进度 ${pct}% · 零金币扣罚！优先派遣波波拔除两翼防空副塔即可触发超级波波空投舱！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.airshipEscort} <span>重战飞艇护航</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isColossusRaid) {
+    const clearSec = Math.max(1.0, world.stageCombatTime);
+    const brokenCount = world.colossusBoss?.weakpointsBroken || 0;
+    const rec = state.recordColossusRaidResult(victory, brokenCount, clearSec);
+    const nextRaidSpec = state.getColossusRaidSpec();
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#fde047', 0.75);
+      modalBadge.innerHTML = `${UI_ART.clockworkColossus} COLOSSUS RAID · 第 ${rec.raidTierCleared} 阶讨伐成功`;
+      modalTitle.innerHTML = `${UI_ART.clockworkCore} 巨型发条玩具首领轰然倒塌！`;
+      modalDesc.innerHTML = `击破弱点臂 ${brokenCount}/2 · 荣获发条核心 +${rec.coresAwarded} ${UI_ART.clockworkCore} · 金币 +${rec.coinsAwarded} ${UI_ART.coin} · 碎片卡 +${rec.cardsAwarded} ${UI_ART.shard} · 齿轮砖块 +${rec.bricksAwarded}（用时 ${clearSec.toFixed(1)}s）`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${UI_ART.clockworkCore} <span>前往工坊升科技</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.clockworkColossus} 挑战第 ${nextRaidSpec.raidTier} 阶首领<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      modalBadge.innerHTML = `${UI_ART.clockworkColossus} COLOSSUS RAID · 攻坚重整`;
+      modalTitle.innerHTML = `${UI_ART.warning} 发条巨兵防线受阻 · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.coresAwarded > 0
+          ? `本局拆解弱点臂 ${brokenCount}/2，发放破拆津贴：发条核心 +${rec.coresAwarded} ${UI_ART.clockworkCore} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}！前往工坊升级波波三系专精科技再战！`
+          : `零金币扣罚！建议在工坊研发【重甲破城营】放大弱点破拆伤害，击破左翼重盾或右翼糖炮触发 6s 瘫痪 2.5x 暴击！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.clockworkColossus} <span>重战发条首领</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isGearTournament) {
+    const playedStage = (world.currentLevel.tournamentStage || state.tournamentStage) as 1 | 2 | 3;
+    const rec = state.recordTournamentMatchResult(victory, playedStage);
+    const nextSpec = state.getTournamentStageSpec(rec.nextStage);
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#fde047', 0.72);
+      const chestPreview = state.getPendingTournamentChestPreview(playedStage);
+      modalBadge.innerHTML = `${UI_ART.gearTournament} GEAR SUMMIT · ${rec.streakMultiplier.toFixed(1)}x`;
+      modalTitle.innerHTML = rec.cupCompleted
+        ? `${UI_ART.gearTournament} 金齿巅峰决战夺冠 · 三连胜满贯！`
+        : `${UI_ART.gearTournament} 第 ${playedStage}/3 战突破 · 晋级${nextSpec.shortTitle}！`;
+      modalDesc.innerHTML = `直得锦标赛荣誉奖杯 +${rec.matchTrophiesAwarded} · 已解锁【${chestPreview.streakLabel} 连胜阶梯倍率宝箱】！`;
+      if (tournamentChestSection && modalChestTitleEl && modalChestRewardsEl && btnClaimTournamentChest) {
+        tournamentChestSection.classList.remove('hidden');
+        modalChestTitleEl.textContent = `连胜阶梯倍率宝箱 · ${chestPreview.streakLabel}（第 ${playedStage}/3 战）`;
+        modalChestRewardsEl.textContent = `金币 +${chestPreview.coins} · 碎片卡 +${chestPreview.cards} · 砖块 +${chestPreview.bricks} · 荣誉奖杯 +${chestPreview.trophies}`;
+        btnClaimTournamentChest.disabled = false;
+        btnClaimTournamentChest.innerHTML = `${UI_ART.tournamentChest} 开启 ${chestPreview.streakLabel} 宝箱`;
+      }
+      btnModalReplay.style.display = 'none';
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.gearTournament} 迎战${nextSpec.badgeText}<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      modalBadge.innerHTML = `${UI_ART.gearTournament} TOURNAMENT RESET`;
+      modalTitle.innerHTML = `${UI_ART.warning} 锦标赛连胜中断 · 重返铜齿预赛`;
+      modalDesc.innerHTML = `零金币扣罚！已积累的 ${state.tournamentTrophies} 座锦标赛荣誉奖杯永久保留，重整副武器再冲击三连冠！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.gearTournament} <span>重战铜齿预赛</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isBonusHeist) {
+    resultModal.classList.add('victory-mode');
+    world.triggerScreenFlash('#fde047', 0.72);
+    modalBadge.innerHTML = `${UI_ART.candyVault} CANDY VAULT JACKPOT`;
+    modalTitle.innerHTML = `${UI_ART.candyVault} 糖果金库大劫案满载而归！`;
+    modalDesc.innerHTML = `共轰碎金库塔 ${world.bonusVaultsBroken}/${world.candyVaults.length} 座 · 狂揽 +${state.stageGoldEarned} ${UI_ART.coin} · 时装碎片 +${world.bonusHeistShardsEarned} ${UI_ART.shard}`;
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    btnModalReplay.style.display = 'none';
+    btnModalNext.disabled = false;
+    btnModalNext.style.display = 'inline-block';
+    btnModalNext.innerHTML = `${UI_ART.rocket} 继续第 ${pendingNextCampaignIdx + 1} 关<kbd class="kbd-hint">Space</kbd>`;
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isPayloadEscort) {
+    const clearSec = Math.max(1.0, world.stageCombatTime);
+    const pct = victory ? 100 : world.getEscortProgressPct();
+    const rec = state.recordEscortRun(pct, clearSec, world.escortBarricadesBroken, victory);
+    const rank = state.getEscortRankInfo();
+    resultModal.classList.toggle('victory-mode', victory);
+    if (victory) {
+      world.triggerScreenFlash('#fde047', 0.72);
+    }
+    modalBadge.innerHTML = `${UI_ART.escortCart} PAYLOAD ESCORT · ${rank.label}`;
+    modalTitle.innerHTML = victory
+      ? `${UI_ART.escortCart} 蒸汽装甲战车攻破终极据点！`
+      : `${UI_ART.escortCart} 战车护送结算 · 推进 ${pct}%`;
+    modalDesc.innerHTML = `${victory ? `${UI_ART.clock} 通关用时 ${clearSec.toFixed(1)}s${rec.isNewSpeedRecord ? ` (${UI_ART.sparkle}最快纪录!)` : ''}` : `个人最佳推进：${rec.bestProgressPct}%`} · ${UI_ART.barricade} 撞碎路障 ${world.escortBarricadesBroken}/${world.escortBarricades.length} · 狂揽 +${state.stageGoldEarned} ${UI_ART.coin}${world.escortShardsEarned > 0 ? ` · 碎片 +${world.escortShardsEarned} ${UI_ART.shard}` : ''} · 零战败损耗`;
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    btnModalNext.style.display = 'none';
+    btnModalReplay.innerHTML = `${UI_ART.escortCart} <span>再战护送</span><kbd class="kbd-hint">P</kbd>`;
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isEndlessDefense) {
+    resultModal.classList.add('victory-mode');
+    const rec = state.recordEndlessWave(world.endlessWave);
+    const medal = state.getEndlessMedalInfo(state.bestEndlessWave);
+    modalBadge.innerHTML = `${UI_ART.endlessMedal} ENDLESS DEFENSE · ${medal.label}`;
+    modalTitle.innerHTML = `${UI_ART.endlessShield} 无尽工坊保卫战 · 坚守 ${world.endlessWave} 波！`;
+    modalDesc.innerHTML = `${rec.isNewRecord ? `${UI_ART.sparkle} 刷新个人最高波次纪录！` : `个人最佳纪录：第 ${state.bestEndlessWave} 波`} · 荣获【${medal.label}】勋章 · 零战败损耗`;
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    btnModalNext.style.display = 'none';
+    btnModalReplay.innerHTML = `${UI_ART.endlessShield} <span>再战无尽</span><kbd class="kbd-hint">P</kbd>`;
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  resultModal.classList.toggle('victory-mode', victory);
 
   if (victory) {
     world.triggerScreenFlash('#facc15', 0.68);
@@ -1406,6 +2617,7 @@ world.onStageEnd = (victory: boolean) => {
     stageRewardRerollCount = 0;
     isSpeedSkipEligible = clearSec < 10.0;
     isSpeedSkipActive = isSpeedSkipEligible;
+    pendingBonusHeistStage = stageNum % 5 === 0 ? stageNum : 0;
 
     modalBadge.innerHTML = isSpeedSkipEligible
       ? `${UI_ART.bolt} SPEED CLEAR ${clearSec.toFixed(1)}s (<10s)`
@@ -1416,6 +2628,9 @@ world.onStageEnd = (victory: boolean) => {
     const parts: string[] = [
       `${UI_ART.clock} 用时 ${clearSec.toFixed(1)}s${isSpeedSkipEligible ? ` (${UI_ART.bolt}跳2关+奖励×3)` : ''}`,
     ];
+    if (pendingBonusHeistStage > 0) {
+      parts.push(`${UI_ART.candyVault} 已解锁 25s 糖果金库大劫案`);
+    }
     if (shardDrop) {
       parts.push(`${UI_ART.shard} ${shardDrop.skinName} +${shardDrop.amount}`);
     }
@@ -1429,6 +2644,7 @@ world.onStageEnd = (victory: boolean) => {
     presentRewardChoices(stageNum);
     renderActiveBuffsBar();
   } else {
+    pendingBonusHeistStage = 0;
     if (btnModalShare) btnModalShare.style.display = 'none';
     const report = state.applyDefeatPenalty(stageNum);
     state.recordBattleStats(0, state.stageMutantsKilled);
@@ -1498,7 +2714,10 @@ function startLevel(idx: number): void {
   }
   const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
   if (stagePlaqueSubEl && world.currentTheme) {
-    stagePlaqueSubEl.textContent = `【${world.currentTheme.perkTitle}】${world.currentTheme.perkDesc}`;
+    const wfSuffix = world.currentLevel?.weatherAffix
+      ? ` · 天气【${world.currentLevel.weatherAffix.name}】`
+      : '';
+    stagePlaqueSubEl.textContent = `【${world.currentTheme.perkTitle}】${world.currentTheme.perkDesc}${wfSuffix}`;
   }
   const stagePickerEl = document.getElementById('btn-stage-theme');
   if (stagePickerEl && world.currentTheme) {
@@ -1512,17 +2731,18 @@ function startLevel(idx: number): void {
   if (lvl.isMegaBoss) {
     showBanner(
       `${UI_ART.warning} 第 ${stageNum} 关 · ${lvl.bossName}`,
-      `${UI_ART.flame} 闪避陨石 · ${UI_ART.boom} 炸桶破除虚空护盾`
+      `${UI_ART.shield} 拔除双侧护盾副塔 · ${UI_ART.warning} 换道规避高压蒸汽`
     );
   } else if (lvl.isMiniBoss) {
     showBanner(
       `${UI_ART.sword} 第 ${stageNum} 关 · ${lvl.bossName}`,
-      `${UI_ART.warning} 闪避红圈 · ${UI_ART.shield} 50%血量破盾`
+      `${UI_ART.shield} 侧翼破除蒸汽副塔 · ${UI_ART.warning} 闪避半桥蒸汽横扫`
     );
   } else {
     centerBanner.classList.add('hidden');
   }
   refreshMechaUI();
+  refreshSubWeaponHUD();
   refreshUpgradeUI();
   renderActiveBuffsBar();
 }
@@ -1581,6 +2801,7 @@ function refreshUpgradeUI(): void {
 
 let lastBerserkState = false;
 let lastAdrenalineActive = false;
+let lastAirdropBuffActive = false;
 let lastHudBlue = -1;
 let lastHudRed = -1;
 let lastHudGold = -1;
@@ -1589,7 +2810,16 @@ let lastHudPlayerHp = -1;
 let lastHudChampPct = -1;
 let lastHudChampHolding = false;
 let lastHudOrbitalPct = -1;
+let lastHudOverlordKey = '';
+let lastHudSubweaponKey = '';
+let lastMechaActiveHud = false;
+let lastSubweaponZoneHud = false;
 let lastUpgLevelsKey = '';
+let lastBonusSecHud = -1;
+let lastEndlessWaveHud = -1;
+let lastEscortHudKey = '';
+let lastColossusHudKey = '';
+let lastAirshipHudKey = '';
 
 function updateLiveHUD(): void {
   if (world.activeBlueCount !== lastHudBlue) {
@@ -1609,12 +2839,128 @@ function updateLiveHUD(): void {
     refreshUpgradeUI();
   }
 
-  const hp = Math.ceil(world.bossHp);
-  if (hp !== lastHudBossHp) {
-    lastHudBossHp = hp;
-    bossHpTextEl.textContent = `${hp}`;
-    const pct = Math.max(0, Math.min(100, (world.bossHp / world.bossMaxHp) * 100));
-    bossBarFillEl.style.width = `${pct}%`;
+  const isColossusRaidActive = Boolean(world.currentLevel?.isColossusRaid && world.colossusBoss?.active);
+  if (colossusRaidHudEl) {
+    colossusRaidHudEl.classList.toggle('hidden', !isColossusRaidActive);
+  }
+  const isAirshipEscortActive = Boolean(world.currentLevel?.isAirshipEscort && world.airshipMothership?.active);
+  if (airshipEscortHudEl) {
+    airshipEscortHudEl.classList.toggle('hidden', !isAirshipEscortActive);
+  }
+  syncCannonModHudBadge();
+
+  if (world.currentLevel?.isBonusHeist) {
+    const secLeft = Math.ceil(world.bonusHeistTimeLeft);
+    const hp = Math.ceil(world.bossHp);
+    if (secLeft !== lastBonusSecHud || hp !== lastHudBossHp) {
+      lastBonusSecHud = secLeft;
+      lastHudBossHp = hp;
+      if (stageBadge) {
+        stageBadge.textContent = `糖果金库 · 剩余 ${secLeft}s`;
+      }
+      bossHpTextEl.textContent = `${secLeft}s · 金库 ${world.bonusVaultsBroken}/${world.candyVaults.length}`;
+      const pct = Math.max(0, Math.min(100, (world.bonusHeistTimeLeft / 25) * 100));
+      bossBarFillEl.style.width = `${pct}%`;
+      renderActiveBuffsBar();
+    }
+  } else if (world.currentLevel?.isEndlessDefense) {
+    const nextSec = Math.max(1, Math.ceil(11.0 - world.endlessWaveTimer));
+    const waveKey = world.endlessWave * 100 + nextSec;
+    if (waveKey !== lastEndlessWaveHud) {
+      lastEndlessWaveHud = waveKey;
+      if (stageBadge) {
+        stageBadge.textContent = `无尽保卫 · 第 ${world.endlessWave} 波`;
+      }
+      bossHpTextEl.textContent = `第 ${world.endlessWave} 波 (${nextSec}s后增援)`;
+      const pct = Math.max(0, Math.min(100, ((11.0 - world.endlessWaveTimer) / 11.0) * 100));
+      bossBarFillEl.style.width = `${pct}%`;
+      renderActiveBuffsBar();
+    }
+  } else if (world.currentLevel?.isPayloadEscort && world.payloadCart) {
+    const pct = world.getEscortProgressPct();
+    const stLbl = world.getEscortStateLabel();
+    const spd = world.payloadCart.speed.toFixed(1);
+    const hudKey = `${pct}_${stLbl}_${spd}_${world.escortBarricadesBroken}_${Math.round(world.payloadCart.steamCharge / 5)}`;
+    if (hudKey !== lastEscortHudKey) {
+      lastEscortHudKey = hudKey;
+      if (stageBadge) {
+        stageBadge.textContent = `战车护送 · 推进 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl} (${spd}m/s)`;
+      bossBarFillEl.style.width = `${pct}%`;
+      renderActiveBuffsBar();
+    }
+  } else if (world.currentLevel?.isColossusRaid && world.colossusBoss?.active) {
+    const cb = world.colossusBoss;
+    const hp = Math.ceil(world.bossHp);
+    const lHp = Math.ceil(cb.leftShieldHp);
+    const rHp = Math.ceil(cb.rightCannonHp);
+    const pTenths = Math.ceil(cb.paralysisTimer * 10);
+    const colKey = `${hp}_${lHp}_${rHp}_${cb.leftShieldAlive ? 1 : 0}_${cb.rightCannonAlive ? 1 : 0}_${pTenths}`;
+    if (colKey !== lastColossusHudKey) {
+      lastColossusHudKey = colKey;
+      const isPara = cb.paralysisTimer > 0;
+      bossHpTextEl.textContent = isPara ? `${hp} (瘫痪2.5x!)` : `${hp}`;
+      const pct = Math.max(0, Math.min(100, (world.bossHp / world.bossMaxHp) * 100));
+      bossBarFillEl.style.width = `${pct}%`;
+
+      if (colossusHudLeftEl && colossusHudLeftTextEl) {
+        colossusHudLeftEl.classList.toggle('is-broken', !cb.leftShieldAlive);
+        colossusHudLeftTextEl.textContent = cb.leftShieldAlive ? `左翼发条重盾 ${lHp}` : '左翼发条重盾 已击破';
+      }
+      if (colossusHudRightEl && colossusHudRightTextEl) {
+        colossusHudRightEl.classList.toggle('is-broken', !cb.rightCannonAlive);
+        colossusHudRightTextEl.textContent = cb.rightCannonAlive ? `右翼糖衣重炮 ${rHp}` : '右翼糖衣重炮 已击破';
+      }
+      if (colossusHudCoreEl && colossusHudCoreTextEl) {
+        colossusHudCoreEl.classList.toggle('is-paralyzed', isPara);
+        colossusHudCoreTextEl.textContent = isPara
+          ? `瘫痪高倍暴击窗口 2.5x · ${cb.paralysisTimer.toFixed(1)}s`
+          : cb.leftShieldAlive || cb.rightCannonAlive
+            ? '拆解左右弱点臂触发 6.0s 瘫痪 2.5x 暴击'
+            : '双翼护臂全破 · 核心暴露 1.15x';
+      }
+      renderActiveBuffsBar();
+    }
+  } else if (world.currentLevel?.isAirshipEscort && world.airshipMothership) {
+    const ship = world.airshipMothership;
+    const pct = world.getAirshipProgressPct();
+    const stLbl = world.getAirshipStateLabel();
+    const hp = Math.ceil(ship.hp);
+    const sh = Math.ceil(ship.shield);
+    const dropPct = Math.round(ship.dropCharge);
+    const aaAlive = world.getAliveAntiAirTurretCount();
+    const airKey = `${pct}_${stLbl}_${hp}_${sh}_${Math.floor(dropPct / 3)}_${world.airshipDropPodsDeployed}_${aaAlive}_${state.activeCannonMod}_${state.getCannonModLevel(state.activeCannonMod)}`;
+    if (airKey !== lastAirshipHudKey) {
+      lastAirshipHudKey = airKey;
+      if (stageBadge) {
+        stageBadge.textContent = `飞艇护航 · 推进 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${pct}%`;
+
+      if (airshipHudHullEl && airshipHudHullTextEl) {
+        airshipHudHullTextEl.textContent = `母舰耐久 ${hp} · 护盾 ${sh}`;
+      }
+      if (airshipHudDropEl && airshipHudDropTextEl) {
+        airshipHudDropEl.classList.toggle('is-dropping', ship.state === 'dropping_pod');
+        airshipHudDropTextEl.textContent = `空投充能 ${dropPct}% · 已投 ${world.airshipDropPodsDeployed} 舱`;
+      }
+      if (airshipHudAaEl && airshipHudAaTextEl) {
+        airshipHudAaEl.classList.toggle('is-broken', aaAlive === 0);
+        airshipHudAaTextEl.textContent =
+          aaAlive > 0 ? `防空副塔 ${aaAlive}/${world.antiAirTurrets.length}` : '防空副塔 已全拔除';
+      }
+      renderActiveBuffsBar();
+    }
+  } else {
+    const hp = Math.ceil(world.bossHp);
+    if (hp !== lastHudBossHp) {
+      lastHudBossHp = hp;
+      bossHpTextEl.textContent = `${hp}`;
+      const pct = Math.max(0, Math.min(100, (world.bossHp / world.bossMaxHp) * 100));
+      bossBarFillEl.style.width = `${pct}%`;
+    }
   }
 
   const pHp = Math.ceil(world.playerBaseHp);
@@ -1647,10 +2993,64 @@ function updateLiveHUD(): void {
     btnOrbital.classList.toggle('ready', oPct >= 100);
   }
 
+  if (btnMechaOverlord && overlordFill && overlordPct) {
+    const mActive = Boolean(world.mechaOverlord?.active);
+    const mPct = mActive
+      ? Math.max(1, Math.round((world.mechaOverlord.lifeTimer / Math.max(1, world.mechaOverlord.maxLifeTimer)) * 100))
+      : Math.floor(state.mechaOverlordCharge);
+    const oKey = `${mActive ? 'A' : 'C'}_${mPct}`;
+    if (oKey !== lastHudOverlordKey) {
+      lastHudOverlordKey = oKey;
+      overlordFill.style.width = `${mPct}%`;
+      overlordPct.textContent = mActive
+        ? `${Math.ceil(world.mechaOverlord.lifeTimer)}s`
+        : mPct >= 100
+          ? '合体!'
+          : `${mPct}%`;
+      btnMechaOverlord.disabled = mActive || state.mechaOverlordCharge < 100;
+      btnMechaOverlord.classList.toggle('ready', !mActive && state.mechaOverlordCharge >= 100);
+      btnMechaOverlord.classList.toggle('is-deployed', mActive);
+    }
+  }
+
+  if (btnTacticalSubweapon && subweaponFill && subweaponPct) {
+    const swPct = Math.floor(state.subWeaponCharge);
+    const swCombat = state.getSubWeaponCombatSpec();
+    const remSec =
+      swPct >= 100
+        ? 0
+        : Math.max(1, Math.ceil(((100 - state.subWeaponCharge) / 100) * swCombat.cooldownSec));
+    const swKey = `${state.equippedSubWeapon}_${swPct}_${remSec}`;
+    if (swKey !== lastHudSubweaponKey) {
+      lastHudSubweaponKey = swKey;
+      subweaponFill.style.width = `${swPct}%`;
+      subweaponPct.textContent = swPct >= 100 ? '满' : `${remSec}s`;
+      btnTacticalSubweapon.disabled = swPct < 100;
+      btnTacticalSubweapon.classList.toggle('ready', swPct >= 100);
+    }
+  }
+
+  const curMechaActive = Boolean(world.mechaOverlord?.active);
+  const curSubweaponZone = Boolean(world.syrupZone?.active || world.rallyAuraFx?.active);
   const curAdrenaline = world.adrenalineTimer > 0;
-  if (world.bossBerserkTriggered !== lastBerserkState || curAdrenaline !== lastAdrenalineActive || curAdrenaline) {
+  const curAirdropBuff =
+    world.dualVolleyTimer > 0 || world.freezeRedsTimer > 0 || world.frontlineGiantsTimer > 0;
+  if (
+    world.bossBerserkTriggered !== lastBerserkState ||
+    curAdrenaline !== lastAdrenalineActive ||
+    curAdrenaline ||
+    curAirdropBuff !== lastAirdropBuffActive ||
+    curAirdropBuff ||
+    curMechaActive !== lastMechaActiveHud ||
+    curMechaActive ||
+    curSubweaponZone !== lastSubweaponZoneHud ||
+    curSubweaponZone
+  ) {
     lastBerserkState = world.bossBerserkTriggered;
     lastAdrenalineActive = curAdrenaline;
+    lastAirdropBuffActive = curAirdropBuff;
+    lastMechaActiveHud = curMechaActive;
+    lastSubweaponZoneHud = curSubweaponZone;
     renderActiveBuffsBar();
   }
 }
@@ -1666,6 +3066,75 @@ if (btnStartBattle) {
   btnStartBattle.addEventListener('click', () => {
     sound.playUpgrade();
     launchBattle();
+  });
+}
+
+if (btnStartTournament) {
+  btnStartTournament.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchGearTournament();
+  });
+}
+
+if (btnStartAirshipEscort) {
+  btnStartAirshipEscort.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchAirshipEscort();
+  });
+}
+
+if (btnStartColossusRaid) {
+  btnStartColossusRaid.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchColossusRaid();
+  });
+}
+
+function handleClaimTournamentChestUI(triggerEl: HTMLElement | null): void {
+  const res = state.claimTournamentStreakChest();
+  if (!res.claimed) return;
+  sound.playVictoryFanfare();
+  if (triggerEl) {
+    spawnMenuUpgradeBurst(
+      triggerEl,
+      `+${res.coinsAwarded}金 +${res.trophiesAwarded}奖杯!`,
+      '#fbbf24'
+    );
+  }
+  if (btnClaimTournamentChest) {
+    btnClaimTournamentChest.disabled = true;
+    btnClaimTournamentChest.innerHTML = `${UI_ART.check} 已领 (+${res.trophiesAwarded} 奖杯)`;
+  }
+  showGlobalToast(
+    `开启 ${res.streakLabel} 连胜宝箱：+${res.coinsAwarded} 金币 · +${res.cardsAwarded} 碎片卡 · +${res.bricksAwarded} 砖块 · +${res.trophiesAwarded} 锦标赛荣誉奖杯！`
+  );
+  refreshUpgradeUI();
+  renderMainMenu();
+}
+
+if (btnLobbyClaimChest) {
+  btnLobbyClaimChest.addEventListener('click', () => {
+    handleClaimTournamentChestUI(btnLobbyClaimChest);
+  });
+}
+
+if (btnClaimTournamentChest) {
+  btnClaimTournamentChest.addEventListener('click', () => {
+    handleClaimTournamentChestUI(btnClaimTournamentChest);
+  });
+}
+
+if (btnStartEscort) {
+  btnStartEscort.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchPayloadEscort();
+  });
+}
+
+if (btnStartEndless) {
+  btnStartEndless.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchEndlessDefense();
   });
 }
 
@@ -1761,6 +3230,17 @@ if (btnHomeMecha) {
     sound.playUpgrade();
     refreshMechaUI();
     spawnMenuUpgradeBurst(btnHomeMecha, `主打歌：${nextSpec.name}`, '#ec4899');
+    renderMainMenu();
+  });
+}
+
+if (btnHomeWeapon) {
+  btnHomeWeapon.addEventListener('click', () => {
+    const nextW = state.cycleWeaponMode();
+    sound.playUpgrade();
+    world.syncTurretEvolution(false);
+    refreshWeaponUI();
+    spawnMenuUpgradeBurst(btnHomeWeapon, `主炮：${nextW.name}`, '#38bdf8');
     renderMainMenu();
   });
 }
@@ -1913,6 +3393,17 @@ btnMechaMode.addEventListener('click', () => {
   showBanner(`${nextSpec.icon} ${nextSpec.name}`);
 });
 
+if (btnWeaponMode) {
+  btnWeaponMode.addEventListener('click', () => {
+    const nextW = state.cycleWeaponMode();
+    sound.playUpgrade();
+    world.syncTurretEvolution(false);
+    refreshWeaponUI();
+    renderActiveBuffsBar();
+    showBanner(`${nextW.icon} ${nextW.name}`, nextW.bannerDesc);
+  });
+}
+
 btnChampion.addEventListener('click', () => {
   world.deployChampion();
 });
@@ -1920,6 +3411,18 @@ btnChampion.addEventListener('click', () => {
 btnOrbital.addEventListener('click', () => {
   world.triggerOrbitalStrike();
 });
+
+if (btnMechaOverlord) {
+  btnMechaOverlord.addEventListener('click', () => {
+    world.summonMechaOverlord();
+  });
+}
+
+if (btnTacticalSubweapon) {
+  btnTacticalSubweapon.addEventListener('click', () => {
+    world.triggerTacticalSubWeapon();
+  });
+}
 
 function rollTycoonFreeDoubleUpgrade(btnEl: HTMLElement): boolean {
   if (state.getSkillNodeRank('tycoon_t4') > 0 && Math.random() < 0.2) {
@@ -2005,6 +3508,38 @@ if (btnModalHome) {
 }
 
 btnModalReplay.addEventListener('click', () => {
+  if (world.currentLevel?.isAirshipEscort) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+    } else {
+      launchAirshipEscort();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isColossusRaid) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+    } else {
+      launchColossusRaid();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isGearTournament) {
+    launchGearTournament();
+    return;
+  }
+  if (world.currentLevel?.isPayloadEscort) {
+    launchPayloadEscort();
+    return;
+  }
+  if (world.currentLevel?.isEndlessDefense) {
+    launchEndlessDefense();
+    return;
+  }
   if (!rewardSection.classList.contains('hidden') && !hasClaimedStageReward) {
     if (isSpeedSkipEligible && isSpeedSkipActive) {
       isSpeedSkipActive = false;
@@ -2013,20 +3548,47 @@ btnModalReplay.addEventListener('click', () => {
     }
     if (!commitStageReward()) return;
   }
+  pendingBonusHeistStage = 0;
   startLevel(state.currentLevelIndex);
 });
 
 btnModalNext.addEventListener('click', () => {
+  if (world.currentLevel?.isAirshipEscort) {
+    launchAirshipEscort();
+    return;
+  }
+
+  if (world.currentLevel?.isColossusRaid) {
+    launchColossusRaid();
+    return;
+  }
+
+  if (world.currentLevel?.isGearTournament) {
+    if (state.pendingTournamentChestStage > 0) {
+      handleClaimTournamentChestUI(btnClaimTournamentChest);
+    }
+    launchGearTournament();
+    return;
+  }
+
+  if (world.currentLevel?.isBonusHeist) {
+    startLevel(pendingNextCampaignIdx);
+    return;
+  }
   if (!rewardSection.classList.contains('hidden') && !hasClaimedStageReward) {
     if (!commitStageReward()) return;
   }
+  let nextIdx = state.currentLevelIndex + 1;
   if (isSpeedSkipEligible && isSpeedSkipActive) {
     const stageNum = state.currentLevelIndex + 1;
     state.creditSkippedStages(stageNum + 2, 2);
-    startLevel(state.currentLevelIndex + 3);
-  } else {
-    startLevel(state.currentLevelIndex + 1);
+    nextIdx = state.currentLevelIndex + 3;
   }
+  if (pendingBonusHeistStage > 0) {
+    startBonusHeist(pendingBonusHeistStage, nextIdx);
+    return;
+  }
+  startLevel(nextIdx);
 });
 
 // Preload 3D stage background & open Title Cover Screen on startup
@@ -2439,13 +4001,16 @@ window.addEventListener('keydown', (e) => {
   } else if (e.code === 'KeyE' || e.code === 'Tab') {
     e.preventDefault();
     btnMechaMode.click();
+  } else if (e.code === 'KeyF') {
+    e.preventDefault();
+    btnWeaponMode?.click();
   } else if (e.code === 'Escape' || e.code === 'KeyH') {
     e.preventDefault();
     btnHome.click();
   } else if (e.code === 'KeyG') {
     e.preventDefault();
     btnRerollMap.click();
-  } else if (e.code === 'KeyV') {
+  } else if (e.code === 'KeyB') {
     e.preventDefault();
     btnCamera.click();
   } else if (e.code === 'KeyM') {
