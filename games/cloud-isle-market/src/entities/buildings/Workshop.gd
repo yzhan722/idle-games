@@ -11,6 +11,9 @@ class_name Workshop
 const BASE_SPRITE_SCALE := 0.85
 const VISUAL_WIDTH := 57.8 # 68 * 0.85
 const VISUAL_HEIGHT := 51.0
+const MORTAR_SPRITE_SCALE := 0.70
+const MORTAR_VISUAL_WIDTH := 47.6 # 68 * 0.70
+const MORTAR_VISUAL_HEIGHT := 40.6 # 58 * 0.70
 const DEFAULT_BUFFER_CAP := 10
 
 @export var workshop_id: String = "mortar" # "mortar", "cauldron", or "orbis_linked"
@@ -46,15 +49,25 @@ func set_chef_progress(chef_key: String, prog: float, active: bool) -> void:
 			best_p = maxf(best_p, float(_chef_progress[k]))
 		process_progress = best_p
 
+func get_base_sprite_scale() -> float:
+	return MORTAR_SPRITE_SCALE if workshop_id == "mortar" else BASE_SPRITE_SCALE
+
+func get_visual_width() -> float:
+	return MORTAR_VISUAL_WIDTH if workshop_id == "mortar" else VISUAL_WIDTH
+
+func get_visual_height() -> float:
+	return MORTAR_VISUAL_HEIGHT if workshop_id == "mortar" else VISUAL_HEIGHT
+
 func _ready() -> void:
 	z_index = EconomyConfig.Z_BUILDING
 	z_as_relative = false
 	tex_delicacies = load("res://assets/pixel_art/buildings/delicacies_sheet_normalized.png")
 
+	var base_sc := get_base_sprite_scale()
 	body_sprite = Sprite2D.new()
 	body_sprite.name = "BodySprite"
 	body_sprite.centered = true
-	body_sprite.scale = Vector2(BASE_SPRITE_SCALE, BASE_SPRITE_SCALE)
+	body_sprite.scale = Vector2(base_sc, base_sc)
 	body_sprite.z_index = EconomyConfig.Z_BUILDING
 	body_sprite.z_as_relative = false
 	add_child(body_sprite)
@@ -89,6 +102,9 @@ func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, _p_offset: Vect
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	_reload_texture()
+	if body_sprite != null:
+		var base_sc := get_base_sprite_scale()
+		body_sprite.scale = Vector2(base_sc, base_sc)
 	var cur_lv := get_workshop_level()
 	if level_label != null:
 		level_label.text = "Lv." + str(cur_lv)
@@ -127,8 +143,8 @@ func get_value_multiplier() -> float:
 	return EconomyConfig.MULTIPLIER_MORTAR
 
 func get_screen_rect() -> Rect2:
-	var w := VISUAL_WIDTH * scale.x
-	var h := VISUAL_HEIGHT * scale.y
+	var w := get_visual_width() * scale.x
+	var h := get_visual_height() * scale.y
 	return Rect2(position.x - w * 0.5, position.y - h, w, h)
 
 func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
@@ -174,15 +190,16 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 
+	var base_sc := get_base_sprite_scale()
 	if is_processing:
 		work_anim_time += delta * 10.0
 		if body_sprite != null:
 			var squash := sin(work_anim_time) * 0.03
-			body_sprite.scale = Vector2(BASE_SPRITE_SCALE * (1.0 + squash), BASE_SPRITE_SCALE * (1.0 - squash))
+			body_sprite.scale = Vector2(base_sc * (1.0 + squash), base_sc * (1.0 - squash))
 		queue_redraw()
 	else:
 		if body_sprite != null:
-			body_sprite.scale = Vector2(BASE_SPRITE_SCALE, BASE_SPRITE_SCALE)
+			body_sprite.scale = Vector2(base_sc, base_sc)
 		if _was_processing:
 			queue_redraw()
 	_was_processing = is_processing
@@ -191,14 +208,14 @@ func _draw() -> void:
 	if tex_building == null:
 		return
 	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
-	EconomyConfig.draw_drop_shadow(self, VISUAL_WIDTH)
+	EconomyConfig.draw_drop_shadow(self, get_visual_width())
 
 	if is_processing:
 		var prog := clampf(process_progress, 0.0, 1.0)
 		var bar_w := 36.0
 		var bar_h := 5.0
 		var bx := -bar_w * 0.5
-		var by := -VISUAL_HEIGHT - 10.0
+		var by := -get_visual_height() - 22.0
 		draw_rect(Rect2(bx - 1.0, by - 1.0, bar_w + 2.0, bar_h + 2.0), Color(0.10, 0.07, 0.04, 0.92), true)
 		var fill_col := Color(0.45, 0.95, 0.42, 0.96) if workshop_id == "mortar" else Color(0.42, 0.88, 1.0, 0.96)
 		draw_rect(Rect2(bx, by, bar_w * prog, bar_h), fill_col, true)

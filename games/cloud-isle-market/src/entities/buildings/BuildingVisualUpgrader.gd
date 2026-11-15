@@ -44,7 +44,12 @@ func _init_child_nodes() -> void:
 		decor_sprite.offset = Vector2(0.0, -float(56) * 0.5)
 		decor_sprite.scale = Vector2(0.65, 0.65)
 		decor_sprite.position = Vector2(-(SoilPlot.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
-	elif building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked":
+	elif building_kind == "mortar":
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
+		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
+		decor_sprite.scale = Vector2(0.58, 0.58)
+		decor_sprite.position = Vector2(-(Workshop.MORTAR_VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+	elif building_kind == "cauldron" or building_kind == "orbis_linked":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
 		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
 		decor_sprite.scale = Vector2(0.65, 0.65)
@@ -54,6 +59,26 @@ func _init_child_nodes() -> void:
 		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
 		decor_sprite.scale = Vector2(0.75, 0.75)
 		decor_sprite.position = Vector2(MarketStall.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
+	elif building_kind == "greenhouse":
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_beehive.png")
+		decor_sprite.offset = Vector2(0.0, -float(52) * 0.5)
+		decor_sprite.scale = Vector2(0.55, 0.55)
+		decor_sprite.position = Vector2(32.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
+	elif building_kind == "hotspring":
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
+		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
+		decor_sprite.scale = Vector2(0.58, 0.58)
+		decor_sprite.position = Vector2(-(32.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+	elif building_kind == "windmill":
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_scarecrow.png")
+		decor_sprite.offset = Vector2(0.0, -float(56) * 0.5)
+		decor_sprite.scale = Vector2(0.56, 0.56)
+		decor_sprite.position = Vector2(32.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
+	elif building_kind == "tea_pavilion":
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
+		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
+		decor_sprite.scale = Vector2(0.54, 0.54)
+		decor_sprite.position = Vector2(-(25.2 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
 
 	# Tier 2/3 Workshop Steam / Alchemy Spark CPUParticles2D
 	particles = CPUParticles2D.new()
@@ -138,7 +163,7 @@ func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
 		decor_sprite.visible = (current_tier >= 2)
 
 	if particles != null:
-		var is_workshop := (building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked")
+		var is_workshop := (building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked" or building_kind == "hotspring" or building_kind == "windmill" or building_kind == "tea_pavilion")
 		particles.emitting = is_workshop and (current_tier >= 2)
 		particles.amount = 16 if current_tier >= 3 else 8
 
