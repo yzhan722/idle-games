@@ -4,11 +4,13 @@ import {
   evolveMon as evolveMon0,
   getMonCurrentStats as getMonCurrentStats0,
 } from "../mons.js";
+import { applyBondCombatStats } from "./collection_fun.js";
 
 /** @typedef {{ state: object, ui: object, getBeastDataByDex: Function, getSpeciesByPid: Function, serverBuffMul: Function, addLog: Function }} MonStatsDeps */
 
 export function getMonCurrentStatsWith(deps, mon) {
-  return getMonCurrentStats0(mon, deps.getBeastDataByDex);
+  const raw = getMonCurrentStats0(mon, deps.getBeastDataByDex);
+  return applyBondCombatStats(raw, deps.state);
 }
 
 export function createMonInstanceWith(deps, species, idOverride = null) {

@@ -4,6 +4,15 @@
 
 import { natureResProdMul } from "./gameplay_fun.js";
 import { legacyProdMul } from "./rebirth.js";
+import {
+  computeAmberRevivalAura,
+  computeEcoRelicAura,
+  computeElementalBondResonance,
+  computeShinyShowcaseAura,
+  computeStarBoutiqueAura,
+  computeStarCampAura,
+} from "./collection_fun.js";
+import { computeChampionLeagueBonus, computeStarCorridorBonus } from "./pve_tower.js";
 
 /**
  * 建筑 effects 汇总为产量/上限/解锁字段
@@ -125,13 +134,19 @@ export function computeStaticItemCaps(defs) {
     advSearchCell: cap("advSearchCell", 99),
     sootheBell: cap("sootheBell", 99),
     expCandyS: cap("expCandyS", 999),
+    seasonMark: cap("seasonMark", 9999),
+    tuningMint: cap("tuningMint", 999),
+    shinyStarSand: cap("shinyStarSand", 9999),
+    ancientGeneAmber: cap("ancientGeneAmber", 9999),
+    corridorStarMedals: cap("corridorStarMedals", 9999),
   };
 }
 
 /** 必须存在的核心资源 id（始终写 cap） */
 const CORE_ALWAYS = new Set([
   "rareCandy", "futurecoin", "evolutionEnergy", "evolutionStone", "linkRope",
-  "bigBerry", "hugeBerry", "megaStone", "masterball",
+  "bigBerry", "hugeBerry", "megaStone", "masterball", "seasonMark", "tuningMint", "shinyStarSand",
+  "ancientGeneAmber", "corridorStarMedals",
   "hpPotion", "atkPotion", "defPotion", "spaPotion", "spdPotion", "spePotion",
 ]);
 
@@ -239,7 +254,25 @@ export function finalizeProductionRates(eff, state, serverProdMul) {
   eff.woodPerSec *= sb;
   eff.mineralsPerSec *= sb;
 
-  const permProdMul = permanentBoostMul(state?.permanentBoosts?.production) * legacyProdMul(state);
+  const showcaseProdMul = computeShinyShowcaseAura(state).prodMul;
+  const bondAtlasProdMul = computeElementalBondResonance(state).prodMul;
+  const ecoRelicProdMul = computeEcoRelicAura(state).prodMul;
+  const starCampProdMul = computeStarCampAura(state).prodMul;
+  const boutiqueProdMul = computeStarBoutiqueAura(state).prodMul;
+  const leagueProdMul = computeChampionLeagueBonus(state).prodMul;
+  const amberProdMul = computeAmberRevivalAura(state).prodMul;
+  const corridorProdMul = computeStarCorridorBonus(state).prodMul;
+  const permProdMul =
+    permanentBoostMul(state?.permanentBoosts?.production) *
+    legacyProdMul(state) *
+    showcaseProdMul *
+    bondAtlasProdMul *
+    ecoRelicProdMul *
+    starCampProdMul *
+    boutiqueProdMul *
+    leagueProdMul *
+    amberProdMul *
+    corridorProdMul;
   if (permProdMul > 1) {
     eff.catnipPerSec *= permProdMul;
     eff.woodPerSec *= permProdMul;

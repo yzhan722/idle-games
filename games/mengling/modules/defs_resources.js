@@ -151,4 +151,24 @@ export const RESOURCE_DEFS = {
     name: "历练糖丸S",
     baseCap: 999,
   },
+  seasonMark: {
+    name: "赛季印记",
+    baseCap: 9999,
+  },
+  tuningMint: {
+    name: "心性调律薄荷",
+    baseCap: 999,
+  },
+  shinyStarSand: {
+    name: "闪光祈愿星砂",
+    baseCap: 9999,
+  },
+  ancientGeneAmber: {
+    name: "远古基因琥珀",
+    baseCap: 9999,
+  },
+  corridorStarMedals: {
+    name: "星轨回廊勋章",
+    baseCap: 9999,
+  },
 };

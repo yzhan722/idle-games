@@ -69,6 +69,128 @@ export function getNatureInfo(natureId) {
 export function getNatureMul() {
   return 1;
 }
+
+// ========== ML-5: 性格薄荷定向调律工坊 ==========
+export const TUNABLE_STATS = Object.freeze(["atk", "def", "spa", "spd", "spe"]);
+
+export const STAT_ZH = Object.freeze({
+  hp: "生命",
+  atk: "物攻",
+  def: "物防",
+  spa: "灵攻",
+  spd: "灵防",
+  spe: "速度",
+});
+
+export const MINT_TUNING_PRESETS = Object.freeze([
+  { id: "breaker",     name: "破军调律", up: "atk", down: "spa", desc: "物攻 +10% · 灵攻 -10%（物理主C优选）" },
+  { id: "starweaver",  name: "星咏调律", up: "spa", down: "atk", desc: "灵攻 +10% · 物攻 -10%（法系主C优选）" },
+  { id: "gale_blade",  name: "疾风物袭", up: "spe", down: "spa", desc: "速度 +10% · 灵攻 -10%（先手物攻优选）" },
+  { id: "gale_arc",    name: "流光灵袭", up: "spe", down: "atk", desc: "速度 +10% · 物攻 -10%（先手灵攻优选）" },
+  { id: "bastion",     name: "磐岩守御", up: "def", down: "spa", desc: "物防 +10% · 灵攻 -10%（重装前排优选）" },
+  { id: "mirror_ward", name: "灵镜障壁", up: "spd", down: "atk", desc: "灵防 +10% · 物攻 -10%（圣盾辅助优选）" },
+  { id: "neutral",     name: "心平归元", up: null,  down: null,  desc: "均衡调律 · 全六维倍率归复 1.00x" },
+]);
+
+export function normalizeMintTuning(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  if (raw.up === null && raw.down === null) {
+    return { up: null, down: null };
+  }
+  const up = typeof raw.up === "string" ? raw.up.trim() : "";
+  const down = typeof raw.down === "string" ? raw.down.trim() : "";
+  if (TUNABLE_STATS.includes(up) && TUNABLE_STATS.includes(down) && up !== down) {
+    return { up, down };
+  }
+  return null;
+}
+
+export function getMintTuningPresetLabel(tuning) {
+  const t = normalizeMintTuning(tuning);
+  if (!t) return "";
+  const hit = MINT_TUNING_PRESETS.find((p) => p.up === t.up && p.down === t.down);
+  return hit ? hit.name : "定向调律";
+}
+
+export function describeMintTuning(tuning) {
+  const t = normalizeMintTuning(tuning);
+  if (!t) return "未调律";
+  if (t.up === null && t.down === null) return "心平归元（全维±0%）";
+  return `${getMintTuningPresetLabel(t)}（${STAT_ZH[t.up]}+10% / ${STAT_ZH[t.down]}-10%）`;
+}
+
+export function formatMonNatureWithTuning(mon, { compact = false } = {}) {
+  const origName = getNatureInfo(mon?.nature)?.name || "勤奋";
+  const t = normalizeMintTuning(mon?.mintTuning);
+  if (!t) return origName;
+  if (t.up === null && t.down === null) {
+    return compact ? `${origName} → 心平归元` : `${origName} → 心平归元（全维±0%）`;
+  }
+  return compact
+    ? `${origName} → ${STAT_ZH[t.up]}+10%/${STAT_ZH[t.down]}-10%`
+    : `${origName} → ${describeMintTuning(t)}`;
+}
+
+export function getMonTuningMul(mon, statKey) {
+  const t = normalizeMintTuning(mon?.mintTuning);
+  if (!t || !statKey || t.up === null || t.down === null) return 1;
+  if (statKey === t.up) return 1.1;
+  if (statKey === t.down) return 0.9;
+  return 1;
+}
+
+export function recommendMintTuningForMon(mon, getBeastDataByDex = null) {
+  const api = typeof getBeastDataByDex === "function" && mon?.dex != null ? getBeastDataByDex(mon.dex) : null;
+  const base = api?.baseStats && typeof api.baseStats === "object" ? api.baseStats : mon?.baseStats || {};
+  const iv = mon?.iv && typeof mon.iv === "object" ? mon.iv : {};
+  const atkScore = (Number(base.atk) || 25) + (Number(iv.atk) || 0);
+  const spaScore = (Number(base.spa) || 25) + (Number(iv.spa) || 0);
+  const defScore = (Number(base.def) || 25) + (Number(iv.def) || 0);
+  const spdScore = (Number(base.spd) || 25) + (Number(iv.spd) || 0);
+  const speScore = (Number(base.spe) || 25) + (Number(iv.spe) || 0);
+  if (defScore + spdScore >= Math.max(atkScore, spaScore) * 2.35) {
+    return defScore >= spdScore
+      ? { up: "def", down: spaScore <= atkScore ? "spa" : "atk" }
+      : { up: "spd", down: atkScore <= spaScore ? "atk" : "spa" };
+  }
+  if (speScore >= Math.max(atkScore, spaScore) * 1.18) {
+    return atkScore >= spaScore ? { up: "spe", down: "spa" } : { up: "spe", down: "atk" };
+  }
+  return spaScore > atkScore ? { up: "spa", down: "atk" } : { up: "atk", down: "spa" };
+}
+
+export function applyMintTuningToMon(state, monId, tuningSpec) {
+  if (!state || typeof state !== "object") return { ok: false, reason: "no_state" };
+  const id = Number(monId);
+  if (!Number.isFinite(id) || id <= 0) return { ok: false, reason: "invalid_mon" };
+  const list = Array.isArray(state.mons?.list) ? state.mons.list : [];
+  const mon = list.find((m) => m && m.id === id);
+  if (!mon) return { ok: false, reason: "missing_mon" };
+
+  const norm = normalizeMintTuning(tuningSpec);
+  if (!norm) return { ok: false, reason: "invalid_tuning" };
+
+  const cur = normalizeMintTuning(mon.mintTuning);
+  if (cur && cur.up === norm.up && cur.down === norm.down) {
+    return { ok: false, reason: "same_tuning" };
+  }
+
+  const have = Math.max(0, Math.floor(Number(state.res?.tuningMint?.value) || 0));
+  if (have < 1) return { ok: false, reason: "insufficient_mint" };
+
+  state.res.tuningMint.value = have - 1;
+  mon.mintTuning = { up: norm.up, down: norm.down };
+  if (!state.meta || typeof state.meta !== "object") state.meta = {};
+  state.meta.mintTuningsApplied = Math.max(0, Math.floor(state.meta.mintTuningsApplied || 0)) + 1;
+
+  return {
+    ok: true,
+    monId: mon.id,
+    origNature: mon.nature,
+    mintTuning: { ...mon.mintTuning },
+    label: formatMonNatureWithTuning(mon),
+  };
+}
 // ============================
 
 export function expNeedForLevel(lvl) {
@@ -126,11 +248,11 @@ export function getMonCurrentStats(mon, getBeastDataByDex) {
   const mul = 1 + (lvl - 1) * 0.03;
   return {
     hp:  Math.max(1, Math.floor(((base?.hp ?? 30)  + (iv.hp ?? 0))  * mul * totalMul) + bHp),
-    atk: Math.max(1, Math.floor(((base?.atk ?? 25) + (iv.atk ?? 0)) * mul * totalMul * getNatureMul(natureId, "atk")) + bAtk),
-    def: Math.max(1, Math.floor(((base?.def ?? 25) + (iv.def ?? 0)) * mul * totalMul * getNatureMul(natureId, "def")) + bDef),
-    spa: Math.max(1, Math.floor(((base?.spa ?? 25) + (iv.spa ?? 0)) * mul * totalMul * getNatureMul(natureId, "spa")) + bSpa),
-    spd: Math.max(1, Math.floor(((base?.spd ?? 25) + (iv.spd ?? 0)) * mul * totalMul * getNatureMul(natureId, "spd")) + bSpd),
-    spe: Math.max(1, Math.floor(((base?.spe ?? 25) + (iv.spe ?? 0)) * mul * totalMul * getNatureMul(natureId, "spe")) + bSpe),
+    atk: Math.max(1, Math.floor(((base?.atk ?? 25) + (iv.atk ?? 0)) * mul * totalMul * getNatureMul(natureId, "atk") * getMonTuningMul(mon, "atk")) + bAtk),
+    def: Math.max(1, Math.floor(((base?.def ?? 25) + (iv.def ?? 0)) * mul * totalMul * getNatureMul(natureId, "def") * getMonTuningMul(mon, "def")) + bDef),
+    spa: Math.max(1, Math.floor(((base?.spa ?? 25) + (iv.spa ?? 0)) * mul * totalMul * getNatureMul(natureId, "spa") * getMonTuningMul(mon, "spa")) + bSpa),
+    spd: Math.max(1, Math.floor(((base?.spd ?? 25) + (iv.spd ?? 0)) * mul * totalMul * getNatureMul(natureId, "spd") * getMonTuningMul(mon, "spd")) + bSpd),
+    spe: Math.max(1, Math.floor(((base?.spe ?? 25) + (iv.spe ?? 0)) * mul * totalMul * getNatureMul(natureId, "spe") * getMonTuningMul(mon, "spe")) + bSpe),
   };
 }
 
@@ -140,6 +262,12 @@ export function monPower(mon, getBeastDataByDex) {
   const pass = monPassive(mon);
   if (pass?.key === "pvePowerBonus" && typeof pass.val === "number") {
     p = Math.floor(p * (1 + pass.val));
+  }
+  const ribbons = typeof mon?.hallOfFameRibbons === "number" && Number.isFinite(mon.hallOfFameRibbons)
+    ? Math.max(0, Math.min(5, Math.floor(mon.hallOfFameRibbons)))
+    : 0;
+  if (ribbons > 0) {
+    p = Math.floor(p * (1 + ribbons * 0.04));
   }
   return p;
 }

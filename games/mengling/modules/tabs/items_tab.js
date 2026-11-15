@@ -56,6 +56,11 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       spaPotion: "使用：特攻 永久 +5（单项上限 +50）",
       spdPotion: "使用：特防 永久 +5（单项上限 +50）",
       spePotion: "使用：速度 永久 +5（单项上限 +50）",
+      seasonMark: "无尽试炼塔里程碑荣誉印记，可在挑战页试炼军需处兑换灵晶石、跃级糖丸与金桂冠",
+      tuningMint: "秘境生态沙盘特产灵草，可在育灵中枢调律工坊或萌灵详情页定向调律六维偏向（保留原性格纪念标签）",
+      shinyStarSand: "星辉配饰流彩造型屋与冠军联盟殿堂赛凝结的璀璨星砂，用于制作/升阶星辉配饰与调染极光流彩光晕",
+      ancientGeneAmber: "远古琥珀基因复苏所与双系星轨回廊凝结的远古基因琥珀，用于苏醒/升阶四大太古血脉印记与淬炼伙伴个体潜能",
+      corridorStarMedals: "双系星轨回廊无尽试炼荣誉勋章，可在挑战页星轨回廊兑换远古基因琥珀、闪光祈愿星砂与心性调律薄荷",
     };
 
     if (!elItems.dataset.itemsInited) {
@@ -333,6 +338,7 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       { rid: "ultraball", category: "捕捉" },
       { rid: "masterball", category: "捕捉" },
       { rid: "futurecoin", category: "货币" },
+      { rid: "seasonMark", category: "货币" },
       { rid: "evolutionStone", category: "进化" },
       { rid: "megaStone", category: "进化" },
       { rid: "linkRope", category: "进化" },
@@ -343,6 +349,10 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       { rid: "luckyEgg", category: "培养" },
       { rid: "bottleCap", category: "培养" },
       { rid: "goldBottleCap", category: "培养" },
+      { rid: "tuningMint", category: "培养" },
+      { rid: "shinyStarSand", category: "培养" },
+      { rid: "ancientGeneAmber", category: "培养" },
+      { rid: "corridorStarMedals", category: "培养" },
       { rid: "bigBerry", category: "消耗品" },
       { rid: "hugeBerry", category: "消耗品" },
       { rid: "shinyCharm", category: "特殊" },

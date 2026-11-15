@@ -1,5 +1,10 @@
 import {
+  ATLAS_ELEMENTS,
+  ATLAS_ELEMENT_ZH,
   buildShinyShareText,
+  computeElementalBondResonance,
+  computeShinyShowcaseAura,
+  SHINY_SHOWCASE_MAX,
   shinyGalleryEntries,
   shinyUniqueCount,
   syncShinyGalleryFromMons,
@@ -88,22 +93,63 @@ export function createRenderDex({
       }
     }
 
-    const gallery = shinyGalleryEntries(state, 16);
+    const gallery = shinyGalleryEntries(state, 24);
     const shareText = buildShinyShareText(state);
+    const tierByPid = (pid) => defs.beasts.find((b) => b.id === pid)?.tier || "common";
+    const showcaseAura = computeShinyShowcaseAura(state, tierByPid);
+    const showcasedSet = new Set(showcaseAura.pids);
+    const pedestalSlotsHtml = Array.from({ length: SHINY_SHOWCASE_MAX }, (_, idx) => {
+      const slotEntry = showcaseAura.entries[idx];
+      if (slotEntry) {
+        return `
+          <button type="button" class="shiny-pedestal-slot is-filled tier-${escapeHtml(slotEntry.tier)}" data-dex-showcase-toggle="${escapeHtml(slotEntry.pid)}" title="点击撤下「${escapeHtml(slotEntry.name)}」（${escapeHtml(slotEntry.tierLabel)}星座）">
+            <span class="shiny-pedestal-slot__art">${renderBeastIcon(slotEntry.dex, slotEntry.name, true)}</span>
+            <span class="shiny-pedestal-slot__name">${escapeHtml(slotEntry.name)}</span>
+            <span class="shiny-pedestal-slot__tier">${escapeHtml(slotEntry.tierLabel)}</span>
+          </button>`;
+      }
+      return `
+        <div class="shiny-pedestal-slot is-empty">
+          <span class="shiny-pedestal-slot__art">${renderResSvg("shinyHall", 22)}</span>
+          <span class="shiny-pedestal-slot__name">空置圣座 #${idx + 1}</span>
+          <span class="shiny-pedestal-slot__tier">待供奉</span>
+        </div>`;
+    }).join("");
+
+    const showcaseRackHtml = `
+      <div class="shiny-showcase-rack">
+        <div class="shiny-showcase-rack__head">
+          <div class="shiny-showcase-rack__title">
+            ${renderResSvg("shinyHall", 18)}
+            <span>闪光殿堂展柜（${showcaseAura.count}/${SHINY_SHOWCASE_MAX} 席）</span>
+            ${showcaseAura.fullResonance ? `<span class="badge badge--ok">✦ 六席星芒共鸣生效</span>` : `<span class="tag">满 6 席激活星芒共鸣</span>`}
+          </div>
+          <div class="shiny-showcase-rack__actions">
+            ${gallery.length > 0 ? `<button type="button" class="btn btn--small btn--primary" data-dex-showcase-autofill="1">一键优选满配</button>` : ""}
+            ${gallery.length > 0 ? `<button type="button" class="btn btn--small btn--ghost" data-dex-shiny-showcase="all">${renderResSvg("shinyCharm", 14)}<span>全屏殿堂调配</span></button>` : ""}
+          </div>
+        </div>
+        <div class="shiny-showcase-rack__auras">
+          <span class="shiny-aura-pill ${showcaseAura.prodAdd > 0 ? "is-on" : ""}">全资源产出 +${Math.round(showcaseAura.prodAdd * 1000) / 10}%</span>
+          <span class="shiny-aura-pill ${showcaseAura.trainExpAdd > 0 ? "is-on" : ""}">训练经验 +${Math.round(showcaseAura.trainExpAdd * 1000) / 10}%</span>
+          <span class="shiny-aura-pill ${showcaseAura.catchAdd > 0 ? "is-on" : ""}">全局捕获率 +${Math.round(showcaseAura.catchAdd * 1000) / 10}%</span>
+        </div>
+        <div class="shiny-pedestal-grid">${pedestalSlotsHtml}</div>
+      </div>`;
+
     const galleryHtml =
       gallery.length > 0
-        ? `<div class="row__desc" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px">
+        ? `<div class="row__desc" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px">
             ${gallery
               .map(
                 (e) =>
-                  `<button type="button" class="shiny-gallery-chip" data-dex-shiny-showcase="${escapeHtml(String(e.dex))}" title="点击全屏鉴赏 ${escapeHtml(e.name)}">${renderBeastIcon(e.dex, e.name, true)}<span class="shiny-gallery-chip__name">${escapeHtml(e.name)}</span></button>`
+                  `<button type="button" class="shiny-gallery-chip ${showcasedSet.has(e.pid) ? "is-showcased" : ""}" data-dex-showcase-toggle="${escapeHtml(e.pid)}" title="${showcasedSet.has(e.pid) ? "已在展柜供奉 · 点击撤下" : "点击供奉至闪光展柜"}">${renderBeastIcon(e.dex, e.name, true)}<span class="shiny-gallery-chip__name">${escapeHtml(e.name)}${showcasedSet.has(e.pid) ? " ★展" : ""}</span></button>`
               )
               .join("")}
-            <button type="button" class="btn btn--small btn--primary" data-dex-shiny-showcase="all">${renderResSvg("shinyCharm", 14)}<span>全屏陈列秀</span></button>
             <button type="button" class="btn btn--small btn--ghost" data-dex-shiny-share data-share="${escapeHtml(shareText)}">${renderUiIcon("tab_social", 14)}<span>复制分享</span></button>
             <button type="button" class="btn btn--small btn--ghost" data-dex-shiny-card>${renderUiIcon("tab_dex", 14)}<span>保存分享卡</span></button>
           </div>`
-        : `<div class="row__desc muted">闪光馆空空如也 — 捕捉或孵出闪光后会出现在这里，并可开启全屏星芒陈列秀。</div>`;
+        : `<div class="row__desc muted">闪光馆空空如也 — 捕捉或孵出闪光后即可点亮图鉴并供奉至 6 席星芒展柜，永久提供全队产出、训练经验与捕获率光环。</div>`;
 
     const dexStageHtml = renderDexStageHtml({
       state,
@@ -118,6 +164,139 @@ export function createRenderDex({
       escapeHtml,
     });
 
+    const bondResonance = computeElementalBondResonance(state);
+    const activeElemFilter = typeof ui.dexElemFilter === "string" ? ui.dexElemFilter : "";
+    const elemStripHtml = ATLAS_ELEMENTS.map((el) => {
+      const cnt = bondResonance.elemSpeciesCounts[el] || 0;
+      const isSel = activeElemFilter === el;
+      return `<button type="button" class="bond-elem-chip type-${escapeHtml(el)} ${isSel ? "is-active" : ""}" data-bond-elem-filter="${escapeHtml(el)}" title="点击按「${escapeHtml(ATLAS_ELEMENT_ZH[el] || el)}」属性筛选图鉴">
+        <span class="badge type type-${escapeHtml(el)}">${escapeHtml(ATLAS_ELEMENT_ZH[el] || el)}</span>
+        <span class="bond-elem-chip__cnt">已录 ${cnt} 种</span>
+      </button>`;
+    }).join("");
+
+    const pairBarInnerHtml = bondResonance.activePair.valid
+      ? `
+        <div class="bond-pair-slots">
+          ${bondResonance.activePair.mons
+            .map(
+              (pm, idx) => `
+              <span class="bond-pair-mon">
+                ${renderBeastIcon(pm.dex, pm.name, pm.isShiny)}
+                <span>${idx === 0 ? "契灵A" : "契灵B"} · ${escapeHtml(pm.name)} Lv.${pm.lvl}${pm.stars > 0 ? ` (${pm.stars}星)` : ""}</span>
+              </span>`,
+            )
+            .join('<span class="bond-pair-link">+</span>')}
+          ${
+            bondResonance.activePair.pairAmpActive
+              ? `<span class="badge badge--ok">双灵结契共鸣生效</span>`
+              : `<span class="tag">需覆盖主星图至少 2 种元素激活增幅</span>`
+          }
+        </div>`
+      : `<span class="muted">暂未结契双灵 — 选定 2 只契合主星图元素的伙伴结契，可额外激发全局产出、攻防速与捕获加成。</span>`;
+
+    const bondCardsHtml = bondResonance.bonds
+      .map((b) => {
+        const tierLabel = b.tier === 3 ? "III阶·星冕" : b.tier === 2 ? "II阶·谐振" : b.tier === 1 ? "I阶·初鸣" : "未点亮";
+        const elemTags = b.elements
+          .map(
+            (el) =>
+              `<span class="badge type type-${escapeHtml(el)}">${escapeHtml(ATLAS_ELEMENT_ZH[el] || el)} ${b.elemCounts[el] || 0}</span>`,
+          )
+          .join("");
+        const bonusParts = [];
+        if (b.bonus.prodAdd > 0) bonusParts.push(`产出+${Math.round(b.bonus.prodAdd * 1000) / 10}%`);
+        if (b.bonus.atkAdd > 0) bonusParts.push(`攻+${Math.round(b.bonus.atkAdd * 1000) / 10}%`);
+        if (b.bonus.defAdd > 0) bonusParts.push(`防+${Math.round(b.bonus.defAdd * 1000) / 10}%`);
+        if (b.bonus.speAdd > 0) bonusParts.push(`速+${Math.round(b.bonus.speAdd * 1000) / 10}%`);
+        if (b.bonus.trainExpAdd > 0) bonusParts.push(`历练+${Math.round(b.bonus.trainExpAdd * 1000) / 10}%`);
+        if (b.bonus.catchAdd > 0) bonusParts.push(`捕获+${Math.round(b.bonus.catchAdd * 1000) / 10}%`);
+
+        return `
+          <div class="bond-atlas-card ${b.tier > 0 ? "is-unlocked" : "is-locked"} ${b.isAttuned ? "is-attuned" : ""}">
+            <div class="bond-atlas-card__top">
+              <div class="bond-atlas-card__nameWrap">
+                <span class="bond-atlas-card__name">${escapeHtml(b.name)}</span>
+                <span class="tag ${b.tier > 0 ? "tag--bond-on" : ""}">${escapeHtml(tierLabel)}</span>
+                ${b.isAttuned ? `<span class="badge badge--ok">主星图 ×1.5</span>` : ""}
+              </div>
+              <div class="bond-atlas-card__sub">${escapeHtml(b.subtitle)}</div>
+            </div>
+            <div class="bond-atlas-card__elems">${elemTags}<span class="tag">升星伙伴 ${b.starredCount}</span></div>
+            <div class="bond-atlas-card__bonus">
+              ${
+                b.tier > 0
+                  ? escapeHtml(bonusParts.join(" · "))
+                  : "集齐该图谱各系至少 1 种萌灵即可点亮 I 阶共鸣"
+              }
+            </div>
+            <div class="bond-atlas-card__foot">
+              <span class="bond-atlas-card__req">${escapeHtml(b.nextReqText)}</span>
+              ${
+                b.tier > 0 && !b.isAttuned
+                  ? `<button type="button" class="btn btn--small" data-bond-attune="${escapeHtml(b.id)}">设为主星图</button>`
+                  : b.isAttuned
+                    ? `<span class="tag">当前主共鸣</span>`
+                    : ""
+              }
+            </div>
+          </div>`;
+      })
+      .join("");
+
+    const bondMilestonesHtml = bondResonance.milestones
+      .map((ms) => {
+        const rwText = Object.entries(ms.rewards)
+          .map(([k, v]) => {
+            if (k === "futurecoin") return `未来币+${v}`;
+            if (k === "expCandy") return `历练糖丸+${v}`;
+            if (k === "evolutionStone") return `灵晶石+${v}`;
+            if (k === "rareCandy") return `跃级糖丸+${v}`;
+            if (k === "linkRope") return `灵契绳+${v}`;
+            if (k === "shinyCharm") return `虹彩护符+${v}`;
+            return `${k}+${v}`;
+          })
+          .join("、");
+        if (ms.canClaim) {
+          return `<button type="button" class="btn btn--small btn--primary" data-bond-claim-mile="${escapeHtml(ms.id)}">领取 ${escapeHtml(ms.label)}（${escapeHtml(rwText)}）</button>`;
+        }
+        return `<span class="bond-mile-pill ${ms.claimed ? "is-claimed" : ""}">${escapeHtml(ms.label)} · ${ms.claimed ? "已领取" : escapeHtml(rwText)}</span>`;
+      })
+      .join("");
+
+    const monCountOwned = Array.isArray(state.mons?.list) ? state.mons.list.filter(Boolean).length : 0;
+    const bondAtlasHtml = `
+      <div class="row bond-atlas-panel">
+        <div class="row__left" style="width:100%">
+          <div class="bond-atlas-head">
+            <div class="row__title row__titleLine">
+              ${renderResSvg("bondAtlas", 20)}
+              <span>属性羁绊共鸣图谱</span>
+              <span class="tag">已点亮 ${bondResonance.unlockedBondsCount}/${bondResonance.totalBondsCount} 组</span>
+              <span class="tag">共鸣总阶 ${bondResonance.totalTierScore}/${bondResonance.maxTierScore}</span>
+              ${activeElemFilter ? `<button type="button" class="btn btn--small btn--ghost" data-bond-elem-filter="clear">清除属性筛选</button>` : ""}
+            </div>
+            <div class="bond-atlas-actions">
+              <button type="button" class="btn btn--small btn--primary" data-bond-autofill="1" ${bondResonance.unlockedBondsCount > 0 || monCountOwned >= 2 ? "" : "disabled"}>一键优选共鸣</button>
+              <button type="button" class="btn btn--small" data-bond-open-pair="1" ${monCountOwned >= 2 ? "" : "disabled"}>${renderResSvg("duoCombo", 14)}<span>调配结契双灵</span></button>
+            </div>
+          </div>
+          <div class="bond-elem-strip">${elemStripHtml}</div>
+          <div class="bond-atlas-auras">
+            <span class="shiny-aura-pill ${bondResonance.prodAdd > 0 ? "is-on" : ""}">全资源产出 +${Math.round(bondResonance.prodAdd * 1000) / 10}%</span>
+            <span class="shiny-aura-pill ${bondResonance.atkAdd > 0 || bondResonance.defAdd > 0 || bondResonance.speAdd > 0 ? "is-on" : ""}">战斗加成 攻+${Math.round(bondResonance.atkAdd * 1000) / 10}% · 防+${Math.round(bondResonance.defAdd * 1000) / 10}% · 速+${Math.round(bondResonance.speAdd * 1000) / 10}%</span>
+            <span class="shiny-aura-pill ${bondResonance.trainExpAdd > 0 ? "is-on" : ""}">训练经验 +${Math.round(bondResonance.trainExpAdd * 1000) / 10}%</span>
+            <span class="shiny-aura-pill ${bondResonance.catchAdd > 0 ? "is-on" : ""}">全局捕获率 +${Math.round(bondResonance.catchAdd * 1000) / 10}%</span>
+          </div>
+          <div class="bond-active-pair-bar">
+            <span class="bond-active-pair-label">${renderResSvg("duoCombo", 16)}<span>结契双灵</span></span>
+            ${pairBarInnerHtml}
+          </div>
+          <div class="bond-atlas-grid">${bondCardsHtml}</div>
+          <div class="bond-atlas-milestones">${bondMilestonesHtml}</div>
+        </div>
+      </div>`;
+
     setHtmlPreservingStage(
       elDexSummary,
       `
@@ -131,12 +310,14 @@ export function createRenderDex({
             ${shinyUnique > 0 ? `<span class="tag">闪光 ${shinyUnique}</span>` : ""}
           </div>
           ${regionGoalHtml}
+          ${showcaseRackHtml}
           ${galleryHtml}
         </div>
         <div class="row__right">
           ${nextCatchRightHtml}
         </div>
       </div>
+      ${bondAtlasHtml}
     `,
     );
 
@@ -166,9 +347,15 @@ export function createRenderDex({
     }
 
     const poolFn = area ? area.pool : null;
+    const elemFilter = typeof ui.dexElemFilter === "string" ? ui.dexElemFilter : "";
+    const typesMapForFilter = globalThis.BEAST_TYPES ?? {};
 
     const filtered = defs.beasts.filter((p) => {
       if (poolFn && !poolFn(p)) return false;
+      if (elemFilter) {
+        const pt = Array.isArray(typesMapForFilter[p.dex]) ? typesMapForFilter[p.dex] : [];
+        if (!pt.includes(elemFilter)) return false;
+      }
       if (onlyShiny) return Boolean(shinyMap[p.id]);
       const n = typeof caught[p.id] === "number" ? caught[p.id] : 0;
       const seen = n > 0;

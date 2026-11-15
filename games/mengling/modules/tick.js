@@ -17,8 +17,24 @@ import {
   natureTrainExpMul,
   noteExpeditionDailyDone,
 } from "./systems/gameplay_fun.js";
-import { noteSeasonRelic, rollSeasonRelic } from "./systems/collection_fun.js";
+import {
+  advanceAmberIvTraining,
+  advanceEcoSandbox,
+  advanceStarCamp,
+  computeAmberRevivalAura,
+  computeEcoRelicAura,
+  computeElementalBondResonance,
+  computeShinyShowcaseAura,
+  computeStarBoutiqueAura,
+  computeStarCampAura,
+  getMonBoutiqueBonus,
+  noteSeasonRelic,
+  rollSeasonRelic,
+} from "./systems/collection_fun.js";
+import { computeStarCorridorBonus } from "./systems/pve_tower.js";
+import { legacyBreedTimeMul } from "./systems/rebirth.js";
 import { hatchEgg as hatchEggCore } from "./systems/breeding.js";
+import { computeTechEffects } from "./systems/effects.js";
 
 export function createTick(ctx) {
   const ui = ctx.ui;
@@ -219,7 +235,7 @@ export function createTick(ctx) {
     }
 
     if ((state.breeding.eggRemainingSec ?? 0) > 0) return;
-    let t = breedingEggTotalSec(lvl) * natureBreedTimeMul(state);
+    let t = breedingEggTotalSec(lvl) * natureBreedTimeMul(state) * legacyBreedTimeMul(state);
     let basePid = null;
     if (a.pid === dittoPid && b.pid !== dittoPid) basePid = getBasePid(b.pid);
     else if (b.pid === dittoPid && a.pid !== dittoPid) basePid = getBasePid(a.pid);
@@ -231,6 +247,11 @@ export function createTick(ctx) {
   }
 
   function hatchEgg(state, mons, monById) {
+    const techEff = typeof computeTechEffects === "function" ? computeTechEffects(state) : null;
+    const shinyChanceMul =
+      typeof techEff?.shinyChanceMul === "number" && Number.isFinite(techEff.shinyChanceMul)
+        ? techEff.shinyChanceMul
+        : 1;
     return hatchEggCore(state, {
       mons,
       monById,
@@ -243,6 +264,7 @@ export function createTick(ctx) {
       addLog,
       addRes,
       ui,
+      shinyChanceMul,
     });
   }
 
@@ -788,7 +810,9 @@ export function createTick(ctx) {
             typeof m.affectionCarry === "number" && Number.isFinite(m.affectionCarry) ? Math.max(0, m.affectionCarry) : 0;
 
           if (sat1 > 0) {
-            const affCarry1 = affCarry0 + affRate * affGainMul;
+            const boutiqueAffMul = computeStarBoutiqueAura(state).affGainMul;
+            const monBoutiqueAff = getMonBoutiqueBonus(state, m.id).styled ? 1.15 : 1;
+            const affCarry1 = affCarry0 + affRate * affGainMul * boutiqueAffMul * monBoutiqueAff;
             const affAdd = Math.floor(affCarry1);
             m.affectionCarry = affCarry1 - affAdd;
             m.affectionDecayCarry = 0;
@@ -803,8 +827,19 @@ export function createTick(ctx) {
         if (sat1 >= 0) {
           const carry0 = typeof m.autoExpCarry === "number" && Number.isFinite(m.autoExpCarry) ? Math.max(0, m.autoExpCarry) : 0;
           const natureMul = isTraining ? natureTrainExpMul(m, trainingIds.length) : 1;
+          const showcaseTrainMul = isTraining ? computeShinyShowcaseAura(state).trainExpMul : 1;
+          const bondTrainMul = isTraining ? computeElementalBondResonance(state).trainExpMul : 1;
+          const ecoTrainMul = isTraining ? computeEcoRelicAura(state).trainExpMul : 1;
+          const campTrainMul = isTraining ? computeStarCampAura(state).trainExpMul : 1;
+          const boutiqueTrainMul = isTraining ? computeStarBoutiqueAura(state).trainExpMul : 1;
+          const amberTrainMul = isTraining ? computeAmberRevivalAura(state).ivTrainMul : 1;
+          const corridorTrainMul = isTraining ? computeStarCorridorBonus(state).ivTrainMul : 1;
           const satBonus = sat1 >= 50 ? 1.25 : 1;
-          const expMul = (isBreeding ? 50 : isTraining ? trainExpMul * natureMul : 1) * satBonus;
+          const expMul = (isBreeding ? 50 : isTraining ? trainExpMul * showcaseTrainMul * bondTrainMul * ecoTrainMul * campTrainMul * boutiqueTrainMul * amberTrainMul * corridorTrainMul * natureMul : 1) * satBonus;
+          if (isTraining) {
+            const ivStep = advanceAmberIvTraining(state, m, dtSec, corridorTrainMul);
+            if (ivStep.upgraded) expAdded = true;
+          }
           const carry1 = carry0 + (dtSec / 300) * expMul;
           const add = Math.floor(carry1);
           m.autoExpCarry = carry1 - add;
@@ -976,6 +1011,23 @@ export function createTick(ctx) {
       const act1 = act0.filter((id) => alive.has(id));
       if (sel1.length !== sel0.length) state.expedition.selectedIds = sel1;
       if (act1.length !== act0.length) state.expedition.activeIds = act1;
+    }
+
+    const ecoStep = advanceEcoSandbox(state, dtSec);
+    if (ecoStep.newlyCompleted.length > 0) {
+      addLog(`秘境生态沙盘：${ecoStep.newlyCompleted.length} 处生态区勘探圆满，可前往育灵中枢收取心性调律薄荷与遗物！`, true);
+      if (ui) ui.functionsDirty = true;
+    }
+
+    const campStep = advanceStarCamp(state, dtSec);
+    if (campStep.leveledUp || campStep.forageCycles > 0 || campStep.expiredFeasts.length > 0) {
+      if (campStep.leveledUp) {
+        addLog(`星界露营野餐屋升级至 Lv.${state.meta?.starCamp?.level || 1}！营火共鸣与采集效率进一步提升`, true);
+      }
+      if (ui) ui.functionsDirty = true;
+    }
+    if (campStep.affectionChanged && ui?.activeTab === "mons") {
+      markMonsDirty();
     }
 
     for (const rid of Object.keys(state.res)) {

@@ -25,7 +25,7 @@ export function createRenderHelp({ elHelp, ui, escapeHtml, getState, getCaptureA
     rows.push(`
       <div class="row">
         <div class="row__left">
-          <div class="row__title row__titleLine">${renderResSvg("library", 18)}<span>帮助文档 · 星野冒险百科</span><span class="tag">版本 v0.7.40</span><span class="tag">点击标题展开</span></div>
+          <div class="row__title row__titleLine">${renderResSvg("library", 18)}<span>帮助文档 · 星野冒险百科</span><span class="tag">版本 v0.7.48</span><span class="tag">点击标题展开</span></div>
           <div class="row__desc muted">涵盖开荒路线、时代纪元、捕捉生态、培育远征、试炼演武与云存档同步指南。</div>
         </div>
       </div>
@@ -116,6 +116,20 @@ export function createRenderHelp({ elHelp, ui, escapeHtml, getState, getCaptureA
       </div>
       ${tip('灵球不够？建灵木营产灵木，或研究「灵球容量」科技。')}
     `, false, renderUiIcon("tab_bonfire", 16), "核心循环"));
+
+    rows.push(block("远古琥珀基因复苏所与双系星轨回廊", `
+      <div style="line-height:1.9">
+        ${h('远古琥珀基因复苏所')}：每日可在功能页免费挖掘「远古基因琥珀」（+6），也可消耗秘境生态沙盘特产（调律薄荷+灵矿）或冠军联盟殿堂奖励（闪光星砂+未来币）凝珀；鉴定并苏醒 Lv.1~3「太古苍牙印记」「沧海旋螺印记」「森罗古蕨印记」「星陨晶龙印记」，为伙伴刻印太古血脉（自动享防放生保护）并支持琥珀基因潜能淬炼，集齐四枚印记更可激活「四太古血脉苏醒共鸣」，全面提升全资源产出、个体潜能训练、捕获率、闪光奇遇率与战斗威力！${br}
+        ${h('双系星轨回廊无尽试炼')}：编组最多 4 只伙伴勇闯层层递进且双属性轮转的「星轨回廊第 1..N 重」，全面联动【元素双灵羁绊 + 薄荷性格调律 + 星营料理盛宴 + 星辉流彩配饰 + 太古血脉印记】五维共鸣，赢取「星轨回廊勋章」与「远古基因琥珀」，并晋升永久星轨回廊阶位 Tier 1~5！
+      </div>
+    `, false, renderUiIcon("amberRevivalPod", 16), "v0.7.48 新增"));
+
+    rows.push(block("星辉造型屋与冠军联盟殿堂", `
+      <div style="line-height:1.9">
+        ${h('星辉配饰流彩造型屋')}：每日可在功能页免费领取「星辉凝砂」（闪光祈愿星砂 +6），也可用未来币或野餐香草合成星砂；裁制并升阶 Lv.1~3「极光星冕头饰」「暖绒星纹围巾」「流光蝶翼披风」及调染极光流彩光晕，提升全资源产量、亲密升温、训练经验、闪光祈愿率与战力，穿戴伙伴自动享防放生保护。${br}
+        ${h('冠军联盟四天王殿堂赛')}：编组 3 只伙伴连续迎战炎狱天王、沧溟天王、翠岚天王、星穹天王与圣殿总冠军，联动元素羁绊、薄荷调律、露营盛宴与星辉配饰加成；登顶授勋可赢取闪光祈愿星砂、为参战伙伴镌刻「冠军殿堂绶带」，并晋升全局殿堂阶位 Tier 1~5（永久提升全产、捕获率与战斗伤害）。
+      </div>
+    `, false, renderUiIcon("leagueChampionRibbon", 16), "v0.7.47 新增"));
 
     rows.push(block("营地（篝火页）", `
       <div style="line-height:1.8">

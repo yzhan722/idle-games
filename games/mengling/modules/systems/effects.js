@@ -8,6 +8,15 @@
 import { clamp } from "../utils.js";
 import { applyMutatorsToEff } from "./era.js";
 import { legacyCatchAdd } from "./rebirth.js";
+import {
+  computeAmberRevivalAura,
+  computeEcoRelicAura,
+  computeElementalBondResonance,
+  computeShinyShowcaseAura,
+  computeStarBoutiqueAura,
+  computeStarCampAura,
+} from "./collection_fun.js";
+import { computeChampionLeagueBonus, computeStarCorridorBonus } from "./pve_tower.js";
 import { natureDexBonusMul } from "./gameplay_fun.js";
 import { serverBuffPct, serverBuffResearchTimeMul as _serverBuffResearchTimeMul } from "./server_buffs.js";
 
@@ -120,6 +129,19 @@ export function computeTechEffects(state, defs, ui) {
     eff.catchChanceAdd += permCaptureLvl * 0.05;
   }
   eff.catchChanceAdd += legacyCatchAdd(state);
+  eff.catchChanceAdd += computeShinyShowcaseAura(state).catchAdd;
+  eff.catchChanceAdd += computeElementalBondResonance(state).catchAdd;
+  eff.catchChanceAdd += computeEcoRelicAura(state).catchAdd;
+  eff.catchChanceAdd += computeStarCampAura(state).catchAdd;
+  const boutiqueAura = computeStarBoutiqueAura(state);
+  const leagueBonus = computeChampionLeagueBonus(state);
+  const amberAura = computeAmberRevivalAura(state);
+  const corridorBonus = computeStarCorridorBonus(state);
+  eff.catchChanceAdd += boutiqueAura.catchAdd;
+  eff.catchChanceAdd += leagueBonus.catchAdd;
+  eff.catchChanceAdd += amberAura.catchAdd;
+  eff.catchChanceAdd += corridorBonus.catchAdd;
+  eff.shinyChanceMul *= boutiqueAura.shinyChanceMul * amberAura.shinyChanceMul * corridorBonus.shinyChanceMul;
 
   // 限时捕获率提升（未来币商店）
   const captureBoostRem =
