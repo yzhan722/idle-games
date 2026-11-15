@@ -444,7 +444,7 @@ export async function partyRoutes(
           stats.killsByMonster = stats.killsByMonster || {};
           const nowDate = new Date();
           const buffEff = getBuffEffects(st, nowDate);
-          const repBuffs = getReputationBonuses(st);
+          const repBuffs = getReputationBonuses(st, nowDate);
           const prestigeMul = getPrestigeMultiplier(st);
           const trainingLevel = houseLevelForSkill(st, "skill_combat");
           const xpBonusMul = (1 + trainingLevel * HOUSE_XP_PER_LEVEL) * (buffEff.xpGain || 1) * repBuffs.xpGain * prestigeMul;

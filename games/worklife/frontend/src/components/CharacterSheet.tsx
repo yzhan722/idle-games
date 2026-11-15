@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { T1Art, characterArtId, normalizeGender, normalizeAvatarId, AVATAR_OPTIONS, PlayerAvatarIcon } from "./T1Art";
+import { T1Art, characterArtId, normalizeGender, normalizeAvatarId, AVATAR_OPTIONS, PlayerAvatarIcon, GuildFramedAvatar } from "./T1Art";
 import { abilityEmoji } from "./AbilityBar";
 import { abilityMasteryTier, getAbilityXpForLevel } from "../gameplay/fightPreview";
 import type { ActiveSetBonus } from "../gameplay/combatSheet";
@@ -69,6 +69,7 @@ type Props = {
   activeClassName?: string;
   playerGender?: string;
   playerAvatar?: string;
+  equippedGuildFrame?: string | null;
   onChangeAvatar?: (avatar: string) => void;
   onOpenProfessionModal?: () => void;
   /** MWI total level: every skill row added up. */
@@ -206,9 +207,18 @@ export function CharacterSheet(props: Props) {
         </div>
         <div className="sheet-identity-wrap">
           <p className="sheet-identity" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontVariantNumeric: "tabular-nums" }}>
-            <span className="sheet-avatar-badge" style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", display: "inline-flex", flexShrink: 0, border: "1px solid var(--border-brand, #d9a04a)" }}>
-              <PlayerAvatarIcon avatar={currentAvatarId} gender={normalizedGender} />
-            </span>
+            {props.equippedGuildFrame ? (
+              <GuildFramedAvatar
+                avatar={currentAvatarId}
+                gender={normalizedGender}
+                frameId={props.equippedGuildFrame}
+                size={32}
+              />
+            ) : (
+              <span className="sheet-avatar-badge" style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", display: "inline-flex", flexShrink: 0, border: "1px solid var(--border-brand, #d9a04a)" }}>
+                <PlayerAvatarIcon avatar={currentAvatarId} gender={normalizedGender} />
+              </span>
+            )}
             <strong style={{ whiteSpace: "nowrap" }}>{props.playerName}</strong>
             {props.activeClassName && <span style={{ whiteSpace: "nowrap", padding: "1px 7px", borderRadius: 999, background: "rgba(217, 160, 74, 0.16)", border: "1px solid rgba(217, 160, 74, 0.36)", fontSize: 12, color: "#f3d299" }}>{props.activeClassName}</span>}
             <span style={{ whiteSpace: "nowrap", fontSize: 12.5, color: "var(--text-secondary)" }}>总等级 {props.totalLevel}</span>

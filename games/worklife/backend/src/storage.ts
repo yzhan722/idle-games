@@ -25,7 +25,23 @@ import type { PlayerCommand, PlayerCommandResult } from './player_commands';
 // 声望/转生：永久被动加成与全局倍率，接入 simulateToNow 在线结算。
 // 注：progression2 也会从本模块导入 appendLog/ensurePlayerExtensions，
 // 二者均仅在函数体内（运行时）相互引用，故此循环依赖在求值期是安全的。
-import { getReputationBonuses, getPrestigeMultiplier } from "./progression2";
+import {
+  getReputationBonuses,
+  getPrestigeMultiplier,
+  getAstrolabeBonuses,
+  getActiveGuildAffixModifiers,
+  ensureBounties,
+  ensureHeritageWorkshop,
+  syncHeritageCodex,
+  recordCodexItemUnlock,
+  getHeritageWorkshopBonuses,
+  ensureCaravanTrade,
+  getCaravanTradeBonuses,
+  ensureAlchemyCauldron,
+  getAlchemyCauldronBonuses,
+  ensureAstralRelics,
+  getAstralRelicsBonuses,
+} from "./progression2";
 import { enhancementStatMultiplier } from "./enhancement_math";
 import { ensureProgression } from './progression_state';
 import { professionMasteryBonuses } from './profession_perks';
@@ -542,6 +558,18 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
   const { ensureAbilities } = require("./abilities") as typeof import("./abilities");
   ensureCombatSkills(player);
   ensureAbilities(player);
+  if (player.heritageWorkshop) {
+    ensureHeritageWorkshop(player);
+  }
+  if (player.caravanTrade) {
+    ensureCaravanTrade(player);
+  }
+  if (player.alchemyCauldron) {
+    ensureAlchemyCauldron(player);
+  }
+  if (player.astralRelics) {
+    ensureAstralRelics(player);
+  }
   return player;
 }
 
@@ -884,12 +912,38 @@ export function getActionRates(
   const atkSpeedMul = isCombatAct ? Math.min(3, 1 + equipStats.atk * 0.005) : 1;
   const defGoldMul = isCombatAct ? Math.min(2.5, 1 + equipStats.def * 0.004) : 1;
   const setBuffs = getEquippedProductionBuffs(player, pack);
-  const repBuffs = getReputationBonuses(player);
+  const repBuffs = getReputationBonuses(player, now);
   const prestigeMul = getPrestigeMultiplier(player);
+  const affixMods = getActiveGuildAffixModifiers(player);
+  const hwMods = getHeritageWorkshopBonuses(player);
+  const caravanMods = getCaravanTradeBonuses(player);
+  const alchemyMods = getAlchemyCauldronBonuses(player);
+  const relicMods = getAstralRelicsBonuses(player);
   const lane = isCombatAct ? "combatSpeed" : hasConsumesAct ? "craftSpeed" : "gatherSpeed";
   const buffSpeed = (buffEff as any)[lane] as number;
   const setSpeed = (setBuffs as any)[lane] as number;
   const repSpeed = (repBuffs as any)[lane] as number;
+  const affixSpeedMul = isCombatAct
+    ? 1 + affixMods.combatSpeedPct / 100
+    : hasConsumesAct
+      ? 1 + affixMods.craftSpeedPct / 100
+      : 1;
+  const hwSpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + hwMods.craftSpeedPct / 100
+      : 1 + hwMods.gatherSpeedPct / 100;
+  const caravanSpeedMul = !isCombatAct && hasConsumesAct ? 1 + caravanMods.craftSpeedPct / 100 : 1;
+  const alchemySpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + alchemyMods.craftSpeedPct / 100
+      : 1 + alchemyMods.gatherSpeedPct / 100;
+  const relicSpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + relicMods.craftSpeedPct / 100
+      : 1 + relicMods.gatherSpeedPct / 100;
   // MWI tool speed: the equipped tool speeds up its own profession's skilling actions (not combat).
   const toolId = (player.equipment as any)?.tool as string | undefined;
   // 幽灵槽防护：工具已不在背包（被卖/挂单/旧脏档）或已损坏时不提供加速
@@ -909,7 +963,7 @@ export function getActionRates(
         GATHER_SKILL_BY_PROFESSION,
         CRAFT_SKILL_BY_PROFESSION
       );
-  const speedMul = buffSpeed * atkSpeedMul * setSpeed * repSpeed * toolSpeedMul * mastery.speedMul;
+  const speedMul = buffSpeed * atkSpeedMul * setSpeed * repSpeed * toolSpeedMul * mastery.speedMul * affixSpeedMul * hwSpeedMul * caravanSpeedMul * alchemySpeedMul * relicSpeedMul;
   const effectiveDurationMs = Math.max(1, Number(action.duration || 0) / (speedMul || 1));
 
   const speedSources: Array<{ label: string; pct: number }> = [];
@@ -919,9 +973,14 @@ export function getActionRates(
   };
   if (toolApplies) pushPct(speedSources, `工具 · ${toolDef.name}`, toolSpeedMul);
   if (mastery.active) pushPct(speedSources, "本职专精", mastery.speedMul);
-  pushPct(speedSources, "增益", buffSpeed);
+  pushPct(speedSources, "增益", buffEff ? buffSpeed : 1);
   pushPct(speedSources, "套装", setSpeed);
   pushPct(speedSources, "声望", repSpeed);
+  if (affixSpeedMul > 1) pushPct(speedSources, "公会词缀", affixSpeedMul);
+  if (hwSpeedMul > 1) pushPct(speedSources, "铭纹与共鸣", hwSpeedMul);
+  if (caravanSpeedMul > 1) pushPct(speedSources, "远征商队", caravanSpeedMul);
+  if (alchemySpeedMul > 1) pushPct(speedSources, "奇美拉魔药釜", alchemySpeedMul);
+  if (relicSpeedMul > 1) pushPct(speedSources, "传世圣物陈列馆", relicSpeedMul);
   if (isCombatAct) pushPct(speedSources, "攻击力", atkSpeedMul);
 
   const { houseLevelForSkill, roomForSkill, HOUSE_EFFICIENCY_PER_LEVEL, HOUSE_XP_PER_LEVEL } =
@@ -940,16 +999,48 @@ export function getActionRates(
     if (gearEff > 0) efficiencySources.push({ label: "装备", pct: Math.round(gearEff * 10) / 10 });
     const buffEffPct = Number((buffEff as any).efficiency || 0);
     if (buffEffPct > 0) efficiencySources.push({ label: "增益", pct: buffEffPct });
-    if (houseLevel > 0) efficiencySources.push({ label: `房屋 · ${houseRoomName}`, pct: houseLevel * HOUSE_EFFICIENCY_PER_LEVEL });
+    const astro = getAstrolabeBonuses(player);
+    if (houseLevel > 0) {
+      efficiencySources.push({
+        label: `房屋 · ${houseRoomName}`,
+        pct: Math.round(houseLevel * HOUSE_EFFICIENCY_PER_LEVEL * astro.houseBonusMult * 10) / 10,
+      });
+    }
     if (mastery.efficiencyPct > 0) efficiencySources.push({ label: "本职专精", pct: mastery.efficiencyPct });
+    if (astro.lifeEfficiencyPct > 0) {
+      efficiencySources.push({ label: "传承星盘 · 巧匠星轨", pct: astro.lifeEfficiencyPct });
+    }
+    if (hasConsumesAct && affixMods.craftEfficiencyPct > 0) {
+      efficiencySources.push({ label: "公会词缀 · 巧匠炉火共鸣", pct: affixMods.craftEfficiencyPct });
+    }
+    if (hasConsumesAct && hwMods.craftEfficiencyPct > 0) {
+      efficiencySources.push({ label: "传世铭纹与图鉴共鸣", pct: hwMods.craftEfficiencyPct });
+    }
+    if (hasConsumesAct && alchemyMods.craftEfficiencyPct > 0) {
+      efficiencySources.push({ label: "奇美拉魔药与双生共鸣", pct: alchemyMods.craftEfficiencyPct });
+    }
+    if (!hasConsumesAct && relicMods.gatherEfficiencyPct > 0) {
+      efficiencySources.push({ label: "传世圣物 · 翠微丰饶圣爵", pct: relicMods.gatherEfficiencyPct });
+    }
+    if (hasConsumesAct && relicMods.craftEfficiencyPct > 0) {
+      efficiencySources.push({ label: "传世圣物 · 泰坦神铸战锤", pct: relicMods.craftEfficiencyPct });
+    }
     efficiencyPct = efficiencySources.reduce((s, x) => s + x.pct, 0);
   }
 
   // MWI house: the skill's room adds +1% XP per level (combat XP goes through hp_combat instead).
-  const houseXpMul = !isCombatAct && houseLevel > 0 ? 1 + houseLevel * HOUSE_XP_PER_LEVEL : 1;
-  const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul;
-  // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成
-  const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul;
+  const astroForXp = getAstrolabeBonuses(player);
+  const houseXpMul = !isCombatAct && houseLevel > 0 ? 1 + houseLevel * HOUSE_XP_PER_LEVEL * astroForXp.houseBonusMult : 1;
+  const hwXpMul = 1 + hwMods.xpGainPct / 100;
+  const relicXpMul = 1 + relicMods.xpGainPct / 100;
+  const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul * hwXpMul * relicXpMul;
+  // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成；并接入公会词缀、铭纹共鸣、远征商队、奇美拉魔药釜与传世圣物陈列馆金币倍率
+  const affixGoldMul = 1 + affixMods.goldGainPct / 100;
+  const hwGoldMul = 1 + hwMods.goldGainPct / 100;
+  const caravanGoldMul = 1 + caravanMods.goldGainPct / 100;
+  const alchemyGoldMul = 1 + alchemyMods.goldGainPct / 100;
+  const relicGoldMul = 1 + relicMods.goldGainPct / 100;
+  const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul * affixGoldMul * hwGoldMul * caravanGoldMul * alchemyGoldMul * relicGoldMul;
   return { isCombatAct, hasConsumesAct, speedMul, effectiveDurationMs, efficiencyPct, speedSources, efficiencySources, xpMul, goldMul, defGoldMul, setBuffs, repBuffs, prestigeMul, wornToolId: toolApplies ? toolId : undefined };
 }
 
@@ -961,11 +1052,16 @@ export function getActionRates(
 export function getRareFindMultiplier(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date = new Date()): number {
   const gear = equippedStatSum(player, pack, "rareFind");
   const buffs = getBuffEffects(player, now) as unknown as { rareFind?: number };
-  // MWI house: 训练场 adds +1% rare find per level.
+  const astro = getAstrolabeBonuses(player);
+  const affixMods = getActiveGuildAffixModifiers(player);
+  const hwMods = getHeritageWorkshopBonuses(player);
+  const alchemyMods = getAlchemyCauldronBonuses(player);
+  const relicMods = getAstralRelicsBonuses(player);
+  // MWI house: 训练场 adds +1% rare find per level (amplified by astro_house_keep).
   const { houseLevelForSkill, HOUSE_RARE_FIND_PER_LEVEL } = require("./houses") as typeof import("./houses");
-  const house = houseLevelForSkill(player, "skill_combat") * HOUSE_RARE_FIND_PER_LEVEL;
+  const house = houseLevelForSkill(player, "skill_combat") * HOUSE_RARE_FIND_PER_LEVEL * astro.houseBonusMult;
   const tailorBonus = player.activeClassId === "tailor" ? 15 : 0;
-  const total = gear + Number(buffs.rareFind || 0) + house + tailorBonus;
+  const total = gear + Number(buffs.rareFind || 0) + house + tailorBonus + astro.rareFindPct + affixMods.rareFindPct + hwMods.rareFindPct + alchemyMods.rareFindPct + relicMods.rareFindPct;
   return Math.max(0, 1 + total / 100);
 }
 
@@ -985,6 +1081,10 @@ export function efficiencyRepeats(efficiencyPct: number, rng: () => number = Mat
 }
 
 export const ACTION_QUEUE_MAX = 5;
+
+export function getActionQueueMax(player?: Pick<EnhancedPlayerState, "prestige"> | null): number {
+  return ACTION_QUEUE_MAX + getAstrolabeBonuses(player).extraQueueSlots;
+}
 
 /**
  * Why a queued action cannot start right now (undefined = it can).
@@ -1226,6 +1326,10 @@ function simulateWindow(input: SimulationInput): SimulateResult {
     const { ensureTasks } = require("./tasks") as typeof import("./tasks");
     ensureTasks(next, input.contentPack as EnhancedContentPack, input.now, input.rng);
   }
+  // 异世界公会词缀委托板：已初始化委托板的玩家跨零点在线/离线结算时自动按新日切种子轮换
+  if (next.bounties) {
+    ensureBounties(next, input.now);
+  }
 
   // Tick a running fight, or a finished one that auto-repeat is about to restart.
   const hpc = next.hpCombat;
@@ -1390,15 +1494,30 @@ function simulateWindow(input: SimulationInput): SimulateResult {
               
               const chance = yieldChance(yield_.chance, rareFindMul);
               if (rng() < chance) {
-                // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成
+                const gatherDoubleChance = !isCombat && !hasConsumes && yield_.itemId !== 'gold'
+                  ? Math.min(
+                      1,
+                      getAstrolabeBonuses(next).gatherDoubleChance +
+                        getActiveGuildAffixModifiers(next).gatherDoubleChance +
+                        getHeritageWorkshopBonuses(next).gatherDoubleChance +
+                        getCaravanTradeBonuses(next).gatherDoubleChance +
+                        getAlchemyCauldronBonuses(next).gatherDoubleChance +
+                        getAstralRelicsBonuses(next).gatherDoubleChance
+                    )
+                  : 0;
+                const critMult = gatherDoubleChance > 0 && rng() < gatherDoubleChance ? 2 : 1;
+                // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成；采集物可受丰饶双星暴击翻倍
                 const baseQty =
                   yield_.itemId === 'gold'
                     ? Math.round(yield_.qty * rates.goldMul)
-                    : yield_.qty;
+                    : yield_.qty * critMult;
                 const addAmount = Math.min(baseQty, MAX_ITEM_OUTPUT - currentTotal);
                 const currentAmount = next.inventory[yield_.itemId] || 0;
                 next.inventory[yield_.itemId] = currentAmount + addAmount;
                 totalRewards[yield_.itemId] = currentTotal + addAmount;
+                if (yield_.itemId !== 'gold' && addAmount > 0) {
+                  recordCodexItemUnlock(next, yield_.itemId);
+                }
                 // 统计：金币与采集物
                 if (yield_.itemId === 'gold') {
                   stats.totalGoldEarned += addAmount;

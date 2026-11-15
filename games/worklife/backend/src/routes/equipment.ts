@@ -5,7 +5,7 @@ import { isDurabilityBroken, type Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
 import { EQUIP_SLOT_KEYS, canEquipItem } from "../equipment_equip";
 import { playerCombatant } from "../first_hour_combat";
-import { buildExtras } from "../hp_combat";
+import { playerBuildExtras } from "../hp_combat";
 
 export async function equipmentRoutes(
   app: FastifyInstance, 
@@ -119,7 +119,7 @@ export async function equipmentRoutes(
     }
     (state.equipment as any)[body.slot] = body.itemId;
     if (state.combatHp !== undefined) {
-      const pc = playerCombatant(state, contentPack, buildExtras(state.chapter1Build));
+      const pc = playerCombatant(state, contentPack, playerBuildExtras(state));
       if (state.combatHp > pc.hp) state.combatHp = pc.hp;
     }
     const saved = await storage.savePlayerState(userId, state);
@@ -150,7 +150,7 @@ export async function equipmentRoutes(
       delete (state.equipment as any)[body.slot];
     }
     if (state.combatHp !== undefined) {
-      const pc = playerCombatant(state, contentPack, buildExtras(state.chapter1Build));
+      const pc = playerCombatant(state, contentPack, playerBuildExtras(state));
       if (state.combatHp > pc.hp) state.combatHp = pc.hp;
     }
     const saved = await storage.savePlayerState(userId, state);

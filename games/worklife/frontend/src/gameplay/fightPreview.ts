@@ -136,10 +136,19 @@ export type FightPreview = {
   casts: Record<string, number>;
 };
 
-/** Mirror of backend first_hour_combat.mitigatedDamage / hitDamage: atk² / (atk + floor(def/2)). */
-function hit(atk: number, outgoing: number, def: number, incoming: number): number {
+/** Mirror of backend first_hour_combat.mitigatedDamage / hitDamage: atk² / (atk + floor(def/2)) × critAmp. */
+function hit(
+  atk: number,
+  outgoing: number,
+  def: number,
+  incoming: number,
+  armorPenPct = 0,
+  relicCritAmpPct = 0
+): number {
   const a = atk * outgoing;
-  const raw = a > 0 ? (a * a) / (a + Math.max(0, Math.floor(def / 2))) : 0;
+  const effDef = armorPenPct > 0 ? Math.floor(def * (1 - armorPenPct)) : def;
+  const critAmp = relicCritAmpPct > 0 ? 1 + relicCritAmpPct / 100 : 1;
+  const raw = a > 0 ? ((a * a) / (a + Math.max(0, Math.floor(effDef / 2)))) * critAmp : 0;
   return Math.max(1, Math.floor(raw * incoming));
 }
 
@@ -232,6 +241,13 @@ export function previewFight(
   const playerInterval = sheet.intervalMs || PLAYER_INTERVAL_MS;
   const maxMp = sheet.mp ?? 20;
   const mpRegen = sheet.mpRegenPerTick ?? 1;
+  const isBossEnemy =
+    Boolean(m.isBoss) || String(m.id || "").endsWith("_boss") || String(m.name || "").includes("BOSS");
+  const effectiveArmorPen = Math.min(
+    0.85,
+    (sheet.armorPenPct || 0) + (isBossEnemy ? sheet.bossArmorBreakPct || 0 : 0)
+  );
+  const relicCritAmp = sheet.relicCritAmpPct || 0;
 
   let playerHp = sheet.hp;
   let playerMp = maxMp;
@@ -324,7 +340,10 @@ export function previewFight(
     if (a.def.damageMult) {
       const guardBefore = guardActive;
       const incoming = guardBefore ? (a.def.breaksGuard ? 1 : guardIncoming) : enemyIncoming;
-      const dmg = Math.max(1, Math.floor(hit(sheet.atk, 1, m.def, incoming) * a.def.damageMult * mult));
+      const dmg = Math.max(
+        1,
+        Math.floor(hit(sheet.atk, 1, m.def, incoming, effectiveArmorPen, relicCritAmp) * a.def.damageMult * mult)
+      );
       const minHpAfterOpeningCast = atMs <= 0 ? Math.max(1, Math.ceil(enemyMax * 0.25)) : 0;
       enemyHp = Math.max(minHpAfterOpeningCast, enemyHp - dmg);
       if (a.def.breaksGuard && guardBefore) guardActive = false;
@@ -366,7 +385,7 @@ export function previewFight(
     const braceNow = braceUntil > t ? braceMult : 1;
     runEvents("state", braceNow);
     if (playerCd >= playerInterval) {
-      const dmg = hit(sheet.atk, 1, m.def, guardActive ? guardIncoming : enemyIncoming);
+      const dmg = hit(sheet.atk, 1, m.def, guardActive ? guardIncoming : enemyIncoming, effectiveArmorPen, relicCritAmp);
       enemyHp = Math.max(0, enemyHp - dmg);
       playerCd = 0;
       playerMp = Math.min(maxMp, playerMp + mpRegen);
@@ -382,8 +401,13 @@ export function previewFight(
       playerHp = Math.max(0, playerHp - dmg);
       enemyCd = 0;
       if (miasmaDef) miasmaStacks = Math.min(mechanicParam(miasmaDef, "maxStacks"), miasmaStacks + 1);
+      if (playerHp > 0 && enemyHp > 0 && sheet.thornsDefRatio && sheet.thornsDefRatio > 0) {
+        const thornsDmg = Math.max(1, Math.floor(sheet.def * sheet.thornsDefRatio));
+        enemyHp = Math.max(0, enemyHp - thornsDmg);
+        phases();
+      }
     }
-    if (playerHp > 0) runEvents("damage", braceNow);
+    if (playerHp > 0 && enemyHp > 0) runEvents("damage", braceNow);
   }
 
   return {
@@ -393,8 +417,11 @@ export function previewFight(
     playerHpLeft: Math.max(0, playerHp),
     playerHpLeftPct: sheet.hp > 0 ? Math.max(0, playerHp) / sheet.hp : 0,
     enemyHpLeft: Math.max(0, enemyHp),
-    normalHit: hit(sheet.atk, 1, m.def, enemyIncoming),
-    heavyHit: Math.max(1, Math.floor(hit(sheet.atk, 1, m.def, enemyIncoming) * HEAVY_CHOP_MULT)),
+    normalHit: hit(sheet.atk, 1, m.def, enemyIncoming, effectiveArmorPen, relicCritAmp),
+    heavyHit: Math.max(
+      1,
+      Math.floor(hit(sheet.atk, 1, m.def, enemyIncoming, effectiveArmorPen, relicCritAmp) * HEAVY_CHOP_MULT)
+    ),
     enemyHit: hit(m.atk, enemyOutgoing, sheet.def, 1),
     heavyChops,
     casts,

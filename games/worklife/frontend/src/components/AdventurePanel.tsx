@@ -1,5 +1,6 @@
 import { apiClient } from '../services/api'
 import { T1Art, T1ItemIcon, characterArtId } from './T1Art'
+import { GuildBountyBoard } from './GuildBountyBoard'
 import { MonsterSceneBackdrop } from './MonsterSceneBackdrop'
 import { CombatPotionBar } from './CombatPotionBar'
 import { AbilityLoadoutPanel } from './AbilityLoadoutPanel'
@@ -45,6 +46,7 @@ export interface AdventurePanelProps {
   startBattle: (monster: any) => Promise<void>
   stopBattle: () => Promise<void>
   refreshPlayerState: () => Promise<void>
+  onOpenRelics?: () => void
 }
 
 export function AdventurePanel({
@@ -79,6 +81,7 @@ export function AdventurePanel({
   startBattle,
   stopBattle,
   refreshPlayerState,
+  onOpenRelics,
 }: AdventurePanelProps) {
   const toast = useToast()
 
@@ -167,7 +170,15 @@ export function AdventurePanel({
 
           <div className="adventure-tactical-dock">
             <div className="tactical-dock-group tactical-potions-group">
-              <span className="tactical-dock-label"><T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 战斗补给</span>
+              <span className="tactical-dock-label">
+                <T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 战斗补给
+                {playerState.chapter4Build && (
+                  <span className="ch4-build-chip" style={{ marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.92 }}>
+                    · <T1Art kind="skills" id={playerState.chapter4Build} className="gold-inline" alt="" />
+                    {playerState.chapter4Build === 'elixir_frenzy' ? '秘药狂热 (+50%药效)' : '盛宴生机 (+35%食疗护盾)'}
+                  </span>
+                )}
+              </span>
               <CombatPotionBar
                 loadout={playerState.combatLoadout}
                 items={contentPack?.items as any}
@@ -799,6 +810,35 @@ export function AdventurePanel({
         </div>
       ) : (
         <div className="adventure-content">
+          {chapterDone && onOpenRelics && (
+            <section className="astral-relics-banner" aria-label="星界远古遗迹勘探队与传世圣物陈列馆">
+              <div className="caravan-trade-banner-left">
+                <T1Art kind="skills" id="astral_ruin_compass" className="caravan-trade-banner-icon" fallback="" alt="" />
+                <div className="caravan-trade-banner-copy">
+                  <strong>星界远古遗迹勘探队 · 传世圣物陈列馆</strong>
+                  <small>
+                    派遣勘探队深入三层星界远古遗迹（每日免费勘探 / 金币补给 / 异域星晶尘深掘），修复并升阶转生永久保留的四大传世圣物基座（Lv.1~5）与全馆共鸣！
+                  </small>
+                </div>
+              </div>
+              <button
+                type="button"
+                data-testid="open-astral-relics-btn"
+                className="prog-claim-btn"
+                onClick={onOpenRelics}
+              >
+                进入遗迹圣物馆
+              </button>
+            </section>
+          )}
+          <GuildBountyBoard
+            playerState={playerState}
+            playerAvatar={playerState.settings?.avatar}
+            playerGender={playerGender}
+            setCurrentProfession={setCurrentProfession}
+            setActiveTab={setActiveTab}
+            refreshPlayerState={refreshPlayerState}
+          />
           <div className="monster-grid">
             {selectedEncounters.map((monster) => (
               <div

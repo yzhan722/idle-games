@@ -371,8 +371,25 @@ async function main() {
     "",
   ].join("\n");
 
-  const prev = fs.existsSync(logFile) ? fs.readFileSync(logFile, "utf8") : "# WorkLife Autonomous Playtest Audit Log\n\n";
-  fs.writeFileSync(logFile, prev + entry + "\n", "utf8");
+  const prev = fs.existsSync(logFile) ? fs.readFileSync(logFile, "utf8") : "";
+  const blocks = prev.split(/(?=^## \[)/m).map((s) => s.trim()).filter((s) => s.startsWith("## ["));
+  blocks.push(entry.trim());
+  const MAX_KEEP = 10;
+  if (blocks.length > MAX_KEEP) {
+    const zlib = await import("node:zlib");
+    const overflow = blocks.splice(0, blocks.length - MAX_KEEP);
+    const gzPath = path.resolve(rootDir, "../../docs/archives/playtest_logs_archive.md.gz");
+    fs.mkdirSync(path.dirname(gzPath), { recursive: true });
+    let oldText = "";
+    if (fs.existsSync(gzPath)) {
+      oldText = zlib.gunzipSync(fs.readFileSync(gzPath)).toString("utf8");
+    }
+    const chunk = `# [games/worklife/playtest_audit_log.md] Archived ${overflow.length} entries at ${stamp}\n\n` + overflow.join("\n\n") + "\n";
+    const merged = (oldText ? oldText.trimEnd() + "\n\n" : "") + chunk;
+    fs.writeFileSync(gzPath, zlib.gzipSync(Buffer.from(merged, "utf8"), { level: 9 }));
+  }
+  const header = "# WorkLife Autonomous Playtest Audit Log\n\n> 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。\n\n";
+  fs.writeFileSync(logFile, header + blocks.join("\n\n") + "\n", "utf8");
   console.log(entry);
   if (issues.length > 0) process.exitCode = 1;
 }

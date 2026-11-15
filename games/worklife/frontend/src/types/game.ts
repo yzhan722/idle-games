@@ -66,6 +66,7 @@ export interface PlayerState {
     totalDeaths?: number;
     killsByMonster?: Record<string, number>;
     totalGathered?: number;
+    totalCrafted?: number;
     totalActions?: number;
     actionsById?: Record<string, number>;
   };
@@ -116,6 +117,9 @@ export interface PlayerState {
     stats?: Record<string, number>;
   }>;
   chapter1Build?: "sharpened_edge" | "thick_bark";
+  chapter2Build?: "heavy_sunder" | "quenched_thorns";
+  chapter3Build?: "gale_flurry" | "relic_hunter";
+  chapter4Build?: "elixir_frenzy" | "feast_vitality";
   /** 玩家偏好/角色档案（建角屏写入；老存档可能整体缺失） */
   settings?: {
     soundEnabled?: boolean;
@@ -141,6 +145,108 @@ export interface PlayerState {
     drink: Array<{ itemId: string; triggerMissingMp?: number }>;
     mp?: Array<{ itemId: string; triggerMissingMp: number }>;
     autoRepeat?: boolean;
+  };
+  bounties?: {
+    date: string;
+    seedKey?: string;
+    rerollsUsed: number;
+    claimedTodayCount?: number;
+    claimedAffixesToday?: string[];
+    comboClaimed?: string[];
+    bounties: Array<{
+      id: string;
+      templateId: string;
+      name: string;
+      description: string;
+      icon: string;
+      iconKind?: 'skills' | 'ui' | 'materials';
+      iconId?: string;
+      affixId?: string;
+      metric: 'gather' | 'craft' | 'kill';
+      target: number;
+      baseline: number;
+      accepted: boolean;
+      claimed: boolean;
+      rarity: 'common' | 'rare' | 'epic';
+      honorReward?: number;
+      reward: { gold: number; reputation: number; items?: Record<string, number> };
+    }>;
+  };
+  guildHonor?: {
+    honorPoints: number;
+    totalHonorEarned: number;
+    forgingEmblems: number;
+    totalChainsCompleted: number;
+    fullClears: number;
+    unlockedFrames: string[];
+    equippedFrame: string | null;
+  };
+  heritageWorkshop?: {
+    runeRanks: Partial<Record<string, number>>;
+    equippedRunes: Partial<Record<'weapon' | 'armor' | 'tool', string | null>>;
+    emblemSynthesis?: {
+      date: string;
+      count: number;
+    };
+    codexUnlockedItems: string[];
+    claimedCodexMilestones: string[];
+  };
+  caravanTrade?: {
+    caravanRep: number;
+    astralCrystalDust: number;
+    expressPermits: number;
+    ledgerRank: number;
+    totalRunsCompleted: number;
+    totalContractsFulfilled: number;
+    wagons: Partial<
+      Record<
+        0 | 1 | 2,
+        {
+          slot: 0 | 1 | 2;
+          routeId: 'frostport' | 'emberoasis' | 'starfallspire';
+          cargo: Record<string, number>;
+          startedAt: number;
+          completesAt: number;
+          scarcityMultiplier: number;
+          usedExpressPermit?: boolean;
+          expectedReward: {
+            gold: number;
+            astralCrystalDust: number;
+            forgingEmblems: number;
+            caravanRep: number;
+          };
+        } | null
+      >
+    >;
+  };
+  alchemyCauldron?: {
+    recipeRanks: Partial<Record<'dragon_fury' | 'elven_bounty' | 'dwarven_temper' | 'astral_fortune', number>>;
+    potionCharges?: Partial<Record<'dragon_fury' | 'elven_bounty' | 'dwarven_temper' | 'astral_fortune', number>>;
+    alchemicalEssence?: number;
+    equippedPotions: [
+      'dragon_fury' | 'elven_bounty' | 'dwarven_temper' | 'astral_fortune' | null,
+      'dragon_fury' | 'elven_bounty' | 'dwarven_temper' | 'astral_fortune' | null,
+    ];
+    totalBrews?: number;
+    totalUpgrades?: number;
+    cauldronPoints?: number;
+    alchemyCauldronRank?: number;
+    dailyExtraction?: {
+      date: string;
+      claimedCount: number;
+    };
+  };
+  astralRelics?: {
+    ancientRelicShards?: number;
+    expeditionXp?: number;
+    curatorRank?: number;
+    totalSurveys?: number;
+    totalRestorations?: number;
+    pedestalRanks?: Partial<Record<'solar_spear' | 'verdant_chalice' | 'titan_anvil' | 'chimera_censer', number>>;
+    dailySurvey?: {
+      date: string;
+      claimedCount: number;
+    };
   };
 }
 

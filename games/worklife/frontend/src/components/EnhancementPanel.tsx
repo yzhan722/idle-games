@@ -129,6 +129,7 @@ type Props = {
   contentItems?: ItemDef[];
   combatLocked?: boolean;
   onRefresh: () => void | Promise<void>;
+  onOpenWorkshop?: () => void;
 };
 
 function enhanceable(item: ItemDef | undefined): boolean {
@@ -174,7 +175,7 @@ function statPreview(item: ItemDef, currentLevel: number, nextLevel: number): st
  * - unprotected failure resets to +0; a Mirror of Protection makes it lose only one level
  * - all owned/equipped gear is visible, not only main/off hand
  */
-export function EnhancementPanel({ playerState, contentItems = [], combatLocked = false, onRefresh }: Props) {
+export function EnhancementPanel({ playerState, contentItems = [], combatLocked = false, onRefresh, onOpenWorkshop }: Props) {
   const run: EnhanceRun | undefined = playerState?.enhanceRun;
   const runActive = playerState?.mode === "enhancing" && !!run && !run.outcome;
   const [selectedItem, setSelectedItem] = useState<string | null>(runActive ? run!.itemId : null);
@@ -418,6 +419,28 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
           {Math.floor(skill.xp || 0)}/{Number.isFinite(skillProgress.need) ? skillProgress.need : "MAX"} ({Math.floor(skillProgress.pct)}%)
         </small>
       </div>
+
+      {onOpenWorkshop && (
+        <section className="enhance-workshop-banner" aria-label="传世铭纹附魔台与跨职业共鸣图鉴">
+          <div className="enhance-workshop-left">
+            <T1Art kind="skills" id="rune_altar_core" className="enhance-workshop-icon" fallback="" alt="" />
+            <div className="enhance-workshop-copy">
+              <strong>传世铭纹附魔台 · 跨职业套装共鸣图鉴</strong>
+              <small>
+                消耗稀有锻造徽记（当前 {Number(playerState?.guildHonor?.forgingEmblems || 0)} 枚，支持水晶熔铸）在武器 / 防具 / 工具槽篆刻永久铭纹，点亮百工跨职业共鸣。
+              </small>
+            </div>
+          </div>
+          <button
+            type="button"
+            data-testid="open-heritage-workshop-btn"
+            className="prog-claim-btn"
+            onClick={onOpenWorkshop}
+          >
+            打开铭纹与共鸣图鉴
+          </button>
+        </section>
+      )}
 
       {run && (runActive || run.outcome) && (
         <section className={`enhance-run${runActive ? " active" : " done"}`} aria-label="强化进行中" data-run-state={runActive ? "active" : run.outcome?.reason}>

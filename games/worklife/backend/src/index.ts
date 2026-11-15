@@ -245,7 +245,17 @@ async function main() {
       (state.equipment as any).main_hand = "weapon_wooden_sword";
       (state.equipment as any).chest = "armor_wood_chest";
       const body = (req.body || {}) as { scene?: string };
-      if (body.scene === "chapter-complete") {
+      if (
+        body.scene === "chapter-complete" ||
+        body.scene === "chapter2-build" ||
+        body.scene === "chapter4-build" ||
+        body.scene === "reputation-qm" ||
+        body.scene === "guild-bounty" ||
+        body.scene === "heritage-workshop" ||
+        body.scene === "caravan-trade" ||
+        body.scene === "alchemy-cauldron" ||
+        body.scene === "astral-relics"
+      ) {
         state.chapter1Build = state.chapter1Build || "thick_bark";
         const stats = (state.stats ?? {}) as NonNullable<typeof state.stats>;
         state.stats = stats;
@@ -258,6 +268,293 @@ async function main() {
           monkey: Math.max(stats.killsByMonster?.monkey || 0, 1),
           forest_boss: Math.max(stats.killsByMonster?.forest_boss || 0, 1),
         };
+        if (body.scene === "reputation-qm") {
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          (state as any).reputation = {
+            total: 18000,
+            spent: 0,
+            tier: 8,
+            dailyPurchases: {},
+            activeScrolls: {},
+            unlockedTitles: [],
+            equippedTitle: null,
+          };
+        }
+        if (body.scene === "guild-bounty") {
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 5000);
+          (state as any).guildHonor = {
+            honorPoints: 260,
+            totalHonorEarned: 380,
+            forgingEmblems: 2,
+            totalChainsCompleted: 2,
+            fullClears: 1,
+            unlockedFrames: ["frame_crimson_vanguard"],
+            equippedFrame: "frame_crimson_vanguard",
+          };
+        }
+        if (body.scene === "heritage-workshop") {
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 24000);
+          state.inventory.crystal_1 = Math.max(state.inventory.crystal_1 || 0, 18);
+          state.inventory.crystal_2 = Math.max(state.inventory.crystal_2 || 0, 12);
+          state.inventory.crystal_3 = Math.max(state.inventory.crystal_3 || 0, 8);
+          state.inventory.crystal_4 = Math.max(state.inventory.crystal_4 || 0, 4);
+          // Populate 4 T1 cross-profession sets + partial T2 items for Codex showcase
+          for (const iid of [
+            "ore_1",
+            "ingot_1",
+            "weapon_iron_sword",
+            "fiber_1",
+            "yarn_1",
+            "armor_cloth_chest",
+            "wool",
+            "food_simple",
+            "armor_farmer_cloth_chest",
+            "potion_hp_t1",
+            "weapon_staff_t1",
+            "ore_3",
+            "honey",
+          ]) {
+            state.inventory[iid] = Math.max(state.inventory[iid] || 0, 2);
+          }
+          (state as any).guildHonor = {
+            honorPoints: 320,
+            totalHonorEarned: 450,
+            forgingEmblems: 6,
+            totalChainsCompleted: 3,
+            fullClears: 1,
+            unlockedFrames: ["frame_crimson_vanguard"],
+            equippedFrame: "frame_crimson_vanguard",
+          };
+          (state as any).heritageWorkshop = {
+            runeRanks: {
+              rune_sunder_edge: 2,
+              rune_bastion_ward: 1,
+            },
+            equippedRunes: {
+              weapon: "rune_sunder_edge",
+              armor: "rune_bastion_ward",
+              tool: null,
+            },
+            codexUnlockedItems: [],
+            claimedCodexMilestones: [],
+          };
+        }
+        if (body.scene === "caravan-trade") {
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 18000);
+          const seedGoods: Record<string, number> = {
+            wood_1: 28,
+            lumber_1: 20,
+            wood_2: 18,
+            lumber_2: 14,
+            ore_1: 24,
+            ingot_1: 16,
+            ore_2: 16,
+            ingot_2: 12,
+            ore_3: 12,
+            ingot_3: 8,
+            fiber_1: 22,
+            yarn_1: 14,
+            yarn_2: 12,
+            fish_river: 14,
+            food_simple: 10,
+            food_fine: 8,
+            crystal_1: 16,
+            crystal_2: 12,
+            crystal_3: 6,
+            potion_hp_t1: 8,
+            potion_mp_t2: 6,
+            weapon_iron_sword: 2,
+          };
+          for (const [iid, qty] of Object.entries(seedGoods)) {
+            state.inventory[iid] = Math.max(state.inventory[iid] || 0, qty);
+          }
+          (state as any).guildHonor = {
+            honorPoints: 280,
+            totalHonorEarned: 420,
+            forgingEmblems: 4,
+            totalChainsCompleted: 2,
+            fullClears: 1,
+            unlockedFrames: ["frame_crimson_vanguard"],
+            equippedFrame: "frame_crimson_vanguard",
+          };
+          const nowMs = Date.now();
+          (state as any).caravanTrade = {
+            caravanRep: 320,
+            astralCrystalDust: 42,
+            expressPermits: 2,
+            ledgerRank: 1,
+            totalRunsCompleted: 3,
+            totalContractsFulfilled: 2,
+            wagons: {
+              0: {
+                slot: 0,
+                routeId: "frostport",
+                cargo: { lumber_1: 12, food_simple: 6 },
+                startedAt: nowMs - 15 * 60 * 1000,
+                completesAt: nowMs - 5 * 1000,
+                scarcityMultiplier: 1.54,
+                usedExpressPermit: false,
+                expectedReward: {
+                  gold: 540,
+                  astralCrystalDust: 10,
+                  forgingEmblems: 1,
+                  caravanRep: 36,
+                },
+              },
+            },
+          };
+        }
+        if (body.scene === "alchemy-cauldron") {
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 22000);
+          for (const [iid, qty] of Object.entries({
+            wood_1: 36,
+            ore_1: 36,
+            fiber_1: 36,
+            crystal_1: 24,
+            crystal_2: 14,
+            crystal_3: 8,
+            crystal_4: 4,
+          })) {
+            state.inventory[iid] = Math.max(state.inventory[iid] || 0, qty);
+          }
+          (state as any).caravanTrade = {
+            caravanRep: 420,
+            astralCrystalDust: 64,
+            expressPermits: 2,
+            ledgerRank: 2,
+            totalRunsCompleted: 4,
+            totalContractsFulfilled: 3,
+            wagons: {},
+          };
+          (state as any).alchemyCauldron = {
+            recipeRanks: {
+              dragon_fury: 3,
+              elven_bounty: 2,
+              dwarven_temper: 3,
+              astral_fortune: 2,
+            },
+            potionCharges: {
+              dragon_fury: 14,
+              elven_bounty: 8,
+              dwarven_temper: 12,
+              astral_fortune: 10,
+            },
+            alchemicalEssence: 6,
+            equippedPotions: ["dragon_fury", "dwarven_temper"],
+            totalBrews: 6,
+            totalUpgrades: 4,
+            cauldronPoints: 230,
+            alchemyCauldronRank: 4,
+          };
+        }
+        if (body.scene === "astral-relics") {
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 18000);
+          for (const [iid, qty] of Object.entries({
+            crystal_1: 18,
+            crystal_2: 12,
+            crystal_3: 8,
+            crystal_4: 4,
+          })) {
+            state.inventory[iid] = Math.max(state.inventory[iid] || 0, qty);
+          }
+          (state as any).caravanTrade = {
+            caravanRep: 480,
+            astralCrystalDust: 58,
+            expressPermits: 2,
+            ledgerRank: 2,
+            totalRunsCompleted: 4,
+            totalContractsFulfilled: 3,
+            wagons: {},
+          };
+          (state as any).astralRelics = {
+            ancientRelicShards: 32,
+            expeditionXp: 155,
+            curatorRank: 3,
+            totalSurveys: 5,
+            totalRestorations: 5,
+            pedestalRanks: {
+              solar_spear: 2,
+              verdant_chalice: 1,
+              titan_anvil: 1,
+              chimera_censer: 1,
+            },
+          };
+        }
+        if (body.scene === "chapter2-build" || body.scene === "chapter4-build") {
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.ore_1 = Math.max(state.inventory.ore_1 || 0, 4);
+          state.inventory.ingot_1 = Math.max(state.inventory.ingot_1 || 0, 4);
+          state.inventory.weapon_iron_sword = Math.max(state.inventory.weapon_iron_sword || 0, 1);
+          (state.equipment as any).main_hand = "weapon_iron_sword";
+        }
+        if (body.scene === "chapter4-build") {
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.chapter3Build = state.chapter3Build || "gale_flurry";
+          (state as any).combatSkills = defaultCombatSkills(32);
+          ensureCombatSkills(state as any);
+          stats.totalKills = Math.max(stats.totalKills || 0, 16);
+          stats.totalBossKills = Math.max(stats.totalBossKills || 0, 3);
+          stats.killsByMonster = {
+            ...stats.killsByMonster,
+            rock_golem: 1,
+            crystal_bat: 1,
+            ore_rat: 1,
+            mine_boss: 1,
+            poison_frog: 1,
+            swamp_zombie: 1,
+            mud_elemental: 1,
+            swamp_boss: 1,
+          };
+          state.inventory.armor_iron_chest = Math.max(state.inventory.armor_iron_chest || 0, 1);
+          state.inventory.armor_leather_legs = Math.max(state.inventory.armor_leather_legs || 0, 1);
+          state.inventory.armor_leather_boots = Math.max(state.inventory.armor_leather_boots || 0, 1);
+          (state.equipment as any).chest = "armor_iron_chest";
+          (state.equipment as any).legs = "armor_leather_legs";
+          (state.equipment as any).boots = "armor_leather_boots";
+          state.inventory.fish_river = Math.max(state.inventory.fish_river || 0, 6);
+          state.inventory.food_hearty_stew = Math.max(state.inventory.food_hearty_stew || 0, 6);
+          state.inventory.crystal_1 = Math.max(state.inventory.crystal_1 || 0, 6);
+          state.inventory.potion_battle_fury = Math.max(state.inventory.potion_battle_fury || 0, 4);
+          state.inventory.potion_hp_t2 = Math.max(state.inventory.potion_hp_t2 || 0, 6);
+          state.inventory.potion_mp_t1 = Math.max(state.inventory.potion_mp_t1 || 0, 6);
+        }
       }
       ensureProgression(state, new Date());
       const saved = await storage.savePlayerState(userId, state);
