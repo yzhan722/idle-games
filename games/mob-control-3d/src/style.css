@@ -647,6 +647,31 @@ body.screen-quake-active #app {
   white-space: nowrap;
 }
 
+.airdrop-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e0f2fe 0%, #38bdf8 100%);
+  border: 2px solid #fffbeb;
+  color: #0c2c4a;
+  font-weight: 900;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(12, 44, 74, 0.36);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.airdrop-label .inline-art-img {
+  width: 19px;
+  height: 19px;
+  margin-right: 0;
+}
+
 .zone-label {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -892,6 +917,16 @@ body.screen-quake-active #app {
   font-weight: 900;
   color: var(--ink-dark);
   white-space: nowrap;
+}
+
+.weapon-mode-btn.is-scatter {
+  background: linear-gradient(180deg, #e0f7ff 0%, #99e5ff 100%);
+  border-color: #0ea5e9;
+}
+
+.weapon-mode-btn.is-rainbow {
+  background: linear-gradient(180deg, #fdf2f8 0%, #fbcfe8 52%, #ddd6fe 100%);
+  border-color: #db2777;
 }
 
 /* Shared Skill Button Reset */
@@ -3484,16 +3519,16 @@ body.screen-quake-active #app {
   }
 
   .mecha-mode-btn {
-    padding: 4px 7px;
-    border-radius: 13px;
+    padding: 4px 6px;
+    border-radius: 12px;
   }
 
   .mecha-mode-btn .mm-icon {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .mecha-mode-btn .mm-label {
-    font-size: 10.5px;
+    font-size: 10px;
   }
 
   .champion-btn {
@@ -4274,18 +4309,37 @@ body.screen-quake-active #app {
 }
 
 .barrel-label,
-.lootbug-label {
+.lootbug-label,
+.subtower-label {
   display: inline-flex;
   align-items: center;
   gap: 3px;
 }
 
 .barrel-label .inline-art-img,
-.lootbug-label .inline-art-img {
+.lootbug-label .inline-art-img,
+.subtower-label .inline-art-img {
   width: 18px;
   height: 18px;
   border-radius: 5px;
   margin-right: 0;
+}
+
+.subtower-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #0ea5e9 0%, #0369a1 100%);
+  border: 2px solid #fde68a;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  justify-content: center;
+  text-shadow: 0 1px 2px rgba(12, 34, 62, 0.9);
+  box-shadow: 0 2px 8px rgba(8, 47, 73, 0.45);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -5292,7 +5346,7 @@ body.screen-quake-active #app {
       rgba(15, 23, 42, 0.0) 76%,
       rgba(15, 23, 42, 0.55) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=18') center center / cover no-repeat;
+    url('/assets/icons/title_splash_bg.jpg?v=25') center center / cover no-repeat;
   image-rendering: auto;
   animation: none !important;
   transform: none !important;
@@ -7171,14 +7225,14 @@ body.screen-quake-active #app {
   right: max(14px, 3.2vw) !important;
   bottom: max(6px, env(safe-area-inset-bottom)) !important;
   transform: none !important;
-  width: min(51vw, 468px) !important;
+  width: min(56vw, 536px) !important;
   padding: 0 !important;
   gap: 8px !important;
 }
 
 .tactical-row {
-  gap: 10px !important;
-  width: 92% !important;
+  gap: 6px !important;
+  width: 97% !important;
   margin: 0 auto !important;
 }
 
@@ -7592,7 +7646,7 @@ img,
       rgba(15, 28, 64, 0.05) 70%,
       rgba(20, 12, 6, 0.62) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=18') center center / cover no-repeat !important;
+    url('/assets/icons/title_splash_bg.jpg?v=25') center center / cover no-repeat !important;
 }
 
 .title-center-emblem {
@@ -8601,8 +8655,8 @@ img,
 .btn-launch-battle {
   width: min(80%, 380px) !important;
   align-self: center !important;
-  min-height: 82px !important;
-  padding: 10px 26px 12px !important;
+  min-height: 70px !important;
+  padding: 8px 24px 10px !important;
   background: linear-gradient(180deg, #4ade80 0%, #22c55e 48%, #15803d 100%) !important;
   border: 4.5px solid #fde047 !important;
   outline: 3px solid #052e16 !important;
@@ -9999,6 +10053,1704 @@ img,
   color: #cbd5e1 !important;
   opacity: 0.86 !important;
 }
+
+/* MC-3: Endless Workshop Defense Lobby Card & 3D Candy Vault Labels */
+.launch-actions-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-endless-defense {
+  width: min(86%, 406px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #312e81 0%, #1e1b4b 58%, #0f172a 100%);
+  border: 3px solid #f59e0b;
+  outline: 2.5px solid #090d1f;
+  color: #f8fafc;
+  cursor: pointer;
+  box-shadow:
+    0 5px 0 #78350f,
+    0 8px 0 #090d1f,
+    0 12px 22px rgba(0, 0, 0, 0.52),
+    inset 0 2px 0 rgba(254, 240, 138, 0.45);
+  transition: transform 0.14s ease, filter 0.14s ease;
+  text-align: left;
+}
+
+.btn-endless-defense:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.btn-endless-defense:active {
+  transform: translateY(2px);
+}
+
+.endless-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.endless-shield-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.65));
+}
+
+.endless-btn-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.endless-btn-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #fef08a;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 0 #090d1f;
+  white-space: nowrap;
+}
+
+.endless-btn-desc {
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.endless-best-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1.5px solid rgba(250, 204, 21, 0.65);
+  color: #fde047;
+  font-size: 11.5px;
+  font-weight: 900;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-shadow: 0 1.5px 0 #090d1f;
+}
+
+.candy-vault-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 100%) !important;
+  border: 2px solid #fffbeb !important;
+  outline: 2px solid #451a03;
+  color: #451a03 !important;
+  font-weight: 900;
+  font-size: 12.5px;
+  text-shadow: none !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
+}
+
+.btn-bonus-heist-cta {
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 52%, #b45309 100%) !important;
+  border-color: #fef9c3 !important;
+  color: #2b1202 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+@media (max-width: 860px) {
+  #menu-panel-launch.menu-panel.active {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .launch-left-col {
+    height: auto !important;
+    flex: 0 0 auto !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .home-hero-stage {
+    flex: 0 0 auto !important;
+    min-height: 228px !important;
+  }
+
+  .launch-actions-stack {
+    gap: 8px;
+    margin-top: 6px;
+    position: relative;
+    z-index: 7;
+  }
+
+  .btn-endless-defense {
+    width: min(94%, 326px);
+    padding: 6px 10px;
+    gap: 6px;
+    border-radius: 14px;
+  }
+
+  .endless-shield-img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .endless-btn-title {
+    font-size: 12.5px;
+  }
+
+  .endless-btn-desc {
+    display: none;
+  }
+
+  .endless-best-badge {
+    padding: 3px 7px;
+    font-size: 10px;
+    max-width: 156px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* MC-5: Steam Armored Payload Escort Mode & Bobo Squad Paint/Material Workshop */
+.btn-payload-escort {
+  width: min(86%, 406px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #9a3412 0%, #7c2d12 56%, #3b1106 100%);
+  border: 3px solid #fbbf24;
+  outline: 2.5px solid #090d1f;
+  color: #fffbeb;
+  cursor: pointer;
+  box-shadow:
+    0 5px 0 #451a03,
+    0 8px 0 #090d1f,
+    0 12px 22px rgba(0, 0, 0, 0.52),
+    inset 0 2px 0 rgba(254, 240, 138, 0.55);
+  transition: transform 0.14s ease, filter 0.14s ease;
+  text-align: left;
+}
+
+.btn-payload-escort:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.btn-payload-escort:active {
+  transform: translateY(2px);
+}
+
+.escort-btn-title {
+  color: #fef08a;
+}
+
+.escort-best-badge {
+  background: rgba(30, 16, 8, 0.85);
+  border-color: rgba(251, 191, 36, 0.78);
+  color: #fde68a;
+}
+
+.payload-cart-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 100%) !important;
+  border: 2px solid #fffbeb !important;
+  outline: 2px solid #271303;
+  color: #271303 !important;
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+  text-shadow: none !important;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.55);
+}
+
+.escort-barricade-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #dc2626 0%, #7f1d1d 100%) !important;
+  border: 2px solid #fecaca !important;
+  outline: 2px solid #1f0808;
+  color: #fff7ed !important;
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.58);
+}
+
+#menu-panel-skins.menu-panel.active {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  gap: 8px;
+}
+
+.squad-finish-workbench {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.78) 0%, rgba(30, 41, 59, 0.88) 100%);
+  border: 2px solid rgba(251, 191, 36, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.squad-finish-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.squad-finish-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+  color: #fef08a;
+  font-size: 13.5px;
+}
+
+.squad-livery-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1.5px solid rgba(56, 189, 248, 0.58);
+  color: #e0f2fe;
+  font-size: 11.5px;
+  font-weight: 800;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.squad-finish-resources {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.squad-finish-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.finish-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 7px 8px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid rgba(148, 163, 184, 0.45);
+  color: #f8fafc;
+  min-width: 0;
+  box-sizing: border-box;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.finish-card.owned {
+  border-color: rgba(56, 189, 248, 0.65);
+}
+
+.finish-card.equipped {
+  border-color: #facc15;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.35), 0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+.finish-card-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.finish-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.4);
+}
+
+.finish-art-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+
+.finish-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.finish-name {
+  font-size: 13px;
+  font-weight: 900;
+  color: #fffbeb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finish-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finish-bonus {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fde68a;
+  background: rgba(15, 23, 42, 0.65);
+  border-radius: 7px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finish-hint {
+  font-size: 10px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finish-action-btn {
+  width: 100%;
+  min-height: 29px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  border: 2px solid #f59e0b;
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  color: #1e1b4b;
+  font-size: 11.5px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finish-action-btn.btn-equip {
+  border-color: #38bdf8;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+  color: #f8fafc;
+}
+
+.finish-action-btn.btn-equipped {
+  border-color: #4ade80;
+  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+  color: #f8fafc;
+}
+
+.finish-action-btn:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  filter: grayscale(0.25);
+}
+
+#menu-panel-skins .skins-shop-grid {
+  flex: 1 0 auto !important;
+  min-height: 436px !important;
+  grid-template-rows: repeat(2, minmax(210px, 1fr)) !important;
+}
+
+#menu-panel-skins .skin-card {
+  animation: none !important;
+}
+
+@media (max-width: 860px) {
+  .btn-payload-escort {
+    width: min(94%, 326px);
+    padding: 6px 10px;
+    gap: 6px;
+    border-radius: 14px;
+  }
+
+  .squad-finish-workbench {
+    padding: 6px 7px;
+    gap: 5px;
+  }
+
+  #menu-panel-skins .skins-shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: auto !important;
+    min-height: 0 !important;
+    flex: 1 0 auto !important;
+  }
+
+  .squad-finish-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .finish-swatch {
+    width: 32px;
+    height: 32px;
+  }
+
+  .finish-art-img {
+    width: 26px;
+    height: 26px;
+  }
+
+  .finish-name {
+    font-size: 12px;
+  }
+
+  .finish-hint {
+    display: none;
+  }
+
+  .finish-action-btn {
+    min-height: 27px;
+    font-size: 10.5px;
+    padding: 2px 4px;
+  }
+}
+
+/* ============================================================================
+   MC-6: Twin-Cannon Steam Mecha Overlord Summon Pill, Hangar & Bridge Zones
+   ============================================================================ */
+#menu-panel-meta.menu-panel.active {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  gap: 8px;
+}
+
+#menu-panel-meta .meta-upgrades-grid {
+  flex: 1 0 auto !important;
+  min-height: 416px !important;
+  grid-template-rows: repeat(2, minmax(198px, 1fr)) !important;
+}
+
+.mecha-hangar-workbench {
+  border-color: rgba(56, 189, 248, 0.68);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.84) 0%, rgba(12, 34, 62, 0.9) 100%);
+}
+
+.mecha-hangar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.overlord-btn {
+  flex: 0.92 !important;
+  max-width: 138px !important;
+  min-width: 96px !important;
+  min-height: 38px !important;
+  padding: 4px 9px 9px !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 55%, #1e3a8a 100%) !important;
+  border: 3px solid #bae6fd !important;
+  outline: 2.5px solid #0f172a !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 4px 0 #0f172a,
+    inset 0 2px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+.overlord-btn:disabled:not(.is-deployed) {
+  background: linear-gradient(180deg, #64748b 0%, #475569 55%, #334155 100%) !important;
+  border-color: #cbd5e1 !important;
+  opacity: 0.92 !important;
+}
+
+.overlord-btn.ready {
+  background: linear-gradient(180deg, #67e8f9 0%, #0ea5e9 52%, #0369a1 100%) !important;
+  border-color: #fef08a !important;
+  box-shadow:
+    0 4px 0 #0f172a,
+    0 0 16px rgba(56, 189, 248, 0.78),
+    inset 0 2px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+.overlord-btn.is-deployed {
+  background: linear-gradient(180deg, #34d399 0%, #059669 55%, #064e3b 100%) !important;
+  border-color: #a7f3d0 !important;
+  opacity: 1 !important;
+}
+
+.overlord-mini-track {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 3px;
+  height: 4.5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  overflow: hidden;
+}
+
+.overlord-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #67e8f9 0%, #fde047 100%);
+  transition: width 0.14s linear;
+}
+
+.overlord-mini-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.overlord-mini-content .hud-art-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.overlord-mini-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.overlord-name-text {
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 #0f172a;
+}
+
+#overlord-pct {
+  display: none !important;
+}
+
+.champion-btn .concert-title-row strong,
+.champion-btn .concert-pct {
+  font-size: 13.5px !important;
+}
+
+.mecha-overlord-label {
+  border-color: #67e8f9 !important;
+  background: rgba(8, 47, 73, 0.9) !important;
+  color: #ecfeff !important;
+}
+
+.zone-tailwind_belt {
+  border-color: #67e8f9 !important;
+  color: #cffafe !important;
+}
+
+.zone-emp_zone {
+  border-color: #a78bfa !important;
+  color: #ede9fe !important;
+}
+
+.zone-frosting_pad {
+  border-color: #f472b6 !important;
+  color: #fce7f3 !important;
+}
+
+@media (max-width: 860px) {
+  .tactical-row {
+    width: 99% !important;
+    gap: 3px !important;
+  }
+
+  .special-skills {
+    gap: 3px !important;
+  }
+
+  .weapon-mode-btn {
+    padding: 3px 5px !important;
+    min-width: 46px !important;
+    max-width: 56px !important;
+    gap: 2px !important;
+  }
+
+  .weapon-mode-btn .hud-art-img {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .weapon-mode-btn .mm-label {
+    font-size: 10.5px !important;
+  }
+
+  .champion-btn {
+    flex: 1.22 1 0 !important;
+    min-width: 96px !important;
+    padding: 3px 6px 3px 3px !important;
+  }
+
+  .champion-btn .concert-avatar-box {
+    width: 30px !important;
+    height: 30px !important;
+    margin-left: -4px !important;
+  }
+
+  .champion-btn .concert-avatar-img {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .champion-btn .concert-main-col {
+    padding-left: 6px !important;
+    gap: 3px !important;
+  }
+
+  .champion-btn .concert-title-row strong,
+  .champion-btn .concert-pct {
+    font-size: 11px !important;
+  }
+
+  .orbital-btn {
+    flex: 0.68 1 0 !important;
+    min-width: 52px !important;
+    max-width: 70px !important;
+    padding: 3px 3px !important;
+  }
+
+  .orbital-name-text {
+    font-size: 10.5px !important;
+  }
+
+  .overlord-btn {
+    flex: 0.78 1 0 !important;
+    min-width: 60px !important;
+    max-width: 80px !important;
+    padding: 3px 4px 7px !important;
+  }
+
+  .overlord-mini-content {
+    gap: 2px;
+  }
+
+  .overlord-mini-content .hud-art-img {
+    width: 15px;
+    height: 15px;
+  }
+
+  .overlord-name-text {
+    font-size: 10.5px;
+  }
+
+  #overlord-pct {
+    display: none;
+  }
+
+  .subweapon-btn {
+    flex: 0.84 1 0 !important;
+    min-width: 64px !important;
+    max-width: 86px !important;
+    padding: 3px 4px 7px !important;
+  }
+
+  .subweapon-mini-content {
+    gap: 2px !important;
+  }
+
+  .subweapon-mini-content .hud-art-img {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .subweapon-name-text {
+    font-size: 10.5px !important;
+  }
+
+  #subweapon-pct {
+    font-size: 9.5px !important;
+  }
+
+  #menu-panel-meta .meta-upgrades-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: auto !important;
+    min-height: 0 !important;
+    flex: 1 0 auto !important;
+  }
+
+  .mecha-hangar-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .tournament-chest-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .tcb-claim-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =========================================================================
+   MC-7: Gear Summit Tournament & Leader Tactical Sub-Weapon Styles
+   ========================================================================= */
+
+.tournament-launch-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.btn-gear-tournament {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 16px;
+  border: 2.5px solid #fde047;
+  outline: 2px solid #1e1b4b;
+  background: linear-gradient(135deg, #312e81 0%, #1d4ed8 52%, #0e7490 100%);
+  color: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  box-shadow:
+    0 4px 0 #1e1b4b,
+    0 8px 18px rgba(30, 27, 75, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.38);
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-gear-tournament:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.btn-gear-tournament:active {
+  transform: translateY(2px);
+}
+
+.tournament-trophy-img {
+  width: 40px !important;
+  height: 40px !important;
+  filter: drop-shadow(0 2px 6px rgba(250, 204, 21, 0.55));
+}
+
+.tournament-btn-title {
+  color: #fef08a !important;
+  text-shadow: 0 2px 0 #1e1b4b !important;
+}
+
+.tournament-progress-badge {
+  background: rgba(15, 23, 42, 0.78) !important;
+  border: 1.8px solid #fde047 !important;
+  color: #fef08a !important;
+  padding: 4px 9px !important;
+  border-radius: 999px !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tournament-chest-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 2px 0 #b45309;
+  color: #451a03;
+}
+
+.tcb-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tcb-chest-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.tcb-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tcb-copy strong {
+  font-size: 12px;
+  font-weight: 900;
+  color: #78350f;
+}
+
+.tcb-copy span {
+  font-size: 11px;
+  color: #92400e;
+  line-height: 1.25;
+}
+
+.tcb-claim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 11px;
+  border-radius: 10px;
+  border: 2px solid #d97706;
+  background: linear-gradient(180deg, #fde68a 0%, #f59e0b 100%);
+  color: #451a03;
+  font-size: 11.5px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tcb-claim-btn:disabled {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  color: #6b7280;
+  cursor: default;
+}
+
+.tcb-claim-btn.is-ready {
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 55%, #d97706 100%);
+  border-color: #78350f;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #78350f;
+  box-shadow: 0 2.5px 0 #78350f, 0 0 12px rgba(245, 158, 11, 0.55);
+}
+
+.tactical-subweapon-workbench {
+  margin-bottom: 10px;
+}
+
+.subweapon-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.subweapon-btn {
+  flex: 0.92 !important;
+  max-width: 138px !important;
+  min-width: 92px !important;
+  min-height: 38px !important;
+  padding: 4px 8px 9px !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(180deg, #22d3ee 0%, #0284c7 55%, #1e1b4b 100%) !important;
+  border: 3px solid #a5f3fc !important;
+  outline: 2.5px solid #0f172a !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 4px 0 #0f172a,
+    inset 0 2px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+.subweapon-btn[data-subweapon='syrup_bubble'] {
+  background: linear-gradient(180deg, #f472b6 0%, #db2777 55%, #831843 100%) !important;
+  border-color: #fbcfe8 !important;
+}
+
+.subweapon-btn[data-subweapon='rally_horn'] {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 55%, #78350f 100%) !important;
+  border-color: #fef08a !important;
+}
+
+.subweapon-btn:disabled {
+  background: linear-gradient(180deg, #64748b 0%, #475569 55%, #334155 100%) !important;
+  border-color: #cbd5e1 !important;
+  opacity: 0.92 !important;
+}
+
+.subweapon-btn.ready {
+  border-color: #fef08a !important;
+  box-shadow:
+    0 4px 0 #0f172a,
+    0 0 14px rgba(34, 211, 238, 0.72),
+    inset 0 2px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+.subweapon-mini-track {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 3px;
+  height: 4.5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  overflow: hidden;
+}
+
+.subweapon-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22d3ee 0%, #fde047 100%);
+  transition: width 0.14s linear;
+}
+
+.subweapon-mini-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.subweapon-mini-content .hud-art-img {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.subweapon-mini-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.subweapon-name-text {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 #0f172a;
+}
+
+#subweapon-pct {
+  color: #fef08a;
+  font-size: 11px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1.5px 0 #0f172a;
+}
+
+.tournament-chest-section {
+  margin: 8px 0 10px;
+}
+
+.tcs-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2.5px solid #f59e0b;
+  box-shadow: 0 3px 0 #b45309;
+  color: #451a03;
+  text-align: left;
+}
+
+.tcs-chest-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.tcs-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tcs-title {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #78350f;
+}
+
+.tcs-rewards {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #92400e;
+  margin-top: 2px;
+}
+
+.tcs-claim-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (min-width: 861px) {
+  .hud-bottom .champion-btn {
+    flex: 1.48 !important;
+    min-width: 218px !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .tactical-row {
+    width: 99% !important;
+    gap: 2.5px !important;
+  }
+
+  .special-skills {
+    gap: 2.5px !important;
+  }
+
+  .weapon-mode-btn {
+    padding: 2px 3px !important;
+    min-width: 42px !important;
+    max-width: 48px !important;
+    gap: 1px !important;
+  }
+
+  .weapon-mode-btn .hud-art-img {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .weapon-mode-btn .mm-label {
+    font-size: 10px !important;
+  }
+
+  .champion-btn {
+    flex: 1.38 1 0 !important;
+    min-width: 108px !important;
+    padding: 3px 5px 3px 3px !important;
+    gap: 3px !important;
+  }
+
+  .champion-btn .concert-avatar-box {
+    width: 26px !important;
+    height: 26px !important;
+    margin-left: -2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .champion-btn .concert-avatar-img {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .champion-btn .concert-main-col {
+    padding-left: 4px !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+  }
+
+  .champion-btn .concert-title-row {
+    gap: 2px !important;
+    min-width: 0 !important;
+  }
+
+  .champion-btn .concert-title-row strong,
+  .champion-btn .concert-pct {
+    font-size: 10px !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .orbital-btn {
+    flex: 0.66 1 0 !important;
+    min-width: 52px !important;
+    max-width: 66px !important;
+    padding: 3px 2px !important;
+  }
+
+  .orbital-name-text {
+    font-size: 9.5px !important;
+  }
+
+  .overlord-btn {
+    flex: 0.76 1 0 !important;
+    min-width: 62px !important;
+    max-width: 76px !important;
+    padding: 3px 3px 7px !important;
+  }
+
+  .overlord-mini-content {
+    gap: 1.5px !important;
+  }
+
+  .overlord-mini-content .hud-art-img {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .overlord-name-text {
+    font-size: 9.5px !important;
+  }
+
+  .subweapon-btn {
+    flex: 0.82 1 0 !important;
+    min-width: 68px !important;
+    max-width: 84px !important;
+    padding: 3px 3px 7px !important;
+  }
+
+  .subweapon-mini-content {
+    gap: 2px !important;
+  }
+
+  .subweapon-mini-content .hud-art-img {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .subweapon-name-text {
+    font-size: 9.5px !important;
+  }
+
+  #subweapon-pct {
+    font-size: 9px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .btn-gear-tournament {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .tournament-progress-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .tcs-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .tcs-chest-img {
+    margin: 0 auto;
+  }
+}
+
+/* ============================================================================
+   MC-8: Giant Clockwork Toy Colossus Boss Raid & Bobo 3-Branch Tech Tree
+   ============================================================================ */
+
+.btn-colossus-raid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #f59e0b;
+  background: linear-gradient(135deg, #7c2d12 0%, #991b1b 48%, #451a03 100%);
+  box-shadow:
+    0 4px 0 #450a0a,
+    0 8px 18px rgba(124, 45, 18, 0.36),
+    inset 0 1px 0 rgba(254, 240, 138, 0.45);
+  color: #fffbeb;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-colossus-raid:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.btn-colossus-raid:active {
+  transform: translateY(2px);
+}
+
+.colossus-raid-img {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.42));
+}
+
+.colossus-btn-title {
+  color: #fef08a !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.65);
+}
+
+.colossus-raid-badge {
+  background: rgba(24, 10, 6, 0.65) !important;
+  border: 1.5px solid #fbbf24 !important;
+  color: #fde68a !important;
+  flex-shrink: 0;
+}
+
+.colossus-raid-hud {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  max-width: 780px;
+  margin: 4px auto 0;
+  padding: 0 6px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.colossus-raid-hud.hidden {
+  display: none !important;
+}
+
+.colossus-hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #fffbeb;
+  background: rgba(15, 23, 42, 0.84);
+  border: 1.5px solid rgba(251, 191, 36, 0.68);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  max-width: 100%;
+}
+
+.colossus-hud-pill.is-left {
+  border-color: #38bdf8;
+  color: #e0f2fe;
+}
+
+.colossus-hud-pill.is-right {
+  border-color: #f472b6;
+  color: #fce7f3;
+}
+
+.colossus-hud-pill.is-broken {
+  opacity: 0.56;
+  text-decoration: line-through;
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.colossus-hud-pill.is-core.is-paralyzed {
+  background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 50%, #eab308 100%);
+  border-color: #fef08a;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.78);
+}
+
+.colossus-weakpoint-label,
+.colossus-core-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.colossus-weakpoint-label.is-right {
+  border-color: #f472b6 !important;
+}
+
+.colossus-core-label {
+  border-color: #fbbf24 !important;
+  background: rgba(30, 18, 10, 0.88) !important;
+  color: #fef08a !important;
+}
+
+.colossus-core-label.is-paralyzed {
+  border-color: #38bdf8 !important;
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.94), rgba(202, 138, 4, 0.94)) !important;
+  color: #ffffff !important;
+}
+
+.bobo-tech-tree-workbench {
+  border-color: rgba(251, 191, 36, 0.58) !important;
+  background: linear-gradient(180deg, rgba(44, 34, 24, 0.94) 0%, rgba(26, 21, 17, 0.96) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(254, 243, 199, 0.16),
+    0 6px 18px rgba(15, 23, 42, 0.24) !important;
+}
+
+.bobo-tech-tree-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bobo-tech-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.bobo-tech-card.is-active-doctrine {
+  border-color: #0284c7 !important;
+  box-shadow:
+    0 0 0 2px rgba(56, 189, 248, 0.35),
+    0 6px 14px rgba(15, 23, 42, 0.14) !important;
+}
+
+.bobo-tech-pips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.bobo-tech-pip {
+  flex: 1 1 0;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.32);
+  border: 1px solid rgba(100, 116, 139, 0.28);
+}
+
+.bobo-tech-pip.is-filled {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  border-color: #d97706;
+}
+
+.bobo-tech-doctrine-note {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.38);
+  border-radius: 8px;
+  padding: 4px 7px;
+  line-height: 1.3;
+}
+
+.bobo-tech-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+  width: 100%;
+}
+
+.bobo-tech-actions .finish-action-btn {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 0;
+  padding: 6px 6px;
+  font-size: 11.5px;
+  box-sizing: border-box;
+}
+
+.bobo-tech-actions .bobo-tech-doctrine-btn {
+  flex: 1 1 100%;
+}
+
+@media (max-width: 860px) {
+  .bobo-tech-tree-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .colossus-raid-hud {
+    gap: 4px;
+    padding: 0 4px;
+  }
+
+  .colossus-hud-pill {
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+}
+
+@media (max-width: 600px) {
+  .btn-colossus-raid {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .colossus-raid-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+/* ============================================================================
+   MC-9: Cloud Airship Mothership Escort & Steam Cannon Core Module Workbench
+   ============================================================================ */
+
+.btn-airship-escort {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #38bdf8;
+  background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 50%, #1e3a8a 100%);
+  box-shadow:
+    0 4px 0 #082f49,
+    0 8px 18px rgba(3, 105, 161, 0.36),
+    inset 0 1px 0 rgba(186, 230, 253, 0.55);
+  color: #f0f9ff;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-airship-escort:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-airship-escort:active {
+  transform: translateY(2px);
+}
+
+.airship-escort-img {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.42));
+}
+
+.airship-btn-title {
+  color: #e0f2fe !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.65);
+}
+
+.airship-escort-badge {
+  background: rgba(8, 47, 73, 0.72) !important;
+  border: 1.5px solid #7dd3fc !important;
+  color: #fef08a !important;
+  flex-shrink: 0;
+}
+
+.airship-escort-hud .colossus-hud-pill.is-core.is-dropping {
+  background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 50%, #f59e0b 100%);
+  border-color: #fef08a;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.8);
+}
+
+.antiair-turret-label,
+.airship-mothership-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.antiair-turret-label {
+  border-color: #fb7185 !important;
+}
+
+.airship-mothership-label {
+  border-color: #38bdf8 !important;
+  background: rgba(12, 42, 70, 0.9) !important;
+  color: #e0f2fe !important;
+}
+
+.cannon-mod-workbench {
+  border-color: rgba(56, 189, 248, 0.62) !important;
+  background: linear-gradient(180deg, rgba(20, 42, 68, 0.95) 0%, rgba(15, 25, 42, 0.97) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(186, 230, 253, 0.2),
+    0 6px 18px rgba(15, 23, 42, 0.26) !important;
+}
+
+.cannon-mod-milestone-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 5px 10px;
+  border-radius: 9px;
+  background: rgba(14, 116, 144, 0.24);
+  border: 1px solid rgba(125, 211, 252, 0.36);
+  color: #e0f2fe;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.cannon-mod-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cannon-mod-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.cannon-mod-card.is-equipped-mod {
+  border-color: #38bdf8 !important;
+  box-shadow:
+    0 0 0 2px rgba(56, 189, 248, 0.4),
+    0 6px 14px rgba(15, 23, 42, 0.18) !important;
+}
+
+.cannon-mod-card.is-locked-mod {
+  opacity: 0.92;
+}
+
+.cannon-mod-hud-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 6px;
+  margin-top: 3px;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(15, 29, 54, 0.92), rgba(9, 18, 36, 0.95));
+  border: 1.5px solid rgba(125, 211, 252, 0.85) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.36);
+  color: #f0f9ff;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  max-width: calc(100vw - 20px);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.cannon-mod-hud-badge .inline-art-img {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 860px) {
+  .cannon-mod-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .btn-airship-escort {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .airship-escort-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .cannon-mod-milestone-banner {
+    font-size: 10.5px;
+    padding: 4px 8px;
+  }
+}
+
+
 
 
 

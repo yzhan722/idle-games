@@ -1,572 +1,347 @@
-# 波波应援团 (Mob Control 3D) 每2小时自主试玩与自动修复巡检日志
+# 波波应援团 (Mob Control 3D) 自主试玩巡检日志
 
-### [2026-11-05 01:35:17] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+> 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。
+
+### [2026-11-15 08:29:38] 自主试玩巡检报告 — **PASS** (25/25 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官4955 · 未上榜 (0 关) · 每周一刷新（剩3天22时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "招财族 -> 波波族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 20/25出兵 / 0/30攻城`
-- ✅ **Scene Special Effect Active in Battle HUD**: `buffs=齿轮城·蒸汽超压 天赋×7`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-05 02:42:24] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官7037 · 未上榜 (0 关) · 每周一刷新（剩3天21时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "招财族 -> 波波族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 17/25出兵 / 0/30攻城`
-- ✅ **Scene Special Effect Active in Battle HUD**: `buffs=齿轮城·蒸汽超压 天赋×7`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-05 02:45:46] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官3340 · 未上榜 (0 关) · 每周一刷新（剩3天21时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官1609未上榜0 关每周一刷新（剩15时30分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 15/25出兵 / 0/30攻城`
+- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 14/25出兵 / 1/30攻城`
 - ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1306, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow**: `overflow=0px (lobby=0, workshop=0)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-05 04:42:19] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 08:36:56] 自主试玩巡检报告 — **PASS** (25/25 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官3819 · 未上榜 (0 关) · 每周一刷新（剩3天19时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 11/25出兵 / 0/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-05 04:46:48] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官3454 · 未上榜 (0 关) · 每周一刷新（剩3天19时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 16/25出兵 / 0/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-09 09:52:55] 自主试玩巡检报告 — **FAIL** (5/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ❌ **Character Click No Jump**: `launch_active=False`
-- ❌ **Scene Selection Buttons Removed**: `no_theme_btns=False`
-- ❌ **Weekly Leaderboard Refresh Text**: `指挥官3265 · 最高 0 关 (未上榜)`
-- ❌ **Rename Blocks <100k Gold**: ``
-- ❌ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=False`
-- ❌ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": false, "saved": {"swarm_t1": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 · 水滴波波 -> 波波族 · 水滴波波"}`
-- ❌ **In-Run Parameter Upgrade Labels Active**: `costs=578 / 740 / 1048 / 854`
-- ❌ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=天赋×1`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-09 09:54:28] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官2978 · 未上榜 (0 关) · 每周一刷新（剩6天14时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 19/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-09 19:11:19] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官8678 · 未上榜 (0 关) · 每周一刷新（剩6天4时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-09 19:35:01] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官3751 · 未上榜 (0 关) · 每周一刷新（剩6天4时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官3780未上榜0 关每周一刷新（剩15时22分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
 - ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 15/25出兵 / 1/30攻城`
 - ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1306, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow**: `overflow=0px (lobby=0, workshop=0)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-10 09:46:53] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 10:38:40] 自主试玩巡检报告 — **PASS** (29/29 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官6589 · 未上榜 (0 关) · 每周一刷新（剩5天14时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-10 11:25:52] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官5058 · 未上榜 (0 关) · 每周一刷新（剩5天12时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官4033未上榜0 关每周一刷新（剩13时21分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
 - ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 12/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压 电磁雷暴·充能+20%`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1313, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **MC-6 5x 256px True-Alpha RGBA Icons (?v=22) & Zero Inline SVG in Hangar/HUD**: `{"rgba5": [true, true, true, true, true], "metaSvg": false, "hudSvg": false}`
+- ✅ **MC-6 Twin-Cannon Steam Mecha Overlord (HUD Summon, Squad Fusion, Twin Volleys & Red/Barricade/Shield Smash)**: `{"hudBtn": true, "liveActive": true, "fused": 4, "marched": true, "volleys": 3, "redSmash": true, "barSmash": true, "shieldBreak": true}`
+- ✅ **MC-6 Workshop Mecha Hangar Upgrades & Summon Milestone Persistence**: `{"mods": 3, "mk": "双联重炮领主 · Mk.II", "coreLv": 2, "cannonLv": 2, "summons": 1, "milestone": true}`
+- ✅ **MC-6 Dynamic Weather Affixes & Bridge Zones (Tailwind Belt, Telegraphed EMP, Frosting Bounce Pad & Bonus/Escort Compat)**: `{"weathers": ["ion_emp_storm", "gale_tailwind", "sugar_snow_updraft"], "tailwind": true, "emp": true, "frostingVault": true, "bonusCompat": true, "escortCompat": true, "plaque": "【蒸汽超压】主炮射速 +18% · 攻城伤害 +25% · 天气【顺风季风】"}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow**: `overflow=0px (lobby=0, workshop=0)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-10 12:26:33] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 10:49:48] 自主试玩巡检报告 — **PASS** (29/29 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官3737 · 未上榜 (0 关) · 每周一刷新（剩5天11时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官7280未上榜0 关每周一刷新（剩13时10分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 18/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 13/25出兵 / 1/30攻城`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压 电磁雷暴·充能+20%`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1309, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **MC-6 5x 256px True-Alpha RGBA Icons (?v=22) & Zero Inline SVG in Hangar/HUD**: `{"rgba5": [true, true, true, true, true], "metaSvg": false, "hudSvg": false}`
+- ✅ **MC-6 Twin-Cannon Steam Mecha Overlord (HUD Summon, Squad Fusion, Twin Volleys & Red/Barricade/Shield Smash)**: `{"hudBtn": true, "liveActive": true, "fused": 4, "marched": true, "volleys": 3, "redSmash": true, "barSmash": true, "shieldBreak": true}`
+- ✅ **MC-6 Workshop Mecha Hangar Upgrades & Summon Milestone Persistence**: `{"mods": 3, "mk": "双联重炮领主 · Mk.II", "coreLv": 2, "cannonLv": 2, "summons": 1, "milestone": true}`
+- ✅ **MC-6 Dynamic Weather Affixes & Bridge Zones (Tailwind Belt, Telegraphed EMP, Frosting Bounce Pad & Bonus/Escort Compat)**: `{"weathers": ["ion_emp_storm", "gale_tailwind", "sugar_snow_updraft"], "tailwind": true, "emp": true, "frostingVault": true, "bonusCompat": true, "escortCompat": true, "plaque": "【蒸汽超压】主炮射速 +18% · 攻城伤害 +25% · 天气【电磁雷暴】"}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow**: `overflow=0px (lobby=0, workshop=0)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-10 13:26:13] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 14:07:20] 自主试玩巡检报告 — **PASS** (32/32 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官4847 · 未上榜 (0 关) · 每周一刷新（剩5天10时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 25/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-10 14:27:05] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官2075 · 未上榜 (0 关) · 每周一刷新（剩5天9时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 15/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-10 15:27:49] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官1471 · 未上榜 (0 关) · 每周一刷新（剩5天8时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 2/12击杀 / 19/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-10 16:26:40] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官9630 · 未上榜 (0 关) · 每周一刷新（剩5天7时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-10 17:26:34] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官7163 · 未上榜 (0 关) · 每周一刷新（剩5天6时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 17/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-10 18:30:19] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官5385 · 未上榜 (0 关) · 每周一刷新（剩5天5时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-10 19:27:21] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官8055 · 未上榜 (0 关) · 每周一刷新（剩5天4时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官4100未上榜0 关每周一刷新（剩9时52分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
 - ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 15/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压 电磁雷暴·充能+20%`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1316, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **MC-6 5x 256px True-Alpha RGBA Icons (?v=23) & Zero Inline SVG in Hangar/HUD**: `{"rgba5": [true, true, true, true, true], "metaSvg": false, "hudSvg": false}`
+- ✅ **MC-6 Twin-Cannon Steam Mecha Overlord (HUD Summon, Squad Fusion, Twin Volleys & Red/Barricade/Shield Smash)**: `{"hudBtn": true, "liveActive": true, "fused": 4, "marched": true, "volleys": 3, "redSmash": true, "barSmash": true, "shieldBreak": true}`
+- ✅ **MC-6 Workshop Mecha Hangar Upgrades & Summon Milestone Persistence**: `{"mods": 3, "mk": "双联重炮领主 · Mk.II", "coreLv": 2, "cannonLv": 2, "summons": 1, "milestone": true}`
+- ✅ **MC-6 Dynamic Weather Affixes & Bridge Zones (Tailwind Belt, Telegraphed EMP, Frosting Bounce Pad & Bonus/Escort Compat)**: `{"weathers": ["ion_emp_storm", "gale_tailwind", "sugar_snow_updraft"], "tailwind": true, "emp": true, "frostingVault": true, "bonusCompat": true, "escortCompat": true, "plaque": "【蒸汽超压】主炮射速 +18% · 攻城伤害 +25% · 天气【顺风季风】"}`
+- ✅ **MC-7 5x 256px True-Alpha RGBA Icons (?v=23), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-7 Gear Summit Tournament (3-Stage Escalating Ladder, 1.5x/2.2x/3.5x Streak Chests & Trophy Global Boosts)**: `{"lobbyBtn": true, "progress": "第 1/3 战 · 铜齿预赛 · 1.5x · 0 奖杯", "inTrn": true, "hudStage": "第 1/3 战 · 铜齿预赛 (1.5x)", "distinct": true, "mults": [1.5, 2.2, 3.5], "all3Chests": true, "persisted": true, "frBoost": true, "pwrBoost": true}`
+- ✅ **MC-7 Leader Tactical Sub-Weapon Slot (Workbench Lv.1-5, Electro Net, Syrup Bubble, Rally Horn & HUD [V])**: `{"cards": 3, "equip": "syrup_bubble", "syrupLv": 2, "casts": [3, 4, 5], "hudFit": true, "lv5": true, "electro": true, "syrup": true, "rally": true}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow & 5-Button Tactical Skill Bar Fit**: `overflow=0px (lobby=0, meta=0, workshop=0, hudFit=True)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-10 20:28:56] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 14:12:05] 自主试玩巡检报告 — **PASS** (32/32 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官2547 · 未上榜 (0 关) · 每周一刷新（剩5天3时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官8802未上榜0 关每周一刷新（剩9时47分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 25/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 12/25出兵 / 1/30攻城`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压 电磁雷暴·充能+20%`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1313, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **MC-6 5x 256px True-Alpha RGBA Icons (?v=23) & Zero Inline SVG in Hangar/HUD**: `{"rgba5": [true, true, true, true, true], "metaSvg": false, "hudSvg": false}`
+- ✅ **MC-6 Twin-Cannon Steam Mecha Overlord (HUD Summon, Squad Fusion, Twin Volleys & Red/Barricade/Shield Smash)**: `{"hudBtn": true, "liveActive": true, "fused": 4, "marched": true, "volleys": 3, "redSmash": true, "barSmash": true, "shieldBreak": true}`
+- ✅ **MC-6 Workshop Mecha Hangar Upgrades & Summon Milestone Persistence**: `{"mods": 3, "mk": "双联重炮领主 · Mk.II", "coreLv": 2, "cannonLv": 2, "summons": 1, "milestone": true}`
+- ✅ **MC-6 Dynamic Weather Affixes & Bridge Zones (Tailwind Belt, Telegraphed EMP, Frosting Bounce Pad & Bonus/Escort Compat)**: `{"weathers": ["ion_emp_storm", "gale_tailwind", "sugar_snow_updraft"], "tailwind": true, "emp": true, "frostingVault": true, "bonusCompat": true, "escortCompat": true, "plaque": "【蒸汽超压】主炮射速 +18% · 攻城伤害 +25% · 天气【电磁雷暴】"}`
+- ✅ **MC-7 5x 256px True-Alpha RGBA Icons (?v=23), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-7 Gear Summit Tournament (3-Stage Escalating Ladder, 1.5x/2.2x/3.5x Streak Chests & Trophy Global Boosts)**: `{"lobbyBtn": true, "progress": "第 1/3 战 · 铜齿预赛 · 1.5x · 0 奖杯", "inTrn": true, "hudStage": "第 1/3 战 · 铜齿预赛 (1.5x)", "distinct": true, "mults": [1.5, 2.2, 3.5], "all3Chests": true, "persisted": true, "frBoost": true, "pwrBoost": true}`
+- ✅ **MC-7 Leader Tactical Sub-Weapon Slot (Workbench Lv.1-5, Electro Net, Syrup Bubble, Rally Horn & HUD [V])**: `{"cards": 3, "equip": "syrup_bubble", "syrupLv": 2, "casts": [3, 4, 5], "hudFit": true, "lv5": true, "electro": true, "syrup": true, "rally": true}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow & 5-Button Tactical Skill Bar Fit**: `overflow=0px (lobby=0, meta=0, workshop=0, hudFit=True)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-10 21:23:50] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 20:32:17] 自主试玩巡检报告 — **PASS** (36/36 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官2775 · 未上榜 (0 关) · 每周一刷新（剩5天2时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官7494未上榜0 关每周一刷新（剩6时27分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 24/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 13/25出兵 / 1/30攻城`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压 顺风季风·冲锋+16%`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1324, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **MC-6 5x 256px True-Alpha RGBA Icons (?v=24) & Zero Inline SVG in Hangar/HUD**: `{"rgba5": [true, true, true, true, true], "metaSvg": false, "hudSvg": false}`
+- ✅ **MC-6 Twin-Cannon Steam Mecha Overlord (HUD Summon, Squad Fusion, Twin Volleys & Red/Barricade/Shield Smash)**: `{"hudBtn": true, "liveActive": true, "fused": 4, "marched": true, "volleys": 3, "redSmash": true, "barSmash": true, "shieldBreak": true}`
+- ✅ **MC-6 Workshop Mecha Hangar Upgrades & Summon Milestone Persistence**: `{"mods": 3, "mk": "双联重炮领主 · Mk.II", "coreLv": 2, "cannonLv": 2, "summons": 1, "milestone": true}`
+- ✅ **MC-6 Dynamic Weather Affixes & Bridge Zones (Tailwind Belt, Telegraphed EMP, Frosting Bounce Pad & Bonus/Escort Compat)**: `{"weathers": ["ion_emp_storm", "gale_tailwind", "sugar_snow_updraft"], "tailwind": true, "emp": true, "frostingVault": true, "bonusCompat": true, "escortCompat": true, "plaque": "【蒸汽超压】主炮射速 +18% · 攻城伤害 +25% · 天气【电磁雷暴】"}`
+- ✅ **MC-7 5x 256px True-Alpha RGBA Icons (?v=24), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-7 Gear Summit Tournament (3-Stage Escalating Ladder, 1.5x/2.2x/3.5x Streak Chests & Trophy Global Boosts)**: `{"lobbyBtn": true, "progress": "第 1/3 战 · 铜齿预赛 · 1.5x · 0 奖杯", "inTrn": true, "hudStage": "第 1/3 战 · 铜齿预赛 (1.5x)", "distinct": true, "mults": [1.5, 2.2, 3.5], "all3Chests": true, "persisted": true, "frBoost": true, "pwrBoost": true}`
+- ✅ **MC-7 Leader Tactical Sub-Weapon Slot (Workbench Lv.1-5, Electro Net, Syrup Bubble, Rally Horn & HUD [V])**: `{"cards": 3, "equip": "syrup_bubble", "syrupLv": 2, "casts": [3, 4, 5], "hudFit": true, "lv5": true, "electro": true, "syrup": true, "rally": true}`
+- ✅ **MC-8 5x 256px True-Alpha RGBA Icons (?v=24), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-8 Giant Clockwork Toy Colossus Boss Raid (Lobby Entry, Left Shield & Right Cannon Weakpoints, 6s 2.5x Paralysis & Core Rewards)**: `{"lobbyBtn": true, "inRaid": true, "hudVisible": true, "paralyzed": true, "coreHud": "瘫痪高倍暴击窗口 2.5x · 5.9s", "twoArms": true, "crit25x": true, "cannonStop": true, "coresReward": true}`
+- ✅ **MC-8 Bobo 3-Branch Specialization Tech Tree (Workshop Lv.0-5 Core/Gold Upgrades, Active Doctrine & 3D Squad Flair)**: `{"cards": 3, "vanguardLv": 1, "siegeLv": 1, "doctrine": "candy_bombard", "pill": "当前专精战策：爆裂糖弹营 Lv.0", "vanguardSim": true, "siegeSim": true, "candySim": true, "flair3D": true}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **Desktop 1440x900 Zero Horizontal Overflow (Lobby, Bobo Tech Tree & Colossus Raid HUD)**: `overflow=0px (lobby=0, meta=0, raid=0)`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow & 5-Button Tactical Skill Bar Fit**: `overflow=0px (lobby=0, meta=0, workshop=0, raid=0, hudFit=True)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-10 22:23:33] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 20:37:07] 自主试玩巡检报告 — **PASS** (36/36 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官6272 · 未上榜 (0 关) · 每周一刷新（剩5天1时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 24/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-10 23:23:48] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官7188 · 未上榜 (0 关) · 每周一刷新（剩5天0时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 25/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 00:23:52] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官8198 · 未上榜 (0 关) · 每周一刷新（剩4天23时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 19/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 00:56:29] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官4277 · 未上榜 (0 关) · 每周一刷新（剩4天23时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 25/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 01:29:40] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官6083 · 未上榜 (0 关) · 每周一刷新（剩4天22时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 25/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 01:39:48] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官5404 · 未上榜 (0 关) · 每周一刷新（剩4天22时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官2623未上榜0 关每周一刷新（剩6时22分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
 - ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 15/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压 顺风季风·冲锋+16%`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1324, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **MC-6 5x 256px True-Alpha RGBA Icons (?v=24) & Zero Inline SVG in Hangar/HUD**: `{"rgba5": [true, true, true, true, true], "metaSvg": false, "hudSvg": false}`
+- ✅ **MC-6 Twin-Cannon Steam Mecha Overlord (HUD Summon, Squad Fusion, Twin Volleys & Red/Barricade/Shield Smash)**: `{"hudBtn": true, "liveActive": true, "fused": 4, "marched": true, "volleys": 3, "redSmash": true, "barSmash": true, "shieldBreak": true}`
+- ✅ **MC-6 Workshop Mecha Hangar Upgrades & Summon Milestone Persistence**: `{"mods": 3, "mk": "双联重炮领主 · Mk.II", "coreLv": 2, "cannonLv": 2, "summons": 1, "milestone": true}`
+- ✅ **MC-6 Dynamic Weather Affixes & Bridge Zones (Tailwind Belt, Telegraphed EMP, Frosting Bounce Pad & Bonus/Escort Compat)**: `{"weathers": ["ion_emp_storm", "gale_tailwind", "sugar_snow_updraft"], "tailwind": true, "emp": true, "frostingVault": true, "bonusCompat": true, "escortCompat": true, "plaque": "【蒸汽超压】主炮射速 +18% · 攻城伤害 +25% · 天气【顺风季风】"}`
+- ✅ **MC-7 5x 256px True-Alpha RGBA Icons (?v=24), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-7 Gear Summit Tournament (3-Stage Escalating Ladder, 1.5x/2.2x/3.5x Streak Chests & Trophy Global Boosts)**: `{"lobbyBtn": true, "progress": "第 1/3 战 · 铜齿预赛 · 1.5x · 0 奖杯", "inTrn": true, "hudStage": "第 1/3 战 · 铜齿预赛 (1.5x)", "distinct": true, "mults": [1.5, 2.2, 3.5], "all3Chests": true, "persisted": true, "frBoost": true, "pwrBoost": true}`
+- ✅ **MC-7 Leader Tactical Sub-Weapon Slot (Workbench Lv.1-5, Electro Net, Syrup Bubble, Rally Horn & HUD [V])**: `{"cards": 3, "equip": "syrup_bubble", "syrupLv": 2, "casts": [3, 4, 5], "hudFit": true, "lv5": true, "electro": true, "syrup": true, "rally": true}`
+- ✅ **MC-8 5x 256px True-Alpha RGBA Icons (?v=24), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-8 Giant Clockwork Toy Colossus Boss Raid (Lobby Entry, Left Shield & Right Cannon Weakpoints, 6s 2.5x Paralysis & Core Rewards)**: `{"lobbyBtn": true, "inRaid": true, "hudVisible": true, "paralyzed": true, "coreHud": "瘫痪高倍暴击窗口 2.5x · 5.9s", "twoArms": true, "crit25x": true, "cannonStop": true, "coresReward": true}`
+- ✅ **MC-8 Bobo 3-Branch Specialization Tech Tree (Workshop Lv.0-5 Core/Gold Upgrades, Active Doctrine & 3D Squad Flair)**: `{"cards": 3, "vanguardLv": 1, "siegeLv": 1, "doctrine": "candy_bombard", "pill": "当前专精战策：爆裂糖弹营 Lv.0", "vanguardSim": true, "siegeSim": true, "candySim": true, "flair3D": true}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **Desktop 1440x900 Zero Horizontal Overflow (Lobby, Bobo Tech Tree & Colossus Raid HUD)**: `overflow=0px (lobby=0, meta=0, raid=0)`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow & 5-Button Tactical Skill Bar Fit**: `overflow=0px (lobby=0, meta=0, workshop=0, raid=0, hudFit=True)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-11 02:29:30] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 23:04:27] 自主试玩巡检报告 — **PASS** (40/40 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官8536 · 未上榜 (0 关) · 每周一刷新（剩4天21时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官4658未上榜0 关每周一刷新（剩3时55分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
 - ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 15/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=过载双发膛 Lv.1 齿轮城·蒸汽超压 顺风季风·冲锋+16%`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1324, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **MC-6 5x 256px True-Alpha RGBA Icons (?v=25) & Zero Inline SVG in Hangar/HUD**: `{"rgba5": [true, true, true, true, true], "metaSvg": false, "hudSvg": false}`
+- ✅ **MC-6 Twin-Cannon Steam Mecha Overlord (HUD Summon, Squad Fusion, Twin Volleys & Red/Barricade/Shield Smash)**: `{"hudBtn": true, "liveActive": true, "fused": 4, "marched": true, "volleys": 3, "redSmash": true, "barSmash": true, "shieldBreak": true}`
+- ✅ **MC-6 Workshop Mecha Hangar Upgrades & Summon Milestone Persistence**: `{"mods": 3, "mk": "双联重炮领主 · Mk.II", "coreLv": 2, "cannonLv": 2, "summons": 1, "milestone": true}`
+- ✅ **MC-6 Dynamic Weather Affixes & Bridge Zones (Tailwind Belt, Telegraphed EMP, Frosting Bounce Pad & Bonus/Escort Compat)**: `{"weathers": ["ion_emp_storm", "gale_tailwind", "sugar_snow_updraft"], "tailwind": true, "emp": true, "frostingVault": true, "bonusCompat": true, "escortCompat": true, "plaque": "【蒸汽超压】主炮射速 +18% · 攻城伤害 +25% · 天气【顺风季风】"}`
+- ✅ **MC-7 5x 256px True-Alpha RGBA Icons (?v=25), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-7 Gear Summit Tournament (3-Stage Escalating Ladder, 1.5x/2.2x/3.5x Streak Chests & Trophy Global Boosts)**: `{"lobbyBtn": true, "progress": "第 1/3 战 · 铜齿预赛 · 1.5x · 0 奖杯", "inTrn": true, "hudStage": "第 1/3 战 · 铜齿预赛 (1.5x)", "distinct": true, "mults": [1.5, 2.2, 3.5], "all3Chests": true, "persisted": true, "frBoost": true, "pwrBoost": true}`
+- ✅ **MC-7 Leader Tactical Sub-Weapon Slot (Workbench Lv.1-5, Electro Net, Syrup Bubble, Rally Horn & HUD [V])**: `{"cards": 3, "equip": "syrup_bubble", "syrupLv": 2, "casts": [3, 4, 5], "hudFit": true, "lv5": true, "electro": true, "syrup": true, "rally": true}`
+- ✅ **MC-8 5x 256px True-Alpha RGBA Icons (?v=25), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-8 Giant Clockwork Toy Colossus Boss Raid (Lobby Entry, Left Shield & Right Cannon Weakpoints, 6s 2.5x Paralysis & Core Rewards)**: `{"lobbyBtn": true, "inRaid": true, "hudVisible": true, "paralyzed": true, "coreHud": "瘫痪高倍暴击窗口 2.5x · 5.9s", "twoArms": true, "crit25x": true, "cannonStop": true, "coresReward": true}`
+- ✅ **MC-8 Bobo 3-Branch Specialization Tech Tree (Workshop Lv.0-5 Core/Gold Upgrades, Active Doctrine & 3D Squad Flair)**: `{"cards": 3, "vanguardLv": 1, "siegeLv": 1, "doctrine": "candy_bombard", "pill": "当前专精战策：爆裂糖弹营 Lv.0", "vanguardSim": true, "siegeSim": true, "candySim": true, "flair3D": true}`
+- ✅ **MC-9 5x 256px True-Alpha RGBA Icons (?v=25), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "btnImg": true, "modImgs": true, "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-9 Cloud Airship Mothership Escort (Lobby Entry, 3D Airship + 4 Anti-Air Flak Sub-Turrets, Super Bobo Drop Pods & Persistent Wing Medals)**: `{"lobbyBtn": true, "inEscort": true, "hud": true, "dropPods": 3, "aaCleared": 2, "victoryMedals": true, "flakDmg": true, "shockTroops": true}`
+- ✅ **MC-9 Steam Cannon Core Module Workbench (Unlock/Upgrade Lv.1..5, Equip All 3 Modules, 3D Barrel Visuals, HUD Badge & Module-Enhanced Firing)**: `{"cards": 3, "levels": {"overdrive_breech": 2, "prism_splitter": 2, "heavy_mortar": 2}, "eqAll3": true, "hudBadge": true, "overdrive": true, "prism": true, "mortar": true, "barrel3D": true}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **MC-9 Reload Persistence (Airship Wing Medals, Cannon Core Module Levels & Active Equipped Module)**: `{"before": {"medals": 23, "activeMod": "prism_splitter", "levels": {"overdrive_breech": 2, "prism_splitter": 2, "heavy_mortar": 1}}, "after": {"medals": 23, "activeMod": "prism_splitter", "levels": {"overdrive_breech": 2, "prism_splitter": 2, "heavy_mortar": 1}}}`
+- ✅ **Desktop 1440x900 Zero Horizontal Overflow (Lobby, Cannon Mod Workbench & Airship Escort HUD)**: `overflow=0px (lobby=0, meta=0, escort=0)`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow & 5-Button Tactical Skill Bar Fit**: `overflow=0px (lobby=0, meta=0, workshop=0, escort=0, hudFit=True)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
 
-### [2026-11-11 03:27:00] 自主试玩巡检报告 — **PASS** (13/13 项通过)
+### [2026-11-15 23:08:18] 自主试玩巡检报告 — **PASS** (40/40 项通过)
 - ✅ **Title Screen Visible**: `visible=True`
 - ✅ **Character Click No Jump**: `launch_active=True`
 - ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官3000 · 未上榜 (0 关) · 每周一刷新（剩4天20时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 04:27:19] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官1478 · 未上榜 (0 关) · 每周一刷新（剩4天19时）`
+- ✅ **Weekly Leaderboard Refresh Text**: `指挥官7038未上榜0 关每周一刷新（剩3时51分）`
 - ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
 - ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
 - ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
 - ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 15/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
+- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=过载双发膛 Lv.1 齿轮城·蒸汽超压 顺风季风·冲锋+16%`
 - ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
+- ✅ **MC-1 Dynamic Gate Charging (-6 -> +1 -> +3 -> +5) & Frame Color Transition**: `prog=['-6', '-5', '-4', '-3', '-2', '-1', '+1', '+3', '+5'], colorChanged=True`
+- ✅ **MC-1 Jelly Giant Gate (2x HP/ATK) & Frosting Shield Gate (Gear/Barrel Immunity)**: `{"hasJelly": true, "hasFrost": true, "jelly2x": true, "blockGear": true, "blockBarrel": true}`
+- ✅ **MC-2 Dual Lateral Steam Shield Sub-Towers (0.24x -> 0.58x -> 1.0x & Overload Shatter)**: `{"s5": 2, "s10": 2, "mults": [0.24, 0.58, 1], "overload": true}`
+- ✅ **MC-2 Boss Ground Half-Bridge Telegraph & High-Pressure Steam Sweep Lane Isolation**: `{"telegraph": true, "sweptHit": true, "safeLane": true}`
+- ✅ **MC-3 25s Candy Vault Bonus Heist (Zero Red Enemies & Gold + Skin Shard Burst)**: `{"vaults": 5, "dur": 25, "zeroRed": true, "broken": true, "goldDelta": 1324, "shards": 2}`
+- ✅ **MC-3 Endless Workshop Defense (Lobby Entry, Wave Escalation, Mutant Giants & Best Medal)**: `{"lobbyBtn": true, "wave": 3, "brutes": 4, "bestWave": 3, "medal": "秘银壁垒勋章"}`
+- ✅ **MC-4 Scatter & Rainbow Weapons (HUD Cycle, Zero SVG/Emoji, RGBA PNGs, Bounce & Pierce)**: `{"labels": ["速射", "散弹", "彩虹"], "imgs": [true, true, true], "fan": 11, "bounced": true, "rainbowHit": true}`
+- ✅ **MC-4 Tactical Airdrop Crate (Drop, Collect, 3x 8s Frenzy Buffs, Clean Reset & Bonus Heist Skip)**: `{"drop": true, "collect": true, "dual": true, "freeze": true, "giants": true, "reset": true, "skipBonus": true}`
+- ✅ **MC-5 Steam Armored Payload Escort Mode (Lobby Entry, Charging, Overdrive, Barricade Ramming & Stronghold Persistence)**: `{"lobbyBtn": true, "bars": 4, "moved": true, "overdrive": true, "rams": 1, "broken": true, "clear": true, "bestPct": 100, "hud": "战车护送 · 推进 0%"}`
+- ✅ **MC-5 Bobo Squad Paint & Material Workshop (4 Finishes + 6 Colorways, Live 3D Materials & 6x 256px RGBA PNGs)**: `{"finishCards": 4, "skinCards": 6, "skinCardH": 404, "rgba": [true, true, true, true, true, true], "switch": "candy_gloss->starlight_prism", "modes": [0, 1, 2, 3], "cannonChanged": true, "cartChanged": true}`
+- ✅ **MC-6 5x 256px True-Alpha RGBA Icons (?v=25) & Zero Inline SVG in Hangar/HUD**: `{"rgba5": [true, true, true, true, true], "metaSvg": false, "hudSvg": false}`
+- ✅ **MC-6 Twin-Cannon Steam Mecha Overlord (HUD Summon, Squad Fusion, Twin Volleys & Red/Barricade/Shield Smash)**: `{"hudBtn": true, "liveActive": true, "fused": 4, "marched": true, "volleys": 3, "redSmash": true, "barSmash": true, "shieldBreak": true}`
+- ✅ **MC-6 Workshop Mecha Hangar Upgrades & Summon Milestone Persistence**: `{"mods": 3, "mk": "双联重炮领主 · Mk.II", "coreLv": 2, "cannonLv": 2, "summons": 1, "milestone": true}`
+- ✅ **MC-6 Dynamic Weather Affixes & Bridge Zones (Tailwind Belt, Telegraphed EMP, Frosting Bounce Pad & Bonus/Escort Compat)**: `{"weathers": ["ion_emp_storm", "gale_tailwind", "sugar_snow_updraft"], "tailwind": true, "emp": true, "frostingVault": true, "bonusCompat": true, "escortCompat": true, "plaque": "【蒸汽超压】主炮射速 +18% · 攻城伤害 +25% · 天气【顺风季风】"}`
+- ✅ **MC-7 5x 256px True-Alpha RGBA Icons (?v=25), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-7 Gear Summit Tournament (3-Stage Escalating Ladder, 1.5x/2.2x/3.5x Streak Chests & Trophy Global Boosts)**: `{"lobbyBtn": true, "progress": "第 1/3 战 · 铜齿预赛 · 1.5x · 0 奖杯", "inTrn": true, "hudStage": "第 1/3 战 · 铜齿预赛 (1.5x)", "distinct": true, "mults": [1.5, 2.2, 3.5], "all3Chests": true, "persisted": true, "frBoost": true, "pwrBoost": true}`
+- ✅ **MC-7 Leader Tactical Sub-Weapon Slot (Workbench Lv.1-5, Electro Net, Syrup Bubble, Rally Horn & HUD [V])**: `{"cards": 3, "equip": "syrup_bubble", "syrupLv": 2, "casts": [3, 4, 5], "hudFit": true, "lv5": true, "electro": true, "syrup": true, "rally": true}`
+- ✅ **MC-8 5x 256px True-Alpha RGBA Icons (?v=25), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-8 Giant Clockwork Toy Colossus Boss Raid (Lobby Entry, Left Shield & Right Cannon Weakpoints, 6s 2.5x Paralysis & Core Rewards)**: `{"lobbyBtn": true, "inRaid": true, "hudVisible": true, "paralyzed": true, "coreHud": "瘫痪高倍暴击窗口 2.5x · 5.9s", "twoArms": true, "crit25x": true, "cannonStop": true, "coresReward": true}`
+- ✅ **MC-8 Bobo 3-Branch Specialization Tech Tree (Workshop Lv.0-5 Core/Gold Upgrades, Active Doctrine & 3D Squad Flair)**: `{"cards": 3, "vanguardLv": 1, "siegeLv": 1, "doctrine": "candy_bombard", "pill": "当前专精战策：爆裂糖弹营 Lv.0", "vanguardSim": true, "siegeSim": true, "candySim": true, "flair3D": true}`
+- ✅ **MC-9 5x 256px True-Alpha RGBA Icons (?v=25), Zero Inline SVG & Zero Raw Emoji**: `{"rgba5": [true, true, true, true, true], "btnImg": true, "modImgs": true, "svgCount": 0, "rawEmoji": false}`
+- ✅ **MC-9 Cloud Airship Mothership Escort (Lobby Entry, 3D Airship + 4 Anti-Air Flak Sub-Turrets, Super Bobo Drop Pods & Persistent Wing Medals)**: `{"lobbyBtn": true, "inEscort": true, "hud": true, "dropPods": 3, "aaCleared": 2, "victoryMedals": true, "flakDmg": true, "shockTroops": true}`
+- ✅ **MC-9 Steam Cannon Core Module Workbench (Unlock/Upgrade Lv.1..5, Equip All 3 Modules, 3D Barrel Visuals, HUD Badge & Module-Enhanced Firing)**: `{"cards": 3, "levels": {"overdrive_breech": 2, "prism_splitter": 2, "heavy_mortar": 2}, "eqAll3": true, "hudBadge": true, "overdrive": true, "prism": true, "mortar": true, "barrel3D": true}`
+- ✅ **Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)**: `max_overflow=0px`
+- ✅ **MC-9 Reload Persistence (Airship Wing Medals, Cannon Core Module Levels & Active Equipped Module)**: `{"before": {"medals": 23, "activeMod": "prism_splitter", "levels": {"overdrive_breech": 2, "prism_splitter": 2, "heavy_mortar": 1}}, "after": {"medals": 23, "activeMod": "prism_splitter", "levels": {"overdrive_breech": 2, "prism_splitter": 2, "heavy_mortar": 1}}}`
+- ✅ **Desktop 1440x900 Zero Horizontal Overflow (Lobby, Cannon Mod Workbench & Airship Escort HUD)**: `overflow=0px (lobby=0, meta=0, escort=0)`
+- ✅ **Mobile 390x844 Zero Horizontal Overflow & 5-Button Tactical Skill Bar Fit**: `overflow=0px (lobby=0, meta=0, workshop=0, escort=0, hudFit=True)`
 - ✅ **Zero Page Exceptions**: `[]`
 - ✅ **Zero Console Errors**: `[]`
 - ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 05:28:30] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官6051 · 未上榜 (0 关) · 每周一刷新（剩4天18时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 06:27:43] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官7117 · 未上榜 (0 关) · 每周一刷新（剩4天17时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 07:27:36] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官1234 · 未上榜 (0 关) · 每周一刷新（剩4天16时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 19/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 11:07:14] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官8214 · 未上榜 (0 关) · 每周一刷新（剩4天12时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 23/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 16:06:48] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官8866 · 未上榜 (0 关) · 每周一刷新（剩4天7时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 25/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 16:43:54] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官4613 · 未上榜 (0 关) · 每周一刷新（剩4天7时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 25/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 17:50:30] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官7017 · 未上榜 (0 关) · 每周一刷新（剩4天6时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 21/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-
-### [2026-11-11 18:51:39] 自主试玩巡检报告 — **PASS** (13/13 项通过)
-- ✅ **Title Screen Visible**: `visible=True`
-- ✅ **Character Click No Jump**: `launch_active=True`
-- ✅ **Scene Selection Buttons Removed**: `no_theme_btns=True`
-- ✅ **Weekly Leaderboard Refresh Text**: `指挥官4407未上榜0 关每周一刷新（剩4天5时）`
-- ✅ **Rename Blocks <100k Gold**: ` 改名需花费 100,000 金币（当前：160 金币）`
-- ✅ **All 7 Characters Cycle & HQ 2D Sprites**: `unique_races=7, all_hq2d=True`
-- ✅ **Multi-Branch Skill Allocation & Free Character Switch & Meta/Skins Tabs**: `{"ok": true, "saved": {"swarm_t1": 2, "gate_t2": 1, "tycoon_t4": 1}, "metaCount": 6, "skinCount": 6, "raceSwitch": "波波族 -> 布丁族"}`
-- ✅ **In-Run Parameter Upgrade Labels Active**: `costs=0/8秒 / 1/12击杀 / 23/25出兵 / 1/30攻城`
-- ✅ **Scene Special Effect & Active-Character-Only Talent Badge in Battle HUD**: `buffs=齿轮城·蒸汽超压`
-- ✅ **Zero NaN/Undefined in DOM Text**: `bad_tokens=[]`
-- ✅ **Zero Page Exceptions**: `[]`
-- ✅ **Zero Console Errors**: `[]`
-- ✅ **Zero Failed Asset Requests**: `[]`
-

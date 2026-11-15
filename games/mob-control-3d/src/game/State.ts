@@ -1,18 +1,357 @@
 import { SkinPalette } from './HumanoidModels';
 import { ThemeId } from './SceneThemes';
 import {
+  BOBO_TECH_ART,
+  BOBO_TECH_HUD_ART,
+  BOBO_TECH_INLINE_ART,
+  CANNON_MOD_ART,
+  CANNON_MOD_HUD_ART,
+  CANNON_MOD_INLINE_ART,
   DEBUFF_ART,
   MECHA_MODE_ART,
   META_UPGRADE_ART,
   RACE_MASCOT_ART,
   REWARD_BUFF_ART,
   SKILL_NODE_SVGS,
+  TACTICAL_SUBWEAPON_ART,
+  TACTICAL_SUBWEAPON_HUD_ART,
+  TACTICAL_SUBWEAPON_INLINE_ART,
   UI_ART,
+  WEAPON_MODE_ART,
 } from './SkillIcons';
 
-export type WeaponMode = 'gatling' | 'twin' | 'plasma';
+export type WeaponMode = 'gatling' | 'twin' | 'plasma' | 'scatter' | 'rainbow';
 
 export type MechaMode = 'hammer' | 'pyro' | 'aegis';
+
+export type TacticalSubWeaponId = 'electro_net' | 'syrup_bubble' | 'rally_horn';
+
+export type TournamentStageId = 1 | 2 | 3;
+
+export type BoboTechBranchId = 'vanguard_charge' | 'heavy_siege' | 'candy_bombard';
+
+export type CannonCoreModId = 'overdrive_breech' | 'prism_splitter' | 'heavy_mortar';
+
+export const CANNON_CORE_MOD_ORDER: CannonCoreModId[] = [
+  'overdrive_breech',
+  'prism_splitter',
+  'heavy_mortar',
+];
+
+export const CANNON_CORE_MOD_MAX_LEVEL = 5;
+
+export interface CannonCoreModSpec {
+  id: CannonCoreModId;
+  icon: string;
+  hudIcon: string;
+  inlineIcon: string;
+  name: string;
+  shortName: string;
+  subtitle: string;
+  desc: string;
+  accentColor: string;
+  medalCosts: [number, number, number, number, number];
+  goldCosts: [number, number, number, number, number];
+  maxLevel: number;
+  statText: (lvl: number) => string;
+}
+
+export const CANNON_CORE_MODS: Record<CannonCoreModId, CannonCoreModSpec> = {
+  overdrive_breech: {
+    id: 'overdrive_breech',
+    icon: CANNON_MOD_ART.overdrive_breech,
+    hudIcon: CANNON_MOD_HUD_ART.overdrive_breech,
+    inlineIcon: CANNON_MOD_INLINE_ART.overdrive_breech,
+    name: '过载双发膛',
+    shortName: '双发膛',
+    subtitle: '双联汽缸 · 基础提速 · 高频双连点射',
+    desc: '强化蒸汽母炮基础连发韵律，并每隔数发触发一次高速双发连点脉冲弹幕',
+    accentColor: '#f59e0b',
+    medalCosts: [2, 3, 4, 5, 7],
+    goldCosts: [380, 620, 920, 1320, 1820],
+    maxLevel: CANNON_CORE_MOD_MAX_LEVEL,
+    statText: (lvl) => {
+      const eff = Math.max(1, lvl);
+      const firePct = 6 + (eff - 1) * 3;
+      const everyShots = Math.max(2, 4 - Math.floor(eff / 2));
+      const tapCount = eff >= 4 ? 3 : 2;
+      return `基础射速+${firePct}% · 每${everyShots}发触发${tapCount}连急促点射`;
+    },
+  },
+  prism_splitter: {
+    id: 'prism_splitter',
+    icon: CANNON_MOD_ART.prism_splitter,
+    hudIcon: CANNON_MOD_HUD_ART.prism_splitter,
+    inlineIcon: CANNON_MOD_INLINE_ART.prism_splitter,
+    name: '棱镜散射镜',
+    shortName: '棱镜镜',
+    subtitle: '虹光折射 · 扇面双三裂 · 超能充能体',
+    desc: '炮口加装星彩水晶棱镜，每隔数发折射出带倾角的双生/三联棱镜充能波波兵',
+    accentColor: '#38bdf8',
+    medalCosts: [2, 3, 4, 5, 7],
+    goldCosts: [420, 660, 960, 1360, 1860],
+    maxLevel: CANNON_CORE_MOD_MAX_LEVEL,
+    statText: (lvl) => {
+      const eff = Math.max(1, lvl);
+      const everyShots = Math.max(2, 4 - Math.floor(eff / 2));
+      const splitCount = eff >= 3 ? 3 : 2;
+      const dmgPct = 15 + eff * 6;
+      return `每${everyShots}发折射${splitCount}枚棱镜充能波波 · 棱镜伤害+${dmgPct}%`;
+    },
+  },
+  heavy_mortar: {
+    id: 'heavy_mortar',
+    icon: CANNON_MOD_ART.heavy_mortar,
+    hudIcon: CANNON_MOD_HUD_ART.heavy_mortar,
+    inlineIcon: CANNON_MOD_INLINE_ART.heavy_mortar,
+    name: '蓄能重炮管',
+    shortName: '重炮管',
+    subtitle: '液压套筒 · 巨型重甲兵 · 轰塔破城震波',
+    desc: '每隔数发抛射一枚披挂护盾的巨型重装迫击波波，落地引发破城震波并对敌塔造成高额伤害',
+    accentColor: '#f43f5e',
+    medalCosts: [2, 3, 4, 5, 7],
+    goldCosts: [440, 680, 980, 1400, 1900],
+    maxLevel: CANNON_CORE_MOD_MAX_LEVEL,
+    statText: (lvl) => {
+      const eff = Math.max(1, lvl);
+      const everyShots = Math.max(3, 5 - Math.floor(eff / 2));
+      const siegePct = 65 + eff * 18;
+      return `每${everyShots}发抛射重装巨型波波 · 对塔与攻城伤害+${siegePct}%`;
+    },
+  },
+};
+
+export const BOBO_TECH_BRANCH_ORDER: BoboTechBranchId[] = [
+  'vanguard_charge',
+  'heavy_siege',
+  'candy_bombard',
+];
+
+export const BOBO_TECH_MAX_LEVEL = 5;
+
+export interface BoboTechBranchSpec {
+  id: BoboTechBranchId;
+  icon: string;
+  hudIcon: string;
+  inlineIcon: string;
+  name: string;
+  shortName: string;
+  subtitle: string;
+  desc: string;
+  doctrineBonusText: string;
+  accentColor: string;
+  coreCosts: [number, number, number, number, number];
+  goldCosts: [number, number, number, number, number];
+  maxLevel: number;
+  statText: (lvl: number, isActiveDoctrine: boolean) => string;
+}
+
+export const BOBO_TECH_BRANCHES: Record<BoboTechBranchId, BoboTechBranchSpec> = {
+  vanguard_charge: {
+    id: 'vanguard_charge',
+    icon: BOBO_TECH_ART.vanguard_charge,
+    hudIcon: BOBO_TECH_HUD_ART.vanguard_charge,
+    inlineIcon: BOBO_TECH_INLINE_ART.vanguard_charge,
+    name: '迅捷冲锋营',
+    shortName: '冲锋营',
+    subtitle: '疾风羽翼 · 穿门疾驰 · 残影闪避',
+    desc: '提升波波全军冲锋移速，穿过倍增门后触发疾风急行，并赋予近战残影闪避率',
+    doctrineBonusText: '主战策加成：移速额外+6% · 穿门冲刺+12% · 披挂青羽冲锋翼饰',
+    accentColor: '#38bdf8',
+    coreCosts: [1, 2, 3, 4, 5],
+    goldCosts: [240, 420, 680, 1050, 1520],
+    maxLevel: BOBO_TECH_MAX_LEVEL,
+    statText: (lvl, isActive) => {
+      const movePct = lvl * 5 + (isActive ? 6 : 0);
+      const surgePct = (lvl > 0 ? 14 + lvl * 6 : 0) + (isActive ? 12 : 0);
+      const dodgePct = lvl * 3 + (isActive ? 4 : 0);
+      return `移速+${movePct}% · 穿门冲刺+${surgePct}% · 闪避${dodgePct}%`;
+    },
+  },
+  heavy_siege: {
+    id: 'heavy_siege',
+    icon: BOBO_TECH_ART.heavy_siege,
+    hudIcon: BOBO_TECH_HUD_ART.heavy_siege,
+    inlineIcon: BOBO_TECH_INLINE_ART.heavy_siege,
+    name: '重甲破城营',
+    shortName: '破城营',
+    subtitle: '发条重盾 · 护甲减伤 · 弱点破拆',
+    desc: '强化波波生命值与出膛前锋护盾概率，显著放大对发条首领弱点与敌塔的破城伤害',
+    doctrineBonusText: '主战策加成：弱点与攻城伤害额外+15% · 护盾率+10% · 披挂金铜重盾肩甲',
+    accentColor: '#f59e0b',
+    coreCosts: [1, 2, 3, 4, 5],
+    goldCosts: [260, 450, 720, 1100, 1600],
+    maxLevel: BOBO_TECH_MAX_LEVEL,
+    statText: (lvl, isActive) => {
+      const hpPct = lvl * 8 + (isActive ? 8 : 0);
+      const siegePct = lvl * 12 + (isActive ? 15 : 0);
+      const shieldPct = lvl * 7 + (isActive ? 10 : 0);
+      return `生命+${hpPct}% · 破城与弱点+${siegePct}% · 前锋盾${shieldPct}%`;
+    },
+  },
+  candy_bombard: {
+    id: 'candy_bombard',
+    icon: BOBO_TECH_ART.candy_bombard,
+    hudIcon: BOBO_TECH_HUD_ART.candy_bombard,
+    inlineIcon: BOBO_TECH_INLINE_ART.candy_bombard,
+    name: '爆裂糖弹营',
+    shortName: '糖弹营',
+    subtitle: '彩虹糖弹 · 碰撞溅射 · 母炮连射',
+    desc: '赋予波波近战碰撞糖衣爆裂溅射伤害，并同步提升蒸汽母炮连发射速',
+    doctrineBonusText: '主战策加成：糖弹溅射伤害+16% · 母炮射速额外+6% · 顶戴爆裂糖衣核心冠',
+    accentColor: '#f472b6',
+    coreCosts: [1, 2, 3, 4, 5],
+    goldCosts: [250, 440, 700, 1080, 1560],
+    maxLevel: BOBO_TECH_MAX_LEVEL,
+    statText: (lvl, isActive) => {
+      const splashPct = (lvl > 0 ? 16 + lvl * 8 : 0) + (isActive ? 16 : 0);
+      const firePct = lvl * 4 + (isActive ? 6 : 0);
+      return `碰撞糖爆溅射${splashPct}% · 母炮射速+${firePct}%`;
+    },
+  },
+};
+
+export const TACTICAL_SUBWEAPON_ORDER: TacticalSubWeaponId[] = [
+  'electro_net',
+  'syrup_bubble',
+  'rally_horn',
+];
+
+export const TACTICAL_SUBWEAPON_MAX_LEVEL = 5;
+
+export interface TacticalSubWeaponSpec {
+  id: TacticalSubWeaponId;
+  icon: string;
+  hudIcon: string;
+  inlineIcon: string;
+  name: string;
+  shortName: string;
+  subtitle: string;
+  desc: string;
+  accentColor: string;
+  baseCost: number;
+  costMult: number;
+  maxLevel: number;
+  statText: (lvl: number) => string;
+}
+
+export const TACTICAL_SUBWEAPONS: Record<TacticalSubWeaponId, TacticalSubWeaponSpec> = {
+  electro_net: {
+    id: 'electro_net',
+    icon: TACTICAL_SUBWEAPON_ART.electro_net,
+    hudIcon: TACTICAL_SUBWEAPON_HUD_ART.electro_net,
+    inlineIcon: TACTICAL_SUBWEAPON_INLINE_ART.electro_net,
+    name: '电磁网弹',
+    shortName: '电磁网',
+    subtitle: '电弧麻痹 · 剥离塔盾',
+    desc: '发射范围青蓝电磁网弹，麻痹减速红方集群并直接剥离敌方据点与副塔护盾',
+    accentColor: '#22d3ee',
+    baseCost: 220,
+    costMult: 1.55,
+    maxLevel: TACTICAL_SUBWEAPON_MAX_LEVEL,
+    statText: (lvl) => {
+      const dur = (3.6 + (lvl - 1) * 0.45).toFixed(1);
+      const strip = 3 + lvl;
+      return `麻痹${dur}s · 破盾-${strip}层 · CD ${(11.5 - (lvl - 1) * 0.65).toFixed(1)}s`;
+    },
+  },
+  syrup_bubble: {
+    id: 'syrup_bubble',
+    icon: TACTICAL_SUBWEAPON_ART.syrup_bubble,
+    hudIcon: TACTICAL_SUBWEAPON_HUD_ART.syrup_bubble,
+    inlineIcon: TACTICAL_SUBWEAPON_INLINE_ART.syrup_bubble,
+    name: '糖浆减速泡',
+    shortName: '糖浆泡',
+    subtitle: '琥珀粉泡 · 减速易伤',
+    desc: '在桥面铺设琥珀粉红黏稠糖浆泡区，大幅迟滞红方推进并使其承受伤害放大',
+    accentColor: '#f472b6',
+    baseCost: 240,
+    costMult: 1.55,
+    maxLevel: TACTICAL_SUBWEAPON_MAX_LEVEL,
+    statText: (lvl) => {
+      const slowPct = Math.round((1 - (0.38 - (lvl - 1) * 0.03)) * 100);
+      const vulnPct = Math.round((0.32 + (lvl - 1) * 0.09) * 100);
+      return `减速${slowPct}% · 易伤+${vulnPct}% · 持续${(6.5 + (lvl - 1) * 0.7).toFixed(1)}s`;
+    },
+  },
+  rally_horn: {
+    id: 'rally_horn',
+    icon: TACTICAL_SUBWEAPON_ART.rally_horn,
+    hudIcon: TACTICAL_SUBWEAPON_HUD_ART.rally_horn,
+    inlineIcon: TACTICAL_SUBWEAPON_INLINE_ART.rally_horn,
+    name: '鼓舞号角光环',
+    shortName: '号角环',
+    subtitle: '黄金号角 · 攻移双增',
+    desc: '围绕领队与前锋波波团吹响黄金号角光环，大幅提升全军移速、攻速与炮台射速',
+    accentColor: '#f59e0b',
+    baseCost: 250,
+    costMult: 1.55,
+    maxLevel: TACTICAL_SUBWEAPON_MAX_LEVEL,
+    statText: (lvl) => {
+      const movePct = Math.round((0.35 + (lvl - 1) * 0.07) * 100);
+      const atkPct = Math.round((0.32 + (lvl - 1) * 0.08) * 100);
+      return `移速+${movePct}% · 攻速+${atkPct}% · 持续${(5.8 + (lvl - 1) * 0.65).toFixed(1)}s`;
+    },
+  },
+};
+
+export interface TournamentStageSpec {
+  stage: TournamentStageId;
+  badgeText: string;
+  shortTitle: string;
+  streakMultiplier: number;
+  streakLabel: string;
+  themeId: ThemeId;
+  baseCoins: number;
+  baseCards: number;
+  baseBricks: number;
+  baseTrophies: number;
+  matchWinTrophies: number;
+}
+
+export const TOURNAMENT_STAGES: Record<TournamentStageId, TournamentStageSpec> = {
+  1: {
+    stage: 1,
+    badgeText: '第 1/3 战 · 铜齿预赛',
+    shortTitle: '铜齿预赛',
+    streakMultiplier: 1.5,
+    streakLabel: '1.5x',
+    themeId: 'wasteland',
+    baseCoins: 520,
+    baseCards: 2,
+    baseBricks: 36,
+    baseTrophies: 12,
+    matchWinTrophies: 4,
+  },
+  2: {
+    stage: 2,
+    badgeText: '第 2/3 战 · 银齿半决赛',
+    shortTitle: '银齿半决赛',
+    streakMultiplier: 2.2,
+    streakLabel: '2.2x',
+    themeId: 'cyberhive',
+    baseCoins: 760,
+    baseCards: 3,
+    baseBricks: 58,
+    baseTrophies: 20,
+    matchWinTrophies: 6,
+  },
+  3: {
+    stage: 3,
+    badgeText: '第 3/3 战 · 金齿巅峰决战',
+    shortTitle: '金齿巅峰决战',
+    streakMultiplier: 3.5,
+    streakLabel: '3.5x',
+    themeId: 'royal',
+    baseCoins: 1120,
+    baseCards: 5,
+    baseBricks: 92,
+    baseTrophies: 34,
+    matchWinTrophies: 10,
+  },
+};
+
+export const TOURNAMENT_TROPHY_MILESTONES = [15, 45, 90, 160, 260] as const;
 
 export type MetaUpgradeId =
   | 'meta_attack'
@@ -200,6 +539,151 @@ export interface SkinSpec {
   badgeColor: string;
   palette: SkinPalette;
 }
+
+export type SquadFinishId =
+  | 'candy_gloss'
+  | 'brass_steam'
+  | 'crystal_jelly'
+  | 'starlight_prism';
+
+export interface SquadFinishSpec {
+  id: SquadFinishId;
+  name: string;
+  tag: string;
+  desc: string;
+  bonusText: string;
+  costGold: number;
+  costShards: number;
+  milestoneEscortClears: number;
+  milestoneEscortPct: number;
+  milestoneBarricades: number;
+  milestoneHint: string;
+  previewGradient: string;
+  badgeColor: string;
+  modeIndex: 0 | 1 | 2 | 3;
+  unitRoughness: number;
+  unitMetalness: number;
+  unitEmissiveIntensity: number;
+  rimHex: number;
+  specBoost: number;
+  cannonBarrelHex: number;
+  cannonTrimHex: number;
+  cannonMetalness: number;
+  cannonRoughness: number;
+  cartArmorHex: number;
+  cartTrimHex: number;
+}
+
+export const SQUAD_FINISH_CATALOG: SquadFinishSpec[] = [
+  {
+    id: 'candy_gloss',
+    name: '蜜糖琉璃釉',
+    tag: '经典釉面',
+    desc: '高光双点糖衣清漆，波波团与蒸汽炮呈现晶莹Q弹搪胶质感',
+    bonusText: '泡泡站生命 +3%',
+    costGold: 0,
+    costShards: 0,
+    milestoneEscortClears: 0,
+    milestoneEscortPct: 0,
+    milestoneBarricades: 0,
+    milestoneHint: '初始解锁',
+    previewGradient: 'linear-gradient(135deg, #38bdf8 0%, #fb7185 100%)',
+    badgeColor: '#38bdf8',
+    modeIndex: 0,
+    unitRoughness: 0.14,
+    unitMetalness: 0.04,
+    unitEmissiveIntensity: 0.05,
+    rimHex: 0xffffff,
+    specBoost: 1.0,
+    cannonBarrelHex: 0xfff8eb,
+    cannonTrimHex: 0xd89e32,
+    cannonMetalness: 0.12,
+    cannonRoughness: 0.24,
+    cartArmorHex: 0xfef3c7,
+    cartTrimHex: 0xd97706,
+  },
+  {
+    id: 'brass_steam',
+    name: '黄铜蒸汽甲',
+    tag: '重装金属',
+    desc: '抛光赤铜与皇家黄铜蒸汽装甲镀层，战车冲角与炮管闪耀金属光泽',
+    bonusText: '冲角与攻城伤害 +10%',
+    costGold: 3600,
+    costShards: 0,
+    milestoneEscortClears: 0,
+    milestoneEscortPct: 0,
+    milestoneBarricades: 4,
+    milestoneHint: '累计撞碎 4 座护送路障可免费解锁',
+    previewGradient: 'linear-gradient(135deg, #f59e0b 0%, #b45309 55%, #fef08a 100%)',
+    badgeColor: '#f59e0b',
+    modeIndex: 1,
+    unitRoughness: 0.20,
+    unitMetalness: 0.68,
+    unitEmissiveIntensity: 0.10,
+    rimHex: 0xfbbf24,
+    specBoost: 1.18,
+    cannonBarrelHex: 0xeab308,
+    cannonTrimHex: 0xfef08a,
+    cannonMetalness: 0.72,
+    cannonRoughness: 0.18,
+    cartArmorHex: 0xd97706,
+    cartTrimHex: 0xfef08a,
+  },
+  {
+    id: 'crystal_jelly',
+    name: '晶透冰果冻',
+    tag: '冰晶透光',
+    desc: '薄荷冰晶高透果冻折射材质，附带清凉水光边缘与冰晶炮身',
+    bonusText: '波波团移速 +6%',
+    costGold: 2400,
+    costShards: 3,
+    milestoneEscortClears: 0,
+    milestoneEscortPct: 0,
+    milestoneBarricades: 0,
+    milestoneHint: '消耗金币与糖衣碎片调配解锁',
+    previewGradient: 'linear-gradient(135deg, #2dd4bf 0%, #38bdf8 55%, #cffafe 100%)',
+    badgeColor: '#2dd4bf',
+    modeIndex: 2,
+    unitRoughness: 0.08,
+    unitMetalness: 0.14,
+    unitEmissiveIntensity: 0.14,
+    rimHex: 0x67e8f9,
+    specBoost: 1.28,
+    cannonBarrelHex: 0xa5f3fc,
+    cannonTrimHex: 0x38bdf8,
+    cannonMetalness: 0.28,
+    cannonRoughness: 0.09,
+    cartArmorHex: 0x67e8f9,
+    cartTrimHex: 0x0284c7,
+  },
+  {
+    id: 'starlight_prism',
+    name: '星芒幻彩棱镜',
+    tag: '护送荣耀',
+    desc: '全息虹彩星芒棱镜镀膜，随视角流转紫金青极光，战车推进速度飙升',
+    bonusText: '全军战力 +5% · 战车推进 +12%',
+    costGold: 12000,
+    costShards: 5,
+    milestoneEscortClears: 1,
+    milestoneEscortPct: 60,
+    milestoneBarricades: 0,
+    milestoneHint: '战车护送推进 ≥60% 或通关 1 次免费解锁',
+    previewGradient: 'linear-gradient(135deg, #a855f7 0%, #ec4899 48%, #facc15 100%)',
+    badgeColor: '#e879f9',
+    modeIndex: 3,
+    unitRoughness: 0.10,
+    unitMetalness: 0.48,
+    unitEmissiveIntensity: 0.18,
+    rimHex: 0xe879f9,
+    specBoost: 1.32,
+    cannonBarrelHex: 0xd8b4fe,
+    cannonTrimHex: 0xfacc15,
+    cannonMetalness: 0.56,
+    cannonRoughness: 0.12,
+    cartArmorHex: 0xa855f7,
+    cartTrimHex: 0xfacc15,
+  },
+];
 
 export const SKINS_CATALOG: SkinSpec[] = [
   {
@@ -409,6 +893,72 @@ export const MECHA_SPECS: Record<MechaMode, MechaSpec> = {
 };
 
 export const MECHA_ORDER: MechaMode[] = ['hammer', 'pyro', 'aegis'];
+
+export interface WeaponSpec {
+  id: WeaponMode;
+  icon: string;
+  name: string;
+  shortName: string;
+  desc: string;
+  bannerDesc: string;
+  fireRateMult: number;
+  accentColor: number;
+}
+
+export const WEAPON_SPECS: Record<WeaponMode, WeaponSpec> = {
+  gatling: {
+    id: 'gatling',
+    icon: WEAPON_MODE_ART.gatling,
+    name: '速射连发炮',
+    shortName: '速射',
+    desc: '经典高射速蒸汽连发泡泡炮',
+    bannerDesc: '经典高射速蒸汽炮 · 稳定连发稳健推线',
+    fireRateMult: 1.0,
+    accentColor: 0x38bdf8,
+  },
+  scatter: {
+    id: 'scatter',
+    icon: WEAPON_MODE_ART.scatter,
+    name: '弹射散弹泡泡炮',
+    shortName: '散弹',
+    desc: '三向扇形弹幕 + 路缘二次弹射压制',
+    bannerDesc: '弹射散弹泡泡炮 · 三发扇形齐射并可弹墙折射穿插倍率门',
+    fireRateMult: 0.78,
+    accentColor: 0x22d3ee,
+  },
+  rainbow: {
+    id: 'rainbow',
+    icon: WEAPON_MODE_ART.rainbow,
+    name: '蓄力彩虹贯通炮',
+    shortName: '彩虹',
+    desc: '每4发蓄力释放贯穿全线的彩虹光束与精英泡泡',
+    bannerDesc: '蓄力彩虹贯通炮 · 周期贯穿彩虹光束击穿红军并充能倍率门',
+    fireRateMult: 0.88,
+    accentColor: 0xf472b6,
+  },
+  twin: {
+    id: 'twin',
+    icon: WEAPON_MODE_ART.twin,
+    name: '双管脉冲炮',
+    shortName: '双管',
+    desc: '双发并行脉冲速射压制两翼',
+    bannerDesc: '双管脉冲炮 · 左右并行发射覆盖宽阔门阵',
+    fireRateMult: 0.9,
+    accentColor: 0x60a5fa,
+  },
+  plasma: {
+    id: 'plasma',
+    icon: WEAPON_MODE_ART.plasma,
+    name: '高能等离子炮',
+    shortName: '等离子',
+    desc: '高伤重装泡泡弹 + 强化倍率充能',
+    bannerDesc: '高能等离子炮 · 发射高攻重装波波并加快能量积累',
+    fireRateMult: 0.8,
+    accentColor: 0xc084fc,
+  },
+};
+
+export const WEAPON_ORDER: WeaponMode[] = ['gatling', 'scatter', 'rainbow', 'twin', 'plasma'];
 
 export type SkillBranchId = 'swarm' | 'titan' | 'gate' | 'plasma' | 'orbital' | 'bastion' | 'tycoon';
 
@@ -1023,15 +1573,54 @@ export interface SaveState {
   powerLevel: number;
   championLevel: number;
   lootLevel: number;
+  weapon?: WeaponMode;
   mechaMode?: MechaMode;
   metaLevels?: Partial<Record<MetaUpgradeId, number>>;
   ownedSkins?: SkinId[];
   equippedSkin?: SkinId;
   skinRanks?: Partial<Record<SkinId, number>>;
   skinShards?: Partial<Record<SkinId, number>>;
+  ownedFinishes?: SquadFinishId[];
+  equippedFinish?: SquadFinishId;
   playerId?: string;
   playerName?: string;
   bestStageCleared?: number;
+  bestEndlessWave?: number;
+  bestEscortProgressPct?: number;
+  bestEscortClearSec?: number;
+  escortClears?: number;
+  totalBarricadesBroken?: number;
+  mechaCoreLevel?: number;
+  mechaCannonLevel?: number;
+  totalMechaSummons?: number;
+  totalMechaSmashes?: number;
+  claimedMechaMilestoneTier?: number;
+  equippedSubWeapon?: TacticalSubWeaponId;
+  subWeaponLevels?: Partial<Record<TacticalSubWeaponId, number>>;
+  totalSubWeaponCasts?: number;
+  tournamentStage?: TournamentStageId;
+  tournamentWinStreak?: number;
+  tournamentCupTier?: number;
+  tournamentTrophies?: number;
+  tournamentBricks?: number;
+  pendingTournamentChestStage?: 0 | 1 | 2 | 3;
+  tournamentChestsClaimed?: number;
+  clockworkCores?: number;
+  colossusRaidClears?: number;
+  totalColossusWeakpointsBroken?: number;
+  bestColossusClearSec?: number;
+  boboTechLevels?: Partial<Record<BoboTechBranchId, number>>;
+  activeBoboTechDoctrine?: BoboTechBranchId;
+  airshipWingMedals?: number;
+  lifetimeAirshipWingMedals?: number;
+  airshipEscortClears?: number;
+  bestAirshipProgressPct?: number;
+  bestAirshipClearSec?: number;
+  totalAirshipDropPods?: number;
+  totalAntiAirTurretsCleared?: number;
+  cannonModLevels?: Partial<Record<CannonCoreModId, number>>;
+  activeCannonMod?: CannonCoreModId;
+  totalCannonModBursts?: number;
   totalMatchesPlayed?: number;
   lifetimeKills?: number;
   playTimeSeconds?: number;
@@ -1108,6 +1697,8 @@ export class GameState {
   public equippedSkin: SkinId = 'azure';
   public skinRanks: Partial<Record<SkinId, number>> = {};
   public skinShards: Partial<Record<SkinId, number>> = {};
+  public ownedFinishes: SquadFinishId[] = ['candy_gloss'];
+  public equippedFinish: SquadFinishId = 'candy_gloss';
 
   // 7-Branch Tactical Race & Skill Tree State
   public skillNodes: Partial<Record<SkillNodeId, number>> = {};
@@ -1122,6 +1713,61 @@ export class GameState {
   public playerId = `cmd_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
   public playerName = `指挥官${Math.floor(1000 + Math.random() * 9000)}`;
   public bestStageCleared = 0;
+  public bestEndlessWave = 0;
+  public bestEscortProgressPct = 0;
+  public bestEscortClearSec = 0;
+  public escortClears = 0;
+  public totalBarricadesBroken = 0;
+  public mechaCoreLevel = 0;
+  public mechaCannonLevel = 0;
+  public totalMechaSummons = 0;
+  public totalMechaSmashes = 0;
+  public claimedMechaMilestoneTier = 0;
+
+  // MC-7: Leader Tactical Sub-Weapon Slot & Gear Summit Tournament
+  public equippedSubWeapon: TacticalSubWeaponId = 'electro_net';
+  public subWeaponLevels: Record<TacticalSubWeaponId, number> = {
+    electro_net: 1,
+    syrup_bubble: 1,
+    rally_horn: 1,
+  };
+  public totalSubWeaponCasts = 0;
+  public tournamentStage: TournamentStageId = 1;
+  public tournamentWinStreak = 0;
+  public tournamentCupTier = 1;
+  public tournamentTrophies = 0;
+  public tournamentBricks = 0;
+  public pendingTournamentChestStage: 0 | 1 | 2 | 3 = 0;
+  public tournamentChestsClaimed = 0;
+
+  // MC-8: Giant Clockwork Toy Colossus Raid & Bobo 3-Branch Specialization Tech Tree
+  public clockworkCores = 0;
+  public colossusRaidClears = 0;
+  public totalColossusWeakpointsBroken = 0;
+  public bestColossusClearSec = 0;
+  public boboTechLevels: Record<BoboTechBranchId, number> = {
+    vanguard_charge: 0,
+    heavy_siege: 0,
+    candy_bombard: 0,
+  };
+  public activeBoboTechDoctrine: BoboTechBranchId = 'vanguard_charge';
+
+  // MC-9: Cloud Airship Mothership Escort & Steam Cannon Core Module Workbench
+  public airshipWingMedals = 0;
+  public lifetimeAirshipWingMedals = 0;
+  public airshipEscortClears = 0;
+  public bestAirshipProgressPct = 0;
+  public bestAirshipClearSec = 0;
+  public totalAirshipDropPods = 0;
+  public totalAntiAirTurretsCleared = 0;
+  public cannonModLevels: Record<CannonCoreModId, number> = {
+    overdrive_breech: 1,
+    prism_splitter: 0,
+    heavy_mortar: 0,
+  };
+  public activeCannonMod: CannonCoreModId = 'overdrive_breech';
+  public totalCannonModBursts = 0;
+
   public totalMatchesPlayed = 0;
   public lifetimeKills = 0;
   public playTimeSeconds = 0;
@@ -1142,6 +1788,8 @@ export class GameState {
   public mechaMode: MechaMode = 'hammer';
   public championCharge = 25;
   public orbitalCharge = 15;
+  public mechaOverlordCharge = 35;
+  public subWeaponCharge = 100;
 
   public stageClonesSpawned = 0;
   public stageMutantsKilled = 0;
@@ -1171,6 +1819,9 @@ export class GameState {
       this.lootLevel = 1;
       this.buffStacks = {};
       this.activeDebuffs = [];
+      if (parsed.weapon && WEAPON_SPECS[parsed.weapon]) {
+        this.weapon = parsed.weapon;
+      }
       if (parsed.mechaMode && MECHA_SPECS[parsed.mechaMode]) {
         this.mechaMode = parsed.mechaMode;
       }
@@ -1189,6 +1840,14 @@ export class GameState {
       if (parsed.skinShards && typeof parsed.skinShards === 'object') {
         this.skinShards = { ...parsed.skinShards };
       }
+      if (Array.isArray(parsed.ownedFinishes) && parsed.ownedFinishes.length > 0) {
+        const validIds = new Set(SQUAD_FINISH_CATALOG.map((f) => f.id));
+        const filtered = parsed.ownedFinishes.filter((fid): fid is SquadFinishId => validIds.has(fid));
+        this.ownedFinishes = Array.from(new Set<SquadFinishId>(['candy_gloss', ...filtered]));
+      }
+      if (parsed.equippedFinish && this.ownedFinishes.includes(parsed.equippedFinish)) {
+        this.equippedFinish = parsed.equippedFinish;
+      }
       if (typeof parsed.playerId === 'string' && parsed.playerId.trim()) {
         this.playerId = parsed.playerId.trim().slice(0, 40);
       }
@@ -1197,6 +1856,160 @@ export class GameState {
       }
       if (typeof parsed.bestStageCleared === 'number') {
         this.bestStageCleared = Math.max(0, parsed.bestStageCleared);
+      }
+      if (typeof parsed.bestEndlessWave === 'number') {
+        this.bestEndlessWave = Math.max(0, Math.floor(parsed.bestEndlessWave));
+      }
+      if (typeof parsed.bestEscortProgressPct === 'number') {
+        this.bestEscortProgressPct = Math.max(0, Math.min(100, Math.round(parsed.bestEscortProgressPct)));
+      }
+      if (typeof parsed.bestEscortClearSec === 'number') {
+        this.bestEscortClearSec = Math.max(0, Number(parsed.bestEscortClearSec.toFixed(1)));
+      }
+      if (typeof parsed.escortClears === 'number') {
+        this.escortClears = Math.max(0, Math.floor(parsed.escortClears));
+      }
+      if (typeof parsed.totalBarricadesBroken === 'number') {
+        this.totalBarricadesBroken = Math.max(0, Math.floor(parsed.totalBarricadesBroken));
+      }
+      if (typeof parsed.mechaCoreLevel === 'number') {
+        this.mechaCoreLevel = Math.max(0, Math.min(12, Math.floor(parsed.mechaCoreLevel)));
+      }
+      if (typeof parsed.mechaCannonLevel === 'number') {
+        this.mechaCannonLevel = Math.max(0, Math.min(12, Math.floor(parsed.mechaCannonLevel)));
+      }
+      if (typeof parsed.totalMechaSummons === 'number') {
+        this.totalMechaSummons = Math.max(0, Math.floor(parsed.totalMechaSummons));
+      }
+      if (typeof parsed.totalMechaSmashes === 'number') {
+        this.totalMechaSmashes = Math.max(0, Math.floor(parsed.totalMechaSmashes));
+      }
+      if (typeof parsed.claimedMechaMilestoneTier === 'number') {
+        this.claimedMechaMilestoneTier = Math.max(0, Math.min(4, Math.floor(parsed.claimedMechaMilestoneTier)));
+      }
+      if (parsed.equippedSubWeapon && TACTICAL_SUBWEAPONS[parsed.equippedSubWeapon]) {
+        this.equippedSubWeapon = parsed.equippedSubWeapon;
+      }
+      if (parsed.subWeaponLevels && typeof parsed.subWeaponLevels === 'object') {
+        for (const swId of TACTICAL_SUBWEAPON_ORDER) {
+          const rawLvl = parsed.subWeaponLevels[swId];
+          if (typeof rawLvl === 'number' && Number.isFinite(rawLvl)) {
+            this.subWeaponLevels[swId] = Math.max(
+              1,
+              Math.min(TACTICAL_SUBWEAPON_MAX_LEVEL, Math.floor(rawLvl))
+            );
+          }
+        }
+      }
+      if (typeof parsed.totalSubWeaponCasts === 'number') {
+        this.totalSubWeaponCasts = Math.max(0, Math.floor(parsed.totalSubWeaponCasts));
+      }
+      if (parsed.tournamentStage === 1 || parsed.tournamentStage === 2 || parsed.tournamentStage === 3) {
+        this.tournamentStage = parsed.tournamentStage;
+      }
+      if (typeof parsed.tournamentWinStreak === 'number') {
+        this.tournamentWinStreak = Math.max(0, Math.floor(parsed.tournamentWinStreak));
+      }
+      if (typeof parsed.tournamentCupTier === 'number') {
+        this.tournamentCupTier = Math.max(1, Math.floor(parsed.tournamentCupTier));
+      }
+      if (typeof parsed.tournamentTrophies === 'number') {
+        this.tournamentTrophies = Math.max(0, Math.floor(parsed.tournamentTrophies));
+      }
+      if (typeof parsed.tournamentBricks === 'number') {
+        this.tournamentBricks = Math.max(0, Math.floor(parsed.tournamentBricks));
+      }
+      if (
+        parsed.pendingTournamentChestStage === 0 ||
+        parsed.pendingTournamentChestStage === 1 ||
+        parsed.pendingTournamentChestStage === 2 ||
+        parsed.pendingTournamentChestStage === 3
+      ) {
+        this.pendingTournamentChestStage = parsed.pendingTournamentChestStage;
+      }
+      if (typeof parsed.tournamentChestsClaimed === 'number') {
+        this.tournamentChestsClaimed = Math.max(0, Math.floor(parsed.tournamentChestsClaimed));
+      }
+      if (typeof parsed.clockworkCores === 'number' && Number.isFinite(parsed.clockworkCores)) {
+        this.clockworkCores = Math.max(0, Math.floor(parsed.clockworkCores));
+      }
+      if (typeof parsed.colossusRaidClears === 'number' && Number.isFinite(parsed.colossusRaidClears)) {
+        this.colossusRaidClears = Math.max(0, Math.floor(parsed.colossusRaidClears));
+      }
+      if (
+        typeof parsed.totalColossusWeakpointsBroken === 'number' &&
+        Number.isFinite(parsed.totalColossusWeakpointsBroken)
+      ) {
+        this.totalColossusWeakpointsBroken = Math.max(0, Math.floor(parsed.totalColossusWeakpointsBroken));
+      }
+      if (typeof parsed.bestColossusClearSec === 'number' && Number.isFinite(parsed.bestColossusClearSec)) {
+        this.bestColossusClearSec = Math.max(0, Number(parsed.bestColossusClearSec.toFixed(1)));
+      }
+      if (parsed.boboTechLevels && typeof parsed.boboTechLevels === 'object') {
+        for (const branchId of BOBO_TECH_BRANCH_ORDER) {
+          const rawLvl = parsed.boboTechLevels[branchId];
+          if (typeof rawLvl === 'number' && Number.isFinite(rawLvl)) {
+            this.boboTechLevels[branchId] = Math.max(0, Math.min(BOBO_TECH_MAX_LEVEL, Math.floor(rawLvl)));
+          }
+        }
+      }
+      if (parsed.activeBoboTechDoctrine && BOBO_TECH_BRANCHES[parsed.activeBoboTechDoctrine]) {
+        this.activeBoboTechDoctrine = parsed.activeBoboTechDoctrine;
+      }
+      if (typeof parsed.airshipWingMedals === 'number' && Number.isFinite(parsed.airshipWingMedals)) {
+        this.airshipWingMedals = Math.max(0, Math.floor(parsed.airshipWingMedals));
+      }
+      if (
+        typeof parsed.lifetimeAirshipWingMedals === 'number' &&
+        Number.isFinite(parsed.lifetimeAirshipWingMedals)
+      ) {
+        this.lifetimeAirshipWingMedals = Math.max(
+          this.airshipWingMedals,
+          Math.floor(parsed.lifetimeAirshipWingMedals)
+        );
+      } else {
+        this.lifetimeAirshipWingMedals = Math.max(this.lifetimeAirshipWingMedals, this.airshipWingMedals);
+      }
+      if (typeof parsed.airshipEscortClears === 'number' && Number.isFinite(parsed.airshipEscortClears)) {
+        this.airshipEscortClears = Math.max(0, Math.floor(parsed.airshipEscortClears));
+      }
+      if (typeof parsed.bestAirshipProgressPct === 'number' && Number.isFinite(parsed.bestAirshipProgressPct)) {
+        this.bestAirshipProgressPct = Math.max(0, Math.min(100, Math.round(parsed.bestAirshipProgressPct)));
+      }
+      if (typeof parsed.bestAirshipClearSec === 'number' && Number.isFinite(parsed.bestAirshipClearSec)) {
+        this.bestAirshipClearSec = Math.max(0, Number(parsed.bestAirshipClearSec.toFixed(1)));
+      }
+      if (typeof parsed.totalAirshipDropPods === 'number' && Number.isFinite(parsed.totalAirshipDropPods)) {
+        this.totalAirshipDropPods = Math.max(0, Math.floor(parsed.totalAirshipDropPods));
+      }
+      if (
+        typeof parsed.totalAntiAirTurretsCleared === 'number' &&
+        Number.isFinite(parsed.totalAntiAirTurretsCleared)
+      ) {
+        this.totalAntiAirTurretsCleared = Math.max(0, Math.floor(parsed.totalAntiAirTurretsCleared));
+      }
+      if (parsed.cannonModLevels && typeof parsed.cannonModLevels === 'object') {
+        for (const modId of CANNON_CORE_MOD_ORDER) {
+          const rawModLvl = parsed.cannonModLevels[modId];
+          if (typeof rawModLvl === 'number' && Number.isFinite(rawModLvl)) {
+            this.cannonModLevels[modId] = Math.max(0, Math.min(CANNON_CORE_MOD_MAX_LEVEL, Math.floor(rawModLvl)));
+          }
+        }
+      }
+      if (parsed.activeCannonMod && CANNON_CORE_MODS[parsed.activeCannonMod]) {
+        this.activeCannonMod = parsed.activeCannonMod;
+        if (this.cannonModLevels[this.activeCannonMod] <= 0) {
+          const firstUnlocked = CANNON_CORE_MOD_ORDER.find((m) => this.cannonModLevels[m] >= 1);
+          if (firstUnlocked) {
+            this.activeCannonMod = firstUnlocked;
+          } else {
+            this.cannonModLevels.overdrive_breech = 1;
+            this.activeCannonMod = 'overdrive_breech';
+          }
+        }
+      }
+      if (typeof parsed.totalCannonModBursts === 'number' && Number.isFinite(parsed.totalCannonModBursts)) {
+        this.totalCannonModBursts = Math.max(0, Math.floor(parsed.totalCannonModBursts));
       }
       if (typeof parsed.totalMatchesPlayed === 'number') {
         this.totalMatchesPlayed = Math.max(this.bestStageCleared, parsed.totalMatchesPlayed);
@@ -1276,6 +2089,8 @@ export class GameState {
     const startCharge = this.getStartingSkillCharge();
     this.championCharge = startCharge;
     this.orbitalCharge = startCharge;
+    this.mechaOverlordCharge = Math.min(100, Math.max(35, startCharge + this.mechaCoreLevel * 4));
+    this.subWeaponCharge = 100;
     this.save();
   }
 
@@ -1289,15 +2104,57 @@ export class GameState {
         powerLevel: 1,
         championLevel: 1,
         lootLevel: 1,
+        weapon: this.weapon,
         mechaMode: this.mechaMode,
         metaLevels: this.metaLevels,
         ownedSkins: this.ownedSkins,
         equippedSkin: this.equippedSkin,
         skinRanks: this.skinRanks,
         skinShards: this.skinShards,
+        ownedFinishes: this.ownedFinishes,
+        equippedFinish: this.equippedFinish,
         playerId: this.playerId,
         playerName: this.playerName,
         bestStageCleared: this.bestStageCleared,
+        bestEndlessWave: this.bestEndlessWave,
+        bestEscortProgressPct: this.bestEscortProgressPct,
+        bestEscortClearSec: this.bestEscortClearSec,
+        escortClears: this.escortClears,
+        totalBarricadesBroken: this.totalBarricadesBroken,
+        mechaCoreLevel: this.mechaCoreLevel,
+        mechaCannonLevel: this.mechaCannonLevel,
+        totalMechaSummons: this.totalMechaSummons,
+        totalMechaSmashes: this.totalMechaSmashes,
+        claimedMechaMilestoneTier: this.claimedMechaMilestoneTier,
+        equippedSubWeapon: this.equippedSubWeapon,
+        subWeaponLevels: { ...this.subWeaponLevels },
+        totalSubWeaponCasts: this.totalSubWeaponCasts,
+        tournamentStage: this.tournamentStage,
+        tournamentWinStreak: this.tournamentWinStreak,
+        tournamentCupTier: this.tournamentCupTier,
+        tournamentTrophies: this.tournamentTrophies,
+        tournamentBricks: this.tournamentBricks,
+        pendingTournamentChestStage: this.pendingTournamentChestStage,
+        tournamentChestsClaimed: this.tournamentChestsClaimed,
+        clockworkCores: Math.max(0, Math.floor(this.clockworkCores)),
+        colossusRaidClears: Math.max(0, Math.floor(this.colossusRaidClears)),
+        totalColossusWeakpointsBroken: Math.max(0, Math.floor(this.totalColossusWeakpointsBroken)),
+        bestColossusClearSec: this.bestColossusClearSec,
+        boboTechLevels: { ...this.boboTechLevels },
+        activeBoboTechDoctrine: this.activeBoboTechDoctrine,
+        airshipWingMedals: Math.max(0, Math.floor(this.airshipWingMedals)),
+        lifetimeAirshipWingMedals: Math.max(
+          Math.max(0, Math.floor(this.airshipWingMedals)),
+          Math.floor(this.lifetimeAirshipWingMedals)
+        ),
+        airshipEscortClears: Math.max(0, Math.floor(this.airshipEscortClears)),
+        bestAirshipProgressPct: Math.max(0, Math.min(100, Math.round(this.bestAirshipProgressPct))),
+        bestAirshipClearSec: this.bestAirshipClearSec,
+        totalAirshipDropPods: Math.max(0, Math.floor(this.totalAirshipDropPods)),
+        totalAntiAirTurretsCleared: Math.max(0, Math.floor(this.totalAntiAirTurretsCleared)),
+        cannonModLevels: { ...this.cannonModLevels },
+        activeCannonMod: this.activeCannonMod,
+        totalCannonModBursts: Math.max(0, Math.floor(this.totalCannonModBursts)),
         totalMatchesPlayed: this.totalMatchesPlayed,
         lifetimeKills: this.lifetimeKills,
         playTimeSeconds: Math.floor(this.playTimeSeconds),
@@ -1752,6 +2609,38 @@ export class GameState {
     };
   }
 
+  public grantBonusSkinShards(amount: number): { skinId: SkinId; skinName: string; amount: number } {
+    const cleanAmt = Math.max(1, Math.floor(amount));
+    const pool = this.ownedSkins.length > 0 ? this.ownedSkins : (['azure'] as SkinId[]);
+    const chosenId =
+      pool.includes(this.equippedSkin) && Math.random() < 0.55
+        ? this.equippedSkin
+        : pool[Math.floor(Math.random() * pool.length)];
+    this.skinShards[chosenId] = (this.skinShards[chosenId] || 0) + cleanAmt;
+    this.save();
+    const spec = SKINS_CATALOG.find((s) => s.id === chosenId) || SKINS_CATALOG[0];
+    return { skinId: chosenId, skinName: spec.name, amount: cleanAmt };
+  }
+
+  public recordEndlessWave(waveReached: number): { isNewRecord: boolean; bestWave: number } {
+    const cleanWave = Math.max(1, Math.floor(waveReached));
+    const isNewRecord = cleanWave > this.bestEndlessWave;
+    if (isNewRecord) {
+      this.bestEndlessWave = cleanWave;
+      this.save();
+    }
+    return { isNewRecord, bestWave: this.bestEndlessWave };
+  }
+
+  public getEndlessMedalInfo(wave = this.bestEndlessWave): { tier: string; label: string; color: string } {
+    if (wave >= 15) return { tier: 'SSS', label: '不朽圣盾勋章', color: '#facc15' };
+    if (wave >= 10) return { tier: 'SS', label: '璀璨钻石勋章', color: '#38bdf8' };
+    if (wave >= 6) return { tier: 'S', label: '皇家黄金勋章', color: '#f59e0b' };
+    if (wave >= 3) return { tier: 'A', label: '秘银壁垒勋章', color: '#cbd5e1' };
+    if (wave >= 1) return { tier: 'B', label: '青铜守卫勋章', color: '#d97706' };
+    return { tier: '—', label: '待铸首枚勋章', color: '#94a3b8' };
+  }
+
   public buyOrEquipSkin(id: SkinId): 'equipped' | 'bought' | 'insufficient' {
     const spec = SKINS_CATALOG.find((s) => s.id === id);
     if (!spec) return 'insufficient';
@@ -1769,6 +2658,148 @@ export class GameState {
     this.equippedSkin = id;
     this.save();
     return 'bought';
+  }
+
+  public getEquippedFinish(): SquadFinishSpec {
+    return (
+      SQUAD_FINISH_CATALOG.find((f) => f.id === this.equippedFinish) || SQUAD_FINISH_CATALOG[0]
+    );
+  }
+
+  public getTotalSkinShards(): number {
+    let sum = 0;
+    for (const val of Object.values(this.skinShards)) {
+      if (typeof val === 'number' && val > 0) sum += Math.floor(val);
+    }
+    return sum;
+  }
+
+  private spendAnySkinShards(amount: number): boolean {
+    let remaining = Math.max(0, Math.floor(amount));
+    if (remaining === 0) return true;
+    if (this.getTotalSkinShards() < remaining) return false;
+    const entries = (Object.keys(this.skinShards) as SkinId[])
+      .map((k) => ({ id: k, count: Math.max(0, Math.floor(this.skinShards[k] || 0)) }))
+      .filter((e) => e.count > 0)
+      .sort((a, b) => b.count - a.count);
+    for (const entry of entries) {
+      if (remaining <= 0) break;
+      const take = Math.min(entry.count, remaining);
+      this.skinShards[entry.id] = entry.count - take;
+      remaining -= take;
+    }
+    return remaining === 0;
+  }
+
+  public isFinishMilestoneMet(spec: SquadFinishSpec): boolean {
+    if (spec.milestoneEscortClears > 0 && this.escortClears >= spec.milestoneEscortClears) {
+      return true;
+    }
+    if (spec.milestoneEscortPct > 0 && this.bestEscortProgressPct >= spec.milestoneEscortPct) {
+      return true;
+    }
+    if (spec.milestoneBarricades > 0 && this.totalBarricadesBroken >= spec.milestoneBarricades) {
+      return true;
+    }
+    return false;
+  }
+
+  public canUnlockFinish(id: SquadFinishId): {
+    isOwned: boolean;
+    milestoneFree: boolean;
+    canPayResources: boolean;
+    canUnlock: boolean;
+    totalShards: number;
+  } {
+    const spec = SQUAD_FINISH_CATALOG.find((f) => f.id === id) || SQUAD_FINISH_CATALOG[0];
+    const isOwned = this.ownedFinishes.includes(id);
+    const milestoneFree = !isOwned && this.isFinishMilestoneMet(spec);
+    const totalShards = this.getTotalSkinShards();
+    const canPayResources =
+      !isOwned && this.gold >= spec.costGold && totalShards >= spec.costShards;
+    return {
+      isOwned,
+      milestoneFree,
+      canPayResources,
+      canUnlock: !isOwned && (milestoneFree || canPayResources),
+      totalShards,
+    };
+  }
+
+  public unlockOrEquipFinish(id: SquadFinishId): 'equipped' | 'unlocked' | 'insufficient' {
+    const spec = SQUAD_FINISH_CATALOG.find((f) => f.id === id);
+    if (!spec) return 'insufficient';
+    if (this.ownedFinishes.includes(id)) {
+      this.equippedFinish = id;
+      this.save();
+      return 'equipped';
+    }
+    const check = this.canUnlockFinish(id);
+    if (!check.canUnlock) return 'insufficient';
+    if (!check.milestoneFree) {
+      this.gold = Math.max(0, this.gold - spec.costGold);
+      if (spec.costShards > 0) {
+        this.spendAnySkinShards(spec.costShards);
+      }
+    }
+    this.ownedFinishes.push(id);
+    this.equippedFinish = id;
+    this.save();
+    return 'unlocked';
+  }
+
+  public recordEscortRun(
+    progressPct: number,
+    clearSec: number,
+    barricadesBrokenDelta: number,
+    completed: boolean
+  ): {
+    isNewProgressRecord: boolean;
+    isNewSpeedRecord: boolean;
+    bestProgressPct: number;
+    bestClearSec: number;
+    escortClears: number;
+  } {
+    const cleanPct = completed ? 100 : Math.max(0, Math.min(100, Math.round(progressPct)));
+    const isNewProgressRecord = cleanPct > this.bestEscortProgressPct;
+    if (isNewProgressRecord) {
+      this.bestEscortProgressPct = cleanPct;
+    }
+    if (barricadesBrokenDelta > 0) {
+      this.totalBarricadesBroken += Math.floor(barricadesBrokenDelta);
+    }
+    let isNewSpeedRecord = false;
+    if (completed) {
+      this.escortClears += 1;
+      const cleanSec = Math.max(1.0, Number(clearSec.toFixed(1)));
+      if (this.bestEscortClearSec <= 0 || cleanSec < this.bestEscortClearSec) {
+        this.bestEscortClearSec = cleanSec;
+        isNewSpeedRecord = true;
+      }
+    }
+    this.save();
+    return {
+      isNewProgressRecord,
+      isNewSpeedRecord,
+      bestProgressPct: this.bestEscortProgressPct,
+      bestClearSec: this.bestEscortClearSec,
+      escortClears: this.escortClears,
+    };
+  }
+
+  public getEscortRankInfo(
+    pct = this.bestEscortProgressPct,
+    clears = this.escortClears
+  ): { tier: string; label: string; color: string } {
+    if (clears >= 3) return { tier: 'SSS', label: '传奇蒸汽统帅', color: '#facc15' };
+    if (clears >= 1 || pct >= 100) return { tier: 'S', label: '王牌破障车长', color: '#38bdf8' };
+    if (pct >= 60) return { tier: 'A', label: '重装先锋护卫', color: '#f59e0b' };
+    if (pct >= 25) return { tier: 'B', label: '蒸汽护航队员', color: '#cbd5e1' };
+    return { tier: '—', label: '待发车', color: '#94a3b8' };
+  }
+
+  public getEscortSpeedMultiplier(): number {
+    return this.ownedFinishes.includes('starlight_prism') ? 1.12 : 1.0;
   }
 
   public getStartingSkillCharge(): number {
@@ -2086,6 +3117,25 @@ export class GameState {
     return this.getMechaSpec();
   }
 
+  public getWeaponSpec(): WeaponSpec {
+    return WEAPON_SPECS[this.weapon] || WEAPON_SPECS.gatling;
+  }
+
+  public setWeaponMode(mode: WeaponMode): WeaponSpec {
+    if (WEAPON_SPECS[mode]) {
+      this.weapon = mode;
+      this.save();
+    }
+    return this.getWeaponSpec();
+  }
+
+  public cycleWeaponMode(): WeaponSpec {
+    const idx = WEAPON_ORDER.indexOf(this.weapon);
+    this.weapon = WEAPON_ORDER[(idx + 1) % WEAPON_ORDER.length];
+    this.save();
+    return this.getWeaponSpec();
+  }
+
   public getBuffStack(id: BuffId): number {
     return this.buffStacks[id] || 0;
   }
@@ -2108,7 +3158,26 @@ export class GameState {
     const buffMult = 1 + this.getBuffStack('rapid_fire') * 0.05;
     const debuffMult = this.hasDebuff('barrel_overheat') ? 0.85 : 1.0;
     const sceneMult = this.activeSceneThemeId === 'wasteland' ? 1.18 : 1.0;
-    return base * metaMult * swarmSkillMult * titanHeavySlowMult * skinMult * buffMult * debuffMult * sceneMult;
+    const weaponMult = this.getWeaponSpec().fireRateMult;
+    const trophyMult = this.getTournamentTrophyBonus().fireRateMult;
+    const boboTechFireMult = this.getBoboTechCombatBonuses().cannonFireRateMult;
+    const airshipMedalFireMult = this.getAirshipMilestoneBonus().fireRateMult;
+    const cannonModFireMult = this.getCannonModCombatSpec().fireRateMult;
+    return (
+      base *
+      metaMult *
+      swarmSkillMult *
+      titanHeavySlowMult *
+      skinMult *
+      buffMult *
+      debuffMult *
+      sceneMult *
+      weaponMult *
+      trophyMult *
+      boboTechFireMult *
+      airshipMedalFireMult *
+      cannonModFireMult
+    );
   }
 
   public getSwarmTrooperSpec(): {
@@ -2232,12 +3301,14 @@ export class GameState {
     const skinMult =
       1 +
       0.02 * this.getSkinBonusMult('crimson') +
-      0.04 * this.getSkinBonusMult('nebula');
+      0.04 * this.getSkinBonusMult('nebula') +
+      (this.ownedFinishes.includes('starlight_prism') ? 0.05 : 0);
     const buffMult = 1 + this.getBuffStack('hyper_gene') * 0.06;
     const debuffMult = this.hasDebuff('gene_instability') ? 0.85 : 1.0;
     const sceneMult =
       this.activeSceneThemeId === 'magma' ? 1.2 : this.activeSceneThemeId === 'royal' ? 1.15 : 1.0;
-    return base * metaMult * skillMult * skinMult * buffMult * debuffMult * sceneMult;
+    const trophyMult = this.getTournamentTrophyBonus().powerMult;
+    return base * metaMult * skillMult * skinMult * buffMult * debuffMult * sceneMult * trophyMult;
   }
 
   public getChampionMultiplier(): number {
@@ -2268,11 +3339,13 @@ export class GameState {
   public getMoveSpeedMultiplier(): number {
     const metaMult = 1 + this.getMetaLevel('meta_thruster') * 0.02;
     const swarmSpeed = this.getSkillNodeRank('swarm_t1') > 0 ? 1.1 : 1.0;
+    const finishSpeed = this.ownedFinishes.includes('crystal_jelly') ? 1.06 : 1.0;
     const buffMult = 1 + Math.min(0.36, this.getBuffStack('nitro_stride') * 0.04);
     const debuffMult = this.hasDebuff('cryo_sludge') ? 0.88 : 1.0;
     const sceneMult =
       this.activeSceneThemeId === 'emerald' ? 1.22 : this.activeSceneThemeId === 'sakura' ? 1.15 : 1.0;
-    return metaMult * swarmSpeed * buffMult * debuffMult * sceneMult;
+    const boboTechMoveMult = this.getBoboTechCombatBonuses().moveSpeedMult;
+    return metaMult * swarmSpeed * finishSpeed * buffMult * debuffMult * sceneMult * boboTechMoveMult;
   }
 
   public getExtraCloneChance(): number {
@@ -2306,11 +3379,12 @@ export class GameState {
   public getBaseHpMultiplier(): number {
     const metaMult = 1 + this.getMetaLevel('meta_bastion') * 0.05;
     const azureSkinMult = 1 + 0.015 * this.getSkinBonusMult('azure');
+    const finishHpMult = this.ownedFinishes.includes('candy_gloss') ? 1.03 : 1.0;
     const bastionWall = 1 + this.getSkillNodeRank('bastion_t1') * 0.18;
     const buffMult = 1 + this.getBuffStack('bastion_aegis') * 0.1;
     const debuffMult = this.hasDebuff('shield_fracture') ? 0.75 : 1.0;
     const sceneMult = this.activeSceneThemeId === 'emerald' ? 1.25 : 1.0;
-    return metaMult * azureSkinMult * bastionWall * buffMult * debuffMult * sceneMult;
+    return metaMult * azureSkinMult * finishHpMult * bastionWall * buffMult * debuffMult * sceneMult;
   }
 
   public getGateBonusAdd(): number {
@@ -2324,8 +3398,10 @@ export class GameState {
 
   public getSiegeDamageMultiplier(): number {
     const bastionSiege = this.getSkillNodeRank('bastion_t3') * 0.2;
+    const brassFinish = this.ownedFinishes.includes('brass_steam') ? 0.1 : 0;
     const sceneMult = this.activeSceneThemeId === 'wasteland' ? 1.25 : 1.0;
-    return (1 + this.getBuffStack('siege_breaker') * 0.1 + bastionSiege) * sceneMult;
+    const boboTechSiegeMult = this.getBoboTechCombatBonuses().siegeDamageMult;
+    return (1 + this.getBuffStack('siege_breaker') * 0.1 + bastionSiege + brassFinish) * sceneMult * boboTechSiegeMult;
   }
 
   public getInMatchUpgradeDiscountMult(): number {
@@ -2549,6 +3625,8 @@ export class GameState {
       const chargeBoost = Math.min(100, gain * 10);
       this.championCharge = Math.min(100, this.championCharge + chargeBoost);
       this.orbitalCharge = Math.min(100, this.orbitalCharge + chargeBoost);
+      this.mechaOverlordCharge = Math.min(100, this.mechaOverlordCharge + chargeBoost);
+      this.subWeaponCharge = Math.min(100, this.subWeaponCharge + chargeBoost * 1.5);
     } else if (id === 'war_plunder') {
       const baseBonusGold = Math.round(35 * Math.pow(1.06, Math.min(stageNum - 1, 20)));
       this.gold += baseBonusGold * gain;
@@ -2639,6 +3717,8 @@ export class GameState {
     // 4. Drain tactical skill energy
     this.championCharge = 0;
     this.orbitalCharge = 0;
+    this.mechaOverlordCharge = 0;
+    this.subWeaponCharge = 0;
 
     // 5. Inflict a random 2-stage Hive Affliction debuff (max 2 concurrent debuffs)
     const template = DEBUFF_CATALOG[Math.floor(Math.random() * DEBUFF_CATALOG.length)];
@@ -2704,6 +3784,16 @@ export class GameState {
       });
     }
 
+    const totalBoboTechLvls = this.getBoboTechTotalLevels();
+    const doctrineSpec = this.getBoboTechSpec(this.activeBoboTechDoctrine);
+    if (totalBoboTechLvls > 0) {
+      badges.push({
+        icon: doctrineSpec.inlineIcon,
+        text: `${doctrineSpec.shortName}·专精Lv.${this.getBoboTechLevel(this.activeBoboTechDoctrine)}`,
+        rarity: totalBoboTechLvls >= 8 ? 'legendary' : totalBoboTechLvls >= 4 ? 'epic' : 'rare',
+      });
+    }
+
     const rf = this.getBuffStack('rapid_fire');
     if (rf > 0) badges.push({ icon: UI_ART.flame, text: `射速+${rf * 5}%`, rarity: this.stackToBadgeRarity(rf) });
 
@@ -2750,5 +3840,1013 @@ export class GameState {
     if (wp > 0) badges.push({ icon: UI_ART.coin, text: `掠夺+${wp * 7}%`, rarity: this.stackToBadgeRarity(wp) });
 
     return badges;
+  }
+
+  public static readonly MECHA_HANGAR_MAX_LEVEL = 12;
+  public static readonly MECHA_MILESTONE_TARGETS = [1, 3, 6, 10] as const;
+
+  public getMechaCoreUpgradeCost(): number {
+    return Math.round(240 * Math.pow(1.48, this.mechaCoreLevel));
+  }
+
+  public getMechaCannonUpgradeCost(): number {
+    return Math.round(260 * Math.pow(1.5, this.mechaCannonLevel));
+  }
+
+  public upgradeMechaCore(): boolean {
+    if (this.mechaCoreLevel >= GameState.MECHA_HANGAR_MAX_LEVEL) return false;
+    const cost = this.getMechaCoreUpgradeCost();
+    if (this.gold < cost) return false;
+    this.gold -= cost;
+    this.mechaCoreLevel += 1;
+    this.mechaOverlordCharge = Math.min(100, Math.max(this.mechaOverlordCharge, 35 + this.mechaCoreLevel * 4));
+    this.save();
+    return true;
+  }
+
+  public upgradeMechaCannon(): boolean {
+    if (this.mechaCannonLevel >= GameState.MECHA_HANGAR_MAX_LEVEL) return false;
+    const cost = this.getMechaCannonUpgradeCost();
+    if (this.gold < cost) return false;
+    this.gold -= cost;
+    this.mechaCannonLevel += 1;
+    this.save();
+    return true;
+  }
+
+  public getMechaOverlordSpec(): {
+    mkLabel: string;
+    hpMult: number;
+    shellDmgMult: number;
+    volleyInterval: number;
+    startingCharge: number;
+    fusionPerUnitBonus: number;
+  } {
+    const milestoneRank = this.claimedMechaMilestoneTier;
+    const totalRank = this.mechaCoreLevel + this.mechaCannonLevel + milestoneRank * 2;
+    const mkNum = totalRank >= 20 ? 'V' : totalRank >= 14 ? 'IV' : totalRank >= 8 ? 'III' : totalRank >= 3 ? 'II' : 'I';
+    const hpMult = (1 + this.mechaCoreLevel * 0.12) * (1 + milestoneRank * 0.1);
+    const shellDmgMult = (1 + this.mechaCannonLevel * 0.12) * (1 + milestoneRank * 0.1);
+    const volleyInterval = Math.max(0.58, Number((1.05 * Math.pow(0.96, this.mechaCannonLevel)).toFixed(2)));
+    const startingCharge = Math.min(85, 35 + this.mechaCoreLevel * 4 + milestoneRank * 4);
+    const fusionPerUnitBonus = 0.06 + milestoneRank * 0.015;
+    return {
+      mkLabel: `Mk.${mkNum}`,
+      hpMult,
+      shellDmgMult,
+      volleyInterval,
+      startingCharge,
+      fusionPerUnitBonus,
+    };
+  }
+
+  public recordMechaSummon(fusedSquadCount = 0): void {
+    this.totalMechaSummons += 1;
+    if (fusedSquadCount > 0) {
+      this.totalMechaSmashes += 0;
+    }
+    this.save();
+  }
+
+  public recordMechaSmashes(count = 1): void {
+    if (count <= 0) return;
+    this.totalMechaSmashes += Math.floor(count);
+    this.save();
+  }
+
+  public getMechaMilestoneStatus(): {
+    tier: number;
+    maxTier: number;
+    nextTargetSummons: number;
+    rewardGold: number;
+    rewardShards: number;
+    canClaim: boolean;
+    allClaimed: boolean;
+  } {
+    const targets = GameState.MECHA_MILESTONE_TARGETS;
+    const maxTier = targets.length;
+    if (this.claimedMechaMilestoneTier >= maxTier) {
+      return {
+        tier: maxTier,
+        maxTier,
+        nextTargetSummons: targets[maxTier - 1],
+        rewardGold: 0,
+        rewardShards: 0,
+        canClaim: false,
+        allClaimed: true,
+      };
+    }
+    const nextIdx = this.claimedMechaMilestoneTier;
+    const nextTargetSummons = targets[nextIdx];
+    const rewardGold = 650 + nextIdx * 450;
+    const rewardShards = 2 + nextIdx;
+    return {
+      tier: nextIdx,
+      maxTier,
+      nextTargetSummons,
+      rewardGold,
+      rewardShards,
+      canClaim: this.totalMechaSummons >= nextTargetSummons,
+      allClaimed: false,
+    };
+  }
+
+  public claimMechaMilestone(): { claimed: boolean; goldAwarded: number; shardsAwarded: number; newTier: number } {
+    const st = this.getMechaMilestoneStatus();
+    if (!st.canClaim || st.allClaimed) {
+      return { claimed: false, goldAwarded: 0, shardsAwarded: 0, newTier: this.claimedMechaMilestoneTier };
+    }
+    this.claimedMechaMilestoneTier += 1;
+    this.gold += st.rewardGold;
+    const shardGrant = this.grantBonusSkinShards(st.rewardShards);
+    this.save();
+    return {
+      claimed: true,
+      goldAwarded: st.rewardGold,
+      shardsAwarded: shardGrant.amount,
+      newTier: this.claimedMechaMilestoneTier,
+    };
+  }
+
+  // =========================================================================
+  // MC-7: Leader Tactical Sub-Weapon Slot & Gear Summit Tournament Methods
+  // =========================================================================
+
+  public getSubWeaponSpec(id: TacticalSubWeaponId = this.equippedSubWeapon): TacticalSubWeaponSpec {
+    return TACTICAL_SUBWEAPONS[id] || TACTICAL_SUBWEAPONS.electro_net;
+  }
+
+  public getSubWeaponLevel(id: TacticalSubWeaponId = this.equippedSubWeapon): number {
+    const raw = this.subWeaponLevels[id] || 1;
+    return Math.max(1, Math.min(TACTICAL_SUBWEAPON_MAX_LEVEL, Math.floor(raw)));
+  }
+
+  public getSubWeaponUpgradeCost(id: TacticalSubWeaponId): number {
+    const spec = this.getSubWeaponSpec(id);
+    const lvl = this.getSubWeaponLevel(id);
+    return Math.round(spec.baseCost * Math.pow(spec.costMult, lvl - 1));
+  }
+
+  public equipSubWeapon(id: TacticalSubWeaponId): boolean {
+    if (!TACTICAL_SUBWEAPONS[id]) return false;
+    this.equippedSubWeapon = id;
+    this.save();
+    return true;
+  }
+
+  public cycleSubWeapon(): TacticalSubWeaponSpec {
+    const idx = TACTICAL_SUBWEAPON_ORDER.indexOf(this.equippedSubWeapon);
+    const nextId = TACTICAL_SUBWEAPON_ORDER[(idx + 1) % TACTICAL_SUBWEAPON_ORDER.length];
+    this.equippedSubWeapon = nextId;
+    this.save();
+    return this.getSubWeaponSpec(nextId);
+  }
+
+  public upgradeSubWeapon(id: TacticalSubWeaponId): boolean {
+    if (!TACTICAL_SUBWEAPONS[id]) return false;
+    const lvl = this.getSubWeaponLevel(id);
+    if (lvl >= TACTICAL_SUBWEAPON_MAX_LEVEL) return false;
+    const cost = this.getSubWeaponUpgradeCost(id);
+    if (this.gold < cost) return false;
+    this.gold -= cost;
+    this.subWeaponLevels[id] = lvl + 1;
+    this.save();
+    return true;
+  }
+
+  public getSubWeaponCombatSpec(id: TacticalSubWeaponId = this.equippedSubWeapon): {
+    id: TacticalSubWeaponId;
+    level: number;
+    cooldownSec: number;
+    radius: number;
+    durationSec: number;
+    burstDmg: number;
+    shieldStripHits: number;
+    slowFactor: number;
+    vulnMult: number;
+    moveSpeedMult: number;
+    attackRateMult: number;
+  } {
+    const lvl = this.getSubWeaponLevel(id);
+    const pMult = this.getPowerMultiplier();
+    if (id === 'electro_net') {
+      return {
+        id,
+        level: lvl,
+        cooldownSec: Number((11.5 - (lvl - 1) * 0.65).toFixed(2)),
+        radius: Number((6.4 + (lvl - 1) * 0.55).toFixed(2)),
+        durationSec: Number((3.6 + (lvl - 1) * 0.45).toFixed(2)),
+        burstDmg: Math.round((2.6 + (lvl - 1) * 0.55) * pMult * 26),
+        shieldStripHits: 3 + lvl,
+        slowFactor: 0.24,
+        vulnMult: 1.15,
+        moveSpeedMult: 1.0,
+        attackRateMult: 1.0,
+      };
+    }
+    if (id === 'syrup_bubble') {
+      return {
+        id,
+        level: lvl,
+        cooldownSec: Number((12.0 - (lvl - 1) * 0.65).toFixed(2)),
+        radius: Number((6.2 + (lvl - 1) * 0.5).toFixed(2)),
+        durationSec: Number((6.5 + (lvl - 1) * 0.7).toFixed(2)),
+        burstDmg: Math.round((1.5 + (lvl - 1) * 0.35) * pMult * 20),
+        shieldStripHits: 1,
+        slowFactor: Number((0.38 - (lvl - 1) * 0.03).toFixed(2)),
+        vulnMult: Number((1.32 + (lvl - 1) * 0.09).toFixed(2)),
+        moveSpeedMult: 1.0,
+        attackRateMult: 1.0,
+      };
+    }
+    return {
+      id: 'rally_horn',
+      level: lvl,
+      cooldownSec: Number((12.5 - (lvl - 1) * 0.65).toFixed(2)),
+      radius: Number((7.5 + (lvl - 1) * 0.6).toFixed(2)),
+      durationSec: Number((5.8 + (lvl - 1) * 0.65).toFixed(2)),
+      burstDmg: 0,
+      shieldStripHits: 0,
+      slowFactor: 1.0,
+      vulnMult: 1.0,
+      moveSpeedMult: Number((1.35 + (lvl - 1) * 0.07).toFixed(2)),
+      attackRateMult: Number((1.32 + (lvl - 1) * 0.08).toFixed(2)),
+    };
+  }
+
+  public recordSubWeaponCast(): void {
+    this.totalSubWeaponCasts += 1;
+    this.save();
+  }
+
+  public getTournamentStageSpec(stage: TournamentStageId = this.tournamentStage): TournamentStageSpec {
+    return TOURNAMENT_STAGES[stage] || TOURNAMENT_STAGES[1];
+  }
+
+  public getTournamentTrophyBonus(): {
+    trophies: number;
+    tier: number;
+    maxTier: number;
+    nextTarget: number;
+    fireRateMult: number;
+    powerMult: number;
+    fireRatePct: number;
+    powerPct: number;
+    badgeLabel: string;
+  } {
+    const trophies = Math.max(0, Math.floor(this.tournamentTrophies));
+    const maxTier = TOURNAMENT_TROPHY_MILESTONES.length;
+    if (trophies <= 0) {
+      return {
+        trophies: 0,
+        tier: 0,
+        maxTier,
+        nextTarget: TOURNAMENT_TROPHY_MILESTONES[0],
+        fireRateMult: 1.0,
+        powerMult: 1.0,
+        fireRatePct: 0,
+        powerPct: 0,
+        badgeLabel: '初阶新秀',
+      };
+    }
+    let tier = 0;
+    for (const m of TOURNAMENT_TROPHY_MILESTONES) {
+      if (trophies >= m) tier += 1;
+    }
+    const nextTarget =
+      tier < maxTier ? TOURNAMENT_TROPHY_MILESTONES[tier] : TOURNAMENT_TROPHY_MILESTONES[maxTier - 1];
+    const smoothBonus = Math.min(0.12, trophies * 0.0008);
+    const fireRateMult = Number((1 + tier * 0.03 + smoothBonus * 0.75).toFixed(4));
+    const powerMult = Number((1 + tier * 0.04 + smoothBonus).toFixed(4));
+    const tierTitles = ['新秀奖章', '青铜齿冠', '白银齿冠', '黄金齿冠', '星耀齿冠', '传奇巅峰冕'];
+    return {
+      trophies,
+      tier,
+      maxTier,
+      nextTarget,
+      fireRateMult,
+      powerMult,
+      fireRatePct: Math.max(1, Math.round((fireRateMult - 1) * 100)),
+      powerPct: Math.max(1, Math.round((powerMult - 1) * 100)),
+      badgeLabel: tierTitles[Math.min(tierTitles.length - 1, tier)],
+    };
+  }
+
+  public getPendingTournamentChestPreview(
+    stageOverride?: 1 | 2 | 3
+  ): {
+    hasChest: boolean;
+    stage: 1 | 2 | 3;
+    streakLabel: string;
+    multiplier: number;
+    coins: number;
+    cards: number;
+    bricks: number;
+    trophies: number;
+  } {
+    const rawStage = stageOverride || this.pendingTournamentChestStage;
+    const safeStage: 1 | 2 | 3 = rawStage === 2 ? 2 : rawStage === 3 ? 3 : 1;
+    const spec = TOURNAMENT_STAGES[safeStage];
+    const mult = spec.streakMultiplier;
+    return {
+      hasChest: (stageOverride ?? this.pendingTournamentChestStage) > 0,
+      stage: safeStage,
+      streakLabel: spec.streakLabel,
+      multiplier: mult,
+      coins: Math.round(spec.baseCoins * mult),
+      cards: Math.max(1, Math.round(spec.baseCards * mult)),
+      bricks: Math.round(spec.baseBricks * mult),
+      trophies: Math.round(spec.baseTrophies * mult),
+    };
+  }
+
+  public recordTournamentMatchResult(
+    won: boolean,
+    stagePlayed: TournamentStageId = this.tournamentStage
+  ): {
+    won: boolean;
+    stagePlayed: TournamentStageId;
+    nextStage: TournamentStageId;
+    streakMultiplier: number;
+    matchTrophiesAwarded: number;
+    unlockedChestStage: 0 | 1 | 2 | 3;
+    cupCompleted: boolean;
+  } {
+    // Auto-claim any previously forgotten chest so rewards are never lost
+    if (this.pendingTournamentChestStage > 0) {
+      this.claimTournamentStreakChest();
+    }
+    const spec = this.getTournamentStageSpec(stagePlayed);
+    if (!won) {
+      this.tournamentWinStreak = 0;
+      this.tournamentStage = 1;
+      this.save();
+      return {
+        won: false,
+        stagePlayed,
+        nextStage: 1,
+        streakMultiplier: spec.streakMultiplier,
+        matchTrophiesAwarded: 0,
+        unlockedChestStage: 0,
+        cupCompleted: false,
+      };
+    }
+
+    this.tournamentWinStreak += 1;
+    this.tournamentTrophies += spec.matchWinTrophies;
+    this.pendingTournamentChestStage = stagePlayed;
+    const cupCompleted = stagePlayed === 3;
+    if (stagePlayed === 1) {
+      this.tournamentStage = 2;
+    } else if (stagePlayed === 2) {
+      this.tournamentStage = 3;
+    } else {
+      this.tournamentStage = 1;
+      this.tournamentCupTier = Math.min(12, this.tournamentCupTier + 1);
+    }
+    this.save();
+    return {
+      won: true,
+      stagePlayed,
+      nextStage: this.tournamentStage,
+      streakMultiplier: spec.streakMultiplier,
+      matchTrophiesAwarded: spec.matchWinTrophies,
+      unlockedChestStage: stagePlayed,
+      cupCompleted,
+    };
+  }
+
+  public claimTournamentStreakChest(): {
+    claimed: boolean;
+    stage: 0 | 1 | 2 | 3;
+    streakLabel: string;
+    coinsAwarded: number;
+    cardsAwarded: number;
+    cardSkinName: string;
+    bricksAwarded: number;
+    trophiesAwarded: number;
+    totalTrophies: number;
+  } {
+    if (this.pendingTournamentChestStage === 0) {
+      return {
+        claimed: false,
+        stage: 0,
+        streakLabel: '1.0x',
+        coinsAwarded: 0,
+        cardsAwarded: 0,
+        cardSkinName: '',
+        bricksAwarded: 0,
+        trophiesAwarded: 0,
+        totalTrophies: this.tournamentTrophies,
+      };
+    }
+    const stageToClaim = this.pendingTournamentChestStage;
+    const preview = this.getPendingTournamentChestPreview(stageToClaim);
+    this.pendingTournamentChestStage = 0;
+    this.tournamentChestsClaimed += 1;
+    this.gold += preview.coins;
+    const cardGrant = this.grantBonusSkinShards(preview.cards);
+    this.tournamentBricks += preview.bricks;
+    this.tournamentTrophies += preview.trophies;
+    this.save();
+    return {
+      claimed: true,
+      stage: stageToClaim,
+      streakLabel: preview.streakLabel,
+      coinsAwarded: preview.coins,
+      cardsAwarded: cardGrant.amount,
+      cardSkinName: cardGrant.skinName,
+      bricksAwarded: preview.bricks,
+      trophiesAwarded: preview.trophies,
+      totalTrophies: this.tournamentTrophies,
+    };
+  }
+
+  // ============================================================================
+  // MC-8: Bobo 3-Branch Specialization Tech Tree & Clockwork Colossus Boss Raid
+  // ============================================================================
+
+  public getBoboTechSpec(id: BoboTechBranchId = this.activeBoboTechDoctrine): BoboTechBranchSpec {
+    return BOBO_TECH_BRANCHES[id] || BOBO_TECH_BRANCHES.vanguard_charge;
+  }
+
+  public getBoboTechLevel(id: BoboTechBranchId): number {
+    return Math.max(0, Math.min(BOBO_TECH_MAX_LEVEL, this.boboTechLevels[id] ?? 0));
+  }
+
+  public getBoboTechTotalLevels(): number {
+    return BOBO_TECH_BRANCH_ORDER.reduce((sum, id) => sum + this.getBoboTechLevel(id), 0);
+  }
+
+  public getBoboTechUpgradeCost(id: BoboTechBranchId): {
+    isMaxed: boolean;
+    coreCost: number;
+    goldCost: number;
+    canAffordCore: boolean;
+    canAffordGold: boolean;
+  } {
+    const lvl = this.getBoboTechLevel(id);
+    if (lvl >= BOBO_TECH_MAX_LEVEL) {
+      return {
+        isMaxed: true,
+        coreCost: 0,
+        goldCost: 0,
+        canAffordCore: false,
+        canAffordGold: false,
+      };
+    }
+    const spec = BOBO_TECH_BRANCHES[id];
+    const coreCost = spec.coreCosts[lvl];
+    const goldCost = spec.goldCosts[lvl];
+    return {
+      isMaxed: false,
+      coreCost,
+      goldCost,
+      canAffordCore: this.clockworkCores >= coreCost,
+      canAffordGold: this.gold >= goldCost,
+    };
+  }
+
+  public setActiveBoboTechDoctrine(id: BoboTechBranchId): BoboTechBranchSpec {
+    if (BOBO_TECH_BRANCHES[id]) {
+      this.activeBoboTechDoctrine = id;
+      this.save();
+    }
+    return this.getBoboTechSpec();
+  }
+
+  public upgradeBoboTechBranch(
+    id: BoboTechBranchId,
+    payWith: 'auto' | 'core' | 'gold' = 'auto'
+  ): {
+    upgraded: boolean;
+    newLevel: number;
+    spentCurrency: 'core' | 'gold' | 'none';
+    spentAmount: number;
+  } {
+    const cost = this.getBoboTechUpgradeCost(id);
+    if (cost.isMaxed) {
+      return {
+        upgraded: false,
+        newLevel: this.getBoboTechLevel(id),
+        spentCurrency: 'none',
+        spentAmount: 0,
+      };
+    }
+
+    let mode: 'core' | 'gold' | 'none' = 'none';
+    if (payWith === 'core') {
+      if (cost.canAffordCore) mode = 'core';
+    } else if (payWith === 'gold') {
+      if (cost.canAffordGold) mode = 'gold';
+    } else {
+      if (cost.canAffordCore) mode = 'core';
+      else if (cost.canAffordGold) mode = 'gold';
+    }
+
+    if (mode === 'none') {
+      return {
+        upgraded: false,
+        newLevel: this.getBoboTechLevel(id),
+        spentCurrency: 'none',
+        spentAmount: 0,
+      };
+    }
+
+    let spentAmount = 0;
+    if (mode === 'core') {
+      this.clockworkCores = Math.max(0, this.clockworkCores - cost.coreCost);
+      spentAmount = cost.coreCost;
+    } else {
+      this.gold = Math.max(0, this.gold - cost.goldCost);
+      spentAmount = cost.goldCost;
+    }
+
+    const nextLvl = Math.min(BOBO_TECH_MAX_LEVEL, this.getBoboTechLevel(id) + 1);
+    this.boboTechLevels[id] = nextLvl;
+    // Automatically align active doctrine if upgrading a branch when current doctrine is Lv.0
+    if (this.getBoboTechLevel(this.activeBoboTechDoctrine) === 0) {
+      this.activeBoboTechDoctrine = id;
+    }
+    this.save();
+    return {
+      upgraded: true,
+      newLevel: nextLvl,
+      spentCurrency: mode,
+      spentAmount,
+    };
+  }
+
+  public getBoboTechCombatBonuses(): {
+    activeDoctrine: BoboTechBranchId;
+    totalLevels: number;
+    moveSpeedMult: number;
+    gateSurgeSpeedMult: number;
+    gateSurgeDuration: number;
+    dodgeChance: number;
+    boboHpMult: number;
+    frontlineShieldChance: number;
+    armorDamageReduction: number;
+    weakpointDamageMult: number;
+    siegeDamageMult: number;
+    candySplashRatio: number;
+    candySplashRadius: number;
+    cannonFireRateMult: number;
+  } {
+    const vLvl = this.getBoboTechLevel('vanguard_charge');
+    const hLvl = this.getBoboTechLevel('heavy_siege');
+    const cLvl = this.getBoboTechLevel('candy_bombard');
+    const totalLevels = vLvl + hLvl + cLvl;
+    const doc = this.activeBoboTechDoctrine;
+
+    const vDocActive = doc === 'vanguard_charge' && (vLvl > 0 || totalLevels > 0);
+    const hDocActive = doc === 'heavy_siege' && (hLvl > 0 || totalLevels > 0);
+    const cDocActive = doc === 'candy_bombard' && (cLvl > 0 || totalLevels > 0);
+
+    const moveSpeedMult = 1 + vLvl * 0.05 + (doc === 'vanguard_charge' ? 0.06 : 0);
+    const gateSurgeSpeedMult =
+      1 + (vLvl > 0 ? 0.14 + vLvl * 0.06 : 0) + (doc === 'vanguard_charge' ? 0.12 : 0);
+    const gateSurgeDuration = vLvl > 0 || doc === 'vanguard_charge' ? 1.55 + vLvl * 0.22 : 0;
+    const dodgeChance = Math.min(0.28, vLvl * 0.03 + (vDocActive ? 0.04 : 0));
+
+    const boboHpMult = 1 + hLvl * 0.08 + (doc === 'heavy_siege' ? 0.08 : 0);
+    const frontlineShieldChance = Math.min(0.55, hLvl * 0.07 + (doc === 'heavy_siege' ? 0.1 : 0));
+    const armorDamageReduction = Math.min(0.26, hLvl * 0.035 + (hDocActive ? 0.04 : 0));
+    const weakpointDamageMult = 1 + hLvl * 0.15 + (doc === 'heavy_siege' ? 0.18 : 0);
+    const siegeDamageMult = 1 + hLvl * 0.12 + (doc === 'heavy_siege' ? 0.15 : 0);
+
+    const candySplashRatio =
+      (cLvl > 0 ? 0.16 + cLvl * 0.08 : 0) + (doc === 'candy_bombard' ? 0.16 : 0);
+    const candySplashRadius = 1.75 + cLvl * 0.18 + (cDocActive ? 0.25 : 0);
+    const cannonFireRateMult = 1 + cLvl * 0.04 + (doc === 'candy_bombard' ? 0.06 : 0);
+
+    return {
+      activeDoctrine: doc,
+      totalLevels,
+      moveSpeedMult,
+      gateSurgeSpeedMult,
+      gateSurgeDuration,
+      dodgeChance,
+      boboHpMult,
+      frontlineShieldChance,
+      armorDamageReduction,
+      weakpointDamageMult,
+      siegeDamageMult,
+      candySplashRatio,
+      candySplashRadius,
+      cannonFireRateMult,
+    };
+  }
+
+  public getColossusRaidSpec(clearsOverride?: number): {
+    raidTier: number;
+    title: string;
+    subtitle: string;
+    coreRewardBase: number;
+    coinsRewardBase: number;
+    cardsRewardBase: number;
+    bricksRewardBase: number;
+  } {
+    const clears = Math.max(0, Math.floor(clearsOverride ?? this.colossusRaidClears));
+    const raidTier = Math.min(8, 1 + clears);
+    return {
+      raidTier,
+      title: `巨型发条首领攻坚 · 第 ${raidTier} 阶`,
+      subtitle: '击破左翼重盾或右翼糖炮 · 触发 6.0s 瘫痪 2.5x 高倍暴击窗口',
+      coreRewardBase: 3 + Math.min(4, Math.floor((raidTier + 1) / 2)),
+      coinsRewardBase: 380 + (raidTier - 1) * 95,
+      cardsRewardBase: 2 + Math.floor(raidTier / 2),
+      bricksRewardBase: 95 + (raidTier - 1) * 25,
+    };
+  }
+
+  public recordColossusRaidResult(
+    victory: boolean,
+    weakpointsBroken: number,
+    clearSec: number
+  ): {
+    victory: boolean;
+    raidTierCleared: number;
+    coresAwarded: number;
+    coinsAwarded: number;
+    cardsAwarded: number;
+    cardSkinName: string;
+    bricksAwarded: number;
+    totalClears: number;
+    totalCores: number;
+  } {
+    const safeBroken = Math.max(0, Math.min(2, Math.floor(weakpointsBroken)));
+    this.totalColossusWeakpointsBroken += safeBroken;
+    const spec = this.getColossusRaidSpec();
+    if (!victory) {
+      const consolationCores = safeBroken >= 1 ? 1 : 0;
+      const consolationCoins = safeBroken * 65;
+      this.clockworkCores += consolationCores;
+      this.gold += consolationCoins;
+      this.save();
+      return {
+        victory: false,
+        raidTierCleared: spec.raidTier,
+        coresAwarded: consolationCores,
+        coinsAwarded: consolationCoins,
+        cardsAwarded: 0,
+        cardSkinName: '',
+        bricksAwarded: 0,
+        totalClears: this.colossusRaidClears,
+        totalCores: this.clockworkCores,
+      };
+    }
+
+    const coresAwarded = spec.coreRewardBase + safeBroken;
+    const coinsAwarded = Math.round(spec.coinsRewardBase + safeBroken * 60);
+    const bricksAwarded = spec.bricksRewardBase + safeBroken * 18;
+    const cardGrant = this.grantBonusSkinShards(spec.cardsRewardBase + (safeBroken >= 2 ? 1 : 0));
+
+    this.clockworkCores += coresAwarded;
+    this.gold += coinsAwarded;
+    this.tournamentBricks += bricksAwarded;
+    this.colossusRaidClears += 1;
+    if (clearSec > 0 && (this.bestColossusClearSec <= 0 || clearSec < this.bestColossusClearSec)) {
+      this.bestColossusClearSec = Number(clearSec.toFixed(1));
+    }
+    this.save();
+
+    return {
+      victory: true,
+      raidTierCleared: spec.raidTier,
+      coresAwarded,
+      coinsAwarded,
+      cardsAwarded: cardGrant.amount,
+      cardSkinName: cardGrant.skinName,
+      bricksAwarded,
+      totalClears: this.colossusRaidClears,
+      totalCores: this.clockworkCores,
+    };
+  }
+
+  // ============================================================================
+  // MC-9: Cloud Airship Mothership Escort & Steam Cannon Core Module Workbench
+  // ============================================================================
+
+  public getAirshipMilestoneBonus(medalsOverride?: number): {
+    effectiveMedals: number;
+    tier: number;
+    rankTitle: string;
+    accentColor: string;
+    fireRateMult: number;
+    troopHpMult: number;
+    startingDropCharge: number;
+    summaryText: string;
+  } {
+    const rawMedals =
+      typeof medalsOverride === 'number'
+        ? Math.max(0, Math.floor(medalsOverride))
+        : Math.max(0, Math.floor(Math.max(this.airshipWingMedals, this.lifetimeAirshipWingMedals)));
+    const capped = Math.min(20, rawMedals);
+    const fireRateMult = 1 + capped * 0.008;
+    const troopHpMult = 1 + capped * 0.012;
+    const startingDropCharge = Math.min(45, capped * 3);
+
+    let tier = 0;
+    let rankTitle = '新锐护航编队';
+    let accentColor = '#7dd3fc';
+    if (rawMedals >= 16) {
+      tier = 3;
+      rankTitle = '黄金母舰统帅';
+      accentColor = '#facc15';
+    } else if (rawMedals >= 8) {
+      tier = 2;
+      rankTitle = '白银苍穹勋阶';
+      accentColor = '#38bdf8';
+    } else if (rawMedals >= 3) {
+      tier = 1;
+      rankTitle = '青铜云翼勋阶';
+      accentColor = '#fbbf24';
+    }
+
+    const firePct = Math.round((fireRateMult - 1) * 100);
+    const hpPct = Math.round((troopHpMult - 1) * 100);
+    return {
+      effectiveMedals: rawMedals,
+      tier,
+      rankTitle,
+      accentColor,
+      fireRateMult,
+      troopHpMult,
+      startingDropCharge,
+      summaryText:
+        rawMedals > 0
+          ? `${rankTitle} · 母炮射速+${firePct}% · 波波生命+${hpPct}% · 空投起充+${startingDropCharge}%`
+          : `${rankTitle} · 夺取护航徽章解锁全局射速/生命/起充加成`,
+    };
+  }
+
+  public getAirshipEscortSpec(clearsOverride?: number): {
+    escortTier: number;
+    title: string;
+    subtitle: string;
+    medalRewardBase: number;
+    coinsRewardBase: number;
+    cardsRewardBase: number;
+  } {
+    const clears = Math.max(0, Math.floor(clearsOverride ?? this.airshipEscortClears));
+    const escortTier = Math.min(8, 1 + clears);
+    return {
+      escortTier,
+      title: `云端飞艇母舰护航战 · 第 ${escortTier} 阶`,
+      subtitle: '拔除沿途防空副塔充能空投舱 · 降临超级波波冲击兵突破敌方要塞',
+      medalRewardBase: 3 + Math.min(4, Math.floor((escortTier + 1) / 2)),
+      coinsRewardBase: 400 + (escortTier - 1) * 90,
+      cardsRewardBase: 2 + Math.floor(escortTier / 2),
+    };
+  }
+
+  public recordAirshipEscortResult(
+    victory: boolean,
+    progressPct: number,
+    antiAirCleared: number,
+    dropPodsDeployed: number,
+    clearSec: number
+  ): {
+    victory: boolean;
+    escortTierCleared: number;
+    medalsAwarded: number;
+    coinsAwarded: number;
+    cardsAwarded: number;
+    cardSkinName: string;
+    totalClears: number;
+    totalMedals: number;
+    isNewSpeedRecord: boolean;
+  } {
+    const safePct = victory ? 100 : Math.max(0, Math.min(99, Math.round(progressPct)));
+    const safeTurrets = Math.max(0, Math.min(4, Math.floor(antiAirCleared)));
+    const safePods = Math.max(0, Math.floor(dropPodsDeployed));
+    this.bestAirshipProgressPct = Math.max(this.bestAirshipProgressPct, safePct);
+    this.totalAntiAirTurretsCleared += safeTurrets;
+    this.totalAirshipDropPods += safePods;
+
+    const spec = this.getAirshipEscortSpec();
+    if (!victory) {
+      const consolationMedals = safeTurrets >= 2 ? 1 : 0;
+      const consolationCoins = safeTurrets * 60 + safePods * 25;
+      this.airshipWingMedals += consolationMedals;
+      this.lifetimeAirshipWingMedals = Math.max(
+        this.lifetimeAirshipWingMedals + consolationMedals,
+        this.airshipWingMedals
+      );
+      this.gold += consolationCoins;
+      this.save();
+      return {
+        victory: false,
+        escortTierCleared: spec.escortTier,
+        medalsAwarded: consolationMedals,
+        coinsAwarded: consolationCoins,
+        cardsAwarded: 0,
+        cardSkinName: '',
+        totalClears: this.airshipEscortClears,
+        totalMedals: this.airshipWingMedals,
+        isNewSpeedRecord: false,
+      };
+    }
+
+    const medalsAwarded = spec.medalRewardBase + Math.min(3, safeTurrets);
+    const coinsAwarded = Math.round(spec.coinsRewardBase + safeTurrets * 55 + safePods * 20);
+    const cardGrant = this.grantBonusSkinShards(spec.cardsRewardBase + (safeTurrets >= 3 ? 1 : 0));
+
+    this.airshipWingMedals += medalsAwarded;
+    this.lifetimeAirshipWingMedals = Math.max(
+      this.lifetimeAirshipWingMedals + medalsAwarded,
+      this.airshipWingMedals
+    );
+    this.gold += coinsAwarded;
+    this.airshipEscortClears += 1;
+
+    let isNewSpeedRecord = false;
+    if (clearSec > 0 && (this.bestAirshipClearSec <= 0 || clearSec < this.bestAirshipClearSec)) {
+      this.bestAirshipClearSec = Number(clearSec.toFixed(1));
+      isNewSpeedRecord = true;
+    }
+    this.save();
+
+    return {
+      victory: true,
+      escortTierCleared: spec.escortTier,
+      medalsAwarded,
+      coinsAwarded,
+      cardsAwarded: cardGrant.amount,
+      cardSkinName: cardGrant.skinName,
+      totalClears: this.airshipEscortClears,
+      totalMedals: this.airshipWingMedals,
+      isNewSpeedRecord,
+    };
+  }
+
+  public getCannonModSpec(id: CannonCoreModId = this.activeCannonMod): CannonCoreModSpec {
+    return CANNON_CORE_MODS[id] || CANNON_CORE_MODS.overdrive_breech;
+  }
+
+  public getCannonModLevel(id: CannonCoreModId = this.activeCannonMod): number {
+    return Math.max(0, Math.min(CANNON_CORE_MOD_MAX_LEVEL, Math.floor(this.cannonModLevels[id] ?? 0)));
+  }
+
+  public isCannonModUnlocked(id: CannonCoreModId): boolean {
+    return this.getCannonModLevel(id) >= 1;
+  }
+
+  public getCannonModUpgradeCost(id: CannonCoreModId): {
+    level: number;
+    isUnlocked: boolean;
+    isMaxed: boolean;
+    medalCost: number;
+    goldCost: number;
+    canAffordMedal: boolean;
+    canAffordGold: boolean;
+  } {
+    const lvl = this.getCannonModLevel(id);
+    if (lvl >= CANNON_CORE_MOD_MAX_LEVEL) {
+      return {
+        level: lvl,
+        isUnlocked: true,
+        isMaxed: true,
+        medalCost: 0,
+        goldCost: 0,
+        canAffordMedal: false,
+        canAffordGold: false,
+      };
+    }
+    const spec = CANNON_CORE_MODS[id];
+    const medalCost = spec.medalCosts[lvl];
+    const goldCost = spec.goldCosts[lvl];
+    return {
+      level: lvl,
+      isUnlocked: lvl >= 1,
+      isMaxed: false,
+      medalCost,
+      goldCost,
+      canAffordMedal: this.airshipWingMedals >= medalCost,
+      canAffordGold: this.gold >= goldCost,
+    };
+  }
+
+  public equipCannonMod(id: CannonCoreModId): boolean {
+    if (!CANNON_CORE_MODS[id]) return false;
+    if (this.getCannonModLevel(id) < 1) return false;
+    this.activeCannonMod = id;
+    this.save();
+    return true;
+  }
+
+  public setActiveCannonMod(id: CannonCoreModId): CannonCoreModSpec {
+    if (CANNON_CORE_MODS[id]) {
+      if (this.getCannonModLevel(id) < 1) {
+        this.cannonModLevels[id] = 1;
+      }
+      this.activeCannonMod = id;
+      this.save();
+    }
+    return this.getCannonModSpec();
+  }
+
+  public upgradeCannonMod(
+    id: CannonCoreModId,
+    payWith: 'auto' | 'medal' | 'gold' = 'auto'
+  ): {
+    upgraded: boolean;
+    wasUnlock: boolean;
+    newLevel: number;
+    spentCurrency: 'medal' | 'gold' | 'none';
+    spentAmount: number;
+  } {
+    const cost = this.getCannonModUpgradeCost(id);
+    if (cost.isMaxed) {
+      return {
+        upgraded: false,
+        wasUnlock: false,
+        newLevel: cost.level,
+        spentCurrency: 'none',
+        spentAmount: 0,
+      };
+    }
+
+    let mode: 'medal' | 'gold' | 'none' = 'none';
+    if (payWith === 'medal') {
+      if (cost.canAffordMedal) mode = 'medal';
+    } else if (payWith === 'gold') {
+      if (cost.canAffordGold) mode = 'gold';
+    } else {
+      if (cost.canAffordMedal) mode = 'medal';
+      else if (cost.canAffordGold) mode = 'gold';
+    }
+
+    if (mode === 'none') {
+      return {
+        upgraded: false,
+        wasUnlock: false,
+        newLevel: cost.level,
+        spentCurrency: 'none',
+        spentAmount: 0,
+      };
+    }
+
+    let spentAmount = 0;
+    if (mode === 'medal') {
+      this.lifetimeAirshipWingMedals = Math.max(this.lifetimeAirshipWingMedals, this.airshipWingMedals);
+      this.airshipWingMedals = Math.max(0, this.airshipWingMedals - cost.medalCost);
+      spentAmount = cost.medalCost;
+    } else {
+      this.gold = Math.max(0, this.gold - cost.goldCost);
+      spentAmount = cost.goldCost;
+    }
+
+    const wasUnlock = cost.level === 0;
+    const nextLvl = Math.min(CANNON_CORE_MOD_MAX_LEVEL, cost.level + 1);
+    this.cannonModLevels[id] = nextLvl;
+    if (this.getCannonModLevel(this.activeCannonMod) <= 0) {
+      this.activeCannonMod = id;
+    }
+    this.save();
+    return {
+      upgraded: true,
+      wasUnlock,
+      newLevel: nextLvl,
+      spentCurrency: mode,
+      spentAmount,
+    };
+  }
+
+  public getCannonModCombatSpec(id: CannonCoreModId = this.activeCannonMod): {
+    id: CannonCoreModId;
+    level: number;
+    fireRateMult: number;
+    overdriveEveryShots: number;
+    overdriveExtraBursts: number;
+    prismEveryShots: number;
+    prismSplitCount: number;
+    prismDmgMult: number;
+    mortarEveryShots: number;
+    mortarHpMult: number;
+    mortarSiegeMult: number;
+    mortarFusionTier: number;
+  } {
+    const rawLvl = this.getCannonModLevel(id);
+    const effLvl = Math.max(1, rawLvl);
+    const isOverdrive = id === 'overdrive_breech' && rawLvl >= 1;
+    const isPrism = id === 'prism_splitter' && rawLvl >= 1;
+    const isMortar = id === 'heavy_mortar' && rawLvl >= 1;
+
+    return {
+      id,
+      level: effLvl,
+      fireRateMult: isOverdrive ? 1 + 0.06 + (effLvl - 1) * 0.03 : 1.0,
+      overdriveEveryShots: isOverdrive ? Math.max(2, 4 - Math.floor(effLvl / 2)) : 0,
+      overdriveExtraBursts: isOverdrive ? (effLvl >= 4 ? 2 : 1) : 0,
+      prismEveryShots: isPrism ? Math.max(2, 4 - Math.floor(effLvl / 2)) : 0,
+      prismSplitCount: isPrism ? (effLvl >= 3 ? 3 : 2) : 0,
+      prismDmgMult: isPrism ? 1.15 + effLvl * 0.06 : 1.0,
+      mortarEveryShots: isMortar ? Math.max(3, 5 - Math.floor(effLvl / 2)) : 0,
+      mortarHpMult: isMortar ? 1.45 + effLvl * 0.12 : 1.0,
+      mortarSiegeMult: isMortar ? 1.65 + effLvl * 0.18 : 1.0,
+      mortarFusionTier: isMortar ? (effLvl >= 4 ? 2 : 1) : 1,
+    };
   }
 }
