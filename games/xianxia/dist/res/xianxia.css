@@ -2346,6 +2346,131 @@ progress::-moz-progress-bar, #loadingProgressBar::-moz-progress-bar {
 .xxAscendRow {
 	margin: 14px 0 8px;
 }
+
+/* ============================================================
+   XX-2 真仙界飞升大典与仙灵法则循环仙台 (.xxImmortalBox)
+   ============================================================ */
+.xxImmortalBox {
+	margin: 14px 0 12px;
+	padding: 14px 16px;
+	border-radius: 10px;
+	border: 1px solid rgba(255, 217, 125, .48);
+	background:
+		radial-gradient(circle at 12% 20%, rgba(255, 217, 125, .16), transparent 55%),
+		radial-gradient(circle at 88% 80%, rgba(126, 249, 212, .12), transparent 55%),
+		linear-gradient(135deg, rgba(32, 24, 14, .96), rgba(14, 22, 36, .96));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10), 0 8px 26px rgba(0, 0, 0, .42);
+}
+.xxImmortalBox.is-ascended {
+	border-color: rgba(126, 249, 212, .52);
+	background:
+		radial-gradient(circle at 15% 15%, rgba(126, 249, 212, .16), transparent 55%),
+		radial-gradient(circle at 85% 85%, rgba(255, 217, 125, .15), transparent 55%),
+		linear-gradient(135deg, rgba(16, 30, 34, .96), rgba(24, 20, 38, .96));
+}
+.xxImmortalHd {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.xxImmortalArt {
+	width: 56px;
+	height: 56px;
+	flex-shrink: 0;
+	border-radius: 8px;
+	overflow: hidden;
+	border: 1px solid rgba(255, 217, 125, .55);
+	box-shadow: 0 0 14px rgba(255, 217, 125, .25);
+}
+.xxImmortalArt img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+.xxImmortalMeta {
+	flex: 1;
+	min-width: 0;
+}
+.xxImmortalBadge {
+	display: inline-block;
+	font-size: 11px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	color: #ffe082;
+	background: rgba(255, 217, 125, .14);
+	border: 1px solid rgba(255, 217, 125, .36);
+	margin-bottom: 4px;
+}
+.xxImmortalTitle {
+	font-family: var(--xx-serif);
+	font-size: 16px;
+	font-weight: 700;
+	letter-spacing: 1.5px;
+	color: var(--xx-gold-hi);
+}
+.xxImmortalDesc {
+	margin-top: 8px;
+	font-size: 12.5px;
+	line-height: 1.55;
+	color: var(--xx-paper);
+	opacity: .92;
+}
+.xxImmortalStats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 10px;
+}
+.xxImmortalPill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	border-radius: 6px;
+	font-size: 12px;
+	background: rgba(255, 255, 255, .05);
+	border: 1px solid rgba(255, 217, 125, .25);
+	color: #ffe8a3;
+}
+.xxImmortalPill img {
+	width: 16px;
+	height: 16px;
+	border-radius: 3px;
+	object-fit: cover;
+}
+.xxImmortalActions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 12px;
+}
+.xxImmortalBtn {
+	flex: 1 1 210px;
+	padding: 9px 14px;
+	border-radius: 7px;
+	border: 1px solid rgba(255, 217, 125, .55);
+	background: linear-gradient(135deg, rgba(78, 56, 20, .95), rgba(38, 28, 14, .95));
+	color: #ffe8a3;
+	font-family: var(--xx-serif);
+	font-size: 13.5px;
+	font-weight: 700;
+	letter-spacing: 1px;
+	cursor: pointer;
+	text-align: center;
+	transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
+.xxImmortalBtn:hover:not(.is-disabled) {
+	border-color: #fff3c4;
+	box-shadow: 0 4px 16px rgba(255, 217, 125, .32);
+}
+.xxImmortalBtn.is-disabled {
+	opacity: .52;
+	cursor: not-allowed;
+	border-color: rgba(160, 170, 185, .3);
+	background: rgba(24, 28, 38, .8);
+	color: #9aa5b4;
+}
 .tabInner.Cultivation .btn.modern.xxAscend {
 	max-width: none;
 	width: 100%;
@@ -6474,4 +6599,1259 @@ input, select, textarea, button { font-family: inherit; }
 }
 #topBar .toolbarIcon.pollutionIcon {
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='14' fill='%239ab0c2' viewBox='0 0 16 16'%3E%3Cpath d='M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383zm.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z'/%3E%3C/svg%3E");
+}
+
+/* XX-3 轮回重修 · 先天命格与特殊灵体轮回盘 (Natal Destiny & Spirit Bodies) */
+.xx-chip.xx-mingge-open {
+	cursor: pointer;
+	border-color: rgba(240, 196, 90, 0.52);
+	background: linear-gradient(135deg, rgba(46, 33, 14, 0.72), rgba(16, 36, 44, 0.78));
+	color: #ffe39e;
+	transition: border-color 0.16s ease, transform 0.16s ease;
+}
+.xx-chip.xx-mingge-open:hover {
+	border-color: rgba(255, 224, 130, 0.9);
+	transform: translateY(-1px);
+}
+.xx-hd-mingge .xx-mingge-chip {
+	border-color: rgba(240, 196, 90, 0.45);
+	background: rgba(32, 24, 14, 0.65);
+	color: #ffe59e;
+}
+.xxMinggeModalCard {
+	max-width: 720px !important;
+	width: min(94vw, 720px) !important;
+	max-height: 88vh;
+	overflow-y: auto;
+}
+.xxDeathCard,
+.xxIdCard {
+	max-height: 88vh;
+	overflow-y: auto;
+}
+.xxMgBanner {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 12px 14px;
+	margin-bottom: 10px;
+	border-radius: 10px;
+	background: linear-gradient(135deg, rgba(10, 18, 28, 0.95), rgba(22, 38, 46, 0.88));
+	border: 1px solid rgba(240, 196, 90, 0.36);
+}
+.xxMgBannerImg {
+	width: 58px;
+	height: 58px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 1.5px solid rgba(240, 196, 90, 0.65);
+	box-shadow: 0 0 14px rgba(79, 209, 165, 0.28);
+	flex-shrink: 0;
+}
+.xxMgBannerTitle {
+	font-size: 16px;
+	font-weight: 700;
+	color: #ffe39e;
+	letter-spacing: 0.5px;
+}
+.xxMgBannerSub {
+	font-size: 12px;
+	color: #a8c7be;
+	margin-top: 3px;
+}
+.xxMgCurrentBar {
+	font-size: 12.5px;
+	padding: 7px 11px;
+	margin-bottom: 8px;
+	border-radius: 8px;
+	background: rgba(15, 28, 36, 0.68);
+	border: 1px solid rgba(79, 209, 165, 0.22);
+	color: #cde6de;
+}
+.xxMgCurrentBar b {
+	color: #ffe39e;
+}
+.xxMgMuted {
+	color: #8ba39c;
+}
+.xxMgPickerBox {
+	margin: 10px 0 12px;
+	padding: 10px;
+	border-radius: 10px;
+	background: rgba(9, 16, 24, 0.72);
+	border: 1px solid rgba(240, 196, 90, 0.24);
+}
+.xxMgPickerHdr,
+.xxMgPromptHdr {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+	font-size: 13px;
+	color: #ffe39e;
+}
+.xxMgPickerTitle {
+	font-weight: 700;
+}
+.xxMgSlotBadge {
+	font-size: 11.5px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: rgba(240, 196, 90, 0.18);
+	border: 1px solid rgba(240, 196, 90, 0.48);
+	color: #ffe59e;
+}
+.xxMgUnlockHint {
+	font-size: 11px;
+	color: #8eb0a6;
+}
+.xxMgGrid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 7px;
+	max-height: 300px;
+	overflow-y: auto;
+	padding-right: 2px;
+}
+.xxMgCard {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 8px 9px;
+	border-radius: 8px;
+	background: rgba(16, 26, 36, 0.82);
+	border: 1px solid rgba(125, 168, 160, 0.24);
+	cursor: pointer;
+	transition: border-color 0.15s ease, background 0.15s ease;
+	min-width: 0;
+}
+.xxMgCard:hover {
+	border-color: rgba(240, 196, 90, 0.55);
+}
+.xxMgCard.xx-sel {
+	background: linear-gradient(135deg, rgba(48, 36, 14, 0.82), rgba(16, 42, 44, 0.88));
+	border-color: rgba(240, 196, 90, 0.88);
+	box-shadow: 0 0 10px rgba(240, 196, 90, 0.22);
+}
+.xxMgIco {
+	width: 30px;
+	height: 30px;
+	border-radius: 6px;
+	overflow: hidden;
+	flex-shrink: 0;
+	border: 1px solid rgba(240, 196, 90, 0.38);
+}
+.xxMgIco svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+.xxMgBody {
+	min-width: 0;
+	flex: 1;
+}
+.xxMgTitleRow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 2px;
+}
+.xxMgTitleRow b {
+	font-size: 12.5px;
+	color: #f3f8f6;
+}
+.xxMgCard.xx-sel .xxMgTitleRow b {
+	color: #ffe59e;
+}
+.xxMgTag {
+	font-size: 10px;
+	padding: 0 5px;
+	border-radius: 4px;
+	background: rgba(79, 209, 165, 0.15);
+	color: #8be8cb;
+}
+.xxMgDesc {
+	display: block;
+	font-size: 11px;
+	line-height: 1.35;
+	color: #9cb8b0;
+}
+.xxMgModalActions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 10px;
+}
+.xxMgModalActions .xxFateBtn {
+	flex: 1 1 200px;
+	margin-top: 0 !important;
+}
+@media (max-width: 680px) {
+	.xxMgGrid {
+		grid-template-columns: 1fr;
+		max-height: 250px;
+	}
+}
+
+/* ============================================================
+   XX-4 仙界洞府 · 聚灵药园与本命仙器蕴养祭炼 (.xxCaveArena)
+   ============================================================ */
+.xxCaveArena {
+	margin: 12px 0 14px;
+	padding: 14px 16px;
+	border-radius: 12px;
+	border: 1px solid rgba(126, 249, 212, 0.42);
+	background:
+		radial-gradient(circle at 12% 14%, rgba(126, 249, 212, 0.14), transparent 52%),
+		radial-gradient(circle at 88% 84%, rgba(246, 213, 122, 0.13), transparent 52%),
+		linear-gradient(145deg, rgba(11, 22, 30, 0.96), rgba(18, 28, 38, 0.97));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 28px rgba(0, 0, 0, 0.45);
+	box-sizing: border-box;
+	max-width: 100%;
+	overflow: hidden;
+}
+.xxCaveArena.is-locked {
+	border-color: rgba(240, 196, 90, 0.35);
+	opacity: 0.92;
+}
+.xxCaveHeader {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding-bottom: 10px;
+	margin-bottom: 12px;
+	border-bottom: 1px solid rgba(126, 249, 212, 0.18);
+}
+.xxCaveHeaderLeft {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+	flex: 1 1 260px;
+}
+.xxCaveHeaderIcon {
+	width: 48px;
+	height: 48px;
+	border-radius: 10px;
+	overflow: hidden;
+	flex-shrink: 0;
+	border: 1px solid rgba(246, 213, 122, 0.58);
+	background: rgba(8, 16, 24, 0.85);
+	box-shadow: 0 0 14px rgba(126, 249, 212, 0.22);
+}
+.xxCaveHeaderIcon img,
+.xxHerbIco img,
+.xxXianqiIco img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	display: block;
+}
+.xxCaveTitleWrap {
+	min-width: 0;
+}
+.xxCaveBadgeRow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 3px;
+}
+.xxCaveBadge {
+	display: inline-block;
+	font-size: 11px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	color: #9df5da;
+	background: rgba(79, 209, 165, 0.16);
+	border: 1px solid rgba(126, 249, 212, 0.42);
+}
+.xxCaveImprintTag {
+	display: inline-block;
+	font-size: 11px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	color: #ffe39e;
+	background: rgba(240, 196, 90, 0.18);
+	border: 1px solid rgba(240, 196, 90, 0.46);
+}
+.xxCaveTitle {
+	font-family: var(--xx-serif);
+	font-size: 15.5px;
+	font-weight: 700;
+	color: #ffe8a3;
+	letter-spacing: 1px;
+}
+.xxCaveDesc {
+	font-size: 12px;
+	line-height: 1.45;
+	color: #b7d2ca;
+	margin-top: 2px;
+}
+.xxCaveSummaryChips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.xxCaveSumChip {
+	font-size: 11.5px;
+	padding: 3px 9px;
+	border-radius: 6px;
+	background: rgba(16, 34, 42, 0.78);
+	border: 1px solid rgba(126, 249, 212, 0.26);
+	color: #d9f3ea;
+}
+.xxCaveSumChip b {
+	color: #ffe39e;
+}
+.xxCaveLockedNotice {
+	padding: 12px 14px;
+	border-radius: 8px;
+	background: rgba(36, 26, 14, 0.65);
+	border: 1px solid rgba(240, 196, 90, 0.36);
+	color: #ffe39e;
+	font-size: 12.5px;
+	line-height: 1.5;
+}
+.xxCaveColumns {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+	align-items: start;
+}
+.xxCaveSection {
+	background: rgba(9, 17, 25, 0.76);
+	border: 1px solid rgba(126, 249, 212, 0.22);
+	border-radius: 10px;
+	padding: 12px;
+	min-width: 0;
+	box-sizing: border-box;
+}
+.xxCaveSecHd {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	margin-bottom: 9px;
+}
+.xxCaveSecTitle {
+	font-family: var(--xx-serif);
+	font-size: 14px;
+	font-weight: 700;
+	color: #9df5da;
+	letter-spacing: 0.6px;
+}
+.xxCaveSecTitle.gold {
+	color: #ffe59e;
+}
+.xxCaveSecMeta {
+	font-size: 11.5px;
+	color: #9fc0b6;
+}
+.xxSeedBar {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 6px;
+	margin-bottom: 10px;
+}
+.xxSeedCard {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 8px;
+	border-radius: 8px;
+	background: rgba(16, 29, 38, 0.82);
+	border: 1px solid rgba(126, 249, 212, 0.20);
+	cursor: pointer;
+	min-width: 0;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+.xxSeedCard:hover {
+	border-color: rgba(246, 213, 122, 0.58);
+}
+.xxSeedCard.is-selected {
+	border-color: rgba(246, 213, 122, 0.90);
+	background: linear-gradient(135deg, rgba(44, 34, 14, 0.85), rgba(14, 38, 42, 0.90));
+	box-shadow: 0 0 10px rgba(246, 213, 122, 0.18);
+}
+.xxHerbIco {
+	width: 34px;
+	height: 34px;
+	border-radius: 7px;
+	overflow: hidden;
+	flex-shrink: 0;
+	background: rgba(8, 15, 22, 0.92);
+	border: 1px solid rgba(126, 249, 212, 0.36);
+}
+.xxSeedBody {
+	flex: 1;
+	min-width: 0;
+}
+.xxSeedNameRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px;
+	font-size: 12px;
+	font-weight: 700;
+	color: #eef9f5;
+}
+.xxSeedStock {
+	font-size: 11px;
+	font-weight: 600;
+	color: #ffe39e;
+	flex-shrink: 0;
+}
+.xxSeedSub {
+	font-size: 10.5px;
+	color: #97b9af;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.xxPlotGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-bottom: 10px;
+}
+.xxPlotCard {
+	padding: 8px 9px;
+	border-radius: 8px;
+	background: rgba(14, 25, 34, 0.88);
+	border: 1px solid rgba(126, 249, 212, 0.24);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+.xxPlotCard.is-mature {
+	border-color: rgba(246, 213, 122, 0.85);
+	background: linear-gradient(145deg, rgba(46, 35, 14, 0.86), rgba(16, 36, 36, 0.90));
+}
+.xxPlotCard.is-locked {
+	border-style: dashed;
+	border-color: rgba(145, 168, 162, 0.25);
+	opacity: 0.76;
+}
+.xxPlotTop {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	min-width: 0;
+}
+.xxPlotTitle {
+	font-size: 12px;
+	font-weight: 700;
+	color: #e9f6f1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.xxPlotState {
+	font-size: 10.5px;
+	color: #9dc2b7;
+}
+.xxPlotBar {
+	height: 5px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.08);
+	overflow: hidden;
+}
+.xxPlotBar > i {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, #4fd1a5, #f6d57a);
+}
+.xxCaveMiniBtnRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.xxCaveMiniBtn {
+	flex: 1 1 92px;
+	padding: 5px 8px;
+	border-radius: 6px;
+	border: 1px solid rgba(126, 249, 212, 0.42);
+	background: linear-gradient(135deg, rgba(20, 52, 50, 0.92), rgba(14, 30, 38, 0.94));
+	color: #c8f9e8;
+	font-size: 11.5px;
+	font-weight: 600;
+	text-align: center;
+	cursor: pointer;
+	min-width: 0;
+}
+.xxPlotCard > .xxCaveMiniBtn {
+	flex: 0 0 auto;
+	margin-top: auto;
+	padding: 6px 8px;
+}
+.xxCaveMiniBtn.gold {
+	border-color: rgba(246, 213, 122, 0.62);
+	background: linear-gradient(135deg, rgba(72, 52, 18, 0.94), rgba(34, 26, 14, 0.94));
+	color: #ffe8a3;
+}
+.xxCaveMiniBtn.is-disabled {
+	opacity: 0.48;
+	cursor: not-allowed;
+	border-color: rgba(145, 165, 175, 0.25);
+	background: rgba(20, 26, 34, 0.78);
+	color: #8fa1ad;
+}
+.xxInfuseShelf {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px dashed rgba(126, 249, 212, 0.20);
+}
+.xxInfuseRow {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 6px;
+	margin-top: 6px;
+}
+.xxXianqiGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 7px;
+	margin-bottom: 10px;
+}
+.xxXianqiCard {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 8px;
+	border-radius: 8px;
+	background: rgba(16, 26, 36, 0.86);
+	border: 1px solid rgba(240, 196, 90, 0.24);
+	cursor: pointer;
+	min-width: 0;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+.xxXianqiCard:hover {
+	border-color: rgba(246, 213, 122, 0.65);
+}
+.xxXianqiCard.is-bound {
+	border-color: rgba(246, 213, 122, 0.95);
+	background: linear-gradient(135deg, rgba(54, 38, 14, 0.90), rgba(18, 36, 44, 0.92));
+	box-shadow: 0 0 12px rgba(246, 213, 122, 0.22);
+}
+.xxXianqiIco {
+	width: 38px;
+	height: 38px;
+	border-radius: 8px;
+	overflow: hidden;
+	flex-shrink: 0;
+	background: rgba(8, 15, 22, 0.94);
+	border: 1px solid rgba(246, 213, 122, 0.45);
+}
+.xxXianqiMeta {
+	flex: 1;
+	min-width: 0;
+}
+.xxXianqiName {
+	font-size: 12px;
+	font-weight: 700;
+	color: #ffe8a3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.xxXianqiTag {
+	font-size: 10.5px;
+	color: #9ec4ba;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.xxXianqiStageBox {
+	padding: 9px 10px;
+	border-radius: 8px;
+	background: rgba(14, 24, 34, 0.88);
+	border: 1px solid rgba(240, 196, 90, 0.30);
+	margin-bottom: 9px;
+}
+.xxXianqiStageTop {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	font-size: 12.5px;
+	color: #ffe8a3;
+	font-weight: 700;
+}
+.xxXianqiStageDesc {
+	font-size: 11.5px;
+	line-height: 1.45;
+	color: #b7d2ca;
+	margin-top: 4px;
+}
+.xxXianqiNurtureWrap {
+	margin-top: 7px;
+}
+.xxXianqiPassiveList {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	margin-bottom: 10px;
+}
+.xxXianqiPassiveItem {
+	padding: 6px 8px;
+	border-radius: 6px;
+	font-size: 11.2px;
+	line-height: 1.4;
+	background: rgba(16, 28, 36, 0.78);
+	border: 1px solid rgba(135, 165, 160, 0.22);
+	color: #8fa9a2;
+}
+.xxXianqiPassiveItem.is-active {
+	background: rgba(20, 44, 42, 0.84);
+	border-color: rgba(126, 249, 212, 0.45);
+	color: #daf8ee;
+}
+.xxXianqiPassiveItem b {
+	color: #ffe39e;
+}
+.xxCaveNote {
+	margin-top: 8px;
+	padding: 6px 10px;
+	border-radius: 6px;
+	font-size: 11.5px;
+	color: #d6efe7;
+	background: rgba(16, 36, 40, 0.72);
+	border-left: 3px solid #5fd4a8;
+}
+@media (max-width: 920px) {
+	.xxCaveColumns {
+		grid-template-columns: 1fr;
+	}
+}
+@media (max-width: 520px) {
+	.xxCaveArena {
+		padding: 11px 10px;
+	}
+	.xxSeedBar,
+	.xxPlotGrid,
+	.xxInfuseRow,
+	.xxXianqiGrid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ============================================================
+   XX-5 周天星斗护山大阵与跨界仙盟奇遇悬赏 (.xxSanctumArena)
+   ============================================================ */
+.xxSanctumArena {
+	border-color: rgba(240, 196, 90, 0.46);
+	background:
+		radial-gradient(circle at 10% 16%, rgba(111, 211, 255, 0.14), transparent 50%),
+		radial-gradient(circle at 90% 82%, rgba(246, 213, 122, 0.16), transparent 52%),
+		linear-gradient(145deg, rgba(11, 19, 30, 0.97), rgba(18, 25, 38, 0.98));
+}
+.xxSanctumHdrIco {
+	border-color: rgba(246, 213, 122, 0.72);
+	box-shadow: 0 0 16px rgba(246, 213, 122, 0.28);
+}
+.xxInlineSanctumIco {
+	width: 20px;
+	height: 20px;
+	object-fit: contain;
+	vertical-align: -4px;
+	margin-right: 6px;
+}
+.xxZhoutianBox {
+	margin-bottom: 9px;
+}
+.xxHarmonyBanner {
+	margin-top: 6px;
+	padding: 5px 8px;
+	border-radius: 6px;
+	font-size: 11.2px;
+	line-height: 1.4;
+	background: rgba(18, 30, 42, 0.80);
+	border: 1px dashed rgba(143, 175, 196, 0.30);
+	color: #9bb7c7;
+}
+.xxHarmonyBanner.is-active {
+	border-style: solid;
+	border-color: rgba(246, 213, 122, 0.78);
+	background: linear-gradient(135deg, rgba(58, 42, 14, 0.88), rgba(16, 44, 48, 0.90));
+	color: #ffe8a3;
+	box-shadow: 0 0 12px rgba(246, 213, 122, 0.18);
+}
+.xxSocketGrid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 7px;
+	margin-bottom: 9px;
+}
+.xxSocketCard {
+	padding: 8px;
+	border-radius: 8px;
+	background: rgba(14, 24, 36, 0.88);
+	border: 1px solid rgba(126, 215, 249, 0.25);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+.xxSocketCard.is-socketed {
+	border-color: rgba(246, 213, 122, 0.82);
+	background: linear-gradient(145deg, rgba(44, 33, 14, 0.88), rgba(14, 32, 44, 0.92));
+}
+.xxSocketCard.is-locked {
+	border-style: dashed;
+	border-color: rgba(140, 160, 176, 0.24);
+	opacity: 0.74;
+}
+.xxStarCoreBar {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	margin-bottom: 10px;
+}
+.xxStarCoreCard {
+	padding: 7px 9px;
+	border-radius: 8px;
+	background: rgba(15, 26, 38, 0.86);
+	border: 1px solid rgba(126, 215, 249, 0.22);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	cursor: pointer;
+	min-width: 0;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+.xxStarCoreCard:hover {
+	border-color: rgba(246, 213, 122, 0.58);
+}
+.xxStarCoreCard.is-selected {
+	border-color: rgba(246, 213, 122, 0.92);
+	background: linear-gradient(135deg, rgba(44, 34, 14, 0.86), rgba(14, 34, 46, 0.92));
+}
+.xxStarCoreTop {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+.xxStarCoreIco {
+	border-color: rgba(246, 213, 122, 0.48);
+}
+.xxRaidPanel {
+	padding: 9px 10px;
+	border-radius: 8px;
+	background: linear-gradient(145deg, rgba(32, 16, 24, 0.86), rgba(14, 22, 34, 0.92));
+	border: 1px solid rgba(220, 100, 110, 0.35);
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+.xxRaidPanel.is-alert {
+	border-color: rgba(255, 132, 112, 0.82);
+	box-shadow: 0 0 14px rgba(220, 88, 76, 0.24);
+}
+.xxRaidIco {
+	border-color: rgba(235, 115, 115, 0.55);
+}
+.xxRaidBar > i {
+	background: linear-gradient(90deg, #d95b5b, #f6d57a);
+}
+.xxSurgeTag {
+	font-size: 11px;
+	padding: 4px 8px;
+	border-radius: 5px;
+	background: rgba(24, 52, 46, 0.85);
+	border: 1px solid rgba(126, 249, 212, 0.45);
+	color: #aef7de;
+}
+.xxActiveBountyBox {
+	padding: 9px 10px;
+	border-radius: 8px;
+	margin-bottom: 9px;
+	background: linear-gradient(145deg, rgba(22, 38, 46, 0.92), rgba(14, 24, 34, 0.94));
+	border: 1px solid rgba(126, 249, 212, 0.45);
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+.xxActiveBountyBox.is-ready {
+	border-color: rgba(246, 213, 122, 0.92);
+	background: linear-gradient(145deg, rgba(52, 38, 14, 0.90), rgba(18, 38, 42, 0.94));
+}
+.xxBountyBoard {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+.xxBountyCard {
+	padding: 8px 10px;
+	border-radius: 8px;
+	background: rgba(14, 25, 36, 0.88);
+	border: 1px solid rgba(240, 196, 90, 0.24);
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	min-width: 0;
+}
+.xxBountyCard.is-active {
+	border-color: rgba(126, 249, 212, 0.65);
+}
+.xxBountyIco {
+	border-color: rgba(246, 213, 122, 0.48);
+}
+.xxBountySynBadge {
+	font-size: 10.5px;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: rgba(79, 209, 165, 0.16);
+	border: 1px solid rgba(126, 249, 212, 0.40);
+	color: #9df5da;
+	flex-shrink: 0;
+}
+.xxBountyDesc {
+	font-size: 11px;
+	line-height: 1.4;
+	color: #a9c5be;
+	margin-top: 2px;
+	overflow-wrap: anywhere;
+}
+.xxBountyRewardRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	color: #ffe39e;
+}
+.xxMeritShop {
+	padding-top: 8px;
+	border-top: 1px dashed rgba(240, 196, 90, 0.28);
+}
+.xxMeritBtnGrid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px;
+}
+.xxSanctumArena .xxSocketCard > .xxCaveMiniBtn,
+.xxSanctumArena .xxStarCoreCard > .xxCaveMiniBtn,
+.xxSanctumArena .xxBountyCard > .xxCaveMiniBtn,
+.xxSanctumArena .xxZhoutianBox > .xxCaveMiniBtn {
+	flex: 0 0 auto;
+	padding: 6px 8px;
+}
+@media (max-width: 720px) {
+	.xxSocketGrid,
+	.xxMeritBtnGrid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ============================================================
+   XX-6 混沌万灵仙宠育兽苑与大道法则碑林 (.xxMenagerieArena)
+   ============================================================ */
+.xxMenagerieArena {
+	border-color: rgba(114, 219, 194, 0.48);
+	background:
+		radial-gradient(circle at 12% 18%, rgba(84, 214, 185, 0.16), transparent 52%),
+		radial-gradient(circle at 88% 82%, rgba(246, 213, 122, 0.16), transparent 52%),
+		linear-gradient(145deg, rgba(10, 22, 26, 0.97), rgba(15, 25, 34, 0.98));
+}
+.xxMenagerieHdrIco {
+	border-color: rgba(126, 249, 212, 0.72);
+	box-shadow: 0 0 16px rgba(126, 249, 212, 0.26);
+}
+.xxMenagerieBox,
+.xxSteleResBox {
+	margin-bottom: 9px;
+}
+.xxBeastGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-bottom: 9px;
+}
+.xxBeastCard {
+	padding: 8px 9px;
+	border-radius: 8px;
+	background: rgba(13, 25, 34, 0.88);
+	border: 1px solid rgba(114, 219, 194, 0.24);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	cursor: pointer;
+	min-width: 0;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+.xxBeastCard:hover {
+	border-color: rgba(246, 213, 122, 0.58);
+}
+.xxBeastCard.is-hatched {
+	border-color: rgba(126, 249, 212, 0.42);
+	background: linear-gradient(145deg, rgba(15, 33, 38, 0.90), rgba(14, 24, 34, 0.94));
+}
+.xxBeastCard.is-selected {
+	border-color: rgba(246, 213, 122, 0.92);
+	box-shadow: 0 0 12px rgba(246, 213, 122, 0.18);
+}
+.xxBeastIco {
+	border-color: rgba(126, 249, 212, 0.50);
+}
+.xxBeastCard .xxSeedNameRow,
+.xxSteleCard .xxSeedNameRow {
+	flex-wrap: wrap;
+	gap: 4px 6px;
+}
+.xxBeastStageLine {
+	font-size: 11px;
+	color: #f6d57a;
+	font-weight: 600;
+	margin-top: 2px;
+}
+.xxBeastRoleTag {
+	font-size: 10px;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: rgba(126, 160, 176, 0.18);
+	border: 1px solid rgba(148, 186, 204, 0.35);
+	color: #b7d3de;
+	flex-shrink: 0;
+}
+.xxBeastRoleTag.is-battle {
+	background: rgba(240, 180, 76, 0.20);
+	border-color: rgba(246, 213, 122, 0.68);
+	color: #ffe8a3;
+}
+.xxBeastRoleTag.is-garden {
+	background: rgba(79, 209, 165, 0.20);
+	border-color: rgba(126, 249, 212, 0.62);
+	color: #9df5da;
+}
+.xxBeastExpBar > i {
+	background: linear-gradient(90deg, #43c9a2, #f6d57a);
+}
+.xxBeastConsole {
+	padding: 9px 10px;
+	border-radius: 8px;
+	background: linear-gradient(145deg, rgba(22, 36, 40, 0.92), rgba(14, 24, 32, 0.95));
+	border: 1px solid rgba(246, 213, 122, 0.38);
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	margin-bottom: 8px;
+}
+.xxSteleTotalBar > i {
+	background: linear-gradient(90deg, #56c9d6, #f6d57a);
+}
+.xxSteleGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-bottom: 8px;
+}
+.xxSteleCard {
+	padding: 8px 9px;
+	border-radius: 8px;
+	background: rgba(14, 24, 34, 0.88);
+	border: 1px solid rgba(240, 196, 90, 0.24);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 7px;
+	min-width: 0;
+}
+.xxSteleCard.is-comprehended {
+	border-color: rgba(126, 249, 212, 0.48);
+	background: linear-gradient(145deg, rgba(16, 34, 40, 0.90), rgba(14, 24, 34, 0.94));
+}
+.xxSteleCard.is-mastered {
+	border-color: rgba(246, 213, 122, 0.88);
+	background: linear-gradient(145deg, rgba(44, 34, 14, 0.88), rgba(16, 36, 42, 0.94));
+}
+.xxSteleIco {
+	border-color: rgba(246, 213, 122, 0.52);
+}
+.xxMenagerieArena .xxBeastCard > .xxCaveMiniBtn,
+.xxMenagerieArena .xxSteleCard > .xxCaveMiniBtn {
+	flex: 0 0 auto;
+	padding: 6px 8px;
+}
+@media (max-width: 720px) {
+	.xxBeastGrid,
+	.xxSteleGrid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ============================================================
+   XX-7 诸天星域游历飞舟与混沌鸿蒙灵宝祭坛 (.xxCosmosArena)
+   ============================================================ */
+.xxCosmosArena {
+	border-color: rgba(232, 188, 98, 0.52);
+	background:
+		radial-gradient(circle at 14% 18%, rgba(214, 168, 72, 0.16), transparent 54%),
+		radial-gradient(circle at 86% 82%, rgba(92, 198, 178, 0.14), transparent 54%),
+		linear-gradient(145deg, rgba(16, 22, 28, 0.97), rgba(12, 24, 30, 0.98));
+}
+.xxCosmosHdrIco {
+	border-color: rgba(246, 213, 122, 0.78);
+	box-shadow: 0 0 16px rgba(246, 213, 122, 0.28);
+}
+.xxVesselConsole,
+.xxHongmengResBox {
+	margin-bottom: 9px;
+}
+.xxVesselStatRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 6px 0;
+}
+.xxVesselChip {
+	font-size: 11px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: rgba(24, 42, 46, 0.85);
+	border: 1px solid rgba(126, 224, 198, 0.36);
+	color: #cfece4;
+}
+.xxVesselChip.is-gold {
+	background: rgba(48, 36, 14, 0.85);
+	border-color: rgba(246, 213, 122, 0.55);
+	color: #ffe7a0;
+}
+.xxVoyageBar > i {
+	background: linear-gradient(90deg, #4bc0a8, #f6d57a);
+}
+.xxHongmengBar > i {
+	background: linear-gradient(90deg, #d89b3c, #ffe394);
+}
+.xxStarRealmGrid {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+.xxStarRealmCard {
+	padding: 8px 9px;
+	border-radius: 8px;
+	background: rgba(14, 26, 34, 0.90);
+	border: 1px solid rgba(126, 219, 196, 0.26);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 6px;
+	cursor: pointer;
+	min-width: 0;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+.xxStarRealmCard:hover {
+	border-color: rgba(246, 213, 122, 0.62);
+}
+.xxStarRealmCard.is-active {
+	border-color: rgba(246, 213, 122, 0.92);
+	background: linear-gradient(145deg, rgba(36, 30, 14, 0.88), rgba(14, 28, 34, 0.95));
+	box-shadow: 0 0 12px rgba(246, 213, 122, 0.18);
+}
+.xxStarRealmIco {
+	border-color: rgba(246, 213, 122, 0.48);
+}
+.xxHongmengGrid {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+.xxHongmengCard {
+	padding: 9px 10px;
+	border-radius: 8px;
+	background: rgba(16, 25, 34, 0.90);
+	border: 1px solid rgba(240, 196, 90, 0.28);
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	min-width: 0;
+}
+.xxHongmengCard.is-forged {
+	border-color: rgba(126, 249, 212, 0.48);
+	background: linear-gradient(145deg, rgba(16, 34, 40, 0.90), rgba(16, 24, 34, 0.95));
+}
+.xxHongmengCard.is-maxed {
+	border-color: rgba(246, 213, 122, 0.90);
+	background: linear-gradient(145deg, rgba(46, 35, 14, 0.90), rgba(16, 34, 40, 0.95));
+}
+.xxHongmengIco {
+	border-color: rgba(246, 213, 122, 0.58);
+}
+.xxStarRealmCard .xxSeedNameRow,
+.xxHongmengCard .xxSeedNameRow {
+	flex-wrap: wrap;
+	gap: 4px 6px;
+}
+.xxCosmosArena .xxStarRealmCard > .xxCaveMiniBtn,
+.xxCosmosArena .xxHongmengCard > .xxCaveMiniBtn {
+	flex: 0 0 auto;
+	padding: 6px 8px;
+}
+
+/* ============================================================
+   XX-8 混沌紫霄讲道坛与三千大道神通法相 (.xxDharmaArena)
+   ============================================================ */
+.xxDharmaArena {
+	border-color: rgba(206, 168, 248, 0.52);
+	background:
+		radial-gradient(circle at 14% 16%, rgba(168, 118, 232, 0.17), transparent 54%),
+		radial-gradient(circle at 86% 84%, rgba(246, 213, 122, 0.16), transparent 54%),
+		linear-gradient(145deg, rgba(18, 18, 30, 0.97), rgba(13, 22, 32, 0.98));
+}
+.xxDharmaHdrIco {
+	border-color: rgba(222, 186, 255, 0.78);
+	box-shadow: 0 0 16px rgba(196, 148, 248, 0.28);
+}
+.xxZixiaoConsole,
+.xxDharmaResBox {
+	margin-bottom: 9px;
+}
+.xxZixiaoBar > i {
+	background: linear-gradient(90deg, #9d74e8, #f6d57a);
+}
+.xxDharmaBar > i {
+	background: linear-gradient(90deg, #5ec9b3, #e6b85c, #c996ff);
+}
+.xxMiniSutraIco {
+	width: 14px;
+	height: 14px;
+	object-fit: contain;
+	vertical-align: -2px;
+	margin-right: 4px;
+}
+.xxZixiaoAuraBox {
+	padding: 8px 10px;
+	border-radius: 8px;
+	background: rgba(18, 26, 38, 0.88);
+	border: 1px solid rgba(196, 158, 246, 0.28);
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	margin-bottom: 8px;
+}
+.xxZixiaoAuraTitle {
+	font-size: 11.5px;
+	font-weight: 700;
+	color: #ebd6ff;
+	display: block;
+	line-height: 1.45;
+}
+.xxDharmaSlotBar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 7px;
+}
+.xxDharmaSlotChip {
+	font-size: 11px;
+	padding: 3px 8px;
+	border-radius: 999px;
+	background: rgba(24, 34, 46, 0.88);
+	border: 1px solid rgba(246, 213, 122, 0.42);
+	color: #ffe8a3;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+.xxDharmaSlotChip.is-support {
+	border-color: rgba(126, 249, 212, 0.48);
+	color: #b4f7e2;
+}
+.xxDharmaGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-bottom: 8px;
+}
+.xxDharmaCard {
+	padding: 8px 9px;
+	border-radius: 8px;
+	background: rgba(15, 24, 35, 0.90);
+	border: 1px solid rgba(198, 166, 244, 0.26);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 6px;
+	min-width: 0;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+.xxDharmaCard.is-awakened {
+	border-color: rgba(126, 249, 212, 0.48);
+	background: linear-gradient(145deg, rgba(16, 33, 40, 0.90), rgba(16, 23, 35, 0.95));
+}
+.xxDharmaCard.is-primary {
+	border-color: rgba(246, 213, 122, 0.92);
+	background: linear-gradient(145deg, rgba(44, 33, 16, 0.90), rgba(18, 26, 38, 0.95));
+	box-shadow: 0 0 12px rgba(246, 213, 122, 0.18);
+}
+.xxDharmaCard.is-support {
+	border-color: rgba(126, 249, 212, 0.82);
+	box-shadow: 0 0 10px rgba(126, 249, 212, 0.15);
+}
+.xxDharmaCard.is-maxed {
+	border-color: rgba(232, 192, 98, 0.94);
+}
+.xxDharmaIco {
+	border-color: rgba(216, 182, 252, 0.56);
+}
+.xxDharmaRoleTag {
+	font-size: 10px;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: rgba(140, 152, 176, 0.18);
+	border: 1px solid rgba(168, 182, 206, 0.34);
+	color: #c7d6e6;
+	flex-shrink: 0;
+}
+.xxDharmaRoleTag.is-primary {
+	background: rgba(240, 184, 76, 0.22);
+	border-color: rgba(246, 213, 122, 0.72);
+	color: #ffea9f;
+}
+.xxDharmaRoleTag.is-support {
+	background: rgba(79, 209, 165, 0.20);
+	border-color: rgba(126, 249, 212, 0.66);
+	color: #a6f7de;
+}
+.xxDharmaCard .xxSeedNameRow {
+	flex-wrap: wrap;
+	gap: 4px 6px;
+}
+.xxDharmaCardTop {
+	align-items: center;
+}
+.xxDharmaRoleRow {
+	margin-top: 3px;
+	display: flex;
+	align-items: center;
+}
+.xxDharmaCardDesc {
+	white-space: normal;
+	overflow: visible;
+	text-overflow: clip;
+	line-height: 1.45;
+	color: #aac6be;
+}
+.xxDharmaArena .xxDharmaCard > .xxCaveMiniBtn {
+	flex: 0 0 auto;
+	padding: 6px 8px;
+}
+@media (max-width: 720px) {
+	.xxDharmaGrid {
+		grid-template-columns: 1fr;
+	}
 }

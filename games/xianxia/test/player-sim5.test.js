@@ -142,7 +142,7 @@ describe("edge — 数值工具", () => {
 		const c = game.cultivation;
 		for (const s of c.stages) s.researched = false;
 		expect(c.getHighestStageIndex()).toBe(-1);
-		reachStage(game, "dujie_0");
+		reachStage(game, "jinxian_2");
 		expect(c.getHighestStageIndex()).toBe(c.stages.length - 1);
 	});
 
