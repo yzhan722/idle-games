@@ -54,12 +54,49 @@ const SPRITE_FILES = {
   furnPc: './assets/furn_pc.webp?v=hd4',
   furnTree: './assets/furn_tree.webp?v=hd4',
   furnLamp: './assets/furn_lamp.webp?v=hd4',
+  furnMusicbox: './assets/furn_musicbox.webp?v=hd23',
+  propStudyBook: './assets/prop_study_book.webp?v=hd23',
 
   // 治愈系手绘 UI / 装扮发饰 / 武器强化 / 粒子贴纸素材
   uiCoin: './assets/ui_coin.webp?v=hd6',
+  uiBtnPomodoro: './assets/ui_btn_pomodoro.webp?v=hd23',
+  uiStampFocus: './assets/ui_stamp_focus.webp?v=hd23',
+  uiBtnTeatime: './assets/ui_btn_teatime.webp?v=hd23',
+  teaPeachOolong: './assets/tea_peach_oolong.webp?v=hd23',
+  teaBlueberryFoam: './assets/tea_blueberry_foam.webp?v=hd23',
+  teaOsmanthusMilk: './assets/tea_osmanthus_milk.webp?v=hd23',
+  pastrySouffle: './assets/pastry_souffle.webp?v=hd23',
+  pastryWhaleMacaron: './assets/pastry_whale_macaron.webp?v=hd23',
+  pastryPuddingTart: './assets/pastry_pudding_tart.webp?v=hd23',
+  teaPlatterSignature: './assets/tea_platter_signature.webp?v=hd23',
+  uiBtnWeeklyJournal: './assets/ui_btn_weekly_journal.webp?v=hd23',
+  uiBtnTerrarium: './assets/ui_btn_terrarium.webp?v=hd23',
+  plantPeachSucculent: './assets/plant_peach_succulent.webp?v=hd23',
+  plantStarLily: './assets/plant_star_lily.webp?v=hd23',
+  plantBlueHydrangea: './assets/plant_blue_hydrangea.webp?v=hd23',
+  uiBtnMusicbox: './assets/ui_btn_musicbox.webp?v=hd23',
+  stampGoodnightMoon: './assets/stamp_goodnight_moon.webp?v=hd23',
+  uiBtnCollageFrame: './assets/ui_btn_collage_frame.webp?v=hd23',
+  stickerLaceGarland: './assets/sticker_lace_garland.webp?v=hd23',
+  stickerPressedDaisy: './assets/sticker_pressed_daisy.webp?v=hd23',
+  stickerWhaleStamp: './assets/sticker_whale_stamp.webp?v=hd23',
+  uiBtnCozyRadio: './assets/ui_btn_cozy_radio.webp?v=hd23',
+  radioVinylNote: './assets/radio_vinyl_note.webp?v=hd23',
+  uiBtnCrochetBasket: './assets/ui_btn_crochet_basket.webp?v=hd23',
+  knitWhaleScarf: './assets/knit_whale_scarf.webp?v=hd23',
+  knitStarCoaster: './assets/knit_star_coaster.webp?v=hd23',
+  knitCloudPillow: './assets/knit_cloud_pillow.webp?v=hd23',
+  uiBtnCocoaBar: './assets/ui_btn_cocoa_bar.webp?v=hd23',
+  cocoaMarshmallowTopping: './assets/cocoa_marshmallow_topping.webp?v=hd23',
   itemBow: './assets/item_bow.webp?v=hd6',
   itemCrown: './assets/item_crown.webp?v=hd6',
   itemAura: './assets/item_aura.webp?v=hd6',
+  itemShellClip: './assets/item_shell_clip.webp?v=hd23',
+  itemStarWreath: './assets/item_star_wreath.webp?v=hd23',
+  vfxSeasonSpring: './assets/vfx_season_spring.webp?v=hd23',
+  vfxSeasonSummer: './assets/vfx_season_summer.webp?v=hd23',
+  vfxSeasonAutumn: './assets/vfx_season_autumn.webp?v=hd23',
+  vfxSeasonWinter: './assets/vfx_season_winter.webp?v=hd23',
   upgBlaster: './assets/upg_blaster.webp?v=hd6',
   upgBlade: './assets/upg_blade.webp?v=hd6',
   upgMagnet: './assets/upg_magnet.webp?v=hd6',
@@ -70,7 +107,17 @@ const SPRITE_FILES = {
   vfxNote: './assets/vfx_note.webp?v=hd6',
   vfxZzz: './assets/vfx_zzz.webp?v=hd6',
   vfxAngry: './assets/vfx_angry.webp?v=hd6',
-  vfxGem: './assets/vfx_gem.webp?v=hd6'
+  vfxGem: './assets/vfx_gem.webp?v=hd6',
+
+  // AR-1 幸存者打工 2.0：奶油手账风肉鸽技能卡、蓝鲸/茶刃超武与最高班次徽章贴图
+  skFrostBubble: './assets/sk_frost_bubble.webp?v=hd15',
+  skCatLightning: './assets/sk_cat_lightning.webp?v=hd15',
+  skOnigiriHeal: './assets/sk_onigiri_heal.webp?v=hd15',
+  skStarPhantom: './assets/sk_star_phantom.webp?v=hd15',
+  skCritCharm: './assets/sk_crit_charm.webp?v=hd15',
+  upgSuperWhale: './assets/upg_super_whale.webp?v=hd15',
+  upgSuperTeablade: './assets/upg_super_teablade.webp?v=hd15',
+  uiBadgeShift: './assets/ui_badge_shift.webp?v=hd15'
 };
 
 export const images = {};
@@ -449,6 +496,30 @@ export function drawHeroSprite(ctx, p, now) {
       poseKey = 'proud_timer';
       targetSprite = images.heroProud;
       targetBounceY = Math.abs(Math.sin(anim.breathPhase * 1.4)) * -2.5;
+    } else if (p.isFocusStudying && !p.onPalm && isReady(images.heroSitEdge)) {
+      poseKey = 'focus_study';
+      targetSprite = images.heroSitEdge;
+      const calmReadPhase = anim.breathPhase * 0.62;
+      targetLegShearX = Math.sin(calmReadPhase) * 2.2;
+      targetHeadSwayX = Math.sin(calmReadPhase * 0.8) * 1.8 + 1.4;
+      targetTilt = Math.sin(calmReadPhase * 0.5) * 0.016;
+      targetBounceY = Math.sin(calmReadPhase) * -1.1;
+      breathExpand = Math.sin(calmReadPhase) * 0.016;
+    } else if (p.isRadioListening && !p.onPalm) {
+      poseKey = 'radio_sway';
+      const humBeat = anim.swayPhase * 0.92;
+      const humMouth = Math.sin(now * 0.0065) > 0.35;
+      targetSprite =
+        humMouth && isReady(images.heroIdleTalk)
+          ? images.heroIdleTalk
+          : isReady(images.heroIdle2)
+            ? images.heroIdle2
+            : images.heroIdle;
+      targetHeadSwayX = Math.sin(humBeat) * 3.8;
+      targetTorsoTwistX = Math.sin(humBeat) * 2.4;
+      targetTilt = Math.sin(humBeat) * 0.036;
+      targetBounceY = Math.abs(Math.sin(humBeat)) * -2.6;
+      breathExpand = Math.sin(humBeat * 1.2) * 0.02;
     } else if (p.idleTime > 5.2 && !p.onPalm && isReady(images.heroSleepLoaf)) {
       poseKey = 'sleep';
       targetSprite = images.heroSleepLoaf;
@@ -593,6 +664,13 @@ export function drawHeroSprite(ctx, p, now) {
   const headTopY = (isLowPose ? -88 : -110) + verticalWave * 0.85;
   const hatOffsetX = anim.headSwayX * 0.85;
 
+  if (eq.star_wreath && isReady(images.itemStarWreath)) {
+    ctx.save();
+    ctx.translate(hatOffsetX, headTopY - 1);
+    ctx.rotate(anim.headSwayX * 0.01);
+    ctx.drawImage(images.itemStarWreath, -22, -12, 44, 24);
+    ctx.restore();
+  }
   if (eq.crown && isReady(images.itemCrown)) {
     ctx.save();
     ctx.translate(hatOffsetX, headTopY - 4);
@@ -605,6 +683,13 @@ export function drawHeroSprite(ctx, p, now) {
     ctx.translate(-16 + hatOffsetX, headTopY + 10);
     ctx.rotate(-0.18 + anim.headSwayX * 0.015);
     ctx.drawImage(images.itemBow, -15, -15, 30, 30);
+    ctx.restore();
+  }
+  if (eq.shell_clip && isReady(images.itemShellClip)) {
+    ctx.save();
+    ctx.translate(18 + hatOffsetX, headTopY + 14);
+    ctx.rotate(0.22 + anim.headSwayX * 0.015);
+    ctx.drawImage(images.itemShellClip, -11, -11, 22, 22);
     ctx.restore();
   }
 
@@ -650,7 +735,8 @@ export function drawFoodItem(ctx, it, now) {
     rice: images.foodRice,
     tea: images.foodTea,
     bento: images.foodBento,
-    cake: images.foodCake
+    cake: images.foodCake,
+    teaPlatter: images.teaPlatterSignature
   };
   const sp = spriteMap[fid] || images.foodRice;
 
@@ -973,13 +1059,22 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
   // 底部柔和落地阴影
   ctx.save();
   ctx.scale(1, 0.28);
-  ctx.fillStyle = 'rgba(10, 20, 42, 0.26)';
+  ctx.fillStyle = furn.isDragging ? 'rgba(255, 178, 92, 0.34)' : 'rgba(10, 20, 42, 0.26)';
   ctx.beginPath();
   ctx.arc(0, 4, furn.key === 'tree' ? 40 : 34, 0, Math.PI * 2);
   ctx.fill();
+  if (furn.isDragging) {
+    ctx.strokeStyle = 'rgba(255, 232, 148, 0.92)';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.arc(0, 4, furn.key === 'tree' ? 46 : 40, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
 
   const isLampLit = furn.key === 'lamp' && (isDarkRoom || furn.manualOn);
+  const isMusicPlaying = furn.key === 'musicbox' && furn.isPlaying !== false;
   if (isLampLit) {
     // 暗光环境或手动点亮时的星海蓝鲸小夜灯温暖柔光光晕
     const pulse = 1 + Math.sin(now * 0.005) * 0.08;
@@ -1008,6 +1103,16 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
       -now * 0.004,
       '#66e3ff'
     );
+  } else if (isMusicPlaying) {
+    const pulse = 1 + Math.sin(now * 0.0045) * 0.07;
+    const mHalo = ctx.createRadialGradient(0, -38, 6, 0, -38, 68 * pulse);
+    mHalo.addColorStop(0, 'rgba(255, 216, 236, 0.36)');
+    mHalo.addColorStop(0.6, 'rgba(138, 216, 255, 0.18)');
+    mHalo.addColorStop(1, 'rgba(138, 216, 255, 0)');
+    ctx.fillStyle = mHalo;
+    ctx.beginPath();
+    ctx.arc(0, -38, 68 * pulse, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   let sx = 1;
@@ -1016,17 +1121,27 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
     const k = furn.squashTimer / 0.2;
     sx = 1 + Math.sin(k * Math.PI) * 0.16;
     sy = 1 - Math.sin(k * Math.PI) * 0.14;
+  } else if (isMusicPlaying) {
+    const beat = Math.sin(now * 0.0065) * 0.025;
+    sx = 1 + beat;
+    sy = 1 - beat * 0.8;
   }
 
   const spriteMap = {
     pc: images.furnPc,
     tree: images.furnTree,
-    lamp: images.furnLamp
+    lamp: images.furnLamp,
+    musicbox: images.furnMusicbox
   };
   const sp = spriteMap[furn.key] || images.furnLamp;
-  const sz = furn.key === 'tree' ? 98 : furn.key === 'pc' ? 88 : 78;
+  const sz = furn.key === 'tree' ? 98 : furn.key === 'pc' ? 88 : furn.key === 'musicbox' ? 84 : 78;
 
   ctx.save();
+  if (furn.isDragging) {
+    ctx.translate(0, -6);
+    sx *= 1.05;
+    sy *= 1.05;
+  }
   ctx.scale(sx, sy);
   if (isReady(sp)) {
     ctx.drawImage(sp, -sz * 0.5, -sz * 0.92, sz, sz);
@@ -1038,7 +1153,16 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
   }
   ctx.restore();
 
-  if (!hideLabel && furn.key === 'pc' && furn.working) {
+  if (furn.isDragging) {
+    ctx.font = '900 10.5px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(58, 75, 110, 0.88)';
+    ctx.lineWidth = 3;
+    const dragTxt = '左右拖动摆位';
+    ctx.strokeText(dragTxt, 0, -sz - 4);
+    ctx.fillStyle = '#fff5cc';
+    ctx.fillText(dragTxt, 0, -sz - 4);
+  } else if (!hideLabel && furn.key === 'pc' && furn.working) {
     const floatY = -76 + Math.sin(now * 0.012) * 4;
     ctx.font = '900 11px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
@@ -1048,6 +1172,16 @@ export function drawFurnitureItem(ctx, furn, now, isDarkRoom = false, hideLabel 
     ctx.strokeText(codeTxt, 0, floatY);
     ctx.fillStyle = '#56e8ff';
     ctx.fillText(codeTxt, 0, floatY);
+  } else if (!hideLabel && furn.key === 'musicbox') {
+    const floatY = -78 + Math.sin(now * 0.008) * 3;
+    ctx.font = '900 10.5px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(58, 75, 110, 0.85)';
+    ctx.lineWidth = 2.8;
+    const trackTxt = `♪ ${furn.trackName || '晴空卡林巴'}`;
+    ctx.strokeText(trackTxt, 0, floatY);
+    ctx.fillStyle = '#ffd9ec';
+    ctx.fillText(trackTxt, 0, floatY);
   } else if (!hideLabel && isLampLit) {
     ctx.font = '900 10.5px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
@@ -1137,8 +1271,9 @@ export function drawEnemySprite(ctx, e, now, playerX) {
     ctx.lineWidth = 3;
     ctx.font = '900 11.5px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
-    ctx.strokeText('摸鱼大魔王', 0, -size * 0.62 - 16);
-    ctx.fillText('摸鱼大魔王', 0, -size * 0.62 - 16);
+    const bossLabel = e.bossName ? e.bossName.split('·').pop().trim() : '摸鱼大魔王';
+    ctx.strokeText(bossLabel, 0, -size * 0.62 - 16);
+    ctx.fillText(bossLabel, 0, -size * 0.62 - 16);
   } else if (e.isGoldTreasure) {
     ctx.fillStyle = '#ffd700';
     ctx.font = '900 11px sans-serif';
@@ -1181,6 +1316,396 @@ export function drawStarGoal(ctx, starTarget, player, now) {
     ctx.strokeText(txt, sx, sy - 38);
     ctx.fillStyle = '#00f3ff';
     ctx.fillText(txt, sx, sy - 38);
+  }
+
+  ctx.restore();
+}
+
+export function drawStudyCompanionProp(ctx, p, now) {
+  if (!p || !p.isFocusStudying || p.onPalm || !isReady(images.propStudyBook)) return;
+  const side = p.facing || 1;
+  const bookX = p.x + side * 66;
+  const bookY = p.y + 26;
+  const sz = 62;
+  const floatY = Math.sin(now * 0.0028) * 1.2;
+
+  ctx.save();
+  ctx.translate(bookX, bookY + floatY);
+  const warmGlow = ctx.createRadialGradient(0, -18, 4, 0, -18, 44);
+  warmGlow.addColorStop(0, 'rgba(255, 240, 202, 0.36)');
+  warmGlow.addColorStop(1, 'rgba(255, 240, 202, 0)');
+  ctx.fillStyle = warmGlow;
+  ctx.fillRect(-44, -60, 88, 72);
+  ctx.drawImage(images.propStudyBook, -sz * 0.5, -sz * 0.88, sz, sz);
+  if (isReady(images.vfxSparkle)) {
+    const spPulse = 0.38 + 0.42 * Math.sin(now * 0.0036);
+    ctx.globalAlpha = Math.max(0.16, spPulse);
+    ctx.drawImage(images.vfxSparkle, 10, -48, 14, 14);
+  }
+  ctx.restore();
+}
+
+export function drawAfternoonTeaProp(ctx, p, now) {
+  if (!p || !(p.teaPlatterTimer > 0) || p.onPalm || p.isFocusStudying || !isReady(images.teaPlatterSignature)) {
+    return;
+  }
+  const side = p.facing || 1;
+  const platterX = p.x + side * 68;
+  const platterY = p.y + 27;
+  const sz = 66;
+  const fadeAlpha = Math.min(1, p.teaPlatterTimer / 0.8);
+  const floatY = Math.sin(now * 0.0032) * 1.1;
+
+  ctx.save();
+  ctx.globalAlpha = fadeAlpha;
+  ctx.translate(platterX, platterY + floatY);
+  const honeyGlow = ctx.createRadialGradient(0, -24, 5, 0, -24, 46);
+  honeyGlow.addColorStop(0, 'rgba(255, 232, 196, 0.44)');
+  honeyGlow.addColorStop(1, 'rgba(255, 232, 196, 0)');
+  ctx.fillStyle = honeyGlow;
+  ctx.fillRect(-46, -66, 92, 76);
+  ctx.drawImage(images.teaPlatterSignature, -sz * 0.5, -sz * 0.92, sz, sz);
+  if (isReady(images.vfxHeart)) {
+    const heartY = -56 - ((now * 0.012) % 10);
+    ctx.globalAlpha = fadeAlpha * (0.45 + 0.35 * Math.sin(now * 0.0045));
+    ctx.drawImage(images.vfxHeart, -18, heartY, 13, 13);
+  }
+  if (isReady(images.vfxSparkle)) {
+    ctx.globalAlpha = fadeAlpha * (0.4 + 0.4 * Math.cos(now * 0.004));
+    ctx.drawImage(images.vfxSparkle, 10, -52, 14, 14);
+  }
+  ctx.restore();
+}
+
+export function drawTerrariumDeskShelf(ctx, p, W, H, now) {
+  const list = p && Array.isArray(p.displayedTerrariumPlants) ? p.displayedTerrariumPlants : [];
+  if (list.length === 0) return;
+
+  for (let idx = 0; idx < list.length; idx++) {
+    const slot = list[idx];
+    const plantImg = images[slot.spriteKey];
+    if (!isReady(plantImg)) continue;
+
+    const baseSz = 50 + Math.min(5, Math.max(1, slot.level || 1)) * 3.8;
+    const sway = Math.sin(now * 0.0023 + idx * 1.7) * 0.028;
+    const breathY = Math.sin(now * 0.0031 + idx * 1.3) * 1.2;
+
+    ctx.save();
+    ctx.translate(slot.x, slot.y + breathY);
+
+    const sunGlow = ctx.createRadialGradient(0, -baseSz * 0.42, 4, 0, -baseSz * 0.42, baseSz * 0.78);
+    sunGlow.addColorStop(0, slot.level >= 4 ? 'rgba(255, 239, 196, 0.52)' : 'rgba(255, 245, 218, 0.34)');
+    sunGlow.addColorStop(1, 'rgba(255, 245, 218, 0)');
+    ctx.fillStyle = sunGlow;
+    ctx.fillRect(-baseSz * 0.8, -baseSz * 1.15, baseSz * 1.6, baseSz * 1.3);
+
+    ctx.save();
+    ctx.rotate(sway);
+    ctx.drawImage(plantImg, -baseSz * 0.5, -baseSz * 0.94, baseSz, baseSz);
+    ctx.restore();
+
+    if ((slot.level || 1) >= 3 && isReady(images.vfxSparkle)) {
+      const spAlpha = 0.35 + 0.42 * Math.sin(now * 0.0038 + idx * 2.1);
+      ctx.globalAlpha = Math.max(0.15, spAlpha);
+      ctx.drawImage(images.vfxSparkle, baseSz * 0.16, -baseSz * 0.88, 13, 13);
+    }
+    if (slot.hasDew && isReady(images.vfxSparkle)) {
+      const dewBob = Math.sin(now * 0.005 + idx) * 2.5;
+      ctx.globalAlpha = 0.86;
+      ctx.drawImage(images.vfxSparkle, -baseSz * 0.36, -baseSz * 0.76 + dewBob, 12, 12);
+    }
+
+    if (!p.hideTerrariumLabels) {
+      ctx.globalAlpha = 0.92;
+      ctx.font = '900 9.5px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.strokeStyle = 'rgba(104, 70, 44, 0.86)';
+      ctx.lineWidth = 2.6;
+      const tagText = `${slot.shortName} Lv.${slot.level}`;
+      ctx.strokeText(tagText, 0, 10);
+      ctx.fillStyle = '#fff9ec';
+      ctx.fillText(tagText, 0, 10);
+    }
+
+    ctx.restore();
+  }
+}
+
+export function drawGoodnightMusicboxProp(ctx, p, now) {
+  if (!p || !p.isGoodnightSleeping || p.onPalm || !isReady(images.uiBtnMusicbox)) {
+    return;
+  }
+  const side = p.facing || 1;
+  const boxX = p.x - side * 68;
+  const boxY = p.y + 26;
+  const sz = 62;
+  const sway = Math.sin(now * 0.0026) * 0.03;
+
+  ctx.save();
+  ctx.translate(boxX, boxY);
+  const lanternGlow = ctx.createRadialGradient(0, -26, 6, 0, -26, 56);
+  lanternGlow.addColorStop(0, 'rgba(255, 234, 188, 0.56)');
+  lanternGlow.addColorStop(0.6, 'rgba(245, 214, 240, 0.24)');
+  lanternGlow.addColorStop(1, 'rgba(255, 234, 188, 0)');
+  ctx.fillStyle = lanternGlow;
+  ctx.fillRect(-58, -80, 116, 96);
+
+  ctx.save();
+  ctx.rotate(sway);
+  ctx.drawImage(images.uiBtnMusicbox, -sz * 0.5, -sz * 0.92, sz, sz);
+  ctx.restore();
+
+  if (isReady(images.vfxNote)) {
+    const floatOffset = (now * 0.014) % 16;
+    ctx.globalAlpha = 0.48 + 0.34 * Math.sin(now * 0.004);
+    ctx.drawImage(images.vfxNote, -18, -56 - floatOffset, 14, 14);
+  }
+  if (isReady(images.vfxZzz)) {
+    const zOffset = (now * 0.011 + 6) % 16;
+    ctx.globalAlpha = 0.44 + 0.34 * Math.cos(now * 0.0035);
+    ctx.drawImage(images.vfxZzz, 8, -58 - zOffset, 15, 15);
+  }
+  ctx.restore();
+}
+
+export function drawCollageKeepsakeFrame(ctx, p, W, H, now) {
+  const ck = p && p.collageKeepsake;
+  if (!ck || !ck.deskDisplayed || !(ck.savedCount > 0) || !isReady(images.uiBtnCollageFrame)) {
+    return;
+  }
+  const frameX = Math.max(W * 0.245, W * 0.20 + 66);
+  const frameY = H * 0.68 + 6;
+  const baseSz = 66;
+  const gentleSway = Math.sin(now * 0.0021) * 0.022;
+
+  ctx.save();
+  ctx.translate(frameX, frameY);
+
+  const frameGlow = ctx.createRadialGradient(0, -baseSz * 0.48, 5, 0, -baseSz * 0.48, baseSz * 0.78);
+  const tintMap = {
+    lace_ivory: 'rgba(255, 249, 236, 0.52)',
+    honey_kraft: 'rgba(255, 234, 194, 0.54)',
+    sakura_letter: 'rgba(255, 226, 236, 0.52)'
+  };
+  frameGlow.addColorStop(0, tintMap[ck.frameStyle] || tintMap.lace_ivory);
+  frameGlow.addColorStop(1, 'rgba(255, 249, 236, 0)');
+  ctx.fillStyle = frameGlow;
+  ctx.fillRect(-baseSz * 0.8, -baseSz * 1.15, baseSz * 1.6, baseSz * 1.25);
+
+  ctx.save();
+  ctx.rotate(gentleSway);
+  ctx.drawImage(images.uiBtnCollageFrame, -baseSz * 0.5, -baseSz * 0.96, baseSz, baseSz);
+
+  const portraitMap = {
+    peace_snap: images.heroPosePeace,
+    cheer_snap: images.heroPoseCheer,
+    study_snap: images.heroSitEdge
+  };
+  const heroThumb = portraitMap[ck.photoId] || images.heroPosePeace;
+  if (isReady(heroThumb)) {
+    ctx.save();
+    roundRect(ctx, -18, -baseSz * 0.78, 36, 33, 4);
+    ctx.clip();
+    ctx.drawImage(heroThumb, -20, -baseSz * 0.80, 40, 40);
+    ctx.restore();
+  }
+
+  const stickers = ck.stickers || {};
+  const miniDefs = [
+    { key: 'lace_garland', img: images.stickerLaceGarland, sz: 24 },
+    { key: 'pressed_daisy', img: images.stickerPressedDaisy, sz: 20 },
+    { key: 'whale_stamp', img: images.stickerWhaleStamp, sz: 19 }
+  ];
+  for (const def of miniDefs) {
+    const st = stickers[def.key];
+    if (!st || !st.enabled || !isReady(def.img)) continue;
+    const sx = ((Number(st.xPct) || 50) - 50) * 0.44;
+    const sy = -baseSz * 0.52 + ((Number(st.yPct) || 50) - 50) * 0.42;
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(((Number(st.rotDeg) || 0) * Math.PI) / 180);
+    ctx.drawImage(def.img, -def.sz * 0.5, -def.sz * 0.5, def.sz, def.sz);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  if (isReady(images.vfxSparkle)) {
+    ctx.globalAlpha = 0.36 + 0.38 * Math.sin(now * 0.0036);
+    ctx.drawImage(images.vfxSparkle, 18, -baseSz * 0.92, 13, 13);
+  }
+
+  if (!p.hideTerrariumLabels) {
+    ctx.globalAlpha = 0.92;
+    ctx.font = '900 9.5px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(104, 70, 44, 0.86)';
+    ctx.lineWidth = 2.6;
+    const labelTxt = '拼贴纪念框';
+    ctx.strokeText(labelTxt, 0, 10);
+    ctx.fillStyle = '#fff9ec';
+    ctx.fillText(labelTxt, 0, 10);
+  }
+
+  ctx.restore();
+}
+
+export function drawCozyTabletopRadio(ctx, p, W, H, now) {
+  if (!p || !isReady(images.uiBtnCozyRadio)) return;
+  const radioState = p.cozyRadioVisual || {};
+  const isPlaying = Boolean(radioState.playing);
+  const radioX = W * 0.755;
+  const radioY = H * 0.68 + 6;
+  const sz = 62;
+  const grooveRock = isPlaying ? Math.sin(now * 0.0052) * 0.038 : Math.sin(now * 0.0018) * 0.01;
+  const bounceY = isPlaying ? Math.abs(Math.sin(now * 0.0052)) * -1.8 : 0;
+
+  ctx.save();
+  ctx.translate(radioX, radioY + bounceY);
+
+  const dialGlow = ctx.createRadialGradient(0, -28, 4, 0, -28, isPlaying ? 58 : 38);
+  dialGlow.addColorStop(0, isPlaying ? 'rgba(255, 232, 182, 0.62)' : 'rgba(255, 245, 224, 0.28)');
+  dialGlow.addColorStop(1, 'rgba(255, 232, 182, 0)');
+  ctx.fillStyle = dialGlow;
+  ctx.fillRect(-60, -82, 120, 96);
+
+  if (isPlaying && isReady(images.radioVinylNote)) {
+    ctx.save();
+    ctx.translate(22, -26 + Math.sin(now * 0.0042) * 2.2);
+    ctx.rotate(0.08 + Math.sin(now * 0.0036) * 0.06);
+    ctx.globalAlpha = 0.94;
+    ctx.drawImage(images.radioVinylNote, -18, -18, 36, 36);
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.rotate(grooveRock);
+  ctx.drawImage(images.uiBtnCozyRadio, -sz * 0.5, -sz * 0.94, sz, sz);
+  ctx.restore();
+
+  if (isPlaying && isReady(images.vfxNote)) {
+    const floatA = (now * 0.018) % 20;
+    const floatB = (now * 0.015 + 10) % 20;
+    ctx.globalAlpha = 0.52 + 0.36 * Math.sin(now * 0.005);
+    ctx.drawImage(images.vfxNote, -22, -52 - floatA, 14, 14);
+    ctx.globalAlpha = 0.44 + 0.36 * Math.cos(now * 0.0046);
+    ctx.drawImage(images.vfxNote, 10, -56 - floatB, 13, 13);
+  }
+
+  if (!p.hideTerrariumLabels) {
+    ctx.globalAlpha = 0.92;
+    ctx.font = '900 9.5px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(104, 70, 44, 0.86)';
+    ctx.lineWidth = 2.6;
+    const radioTag = isPlaying ? radioState.code || 'CH-01 播音' : '窗畔轻电台';
+    ctx.strokeText(radioTag, 0, 10);
+    ctx.fillStyle = '#fff9ec';
+    ctx.fillText(radioTag, 0, 10);
+  }
+
+  ctx.restore();
+}
+
+export function drawCrochetKeepsakeDesk(ctx, p, W, H, now) {
+  const vis = p && p.crochetDeskVisual;
+  if (!vis || !vis.displayed || !(vis.level > 0)) return;
+  const knitImg = images[vis.spriteKey];
+  if (!isReady(knitImg)) return;
+
+  const deskX = W * 0.692;
+  const deskY = H * 0.68 + 6;
+  const baseSz = 54 + Math.min(3, Math.max(1, vis.level || 1)) * 4;
+  const sway = Math.sin(now * 0.0024 + 0.9) * 0.025;
+  const breathY = Math.sin(now * 0.003 + 0.5) * 1.1;
+
+  ctx.save();
+  ctx.translate(deskX, deskY + breathY);
+
+  const woolGlow = ctx.createRadialGradient(0, -baseSz * 0.45, 5, 0, -baseSz * 0.45, baseSz * 0.82);
+  woolGlow.addColorStop(0, vis.level >= 3 ? 'rgba(255, 236, 206, 0.58)' : 'rgba(255, 245, 228, 0.4)');
+  woolGlow.addColorStop(1, 'rgba(255, 245, 228, 0)');
+  ctx.fillStyle = woolGlow;
+  ctx.fillRect(-baseSz * 0.85, -baseSz * 1.15, baseSz * 1.7, baseSz * 1.3);
+
+  if (isReady(images.uiBtnCrochetBasket)) {
+    ctx.save();
+    ctx.globalAlpha = 0.88;
+    ctx.translate(-22, -2);
+    ctx.rotate(-0.06);
+    ctx.drawImage(images.uiBtnCrochetBasket, -17, -34, 34, 34);
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.rotate(sway);
+  ctx.drawImage(knitImg, -baseSz * 0.5, -baseSz * 0.95, baseSz, baseSz);
+  ctx.restore();
+
+  if (vis.level >= 2 && isReady(images.vfxHeart)) {
+    const floatH = (now * 0.012) % 12;
+    ctx.globalAlpha = 0.42 + 0.36 * Math.sin(now * 0.0042);
+    ctx.drawImage(images.vfxHeart, 14, -baseSz * 0.88 - floatH, 12, 12);
+  }
+  if (vis.level >= 3 && isReady(images.vfxSparkle)) {
+    ctx.globalAlpha = 0.38 + 0.42 * Math.cos(now * 0.0038);
+    ctx.drawImage(images.vfxSparkle, -22, -baseSz * 0.86, 13, 13);
+  }
+
+  if (!p.hideTerrariumLabels) {
+    ctx.globalAlpha = 0.92;
+    ctx.font = '900 9.5px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(104, 70, 44, 0.86)';
+    ctx.lineWidth = 2.6;
+    const tagTxt = `${vis.shortName} Lv.${vis.level}`;
+    ctx.strokeText(tagTxt, 0, 10);
+    ctx.fillStyle = '#fff9ec';
+    ctx.fillText(tagTxt, 0, 10);
+  }
+
+  ctx.restore();
+}
+
+export function drawHotCocoaProp(ctx, p, now) {
+  if (!p || !(p.cocoaCupTimer > 0) || p.onPalm || p.isFocusStudying || !isReady(images.uiBtnCocoaBar)) {
+    return;
+  }
+  const side = p.facing || 1;
+  const cupX = p.x - side * 68;
+  const cupY = p.y + 27;
+  const sz = 62;
+  const fadeAlpha = Math.min(1, p.cocoaCupTimer / 0.8);
+  const floatY = Math.sin(now * 0.0034 + 1.1) * 1.2;
+
+  ctx.save();
+  ctx.globalAlpha = fadeAlpha;
+  ctx.translate(cupX, cupY + floatY);
+
+  const cocoaGlow = ctx.createRadialGradient(0, -24, 5, 0, -24, 48);
+  cocoaGlow.addColorStop(0, 'rgba(255, 226, 186, 0.52)');
+  cocoaGlow.addColorStop(1, 'rgba(255, 226, 186, 0)');
+  ctx.fillStyle = cocoaGlow;
+  ctx.fillRect(-48, -68, 96, 78);
+
+  ctx.drawImage(images.uiBtnCocoaBar, -sz * 0.5, -sz * 0.92, sz, sz);
+
+  if (p.cocoaToppingId === 'star_marshmallow' && isReady(images.cocoaMarshmallowTopping)) {
+    ctx.save();
+    ctx.translate(20, -18 + Math.sin(now * 0.0045) * 1.4);
+    ctx.rotate(0.08);
+    ctx.drawImage(images.cocoaMarshmallowTopping, -15, -15, 30, 30);
+    ctx.restore();
+  }
+
+  if (isReady(images.vfxHeart)) {
+    const steamY = -56 - ((now * 0.015) % 14);
+    ctx.globalAlpha = fadeAlpha * (0.48 + 0.36 * Math.sin(now * 0.0048));
+    ctx.drawImage(images.vfxHeart, -16, steamY, 13, 13);
+  }
+  if (isReady(images.vfxSparkle)) {
+    const steamY2 = -52 - ((now * 0.013 + 7) % 14);
+    ctx.globalAlpha = fadeAlpha * (0.42 + 0.38 * Math.cos(now * 0.0042));
+    ctx.drawImage(images.vfxSparkle, 8, steamY2, 13, 13);
   }
 
   ctx.restore();
