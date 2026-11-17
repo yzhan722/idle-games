@@ -8,10 +8,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { geoNaturalEarth1, geoPath, geoContains, geoArea } from "d3-geo";
 import * as topoClient from "topojson-client";
-import { loadAtlas, parsePath, oldToLL, readJSON, ATLAS, OUT } from "./lib.mjs";
+import { loadAtlas, parsePath, oldToLL, readJSON, ATLAS, OUT, HERE } from "./lib.mjs";
 import { polityFor } from "./polity_map.mjs";
 import { FALLBACK_GW, FALLBACK_UNIT } from "./fallback.mjs";
 import { PRE1886, PRE1886_SKIP_REGIONS } from "./pre1886.mjs";
+// researched per-unit rows before 1886 (one JSON per area, see out/r3/PRE1886_BRIEF.md)
+const R3 = path.join(HERE, "research");
+const RESEARCH = fs.existsSync(R3) ? fs.readdirSync(R3).filter(f => /^pre_[a-z]+\.json$/.test(f)).sort().map(f => JSON.parse(fs.readFileSync(path.join(R3, f), "utf8")).rows || {}) : [];
 
 const units = readJSON(path.join(OUT, "units_ll.json"));
 const modernRaw = readJSON(path.join(OUT, "modern_raw.json"));
@@ -120,11 +123,28 @@ for (const u of units) {
   }
   const seq = [];
   perYear.forEach((v, i) => { const y = 1886 + i; const last = seq[seq.length - 1]; if (last && last[2] === v) last[1] = y + 1; else seq.push([y, y + 1, v]); });
-  // earlier holders for coarse regions (Americas, southern Africa, Algeria)
-  const pre = (PRE1886[u.adm] || PRE1886[u.iso] || []).filter(() => !(PRE1886_SKIP_REGIONS[u.iso] && PRE1886_SKIP_REGIONS[u.iso].has(u.region)));
-  for (const r of pre) if (!EMP[r[2]]) missing.add(`polity:${r[2]}`);
-  const full = [...pre.map(r => [r[0], r[1], r[2]]), ...seq];
-  if (full.some(s => s[2] !== "#old")) modern[u.id] = full.map(s => [s[0], s[1], s[2] === "#old" ? null : s[2]]);
+  // earlier holders for coarse regions: hand table (pre1886.mjs) + researched rows (out/r3/pre_*.json).
+  // Rows are layered year by year: country code < admin code < unit id, later sources over earlier ones.
+  const layers = [];
+  const skipHere = PRE1886_SKIP_REGIONS[u.iso] && PRE1886_SKIP_REGIONS[u.iso].has(u.region);
+  if (!skipHere) { if (PRE1886[u.iso]) layers.push(PRE1886[u.iso]); if (PRE1886[u.adm] && u.adm !== u.iso) layers.push(PRE1886[u.adm]); }
+  for (const R of RESEARCH) { if (R[u.iso]) layers.push(R[u.iso]); if (u.adm !== u.iso && R[u.adm]) layers.push(R[u.adm]); }
+  for (const R of RESEARCH) if (R[u.id] && u.id !== u.adm) layers.push(R[u.id]);
+  const early = new Map();
+  for (const rows of layers) for (const [a, b2, n] of rows) {
+    if (n !== "#none" && !EMP[n]) { missing.add(`polity:${n}`); continue; }
+    for (let y = a; y < Math.min(b2, 1886); y++) if (y !== 0) early.set(y, n);
+  }
+  const pre = [];
+  for (const y of [...early.keys()].sort((a, b2) => a - b2)) {
+    const v = early.get(y), last = pre[pre.length - 1];
+    if (last && last[2] === v && last[1] === y) last[1] = y + 1;
+    else if (last && last[2] === v && last[1] === 0 && y === 1) last[1] = 2; // across the missing year 0
+    else pre.push([y, y + 1, v]);
+  }
+  const full = [...pre, ...seq];
+  // null = use the historic region; "" = no state (researched "#none")
+  if (full.some(s => s[2] !== "#old")) modern[u.id] = full.map(s => [s[0], s[1], s[2] === "#old" ? null : s[2] === "#none" ? "" : s[2]]);
 }
 if (missing.size) console.log("unmapped:", [...missing].slice(0, 40).join(" "), missing.size > 40 ? `(+${missing.size - 40})` : "");
 

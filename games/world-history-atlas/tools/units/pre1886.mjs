@@ -18,7 +18,7 @@ put("US-AK", [[1799, 1867, "俄罗斯帝国"], [1867, 1886, US]]);
 // Canada: provinces by date of joining the federation (British North America before)
 put("CA-ON CA-NS CA-NB", [[1763, 1867, UK], [1867, 1886, CA]]);
 put("CA-QC", [[1608, 1763, "法兰西王国"], [1763, 1867, UK], [1867, 1886, CA]]);
-put("CA-MB CA-SK CA-AB CA-NT CA-NU CA-YT", [[1670, 1870, UK], [1870, 1886, CA]]);
+put("CA-MB CA-SK CA-AB CA-NT CA-NU CA-YT", [[1670, 1707, "英格兰王国"], [1707, 1870, UK], [1870, 1886, CA]]);
 put("CA-BC", [[1858, 1871, UK], [1871, 1886, CA]]);
 put("CA-PE", [[1763, 1873, UK], [1873, 1886, CA]]);
 put("CA-NL", [[1763, 1886, UK]]);
@@ -42,12 +42,13 @@ put("URY", [[1828, 1886, "乌拉圭东岸共和国"]]);
 put("BRA", [[1822, 1886, "巴西帝国"]]);
 put("HTI", [[1804, 1886, "海地共和国"]]);
 put("DOM", [[1822, 1844, "海地共和国"], [1844, 1886, "多米尼加共和国"]]);
-put("JAM", [[1655, 1886, UK]]);
+put("JAM", [[1655, 1707, "英格兰王国"], [1707, 1886, UK]]);
 
 // Southern Africa and French Algeria
-put("ZA-WC ZA-EC ZA-NC", [[1806, 1886, UK]]);
+put("ZA-WC ZA-EC", [[1806, 1886, UK]]);
+put("ZA-NC", [[1847, 1886, UK]]); // the Cape reached the Orange River in 1847
 put("ZA-NL", [[1843, 1886, UK]]);
-put("ZA-GT ZA-LP ZA-MP ZA-NW", [[1852, 1886, "德兰士瓦共和国"]]);
+put("ZA-GT ZA-LP ZA-MP ZA-NW", [[1852, 1877, "德兰士瓦共和国"], [1877, 1881, UK], [1881, 1886, "德兰士瓦共和国"]]); // British annexation 1877-1881
 put("ZA-FS", [[1854, 1886, "奥兰治自由邦"]]);
 put("DZA", [[1848, 1852, "法兰西第二共和国"], [1852, 1870, "法兰西第二帝国"], [1870, 1886, "法兰西第三共和国"]]);
 put("LBR", [[1847, 1886, "利比里亚共和国"]]);

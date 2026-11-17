@@ -323,46 +323,50 @@ class TimelineEngine {
   }
 
   // Compute complete deterministic world state at targetYear
-  getStateAtYear(targetYear) {
+  // Cumulative state after each keyframe, built once (getStateAtYear used to replay every keyframe on every call)
+  _buildSnapshots() {
+    this._snaps = [];
     const owners = {};
-    let prevOwners = {};
-    let activeEra = "远古与青铜时代";
-    let activeTheme = "era-ancient";
-    let latestToast = "";
-    let toastMeta = null;
-    let activeRoutes = [];
-    let activeLandmarks = [];
-    let lastKeyframeYear = this.timeline[0].year;
-    let activeFrame = this.timeline[0];
-
+    let era = "远古与青铜时代", theme = "era-ancient", toastFrame = null, routes = [], landmarks = [];
     for (const frame of this.timeline) {
-      if (frame.year <= targetYear) {
-        prevOwners = Object.assign({}, owners);
-        activeFrame = frame;
-        activeEra = frame.era;
-        if (frame.theme) activeTheme = frame.theme;
-        if (frame.toast) {
-          latestToast = frame.toast;
-          const matchedChr = this._chronicleByDetail.get(frame.toast);
-          toastMeta = this._extractToastMeta(frame) || this._extractToastMeta(matchedChr);
+      era = frame.era;
+      if (frame.theme) theme = frame.theme;
+      if (frame.toast) toastFrame = frame;
+      if (frame.routes) routes = frame.routes;
+      if (frame.landmarks) landmarks = frame.landmarks;
+      if (frame.owners) {
+        for (const [regId, empName] of Object.entries(frame.owners)) {
+          if (empName === null) delete owners[regId]; else owners[regId] = empName;
         }
-        if (frame.routes) activeRoutes = frame.routes;
-        if (frame.landmarks) activeLandmarks = frame.landmarks;
-        lastKeyframeYear = frame.year;
-
-        if (frame.owners) {
-          for (const [regId, empName] of Object.entries(frame.owners)) {
-            if (empName === null) {
-              delete owners[regId];
-            } else {
-              owners[regId] = empName;
-            }
-          }
-        }
-      } else {
-        break;
       }
+      this._snaps.push({ year: frame.year, frame, owners: Object.assign({}, owners), era, theme, toastFrame, routes, landmarks, toastMeta: undefined });
     }
+  }
+
+  _snapIndexAt(targetYear) {
+    let lo = 0, hi = this._snaps.length - 1, ans = -1;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (this._snaps[mid].year <= targetYear) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
+    return ans;
+  }
+
+  getStateAtYear(targetYear) {
+    if (!this._snaps) this._buildSnapshots();
+    const idx = this._snapIndexAt(targetYear);
+    const snap = idx >= 0 ? this._snaps[idx] : null;
+    const owners = snap ? Object.assign({}, snap.owners) : {};
+    const prevOwners = idx > 0 ? this._snaps[idx - 1].owners : {};
+    let activeEra = snap ? snap.era : "远古与青铜时代";
+    let activeTheme = snap ? snap.theme : "era-ancient";
+    let latestToast = snap && snap.toastFrame ? snap.toastFrame.toast : "";
+    if (snap && snap.toastFrame && snap.toastMeta === undefined) {
+      const tf = snap.toastFrame;
+      snap.toastMeta = this._extractToastMeta(tf) || this._extractToastMeta(this._chronicleByDetail.get(tf.toast)) || null;
+    }
+    let toastMeta = snap && snap.toastFrame ? snap.toastMeta : null;
+    let activeRoutes = snap ? snap.routes : [];
+    let activeLandmarks = snap ? snap.landmarks : [];
+    const lastKeyframeYear = snap ? snap.year : this.timeline[0].year;
+    const activeFrame = snap ? snap.frame : this.timeline[0];
 
     // Check granular CHRONICLE_ANNALS only when pinned/exact year match so map pins stay calm and steady
     if (this.pinnedChronicleYear === targetYear && this.chronicles && this.chronicles.length > 0) {
@@ -547,6 +551,34 @@ class TimelineEngine {
     return history.reverse();
   }
 
+  // History of one province/state unit: its historic region's keyframes, overridden by the unit's own holder rows
+  getUnitHistory(unitId, regionId, upToYear = 2026) {
+    const MU = window.HistoryAtlas.MAP_UNITS;
+    const seq = (MU && MU.modern && MU.modern[unitId]) || [];
+    const regionAsc = this.getRegionHistory(regionId, upToYear).slice().reverse();
+    const regionAt = y => { let h = null; for (const e of regionAsc) { if (e.year <= y) h = e; else break; } return h; };
+    const years = new Set(regionAsc.map(e => e.year));
+    for (const [a, b] of seq) { if (a <= upToYear) years.add(a); if (b <= upToYear) years.add(b); }
+    const out = [];
+    for (const y of [...years].sort((a, b) => a - b)) {
+      if (y > upToYear) break;
+      const row = seq.find(r => y >= r[0] && y < r[1] && r[2] !== null);
+      let entry;
+      if (row && row[2] === "") {
+        entry = { year: y, rawOwner: null, stateless: true, owner: "无统一政权" };
+      } else if (row) {
+        entry = { year: y, rawOwner: row[2], stateless: false, owner: window.HistoryAtlas.getDisplayEmpireName(row[2], y) };
+      } else {
+        const h = regionAt(y);
+        if (!h) continue;
+        entry = { year: y, rawOwner: h.rawOwner, stateless: h.stateless, owner: h.owner };
+      }
+      const last = out[out.length - 1];
+      if (!last || last.owner !== entry.owner) out.push(entry);
+    }
+    return out.reverse();
+  }
+
   // Instant search across Empires, Keyframe Events/Landmarks, and Regions
   search(query) {
     const q = (query || "").trim().toLowerCase();
@@ -667,6 +699,39 @@ class TimelineEngine {
           y: cs.y
         });
       }
+    }
+
+    // 4.7 Search historical figures (person view); a name match goes to the top
+    const persons = window.HistoryAtlas.PERSONS_INDEX || [];
+    const fmtY = (y) => (y < 0 ? `前${Math.abs(y)}` : `${y}`);
+    const personHits = persons.filter(p => p.name.toLowerCase().includes(q) || (p.role && p.role.toLowerCase().includes(q))).slice(0, 6)
+      .map(p => ({ type: "人物", title: p.name, sub: `${fmtY(p.born)}—${fmtY(p.died)} · ${p.role}`, personId: p.id }));
+    results.unshift(...personHits.filter(h => h.title.toLowerCase().includes(q)));
+    results.push(...personHits.filter(h => !h.title.toLowerCase().includes(q)));
+
+    // 4.8 Search modern provinces / states / countries (map units; a country split across regions is listed once)
+    const MU = window.HistoryAtlas.MAP_UNITS;
+    if (MU) {
+      const best = {};
+      for (const u of MU.units) {
+        if (!(u.n.toLowerCase().includes(q) || String(u.a).toLowerCase() === q)) continue;
+        if (!best[u.a] || u.w > best[u.a].w) best[u.a] = u;
+      }
+      const exact = [];
+      Object.values(best).sort((a, b) => b.w - a.w).slice(0, 8).forEach(u => {
+        const reg = this.regionMap[u.r];
+        // a place whose name starts with the query is what the user is looking for: list it first
+        (u.n.toLowerCase().startsWith(q) ? exact : results).push({
+          type: String(u.a).length === 3 ? "国家" : "省州",
+          title: u.n,
+          sub: `历史区块：${reg ? reg.name : u.r}`,
+          regionId: u.r,
+          unitId: u.id,
+          x: u.x,
+          y: u.y
+        });
+      });
+      results.unshift(...exact);
     }
 
     // 5. Search Regions

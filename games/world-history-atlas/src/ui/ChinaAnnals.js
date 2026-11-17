@@ -55,6 +55,7 @@
 
   const HA = global.HistoryAtlas = global.HistoryAtlas || {};
 
+  const CN_SCRIPT_SRC = (document.currentScript && document.currentScript.src) || "";
   const CN_VOL_NUMS = ["一", "二", "三", "四", "五", "六"];
 
   const DEFAULT_VOLUMES_META = [
@@ -664,8 +665,29 @@
       this.setOpen(!this.isOpenFlag);
     }
 
+    // The six yearly volumes (~2.9 MB) are not needed for the first paint: fetch them on first use / when idle
+    ensureVolumes() {
+      if (this._volumesPromise) return this._volumesPromise;
+      const ver = (CN_SCRIPT_SRC.match(/[?&]v=([^&]+)/) || [])[1];
+      const base = CN_SCRIPT_SRC ? CN_SCRIPT_SRC.replace(/src\/ui\/ChinaAnnals\.js.*$/, "") : "";
+      const loads = [];
+      for (let v = 1; v <= 6; v++) {
+        if (HA["CHINA_ANNALS_V" + v]) continue;
+        loads.push(new Promise(resolve => {
+          const el = document.createElement("script");
+          el.src = `${base}src/data/china_annals_v${v}.js${ver ? "?v=" + ver : ""}`;
+          el.async = false; // keep volume order
+          el.onload = el.onerror = () => resolve();
+          document.head.appendChild(el);
+        }));
+      }
+      this._volumesPromise = Promise.all(loads).then(() => { if (loads.length) this.reloadVolumes(); });
+      return this._volumesPromise;
+    }
+
     setOpen(open) {
       this.isOpenFlag = Boolean(open);
+      if (this.isOpenFlag) this.ensureVolumes();
       if (this.panelEl) {
         this.panelEl.classList.toggle("is-hidden", !this.isOpenFlag);
       }

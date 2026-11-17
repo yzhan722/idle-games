@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="data:," />
   <title>世界历史疆域演化沙盒 (World History Evolution Atlas)</title>
-  <link rel="stylesheet" href="src/styles/main.css?v=25" />
+  <link rel="stylesheet" href="src/styles/main.css?v=31" />
 </head>
 <body class="era-ancient">
 
@@ -24,9 +24,11 @@
     <div class="search-wrap">
       <input type="text" id="search-input" placeholder="搜索编年史 / 政权 / 典章兵制 / 丝路商埠 / 年份..." autocomplete="off" oninput="AtlasApp.onSearchInput(this.value)" />
       <div id="search-dropdown"></div>
+      <button type="button" class="mobile-only" id="btn-mobile-menu" aria-label="打开功能菜单">☰</button>
       <button class="era-btn compare-trigger-btn" id="btn-open-chronicle" onclick="AtlasApp.openChronicleModal()">❖ 编年史大库 (813)</button>
       <button class="era-btn compare-trigger-btn" onclick="AtlasApp.openCompareModal()">◈ 帝国兴衰图志</button>
       <button class="era-btn compare-trigger-btn" id="btn-open-cn-annals" onclick="AtlasApp.toggleChinaAnnals()">§ 中国纪年志</button>
+      <button class="era-btn compare-trigger-btn" id="btn-open-persons" onclick="AtlasApp.openPersonPicker()">◎ 人物视角</button>
     </div>
 
     <div class="era-bookmarks">
@@ -220,26 +222,25 @@
   <div id="china-annals-root"></div>
 
   <!-- 模块化脚本按序加载（兼容本地直接双击 file:// 与 HTTP 服务器） -->
-  <script src="src/data/regions_geo.js?v=25"></script>
-  <script src="src/data/empires_db.js?v=25"></script>
-  <script src="src/data/timeline_keyframes.js?v=25"></script>
-  <script src="src/data/stateless_cultures.js?v=25"></script>
-  <script src="src/data/confidence.js?v=25"></script>
-  <script src="src/data/city_states.js?v=25"></script>
-  <script src="src/data/chronicle_annals_db.js?v=25"></script>
-  <script src="src/data/china_reign_eras.js?v=25"></script>
-  <script src="src/data/china_annals_v1.js?v=25"></script>
-  <script src="src/data/china_annals_v2.js?v=25"></script>
-  <script src="src/data/china_annals_v3.js?v=25"></script>
-  <script src="src/data/china_annals_v4.js?v=25"></script>
-  <script src="src/data/china_annals_v5.js?v=25"></script>
-  <script src="src/data/china_annals_v6.js?v=25"></script>
-  <script src="src/data/map_units.js?v=25"></script>
-  <script src="src/core/UnitMap.js?v=25"></script>
-  <script src="src/core/TimelineEngine.js?v=25"></script>
-  <script src="src/ui/AudioSynthesizer.js?v=25"></script>
-  <script src="src/ui/MapRenderer.js?v=25"></script>
-  <script src="src/ui/ChinaAnnals.js?v=25"></script>
-  <script src="src/main.js?v=25"></script>
+  <script src="src/data/regions_geo.js?v=31"></script>
+  <script src="src/data/empires_db.js?v=31"></script>
+  <script src="src/data/timeline_keyframes.js?v=31"></script>
+  <script src="src/data/stateless_cultures.js?v=31"></script>
+  <script src="src/data/confidence.js?v=31"></script>
+  <script src="src/data/city_states.js?v=31"></script>
+  <script src="src/data/chronicle_annals_db.js?v=31"></script>
+  <script src="src/data/china_reign_eras.js?v=31"></script>
+  <!-- china_annals_v1..v6 are loaded on demand by src/ui/ChinaAnnals.js (ensureVolumes) -->
+  <script src="src/data/map_units.js?v=31"></script>
+  <script src="src/data/map_layers.js?v=31"></script>
+  <script src="src/core/UnitMap.js?v=31"></script>
+  <script src="src/data/persons_index.js?v=31"></script>
+  <script src="src/core/TimelineEngine.js?v=31"></script>
+  <script src="src/ui/AudioSynthesizer.js?v=31"></script>
+  <script src="src/ui/MapRenderer.js?v=31"></script>
+  <script src="src/ui/ChinaAnnals.js?v=31"></script>
+  <script src="src/ui/PersonView.js?v=31"></script>
+  <script src="src/ui/MobileMenu.js?v=31"></script>
+  <script src="src/main.js?v=31"></script>
 </body>
 </html>

@@ -213,6 +213,11 @@ class MapRenderer {
 
   _moveTooltip(e) {
     if (!this.tooltipEl || this.tooltipEl.style.display === "none") return;
+    // Touch screens have no mouseleave: let the tooltip fade out on its own
+    if (window.matchMedia && window.matchMedia("(hover: none)").matches) {
+      clearTimeout(this._tipTimer);
+      this._tipTimer = setTimeout(() => this._hideTooltip(), 2600);
+    }
     const x = Math.min(window.innerWidth - 290, Math.max(16, e.clientX + 16));
     const y = Math.min(window.innerHeight - 130, Math.max(16, e.clientY - 24));
     this.tooltipEl.style.left = `${x}px`;
@@ -243,6 +248,8 @@ class MapRenderer {
 
   _initLayers() {
     this.svg.innerHTML = "";
+    this._paintSig = {};
+    this._pathEl = {};
 
     // SVG Defs: Gradients, Glow Filters & Campaign Arrowhead
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
@@ -325,7 +332,6 @@ class MapRenderer {
 
     // 2. Regions Layer
     this.regionsLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    this.regionsLayer.setAttribute("filter", "url(#soft-territory-glow)");
     this.viewport.appendChild(this.regionsLayer);
 
     // 2.2 Inland Lakes & Continental Outer Coastlines Layer
@@ -342,6 +348,12 @@ class MapRenderer {
       coast.setAttribute("d", window.HistoryAtlas.COASTLINES);
       coast.setAttribute("class", "world-coastline");
       this.coastlinesLayer.appendChild(coast);
+    }
+    if (window.HistoryAtlas.EXTRA_LAKES) {
+      const lakes = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      lakes.setAttribute("d", window.HistoryAtlas.EXTRA_LAKES);
+      lakes.setAttribute("class", "inland-sea");
+      this.seasLayer.appendChild(lakes);
     }
     this.seas.forEach(s => {
       if (s.d) {
@@ -428,26 +440,7 @@ class MapRenderer {
       });
       grp.appendChild(hitPath);
 
-      // Gentle low-key caravan/ship micro-pearls along primary subpaths
-      const subpaths = rt.d.split("M ").filter(Boolean).map(seg => "M " + seg.trim());
-      subpaths.slice(0, 2).forEach((subD, sIdx) => {
-        const offsets = sIdx === 0 ? [0, 14] : [7];
-        offsets.forEach((beginSec) => {
-          const bead = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          bead.setAttribute("r", "1.95");
-          bead.setAttribute("fill", "#f4ead2");
-          bead.setAttribute("stroke", color);
-          bead.setAttribute("stroke-width", "1.1");
-          bead.setAttribute("class", "route-caravan");
-          const anim = document.createElementNS("http://www.w3.org/2000/svg", "animateMotion");
-          anim.setAttribute("path", subD);
-          anim.setAttribute("dur", "28s");
-          anim.setAttribute("begin", `${beginSec}s`);
-          anim.setAttribute("repeatCount", "indefinite");
-          bead.appendChild(anim);
-          grp.appendChild(bead);
-        });
-      });
+      // (moving caravan beads removed: endless SMIL animations kept the page repainting while idle)
 
       // Historical Entrepot / Hub Micro-Ring Nodes (labels stay quiet until hover/focus)
       (rt.hubs || []).forEach((hub) => {
@@ -568,6 +561,22 @@ class MapRenderer {
       bc.setAttribute("d", MUb.borders.country);
       bc.setAttribute("class", "unit-border-country");
       this.regionsLayer.appendChild(bc);
+    }
+
+    // Province / state / country names, shown only when zoomed in far enough to read them
+    if (this.units) {
+      this.unitLabelsLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      this.unitLabelsLayer.setAttribute("class", "unit-labels");
+      this._drawItems().forEach(it => {
+        if (it.area_weight < 0.012) return;
+        const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        t.setAttribute("x", it.cx);
+        t.setAttribute("y", it.cy);
+        t.setAttribute("class", "unit-label");
+        t.textContent = it.name;
+        this.unitLabelsLayer.appendChild(t);
+      });
+      this.labelsLayer.appendChild(this.unitLabelsLayer);
     }
 
     this.regions.forEach(r => {
@@ -761,6 +770,7 @@ class MapRenderer {
     // so reveal .is-minor banners & stateless sublabels once zoomed into a theater (>= 2.6x portrait, >= 1.6x desktop)
     const minZoom = window.innerHeight > window.innerWidth ? 2.6 : 1.6;
     const zoomed = this.scale >= minZoom;
+    this.svg.classList.toggle("map-zoomed-deep", this.scale >= (window.innerHeight > window.innerWidth ? 4.5 : 3.0));
     if (zoomed !== this._zoomedClass) {
       this._zoomedClass = zoomed;
       this.svg.classList.toggle("map-zoomed", zoomed);
@@ -832,17 +842,27 @@ class MapRenderer {
     const empireClusters = {};
     const resolveDisplayHex = window.HistoryAtlas.getEmpireDisplayColor || ((_, hex) => hex);
 
+    if (!this._paintSig) this._paintSig = {};
+    if (!this._pathEl) this._pathEl = {};
     this._drawItems().forEach(r => {
       const owner = ownerOf[r.id];
-      const el = document.getElementById("reg-" + r.id);
+      const el = this._pathEl[r.id] || (this._pathEl[r.id] = document.getElementById("reg-" + r.id));
       const rWeight = typeof r.area_weight === "number" ? r.area_weight : 1.0;
+      // Only touch the DOM when this unit's holder or selection changed (playback steps one year at a time)
+      const isSelected = (r.region || r.id) === selectedRegionId;
+      const isEmpireHighlighted = Boolean(this.highlightedEmpire && owner === this.highlightedEmpire);
+      const sig = `${owner || ""}|${isSelected || isEmpireHighlighted ? 1 : 0}`;
+      const dirty = this._paintSig[r.id] !== sig;
+      this._paintSig[r.id] = sig;
 
       if (owner && this.empires[owner]) {
         const gInfo = this._empireGradMap[owner];
         const fallbackColor = resolveDisplayHex(owner, this.empires[owner].color);
-        el.style.fill = gInfo ? gInfo.mid : fallbackColor;
-        el.style.stroke = gInfo ? gInfo.deep : "rgba(20, 28, 36, 0.45)";
-        el.classList.add("owned");
+        if (dirty) {
+          el.style.fill = gInfo ? gInfo.mid : fallbackColor;
+          el.style.stroke = gInfo ? gInfo.deep : "rgba(20, 28, 36, 0.45)";
+          el.classList.add("owned");
+        }
 
         if (!empireClusters[owner]) {
           empireClusters[owner] = { regs: [], count: 0, weight: 0, color: gInfo ? gInfo.light : fallbackColor };
@@ -850,18 +870,16 @@ class MapRenderer {
         empireClusters[owner].regs.push(r);
         empireClusters[owner].count += 1;
         empireClusters[owner].weight += rWeight;
-      } else {
+      } else if (dirty) {
         el.style.fill = "url(#stateless-hatch)";
         el.style.stroke = "rgba(18, 25, 34, 0.42)";
         el.classList.remove("owned");
       }
-      el.classList.toggle("stateless", !owner);
-
+      if (dirty) {
+        el.classList.toggle("stateless", !owner);
+        el.classList.toggle("selected", isSelected || isEmpireHighlighted);
+      }
       this._prevOwners[r.id] = owner || null;
-
-      const isSelected = (r.region || r.id) === selectedRegionId;
-      const isEmpireHighlighted = this.highlightedEmpire && owner === this.highlightedEmpire;
-      el.classList.toggle("selected", isSelected || isEmpireHighlighted);
     });
 
     // Stateless regions name who lived there (tribes, city-states, archaeological cultures)
