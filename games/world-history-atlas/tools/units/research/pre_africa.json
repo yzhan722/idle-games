@@ -1,0 +1,1578 @@
+{
+ "rows": {
+  "MRT": [
+   [
+    1594,
+    1886,
+    "#none"
+   ]
+  ],
+  "MLI~west_africa": [
+   [
+    1468,
+    1492,
+    "桑海帝国"
+   ],
+   [
+    1594,
+    1712,
+    "#none"
+   ],
+   [
+    1712,
+    1861,
+    "塞古班巴拉帝国"
+   ],
+   [
+    1861,
+    1886,
+    "图库勒尔帝国"
+   ]
+  ],
+  "MLI~maghreb_west": [
+   [
+    -202,
+    1886,
+    "#none"
+   ]
+  ],
+  "SEN": [
+   [
+    715,
+    1241,
+    "#none"
+   ],
+   [
+    1350,
+    1549,
+    "沃洛夫帝国"
+   ],
+   [
+    1549,
+    1885,
+    "#none"
+   ]
+  ],
+  "GMB": [
+   [
+    715,
+    1241,
+    "#none"
+   ],
+   [
+    1492,
+    1886,
+    "#none"
+   ]
+  ],
+  "GNB": [
+   [
+    715,
+    1241,
+    "#none"
+   ],
+   [
+    1492,
+    1537,
+    "马里帝国"
+   ],
+   [
+    1537,
+    1867,
+    "卡布王国"
+   ],
+   [
+    1867,
+    1886,
+    "#none"
+   ]
+  ],
+  "GIN": [
+   [
+    715,
+    1241,
+    "#none"
+   ],
+   [
+    1492,
+    1600,
+    "马里帝国"
+   ],
+   [
+    1600,
+    1725,
+    "#none"
+   ],
+   [
+    1725,
+    1880,
+    "富塔贾隆伊玛目国"
+   ],
+   [
+    1880,
+    1886,
+    "瓦苏卢帝国"
+   ]
+  ],
+  "SLE": [
+   [
+    715,
+    1886,
+    "#none"
+   ]
+  ],
+  "GNQ": [
+   [
+    715,
+    1886,
+    "#none"
+   ]
+  ],
+  "SAH": [
+   [
+    715,
+    1886,
+    "#none"
+   ]
+  ],
+  "CAF": [
+   [
+    715,
+    1886,
+    "#none"
+   ]
+  ],
+  "LBR": [
+   [
+    715,
+    1847,
+    "#none"
+   ]
+  ],
+  "CIV": [
+   [
+    715,
+    1594,
+    "#none"
+   ],
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "TGO": [
+   [
+    715,
+    1594,
+    "#none"
+   ],
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "GHA": [
+   [
+    715,
+    1594,
+    "#none"
+   ],
+   [
+    1701,
+    1874,
+    "阿散蒂帝国"
+   ],
+   [
+    1874,
+    1886,
+    "大英帝国"
+   ]
+  ],
+  "BFA": [
+   [
+    715,
+    1500,
+    "#none"
+   ],
+   [
+    1500,
+    1886,
+    "瓦加杜古王国"
+   ]
+  ],
+  "BEN": [
+   [
+    715,
+    1594,
+    "#none"
+   ],
+   [
+    1724,
+    1886,
+    "达荷美王国"
+   ]
+  ],
+  "NGA": [
+   [
+    715,
+    1594,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "索科托哈里发国"
+   ]
+  ],
+  "CMR": [
+   [
+    715,
+    1594,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "索科托哈里发国"
+   ]
+  ],
+  "NER": [
+   [
+    715,
+    1492,
+    "#none"
+   ],
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "CPV": [
+   [
+    -3000,
+    1462,
+    "#none"
+   ],
+   [
+    1462,
+    1886,
+    "葡萄牙王国"
+   ]
+  ],
+  "DZA~west_africa": [
+   [
+    715,
+    1886,
+    "#none"
+   ]
+  ],
+  "TCD~west_africa": [
+   [
+    715,
+    1380,
+    "加涅姆帝国"
+   ],
+   [
+    1380,
+    1507,
+    "#none"
+   ],
+   [
+    1507,
+    1806,
+    "博尔努帝国"
+   ],
+   [
+    1806,
+    1886,
+    "瓦达伊苏丹国"
+   ]
+  ],
+  "TCD~nubia": [
+   [
+    -1450,
+    715,
+    "#none"
+   ],
+   [
+    715,
+    1380,
+    "加涅姆帝国"
+   ],
+   [
+    1380,
+    1507,
+    "#none"
+   ],
+   [
+    1507,
+    1806,
+    "博尔努帝国"
+   ],
+   [
+    1806,
+    1886,
+    "瓦达伊苏丹国"
+   ]
+  ],
+  "TCD~carthage_tunisia": [
+   [
+    -814,
+    715,
+    "#none"
+   ],
+   [
+    715,
+    1380,
+    "加涅姆帝国"
+   ],
+   [
+    1380,
+    1507,
+    "#none"
+   ],
+   [
+    1507,
+    1806,
+    "博尔努帝国"
+   ],
+   [
+    1806,
+    1886,
+    "瓦达伊苏丹国"
+   ]
+  ],
+  "GAB~west_africa": [
+   [
+    715,
+    1886,
+    "#none"
+   ]
+  ],
+  "COG~west_africa": [
+   [
+    715,
+    1886,
+    "#none"
+   ]
+  ],
+  "GAB~south_africa": [
+   [
+    1075,
+    1886,
+    "#none"
+   ]
+  ],
+  "COG~south_africa": [
+   [
+    1075,
+    1886,
+    "#none"
+   ]
+  ],
+  "COD~south_africa": [
+   [
+    1075,
+    1886,
+    "#none"
+   ]
+  ],
+  "SDN~nubia": [
+   [
+    1504,
+    1821,
+    "森纳尔苏丹国"
+   ],
+   [
+    1821,
+    1884,
+    "穆罕默德·阿里王朝"
+   ],
+   [
+    1884,
+    1886,
+    "马赫迪国"
+   ]
+  ],
+  "SDN~east_africa": [
+   [
+    330,
+    1504,
+    "#none"
+   ],
+   [
+    1504,
+    1821,
+    "森纳尔苏丹国"
+   ],
+   [
+    1821,
+    1884,
+    "穆罕默德·阿里王朝"
+   ],
+   [
+    1884,
+    1886,
+    "马赫迪国"
+   ]
+  ],
+  "SDN~west_africa": [
+   [
+    715,
+    1603,
+    "#none"
+   ],
+   [
+    1603,
+    1874,
+    "达尔富尔苏丹国"
+   ],
+   [
+    1874,
+    1884,
+    "穆罕默德·阿里王朝"
+   ],
+   [
+    1884,
+    1886,
+    "马赫迪国"
+   ]
+  ],
+  "SDS~east_africa": [
+   [
+    330,
+    1886,
+    "#none"
+   ]
+  ],
+  "COD~east_africa": [
+   [
+    330,
+    1886,
+    "#none"
+   ]
+  ],
+  "SDS~west_africa": [
+   [
+    715,
+    1886,
+    "#none"
+   ]
+  ],
+  "EGY": [
+   [
+    1798,
+    1801,
+    "法兰西第一共和国"
+   ],
+   [
+    1805,
+    1882,
+    "穆罕默德·阿里王朝"
+   ],
+   [
+    1882,
+    1886,
+    "大英帝国"
+   ]
+  ],
+  "ETH": [
+   [
+    1531,
+    1543,
+    "阿达尔苏丹国"
+   ]
+  ],
+  "DJI": [
+   [
+    330,
+    943,
+    "#none"
+   ],
+   [
+    1415,
+    1577,
+    "阿达尔苏丹国"
+   ],
+   [
+    1577,
+    1884,
+    "#none"
+   ],
+   [
+    1884,
+    1886,
+    "法兰西第三共和国"
+   ]
+  ],
+  "SOL": [
+   [
+    330,
+    943,
+    "#none"
+   ],
+   [
+    1415,
+    1577,
+    "阿达尔苏丹国"
+   ],
+   [
+    1577,
+    1886,
+    "#none"
+   ]
+  ],
+  "SOM": [
+   [
+    330,
+    943,
+    "#none"
+   ],
+   [
+    1279,
+    1300,
+    "#none"
+   ],
+   [
+    1300,
+    1695,
+    "阿朱兰苏丹国"
+   ],
+   [
+    1695,
+    1886,
+    "#none"
+   ]
+  ],
+  "KEN": [
+   [
+    330,
+    943,
+    "#none"
+   ],
+   [
+    1279,
+    1886,
+    "#none"
+   ]
+  ],
+  "TZA": [
+   [
+    330,
+    943,
+    "#none"
+   ],
+   [
+    1279,
+    1886,
+    "#none"
+   ]
+  ],
+  "UGA": [
+   [
+    330,
+    1800,
+    "#none"
+   ],
+   [
+    1800,
+    1886,
+    "布干达王国"
+   ]
+  ],
+  "RWA": [
+   [
+    330,
+    1700,
+    "#none"
+   ],
+   [
+    1700,
+    1886,
+    "卢旺达王国"
+   ]
+  ],
+  "BDI": [
+   [
+    330,
+    1700,
+    "#none"
+   ],
+   [
+    1700,
+    1886,
+    "布隆迪王国"
+   ]
+  ],
+  "MAR": [
+   [
+    1526,
+    1659,
+    "萨阿德王朝"
+   ],
+   [
+    1659,
+    1666,
+    "#none"
+   ],
+   [
+    1666,
+    1886,
+    "摩洛哥阿拉维王朝"
+   ]
+  ],
+  "DZA": [
+   [
+    1683,
+    1830,
+    "奥斯曼帝国"
+   ],
+   [
+    1830,
+    1848,
+    "七月王朝"
+   ]
+  ],
+  "TUN~carthage_tunisia": [
+   [
+    1229,
+    1574,
+    "哈夫斯王朝"
+   ],
+   [
+    1881,
+    1886,
+    "法兰西第三共和国"
+   ]
+  ],
+  "TUN~maghreb_west": [
+   [
+    1229,
+    1574,
+    "哈夫斯王朝"
+   ],
+   [
+    1574,
+    1881,
+    "奥斯曼帝国"
+   ],
+   [
+    1881,
+    1886,
+    "法兰西第三共和国"
+   ]
+  ],
+  "LBY~carthage_tunisia": [
+   [
+    1526,
+    1551,
+    "#none"
+   ]
+  ],
+  "LBY~maghreb_west": [
+   [
+    -202,
+    1551,
+    "#none"
+   ],
+   [
+    1551,
+    1886,
+    "奥斯曼帝国"
+   ]
+  ],
+  "AGO": [
+   [
+    1075,
+    1400,
+    "#none"
+   ],
+   [
+    1400,
+    1665,
+    "刚果王国"
+   ],
+   [
+    1665,
+    1886,
+    "#none"
+   ]
+  ],
+  "ZMB": [
+   [
+    1075,
+    1886,
+    "#none"
+   ]
+  ],
+  "NAM": [
+   [
+    1075,
+    1886,
+    "#none"
+   ]
+  ],
+  "MWI": [
+   [
+    1075,
+    1886,
+    "#none"
+   ]
+  ],
+  "COM": [
+   [
+    1075,
+    1886,
+    "#none"
+   ]
+  ],
+  "BWA": [
+   [
+    1689,
+    1886,
+    "#none"
+   ]
+  ],
+  "ZWE": [
+   [
+    1220,
+    1450,
+    "大津巴布韦王国"
+   ],
+   [
+    1450,
+    1684,
+    "穆塔帕王国"
+   ],
+   [
+    1684,
+    1834,
+    "罗兹维帝国"
+   ],
+   [
+    1834,
+    1840,
+    "#none"
+   ],
+   [
+    1840,
+    1886,
+    "恩德贝莱王国"
+   ]
+  ],
+  "MOZ": [
+   [
+    1689,
+    1830,
+    "#none"
+   ],
+   [
+    1830,
+    1886,
+    "加扎帝国"
+   ]
+  ],
+  "LSO": [
+   [
+    1689,
+    1824,
+    "#none"
+   ],
+   [
+    1824,
+    1868,
+    "巴索托王国"
+   ],
+   [
+    1868,
+    1886,
+    "大英帝国"
+   ]
+  ],
+  "SWZ": [
+   [
+    1689,
+    1820,
+    "#none"
+   ],
+   [
+    1820,
+    1886,
+    "斯威士王国"
+   ]
+  ],
+  "ZA-WC": [
+   [
+    1795,
+    1803,
+    "大英帝国"
+   ]
+  ],
+  "ZA-EC": [
+   [
+    1689,
+    1778,
+    "#none"
+   ],
+   [
+    1795,
+    1803,
+    "大英帝国"
+   ]
+  ],
+  "ZA-NC": [
+   [
+    1689,
+    1806,
+    "#none"
+   ]
+  ],
+  "ZA-NL": [
+   [
+    1689,
+    1816,
+    "#none"
+   ],
+   [
+    1816,
+    1839,
+    "祖鲁王国"
+   ],
+   [
+    1839,
+    1843,
+    "纳塔利亚共和国"
+   ]
+  ],
+  "ZA-NW": [
+   [
+    1689,
+    1827,
+    "#none"
+   ],
+   [
+    1827,
+    1837,
+    "恩德贝莱王国"
+   ],
+   [
+    1837,
+    1852,
+    "#none"
+   ]
+  ],
+  "ZA-GT": [
+   [
+    1689,
+    1852,
+    "#none"
+   ]
+  ],
+  "ZA-LP": [
+   [
+    1689,
+    1852,
+    "#none"
+   ]
+  ],
+  "ZA-MP": [
+   [
+    1689,
+    1852,
+    "#none"
+   ]
+  ],
+  "ZA-FS": [
+   [
+    1689,
+    1848,
+    "#none"
+   ]
+  ],
+  "MDG": [
+   [
+    -3000,
+    1817,
+    "#none"
+   ]
+  ],
+  "MUS": [
+   [
+    -3000,
+    1638,
+    "#none"
+   ],
+   [
+    1638,
+    1658,
+    "荷兰共和国"
+   ],
+   [
+    1658,
+    1664,
+    "#none"
+   ],
+   [
+    1664,
+    1710,
+    "荷兰共和国"
+   ],
+   [
+    1710,
+    1715,
+    "#none"
+   ],
+   [
+    1715,
+    1792,
+    "法兰西王国"
+   ],
+   [
+    1792,
+    1804,
+    "法兰西第一共和国"
+   ],
+   [
+    1804,
+    1810,
+    "法兰西第一帝国"
+   ],
+   [
+    1810,
+    1886,
+    "大英帝国"
+   ]
+  ],
+  "FRA~south_africa": [
+   [
+    -3000,
+    1665,
+    "#none"
+   ],
+   [
+    1665,
+    1792,
+    "法兰西王国"
+   ],
+   [
+    1792,
+    1804,
+    "法兰西第一共和国"
+   ],
+   [
+    1804,
+    1810,
+    "法兰西第一帝国"
+   ],
+   [
+    1810,
+    1815,
+    "大英帝国"
+   ],
+   [
+    1815,
+    1830,
+    "波旁复辟王朝"
+   ],
+   [
+    1830,
+    1848,
+    "七月王朝"
+   ],
+   [
+    1848,
+    1852,
+    "法兰西第二共和国"
+   ],
+   [
+    1852,
+    1870,
+    "法兰西第二帝国"
+   ],
+   [
+    1870,
+    1886,
+    "法兰西第三共和国"
+   ]
+  ],
+  "ATF": [
+   [
+    -3000,
+    1886,
+    "#none"
+   ]
+  ],
+  "STP": [
+   [
+    -3000,
+    1485,
+    "#none"
+   ],
+   [
+    1485,
+    1641,
+    "葡萄牙王国"
+   ],
+   [
+    1641,
+    1648,
+    "荷兰共和国"
+   ],
+   [
+    1648,
+    1886,
+    "葡萄牙王国"
+   ]
+  ]
+ },
+ "new_polities": {
+  "加涅姆帝国": {
+   "color": "#d9a441",
+   "capital": "恩吉米",
+   "era_span": "700 - 1380",
+   "peak_area": "不详（13世纪盛期势力北达费赞）",
+   "regime": "萨赫勒神圣君主制（麦伊，11世纪起为赛义夫王朝）",
+   "desc": "兴起于乍得湖东北加涅姆地区的萨赫勒王国，9世纪已见于阿拉伯地理文献；11世纪末赛义夫王朝麦伊胡迈改宗伊斯兰教，13世纪杜纳马·迪巴勒米时期控制北通费赞的跨撒哈拉商路；14世纪后期受布拉拉人压迫，王室西迁乍得湖以西，延续为博尔努帝国。",
+   "capital_evol": "恩吉米（加涅姆，约700—1380年前后） → 王室放弃加涅姆西迁博尔努",
+   "institutions": "麦伊为神圣君主，宗室、王太后（马吉拉）与重臣组成议事会；伊斯兰化后以乌莱玛辅政，各地由贵族领主镇守",
+   "fiscal_tax": "依托跨撒哈拉商路的奴隶、象牙、马匹与盐贸易征税，并向周边部族征收贡赋",
+   "peak_demography": "人口与疆域无可靠统计",
+   "treaties_campaigns": "叶尔孤比记载扎加瓦人王国(872) · 麦伊胡迈改宗伊斯兰教、赛义夫王朝立(11世纪末) · 杜纳马·迪巴勒米扩张至费赞(13世纪中叶) · 布拉拉人逐出加涅姆、王室西迁(14世纪后期)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "早期年代依叶尔孤比（872年）等阿拉伯地理文献与赛义夫王朝王表《迪万》推算，起讫年份均为约数。"
+   }
+  },
+  "博尔努帝国": {
+   "color": "#c9935b",
+   "capital": "恩加扎尔加穆 / 库卡瓦",
+   "era_span": "1380 - 1893",
+   "peak_area": "不详（16世纪末环乍得湖盆地，北控费赞商路）",
+   "regime": "伊斯兰苏丹国（赛义夫王朝麦伊；19世纪由卡奈米家族谢胡掌权）",
+   "desc": "加涅姆赛义夫王室西迁乍得湖西岸后建立的国家，15世纪后期定都恩加扎尔加穆，16世纪收复加涅姆，伊德里斯·阿洛马引入火器称霸乍得湖盆地；19世纪初抵御富拉尼圣战，由穆罕默德·阿明·卡奈米主政，1846年赛义夫王朝终结；1893年为拉比赫所灭。",
+   "capital_evol": "迁徙无定都（约1380—1470年代） → 恩加扎尔加穆（约1472—1808） → 库卡瓦（1814年由卡奈米营建，1846年起为王都）",
+   "institutions": "麦伊之下设宗室与大臣议事会，诸省由贵族封臣管辖，伊斯兰教法官断案；1846年后谢胡为国家元首",
+   "fiscal_tax": "经费赞至的黎波里的跨撒哈拉商路征税，奴隶、马匹与盐贸易，属地与游牧部族贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "阿里·加吉定都恩加扎尔加穆(约1472) · 收复加涅姆故地(16世纪初) · 伊德里斯·阿洛马改革军制(1564—1596在位) · 富拉尼圣战军攻陷恩加扎尔加穆(1808) · 拉比赫攻灭博尔努(1893)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "伊玛目艾哈迈德·伊本·福尔图的16世纪编年史、阿拉伯与北非文献及巴尔特、纳赫蒂加尔等19世纪探险记录可证；14—15世纪年代为约数。"
+   }
+  },
+  "瓦达伊苏丹国": {
+   "color": "#e07a5f",
+   "capital": "瓦拉 / 阿贝歇",
+   "era_span": "1635 - 1909",
+   "peak_area": "不详（19世纪控制乍得东部并以巴吉尔米为属国）",
+   "regime": "伊斯兰苏丹国",
+   "desc": "约1635年阿卜杜·卡里姆在乍得东部推翻通朱尔人统治建立的伊斯兰苏丹国；19世纪初萨布恩苏丹攻破巴吉尔米，并开辟经库夫拉至班加西的商路，成为乍得盆地最强的国家；1909年为法军攻占。",
+   "capital_evol": "瓦拉（约1635—1850） → 阿贝歇（1850年起）",
+   "institutions": "苏丹之下设宫廷重臣与省督，巴吉尔米等属邦定期纳贡",
+   "fiscal_tax": "奴隶与象牙贸易、北向商路税、属邦贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "阿卜杜·卡里姆建国(约1635) · 萨布恩攻破巴吉尔米都城马塞尼亚(19世纪初) · 迁都阿贝歇(1850) · 法军攻占阿贝歇(1909)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "建国年代据口述传统约为1635年；19世纪据穆罕默德·突尼西与纳赫蒂加尔的实地记录及法国殖民档案。"
+   }
+  },
+  "沃洛夫帝国": {
+   "color": "#90be6d",
+   "capital": "若洛夫腹地（今塞内加尔林盖尔一带）",
+   "era_span": "1350 - 1549",
+   "peak_area": "不详（约今塞内加尔大部）",
+   "regime": "沃洛夫宗主君主国（布尔巴·若洛夫统辖属邦）",
+   "desc": "据传恩迪亚迪安·恩迪亚耶于14世纪中叶统一沃洛夫诸部建立，以布尔巴为宗主，统辖瓦洛、卡约尔、巴奥尔、锡内、萨卢姆等属邦，控制今塞内加尔大部；1549年卡约尔在丹基战役中击败宗主而独立，帝国瓦解为诸邦。",
+   "capital_evol": "若洛夫内陆腹地（今塞内加尔林盖尔一带）",
+   "institutions": "布尔巴为最高君主，由贵族会议推选；属邦君主（如卡约尔的达梅尔）向其纳贡",
+   "fiscal_tax": "属邦贡赋，15世纪后与葡萄牙人进行马匹与奴隶交易",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "恩迪亚迪安·恩迪亚耶建国(约1350) · 葡萄牙航海者抵达塞内加尔沿岸(15世纪中叶) · 丹基战役卡约尔独立、帝国解体(1549)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "建国人物与年代据口述传统；15世纪中叶卡达莫斯托等葡萄牙航海记录可证其存在与宗主体制。"
+   }
+  },
+  "卡布王国": {
+   "color": "#43aa8b",
+   "capital": "坎萨拉",
+   "era_span": "1537 - 1867",
+   "peak_area": "不详（今几内亚比绍大部及卡萨芒斯、冈比亚南部）",
+   "regime": "曼丁卡贵族武士君主国（曼萨巴）",
+   "desc": "原为马里帝国最西部的省份，16世纪马里衰落后独立，以曼丁卡尼安乔贵族为统治阶层，地跨今几内亚比绍大部及塞内加尔卡萨芒斯、冈比亚南部，长期参与大西洋奴隶贸易；1867年王都坎萨拉被富塔贾隆军攻破而亡。",
+   "capital_evol": "坎萨拉（今几内亚比绍东部加布区）",
+   "institutions": "由数个王系轮流出任曼萨巴，下辖众多省级小王国",
+   "fiscal_tax": "战俘与奴隶贸易（经葡萄牙卡谢乌等商站）、属地贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "脱离马里独立(16世纪) · 与葡萄牙沿海商站贸易(16—18世纪) · 坎萨拉之战王都陷落(1867)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "独立年代据口述传统与葡萄牙文献推算，1537年为常用约数；1867年坎萨拉之战较为确定。"
+   }
+  },
+  "富塔贾隆伊玛目国": {
+   "color": "#f4a261",
+   "capital": "廷博",
+   "era_span": "1725 - 1896",
+   "peak_area": "不详（富塔贾隆高原及周边）",
+   "regime": "富拉尼伊斯兰神权国（阿尔玛米由两大家系轮替）",
+   "desc": "18世纪20年代卡拉莫科·阿尔法领导富拉尼穆斯林在富塔贾隆高原发动圣战建立，以廷博为都，由阿尔法亚与索里亚两大家系轮流出任阿尔玛米；为西非最早的伊斯兰革新国家之一，1867年攻灭卡布王国，1896年并入法属几内亚。",
+   "capital_evol": "廷博（政治首都） / 富贡巴（宗教中心）",
+   "institutions": "阿尔玛米由长老会议推举，下辖九个迪瓦尔（省），依伊斯兰教法治理",
+   "fiscal_tax": "天课与农产贡赋、奴隶农业劳动、牲畜与对沿海的贸易",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "卡拉莫科·阿尔法发动圣战建国(约1725) · 伊布拉希马·索里任阿尔玛米、国势扩张(18世纪后期) · 攻灭卡布王国(1867) · 并入法属几内亚(1896)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "富拉尼阿拉伯文编年与19世纪欧洲旅行者记录可证；建国年份诸说在1725—1727年间。"
+   }
+  },
+  "瓦苏卢帝国": {
+   "color": "#e9c46a",
+   "capital": "比桑杜古",
+   "era_span": "1878 - 1898",
+   "peak_area": "不详（上几内亚、马里南部与科特迪瓦北部）",
+   "regime": "曼丁卡伊斯兰军事国家",
+   "desc": "萨摩里·杜尔以职业化步兵与自造火器建立的军事国家，1878年前后称法玛，鼎盛时控制上几内亚、马里南部与科特迪瓦北部；1880年代起与法军长期交战，1898年萨摩里被俘，国家覆灭。",
+   "capital_evol": "比桑杜古（今几内亚） → 1890年代东迁达巴卡拉（今科特迪瓦北部）",
+   "institutions": "萨摩里为法玛（后称阿尔玛米），全国分为军区，以索法常备军为骨干并设兵器作坊",
+   "fiscal_tax": "布雷等金矿区黄金、马匹与奴隶贸易、征服地贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "萨摩里称法玛(约1878) · 攻占康康(1881) · 与法国签订凯尼耶巴—库拉条约(1886) · 东迁科特迪瓦北部(1890年代) · 萨摩里被法军俘获(1898)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "法国军事档案、条约文本与同时代欧洲记录直接记载。"
+   }
+  },
+  "塞古班巴拉帝国": {
+   "color": "#d08c60",
+   "capital": "塞古",
+   "era_span": "1712 - 1861",
+   "peak_area": "不详（尼日尔河中游，自巴马科一带至杰内）",
+   "regime": "班巴拉军事君主国",
+   "desc": "比通·库利巴利于18世纪初将青年同龄组改造为常备军（托恩吉），在尼日尔河中游以塞古为都建国；1766年起恩戈洛·迪亚拉建立迪亚拉王朝，势力及于杰内并一度向廷巴克图征贡；1861年为哈吉·乌玛尔的图库勒尔军攻灭。",
+   "capital_evol": "塞古（尼日尔河畔，全期王都）",
+   "institutions": "法玛为君，托恩吉（王室奴兵团）为军事与行政骨干，属地纳贡",
+   "fiscal_tax": "战俘奴隶贸易、尼日尔河航运与市集税、属地贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "比通·库利巴利建国(约1712) · 恩戈洛·迪亚拉建立迪亚拉王朝(1766) · 蒙戈·帕克途经塞古(1796) · 图库勒尔军攻陷塞古(1861)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "18世纪年代据口述王表推算，1796年蒙戈·帕克游记及19世纪法国记录可证；建国年份为约数。"
+   }
+  },
+  "图库勒尔帝国": {
+   "color": "#a7c957",
+   "capital": "丁吉拉耶 / 塞古",
+   "era_span": "1848 - 1893",
+   "peak_area": "不详（今马里西部与中部、几内亚东北部）",
+   "regime": "提加尼教团伊斯兰圣战国家",
+   "desc": "富塔托罗出身的提加尼教团学者哈吉·乌玛尔·塔勒于1848年前后在丁吉拉耶聚众，1852年发动圣战，先后征服卡尔塔、塞古（1861）与马西纳（1862）；乌玛尔1864年死后由其子艾哈迈杜·塞库继承，1890—1893年为法军攻灭。",
+   "capital_evol": "丁吉拉耶（1840年代末—1850年代） → 塞古（1861—1890），诸子分镇尼奥罗、班迪亚加拉等地",
+   "institutions": "哈里发统领，诸子与门徒（塔利贝）分镇各地，依伊斯兰教法治理",
+   "fiscal_tax": "战利品、天课、征服地贡赋与奴隶劳动",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "发动圣战(1852) · 梅迪纳堡之围失利(1857) · 攻陷塞古(1861) · 攻灭马西纳(1862) · 法军攻占塞古(1890)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "法国殖民档案、法军战报与西非阿拉伯文史料直接记载。"
+   }
+  },
+  "瓦加杜古王国": {
+   "color": "#e5989b",
+   "capital": "瓦加杜古",
+   "era_span": "1500 - 1896",
+   "peak_area": "不详（今布基纳法索中部莫西高原）",
+   "regime": "莫西神圣君主制（莫戈·纳巴）",
+   "desc": "莫西诸王国中最大的一国，由莫戈·纳巴统治今布基纳法索中部莫西高原；建国年代说法不一（长年表上溯至11世纪，短年表定于15世纪末），此处取16世纪初起算；长期保持独立，1896年为法军占领。",
+   "capital_evol": "瓦加杜古",
+   "institutions": "莫戈·纳巴为神圣君主，宫廷大臣分掌政务，地方由纳巴（酋长）统治",
+   "fiscal_tax": "农产与牲畜贡赋、马匹贸易及柯拉果等商路税",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "桑海阿斯基亚·穆罕默德讨伐莫西(1497/1498) · 宾热访问瓦加杜古(1888) · 法军占领瓦加杜古(1896)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "王表据口述传统，长短年表之争未决；廷巴克图编年史与19世纪法国记录可证其存在。"
+   }
+  },
+  "阿散蒂帝国": {
+   "color": "#ffd166",
+   "capital": "库马西",
+   "era_span": "1670 - 1902",
+   "peak_area": "约 25 万 km²（18世纪后期含属邦，诸说不一）",
+   "regime": "阿坎联邦君主国（阿散蒂赫内）",
+   "desc": "奥塞·图图与祭司奥孔福·阿诺基以金凳子为象征统合阿坎诸邦，1701年击败登基拉而独立，18世纪扩张至今加纳大部并以北方贡加、达贡巴为属邦；19世纪多次与英国交战，1874年库马西被焚，1902年并入英属黄金海岸。",
+   "capital_evol": "库马西（全期王都）",
+   "institutions": "阿散蒂赫内为君，库马西议会与诸邦首领（奥曼赫内）组成联邦，奥塞·夸多时期形成官僚体系",
+   "fiscal_tax": "黄金专营、属邦奴隶与实物贡赋、商路过境税",
+   "peak_demography": "人口无可靠统计（19世纪估计数十万至百万余，诸说悬殊）",
+   "treaties_campaigns": "费耶阿塞之战击败登基拉(1701) · 征服贡加与达贡巴(1740年代) · 第一次英阿战争(1824) · 英军焚毁库马西、福梅纳条约(1874) · 金凳子战争后并入黄金海岸(1900—1902)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "荷兰、英国沿海商站档案与19世纪英国外交、军事记录直接记载；建国年代为约数。"
+   }
+  },
+  "达荷美王国": {
+   "color": "#ef476f",
+   "capital": "阿波美",
+   "era_span": "1600 - 1904",
+   "peak_area": "不详（今贝宁南部与中部）",
+   "regime": "丰人君主制",
+   "desc": "丰人在阿波美高原建立的王国，阿加贾王于1724年与1727年先后攻占阿拉达与维达，控制奴隶海岸；1730年起向奥约帝国纳贡，19世纪初盖佐王摆脱奥约宗主权；以女兵团著称，1892—1894年为法国征服。",
+   "capital_evol": "阿波美（王都）；维达为主要贸易港口",
+   "institutions": "君主集权，宫廷大臣（米甘、梅乌等）分掌内政与商务，官职男女对置，常备军含女兵团",
+   "fiscal_tax": "王室控制奴隶贸易，19世纪转向棕榈油出口；人头税、市场与通行税",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "阿加贾攻占阿拉达(1724) · 攻占维达(1727) · 向奥约纳贡(1730) · 盖佐摆脱奥约宗主权(1823) · 第二次法达战争、阿波美陷落(1892—1894)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "18世纪起英法葡奴隶贸易商站档案与旅行者记录直接记载；17世纪建国年代据口述王表为约数。"
+   }
+  },
+  "阿达尔苏丹国": {
+   "color": "#b388eb",
+   "capital": "达卡尔 / 哈勒尔",
+   "era_span": "1415 - 1577",
+   "peak_area": "不详（1530年代一度占领埃塞俄比亚高原大部）",
+   "regime": "伊斯兰苏丹国（16世纪由伊玛目掌握实权）",
+   "desc": "伊法特苏丹国覆灭后由瓦拉什马王族在泽拉与哈勒尔一带重建的穆斯林苏丹国；伊玛目艾哈迈德·格兰于1529年希姆布拉·库雷战役大败埃塞俄比亚，此后十余年占领埃塞俄比亚高原大部；1543年艾哈迈德战死后衰落，1577年迁都奥萨后解体。",
+   "capital_evol": "达卡尔 → 哈勒尔（1520年起） → 奥萨（1577年）",
+   "institutions": "瓦拉什马苏丹与伊玛目（军事宗教领袖）并立，16世纪伊玛目掌实权",
+   "fiscal_tax": "泽拉港红海与印度洋贸易税、战利品与贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "瓦拉什马王族复国(1415) · 希姆布拉·库雷战役(1529) · 葡萄牙援军抵达埃塞俄比亚(1541) · 瓦伊纳·达加战役艾哈迈德战死(1543) · 迁都奥萨(1577)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "阿拉伯文《阿比西尼亚征服史》、埃塞俄比亚王室编年史与葡萄牙远征记录相互印证。"
+   }
+  },
+  "阿朱兰苏丹国": {
+   "color": "#4cc9f0",
+   "capital": "马雷格 / 摩加迪沙",
+   "era_span": "1250 - 1695",
+   "peak_area": "不详（索马里南部，北至霍比奥、南至基斯马尤）",
+   "regime": "索马里氏族伊斯兰苏丹国（加雷恩王朝）",
+   "desc": "由阿朱兰氏族加雷恩王朝统治的索马里南部伊斯兰国家，控制谢贝利河与朱巴河流域的灌溉农业及摩加迪沙、梅尔卡、巴拉韦等印度洋港口；16世纪曾与奥斯曼舰队合作对抗葡萄牙；17世纪末因苛税引发叛乱而崩溃。",
+   "capital_evol": "马雷格（早期） → 克拉福 / 梅尔卡 / 摩加迪沙",
+   "institutions": "苏丹兼宗教领袖，地方设埃米尔与总督，国家掌控水井与河流用水",
+   "fiscal_tax": "农产与牲畜贡赋、港口贸易税",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "阿朱兰苏丹国兴起(13世纪) · 与奥斯曼米尔·阿里·贝伊舰队合作对抗葡萄牙(1580年代) · 加雷恩王朝倒台、国家解体(17世纪末)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "主要依据索马里口述传统与零星葡萄牙、阿拉伯记载，起讫年代均为约数。"
+   }
+  },
+  "布干达王国": {
+   "color": "#06d6a0",
+   "capital": "门戈（王宫历朝迁建，今坎帕拉一带）",
+   "era_span": "1300 - 1894",
+   "peak_area": "不详（维多利亚湖北岸及西北岸）",
+   "regime": "卡巴卡君主制",
+   "desc": "维多利亚湖北岸的班图王国，传统将其起源追溯至14世纪的金图；18—19世纪逐渐超越布尼奥罗成为大湖地区最强国家，穆特萨一世（1856—1884在位）时期与阿拉伯商人及欧洲传教士往来；1894年成为英国保护国。",
+   "capital_evol": "卡巴卡每朝另建王宫（基布加），19世纪后期定于门戈与鲁巴加一带（今坎帕拉）",
+   "institutions": "卡巴卡任命各郡（萨扎）酋长，设首相（卡蒂基罗）与议会（卢基科）",
+   "fiscal_tax": "农产与树皮布贡赋、劳役、战利品，19世纪起有象牙与奴隶贸易",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "穆特萨一世即位(1856) · 斯皮克抵达布干达(1862) · 宗教内战(1888—1892) · 成为英国保护国(1894)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "早期王表据口述传统；19世纪据斯皮克、斯坦利及传教士记录。"
+   }
+  },
+  "卢旺达王国": {
+   "color": "#5fa8d3",
+   "capital": "尼扬扎（19世纪末定都；此前王宫巡驻）",
+   "era_span": "1650 - 1897",
+   "peak_area": "约今卢旺达范围（19世纪后期）",
+   "regime": "神圣君主制（姆瓦米）",
+   "desc": "尼京亚王朝统治的大湖地区王国，17世纪中叶鲁甘祖·恩多里时期奠基，此后持续扩张，19世纪后期基格利四世·鲁瓦布吉里时期大致达到今卢旺达范围；1897年接受德国保护。",
+   "capital_evol": "王宫随姆瓦米巡驻 → 19世纪末定于尼扬扎",
+   "institutions": "姆瓦米为神圣君主，设牧场、土地、军事三类酋长，以牛只庇护关系维系等级",
+   "fiscal_tax": "牛只与农产贡赋、劳役",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "鲁甘祖·恩多里奠定王国(17世纪中叶) · 基格利四世·鲁瓦布吉里扩张(1853—1895在位) · 接受德国保护(1897)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "王表与年代依口述传统，主流采用范西纳的重建；19世纪后期有欧洲记录。"
+   }
+  },
+  "布隆迪王国": {
+   "color": "#73d2de",
+   "capital": "王宫巡驻（基特加一带）",
+   "era_span": "1680 - 1903",
+   "peak_area": "约今布隆迪范围（19世纪中叶）",
+   "regime": "神圣君主制（姆瓦米）",
+   "desc": "据传由恩塔雷一世·鲁沙齐于17世纪后期建立的大湖地区王国，19世纪上半叶恩塔雷四世·鲁甘巴时期扩张至大致今布隆迪范围；1903年姆瓦米姆韦齐四世签订基甘达条约承认德国保护。",
+   "capital_evol": "王宫随姆瓦米巡驻（基特加一带）",
+   "institutions": "姆瓦米为君，王族亲王（甘瓦）分领各地",
+   "fiscal_tax": "牛只与农产贡赋、劳役",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "恩塔雷一世建国(17世纪后期) · 恩塔雷四世·鲁甘巴扩张(19世纪上半叶) · 基甘达条约接受德国保护(1903)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "建国年代据口述传统，诸说相差可达一个世纪；19世纪后期有欧洲记录。"
+   }
+  },
+  "森纳尔苏丹国": {
+   "color": "#ff9f1c",
+   "capital": "森纳尔",
+   "era_span": "1504 - 1821",
+   "peak_area": "不详（杰济拉与尼罗河谷北至第三瀑布）",
+   "regime": "丰吉伊斯兰苏丹国",
+   "desc": "丰吉人首领阿马拉·敦卡斯于1504年前后建立、以青尼罗河畔森纳尔为都的伊斯兰苏丹国，与阿卜杜拉比人联合灭阿勒瓦，统辖杰济拉与尼罗河谷北至第三瀑布；18世纪后期实权落入哈马杰摄政之手，1821年向穆罕默德·阿里派遣的埃及军投降。",
+   "capital_evol": "森纳尔（青尼罗河畔，全期王都）",
+   "institutions": "丰吉苏丹为君，阿卜杜拉比谢赫（马尼尔）统辖北方，18世纪后期由哈马杰摄政执政",
+   "fiscal_tax": "王室掌控黄金与奴隶贸易，属地贡赋与商路税",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "阿马拉·敦卡斯建国(1504) · 丁德尔河畔击败埃塞俄比亚伊亚苏二世(1744) · 哈马杰摄政掌权(1761) · 向埃及军投降(1821)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "苏丹本地编年史（丰吉编年史）、布鲁斯等18世纪旅行者记录与埃及档案相互印证。"
+   }
+  },
+  "达尔富尔苏丹国": {
+   "color": "#b392ac",
+   "capital": "法希尔",
+   "era_span": "1603 - 1874",
+   "peak_area": "不详（今苏丹达尔富尔及科尔多凡西部）",
+   "regime": "凯拉王朝伊斯兰苏丹国",
+   "desc": "凯拉王朝苏莱曼·索隆于17世纪在杰贝勒迈拉山区建立的伊斯兰苏丹国，控制经“四十日路”通往埃及的商队路线；1874年为祖贝尔与埃及军攻灭，1898—1916年阿里·迪纳尔曾短暂复国。",
+   "capital_evol": "杰贝勒迈拉山区诸王宫 → 法希尔（18世纪末起）",
+   "institutions": "苏丹与宫廷大臣，地方以分封领地（哈库拉）治理",
+   "fiscal_tax": "奴隶、象牙、骆驼贸易与“四十日路”商队税，领地贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "苏莱曼·索隆建国(17世纪) · 定都法希尔(18世纪末) · 祖贝尔与埃及军攻灭(1874) · 阿里·迪纳尔复国(1898)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "18—19世纪据布朗、穆罕默德·突尼西游记与埃及档案；建国年代据王表约为1603年或更晚。"
+   }
+  },
+  "穆罕默德·阿里王朝": {
+   "color": "#f07167",
+   "capital": "开罗",
+   "era_span": "1805 - 1914",
+   "peak_area": "约 300 万 km²（1870年代含苏丹）",
+   "regime": "奥斯曼宗主权下的世袭自治总督国（1867年起称赫迪夫）",
+   "desc": "阿尔巴尼亚裔军官穆罕默德·阿里于1805年出任埃及总督，1811年清除马穆鲁克，推行军事与经济改革并于1820—1821年征服苏丹；1841年获奥斯曼承认世袭统治，1867年起称赫迪夫；1882年英军占领埃及后实权归英国，1914年英国宣布埃及为保护国。",
+   "capital_evol": "开罗；苏丹领地以喀土穆为首府（1820年代末起）",
+   "institutions": "世袭总督集权，新式征兵军队、国营工厂与专营制度，1866年设协商议会",
+   "fiscal_tax": "土地国有与棉花等农产专营、关税；1875年出售苏伊士运河股份，1876年设债务委员会",
+   "peak_demography": "1882年埃及人口普查约 680 万",
+   "treaties_campaigns": "出任埃及总督(1805) · 清除马穆鲁克(1811) · 征服苏丹(1820—1821) · 伦敦条约确认世袭(1840—1841) · 苏伊士运河通航(1869) · 泰勒凯比尔战役后英军占领(1882)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "奥斯曼敕令、1840年伦敦条约、埃及政府档案与人口普查直接记载。"
+   }
+  },
+  "马赫迪国": {
+   "color": "#2a9d8f",
+   "capital": "恩图曼",
+   "era_span": "1881 - 1898",
+   "peak_area": "不详（今苏丹大部及南苏丹部分地区）",
+   "regime": "伊斯兰神权国家（马赫迪，1885年后由哈里发统治）",
+   "desc": "穆罕默德·艾哈迈德1881年自称马赫迪起事反抗埃及统治，1883年歼灭希克斯所率埃及军，1885年1月攻陷喀土穆，建立以恩图曼为都的伊斯兰国家；马赫迪同年去世后由哈里发阿卜杜拉统治，1898年恩图曼战役为英埃联军所灭。",
+   "capital_evol": "阿巴岛起事（1881） → 欧拜伊德（1883） → 恩图曼（1885—1898）",
+   "institutions": "马赫迪及哈里发神权统治，设国库（贝特马尔），军队以安萨尔为核心",
+   "fiscal_tax": "天课、战利品与没收财产，由国库统一调度",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "宣布为马赫迪(1881) · 希坎战役歼灭希克斯军(1883) · 攻陷喀土穆、戈登被杀(1885) · 恩图曼战役覆灭(1898)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "马赫迪国文书、英国与埃及军事及外交档案直接记载。"
+   }
+  },
+  "萨阿德王朝": {
+   "color": "#f28482",
+   "capital": "马拉喀什 / 非斯",
+   "era_span": "1510 - 1659",
+   "peak_area": "不详（摩洛哥全境；1591年后兼领尼日尔河湾）",
+   "regime": "谢里夫苏丹国",
+   "desc": "出身德拉河谷的谢里夫家族，1510年起于苏斯地区领导抗葡斗争，1525年取马拉喀什，1549年攻占非斯取代瓦塔斯王朝统一摩洛哥；1578年马哈赞河之战大败葡萄牙，艾哈迈德·曼苏尔1591年远征灭桑海；1603年后陷入内战，1659年绝嗣而亡。",
+   "capital_evol": "塔鲁丹特 → 马拉喀什（1525年起） / 非斯",
+   "institutions": "谢里夫苏丹集权，中央政府（马赫增）统辖，火器部队多由雇佣兵与改宗者组成",
+   "fiscal_tax": "苏斯制糖业、跨撒哈拉黄金贸易、部落税与关税",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "取马拉喀什(1525) · 攻占非斯统一摩洛哥(1549) · 马哈赞河之战(1578) · 汤迪比战役灭桑海(1591) · 绝嗣灭亡(1659)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "摩洛哥宫廷史书、葡萄牙与西班牙档案及廷巴克图编年史相互印证。"
+   }
+  },
+  "哈夫斯王朝": {
+   "color": "#84a59d",
+   "capital": "突尼斯",
+   "era_span": "1229 - 1574",
+   "peak_area": "不详（今突尼斯、阿尔及利亚东部与的黎波里塔尼亚）",
+   "regime": "伊斯兰苏丹国（1253年起称哈里发）",
+   "desc": "穆瓦希德王朝伊夫里基亚总督阿布·扎卡里亚于1229年自立建立，以突尼斯为都，统治今突尼斯、阿尔及利亚东部与的黎波里塔尼亚；1270年击退法王路易九世十字军；16世纪成为西班牙与奥斯曼争夺的对象，1574年奥斯曼攻占突尼斯而灭亡。",
+   "capital_evol": "突尼斯（全期首都）",
+   "institutions": "苏丹之下设维齐尔与穆瓦希德长老会议，各省由王族或总督治理",
+   "fiscal_tax": "地中海贸易关税、农业土地税与部落贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "阿布·扎卡里亚自立(1229) · 击退路易九世十字军(1270) · 西班牙攻占的黎波里(1510) · 查理五世攻占突尼斯、哈夫斯成西班牙附庸(1535) · 奥斯曼攻占突尼斯(1574)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "伊本·赫勒敦等同时代史家记载及欧洲外交、军事档案直接确证。"
+   }
+  },
+  "祖鲁王国": {
+   "color": "#fb8500",
+   "capital": "夸布拉瓦约 / 乌伦迪",
+   "era_span": "1816 - 1897",
+   "peak_area": "不详（19世纪20年代控制图盖拉河南北的今夸祖鲁-纳塔尔大部）",
+   "regime": "军事君主制",
+   "desc": "恰卡于1816年继任祖鲁首领后改革军制，以年龄组军团与短刺矛战术兼并恩古尼诸部，建立东南非最强的王国；1838年血河之战败于布尔人，1879年英祖战争先胜于伊散德尔瓦纳、终败于乌伦迪；1887年祖鲁兰被英国吞并，1897年并入纳塔尔。",
+   "capital_evol": "夸布拉瓦约（恰卡） → 乌姆贡贡德洛武（丁冈） → 乌伦迪（塞奇瓦约）",
+   "institutions": "国王集权，年龄组军团驻扎军营，因杜纳任大臣与将领",
+   "fiscal_tax": "王室牛群、贡赋与战利品",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "恰卡继位(1816) · 血河之战(1838) · 伊散德尔瓦纳战役(1879) · 乌伦迪战役、王国瓦解(1879) · 英国吞并祖鲁兰(1887)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "纳塔尔殖民地档案、传教士与商人记录及英祖战争军事档案直接记载。"
+   }
+  },
+  "纳塔利亚共和国": {
+   "color": "#8ecae6",
+   "capital": "彼得马里茨堡",
+   "era_span": "1839 - 1843",
+   "peak_area": "不详（图盖拉河以南的纳塔尔）",
+   "regime": "布尔人共和国（人民议会）",
+   "desc": "布尔人迁徙者在血河之战后于图盖拉河以南建立的共和国，1839年成立，以彼得马里茨堡为都；1842年英军进驻德班并击败布尔人，1843年被英国吞并为纳塔尔殖民地。",
+   "capital_evol": "彼得马里茨堡",
+   "institutions": "人民议会（Volksraad）行使立法与行政权",
+   "fiscal_tax": "以农牧经济为主，财政规模有限",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "血河之战(1838) · 共和国成立(1839) · 德班之战(1842) · 英国吞并(1843)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "人民议会文件与英国开普殖民地档案直接记载。"
+   }
+  },
+  "恩德贝莱王国": {
+   "color": "#ff8fab",
+   "capital": "布拉瓦约",
+   "era_span": "1823 - 1894",
+   "peak_area": "不详（今津巴布韦西南部为核心，绍纳诸部纳贡）",
+   "regime": "军事君主制",
+   "desc": "祖鲁将领姆济利卡济于1823年前后脱离恰卡北迁，先后在高原西部（今南非豪登、西北省）立国，1837年为布尔人击败后越过林波波河，约1840年在今津巴布韦西南部重建王国；洛本古拉在位时以布拉瓦约为都，1893年第一次马塔贝莱战争后被英国南非公司征服。",
+   "capital_evol": "马加利斯堡山区（今比勒陀利亚一带，1827—1832） → 莫塞加（今西北省泽勒斯特附近，1832—1837） → 布拉瓦约（今津巴布韦）",
+   "institutions": "国王统率年龄组军团，以军团村落组织社会，被征服者与周边绍纳诸部纳贡",
+   "fiscal_tax": "牛只、贡赋与劫掠所得",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "脱离恰卡北迁(约1823) · 莫塞加之战败于布尔人(1837) · 在津巴布韦西南部重建王国(约1840) · 拉德租让协议(1888) · 第一次马塔贝莱战争(1893)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "传教士莫法特等记录、布尔人与英国殖民档案直接记载；早期年代为约数。"
+   }
+  },
+  "巴索托王国": {
+   "color": "#80ed99",
+   "capital": "塔巴博休",
+   "era_span": "1822 - 1868",
+   "peak_area": "不详（今莱索托及奥兰治河上游西岸低地）",
+   "regime": "君主制",
+   "desc": "莫舒舒一世在姆菲卡尼动乱中聚合索托诸部，1824年据守塔巴博休山建立王国；与英国及奥兰治自由邦多次交战，塞克蒂战争中失去西部肥沃低地，1868年请求英国保护成为巴苏陀兰。",
+   "capital_evol": "布塔布泰（1820年代初） → 塔巴博休（1824年起）",
+   "institutions": "国王与各地酋长共治，重大事务由民众大会（皮佐）商议",
+   "fiscal_tax": "牛只与谷物贡赋，19世纪中叶起向开普出售谷物",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "定都塔巴博休(1824) · 维尔沃特之战击败英方部队(1851) · 塞克蒂战争(1865—1866) · 成为英国保护地(1868)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "法国新教传教士记录与开普、奥兰治自由邦档案直接记载。"
+   }
+  },
+  "斯威士王国": {
+   "color": "#c77dff",
+   "capital": "洛班巴（王室驻地随君迁移）",
+   "era_span": "1745 - 1903",
+   "peak_area": "不详（19世纪中叶略大于今埃斯瓦蒂尼）",
+   "regime": "君主制（恩格温亚马与太后共治）",
+   "desc": "恩瓦内王族于18世纪中叶迁入今埃斯瓦蒂尼南部，19世纪初索布扎一世在姆菲卡尼动乱中重建国家，姆斯瓦蒂二世（1840—1868在位）将其扩展为强国；1894年起受德兰士瓦管辖，1903年成为英国保护地。",
+   "capital_evol": "王室驻地随君迁移，以洛班巴一带为中心",
+   "institutions": "国王与太后（恩德洛武卡蒂）共治，年龄组军团，各地酋长效忠王室",
+   "fiscal_tax": "牛只与农产贡赋、劳役",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "索布扎一世立国于今埃斯瓦蒂尼(约1815—1820) · 姆斯瓦蒂二世即位(1840) · 比勒陀利亚公约承认其独立(1881) · 受德兰士瓦管辖(1894) · 成为英国保护地(1903)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "18世纪年代据口述王系推算；19世纪据英国与德兰士瓦档案。"
+   }
+  },
+  "罗兹维帝国": {
+   "color": "#e85d75",
+   "capital": "达南贡贝",
+   "era_span": "1684 - 1834",
+   "peak_area": "不详（津巴布韦高原南部与西部为核心）",
+   "regime": "绍纳君主制（昌加米雷）",
+   "desc": "原为穆塔帕属下首领的昌加米雷·多姆博于1680年代崛起，取代托尔瓦（布图阿）王国，1693—1695年将葡萄牙人逐出津巴布韦高原，此后主宰高原南部与西部一个多世纪；1830年代遭北迁的恩古尼人攻灭。",
+   "capital_evol": "达南贡贝（今津巴布韦西南部）",
+   "institutions": "昌加米雷为君，诸地方首领纳贡",
+   "fiscal_tax": "黄金、牛只与贡赋，经葡萄牙集市贸易",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "昌加米雷·多姆博征服布图阿(1684) · 攻破葡萄牙丹博拉雷集市、逐葡人出高原(1693) · 恩古尼人攻灭(1830年代)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "主要依据葡萄牙文献、考古遗址与绍纳口述传统，起讫年代为约数。"
+   }
+  },
+  "穆塔帕王国": {
+   "color": "#ffbe0b",
+   "capital": "津巴布韦高原北缘王宫",
+   "era_span": "1430 - 1760",
+   "peak_area": "不详（津巴布韦高原北部至赞比西河谷）",
+   "regime": "绍纳神圣君主制（姆韦内·穆塔帕）",
+   "desc": "大津巴布韦衰落后由尼亚茨姆巴·穆托塔于15世纪中叶在津巴布韦高原北部建立的绍纳人王国，控制赞比西河流域的黄金贸易；16世纪起与葡萄牙人往来，1629年被迫成为葡萄牙附庸，17世纪末受罗兹维挤压，18世纪退缩至赞比西河谷。",
+   "capital_evol": "高原北缘（马佐埃河谷一带）王宫 → 18世纪退至赞比西河谷",
+   "institutions": "姆韦内·穆塔帕为神圣君主，宗室与地方首领纳贡",
+   "fiscal_tax": "黄金、象牙贸易及属地贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "穆托塔北迁立国(约1430) · 葡萄牙传教士西尔韦拉被杀(1561) · 成为葡萄牙附庸(1629) · 罗兹维逐葡萄牙人出高原(1693)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "16世纪起有葡萄牙文献记载；建国年代据口述传统与考古推算。"
+   }
+  },
+  "加扎帝国": {
+   "color": "#9ef01a",
+   "capital": "恰伊米特 / 曼贾卡泽",
+   "era_span": "1824 - 1895",
+   "peak_area": "不详（林波波河至赞比西河之间的莫桑比克南部与中部）",
+   "regime": "恩古尼军事君主制",
+   "desc": "恩德万德韦部将领索尚加内在姆菲卡尼时期北迁今莫桑比克南部建立的恩古尼王国，统治林波波河至赞比西河之间的广大地区，并迫使沿海葡萄牙据点纳贡；1895年贡古尼亚内被葡萄牙军俘获，王国覆灭。",
+   "capital_evol": "恰伊米特（索尚加内时期） → 曼贾卡泽（贡古尼亚内时期）",
+   "institutions": "国王统率年龄组军团，被征服的聪加、绍纳诸部纳贡",
+   "fiscal_tax": "牛只与贡赋，向葡萄牙商站征收贡金",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "索尚加内北迁建国(1820年代) · 继承战争(1858—1862) · 贡古尼亚内即位(1884) · 恰伊米特被俘、王国覆灭(1895)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "葡萄牙殖民档案与19世纪旅行者记录直接记载；建国年代为约数。"
+   }
+  },
+  "刚果王国": {
+   "color": "#3a86ff",
+   "capital": "姆班扎刚果（圣萨尔瓦多）",
+   "era_span": "1390 - 1914",
+   "peak_area": "不详（刚果河下游以南，今安哥拉北部与刚果（金）西端）",
+   "regime": "君主制（马尼刚果，选王会推举）",
+   "desc": "14世纪末卢肯尼·卢阿·尼米在刚果河下游以南建立的班图王国，以姆班扎刚果（今安哥拉北部）为都；1483年葡萄牙人抵达，阿方索一世（1509—1542在位）推行天主教化；1665年姆布维拉之战败于葡萄牙后陷入长期内战，此后王权衰微，1914年王位为葡萄牙废除。",
+   "capital_evol": "姆班扎刚果（16世纪末改称圣萨尔瓦多）",
+   "institutions": "马尼刚果由选王会推举，索约、姆班巴、姆彭巴、恩松迪等省由王族总督管理",
+   "fiscal_tax": "贝壳货币（恩津布）、布匹与实物贡赋，16世纪起有奴隶贸易",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "迪奥戈·康抵达刚果河口(1483) · 恩津加·恩库武受洗(1491) · 阿方索一世即位(1509) · 姆布维拉之战(1665) · 葡萄牙废除王位(1914)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "1483年后葡萄牙文献、刚果国王书信与传教士记录直接记载；建国年代据口述传统为约数。"
+   }
+  }
+ },
+ "notes": "How units were assigned: African units are whole countries (except South Africa), so a state is assigned only when it was the main state of the unit's settled heartland and held a substantial share of it. Where the region showed an empire that never reached the unit (Ghana, Mali, Songhai or Sokoto across all of West and Central Africa, Ethiopia across all of East Africa, Dutch and British rule over all of southern Africa, Aksum over Kenya, Tanzania and the Great Lakes), the row is #none. #none also replaces region culture labels that do not apply to the unit, such as the 1594-1803 Bornu/Hausa/Ashanti/Oyo label on Sierra Leone, Senegal or Mauritania, Mapungubwe and Great Zimbabwe on Congo, Angola or Madagascar, and uninhabited islands before settlement.\n\nKEYS ALREADY IN pre1886_current.mjs (DZA, LBR, MDG, ZA-WC, ZA-EC, ZA-NC, ZA-NL, ZA-NW, ZA-GT, ZA-LP, ZA-MP, ZA-FS): my rows end at or before the year the existing rows start, so add them to the existing rows rather than replacing them. DZA~west_africa is keyed by unit_id because PRE1886_SKIP_REGIONS excludes that piece from the DZA rows. Split countries (TCD, SDN, SDS, TUN, LBY, MLI, GAB, COG, COD, FRA) are keyed by unit_id because their pieces need different rows. Never key FRA as ISO3: FRA~south_africa is Réunion.\n\nLeast certain choices:\n(1) UGA, Buganda from 1800: Buganda held roughly a fifth of Uganda and Bunyoro was a comparable rival. It is assigned as the leading 19th-century state; #none would also be defensible.\n(2) AGO, Kongo 1400-1665: Kongo's core (Mbanza Kongo) is in Angola, but it covered only northern Angola. Portuguese Angola is not assigned because before 1886 it was only Luanda, Benguela and the Kwanza valley. The same applies to Portuguese Mozambique (Ilha, Zambezi prazos, coastal posts), so MOZ has #none 1689-1830 and then Gaza, to which those posts paid tribute.\n(3) BFA uses Ouagadougou (Mossi) from 1500 under the short chronology; the founding date is disputed.\n(4) Dates for Ajuran, Rwanda and Burundi come from oral tradition (confidence 学界推测).\n(5) TCD 1507-1806 Bornu (holding Kanem), then Wadai: neither held most of Chad, but each was the leading power in the Chad basin. 1380-1507, when the Bulala held Kanem, is #none.\n(6) NGA keeps the region's Sokoto 1804-1884. Before that it is #none for 715-1594 and keeps the region label for 1594-1803, because one Nigeria unit cannot show Oyo, Benin, Bornu or the Hausa states. CMR keeps Sokoto through the Adamawa emirate, which held much of north and central Cameroon. 1885 is set to Sokoto for both because the region's 1885 French Third Republic is wrong for every West African unit except SEN.\n(7) EGY from 1882 to 1886 is 大英帝国 (British occupation after Tel el-Kebir, with the khedive kept in office). This matches the region's 1885.\n(8) GHA from 1874 to 1886 is 大英帝国 (Gold Coast Colony). Asante proper stayed independent until 1896-1902, so 阿散蒂帝国 could run to 1886 instead.\n(9) DZA 1830-1848 is 七月王朝 from the 1830 landing. In the 1830s France held only the coast, while Abd al-Qadir held much of the interior until 1847.\n(10) DJI is French from 1884 (Obock and Tadjoura treaties). For SOL I kept #none to 1886: the British protectorate rested on treaties of 1884-86, and Britain held only the coast towns.\n\nCannot be shown with country-level units (would need sub-national units): Oyo, Benin, Hausa and Bornu inside Nigeria; Luba, Lunda, Kuba, Yeke and the Congo Free State inside COD (#none); Lozi and Kazembe in ZMB; Maravi in MWI; Kilwa and the Omani/Zanzibar coastal strip in KEN and TZA (coastal, so #none); Ndongo and Matamba in AGO; Pedi in Limpopo and Mpumalanga; Loango and Tio in COG.\n\nProblems in existing rows (pre1886_current.mjs):\n- ZA-GT, ZA-LP, ZA-MP, ZA-NW: the Transvaal (德兰士瓦共和国) 1852-1886 row misses the British annexation of 1877-1881. It should be 1877-1881 大英帝国.\n- ZA-NC: 1806 UK is too early. The Cape reached the Orange only in 1847, Griqualand West was annexed in 1871/1880, and British Bechuanaland and Gordonia came in 1885. My NC row ends at 1806 so that it does not overlap; strictly, 1806-1847 should be #none.\n- ZA-NL: 1843 UK covers only Natal. Zululand, north of the Tugela, stayed an independent Zulu kingdom until 1879 and was annexed in 1887; Natal was the larger part, so I left the row as is.\n- ZA-EC: Transkei was annexed only in 1879-1894. Minor.\n\nProblems in region_timeline.tsv (worth fixing at region level):\n- nubia: Sennar (1504-1821) is drawn as a stateless label although it was a state. Egyptian rule began in 1821, not 1836. 1885 should be the Mahdist State, not Britain.\n- maghreb_west: 1526-1682 Ottoman is wrong for Morocco, which was Saadi. 1683-1847 Alaouite is wrong for Algeria, Tunisia and Libya, which were the Ottoman regencies. 1848-1885 France is wrong for Morocco, which was independent until 1912.\n- carthage_tunisia: Ottoman rule begins in 1574 for Tunis (Hafsids until then, Spanish vassals from 1535) and in 1551 for Tripoli (Spain and the Knights of Malta held it 1510-1551). Not fixed: Carthage, Western Rome and the Vandals are shown over all of Libya, including Cyrenaica, which was Greek/Ptolemaic and later Eastern Roman.\n- lower_egypt: Assyria -700 to -613 should be about -671 to -656 (Saite independence came under Psamtik I). The Kushite 25th Dynasty (about -728 to -656) is missing. The Fatimid conquest was in 969, not 979. upper_egypt: Kush -770 to -613 should end about -656.\n- maghreb_west, ancient: Rome is shown over all of Morocco from -27 to 394. Mauretania was a client kingdom until 40 AD, and Rome gave up southern Tingitana about 285.\n- east_africa: Aksum is shown from 330; it was a state from about 100 AD."
+}

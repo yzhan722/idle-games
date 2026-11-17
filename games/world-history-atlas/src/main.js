@@ -22,6 +22,13 @@
   let activeTheaterId = "world";
 
   const svgEl = document.getElementById("world-map");
+  // Phone home view: Afro-Eurasia (stored in old base-map coordinates, moved onto the current projection)
+  function focusPhoneHome() {
+    const w = window.HistoryAtlas.warpOldPoint;
+    // centred on Central Asia (~68E 34N); 2.5x lets Europe-to-Japan fill a portrait screen's height
+    const [x, y] = w ? w(805, 170) : [780, 180];
+    renderer.focusOnPoint(x, y, w ? 2.5 : 1.8);
+  }
   const renderer = new MapRenderer(
     svgEl,
     REGIONS,
@@ -48,6 +55,17 @@
     }
   );
 
+  // Person view (人物视角): follows one figure's documented stops year by year
+  let personView = null;
+  if (window.HistoryAtlas.PersonViewController) {
+    personView = new window.HistoryAtlas.PersonViewController({
+      renderer,
+      getYear: () => currentYear,
+      jumpToYear: (y) => window.AtlasApp.jumpToYear(y),
+      pausePlayback: () => { if (isPlaying) window.AtlasApp.togglePlay(); }
+    });
+  }
+
   // Inspector drawer: on screens narrower than 1500px it stays collapsed to its title until a region is
   // chosen, so it does not cover the map; wide screens reserve room for it beside the map.
   const infoCardEl = document.getElementById("info-card");
@@ -71,7 +89,7 @@
   // Counts in static copy follow the data instead of being hard-coded
   const searchInputEl = document.getElementById("search-input");
   if (searchInputEl) {
-    searchInputEl.placeholder = `搜索编年史 / ${Object.keys(EMPIRES).length} 个政权 / 典章兵制 / 丝路商埠 / 年份...`;
+    searchInputEl.placeholder = `搜索编年史 / ${Object.keys(EMPIRES).length} 个政权 / 省州国家 / 丝路商埠 / 年份...`;
   }
   const chrSubtitleEl = document.getElementById("chr-subtitle");
   if (chrSubtitleEl) {
@@ -388,6 +406,7 @@
     if (typeof syncChinaAnnalsView === "function") {
       syncChinaAnnalsView();
     }
+    if (personView) personView.sync(currentYear);
   }
 
   function formatShortYear(y) {
@@ -586,13 +605,19 @@
       renderInspectorTrajectory(null);
     }
 
-    const historyList = engine.getRegionHistory(regionId, currentYear);
+    const historyList = selUnit
+      ? engine.getUnitHistory(selUnit.id, regionId, currentYear)
+      : engine.getRegionHistory(regionId, currentYear);
     const histContainer = document.getElementById("card-history-list");
     histContainer.innerHTML = "";
     if (historyList.length === 0) {
       histContainer.innerHTML = '<div class="hist-item is-stateless">暂无政权更替记录</div>';
     } else {
-      historyList.slice(0, 6).forEach(h => {
+      const head = document.createElement("div");
+      head.className = "hist-scope";
+      head.textContent = selUnit ? `${selUnit.n}历代归属（共 ${historyList.length} 段，新近在前）` : `${regObj.name.split("(")[0]}历代归属（新近在前）`;
+      histContainer.appendChild(head);
+      historyList.slice(0, selUnit ? 12 : 6).forEach(h => {
         const div = document.createElement("div");
         div.className = h.stateless ? "hist-item is-stateless" : "hist-item";
         div.innerHTML = `<span class="hist-year">${formatYear(h.year)}</span> <span class="hist-owner">${h.owner}</span>`;
@@ -796,7 +821,7 @@
       activeTheaterId = "world";
       document.querySelectorAll(".theater-pill").forEach(el => el.classList.toggle("active", el.id === "th-world"));
       if (window.innerWidth <= 900 && window.innerHeight > window.innerWidth) {
-        renderer.focusOnPoint(780, 180, 1.8);
+        focusPhoneHome();
       } else {
         renderer.resetView();
       }
@@ -827,6 +852,10 @@
         item.onclick = () => {
           audio.playClickPop();
           dd.style.display = "none";
+          if (h.personId) {
+            if (personView) personView.open(h.personId);
+            return;
+          }
           if (typeof h.year === "number") {
             currentYear = h.year;
             yearFloat = h.year;
@@ -840,9 +869,11 @@
           }
           if (h.regionId) {
             selectedRegionId = h.regionId;
+            selectedUnitId = h.unitId || null;
+            if (h.unitId) setInspectorOpen(true);
           }
           if (h.x && h.y) {
-            renderer.focusOnPoint(h.x, h.y, 2.0);
+            renderer.focusOnPoint(h.x, h.y, h.unitId ? 3.0 : 2.0);
           }
           updateView();
         };
@@ -1230,6 +1261,10 @@
       }
       syncChinaAnnalsView();
     },
+    openPersonPicker() {
+      audio.playClickPop();
+      if (personView) personView.openPicker();
+    },
     toggleChinaAnnals(forceOpen) {
       audio.playClickPop();
       if (!chinaAnnals) return;
@@ -1367,7 +1402,13 @@
 
   // Phones: the world map is a thin strip at full width, so open on Afro-Eurasia at a readable zoom
   if (window.innerWidth <= 900) {
-    renderer.focusOnPoint(780, 180, 1.8);
+    focusPhoneHome();
+  }
+
+  // Desktop: fetch the China yearly volumes once the page is idle; phones wait until the panel is opened
+  if (chinaAnnals && window.innerWidth > 900) {
+    const idle = window.requestIdleCallback || (cb => setTimeout(cb, 2500));
+    idle(() => chinaAnnals.ensureVolumes(), { timeout: 8000 });
   }
 
   let lastIsPortrait = window.innerHeight > window.innerWidth;

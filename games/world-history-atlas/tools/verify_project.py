@@ -711,6 +711,7 @@ def main():
     verify_china_annals_v6(region_ids)
 
     verify_map_units()
+    verify_persons()
     print("[PASS] ALL CHECKS PASSED! 100% Referential Integrity Verified.")
     sys.exit(0)
 
@@ -1115,7 +1116,10 @@ def verify_map_units():
         'const R=new Set(H.REGIONS.map(r=>r.id)); const ids=new Set(); let bad=[]; '
         'for (const u of M.units){ if(!R.has(u.r)) bad.push("region "+u.r+" of "+u.id); if(ids.has(u.id)) bad.push("dup "+u.id); ids.add(u.id); if(!u.d) bad.push("no path "+u.id); } '
         'for (const [id,seq] of Object.entries(M.modern)){ if(!ids.has(id)) bad.push("modern for unknown unit "+id); '
-        '  for (const [a,b,n] of seq){ if(!(a<b)) bad.push("bad span "+id); if(n && !H.EMPIRES[n]) bad.push("unknown polity "+n); } } '
+        'const yr=t=>t==="至今"?9999:t.startsWith("前")?-parseInt(t.slice(1)):parseInt(t); '
+        'const span=n=>{const m=(H.EMPIRES[n].era_span||"").match(/^(前?\\d+)\\s*-\\s*(前?\\d+|至今)$/); return m?[yr(m[1]),yr(m[2])]:null;}; '
+        '  for (const [a,b,n] of seq){ if(!(a<b)) bad.push("bad span "+id); if(!n) continue; if(!H.EMPIRES[n]) { bad.push("unknown polity "+n); continue; } '
+        '    const sp=span(n); if(sp && (a < sp[0]-10 || b-1 > sp[1]+15)) bad.push(id+" "+a+"-"+b+" "+n+" outside "+H.EMPIRES[n].era_span); } } '
         'for (const r of R) if(!M.regionCenters[r]) bad.push("no anchor for region "+r); '
         'if(bad.length) throw new Error(bad.slice(0,10).join("; ")); '
         'process.stdout.write(M.units.length+" units, "+Object.keys(M.modern).length+" with unit-level holders");'
@@ -1124,6 +1128,25 @@ def verify_map_units():
     if pv.returncode != 0:
         fail(f"map_units.js check failed: {pv.stderr.strip()[-600:]}")
     print(f"[OK] Verified map_units.js: {pv.stdout.strip()}")
+
+
+def verify_persons():
+    """Person view: index entries have a data file; stops sorted, inside the life span, nothing after 1949."""
+    import subprocess as _sp
+    js = (
+        'global.window={HistoryAtlas:{}}; require("./src/data/persons_index.js"); require("./src/data/empires_db.js"); '
+        'const H=window.HistoryAtlas, fs=require("fs"); const bad=[]; let stops=0; '
+        'for (const e of H.PERSONS_INDEX){ const f="./src/data/persons/"+e.id+".js"; if(!fs.existsSync(f)){ bad.push("missing "+f); continue; } require(f); '
+        '  const p=H.PERSONS[e.id]; if(!p){ bad.push("not registered "+e.id); continue; } if(p.polity && !H.EMPIRES[p.polity]) bad.push(e.id+" unknown polity "+p.polity); '
+        '  let last=-1e9; for (const s of p.stops){ stops++; if(s.year<last) bad.push(e.id+" unsorted "+s.year); last=s.year; '
+        '    if(s.year<p.born-1||s.to>p.died+1) bad.push(e.id+" stop outside life "+s.year); if(s.to>1949) bad.push(e.id+" after 1949"); '
+        '    if(typeof s.x!=="number"||typeof s.y!=="number") bad.push(e.id+" no xy "+s.year); } } '
+        'if(bad.length) throw new Error(bad.slice(0,10).join("; ")); process.stdout.write(H.PERSONS_INDEX.length+" persons, "+stops+" stops");'
+    )
+    pv = _sp.run(["node", "-e", js], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+    if pv.returncode != 0:
+        fail(f"persons check failed: {pv.stderr.strip()[-600:]}")
+    print(f"[OK] Verified person view data: {pv.stdout.strip()}")
 
 if __name__ == "__main__":
     main()

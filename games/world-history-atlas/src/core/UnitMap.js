@@ -46,13 +46,25 @@
     if (c) { r.cx = c[0]; r.cy = c[1]; } else { const [x, y] = warp(r.cx, r.cy); r.cx = x; r.cy = y; }
   });
   H.COASTLINES = MU.land;
-  (H.SEAS || []).forEach(s => { s.d = s.d ? warpPath(s.d) : s.d; warpXY(s, "lx", "ly"); });
-  (H.RIVERS || []).forEach(rv => { rv.d = warpPath(rv.d); warpXY(rv, "lx", "ly"); });
-  (H.MOUNTAINS || []).forEach(m => { m.d = warpPath(m.d); warpXY(m, "lx", "ly"); });
-  Object.values(H.TRADE_ROUTES || {}).forEach(rt => { rt.d = warpPath(rt.d); (rt.hubs || []).forEach(h => warpXY(h)); });
-  (H.CITY_STATES || []).forEach(cs => warpXY(cs));
+  const L = H.MAP_LAYERS; // real rivers / lakes / seas / ranges and pre-placed markers (src/data/map_layers.js)
+  if (L) {
+    H.RIVERS = L.rivers;
+    H.SEAS = L.seas;
+    H.MOUNTAINS = L.mountains;
+    H.EXTRA_LAKES = L.extraLakes;
+  } else {
+    (H.SEAS || []).forEach(s => { s.d = s.d ? warpPath(s.d) : s.d; warpXY(s, "lx", "ly"); });
+    (H.RIVERS || []).forEach(rv => { rv.d = warpPath(rv.d); warpXY(rv, "lx", "ly"); });
+    (H.MOUNTAINS || []).forEach(m => { m.d = warpPath(m.d); warpXY(m, "lx", "ly"); });
+  }
+  const placed = (table, key, o) => {
+    const p = L && L.points[table] && L.points[table][key];
+    if (p) { o.x = p[0]; o.y = p[1]; } else warpXY(o);
+  };
+  Object.entries(H.TRADE_ROUTES || {}).forEach(([key, rt]) => { rt.d = warpPath(rt.d); (rt.hubs || []).forEach((h, i) => placed("hub", `${key}:${i}`, h)); });
+  (H.CITY_STATES || []).forEach(cs => placed("cs", cs.id, cs));
   (H.TIMELINE || []).forEach(k => (k.landmarks || []).forEach(lm => warpXY(lm)));
-  (H.CHRONICLE_ANNALS || []).forEach(ev => warpXY(ev));
+  (H.CHRONICLE_ANNALS || []).forEach(ev => placed("ev", ev.id, ev));
 
   // Theater cameras were stored as (scale, panX, panY) for the old view centred on (600, 295)
   const cx = MU.viewBox[0] + MU.viewBox[2] / 2 - 20, cy = MU.viewBox[1] + MU.viewBox[3] / 2 + 4.5;
@@ -72,7 +84,7 @@
       let o = regionOwners[u.r] || null;
       const seq = MU.modern[u.id];
       if (seq) {
-        for (const s of seq) { if (y >= s[0] && y < s[1]) { if (s[2]) o = s[2]; break; } }
+        for (const s of seq) { if (y >= s[0] && y < s[1]) { if (s[2]) o = s[2]; else if (s[2] === "") o = null; break; } }
       }
       out[u.id] = o;
     }
