@@ -248,6 +248,102 @@ export interface PlayerState {
       claimedCount: number;
     };
   };
+  skyForge?: {
+    emblemLevels?: Partial<Record<'star_blade' | 'crescent_bow' | 'star_hammer' | 'amethyst_staff', number>>;
+    totalForges?: number;
+    activePacts?: Array<'ember_vanguard' | 'verdant_harvest' | 'forge_oath' | 'gale_hunt' | 'astral_covenant'>;
+    totalPactsSigned?: number;
+  };
+  harborDerby?: {
+    weekKey?: string;
+    entriesUsed?: number;
+    totalEntries?: number;
+    bestWeeklyScore?: number;
+    knownRecipes?: Array<'harbor_worm' | 'glow_shrimp' | 'sunscale_lure' | 'abyss_lantern_lure'>;
+    trophies?: Partial<Record<'bronze' | 'silver' | 'gold' | 'legend', number>>;
+  };
+  harborAquarium?: {
+    species?: Partial<Record<string, { count: number; bestSizeCm: number }>>;
+    featuredTank?: string | null;
+  };
+  adventurerAcademy?: {
+    credits?: Partial<Record<'gathering' | 'crafting' | 'tactics' | 'commerce', number>>;
+    completedCourses?: Partial<Record<string, number>>;
+    activeCourse?: { courseId: string; startedAt: string; endsAt: string } | null;
+    totalEnrollments?: number;
+    totalGraduations?: number;
+  };
+  festivalCalendar?: {
+    seasonKey?: string;
+    tokens?: number;
+    keepsakes?: Array<'spring' | 'summer' | 'autumn' | 'winter'>;
+    totalTokensEarned?: number;
+    totalClaims?: number;
+  };
+  skyArena?: {
+    seasonKey?: string;
+    rung?: number;
+    bestRung?: number;
+    dayKey?: string;
+    attemptsUsed?: number;
+    medals?: number;
+    titles?: Array<'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'sky_king'>;
+  };
+  guildTown?: {
+    facilities?: Partial<
+      Record<'town_hall' | 'artisan_row' | 'harvest_market' | 'training_grounds' | 'guild_bank' | 'sage_library', number>
+    >;
+    chestsClaimed?: number[];
+  };
+  beastRanch?: {
+    beasts?: Partial<
+      Record<
+        'bloom_bee' | 'echo_bat' | 'mire_toad' | 'frostmane_wolf' | 'ember_hound' | 'chrono_wyrm',
+        { xp?: number; fed?: number; tamedAt?: string }
+      >
+    >;
+    activeBeastId?: 'bloom_bee' | 'echo_bat' | 'mire_toad' | 'frostmane_wolf' | 'ember_hound' | 'chrono_wyrm' | null;
+  };
+  bardTavern?: {
+    dayKey?: string;
+    fame?: number;
+    activeBallad?: { balladId?: string; startedAt?: string; endsAt?: string } | null;
+  };
+  adventurerChronicle?: {
+    inscribed?: string[];
+    equippedTitle?: string | null;
+  };
+  airshipTrade?: {
+    dayKey?: string;
+    location?: string;
+    hullLevel?: number;
+  };
+  paladinTrial?: {
+    weekKey?: string;
+    medals?: number;
+    totalMedals?: number;
+    virtues?: Partial<Record<'valor' | 'aegis' | 'vigor' | 'glory', number>>;
+  };
+  dwarfMine?: {
+    dayKey?: string;
+    depth?: number;
+    cartLevel?: number;
+  };
+  elfWaystation?: {
+    dayKey?: string;
+    favor?: number;
+    boardTier?: number;
+  };
+  weatherTower?: {
+    dayKey?: string;
+    forecasts?: Array<{
+      dayKey?: string;
+      natural?: 'sunny' | 'rain' | 'fog' | 'storm' | 'aurora';
+      wish?: 'sunny' | 'rain' | 'fog' | 'storm' | 'aurora' | null;
+      granted?: boolean;
+    }>;
+    totalDivinations?: number;
+  };
 }
 
 export type CombatSkillId = "stamina" | "intelligence" | "attack" | "defense" | "melee" | "ranged" | "magic";

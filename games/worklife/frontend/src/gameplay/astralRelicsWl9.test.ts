@@ -34,8 +34,8 @@ const t1Root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../as
 const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 describe("WL-9 frontend art contract, navigation IA, zero-SVG/Emoji/flicker guard, and Sacred Relic helpers", () => {
-  it("registers all 6 WL-9 hand-painted RGBA .webp icons in T1 contract and bumps cache version to 20261115wl9", () => {
-    assert.equal(T1_ASSET_CACHE_VERSION, "20261115wl9");
+  it("registers all 6 WL-9 hand-painted RGBA .webp icons in T1 contract and keeps a dated wl cache version", () => {
+    assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.equal(WL9_ASTRAL_RELICS_ART_IDS.length, 6);
 
     for (const id of WL9_ASTRAL_RELICS_ART_IDS) {
@@ -53,7 +53,7 @@ describe("WL-9 frontend art contract, navigation IA, zero-SVG/Emoji/flicker guar
 
     assert.equal(
       withAssetCacheVersion("/assets/astral_ruin_compass.webp"),
-      "/assets/astral_ruin_compass.webp?v=20261115wl9"
+      `/assets/astral_ruin_compass.webp?v=${T1_ASSET_CACHE_VERSION}`
     );
   });
 

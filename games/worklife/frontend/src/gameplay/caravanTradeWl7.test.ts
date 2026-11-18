@@ -22,7 +22,7 @@ const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 
 describe("WL-7 frontend art contract, navigation IA, zero-SVG/Emoji guard, and caravan helpers", () => {
   it("registers all 6 WL-7 hand-drawn RGBA .webp caravan icons in T1 contract with cache version", () => {
-    assert.match(T1_ASSET_CACHE_VERSION, /^20261115wl\d+$/);
+    assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.equal(WL7_CARAVAN_ART_IDS.length, 6);
 
     for (const id of WL7_CARAVAN_ART_IDS) {

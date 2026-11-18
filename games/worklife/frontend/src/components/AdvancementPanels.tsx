@@ -23,6 +23,113 @@ import type {
   SacredRelicId,
   SacredRelicLevelStats,
 } from '../gameplay/astralRelics';
+import type {
+  GuildPactAction,
+  GuildPactLinkTierDef,
+  GuildTrialPactId,
+  SkyForgeBonuses,
+  SkyForgeTierDef,
+  StarEmblemDomain,
+  StarEmblemId,
+  StarEmblemLevelStats,
+} from '../gameplay/skyForge';
+import {
+  HARBOR_RARITY_LABELS,
+  HARBOR_SPECIES,
+  buildHarborCatchPool,
+  harborPoolOdds,
+  type HarborAquariumBonuses,
+  type HarborAquariumStats,
+  type HarborAquariumTierDef,
+  type HarborBaitId,
+  type HarborDerbyTierDef,
+  type HarborDerbyTierId,
+  type HarborGroundId,
+  type HarborRodTierDef,
+  type HarborSpeciesId,
+  type HarborTankThemeId,
+  type HarborTrophyTierId,
+} from '../gameplay/harborDerby';
+import {
+  ACADEMY_DEPARTMENTS,
+  formatAcademyCountdown,
+  formatAcademyStats,
+  formatCourseDuration,
+  getAcademyDepartmentTier,
+  type AcademyBadgeDef,
+  type AcademyCourseId,
+  type AcademyDepartmentId,
+  type AcademyDepartmentTierDef,
+  type AcademyFestivalBonuses,
+  type AcademyStats,
+  type FestivalCommissionId,
+  type FestivalCommissionKind,
+  type FestivalSeasonDef,
+  type FestivalSeasonId,
+  type FestivalShopItemId,
+  type FestivalShopItemKind,
+} from '../gameplay/academyFestival';
+import {
+  formatArenaTownStats,
+  formatDuelDuration,
+  type ArenaArchetypeId,
+  type ArenaDivisionId,
+  type ArenaTownBonuses,
+  type ArenaTownStats,
+  type TownFacilityId,
+} from '../gameplay/arenaTown';
+import {
+  formatBeastWeatherStats,
+  formatWeatherDayLabel,
+  planBeastFeed,
+  WEATHER_LIFE_SKILLS,
+  type BeastRanchBonuses,
+  type BeastRoleId,
+  type BeastWeatherStats,
+  type ContractBeastId,
+  type WeatherId,
+} from '../gameplay/beastWeather';
+import {
+  formatBalladRemaining,
+  formatTavernStats,
+  formatTavernVerdict,
+  planTavernServe,
+  tavernDayIndexFromKey,
+  type ChronicleChapterId,
+  type TavernBalladId,
+  type TavernChronicleBonuses,
+  type TavernChronicleStats,
+  type TavernVisitorId,
+} from '../gameplay/bardTavern';
+import {
+  airshipDayIndexFromKey,
+  formatAirshipDuration,
+  formatAirshipProfit,
+  formatAirshipTrend,
+  formatPaladinStats,
+  planAirshipBuy,
+  planAirshipSell,
+  type AirshipGoodId,
+  type AirshipRouteId,
+  type AirshipTownId,
+  type PaladinOpponent,
+  type PaladinStats,
+  type PaladinTrialBonuses,
+  type PaladinVirtueId,
+} from '../gameplay/airshipPaladin';
+import {
+  formatElfStats,
+  formatMineGrade,
+  getMineVeinMap,
+  mineDayIndexFromKey,
+  mineGradeTone,
+  planElfCommission,
+  planMineHaul,
+  type ElfExpeditionSourceId,
+  type ElfStats,
+  type ElfWaystationBonuses,
+  type MineGradeId,
+} from '../gameplay/dwarfElf';
 import './ProgressionPanels.css';
 import './SystemPanels.css';
 import './AdvancementPanels.css';
@@ -4101,5 +4208,6242 @@ export function AstralRelicsPanel({
         </div>
       )}
     </PanelModal>
+  );
+}
+
+/* ============================================================================
+   天空锻炉星辰神兵谱 & 公会秘境试炼契约阵 (WL-10)
+   ============================================================================ */
+
+interface StarEmblemView {
+  id: StarEmblemId;
+  name: string;
+  subtitle: string;
+  description: string;
+  iconId: string;
+  domain: StarEmblemDomain;
+  domainLabel: string;
+  level: number;
+  maxLevel: number;
+  currentStats: StarEmblemLevelStats | null;
+  nextStats: StarEmblemLevelStats | null;
+  forgeOption: {
+    targetLevel: number;
+    ancientRelicShards: number;
+    astralCrystalDust: number;
+    canAfford: boolean;
+  } | null;
+}
+
+interface GuildTrialPactView {
+  id: GuildTrialPactId;
+  name: string;
+  subtitle: string;
+  description: string;
+  iconId: string;
+  pactTier: number;
+  unlockTotalLevels: number;
+  unlocked: boolean;
+  alignedEmblem: StarEmblemId | null;
+  alignedEmblemName: string | null;
+  alignedEmblemLevel: number;
+  signDust: number;
+  boons: StarEmblemLevelStats;
+  tradeoffs: StarEmblemLevelStats;
+  effectiveTradeoffs: StarEmblemLevelStats;
+  mitigated: boolean;
+  active: boolean;
+  canSign: boolean;
+  signBlockReason: string | null;
+}
+
+interface SkyForgeInfo {
+  nowMs: number;
+  ancientRelicShards: number;
+  astralCrystalDust: number;
+  totalEmblemLevels: number;
+  maxTotalLevels: number;
+  totalForges: number;
+  totalPactsSigned: number;
+  forgeTier: {
+    tier: number;
+    title: string;
+    minTotalLevels: number;
+    pactSlots: number;
+    next: SkyForgeTierDef | null;
+    progressPct: number;
+    allTiers: readonly SkyForgeTierDef[];
+  };
+  emblems: StarEmblemView[];
+  pacts: GuildTrialPactView[];
+  pactSlots: { used: number; max: number; cap: number };
+  activePacts: GuildTrialPactId[];
+  link: {
+    activeTier: number;
+    current: GuildPactLinkTierDef | null;
+    next: GuildPactLinkTierDef | null;
+    allTiers: readonly GuildPactLinkTierDef[];
+  };
+  mitigation: { emblemLevel: number; forgeTier: number };
+  bonuses: SkyForgeBonuses;
+}
+
+const PACT_TIER_LABEL: Record<number, string> = { 1: '一阶契约', 2: '二阶契约', 3: '三阶契约' };
+
+function fmtSignedNum(v: number, unit = ''): string {
+  return `${v > 0 ? '+' : ''}${v}${unit}`;
+}
+
+/** 纹章 / 契约 / 连携数值行：正负号自动带出，契约代价显示为负值。 */
+function formatStarEmblemStats(s: StarEmblemLevelStats | null | undefined): string[] {
+  if (!s) return [];
+  const lines: string[] = [];
+  if (s.bonusAtk) lines.push(`基础攻击 ${fmtSignedNum(s.bonusAtk)}`);
+  if (s.combatAtkPct) lines.push(`战斗攻击 ${fmtSignedNum(s.combatAtkPct, '%')}`);
+  if (s.critRateBonusPct) lines.push(`暴击率 ${fmtSignedNum(s.critRateBonusPct, '%')}`);
+  if (s.critDmgBonusPct) lines.push(`暴击伤害 ${fmtSignedNum(s.critDmgBonusPct, '%')}`);
+  if (s.intervalReductionPct) lines.push(`攻速提振 ${fmtSignedNum(s.intervalReductionPct, '%')}`);
+  if (s.armorPenPct) lines.push(`无视护甲 ${fmtSignedNum(Math.round(s.armorPenPct * 100), '%')}`);
+  if (s.bossArmorBreakPct) lines.push(`首领破甲 ${fmtSignedNum(Math.round(s.bossArmorBreakPct * 100), '%')}`);
+  if (s.rareFindPct) lines.push(`珍稀掉落 ${fmtSignedNum(s.rareFindPct, '%')}`);
+  if (s.bonusDef) lines.push(`基础防御 ${fmtSignedNum(s.bonusDef)}`);
+  if (s.craftSpeedPct) lines.push(`制作速度 ${fmtSignedNum(s.craftSpeedPct, '%')}`);
+  if (s.craftEfficiencyPct) lines.push(`制作连作 ${fmtSignedNum(s.craftEfficiencyPct, '%')}`);
+  if (s.bonusHp) lines.push(`生命上限 ${fmtSignedNum(s.bonusHp)}`);
+  if (s.gatherSpeedPct) lines.push(`采集速度 ${fmtSignedNum(s.gatherSpeedPct, '%')}`);
+  if (s.gatherDoubleChance) lines.push(`双倍采集 ${fmtSignedNum(Math.round(s.gatherDoubleChance * 100), '%')}`);
+  if (s.gatherEfficiencyPct) lines.push(`采集连作 ${fmtSignedNum(s.gatherEfficiencyPct, '%')}`);
+  if (s.xpGainPct) lines.push(`全技能经验 ${fmtSignedNum(s.xpGainPct, '%')}`);
+  if (s.goldGainPct) lines.push(`全局金币 ${fmtSignedNum(s.goldGainPct, '%')}`);
+  return lines;
+}
+
+function skyForgeNetChips(b: SkyForgeBonuses): Array<{ text: string; neg: boolean }> {
+  const chips: Array<{ text: string; neg: boolean }> = [];
+  const push = (label: string, v: number, unit = '%') => {
+    if (!v) return;
+    chips.push({ text: `${label} ${fmtSignedNum(v, unit)}`, neg: v < 0 });
+  };
+  push('基础攻击', b.bonusAtk, '');
+  push('战斗攻击', b.combatAtkPct);
+  push('暴击率', b.critRateBonusPct);
+  push('暴击伤害', b.critDmgBonusPct);
+  if (b.intervalMult !== 1) push('攻速提振', Math.round((1 - b.intervalMult) * 1000) / 10);
+  push('无视护甲', Math.round(b.armorPenPct * 100));
+  push('首领破甲', Math.round(b.bossArmorBreakPct * 100));
+  push('基础防御', b.bonusDef, '');
+  push('生命上限', b.bonusHp, '');
+  push('制作速度', b.craftSpeedPct);
+  push('制作连作', b.craftEfficiencyPct);
+  push('采集速度', b.gatherSpeedPct);
+  push('双倍采集', Math.round(b.gatherDoubleChance * 100));
+  push('采集连作', b.gatherEfficiencyPct);
+  push('全技能经验', b.xpGainPct);
+  push('全局金币', b.goldGainPct);
+  push('珍稀掉落', b.rareFindPct);
+  return chips;
+}
+
+export function SkyForgePanel({
+  onClose,
+  onChange,
+  onOpenRelics,
+}: {
+  onClose: () => void;
+  onChange?: () => void;
+  onOpenRelics?: () => void;
+}) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<SkyForgeInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'codex' | 'pacts'>('codex');
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getSkyForge();
+      setInfo(res);
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载天空锻炉与试炼契约阵失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const handleForge = async (emblem: StarEmblemView) => {
+    setBusyKey(`forge:${emblem.id}`);
+    try {
+      const res: any = await apiClient.forgeStarEmblem({ emblemId: emblem.id });
+      if (res?.forge) setInfo(res.forge);
+      else await load();
+      const fg = res?.forged ?? res;
+      const tierNote = fg?.forgeTierUpTo
+        ? ` · 锻炉晋升「${fg.forgeTierTitle || ''}」，契约阵位 ${fg.newPactSlots ?? ''} 席`
+        : '';
+      const pactNote =
+        Array.isArray(fg?.unlockedPacts) && fg.unlockedPacts.length > 0
+          ? ` · 解锁 ${fg.unlockedPacts.length} 份新试炼契约`
+          : '';
+      toastRef.current.success(
+        `天空锻炉淬炼：「${emblem.name}」晋升至 Lv.${fg?.newLevel ?? emblem.level + 1}（转生永久保留）${tierNote}${pactNote}`
+      );
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '淬炼星辰神兵纹章失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handlePact = async (pact: GuildTrialPactView, action: GuildPactAction) => {
+    setBusyKey(`pact:${pact.id}`);
+    try {
+      const res: any = await apiClient.setGuildTrialPact({ pactId: pact.id, action });
+      if (res?.forge) setInfo(res.forge);
+      else await load();
+      const pr = res?.pact ?? res;
+      const linkNote = pr?.linkTitle ? ` · 连携「${pr.linkTitle}」生效` : '';
+      toastRef.current.success(
+        action === 'sign'
+          ? `已签署「${pact.name}」（-${pact.signDust} 星晶尘）${linkNote}`
+          : `已解除「${pact.name}」，其增益与代价同步撤销`
+      );
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || (action === 'sign' ? '签署试炼契约失败' : '解除试炼契约失败'));
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const netChips = info ? skyForgeNetChips(info.bonuses) : [];
+
+  return (
+    <PanelModal
+      title="天空锻炉星辰神兵谱与公会秘境试炼契约阵"
+      icon={<T1Art kind="skills" id="sky_forge" className="hw-modal-title-icon" fallback="" alt="" />}
+      onClose={onClose}
+    >
+      {loading && !info ? (
+        <div className="prog-empty">正在点燃天空锻炉与秘境试炼契约阵…</div>
+      ) : !info ? (
+        <div className="prog-empty">暂无天空锻炉数据</div>
+      ) : (
+        <div className="sf-panel-root" data-testid="sky-forge-panel">
+          <div className="hw-hero-card sf-hero-card">
+            <div className="hw-hero-top">
+              <div className="hw-hero-emblem sf-hero-emblem">
+                <T1Art kind="skills" id="sky_forge" className="hw-hero-core-icon" fallback="" alt="天空锻炉" />
+              </div>
+              <div className="hw-hero-copy sf-hero-copy">
+                <div className="ac-hero-title-row">
+                  <span className="hw-hero-title" data-testid="sky-forge-tier-title">
+                    锻炉 {info.forgeTier.tier} 阶 · {info.forgeTier.title}
+                  </span>
+                  <span className="qm-equipped-pill">纹章等阶与已签契约转生永久保留</span>
+                </div>
+                <div className="hw-hero-sub">
+                  以遗迹圣物馆的「远古圣物残片」与「异域星晶尘」淬炼四大星辰传世神兵纹章（Lv.0~5）；神兵谱总阶解锁公会秘境试炼契约与契约阵位。
+                </div>
+                <div className="ct-rep-progress-meta sf-progress-meta">
+                  <span>
+                    神兵谱总阶 <strong data-testid="sky-forge-total-levels">{info.totalEmblemLevels}</strong> / {info.maxTotalLevels}
+                    {info.forgeTier.next
+                      ? `（下一阶「${info.forgeTier.next.title}」需总阶 ${info.forgeTier.next.minTotalLevels}，契约阵位 ${info.forgeTier.next.pactSlots} 席）`
+                      : '（神兵谱圆满：全部契约代价减半）'}
+                  </span>
+                </div>
+                <div className="ct-rep-bar sf-progress-bar">
+                  <div className="ct-rep-bar-fill sf-bar-fill" style={{ width: `${info.forgeTier.progressPct}%` }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="sf-wallet-row">
+              <div className="ac-wallet-badges">
+                <span className="ac-wallet-badge sf-shard-badge">
+                  <T1Art kind="skills" id="relic_shard_crystal" className="ac-badge-icon" fallback="" alt="" />
+                  远古圣物残片：<strong data-testid="sky-forge-wallet-shards">{info.ancientRelicShards}</strong>
+                </span>
+                <span className="ac-wallet-badge sf-dust-badge">
+                  <T1Art kind="skills" id="astral_crystal_dust" className="ac-badge-icon" fallback="" alt="" />
+                  异域星晶尘：<strong data-testid="sky-forge-wallet-dust">{info.astralCrystalDust}</strong>
+                </span>
+                <span className="ac-wallet-badge">
+                  <T1Art kind="skills" id="guild_trial_pact" className="ac-badge-icon" fallback="" alt="" />
+                  契约阵位：<strong data-testid="sky-forge-pact-slots">{info.pactSlots.used} / {info.pactSlots.max}</strong>
+                </span>
+              </div>
+              {onOpenRelics && (
+                <button type="button" className="sf-goto-relics-btn" onClick={onOpenRelics}>
+                  前往遗迹圣物馆获取残片
+                </button>
+              )}
+            </div>
+
+            {(netChips.length > 0 || info.bonuses.linkTitle) && (
+              <div className="hw-bonus-strip" data-testid="sky-forge-net-bonuses">
+                {info.bonuses.linkTitle && (
+                  <span className="sf-chip link">
+                    连携 Lv.{info.bonuses.linkTier}「{info.bonuses.linkTitle}」
+                  </span>
+                )}
+                {netChips.map((c) => (
+                  <span key={c.text} className={`sf-chip ${c.neg ? 'neg' : 'pos'}`}>
+                    {c.text}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="prog-filter-bar sf-tab-bar">
+            <button
+              type="button"
+              data-testid="sky-forge-tab-codex"
+              className={`prog-filter-btn ${tab === 'codex' ? 'active' : ''}`}
+              onClick={() => setTab('codex')}
+            >
+              星辰神兵谱（四大纹章）
+            </button>
+            <button
+              type="button"
+              data-testid="sky-forge-tab-pacts"
+              className={`prog-filter-btn ${tab === 'pacts' ? 'active' : ''}`}
+              onClick={() => setTab('pacts')}
+            >
+              公会秘境试炼契约阵（{info.pactSlots.used}/{info.pactSlots.max}）
+            </button>
+          </div>
+
+          {tab === 'codex' && (
+            <div className="sf-emblem-grid">
+              {info.emblems.map((em) => {
+                const cur = formatStarEmblemStats(em.currentStats);
+                const nxt = formatStarEmblemStats(em.nextStats);
+                const opt = em.forgeOption;
+                const busy = busyKey === `forge:${em.id}`;
+                const shardShort = opt ? info.ancientRelicShards < opt.ancientRelicShards : false;
+                const dustShort = opt ? info.astralCrystalDust < opt.astralCrystalDust : false;
+                return (
+                  <div
+                    key={em.id}
+                    data-testid={`emblem-card-${em.id}`}
+                    className={`sf-emblem-card domain-${em.domain} ${em.level > 0 ? 'forged' : 'cold'}`}
+                  >
+                    <div className="sf-emblem-head">
+                      <div className="sf-emblem-icon-frame">
+                        <T1Art kind="skills" id={em.iconId} className="sf-emblem-icon" fallback="" alt={em.name} />
+                      </div>
+                      <div className="sf-emblem-title-col">
+                        <div className="sf-emblem-name-row">
+                          <strong>{em.name}</strong>
+                          <span className="sf-domain-tag">{em.domainLabel}</span>
+                          <span
+                            className={`ar-rank-pill ${em.level > 0 ? 'lit' : 'dim'}`}
+                            data-testid={`emblem-level-${em.id}`}
+                          >
+                            Lv.{em.level}/{em.maxLevel}
+                          </span>
+                        </div>
+                        <span className="sf-emblem-subtitle">{em.subtitle}</span>
+                        <div className="sf-level-pips" aria-label={`当前 Lv.${em.level}，满阶 Lv.${em.maxLevel}`}>
+                          {Array.from({ length: em.maxLevel }, (_, i) => (
+                            <span key={i} className={`sf-pip ${i < em.level ? 'on' : ''}`} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="ar-stratum-desc">{em.description}</p>
+
+                    <div className="sf-stats-box">
+                      {cur.length > 0 ? (
+                        <div className="sf-stat-line current">
+                          <strong>当前纹章（Lv.{em.level}）：</strong>
+                          <span>{cur.join(' · ')}</span>
+                        </div>
+                      ) : (
+                        <div className="sf-stat-line unlit">尚未淬炼 —— 淬炼至 Lv.1 立即永久生效</div>
+                      )}
+                      {nxt.length > 0 && opt && (
+                        <div className="sf-stat-line next">
+                          <strong>淬炼 Lv.{opt.targetLevel} 预览：</strong>
+                          <span>{nxt.join(' · ')}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {opt ? (
+                      <div className="sf-forge-box">
+                        <div className="sf-cost-row">
+                          <span className={`sf-cost-chip ${shardShort ? 'short' : 'ok'}`}>
+                            <T1Art kind="skills" id="relic_shard_crystal" className="ac-badge-icon" fallback="" alt="" />
+                            残片 {info.ancientRelicShards}/{opt.ancientRelicShards}
+                          </span>
+                          <span className={`sf-cost-chip ${dustShort ? 'short' : 'ok'}`}>
+                            <T1Art kind="skills" id="astral_crystal_dust" className="ac-badge-icon" fallback="" alt="" />
+                            星晶尘 {info.astralCrystalDust}/{opt.astralCrystalDust}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          data-testid={`forge-emblem-${em.id}`}
+                          className="prog-claim-btn sf-action-btn sf-forge-btn"
+                          disabled={!opt.canAfford || Boolean(busyKey)}
+                          onClick={() => handleForge(em)}
+                        >
+                          {busy
+                            ? '淬炼中…'
+                            : opt.canAfford
+                            ? em.level === 0
+                              ? '点燃纹章 Lv.1'
+                              : `淬炼至 Lv.${opt.targetLevel}`
+                            : shardShort
+                            ? '残片不足'
+                            : '星晶尘不足'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="sf-max-banner">已淬炼至星辰神兵满阶 Lv.{em.maxLevel}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {tab === 'pacts' && (
+            <div className="sf-pact-view">
+              <div className="sf-slot-row" data-testid="sky-forge-slot-row">
+                {Array.from({ length: info.pactSlots.cap }, (_, i) => {
+                  const pid = info.activePacts[i];
+                  const pact = pid ? info.pacts.find((p) => p.id === pid) : null;
+                  const open = i < info.pactSlots.max;
+                  return (
+                    <div key={i} className={`sf-slot ${pact ? 'filled' : open ? 'open' : 'locked'}`}>
+                      <span className="sf-slot-index">第 {i + 1} 席</span>
+                      <strong>{pact ? pact.name : open ? '空席 · 可签署' : '未开放'}</strong>
+                      {!pact && !open && (
+                        <small>
+                          需锻炉「{info.forgeTier.allTiers.find((t) => t.pactSlots >= i + 1)?.title || ''}」
+                        </small>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className={`ar-resonance-banner sf-link-banner ${info.link.current ? 'active' : ''}`}>
+                <div className="ar-res-banner-left">
+                  <div className="ac-rack-title">
+                    {info.link.current
+                      ? `契约连携 Lv.${info.link.activeTier}「${info.link.current.title}」生效中`
+                      : '契约连携未激活（同时签署 2 份契约即可触发）'}
+                  </div>
+                  <div className="ac-rack-sub">
+                    {info.link.current
+                      ? formatStarEmblemStats(info.link.current.bonuses).join(' · ')
+                      : ''}
+                    {info.link.next
+                      ? `${info.link.current ? ' ｜ ' : ''}下一阶「${info.link.next.title}」（${info.link.next.subtitle}）：${formatStarEmblemStats(info.link.next.bonuses).join(' · ')}`
+                      : ''}
+                  </div>
+                </div>
+              </div>
+
+              <div className="sf-intro">
+                每份契约同时带来增益与代价；对应纹章达到 Lv.{info.mitigation.emblemLevel} 或锻炉达到 {info.mitigation.forgeTier} 阶时，该契约代价减半。签署消耗异域星晶尘，解除免费但不退还。
+              </div>
+
+              <div className="sf-pact-grid">
+                {info.pacts.map((p) => {
+                  const boons = formatStarEmblemStats(p.boons);
+                  const costs = formatStarEmblemStats(p.effectiveTradeoffs);
+                  const busy = busyKey === `pact:${p.id}`;
+                  const statusText = p.active
+                    ? '生效中'
+                    : !p.unlocked
+                    ? `需总阶 ${p.unlockTotalLevels}`
+                    : p.canSign
+                    ? '可签署'
+                    : p.signBlockReason || '暂不可签';
+                  return (
+                    <div
+                      key={p.id}
+                      data-testid={`pact-card-${p.id}`}
+                      className={`sf-pact-card ${p.active ? 'active' : p.unlocked ? 'unlocked' : 'locked'}`}
+                    >
+                      <div className="sf-pact-head">
+                        <div className="sf-pact-icon-frame">
+                          <T1Art kind="skills" id={p.iconId} className="sf-pact-icon" fallback="" alt={p.name} />
+                        </div>
+                        <div className="sf-emblem-title-col">
+                          <div className="sf-emblem-name-row">
+                            <strong>{p.name}</strong>
+                            <span className="sf-domain-tag">{PACT_TIER_LABEL[p.pactTier] || `${p.pactTier} 阶契约`}</span>
+                            <span
+                              className={`sf-pact-status ${p.active ? 'on' : p.canSign ? 'ready' : 'off'}`}
+                              data-testid={`pact-status-${p.id}`}
+                            >
+                              {statusText}
+                            </span>
+                          </div>
+                          <span className="sf-emblem-subtitle">{p.subtitle}</span>
+                        </div>
+                      </div>
+
+                      <div className="sf-pact-effects">
+                        <div className="sf-effect-line boon">
+                          <strong>增益</strong>
+                          <span>{boons.join(' · ')}</span>
+                        </div>
+                        <div className={`sf-effect-line cost ${p.mitigated ? 'mitigated' : ''}`}>
+                          <strong>代价{p.mitigated ? '（已减半）' : ''}</strong>
+                          <span>{costs.join(' · ')}</span>
+                        </div>
+                        <div className="sf-effect-note">
+                          {p.alignedEmblemName
+                            ? `共鸣纹章「${p.alignedEmblemName}」Lv.${p.alignedEmblemLevel}${
+                                p.alignedEmblemLevel >= info.mitigation.emblemLevel
+                                  ? '：代价减半已生效'
+                                  : `：达到 Lv.${info.mitigation.emblemLevel} 代价减半`
+                              }`
+                            : `无共鸣纹章：锻炉 ${info.mitigation.forgeTier} 阶时代价减半`}
+                        </div>
+                      </div>
+
+                      <div className="sf-pact-actions">
+                        {p.active ? (
+                          <button
+                            type="button"
+                            data-testid={`pact-revoke-${p.id}`}
+                            className="prog-claim-btn sf-action-btn sf-revoke-btn"
+                            disabled={Boolean(busyKey)}
+                            onClick={() => handlePact(p, 'revoke')}
+                          >
+                            {busy ? '解约中…' : '解除契约（不退还星晶尘）'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            data-testid={`pact-sign-${p.id}`}
+                            className="prog-claim-btn sf-action-btn sf-sign-btn"
+                            disabled={!p.canSign || Boolean(busyKey)}
+                            onClick={() => handlePact(p, 'sign')}
+                          >
+                            {busy
+                              ? '签署中…'
+                              : p.canSign
+                              ? `签署契约（-${p.signDust} 星晶尘）`
+                              : p.signBlockReason || '暂不可签'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="sf-tier-card">
+                <div className="ac-rack-title">天空锻炉阶位（神兵谱总阶 → 契约阵位）</div>
+                <div className="ct-tier-list">
+                  {info.forgeTier.allTiers.map((t) => (
+                    <div
+                      key={t.tier}
+                      className={`ct-tier-pill-row ${info.forgeTier.tier >= t.tier ? 'is-unlocked' : ''}`}
+                    >
+                      <span>
+                        <strong>
+                          {t.tier} 阶 · {t.title}
+                        </strong>
+                        （需总阶 {t.minTotalLevels}）
+                      </span>
+                      <span>
+                        契约阵位 {t.pactSlots} 席
+                        {t.tier >= info.mitigation.forgeTier ? ' · 全部契约代价减半' : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </PanelModal>
+  );
+}
+
+/* ============================================================================
+   港湾垂钓大赛 & 海港水族馆收藏图鉴 (WL-11)
+   ============================================================================ */
+
+interface HarborSpeciesBrief {
+  id: HarborSpeciesId;
+  name: string;
+  iconKind: 'item' | 'skills';
+  iconId: string;
+  rarity: number;
+  rarityLabel: string;
+}
+
+interface HarborCatchView extends HarborSpeciesBrief {
+  speciesId: HarborSpeciesId;
+  sizeCm: number;
+  score: number;
+  baitId: HarborBaitId;
+  baitName: string;
+  featured: boolean;
+  trophySize: boolean;
+  at: string;
+}
+
+interface HarborBaitView {
+  id: HarborBaitId;
+  name: string;
+  subtitle: string;
+  description: string;
+  iconId: string;
+  rarityShift: number;
+  sizeBonusPct: number;
+  scoreBonusPct: number;
+  unlocksSpecies: HarborSpeciesId | null;
+  unlocksSpeciesName: string | null;
+  recipeTier: HarborTrophyTierId | null;
+  recipeTierName: string | null;
+  known: boolean;
+  stock: number;
+  craftItems: Array<{ itemId: string; name: string; qty: number; have: number }>;
+  craftGold: number;
+  craftYield: number;
+  maxBatches: number;
+  canCraft: boolean;
+  craftBlockReason: string | null;
+  canEnter: boolean;
+}
+
+interface HarborTankSpeciesView extends HarborSpeciesBrief {
+  collected: boolean;
+  count: number;
+  bestSizeCm: number;
+  maxSizeCm: number;
+  minChefLevel: number;
+  exclusiveBaitName: string | null;
+}
+
+interface HarborTankView {
+  id: HarborTankThemeId;
+  name: string;
+  subtitle: string;
+  description: string;
+  unlockSpecies: number;
+  unlocked: boolean;
+  featured: boolean;
+  full: boolean;
+  resonance: HarborAquariumStats;
+  effectiveResonance: Required<HarborAquariumStats>;
+  species: HarborTankSpeciesView[];
+}
+
+interface HarborEntryResult {
+  catches?: Array<{
+    speciesId: HarborSpeciesId;
+    name: string;
+    rarity: number;
+    sizeCm: number;
+    score: number;
+    featured: boolean;
+    trophySize: boolean;
+    newSpecies: boolean;
+    newRecord: boolean;
+  }>;
+  weeklyScore?: number;
+  tierName?: string;
+  tierUp?: boolean;
+  collectionTitle?: string;
+  collectionTierUpTo?: number;
+}
+
+interface HarborDerbyInfo {
+  nowMs: number;
+  weekKey: string;
+  weekIndex: number;
+  weekEndsAtMs: number;
+  ground: {
+    id: HarborGroundId;
+    name: string;
+    subtitle: string;
+    description: string;
+    sceneId: string;
+    featuredSpecies: HarborSpeciesBrief[];
+  };
+  nextGround: { id: HarborGroundId; name: string; subtitle: string };
+  chefLevel: number;
+  fishingActionsThisWeek: number;
+  castsAvailable: number;
+  castsPerEntry: number;
+  entriesUsed: number;
+  entryCap: number;
+  maxEntriesPerRequest: number;
+  weeklyScore: number;
+  tier: {
+    current: HarborDerbyTierDef;
+    next: HarborDerbyTierDef | null;
+    progressPct: number;
+    allTiers: readonly HarborDerbyTierDef[];
+  };
+  projectedSettlement: {
+    weeklyScore: number;
+    tierId: HarborDerbyTierId;
+    tierName: string;
+    trophyGranted: HarborTrophyTierId | null;
+    goldReward: number;
+    baitReward: Partial<Record<HarborBaitId, number>>;
+    unlockedRecipes: HarborBaitId[];
+  };
+  leaderboardSize: number;
+  leaderboard: HarborCatchView[];
+  recentCatches: HarborCatchView[];
+  weeklyCatchCount: number;
+  baits: HarborBaitView[];
+  knownRecipes: HarborBaitId[];
+  trophies: Record<HarborTrophyTierId, number>;
+  trophyPoints: number;
+  rod: {
+    tier: number;
+    title: string;
+    sizeBonusPct: number;
+    scoreBonusPct: number;
+    next: HarborRodTierDef | null;
+    progressPct: number;
+    allTiers: readonly HarborRodTierDef[];
+  };
+  totalEntries: number;
+  bestWeeklyScore: number;
+  lastSettlement: {
+    weekKey: string;
+    groundId: HarborGroundId;
+    groundName: string;
+    tier: HarborDerbyTierId;
+    tierName: string;
+    weeklyScore: number;
+    entries: number;
+    trophyGranted: HarborTrophyTierId | null;
+    unlockedRecipes: HarborBaitId[];
+    unlockedRecipeNames: string[];
+    goldReward: number;
+    baitReward: Partial<Record<HarborBaitId, number>>;
+  } | null;
+  aquarium: {
+    collectedCount: number;
+    totalSpecies: number;
+    tier: {
+      current: HarborAquariumTierDef;
+      next: HarborAquariumTierDef | null;
+      progressPct: number;
+      allTiers: readonly HarborAquariumTierDef[];
+    };
+    featuredTank: HarborTankThemeId | null;
+    fullTankResonanceMult: number;
+    tanks: HarborTankView[];
+    bonuses: HarborAquariumBonuses;
+  };
+}
+
+const HARBOR_BAIT_NAME: Record<HarborBaitId, string> = {
+  harbor_worm: '港湾蚯蚓饵',
+  glow_shrimp: '荧光虾饵',
+  sunscale_lure: '金鳞日耀饵',
+  abyss_lantern_lure: '渊灯秘饵',
+};
+
+const HARBOR_TROPHY_LABEL: Record<HarborTrophyTierId, string> = {
+  bronze: '青铜奖杯',
+  silver: '白银奖杯',
+  gold: '黄金奖杯',
+  legend: '传奇金杯',
+};
+
+function HarborSpeciesIcon({ sp, className }: { sp: { iconKind: 'item' | 'skills'; iconId: string; name: string }; className: string }) {
+  return sp.iconKind === 'item' ? (
+    <T1ItemIcon itemId={sp.iconId} className={className} fallback="" alt={sp.name} />
+  ) : (
+    <T1Art kind="skills" id={sp.iconId} className={className} fallback="" alt={sp.name} />
+  );
+}
+
+function fmtHarborCountdown(ms: number): string {
+  if (!(ms > 0)) return '即将翻周';
+  const totalMin = Math.floor(ms / 60_000);
+  const d = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
+  const m = totalMin % 60;
+  if (d > 0) return `${d} 天 ${h} 小时`;
+  if (h > 0) return `${h} 小时 ${m} 分`;
+  return `${Math.max(1, m)} 分钟`;
+}
+
+function formatHarborAquariumStats(s: HarborAquariumStats | null | undefined): string[] {
+  if (!s) return [];
+  const out: string[] = [];
+  if (s.fishingSpeedPct) out.push(`钓鱼速度 +${s.fishingSpeedPct}%`);
+  if (s.cookingQualityPct) out.push(`料理品质 +${s.cookingQualityPct}%`);
+  if (s.goldGainPct) out.push(`金币收益 +${s.goldGainPct}%`);
+  return out;
+}
+
+function formatHarborBaitReward(r: Partial<Record<HarborBaitId, number>> | null | undefined): string {
+  if (!r) return '';
+  return (Object.keys(HARBOR_BAIT_NAME) as HarborBaitId[])
+    .filter((id) => (r[id] || 0) > 0)
+    .map((id) => `${HARBOR_BAIT_NAME[id]}×${r[id]}`)
+    .join('、');
+}
+
+function formatHarborBaitEffects(b: { rarityShift: number; sizeBonusPct: number; scoreBonusPct: number; unlocksSpeciesName?: string | null }): string {
+  const parts: string[] = [];
+  parts.push(b.rarityShift > 0 ? `稀有鱼种偏移 +${b.rarityShift}` : '无稀有偏移');
+  if (b.sizeBonusPct) parts.push(`尺寸 +${b.sizeBonusPct}%`);
+  if (b.scoreBonusPct) parts.push(`计分 +${b.scoreBonusPct}%`);
+  if (b.unlocksSpeciesName) parts.push(`可引出「${b.unlocksSpeciesName}」`);
+  return parts.join(' · ');
+}
+
+export function HarborDerbyPanel({ onClose, onChange }: { onClose: () => void; onChange?: () => void }) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<HarborDerbyInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'derby' | 'bait' | 'aquarium'>('derby');
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [baitChoice, setBaitChoice] = useState<HarborBaitId | null>(null);
+  const [lastEntry, setLastEntry] = useState<HarborEntryResult | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getHarborDerby();
+      setInfo(res);
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载港湾垂钓大赛与海港水族馆失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // 默认选中：有库存的最高阶已掌握鱼饵，否则港湾蚯蚓饵
+  const selectedBait: HarborBaitId = (() => {
+    if (!info) return baitChoice || 'harbor_worm';
+    if (baitChoice && info.baits.some((b) => b.id === baitChoice && b.known)) return baitChoice;
+    const stocked = [...info.baits].reverse().find((b) => b.known && b.stock > 0);
+    return stocked ? stocked.id : 'harbor_worm';
+  })();
+
+  const handleEnter = async (count: number) => {
+    setBusyKey(`enter:${count}`);
+    try {
+      const res: any = await apiClient.enterHarborDerby({ baitId: selectedBait, count });
+      if (res?.harbor) setInfo(res.harbor);
+      else await load();
+      const entry: HarborEntryResult = res?.entry ?? {};
+      setLastEntry(entry);
+      const best = (entry.catches || []).reduce<NonNullable<HarborEntryResult['catches']>[number] | null>(
+        (a, c) => (!a || c.score > a.score ? c : a),
+        null
+      );
+      const newCount = (entry.catches || []).filter((c) => c.newSpecies).length;
+      toastRef.current.success(
+        `连投 ${count} 竿：最佳「${best?.name ?? ''}」${best?.sizeCm ?? 0}cm 计 ${best?.score ?? 0} 分 · 周榜 ${entry.weeklyScore ?? 0} 分${
+          entry.tierUp ? ` · 段位晋升「${entry.tierName}」` : ''
+        }${newCount > 0 ? ` · 水族馆新收藏 ${newCount} 种` : ''}`
+      );
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '参赛投竿失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleCraft = async (bait: HarborBaitView, batches: number) => {
+    setBusyKey(`bait:${bait.id}:${batches}`);
+    try {
+      const res: any = await apiClient.craftHarborBait({ baitId: bait.id, batches });
+      if (res?.harbor) setInfo(res.harbor);
+      else await load();
+      toastRef.current.success(`鱼饵工坊调制「${bait.name}」×${res?.bait?.crafted ?? bait.craftYield * batches}`);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '调制鱼饵失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleTank = async (themeId: HarborTankThemeId | null, name: string) => {
+    setBusyKey(`tank:${themeId ?? 'none'}`);
+    try {
+      const res: any = await apiClient.setHarborFeaturedTank({ themeId });
+      if (res?.harbor) setInfo(res.harbor);
+      else await load();
+      toastRef.current.success(themeId ? `主展缸切换为「${name}」，主题共鸣生效` : '已撤下主展缸');
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '设置主展缸失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const pool = info ? harborPoolOdds(buildHarborCatchPool(info.ground.id, info.chefLevel, selectedBait)) : [];
+  const speciesName = (id: HarborSpeciesId) => HARBOR_SPECIES.find((s) => s.id === id)?.name || id;
+  const speciesMeta = (id: HarborSpeciesId) => HARBOR_SPECIES.find((s) => s.id === id)!;
+  const selected = info ? info.baits.find((b) => b.id === selectedBait) || null : null;
+  const multiCount = info ? Math.min(info.maxEntriesPerRequest, info.castsAvailable, selected?.stock || 0) : 0;
+  const totalTrophies = info
+    ? (Object.keys(HARBOR_TROPHY_LABEL) as HarborTrophyTierId[]).reduce((s, k) => s + (info.trophies[k] || 0), 0)
+    : 0;
+  const aqChips = info ? formatHarborAquariumStats(info.aquarium.bonuses) : [];
+
+  return (
+    <PanelModal
+      title="港湾垂钓大赛与海港水族馆收藏图鉴"
+      icon={<T1Art kind="skills" id="fishing_trophy" className="hw-modal-title-icon" fallback="" alt="" />}
+      onClose={onClose}
+    >
+      {loading && !info ? (
+        <div className="prog-empty">正在布置港湾鱼场与水族馆展缸…</div>
+      ) : !info ? (
+        <div className="prog-empty">暂无港湾垂钓大赛数据</div>
+      ) : (
+        <div className="hd-panel-root" data-testid="harbor-derby-panel">
+          <div className="hw-hero-card hd-hero-card">
+            <div className="hw-hero-top">
+              <div className="hw-hero-emblem hd-hero-emblem">
+                <T1Art kind="skills" id="fishing_trophy" className="hw-hero-core-icon" fallback="" alt="港湾垂钓大赛奖杯" />
+              </div>
+              <div className="hw-hero-copy hd-hero-copy">
+                <div className="ac-hero-title-row">
+                  <span className="hw-hero-title" data-testid="harbor-ground-title">
+                    本周鱼场 · {info.ground.name}
+                  </span>
+                  <span className="qm-equipped-pill">水族馆收藏、奖杯与配方转生永久保留</span>
+                </div>
+                <div className="hw-hero-sub">{info.ground.subtitle}</div>
+                <div className="ct-rep-progress-meta hd-progress-meta">
+                  <span>
+                    周榜 <strong data-testid="harbor-weekly-score">{info.weeklyScore}</strong> 分 · 段位「
+                    <strong data-testid="harbor-tier-name">{info.tier.current.name}</strong>」
+                    {info.tier.next
+                      ? `（「${info.tier.next.name}」需 ${info.tier.next.minScore} 分）`
+                      : '（已达最高段位）'}
+                  </span>
+                  <span className="hd-countdown">
+                    距翻周结算 {fmtHarborCountdown(info.weekEndsAtMs - info.nowMs)} · 下周鱼场「{info.nextGround.name}」
+                  </span>
+                </div>
+                <div className="ct-rep-bar hd-progress-bar">
+                  <div className="ct-rep-bar-fill hd-bar-fill" style={{ width: `${info.tier.progressPct}%` }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="ac-wallet-badges hd-wallet-row">
+              <span className="ac-wallet-badge hd-cast-badge">
+                <T1Art kind="ui" id="nav-fishing" className="ac-badge-icon" fallback="" alt="" />
+                本周竿次：<strong data-testid="harbor-casts">{info.castsAvailable}</strong>
+              </span>
+              <span className="ac-wallet-badge">
+                参赛：<strong data-testid="harbor-entries">{info.entriesUsed} / {info.entryCap}</strong>
+              </span>
+              <span className="ac-wallet-badge hd-trophy-badge">
+                <T1Art kind="skills" id="fishing_trophy" className="ac-badge-icon" fallback="" alt="" />
+                奖杯：<strong data-testid="harbor-trophies">{totalTrophies}</strong>
+              </span>
+              <span className="ac-wallet-badge hd-rod-badge">
+                <T1Art kind="skills" id="master_fishing_rod" className="ac-badge-icon" fallback="" alt="" />
+                <strong data-testid="harbor-rod-title">{info.rod.title}</strong>
+              </span>
+              <span className="ac-wallet-badge hd-aqua-badge">
+                <T1Art kind="skills" id="harbor_aquarium" className="ac-badge-icon" fallback="" alt="" />
+                水族馆：<strong data-testid="harbor-collected">{info.aquarium.collectedCount} / {info.aquarium.totalSpecies}</strong>
+              </span>
+            </div>
+
+            {aqChips.length > 0 && (
+              <div className="hw-bonus-strip" data-testid="harbor-aquarium-bonuses">
+                <span className="hd-chip title">水族馆「{info.aquarium.bonuses.collectionTitle}」</span>
+                {aqChips.map((c) => (
+                  <span key={c} className="hd-chip">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="prog-filter-bar hd-tab-bar">
+            <button
+              type="button"
+              data-testid="harbor-tab-derby"
+              className={`prog-filter-btn ${tab === 'derby' ? 'active' : ''}`}
+              onClick={() => setTab('derby')}
+            >
+              港湾垂钓大赛
+            </button>
+            <button
+              type="button"
+              data-testid="harbor-tab-bait"
+              className={`prog-filter-btn ${tab === 'bait' ? 'active' : ''}`}
+              onClick={() => setTab('bait')}
+            >
+              鱼饵工坊（稀有配方 {info.knownRecipes.length}/3）
+            </button>
+            <button
+              type="button"
+              data-testid="harbor-tab-aquarium"
+              className={`prog-filter-btn ${tab === 'aquarium' ? 'active' : ''}`}
+              onClick={() => setTab('aquarium')}
+            >
+              海港水族馆（{info.aquarium.collectedCount}/{info.aquarium.totalSpecies}）
+            </button>
+          </div>
+
+          {tab === 'derby' && (
+            <div className="hd-derby-view">
+              <div className="hd-ground-card" data-testid="harbor-ground-card">
+                <div className="hd-ground-scene">
+                  <T1Art kind="tree" id={info.ground.sceneId} className="hd-ground-scene-img" fallback="" alt={info.ground.name} />
+                </div>
+                <div className="hd-ground-copy">
+                  <div className="hd-ground-name">{info.ground.name}</div>
+                  <p className="hd-ground-desc">{info.ground.description}</p>
+                  <div className="hd-featured-label">本周主打鱼种（计分 ×1.5、出现率 ×2）</div>
+                  <div className="hd-featured-row">
+                    {info.ground.featuredSpecies.map((sp) => (
+                      <span key={sp.id} className={`hd-species-chip rarity-${sp.rarity}`}>
+                        <HarborSpeciesIcon sp={sp} className="hd-chip-icon" />
+                        {sp.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="hd-cast-card" data-testid="harbor-cast-card">
+                <div className="ac-rack-title">选择鱼饵投竿参赛</div>
+                <div className="hd-bait-pills">
+                  {info.baits.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      data-testid={`harbor-bait-pick-${b.id}`}
+                      className={`hd-bait-pill ${selectedBait === b.id ? 'selected' : ''} ${b.known ? '' : 'locked'}`}
+                      disabled={!b.known || Boolean(busyKey)}
+                      onClick={() => setBaitChoice(b.id)}
+                    >
+                      <span className="hd-bait-pill-name">{b.name}</span>
+                      <span className="hd-bait-pill-stock">{b.known ? `库存 ${b.stock}` : '未掌握'}</span>
+                    </button>
+                  ))}
+                </div>
+                {selected && <div className="hd-bait-effect">{formatHarborBaitEffects(selected)}</div>}
+
+                <div className="hd-pool" data-testid="harbor-pool">
+                  <div className="hd-pool-title">
+                    本周鱼种池（厨师 Lv.{info.chefLevel} · {HARBOR_BAIT_NAME[selectedBait]}）
+                  </div>
+                  <div className="hd-pool-grid">
+                    {pool.map((p) => {
+                      const sp = speciesMeta(p.speciesId);
+                      return (
+                        <div key={p.speciesId} className={`hd-pool-row ${p.featured ? 'featured' : ''}`}>
+                          <HarborSpeciesIcon sp={sp} className="hd-pool-icon" />
+                          <span className="hd-pool-name">{sp.name}</span>
+                          <span className={`hd-rarity-tag rarity-${sp.rarity}`}>{HARBOR_RARITY_LABELS[sp.rarity]}</span>
+                          <span className="hd-pool-pct">{p.pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="hd-cast-actions">
+                  <button
+                    type="button"
+                    data-testid="harbor-enter-1"
+                    className="prog-claim-btn hd-action-btn hd-cast-btn"
+                    disabled={!selected?.canEnter || Boolean(busyKey)}
+                    onClick={() => handleEnter(1)}
+                  >
+                    {busyKey === 'enter:1'
+                      ? '投竿中…'
+                      : info.castsAvailable <= 0
+                      ? '本周竿次不足'
+                      : (selected?.stock || 0) <= 0
+                      ? '鱼饵不足'
+                      : '投竿 ×1'}
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="harbor-enter-multi"
+                    className="prog-claim-btn hd-action-btn hd-cast-btn"
+                    disabled={multiCount < 2 || Boolean(busyKey)}
+                    onClick={() => handleEnter(multiCount)}
+                  >
+                    {busyKey === `enter:${multiCount}`
+                      ? '连投中…'
+                      : multiCount >= 2
+                      ? `连投 ×${multiCount}`
+                      : '连投需 2 竿 + 2 份饵'}
+                  </button>
+                </div>
+                <div className="hd-cast-hint">
+                  每竿消耗 {info.castsPerEntry} 次本周真实钓鱼行动 + 1 份鱼饵。本周已完成钓鱼行动 {info.fishingActionsThisWeek} 次（去「钓鱼」页挂机即可积累竿次），每周至多参赛 {info.entryCap} 次。
+                </div>
+              </div>
+
+              {lastEntry?.catches && lastEntry.catches.length > 0 && (
+                <div className="hd-result-card" data-testid="harbor-last-result">
+                  <div className="ac-rack-title">刚刚的渔获</div>
+                  <div className="hd-result-list">
+                    {lastEntry.catches.map((c, i) => {
+                      const sp = speciesMeta(c.speciesId);
+                      return (
+                        <div key={`${c.speciesId}-${i}`} className={`hd-result-row rarity-${c.rarity}`}>
+                          <HarborSpeciesIcon sp={sp} className="hd-result-icon" />
+                          <span className="hd-result-name">{c.name}</span>
+                          <span className="hd-result-size">{c.sizeCm}cm</span>
+                          <span className="hd-result-score">{c.score} 分</span>
+                          <span className="hd-result-tags">
+                            {c.featured && <span className="hd-tag featured">主打</span>}
+                            {c.trophySize && <span className="hd-tag trophy">奖杯级</span>}
+                            {c.newSpecies && <span className="hd-tag new">新收藏</span>}
+                            {c.newRecord && <span className="hd-tag record">新纪录</span>}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="hd-board-card" data-testid="harbor-leaderboard">
+                <div className="ac-rack-title">
+                  本周周榜（最佳 {info.leaderboardSize} 条渔获计分 · 本周渔获 {info.weeklyCatchCount} 条）
+                </div>
+                {info.leaderboard.length === 0 ? (
+                  <div className="hd-empty-line">本周还没有渔获，选好鱼饵投出第一竿吧。</div>
+                ) : (
+                  <div className="hd-board-list">
+                    {info.leaderboard.map((c, i) => (
+                      <div key={`${c.speciesId}-${c.at}-${i}`} className={`hd-board-row rank-${i + 1}`}>
+                        <span className="hd-board-rank">{i + 1}</span>
+                        <HarborSpeciesIcon sp={c} className="hd-board-icon" />
+                        <span className="hd-board-name">
+                          {c.name}
+                          <small>
+                            {c.sizeCm}cm · {c.baitName}
+                            {c.featured ? ' · 主打' : ''}
+                            {c.trophySize ? ' · 奖杯级' : ''}
+                          </small>
+                        </span>
+                        <span className="hd-board-score">{c.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="hd-tier-card">
+                <div className="ac-rack-title">周榜段位（周一东八区 0 点翻周时结算）</div>
+                <div className="ct-tier-list">
+                  {info.tier.allTiers
+                    .filter((t) => t.rank > 0)
+                    .map((t) => (
+                      <div
+                        key={t.id}
+                        className={`ct-tier-pill-row hd-tier-row ${info.tier.current.rank >= t.rank ? 'is-unlocked' : ''}`}
+                      >
+                        <span>
+                          <strong>{t.name}</strong>（{t.minScore} 分）
+                        </span>
+                        <span>
+                          {t.trophyName} · {t.goldReward} 金币 · {formatHarborBaitReward(t.baitReward)}
+                          {t.recipe ? ` · 稀有配方「${HARBOR_BAIT_NAME[t.recipe]}」` : ''}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+                <div className="hd-projection" data-testid="harbor-projection">
+                  {info.projectedSettlement.trophyGranted
+                    ? `若此刻结算：「${info.projectedSettlement.tierName}」· ${HARBOR_TROPHY_LABEL[info.projectedSettlement.trophyGranted]} · ${info.projectedSettlement.goldReward} 金币${
+                        info.projectedSettlement.unlockedRecipes.length
+                          ? ` · 解锁「${info.projectedSettlement.unlockedRecipes.map((id) => HARBOR_BAIT_NAME[id]).join('」「')}」`
+                          : ''
+                      }`
+                    : `若此刻结算：未达「青铜钓手」（需 ${info.tier.allTiers[1]?.minScore ?? 0} 分）`}
+                </div>
+              </div>
+
+              {info.lastSettlement && (
+                <div className="hd-settle-card" data-testid="harbor-last-settlement">
+                  <div className="ac-rack-title">
+                    上周结算（{info.lastSettlement.weekKey} · {info.lastSettlement.groundName}）
+                  </div>
+                  <div className="ac-rack-sub">
+                    「{info.lastSettlement.tierName}」· 周榜 {info.lastSettlement.weeklyScore} 分 · 参赛 {info.lastSettlement.entries} 次
+                    {info.lastSettlement.trophyGranted ? ` · ${HARBOR_TROPHY_LABEL[info.lastSettlement.trophyGranted]}` : ''}
+                    {info.lastSettlement.goldReward ? ` · +${info.lastSettlement.goldReward} 金币` : ''}
+                    {formatHarborBaitReward(info.lastSettlement.baitReward)
+                      ? ` · ${formatHarborBaitReward(info.lastSettlement.baitReward)}`
+                      : ''}
+                    {info.lastSettlement.unlockedRecipeNames.length
+                      ? ` · 习得「${info.lastSettlement.unlockedRecipeNames.join('」「')}」`
+                      : ''}
+                  </div>
+                </div>
+              )}
+
+              <div className="hd-cabinet-card" data-testid="harbor-trophy-cabinet">
+                <div className="hd-cabinet-head">
+                  <T1Art kind="skills" id="master_fishing_rod" className="hd-cabinet-rod" fallback="" alt="大师钓竿" />
+                  <div className="hd-cabinet-copy">
+                    <div className="ac-rack-title">
+                      奖杯柜 · {info.rod.title}（奖杯积分 {info.trophyPoints}）
+                    </div>
+                    <div className="ac-rack-sub">
+                      投竿尺寸 +{info.rod.sizeBonusPct}% · 计分 +{info.rod.scoreBonusPct}%
+                      {info.rod.next
+                        ? ` ｜ 下一阶「${info.rod.next.title}」需积分 ${info.rod.next.minTrophyPoints}`
+                        : ' ｜ 已至大师钓竿满阶'}
+                    </div>
+                    <div className="ct-rep-bar hd-rod-bar">
+                      <div className="ct-rep-bar-fill hd-bar-fill" style={{ width: `${info.rod.progressPct}%` }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="hd-trophy-row">
+                  {(Object.keys(HARBOR_TROPHY_LABEL) as HarborTrophyTierId[]).map((k) => (
+                    <div key={k} className={`hd-trophy-slot tier-${k} ${(info.trophies[k] || 0) > 0 ? 'owned' : ''}`}>
+                      <T1Art kind="skills" id="fishing_trophy" className="hd-trophy-icon" fallback="" alt="" />
+                      <span>{HARBOR_TROPHY_LABEL[k]}</span>
+                      <strong>×{info.trophies[k] || 0}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'bait' && (
+            <div className="hd-bait-view">
+              <div className="hd-intro">
+                鱼饵由真实钓鱼产物（河鱼 / 鲜虾 / 海鱼 / 湖鱼 / 深海鱼 / 渊海巨鱼）调制；稀有鱼饵配方在周榜达到对应段位并于翻周结算时解锁，转生永久保留。
+              </div>
+              <div className="hd-bait-grid">
+                {info.baits.map((b) => (
+                  <div
+                    key={b.id}
+                    data-testid={`harbor-bait-card-${b.id}`}
+                    className={`hd-bait-card ${b.known ? 'known' : 'locked'} bait-${b.id}`}
+                  >
+                    <div className="hd-bait-head">
+                      <div className="hd-bait-icon-frame">
+                        <T1Art kind="skills" id={b.iconId} className="hd-bait-icon" fallback="" alt={b.name} />
+                      </div>
+                      <div className="hd-bait-title-col">
+                        <div className="hd-bait-name-row">
+                          <strong>{b.name}</strong>
+                          <span className={`hd-recipe-tag ${b.known ? 'on' : 'off'}`}>
+                            {b.recipeTier ? (b.known ? '稀有配方 · 已掌握' : `需「${b.recipeTierName}」结算`) : '基础配方'}
+                          </span>
+                        </div>
+                        <span className="hd-bait-subtitle">{b.subtitle}</span>
+                      </div>
+                    </div>
+                    <p className="ar-stratum-desc">{b.description}</p>
+                    <div className="hd-bait-effect">{formatHarborBaitEffects(b)}</div>
+                    <div className="sf-cost-row">
+                      {b.craftItems.map((it) => (
+                        <span key={it.itemId} className={`sf-cost-chip ${it.have >= it.qty ? 'ok' : 'short'}`}>
+                          <T1ItemIcon itemId={it.itemId} className="ac-badge-icon" fallback="" alt="" />
+                          {it.name} {it.have}/{it.qty}
+                        </span>
+                      ))}
+                      <span className="sf-cost-chip ok">
+                        <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                        {b.craftGold} 金币
+                      </span>
+                    </div>
+                    <div className="hd-bait-stock-line">
+                      每批产出 {b.craftYield} 份 · 库存 <strong data-testid={`harbor-bait-stock-${b.id}`}>{b.stock}</strong> / 99
+                    </div>
+                    <div className="hd-bait-actions">
+                      <button
+                        type="button"
+                        data-testid={`harbor-craft-${b.id}`}
+                        className="prog-claim-btn hd-action-btn"
+                        disabled={!b.canCraft || Boolean(busyKey)}
+                        onClick={() => handleCraft(b, 1)}
+                      >
+                        {busyKey === `bait:${b.id}:1` ? '调制中…' : b.canCraft ? '调制 ×1 批' : b.craftBlockReason || '暂不可调制'}
+                      </button>
+                      {b.canCraft && b.maxBatches > 1 && (
+                        <button
+                          type="button"
+                          data-testid={`harbor-craft-max-${b.id}`}
+                          className="prog-claim-btn hd-action-btn hd-secondary-btn"
+                          disabled={Boolean(busyKey)}
+                          onClick={() => handleCraft(b, b.maxBatches)}
+                        >
+                          {busyKey === `bait:${b.id}:${b.maxBatches}` ? '调制中…' : `调制 ×${b.maxBatches} 批`}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === 'aquarium' && (
+            <div className="hd-aquarium-view">
+              <div className="hd-aqua-hero" data-testid="harbor-aquarium-hero">
+                <div className="hd-aqua-emblem">
+                  <T1Art kind="skills" id="harbor_aquarium" className="hd-aqua-hero-icon" fallback="" alt="海港水族馆" />
+                </div>
+                <div className="hd-aqua-copy">
+                  <div className="hw-hero-title">
+                    {info.aquarium.tier.current.title} · 收藏 {info.aquarium.collectedCount} / {info.aquarium.totalSpecies} 种
+                  </div>
+                  <div className="hw-hero-sub">
+                    参赛渔获自动入缸展出（转生永久保留）。收藏进度解锁主题展缸，并加成钓鱼速度（钓鱼行动）、料理品质（烹饪精品出锅）与金币收益（生产与战斗金币）。
+                  </div>
+                  <div className="ct-rep-progress-meta">
+                    <span>
+                      {info.aquarium.tier.next
+                        ? `下一展阶「${info.aquarium.tier.next.title}」需收藏 ${info.aquarium.tier.next.minSpecies} 种`
+                        : '已收齐全部港湾鱼种'}
+                    </span>
+                  </div>
+                  <div className="ct-rep-bar">
+                    <div className="ct-rep-bar-fill hd-aqua-fill" style={{ width: `${info.aquarium.tier.progressPct}%` }} />
+                  </div>
+                  <div className="hw-bonus-strip">
+                    {aqChips.length === 0 ? (
+                      <span className="hd-chip muted">尚无加成 —— 钓到第 1 种鱼即可开馆</span>
+                    ) : (
+                      aqChips.map((c) => (
+                        <span key={c} className="hd-chip">
+                          {c}
+                        </span>
+                      ))
+                    )}
+                    {info.aquarium.bonuses.featuredTank && (
+                      <span className="hd-chip title">
+                        主展缸「{info.aquarium.tanks.find((t) => t.id === info.aquarium.bonuses.featuredTank)?.name}」
+                        {info.aquarium.bonuses.featuredTankFull ? '已收齐 · 共鸣翻倍' : '共鸣生效'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="hd-tank-grid">
+                {info.aquarium.tanks.map((t) => {
+                  const reso = formatHarborAquariumStats(t.resonance);
+                  const eff = formatHarborAquariumStats(t.effectiveResonance);
+                  return (
+                    <div
+                      key={t.id}
+                      data-testid={`harbor-tank-${t.id}`}
+                      className={`hd-tank-card theme-${t.id} ${t.unlocked ? 'unlocked' : 'locked'} ${t.featured ? 'featured' : ''}`}
+                    >
+                      <div className="hd-tank-head">
+                        <div className="hd-tank-title-col">
+                          <strong>{t.name}</strong>
+                          <span className="hd-tank-subtitle">{t.subtitle}</span>
+                        </div>
+                        <span className={`hd-tank-status ${t.featured ? 'on' : t.unlocked ? 'ready' : 'off'}`}>
+                          {t.featured ? '主展缸' : t.unlocked ? (t.full ? '已收齐' : '已开放') : `收藏 ${t.unlockSpecies} 种开放`}
+                        </span>
+                      </div>
+                      <div className="hd-tank-water">
+                        {t.species.map((s) => (
+                          <div
+                            key={s.id}
+                            data-testid={`harbor-species-${s.id}`}
+                            className={`hd-fish-slot ${s.collected ? 'collected' : 'empty'} rarity-${s.rarity}`}
+                          >
+                            <div className="hd-fish-icon-wrap">
+                              <HarborSpeciesIcon sp={s} className="hd-fish-icon" />
+                            </div>
+                            <span className="hd-fish-name">{s.name}</span>
+                            <span className={`hd-rarity-tag rarity-${s.rarity}`}>{s.rarityLabel}</span>
+                            <span className="hd-fish-meta">
+                              {s.collected
+                                ? `最佳 ${s.bestSizeCm}cm · ×${s.count}`
+                                : s.exclusiveBaitName
+                                ? `需「${s.exclusiveBaitName}」`
+                                : `厨师 Lv.${s.minChefLevel}`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="hd-tank-reso">
+                        主题共鸣：{reso.join(' · ')}
+                        {t.full ? `（已收齐，翻倍为 ${eff.join(' · ')}）` : `（收齐本缸翻倍）`}
+                      </div>
+                      <div className="hd-tank-actions">
+                        {t.featured ? (
+                          <button
+                            type="button"
+                            data-testid={`harbor-tank-unset-${t.id}`}
+                            className="prog-claim-btn hd-action-btn hd-secondary-btn"
+                            disabled={Boolean(busyKey)}
+                            onClick={() => handleTank(null, t.name)}
+                          >
+                            撤下主展缸
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            data-testid={`harbor-tank-set-${t.id}`}
+                            className="prog-claim-btn hd-action-btn"
+                            disabled={!t.unlocked || Boolean(busyKey)}
+                            onClick={() => handleTank(t.id, t.name)}
+                          >
+                            {t.unlocked ? '设为主展缸' : `需收藏 ${t.unlockSpecies} 种`}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="hd-tier-card">
+                <div className="ac-rack-title">收藏展阶（按已收藏鱼种数）</div>
+                <div className="ct-tier-list">
+                  {info.aquarium.tier.allTiers
+                    .filter((t) => t.tier > 0)
+                    .map((t) => (
+                      <div
+                        key={t.tier}
+                        className={`ct-tier-pill-row ${info.aquarium.tier.current.tier >= t.tier ? 'is-unlocked' : ''}`}
+                      >
+                        <span>
+                          <strong>{t.title}</strong>（收藏 {t.minSpecies} 种）
+                        </span>
+                        <span>
+                          钓鱼速度 +{t.fishingSpeedPct}% · 料理品质 +{t.cookingQualityPct}% · 金币收益 +{t.goldGainPct}%
+                        </span>
+                      </div>
+                    ))}
+                </div>
+                <div className="hd-projection">
+                  已收藏：
+                  {HARBOR_SPECIES.filter((s) => info.aquarium.tanks.some((t) => t.species.some((x) => x.id === s.id && x.collected)))
+                    .map((s) => speciesName(s.id))
+                    .join('、') || '暂无'}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </PanelModal>
+  );
+}
+
+/* ============================================================================
+   冒险者学院进修课程 & 四季节庆活动日历 (WL-12)
+   ============================================================================ */
+
+interface AcademyCostItemView {
+  itemId: string;
+  name: string;
+  qty: number;
+  have: number;
+}
+
+interface AcademyGraduationPreview {
+  department: AcademyDepartmentId;
+  credits: number;
+  departmentTierBefore: number;
+  departmentTierAfter: number;
+  badgeTierBefore: number;
+  badgeTierAfter: number;
+}
+
+interface AcademyCourseView {
+  id: AcademyCourseId;
+  name: string;
+  level: 'basic' | 'advanced';
+  department: AcademyDepartmentId;
+  departmentName: string;
+  description: string;
+  durationMinutes: number;
+  goldCost: number;
+  items: AcademyCostItemView[];
+  credits: number;
+  minBadgeTier: number;
+  minBadgeName: string;
+  completedCount: number;
+  preview: AcademyGraduationPreview;
+  canEnroll: boolean;
+  blockReason: string | null;
+}
+
+interface AcademyDepartmentView {
+  id: AcademyDepartmentId;
+  name: string;
+  passiveName: string;
+  subtitle: string;
+  description: string;
+  credits: number;
+  tier: AcademyDepartmentTierDef;
+  next: AcademyDepartmentTierDef | null;
+  progressPct: number;
+  allTiers: readonly AcademyDepartmentTierDef[];
+  festivalSeason: FestivalSeasonId;
+  festivalSeasonName: string;
+}
+
+interface AcademyActiveCourseView {
+  courseId: AcademyCourseId;
+  startedAt: string;
+  endsAt: string;
+  name: string;
+  level: 'basic' | 'advanced';
+  department: AcademyDepartmentId;
+  departmentName: string;
+  credits: number;
+  durationMinutes: number;
+  remainingMs: number;
+  progressPct: number;
+  finished: boolean;
+  preview: AcademyGraduationPreview;
+}
+
+interface FestivalCommissionView {
+  id: FestivalCommissionId;
+  name: string;
+  description: string;
+  kind: FestivalCommissionKind;
+  items: AcademyCostItemView[];
+  actionPrefix: string | null;
+  target: number;
+  maxClaims: number;
+  claims: number;
+  tokens: number;
+  gold: number;
+  seasonCount: number;
+  progress: number;
+  required: number;
+  canClaim: boolean;
+  blockReason: string | null;
+}
+
+interface FestivalShopItemView {
+  id: FestivalShopItemId;
+  name: string;
+  description: string;
+  kind: FestivalShopItemKind;
+  iconKind: 'item' | 'skills' | 'ui';
+  iconId: string;
+  cost: number;
+  limit: number;
+  purchased: number;
+  gold: number;
+  items: Array<{ itemId: string; name: string; qty: number }>;
+  credits: number;
+  department: AcademyDepartmentId | null;
+  departmentName: string | null;
+  owned: boolean;
+  canBuy: boolean;
+  blockReason: string | null;
+}
+
+interface AcademyFestivalInfo {
+  nowMs: number;
+  bonuses: AcademyFestivalBonuses;
+  academy: {
+    slots: number;
+    totalCredits: number;
+    badge: {
+      current: AcademyBadgeDef;
+      next: AcademyBadgeDef | null;
+      progressPct: number;
+      allBadges: readonly AcademyBadgeDef[];
+    };
+    departments: AcademyDepartmentView[];
+    activeCourse: AcademyActiveCourseView | null;
+    courses: AcademyCourseView[];
+    totalEnrollments: number;
+    totalGraduations: number;
+    lastGraduation: {
+      courseId: AcademyCourseId;
+      courseName: string;
+      department: AcademyDepartmentId;
+      departmentName: string;
+      credits: number;
+      at: string;
+      departmentTier: number;
+      badgeTier: number;
+      badgeName: string;
+    } | null;
+  };
+  festival: {
+    seasonKey: string;
+    seasonIndex: number;
+    year: number;
+    season: FestivalSeasonDef;
+    startsAtMs: number;
+    endsAtMs: number;
+    nextSeason: { id: FestivalSeasonId; name: string; shortName: string; months: string };
+    calendar: Array<{
+      id: FestivalSeasonId;
+      name: string;
+      shortName: string;
+      months: string;
+      subtitle: string;
+      current: boolean;
+      keepsakeName: string;
+      keepsakeStats: AcademyStats;
+      keepsakeOwned: boolean;
+    }>;
+    tokens: number;
+    tokenCap: number;
+    tokenGoldRate: number;
+    commissions: FestivalCommissionView[];
+    shop: FestivalShopItemView[];
+    keepsakes: FestivalSeasonId[];
+    fullCycle: boolean;
+    fullCycleStats: AcademyStats;
+    totalTokensEarned: number;
+    totalClaims: number;
+    lastRollover: {
+      seasonKey: string;
+      seasonName: string;
+      claims: number;
+      tokensConverted: number;
+      goldConverted: number;
+    } | null;
+  };
+}
+
+const ACADEMY_LEVEL_LABEL: Record<'basic' | 'advanced', string> = { basic: '基础课', advanced: '进阶课' };
+
+const FESTIVAL_KIND_LABEL: Record<FestivalCommissionKind, string> = {
+  deliver: '交付成品',
+  actions: '本季行动',
+  kills: '本季击杀',
+};
+
+const FESTIVAL_ACTION_LABEL: Record<string, string> = {
+  act_plant_: '种植行动',
+  act_fish_: '钓鱼行动',
+  act_raise_: '畜牧养殖行动',
+};
+
+function academyDeptTierTitle(dept: AcademyDepartmentId, tier: number): string {
+  const def = ACADEMY_DEPARTMENTS.find((d) => d.id === dept);
+  return def?.tiers.find((t) => t.tier === tier)?.title || '';
+}
+
+function academyPreviewText(p: AcademyGraduationPreview, deptName: string, credits: number): string {
+  const after = getAcademyDepartmentTier(p.department, credits + p.credits);
+  if (p.departmentTierAfter > p.departmentTierBefore) {
+    return p.departmentTierBefore === 0
+      ? `结业后点亮${deptName}「${after.current.title}」`
+      : `结业后「${academyDeptTierTitle(p.department, p.departmentTierBefore)}」晋升「${after.current.title}」`;
+  }
+  return after.next
+    ? `结业后${deptName} ${credits} → ${credits + p.credits} 学分（「${after.next.title}」需 ${after.next.minCredits}）`
+    : `结业后${deptName} ${credits} → ${credits + p.credits} 学分（已满阶）`;
+}
+
+function FestivalShopIcon({ item, className }: { item: FestivalShopItemView; className: string }) {
+  if (item.iconKind === 'item') return <T1ItemIcon itemId={item.iconId} className={className} fallback="" alt={item.name} />;
+  if (item.iconKind === 'ui') return <T1Art kind="ui" id={item.iconId} className={className} fallback="" alt={item.name} />;
+  return <T1Art kind="skills" id={item.iconId} className={className} fallback="" alt={item.name} />;
+}
+
+export function AcademyFestivalPanel({ onClose, onChange }: { onClose: () => void; onChange?: () => void }) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<AcademyFestivalInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'academy' | 'festival' | 'shop'>('academy');
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  // 服务器时钟偏移：倒计时按「服务器 nowMs + 本地流逝」推算，每 30 秒刷新一次
+  const [clientAnchor, setClientAnchor] = useState(() => Date.now());
+  const [tick, setTick] = useState(() => Date.now());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getAcademyFestival();
+      setInfo(res);
+      setClientAnchor(Date.now());
+      return res as AcademyFestivalInfo;
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载冒险者学院与四季节庆失败');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setTick(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const applyInfo = (res: any) => {
+    if (res?.academy) {
+      setInfo(res.academy);
+      setClientAnchor(Date.now());
+    }
+  };
+
+  const handleEnroll = async (course: AcademyCourseView) => {
+    setBusyKey(`enroll:${course.id}`);
+    try {
+      const res: any = await apiClient.enrollAcademyCourse({ courseId: course.id });
+      if (res?.academy) applyInfo(res);
+      else await load();
+      toastRef.current.success(`已报名「${course.name}」，${formatCourseDuration(course.durationMinutes)}后结业可得 ${course.credits} 学分`);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '报名学院课程失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleGraduate = async () => {
+    setBusyKey('graduate');
+    const before = info?.academy.totalGraduations ?? 0;
+    const res = await load();
+    setBusyKey(null);
+    if (res && res.academy.totalGraduations > before && res.academy.lastGraduation) {
+      toastRef.current.success(
+        `「${res.academy.lastGraduation.courseName}」结业：${res.academy.lastGraduation.departmentName} +${res.academy.lastGraduation.credits} 学分`
+      );
+      onChange?.();
+    }
+  };
+
+  const handleClaim = async (c: FestivalCommissionView) => {
+    setBusyKey(`claim:${c.id}`);
+    try {
+      const res: any = await apiClient.claimFestivalCommission({ commissionId: c.id });
+      if (res?.academy) applyInfo(res);
+      else await load();
+      toastRef.current.success(`委托「${c.name}」完成：+${c.tokens} ${info?.festival.season.tokenName ?? '节庆代币'} · +${c.gold} 金币`);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '完成节庆委托失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleBuy = async (item: FestivalShopItemView) => {
+    setBusyKey(`buy:${item.id}`);
+    try {
+      const res: any = await apiClient.buyFestivalShopItem({ itemId: item.id });
+      if (res?.academy) applyInfo(res);
+      else await load();
+      toastRef.current.success(`节庆商店兑换「${item.name}」`);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '节庆商店兑换失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const serverNow = info ? info.nowMs + Math.max(0, tick - clientAnchor) : 0;
+  const active = info?.academy.activeCourse ?? null;
+  const activeRemaining = active ? Math.max(0, Date.parse(active.endsAt) - serverNow) : 0;
+  const activePct = active
+    ? Math.min(100, Math.max(0, Math.floor(((serverNow - Date.parse(active.startedAt)) / Math.max(1, active.durationMinutes * 60_000)) * 100)))
+    : 0;
+  const activeDone = Boolean(active) && activeRemaining <= 0;
+  const bonusChips = info ? formatAcademyStats(info.bonuses) : [];
+  const seasonLeft = info ? Math.max(0, info.festival.endsAtMs - serverNow) : 0;
+  const deptCredits = (id: AcademyDepartmentId) => info?.academy.departments.find((d) => d.id === id)?.credits ?? 0;
+  const claimableCount = info ? info.festival.commissions.filter((c) => c.canClaim).length : 0;
+  const seasonClaims = info ? info.festival.commissions.reduce((s, c) => s + c.claims, 0) : 0;
+
+  return (
+    <PanelModal
+      title="冒险者学院与四季节庆"
+      icon={<T1Art kind="skills" id="academy_crest" className="hw-modal-title-icon" fallback="" alt="" />}
+      onClose={onClose}
+    >
+      {loading && !info ? (
+        <div className="prog-empty">正在翻开学院课表与节庆日历…</div>
+      ) : !info ? (
+        <div className="prog-empty">暂无冒险者学院数据</div>
+      ) : (
+        <div className="af-panel-root" data-testid="academy-festival-panel">
+          <div className="hw-hero-card af-hero-card">
+            <div className="hw-hero-top">
+              <div className="hw-hero-emblem af-hero-emblem">
+                <T1Art kind="skills" id="academy_crest" className="hw-hero-core-icon" fallback="" alt="冒险者学院院徽" />
+              </div>
+              <div className="hw-hero-copy af-hero-copy">
+                <div className="ac-hero-title-row">
+                  <span className="hw-hero-title" data-testid="academy-badge-name">
+                    冒险者学院 · {info.academy.badge.current.name}
+                  </span>
+                  <span className="qm-equipped-pill">学分、徽章与纪念章转生永久保留</span>
+                </div>
+                <div className="ct-rep-progress-meta af-progress-meta">
+                  <span>
+                    四系学分合计 <strong data-testid="academy-total-credits">{info.academy.totalCredits}</strong>
+                    {info.academy.badge.next
+                      ? ` · 下一枚「${info.academy.badge.next.name}」需 ${info.academy.badge.next.minCredits} 学分`
+                      : ' · 已获最高学院徽章'}
+                  </span>
+                  <span className="af-season-line">
+                    {info.festival.year} {info.festival.season.name}（{info.festival.season.months}）· 距翻季 {formatAcademyCountdown(seasonLeft)}
+                  </span>
+                </div>
+                <div className="ct-rep-bar af-progress-bar">
+                  <div className="ct-rep-bar-fill af-bar-fill" style={{ width: `${info.academy.badge.progressPct}%` }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="ac-wallet-badges af-wallet-row">
+              <span className="ac-wallet-badge af-course-badge">
+                <T1Art kind="skills" id="course_scroll" className="ac-badge-icon" fallback="" alt="" />
+                {active ? (
+                  <>
+                    进修中：<strong data-testid="academy-active-name">{active.name}</strong>
+                  </>
+                ) : (
+                  <>
+                    进修席位：<strong data-testid="academy-active-name">空闲</strong>
+                  </>
+                )}
+              </span>
+              <span className="ac-wallet-badge af-grad-badge">
+                <T1Art kind="skills" id="graduation_cap" className="ac-badge-icon" fallback="" alt="" />
+                结业：<strong data-testid="academy-graduations">{info.academy.totalGraduations}</strong> 次
+              </span>
+              <span className="ac-wallet-badge af-token-badge">
+                <T1Art kind="skills" id="festival_shop_tent" className="ac-badge-icon" fallback="" alt="" />
+                {info.festival.season.tokenName}：<strong data-testid="festival-tokens">{info.festival.tokens}</strong>
+              </span>
+              <span className="ac-wallet-badge af-keepsake-badge">
+                <T1Art kind="skills" id="festival_calendar" className="ac-badge-icon" fallback="" alt="" />
+                纪念章：<strong data-testid="festival-keepsake-count">{info.festival.keepsakes.length} / 4</strong>
+              </span>
+            </div>
+
+            <div className="hw-bonus-strip" data-testid="academy-bonuses">
+              {bonusChips.length === 0 ? (
+                <span className="af-chip muted">尚无永久加成 —— 修满 8 学分即可点亮第一条跨职业被动</span>
+              ) : (
+                bonusChips.map((c) => (
+                  <span key={c} className="af-chip">
+                    {c}
+                  </span>
+                ))
+              )}
+              {info.festival.fullCycle && <span className="af-chip title">四季圆满</span>}
+            </div>
+          </div>
+
+          <div className="prog-filter-bar af-tab-bar">
+            <button
+              type="button"
+              data-testid="academy-tab-courses"
+              className={`prog-filter-btn ${tab === 'academy' ? 'active' : ''}`}
+              onClick={() => setTab('academy')}
+            >
+              学院进修
+            </button>
+            <button
+              type="button"
+              data-testid="academy-tab-festival"
+              className={`prog-filter-btn ${tab === 'festival' ? 'active' : ''}`}
+              onClick={() => setTab('festival')}
+            >
+              {info.festival.season.shortName}委托{claimableCount > 0 ? `（可领 ${claimableCount}）` : ''}
+            </button>
+            <button
+              type="button"
+              data-testid="academy-tab-shop"
+              className={`prog-filter-btn ${tab === 'shop' ? 'active' : ''}`}
+              onClick={() => setTab('shop')}
+            >
+              节庆商店
+            </button>
+          </div>
+
+          {tab === 'academy' && (
+            <div className="af-academy-view">
+              <div className={`af-active-card ${active ? 'busy' : 'idle'}`} data-testid="academy-active-course">
+                <div className="af-active-icon-frame">
+                  <T1Art kind="skills" id="course_scroll" className="af-active-icon" fallback="" alt="学院进修课程卷轴" />
+                </div>
+                <div className="af-active-copy">
+                  {active ? (
+                    <>
+                      <div className="af-active-title">
+                        正在进修「{active.name}」
+                        <span className={`af-dept-tag dept-${active.department}`}>{active.departmentName}</span>
+                        <span className="af-level-tag">{ACADEMY_LEVEL_LABEL[active.level]}</span>
+                      </div>
+                      <div className="ct-rep-bar af-course-bar">
+                        <div
+                          className="ct-rep-bar-fill af-course-fill"
+                          style={{ width: `${activeDone ? 100 : activePct}%` }}
+                        />
+                      </div>
+                      <div className="af-active-meta">
+                        {activeDone
+                          ? `课程已到点，结业即得 ${active.credits} 学分`
+                          : `还剩 ${formatAcademyCountdown(activeRemaining)} · 结业可得 ${active.credits} 学分`}
+                        {' · '}
+                        {academyPreviewText(active.preview, active.departmentName, deptCredits(active.department))}
+                      </div>
+                      {activeDone && (
+                        <button
+                          type="button"
+                          data-testid="academy-graduate-btn"
+                          className="prog-claim-btn af-action-btn af-primary-btn"
+                          disabled={Boolean(busyKey)}
+                          onClick={handleGraduate}
+                        >
+                          {busyKey === 'graduate' ? '结业中…' : '结业领取学分'}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="af-active-title">进修席位空闲</div>
+                      <div className="af-active-meta">
+                        从下方课程目录选择一门报名（同一时间只能修读 {info.academy.slots} 门）。课程到点后打开本面板即结业，学分计入所属学系。
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {info.academy.lastGraduation && (
+                <div className="af-grad-line" data-testid="academy-last-graduation">
+                  <T1Art kind="skills" id="graduation_cap" className="af-grad-icon" fallback="" alt="" />
+                  <span>
+                    上次结业：「{info.academy.lastGraduation.courseName}」· {info.academy.lastGraduation.departmentName} +
+                    {info.academy.lastGraduation.credits} 学分 · 当时徽章「{info.academy.lastGraduation.badgeName}」
+                  </span>
+                </div>
+              )}
+
+              <div className="ac-rack-title">课程目录（报名消耗金币 + 生活职业成品，结业学分计入所属学系）</div>
+              <div className="af-course-grid">
+                {info.academy.courses.map((c) => (
+                  <div
+                    key={c.id}
+                    data-testid={`academy-course-${c.id}`}
+                    className={`af-course-card dept-${c.department} ${c.canEnroll ? 'ready' : 'blocked'} ${active?.courseId === c.id ? 'current' : ''}`}
+                  >
+                    <div className="af-course-head">
+                      <div className="af-course-icon-frame">
+                        <T1Art kind="skills" id="course_scroll" className="af-course-icon" fallback="" alt="" />
+                      </div>
+                      <div className="af-course-title-col">
+                        <div className="af-course-name-row">
+                          <strong>{c.name}</strong>
+                          <span className={`af-dept-tag dept-${c.department}`}>{c.departmentName}</span>
+                          <span className="af-level-tag">{ACADEMY_LEVEL_LABEL[c.level]}</span>
+                        </div>
+                        <span className="af-course-sub">
+                          {formatCourseDuration(c.durationMinutes)} · +{c.credits} 学分
+                          {c.completedCount > 0 ? ` · 已结业 ×${c.completedCount}` : ''}
+                          {info.academy.badge.current.tier < c.minBadgeTier ? ` · 需「${c.minBadgeName}」` : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="af-course-desc">{c.description}</p>
+                    <div className="sf-cost-row">
+                      {c.items.map((it) => (
+                        <span key={it.itemId} className={`sf-cost-chip ${it.have >= it.qty ? 'ok' : 'short'}`}>
+                          <T1ItemIcon itemId={it.itemId} className="ac-badge-icon" fallback="" alt="" />
+                          {it.name} {it.have}/{it.qty}
+                        </span>
+                      ))}
+                      <span className="sf-cost-chip ok">
+                        <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                        {c.goldCost} 金币
+                      </span>
+                    </div>
+                    <div className="af-course-preview">{academyPreviewText(c.preview, c.departmentName, deptCredits(c.department))}</div>
+                    <button
+                      type="button"
+                      data-testid={`academy-enroll-${c.id}`}
+                      className="prog-claim-btn af-action-btn af-primary-btn"
+                      disabled={!c.canEnroll || Boolean(busyKey)}
+                      onClick={() => handleEnroll(c)}
+                    >
+                      {busyKey === `enroll:${c.id}`
+                        ? '报名中…'
+                        : active?.courseId === c.id
+                        ? '进修中'
+                        : c.canEnroll
+                        ? '报名进修'
+                        : c.blockReason || '暂不可报名'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="ac-rack-title">四系跨职业永久被动（学分达标即生效，转生保留）</div>
+              <div className="af-dept-grid">
+                {info.academy.departments.map((d) => {
+                  const cur = formatAcademyStats(d.tier.stats);
+                  const nextStats = d.next ? formatAcademyStats(d.next.stats) : [];
+                  return (
+                    <div key={d.id} data-testid={`academy-dept-${d.id}`} className={`af-dept-card dept-${d.id} tier-${d.tier.tier}`}>
+                      <div className="af-dept-head">
+                        <strong>{d.name}</strong>
+                        <span className="af-dept-tier">{d.tier.title}</span>
+                      </div>
+                      <div className="af-dept-sub">
+                        「{d.passiveName}」· {d.subtitle}
+                      </div>
+                      <div className="ct-rep-bar af-dept-bar">
+                        <div className="ct-rep-bar-fill af-dept-fill" style={{ width: `${d.progressPct}%` }} />
+                      </div>
+                      <div className="af-dept-meta">
+                        学分 <strong>{d.credits}</strong>
+                        {d.next ? ` / ${d.next.minCredits}（下一阶「${d.next.title}」）` : '（已满阶）'}
+                      </div>
+                      <div className="af-dept-stats">
+                        {cur.length > 0 ? `当前：${cur.join(' · ')}` : '当前：未点亮'}
+                        {nextStats.length > 0 ? ` ｜ 下一阶：${nextStats.join(' · ')}` : ''}
+                      </div>
+                      <div className="af-dept-note">{d.festivalSeasonName}商店限定：本系进修推荐信 +3 学分</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="ac-rack-title">学院徽章（四系学分合计晋阶）</div>
+              <div className="af-badge-row" data-testid="academy-badges">
+                {info.academy.badge.allBadges
+                  .filter((b) => b.tier > 0)
+                  .map((b) => (
+                    <div
+                      key={b.tier}
+                      className={`af-badge-slot tier-${b.tier} ${info.academy.badge.current.tier >= b.tier ? 'owned' : 'locked'}`}
+                    >
+                      <T1Art kind="skills" id={b.iconId} className="af-badge-icon" fallback="" alt={b.name} />
+                      <strong>{b.name}</strong>
+                      <span className="af-badge-req">学分 {b.minCredits}</span>
+                      <span className="af-badge-stats">{formatAcademyStats(b.stats).join(' · ')}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {tab === 'festival' && (
+            <div className="af-festival-view">
+              <div className={`af-season-card season-${info.festival.season.id}`} data-testid="festival-season-card">
+                <div className="af-season-emblem">
+                  <T1Art kind="skills" id="festival_calendar" className="af-season-icon" fallback="" alt="四季节庆活动日历" />
+                </div>
+                <div className="af-season-copy">
+                  <div className="af-season-title" data-testid="festival-season-name">
+                    {info.festival.year} {info.festival.season.name}
+                    <span className="af-season-months">{info.festival.season.months} · {info.festival.season.subtitle}</span>
+                  </div>
+                  <p className="af-season-desc">{info.festival.season.description}</p>
+                  <div className="af-season-meta">
+                    距翻季 {formatAcademyCountdown(seasonLeft)} · 下一季「{info.festival.nextSeason.name}」（{info.festival.nextSeason.months}）·
+                    本季代币「{info.festival.season.tokenName}」翻季时 1 枚折 {info.festival.tokenGoldRate} 金币
+                  </div>
+                </div>
+              </div>
+
+              <div className="af-calendar-strip" data-testid="festival-calendar">
+                {info.festival.calendar.map((s) => (
+                  <div key={s.id} className={`af-calendar-cell season-${s.id} ${s.current ? 'current' : ''}`}>
+                    <strong>{s.name}</strong>
+                    <span className="af-calendar-months">{s.months}</span>
+                    <span className={`af-calendar-keep ${s.keepsakeOwned ? 'owned' : ''}`}>
+                      {s.keepsakeOwned ? '纪念章已收藏' : s.current ? '本季可兑纪念章' : '纪念章未收藏'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="af-commission-head">
+                <T1Art kind="skills" id="festival_harvest_basket" className="af-basket-icon" fallback="" alt="节庆限定委托" />
+                <div>
+                  <div className="ac-rack-title">{info.festival.season.name}限定委托</div>
+                  <div className="ac-rack-sub">
+                    交付真实成品或完成本季真实行动 / 击杀，每份委托每季限 3 次；本季已完成 {seasonClaims} 次 · 生涯累计获得节庆代币 {info.festival.totalTokensEarned} 枚。
+                  </div>
+                </div>
+              </div>
+              <div className="af-commission-list">
+                {info.festival.commissions.map((c) => (
+                  <div
+                    key={c.id}
+                    data-testid={`festival-commission-${c.id}`}
+                    className={`af-commission-card kind-${c.kind} ${c.canClaim ? 'ready' : ''} ${c.claims >= c.maxClaims ? 'done' : ''}`}
+                  >
+                    <div className="af-commission-top">
+                      <div className="af-commission-title">
+                        <strong>{c.name}</strong>
+                        <span className={`af-kind-tag kind-${c.kind}`}>{FESTIVAL_KIND_LABEL[c.kind]}</span>
+                      </div>
+                      <span className="af-claim-pips" aria-label={`已完成 ${c.claims}/${c.maxClaims}`}>
+                        {Array.from({ length: c.maxClaims }, (_, i) => (
+                          <span key={i} className={`af-pip ${i < c.claims ? 'on' : ''}`} />
+                        ))}
+                      </span>
+                    </div>
+                    <p className="af-commission-desc">{c.description}</p>
+                    {c.kind === 'deliver' ? (
+                      <div className="sf-cost-row">
+                        {c.items.map((it) => (
+                          <span key={it.itemId} className={`sf-cost-chip ${it.have >= it.qty ? 'ok' : 'short'}`}>
+                            <T1ItemIcon itemId={it.itemId} className="ac-badge-icon" fallback="" alt="" />
+                            {it.name} {it.have}/{it.qty}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="af-count-block">
+                        <div className="ct-rep-bar af-count-bar">
+                          <div
+                            className="ct-rep-bar-fill af-count-fill"
+                            style={{ width: `${c.target > 0 ? Math.round((c.progress / c.target) * 100) : 0}%` }}
+                          />
+                        </div>
+                        <span className="af-count-meta">
+                          本季{c.kind === 'kills' ? '击杀' : FESTIVAL_ACTION_LABEL[c.actionPrefix || ''] || '行动'} {c.seasonCount} 次
+                          {c.claims < c.maxClaims ? ` · 第 ${c.claims + 1} 次需累计 ${c.required}` : ' · 本季已领满'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="af-commission-foot">
+                      <span className="af-reward">
+                        +{c.tokens} {info.festival.season.tokenName} · +{c.gold} 金币
+                      </span>
+                      <button
+                        type="button"
+                        data-testid={`festival-claim-${c.id}`}
+                        className="prog-claim-btn af-action-btn af-festival-btn"
+                        disabled={!c.canClaim || Boolean(busyKey)}
+                        onClick={() => handleClaim(c)}
+                      >
+                        {busyKey === `claim:${c.id}`
+                          ? '提交中…'
+                          : c.canClaim
+                          ? c.kind === 'deliver'
+                            ? '交付委托'
+                            : '领取奖励'
+                          : c.blockReason || '暂不可领取'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {info.festival.lastRollover && (
+                <div className="af-rollover-line" data-testid="festival-last-rollover">
+                  上一季（{info.festival.lastRollover.seasonName}）完成委托 {info.festival.lastRollover.claims} 次，剩余{' '}
+                  {info.festival.lastRollover.tokensConverted} 枚代币折算 {info.festival.lastRollover.goldConverted} 金币。
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'shop' && (
+            <div className="af-shop-view">
+              <div className={`af-shop-hero season-${info.festival.season.id}`} data-testid="festival-shop-hero">
+                <div className="af-shop-emblem">
+                  <T1Art kind="skills" id="festival_shop_tent" className="af-shop-icon" fallback="" alt="节庆商店帐篷" />
+                </div>
+                <div className="af-shop-copy">
+                  <div className="af-season-title">
+                    {info.festival.season.name}商店
+                    <span className="af-season-months">持有「{info.festival.season.tokenName}」{info.festival.tokens} 枚</span>
+                  </div>
+                  <div className="af-season-meta">
+                    商品每季限购，翻季后换上新一季的礼包与纪念章；进修推荐信直接为学院学系增加学分，纪念章转生永久保留。
+                  </div>
+                </div>
+              </div>
+
+              <div className="af-shop-grid">
+                {info.festival.shop.map((item) => (
+                  <div
+                    key={item.id}
+                    data-testid={`festival-shop-${item.id}`}
+                    className={`af-shop-card kind-${item.kind} ${item.canBuy ? 'ready' : 'blocked'}`}
+                  >
+                    <div className="af-shop-head">
+                      <div className="af-shop-icon-frame">
+                        <FestivalShopIcon item={item} className="af-shop-item-icon" />
+                      </div>
+                      <div className="af-shop-title-col">
+                        <strong>{item.name}</strong>
+                        <span className="af-shop-sub">
+                          {item.cost} 枚 · 本季 {item.purchased}/{item.limit}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="af-shop-desc">{item.description}</p>
+                    {item.items.length > 0 && (
+                      <div className="sf-cost-row">
+                        {item.items.map((it) => (
+                          <span key={it.itemId} className="sf-cost-chip ok">
+                            <T1ItemIcon itemId={it.itemId} className="ac-badge-icon" fallback="" alt="" />
+                            {it.name} ×{it.qty}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {item.kind === 'gold' && <div className="af-shop-grant">获得 {item.gold} 金币</div>}
+                    {item.kind === 'credits' && (
+                      <div className="af-shop-grant">
+                        {item.departmentName} +{item.credits} 学分
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      data-testid={`festival-buy-${item.id}`}
+                      className="prog-claim-btn af-action-btn af-festival-btn"
+                      disabled={!item.canBuy || Boolean(busyKey)}
+                      onClick={() => handleBuy(item)}
+                    >
+                      {busyKey === `buy:${item.id}` ? '兑换中…' : item.canBuy ? '兑换' : item.blockReason || '暂不可兑换'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="ac-rack-title">四季纪念章（转生永久保留，收齐四季额外获得「四季圆满」）</div>
+              <div className="af-keepsake-row" data-testid="festival-keepsakes">
+                {info.festival.calendar.map((s) => (
+                  <div key={s.id} className={`af-keepsake-slot season-${s.id} ${s.keepsakeOwned ? 'owned' : 'locked'}`}>
+                    <T1Art kind="skills" id="festival_calendar" className="af-keepsake-icon" fallback="" alt="" />
+                    <strong>{s.keepsakeName}</strong>
+                    <span>{formatAcademyStats(s.keepsakeStats).join(' · ')}</span>
+                    <span className="af-keepsake-state">{s.keepsakeOwned ? '已收藏' : `${s.name}限定兑换`}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="af-fullcycle-line">
+                四季圆满：{formatAcademyStats(info.festival.fullCycleStats).join(' · ')}
+                {info.festival.fullCycle ? '（已生效）' : `（已收藏 ${info.festival.keepsakes.length} / 4）`}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </PanelModal>
+  );
+}
+
+/* ============================================================================
+   天空竞技场赛季排位 & 公会领地城镇建设 (WL-13)
+   ============================================================================ */
+
+interface ArenaDuelPreviewView {
+  won: boolean;
+  timeout: boolean;
+  playerHpLeft: number;
+  playerMaxHp: number;
+  enemyHpLeft: number;
+  enemyMaxHp: number;
+  durationMs: number;
+}
+
+interface ArenaChampionView {
+  id: string;
+  rung: number;
+  level: number;
+  name: string;
+  epithet: string;
+  archetype: ArenaArchetypeId;
+  archetypeName: string;
+  style: string;
+  division: ArenaDivisionId;
+  divisionName: string;
+  gatekeeper: boolean;
+  hp: number;
+  atk: number;
+  def: number;
+  attackIntervalMs: number;
+  isBoss: boolean;
+  mechanics: string[];
+  mechanicLabels: Array<{ id: string; label: string; desc: string }>;
+  gold: number;
+  preview: ArenaDuelPreviewView | null;
+  next: boolean;
+}
+
+interface ArenaDuelRecordView extends ArenaDuelPreviewView {
+  seasonKey: string;
+  rung: number;
+  championName: string;
+  gold: number;
+  at: string;
+}
+
+interface TownCostItemView {
+  itemId: string;
+  name: string;
+  qty: number;
+  have: number;
+}
+
+interface TownFacilityView {
+  id: TownFacilityId;
+  name: string;
+  subtitle: string;
+  description: string;
+  iconKind: 'skills' | 'ui';
+  iconId: string;
+  prosperityPerLevel: number;
+  level: number;
+  maxLevel: number;
+  cap: number;
+  currentStats: ArenaTownStats;
+  currentPerk: string | null;
+  next: {
+    level: number;
+    gold: number;
+    medals: number;
+    items: TownCostItemView[];
+    stats: ArenaTownStats;
+    perk: string | null;
+  } | null;
+  perks: Array<{ level: number; perk: string; unlocked: boolean }>;
+  canUpgrade: boolean;
+  blockReason: string | null;
+}
+
+interface SkyArenaTownInfo {
+  nowMs: number;
+  bonuses: ArenaTownBonuses;
+  arena: {
+    seasonKey: string;
+    seasonIndex: number;
+    seasonLabel: string;
+    startsAtMs: number;
+    endsAtMs: number;
+    dayKey: string;
+    dayEndsAtMs: number;
+    rungCount: number;
+    rung: number;
+    bestRung: number;
+    division: { id: ArenaDivisionId; name: string } | null;
+    attemptsPerDay: number;
+    attemptsUsed: number;
+    attemptsLeft: number;
+    seasonWins: number;
+    seasonLosses: number;
+    totalWins: number;
+    totalLosses: number;
+    medals: number;
+    totalMedalsEarned: number;
+    titles: ArenaDivisionId[];
+    bestTitle: { id: ArenaDivisionId; name: string; stats: ArenaTownStats } | null;
+    seasonsSettled: number;
+    settlementPreview: { rung: number; division: ArenaDivisionId | null; divisionName: string; medals: number; titleName: string | null };
+    lastSettlement: {
+      seasonKey: string;
+      seasonLabel: string;
+      rung: number;
+      division: ArenaDivisionId | null;
+      divisionName: string;
+      medals: number;
+      newTitle: ArenaDivisionId | null;
+      newTitleName: string | null;
+    } | null;
+    lastDuel: ArenaDuelRecordView | null;
+    buildStats: { atk: number; def: number; hp: number; intervalMs: number } | null;
+    next: ArenaChampionView | null;
+    upcoming: ArenaChampionView[];
+    challengeBlock: string | null;
+    canChallenge: boolean;
+    ladder: Array<{
+      rung: number;
+      name: string;
+      archetypeName: string;
+      division: ArenaDivisionId;
+      gatekeeper: boolean;
+      defeated: boolean;
+      current: boolean;
+    }>;
+    divisions: Array<{
+      id: ArenaDivisionId;
+      name: string;
+      minRung: number;
+      maxRung: number;
+      medals: number;
+      titleName: string;
+      titleStats: ArenaTownStats;
+      reached: boolean;
+      titleOwned: boolean;
+    }>;
+  };
+  town: {
+    facilities: TownFacilityView[];
+    prosperity: {
+      points: number;
+      maxPoints: number;
+      tier: number;
+      name: string;
+      stats: ArenaTownStats;
+      next: { tier: number; name: string; minPoints: number; stats: ArenaTownStats } | null;
+      progressPct: number;
+    };
+    chests: Array<{
+      tier: number;
+      name: string;
+      minPoints: number;
+      stats: ArenaTownStats;
+      gold: number;
+      items: Array<{ itemId: string; name: string; qty: number }>;
+      reached: boolean;
+      claimed: boolean;
+      canClaim: boolean;
+    }>;
+    totalUpgrades: number;
+    goldInvested: number;
+    lastUpgrade: { facilityId: TownFacilityId; facilityName: string; level: number; at: string } | null;
+    medals: number;
+  };
+}
+
+function arenaPreviewText(p: ArenaDuelPreviewView | null): string {
+  if (!p) return '暂无预演';
+  if (p.won) {
+    const pct = p.playerMaxHp > 0 ? Math.round((p.playerHpLeft / p.playerMaxHp) * 100) : 0;
+    return `预计胜利 · 剩 ${pct}% 生命 · 约 ${formatDuelDuration(p.durationMs)}`;
+  }
+  const pct = p.enemyMaxHp > 0 ? Math.round((p.enemyHpLeft / p.enemyMaxHp) * 100) : 0;
+  return p.timeout ? `预计 10 分钟内拿不下（擂主剩 ${pct}%）` : `预计落败 · 擂主剩 ${pct}% 生命`;
+}
+
+function arenaPreviewTone(p: ArenaDuelPreviewView | null): 'win' | 'close' | 'lose' {
+  if (!p || !p.won) return 'lose';
+  return p.playerMaxHp > 0 && p.playerHpLeft / p.playerMaxHp < 0.3 ? 'close' : 'win';
+}
+
+function TownFacilityIcon({ facility, className }: { facility: TownFacilityView; className: string }) {
+  if (facility.iconKind === 'ui') return <T1Art kind="ui" id={facility.iconId} className={className} fallback="" alt={facility.name} />;
+  return <T1Art kind="skills" id={facility.iconId} className={className} fallback="" alt={facility.name} />;
+}
+
+export function SkyArenaTownPanel({ onClose, onChange }: { onClose: () => void; onChange?: () => void }) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<SkyArenaTownInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'arena' | 'honors' | 'town'>('arena');
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [lastLog, setLastLog] = useState<string[]>([]);
+  // 服务器时钟偏移：倒计时按「服务器 nowMs + 本地流逝」推算，每 30 秒刷新一次
+  const [clientAnchor, setClientAnchor] = useState(() => Date.now());
+  const [tick, setTick] = useState(() => Date.now());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getSkyArenaTown();
+      setInfo(res);
+      setClientAnchor(Date.now());
+      return res as SkyArenaTownInfo;
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载天空竞技场与公会城镇失败');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setTick(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const applyInfo = (res: any) => {
+    if (res?.arena?.arena) {
+      setInfo(res.arena);
+      setClientAnchor(Date.now());
+    }
+  };
+
+  const handleChallenge = async () => {
+    const next = info?.arena.next;
+    if (!next) return;
+    setBusyKey('challenge');
+    try {
+      const res: any = await apiClient.challengeSkyArena({ rung: next.rung });
+      if (res?.arena) applyInfo(res);
+      else await load();
+      const c = res?.challenge;
+      setLastLog(Array.isArray(c?.duel?.log) ? c.duel.log : []);
+      if (c?.won) {
+        toastRef.current.success(`击败「${c.championName}」！晋级第 ${c.rung} 级 · +${c.gold} 金币`);
+      } else if (c) {
+        toastRef.current.info(c.timeout ? `与「${c.championName}」鏖战 10 分钟未分胜负，判负` : `惜败于「${c.championName}」，强化构建后再来`);
+      }
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '挑战擂主失败');
+      await load();
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleUpgrade = async (f: TownFacilityView) => {
+    setBusyKey(`build:${f.id}`);
+    try {
+      const res: any = await apiClient.upgradeTownFacility({ facilityId: f.id });
+      if (res?.arena) applyInfo(res);
+      else await load();
+      toastRef.current.success(`「${f.name}」${f.level === 0 ? '落成' : '升至'} Lv.${f.level + 1}`);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '城镇建设失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleChest = async (tier: number, name: string) => {
+    setBusyKey(`chest:${tier}`);
+    try {
+      const res: any = await apiClient.claimTownProsperityChest({ tier });
+      if (res?.arena) applyInfo(res);
+      else await load();
+      toastRef.current.success(`开启「${name}」繁荣宝箱：+${res?.chest?.gold ?? 0} 金币`);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '领取繁荣宝箱失败');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const serverNow = info ? info.nowMs + Math.max(0, tick - clientAnchor) : 0;
+  const seasonLeft = info ? Math.max(0, info.arena.endsAtMs - serverNow) : 0;
+  const dayLeft = info ? Math.max(0, info.arena.dayEndsAtMs - serverNow) : 0;
+  const bonusChips = info ? formatArenaTownStats(info.bonuses) : [];
+  const next = info?.arena.next ?? null;
+  const hall = info?.town.facilities.find((f) => f.id === 'town_hall');
+  const claimableChests = info ? info.town.chests.filter((c) => c.canClaim).length : 0;
+  const upgradable = info ? info.town.facilities.filter((f) => f.canUpgrade).length : 0;
+
+  return (
+    <PanelModal
+      title="天空竞技场与公会城镇"
+      icon={<T1Art kind="skills" id="sky_arena" className="hw-modal-title-icon" fallback="" alt="" />}
+      onClose={onClose}
+    >
+      {loading && !info ? (
+        <div className="prog-empty">正在登上天空竞技场、清点城镇账册…</div>
+      ) : !info ? (
+        <div className="prog-empty">暂无天空竞技场数据</div>
+      ) : (
+        <div className="at-panel-root" data-testid="arena-town-panel">
+          <div className="hw-hero-card at-hero-card">
+            <div className="hw-hero-top">
+              <div className="hw-hero-emblem at-hero-emblem">
+                <T1Art kind="skills" id="sky_arena" className="hw-hero-core-icon" fallback="" alt="天空竞技场" />
+              </div>
+              <div className="hw-hero-copy at-hero-copy">
+                <div className="ac-hero-title-row">
+                  <span className="hw-hero-title" data-testid="arena-division-name">
+                    天空竞技场 · {info.arena.division ? `${info.arena.division.name}段位` : '未定级'}
+                  </span>
+                  <span className="qm-equipped-pill">称号、勋章与城镇转生永久保留</span>
+                </div>
+                <div className="ct-rep-progress-meta at-progress-meta">
+                  <span>
+                    {info.arena.seasonLabel} · 第 <strong data-testid="arena-rung">{info.arena.rung}</strong> / {info.arena.rungCount} 级 · 本季{' '}
+                    {info.arena.seasonWins} 胜 {info.arena.seasonLosses} 负 · 生涯最高第 {info.arena.bestRung} 级
+                  </span>
+                  <span className="at-season-line">距赛季结算 {formatAcademyCountdown(seasonLeft)} · 挑战次数 {formatAcademyCountdown(dayLeft)}后重置</span>
+                </div>
+                <div className="ct-rep-bar at-progress-bar">
+                  <div
+                    className="ct-rep-bar-fill at-bar-fill"
+                    style={{ width: `${Math.round((info.arena.rung / Math.max(1, info.arena.rungCount)) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="ac-wallet-badges at-wallet-row">
+              <span className="ac-wallet-badge at-attempt-badge">
+                <T1Art kind="skills" id="sky_arena" className="ac-badge-icon" fallback="" alt="" />
+                今日挑战：<strong data-testid="arena-attempts">{info.arena.attemptsLeft} / {info.arena.attemptsPerDay}</strong>
+              </span>
+              <span className="ac-wallet-badge at-medal-badge">
+                <T1Art kind="skills" id="arena_medal" className="ac-badge-icon" fallback="" alt="" />
+                竞技场勋章：<strong data-testid="arena-medals">{info.arena.medals}</strong>
+              </span>
+              <span className="ac-wallet-badge at-title-badge">
+                <T1Art kind="skills" id="season_title" className="ac-badge-icon" fallback="" alt="" />
+                称号：<strong data-testid="arena-best-title">{info.arena.bestTitle ? info.arena.bestTitle.name : '暂无'}</strong>
+              </span>
+              <span className="ac-wallet-badge at-town-badge">
+                <T1Art kind="skills" id="guild_town" className="ac-badge-icon" fallback="" alt="" />
+                繁荣度：<strong data-testid="town-prosperity">{info.town.prosperity.points}</strong> · {info.town.prosperity.name}
+              </span>
+            </div>
+
+            <div className="hw-bonus-strip" data-testid="arena-town-bonuses">
+              {bonusChips.length === 0 ? (
+                <span className="at-chip muted">尚无永久加成 —— 赛季结算解锁称号，建造城镇设施点亮跨职业被动</span>
+              ) : (
+                bonusChips.map((c) => (
+                  <span key={c} className="at-chip">
+                    {c}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="prog-filter-bar at-tab-bar">
+            <button
+              type="button"
+              data-testid="arena-tab-ladder"
+              className={`prog-filter-btn ${tab === 'arena' ? 'active' : ''}`}
+              onClick={() => setTab('arena')}
+            >
+              竞技场排位{info.arena.canChallenge ? `（剩 ${info.arena.attemptsLeft} 次）` : ''}
+            </button>
+            <button
+              type="button"
+              data-testid="arena-tab-honors"
+              className={`prog-filter-btn ${tab === 'honors' ? 'active' : ''}`}
+              onClick={() => setTab('honors')}
+            >
+              赛季荣誉
+            </button>
+            <button
+              type="button"
+              data-testid="arena-tab-town"
+              className={`prog-filter-btn ${tab === 'town' ? 'active' : ''}`}
+              onClick={() => setTab('town')}
+            >
+              公会城镇{claimableChests + upgradable > 0 ? `（可建 ${upgradable}${claimableChests > 0 ? ` · 宝箱 ${claimableChests}` : ''}）` : ''}
+            </button>
+          </div>
+
+          {tab === 'arena' && (
+            <div className="at-arena-view">
+              {next ? (
+                <div
+                  className={`at-champion-card division-${next.division} ${next.gatekeeper ? 'gatekeeper' : ''}`}
+                  data-testid="arena-next-champion"
+                >
+                  <div className="at-champion-head">
+                    <div className="at-champion-emblem">
+                      <T1Art kind="skills" id={next.gatekeeper ? 'season_title' : 'sky_arena'} className="at-champion-icon" fallback="" alt="" />
+                      <span className="at-rung-tag">第 {next.rung} 级</span>
+                    </div>
+                    <div className="at-champion-copy">
+                      <div className="at-champion-name-row">
+                        <strong data-testid="arena-champion-name">{next.name}</strong>
+                        <span className={`at-division-tag division-${next.division}`}>{next.divisionName}</span>
+                        <span className="at-style-tag">
+                          {next.archetypeName} · {next.style}
+                        </span>
+                        {next.gatekeeper && <span className="at-gate-tag">段位守擂人</span>}
+                      </div>
+                      <div className="at-stat-compare">
+                        <div className="at-stat-col">
+                          <span className="at-stat-label">擂主</span>
+                          <span>生命 {next.hp}</span>
+                          <span>攻击 {next.atk}</span>
+                          <span>防御 {next.def}</span>
+                          <span>攻击间隔 {(next.attackIntervalMs / 1000).toFixed(1)} 秒</span>
+                        </div>
+                        {info.arena.buildStats && (
+                          <div className="at-stat-col you">
+                            <span className="at-stat-label">你的竞技构建</span>
+                            <span>生命 {info.arena.buildStats.hp}</span>
+                            <span>攻击 {info.arena.buildStats.atk}</span>
+                            <span>防御 {info.arena.buildStats.def}</span>
+                            <span>攻击间隔 {(info.arena.buildStats.intervalMs / 1000).toFixed(1)} 秒</span>
+                          </div>
+                        )}
+                      </div>
+                      {next.mechanicLabels.length > 0 && (
+                        <div className="at-mech-row">
+                          {next.mechanicLabels.map((m) => (
+                            <span key={m.id} className="at-mech-chip" title={m.desc}>
+                              {m.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className={`at-preview-line tone-${arenaPreviewTone(next.preview)}`} data-testid="arena-preview">
+                    {arenaPreviewText(next.preview)}
+                  </div>
+                  <div className="at-champion-foot">
+                    <span className="at-reward">
+                      <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                      胜利 +{next.gold} 金币 · 晋级第 {next.rung} 级
+                    </span>
+                    <button
+                      type="button"
+                      data-testid="arena-challenge-btn"
+                      className={`prog-claim-btn af-action-btn at-challenge-btn ${next.preview && !next.preview.won ? 'risky' : ''}`}
+                      disabled={!info.arena.canChallenge || Boolean(busyKey)}
+                      onClick={handleChallenge}
+                      title={next.preview && !next.preview.won ? '真实战斗引擎预演为落败：挑战仍会消耗 1 次今日次数' : undefined}
+                    >
+                      {busyKey === 'challenge'
+                        ? '对决中…'
+                        : !info.arena.canChallenge
+                        ? info.arena.challengeBlock || '暂不可挑战'
+                        : next.preview && !next.preview.won
+                        ? `挑战第 ${next.rung} 级（预计落败）`
+                        : `挑战第 ${next.rung} 级`}
+                    </button>
+                  </div>
+                  <div className="at-rule-note">
+                    预演与挑战都直接运行真实战斗引擎：满血入场，禁用料理 / 饮品与临时药剂增益，按你的装备、战斗技能、构筑、永久加成与技能栏对决，结果确定。
+                  </div>
+                </div>
+              ) : (
+                <div className="at-champion-card summit" data-testid="arena-next-champion">
+                  <div className="at-champion-head">
+                    <div className="at-champion-emblem">
+                      <T1Art kind="skills" id="season_title" className="at-champion-icon" fallback="" alt="" />
+                    </div>
+                    <div className="at-champion-copy">
+                      <strong>本赛季已登顶天空竞技场第 {info.arena.rungCount} 级</strong>
+                      <span className="at-rule-note">月末赛季结算时发放天空王者段位勋章与称号。</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(info.arena.lastDuel || lastLog.length > 0) && (
+                <div className="at-duel-report" data-testid="arena-last-duel">
+                  {info.arena.lastDuel && (
+                    <div className={`at-duel-line ${info.arena.lastDuel.won ? 'won' : 'lost'}`}>
+                      上一战：第 {info.arena.lastDuel.rung} 级「{info.arena.lastDuel.championName}」·{' '}
+                      {info.arena.lastDuel.won ? '胜利' : info.arena.lastDuel.timeout ? '超时判负' : '落败'} · 用时{' '}
+                      {formatDuelDuration(info.arena.lastDuel.durationMs)} · 剩余生命 {info.arena.lastDuel.playerHpLeft}/
+                      {info.arena.lastDuel.playerMaxHp}
+                      {info.arena.lastDuel.won ? ` · +${info.arena.lastDuel.gold} 金币` : ''}
+                    </div>
+                  )}
+                  {lastLog.length > 0 && (
+                    <ul className="at-duel-log">
+                      {lastLog.map((line, i) => (
+                        <li key={`${i}-${line}`}>{line}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {info.arena.upcoming.length > 1 && (
+                <>
+                  <div className="ac-rack-title">后续擂主（同一赛季恒定，下月 1 日换一批）</div>
+                  <div className="at-upcoming-grid">
+                    {info.arena.upcoming.slice(1).map((c) => (
+                      <div key={c.rung} className={`at-upcoming-card division-${c.division}`} data-testid={`arena-upcoming-${c.rung}`}>
+                        <div className="at-upcoming-head">
+                          <span className="at-rung-tag small">第 {c.rung} 级</span>
+                          <strong>{c.name}</strong>
+                        </div>
+                        <span className="at-upcoming-sub">
+                          {c.divisionName} · {c.archetypeName} · 生命 {c.hp} · 攻击 {c.atk} · 防御 {c.def}
+                        </span>
+                        <span className={`at-preview-mini tone-${arenaPreviewTone(c.preview)}`}>{arenaPreviewText(c.preview)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <div className="ac-rack-title">本季擂主梯队（每段 5 级，第 5 级为段位守擂人）</div>
+              <div className="at-ladder" data-testid="arena-ladder">
+                {info.arena.divisions.map((d) => (
+                  <div key={d.id} className={`at-ladder-division division-${d.id} ${d.reached ? 'reached' : ''}`}>
+                    <span className="at-ladder-name">{d.name}</span>
+                    <div className="at-ladder-pips">
+                      {info.arena.ladder
+                        .filter((r) => r.division === d.id)
+                        .map((r) => (
+                          <span
+                            key={r.rung}
+                            className={`at-pip ${r.defeated ? 'done' : ''} ${r.current ? 'current' : ''} ${r.gatekeeper ? 'gate' : ''}`}
+                            title={`第 ${r.rung} 级 · ${r.name}`}
+                          >
+                            {r.rung}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === 'honors' && (
+            <div className="at-honors-view">
+              <div className="at-settle-card" data-testid="arena-settlement-preview">
+                <div className="at-settle-emblem">
+                  <T1Art kind="skills" id="season_title" className="at-settle-icon" fallback="" alt="赛季称号" />
+                </div>
+                <div className="at-settle-copy">
+                  <div className="at-settle-title">
+                    {info.arena.seasonLabel}结算预估：{info.arena.settlementPreview.divisionName}
+                    {info.arena.settlementPreview.division ? `（第 ${info.arena.settlementPreview.rung} 级）` : ''}
+                  </div>
+                  <div className="at-settle-meta">
+                    {info.arena.settlementPreview.division
+                      ? `月末结算可得竞技场勋章 ×${info.arena.settlementPreview.medals} 与赛季称号「${info.arena.settlementPreview.titleName}」（已拥有则只发勋章）。`
+                      : '本赛季尚未击败任何擂主，结算时不发放奖励。'}
+                    距结算 {formatAcademyCountdown(seasonLeft)}；结算后梯级归零，新一批擂主登场。
+                  </div>
+                </div>
+              </div>
+
+              {info.arena.lastSettlement && (
+                <div className="at-settle-line" data-testid="arena-last-settlement">
+                  <T1Art kind="skills" id="arena_medal" className="af-grad-icon" fallback="" alt="" />
+                  <span>
+                    上赛季（{info.arena.lastSettlement.seasonLabel}）：{info.arena.lastSettlement.divisionName}段位 · 第{' '}
+                    {info.arena.lastSettlement.rung} 级 · 勋章 +{info.arena.lastSettlement.medals}
+                    {info.arena.lastSettlement.newTitleName ? ` · 解锁称号「${info.arena.lastSettlement.newTitleName}」` : ''}
+                  </span>
+                </div>
+              )}
+
+              <div className="ac-rack-title">段位、勋章与赛季称号（称号转生永久保留，最高称号生效）</div>
+              <div className="at-division-grid" data-testid="arena-divisions">
+                {info.arena.divisions.map((d) => (
+                  <div
+                    key={d.id}
+                    className={`at-division-card division-${d.id} ${d.titleOwned ? 'owned' : ''} ${
+                      info.arena.bestTitle?.id === d.id ? 'active' : ''
+                    }`}
+                  >
+                    <div className="at-division-head">
+                      <T1Art kind="skills" id="season_title" className="at-division-icon" fallback="" alt="" />
+                      <div>
+                        <strong>{d.name}</strong>
+                        <span className="at-division-range">
+                          第 {d.minRung}~{d.maxRung} 级
+                        </span>
+                      </div>
+                    </div>
+                    <span className="at-division-medals">
+                      <T1Art kind="skills" id="arena_medal" className="ac-badge-icon" fallback="" alt="" />
+                      结算勋章 ×{d.medals}
+                    </span>
+                    <span className="at-division-title">称号「{d.titleName}」</span>
+                    <span className="at-division-stats">{formatArenaTownStats(d.titleStats).join(' · ')}</span>
+                    <span className="at-division-state">
+                      {info.arena.bestTitle?.id === d.id ? '生效中' : d.titleOwned ? '已拥有' : d.reached ? '本季已达成，待结算' : '未达成'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="at-medal-note">
+                竞技场勋章 {info.arena.medals} 枚（生涯累计 {info.arena.totalMedalsEarned} 枚，已结算 {info.arena.seasonsSettled} 个赛季）——用于建造「荣耀演武场」Lv.3~5。
+              </div>
+            </div>
+          )}
+
+          {tab === 'town' && (
+            <div className="at-town-view">
+              <div className="at-town-hero" data-testid="town-hero">
+                <div className="at-town-emblem">
+                  <T1Art kind="skills" id="guild_town" className="at-town-icon" fallback="" alt="公会领地城镇" />
+                </div>
+                <div className="at-town-copy">
+                  <div className="at-town-title" data-testid="town-prosperity-name">
+                    {info.town.prosperity.name}
+                    <span className="at-town-points">
+                      繁荣度 {info.town.prosperity.points} / {info.town.prosperity.maxPoints}
+                    </span>
+                  </div>
+                  <div className="ct-rep-bar at-town-bar">
+                    <div className="ct-rep-bar-fill at-town-fill" style={{ width: `${info.town.prosperity.progressPct}%` }} />
+                  </div>
+                  <div className="at-town-meta">
+                    {formatArenaTownStats(info.town.prosperity.stats).length > 0
+                      ? `繁荣加成：${formatArenaTownStats(info.town.prosperity.stats).join(' · ')}`
+                      : '繁荣加成：尚未生效'}
+                    {info.town.prosperity.next
+                      ? ` ｜ 「${info.town.prosperity.next.name}」需繁荣度 ${info.town.prosperity.next.minPoints}`
+                      : ' ｜ 已达最高繁荣等级'}
+                  </div>
+                  <div className="at-town-meta muted">
+                    <T1Art kind="skills" id="town_hall" className="ac-badge-icon" fallback="" alt="" />
+                    议事厅 Lv.{hall?.level ?? 0}：其余设施最高可建至 Lv.{hall?.level ?? 0} · 累计建设 {info.town.totalUpgrades} 次 · 投入{' '}
+                    {info.town.goldInvested} 金币
+                  </div>
+                </div>
+              </div>
+
+              <div className="ac-rack-title">城镇设施（金币 + 生活职业成品建造；设施等级不超过议事厅）</div>
+              <div className="at-facility-grid">
+                {info.town.facilities.map((f) => {
+                  const cur = formatArenaTownStats(f.currentStats);
+                  const nextStats = f.next ? formatArenaTownStats(f.next.stats) : [];
+                  return (
+                    <div
+                      key={f.id}
+                      data-testid={`town-facility-${f.id}`}
+                      className={`at-facility-card fac-${f.id} ${f.canUpgrade ? 'ready' : 'blocked'} ${f.level >= f.maxLevel ? 'maxed' : ''}`}
+                    >
+                      <div className="at-facility-head">
+                        <div className="at-facility-icon-frame">
+                          <TownFacilityIcon facility={f} className="at-facility-icon" />
+                        </div>
+                        <div className="at-facility-title-col">
+                          <div className="at-facility-name-row">
+                            <strong>{f.name}</strong>
+                            <span className="at-level-tag">
+                              Lv.{f.level} / {f.maxLevel}
+                            </span>
+                          </div>
+                          <span className="at-facility-sub">{f.subtitle}</span>
+                        </div>
+                      </div>
+                      <p className="at-facility-desc">{f.description}</p>
+                      <div className="at-facility-stats">
+                        {f.id === 'town_hall'
+                          ? `当前：其余设施上限 Lv.${f.level}`
+                          : cur.length > 0
+                          ? `当前：${cur.join(' · ')}`
+                          : '当前：未建造'}
+                        {f.next && (f.id === 'town_hall' ? ` ｜ 下一级：上限 Lv.${f.next.level}` : nextStats.length > 0 ? ` ｜ Lv.${f.next.level}：${nextStats.join(' · ')}` : '')}
+                      </div>
+                      {f.perks.length > 0 && f.id !== 'town_hall' && (
+                        <div className="at-perk-list">
+                          {f.perks.map((p) => (
+                            <span key={p.level} className={`at-perk ${p.unlocked ? 'on' : ''}`}>
+                              Lv.{p.level} {p.perk}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {f.next && (
+                        <div className="sf-cost-row">
+                          {f.next.items.map((it) => (
+                            <span key={it.itemId} className={`sf-cost-chip ${it.have >= it.qty ? 'ok' : 'short'}`}>
+                              <T1ItemIcon itemId={it.itemId} className="ac-badge-icon" fallback="" alt="" />
+                              {it.name} {it.have}/{it.qty}
+                            </span>
+                          ))}
+                          {f.next.medals > 0 && (
+                            <span className={`sf-cost-chip ${info.town.medals >= f.next.medals ? 'ok' : 'short'}`}>
+                              <T1Art kind="skills" id="arena_medal" className="ac-badge-icon" fallback="" alt="" />
+                              勋章 {info.town.medals}/{f.next.medals}
+                            </span>
+                          )}
+                          <span className="sf-cost-chip ok">
+                            <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                            {f.next.gold} 金币
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        data-testid={`town-build-${f.id}`}
+                        className="prog-claim-btn af-action-btn at-build-btn"
+                        disabled={!f.canUpgrade || Boolean(busyKey)}
+                        onClick={() => handleUpgrade(f)}
+                      >
+                        {busyKey === `build:${f.id}`
+                          ? '施工中…'
+                          : f.canUpgrade
+                          ? f.level === 0
+                            ? '建造'
+                            : `升级至 Lv.${f.level + 1}`
+                          : f.blockReason || '暂不可建造'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="ac-rack-title">繁荣宝箱（每个繁荣等级首次达到可领一次）</div>
+              <div className="at-chest-row" data-testid="town-chests">
+                {info.town.chests.map((c) => (
+                  <div key={c.tier} className={`at-chest-card ${c.claimed ? 'claimed' : c.reached ? 'ready' : 'locked'}`}>
+                    <T1Art kind="skills" id="prosperity_chest" className="at-chest-icon" fallback="" alt="" />
+                    <strong>{c.name}</strong>
+                    <span className="at-chest-req">繁荣度 {c.minPoints}</span>
+                    <span className="at-chest-reward">
+                      {c.gold} 金币{c.items.length > 0 ? ` · ${c.items.map((it) => `${it.name}×${it.qty}`).join(' · ')}` : ''}
+                    </span>
+                    <button
+                      type="button"
+                      data-testid={`town-chest-${c.tier}`}
+                      className="prog-claim-btn af-action-btn at-chest-btn"
+                      disabled={!c.canClaim || Boolean(busyKey)}
+                      onClick={() => handleChest(c.tier, c.name)}
+                    >
+                      {busyKey === `chest:${c.tier}` ? '开启中…' : c.claimed ? '已领取' : c.reached ? '领取' : '未达成'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {info.town.lastUpgrade && (
+                <div className="at-medal-note" data-testid="town-last-upgrade">
+                  最近建设：「{info.town.lastUpgrade.facilityName}」Lv.{info.town.lastUpgrade.level}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </PanelModal>
+  );
+}
+
+/* ============================================================================
+   契约魔兽牧场 & 天候观星占卜塔 (WL-14)
+   ============================================================================ */
+
+interface BeastCostItemView {
+  itemId: string;
+  name: string;
+  qty: number;
+  have: number;
+}
+
+interface ContractBeastView {
+  id: ContractBeastId;
+  name: string;
+  title: string;
+  role: BeastRoleId;
+  roleName: string;
+  artId: string;
+  description: string;
+  bossId: string;
+  bossName: string;
+  tamed: boolean;
+  active: boolean;
+  level: number;
+  maxLevel: number;
+  xp: number;
+  levelXp: number;
+  nextXp: number | null;
+  progressPct: number;
+  fed: number;
+  tamedAt: string | null;
+  favoriteFood: { itemId: string; name: string; have: number };
+  currentStats: BeastWeatherStats;
+  nextStats: BeastWeatherStats | null;
+  lv1Stats: BeastWeatherStats;
+  maxStats: BeastWeatherStats;
+  tame: { gold: number; items: BeastCostItemView[]; canTame: boolean; blockReason: string | null };
+}
+
+interface WeatherOutputView {
+  skillId: string;
+  name: string;
+  lane: 'gather' | 'craft';
+  pct: number;
+}
+
+interface WeatherTypeView {
+  id: WeatherId;
+  name: string;
+  short: string;
+  weight: number;
+  description: string;
+  wishDust: number;
+  outputs: WeatherOutputView[];
+  chancePct: number;
+  canWish: boolean;
+  wishBlock: string | null;
+}
+
+interface BeastWeatherInfo {
+  nowMs: number;
+  bonuses: BeastRanchBonuses;
+  weatherEffect: { active: boolean; dayKey: string; weather: WeatherId; name: string; outputs: WeatherOutputView[] };
+  ranch: {
+    beasts: ContractBeastView[];
+    activeBeastId: ContractBeastId | null;
+    foods: Array<{ itemId: string; name: string; xp: number; have: number }>;
+    feedMaxQty: number;
+    favoriteXpPct: number;
+    bond: {
+      totalLevels: number;
+      maxLevels: number;
+      tier: number;
+      name: string;
+      stats: BeastWeatherStats;
+      next: { tier: number; name: string; minLevels: number; stats: BeastWeatherStats } | null;
+      progressPct: number;
+      tiers: Array<{ tier: number; name: string; minLevels: number; stats: BeastWeatherStats; reached: boolean }>;
+    };
+    totalTamed: number;
+    totalFeedings: number;
+    lastEvent: {
+      kind: 'tame' | 'feed' | 'assign';
+      beastId: ContractBeastId;
+      beastName: string;
+      level: number;
+      foodId: string | null;
+      foodName: string | null;
+      qty: number;
+      xpGained: number;
+      at: string;
+    } | null;
+  };
+  weather: {
+    dayKey: string;
+    dayEndsAtMs: number;
+    tomorrowKey: string;
+    today: {
+      dayKey: string;
+      weather: WeatherId;
+      name: string;
+      short: string;
+      description: string;
+      natural: WeatherId;
+      wished: boolean;
+      outputs: WeatherOutputView[];
+    };
+    tomorrow: {
+      dayKey: string;
+      divined: boolean;
+      natural: WeatherId | null;
+      naturalName: string | null;
+      wish: WeatherId | null;
+      wishName: string | null;
+      chancePct: number;
+      granted: boolean;
+      final: WeatherId | null;
+      finalName: string | null;
+      outputs: WeatherOutputView[];
+    };
+    types: WeatherTypeView[];
+    history: Array<{ dayKey: string; weather: WeatherId; wished: boolean; name: string; short: string }>;
+    insight: {
+      totalDivinations: number;
+      tier: number;
+      name: string;
+      wishChancePct: number;
+      auroraChancePct: number;
+      next: { tier: number; name: string; minDivinations: number; wishChancePct: number } | null;
+      progressPct: number;
+    };
+    dust: number;
+    divineDust: number;
+    canDivine: boolean;
+    divineBlock: string | null;
+    wishChanceCap: number;
+    totalDivinations: number;
+    totalWishes: number;
+    wishesGranted: number;
+    dustSpent: number;
+  };
+}
+
+/** 天候产出加成 → 展示条目（星辉极光这类「全部生活职业同幅提升」合并成一条）。 */
+function compactWeatherOutputs(outputs: WeatherOutputView[]): Array<{ key: string; label: string; lane: string }> {
+  if (outputs.length === WEATHER_LIFE_SKILLS.length && outputs.every((o) => o.pct === outputs[0].pct)) {
+    return [{ key: 'all', label: `全部生活职业 +${outputs[0].pct}%`, lane: 'all' }];
+  }
+  return outputs.map((o) => ({ key: o.skillId, label: `${o.name} +${o.pct}%`, lane: o.lane }));
+}
+
+function weatherOutputText(outputs: WeatherOutputView[]): string {
+  const list = compactWeatherOutputs(outputs);
+  return list.length > 0 ? list.map((o) => o.label).join(' · ') : '无产出加成';
+}
+
+export function BeastWeatherPanel({ onClose, onChange }: { onClose: () => void; onChange?: () => void }) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<BeastWeatherInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'ranch' | 'weather'>('ranch');
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [feedBeastId, setFeedBeastId] = useState<ContractBeastId | null>(null);
+  const [feedFoodId, setFeedFoodId] = useState<string | null>(null);
+  const [feedQty, setFeedQty] = useState(1);
+  // 服务器时钟偏移：换日倒计时按「服务器 nowMs + 本地流逝」推算，每 30 秒刷新一次
+  const [clientAnchor, setClientAnchor] = useState(() => Date.now());
+  const [tick, setTick] = useState(() => Date.now());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getBeastWeather();
+      setInfo(res);
+      setClientAnchor(Date.now());
+      return res as BeastWeatherInfo;
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载契约魔兽牧场与观星塔失败');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setTick(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const applyInfo = (res: any) => {
+    if (res?.ranch?.ranch) {
+      setInfo(res.ranch);
+      setClientAnchor(Date.now());
+    }
+  };
+
+  const runAction = async (key: string, call: () => Promise<any>, onOk: (res: any) => void, failText: string) => {
+    setBusyKey(key);
+    try {
+      const res: any = await call();
+      if (res?.ranch) applyInfo(res);
+      else await load();
+      onOk(res);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || failText);
+      await load();
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleTame = (b: ContractBeastView) =>
+    runAction(
+      `tame:${b.id}`,
+      () => apiClient.tameContractBeast({ beastId: b.id }),
+      (res) => {
+        toastRef.current.success(`契约缔结！「${b.name}」加入牧场${res?.tame?.autoAssigned ? '并出战' : ''}`);
+        setFeedBeastId(b.id);
+      },
+      '驯服契约魔兽失败'
+    );
+
+  const handleAssign = (beastId: ContractBeastId | null, name: string) =>
+    runAction(
+      `assign:${beastId ?? 'none'}`,
+      () => apiClient.assignBeastCompanion({ beastId }),
+      () => toastRef.current.success(beastId ? `「${name}」出战！` : `「${name}」回到牧场休息`),
+      '指派出战伙伴失败'
+    );
+
+  const handleDivine = () =>
+    runAction(
+      'divine',
+      () => apiClient.divineTomorrowWeather({ dayKey: info?.weather.tomorrowKey }),
+      (res) => {
+        const d = res?.ranch?.weather?.tomorrow;
+        toastRef.current.success(d?.naturalName ? `星象显示：明日「${d.naturalName}」` : '占卜完成');
+      },
+      '占卜明日天候失败'
+    );
+
+  const handleWish = (w: WeatherTypeView) =>
+    runAction(
+      `wish:${w.id}`,
+      () => apiClient.wishTomorrowWeather({ weather: w.id, dayKey: info?.weather.tomorrowKey }),
+      (res) => {
+        const r = res?.wish;
+        if (r?.granted) toastRef.current.success(`祈愿应验！明日将是「${w.name}」`);
+        else toastRef.current.info(`祈愿「${w.name}」未能应验（${r?.chancePct ?? w.chancePct}%）`);
+      },
+      '祈愿失败'
+    );
+
+  const serverNow = info ? info.nowMs + Math.max(0, tick - clientAnchor) : 0;
+  const dayLeft = info ? Math.max(0, info.weather.dayEndsAtMs - serverNow) : 0;
+  const bonusChips = info ? formatBeastWeatherStats(info.bonuses) : [];
+  const tamedBeasts = info ? info.ranch.beasts.filter((b) => b.tamed) : [];
+  const active = info?.ranch.beasts.find((b) => b.active) ?? null;
+  const feedBeast =
+    tamedBeasts.find((b) => b.id === feedBeastId) ??
+    (active && active.level < active.maxLevel ? active : null) ??
+    tamedBeasts.find((b) => b.level < b.maxLevel) ??
+    tamedBeasts[0] ??
+    null;
+  const foodsInBag = info ? info.ranch.foods.filter((f) => f.have > 0) : [];
+  const feedFood =
+    foodsInBag.find((f) => f.itemId === feedFoodId) ??
+    (feedBeast ? foodsInBag.find((f) => f.itemId === feedBeast.favoriteFood.itemId) : undefined) ??
+    foodsInBag[foodsInBag.length - 1] ??
+    null;
+  const fullPlan = feedBeast && feedFood ? planBeastFeed(feedBeast.id, feedBeast.xp, feedFood.itemId, info?.ranch.feedMaxQty ?? 50) : null;
+  const maxQty = fullPlan && fullPlan.ok && feedFood ? Math.max(1, Math.min(feedFood.have, fullPlan.qtyUsed)) : 1;
+  const qty = Math.min(Math.max(1, feedQty), maxQty);
+  const plan = feedBeast && feedFood ? planBeastFeed(feedBeast.id, feedBeast.xp, feedFood.itemId, qty) : null;
+  const tameReady = info ? info.ranch.beasts.filter((b) => b.tame.canTame).length : 0;
+  const tomorrow = info?.weather.tomorrow;
+
+  const handleFeed = () => {
+    if (!feedBeast || !feedFood || !plan?.ok) return;
+    const beastName = feedBeast.name;
+    return runAction(
+      `feed:${feedBeast.id}`,
+      () => apiClient.feedContractBeast({ beastId: feedBeast.id, foodId: feedFood.itemId, qty }),
+      (res) => {
+        const r = res?.feed;
+        toastRef.current.success(
+          `「${beastName}」喂养经验 +${r?.xpGained ?? plan.xpGained}${r && r.levelAfter > r.levelBefore ? `，成长至 Lv.${r.levelAfter}！` : ''}`
+        );
+        setFeedQty(1);
+      },
+      '喂养失败'
+    );
+  };
+
+  return (
+    <PanelModal
+      title="契约魔兽牧场与天候观星塔"
+      icon={<T1Art kind="skills" id="beast_ranch" className="hw-modal-title-icon" fallback="" alt="" />}
+      onClose={onClose}
+    >
+      {loading && !info ? (
+        <div className="prog-empty">正在清点牧场、登上观星塔…</div>
+      ) : !info ? (
+        <div className="prog-empty">暂无契约魔兽牧场数据</div>
+      ) : (
+        <div className="bw-panel-root" data-testid="beast-weather-panel">
+          <div className="hw-hero-card bw-hero-card">
+            <div className="hw-hero-top">
+              <div className="hw-hero-emblem bw-hero-emblem">
+                <T1Art kind="skills" id="beast_ranch" className="hw-hero-core-icon" fallback="" alt="契约魔兽牧场" />
+              </div>
+              <div className="bw-hero-copy">
+                <div className="ac-hero-title-row">
+                  <span className="hw-hero-title" data-testid="ranch-bond-name">
+                    契约魔兽牧场 · {info.ranch.bond.name}
+                  </span>
+                  <span className="qm-equipped-pill">魔兽、等级与观星阅历转生永久保留</span>
+                </div>
+                <div className="bw-hero-meta">
+                  <span>
+                    已驯服 <strong data-testid="ranch-tamed-count">{tamedBeasts.length}</strong> / {info.ranch.beasts.length} 只 · 羁绊等级{' '}
+                    {info.ranch.bond.totalLevels} / {info.ranch.bond.maxLevels}
+                    {info.ranch.bond.next
+                      ? ` · 距「${info.ranch.bond.next.name}」还差 ${info.ranch.bond.next.minLevels - info.ranch.bond.totalLevels} 级`
+                      : ' · 羁绊已满'}
+                  </span>
+                  <span className="bw-weather-line" data-testid="weather-today-line">
+                    今日 {formatWeatherDayLabel(info.weather.today.dayKey)} · {info.weather.today.name}
+                    {info.weather.today.wished ? '（祈愿应验）' : ''} · {formatAcademyCountdown(dayLeft)}后换日
+                  </span>
+                </div>
+                <div className="ct-rep-bar bw-bond-bar">
+                  <div className="ct-rep-bar-fill bw-bond-fill" style={{ width: `${info.ranch.bond.progressPct}%` }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="ac-wallet-badges bw-wallet-row">
+              <span className="ac-wallet-badge bw-companion-badge">
+                <T1Art kind="skills" id="contract_seal" className="ac-badge-icon" fallback="" alt="" />
+                出战：<strong data-testid="ranch-active-beast">{active ? `${active.name} Lv.${active.level}` : '未指派'}</strong>
+              </span>
+              <span className="ac-wallet-badge bw-dust-badge">
+                <T1Art kind="skills" id="star_dust_vial" className="ac-badge-icon" fallback="" alt="" />
+                星晶尘：<strong data-testid="weather-dust">{info.weather.dust}</strong>
+              </span>
+              <span className="ac-wallet-badge bw-today-badge">
+                <T1Art kind="skills" id="weather_orb" className="ac-badge-icon" fallback="" alt="" />
+                今日：<strong data-testid="weather-today-name">{info.weather.today.name}</strong>
+              </span>
+              <span className="ac-wallet-badge bw-insight-badge">
+                <T1Art kind="skills" id="weather_tower" className="ac-badge-icon" fallback="" alt="" />
+                {info.weather.insight.name} · 祈愿 <strong data-testid="weather-wish-chance">{info.weather.insight.wishChancePct}%</strong>
+              </span>
+            </div>
+
+            <div className="hw-bonus-strip" data-testid="beast-weather-bonuses">
+              {bonusChips.length === 0 && info.weatherEffect.outputs.length === 0 ? (
+                <span className="bw-chip muted">尚无加成 —— 驯服契约魔兽并指派出战，或等待有利的天候</span>
+              ) : (
+                <>
+                  {bonusChips.map((c) => (
+                    <span key={c} className="bw-chip">
+                      {c}
+                    </span>
+                  ))}
+                  {info.weatherEffect.outputs.length > 0 && (
+                    <span className="bw-chip weather">
+                      {info.weatherEffect.name}产出：{weatherOutputText(info.weatherEffect.outputs)}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="prog-filter-bar bw-tab-bar">
+            <button
+              type="button"
+              data-testid="beast-tab-ranch"
+              className={`prog-filter-btn ${tab === 'ranch' ? 'active' : ''}`}
+              onClick={() => setTab('ranch')}
+            >
+              契约牧场{tameReady > 0 ? `（可驯服 ${tameReady}）` : ''}
+            </button>
+            <button
+              type="button"
+              data-testid="beast-tab-weather"
+              className={`prog-filter-btn ${tab === 'weather' ? 'active' : ''}`}
+              onClick={() => setTab('weather')}
+            >
+              天候观星塔{info.weather.canDivine ? '（可占卜）' : tomorrow && tomorrow.divined && !tomorrow.wish ? '（可祈愿）' : ''}
+            </button>
+          </div>
+
+          {tab === 'ranch' && (
+            <div className="bw-ranch-view">
+              <div className="ac-rack-title">契约魔兽（首领真实掉落 + 料理驯服；同一时间一只出战，职能加成按等级成长）</div>
+              <div className="bw-beast-grid">
+                {info.ranch.beasts.map((b) => {
+                  const cur = formatBeastWeatherStats(b.currentStats);
+                  const nextStats = b.nextStats ? formatBeastWeatherStats(b.nextStats) : [];
+                  return (
+                    <div
+                      key={b.id}
+                      data-testid={`beast-card-${b.id}`}
+                      className={`bw-beast-card role-${b.role} ${b.tamed ? 'tamed' : 'wild'} ${b.active ? 'active' : ''}`}
+                    >
+                      <div className="bw-beast-head">
+                        <div className="bw-beast-portrait">
+                          <T1Art kind="monster" id={b.artId} className="bw-beast-art" fallback="" alt={b.name} />
+                          {b.tamed && <span className="bw-level-tag">Lv.{b.level}</span>}
+                        </div>
+                        <div className="bw-beast-title-col">
+                          <div className="bw-beast-name-row">
+                            <strong>{b.name}</strong>
+                            <span className={`bw-role-tag role-${b.role}`}>{b.roleName}</span>
+                            {b.active && <span className="bw-active-tag">出战中</span>}
+                          </div>
+                          <span className="bw-beast-sub">{b.title}</span>
+                          {b.tamed ? (
+                            <>
+                              <div className="ct-rep-bar bw-xp-bar">
+                                <div className="ct-rep-bar-fill bw-xp-fill" style={{ width: `${b.progressPct}%` }} />
+                              </div>
+                              <span className="bw-xp-text">
+                                {b.nextXp === null ? `满级 · 喂养经验 ${b.xp}` : `喂养经验 ${b.xp} / ${b.nextXp}`}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="bw-beast-sub muted">信物来源：{b.bossName}</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="bw-beast-desc">{b.description}</p>
+                      <div className="bw-beast-stats">
+                        {b.tamed
+                          ? `当前：${cur.join(' · ') || '—'}${nextStats.length > 0 ? ` ｜ Lv.${b.level + 1}：${nextStats.join(' · ')}` : ''}`
+                          : `Lv.1：${formatBeastWeatherStats(b.lv1Stats).join(' · ')} ｜ Lv.${b.maxLevel}：${formatBeastWeatherStats(b.maxStats).join(' · ')}`}
+                      </div>
+                      <div className="bw-beast-fav">
+                        <T1ItemIcon itemId={b.favoriteFood.itemId} className="ac-badge-icon" fallback="" alt="" />
+                        偏好：{b.favoriteFood.name} · 经验 ×{info.ranch.favoriteXpPct / 100}
+                      </div>
+                      {b.tamed ? (
+                        <div className="bw-beast-actions">
+                          <button
+                            type="button"
+                            data-testid={`beast-feed-pick-${b.id}`}
+                            className={`prog-filter-btn bw-pick-btn ${feedBeast?.id === b.id ? 'active' : ''}`}
+                            disabled={b.level >= b.maxLevel}
+                            onClick={() => {
+                              setFeedBeastId(b.id);
+                              setFeedQty(1);
+                            }}
+                          >
+                            {b.level >= b.maxLevel ? '已满级' : feedBeast?.id === b.id ? '喂养中' : '去喂养'}
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`beast-assign-${b.id}`}
+                            className="prog-claim-btn af-action-btn bw-assign-btn"
+                            disabled={Boolean(busyKey)}
+                            onClick={() => handleAssign(b.active ? null : b.id, b.name)}
+                          >
+                            {busyKey === `assign:${b.active ? 'none' : b.id}` ? '指派中…' : b.active ? '召回休息' : '指派出战'}
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="sf-cost-row">
+                            {b.tame.items.map((it) => (
+                              <span key={it.itemId} className={`sf-cost-chip ${it.have >= it.qty ? 'ok' : 'short'}`}>
+                                <T1ItemIcon itemId={it.itemId} className="ac-badge-icon" fallback="" alt="" />
+                                {it.name} {it.have}/{it.qty}
+                              </span>
+                            ))}
+                            <span className="sf-cost-chip ok">
+                              <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                              {b.tame.gold} 金币
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            data-testid={`beast-tame-${b.id}`}
+                            className="prog-claim-btn af-action-btn bw-tame-btn"
+                            disabled={!b.tame.canTame || Boolean(busyKey)}
+                            onClick={() => handleTame(b)}
+                          >
+                            <T1Art kind="skills" id="contract_seal" className="ac-badge-icon" fallback="" alt="" />
+                            {busyKey === `tame:${b.id}` ? '缔结中…' : b.tame.canTame ? '缔结契约' : b.tame.blockReason || '暂不可驯服'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="bw-feed-station" data-testid="beast-feed-station">
+                <div className="bw-feed-head">
+                  <div className="bw-feed-emblem">
+                    <T1Art kind="skills" id="beast_feed" className="bw-feed-icon" fallback="" alt="喂养台" />
+                  </div>
+                  <div className="bw-feed-copy">
+                    <strong>喂养台</strong>
+                    <span className="bw-rule-note">
+                      投喂背包里的真实料理获得喂养经验；偏好料理经验 ×{info.ranch.favoriteXpPct / 100}，只扣到满级所需的份数。
+                    </span>
+                  </div>
+                </div>
+                {tamedBeasts.length === 0 ? (
+                  <div className="bw-empty">牧场里还没有契约魔兽 —— 先用首领掉落缔结契约吧。</div>
+                ) : (
+                  <>
+                    <div className="bw-feed-beasts">
+                      {tamedBeasts.map((b) => (
+                        <button
+                          key={b.id}
+                          type="button"
+                          data-testid={`beast-feed-target-${b.id}`}
+                          className={`bw-feed-beast ${feedBeast?.id === b.id ? 'selected' : ''}`}
+                          onClick={() => {
+                            setFeedBeastId(b.id);
+                            setFeedQty(1);
+                          }}
+                        >
+                          <T1Art kind="monster" id={b.artId} className="ac-badge-icon" fallback="" alt="" />
+                          {b.name} Lv.{b.level}
+                        </button>
+                      ))}
+                    </div>
+                    {foodsInBag.length === 0 ? (
+                      <div className="bw-empty">背包里没有可喂养的料理 —— 去烹饪页做些简单料理、灵面包或更高级的菜肴吧。</div>
+                    ) : (
+                      <div className="bw-food-grid">
+                        {foodsInBag.map((f) => {
+                          const fav = feedBeast?.favoriteFood.itemId === f.itemId;
+                          return (
+                            <button
+                              key={f.itemId}
+                              type="button"
+                              data-testid={`beast-food-${f.itemId}`}
+                              className={`bw-food-chip ${feedFood?.itemId === f.itemId ? 'selected' : ''} ${fav ? 'favorite' : ''}`}
+                              onClick={() => {
+                                setFeedFoodId(f.itemId);
+                                setFeedQty(1);
+                              }}
+                            >
+                              <T1ItemIcon itemId={f.itemId} className="bw-food-icon" fallback="" alt="" />
+                              <span className="bw-food-name">{f.name}</span>
+                              <span className="bw-food-meta">
+                                ×{f.have} · +{fav ? Math.floor((f.xp * info.ranch.favoriteXpPct) / 100) : f.xp}/份{fav ? ' · 偏好' : ''}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {feedBeast && feedFood && (
+                      <div className="bw-feed-foot">
+                        <div className="bw-qty-row">
+                          {[1, 5, 10].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              data-testid={`beast-feed-qty-${n}`}
+                              className={`prog-filter-btn bw-qty-btn ${qty === n ? 'active' : ''}`}
+                              disabled={n > maxQty}
+                              onClick={() => setFeedQty(n)}
+                            >
+                              ×{n}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            data-testid="beast-feed-max"
+                            className={`prog-filter-btn bw-qty-btn ${qty === maxQty && maxQty > 10 ? 'active' : ''}`}
+                            onClick={() => setFeedQty(maxQty)}
+                          >
+                            最多 ×{maxQty}
+                          </button>
+                        </div>
+                        <span className="bw-feed-preview" data-testid="beast-feed-preview">
+                          {plan && plan.ok
+                            ? `喂「${feedBeast.name}」${feedFood.name}×${plan.qtyUsed}：喂养经验 +${plan.xpGained}${
+                                plan.levelAfter > plan.levelBefore ? `，Lv.${plan.levelBefore} → Lv.${plan.levelAfter}` : ''
+                              }`
+                            : `「${feedBeast.name}」已满级`}
+                        </span>
+                        <button
+                          type="button"
+                          data-testid="beast-feed-btn"
+                          className="prog-claim-btn af-action-btn bw-feed-btn"
+                          disabled={!plan?.ok || Boolean(busyKey)}
+                          onClick={handleFeed}
+                        >
+                          <T1Art kind="skills" id="beast_feed" className="ac-badge-icon" fallback="" alt="" />
+                          {busyKey === `feed:${feedBeast.id}` ? '喂养中…' : '喂养'}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="ac-rack-title">牧场羁绊（全部魔兽等级之和，不论是否出战都生效）</div>
+              <div className="bw-bond-row" data-testid="ranch-bond-tiers">
+                {info.ranch.bond.tiers.map((t) => (
+                  <div key={t.tier} className={`bw-bond-card ${t.reached ? 'reached' : ''} ${info.ranch.bond.tier === t.tier ? 'current' : ''}`}>
+                    <strong>{t.name}</strong>
+                    <span className="bw-bond-req">等级之和 {t.minLevels}</span>
+                    <span className="bw-bond-stats">{formatBeastWeatherStats(t.stats).join(' · ')}</span>
+                  </div>
+                ))}
+              </div>
+              {info.ranch.lastEvent && (
+                <div className="bw-note" data-testid="ranch-last-event">
+                  最近：
+                  {info.ranch.lastEvent.kind === 'tame'
+                    ? `驯服「${info.ranch.lastEvent.beastName}」`
+                    : info.ranch.lastEvent.kind === 'feed'
+                    ? `喂给「${info.ranch.lastEvent.beastName}」${info.ranch.lastEvent.foodName}×${info.ranch.lastEvent.qty}（经验 +${info.ranch.lastEvent.xpGained}，Lv.${info.ranch.lastEvent.level}）`
+                    : `「${info.ranch.lastEvent.beastName}」出战`}{' '}
+                  · 累计驯服 {info.ranch.totalTamed} 只、喂养 {info.ranch.totalFeedings} 份
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'weather' && tomorrow && (
+            <div className="bw-weather-view">
+              <div className="bw-sky-row">
+                <div className={`bw-sky-card today weather-${info.weather.today.weather}`} data-testid="weather-today-card">
+                  <div className="bw-sky-emblem">
+                    <T1Art kind="skills" id="weather_orb" className="bw-sky-icon" fallback="" alt="今日天候" />
+                  </div>
+                  <div className="bw-sky-copy">
+                    <span className="bw-sky-label">今日 · {formatWeatherDayLabel(info.weather.today.dayKey)}</span>
+                    <strong className="bw-sky-name">
+                      {info.weather.today.name}
+                      {info.weather.today.wished && <span className="bw-wished-tag">祈愿应验</span>}
+                    </strong>
+                    <span className="bw-sky-desc">{info.weather.today.description}</span>
+                    <div className="bw-output-row">
+                      {compactWeatherOutputs(info.weather.today.outputs).map((o) => (
+                        <span key={o.key} className={`bw-output-chip lane-${o.lane}`}>
+                          {o.label}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="bw-rule-note">距换日 {formatAcademyCountdown(dayLeft)}（东八区每日 0 点）</span>
+                  </div>
+                </div>
+
+                <div
+                  className={`bw-sky-card tomorrow ${tomorrow.final ? `weather-${tomorrow.final}` : 'unknown'}`}
+                  data-testid="weather-tomorrow-card"
+                >
+                  <div className="bw-sky-emblem">
+                    <T1Art kind="skills" id="weather_tower" className="bw-sky-icon" fallback="" alt="观星塔" />
+                  </div>
+                  <div className="bw-sky-copy">
+                    <span className="bw-sky-label">明日 · {formatWeatherDayLabel(tomorrow.dayKey)}</span>
+                    {tomorrow.divined ? (
+                      <>
+                        <strong className="bw-sky-name" data-testid="weather-tomorrow-name">
+                          {tomorrow.finalName}
+                          {tomorrow.wish && (
+                            <span className={`bw-wished-tag ${tomorrow.granted ? '' : 'missed'}`}>
+                              {tomorrow.granted ? `祈愿应验（${tomorrow.chancePct}%）` : `祈愿「${tomorrow.wishName}」未应验`}
+                            </span>
+                          )}
+                        </strong>
+                        <span className="bw-sky-desc">
+                          星象所示天然天候：{tomorrow.naturalName}
+                          {tomorrow.wish ? '' : ' —— 可以消耗星晶尘祈愿，把明日偏向你想要的天候。'}
+                        </span>
+                        <div className="bw-output-row">
+                          {compactWeatherOutputs(tomorrow.outputs).map((o) => (
+                            <span key={o.key} className={`bw-output-chip lane-${o.lane}`}>
+                              {o.label}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <strong className="bw-sky-name" data-testid="weather-tomorrow-name">
+                          星象未明
+                        </strong>
+                        <span className="bw-sky-desc">
+                          消耗 {info.weather.divineDust} 异域星晶尘占卜明日的天然天候（每个东八区日 1 次），之后可以祈愿偏转。
+                        </span>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      data-testid="weather-divine-btn"
+                      className="prog-claim-btn af-action-btn bw-divine-btn"
+                      disabled={!info.weather.canDivine || Boolean(busyKey)}
+                      onClick={handleDivine}
+                    >
+                      <T1Art kind="skills" id="star_dust_vial" className="ac-badge-icon" fallback="" alt="" />
+                      {busyKey === 'divine'
+                        ? '观星中…'
+                        : info.weather.canDivine
+                        ? `占卜明日（${info.weather.divineDust} 星晶尘）`
+                        : info.weather.divineBlock || '暂不可占卜'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ac-rack-title">
+                祈愿明日天候（成功率由观星阅历决定，封顶 {info.weather.wishChanceCap}%，星辉极光减半；每日 1 次，确定性判定）
+              </div>
+              <div className="bw-wish-grid" data-testid="weather-wish-grid">
+                {info.weather.types.map((w) => (
+                  <div
+                    key={w.id}
+                    data-testid={`weather-type-${w.id}`}
+                    className={`bw-wish-card weather-${w.id} ${tomorrow.final === w.id ? 'chosen' : ''}`}
+                  >
+                    <div className="bw-wish-head">
+                      <T1Art kind="skills" id="weather_orb" className="bw-wish-icon" fallback="" alt="" />
+                      <strong>{w.name}</strong>
+                      <span className="bw-weight-tag">出现 {w.weight}%</span>
+                    </div>
+                    <span className="bw-wish-outputs">{weatherOutputText(w.outputs)}</span>
+                    <span className="bw-wish-cost">
+                      <T1Art kind="skills" id="star_dust_vial" className="ac-badge-icon" fallback="" alt="" />
+                      祈愿消耗 {w.wishDust} 星晶尘
+                    </span>
+                    <button
+                      type="button"
+                      data-testid={`weather-wish-${w.id}`}
+                      className="prog-claim-btn af-action-btn bw-wish-btn"
+                      disabled={!w.canWish || Boolean(busyKey)}
+                      onClick={() => handleWish(w)}
+                    >
+                      {busyKey === `wish:${w.id}`
+                        ? '祈愿中…'
+                        : w.canWish
+                        ? `祈愿 ${w.chancePct}%`
+                        : w.wishBlock || '暂不可祈愿'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bw-insight-card" data-testid="weather-insight">
+                <T1Art kind="skills" id="weather_tower" className="bw-insight-icon" fallback="" alt="" />
+                <div className="bw-insight-copy">
+                  <strong>
+                    观星阅历：{info.weather.insight.name}（累计占卜 {info.weather.insight.totalDivinations} 次）
+                  </strong>
+                  <div className="ct-rep-bar bw-insight-bar">
+                    <div className="ct-rep-bar-fill bw-insight-fill" style={{ width: `${info.weather.insight.progressPct}%` }} />
+                  </div>
+                  <span className="bw-rule-note">
+                    祈愿成功率 {info.weather.insight.wishChancePct}%（星辉极光 {info.weather.insight.auroraChancePct}%）
+                    {info.weather.insight.next
+                      ? ` · 累计占卜 ${info.weather.insight.next.minDivinations} 次晋升「${info.weather.insight.next.name}」（${info.weather.insight.next.wishChancePct}%）`
+                      : ' · 已达最高阅历'}{' '}
+                    · 祈愿 {info.weather.totalWishes} 次、应验 {info.weather.wishesGranted} 次 · 共消耗星晶尘 {info.weather.dustSpent}
+                  </span>
+                </div>
+              </div>
+
+              {info.weather.history.length > 0 && (
+                <>
+                  <div className="ac-rack-title">近 7 日天候</div>
+                  <div className="bw-history-row" data-testid="weather-history">
+                    {info.weather.history.map((h) => (
+                      <div key={h.dayKey} className={`bw-history-chip weather-${h.weather}`} title={h.name}>
+                        <span className="bw-history-day">{formatWeatherDayLabel(h.dayKey)}</span>
+                        <strong>{h.short}</strong>
+                        {h.wished && <span className="bw-history-wish">祈愿</span>}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div className="bw-rule-note">
+                天候由东八区日期确定性生成、全服一致；登临观星塔后，当天天候的产出加成直接计入对应生活职业的效率（多完成一次 = 多一份产出）。异域星晶尘来自远征商队与遗迹勘探。
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </PanelModal>
+  );
+}
+
+/* ============================================================================
+   吟游诗人酒馆 & 冒险者编年史 (WL-15)
+   ============================================================================ */
+
+interface TavernMenuView {
+  itemId: string;
+  name: string;
+  kind: 'dish' | 'drink';
+  fame: number;
+  have: number;
+}
+
+interface TavernVisitorView {
+  id: TavernVisitorId;
+  name: string;
+  title: string;
+  avatarId: string;
+  quote: string;
+  tipPerFame: number;
+  order: { dish: TavernMenuView; drink: TavernMenuView };
+  likes: { dishes: string[]; drinks: string[] };
+  perfectFame: number;
+  served: boolean;
+  record: {
+    dishId: string | null;
+    drinkId: string | null;
+    dishName: string | null;
+    drinkName: string | null;
+    matchedDish: boolean;
+    matchedDrink: boolean;
+    fame: number;
+    tipGold: number;
+    at: string;
+  } | null;
+}
+
+interface TavernBalladView {
+  id: TavernBalladId;
+  name: string;
+  description: string;
+  minFameTier: number;
+  minFameName: string;
+  costGold: number;
+  durationMin: number;
+  fame: number;
+  stats: TavernChronicleStats;
+  unlocked: boolean;
+  canRequest: boolean;
+  block: string | null;
+}
+
+interface ChronicleChapterView {
+  id: ChronicleChapterId;
+  name: string;
+  title: string;
+  description: string;
+  stats: TavernChronicleStats;
+  entries: Array<{
+    metric: string;
+    label: string;
+    target: number;
+    value: number;
+    done: boolean;
+    pct: number;
+    metricName: string;
+    source: string;
+  }>;
+  complete: boolean;
+  inscribed: boolean;
+  inscribedAt: string | null;
+  canInscribe: boolean;
+  equipped: boolean;
+}
+
+interface TavernChronicleInfo {
+  nowMs: number;
+  bonuses: TavernChronicleBonuses;
+  ballad: {
+    balladId: TavernBalladId | null;
+    active: boolean;
+    startedAtMs: number;
+    endsAtMs: number;
+    remainingMs: number;
+    stats: TavernChronicleStats;
+    name: string | null;
+  };
+  tavern: {
+    dayKey: string;
+    dayEndsAtMs: number;
+    visitors: TavernVisitorView[];
+    tomorrowVisitors: Array<{ id: TavernVisitorId; name: string; title: string; avatarId: string }>;
+    servedToday: number;
+    visitorsPerDay: number;
+    menu: TavernMenuView[];
+    matchPct: number;
+    perfectBonus: number;
+    ballads: TavernBalladView[];
+    balladsToday: number;
+    balladsPerDay: number;
+    fame: {
+      total: number;
+      tier: number;
+      name: string;
+      stats: TavernChronicleStats;
+      next: { tier: number; name: string; minFame: number; stats: TavernChronicleStats } | null;
+      progressPct: number;
+      tiers: Array<{ tier: number; name: string; minFame: number; stats: TavernChronicleStats; reached: boolean }>;
+    };
+    gold: number;
+    totalServed: number;
+    totalPerfect: number;
+    totalBallads: number;
+    tipsEarned: number;
+  };
+  chronicle: {
+    chapters: ChronicleChapterView[];
+    inscribedCount: number;
+    completeCount: number;
+    chapterCount: number;
+    entriesDone: number;
+    entriesTotal: number;
+    equippedTitle: ChronicleChapterId | null;
+    equippedTitleName: string | null;
+    lastInscription: { chapterId: ChronicleChapterId; at: string; name: string } | null;
+  };
+}
+
+/** 「2026-11-18T…」→「11 月 18 日」。 */
+function chronicleDateLabel(iso: string | null): string {
+  if (!iso) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${Number(m[2])} 月 ${Number(m[3])} 日` : '';
+}
+
+/**
+ * 酒馆面板的六个分页：WL-15 酒馆 / 编年史 + WL-16 飞艇商路 / 荣誉试炼 + WL-17 矮人矿脉 / 精灵驿站
+ * （并入既有面板，顶栏不再加胶囊）。
+ */
+export type TavernPanelTab = 'tavern' | 'chronicle' | 'airship' | 'trial' | 'mine' | 'waystation';
+
+export function BardTavernChroniclePanel({
+  onClose,
+  onChange,
+  initialTab,
+}: {
+  onClose: () => void;
+  onChange?: () => void;
+  initialTab?: TavernPanelTab;
+}) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<TavernChronicleInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<TavernPanelTab>(initialTab ?? 'tavern');
+  const wl16Tab = tab === 'airship' || tab === 'trial';
+  const wl17Tab = tab === 'mine' || tab === 'waystation';
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [serveVisitorId, setServeVisitorId] = useState<TavernVisitorId | null>(null);
+  // undefined = 自动（优先点单那份），null = 这一项不上，string = 指定菜品
+  const [dishPick, setDishPick] = useState<string | null | undefined>(undefined);
+  const [drinkPick, setDrinkPick] = useState<string | null | undefined>(undefined);
+  // 服务器时钟偏移：换日 / 诗篇倒计时按「服务器 nowMs + 本地流逝」推算
+  const [clientAnchor, setClientAnchor] = useState(() => Date.now());
+  const [tick, setTick] = useState(() => Date.now());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getTavernChronicle();
+      setInfo(res);
+      setClientAnchor(Date.now());
+      return res as TavernChronicleInfo;
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载吟游诗人酒馆与冒险者编年史失败');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setTick(Date.now()), 15_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const runAction = async (key: string, call: () => Promise<any>, onOk: (res: any) => void, failText: string) => {
+    setBusyKey(key);
+    try {
+      const res: any = await call();
+      if (res?.tavern?.tavern) {
+        setInfo(res.tavern);
+        setClientAnchor(Date.now());
+      } else {
+        await load();
+      }
+      onOk(res);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || failText);
+      await load();
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const serverNow = info ? info.nowMs + Math.max(0, tick - clientAnchor) : 0;
+  const dayLeft = info ? Math.max(0, info.tavern.dayEndsAtMs - serverNow) : 0;
+  const balladLeft = info && info.ballad.active ? Math.max(0, info.ballad.endsAtMs - serverNow) : 0;
+  const balladLive = Boolean(info?.ballad.active && balladLeft > 0);
+  const dayIndex = info ? tavernDayIndexFromKey(info.tavern.dayKey) ?? 0 : 0;
+  const bonusChips = info ? formatTavernStats(info.bonuses) : [];
+  const waiting = info ? info.tavern.visitors.filter((v) => !v.served) : [];
+  const serveVisitor = waiting.find((v) => v.id === serveVisitorId) ?? waiting[0] ?? null;
+  const dishesInBag = info ? info.tavern.menu.filter((m) => m.kind === 'dish' && m.have > 0) : [];
+  const drinksInBag = info ? info.tavern.menu.filter((m) => m.kind === 'drink' && m.have > 0) : [];
+  const autoPick = (list: TavernMenuView[], orderId: string | undefined) =>
+    list.find((m) => m.itemId === orderId)?.itemId ?? (list.length > 0 ? list.reduce((a, b) => (b.fame > a.fame ? b : a)).itemId : null);
+  const dishId =
+    dishPick === undefined
+      ? autoPick(dishesInBag, serveVisitor?.order.dish.itemId)
+      : dishPick && dishesInBag.some((m) => m.itemId === dishPick)
+      ? dishPick
+      : null;
+  const drinkId =
+    drinkPick === undefined
+      ? autoPick(drinksInBag, serveVisitor?.order.drink.itemId)
+      : drinkPick && drinksInBag.some((m) => m.itemId === drinkPick)
+      ? drinkPick
+      : null;
+  const plan = serveVisitor ? planTavernServe(dayIndex, serveVisitor.id, dishId, drinkId) : null;
+  const inscribable = info ? info.chronicle.chapters.filter((c) => c.canInscribe).length : 0;
+  const menuName = (itemId: string | null) => (itemId && info ? info.tavern.menu.find((m) => m.itemId === itemId)?.name ?? itemId : '');
+
+  const pickVisitor = (id: TavernVisitorId) => {
+    setServeVisitorId(id);
+    setDishPick(undefined);
+    setDrinkPick(undefined);
+  };
+
+  const handleServe = () => {
+    if (!serveVisitor || !plan?.ok) return;
+    const v = serveVisitor;
+    return runAction(
+      `serve:${v.id}`,
+      () => apiClient.serveTavernVisitor({ visitorId: v.id, dishId, drinkId, dayKey: info?.tavern.dayKey }),
+      (res) => {
+        const r = res?.serve;
+        const verdict = formatTavernVerdict(r?.verdict ?? plan.verdict);
+        toastRef.current.success(
+          `「${v.title} · ${v.name}」${verdict}！名望 +${r?.fame ?? plan.fame}，小费 ${r?.tipGold ?? plan.tipGold} 金币`
+        );
+        setServeVisitorId(null);
+        setDishPick(undefined);
+        setDrinkPick(undefined);
+      },
+      '招待失败'
+    );
+  };
+
+  const handleBallad = (b: TavernBalladView) =>
+    runAction(
+      `ballad:${b.id}`,
+      () => apiClient.requestBardBallad({ balladId: b.id, dayKey: info?.tavern.dayKey }),
+      () => toastRef.current.success(`吟游诗人开始演唱「${b.name}」，${b.durationMin} 分钟内增益生效`),
+      '点唱失败'
+    );
+
+  const handleInscribe = (c: ChronicleChapterView) =>
+    runAction(
+      `inscribe:${c.id}`,
+      () => apiClient.inscribeChronicleChapter({ chapterId: c.id }),
+      (res) => toastRef.current.success(`编撰「${c.name}」！解锁称号「${c.title}」${res?.inscribe?.autoEquipped ? '并佩戴' : ''}`),
+      '编撰失败'
+    );
+
+  const handleTitle = (c: ChronicleChapterView) =>
+    runAction(
+      `title:${c.id}`,
+      () => apiClient.equipChronicleTitle({ chapterId: c.equipped ? null : c.id }),
+      () => toastRef.current.success(c.equipped ? `取下称号「${c.title}」` : `佩戴称号「${c.title}」`),
+      '更换称号失败'
+    );
+
+  return (
+    <PanelModal
+      title={wl17Tab ? '矮人地底矿脉与精灵林地驿站' : wl16Tab ? '浮空飞艇商路与圣骑士团荣誉试炼' : '吟游诗人酒馆与冒险者编年史'}
+      icon={
+        <T1Art
+          kind="skills"
+          id={wl17Tab ? (tab === 'waystation' ? 'elf_waystation' : 'dwarf_mine') : wl16Tab ? 'trade_airship' : 'bard_tavern'}
+          className="hw-modal-title-icon"
+          fallback=""
+          alt=""
+        />
+      }
+      onClose={onClose}
+    >
+      {loading && !info ? (
+        <div className="prog-empty">正在推开酒馆的门、翻开编年史…</div>
+      ) : !info ? (
+        <div className="prog-empty">暂无吟游诗人酒馆数据</div>
+      ) : (
+        <div className="tv-panel-root" data-testid="tavern-chronicle-panel">
+          <div className="prog-filter-bar tv-tab-bar">
+            <button
+              type="button"
+              data-testid="tavern-tab-tavern"
+              className={`prog-filter-btn ${tab === 'tavern' ? 'active' : ''}`}
+              onClick={() => setTab('tavern')}
+            >
+              吟游诗人酒馆{waiting.length > 0 ? `（待招待 ${waiting.length}）` : ''}
+            </button>
+            <button
+              type="button"
+              data-testid="tavern-tab-chronicle"
+              className={`prog-filter-btn ${tab === 'chronicle' ? 'active' : ''}`}
+              onClick={() => setTab('chronicle')}
+            >
+              冒险者编年史{inscribable > 0 ? `（可编撰 ${inscribable}）` : ''}
+            </button>
+            <button
+              type="button"
+              data-testid="tavern-tab-airship"
+              className={`prog-filter-btn ${tab === 'airship' ? 'active' : ''}`}
+              onClick={() => setTab('airship')}
+            >
+              浮空飞艇商路
+            </button>
+            <button
+              type="button"
+              data-testid="tavern-tab-trial"
+              className={`prog-filter-btn ${tab === 'trial' ? 'active' : ''}`}
+              onClick={() => setTab('trial')}
+            >
+              圣骑士团试炼
+            </button>
+            <button
+              type="button"
+              data-testid="tavern-tab-mine"
+              className={`prog-filter-btn ${tab === 'mine' ? 'active' : ''}`}
+              onClick={() => setTab('mine')}
+            >
+              矮人矿脉
+            </button>
+            <button
+              type="button"
+              data-testid="tavern-tab-waystation"
+              className={`prog-filter-btn ${tab === 'waystation' ? 'active' : ''}`}
+              onClick={() => setTab('waystation')}
+            >
+              精灵驿站
+            </button>
+          </div>
+
+          {wl16Tab && <AirshipPaladinView view={tab === 'trial' ? 'trial' : 'airship'} onChange={onChange} />}
+
+          {wl17Tab && <DwarfElfView view={tab === 'waystation' ? 'waystation' : 'mine'} onChange={onChange} />}
+
+          {!wl16Tab && !wl17Tab && (
+          <div className="hw-hero-card tv-hero-card">
+            <div className="hw-hero-top">
+              <div className="hw-hero-emblem tv-hero-emblem">
+                <T1Art kind="skills" id="bard_tavern" className="hw-hero-core-icon" fallback="" alt="吟游诗人酒馆" />
+              </div>
+              <div className="tv-hero-copy">
+                <div className="ac-hero-title-row">
+                  <span className="hw-hero-title" data-testid="tavern-fame-name">
+                    吟游诗人酒馆 · {info.tavern.fame.name}
+                  </span>
+                  <span className="qm-equipped-pill">名望与编年史转生永久保留</span>
+                </div>
+                <div className="tv-hero-meta">
+                  <span>
+                    酒馆名望 <strong data-testid="tavern-fame-total">{info.tavern.fame.total}</strong>
+                    {info.tavern.fame.next
+                      ? ` · 距「${info.tavern.fame.next.name}」还差 ${info.tavern.fame.next.minFame - info.tavern.fame.total}`
+                      : ' · 名望已满'}{' '}
+                    · 累计招待 {info.tavern.totalServed} 位（完美 {info.tavern.totalPerfect}）· 小费 {info.tavern.tipsEarned} 金币
+                  </span>
+                  <span className="tv-day-line" data-testid="tavern-day-line">
+                    今日 {formatWeatherDayLabel(info.tavern.dayKey)} · 来访 {info.tavern.visitorsPerDay} 位，已招待 {info.tavern.servedToday} 位 ·{' '}
+                    {formatAcademyCountdown(dayLeft)}后换一批客人
+                  </span>
+                </div>
+                <div className="ct-rep-bar tv-fame-bar">
+                  <div className="ct-rep-bar-fill tv-fame-fill" style={{ width: `${info.tavern.fame.progressPct}%` }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="ac-wallet-badges tv-wallet-row">
+              <span className="ac-wallet-badge tv-fame-badge">
+                <T1Art kind="skills" id="fame_laurel" className="ac-badge-icon" fallback="" alt="" />
+                名望：<strong>{info.tavern.fame.total}</strong>
+              </span>
+              <span className="ac-wallet-badge tv-served-badge">
+                <T1Art kind="skills" id="ale_mug" className="ac-badge-icon" fallback="" alt="" />
+                今日招待 <strong data-testid="tavern-served-count">{info.tavern.servedToday}</strong> / {info.tavern.visitorsPerDay}
+              </span>
+              <span className="ac-wallet-badge tv-ballad-badge">
+                <T1Art kind="skills" id="bard_lute" className="ac-badge-icon" fallback="" alt="" />
+                <span data-testid="tavern-ballad-status">
+                  {balladLive && info.ballad.name
+                    ? `演唱中「${info.ballad.name}」· ${formatBalladRemaining(balladLeft)}`
+                    : `诗篇 ${info.tavern.balladsToday} / ${info.tavern.balladsPerDay}`}
+                </span>
+              </span>
+              <span className="ac-wallet-badge tv-chronicle-badge">
+                <T1Art kind="skills" id="chronicle_book" className="ac-badge-icon" fallback="" alt="" />
+                编年史 {info.chronicle.inscribedCount} / {info.chronicle.chapterCount} 卷 · 称号{' '}
+                <strong data-testid="chronicle-equipped-title">{info.chronicle.equippedTitleName ?? '未佩戴'}</strong>
+              </span>
+            </div>
+
+            <div className="hw-bonus-strip" data-testid="tavern-bonuses">
+              {bonusChips.length === 0 && !balladLive ? (
+                <span className="tv-chip muted">尚无加成 —— 招待冒险者积累名望、编撰编年史，或点一首吟游诗篇</span>
+              ) : (
+                <>
+                  {bonusChips.map((c) => (
+                    <span key={c} className="tv-chip">
+                      {c}
+                    </span>
+                  ))}
+                  {balladLive && (
+                    <span className="tv-chip ballad">
+                      {info.ballad.name}：{formatTavernStats(info.ballad.stats).join(' · ')}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+          )}
+
+          {tab === 'tavern' && (
+            <div className="tv-tavern-view">
+              <div className="ac-rack-title">
+                今日来访的冒险者（东八区每日轮换；每位每日招待 1 次，合点单名望 ×{info.tavern.matchPct / 100}，料理与饮品全合再 +
+                {info.tavern.perfectBonus}）
+              </div>
+              <div className="tv-visitor-grid">
+                {info.tavern.visitors.map((v) => (
+                  <div
+                    key={v.id}
+                    data-testid={`tavern-visitor-${v.id}`}
+                    className={`tv-visitor-card ${v.served ? 'served' : ''} ${serveVisitor?.id === v.id ? 'selected' : ''}`}
+                  >
+                    <div className="tv-visitor-head">
+                      <div className="tv-visitor-portrait">
+                        <T1Art kind="ui" id={v.avatarId} className="tv-visitor-art" fallback="" alt={v.name} />
+                      </div>
+                      <div className="tv-visitor-title-col">
+                        <div className="tv-visitor-name-row">
+                          <strong>{v.name}</strong>
+                          <span className="tv-role-tag">{v.title}</span>
+                          {v.served && <span className="tv-served-tag">已招待</span>}
+                        </div>
+                        <span className="tv-visitor-quote">{v.quote}</span>
+                      </div>
+                    </div>
+                    <div className="tv-order-row">
+                      <span className="tv-order-label">今日点单</span>
+                      {[v.order.dish, v.order.drink].map((m) => (
+                        <span key={m.itemId} className={`tv-order-chip ${m.have > 0 ? 'ok' : 'short'}`}>
+                          <T1ItemIcon itemId={m.itemId} className="ac-badge-icon" fallback="" alt="" />
+                          {m.name} ×{m.have}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="tv-visitor-foot">
+                      {v.served && v.record ? (
+                        <span className="tv-record-text">
+                          已端上 {[v.record.dishName, v.record.drinkName].filter(Boolean).join(' + ')} · 名望 +{v.record.fame} · 小费{' '}
+                          {v.record.tipGold}
+                        </span>
+                      ) : v.served ? (
+                        <span className="tv-record-text">今天已经招待过了</span>
+                      ) : (
+                        <>
+                          <span className="tv-perfect-hint">完美招待 +{v.perfectFame} 名望</span>
+                          <button
+                            type="button"
+                            data-testid={`tavern-serve-pick-${v.id}`}
+                            className={`prog-filter-btn tv-pick-btn ${serveVisitor?.id === v.id ? 'active' : ''}`}
+                            onClick={() => pickVisitor(v.id)}
+                          >
+                            {serveVisitor?.id === v.id ? '吧台招待中' : '去招待'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="tv-bar-station" data-testid="tavern-serve-station">
+                <div className="tv-bar-head">
+                  <div className="tv-bar-emblem">
+                    <T1Art kind="skills" id="ale_mug" className="tv-bar-icon" fallback="" alt="吧台" />
+                  </div>
+                  <div className="tv-bar-copy">
+                    <strong>吧台{serveVisitor ? ` · 招待「${serveVisitor.title} · ${serveVisitor.name}」` : ''}</strong>
+                    <span className="tv-rule-note">
+                      从背包里挑一份料理和一杯饮品端上（至少一样）；点到的菜品高亮，再点一次可以撤下。
+                    </span>
+                  </div>
+                </div>
+                {!serveVisitor ? (
+                  <div className="tv-empty">今天的客人都招待完了 —— 东八区 0 点会换一批新面孔。</div>
+                ) : dishesInBag.length === 0 && drinksInBag.length === 0 ? (
+                  <div className="tv-empty">背包里没有酒馆菜单上的料理或饮品 —— 去烹饪页做些料理、酿些饮品吧。</div>
+                ) : (
+                  <>
+                    <div className="tv-menu-label">料理</div>
+                    {dishesInBag.length === 0 ? (
+                      <div className="tv-empty">背包里没有料理</div>
+                    ) : (
+                      <div className="tv-menu-grid">
+                        {dishesInBag.map((m) => {
+                          const ordered = serveVisitor.order.dish.itemId === m.itemId;
+                          return (
+                            <button
+                              key={m.itemId}
+                              type="button"
+                              data-testid={`tavern-dish-${m.itemId}`}
+                              className={`tv-menu-chip ${dishId === m.itemId ? 'selected' : ''} ${ordered ? 'ordered' : ''}`}
+                              onClick={() => setDishPick(dishId === m.itemId ? null : m.itemId)}
+                            >
+                              <T1ItemIcon itemId={m.itemId} className="tv-menu-icon" fallback="" alt="" />
+                              <span className="tv-menu-name">{m.name}</span>
+                              <span className="tv-menu-meta">
+                                ×{m.have} · 名望 {ordered ? Math.floor((m.fame * info.tavern.matchPct) / 100) : m.fame}
+                                {ordered ? ' · 点单' : ''}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="tv-menu-label">饮品</div>
+                    {drinksInBag.length === 0 ? (
+                      <div className="tv-empty">背包里没有饮品</div>
+                    ) : (
+                      <div className="tv-menu-grid">
+                        {drinksInBag.map((m) => {
+                          const ordered = serveVisitor.order.drink.itemId === m.itemId;
+                          return (
+                            <button
+                              key={m.itemId}
+                              type="button"
+                              data-testid={`tavern-drink-${m.itemId}`}
+                              className={`tv-menu-chip drink ${drinkId === m.itemId ? 'selected' : ''} ${ordered ? 'ordered' : ''}`}
+                              onClick={() => setDrinkPick(drinkId === m.itemId ? null : m.itemId)}
+                            >
+                              <T1ItemIcon itemId={m.itemId} className="tv-menu-icon" fallback="" alt="" />
+                              <span className="tv-menu-name">{m.name}</span>
+                              <span className="tv-menu-meta">
+                                ×{m.have} · 名望 {ordered ? Math.floor((m.fame * info.tavern.matchPct) / 100) : m.fame}
+                                {ordered ? ' · 点单' : ''}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="tv-bar-foot">
+                      <span className="tv-serve-preview" data-testid="tavern-serve-preview">
+                        {plan && plan.ok
+                          ? `端上 ${[menuName(plan.dishId), menuName(plan.drinkId)].filter(Boolean).join(' + ')}：${formatTavernVerdict(
+                              plan.verdict
+                            )} · 名望 +${plan.fame} · 小费 ${plan.tipGold} 金币`
+                          : '请至少选一份料理或饮品'}
+                      </span>
+                      <button
+                        type="button"
+                        data-testid="tavern-serve-btn"
+                        className="prog-claim-btn af-action-btn tv-serve-btn"
+                        disabled={!plan?.ok || Boolean(busyKey)}
+                        onClick={handleServe}
+                      >
+                        <T1Art kind="skills" id="ale_mug" className="ac-badge-icon" fallback="" alt="" />
+                        {busyKey === `serve:${serveVisitor.id}` ? '上菜中…' : '端上吧台'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="ac-rack-title">
+                吟游诗人点唱（每日 {info.tavern.balladsPerDay} 首，同一时间只演唱一首；增益只作用于生活职业的速度、产出、经验与金币）
+              </div>
+              {balladLive && info.ballad.name && (
+                <div className="tv-stage-banner" data-testid="tavern-active-ballad">
+                  <T1Art kind="skills" id="bard_lute" className="tv-stage-icon" fallback="" alt="" />
+                  <div className="tv-stage-copy">
+                    <strong>正在演唱「{info.ballad.name}」</strong>
+                    <span>
+                      {formatTavernStats(info.ballad.stats).join(' · ')} · 剩余 {formatBalladRemaining(balladLeft)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div className="tv-ballad-grid" data-testid="tavern-ballads">
+                {info.tavern.ballads.map((b) => (
+                  <div
+                    key={b.id}
+                    data-testid={`tavern-ballad-${b.id}`}
+                    className={`tv-ballad-card ${b.unlocked ? '' : 'locked'} ${info.ballad.balladId === b.id && balladLive ? 'playing' : ''}`}
+                  >
+                    <div className="tv-ballad-head">
+                      <T1Art kind="skills" id="bard_lute" className="tv-ballad-icon" fallback="" alt="" />
+                      <strong>{b.name}</strong>
+                    </div>
+                    <span className="tv-ballad-desc">{b.description}</span>
+                    <span className="tv-ballad-stats">{formatTavernStats(b.stats).join(' · ')}</span>
+                    <span className="tv-ballad-meta">
+                      {b.durationMin} 分钟 · 名望 +{b.fame}
+                      {b.minFameTier > 0 ? ` · 需「${b.minFameName}」` : ''}
+                    </span>
+                    <button
+                      type="button"
+                      data-testid={`tavern-ballad-btn-${b.id}`}
+                      className="prog-claim-btn af-action-btn tv-ballad-btn"
+                      disabled={!b.canRequest || Boolean(busyKey)}
+                      onClick={() => handleBallad(b)}
+                    >
+                      <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                      {busyKey === `ballad:${b.id}` ? '调弦中…' : b.canRequest ? `点唱 ${b.costGold}` : b.block || '暂不可点唱'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="ac-rack-title">酒馆名望（累计名望只增不减，等级加成永久生效）</div>
+              <div className="tv-fame-row" data-testid="tavern-fame-tiers">
+                {info.tavern.fame.tiers.map((t) => (
+                  <div
+                    key={t.tier}
+                    className={`tv-fame-card ${t.reached ? 'reached' : ''} ${info.tavern.fame.tier === t.tier ? 'current' : ''}`}
+                  >
+                    <div className="tv-fame-head">
+                      <T1Art kind="skills" id="fame_laurel" className="tv-fame-icon" fallback="" alt="" />
+                      <strong>{t.name}</strong>
+                    </div>
+                    <span className="tv-fame-req">名望 {t.minFame}</span>
+                    <span className="tv-fame-stats">{formatTavernStats(t.stats).join(' · ')}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="tv-tomorrow-row" data-testid="tavern-tomorrow">
+                <span className="tv-tomorrow-label">明日来访</span>
+                {info.tavern.tomorrowVisitors.map((v) => (
+                  <span key={v.id} className="tv-tomorrow-chip">
+                    <T1Art kind="ui" id={v.avatarId} className="ac-badge-icon" fallback="" alt="" />
+                    {v.title} · {v.name}
+                  </span>
+                ))}
+              </div>
+              <div className="tv-rule-note">
+                来访名单与点单由东八区日期确定性生成、全服一致；菜单只收真实的烹饪成品（料理与饮品），名望等级与编年史加成永久计入生产与战斗公式。
+              </div>
+            </div>
+          )}
+
+          {tab === 'chronicle' && (
+            <div className="tv-chronicle-view">
+              <div className="tv-chronicle-hero" data-testid="chronicle-progress">
+                <div className="tv-chronicle-emblem">
+                  <T1Art kind="skills" id="chronicle_book" className="tv-chronicle-icon" fallback="" alt="冒险者编年史" />
+                </div>
+                <div className="tv-chronicle-copy">
+                  <strong>
+                    冒险者编年史 · 已编撰 {info.chronicle.inscribedCount} / {info.chronicle.chapterCount} 卷 · 里程碑{' '}
+                    {info.chronicle.entriesDone} / {info.chronicle.entriesTotal}
+                  </strong>
+                  <div className="ct-rep-bar tv-chronicle-bar">
+                    <div
+                      className="ct-rep-bar-fill tv-chronicle-fill"
+                      style={{ width: `${Math.round((info.chronicle.entriesDone * 100) / Math.max(1, info.chronicle.entriesTotal))}%` }}
+                    />
+                  </div>
+                  <span className="tv-rule-note">
+                    编年史直接读取存档里的真实记录：首领讨伐、遗迹勘探与商队远征、垂钓大赛与水族馆、学院与节庆、天空竞技场、契约魔兽、酒馆名望与转生。三条里程碑全部达成即可编撰，解锁称号与小幅永久加成。
+                  </span>
+                  <div className="tv-chip-row">
+                    {formatTavernStats(info.bonuses.chronicleStats).length === 0 ? (
+                      <span className="tv-chip muted">编撰第一卷后，这里会列出编年史的永久加成</span>
+                    ) : (
+                      formatTavernStats(info.bonuses.chronicleStats).map((c) => (
+                        <span key={c} className="tv-chip chronicle">
+                          {c}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="tv-chapter-grid">
+                {info.chronicle.chapters.map((c) => (
+                  <div
+                    key={c.id}
+                    data-testid={`chronicle-chapter-${c.id}`}
+                    className={`tv-chapter-card ${c.inscribed ? 'inscribed' : c.complete ? 'complete' : ''} ${c.equipped ? 'equipped' : ''}`}
+                  >
+                    <div className="tv-chapter-head">
+                      <T1Art kind="skills" id={c.inscribed ? 'chronicle_book' : 'quill_inkwell'} className="tv-chapter-icon" fallback="" alt="" />
+                      <div className="tv-chapter-title-col">
+                        <strong>{c.name}</strong>
+                        <span className="tv-title-tag">称号「{c.title}」</span>
+                      </div>
+                    </div>
+                    <span className="tv-chapter-desc">{c.description}</span>
+                    <div className="tv-entry-list">
+                      {c.entries.map((e, i) => (
+                        <div key={`${e.metric}-${i}`} className={`tv-entry ${e.done ? 'done' : ''}`}>
+                          <div className="tv-entry-row">
+                            <span className="tv-entry-label">{e.label}</span>
+                            <span className="tv-entry-value">
+                              {e.done ? '达成' : `${e.value} / ${e.target}`}
+                            </span>
+                          </div>
+                          <div className="ct-rep-bar tv-entry-bar">
+                            <div className="ct-rep-bar-fill tv-entry-fill" style={{ width: `${e.pct}%` }} />
+                          </div>
+                          <span className="tv-entry-source">
+                            {e.source} · {e.metricName} {e.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <span className="tv-chapter-stats">编撰加成：{formatTavernStats(c.stats).join(' · ')}</span>
+                    {c.inscribed ? (
+                      <div className="tv-chapter-foot">
+                        <span className="tv-inscribed-text">已编撰{c.inscribedAt ? ` · ${chronicleDateLabel(c.inscribedAt)}` : ''}</span>
+                        <button
+                          type="button"
+                          data-testid={`chronicle-title-${c.id}`}
+                          className="prog-filter-btn tv-title-btn"
+                          disabled={Boolean(busyKey)}
+                          onClick={() => handleTitle(c)}
+                        >
+                          {busyKey === `title:${c.id}` ? '更换中…' : c.equipped ? '取下称号' : '佩戴称号'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        data-testid={`chronicle-inscribe-${c.id}`}
+                        className="prog-claim-btn af-action-btn tv-inscribe-btn"
+                        disabled={!c.canInscribe || Boolean(busyKey)}
+                        onClick={() => handleInscribe(c)}
+                      >
+                        <T1Art kind="skills" id="quill_inkwell" className="ac-badge-icon" fallback="" alt="" />
+                        {busyKey === `inscribe:${c.id}` ? '落笔中…' : c.canInscribe ? '编撰本卷' : `尚缺 ${c.entries.filter((e) => !e.done).length} 条里程碑`}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {info.chronicle.lastInscription && (
+                <div className="tv-note" data-testid="chronicle-last">
+                  最近编撰：「{info.chronicle.lastInscription.name}」· {chronicleDateLabel(info.chronicle.lastInscription.at)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </PanelModal>
+  );
+}
+
+/* ============================================================================
+   浮空飞艇商路 & 圣骑士团荣誉试炼 (WL-16)
+   并入 WL-15「吟游诗人酒馆与冒险者编年史」面板的两个分页（顶栏已 9 枚胶囊，不再新增）。
+   ============================================================================ */
+
+interface AirshipGoodView {
+  id: AirshipGoodId;
+  name: string;
+  origin: AirshipTownId;
+  originName: string;
+  basePrice: number;
+  minHull: number;
+  unlocked: boolean;
+}
+
+interface AirshipMarketTownView {
+  townId: AirshipTownId;
+  townName: string;
+  artId: string;
+  here: boolean;
+  buys: Array<AirshipGoodView & { pct: number; price: number; prevPrice: number; stockLeft: number }>;
+  sells: Array<AirshipGoodView & { pct: number; price: number; prevPrice: number; held: number }>;
+}
+
+interface AirshipRouteView {
+  id: AirshipRouteId;
+  name: string;
+  description: string;
+  from: AirshipTownId;
+  to: AirshipTownId;
+  fromName: string;
+  toName: string;
+  fromArt: string;
+  toArt: string;
+  baseMinutes: number;
+  openCost: number;
+  minHull: number;
+  opened: boolean;
+  xp: number;
+  voyages: number;
+  level: number;
+  speedPct: number;
+  sellBonusPct: number;
+  next: { level: number; minXp: number; speedPct: number; sellBonusPct: number } | null;
+  progressPct: number;
+  durationMs: number;
+  destination: AirshipTownId | null;
+  destinationName: string | null;
+  canOpen: boolean;
+  openBlock: string | null;
+  canLaunch: boolean;
+  launchBlock: string | null;
+}
+
+interface PaladinStageView extends PaladinOpponent {
+  mechanicsInfo: Array<{ id: string; label: string; desc: string }>;
+  cleared: boolean;
+  isNext: boolean;
+  locked: boolean;
+  reward: { stage: number; medals: number; base: number; fullClear: boolean };
+  preview: {
+    won: boolean;
+    timeout: boolean;
+    playerHpLeft: number;
+    playerMaxHp: number;
+    enemyHpLeft: number;
+    enemyMaxHp: number;
+    durationMs: number;
+  } | null;
+}
+
+interface PaladinVirtueView {
+  id: PaladinVirtueId;
+  name: string;
+  description: string;
+  perRank: PaladinStats;
+  rank: number;
+  maxRank: number;
+  stats: PaladinStats;
+  nextRank: number;
+  cost: number;
+  needHonorRank: number;
+  needHonorName: string;
+  canUpgrade: boolean;
+  block: string | null;
+}
+
+interface AirshipPaladinInfo {
+  nowMs: number;
+  bonuses: PaladinTrialBonuses;
+  airship: {
+    dayKey: string;
+    dayEndsAtMs: number;
+    gold: number;
+    location: { id: AirshipTownId; name: string; artId: string };
+    hull: {
+      level: number;
+      name: string;
+      capacity: number;
+      speedPct: number;
+      maxLevel: number;
+      next: {
+        level: number;
+        name: string;
+        capacity: number;
+        speedPct: number;
+        costGold: number;
+        materials: Array<{ itemId: string; name: string; need: number; have: number }>;
+      } | null;
+      canUpgrade: boolean;
+      block: string | null;
+    };
+    cargo: Array<AirshipGoodView & { qty: number; cost: number }>;
+    cargoMap: Partial<Record<AirshipGoodId, number>>;
+    cargoCost: Partial<Record<AirshipGoodId, number>>;
+    boughtToday: Partial<Record<AirshipGoodId, number>>;
+    cargoUnits: number;
+    capacity: number;
+    voyage: {
+      routeId: AirshipRouteId;
+      routeName: string;
+      from: AirshipTownId;
+      to: AirshipTownId;
+      fromName: string;
+      toName: string;
+      departedAtMs: number;
+      arrivesAtMs: number;
+      cargoUnits: number;
+      xpOnArrival: number;
+    } | null;
+    arrivedVia: { routeId: AirshipRouteId; name: string; level: number; sellBonusPct: number } | null;
+    sellBonusPct: number;
+    towns: Array<{ id: AirshipTownId; name: string; artId: string; source: string; description: string; here: boolean; specialties: AirshipGoodId[] }>;
+    goods: AirshipGoodView[];
+    routes: AirshipRouteView[];
+    routesOpened: number;
+    market: AirshipMarketTownView[];
+    dailyStock: number;
+    maxTradeQty: number;
+    totals: { voyages: number; sales: number; spent: number; profit: number };
+    lastSale: { goodId: AirshipGoodId; name: string; townName: string; qty: number; gold: number; profit: number; at: string } | null;
+    lastArrival: { routeName: string; toName: string; cargoUnits: number; xpGained: number; at: string } | null;
+    hulls: Array<{ level: number; name: string; capacity: number; speedPct: number; reached: boolean }>;
+  };
+  trial: {
+    weekKey: string;
+    weekEndsAtMs: number;
+    theme: { id: string; name: string; description: string; mechanics: Array<{ id: string; label: string; desc: string }> };
+    nextWeekTheme: { id: string; name: string };
+    attemptsUsed: number;
+    attemptsLeft: number;
+    weeklyAttempts: number;
+    cleared: number[];
+    nextStage: number | null;
+    stages: PaladinStageView[];
+    player: { atk: number; def: number; hp: number; intervalMs: number } | null;
+    medals: number;
+    totalMedals: number;
+    fullClearBonus: number;
+    honor: {
+      rank: number;
+      name: string;
+      next: { rank: number; name: string; minMedals: number } | null;
+      progressPct: number;
+      ranks: Array<{ rank: number; name: string; minMedals: number; reached: boolean }>;
+    };
+    virtues: PaladinVirtueView[];
+    caps: Required<PaladinStats>;
+    bestStage: number;
+    weeksFullCleared: number;
+    totalWins: number;
+    totalLosses: number;
+    lastDuel: {
+      stage: number;
+      opponentName: string;
+      won: boolean;
+      timeout: boolean;
+      enemyHpLeft: number;
+      enemyMaxHp: number;
+      playerHpLeft: number;
+      playerMaxHp: number;
+      durationMs: number;
+      medals: number;
+      at: string;
+    } | null;
+  };
+}
+
+function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onChange?: () => void }) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<AirshipPaladinInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  // 每张买卖卡的件数（未手动调整时：购入默认填满可买上限，卖出默认全部卖出）
+  const [qtyPick, setQtyPick] = useState<Record<string, number>>({});
+  // 服务器时钟偏移：换日 / 航程倒计时按「服务器 nowMs + 本地流逝」推算
+  const [clientAnchor, setClientAnchor] = useState(() => Date.now());
+  const [tick, setTick] = useState(() => Date.now());
+  const arrivalReloadRef = useRef<number | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getAirshipPaladin();
+      setInfo(res);
+      setClientAnchor(Date.now());
+      return res as AirshipPaladinInfo;
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载浮空飞艇商路与圣骑士团荣誉试炼失败');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const flying = Boolean(info?.airship.voyage);
+  useEffect(() => {
+    const t = window.setInterval(() => setTick(Date.now()), flying ? 1_000 : 15_000);
+    return () => window.clearInterval(t);
+  }, [flying]);
+
+  const serverNow = info ? info.nowMs + Math.max(0, tick - clientAnchor) : 0;
+  const voyage = info?.airship.voyage ?? null;
+  const voyageLeft = voyage ? Math.max(0, voyage.arrivesAtMs - serverNow) : 0;
+  // 到点后由服务器结算抵港（显式 now）：每趟航程只自动刷新一次
+  useEffect(() => {
+    if (!voyage || voyageLeft > 0 || loading) return;
+    if (arrivalReloadRef.current === voyage.arrivesAtMs) return;
+    arrivalReloadRef.current = voyage.arrivesAtMs;
+    void load();
+  }, [voyage, voyageLeft, loading, load]);
+
+  const runAction = async (key: string, call: () => Promise<any>, onOk: (res: any) => void, failText: string) => {
+    setBusyKey(key);
+    try {
+      const res: any = await call();
+      if (res?.airship?.airship) {
+        setInfo(res.airship);
+        setClientAnchor(Date.now());
+      } else {
+        await load();
+      }
+      setQtyPick({});
+      onOk(res);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || failText);
+      await load();
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  if (loading && !info) return <div className="prog-empty">正在升起飞艇的帆、擦亮试炼场的战旗…</div>;
+  if (!info) return <div className="prog-empty">暂无浮空飞艇商路与荣誉试炼数据</div>;
+
+  const a = info.airship;
+  const t = info.trial;
+  const dayIndex = airshipDayIndexFromKey(a.dayKey) ?? 0;
+  const dayLeft = Math.max(0, a.dayEndsAtMs - serverNow);
+  const weekLeft = Math.max(0, t.weekEndsAtMs - serverNow);
+  const hereMarket = a.market.find((m) => m.here) ?? a.market[0];
+  const qtyOf = (key: string, fallback: number) => (qtyPick[key] !== undefined ? qtyPick[key] : fallback);
+  const setQty = (key: string, n: number, max: number) =>
+    setQtyPick((prev) => ({ ...prev, [key]: Math.max(1, Math.min(Math.max(1, max), Math.floor(Number(n) || 1))) }));
+  const bonusChips = formatPaladinStats(info.bonuses);
+  const capLine = formatPaladinStats(t.caps).join(' · ');
+  const voyagePct = voyage
+    ? Math.min(100, Math.max(0, Math.round(((serverNow - voyage.departedAtMs) * 100) / Math.max(1, voyage.arrivesAtMs - voyage.departedAtMs))))
+    : 0;
+
+  const handleBuy = (goodId: AirshipGoodId, name: string, qty: number) =>
+    runAction(
+      `buy:${goodId}`,
+      () => apiClient.buyAirshipCargo({ goodId, qty, dayKey: a.dayKey }),
+      (res) => toastRef.current.success(`购入「${name}」×${res?.buy?.qty ?? qty}，花费 ${res?.buy?.total ?? ''} 金币`),
+      '购入失败'
+    );
+  const handleSell = (goodId: AirshipGoodId, name: string, qty: number) =>
+    runAction(
+      `sell:${goodId}`,
+      () => apiClient.sellAirshipCargo({ goodId, qty, dayKey: a.dayKey }),
+      (res) =>
+        toastRef.current.success(
+          `卖出「${name}」×${res?.sell?.qty ?? qty}，收入 ${res?.sell?.total ?? ''} 金币（${formatAirshipProfit(res?.sell?.profit ?? 0)}）`
+        ),
+      '卖出失败'
+    );
+  const handleOpen = (r: AirshipRouteView) =>
+    runAction(
+      `open:${r.id}`,
+      () => apiClient.openAirshipRoute({ routeId: r.id }),
+      () => toastRef.current.success(`开辟「${r.name}」：${r.fromName} ↔ ${r.toName}`),
+      '开辟航线失败'
+    );
+  const handleLaunch = (r: AirshipRouteView) =>
+    runAction(
+      `launch:${r.id}`,
+      () => apiClient.launchAirshipVoyage({ routeId: r.id }),
+      (res) =>
+        toastRef.current.success(
+          `飞艇沿「${r.name}」起航，${formatAirshipDuration(res?.launch?.durationMs ?? r.durationMs)}后抵达${r.destinationName ?? ''}`
+        ),
+      '起航失败'
+    );
+  const handleHull = () =>
+    runAction(
+      'hull',
+      () => apiClient.upgradeAirshipHull(),
+      (res) => toastRef.current.success(`船体升级完成：货舱 ${res?.hull?.capacity ?? ''} 件`),
+      '船体升级失败'
+    );
+  const handleChallenge = (s: PaladinStageView) =>
+    runAction(
+      `challenge:${s.stage}`,
+      () => apiClient.challengePaladinTrial({ stage: s.stage, weekKey: t.weekKey }),
+      (res) => {
+        const r = res?.challenge;
+        if (r?.won) {
+          toastRef.current.success(`第 ${s.stage} 关「${s.stageName}」通过！荣誉勋章 +${r.medals}${r.fullClear ? '（本周六关全通）' : ''}`);
+        } else {
+          toastRef.current.error(`第 ${s.stage} 关「${s.stageName}」${r?.timeout ? '10 分钟未分胜负，判负' : '挑战失败'}，剩余挑战 ${r?.attemptsLeft ?? ''} 次`);
+        }
+      },
+      '挑战失败'
+    );
+  const handleVirtue = (v: PaladinVirtueView) =>
+    runAction(
+      `virtue:${v.id}`,
+      () => apiClient.upgradePaladinVirtue({ virtueId: v.id }),
+      () => toastRef.current.success(`「${v.name}」升至第 ${v.nextRank} 阶`),
+      '誓言升阶失败'
+    );
+
+  if (view === 'airship') {
+    const sellRows = a.cargo.map((c) => {
+      const plan = planAirshipSell(dayIndex, a.location.id, c.id, qtyOf(`sell:${c.id}`, c.qty), a.cargoMap, a.cargoCost, a.sellBonusPct);
+      return { c, plan, isOrigin: c.origin === a.location.id };
+    });
+    return (
+      <div className="as-view" data-testid="airship-view">
+        <div className="hw-hero-card as-hero-card">
+          <div className="hw-hero-top">
+            <div className="hw-hero-emblem as-hero-emblem">
+              <T1Art kind="skills" id="trade_airship" className="hw-hero-core-icon" fallback="" alt="浮空飞艇" />
+            </div>
+            <div className="as-hero-copy">
+              <div className="ac-hero-title-row">
+                <span className="hw-hero-title" data-testid="airship-hull-name">
+                  浮空飞艇 · {a.hull.name}
+                </span>
+                <span className="qm-equipped-pill">航线与船体转生永久保留</span>
+              </div>
+              <div className="as-hero-meta">
+                <span data-testid="airship-status">
+                  {voyage
+                    ? `航行中：「${voyage.routeName}」${voyage.fromName} → ${voyage.toName}`
+                    : `停靠在${a.location.name}`}
+                  {!voyage && a.arrivedVia ? ` · 经「${a.arrivedVia.name}」Lv.${a.arrivedVia.level} 抵港，收购价 +${a.sellBonusPct}%` : ''}
+                </span>
+                <span className="as-day-line">
+                  今日 {formatWeatherDayLabel(a.dayKey)} 行情 · {formatAcademyCountdown(dayLeft)}后换行情、补满存货 · 船体 Lv.{a.hull.level}（航程 -
+                  {a.hull.speedPct}%）
+                </span>
+              </div>
+              <div className="ct-rep-bar as-cargo-bar">
+                <div className="ct-rep-bar-fill as-cargo-fill" style={{ width: `${Math.round((a.cargoUnits * 100) / Math.max(1, a.capacity))}%` }} />
+              </div>
+            </div>
+          </div>
+          <div className="ac-wallet-badges as-wallet-row">
+            <span className="ac-wallet-badge as-gold-badge">
+              <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+              金币 <strong data-testid="airship-gold">{a.gold}</strong>
+            </span>
+            <span className="ac-wallet-badge as-cargo-badge">
+              <T1Art kind="skills" id="cargo_crate" className="ac-badge-icon" fallback="" alt="" />
+              货舱 <strong data-testid="airship-cargo-units">{a.cargoUnits}</strong> / {a.capacity}
+            </span>
+            <span className="ac-wallet-badge as-dock-badge">
+              <T1Art kind="skills" id="airship_dock" className="ac-badge-icon" fallback="" alt="" />
+              航线 <strong data-testid="airship-routes-opened">{a.routesOpened}</strong> / {a.routes.length}
+            </span>
+            <span className="ac-wallet-badge as-profit-badge">
+              <T1Art kind="skills" id="trade_airship" className="ac-badge-icon" fallback="" alt="" />
+              {a.totals.voyages} 趟航程 · 累计{formatAirshipProfit(a.totals.profit)}
+            </span>
+          </div>
+        </div>
+
+        {voyage && (
+          <div className="as-voyage-banner" data-testid="airship-voyage">
+            <T1Art kind="skills" id="trade_airship" className="as-voyage-icon" fallback="" alt="" />
+            <div className="as-voyage-copy">
+              <strong>
+                「{voyage.routeName}」{voyage.fromName} → {voyage.toName}
+              </strong>
+              <span>
+                载货 {voyage.cargoUnits} 件 · 抵港航线经验 +{voyage.xpOnArrival} ·{' '}
+                {voyageLeft > 0 ? `还有 ${formatAirshipDuration(voyageLeft)}抵港` : '正在靠港…'}
+              </span>
+              <div className="ct-rep-bar as-voyage-bar">
+                <div className="ct-rep-bar-fill as-voyage-fill" style={{ width: `${voyagePct}%` }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="ac-rack-title">
+          {a.location.name}集市 · 今日行情（东八区每日 0 点换行情；每种特产每日 {a.dailyStock} 件存货）
+        </div>
+        <div className="as-market-here" data-testid="airship-market-here">
+          <div className="as-market-col">
+            <div className="as-col-title">
+              <T1Art kind="skills" id={a.location.artId} className="ac-badge-icon" fallback="" alt="" />
+              本地特产 · 产地价购入
+            </div>
+            {hereMarket.buys.map((g) => {
+              const key = `buy:${g.id}`;
+              const probe = planAirshipBuy(dayIndex, a.location.id, a.hull.level, g.id, 1, a.cargoMap, a.boughtToday, a.gold);
+              const qty = qtyOf(key, Math.max(1, probe.maxQty));
+              const plan = planAirshipBuy(dayIndex, a.location.id, a.hull.level, g.id, qty, a.cargoMap, a.boughtToday, a.gold);
+              const block = voyage
+                ? '航行中'
+                : !plan.hullOk
+                  ? `需船体 ${g.minHull} 级`
+                  : plan.stockLeft <= 0
+                    ? '今日售罄'
+                    : plan.spaceLeft <= 0
+                      ? '货舱已满'
+                      : probe.maxQty <= 0
+                        ? '金币不足'
+                        : null;
+              return (
+                <div key={g.id} className={`as-trade-card ${g.unlocked ? '' : 'locked'}`} data-testid={`airship-buy-${g.id}`}>
+                  <div className="as-trade-head">
+                    <T1ItemIcon itemId={g.id} className="as-trade-icon" fallback="" alt={g.name} />
+                    <div className="as-trade-title">
+                      <strong>{g.name}</strong>
+                      <span className="as-trade-meta">
+                        单价 {g.price}（基准 {g.basePrice} 的 {g.pct}%）· 较昨日{formatAirshipTrend(g.price, g.prevPrice)}
+                      </span>
+                      <span className="as-trade-meta">今日存货 {g.stockLeft} / {a.dailyStock}</span>
+                    </div>
+                  </div>
+                  <div className="as-trade-foot">
+                    <div className="as-qty">
+                      <button type="button" className="prog-filter-btn as-qty-btn" disabled={Boolean(block) || qty <= 1} onClick={() => setQty(key, qty - 1, probe.maxQty)}>
+                        -
+                      </button>
+                      <input
+                        className="as-qty-input"
+                        type="number"
+                        min={1}
+                        max={Math.max(1, probe.maxQty)}
+                        value={qty}
+                        disabled={Boolean(block)}
+                        aria-label={`购入「${g.name}」件数`}
+                        onChange={(e) => setQty(key, Number(e.target.value), probe.maxQty)}
+                      />
+                      <button type="button" className="prog-filter-btn as-qty-btn" disabled={Boolean(block) || qty >= probe.maxQty} onClick={() => setQty(key, qty + 1, probe.maxQty)}>
+                        +
+                      </button>
+                      <button type="button" className="prog-filter-btn as-qty-btn" disabled={Boolean(block)} onClick={() => setQty(key, probe.maxQty, probe.maxQty)}>
+                        最大
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      data-testid={`airship-buy-btn-${g.id}`}
+                      className="prog-claim-btn af-action-btn as-buy-btn"
+                      disabled={!plan.ok || Boolean(block) || Boolean(busyKey)}
+                      onClick={() => handleBuy(g.id, g.name, plan.qty)}
+                    >
+                      <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                      {busyKey === key ? '装货中…' : block ? block : `购入 ${plan.qty} 件 · ${plan.total}`}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="as-market-col">
+            <div className="as-col-title">
+              <T1Art kind="skills" id="cargo_crate" className="ac-badge-icon" fallback="" alt="" />
+              货舱 · 在{a.location.name}卖出{a.sellBonusPct > 0 ? `（航线加成 +${a.sellBonusPct}%）` : ''}
+            </div>
+            {sellRows.length === 0 ? (
+              <div className="tv-empty">货舱空空如也 —— 在产地买些特产，飞去外地港口高价卖出。</div>
+            ) : (
+              sellRows.map(({ c, plan, isOrigin }) => {
+                const key = `sell:${c.id}`;
+                const qty = qtyOf(key, c.qty);
+                const quote = hereMarket.sells.find((s) => s.id === c.id);
+                const block = voyage ? '航行中' : isOrigin ? '产地不收购' : null;
+                return (
+                  <div key={c.id} className="as-trade-card sell" data-testid={`airship-sell-${c.id}`}>
+                    <div className="as-trade-head">
+                      <T1ItemIcon itemId={c.id} className="as-trade-icon" fallback="" alt={c.name} />
+                      <div className="as-trade-title">
+                        <strong>
+                          {c.name} ×{c.qty}
+                        </strong>
+                        <span className="as-trade-meta">
+                          {isOrigin || !quote
+                            ? `产自${c.originName}，需运往外地港口出售`
+                            : `收购价 ${plan.unitPrice}（${quote.pct}%${plan.bonusPct > 0 ? ` +${plan.bonusPct}%` : ''}）· 较昨日${formatAirshipTrend(quote.price, quote.prevPrice)}`}
+                        </span>
+                        <span className="as-trade-meta">购入成本 {c.cost} 金币</span>
+                      </div>
+                    </div>
+                    <div className="as-trade-foot">
+                      <div className="as-qty">
+                        <button type="button" className="prog-filter-btn as-qty-btn" disabled={Boolean(block) || qty <= 1} onClick={() => setQty(key, qty - 1, c.qty)}>
+                          -
+                        </button>
+                        <input
+                          className="as-qty-input"
+                          type="number"
+                          min={1}
+                          max={c.qty}
+                          value={qty}
+                          disabled={Boolean(block)}
+                          aria-label={`卖出「${c.name}」件数`}
+                          onChange={(e) => setQty(key, Number(e.target.value), c.qty)}
+                        />
+                        <button type="button" className="prog-filter-btn as-qty-btn" disabled={Boolean(block) || qty >= c.qty} onClick={() => setQty(key, qty + 1, c.qty)}>
+                          +
+                        </button>
+                        <button type="button" className="prog-filter-btn as-qty-btn" disabled={Boolean(block)} onClick={() => setQty(key, c.qty, c.qty)}>
+                          全部
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        data-testid={`airship-sell-btn-${c.id}`}
+                        className="prog-claim-btn af-action-btn as-sell-btn"
+                        disabled={!plan.ok || Boolean(block) || Boolean(busyKey)}
+                        onClick={() => handleSell(c.id, c.name, plan.qty)}
+                      >
+                        <T1Art kind="skills" id="cargo_crate" className="ac-badge-icon" fallback="" alt="" />
+                        {busyKey === key ? '卸货中…' : block ? block : `卖出 ${plan.qty} 件 · ${plan.total}（${formatAirshipProfit(plan.profit)}）`}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="ac-rack-title">航线（双向通航；载货航程积累航线经验，升级缩短航程并提高抵港后的收购价）</div>
+        <div className="as-route-grid" data-testid="airship-routes">
+          {a.routes.map((r) => (
+            <div
+              key={r.id}
+              data-testid={`airship-route-${r.id}`}
+              className={`as-route-card ${r.opened ? 'opened' : ''} ${r.destination && r.opened ? 'here' : ''}`}
+            >
+              <div className="as-route-towns">
+                <T1Art kind="skills" id={r.fromArt} className="as-town-icon" fallback="" alt={r.fromName} />
+                <span className="as-route-arrow">↔</span>
+                <T1Art kind="skills" id={r.toArt} className="as-town-icon" fallback="" alt={r.toName} />
+                <div className="as-route-title">
+                  <strong>{r.name}</strong>
+                  <span>
+                    {r.fromName} ↔ {r.toName}
+                  </span>
+                </div>
+              </div>
+              <span className="as-route-desc">{r.description}</span>
+              <span className="as-route-meta">
+                {r.opened
+                  ? `Lv.${r.level} · 航程 ${formatAirshipDuration(r.durationMs)} · 抵港收购 +${r.sellBonusPct}% · 已飞 ${r.voyages} 趟`
+                  : `基准航程 ${r.baseMinutes} 分钟 · 开辟需船体 ${r.minHull} 级`}
+              </span>
+              {r.opened && (
+                <div className="ct-rep-bar as-route-bar">
+                  <div className="ct-rep-bar-fill as-route-fill" style={{ width: `${r.progressPct}%` }} />
+                </div>
+              )}
+              {r.opened && (
+                <span className="as-route-xp">
+                  航线经验 {r.xp}
+                  {r.next ? ` / ${r.next.minXp}（Lv.${r.next.level}：航程 -${r.next.speedPct}%、收购 +${r.next.sellBonusPct}%）` : '（满级）'}
+                </span>
+              )}
+              {r.opened ? (
+                <button
+                  type="button"
+                  data-testid={`airship-launch-${r.id}`}
+                  className="prog-claim-btn af-action-btn as-launch-btn"
+                  disabled={!r.canLaunch || Boolean(busyKey)}
+                  onClick={() => handleLaunch(r)}
+                >
+                  <T1Art kind="skills" id="trade_airship" className="ac-badge-icon" fallback="" alt="" />
+                  {busyKey === `launch:${r.id}` ? '起锚中…' : r.canLaunch ? `起航前往${r.destinationName}` : r.launchBlock || '暂不可起航'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  data-testid={`airship-open-${r.id}`}
+                  className="prog-claim-btn af-action-btn as-open-btn"
+                  disabled={!r.canOpen || Boolean(busyKey)}
+                  onClick={() => handleOpen(r)}
+                >
+                  <T1Art kind="skills" id="airship_dock" className="ac-badge-icon" fallback="" alt="" />
+                  {busyKey === `open:${r.id}` ? '测绘中…' : r.canOpen ? `开辟航线 ${r.openCost}` : r.openBlock || '暂不可开辟'}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="ac-rack-title">船坞 · 船体升级（金币 + 真实生活职业成品；航行中不能进坞）</div>
+        <div className="as-hull-card" data-testid="airship-hull">
+          <div className="as-hull-emblem">
+            <T1Art kind="skills" id="airship_dock" className="as-hull-icon" fallback="" alt="飞艇船坞" />
+          </div>
+          <div className="as-hull-copy">
+            <strong>
+              当前「{a.hull.name}」Lv.{a.hull.level} · 货舱 {a.hull.capacity} 件 · 航程 -{a.hull.speedPct}%
+            </strong>
+            {a.hull.next ? (
+              <>
+                <span className="as-hull-next">
+                  下一级「{a.hull.next.name}」：货舱 {a.hull.next.capacity} 件 · 航程 -{a.hull.next.speedPct}%
+                </span>
+                <div className="as-mat-row">
+                  <span className={`as-mat-chip ${a.gold >= a.hull.next.costGold ? 'ok' : 'short'}`}>
+                    <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                    {a.hull.next.costGold}
+                  </span>
+                  {a.hull.next.materials.map((m) => (
+                    <span key={m.itemId} className={`as-mat-chip ${m.have >= m.need ? 'ok' : 'short'}`}>
+                      <T1ItemIcon itemId={m.itemId} className="ac-badge-icon" fallback="" alt="" />
+                      {m.name} {m.have}/{m.need}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <span className="as-hull-next">船体已是最高等级</span>
+            )}
+            <div className="as-hull-steps">
+              {a.hulls.map((h) => (
+                <span key={h.level} className={`as-hull-step ${h.reached ? 'reached' : ''} ${h.level === a.hull.level ? 'current' : ''}`}>
+                  Lv.{h.level} {h.name} · {h.capacity} 件
+                </span>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            data-testid="airship-hull-btn"
+            className="prog-claim-btn af-action-btn as-hull-btn"
+            disabled={!a.hull.canUpgrade || Boolean(busyKey)}
+            onClick={handleHull}
+          >
+            <T1Art kind="skills" id="airship_dock" className="ac-badge-icon" fallback="" alt="" />
+            {busyKey === 'hull' ? '进坞中…' : a.hull.canUpgrade ? '进坞升级' : a.hull.block || '暂不可升级'}
+          </button>
+        </div>
+
+        <div className="ac-rack-title">全图行情（各港今日收购价，未含航线加成；产地不收购本地特产）</div>
+        <div className="as-town-grid" data-testid="airship-market-all">
+          {a.market.map((m) => {
+            const town = a.towns.find((x) => x.id === m.townId);
+            return (
+              <div key={m.townId} className={`as-town-card ${m.here ? 'here' : ''}`}>
+                <div className="as-town-head">
+                  <T1Art kind="skills" id={m.artId} className="as-town-art" fallback="" alt={m.townName} />
+                  <div className="as-town-title">
+                    <strong>
+                      {m.townName}
+                      {m.here ? ' · 停靠中' : ''}
+                    </strong>
+                    <span>{town?.source}</span>
+                  </div>
+                </div>
+                <span className="as-town-desc">{town?.description}</span>
+                <div className="as-town-specials">
+                  特产：
+                  {m.buys.map((g) => (
+                    <span key={g.id} className="as-mini-chip origin">
+                      <T1ItemIcon itemId={g.id} className="ac-badge-icon" fallback="" alt="" />
+                      {g.name} {g.price}
+                    </span>
+                  ))}
+                </div>
+                <div className="as-town-prices">
+                  {m.sells.map((g) => (
+                    <span key={g.id} className={`as-mini-chip ${g.held > 0 ? 'held' : ''} ${g.unlocked ? '' : 'locked'}`}>
+                      <T1ItemIcon itemId={g.id} className="ac-badge-icon" fallback="" alt="" />
+                      {g.name} {g.price}（{g.pct}%，{formatAirshipTrend(g.price, g.prevPrice)}）
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="tv-rule-note">
+          城镇沿用公会城镇与远征商队的三座航路城镇，特产都是内容包里的真实物品（基准价即物品价值）；行情按东八区日期确定性生成、全服一致。
+          航线、航线等级与船体转生永久保留，货舱里的特产会在转生时清空。
+          {a.lastArrival ? ` 最近抵港：沿「${a.lastArrival.routeName}」到${a.lastArrival.toName}，载货 ${a.lastArrival.cargoUnits} 件，航线经验 +${a.lastArrival.xpGained}。` : ''}
+          {a.lastSale ? ` 最近成交：在${a.lastSale.townName}卖出「${a.lastSale.name}」×${a.lastSale.qty}，${formatAirshipProfit(a.lastSale.profit)}。` : ''}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ht-view" data-testid="paladin-trial-view">
+      <div className="hw-hero-card ht-hero-card">
+        <div className="hw-hero-top">
+          <div className="hw-hero-emblem ht-hero-emblem">
+            <T1Art kind="skills" id="paladin_trial" className="hw-hero-core-icon" fallback="" alt="圣骑士团荣誉试炼" />
+          </div>
+          <div className="ht-hero-copy">
+            <div className="ac-hero-title-row">
+              <span className="hw-hero-title" data-testid="paladin-theme">
+                圣骑士团荣誉试炼 · 本周「{t.theme.name}」
+              </span>
+              <span className="qm-equipped-pill">勋章与誓言转生永久保留</span>
+            </div>
+            <div className="ht-hero-meta">
+              <span>{t.theme.description}</span>
+              <span className="ht-week-line">
+                本周 {formatWeatherDayLabel(t.weekKey)} 起 · {formatAcademyCountdown(weekLeft)}后轮换为「{t.nextWeekTheme.name}」 · 荣誉位阶「
+                {t.honor.name}」
+                {t.honor.next ? `，距「${t.honor.next.name}」还差 ${t.honor.next.minMedals - t.totalMedals} 枚` : '（已满）'}
+              </span>
+            </div>
+            <div className="ct-rep-bar ht-honor-bar">
+              <div className="ct-rep-bar-fill ht-honor-fill" style={{ width: `${t.honor.progressPct}%` }} />
+            </div>
+          </div>
+        </div>
+        <div className="ac-wallet-badges ht-wallet-row">
+          <span className="ac-wallet-badge ht-medal-badge">
+            <T1Art kind="skills" id="honor_medal" className="ac-badge-icon" fallback="" alt="" />
+            荣誉勋章 <strong data-testid="paladin-medals">{t.medals}</strong>（累计 {t.totalMedals}）
+          </span>
+          <span className="ac-wallet-badge ht-attempt-badge">
+            <T1Art kind="skills" id="trial_banner" className="ac-badge-icon" fallback="" alt="" />
+            本周挑战 <strong data-testid="paladin-attempts">{t.attemptsLeft}</strong> / {t.weeklyAttempts}
+          </span>
+          <span className="ac-wallet-badge ht-clear-badge">
+            <T1Art kind="skills" id="paladin_trial" className="ac-badge-icon" fallback="" alt="" />
+            本周已通 <strong data-testid="paladin-cleared">{t.cleared.length}</strong> / {t.stages.length} 关
+          </span>
+        </div>
+        <div className="hw-bonus-strip" data-testid="paladin-bonuses">
+          {bonusChips.length === 0 ? (
+            <span className="tv-chip muted">尚无誓言加成 —— 通关试炼赢取荣誉勋章，再到下方立下誓言</span>
+          ) : (
+            bonusChips.map((c) => (
+              <span key={c} className="tv-chip ht-chip">
+                {c}
+              </span>
+            ))
+          )}
+          <span className="tv-chip muted">封顶：{capLine}</span>
+        </div>
+      </div>
+
+      {t.player && (
+        <div className="ht-build-line" data-testid="paladin-build">
+          你的试炼构建：攻击 {t.player.atk} · 防御 {t.player.def} · 生命 {t.player.hp} · 出手间隔 {(t.player.intervalMs / 1000).toFixed(2)} 秒（满血、无临时增益，与天空竞技场同一沙盒）
+        </div>
+      )}
+
+      <div className="ac-rack-title">
+        本周六关（按顺序挑战，胜负都消耗 1 次；首通得荣誉勋章，六关全通再 +{t.fullClearBonus}）
+      </div>
+      <div className="ht-stage-grid" data-testid="paladin-stages">
+        {t.stages.map((s) => (
+          <div
+            key={s.stage}
+            data-testid={`paladin-stage-${s.stage}`}
+            className={`ht-stage-card ${s.cleared ? 'cleared' : ''} ${s.isNext ? 'next' : ''} ${s.locked ? 'locked' : ''} ${s.isBoss ? 'boss' : ''}`}
+          >
+            <div className="ht-stage-head">
+              <div className="ht-stage-portrait">
+                <T1Art kind="monster" id={s.monsterId} className="ht-stage-art" fallback="" alt={s.name} />
+              </div>
+              <div className="ht-stage-title">
+                <span className="ht-stage-no">
+                  第 {s.stage} 关 · {s.stageName}
+                </span>
+                <strong>{s.name}</strong>
+                <span className="ht-stage-stats">
+                  Lv.{s.level} · 生命 {s.hp} · 攻击 {s.atk} · 防御 {s.def} · 间隔 {(s.attackIntervalMs / 1000).toFixed(1)} 秒
+                </span>
+              </div>
+            </div>
+            {s.mechanicsInfo.length > 0 && (
+              <div className="ht-mech-row">
+                {s.mechanicsInfo.map((m) => (
+                  <span key={m.id} className="ht-mech-tag" title={m.desc}>
+                    {m.label}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="ht-stage-foot">
+              <span className="ht-reward">
+                <T1Art kind="skills" id="honor_medal" className="ac-badge-icon" fallback="" alt="" />
+                勋章 +{s.reward.base}
+                {s.reward.fullClear ? ` · 全通 +${t.fullClearBonus}` : ''}
+              </span>
+              <span className={`ht-preview ${s.cleared ? 'done' : s.preview?.won ? 'win' : 'lose'}`} data-testid={`paladin-preview-${s.stage}`}>
+                {s.cleared
+                  ? '本周已通关'
+                  : s.preview
+                    ? s.preview.won
+                      ? `预演：胜 · 剩余生命 ${s.preview.playerHpLeft}/${s.preview.playerMaxHp} · ${formatDuelDuration(s.preview.durationMs)}`
+                      : s.preview.timeout
+                        ? `预演：10 分钟未分胜负（判负）`
+                        : `预演：落败 · 幻影剩余 ${s.preview.enemyHpLeft}/${s.preview.enemyMaxHp}`
+                    : ''}
+              </span>
+            </div>
+            {s.isNext && (
+              <button
+                type="button"
+                data-testid="paladin-challenge-btn"
+                className="prog-claim-btn af-action-btn ht-challenge-btn"
+                disabled={t.attemptsLeft <= 0 || Boolean(busyKey)}
+                onClick={() => handleChallenge(s)}
+              >
+                <T1Art kind="skills" id="trial_banner" className="ac-badge-icon" fallback="" alt="" />
+                {busyKey === `challenge:${s.stage}` ? '试炼中…' : t.attemptsLeft > 0 ? `挑战第 ${s.stage} 关` : '本周次数已用完'}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="ac-rack-title">圣骑士誓言（花荣誉勋章升阶；第 n 阶需荣誉位阶 ≥ n-1，满 5 阶即达封顶）</div>
+      <div className="ht-virtue-grid" data-testid="paladin-virtues">
+        {t.virtues.map((v) => (
+          <div key={v.id} data-testid={`paladin-virtue-${v.id}`} className={`ht-virtue-card ${v.rank >= v.maxRank ? 'maxed' : ''}`}>
+            <div className="ht-virtue-head">
+              <T1Art kind="skills" id="honor_medal" className="ht-virtue-icon" fallback="" alt="" />
+              <div className="ht-virtue-title">
+                <strong>{v.name}</strong>
+                <span>
+                  第 {v.rank} / {v.maxRank} 阶
+                </span>
+              </div>
+            </div>
+            <span className="ht-virtue-desc">{v.description}</span>
+            <div className="ht-pips">
+              {Array.from({ length: v.maxRank }, (_, i) => (
+                <span key={i} className={`ht-pip ${i < v.rank ? 'on' : ''}`} />
+              ))}
+            </div>
+            <span className="ht-virtue-stats">
+              当前：{formatPaladinStats(v.stats).join(' · ') || '无'} · 每阶 {formatPaladinStats(v.perRank).join(' · ')}
+            </span>
+            <button
+              type="button"
+              data-testid={`paladin-virtue-btn-${v.id}`}
+              className="prog-claim-btn af-action-btn ht-virtue-btn"
+              disabled={!v.canUpgrade || Boolean(busyKey)}
+              onClick={() => handleVirtue(v)}
+            >
+              <T1Art kind="skills" id="honor_medal" className="ac-badge-icon" fallback="" alt="" />
+              {busyKey === `virtue:${v.id}` ? '宣誓中…' : v.canUpgrade ? `升至第 ${v.nextRank} 阶 · ${v.cost} 勋章` : v.block || '暂不可升阶'}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="ht-rank-row" data-testid="paladin-ranks">
+        {t.honor.ranks.map((r) => (
+          <span key={r.rank} className={`ht-rank-chip ${r.reached ? 'reached' : ''} ${t.honor.rank === r.rank ? 'current' : ''}`}>
+            {r.name} · {r.minMedals}
+          </span>
+        ))}
+      </div>
+      <div className="tv-rule-note">
+        幻影的战斗属性逐项取自内容包里的真实魔物，再乘本周誓约倍率；对决直接跑天空竞技场同一个 hp_combat 沙盒（满血、无临时增益、10 分钟上限），面板预演与实战结算一致。
+        历史最佳第 {t.bestStage} 关 · 全通 {t.weeksFullCleared} 周 · 胜 {t.totalWins} / 负 {t.totalLosses}。
+        {t.lastDuel
+          ? ` 最近一战：第 ${t.lastDuel.stage} 关「${t.lastDuel.opponentName}」${t.lastDuel.won ? `胜，勋章 +${t.lastDuel.medals}` : '负'}。`
+          : ''}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================================
+   矮人地底矿脉 & 精灵林地驿站 (WL-17)
+   并入酒馆面板的两个分页（另有「生涯 → 远期」入口直达）；顶栏胶囊数不变。
+   ============================================================================ */
+
+interface MineForgeUse {
+  actionId: string;
+  name: string;
+  level: number;
+}
+
+interface MineLayerView {
+  layer: number;
+  name: string;
+  description: string;
+  meters: number;
+  ores: Array<{ id: string; name: string; have: number; smelt: MineForgeUse | null }>;
+  byproduct: { id: string; name: string; have: number; forge: MineForgeUse | null };
+  minMiningLevel: number;
+  baseMinutes: number;
+  durationMs: number;
+  vein: {
+    layer: number;
+    oreId: string;
+    oreName: string;
+    grade: MineGradeId;
+    gradeName: string;
+    yieldPct: number;
+    byproductId: string;
+    byproductName: string;
+    byproduct: number;
+  };
+  yield: { oreId: string; oreQty: number; byproductId: string; byproductQty: number; grade: MineGradeId; gradeName: string } | null;
+  reached: boolean;
+  levelOk: boolean;
+  haulsUsed: number;
+  haulsLeft: number;
+  canHaul: boolean;
+  block: string | null;
+}
+
+interface MineUpgradeView {
+  level: number;
+  name: string;
+  maxLevel: number;
+  materials: Array<{ itemId: string; name: string; need: number; have: number }>;
+  canUpgrade: boolean;
+  block: string | null;
+}
+
+interface ElfCommissionBase {
+  slot: number;
+  id: string;
+  client: string;
+  favor: number;
+  gold: number;
+  minTier: number;
+  done: boolean;
+  canDeliver: boolean;
+  fullBoard: boolean;
+  block: string | null;
+}
+
+interface ElfGatherCommissionView extends ElfCommissionBase {
+  kind: 'gather';
+  itemId: string;
+  itemName: string;
+  actionId: string;
+  actionName: string;
+  skillName: string;
+  level: number;
+  qty: number;
+  have: number;
+}
+
+interface ElfExpeditionCommissionView extends ElfCommissionBase {
+  kind: 'expedition';
+  sourceId: ElfExpeditionSourceId;
+  sourceName: string;
+  source: string;
+  artId: string;
+  unit: string;
+  target: number;
+  progress: number;
+  current: number;
+  base: number;
+}
+
+type ElfCommissionView = ElfGatherCommissionView | ElfExpeditionCommissionView;
+
+interface DwarfElfInfo {
+  nowMs: number;
+  bonuses: ElfWaystationBonuses;
+  mine: {
+    dayKey: string;
+    dayEndsAtMs: number;
+    gold: number;
+    miningLevel: number;
+    depth: MineUpgradeView & {
+      meters: number;
+      next: { level: number; name: string; costGold: number; meters: number } | null;
+      steps: Array<{ level: number; name: string; reached: boolean }>;
+    };
+    cart: MineUpgradeView & {
+      capacity: number;
+      speedPct: number;
+      next: { level: number; name: string; capacity: number; speedPct: number; costGold: number } | null;
+      steps: Array<{ level: number; name: string; capacity: number; reached: boolean }>;
+    };
+    layers: MineLayerView[];
+    haul: {
+      layer: number;
+      layerName: string;
+      dayKey: string;
+      startedAtMs: number;
+      returnsAtMs: number;
+      oreId: string;
+      oreName: string;
+      oreQty: number;
+      grade: MineGradeId;
+      gradeName: string;
+      byproductId: string;
+      byproductName: string;
+      byproductQty: number;
+    } | null;
+    haulsPerLayer: number;
+    haulsToday: number;
+    totals: { hauls: number; ore: number; byproduct: number; bonanza: number };
+    lastHaul: {
+      layer: number;
+      layerName: string;
+      oreName: string;
+      oreQty: number;
+      gradeName: string;
+      byproductName: string;
+      byproductQty: number;
+      at: string;
+    } | null;
+  };
+  elf: {
+    dayKey: string;
+    dayEndsAtMs: number;
+    gold: number;
+    boardTier: number;
+    boardTierName: string;
+    favor: {
+      total: number;
+      tier: number;
+      name: string;
+      stats: ElfStats;
+      next: { tier: number; name: string; minFavor: number; stats: ElfStats } | null;
+      progressPct: number;
+      tiers: Array<{ tier: number; name: string; minFavor: number; stats: ElfStats; reached: boolean }>;
+    };
+    commissions: ElfCommissionView[];
+    completedCount: number;
+    boardSize: number;
+    fullBoardBonus: number;
+    sources: Array<{ id: ElfExpeditionSourceId; name: string; source: string; artId: string; unit: string; current: number; base: number }>;
+    caps: Required<ElfStats>;
+    totals: { commissions: number; fullBoards: number; gold: number };
+    lastCommission: { client: string; name: string; favor: number; gold: number; at: string } | null;
+  };
+}
+
+function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChange?: () => void }) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<DwarfElfInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  // 服务器时钟偏移：换日 / 回矿倒计时按「服务器 nowMs + 本地流逝」推算
+  const [clientAnchor, setClientAnchor] = useState(() => Date.now());
+  const [tick, setTick] = useState(() => Date.now());
+  const returnReloadRef = useRef<number | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getDwarfElf();
+      setInfo(res);
+      setClientAnchor(Date.now());
+      return res as DwarfElfInfo;
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载矮人地底矿脉与精灵林地驿站失败');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const hauling = Boolean(info?.mine.haul);
+  useEffect(() => {
+    const t = window.setInterval(() => setTick(Date.now()), hauling ? 1_000 : 15_000);
+    return () => window.clearInterval(t);
+  }, [hauling]);
+
+  const serverNow = info ? info.nowMs + Math.max(0, tick - clientAnchor) : 0;
+  const haul = info?.mine.haul ?? null;
+  const haulLeft = haul ? Math.max(0, haul.returnsAtMs - serverNow) : 0;
+  // 到点后由服务器结算回矿（显式 now）：每趟出车只自动刷新一次
+  useEffect(() => {
+    if (!haul || haulLeft > 0 || loading) return;
+    if (returnReloadRef.current === haul.returnsAtMs) return;
+    returnReloadRef.current = haul.returnsAtMs;
+    void load();
+  }, [haul, haulLeft, loading, load]);
+
+  const runAction = async (key: string, call: () => Promise<any>, onOk: (res: any) => void, failText: string) => {
+    setBusyKey(key);
+    try {
+      const res: any = await call();
+      if (res?.mine?.mine) {
+        setInfo(res.mine);
+        setClientAnchor(Date.now());
+      } else {
+        await load();
+      }
+      onOk(res);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || failText);
+      await load();
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  if (loading && !info) return <div className="prog-empty">正在点亮矿灯、推开林地驿站的木门…</div>;
+  if (!info) return <div className="prog-empty">暂无矮人地底矿脉与精灵林地驿站数据</div>;
+
+  const m = info.mine;
+  const e = info.elf;
+  const dayIndex = mineDayIndexFromKey(m.dayKey) ?? 0;
+  const elfDayIndex = mineDayIndexFromKey(e.dayKey) ?? 0;
+  const mineDayLeft = Math.max(0, m.dayEndsAtMs - serverNow);
+  const elfDayLeft = Math.max(0, e.dayEndsAtMs - serverNow);
+  const haulsMap: Record<string, number> = Object.fromEntries(m.layers.map((l) => [String(l.layer), l.haulsUsed]));
+  const tomorrow = getMineVeinMap(dayIndex + 1);
+  const haulPct = haul
+    ? Math.min(100, Math.max(0, Math.round(((serverNow - haul.startedAtMs) * 100) / Math.max(1, haul.returnsAtMs - haul.startedAtMs))))
+    : 0;
+  const bonusChips = formatElfStats(info.bonuses);
+  const capLine = formatElfStats(e.caps).join(' · ');
+
+  const handleHaul = (l: MineLayerView) =>
+    runAction(
+      `haul:${l.layer}`,
+      () => apiClient.dispatchMineCart({ layer: l.layer, dayKey: m.dayKey }),
+      (res) =>
+        toastRef.current.success(
+          `矿车下到第 ${l.layer} 层「${l.name}」，${formatAirshipDuration(res?.haul?.durationMs ?? l.durationMs)}后带回「${l.vein.oreName}」×${
+            res?.haul?.oreQty ?? l.yield?.oreQty ?? ''
+          }`
+        ),
+      '派矿车失败'
+    );
+  const handleDepth = () =>
+    runAction(
+      'depth',
+      () => apiClient.upgradeMineDepth(),
+      (res) => toastRef.current.success(`矿道掘进到第 ${res?.depth?.depth ?? ''} 层`),
+      '矿道掘进失败'
+    );
+  const handleCart = () =>
+    runAction(
+      'cart',
+      () => apiClient.upgradeMineCart(),
+      (res) => toastRef.current.success(`矿车升级完成：每车 ${res?.cart?.capacity ?? ''} 块`),
+      '矿车升级失败'
+    );
+  const handleCommission = (c: ElfCommissionView) =>
+    runAction(
+      `commission:${c.slot}`,
+      () => apiClient.deliverElfCommission({ slot: c.slot, dayKey: e.dayKey }),
+      (res) => {
+        const r = res?.commission;
+        const gain = (r?.favor ?? c.favor) + (r?.bonusFavor ?? 0);
+        toastRef.current.success(
+          `完成「${c.client}」的委托：林地好感 +${gain}${r?.bonusFavor ? '（今日全清）' : ''}，金币 +${r?.gold ?? c.gold}${r?.tierUp ? '，好感等级提升！' : ''}`
+        );
+      },
+      '交付委托失败'
+    );
+
+  if (view === 'mine') {
+    return (
+      <div className="dm-view" data-testid="mine-view">
+        <div className="hw-hero-card dm-hero-card">
+          <div className="hw-hero-top">
+            <div className="hw-hero-emblem dm-hero-emblem">
+              <T1Art kind="skills" id="dwarf_mine" className="hw-hero-core-icon" fallback="" alt="矮人地底矿脉" />
+            </div>
+            <div className="dm-hero-copy">
+              <div className="ac-hero-title-row">
+                <span className="hw-hero-title" data-testid="mine-depth-name">
+                  矮人地底矿脉 · {m.depth.name}
+                </span>
+                <span className="qm-equipped-pill">矿道与矿车转生永久保留</span>
+              </div>
+              <div className="dm-hero-meta">
+                <span data-testid="mine-status">
+                  {haul
+                    ? `矿车在第 ${haul.layer} 层「${haul.layerName}」· ${haulLeft > 0 ? `还有 ${formatAirshipDuration(haulLeft)}回到井口` : '正在出井…'}`
+                    : `矿车停在井口 · 今日已出车 ${m.haulsToday} 车`}
+                </span>
+                <span className="dm-day-line">
+                  今日 {formatWeatherDayLabel(m.dayKey)} 矿脉 · {formatAcademyCountdown(mineDayLeft)}后换新矿脉 · 竖井深 {m.depth.meters} 米 · 铁匠采矿 Lv.
+                  {m.miningLevel}
+                </span>
+              </div>
+              <div className="ct-rep-bar dm-depth-bar">
+                <div className="ct-rep-bar-fill dm-depth-fill" style={{ width: `${Math.round((m.depth.level * 100) / Math.max(1, m.depth.maxLevel))}%` }} />
+              </div>
+            </div>
+          </div>
+          <div className="ac-wallet-badges dm-wallet-row">
+            <span className="ac-wallet-badge dm-gold-badge">
+              <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+              金币 <strong data-testid="mine-gold">{m.gold}</strong>
+            </span>
+            <span className="ac-wallet-badge dm-cart-badge">
+              <T1Art kind="skills" id="mine_cart" className="ac-badge-icon" fallback="" alt="" />
+              {m.cart.name} · 每车 <strong data-testid="mine-cart-capacity">{m.cart.capacity}</strong> 块
+            </span>
+            <span className="ac-wallet-badge dm-vein-badge">
+              <T1Art kind="skills" id="ore_vein" className="ac-badge-icon" fallback="" alt="" />
+              今日出车 <strong data-testid="mine-hauls-today">{m.haulsToday}</strong> 车
+            </span>
+            <span className="ac-wallet-badge dm-total-badge">
+              <T1Art kind="skills" id="dwarf_mine" className="ac-badge-icon" fallback="" alt="" />
+              累计 {m.totals.hauls} 车 · 矿石 {m.totals.ore} 块 · 极品 {m.totals.bonanza} 次
+            </span>
+          </div>
+        </div>
+
+        {haul && (
+          <div className="dm-haul-banner" data-testid="mine-haul">
+            <T1Art kind="skills" id="mine_cart" className="dm-haul-icon" fallback="" alt="" />
+            <div className="dm-haul-copy">
+              <strong>
+                第 {haul.layer} 层「{haul.layerName}」· {haul.gradeName}「{haul.oreName}」
+              </strong>
+              <span>
+                预计带回「{haul.oreName}」×{haul.oreQty}
+                {haul.byproductQty > 0 ? `、伴生「${haul.byproductName}」×${haul.byproductQty}` : ''} ·{' '}
+                {haulLeft > 0 ? `还有 ${formatAirshipDuration(haulLeft)}回到井口` : '正在出井…'}
+              </span>
+              <div className="ct-rep-bar dm-haul-bar">
+                <div className="ct-rep-bar-fill dm-haul-fill" style={{ width: `${haulPct}%` }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="ac-rack-title">
+          今日矿脉图（东八区每日 0 点换矿脉、全服一致；每层每日 {m.haulsPerLayer} 车；矿石与伴生材料直接入背包，用于锻造冶炼）
+        </div>
+        <div className="dm-layer-grid" data-testid="mine-layers">
+          {m.layers.map((l) => {
+            const probe = planMineHaul(dayIndex, l.layer, m.depth.level, m.cart.level, m.miningLevel, haulsMap, Boolean(haul));
+            const canHaul = probe.ok && l.canHaul;
+            const ore = l.ores.find((o) => o.id === l.vein.oreId) ?? l.ores[0];
+            const next = tomorrow[l.layer - 1];
+            const nextOre = l.ores.find((o) => o.id === next?.oreId);
+            const key = `haul:${l.layer}`;
+            return (
+              <div
+                key={l.layer}
+                data-testid={`mine-layer-${l.layer}`}
+                className={`dm-layer-card ${l.reached ? 'reached' : 'locked'} ${l.reached && l.levelOk ? '' : 'dim'} grade-${mineGradeTone(l.vein.grade)}`}
+              >
+                <div className="dm-layer-head">
+                  <T1ItemIcon itemId={l.vein.oreId} className="dm-ore-icon" fallback="" alt={l.vein.oreName} />
+                  <div className="dm-layer-title">
+                    <strong>
+                      第 {l.layer} 层 · {l.name}
+                    </strong>
+                    <span>
+                      深 {l.meters} 米 · 需采矿 Lv.{l.minMiningLevel} · 今日剩 {l.haulsLeft} / {m.haulsPerLayer} 车
+                    </span>
+                  </div>
+                </div>
+                <span className={`dm-grade-chip ${mineGradeTone(l.vein.grade)}`} data-testid={`mine-grade-${l.layer}`}>
+                  <T1Art kind="skills" id="ore_vein" className="ac-badge-icon" fallback="" alt="" />
+                  {l.vein.oreName} · {formatMineGrade(l.vein.grade)}
+                </span>
+                <span className="dm-layer-desc">{l.description}</span>
+                <span className="dm-layer-meta">
+                  每车「{l.vein.oreName}」×{l.yield?.oreQty ?? 0}
+                  {(l.yield?.byproductQty ?? 0) > 0 ? ` + 伴生「${l.byproduct.name}」×${l.yield?.byproductQty}` : ''} · 出车 {formatAirshipDuration(l.durationMs)}
+                </span>
+                <div className="as-mat-row">
+                  <span className="as-mini-chip">
+                    <T1ItemIcon itemId={ore.id} className="ac-badge-icon" fallback="" alt="" />
+                    {ore.smelt ? `冶炼「${ore.smelt.name}」锻造 Lv.${ore.smelt.level}` : ore.name} · 背包 {ore.have}
+                  </span>
+                  <span className="as-mini-chip">
+                    <T1ItemIcon itemId={l.byproduct.id} className="ac-badge-icon" fallback="" alt="" />
+                    伴生「{l.byproduct.name}」{l.byproduct.forge ? `用于「${l.byproduct.forge.name}」` : ''} · 背包 {l.byproduct.have}
+                  </span>
+                </div>
+                <span className="dm-layer-next">
+                  明日预告：{next ? `${next.gradeName}「${nextOre?.name ?? next.oreId}」` : '—'}
+                </span>
+                <button
+                  type="button"
+                  data-testid={`mine-haul-btn-${l.layer}`}
+                  className="prog-claim-btn af-action-btn dm-haul-btn"
+                  disabled={!canHaul || Boolean(busyKey)}
+                  onClick={() => handleHaul(l)}
+                >
+                  <T1Art kind="skills" id="mine_cart" className="ac-badge-icon" fallback="" alt="" />
+                  {busyKey === key ? '下井中…' : canHaul ? `派矿车下井（剩 ${l.haulsLeft} 车）` : l.block || '暂不可出车'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="ac-rack-title">矿道与矿车（金币 + 真实生活职业成品；矿车在井下时不能升级）</div>
+        <div className="dm-upgrade-grid">
+          <div className="dm-upgrade-card" data-testid="mine-depth">
+            <div className="dm-upgrade-emblem">
+              <T1Art kind="skills" id="dwarf_mine" className="dm-upgrade-icon" fallback="" alt="矿道掘进" />
+            </div>
+            <div className="dm-upgrade-copy">
+              <strong>
+                矿道「{m.depth.name}」第 {m.depth.level} / {m.depth.maxLevel} 层 · 深 {m.depth.meters} 米
+              </strong>
+              {m.depth.next ? (
+                <>
+                  <span className="dm-upgrade-next">
+                    掘进到「{m.depth.next.name}」：可下到第 {m.depth.next.level} 层（深 {m.depth.next.meters} 米）
+                  </span>
+                  <div className="as-mat-row">
+                    <span className={`as-mat-chip ${m.gold >= m.depth.next.costGold ? 'ok' : 'short'}`}>
+                      <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                      {m.depth.next.costGold}
+                    </span>
+                    {m.depth.materials.map((x) => (
+                      <span key={x.itemId} className={`as-mat-chip ${x.have >= x.need ? 'ok' : 'short'}`}>
+                        <T1ItemIcon itemId={x.itemId} className="ac-badge-icon" fallback="" alt="" />
+                        {x.name} {x.have}/{x.need}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <span className="dm-upgrade-next">矿道已掘进到世界之底</span>
+              )}
+              <div className="as-hull-steps">
+                {m.depth.steps.map((d) => (
+                  <span key={d.level} className={`as-hull-step ${d.reached ? 'reached' : ''} ${d.level === m.depth.level ? 'current' : ''}`}>
+                    {d.level} 层 {d.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              data-testid="mine-depth-btn"
+              className="prog-claim-btn af-action-btn dm-depth-btn"
+              disabled={!m.depth.canUpgrade || Boolean(busyKey)}
+              onClick={handleDepth}
+            >
+              <T1Art kind="skills" id="dwarf_mine" className="ac-badge-icon" fallback="" alt="" />
+              {busyKey === 'depth' ? '掘进中…' : m.depth.canUpgrade ? '掘进矿道' : m.depth.block || '暂不可掘进'}
+            </button>
+          </div>
+          <div className="dm-upgrade-card" data-testid="mine-cart">
+            <div className="dm-upgrade-emblem">
+              <T1Art kind="skills" id="mine_cart" className="dm-upgrade-icon" fallback="" alt="矮人矿车" />
+            </div>
+            <div className="dm-upgrade-copy">
+              <strong>
+                「{m.cart.name}」Lv.{m.cart.level} · 每车 {m.cart.capacity} 块 · 出车 -{m.cart.speedPct}%
+              </strong>
+              {m.cart.next ? (
+                <>
+                  <span className="dm-upgrade-next">
+                    下一级「{m.cart.next.name}」：每车 {m.cart.next.capacity} 块 · 出车 -{m.cart.next.speedPct}%
+                  </span>
+                  <div className="as-mat-row">
+                    <span className={`as-mat-chip ${m.gold >= m.cart.next.costGold ? 'ok' : 'short'}`}>
+                      <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                      {m.cart.next.costGold}
+                    </span>
+                    {m.cart.materials.map((x) => (
+                      <span key={x.itemId} className={`as-mat-chip ${x.have >= x.need ? 'ok' : 'short'}`}>
+                        <T1ItemIcon itemId={x.itemId} className="ac-badge-icon" fallback="" alt="" />
+                        {x.name} {x.have}/{x.need}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <span className="dm-upgrade-next">矿车已是最高等级</span>
+              )}
+              <div className="as-hull-steps">
+                {m.cart.steps.map((c) => (
+                  <span key={c.level} className={`as-hull-step ${c.reached ? 'reached' : ''} ${c.level === m.cart.level ? 'current' : ''}`}>
+                    Lv.{c.level} {c.name} · {c.capacity} 块
+                  </span>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              data-testid="mine-cart-btn"
+              className="prog-claim-btn af-action-btn dm-cart-btn"
+              disabled={!m.cart.canUpgrade || Boolean(busyKey)}
+              onClick={handleCart}
+            >
+              <T1Art kind="skills" id="mine_cart" className="ac-badge-icon" fallback="" alt="" />
+              {busyKey === 'cart' ? '改装中…' : m.cart.canUpgrade ? '升级矿车' : m.cart.block || '暂不可升级'}
+            </button>
+          </div>
+        </div>
+        <div className="tv-rule-note">
+          矿脉按东八区日期确定性生成：每层在两种真实矿石中定出今天的矿种与品位（贫 70% / 中 100% / 富 135% / 极品 180%，富矿与极品另带伴生锻造材料），
+          明天的矿脉今天就能预告。矿石与伴生材料直接入背包，可在锻造技能里冶炼成锭或打造装备。矿道深度、矿车与累计记录转生永久保留，
+          但下到深层仍需本世的铁匠采矿等级；转生时在途矿车里的矿石会散去。
+          {m.lastHaul
+            ? ` 最近一车：第 ${m.lastHaul.layer} 层「${m.lastHaul.layerName}」${m.lastHaul.gradeName}，带回「${m.lastHaul.oreName}」×${m.lastHaul.oreQty}${
+                m.lastHaul.byproductQty > 0 ? `、「${m.lastHaul.byproductName}」×${m.lastHaul.byproductQty}` : ''
+              }。`
+            : ''}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ew-view" data-testid="elf-waystation-view">
+      <div className="hw-hero-card ew-hero-card">
+        <div className="hw-hero-top">
+          <div className="hw-hero-emblem ew-hero-emblem">
+            <T1Art kind="skills" id="elf_waystation" className="hw-hero-core-icon" fallback="" alt="精灵林地驿站" />
+          </div>
+          <div className="ew-hero-copy">
+            <div className="ac-hero-title-row">
+              <span className="hw-hero-title" data-testid="elf-favor-name">
+                精灵林地驿站 · {e.favor.name}
+              </span>
+              <span className="qm-equipped-pill">林地好感转生永久保留</span>
+            </div>
+            <div className="ew-hero-meta">
+              <span>
+                林地好感 {e.favor.total}
+                {e.favor.next ? ` · 距「${e.favor.next.name}」还差 ${e.favor.next.minFavor - e.favor.total}` : ' · 好感已满'} · 累计完成委托 {e.totals.commissions} 张（全清{' '}
+                {e.totals.fullBoards} 天）
+              </span>
+              <span className="ew-day-line">
+                今日 {formatWeatherDayLabel(e.dayKey)} 委托板（按「{e.boardTierName}」张贴）· {formatAcademyCountdown(elfDayLeft)}后换新委托
+              </span>
+            </div>
+            <div className="ct-rep-bar ew-favor-bar">
+              <div className="ct-rep-bar-fill ew-favor-fill" style={{ width: `${e.favor.progressPct}%` }} />
+            </div>
+          </div>
+        </div>
+        <div className="ac-wallet-badges ew-wallet-row">
+          <span className="ac-wallet-badge ew-favor-badge">
+            <T1Art kind="skills" id="elf_favor" className="ac-badge-icon" fallback="" alt="" />
+            林地好感 <strong data-testid="elf-favor-total">{e.favor.total}</strong>
+          </span>
+          <span className="ac-wallet-badge ew-board-badge">
+            <T1Art kind="skills" id="forest_commission" className="ac-badge-icon" fallback="" alt="" />
+            今日委托 <strong data-testid="elf-completed">{e.completedCount}</strong> / {e.boardSize}
+          </span>
+          <span className="ac-wallet-badge ew-gold-badge">
+            <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+            金币 <strong>{e.gold}</strong>
+          </span>
+          <span className="ac-wallet-badge ew-bonus-badge" data-testid="elf-bonuses">
+            <T1Art kind="skills" id="elf_waystation" className="ac-badge-icon" fallback="" alt="" />
+            {bonusChips.length > 0 ? bonusChips.join(' · ') : '提升好感解锁采集加成'}
+          </span>
+        </div>
+      </div>
+
+      <div className="ac-rack-title">
+        今日委托板（两张采集委托 + 一张远征委托；全部完成额外 +{e.fullBoardBonus} 好感）
+      </div>
+      <div className="ew-board" data-testid="elf-board">
+        {e.commissions.map((c) => {
+          const probe = planElfCommission(
+            elfDayIndex,
+            e.boardTier,
+            c.slot,
+            e.commissions.filter((x) => x.done).map((x) => x.slot),
+            c.kind === 'gather' ? { [c.itemId]: c.have } : {},
+            c.kind === 'expedition' ? { [c.sourceId]: c.current } : {},
+            c.kind === 'expedition' ? { [c.sourceId]: c.base } : {}
+          );
+          const canDeliver = probe.ok && c.canDeliver;
+          const need = c.kind === 'gather' ? c.qty : c.target;
+          const have = c.kind === 'gather' ? c.have : c.progress;
+          const pct = Math.min(100, Math.round((Math.min(have, need) * 100) / Math.max(1, need)));
+          const key = `commission:${c.slot}`;
+          return (
+            <div
+              key={c.slot}
+              data-testid={`elf-commission-${c.slot}`}
+              className={`ew-commission-card ${c.kind} ${c.done ? 'done' : ''} ${canDeliver ? 'ready' : ''}`}
+            >
+              <div className="ew-commission-head">
+                {c.kind === 'gather' ? (
+                  <T1ItemIcon itemId={c.itemId} className="ew-commission-icon" fallback="" alt={c.itemName} />
+                ) : (
+                  <T1Art kind="skills" id={c.artId} className="ew-commission-icon" fallback="" alt={c.sourceName} />
+                )}
+                <div className="ew-commission-title">
+                  <span className="ew-client">
+                    {c.kind === 'gather' ? '采集委托' : '远征委托'} · {c.client}
+                  </span>
+                  <strong>{c.kind === 'gather' ? `交付「${c.itemName}」×${c.qty}` : `${c.sourceName} ×${c.target} ${c.unit}`}</strong>
+                </div>
+              </div>
+              <span className="ew-commission-meta">
+                {c.kind === 'gather'
+                  ? `来源：${c.skillName}「${c.actionName}」（Lv.${c.level}）· 背包 ${c.have} / ${c.qty}`
+                  : `读数：${c.source}（张贴时 ${c.base} → 现在 ${c.current}）· 进度 ${c.progress} / ${c.target}`}
+              </span>
+              <div className="ct-rep-bar ew-commission-bar">
+                <div className="ct-rep-bar-fill ew-commission-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="as-mat-row">
+                <span className="as-mini-chip ew-reward-chip">
+                  <T1Art kind="skills" id="elf_favor" className="ac-badge-icon" fallback="" alt="" />
+                  好感 +{c.favor}
+                  {c.fullBoard ? ` +${e.fullBoardBonus}（全清）` : ''}
+                </span>
+                <span className="as-mini-chip ew-reward-chip">
+                  <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                  金币 +{c.gold}
+                </span>
+              </div>
+              <button
+                type="button"
+                data-testid={`elf-deliver-btn-${c.slot}`}
+                className="prog-claim-btn af-action-btn ew-deliver-btn"
+                disabled={!canDeliver || Boolean(busyKey)}
+                onClick={() => handleCommission(c)}
+              >
+                <T1Art kind="skills" id="forest_commission" className="ac-badge-icon" fallback="" alt="" />
+                {busyKey === key ? '交付中…' : c.done ? '已完成' : canDeliver ? (c.kind === 'gather' ? '交付委托' : '领取远征委托') : c.block || '暂不可交付'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="ac-rack-title">林地好感等级（永久加成只作用于采集行动；封顶 {capLine}）</div>
+      <div className="ew-tier-grid" data-testid="elf-tiers">
+        {e.favor.tiers.map((t) => {
+          const chips = formatElfStats(t.stats);
+          return (
+            <div key={t.tier} className={`ew-tier-card ${t.reached ? 'reached' : ''} ${t.tier === e.favor.tier ? 'current' : ''}`}>
+              <div className="ew-tier-head">
+                <T1Art kind="skills" id="elf_favor" className="ac-badge-icon" fallback="" alt="" />
+                <strong>{t.name}</strong>
+              </div>
+              <span className="ew-tier-need">好感 {t.minFavor}</span>
+              <span className="ew-tier-stats">
+                {chips.length > 0 ? chips.map((line) => <span key={line}>{line}</span>) : <span>初次来访，暂无加成</span>}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="ac-rack-title">远征读数（直接读取存档里已有的真实记录，不新增计数器）</div>
+      <div className="ew-source-row" data-testid="elf-sources">
+        {e.sources.map((s) => (
+          <span key={s.id} className="as-mini-chip ew-source-chip">
+            <T1Art kind="skills" id={s.artId} className="ac-badge-icon" fallback="" alt="" />
+            {s.source} · {s.name} {s.current} {s.unit}（今日基线 {s.base}）
+          </span>
+        ))}
+      </div>
+      <div className="tv-rule-note">
+        驿站每个东八区日按张贴时的好感等级换一块委托板：采集委托要交出内容包里真实采集行动的产出，远征委托只认委托板张贴后新完成的远征商队返航、
+        星界遗迹勘探或浮空飞艇抵港。林地好感只增不减、转生永久保留，好感等级的采集速度 / 产出效率 / 经验加成逐项封顶。
+        {e.lastCommission
+          ? ` 最近完成：「${e.lastCommission.client}」的委托 ${e.lastCommission.name}，好感 +${e.lastCommission.favor}、金币 +${e.lastCommission.gold}。`
+          : ''}
+      </div>
+    </div>
   );
 }

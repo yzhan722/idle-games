@@ -41,6 +41,33 @@ import {
   getAlchemyCauldronBonuses,
   ensureAstralRelics,
   getAstralRelicsBonuses,
+  ensureSkyForge,
+  getSkyForgeBonuses,
+  ensureHarborDerby,
+  ensureHarborAquarium,
+  getHarborAquariumBonuses,
+  ensureAdventurerAcademy,
+  ensureFestivalCalendar,
+  getAcademyFestivalBonuses,
+  ensureSkyArena,
+  ensureGuildTown,
+  getArenaTownBonuses,
+  ensureBeastRanch,
+  ensureWeatherTower,
+  getBeastRanchBonuses,
+  getWeatherTowerEffect,
+  getWeatherDef,
+  ensureBardTavern,
+  ensureAdventurerChronicle,
+  getTavernChronicleBonuses,
+  getTavernBalladEffect,
+  getTavernBalladDef,
+  ensureAirshipTrade,
+  ensurePaladinTrial,
+  getPaladinTrialBonuses,
+  ensureDwarfMine,
+  ensureElfWaystation,
+  getElfWaystationBonuses,
 } from "./progression2";
 import { enhancementStatMultiplier } from "./enhancement_math";
 import { ensureProgression } from './progression_state';
@@ -570,6 +597,59 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
   if (player.astralRelics) {
     ensureAstralRelics(player);
   }
+  // WL-10 天空锻炉：旧存档没有 skyForge 时保持缺省（首次打开面板再补齐），已有则净化脏档
+  if (player.skyForge) {
+    ensureSkyForge(player);
+  }
+  // WL-11 港湾垂钓大赛 / 海港水族馆：旧存档缺省保持（首次打开面板再补齐）；已有则无参净化，绝不按墙钟翻周
+  if (player.harborDerby) {
+    ensureHarborDerby(player);
+  }
+  if (player.harborAquarium) {
+    ensureHarborAquarium(player);
+  }
+  // WL-12 冒险者学院 / 四季节庆日历：旧存档缺省保持（首次打开面板再补齐）；已有则无参净化，绝不按墙钟结业或翻季
+  if (player.adventurerAcademy) {
+    ensureAdventurerAcademy(player);
+  }
+  if (player.festivalCalendar) {
+    ensureFestivalCalendar(player);
+  }
+  // WL-13 天空竞技场 / 公会城镇：旧存档缺省保持（首次打开面板再补齐）；已有则无参净化，绝不按墙钟翻季或换日
+  if (player.skyArena) {
+    ensureSkyArena(player);
+  }
+  if (player.guildTown) {
+    ensureGuildTown(player);
+  }
+  // WL-14 契约魔兽牧场 / 天候观星塔：旧存档缺省保持（首次打开面板再补齐）；已有则无参净化，绝不按墙钟换日
+  if (player.beastRanch) {
+    ensureBeastRanch(player);
+  }
+  if (player.weatherTower) {
+    ensureWeatherTower(player);
+  }
+  // WL-15 吟游诗人酒馆 / 冒险者编年史：旧存档缺省保持（首次打开面板再补齐）；已有则无参净化，绝不按墙钟换日
+  if (player.bardTavern) {
+    ensureBardTavern(player);
+  }
+  if (player.adventurerChronicle) {
+    ensureAdventurerChronicle(player);
+  }
+  // WL-16 浮空飞艇商路 / 圣骑士团荣誉试炼：旧存档缺省保持（首次打开面板再补齐）；已有则无参净化，绝不按墙钟换日、抵港或翻周
+  if (player.airshipTrade) {
+    ensureAirshipTrade(player);
+  }
+  if (player.paladinTrial) {
+    ensurePaladinTrial(player);
+  }
+  // WL-17 矮人地底矿脉 / 精灵林地驿站：旧存档缺省保持（首次打开面板再补齐）；已有则无参净化，绝不按墙钟换日或回矿
+  if (player.dwarfMine) {
+    ensureDwarfMine(player);
+  }
+  if (player.elfWaystation) {
+    ensureElfWaystation(player);
+  }
   return player;
 }
 
@@ -919,6 +999,19 @@ export function getActionRates(
   const caravanMods = getCaravanTradeBonuses(player);
   const alchemyMods = getAlchemyCauldronBonuses(player);
   const relicMods = getAstralRelicsBonuses(player);
+  const forgeMods = getSkyForgeBonuses(player);
+  const harborMods = getHarborAquariumBonuses(player);
+  const academyMods = getAcademyFestivalBonuses(player);
+  const arenaTownMods = getArenaTownBonuses(player);
+  const beastMods = getBeastRanchBonuses(player);
+  // WL-15 酒馆名望等级 + 已编撰编年史（永久）与正在演唱的吟游诗篇（限时，按 now 判定；离线模拟按结算时刻）
+  const tavernMods = getTavernChronicleBonuses(player);
+  const balladFx = getTavernBalladEffect(player, now);
+  const balladStats = balladFx.stats;
+  // WL-16 圣骑士团荣誉试炼：荣光誓言的永久经验 / 金币（封顶 5%）；攻防血另由 playerBuildExtras 接入战斗
+  const paladinMods = getPaladinTrialBonuses(player);
+  // WL-17 精灵林地驿站：林地好感等级的永久加成（采集速度 / 采集产出效率 / 采集经验，逐项封顶），只作用于采集行动
+  const elfMods = getElfWaystationBonuses(player);
   const lane = isCombatAct ? "combatSpeed" : hasConsumesAct ? "craftSpeed" : "gatherSpeed";
   const buffSpeed = (buffEff as any)[lane] as number;
   const setSpeed = (setBuffs as any)[lane] as number;
@@ -944,6 +1037,46 @@ export function getActionRates(
     : hasConsumesAct
       ? 1 + relicMods.craftSpeedPct / 100
       : 1 + relicMods.gatherSpeedPct / 100;
+  // WL-10 天空锻炉：纹章 + 契约（含代价，可为负）+ 连携，只作用于采集/制作，不影响战斗行动
+  const forgeSpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + forgeMods.craftSpeedPct / 100
+      : 1 + forgeMods.gatherSpeedPct / 100;
+  // WL-11 海港水族馆：收藏进度 + 主展缸共鸣只加速真实钓鱼行动（act_fish_*）
+  const isFishingAct = !isCombatAct && typeof action.id === "string" && action.id.startsWith("act_fish_");
+  const harborFishSpeedMul = isFishingAct ? 1 + harborMods.fishingSpeedPct / 100 : 1;
+  // WL-12 冒险者学院跨职业被动 + 学院徽章 + 四季纪念章：采集 / 制作两条速度线，不影响战斗行动
+  const academySpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + academyMods.craftSpeedPct / 100
+      : 1 + academyMods.gatherSpeedPct / 100;
+  // WL-13 公会城镇设施跨职业被动 + 繁荣等级 + 赛季称号：采集 / 制作两条速度线，不影响战斗行动
+  const townSpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + arenaTownMods.craftSpeedPct / 100
+      : 1 + arenaTownMods.gatherSpeedPct / 100;
+  // WL-14 契约魔兽牧场：出战的采集 / 制造伙伴 + 牧场羁绊，只作用于采集 / 制作两条速度线，不影响战斗行动
+  const beastSpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + beastMods.craftSpeedPct / 100
+      : 1 + beastMods.gatherSpeedPct / 100;
+  // WL-15 吟游诗人酒馆名望 + 冒险者编年史 / 吟游诗篇：只作用于采集 / 制作两条速度线，不影响战斗行动
+  const tavernSpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + tavernMods.craftSpeedPct / 100
+      : 1 + tavernMods.gatherSpeedPct / 100;
+  const balladSpeedMul = isCombatAct
+    ? 1
+    : hasConsumesAct
+      ? 1 + (balladStats.craftSpeedPct || 0) / 100
+      : 1 + (balladStats.gatherSpeedPct || 0) / 100;
+  const isGatherAct = !isCombatAct && !hasConsumesAct;
+  const elfSpeedMul = isGatherAct ? 1 + elfMods.gatherSpeedPct / 100 : 1;
   // MWI tool speed: the equipped tool speeds up its own profession's skilling actions (not combat).
   const toolId = (player.equipment as any)?.tool as string | undefined;
   // 幽灵槽防护：工具已不在背包（被卖/挂单/旧脏档）或已损坏时不提供加速
@@ -963,7 +1096,7 @@ export function getActionRates(
         GATHER_SKILL_BY_PROFESSION,
         CRAFT_SKILL_BY_PROFESSION
       );
-  const speedMul = buffSpeed * atkSpeedMul * setSpeed * repSpeed * toolSpeedMul * mastery.speedMul * affixSpeedMul * hwSpeedMul * caravanSpeedMul * alchemySpeedMul * relicSpeedMul;
+  const speedMul = buffSpeed * atkSpeedMul * setSpeed * repSpeed * toolSpeedMul * mastery.speedMul * affixSpeedMul * hwSpeedMul * caravanSpeedMul * alchemySpeedMul * relicSpeedMul * forgeSpeedMul * harborFishSpeedMul * academySpeedMul * townSpeedMul * beastSpeedMul * tavernSpeedMul * balladSpeedMul * elfSpeedMul;
   const effectiveDurationMs = Math.max(1, Number(action.duration || 0) / (speedMul || 1));
 
   const speedSources: Array<{ label: string; pct: number }> = [];
@@ -981,6 +1114,15 @@ export function getActionRates(
   if (caravanSpeedMul > 1) pushPct(speedSources, "远征商队", caravanSpeedMul);
   if (alchemySpeedMul > 1) pushPct(speedSources, "奇美拉魔药釜", alchemySpeedMul);
   if (relicSpeedMul > 1) pushPct(speedSources, "传世圣物陈列馆", relicSpeedMul);
+  if (forgeSpeedMul !== 1) pushPct(speedSources, "天空锻炉神兵谱与试炼契约", forgeSpeedMul);
+  if (harborFishSpeedMul > 1) pushPct(speedSources, "海港水族馆 · 钓鱼速度", harborFishSpeedMul);
+  if (academySpeedMul > 1) pushPct(speedSources, "冒险者学院与四季纪念章", academySpeedMul);
+  if (townSpeedMul > 1) pushPct(speedSources, "公会城镇设施与繁荣度", townSpeedMul);
+  if (beastSpeedMul > 1) pushPct(speedSources, "契约魔兽牧场", beastSpeedMul);
+  if (tavernSpeedMul > 1) pushPct(speedSources, "酒馆名望与冒险者编年史", tavernSpeedMul);
+  const balladName = balladFx.active && balladFx.balladId ? getTavernBalladDef(balladFx.balladId).name : "";
+  if (balladSpeedMul > 1) pushPct(speedSources, `吟游诗篇 · ${balladName}`, balladSpeedMul);
+  if (elfSpeedMul > 1) pushPct(speedSources, `精灵林地驿站 · ${elfMods.tierName}`, elfSpeedMul);
   if (isCombatAct) pushPct(speedSources, "攻击力", atkSpeedMul);
 
   const { houseLevelForSkill, roomForSkill, HOUSE_EFFICIENCY_PER_LEVEL, HOUSE_XP_PER_LEVEL } =
@@ -1025,6 +1167,32 @@ export function getActionRates(
     if (hasConsumesAct && relicMods.craftEfficiencyPct > 0) {
       efficiencySources.push({ label: "传世圣物 · 泰坦神铸战锤", pct: relicMods.craftEfficiencyPct });
     }
+    if (!hasConsumesAct && forgeMods.gatherEfficiencyPct > 0) {
+      efficiencySources.push({ label: "天空锻炉 · 试炼契约", pct: forgeMods.gatherEfficiencyPct });
+    }
+    if (hasConsumesAct && forgeMods.craftEfficiencyPct > 0) {
+      efficiencySources.push({ label: "天空锻炉 · 星铁战锤", pct: forgeMods.craftEfficiencyPct });
+    }
+    // WL-11 料理品质：烹饪行动精品出锅（效率 → 额外成品）
+    if (action.skillId === "skill_cooking" && harborMods.cookingQualityPct > 0) {
+      efficiencySources.push({ label: "海港水族馆 · 料理品质", pct: harborMods.cookingQualityPct });
+    }
+    // WL-14 出战伙伴：采集 / 制造伙伴的产出效率（多完成一次 = 多一份产出）
+    const beastEffPct = hasConsumesAct ? beastMods.craftEfficiencyPct : beastMods.gatherEfficiencyPct;
+    if (beastEffPct > 0) efficiencySources.push({ label: "契约魔兽 · 出战伙伴", pct: beastEffPct });
+    // WL-14 天候加护：登临过观星塔后，按 now 所在东八区日期的最终天候提升对应生活职业的产出
+    const weatherFx = getWeatherTowerEffect(player, now);
+    const weatherPct = weatherFx.outputPct[String(action.skillId)] || 0;
+    if (weatherPct > 0) efficiencySources.push({ label: `天候 · ${getWeatherDef(weatherFx.weather).name}`, pct: weatherPct });
+    // WL-15 已编撰的编年史章节（永久）与正在演唱的吟游诗篇（限时）：采集 / 制作产出效率
+    const chronicleEffPct = hasConsumesAct ? tavernMods.craftEfficiencyPct : tavernMods.gatherEfficiencyPct;
+    if (chronicleEffPct > 0) efficiencySources.push({ label: "冒险者编年史", pct: chronicleEffPct });
+    const balladEffPct = (hasConsumesAct ? balladStats.craftEfficiencyPct : balladStats.gatherEfficiencyPct) || 0;
+    if (balladEffPct > 0) efficiencySources.push({ label: `吟游诗篇 · ${balladName}`, pct: balladEffPct });
+    // WL-17 林地好感：采集行动的产出效率
+    if (isGatherAct && elfMods.gatherEfficiencyPct > 0) {
+      efficiencySources.push({ label: `精灵林地驿站 · ${elfMods.tierName}`, pct: elfMods.gatherEfficiencyPct });
+    }
     efficiencyPct = efficiencySources.reduce((s, x) => s + x.pct, 0);
   }
 
@@ -1033,14 +1201,28 @@ export function getActionRates(
   const houseXpMul = !isCombatAct && houseLevel > 0 ? 1 + houseLevel * HOUSE_XP_PER_LEVEL * astroForXp.houseBonusMult : 1;
   const hwXpMul = 1 + hwMods.xpGainPct / 100;
   const relicXpMul = 1 + relicMods.xpGainPct / 100;
-  const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul * hwXpMul * relicXpMul;
+  const forgeXpMul = 1 + forgeMods.xpGainPct / 100;
+  const academyXpMul = 1 + academyMods.xpGainPct / 100;
+  const townXpMul = 1 + arenaTownMods.xpGainPct / 100;
+  const beastXpMul = 1 + beastMods.xpGainPct / 100;
+  const tavernXpMul = (1 + tavernMods.xpGainPct / 100) * (1 + (balladStats.xpGainPct || 0) / 100);
+  const paladinXpMul = 1 + paladinMods.xpGainPct / 100;
+  const elfXpMul = isGatherAct ? 1 + elfMods.gatherXpPct / 100 : 1;
+  const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul * hwXpMul * relicXpMul * forgeXpMul * academyXpMul * townXpMul * beastXpMul * tavernXpMul * paladinXpMul * elfXpMul;
   // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成；并接入公会词缀、铭纹共鸣、远征商队、奇美拉魔药釜与传世圣物陈列馆金币倍率
   const affixGoldMul = 1 + affixMods.goldGainPct / 100;
   const hwGoldMul = 1 + hwMods.goldGainPct / 100;
   const caravanGoldMul = 1 + caravanMods.goldGainPct / 100;
   const alchemyGoldMul = 1 + alchemyMods.goldGainPct / 100;
   const relicGoldMul = 1 + relicMods.goldGainPct / 100;
-  const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul * affixGoldMul * hwGoldMul * caravanGoldMul * alchemyGoldMul * relicGoldMul;
+  const forgeGoldMul = 1 + forgeMods.goldGainPct / 100;
+  const harborGoldMul = 1 + harborMods.goldGainPct / 100;
+  const academyGoldMul = 1 + academyMods.goldGainPct / 100;
+  const townGoldMul = 1 + arenaTownMods.goldGainPct / 100;
+  const beastGoldMul = 1 + beastMods.goldGainPct / 100;
+  const tavernGoldMul = (1 + tavernMods.goldGainPct / 100) * (1 + (balladStats.goldGainPct || 0) / 100);
+  const paladinGoldMul = 1 + paladinMods.goldGainPct / 100;
+  const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul * affixGoldMul * hwGoldMul * caravanGoldMul * alchemyGoldMul * relicGoldMul * forgeGoldMul * harborGoldMul * academyGoldMul * townGoldMul * beastGoldMul * tavernGoldMul * paladinGoldMul;
   return { isCombatAct, hasConsumesAct, speedMul, effectiveDurationMs, efficiencyPct, speedSources, efficiencySources, xpMul, goldMul, defGoldMul, setBuffs, repBuffs, prestigeMul, wornToolId: toolApplies ? toolId : undefined };
 }
 
@@ -1057,11 +1239,12 @@ export function getRareFindMultiplier(player: EnhancedPlayerState, pack: Enhance
   const hwMods = getHeritageWorkshopBonuses(player);
   const alchemyMods = getAlchemyCauldronBonuses(player);
   const relicMods = getAstralRelicsBonuses(player);
+  const forgeMods = getSkyForgeBonuses(player);
   // MWI house: 训练场 adds +1% rare find per level (amplified by astro_house_keep).
   const { houseLevelForSkill, HOUSE_RARE_FIND_PER_LEVEL } = require("./houses") as typeof import("./houses");
   const house = houseLevelForSkill(player, "skill_combat") * HOUSE_RARE_FIND_PER_LEVEL * astro.houseBonusMult;
   const tailorBonus = player.activeClassId === "tailor" ? 15 : 0;
-  const total = gear + Number(buffs.rareFind || 0) + house + tailorBonus + astro.rareFindPct + affixMods.rareFindPct + hwMods.rareFindPct + alchemyMods.rareFindPct + relicMods.rareFindPct;
+  const total = gear + Number(buffs.rareFind || 0) + house + tailorBonus + astro.rareFindPct + affixMods.rareFindPct + hwMods.rareFindPct + alchemyMods.rareFindPct + relicMods.rareFindPct + forgeMods.rareFindPct;
   return Math.max(0, 1 + total / 100);
 }
 
@@ -1502,7 +1685,8 @@ function simulateWindow(input: SimulationInput): SimulateResult {
                         getHeritageWorkshopBonuses(next).gatherDoubleChance +
                         getCaravanTradeBonuses(next).gatherDoubleChance +
                         getAlchemyCauldronBonuses(next).gatherDoubleChance +
-                        getAstralRelicsBonuses(next).gatherDoubleChance
+                        getAstralRelicsBonuses(next).gatherDoubleChance +
+                        getSkyForgeBonuses(next).gatherDoubleChance
                     )
                   : 0;
                 const critMult = gatherDoubleChance > 0 && rng() < gatherDoubleChance ? 2 : 1;

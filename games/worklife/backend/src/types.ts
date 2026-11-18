@@ -316,6 +316,51 @@ export type EnhancedPlayerState = PlayerState & {
   // 异世界公会：星界远古遗迹勘探队与传世圣物陈列馆（跨转生永久保留圣物残片、勘探等阶与四大圣物基座）
   astralRelics?: AstralRelicsState;
 
+  // 异世界工坊：天空锻炉星辰神兵谱与公会秘境试炼契约阵（跨转生永久保留四大星辰神兵纹章等阶与已签契约）
+  skyForge?: SkyForgeState;
+
+  // 异世界港湾：港湾垂钓大赛（每周轮换鱼场、周榜段位、奖杯柜与稀有鱼饵配方）
+  harborDerby?: HarborDerbyState;
+
+  // 异世界港湾：海港水族馆收藏图鉴（转生永久保留已收藏鱼种、最佳尺寸与主展缸）
+  harborAquarium?: HarborAquariumState;
+
+  // 异世界学院：冒险者学院进修课程（转生永久保留四系学分、结业记录与进行中的课程）
+  adventurerAcademy?: AdventurerAcademyState;
+
+  // 异世界节庆：四季节庆活动日历（东八区季节、限定委托、节庆代币商店；纪念章转生永久保留）
+  festivalCalendar?: FestivalCalendarState;
+
+  // 异世界竞技：天空竞技场赛季排位（东八区自然月赛季、每日挑战次数；赛季称号与竞技场勋章转生永久保留）
+  skyArena?: SkyArenaState;
+
+  // 异世界领地：公会领地城镇建设（设施等级、繁荣宝箱领取记录，转生永久保留）
+  guildTown?: GuildTownState;
+
+  // 异世界牧场：契约魔兽牧场（首领掉落 + 料理驯服、喂养升阶、出战伙伴；转生永久保留）
+  beastRanch?: BeastRanchState;
+
+  // 异世界天候：天候观星占卜塔（东八区日期确定性天候、占卜明日与祈愿记录；转生永久保留）
+  weatherTower?: WeatherTowerState;
+
+  // 异世界酒馆：吟游诗人酒馆（东八区日轮换来访冒险者、料理 / 饮品招待、点唱诗篇；名望转生永久保留）
+  bardTavern?: BardTavernState;
+
+  // 异世界编年史：冒险者编年史（把存档里真实的里程碑汇编成章节，编撰后解锁称号与小幅永久加成；转生永久保留）
+  adventurerChronicle?: AdventurerChronicleState;
+
+  // 异世界飞艇：浮空飞艇商路（在既有城镇间开辟航线、按东八区日行情买卖特产、航线等级与船体；转生永久保留，货舱清空）
+  airshipTrade?: AirshipTradeState;
+
+  // 异世界骑士团：圣骑士团荣誉试炼（东八区按周轮换的六关试炼、荣誉勋章与封顶的誓言永久加成；转生永久保留）
+  paladinTrial?: PaladinTrialState;
+
+  // 异世界地底：矮人地底矿脉（东八区日确定性矿脉图、矿道深度与矿车，产出直接入背包接入既有锻造材料；转生永久保留，在途矿车清空）
+  dwarfMine?: DwarfMineState;
+
+  // 异世界林地：精灵林地驿站（东八区每日采集 / 远征委托、林地好感与封顶的采集永久加成；转生永久保留）
+  elfWaystation?: ElfWaystationState;
+
   // MWI 任务板：按冷却逐个发放的技能任务、任务代币与代币商店
   tasksState?: TaskState;
 
@@ -583,6 +628,635 @@ export type AstralRelicsState = {
     date: string;
     claimedCount: number;
   };
+};
+
+// ===== 异世界工坊：天空锻炉星辰神兵谱与公会秘境试炼契约阵 (WL-10) =====
+export type StarEmblemId =
+  | "star_blade"
+  | "crescent_bow"
+  | "star_hammer"
+  | "amethyst_staff";
+
+export type GuildTrialPactId =
+  | "ember_vanguard"
+  | "verdant_harvest"
+  | "forge_oath"
+  | "gale_hunt"
+  | "astral_covenant";
+
+export type SkyForgeState = {
+  emblemLevels: Record<StarEmblemId, number>;
+  totalForges: number;
+  activePacts: GuildTrialPactId[];
+  totalPactsSigned: number;
+};
+
+// ===== 异世界港湾：港湾垂钓大赛与海港水族馆收藏图鉴 (WL-11) =====
+export type HarborGroundId = "dawn_pier" | "coral_moon_reef" | "frost_mist_fjord" | "starlit_abyss_port";
+
+export type HarborBaitId = "harbor_worm" | "glow_shrimp" | "sunscale_lure" | "abyss_lantern_lure";
+
+export type HarborSpeciesId =
+  | "fish_river"
+  | "shrimp"
+  | "fish_sea"
+  | "fish_lake"
+  | "fish_deepsea"
+  | "fish_abyss"
+  | "fish_frost"
+  | "fish_lava"
+  | "fish_star"
+  | "fish_dragon"
+  | "sunscale_carp"
+  | "abyss_lantern";
+
+export type HarborDerbyTierId = "none" | "bronze" | "silver" | "gold" | "legend";
+
+export type HarborTrophyTierId = Exclude<HarborDerbyTierId, "none">;
+
+export type HarborTankThemeId =
+  | "stream_shallows"
+  | "coral_harbor"
+  | "frost_grotto"
+  | "ember_starlight"
+  | "sunscale_palace";
+
+export type HarborCatchRecord = {
+  speciesId: HarborSpeciesId;
+  sizeCm: number;
+  score: number;
+  baitId: HarborBaitId;
+  featured: boolean;
+  trophySize: boolean;
+  at: string;
+};
+
+export type HarborDerbySettlement = {
+  weekKey: string;
+  groundId: HarborGroundId;
+  tier: HarborDerbyTierId;
+  weeklyScore: number;
+  entries: number;
+  trophyGranted: HarborTrophyTierId | null;
+  unlockedRecipes: HarborBaitId[];
+  goldReward: number;
+  baitReward: Partial<Record<HarborBaitId, number>>;
+};
+
+export type HarborDerbyState = {
+  /** 本周周一日期（东八区业务周，YYYY-MM-DD）；仅显式传入 now 时才会翻周结算。 */
+  weekKey: string;
+  /** 本周开始时的累计钓鱼行动数（stats.actionsById 中 act_fish_* 之和）。 */
+  fishingBaseline: number;
+  entriesUsed: number;
+  weeklyCatches: HarborCatchRecord[];
+  baitStock: Record<HarborBaitId, number>;
+  knownRecipes: HarborBaitId[];
+  trophies: Record<HarborTrophyTierId, number>;
+  totalEntries: number;
+  bestWeeklyScore: number;
+  lastSettlement: HarborDerbySettlement | null;
+};
+
+export type HarborAquariumState = {
+  species: Partial<Record<HarborSpeciesId, { count: number; bestSizeCm: number }>>;
+  featuredTank: HarborTankThemeId | null;
+};
+
+// ===== 异世界学院与节庆：冒险者学院进修课程与四季节庆活动日历 (WL-12) =====
+export type AcademyDepartmentId = "gathering" | "crafting" | "tactics" | "commerce";
+
+export type AcademyCourseId =
+  | "field_survey"
+  | "spirit_botany"
+  | "forge_practicum"
+  | "master_artisan"
+  | "squire_drills"
+  | "dragon_tactics"
+  | "ledger_basics"
+  | "guild_economics";
+
+export type FestivalSeasonId = "spring" | "summer" | "autumn" | "winter";
+
+export type FestivalCommissionKind = "deliver" | "actions" | "kills";
+
+export type FestivalCommissionId =
+  | "spring_rice_offering"
+  | "spring_planting_drive"
+  | "spring_timber_frames"
+  | "spring_loom_ribbons"
+  | "summer_fish_feast"
+  | "summer_net_casting"
+  | "summer_cool_drinks"
+  | "summer_seafood_platter"
+  | "autumn_bread_basket"
+  | "autumn_livestock_fair"
+  | "autumn_honey_jars"
+  | "autumn_vegetable_stew"
+  | "winter_hunt_patrol"
+  | "winter_hearty_stew"
+  | "winter_healing_supply"
+  | "winter_iron_chains";
+
+export type FestivalShopItemKind = "gold" | "items" | "credits" | "keepsake";
+
+export type FestivalShopItemId =
+  | "festival_gold_pouch"
+  | "spring_seed_bundle"
+  | "spring_academy_letter"
+  | "spring_keepsake"
+  | "summer_catch_bundle"
+  | "summer_academy_letter"
+  | "summer_keepsake"
+  | "autumn_harvest_bundle"
+  | "autumn_academy_letter"
+  | "autumn_keepsake"
+  | "winter_hunt_bundle"
+  | "winter_academy_letter"
+  | "winter_keepsake";
+
+export type AcademyActiveCourse = {
+  courseId: AcademyCourseId;
+  /** 报名时刻（ISO）；结业时刻恒为 startedAt + 课程时长（净化时重算，防篡改）。 */
+  startedAt: string;
+  endsAt: string;
+};
+
+export type AcademyGraduationRecord = {
+  courseId: AcademyCourseId;
+  department: AcademyDepartmentId;
+  credits: number;
+  /** 结业时刻 = 课程 endsAt（不是玩家打开面板的时刻）。 */
+  at: string;
+  departmentTier: number;
+  badgeTier: number;
+};
+
+export type AdventurerAcademyState = {
+  credits: Record<AcademyDepartmentId, number>;
+  completedCourses: Partial<Record<AcademyCourseId, number>>;
+  /** 进修席位 1：同一时间只修读 1 门；仅显式传入 now 且到点时才结业发放学分。 */
+  activeCourse: AcademyActiveCourse | null;
+  totalEnrollments: number;
+  totalGraduations: number;
+  lastGraduation: AcademyGraduationRecord | null;
+};
+
+export type FestivalRolloverRecord = {
+  seasonKey: string;
+  claims: number;
+  tokensConverted: number;
+  goldConverted: number;
+};
+
+export type FestivalCalendarState = {
+  /** 当前节庆季节键（东八区，YYYY-spring|summer|autumn|winter）；仅显式传入 now 时才会翻季。 */
+  seasonKey: string;
+  /** 本季节庆代币（翻季时按比率折算金币后清零）。 */
+  tokens: number;
+  claims: Partial<Record<FestivalCommissionId, number>>;
+  /** 本季计数类委托（行动 / 击杀）在季初的计数器基线。 */
+  baselines: Partial<Record<FestivalCommissionId, number>>;
+  purchases: Partial<Record<FestivalShopItemId, number>>;
+  /** 四季纪念章（转生永久保留）。 */
+  keepsakes: FestivalSeasonId[];
+  totalTokensEarned: number;
+  totalClaims: number;
+  lastRollover: FestivalRolloverRecord | null;
+};
+
+// ===== 异世界竞技与领地：天空竞技场赛季排位与公会领地城镇建设 (WL-13) =====
+export type ArenaDivisionId = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "sky_king";
+
+export type ArenaArchetypeId = "iron_wall" | "gale" | "berserker" | "arcane" | "knight" | "colossus";
+
+export type TownFacilityId =
+  | "town_hall"
+  | "artisan_row"
+  | "harvest_market"
+  | "training_grounds"
+  | "guild_bank"
+  | "sage_library";
+
+export type ArenaSettlementRecord = {
+  /** 结算的赛季键（东八区自然月，YYYY-MM）。 */
+  seasonKey: string;
+  /** 该赛季击败的擂主数（= 最高梯级）。 */
+  rung: number;
+  division: ArenaDivisionId | null;
+  medals: number;
+  /** 本次结算首次解锁的赛季称号（已拥有则为 null）。 */
+  newTitle: ArenaDivisionId | null;
+};
+
+export type ArenaDuelRecord = {
+  seasonKey: string;
+  rung: number;
+  championName: string;
+  won: boolean;
+  /** true = 10 分钟未分胜负（按落败计）。 */
+  timeout: boolean;
+  playerHpLeft: number;
+  playerMaxHp: number;
+  enemyHpLeft: number;
+  enemyMaxHp: number;
+  durationMs: number;
+  gold: number;
+  at: string;
+};
+
+export type SkyArenaState = {
+  /** 当前赛季键（东八区自然月 YYYY-MM）；仅显式传入 now 时才会翻季结算。 */
+  seasonKey: string;
+  /** 本赛季已击败的擂主数（0~30），下一位挑战对象为 rung + 1。 */
+  rung: number;
+  /** 生涯最高梯级。 */
+  bestRung: number;
+  /** 每日挑战次数所属的东八区日期（YYYY-MM-DD）；仅显式传入 now 时才会换日重置。 */
+  dayKey: string;
+  attemptsUsed: number;
+  seasonWins: number;
+  seasonLosses: number;
+  totalWins: number;
+  totalLosses: number;
+  /** 可用竞技场勋章（赛季结算发放，用于城镇「荣耀演武场」升级；转生保留）。 */
+  medals: number;
+  totalMedalsEarned: number;
+  /** 已解锁的赛季称号（转生永久保留，最高称号生效）。 */
+  titles: ArenaDivisionId[];
+  seasonsSettled: number;
+  lastSettlement: ArenaSettlementRecord | null;
+  lastDuel: ArenaDuelRecord | null;
+};
+
+export type GuildTownUpgradeRecord = {
+  facilityId: TownFacilityId;
+  level: number;
+  at: string;
+};
+
+export type GuildTownState = {
+  /** 各设施等级（0~5）；议事厅等级是其余设施的等级上限。 */
+  facilities: Record<TownFacilityId, number>;
+  /** 已领取的繁荣宝箱（繁荣等级 1~5）。 */
+  chestsClaimed: number[];
+  totalUpgrades: number;
+  goldInvested: number;
+  lastUpgrade: GuildTownUpgradeRecord | null;
+};
+
+// ===== 异世界牧场与天候：契约魔兽牧场与天候观星占卜塔 (WL-14) =====
+export type ContractBeastId = "bloom_bee" | "echo_bat" | "mire_toad" | "frostmane_wolf" | "ember_hound" | "chrono_wyrm";
+
+export type BeastRoleId = "gather" | "craft" | "combat";
+
+export type WeatherId = "sunny" | "rain" | "fog" | "storm" | "aurora";
+
+export type ContractBeastRecord = {
+  /** 累计喂养经验（等级由经验表推导，0 = Lv.1，满级 Lv.10）。 */
+  xp: number;
+  /** 累计喂食的料理份数。 */
+  fed: number;
+  tamedAt: string;
+};
+
+export type BeastRanchEventRecord = {
+  kind: "tame" | "feed" | "assign";
+  beastId: ContractBeastId;
+  level: number;
+  foodId: string | null;
+  qty: number;
+  xpGained: number;
+  at: string;
+};
+
+export type BeastRanchState = {
+  beasts: Partial<Record<ContractBeastId, ContractBeastRecord>>;
+  /** 出战伙伴（只有它的职能加成生效）；null = 未指派。 */
+  activeBeastId: ContractBeastId | null;
+  totalTamed: number;
+  totalFeedings: number;
+  lastEvent: BeastRanchEventRecord | null;
+};
+
+export type WeatherForecastRecord = {
+  /** 占卜的目标日（东八区 YYYY-MM-DD）。 */
+  dayKey: string;
+  /** 该日的天然天候（由日期确定性生成）。 */
+  natural: WeatherId;
+  /** 祈愿的天候（未祈愿为 null）。 */
+  wish: WeatherId | null;
+  /** 祈愿时的成功率（%）。 */
+  chancePct: number;
+  /** 祈愿是否应验（应验则该日天候 = 祈愿天候）。 */
+  granted: boolean;
+  /** 该日最终天候。 */
+  final: WeatherId;
+  at: string;
+};
+
+export type WeatherHistoryRecord = {
+  dayKey: string;
+  weather: WeatherId;
+  wished: boolean;
+};
+
+export type WeatherTowerState = {
+  /** 观星塔所在的东八区日期（YYYY-MM-DD）；仅显式传入 now 时才会换日。 */
+  dayKey: string;
+  /** 今日 / 明日的占卜记录（最多 2 条）。 */
+  forecasts: WeatherForecastRecord[];
+  /** 近 7 日天候记录（换日时归档）。 */
+  history: WeatherHistoryRecord[];
+  totalDivinations: number;
+  totalWishes: number;
+  wishesGranted: number;
+  dustSpent: number;
+};
+
+// ===== 异世界酒馆与编年史：吟游诗人酒馆与冒险者编年史 (WL-15) =====
+export type TavernVisitorId =
+  | "star_knight"
+  | "dawn_ranger"
+  | "verdant_mage"
+  | "crimson_valkyrie"
+  | "jade_alchemist"
+  | "moon_healer"
+  | "fox_wanderer"
+  | "cat_cavalier";
+
+export type TavernBalladId = "forest_wander" | "forge_hearth" | "sage_chant" | "golden_toast" | "hero_epic";
+
+export type ChronicleChapterId =
+  | "slayer_saga"
+  | "expedition_journal"
+  | "harbor_log"
+  | "academy_annals"
+  | "arena_epic"
+  | "beast_bond"
+  | "legend_finale";
+
+export type ChronicleMetricId =
+  | "boss_kinds"
+  | "boss_kills"
+  | "relic_surveys"
+  | "curator_rank"
+  | "caravan_runs"
+  | "derby_trophies"
+  | "derby_best_tier"
+  | "aquarium_species"
+  | "academy_graduations"
+  | "academy_credits"
+  | "festival_keepsakes"
+  | "arena_best_rung"
+  | "arena_wins"
+  | "arena_titles"
+  | "beasts_tamed"
+  | "beast_top_level"
+  | "ranch_bond_levels"
+  | "chapters_inscribed"
+  | "tavern_fame"
+  | "prestige_count";
+
+export type TavernActiveBallad = {
+  balladId: TavernBalladId;
+  /** 点唱时刻（ISO）；结束时刻恒为 startedAt + 诗篇时长（净化时重算，防篡改）。 */
+  startedAt: string;
+  endsAt: string;
+};
+
+export type TavernServeRecord = {
+  visitorId: TavernVisitorId;
+  dayKey: string;
+  dishId: string | null;
+  drinkId: string | null;
+  matchedDish: boolean;
+  matchedDrink: boolean;
+  fame: number;
+  tipGold: number;
+  at: string;
+};
+
+export type BardTavernState = {
+  /** 酒馆所在的东八区日期（YYYY-MM-DD）；仅显式传入 now 时才会换日（重置当日招待与点唱次数）。 */
+  dayKey: string;
+  /** 今日已招待的来访冒险者（每位每日 1 次）。 */
+  served: TavernVisitorId[];
+  /** 今日已点唱的诗篇次数。 */
+  balladsToday: number;
+  /** 正在演唱的诗篇（限时增益；过期后保留到下次点唱前，仅用于展示）。 */
+  activeBallad: TavernActiveBallad | null;
+  /** 累计酒馆名望（只增不减，决定名望等级与永久加成；转生保留）。 */
+  fame: number;
+  totalServed: number;
+  totalPerfect: number;
+  totalBallads: number;
+  tipsEarned: number;
+  lastServe: TavernServeRecord | null;
+};
+
+export type ChronicleInscriptionRecord = {
+  chapterId: ChronicleChapterId;
+  at: string;
+};
+
+export type AdventurerChronicleState = {
+  /** 已编撰的章节（编撰时校验真实里程碑；编撰后永久保留，解锁称号与小幅永久加成）。 */
+  inscribed: ChronicleChapterId[];
+  inscribedAt: Partial<Record<ChronicleChapterId, string>>;
+  /** 佩戴的编年史称号（必须是已编撰章节的称号；null = 未佩戴）。 */
+  equippedTitle: ChronicleChapterId | null;
+  lastInscription: ChronicleInscriptionRecord | null;
+};
+
+// ===== 异世界飞艇与骑士团：浮空飞艇商路与圣骑士团荣誉试炼 (WL-16) =====
+export type AirshipTownId = "guild_town" | "frostport" | "emberoasis" | "starfallspire";
+
+export type AirshipGoodId =
+  | "cheese_wheel"
+  | "dyed_cloth"
+  | "fish_deepsea"
+  | "snow_pelt"
+  | "ingot_4"
+  | "obsidian_chunk"
+  | "crystal_4"
+  | "tea_spirit";
+
+export type AirshipRouteId =
+  | "guild_frostport"
+  | "guild_emberoasis"
+  | "guild_starfall"
+  | "frost_ember"
+  | "ember_starfall"
+  | "starfall_frost";
+
+export type PaladinVirtueId = "valor" | "aegis" | "vigor" | "glory";
+
+export type PaladinThemeId = "bulwark" | "blade" | "radiance" | "gale";
+
+export type AirshipRouteRecord = {
+  /** 航线经验（每趟载货航程 1 + 每 10 件货 1 点），决定航线等级。 */
+  xp: number;
+  /** 经此航线完成的航程数。 */
+  voyages: number;
+  openedAt: string;
+};
+
+export type AirshipVoyage = {
+  routeId: AirshipRouteId;
+  from: AirshipTownId;
+  to: AirshipTownId;
+  departedAt: string;
+  /** 抵港时刻恒为 departedAt + 航程时长（净化时按航线等级与船体重算，防篡改）。 */
+  arrivesAt: string;
+  /** 起航时货舱里的货物件数（抵港时折算航线经验）。 */
+  cargoUnits: number;
+};
+
+export type AirshipSaleRecord = {
+  goodId: AirshipGoodId;
+  townId: AirshipTownId;
+  qty: number;
+  gold: number;
+  profit: number;
+  at: string;
+};
+
+export type AirshipArrivalRecord = {
+  routeId: AirshipRouteId;
+  to: AirshipTownId;
+  cargoUnits: number;
+  xpGained: number;
+  at: string;
+};
+
+export type AirshipTradeState = {
+  /** 集市所在的东八区日期（YYYY-MM-DD）；仅显式传入 now 时才会换日（补货、清空今日购入量）。 */
+  dayKey: string;
+  /** 飞艇停靠的城镇（航行中为出发港）。 */
+  location: AirshipTownId;
+  /** 正在进行的航程；仅显式传入 now 且到点时才会抵港。 */
+  voyage: AirshipVoyage | null;
+  /** 最近一次抵港所走的航线（在该港卖货享受航线等级加成）。 */
+  arrivedVia: AirshipRouteId | null;
+  hullLevel: number;
+  /** 已开辟的航线。 */
+  routes: Partial<Record<AirshipRouteId, AirshipRouteRecord>>;
+  /** 货舱里的特产件数。 */
+  cargo: Partial<Record<AirshipGoodId, number>>;
+  /** 货舱里各特产的购入总成本（卖出时按件数比例摊销，用于计算盈亏）。 */
+  cargoCost: Partial<Record<AirshipGoodId, number>>;
+  /** 今日在产地已购入的件数（每种每日 40 件存货）。 */
+  boughtToday: Partial<Record<AirshipGoodId, number>>;
+  totalVoyages: number;
+  totalSales: number;
+  totalSpent: number;
+  /** 累计已实现盈亏（可为负）。 */
+  totalProfit: number;
+  lastSale: AirshipSaleRecord | null;
+  lastArrival: AirshipArrivalRecord | null;
+};
+
+export type PaladinDuelRecord = {
+  weekKey: string;
+  stage: number;
+  opponentName: string;
+  won: boolean;
+  timeout: boolean;
+  playerHpLeft: number;
+  playerMaxHp: number;
+  enemyHpLeft: number;
+  enemyMaxHp: number;
+  durationMs: number;
+  medals: number;
+  at: string;
+};
+
+export type PaladinTrialState = {
+  /** 本周周键（周一的东八区日期）；仅显式传入 now 时才会翻周（重置通关进度与挑战次数）。 */
+  weekKey: string;
+  /** 本周已通关的关卡（从第 1 关起连续）。 */
+  cleared: number[];
+  attemptsUsed: number;
+  /** 可花费的荣誉勋章。 */
+  medals: number;
+  /** 累计获得的荣誉勋章（只增不减，决定荣誉位阶）。 */
+  totalMedals: number;
+  /** 四项誓言的阶数（各 0 ~ 5 阶，永久加成封顶）。 */
+  virtues: Record<PaladinVirtueId, number>;
+  bestStage: number;
+  weeksFullCleared: number;
+  totalWins: number;
+  totalLosses: number;
+  lastDuel: PaladinDuelRecord | null;
+};
+
+// ===== 异世界地底与林地：矮人地底矿脉与精灵林地驿站 (WL-17) =====
+export type MineGradeId = "lean" | "common" | "rich" | "bonanza";
+
+export type ElfExpeditionSourceId = "caravan_runs" | "relic_surveys" | "airship_voyages";
+
+export type DwarfMineHaul = {
+  /** 下井的矿层（1 ~ 6，不超过矿道深度）。 */
+  layer: number;
+  /** 出车当天（东八区）的矿脉日期键：回矿时按该日矿脉品位与当前矿车结算产出。 */
+  dayKey: string;
+  startedAt: string;
+  /** 回矿时刻恒为 startedAt + 本层出车时长（净化时按矿车等级重算，防篡改）。 */
+  returnsAt: string;
+};
+
+export type DwarfMineHaulRecord = {
+  layer: number;
+  oreId: string;
+  oreQty: number;
+  grade: MineGradeId;
+  byproductId: string;
+  byproductQty: number;
+  at: string;
+};
+
+export type DwarfMineState = {
+  /** 矿脉图所在的东八区日期（YYYY-MM-DD）；仅显式传入 now 时才会换日（新矿脉、补满各层储量）。 */
+  dayKey: string;
+  /** 矿道深度 = 能下到的最深矿层（1 ~ 6）。 */
+  depth: number;
+  cartLevel: number;
+  /** 今日各层已出车次数（键为层号字符串，每层每日 2 车）。 */
+  haulsToday: Record<string, number>;
+  /** 正在井下的矿车；仅显式传入 now 且到点时才会回矿入背包。 */
+  haul: DwarfMineHaul | null;
+  totalHauls: number;
+  totalOre: number;
+  totalByproduct: number;
+  bonanzaHauls: number;
+  lastHaul: DwarfMineHaulRecord | null;
+};
+
+export type ElfCommissionRecord = {
+  slot: number;
+  commissionId: string;
+  /** 本次获得的林地好感（含全清奖励）。 */
+  favor: number;
+  gold: number;
+  at: string;
+};
+
+export type ElfWaystationState = {
+  /** 委托板所在的东八区日期；仅显式传入 now 时才会换日（重新张贴委托板）。 */
+  dayKey: string;
+  /** 今日委托板张贴时的林地好感等级（决定委托池，当天不变）。 */
+  boardTier: number;
+  /** 今日已完成的委托栏位（0、1 为采集委托，2 为远征委托）。 */
+  completed: number[];
+  /** 今日委托板张贴时读到的远征计数（远征委托只认此后新完成的次数）。 */
+  expeditionBase: Record<ElfExpeditionSourceId, number>;
+  /** 累计林地好感（只增不减，决定好感等级与永久加成）。 */
+  favor: number;
+  totalCommissions: number;
+  fullBoards: number;
+  totalGold: number;
+  lastCommission: ElfCommissionRecord | null;
 };
 
 // ===== 转生系统 =====
