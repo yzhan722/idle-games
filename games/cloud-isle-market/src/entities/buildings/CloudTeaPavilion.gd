@@ -8,10 +8,12 @@ class_name CloudTeaPavilion
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
 ## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font, ZERO Emoji, ZERO SVG).
 
-const SLOT_X := 926.9
-const BASE_SPRITE_SCALE := 0.45
-const TARGET_VISUAL_W := 50.40 # 112.0 * 0.45
-const TARGET_VISUAL_H := 46.80 # 104.0 * 0.45
+## CI-11: Island 1 re-slotted to 7 buildings (incl. `DairyWorkshop_1`), every adjacent clear gap >= 28px
+const SLOT_X := 950.7
+const BASE_SPRITE_SCALE := 0.355
+const TARGET_VISUAL_W := 39.76 # 112.0 * 0.355
+const TARGET_VISUAL_H := 36.92 # 104.0 * 0.355
+const BADGE_Y := -TARGET_VISUAL_H - 25.0
 
 var island_idx: int = 1
 var tex_pavilion: Texture2D
@@ -54,15 +56,17 @@ func _ready() -> void:
 
 	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
 	level_label.name = "TeaPavilionLevelLabel"
+	# CI-11: own LabelSettings copy -> greying the unbuilt tea pavilion label never recolours the shared `Lv.` labels
+	level_label.label_settings = level_label.label_settings.duplicate() as LabelSettings
 	level_label.position = Vector2(-34.0, 2.0)
 	level_label.custom_minimum_size = Vector2(68.0, 20.0)
 	add_child(level_label)
 
 	status_badge_label = EconomyConfig.create_pixel_label("★茶坊·龙井茗茶", 13, Color("#FFE066"), true)
 	status_badge_label.name = "TeaPavilionBadgeLabel"
-	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
+	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
 	status_badge_label.scale = Vector2(0.74, 0.74)
-	status_badge_label.position = Vector2(-44.0, -TARGET_VISUAL_H - 25.0)
+	status_badge_label.position = Vector2(-36.0, BADGE_Y)
 	status_badge_label.z_index = EconomyConfig.Z_CARRY_EMOTE
 	status_badge_label.z_as_relative = false
 	add_child(status_badge_label)
@@ -171,8 +175,17 @@ func _sync_labels_and_tint() -> void:
 			status_badge_label.text = "★茶坊(" + str(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD) + "G)"
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#CBD5E1")
+	if status_badge_label != null:
+		# CI-11: keep the badge centred on its real text width so it never spills over the dairy / mortar badges
+		status_badge_label.size = Vector2.ZERO
+		status_badge_label.position = Vector2(-status_badge_label.size.x * status_badge_label.scale.x * 0.5, BADGE_Y)
 	if body_sprite != null:
 		body_sprite.modulate = Color.WHITE if built else Color(0.74, 0.80, 0.86, 0.72)
+
+func get_badge_local_rect() -> Rect2:
+	if status_badge_label == null:
+		return Rect2()
+	return Rect2(position + status_badge_label.position, status_badge_label.size * status_badge_label.scale)
 
 func _process(delta: float) -> void:
 	var isl_open := GameManager != null and bool(GameManager.unlocked_islands.get(island_idx, false))
@@ -203,12 +216,12 @@ func _draw() -> void:
 	# Jade-amber Tea Serenity Aura (`茗香清心光环`) & rising fragrant pixel tea steam motes
 	var pulse := 0.86 + 0.14 * sin(anim_time * 2.5)
 	var glow_a := 0.12 * pulse + (0.18 * (brew_flash_timer / 0.50) if brew_flash_timer > 0.0 else 0.0)
-	draw_circle(Vector2(0.0, -20.0), 16.0, Color(0.62, 0.96, 0.72, glow_a))
+	draw_circle(Vector2(0.0, -15.0), 12.0, Color(0.62, 0.96, 0.72, glow_a))
 
 	for mi in range(3):
 		var phase := fmod(anim_time * 0.58 + float(mi) * 0.33, 1.0)
-		var mx := -8.0 + float(mi) * 5.0 + sin(anim_time * 2.2 + float(mi)) * 1.5
-		var my := -36.0 - phase * 15.0
+		var mx := -6.0 + float(mi) * 4.0 + sin(anim_time * 2.2 + float(mi)) * 1.5
+		var my := -29.0 - phase * 12.0
 		var ma := (1.0 - phase) * 0.48
 		draw_rect(Rect2(roundf(mx), roundf(my), 2.5, 2.5), Color(0.86, 1.0, 0.88, ma), true)
 

@@ -8,9 +8,10 @@ class_name CloudWindmillBakery
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
 ## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font, ZERO Emoji, ZERO SVG).
 
-const SLOT_X := 459.4
-const TARGET_VISUAL_W := 64.96 # 116.0 * 0.56
-const TARGET_VISUAL_H := 60.48 # 108.0 * 0.56
+## CI-9: Island 2 re-slotted to 6 buildings (with `ChefTastingPavilion_2`), every adjacent clear gap >= 28px
+const SLOT_X := 397.9
+const TARGET_VISUAL_W := 43.50 # 116.0 * 0.375
+const TARGET_VISUAL_H := 40.50 # 108.0 * 0.375
 
 var island_idx: int = 2
 var tex_windmill: Texture2D
@@ -25,7 +26,7 @@ var status_badge_label: Label
 
 var anim_time: float = 0.0
 var bake_flash_timer: float = 0.0
-var base_scale_vec: Vector2 = Vector2(0.56, 0.56)
+var base_scale_vec: Vector2 = Vector2(0.375, 0.375)
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_BUILDING
@@ -61,7 +62,7 @@ func _ready() -> void:
 	status_badge_label.name = "WindmillBadgeLabel"
 	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
 	status_badge_label.scale = Vector2(0.76, 0.76)
-	status_badge_label.position = Vector2(-45.0, -TARGET_VISUAL_H - 27.0)
+	status_badge_label.position = Vector2(-45.0, -TARGET_VISUAL_H - 39.0)
 	status_badge_label.z_index = EconomyConfig.Z_CARRY_EMOTE
 	status_badge_label.z_as_relative = false
 	add_child(status_badge_label)

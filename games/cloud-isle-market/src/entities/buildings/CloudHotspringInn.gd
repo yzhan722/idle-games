@@ -8,9 +8,10 @@ class_name CloudHotspringInn
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
 ## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font, ZERO Emoji).
 
-const SLOT_X := 1714.7
-const TARGET_VISUAL_W := 64.96 # 116.0 * 0.56
-const TARGET_VISUAL_H := 60.48 # 108.0 * 0.56
+## CI-10: Island 3 re-slotted to 6 buildings (with `LighthouseHarbor_3`), every adjacent clear gap >= 28px
+const SLOT_X := 1672.3
+const TARGET_VISUAL_W := 42.92 # 116.0 * 0.37
+const TARGET_VISUAL_H := 39.96 # 108.0 * 0.37
 
 var island_idx: int = 3
 var tex_hotspring: Texture2D
@@ -25,7 +26,7 @@ var status_badge_label: Label
 
 var anim_time: float = 0.0
 var brew_flash_timer: float = 0.0
-var base_scale_vec: Vector2 = Vector2(0.56, 0.56)
+var base_scale_vec: Vector2 = Vector2(0.37, 0.37)
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_BUILDING
@@ -53,12 +54,15 @@ func _ready() -> void:
 
 	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
 	level_label.name = "HotspringLevelLabel"
+	# Own LabelSettings copy: tinting this label must never recolour other shared `Lv.` labels
+	level_label.label_settings = level_label.label_settings.duplicate() as LabelSettings
 	level_label.position = Vector2(-34.0, 2.0)
 	level_label.custom_minimum_size = Vector2(68.0, 20.0)
 	add_child(level_label)
 
 	status_badge_label = EconomyConfig.create_pixel_label("★汤屋·艾草暖汤", 13, Color("#FFE066"), true)
 	status_badge_label.name = "HotspringBadgeLabel"
+	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
 	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
 	status_badge_label.scale = Vector2(0.76, 0.76)
 	status_badge_label.position = Vector2(-45.0, -TARGET_VISUAL_H - 27.0)

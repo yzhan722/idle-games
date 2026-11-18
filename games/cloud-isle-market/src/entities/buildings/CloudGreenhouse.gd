@@ -8,9 +8,10 @@ class_name CloudGreenhouse
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
 ## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font/emoji).
 
-const SLOT_X := 365.7
-const TARGET_VISUAL_W := 64.96 # 112.0 * 0.58
-const TARGET_VISUAL_H := 60.32 # 104.0 * 0.58
+## CI-9: Island 2 re-slotted to 6 buildings (with `ChefTastingPavilion_2`), every adjacent clear gap >= 28px
+const SLOT_X := 325.9
+const TARGET_VISUAL_W := 44.24 # 112.0 * 0.395
+const TARGET_VISUAL_H := 41.08 # 104.0 * 0.395
 
 var island_idx: int = 2
 var tex_greenhouse: Texture2D
@@ -25,7 +26,7 @@ var status_badge_label: Label
 
 var anim_time: float = 0.0
 var harvest_flash_timer: float = 0.0
-var base_scale_vec: Vector2 = Vector2(0.58, 0.58)
+var base_scale_vec: Vector2 = Vector2(0.395, 0.395)
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_BUILDING
