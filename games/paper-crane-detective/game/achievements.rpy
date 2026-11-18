@@ -50,7 +50,7 @@ init -1 python:
         return sum(1 for a in ACH_LIST if achievement.has(a[0]))
 
     def ach_grid_rows():
-        """按 2 列对称网格计算行数（包含 PC-7 / PC-8 动态扩展后共 2×11 = 22 枚成就）"""
+        """按 2 列对称网格计算行数（包含 PC-7 / PC-8 / PC-9 / PC-10 / PC-11 / PC-12 / PC-13 / PC-14 / PC-15 / PC-16 动态扩展后共 2×19 = 38 枚成就）"""
         return max(1, (len(ACH_LIST) + 1) // 2)
 
     def ach_grant(aid):
@@ -107,7 +107,7 @@ style ach_toast_text is text:
     color "#fff1d0"
 
 
-## 鉴赏页里的成就分页（由 extra.rpy 的 extras 屏 use，支持 2×11 共 22 枚对称双列网格）
+## 鉴赏页里的成就分页（由 extra.rpy 的 extras 屏 use，支持 2×19 共 38 枚对称双列网格）
 screen extras_achievements():
     vbox:
         spacing 12

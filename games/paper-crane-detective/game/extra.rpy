@@ -73,6 +73,40 @@ init python:
         "radio_letter_b3": "旧广播电台 · B-03 旧广播站天台寄往四年前的电波",
     }
 
+    _PLANETARIUM_LABELS = {
+        "planetarium_cipher_s1": "钟楼星象馆 · S-01 斗柄西指的铜钥匙",
+        "planetarium_cipher_s2": "钟楼星象馆 · S-02 四象星柜与南斗的抽屉",
+        "planetarium_cipher_s3": "钟楼星象馆 · S-03 鹤喙双星与天河上的渡口",
+    }
+
+    _CLOSED_LIBRARY_LABELS = {
+        "closed_library_case": "闭馆图书馆 · L-01 消失的校友文集专架",
+    }
+
+    _THEATER_CASE_LABELS = {
+        "rainy_theater_case": "雨夜剧场 · TH-01 失踪的导演批注本",
+    }
+
+    _ATELIER_CASE_LABELS = {
+        "atelier_painting_case": "美术室 · AT-01 北窗下的三年",
+    }
+
+    _SPORTS_CASE_LABELS = {
+        "sports_lostfound_case": "失物招领 · SD-01 没有跑的第四棒",
+    }
+
+    _HAUNTED_CASE_LABELS = {
+        "haunted_house_case": "文化祭鬼屋 · HH-01 提灯笼的第七个影子",
+    }
+
+    _ASTRO_CASE_LABELS = {
+        "astro_telescope_case": "天文社流星夜 · MN-01 流星夜的空三脚架",
+    }
+
+    _POOL_CASE_LABELS = {
+        "pool_locker_case": "游泳馆更衣柜 · SW-01 错位的二十三号钥匙",
+    }
+
     # 结局 label -> 成就 id
     _ENDING_TO_ACH = {
         "ending_te":     "ach_te",
@@ -83,22 +117,36 @@ init python:
     }
 
     def _progress_label_callback(name, abnormal):
-        # 进入任何主线/番外/结局/委托卷宗/茶话会/四季信笺/旧广播电台剧场时，确保鉴赏室留声机白噪音与音量倍率归零复位，绝不污染剧情音频
+        # 进入任何主线/番外/结局/委托卷宗/茶话会/四季信笺/旧广播电台/钟楼星象馆/闭馆图书馆/雨夜剧场/美术室/运动会失物箱/文化祭鬼屋/天文社流星夜/游泳馆更衣柜等剧场时，确保鉴赏室留声机白噪音与音量倍率归零复位，绝不污染剧情音频
         if (name == "start" or name in _LABEL_TO_CHAPTER or name in _LABEL_TO_ENDING
                 or name in _DLC_LABELS or name in _MAILBOX_LABELS
                 or name in _TEA_PARTY_LABELS or name in _SEASON_LETTER_LABELS
-                or name in _RADIO_BOOTH_LABELS):
+                or name in _RADIO_BOOTH_LABELS or name in _PLANETARIUM_LABELS
+                or name in _CLOSED_LIBRARY_LABELS
+                or name in _THEATER_CASE_LABELS
+                or name in _ATELIER_CASE_LABELS
+                or name in _SPORTS_CASE_LABELS
+                or name in _HAUNTED_CASE_LABELS
+                or name in _ASTRO_CASE_LABELS
+                or name in _POOL_CASE_LABELS):
             if "stop_all_gramophone_ambience" in globals():
                 stop_all_gramophone_ambience(reset_music_vol=True)
         # 从标题"开始游戏"进来的完整周目（章节选择 / 重温结局不会经过 start）
         if name == "start":
             store.full_run = True
             store.current_chapter_label = "prologue"
-        # 记录当前所在章节/番外/结局/委托信箱/茶话会/四季信笺/旧广播电台入口 label，供折纸书签跳转定位
+        # 记录当前所在章节/番外/结局/委托信箱/茶话会/四季信笺/旧广播电台/钟楼星象馆/闭馆图书馆/雨夜剧场/美术室/运动会失物箱/文化祭鬼屋/天文社流星夜/游泳馆更衣柜入口 label，供折纸书签跳转定位
         if (name in _LABEL_TO_CHAPTER or name in _LABEL_TO_ENDING
                 or name in _DLC_LABELS or name in _MAILBOX_LABELS
                 or name in _TEA_PARTY_LABELS or name in _SEASON_LETTER_LABELS
-                or name in _RADIO_BOOTH_LABELS):
+                or name in _RADIO_BOOTH_LABELS or name in _PLANETARIUM_LABELS
+                or name in _CLOSED_LIBRARY_LABELS
+                or name in _THEATER_CASE_LABELS
+                or name in _ATELIER_CASE_LABELS
+                or name in _SPORTS_CASE_LABELS
+                or name in _HAUNTED_CASE_LABELS
+                or name in _ASTRO_CASE_LABELS
+                or name in _POOL_CASE_LABELS):
             store.current_chapter_label = name
         # 记录已到达的最高章节
         if name in _LABEL_TO_CHAPTER:
@@ -437,6 +485,33 @@ default persistent.radio_selected_broadcast = "b1"
 default persistent.origami_cabinet_records = {}
 default persistent.origami_selected_crane = "c01"
 default persistent.origami_cat_filter = "all"
+default persistent.planetarium_records = {}
+default persistent.planetarium_selected_cipher = "s1"
+default persistent.badge_journal_records = {}
+default persistent.badge_selected_id = "bd01"
+default persistent.closed_library_record = {}
+default persistent.library_selected_hotspot = "h1"
+default persistent.photo_album_records = {}
+default persistent.album_selected_photo = "ph01"
+default persistent.extras_salon_group = "salon"
+default persistent.theater_script_record = {}
+default persistent.theater_selected_hotspot = "h1"
+default persistent.time_capsule_record = {}
+default persistent.capsule_selected_item = "c01"
+default persistent.atelier_painting_record = {}
+default persistent.atelier_selected_hotspot = "h1"
+default persistent.message_wall_record = {}
+default persistent.wall_selected_card = "w01"
+default persistent.sports_lostfound_record = {}
+default persistent.sports_selected_item = "h1"
+default persistent.case_notebook_record = {}
+default persistent.notebook_selected_case = "library"
+default persistent.haunted_house_record = {}
+default persistent.haunted_selected_spot = "h1"
+default persistent.astro_telescope_record = {}
+default persistent.astro_selected_spot = "s1"
+default persistent.pool_locker_record = {}
+default persistent.pool_selected_spot = "s1"
 
 init python:
     EXTRAS_TABS = [
@@ -466,6 +541,235 @@ init python:
         ("origami", "千纸鹤陈列柜"),
     ]
 
+    EXTRAS_STARLIT_TABS = [
+        ("planetarium", "钟楼星象馆"),
+        ("badges",      "铜章手账册"),
+    ]
+
+    EXTRAS_CLOSED_LIBRARY_TABS = [
+        ("library", "闭馆图书馆"),
+        ("album",   "合照相册"),
+    ]
+
+    EXTRAS_THEATER_CAPSULE_TABS = [
+        ("theater", "雨夜剧场"),
+        ("capsule", "时间胶囊"),
+    ]
+
+    EXTRAS_ATELIER_WALL_TABS = [
+        ("atelier", "美术室油画"),
+        ("wall",    "寄语墙"),
+    ]
+
+    EXTRAS_SPORTS_NOTEBOOK_TABS = [
+        ("sportsday", "运动会失物"),
+        ("notebook",  "推理笔记复盘本"),
+    ]
+
+    EXTRAS_HAUNTED_TABS = [
+        ("haunted", "文化祭鬼屋"),
+    ]
+
+    EXTRAS_ASTRO_TABS = [
+        ("astro", "天文社流星夜"),
+    ]
+
+    EXTRAS_POOL_TABS = [
+        ("pool", "游泳池更衣柜"),
+    ]
+
+    ## PC-10：「侦探社沙龙」子栏改为分组手风琴——当前分页所在的组展开成「图标 + 等宽短签」，
+    ## 其余组各收拢为一枚组签（点击即展开并直达该组第一项）。十项玩法分四组，与铜章手账册的分行一致。
+    ## PC-11：雨夜剧场（可重玩短案）与时间胶囊（纪念收藏）并入第四组，组名改为「雨夜与纪念」——
+    ## 两桩雨夜短案在前、两项纪念收藏在后；仍为四组，十二项玩法各出现一次。
+    ## PC-12：美术室油画与寄语墙加入后，第四组若继续展开六枚短签会达 802px（> 702px 内宽），
+    ## 因此按「可重玩短案 / 纪念收藏」拆成两组：第四组「放学后短案」（闭馆 · 剧场 · 画室，组键沿用 closedlib，
+    ## 旧存档记住的组仍有效），第五组「纪念与寄语」（相册 · 胶囊 · 寄语墙）。五组十四项各出现一次，
+    ## 五种展开状态由 verify_pc12 逐一实测均 <= 702px。
+    ## PC-13：运动会失物箱（第四桩可重玩短案）追加进「放学后短案」，推理笔记复盘本（只读汇总四案的纪念册）追加进「纪念与寄语」，
+    ## 两组恰好都是 PC-10..PC-13 各一项、按里程碑顺序排列。五组任一组装进四项时，展开态改用紧凑等宽短签
+    ## （style salon_quad_pill：xminimum 60 / 内边距 4，见 zephyr_relay_casebook.rpy）；若沿用 66px 短签，
+    ## 四签组展开会达 715px（> 702px），紧凑短签后五种展开状态由 verify_pc13 逐一实测均 <= 702px。
+    ## PC-14：文化祭鬼屋（第五桩可重玩短案）追加进「放学后短案」。五签组若沿用「每签一枚图标 + 60px 紧凑短签」会达 773px，
+    ## 因此装进五项的组展开时只在最前面放一枚当前分页的图标，后接五枚 56px 紧凑等宽短签（style salon_quint_pill，
+    ## 见 zoetrope_shadow_folio.rpy）；五种展开状态由 verify_pc14 逐一实测均 <= 702px。
+    ## PC-15：天文社流星夜（第六桩可重玩短案）追加进「放学后短案」。六签组若沿用五枚 56px 短签会达 741px，
+    ## 因此装进六项的组展开时仍只放一枚当前分页图标，短签改用 48px 紧凑等宽签（style salon_sext_pill，
+    ## 见 zubenelgenubi_meteor_casebook.rpy）；五种展开状态由 verify_pc15 逐一实测均 <= 702px。
+    ## PC-16：游泳池更衣柜（第七桩可重玩短案）加入后，「放学后短案」若装七签，即便沿用 48px 短签也会达 745px（> 702px），
+    ## 而七枚短签的文字本身就有 40px，再压短签只能删字。因此改分组：天文社流星夜移入「电波与星空」
+    ## （与钟楼星象馆、铜章手账册同属星空主题，四签组按 PC-13 的规则用每签一枚图标 + 60px 紧凑短签），
+    ## 游泳池更衣柜接入「放学后短案」（仍为六签组）。五组十九项各出现一次，五种展开状态由 verify_pc16 逐一实测均 <= 702px。
+    EXTRAS_SALON_GROUPS = [
+        ("salon",      "侦探社沙龙",   "images/ui/icon_tea_party_cup.png",          ("teaparty", "lexicon")),
+        ("bookstreet", "旧书街与四季", "images/ui/icon_book_restoration.png",       ("restoration", "letterbox", "origami")),
+        ("starlit",    "电波与星空",   "images/ui/icon_clocktower_planetarium.png", ("radio", "planetarium", "badges", "astro")),
+        ("closedlib",  "放学后短案",   "images/ui/icon_closed_library.png",         ("library", "theater", "atelier", "sportsday", "haunted", "pool")),
+        ("keepsake",   "纪念与寄语",   "images/ui/icon_graduation_card.png",        ("album", "capsule", "wall", "notebook")),
+    ]
+
+    _SALON_TAB_ICONS = {
+        "teaparty":    "images/ui/icon_tea_party_cup.png",
+        "lexicon":     "images/ui/icon_mystery_lexicon.png",
+        "restoration": "images/ui/icon_book_restoration.png",
+        "letterbox":   "images/ui/icon_seasonal_letterbox.png",
+        "origami":     "images/ui/icon_origami_cabinet.png",
+        "radio":       "images/ui/icon_radio_booth_mic.png",
+        "planetarium": "images/ui/icon_clocktower_planetarium.png",
+        "badges":      "images/ui/icon_badge_journal.png",
+        "library":     "images/ui/icon_closed_library.png",
+        "album":       "images/ui/icon_photo_album.png",
+        "theater":     "images/ui/icon_theater_backstage.png",
+        "capsule":     "images/ui/icon_time_capsule.png",
+        "atelier":     "images/ui/icon_art_room.png",
+        "wall":        "images/ui/icon_message_wall.png",
+        "sportsday":   "images/ui/icon_lost_found_box.png",
+        "notebook":    "images/ui/icon_case_notebook.png",
+        "haunted":     "images/ui/icon_haunted_house.png",
+        "astro":       "images/ui/icon_astro_club.png",
+        "pool":        "images/ui/icon_pool_locker.png",
+    }
+
+    # 短签：key -> (短名, 计数函数名, 总数来源列表名或整数)；运行期按名取函数，模块加载顺序互不依赖
+    _SALON_TAB_PILLS = {
+        "teaparty":    ("茶话会", "tea_party_cleared_count",     "TEA_PARTY_SESSIONS"),
+        "lexicon":     ("辞典",   "lexicon_read_count",          "LEXICON_ENTRIES"),
+        "restoration": ("古籍",   "restoration_completed_count", "RESTORATION_TOMES"),
+        "letterbox":   ("信笺",   "letterbox_seal_count",        "SEASONAL_LETTERS"),
+        "origami":     ("鹤谱",   "origami_inspected_count",     "ORIGAMI_CRANE_PATTERNS"),
+        "radio":       ("电台",   "radio_solved_count",          "RADIO_BROADCASTS"),
+        "planetarium": ("星象馆", "planetarium_solved_count",    "PLANETARIUM_CIPHERS"),
+        "badges":      ("铜章",   "badge_stamped_count",         "BADGE_DEFS"),
+        "library":     ("闭馆",   "library_case_solved_count",   1),
+        "album":       ("相册",   "album_developed_count",       "ALBUM_PHOTOS"),
+        "theater":     ("剧场",   "theater_case_solved_count",   1),
+        "capsule":     ("胶囊",   "capsule_placed_count",        "CAPSULE_ITEMS"),
+        "atelier":     ("画室",   "atelier_case_solved_count",   1),
+        "wall":        ("寄语",   "wall_pinned_count",           "WALL_CARDS"),
+        "sportsday":   ("操场",   "sports_case_solved_count",    1),
+        "notebook":    ("复盘",   "notebook_stamped_count",      "NOTEBOOK_CASES"),
+        "haunted":     ("鬼屋",   "haunted_case_solved_count",   1),
+        "astro":       ("天文",   "astro_case_solved_count",     1),
+        "pool":        ("泳池",   "pool_case_solved_count",      1),
+    }
+
+    def salon_tab_icon(tab_key):
+        return _SALON_TAB_ICONS.get(tab_key, "images/ui/icon_tea_party_cup.png")
+
+    def salon_tab_pill_text(tab_key):
+        """子栏短签文字：「短名 当前/总数」；计数函数缺失时只显示短名，绝不让鉴赏页崩溃。"""
+        name, fn_name, total_src = _SALON_TAB_PILLS[tab_key]
+        g = globals()
+        try:
+            total = total_src if isinstance(total_src, int) else len(g[total_src])
+            return "%s %d/%d" % (name, int(g[fn_name]()), total)
+        except Exception:
+            return name
+
+    def salon_group_of(tab_key):
+        for gkey, _glabel, _gicon, gtabs in EXTRAS_SALON_GROUPS:
+            if tab_key in gtabs:
+                return gkey
+        return None
+
+    def salon_open_group(cur_tab):
+        """当前分页属于沙龙某组时展开该组；否则展开上次停留的组（默认第一组）。"""
+        gkey = salon_group_of(cur_tab)
+        if gkey:
+            return gkey
+        remembered = persistent.extras_salon_group
+        if any(g[0] == remembered for g in EXTRAS_SALON_GROUPS):
+            return remembered
+        return EXTRAS_SALON_GROUPS[0][0]
+
+    ## PC-14：主菜单「番外卷宗」分组入口（screens.rpy 的 extras_folio_modal）用到的只读视图函数。
+    ## 卷宗里列出两篇番外短篇、五桩可重玩短案与推理笔记复盘本（PC-15 起六桩短案，PC-16 起七桩）；本组函数从不写任何 persistent 字段。
+    ## 番外短篇沿用原入口的解锁条件（只从「章节选择」开启，导航列同一条件：chapter_reached >= 1）与原提示条件
+    ## （后日谈在未通关 TRUE END 时建议先通关）；后日谈标题另受 truth_spoiler_unlocked() 防剧透火漆封存。
+    FOLIO_DLC_MASKED_TITLE = "后日谈 · 标题已封存"
+    FOLIO_DLC_ICONS = {
+        "dlc_alice_ledger":  "images/ui/icon_dossier_stamp.png",
+        "dlc_mo_bookstreet": "images/ui/icon_crane_bookmark.png",
+    }
+    # 卷宗里七桩可重玩短案的结案计数函数（运行期按名取，模块加载顺序互不依赖；PC-15 追加天文社流星夜，PC-16 追加游泳池更衣柜）
+    FOLIO_CASE_COUNTERS = ("library_case_solved_count", "theater_case_solved_count", "atelier_case_solved_count",
+                           "sports_case_solved_count", "haunted_case_solved_count", "astro_case_solved_count",
+                           "pool_case_solved_count")
+
+    def folio_chapter_select_open():
+        """与导航列「章节选择」按钮完全相同的解锁条件：番外短篇只从章节选择开启，序章之后开放。"""
+        return bool((persistent.chapter_reached or 0) >= 1)
+
+    def folio_spoiler_unlocked():
+        return bool(truth_spoiler_unlocked()) if "truth_spoiler_unlocked" in globals() else False
+
+    def folio_dlc_view(dlc_label):
+        """番外短篇一行的只读视图：未解封时，后日谈的标题一律不出现（返回值与原标题文本完全无关，零侧信道）；
+        卷宗里从不显示番外简介。"""
+        unlocked = folio_spoiler_unlocked()
+        is_open = folio_chapter_select_open()
+        for (lbl, badge, name, _blurb, _thumb, done_key, need_te) in DLC_LIST:
+            if lbl != dlc_label:
+                continue
+            masked = bool(need_te) and not unlocked
+            done = bool(getattr(persistent, done_key, False))
+            if not is_open:
+                note = "通关序章后，在「章节选择」开启"
+            elif need_te and not persistent.te_cleared:
+                note = "TRUE END 后日谈 · 建议通关真结局后体验"
+            elif need_te:
+                note = "TRUE END 后日谈 · 在「章节选择」开启"
+            else:
+                note = "独立番外短篇 · 不改动主线章节进度"
+            return {
+                "label": lbl,
+                "badge": badge,
+                "title": FOLIO_DLC_MASKED_TITLE if masked else name,
+                "icon": FOLIO_DLC_ICONS.get(lbl, "images/ui/icon_extras_folio.png"),
+                "masked": masked,
+                "open": is_open,
+                "done": done,
+                "note": note,
+                "status": "已读完" if done else ("未读" if is_open else "未开放"),
+            }
+        return {"label": dlc_label, "badge": "番外", "title": "缺卷", "icon": "images/ui/icon_extras_folio.png",
+                "masked": False, "open": False, "done": False, "note": "这一卷暂时不在卷宗里", "status": "缺卷"}
+
+    def folio_case_line(case_var, unit=""):
+        """短案一行的副标题：「编号 《短标题》」+ 推理单元，按名字读取各案卷宗（缺卷时只显示编号占位）。"""
+        case = globals().get(case_var)
+        if not isinstance(case, dict):
+            return "----"
+        line = "%s 《%s》" % (case.get("code", "----"), case.get("short_title", ""))
+        return ("%s · %s" % (line, unit)) if unit else line
+
+    def folio_done_count():
+        """卷宗完成数：番外短篇读完、短案结案、复盘本盖满复盘章各记一卷；计数函数缺失时按未完成计，绝不让主菜单崩溃。"""
+        g = globals()
+        done = sum(1 for d in DLC_LIST if getattr(persistent, d[5], False))
+        for fn_name in FOLIO_CASE_COUNTERS:
+            try:
+                done += 1 if int(g[fn_name]()) > 0 else 0
+            except Exception:
+                pass
+        try:
+            if int(g["notebook_stamped_count"]()) >= len(g["NOTEBOOK_CASES"]):
+                done += 1
+        except Exception:
+            pass
+        return done
+
+    def folio_total_count():
+        return len(DLC_LIST) + len(FOLIO_CASE_COUNTERS) + 1
+
+    def folio_seal_view():
+        """卷宗抬头的防剧透火漆状态（只读）。"""
+        if persistent.te_cleared:
+            return {"text": "火漆 · 已通关解封", "color": "#9fe3b0"}
+        if persistent.truth_spoiler_confirmed:
+            return {"text": "火漆 · 手动解封", "color": "#f0a4b8"}
+        return {"text": "火漆 · 封存中", "color": "#d8c3a0"}
+
     def extras_count_text():
         """主菜单按钮上的总进度：结局 + CG + 成就 的已解锁数 / 总数"""
         got = (sum(1 for e in ENDING_LIST if getattr(persistent, e[0], False))
@@ -474,7 +778,7 @@ init python:
         return "(%d/%d)" % (got, total)
 
     def reset_all_progress():
-        """一键清空全部存档、已解锁 CG、结局、章节、成就、书签、委托信箱、茶话会、批注辞典、古籍修复台、四季信笺匣、旧广播电台与千纸鹤陈列柜"""
+        """一键清空全部存档、已解锁 CG、结局、章节、成就、书签、委托信箱、茶话会、批注辞典、古籍修复台、四季信笺匣、旧广播电台、千纸鹤陈列柜、钟楼星象馆、铜章手账册、闭馆图书馆、合照相册、雨夜剧场、时间胶囊、美术室油画、寄语墙、运动会失物箱、推理笔记复盘本、文化祭鬼屋、天文社流星夜与游泳池更衣柜"""
         persistent.chapter_reached = 0
         persistent.te_cleared = False
         persistent.truth_spoiler_confirmed = False
@@ -498,6 +802,33 @@ init python:
         persistent.origami_cabinet_records = {}
         persistent.origami_selected_crane = "c01"
         persistent.origami_cat_filter = "all"
+        persistent.planetarium_records = {}
+        persistent.planetarium_selected_cipher = "s1"
+        persistent.badge_journal_records = {}
+        persistent.badge_selected_id = "bd01"
+        persistent.closed_library_record = {}
+        persistent.library_selected_hotspot = "h1"
+        persistent.photo_album_records = {}
+        persistent.album_selected_photo = "ph01"
+        persistent.extras_salon_group = "salon"
+        persistent.theater_script_record = {}
+        persistent.theater_selected_hotspot = "h1"
+        persistent.time_capsule_record = {}
+        persistent.capsule_selected_item = "c01"
+        persistent.atelier_painting_record = {}
+        persistent.atelier_selected_hotspot = "h1"
+        persistent.message_wall_record = {}
+        persistent.wall_selected_card = "w01"
+        persistent.sports_lostfound_record = {}
+        persistent.sports_selected_item = "h1"
+        persistent.case_notebook_record = {}
+        persistent.notebook_selected_case = "library"
+        persistent.haunted_house_record = {}
+        persistent.haunted_selected_spot = "h1"
+        persistent.astro_telescope_record = {}
+        persistent.astro_selected_spot = "s1"
+        persistent.pool_locker_record = {}
+        persistent.pool_selected_spot = "s1"
         if "restoration_reset_workbench_session" in globals():
             restoration_reset_workbench_session()
         if "origami_reset_session" in globals():
@@ -540,7 +871,8 @@ screen extras():
     on "hide" action [Function(gramophone_on_leave_extras), Play("music", config.main_menu_music, fadein=1.0, if_changed=True)]
     on "replaced" action [Function(gramophone_on_leave_extras), Play("music", config.main_menu_music, fadein=1.0, if_changed=True)]
 
-    use game_menu(_("鉴赏"), subtitle=_("结局 · 画廊 · 留声机 · 成就 · 信箱 · 茶会 · 辞典 · 古籍 · 信笺 · 电台 · 鹤谱 · 真相 · 书签 · 白板 · 剧场")):
+    ## 副标题收敛为一行（≤776px 可用宽度）：沙龙各玩法统一由下方「侦探社沙龙」子栏承载
+    use game_menu(_("鉴赏"), subtitle=_("结局 · 画廊 · 留声机 · 成就 · 侦探社沙龙 · 真相 · 书签 · 白板 · 剧场")):
 
         vbox:
             spacing 7
@@ -552,6 +884,13 @@ screen extras():
                         at pill_hover_fx
                         selected (cur == key)
                         action SetField(persistent, "extras_tab", key)
+            ## 侦探社沙龙子栏（PC-10 分组手风琴）：当前分页所在组展开为「图标 + 等宽短签」，其余组收拢为一枚组签；
+            ## PC-11 起十二项玩法分四组；PC-12 起十四项玩法分五组；PC-13 起十六项玩法分五组，装进四项的组展开时改用紧凑等宽短签，
+            ## 五种展开状态经 verify_pc13 逐一实测 <= 702px 内宽；PC-14 起十七项玩法分五组，装进五项的组展开时只放一枚当前分页图标 + 五枚 56px 短签，
+            ## 五种展开状态经 verify_pc14 逐一实测 <= 702px 内宽；PC-15 起十八项玩法分五组，装进六项的组展开时仍只放一枚当前分页图标，
+            ## 短签改用 48px 紧凑等宽签（salon_sext_pill），五种展开状态经 verify_pc15 逐一实测 <= 702px 内宽；PC-16 起十九项玩法分五组，
+            ## 天文社流星夜移入「电波与星空」、游泳池更衣柜接入「放学后短案」，五种展开状态经 verify_pc16 逐一实测 <= 702px 内宽
+            $ _salon_open = salon_open_group(cur)
             frame:
                 style "salon_subbar_frame"
                 hbox:
@@ -560,41 +899,26 @@ screen extras():
                     hbox:
                         spacing 4
                         yalign 0.5
-                        add "images/ui/icon_tea_party_cup.png" xysize (14, 14) yalign 0.5
-                        textbutton ("茶话会 %d/3" % tea_party_cleared_count()):
-                            style "bookstreet_subtab_pill"
-                            selected (cur == "teaparty")
-                            action SetField(persistent, "extras_tab", "teaparty")
-                        textbutton ("批注辞典 %d/%d" % (lexicon_read_count(), len(LEXICON_ENTRIES))):
-                            style "bookstreet_subtab_pill"
-                            selected (cur == "lexicon")
-                            action SetField(persistent, "extras_tab", "lexicon")
-                        add "images/ui/icon_book_restoration.png" xysize (14, 14) yalign 0.5
-                        textbutton ("古籍修复 %d/3" % restoration_completed_count()):
-                            style "bookstreet_subtab_pill"
-                            selected (cur == "restoration")
-                            action SetField(persistent, "extras_tab", "restoration")
-                        add "images/ui/icon_seasonal_letterbox.png" xysize (14, 14) yalign 0.5
-                        textbutton ("四季信笺 %d/4" % letterbox_seal_count()):
-                            style "bookstreet_subtab_pill"
-                            selected (cur == "letterbox")
-                            action SetField(persistent, "extras_tab", "letterbox")
-                        add "images/ui/icon_radio_booth_mic.png" xysize (14, 14) yalign 0.5
-                        textbutton ("旧广播电台 %d/3" % radio_solved_count()):
-                            style "bookstreet_subtab_pill"
-                            selected (cur == "radio")
-                            action SetField(persistent, "extras_tab", "radio")
-                        add "images/ui/icon_origami_cabinet.png" xysize (14, 14) yalign 0.5
-                        textbutton ("千纸鹤陈列柜 %d/12" % origami_inspected_count()):
-                            style "bookstreet_subtab_pill"
-                            selected (cur == "origami")
-                            action SetField(persistent, "extras_tab", "origami")
-                    hbox:
-                        xalign 1.0
-                        yalign 0.5
-                        spacing 4
-                        add "images/ui/icon_golden_vow_crane.png" xysize (14, 14) yalign 0.5
-                        text ("鹤谱 %d/12" % origami_inspected_count()) size 11 color "#f4d98a" yalign 0.5
+                        for _gkey, _glabel, _gicon, _gtabs in EXTRAS_SALON_GROUPS:
+                            if _gkey == _salon_open and len(_gtabs) >= 5:
+                                add salon_tab_icon(cur if cur in _gtabs else _gtabs[0]) xysize (14, 14) yalign 0.5
+                                for _tkey in _gtabs:
+                                    textbutton salon_tab_pill_text(_tkey):
+                                        style ("salon_sext_pill" if len(_gtabs) >= 6 else "salon_quint_pill")
+                                        selected (cur == _tkey)
+                                        action [SetField(persistent, "extras_salon_group", _gkey), SetField(persistent, "extras_tab", _tkey)]
+                            elif _gkey == _salon_open:
+                                for _tkey in _gtabs:
+                                    add salon_tab_icon(_tkey) xysize (14, 14) yalign 0.5
+                                    textbutton salon_tab_pill_text(_tkey):
+                                        style ("salon_quad_pill" if len(_gtabs) >= 4 else "bookstreet_subtab_pill")
+                                        selected (cur == _tkey)
+                                        action [SetField(persistent, "extras_salon_group", _gkey), SetField(persistent, "extras_tab", _tkey)]
+                            else:
+                                add _gicon xysize (14, 14) yalign 0.5 alpha 0.7
+                                textbutton _glabel:
+                                    style "salon_group_pill"
+                                    action [SetField(persistent, "extras_salon_group", _gkey), SetField(persistent, "extras_tab", _gtabs[0])]
             viewport:
                 ysize 468
                 scrollbars "vertical"
@@ -626,6 +950,33 @@ screen extras():
                         use extras_radio_booth
                     elif cur == "origami":
                         use extras_origami_cabinet
+                    elif cur == "planetarium":
+                        use extras_planetarium
+                    elif cur == "badges":
+                        use extras_badge_journal
+                    elif cur == "library":
+                        use extras_closed_library
+                    elif cur == "album":
+                        use extras_photo_album
+                    elif cur == "theater":
+                        use extras_rainy_theater
+                    elif cur == "capsule":
+                        use extras_time_capsule
+                    elif cur == "atelier":
+                        use extras_atelier_painting
+                    elif cur == "wall":
+                        use extras_message_wall
+                    elif cur == "sportsday":
+                        use extras_sports_lostfound
+                    elif cur == "notebook":
+                        ## PC-15：复盘本扩容为六页（鬼屋 + 流星夜），改由 3 列索引签的扩容页面承载；PC-16 再加游泳池更衣柜一页（七页），PC-13 的四签旧页面已删除
+                        use extras_casebook_expanded
+                    elif cur == "haunted":
+                        use extras_haunted_house
+                    elif cur == "astro":
+                        use extras_astro_telescope
+                    elif cur == "pool":
+                        use extras_pool_locker
                     elif cur == "truth":
                         use extras_truth
                     elif cur == "bookmarks":

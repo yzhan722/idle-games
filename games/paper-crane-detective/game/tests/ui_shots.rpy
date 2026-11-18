@@ -305,9 +305,492 @@ testsuite uiaudit:
         $ persistent.origami_cat_filter = _saved_oc_cat
         $ persistent.te_cleared = _saved_pc8_te
         $ persistent.truth_spoiler_confirmed = _saved_pc8_conf
+        $ _saved_pl_recs = dict(persistent.planetarium_records or {})
+        $ _saved_pl_sel = persistent.planetarium_selected_cipher
+        $ _saved_bj_recs = dict(persistent.badge_journal_records or {})
+        $ _saved_bj_sel = persistent.badge_selected_id
+        $ _saved_pc9_te = persistent.te_cleared
+        $ _saved_pc9_conf = persistent.truth_spoiler_confirmed
+        $ persistent.planetarium_records = {}
+        $ persistent.planetarium_selected_cipher = "s3"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "planetarium")
+        pause 0.5
+        assert eval (not truth_spoiler_unlocked() and not planetarium_render_view("s3")["unlocked"])
+        screenshot "ui_09zc_planetarium_locked.png"
+        $ persistent.planetarium_records = {"s1": {"solved": True, "first_try": True, "best_badge": "北辰首席解码", "replays": 1}, "s3": {"solved": True, "best_badge": "守夜观星学徒", "replays": 1}}
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (planetarium_solved_count() == 2 and planetarium_render_view("s3")["unlocked"])
+        screenshot "ui_09zd_planetarium_annotated.png"
+        run Show("planetarium_annotation_modal", cipher_id="s3")
+        pause 0.5
+        screenshot "ui_09ze_planetarium_modal.png"
+        run Hide("planetarium_annotation_modal")
+        $ persistent.badge_journal_records = {}
+        $ persistent.badge_selected_id = "bd08"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "badges")
+        pause 0.5
+        assert eval (not truth_spoiler_unlocked() and not badge_render_view("bd08")["unlocked"])
+        screenshot "ui_09zf_badge_journal_locked.png"
+        $ persistent.planetarium_records = {"s1": {"solved": True}, "s2": {"solved": True}, "s3": {"solved": True}}
+        $ persistent.badge_journal_records = {"bd08": {"stamped": True, "stamp_count": 1, "page_viewed": True}}
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (badge_get_record("bd08")["stamped"] and badge_render_view("bd08")["unlocked"])
+        screenshot "ui_09zg_badge_journal_stamped.png"
+        run Show("badge_journal_page_modal", badge_id="bd08")
+        pause 0.5
+        screenshot "ui_09zh_badge_journal_page.png"
+        run Hide("badge_journal_page_modal")
+        $ persistent.planetarium_records = _saved_pl_recs
+        $ persistent.planetarium_selected_cipher = _saved_pl_sel
+        $ persistent.badge_journal_records = _saved_bj_recs
+        $ persistent.badge_selected_id = _saved_bj_sel
+        $ persistent.te_cleared = _saved_pc9_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc9_conf
+        $ _saved_lb_rec = dict(persistent.closed_library_record or {})
+        $ _saved_lb_sel = persistent.library_selected_hotspot
+        $ _saved_al_recs = dict(persistent.photo_album_records or {})
+        $ _saved_al_sel = persistent.album_selected_photo
+        $ _saved_al_pl = dict(persistent.planetarium_records or {})
+        $ _saved_salon_grp = persistent.extras_salon_group
+        $ _saved_pc10_te = persistent.te_cleared
+        $ _saved_pc10_conf = persistent.truth_spoiler_confirmed
+        $ persistent.closed_library_record = {}
+        $ persistent.library_selected_hotspot = "h5"
+        run SetField(persistent, "extras_tab", "library")
+        pause 0.5
+        assert eval (library_case_solved_count() == 0 and salon_open_group("library") == "closedlib")
+        screenshot "ui_10a_library_unsolved.png"
+        $ persistent.closed_library_record = {"solved": True, "replays": 3, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
+        pause 0.5
+        assert eval (library_render_view()["solved"] and library_best_short() == "金书签")
+        screenshot "ui_10b_library_gold.png"
+        run Show("library_report_modal")
+        pause 0.5
+        screenshot "ui_10c_library_report.png"
+        run Hide("library_report_modal")
+        run Show("library_chain_banner", links_done=2, prompt_line="第三环 · 动机：漏点、红水桶、盖好的塑料布——为什么偏偏只搬走 E-7？")
+        pause 0.5
+        screenshot "ui_10d_library_chain_banner.png"
+        run Hide("library_chain_banner")
+        run Show("library_result_card", cur_tier="silver", best_tier="gold", mistakes=1, best_mistakes=0, replays=3, new_record=False, is_first=False)
+        pause 0.5
+        screenshot "ui_10e_library_result_card.png"
+        run Hide("library_result_card")
+        $ persistent.photo_album_records = {"ph01": {"developed": True, "develop_count": 1, "viewed": True}, "ph08": {"developed": True, "develop_count": 1, "viewed": True}}
+        $ persistent.planetarium_records = {"s1": {"solved": True}}
+        $ persistent.album_selected_photo = "ph08"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "album")
+        pause 0.5
+        assert eval (not truth_spoiler_unlocked() and album_render_view("ph08")["display_mo_secret"] == "" and album_render_view("ph08")["display_masked_notice"] != "")
+        screenshot "ui_10f_album_masked.png"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (album_render_view("ph08")["unlocked"] and album_render_view("ph08")["display_mo_secret"] != "")
+        screenshot "ui_10g_album_unmasked.png"
+        run Show("album_photo_modal", photo_id="ph08")
+        pause 0.5
+        screenshot "ui_10h_album_photo_modal.png"
+        run Hide("album_photo_modal")
+        $ persistent.closed_library_record = _saved_lb_rec
+        $ persistent.library_selected_hotspot = _saved_lb_sel
+        $ persistent.photo_album_records = _saved_al_recs
+        $ persistent.album_selected_photo = _saved_al_sel
+        $ persistent.planetarium_records = _saved_al_pl
+        $ persistent.extras_salon_group = _saved_salon_grp
+        $ persistent.te_cleared = _saved_pc10_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc10_conf
+        $ _saved_th_rec = dict(persistent.theater_script_record or {})
+        $ _saved_th_sel = persistent.theater_selected_hotspot
+        $ _saved_tc_rec = dict(persistent.time_capsule_record or {})
+        $ _saved_tc_sel = persistent.capsule_selected_item
+        $ _saved_tc_pl = dict(persistent.planetarium_records or {})
+        $ _saved_pc11_grp = persistent.extras_salon_group
+        $ _saved_pc11_te = persistent.te_cleared
+        $ _saved_pc11_conf = persistent.truth_spoiler_confirmed
+        $ persistent.theater_script_record = {}
+        $ persistent.theater_selected_hotspot = "h4"
+        run SetField(persistent, "extras_tab", "theater")
+        pause 0.5
+        assert eval (theater_case_solved_count() == 0 and salon_open_group("theater") == "closedlib")
+        screenshot "ui_11a_theater_unsolved.png"
+        $ persistent.theater_script_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 2, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
+        pause 0.5
+        assert eval (theater_render_view()["solved"] and theater_best_short() == "金票根")
+        screenshot "ui_11b_theater_gold.png"
+        run Show("theater_report_modal")
+        pause 0.5
+        screenshot "ui_11c_theater_report.png"
+        run Hide("theater_report_modal")
+        run Show("theater_act_banner", acts_done=2, prompt_line="第三幕 · 动机：擦过的桌子、消失的吹风机、跳闸的熨斗——为什么要拿走导演本？")
+        pause 0.5
+        screenshot "ui_11d_theater_act_banner.png"
+        run Hide("theater_act_banner")
+        run Show("theater_result_card", cur_tier="silver", best_tier="gold", mistakes=2, best_mistakes=0, replays=2, new_record=False, is_first=False)
+        pause 0.5
+        screenshot "ui_11e_theater_result_card.png"
+        run Hide("theater_result_card")
+        $ persistent.planetarium_records = {"s1": {"solved": True}}
+        $ persistent.time_capsule_record = {"placed": ["c08", "c10", "c11", "c12"], "sealed": False, "seal_count": 0, "letters_read": []}
+        $ persistent.capsule_selected_item = "c08"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "capsule")
+        pause 0.5
+        assert eval (not truth_spoiler_unlocked() and capsule_render_item("c08")["display_mo_secret"] == "" and capsule_render_item("c08")["display_masked_notice"] != "" and capsule_render_letter("lt_alice")["readable"])
+        screenshot "ui_11f_capsule_masked.png"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (capsule_render_item("c08")["unlocked"] and capsule_render_item("c08")["display_mo_secret"] != "")
+        screenshot "ui_11g_capsule_unmasked.png"
+        run Show("capsule_letter_modal", letter_id="lt_alice")
+        pause 0.5
+        screenshot "ui_11h_capsule_letter_modal.png"
+        run Hide("capsule_letter_modal")
+        $ persistent.theater_script_record = _saved_th_rec
+        $ persistent.theater_selected_hotspot = _saved_th_sel
+        $ persistent.time_capsule_record = _saved_tc_rec
+        $ persistent.capsule_selected_item = _saved_tc_sel
+        $ persistent.planetarium_records = _saved_tc_pl
+        $ persistent.extras_salon_group = _saved_pc11_grp
+        $ persistent.te_cleared = _saved_pc11_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc11_conf
+        $ _saved_at_rec = dict(persistent.atelier_painting_record or {})
+        $ _saved_at_sel = persistent.atelier_selected_hotspot
+        $ _saved_mw_rec = dict(persistent.message_wall_record or {})
+        $ _saved_mw_sel = persistent.wall_selected_card
+        $ _saved_mw_al = dict(persistent.photo_album_records or {})
+        $ _saved_mw_tc = dict(persistent.time_capsule_record or {})
+        $ _saved_mw_pl = dict(persistent.planetarium_records or {})
+        $ _saved_pc12_grp = persistent.extras_salon_group
+        $ _saved_pc12_te = persistent.te_cleared
+        $ _saved_pc12_conf = persistent.truth_spoiler_confirmed
+        $ persistent.atelier_painting_record = {}
+        $ persistent.atelier_selected_hotspot = "h2"
+        run SetField(persistent, "extras_tab", "atelier")
+        pause 0.5
+        assert eval (atelier_case_solved_count() == 0 and salon_open_group("atelier") == "closedlib")
+        screenshot "ui_12a_atelier_unsolved.png"
+        $ persistent.atelier_painting_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
+        pause 0.5
+        assert eval (atelier_render_view()["solved"] and atelier_best_short() == "金画框")
+        screenshot "ui_12b_atelier_gold.png"
+        run Show("atelier_report_modal")
+        pause 0.5
+        screenshot "ui_12c_atelier_report.png"
+        run Hide("atelier_report_modal")
+        run Show("atelier_stroke_banner", strokes_done=2, prompt_line="第三笔 · 动机：七支金色油漆笔、七副白手套、开展倒计时——为什么要把画翻过来？")
+        pause 0.5
+        screenshot "ui_12d_atelier_stroke_banner.png"
+        run Hide("atelier_stroke_banner")
+        run Show("atelier_result_card", cur_tier="silver", best_tier="gold", mistakes=1, best_mistakes=0, replays=2, new_record=False, is_first=False)
+        pause 0.5
+        screenshot "ui_12e_atelier_result_card.png"
+        run Hide("atelier_result_card")
+        $ persistent.photo_album_records = {"ph01": {"developed": True, "develop_count": 1, "viewed": True}, "ph08": {"developed": True, "develop_count": 1, "viewed": True}}
+        $ persistent.time_capsule_record = {"placed": ["c01", "c08"], "sealed": False, "seal_count": 0, "letters_read": []}
+        $ persistent.planetarium_records = {"s1": {"solved": True}}
+        $ persistent.message_wall_record = {"pinned": ["w01", "w02"], "read": ["w01"]}
+        $ persistent.wall_selected_card = "w01"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "wall")
+        pause 0.5
+        assert eval (not truth_spoiler_unlocked() and salon_open_group("wall") == "keepsake" and wall_render_card("w01")["display_secret"] == "" and wall_render_card("w01")["display_masked_notice"] != "" and wall_render_photo_label("pl4")["display_label"] != "" and wall_render_photo_label("pl4")["display_secret"] == "")
+        screenshot "ui_12f_wall_masked.png"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (wall_render_card("w01")["unlocked"] and wall_render_card("w01")["display_secret"] != "" and wall_render_photo_label("pl4")["display_secret"] != "")
+        screenshot "ui_12g_wall_unmasked.png"
+        run Show("wall_card_modal", card_id="w01")
+        pause 0.5
+        screenshot "ui_12h_wall_card_modal.png"
+        run Hide("wall_card_modal")
+        $ persistent.atelier_painting_record = _saved_at_rec
+        $ persistent.atelier_selected_hotspot = _saved_at_sel
+        $ persistent.message_wall_record = _saved_mw_rec
+        $ persistent.wall_selected_card = _saved_mw_sel
+        $ persistent.photo_album_records = _saved_mw_al
+        $ persistent.time_capsule_record = _saved_mw_tc
+        $ persistent.planetarium_records = _saved_mw_pl
+        $ persistent.extras_salon_group = _saved_pc12_grp
+        $ persistent.te_cleared = _saved_pc12_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc12_conf
+        $ _saved_sd_rec = dict(persistent.sports_lostfound_record or {})
+        $ _saved_sd_sel = persistent.sports_selected_item
+        $ _saved_nb_rec = dict(persistent.case_notebook_record or {})
+        $ _saved_nb_sel = persistent.notebook_selected_case
+        $ _saved_nb_lib = dict(persistent.closed_library_record or {})
+        $ _saved_nb_th = dict(persistent.theater_script_record or {})
+        $ _saved_nb_at = dict(persistent.atelier_painting_record or {})
+        $ _saved_pc13_grp = persistent.extras_salon_group
+        $ _saved_pc13_te = persistent.te_cleared
+        $ _saved_pc13_conf = persistent.truth_spoiler_confirmed
+        $ persistent.sports_lostfound_record = {}
+        $ persistent.sports_selected_item = "h3"
+        run SetField(persistent, "extras_tab", "sportsday")
+        pause 0.5
+        assert eval (sports_case_solved_count() == 0 and salon_open_group("sportsday") == "closedlib")
+        screenshot "ui_13a_sports_unsolved.png"
+        $ persistent.sports_lostfound_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
+        pause 0.5
+        assert eval (sports_render_view()["solved"] and sports_best_short() == "金秒表")
+        screenshot "ui_13b_sports_gold.png"
+        run Show("sports_report_modal")
+        pause 0.5
+        screenshot "ui_13c_sports_report.png"
+        run Hide("sports_report_modal")
+        run Show("sports_relay_banner", legs_done=2, prompt_line="第三棒 · 起点：系成蝴蝶结的钉鞋、挨在一起的兔子发卡、只有小孩能站进去的看台——从哪里开始？")
+        pause 0.5
+        screenshot "ui_13d_sports_relay_banner.png"
+        run Hide("sports_relay_banner")
+        run Show("sports_result_card", cur_tier="silver", best_tier="gold", mistakes=1, best_mistakes=0, replays=2, new_record=False, is_first=False)
+        pause 0.5
+        screenshot "ui_13e_sports_result_card.png"
+        run Hide("sports_result_card")
+        $ persistent.closed_library_record = {"solved": True, "replays": 1, "best_tier": "silver", "last_tier": "silver", "best_mistakes": 1, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
+        $ persistent.theater_script_record = {"inspected": ["h1", "h3"]}
+        $ persistent.atelier_painting_record = {}
+        $ persistent.case_notebook_record = {"stamped": ["library"], "read": []}
+        $ persistent.notebook_selected_case = "library"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "notebook")
+        pause 0.5
+        assert eval (not truth_spoiler_unlocked() and salon_open_group("notebook") == "keepsake" and notebook_render_page("library")["display_secret"] == "" and notebook_render_page("library")["display_masked_notice"] != "" and notebook_render_page("library")["stamped"])
+        screenshot "ui_13f_notebook_masked.png"
+        $ persistent.notebook_selected_case = "theater"
+        pause 0.5
+        assert eval (notebook_render_page("theater")["inspected_count"] == 2 and not notebook_render_page("theater")["solved"])
+        screenshot "ui_13g_notebook_partial.png"
+        $ persistent.notebook_selected_case = "library"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (notebook_render_page("library")["unlocked"] and notebook_render_page("library")["display_secret"] != "")
+        screenshot "ui_13h_notebook_unmasked.png"
+        run Show("notebook_page_modal", case_key="library")
+        pause 0.5
+        screenshot "ui_13i_notebook_page_modal.png"
+        run Hide("notebook_page_modal")
+        $ persistent.sports_lostfound_record = _saved_sd_rec
+        $ persistent.sports_selected_item = _saved_sd_sel
+        $ persistent.case_notebook_record = _saved_nb_rec
+        $ persistent.notebook_selected_case = _saved_nb_sel
+        $ persistent.closed_library_record = _saved_nb_lib
+        $ persistent.theater_script_record = _saved_nb_th
+        $ persistent.atelier_painting_record = _saved_nb_at
+        $ persistent.extras_salon_group = _saved_pc13_grp
+        $ persistent.te_cleared = _saved_pc13_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc13_conf
+        $ _saved_hh_rec = dict(persistent.haunted_house_record or {})
+        $ _saved_hh_sel = persistent.haunted_selected_spot
+        $ _saved_pc14_grp = persistent.extras_salon_group
+        $ _saved_pc14_te = persistent.te_cleared
+        $ _saved_pc14_conf = persistent.truth_spoiler_confirmed
+        $ _saved_pc14_chap = persistent.chapter_reached
+        $ persistent.haunted_house_record = {}
+        $ persistent.haunted_selected_spot = "h3"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "haunted")
+        pause 0.5
+        assert eval (haunted_case_solved_count() == 0 and salon_open_group("haunted") == "closedlib" and haunted_render_view()["display_masked_notice"] != "")
+        screenshot "ui_14a_haunted_unsolved.png"
+        $ persistent.haunted_house_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
+        pause 0.5
+        assert eval (haunted_render_view()["solved"] and haunted_best_short() == "金灯笼" and haunted_render_view()["display_secret"] == "")
+        screenshot "ui_14b_haunted_gold_masked.png"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (haunted_render_view()["unlocked"] and haunted_render_view()["display_secret"] != "")
+        screenshot "ui_14c_haunted_unmasked.png"
+        run Show("haunted_report_modal")
+        pause 0.5
+        screenshot "ui_14d_haunted_report.png"
+        run Hide("haunted_report_modal")
+        run Show("haunted_lamp_banner", lamps_done=2, prompt_line="第三盏 · 时机：四沓夹着粉色儿童票的票根、四张蜡笔画——它什么时候才会出现？")
+        pause 0.5
+        screenshot "ui_14e_haunted_lamp_banner.png"
+        run Hide("haunted_lamp_banner")
+        run Show("haunted_result_card", cur_tier="silver", best_tier="gold", mistakes=1, best_mistakes=0, replays=2, new_record=False, is_first=False)
+        pause 0.5
+        screenshot "ui_14f_haunted_result_card.png"
+        run Hide("haunted_result_card")
+        run Show("extras_folio_modal", from_extras=True)
+        pause 0.5
+        screenshot "ui_14g_folio_from_extras.png"
+        run Hide("extras_folio_modal")
+        $ persistent.haunted_house_record = _saved_hh_rec
+        $ persistent.haunted_selected_spot = _saved_hh_sel
+        $ persistent.extras_salon_group = _saved_pc14_grp
+        $ persistent.te_cleared = _saved_pc14_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc14_conf
+        $ _saved_mn_rec = dict(persistent.astro_telescope_record or {})
+        $ _saved_mn_sel = persistent.astro_selected_spot
+        $ _saved_pc15_nb = dict(persistent.case_notebook_record or {})
+        $ _saved_pc15_nbsel = persistent.notebook_selected_case
+        $ _saved_pc15_hh = dict(persistent.haunted_house_record or {})
+        $ _saved_pc15_grp = persistent.extras_salon_group
+        $ _saved_pc15_te = persistent.te_cleared
+        $ _saved_pc15_conf = persistent.truth_spoiler_confirmed
+        $ _saved_pc15_chap = persistent.chapter_reached
+        $ persistent.astro_telescope_record = {}
+        $ persistent.astro_selected_spot = "s2"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "astro")
+        pause 0.5
+        assert eval (astro_case_solved_count() == 0 and salon_open_group("astro") == "starlit" and astro_render_view()["display_masked_notice"] != "")
+        screenshot "ui_15a_astro_unsolved.png"
+        $ persistent.astro_telescope_record = {"solved": True, "replays": 3, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 2, "inspected": ["s1", "s2", "s3", "s4", "s5", "s6"]}
+        pause 0.5
+        assert eval (astro_render_view()["solved"] and astro_best_short() == "一等星" and astro_render_view()["display_secret"] == "")
+        screenshot "ui_15b_astro_gold_masked.png"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (astro_render_view()["unlocked"] and astro_render_view()["display_secret"] != "")
+        screenshot "ui_15c_astro_unmasked.png"
+        run Show("astro_report_modal")
+        pause 0.5
+        screenshot "ui_15d_astro_report.png"
+        run Hide("astro_report_modal")
+        run Show("astro_star_banner", stars_done=2, prompt_line="第三颗星 · 时机：20:48 还有人排队看木星，21:20 镜筒已经不见——它是什么时候下楼的？")
+        pause 0.5
+        screenshot "ui_15e_astro_star_banner.png"
+        run Hide("astro_star_banner")
+        run Show("astro_result_card", cur_tier="silver", best_tier="gold", mistakes=2, best_mistakes=0, replays=3, new_record=False, is_first=False)
+        pause 0.5
+        screenshot "ui_15f_astro_result_card.png"
+        run Hide("astro_result_card")
+        $ persistent.te_cleared = False
+        $ persistent.haunted_house_record = {"solved": True, "replays": 1, "best_tier": "silver", "last_tier": "silver", "best_mistakes": 1, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
+        $ persistent.case_notebook_record = {"stamped": ["library"], "read": []}
+        $ persistent.notebook_selected_case = "astro"
+        run SetField(persistent, "extras_tab", "notebook")
+        pause 0.5
+        assert eval (len(NOTEBOOK_CASES) == 7 and notebook_render_page("astro")["solved"] and notebook_render_page("astro")["display_secret"] == "" and notebook_render_page("haunted")["status"] == "ready")
+        screenshot "ui_15g_casebook_expanded_masked.png"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (notebook_render_page("astro")["unlocked"] and notebook_render_page("astro")["display_secret"] != "")
+        screenshot "ui_15h_casebook_expanded_unmasked.png"
+        run Show("notebook_page_modal", case_key="astro")
+        pause 0.5
+        screenshot "ui_15i_casebook_astro_page.png"
+        run Hide("notebook_page_modal")
+        run Show("extras_folio_modal", from_extras=True)
+        pause 0.5
+        assert eval (folio_total_count() == 10 and astro_case_solved_count() == 1)
+        screenshot "ui_15j_folio_six_cases.png"
+        run Hide("extras_folio_modal")
+        $ persistent.astro_telescope_record = _saved_mn_rec
+        $ persistent.astro_selected_spot = _saved_mn_sel
+        $ persistent.case_notebook_record = _saved_pc15_nb
+        $ persistent.notebook_selected_case = _saved_pc15_nbsel
+        $ persistent.haunted_house_record = _saved_pc15_hh
+        $ persistent.extras_salon_group = _saved_pc15_grp
+        $ persistent.te_cleared = _saved_pc15_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc15_conf
+        $ _saved_sw_rec = dict(persistent.pool_locker_record or {})
+        $ _saved_sw_sel = persistent.pool_selected_spot
+        $ _saved_pc16_nb = dict(persistent.case_notebook_record or {})
+        $ _saved_pc16_nbsel = persistent.notebook_selected_case
+        $ _saved_pc16_grp = persistent.extras_salon_group
+        $ _saved_pc16_te = persistent.te_cleared
+        $ _saved_pc16_conf = persistent.truth_spoiler_confirmed
+        $ persistent.pool_locker_record = {}
+        $ persistent.pool_selected_spot = "s1"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "pool")
+        pause 0.5
+        assert eval (pool_case_solved_count() == 0 and salon_open_group("pool") == "closedlib" and pool_render_view()["display_masked_notice"] != "")
+        screenshot "ui_16a_pool_unsolved.png"
+        $ persistent.pool_locker_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["s1", "s2", "s3", "s4", "s5", "s6"]}
+        pause 0.5
+        assert eval (pool_render_view()["solved"] and pool_best_short() == "金浪花" and pool_render_view()["display_secret"] == "")
+        screenshot "ui_16b_pool_gold_masked.png"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (pool_render_view()["unlocked"] and pool_render_view()["display_secret"] != "")
+        screenshot "ui_16c_pool_unmasked.png"
+        run Show("pool_report_modal")
+        pause 0.5
+        screenshot "ui_16d_pool_report.png"
+        run Hide("pool_report_modal")
+        run Show("pool_lap_banner", laps_done=2, prompt_line="蛙泳段 · 去向：剪齐的旧线头、看台上的深蓝线、一顶也没借出的备用泳帽——队帽此刻在哪里？")
+        pause 0.5
+        screenshot "ui_16e_pool_lap_banner.png"
+        run Hide("pool_lap_banner")
+        run Show("pool_result_card", cur_tier="silver", best_tier="gold", mistakes=1, best_mistakes=0, replays=2, new_record=False, is_first=False)
+        pause 0.5
+        screenshot "ui_16f_pool_result_card.png"
+        run Hide("pool_result_card")
+        run SetField(persistent, "extras_tab", "astro")
+        pause 0.5
+        assert eval (salon_open_group("astro") == "starlit" and salon_open_group("pool") == "closedlib")
+        screenshot "ui_16g_subbar_starlit_astro.png"
+        $ persistent.te_cleared = False
+        $ persistent.case_notebook_record = {"stamped": ["library"], "read": []}
+        $ persistent.notebook_selected_case = "pool"
+        run SetField(persistent, "extras_tab", "notebook")
+        pause 0.5
+        assert eval (len(NOTEBOOK_CASES) == 7 and casebook_index_rows() == 3 and notebook_render_page("pool")["solved"] and notebook_render_page("pool")["display_secret"] == "" and not renpy.has_screen("extras_case_notebook"))
+        screenshot "ui_16h_casebook_seven_pages.png"
+        run Show("notebook_page_modal", case_key="pool")
+        pause 0.5
+        screenshot "ui_16i_casebook_pool_page.png"
+        run Hide("notebook_page_modal")
+        run Show("extras_folio_modal", from_extras=True)
+        pause 0.5
+        assert eval (folio_total_count() == 10 and pool_case_solved_count() == 1)
+        screenshot "ui_16j_folio_seven_cases.png"
+        run Hide("extras_folio_modal")
+        $ persistent.pool_locker_record = _saved_sw_rec
+        $ persistent.pool_selected_spot = _saved_sw_sel
+        $ persistent.case_notebook_record = _saved_pc16_nb
+        $ persistent.notebook_selected_case = _saved_pc16_nbsel
+        $ persistent.extras_salon_group = _saved_pc16_grp
+        $ persistent.te_cleared = _saved_pc16_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc16_conf
         run SetField(persistent, "extras_tab", "endings")
         run Return()
         pause until screen "main_menu"
+        $ persistent.chapter_reached = 0
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run Show("extras_folio_modal")
+        pause 0.5
+        assert eval (not folio_chapter_select_open() and folio_dlc_view("dlc_mo_bookstreet")["masked"])
+        screenshot "ui_14h_folio_main_locked.png"
+        run Hide("extras_folio_modal")
+        $ persistent.chapter_reached = 6
+        $ persistent.te_cleared = True
+        run Show("extras_folio_modal")
+        pause 0.5
+        assert eval (folio_chapter_select_open() and not folio_dlc_view("dlc_mo_bookstreet")["masked"])
+        screenshot "ui_14i_folio_main_open.png"
+        run Hide("extras_folio_modal")
+        $ persistent.chapter_reached = _saved_pc14_chap
+        $ persistent.te_cleared = _saved_pc14_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc14_conf
+        $ persistent.chapter_reached = 6
+        $ persistent.te_cleared = True
+        pause 0.8
+        assert eval (folio_chapter_select_open() and folio_total_count() == 10)
+        screenshot "ui_15k_main_menu_reflowed.png"
+        assert eval (folio_total_count() == 10 and folio_chapter_select_open())
+        screenshot "ui_16k_main_menu_no_new_chip.png"
+        $ persistent.chapter_reached = _saved_pc15_chap
+        $ persistent.te_cleared = _saved_pc15_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc15_conf
         run Quit(confirm=True)
         pause until screen "confirm"
         pause 0.4

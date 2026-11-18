@@ -1441,7 +1441,7 @@ screen extras_letterbox():
                             spacing 6
                             yalign 0.5
                             add "images/ui/icon_lighting_lamp.png" xysize (15, 15) yalign 0.5
-                            text ("季节色温：%s" % _sdef["lighting_note"]) size 12 color "#a892c2" yalign 0.5
+                            text ("季节色温：%s" % _sdef["lighting_note"]) size 12 color "#a892c2" yalign 0.5 substitute False
                         if _srec["sealed"]:
                             text ("收藏状态：已钤盖【%s】（%s · 已重温 %d 次）" % (_sdef["wax_seal_name"], _srec["best_badge"], _srec["replays"])) size 12 color "#f4d98a"
                         else:
