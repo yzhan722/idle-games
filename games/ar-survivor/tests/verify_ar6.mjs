@@ -59,24 +59,24 @@ function runStaticChecks() {
   }
 
   const htmlContent = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
-  assert(/\.\/style\.css\?v=hd2\d/.test(htmlContent), 'index.html must reference ./style.css?v=hd21+');
-  assert(/\.\/game\.js\?v=hd4\d/.test(htmlContent), 'index.html must reference ./game.js?v=hd45+');
+  assert(/\.\/style\.css\?v=hd(?:2\d|[3-9]\d)/.test(htmlContent), 'index.html must reference ./style.css?v=hd21+');
+  assert(/\.\/game\.js\?v=hd(?:4[5-9]|[5-9]\d)\b/.test(htmlContent), 'index.html must reference ./game.js?v=hd45+');
   for (const reqAsset of REQUIRED_AR6_ASSETS) {
     assert(
-      new RegExp(`\\./assets/${reqAsset.replace('.', '\\.')}\\?v=hd2\\d`).test(htmlContent),
+      new RegExp(`\\./assets/${reqAsset.replace('.', '\\.')}\\?v=hd(?:2\\d|[3-9]\\d)`).test(htmlContent),
       `index.html must reference ./assets/${reqAsset}?v=hd21+`
     );
   }
 
   const cssContent = fs.readFileSync(path.join(PUBLIC_DIR, 'style.css'), 'utf8');
-  assert(/\?v=hd2\d/.test(cssContent), 'style.css must bump asset cache-buster to ?v=hd21+');
+  assert(/\?v=hd(?:2\d|[3-9]\d)/.test(cssContent), 'style.css must bump asset cache-buster to ?v=hd21+');
 
   const spritesContent = fs.readFileSync(path.join(PUBLIC_DIR, 'sprites.js'), 'utf8');
-  assert(/\?v=hd2\d/.test(spritesContent), 'sprites.js must reference ?v=hd21+');
+  assert(/\?v=hd(?:2\d|[3-9]\d)/.test(spritesContent), 'sprites.js must reference ?v=hd21+');
 
   const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
-  assert(/\.\/sprites\.js\?v=hd2\d/.test(gameContent), 'game.js must import ./sprites.js?v=hd21+');
-  assert(/\.\/audio\.js\?v=hd2\d/.test(gameContent), 'game.js must import ./audio.js?v=hd21+');
+  assert(/\.\/sprites\.js\?v=hd(?:2\d|[3-9]\d)/.test(gameContent), 'game.js must import ./sprites.js?v=hd21+');
+  assert(/\.\/audio\.js\?v=hd(?:2\d|[3-9]\d)/.test(gameContent), 'game.js must import ./audio.js?v=hd21+');
 
   for (const reqAsset of REQUIRED_AR6_ASSETS) {
     assert(assetRefs.has(reqAsset), `Required AR-6 asset ${reqAsset} is not referenced in code`);

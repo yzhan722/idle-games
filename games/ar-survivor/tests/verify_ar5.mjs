@@ -62,17 +62,17 @@ function runStaticChecks() {
   }
 
   const htmlContent = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
-  assert(/\.\/style\.css\?v=hd2\d/.test(htmlContent), 'index.html must reference ./style.css?v=hd20+');
-  assert(/\.\/game\.js\?v=hd4\d/.test(htmlContent), 'index.html must reference ./game.js?v=hd44+');
+  assert(/\.\/style\.css\?v=hd(?:2\d|[3-9]\d)/.test(htmlContent), 'index.html must reference ./style.css?v=hd20+');
+  assert(/\.\/game\.js\?v=hd(?:4\d|[5-9]\d)\b/.test(htmlContent), 'index.html must reference ./game.js?v=hd44+');
 
   const cssContent = fs.readFileSync(path.join(PUBLIC_DIR, 'style.css'), 'utf8');
-  assert(/\?v=hd2\d/.test(cssContent), 'style.css must bump asset cache-buster to ?v=hd20+');
+  assert(/\?v=hd(?:2\d|[3-9]\d)/.test(cssContent), 'style.css must bump asset cache-buster to ?v=hd20+');
 
   const spritesContent = fs.readFileSync(path.join(PUBLIC_DIR, 'sprites.js'), 'utf8');
-  assert(/\?v=hd2\d/.test(spritesContent), 'sprites.js must reference ?v=hd20+');
+  assert(/\?v=hd(?:2\d|[3-9]\d)/.test(spritesContent), 'sprites.js must reference ?v=hd20+');
 
   const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
-  assert(/\.\/sprites\.js\?v=hd2\d/.test(gameContent), 'game.js must import ./sprites.js?v=hd20+');
+  assert(/\.\/sprites\.js\?v=hd(?:2\d|[3-9]\d)/.test(gameContent), 'game.js must import ./sprites.js?v=hd20+');
 
   for (const reqAsset of REQUIRED_AR5_ASSETS) {
     assert(assetRefs.has(reqAsset), `Required AR-5 asset ${reqAsset} is not referenced in code`);

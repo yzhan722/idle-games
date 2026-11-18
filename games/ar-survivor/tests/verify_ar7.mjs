@@ -59,25 +59,25 @@ function runStaticChecks() {
   }
 
   const htmlContent = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
-  assert(/\.\/style\.css\?v=hd2[2-9]/.test(htmlContent), 'index.html must reference ./style.css?v=hd22+');
-  assert(/\.\/game\.js\?v=hd4[6-9]/.test(htmlContent), 'index.html must reference ./game.js?v=hd46+');
+  assert(/\.\/style\.css\?v=hd(?:2[2-9]|[3-9]\d)/.test(htmlContent), 'index.html must reference ./style.css?v=hd22+');
+  assert(/\.\/game\.js\?v=hd(?:4[6-9]|[5-9]\d)\b/.test(htmlContent), 'index.html must reference ./game.js?v=hd46+');
   for (const reqAsset of REQUIRED_AR7_ASSETS) {
     assert(
-      new RegExp(`\\./assets/${reqAsset.replace('.', '\\.')}\\?v=hd2[2-9]`).test(htmlContent),
+      new RegExp(`\\./assets/${reqAsset.replace('.', '\\.')}\\?v=hd(?:2[2-9]|[3-9]\\d)`).test(htmlContent),
       `index.html must reference ./assets/${reqAsset}?v=hd22+`
     );
   }
 
   const cssContent = fs.readFileSync(path.join(PUBLIC_DIR, 'style.css'), 'utf8');
-  assert(/\?v=hd2[2-9]/.test(cssContent), 'style.css must bump asset cache-buster to ?v=hd22+');
+  assert(/\?v=hd(?:2[2-9]|[3-9]\d)/.test(cssContent), 'style.css must bump asset cache-buster to ?v=hd22+');
 
   const spritesContent = fs.readFileSync(path.join(PUBLIC_DIR, 'sprites.js'), 'utf8');
-  assert(/\?v=hd2[2-9]/.test(spritesContent), 'sprites.js must reference ?v=hd22+');
+  assert(/\?v=hd(?:2[2-9]|[3-9]\d)/.test(spritesContent), 'sprites.js must reference ?v=hd22+');
 
   const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
-  assert(/\.\/sprites\.js\?v=hd2[2-9]/.test(gameContent), 'game.js must import ./sprites.js?v=hd22+');
-  assert(/\.\/audio\.js\?v=hd2[2-9]/.test(gameContent), 'game.js must import ./audio.js?v=hd22+');
-  assert(/\.\/vision\.js\?v=hd2[2-9]/.test(gameContent), 'game.js must import ./vision.js?v=hd22+');
+  assert(/\.\/sprites\.js\?v=hd(?:2[2-9]|[3-9]\d)/.test(gameContent), 'game.js must import ./sprites.js?v=hd22+');
+  assert(/\.\/audio\.js\?v=hd(?:2[2-9]|[3-9]\d)/.test(gameContent), 'game.js must import ./audio.js?v=hd22+');
+  assert(/\.\/vision\.js\?v=hd(?:2[2-9]|[3-9]\d)/.test(gameContent), 'game.js must import ./vision.js?v=hd22+');
 
   for (const reqAsset of REQUIRED_AR7_ASSETS) {
     assert(assetRefs.has(reqAsset), `Required AR-7 asset ${reqAsset} is not referenced in code`);
