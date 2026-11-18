@@ -60,7 +60,7 @@ function runStaticChecks() {
   }
 
   const htmlContent = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
-  assert(/\.\/style\.css\?v=hd(19|2\d)/.test(htmlContent), 'index.html must reference ./style.css?v=hd19+');
+  assert(/\.\/style\.css\?v=hd(19|2\d|[3-9]\d)/.test(htmlContent), 'index.html must reference ./style.css?v=hd19+');
   assert(!/\p{Extended_Pictographic}/u.test(htmlContent), 'Emoji character detected in public/index.html');
 
   const cssContent = fs.readFileSync(path.join(PUBLIC_DIR, 'style.css'), 'utf8');
@@ -291,13 +291,30 @@ async function runPlaywrightSuite() {
       await page.screenshot({ path: DESKTOP_SHOT });
     }
 
+    // 连签日期相对页面本地“今天”生成：Day 1 = 昨天，Day 2 = 今天。
+    // 原先硬编码 2026-11-14/15，过了那两天后刷新时 lastCompletedDate 早于昨天，游戏按真实时钟把连签清零导致误报失败；
+    // 在页面内用同一时钟/时区计算，跨午夜运行也只会让“今天”变成“昨天”，连签依旧有效。
+    const streakDates = await page.evaluate(() => {
+      const pad = (n) => String(n).padStart(2, '0');
+      const localIso = (d, hh, mm) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(hh)}:${pad(mm)}:00`;
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+      return {
+        day1Half: localIso(yesterday, 10, 8),
+        day1Done: localIso(yesterday, 10, 15),
+        day2Done: localIso(today, 11, 0)
+      };
+    });
+
     // Fast-forward halfway, then complete Day 1 session
-    await page.evaluate(() => window.__AR4_DEBUG__.fastForwardPomodoro(460, '2026-11-14T10:08:00'));
+    await page.evaluate((iso) => window.__AR4_DEBUG__.fastForwardPomodoro(460, iso), streakDates.day1Half);
     pomoState = await page.evaluate(() => window.__AR4_DEBUG__.getState());
     assert.equal(pomoState.pomodoroRun.status, 'running');
     assert(pomoState.pomodoroRun.remainingSec <= 445);
 
-    await page.evaluate(() => window.__AR4_DEBUG__.fastForwardPomodoro(500, '2026-11-14T10:15:00'));
+    await page.evaluate((iso) => window.__AR4_DEBUG__.fastForwardPomodoro(500, iso), streakDates.day1Done);
     await page.waitForTimeout(200);
     const afterDay1 = await page.evaluate(() => window.__AR4_DEBUG__.getState());
     assert.equal(afterDay1.pomodoroRun.status, 'completed');
@@ -316,7 +333,7 @@ async function runPlaywrightSuite() {
     await page.click('.pomo-preset-btn[data-mins="45"]');
     await page.click('#btn-pomo-start');
     await page.waitForTimeout(150);
-    await page.evaluate(() => window.__AR4_DEBUG__.fastForwardPomodoro(2705, '2026-11-15T11:00:00'));
+    await page.evaluate((iso) => window.__AR4_DEBUG__.fastForwardPomodoro(2705, iso), streakDates.day2Done);
     await page.waitForTimeout(200);
     const afterDay2 = await page.evaluate(() => window.__AR4_DEBUG__.getState());
     assert.equal(afterDay2.pomodoro.totalStamps, 3);
@@ -340,6 +357,7 @@ async function runPlaywrightSuite() {
     const reloadedPomo = await page.evaluate(() => window.__AR4_DEBUG__.getState().pomodoro);
     assert.equal(reloadedPomo.totalStamps, 3);
     assert.equal(reloadedPomo.streakDays, 2);
+    assert.equal(reloadedPomo.lastCompletedDate, streakDates.day2Done.slice(0, 10));
     assert.equal(reloadedPomo.totalFocusMinutes, 60);
 
     // 3. Mobile 390x844 (portrait forced-landscape) & 844x390 clearance & zero-overflow check

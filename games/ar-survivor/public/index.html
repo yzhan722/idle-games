@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>AR DeepSeek娘 · 实景桌宠养成</title>
   <link rel="icon" type="image/webp" href="./assets/hero_idle2.webp?v=hd5" />
-  <link rel="stylesheet" href="./style.css?v=hd23" />
+  <link rel="stylesheet" href="./style.css?v=hd31" />
 </head>
 <body>
   <!-- 底层全屏实景摄像头 -->
@@ -64,54 +64,155 @@
         <!-- AR-4 / AR-5 / AR-6 四季窗景昼夜流转胶囊 + 心情手账周报胶囊 + 番茄钟/下午茶/花房/晚安八音盒微胶囊 -->
         <div class="hud-ambience-row" id="hud-ambience-row">
           <button type="button" id="hud-ambience-pill" class="ambience-pill" title="调节四季窗景与昼夜流转">
-            <img id="hud-ambience-ico" src="./assets/vfx_season_spring.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img id="hud-ambience-ico" src="./assets/vfx_season_spring.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="hud-ambience-label">春樱 · 晨光</span>
             <em id="hud-ambience-mode" class="ambience-mode-tag">随钟</em>
           </button>
+          <!-- AR-10 画廊专注守护 + 信笺心意 合并紧凑胶囊（紧跟窗景胶囊，窄屏只占首行剩余空间，不新增换行） -->
+          <button type="button" id="atelier-post-pill" class="atelier-post-pill hidden" title="查看水彩画廊专注守护与手写信笺心意">
+            <span class="atelier-seg hidden" id="atelier-seg-easel" data-atelier-seg="easel">
+              <img src="./assets/ui_btn_watercolor_easel.webp?v=hd31" alt="" class="atelier-seg-ico" />
+              <span class="atelier-seg-label">画廊</span>
+              <em id="atelier-pill-gallery" class="atelier-mini-tag">0</em>
+            </span>
+            <span class="atelier-seg hidden" id="atelier-seg-mail" data-atelier-seg="mail">
+              <img src="./assets/ui_btn_mailbox.webp?v=hd31" alt="" class="atelier-seg-ico" />
+              <span class="atelier-seg-label">信笺</span>
+              <em id="atelier-pill-mail" class="atelier-mini-tag">0</em>
+            </span>
+          </button>
           <button type="button" id="btn-weekly-journal" class="weekly-journal-pill" title="打开陪伴心情手账周报与周度礼盒">
-            <img src="./assets/ui_btn_weekly_journal.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/ui_btn_weekly_journal.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="hud-journal-label">心情周报</span>
             <em id="hud-journal-badge" class="journal-pill-tag">0/7章</em>
           </button>
           <button type="button" id="pomodoro-mini-pill" class="pomodoro-mini-pill hidden" title="展开奶油手账番茄钟">
-            <img src="./assets/ui_btn_pomodoro.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/ui_btn_pomodoro.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="pomodoro-mini-clock">25:00</span>
             <em id="pomodoro-mini-tag" class="pomo-mini-tag">伴读中</em>
           </button>
           <button type="button" id="teatime-buff-pill" class="teatime-buff-pill hidden" title="查看下午茶幸存者打工增益">
-            <img src="./assets/tea_platter_signature.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/tea_platter_signature.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="teatime-buff-pill-label">茶点增益</span>
             <em id="teatime-buff-pill-clock" class="teatime-mini-tag">07:00</em>
           </button>
           <button type="button" id="terrarium-blessing-pill" class="terrarium-blessing-pill hidden" title="查看微缩绿植花房幸存者打工佑护">
-            <img src="./assets/ui_btn_terrarium.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/ui_btn_terrarium.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="terrarium-pill-label">花房佑护</span>
             <em id="terrarium-pill-tag" class="terrarium-mini-tag">Lv.3</em>
           </button>
           <button type="button" id="musicbox-mini-pill" class="musicbox-mini-pill hidden" title="展开晚安助眠星空八音盒">
-            <img src="./assets/ui_btn_musicbox.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/ui_btn_musicbox.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="musicbox-mini-clock">30:00</span>
             <em id="musicbox-mini-tag" class="musicbox-mini-tag">伴眠中</em>
           </button>
           <button type="button" id="collage-blessing-pill" class="collage-blessing-pill hidden" title="查看手账贴纸拼贴画框幸存者幸运佑护">
-            <img src="./assets/ui_btn_collage_frame.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/ui_btn_collage_frame.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="collage-pill-label">手账佑护</span>
             <em id="collage-pill-tag" class="collage-mini-tag">+30金</em>
           </button>
           <button type="button" id="cozy-radio-pill" class="cozy-radio-pill hidden" title="展开窗畔温暖轻电台">
-            <img src="./assets/ui_btn_cozy_radio.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/ui_btn_cozy_radio.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="cozy-radio-pill-label">木吉他轻弦</span>
             <em id="cozy-radio-pill-tag" class="cozy-radio-mini-tag">播音中</em>
           </button>
           <button type="button" id="crochet-guard-pill" class="crochet-guard-pill hidden" title="查看毛线钩针手作篮幸存者暖绒守护">
-            <img src="./assets/ui_btn_crochet_basket.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/ui_btn_crochet_basket.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="crochet-pill-label">暖绒守护</span>
             <em id="crochet-pill-tag" class="crochet-mini-tag">Lv.1</em>
           </button>
           <button type="button" id="hot-cocoa-pill" class="hot-cocoa-pill hidden" title="查看暖冬棉花糖热可可幸存者暖意增益">
-            <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="ambience-pill-ico" />
+            <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="ambience-pill-ico" />
             <span id="hot-cocoa-pill-label">暖可可</span>
             <em id="hot-cocoa-pill-clock" class="cocoa-mini-tag">08:00</em>
+          </button>
+          <button type="button" id="pressed-flower-pill" class="pressed-flower-pill hidden" title="查看干花标本压花册幸存者幸运再生佑护">
+            <img src="./assets/ui_btn_pressed_flowers.webp?v=hd31" alt="" class="ambience-pill-ico" />
+            <span id="pressed-flower-pill-label" class="ar9-pill-label">幸运再生</span>
+            <em id="pressed-flower-pill-tag" class="pressed-mini-tag">Lv.1</em>
+          </button>
+          <button type="button" id="star-chart-pill" class="star-chart-pill hidden" title="查看窗畔星夜望远镜星图手账">
+            <img src="./assets/star_chart_card.webp?v=hd31" alt="" class="ambience-pill-ico" />
+            <span id="star-chart-pill-label" class="ar9-pill-label">星图</span>
+            <em id="star-chart-pill-tag" class="star-chart-mini-tag">1/6</em>
+          </button>
+          <!-- AR-11 便当袋 + 回忆墙 合并紧凑胶囊（排在胶囊行末尾，只占末行剩余空间，窄屏不新增换行） -->
+          <button type="button" id="kitchen-memory-pill" class="kitchen-memory-pill hidden" title="查看便当袋续航与回忆墙拾光">
+            <span class="km-seg hidden" id="km-seg-bento" data-km-seg="bento">
+              <img src="./assets/bento_box_finished.webp?v=hd31" alt="" class="km-seg-ico" />
+              <span class="km-seg-label">便当</span>
+              <em id="km-pill-bento" class="km-mini-tag">0</em>
+            </span>
+            <span class="km-seg hidden" id="km-seg-puzzle" data-km-seg="puzzle">
+              <img src="./assets/ui_btn_memory_puzzle.webp?v=hd31" alt="" class="km-seg-ico" />
+              <span class="km-seg-label">回忆</span>
+              <em id="km-pill-puzzle" class="km-mini-tag">0</em>
+            </span>
+          </button>
+          <!-- AR-12 窗台小猫 + 节日贺卡 合并紧凑胶囊（跟在 AR-11 胶囊之后；窄屏放不下先只留优先的一段，仍放不下就自动收起，绝不新开一行） -->
+          <button type="button" id="sill-card-pill" class="sill-card-pill hidden" title="查看窗台小猫访客与节日手作贺卡">
+            <span class="sc-seg hidden" id="sc-seg-kitten" data-sc-seg="kitten">
+              <img src="./assets/ui_btn_kitten_corner.webp?v=hd31" alt="" class="sc-seg-ico" />
+              <span class="sc-seg-label">小猫</span>
+              <em id="sc-pill-kitten" class="sc-mini-tag">0</em>
+            </span>
+            <span class="sc-seg hidden" id="sc-seg-card" data-sc-seg="card">
+              <img src="./assets/ui_btn_greeting_card.webp?v=hd31" alt="" class="sc-seg-ico" />
+              <span class="sc-seg-label">贺卡</span>
+              <em id="sc-pill-card" class="sc-mini-tag">0</em>
+            </span>
+          </button>
+          <!-- AR-13 周末野餐 + 手写日记 合并紧凑胶囊（排在 AR-12 胶囊之后；窄屏放不下先只留优先的一段，仍放不下就自动收起，绝不新开一行） -->
+          <button type="button" id="picnic-diary-pill" class="picnic-diary-pill hidden" title="查看周末野餐好心情与手写日记">
+            <span class="pd-seg hidden" id="pd-seg-picnic" data-pd-seg="picnic">
+              <img src="./assets/ui_btn_picnic_basket.webp?v=hd31" alt="" class="pd-seg-ico" />
+              <span class="pd-seg-label">野餐</span>
+              <em id="pd-pill-picnic" class="pd-mini-tag">周末</em>
+            </span>
+            <span class="pd-seg hidden" id="pd-seg-diary" data-pd-seg="diary">
+              <img src="./assets/ui_btn_diary.webp?v=hd31" alt="" class="pd-seg-ico" />
+              <span class="pd-seg-label">日记</span>
+              <em id="pd-pill-diary" class="pd-mini-tag">新</em>
+            </span>
+          </button>
+          <!-- AR-14 陶艺佑护 + 香氛倒计时 合并紧凑胶囊（排在 AR-13 胶囊之后；窄屏放不下先只留优先的一段，仍放不下就自动收起，绝不新开一行） -->
+          <button type="button" id="pottery-aroma-pill" class="pottery-aroma-pill hidden" title="查看陶艺佑护与房间香氛">
+            <span class="pa-seg hidden" id="pa-seg-pottery" data-pa-seg="pottery">
+              <img src="./assets/ui_btn_pottery_wheel.webp?v=hd31" alt="" class="pa-seg-ico" />
+              <span class="pa-seg-label">陶艺</span>
+              <em id="pa-pill-pottery" class="pa-mini-tag">护0</em>
+            </span>
+            <span class="pa-seg hidden" id="pa-seg-aroma" data-pa-seg="aroma">
+              <img src="./assets/aroma_diffuser.webp?v=hd31" alt="" class="pa-seg-ico" />
+              <span class="pa-seg-label">香氛</span>
+              <em id="pa-pill-aroma" class="pa-mini-tag">30分</em>
+            </span>
+          </button>
+          <!-- AR-15 星空投影倒计时 + 听雨中 合并紧凑胶囊（排在 AR-14 胶囊之后；窄屏放不下先只留优先的一段，仍放不下就自动收起，绝不新开一行） -->
+          <button type="button" id="star-rain-pill" class="star-rain-pill hidden" title="查看卧室星空投影与窗边听雨">
+            <span class="sr-seg hidden" id="sr-seg-star" data-sr-seg="star">
+              <img src="./assets/ui_btn_star_projector.webp?v=hd31" alt="" class="sr-seg-ico" />
+              <span class="sr-seg-label">星空</span>
+              <em id="sr-pill-star" class="sr-mini-tag">20分</em>
+            </span>
+            <span class="sr-seg hidden" id="sr-seg-rain" data-sr-seg="rain">
+              <img src="./assets/rain_chime.webp?v=hd31" alt="" class="sr-seg-ico" />
+              <span class="sr-seg-label">听雨</span>
+              <em id="sr-pill-rain" class="sr-mini-tag">细雨</em>
+            </span>
+          </button>
+          <!-- AR-16 围炉依偎 / 烤点心 + 刺绣进度 合并紧凑胶囊（排在 AR-15 胶囊之后；窄屏放不下先只留优先的一段，仍放不下就自动收起，绝不新开一行） -->
+          <button type="button" id="stitch-hearth-pill" class="stitch-hearth-pill hidden" title="查看地板小暖炉与墙面刺绣绷架">
+            <span class="sh-seg hidden" id="sh-seg-hearth" data-sh-seg="hearth">
+              <img src="./assets/ui_btn_hearth_corner.webp?v=hd31" alt="" class="sh-seg-ico" />
+              <span class="sh-seg-label">暖炉</span>
+              <em id="sh-pill-hearth" class="sh-mini-tag">依偎20分</em>
+            </span>
+            <span class="sh-seg hidden" id="sh-seg-stitch" data-sh-seg="stitch">
+              <img src="./assets/ui_btn_embroidery.webp?v=hd31" alt="" class="sh-seg-ico" />
+              <span class="sh-seg-label">刺绣</span>
+              <em id="sh-pill-stitch" class="sh-mini-tag">2/4</em>
+            </span>
           </button>
         </div>
       </div>
@@ -343,7 +444,7 @@
         <div class="pomo-stamp-strip" id="pomodoro-stamp-strip" title="专注达成手账印章册"></div>
         <div class="pomo-stats-row">
           <span class="pomo-stat-pill">
-            <img src="./assets/ui_stamp_focus.webp?v=hd23" alt="" class="pomo-inline-ico" />
+            <img src="./assets/ui_stamp_focus.webp?v=hd31" alt="" class="pomo-inline-ico" />
             印章 <b id="pomo-stat-stamps">0</b>
           </span>
           <span class="pomo-stat-pill">连续 <b id="pomo-stat-streak">0</b> 天</span>
@@ -356,7 +457,7 @@
     <aside id="teatime-card" class="teatime-card hidden" aria-label="治愈下午茶甜点手作台">
       <div class="teatime-card-head">
         <div class="teatime-title-wrap">
-          <img src="./assets/ui_btn_teatime.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <img src="./assets/ui_btn_teatime.webp?v=hd31" alt="" class="pomo-head-ico" />
           <span class="teatime-kicker">治愈下午茶 · 甜点手作台</span>
         </div>
         <div class="teatime-head-actions">
@@ -368,17 +469,17 @@
       <div class="teatime-step-label">1. 挑选鲜萃茶底</div>
       <div class="teatime-grid-3" id="teatime-base-grid">
         <button type="button" class="teatime-pick-btn active" data-tea-base="peach_oolong">
-          <img src="./assets/tea_peach_oolong.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/tea_peach_oolong.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">蜜桃乌龙</span>
           <em class="teatime-pick-sub">清甜白桃</em>
         </button>
         <button type="button" class="teatime-pick-btn" data-tea-base="blueberry_foam">
-          <img src="./assets/tea_blueberry_foam.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/tea_blueberry_foam.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">海盐奶盖蓝莓</span>
           <em class="teatime-pick-sub">微咸芝士</em>
         </button>
         <button type="button" class="teatime-pick-btn" data-tea-base="osmanthus_milk">
-          <img src="./assets/tea_osmanthus_milk.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/tea_osmanthus_milk.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">桂花牛乳茶</span>
           <em class="teatime-pick-sub">丹桂鲜奶</em>
         </button>
@@ -387,17 +488,17 @@
       <div class="teatime-step-label">2. 搭配现烤手作甜点</div>
       <div class="teatime-grid-3" id="teatime-pastry-grid">
         <button type="button" class="teatime-pick-btn" data-pastry="souffle">
-          <img src="./assets/pastry_souffle.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/pastry_souffle.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">草莓舒芙蕾</span>
           <em class="teatime-pick-sub">云朵松饼</em>
         </button>
         <button type="button" class="teatime-pick-btn active" data-pastry="whale_macaron">
-          <img src="./assets/pastry_whale_macaron.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/pastry_whale_macaron.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">蓝鲸马卡龙</span>
           <em class="teatime-pick-sub">香草杏仁</em>
         </button>
         <button type="button" class="teatime-pick-btn" data-pastry="pudding_tart">
-          <img src="./assets/pastry_pudding_tart.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/pastry_pudding_tart.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">焦糖布丁挞</span>
           <em class="teatime-pick-sub">琥珀蛋奶</em>
         </button>
@@ -405,10 +506,10 @@
 
       <div class="teatime-preview-box" id="teatime-preview-box">
         <div class="teatime-platter-stage">
-          <img src="./assets/tea_platter_signature.webp?v=hd23" alt="" class="teatime-platter-main" />
+          <img src="./assets/tea_platter_signature.webp?v=hd31" alt="" class="teatime-platter-main" />
           <div class="teatime-pair-minis">
-            <img id="teatime-prev-tea-ico" src="./assets/tea_peach_oolong.webp?v=hd23" alt="" class="teatime-pair-ico" />
-            <img id="teatime-prev-pastry-ico" src="./assets/pastry_whale_macaron.webp?v=hd23" alt="" class="teatime-pair-ico" />
+            <img id="teatime-prev-tea-ico" src="./assets/tea_peach_oolong.webp?v=hd31" alt="" class="teatime-pair-ico" />
+            <img id="teatime-prev-pastry-ico" src="./assets/pastry_whale_macaron.webp?v=hd31" alt="" class="teatime-pair-ico" />
           </div>
         </div>
         <div class="teatime-preview-info">
@@ -436,7 +537,7 @@
     <aside id="weekly-journal-card" class="weekly-journal-card hidden" aria-label="陪伴心情手账周报">
       <div class="journal-card-head">
         <div class="teatime-title-wrap">
-          <img src="./assets/ui_btn_weekly_journal.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <img src="./assets/ui_btn_weekly_journal.webp?v=hd31" alt="" class="pomo-head-ico" />
           <span class="journal-kicker">陪伴心情手账 · 七日周报</span>
         </div>
         <div class="teatime-head-actions">
@@ -449,19 +550,19 @@
         <span>近 7 日陪伴心情印章栏</span>
         <div class="journal-mood-picker" id="journal-mood-picker">
           <button type="button" class="journal-mood-chip active" data-mood-id="bliss">
-            <img src="./assets/ui_mood_blush.webp?v=hd23" alt="" />甜心
+            <img src="./assets/ui_mood_blush.webp?v=hd31" alt="" />甜心
           </button>
           <button type="button" class="journal-mood-chip" data-mood-id="focus">
-            <img src="./assets/ui_stamp_focus.webp?v=hd23" alt="" />专注
+            <img src="./assets/ui_stamp_focus.webp?v=hd31" alt="" />专注
           </button>
           <button type="button" class="journal-mood-chip" data-mood-id="cozy">
-            <img src="./assets/ui_btn_teatime.webp?v=hd23" alt="" />茶歇
+            <img src="./assets/ui_btn_teatime.webp?v=hd31" alt="" />茶歇
           </button>
           <button type="button" class="journal-mood-chip" data-mood-id="star">
-            <img src="./assets/ui_pin_star.webp?v=hd23" alt="" />星梦
+            <img src="./assets/ui_pin_star.webp?v=hd31" alt="" />星梦
           </button>
           <button type="button" class="journal-mood-chip" data-mood-id="goodnight">
-            <img src="./assets/stamp_goodnight_moon.webp?v=hd23" alt="" />好梦
+            <img src="./assets/stamp_goodnight_moon.webp?v=hd31" alt="" />好梦
           </button>
         </div>
       </div>
@@ -482,16 +583,31 @@
       <div class="journal-gift-row" id="journal-gift-row"></div>
     </aside>
 
+    <!-- AR-14 房间香氛色温层：点香期间按心情 / 季节给整个房间罩一层极淡的奶油色温柔光（不拦截点击，零暗黑赛博） -->
+    <div id="aroma-ambient-overlay" class="aroma-ambient-overlay hidden" aria-hidden="true"></div>
+
+    <!-- AR-15 星空投影星光层：点亮投影时把星座卡上的亮星（vfx_sparkle 位图）投到天花板，罩一层极淡的奶油星光（不拦截点击，零暗黑赛博） -->
+    <div id="star-projector-overlay" class="star-projector-overlay hidden" aria-hidden="true">
+      <div class="spo-glow" id="spo-glow"></div>
+      <div class="spo-sky" id="spo-sky"></div>
+    </div>
+
+    <!-- AR-15 窗边雨幕层：听雨时按窗外天气罩一层极淡的奶油雨幕与细细的浅色雨丝（不拦截点击，与香氛色温叠加仍是奶油色调） -->
+    <div id="rain-ambient-overlay" class="rain-ambient-overlay hidden" aria-hidden="true"></div>
+
+    <!-- AR-16 地板暖炉暖光层：暖炉按本地日期 + 时段亮起时，从地板向上罩一层极淡的奶油琥珀暖光（不拦截点击，与香氛 / 星光 / 雨幕叠加仍是奶油色调） -->
+    <div id="hearth-ambient-overlay" class="hearth-ambient-overlay hidden" aria-hidden="true" data-level="0"></div>
+
     <!-- AR-6 柔和暖光晚安星空纸灯投影氛围层（奶油手账暖珀柔光，零暗黑赛博） -->
     <div id="goodnight-starlight-overlay" class="goodnight-starlight-overlay hidden" aria-hidden="true">
       <div class="goodnight-lantern-glow"></div>
       <div class="goodnight-star-motes">
-        <img src="./assets/vfx_sparkle.webp?v=hd23" alt="" class="gn-mote gn-mote-1" />
-        <img src="./assets/vfx_note.webp?v=hd23" alt="" class="gn-mote gn-mote-2" />
-        <img src="./assets/vfx_sparkle.webp?v=hd23" alt="" class="gn-mote gn-mote-3" />
-        <img src="./assets/vfx_zzz.webp?v=hd23" alt="" class="gn-mote gn-mote-4" />
-        <img src="./assets/vfx_sparkle.webp?v=hd23" alt="" class="gn-mote gn-mote-5" />
-        <img src="./assets/vfx_note.webp?v=hd23" alt="" class="gn-mote gn-mote-6" />
+        <img src="./assets/vfx_sparkle.webp?v=hd31" alt="" class="gn-mote gn-mote-1" />
+        <img src="./assets/vfx_note.webp?v=hd31" alt="" class="gn-mote gn-mote-2" />
+        <img src="./assets/vfx_sparkle.webp?v=hd31" alt="" class="gn-mote gn-mote-3" />
+        <img src="./assets/vfx_zzz.webp?v=hd31" alt="" class="gn-mote gn-mote-4" />
+        <img src="./assets/vfx_sparkle.webp?v=hd31" alt="" class="gn-mote gn-mote-5" />
+        <img src="./assets/vfx_note.webp?v=hd31" alt="" class="gn-mote gn-mote-6" />
       </div>
     </div>
 
@@ -499,7 +615,7 @@
     <aside id="terrarium-card" class="terrarium-card hidden" aria-label="治愈桌面微缩绿植花房">
       <div class="terrarium-card-head">
         <div class="teatime-title-wrap">
-          <img src="./assets/ui_btn_terrarium.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <img src="./assets/ui_btn_terrarium.webp?v=hd31" alt="" class="pomo-head-ico" />
           <span class="terrarium-kicker">治愈花房 · 微缩绿植架</span>
         </div>
         <div class="teatime-head-actions">
@@ -510,17 +626,17 @@
 
       <div class="terrarium-grid-3" id="terrarium-plant-grid">
         <button type="button" class="terrarium-plant-tab active" data-plant-id="peach_succulent">
-          <img src="./assets/plant_peach_succulent.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <img src="./assets/plant_peach_succulent.webp?v=hd31" alt="" class="terrarium-tab-ico" />
           <span class="terrarium-tab-name">蜜桃粉胖多肉</span>
           <em class="terrarium-tab-stage" id="plant-tab-stage-peach_succulent">萌芽 Lv.1</em>
         </button>
         <button type="button" class="terrarium-plant-tab" data-plant-id="star_lily">
-          <img src="./assets/plant_star_lily.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <img src="./assets/plant_star_lily.webp?v=hd31" alt="" class="terrarium-tab-ico" />
           <span class="terrarium-tab-name">星露白铃兰</span>
           <em class="terrarium-tab-stage" id="plant-tab-stage-star_lily">萌芽 Lv.1</em>
         </button>
         <button type="button" class="terrarium-plant-tab" data-plant-id="blue_hydrangea">
-          <img src="./assets/plant_blue_hydrangea.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <img src="./assets/plant_blue_hydrangea.webp?v=hd31" alt="" class="terrarium-tab-ico" />
           <span class="terrarium-tab-name">晴空蓝绣球</span>
           <em class="terrarium-tab-stage" id="plant-tab-stage-blue_hydrangea">萌芽 Lv.1</em>
         </button>
@@ -528,7 +644,7 @@
 
       <div class="terrarium-stage-box" id="terrarium-stage-box">
         <div class="terrarium-pedestal">
-          <img id="terrarium-main-plant-img" src="./assets/plant_peach_succulent.webp?v=hd23" alt="" class="terrarium-main-img" />
+          <img id="terrarium-main-plant-img" src="./assets/plant_peach_succulent.webp?v=hd31" alt="" class="terrarium-main-img" />
           <span class="terrarium-stage-badge" id="terrarium-stage-badge">萌芽 · Lv.1</span>
         </div>
         <div class="terrarium-detail-col">
@@ -584,7 +700,7 @@
     <aside id="goodnight-musicbox-card" class="goodnight-musicbox-card hidden" aria-label="晚安助眠星空八音盒">
       <div class="musicbox-card-head">
         <div class="teatime-title-wrap">
-          <img src="./assets/ui_btn_musicbox.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <img src="./assets/ui_btn_musicbox.webp?v=hd31" alt="" class="pomo-head-ico" />
           <span class="musicbox-kicker">晚安助眠 · 星空八音盒</span>
         </div>
         <div class="teatime-head-actions">
@@ -597,7 +713,7 @@
       <div class="musicbox-timer-box">
         <div class="musicbox-clock-row">
           <div class="musicbox-clock-left">
-            <img src="./assets/ui_btn_musicbox.webp?v=hd23" alt="" class="musicbox-host-ico" />
+            <img src="./assets/ui_btn_musicbox.webp?v=hd31" alt="" class="musicbox-host-ico" />
             <span class="musicbox-clock" id="musicbox-clock">30:00</span>
           </div>
           <span class="musicbox-state-pill" id="musicbox-state-pill">准备伴眠</span>
@@ -633,7 +749,7 @@
         <div class="musicbox-stamp-strip" id="musicbox-stamp-strip" title="晚安好梦火漆纪念章册"></div>
         <div class="pomo-stats-row">
           <span class="pomo-stat-pill">
-            <img src="./assets/stamp_goodnight_moon.webp?v=hd23" alt="" class="pomo-inline-ico" />
+            <img src="./assets/stamp_goodnight_moon.webp?v=hd31" alt="" class="pomo-inline-ico" />
             好梦章 <b id="musicbox-stat-stamps">0</b>
           </span>
           <span class="pomo-stat-pill">伴眠 <b id="musicbox-stat-sessions">0</b> 夜</span>
@@ -646,7 +762,7 @@
     <aside id="collage-frame-card" class="collage-frame-card hidden" aria-label="奶油手账贴纸拼贴纪念画框">
       <div class="collage-card-head">
         <div class="teatime-title-wrap">
-          <img src="./assets/ui_btn_collage_frame.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <img src="./assets/ui_btn_collage_frame.webp?v=hd31" alt="" class="pomo-head-ico" />
           <span class="collage-kicker">奶油手账 · 贴纸拼贴画框</span>
         </div>
         <div class="teatime-head-actions">
@@ -668,21 +784,21 @@
           </div>
           <img
             id="stage-sticker-lace_garland"
-            src="./assets/sticker_lace_garland.webp?v=hd23"
+            src="./assets/sticker_lace_garland.webp?v=hd31"
             alt="奶油蕾丝花边"
             class="collage-stage-sticker"
             data-stage-sticker="lace_garland"
           />
           <img
             id="stage-sticker-pressed_daisy"
-            src="./assets/sticker_pressed_daisy.webp?v=hd23"
+            src="./assets/sticker_pressed_daisy.webp?v=hd31"
             alt="干花书签"
             class="collage-stage-sticker"
             data-stage-sticker="pressed_daisy"
           />
           <img
             id="stage-sticker-whale_stamp"
-            src="./assets/sticker_whale_stamp.webp?v=hd23"
+            src="./assets/sticker_whale_stamp.webp?v=hd31"
             alt="蓝鲸纪念邮票"
             class="collage-stage-sticker"
             data-stage-sticker="whale_stamp"
@@ -702,15 +818,15 @@
 
           <div class="collage-sticker-grid" id="collage-sticker-grid">
             <button type="button" class="collage-sticker-btn active" data-sticker-id="lace_garland">
-              <img src="./assets/sticker_lace_garland.webp?v=hd23" alt="" class="collage-sticker-ico" />
+              <img src="./assets/sticker_lace_garland.webp?v=hd31" alt="" class="collage-sticker-ico" />
               <span>奶油蕾丝花边</span>
             </button>
             <button type="button" class="collage-sticker-btn active" data-sticker-id="pressed_daisy">
-              <img src="./assets/sticker_pressed_daisy.webp?v=hd23" alt="" class="collage-sticker-ico" />
+              <img src="./assets/sticker_pressed_daisy.webp?v=hd31" alt="" class="collage-sticker-ico" />
               <span>干花书签</span>
             </button>
             <button type="button" class="collage-sticker-btn active" data-sticker-id="whale_stamp">
-              <img src="./assets/sticker_whale_stamp.webp?v=hd23" alt="" class="collage-sticker-ico" />
+              <img src="./assets/sticker_whale_stamp.webp?v=hd31" alt="" class="collage-sticker-ico" />
               <span>蓝鲸纪念邮票</span>
             </button>
           </div>
@@ -736,7 +852,7 @@
     <aside id="cozy-radio-card" class="cozy-radio-card hidden" aria-label="窗畔温暖轻电台">
       <div class="cozy-radio-head">
         <div class="teatime-title-wrap">
-          <img src="./assets/ui_btn_cozy_radio.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <img src="./assets/ui_btn_cozy_radio.webp?v=hd31" alt="" class="pomo-head-ico" />
           <span class="cozy-radio-kicker">窗畔轻电台 · 温暖波段</span>
         </div>
         <div class="teatime-head-actions">
@@ -747,8 +863,8 @@
 
       <div class="cozy-radio-stage" id="cozy-radio-stage">
         <div class="cozy-radio-visual">
-          <img src="./assets/ui_btn_cozy_radio.webp?v=hd23" alt="胡桃木轻电台" class="cozy-radio-unit-ico" id="cozy-radio-unit-ico" />
-          <img src="./assets/radio_vinyl_note.webp?v=hd23" alt="温暖黑胶唱针" class="cozy-radio-vinyl-ico" id="cozy-radio-vinyl-ico" />
+          <img src="./assets/ui_btn_cozy_radio.webp?v=hd31" alt="胡桃木轻电台" class="cozy-radio-unit-ico" id="cozy-radio-unit-ico" />
+          <img src="./assets/radio_vinyl_note.webp?v=hd31" alt="温暖黑胶唱针" class="cozy-radio-vinyl-ico" id="cozy-radio-vinyl-ico" />
         </div>
         <div class="cozy-radio-info">
           <div class="cozy-radio-top-line">
@@ -782,7 +898,7 @@
 
       <div class="cozy-radio-footer">
         <span class="pomo-stat-pill">
-          <img src="./assets/radio_vinyl_note.webp?v=hd23" alt="" class="pomo-inline-ico" />
+          <img src="./assets/radio_vinyl_note.webp?v=hd31" alt="" class="pomo-inline-ico" />
           合成 <b id="radio-stat-notes">0</b> 拍
         </span>
         <span class="pomo-stat-pill">收听 <b id="radio-stat-mins">0</b> 分</span>
@@ -794,7 +910,7 @@
     <aside id="crochet-basket-card" class="crochet-basket-card hidden" aria-label="毛线钩针温暖手作篮">
       <div class="crochet-card-head">
         <div class="teatime-title-wrap">
-          <img src="./assets/ui_btn_crochet_basket.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <img src="./assets/ui_btn_crochet_basket.webp?v=hd31" alt="" class="pomo-head-ico" />
           <span class="crochet-kicker">奶油手作 · 毛线钩针篮</span>
         </div>
         <div class="teatime-head-actions">
@@ -805,7 +921,7 @@
 
       <div class="crochet-yarn-bar">
         <div class="crochet-yarn-left">
-          <img src="./assets/ui_btn_crochet_basket.webp?v=hd23" alt="" class="crochet-yarn-ico" />
+          <img src="./assets/ui_btn_crochet_basket.webp?v=hd31" alt="" class="crochet-yarn-ico" />
           <div class="crochet-yarn-meta">
             <span class="crochet-yarn-title">暖绒毛线团 <b id="crochet-yarn-count">3</b> 团</span>
             <span class="crochet-yarn-sub" id="crochet-yarn-sub">日常摸头投喂与茶歇照料可额外掉毛线~</span>
@@ -819,17 +935,17 @@
 
       <div class="terrarium-grid-3" id="crochet-knit-grid">
         <button type="button" class="terrarium-plant-tab active" data-knit-id="whale_scarf">
-          <img src="./assets/knit_whale_scarf.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <img src="./assets/knit_whale_scarf.webp?v=hd31" alt="" class="terrarium-tab-ico" />
           <span class="terrarium-tab-name">手织蓝鲸小围巾</span>
           <em class="terrarium-tab-stage" id="knit-tab-lv-whale_scarf">待起针</em>
         </button>
         <button type="button" class="terrarium-plant-tab" data-knit-id="star_coaster">
-          <img src="./assets/knit_star_coaster.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <img src="./assets/knit_star_coaster.webp?v=hd31" alt="" class="terrarium-tab-ico" />
           <span class="terrarium-tab-name">钩针星芒杯垫</span>
           <em class="terrarium-tab-stage" id="knit-tab-lv-star_coaster">待起针</em>
         </button>
         <button type="button" class="terrarium-plant-tab" data-knit-id="cloud_pillow">
-          <img src="./assets/knit_cloud_pillow.webp?v=hd23" alt="" class="terrarium-tab-ico" />
+          <img src="./assets/knit_cloud_pillow.webp?v=hd31" alt="" class="terrarium-tab-ico" />
           <span class="terrarium-tab-name">绒云晚安抱枕</span>
           <em class="terrarium-tab-stage" id="knit-tab-lv-cloud_pillow">待起针</em>
         </button>
@@ -837,7 +953,7 @@
 
       <div class="crochet-stage-box" id="crochet-stage-box">
         <div class="crochet-pedestal">
-          <img id="crochet-main-knit-img" src="./assets/knit_whale_scarf.webp?v=hd23" alt="" class="crochet-main-img" />
+          <img id="crochet-main-knit-img" src="./assets/knit_whale_scarf.webp?v=hd31" alt="" class="crochet-main-img" />
           <span class="crochet-stage-badge" id="crochet-stage-badge">待起针 · Lv.0</span>
         </div>
         <div class="crochet-detail-col">
@@ -866,7 +982,7 @@
     <aside id="hot-cocoa-card" class="hot-cocoa-card hidden" aria-label="暖冬棉花糖热可可吧台">
       <div class="cocoa-card-head">
         <div class="teatime-title-wrap">
-          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="pomo-head-ico" />
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="pomo-head-ico" />
           <span class="cocoa-kicker">暖冬吧台 · 棉花糖热可可</span>
         </div>
         <div class="teatime-head-actions">
@@ -878,17 +994,17 @@
       <div class="teatime-step-label">1. 挑选暖冬热可可基底</div>
       <div class="teatime-grid-3" id="cocoa-base-grid">
         <button type="button" class="teatime-pick-btn active" data-cocoa-base="mellow_dark">
-          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">醇香黑巧基底</span>
           <em class="teatime-pick-sub">浓醇攻速</em>
         </button>
         <button type="button" class="teatime-pick-btn" data-cocoa-base="sea_salt_caramel">
-          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">海盐焦糖可可</span>
           <em class="teatime-pick-sub">琥珀财运</em>
         </button>
         <button type="button" class="teatime-pick-btn" data-cocoa-base="hazelnut_cream">
-          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">榛果奶霜可可</span>
           <em class="teatime-pick-sub">焙香均衡</em>
         </button>
@@ -897,12 +1013,12 @@
       <div class="teatime-step-label">2. 点缀暖绒配料罐顶料</div>
       <div class="cocoa-grid-2" id="cocoa-topping-grid">
         <button type="button" class="teatime-pick-btn active" data-cocoa-topping="star_marshmallow">
-          <img src="./assets/cocoa_marshmallow_topping.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/cocoa_marshmallow_topping.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">烤星芒棉花糖</span>
           <em class="teatime-pick-sub">微焦绵软 · 财运加倍</em>
         </button>
         <button type="button" class="teatime-pick-btn" data-cocoa-topping="cinnamon_stick">
-          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="teatime-pick-ico" />
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="teatime-pick-ico" />
           <span class="teatime-pick-name">肉桂暖香棒</span>
           <em class="teatime-pick-sub">木质暖香 · 攻速加倍</em>
         </button>
@@ -910,8 +1026,8 @@
 
       <div class="cocoa-preview-box" id="cocoa-preview-box">
         <div class="cocoa-mug-stage">
-          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="cocoa-mug-main" />
-          <img id="cocoa-prev-topping-ico" src="./assets/cocoa_marshmallow_topping.webp?v=hd23" alt="" class="cocoa-topping-mini" />
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="cocoa-mug-main" />
+          <img id="cocoa-prev-topping-ico" src="./assets/cocoa_marshmallow_topping.webp?v=hd31" alt="" class="cocoa-topping-mini" />
         </div>
         <div class="teatime-preview-info">
           <div class="teatime-recipe-top">
@@ -931,6 +1047,919 @@
       <div class="teatime-codex-footer">
         <div class="teatime-active-buff-bar" id="cocoa-active-buff-bar">端上热可可即可激活 8 分钟「幸存者打工」攻速与财运暖意增益~</div>
         <div class="cocoa-codex-grid" id="cocoa-codex-grid" title="6款暖冬热可可特调图鉴"></div>
+      </div>
+    </aside>
+
+    <!-- AR-9 奶油手账干花标本压花册（拾取樱瓣/银杏/满天星花材 + 压制3枚干花书签 Lv.1~3 + 木桌陈列 + 幸运再生佑护） -->
+    <aside id="pressed-flower-card" class="pressed-flower-card hidden" aria-label="干花标本温馨压花册">
+      <div class="pressed-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_pressed_flowers.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="pressed-kicker">奶油手账 · 干花标本压花册</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="pressed-summary-pill" id="pressed-summary-pill">压花 Lv.0/9</span>
+          <button type="button" id="btn-pressed-close" class="topic-close-btn" aria-label="关闭干花标本压花册">×</button>
+        </div>
+      </div>
+
+      <div class="pressed-petal-bar">
+        <div class="pressed-petal-stock" id="pressed-petal-stock">
+          <span class="pressed-petal-chip" data-petal-chip="sakura">
+            <img src="./assets/pressed_sakura_bookmark.webp?v=hd31" alt="" class="pressed-petal-ico" />樱瓣 <b id="petal-count-sakura">2</b>
+          </span>
+          <span class="pressed-petal-chip" data-petal-chip="ginkgo">
+            <img src="./assets/pressed_ginkgo_bookmark.webp?v=hd31" alt="" class="pressed-petal-ico" />银杏 <b id="petal-count-ginkgo">2</b>
+          </span>
+          <span class="pressed-petal-chip" data-petal-chip="babysbreath">
+            <img src="./assets/pressed_babysbreath_bookmark.webp?v=hd31" alt="" class="pressed-petal-ico" />满天星 <b id="petal-count-babysbreath">2</b>
+          </span>
+        </div>
+        <div class="pressed-petal-btns">
+          <button type="button" id="btn-pressed-daily-gather" class="pressed-petal-btn is-daily">今日拾花 +6</button>
+          <button type="button" id="btn-pressed-flower-pack" class="pressed-petal-btn">花束 12金+3</button>
+        </div>
+      </div>
+
+      <div class="terrarium-grid-3" id="pressed-bookmark-grid">
+        <button type="button" class="terrarium-plant-tab active" data-bookmark-id="sakura">
+          <img src="./assets/pressed_sakura_bookmark.webp?v=hd31" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">樱瓣书签</span>
+          <em class="terrarium-tab-stage" id="bookmark-tab-lv-sakura">待压制</em>
+        </button>
+        <button type="button" class="terrarium-plant-tab" data-bookmark-id="ginkgo">
+          <img src="./assets/pressed_ginkgo_bookmark.webp?v=hd31" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">银杏书签</span>
+          <em class="terrarium-tab-stage" id="bookmark-tab-lv-ginkgo">待压制</em>
+        </button>
+        <button type="button" class="terrarium-plant-tab" data-bookmark-id="babysbreath">
+          <img src="./assets/pressed_babysbreath_bookmark.webp?v=hd31" alt="" class="terrarium-tab-ico" />
+          <span class="terrarium-tab-name">满天星书签</span>
+          <em class="terrarium-tab-stage" id="bookmark-tab-lv-babysbreath">待压制</em>
+        </button>
+      </div>
+
+      <div class="pressed-stage-box" id="pressed-stage-box">
+        <div class="pressed-pedestal">
+          <img id="pressed-main-bookmark-img" src="./assets/pressed_sakura_bookmark.webp?v=hd31" alt="" class="pressed-main-img" />
+          <span class="pressed-stage-badge" id="pressed-stage-badge">待压制 · Lv.0</span>
+        </div>
+        <div class="pressed-detail-col">
+          <div class="terrarium-detail-top">
+            <strong class="pressed-bookmark-title" id="pressed-bookmark-title">樱瓣干花书签</strong>
+            <button type="button" id="btn-pressed-display-toggle" class="terrarium-display-btn">摆上木桌</button>
+          </div>
+          <p class="pressed-bookmark-note" id="pressed-bookmark-note">春日窗台拾来的樱花瓣，夹进厚书压平后封进牛皮纸书签~</p>
+          <span class="pressed-cost-hint" id="pressed-cost-hint">压制消耗 2 片樱瓣 · 赠予立得亲密与金币</span>
+          <div class="pressed-bless-desc" id="pressed-bless-desc">专属佑护：幸存者打工幸运掉宝</div>
+        </div>
+      </div>
+
+      <div class="pressed-actions-row">
+        <button type="button" id="btn-pressed-press" class="pomo-btn pressed-btn-press">压制书签 · 赠予她 (2片)</button>
+        <button type="button" id="btn-pressed-gift" class="pomo-btn pressed-btn-gift" disabled>轻抚书签</button>
+        <button type="button" id="btn-pressed-go-shift" class="pomo-btn pressed-btn-shift hidden">带佑护打工</button>
+      </div>
+
+      <div class="pressed-footer-bar" id="pressed-total-bless">
+        幸运再生佑护：压制任意干花书签即可激活幸存者「幸运掉宝 + 体力再生 + 金币幸运」
+      </div>
+    </aside>
+
+    <!-- AR-9 窗畔星夜天文望远镜（按序连星 + 辨认星座形状 + 星图手账收录 + 周报联动 + 星辉指引） -->
+    <aside id="telescope-card" class="telescope-card hidden" aria-label="窗畔星夜天文望远镜">
+      <div class="telescope-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_telescope.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="telescope-kicker">窗畔星夜 · 天文望远镜</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="telescope-codex-pill" id="telescope-codex-pill">星图 0/6</span>
+          <button type="button" id="btn-telescope-close" class="topic-close-btn" aria-label="关闭窗畔星夜天文望远镜">×</button>
+        </div>
+      </div>
+
+      <div class="telescope-sky" id="telescope-sky" aria-label="望远镜视野">
+        <div class="telescope-sky-lines" id="telescope-sky-lines"></div>
+        <div class="telescope-sky-stars" id="telescope-sky-stars"></div>
+        <div class="telescope-sky-idle" id="telescope-sky-idle">
+          <img src="./assets/ui_btn_telescope.webp?v=hd31" alt="" class="telescope-idle-ico" />
+          <span>点下方「对准星空」，望远镜里会浮现编号星星~</span>
+        </div>
+        <span class="telescope-sky-progress hidden" id="telescope-sky-progress">连星 0/0</span>
+      </div>
+
+      <p class="telescope-step-hint" id="telescope-step-hint">按 1→2→3 的顺序轻点星星连成星座，再辨认它是哪一座吧~</p>
+
+      <div class="telescope-identify-grid hidden" id="telescope-identify-grid"></div>
+
+      <div class="telescope-actions-row">
+        <button type="button" id="btn-telescope-start" class="pomo-btn telescope-btn-start">对准星空 · 开始寻星</button>
+        <button type="button" id="btn-telescope-go-shift" class="pomo-btn telescope-btn-shift hidden">带星辉打工</button>
+      </div>
+
+      <div class="star-chart-box">
+        <div class="star-chart-head">
+          <img src="./assets/star_chart_card.webp?v=hd31" alt="" class="star-chart-ico" />
+          <div class="star-chart-meta">
+            <strong class="star-chart-title">星图手账 · 已收录星座</strong>
+            <span class="star-chart-sub" id="star-chart-sub">共观星 0 次 · 连星 0 颗</span>
+          </div>
+        </div>
+        <div class="star-chart-grid" id="star-chart-grid" title="6座星座星图手账"></div>
+      </div>
+
+      <div class="telescope-footer-bar" id="telescope-total-bonus">
+        星辉指引：每收录 1 座星座，幸存者打工暴击 +1.5% · 宝石磁吸 +3%
+      </div>
+    </aside>
+
+    <!-- AR-10 窗畔雨天水彩写生画架（选题材 + 选调色盘 + 调色起笔 + 晕染笔触 + 落款挂上墙面画廊 + 画意专注守护） -->
+    <aside id="watercolor-card" class="watercolor-card hidden" aria-label="窗畔雨天水彩写生画架">
+      <div class="watercolor-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_watercolor_easel.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="watercolor-kicker">窗畔雨天 · 水彩写生画架</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="watercolor-summary-pill" id="watercolor-summary-pill">画廊 0/9</span>
+          <button type="button" id="btn-watercolor-close" class="topic-close-btn" aria-label="关闭水彩写生画架">×</button>
+        </div>
+      </div>
+
+      <div class="watercolor-pick-row">
+        <div class="watercolor-subject-grid" id="watercolor-subject-grid">
+          <button type="button" class="watercolor-subject-tab active" data-subject-id="rainy_window">
+            <img src="./assets/watercolor_rainy_window.webp?v=hd31" alt="" class="watercolor-subject-ico" />
+            <span class="watercolor-subject-name">雨天窗畔</span>
+          </button>
+          <button type="button" class="watercolor-subject-tab" data-subject-id="potted_plant">
+            <img src="./assets/plant_star_lily.webp?v=hd31" alt="" class="watercolor-subject-ico" />
+            <span class="watercolor-subject-name">窗台盆栽</span>
+          </button>
+          <button type="button" class="watercolor-subject-tab" data-subject-id="whale_plush">
+            <img src="./assets/toy_whale.webp?v=hd31" alt="" class="watercolor-subject-ico" />
+            <span class="watercolor-subject-name">酣睡鲸鱼</span>
+          </button>
+        </div>
+        <div class="watercolor-palette-grid" id="watercolor-palette-grid">
+          <button type="button" class="watercolor-palette-chip active" data-palette-id="mist_blue">
+            <img src="./assets/watercolor_palette.webp?v=hd31" alt="" class="watercolor-palette-ico" />
+            <span class="watercolor-palette-name">雾霾蓝调</span>
+          </button>
+          <button type="button" class="watercolor-palette-chip" data-palette-id="peach_cream">
+            <img src="./assets/watercolor_palette.webp?v=hd31" alt="" class="watercolor-palette-ico" />
+            <span class="watercolor-palette-name">蜜桃奶油</span>
+          </button>
+          <button type="button" class="watercolor-palette-chip" data-palette-id="matcha_latte">
+            <img src="./assets/watercolor_palette.webp?v=hd31" alt="" class="watercolor-palette-ico" />
+            <span class="watercolor-palette-name">抹茶拿铁</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="watercolor-stage" id="watercolor-stage">
+        <div class="watercolor-paper" id="watercolor-paper" data-phase="idle">
+          <img id="watercolor-paper-base" src="./assets/watercolor_rainy_window.webp?v=hd31" alt="" class="watercolor-paper-base" />
+          <img id="watercolor-paper-subject" src="./assets/plant_star_lily.webp?v=hd31" alt="" class="watercolor-paper-subject hidden" />
+          <div class="watercolor-wash-layer" id="watercolor-wash-layer"></div>
+          <span class="watercolor-paper-tag" id="watercolor-paper-tag">待起笔</span>
+        </div>
+        <div class="watercolor-side">
+          <p class="watercolor-step-hint" id="watercolor-step-hint">选好题材与调色盘，点「调色起笔」开始写生~</p>
+          <div class="watercolor-well-row" id="watercolor-well-row"></div>
+          <div class="watercolor-progress" title="晕染进度"><i class="watercolor-progress-fill" id="watercolor-progress-fill"></i></div>
+        </div>
+      </div>
+
+      <div class="watercolor-actions-row">
+        <button type="button" id="btn-watercolor-main" class="pomo-btn watercolor-btn-main">调色起笔</button>
+        <button type="button" id="btn-watercolor-go-shift" class="pomo-btn watercolor-btn-shift hidden">带画意打工</button>
+      </div>
+
+      <div class="watercolor-gallery-box">
+        <div class="watercolor-gallery-head">
+          <img src="./assets/watercolor_palette.webp?v=hd31" alt="" class="watercolor-gallery-ico" />
+          <span class="watercolor-gallery-sub" id="watercolor-gallery-sub">墙面画廊 · 共画 0 幅</span>
+        </div>
+        <div class="watercolor-gallery-grid" id="watercolor-gallery-grid" title="3 题材 × 3 调色盘水彩画廊"></div>
+      </div>
+
+      <div class="watercolor-footer-bar" id="watercolor-total-ward">
+        画意专注守护：每收藏 1 幅不同水彩，幸存者打工暴击 +1.2% · 专注攻速 +1.5%
+      </div>
+    </aside>
+
+    <!-- AR-10 奶油手账小邮差信箱（她按亲密度与七日心情周报定期写信 + 选回信 + 贴邮票 + 集邮册 + 信笺心意） -->
+    <aside id="mailbox-card" class="mailbox-card hidden" aria-label="奶油手账小邮差信箱">
+      <div class="mailbox-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_mailbox.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="mailbox-kicker">奶油手账 · 小邮差信箱</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="mailbox-summary-pill" id="mailbox-summary-pill">回信 0 · 邮票 1/3</span>
+          <button type="button" id="btn-mailbox-close" class="topic-close-btn" aria-label="关闭小邮差信箱">×</button>
+        </div>
+      </div>
+
+      <div class="mailbox-tab-row" id="mailbox-tab-row">
+        <button type="button" class="mailbox-tab active" data-mail-view="inbox">信箱 <em id="mailbox-inbox-count">0</em></button>
+        <button type="button" class="mailbox-tab" data-mail-view="album">集邮册 <em id="mailbox-album-count">0</em></button>
+      </div>
+
+      <div class="mailbox-inbox" id="mailbox-inbox-view">
+        <div class="mailbox-envelope-row" id="mailbox-envelope-row"></div>
+        <p class="mailbox-next-hint" id="mailbox-next-hint">她正在书桌旁写下一封信~</p>
+        <div class="mailbox-letter hidden" id="mailbox-letter">
+          <div class="mailbox-letter-top">
+            <img src="./assets/letter_envelope.webp?v=hd31" alt="" class="mailbox-letter-ico" />
+            <strong class="mailbox-letter-title" id="mailbox-letter-title">粉色便笺</strong>
+            <em class="mailbox-letter-mood" id="mailbox-letter-mood">甜心</em>
+          </div>
+          <p class="mailbox-letter-body" id="mailbox-letter-body"></p>
+          <span class="mailbox-letter-sign" id="mailbox-letter-sign"></span>
+          <img id="mailbox-letter-stamp" src="./assets/stamp_whale.webp?v=hd31" alt="" class="mailbox-letter-stamp hidden" />
+        </div>
+        <div class="mailbox-reply-grid hidden" id="mailbox-reply-grid"></div>
+        <div class="mailbox-stamp-row hidden" id="mailbox-stamp-row">
+          <button type="button" class="mailbox-stamp-btn" data-stamp-id="whale">
+            <img src="./assets/stamp_whale.webp?v=hd31" alt="" class="mailbox-stamp-ico" />
+            <span class="mailbox-stamp-name">蓝鲸邮票</span>
+          </button>
+          <button type="button" class="mailbox-stamp-btn" data-stamp-id="moon">
+            <img src="./assets/stamp_goodnight_moon.webp?v=hd31" alt="" class="mailbox-stamp-ico" />
+            <span class="mailbox-stamp-name">晚安月亮</span>
+          </button>
+          <button type="button" class="mailbox-stamp-btn" data-stamp-id="daisy">
+            <img src="./assets/sticker_pressed_daisy.webp?v=hd31" alt="" class="mailbox-stamp-ico" />
+            <span class="mailbox-stamp-name">雏菊干花</span>
+          </button>
+        </div>
+        <div class="mailbox-actions-row">
+          <button type="button" id="btn-mailbox-send" class="pomo-btn mailbox-btn-send" disabled>先拆开一封信</button>
+          <button type="button" id="btn-mailbox-go-shift" class="pomo-btn mailbox-btn-shift hidden">带心意打工</button>
+        </div>
+      </div>
+
+      <div class="mailbox-album hidden" id="mailbox-album-view">
+        <div class="mailbox-stamp-tally" id="mailbox-stamp-tally"></div>
+        <div class="mailbox-album-grid" id="mailbox-album-grid"></div>
+        <p class="mailbox-album-read" id="mailbox-album-read">点一封珍藏信笺，重温她的字迹与你的回信~</p>
+      </div>
+
+      <div class="mailbox-footer-bar" id="mailbox-total-bonus">
+        信笺心意：每寄出 1 封回信，幸存者打工班次经验 +1.2%，每集到 1 种邮票再 +1%
+      </div>
+    </aside>
+
+    <!-- AR-11 暖灯厨房一起做饭团便当（挑饭团馅料与配菜 + 点选/拖放摆进便当格 + 盖盖完成 + 打包进便当袋带去打工 + 9 款便当图鉴） -->
+    <aside id="bento-kitchen-card" class="bento-kitchen-card hidden" aria-label="暖灯厨房一起做饭团便当">
+      <div class="bento-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_bento_kitchen.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="bento-kicker">暖灯厨房 · 一起做饭团便当</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="bento-summary-pill" id="bento-summary-pill">图鉴 0/9 · 袋 0/3</span>
+          <button type="button" id="btn-bento-close" class="topic-close-btn" aria-label="关闭暖灯厨房">×</button>
+        </div>
+      </div>
+
+      <div class="bento-tray" id="bento-tray">
+        <button type="button" class="bento-tray-chip" data-tray-item="filling:ume" style="--bk:#f2a9b8">
+          <img src="./assets/onigiri_trio.webp?v=hd31" alt="" class="bento-tray-ico" />
+          <span class="bento-tray-name"><i class="bento-dot"></i>梅子</span>
+        </button>
+        <button type="button" class="bento-tray-chip" data-tray-item="filling:salmon" style="--bk:#f6b48c">
+          <img src="./assets/onigiri_trio.webp?v=hd31" alt="" class="bento-tray-ico" />
+          <span class="bento-tray-name"><i class="bento-dot"></i>鲑鱼</span>
+        </button>
+        <button type="button" class="bento-tray-chip" data-tray-item="filling:tuna" style="--bk:#f2dd9c">
+          <img src="./assets/onigiri_trio.webp?v=hd31" alt="" class="bento-tray-ico" />
+          <span class="bento-tray-name"><i class="bento-dot"></i>金枪鱼</span>
+        </button>
+        <button type="button" class="bento-tray-chip is-side" data-tray-item="side:tamago" style="--bk:#f7d774">
+          <i class="bento-tray-portion"></i>
+          <span class="bento-tray-name">厚蛋烧</span>
+        </button>
+        <button type="button" class="bento-tray-chip is-side" data-tray-item="side:octopus" style="--bk:#f29a8a">
+          <i class="bento-tray-portion"></i>
+          <span class="bento-tray-name">章鱼香肠</span>
+        </button>
+        <button type="button" class="bento-tray-chip is-side" data-tray-item="side:broccoli" style="--bk:#a9d18e">
+          <i class="bento-tray-portion"></i>
+          <span class="bento-tray-name">西兰花</span>
+        </button>
+      </div>
+
+      <div class="bento-stage" id="bento-stage">
+        <div class="bento-box" id="bento-box" data-phase="assemble">
+          <button type="button" class="bento-slot bento-slot-rice" data-bento-slot="rice"><span class="bento-slot-label">饭团格</span></button>
+          <button type="button" class="bento-slot bento-slot-side" data-bento-slot="sideA"><span class="bento-slot-label">配菜格</span></button>
+          <button type="button" class="bento-slot bento-slot-side" data-bento-slot="sideB"><span class="bento-slot-label">配菜格</span></button>
+          <img id="bento-box-finished" src="./assets/bento_box_finished.webp?v=hd31" alt="完成的饭团便当" class="bento-box-finished hidden" />
+          <span class="bento-box-tag" id="bento-box-tag">摆盘 0/3</span>
+        </div>
+        <div class="bento-side">
+          <p class="bento-step-hint" id="bento-step-hint">点一种饭团馅料或配菜拿在手里，再点便当盒的格子摆进去~</p>
+          <div class="bento-recipe-line" id="bento-recipe-line"></div>
+          <div class="bento-bag-row" id="bento-bag-row"></div>
+        </div>
+      </div>
+
+      <div class="bento-actions-row">
+        <button type="button" id="btn-bento-main" class="pomo-btn bento-btn-main" disabled>还差 3 格</button>
+        <button type="button" id="btn-bento-share" class="pomo-btn bento-btn-share hidden">一起吃掉</button>
+        <button type="button" id="btn-bento-go-shift" class="pomo-btn bento-btn-shift hidden">带便当打工</button>
+      </div>
+
+      <div class="bento-codex-box">
+        <div class="bento-codex-head">
+          <img src="./assets/onigiri_trio.webp?v=hd31" alt="" class="bento-codex-head-ico" />
+          <span class="bento-codex-sub" id="bento-codex-sub">便当图鉴 0/9 · 共做 0 份</span>
+        </div>
+        <div class="bento-codex-grid" id="bento-codex-grid" title="3 种饭团 × 3 组配菜便当图鉴"></div>
+      </div>
+
+      <div class="bento-footer-bar" id="bento-total-ward">
+        便当续航：打包的便当在下一个幸存者班次打开，每份守护 1 个班次（持续回血 + 低血饭团救急）
+      </div>
+    </aside>
+
+    <!-- AR-11 奶油手账回忆拼图时光（从拍立得 / 水彩画 / 七日心情周报生成 3×3 小拼图 + 点选或拖动交换 + 拼好挂上回忆墙 + 回忆拾光） -->
+    <aside id="memory-puzzle-card" class="memory-puzzle-card hidden" aria-label="奶油手账回忆拼图时光">
+      <div class="puzzle-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_memory_puzzle.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="puzzle-kicker">奶油手账 · 回忆拼图时光</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="puzzle-summary-pill" id="puzzle-summary-pill">回忆墙 0/6</span>
+          <button type="button" id="btn-puzzle-close" class="topic-close-btn" aria-label="关闭回忆拼图">×</button>
+        </div>
+      </div>
+
+      <div class="puzzle-source-row" id="puzzle-source-row"></div>
+
+      <div class="puzzle-stage" id="puzzle-stage">
+        <div class="puzzle-board" id="puzzle-board" data-phase="idle"></div>
+        <div class="puzzle-side">
+          <p class="puzzle-step-hint" id="puzzle-step-hint">选一段回忆，点「打乱开拼」把它剪成 9 块~</p>
+          <div class="puzzle-ref-row">
+            <img id="puzzle-ref-img" src="./assets/puzzle_piece_memory.webp?v=hd31" alt="原图参考" class="puzzle-ref-img" />
+            <span class="puzzle-moves" id="puzzle-moves">3×3 · 9 块</span>
+          </div>
+          <div class="puzzle-progress" title="归位进度"><i class="puzzle-progress-fill" id="puzzle-progress-fill"></i></div>
+        </div>
+      </div>
+
+      <div class="puzzle-actions-row">
+        <button type="button" id="btn-puzzle-main" class="pomo-btn puzzle-btn-main">打乱开拼</button>
+        <button type="button" id="btn-puzzle-go-shift" class="pomo-btn puzzle-btn-shift hidden">带回忆打工</button>
+      </div>
+
+      <div class="puzzle-wall-box" id="puzzle-wall-box">
+        <div class="puzzle-wall-head">
+          <img src="./assets/memory_wall_frame.webp?v=hd31" alt="" class="puzzle-wall-frame-ico" />
+          <span class="puzzle-wall-sub" id="puzzle-wall-sub">回忆墙 · 挂出 0/6</span>
+        </div>
+        <div class="puzzle-wall-grid" id="puzzle-wall-grid"></div>
+      </div>
+
+      <div class="puzzle-footer-bar" id="puzzle-total-bonus">
+        回忆拾光：每拼好 1 段不同回忆，幸存者打工金币 +2%（集满 6 段再 +3%）
+      </div>
+    </aside>
+
+    <!-- AR-12 窗台小猫访客喂食角（按真实时钟不定期来访，添猫粮 / 摸摸提升好感，小猫图鉴，好感合计化作幸存者班次幸运佑护） -->
+    <aside id="kitten-corner-card" class="kitten-corner-card hidden" aria-label="窗台小猫访客喂食角">
+      <div class="kc-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_kitten_corner.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="kc-kicker">窗台小猫 · 访客喂食角</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="kc-summary-pill" id="kc-summary-pill">好感 0/200 · 图鉴 0/2</span>
+          <button type="button" id="btn-kitten-close" class="topic-close-btn" aria-label="关闭窗台小猫">×</button>
+        </div>
+      </div>
+
+      <div class="kc-stage" id="kc-stage">
+        <div class="kc-sill" id="kc-sill" data-state="empty">
+          <img id="kc-visitor-img" src="./assets/kitten_ginger.webp?v=hd31" alt="" class="kc-visitor-img hidden" />
+          <img id="kc-bowl-img" src="./assets/cat_food_bowl.webp?v=hd31" alt="" class="kc-bowl-img hidden" />
+          <img id="kc-heart-img" src="./assets/vfx_heart.webp?v=hd6" alt="" class="kc-heart-img hidden" />
+          <span class="kc-sill-tag" id="kc-sill-tag">窗台空着</span>
+        </div>
+        <div class="kc-side">
+          <p class="kc-status" id="kc-status">窗台还空着，过一会儿也许会有小猫来串门~</p>
+          <div class="kc-aff-row" id="kc-aff-row">
+            <span class="kc-aff-name" id="kc-aff-name">好感</span>
+            <span class="kc-aff-bar"><i class="kc-aff-fill" id="kc-aff-fill"></i></span>
+            <em class="kc-aff-val" id="kc-aff-val">0/100</em>
+          </div>
+          <span class="kc-visit-meta" id="kc-visit-meta">今日来访 0/8</span>
+        </div>
+      </div>
+
+      <div class="kc-actions-row">
+        <button type="button" id="btn-kitten-feed" class="pomo-btn kc-btn-feed" disabled>添一碗猫粮</button>
+        <button type="button" id="btn-kitten-pet" class="pomo-btn kc-btn-pet" disabled>摸摸 0/3</button>
+        <button type="button" id="btn-kitten-go-shift" class="pomo-btn kc-btn-shift hidden">带好运打工</button>
+      </div>
+
+      <div class="kc-codex-box">
+        <div class="kc-codex-head">
+          <img src="./assets/cat_food_bowl.webp?v=hd31" alt="" class="kc-codex-head-ico" />
+          <span class="kc-codex-sub" id="kc-codex-sub">小猫图鉴 0/2 · 来访 0 次</span>
+        </div>
+        <div class="kc-codex-grid" id="kc-codex-grid" title="窗台小猫访客图鉴"></div>
+      </div>
+
+      <div class="kc-footer-bar" id="kc-ward-line">
+        猫咪幸运佑护：两只小猫的好感合计越高，幸存者班次幸运掉宝越多，还能在体力见底时护身一次
+      </div>
+    </aside>
+
+    <!-- AR-12 奶油手账节日手作贺卡（按本地日期 / 季节与固定节日，和 DeepSeek 娘一起选卡纸、贴剪贴、写祝福，寄进贺卡收藏册） -->
+    <aside id="greeting-craft-card" class="greeting-craft-card hidden" aria-label="奶油手账节日手作贺卡">
+      <div class="gc-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_greeting_card.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="gc-kicker">奶油手账 · 节日手作贺卡</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="gc-summary-pill" id="gc-summary-pill">收藏 0 · 节日 0/8</span>
+          <button type="button" id="btn-greeting-close" class="topic-close-btn" aria-label="关闭节日贺卡">×</button>
+        </div>
+      </div>
+
+      <div class="gc-occasion-row" id="gc-occasion-row">
+        <img id="gc-occasion-ico" src="./assets/vfx_season_autumn.webp?v=hd31" alt="" class="gc-occasion-ico" />
+        <strong class="gc-occasion-name" id="gc-occasion-name">秋枫季</strong>
+        <span class="gc-occasion-sub" id="gc-occasion-sub">季节贺卡</span>
+      </div>
+
+      <div class="gc-stage">
+        <div class="gc-preview" id="gc-preview" data-base="cream_grid">
+          <img src="./assets/handmade_card.webp?v=hd31" alt="手作贺卡" class="gc-preview-art" id="gc-preview-art" />
+          <img src="./assets/vfx_sparkle.webp?v=hd6" alt="" class="gc-preview-sticker gc-ps-0 hidden" id="gc-ps-0" />
+          <img src="./assets/vfx_sparkle.webp?v=hd6" alt="" class="gc-preview-sticker gc-ps-1 hidden" id="gc-ps-1" />
+          <img src="./assets/vfx_sparkle.webp?v=hd6" alt="" class="gc-preview-sticker gc-ps-2 hidden" id="gc-ps-2" />
+          <span class="gc-preview-tag" id="gc-preview-tag">秋枫季</span>
+          <p class="gc-preview-line" id="gc-preview-line">选一句想说的话~</p>
+          <span class="gc-preview-sign">DeepSeek娘 &amp; 你</span>
+        </div>
+        <div class="gc-pickers">
+          <div class="gc-step-label">卡纸</div>
+          <div class="gc-base-row" id="gc-base-row">
+            <button type="button" class="gc-base-chip active" data-base-id="cream_grid"><i class="gc-base-swatch"></i><span>奶油格纹</span></button>
+            <button type="button" class="gc-base-chip" data-base-id="sakura_wash"><i class="gc-base-swatch"></i><span>樱粉水彩</span></button>
+            <button type="button" class="gc-base-chip" data-base-id="mint_letter"><i class="gc-base-swatch"></i><span>薄荷信笺</span></button>
+          </div>
+          <div class="gc-step-label">剪贴贴纸 <em id="gc-sticker-count">0/3</em></div>
+          <div class="gc-sticker-row" id="gc-sticker-row"></div>
+          <div class="gc-step-label">写一句</div>
+          <div class="gc-line-row" id="gc-line-row"></div>
+        </div>
+      </div>
+
+      <div class="gc-actions-row">
+        <button type="button" id="btn-greeting-helper" class="pomo-btn gc-btn-helper">她来帮忙</button>
+        <button type="button" id="btn-greeting-send" class="pomo-btn gc-btn-send" disabled>选好卡纸、贴纸和祝福</button>
+        <button type="button" id="btn-greeting-go-shift" class="pomo-btn gc-btn-shift hidden">带心意打工</button>
+      </div>
+
+      <div class="gc-album-box">
+        <div class="gc-album-head">
+          <img src="./assets/handmade_card.webp?v=hd31" alt="" class="gc-album-head-ico" />
+          <span class="gc-album-sub" id="gc-album-sub">贺卡收藏册 · 共 0 张</span>
+        </div>
+        <div class="gc-album-grid" id="gc-album-grid" title="寄出的手作贺卡收藏册"></div>
+      </div>
+
+      <div class="gc-footer-bar" id="gc-bless-line">
+        贺卡心意：每收集 1 种节日 / 季节贺卡，幸存者打工班次经验 +1.5%（8 种集齐 +12%）
+      </div>
+    </aside>
+
+    <!-- AR-13 奶油手账周末野餐篮（按本地星期：周末和她挑点心、选地点去野餐；工作日先装篮子攒期待章，野餐完成化作幸存者班次好心情佑护） -->
+    <aside id="picnic-basket-card" class="picnic-basket-card hidden" aria-label="奶油手账周末野餐篮">
+      <div class="pc-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_picnic_basket.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="pc-kicker">奶油手账 · 周末野餐篮</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="pc-summary-pill" id="pc-summary-pill">野餐 0 次 · 地点 0/3</span>
+          <button type="button" id="btn-picnic-close" class="topic-close-btn" aria-label="关闭周末野餐篮">×</button>
+        </div>
+      </div>
+
+      <div class="pc-day-row" id="pc-day-row" data-day-kind="weekday">
+        <strong class="pc-day-name" id="pc-day-name">周三</strong>
+        <span class="pc-day-sub" id="pc-day-sub">离周末还有 3 天 · 先把篮子装好</span>
+        <span class="pc-prep-stamps" id="pc-prep-stamps" title="工作日每天装一次篮子攒 1 枚期待章（最多 5 枚）">
+          <i class="pc-prep-dot"></i><i class="pc-prep-dot"></i><i class="pc-prep-dot"></i><i class="pc-prep-dot"></i><i class="pc-prep-dot"></i>
+        </span>
+      </div>
+
+      <div class="pc-stage">
+        <div class="pc-blanket" id="pc-blanket" data-phase="plan" data-spot="">
+          <img src="./assets/picnic_blanket.webp?v=hd31" alt="野餐垫" class="pc-blanket-art" id="pc-blanket-art" />
+          <button type="button" class="pc-food-slot pc-fs-0 hidden" data-food-slot="0"><img src="./assets/picnic_sandwich.webp?v=hd31" alt="" class="pc-food-slot-ico" /></button>
+          <button type="button" class="pc-food-slot pc-fs-1 hidden" data-food-slot="1"><img src="./assets/picnic_sandwich.webp?v=hd31" alt="" class="pc-food-slot-ico" /></button>
+          <button type="button" class="pc-food-slot pc-fs-2 hidden" data-food-slot="2"><img src="./assets/picnic_sandwich.webp?v=hd31" alt="" class="pc-food-slot-ico" /></button>
+          <span class="pc-blanket-tag" id="pc-blanket-tag">还没选地点</span>
+        </div>
+        <div class="pc-pickers">
+          <div class="pc-step-label">野餐点心 <em id="pc-food-count">0/3</em></div>
+          <div class="pc-food-row" id="pc-food-row"></div>
+          <div class="pc-step-label">野餐地点</div>
+          <div class="pc-spot-row" id="pc-spot-row"></div>
+        </div>
+      </div>
+
+      <div class="pc-actions-row">
+        <button type="button" id="btn-picnic-helper" class="pomo-btn pc-btn-helper">她来搭配</button>
+        <button type="button" id="btn-picnic-main" class="pomo-btn pc-btn-main" disabled>还差点心、地点</button>
+        <button type="button" id="btn-picnic-go-shift" class="pomo-btn pc-btn-shift hidden">带好心情打工</button>
+      </div>
+
+      <div class="pc-log-box">
+        <div class="pc-log-head">
+          <img src="./assets/picnic_sandwich.webp?v=hd31" alt="" class="pc-log-head-ico" />
+          <span class="pc-log-sub" id="pc-log-sub">野餐手账 · 共 0 次</span>
+        </div>
+        <div class="pc-log-grid" id="pc-log-grid" title="去过的野餐"></div>
+      </div>
+
+      <div class="pc-footer-bar" id="pc-ward-line">
+        野餐好心情：周末完成一次野餐，接下来 2 个幸存者打工班次获得地点佑护（期待章每枚 +5%）
+      </div>
+    </aside>
+
+    <!-- AR-13 DeepSeek 娘手写日记本（她按每天真实的互动自动写一页，可翻页、贴贴纸装饰，与七日心情周报联动） -->
+    <aside id="diary-book-card" class="diary-book-card hidden" aria-label="DeepSeek娘手写日记本">
+      <div class="dy-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_diary.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="dy-kicker">奶油手账 · 她的手写日记</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="dy-summary-pill" id="dy-summary-pill">日记 1 页 · 装饰 0</span>
+          <button type="button" id="btn-diary-close" class="topic-close-btn" aria-label="关闭手写日记本">×</button>
+        </div>
+      </div>
+
+      <div class="dy-book">
+        <button type="button" class="dy-flip-btn" id="btn-diary-prev" aria-label="上一页">‹</button>
+        <div class="dy-page" id="dy-page" data-has-content="0">
+          <img src="./assets/diary_page.webp?v=hd31" alt="" class="dy-page-art" id="dy-page-art" />
+          <div class="dy-page-top">
+            <strong class="dy-page-date" id="dy-page-date">11月18日 · 周三</strong>
+            <em class="dy-page-mood" id="dy-page-mood">甜心</em>
+          </div>
+          <ul class="dy-page-lines" id="dy-page-lines"></ul>
+          <p class="dy-page-sign" id="dy-page-sign">—— DeepSeek娘</p>
+          <img src="./assets/diary_sticker.webp?v=hd31" alt="" class="dy-page-sticker dy-ps-0 hidden" id="dy-ps-0" data-sticker-slot="0" />
+          <img src="./assets/diary_sticker.webp?v=hd31" alt="" class="dy-page-sticker dy-ps-1 hidden" id="dy-ps-1" data-sticker-slot="1" />
+          <img src="./assets/diary_sticker.webp?v=hd31" alt="" class="dy-page-sticker dy-ps-2 hidden" id="dy-ps-2" data-sticker-slot="2" />
+          <span class="dy-page-no" id="dy-page-no">1/1</span>
+        </div>
+        <button type="button" class="dy-flip-btn" id="btn-diary-next" aria-label="下一页">›</button>
+      </div>
+
+      <div class="dy-sticker-head">
+        <span class="dy-step-label">贴纸装饰 <em id="dy-sticker-count">0/3</em></span>
+        <span class="dy-reward-tag" id="dy-reward-tag">今日装饰奖励 0/3</span>
+      </div>
+      <div class="dy-sticker-row" id="dy-sticker-row"></div>
+
+      <div class="dy-actions-row">
+        <button type="button" id="btn-diary-today" class="pomo-btn dy-btn-today">翻到今天</button>
+        <button type="button" id="btn-diary-helper" class="pomo-btn dy-btn-helper">她来贴</button>
+        <button type="button" id="btn-diary-journal" class="pomo-btn dy-btn-journal">看七日周报</button>
+      </div>
+
+      <div class="dy-footer-bar" id="dy-footer-line">
+        日记心意：每天第一次给有内容的日记页贴贴纸，+6 金币与亲密（每天 3 页）；装饰次数计入七日心情周报
+      </div>
+    </aside>
+
+    <!-- AR-14 窗畔手作陶艺转盘（拉坯 → 上釉 → 烧成，出窑的小陶器摆上窗畔陶艺架并化作幸存者班次陶艺佑护；船坞不加键，入口在「家具与装扮」抽屉 / 场景陶艺架 / 合并胶囊） -->
+    <aside id="pottery-wheel-card" class="pottery-wheel-card hidden" aria-label="窗畔手作陶艺转盘">
+      <div class="pw-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_pottery_wheel.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="pw-kicker">窗畔手作 · 陶艺转盘</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="pw-summary-pill" id="pw-summary-pill">陶艺架 0 件 · 图鉴 0/6</span>
+          <button type="button" id="btn-pottery-close" class="topic-close-btn" aria-label="关闭陶艺转盘">×</button>
+        </div>
+      </div>
+
+      <div class="pw-step-row" id="pw-step-row" data-phase="shape">
+        <span class="pw-step is-active" data-step="shape">1 拉坯</span>
+        <span class="pw-step" data-step="glaze">2 上釉</span>
+        <span class="pw-step" data-step="fire">3 烧成</span>
+        <span class="pw-step-hint" id="pw-step-hint">选个器型，点转盘拉坯~</span>
+      </div>
+
+      <div class="pw-stage">
+        <div class="pw-wheel" id="pw-wheel" data-phase="shape" data-glaze="">
+          <img src="./assets/ui_btn_pottery_wheel.webp?v=hd31" alt="陶艺转盘" class="pw-wheel-art" id="pw-wheel-art" />
+          <img src="./assets/pottery_cup.webp?v=hd31" alt="" class="pw-clay" id="pw-clay" />
+          <span class="pw-wheel-tag" id="pw-wheel-tag">拉坯 0/3</span>
+        </div>
+        <div class="pw-pickers">
+          <div class="pw-step-label">器型</div>
+          <div class="pw-shape-row" id="pw-shape-row"></div>
+          <div class="pw-step-label">釉色</div>
+          <div class="pw-glaze-row" id="pw-glaze-row"></div>
+        </div>
+      </div>
+
+      <div class="pw-actions-row">
+        <button type="button" id="btn-pottery-helper" class="pomo-btn pw-btn-helper">她来拉坯</button>
+        <button type="button" id="btn-pottery-main" class="pomo-btn pw-btn-main">转盘拉坯 0/3</button>
+        <button type="button" id="btn-pottery-go-shift" class="pomo-btn pw-btn-shift hidden">带佑护打工</button>
+      </div>
+
+      <div class="pw-shelf-box">
+        <div class="pw-shelf-head">
+          <img src="./assets/pottery_vase.webp?v=hd31" alt="" class="pw-shelf-head-ico" />
+          <span class="pw-shelf-sub" id="pw-shelf-sub">窗畔陶艺架 · 共 0 件</span>
+        </div>
+        <div class="pw-shelf-grid" id="pw-shelf-grid" title="最近出窑的小陶器"></div>
+      </div>
+
+      <div class="pw-footer-bar" id="pw-ward-line">
+        陶艺佑护：茶杯护 2 个打工班次、花瓶护 1 个（效果 ×1.5）；奶白减伤 / 樱粉金币 / 青瓷磁吸
+      </div>
+    </aside>
+
+    <!-- AR-14 她的小小香氛调配台（按心情 + 本地日期季节调香，点香期间房间色温随之变化，与七日心情周报 / 日记联动） -->
+    <aside id="aroma-table-card" class="aroma-table-card hidden" aria-label="她的小小香氛调配台">
+      <div class="am-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_aroma_table.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="am-kicker">她的小小 · 香氛调配台</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="am-summary-pill" id="am-summary-pill">香氛 0 次 · 图鉴 0/20</span>
+          <button type="button" id="btn-aroma-close" class="topic-close-btn" aria-label="关闭香氛调配台">×</button>
+        </div>
+      </div>
+
+      <div class="am-season-row" id="am-season-row" data-season="autumn">
+        <img src="./assets/vfx_season_autumn.webp?v=hd31" alt="" class="am-season-ico" id="am-season-ico" />
+        <strong class="am-season-name" id="am-season-name">秋 · 桂花木质</strong>
+        <span class="am-season-sub" id="am-season-sub">按本地日期取当季基调</span>
+      </div>
+
+      <div class="am-stage">
+        <div class="am-bottle-stage" id="am-bottle-stage" data-mood="" data-lit="0">
+          <img src="./assets/aroma_bottle.webp?v=hd31" alt="香氛瓶" class="am-bottle-art" id="am-bottle-art" />
+          <img src="./assets/aroma_diffuser.webp?v=hd31" alt="香薰机" class="am-diffuser-art" id="am-diffuser-art" />
+          <span class="am-drops" id="am-drops"><i class="am-drop"></i><i class="am-drop"></i><i class="am-drop"></i></span>
+          <span class="am-stage-tag" id="am-stage-tag">还没选心情</span>
+        </div>
+        <div class="am-pickers">
+          <div class="am-step-label">今天的心情</div>
+          <div class="am-mood-row" id="am-mood-row"></div>
+          <div class="am-recipe-line" id="am-recipe-line">香调 = 当季基调 + 心情心调 + 她的小心意</div>
+        </div>
+      </div>
+
+      <div class="am-actions-row">
+        <button type="button" id="btn-aroma-helper" class="pomo-btn am-btn-helper">她来调</button>
+        <button type="button" id="btn-aroma-main" class="pomo-btn am-btn-main" disabled>先选心情</button>
+        <button type="button" id="btn-aroma-stop" class="pomo-btn am-btn-stop hidden">熄香</button>
+      </div>
+
+      <div class="am-codex-box">
+        <div class="am-codex-head">
+          <img src="./assets/aroma_bottle.webp?v=hd31" alt="" class="am-codex-head-ico" />
+          <span class="am-codex-sub" id="am-codex-sub">香氛图鉴 0/20</span>
+        </div>
+        <div class="am-codex-grid" id="am-codex-grid" title="当季 5 种心情香氛图鉴"></div>
+      </div>
+
+      <div class="am-footer-bar" id="am-footer-line">
+        香氛舒心：滴满 3 滴点香后 30 分钟，房间换上心情色温、日常亲密 +10%
+      </div>
+    </aside>
+
+    <!-- AR-15 卧室星空投影灯（挑当季星座卡 → 转动投影罩对准亮星 → 点亮投影收集星座卡 → 一起晚安盖好梦章；船坞不加键，入口在「家具与装扮」抽屉 / 窗边飘台投影灯 / 合并胶囊） -->
+    <aside id="star-projector-card" class="star-projector-card hidden" aria-label="卧室星空投影灯">
+      <div class="sp-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_star_projector.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="sp-kicker">睡前 · 卧室星空投影灯</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="sp-summary-pill" id="sp-summary-pill">星座卡 0/8 · 好梦 0</span>
+          <button type="button" id="btn-star-close" class="topic-close-btn" aria-label="关闭星空投影灯">×</button>
+        </div>
+      </div>
+
+      <div class="sp-night-row" id="sp-night-row" data-season="autumn" data-bedtime="0">
+        <img src="./assets/stamp_goodnight_moon.webp?v=hd31" alt="" class="sp-night-ico" />
+        <strong class="sp-night-name" id="sp-night-name">今晚 · 秋夜星空</strong>
+        <span class="sp-night-sub" id="sp-night-sub">20:00 后点亮算睡前 ×1.5</span>
+      </div>
+
+      <div class="sp-stage">
+        <div class="sp-dome" id="sp-dome" data-phase="pick" data-lit="0">
+          <span class="sp-sky" id="sp-sky"></span>
+          <img src="./assets/star_projector.webp?v=hd31" alt="星空投影灯" class="sp-dome-art" id="sp-dome-art" />
+          <span class="sp-dome-tag" id="sp-dome-tag">先挑星座卡</span>
+        </div>
+        <div class="sp-pickers">
+          <div class="sp-step-label">今晚的星座卡（当季）</div>
+          <div class="sp-card-row" id="sp-card-row"></div>
+          <div class="sp-story-line" id="sp-story-line">挑一张星座卡，转动投影罩把亮星一颗颗对准~</div>
+        </div>
+      </div>
+
+      <div class="sp-actions-row">
+        <button type="button" id="btn-star-helper" class="pomo-btn sp-btn-helper">她来点亮</button>
+        <button type="button" id="btn-star-main" class="pomo-btn sp-btn-main" disabled>先挑星座卡</button>
+        <button type="button" id="btn-star-off" class="pomo-btn sp-btn-off hidden">熄灯</button>
+      </div>
+
+      <div class="sp-album-box">
+        <div class="sp-album-head">
+          <img src="./assets/constellation_card.webp?v=hd31" alt="" class="sp-album-head-ico" />
+          <span class="sp-album-sub" id="sp-album-sub">星座卡册 0/8</span>
+        </div>
+        <div class="sp-album-grid" id="sp-album-grid" title="8 张星座卡（每季 2 张）"></div>
+      </div>
+
+      <div class="sp-footer-bar" id="sp-footer-line">
+        点亮一次投影 20 分钟；投影亮着时一起晚安，星座卡会盖上好梦章
+      </div>
+    </aside>
+
+    <!-- AR-15 窗边听雨角（按本地日期 + 时段确定性轮换的窗外天气播放白噪音，每听满 5 分钟记一则听雨小记；不联网、不读传感器） -->
+    <aside id="rain-corner-card" class="rain-corner-card hidden" aria-label="窗边听雨角">
+      <div class="rc-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_rain_corner.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="rc-kicker">窗边 · 听雨角</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="rc-summary-pill" id="rc-summary-pill">听雨 0 则 · 手帐 0/20</span>
+          <button type="button" id="btn-rain-close" class="topic-close-btn" aria-label="关闭听雨角">×</button>
+        </div>
+      </div>
+
+      <div class="rc-weather-row" id="rc-weather-row" data-weather="drizzle" data-seg="day">
+        <img src="./assets/watercolor_rainy_window.webp?v=hd31" alt="" class="rc-weather-ico" id="rc-weather-ico" />
+        <strong class="rc-weather-name" id="rc-weather-name">午后 · 绵绵细雨</strong>
+        <span class="rc-weather-sub" id="rc-weather-sub">按本地日期与时段轮换</span>
+      </div>
+
+      <div class="rc-stage">
+        <div class="rc-window" id="rc-window" data-listening="0" data-weather="drizzle">
+          <span class="rc-drops" aria-hidden="true">
+            <img src="./assets/vfx_sparkle.webp?v=hd31" alt="" class="rc-drop rc-drop-1" />
+            <img src="./assets/vfx_sparkle.webp?v=hd31" alt="" class="rc-drop rc-drop-2" />
+            <img src="./assets/vfx_sparkle.webp?v=hd31" alt="" class="rc-drop rc-drop-3" />
+            <img src="./assets/vfx_sparkle.webp?v=hd31" alt="" class="rc-drop rc-drop-4" />
+          </span>
+          <img src="./assets/rain_chime.webp?v=hd31" alt="雨滴风铃" class="rc-chime-art" id="rc-chime-art" />
+          <img src="./assets/rain_cushion.webp?v=hd31" alt="听雨坐垫" class="rc-cushion-art" />
+          <span class="rc-stage-tag" id="rc-stage-tag">细雨 · 还没开始</span>
+        </div>
+        <div class="rc-pickers">
+          <div class="rc-step-label">白噪音音量 · 风铃</div>
+          <div class="rc-volume-row" id="rc-volume-row"></div>
+          <div class="rc-mix-line" id="rc-mix-line">白噪音：细雨沙沙 · 偶尔檐滴</div>
+        </div>
+      </div>
+
+      <div class="rc-actions-row">
+        <button type="button" id="btn-rain-helper" class="pomo-btn rc-btn-helper">她来陪听</button>
+        <button type="button" id="btn-rain-main" class="pomo-btn rc-btn-main">开始听雨</button>
+      </div>
+
+      <div class="rc-codex-box">
+        <div class="rc-codex-head">
+          <img src="./assets/rain_cushion.webp?v=hd31" alt="" class="rc-codex-head-ico" />
+          <span class="rc-codex-sub" id="rc-codex-sub">听雨手帐 0/20</span>
+        </div>
+        <div class="rc-codex-grid" id="rc-codex-grid" title="当前时段 5 种窗外天气的听雨手帐"></div>
+      </div>
+
+      <div class="rc-footer-bar" id="rc-footer-line">
+        每听满 5 分钟记一则听雨小记；听雨时日常亲密 +5%
+      </div>
+    </aside>
+
+    <!-- AR-16 墙面刺绣绷架（挑当季绣样 → 选绣线 → 你一针她一针绣满 → 收针挂上墙面并写进手写日记；船坞不加键，入口在「家具与装扮」抽屉 / 墙面绷架与绣品 / 合并胶囊） -->
+    <aside id="embroidery-card" class="embroidery-card hidden" aria-label="墙面刺绣绷架">
+      <div class="eb-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_embroidery.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="eb-kicker">墙面 · 刺绣绷架</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="eb-summary-pill" id="eb-summary-pill">绣样 0/8 · 墙上 0</span>
+          <button type="button" id="btn-embroidery-close" class="topic-close-btn" aria-label="关闭刺绣绷架">×</button>
+        </div>
+      </div>
+
+      <div class="eb-season-row" id="eb-season-row" data-season="autumn">
+        <img src="./assets/embroidery_patch.webp?v=hd31" alt="" class="eb-season-ico" />
+        <strong class="eb-season-name" id="eb-season-name">本季 · 秋日绣样</strong>
+        <span class="eb-season-sub" id="eb-season-sub">你绣一针、她接一针</span>
+      </div>
+
+      <div class="eb-stage">
+        <div class="eb-hoop" id="eb-hoop" data-phase="pick">
+          <img src="./assets/embroidery_hoop.webp?v=hd31" alt="刺绣绷架" class="eb-hoop-art" />
+          <img src="./assets/embroidery_patch.webp?v=hd31" alt="" class="eb-hoop-patch" id="eb-hoop-patch" />
+          <span class="eb-stitches" id="eb-stitches"></span>
+          <span class="eb-hoop-tag" id="eb-hoop-tag">先挑绣样</span>
+        </div>
+        <div class="eb-pickers">
+          <div class="eb-step-label">本季绣样 · 绣线</div>
+          <div class="eb-pattern-row" id="eb-pattern-row"></div>
+          <div class="eb-thread-row" id="eb-thread-row"></div>
+          <div class="eb-story-line" id="eb-story-line">挑一款绣样、选好绣线，你一针她一针~</div>
+        </div>
+      </div>
+
+      <div class="eb-actions-row">
+        <button type="button" id="btn-embroidery-helper" class="pomo-btn eb-btn-helper">她来绣</button>
+        <button type="button" id="btn-embroidery-main" class="pomo-btn eb-btn-main" disabled>先挑绣样</button>
+      </div>
+
+      <div class="eb-album-box">
+        <div class="eb-album-head">
+          <img src="./assets/embroidery_patch.webp?v=hd31" alt="" class="eb-album-head-ico" />
+          <span class="eb-album-sub" id="eb-album-sub">绣样册 0/8</span>
+        </div>
+        <div class="eb-album-grid" id="eb-album-grid" title="8 款季节绣样（每季 2 款）"></div>
+      </div>
+
+      <div class="eb-footer-bar" id="eb-footer-line">
+        收针后绣品挂上墙面，当天的手写日记会多一枚刺绣布贴
+      </div>
+    </aside>
+
+    <!-- AR-16 地板小暖炉冬日角（按本地日期 + 时段亮起的暖炉，挑口味翻面烤松饼分着吃，围炉依偎加亲密；不联网、不读传感器） -->
+    <aside id="hearth-card" class="hearth-card hidden" aria-label="地板小暖炉冬日角">
+      <div class="hc-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_hearth_corner.webp?v=hd31" alt="" class="pomo-head-ico" />
+          <span class="hc-kicker">地板 · 小暖炉冬日角</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="hc-summary-pill" id="hc-summary-pill">点心手帐 0/12 · 依偎 0</span>
+          <button type="button" id="btn-hearth-close" class="topic-close-btn" aria-label="关闭小暖炉">×</button>
+        </div>
+      </div>
+
+      <div class="hc-heat-row" id="hc-heat-row" data-level="0">
+        <img src="./assets/floor_heater.webp?v=hd31" alt="" class="hc-heat-ico" />
+        <strong class="hc-heat-name" id="hc-heat-name">初冬 · 午后 · 小火</strong>
+        <span class="hc-heat-sub" id="hc-heat-sub">按本地日期与时段亮起</span>
+      </div>
+
+      <div class="hc-stage">
+        <div class="hc-stove" id="hc-stove" data-level="0" data-phase="pick">
+          <img src="./assets/floor_heater.webp?v=hd31" alt="小暖炉" class="hc-heater-art" />
+          <img src="./assets/roasted_snack.webp?v=hd31" alt="炉边烤松饼" class="hc-snack-art" id="hc-snack-art" />
+          <span class="hc-sparks" id="hc-sparks"></span>
+          <span class="hc-stove-tag" id="hc-stove-tag">先挑口味</span>
+        </div>
+        <div class="hc-pickers">
+          <div class="hc-step-label">炉边松饼口味</div>
+          <div class="hc-snack-row" id="hc-snack-row"></div>
+          <div class="hc-story-line" id="hc-story-line">挑一种口味放上小暖炉，翻面烤好一起分着吃~</div>
+        </div>
+      </div>
+
+      <div class="hc-actions-row">
+        <button type="button" id="btn-hearth-helper" class="pomo-btn hc-btn-helper">她来烤</button>
+        <button type="button" id="btn-hearth-main" class="pomo-btn hc-btn-main" disabled>先挑口味</button>
+      </div>
+
+      <div class="hc-codex-box">
+        <div class="hc-codex-head">
+          <img src="./assets/roasted_snack.webp?v=hd31" alt="" class="hc-codex-head-ico" />
+          <span class="hc-codex-sub" id="hc-codex-sub">炉边点心手帐 0/12</span>
+        </div>
+        <div class="hc-codex-grid" id="hc-codex-grid" title="当前火力下 4 种口味的炉边点心手帐"></div>
+      </div>
+
+      <div class="hc-footer-bar" id="hc-footer-line">
+        分着吃完一起围炉依偎 20 分钟：火力越旺，日常亲密加成越高
       </div>
     </aside>
 
@@ -1039,36 +2068,82 @@
           <span class="care-label" id="btn-nap-label">小憩</span>
         </button>
         <button id="btn-pomodoro" class="care-btn care-btn-pomodoro" aria-label="奶油手账番茄钟专注陪伴">
-          <img src="./assets/ui_btn_pomodoro.webp?v=hd23" alt="" class="care-thumb" />
+          <img src="./assets/ui_btn_pomodoro.webp?v=hd31" alt="" class="care-thumb" />
           <span class="care-label" id="btn-pomodoro-label">专注</span>
         </button>
         <button id="btn-teatime" class="care-btn care-btn-teatime" aria-label="治愈下午茶甜点手作台">
-          <img src="./assets/ui_btn_teatime.webp?v=hd23" alt="" class="care-thumb" />
+          <img src="./assets/ui_btn_teatime.webp?v=hd31" alt="" class="care-thumb" />
           <span class="care-label" id="btn-teatime-label">下午茶</span>
         </button>
         <button id="btn-terrarium" class="care-btn care-btn-terrarium" aria-label="治愈桌面微缩绿植花房">
-          <img src="./assets/ui_btn_terrarium.webp?v=hd23" alt="" class="care-thumb" />
+          <img src="./assets/ui_btn_terrarium.webp?v=hd31" alt="" class="care-thumb" />
           <span class="care-label" id="btn-terrarium-label">花房</span>
         </button>
         <button id="btn-musicbox" class="care-btn care-btn-musicbox" aria-label="晚安助眠星空八音盒">
-          <img src="./assets/ui_btn_musicbox.webp?v=hd23" alt="" class="care-thumb" />
+          <img src="./assets/ui_btn_musicbox.webp?v=hd31" alt="" class="care-thumb" />
           <span class="care-label" id="btn-musicbox-label">晚安盒</span>
         </button>
         <button id="btn-collage-frame" class="care-btn care-btn-collage" aria-label="奶油手账贴纸拼贴纪念画框">
-          <img src="./assets/ui_btn_collage_frame.webp?v=hd23" alt="" class="care-thumb" />
+          <img src="./assets/ui_btn_collage_frame.webp?v=hd31" alt="" class="care-thumb" />
           <span class="care-label" id="btn-collage-label">拼贴框</span>
         </button>
         <button id="btn-cozy-radio" class="care-btn care-btn-radio" aria-label="窗畔温暖轻电台">
-          <img src="./assets/ui_btn_cozy_radio.webp?v=hd23" alt="" class="care-thumb" />
+          <img src="./assets/ui_btn_cozy_radio.webp?v=hd31" alt="" class="care-thumb" />
           <span class="care-label" id="btn-radio-label">轻电台</span>
         </button>
         <button id="btn-crochet-basket" class="care-btn care-btn-crochet" aria-label="毛线钩针温暖手作篮">
-          <img src="./assets/ui_btn_crochet_basket.webp?v=hd23" alt="" class="care-thumb" />
+          <img src="./assets/ui_btn_crochet_basket.webp?v=hd31" alt="" class="care-thumb" />
           <span class="care-label" id="btn-crochet-label">手作篮</span>
         </button>
         <button id="btn-hot-cocoa" class="care-btn care-btn-cocoa" aria-label="暖冬棉花糖热可可吧台">
-          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd23" alt="" class="care-thumb" />
+          <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="care-thumb" />
           <span class="care-label" id="btn-cocoa-label">热可可</span>
+        </button>
+        <button id="btn-pressed-flowers" class="care-btn care-btn-pressed" aria-label="干花标本温馨压花册">
+          <img src="./assets/ui_btn_pressed_flowers.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-pressed-label">压花册</span>
+        </button>
+        <button id="btn-telescope" class="care-btn care-btn-telescope" aria-label="窗畔星夜天文望远镜">
+          <img src="./assets/ui_btn_telescope.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-telescope-label">望远镜</span>
+        </button>
+        <button id="btn-watercolor-easel" class="care-btn care-btn-watercolor" aria-label="窗畔雨天水彩写生画架">
+          <img src="./assets/ui_btn_watercolor_easel.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-watercolor-label">画架</span>
+        </button>
+        <button id="btn-mailbox" class="care-btn care-btn-mailbox" aria-label="奶油手账小邮差信箱">
+          <img src="./assets/ui_btn_mailbox.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-mailbox-label">信箱</span>
+          <em class="care-mail-badge hidden" id="mailbox-unread-badge">1</em>
+        </button>
+        <button id="btn-bento-kitchen" class="care-btn care-btn-bento" aria-label="暖灯厨房一起做饭团便当">
+          <img src="./assets/ui_btn_bento_kitchen.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-bento-label">便当</span>
+          <em class="care-mail-badge care-bento-badge hidden" id="bento-bag-badge">1</em>
+        </button>
+        <button id="btn-memory-puzzle" class="care-btn care-btn-puzzle" aria-label="奶油手账回忆拼图时光">
+          <img src="./assets/ui_btn_memory_puzzle.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-puzzle-label">拼图</span>
+        </button>
+        <button id="btn-kitten-corner" class="care-btn care-btn-kitten" aria-label="窗台小猫访客喂食角">
+          <img src="./assets/ui_btn_kitten_corner.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-kitten-label">小猫</span>
+          <em class="care-mail-badge care-kitten-badge hidden" id="kitten-visit-badge">来</em>
+        </button>
+        <button id="btn-greeting-card" class="care-btn care-btn-greeting" aria-label="奶油手账节日手作贺卡">
+          <img src="./assets/ui_btn_greeting_card.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-greeting-label">贺卡</span>
+          <em class="care-mail-badge care-greeting-badge hidden" id="greeting-holiday-badge">节</em>
+        </button>
+        <button id="btn-picnic-basket" class="care-btn care-btn-picnic" aria-label="奶油手账周末野餐篮">
+          <img src="./assets/ui_btn_picnic_basket.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-picnic-label">野餐</span>
+          <em class="care-mail-badge care-picnic-badge hidden" id="picnic-weekend-badge">周</em>
+        </button>
+        <button id="btn-diary-book" class="care-btn care-btn-diary" aria-label="DeepSeek娘手写日记本">
+          <img src="./assets/ui_btn_diary.webp?v=hd31" alt="" class="care-thumb" />
+          <span class="care-label" id="btn-diary-label">日记</span>
+          <em class="care-mail-badge care-diary-badge hidden" id="diary-new-badge">新</em>
         </button>
         <button id="btn-shop" class="care-btn care-btn-shop" aria-label="打开鲸鱼小铺">
           <img src="./assets/ui_shop.webp?v=hd6" alt="" class="care-thumb" />
@@ -1089,6 +2164,6 @@
     </div>
   </div>
 
-  <script type="module" src="./game.js?v=hd47"></script>
+  <script type="module" src="./game.js?v=hd55"></script>
 </body>
 </html>
