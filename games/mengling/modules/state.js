@@ -11,8 +11,31 @@ import { EXTRA_TECH_FLAGS } from "./tech_defs.js";
 import { ensureEraState } from "./systems/era.js";
 import { normalizeLegacy } from "./systems/rebirth.js";
 import { normalizeMintTuning } from "./mons.js";
-import { ensureAmberRevivalState, ensureEcoSandboxState, ensureStarBoutiqueState } from "./systems/collection_fun.js";
-import { ensureChampionLeagueState, ensureStarCorridorState } from "./systems/pve_tower.js";
+import {
+  ensureAmberRevivalState,
+  ensureEcoSandboxState,
+  ensureNightObservatoryState,
+  ensureSkyIslandState,
+  ensureHotSpringState,
+  ensureDreamLibraryState,
+  ensureBakeryState,
+  ensureCloudParkState,
+  ensureStarBoutiqueState,
+  ensureTreasureVoyageState,
+  ensureWishDockState,
+} from "./systems/collection_fun.js";
+import {
+  ensureAcrobatShowState,
+  ensureBandConcertState,
+  ensureChampionLeagueState,
+  ensurePostOfficeState,
+  ensureFishingClubState,
+  ensureBalloonTravelState,
+  ensureStargazeCampState,
+  ensureEcoTriHallState,
+  ensureSeasonMigrationState,
+  ensureStarCorridorState,
+} from "./systems/pve_tower.js";
 
 
 
@@ -159,6 +182,9 @@ export const defaultState = () => ({
     shinyStarSand: { value: 0, cap: 0 },
     ancientGeneAmber: { value: 0, cap: 0 },
     corridorStarMedals: { value: 0, cap: 0 },
+    driftBottle: { value: 0, cap: 0 },
+    fireflyLantern: { value: 0, cap: 0 },
+    mapFragment: { value: 0, cap: 0 },
 
   },
 
@@ -431,6 +457,33 @@ export const defaultState = () => ({
       clearedFloors: {},
       records: [],
       lastRunSummary: null,
+    },
+    ecoTriHall: {
+      squadIds: [],
+      dayKey: "",
+      rotationId: "",
+      rungIdx: 0,
+      clearedToday: {},
+      championToday: false,
+      totalChampionships: 0,
+      triadChampions: {},
+      crestTier: 0,
+      bestRung: 0,
+      totalRungClears: 0,
+      records: [],
+      lastRunSummary: null,
+    },
+    acrobatShow: {
+      routine: [],
+      dayKey: "",
+      themeId: "",
+      performedToday: 0,
+      bestScoreToday: 0,
+      bestTierByTheme: {},
+      bestScoreByTheme: {},
+      totalPerformances: 0,
+      records: [],
+      lastShow: null,
     },
 
   },
@@ -1520,6 +1573,54 @@ export function loadFromRaw(raw) {
   if (s.meta?.amberRevival) {
     ensureAmberRevivalState(s);
   }
+  if (s.meta?.wishDock) {
+    ensureWishDockState(s);
+  }
+  if (s.meta?.nightObservatory) {
+    ensureNightObservatoryState(s);
+  }
+  // ML-11：云顶浮空岛（设施等级 / 工地 / 建造伙伴）与季节迁徙（纪念章 / 图鉴 / 驻留候鸟）——旧存档无此字段时保持中性默认
+  if (s.meta?.skyIsland) {
+    ensureSkyIslandState(s);
+  }
+  if (s.meta?.seasonMigration) {
+    ensureSeasonMigrationState(s);
+  }
+  // ML-12：寻宝地图远航（藏宝图 / 远航船队 / 纪念品）与萌灵乐队合奏音乐会（声部编排 / 节奏型 / 巡演奖杯）——旧存档无此字段时保持中性默认
+  if (s.meta?.treasureVoyage) {
+    ensureTreasureVoyageState(s);
+  }
+  if (s.meta?.bandConcert) {
+    ensureBandConcertState(s);
+  }
+  // ML-13：温泉疗愈乡（汤池泡汤位 / 限时状态 / 疗愈轮数）与萌灵邮局信使网络（邮筒信件 / 信使行程 / 邮戳）——旧存档无此字段时保持中性默认
+  if (s.meta?.hotSpring) {
+    ensureHotSpringState(s);
+  }
+  if (s.meta?.postOffice) {
+    ensurePostOfficeState(s);
+  }
+  // ML-14：梦境绘本馆（梦枕入梦伙伴 / 各绘本章节进度 / 插页与执笔人）与溪畔钓鱼会（钓手 / 鱼篓 / 钓获图鉴）——旧存档无此字段时保持中性默认
+  if (s.meta?.dreamLibrary) {
+    ensureDreamLibraryState(s);
+  }
+  if (s.meta?.fishingClub) {
+    ensureFishingClubState(s);
+  }
+  // ML-15：云朵甜点烘焙坊（工位 / 当前这一炉 / 甜点柜 / 食谱图鉴 / 限时增益）与彩虹气球旅行（气球航程 / 纪念品图鉴）——旧存档无此字段时保持中性默认
+  if (s.meta?.cloudBakery) {
+    ensureBakeryState(s);
+  }
+  if (s.meta?.balloonTravel) {
+    ensureBalloonTravelState(s);
+  }
+  // ML-16：云端游乐园（操作员 / 各设施进度 / 满意度 / 门票 / 限时增益）与星空露营观测（营地夜营 / 观测图鉴）——旧存档无此字段时保持中性默认
+  if (s.meta?.cloudPark) {
+    ensureCloudParkState(s);
+  }
+  if (s.meta?.stargazeCamp) {
+    ensureStargazeCampState(s);
+  }
 
 
 
@@ -1649,6 +1750,16 @@ export function loadFromRaw(raw) {
     if (data.pve.starCorridor && typeof data.pve.starCorridor === "object") {
       s.pve.starCorridor = data.pve.starCorridor;
       ensureStarCorridorState(s);
+    }
+
+    if (data.pve.ecoTriHall && typeof data.pve.ecoTriHall === "object") {
+      s.pve.ecoTriHall = data.pve.ecoTriHall;
+      ensureEcoTriHallState(s);
+    }
+
+    if (data.pve.acrobatShow && typeof data.pve.acrobatShow === "object") {
+      s.pve.acrobatShow = data.pve.acrobatShow;
+      ensureAcrobatShowState(s);
     }
 
   }

@@ -1,8 +1,29 @@
 /** Breeding & Eugenics 2.0 — high-IV / star / locked-ability inheritance + dynamic shiny odds & pity chain. */
 
 import { pickBreedEventCard } from "./expedition.js";
-import { computeAmberRevivalAura, computeStarBoutiqueAura, noteShinySpecies } from "./collection_fun.js";
-import { computeStarCorridorBonus } from "./pve_tower.js";
+import {
+  computeAmberRevivalAura,
+  computeNightObservatoryAura,
+  computeSkyIslandAura,
+  computeStarBoutiqueAura,
+  computeTreasureVoyageAura,
+  computeWishDockAura,
+  computeHotSpringAura,
+  computeDreamLibraryAura,
+  computeBakeryAura,
+  computeCloudParkAura,
+  noteShinySpecies,
+} from "./collection_fun.js";
+import {
+  computeAcrobatTrophyBonus,
+  computeBandTourBonus,
+  computeEcoTriCrestBonus,
+  computeFishingClubBonus,
+  computeBalloonTravelBonus,
+  computeStargazeCampBonus,
+  computeSeasonMigrationBonus,
+  computeStarCorridorBonus,
+} from "./pve_tower.js";
 import { legacyHatchAffectionAdd } from "./rebirth.js";
 import { ABILITIES, ensureMonAbility, getAbilityInfo, LEGACY_NATURE_TO_ABILITY } from "../abilities.js";
 import { clampStar } from "../stars.js";
@@ -157,10 +178,43 @@ export function computeBreedingShinyInfo(state, parentA = null, parentB = null, 
   const boutiqueShinyMul = state?.meta?.starBoutique ? computeStarBoutiqueAura(state).shinyChanceMul : 1;
   const amberShinyMul = state?.meta?.amberRevival ? computeAmberRevivalAura(state).shinyChanceMul : 1;
   const corridorShinyMul = state?.pve?.starCorridor ? computeStarCorridorBonus(state).shinyChanceMul : 1;
-  const shinyChanceMul =
+  const wishDockShinyMul = state?.meta?.wishDock ? computeWishDockAura(state).shinyChanceMul : 1;
+  const ecoTriShinyMul = state?.pve?.ecoTriHall ? computeEcoTriCrestBonus(state).shinyChanceMul : 1;
+  const nightObsShinyMul = state?.meta?.nightObservatory ? computeNightObservatoryAura(state).shinyChanceMul : 1;
+  const acrobatShinyMul = state?.pve?.acrobatShow ? computeAcrobatTrophyBonus(state).shinyChanceMul : 1;
+  const migrationShinyMul = state?.meta?.seasonMigration ? computeSeasonMigrationBonus(state).shinyChanceMul : 1;
+  const treasureShinyMul = state?.meta?.treasureVoyage ? computeTreasureVoyageAura(state).shinyChanceMul : 1;
+  const bandTourShinyMul = state?.meta?.bandConcert ? computeBandTourBonus(state).shinyChanceMul : 1;
+  const hotSpringShinyMul = state?.meta?.hotSpring ? computeHotSpringAura(state).shinyChanceMul : 1;
+  const dreamShinyMul = state?.meta?.dreamLibrary ? computeDreamLibraryAura(state).shinyChanceMul : 1;
+  const fishingShinyMul = state?.meta?.fishingClub ? computeFishingClubBonus(state).shinyChanceMul : 1;
+  const bakeryShinyMul = state?.meta?.cloudBakery ? computeBakeryAura(state).shinyChanceMul : 1;
+  const balloonShinyMul = state?.meta?.balloonTravel ? computeBalloonTravelBonus(state).shinyChanceMul : 1;
+  const parkShinyMul = state?.meta?.cloudPark ? computeCloudParkAura(state).shinyChanceMul : 1;
+  const stargazeShinyMul = state?.meta?.stargazeCamp ? computeStargazeCampBonus(state).shinyChanceMul : 1;
+  const baseShinyMul =
     typeof opts.shinyChanceMul === "number" && Number.isFinite(opts.shinyChanceMul)
       ? Math.max(0, opts.shinyChanceMul)
-      : boutiqueShinyMul * amberShinyMul * corridorShinyMul;
+      : boutiqueShinyMul *
+        amberShinyMul *
+        corridorShinyMul *
+        wishDockShinyMul *
+        ecoTriShinyMul *
+        nightObsShinyMul *
+        acrobatShinyMul *
+        migrationShinyMul *
+        treasureShinyMul *
+        bandTourShinyMul *
+        hotSpringShinyMul *
+        dreamShinyMul *
+        fishingShinyMul *
+        bakeryShinyMul *
+        balloonShinyMul *
+        parkShinyMul *
+        stargazeShinyMul;
+  // ML-11 虹泉育灵池：仅作用于孵化（育灵）的闪光率，叠加在全局闪光倍率之上（含 opts 覆盖时）
+  const islandBreedShinyMul = state?.meta?.skyIsland ? computeSkyIslandAura(state).breedShinyMul : 1;
+  const shinyChanceMul = baseShinyMul * islandBreedShinyMul;
 
   const softPityBonus =
     pity >= SHINY_SOFT_PITY_START && pity < SHINY_PITY_CAP
@@ -397,7 +451,9 @@ export function hatchEgg(state, deps = {}) {
     mon.iv = traits.iv;
     if (traits.stars > 0) mon.stars = traits.stars;
     if (traits.ability && ABILITIES[traits.ability]) mon.ability = traits.ability;
-    const affAdd = legacyHatchAffectionAdd(state);
+    // ML-11 虹泉育灵池：破壳亲密 +2/级（与转生「极速孵育」叠加）
+    const islandAffAdd = state?.meta?.skyIsland ? computeSkyIslandAura(state).hatchAffectionAdd : 0;
+    const affAdd = legacyHatchAffectionAdd(state) + islandAffAdd;
     if (affAdd > 0) {
       const baseAff = typeof mon.affection === "number" && Number.isFinite(mon.affection) ? mon.affection : 0;
       mon.affection = Math.min(100, baseAff + affAdd);

@@ -5,7 +5,7 @@ import {
 } from "../systems/mon_release.js";
 import { getNatalBondMonId, perkLevel, setNatalBondMonId } from "../systems/rebirth.js";
 import { applyMintTuningToMon, MINT_TUNING_PRESETS } from "../mons.js";
-import { getEcoSandboxBusyIds } from "../systems/collection_fun.js";
+import { getAwayActivityOfMon, getAwayMonIds, getEcoSandboxBusyIds } from "../systems/collection_fun.js";
 import {
   BATCH_ONCE_SKILL_TYPES,
   isSkillImplemented,
@@ -756,7 +756,9 @@ export function initMonsTab({
 
         const candidates = list.filter((x) => x && x.id !== id && isSameEvoFamily(x.pid, target.pid));
         const selIds = Array.isArray(ui.starUpSelectedIds) ? ui.starUpSelectedIds : [];
-        const validSel = selIds.filter((sid) => candidates.some((x) => x.id === sid));
+        // ML-14 统一忙碌排除：外出 / 驻场中的伙伴不能作升星材料
+        const awayIds = getAwayMonIds(state);
+        const validSel = selIds.filter((sid) => candidates.some((x) => x.id === sid) && !awayIds.has(sid));
 
         if (validSel.length !== need) return;
 
@@ -819,6 +821,12 @@ export function initMonsTab({
         }
         if (getEcoSandboxBusyIds(state).has(id)) {
           addLog("放生拦截：该萌灵正在秘境生态沙盘勘探中，请先撤回或结算后再放生", true);
+          return;
+        }
+        // ML-14 统一忙碌排除：外出 / 驻场中的伙伴（码头 / 观察站 / 浮岛 / 远航 / 温泉 / 邮局 / 绘本馆 / 钓鱼会）一律拦截
+        const awayAct = getAwayActivityOfMon(state, id);
+        if (awayAct) {
+          addLog(`放生拦截：${awayAct.blockLog}`, true);
           return;
         }
         const mIdx = (state.mons?.list ?? []).findIndex((x) => x.id === id);

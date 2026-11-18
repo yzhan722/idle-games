@@ -1,11 +1,29 @@
 import { getEvoFamilyId } from "../evo_utils.js";
 import { monPower } from "../mons.js";
 import {
+  detachBakeryWorker,
+  detachCloudParkOperator,
+  detachDreamer,
+  detachHotSpringMon,
+  detachNightObservatoryMon,
+  detachSkyIslandMon,
+  detachTreasureVoyageMon,
+  detachWishDockMon,
   getAmberImprintedMonIds,
+  getAwayMonIds,
   getBoutiqueStyledMonIds,
   unequipBoutiqueStyle,
   unequipMonPrimalImprints,
 } from "./collection_fun.js";
+import {
+  detachAcrobatPerformer,
+  detachBalloonPassenger,
+  detachBandMember,
+  detachStargazeCamper,
+  detachFishingAngler,
+  detachPostMessenger,
+  getBandLineupMonIds,
+} from "./pve_tower.js";
 
 export const BOX_SOFT_LIMIT = 120;
 export const BOX_RELEASE_BATCH = 24;
@@ -50,6 +68,25 @@ export function busyMonIds(state) {
   const corridorSquadIds = state?.pve?.starCorridor?.squadIds;
   if (Array.isArray(corridorSquadIds)) {
     for (const id of corridorSquadIds) if (id != null) ids.add(id);
+  }
+  const ecoTriSquadIds = state?.pve?.ecoTriHall?.squadIds;
+  if (Array.isArray(ecoTriSquadIds)) {
+    for (const id of ecoTriSquadIds) if (id != null) ids.add(id);
+  }
+  // ML-9 ~ ML-14 外出 / 驻场类玩法（心愿码头出海、月光观察站派驻、浮空岛建造、寻宝远航、温泉泡汤、邮局送信、
+  // 梦境绘本馆入梦、溪畔钓鱼会垂钓，ML-15 云朵甜点烘焙坊上岗、彩虹气球旅行，ML-16 云端游乐园值班、星空露营观测夜营）
+  // 统一从 collection_fun.js 的登记表读取，新增外出玩法无需再改这里
+  for (const id of getAwayMonIds(state)) {
+    if (id != null) ids.add(id);
+  }
+  // ML-12 萌灵乐队合奏音乐会：编入乐队声部的伙伴（与杂技节目单同等保护）
+  for (const id of getBandLineupMonIds(state)) {
+    if (id != null) ids.add(id);
+  }
+  // ML-10 萌灵杂技舞台表演赛：编入节目的登台伙伴（与锦标赛战队同等保护）
+  const showRoutine = state?.pve?.acrobatShow?.routine;
+  if (Array.isArray(showRoutine)) {
+    for (const r of showRoutine) if (r && r.monId != null) ids.add(r.monId);
   }
   for (const id of getBoutiqueStyledMonIds(state)) {
     if (id != null) ids.add(id);
@@ -130,6 +167,20 @@ export function releaseMonIds(state, ids, ctx = {}) {
     if (protectSet && protectSet.has(m.id)) return true;
     unequipBoutiqueStyle(state, m.id);
     unequipMonPrimalImprints(state, m.id);
+    detachWishDockMon(state, m.id);
+    detachNightObservatoryMon(state, m.id);
+    detachSkyIslandMon(state, m.id);
+    detachTreasureVoyageMon(state, m.id);
+    detachAcrobatPerformer(state, m.id);
+    detachBandMember(state, m.id);
+    detachHotSpringMon(state, m.id);
+    detachPostMessenger(state, m.id);
+    detachDreamer(state, m.id);
+    detachFishingAngler(state, m.id);
+    detachBakeryWorker(state, m.id);
+    detachBalloonPassenger(state, m.id);
+    detachCloudParkOperator(state, m.id);
+    detachStargazeCamper(state, m.id);
     candy += releaseCandyRefund(monPower(m));
     if (sampleNames.length < 3) sampleNames.push(m.name || "未知萌灵");
     removed += 1;

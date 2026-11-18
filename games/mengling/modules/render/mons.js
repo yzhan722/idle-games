@@ -18,7 +18,36 @@ import {
   listActiveSkillBuffs,
 } from "../type_skills.js";
 import { beastZone, ZONE_INDEX } from "../beast_defs.js";
-import { getMonBoutiqueBonus, getMonPrimalImprintBonus } from "../systems/collection_fun.js";
+import {
+  getMonBoutiqueBonus,
+  getMonNocturnalFormBonus,
+  getMonPrimalImprintBonus,
+  getNightObservatoryStationedMonIds,
+  getSkyIslandCrewMonIds,
+  getTreasureIslandDef,
+  getTreasureVoyageCrewMonIds,
+  getWishDockAwayMonIds,
+  getHotSpringPoolOfMon,
+  getHotSpringSoakingMonIds,
+  getPostMessengerMonIds,
+  getAwayActivityMap,
+  getDreamBookDef,
+  getDreamLibraryDreamerIds,
+  getFishingAnglerMonIds,
+  getBakeryStationOfMon,
+  getBalloonTravelerMonIds,
+  getCloudParkRideOfMon,
+  getStargazeCamperMonIds,
+} from "../systems/collection_fun.js";
+import {
+  BAND_PARTS,
+  getBalloonIsleDef,
+  getFishingSection,
+  getMigrantDef,
+  getMigrantFriendMonIds,
+  getPostRouteDef,
+  getStargazeSiteDef,
+} from "../systems/pve_tower.js";
 import { renderMonsStageHtml, setHtmlPreservingStage } from "./tab_stages.js";
 import { renderResSvg, renderUiIcon } from "./rpg_svg_icons.js";
 
@@ -416,7 +445,11 @@ export function createRenderMons({
           const need = getStarUpgradeNeed(stars);
           const gate = getStarUpgradeGate(stars);
           const gateOk = meetsStarUpgradeGate(m, stars);
-          const candidates = (state.mons?.list ?? []).filter((x) => x && x.id !== m.id && isSameEvoFamily(x.pid, m.pid));
+          // ML-14 统一忙碌排除：外出 / 驻场中的伙伴（码头 / 观察站 / 浮岛 / 远航 / 温泉 / 邮局 / 绘本馆 / 钓鱼会）不能作升星材料，放生按钮禁用
+          const awayMap = getAwayActivityMap(state);
+          const candidates = (state.mons?.list ?? []).filter(
+            (x) => x && x.id !== m.id && isSameEvoFamily(x.pid, m.pid) && !awayMap.has(x.id),
+          );
           const selIds = Array.isArray(ui.starUpSelectedIds) ? ui.starUpSelectedIds : [];
           const validSel = selIds.filter((id) => candidates.some((x) => x.id === id));
           const canStarUp =
@@ -435,13 +468,17 @@ export function createRenderMons({
           });
           const evoBadgeHtml = isEvoReady ? `<span class="badge badge--evo-ready">✦ 可进化</span>` : "";
           const isNatalBond = state?.meta?.natalBondMonId === m.id;
+          const nocturnalForm = getMonNocturnalFormBonus(state, m.id);
           const showNatalBtn = isNatalBond || (state?.meta?.legacy?.perks?.natalBond ?? 0) > 0 || Boolean(state?.era?.prestigeUnlocked);
           const natalBadgeHtml = isNatalBond ? `<span class="badge badge--natal">${renderUiIcon("natalBond", 12)}<span>本命灵契</span></span>` : "";
-          const cardExtraCls = `${m.isShiny ? " row--shiny-mon" : ""}${m.tier === "epic" ? " row--mythic-mon" : m.tier === "rare" ? " row--rare-mon" : m.tier === "uncommon" ? " row--uncommon-mon" : ""}${isEvoReady ? " row--evo-ready" : ""}`;
+          const nocturnalBadgeHtml = nocturnalForm.hasForm
+            ? `<span class="badge badge--nocturnal-form" title="${escapeHtml(nocturnalForm.formDesc)}">${renderUiIcon("nocturnalCrest", 12)}<span>夜行·${escapeHtml(nocturnalForm.formName)}</span></span>`
+            : "";
+          const cardExtraCls = `${nocturnalForm.hasForm ? " row--nocturnal-form" : ""}${m.isShiny ? " row--shiny-mon" : ""}${m.tier === "epic" ? " row--mythic-mon" : m.tier === "rare" ? " row--rare-mon" : m.tier === "uncommon" ? " row--uncommon-mon" : ""}${isEvoReady ? " row--evo-ready" : ""}`;
           rows.push(`
             <div class="row mon-card${cardExtraCls}">
               <div class="row__left">
-                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}${natalBadgeHtml}${evoBadgeHtml}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
+                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}${natalBadgeHtml}${nocturnalBadgeHtml}${evoBadgeHtml}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
                 <div class="row__desc">Lv.${m.lvl} · 战力 ${power} · 性格 ${escapeHtml(natureName)} · 特性 ${escapeHtml(ab?.name || "—")} · 亲密 ${aff}/100${"caughtWith" in m && m.caughtWith && m.caughtWith !== "pokeball" ? " · " + ({"pokeball":"灵球","ultraball":"高级灵球","quickball":"迅捷灵球","luxuryball":"豪华灵球","masterball":"究极灵球","netball":"捕灵球","duskball":"暗夜灵球"}[m.caughtWith] ?? m.caughtWith) : ""}</div>
               </div>
               <div class="row__right">
@@ -450,7 +487,7 @@ export function createRenderMons({
                   <button class="btn btn--small" data-mon-open="${m.id}">查看</button>
                   <button class="btn btn--small" data-mon-starup="${m.id}" ${stars >= 5 ? "disabled" : ""}>升星</button>
                   ${showNatalBtn ? `<button class="btn btn--small${isNatalBond ? " btn--primary" : ""}" data-mon-natal="${m.id}" title="缔结/解除跨周目本命灵契">${isNatalBond ? "★本命" : "缔契"}</button>` : ""}
-                  <button class="btn btn--small btn--danger" data-mon-release="${m.id}" ${isNatalBond ? 'disabled title="本命灵契保护中，解除缔契后方可放生"' : ""}>放生</button>
+                  <button class="btn btn--small btn--danger" data-mon-release="${m.id}" ${isNatalBond ? 'disabled title="本命灵契保护中，解除缔契后方可放生"' : awayMap.has(m.id) ? `disabled title="${escapeHtml(awayMap.get(m.id).releaseHint)}"` : ""}>放生</button>
                 </div>
               </div>
             </div>
@@ -635,6 +672,65 @@ export function createRenderMons({
             }
             if (imp.imprintName) {
               parts.push(`<span class="tag tag--amber-stock">${renderUiIcon(imp.imprintIcon || "amberRevivalPod", 13)}<span>${escapeHtml(imp.imprintName)} Lv.${imp.imprintLevel}</span></span>`);
+            }
+            if (getWishDockAwayMonIds(state).has(selected.id)) {
+              parts.push(`<span class="tag tag--dock-bottle">${renderUiIcon("driftBottle", 13)}<span>心愿码头出海中</span></span>`);
+            }
+            if (getNightObservatoryStationedMonIds(state).has(selected.id)) {
+              parts.push(`<span class="tag tag--night-obs">${renderUiIcon("nightObservatory", 13)}<span>月光观察站派驻中</span></span>`);
+            }
+            if (getSkyIslandCrewMonIds(state).has(selected.id)) {
+              parts.push(`<span class="tag tag--sky-crew">${renderUiIcon("buildHammer", 13)}<span>云顶浮岛建造中</span></span>`);
+            }
+            if (getTreasureVoyageCrewMonIds(state).has(selected.id)) {
+              const voyIsland = getTreasureIslandDef(state.meta?.treasureVoyage?.voyage?.islandId)?.name || "宝岛";
+              parts.push(`<span class="tag tag--voyage-crew">${renderUiIcon("treasureMap", 13)}<span>寻宝远航中 · ${escapeHtml(voyIsland)}</span></span>`);
+            }
+            const soakPool = getHotSpringPoolOfMon(state, selected.id);
+            if (soakPool) {
+              parts.push(`<span class="tag tag--spring-soak">${renderUiIcon("bathBucket", 13)}<span>温泉泡汤中 · ${escapeHtml(soakPool.name)}</span></span>`);
+            }
+            const postTrip = Array.isArray(state.meta?.postOffice?.trips) ? state.meta.postOffice.trips.find((t) => t && Number(t.monId) === selected.id) : null;
+            if (postTrip && getPostMessengerMonIds(state).has(selected.id)) {
+              parts.push(`<span class="tag tag--post-messenger">${renderUiIcon("messengerBag", 13)}<span>信使送信中 · ${escapeHtml(getPostRouteDef(postTrip.routeId)?.name || "邮路")}</span></span>`);
+            }
+            if (getDreamLibraryDreamerIds(state).has(selected.id)) {
+              const dreamBook = getDreamBookDef(state.meta?.dreamLibrary?.bookId)?.name || "童话绘本";
+              parts.push(`<span class="tag tag--dream-writer">${renderUiIcon("pictureBook", 13)}<span>入梦写绘本 · 《${escapeHtml(dreamBook)}》</span></span>`);
+            }
+            if (getFishingAnglerMonIds(state).has(selected.id)) {
+              parts.push(`<span class="tag tag--fishing-angler">${renderUiIcon("fishingRod", 13)}<span>溪畔垂钓中 · ${escapeHtml(getFishingSection().name)}</span></span>`);
+            }
+            const bakeryStation = getBakeryStationOfMon(state, selected.id);
+            if (bakeryStation) {
+              parts.push(`<span class="tag tag--bakery-worker">${renderUiIcon("bakeryOven", 13)}<span>烘焙坊上岗 · ${escapeHtml(bakeryStation.name)}</span></span>`);
+            }
+            if (getBalloonTravelerMonIds(state).has(selected.id)) {
+              const balloonTrip = (state.meta?.balloonTravel?.balloons || []).map((b) => b?.trip).find((t) => t && Array.isArray(t.passengerIds) && t.passengerIds.includes(selected.id));
+              const balloonIsle = balloonTrip ? getBalloonIsleDef(balloonTrip.isleId)?.name || "空中群岛" : "空中群岛";
+              parts.push(`<span class="tag tag--balloon-traveler">${renderUiIcon("rainbowBalloon", 13)}<span>${balloonTrip?.phase === "landed" ? "气球已降落" : "乘气球旅行中"} · ${escapeHtml(balloonIsle)}</span></span>`);
+            }
+            const parkRide = getCloudParkRideOfMon(state, selected.id);
+            if (parkRide) {
+              parts.push(`<span class="tag tag--park-operator">${renderUiIcon("carouselRide", 13)}<span>游乐园值班 · ${escapeHtml(parkRide.name)}</span></span>`);
+            }
+            if (getStargazeCamperMonIds(state).has(selected.id)) {
+              const campTrip = (state.meta?.stargazeCamp?.sites || []).map((x) => x?.trip).find((t) => t && Array.isArray(t.camperIds) && t.camperIds.includes(selected.id));
+              const campSite = campTrip ? getStargazeSiteDef(campTrip.siteId)?.name || "星空营地" : "星空营地";
+              parts.push(`<span class="tag tag--stargaze-camper">${renderUiIcon("starCamp", 13)}<span>${campTrip?.phase === "returned" ? "夜营已归来" : "夜营观星中"} · ${escapeHtml(campSite)}</span></span>`);
+            }
+            const bandLineup = state.meta?.bandConcert?.lineup;
+            const bandPart = bandLineup && typeof bandLineup === "object" ? BAND_PARTS.find((p) => Number(bandLineup[p.id]) === selected.id) : null;
+            if (bandPart) {
+              parts.push(`<span class="tag tag--band-member">${renderUiIcon("instrumentSet", 13)}<span>萌灵乐队 · ${escapeHtml(bandPart.name)}声部</span></span>`);
+            }
+            const selMigrant = getMigrantFriendMonIds(state).get(selected.id);
+            if (selMigrant) {
+              parts.push(`<span class="tag tag--migrant-friend">${renderUiIcon("migratingBird", 13)}<span>候鸟之友 · ${escapeHtml(getMigrantDef(selMigrant)?.name || "候鸟萌灵")}</span></span>`);
+            }
+            const selForm = getMonNocturnalFormBonus(state, selected.id);
+            if (selForm.hasForm) {
+              parts.push(`<span class="tag tag--nocturnal-form" title="${escapeHtml(selForm.formDesc)}">${renderUiIcon("nocturnalCrest", 13)}<span>夜行形态「${escapeHtml(selForm.formName)}」${selForm.nightActive ? " · 夜间战斗 +5%" : " · 白昼 +2%"}</span></span>`);
             }
             if (bq.accessoryName) {
               parts.push(`<span class="tag tag--sand-stock">${renderUiIcon(bq.accessoryIcon || "boutiqueMirrorStar", 13)}<span>${escapeHtml(bq.accessoryName)} Lv.${bq.accessoryLevel}</span></span>`);
