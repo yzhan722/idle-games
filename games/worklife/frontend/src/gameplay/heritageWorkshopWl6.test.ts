@@ -29,7 +29,7 @@ const WL6_ART_IDS = [
 
 describe("WL-6 frontend art contract, navigation IA, zero-SVG/Emoji guard, and combat sheet", () => {
   it("registers all 8 WL-6 hand-drawn RGBA .webp workshop icons in T1 contract with active cache-buster", () => {
-    assert.match(T1_ASSET_CACHE_VERSION, /^20261115wl\d+$/);
+    assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     for (const id of WL6_ART_IDS) {
       const key = t1KeyFor("skills", id);
       assert.equal(key, `skills/${id}`);

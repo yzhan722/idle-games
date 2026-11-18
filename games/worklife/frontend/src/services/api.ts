@@ -459,6 +459,172 @@ class ApiClient {
   }) {
     return this.post('/progression2/relics/upgrade', payload);
   }
+  async getSkyForge() {
+    return this.get('/progression2/forge');
+  }
+  async forgeStarEmblem(payload: {
+    emblemId: 'star_blade' | 'crescent_bow' | 'star_hammer' | 'amethyst_staff';
+  }) {
+    return this.post('/progression2/forge/emblem', payload);
+  }
+  async setGuildTrialPact(payload: {
+    pactId: 'ember_vanguard' | 'verdant_harvest' | 'forge_oath' | 'gale_hunt' | 'astral_covenant';
+    action: 'sign' | 'revoke';
+  }) {
+    return this.post('/progression2/forge/pact', payload);
+  }
+  async getHarborDerby() {
+    return this.get('/progression2/harbor');
+  }
+  async enterHarborDerby(payload: {
+    baitId: 'harbor_worm' | 'glow_shrimp' | 'sunscale_lure' | 'abyss_lantern_lure';
+    count?: number;
+  }) {
+    return this.post('/progression2/harbor/enter', payload);
+  }
+  async craftHarborBait(payload: {
+    baitId: 'harbor_worm' | 'glow_shrimp' | 'sunscale_lure' | 'abyss_lantern_lure';
+    batches?: number;
+  }) {
+    return this.post('/progression2/harbor/bait', payload);
+  }
+  async setHarborFeaturedTank(payload: {
+    themeId: 'stream_shallows' | 'coral_harbor' | 'frost_grotto' | 'ember_starlight' | 'sunscale_palace' | null;
+  }) {
+    return this.post('/progression2/harbor/tank', payload);
+  }
+  async getAcademyFestival() {
+    return this.get('/progression2/academy');
+  }
+  async enrollAcademyCourse(payload: {
+    courseId:
+      | 'field_survey'
+      | 'spirit_botany'
+      | 'forge_practicum'
+      | 'master_artisan'
+      | 'squire_drills'
+      | 'dragon_tactics'
+      | 'ledger_basics'
+      | 'guild_economics';
+  }) {
+    return this.post('/progression2/academy/enroll', payload);
+  }
+  async claimFestivalCommission(payload: { commissionId: string }) {
+    return this.post('/progression2/festival/commission', payload);
+  }
+  async buyFestivalShopItem(payload: { itemId: string }) {
+    return this.post('/progression2/festival/shop', payload);
+  }
+  async getSkyArenaTown() {
+    return this.get('/progression2/arena');
+  }
+  async challengeSkyArena(payload: { rung?: number }) {
+    return this.post('/progression2/arena/challenge', payload);
+  }
+  async upgradeTownFacility(payload: {
+    facilityId: 'town_hall' | 'artisan_row' | 'harvest_market' | 'training_grounds' | 'guild_bank' | 'sage_library';
+  }) {
+    return this.post('/progression2/town/build', payload);
+  }
+  async claimTownProsperityChest(payload: { tier: number }) {
+    return this.post('/progression2/town/chest', payload);
+  }
+  async getBeastWeather() {
+    return this.get('/progression2/ranch');
+  }
+  async tameContractBeast(payload: {
+    beastId: 'bloom_bee' | 'echo_bat' | 'mire_toad' | 'frostmane_wolf' | 'ember_hound' | 'chrono_wyrm';
+  }) {
+    return this.post('/progression2/ranch/tame', payload);
+  }
+  async feedContractBeast(payload: {
+    beastId: 'bloom_bee' | 'echo_bat' | 'mire_toad' | 'frostmane_wolf' | 'ember_hound' | 'chrono_wyrm';
+    foodId: string;
+    qty: number;
+  }) {
+    return this.post('/progression2/ranch/feed', payload);
+  }
+  async assignBeastCompanion(payload: {
+    beastId: 'bloom_bee' | 'echo_bat' | 'mire_toad' | 'frostmane_wolf' | 'ember_hound' | 'chrono_wyrm' | null;
+  }) {
+    return this.post('/progression2/ranch/companion', payload);
+  }
+  async divineTomorrowWeather(payload: { dayKey?: string }) {
+    return this.post('/progression2/weather/divine', payload);
+  }
+  async wishTomorrowWeather(payload: { weather: 'sunny' | 'rain' | 'fog' | 'storm' | 'aurora'; dayKey?: string }) {
+    return this.post('/progression2/weather/wish', payload);
+  }
+  async getTavernChronicle() {
+    return this.get('/progression2/tavern');
+  }
+  async serveTavernVisitor(payload: {
+    visitorId:
+      | 'star_knight'
+      | 'dawn_ranger'
+      | 'verdant_mage'
+      | 'crimson_valkyrie'
+      | 'jade_alchemist'
+      | 'moon_healer'
+      | 'fox_wanderer'
+      | 'cat_cavalier';
+    dishId?: string | null;
+    drinkId?: string | null;
+    dayKey?: string;
+  }) {
+    return this.post('/progression2/tavern/serve', payload);
+  }
+  async requestBardBallad(payload: {
+    balladId: 'forest_wander' | 'forge_hearth' | 'sage_chant' | 'golden_toast' | 'hero_epic';
+    dayKey?: string;
+  }) {
+    return this.post('/progression2/tavern/ballad', payload);
+  }
+  async inscribeChronicleChapter(payload: { chapterId: string }) {
+    return this.post('/progression2/chronicle/inscribe', payload);
+  }
+  async equipChronicleTitle(payload: { chapterId: string | null }) {
+    return this.post('/progression2/chronicle/title', payload);
+  }
+  async getAirshipPaladin() {
+    return this.get('/progression2/airship');
+  }
+  async openAirshipRoute(payload: { routeId: string }) {
+    return this.post('/progression2/airship/route', payload);
+  }
+  async buyAirshipCargo(payload: { goodId: string; qty: number; dayKey?: string }) {
+    return this.post('/progression2/airship/buy', payload);
+  }
+  async sellAirshipCargo(payload: { goodId: string; qty: number; dayKey?: string }) {
+    return this.post('/progression2/airship/sell', payload);
+  }
+  async launchAirshipVoyage(payload: { routeId: string }) {
+    return this.post('/progression2/airship/launch', payload);
+  }
+  async upgradeAirshipHull() {
+    return this.post('/progression2/airship/hull', {});
+  }
+  async challengePaladinTrial(payload: { stage: number; weekKey?: string }) {
+    return this.post('/progression2/paladin/challenge', payload);
+  }
+  async upgradePaladinVirtue(payload: { virtueId: 'valor' | 'aegis' | 'vigor' | 'glory' }) {
+    return this.post('/progression2/paladin/virtue', payload);
+  }
+  async getDwarfElf() {
+    return this.get('/progression2/mine');
+  }
+  async dispatchMineCart(payload: { layer: number; dayKey?: string }) {
+    return this.post('/progression2/mine/haul', payload);
+  }
+  async upgradeMineDepth() {
+    return this.post('/progression2/mine/depth', {});
+  }
+  async upgradeMineCart() {
+    return this.post('/progression2/mine/cart', {});
+  }
+  async deliverElfCommission(payload: { slot: number; dayKey?: string }) {
+    return this.post('/progression2/elf/commission', payload);
+  }
 
   async startHpCombat(monsterId: string) {
     return this.post('/combat/hp/start', { monsterId, autoRepeat: true });

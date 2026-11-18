@@ -254,7 +254,15 @@ async function main() {
         body.scene === "heritage-workshop" ||
         body.scene === "caravan-trade" ||
         body.scene === "alchemy-cauldron" ||
-        body.scene === "astral-relics"
+        body.scene === "astral-relics" ||
+        body.scene === "sky-forge" ||
+        body.scene === "harbor-derby" ||
+        body.scene === "academy-festival" ||
+        body.scene === "arena-town" ||
+        body.scene === "beast-weather" ||
+        body.scene === "tavern-chronicle" ||
+        body.scene === "airship-paladin" ||
+        body.scene === "dwarf-elf"
       ) {
         state.chapter1Build = state.chapter1Build || "thick_bark";
         const stats = (state.stats ?? {}) as NonNullable<typeof state.stats>;
@@ -511,6 +519,717 @@ async function main() {
               titan_anvil: 1,
               chimera_censer: 1,
             },
+          };
+        }
+        if (body.scene === "sky-forge") {
+          // WL-10 视觉自检/E2E：神兵谱总阶 8（锻炉二阶 · 2 席契约阵位），已签 1 份契约，残片/星晶尘足够继续淬炼与签约
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 12000);
+          (state as any).caravanTrade = {
+            caravanRep: 520,
+            astralCrystalDust: 36,
+            expressPermits: 2,
+            ledgerRank: 2,
+            totalRunsCompleted: 5,
+            totalContractsFulfilled: 3,
+            wagons: {},
+          };
+          (state as any).astralRelics = {
+            ancientRelicShards: 40,
+            expeditionXp: 180,
+            curatorRank: 3,
+            totalSurveys: 7,
+            totalRestorations: 4,
+            pedestalRanks: {
+              solar_spear: 1,
+              verdant_chalice: 1,
+              titan_anvil: 1,
+              chimera_censer: 1,
+            },
+          };
+          (state as any).skyForge = {
+            emblemLevels: {
+              star_blade: 3,
+              crescent_bow: 2,
+              star_hammer: 2,
+              amethyst_staff: 1,
+            },
+            totalForges: 8,
+            activePacts: ["ember_vanguard"],
+            totalPactsSigned: 1,
+          };
+        }
+        if (body.scene === "harbor-derby") {
+          // WL-11 视觉自检/E2E：厨师（钓鱼）Lv.50，本周 18 次钓鱼行动已投 6 竿（剩 12 竿），已掌握荧光虾饵 / 金鳞日耀饵，
+          // 奖杯积分 8（银纹远投竿），水族馆收藏 7 种（寒霜冰窟展），主展缸「清溪浅滩缸」已收齐
+          const {
+            getHarborWeekIndex,
+            getHarborGroundForWeek,
+            harborWeekKeyFromIndex,
+            scoreHarborCatch,
+          } = require("./progression2") as typeof import("./progression2");
+          const seedNow = new Date();
+          const weekIdx = getHarborWeekIndex(seedNow);
+          const ground = getHarborGroundForWeek(weekIdx);
+          const prevGround = getHarborGroundForWeek(weekIdx - 1);
+          const mkCatch = (speciesId: any, sizeCm: number, baitId: any, bonusPct: number, minutesAgo: number) => {
+            const featured = (ground.featuredSpecies as readonly string[]).includes(speciesId);
+            const { score, trophySize } = scoreHarborCatch(speciesId, sizeCm, featured, bonusPct);
+            return {
+              speciesId,
+              sizeCm,
+              score,
+              baitId,
+              featured,
+              trophySize,
+              at: new Date(seedNow.getTime() - minutesAgo * 60_000).toISOString(),
+            };
+          };
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 12000);
+          state.inventory.fish_river = Math.max(state.inventory.fish_river || 0, 12);
+          state.inventory.shrimp = Math.max(state.inventory.shrimp || 0, 8);
+          state.inventory.fish_sea = Math.max(state.inventory.fish_sea || 0, 6);
+          state.inventory.fish_lake = Math.max(state.inventory.fish_lake || 0, 6);
+          state.inventory.fish_deepsea = Math.max(state.inventory.fish_deepsea || 0, 3);
+          state.inventory.fish_abyss = Math.max(state.inventory.fish_abyss || 0, 4);
+          if (state.skills?.skill_chef) {
+            state.skills.skill_chef.level = Math.max(state.skills.skill_chef.level || 1, 50);
+          }
+          stats.actionsById = {
+            ...(stats.actionsById || {}),
+            act_fish_river_t1: 60,
+            act_fish_sea_t2: 30,
+            act_fish_t3: 20,
+          };
+          (state as any).harborDerby = {
+            weekKey: harborWeekKeyFromIndex(weekIdx),
+            fishingBaseline: 110 - 18,
+            entriesUsed: 6,
+            weeklyCatches: [
+              mkCatch("fish_abyss", 168.4, "glow_shrimp", 14, 150),
+              mkCatch("fish_deepsea", 92.6, "harbor_worm", 6, 120),
+              mkCatch("fish_lake", 58.1, "harbor_worm", 6, 90),
+              mkCatch("fish_sea", 61.3, "harbor_worm", 6, 60),
+              mkCatch("fish_river", 43.0, "harbor_worm", 6, 30),
+              mkCatch("shrimp", 11.2, "harbor_worm", 6, 10),
+            ],
+            baitStock: { harbor_worm: 9, glow_shrimp: 4, sunscale_lure: 2, abyss_lantern_lure: 0 },
+            knownRecipes: ["glow_shrimp", "sunscale_lure"],
+            trophies: { bronze: 2, silver: 1, gold: 1, legend: 0 },
+            totalEntries: 41,
+            bestWeeklyScore: 1820,
+            lastSettlement: {
+              weekKey: harborWeekKeyFromIndex(weekIdx - 1),
+              groundId: prevGround.id,
+              tier: "gold",
+              weeklyScore: 1820,
+              entries: 30,
+              trophyGranted: "gold",
+              unlockedRecipes: ["sunscale_lure"],
+              goldReward: 2000,
+              baitReward: { glow_shrimp: 3, sunscale_lure: 1 },
+            },
+          };
+          (state as any).harborAquarium = {
+            species: {
+              fish_river: { count: 9, bestSizeCm: 43 },
+              shrimp: { count: 4, bestSizeCm: 13.1 },
+              fish_sea: { count: 5, bestSizeCm: 66 },
+              fish_lake: { count: 6, bestSizeCm: 61.8 },
+              fish_deepsea: { count: 3, bestSizeCm: 92.6 },
+              fish_abyss: { count: 2, bestSizeCm: 168.4 },
+              sunscale_carp: { count: 1, bestSizeCm: 104.5 },
+            },
+            featuredTank: "stream_shallows",
+          };
+        }
+        if (body.scene === "academy-festival") {
+          // WL-12 视觉自检/E2E：学院四系学分 23/11/5/12（合计 51 → 银穗进修徽章），正在进修「宗师匠艺研讨」（已过 50 分钟），
+          // 当前东八区季节节庆：代币 26、部分委托已领取、计数类委托（行动）可再领 1 次；已收藏夏渔纪念章
+          const {
+            festivalSeasonKey,
+            getFestivalSeasonIndex,
+            festivalSeasonIdFromIndex,
+            festivalSeasonKeyFromIndex,
+            getFestivalCommissionsForSeason,
+            countFestivalCommissionCounter,
+          } = require("./progression2") as typeof import("./progression2");
+          const seedNow = new Date();
+          const seasonIdx = getFestivalSeasonIndex(seedNow);
+          const seasonId = festivalSeasonIdFromIndex(seasonIdx);
+          const keepsakeSeason = festivalSeasonIdFromIndex(seasonIdx - 1);
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 15000);
+          const seedItems: Record<string, number> = {
+            food_simple: 6,
+            ingot_1: 6,
+            potion_hp_t1: 4,
+            bread: 7,
+            drink_basic: 3,
+            food_grain_meal: 8,
+            yarn_1: 5,
+            yarn_2: 4,
+            ingot_2: 5,
+            ingot_3: 4,
+            yarn_3: 3,
+            potion_hp_t2: 2,
+            potion_hp_t3: 1,
+            food_hearty_stew: 2,
+            food_fine: 1,
+            dyed_cloth: 2,
+            honey: 5,
+            food_vegetable_stew: 1,
+          };
+          for (const [itemId, qty] of Object.entries(seedItems)) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, qty);
+          }
+          stats.actionsById = {
+            ...(stats.actionsById || {}),
+            act_raise_sheep_t1: 40,
+            act_raise_chicken_t1: 20,
+            act_plant_grain_t1: 52,
+            act_fish_river_t1: 48,
+          };
+          stats.totalKills = Math.max(stats.totalKills || 0, 61);
+          const startedAt = new Date(seedNow.getTime() - 50 * 60_000);
+          (state as any).adventurerAcademy = {
+            credits: { gathering: 23, crafting: 11, tactics: 5, commerce: 12 },
+            completedCourses: { field_survey: 3, spirit_botany: 1, forge_practicum: 2, squire_drills: 1, ledger_basics: 3 },
+            activeCourse: {
+              courseId: "master_artisan",
+              startedAt: startedAt.toISOString(),
+              endsAt: new Date(startedAt.getTime() + 120 * 60_000).toISOString(),
+            },
+            totalEnrollments: 11,
+            totalGraduations: 10,
+            lastGraduation: {
+              courseId: "spirit_botany",
+              department: "gathering",
+              credits: 11,
+              at: new Date(seedNow.getTime() - 130 * 60_000).toISOString(),
+              departmentTier: 2,
+              badgeTier: 2,
+            },
+          };
+          // 本季计数类委托：第 1 次已领取，季初基线留出 34 次计数 → 第 2 次（需 30）可领取
+          const claims: Record<string, number> = {};
+          const baselines: Record<string, number> = {};
+          const deliverIds: string[] = [];
+          for (const def of getFestivalCommissionsForSeason(seasonId)) {
+            if (def.kind === "deliver") {
+              deliverIds.push(def.id);
+              continue;
+            }
+            claims[def.id] = 1;
+            baselines[def.id] = Math.max(0, countFestivalCommissionCounter(def, stats) - 34);
+          }
+          if (deliverIds[0]) claims[deliverIds[0]] = 1;
+          if (deliverIds[2]) claims[deliverIds[2]] = 2;
+          (state as any).festivalCalendar = {
+            seasonKey: festivalSeasonKey(seedNow),
+            tokens: 26,
+            claims,
+            baselines,
+            purchases: { festival_gold_pouch: 2, [`${seasonId}_academy_letter`]: 1 },
+            keepsakes: [keepsakeSeason],
+            totalTokensEarned: 120,
+            totalClaims: 13,
+            lastRollover: {
+              seasonKey: festivalSeasonKeyFromIndex(seasonIdx - 1),
+              claims: 9,
+              tokensConverted: 4,
+              goldConverted: 80,
+            },
+          };
+        }
+        if (body.scene === "arena-town") {
+          // WL-13 视觉自检/E2E：钢斧 + 铁甲 + 练过的战斗技能；本赛季停在「下一位擂主可胜、再下一位难胜」的梯级，
+          // 今日已用 2 次；称号青铜 / 白银、勋章 9；城镇议事厅 Lv.3（繁荣度 42 → 领地城镇），演武场 Lv.3 材料 + 勋章齐备
+          const {
+            arenaSeasonKey,
+            arenaSeasonKeyFromIndex,
+            arenaDayKey,
+            getArenaSeasonIndex,
+            generateArenaChampion,
+            simulateArenaDuel,
+          } = require("./progression2") as typeof import("./progression2");
+          const { ensureCombatSkills } = require("./combat_skills") as typeof import("./combat_skills");
+          const seedNow = new Date();
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 30000);
+          const gear: Record<string, string> = { main_hand: "weapon_steel_axe", chest: "armor_iron_chest", legs: "armor_iron_legs" };
+          for (const [slot, itemId] of Object.entries(gear)) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, 1);
+            (state.equipment as any)[slot] = itemId;
+          }
+          const cs = ensureCombatSkills(state);
+          for (const k of ["stamina", "attack", "defense", "melee"] as const) (cs as any)[k].level = Math.max((cs as any)[k].level || 1, 22);
+          ensureCombatSkills(state);
+          const seedItems: Record<string, number> = {
+            ingot_3: 20,
+            potion_hp_t3: 4,
+            dyed_cloth: 4,
+            lumber_4: 12,
+            ingot_4: 6,
+            resin: 6,
+            food_vegetable_stew: 4,
+            food_fine: 3,
+            lumber_2: 8,
+            crystal_2: 4,
+            ingot_2: 10,
+            drink_basic: 4,
+          };
+          for (const [itemId, qty] of Object.entries(seedItems)) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, qty);
+          }
+          (state as any).guildTown = {
+            facilities: { town_hall: 3, artisan_row: 2, harvest_market: 3, training_grounds: 2, guild_bank: 2, sage_library: 1 },
+            chestsClaimed: [1],
+            totalUpgrades: 13,
+            goldInvested: 21400,
+            lastUpgrade: { facilityId: "harvest_market", level: 3, at: new Date(seedNow.getTime() - 3_600_000).toISOString() },
+          };
+          const seasonIdx = getArenaSeasonIndex(seedNow);
+          (state as any).skyArena = {
+            seasonKey: arenaSeasonKey(seedNow),
+            rung: 0,
+            bestRung: 9,
+            dayKey: arenaDayKey(seedNow),
+            attemptsUsed: 2,
+            seasonWins: 0,
+            seasonLosses: 1,
+            totalWins: 24,
+            totalLosses: 5,
+            medals: 9,
+            totalMedalsEarned: 15,
+            titles: ["bronze", "silver"],
+            seasonsSettled: 2,
+            lastSettlement: { seasonKey: arenaSeasonKeyFromIndex(seasonIdx - 1), rung: 8, division: "silver", medals: 6, newTitle: "silver" },
+            lastDuel: null,
+          };
+          // 停在「下一位可胜」的梯级：真实引擎逐级推演，找到连胜上限 k，令 rung = k - 1
+          let reach = 0;
+          for (let r = 1; r <= 12; r++) {
+            if (!simulateArenaDuel(state as any, contentPack, generateArenaChampion(seasonIdx, r), seedNow).won) break;
+            reach = r;
+          }
+          const sa = (state as any).skyArena;
+          sa.rung = Math.max(0, reach - 1);
+          sa.seasonWins = sa.rung;
+          sa.bestRung = Math.max(sa.bestRung, sa.rung);
+          if (sa.rung > 0) {
+            const last = generateArenaChampion(seasonIdx, sa.rung);
+            const duel = simulateArenaDuel(state as any, contentPack, last, seedNow);
+            sa.lastDuel = {
+              seasonKey: sa.seasonKey,
+              rung: sa.rung,
+              championName: last.name,
+              won: duel.won,
+              timeout: duel.timeout,
+              playerHpLeft: duel.playerHpLeft,
+              playerMaxHp: duel.playerMaxHp,
+              enemyHpLeft: duel.enemyHpLeft,
+              enemyMaxHp: duel.enemyMaxHp,
+              durationMs: duel.durationMs,
+              gold: duel.won ? last.gold : 0,
+              at: new Date(seedNow.getTime() - 20 * 60_000).toISOString(),
+            };
+          }
+        }
+        if (body.scene === "beast-weather") {
+          // WL-14 视觉自检/E2E：牧场已驯服蜜语花蜂 Lv.4 与霜鬃雪狼 Lv.6（雪狼出战），晶耳回声蝠的信物 / 料理 / 金币齐备可驯服；
+          // 背包备好可喂养料理；观星塔已建（阅历 5 次 → 星图学徒）、近 6 日天候已归档、明日尚未占卜，星晶尘 80
+          const { weatherDayIndex, weatherDayKeyFromIndex, getNaturalWeather, BEAST_LEVEL_XP } =
+            require("./progression2") as typeof import("./progression2");
+          const seedNow = new Date();
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 30000);
+          const seedItems: Record<string, number> = {
+            ore_6: 2,
+            food_grain_meal: 12,
+            bread: 8,
+            food_simple: 30,
+            food_honey_cake: 6,
+            food_master_feast: 5,
+            food_pork_roast: 3,
+            dish_deepsea_stew: 4,
+          };
+          for (const [itemId, qty] of Object.entries(seedItems)) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, qty);
+          }
+          const tamedAt = new Date(seedNow.getTime() - 3 * 86_400_000).toISOString();
+          (state as any).beastRanch = {
+            beasts: {
+              bloom_bee: { xp: BEAST_LEVEL_XP[3] + 70, fed: 46, tamedAt },
+              frostmane_wolf: { xp: BEAST_LEVEL_XP[5] + 210, fed: 22, tamedAt },
+            },
+            activeBeastId: "frostmane_wolf",
+            totalTamed: 2,
+            totalFeedings: 68,
+            lastEvent: { kind: "feed", beastId: "frostmane_wolf", level: 6, foodId: "food_master_feast", qty: 4, xpGained: 220, at: tamedAt },
+          };
+          const today = weatherDayIndex(seedNow);
+          (state as any).weatherTower = {
+            dayKey: weatherDayKeyFromIndex(today),
+            forecasts: [],
+            history: Array.from({ length: 6 }, (_, i) => {
+              const d = today - 6 + i;
+              return { dayKey: weatherDayKeyFromIndex(d), weather: getNaturalWeather(d), wished: false };
+            }),
+            totalDivinations: 5,
+            totalWishes: 2,
+            wishesGranted: 1,
+            dustSpent: 52,
+          };
+          const ct = (state as any).caravanTrade || {
+            caravanRep: 0,
+            astralCrystalDust: 0,
+            expressPermits: 1,
+            ledgerRank: 0,
+            totalRunsCompleted: 0,
+            totalContractsFulfilled: 0,
+            wagons: {},
+          };
+          ct.astralCrystalDust = Math.max(Number(ct.astralCrystalDust || 0), 80);
+          (state as any).caravanTrade = ct;
+        }
+        if (body.scene === "tavern-chronicle") {
+          // WL-15 视觉自检/E2E：酒馆名望 236（冒险者驿站）、今日 4 位来访已招待 1 位、今日已点唱 1 首（已唱完，还能再点 2 首）；
+          // 背包备好菜单料理 / 饮品，并保证前两位未招待的来访者点名的料理与饮品都在背包里（可完美招待）。
+          // 编年史读真实记录：首领 4 种 34 次（首卷可编撰）、遗迹 7 次 + 勘探 2 阶 + 商队 6 趟（第二卷已编撰并佩戴称号）、
+          // 竞技场第 9 梯 14 胜 + 青铜称号（第五卷可编撰），其余各卷部分达成
+          const { tavernDayIndex, tavernDayKeyFromIndex, getTavernVisitorsForDay, getTavernVisitorOrder, planTavernServe, BEAST_LEVEL_XP } =
+            require("./progression2") as typeof import("./progression2");
+          const seedNow = new Date();
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 30000);
+          const seedItems: Record<string, number> = {
+            food_simple: 12,
+            food_grain_meal: 8,
+            bread: 6,
+            food_hearty_stew: 5,
+            food_vegetable_stew: 4,
+            food_fine: 4,
+            food_master_feast: 3,
+            soup_herbal: 3,
+            dish_grilled_lake: 3,
+            food_honey_cake: 2,
+            drink_basic: 8,
+            drink_herbal_tonic: 4,
+            drink_fine: 4,
+            tea_spirit: 3,
+            drink_rich: 2,
+          };
+          const today = tavernDayIndex(seedNow);
+          const visitors = getTavernVisitorsForDay(today);
+          for (const id of visitors.slice(0, 2)) {
+            const order = getTavernVisitorOrder(today, id);
+            seedItems[order.dishId] = Math.max(seedItems[order.dishId] || 0, 2);
+            seedItems[order.drinkId] = Math.max(seedItems[order.drinkId] || 0, 2);
+          }
+          for (const [itemId, qty] of Object.entries(seedItems)) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, qty);
+          }
+          const servedId = visitors[visitors.length - 1];
+          const servedOrder = getTavernVisitorOrder(today, servedId);
+          // 上一位客人：端上了点单的料理 + 一杯提神饮料（名望与小费按真实公式计算）
+          const servedPlan = planTavernServe(today, servedId, servedOrder.dishId, "drink_basic");
+          const balladStart = new Date(seedNow.getTime() - 50 * 60_000);
+          (state as any).bardTavern = {
+            dayKey: tavernDayKeyFromIndex(today),
+            served: [servedId],
+            balladsToday: 1,
+            activeBallad: {
+              balladId: "forest_wander",
+              startedAt: balladStart.toISOString(),
+              endsAt: new Date(balladStart.getTime() + 30 * 60_000).toISOString(),
+            },
+            fame: 236,
+            totalServed: 41,
+            totalPerfect: 9,
+            totalBallads: 7,
+            tipsEarned: 5400,
+            lastServe: {
+              visitorId: servedId,
+              dayKey: tavernDayKeyFromIndex(today),
+              dishId: servedOrder.dishId,
+              drinkId: "drink_basic",
+              matchedDish: servedPlan.matchedDish,
+              matchedDrink: servedPlan.matchedDrink,
+              fame: servedPlan.fame,
+              tipGold: servedPlan.tipGold,
+              at: new Date(seedNow.getTime() - 25 * 60_000).toISOString(),
+            },
+          };
+          stats.totalBossKills = Math.max(stats.totalBossKills || 0, 34);
+          stats.killsByMonster = {
+            ...(stats.killsByMonster || {}),
+            forest_boss: Math.max(stats.killsByMonster?.forest_boss || 0, 15),
+            mine_boss: Math.max(stats.killsByMonster?.mine_boss || 0, 10),
+            swamp_boss: Math.max(stats.killsByMonster?.swamp_boss || 0, 6),
+            snow_boss: Math.max(stats.killsByMonster?.snow_boss || 0, 3),
+          };
+          (state as any).astralRelics = {
+            ancientRelicShards: 6,
+            expeditionXp: 60,
+            curatorRank: 2,
+            totalSurveys: 7,
+            totalRestorations: 1,
+            pedestalRanks: { solar_spear: 1, verdant_chalice: 0, titan_anvil: 0, chimera_censer: 0 },
+          };
+          const ct = (state as any).caravanTrade || {
+            caravanRep: 40,
+            astralCrystalDust: 12,
+            expressPermits: 1,
+            ledgerRank: 1,
+            totalRunsCompleted: 0,
+            totalContractsFulfilled: 2,
+            wagons: {},
+          };
+          ct.totalRunsCompleted = Math.max(Number(ct.totalRunsCompleted || 0), 6);
+          (state as any).caravanTrade = ct;
+          (state as any).harborDerby = { trophies: { bronze: 2, silver: 1, gold: 0, legend: 0 }, totalEntries: 36, bestWeeklyScore: 410 };
+          (state as any).harborAquarium = {
+            species: {
+              fish_river: { count: 9, bestSizeCm: 43 },
+              shrimp: { count: 4, bestSizeCm: 13.1 },
+              fish_sea: { count: 5, bestSizeCm: 66 },
+              fish_lake: { count: 3, bestSizeCm: 58.1 },
+            },
+            featuredTank: null,
+          };
+          (state as any).adventurerAcademy = {
+            credits: { gathering: 18, crafting: 14, tactics: 8, commerce: 8 },
+            completedCourses: { field_survey: 2, forge_practicum: 1 },
+            activeCourse: null,
+            totalEnrollments: 3,
+            totalGraduations: 3,
+            lastGraduation: null,
+          };
+          (state as any).skyArena = {
+            bestRung: 9,
+            totalWins: 14,
+            totalLosses: 4,
+            titles: ["bronze"],
+            seasonsSettled: 1,
+            medals: 3,
+            totalMedalsEarned: 3,
+          };
+          const tamedAt = new Date(seedNow.getTime() - 5 * 86_400_000).toISOString();
+          (state as any).beastRanch = {
+            beasts: {
+              bloom_bee: { xp: BEAST_LEVEL_XP[3], fed: 30, tamedAt },
+              frostmane_wolf: { xp: BEAST_LEVEL_XP[5], fed: 20, tamedAt },
+            },
+            activeBeastId: "frostmane_wolf",
+            totalTamed: 2,
+            totalFeedings: 50,
+            lastEvent: null,
+          };
+          const inscribedAt = new Date(seedNow.getTime() - 2 * 86_400_000).toISOString();
+          (state as any).adventurerChronicle = {
+            inscribed: ["expedition_journal"],
+            inscribedAt: { expedition_journal: inscribedAt },
+            equippedTitle: "expedition_journal",
+            lastInscription: { chapterId: "expedition_journal", at: inscribedAt },
+          };
+        }
+        if (body.scene === "airship-paladin") {
+          // WL-16 视觉自检/E2E：飞艇 2 级船体停在公会城镇（经北境冰港航线 Lv.2 抵港，可享收购加成），货舱装着冰港买来的
+          // 深海鱼 14 + 雪兽厚皮 6；已开辟两条航线，升 3 级船体的材料与金币齐备。试炼：钢斧 + 铁甲 + 练过的战斗技能，
+          // 本周停在「下一关可胜」的关卡（真实引擎逐关推演）；勋章 26 / 累计 74（白银骑士），誓言勇气 2 · 坚忍 1 · 荣光 1
+          const {
+            airshipDayKey,
+            paladinWeekKey,
+            paladinWeekIndex,
+            generatePaladinOpponent,
+            simulatePaladinTrialDuel,
+            getPaladinStageReward,
+            getAirshipBuyQuote,
+            airshipDayIndex,
+          } = require("./progression2") as typeof import("./progression2");
+          const { ensureCombatSkills } = require("./combat_skills") as typeof import("./combat_skills");
+          const seedNow = new Date();
+          state.chapter2Build = state.chapter2Build || "heavy_sunder";
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 60000);
+          const gear: Record<string, string> = { main_hand: "weapon_steel_axe", chest: "armor_iron_chest", legs: "armor_iron_legs" };
+          for (const [slot, itemId] of Object.entries(gear)) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, 1);
+            (state.equipment as any)[slot] = itemId;
+          }
+          const cs = ensureCombatSkills(state);
+          for (const k of ["stamina", "attack", "defense", "melee"] as const) (cs as any)[k].level = Math.max((cs as any)[k].level || 1, 40);
+          ensureCombatSkills(state);
+          for (const [itemId, qty] of Object.entries({ lumber_4: 24, ingot_3: 18, yarn_3: 12, lumber_3: 8, ingot_2: 6 })) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, qty);
+          }
+          const day = airshipDayIndex(seedNow);
+          const fishCost = getAirshipBuyQuote(day - 1, "fish_deepsea")!.price * 14;
+          const peltCost = getAirshipBuyQuote(day - 1, "snow_pelt")!.price * 6;
+          const arrivedAt = new Date(seedNow.getTime() - 40 * 60_000).toISOString();
+          (state as any).airshipTrade = {
+            dayKey: airshipDayKey(seedNow),
+            location: "guild_town",
+            voyage: null,
+            arrivedVia: "guild_frostport",
+            hullLevel: 2,
+            routes: {
+              guild_frostport: { xp: 9, voyages: 5, openedAt: new Date(seedNow.getTime() - 3 * 86_400_000).toISOString() },
+              guild_emberoasis: { xp: 2, voyages: 1, openedAt: new Date(seedNow.getTime() - 86_400_000).toISOString() },
+            },
+            cargo: { fish_deepsea: 14, snow_pelt: 6 },
+            cargoCost: { fish_deepsea: fishCost, snow_pelt: peltCost },
+            boughtToday: { cheese_wheel: 10 },
+            totalVoyages: 6,
+            totalSales: 8640,
+            totalSpent: 6120,
+            totalProfit: 2520,
+            lastSale: null,
+            lastArrival: { routeId: "guild_frostport", to: "guild_town", cargoUnits: 20, xpGained: 3, at: arrivedAt },
+          };
+          const weekIdx = paladinWeekIndex(seedNow);
+          (state as any).paladinTrial = {
+            weekKey: paladinWeekKey(seedNow),
+            cleared: [],
+            attemptsUsed: 1,
+            medals: 26,
+            totalMedals: 74,
+            virtues: { valor: 2, aegis: 0, vigor: 1, glory: 1 },
+            bestStage: 3,
+            weeksFullCleared: 0,
+            totalWins: 9,
+            totalLosses: 3,
+            lastDuel: null,
+          };
+          // 停在「下一关可胜」：真实引擎逐关推演，找到连胜上限 k，令已通关 = 前 k - 1 关
+          let reach = 0;
+          for (let s = 1; s <= 6; s++) {
+            if (!simulatePaladinTrialDuel(state as any, contentPack, generatePaladinOpponent(weekIdx, s), seedNow).won) break;
+            reach = s;
+          }
+          const pt = (state as any).paladinTrial;
+          pt.cleared = Array.from({ length: Math.max(0, reach - 1) }, (_, i) => i + 1);
+          pt.attemptsUsed = Math.max(pt.attemptsUsed, pt.cleared.length + 1);
+          if (pt.cleared.length > 0) {
+            const last = generatePaladinOpponent(weekIdx, pt.cleared.length);
+            const duel = simulatePaladinTrialDuel(state as any, contentPack, last, seedNow);
+            pt.lastDuel = {
+              weekKey: pt.weekKey,
+              stage: last.stage,
+              opponentName: last.name,
+              won: duel.won,
+              timeout: duel.timeout,
+              playerHpLeft: duel.playerHpLeft,
+              playerMaxHp: duel.playerMaxHp,
+              enemyHpLeft: duel.enemyHpLeft,
+              enemyMaxHp: duel.enemyMaxHp,
+              durationMs: duel.durationMs,
+              medals: getPaladinStageReward(last.stage).medals,
+              at: new Date(seedNow.getTime() - 2 * 3_600_000).toISOString(),
+            };
+          }
+        }
+        if (body.scene === "dwarf-elf") {
+          // WL-17 视觉自检/E2E：铁匠采矿 50 级（可下前三层），矿道已掘进到第 3 层「熔脉断层」、2 级铁箍矿车，第 1 层今天已出过 1 车；
+          // 升 3 级矿车的材料与金币齐备（掘进第 4 层的材料不足）。驿站林地好感 120（树语之友），今日委托板：第 1 张采集委托的
+          // 物品备齐、第 2 张差 3 件；远征委托按真实读数（远征商队 3 趟 / 遗迹勘探 2 次 / 飞艇抵港 5 趟）以「刚好达成」为基线
+          const {
+            mineDayKey,
+            mineDayIndex,
+            getElfBoard,
+            getElfExpeditionCounters,
+            ensureCaravanTrade,
+            ensureAstralRelics,
+            ensureAirshipTrade,
+          } = require("./progression2") as typeof import("./progression2");
+          const seedNow = new Date();
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 60000);
+          const smith = (state.skills as any).skill_blacksmith;
+          if (smith) smith.level = Math.max(Number(smith.level) || 1, 50);
+          for (const [itemId, qty] of Object.entries({ lumber_3: 12, ingot_3: 14, lumber_6: 4, ingot_6: 2, ore_1: 6, ore_5: 9 })) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, qty);
+          }
+          const dayKey = mineDayKey(seedNow);
+          (state as any).dwarfMine = {
+            dayKey,
+            depth: 3,
+            cartLevel: 2,
+            haulsToday: { "1": 1 },
+            haul: null,
+            totalHauls: 14,
+            totalOre: 176,
+            totalByproduct: 5,
+            bonanzaHauls: 1,
+            lastHaul: {
+              layer: 1,
+              oreId: "ore_2",
+              oreQty: 12,
+              grade: "common",
+              byproductId: "crystal_1",
+              byproductQty: 0,
+              at: new Date(seedNow.getTime() - 25 * 60_000).toISOString(),
+            },
+          };
+          ensureCaravanTrade(state as any, seedNow).totalRunsCompleted = 3;
+          ensureAstralRelics(state as any, seedNow).totalSurveys = 2;
+          ensureAirshipTrade(state as any, seedNow).totalVoyages = 5;
+          const counters = getElfExpeditionCounters(state);
+          const board = getElfBoard(mineDayIndex(seedNow), 2);
+          const base = { ...counters };
+          base[board.expedition.sourceId] = Math.max(0, counters[board.expedition.sourceId] - board.expedition.target);
+          const [g0, g1] = board.gather;
+          state.inventory[g0.itemId] = Math.max(state.inventory[g0.itemId] || 0, g0.qty);
+          if (g1.itemId !== g0.itemId) state.inventory[g1.itemId] = Math.max(0, g1.qty - 3);
+          (state as any).elfWaystation = {
+            dayKey,
+            boardTier: 2,
+            completed: [],
+            expeditionBase: base,
+            favor: 120,
+            totalCommissions: 17,
+            fullBoards: 3,
+            totalGold: 6240,
+            lastCommission: null,
           };
         }
         if (body.scene === "chapter2-build" || body.scene === "chapter4-build") {

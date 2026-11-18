@@ -11,6 +11,13 @@ import {
   getCaravanTradeBonuses,
   getAlchemyCauldronBonuses,
   getAstralRelicsBonuses,
+  getSkyForgeBonuses,
+  getHarborAquariumBonuses,
+  getAcademyFestivalBonuses,
+  getArenaTownBonuses,
+  getBeastRanchBonuses,
+  getTavernChronicleBonuses,
+  getPaladinTrialBonuses,
   consumeEquippedPotionChargesOnBossKill,
   recordCodexItemUnlock,
 } from "./progression2";
@@ -181,6 +188,16 @@ export function playerBuildExtras(
     | "caravanTrade"
     | "alchemyCauldron"
     | "astralRelics"
+    | "skyForge"
+    | "harborAquarium"
+    | "adventurerAcademy"
+    | "festivalCalendar"
+    | "skyArena"
+    | "guildTown"
+    | "beastRanch"
+    | "bardTavern"
+    | "adventurerChronicle"
+    | "paladinTrial"
   > | null
 ): CombinedBuildExtras {
   const ch1 = buildExtras(player?.chapter1Build);
@@ -190,9 +207,19 @@ export function playerBuildExtras(
   const caravan = getCaravanTradeBonuses(player);
   const alchemy = getAlchemyCauldronBonuses(player);
   const relics = getAstralRelicsBonuses(player);
-  let atk = ch1.atk + astro.bonusAtk + affix.bonusAtk + hw.bonusAtk + alchemy.bonusAtk + relics.bonusAtk;
-  let hp = ch1.hp + astro.bonusHp + hw.bonusHp + alchemy.bonusHp + relics.bonusHp;
-  let def = ch1.def + hw.bonusDef + alchemy.bonusDef + relics.bonusDef;
+  const forge = getSkyForgeBonuses(player);
+  const harbor = getHarborAquariumBonuses(player);
+  const academy = getAcademyFestivalBonuses(player);
+  const arenaTown = getArenaTownBonuses(player);
+  // WL-14 出战的战斗伙伴（攻防血按等级插值）+ 牧场羁绊：与前端 combinedBuildFromState 同口径，fightPreview / 竞技场沙盒对决自动对称
+  const beast = getBeastRanchBonuses(player);
+  // WL-15 酒馆名望等级 + 已编撰编年史章节的永久攻防血与金币（限时诗篇只作用于生活职业，不进战斗）：与前端 combinedBuildFromState 同口径
+  const tavern = getTavernChronicleBonuses(player);
+  // WL-16 圣骑士团誓言（勇气 / 守护 / 坚忍 / 荣光，逐项封顶）：与前端 combinedBuildFromState 同口径
+  const paladin = getPaladinTrialBonuses(player);
+  let atk = ch1.atk + astro.bonusAtk + affix.bonusAtk + hw.bonusAtk + alchemy.bonusAtk + relics.bonusAtk + forge.bonusAtk + academy.bonusAtk + arenaTown.bonusAtk + beast.bonusAtk + tavern.bonusAtk + paladin.bonusAtk;
+  let hp = ch1.hp + astro.bonusHp + hw.bonusHp + alchemy.bonusHp + relics.bonusHp + forge.bonusHp + academy.bonusHp + arenaTown.bonusHp + beast.bonusHp + tavern.bonusHp + paladin.bonusHp;
+  let def = ch1.def + hw.bonusDef + alchemy.bonusDef + relics.bonusDef + forge.bonusDef + academy.bonusDef + arenaTown.bonusDef + beast.bonusDef + tavern.bonusDef + paladin.bonusDef;
   let armorPenPct = 0;
   let thornsDefRatio = 0;
   let intervalMult = 1;
@@ -254,6 +281,9 @@ export function playerBuildExtras(
   if (relics.armorPenPct > 0) {
     armorPenPct = Math.min(0.75, Math.round((armorPenPct + relics.armorPenPct) * 1000) / 1000);
   }
+  if (forge.armorPenPct > 0) {
+    armorPenPct = Math.min(0.75, Math.round((armorPenPct + forge.armorPenPct) * 1000) / 1000);
+  }
   if (hw.thornsDefRatio > 0) {
     thornsDefRatio = Math.min(0.85, Math.round((thornsDefRatio + hw.thornsDefRatio) * 1000) / 1000);
   }
@@ -265,6 +295,9 @@ export function playerBuildExtras(
   }
   if (relics.intervalMult !== 1) {
     intervalMult = Math.max(0.65, Math.round(intervalMult * relics.intervalMult * 1000) / 1000);
+  }
+  if (forge.intervalMult !== 1) {
+    intervalMult = Math.max(0.65, Math.round(intervalMult * forge.intervalMult * 1000) / 1000);
   }
   if (hw.goldGainPct > 0) {
     goldMult = Math.round(goldMult * (1 + hw.goldGainPct / 100) * 1000) / 1000;
@@ -281,6 +314,37 @@ export function playerBuildExtras(
   if (relics.rareFindPct > 0) {
     dropMult = Math.round(dropMult * (1 + relics.rareFindPct / 100) * 1000) / 1000;
   }
+  // WL-10：契约代价可令天空锻炉金币净值为负（如新月疾猎契），因此按 !== 0 接入
+  if (forge.goldGainPct !== 0) {
+    goldMult = Math.round(goldMult * (1 + forge.goldGainPct / 100) * 1000) / 1000;
+  }
+  if (forge.rareFindPct > 0) {
+    dropMult = Math.round(dropMult * (1 + forge.rareFindPct / 100) * 1000) / 1000;
+  }
+  // WL-11 海港水族馆：收藏进度 + 主展缸共鸣的金币收益同样作用于战斗金币
+  if (harbor.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + harbor.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-12 冒险者学院（商会经营系 + 徽章）与夏渔纪念章：金币收益同样作用于战斗金币
+  if (academy.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + academy.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-13 赛季称号 + 城镇设施（演武护商 / 钱庄）+ 繁荣等级：金币收益同样作用于战斗金币
+  if (arenaTown.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + arenaTown.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-14 时渊幼龙（战斗伙伴）与牧场羁绊：金币收益同样作用于战斗金币
+  if (beast.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + beast.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-15 酒馆名望与编年史：金币收益同样作用于战斗金币
+  if (tavern.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + tavern.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-16 荣光誓言：金币收益同样作用于战斗金币
+  if (paladin.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + paladin.goldGainPct / 100) * 1000) / 1000;
+  }
   if (hw.potionBuffMult !== 1) {
     potionBuffMult = Math.round(potionBuffMult * hw.potionBuffMult * 1000) / 1000;
   }
@@ -296,16 +360,16 @@ export function playerBuildExtras(
 
   const bossArmorBreakPct = Math.min(
     0.75,
-    Math.round((alchemy.bossArmorBreakPct + relics.bossArmorBreakPct) * 1000) / 1000
+    Math.round((alchemy.bossArmorBreakPct + relics.bossArmorBreakPct + forge.bossArmorBreakPct) * 1000) / 1000
   );
   const critRateBonusPct = Math.round(
-    (hw.critRateBonusPct + alchemy.critRateBonusPct + relics.critRateBonusPct) * 10
+    (hw.critRateBonusPct + alchemy.critRateBonusPct + relics.critRateBonusPct + forge.critRateBonusPct) * 10
   ) / 10;
-  const critDmgBonusPct = hw.critDmgBonusPct + alchemy.critDmgBonusPct + relics.critDmgBonusPct;
+  const critDmgBonusPct = hw.critDmgBonusPct + alchemy.critDmgBonusPct + relics.critDmgBonusPct + forge.critDmgBonusPct;
 
   return {
     atk,
-    combatAtkPct: alchemy.combatAtkPct + relics.combatAtkPct,
+    combatAtkPct: alchemy.combatAtkPct + relics.combatAtkPct + forge.combatAtkPct,
     hp,
     def,
     armorPenPct,
@@ -798,8 +862,9 @@ function grantWin(
   const astro = getAstrolabeBonuses(player);
   const hw = getHeritageWorkshopBonuses(player);
   const relics = getAstralRelicsBonuses(player);
+  const forge = getSkyForgeBonuses(player);
   const trainingLevel = houseLevelForSkill(player, "skill_combat");
-  const xp = Math.round(Number(m.xp || 0) * (1 + trainingLevel * HOUSE_XP_PER_LEVEL * astro.houseBonusMult) * (buffEff.xpGain || 1) * repBuffs.xpGain * prestigeMul * astro.combatXpMult * (1 + hw.xpGainPct / 100) * (1 + relics.xpGainPct / 100) * 10) / 10;
+  const xp = Math.round(Number(m.xp || 0) * (1 + trainingLevel * HOUSE_XP_PER_LEVEL * astro.houseBonusMult) * (buffEff.xpGain || 1) * repBuffs.xpGain * prestigeMul * astro.combatXpMult * (1 + hw.xpGainPct / 100) * (1 + relics.xpGainPct / 100) * (1 + forge.xpGainPct / 100) * 10) / 10;
   player.inventory.gold = (player.inventory.gold || 0) + gold;
   const rare = rareDropFor(pack, m);
   enc.drops = [];

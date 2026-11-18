@@ -344,7 +344,9 @@ export function previewFight(
         1,
         Math.floor(hit(sheet.atk, 1, m.def, incoming, effectiveArmorPen, relicCritAmp) * a.def.damageMult * mult)
       );
-      const minHpAfterOpeningCast = atMs <= 0 ? Math.max(1, Math.ceil(enemyMax * 0.25)) : 0;
+      // Mirror of backend castAbility: only the opening cast into a full-HP enemy is floored at 25%
+      // (a second damaging slot firing at t=0 hits normally).
+      const minHpAfterOpeningCast = atMs <= 0 && enemyHp >= enemyMax ? Math.max(1, Math.ceil(enemyMax * 0.25)) : 0;
       enemyHp = Math.max(minHpAfterOpeningCast, enemyHp - dmg);
       if (a.def.breaksGuard && guardBefore) guardActive = false;
       phases();

@@ -1,6 +1,13 @@
 import { enhancementStatMultiplier } from "./enhancement";
 import { getAlchemyCauldronBonuses } from "./alchemyCauldron";
 import { getAstralRelicsBonuses } from "./astralRelics";
+import { getSkyForgeBonuses } from "./skyForge";
+import { getHarborAquariumBonuses } from "./harborDerby";
+import { getAcademyFestivalBonuses } from "./academyFestival";
+import { getArenaTownBonuses } from "./arenaTown";
+import { getBeastRanchBonuses } from "./beastWeather";
+import { getTavernChronicleBonuses } from "./bardTavern";
+import { getPaladinTrialBonuses } from "./airshipPaladin";
 
 /** Must stay aligned with backend/src/first_hour_combat.ts playerCombatant + combat_skills.ts. */
 
@@ -111,6 +118,44 @@ type State = {
     ancientRelicShards?: number;
     totalSurveys?: number;
     totalRestorations?: number;
+  } | null;
+  skyForge?: {
+    emblemLevels?: Partial<Record<string, number>> | null;
+    activePacts?: ReadonlyArray<string> | null;
+    totalForges?: number;
+    totalPactsSigned?: number;
+  } | null;
+  harborAquarium?: {
+    species?: unknown;
+    featuredTank?: unknown;
+  } | null;
+  adventurerAcademy?: {
+    credits?: unknown;
+  } | null;
+  festivalCalendar?: {
+    keepsakes?: unknown;
+  } | null;
+  skyArena?: {
+    titles?: unknown;
+  } | null;
+  guildTown?: {
+    facilities?: unknown;
+  } | null;
+  beastRanch?: {
+    beasts?: unknown;
+    activeBeastId?: unknown;
+  } | null;
+  bardTavern?: {
+    fame?: unknown;
+    activeBallad?: unknown;
+  } | null;
+  adventurerChronicle?: {
+    inscribed?: unknown;
+    equippedTitle?: unknown;
+  } | null;
+  paladinTrial?: {
+    virtues?: unknown;
+    totalMedals?: unknown;
   } | null;
 };
 
@@ -407,6 +452,41 @@ export function astralRelicsCombatExtras(state: State | null | undefined) {
   return getAstralRelicsBonuses(state);
 }
 
+/** WL-10 天空锻炉星辰神兵谱 + 公会秘境试炼契约阵（mirror of backend getSkyForgeBonuses）。 */
+export function skyForgeCombatExtras(state: State | null | undefined) {
+  return getSkyForgeBonuses(state);
+}
+
+/** WL-11 海港水族馆收藏图鉴（mirror of backend getHarborAquariumBonuses；战斗只吃金币收益）。 */
+export function harborAquariumCombatExtras(state: State | null | undefined) {
+  return getHarborAquariumBonuses(state);
+}
+
+/** WL-12 冒险者学院跨职业被动 + 学院徽章 + 四季纪念章（mirror of backend getAcademyFestivalBonuses；战斗吃攻防血与金币收益）。 */
+export function academyFestivalCombatExtras(state: State | null | undefined) {
+  return getAcademyFestivalBonuses(state);
+}
+
+/** WL-13 最高赛季称号 + 公会城镇设施 + 繁荣等级（mirror of backend getArenaTownBonuses；战斗吃攻防血与金币收益）。 */
+export function arenaTownCombatExtras(state: State | null | undefined) {
+  return getArenaTownBonuses(state);
+}
+
+/** WL-14 出战的战斗伙伴 + 牧场羁绊（mirror of backend getBeastRanchBonuses；战斗吃攻防血与金币收益）。 */
+export function beastRanchCombatExtras(state: State | null | undefined) {
+  return getBeastRanchBonuses(state);
+}
+
+/** WL-15 酒馆名望等级 + 已编撰编年史章节（mirror of backend getTavernChronicleBonuses；战斗吃永久攻防血与金币，限时诗篇不进战斗）。 */
+export function tavernChronicleCombatExtras(state: State | null | undefined) {
+  return getTavernChronicleBonuses(state);
+}
+
+/** WL-16 圣骑士团誓言（mirror of backend getPaladinTrialBonuses；攻防血与金币逐项封顶后进战斗）。 */
+export function paladinTrialCombatExtras(state: State | null | undefined) {
+  return getPaladinTrialBonuses(state);
+}
+
 export function combinedBuildFromState(state: State | null | undefined) {
   const ch1 = (state?.chapter1Build && BUILD[state.chapter1Build]) || { atk: 0, hp: 0, def: 0 };
   const affix = guildAffixCombatExtras(state);
@@ -414,9 +494,16 @@ export function combinedBuildFromState(state: State | null | undefined) {
   const caravan = caravanTradeCombatExtras(state);
   const alchemy = alchemyCauldronCombatExtras(state);
   const relics = astralRelicsCombatExtras(state);
-  let atk = ch1.atk + affix.bonusAtk + hw.bonusAtk + alchemy.bonusAtk + relics.bonusAtk;
-  let hp = ch1.hp + hw.bonusHp + alchemy.bonusHp + relics.bonusHp;
-  let def = ch1.def + hw.bonusDef + alchemy.bonusDef + relics.bonusDef;
+  const forge = skyForgeCombatExtras(state);
+  const harbor = harborAquariumCombatExtras(state);
+  const academy = academyFestivalCombatExtras(state);
+  const arenaTown = arenaTownCombatExtras(state);
+  const beast = beastRanchCombatExtras(state);
+  const tavern = tavernChronicleCombatExtras(state);
+  const paladin = paladinTrialCombatExtras(state);
+  let atk = ch1.atk + affix.bonusAtk + hw.bonusAtk + alchemy.bonusAtk + relics.bonusAtk + forge.bonusAtk + academy.bonusAtk + arenaTown.bonusAtk + beast.bonusAtk + tavern.bonusAtk + paladin.bonusAtk;
+  let hp = ch1.hp + hw.bonusHp + alchemy.bonusHp + relics.bonusHp + forge.bonusHp + academy.bonusHp + arenaTown.bonusHp + beast.bonusHp + tavern.bonusHp + paladin.bonusHp;
+  let def = ch1.def + hw.bonusDef + alchemy.bonusDef + relics.bonusDef + forge.bonusDef + academy.bonusDef + arenaTown.bonusDef + beast.bonusDef + tavern.bonusDef + paladin.bonusDef;
   let armorPenPct = 0;
   let thornsDefRatio = 0;
   let intervalMult = 1;
@@ -470,6 +557,9 @@ export function combinedBuildFromState(state: State | null | undefined) {
   if (relics.armorPenPct > 0) {
     armorPenPct = Math.min(0.75, Math.round((armorPenPct + relics.armorPenPct) * 1000) / 1000);
   }
+  if (forge.armorPenPct > 0) {
+    armorPenPct = Math.min(0.75, Math.round((armorPenPct + forge.armorPenPct) * 1000) / 1000);
+  }
   if (hw.thornsDefRatio > 0) {
     thornsDefRatio = Math.min(0.85, Math.round((thornsDefRatio + hw.thornsDefRatio) * 1000) / 1000);
   }
@@ -481,6 +571,9 @@ export function combinedBuildFromState(state: State | null | undefined) {
   }
   if (relics.intervalMult !== 1) {
     intervalMult = Math.max(0.65, Math.round(intervalMult * relics.intervalMult * 1000) / 1000);
+  }
+  if (forge.intervalMult !== 1) {
+    intervalMult = Math.max(0.65, Math.round(intervalMult * forge.intervalMult * 1000) / 1000);
   }
   if (hw.goldGainPct > 0) {
     goldMult = Math.round(goldMult * (1 + hw.goldGainPct / 100) * 1000) / 1000;
@@ -497,6 +590,37 @@ export function combinedBuildFromState(state: State | null | undefined) {
   if (relics.rareFindPct > 0) {
     dropMult = Math.round(dropMult * (1 + relics.rareFindPct / 100) * 1000) / 1000;
   }
+  // WL-10：契约代价可令天空锻炉金币净值为负（如新月疾猎契），因此按 !== 0 接入（与后端一致）
+  if (forge.goldGainPct !== 0) {
+    goldMult = Math.round(goldMult * (1 + forge.goldGainPct / 100) * 1000) / 1000;
+  }
+  if (forge.rareFindPct > 0) {
+    dropMult = Math.round(dropMult * (1 + forge.rareFindPct / 100) * 1000) / 1000;
+  }
+  // WL-11 海港水族馆：金币收益同样作用于战斗金币（与后端 playerBuildExtras 一致）
+  if (harbor.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + harbor.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-12 冒险者学院（商会经营系 + 徽章）与夏渔纪念章：金币收益同样作用于战斗金币（与后端 playerBuildExtras 一致）
+  if (academy.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + academy.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-13 赛季称号 + 城镇设施 + 繁荣等级：金币收益同样作用于战斗金币（与后端 playerBuildExtras 一致）
+  if (arenaTown.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + arenaTown.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-14 时渊幼龙（战斗伙伴）与牧场羁绊：金币收益同样作用于战斗金币（与后端 playerBuildExtras 一致）
+  if (beast.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + beast.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-15 酒馆名望与编年史：金币收益同样作用于战斗金币（与后端 playerBuildExtras 一致）
+  if (tavern.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + tavern.goldGainPct / 100) * 1000) / 1000;
+  }
+  // WL-16 荣光誓言：金币收益同样作用于战斗金币（与后端 playerBuildExtras 一致）
+  if (paladin.goldGainPct > 0) {
+    goldMult = Math.round(goldMult * (1 + paladin.goldGainPct / 100) * 1000) / 1000;
+  }
   if (hw.potionBuffMult !== 1) {
     potionBuffMult = Math.round(potionBuffMult * hw.potionBuffMult * 1000) / 1000;
   }
@@ -512,15 +636,18 @@ export function combinedBuildFromState(state: State | null | undefined) {
 
   const bossArmorBreakPct = Math.min(
     0.75,
-    Math.round((alchemy.bossArmorBreakPct + relics.bossArmorBreakPct) * 1000) / 1000
+    Math.round((alchemy.bossArmorBreakPct + relics.bossArmorBreakPct + forge.bossArmorBreakPct) * 1000) / 1000
   );
   const critRateBonusPct =
-    Math.round((hw.critRateBonusPct + alchemy.critRateBonusPct + relics.critRateBonusPct) * 10) / 10;
-  const critDmgBonusPct = hw.critDmgBonusPct + alchemy.critDmgBonusPct + relics.critDmgBonusPct;
+    Math.round(
+      (hw.critRateBonusPct + alchemy.critRateBonusPct + relics.critRateBonusPct + forge.critRateBonusPct) * 10
+    ) / 10;
+  const critDmgBonusPct =
+    hw.critDmgBonusPct + alchemy.critDmgBonusPct + relics.critDmgBonusPct + forge.critDmgBonusPct;
 
   return {
     atk,
-    combatAtkPct: alchemy.combatAtkPct + relics.combatAtkPct,
+    combatAtkPct: alchemy.combatAtkPct + relics.combatAtkPct + forge.combatAtkPct,
     hp,
     def,
     armorPenPct,
@@ -686,4 +813,13 @@ export function equippedWeaponAtk(state: State | null | undefined, items: PackIt
   const enh = state?.equipment?.enhancementLevels?.[id] || 0;
   const mult = enhancementStatMultiplier(enh, item);
   return Math.round((Number(item.atk || 0) + Number(item.mag || 0)) * mult);
+}
+
+/** WL-13 竞技场规则下的战斗面板：满血入场、无临时药剂增益（mirror of backend simulateArenaDuel 的沙盒规则）。 */
+export function arenaCombatSheet(
+  state: State | null | undefined,
+  items: PackItem[] | undefined,
+  sets?: PackEquipmentSet[] | undefined
+): CombatSheet {
+  return combatSheetFromPack(state ? { ...state, activeBuffs: [] } : state, items, sets);
 }

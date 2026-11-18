@@ -31,7 +31,7 @@ const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 
 describe("WL-8 frontend art contract, navigation IA, zero-SVG/Emoji guard, and Chimera Cauldron helpers", () => {
   it("registers all 6 WL-8 hand-painted RGBA .webp icons in T1 contract and bumps cache version", () => {
-    assert.match(T1_ASSET_CACHE_VERSION, /^20261115wl\d+$/);
+    assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.equal(WL8_ALCHEMY_CAULDRON_ART_IDS.length, 6);
 
     for (const id of WL8_ALCHEMY_CAULDRON_ART_IDS) {

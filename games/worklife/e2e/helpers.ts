@@ -78,7 +78,7 @@ export async function openNav(page: Page, id: NavId) {
 
 export async function seedT1(
   page: Page,
-  scene?: "chapter-complete" | "combat-levels" | "heritage-workshop" | "caravan-trade" | "alchemy-cauldron" | "astral-relics"
+  scene?: "chapter-complete" | "combat-levels" | "heritage-workshop" | "caravan-trade" | "alchemy-cauldron" | "astral-relics" | "sky-forge" | "harbor-derby" | "academy-festival" | "arena-town" | "beast-weather" | "tavern-chronicle" | "airship-paladin" | "dwarf-elf"
 ) {
   const res = await page.evaluate(async ({ sceneName, api }) => {
     const raw = localStorage.getItem("worklife_user");

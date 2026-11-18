@@ -12,6 +12,14 @@ export type ProgPanelId =
   | "caravan"
   | "cauldron"
   | "relics"
+  | "forge"
+  | "harbor"
+  | "academy"
+  | "arena"
+  | "ranch"
+  | "tavern"
+  | "airship"
+  | "mine"
   | "prestige";
 
 const LABELS: Record<ProgPanelId, string> = {
@@ -23,6 +31,14 @@ const LABELS: Record<ProgPanelId, string> = {
   caravan: "远征商队",
   cauldron: "奇美拉魔药釜",
   relics: "遗迹圣物馆",
+  forge: "天空锻炉",
+  harbor: "港湾垂钓大赛",
+  academy: "冒险者学院与四季节庆",
+  arena: "天空竞技场与公会城镇",
+  ranch: "契约魔兽牧场与天候观星塔",
+  tavern: "吟游诗人酒馆与冒险者编年史",
+  airship: "浮空飞艇商路与圣骑士团荣誉试炼",
+  mine: "矮人地底矿脉与精灵林地驿站",
   prestige: "转生",
   settings: "设置",
 };
@@ -294,6 +310,66 @@ export function GameHeader(props: Props) {
       <div className="header-right" ref={menuRef}>
         {props.chapterComplete && (
           <>
+            <button
+              type="button"
+              data-testid="header-tavern-chronicle-btn"
+              className="header-tavern-pill"
+              onClick={() => props.onOpenProg("tavern")}
+              title="吟游诗人酒馆与冒险者编年史"
+            >
+              <T1Art kind="skills" id="bard_tavern" alt="" className="header-caravan-pill-icon" />
+              <span>酒馆编年</span>
+            </button>
+            <button
+              type="button"
+              data-testid="header-beast-weather-btn"
+              className="header-ranch-pill"
+              onClick={() => props.onOpenProg("ranch")}
+              title="契约魔兽牧场与天候观星占卜塔"
+            >
+              <T1Art kind="skills" id="beast_ranch" alt="" className="header-caravan-pill-icon" />
+              <span>牧场天候</span>
+            </button>
+            <button
+              type="button"
+              data-testid="header-arena-town-btn"
+              className="header-arena-pill"
+              onClick={() => props.onOpenProg("arena")}
+              title="天空竞技场赛季排位与公会领地城镇建设"
+            >
+              <T1Art kind="skills" id="sky_arena" alt="" className="header-caravan-pill-icon" />
+              <span>竞技城镇</span>
+            </button>
+            <button
+              type="button"
+              data-testid="header-academy-festival-btn"
+              className="header-academy-pill"
+              onClick={() => props.onOpenProg("academy")}
+              title="冒险者学院进修课程与四季节庆活动日历"
+            >
+              <T1Art kind="skills" id="academy_crest" alt="" className="header-caravan-pill-icon" />
+              <span>学院节庆</span>
+            </button>
+            <button
+              type="button"
+              data-testid="header-harbor-derby-btn"
+              className="header-harbor-pill"
+              onClick={() => props.onOpenProg("harbor")}
+              title="港湾垂钓大赛与海港水族馆收藏图鉴"
+            >
+              <T1Art kind="skills" id="fishing_trophy" alt="" className="header-caravan-pill-icon" />
+              <span>港湾大赛</span>
+            </button>
+            <button
+              type="button"
+              data-testid="header-sky-forge-btn"
+              className="header-forge-pill"
+              onClick={() => props.onOpenProg("forge")}
+              title="天空锻炉星辰神兵谱与公会秘境试炼契约阵"
+            >
+              <T1Art kind="skills" id="sky_forge" alt="" className="header-caravan-pill-icon" />
+              <span>天空锻炉</span>
+            </button>
             <button
               type="button"
               data-testid={props.activeTab === "adventure" ? "header-relics-shortcut-btn" : "open-astral-relics-btn"}

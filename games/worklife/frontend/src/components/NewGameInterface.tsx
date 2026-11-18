@@ -20,7 +20,7 @@ import { logger } from '../utils/logger'
 import { getItemName, registerItemNames } from '../utils/itemNames'
 import { AchievementsPanel, DailyQuestsPanel, SettingsPanel } from './ProgressionPanels'
 import { CheckInModal } from './SystemPanels'
-import { AlchemyCauldronPanel, AstralRelicsPanel, CaravanTradePanel, HeritageWorkshopPanel, PrestigePanel, ReputationPanel } from './AdvancementPanels'
+import { AcademyFestivalPanel, AlchemyCauldronPanel, AstralRelicsPanel, BardTavernChroniclePanel, BeastWeatherPanel, CaravanTradePanel, HarborDerbyPanel, HeritageWorkshopPanel, PrestigePanel, ReputationPanel, SkyArenaTownPanel, SkyForgePanel } from './AdvancementPanels'
 import { useToast } from './Toast'
 import { CharacterCreate } from './CharacterCreate'
 import { TutorialGuide } from './TutorialGuide'
@@ -128,7 +128,7 @@ export default function NewGameInterface() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('logging')
 
   // 进度系统弹窗：成就 / 每日任务 / 设置 / 签到 / 声望军需 / 转生
-  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'reputation' | 'workshop' | 'caravan' | 'cauldron' | 'relics' | 'prestige'>(null)
+  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'reputation' | 'workshop' | 'caravan' | 'cauldron' | 'relics' | 'forge' | 'harbor' | 'academy' | 'arena' | 'ranch' | 'tavern' | 'airship' | 'mine' | 'prestige'>(null)
   // 顶栏角标：可领取数量
   const [claimableCount, setClaimableCount] = useState(0)
   // 顶栏角标：今日是否可签到
@@ -2599,6 +2599,79 @@ export default function NewGameInterface() {
       )}
       {progPanel === 'relics' && (
         <AstralRelicsPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'forge' && (
+        <SkyForgePanel
+          onClose={() => setProgPanel(null)}
+          onOpenRelics={() => setProgPanel('relics')}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'harbor' && (
+        <HarborDerbyPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'academy' && (
+        <AcademyFestivalPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'arena' && (
+        <SkyArenaTownPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'ranch' && (
+        <BeastWeatherPanel
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {(progPanel === 'tavern' || progPanel === 'airship') && (
+        <BardTavernChroniclePanel
+          initialTab={progPanel === 'airship' ? 'airship' : 'tavern'}
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'mine' && (
+        <BardTavernChroniclePanel
+          initialTab="mine"
           onClose={() => setProgPanel(null)}
           onChange={() => {
             apiClient.clearCache();
