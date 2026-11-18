@@ -195,6 +195,452 @@ export interface AntiAirTurretConfig {
   dropChargeBonus: number;
 }
 
+export type CandyTrainCarKind = 'locomotive' | 'armored' | 'treasure' | 'caboose';
+
+/**
+ * MC-10: One coupled car of the 3D armored Rainbow Candy Freight Train.
+ * `armor` is the fractional damage reduction while the bolted armor plates are intact
+ * (plates are shed at 50% HP, cutting the armor to 40% of its value).
+ */
+export interface CandyTrainCarConfig {
+  id: string;
+  name: string;
+  shortName: string;
+  kind: CandyTrainCarKind;
+  hp: number;
+  armor: number;
+  rewardGold: number;
+  rewardMedals: number;
+  ventDmg: number;
+  ventInterval: number;
+}
+
+/** MC-10: Elliptical rainbow rail loop the candy freight train circles around (world units). */
+export interface CandyTrainTrackConfig {
+  centerX: number;
+  centerZ: number;
+  radiusX: number;
+  radiusZ: number;
+  carSpacing: number;
+}
+
+/**
+ * MC-11: A full-width coral reef barrier sealing the submarine bubble lane at `z`.
+ * The 3D toy submarine cannot pass while it stands; Bobos, sub torpedoes & pet sparks break it.
+ */
+export interface CoralBarrierConfig {
+  id: string;
+  name: string;
+  z: number;
+  hp: number;
+  rewardGold: number;
+}
+
+/** MC-11: A drifting rescue bubble holding a trapped Bobo squad (popping it releases `bobos` Blue units). */
+export interface RescueBubbleConfig {
+  id: string;
+  x: number;
+  z: number;
+  hp: number;
+  bobos: number;
+  driftRangeX: number;
+  driftSpeed: number;
+  driftPhase: number;
+  isGrand?: boolean;
+}
+
+/** MC-11: Periodic jellyfish swarm that drifts at the submarine, stinging (damage + slow) Bobos and the hull. */
+export interface JellyfishSwarmConfig {
+  firstDelaySec: number;
+  intervalSec: number;
+  perSwarm: number;
+  hp: number;
+  speed: number;
+  stingRadius: number;
+  stingIntervalSec: number;
+  stingDmg: number;
+  hullStingDmg: number;
+  slowSec: number;
+  slowMult: number;
+  rewardGold: number;
+}
+
+/** MC-11: Submarine bubble lane geometry and hull / oxygen / torpedo budget. */
+export interface SubmarineLaneConfig {
+  startZ: number;
+  dockZ: number;
+  maxSteerX: number;
+  baseSpeed: number;
+  hullHp: number;
+  oxygenSec: number;
+  torpedoIntervalSec: number;
+  torpedoDmg: number;
+}
+
+/**
+ * MC-12: A sled gate standing across part of the glacier course at course distance `d` (metres from the summit).
+ * The toy sled passing through it (sled centre x within [x - width/2, x + width/2]) adds Bobo riders.
+ */
+export interface SledGateConfig {
+  id: string;
+  d: number;
+  x: number;
+  width: number;
+  op: 'add' | 'mul';
+  value: number;
+  style: GateStyle;
+}
+
+/** MC-12: A falling icicle telegraphed by a ground shadow; once landed it stands as an ice spike that knocks riders off. */
+export interface SledIcicleConfig {
+  id: string;
+  d: number;
+  x: number;
+  radius: number;
+  knockCap: number;
+}
+
+/** MC-12: An avalanche snow wave rolling up the course toward the sled; only the flagged gap `gapX ± gapW/2` is safe. */
+export interface SledAvalancheConfig {
+  id: string;
+  d: number;
+  gapX: number;
+  gapW: number;
+  rollSpeed: number;
+  knockPct: number;
+}
+
+/** MC-12: An ice boost strip; the sled sliding over it gains a short speed burst. */
+export interface SledBoostConfig {
+  id: string;
+  d: number;
+  x: number;
+  width: number;
+}
+
+/** MC-12: Glacier sled course geometry, speed / time budget and rider capacity. */
+export interface GlacierSledCourseConfig {
+  length: number;
+  baseSpeed: number;
+  timeLimitSec: number;
+  startRiders: number;
+  maxRiders: number;
+  maxSteerX: number;
+  hitSlowMult: number;
+  hitSlowSec: number;
+  boostMult: number;
+  boostSec: number;
+}
+
+/**
+ * MC-13: A floating stone platform on the lava course. Every platform of one row shares `d` (course metres of the
+ * row centre) and `depth`; the Bobo crowd lands on a row when it reaches `d - depth / 2`.
+ * - `stone`: basalt slab; `cooled`: wide cooled-rock safe platform (never targeted by hazards, grants a short
+ *   heat shield); `shore`: the start / exit obsidian shore. A platform may carry a unit gate (+N / ×N).
+ */
+export type LavaPlatformKind = 'stone' | 'cooled' | 'shore';
+
+export interface LavaPlatformConfig {
+  id: string;
+  row: number;
+  d: number;
+  x: number;
+  width: number;
+  depth: number;
+  kind: LavaPlatformKind;
+  gateOp?: 'add' | 'mul';
+  gateValue?: number;
+  gateStyle?: GateStyle;
+}
+
+/** MC-13: A telegraphed lava eruption (AoE circle) on one platform of a row; it bursts as the crowd arrives. */
+export interface LavaEruptionConfig {
+  id: string;
+  row: number;
+  d: number;
+  x: number;
+  radius: number;
+  knockCap: number;
+}
+
+/** MC-13: A volcanic bomb falling onto part of a platform (shadow telegraph) that then burns there as an obstacle. */
+export interface LavaRockConfig {
+  id: string;
+  row: number;
+  d: number;
+  x: number;
+  radius: number;
+  knockCap: number;
+}
+
+/** MC-13: Lava jump course geometry, pace / time budget and crowd capacity. */
+export interface LavaJumpCourseConfig {
+  length: number;
+  baseSpeed: number;
+  timeLimitSec: number;
+  startBobos: number;
+  maxBobos: number;
+  maxSteerX: number;
+  hopHeight: number;
+  hitSlowMult: number;
+  hitSlowSec: number;
+  cooledShieldSec: number;
+}
+
+/**
+ * MC-14: A gate across part of the asteroid-belt space track. `unit` gates add Bobos (+N / ×N); `shield` gates charge a
+ * temporary energy shield on the whole squad (`value` = hazard hits it absorbs before it pops). Gates sharing `d` are
+ * resolved together: only the one under the squad centre triggers.
+ */
+export interface AsteroidGateConfig {
+  id: string;
+  d: number;
+  x: number;
+  width: number;
+  kind: 'unit' | 'shield';
+  op?: 'add' | 'mul';
+  value: number;
+  style: GateStyle;
+}
+
+/** MC-14: A telegraphed asteroid strike (warning ring + slowly falling rock in low gravity) that blasts a circle. */
+export interface AsteroidMeteorConfig {
+  id: string;
+  d: number;
+  x: number;
+  radius: number;
+  knockCap: number;
+}
+
+/** MC-14: A drifting asteroid belt spanning the track with one flagged safe gap (`gapX` ± `gapW` / 2). */
+export interface AsteroidBeltConfig {
+  id: string;
+  d: number;
+  gapX: number;
+  gapW: number;
+  knockCap: number;
+}
+
+/** MC-14: Asteroid dash course geometry, pace / time budget, crowd capacity, low-gravity float & shield tuning. */
+export interface AsteroidDashCourseConfig {
+  length: number;
+  baseSpeed: number;
+  timeLimitSec: number;
+  startBobos: number;
+  maxBobos: number;
+  maxSteerX: number;
+  floatHeight: number;
+  hitSlowMult: number;
+  hitSlowSec: number;
+  shieldSec: number;
+}
+
+/**
+ * MC-15: A unit gate pair on the haunted-castle night track (+N / ×N). Gates sharing `d` resolve together: only the one
+ * under the squad centre triggers.
+ */
+export interface PumpkinGateConfig {
+  id: string;
+  d: number;
+  x: number;
+  width: number;
+  op: 'add' | 'mul';
+  value: number;
+  style: GateStyle;
+}
+
+/**
+ * MC-15: A pumpkin-lantern lit zone (a warm pool of light on the castle floor). While the squad centre is inside it, the
+ * squad's lantern light refills; a ghost drifting into the light is dispelled.
+ */
+export interface PumpkinLampConfig {
+  id: string;
+  d: number;
+  x: number;
+  radius: number;
+}
+
+/**
+ * MC-15: A wall-phasing ghost. It glides out of the castle side wall (`side` -1 = left / +1 = right), sweeping across
+ * the track in lock-step with the squad's progress, so it is exactly at `crossX` when the squad front reaches `d`
+ * (marked by a purple intercept ring). Lateral shift = `sweep` metres per metre the squad advances.
+ */
+export interface PumpkinGhostConfig {
+  id: string;
+  d: number;
+  side: -1 | 1;
+  crossX: number;
+  sweep: number;
+  radius: number;
+  knockCap: number;
+}
+
+/** MC-15: An inner castle wall across the track with one open archway (`doorX` ± `doorW` / 2). Ghosts phase through it. */
+export interface PumpkinWallConfig {
+  id: string;
+  d: number;
+  doorX: number;
+  doorW: number;
+  knockCap: number;
+}
+
+/** MC-15: Haunted-castle night run geometry, pace / time budget, crowd capacity and lantern-light tuning. */
+export interface PumpkinNightCourseConfig {
+  length: number;
+  baseSpeed: number;
+  timeLimitSec: number;
+  startBobos: number;
+  maxBobos: number;
+  maxSteerX: number;
+  /** Lantern light capacity (before 南瓜灯徽章 milestone bonus), drain per second, refill per second inside a lit zone. */
+  lightMax: number;
+  lightDecayPerSec: number;
+  lightRefillPerSec: number;
+  /** Light a ghost contact burns when the squad's lantern dispels it (needs at least this much light). */
+  ghostLightCost: number;
+  /** Pace multiplier while the lantern light is out (groping through the dark). */
+  darkSlowMult: number;
+  hitSlowMult: number;
+  hitSlowSec: number;
+}
+
+/**
+ * MC-16: A unit gate pair on the desert tomb track (+N / ×N, golden scarab posts). Gates sharing `d` resolve together:
+ * only the one under the squad centre triggers.
+ */
+export interface PyramidGateConfig {
+  id: string;
+  d: number;
+  x: number;
+  width: number;
+  op: 'add' | 'mul';
+  value: number;
+  style: GateStyle;
+}
+
+/**
+ * MC-16: A quicksand belt (流沙减速带) across the whole tomb passage from `d` to `d + length`, crossed by one firm
+ * stepping-stone path (`pathX` ± `pathW` / 2). Bobos standing in the sand drag the squad pace down and slowly sink; a
+ * Bobo that stays in the sand for `sinkSec` (course tuning) is swallowed (capped per belt by `knockCap`).
+ */
+export interface PyramidSandConfig {
+  id: string;
+  d: number;
+  length: number;
+  pathX: number;
+  pathW: number;
+  knockCap: number;
+}
+
+/** MC-16: One flip slab of a slab row (centre x, width) and its phase offset (seconds) in the row's flip cycle. */
+export interface PyramidSlabConfig {
+  x: number;
+  width: number;
+  offset: number;
+}
+
+/**
+ * MC-16: A row of flip slabs (翻转石板机关) spanning the passage at `d` (`depth` metres deep). Every slab runs the same
+ * cycle on the run clock: closed -> `warnSec` warning (red glyph, trembling) -> `openSec` flipped on its edge over a
+ * pit (Bobos on it are flung away, capped per row) -> closed. Slab offsets are staggered so at least two slabs of a
+ * row are always closed.
+ */
+export interface PyramidSlabRowConfig {
+  id: string;
+  d: number;
+  depth: number;
+  period: number;
+  openSec: number;
+  warnSec: number;
+  knockCap: number;
+  slabs: PyramidSlabConfig[];
+}
+
+/** MC-16: Desert pyramid tomb run geometry, pace / time budget, crowd capacity and quicksand tuning. */
+export interface PyramidRunCourseConfig {
+  length: number;
+  baseSpeed: number;
+  timeLimitSec: number;
+  startBobos: number;
+  maxBobos: number;
+  maxSteerX: number;
+  /** Pace multiplier once at least half of the squad stands in quicksand (scaled linearly below that). */
+  sandSlowMult: number;
+  /** Seconds a Bobo can stand in quicksand before it is swallowed. */
+  sinkSec: number;
+  hitSlowMult: number;
+  hitSlowSec: number;
+}
+
+/**
+ * MC-17: A unit gate pair on the jungle temple path (+N / ×N, carved jade-idol posts). Gates sharing `d` resolve
+ * together: only the one under the squad centre triggers.
+ */
+export interface JungleGateConfig {
+  id: string;
+  d: number;
+  x: number;
+  width: number;
+  op: 'add' | 'mul';
+  value: number;
+  style: GateStyle;
+}
+
+/**
+ * MC-17: One vine of a chasm. It hangs from the canopy beam above the chasm centre and sways sideways on the run
+ * clock: its grab point sits at `x + amp · sin(2π · (clock + offset) / period)`.
+ */
+export interface JungleVineConfig {
+  x: number;
+  amp: number;
+  period: number;
+  offset: number;
+}
+
+/**
+ * MC-17: A chasm (断崖) across the whole temple path from `d` to `d + gap`. The only way over is a swaying vine: when
+ * the squad front reaches the edge, the vine nearest to the squad line is grabbed and stops swaying (locked at its
+ * current x). Every Bobo that reaches the edge within `reach` of the locked vine swings across on it; the others fall
+ * (capped per chasm by `knockCap`; a candy shield floats a Bobo across instead).
+ */
+export interface JungleChasmConfig {
+  id: string;
+  d: number;
+  gap: number;
+  reach: number;
+  knockCap: number;
+  vines: JungleVineConfig[];
+}
+
+/**
+ * MC-17: A rolling boulder (滚石机关) resting on a ramp at `d` in the lane `x`. Once the squad front comes within
+ * `wakeD` it starts rolling toward the squad at `speed` (metres per second along the course, on top of the squad's own
+ * pace); Bobos in its lane are flattened (capped per boulder; a candy shield absorbs it).
+ */
+export interface JungleBoulderConfig {
+  id: string;
+  d: number;
+  x: number;
+  radius: number;
+  speed: number;
+  wakeD: number;
+  knockCap: number;
+}
+
+/** MC-17: Jungle temple vine-swing run geometry, pace / time budget, crowd capacity and swing arc tuning. */
+export interface JungleSwingCourseConfig {
+  length: number;
+  baseSpeed: number;
+  timeLimitSec: number;
+  startBobos: number;
+  maxBobos: number;
+  maxSteerX: number;
+  /** Height (metres) of the swing arc above the path at the chasm centre. */
+  swingHeight: number;
+  hitSlowMult: number;
+  hitSlowSec: number;
+}
+
 export interface LevelConfig {
   id: number;
   seed: number;
@@ -221,7 +667,15 @@ export interface LevelConfig {
     | 'payload_escort'
     | 'gear_tournament'
     | 'colossus_raid'
-    | 'airship_escort';
+    | 'airship_escort'
+    | 'candy_train_raid'
+    | 'submarine_rescue'
+    | 'glacier_sled'
+    | 'lava_jump'
+    | 'asteroid_dash'
+    | 'pumpkin_night'
+    | 'pyramid_run'
+    | 'jungle_swing';
   isColossusRaid?: boolean;
   colossusRaidTier?: number;
   colossusLeftShieldHp?: number;
@@ -231,6 +685,56 @@ export interface LevelConfig {
   airshipMaxHp?: number;
   airshipMaxShield?: number;
   antiAirTurrets?: AntiAirTurretConfig[];
+  isCandyTrainRaid?: boolean;
+  candyTrainTier?: number;
+  candyTrainCars?: CandyTrainCarConfig[];
+  candyTrainTrack?: CandyTrainTrackConfig;
+  candyTrainSpeed?: number;
+  candyTrainEscapeSec?: number;
+  isSubmarineRescue?: boolean;
+  submarineTier?: number;
+  submarineLane?: SubmarineLaneConfig;
+  coralBarriers?: CoralBarrierConfig[];
+  rescueBubbles?: RescueBubbleConfig[];
+  jellyfishSwarm?: JellyfishSwarmConfig;
+  isGlacierSled?: boolean;
+  sledTier?: number;
+  sledCourse?: GlacierSledCourseConfig;
+  sledGates?: SledGateConfig[];
+  sledIcicles?: SledIcicleConfig[];
+  sledAvalanches?: SledAvalancheConfig[];
+  sledBoosts?: SledBoostConfig[];
+  isLavaJump?: boolean;
+  lavaTier?: number;
+  lavaCourse?: LavaJumpCourseConfig;
+  lavaPlatforms?: LavaPlatformConfig[];
+  lavaEruptions?: LavaEruptionConfig[];
+  lavaRocks?: LavaRockConfig[];
+  isAsteroidDash?: boolean;
+  asteroidTier?: number;
+  asteroidCourse?: AsteroidDashCourseConfig;
+  asteroidGates?: AsteroidGateConfig[];
+  asteroidMeteors?: AsteroidMeteorConfig[];
+  asteroidBelts?: AsteroidBeltConfig[];
+  isPumpkinNight?: boolean;
+  pumpkinTier?: number;
+  pumpkinCourse?: PumpkinNightCourseConfig;
+  pumpkinGates?: PumpkinGateConfig[];
+  pumpkinLamps?: PumpkinLampConfig[];
+  pumpkinGhosts?: PumpkinGhostConfig[];
+  pumpkinWalls?: PumpkinWallConfig[];
+  isPyramidRun?: boolean;
+  pyramidTier?: number;
+  pyramidCourse?: PyramidRunCourseConfig;
+  pyramidGates?: PyramidGateConfig[];
+  pyramidSands?: PyramidSandConfig[];
+  pyramidSlabRows?: PyramidSlabRowConfig[];
+  isJungleSwing?: boolean;
+  jungleTier?: number;
+  jungleCourse?: JungleSwingCourseConfig;
+  jungleGates?: JungleGateConfig[];
+  jungleChasms?: JungleChasmConfig[];
+  jungleBoulders?: JungleBoulderConfig[];
   weatherAffix?: WeatherAffixConfig;
   name: string;
   subtitle: string;
@@ -2585,6 +3089,1308 @@ export function generateAirshipEscortLevel(escortTier = 1): LevelConfig {
       { id: 'air_bmp_l', x: -2.4, z: -4.2, radius: 0.92 },
       { id: 'air_bmp_r', x: 2.4, z: -4.2, radius: 0.92 },
     ],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-10「彩虹糖果列车突袭战」(Rainbow Candy Train Raid) stage:
+ * - A 6-car armored 3D Rainbow Candy Freight Train circles an elliptical rainbow rail loop mid-bridge.
+ * - Every car has its own HP + bolted armor plates (shed at 50% HP); armored cars & the locomotive vent
+ *   scalding steam at nearby Bobos, while treasure cars carry 列车金章 (Train Gold Medals) as loot.
+ * - Break the locomotive to stall the whole train (escape countdown freezes); break every car before the
+ *   escape countdown ends to win the raid.
+ */
+export function generateCandyTrainRaidLevel(raidTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(raidTier)));
+  const tierScale = 1 + (safeTier - 1) * 0.14;
+  const raidThemes: ThemeId[] = ['sakura', 'royal', 'glacier'];
+  const themeId = raidThemes[(safeTier - 1) % raidThemes.length];
+
+  const candyTrainCars: CandyTrainCarConfig[] = [
+    {
+      id: 'train_loco',
+      name: '彩虹蒸汽火车头',
+      shortName: '火车头',
+      kind: 'locomotive',
+      hp: Math.round(6500 * tierScale),
+      armor: 0.4,
+      rewardGold: 170 + safeTier * 22,
+      rewardMedals: 0,
+      ventDmg: Math.round(9 * tierScale),
+      ventInterval: 3.6,
+    },
+    {
+      id: 'train_armor_mint',
+      name: '薄荷装甲货厢',
+      shortName: '薄荷装甲',
+      kind: 'armored',
+      hp: Math.round(4700 * tierScale),
+      armor: 0.34,
+      rewardGold: 120 + safeTier * 16,
+      rewardMedals: 0,
+      ventDmg: Math.round(7 * tierScale),
+      ventInterval: 4.2,
+    },
+    {
+      id: 'train_treasure_rainbow',
+      name: '彩虹宝箱货厢',
+      shortName: '彩虹宝箱',
+      kind: 'treasure',
+      hp: Math.round(3400 * tierScale),
+      armor: 0.16,
+      rewardGold: 210 + safeTier * 26,
+      rewardMedals: 1,
+      ventDmg: 0,
+      ventInterval: 0,
+    },
+    {
+      id: 'train_armor_berry',
+      name: '草莓装甲货厢',
+      shortName: '草莓装甲',
+      kind: 'armored',
+      hp: Math.round(4700 * tierScale),
+      armor: 0.34,
+      rewardGold: 120 + safeTier * 16,
+      rewardMedals: 0,
+      ventDmg: Math.round(7 * tierScale),
+      ventInterval: 4.6,
+    },
+    {
+      id: 'train_treasure_star',
+      name: '星糖金库货厢',
+      shortName: '星糖金库',
+      kind: 'treasure',
+      hp: Math.round(3600 * tierScale),
+      armor: 0.18,
+      rewardGold: 230 + safeTier * 28,
+      rewardMedals: 1 + (safeTier >= 4 ? 1 : 0),
+      ventDmg: 0,
+      ventInterval: 0,
+    },
+    {
+      id: 'train_caboose',
+      name: '棉花糖守车',
+      shortName: '守车',
+      kind: 'caboose',
+      hp: Math.round(2700 * tierScale),
+      armor: 0.2,
+      rewardGold: 100 + safeTier * 14,
+      rewardMedals: 0,
+      ventDmg: 0,
+      ventInterval: 0,
+    },
+  ];
+
+  return {
+    id: 2 + safeTier * 2,
+    seed: 110300 + safeTier * 29,
+    mode: 'candy_train_raid',
+    isCandyTrainRaid: true,
+    candyTrainTier: safeTier,
+    candyTrainCars,
+    candyTrainTrack: {
+      centerX: 0,
+      centerZ: -1.6,
+      radiusX: 7.6,
+      radiusZ: 6.8,
+      carSpacing: 3.05,
+    },
+    candyTrainSpeed: Math.min(3.4, 2.15 + (safeTier - 1) * 0.12),
+    candyTrainEscapeSec: Math.max(72, 92 - (safeTier - 1) * 2),
+    themeId,
+    archetype: 'trilane_siege',
+    archetypeName: `彩虹糖果列车突袭战 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: true,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier + 2) % WEATHER_AFFIX_ORDER.length]],
+    name: `彩虹糖果列车突袭战 · 第 ${safeTier} 阶`,
+    subtitle: '拦截环线上的多节装甲糖果货运列车，击破车厢夺取列车金章！先打火车头可令全车停摆！',
+    bossName: '彩虹糖果装甲货运列车',
+    bossMaxHp: candyTrainCars.reduce((sum, car) => sum + car.hp, 0),
+    enemySpawnInterval: 2.6,
+    enemyBurstCount: 3 + Math.min(3, Math.floor((safeTier - 1) / 3)),
+    initialRedPrewarm: 3,
+    bruteSpawnInterval: 11.5,
+    rewardGold: Math.round(860 * tierScale),
+    gates: [
+      { id: 'trn_g1', x: -4.9, z: 12.6, width: 4.3, op: 'mul', value: 3, style: 'gold', moveRangeX: 1.8, moveSpeed: 1.05, movePhase: 0 },
+      { id: 'trn_g2', x: 4.9, z: 12.6, width: 4.3, op: 'add', value: 8, style: 'blue', moveRangeX: 1.8, moveSpeed: 1.05, movePhase: Math.PI },
+      { id: 'trn_g3', x: -4.7, z: 8.4, width: 4.2, op: 'frost_shield', value: 1, style: 'frost', moveRangeX: 1.6, moveSpeed: 1.15, movePhase: 0.9 },
+      { id: 'trn_g4', x: 4.7, z: 8.4, width: 4.2, op: 'mul', value: 2, style: 'gold', moveRangeX: 1.6, moveSpeed: 1.15, movePhase: 4.0 },
+    ],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [
+      { id: 'trn_br_l', x: -2.6, z: -1.6, hp: 14 },
+      { id: 'trn_br_r', x: 2.6, z: -1.6, hp: 14 },
+    ],
+    zones: [],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-11「深海潜艇泡泡营救战」(Deep-Sea Submarine Bubble Rescue) stage:
+ * - Underwater (ocean theme + deep-sea tint, fog & rising bubbles). The player's 3D toy submarine sails the
+ *   bubble lane from the home dock (z = startZ) to the rescue station (z = dockZ), steered with the cannon,
+ *   and fires its own bubble torpedoes (the submarine's cannon) at jellyfish / coral / rescue bubbles.
+ * - Three full-width coral barriers seal the lane (HP, scaled by tier); the sub stops at each until it breaks.
+ * - Seven drifting rescue bubbles hold trapped Bobo squads; popping one adds those Bobos to the army.
+ * - Jellyfish swarms periodically drift at the submarine, stinging (damage + slow) Bobos and the hull.
+ * - Win: the submarine docks at the rescue station. Lose: hull HP hits 0 or the oxygen timer runs out.
+ * - Regular red minion waves are disabled in this mode (jellyfish are the threat), so the level `id`
+ *   (2 + 2 x tier, mirroring MC-10) only scales the loot-bug jackpot; jellyfish/coral scale by `tierScale`.
+ */
+export function generateSubmarineRescueLevel(rescueTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(rescueTier)));
+  const tierScale = 1 + (safeTier - 1) * 0.12;
+  const jellyScale = 1 + (safeTier - 1) * 0.06;
+  const extraBobos = Math.floor((safeTier - 1) / 2);
+
+  const coralBarriers: CoralBarrierConfig[] = [
+    { id: 'coral_pink', name: '粉珊瑚礁封锁', z: 8.0, hp: Math.round(4200 * tierScale), rewardGold: 90 + safeTier * 14 },
+    { id: 'coral_violet', name: '紫珊瑚礁封锁', z: -1.4, hp: Math.round(6200 * tierScale), rewardGold: 120 + safeTier * 18 },
+    { id: 'coral_amber', name: '琥珀巨珊瑚墙', z: -10.0, hp: Math.round(8600 * tierScale), rewardGold: 160 + safeTier * 22 },
+  ];
+
+  const bubbleHp = Math.round(46 * tierScale);
+  const rescueBubbles: RescueBubbleConfig[] = [
+    { id: 'bub_1', x: -5.4, z: 10.6, hp: bubbleHp, bobos: 4 + extraBobos, driftRangeX: 1.2, driftSpeed: 0.8, driftPhase: 0 },
+    { id: 'bub_2', x: 5.6, z: 10.0, hp: bubbleHp, bobos: 4 + extraBobos, driftRangeX: 1.2, driftSpeed: 0.75, driftPhase: 2.1 },
+    { id: 'bub_3', x: -4.6, z: 3.6, hp: bubbleHp, bobos: 6 + extraBobos, driftRangeX: 1.6, driftSpeed: 0.7, driftPhase: 1.2 },
+    { id: 'bub_4', x: 4.8, z: 1.8, hp: bubbleHp, bobos: 6 + extraBobos, driftRangeX: 1.6, driftSpeed: 0.85, driftPhase: 3.3 },
+    { id: 'bub_5', x: -5.2, z: -4.8, hp: bubbleHp, bobos: 8 + extraBobos, driftRangeX: 1.8, driftSpeed: 0.65, driftPhase: 0.6 },
+    { id: 'bub_6', x: 5.2, z: -6.6, hp: bubbleHp, bobos: 8 + extraBobos, driftRangeX: 1.8, driftSpeed: 0.7, driftPhase: 2.7 },
+    {
+      id: 'bub_grand',
+      x: 0,
+      z: -12.4,
+      hp: Math.round(bubbleHp * 2.2),
+      bobos: 12 + extraBobos * 2,
+      driftRangeX: 2.6,
+      driftSpeed: 0.55,
+      driftPhase: 1.7,
+      isGrand: true,
+    },
+  ];
+
+  const jellyfishSwarm: JellyfishSwarmConfig = {
+    firstDelaySec: 3.0,
+    intervalSec: Math.max(5.6, 8.0 - (safeTier - 1) * 0.3),
+    perSwarm: Math.min(5, 3 + Math.floor((safeTier - 1) / 4)),
+    hp: Math.round(480 * jellyScale),
+    speed: Math.min(2.4, 1.8 + (safeTier - 1) * 0.06),
+    stingRadius: 1.85,
+    stingIntervalSec: 1.1,
+    stingDmg: Math.round(8 * jellyScale),
+    hullStingDmg: Math.round(20 * jellyScale),
+    slowSec: 2.4,
+    slowMult: 0.5,
+    rewardGold: 14 + safeTier * 3,
+  };
+
+  return {
+    id: 2 + safeTier * 2,
+    seed: 120900 + safeTier * 31,
+    mode: 'submarine_rescue',
+    isSubmarineRescue: true,
+    submarineTier: safeTier,
+    submarineLane: {
+      startZ: 14.6,
+      dockZ: -14.2,
+      maxSteerX: 6.4,
+      baseSpeed: Math.max(0.68, 0.78 - (safeTier - 1) * 0.012),
+      hullHp: Math.round(600 + (safeTier - 1) * 80),
+      oxygenSec: Math.max(55, 80 - (safeTier - 1) * 3),
+      torpedoIntervalSec: 1.7,
+      torpedoDmg: Math.round(70 * (1 + (safeTier - 1) * 0.08)),
+    },
+    coralBarriers,
+    rescueBubbles,
+    jellyfishSwarm,
+    themeId: 'ocean',
+    archetype: 'trilane_siege',
+    archetypeName: `深海潜艇泡泡营救战 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    name: `深海潜艇泡泡营救战 · 第 ${safeTier} 阶`,
+    subtitle: '驾驶玩具潜艇破开珊瑚封锁、戳破营救泡泡，抵达深海营救站！',
+    bossName: '深海营救站',
+    bossMaxHp: 100,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: Math.round(520 * tierScale),
+    gates: [
+      { id: 'sub_g1', x: -4.6, z: 12.6, width: 4.2, op: 'mul', value: 2, style: 'gold', moveRangeX: 1.6, moveSpeed: 1.0, movePhase: 0 },
+      { id: 'sub_g2', x: 4.6, z: 12.6, width: 4.2, op: 'add', value: 6, style: 'blue', moveRangeX: 1.6, moveSpeed: 1.0, movePhase: Math.PI },
+    ],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-12「冰川雪橇竞速冲关」(Glacier Sled Race) stage:
+ * - Glacier theme + snowfall. The Bobo crowd rides the player's 3D toy sled down an icy course of `length` metres;
+ *   the camera stays put and the course scrolls toward the camera (treadmill), the sled is steered with the cannon.
+ * - Gate pairs add riders (+N / ×N), falling icicles become ice spikes that knock riders off, avalanche waves roll
+ *   up the slope with a single flagged safe gap, ice boost strips grant short speed bursts.
+ * - Win: cross the finish line before the countdown ends. Lose: time runs out or every rider is knocked off.
+ * - Regular red waves are disabled. Course length / speed / hazard density scale with `sledTier`;
+ *   tier 1 is tuned to finish in ~30 s with a ~41 s limit.
+ */
+export function generateGlacierSledLevel(sledTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(sledTier)));
+  const rng = new SeededRNG(91200 + safeTier * 53);
+  const length = 300 + (safeTier - 1) * 24;
+  const baseSpeed = Number((10.4 + (safeTier - 1) * 0.3).toFixed(2));
+  const timeLimitSec = Math.round((length / baseSpeed) * Math.max(1.26, 1.42 - (safeTier - 1) * 0.02));
+  const addBonus = Math.floor((safeTier - 1) / 2) * 2;
+
+  const course: GlacierSledCourseConfig = {
+    length,
+    baseSpeed,
+    timeLimitSec,
+    startRiders: 14 + Math.floor((safeTier - 1) / 2),
+    maxRiders: 120,
+    maxSteerX: 8.0,
+    hitSlowMult: 0.5,
+    hitSlowSec: 0.9,
+    boostMult: 1.4,
+    boostSec: 1.6,
+  };
+
+  const gatePairs: Array<[{ op: 'add' | 'mul'; value: number }, { op: 'add' | 'mul'; value: number }]> = [
+    [{ op: 'add', value: 4 + addBonus }, { op: 'add', value: 6 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 8 + addBonus }],
+    [{ op: 'add', value: 8 + addBonus }, { op: 'add', value: 12 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 14 + addBonus }],
+    [{ op: 'add', value: 10 + addBonus }, { op: 'mul', value: 2 }],
+  ];
+  const pattern: Array<'gates' | 'icicles' | 'avalanche' | 'boost'> = [
+    'gates',
+    'icicles',
+    'avalanche',
+    'gates',
+    'boost',
+    'icicles',
+    'avalanche',
+    'gates',
+    'icicles',
+    'boost',
+    'avalanche',
+    'gates',
+    'icicles',
+    'avalanche',
+  ];
+
+  const sledGates: SledGateConfig[] = [];
+  const sledIcicles: SledIcicleConfig[] = [];
+  const sledAvalanches: SledAvalancheConfig[] = [];
+  const sledBoosts: SledBoostConfig[] = [];
+  const icicleLanes = [-6.6, -3.3, 0, 3.3, 6.6];
+  let d = 26;
+  let k = 0;
+  let gateIdx = 0;
+  const spacingShrink = Math.min(3.5, (safeTier - 1) * 0.5);
+  while (d < length - 18) {
+    const kind = pattern[k % pattern.length];
+    if (kind === 'gates') {
+      const pair = gatePairs[gateIdx % gatePairs.length];
+      const swap = rng.chance(0.5);
+      const left = swap ? pair[1] : pair[0];
+      const right = swap ? pair[0] : pair[1];
+      for (const [side, g] of [[-1, left], [1, right]] as const) {
+        sledGates.push({
+          id: `sled_gate_${gateIdx}_${side < 0 ? 'l' : 'r'}`,
+          d,
+          x: side * 4.3,
+          width: 7.4,
+          op: g.op,
+          value: g.value,
+          style: g.op === 'mul' ? 'gold' : g.value >= 10 ? 'mega' : 'blue',
+        });
+      }
+      gateIdx++;
+    } else if (kind === 'icicles') {
+      const count = Math.min(6, 3 + Math.floor((safeTier - 1) / 2));
+      const lanes = [...icicleLanes];
+      for (let i = 0; i < count; i++) {
+        if (lanes.length === 0) lanes.push(...icicleLanes);
+        const lane = lanes.splice(Math.floor(rng.next() * lanes.length), 1)[0];
+        sledIcicles.push({
+          id: `sled_icicle_${k}_${i}`,
+          d: d + i * 3.4,
+          x: Number((lane + rng.range(-0.8, 0.8)).toFixed(2)),
+          radius: 1.15,
+          knockCap: 5 + Math.floor(safeTier / 2),
+        });
+      }
+    } else if (kind === 'avalanche') {
+      const gapX = Number(rng.pick([-5.2, -2.6, 0, 2.6, 5.2]).toFixed(2));
+      sledAvalanches.push({
+        id: `sled_avalanche_${k}`,
+        d: d + 6,
+        gapX,
+        gapW: Math.max(5.0, 6.6 - (safeTier - 1) * 0.2),
+        rollSpeed: Math.min(4.2, 2.6 + (safeTier - 1) * 0.2),
+        knockPct: Math.min(70, 45 + (safeTier - 1) * 3),
+      });
+    } else {
+      sledBoosts.push({
+        id: `sled_boost_${k}`,
+        d,
+        x: Number(rng.pick([-4.8, 0, 4.8]).toFixed(2)),
+        width: 4.6,
+      });
+    }
+    d += 18.5 + rng.range(0, 3.5) - spacingShrink;
+    k++;
+  }
+
+  return {
+    id: 2 + safeTier * 2,
+    seed: 91200 + safeTier * 53,
+    mode: 'glacier_sled',
+    isGlacierSled: true,
+    sledTier: safeTier,
+    sledCourse: course,
+    sledGates,
+    sledIcicles,
+    sledAvalanches,
+    sledBoosts,
+    themeId: 'glacier',
+    archetype: 'trilane_siege',
+    archetypeName: `冰川雪橇竞速冲关 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    name: `冰川雪橇竞速冲关 · 第 ${safeTier} 阶`,
+    subtitle: '左右操控玩具雪橇冲下冰川赛道：躲开雪崩浪与坠落冰锥、穿过加人门，限时冲线！',
+    bossName: '冰川终点线',
+    bossMaxHp: 100,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: Math.round(360 * (1 + (safeTier - 1) * 0.12)),
+    gates: [],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-13「火山熔岩跳台突围战」(Volcano Lava Jump Breakout) stage:
+ * - Magma theme. The Bobo crowd hops forward across a lava lake from one row of floating stone platforms to the next;
+ *   the camera stays put and the course scrolls toward the camera (treadmill). The crowd is steered with the cannon.
+ * - Every Bobo lands individually: a Bobo whose x is not over a platform of the row it reaches falls into the lava.
+ *   Bigger crowds form wider squads, so they need wider platforms or a cleaner line.
+ * - Row kinds: plain stone pairs, unit-gate pairs (+N / xN), telegraphed eruptions (AoE that bursts as the crowd
+ *   arrives), falling volcanic bombs (shadow telegraph, then a burning boulder) and cooled-rock safe platforms
+ *   (wide, never targeted by hazards, landing grants a short heat shield).
+ * - Win: reach the exit shore before the countdown ends. Lose: time runs out or every Bobo is lost.
+ * - Regular red waves are disabled. Pace / platform width / hazard strength scale with `lavaTier`;
+ *   tier 1 is tuned to finish in ~30 s with a ~41 s limit.
+ */
+export function generateLavaJumpLevel(lavaTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(lavaTier)));
+  const rng = new SeededRNG(77300 + safeTier * 61);
+  const baseSpeed = Number((8.8 + (safeTier - 1) * 0.28).toFixed(2));
+  const addBonus = Math.floor((safeTier - 1) / 2) * 2;
+  const stoneW = Number(Math.max(4.2, 5.0 - (safeTier - 1) * 0.1).toFixed(2));
+  const depth = 4.4;
+  const targetLength = 250 + (safeTier - 1) * 22;
+
+  const platforms: LavaPlatformConfig[] = [
+    { id: 'lava_shore_start', row: 0, d: -3, x: 0, width: 19, depth: 13, kind: 'shore' },
+  ];
+  const eruptions: LavaEruptionConfig[] = [];
+  const rocks: LavaRockConfig[] = [];
+  const gatePairs: Array<[{ op: 'add' | 'mul'; value: number }, { op: 'add' | 'mul'; value: number }]> = [
+    [{ op: 'add', value: 5 + addBonus }, { op: 'add', value: 8 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 10 + addBonus }],
+    [{ op: 'add', value: 8 + addBonus }, { op: 'add', value: 12 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 14 + addBonus }],
+    [{ op: 'add', value: 10 + addBonus }, { op: 'mul', value: 2 }],
+  ];
+  const pattern: Array<'stone' | 'gates' | 'eruption' | 'cooled' | 'rocks'> = [
+    'stone',
+    'gates',
+    'eruption',
+    'stone',
+    'cooled',
+    'rocks',
+    'gates',
+    'eruption',
+    'stone',
+    'rocks',
+    'cooled',
+    'gates',
+    'eruption',
+    'rocks',
+  ];
+  const pairLanes: Array<[number, number]> = [
+    [-4.6, 2.6],
+    [-2.6, 4.6],
+    [-5.0, 4.4],
+    [-4.4, 5.0],
+    [-3.8, 3.8],
+  ];
+  const shrink = Math.min(1.6, (safeTier - 1) * 0.22);
+  const jitter = (): number => Number(rng.range(-0.45, 0.45).toFixed(2));
+  let d = 3.5 + 6.6 + depth / 2;
+  let row = 1;
+  let k = 0;
+  let gateIdx = 0;
+  let lastEnd = 3.5;
+  while (d + depth / 2 < targetLength - 6.5) {
+    const kind = pattern[k % pattern.length];
+    const lanes = rng.pick(pairLanes);
+    const mirror = rng.chance(0.5);
+    const xa = Number(((mirror ? -lanes[1] : lanes[0]) + jitter()).toFixed(2));
+    const xb = Number(((mirror ? -lanes[0] : lanes[1]) + jitter()).toFixed(2));
+    const base = { row, d: Number(d.toFixed(2)), depth };
+    if (kind === 'gates') {
+      const pair = gatePairs[gateIdx % gatePairs.length];
+      const swap = rng.chance(0.5);
+      const left = swap ? pair[1] : pair[0];
+      const right = swap ? pair[0] : pair[1];
+      for (const [side, g] of [
+        [-1, left],
+        [1, right],
+      ] as const) {
+        platforms.push({
+          ...base,
+          id: `lava_p${row}_${side < 0 ? 'l' : 'r'}`,
+          x: Number((side * 4.0 + jitter() * 0.6).toFixed(2)),
+          width: stoneW,
+          kind: 'stone',
+          gateOp: g.op,
+          gateValue: g.value,
+          gateStyle: g.op === 'mul' ? 'gold' : g.value >= 10 ? 'mega' : 'blue',
+        });
+      }
+      gateIdx++;
+    } else if (kind === 'eruption') {
+      platforms.push({ ...base, id: `lava_p${row}_a`, x: xa, width: stoneW, kind: 'stone' });
+      platforms.push({ ...base, id: `lava_p${row}_b`, x: xb, width: Number((stoneW - 0.4).toFixed(2)), kind: 'stone' });
+      eruptions.push({
+        id: `lava_erupt_${row}`,
+        row,
+        d: base.d,
+        x: xa,
+        radius: Number((stoneW / 2 + 0.5).toFixed(2)),
+        knockCap: 7 + safeTier,
+      });
+    } else if (kind === 'cooled') {
+      platforms.push({ ...base, id: `lava_p${row}_c`, x: xa, width: 7.0, kind: 'cooled' });
+      platforms.push({ ...base, id: `lava_p${row}_b`, x: xb, width: Number((stoneW - 0.8).toFixed(2)), kind: 'stone' });
+    } else if (kind === 'rocks') {
+      const wideW = Number((stoneW + 0.6).toFixed(2));
+      platforms.push({ ...base, id: `lava_p${row}_a`, x: xa, width: wideW, kind: 'stone' });
+      platforms.push({ ...base, id: `lava_p${row}_b`, x: xb, width: Number((stoneW - 0.6).toFixed(2)), kind: 'stone' });
+      const side = rng.chance(0.5) ? -1 : 1;
+      rocks.push({
+        id: `lava_rock_${row}_a`,
+        row,
+        d: Number((base.d + rng.range(-0.8, 0.8)).toFixed(2)),
+        x: Number((xa + side * 1.25).toFixed(2)),
+        radius: 1.25,
+        knockCap: 5 + Math.floor(safeTier / 2),
+      });
+      if (safeTier >= 4) {
+        rocks.push({
+          id: `lava_rock_${row}_b`,
+          row,
+          d: Number((base.d + rng.range(-0.6, 0.6)).toFixed(2)),
+          x: Number((xb - side * 1.0).toFixed(2)),
+          radius: 1.0,
+          knockCap: 4 + Math.floor(safeTier / 3),
+        });
+      }
+    } else {
+      const narrowA = rng.chance(0.5);
+      platforms.push({
+        ...base,
+        id: `lava_p${row}_a`,
+        x: xa,
+        width: Number((narrowA ? stoneW - 0.5 : stoneW).toFixed(2)),
+        kind: 'stone',
+      });
+      platforms.push({
+        ...base,
+        id: `lava_p${row}_b`,
+        x: xb,
+        width: Number((narrowA ? stoneW : stoneW - 0.5).toFixed(2)),
+        kind: 'stone',
+      });
+    }
+    lastEnd = d + depth / 2;
+    d += 10.8 + rng.range(0, 1.6) - shrink;
+    row++;
+    k++;
+  }
+
+  // Exit shore: its near edge is the finish line (course length), a final ~7 m leap after the last row
+  const length = Math.round(lastEnd + 7.2);
+  platforms.push({ id: 'lava_shore_exit', row, d: length + 6.5, x: 0, width: 19, depth: 13, kind: 'shore' });
+  const timeLimitSec = Math.round((length / baseSpeed) * Math.max(1.24, 1.38 - (safeTier - 1) * 0.02));
+  const course: LavaJumpCourseConfig = {
+    length,
+    baseSpeed,
+    timeLimitSec,
+    startBobos: 16 + Math.floor((safeTier - 1) / 2),
+    maxBobos: 90,
+    maxSteerX: 7.6,
+    hopHeight: 2.0,
+    hitSlowMult: 0.55,
+    hitSlowSec: 0.8,
+    cooledShieldSec: 2.4,
+  };
+
+  return {
+    id: 2 + safeTier * 2,
+    seed: 77300 + safeTier * 61,
+    mode: 'lava_jump',
+    isLavaJump: true,
+    lavaTier: safeTier,
+    lavaCourse: course,
+    lavaPlatforms: platforms,
+    lavaEruptions: eruptions,
+    lavaRocks: rocks,
+    themeId: 'magma',
+    archetype: 'trilane_siege',
+    archetypeName: `火山熔岩跳台突围战 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    name: `火山熔岩跳台突围战 · 第 ${safeTier} 阶`,
+    subtitle: '左右操控波波团在熔岩浮石间连跳：躲开喷发与落石、抢占冷却岩、穿过加人门，限时冲出火山口！',
+    bossName: '火山出口',
+    bossMaxHp: 100,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: Math.round(380 * (1 + (safeTier - 1) * 0.12)),
+    gates: [],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-14「星际陨石带护盾突围」(Asteroid Belt Shield Breakout) stage:
+ * - Deep-space tint over the carnival theme. A low-gravity glowing space track scrolls toward the camera (treadmill);
+ *   the Bobo squad floats forward in formation and is steered left / right with the cannon aim.
+ * - Course rows: unit gate pairs (+N / ×N), shield-charge gates (a temporary energy shield on the whole squad that
+ *   absorbs a few hazard hits, paired with a small +N gate on the other side), telegraphed asteroid strikes (red
+ *   warning ring that charges while the rock falls slowly, then blasts a circle) and drifting asteroid belts with one
+ *   flagged safe gap. A warp gate at the far end is the exit.
+ * - Win: reach the warp gate before the countdown ends. Lose: time runs out or every Bobo is lost.
+ * - Regular red waves are disabled. Pace / belt gap / strike radius & strength scale with `asteroidTier`;
+ *   tier 1 is tuned to finish in ~30 s with a ~40 s limit.
+ */
+export function generateAsteroidDashLevel(asteroidTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(asteroidTier)));
+  const rng = new SeededRNG(88400 + safeTier * 67);
+  const baseSpeed = Number((8.0 + (safeTier - 1) * 0.26).toFixed(2));
+  const addBonus = Math.floor((safeTier - 1) / 2) * 2;
+  const targetLength = 232 + (safeTier - 1) * 20;
+  const gapW = Number(Math.max(3.6, 5.4 - (safeTier - 1) * 0.22).toFixed(2));
+  const meteorR = Number(Math.min(2.7, 2.0 + (safeTier - 1) * 0.08).toFixed(2));
+  const shieldCharges = safeTier >= 5 ? 2 : 3;
+  const halfLane = 3.75;
+  const laneW = 6.7;
+
+  const gates: AsteroidGateConfig[] = [];
+  const meteors: AsteroidMeteorConfig[] = [];
+  const belts: AsteroidBeltConfig[] = [];
+  const gatePairs: Array<[{ op: 'add' | 'mul'; value: number }, { op: 'add' | 'mul'; value: number }]> = [
+    [{ op: 'add', value: 5 + addBonus }, { op: 'add', value: 8 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 10 + addBonus }],
+    [{ op: 'add', value: 8 + addBonus }, { op: 'add', value: 12 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 14 + addBonus }],
+    [{ op: 'add', value: 10 + addBonus }, { op: 'mul', value: 2 }],
+  ];
+  const pattern: Array<'gates' | 'meteor' | 'shield' | 'belt' | 'meteors'> = [
+    'gates',
+    'meteor',
+    'shield',
+    'belt',
+    'gates',
+    'meteors',
+    'belt',
+    'gates',
+    'shield',
+    'meteor',
+    'belt',
+    'gates',
+    'meteors',
+    'belt',
+  ];
+  const shrink = Math.min(1.6, (safeTier - 1) * 0.2);
+  let d = 17;
+  let k = 0;
+  let gateIdx = 0;
+  while (d < targetLength - 10) {
+    const kind = pattern[k % pattern.length];
+    const dd = Number(d.toFixed(2));
+    if (kind === 'gates') {
+      const pair = gatePairs[gateIdx % gatePairs.length];
+      const swap = rng.chance(0.5);
+      const left = swap ? pair[1] : pair[0];
+      const right = swap ? pair[0] : pair[1];
+      for (const [side, g] of [
+        [-1, left],
+        [1, right],
+      ] as const) {
+        gates.push({
+          id: `ast_g${k}_${side < 0 ? 'l' : 'r'}`,
+          d: dd,
+          x: side * halfLane,
+          width: laneW,
+          kind: 'unit',
+          op: g.op,
+          value: g.value,
+          style: g.op === 'mul' ? 'gold' : g.value >= 10 ? 'mega' : 'blue',
+        });
+      }
+      gateIdx++;
+    } else if (kind === 'shield') {
+      const side = rng.chance(0.5) ? -1 : 1;
+      gates.push({
+        id: `ast_s${k}`,
+        d: dd,
+        x: side * halfLane,
+        width: laneW,
+        kind: 'shield',
+        value: shieldCharges,
+        style: 'frost',
+      });
+      gates.push({
+        id: `ast_s${k}_unit`,
+        d: dd,
+        x: -side * halfLane,
+        width: laneW,
+        kind: 'unit',
+        op: 'add',
+        value: 4 + addBonus,
+        style: 'blue',
+      });
+    } else if (kind === 'belt') {
+      const gx = Number(rng.range(-5.2, 5.2).toFixed(2));
+      belts.push({ id: `ast_b${k}`, d: dd, gapX: gx, gapW, knockCap: 8 + safeTier * 2 });
+    } else {
+      const count = kind === 'meteors' && safeTier >= 3 ? 2 : 1;
+      const firstX = Number(rng.range(-4.6, 4.6).toFixed(2));
+      meteors.push({ id: `ast_m${k}_a`, d: dd, x: firstX, radius: meteorR, knockCap: 6 + safeTier });
+      if (count === 2) {
+        const secondX = Number((firstX > 0 ? firstX - rng.range(5.2, 7.0) : firstX + rng.range(5.2, 7.0)).toFixed(2));
+        meteors.push({
+          id: `ast_m${k}_b`,
+          d: Number((dd + rng.range(3.0, 5.0)).toFixed(2)),
+          x: Math.max(-6.8, Math.min(6.8, secondX)),
+          radius: meteorR,
+          knockCap: 5 + safeTier,
+        });
+      }
+    }
+    d += 15.6 + rng.range(0, 1.6) - shrink;
+    k++;
+  }
+
+  const length = Math.round(d + 4);
+  const timeLimitSec = Math.round((length / baseSpeed) * Math.max(1.24, 1.38 - (safeTier - 1) * 0.02));
+  const course: AsteroidDashCourseConfig = {
+    length,
+    baseSpeed,
+    timeLimitSec,
+    startBobos: 16 + Math.floor((safeTier - 1) / 2),
+    maxBobos: 90,
+    maxSteerX: 7.4,
+    floatHeight: 0.55,
+    hitSlowMult: 0.55,
+    hitSlowSec: 0.8,
+    shieldSec: 6.5,
+  };
+
+  return {
+    id: 3 + safeTier * 2,
+    seed: 88400 + safeTier * 67,
+    mode: 'asteroid_dash',
+    isAsteroidDash: true,
+    asteroidTier: safeTier,
+    asteroidCourse: course,
+    asteroidGates: gates,
+    asteroidMeteors: meteors,
+    asteroidBelts: belts,
+    themeId: 'cyberhive',
+    archetype: 'trilane_siege',
+    archetypeName: `星际陨石带护盾突围 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    name: `星际陨石带护盾突围 · 第 ${safeTier} 阶`,
+    subtitle: '左右操控波波团在低重力星轨漂浮突进：躲陨石落点与陨石带、穿护盾门挡撞击、冲进跃迁门！',
+    bossName: '跃迁门',
+    bossMaxHp: 100,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: Math.round(400 * (1 + (safeTier - 1) * 0.12)),
+    gates: [],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-15「幽灵古堡南瓜夜」(Haunted Castle Pumpkin Night) stage:
+ * - Its own night-castle scene (moonlit royal-castle base, crenellated side walls, towers, moon & stars) instead of the
+ *   carnival. The castle corridor scrolls toward the camera (treadmill) while the Bobo squad marches forward in
+ *   formation and is steered left / right with the cannon aim.
+ * - Course rows: unit gate pairs (+N / ×N), pumpkin-lantern lit zones (refill the squad's lantern light; ghosts that
+ *   touch a squad standing in the light are dispelled for free), wall-phasing ghosts that glide out of the castle side
+ *   walls to intercept the squad at a marked point (the lantern light dispels them if it is bright enough, otherwise
+ *   they scare Bobos away), inner castle walls with one open archway, and "haunt" rows where a ghost converges on a lamp.
+ * - The lantern light drains over time; with no light left the squad gropes through the dark (slower pace).
+ * - Win: run out through the castle gate before the countdown ends. Lose: time runs out or every Bobo is scared off.
+ * - Regular red waves are disabled. Pace / archway / ghost sweep, size & strength / light drain scale with `pumpkinTier`;
+ *   tier 1 is tuned to finish in ~30 s with a ~41 s limit.
+ */
+export function generatePumpkinNightLevel(pumpkinTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(pumpkinTier)));
+  const rng = new SeededRNG(93100 + safeTier * 71);
+  const baseSpeed = Number((7.8 + (safeTier - 1) * 0.26).toFixed(2));
+  const addBonus = Math.floor((safeTier - 1) / 2) * 2;
+  const targetLength = 228 + (safeTier - 1) * 20;
+  const doorW = Number(Math.max(3.8, 5.4 - (safeTier - 1) * 0.2).toFixed(2));
+  const lampR = Number(Math.max(2.1, 2.7 - (safeTier - 1) * 0.08).toFixed(2));
+  const ghostR = Number(Math.min(1.6, 1.1 + (safeTier - 1) * 0.06).toFixed(2));
+  const sweep = Number(Math.min(0.8, 0.55 + (safeTier - 1) * 0.03).toFixed(3));
+  const halfLane = 3.75;
+  const laneW = 6.7;
+
+  const gates: PumpkinGateConfig[] = [];
+  const lamps: PumpkinLampConfig[] = [];
+  const ghosts: PumpkinGhostConfig[] = [];
+  const walls: PumpkinWallConfig[] = [];
+  const gatePairs: Array<[{ op: 'add' | 'mul'; value: number }, { op: 'add' | 'mul'; value: number }]> = [
+    [{ op: 'add', value: 5 + addBonus }, { op: 'add', value: 8 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 10 + addBonus }],
+    [{ op: 'add', value: 8 + addBonus }, { op: 'add', value: 12 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 14 + addBonus }],
+  ];
+  const pattern: Array<'gates' | 'ghost' | 'lamp' | 'wall' | 'ghosts' | 'haunt'> = [
+    'gates',
+    'ghost',
+    'lamp',
+    'wall',
+    'gates',
+    'haunt',
+    'ghosts',
+    'wall',
+    'gates',
+    'lamp',
+    'ghost',
+    'haunt',
+    'wall',
+    'gates',
+  ];
+  const shrink = Math.min(1.6, (safeTier - 1) * 0.2);
+  let d = 17;
+  let k = 0;
+  let gateIdx = 0;
+  let lampSide: -1 | 1 = rng.chance(0.5) ? -1 : 1;
+  const ghostOf = (id: string, dd: number, side: -1 | 1, crossX: number, knockCap: number): PumpkinGhostConfig => ({
+    id,
+    d: Number(dd.toFixed(2)),
+    side,
+    crossX: Number(Math.max(-5.6, Math.min(5.6, crossX)).toFixed(2)),
+    sweep,
+    radius: ghostR,
+    knockCap,
+  });
+  while (d < targetLength - 10) {
+    const kind = pattern[k % pattern.length];
+    const dd = Number(d.toFixed(2));
+    if (kind === 'gates') {
+      const pair = gatePairs[gateIdx % gatePairs.length];
+      const swap = rng.chance(0.5);
+      const left = swap ? pair[1] : pair[0];
+      const right = swap ? pair[0] : pair[1];
+      for (const [side, g] of [
+        [-1, left],
+        [1, right],
+      ] as const) {
+        gates.push({
+          id: `pk_g${k}_${side < 0 ? 'l' : 'r'}`,
+          d: dd,
+          x: side * halfLane,
+          width: laneW,
+          op: g.op,
+          value: g.value,
+          style: g.op === 'mul' ? 'gold' : g.value >= 10 ? 'mega' : 'blue',
+        });
+      }
+      gateIdx++;
+    } else if (kind === 'lamp' || kind === 'haunt') {
+      lampSide = lampSide < 0 ? 1 : -1;
+      const lx = Number((lampSide * rng.range(2.4, 5.0)).toFixed(2));
+      lamps.push({ id: `pk_l${k}`, d: dd, x: lx, radius: lampR });
+      if (kind === 'haunt') {
+        // The ghost converges on the lantern: step into the light (free dispel + refill) or swing wide of it
+        const side: -1 | 1 = lx > 0 ? -1 : 1;
+        ghosts.push(ghostOf(`pk_h${k}`, dd + 0.6, side, lx + rng.range(-0.6, 0.6), 5 + safeTier));
+      }
+    } else if (kind === 'wall') {
+      const doorX = Number(rng.range(-5.0, 5.0).toFixed(2));
+      walls.push({ id: `pk_w${k}`, d: dd, doorX, doorW, knockCap: 8 + safeTier * 2 });
+    } else {
+      const count = kind === 'ghosts' && safeTier >= 3 ? 2 : 1;
+      const side: -1 | 1 = rng.chance(0.5) ? -1 : 1;
+      const firstX = rng.range(-4.6, 4.6);
+      ghosts.push(ghostOf(`pk_s${k}_a`, dd, side, firstX, 6 + safeTier));
+      if (count === 2) {
+        const secondX = firstX > 0 ? firstX - rng.range(5.2, 7.0) : firstX + rng.range(5.2, 7.0);
+        ghosts.push(ghostOf(`pk_s${k}_b`, dd + rng.range(3.0, 5.0), side < 0 ? 1 : -1, secondX, 5 + safeTier));
+      }
+    }
+    d += 15.6 + rng.range(0, 1.6) - shrink;
+    k++;
+  }
+
+  const length = Math.round(d + 4);
+  const timeLimitSec = Math.round((length / baseSpeed) * Math.max(1.24, 1.38 - (safeTier - 1) * 0.02));
+  const course: PumpkinNightCourseConfig = {
+    length,
+    baseSpeed,
+    timeLimitSec,
+    startBobos: 16 + Math.floor((safeTier - 1) / 2),
+    maxBobos: 90,
+    maxSteerX: 7.4,
+    lightMax: 100,
+    lightDecayPerSec: Number((4.5 + (safeTier - 1) * 0.4).toFixed(2)),
+    lightRefillPerSec: 110,
+    ghostLightCost: 34,
+    darkSlowMult: 0.7,
+    hitSlowMult: 0.55,
+    hitSlowSec: 0.8,
+  };
+
+  return {
+    id: 3 + safeTier * 2,
+    seed: 93100 + safeTier * 71,
+    mode: 'pumpkin_night',
+    isPumpkinNight: true,
+    pumpkinTier: safeTier,
+    pumpkinCourse: course,
+    pumpkinGates: gates,
+    pumpkinLamps: lamps,
+    pumpkinGhosts: ghosts,
+    pumpkinWalls: walls,
+    themeId: 'royal',
+    archetype: 'trilane_siege',
+    archetypeName: `幽灵古堡南瓜夜 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    name: `幽灵古堡南瓜夜 · 第 ${safeTier} 阶`,
+    subtitle: '左右操控波波团夜闯古堡：踩南瓜灯补光、驱散穿墙幽灵、钻拱门冲出城门！',
+    bossName: '古堡城门',
+    bossMaxHp: 100,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: Math.round(420 * (1 + (safeTier - 1) * 0.12)),
+    gates: [],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-16「沙漠金字塔机关跑酷」(Desert Pyramid Trap Run) stage:
+ * - Its own desert-pyramid scene (sunset desert sky, dunes, distant pyramids, obelisks & palms over a sandstone tomb
+ *   passage) instead of the carnival / gear-town backdrop. The tomb passage scrolls toward the camera (treadmill) while
+ *   the Bobo squad runs forward in formation and is steered left / right with the cannon aim.
+ * - Course rows: unit gate pairs (+N / ×N), quicksand belts across the whole passage with one firm stepping-stone path
+ *   (sand drags the pace down and swallows Bobos that linger), and flip-slab rows whose slabs cycle closed -> warning
+ *   -> flipped open over a pit on the run clock (Bobos on an open slab are flung away; a candy shield absorbs it).
+ * - Win: run out of the tomb gate before the countdown ends. Lose: time runs out or every Bobo is lost.
+ * - Regular red waves are disabled. Pace / course length / stone-path width / belt length / sink time / slab cycle and
+ *   slab count scale with `pyramidTier`; tier 1 is tuned to finish in ~30 s with a ~41 s limit.
+ */
+export function generatePyramidRunLevel(pyramidTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(pyramidTier)));
+  const rng = new SeededRNG(96400 + safeTier * 83);
+  const baseSpeed = Number((7.8 + (safeTier - 1) * 0.26).toFixed(2));
+  const addBonus = Math.floor((safeTier - 1) / 2) * 2;
+  const targetLength = 228 + (safeTier - 1) * 20;
+  const pathW = Number(Math.max(2.6, 3.8 - (safeTier - 1) * 0.15).toFixed(2));
+  const sandLen = Number(Math.min(7.6, 5.0 + (safeTier - 1) * 0.32).toFixed(2));
+  const slabDepth = Number(Math.min(3.4, 2.6 + (safeTier - 1) * 0.1).toFixed(2));
+  const period = Number(Math.max(2.5, 3.4 - (safeTier - 1) * 0.12).toFixed(2));
+  const openSec = Number(Math.min(1.36, 1.1 + (safeTier - 1) * 0.04).toFixed(2));
+  const warnSec = Number(Math.max(0.5, 0.78 - (safeTier - 1) * 0.04).toFixed(2));
+  const slabCount = safeTier >= 4 ? 5 : 4;
+  const slabSpanHalf = 10.4;
+  const slabW = Number(((slabSpanHalf * 2) / slabCount).toFixed(3));
+  const halfLane = 3.75;
+  const laneW = 6.7;
+
+  const gates: PyramidGateConfig[] = [];
+  const sands: PyramidSandConfig[] = [];
+  const slabRows: PyramidSlabRowConfig[] = [];
+  const gatePairs: Array<[{ op: 'add' | 'mul'; value: number }, { op: 'add' | 'mul'; value: number }]> = [
+    [{ op: 'add', value: 5 + addBonus }, { op: 'add', value: 8 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 10 + addBonus }],
+    [{ op: 'add', value: 8 + addBonus }, { op: 'add', value: 12 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 14 + addBonus }],
+  ];
+  const pattern: Array<'gates' | 'sand' | 'slabs'> = [
+    'gates',
+    'sand',
+    'slabs',
+    'gates',
+    'slabs',
+    'sand',
+    'gates',
+    'slabs',
+    'sand',
+    'gates',
+    'slabs',
+    'sand',
+    'gates',
+    'slabs',
+  ];
+  const shrink = Math.min(1.6, (safeTier - 1) * 0.2);
+  let d = 17;
+  let k = 0;
+  let gateIdx = 0;
+  let lastPathX = 0;
+  while (d < targetLength - 10) {
+    const kind = pattern[k % pattern.length];
+    const dd = Number(d.toFixed(2));
+    let extra = 0;
+    if (kind === 'gates') {
+      const pair = gatePairs[gateIdx % gatePairs.length];
+      const swap = rng.chance(0.5);
+      const left = swap ? pair[1] : pair[0];
+      const right = swap ? pair[0] : pair[1];
+      for (const [side, g] of [
+        [-1, left],
+        [1, right],
+      ] as const) {
+        gates.push({
+          id: `py_g${k}_${side < 0 ? 'l' : 'r'}`,
+          d: dd,
+          x: side * halfLane,
+          width: laneW,
+          op: g.op,
+          value: g.value,
+          style: g.op === 'mul' ? 'gold' : g.value >= 10 ? 'mega' : 'blue',
+        });
+      }
+      gateIdx++;
+    } else if (kind === 'sand') {
+      // The stone path never sits right where the previous one was (the squad has to read every belt)
+      let pathX = Number(rng.range(-5.2, 5.2).toFixed(2));
+      if (Math.abs(pathX - lastPathX) < 2.4) pathX = Number((pathX > 0 ? pathX - 4.6 : pathX + 4.6).toFixed(2));
+      lastPathX = pathX;
+      sands.push({ id: `py_s${k}`, d: dd, length: sandLen, pathX, pathW, knockCap: 5 + safeTier });
+      extra = sandLen;
+    } else {
+      // Staggered flip cycle: slab i opens `period / count` after the previous one in a shuffled order
+      const order = Array.from({ length: slabCount }, (_, i) => i);
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(rng.next() * (i + 1));
+        const tmp = order[i];
+        order[i] = order[j];
+        order[j] = tmp;
+      }
+      const shift = rng.range(0, period);
+      const slabs: PyramidSlabConfig[] = [];
+      for (let i = 0; i < slabCount; i++) {
+        slabs.push({
+          x: Number((-slabSpanHalf + slabW * (i + 0.5)).toFixed(3)),
+          width: slabW,
+          offset: Number((((order[i] * period) / slabCount + shift) % period).toFixed(3)),
+        });
+      }
+      slabRows.push({
+        id: `py_f${k}`,
+        d: dd,
+        depth: slabDepth,
+        period,
+        openSec,
+        warnSec,
+        knockCap: 6 + safeTier,
+        slabs,
+      });
+    }
+    d += extra + 14.8 + rng.range(0, 1.6) - shrink;
+    k++;
+  }
+
+  const length = Math.round(d + 4);
+  const timeLimitSec = Math.round((length / baseSpeed) * Math.max(1.24, 1.38 - (safeTier - 1) * 0.02));
+  const course: PyramidRunCourseConfig = {
+    length,
+    baseSpeed,
+    timeLimitSec,
+    startBobos: 16 + Math.floor((safeTier - 1) / 2),
+    maxBobos: 90,
+    maxSteerX: 7.4,
+    sandSlowMult: Number(Math.max(0.36, 0.5 - (safeTier - 1) * 0.02).toFixed(2)),
+    sinkSec: Number(Math.max(0.95, 1.6 - (safeTier - 1) * 0.08).toFixed(2)),
+    hitSlowMult: 0.55,
+    hitSlowSec: 0.8,
+  };
+
+  return {
+    id: 4 + safeTier * 2,
+    seed: 96400 + safeTier * 83,
+    mode: 'pyramid_run',
+    isPyramidRun: true,
+    pyramidTier: safeTier,
+    pyramidCourse: course,
+    pyramidGates: gates,
+    pyramidSands: sands,
+    pyramidSlabRows: slabRows,
+    themeId: 'wasteland',
+    archetype: 'trilane_siege',
+    archetypeName: `沙漠金字塔机关跑酷 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    name: `沙漠金字塔机关跑酷 · 第 ${safeTier} 阶`,
+    subtitle: '左右操控波波团闯金字塔墓道：踩石板路过流沙、躲开翻转石板、限时冲出墓道！',
+    bossName: '墓道出口',
+    bossMaxHp: 100,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: Math.round(440 * (1 + (safeTier - 1) * 0.12)),
+    gates: [],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-17「丛林神庙藤蔓秋千」(Jungle Temple Vine Swing) stage:
+ * - Its own jungle-temple scene (misty green sky, a stepped jade temple, canopy hills, giant trees & fireflies over a
+ *   mossy temple path) instead of the carnival / gear-town backdrop. The temple path scrolls toward the camera
+ *   (treadmill) while the Bobo squad runs forward in formation and is steered left / right with the cannon aim.
+ * - Course rows: unit gate pairs (+N / ×N), chasms across the whole path that can only be crossed on a swaying vine
+ *   (line the squad up under a vine as the front reaches the edge; Bobos out of its reach fall, capped per chasm), and
+ *   rolling boulders that wake up as the squad approaches and roll down their lane toward it (flattening the Bobos in
+ *   that lane, capped per boulder; a candy shield absorbs a fall or a boulder once).
+ * - Win: run out of the temple gate before the countdown ends. Lose: time runs out or every Bobo is lost.
+ * - Regular red waves are disabled. Pace / course length / chasm width / vine reach, sway and speed / boulder size,
+ *   speed and count scale with `jungleTier`; tier 1 is tuned to finish in ~30 s with a ~41 s limit.
+ */
+export function generateJungleSwingLevel(jungleTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(10, Math.floor(jungleTier)));
+  const rng = new SeededRNG(97300 + safeTier * 89);
+  const baseSpeed = Number((7.8 + (safeTier - 1) * 0.26).toFixed(2));
+  const addBonus = Math.floor((safeTier - 1) / 2) * 2;
+  const targetLength = 228 + (safeTier - 1) * 20;
+  const gap = Number(Math.min(7.0, 4.6 + (safeTier - 1) * 0.3).toFixed(2));
+  const reach = Number(Math.max(1.75, 2.6 - (safeTier - 1) * 0.12).toFixed(2));
+  const amp = Number(Math.min(4.0, 2.0 + (safeTier - 1) * 0.28).toFixed(2));
+  const vinePeriod = Number(Math.max(2.4, 3.6 - (safeTier - 1) * 0.16).toFixed(2));
+  const boulderR = Number(Math.min(1.7, 1.25 + (safeTier - 1) * 0.06).toFixed(2));
+  const boulderSpeed = Number(Math.min(9, 5.2 + (safeTier - 1) * 0.45).toFixed(2));
+  const twinBoulders = safeTier >= 5;
+  const halfLane = 3.75;
+  const laneW = 6.7;
+
+  const gates: JungleGateConfig[] = [];
+  const chasms: JungleChasmConfig[] = [];
+  const boulders: JungleBoulderConfig[] = [];
+  const gatePairs: Array<[{ op: 'add' | 'mul'; value: number }, { op: 'add' | 'mul'; value: number }]> = [
+    [{ op: 'add', value: 5 + addBonus }, { op: 'add', value: 8 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 10 + addBonus }],
+    [{ op: 'add', value: 8 + addBonus }, { op: 'add', value: 12 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 14 + addBonus }],
+  ];
+  const pattern: Array<'gates' | 'chasm' | 'boulder'> = [
+    'gates',
+    'chasm',
+    'boulder',
+    'gates',
+    'boulder',
+    'chasm',
+    'gates',
+    'chasm',
+    'boulder',
+    'gates',
+    'boulder',
+    'chasm',
+    'gates',
+    'chasm',
+  ];
+  const shrink = Math.min(1.6, (safeTier - 1) * 0.2);
+  // Vine sway centres keep every grab point well inside the view on a portrait phone too (|x| <= 4.0, so even a
+  // 7-column squad hanging on an outer vine stays on screen)
+  const vineLo = Math.min(4.0 - amp, 1.0 + amp * 0.5);
+  const vineHi = Math.max(vineLo, 4.0 - amp);
+  let d = 17;
+  let k = 0;
+  let gateIdx = 0;
+  let lastLane = 0;
+  while (d < targetLength - 10) {
+    const kind = pattern[k % pattern.length];
+    const dd = Number(d.toFixed(2));
+    let extra = 0;
+    if (kind === 'gates') {
+      const pair = gatePairs[gateIdx % gatePairs.length];
+      const swap = rng.chance(0.5);
+      const left = swap ? pair[1] : pair[0];
+      const right = swap ? pair[0] : pair[1];
+      for (const [side, g] of [
+        [-1, left],
+        [1, right],
+      ] as const) {
+        gates.push({
+          id: `jg_g${k}_${side < 0 ? 'l' : 'r'}`,
+          d: dd,
+          x: side * halfLane,
+          width: laneW,
+          op: g.op,
+          value: g.value,
+          style: g.op === 'mul' ? 'gold' : g.value >= 10 ? 'mega' : 'blue',
+        });
+      }
+      gateIdx++;
+    } else if (kind === 'chasm') {
+      // One vine sways over each half of the path, out of step with the other one
+      const vines: JungleVineConfig[] = [];
+      const phase = rng.range(0, vinePeriod);
+      for (const side of [-1, 1]) {
+        vines.push({
+          x: Number((side * rng.range(vineLo, vineHi)).toFixed(2)),
+          amp,
+          period: Number((vinePeriod * (side < 0 ? 1 : 1.12)).toFixed(2)),
+          offset: Number(((phase + (side < 0 ? 0 : vinePeriod * 0.5)) % vinePeriod).toFixed(3)),
+        });
+      }
+      chasms.push({ id: `jg_c${k}`, d: dd, gap, reach, knockCap: 6 + safeTier, vines });
+      extra = gap;
+    } else {
+      // A boulder never rolls down the lane of the previous one (the squad has to read every ramp)
+      let x = Number(rng.range(-5.0, 5.0).toFixed(2));
+      if (Math.abs(x - lastLane) < 2.6) x = Number((x > 0 ? x - 4.6 : x + 4.6).toFixed(2));
+      lastLane = x;
+      boulders.push({ id: `jg_b${k}`, d: dd, x, radius: boulderR, speed: boulderSpeed, wakeD: 30, knockCap: 6 + safeTier });
+      if (twinBoulders) {
+        // A second boulder on the far side, leaving a corridor of at least 4.4 m between the two lanes
+        const x2 = Number((x > 0 ? x - (boulderR * 2 + 4.4 + rng.range(0, 1.2)) : x + (boulderR * 2 + 4.4 + rng.range(0, 1.2))).toFixed(2));
+        boulders.push({
+          id: `jg_b${k}b`,
+          d: Number((dd + 2.4).toFixed(2)),
+          x: Math.max(-5.6, Math.min(5.6, x2)),
+          radius: boulderR,
+          speed: boulderSpeed,
+          wakeD: 30,
+          knockCap: 6 + safeTier,
+        });
+      }
+    }
+    d += extra + 14.8 + rng.range(0, 1.6) - shrink;
+    k++;
+  }
+
+  const length = Math.round(d + 4);
+  const timeLimitSec = Math.round((length / baseSpeed) * Math.max(1.24, 1.38 - (safeTier - 1) * 0.02));
+  const course: JungleSwingCourseConfig = {
+    length,
+    baseSpeed,
+    timeLimitSec,
+    startBobos: 16 + Math.floor((safeTier - 1) / 2),
+    maxBobos: 90,
+    maxSteerX: 6.2,
+    swingHeight: 1.9,
+    hitSlowMult: 0.55,
+    hitSlowSec: 0.8,
+  };
+
+  return {
+    id: 3 + safeTier * 2,
+    seed: 97300 + safeTier * 89,
+    mode: 'jungle_swing',
+    isJungleSwing: true,
+    jungleTier: safeTier,
+    jungleCourse: course,
+    jungleGates: gates,
+    jungleChasms: chasms,
+    jungleBoulders: boulders,
+    themeId: 'emerald',
+    archetype: 'trilane_siege',
+    archetypeName: `丛林神庙藤蔓秋千 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    name: `丛林神庙藤蔓秋千 · 第 ${safeTier} 阶`,
+    subtitle: '左右操控波波团闯丛林神庙：对准摆动的藤蔓荡过断崖、闪开滚石、限时冲出神庙！',
+    bossName: '神庙出口',
+    bossMaxHp: 100,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: Math.round(450 * (1 + (safeTier - 1) * 0.12)),
+    gates: [],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [],
+    bumpers: [],
     bossSubTowers: [],
   };
 }

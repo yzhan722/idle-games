@@ -5346,7 +5346,7 @@ body.screen-quake-active #app {
       rgba(15, 23, 42, 0.0) 76%,
       rgba(15, 23, 42, 0.55) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=25') center center / cover no-repeat;
+    url('/assets/icons/title_splash_bg.jpg?v=33') center center / cover no-repeat;
   image-rendering: auto;
   animation: none !important;
   transform: none !important;
@@ -7646,7 +7646,7 @@ img,
       rgba(15, 28, 64, 0.05) 70%,
       rgba(20, 12, 6, 0.62) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=25') center center / cover no-repeat !important;
+    url('/assets/icons/title_splash_bg.jpg?v=33') center center / cover no-repeat !important;
 }
 
 .title-center-emblem {
@@ -11758,3 +11758,3122 @@ img,
 
 
 
+
+/* ============================================================================
+   MC-10: Rainbow Candy Train Raid & Bobo Squad Relic Banner Stand
+   ============================================================================ */
+
+.btn-candy-train-raid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #f9a8d4;
+  background: linear-gradient(120deg, #be185d 0%, #db2777 34%, #7c3aed 68%, #0e7490 100%);
+  box-shadow:
+    0 4px 0 #831843,
+    0 8px 18px rgba(190, 24, 93, 0.34),
+    inset 0 1px 0 rgba(251, 207, 232, 0.6);
+  color: #fdf2f8;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-candy-train-raid:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-candy-train-raid:active {
+  transform: translateY(2px);
+}
+
+.candy-train-raid-img {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.42));
+}
+
+.candy-train-btn-title {
+  color: #fdf2f8 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.candy-train-badge {
+  background: rgba(80, 7, 36, 0.72) !important;
+  border: 1.5px solid #f9a8d4 !important;
+  color: #fef08a !important;
+  flex-shrink: 0;
+}
+
+.candy-train-hud .colossus-hud-pill.is-left {
+  border-color: #f9a8d4;
+  color: #fdf2f8;
+}
+
+.candy-train-hud .colossus-hud-pill.is-left.is-broken {
+  opacity: 1;
+  text-decoration: none;
+  border-color: #fde047;
+  background: linear-gradient(90deg, rgba(131, 24, 67, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.candy-train-hud .colossus-hud-pill.is-core.is-dropping {
+  background: linear-gradient(90deg, #a16207 0%, #eab308 55%, #f472b6 100%);
+  border-color: #fef08a;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.7);
+}
+
+.candy-train-hud .colossus-hud-pill.is-right.is-urgent {
+  border-color: #fb7185;
+  background: linear-gradient(90deg, rgba(159, 18, 57, 0.92), rgba(15, 23, 42, 0.88));
+  animation: candyTrainUrgentPulse 0.9s ease-in-out infinite;
+}
+
+.candy-train-hud .colossus-hud-pill.is-right.is-frozen {
+  border-color: #7dd3fc;
+  color: #e0f2fe;
+}
+
+@keyframes candyTrainUrgentPulse {
+  0%,
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(251, 113, 133, 0.85);
+  }
+}
+
+.candy-train-car-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 10.5px !important;
+  padding: 1px 7px 1px 4px !important;
+  border-color: #f9a8d4 !important;
+  background: rgba(80, 7, 36, 0.86) !important;
+  color: #fdf2f8 !important;
+}
+
+.candy-train-car-label .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.candy-train-car-label.is-locomotive {
+  border-color: #fde047 !important;
+}
+
+.candy-train-car-label.is-treasure {
+  border-color: #facc15 !important;
+  background: rgba(113, 63, 18, 0.9) !important;
+  color: #fef9c3 !important;
+}
+
+.relic-banner-stand {
+  border-color: rgba(249, 168, 212, 0.62) !important;
+  background: linear-gradient(180deg, rgba(76, 29, 66, 0.95) 0%, rgba(30, 20, 48, 0.97) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(251, 207, 232, 0.2),
+    0 6px 18px rgba(15, 23, 42, 0.26) !important;
+}
+
+.relic-banner-milestone-banner {
+  background: rgba(157, 23, 77, 0.22);
+  border-color: rgba(249, 168, 212, 0.4);
+  color: #fdf2f8;
+}
+
+.relic-banner-card.is-equipped-banner {
+  border-color: var(--banner-accent, #f472b6) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--banner-accent, #f472b6) 45%, transparent),
+    0 6px 14px rgba(15, 23, 42, 0.18) !important;
+}
+
+.relic-banner-card .finish-bonus {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.relic-banner-swatch .finish-art-img {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.relic-banner-pill .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 600px) {
+  .btn-candy-train-raid {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .candy-train-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .candy-train-car-label {
+    font-size: 9.5px !important;
+    padding: 1px 5px 1px 3px !important;
+  }
+
+  .candy-train-car-label .inline-art-img {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+/* ============================================================================
+   MC-11: Deep-Sea Submarine Bubble Rescue & Bobo Squad Pet Companion Dock
+   ============================================================================ */
+
+.btn-submarine-rescue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #67e8f9;
+  background: linear-gradient(120deg, #075985 0%, #0e7490 38%, #0f766e 70%, #1e3a8a 100%);
+  box-shadow:
+    0 4px 0 #0c4a6e,
+    0 8px 18px rgba(8, 145, 178, 0.34),
+    inset 0 1px 0 rgba(165, 243, 252, 0.6);
+  color: #ecfeff;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-submarine-rescue:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-submarine-rescue:active {
+  transform: translateY(2px);
+}
+
+.submarine-rescue-img {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.42));
+}
+
+.submarine-btn-title {
+  color: #ecfeff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.submarine-pearl-badge {
+  background: rgba(8, 47, 73, 0.74) !important;
+  border: 1.5px solid #7dd3fc !important;
+  color: #fef9c3 !important;
+  flex-shrink: 0;
+}
+
+.submarine-rescue-hud .colossus-hud-pill.is-left {
+  border-color: #facc15;
+  color: #fefce8;
+}
+
+.submarine-rescue-hud .colossus-hud-pill.is-left.is-urgent {
+  border-color: #fb7185;
+  background: linear-gradient(90deg, rgba(159, 18, 57, 0.92), rgba(15, 23, 42, 0.88));
+  animation: candyTrainUrgentPulse 0.9s ease-in-out infinite;
+}
+
+.submarine-rescue-hud .colossus-hud-pill.is-core {
+  border-color: #7dd3fc;
+  color: #e0f2fe;
+}
+
+.submarine-rescue-hud .colossus-hud-pill.is-core.is-dropping {
+  background: linear-gradient(90deg, #0e7490 0%, #0891b2 55%, #f472b6 100%);
+  border-color: #bae6fd;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+.submarine-rescue-hud .colossus-hud-pill.is-right {
+  border-color: #f0abfc;
+  color: #fdf4ff;
+}
+
+.submarine-rescue-hud .colossus-hud-pill.is-right.is-frozen {
+  border-color: #f472b6;
+  background: linear-gradient(90deg, rgba(131, 24, 67, 0.9), rgba(15, 23, 42, 0.88));
+}
+
+.coral-barrier-label,
+.rescue-bubble-label,
+.submarine-hull-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 10.5px !important;
+  padding: 1px 7px 1px 4px !important;
+}
+
+.coral-barrier-label .inline-art-img,
+.rescue-bubble-label .inline-art-img,
+.submarine-hull-label .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.coral-barrier-label {
+  border-color: #f9a8d4 !important;
+  background: rgba(112, 26, 117, 0.86) !important;
+  color: #fdf4ff !important;
+}
+
+.rescue-bubble-label {
+  border-color: #bae6fd !important;
+  background: rgba(7, 89, 133, 0.82) !important;
+  color: #f0f9ff !important;
+}
+
+.submarine-hull-label {
+  border-color: #facc15 !important;
+  background: rgba(12, 74, 110, 0.9) !important;
+  color: #fefce8 !important;
+}
+
+.submarine-hull-label.is-blocked {
+  border-color: #f472b6 !important;
+}
+
+.submarine-hull-label.is-stung {
+  border-color: #e879f9 !important;
+  background: rgba(112, 26, 117, 0.9) !important;
+}
+
+.pet-companion-dock {
+  border-color: rgba(103, 232, 249, 0.62) !important;
+  background: linear-gradient(180deg, rgba(12, 74, 110, 0.95) 0%, rgba(17, 24, 54, 0.97) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(165, 243, 252, 0.2),
+    0 6px 18px rgba(15, 23, 42, 0.26) !important;
+}
+
+.pet-companion-milestone-banner {
+  background: rgba(8, 145, 178, 0.2);
+  border-color: rgba(103, 232, 249, 0.4);
+  color: #ecfeff;
+}
+
+.pet-companion-card.is-equipped-pet {
+  border-color: var(--pet-accent, #67e8f9) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--pet-accent, #67e8f9) 45%, transparent),
+    0 6px 14px rgba(15, 23, 42, 0.18) !important;
+}
+
+.pet-companion-card .finish-bonus {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.pet-companion-swatch .finish-art-img {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.pet-companion-pill .inline-art-img,
+.submarine-rescue-pill .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 600px) {
+  .btn-submarine-rescue {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .submarine-pearl-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .coral-barrier-label,
+  .rescue-bubble-label,
+  .submarine-hull-label {
+    font-size: 9.5px !important;
+    padding: 1px 5px 1px 3px !important;
+  }
+
+  .coral-barrier-label .inline-art-img,
+  .rescue-bubble-label .inline-art-img,
+  .submarine-hull-label .inline-art-img {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+/* MC-11: Deep-sea water tint, vignette & drifting caustic light over the 3D canvas (below labels & HUD) */
+.underwater-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 115% 95% at 50% 42%, rgba(6, 78, 120, 0) 46%, rgba(3, 37, 72, 0.46) 100%),
+    linear-gradient(180deg, rgba(8, 112, 160, 0.26) 0%, rgba(14, 116, 160, 0.14) 48%, rgba(6, 58, 100, 0.3) 100%);
+}
+
+.underwater-overlay.hidden {
+  display: none;
+}
+
+.underwater-overlay::before {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(ellipse 60px 26px at 30% 40%, rgba(186, 230, 253, 0.22), transparent 70%),
+    radial-gradient(ellipse 44px 20px at 72% 64%, rgba(165, 243, 252, 0.18), transparent 70%),
+    radial-gradient(ellipse 30px 14px at 52% 18%, rgba(224, 242, 254, 0.2), transparent 70%);
+  background-size: 240px 170px, 320px 230px, 200px 150px;
+  animation: underwaterCaustics 12s linear infinite;
+}
+
+@keyframes underwaterCaustics {
+  0% {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 240px 170px, -320px 230px, 200px -150px;
+  }
+}
+
+/* ============================================================================
+   MC-12: Glacier Sled Race & Bobo Squad Honor Trophy Hall
+   ============================================================================ */
+
+.btn-glacier-sled {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #e0f2fe;
+  background: linear-gradient(120deg, #0369a1 0%, #0284c7 34%, #38bdf8 62%, #be123c 100%);
+  box-shadow:
+    0 4px 0 #075985,
+    0 8px 18px rgba(14, 165, 233, 0.34),
+    inset 0 1px 0 rgba(240, 249, 255, 0.7);
+  color: #f0f9ff;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-glacier-sled:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-glacier-sled:active {
+  transform: translateY(2px);
+}
+
+.glacier-sled-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.42));
+}
+
+.glacier-sled-btn-title {
+  color: #f0f9ff !important;
+  text-shadow: 0 2px 4px rgba(7, 89, 133, 0.85);
+}
+
+.glacier-sled-badge {
+  background: rgba(7, 89, 133, 0.78) !important;
+  border: 1.5px solid #bae6fd !important;
+  color: #fef9c3 !important;
+  flex-shrink: 0;
+}
+
+.glacier-sled-hud .colossus-hud-pill.is-left {
+  border-color: #bae6fd;
+  color: #f0f9ff;
+}
+
+.glacier-sled-hud .colossus-hud-pill.is-left.is-urgent {
+  border-color: #fb7185;
+  background: linear-gradient(90deg, rgba(159, 18, 57, 0.92), rgba(15, 23, 42, 0.88));
+  animation: candyTrainUrgentPulse 0.9s ease-in-out infinite;
+}
+
+.glacier-sled-hud .colossus-hud-pill.is-core {
+  border-color: #fda4af;
+  color: #fff1f2;
+}
+
+.glacier-sled-hud .colossus-hud-pill.is-core.is-dropping {
+  background: linear-gradient(90deg, #0e7490 0%, #0891b2 55%, #22d3ee 100%);
+  border-color: #cffafe;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
+}
+
+.glacier-sled-hud .colossus-hud-pill.is-right {
+  border-color: #7dd3fc;
+  color: #e0f2fe;
+}
+
+.glacier-sled-hud .colossus-hud-pill.is-right.is-frozen {
+  border-color: #f472b6;
+  background: linear-gradient(90deg, rgba(131, 24, 67, 0.9), rgba(15, 23, 42, 0.88));
+}
+
+.glacier-sled-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 10.5px !important;
+  padding: 1px 7px 1px 4px !important;
+  border-color: #fda4af !important;
+  background: rgba(136, 19, 55, 0.88) !important;
+  color: #fff1f2 !important;
+}
+
+.glacier-sled-label .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.glacier-sled-label.is-stumbled {
+  border-color: #fb7185 !important;
+  background: rgba(76, 5, 25, 0.92) !important;
+}
+
+.glacier-sled-label.is-boosting {
+  border-color: #67e8f9 !important;
+  background: rgba(14, 116, 144, 0.92) !important;
+}
+
+/* Result modal: the tournament chest card only belongs to Gear Summit wins (its .hidden had no rule) */
+.tournament-chest-section.hidden {
+  display: none;
+}
+
+/* The crowd rides the sled: no cannon volleys / skill bar / cannon-module badge on the glacier course */
+body.sled-mode-active .hud-bottom,
+body.sled-mode-active #cannon-mod-hud-badge {
+  display: none !important;
+}
+
+.trophy-hall-pill .inline-art-img,
+.glacier-sled-pill .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Lobby: small rotating 3D trophy pedestal (mirrors the trophies displayed in the hall) */
+.lobby-trophy-pedestal {
+  position: absolute !important;
+  top: 6px;
+  left: 10px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 132px;
+  padding: 4px 4px 5px;
+  border-radius: 16px;
+  border: 2px solid var(--hall-accent, #facc15);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 70%, rgba(250, 204, 21, 0.22), transparent 70%),
+    linear-gradient(180deg, rgba(30, 64, 175, 0.72) 0%, rgba(12, 33, 87, 0.86) 100%);
+  box-shadow:
+    0 4px 0 #040b1e,
+    0 8px 18px rgba(4, 11, 30, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.lobby-trophy-pedestal:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.trophy-pedestal-canvas {
+  display: block;
+  width: 120px;
+  height: 100px;
+  pointer-events: none;
+}
+
+.lobby-trophy-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(4, 11, 30, 0.7);
+  border: 1.5px solid rgba(250, 204, 21, 0.7);
+  color: #fef08a;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lobby-trophy-caption .inline-art-img {
+  width: 14px;
+  height: 14px;
+}
+
+/* Workshop: Honor Trophy Hall */
+.trophy-hall {
+  border-color: rgba(250, 204, 21, 0.7) !important;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(250, 204, 21, 0.16), transparent 70%),
+    linear-gradient(180deg, rgba(76, 29, 149, 0.94) 0%, rgba(30, 27, 75, 0.97) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(254, 240, 138, 0.22),
+    0 6px 18px rgba(15, 23, 42, 0.26) !important;
+}
+
+.trophy-hall-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.trophy-auto-btn {
+  width: auto !important;
+  flex: 0 0 auto !important;
+  padding: 4px 14px !important;
+  font-size: 11.5px !important;
+  white-space: nowrap;
+}
+
+.trophy-hall-milestone-banner {
+  background: rgba(250, 204, 21, 0.12);
+  border-color: rgba(250, 204, 21, 0.45);
+  color: #fef9c3;
+}
+
+.trophy-hall-slots {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+.trophy-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 6px 4px 7px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(196, 181, 253, 0.45);
+  background: linear-gradient(180deg, rgba(49, 46, 129, 0.72) 0%, rgba(30, 27, 75, 0.9) 100%);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.trophy-slot.is-filled {
+  border-color: var(--trophy-accent, #facc15);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--trophy-accent, #facc15) 40%, transparent),
+    0 4px 12px rgba(15, 23, 42, 0.3);
+}
+
+.trophy-slot.is-locked {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.trophy-slot.is-locked.is-next {
+  opacity: 1;
+  border-color: #7dd3fc;
+}
+
+.trophy-slot-stage {
+  position: relative;
+  width: 78px;
+  height: 78px;
+  flex-shrink: 0;
+}
+
+.trophy-pedestal-img {
+  position: absolute;
+  left: 4px;
+  bottom: 0;
+  width: 70px;
+  height: 70px;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));
+}
+
+.trophy-slot.is-empty .trophy-pedestal-img,
+.trophy-slot.is-locked .trophy-pedestal-img {
+  filter: grayscale(0.7) brightness(0.7) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));
+}
+
+.trophy-slot-stage .trophy-cup-img {
+  position: absolute;
+  left: 17px;
+  top: -6px;
+  width: 44px;
+  height: 44px;
+}
+
+.trophy-slot-emblem {
+  position: absolute;
+  right: 0;
+  top: 18px;
+  display: inline-flex;
+}
+
+.trophy-slot-emblem .inline-art-img {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.trophy-slot-lock {
+  position: absolute;
+  left: 27px;
+  top: 6px;
+  display: inline-flex;
+}
+
+.trophy-slot-lock .inline-art-img {
+  width: 24px;
+  height: 24px;
+}
+
+.trophy-slot-name {
+  max-width: 100%;
+  color: #fef9c3;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trophy-slot-tier {
+  max-width: 100%;
+  color: #ddd6fe;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.trophy-slot-remove-btn {
+  padding: 2px 10px !important;
+  font-size: 10.5px !important;
+}
+
+.trophy-slot-unlock {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.trophy-slot-unlock .finish-action-btn {
+  padding: 2px 6px !important;
+  font-size: 10.5px !important;
+  min-width: 0;
+}
+
+.trophy-slot-unlock .inline-art-img {
+  width: 13px;
+  height: 13px;
+}
+
+/* Trophy tiers: one gold cup art, tinted to bronze / silver; unearned trophies stay as dim silhouettes */
+.trophy-cup-img.tier-0 {
+  filter: grayscale(1) brightness(0.45) opacity(0.65);
+}
+
+.trophy-cup-img.tier-1 {
+  filter: sepia(0.55) saturate(1.5) hue-rotate(-16deg) brightness(0.8) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+}
+
+.trophy-cup-img.tier-2 {
+  filter: grayscale(1) brightness(1.22) contrast(1.06) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+}
+
+.trophy-cup-img.tier-3 {
+  filter: saturate(1.15) drop-shadow(0 0 6px rgba(250, 204, 21, 0.55));
+}
+
+.trophy-cabinet-swatch {
+  position: relative;
+  background: radial-gradient(circle, #ede9fe 0%, #5b21b6 100%) !important;
+}
+
+.trophy-cabinet-swatch .trophy-cabinet-cup {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+}
+
+.trophy-cabinet-source {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 46%;
+  height: 46%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+.trophy-cabinet-card.is-displayed-trophy {
+  border-color: var(--trophy-accent, #facc15) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--trophy-accent, #facc15) 45%, transparent),
+    0 6px 14px rgba(15, 23, 42, 0.18) !important;
+}
+
+.trophy-cabinet-card .finish-bonus {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+@media (max-width: 600px) {
+  .btn-glacier-sled {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .glacier-sled-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .glacier-sled-label {
+    font-size: 9.5px !important;
+    padding: 1px 5px 1px 3px !important;
+  }
+
+  .glacier-sled-label .inline-art-img {
+    width: 13px;
+    height: 13px;
+  }
+
+  .lobby-trophy-pedestal {
+    top: 2px;
+    left: 4px;
+    width: 92px;
+    padding: 3px 3px 4px;
+    border-radius: 13px;
+  }
+
+  .trophy-pedestal-canvas {
+    width: 84px;
+    height: 70px;
+  }
+
+  .lobby-trophy-caption {
+    font-size: 9.5px;
+    padding: 1px 5px;
+  }
+
+  .lobby-trophy-caption .inline-art-img {
+    width: 12px;
+    height: 12px;
+  }
+
+  .trophy-hall-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .trophy-slot-stage {
+    width: 64px;
+    height: 64px;
+  }
+
+  .trophy-pedestal-img {
+    left: 4px;
+    width: 58px;
+    height: 58px;
+  }
+
+  .trophy-slot-stage .trophy-cup-img {
+    left: 14px;
+    top: -4px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .trophy-slot-emblem {
+    top: 14px;
+  }
+
+  .trophy-slot-emblem .inline-art-img {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ============================================================================
+   MC-13: Volcano Lava Jump Breakout & Bobo Squad Skin Gacha Machine
+   ============================================================================ */
+
+.btn-lava-jump {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #fed7aa;
+  background: linear-gradient(120deg, #7c2d12 0%, #c2410c 36%, #f97316 66%, #facc15 100%);
+  box-shadow:
+    0 4px 0 #5a1a07,
+    0 8px 18px rgba(234, 88, 12, 0.36),
+    inset 0 1px 0 rgba(255, 237, 213, 0.7);
+  color: #fff7ed;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-lava-jump:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-lava-jump:active {
+  transform: translateY(2px);
+}
+
+.lava-jump-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+
+.lava-jump-btn-title {
+  color: #fff7ed !important;
+  text-shadow: 0 2px 4px rgba(90, 26, 7, 0.9);
+}
+
+.lava-jump-badge {
+  background: rgba(90, 26, 7, 0.8) !important;
+  border: 1.5px solid #fdba74 !important;
+  color: #fef9c3 !important;
+  flex-shrink: 0;
+}
+
+.lava-jump-hud .colossus-hud-pill.is-left {
+  border-color: #fdba74;
+  color: #fff7ed;
+}
+
+.lava-jump-hud .colossus-hud-pill.is-left.is-urgent {
+  border-color: #fb7185;
+  background: linear-gradient(90deg, rgba(159, 18, 57, 0.92), rgba(15, 23, 42, 0.88));
+  animation: candyTrainUrgentPulse 0.9s ease-in-out infinite;
+}
+
+.lava-jump-hud .colossus-hud-pill.is-core {
+  border-color: #fb923c;
+  color: #fff7ed;
+}
+
+.lava-jump-hud .colossus-hud-pill.is-core.is-shielded {
+  background: linear-gradient(90deg, #0f766e 0%, #14b8a6 60%, #5eead4 100%);
+  border-color: #ccfbf1;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.6);
+}
+
+.lava-jump-hud .colossus-hud-pill.is-right {
+  border-color: #facc15;
+  color: #fef9c3;
+}
+
+.lava-jump-hud .colossus-hud-pill.is-right.is-stumbled {
+  border-color: #f97316;
+  background: linear-gradient(90deg, rgba(124, 45, 18, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.lava-jump-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 10.5px !important;
+  padding: 1px 7px 1px 4px !important;
+  border-color: #fdba74 !important;
+  background: rgba(124, 45, 18, 0.9) !important;
+  color: #fff7ed !important;
+}
+
+.lava-jump-label .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.lava-jump-label.is-stumbled {
+  border-color: #fb7185 !important;
+  background: rgba(76, 5, 25, 0.92) !important;
+}
+
+.lava-jump-label.is-shielded {
+  border-color: #5eead4 !important;
+  background: rgba(15, 118, 110, 0.92) !important;
+}
+
+/* The squad hops on its own: no cannon volleys / skill bar / cannon-module badge on the lava course */
+body.lava-mode-active .hud-bottom,
+body.lava-mode-active #cannon-mod-hud-badge {
+  display: none !important;
+}
+
+.lava-jump-pill .inline-art-img,
+.gacha-skin-pill .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Workshop: Bobo Squad Skin Gacha Machine */
+.gacha-machine {
+  border-color: rgba(244, 114, 182, 0.75) !important;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(244, 114, 182, 0.18), transparent 70%),
+    linear-gradient(180deg, rgba(131, 24, 67, 0.92) 0%, rgba(49, 16, 84, 0.97) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(251, 207, 232, 0.22),
+    0 6px 18px rgba(15, 23, 42, 0.26) !important;
+}
+
+.gacha-machine .squad-livery-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gacha-machine .squad-livery-active-pill .gacha-skin-art,
+.gacha-machine .squad-livery-active-pill .inline-art-img {
+  width: 18px;
+  height: 18px;
+}
+
+.gacha-machine .squad-finish-resources .inline-art-img {
+  width: 15px;
+  height: 15px;
+  vertical-align: -3px;
+}
+
+.gacha-odds-banner {
+  background: rgba(244, 114, 182, 0.12);
+  border-color: rgba(244, 114, 182, 0.45);
+  color: #fce7f3;
+}
+
+.gacha-odds-banner b {
+  font-weight: 900;
+}
+
+.gacha-stage {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.gacha-machine-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(251, 207, 232, 0.5);
+  background: radial-gradient(circle at 50% 40%, rgba(253, 224, 71, 0.22), rgba(76, 29, 149, 0.55) 72%);
+  min-width: 0;
+}
+
+.gacha-machine-art {
+  width: 132px;
+  height: 132px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  transform-origin: 50% 85%;
+}
+
+.gacha-machine-art.is-shaking {
+  animation: gachaMachineShake 0.55s ease-in-out;
+}
+
+@keyframes gachaMachineShake {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  20% {
+    transform: rotate(-7deg) scale(1.04);
+  }
+  45% {
+    transform: rotate(6deg) scale(1.06);
+  }
+  70% {
+    transform: rotate(-3deg) scale(1.02);
+  }
+}
+
+.gacha-pity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+
+.gacha-pity-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(196, 181, 253, 0.6);
+  overflow: hidden;
+}
+
+.gacha-pity-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c084fc 0%, #f472b6 60%, #facc15 100%);
+  transition: width 0.3s ease;
+}
+
+.gacha-pity-text {
+  color: #f5d0fe;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.gacha-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.gacha-roll-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.gacha-roll-btn {
+  min-height: 34px;
+  justify-content: space-between !important;
+  padding: 3px 9px !important;
+}
+
+.gacha-roll-btn.is-ten {
+  border-color: #f472b6;
+  background: linear-gradient(180deg, #f9a8d4 0%, #db2777 100%);
+  color: #fff;
+}
+
+.gacha-roll-label {
+  font-weight: 900;
+}
+
+.gacha-roll-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 900;
+}
+
+.gacha-roll-cost .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+.gacha-result-tray {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  min-height: 92px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1.5px dashed rgba(251, 207, 232, 0.45);
+  background: rgba(30, 27, 75, 0.55);
+  box-sizing: border-box;
+}
+
+.gacha-result-tray.is-empty,
+.gacha-result-tray.is-single {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gacha-result-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #fbcfe8;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.gacha-result-empty .inline-art-img {
+  width: 22px;
+  height: 22px;
+}
+
+.gacha-result-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 3px 5px;
+  border-radius: 10px;
+  border: 2px solid var(--rarity-color, #94a3b8);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.85) 100%);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--rarity-color, #94a3b8) 45%, transparent);
+  text-align: center;
+  animation: gachaChipReveal 0.42s ease-out both;
+  animation-delay: calc(var(--reveal-i, 0) * 60ms);
+}
+
+.gacha-result-tray.is-single .gacha-result-chip {
+  width: min(190px, 100%);
+  padding: 6px 8px 8px;
+}
+
+@keyframes gachaChipReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.6) rotate(-8deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.06) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.gacha-chip-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.gacha-result-tray.is-single .gacha-chip-swatch {
+  width: 72px;
+  height: 72px;
+}
+
+.gacha-skin-art {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+
+.gacha-chip-rarity {
+  color: var(--rarity-color, #94a3b8);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.gacha-chip-name {
+  max-width: 100%;
+  color: #fdf4ff;
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gacha-result-tray.is-single .gacha-chip-name {
+  font-size: 13px;
+}
+
+.gacha-chip-new {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fde047, #f59e0b);
+  color: #451a03;
+  font-size: 9px;
+  font-weight: 900;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.gacha-chip-dup {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #fde68a;
+  font-size: 9.5px;
+  font-weight: 900;
+}
+
+.gacha-chip-dup .inline-art-img {
+  width: 12px;
+  height: 12px;
+}
+
+.gacha-collection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gacha-collection-title {
+  color: #fbcfe8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.gacha-unequip-btn {
+  width: auto !important;
+  flex: 0 0 auto;
+  padding: 3px 12px !important;
+  font-size: 11px !important;
+}
+
+.gacha-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  width: 100%;
+}
+
+.gacha-skin-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 5px 6px;
+  border-radius: 12px;
+  border: 2px solid color-mix(in srgb, var(--rarity-color, #94a3b8) 70%, transparent);
+  background: linear-gradient(180deg, rgba(30, 27, 75, 0.78) 0%, rgba(15, 23, 42, 0.92) 100%);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.gacha-skin-card.is-locked .gacha-skin-swatch {
+  filter: grayscale(0.85) brightness(0.55);
+}
+
+.gacha-skin-card.is-equipped {
+  border-color: #4ade80;
+  box-shadow:
+    0 0 0 2px rgba(74, 222, 128, 0.35),
+    0 0 14px color-mix(in srgb, var(--rarity-color, #94a3b8) 55%, transparent);
+}
+
+.gacha-skin-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.18);
+}
+
+.gacha-skin-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  width: 100%;
+}
+
+.gacha-skin-rarity {
+  color: var(--rarity-color, #94a3b8);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.gacha-skin-name {
+  max-width: 100%;
+  color: #fdf4ff;
+  font-size: 12px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gacha-skin-desc {
+  max-width: 100%;
+  color: #ddd6fe;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  min-height: 2.5em;
+}
+
+.gacha-equip-btn .inline-art-img {
+  width: 13px;
+  height: 13px;
+}
+
+@media (max-width: 600px) {
+  .btn-lava-jump {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .lava-jump-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .lava-jump-label {
+    font-size: 9.5px !important;
+    padding: 1px 5px 1px 3px !important;
+  }
+
+  .lava-jump-label .inline-art-img {
+    width: 13px;
+    height: 13px;
+  }
+
+  .gacha-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .gacha-machine-box {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .gacha-machine-art {
+    width: 84px;
+    height: 84px;
+  }
+
+  .gacha-pity {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .gacha-result-tray {
+    min-height: 80px;
+    gap: 4px;
+  }
+
+  .gacha-chip-swatch {
+    width: 36px;
+    height: 36px;
+  }
+
+  .gacha-collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+}
+
+/* ============================================================================
+   MC-14: Asteroid Belt Shield Breakout & Bobo Squad Themed Lobby Decoration Hall
+   ============================================================================ */
+
+.btn-asteroid-dash {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #c7d2fe;
+  background:
+    radial-gradient(circle at 18% 30%, rgba(255, 255, 255, 0.55) 0 1px, transparent 2px),
+    radial-gradient(circle at 62% 70%, rgba(255, 255, 255, 0.45) 0 1px, transparent 2px),
+    radial-gradient(circle at 84% 22%, rgba(196, 181, 253, 0.6) 0 1.5px, transparent 2.5px),
+    linear-gradient(120deg, #070b24 0%, #1e1b4b 34%, #4338ca 68%, #22d3ee 100%);
+  box-shadow:
+    0 4px 0 #050720,
+    0 8px 18px rgba(67, 56, 202, 0.38),
+    inset 0 1px 0 rgba(224, 231, 255, 0.6);
+  color: #eef2ff;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-asteroid-dash:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.btn-asteroid-dash:active {
+  transform: translateY(2px);
+}
+
+.asteroid-dash-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.asteroid-dash-btn-title {
+  color: #eef2ff !important;
+  text-shadow: 0 2px 4px rgba(7, 11, 36, 0.9);
+}
+
+.asteroid-dash-badge {
+  background: rgba(7, 11, 36, 0.82) !important;
+  border: 1.5px solid #c4b5fd !important;
+  color: #e0e7ff !important;
+  flex-shrink: 0;
+}
+
+.asteroid-dash-hud .colossus-hud-pill.is-left {
+  border-color: #c4b5fd;
+  color: #eef2ff;
+}
+
+.asteroid-dash-hud .colossus-hud-pill.is-left.is-urgent {
+  border-color: #fb7185;
+  background: linear-gradient(90deg, rgba(159, 18, 57, 0.92), rgba(15, 23, 42, 0.88));
+  animation: candyTrainUrgentPulse 0.9s ease-in-out infinite;
+}
+
+.asteroid-dash-hud .colossus-hud-pill.is-core {
+  border-color: #818cf8;
+  color: #eef2ff;
+}
+
+.asteroid-dash-hud .colossus-hud-pill.is-core.is-shielded {
+  background: linear-gradient(90deg, #0e7490 0%, #06b6d4 60%, #67e8f9 100%);
+  border-color: #cffafe;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.65);
+}
+
+.asteroid-dash-hud .colossus-hud-pill.is-right {
+  border-color: #a78bfa;
+  color: #ede9fe;
+}
+
+.asteroid-dash-hud .colossus-hud-pill.is-right.is-stumbled {
+  border-color: #fb923c;
+  background: linear-gradient(90deg, rgba(124, 45, 18, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.asteroid-dash-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 10.5px !important;
+  padding: 1px 7px 1px 4px !important;
+  border-color: #a5b4fc !important;
+  background: rgba(30, 27, 75, 0.9) !important;
+  color: #eef2ff !important;
+}
+
+.asteroid-dash-label .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.asteroid-dash-label.is-stumbled {
+  border-color: #fb7185 !important;
+  background: rgba(76, 5, 25, 0.92) !important;
+}
+
+.asteroid-dash-label.is-shielded {
+  border-color: #67e8f9 !important;
+  background: rgba(14, 116, 144, 0.92) !important;
+}
+
+/* The squad floats on its own: no cannon volleys / skill bar / cannon-module badge on the space track */
+body.asteroid-mode-active .hud-bottom,
+body.asteroid-mode-active #cannon-mod-hud-badge {
+  display: none !important;
+}
+
+.asteroid-dash-pill .inline-art-img,
+.decor-hall-pill .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Lobby: the trophy pedestal is now a little decorated 3D room (wallpaper / floor follow the decor theme) */
+.lobby-trophy-pedestal {
+  width: 178px;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 72%, color-mix(in srgb, var(--decor-accent, #facc15) 24%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--decor-wall, #1e40af) 0%, var(--decor-floor, #0c2157) 100%);
+}
+
+.trophy-pedestal-canvas {
+  width: 166px;
+  height: 106px;
+  border-radius: 11px;
+}
+
+/* Workshop: Themed Lobby Decoration Hall */
+.decor-hall {
+  border-color: rgba(129, 140, 248, 0.75) !important;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(129, 140, 248, 0.2), transparent 70%),
+    linear-gradient(180deg, rgba(30, 58, 138, 0.94) 0%, rgba(30, 27, 75, 0.97) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(199, 210, 254, 0.24),
+    0 6px 18px rgba(15, 23, 42, 0.26) !important;
+}
+
+.decor-hall .squad-livery-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.decor-hall .squad-livery-active-pill .decor-theme-art {
+  width: 18px;
+  height: 18px;
+}
+
+#decor-resources {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 10px;
+}
+
+.decor-res-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.decor-hall .squad-finish-resources .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.decor-bonus-banner {
+  background: rgba(129, 140, 248, 0.12);
+  border-color: rgba(129, 140, 248, 0.45);
+  color: #e0e7ff;
+}
+
+.decor-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.decor-section-title {
+  color: #c7d2fe;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.decor-view-btn {
+  width: auto !important;
+  flex: 0 0 auto;
+  padding: 3px 12px !important;
+  font-size: 11px !important;
+}
+
+.decor-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  width: 100%;
+}
+
+.decor-theme-card,
+.decor-prop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 6px 7px;
+  border-radius: 12px;
+  border: 2px solid rgba(165, 180, 252, 0.45);
+  background: linear-gradient(180deg, rgba(30, 27, 75, 0.78) 0%, rgba(15, 23, 42, 0.92) 100%);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.decor-theme-card.is-active {
+  border-color: #4ade80;
+  box-shadow:
+    0 0 0 2px rgba(74, 222, 128, 0.32),
+    0 0 14px color-mix(in srgb, var(--decor-accent, #facc15) 45%, transparent);
+}
+
+.decor-theme-card.is-locked .decor-theme-swatch,
+.decor-prop-card.is-locked .decor-prop-swatch {
+  filter: saturate(0.7) brightness(0.78);
+}
+
+.decor-theme-swatch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 62px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--decor-accent, #facc15);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 6px, transparent 6px 14px),
+    var(--decor-wall, #1e40af);
+  box-sizing: border-box;
+}
+
+.decor-swatch-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  background: var(--decor-floor, #0c2157);
+  border-top: 2px solid var(--decor-accent, #facc15);
+}
+
+.decor-theme-swatch .decor-card-art {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45));
+}
+
+.decor-prop-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(253, 230, 138, 0.75);
+  background: radial-gradient(circle at 50% 40%, rgba(253, 224, 71, 0.28), rgba(49, 46, 129, 0.75) 72%);
+}
+
+.decor-prop-swatch .decor-card-art {
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+}
+
+.decor-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  width: 100%;
+}
+
+.decor-card-name {
+  max-width: 100%;
+  color: #eef2ff;
+  font-size: 12px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.decor-card-desc {
+  max-width: 100%;
+  color: #c7d2fe;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  min-height: 2.5em;
+}
+
+.decor-card-comfort {
+  color: #fde68a;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.decor-theme-btn .inline-art-img,
+.decor-prop-btn .inline-art-img,
+.decor-slot-btn .inline-art-img {
+  width: 14px;
+  height: 14px;
+}
+
+.decor-prop-card.is-placed {
+  border-color: #4ade80;
+}
+
+.decor-slot-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.decor-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 4px 6px;
+  border-radius: 11px;
+  border: 1.5px dashed rgba(165, 180, 252, 0.55);
+  background: rgba(15, 23, 42, 0.55);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.decor-slot.is-filled {
+  border-style: solid;
+  border-color: rgba(253, 230, 138, 0.75);
+  background: linear-gradient(180deg, rgba(67, 56, 202, 0.45), rgba(15, 23, 42, 0.8));
+}
+
+.decor-slot-name {
+  color: #a5b4fc;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.decor-slot-art {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.decor-slot-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(165, 180, 252, 0.5);
+  color: #818cf8;
+  font-size: 10px;
+  font-weight: 800;
+  box-sizing: border-box;
+}
+
+.decor-slot-prop {
+  max-width: 100%;
+  color: #e0e7ff;
+  font-size: 10px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.decor-slot-btn {
+  padding: 2px 10px !important;
+  font-size: 10.5px !important;
+  min-height: 0 !important;
+}
+
+.decor-prop-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .btn-asteroid-dash {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .asteroid-dash-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .asteroid-dash-label {
+    font-size: 9.5px !important;
+    padding: 1px 5px 1px 3px !important;
+  }
+
+  .asteroid-dash-label .inline-art-img {
+    width: 13px;
+    height: 13px;
+  }
+
+  .lobby-trophy-pedestal {
+    width: 112px;
+  }
+
+  .trophy-pedestal-canvas {
+    width: 104px;
+    height: 64px;
+    border-radius: 9px;
+  }
+
+  #decor-resources {
+    justify-content: flex-start;
+    gap: 3px 9px;
+  }
+
+  .decor-res-chip {
+    font-size: 10.5px;
+  }
+
+  .decor-theme-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .decor-slot-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .decor-prop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .decor-section-head {
+    flex-wrap: wrap;
+  }
+}
+
+/* ============================================================================
+   MC-15: Haunted Castle Pumpkin Night & Bobo Squad Tactic Deck
+   ============================================================================ */
+
+.btn-pumpkin-night {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #fdba74;
+  background:
+    radial-gradient(circle at 86% 24%, rgba(254, 243, 199, 0.95) 0 7px, rgba(253, 230, 138, 0.35) 8px, transparent 15px),
+    radial-gradient(circle at 14% 82%, rgba(249, 115, 22, 0.55) 0 4px, transparent 14px),
+    linear-gradient(120deg, #120c2c 0%, #2e1065 38%, #6d28d9 70%, #ea580c 100%);
+  box-shadow:
+    0 4px 0 #0b0720,
+    0 8px 18px rgba(124, 58, 237, 0.36),
+    inset 0 1px 0 rgba(254, 215, 170, 0.55);
+  color: #fff7ed;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-pumpkin-night:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.btn-pumpkin-night:active {
+  transform: translateY(2px);
+}
+
+.pumpkin-night-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.pumpkin-night-btn-title {
+  color: #fff7ed !important;
+  text-shadow: 0 2px 4px rgba(18, 12, 44, 0.9);
+}
+
+.pumpkin-night-badge {
+  background: rgba(18, 12, 44, 0.84) !important;
+  border: 1.5px solid #fdba74 !important;
+  color: #ffedd5 !important;
+  flex-shrink: 0;
+}
+
+.pumpkin-night-hud .colossus-hud-pill.is-left {
+  border-color: #fdba74;
+  color: #fff7ed;
+}
+
+.pumpkin-night-hud .colossus-hud-pill.is-left.is-urgent {
+  border-color: #fb7185;
+  background: linear-gradient(90deg, rgba(159, 18, 57, 0.92), rgba(15, 23, 42, 0.88));
+  animation: candyTrainUrgentPulse 0.9s ease-in-out infinite;
+}
+
+.pumpkin-night-hud .colossus-hud-pill.is-core {
+  border-color: #fb923c;
+  color: #fff7ed;
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.6) 0 var(--pk-light, 100%), rgba(30, 20, 60, 0.9) var(--pk-light, 100%) 100%);
+}
+
+.pumpkin-night-hud .colossus-hud-pill.is-core.is-lit {
+  border-color: #fde68a;
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.7);
+}
+
+.pumpkin-night-hud .colossus-hud-pill.is-core.is-dark {
+  border-color: #6b7280;
+  color: #d1d5db;
+  background: rgba(17, 12, 34, 0.94);
+}
+
+.pumpkin-night-hud .colossus-hud-pill.is-right {
+  border-color: #c4b5fd;
+  color: #ede9fe;
+}
+
+.pumpkin-night-hud .colossus-hud-pill.is-right.is-stumbled {
+  border-color: #e879f9;
+  background: linear-gradient(90deg, rgba(88, 28, 135, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.pumpkin-night-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 10.5px !important;
+  padding: 1px 7px 1px 4px !important;
+  border-color: #fdba74 !important;
+  background: rgba(46, 16, 101, 0.9) !important;
+  color: #fff7ed !important;
+}
+
+.pumpkin-night-label .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.pumpkin-night-label.is-lit {
+  border-color: #fde68a !important;
+  background: rgba(194, 65, 12, 0.92) !important;
+}
+
+.pumpkin-night-label.is-dark {
+  border-color: #6b7280 !important;
+  background: rgba(17, 12, 34, 0.94) !important;
+  color: #d1d5db !important;
+}
+
+.pumpkin-night-label.is-stumbled {
+  border-color: #e879f9 !important;
+  background: rgba(88, 28, 135, 0.94) !important;
+}
+
+/* The squad marches on its own: no cannon volleys / skill bar / cannon-module badge in the castle */
+body.pumpkin-mode-active .hud-bottom,
+body.pumpkin-mode-active #cannon-mod-hud-badge {
+  display: none !important;
+}
+
+.pumpkin-night-pill .inline-art-img,
+.tactic-deck-pill .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Battle HUD: the 3 tactic cards of this match */
+.tactic-deck-hud {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  align-self: center;
+  gap: 5px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.tactic-deck-hud.hidden {
+  display: none !important;
+}
+
+.tactic-hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 190px;
+  padding: 2px 8px 2px 3px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(148, 163, 184, 0.7);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(30, 27, 75, 0.92));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  color: #f8fafc;
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tactic-hud-chip.is-shield {
+  border-color: #7dd3fc;
+}
+
+.tactic-hud-chip.is-rush {
+  border-color: #fde047;
+}
+
+.tactic-hud-chip.is-crowd {
+  border-color: #86efac;
+}
+
+.tactic-hud-chip.is-ready .tactic-hud-art {
+  filter: saturate(0.75) brightness(0.9);
+}
+
+.tactic-hud-chip.is-fired {
+  background: linear-gradient(180deg, rgba(67, 56, 202, 0.92), rgba(30, 27, 75, 0.95));
+}
+
+.tactic-hud-chip.is-flash {
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(253, 230, 138, 0.85);
+}
+
+.tactic-hud-art {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.tactic-hud-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.tactic-hud-name {
+  font-size: 10.5px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tactic-hud-state {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #cbd5e1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tactic-hud-chip.is-fired .tactic-hud-state {
+  color: #fde68a;
+}
+
+/* Lobby: tactic deck strip under the battle button */
+.lobby-tactic-deck {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-radius: 13px;
+  border: 2px solid rgba(253, 224, 71, 0.7);
+  background: linear-gradient(120deg, rgba(30, 27, 75, 0.95) 0%, rgba(67, 56, 202, 0.92) 60%, rgba(14, 116, 144, 0.9) 100%);
+  box-shadow:
+    0 3px 0 #0b0a2a,
+    0 6px 14px rgba(30, 27, 75, 0.32);
+  color: #eef2ff;
+}
+
+.lobby-tactic-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.lobby-tactic-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.lobby-tactic-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.lobby-tactic-copy strong {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #fef9c3;
+  white-space: nowrap;
+}
+
+#lobby-tactic-sub {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #c7d2fe;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lobby-tactic-slots {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.lobby-tactic-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1.5px dashed rgba(199, 210, 254, 0.6);
+  background: rgba(15, 23, 42, 0.55);
+  color: #a5b4fc;
+  font-size: 16px;
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+.lobby-tactic-slot.is-filled {
+  border-style: solid;
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.lobby-tactic-slot.is-shield {
+  border-color: #7dd3fc;
+}
+
+.lobby-tactic-slot.is-rush {
+  border-color: #fde047;
+}
+
+.lobby-tactic-slot.is-crowd {
+  border-color: #86efac;
+}
+
+.lobby-tactic-art {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.lobby-tactic-trigger {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 4px;
+  border-radius: 6px;
+  background: #1e1b4b;
+  color: #fde68a;
+  font-size: 8.5px;
+  font-weight: 900;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.lobby-tactic-edit {
+  width: auto !important;
+  flex: 0 0 auto;
+  padding: 4px 12px !important;
+  font-size: 11.5px !important;
+}
+
+/* Workshop: Bobo Squad Tactic Deck */
+.tactic-deck {
+  border-color: rgba(253, 224, 71, 0.7) !important;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(253, 224, 71, 0.16), transparent 70%),
+    linear-gradient(180deg, rgba(49, 46, 129, 0.95) 0%, rgba(17, 24, 39, 0.97) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(254, 240, 138, 0.22),
+    0 6px 18px rgba(15, 23, 42, 0.26) !important;
+}
+
+.tactic-deck .squad-livery-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tactic-deck .squad-livery-active-pill .inline-art-img,
+.tactic-deck .squad-finish-resources .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+#tactic-resources {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 9px;
+}
+
+.tactic-rule-banner {
+  background: rgba(253, 224, 71, 0.1);
+  border-color: rgba(253, 224, 71, 0.4);
+  color: #fef9c3;
+}
+
+.tactic-deck-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  width: 100%;
+}
+
+.tactic-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 4px 6px;
+  border-radius: 11px;
+  border: 1.5px dashed rgba(199, 210, 254, 0.55);
+  background: rgba(15, 23, 42, 0.55);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.tactic-slot.is-filled {
+  border-style: solid;
+  background: linear-gradient(180deg, rgba(67, 56, 202, 0.45), rgba(15, 23, 42, 0.8));
+}
+
+.tactic-slot.is-shield,
+.tactic-card.is-shield.is-equipped {
+  border-color: #7dd3fc;
+}
+
+.tactic-slot.is-rush,
+.tactic-card.is-rush.is-equipped {
+  border-color: #fde047;
+}
+
+.tactic-slot.is-crowd,
+.tactic-card.is-crowd.is-equipped {
+  border-color: #86efac;
+}
+
+.tactic-slot-no {
+  color: #a5b4fc;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.tactic-slot-art {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.tactic-slot-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px dashed rgba(165, 180, 252, 0.5);
+  color: #818cf8;
+  font-size: 10px;
+  font-weight: 800;
+  box-sizing: border-box;
+}
+
+.tactic-slot-name {
+  max-width: 100%;
+  color: #eef2ff;
+  font-size: 11px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tactic-slot-trigger {
+  color: #fde68a;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.tactic-slot-btn {
+  padding: 2px 10px !important;
+  font-size: 10.5px !important;
+  min-height: 0 !important;
+}
+
+.tactic-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  width: 100%;
+}
+
+.tactic-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 7px 8px;
+  border-radius: 12px;
+  border: 2px solid rgba(165, 180, 252, 0.4);
+  background: linear-gradient(180deg, rgba(30, 27, 75, 0.82) 0%, rgba(15, 23, 42, 0.94) 100%);
+  box-sizing: border-box;
+}
+
+.tactic-card.is-equipped {
+  box-shadow: 0 0 0 2px rgba(253, 224, 71, 0.22);
+}
+
+.tactic-card.is-locked .tactic-card-icon {
+  filter: saturate(0.6) brightness(0.75);
+}
+
+.tactic-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tactic-card-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45));
+}
+
+.tactic-card-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.tactic-card-name {
+  color: #fef9c3;
+  font-size: 12.5px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tactic-card-tag {
+  color: #a5b4fc;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.tactic-card-desc {
+  color: #e0e7ff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  min-height: 2.6em;
+}
+
+.tactic-card-cond {
+  color: #fde68a;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.tactic-card-btn {
+  margin-top: auto;
+}
+
+.tactic-card-btn .inline-art-img {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 600px) {
+  .btn-pumpkin-night {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .pumpkin-night-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .pumpkin-night-label {
+    font-size: 9.5px !important;
+    padding: 1px 5px 1px 3px !important;
+  }
+
+  .pumpkin-night-label .inline-art-img {
+    width: 13px;
+    height: 13px;
+  }
+
+  .tactic-deck-hud {
+    width: 100%;
+    gap: 4px;
+  }
+
+  .tactic-hud-chip {
+    flex: 1 1 0;
+    max-width: 124px;
+    padding: 2px 5px 2px 2px;
+    gap: 3px;
+  }
+
+  .tactic-hud-art {
+    width: 22px;
+    height: 22px;
+  }
+
+  .tactic-hud-name {
+    font-size: 9.5px;
+  }
+
+  .tactic-hud-state {
+    font-size: 8.5px;
+  }
+
+  .lobby-tactic-deck {
+    flex-wrap: wrap;
+    padding: 6px 8px;
+    gap: 6px 8px;
+  }
+
+  .lobby-tactic-left {
+    flex: 1 1 100%;
+  }
+
+  .lobby-tactic-slots {
+    flex: 1 1 auto;
+  }
+
+  .lobby-tactic-slot {
+    width: 34px;
+    height: 34px;
+  }
+
+  .lobby-tactic-art {
+    width: 28px;
+    height: 28px;
+  }
+
+  #tactic-resources {
+    justify-content: flex-start;
+    gap: 3px 8px;
+  }
+
+  .tactic-deck-slots {
+    gap: 5px;
+  }
+
+  .tactic-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .tactic-card-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .tactic-card-name {
+    font-size: 11.5px;
+  }
+}
+
+/* ============================================================================
+   MC-16: Desert Pyramid Trap Run & tactic deck balance (main-campaign coefficient / switch)
+   ============================================================================ */
+
+.btn-pyramid-run {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #fcd34d;
+  background:
+    radial-gradient(circle at 86% 22%, rgba(255, 247, 214, 0.95) 0 7px, rgba(253, 224, 71, 0.4) 8px, transparent 16px),
+    radial-gradient(circle at 12% 84%, rgba(45, 212, 191, 0.5) 0 4px, transparent 13px),
+    linear-gradient(120deg, #7c2d12 0%, #b45309 34%, #d97706 64%, #f59e0b 100%);
+  box-shadow:
+    0 4px 0 #4a1d06,
+    0 8px 18px rgba(217, 119, 6, 0.38),
+    inset 0 1px 0 rgba(254, 243, 199, 0.6);
+  color: #fffbeb;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-pyramid-run:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-pyramid-run:active {
+  transform: translateY(2px);
+}
+
+.pyramid-run-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+
+.pyramid-run-btn-title {
+  color: #fffbeb !important;
+  text-shadow: 0 2px 4px rgba(74, 29, 6, 0.9);
+}
+
+.btn-pyramid-run .endless-btn-desc {
+  color: #fef3c7 !important;
+  text-shadow: 0 1px 2px rgba(74, 29, 6, 0.85);
+}
+
+.pyramid-run-badge {
+  background: rgba(67, 26, 3, 0.84) !important;
+  border: 1.5px solid #fcd34d !important;
+  color: #fef3c7 !important;
+  flex-shrink: 0;
+}
+
+.pyramid-run-hud .colossus-hud-pill.is-left {
+  border-color: #fcd34d;
+  color: #fffbeb;
+}
+
+.pyramid-run-hud .colossus-hud-pill.is-left.is-urgent {
+  border-color: #fb7185;
+  background: linear-gradient(90deg, rgba(159, 18, 57, 0.92), rgba(15, 23, 42, 0.88));
+  animation: candyTrainUrgentPulse 0.9s ease-in-out infinite;
+}
+
+.pyramid-run-hud .colossus-hud-pill.is-core {
+  border-color: #f59e0b;
+  color: #fffbeb;
+  background: linear-gradient(90deg, rgba(146, 64, 14, 0.88), rgba(41, 22, 6, 0.9));
+}
+
+.pyramid-run-hud .colossus-hud-pill.is-core.is-sand {
+  border-color: #fdba74;
+  background: linear-gradient(90deg, rgba(194, 65, 12, 0.94), rgba(120, 53, 15, 0.92));
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.7);
+}
+
+.pyramid-run-hud .colossus-hud-pill.is-right {
+  border-color: #5eead4;
+  color: #f0fdfa;
+}
+
+.pyramid-run-hud .colossus-hud-pill.is-right.is-stumbled {
+  border-color: #f87171;
+  background: linear-gradient(90deg, rgba(153, 27, 27, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.pyramid-run-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 10.5px !important;
+  padding: 1px 7px 1px 4px !important;
+  border-color: #fcd34d !important;
+  background: rgba(120, 53, 15, 0.9) !important;
+  color: #fffbeb !important;
+}
+
+.pyramid-run-label .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.pyramid-run-label.is-sand {
+  border-color: #fdba74 !important;
+  background: rgba(194, 65, 12, 0.94) !important;
+}
+
+.pyramid-run-label.is-stumbled {
+  border-color: #f87171 !important;
+  background: rgba(153, 27, 27, 0.94) !important;
+}
+
+/* The squad runs on its own: no cannon volleys / skill bar / cannon-module badge in the tomb */
+body.pyramid-mode-active .hud-bottom,
+body.pyramid-mode-active #cannon-mod-hud-badge {
+  display: none !important;
+}
+
+.pyramid-run-pill .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Workshop: main-campaign balance row (coefficient, scaled caps & on / off switch) */
+.tactic-balance-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 9px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(251, 191, 36, 0.55);
+  background: linear-gradient(100deg, rgba(120, 53, 15, 0.55), rgba(30, 27, 75, 0.6));
+}
+
+.tactic-balance-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.tactic-balance-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 0;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.tactic-balance-copy strong {
+  font-size: 12.5px;
+  color: #fde68a;
+}
+
+.tactic-balance-copy span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fef3c7;
+}
+
+.tactic-balance-toggle {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 3px 12px;
+  white-space: nowrap;
+}
+
+.tactic-balance-toggle.is-off {
+  filter: grayscale(0.7);
+  opacity: 0.9;
+}
+
+.tactic-card-camp {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  color: #fcd34d;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tactic-card-camp .inline-art-img {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* Battle HUD: campaign coefficient tag in front of the 3 card chips */
+.tactic-hud-scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px 6px 2px 2px;
+  border-radius: 10px;
+  border: 1.5px solid #fbbf24;
+  background: linear-gradient(180deg, rgba(120, 53, 15, 0.92), rgba(41, 22, 6, 0.94));
+  color: #fde68a;
+  font-size: 10.5px;
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+.tactic-hud-scale .inline-art-img {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 600px) {
+  .btn-pyramid-run {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .pyramid-run-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .pyramid-run-label {
+    font-size: 9.5px !important;
+    padding: 1px 5px 1px 3px !important;
+  }
+
+  .pyramid-run-label .inline-art-img {
+    width: 13px;
+    height: 13px;
+  }
+
+  .tactic-balance-row {
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    padding: 6px 8px;
+  }
+
+  .tactic-balance-copy {
+    flex: 1 1 calc(100% - 50px);
+  }
+
+  .tactic-balance-toggle {
+    flex: 1 1 100%;
+  }
+
+  .tactic-hud-scale {
+    padding: 2px 4px 2px 1px;
+    font-size: 9.5px;
+  }
+
+  .tactic-hud-scale .inline-art-img {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ============================================================================
+   MC-17: Jungle Temple Vine Swing (lobby card, HUD pills, squad label)
+   ============================================================================ */
+
+.btn-jungle-swing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #6ee7b7;
+  background:
+    radial-gradient(circle at 86% 24%, rgba(236, 253, 245, 0.85) 0 6px, rgba(110, 231, 183, 0.38) 7px, transparent 15px),
+    radial-gradient(circle at 10% 86%, rgba(250, 204, 21, 0.42) 0 4px, transparent 12px),
+    linear-gradient(120deg, #064e3b 0%, #047857 36%, #059669 66%, #34d399 100%);
+  box-shadow:
+    0 4px 0 #022c22,
+    0 8px 18px rgba(5, 150, 105, 0.38),
+    inset 0 1px 0 rgba(209, 250, 229, 0.55);
+  color: #ecfdf5;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-jungle-swing:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-jungle-swing:active {
+  transform: translateY(2px);
+}
+
+.jungle-swing-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+
+.jungle-swing-btn-title {
+  color: #ecfdf5 !important;
+  text-shadow: 0 2px 4px rgba(2, 44, 34, 0.9);
+}
+
+.btn-jungle-swing .endless-btn-desc {
+  color: #d1fae5 !important;
+  text-shadow: 0 1px 2px rgba(2, 44, 34, 0.85);
+}
+
+.jungle-swing-badge {
+  background: rgba(2, 44, 34, 0.84) !important;
+  border: 1.5px solid #6ee7b7 !important;
+  color: #d1fae5 !important;
+  flex-shrink: 0;
+}
+
+.jungle-swing-hud .colossus-hud-pill.is-left {
+  border-color: #6ee7b7;
+  color: #ecfdf5;
+}
+
+.jungle-swing-hud .colossus-hud-pill.is-left.is-urgent {
+  border-color: #fb7185;
+  background: linear-gradient(90deg, rgba(159, 18, 57, 0.92), rgba(15, 23, 42, 0.88));
+  animation: candyTrainUrgentPulse 0.9s ease-in-out infinite;
+}
+
+.jungle-swing-hud .colossus-hud-pill.is-core {
+  border-color: #34d399;
+  color: #ecfdf5;
+  background: linear-gradient(90deg, rgba(6, 78, 59, 0.9), rgba(2, 44, 34, 0.9));
+}
+
+.jungle-swing-hud .colossus-hud-pill.is-core.is-swinging {
+  border-color: #bef264;
+  background: linear-gradient(90deg, rgba(77, 124, 15, 0.94), rgba(6, 78, 59, 0.92));
+  box-shadow: 0 0 12px rgba(190, 242, 100, 0.65);
+}
+
+.jungle-swing-hud .colossus-hud-pill.is-right {
+  border-color: #fdba74;
+  color: #fff7ed;
+}
+
+.jungle-swing-hud .colossus-hud-pill.is-right.is-stumbled {
+  border-color: #f87171;
+  background: linear-gradient(90deg, rgba(153, 27, 27, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.jungle-swing-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 10.5px !important;
+  padding: 1px 7px 1px 4px !important;
+  border-color: #6ee7b7 !important;
+  background: rgba(6, 78, 59, 0.9) !important;
+  color: #ecfdf5 !important;
+}
+
+.jungle-swing-label .inline-art-img {
+  width: 15px;
+  height: 15px;
+}
+
+.jungle-swing-label.is-swinging {
+  border-color: #bef264 !important;
+  background: rgba(77, 124, 15, 0.94) !important;
+}
+
+.jungle-swing-label.is-stumbled {
+  border-color: #f87171 !important;
+  background: rgba(153, 27, 27, 0.94) !important;
+}
+
+/* The squad runs on its own: no cannon volleys / skill bar / cannon-module badge in the temple */
+body.jungle-mode-active .hud-bottom,
+body.jungle-mode-active #cannon-mod-hud-badge {
+  display: none !important;
+}
+
+.jungle-swing-pill .inline-art-img {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 600px) {
+  .btn-jungle-swing {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .jungle-swing-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .jungle-swing-label {
+    font-size: 9.5px !important;
+    padding: 1px 5px 1px 3px !important;
+  }
+
+  .jungle-swing-label .inline-art-img {
+    width: 13px;
+    height: 13px;
+  }
+}

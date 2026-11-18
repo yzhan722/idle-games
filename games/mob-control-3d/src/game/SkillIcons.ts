@@ -3,36 +3,40 @@
   BuffId,
   CannonCoreModId,
   DebuffId,
+  HallTrophyId,
   MechaMode,
   MetaUpgradeId,
+  PetCompanionId,
+  RelicBannerId,
   SkillBranchId,
   SkillNodeId,
   SkinId,
   SquadFinishId,
+  TacticCategory,
   TacticalSubWeaponId,
   WeaponMode,
 } from './State';
 
 const skillImg = (id: string): string =>
-  `<img class="art-icon-img skill-art-img" src="/assets/icons/${id}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img skill-art-img" src="/assets/icons/${id}.png?v=33" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const raceImg = (id: string, cls = 'race-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/icons/race_${id}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/icons/race_${id}.png?v=33" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const metaImg = (id: string): string =>
-  `<img class="art-icon-img meta-art-img" src="/assets/icons/${id}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img meta-art-img" src="/assets/icons/${id}.png?v=33" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const hudImg = (file: string, cls = 'hud-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=33" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const hudImgV19 = (file: string, cls = 'inline-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=33" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const rootAssetImgV20 = (file: string, cls = 'inline-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/${file}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/${file}.png?v=33" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 const finishImgV21 = (file: string, cls = 'finish-art-img'): string =>
-  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=25" alt="" loading="eager" decoding="async" draggable="false" />`;
+  `<img class="art-icon-img ${cls}" src="/assets/icons/${file}.png?v=33" alt="" loading="eager" decoding="async" draggable="false" />`;
 
 /**
  * 28 AI-Generated Kingdom-Rush / Brawl-Stars Style 2D Thick-Painted Skill Icons
@@ -200,6 +204,159 @@ export const CANNON_MOD_INLINE_ART: Record<CannonCoreModId, string> = {
 };
 
 /**
+ * MC-10: Bobo Squad Relic Banner Stand (疾风冲锋旗 / 圣盾守护旗 / 星耀狂欢旗) 256x256 RGBA art.
+ * `RELIC_BANNER_ICON_URL` is also sampled as the emblem texture of the in-match 3D war banner.
+ */
+export const RELIC_BANNER_ICON_URL: Record<RelicBannerId, string> = {
+  gale_charge: '/assets/icons/banner_gale_charge.png?v=33',
+  holy_shield: '/assets/icons/banner_holy_shield.png?v=33',
+  star_carnival: '/assets/icons/banner_star_carnival.png?v=33',
+};
+
+export const RELIC_BANNER_ART: Record<RelicBannerId, string> = {
+  gale_charge: finishImgV21('banner_gale_charge', 'finish-art-img'),
+  holy_shield: finishImgV21('banner_holy_shield', 'finish-art-img'),
+  star_carnival: finishImgV21('banner_star_carnival', 'finish-art-img'),
+};
+
+export const RELIC_BANNER_HUD_ART: Record<RelicBannerId, string> = {
+  gale_charge: hudImg('banner_gale_charge', 'hud-art-img'),
+  holy_shield: hudImg('banner_holy_shield', 'hud-art-img'),
+  star_carnival: hudImg('banner_star_carnival', 'hud-art-img'),
+};
+
+export const RELIC_BANNER_INLINE_ART: Record<RelicBannerId, string> = {
+  gale_charge: hudImgV19('banner_gale_charge', 'inline-art-img'),
+  holy_shield: hudImgV19('banner_holy_shield', 'inline-art-img'),
+  star_carnival: hudImgV19('banner_star_carnival', 'inline-art-img'),
+};
+
+/**
+ * MC-11: Bobo Squad Pet Companion Dock (果冻泡泡水母 / 盾壳小海龟 / 闪电小海马) 256x256 RGBA art.
+ */
+export const PET_COMPANION_ICON_URL: Record<PetCompanionId, string> = {
+  jelly_puff: '/assets/icons/pet_jelly_puff.png?v=33',
+  shell_turtle: '/assets/icons/pet_shell_turtle.png?v=33',
+  spark_seahorse: '/assets/icons/pet_spark_seahorse.png?v=33',
+};
+
+export const PET_COMPANION_ART: Record<PetCompanionId, string> = {
+  jelly_puff: finishImgV21('pet_jelly_puff', 'finish-art-img'),
+  shell_turtle: finishImgV21('pet_shell_turtle', 'finish-art-img'),
+  spark_seahorse: finishImgV21('pet_spark_seahorse', 'finish-art-img'),
+};
+
+export const PET_COMPANION_HUD_ART: Record<PetCompanionId, string> = {
+  jelly_puff: hudImg('pet_jelly_puff', 'hud-art-img'),
+  shell_turtle: hudImg('pet_shell_turtle', 'hud-art-img'),
+  spark_seahorse: hudImg('pet_spark_seahorse', 'hud-art-img'),
+};
+
+export const PET_COMPANION_INLINE_ART: Record<PetCompanionId, string> = {
+  jelly_puff: hudImgV19('pet_jelly_puff', 'inline-art-img'),
+  shell_turtle: hudImgV19('pet_shell_turtle', 'inline-art-img'),
+  spark_seahorse: hudImgV19('pet_spark_seahorse', 'inline-art-img'),
+};
+
+/**
+ * MC-12: Honor Trophy Hall — each trophy reuses the 256x256 RGBA art of the currency/mode it commemorates
+ * (战役 ui_trophy, 发条核心, 飞艇徽章, 列车金章, 深海珍珠, 冰晶奖章).
+ */
+const HALL_TROPHY_FILE: Record<HallTrophyId, string> = {
+  campaign_star: 'ui_trophy',
+  clockwork_core: 'ui_clockwork_core',
+  airship_medal: 'ui_airship_wing_medal',
+  train_medal: 'ui_train_gold_medal',
+  deep_pearl: 'ui_deep_pearl',
+  ice_medal: 'ui_ice_medal',
+  lava_core: 'ui_lava_core',
+  stardust_badge: 'ui_stardust_badge',
+  pumpkin_badge: 'ui_pumpkin_badge',
+  scarab_badge: 'ui_scarab_badge',
+  emerald_idol_badge: 'ui_emerald_idol_badge',
+};
+
+export const HALL_TROPHY_ICON_URL: Record<HallTrophyId, string> = {
+  campaign_star: `/assets/icons/${HALL_TROPHY_FILE.campaign_star}.png?v=33`,
+  clockwork_core: `/assets/icons/${HALL_TROPHY_FILE.clockwork_core}.png?v=33`,
+  airship_medal: `/assets/icons/${HALL_TROPHY_FILE.airship_medal}.png?v=33`,
+  train_medal: `/assets/icons/${HALL_TROPHY_FILE.train_medal}.png?v=33`,
+  deep_pearl: `/assets/icons/${HALL_TROPHY_FILE.deep_pearl}.png?v=33`,
+  ice_medal: `/assets/icons/${HALL_TROPHY_FILE.ice_medal}.png?v=33`,
+  lava_core: `/assets/icons/${HALL_TROPHY_FILE.lava_core}.png?v=33`,
+  stardust_badge: `/assets/icons/${HALL_TROPHY_FILE.stardust_badge}.png?v=33`,
+  pumpkin_badge: `/assets/icons/${HALL_TROPHY_FILE.pumpkin_badge}.png?v=33`,
+  scarab_badge: `/assets/icons/${HALL_TROPHY_FILE.scarab_badge}.png?v=33`,
+  emerald_idol_badge: `/assets/icons/${HALL_TROPHY_FILE.emerald_idol_badge}.png?v=33`,
+};
+
+export const HALL_TROPHY_INLINE_ART: Record<HallTrophyId, string> = {
+  campaign_star: hudImgV19(HALL_TROPHY_FILE.campaign_star, 'inline-art-img'),
+  clockwork_core: hudImgV19(HALL_TROPHY_FILE.clockwork_core, 'inline-art-img'),
+  airship_medal: hudImgV19(HALL_TROPHY_FILE.airship_medal, 'inline-art-img'),
+  train_medal: hudImgV19(HALL_TROPHY_FILE.train_medal, 'inline-art-img'),
+  deep_pearl: hudImgV19(HALL_TROPHY_FILE.deep_pearl, 'inline-art-img'),
+  ice_medal: hudImgV19(HALL_TROPHY_FILE.ice_medal, 'inline-art-img'),
+  lava_core: hudImgV19(HALL_TROPHY_FILE.lava_core, 'inline-art-img'),
+  stardust_badge: hudImgV19(HALL_TROPHY_FILE.stardust_badge, 'inline-art-img'),
+  pumpkin_badge: hudImgV19(HALL_TROPHY_FILE.pumpkin_badge, 'inline-art-img'),
+  scarab_badge: hudImgV19(HALL_TROPHY_FILE.scarab_badge, 'inline-art-img'),
+  emerald_idol_badge: hudImgV19(HALL_TROPHY_FILE.emerald_idol_badge, 'inline-art-img'),
+};
+
+/**
+ * MC-13: Bobo Squad Skin Gacha Machine — every skin card uses the shared capsule art (hue-shifted per skin in CSS);
+ * the 传说 王冠 skin uses the crown art.
+ */
+export const GACHA_CAPSULE_ICON_URL = '/assets/icons/skin_capsule.png?v=33';
+export const GACHA_CROWN_ICON_URL = '/assets/icons/skin_crown.png?v=33';
+export const GACHA_MACHINE_ICON_URL = '/assets/icons/gacha_machine.png?v=33';
+
+/**
+ * MC-14: Bobo Squad Themed Lobby Decoration Hall — theme cards share the lobby_theme art (hue-shifted per theme in CSS);
+ * the lamp / plant props have their own art, the banner reuses the 星光嘉年华 banner art and the globe the 星尘徽章 art.
+ */
+export const DECOR_THEME_ICON_URL = '/assets/icons/lobby_theme.png?v=33';
+export const DECOR_LAMP_ICON_URL = '/assets/icons/decor_lamp.png?v=33';
+export const DECOR_PLANT_ICON_URL = '/assets/icons/decor_plant.png?v=33';
+export const DECOR_BANNER_ICON_URL = '/assets/icons/banner_star_carnival.png?v=33';
+export const STARDUST_BADGE_ICON_URL = '/assets/icons/ui_stardust_badge.png?v=33';
+
+/**
+ * MC-15: Haunted Castle Pumpkin Night & Bobo Squad Tactic Deck — the three tactic-card families share one card art each
+ * (护盾卡 card_shield / 冲锋卡 card_rush / 人海卡 card_crowd).
+ */
+export const PUMPKIN_NIGHT_ICON_URL = '/assets/icons/ui_pumpkin_night.png?v=33';
+export const PUMPKIN_BADGE_ICON_URL = '/assets/icons/ui_pumpkin_badge.png?v=33';
+export const GHOST_ICON_URL = '/assets/icons/ghost.png?v=33';
+export const TACTIC_DECK_ICON_URL = '/assets/icons/ui_tactic_deck.png?v=33';
+export const TACTIC_CARD_ICON_URL: Record<TacticCategory, string> = {
+  shield: '/assets/icons/card_shield.png?v=33',
+  rush: '/assets/icons/card_rush.png?v=33',
+  crowd: '/assets/icons/card_crowd.png?v=33',
+};
+
+/**
+ * MC-16: Desert Pyramid Trap Run (lobby card / 圣甲虫徽章 / quicksand & flip-slab traps) and the tactic deck balance badge
+ * (main-campaign effect coefficient).
+ */
+export const PYRAMID_RUN_ICON_URL = '/assets/icons/ui_pyramid_run.png?v=33';
+export const SCARAB_BADGE_ICON_URL = '/assets/icons/ui_scarab_badge.png?v=33';
+export const QUICKSAND_ICON_URL = '/assets/icons/quicksand_trap.png?v=33';
+export const FLIP_SLAB_ICON_URL = '/assets/icons/flip_slab.png?v=33';
+export const TACTIC_BALANCE_ICON_URL = '/assets/icons/tactic_balance.png?v=33';
+
+/**
+ * MC-17: Jungle Temple Vine Swing (lobby card / 翡翠神像徽章 / vine swing & rolling boulder traps). These four files are
+ * stand-in copies of existing approved art (decor_plant / skin_emerald / env_tailwind_belt / ui_barrel) made while the
+ * image quota was exhausted; the jungle screens never show them next to their originals.
+ */
+export const JUNGLE_SWING_ICON_URL = '/assets/icons/ui_jungle_temple.png?v=33';
+export const EMERALD_IDOL_ICON_URL = '/assets/icons/ui_emerald_idol_badge.png?v=33';
+export const VINE_SWING_ICON_URL = '/assets/icons/vine_swing.png?v=33';
+export const ROLLING_BOULDER_ICON_URL = '/assets/icons/rolling_boulder.png?v=33';
+
+/**
  * 100% AI-Generated Hand-Painted Raster Game Art Badges & Micro-Illustrations
  * Zero inline SVGs or raw Unicode emojis anywhere in the UI.
  */
@@ -292,6 +449,74 @@ export const UI_ART = {
   modOverdrive: hudImgV19('mod_overdrive_breech', 'inline-art-img'),
   modPrism: hudImgV19('mod_prism_splitter', 'inline-art-img'),
   modHeavyMortar: hudImgV19('mod_heavy_mortar', 'inline-art-img'),
+  candyTrainRaid: hudImgV19('ui_candy_train_raid', 'inline-art-img'),
+  candyTrainRaidHud: hudImg('ui_candy_train_raid', 'hud-art-img'),
+  candyTrainRaidArt: finishImgV21('ui_candy_train_raid', 'finish-art-img'),
+  trainGoldMedal: hudImgV19('ui_train_gold_medal', 'inline-art-img'),
+  trainGoldMedalArt: finishImgV21('ui_train_gold_medal', 'finish-art-img'),
+  bannerGale: hudImgV19('banner_gale_charge', 'inline-art-img'),
+  bannerHolyShield: hudImgV19('banner_holy_shield', 'inline-art-img'),
+  bannerStarCarnival: hudImgV19('banner_star_carnival', 'inline-art-img'),
+  submarineRescue: hudImgV19('ui_submarine_rescue', 'inline-art-img'),
+  submarineRescueHud: hudImg('ui_submarine_rescue', 'hud-art-img'),
+  submarineRescueArt: finishImgV21('ui_submarine_rescue', 'finish-art-img'),
+  deepPearl: hudImgV19('ui_deep_pearl', 'inline-art-img'),
+  deepPearlArt: finishImgV21('ui_deep_pearl', 'finish-art-img'),
+  petJellyPuff: hudImgV19('pet_jelly_puff', 'inline-art-img'),
+  petShellTurtle: hudImgV19('pet_shell_turtle', 'inline-art-img'),
+  petSparkSeahorse: hudImgV19('pet_spark_seahorse', 'inline-art-img'),
+  glacierSled: hudImgV19('ui_glacier_sled', 'inline-art-img'),
+  glacierSledHud: hudImg('ui_glacier_sled', 'hud-art-img'),
+  glacierSledArt: finishImgV21('ui_glacier_sled', 'finish-art-img'),
+  iceMedal: hudImgV19('ui_ice_medal', 'inline-art-img'),
+  iceMedalArt: finishImgV21('ui_ice_medal', 'finish-art-img'),
+  trophyHall: hudImgV19('trophy_hall', 'inline-art-img'),
+  trophyHallArt: finishImgV21('trophy_hall', 'finish-art-img'),
+  trophyGoldCup: hudImgV19('trophy_gold_cup', 'inline-art-img'),
+  trophyGoldCupArt: finishImgV21('trophy_gold_cup', 'finish-art-img'),
+  displayPedestal: hudImgV19('display_pedestal', 'inline-art-img'),
+  displayPedestalArt: finishImgV21('display_pedestal', 'finish-art-img'),
+  lavaJump: hudImgV19('ui_lava_jump', 'inline-art-img'),
+  lavaJumpHud: hudImg('ui_lava_jump', 'hud-art-img'),
+  lavaJumpArt: finishImgV21('ui_lava_jump', 'finish-art-img'),
+  lavaCore: hudImgV19('ui_lava_core', 'inline-art-img'),
+  lavaCoreArt: finishImgV21('ui_lava_core', 'finish-art-img'),
+  gachaMachine: hudImgV19('gacha_machine', 'inline-art-img'),
+  gachaMachineArt: finishImgV21('gacha_machine', 'finish-art-img'),
+  skinCapsule: hudImgV19('skin_capsule', 'inline-art-img'),
+  skinCrown: hudImgV19('skin_crown', 'inline-art-img'),
+  asteroidDash: hudImgV19('ui_asteroid_dash', 'inline-art-img'),
+  asteroidDashHud: hudImg('ui_asteroid_dash', 'hud-art-img'),
+  asteroidDashArt: finishImgV21('ui_asteroid_dash', 'finish-art-img'),
+  stardustBadge: hudImgV19('ui_stardust_badge', 'inline-art-img'),
+  stardustBadgeArt: finishImgV21('ui_stardust_badge', 'finish-art-img'),
+  lobbyTheme: hudImgV19('lobby_theme', 'inline-art-img'),
+  lobbyThemeArt: finishImgV21('lobby_theme', 'finish-art-img'),
+  decorLamp: hudImgV19('decor_lamp', 'inline-art-img'),
+  decorPlant: hudImgV19('decor_plant', 'inline-art-img'),
+  pumpkinNight: hudImgV19('ui_pumpkin_night', 'inline-art-img'),
+  pumpkinNightArt: finishImgV21('ui_pumpkin_night', 'finish-art-img'),
+  pumpkinBadge: hudImgV19('ui_pumpkin_badge', 'inline-art-img'),
+  pumpkinBadgeArt: finishImgV21('ui_pumpkin_badge', 'finish-art-img'),
+  ghost: hudImgV19('ghost', 'inline-art-img'),
+  tacticDeck: hudImgV19('ui_tactic_deck', 'inline-art-img'),
+  tacticDeckArt: finishImgV21('ui_tactic_deck', 'finish-art-img'),
+  cardShield: hudImgV19('card_shield', 'inline-art-img'),
+  cardRush: hudImgV19('card_rush', 'inline-art-img'),
+  cardCrowd: hudImgV19('card_crowd', 'inline-art-img'),
+  pyramidRun: hudImgV19('ui_pyramid_run', 'inline-art-img'),
+  pyramidRunArt: finishImgV21('ui_pyramid_run', 'finish-art-img'),
+  scarabBadge: hudImgV19('ui_scarab_badge', 'inline-art-img'),
+  scarabBadgeArt: finishImgV21('ui_scarab_badge', 'finish-art-img'),
+  quicksand: hudImgV19('quicksand_trap', 'inline-art-img'),
+  flipSlab: hudImgV19('flip_slab', 'inline-art-img'),
+  tacticBalance: hudImgV19('tactic_balance', 'inline-art-img'),
+  jungleSwing: hudImgV19('ui_jungle_temple', 'inline-art-img'),
+  jungleSwingArt: finishImgV21('ui_jungle_temple', 'finish-art-img'),
+  emeraldIdol: hudImgV19('ui_emerald_idol_badge', 'inline-art-img'),
+  emeraldIdolArt: finishImgV21('ui_emerald_idol_badge', 'finish-art-img'),
+  vineSwing: hudImgV19('vine_swing', 'inline-art-img'),
+  rollingBoulder: hudImgV19('rolling_boulder', 'inline-art-img'),
 };
 
 /**
