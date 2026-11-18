@@ -8,9 +8,11 @@ class_name MarketStall
 ## - Supports zero-Shiba self-service checkout (`1.8s` duration, `1.0x` price bonus) and Shiba Manager accelerated checkout (`1.0s` duration, `PriceBonus = 1.0 + 0.1 * L`).
 ## - Pure numeric inventory buffer (`GameManager.stall_inventory`, default cap = 10, +5 per building level) with zero icon clutter on the counter.
 
-const BASE_SPRITE_SCALE := 0.52
-const VISUAL_WIDTH := 66.56 # 128 * 0.52
-const VISUAL_HEIGHT := 54.08 # 104 * 0.52
+## CI-11: Island 1 re-slotted to 7 buildings -> stall 48.0px wide, right edge kept at the customer walkway edge `1046.7`
+const SLOT_X := 1022.7
+const BASE_SPRITE_SCALE := 0.375
+const VISUAL_WIDTH := 48.0 # 128 * 0.375
+const VISUAL_HEIGHT := 39.0 # 104 * 0.375
 const QUEUE_BASE_OFFSET_X := 28.0
 const QUEUE_SPACING_X := 16.0
 const MAX_VISIBLE_QUEUE := 5
@@ -52,6 +54,7 @@ func _ready() -> void:
 	visual_upgrader.setup_upgrader(self, "stall", cur_lv)
 
 	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
+	level_label.name = "MarketStallLevelLabel"
 	level_label.position = Vector2(-28.0, 2.0)
 	level_label.custom_minimum_size = Vector2(56.0, 20.0)
 	add_child(level_label)
@@ -161,4 +164,4 @@ func _draw() -> void:
 	var base_alpha := (0.14 if is_shiba_manager_active() else 0.08) * pulse
 	if checkout_flash_timer > 0.0:
 		base_alpha += 0.18 * (checkout_flash_timer / 0.35)
-	draw_circle(Vector2(-10.0, -34.0), 14.0, Color(1.0, 0.86, 0.38, base_alpha))
+	draw_circle(Vector2(-7.0, -25.0), 10.5, Color(1.0, 0.86, 0.38, base_alpha))

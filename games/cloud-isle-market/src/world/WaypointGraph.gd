@@ -11,30 +11,30 @@ const GROUND_Y := 124.0
 
 ## Master Waypoint Coordinates along unified `GROUND_Y = 124.0`
 const WAYPOINTS: Array[Vector2] = [
-	Vector2(96.2, GROUND_Y),    # 0: Island 2 Left Hut (Ellinia West Spawn)
-	Vector2(186.0, GROUND_Y),   # 1: Island 2 SoilPlot & Basket Dock
-	Vector2(275.6, GROUND_Y),   # 2: Island 2 Cauldron Workshop Dock
-	Vector2(365.7, GROUND_Y),   # 3: Island 2 Cloud Greenhouse Dock
-	Vector2(459.4, GROUND_Y),   # 4: Island 2 Cloud Windmill Bakery Dock
+	Vector2(89.1, GROUND_Y),    # 0: Island 2 Left Hut (Ellinia West Spawn)
+	Vector2(171.4, GROUND_Y),   # 1: Island 2 SoilPlot & Basket Dock
+	Vector2(253.6, GROUND_Y),   # 2: Island 2 Cauldron Workshop Dock
+	Vector2(325.9, GROUND_Y),   # 3: Island 2 Cloud Greenhouse Dock
+	Vector2(397.9, GROUND_Y),   # 4: Island 2 Cloud Windmill Bakery Dock (CI-9: Chef Tasting Pavilion dock at +72.0)
 	Vector2(492.0, GROUND_Y),   # 5: Bridge 1 West Endpoint (Ellinia -> Henesys)
 	Vector2(542.0, GROUND_Y),   # 6: Bridge 1 Center Arch
 	Vector2(586.0, GROUND_Y),   # 7: Bridge 1 East Endpoint
-	Vector2(596.9, GROUND_Y),   # 8: Island 1 Apple Tree
-	Vector2(683.4, GROUND_Y),   # 9: Island 1 SoilPlot & Basket Dock
-	Vector2(770.7, GROUND_Y),   # 10: Island 1 Mushroom Cottage
-	Vector2(849.8, GROUND_Y),   # 11: Island 1 Mortar Workshop Dock
-	Vector2(926.9, GROUND_Y),   # 12: Island 1 Cloud Tea Pavilion Dock
-	Vector2(1013.4, GROUND_Y),  # 13: Island 1 Market Stall Main Counter
+	Vector2(590.0, GROUND_Y),   # 8: Island 1 Apple Tree (CI-11: tree sprite at 585.9; node kept east of Bridge 1 east endpoint)
+	Vector2(665.9, GROUND_Y),   # 9: Island 1 SoilPlot & Basket Dock
+	Vector2(746.9, GROUND_Y),   # 10: Island 1 Mushroom Cottage (CI-11: Dairy Workshop dock at +70.4)
+	Vector2(884.7, GROUND_Y),   # 11: Island 1 Mortar Workshop Dock
+	Vector2(950.7, GROUND_Y),   # 12: Island 1 Cloud Tea Pavilion Dock
+	Vector2(1022.7, GROUND_Y),  # 13: Island 1 Market Stall Main Counter
 	Vector2(1082.0, GROUND_Y),  # 14: Lotus Pond Bridge West
 	Vector2(1192.0, GROUND_Y),  # 15: Lotus Pond Bridge Center Pier
 	Vector2(1302.0, GROUND_Y),  # 16: Lotus Pond Bridge East
 	Vector2(1358.0, GROUND_Y),  # 17: Bridge 2 Center Arch (Henesys -> Orbis Coast)
 	Vector2(1414.0, GROUND_Y),  # 18: Bridge 2 East Endpoint (Orbis West Landing)
-	Vector2(1445.5, GROUND_Y),  # 19: Island 3 Apple Tree
-	Vector2(1535.2, GROUND_Y),  # 20: Island 3 SoilPlot & Basket Dock
-	Vector2(1624.7, GROUND_Y),  # 21: Island 3 Dual Linked Workshop Dock
-	Vector2(1714.7, GROUND_Y),  # 22: Island 3 Cloud-Sea Hot-Spring Inn Dock
-	Vector2(1805.9, GROUND_Y)   # 23: Island 3 Right Tiki Landmark (VIP East Spawn)
+	Vector2(1437.8, GROUND_Y),  # 19: Island 3 Cloud Pottery Kiln (CI-12: slot of the former duplicate apple tree)
+	Vector2(1519.7, GROUND_Y),  # 20: Island 3 SoilPlot & Basket Dock
+	Vector2(1601.3, GROUND_Y),  # 21: Island 3 Dual Linked Workshop Dock
+	Vector2(1672.3, GROUND_Y),  # 22: Island 3 Cloud-Sea Hot-Spring Inn Dock (CI-10: Lighthouse Harbor dock at +71.1)
+	Vector2(1814.5, GROUND_Y)   # 23: Island 3 Right Tiki Landmark (VIP East Spawn)
 ]
 
 ## Named Waypoint Node Index Lookup
@@ -62,6 +62,7 @@ const NAMED_WAYPOINTS: Dictionary = {
 	"bridge_2_arch": 17,
 	"bridge_2_east": 18,
 	"apple_tree_3": 19,
+	"pottery_kiln": 19,
 	"soil_3": 20,
 	"basket_3": 20,
 	"orbis_linked": 21,
@@ -71,34 +72,53 @@ const NAMED_WAYPOINTS: Dictionary = {
 }
 
 ## Independent Building Loading / Unloading Dock Offsets (`x` offset relative to building waypoint)
+## CI-12 rest-dock audit: every long-dwell spot (bunny furrow ends, chef stations, shiba post, otter / toucan rest docks) sits in
+## a 28px gap or at a field end, so the idle/work poses of all resting workers cover <= 50% of any building's width.
 const BUILDING_DOCKS: Dictionary = {
-	"soil_1_slot_0": {"wp": 9, "dx": -12.0},
-	"soil_1_slot_1": {"wp": 9, "dx": 12.0},
+	"soil_1_slot_0": {"wp": 9, "dx": -38.0},
+	"soil_1_slot_1": {"wp": 9, "dx": 38.0},
 	"basket_1_pickup": {"wp": 9, "dx": 42.0},
 	"mortar_input": {"wp": 11, "dx": -38.0},
-	"mortar_chef": {"wp": 11, "dx": -18.0},
+	"mortar_chef": {"wp": 11, "dx": -32.07},
 	"mortar_output": {"wp": 11, "dx": 24.0},
 	"tea_pavilion_dock": {"wp": 12, "dx": 0.0},
 	"stall_restock": {"wp": 13, "dx": -16.0},
-	"stall_manager": {"wp": 13, "dx": 4.0},
+	"stall_manager": {"wp": 13, "dx": -38.06},
 	"stall_checkout": {"wp": 13, "dx": 28.0},
-	"soil_2_slot_0": {"wp": 1, "dx": -10.0},
-	"soil_2_slot_1": {"wp": 1, "dx": 10.0},
+	"soil_2_slot_0": {"wp": 1, "dx": -38.0},
+	"soil_2_slot_1": {"wp": 1, "dx": 38.0},
 	"basket_2_pickup": {"wp": 1, "dx": 36.0},
 	"cauldron_input": {"wp": 2, "dx": -42.0},
-	"cauldron_chef": {"wp": 2, "dx": -18.0},
+	"cauldron_chef": {"wp": 2, "dx": -36.15},
 	"cauldron_output": {"wp": 2, "dx": 24.0},
 	"greenhouse_dock": {"wp": 3, "dx": 0.0},
 	"windmill_bakery_dock": {"wp": 4, "dx": 0.0},
-	"soil_3_slot_0": {"wp": 20, "dx": -10.0},
-	"soil_3_slot_1": {"wp": 20, "dx": 10.0},
+	"chef_pavilion_dock": {"wp": 4, "dx": 72.0},
+	"soil_3_slot_0": {"wp": 20, "dx": -38.0},
+	"soil_3_slot_1": {"wp": 20, "dx": 38.0},
 	"basket_3_pickup": {"wp": 20, "dx": 38.0},
-	"orbis_input": {"wp": 21, "dx": -42.0},
-	"orbis_chef": {"wp": 21, "dx": -18.0},
-	"orbis_chef_fox": {"wp": 21, "dx": -18.0},
-	"orbis_chef_penguin": {"wp": 21, "dx": 18.0},
+	"orbis_input": {"wp": 21, "dx": -32.0},
+	"orbis_chef": {"wp": 21, "dx": -37.55},
+	"orbis_chef_fox": {"wp": 21, "dx": -37.55},
+	"orbis_chef_penguin": {"wp": 21, "dx": 41.52},
 	"orbis_output": {"wp": 21, "dx": 36.0},
-	"hotspring_dock": {"wp": 22, "dx": 0.0}
+	"hotspring_dock": {"wp": 22, "dx": 0.0},
+	"lighthouse_harbor_dock": {"wp": 22, "dx": 71.1},
+	"dairy_workshop_dock": {"wp": 10, "dx": 70.4},
+	"open_air_cinema_dock": {"wp": 16, "dx": 32.5},
+	## CI-12: Cloud Pottery Kiln (Island 3 slot 1) + idle rest docks in 28px gaps (soil|cottage, hut|soil, kiln|soil,
+	## greenhouse|windmill, lighthouse|tiki) + the Autumn Sports Day track on the Lotus Pond twin bridges
+	"pottery_kiln_dock": {"wp": 19, "dx": 0.0},
+	"otter_rest_1": {"wp": 9, "dx": 46.03},
+	"otter_rest_2": {"wp": 1, "dx": -46.09},
+	## Island 3 otters wait in the kiln|soil gap, nudged toward the field end (<= 6px over the kiln); the Bridge 2 landing was
+	## rejected because their heads would sit under the docked airship's `★商队` badge
+	"otter_rest_3": {"wp": 20, "dx": -42.03},
+	"toucan_rest_2": {"wp": 4, "dx": -35.82},
+	"toucan_rest_3": {"wp": 23, "dx": -35.48},
+	"sports_track_west": {"wp": 14, "dx": 12.0},
+	"sports_track_center": {"wp": 15, "dx": 0.0},
+	"sports_track_east": {"wp": 16, "dx": -12.0}
 }
 
 ## Weighted Graph Adjacency List (`node_idx -> Array[{to: int, cost: float, bridge_id: int}]`)
@@ -243,4 +263,4 @@ func get_path_total_length(path: Array[Vector2]) -> float:
 	return total
 
 func constrain_to_walkable_surface(pos: Vector2) -> Vector2:
-	return Vector2(clampf(pos.x, 90.0, 1812.0), GROUND_Y)
+	return Vector2(clampf(pos.x, 90.0, 1815.0), GROUND_Y)

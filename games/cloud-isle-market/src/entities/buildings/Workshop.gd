@@ -11,9 +11,23 @@ class_name Workshop
 const BASE_SPRITE_SCALE := 0.85
 const VISUAL_WIDTH := 57.8 # 68 * 0.85
 const VISUAL_HEIGHT := 51.0
-const MORTAR_SPRITE_SCALE := 0.70
-const MORTAR_VISUAL_WIDTH := 47.6 # 68 * 0.70
-const MORTAR_VISUAL_HEIGHT := 40.6 # 58 * 0.70
+## CI-11: Island 1 re-slotted to 7 buildings (incl. `DairyWorkshop_1`) -> mortar footprint 36.04px keeps every gap >= 28px
+const MORTAR_SPRITE_SCALE := 0.53
+const MORTAR_VISUAL_WIDTH := 36.04 # 68 * 0.53
+const MORTAR_VISUAL_HEIGHT := 30.74 # 58 * 0.53
+## CI-9: Island 2 re-slotted to 6 buildings (incl. `ChefTastingPavilion_2`) -> cauldron footprint 44.2px keeps every gap >= 28px
+const CAULDRON_SPRITE_SCALE := 0.65
+const CAULDRON_VISUAL_WIDTH := 44.2 # 68 * 0.65
+const CAULDRON_VISUAL_HEIGHT := 40.3 # 62 * 0.65
+## CI-10: Island 3 re-slotted to 6 buildings (incl. `LighthouseHarbor_3`) -> the dual mortar + cauldron workshop keeps its
+## original composition (cauldron 0.8x the mortar, offset to the right so the mortar bowl peeks out) scaled to 61%, and now
+## reports its honest union footprint: mortar (68*0.522 = 35.5px @ x-3.75) + cauldron (68*0.4176 = 28.4px @ x+7.3) = 43.0px.
+const ORBIS_SPRITE_SCALE := 0.522
+const ORBIS_SECONDARY_SCALE := 0.4176
+const ORBIS_BODY_X := -3.75
+const ORBIS_SECONDARY_X := 7.3
+const ORBIS_VISUAL_WIDTH := 43.0
+const ORBIS_VISUAL_HEIGHT := 30.3 # 58 * 0.522
 const DEFAULT_BUFFER_CAP := 10
 
 @export var workshop_id: String = "mortar" # "mortar", "cauldron", or "orbis_linked"
@@ -50,12 +64,24 @@ func set_chef_progress(chef_key: String, prog: float, active: bool) -> void:
 		process_progress = best_p
 
 func get_base_sprite_scale() -> float:
+	if workshop_id == "cauldron":
+		return CAULDRON_SPRITE_SCALE
+	if workshop_id == "orbis_linked":
+		return ORBIS_SPRITE_SCALE
 	return MORTAR_SPRITE_SCALE if workshop_id == "mortar" else BASE_SPRITE_SCALE
 
 func get_visual_width() -> float:
+	if workshop_id == "cauldron":
+		return CAULDRON_VISUAL_WIDTH
+	if workshop_id == "orbis_linked":
+		return ORBIS_VISUAL_WIDTH
 	return MORTAR_VISUAL_WIDTH if workshop_id == "mortar" else VISUAL_WIDTH
 
 func get_visual_height() -> float:
+	if workshop_id == "cauldron":
+		return CAULDRON_VISUAL_HEIGHT
+	if workshop_id == "orbis_linked":
+		return ORBIS_VISUAL_HEIGHT
 	return MORTAR_VISUAL_HEIGHT if workshop_id == "mortar" else VISUAL_HEIGHT
 
 func _ready() -> void:
@@ -177,6 +203,7 @@ func _reload_texture() -> void:
 		body_sprite.centered = true
 		# GEMINI.md Law 2.2: sprite.offset = Vector2(0.0, -float(frame_h) * 0.5)
 		body_sprite.offset = Vector2(0.0, -float(frame_h) * 0.5)
+		body_sprite.position = Vector2(ORBIS_BODY_X if workshop_id == "orbis_linked" else 0.0, 0.0)
 
 	if secondary_sprite != null:
 		secondary_sprite.visible = (tex_secondary != null)
@@ -184,6 +211,9 @@ func _reload_texture() -> void:
 			secondary_sprite.texture = tex_secondary
 			secondary_sprite.centered = true
 			secondary_sprite.offset = Vector2(0.0, -float(62) * 0.5)
+			if workshop_id == "orbis_linked":
+				secondary_sprite.position = Vector2(ORBIS_SECONDARY_X, 0.0)
+				secondary_sprite.scale = Vector2(ORBIS_SECONDARY_SCALE, ORBIS_SECONDARY_SCALE)
 
 func _process(delta: float) -> void:
 	visible = bool(GameManager.unlocked_islands.get(island_idx, false))

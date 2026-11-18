@@ -45,40 +45,64 @@ func _init_child_nodes() -> void:
 		decor_sprite.scale = Vector2(0.65, 0.65)
 		decor_sprite.position = Vector2(-(SoilPlot.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
 	elif building_kind == "mortar":
+		# CI-11: Island 1 runs 7 buildings with 28px gaps -> slimmer signpost (~22px) centered at outer edge + 16px
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
 		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
-		decor_sprite.scale = Vector2(0.58, 0.58)
+		decor_sprite.scale = Vector2(0.50, 0.50)
 		decor_sprite.position = Vector2(-(Workshop.MORTAR_VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
-	elif building_kind == "cauldron" or building_kind == "orbis_linked":
+	elif building_kind == "cauldron":
+		# CI-9: Island 2 runs 6 buildings with 28px gaps -> slimmer signpost (~23px) centered at outer edge + 16px
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
 		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
-		decor_sprite.scale = Vector2(0.65, 0.65)
-		decor_sprite.position = Vector2(-(Workshop.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+		decor_sprite.scale = Vector2(0.52, 0.52)
+		decor_sprite.position = Vector2(-(Workshop.CAULDRON_VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+	elif building_kind == "orbis_linked":
+		# CI-10: Island 3 runs 6 buildings with 28px gaps -> slimmer signpost (~23px) centered at outer edge + 16px
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
+		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
+		decor_sprite.scale = Vector2(0.52, 0.52)
+		decor_sprite.position = Vector2(-(Workshop.ORBIS_VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
 	elif building_kind == "stall":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
 		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
-		decor_sprite.scale = Vector2(0.75, 0.75)
+		decor_sprite.scale = Vector2(0.62, 0.62)
 		decor_sprite.position = Vector2(MarketStall.VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
 	elif building_kind == "greenhouse":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_beehive.png")
 		decor_sprite.offset = Vector2(0.0, -float(52) * 0.5)
-		decor_sprite.scale = Vector2(0.55, 0.55)
-		decor_sprite.position = Vector2(32.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
+		decor_sprite.scale = Vector2(0.40, 0.40)
+		decor_sprite.position = Vector2(CloudGreenhouse.TARGET_VISUAL_W * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
 	elif building_kind == "hotspring":
+		# CI-10: slimmer lamp (~20px) inside the 28px workshop/spa gap after the Island 3 re-slot
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
 		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
-		decor_sprite.scale = Vector2(0.58, 0.58)
-		decor_sprite.position = Vector2(-(32.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+		decor_sprite.scale = Vector2(0.45, 0.45)
+		decor_sprite.position = Vector2(-(CloudHotspringInn.TARGET_VISUAL_W * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+	elif building_kind == "lighthouse_harbor":
+		# CI-10: harbor signpost on the landward (west) side, the east side is the fishing pier
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
+		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
+		decor_sprite.scale = Vector2(0.45, 0.45)
+		decor_sprite.position = Vector2(-(LighthouseHarbor.TARGET_VISUAL_W * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
 	elif building_kind == "windmill":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_scarecrow.png")
 		decor_sprite.offset = Vector2(0.0, -float(56) * 0.5)
-		decor_sprite.scale = Vector2(0.56, 0.56)
-		decor_sprite.position = Vector2(32.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
+		decor_sprite.scale = Vector2(0.48, 0.48)
+		decor_sprite.position = Vector2(CloudWindmillBakery.TARGET_VISUAL_W * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET, 0.0)
 	elif building_kind == "tea_pavilion":
+		# CI-11: slimmer lamp (~21px) inside the 28px mortar/tea gap after the Island 1 7-slot re-lay
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
 		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
-		decor_sprite.scale = Vector2(0.54, 0.54)
-		decor_sprite.position = Vector2(-(25.2 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+		decor_sprite.scale = Vector2(0.48, 0.48)
+		decor_sprite.position = Vector2(-(CloudTeaPavilion.TARGET_VISUAL_W * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+	elif building_kind == "dairy_workshop":
+		# CI-11: dairy signpost on the farmhouse (west) side, inside the 28px cottage/dairy gap
+		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
+		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
+		decor_sprite.scale = Vector2(0.45, 0.45)
+		decor_sprite.position = Vector2(-(DairyWorkshop.TARGET_VISUAL_W * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+	# CI-12: `pottery_kiln` mounts no Tier-2 decor: its west side is the Bridge 2 landing and its east gap already holds the
+	# `SoilPlot_3` scarecrow (outer edge + 16px), so the kiln only gains Tier-2 kiln-smoke particles.
 
 	# Tier 2/3 Workshop Steam / Alchemy Spark CPUParticles2D
 	particles = CPUParticles2D.new()
@@ -163,7 +187,7 @@ func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
 		decor_sprite.visible = (current_tier >= 2)
 
 	if particles != null:
-		var is_workshop := (building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked" or building_kind == "hotspring" or building_kind == "windmill" or building_kind == "tea_pavilion")
+		var is_workshop := (building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked" or building_kind == "hotspring" or building_kind == "windmill" or building_kind == "tea_pavilion" or building_kind == "chef_pavilion" or building_kind == "lighthouse_harbor" or building_kind == "dairy_workshop" or building_kind == "pottery_kiln")
 		particles.emitting = is_workshop and (current_tier >= 2)
 		particles.amount = 16 if current_tier >= 3 else 8
 

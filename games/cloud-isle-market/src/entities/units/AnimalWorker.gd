@@ -80,6 +80,15 @@ var pet_motes: Array[Sprite2D] = []
 var total_distance_moved: float = 0.0
 var _was_hired: bool = false
 
+## CI-12: Autumn Sports Day athlete mode. `MainWorld` drives `sports_target_x` along the Lotus Pond bridge track every frame;
+## production pauses while racing and the worker walks back to the task it left (same step / carry state) afterwards.
+var sports_mode: bool = false
+var sports_target_x: float = 0.0
+var sports_facing: float = 0.0
+var sports_pull_pose: bool = false
+var _sports_resume_dest: Vector2 = Vector2.ZERO
+var _sports_saved_sleep: bool = false
+
 func _ready() -> void:
 	z_index = EconomyConfig.Z_UNIT
 	z_as_relative = false
@@ -356,6 +365,79 @@ func _sync_carry_rig_transform(hop_y: float) -> void:
 		carry_front_grip.flip_h = facing_left
 		carry_front_grip.rotation = 0.0
 
+func enter_sports_mode(start_x: float) -> void:
+	if sports_mode:
+		return
+	sports_mode = true
+	_sports_resume_dest = nav_path[nav_path.size() - 1] if nav_path.size() > 0 else position
+	_sports_saved_sleep = is_sleeping_full
+	is_sleeping_full = false
+	nav_path.clear()
+	sports_target_x = start_x
+	sports_facing = 0.0
+	sports_pull_pose = false
+
+func exit_sports_mode() -> void:
+	if not sports_mode:
+		return
+	sports_mode = false
+	sports_pull_pose = false
+	sports_facing = 0.0
+	is_sleeping_full = _sports_saved_sleep
+	_navigate_to(_sports_resume_dest)
+
+func get_sports_resume_dest() -> Vector2:
+	return _sports_resume_dest
+
+func _process_sports_motion(delta: float) -> void:
+	var tx := clampf(sports_target_x, 90.0, 1815.0)
+	var dx := tx - position.x
+	var step := EconomyConfig.SPORTS_RUN_SPEED * maxf(0.0, delta)
+	if absf(dx) > 0.5:
+		is_moving = true
+		var mv := signf(dx) * minf(absf(dx), step)
+		position = Vector2(position.x + mv, EconomyConfig.GROUND_Y)
+		total_distance_moved += absf(mv)
+		facing_left = dx < 0.0
+	else:
+		is_moving = false
+		position = Vector2(tx, EconomyConfig.GROUND_Y)
+		if absf(sports_facing) > 0.01:
+			facing_left = sports_facing < 0.0
+
+## CI-12: x of the long-dwell spot this worker returns to between trips (work dock or idle rest dock)
+func get_rest_dock_x() -> float:
+	if waypoint_graph == null:
+		return position.x
+	match role_type:
+		RoleType.BUNNY_FARMER:
+			return waypoint_graph.get_dock_pos("soil_%d_slot_%d" % [home_island, clampi(slot_index, 0, 1)]).x
+		RoleType.OTTER_LOGISTICS:
+			return _get_otter_rest_pos().x
+		RoleType.TOUCAN_TRADER:
+			return _get_toucan_rest_pos().x
+		RoleType.FOX_MORTAR_CHEF, RoleType.PENGUIN_ALCHEMIST:
+			return _get_workshop_dock_pos("chef").x
+		RoleType.SHIBA_MANAGER:
+			return waypoint_graph.get_dock_pos("stall_manager").x
+	return position.x
+
+## Pose frames shown at the rest dock: farmers / chefs alternate idle + work, everybody else stands idle
+func get_rest_pose_frames() -> Array[int]:
+	if role_type == RoleType.BUNNY_FARMER or role_type == RoleType.FOX_MORTAR_CHEF or role_type == RoleType.PENGUIN_ALCHEMIST:
+		return [0, 2]
+	return [0]
+
+func _get_otter_rest_pos() -> Vector2:
+	if waypoint_graph != null and WaypointGraph.BUILDING_DOCKS.has("otter_rest_%d" % home_island):
+		return waypoint_graph.get_dock_pos("otter_rest_%d" % home_island) + Vector2(float(slot_index * 8) - 4.0, 0.0)
+	return _get_home_basket_pos() + Vector2(14.0 + float(slot_index * 8), 0.0)
+
+func _get_toucan_rest_pos() -> Vector2:
+	if waypoint_graph != null and WaypointGraph.BUILDING_DOCKS.has("toucan_rest_%d" % home_island):
+		return waypoint_graph.get_dock_pos("toucan_rest_%d" % home_island) + Vector2(float(slot_index * 6) - 3.0, 0.0)
+	return _get_workshop_dock_pos("output") + Vector2(float(slot_index * 12), 0.0)
+
 func _navigate_to(dest: Vector2) -> void:
 	var grounded_dest := Vector2(dest.x, EconomyConfig.GROUND_Y)
 	if waypoint_graph != null:
@@ -450,7 +532,9 @@ func _process(delta: float) -> void:
 	var tea_move_mult := GameManager.get_tea_aura_worker_move_multiplier() if GameManager != null else 1.0
 	var tea_stamina_mult := GameManager.get_tea_aura_worker_stamina_multiplier() if GameManager != null else 1.0
 
-	if nav_path.size() > 0:
+	if sports_mode:
+		_process_sports_motion(delta)
+	elif nav_path.size() > 0:
 		is_moving = true
 		var spd := EconomyConfig.calc_move_speed(animal_key, get_level()) * haste_mult * hs_move_mult * tea_move_mult
 		var rem_move := spd * delta
@@ -574,7 +658,8 @@ func _assign_next_task() -> void:
 			else:
 				worker_step = 20
 				is_sleeping_full = (GameManager.get_island_basket_total(home_island) > 0 and not can_feed_workshop and not can_divert_to_stall) or (home_island == 1 and GameManager.get_workshop_output_total(wid) > 0 and GameManager.is_stall_full())
-				_navigate_to(_get_home_basket_pos() + Vector2(14.0 + float(slot_index * 8), 0.0))
+				# CI-12: idle otters wait at their island's rest dock in a 28px gap instead of in front of a building
+				_navigate_to(_get_otter_rest_pos())
 
 		RoleType.TOUCAN_TRADER:
 			var wid := "orbis_linked" if home_island == 3 else "cauldron"
@@ -588,7 +673,8 @@ func _assign_next_task() -> void:
 			else:
 				worker_step = 40
 				is_sleeping_full = GameManager.is_stall_full() and (GameManager.get_workshop_output_total(wid) > 0 or GameManager.get_island_basket_total(home_island) > 0)
-				_navigate_to(_get_workshop_dock_pos("output") + Vector2(float(slot_index * 12), 0.0))
+				# CI-12: idle toucans wait at their island's rest dock in a 28px gap instead of in front of a building
+				_navigate_to(_get_toucan_rest_pos())
 
 		RoleType.FOX_MORTAR_CHEF:
 			worker_step = 0
@@ -847,6 +933,11 @@ func _update_chef_work_step() -> void:
 func _get_pose_index() -> int:
 	# Strictly keep all animal poses upright (0 = Idle/Stand, 1 = Walk, 2 = Active Work).
 	# Never select frame 3 (horizontal lying-down sleep pose) to prevent sudden 90-degree sideways sprite flips.
+	if sports_mode:
+		if is_moving:
+			return int(floor(anim_time * 9.5 / PI)) % 2
+		# Tug-of-war heave: slow alternating idle/step frames (planting the feet and hauling) instead of the tool-work pose
+		return (int(floor(anim_time * 3.0)) % 2) if sports_pull_pose else 0
 	if is_sleeping_full or worker_step == 20 or worker_step == 40 or worker_step == 99:
 		return 0
 	if is_moving:

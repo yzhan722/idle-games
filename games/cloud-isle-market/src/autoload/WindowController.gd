@@ -44,6 +44,8 @@ var _last_hotspring_rect: Rect2 = Rect2()
 var _last_windmill_rect: Rect2 = Rect2()
 var _last_tea_pavilion_rect: Rect2 = Rect2()
 var _last_moon_boat_rect: Rect2 = Rect2()
+## CI-13: extra clickable sky notches (one per flying kite of the Cloud-Sea Kite Festival)
+var _last_extra_sky_rects: Array = []
 var _last_passthrough_polygon: PackedVector2Array = PackedVector2Array()
 
 func _ready() -> void:
@@ -219,8 +221,8 @@ func snap_window_to_desktop(dock: DockPosition) -> void:
 	DisplayServer.window_set_position(Vector2i(pos_x, pos_y))
 	_refresh_passthrough()
 
-func update_passthrough_polygon(logical_island_rect: Rect2, logical_hud_rect: Rect2, logical_drawer_rect: Rect2 = Rect2(), logical_balloon_rect: Rect2 = Rect2(), logical_airship_rect: Rect2 = Rect2(), logical_greenhouse_rect: Rect2 = Rect2(), logical_hotspring_rect: Rect2 = Rect2(), logical_windmill_rect: Rect2 = Rect2(), logical_tea_pavilion_rect: Rect2 = Rect2(), logical_moon_boat_rect: Rect2 = Rect2()) -> void:
-	if _last_island_rect == logical_island_rect and _last_hud_rect == logical_hud_rect and _last_drawer_rect == logical_drawer_rect and _last_balloon_rect == logical_balloon_rect and _last_airship_rect == logical_airship_rect and _last_greenhouse_rect == logical_greenhouse_rect and _last_hotspring_rect == logical_hotspring_rect and _last_windmill_rect == logical_windmill_rect and _last_tea_pavilion_rect == logical_tea_pavilion_rect and _last_moon_boat_rect == logical_moon_boat_rect and not _last_passthrough_polygon.is_empty():
+func update_passthrough_polygon(logical_island_rect: Rect2, logical_hud_rect: Rect2, logical_drawer_rect: Rect2 = Rect2(), logical_balloon_rect: Rect2 = Rect2(), logical_airship_rect: Rect2 = Rect2(), logical_greenhouse_rect: Rect2 = Rect2(), logical_hotspring_rect: Rect2 = Rect2(), logical_windmill_rect: Rect2 = Rect2(), logical_tea_pavilion_rect: Rect2 = Rect2(), logical_moon_boat_rect: Rect2 = Rect2(), logical_extra_sky_rects: Array = []) -> void:
+	if _last_island_rect == logical_island_rect and _last_hud_rect == logical_hud_rect and _last_drawer_rect == logical_drawer_rect and _last_balloon_rect == logical_balloon_rect and _last_airship_rect == logical_airship_rect and _last_greenhouse_rect == logical_greenhouse_rect and _last_hotspring_rect == logical_hotspring_rect and _last_windmill_rect == logical_windmill_rect and _last_tea_pavilion_rect == logical_tea_pavilion_rect and _last_moon_boat_rect == logical_moon_boat_rect and _last_extra_sky_rects == logical_extra_sky_rects and not _last_passthrough_polygon.is_empty():
 		return
 	_last_island_rect = logical_island_rect
 	_last_hud_rect = logical_hud_rect
@@ -232,6 +234,7 @@ func update_passthrough_polygon(logical_island_rect: Rect2, logical_hud_rect: Re
 	_last_windmill_rect = logical_windmill_rect
 	_last_tea_pavilion_rect = logical_tea_pavilion_rect
 	_last_moon_boat_rect = logical_moon_boat_rect
+	_last_extra_sky_rects = logical_extra_sky_rects.duplicate()
 	if not is_dragging:
 		_refresh_passthrough()
 
@@ -289,7 +292,11 @@ func _refresh_passthrough() -> void:
 	var isl_r := clampf(isl_rect.end.x, 0.0, VIEWPORT_W)
 
 	var raw_notches: Array[Dictionary] = []
-	for sky_r in [_last_balloon_rect, _last_airship_rect, _last_greenhouse_rect, _last_hotspring_rect, _last_windmill_rect, _last_tea_pavilion_rect, _last_moon_boat_rect]:
+	var sky_rects: Array = [_last_balloon_rect, _last_airship_rect, _last_greenhouse_rect, _last_hotspring_rect, _last_windmill_rect, _last_tea_pavilion_rect, _last_moon_boat_rect]
+	for extra_r in _last_extra_sky_rects:
+		if extra_r is Rect2:
+			sky_rects.append(extra_r)
+	for sky_r in sky_rects:
 		if sky_r.size.x > 0.0 and sky_r.size.y > 0.0:
 			var nl := clampf(sky_r.position.x, 0.0, VIEWPORT_W)
 			var nr := clampf(sky_r.end.x, nl + 4.0, VIEWPORT_W)
