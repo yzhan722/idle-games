@@ -949,7 +949,7 @@ screen extras_radio_booth():
                             spacing 6
                             yalign 0.5
                             add "images/ui/icon_lighting_lamp.png" xysize (15, 15) yalign 0.5
-                            text ("播音色温：%s" % _bdef["lighting_note"]) size 12 color "#a892c2" yalign 0.5
+                            text ("播音色温：%s" % _bdef["lighting_note"]) size 12 color "#a892c2" yalign 0.5 substitute False
                         if _brec["solved"]:
                             text ("电波归档：%s（已直播重温 %d 次 · 物证全核验）" % (_brec["best_badge"], _brec["replays"])) size 12 color "#f4d98a"
                         else:
@@ -1421,6 +1421,12 @@ screen extras_origami_cabinet():
                         xalign 1.0
                         yalign 0.5
                         spacing 8
+                        ## PC-9：C-08 天文台星轨夜光鹤直通钟楼星象馆（仅 C-08 显示，宽度经 verify_pc9 实测）
+                        if _cview["id"] == "c08":
+                            textbutton _("钟楼星象馆"):
+                                style "gramophone_mini_pill"
+                                yalign 0.5
+                                action SetField(persistent, "extras_tab", "planetarium")
                         textbutton (_("重展誓约短册") if _cview["vow_inspected"] else _("亲手折纸并展阅誓约签")):
                             style "pill_button"
                             xminimum 176

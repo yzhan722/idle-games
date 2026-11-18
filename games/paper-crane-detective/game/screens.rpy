@@ -845,83 +845,155 @@ screen main_menu():
             xalign 0.5
             at main_title_in(0.55)
         null height 20
-        hbox:
+        ## PC-15：主菜单胶囊区修正与导航列（x 60..340）的横向重叠——PC-14 的第 1～3 行各 4 枚胶囊以 x=568 居中，
+        ## 左端落在 x≈254～288，压进导航列右缘。本期行数不变（仍 4 行），按鉴赏页沙龙分组重排为 4 + 3 + 3 + 4：
+        ## 第一行侦探社沙龙与留声机，第二行旧书街与四季，第三行电波与星空，第四行纪念与寄语 + 番外卷宗；
+        ## 胶囊改为 9px 内边距 / 16px 图标 / 12 号字、行内间距 6。四行装进同一个不带变换的外层 vbox，由它整体 xoffset 52
+        ## 落在导航列与主视觉人物之间（标题仍以 x=568 居中；各行自己的 main_title_in 入场动画不变——ATL 变换只继承子项的
+        ## pos / anchor、不继承 offset，所以平移写在外层容器上）。verify_pc15 按最坏计数逐行实测：每行左缘与导航列右缘
+        ## 至少留 12px，行高与列底不变，与左下进度徽记仍隔 80px。
+        vbox:
             xalign 0.5
-            spacing 10
-            at main_title_in(0.62)
-            button:
-                style "main_menu_cozy_chip"
-                action [SetField(persistent, "extras_tab", "mailbox"), ShowMenu("extras")]
-                hbox:
-                    spacing 6
-                    yalign 0.5
-                    add "images/ui/icon_club_mailbox.png" xysize (18, 18) yalign 0.5
-                    text ("委托信箱 (%d/3)" % mailbox_solved_count()) size 13 color "#f2e6ff" yalign 0.5
-            button:
-                style "main_menu_cozy_chip"
-                action [SetField(persistent, "extras_tab", "teaparty"), ShowMenu("extras")]
-                hbox:
-                    spacing 6
-                    yalign 0.5
-                    add "images/ui/icon_tea_party_cup.png" xysize (18, 18) yalign 0.5
-                    text ("午后茶话会 (%d/3)" % tea_party_cleared_count()) size 13 color "#f2e6ff" yalign 0.5
-            button:
-                style "main_menu_cozy_chip"
-                action [SetField(persistent, "extras_tab", "lexicon"), ShowMenu("extras")]
-                hbox:
-                    spacing 6
-                    yalign 0.5
-                    add "images/ui/icon_mystery_lexicon.png" xysize (18, 18) yalign 0.5
-                    text ("批注辞典 (%d/%d)" % (lexicon_read_count(), len(LEXICON_ENTRIES))) size 13 color "#f2e6ff" yalign 0.5
-            button:
-                style "main_menu_cozy_chip"
-                action [SetField(persistent, "extras_tab", "music"), ShowMenu("extras")]
-                hbox:
-                    spacing 6
-                    yalign 0.5
-                    add "images/ui/icon_gramophone_disc.png" xysize (18, 18) yalign 0.5
-                    text _("雨夜留声机") size 13 color "#f2e6ff" yalign 0.5
-                    if (persistent.gramophone_rain_pct or 0) > 0 and not persistent.gramophone_stop_on_exit:
-                        add "images/ui/icon_rain_ambience.png" xysize (15, 15) yalign 0.5
-                    if (persistent.gramophone_study_pct or 0) > 0 and not persistent.gramophone_stop_on_exit:
-                        add "images/ui/icon_book_ambience.png" xysize (15, 15) yalign 0.5
-        null height 8
-        hbox:
-            xalign 0.5
-            spacing 10
-            at main_title_in(0.68)
-            button:
-                style "main_menu_cozy_chip"
-                action [SetField(persistent, "extras_tab", "restoration"), ShowMenu("extras")]
-                hbox:
-                    spacing 6
-                    yalign 0.5
-                    add "images/ui/icon_book_restoration.png" xysize (18, 18) yalign 0.5
-                    text ("古籍修复台 (%d/3)" % restoration_completed_count()) size 13 color "#f2e6ff" yalign 0.5
-            button:
-                style "main_menu_cozy_chip"
-                action [SetField(persistent, "extras_tab", "letterbox"), ShowMenu("extras")]
-                hbox:
-                    spacing 6
-                    yalign 0.5
-                    add "images/ui/icon_seasonal_letterbox.png" xysize (18, 18) yalign 0.5
-                    text ("四季信笺匣 (%d/4)" % letterbox_seal_count()) size 13 color "#f2e6ff" yalign 0.5
-            button:
-                style "main_menu_cozy_chip"
-                action [SetField(persistent, "extras_tab", "radio"), ShowMenu("extras")]
-                hbox:
-                    spacing 6
-                    yalign 0.5
-                    add "images/ui/icon_radio_booth_mic.png" xysize (18, 18) yalign 0.5
-                    text ("旧广播电台 (%d/3)" % radio_solved_count()) size 13 color "#f2e6ff" yalign 0.5
-            button:
-                style "main_menu_cozy_chip"
-                action [SetField(persistent, "extras_tab", "origami"), ShowMenu("extras")]
-                hbox:
-                    spacing 6
-                    yalign 0.5
-                    add "images/ui/icon_origami_cabinet.png" xysize (18, 18) yalign 0.5
-                    text ("千纸鹤陈列柜 (%d/12)" % origami_inspected_count()) size 13 color "#f2e6ff" yalign 0.5
+            xoffset 52
+            spacing 0
+            hbox:
+                xalign 0.5
+                spacing 6
+                at main_title_in(0.62)
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "mailbox"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_club_mailbox.png" xysize (16, 16) yalign 0.5
+                        text ("委托信箱 (%d/3)" % mailbox_solved_count()) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "teaparty"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_tea_party_cup.png" xysize (16, 16) yalign 0.5
+                        text ("午后茶话会 (%d/3)" % tea_party_cleared_count()) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "lexicon"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_mystery_lexicon.png" xysize (16, 16) yalign 0.5
+                        text ("批注辞典 (%d/%d)" % (lexicon_read_count(), len(LEXICON_ENTRIES))) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "music"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_gramophone_disc.png" xysize (16, 16) yalign 0.5
+                        text _("雨夜留声机") size 12 color "#f2e6ff" yalign 0.5
+                        if (persistent.gramophone_rain_pct or 0) > 0 and not persistent.gramophone_stop_on_exit:
+                            add "images/ui/icon_rain_ambience.png" xysize (14, 14) yalign 0.5
+                        if (persistent.gramophone_study_pct or 0) > 0 and not persistent.gramophone_stop_on_exit:
+                            add "images/ui/icon_book_ambience.png" xysize (14, 14) yalign 0.5
+            null height 8
+            hbox:
+                xalign 0.5
+                spacing 6
+                at main_title_in(0.68)
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "restoration"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_book_restoration.png" xysize (16, 16) yalign 0.5
+                        text ("古籍修复台 (%d/3)" % restoration_completed_count()) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "letterbox"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_seasonal_letterbox.png" xysize (16, 16) yalign 0.5
+                        text ("四季信笺匣 (%d/4)" % letterbox_seal_count()) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "origami"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_origami_cabinet.png" xysize (16, 16) yalign 0.5
+                        text ("千纸鹤陈列柜 (%d/12)" % origami_inspected_count()) size 12 color "#f2e6ff" yalign 0.5
+            null height 8
+            hbox:
+                xalign 0.5
+                spacing 6
+                at main_title_in(0.74)
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "radio"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_radio_booth_mic.png" xysize (16, 16) yalign 0.5
+                        text ("旧广播电台 (%d/3)" % radio_solved_count()) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "planetarium"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_clocktower_planetarium.png" xysize (16, 16) yalign 0.5
+                        text ("钟楼星象馆 (%d/3)" % planetarium_solved_count()) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "badges"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_badge_journal.png" xysize (16, 16) yalign 0.5
+                        text ("铜章手账册 (%d/9)" % badge_stamped_count()) size 12 color "#f2e6ff" yalign 0.5
+            ## PC-14：番外类胶囊合并为分组入口——PC-10..PC-13 加上的闭馆图书馆 / 雨夜剧场 / 美术室油画 / 失物招领箱 / 复盘本五枚胶囊
+            ## （以及 PC-14 的文化祭鬼屋、两篇番外短篇）统一收进「番外卷宗」（screen extras_folio_modal），主菜单由 6 行减为 4 行。
+            ## 后续里程碑的新番外 / 短案只往卷宗里加卡片，不再给主菜单加胶囊行（PC-15 的天文社流星夜、PC-16 的游泳池更衣柜同样只进卷宗）。
+            null height 8
+            hbox:
+                xalign 0.5
+                spacing 6
+                at main_title_in(0.80)
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "album"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_photo_album.png" xysize (16, 16) yalign 0.5
+                        text ("合照相册 (%d/%d)" % (album_developed_count(), len(ALBUM_PHOTOS))) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "capsule"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_time_capsule.png" xysize (16, 16) yalign 0.5
+                        text ("时间胶囊 (%d/%d)" % (capsule_placed_count(), len(CAPSULE_ITEMS))) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_cozy_chip"
+                    action [SetField(persistent, "extras_tab", "wall"), ShowMenu("extras")]
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_message_wall.png" xysize (16, 16) yalign 0.5
+                        text ("寄语墙 (%d/%d)" % (wall_pinned_count(), len(WALL_CARDS))) size 12 color "#f2e6ff" yalign 0.5
+                button:
+                    style "main_menu_folio_chip"
+                    action Show("extras_folio_modal")
+                    hbox:
+                        spacing 5
+                        yalign 0.5
+                        add "images/ui/icon_extras_folio.png" xysize (16, 16) yalign 0.5
+                        text ("番外卷宗 (%d/%d)" % (folio_done_count(), folio_total_count())) size 12 color "#fbeec8" yalign 0.5
 
     ## 进度徽记：精致胶囊徽章，让回访玩家一眼看到自己在哪
     if persistent.chapter_reached:
@@ -948,7 +1020,7 @@ style main_menu_vbox:
 
 style main_menu_cozy_chip is button:
     ysize 30
-    padding (12, 0)
+    padding (9, 0)
     background Frame("gui/hud_chip.png", 12, 12)
     hover_background Frame("gui/hud_chip_hover.png", 12, 12)
     hover_sound "audio/sfx_hover.ogg"
@@ -992,6 +1064,163 @@ style main_menu_version is text:
     yalign 1.0
     xoffset -20
     yoffset -16
+
+## PC-14：「番外卷宗」分组胶囊——与普通胶囊同高同内边距（不改变行高），皮面暖金底色示意「点开是一整夹」
+style main_menu_folio_chip is main_menu_cozy_chip:
+    background Transform(Frame("gui/hud_chip.png", 12, 12), matrixcolor=TintMatrix("#f4d98a") * SaturationMatrix(0.0))
+    hover_background Transform(Frame("gui/hud_chip_hover.png", 12, 12), matrixcolor=TintMatrix("#ffeab0") * SaturationMatrix(0.0))
+
+
+################################################################################
+## 番外卷宗 extras_folio_modal（PC-14：主菜单番外类胶囊合并后的分组入口）
+##   · 收录两篇番外短篇、五桩可重玩短案与推理笔记复盘本，两列卡片，760px 宽弹窗；
+##   · PC-15：天文社流星夜加入后为六桩短案（2 × 3 网格），扩容到六页的复盘本改为独占一行的 712px 宽卡，
+##     卷宗高度 444 → 508px（<= 672px），宽度不变；
+##   · PC-16：游泳池更衣柜加入后为七桩短案，与七页复盘本合成 2 × 4 网格（复盘本回到第八格的普通卡片），
+##     卷宗高度仍为 508px、宽度不变；PC-15 只为复盘本独占一行而加的宽卡样式与 wide 参数随之删除；
+##   · 番外短篇沿用原入口：只从「章节选择」开启（与导航列同一条件，序章之后开放），后日谈的标题受防剧透火漆封存；
+##   · 短案与复盘本的跳转动作与原主菜单胶囊逐字相同（SetField extras_tab + ShowMenu("extras")）；
+##     从鉴赏页里翻开时（from_extras=True）只切换分页，不重复打开菜单；
+##   · 只读：卷宗本身不写任何 persistent 字段（verify_pc14 快照比对）。
+################################################################################
+
+transform folio_cover_sway:
+    subpixel True
+    block:
+        ease 2.4 rotate -4
+        ease 2.4 rotate 4
+        repeat
+
+screen extras_folio_modal(from_extras=False):
+    modal True
+    zorder 210
+    $ _fdone = folio_done_count()
+    $ _fseal = folio_seal_view()
+
+    add "#0c0814e0"
+    key "K_ESCAPE" action Hide("extras_folio_modal")
+
+    frame:
+        style "folio_panel"
+        xalign 0.5
+        yalign 0.5
+        vbox:
+            spacing 8
+            xfill True
+            hbox:
+                xfill True
+                yalign 0.5
+                hbox:
+                    spacing 12
+                    yalign 0.5
+                    add "images/ui/icon_extras_folio.png" xysize (44, 44) yalign 0.5 at folio_cover_sway
+                    vbox:
+                        spacing 2
+                        yalign 0.5
+                        text _("番外卷宗") font gui.name_text_font size 22 color "#fff1d6"
+                        text _("番外短篇 · 可重玩短案 · 复盘本——主菜单的番外入口都收在这一夹里") size 12 color "#dcc6a0"
+                hbox:
+                    xalign 1.0
+                    yalign 0.5
+                    spacing 6
+                    frame:
+                        style "mailbox_stat_chip"
+                        text ("已完成 %d/%d" % (_fdone, folio_total_count())) size 12 color "#f4d98a" align (0.5, 0.5)
+                    frame:
+                        style "mailbox_stat_chip"
+                        text _fseal["text"] size 12 color _fseal["color"] align (0.5, 0.5) substitute False
+
+            add Solid("#f4d98a55") xfill True ysize 1
+
+            ## 一、番外短篇（2 卷）：解锁条件与原入口一致，点开去「章节选择」
+            text _("番外短篇 · 独立剧情，序章之后在「章节选择」开启") size 12 color "#e8c88a" bold True
+            hbox:
+                spacing 12
+                use extras_folio_dlc_card("dlc_alice_ledger")
+                use extras_folio_dlc_card("dlc_mo_bookstreet")
+
+            ## 二、放学后短案（7 桩）与推理笔记复盘本：2 × 4 网格，2 × 350 + 12 = 712px 贴合内宽
+            text _("放学后短案与复盘本 · 评级可重玩刷新，失误不影响主线") size 12 color "#e8c88a" bold True
+            grid 2 4:
+                xspacing 12
+                yspacing 8
+                use extras_folio_case_card("images/ui/icon_closed_library.png", _("闭馆图书馆"), folio_case_line("LIBRARY_CASE", "四环推理链"), library_best_short(), library_case_solved_count() > 0, SetField(persistent, "extras_tab", "library"), from_extras)
+                use extras_folio_case_card("images/ui/icon_theater_backstage.png", _("雨夜剧场"), folio_case_line("THEATER_CASE", "四幕推理"), theater_best_short(), theater_case_solved_count() > 0, SetField(persistent, "extras_tab", "theater"), from_extras)
+                use extras_folio_case_card("images/ui/icon_art_room.png", _("美术室油画"), folio_case_line("ATELIER_CASE", "四笔推理"), atelier_best_short(), atelier_case_solved_count() > 0, SetField(persistent, "extras_tab", "atelier"), from_extras)
+                use extras_folio_case_card("images/ui/icon_lost_found_box.png", _("失物招领箱"), folio_case_line("SPORTS_CASE", "倒跑四棒"), sports_best_short(), sports_case_solved_count() > 0, SetField(persistent, "extras_tab", "sportsday"), from_extras)
+                use extras_folio_case_card("images/ui/icon_haunted_house.png", _("文化祭鬼屋"), folio_case_line("HAUNTED_CASE", "四盏灯"), haunted_best_short(), haunted_case_solved_count() > 0, SetField(persistent, "extras_tab", "haunted"), from_extras)
+                use extras_folio_case_card("images/ui/icon_astro_club.png", _("天文社流星夜"), folio_case_line("ASTRO_CASE", "四颗星"), astro_best_short(), astro_case_solved_count() > 0, SetField(persistent, "extras_tab", "astro"), from_extras)
+                use extras_folio_case_card("images/ui/icon_pool_locker.png", _("游泳池更衣柜"), folio_case_line("POOL_CASE", "混合泳四段"), pool_best_short(), pool_case_solved_count() > 0, SetField(persistent, "extras_tab", "pool"), from_extras)
+                use extras_folio_case_card("images/ui/icon_case_notebook.png", _("推理笔记复盘本"), _("只读汇总七桩短案 · 页边续批受火漆保护"), ("复盘章 %d/%d" % (notebook_stamped_count(), len(NOTEBOOK_CASES))), notebook_stamped_count() >= len(NOTEBOOK_CASES), SetField(persistent, "extras_tab", "notebook"), from_extras)
+
+            hbox:
+                xfill True
+                yalign 0.5
+                text _("按 Esc 或点击右侧按钮合上卷宗 · 卷宗只负责翻到对应分页，不改动任何进度") size 12 color "#b39d7a" yalign 0.5
+                textbutton _("合上卷宗"):
+                    style "pill_button"
+                    xalign 1.0
+                    yalign 0.5
+                    xminimum 128
+                    ysize 34
+                    text_size 14
+                    action Hide("extras_folio_modal")
+
+## 卷宗里的一张短案 / 复盘本卡片：跳转动作由调用处逐字传入（与原主菜单胶囊相同）
+screen extras_folio_case_card(icon, title, line, status, done, tab_action, from_extras=False):
+    button:
+        style "folio_card"
+        action ([Hide("extras_folio_modal"), tab_action] + ([] if from_extras else [ShowMenu("extras")]))
+        hbox:
+            spacing 10
+            yalign 0.5
+            add icon xysize (34, 34) yalign 0.5
+            vbox:
+                spacing 2
+                yalign 0.5
+                xsize 278
+                hbox:
+                    xfill True
+                    yalign 0.5
+                    text title font gui.name_text_font size 15 color "#fff1d6" yalign 0.5 substitute False
+                    text status size 12 color ("#f4d98a" if done else "#b39d7a") bold True xalign 1.0 yalign 0.5 substitute False
+                text line size 11 color "#dcc6a0" substitute False
+
+## 卷宗里的一张番外短篇卡片：未开放时不可点（与导航列「章节选择」同一条件），后日谈标题按防剧透火漆封存
+screen extras_folio_dlc_card(dlc_label):
+    $ _dv = folio_dlc_view(dlc_label)
+    button:
+        style "folio_card"
+        action ([Hide("extras_folio_modal"), ShowMenu("chapter_select")] if _dv["open"] else None)
+        hbox:
+            spacing 10
+            yalign 0.5
+            add _dv["icon"] xysize (34, 34) yalign 0.5
+            vbox:
+                spacing 2
+                yalign 0.5
+                xsize 278
+                hbox:
+                    xfill True
+                    yalign 0.5
+                    text ("%s · %s" % (_dv["badge"], _dv["title"])) font gui.name_text_font size 15 color ("#c9b48f" if _dv["masked"] else "#fff1d6") yalign 0.5 substitute False
+                    text _dv["status"] size 12 color ("#9fe3b0" if _dv["done"] else "#b39d7a") bold True xalign 1.0 yalign 0.5 substitute False
+                text _dv["note"] size 11 color ("#f0a4b8" if _dv["masked"] else "#dcc6a0") substitute False
+
+style folio_panel is default:
+    xsize 760
+    padding (24, 18)
+    background Transform(Frame("gui/panel_dark.png", 26, 26), matrixcolor=TintMatrix("#e6cfa4") * SaturationMatrix(0.0))
+
+style folio_card is button:
+    xsize 350
+    ysize 56
+    padding (10, 6)
+    background Frame("gui/hud_chip.png", 12, 12)
+    hover_background Frame("gui/panel_card_hover.png", 16, 16)
+    insensitive_background Transform(Frame("gui/hud_chip.png", 12, 12), alpha=0.55)
+    hover_sound "audio/sfx_hover.ogg"
+    activate_sound "audio/sfx_click.ogg"
 
 
 ################################################################################
