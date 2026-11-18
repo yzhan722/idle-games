@@ -5304,6 +5304,130 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			if (curDharmaTier >= 3){
 				gainedImprint += 1;
 			}
+			var curChronoTier = (prevCult.chronoAltar && prevCult.chronoAltar.tier) ? Math.floor(prevCult.chronoAltar.tier) : 0;
+			if (prevCult.innateTreasures && prevCult.innateTreasures.levels){
+				var itMap = prevCult.innateTreasures.levels;
+				for (var itk in itMap){
+					if (itMap.hasOwnProperty(itk) && typeof itMap[itk] === "number" && itMap[itk] > curChronoTier){
+						curChronoTier = Math.floor(itMap[itk]);
+					}
+				}
+			}
+			if (curChronoTier >= 3){
+				gainedImprint += 1;
+			}
+			var curThunderTier = (prevCult.thunderPool && typeof prevCult.thunderPool.tier === "number" && isFinite(prevCult.thunderPool.tier)) ? Math.max(0, Math.floor(prevCult.thunderPool.tier)) : 0;
+			var curHeavenLayer = (prevCult.fengshenRoster && typeof prevCult.fengshenRoster.layer === "number" && isFinite(prevCult.fengshenRoster.layer)) ? Math.max(0, Math.floor(prevCult.fengshenRoster.layer)) : 0;
+			if (curThunderTier >= 5 || curHeavenLayer >= 18){
+				gainedImprint += 1;
+			}
+			//XX-11 太虚幻境破至第 6 重或六道前尘尽数照见,再添一道仙印
+			var curIllusionLayer = (prevCult.illusionTrial && typeof prevCult.illusionTrial.layer === "number" && isFinite(prevCult.illusionTrial.layer)) ? Math.max(0, Math.min(9, Math.floor(prevCult.illusionTrial.layer))) : 0;
+			var prevSamsara = (prevCult.samsaraMirror && typeof prevCult.samsaraMirror === "object") ? prevCult.samsaraMirror : null;
+			var curRevealedPaths = 0;
+			if (prevSamsara && prevSamsara.revealed){
+				for (var spk in prevSamsara.revealed){
+					if (prevSamsara.revealed.hasOwnProperty(spk) && prevSamsara.revealed[spk] === true){
+						curRevealedPaths++;
+					}
+				}
+			}
+			if (curIllusionLayer >= 6 || curRevealedPaths >= 6){
+				gainedImprint += 1;
+			}
+			//XX-12 弈胜北斗第五位星君或此世拍得四件灵宝,再添一道仙印
+			var prevStarGo = (prevCult.starGo && typeof prevCult.starGo === "object") ? prevCult.starGo : null;
+			var curStarGoBeaten = 0;
+			var sgLordList = (this.cultivation && this.cultivation.STAR_GO_LORDS) ? this.cultivation.STAR_GO_LORDS : [];
+			if (prevStarGo && prevStarGo.beaten && typeof prevStarGo.beaten === "object"){
+				for (var sgi = 0; sgi < sgLordList.length; sgi++){
+					var sgWins = prevStarGo.beaten[sgLordList[sgi].key];
+					if (typeof sgWins === "number" && isFinite(sgWins) && sgWins > 0){
+						curStarGoBeaten++;
+					} else {
+						break;
+					}
+				}
+			}
+			var curAuctionTreasures = 0;
+			if (prevCult.auctionHouse && prevCult.auctionHouse.owned && typeof prevCult.auctionHouse.owned === "object"){
+				for (var atk in prevCult.auctionHouse.owned){
+					if (prevCult.auctionHouse.owned.hasOwnProperty(atk) && prevCult.auctionHouse.owned[atk] === true){
+						curAuctionTreasures++;
+					}
+				}
+			}
+			if (curStarGoBeaten >= 5 || curAuctionTreasures >= 4){
+				gainedImprint += 1;
+			}
+			//XX-13 此世堪舆成「龙蟠虎踞」以上格局或绘成两道神品符箓,再添一道仙印
+			var prevFengshui = (prevCult.fengshui && typeof prevCult.fengshui === "object") ? prevCult.fengshui : null;
+			var curFengshuiGrade = 0;
+			if (prevFengshui){
+				if (typeof prevFengshui.peakGrade === "number" && isFinite(prevFengshui.peakGrade)){
+					curFengshuiGrade = Math.max(0, Math.min(5, Math.floor(prevFengshui.peakGrade)));
+				}
+				if (prevFengshui.nodes && this.cultivation && this.cultivation.computeFengshuiPattern){
+					curFengshuiGrade = Math.max(curFengshuiGrade, this.cultivation.computeFengshuiPattern(prevFengshui.nodes).grade);
+				}
+			}
+			var curDivineTalismans = (prevCult.talismanWorkshop && typeof prevCult.talismanWorkshop.divine === "number" && isFinite(prevCult.talismanWorkshop.divine))
+				? Math.max(0, Math.floor(prevCult.talismanWorkshop.divine))
+				: 0;
+			if (curFengshuiGrade >= 4 || curDivineTalismans >= 2){
+				gainedImprint += 1;
+			}
+			//XX-14 此世剑阵成「天罡剑阵」以上或蓬莱海市圆满六回,再添一道仙印
+			var prevSwordTomb = (prevCult.swordTomb && typeof prevCult.swordTomb === "object") ? prevCult.swordTomb : null;
+			var curSwordGrade = 0;
+			if (prevSwordTomb){
+				if (typeof prevSwordTomb.peakGrade === "number" && isFinite(prevSwordTomb.peakGrade)){
+					curSwordGrade = Math.max(0, Math.min(5, Math.floor(prevSwordTomb.peakGrade)));
+				}
+				if (prevSwordTomb.slots && prevSwordTomb.intents && this.cultivation && this.cultivation.computeSwordFormation){
+					curSwordGrade = Math.max(curSwordGrade, this.cultivation.computeSwordFormation(prevSwordTomb.slots, prevSwordTomb.intents).grade);
+				}
+			}
+			var curPenglaiDone = (prevCult.penglai && typeof prevCult.penglai.completed === "number" && isFinite(prevCult.penglai.completed))
+				? Math.max(0, Math.floor(prevCult.penglai.completed))
+				: 0;
+			if (curSwordGrade >= 4 || curPenglaiDone >= 6){
+				gainedImprint += 1;
+			}
+			//XX-15 此世星图点亮至「星垂四野」以上或本命器灵温养至「合道」以上,再添一道仙印
+			var prevStarObs = (prevCult.starObservatory && typeof prevCult.starObservatory === "object") ? prevCult.starObservatory : null;
+			var curStarMapGrade = 0;
+			if (prevStarObs){
+				if (typeof prevStarObs.peakGrade === "number" && isFinite(prevStarObs.peakGrade)){
+					curStarMapGrade = Math.max(0, Math.min(5, Math.floor(prevStarObs.peakGrade)));
+				}
+				if (prevStarObs.lit && this.cultivation && this.cultivation.computeStarMap){
+					curStarMapGrade = Math.max(curStarMapGrade, this.cultivation.computeStarMap(prevStarObs.lit).grade);
+				}
+			}
+			var curSpiritGrade = (prevCult.natalWarming && typeof prevCult.natalWarming.warmth === "number" && isFinite(prevCult.natalWarming.warmth) && this.cultivation && this.cultivation.getNatalSpiritGrade)
+				? this.cultivation.getNatalSpiritGrade(Math.max(0, prevCult.natalWarming.warmth))
+				: 0;
+			if (curStarMapGrade >= 4 || curSpiritGrade >= 4){
+				gainedImprint += 1;
+			}
+			//XX-16 此世宗门大比登「探花」以上或心魔幻境渡尽六劫,再添一道仙印
+			var prevSectArena = (prevCult.sectArena && typeof prevCult.sectArena === "object") ? prevCult.sectArena : null;
+			var curSectRank = 0;
+			if (prevSectArena){
+				if (typeof prevSectArena.peakTier === "number" && isFinite(prevSectArena.peakTier)){
+					curSectRank = Math.max(0, Math.min(5, Math.floor(prevSectArena.peakTier)));
+				}
+				if (typeof prevSectArena.seat === "number" && isFinite(prevSectArena.seat) && this.cultivation && this.cultivation.getSectRankTier){
+					curSectRank = Math.max(curSectRank, this.cultivation.getSectRankTier(prevSectArena.seat));
+				}
+			}
+			var curHeartStage = (prevCult.heartTrib && typeof prevCult.heartTrib.stage === "number" && isFinite(prevCult.heartTrib.stage))
+				? Math.max(0, Math.min(6, Math.floor(prevCult.heartTrib.stage)))
+				: 0;
+			if (curSectRank >= 3 || curHeartStage >= 6){
+				gainedImprint += 1;
+			}
 			if (prevImprint + gainedImprint > 0){
 				soulObj.immortalImprint = Math.min(10, prevImprint + gainedImprint);
 				if (prevCult.xianqi && prevCult.xianqi.boundKey){
@@ -5328,6 +5452,56 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			var prevDharmaSeal = Math.max(0, Math.floor(prevCult.dharmaImprintTier || 0));
 			if (Math.max(prevDharmaSeal, curDharmaTier) > 0){
 				soulObj.dharmaImprintTier = Math.min(6, Math.max(prevDharmaSeal, curDharmaTier));
+			}
+			var prevChronoSeal = Math.max(0, Math.floor(prevCult.chronoImprintTier || 0));
+			if (Math.max(prevChronoSeal, curChronoTier) > 0){
+				soulObj.chronoImprintTier = Math.min(6, Math.max(prevChronoSeal, curChronoTier));
+			}
+			var prevThunderSeal = Math.max(0, Math.floor(prevCult.thunderTemperTier || 0));
+			if (Math.max(prevThunderSeal, curThunderTier) > 0){
+				soulObj.thunderTemperTier = Math.min(9, Math.max(prevThunderSeal, curThunderTier));
+			}
+			var prevDaoHeartSeal = Math.max(0, Math.floor(prevCult.daoHeartTier || 0));
+			if (Math.max(prevDaoHeartSeal, curIllusionLayer) > 0){
+				soulObj.daoHeartTier = Math.min(9, Math.max(prevDaoHeartSeal, curIllusionLayer));
+			}
+			//XX-12 弈道印:历世所胜北斗星君最多位数随魂转世(弈局星辉、灵宝与拍卖行皆归尘土)
+			var prevStarGoSeal = (typeof prevCult.starGoTier === "number" && isFinite(prevCult.starGoTier)) ? Math.max(0, Math.floor(prevCult.starGoTier)) : 0;
+			if (Math.max(prevStarGoSeal, curStarGoBeaten) > 0){
+				soulObj.starGoTier = Math.min(7, Math.max(prevStarGoSeal, curStarGoBeaten));
+			}
+			//XX-13 堪舆印:历世所成最高风水格局随魂转世(九宫灵脉、勘脉等级、朱砂符纸与符箓皆归尘土)
+			var prevFengshuiSeal = (typeof prevCult.fengshuiTier === "number" && isFinite(prevCult.fengshuiTier)) ? Math.max(0, Math.floor(prevCult.fengshuiTier)) : 0;
+			if (Math.max(prevFengshuiSeal, curFengshuiGrade) > 0){
+				soulObj.fengshuiTier = Math.min(5, Math.max(prevFengshuiSeal, curFengshuiGrade));
+			}
+			//XX-14 剑意印:历世所成最高剑阵随魂转世(古剑剑意、剑阵与蓬莱海市皆归尘土)
+			var prevSwordSeal = (typeof prevCult.swordIntentTier === "number" && isFinite(prevCult.swordIntentTier)) ? Math.max(0, Math.floor(prevCult.swordIntentTier)) : 0;
+			if (Math.max(prevSwordSeal, curSwordGrade) > 0){
+				soulObj.swordIntentTier = Math.min(5, Math.max(prevSwordSeal, curSwordGrade));
+			}
+			//XX-15 星图印:历世所成最高星图随魂转世(二十八宿星图、星宿加持与本命法宝温养皆归尘土)
+			var prevStarMapSeal = (typeof prevCult.starMapTier === "number" && isFinite(prevCult.starMapTier)) ? Math.max(0, Math.floor(prevCult.starMapTier)) : 0;
+			if (Math.max(prevStarMapSeal, curStarMapGrade) > 0){
+				soulObj.starMapTier = Math.min(5, Math.max(prevStarMapSeal, curStarMapGrade));
+			}
+			//XX-16 宗门印:历世所登最高擂台名次随魂转世(擂台席位、擂台令与心魔劫皆归尘土)
+			var prevSectSeal = (typeof prevCult.sectTier === "number" && isFinite(prevCult.sectTier)) ? Math.max(0, Math.floor(prevCult.sectTier)) : 0;
+			if (Math.max(prevSectSeal, curSectRank) > 0){
+				soulObj.sectTier = Math.min(5, Math.max(prevSectSeal, curSectRank));
+			}
+			//XX-11 此世所择之道随魂入来世:来世道缘命格共鸣,业障封印的命格不得携入
+			var legacyPathDef = (prevSamsara && typeof prevSamsara.activePath === "string" && this.cultivation && this.cultivation.getSamsaraPathDef)
+				? this.cultivation.getSamsaraPathDef(prevSamsara.activePath)
+				: null;
+			if (legacyPathDef){
+				soulObj.samsaraLegacyPath = legacyPathDef.key;
+				if (soulObj.mingge && legacyPathDef.seal){
+					soulObj.mingge = this.cultivation.filterSealedMingge(soulObj.mingge, legacyPathDef.key);
+					if (!soulObj.mingge.length){
+						delete soulObj.mingge;
+					}
+				}
 			}
 			saveData.cultivation = soulObj;
 		}

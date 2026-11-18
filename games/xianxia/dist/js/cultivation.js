@@ -84,6 +84,43 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	dharmaIdols: null,		//XX-8 三千大道神通法相状态
 	dharmaImprintTier: 0,	//XX-8 跨轮回法相道印最高阶数(0..6)
 	daoSutras: 0,			//XX-8 三千大道玉简同步镜像
+	chronoAltar: null,		//XX-9 混沌岁月长河悟道台状态
+	innateTreasures: null,	//XX-9 先天至宝器魂共鸣谱状态
+	chronoImprintTier: 0,	//XX-9 跨轮回光阴道印最高阶数(0..6)
+	chronoSand: 0,			//XX-9 光阴本源砂同步镜像
+	fengshenRoster: null,	//XX-10 三十三天封神榜状态
+	thunderPool: null,		//XX-10 九霄雷池淬体状态
+	thunderTemperTier: 0,	//XX-10 跨轮回雷纹道骨最高重数(0..9)
+	divineMerit: 0,			//XX-10 神位功德同步镜像
+	thunderOrbs: 0,			//XX-10 九霄雷髓同步镜像
+	samsaraMirror: null,	//XX-11 六道轮回镜状态
+	illusionTrial: null,	//XX-11 太虚幻境心魔试炼状态
+	daoHeartTier: 0,		//XX-11 跨轮回道心印最高重数(0..9)
+	daoPatterns: 0,			//XX-11 道心纹同步镜像(0..9)
+	samsaraLegacyPath: null,	//XX-11 前世所择之道(定此世道缘共鸣 / 业障封印命格)
+	starGo: null,			//XX-12 周天星辰弈局状态
+	auctionHouse: null,		//XX-12 诸天万界灵宝拍卖行状态
+	starGoTier: 0,			//XX-12 跨轮回弈道印(历世所胜北斗星君最多位数 0..7)
+	auctionRandom: null,	//XX-12 拍卖行可注入随机源(函数;缺省 Math.random,不入存档)
+	fengshui: null,			//XX-13 灵脉风水堪舆状态(九宫灵脉 / 勘脉等级 / 此世最高格局)
+	talismanWorkshop: null,	//XX-13 符箓画坊状态(朱砂 / 符纸 / 符囊 / 笔悟)
+	fengshuiTier: 0,		//XX-13 跨轮回堪舆印(历世所成最高格局 0..5)
+	talismanRandom: null,	//XX-13 绘符可注入随机源(函数;缺省 Math.random,不入存档)
+	swordTomb: null,		//XX-14 太虚剑冢状态(六柄古剑剑意 / 五位剑阵 / 此世最高剑阵)
+	penglai: null,			//XX-14 蓬莱海市奇遇状态(蜃气进度 / 当前海市 / 见闻)
+	swordIntentTier: 0,		//XX-14 跨轮回剑意印(历世所成最高剑阵 0..5)
+	penglaiRandom: null,	//XX-14 海市可注入随机源(函数;缺省 Math.random,不入存档)
+	penglaiClock: null,		//XX-14 海市可注入时钟(函数,返回毫秒;缺省 Date.now,不入存档)
+	starObservatory: null,	//XX-15 周天星宿观星台状态(周天相位 / 二十八宿星图 / 星宿加持 / 推演冷却)
+	natalWarming: null,		//XX-15 本命法宝温养状态(温养度 / 灵材 / 限时共鸣)
+	starMapTier: 0,			//XX-15 跨轮回星图印(历世所成最高星图 0..5)
+	starRandom: null,		//XX-15 观星推演可注入随机源(函数;缺省 Math.random,不入存档)
+	starClock: null,		//XX-15 观星台可注入时钟(函数,返回毫秒;缺省 Date.now,不入存档)
+	sectArena: null,		//XX-16 宗门大比擂台状态(本周擂台 / 席位 / 擂台令 / 上周结算)
+	heartTrib: null,		//XX-16 心魔幻境渡劫状态(已渡心魔劫数 / 照心积蕴 / 冷却)
+	sectTier: 0,			//XX-16 跨轮回宗门印(历世所登最高擂台名次 0..5)
+	sectRandom: null,		//XX-16 擂台 / 心魔劫可注入随机源(函数;缺省 Math.random,不入存档)
+	sectClock: null,		//XX-16 擂台可注入时钟(函数,返回毫秒;缺省 Date.now,不入存档;周界 = 东八区周一 0 点)
 
 	//突破异象 — 每次冲关掷一次;多数纯叙事,小幅修正当次成败/代价。
 	//w 为百分比权重,合计 82 —— 余下 18% 无异象静默。
@@ -1268,7 +1305,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	},
 
 	setMingge: function(keys){
-		this.mingge = this.normalizeMinggeList(keys, 3);
+		this.mingge = this.filterSealedMingge(this.normalizeMinggeList(keys, 3), this.samsaraLegacyPath);	//XX-11 前世业障封印不得凝定
 		this.applyOrigin();
 		if (this.game && this.game.updateCaches){ this.game.updateCaches(); }
 		return this.mingge;
@@ -1276,12 +1313,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	setPendingMingge: function(keys){
 		var cap = this.getMinggeSlotCap(true);
-		this.pendingMingge = this.normalizeMinggeList(keys, cap);
+		this.pendingMingge = this.filterSealedMingge(this.normalizeMinggeList(keys, cap), this.getSamsaraActivePath());	//XX-11 此世所择之道封印的命格不入来世
 		return this.pendingMingge;
 	},
 
 	togglePendingMingge: function(key){
 		if (!this.getMinggeDef(key)){ return false; }
+		if (this.isMinggeSealed(key, true)){ return false; }	//XX-11 业障封印
 		var cap = this.getMinggeSlotCap(true);
 		var cur = this.normalizeMinggeList(this.pendingMingge || [], cap);
 		for (var i = 0; i < cur.length; i++){
@@ -1336,6 +1374,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				base[k] = (base[k] || 0) + eff[k];
 			}
 		}
+		//XX-11 前世道缘:此世凝定的道缘命格追加前世所择之道的共鸣效果
+		var legRes = this.getSamsaraLegacyResonance ? this.getSamsaraLegacyResonance() : null;
+		if (legRes && legRes.count > 0){
+			for (var lk in legRes.effects){
+				if (legRes.effects.hasOwnProperty(lk)){
+					base[lk] = (base[lk] || 0) + legRes.effects[lk];
+				}
+			}
+		}
 		this.effectsBase = base;
 		this.setEffectsCachedExisting();
 	},
@@ -1367,6 +1414,19 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.hongmengImprintTier = 0;
 		this.dharmaImprintTier = 0;
 		this.daoSutras = 0;
+		this.chronoImprintTier = 0;
+		this.chronoSand = 0;
+		this.thunderTemperTier = 0;
+		this.divineMerit = 0;
+		this.thunderOrbs = 0;
+		this.daoHeartTier = 0;
+		this.daoPatterns = 0;
+		this.samsaraLegacyPath = null;
+		this.starGoTier = 0;
+		this.fengshuiTier = 0;
+		this.swordIntentTier = 0;
+		this.starMapTier = 0;
+		this.sectTier = 0;
 		this.herbGarden = this.makeDefaultHerbGarden();
 		this.xianqi = this.makeDefaultXianqi();
 		this.starArray = this.makeDefaultStarArray();
@@ -1377,6 +1437,22 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.hongmengAltar = this.makeDefaultHongmengAltar();
 		this.zixiaoAltar = this.makeDefaultZixiaoAltar();
 		this.dharmaIdols = this.makeDefaultDharmaIdols();
+		this.chronoAltar = this.makeDefaultChronoAltar();
+		this.innateTreasures = this.makeDefaultInnateTreasures();
+		this.fengshenRoster = this.makeDefaultFengshenRoster();
+		this.thunderPool = this.makeDefaultThunderPool();
+		this.samsaraMirror = this.makeDefaultSamsaraMirror();
+		this.illusionTrial = this.makeDefaultIllusionTrial();
+		this.starGo = this.makeDefaultStarGo();
+		this.auctionHouse = this.makeDefaultAuctionHouse();
+		this.fengshui = this.makeDefaultFengshui();
+		this.talismanWorkshop = this.makeDefaultTalismanWorkshop();
+		this.swordTomb = this.makeDefaultSwordTomb();
+		this.penglai = this.makeDefaultPenglai();
+		this.starObservatory = this.makeDefaultStarObservatory();
+		this.natalWarming = this.makeDefaultNatalWarming();
+		this.sectArena = this.makeDefaultSectArena();
+		this.heartTrib = this.makeDefaultHeartTrib();
 		this.tale = {};
 		this.taleLog = [];
 		this.stages = this.buildStages();
@@ -2600,12 +2676,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if ((this.beastImprintTier || 0) > 0){ mult *= (1 + this.beastImprintTier * 0.04); }	//XX-6 前世万灵兽印护体
 		if ((this.hongmengImprintTier || 0) > 0){ mult *= (1 + this.hongmengImprintTier * 0.05); }	//XX-7 前世鸿蒙道印镇世
 		if ((this.dharmaImprintTier || 0) > 0){ mult *= (1 + this.dharmaImprintTier * 0.06); }	//XX-8 前世法相道印护道
+		if ((this.chronoImprintTier || 0) > 0){ mult *= (1 + this.chronoImprintTier * 0.05); }	//XX-9 前世光阴道印溯时
+		if ((this.thunderTemperTier || 0) > 0){ mult *= (1 + Math.min(9, this.thunderTemperTier) * 0.04); }	//XX-10 前世雷纹道骨淬体
 		if (this.immortalAscended){ mult *= 1.35; }					//仙躯蜕凡
 		if (this.daoyun > 0){ mult *= (1 + this.daoyun * 0.15); }	//诸天法则道韵加持
 		var caveBonus = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
 		if (caveBonus && caveBonus.combatMult > 1){ mult *= caveBonus.combatMult; }	//XX-4 本命仙器器灵共鸣与轮回仙印
 		if (this.hasMingge("jiangu")){ mult *= 1.28; }				//剑骨通明 ×1.28
 		if (this.hasMingge("huanggu")){ mult *= 1.20; }				//荒古战躯 ×1.20
+		mult *= this.getSamsaraCombatMult();						//XX-11 六道择道加持(修罗 ×1.20 / 天道 ×0.85…) & 前世修罗道缘
 		mult *= Math.max(0.3, 1 - this.heartDemon * 0.005);	//心魔蚀骨
 		return Math.max(1, base * mult);
 	},
@@ -2809,7 +2888,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		});
 
 		//XX-3 转世择身时同步展示「先天命格·特殊灵体」择取盘(1~3 槽)
-		var selMingge = self.normalizeMinggeList(self.mingge || [], self.getMinggeSlotCap(false));
+		var selMingge = self.filterSealedMingge(self.normalizeMinggeList(self.mingge || [], self.getMinggeSlotCap(false)), self.samsaraLegacyPath);
 		if (originOnly){
 			var mgCap = self.getMinggeSlotCap(false);
 			var mgHdr = dojo.create("div", {
@@ -2824,9 +2903,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					for (var mi = 0; mi < selMingge.length; mi++){
 						if (selMingge[mi] === mk){ on = true; break; }
 					}
-					mgCards[mk].className = "xxMgCard" + (on ? " xx-sel" : "");
+					mgCards[mk].className = "xxMgCard" + (on ? " xx-sel" : "") + self.getSamsaraMinggeCardCls(mk, false);
 				}
 			};
+			var mgLegHint = self.getSamsaraMinggeHintHtml(false);
+			if (mgLegHint){
+				dojo.create("div", {className: "xxMgSamsaraHint", innerHTML: mgLegHint}, card);
+			}
 			var mgGrid = dojo.create("div", {className: "xxMgGrid"}, card);
 			this.MINGGE_DEFS.forEach(function(mg){
 				var ico = (classes.ui && classes.ui.XianxiaArt && classes.ui.XianxiaArt.minggeIcon) ?
@@ -2835,10 +2918,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					className: "xxMgCard",
 					"data-mg": mg.key,
 					innerHTML: ico + "<div class=\"xxMgBody\">" +
-						"<div class=\"xxMgTitleRow\"><b>" + mg.label + "</b><span class=\"xxMgTag\">" + mg.tag + "</span></div>" +
+						"<div class=\"xxMgTitleRow\"><b>" + mg.label + "</b><span class=\"xxMgTag\">" + mg.tag + "</span>" + self.getSamsaraMinggeTagHtml(mg.key, false) + "</div>" +
 						"<span class=\"xxMgDesc\">" + mg.desc + "</span></div>"
 				}, mgGrid);
 				dojo.connect(mgCards[mg.key], "onclick", function(){
+					if (self.isMinggeSealed(mg.key, false)){ return; }	//XX-11 前世业障封印
 					var idx = -1;
 					for (var j = 0; j < selMingge.length; j++){
 						if (selMingge[j] === mg.key){ idx = j; break; }
@@ -2959,8 +3043,13 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		} else {
 			this.pendingMingge = this.normalizeMinggeList(this.pendingMingge || [], cap);
 		}
+		this.pendingMingge = this.filterSealedMingge(this.pendingMingge, this.getSamsaraActivePath());	//XX-11 此世所择之道的业障封印
 		var box = dojo.create("div", {className: "xxMgPickerBox"}, parentNode);
 		var hdr = dojo.create("div", {className: "xxMgPickerHdr"}, box);
+		var smNextHint = this.getSamsaraMinggeHintHtml(true);
+		if (smNextHint){
+			dojo.create("div", {className: "xxMgSamsaraHint", innerHTML: smNextHint}, box);
+		}
 		var grid = dojo.create("div", {className: "xxMgGrid"}, box);
 		var cardMap = {};
 		var refresh = function(){
@@ -2973,7 +3062,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				for (var i = 0; i < cur.length; i++){
 					if (cur[i] === k){ picked = true; break; }
 				}
-				cardMap[k].className = "xxMgCard" + (picked ? " xx-sel" : "");
+				cardMap[k].className = "xxMgCard" + (picked ? " xx-sel" : "") + self.getSamsaraMinggeCardCls(k, true);
 			}
 		};
 		for (var i = 0; i < this.MINGGE_DEFS.length; i++){
@@ -2984,7 +3073,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 					className: "xxMgCard",
 					"data-mg": mg.key,
 					innerHTML: ico + "<div class=\"xxMgBody\">" +
-						"<div class=\"xxMgTitleRow\"><b>" + mg.label + "</b><span class=\"xxMgTag\">" + mg.tag + "</span></div>" +
+						"<div class=\"xxMgTitleRow\"><b>" + mg.label + "</b><span class=\"xxMgTag\">" + mg.tag + "</span>" + self.getSamsaraMinggeTagHtml(mg.key, true) + "</div>" +
 						"<span class=\"xxMgDesc\">" + mg.desc + "</span></div>"
 				}, grid);
 				cardMap[mg.key] = el;
@@ -4555,6 +4644,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			waveKeys: waveKeys,
 			natalName: natalName,
 			nirvanaUsed: false,
+			panguUsed: false,
 			autoFlow: true,
 			castTick: 0,
 			castMax: 10,
@@ -4777,6 +4867,22 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 		}
 
+		// XX-9 盘古幡·开天一击：26F~35F 每场斗法首个出手回合劈落妖仙最大气血一定比例
+		if (sk.key !== "guard" && e.hp > 0 && caveB && caveB.panguCleaveRatio > 0 && !b.panguUsed){
+			b.panguUsed = true;
+			var cleaveDmg = Math.max(12, Math.round(e.maxHp * caveB.panguCleaveRatio));
+			e.hp = Math.max(0, e.hp - cleaveDmg);
+			ev.pDmgDealt += cleaveDmg;
+			turnNotes.push("【盘古幡·开天】混沌幡面一卷开天辟地，劈落妖仙 " + cleaveDmg + " 点本源气血");
+		}
+
+		// XX-10 九霄神雷追击：雷池淬体之躯 26F~35F 每个出手回合引落神雷追加一击
+		if (sk.key !== "guard" && e.hp > 0 && caveB && caveB.thunderStrikeRatio > 0){
+			var thunderRaw = Math.max(8, atkEff * caveB.thunderStrikeRatio);
+			var thunderDealt = applyDamageToEnemy(thunderRaw, 1.5, false);
+			turnNotes.push("【九霄神雷】雷体引落九霄神雷追击，再劈 " + thunderDealt + " 点雷霆伤害");
+		}
+
 		// XX-7 / XX-8 三宝鸿蒙开天共鸣 & 诛仙剑阵图 26F~35F 残血妖王/魔尊斩决
 		if (b.mode === "greater" && b.floor >= 26 && e.hp > 0 && sk.key !== "guard" && caveB && caveB.riftBossExecuteRatio > 0){
 			if (e.hp <= e.maxHp * caveB.riftBossExecuteRatio){
@@ -4803,8 +4909,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 
 		// 4. 妖兽回合结算
+		// XX-9 混沌钟·镇压时空：26F~35F 每隔 N 回合钟鸣定住妖仙一回合(不再生、不出手)
+		var bellEvery = (caveB && caveB.chronoBellFreezeEvery > 0) ? caveB.chronoBellFreezeEvery : 0;
+		var bellFrozen = !!(bellEvery > 0 && ((b.turn || 1) % bellEvery) === 0);
 		// 妖王再生特征 (千年墨蛟王 / 双首银狼王狂暴 / 真仙法则化身 / 上界妖仙)
-		if (e.key === "mojiaowang" || e.key === "zhenxian" || e.key === "yaoxian" || (e.key === "yinlang" && e.enraged)){
+		if (!bellFrozen && (e.key === "mojiaowang" || e.key === "zhenxian" || e.key === "yaoxian" || (e.key === "yinlang" && e.enraged))){
 			var regenRatio = (e.key === "yinlang") ? 0.04 : (e.key === "yaoxian" ? 0.06 : 0.05);
 			var regenHp = Math.max(5, Math.round(e.maxHp * regenRatio));
 			e.hp = Math.min(e.maxHp, e.hp + regenHp);
@@ -4823,6 +4932,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 		var xianqiMit = (caveB && caveB.riftMitigation) ? caveB.riftMitigation : 0;
 		var xianqiPierceMit = (caveB && caveB.riftPierceMitigation) ? caveB.riftPierceMitigation : 0;
+		var taijiReflectRatio = (caveB && caveB.taijiReflectRatio > 0) ? caveB.taijiReflectRatio : 0;	//XX-9 太极图·阴阳逆转
+		var taijiReflected = 0;
 
 		var applyDamageToPlayer = function(rawEnemyDmg, pierceRatio){
 			var incoming = Math.max(4, Math.round((rawEnemyDmg - p.def * 0.45) * (1 - xianqiMit)));
@@ -4841,10 +4952,28 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var totalHpLost = directHpDmg + shieldableDmg;
 			p.hp = Math.max(0, p.hp - totalHpLost);
 			ev.eDmgDealt += totalHpLost;
+			if (taijiReflectRatio > 0 && incoming > 0 && e.hp > 0){
+				var reflDmg = Math.max(1, Math.round(incoming * taijiReflectRatio));
+				e.hp = Math.max(0, e.hp - reflDmg);
+				ev.pDmgDealt += reflDmg;
+				taijiReflected += reflDmg;
+			}
 			return totalHpLost;
 		};
 
-		if (intent === "heavy"){
+		if (bellFrozen){
+			turnNotes.push("【混沌钟·镇压时空】钟鸣一响万古凝滞，" + e.name + "被定在光阴之中，本回合无法出手");
+			// XX-10 钟鸣引雷：混沌钟共鸣 + 雷池淬体，镇压回合以九霄神雷震荡妖仙本源
+			if (caveB && caveB.thunderBellShockRatio > 0 && e.hp > 0){
+				var bellShock = Math.max(8, Math.round(e.maxHp * caveB.thunderBellShockRatio));
+				e.hp = Math.max(0, e.hp - bellShock);
+				ev.pDmgDealt += bellShock;
+				turnNotes.push("【钟鸣引雷】钟声引落九霄神雷，雷震妖仙 " + bellShock + " 点本源气血");
+				if (e.hp <= 0){
+					return this.advanceBattleWaveOrWin(turnNotes.join("；"));
+				}
+			}
+		} else if (intent === "heavy"){
 			if (p.counterStance){
 				// 太极反震破招！(剑骨通明反震伤害 +75% + 本命玄天镜反制加成)
 				var reducedDmg = applyDamageToPlayer(eAtk * 1.65 * 0.25, 0);
@@ -4912,6 +5041,14 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				turnNotes.push("☠ " + e.name + "毒牙扑击造成 " + stLost + " 伤并附带【蛇毒】");
 			} else {
 				turnNotes.push("⚔ " + e.name + (isDouble ? "双锋连斩" : "凶煞扑击") + "造成 " + stLost + " 点伤害");
+			}
+		}
+
+		if (taijiReflected > 0){
+			turnNotes.push("【太极图·阴阳逆转】阴阳二气倒转乾坤，将 " + taijiReflected + " 点伤害反震回妖仙");
+			if (e.hp <= 0){
+				if (p.hp <= 0){ p.hp = 1; }
+				return this.advanceBattleWaveOrWin(turnNotes.join("；"));
 			}
 		}
 
@@ -5032,6 +5169,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			if (xyRes){ xyRes.unlocked = true; }
 			addRes("xianyuan", xyGain);
 		}
+		var fsWin = (floor >= 26 && this.onFengshenRiftVictory) ? this.onFengshenRiftVictory(floor) : null;	//XX-10 封神记功
+		var tlPaperWin = (floor >= 26 && this.onTalismanRiftVictory) ? this.onTalismanRiftVictory(floor) : 0;	//XX-13 秘境破关得符纸
+		if (floor >= 26 && this.onPenglaiRiftVictory){ this.onPenglaiRiftVictory(floor); }	//XX-14 秘境破关,海上蜃气渐浓
+		if (floor >= 26 && this.onStarRiftVictory){ this.onStarRiftVictory(floor); }	//XX-15 秘境破关,星象更明
+		if (floor >= 26 && this.onSectRiftVictory){ this.onSectRiftVictory(floor); }	//XX-16 秘境破关,心魔劫冷却缩短
 		var floorScale = scale * (1 + floor * 0.25);
 		var artOdds = Math.min(0.65, 0.18 + floor * 0.03);
 		var gArtDropped = false;
@@ -5041,7 +5183,10 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		b.active = false;
 		b.result = "win";
 		var gWinMsg = "【上古大秘境破关】成功斩杀第 " + floor + " 层妖王【" + b.enemy.name + "】！修为 +" + fmt(gAmt) +
-			"，上古遗宝 +" + relics + (xyGain > 0 ? "，仙元 +" + xyGain : "") + (gArtDropped ? "，更夺得上古法宝！" : "！");
+			"，上古遗宝 +" + relics + (xyGain > 0 ? "，仙元 +" + xyGain : "") +
+			(fsWin ? ("，神位功德 +" + fsWin.merit + "，九霄雷髓 +" + fsWin.orbs) : "") +
+			(tlPaperWin > 0 ? ("，黄表符纸 +" + tlPaperWin) : "") +
+			(gArtDropped ? "，更夺得上古法宝！" : "！");
 		b.logs.unshift((turnSummary ? turnSummary + " — " : "") + gWinMsg);
 		this.lastBattleReport = this.buildBattleReport(floor, true, this.getCombatPower(), this.floorPower(floor));
 		this.setLastAction("ok", gWinMsg);
@@ -5198,6 +5343,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 				var xyObj = this.game.resPool.get("xianyuan");
 				if (xyObj){ xyObj.unlocked = true; }
 				addRes("xianyuan", xy);
+				if (this.onFengshenRiftVictory){ this.onFengshenRiftVictory(floor); }	//XX-10 封神记功
 			}
 			if (gInfo.countered && this.riftStance === "stealth"){
 				this.heartDemon = Math.max(0, this.heartDemon - 6);
@@ -5254,12 +5400,14 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			if (sXyObj){ sXyObj.unlocked = true; }
 			addRes("xianyuan", sweepXy);
 		}
+		var fsSweep = (floor >= 26 && this.onFengshenRiftVictory) ? this.onFengshenRiftVictory(floor, true) : null;	//XX-10 清剿记功(半数)
 		var dropped = false;
 		if (Math.random() < Math.min(0.55, 0.14 + floor * 0.025 + (this.riftStance === "array" ? 0.08 : 0))){
 			dropped = this.rollArtifactDrop(floorScale);
 			if (dropped && this.game.render){ this.game.render(); }
 		}
-		var text = "清剿上古秘境第 " + floor + " 层凯旋：修为 +" + fmt(amt) + "，上古遗宝 +" + relics + (sweepXy > 0 ? "，仙元 +" + sweepXy : "") + (dropped ? "，更获古宝机缘！" : "");
+		var text = "清剿上古秘境第 " + floor + " 层凯旋：修为 +" + fmt(amt) + "，上古遗宝 +" + relics + (sweepXy > 0 ? "，仙元 +" + sweepXy : "") +
+			(fsSweep ? ("，神位功德 +" + fsSweep.merit + "，九霄雷髓 +" + fsSweep.orbs) : "") + (dropped ? "，更获古宝机缘！" : "");
 		this.game.msg("【秘境清剿】" + text, "important");
 		this.setLastAction("ok", text);
 		this.lastBattleReport = this.buildBattleReport(floor, true, this.getCombatPower(), this.floorPower(floor));
@@ -5357,6 +5505,14 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		this.syncDaoSutras();
 		this.dharmaIdols = this.normalizeDharmaIdols(this.dharmaIdols);
+		this.initChronoStateOnAscend();
+		this.initFengshenStateOnAscend();
+		this.initSamsaraStateOnAscend();
+		this.initStarGoStateOnAscend();
+		this.initFengshuiStateOnAscend();
+		this.initSwordPenglaiStateOnAscend();
+		this.initStarArtifactStateOnAscend();
+		this.initSectTribStateOnAscend();
 		var xyRes = this.game.resPool.get("xianyuan");
 		if (xyRes){ xyRes.unlocked = true; }
 		this.game.resPool.addResEvent("xianyuan", 25);
@@ -5425,7 +5581,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 
 	// ---------------- XX-4 仙界洞府 · 聚灵药园与本命仙器蕴养祭炼 ----------------
 
-	ART_VER: "77",
+	ART_VER: "85",
 
 	IMMORTAL_HERBS: [
 		{
@@ -5729,6 +5885,14 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		}
 		this.syncDaoSutras();
 		this.dharmaIdols = this.normalizeDharmaIdols(this.dharmaIdols);
+		this.initChronoStateOnAscend();
+		this.initFengshenStateOnAscend();
+		this.initSamsaraStateOnAscend();
+		this.initStarGoStateOnAscend();
+		this.initFengshuiStateOnAscend();
+		this.initSwordPenglaiStateOnAscend();
+		this.initStarArtifactStateOnAscend();
+		this.initSectTribStateOnAscend();
 		if (this.game.updateCaches){ this.game.updateCaches(); }
 		return true;
 	},
@@ -7724,7 +7888,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (!this.immortalAscended || !this.spiritNursery){ return; }
 		var step = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
 		if (step <= 0){ return; }
-		var sealMult = 1 + Math.max(0, Math.floor(this.beastImprintTier || 0)) * 0.12;
+		var sealMult = (1 + Math.max(0, Math.floor(this.beastImprintTier || 0)) * 0.12) * this.getSamsaraNurseryMult();	//XX-11 畜生道万灵本性
 		var incStep = step * sealMult;
 		var dirty = false;
 		for (var i = 0; i < this.PRIMORDIAL_BEASTS.length; i++){
@@ -8687,7 +8851,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		var cfg = this.getZixiaoAltarTierDef(tier);
 		var mult = this.getDharmaImprintCostMult();
 		var compRank = this.getZixiaoComprehensionRank();
-		var sutraScale = Math.max(1, cfg.sutraMult || 1) * (1 + compRank * 0.05);
+		var chronoSermon = (this.getChronoSermonMult ? this.getChronoSermonMult() : 1) * (this.getFengshenSermonMult ? this.getFengshenSermonMult() : 1) * (this.getFengshuiSermonMult ? this.getFengshuiSermonMult() : 1);	//XX-9 岁月长河 & 造化玉碟 / XX-10 文昌讲经天师 / XX-13 离火格局加持讲道产出
+		var sutraScale = Math.max(1, cfg.sutraMult || 1) * (1 + compRank * 0.05) * chronoSermon;
 		var isHm = (mode === "hongmeng");
 		var xyCost = isHm
 			? Math.max(6, Math.round(14 * mult))
@@ -8697,8 +8862,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			? Math.max(5, Math.round(5 * sutraScale))
 			: Math.max(2, Math.round(2 * sutraScale));
 		var compGain = isHm
-			? Math.max(22, Math.round(26 * (cfg.sutraMult || 1)))
-			: Math.max(10, Math.round(12 * (cfg.sutraMult || 1)));
+			? Math.max(22, Math.round(26 * (cfg.sutraMult || 1) * chronoSermon))
+			: Math.max(10, Math.round(12 * (cfg.sutraMult || 1) * chronoSermon));
 		var lawProg = isHm ? (34 + tier * 6) : (16 + tier * 4);
 		var xyObj = this.game.resPool.get("xianyuan");
 		var okTier = tier >= 1;
@@ -8734,6 +8899,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.zixiaoAltar.hongmengLectureCount = (this.zixiaoAltar.hongmengLectureCount || 0) + 1;
 		}
 		this.syncDaoSutras();
+		if (this.gainFengshenMerit){ this.gainFengshenMerit(this.getFengshenSermonMerit(prev.sutraGain, true), "sermon"); }	//XX-10 讲道功德
 		this.addDaoLawProgress(prev.lawProg);
 		if (this.game.updateCaches){ this.game.updateCaches(); }
 		var isEn = String($I("cultivation.zixiao.panel.badge") || "").indexOf("Immortal") === 0;
@@ -8760,13 +8926,15 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 	completePassiveZixiaoSermon: function(){
 		if (!this.immortalAscended || !this.zixiaoAltar || (this.zixiaoAltar.tier || 0) <= 0){ return null; }
 		var cfg = this.getZixiaoAltarTierDef(this.zixiaoAltar.tier);
-		var sGain = Math.max(1, Math.round(1.5 * (cfg.sutraMult || 1)));
-		var cGain = Math.max(6, Math.round(7 * (cfg.sutraMult || 1)));
+		var chronoPassive = (this.getChronoSermonMult ? this.getChronoSermonMult() : 1) * (this.getFengshenSermonMult ? this.getFengshenSermonMult() : 1) * (this.getFengshuiSermonMult ? this.getFengshuiSermonMult() : 1);
+		var sGain = Math.max(1, Math.round(1.5 * (cfg.sutraMult || 1) * chronoPassive));
+		var cGain = Math.max(6, Math.round(7 * (cfg.sutraMult || 1) * chronoPassive));
 		this.zixiaoAltar.daoSutras = (this.zixiaoAltar.daoSutras || 0) + sGain;
 		this.zixiaoAltar.totalSutrasCondensed = (this.zixiaoAltar.totalSutrasCondensed || 0) + sGain;
 		this.zixiaoAltar.comprehension = (this.zixiaoAltar.comprehension || 0) + cGain;
 		this.zixiaoAltar.lectureCount = (this.zixiaoAltar.lectureCount || 0) + 1;
 		this.syncDaoSutras();
+		if (this.gainFengshenMerit){ this.gainFengshenMerit(this.getFengshenSermonMerit(sGain, false), "sermon"); }	//XX-10 讲道功德
 		this.addDaoLawProgress(8 + this.zixiaoAltar.tier * 2);
 		if (this.game.updateCaches){ this.game.updateCaches(); }
 		var isEn = String($I("cultivation.zixiao.panel.badge") || "").indexOf("Immortal") === 0;
@@ -8783,7 +8951,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (dt <= 0){ return; }
 		var cfg = this.getZixiaoAltarTierDef(this.zixiaoAltar.tier);
 		var sealMult = 1 + Math.max(0, Math.floor(this.dharmaImprintTier || 0)) * 0.08;
-		var step = dt * 1.15 * (cfg.lectureSpeed || 1) * sealMult;
+		var chronoTempo = this.getChronoSermonMult ? (1 + (this.getChronoSermonMult() - 1) * 0.5) : 1;
+		var step = dt * 1.15 * (cfg.lectureSpeed || 1) * sealMult * chronoTempo;
 		this.zixiaoAltar.lectureProgress = (this.zixiaoAltar.lectureProgress || 0) + step;
 		var maxP = Math.max(1, this.zixiaoAltar.lectureMax || 100);
 		var guard = 0;
@@ -8962,6 +9131,6450 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		return true;
 	},
 
+	// ---------------- XX-9 混沌岁月长河悟道台与先天至宝器魂共鸣谱 ----------------
+
+	CHRONO_ALTAR_TIERS: [
+		{tier: 0, titleKey: "cultivation.chrono.tier.0", sandMult: 0, flowSpeed: 0, xyBase: 0, xyRatio: 0, herbSpeed: 0, sermonBoost: 0},
+		{tier: 1, titleKey: "cultivation.chrono.tier.1", xianyuan: 24, timeCrystal: 16, auxRes: null, auxVal: 0, sutras: 0, reqDaoyun: 0, sandMult: 1.00, flowSpeed: 1.00, xyBase: 0.03, xyRatio: 0.10, herbSpeed: 0.08, sermonBoost: 0.08},
+		{tier: 2, titleKey: "cultivation.chrono.tier.2", xianyuan: 48, timeCrystal: 28, auxRes: "relic", auxVal: 20, sutras: 0, reqDaoyun: 1, sandMult: 1.30, flowSpeed: 1.25, xyBase: 0.06, xyRatio: 0.18, herbSpeed: 0.15, sermonBoost: 0.15},
+		{tier: 3, titleKey: "cultivation.chrono.tier.3", xianyuan: 88, timeCrystal: 44, auxRes: "unobtainium", auxVal: 26, sutras: 10, reqDaoyun: 1, sandMult: 1.65, flowSpeed: 1.55, xyBase: 0.10, xyRatio: 0.28, herbSpeed: 0.24, sermonBoost: 0.24},
+		{tier: 4, titleKey: "cultivation.chrono.tier.4", xianyuan: 145, timeCrystal: 66, auxRes: "relic", auxVal: 60, sutras: 16, reqDaoyun: 2, sandMult: 2.05, flowSpeed: 1.90, xyBase: 0.15, xyRatio: 0.40, herbSpeed: 0.34, sermonBoost: 0.34},
+		{tier: 5, titleKey: "cultivation.chrono.tier.5", xianyuan: 230, timeCrystal: 95, auxRes: "unobtainium", auxVal: 55, sutras: 24, reqDaoyun: 2, sandMult: 2.55, flowSpeed: 2.30, xyBase: 0.22, xyRatio: 0.55, herbSpeed: 0.46, sermonBoost: 0.46},
+		{tier: 6, titleKey: "cultivation.chrono.tier.6", xianyuan: 350, timeCrystal: 140, auxRes: "relic", auxVal: 150, sutras: 36, reqDaoyun: 3, sandMult: 3.20, flowSpeed: 2.80, xyBase: 0.30, xyRatio: 0.72, herbSpeed: 0.60, sermonBoost: 0.60}
+	],
+
+	//太古岁月节点:由近及远溯游(上皇 → 混沌),每升一阶悟道台多开一处节点
+	CHRONO_ERAS: [
+		{key: "shanghuang", labelKey: "cultivation.chrono.era.shanghuang.label", descKey: "cultivation.chrono.era.shanghuang.desc", reqTier: 1, xyCost: 14, tcCost: 0, baseSand: 3, baseInsight: 10},
+		{key: "kaihuang", labelKey: "cultivation.chrono.era.kaihuang.label", descKey: "cultivation.chrono.era.kaihuang.desc", reqTier: 2, xyCost: 20, tcCost: 2, baseSand: 5, baseInsight: 14},
+		{key: "chiming", labelKey: "cultivation.chrono.era.chiming.label", descKey: "cultivation.chrono.era.chiming.desc", reqTier: 3, xyCost: 28, tcCost: 4, baseSand: 7, baseInsight: 19},
+		{key: "yankang", labelKey: "cultivation.chrono.era.yankang.label", descKey: "cultivation.chrono.era.yankang.desc", reqTier: 4, xyCost: 38, tcCost: 6, baseSand: 10, baseInsight: 25},
+		{key: "longhan", labelKey: "cultivation.chrono.era.longhan.label", descKey: "cultivation.chrono.era.longhan.desc", reqTier: 5, xyCost: 50, tcCost: 9, baseSand: 13, baseInsight: 32},
+		{key: "hundun", labelKey: "cultivation.chrono.era.hundun.label", descKey: "cultivation.chrono.era.hundun.desc", reqTier: 6, xyCost: 66, tcCost: 12, baseSand: 17, baseInsight: 40}
+	],
+
+	INNATE_TREASURES: [
+		{
+			key: "chaosBell",
+			labelKey: "cultivation.innate.item.chaosBell.label",
+			descKey: "cultivation.innate.item.chaosBell.desc",
+			art: "res/art/treasure_chaos_bell.webp",
+			baseSand: 6,
+			baseXy: 24
+		},
+		{
+			key: "taijiDiagram",
+			labelKey: "cultivation.innate.item.taijiDiagram.label",
+			descKey: "cultivation.innate.item.taijiDiagram.desc",
+			art: "res/art/treasure_taiji_diagram.webp",
+			baseSand: 6,
+			baseXy: 24
+		},
+		{
+			key: "panguBanner",
+			labelKey: "cultivation.innate.item.panguBanner.label",
+			descKey: "cultivation.innate.item.panguBanner.desc",
+			art: "res/art/treasure_pangu_banner.webp",
+			baseSand: 7,
+			baseXy: 28
+		},
+		{
+			key: "creationDisc",
+			labelKey: "cultivation.innate.item.creationDisc.label",
+			descKey: "cultivation.innate.item.creationDisc.desc",
+			art: "res/art/treasure_creation_disc.webp",
+			baseSand: 6,
+			baseXy: 26
+		}
+	],
+
+	//器魂达到此重数即入「共鸣」;共鸣器魂数 1 / 2 / 4 对应一 / 二 / 三重共鸣
+	INNATE_RESONANT_LEVEL: 3,
+	INNATE_RESONANCE_STEPS: [1, 2, 4],
+
+	getChronoAltarTierDef: function(tier){
+		var t = Math.max(0, Math.min(6, Math.floor(tier || 0)));
+		return this.CHRONO_ALTAR_TIERS[t] || this.CHRONO_ALTAR_TIERS[0];
+	},
+
+	getChronoEraDef: function(key){
+		for (var i = 0; i < this.CHRONO_ERAS.length; i++){
+			if (this.CHRONO_ERAS[i].key === key){ return this.CHRONO_ERAS[i]; }
+		}
+		return null;
+	},
+
+	getInnateTreasureDef: function(key){
+		for (var i = 0; i < this.INNATE_TREASURES.length; i++){
+			if (this.INNATE_TREASURES[i].key === key){ return this.INNATE_TREASURES[i]; }
+		}
+		return null;
+	},
+
+	makeDefaultChronoAltar: function(){
+		var mastery = {};
+		for (var i = 0; i < this.CHRONO_ERAS.length; i++){
+			mastery[this.CHRONO_ERAS[i].key] = 0;
+		}
+		return {
+			tier: 0,
+			chronoSand: 0,
+			totalSandGathered: 0,
+			insight: 0,
+			flowProgress: 0,
+			flowMax: 100,
+			traceCount: 0,
+			passiveTraceCount: 0,
+			selectedEra: "shanghuang",
+			eraMastery: mastery,
+			autoTrace: true,
+			lastNote: ""
+		};
+	},
+
+	normalizeChronoAltar: function(raw){
+		var def = this.makeDefaultChronoAltar();
+		if (!raw || typeof raw !== "object"){ return def; }
+		if (typeof raw.tier === "number" && isFinite(raw.tier)){
+			def.tier = Math.min(6, Math.max(0, Math.floor(raw.tier)));
+		}
+		if (typeof raw.chronoSand === "number" && isFinite(raw.chronoSand)){
+			def.chronoSand = Math.max(0, Math.floor(raw.chronoSand));
+		}
+		def.totalSandGathered = (typeof raw.totalSandGathered === "number" && isFinite(raw.totalSandGathered))
+			? Math.max(def.chronoSand, Math.floor(raw.totalSandGathered))
+			: def.chronoSand;
+		if (typeof raw.insight === "number" && isFinite(raw.insight)){
+			def.insight = Math.max(0, Math.floor(raw.insight));
+		}
+		if (typeof raw.flowProgress === "number" && isFinite(raw.flowProgress)){
+			def.flowProgress = Math.max(0, Math.min(100, raw.flowProgress));
+		}
+		if (typeof raw.traceCount === "number" && isFinite(raw.traceCount)){
+			def.traceCount = Math.max(0, Math.floor(raw.traceCount));
+		}
+		if (typeof raw.passiveTraceCount === "number" && isFinite(raw.passiveTraceCount)){
+			def.passiveTraceCount = Math.max(0, Math.floor(raw.passiveTraceCount));
+		}
+		if (typeof raw.selectedEra === "string" && this.getChronoEraDef(raw.selectedEra)){
+			def.selectedEra = raw.selectedEra;
+		}
+		if (raw.eraMastery && typeof raw.eraMastery === "object"){
+			for (var i = 0; i < this.CHRONO_ERAS.length; i++){
+				var ek = this.CHRONO_ERAS[i].key;
+				var mv = raw.eraMastery[ek];
+				if (typeof mv === "number" && isFinite(mv)){
+					def.eraMastery[ek] = Math.min(10, Math.max(0, Math.floor(mv)));
+				}
+			}
+		}
+		if (typeof raw.autoTrace === "boolean"){
+			def.autoTrace = raw.autoTrace;
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	syncChronoSand: function(){
+		this.chronoSand = (this.chronoAltar && typeof this.chronoAltar.chronoSand === "number")
+			? Math.max(0, Math.floor(this.chronoAltar.chronoSand))
+			: 0;
+		return this.chronoSand;
+	},
+
+	makeDefaultInnateTreasures: function(){
+		var levels = {};
+		for (var i = 0; i < this.INNATE_TREASURES.length; i++){
+			levels[this.INNATE_TREASURES[i].key] = 0;
+		}
+		return {
+			levels: levels,
+			totalRefinements: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeInnateTreasures: function(raw){
+		var def = this.makeDefaultInnateTreasures();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var sum = 0;
+		if (raw.levels && typeof raw.levels === "object"){
+			for (var i = 0; i < this.INNATE_TREASURES.length; i++){
+				var tk = this.INNATE_TREASURES[i].key;
+				var lv = raw.levels[tk];
+				if (typeof lv === "number" && isFinite(lv)){
+					def.levels[tk] = Math.min(6, Math.max(0, Math.floor(lv)));
+				}
+				sum += def.levels[tk];
+			}
+		}
+		def.totalRefinements = (typeof raw.totalRefinements === "number" && isFinite(raw.totalRefinements))
+			? Math.max(sum, Math.floor(raw.totalRefinements))
+			: sum;
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	//飞升 / 测试洞府初始化:归一化状态并按前世光阴道印赐下先天光阴本源砂
+	initChronoStateOnAscend: function(){
+		this.chronoAltar = this.normalizeChronoAltar(this.chronoAltar);
+		if ((this.chronoImprintTier || 0) > 0 && (this.chronoAltar.totalSandGathered || 0) === 0 && (this.chronoAltar.chronoSand || 0) === 0){
+			var initSand = this.getChronoStartingSand();
+			this.chronoAltar.chronoSand = initSand;
+			this.chronoAltar.totalSandGathered = initSand;
+		}
+		this.syncChronoSand();
+		this.innateTreasures = this.normalizeInnateTreasures(this.innateTreasures);
+	},
+
+	getChronoImprintCostMult: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.chronoImprintTier || 0)));
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		return Math.max(0.55, 1 - seal * 0.06 - imp * 0.015);
+	},
+
+	getChronoStartingSand: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.chronoImprintTier || 0)));
+		return seal * 6;
+	},
+
+	getChronoDaoBonus: function(){
+		var seal = Math.max(0, Math.min(6, Math.floor(this.chronoImprintTier || 0)));
+		if (seal <= 0){
+			return {tier: 0, xiuweiBase: 0, xiuweiRatio: 0, realmProductionRatio: 0};
+		}
+		return {
+			tier: seal,
+			xiuweiBase: seal * 0.22,
+			xiuweiRatio: seal * 0.10,
+			realmProductionRatio: seal * 0.05
+		};
+	},
+
+	syncChronoImprintTier: function(){
+		var peak = Math.max(0, Math.floor(this.chronoImprintTier || 0));
+		if (this.chronoAltar && (this.chronoAltar.tier || 0) > peak){
+			peak = Math.floor(this.chronoAltar.tier);
+		}
+		var maxLv = this.getInnateMaxLevel();
+		if (maxLv > peak){ peak = maxLv; }
+		this.chronoImprintTier = Math.min(6, peak);
+		return this.chronoImprintTier;
+	},
+
+	getChronoEpochRank: function(){
+		var ca = this.chronoAltar;
+		if (!ca){ return 0; }
+		return Math.min(12, Math.floor((ca.insight || 0) / 40));
+	},
+
+	getInnateTotalLevel: function(){
+		if (!this.innateTreasures || !this.innateTreasures.levels){ return 0; }
+		var sum = 0;
+		for (var i = 0; i < this.INNATE_TREASURES.length; i++){
+			sum += Math.max(0, Math.floor(this.innateTreasures.levels[this.INNATE_TREASURES[i].key] || 0));
+		}
+		return sum;
+	},
+
+	getAwakenedInnateCount: function(){
+		if (!this.innateTreasures || !this.innateTreasures.levels){ return 0; }
+		var cnt = 0;
+		for (var i = 0; i < this.INNATE_TREASURES.length; i++){
+			if ((this.innateTreasures.levels[this.INNATE_TREASURES[i].key] || 0) > 0){ cnt++; }
+		}
+		return cnt;
+	},
+
+	getInnateMaxLevel: function(){
+		if (!this.innateTreasures || !this.innateTreasures.levels){ return 0; }
+		var maxL = 0;
+		for (var i = 0; i < this.INNATE_TREASURES.length; i++){
+			var lv = Math.floor(this.innateTreasures.levels[this.INNATE_TREASURES[i].key] || 0);
+			if (lv > maxL){ maxL = lv; }
+		}
+		return maxL;
+	},
+
+	getInnateResonantCount: function(){
+		if (!this.innateTreasures || !this.innateTreasures.levels){ return 0; }
+		var cnt = 0;
+		for (var i = 0; i < this.INNATE_TREASURES.length; i++){
+			if ((this.innateTreasures.levels[this.INNATE_TREASURES[i].key] || 0) >= this.INNATE_RESONANT_LEVEL){ cnt++; }
+		}
+		return cnt;
+	},
+
+	getInnateResonanceTier: function(){
+		var cnt = this.getInnateResonantCount();
+		var tier = 0;
+		for (var i = 0; i < this.INNATE_RESONANCE_STEPS.length; i++){
+			if (cnt >= this.INNATE_RESONANCE_STEPS[i]){ tier = i + 1; }
+		}
+		return tier;
+	},
+
+	//单件器魂在给定重数下的直观数值(供加成结算与面板显示共用)
+	getInnateTreasureEffect: function(key, lvOpt){
+		var lv = (typeof lvOpt === "number")
+			? Math.max(0, Math.min(6, Math.floor(lvOpt)))
+			: ((this.innateTreasures && this.innateTreasures.levels) ? Math.floor(this.innateTreasures.levels[key] || 0) : 0);
+		if (key === "chaosBell"){
+			return {
+				lv: lv,
+				mitigation: 0.04 * lv,
+				startShield: 0.06 * lv,
+				hpMult: 1 + 0.10 * lv,
+				freezeEvery: (lv >= 5) ? 2 : ((lv >= 3) ? 3 : ((lv >= 1) ? 4 : 0))
+			};
+		}
+		if (key === "taijiDiagram"){
+			return {
+				lv: lv,
+				defIgnore: 0.04 * lv,
+				counterBonus: 0.12 * lv,
+				reflect: Math.min(0.45, 0.06 * lv),
+				herbYield: 0.05 * lv
+			};
+		}
+		if (key === "panguBanner"){
+			return {
+				lv: lv,
+				combatMult: 1 + 0.14 * lv,
+				riftDmg: 0.10 * lv,
+				cleave: Math.min(0.20, 0.025 * lv),
+				critChance: 0.03 * lv
+			};
+		}
+		if (key === "creationDisc"){
+			return {
+				lv: lv,
+				herbSpeed: 0.12 * lv,
+				herbYield: 0.04 * lv,
+				xiuweiRatio: 0.22 * lv,
+				sermon: 0.06 * lv
+			};
+		}
+		return {lv: lv};
+	},
+
+	getChronoAuraBonuses: function(){
+		if (!this.immortalAscended){
+			return {xyBase: 0, xyRatio: 0, herbSpeed: 0, sermonBoost: 0};
+		}
+		var ca = this.chronoAltar;
+		var tier = (ca && ca.tier) ? ca.tier : 0;
+		var cfg = this.getChronoAltarTierDef(tier);
+		var insight = (ca && ca.insight) ? ca.insight : 0;
+		var epochSteps = Math.min(12, insight / 40);
+		return {
+			xyBase: (cfg.xyBase || 0) + epochSteps * 0.012,
+			xyRatio: (cfg.xyRatio || 0) + epochSteps * 0.04,
+			herbSpeed: (cfg.herbSpeed || 0) + epochSteps * 0.04,
+			sermonBoost: (cfg.sermonBoost || 0) + epochSteps * 0.02
+		};
+	},
+
+	//XX-9 → XX-8 联动:岁月长河悟道台、造化玉碟与器魂共鸣对紫霄讲道坛玉简 / 悟道产出的总倍率
+	getChronoSermonMult: function(){
+		if (!this.immortalAscended){ return 1; }
+		var aura = this.getChronoAuraBonuses();
+		var boost = aura.sermonBoost || 0;
+		var discLv = (this.innateTreasures && this.innateTreasures.levels) ? (this.innateTreasures.levels.creationDisc || 0) : 0;
+		if (discLv > 0){ boost += this.getInnateTreasureEffect("creationDisc", discLv).sermon; }
+		var resTier = this.getInnateResonanceTier();
+		if (resTier >= 1){ boost += 0.10; }
+		if (resTier >= 2){ boost += 0.18; }
+		if (resTier >= 3){ boost += 0.30; }
+		return 1 + boost;
+	},
+
+	getChronoUpgradeReq: function(){
+		var ca = this.chronoAltar || this.makeDefaultChronoAltar();
+		if ((ca.tier || 0) >= 6){ return null; }
+		var nextTier = (ca.tier || 0) + 1;
+		var cfg = this.CHRONO_ALTAR_TIERS[nextTier];
+		if (!cfg){ return null; }
+		var mult = this.getChronoImprintCostMult();
+		var xyCost = Math.max(8, this.roundNice(cfg.xianyuan * mult));
+		var tcCost = Math.max(4, this.roundNice(cfg.timeCrystal * mult));
+		var auxCost = (cfg.auxRes && cfg.auxVal > 0) ? Math.max(4, this.roundNice(cfg.auxVal * mult)) : 0;
+		var sutraCost = (cfg.sutras > 0) ? Math.max(1, Math.round(cfg.sutras * mult)) : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var tcObj = this.game.resPool.get("timeCrystal");
+		var auxObj = cfg.auxRes ? this.game.resPool.get(cfg.auxRes) : null;
+		var za = this.zixiaoAltar;
+		var haveSutras = (za && za.daoSutras) ? za.daoSutras : 0;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okTc = !!(tcObj && tcObj.value >= tcCost);
+		var okAux = !cfg.auxRes || auxCost <= 0 || !!(auxObj && auxObj.value >= auxCost);
+		var okSutra = sutraCost <= 0 || haveSutras >= sutraCost;
+		var okLaw = (this.daoyun || 0) >= (cfg.reqDaoyun || 0);
+		return {
+			nextTier: nextTier,
+			titleKey: cfg.titleKey,
+			xianyuan: xyCost,
+			timeCrystal: tcCost,
+			auxRes: cfg.auxRes,
+			auxVal: auxCost,
+			daoSutras: sutraCost,
+			reqDaoyun: cfg.reqDaoyun || 0,
+			affordable: !!(this.immortalAscended && okXy && okTc && okAux && okSutra && okLaw)
+		};
+	},
+
+	upgradeChronoAltar: function(){
+		if (!this.immortalAscended){ return false; }
+		this.chronoAltar = this.normalizeChronoAltar(this.chronoAltar);
+		this.zixiaoAltar = this.normalizeZixiaoAltar(this.zixiaoAltar);
+		var req = this.getChronoUpgradeReq();
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("timeCrystal", -req.timeCrystal);
+		if (req.auxRes && req.auxVal > 0){
+			this.game.resPool.addResEvent(req.auxRes, -req.auxVal);
+		}
+		if (req.daoSutras > 0){
+			this.zixiaoAltar.daoSutras = Math.max(0, (this.zixiaoAltar.daoSutras || 0) - req.daoSutras);
+			this.syncDaoSutras();
+		}
+		this.chronoAltar.tier = req.nextTier;
+		//新开节点自动锚定为最深可溯游的岁月节点
+		var deepest = this.getDeepestUnlockedChronoEra();
+		if (deepest){ this.chronoAltar.selectedEra = deepest.key; }
+		this.syncChronoImprintTier();
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.chrono.panel.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Chrono River Altar upgraded to [" + $I(req.titleKey) + "]!")
+			: ("【悟道台晋阶】岁月长河倒卷千古，悟道台晋升至【" + $I(req.titleKey) + "】！");
+		this.chronoAltar.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	constructChronoAltar: function(){
+		return this.upgradeChronoAltar();
+	},
+
+	toggleChronoAutoTrace: function(){
+		if (!this.immortalAscended){ return false; }
+		this.chronoAltar = this.normalizeChronoAltar(this.chronoAltar);
+		this.chronoAltar.autoTrace = !this.chronoAltar.autoTrace;
+		return this.chronoAltar.autoTrace;
+	},
+
+	isChronoEraUnlocked: function(eraKey){
+		var era = this.getChronoEraDef(eraKey);
+		if (!era){ return false; }
+		var tier = (this.chronoAltar && this.chronoAltar.tier) ? this.chronoAltar.tier : 0;
+		return tier >= era.reqTier;
+	},
+
+	getDeepestUnlockedChronoEra: function(){
+		var best = null;
+		for (var i = 0; i < this.CHRONO_ERAS.length; i++){
+			if (this.isChronoEraUnlocked(this.CHRONO_ERAS[i].key)){ best = this.CHRONO_ERAS[i]; }
+		}
+		return best;
+	},
+
+	selectChronoEra: function(eraKey){
+		if (!this.immortalAscended){ return false; }
+		this.chronoAltar = this.normalizeChronoAltar(this.chronoAltar);
+		if (!this.isChronoEraUnlocked(eraKey)){ return false; }
+		if (this.chronoAltar.selectedEra === eraKey){ return false; }
+		this.chronoAltar.selectedEra = eraKey;
+		return true;
+	},
+
+	getChronoTracePreview: function(eraKeyOpt){
+		var ca = this.chronoAltar || this.makeDefaultChronoAltar();
+		var era = this.getChronoEraDef(eraKeyOpt || ca.selectedEra || "shanghuang") || this.CHRONO_ERAS[0];
+		var tier = ca.tier || 0;
+		var cfg = this.getChronoAltarTierDef(tier);
+		var mult = this.getChronoImprintCostMult();
+		var mastery = (ca.eraMastery && ca.eraMastery[era.key]) ? ca.eraMastery[era.key] : 0;
+		var epochRank = this.getChronoEpochRank();
+		var scale = Math.max(1, cfg.sandMult || 1);
+		var fsChrono = this.getFengshuiChronoMult ? this.getFengshuiChronoMult() : 1;	//XX-13 坎水长河格局加持悟道产出
+		var sandGain = Math.max(1, Math.round(era.baseSand * scale * (1 + mastery * 0.06) * (1 + epochRank * 0.04) * fsChrono));
+		var insightGain = Math.max(4, Math.round(era.baseInsight * scale * fsChrono));
+		var xyCost = Math.max(6, Math.round(era.xyCost * mult));
+		var tcCost = (era.tcCost > 0) ? Math.max(1, Math.round(era.tcCost * mult)) : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var tcObj = this.game.resPool.get("timeCrystal");
+		var okTier = tier >= era.reqTier;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okTc = tcCost <= 0 || !!(tcObj && tcObj.value >= tcCost);
+		return {
+			eraKey: era.key,
+			reqTier: era.reqTier,
+			mastery: mastery,
+			xianyuan: xyCost,
+			timeCrystal: tcCost,
+			sandGain: sandGain,
+			insightGain: insightGain,
+			passiveSand: Math.max(1, Math.round(sandGain * 0.5)),
+			passiveInsight: Math.max(2, Math.round(insightGain * 0.5)),
+			lawProg: 10 + era.reqTier * 3,
+			unlocked: okTier,
+			affordable: !!(this.immortalAscended && okTier && okXy && okTc)
+		};
+	},
+
+	gainChronoSand: function(sand, insight){
+		var ca = this.chronoAltar;
+		ca.chronoSand = (ca.chronoSand || 0) + sand;
+		ca.totalSandGathered = (ca.totalSandGathered || 0) + sand;
+		ca.insight = (ca.insight || 0) + insight;
+		this.syncChronoSand();
+	},
+
+	traceChronoEra: function(eraKeyOpt){
+		if (!this.immortalAscended){ return false; }
+		this.chronoAltar = this.normalizeChronoAltar(this.chronoAltar);
+		if ((this.chronoAltar.tier || 0) <= 0){ return false; }
+		var eraKey = eraKeyOpt || this.chronoAltar.selectedEra;
+		var era = this.getChronoEraDef(eraKey);
+		if (!era){ return false; }
+		var prev = this.getChronoTracePreview(era.key);
+		if (!prev.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -prev.xianyuan);
+		if (prev.timeCrystal > 0){
+			this.game.resPool.addResEvent("timeCrystal", -prev.timeCrystal);
+		}
+		this.gainChronoSand(prev.sandGain, prev.insightGain);
+		if (this.gainFengshenMerit){ this.gainFengshenMerit(this.getFengshenChronoMerit(prev.insightGain, true), "chrono"); }	//XX-10 悟道功德
+		this.chronoAltar.traceCount = (this.chronoAltar.traceCount || 0) + 1;
+		this.chronoAltar.eraMastery[era.key] = Math.min(10, (this.chronoAltar.eraMastery[era.key] || 0) + 1);
+		this.chronoAltar.selectedEra = era.key;
+		this.addDaoLawProgress(prev.lawProg);
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.chrono.panel.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ("Traced upstream to [" + $I(era.labelKey) + "]: gathered +" + prev.sandGain + " Chrono Origin Sand & +" + prev.insightGain + " Era Insight!")
+			: ("【溯游岁月】逆流直上【" + $I(era.labelKey) + "】，采撷光阴本源砂 +" + prev.sandGain + " · 纪元推演 +" + prev.insightGain + "！");
+		this.chronoAltar.lastNote = note;
+		this.game.msg(note, "notice");
+		return true;
+	},
+
+	completePassiveChronoTrace: function(){
+		if (!this.immortalAscended || !this.chronoAltar || (this.chronoAltar.tier || 0) <= 0){ return null; }
+		var era = this.getChronoEraDef(this.chronoAltar.selectedEra);
+		if (!era || !this.isChronoEraUnlocked(era.key)){
+			era = this.getDeepestUnlockedChronoEra();
+			if (!era){ return null; }
+			this.chronoAltar.selectedEra = era.key;
+		}
+		var prev = this.getChronoTracePreview(era.key);
+		this.gainChronoSand(prev.passiveSand, prev.passiveInsight);
+		if (this.gainFengshenMerit){ this.gainFengshenMerit(this.getFengshenChronoMerit(prev.passiveInsight, false), "chrono"); }	//XX-10 悟道功德
+		this.chronoAltar.passiveTraceCount = (this.chronoAltar.passiveTraceCount || 0) + 1;
+		this.addDaoLawProgress(4 + (this.chronoAltar.tier || 0));
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.chrono.panel.badge") || "").indexOf("Immortal") === 0;
+		this.chronoAltar.lastNote = isEn
+			? ("The river carried back +" + prev.passiveSand + " Chrono Origin Sand & +" + prev.passiveInsight + " Era Insight from [" + $I(era.labelKey) + "].")
+			: ("【长河回涌】【" + $I(era.labelKey) + "】光阴逆卷而来，自凝光阴本源砂 +" + prev.passiveSand + " · 纪元推演 +" + prev.passiveInsight + "。");
+		return {sandGain: prev.passiveSand, insightGain: prev.passiveInsight};
+	},
+
+	tickChronoAltar: function(ticksDelta){
+		if (!this.immortalAscended || !this.chronoAltar){ return; }
+		if ((this.chronoAltar.tier || 0) <= 0 || !this.chronoAltar.autoTrace){ return; }
+		var dt = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
+		if (dt <= 0){ return; }
+		var cfg = this.getChronoAltarTierDef(this.chronoAltar.tier);
+		var sealMult = 1 + Math.max(0, Math.floor(this.chronoImprintTier || 0)) * 0.08;
+		var step = dt * 1.1 * (cfg.flowSpeed || 1) * sealMult;
+		this.chronoAltar.flowProgress = (this.chronoAltar.flowProgress || 0) + step;
+		var maxP = Math.max(1, this.chronoAltar.flowMax || 100);
+		var guard = 0;
+		while (this.chronoAltar.flowProgress >= maxP && guard < 8){
+			this.chronoAltar.flowProgress -= maxP;
+			this.completePassiveChronoTrace();
+			guard++;
+		}
+		if (this.chronoAltar.flowProgress >= maxP){
+			this.chronoAltar.flowProgress = maxP - 1;
+		}
+	},
+
+	getInnateRefineReq: function(treasureKey){
+		var def = this.getInnateTreasureDef(treasureKey);
+		if (!def){ return null; }
+		var it = this.innateTreasures || this.makeDefaultInnateTreasures();
+		var ca = this.chronoAltar || this.makeDefaultChronoAltar();
+		var za = this.zixiaoAltar;
+		var curLv = it.levels[treasureKey] || 0;
+		if (curLv >= 6){ return null; }
+		var nextLv = curLv + 1;
+		var mult = this.getChronoImprintCostMult();
+		var sandCost = Math.max(1, Math.round((def.baseSand + (nextLv - 1) * 4) * mult));
+		var xyCost = Math.max(10, this.roundNice(def.baseXy * Math.pow(1.42, nextLv - 1) * mult));
+		var sutraCost = (nextLv >= 3) ? Math.max(1, Math.round((nextLv - 2) * 4 * mult)) : 0;
+		var reqDaoyun = Math.floor((nextLv - 1) / 2);
+		var reqAltarTier = nextLv;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okSand = (ca.chronoSand || 0) >= sandCost;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okSutra = sutraCost <= 0 || ((za && za.daoSutras) ? za.daoSutras : 0) >= sutraCost;
+		var okLaw = (this.daoyun || 0) >= reqDaoyun;
+		var okAltar = (ca.tier || 0) >= reqAltarTier;
+		return {
+			treasureKey: treasureKey,
+			nextLv: nextLv,
+			chronoSand: sandCost,
+			xianyuan: xyCost,
+			daoSutras: sutraCost,
+			reqDaoyun: reqDaoyun,
+			reqAltarTier: reqAltarTier,
+			altarOk: okAltar,
+			affordable: !!(this.immortalAscended && okSand && okXy && okSutra && okLaw && okAltar)
+		};
+	},
+
+	refineInnateTreasure: function(treasureKey){
+		if (!this.immortalAscended){ return false; }
+		this.chronoAltar = this.normalizeChronoAltar(this.chronoAltar);
+		this.innateTreasures = this.normalizeInnateTreasures(this.innateTreasures);
+		this.zixiaoAltar = this.normalizeZixiaoAltar(this.zixiaoAltar);
+		var def = this.getInnateTreasureDef(treasureKey);
+		if (!def){ return false; }
+		var prevRes = this.getInnateResonanceTier();
+		var req = this.getInnateRefineReq(treasureKey);
+		if (!req || !req.affordable){ return false; }
+		this.chronoAltar.chronoSand = Math.max(0, (this.chronoAltar.chronoSand || 0) - req.chronoSand);
+		this.syncChronoSand();
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		if (req.daoSutras > 0){
+			this.zixiaoAltar.daoSutras = Math.max(0, (this.zixiaoAltar.daoSutras || 0) - req.daoSutras);
+			this.syncDaoSutras();
+		}
+		this.innateTreasures.levels[treasureKey] = req.nextLv;
+		this.innateTreasures.totalRefinements = (this.innateTreasures.totalRefinements || 0) + 1;
+		this.syncChronoImprintTier();
+		this.addDaoLawProgress(20 + req.nextLv * 5);
+		var newRes = this.getInnateResonanceTier();
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = String($I("cultivation.chrono.panel.badge") || "").indexOf("Immortal") === 0;
+		var note = isEn
+			? ((req.nextLv === 1 ? "Awakened the spirit of [" : "Nurtured the spirit of [") + $I(def.labelKey) + "] to Lv." + req.nextLv + "/6" +
+				(newRes > prevRes ? (" — Innate Treasure Resonance Tier " + newRes + " awakened!") : "!"))
+			: ((req.nextLv === 1 ? "【器魂苏醒】【" : "【器魂温养】【") + $I(def.labelKey) + "】器魂温养至第 " + req.nextLv + "/6 重" +
+				(newRes > prevRes ? ("，激发第 " + newRes + " 重【先天至宝器魂共鸣】！") : "！"));
+		this.innateTreasures.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	awakenInnateTreasure: function(treasureKey){
+		return this.refineInnateTreasure(treasureKey);
+	},
+
+	// ---------------- XX-10 三十三天封神榜与九霄雷池淬体 ----------------
+
+	FENGSHEN_MAX_LAYER: 33,
+
+	//三十三天分七大天域:登临天域首重即授该天域对应的天庭神职,其后每登一重神职晋一阶
+	FENGSHEN_DOMAINS: [
+		{key: "desire", office: "patrol", from: 1, to: 6, reqRiftFloor: 26, reqDaoyun: 0, labelKey: "cultivation.fengshen.domain.desire.label", officeKey: "cultivation.fengshen.office.patrol.label", effectKey: "cultivation.fengshen.office.patrol.effect"},
+		{key: "brahma", office: "herbal", from: 7, to: 12, reqRiftFloor: 27, reqDaoyun: 1, labelKey: "cultivation.fengshen.domain.brahma.label", officeKey: "cultivation.fengshen.office.herbal.label", effectKey: "cultivation.fengshen.office.herbal.effect"},
+		{key: "radiant", office: "thunderGeneral", from: 13, to: 18, reqRiftFloor: 28, reqDaoyun: 1, labelKey: "cultivation.fengshen.domain.radiant.label", officeKey: "cultivation.fengshen.office.thunderGeneral.label", effectKey: "cultivation.fengshen.office.thunderGeneral.effect"},
+		{key: "purity", office: "dipper", from: 19, to: 24, reqRiftFloor: 30, reqDaoyun: 2, labelKey: "cultivation.fengshen.domain.purity.label", officeKey: "cultivation.fengshen.office.dipper.label", effectKey: "cultivation.fengshen.office.dipper.effect"},
+		{key: "formless", office: "wenchang", from: 25, to: 28, reqRiftFloor: 32, reqDaoyun: 2, labelKey: "cultivation.fengshen.domain.formless.label", officeKey: "cultivation.fengshen.office.wenchang.label", effectKey: "cultivation.fengshen.office.wenchang.effect"},
+		{key: "seed", office: "thunderLord", from: 29, to: 32, reqRiftFloor: 34, reqDaoyun: 3, labelKey: "cultivation.fengshen.domain.seed.label", officeKey: "cultivation.fengshen.office.thunderLord.label", effectKey: "cultivation.fengshen.office.thunderLord.effect"},
+		{key: "daluo", office: "daluo", from: 33, to: 33, reqRiftFloor: 35, reqDaoyun: 3, labelKey: "cultivation.fengshen.domain.daluo.label", officeKey: "cultivation.fengshen.office.daluo.label", effectKey: "cultivation.fengshen.office.daluo.effect"}
+	],
+
+	THUNDER_MAX_TIER: 9,
+	THUNDER_FAIL_STACK_MAX: 5,
+
+	//九霄淬体:神霄 → 太霄九重,chance 为基础成功率(失败积蕴雷纹 +10%/层,神职与道骨另加)
+	THUNDER_TEMPER_TIERS: [
+		{tier: 0, titleKey: "cultivation.thunder.tier.0", shortKey: "", chance: 1},
+		{tier: 1, titleKey: "cultivation.thunder.tier.1", shortKey: "cultivation.thunder.short.1", chance: 1.00},
+		{tier: 2, titleKey: "cultivation.thunder.tier.2", shortKey: "cultivation.thunder.short.2", chance: 0.92},
+		{tier: 3, titleKey: "cultivation.thunder.tier.3", shortKey: "cultivation.thunder.short.3", chance: 0.85},
+		{tier: 4, titleKey: "cultivation.thunder.tier.4", shortKey: "cultivation.thunder.short.4", chance: 0.78},
+		{tier: 5, titleKey: "cultivation.thunder.tier.5", shortKey: "cultivation.thunder.short.5", chance: 0.70},
+		{tier: 6, titleKey: "cultivation.thunder.tier.6", shortKey: "cultivation.thunder.short.6", chance: 0.62},
+		{tier: 7, titleKey: "cultivation.thunder.tier.7", shortKey: "cultivation.thunder.short.7", chance: 0.55},
+		{tier: 8, titleKey: "cultivation.thunder.tier.8", shortKey: "cultivation.thunder.short.8", chance: 0.48},
+		{tier: 9, titleKey: "cultivation.thunder.tier.9", shortKey: "cultivation.thunder.short.9", chance: 0.42}
+	],
+
+	isFengshenEn: function(){
+		return String($I("cultivation.fengshen.panel.badge") || "").indexOf("Immortal") === 0;
+	},
+
+	getFengshenDomainDef: function(key){
+		for (var i = 0; i < this.FENGSHEN_DOMAINS.length; i++){
+			if (this.FENGSHEN_DOMAINS[i].key === key){ return this.FENGSHEN_DOMAINS[i]; }
+		}
+		return null;
+	},
+
+	getFengshenDomainForLayer: function(layer){
+		var l = Math.floor(layer || 0);
+		for (var i = 0; i < this.FENGSHEN_DOMAINS.length; i++){
+			var d = this.FENGSHEN_DOMAINS[i];
+			if (l >= d.from && l <= d.to){ return d; }
+		}
+		return null;
+	},
+
+	makeDefaultFengshenRoster: function(){
+		return {
+			layer: 0,
+			merit: 0,
+			totalMerit: 0,
+			meritFromRift: 0,
+			meritFromSermon: 0,
+			meritFromChrono: 0,
+			riftWins: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeFengshenRoster: function(raw){
+		var def = this.makeDefaultFengshenRoster();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		if (typeof raw.layer === "number" && isFinite(raw.layer)){
+			def.layer = Math.min(this.FENGSHEN_MAX_LAYER, Math.max(0, Math.floor(raw.layer)));
+		}
+		def.merit = num(raw.merit);
+		def.meritFromRift = num(raw.meritFromRift);
+		def.meritFromSermon = num(raw.meritFromSermon);
+		def.meritFromChrono = num(raw.meritFromChrono);
+		def.totalMerit = Math.max(def.merit, def.meritFromRift + def.meritFromSermon + def.meritFromChrono, num(raw.totalMerit));
+		def.riftWins = num(raw.riftWins);
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	syncDivineMerit: function(){
+		this.divineMerit = (this.fengshenRoster && typeof this.fengshenRoster.merit === "number")
+			? Math.max(0, Math.floor(this.fengshenRoster.merit))
+			: 0;
+		return this.divineMerit;
+	},
+
+	getFengshenLayer: function(){
+		return (this.fengshenRoster && this.fengshenRoster.layer) ? Math.max(0, Math.floor(this.fengshenRoster.layer)) : 0;
+	},
+
+	//神职阶数 = 本天域内已登临的重天数(0 = 虚位)
+	getFengshenOfficeRank: function(officeKey){
+		var layer = this.getFengshenLayer();
+		for (var i = 0; i < this.FENGSHEN_DOMAINS.length; i++){
+			var d = this.FENGSHEN_DOMAINS[i];
+			if (d.office === officeKey){
+				return Math.max(0, Math.min(d.to - d.from + 1, layer - d.from + 1));
+			}
+		}
+		return 0;
+	},
+
+	getFengshenOfficeCount: function(){
+		var cnt = 0;
+		for (var i = 0; i < this.FENGSHEN_DOMAINS.length; i++){
+			if (this.getFengshenOfficeRank(this.FENGSHEN_DOMAINS[i].office) > 0){ cnt++; }
+		}
+		return cnt;
+	},
+
+	//单席神职在给定阶数下的直观数值(加成结算与面板显示共用)
+	getFengshenOfficeEffect: function(officeKey, rankOpt){
+		var r = (typeof rankOpt === "number") ? Math.max(0, Math.floor(rankOpt)) : this.getFengshenOfficeRank(officeKey);
+		if (officeKey === "patrol"){
+			return {rank: r, xyBase: 0.02 * r, xyRatio: 0.06 * r, prodRatio: 0.04 * r};
+		}
+		if (officeKey === "herbal"){
+			return {rank: r, herbSpeed: 0.07 * r, herbYield: 0.03 * r, pillPot: 0.04 * r};
+		}
+		if (officeKey === "thunderGeneral"){
+			return {rank: r, combat: 0.06 * r, riftDmg: 0.04 * r, crit: 0.015 * r};
+		}
+		if (officeKey === "dipper"){
+			return {rank: r, riftHp: 0.05 * r, mitigation: 0.01 * r, startShield: 0.03 * r};
+		}
+		if (officeKey === "wenchang"){
+			return {rank: r, sermon: 0.08 * r, xiuwei: 0.12 * r, merit: 0.05 * r};
+		}
+		if (officeKey === "thunderLord"){
+			return {rank: r, temperChance: 0.04 * r, orbGain: 0.12 * r, strike: 0.02 * r};
+		}
+		if (officeKey === "daluo"){
+			var on = (r > 0) ? 1 : 0;
+			return {rank: r, combat: 0.25 * on, xyRatio: 0.30 * on, xiuwei: 0.50 * on, merit: 0.10 * on, mitigation: 0.03 * on};
+		}
+		return {rank: r};
+	},
+
+	getFengshenMeritMult: function(){
+		var wc = this.getFengshenOfficeEffect("wenchang");
+		var dl = this.getFengshenOfficeEffect("daluo");
+		return 1 + (wc.merit || 0) + (dl.merit || 0);
+	},
+
+	//XX-10 → XX-8 联动:文昌讲经天师神职增幅紫霄讲道玉简 / 悟道产出
+	getFengshenSermonMult: function(){
+		if (!this.immortalAscended){ return 1; }
+		var wc = this.getFengshenOfficeEffect("wenchang");
+		return 1 + (wc.sermon || 0);
+	},
+
+	getFengshenCostMult: function(){
+		var seal = Math.max(0, Math.min(this.THUNDER_MAX_TIER, Math.floor(this.thunderTemperTier || 0)));
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		return Math.max(0.60, 1 - imp * 0.015 - seal * 0.015);
+	},
+
+	getFengshenAscendReq: function(){
+		var fr = this.fengshenRoster || this.makeDefaultFengshenRoster();
+		var layer = Math.floor(fr.layer || 0);
+		if (layer >= this.FENGSHEN_MAX_LAYER){ return null; }
+		var n = layer + 1;
+		var dom = this.getFengshenDomainForLayer(n);
+		if (!dom){ return null; }
+		var mult = this.getFengshenCostMult();
+		var meritCost = Math.max(1, Math.round((12 + 6 * n + 0.45 * n * n) * mult));
+		var xyCost = Math.max(6, this.roundNice((8 + 3 * n) * mult));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okMerit = (fr.merit || 0) >= meritCost;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okRift = (this.riftFloor || 0) >= dom.reqRiftFloor;
+		var okLaw = (this.daoyun || 0) >= dom.reqDaoyun;
+		return {
+			nextLayer: n,
+			domainKey: dom.key,
+			officeKey: dom.office,
+			newOffice: (n === dom.from),
+			merit: meritCost,
+			xianyuan: xyCost,
+			reqRiftFloor: dom.reqRiftFloor,
+			reqDaoyun: dom.reqDaoyun,
+			meritOk: okMerit,
+			riftOk: okRift,
+			lawOk: okLaw,
+			affordable: !!(this.immortalAscended && okMerit && okXy && okRift && okLaw)
+		};
+	},
+
+	ascendFengshenHeaven: function(){
+		if (!this.immortalAscended){ return false; }
+		this.fengshenRoster = this.normalizeFengshenRoster(this.fengshenRoster);
+		var req = this.getFengshenAscendReq();
+		if (!req || !req.affordable){ return false; }
+		this.fengshenRoster.merit = Math.max(0, this.fengshenRoster.merit - req.merit);
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.fengshenRoster.layer = req.nextLayer;
+		this.syncDivineMerit();
+		this.addDaoLawProgress(8 + req.nextLayer);
+		var dom = this.getFengshenDomainDef(req.domainKey);
+		var rank = this.getFengshenOfficeRank(req.officeKey);
+		var size = dom.to - dom.from + 1;
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = this.isFengshenEn();
+		var note = req.newOffice
+			? (isEn
+				? ("Ascended to Heaven " + req.nextLayer + "/33 [" + $I(dom.labelKey) + "] and invested as [" + $I(dom.officeKey) + "]!")
+				: ("【封神授箓】登临第 " + req.nextLayer + " 重天【" + $I(dom.labelKey) + "】，敕封天庭神职【" + $I(dom.officeKey) + "】！"))
+			: (isEn
+				? ("Ascended to Heaven " + req.nextLayer + "/33 [" + $I(dom.labelKey) + "]: [" + $I(dom.officeKey) + "] rank " + rank + "/" + size + "!")
+				: ("【登天】步入第 " + req.nextLayer + " 重天【" + $I(dom.labelKey) + "】，【" + $I(dom.officeKey) + "】晋至第 " + rank + "/" + size + " 阶！"));
+		this.fengshenRoster.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	gainFengshenMerit: function(amount, source){
+		if (!this.immortalAscended){ return 0; }
+		var amt = Math.max(0, Math.floor(amount || 0));
+		if (amt <= 0){ return 0; }
+		if (!this.fengshenRoster){ this.fengshenRoster = this.makeDefaultFengshenRoster(); }
+		var fr = this.fengshenRoster;
+		fr.merit = (fr.merit || 0) + amt;
+		fr.totalMerit = (fr.totalMerit || 0) + amt;
+		if (source === "rift"){
+			fr.meritFromRift = (fr.meritFromRift || 0) + amt;
+		} else if (source === "sermon"){
+			fr.meritFromSermon = (fr.meritFromSermon || 0) + amt;
+		} else if (source === "chrono"){
+			fr.meritFromChrono = (fr.meritFromChrono || 0) + amt;
+		}
+		this.syncDivineMerit();
+		return amt;
+	},
+
+	//26F 起每胜一层妖仙记功:层数越深功德越厚(35F 封顶),清剿已破层计半数,雷池淬体每重 +4%
+	getFengshenRiftMerit: function(floor, sweptOpt){
+		var f = Math.floor(floor || 0);
+		if (f < 26){ return 0; }
+		var eff = Math.min(35, f);
+		var t = this.thunderPool ? Math.max(0, Math.floor(this.thunderPool.tier || 0)) : 0;
+		var base = (18 + (eff - 25) * 6) * (sweptOpt ? 0.5 : 1);
+		return Math.max(1, Math.round(base * this.getFengshenMeritMult() * (1 + t * 0.04)));
+	},
+
+	getFengshenSermonMerit: function(sutraGain, active){
+		var s = Math.max(0, sutraGain || 0);
+		if (s <= 0){ return 0; }
+		return Math.max(1, Math.round(s * (active ? 0.6 : 0.4) * this.getFengshenMeritMult()));
+	},
+
+	getFengshenChronoMerit: function(insightGain, active){
+		var s = Math.max(0, insightGain || 0);
+		if (s <= 0){ return 0; }
+		return Math.max(1, Math.round(s * (active ? 0.12 : 0.08) * this.getFengshenMeritMult()));
+	},
+
+	getThunderRiftOrbs: function(floor, sweptOpt){
+		var f = Math.floor(floor || 0);
+		if (f < 26){ return 0; }
+		var eff = Math.min(35, f);
+		return Math.max(1, Math.round((2 + (eff - 25) * 0.5) * (sweptOpt ? 0.5 : 1) * this.getThunderOrbMult()));
+	},
+
+	//妖仙秘境 26F+ 凯旋(破关 / 清剿):录入封神榜记功并掉落九霄雷髓
+	onFengshenRiftVictory: function(floor, sweptOpt){
+		if (!this.immortalAscended || Math.floor(floor || 0) < 26){ return null; }
+		var swept = !!sweptOpt;
+		this.fengshenRoster = this.normalizeFengshenRoster(this.fengshenRoster);
+		this.thunderPool = this.normalizeThunderPool(this.thunderPool);
+		var merit = this.gainFengshenMerit(this.getFengshenRiftMerit(floor, swept), "rift");
+		this.fengshenRoster.riftWins = (this.fengshenRoster.riftWins || 0) + 1;
+		var orbs = this.gainThunderOrbs(this.getThunderRiftOrbs(floor, swept));
+		var isEn = this.isFengshenEn();
+		this.fengshenRoster.lastNote = isEn
+			? ("Rift " + floor + "F " + (swept ? "sweep" : "boss") + " recorded on the Roster: +" + merit + " Divine Merit · +" + orbs + " Thunder Essence.")
+			: ("【封神记功】" + (swept ? "清剿" : "斩落") + "第 " + floor + " 层妖仙录入封神榜：神位功德 +" + merit + " · 九霄雷髓 +" + orbs + "。");
+		return {merit: merit, orbs: orbs};
+	},
+
+	getThunderTierDef: function(tier){
+		var t = Math.max(0, Math.min(this.THUNDER_MAX_TIER, Math.floor(tier || 0)));
+		return this.THUNDER_TEMPER_TIERS[t] || this.THUNDER_TEMPER_TIERS[0];
+	},
+
+	makeDefaultThunderPool: function(){
+		return {
+			tier: 0,
+			thunderOrbs: 0,
+			totalOrbsGathered: 0,
+			charge: 0,
+			chargeMax: 100,
+			autoCondense: true,
+			summonCount: 0,
+			passiveCount: 0,
+			attempts: 0,
+			failures: 0,
+			failStacks: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeThunderPool: function(raw){
+		var def = this.makeDefaultThunderPool();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		if (typeof raw.tier === "number" && isFinite(raw.tier)){
+			def.tier = Math.min(this.THUNDER_MAX_TIER, Math.max(0, Math.floor(raw.tier)));
+		}
+		def.thunderOrbs = num(raw.thunderOrbs);
+		def.totalOrbsGathered = Math.max(def.thunderOrbs, num(raw.totalOrbsGathered));
+		if (typeof raw.charge === "number" && isFinite(raw.charge)){
+			def.charge = Math.max(0, Math.min(100, raw.charge));
+		}
+		def.summonCount = num(raw.summonCount);
+		def.passiveCount = num(raw.passiveCount);
+		def.attempts = num(raw.attempts);
+		def.failures = Math.min(def.attempts, num(raw.failures));
+		def.failStacks = Math.min(this.THUNDER_FAIL_STACK_MAX, num(raw.failStacks));
+		if (typeof raw.autoCondense === "boolean"){ def.autoCondense = raw.autoCondense; }
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	syncThunderOrbs: function(){
+		this.thunderOrbs = (this.thunderPool && typeof this.thunderPool.thunderOrbs === "number")
+			? Math.max(0, Math.floor(this.thunderPool.thunderOrbs))
+			: 0;
+		return this.thunderOrbs;
+	},
+
+	//飞升 / 测试洞府初始化:归一化封神榜与雷池,并按前世雷纹道骨赐下先天九霄雷髓
+	initFengshenStateOnAscend: function(){
+		this.fengshenRoster = this.normalizeFengshenRoster(this.fengshenRoster);
+		this.syncDivineMerit();
+		this.thunderPool = this.normalizeThunderPool(this.thunderPool);
+		if ((this.thunderTemperTier || 0) > 0 && (this.thunderPool.totalOrbsGathered || 0) === 0 && (this.thunderPool.thunderOrbs || 0) === 0){
+			var initOrbs = this.getThunderStartingOrbs();
+			this.thunderPool.thunderOrbs = initOrbs;
+			this.thunderPool.totalOrbsGathered = initOrbs;
+		}
+		this.syncThunderOrbs();
+	},
+
+	getThunderBoneSeal: function(){
+		return Math.max(0, Math.min(this.THUNDER_MAX_TIER, Math.floor(this.thunderTemperTier || 0)));
+	},
+
+	getThunderBoneCostMult: function(){
+		var seal = this.getThunderBoneSeal();
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		return Math.max(0.55, 1 - seal * 0.04 - imp * 0.015);
+	},
+
+	getThunderStartingOrbs: function(){
+		return this.getThunderBoneSeal() * 5;
+	},
+
+	//跨轮回雷纹道骨:凡身即得修为 / 真元加持,并提升淬体成功率与斗法战力
+	getThunderBoneBonus: function(){
+		var seal = this.getThunderBoneSeal();
+		if (seal <= 0){
+			return {tier: 0, xiuweiBase: 0, xiuweiRatio: 0, zhenyuanRatio: 0, combatPct: 0, temperChance: 0};
+		}
+		return {
+			tier: seal,
+			xiuweiBase: seal * 0.18,
+			xiuweiRatio: seal * 0.08,
+			zhenyuanRatio: seal * 0.03,
+			combatPct: seal * 0.04,
+			temperChance: seal * 0.03
+		};
+	},
+
+	syncThunderTemperTier: function(){
+		var peak = Math.max(0, Math.floor(this.thunderTemperTier || 0));
+		if (this.thunderPool && (this.thunderPool.tier || 0) > peak){
+			peak = Math.floor(this.thunderPool.tier);
+		}
+		this.thunderTemperTier = Math.min(this.THUNDER_MAX_TIER, peak);
+		return this.thunderTemperTier;
+	},
+
+	getThunderOrbMult: function(){
+		var tl = this.getFengshenOfficeEffect("thunderLord");
+		return 1 + (tl.orbGain || 0) + this.getThunderBoneSeal() * 0.05;
+	},
+
+	gainThunderOrbs: function(n){
+		var amt = Math.max(0, Math.floor(n || 0));
+		if (amt <= 0){ return 0; }
+		if (!this.thunderPool){ this.thunderPool = this.makeDefaultThunderPool(); }
+		this.thunderPool.thunderOrbs = (this.thunderPool.thunderOrbs || 0) + amt;
+		this.thunderPool.totalOrbsGathered = (this.thunderPool.totalOrbsGathered || 0) + amt;
+		this.syncThunderOrbs();
+		return amt;
+	},
+
+	getThunderPassiveOrbs: function(){
+		var tp = this.thunderPool || this.makeDefaultThunderPool();
+		return Math.max(1, Math.round((1 + (tp.tier || 0) * 0.25) * this.getThunderOrbMult()));
+	},
+
+	getThunderSummonPreview: function(){
+		var tp = this.thunderPool || this.makeDefaultThunderPool();
+		var mult = this.getThunderBoneCostMult();
+		var xyCost = Math.max(6, Math.round(16 * mult));
+		var tcCost = Math.max(2, Math.round(5 * mult));
+		var orbGain = Math.max(1, Math.round((3 + (tp.tier || 0) * 0.5) * this.getThunderOrbMult()));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var tcObj = this.game.resPool.get("timeCrystal");
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okTc = !!(tcObj && tcObj.value >= tcCost);
+		return {
+			xianyuan: xyCost,
+			timeCrystal: tcCost,
+			orbGain: orbGain,
+			passiveOrbs: this.getThunderPassiveOrbs(),
+			affordable: !!(this.immortalAscended && okXy && okTc)
+		};
+	},
+
+	summonNineHeavenThunder: function(){
+		if (!this.immortalAscended){ return false; }
+		this.thunderPool = this.normalizeThunderPool(this.thunderPool);
+		var prev = this.getThunderSummonPreview();
+		if (!prev.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -prev.xianyuan);
+		this.game.resPool.addResEvent("timeCrystal", -prev.timeCrystal);
+		this.gainThunderOrbs(prev.orbGain);
+		this.thunderPool.summonCount = (this.thunderPool.summonCount || 0) + 1;
+		this.addDaoLawProgress(6);
+		var isEn = this.isFengshenEn();
+		var note = isEn
+			? ("Called nine-heaven thunder into the pool: +" + prev.orbGain + " Thunder Essence!")
+			: ("【引雷入池】九霄神雷轰然坠入雷池，凝得九霄雷髓 +" + prev.orbGain + "！");
+		this.thunderPool.lastNote = note;
+		this.game.msg(note, "notice");
+		return true;
+	},
+
+	//成功率 = 基础 + 雷纹积蕴 10%/层 + 九天雷府真君神职 + 雷纹道骨(仅重淬前世已证之重:nextTier ≤ 道骨重数)
+	getThunderTemperChance: function(nextTier){
+		var def = this.getThunderTierDef(nextTier);
+		var tp = this.thunderPool || this.makeDefaultThunderPool();
+		var tl = this.getFengshenOfficeEffect("thunderLord");
+		var bone = this.getThunderBoneBonus();
+		var stacks = Math.max(0, Math.min(this.THUNDER_FAIL_STACK_MAX, Math.floor(tp.failStacks || 0)));
+		var boneChance = (Math.floor(nextTier || 0) <= bone.tier) ? (bone.temperChance || 0) : 0;
+		var c = (def.chance || 0) + stacks * 0.10 + (tl.temperChance || 0) + boneChance;
+		return Math.max(0, Math.min(1, c));
+	},
+
+	getThunderTemperReq: function(){
+		var tp = this.thunderPool || this.makeDefaultThunderPool();
+		var cur = Math.floor(tp.tier || 0);
+		if (cur >= this.THUNDER_MAX_TIER){ return null; }
+		var n = cur + 1;
+		var def = this.getThunderTierDef(n);
+		var mult = this.getThunderBoneCostMult();
+		var orbCost = Math.max(1, Math.round((10 + 6 * n + 1.5 * n * n) * mult));
+		var xyCost = Math.max(10, this.roundNice((20 + 14 * n) * mult));
+		var reqLayer = (n - 1) * 3;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okOrbs = (tp.thunderOrbs || 0) >= orbCost;
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okLayer = this.getFengshenLayer() >= reqLayer;
+		return {
+			nextTier: n,
+			titleKey: def.titleKey,
+			thunderOrbs: orbCost,
+			xianyuan: xyCost,
+			reqLayer: reqLayer,
+			layerOk: okLayer,
+			chance: this.getThunderTemperChance(n),
+			failOrbLoss: Math.ceil(orbCost * 0.5),
+			affordable: !!(this.immortalAscended && okOrbs && okXy && okLayer)
+		};
+	},
+
+	//引九霄神雷淬体:roll < 成功率即淬成下一重;失败散去半数雷髓、积蕴一层雷纹(下次 +10%)并微增心魔。
+	//rollOpt 供测试注入确定性掷点(0 ≤ roll < 1),缺省走 Math.random()
+	temperThunderBody: function(rollOpt){
+		if (!this.immortalAscended){ return false; }
+		this.thunderPool = this.normalizeThunderPool(this.thunderPool);
+		var req = this.getThunderTemperReq();
+		if (!req || !req.affordable){ return false; }
+		var tp = this.thunderPool;
+		var roll = (typeof rollOpt === "number" && isFinite(rollOpt)) ? rollOpt : Math.random();
+		var isEn = this.isFengshenEn();
+		var note = "";
+		tp.attempts = (tp.attempts || 0) + 1;
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		if (roll < req.chance){
+			tp.thunderOrbs = Math.max(0, (tp.thunderOrbs || 0) - req.thunderOrbs);
+			tp.tier = req.nextTier;
+			tp.failStacks = 0;
+			this.syncThunderTemperTier();
+			this.addDaoLawProgress(18 + req.nextTier * 4);
+			if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playTribulation){
+				classes.ui.XianxiaAudio.playTribulation(this.game);
+			}
+			note = isEn
+				? ("Nine-heaven thunder pierced the body: tempered to [" + $I(req.titleKey) + "]!")
+				: ("【雷池淬体】九霄神雷贯体而过，仙躯淬成【" + $I(req.titleKey) + "】！");
+			this.game.msg(note, "important");
+		} else {
+			tp.thunderOrbs = Math.max(0, (tp.thunderOrbs || 0) - req.failOrbLoss);
+			tp.failures = (tp.failures || 0) + 1;
+			tp.failStacks = Math.min(this.THUNDER_FAIL_STACK_MAX, (tp.failStacks || 0) + 1);
+			this.heartDemon = Math.min(100, (this.heartDemon || 0) + 2);
+			if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playFail){
+				classes.ui.XianxiaAudio.playFail(this.game);
+			}
+			note = isEn
+				? ("Tempering to Tier " + req.nextTier + " failed: " + req.failOrbLoss + " Thunder Essence dispersed, Thunder Veins " + tp.failStacks + "/" + this.THUNDER_FAIL_STACK_MAX + " (+10% next attempt).")
+				: ("【淬体受挫】神雷反噬未能淬成第 " + req.nextTier + " 重，散去九霄雷髓 " + req.failOrbLoss + "，雷纹积蕴 " + tp.failStacks + "/" + this.THUNDER_FAIL_STACK_MAX + "（下次成功率 +10%）。");
+			this.game.msg(note, "alert");
+		}
+		this.syncThunderOrbs();
+		tp.lastNote = note;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
+	},
+
+	toggleThunderAutoCondense: function(){
+		if (!this.immortalAscended){ return false; }
+		this.thunderPool = this.normalizeThunderPool(this.thunderPool);
+		this.thunderPool.autoCondense = !this.thunderPool.autoCondense;
+		return this.thunderPool.autoCondense;
+	},
+
+	completePassiveThunderCondense: function(){
+		if (!this.immortalAscended || !this.thunderPool){ return null; }
+		var orbs = this.gainThunderOrbs(this.getThunderPassiveOrbs());
+		this.thunderPool.passiveCount = (this.thunderPool.passiveCount || 0) + 1;
+		var isEn = this.isFengshenEn();
+		this.thunderPool.lastNote = isEn
+			? ("The Thunder Pool brimmed over and condensed +" + orbs + " Thunder Essence.")
+			: ("【雷池凝髓】雷池蓄满神雷，自凝九霄雷髓 +" + orbs + "。");
+		return {orbs: orbs};
+	},
+
+	tickThunderPool: function(ticksDelta){
+		if (!this.immortalAscended || !this.thunderPool){ return; }
+		if (!this.thunderPool.autoCondense){ return; }
+		var dt = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
+		if (dt <= 0){ return; }
+		var tp = this.thunderPool;
+		var step = dt * 0.6 * (1 + (tp.tier || 0) * 0.15) * (1 + this.getThunderBoneSeal() * 0.06);
+		tp.charge = (tp.charge || 0) + step;
+		var maxC = Math.max(1, tp.chargeMax || 100);
+		var guard = 0;
+		while (tp.charge >= maxC && guard < 8){
+			tp.charge -= maxC;
+			this.completePassiveThunderCondense();
+			guard++;
+		}
+		if (tp.charge >= maxC){
+			tp.charge = maxC - 1;
+		}
+	},
+
+	//雷体淬炼常驻数值(t = 淬体重数)
+	getThunderTemperEffect: function(tierOpt){
+		var t = (typeof tierOpt === "number")
+			? Math.max(0, Math.min(this.THUNDER_MAX_TIER, Math.floor(tierOpt)))
+			: (this.thunderPool ? Math.max(0, Math.floor(this.thunderPool.tier || 0)) : 0);
+		return {
+			tier: t,
+			combatMult: 1 + 0.05 * t,
+			riftHpMult: 1 + 0.06 * t,
+			riftDmg: 0.05 * t,
+			mitigation: 0.01 * t,
+			startShield: 0.03 * t,
+			strike: 0.05 * t
+		};
+	},
+
+	//XX-10 ↔ XX-9 协同:盘古幡 / 混沌钟器魂共鸣(第 3 重+)与四宝归元
+	getThunderSynergy: function(){
+		var t = this.thunderPool ? Math.max(0, Math.floor(this.thunderPool.tier || 0)) : 0;
+		var lv = (this.innateTreasures && this.innateTreasures.levels) ? this.innateTreasures.levels : {};
+		var resLv = this.INNATE_RESONANT_LEVEL || 3;
+		var panguOn = t > 0 && (lv.panguBanner || 0) >= resLv;
+		var bellOn = t > 0 && (lv.chaosBell || 0) >= resLv;
+		var unityOn = t > 0 && this.getInnateResonanceTier() >= 3;
+		return {
+			tier: t,
+			panguActive: panguOn,
+			bellActive: bellOn,
+			unityActive: unityOn,
+			panguCleaveBonus: panguOn ? 0.008 * t : 0,
+			bellShockRatio: bellOn ? 0.004 * t : 0,
+			strikeMult: unityOn ? 1.5 : 1
+		};
+	},
+
+	//26F~35F 九霄神雷追击倍率(按当回合有效攻击计)
+	getThunderStrikeRatio: function(){
+		var eff = this.getThunderTemperEffect();
+		if (eff.tier <= 0){ return 0; }
+		var tl = this.getFengshenOfficeEffect("thunderLord");
+		var syn = this.getThunderSynergy();
+		return (eff.strike + (tl.strike || 0)) * syn.strikeMult;
+	},
+
+	// ---------------- XX-11 六道轮回镜与太虚幻境心魔试炼 ----------------
+
+	SAMSARA_SWITCH_COOLDOWN: 1500,	//择道后 1500 tick(常速约 5 分钟)内不可再转道
+
+	//六道:天 / 人 / 修罗 / 畜生 / 饿鬼 / 地狱。reqLayer = 照见该道前尘所需太虚幻境破境重数;
+	//mingge = 来世「道缘共鸣」命格(此世所择之道随魂入来世),seal = 来世「业障封印」命格(人道中庸,无封印);
+	//resonance = 来世每道已凝定的道缘命格追加的全局效果,resonanceCombat = 每道道缘命格的斗法战力乘区
+	SAMSARA_PATHS: [
+		{key: "deva", reqLayer: 3, mingge: ["tianling", "zhenyan"], seal: "huanggu", resonance: {xiuweiRatio: 0.12}, resonanceCombat: 0,
+			labelKey: "cultivation.samsara.path.deva.label", blessKey: "cultivation.samsara.path.deva.bless", upKey: "cultivation.samsara.path.deva.up", downKey: "cultivation.samsara.path.deva.down", pastKey: "cultivation.samsara.path.deva.past", resonanceKey: "cultivation.samsara.path.deva.resonance"},
+		{key: "human", reqLayer: 0, mingge: ["baiyi", "qiyun"], seal: null, resonance: {realmProductionRatio: 0.10}, resonanceCombat: 0,
+			labelKey: "cultivation.samsara.path.human.label", blessKey: "cultivation.samsara.path.human.bless", upKey: "cultivation.samsara.path.human.up", downKey: "cultivation.samsara.path.human.down", pastKey: "cultivation.samsara.path.human.past", resonanceKey: "cultivation.samsara.path.human.resonance"},
+		{key: "asura", reqLayer: 0, mingge: ["jiangu", "huanggu"], seal: "dandao", resonance: {}, resonanceCombat: 0.08,
+			labelKey: "cultivation.samsara.path.asura.label", blessKey: "cultivation.samsara.path.asura.bless", upKey: "cultivation.samsara.path.asura.up", downKey: "cultivation.samsara.path.asura.down", pastKey: "cultivation.samsara.path.asura.past", resonanceKey: "cultivation.samsara.path.asura.resonance"},
+		{key: "beast", reqLayer: 1, mingge: ["xuanmai", "huanggu"], seal: "baiyi", resonance: {catnipRatio: 0.15, woodRatio: 0.15}, resonanceCombat: 0,
+			labelKey: "cultivation.samsara.path.beast.label", blessKey: "cultivation.samsara.path.beast.bless", upKey: "cultivation.samsara.path.beast.up", downKey: "cultivation.samsara.path.beast.down", pastKey: "cultivation.samsara.path.beast.past", resonanceKey: "cultivation.samsara.path.beast.resonance"},
+		{key: "preta", reqLayer: 2, mingge: ["dandao", "qiyun"], seal: "changsheng", resonance: {goldRatio: 0.15, mineralsRatio: 0.15}, resonanceCombat: 0,
+			labelKey: "cultivation.samsara.path.preta.label", blessKey: "cultivation.samsara.path.preta.bless", upKey: "cultivation.samsara.path.preta.up", downKey: "cultivation.samsara.path.preta.down", pastKey: "cultivation.samsara.path.preta.past", resonanceKey: "cultivation.samsara.path.preta.resonance"},
+		{key: "naraka", reqLayer: 5, mingge: ["changsheng", "jiangu"], seal: "qiyun", resonance: {faithRatio: 0.15, xiuweiRatio: 0.05}, resonanceCombat: 0,
+			labelKey: "cultivation.samsara.path.naraka.label", blessKey: "cultivation.samsara.path.naraka.bless", upKey: "cultivation.samsara.path.naraka.up", downKey: "cultivation.samsara.path.naraka.down", pastKey: "cultivation.samsara.path.naraka.past", resonanceKey: "cultivation.samsara.path.naraka.resonance"}
+	],
+
+	ILLUSION_MAX_LAYER: 9,
+	ILLUSION_NEED: 100,				//每重幻境破幻进度
+	ILLUSION_DEMON_MAX: 100,		//幻境心魔值满 100 即心魔反噬
+	ILLUSION_CLEAR_RELIEF: 20,		//破一重幻境,幻境心魔值回落 20
+	ILLUSION_LAMP_RELIEF: 30,		//梦莲灯一盏,幻境心魔值回落 30
+	ILLUSION_BACKLASH_COOLDOWN: 600,	//心魔反噬后 600 tick(常速约 2 分钟)不得再入幻境
+	ILLUSION_INSIGHT_MAX: 3,		//心魔识破积蕴上限(每层幻境心魔滋生 -10%,破境即散)
+	DAO_HEART_MAX: 9,
+
+	//太虚九重幻境:七情(喜怒忧思悲恐惊)+ 六欲幻海 + 本我心魔;pressure 越深,心魔滋生越猛
+	ILLUSION_LAYERS: [
+		{layer: 1, key: "joy", pressure: 6, titleKey: "cultivation.illusion.layer.joy.title", shortKey: "cultivation.illusion.layer.joy.short"},
+		{layer: 2, key: "anger", pressure: 8, titleKey: "cultivation.illusion.layer.anger.title", shortKey: "cultivation.illusion.layer.anger.short"},
+		{layer: 3, key: "worry", pressure: 10, titleKey: "cultivation.illusion.layer.worry.title", shortKey: "cultivation.illusion.layer.worry.short"},
+		{layer: 4, key: "thought", pressure: 12, titleKey: "cultivation.illusion.layer.thought.title", shortKey: "cultivation.illusion.layer.thought.short"},
+		{layer: 5, key: "grief", pressure: 14, titleKey: "cultivation.illusion.layer.grief.title", shortKey: "cultivation.illusion.layer.grief.short"},
+		{layer: 6, key: "fear", pressure: 16, titleKey: "cultivation.illusion.layer.fear.title", shortKey: "cultivation.illusion.layer.fear.short"},
+		{layer: 7, key: "shock", pressure: 18, titleKey: "cultivation.illusion.layer.shock.title", shortKey: "cultivation.illusion.layer.shock.short"},
+		{layer: 8, key: "desire", pressure: 21, titleKey: "cultivation.illusion.layer.desire.title", shortKey: "cultivation.illusion.layer.desire.short"},
+		{layer: 9, key: "self", pressure: 24, titleKey: "cultivation.illusion.layer.self.title", shortKey: "cultivation.illusion.layer.self.short"}
+	],
+
+	//观心:进度慢、心魔滋生 = 0.5×幻压 + 掷点×6;斩念:进度快、心魔滋生 = 1.0×幻压 + 掷点×12
+	ILLUSION_MODES: {
+		calm: {progress: 22, demonBase: 0.5, demonRoll: 6},
+		sever: {progress: 40, demonBase: 1.0, demonRoll: 12}
+	},
+
+	isSamsaraEn: function(){
+		return String($I("cultivation.samsara.panel.badge") || "").indexOf("Immortal") === 0;
+	},
+
+	getSamsaraPathDef: function(key){
+		for (var i = 0; i < this.SAMSARA_PATHS.length; i++){
+			if (this.SAMSARA_PATHS[i].key === key){ return this.SAMSARA_PATHS[i]; }
+		}
+		return null;
+	},
+
+	makeDefaultSamsaraMirror: function(){
+		var revealed = {};
+		for (var i = 0; i < this.SAMSARA_PATHS.length; i++){
+			revealed[this.SAMSARA_PATHS[i].key] = false;
+		}
+		return {
+			revealed: revealed,
+			activePath: null,
+			switchCooldown: 0,
+			switchCount: 0,
+			choiceCount: 0,
+			revealCount: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeSamsaraMirror: function(raw){
+		var def = this.makeDefaultSamsaraMirror();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		var rv = (raw.revealed && typeof raw.revealed === "object") ? raw.revealed : {};
+		for (var k in def.revealed){
+			if (def.revealed.hasOwnProperty(k)){
+				def.revealed[k] = (rv[k] === true);
+			}
+		}
+		if (typeof raw.activePath === "string" && this.getSamsaraPathDef(raw.activePath) && def.revealed[raw.activePath]){
+			def.activePath = raw.activePath;
+		}
+		def.switchCooldown = Math.min(this.SAMSARA_SWITCH_COOLDOWN, num(raw.switchCooldown));
+		if (!def.activePath){ def.switchCooldown = 0; }
+		def.switchCount = num(raw.switchCount);
+		def.choiceCount = Math.max(def.activePath ? 1 : 0, num(raw.choiceCount));
+		def.revealCount = num(raw.revealCount);
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	getSamsaraActivePath: function(){
+		if (!this.immortalAscended || !this.samsaraMirror){ return null; }
+		var k = this.samsaraMirror.activePath;
+		return (typeof k === "string" && this.getSamsaraPathDef(k)) ? k : null;
+	},
+
+	getSamsaraRevealedCount: function(){
+		var sm = this.samsaraMirror;
+		if (!sm || !sm.revealed){ return 0; }
+		var cnt = 0;
+		for (var i = 0; i < this.SAMSARA_PATHS.length; i++){
+			if (sm.revealed[this.SAMSARA_PATHS[i].key] === true){ cnt++; }
+		}
+		return cnt;
+	},
+
+	//择道加持常驻数值(正增负减;combatMult / riftHpMult / nurseryMult / demonGainMult 为乘区)
+	getSamsaraPathEffect: function(keyOpt){
+		var k = (typeof keyOpt === "string") ? keyOpt : this.getSamsaraActivePath();
+		var e = {
+			key: (k && this.getSamsaraPathDef(k)) ? k : null,
+			xiuweiRatio: 0,
+			xianyuanRatio: 0,
+			realmProductionRatio: 0,
+			combatMult: 1,
+			riftDmg: 0,
+			riftCrit: 0,
+			riftHpMult: 1,
+			mitigation: 0,
+			herbSpeed: 0,
+			herbYield: 0,
+			nurseryMult: 1,
+			bountySpeed: 0,
+			demonGainMult: 1,
+			demonDecay: 0
+		};
+		if (e.key === "deva"){				//天人福报:修为仙元大盛,天人五衰斗法折损
+			e.xiuweiRatio = 0.40;
+			e.xianyuanRatio = 0.20;
+			e.realmProductionRatio = 0.10;
+			e.combatMult = 0.85;
+		} else if (e.key === "human"){		//人间正道:诸般平衡小增,无所折损
+			e.xiuweiRatio = 0.12;
+			e.xianyuanRatio = 0.10;
+			e.herbSpeed = 0.10;
+			e.combatMult = 1.06;
+		} else if (e.key === "asura"){		//修罗战意:斗法大盛,药园荒芜
+			e.combatMult = 1.20;
+			e.riftDmg = 0.12;
+			e.riftCrit = 0.05;
+			e.herbSpeed = -0.30;
+			e.herbYield = -0.20;
+		} else if (e.key === "beast"){		//万灵本性:气血绵长、灵兽亲近,悟性折损
+			e.riftHpMult = 1.20;
+			e.nurseryMult = 1.40;
+			e.bountySpeed = 0.20;
+			e.xiuweiRatio = -0.20;
+		} else if (e.key === "preta"){		//饿鬼贪求:仙元万产暴涨,心魔滋生难消
+			e.xianyuanRatio = 0.35;
+			e.herbYield = 0.25;
+			e.realmProductionRatio = 0.15;
+			e.demonGainMult = 1.30;
+			e.demonDecay = -0.30;
+		} else if (e.key === "naraka"){		//地狱炼心:护体炼心,仙元修为受苦
+			e.mitigation = 0.04;
+			e.riftHpMult = 1.10;
+			e.demonGainMult = 0.70;
+			e.demonDecay = 0.30;
+			e.xianyuanRatio = -0.20;
+			e.xiuweiRatio = -0.10;
+		}
+		return e;
+	},
+
+	//斗法战力乘区:此世择道加持 × 前世道缘(修罗道缘命格每道 +8%)
+	getSamsaraCombatMult: function(){
+		var m = this.getSamsaraPathEffect().combatMult || 1;
+		var leg = this.getSamsaraLegacyResonance();
+		if (leg.combatBonus > 0){ m *= (1 + leg.combatBonus); }
+		return m;
+	},
+
+	getSamsaraNurseryMult: function(){
+		return this.getSamsaraPathEffect().nurseryMult || 1;
+	},
+
+	//六道见闻:每照见一道前尘,真仙修为 +2%
+	getSamsaraClarityRatio: function(){
+		if (!this.immortalAscended){ return 0; }
+		return this.getSamsaraRevealedCount() * 0.02;
+	},
+
+	getSamsaraCostMult: function(){
+		var seal = this.getDaoHeartSeal();
+		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
+		return Math.max(0.60, 1 - seal * 0.04 - imp * 0.015);
+	},
+
+	getSamsaraRevealReq: function(key){
+		var def = this.getSamsaraPathDef(key);
+		if (!def){ return null; }
+		var sm = this.samsaraMirror || this.makeDefaultSamsaraMirror();
+		if (sm.revealed && sm.revealed[key] === true){ return null; }
+		var n = Math.max(0, this.getSamsaraRevealedCount() - 1);
+		var mult = this.getSamsaraCostMult();
+		var xyCost = Math.max(10, this.roundNice((30 + 20 * n) * mult));
+		var tcCost = Math.max(2, Math.round((4 + 2 * n) * mult));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var tcObj = this.game.resPool.get("timeCrystal");
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var okTc = !!(tcObj && tcObj.value >= tcCost);
+		var okLayer = this.getIllusionLayer() >= def.reqLayer;
+		return {
+			key: key,
+			xianyuan: xyCost,
+			timeCrystal: tcCost,
+			reqLayer: def.reqLayer,
+			layerOk: okLayer,
+			affordable: !!(this.immortalAscended && okLayer && okXy && okTc)
+		};
+	},
+
+	//照见前尘:轮回镜映出该道前世,方可择此道加持
+	revealSamsaraPath: function(key){
+		if (!this.immortalAscended){ return false; }
+		this.samsaraMirror = this.normalizeSamsaraMirror(this.samsaraMirror);
+		var req = this.getSamsaraRevealReq(key);
+		if (!req || !req.affordable){ return false; }
+		var def = this.getSamsaraPathDef(key);
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("timeCrystal", -req.timeCrystal);
+		this.samsaraMirror.revealed[key] = true;
+		this.samsaraMirror.revealCount = (this.samsaraMirror.revealCount || 0) + 1;
+		this.addDaoLawProgress(6 + this.getSamsaraRevealedCount() * 2);
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, false);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = this.isSamsaraEn();
+		var note = isEn
+			? ("The Samsara Mirror reveals a past life in the [" + $I(def.labelKey) + "]: " + $I(def.pastKey))
+			: ("【照见前尘】六道轮回镜映出你在【" + $I(def.labelKey) + "】的一世前尘：" + $I(def.pastKey));
+		this.samsaraMirror.lastNote = note;
+		this.game.msg(note, "notice");
+		return true;
+	},
+
+	getSamsaraSwitchReq: function(key){
+		var def = this.getSamsaraPathDef(key);
+		if (!def){ return null; }
+		var sm = this.samsaraMirror || this.makeDefaultSamsaraMirror();
+		var first = !sm.activePath;
+		var same = (sm.activePath === key);
+		var base = Math.min(240, 40 + 25 * Math.max(0, Math.floor(sm.switchCount || 0)));
+		var xyCost = first ? 0 : Math.max(10, this.roundNice(base * this.getSamsaraCostMult()));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okXy = (xyCost <= 0) || !!(xyObj && xyObj.value >= xyCost);
+		var okReveal = !!(sm.revealed && sm.revealed[key] === true);
+		var cd = Math.max(0, Math.ceil(sm.switchCooldown || 0));
+		return {
+			key: key,
+			first: first,
+			same: same,
+			xianyuan: xyCost,
+			cooldown: cd,
+			cooldownOk: cd <= 0,
+			revealed: okReveal,
+			affordable: !!(this.immortalAscended && !same && okReveal && cd <= 0 && okXy)
+		};
+	},
+
+	//择一道加持此世修行:首次择道免费;此后转道耗仙元(逐次递增,240 封顶)并进入转道冷却
+	chooseSamsaraPath: function(key){
+		if (!this.immortalAscended){ return false; }
+		this.samsaraMirror = this.normalizeSamsaraMirror(this.samsaraMirror);
+		var req = this.getSamsaraSwitchReq(key);
+		if (!req || !req.affordable){ return false; }
+		var sm = this.samsaraMirror;
+		var def = this.getSamsaraPathDef(key);
+		if (req.xianyuan > 0){
+			this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		}
+		if (!req.first){
+			sm.switchCount = (sm.switchCount || 0) + 1;
+		}
+		sm.activePath = key;
+		sm.choiceCount = (sm.choiceCount || 0) + 1;
+		sm.switchCooldown = this.SAMSARA_SWITCH_COOLDOWN;
+		//来世命格预设随所择之道即时剔除业障封印
+		if (def.seal && this.pendingMingge && this.pendingMingge.length){
+			this.pendingMingge = this.filterSealedMingge(this.pendingMingge, key);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		var isEn = this.isSamsaraEn();
+		var note = req.first
+			? (isEn
+				? ("Your path is set: the [" + $I(def.labelKey) + "] blesses this life with [" + $I(def.blessKey) + "].")
+				: ("【六道择道】择定【" + $I(def.labelKey) + "】，此世修行得【" + $I(def.blessKey) + "】加持。"))
+			: (isEn
+				? ("Path switched to the [" + $I(def.labelKey) + "] for " + req.xianyuan + " Immortal Essence; the mirror rests for a while.")
+				: ("【六道转道】耗仙元 " + req.xianyuan + " 改投【" + $I(def.labelKey) + "】，轮回镜光暂敛，须待冷却方可再转。"));
+		sm.lastNote = note;
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	//此世择道对来世命格词条池的影响:道缘共鸣命格 / 业障封印命格
+	getSamsaraMinggeInfluence: function(pathKey){
+		var def = this.getSamsaraPathDef(pathKey);
+		if (!def){
+			return {path: null, resonant: [], sealed: null};
+		}
+		return {path: def.key, resonant: def.mingge.slice(0), sealed: def.seal || null};
+	},
+
+	getSamsaraNextLifeInfluence: function(){
+		return this.getSamsaraMinggeInfluence(this.getSamsaraActivePath());
+	},
+
+	getSamsaraLegacyInfluence: function(){
+		return this.getSamsaraMinggeInfluence(this.samsaraLegacyPath);
+	},
+
+	isMinggeSealed: function(key, forNextLife){
+		var inf = forNextLife ? this.getSamsaraNextLifeInfluence() : this.getSamsaraLegacyInfluence();
+		return !!(inf.sealed && inf.sealed === key);
+	},
+
+	isMinggeResonant: function(key, forNextLife){
+		var inf = forNextLife ? this.getSamsaraNextLifeInfluence() : this.getSamsaraLegacyInfluence();
+		for (var i = 0; i < inf.resonant.length; i++){
+			if (inf.resonant[i] === key){ return true; }
+		}
+		return false;
+	},
+
+	getSamsaraMinggeName: function(key){
+		var d = this.getMinggeDef(key);
+		if (!d){ return key; }
+		var t = $I("cultivation.samsara.mingge." + key);
+		return (t && String(t).charAt(0) !== "$") ? t : d.label;
+	},
+
+	//命格择取卡面的六道标签:forNextLife = 来世(按此世所择之道) / 此世(按前世道缘)
+	getSamsaraMinggeTagHtml: function(key, forNextLife){
+		if (this.isMinggeSealed(key, forNextLife)){
+			return "<span class=\"xxMgSamsaraTag is-sealed\">" + $I("cultivation.samsara.mingge.tag.sealed") + "</span>";
+		}
+		if (this.isMinggeResonant(key, forNextLife)){
+			return "<span class=\"xxMgSamsaraTag is-resonant\">" + $I("cultivation.samsara.mingge.tag.resonant") + "</span>";
+		}
+		return "";
+	},
+
+	getSamsaraMinggeCardCls: function(key, forNextLife){
+		if (this.isMinggeSealed(key, forNextLife)){ return " xx-mg-sealed"; }
+		if (this.isMinggeResonant(key, forNextLife)){ return " xx-mg-resonant"; }
+		return "";
+	},
+
+	getSamsaraMinggeHintHtml: function(forNextLife){
+		var inf = forNextLife ? this.getSamsaraNextLifeInfluence() : this.getSamsaraLegacyInfluence();
+		var def = this.getSamsaraPathDef(inf.path);
+		if (!def){ return ""; }
+		var names = [];
+		for (var i = 0; i < inf.resonant.length; i++){
+			names.push("【" + this.getSamsaraMinggeName(inf.resonant[i]) + "】");
+		}
+		var sealTxt = inf.sealed ? ("【" + this.getSamsaraMinggeName(inf.sealed) + "】") : $I("cultivation.samsara.mingge.noseal");
+		return $I(forNextLife ? "cultivation.samsara.mingge.hint.next" : "cultivation.samsara.mingge.hint.legacy", [$I(def.labelKey), names.join(""), sealTxt]);
+	},
+
+	filterSealedMingge: function(list, pathKey){
+		var inf = this.getSamsaraMinggeInfluence(pathKey);
+		var out = [];
+		if (!list || !list.length){ return out; }
+		for (var i = 0; i < list.length; i++){
+			if (inf.sealed && list[i] === inf.sealed){ continue; }
+			out.push(list[i]);
+		}
+		return out;
+	},
+
+	//前世道缘共鸣:此世凝定的命格若属前世所择之道的道缘命格,每道追加该道共鸣效果
+	getSamsaraLegacyResonance: function(){
+		var out = {path: null, count: 0, keys: [], effects: {}, combatBonus: 0};
+		var def = this.getSamsaraPathDef(this.samsaraLegacyPath);
+		if (!def){ return out; }
+		out.path = def.key;
+		var cur = this.mingge || [];
+		for (var i = 0; i < def.mingge.length; i++){
+			for (var j = 0; j < cur.length; j++){
+				if (cur[j] === def.mingge[i]){
+					out.count++;
+					out.keys.push(def.mingge[i]);
+					break;
+				}
+			}
+		}
+		if (out.count > 0){
+			for (var ek in def.resonance){
+				if (def.resonance.hasOwnProperty(ek)){
+					out.effects[ek] = def.resonance[ek] * out.count;
+				}
+			}
+			out.combatBonus = (def.resonanceCombat || 0) * out.count;
+		}
+		return out;
+	},
+
+	tickSamsaraIllusion: function(ticksDelta){
+		var dt = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
+		if (dt <= 0){ return; }
+		var sm = this.samsaraMirror;
+		if (sm && (sm.switchCooldown || 0) > 0){
+			sm.switchCooldown = Math.max(0, sm.switchCooldown - dt);
+		}
+		var it = this.illusionTrial;
+		if (it && (it.cooldown || 0) > 0){
+			it.cooldown = Math.max(0, it.cooldown - dt);
+		}
+	},
+
+	// ---- 太虚幻境心魔试炼 ----
+
+	getIllusionLayerDef: function(layer){
+		var l = Math.max(1, Math.min(this.ILLUSION_MAX_LAYER, Math.floor(layer || 1)));
+		return this.ILLUSION_LAYERS[l - 1];
+	},
+
+	makeDefaultIllusionTrial: function(){
+		return {
+			layer: 0,
+			cooldown: 0,
+			insight: 0,
+			entries: 0,
+			clears: 0,
+			backlashes: 0,
+			steps: 0,
+			lampsUsed: 0,
+			run: null,
+			lastNote: ""
+		};
+	},
+
+	normalizeIllusionTrial: function(raw){
+		var def = this.makeDefaultIllusionTrial();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		def.layer = Math.min(this.ILLUSION_MAX_LAYER, num(raw.layer));
+		def.cooldown = Math.min(this.ILLUSION_BACKLASH_COOLDOWN, num(raw.cooldown));
+		def.insight = Math.min(this.ILLUSION_INSIGHT_MAX, num(raw.insight));
+		def.entries = num(raw.entries);
+		def.clears = Math.max(def.layer, num(raw.clears));
+		def.backlashes = num(raw.backlashes);
+		def.steps = num(raw.steps);
+		def.lampsUsed = num(raw.lampsUsed);
+		if (raw.run && typeof raw.run === "object" && def.layer < this.ILLUSION_MAX_LAYER){
+			def.run = {
+				depth: def.layer + 1,
+				demon: Math.min(this.ILLUSION_DEMON_MAX - 1, num(raw.run.demon)),
+				progress: Math.min(this.ILLUSION_NEED - 1, num(raw.run.progress)),
+				lamps: Math.min(4, num(raw.run.lamps)),
+				steps: num(raw.run.steps)
+			};
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	getIllusionLayer: function(){
+		return (this.illusionTrial && this.illusionTrial.layer) ? Math.max(0, Math.min(this.ILLUSION_MAX_LAYER, Math.floor(this.illusionTrial.layer))) : 0;
+	},
+
+	//道心纹:每破一重幻境铭刻一道(0..9)
+	syncDaoPatterns: function(){
+		this.daoPatterns = this.getIllusionLayer();
+		return this.daoPatterns;
+	},
+
+	getDaoHeartSeal: function(){
+		return Math.max(0, Math.min(this.DAO_HEART_MAX, Math.floor(this.daoHeartTier || 0)));
+	},
+
+	syncDaoHeartTier: function(){
+		var peak = Math.max(0, Math.floor(this.daoHeartTier || 0));
+		var layer = this.getIllusionLayer();
+		if (layer > peak){ peak = layer; }
+		this.daoHeartTier = Math.min(this.DAO_HEART_MAX, peak);
+		return this.daoHeartTier;
+	},
+
+	//跨轮回道心印:凡身修为加持、心魔消退加速,幻境心魔滋生 -4%/重、开局破幻进度 +4/重、梦莲灯每 3 重 +1 盏,镜光与入幻消耗 -4%/重
+	getDaoHeartSealBonus: function(){
+		var seal = this.getDaoHeartSeal();
+		if (seal <= 0){
+			return {tier: 0, xiuweiRatio: 0, demonDecay: 0, demonGainCut: 0, startProgress: 0, lampBonus: 0, costCut: 0};
+		}
+		return {
+			tier: seal,
+			xiuweiRatio: seal * 0.05,
+			demonDecay: seal * 0.06,
+			demonGainCut: Math.min(0.36, seal * 0.04),
+			startProgress: Math.min(36, seal * 4),
+			lampBonus: Math.floor(seal / 3),
+			costCut: seal * 0.04
+		};
+	},
+
+	//道心纹常驻效果与 XX-10 协同:每纹 × 每席天庭神职 / 每重雷池淬体追加
+	getDaoPatternEffect: function(patternsOpt){
+		var n = (typeof patternsOpt === "number")
+			? Math.max(0, Math.min(this.ILLUSION_MAX_LAYER, Math.floor(patternsOpt)))
+			: this.getIllusionLayer();
+		var offices = (this.immortalAscended && this.getFengshenOfficeCount) ? this.getFengshenOfficeCount() : 0;
+		var tier = (this.thunderPool && this.thunderPool.tier) ? Math.max(0, Math.min(this.THUNDER_MAX_TIER, Math.floor(this.thunderPool.tier))) : 0;
+		return {
+			patterns: n,
+			offices: offices,
+			tier: tier,
+			xiuweiRatio: 0.03 * n,
+			demonDecay: 0.05 * n,
+			mitigation: 0.004 * n,
+			officeXiuwei: 0.004 * n * offices,
+			officeXianyuan: 0.004 * n * offices,
+			thunderRiftHp: 0.003 * n * tier,
+			officeActive: (n > 0 && offices > 0),
+			thunderActive: (n > 0 && tier > 0)
+		};
+	},
+
+	getIllusionStartDemon: function(){
+		return Math.min(40, Math.round((this.heartDemon || 0) * 0.5));
+	},
+
+	getIllusionStartProgress: function(){
+		return this.getDaoHeartSealBonus().startProgress;
+	},
+
+	getIllusionLampCharges: function(){
+		return Math.min(4, 1 + this.getDaoHeartSealBonus().lampBonus);
+	},
+
+	//幻境心魔滋生倍率:择道(饿鬼 ×1.30 / 地狱 ×0.70) × 道心印 × 心魔识破积蕴(-10%/层),最低 ×0.35
+	getIllusionDemonMult: function(){
+		var it = this.illusionTrial || this.makeDefaultIllusionTrial();
+		var path = this.getSamsaraPathEffect();
+		var seal = this.getDaoHeartSealBonus();
+		var stacks = Math.max(0, Math.min(this.ILLUSION_INSIGHT_MAX, Math.floor(it.insight || 0)));
+		var m = (path.demonGainMult || 1) * (1 - seal.demonGainCut) * (1 - 0.10 * stacks);
+		return Math.max(0.35, m);
+	},
+
+	//破幻进度倍率:道心印 +3%/重;观心另按天庭神职每席 +3%,斩念另按雷池淬体每重 +3%
+	getIllusionProgressMult: function(mode){
+		var m = 1 + this.getDaoHeartSeal() * 0.03;
+		if (mode === "calm"){
+			m += ((this.immortalAscended && this.getFengshenOfficeCount) ? this.getFengshenOfficeCount() : 0) * 0.03;
+		} else if (mode === "sever"){
+			m += ((this.thunderPool && this.thunderPool.tier) ? Math.max(0, Math.floor(this.thunderPool.tier)) : 0) * 0.03;
+		}
+		return m;
+	},
+
+	getIllusionStepPreview: function(mode){
+		var cfg = this.ILLUSION_MODES[mode];
+		if (!cfg){ return null; }
+		var it = this.illusionTrial || this.makeDefaultIllusionTrial();
+		var depth = it.run ? it.run.depth : Math.min(this.ILLUSION_MAX_LAYER, (it.layer || 0) + 1);
+		var ld = this.getIllusionLayerDef(depth);
+		var dm = this.getIllusionDemonMult();
+		return {
+			mode: mode,
+			depth: depth,
+			progress: Math.max(1, Math.round(cfg.progress * this.getIllusionProgressMult(mode))),
+			demonMin: Math.round(ld.pressure * cfg.demonBase * dm),
+			demonMax: Math.round((ld.pressure * cfg.demonBase + cfg.demonRoll) * dm)
+		};
+	},
+
+	getIllusionEnterReq: function(){
+		var it = this.illusionTrial || this.makeDefaultIllusionTrial();
+		var layer = Math.floor(it.layer || 0);
+		if (layer >= this.ILLUSION_MAX_LAYER){ return null; }
+		var n = layer + 1;
+		var xyCost = Math.max(10, this.roundNice((20 + 8 * n) * this.getSamsaraCostMult()));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okXy = !!(xyObj && xyObj.value >= xyCost);
+		var cd = Math.max(0, Math.ceil(it.cooldown || 0));
+		var active = !!it.run;
+		return {
+			nextLayer: n,
+			xianyuan: xyCost,
+			cooldown: cd,
+			cooldownOk: cd <= 0,
+			active: active,
+			startDemon: this.getIllusionStartDemon(),
+			startProgress: this.getIllusionStartProgress(),
+			lamps: this.getIllusionLampCharges(),
+			affordable: !!(this.immortalAscended && !active && cd <= 0 && okXy)
+		};
+	},
+
+	//入太虚幻境:自下一未破之重起闯,幻境心魔值以此身心魔之半起算(40 封顶)
+	enterIllusion: function(){
+		if (!this.immortalAscended){ return false; }
+		this.illusionTrial = this.normalizeIllusionTrial(this.illusionTrial);
+		var req = this.getIllusionEnterReq();
+		if (!req || !req.affordable){ return false; }
+		var it = this.illusionTrial;
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		it.entries = (it.entries || 0) + 1;
+		it.run = {
+			depth: req.nextLayer,
+			demon: req.startDemon,
+			progress: req.startProgress,
+			lamps: req.lamps,
+			steps: 0
+		};
+		var ld = this.getIllusionLayerDef(req.nextLayer);
+		var isEn = this.isSamsaraEn();
+		var note = isEn
+			? ("Entered the Taixu Illusion at layer " + req.nextLayer + " [" + $I(ld.titleKey) + "] — inner demon " + req.startDemon + "/100.")
+			: ("【入太虚幻境】神识沉入第 " + req.nextLayer + " 重【" + $I(ld.titleKey) + "】，幻境心魔值 " + req.startDemon + "/100。");
+		it.lastNote = note;
+		this.game.msg(note, "notice");
+		return true;
+	},
+
+	//破幻一步:mode = "calm" 观心 / "sever" 斩念;rollOpt 供测试注入确定性掷点(0 ≤ roll < 1),缺省走 Math.random()。
+	//先结进度后算心魔:同一步进度满 100 即破境(心魔回落 20,铭刻道心纹),否则心魔满 100 即心魔反噬
+	illusionStep: function(mode, rollOpt){
+		if (!this.immortalAscended){ return false; }
+		var cfg = this.ILLUSION_MODES[mode];
+		if (!cfg){ return false; }
+		if (!this.illusionTrial){ this.illusionTrial = this.makeDefaultIllusionTrial(); }	//保持同一状态对象(运行中的 run 引用不失效)
+		var it = this.illusionTrial;
+		var run = it.run;
+		if (!run){ return false; }
+		var roll = (typeof rollOpt === "number" && isFinite(rollOpt)) ? Math.max(0, Math.min(0.999999, rollOpt)) : Math.random();
+		var prev = this.getIllusionStepPreview(mode);
+		var ld = this.getIllusionLayerDef(run.depth);
+		var demonGain = Math.round((ld.pressure * cfg.demonBase + roll * cfg.demonRoll) * this.getIllusionDemonMult());
+		run.steps = (run.steps || 0) + 1;
+		it.steps = (it.steps || 0) + 1;
+		run.progress = (run.progress || 0) + prev.progress;
+		run.demon = (run.demon || 0) + demonGain;
+		var isEn = this.isSamsaraEn();
+		var note = "";
+		if (run.progress >= this.ILLUSION_NEED){
+			return this.clearIllusionLayer(demonGain);
+		}
+		if (run.demon >= this.ILLUSION_DEMON_MAX){
+			return this.triggerIllusionBacklash(demonGain);
+		}
+		note = isEn
+			? ((mode === "calm" ? "Calm Mind" : "Sever Thought") + ": illusion " + run.progress + "/100, inner demon +" + demonGain + " → " + run.demon + "/100.")
+			: ((mode === "calm" ? "【观心破幻】" : "【斩念破幻】") + "破幻进度 " + run.progress + "/100，幻境心魔 +" + demonGain + " → " + run.demon + "/100。");
+		it.lastNote = note;
+		return true;
+	},
+
+	clearIllusionLayer: function(demonGain){
+		var it = this.illusionTrial;
+		var run = it.run;
+		var cleared = run.depth;
+		var ld = this.getIllusionLayerDef(cleared);
+		it.layer = Math.max(it.layer || 0, cleared);
+		it.clears = (it.clears || 0) + 1;
+		it.insight = 0;
+		this.heartDemon = Math.max(0, (this.heartDemon || 0) - 6);
+		this.syncDaoPatterns();
+		this.syncDaoHeartTier();
+		this.addDaoLawProgress(10 + cleared * 2);
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, true);
+		}
+		var isEn = this.isSamsaraEn();
+		var note = "";
+		if (cleared >= this.ILLUSION_MAX_LAYER){
+			it.run = null;
+			note = isEn
+				? ("The Self-Demon falls: all nine illusion layers are broken and the ninth Dao-Heart Pattern is engraved!")
+				: ("【太虚圆满】本我心魔伏诛，九重幻境尽破，第九道道心纹铭刻道心！");
+		} else {
+			run.demon = Math.max(0, (run.demon || 0) - this.ILLUSION_CLEAR_RELIEF);
+			run.progress = 0;
+			run.depth = cleared + 1;
+			var nd = this.getIllusionLayerDef(run.depth);
+			note = isEn
+				? ("Broke illusion layer " + cleared + " [" + $I(ld.titleKey) + "]: Dao-Heart Pattern " + it.layer + "/9 engraved; inner demon eases to " + run.demon + "/100. Next: [" + $I(nd.titleKey) + "].")
+				: ("【破幻铭纹】勘破第 " + cleared + " 重【" + $I(ld.titleKey) + "】，铭刻道心纹 " + it.layer + "/9，幻境心魔回落至 " + run.demon + "/100；前方【" + $I(nd.titleKey) + "】。");
+		}
+		it.lastNote = note;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(note, "important");
+		return true;
+	},
+
+	triggerIllusionBacklash: function(demonGain){
+		var it = this.illusionTrial;
+		var depth = it.run ? it.run.depth : (it.layer || 0) + 1;
+		it.run = null;
+		it.backlashes = (it.backlashes || 0) + 1;
+		it.insight = Math.min(this.ILLUSION_INSIGHT_MAX, (it.insight || 0) + 1);
+		it.cooldown = this.ILLUSION_BACKLASH_COOLDOWN;
+		this.heartDemon = Math.min(100, (this.heartDemon || 0) + 6);
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playFail){
+			classes.ui.XianxiaAudio.playFail(this.game);
+		}
+		var isEn = this.isSamsaraEn();
+		var note = isEn
+			? ("Inner-demon backlash at layer " + depth + ": cast out of the illusion, heart demon +6, Demon Insight " + it.insight + "/" + this.ILLUSION_INSIGHT_MAX + " (-10% demon growth each until the next breakthrough).")
+			: ("【心魔反噬】困于第 " + depth + " 重幻境心魔满溢，神识被逐出太虚，此身心魔 +6；心魔识破 " + it.insight + "/" + this.ILLUSION_INSIGHT_MAX + "（每层幻境心魔滋生 -10%，破境即散）。");
+		it.lastNote = note;
+		this.game.msg(note, "alert");
+		return true;
+	},
+
+	useDreamLotusLamp: function(){
+		if (!this.immortalAscended){ return false; }
+		if (!this.illusionTrial){ this.illusionTrial = this.makeDefaultIllusionTrial(); }	//保持同一状态对象(运行中的 run 引用不失效)
+		var it = this.illusionTrial;
+		var run = it.run;
+		if (!run || (run.lamps || 0) <= 0 || (run.demon || 0) <= 0){ return false; }
+		var before = run.demon;
+		run.demon = Math.max(0, run.demon - this.ILLUSION_LAMP_RELIEF);
+		run.lamps -= 1;
+		it.lampsUsed = (it.lampsUsed || 0) + 1;
+		var isEn = this.isSamsaraEn();
+		it.lastNote = isEn
+			? ("Lit a Dream Lotus Lamp: inner demon " + before + " → " + run.demon + "/100 (" + run.lamps + " left).")
+			: ("【梦莲照心】点燃梦莲灯，幻境心魔 " + before + " → " + run.demon + "/100（余 " + run.lamps + " 盏）。");
+		return true;
+	},
+
+	leaveIllusion: function(){
+		if (!this.illusionTrial || !this.illusionTrial.run){ return false; }
+		var it = this.illusionTrial;
+		var depth = it.run.depth;
+		it.run = null;
+		var isEn = this.isSamsaraEn();
+		it.lastNote = isEn
+			? ("Withdrew from illusion layer " + depth + "; engraved patterns are kept.")
+			: ("【出离幻境】自第 " + depth + " 重幻境收摄神识，已铭刻的道心纹尽数保留。");
+		return true;
+	},
+
+	//飞升 / 测试洞府初始化:归一化轮回镜与幻境;人道(此世)前尘自明,前世所择之道亦自照见
+	initSamsaraStateOnAscend: function(){
+		this.samsaraMirror = this.normalizeSamsaraMirror(this.samsaraMirror);
+		this.illusionTrial = this.normalizeIllusionTrial(this.illusionTrial);
+		if (this.samsaraMirror.revealed.human !== true){
+			this.samsaraMirror.revealed.human = true;
+		}
+		var leg = this.getSamsaraPathDef(this.samsaraLegacyPath);
+		if (leg && this.samsaraMirror.revealed[leg.key] !== true){
+			this.samsaraMirror.revealed[leg.key] = true;
+		}
+		this.syncDaoPatterns();
+		this.syncDaoHeartTier();
+	},
+
+	// ---------------- XX-12 周天星辰弈局与诸天万界灵宝拍卖行 ----------------
+
+	STAR_GO_LINE_BONUS: 2,			//三子连星成阵(横 / 竖 / 斜)每条 +2 目
+	STAR_GO_LOSS_COOLDOWN: 300,		//败局后 300 tick(常速约 1 分钟)星君闭目调息,不得再开局
+	STAR_GO_INSIGHT_MAX: 3,			//弈悟积蕴上限(每层下一局 +1 目,胜局即散)
+	STAR_GO_REMATCH_PURSE: 0.5,		//再胜同一位星君只得半数彩头(防刷仙元;星辉照常)
+	STAR_GO_TIER_MAX: 7,			//弈道印上限 = 北斗七星君
+	STAR_GO_RNG_MOD: 2147483647,	//Park–Miller 线性同余模数(种子 1..2^31-2,ES5 双精度内无精度损失)
+	XX12_COMBAT_CAP: 0.08,			//星位神通 + 灵宝的秘境增伤 / 秘境气血各自合计封顶 +8%
+	XX12_MITIGATION_CAP: 0.01,		//减伤合计封顶 +1%;一概不触碰神雷追击
+
+	//3×3 星盘:0..8 自左上而右下(4 = 天元);邻接为上下左右
+	STAR_GO_NEIGHBORS: [[1, 3], [0, 2, 4], [1, 5], [0, 4, 6], [1, 3, 5, 7], [2, 4, 8], [3, 7], [4, 6, 8], [5, 7]],
+	STAR_GO_LINES: [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]],
+
+	//北斗七星君(依次对弈解锁):komi = 贴目;slack = 应手容差(越大越随性,掷点择一);deny = 抢点阻断权重;
+	//fee = 入局仙元;purse = 首胜彩头仙元(再胜半数);glow = 胜局弈道星辉(首胜 ×2)
+	STAR_GO_LORDS: [
+		{key: "tanlang", komi: 0, slack: 2, deny: 0.3, fee: 20, purse: 36, glow: 4},
+		{key: "jumen", komi: 1, slack: 2, deny: 0.5, fee: 30, purse: 54, glow: 6},
+		{key: "lucun", komi: 2, slack: 1, deny: 0.6, fee: 40, purse: 72, glow: 8},
+		{key: "wenqu", komi: 3, slack: 1, deny: 0.7, fee: 50, purse: 90, glow: 10},
+		{key: "lianzhen", komi: 4, slack: 0, deny: 0.8, fee: 60, purse: 108, glow: 13},
+		{key: "wuqu", komi: 5, slack: 0, deny: 0.9, fee: 70, purse: 126, glow: 16},
+		{key: "pojun", komi: 7, slack: 0, deny: 1.0, fee: 80, purse: 150, glow: 20}
+	],
+
+	//星位神通:弈道星辉(此世累积,只增不减)达到 need 即点亮,常驻生效
+	STAR_GO_PASSIVES: [
+		{key: "sansan", need: 10},
+		{key: "komoku", need: 30},
+		{key: "hoshi", need: 60},
+		{key: "takamoku", need: 100},
+		{key: "mokuhazushi", need: 160},
+		{key: "tengen", need: 240}
+	],
+
+	//六道择道 × 弈局:此世所择之道改写对弈规则(每局即时生效)
+	STAR_GO_PATH_PERKS: {
+		deva: {bonus: 1},
+		human: {glowMult: 0.20},
+		asura: {capture: 1},
+		beast: {line: 1},
+		preta: {purseMult: 0.50},
+		naraka: {komiCut: 1}
+	},
+
+	isStarGoEn: function(){
+		return String($I("cultivation.stargo.panel.badge") || "").indexOf("Immortal") === 0;
+	},
+
+	starGoNextSeed: function(seed){
+		return (seed * 16807) % this.STAR_GO_RNG_MOD;
+	},
+
+	clampXX12Roll: function(rollOpt){
+		return (typeof rollOpt === "number" && isFinite(rollOpt)) ? Math.max(0, Math.min(0.999999, rollOpt)) : Math.random();
+	},
+
+	starGoSeedFromRoll: function(rollOpt){
+		return 1 + Math.floor(this.clampXX12Roll(rollOpt) * (this.STAR_GO_RNG_MOD - 2));
+	},
+
+	getStarGoLordDef: function(key){
+		for (var i = 0; i < this.STAR_GO_LORDS.length; i++){
+			if (this.STAR_GO_LORDS[i].key === key){ return this.STAR_GO_LORDS[i]; }
+		}
+		return null;
+	},
+
+	getStarGoLordIndex: function(key){
+		for (var i = 0; i < this.STAR_GO_LORDS.length; i++){
+			if (this.STAR_GO_LORDS[i].key === key){ return i; }
+		}
+		return -1;
+	},
+
+	getStarGoPassiveDef: function(key){
+		for (var i = 0; i < this.STAR_GO_PASSIVES.length; i++){
+			if (this.STAR_GO_PASSIVES[i].key === key){ return this.STAR_GO_PASSIVES[i]; }
+		}
+		return null;
+	},
+
+	makeDefaultStarGo: function(){
+		var beaten = {};
+		for (var i = 0; i < this.STAR_GO_LORDS.length; i++){
+			beaten[this.STAR_GO_LORDS[i].key] = 0;
+		}
+		return {
+			glow: 0,
+			beaten: beaten,
+			games: 0,
+			wins: 0,
+			losses: 0,
+			draws: 0,
+			captures: 0,
+			insight: 0,
+			cooldown: 0,
+			match: null,
+			lastResult: null,
+			lastNote: ""
+		};
+	},
+
+	normalizeStarGoBoard: function(raw){
+		if (!raw || typeof raw !== "object" || !raw.vals || !raw.own || raw.vals.length !== 9 || raw.own.length !== 9){ return null; }
+		if (!this.getStarGoLordDef(raw.lord)){ return null; }
+		var vals = [];
+		var own = [];
+		var filled = 0;
+		for (var i = 0; i < 9; i++){
+			var v = raw.vals[i];
+			vals.push((typeof v === "number" && isFinite(v)) ? Math.max(1, Math.min(3, Math.floor(v))) : 1);
+			var o = (raw.own[i] === 1 || raw.own[i] === 2) ? raw.own[i] : 0;
+			if (o){ filled++; }
+			own.push(o);
+		}
+		return {lord: raw.lord, vals: vals, own: own, filled: filled};
+	},
+
+	normalizeStarGoMatch: function(raw){
+		var b = this.normalizeStarGoBoard(raw);
+		if (!b || b.filled >= 9){ return null; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		var cell = function(v){
+			return (typeof v === "number" && isFinite(v) && v >= 0 && v < 9) ? Math.floor(v) : -1;
+		};
+		var flipped = [];
+		if (raw.flipped && raw.flipped.length){
+			for (var j = 0; j < raw.flipped.length && flipped.length < 8; j++){
+				var fc = cell(raw.flipped[j]);
+				if (fc >= 0){ flipped.push(fc); }
+			}
+		}
+		var outM = {
+			lord: b.lord,
+			vals: b.vals,
+			own: b.own,
+			lastPlayer: cell(raw.lastPlayer),
+			lastLord: cell(raw.lastLord),
+			flipped: flipped,
+			captures: num(raw.captures),
+			lordCaptures: num(raw.lordCaptures),
+			fee: num(raw.fee),
+			seed: num(raw.seed)
+		};
+		if (raw.charm === 1 || raw.charm === true){ outM.charm = 1; }	//XX-13 北斗星符(仅此一局 +1 目)
+		return outM;
+	},
+
+	normalizeStarGoResult: function(raw){
+		var b = this.normalizeStarGoBoard(raw);
+		if (!b){ return null; }
+		var res = (raw.result === "win" || raw.result === "draw" || raw.result === "loss" || raw.result === "resign") ? raw.result : "loss";
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		return {
+			lord: b.lord,
+			vals: b.vals,
+			own: b.own,
+			result: res,
+			player: num(raw.player),
+			lordScore: num(raw.lordScore),
+			glow: num(raw.glow),
+			purse: num(raw.purse),
+			first: raw.first === true
+		};
+	},
+
+	normalizeStarGo: function(raw){
+		var def = this.makeDefaultStarGo();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		def.glow = num(raw.glow);
+		var bt = (raw.beaten && typeof raw.beaten === "object") ? raw.beaten : {};
+		var chain = true;
+		var beatenSum = 0;
+		for (var i = 0; i < this.STAR_GO_LORDS.length; i++){
+			var k = this.STAR_GO_LORDS[i].key;
+			var n = chain ? num(bt[k]) : 0;	//北斗依次解锁:前一位星君未胜,后者之胜不作数
+			def.beaten[k] = n;
+			beatenSum += n;
+			if (n <= 0){ chain = false; }
+		}
+		def.wins = Math.max(beatenSum, num(raw.wins));
+		def.losses = num(raw.losses);
+		def.draws = num(raw.draws);
+		def.games = Math.max(def.wins + def.losses + def.draws, num(raw.games));
+		def.captures = num(raw.captures);
+		def.insight = Math.min(this.STAR_GO_INSIGHT_MAX, num(raw.insight));
+		def.cooldown = Math.min(this.STAR_GO_LOSS_COOLDOWN, num(raw.cooldown));
+		def.match = this.normalizeStarGoMatch(raw.match);
+		if (def.match){
+			var mIdx = this.getStarGoLordIndex(def.match.lord);
+			if (mIdx > 0 && def.beaten[this.STAR_GO_LORDS[mIdx - 1].key] <= 0){ def.match = null; }
+		}
+		def.lastResult = this.normalizeStarGoResult(raw.lastResult);
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	getStarGoBeatenCount: function(){
+		var sg = this.starGo;
+		if (!sg || !sg.beaten){ return 0; }
+		var cnt = 0;
+		for (var i = 0; i < this.STAR_GO_LORDS.length; i++){
+			if ((sg.beaten[this.STAR_GO_LORDS[i].key] || 0) > 0){ cnt++; } else { break; }
+		}
+		return cnt;
+	},
+
+	isStarGoLordUnlocked: function(key){
+		var idx = this.getStarGoLordIndex(key);
+		if (idx < 0){ return false; }
+		return idx <= this.getStarGoBeatenCount();
+	},
+
+	getStarGoSeal: function(){
+		return Math.max(0, Math.min(this.STAR_GO_TIER_MAX, Math.floor(this.starGoTier || 0)));
+	},
+
+	//弈道印 = 历世所胜北斗星君最多位数(跨转世保留,只增不减)
+	syncStarGoTier: function(){
+		var peak = Math.max(0, Math.floor(this.starGoTier || 0));
+		var cur = this.getStarGoBeatenCount();
+		if (cur > peak){ peak = cur; }
+		this.starGoTier = Math.min(this.STAR_GO_TIER_MAX, peak);
+		return this.starGoTier;
+	},
+
+	//跨轮回弈道印:修为 +3%/位(凡身即得)、对弈先手加目 +1/每 2 位、入局仙元 -4%/位、飞升开局弈道星辉 +6/位
+	getStarGoSealBonus: function(){
+		var t = this.getStarGoSeal();
+		if (t <= 0){
+			return {tier: 0, xiuweiRatio: 0, bonus: 0, feeCut: 0, startGlow: 0};
+		}
+		return {
+			tier: t,
+			xiuweiRatio: t * 0.03,
+			bonus: Math.floor(t / 2),
+			feeCut: t * 0.04,
+			startGlow: t * 6
+		};
+	},
+
+	getStarGoStartingGlow: function(){
+		return this.getStarGoSealBonus().startGlow;
+	},
+
+	getStarGoGlow: function(){
+		return (this.starGo && typeof this.starGo.glow === "number" && isFinite(this.starGo.glow)) ? Math.max(0, Math.floor(this.starGo.glow)) : 0;
+	},
+
+	isStarGoPassiveLit: function(key){
+		var def = this.getStarGoPassiveDef(key);
+		return !!(def && this.immortalAscended && this.getStarGoGlow() >= def.need);
+	},
+
+	getStarGoLitCount: function(){
+		var cnt = 0;
+		for (var i = 0; i < this.STAR_GO_PASSIVES.length; i++){
+			if (this.isStarGoPassiveLit(this.STAR_GO_PASSIVES[i].key)){ cnt++; }
+		}
+		return cnt;
+	},
+
+	//星位神通合计(glowOpt 供面板预览;未飞升且未指定预览时为零)
+	//三三 万产 +6% · 小目 修为 +8% · 星位 仙元 +4% 且每席天庭神职 +1% · 高目 秘境增伤 / 气血 +5% · 目外 药园催熟 / 悬赏行程 +8% 且连星 +1 目 · 天元 每照见一道六道前尘修为 +2% 且对弈 +1 目
+	getStarGoPassiveEffect: function(glowOpt){
+		var preview = (typeof glowOpt === "number" && isFinite(glowOpt));
+		var glow = preview ? Math.max(0, Math.floor(glowOpt)) : this.getStarGoGlow();
+		var offices = (this.immortalAscended && this.getFengshenOfficeCount) ? this.getFengshenOfficeCount() : 0;
+		var revealed = (this.immortalAscended && this.getSamsaraRevealedCount) ? this.getSamsaraRevealedCount() : 0;
+		var e = {
+			glow: glow, lit: 0, offices: offices, revealed: revealed,
+			realmProductionRatio: 0, xiuweiRatio: 0, xianyuanRatio: 0, officeXianyuan: 0, pathXiuwei: 0,
+			riftDmg: 0, riftHp: 0, herbSpeed: 0, bountySpeed: 0, lineBonus: 0, bonus: 0
+		};
+		if (!this.immortalAscended && !preview){ return e; }
+		for (var i = 0; i < this.STAR_GO_PASSIVES.length; i++){
+			var p = this.STAR_GO_PASSIVES[i];
+			if (glow < p.need){ continue; }
+			e.lit++;
+			if (p.key === "sansan"){
+				e.realmProductionRatio += 0.06;
+			} else if (p.key === "komoku"){
+				e.xiuweiRatio += 0.08;
+			} else if (p.key === "hoshi"){
+				e.officeXianyuan = 0.01 * offices;
+				e.xianyuanRatio += 0.04 + e.officeXianyuan;
+			} else if (p.key === "takamoku"){
+				e.riftDmg += 0.05;
+				e.riftHp += 0.05;
+			} else if (p.key === "mokuhazushi"){
+				e.herbSpeed += 0.08;
+				e.bountySpeed += 0.08;
+				e.lineBonus += 1;
+			} else if (p.key === "tengen"){
+				e.pathXiuwei = 0.02 * revealed;
+				e.xiuweiRatio += e.pathXiuwei;
+				e.bonus += 1;
+			}
+		}
+		return e;
+	},
+
+	getStarGoPathPerk: function(){
+		var key = (this.immortalAscended && this.getSamsaraActivePath) ? this.getSamsaraActivePath() : null;
+		var p = (key && this.STAR_GO_PATH_PERKS[key]) ? this.STAR_GO_PATH_PERKS[key] : {};
+		return {
+			path: key || null,
+			bonus: p.bonus || 0,
+			glowMult: p.glowMult || 0,
+			capture: p.capture || 0,
+			line: p.line || 0,
+			purseMult: p.purseMult || 0,
+			komiCut: p.komiCut || 0
+		};
+	},
+
+	//弈道星辉倍率:每席天庭神职 +5% × 人道「人和」+20%
+	getStarGoGlowMult: function(){
+		var offices = (this.immortalAscended && this.getFengshenOfficeCount) ? this.getFengshenOfficeCount() : 0;
+		return (1 + 0.05 * offices) * (1 + this.getStarGoPathPerk().glowMult);
+	},
+
+	getStarGoFeeMult: function(){
+		return Math.max(0.70, 1 - this.getStarGoSealBonus().feeCut);
+	},
+
+	//对弈规则总表:贴目、白方加目(弈道印 / 天道 / 天元 / 周天星斗棋枰 / 弈悟)、连星目数、夺子目数、星辉与彩头
+	getStarGoMatchRules: function(lordKey){
+		var lord = this.getStarGoLordDef(lordKey);
+		if (!lord){ return null; }
+		var sg = this.starGo || this.makeDefaultStarGo();
+		var seal = this.getStarGoSealBonus();
+		var perk = this.getStarGoPathPerk();
+		var pas = this.getStarGoPassiveEffect();
+		var tr = this.getAuctionTreasureEffect();
+		var insight = Math.max(0, Math.min(this.STAR_GO_INSIGHT_MAX, Math.floor(sg.insight || 0)));
+		var charm = (sg.match && sg.match.lord === lord.key)
+			? Math.max(0, Math.min(1, Math.floor(sg.match.charm || 0)))
+			: (this.getTalismanGoBonus ? this.getTalismanGoBonus() : 0);	//XX-13 北斗星符 +1 目(一符一局)
+		return {
+			lord: lord.key,
+			komi: Math.max(0, lord.komi - perk.komiCut),
+			bonus: seal.bonus + perk.bonus + pas.bonus + tr.goBonus + insight + charm,
+			bonusCharm: charm,
+			bonusSeal: seal.bonus,
+			bonusPath: perk.bonus,
+			bonusTengen: pas.bonus,
+			bonusBoard: tr.goBonus,
+			bonusInsight: insight,
+			lineP: this.STAR_GO_LINE_BONUS + perk.line + pas.lineBonus,
+			lineL: this.STAR_GO_LINE_BONUS,
+			capture: perk.capture,
+			slack: lord.slack,
+			deny: lord.deny,
+			glow: Math.max(1, Math.round(lord.glow * this.getStarGoGlowMult())) + tr.goGlow,
+			purse: Math.round(lord.purse * (1 + perk.purseMult)),
+			fee: Math.max(5, this.roundNice(lord.fee * this.getStarGoFeeMult()))
+		};
+	},
+
+	//星盘每位星辉 1..3(天元 2..3),由种子确定
+	starGoGenBoard: function(seed){
+		var s = Math.max(1, Math.floor(seed || 1));
+		var vals = [];
+		for (var i = 0; i < 9; i++){
+			s = this.starGoNextSeed(s);
+			var r = s / this.STAR_GO_RNG_MOD;
+			vals.push(i === 4 ? 2 + Math.floor(r * 2) : 1 + Math.floor(r * 3));
+		}
+		return vals;
+	},
+
+	//落子:围住(四邻皆为己子)的相邻敌子即被夺为己子(单次结算,不连锁)
+	starGoPlace: function(own, cell, who){
+		var o = own.slice(0);
+		o[cell] = who;
+		var flips = [];
+		var nb = this.STAR_GO_NEIGHBORS[cell];
+		for (var k = 0; k < nb.length; k++){
+			var n = nb[k];
+			if (o[n] && o[n] !== who){
+				var nn = this.STAR_GO_NEIGHBORS[n];
+				var surrounded = true;
+				for (var j = 0; j < nn.length; j++){
+					if (o[nn[j]] !== who){ surrounded = false; break; }
+				}
+				if (surrounded){ flips.push(n); }
+			}
+		}
+		for (var f = 0; f < flips.length; f++){
+			o[flips[f]] = who;
+		}
+		return {own: o, flips: flips};
+	},
+
+	starGoEmptyCount: function(own){
+		var cnt = 0;
+		for (var i = 0; i < 9; i++){
+			if (!own[i]){ cnt++; }
+		}
+		return cnt;
+	},
+
+	starGoScore: function(own, vals, who, lineBonus){
+		var stones = 0;
+		var pts = 0;
+		var lines = 0;
+		for (var i = 0; i < 9; i++){
+			if (own[i] === who){
+				stones++;
+				pts += vals[i];
+			}
+		}
+		for (var l = 0; l < this.STAR_GO_LINES.length; l++){
+			var L = this.STAR_GO_LINES[l];
+			if (own[L[0]] === who && own[L[1]] === who && own[L[2]] === who){ lines++; }
+		}
+		return {stones: stones, points: pts, lines: lines, total: pts + lines * lineBonus};
+	},
+
+	starGoEvalDiff: function(own, vals, rules){
+		return this.starGoScore(own, vals, 1, rules.lineP).total - this.starGoScore(own, vals, 2, rules.lineL).total;
+	},
+
+	//星君应手:每个空位评估「己方得失 + deny × 白方抢此点之利」,在最佳值 slack 容差内的候选里按掷点择一(确定性)
+	getStarGoLordMove: function(own, vals, rules, roll){
+		var base = this.starGoEvalDiff(own, vals, rules);
+		var evals = [];
+		var best = -Infinity;
+		for (var c = 0; c < 9; c++){
+			if (own[c]){ continue; }
+			var gain = base - this.starGoEvalDiff(this.starGoPlace(own, c, 2).own, vals, rules);
+			var threat = this.starGoEvalDiff(this.starGoPlace(own, c, 1).own, vals, rules) - base;
+			var ev = gain + rules.deny * threat;
+			evals.push({cell: c, ev: ev});
+			if (ev > best){ best = ev; }
+		}
+		if (!evals.length){ return -1; }
+		var cand = [];
+		for (var i = 0; i < evals.length; i++){
+			if (evals[i].ev >= best - rules.slack - 1e-9){ cand.push(evals[i].cell); }
+		}
+		var r = this.clampXX12Roll(roll);
+		return cand[Math.min(cand.length - 1, Math.floor(r * cand.length))];
+	},
+
+	getStarGoMatchScore: function(matchOpt, rulesOpt){
+		var m = matchOpt || (this.starGo ? this.starGo.match : null);
+		if (!m){ return null; }
+		var rules = rulesOpt || this.getStarGoMatchRules(m.lord);
+		if (!rules){ return null; }
+		var p = this.starGoScore(m.own, m.vals, 1, rules.lineP);
+		var l = this.starGoScore(m.own, m.vals, 2, rules.lineL);
+		var capPts = (m.captures || 0) * rules.capture;
+		return {
+			player: p.total + rules.bonus + capPts,
+			lord: l.total + rules.komi,
+			pStones: p.stones,
+			lStones: l.stones,
+			pPoints: p.points,
+			lPoints: l.points,
+			pLines: p.lines,
+			lLines: l.lines,
+			bonus: rules.bonus,
+			komi: rules.komi,
+			capturePts: capPts,
+			captures: m.captures || 0
+		};
+	},
+
+	getStarGoEnterReq: function(lordKey){
+		var lord = this.getStarGoLordDef(lordKey);
+		if (!lord){ return null; }
+		var sg = this.starGo || this.makeDefaultStarGo();
+		var rules = this.getStarGoMatchRules(lordKey);
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okXy = !!(xyObj && xyObj.value >= rules.fee);
+		var cd = Math.max(0, Math.ceil(sg.cooldown || 0));
+		var unlocked = this.isStarGoLordUnlocked(lordKey);
+		var active = !!sg.match;
+		return {
+			lord: lord.key,
+			fee: rules.fee,
+			cooldown: cd,
+			cooldownOk: cd <= 0,
+			unlocked: unlocked,
+			active: active,
+			firstWin: !((sg.beaten && sg.beaten[lord.key]) > 0),
+			purse: ((sg.beaten && sg.beaten[lord.key]) > 0) ? Math.round(rules.purse * this.STAR_GO_REMATCH_PURSE) : rules.purse,
+			rules: rules,
+			affordable: !!(this.immortalAscended && unlocked && !active && cd <= 0 && okXy)
+		};
+	},
+
+	//开局:付入局仙元,按掷点种子排出星盘;白方(你)执先
+	startStarGo: function(lordKey, rollOpt){
+		if (!this.immortalAscended){ return false; }
+		this.starGo = this.normalizeStarGo(this.starGo);
+		var req = this.getStarGoEnterReq(lordKey);
+		if (!req || !req.affordable){ return false; }
+		var sg = this.starGo;
+		this.game.resPool.addResEvent("xianyuan", -req.fee);
+		var seed = this.starGoSeedFromRoll(rollOpt);
+		sg.match = {
+			lord: req.lord,
+			vals: this.starGoGenBoard(seed),
+			own: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+			lastPlayer: -1,
+			lastLord: -1,
+			flipped: [],
+			captures: 0,
+			lordCaptures: 0,
+			fee: req.fee,
+			seed: seed
+		};
+		sg.lastResult = null;
+		var charm = this.consumeBeidouTalisman ? this.consumeBeidouTalisman() : 0;	//XX-13 北斗星符化入此局
+		if (charm > 0){ sg.match.charm = charm; }
+		var isEn = this.isStarGoEn();
+		var lordName = $I("cultivation.stargo.lord." + req.lord + ".label");
+		sg.lastNote = isEn
+			? ("You sit down across from " + lordName + " (" + req.fee + " Immortal Essence). You play first; the Star Lord takes " + req.rules.komi + " komi.")
+			: ("【周天星辰弈局】奉上 " + req.fee + " 仙元，与【" + lordName + "】对坐星盘；你执白先行，星君贴目 " + req.rules.komi + "。");
+		if (charm > 0){
+			sg.lastNote += isEn ? " Your Big Dipper Charm melts into the board: +1 point this game." : "北斗星符化入星盘，此局 +1 目。";
+		}
+		return true;
+	},
+
+	//落子一手:cell = 0..8;rollOpt 供测试注入星君应手掷点(0 ≤ roll < 1),缺省走 Math.random()。棋盘下满即终局结算
+	starGoMove: function(cell, rollOpt){
+		if (!this.immortalAscended || !this.starGo){ return false; }
+		var sg = this.starGo;
+		var m = sg.match;
+		if (!m){ return false; }
+		var c = (typeof cell === "number") ? cell : parseInt(cell, 10);
+		if (!(c >= 0 && c < 9) || Math.floor(c) !== c || m.own[c]){ return false; }
+		var rules = this.getStarGoMatchRules(m.lord);
+		var pr = this.starGoPlace(m.own, c, 1);
+		m.own = pr.own;
+		m.lastPlayer = c;
+		m.lastLord = -1;
+		m.flipped = pr.flips.slice(0);
+		m.captures = (m.captures || 0) + pr.flips.length;
+		sg.captures = (sg.captures || 0) + pr.flips.length;
+		if (this.starGoEmptyCount(m.own) > 0){
+			var lc = this.getStarGoLordMove(m.own, m.vals, rules, rollOpt);
+			if (lc >= 0){
+				var lr = this.starGoPlace(m.own, lc, 2);
+				m.own = lr.own;
+				m.lastLord = lc;
+				m.lordCaptures = (m.lordCaptures || 0) + lr.flips.length;
+				for (var f = 0; f < lr.flips.length; f++){ m.flipped.push(lr.flips[f]); }
+			}
+		}
+		if (this.starGoEmptyCount(m.own) <= 0){
+			return this.finishStarGo(false);
+		}
+		var sc = this.getStarGoMatchScore(m, rules);
+		var isEn = this.isStarGoEn();
+		sg.lastNote = isEn
+			? ("You take point " + (c + 1) + (pr.flips.length ? (" and capture " + pr.flips.length + " stone(s)") : "") + "; the Star Lord answers at point " + (m.lastLord + 1) + ". Score " + sc.player + " : " + sc.lord + ".")
+			: ("【落子】你点第 " + (c + 1) + " 位" + (pr.flips.length ? ("，围夺 " + pr.flips.length + " 子") : "") + "；星君应于第 " + (m.lastLord + 1) + " 位。目数 " + sc.player + " : " + sc.lord + "。");
+		return true;
+	},
+
+	//终局:胜得弈道星辉(首胜 ×2)与彩头仙元;和局退还入局仙元并得三成星辉;败局星君调息,另积一层弈悟(认输不积)
+	finishStarGo: function(resigned){
+		var sg = this.starGo;
+		var m = sg ? sg.match : null;
+		if (!m){ return false; }
+		var lord = this.getStarGoLordDef(m.lord);
+		var rules = this.getStarGoMatchRules(m.lord);
+		var sc = this.getStarGoMatchScore(m, rules);
+		var result = resigned ? "loss" : ((sc.player > sc.lord) ? "win" : ((sc.player === sc.lord) ? "draw" : "loss"));
+		var glowGain = 0;
+		var purse = 0;
+		var first = false;
+		var isEn = this.isStarGoEn();
+		var lordName = $I("cultivation.stargo.lord." + lord.key + ".label");
+		var note = "";
+		sg.games = (sg.games || 0) + 1;
+		if (result === "win"){
+			first = !((sg.beaten[lord.key] || 0) > 0);
+			glowGain = rules.glow * (first ? 2 : 1);
+			purse = first ? rules.purse : Math.round(rules.purse * this.STAR_GO_REMATCH_PURSE);
+			sg.beaten[lord.key] = (sg.beaten[lord.key] || 0) + 1;
+			sg.wins = (sg.wins || 0) + 1;
+			sg.insight = 0;
+			sg.glow = (sg.glow || 0) + glowGain;
+			this.game.resPool.addResEvent("xianyuan", purse);
+			this.syncStarGoTier();
+			this.addDaoLawProgress(3 + this.getStarGoLordIndex(lord.key));
+			if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+				classes.ui.XianxiaAudio.playBell(this.game, first);
+			}
+			note = isEn
+				? ((first ? "First victory! " : "Victory! ") + sc.player + " : " + sc.lord + " over " + lordName + " — Star Radiance +" + glowGain + ", Immortal Essence +" + purse + ".")
+				: ("【" + (first ? "弈胜首局" : "弈局告捷") + "】以 " + sc.player + " : " + sc.lord + " 胜【" + lordName + "】，弈道星辉 +" + glowGain + "，彩头仙元 +" + purse + "。");
+		} else if (result === "draw"){
+			glowGain = Math.max(1, Math.round(rules.glow / 3));
+			purse = m.fee || 0;
+			sg.draws = (sg.draws || 0) + 1;
+			sg.glow = (sg.glow || 0) + glowGain;
+			if (purse > 0){ this.game.resPool.addResEvent("xianyuan", purse); }
+			note = isEn
+				? ("A draw with " + lordName + " (" + sc.player + " : " + sc.lord + "): stake returned, Star Radiance +" + glowGain + ".")
+				: ("【和局】与【" + lordName + "】" + sc.player + " : " + sc.lord + " 平分秋色，退还入局仙元，弈道星辉 +" + glowGain + "。");
+		} else {
+			sg.losses = (sg.losses || 0) + 1;
+			sg.cooldown = this.STAR_GO_LOSS_COOLDOWN;
+			if (!resigned){
+				sg.insight = Math.min(this.STAR_GO_INSIGHT_MAX, (sg.insight || 0) + 1);
+			}
+			if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playFail){
+				classes.ui.XianxiaAudio.playFail(this.game);
+			}
+			note = resigned
+				? (isEn
+					? ("You resign to " + lordName + "; the Star Lord rests his eyes for a while.")
+					: ("【投子认负】向【" + lordName + "】投子认负，星君闭目调息片刻。"))
+				: (isEn
+					? ("Defeat by " + lordName + " (" + sc.player + " : " + sc.lord + "). Go Insight " + sg.insight + "/" + this.STAR_GO_INSIGHT_MAX + " (+1 point each next game until you win).")
+					: ("【弈局失利】" + sc.player + " : " + sc.lord + " 负于【" + lordName + "】；弈悟 " + sg.insight + "/" + this.STAR_GO_INSIGHT_MAX + "（每层下一局 +1 目，胜局即散）。"));
+		}
+		sg.lastResult = {
+			lord: lord.key,
+			vals: m.vals.slice(0),
+			own: m.own.slice(0),
+			result: resigned ? "resign" : result,
+			player: sc.player,
+			lordScore: sc.lord,
+			glow: glowGain,
+			purse: purse,
+			first: first
+		};
+		sg.match = null;
+		sg.lastNote = note;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(note, (result === "win") ? "important" : ((result === "draw") ? "notice" : "alert"));
+		return true;
+	},
+
+	resignStarGo: function(){
+		if (!this.starGo || !this.starGo.match){ return false; }
+		return this.finishStarGo(true);
+	},
+
+	// ---- 诸天万界灵宝拍卖行 ----
+
+	AUCTION_LOT_TICKS: 900,			//每件拍品限时 900 tick(常速约 3 分钟)落槌
+	AUCTION_HISTORY_MAX: 4,
+	AUCTION_MAX_LOTS_PER_TICK: 6,	//离线补算一次最多结算 6 件拍品
+
+	//灵宝(treasure,此世每件限拍一次,常驻小幅加成)与材料(material,可反复上拍,直接补给既有系统)
+	AUCTION_ITEMS: [
+		{key: "luobaoCoin", kind: "treasure", cur: "xianyuan", start: 80, inc: 10},
+		{key: "dinghaiPearl", kind: "treasure", cur: "xianyuan", start: 120, inc: 10},
+		{key: "hongHulu", kind: "treasure", cur: "timeCrystal", start: 10, inc: 1},
+		{key: "qiankunRing", kind: "treasure", cur: "xianyuan", start: 150, inc: 15},
+		{key: "zishouRobe", kind: "treasure", cur: "timeCrystal", start: 14, inc: 2},
+		{key: "linglongPagoda", kind: "treasure", cur: "xianyuan", start: 100, inc: 10},
+		{key: "zhoutianBoard", kind: "treasure", cur: "timeCrystal", start: 12, inc: 1},
+		{key: "thunderMarrow", kind: "material", cur: "xianyuan", start: 60, inc: 5, amount: 30},
+		{key: "meritScroll", kind: "material", cur: "timeCrystal", start: 6, inc: 1, amount: 40},
+		{key: "chronoSandJar", kind: "material", cur: "xianyuan", start: 50, inc: 5, amount: 12},
+		{key: "riftToken", kind: "material", cur: "timeCrystal", start: 5, inc: 1, amount: 2}
+	],
+
+	//三位确定性 AI 拍客:心理价位 = 起拍价 × (lo + 掷点 × (hi - lo)) [+0.10 偏好] × (1 - 天庭神职威望)
+	AUCTION_RIVALS: [
+		{key: "aoguang", lo: 1.05, hi: 1.55, affinity: "xianyuan"},
+		{key: "duobao", lo: 1.10, hi: 1.70, affinity: "treasure"},
+		{key: "jinchan", lo: 1.00, hi: 1.80, affinity: "timeCrystal"}
+	],
+
+	getAuctionItemDef: function(key){
+		for (var i = 0; i < this.AUCTION_ITEMS.length; i++){
+			if (this.AUCTION_ITEMS[i].key === key){ return this.AUCTION_ITEMS[i]; }
+		}
+		return null;
+	},
+
+	getAuctionRivalDef: function(key){
+		for (var i = 0; i < this.AUCTION_RIVALS.length; i++){
+			if (this.AUCTION_RIVALS[i].key === key){ return this.AUCTION_RIVALS[i]; }
+		}
+		return null;
+	},
+
+	//可注入随机源:rngOpt(函数) > this.auctionRandom(函数,测试 / 调试注入) > Math.random
+	getAuctionRandom: function(rngOpt){
+		if (typeof rngOpt === "function"){ return rngOpt; }
+		if (typeof this.auctionRandom === "function"){ return this.auctionRandom; }
+		return Math.random;
+	},
+
+	makeDefaultAuctionHouse: function(){
+		var owned = {};
+		for (var i = 0; i < this.AUCTION_ITEMS.length; i++){
+			if (this.AUCTION_ITEMS[i].kind === "treasure"){ owned[this.AUCTION_ITEMS[i].key] = false; }
+		}
+		return {
+			lot: null,
+			owned: owned,
+			lotsOpened: 0,
+			won: 0,
+			materialsWon: 0,
+			lostToRivals: 0,
+			unsold: 0,
+			bids: 0,
+			spentXianyuan: 0,
+			spentTimeCrystal: 0,
+			history: [],
+			lastNote: ""
+		};
+	},
+
+	normalizeAuctionLot: function(raw){
+		if (!raw || typeof raw !== "object"){ return null; }
+		var def = this.getAuctionItemDef(raw.key);
+		if (!def){ return null; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		var cap = def.start * 4;
+		var rawRivals = (raw.rivals && raw.rivals.length) ? raw.rivals : [];
+		var rivals = [];
+		for (var i = 0; i < this.AUCTION_RIVALS.length; i++){
+			var rk = this.AUCTION_RIVALS[i].key;
+			var ceil = 0;
+			for (var j = 0; j < rawRivals.length; j++){
+				if (rawRivals[j] && rawRivals[j].key === rk){ ceil = Math.min(cap, num(rawRivals[j].ceiling)); break; }
+			}
+			rivals.push({key: rk, ceiling: ceil});
+		}
+		var leader = (raw.leader === "player") ? "player" : (this.getAuctionRivalDef(raw.leader) ? raw.leader : null);
+		var playerBid = (leader === "player") ? Math.min(cap, num(raw.playerBid)) : 0;
+		if (leader === "player" && playerBid <= 0){ leader = null; }
+		var price = Math.min(cap, Math.max(def.start, num(raw.price)));
+		if (leader === "player"){ price = playerBid; }
+		return {
+			key: def.key,
+			kind: def.kind,
+			cur: def.cur,
+			start: def.start,
+			inc: def.inc,
+			price: price,
+			leader: leader,
+			playerBid: playerBid,
+			ticksLeft: Math.min(this.AUCTION_LOT_TICKS, num(raw.ticksLeft)),
+			seed: num(raw.seed),
+			rivals: rivals,
+			bids: num(raw.bids)
+		};
+	},
+
+	normalizeAuctionHouse: function(raw){
+		var def = this.makeDefaultAuctionHouse();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		var ow = (raw.owned && typeof raw.owned === "object") ? raw.owned : {};
+		var ownedCnt = 0;
+		for (var k in def.owned){
+			if (def.owned.hasOwnProperty(k)){
+				def.owned[k] = (ow[k] === true);
+				if (def.owned[k]){ ownedCnt++; }
+			}
+		}
+		def.lot = this.normalizeAuctionLot(raw.lot);
+		def.lotsOpened = Math.max(def.lot ? 1 : 0, num(raw.lotsOpened));
+		def.materialsWon = num(raw.materialsWon);
+		def.won = Math.max(ownedCnt + def.materialsWon, num(raw.won));
+		def.lostToRivals = num(raw.lostToRivals);
+		def.unsold = num(raw.unsold);
+		def.bids = num(raw.bids);
+		def.spentXianyuan = num(raw.spentXianyuan);
+		def.spentTimeCrystal = num(raw.spentTimeCrystal);
+		if (raw.history && raw.history.length){
+			for (var h = 0; h < raw.history.length && def.history.length < this.AUCTION_HISTORY_MAX; h++){
+				var e = raw.history[h];
+				if (!e || typeof e !== "object" || !this.getAuctionItemDef(e.key)){ continue; }
+				var win = (e.winner === "player") ? "player" : (this.getAuctionRivalDef(e.winner) ? e.winner : null);
+				def.history.push({key: e.key, winner: win, price: win ? num(e.price) : 0, cur: this.getAuctionItemDef(e.key).cur});
+			}
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	hasAuctionTreasure: function(key){
+		return !!(this.immortalAscended && this.auctionHouse && this.auctionHouse.owned && this.auctionHouse.owned[key] === true);
+	},
+
+	getAuctionOwnedCount: function(){
+		var ah = this.auctionHouse;
+		if (!ah || !ah.owned){ return 0; }
+		var cnt = 0;
+		for (var k in ah.owned){
+			if (ah.owned.hasOwnProperty(k) && ah.owned[k] === true){ cnt++; }
+		}
+		return cnt;
+	},
+
+	getAuctionTreasureCount: function(){
+		var cnt = 0;
+		for (var i = 0; i < this.AUCTION_ITEMS.length; i++){
+			if (this.AUCTION_ITEMS[i].kind === "treasure"){ cnt++; }
+		}
+		return cnt;
+	},
+
+	//灵宝常驻加成(此世拍得即生效):落宝金钱 仙元 +5% · 定海神珠 万产 +6% · 紫金红葫芦 药园产量 +8% / 丹药药力 +5% ·
+	//乾坤圈 秘境增伤 +4% · 八卦紫绶仙衣 秘境气血 +5% / 减伤 +1% · 玲珑宝塔 心魔消退 +10% · 周天星斗棋枰 对弈 +1 目 / 胜局星辉 +2
+	getAuctionTreasureEffect: function(){
+		var e = {count: 0, xianyuanRatio: 0, realmProductionRatio: 0, herbYield: 0, pillPotency: 0, riftDmg: 0, riftHp: 0, mitigation: 0, demonDecay: 0, goBonus: 0, goGlow: 0};
+		if (!this.immortalAscended){ return e; }
+		if (this.hasAuctionTreasure("luobaoCoin")){ e.count++; e.xianyuanRatio += 0.05; }
+		if (this.hasAuctionTreasure("dinghaiPearl")){ e.count++; e.realmProductionRatio += 0.06; }
+		if (this.hasAuctionTreasure("hongHulu")){ e.count++; e.herbYield += 0.08; e.pillPotency += 0.05; }
+		if (this.hasAuctionTreasure("qiankunRing")){ e.count++; e.riftDmg += 0.04; }
+		if (this.hasAuctionTreasure("zishouRobe")){ e.count++; e.riftHp += 0.05; e.mitigation += 0.01; }
+		if (this.hasAuctionTreasure("linglongPagoda")){ e.count++; e.demonDecay += 0.10; }
+		if (this.hasAuctionTreasure("zhoutianBoard")){ e.count++; e.goBonus += 1; e.goGlow += 2; }
+		return e;
+	},
+
+	//XX-12 斗法向加成封顶:高目(+5% / +5%)与乾坤圈 / 紫绶仙衣合计,秘境增伤与秘境气血各 ≤ +8%,减伤 ≤ +1%
+	getStarAuctionCombatBonus: function(){
+		var sg = this.getStarGoPassiveEffect();
+		var at = this.getAuctionTreasureEffect();
+		var rawDmg = sg.riftDmg + at.riftDmg;
+		var rawHp = sg.riftHp + at.riftHp;
+		var rawMit = at.mitigation;
+		return {
+			rawDmg: rawDmg,
+			rawHp: rawHp,
+			rawMit: rawMit,
+			riftDmg: Math.min(this.XX12_COMBAT_CAP, rawDmg),
+			riftHp: Math.min(this.XX12_COMBAT_CAP, rawHp),
+			mitigation: Math.min(this.XX12_MITIGATION_CAP, rawMit),
+			capped: (rawDmg > this.XX12_COMBAT_CAP || rawHp > this.XX12_COMBAT_CAP || rawMit > this.XX12_MITIGATION_CAP)
+		};
+	},
+
+	//天庭神职威望:每席神职令诸位拍客心理价位 -1.5%(上限 -10.5%)
+	getAuctionPrestige: function(){
+		var offices = (this.immortalAscended && this.getFengshenOfficeCount) ? this.getFengshenOfficeCount() : 0;
+		return Math.min(0.105, 0.015 * offices);
+	},
+
+	//拍客按心理价位由高到低排序(同价按座次)
+	getAuctionRivalOrder: function(lot){
+		var idx = [];
+		for (var i = 0; i < lot.rivals.length; i++){ idx.push(i); }
+		idx.sort(function(a, b){
+			var d = lot.rivals[b].ceiling - lot.rivals[a].ceiling;
+			return d !== 0 ? d : a - b;
+		});
+		return idx;
+	},
+
+	//上拍:rollOpt 决定拍品与诸位拍客心理价位(同一掷点必得同一拍局);keyOpt 指定拍品(灵宝已拍得则不可再上)。
+	//撤下旧拍品时退还你的押金。暖场:拍客互相抬价至「次高心理价位 + 一档」(不超过最高者心理价位),最高者暂领先
+	openAuctionLot: function(rollOpt, keyOpt){
+		if (!this.immortalAscended){ return false; }
+		if (!this.auctionHouse){ this.auctionHouse = this.makeDefaultAuctionHouse(); }
+		var ah = this.auctionHouse;
+		if (ah.lot && ah.lot.leader === "player" && (ah.lot.playerBid || 0) > 0){
+			this.game.resPool.addResEvent(ah.lot.cur, ah.lot.playerBid);
+		}
+		var roll = (typeof rollOpt === "number" && isFinite(rollOpt)) ? rollOpt : this.getAuctionRandom()();
+		var seed = this.starGoSeedFromRoll(roll);
+		var cands = [];
+		for (var i = 0; i < this.AUCTION_ITEMS.length; i++){
+			var it = this.AUCTION_ITEMS[i];
+			if (it.kind === "material" || ah.owned[it.key] !== true){ cands.push(it); }
+		}
+		var s = this.starGoNextSeed(seed);
+		var item = cands[Math.min(cands.length - 1, Math.floor((s / this.STAR_GO_RNG_MOD) * cands.length))];
+		if (typeof keyOpt === "string"){
+			var forced = this.getAuctionItemDef(keyOpt);
+			if (forced && (forced.kind === "material" || ah.owned[forced.key] !== true)){ item = forced; }
+		}
+		var prestigeMult = 1 - this.getAuctionPrestige();
+		var rivals = [];
+		for (var r = 0; r < this.AUCTION_RIVALS.length; r++){
+			var rv = this.AUCTION_RIVALS[r];
+			s = this.starGoNextSeed(s);
+			var mult = rv.lo + (s / this.STAR_GO_RNG_MOD) * (rv.hi - rv.lo);
+			if (rv.affinity === item.cur || rv.affinity === item.kind){ mult += 0.10; }
+			var rawCeil = item.start * mult * prestigeMult;
+			var ceiling = (rawCeil >= item.start) ? item.start + Math.floor((rawCeil - item.start) / item.inc + 1e-9) * item.inc : 0;
+			rivals.push({key: rv.key, ceiling: ceiling});
+		}
+		var lot = {
+			key: item.key,
+			kind: item.kind,
+			cur: item.cur,
+			start: item.start,
+			inc: item.inc,
+			price: item.start,
+			leader: null,
+			playerBid: 0,
+			ticksLeft: this.AUCTION_LOT_TICKS,
+			seed: seed,
+			rivals: rivals,
+			bids: 0
+		};
+		var order = this.getAuctionRivalOrder(lot);
+		var top = lot.rivals[order[0]];
+		var second = lot.rivals[order[1]];
+		if (top && top.ceiling >= lot.start){
+			lot.leader = top.key;
+			lot.price = (second && second.ceiling >= lot.start) ? Math.min(top.ceiling, second.ceiling + lot.inc) : lot.start;
+		}
+		ah.lot = lot;
+		ah.lotsOpened = (ah.lotsOpened || 0) + 1;
+		return true;
+	},
+
+	//举牌出价 = (有人领先 ? 现价 : 起拍价 - 一档) + steps 档
+	getAuctionBidAmount: function(steps){
+		var lot = this.auctionHouse ? this.auctionHouse.lot : null;
+		if (!lot){ return 0; }
+		var st = Math.max(1, Math.min(10, Math.floor(steps || 1)));
+		var base = lot.leader ? lot.price : (lot.price - lot.inc);
+		return base + lot.inc * st;
+	},
+
+	getAuctionBidReq: function(steps){
+		var lot = this.auctionHouse ? this.auctionHouse.lot : null;
+		if (!lot){ return null; }
+		var amount = this.getAuctionBidAmount(steps);
+		var resObj = this.game.resPool.get(lot.cur);
+		var okRes = !!(resObj && resObj.value >= amount);
+		var leading = (lot.leader === "player");
+		var open = (lot.ticksLeft || 0) > 0;
+		return {
+			steps: Math.max(1, Math.min(10, Math.floor(steps || 1))),
+			amount: amount,
+			cur: lot.cur,
+			leading: leading,
+			open: open,
+			affordable: !!(this.immortalAscended && !leading && open && okRes)
+		};
+	},
+
+	//举牌:当即扣下押金并领先;心理价位最高且尚能再加一档的拍客随即应价一档压过(押金立退)。拍客只应不抢,确定性代理出价
+	placeAuctionBid: function(steps){
+		if (!this.immortalAscended || !this.auctionHouse || !this.auctionHouse.lot){ return false; }
+		var ah = this.auctionHouse;
+		var lot = ah.lot;
+		var req = this.getAuctionBidReq(steps);
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent(lot.cur, -req.amount);
+		lot.playerBid = req.amount;
+		lot.price = req.amount;
+		lot.leader = "player";
+		lot.bids = (lot.bids || 0) + 1;
+		ah.bids = (ah.bids || 0) + 1;
+		var isEn = this.isStarGoEn();
+		var curName = this.getAuctionCurName(lot.cur);
+		var order = this.getAuctionRivalOrder(lot);
+		var rv = lot.rivals[order[0]];
+		var note = "";
+		if (rv && rv.ceiling >= req.amount + lot.inc){
+			lot.price = req.amount + lot.inc;
+			lot.leader = rv.key;
+			this.game.resPool.addResEvent(lot.cur, lot.playerBid);
+			lot.playerBid = 0;
+			var rvName = $I("cultivation.auction.rival." + rv.key + ".label");
+			note = isEn
+				? ("You bid " + req.amount + " " + curName + "; " + rvName + " raises at once to " + lot.price + " (your deposit is returned).")
+				: ("【竞拍】你举牌 " + req.amount + " " + curName + "，【" + rvName + "】随即应价 " + lot.price + " 压过（押金已退还）。");
+		} else {
+			note = isEn
+				? ("You lead with " + req.amount + " " + curName + " — the rivals fall silent. Wait for the gong or strike it now.")
+				: ("【竞拍】你以 " + req.amount + " " + curName + " 领先全场，诸位拍客纷纷罢手——静候落槌或一锤定音。");
+		}
+		ah.lastNote = note;
+		return true;
+	},
+
+	getAuctionCurName: function(cur){
+		var ro = this.game.resPool.get(cur);
+		if (ro && ro.title){ return ro.title; }
+		return $I("resources." + cur + ".title");
+	},
+
+	//落槌:你领先则得宝(押金即成交价),拍客领先则被其拍走,无人出价则流拍
+	settleAuctionLot: function(){
+		var ah = this.auctionHouse;
+		var lot = ah ? ah.lot : null;
+		if (!lot){ return false; }
+		var def = this.getAuctionItemDef(lot.key);
+		var isEn = this.isStarGoEn();
+		var itemName = $I("cultivation.auction.item." + lot.key + ".label");
+		var curName = this.getAuctionCurName(lot.cur);
+		var entry = {key: lot.key, winner: lot.leader || null, price: lot.leader ? lot.price : 0, cur: lot.cur};
+		var note = "";
+		if (lot.leader === "player"){
+			if (def.kind === "treasure" && ah.owned[def.key] === true){
+				this.game.resPool.addResEvent(lot.cur, lot.playerBid);
+				entry.winner = null;
+				entry.price = 0;
+				ah.unsold = (ah.unsold || 0) + 1;
+			} else {
+				this.grantAuctionItem(def);
+				ah.won = (ah.won || 0) + 1;
+				if (lot.cur === "timeCrystal"){
+					ah.spentTimeCrystal = (ah.spentTimeCrystal || 0) + lot.playerBid;
+				} else {
+					ah.spentXianyuan = (ah.spentXianyuan || 0) + lot.playerBid;
+				}
+				if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+					classes.ui.XianxiaAudio.playBell(this.game, def.kind === "treasure");
+				}
+				note = isEn
+					? ("The gong sounds: [" + itemName + "] is yours for " + lot.playerBid + " " + curName + ".")
+					: ("【落槌】以 " + lot.playerBid + " " + curName + " 拍得【" + itemName + "】！");
+				this.game.msg(note, "important");
+			}
+			lot.playerBid = 0;
+		} else if (lot.leader){
+			ah.lostToRivals = (ah.lostToRivals || 0) + 1;
+			var rvName = $I("cultivation.auction.rival." + lot.leader + ".label");
+			note = isEn
+				? ("The gong sounds: " + rvName + " takes [" + itemName + "] for " + lot.price + " " + curName + ".")
+				: ("【落槌】【" + rvName + "】以 " + lot.price + " " + curName + " 拍走【" + itemName + "】。");
+		} else {
+			ah.unsold = (ah.unsold || 0) + 1;
+			note = isEn
+				? ("No bids: [" + itemName + "] goes unsold.")
+				: ("【流拍】【" + itemName + "】无人举牌，就此流拍。");
+		}
+		ah.history.unshift(entry);
+		if (ah.history.length > this.AUCTION_HISTORY_MAX){ ah.history.length = this.AUCTION_HISTORY_MAX; }
+		ah.lot = null;
+		if (note){ ah.lastNote = note; }
+		return true;
+	},
+
+	//拍得之物入账:灵宝常驻生效;材料补给九霄雷髓 / 神位功德 / 光阴本源砂 / 秘境令
+	grantAuctionItem: function(def){
+		var ah = this.auctionHouse;
+		if (!def || !ah){ return false; }
+		if (def.kind === "treasure"){
+			ah.owned[def.key] = true;
+			if (this.game.updateCaches){ this.game.updateCaches(); }
+			return true;
+		}
+		ah.materialsWon = (ah.materialsWon || 0) + 1;
+		if (def.key === "thunderMarrow"){
+			this.gainThunderOrbs(def.amount);
+		} else if (def.key === "meritScroll"){
+			this.gainFengshenMerit(def.amount, "auction");
+		} else if (def.key === "chronoSandJar"){
+			if (!this.chronoAltar){ this.chronoAltar = this.makeDefaultChronoAltar(); }
+			this.gainChronoSand(def.amount, 0);
+		} else if (def.key === "riftToken"){
+			this.riftKeys = (this.riftKeys || 0) + def.amount;
+		}
+		return true;
+	},
+
+	//一锤定音:你已领先(拍客只应不抢,不会再翻盘)时可即刻落槌,随即上新拍品
+	hammerAuctionLot: function(){
+		if (!this.immortalAscended || !this.auctionHouse || !this.auctionHouse.lot || this.auctionHouse.lot.leader !== "player"){ return false; }
+		this.settleAuctionLot();
+		this.openAuctionLot(this.getAuctionRandom()());
+		return true;
+	},
+
+	tickStarGoAuction: function(ticksDelta, rngOpt){
+		var dt = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
+		if (dt <= 0){ return; }
+		var sg = this.starGo;
+		if (sg && (sg.cooldown || 0) > 0){
+			sg.cooldown = Math.max(0, sg.cooldown - dt);
+		}
+		if (!this.immortalAscended){ return; }
+		if (!this.auctionHouse){ this.auctionHouse = this.makeDefaultAuctionHouse(); }
+		var ah = this.auctionHouse;
+		var rng = this.getAuctionRandom(rngOpt);
+		if (!ah.lot){
+			this.openAuctionLot(rng());
+			return;
+		}
+		var remaining = dt;
+		var loops = 0;
+		while (ah.lot && remaining > 0 && loops < this.AUCTION_MAX_LOTS_PER_TICK){
+			var use = Math.min(remaining, Math.max(0, ah.lot.ticksLeft || 0));
+			ah.lot.ticksLeft = Math.max(0, (ah.lot.ticksLeft || 0) - use);
+			remaining -= use;
+			if (ah.lot.ticksLeft <= 0){
+				this.settleAuctionLot();
+				this.openAuctionLot(rng());
+				loops++;
+			} else {
+				break;
+			}
+		}
+	},
+
+	//飞升 / 测试洞府初始化:归一化弈局与拍卖行;前世弈道印赐下开局弈道星辉;拍卖行即刻上第一件拍品
+	initStarGoStateOnAscend: function(){
+		this.starGo = this.normalizeStarGo(this.starGo);
+		this.auctionHouse = this.normalizeAuctionHouse(this.auctionHouse);
+		var startGlow = this.getStarGoStartingGlow();
+		if (startGlow > 0 && (this.starGo.glow || 0) === 0 && (this.starGo.games || 0) === 0){
+			this.starGo.glow = startGlow;
+		}
+		this.syncStarGoTier();
+		if (!this.auctionHouse.lot){
+			this.openAuctionLot(this.getAuctionRandom()());
+		}
+	},
+
+	// ---------------- XX-13 灵脉风水堪舆与符箓画坊 ----------------
+
+	FENGSHUI_TIER_MAX: 5,			//堪舆印上限 = 最高格局「九宫飞星大吉局」
+	FENGSHUI_ECON_CAP: 0.36,		//药园 + 讲道 + 悟道三项格局增益合计封顶 +36%(超出按比例收拢)
+
+	//五行:cyc 为相生环序(木→火→土→金→水→木);相克为隔一位(木克土、火克金、土克水、金克木、水克火)
+	FENGSHUI_ELEMENTS: [
+		{key: "metal", cyc: 3},
+		{key: "wood", cyc: 0},
+		{key: "water", cyc: 4},
+		{key: "fire", cyc: 1},
+		{key: "earth", cyc: 2}
+	],
+
+	//洞府九宫(上南下北,后天八卦方位):0..8 自左上而右下;el = 本宫五行(灵脉与本宫同行即「得位」)
+	FENGSHUI_PALACES: [
+		{key: "xun", el: "wood"},
+		{key: "li", el: "fire"},
+		{key: "kun", el: "earth"},
+		{key: "zhen", el: "wood"},
+		{key: "zhong", el: "earth"},
+		{key: "dui", el: "metal"},
+		{key: "gen", el: "earth"},
+		{key: "kan", el: "water"},
+		{key: "qian", el: "metal"}
+	],
+
+	//邻宫(上下左右 12 条)与对宫(过中宫相望 4 对)
+	FENGSHUI_EDGES: [[0, 1], [1, 2], [3, 4], [4, 5], [6, 7], [7, 8], [0, 3], [3, 6], [1, 4], [4, 7], [2, 5], [5, 8]],
+	FENGSHUI_OPPOSITES: [[0, 8], [1, 7], [2, 6], [3, 5]],
+
+	//格局:灵气 = 2×相生 + 得位 - 2×相克;factor = 格局成色(增益系数)
+	FENGSHUI_GRADES: [
+		{key: "plain", min: 0, factor: 0.30},
+		{key: "cangfeng", min: 4, factor: 0.45},
+		{key: "juqi", min: 8, factor: 0.60},
+		{key: "yudai", min: 13, factor: 0.75},
+		{key: "longpan", min: 18, factor: 0.90},
+		{key: "feixing", min: 24, factor: 1.00}
+	],
+
+	//五项格局神效:main 每枚 +1 权重、sup(生 main 之母行)每枚 +0.5 权重;值 = 权重 × per × 格局成色 × 堪舆印,单项封顶 cap
+	FENGSHUI_TARGETS: [
+		{key: "herb", main: "wood", sup: "water", per: 0.04, cap: 0.20},
+		{key: "sermon", main: "fire", sup: "wood", per: 0.04, cap: 0.20},
+		{key: "chrono", main: "water", sup: "metal", per: 0.04, cap: 0.20},
+		{key: "stroke", main: "earth", sup: "fire", per: 3, cap: 12},
+		{key: "duration", main: "metal", sup: "earth", per: 0.08, cap: 0.40}
+	],
+
+	//勘脉等级 1..7:可布灵脉 3..9 枚;升级耗仙元 + 周天星图
+	FENGSHUI_LEVELS: [
+		{level: 1, slots: 3, xianyuan: 0, starchart: 0},
+		{level: 2, slots: 4, xianyuan: 40, starchart: 6},
+		{level: 3, slots: 5, xianyuan: 70, starchart: 10},
+		{level: 4, slots: 6, xianyuan: 110, starchart: 15},
+		{level: 5, slots: 7, xianyuan: 160, starchart: 21},
+		{level: 6, slots: 8, xianyuan: 230, starchart: 28},
+		{level: 7, slots: 9, xianyuan: 320, starchart: 36}
+	],
+
+	isFengshuiEn: function(){
+		return String($I("cultivation.fengshui.panel.badge") || "").indexOf("Immortal") === 0;
+	},
+
+	getFengshuiElementDef: function(key){
+		for (var i = 0; i < this.FENGSHUI_ELEMENTS.length; i++){
+			if (this.FENGSHUI_ELEMENTS[i].key === key){ return this.FENGSHUI_ELEMENTS[i]; }
+		}
+		return null;
+	},
+
+	getFengshuiGradeDef: function(grade){
+		var g = Math.max(0, Math.min(this.FENGSHUI_GRADES.length - 1, Math.floor(grade || 0)));
+		return this.FENGSHUI_GRADES[g];
+	},
+
+	getFengshuiLevelDef: function(level){
+		var l = Math.max(1, Math.min(this.FENGSHUI_LEVELS.length, Math.floor(level || 1)));
+		return this.FENGSHUI_LEVELS[l - 1];
+	},
+
+	makeDefaultFengshui: function(){
+		return {
+			level: 1,
+			nodes: ["", "", "", "", "", "", "", "", ""],
+			brush: "wood",
+			peakGrade: 0,
+			rearranges: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeFengshui: function(raw){
+		var def = this.makeDefaultFengshui();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		def.level = Math.max(1, Math.min(this.FENGSHUI_LEVELS.length, num(raw.level) || 1));
+		var slots = this.getFengshuiLevelDef(def.level).slots;
+		var placed = 0;
+		if (raw.nodes && raw.nodes.length){
+			for (var i = 0; i < 9; i++){
+				var n = raw.nodes[i];
+				if (typeof n === "string" && this.getFengshuiElementDef(n) && placed < slots){
+					def.nodes[i] = n;
+					placed++;
+				}
+			}
+		}
+		if (raw.brush === "erase" || (typeof raw.brush === "string" && this.getFengshuiElementDef(raw.brush))){
+			def.brush = raw.brush;
+		}
+		def.peakGrade = Math.min(this.FENGSHUI_TIER_MAX, Math.max(num(raw.peakGrade), this.computeFengshuiPattern(def.nodes).grade));
+		def.rearranges = num(raw.rearranges);
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	//五行关系:a 生 b 或 b 生 a = 相生;a 克 b 或 b 克 a = 相克;同行 = 比和
+	fengshuiRelation: function(a, b){
+		var da = this.getFengshuiElementDef(a);
+		var db = this.getFengshuiElementDef(b);
+		if (!da || !db){ return null; }
+		var d = ((db.cyc - da.cyc) % 5 + 5) % 5;
+		if (d === 0){ return "bihe"; }
+		if (d === 1 || d === 4){ return "sheng"; }
+		return "ke";
+	},
+
+	//格局推演(纯函数,确定性):邻宫与对宫逐对论生克,灵脉与本宫同行为得位
+	computeFengshuiPattern: function(nodesOpt){
+		var nodes = nodesOpt || ((this.fengshui && this.fengshui.nodes) ? this.fengshui.nodes : []);
+		var counts = {metal: 0, wood: 0, water: 0, fire: 0, earth: 0};
+		var placed = 0;
+		var seated = 0;
+		var seatedCells = [];
+		for (var i = 0; i < 9; i++){
+			var n = nodes[i];
+			if (typeof n === "string" && counts.hasOwnProperty(n)){
+				counts[n]++;
+				placed++;
+				if (n === this.FENGSHUI_PALACES[i].el){
+					seated++;
+					seatedCells.push(i);
+				}
+			}
+		}
+		var self = this;
+		var harmony = 0;
+		var clash = 0;
+		var bihe = 0;
+		var walk = function(pairs, kind){
+			var list = [];
+			for (var p = 0; p < pairs.length; p++){
+				var a = nodes[pairs[p][0]];
+				var b = nodes[pairs[p][1]];
+				var rel = (a && b) ? self.fengshuiRelation(a, b) : null;
+				if (rel === "sheng"){ harmony++; }
+				else if (rel === "ke"){ clash++; }
+				else if (rel === "bihe"){ bihe++; }
+				list.push({a: pairs[p][0], b: pairs[p][1], rel: rel, kind: kind});
+			}
+			return list;
+		};
+		var edges = walk(this.FENGSHUI_EDGES, "adjacent");
+		var opposites = walk(this.FENGSHUI_OPPOSITES, "opposite");
+		var qi = Math.max(0, harmony * 2 + seated - clash * 2);
+		var grade = 0;
+		for (var g = this.FENGSHUI_GRADES.length - 1; g >= 0; g--){
+			if (qi >= this.FENGSHUI_GRADES[g].min){ grade = g; break; }
+		}
+		return {
+			placed: placed,
+			counts: counts,
+			harmony: harmony,
+			clash: clash,
+			bihe: bihe,
+			seated: seated,
+			seatedCells: seatedCells,
+			qi: qi,
+			grade: grade,
+			gradeKey: this.FENGSHUI_GRADES[grade].key,
+			factor: this.FENGSHUI_GRADES[grade].factor,
+			edges: edges,
+			opposites: opposites
+		};
+	},
+
+	getFengshuiSlots: function(){
+		var fs = this.fengshui || this.makeDefaultFengshui();
+		return this.getFengshuiLevelDef(fs.level).slots;
+	},
+
+	getFengshuiNodeCount: function(){
+		var fs = this.fengshui;
+		if (!fs || !fs.nodes){ return 0; }
+		var cnt = 0;
+		for (var i = 0; i < 9; i++){
+			if (fs.nodes[i]){ cnt++; }
+		}
+		return cnt;
+	},
+
+	getFengshuiSeal: function(){
+		return Math.max(0, Math.min(this.FENGSHUI_TIER_MAX, Math.floor(this.fengshuiTier || 0)));
+	},
+
+	//堪舆印 = 历世所成最高格局(跨转世保留,只增不减)
+	syncFengshuiTier: function(){
+		var peak = Math.max(0, Math.floor(this.fengshuiTier || 0));
+		var cur = (this.fengshui && this.fengshui.peakGrade) ? Math.floor(this.fengshui.peakGrade) : 0;
+		if (cur > peak){ peak = cur; }
+		this.fengshuiTier = Math.min(this.FENGSHUI_TIER_MAX, peak);
+		return this.fengshuiTier;
+	},
+
+	//跨轮回堪舆印:修为 +3%/重(凡身即得)、飞升开局勘脉 +1 级/每 2 重、格局神效 +4%/重、绘符笔意 +1/重
+	getFengshuiSealBonus: function(){
+		var t = this.getFengshuiSeal();
+		if (t <= 0){
+			return {tier: 0, xiuweiRatio: 0, startLevel: 0, patternMult: 1, stroke: 0};
+		}
+		return {
+			tier: t,
+			xiuweiRatio: t * 0.03,
+			startLevel: Math.floor(t / 2),
+			patternMult: 1 + t * 0.04,
+			stroke: t
+		};
+	},
+
+	//格局神效(nodesOpt 供面板 / 测试预览;未飞升且无预览时为零)
+	getFengshuiEffect: function(nodesOpt){
+		var preview = !!nodesOpt;
+		var pat = this.computeFengshuiPattern(nodesOpt);
+		var seal = this.getFengshuiSealBonus();
+		var e = {
+			grade: pat.grade, gradeKey: pat.gradeKey, factor: pat.factor, qi: pat.qi, placed: pat.placed,
+			sealMult: seal.patternMult,
+			weights: {}, raw: {},
+			herb: 0, sermon: 0, chrono: 0, stroke: 0, duration: 0,
+			econRaw: 0, econScale: 1, capped: false
+		};
+		if (!this.immortalAscended && !preview){ return e; }
+		for (var i = 0; i < this.FENGSHUI_TARGETS.length; i++){
+			var t = this.FENGSHUI_TARGETS[i];
+			var w = (pat.counts[t.main] || 0) + 0.5 * (pat.counts[t.sup] || 0);
+			var v = w * t.per * pat.factor * seal.patternMult;
+			e.weights[t.key] = w;
+			e.raw[t.key] = v;
+			if (v > t.cap){ e.capped = true; }
+			e[t.key] = Math.min(t.cap, v);
+		}
+		e.stroke = Math.floor(e.stroke + 1e-9);
+		e.econRaw = e.herb + e.sermon + e.chrono;
+		if (e.econRaw > this.FENGSHUI_ECON_CAP){
+			e.econScale = this.FENGSHUI_ECON_CAP / e.econRaw;
+			e.herb *= e.econScale;
+			e.sermon *= e.econScale;
+			e.chrono *= e.econScale;
+			e.capped = true;
+		}
+		return e;
+	},
+
+	//XX-13 → XX-8 联动:离火文明之气加持紫霄讲道玉简 / 悟道产出
+	getFengshuiSermonMult: function(){
+		if (!this.immortalAscended){ return 1; }
+		return 1 + this.getFengshuiEffect().sermon;
+	},
+
+	//XX-13 → XX-9 联动:坎水长河之气加持溯游岁月的光阴本源砂 / 纪元推演
+	getFengshuiChronoMult: function(){
+		if (!this.immortalAscended){ return 1; }
+		return 1 + this.getFengshuiEffect().chrono;
+	},
+
+	//布脉:element = 五行键或 ""(拔除);空宫立新脉受勘脉枚数所限,改换既有灵脉不占新额
+	setFengshuiNode: function(palace, element){
+		if (!this.immortalAscended){ return false; }
+		this.fengshui = this.normalizeFengshui(this.fengshui);
+		var fs = this.fengshui;
+		var p = (typeof palace === "number") ? palace : parseInt(palace, 10);
+		if (!(p >= 0 && p < 9) || Math.floor(p) !== p){ return false; }
+		var el = (typeof element === "string") ? element : "";
+		if (el && !this.getFengshuiElementDef(el)){ return false; }
+		var cur = fs.nodes[p] || "";
+		if (cur === el){ return false; }
+		if (!cur && el && this.getFengshuiNodeCount() >= this.getFengshuiSlots()){ return false; }
+		var before = this.computeFengshuiPattern(fs.nodes);
+		fs.nodes[p] = el;
+		fs.rearranges = (fs.rearranges || 0) + 1;
+		var after = this.computeFengshuiPattern(fs.nodes);
+		if (after.grade > (fs.peakGrade || 0)){ fs.peakGrade = Math.min(this.FENGSHUI_TIER_MAX, after.grade); }
+		this.syncFengshuiTier();
+		var isEn = this.isFengshuiEn();
+		var palName = $I("cultivation.fengshui.palace." + this.FENGSHUI_PALACES[p].key + ".label");
+		var gradeName = $I("cultivation.fengshui.grade." + after.gradeKey);
+		if (el){
+			var elName = $I("cultivation.fengshui.el." + el);
+			fs.lastNote = isEn
+				? ("A " + elName + " spirit vein settles in " + palName + ". Pattern: " + gradeName + " (Qi " + after.qi + ").")
+				: ("【布脉】于【" + palName + "】立" + elName + "行灵脉；格局「" + gradeName + "」，灵气 " + after.qi + "。");
+		} else {
+			fs.lastNote = isEn
+				? ("The spirit vein in " + palName + " is withdrawn. Pattern: " + gradeName + " (Qi " + after.qi + ").")
+				: ("【拔脉】撤去【" + palName + "】灵脉；格局「" + gradeName + "」，灵气 " + after.qi + "。");
+		}
+		if (after.grade > before.grade && after.grade >= 3 && classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, after.grade >= 5);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
+	},
+
+	setFengshuiBrush: function(key){
+		if (!this.immortalAscended){ return false; }
+		this.fengshui = this.normalizeFengshui(this.fengshui);
+		if (key !== "erase" && !this.getFengshuiElementDef(key)){ return false; }
+		if (this.fengshui.brush === key){ return false; }
+		this.fengshui.brush = key;
+		return true;
+	},
+
+	//点宫落笔:拔除笔 / 再点同行即撤脉,否则以当前五行布脉(几下点按即可重排格局)
+	applyFengshuiBrush: function(palace){
+		if (!this.immortalAscended){ return false; }
+		this.fengshui = this.normalizeFengshui(this.fengshui);
+		var fs = this.fengshui;
+		var p = (typeof palace === "number") ? palace : parseInt(palace, 10);
+		if (!(p >= 0 && p < 9)){ return false; }
+		var cur = fs.nodes[p] || "";
+		if (fs.brush === "erase" || cur === fs.brush){
+			return cur ? this.setFengshuiNode(p, "") : false;
+		}
+		return this.setFengshuiNode(p, fs.brush);
+	},
+
+	clearFengshui: function(){
+		if (!this.immortalAscended){ return false; }
+		this.fengshui = this.normalizeFengshui(this.fengshui);
+		if (this.getFengshuiNodeCount() <= 0){ return false; }
+		this.fengshui.nodes = ["", "", "", "", "", "", "", "", ""];
+		this.fengshui.rearranges = (this.fengshui.rearranges || 0) + 1;
+		this.fengshui.lastNote = this.isFengshuiEn()
+			? "All spirit veins are withdrawn; the nine palaces lie quiet."
+			: "【归藏】九宫灵脉尽数收回，洞府地气复归平静。";
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
+	},
+
+	getFengshuiSurveyReq: function(){
+		var fs = this.fengshui || this.makeDefaultFengshui();
+		if ((fs.level || 1) >= this.FENGSHUI_LEVELS.length){ return null; }
+		var next = this.getFengshuiLevelDef((fs.level || 1) + 1);
+		var xyObj = this.game.resPool.get("xianyuan");
+		var scObj = this.game.resPool.get("starchart");
+		var okXy = !!(xyObj && xyObj.value >= next.xianyuan);
+		var okSc = !!(scObj && scObj.value >= next.starchart);
+		return {
+			level: next.level,
+			slots: next.slots,
+			xianyuan: next.xianyuan,
+			starchart: next.starchart,
+			affordable: !!(this.immortalAscended && okXy && okSc)
+		};
+	},
+
+	upgradeFengshuiSurvey: function(){
+		if (!this.immortalAscended){ return false; }
+		this.fengshui = this.normalizeFengshui(this.fengshui);
+		var req = this.getFengshuiSurveyReq();
+		if (!req || !req.affordable){ return false; }
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("starchart", -req.starchart);
+		this.fengshui.level = req.level;
+		this.addDaoLawProgress(4 + req.level * 2);
+		this.fengshui.lastNote = this.isFengshuiEn()
+			? ("Survey deepened to level " + req.level + ": the compass now reads " + req.slots + " spirit veins.")
+			: ("【勘脉】罗盘再转，堪舆进至 " + req.level + " 重，洞府可布灵脉 " + req.slots + " 枚。");
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
+	},
+
+	// ---- 符箓画坊 ----
+
+	TALISMAN_TICKS: 1500,			//中品符箓灵效 1500 tick(常速约 5 分钟)
+	TALISMAN_SLOTS: 3,				//符囊三格:同时生效至多三道(同名重绘即替换)
+	TALISMAN_STOCK_MAX: 30,			//朱砂 / 符纸各自存量上限
+	TALISMAN_TRICKLE_TICKS: 600,	//洞府地气每 600 tick 自凝朱砂 1、符纸 1
+	TALISMAN_INSIGHT_MAX: 3,		//笔悟上限(废符一次 +1,每层下一笔 +6 笔意,成符即散)
+	TALISMAN_INSIGHT_PTS: 6,
+	TALISMAN_RNG_MOD: 2147483647,	//Park–Miller 模数(与星盘同法,ES5 双精度内无精度损失)
+	XX13_COMBAT_CAP: 0.06,			//符箓秘境增伤 / 秘境气血各自封顶 +6%(仅 26 层以上大秘境)
+	XX13_MITIGATION_CAP: 0.01,		//符箓减伤封顶 +1%;一概不触碰神雷追击
+	XX13_RIFT_XY_CAP: 0.30,			//五鬼搬运符破关仙元封顶 +30%
+	XX13_HERB_CAP: 0.09,			//聚灵符药园产量 / 催熟封顶 +9%
+	GRIND_CINNABAR: {xianyuan: 30, gain: 3},
+	CUT_PAPER: {relic: 6, gain: 2},
+
+	//五道真符:cinnabar / paper = 用料;效力随品第(下品 0.6 · 中品 1 · 上品 1.25 · 神品 1.5)
+	TALISMANS: [
+		{key: "poxie", cinnabar: 3, paper: 1, riftDmg: 0.04},
+		{key: "jinguang", cinnabar: 3, paper: 1, riftHp: 0.04, mitigation: 0.008},
+		{key: "banyun", cinnabar: 2, paper: 1, riftXy: 0.20},
+		{key: "beidou", cinnabar: 2, paper: 2, goBonus: 1},
+		{key: "juling", cinnabar: 2, paper: 1, herbYield: 0.06, herbSpeed: 0.06}
+	],
+
+	//笔意总分 = 符头 + 符胆 + 符脚(各 5..35,由掷点种子确定)+ 笔悟 / 堪舆土气 / 堪舆印加成
+	TALISMAN_QUALITIES: [
+		{key: "fail", min: 0, pot: 0, dur: 0},
+		{key: "lower", min: 40, pot: 0.6, dur: 0.8},
+		{key: "middle", min: 60, pot: 1.0, dur: 1.0},
+		{key: "upper", min: 80, pot: 1.25, dur: 1.2},
+		{key: "divine", min: 95, pot: 1.5, dur: 1.5}
+	],
+
+	getTalismanDef: function(key){
+		for (var i = 0; i < this.TALISMANS.length; i++){
+			if (this.TALISMANS[i].key === key){ return this.TALISMANS[i]; }
+		}
+		return null;
+	},
+
+	getTalismanQualityDef: function(key){
+		for (var i = 0; i < this.TALISMAN_QUALITIES.length; i++){
+			if (this.TALISMAN_QUALITIES[i].key === key){ return this.TALISMAN_QUALITIES[i]; }
+		}
+		return null;
+	},
+
+	makeDefaultTalismanWorkshop: function(){
+		return {
+			cinnabar: 0,
+			paper: 0,
+			trickle: 0,
+			insight: 0,
+			active: [],
+			drawn: 0,
+			failed: 0,
+			divine: 0,
+			expired: 0,
+			lastDraw: null,
+			lastNote: ""
+		};
+	},
+
+	normalizeTalismanWorkshop: function(raw){
+		var def = this.makeDefaultTalismanWorkshop();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		def.cinnabar = Math.min(this.TALISMAN_STOCK_MAX, num(raw.cinnabar));
+		def.paper = Math.min(this.TALISMAN_STOCK_MAX, num(raw.paper));
+		def.trickle = Math.min(this.TALISMAN_TRICKLE_TICKS - 1, num(raw.trickle));
+		def.insight = Math.min(this.TALISMAN_INSIGHT_MAX, num(raw.insight));
+		var seen = {};
+		if (raw.active && raw.active.length){
+			for (var i = 0; i < raw.active.length && def.active.length < this.TALISMAN_SLOTS; i++){
+				var a = raw.active[i];
+				if (!a || typeof a !== "object" || !this.getTalismanDef(a.key) || seen[a.key]){ continue; }
+				var q = this.getTalismanQualityDef(a.quality);
+				if (!q || q.key === "fail"){ continue; }
+				var maxT = Math.round(this.TALISMAN_TICKS * q.dur * 1.4);
+				var left = Math.min(maxT, num(a.ticksLeft));
+				if (left <= 0){ continue; }
+				seen[a.key] = true;
+				def.active.push({key: a.key, quality: q.key, ticksLeft: left, maxTicks: Math.max(left, Math.min(maxT, num(a.maxTicks)))});
+			}
+		}
+		def.drawn = num(raw.drawn);
+		def.failed = Math.min(def.drawn, num(raw.failed));
+		def.divine = Math.min(def.drawn, num(raw.divine));
+		def.expired = num(raw.expired);
+		var ld = raw.lastDraw;
+		if (ld && typeof ld === "object" && this.getTalismanDef(ld.key) && this.getTalismanQualityDef(ld.quality) && ld.strokes && ld.strokes.length === 3){
+			var st = [];
+			for (var s = 0; s < 3; s++){ st.push(Math.max(5, Math.min(35, num(ld.strokes[s]) || 5))); }
+			var bonus = Math.min(60, num(ld.bonus));
+			def.lastDraw = {key: ld.key, quality: ld.quality, strokes: st, bonus: bonus, total: st[0] + st[1] + st[2] + bonus};
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	//动作入口只在结构缺损时归一化(保持对象引用稳定;读档时已整体归一化)
+	ensureTalismanWorkshop: function(){
+		var ws = this.talismanWorkshop;
+		if (!ws || typeof ws !== "object" || !ws.active || typeof ws.active.length !== "number"){
+			this.talismanWorkshop = this.normalizeTalismanWorkshop(ws);
+		}
+		return this.talismanWorkshop;
+	},
+
+	talismanNextSeed: function(seed){
+		return (seed * 16807) % this.TALISMAN_RNG_MOD;
+	},
+
+	//掷点来源:显式 rollOpt(数字) > this.talismanRandom(函数,测试 / 调试注入) > Math.random;皆夹到 [0, 1)
+	getTalismanRoll: function(rollOpt){
+		var r = rollOpt;
+		if (typeof r !== "number" || !isFinite(r)){
+			r = (typeof this.talismanRandom === "function") ? this.talismanRandom() : Math.random();
+		}
+		return (typeof r === "number" && isFinite(r)) ? Math.max(0, Math.min(0.999999, r)) : 0;
+	},
+
+	getTalismanStrokeBonus: function(){
+		var ws = this.talismanWorkshop || this.makeDefaultTalismanWorkshop();
+		var insight = Math.max(0, Math.min(this.TALISMAN_INSIGHT_MAX, Math.floor(ws.insight || 0)));
+		var fsStroke = this.immortalAscended ? this.getFengshuiEffect().stroke : 0;
+		var seal = this.getFengshuiSealBonus().stroke;
+		return {
+			insight: insight * this.TALISMAN_INSIGHT_PTS,
+			fengshui: fsStroke,
+			seal: seal,
+			total: insight * this.TALISMAN_INSIGHT_PTS + fsStroke + seal
+		};
+	},
+
+	//绘符判定(纯函数,确定性):掷点 → Park–Miller 种子 → 符头 / 符胆 / 符脚三笔,加笔意加成后定品第
+	judgeTalismanStrokes: function(roll, bonusOpt){
+		var r = Math.max(0, Math.min(0.999999, (typeof roll === "number" && isFinite(roll)) ? roll : 0));
+		var seed = 1 + Math.floor(r * (this.TALISMAN_RNG_MOD - 2));
+		var s = seed;
+		var strokes = [];
+		for (var k = 0; k < 3; k++){
+			s = this.talismanNextSeed(s);
+			strokes.push(5 + Math.floor((s / this.TALISMAN_RNG_MOD) * 31));
+		}
+		var bonus = Math.max(0, Math.floor((typeof bonusOpt === "number" && isFinite(bonusOpt)) ? bonusOpt : 0));
+		var base = strokes[0] + strokes[1] + strokes[2];
+		var total = base + bonus;
+		var quality = this.TALISMAN_QUALITIES[0].key;
+		for (var q = this.TALISMAN_QUALITIES.length - 1; q >= 0; q--){
+			if (total >= this.TALISMAN_QUALITIES[q].min){ quality = this.TALISMAN_QUALITIES[q].key; break; }
+		}
+		return {seed: seed, strokes: strokes, base: base, bonus: bonus, total: total, quality: quality};
+	},
+
+	getActiveTalisman: function(key){
+		var ws = this.talismanWorkshop;
+		if (!ws || !ws.active){ return null; }
+		for (var i = 0; i < ws.active.length; i++){
+			if (ws.active[i].key === key && (ws.active[i].ticksLeft || 0) > 0){ return ws.active[i]; }
+		}
+		return null;
+	},
+
+	//灵效时长:基础 × 品第 × (1 + 堪舆金气)
+	getTalismanDuration: function(qualityKey){
+		var q = this.getTalismanQualityDef(qualityKey);
+		if (!q || q.dur <= 0){ return 0; }
+		var fsDur = this.immortalAscended ? this.getFengshuiEffect().duration : 0;
+		return Math.max(1, Math.round(this.TALISMAN_TICKS * q.dur * (1 + fsDur)));
+	},
+
+	getTalismanDrawReq: function(key){
+		var def = this.getTalismanDef(key);
+		if (!def){ return null; }
+		var ws = this.talismanWorkshop || this.makeDefaultTalismanWorkshop();
+		var replacing = !!this.getActiveTalisman(key);
+		var slotOk = replacing || (ws.active ? ws.active.length : 0) < this.TALISMAN_SLOTS;
+		var okCin = (ws.cinnabar || 0) >= def.cinnabar;
+		var okPaper = (ws.paper || 0) >= def.paper;
+		return {
+			key: def.key,
+			cinnabar: def.cinnabar,
+			paper: def.paper,
+			okCinnabar: okCin,
+			okPaper: okPaper,
+			replacing: replacing,
+			slotOk: slotOk,
+			affordable: !!(this.immortalAscended && okCin && okPaper && slotOk)
+		};
+	},
+
+	//绘符:耗朱砂与符纸,按掷点判定三笔定品第;rollOpt 供测试注入(0 ≤ roll < 1)
+	drawTalisman: function(key, rollOpt){
+		if (!this.immortalAscended){ return false; }
+		this.ensureTalismanWorkshop();
+		var req = this.getTalismanDrawReq(key);
+		if (!req || !req.affordable){ return false; }
+		var ws = this.talismanWorkshop;
+		var bonus = this.getTalismanStrokeBonus();
+		var judge = this.judgeTalismanStrokes(this.getTalismanRoll(rollOpt), bonus.total);
+		ws.cinnabar -= req.cinnabar;
+		ws.paper -= req.paper;
+		ws.drawn = (ws.drawn || 0) + 1;
+		ws.lastDraw = {key: req.key, quality: judge.quality, strokes: judge.strokes.slice(0), bonus: judge.bonus, total: judge.total};
+		var isEn = this.isFengshuiEn();
+		var tName = $I("cultivation.talisman.item." + req.key + ".label");
+		var qName = $I("cultivation.talisman.quality." + judge.quality);
+		if (judge.quality === "fail"){
+			ws.failed = (ws.failed || 0) + 1;
+			ws.insight = Math.min(this.TALISMAN_INSIGHT_MAX, (ws.insight || 0) + 1);
+			ws.lastNote = isEn
+				? ("The brush falters (" + judge.total + "): the " + tName + " burns to ash. Brush Insight " + ws.insight + "/" + this.TALISMAN_INSIGHT_MAX + " (+" + this.TALISMAN_INSIGHT_PTS + " to each next stroke total).")
+				: ("【废符】笔意 " + judge.total + "，【" + tName + "】符胆不聚，化作飞灰；笔悟 " + ws.insight + "/" + this.TALISMAN_INSIGHT_MAX + "（每层下一笔 +" + this.TALISMAN_INSIGHT_PTS + " 笔意）。");
+			if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playFail){
+				classes.ui.XianxiaAudio.playFail(this.game);
+			}
+			this.game.msg(ws.lastNote, "alert");
+			return true;
+		}
+		ws.insight = 0;
+		if (judge.quality === "divine"){ ws.divine = (ws.divine || 0) + 1; }
+		var ticks = this.getTalismanDuration(judge.quality);
+		var entry = {key: req.key, quality: judge.quality, ticksLeft: ticks, maxTicks: ticks};
+		var replaced = false;
+		for (var i = 0; i < ws.active.length; i++){
+			if (ws.active[i].key === req.key){
+				ws.active[i] = entry;
+				replaced = true;
+				break;
+			}
+		}
+		if (!replaced){ ws.active.push(entry); }
+		this.addDaoLawProgress(2 + this.TALISMAN_QUALITIES.indexOf(this.getTalismanQualityDef(judge.quality)));
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, judge.quality === "divine");
+		}
+		ws.lastNote = isEn
+			? (qName + " " + tName + " drawn (stroke total " + judge.total + "): active for " + Math.ceil(ticks / (this.game.ticksPerSecond || 5)) + "s" + (replaced ? ", replacing the old one." : "."))
+			: ("【成符】笔意 " + judge.total + "，绘成" + qName + "【" + tName + "】，灵效 " + Math.ceil(ticks / (this.game.ticksPerSecond || 5)) + " 秒" + (replaced ? "（旧符随之化去）。" : "。"));
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(ws.lastNote, (judge.quality === "divine") ? "important" : "notice");
+		return true;
+	},
+
+	dismissTalisman: function(key){
+		if (!this.immortalAscended || !this.talismanWorkshop || !this.talismanWorkshop.active){ return false; }
+		var ws = this.talismanWorkshop;
+		for (var i = 0; i < ws.active.length; i++){
+			if (ws.active[i].key === key){
+				ws.active.splice(i, 1);
+				ws.lastNote = this.isFengshuiEn()
+					? ("You burn the " + $I("cultivation.talisman.item." + key + ".label") + " to free its pouch slot.")
+					: ("【焚符】焚去【" + $I("cultivation.talisman.item." + key + ".label") + "】，腾出符囊一格。");
+				if (this.game.updateCaches){ this.game.updateCaches(); }
+				return true;
+			}
+		}
+		return false;
+	},
+
+	getTalismanMatReq: function(kind){
+		var ws = this.talismanWorkshop || this.makeDefaultTalismanWorkshop();
+		if (kind === "cinnabar"){
+			var xyObj = this.game.resPool.get("xianyuan");
+			var roomC = (ws.cinnabar || 0) < this.TALISMAN_STOCK_MAX;
+			return {
+				kind: kind, res: "xianyuan", cost: this.GRIND_CINNABAR.xianyuan, gain: this.GRIND_CINNABAR.gain, room: roomC,
+				affordable: !!(this.immortalAscended && roomC && xyObj && xyObj.value >= this.GRIND_CINNABAR.xianyuan)
+			};
+		}
+		if (kind === "paper"){
+			var rlObj = this.game.resPool.get("relic");
+			var roomP = (ws.paper || 0) < this.TALISMAN_STOCK_MAX;
+			return {
+				kind: kind, res: "relic", cost: this.CUT_PAPER.relic, gain: this.CUT_PAPER.gain, room: roomP,
+				affordable: !!(this.immortalAscended && roomP && rlObj && rlObj.value >= this.CUT_PAPER.relic)
+			};
+		}
+		return null;
+	},
+
+	//研朱砂(仙元)/ 裁符纸(古宝)
+	prepareTalismanMaterial: function(kind){
+		if (!this.immortalAscended){ return false; }
+		this.ensureTalismanWorkshop();
+		var req = this.getTalismanMatReq(kind);
+		if (!req || !req.affordable){ return false; }
+		var ws = this.talismanWorkshop;
+		this.game.resPool.addResEvent(req.res, -req.cost);
+		var isEn = this.isFengshuiEn();
+		if (kind === "cinnabar"){
+			ws.cinnabar = Math.min(this.TALISMAN_STOCK_MAX, (ws.cinnabar || 0) + req.gain);
+			ws.lastNote = isEn
+				? ("Ground cinnabar +" + req.gain + " (" + req.cost + " Immortal Essence).")
+				: ("【研朱砂】以 " + req.cost + " 仙元研得朱砂 +" + req.gain + "。");
+		} else {
+			ws.paper = Math.min(this.TALISMAN_STOCK_MAX, (ws.paper || 0) + req.gain);
+			ws.lastNote = isEn
+				? ("Cut talisman paper +" + req.gain + " (" + req.cost + " Ancient Treasure).")
+				: ("【裁符纸】以 " + req.cost + " 古宝裁得黄表符纸 +" + req.gain + "。");
+		}
+		return true;
+	},
+
+	//北斗星符:下一局周天星辰弈局 +1 目(开局即化入棋局,一符一局)
+	getTalismanGoBonus: function(){
+		if (!this.immortalAscended){ return 0; }
+		return this.getActiveTalisman("beidou") ? 1 : 0;
+	},
+
+	consumeBeidouTalisman: function(){
+		if (!this.getTalismanGoBonus()){ return 0; }
+		var ws = this.talismanWorkshop;
+		for (var i = 0; i < ws.active.length; i++){
+			if (ws.active[i].key === "beidou"){
+				ws.active.splice(i, 1);
+				return 1;
+			}
+		}
+		return 0;
+	},
+
+	//符箓灵效合计:斗法向(破邪 / 金光)与搬运仅在 26 层以上大秘境生效,且各自封顶;聚灵符常驻
+	getTalismanEffect: function(riftFloorOpt){
+		var e = {
+			count: 0, highRift: false,
+			rawDmg: 0, rawHp: 0, rawMit: 0, rawXy: 0,
+			riftDmg: 0, riftHp: 0, mitigation: 0, riftXy: 0,
+			herbYield: 0, herbSpeed: 0, goBonus: 0, capped: false
+		};
+		if (!this.immortalAscended || !this.talismanWorkshop || !this.talismanWorkshop.active){ return e; }
+		var act = this.talismanWorkshop.active;
+		for (var i = 0; i < act.length; i++){
+			var def = this.getTalismanDef(act[i].key);
+			var q = this.getTalismanQualityDef(act[i].quality);
+			if (!def || !q || (act[i].ticksLeft || 0) <= 0){ continue; }
+			e.count++;
+			e.rawDmg += (def.riftDmg || 0) * q.pot;
+			e.rawHp += (def.riftHp || 0) * q.pot;
+			e.rawMit += (def.mitigation || 0) * q.pot;
+			e.rawXy += (def.riftXy || 0) * q.pot;
+			e.herbYield += (def.herbYield || 0) * q.pot;
+			e.herbSpeed += (def.herbSpeed || 0) * q.pot;
+			e.goBonus += def.goBonus || 0;
+		}
+		e.herbYield = Math.min(this.XX13_HERB_CAP, e.herbYield);
+		e.herbSpeed = Math.min(this.XX13_HERB_CAP, e.herbSpeed);
+		e.goBonus = Math.min(1, e.goBonus);
+		e.capped = (e.rawDmg > this.XX13_COMBAT_CAP || e.rawHp > this.XX13_COMBAT_CAP || e.rawMit > this.XX13_MITIGATION_CAP || e.rawXy > this.XX13_RIFT_XY_CAP);
+		e.highRift = (typeof riftFloorOpt === "number" && riftFloorOpt >= 26);
+		if (e.highRift){
+			e.riftDmg = Math.min(this.XX13_COMBAT_CAP, e.rawDmg);
+			e.riftHp = Math.min(this.XX13_COMBAT_CAP, e.rawHp);
+			e.mitigation = Math.min(this.XX13_MITIGATION_CAP, e.rawMit);
+			e.riftXy = Math.min(this.XX13_RIFT_XY_CAP, e.rawXy);
+		}
+		return e;
+	},
+
+	//XX-13 秘境协同:26 层以上大秘境破关,洞府符坊得黄表符纸 +1
+	onTalismanRiftVictory: function(floor){
+		if (!this.immortalAscended || !(floor >= 26)){ return 0; }
+		this.ensureTalismanWorkshop();
+		var ws = this.talismanWorkshop;
+		if ((ws.paper || 0) >= this.TALISMAN_STOCK_MAX){ return 0; }
+		ws.paper = (ws.paper || 0) + 1;
+		return 1;
+	},
+
+	tickFengshuiTalisman: function(ticksDelta){
+		var dt = Math.max(0, typeof ticksDelta === "number" ? ticksDelta : 1);
+		if (dt <= 0 || !this.immortalAscended){ return; }
+		if (!this.talismanWorkshop){ this.talismanWorkshop = this.makeDefaultTalismanWorkshop(); }
+		var ws = this.talismanWorkshop;
+		if (!ws.active){ ws.active = []; }
+		var expiredNames = [];
+		for (var i = ws.active.length - 1; i >= 0; i--){
+			ws.active[i].ticksLeft = Math.max(0, (ws.active[i].ticksLeft || 0) - dt);
+			if (ws.active[i].ticksLeft <= 0){
+				expiredNames.unshift($I("cultivation.talisman.item." + ws.active[i].key + ".label"));
+				ws.active.splice(i, 1);
+				ws.expired = (ws.expired || 0) + 1;
+			}
+		}
+		if (expiredNames.length){
+			ws.lastNote = this.isFengshuiEn()
+				? ("Spent and faded: " + expiredNames.join(", ") + ".")
+				: ("【符力散尽】" + expiredNames.join("、") + " 灵效已尽，化作朱痕一缕。");
+			if (this.game.updateCaches){ this.game.updateCaches(); }
+		}
+		ws.trickle = (ws.trickle || 0) + dt;
+		if (ws.trickle >= this.TALISMAN_TRICKLE_TICKS){
+			var gained = Math.floor(ws.trickle / this.TALISMAN_TRICKLE_TICKS);
+			ws.trickle -= gained * this.TALISMAN_TRICKLE_TICKS;
+			ws.cinnabar = Math.min(this.TALISMAN_STOCK_MAX, (ws.cinnabar || 0) + gained);
+			ws.paper = Math.min(this.TALISMAN_STOCK_MAX, (ws.paper || 0) + gained);
+		}
+	},
+
+	//飞升 / 测试洞府初始化:归一化堪舆与符坊;前世堪舆印赐下开局勘脉等级;符坊初开赠朱砂 6、符纸 4
+	initFengshuiStateOnAscend: function(){
+		this.fengshui = this.normalizeFengshui(this.fengshui);
+		this.talismanWorkshop = this.normalizeTalismanWorkshop(this.talismanWorkshop);
+		var startLv = 1 + this.getFengshuiSealBonus().startLevel;
+		if ((this.fengshui.level || 1) < startLv && (this.fengshui.rearranges || 0) === 0){
+			this.fengshui.level = Math.min(this.FENGSHUI_LEVELS.length, startLv);
+		}
+		var ws = this.talismanWorkshop;
+		if ((ws.drawn || 0) === 0 && (ws.cinnabar || 0) === 0 && (ws.paper || 0) === 0 && (ws.trickle || 0) === 0){
+			ws.cinnabar = 6;
+			ws.paper = 4;
+		}
+		this.syncFengshuiTier();
+	},
+
+	// ---------------- XX-14 太虚剑冢万剑归宗与蓬莱海市奇遇 ----------------
+
+	SWORD_TIER_MAX: 5,				//剑意印上限 = 最高剑阵「万剑归宗」
+	SWORD_INTENT_MAX: 3,			//每柄古剑剑意至多三重(剑气 · 剑意 · 剑心)
+	SWORD_SLOT_BASE: 2,				//剑阵初开两位(阵眼 + 青龙位),此后每悟 4 重剑意再开一位,至多五位
+	SWORD_SLOT_PER_INTENT: 4,
+	SWORD_SEATED_MULT: 1.5,			//古剑与方位相合(得位)剑势 ×1.5
+	SWORD_EYE_MULT: 1.25,			//坐镇阵眼再 ×1.25
+	SWORD_THUNDER_STEP: 0.08,		//XX-10 协同:紫电剑势每重雷池淬体 +8%
+	SWORD_THUNDER_SEAT: 3,			//XX-10 协同:雷池淬体第 3 重起,紫电随雷而动,任何方位皆得位
+	XX14_DMG_CAP: 0.08,				//剑阵秘境增伤封顶 +8%(仅 26 层以上大秘境)
+	XX14_CRIT_CAP: 0.04,			//剑阵秘境暴击率封顶 +4%
+	XX14_HP_CAP: 0.06,				//剑阵秘境气血封顶 +6%
+	XX14_MIT_CAP: 0.01,				//剑阵减伤封顶 +1%;一概不触碰神雷追击
+
+	//剑阵五位:0 阵眼(居中) / 1 青龙(东) / 2 朱雀(南) / 3 白虎(西) / 4 玄武(北)
+	SWORD_POSITIONS: [
+		{key: "eye", dir: "center"},
+		{key: "east", dir: "east"},
+		{key: "south", dir: "south"},
+		{key: "west", dir: "west"},
+		{key: "north", dir: "north"}
+	],
+
+	//阵眼四辐 + 四象环连,共 8 条剑气连势
+	SWORD_LINKS: [[0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [2, 3], [3, 4], [4, 1]],
+
+	//剑势 = Σ 剑意 × (得位 3 / 未得位 2,阵眼再 +剑意) + 连势(两端皆有剑 +1,两端皆得位 +2,紫电雷引再 +1);factor = 剑阵成色
+	SWORD_GRADES: [
+		{key: "sanjian", min: 0, factor: 0.35},
+		{key: "liangyi", min: 8, factor: 0.50},
+		{key: "sancai", min: 18, factor: 0.65},
+		{key: "sixiang", min: 30, factor: 0.80},
+		{key: "tiangang", min: 44, factor: 0.92},
+		{key: "wanjian", min: 58, factor: 1.05}
+	],
+
+	//六柄上古神剑:reqFloor = 上古大秘境破关层数;xy / relic / orbs = 一重剑意基础参悟耗费;dmg / crit / hp / mit = 每重剑意的剑势
+	ANCIENT_SWORDS: [
+		{key: "qingping", dir: "east", reqFloor: 26, xy: 60, relic: 8, crit: 0.005},
+		{key: "chixiao", dir: "south", reqFloor: 27, xy: 80, relic: 10, dmg: 0.008},
+		{key: "zidian", dir: "thunder", reqFloor: 28, xy: 100, relic: 10, orbs: 6, dmg: 0.006, crit: 0.003},
+		{key: "taie", dir: "west", reqFloor: 29, xy: 110, relic: 14, dmg: 0.005, hp: 0.004},
+		{key: "zhanlu", dir: "north", reqFloor: 31, xy: 140, relic: 18, hp: 0.006, mit: 0.0012},
+		{key: "xuanyuan", dir: "center", reqFloor: 33, xy: 200, relic: 26, dmg: 0.003, crit: 0.002, hp: 0.003, mit: 0.0005}
+	],
+	SWORD_LEVEL_COST: [0, 1, 2, 3.5],		//参悟第 L 重剑意的耗费倍率
+	SWORD_ZIDIAN_THUNDER: [0, 1, 3, 5],		//紫电第 L 重剑意所需雷池淬体重数(XX-10)
+
+	isSwordTombEn: function(){
+		return String($I("cultivation.swordtomb.panel.badge") || "").indexOf("Immortal") === 0;
+	},
+
+	getAncientSwordDef: function(key){
+		for (var i = 0; i < this.ANCIENT_SWORDS.length; i++){
+			if (this.ANCIENT_SWORDS[i].key === key){ return this.ANCIENT_SWORDS[i]; }
+		}
+		return null;
+	},
+
+	getSwordGradeDef: function(grade){
+		var g = Math.max(0, Math.min(this.SWORD_GRADES.length - 1, Math.floor(grade || 0)));
+		return this.SWORD_GRADES[g];
+	},
+
+	makeDefaultSwordTomb: function(){
+		var intents = {};
+		for (var i = 0; i < this.ANCIENT_SWORDS.length; i++){
+			intents[this.ANCIENT_SWORDS[i].key] = 0;
+		}
+		return {
+			intents: intents,
+			slots: ["", "", "", "", ""],
+			selected: "",
+			peakGrade: 0,
+			comprehends: 0,
+			rearranges: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeSwordTomb: function(raw){
+		var def = this.makeDefaultSwordTomb();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		if (raw.intents && typeof raw.intents === "object"){
+			for (var i = 0; i < this.ANCIENT_SWORDS.length; i++){
+				var k = this.ANCIENT_SWORDS[i].key;
+				def.intents[k] = Math.min(this.SWORD_INTENT_MAX, num(raw.intents[k]));
+			}
+		}
+		var open = this.getSwordSlotsOpen(def.intents);
+		var used = {};
+		if (raw.slots && raw.slots.length){
+			for (var s = 0; s < this.SWORD_POSITIONS.length && s < open; s++){
+				var sk = raw.slots[s];
+				if (typeof sk === "string" && this.getAncientSwordDef(sk) && def.intents[sk] > 0 && !used[sk]){
+					def.slots[s] = sk;
+					used[sk] = true;
+				}
+			}
+		}
+		if (typeof raw.selected === "string" && this.getAncientSwordDef(raw.selected) && def.intents[raw.selected] > 0){
+			def.selected = raw.selected;
+		}
+		def.peakGrade = Math.min(this.SWORD_TIER_MAX, Math.max(num(raw.peakGrade), this.computeSwordFormation(def.slots, def.intents).grade));
+		def.comprehends = num(raw.comprehends);
+		def.rearranges = num(raw.rearranges);
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	//动作入口只在结构缺损时归一化(保持对象引用稳定;读档时已整体归一化)
+	ensureSwordTomb: function(){
+		var st = this.swordTomb;
+		if (!st || typeof st !== "object" || !st.intents || typeof st.intents !== "object" || !st.slots || typeof st.slots.length !== "number"){
+			this.swordTomb = this.normalizeSwordTomb(st);
+		}
+		return this.swordTomb;
+	},
+
+	getSwordIntent: function(key, intentsOpt){
+		var it = intentsOpt || ((this.swordTomb && this.swordTomb.intents) ? this.swordTomb.intents : {});
+		var v = it[key];
+		return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.min(this.SWORD_INTENT_MAX, Math.floor(v))) : 0;
+	},
+
+	getSwordTotalIntent: function(intentsOpt){
+		var total = 0;
+		for (var i = 0; i < this.ANCIENT_SWORDS.length; i++){
+			total += this.getSwordIntent(this.ANCIENT_SWORDS[i].key, intentsOpt);
+		}
+		return total;
+	},
+
+	getSwordLearnedCount: function(intentsOpt){
+		var cnt = 0;
+		for (var i = 0; i < this.ANCIENT_SWORDS.length; i++){
+			if (this.getSwordIntent(this.ANCIENT_SWORDS[i].key, intentsOpt) > 0){ cnt++; }
+		}
+		return cnt;
+	},
+
+	//剑阵开位:初开两位,每悟 4 重剑意再开一位,至多五位
+	getSwordSlotsOpen: function(intentsOpt){
+		var total = this.getSwordTotalIntent(intentsOpt);
+		return Math.min(this.SWORD_POSITIONS.length, this.SWORD_SLOT_BASE + Math.floor(total / this.SWORD_SLOT_PER_INTENT));
+	},
+
+	//XX-10 雷池淬体重数(紫电剑意的门槛与加持)
+	getSwordThunderTier: function(){
+		var tp = this.thunderPool;
+		if (!tp || typeof tp.tier !== "number" || !isFinite(tp.tier)){ return 0; }
+		return Math.max(0, Math.min(this.THUNDER_MAX_TIER, Math.floor(tp.tier)));
+	},
+
+	isSwordSeated: function(key, pos, thunderTier){
+		var def = this.getAncientSwordDef(key);
+		var p = this.SWORD_POSITIONS[pos];
+		if (!def || !p){ return false; }
+		if (def.dir === "thunder"){ return (thunderTier || 0) >= this.SWORD_THUNDER_SEAT; }
+		return def.dir === p.dir;
+	},
+
+	//剑阵推演(纯函数,确定性):逐位论得位与阵眼,逐连势论相连 / 相合 / 雷引
+	computeSwordFormation: function(slotsOpt, intentsOpt, thunderOpt){
+		var st = this.swordTomb;
+		var slots = slotsOpt || ((st && st.slots) ? st.slots : []);
+		var intents = intentsOpt || ((st && st.intents) ? st.intents : {});
+		var thunder = (typeof thunderOpt === "number" && isFinite(thunderOpt))
+			? Math.max(0, Math.min(this.THUNDER_MAX_TIER, Math.floor(thunderOpt)))
+			: this.getSwordThunderTier();
+		var open = this.getSwordSlotsOpen(intents);
+		var byPos = [null, null, null, null, null];
+		var pieces = [];
+		var used = {};
+		var ch = {dmg: 0, crit: 0, hp: 0, mit: 0};
+		var piecePts = 0;
+		var seated = 0;
+		for (var p = 0; p < this.SWORD_POSITIONS.length; p++){
+			var key = slots[p];
+			if (p >= open || typeof key !== "string" || !key || used[key]){ continue; }
+			var def = this.getAncientSwordDef(key);
+			var lv = def ? this.getSwordIntent(key, intents) : 0;
+			if (!def || lv <= 0){ continue; }
+			used[key] = true;
+			var isSeated = this.isSwordSeated(key, p, thunder);
+			var isEye = (p === 0);
+			var pts = lv * (isSeated ? 3 : 2) + (isEye ? lv : 0);
+			var k = (isSeated ? this.SWORD_SEATED_MULT : 1) * (isEye ? this.SWORD_EYE_MULT : 1) *
+				(def.dir === "thunder" ? (1 + this.SWORD_THUNDER_STEP * thunder) : 1);
+			ch.dmg += (def.dmg || 0) * lv * k;
+			ch.crit += (def.crit || 0) * lv * k;
+			ch.hp += (def.hp || 0) * lv * k;
+			ch.mit += (def.mit || 0) * lv * k;
+			piecePts += pts;
+			if (isSeated){ seated++; }
+			var piece = {pos: p, key: key, level: lv, seated: isSeated, eye: isEye, pts: pts, mult: k};
+			pieces.push(piece);
+			byPos[p] = piece;
+		}
+		var links = [];
+		var linkPts = 0;
+		var joined = 0;
+		var resonant = 0;
+		var thunderLinks = 0;
+		for (var li = 0; li < this.SWORD_LINKS.length; li++){
+			var la = byPos[this.SWORD_LINKS[li][0]];
+			var lb = byPos[this.SWORD_LINKS[li][1]];
+			var state = "none";
+			var v = 0;
+			var lThunder = false;
+			if (la && lb){
+				if (la.seated && lb.seated){
+					state = "resonant";
+					v = 2;
+					resonant++;
+				} else {
+					state = "joined";
+					v = 1;
+					joined++;
+				}
+				if (thunder >= 1 && (la.key === "zidian" || lb.key === "zidian")){
+					lThunder = true;
+					v += 1;
+					thunderLinks++;
+				}
+			}
+			linkPts += v;
+			links.push({a: this.SWORD_LINKS[li][0], b: this.SWORD_LINKS[li][1], state: state, thunder: lThunder, pts: v});
+		}
+		var score = piecePts + linkPts;
+		var grade = 0;
+		for (var g = this.SWORD_GRADES.length - 1; g >= 0; g--){
+			if (score >= this.SWORD_GRADES[g].min){ grade = g; break; }
+		}
+		return {
+			open: open,
+			placed: pieces.length,
+			seated: seated,
+			joined: joined,
+			resonant: resonant,
+			thunderLinks: thunderLinks,
+			thunder: thunder,
+			piecePts: piecePts,
+			linkPts: linkPts,
+			score: score,
+			grade: grade,
+			gradeKey: this.SWORD_GRADES[grade].key,
+			factor: this.SWORD_GRADES[grade].factor,
+			pieces: pieces,
+			links: links,
+			channels: ch
+		};
+	},
+
+	getSwordSeal: function(){
+		return Math.max(0, Math.min(this.SWORD_TIER_MAX, Math.floor(this.swordIntentTier || 0)));
+	},
+
+	//剑意印 = 历世所成最高剑阵(跨转世保留,只增不减)
+	syncSwordIntentTier: function(){
+		var peak = Math.max(0, Math.floor(this.swordIntentTier || 0));
+		var cur = (this.swordTomb && this.swordTomb.peakGrade) ? Math.floor(this.swordTomb.peakGrade) : 0;
+		if (cur > peak){ peak = cur; }
+		this.swordIntentTier = Math.min(this.SWORD_TIER_MAX, peak);
+		return this.swordIntentTier;
+	},
+
+	//跨轮回剑意印:修为 +3%/重(凡身即得)、参悟耗费 -5%/重、剑阵神效 +4%/重、飞升即得青萍剑意 1 重/每 2 重(至多 2)
+	getSwordSealBonus: function(){
+		var t = this.getSwordSeal();
+		if (t <= 0){
+			return {tier: 0, xiuweiRatio: 0, costCut: 0, formationMult: 1, freeIntent: 0};
+		}
+		return {
+			tier: t,
+			xiuweiRatio: t * 0.03,
+			costCut: t * 0.05,
+			formationMult: 1 + t * 0.04,
+			freeIntent: Math.min(2, Math.floor(t / 2))
+		};
+	},
+
+	//剑阵神效(slotsOpt 供面板 / 测试预览):增伤 / 暴击 / 气血 / 减伤仅 26 层以上大秘境生效,各自封顶
+	getSwordFormationEffect: function(riftFloorOpt, slotsOpt){
+		var preview = !!slotsOpt;
+		var highRift = (typeof riftFloorOpt === "number" && riftFloorOpt >= 26);
+		var e = {
+			grade: 0, gradeKey: this.SWORD_GRADES[0].key, factor: this.SWORD_GRADES[0].factor, score: 0, placed: 0,
+			sealMult: 1, highRift: highRift,
+			rawDmg: 0, rawCrit: 0, rawHp: 0, rawMit: 0,
+			riftDmg: 0, riftCrit: 0, riftHp: 0, mitigation: 0, capped: false
+		};
+		if (!this.immortalAscended && !preview){ return e; }
+		if (!highRift && !preview){ return e; }
+		var f = this.computeSwordFormation(slotsOpt);
+		var seal = this.getSwordSealBonus();
+		var m = f.factor * seal.formationMult;
+		e.grade = f.grade;
+		e.gradeKey = f.gradeKey;
+		e.factor = f.factor;
+		e.score = f.score;
+		e.placed = f.placed;
+		e.sealMult = seal.formationMult;
+		e.rawDmg = f.channels.dmg * m;
+		e.rawCrit = f.channels.crit * m;
+		e.rawHp = f.channels.hp * m;
+		e.rawMit = f.channels.mit * m;
+		e.capped = (e.rawDmg > this.XX14_DMG_CAP || e.rawCrit > this.XX14_CRIT_CAP || e.rawHp > this.XX14_HP_CAP || e.rawMit > this.XX14_MIT_CAP);
+		if (highRift){
+			e.riftDmg = Math.min(this.XX14_DMG_CAP, e.rawDmg);
+			e.riftCrit = Math.min(this.XX14_CRIT_CAP, e.rawCrit);
+			e.riftHp = Math.min(this.XX14_HP_CAP, e.rawHp);
+			e.mitigation = Math.min(this.XX14_MIT_CAP, e.rawMit);
+		}
+		return e;
+	},
+
+	getSwordComprehendReq: function(key){
+		var def = this.getAncientSwordDef(key);
+		if (!def){ return null; }
+		var cur = this.getSwordIntent(key);
+		var floorOk = (this.riftFloor || 0) >= def.reqFloor;
+		if (cur >= this.SWORD_INTENT_MAX){
+			return {key: key, cur: cur, level: cur, maxed: true, xianyuan: 0, relic: 0, orbs: 0, reqFloor: def.reqFloor, needThunder: 0,
+				floorOk: floorOk, thunderOk: true, okXy: true, okRelic: true, okOrbs: true, affordable: false};
+		}
+		var next = cur + 1;
+		var mult = this.SWORD_LEVEL_COST[next] * (1 - this.getSwordSealBonus().costCut);
+		var xy = Math.max(1, Math.round(def.xy * mult));
+		var relic = Math.max(1, Math.round(def.relic * mult));
+		var orbs = def.orbs ? Math.max(1, Math.round(def.orbs * mult)) : 0;
+		var needThunder = (def.dir === "thunder") ? this.SWORD_ZIDIAN_THUNDER[next] : 0;
+		var thunderOk = this.getSwordThunderTier() >= needThunder;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var rlObj = this.game.resPool.get("relic");
+		var haveOrbs = (this.thunderPool && typeof this.thunderPool.thunderOrbs === "number") ? this.thunderPool.thunderOrbs : 0;
+		var okXy = !!(xyObj && xyObj.value >= xy);
+		var okRelic = !!(rlObj && rlObj.value >= relic);
+		var okOrbs = haveOrbs >= orbs;
+		return {
+			key: key, cur: cur, level: next, maxed: false,
+			xianyuan: xy, relic: relic, orbs: orbs,
+			reqFloor: def.reqFloor, needThunder: needThunder,
+			floorOk: floorOk, thunderOk: thunderOk, okXy: okXy, okRelic: okRelic, okOrbs: okOrbs,
+			affordable: !!(this.immortalAscended && floorOk && thunderOk && okXy && okRelic && okOrbs)
+		};
+	},
+
+	//记一笔剑阵变化:刷新此世最高剑阵与剑意印,新成三阶以上剑阵鸣钟
+	noteSwordFormationChange: function(before){
+		var st = this.swordTomb;
+		var after = this.computeSwordFormation();
+		if (after.grade > (st.peakGrade || 0)){ st.peakGrade = Math.min(this.SWORD_TIER_MAX, after.grade); }
+		this.syncSwordIntentTier();
+		if (before && after.grade > before.grade && after.grade >= 3 && classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, after.grade >= 5);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return after;
+	},
+
+	//参悟古剑:耗仙元 + 古宝(紫电另耗九霄雷髓),剑意 +1 重;首重即得此剑剑谱
+	comprehendAncientSword: function(key){
+		if (!this.immortalAscended){ return false; }
+		this.ensureSwordTomb();
+		var req = this.getSwordComprehendReq(key);
+		if (!req || !req.affordable){ return false; }
+		var st = this.swordTomb;
+		var before = this.computeSwordFormation();
+		var openBefore = before.open;
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("relic", -req.relic);
+		if (req.orbs > 0 && this.thunderPool){
+			this.thunderPool.thunderOrbs = Math.max(0, (this.thunderPool.thunderOrbs || 0) - req.orbs);
+			if (this.syncThunderOrbs){ this.syncThunderOrbs(); }
+		}
+		st.intents[key] = req.level;
+		st.comprehends = (st.comprehends || 0) + 1;
+		if (!st.selected){ st.selected = key; }
+		this.addDaoLawProgress(3 + req.level * 2);
+		var after = this.noteSwordFormationChange(before);
+		var swName = $I("cultivation.swordtomb.sword." + key + ".label");
+		var note = $I(req.level === 1 ? "cultivation.swordtomb.note.learn" : "cultivation.swordtomb.note.deepen", [swName, $I("cultivation.swordtomb.intent." + req.level)]);
+		if (after.open > openBefore){
+			note += $I("cultivation.swordtomb.note.slot", [after.open]);
+		}
+		st.lastNote = note;
+		if (req.level >= this.SWORD_INTENT_MAX && classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, false);
+		}
+		this.game.msg(note, "notice");
+		return true;
+	},
+
+	//择剑谱:再点同一剑谱即收起
+	selectSwordManual: function(key){
+		if (!this.immortalAscended){ return false; }
+		this.ensureSwordTomb();
+		var st = this.swordTomb;
+		var k = (typeof key === "string") ? key : "";
+		if (k && (!this.getAncientSwordDef(k) || this.getSwordIntent(k) <= 0)){ return false; }
+		if (st.selected === k){
+			if (!k){ return false; }
+			st.selected = "";
+			return true;
+		}
+		st.selected = k;
+		return true;
+	},
+
+	//落剑:key = 剑谱键或 ""(撤剑);此剑已在他位则移来,原位与此位互换
+	setSwordSlot: function(pos, key){
+		if (!this.immortalAscended){ return false; }
+		this.ensureSwordTomb();
+		var st = this.swordTomb;
+		var p = (typeof pos === "number") ? pos : parseInt(pos, 10);
+		if (!(p >= 0 && p < this.SWORD_POSITIONS.length) || Math.floor(p) !== p){ return false; }
+		if (p >= this.getSwordSlotsOpen()){ return false; }
+		var k = (typeof key === "string") ? key : "";
+		if (k && (!this.getAncientSwordDef(k) || this.getSwordIntent(k) <= 0)){ return false; }
+		var cur = st.slots[p] || "";
+		if (cur === k){ return false; }
+		var before = this.computeSwordFormation();
+		if (k){
+			for (var i = 0; i < st.slots.length; i++){
+				if (i !== p && st.slots[i] === k){
+					st.slots[i] = cur;
+					break;
+				}
+			}
+		}
+		st.slots[p] = k;
+		st.rearranges = (st.rearranges || 0) + 1;
+		var after = this.noteSwordFormationChange(before);
+		var posName = $I("cultivation.swordtomb.pos." + this.SWORD_POSITIONS[p].key + ".label");
+		var gradeName = $I("cultivation.swordtomb.grade." + after.gradeKey);
+		st.lastNote = k
+			? $I("cultivation.swordtomb.note.place", [$I("cultivation.swordtomb.sword." + k + ".label"), posName, gradeName, after.score])
+			: $I("cultivation.swordtomb.note.withdraw", [posName, gradeName, after.score]);
+		return true;
+	},
+
+	//点位落剑:已择剑谱则落于此位(同剑再点即撤),未择剑谱则撤去此位之剑
+	applySwordManual: function(pos){
+		if (!this.immortalAscended){ return false; }
+		this.ensureSwordTomb();
+		var st = this.swordTomb;
+		var p = (typeof pos === "number") ? pos : parseInt(pos, 10);
+		if (!(p >= 0 && p < this.SWORD_POSITIONS.length)){ return false; }
+		var cur = st.slots[p] || "";
+		var sel = st.selected || "";
+		if (!sel || sel === cur){
+			return cur ? this.setSwordSlot(p, "") : false;
+		}
+		return this.setSwordSlot(p, sel);
+	},
+
+	clearSwordFormation: function(){
+		if (!this.immortalAscended){ return false; }
+		this.ensureSwordTomb();
+		var st = this.swordTomb;
+		var any = false;
+		for (var i = 0; i < st.slots.length; i++){
+			if (st.slots[i]){ any = true; }
+		}
+		if (!any){ return false; }
+		st.slots = ["", "", "", "", ""];
+		st.rearranges = (st.rearranges || 0) + 1;
+		st.lastNote = $I("cultivation.swordtomb.note.clear");
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return true;
+	},
+
+	// ---- 蓬莱海市奇遇 ----
+
+	PENGLAI_INTERVAL: 2400,			//海面平静 2400 tick(常速约 8 分钟)后浮现一座海市
+	PENGLAI_LIFETIME: 1800,			//海市浮现后若不入,1800 tick(约 6 分钟)即散;入市之后不再计时
+	PENGLAI_OFFLINE_CAP: 2400,		//离线至多折算一个海市周期:回来时至多一座海市候你
+	PENGLAI_OFFLINE_MIN_MS: 10000,	//离线不足 10 秒不计(防刷新抖动)
+	PENGLAI_RIFT_CHARGE: 240,		//26 层以上大秘境破关,海上蜃气渐浓:海市进度 +240 tick
+	PENGLAI_LOG_MAX: 4,
+	PENGLAI_CHANCE_MAX: 0.85,
+	PENGLAI_PEACH_SHARE: 0.05,		//蓬莱仙桃:下一层破境修为价的 5%(过瓶颈按软上限收拢)
+	PENGLAI_PEACH_CALM: 6,			//蓬莱仙桃:心魔 -6
+	PENGLAI_INTENT_FALLBACK: 12,	//无剑可悟时折为古宝 +12
+
+	//海市四链,每链三幕,每幕两择;chance = 掷点判定(sword 剑阵 / thunder 雷池 / fengshui 堪舆 / luck 机缘),
+	//next / loseNext = 下一幕序号(-1 = 散市);win / lose = 奖励(皆入既有资源与玩法)
+	PENGLAI_CHAINS: [
+		{key: "market", steps: [
+			{key: "gate", opts: [
+				{key: "toll", cost: {xianyuan: 30}, win: {}, next: 1},
+				{key: "pierce", chance: "sword", win: {relic: 6}, next: 1, lose: {cinnabar: 2}, loseNext: -1}
+			]},
+			{key: "stall", opts: [
+				{key: "chart", win: {starchart: 8}, next: 2},
+				{key: "peach", win: {peach: 1}, next: 2}
+			]},
+			{key: "tide", opts: [
+				{key: "linger", chance: "luck", win: {timeCrystal: 4, relic: 8}, next: -1, lose: {}, loseNext: -1},
+				{key: "depart", win: {xianyuan: 24}, next: -1}
+			]}
+		]},
+		{key: "isle", steps: [
+			{key: "shore", opts: [
+				{key: "pick", chance: "luck", win: {peach: 1}, next: 1, lose: {}, loseNext: 1},
+				{key: "bow", win: {daoLaw: 6}, next: 1}
+			]},
+			{key: "hermit", opts: [
+				{key: "duel", chance: "sword", win: {intent: 1, relic: 6}, next: 2, lose: {daoLaw: 4}, loseNext: 2},
+				{key: "tea", win: {insight: 1, daoLaw: 4}, next: 2}
+			]},
+			{key: "farewell", opts: [
+				{key: "shell", win: {charge: 1200}, next: -1},
+				{key: "gift", win: {cinnabar: 3, paper: 3}, next: -1}
+			]}
+		]},
+		{key: "palace", steps: [
+			{key: "invite", opts: [
+				{key: "orbs", cost: {orbs: 3}, req: {thunder: 1}, win: {relic: 4}, next: 1},
+				{key: "empty", chance: "luck", win: {}, next: 1, lose: {xianyuan: 10}, loseNext: -1}
+			]},
+			{key: "feast", opts: [
+				{key: "herbs", win: {qinglian: 1, zizhi: 1}, next: 2},
+				{key: "ink", win: {cinnabar: 4, paper: 2}, next: 2}
+			]},
+			{key: "vault", opts: [
+				{key: "thunder", chance: "thunder", win: {timeCrystal: 5, orbs: 4}, next: -1, lose: {daoLaw: 3}, loseNext: -1},
+				{key: "decline", win: {xianyuan: 30}, next: -1}
+			]}
+		]},
+		{key: "dragon", steps: [
+			{key: "pearl", opts: [
+				{key: "read", chance: "fengshui", win: {starchart: 6}, next: 1, lose: {}, loseNext: 1},
+				{key: "grab", chance: "luck", win: {relic: 10}, next: 1, lose: {}, loseNext: -1}
+			]},
+			{key: "maze", opts: [
+				{key: "formation", chance: "sword", win: {intent: 1}, next: 2, lose: {}, loseNext: 2},
+				{key: "talisman", cost: {paper: 2}, win: {relic: 4}, next: 2}
+			]},
+			{key: "dawn", opts: [
+				{key: "breath", win: {xianyuan: 20, daoLaw: 5}, next: -1},
+				{key: "peach", win: {peach: 1}, next: -1}
+			]}
+		]}
+	],
+
+	PENGLAI_REWARD_ORDER: ["xianyuan", "relic", "starchart", "timeCrystal", "cinnabar", "paper", "orbs", "qinglian", "zizhi", "daoLaw", "insight", "peach", "intent", "charge"],
+	PENGLAI_COST_ORDER: ["xianyuan", "orbs", "paper"],
+
+	getPenglaiChainDef: function(key){
+		for (var i = 0; i < this.PENGLAI_CHAINS.length; i++){
+			if (this.PENGLAI_CHAINS[i].key === key){ return this.PENGLAI_CHAINS[i]; }
+		}
+		return null;
+	},
+
+	getPenglaiOptDef: function(chainKey, stepIdx, optKey){
+		var ch = this.getPenglaiChainDef(chainKey);
+		var step = ch ? ch.steps[stepIdx] : null;
+		if (!step){ return null; }
+		for (var i = 0; i < step.opts.length; i++){
+			if (step.opts[i].key === optKey){ return step.opts[i]; }
+		}
+		return null;
+	},
+
+	makeDefaultPenglai: function(){
+		return {
+			charge: 0,
+			mirage: null,
+			lastChain: "",
+			visited: 0,
+			completed: 0,
+			faded: 0,
+			peaches: 0,
+			log: [],
+			lastNote: ""
+		};
+	},
+
+	normalizePenglai: function(raw){
+		var def = this.makeDefaultPenglai();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		def.charge = Math.min(this.PENGLAI_INTERVAL - 1, num(raw.charge));
+		var m = raw.mirage;
+		var mc = (m && typeof m === "object") ? this.getPenglaiChainDef(m.chain) : null;
+		if (mc){
+			var entered = (m.entered === true);
+			var stepIdx = entered ? Math.min(mc.steps.length - 1, num(m.step)) : 0;
+			var left = Math.min(this.PENGLAI_LIFETIME, num(m.ticksLeft));
+			if (entered || left > 0){
+				def.mirage = {chain: mc.key, step: stepIdx, ticksLeft: entered ? Math.max(1, left) : left, entered: entered};
+			}
+		}
+		if (typeof raw.lastChain === "string" && this.getPenglaiChainDef(raw.lastChain)){ def.lastChain = raw.lastChain; }
+		def.visited = num(raw.visited);
+		def.completed = Math.min(def.visited, num(raw.completed));
+		def.faded = num(raw.faded);
+		def.peaches = num(raw.peaches);
+		if (raw.log && raw.log.length){
+			for (var i = 0; i < raw.log.length && def.log.length < this.PENGLAI_LOG_MAX; i++){
+				var e = raw.log[i];
+				if (!e || typeof e !== "object"){ continue; }
+				var s = num(e.s);
+				if (!this.getPenglaiOptDef(e.c, s, e.o)){ continue; }
+				def.log.push({c: e.c, s: s, o: e.o, ok: e.ok === true});
+			}
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	ensurePenglai: function(){
+		var pl = this.penglai;
+		if (!pl || typeof pl !== "object" || !pl.log || typeof pl.log.length !== "number"){
+			this.penglai = this.normalizePenglai(pl);
+		}
+		return this.penglai;
+	},
+
+	//存档:附上存档时刻,读档时折算离线(至多一个海市周期)
+	serializePenglai: function(){
+		var out = this.normalizePenglai(this.penglai);
+		out.savedAt = this.getPenglaiClock();
+		return out;
+	},
+
+	//时钟来源:this.penglaiClock(函数,测试注入) > Date.now
+	getPenglaiClock: function(){
+		var t = (typeof this.penglaiClock === "function") ? this.penglaiClock() : Date.now();
+		return (typeof t === "number" && isFinite(t)) ? t : 0;
+	},
+
+	//掷点来源:显式 rollOpt(数字) > this.penglaiRandom(函数,测试 / 调试注入) > Math.random;皆夹到 [0, 1)
+	getPenglaiRoll: function(rollOpt){
+		var r = rollOpt;
+		if (typeof r !== "number" || !isFinite(r)){
+			r = (typeof this.penglaiRandom === "function") ? this.penglaiRandom() : Math.random();
+		}
+		return (typeof r === "number" && isFinite(r)) ? Math.max(0, Math.min(0.999999, r)) : 0;
+	},
+
+	//判定成功率(确定性):剑阵 / 雷池 / 堪舆格局越高越稳;机缘恒为五成
+	getPenglaiChance: function(kind){
+		var base = 0.5;
+		if (kind === "sword"){
+			base = 0.30 + 0.10 * this.computeSwordFormation().grade;
+		} else if (kind === "thunder"){
+			base = 0.30 + 0.06 * this.getSwordThunderTier();
+		} else if (kind === "fengshui"){
+			base = 0.30 + 0.10 * (this.computeFengshuiPattern ? this.computeFengshuiPattern().grade : 0);
+		}
+		return Math.max(0, Math.min(this.PENGLAI_CHANCE_MAX, Math.round(base * 1000) / 1000));
+	},
+
+	getPenglaiCostHave: function(kind){
+		if (kind === "orbs"){
+			return (this.thunderPool && typeof this.thunderPool.thunderOrbs === "number") ? this.thunderPool.thunderOrbs : 0;
+		}
+		if (kind === "paper"){
+			return (this.talismanWorkshop && typeof this.talismanWorkshop.paper === "number") ? this.talismanWorkshop.paper : 0;
+		}
+		var r = this.game.resPool.get(kind);
+		return r ? (r.value || 0) : 0;
+	},
+
+	getPenglaiOptionReq: function(optKey){
+		var pl = this.penglai;
+		var m = pl ? pl.mirage : null;
+		if (!m){ return null; }
+		var opt = this.getPenglaiOptDef(m.chain, m.step, optKey);
+		if (!opt){ return null; }
+		var costs = [];
+		var okCost = true;
+		if (opt.cost){
+			for (var i = 0; i < this.PENGLAI_COST_ORDER.length; i++){
+				var ck = this.PENGLAI_COST_ORDER[i];
+				if (!opt.cost[ck]){ continue; }
+				var ok = this.getPenglaiCostHave(ck) >= opt.cost[ck];
+				if (!ok){ okCost = false; }
+				costs.push({kind: ck, n: opt.cost[ck], ok: ok});
+			}
+		}
+		var needThunder = (opt.req && opt.req.thunder) ? opt.req.thunder : 0;
+		var okReq = this.getSwordThunderTier() >= needThunder;
+		return {
+			opt: opt,
+			chance: opt.chance ? this.getPenglaiChance(opt.chance) : 1,
+			costs: costs,
+			needThunder: needThunder,
+			okCost: okCost,
+			okReq: okReq,
+			affordable: !!(this.immortalAscended && okCost && okReq)
+		};
+	},
+
+	//海市浮现:按掷点择一链(不与上一座重复),rollOpt 供测试注入
+	spawnPenglaiMirage: function(rollOpt){
+		if (!this.immortalAscended){ return false; }
+		this.ensurePenglai();
+		var pl = this.penglai;
+		if (pl.mirage){ return false; }
+		var n = this.PENGLAI_CHAINS.length;
+		var idx = Math.min(n - 1, Math.floor(this.getPenglaiRoll(rollOpt) * n));
+		if (this.PENGLAI_CHAINS[idx].key === pl.lastChain){ idx = (idx + 1) % n; }
+		var chain = this.PENGLAI_CHAINS[idx];
+		pl.mirage = {chain: chain.key, step: 0, ticksLeft: this.PENGLAI_LIFETIME, entered: false};
+		pl.lastNote = $I("cultivation.penglai.note.rise", [$I("cultivation.penglai.chain." + chain.key + ".title"), Math.round(this.PENGLAI_LIFETIME / (this.game.ticksPerSecond || 5) / 60)]);
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, false);
+		}
+		this.game.msg(pl.lastNote, "notice");
+		return true;
+	},
+
+	//无剑可悟则折为古宝:优先补最浅的已悟古剑,其次初悟一柄已可参悟的古剑
+	grantPenglaiSwordIntent: function(){
+		this.ensureSwordTomb();
+		var st = this.swordTomb;
+		var pick = null;
+		var pickLv = this.SWORD_INTENT_MAX;
+		for (var i = 0; i < this.ANCIENT_SWORDS.length; i++){
+			var lv = this.getSwordIntent(this.ANCIENT_SWORDS[i].key);
+			if (lv > 0 && lv < pickLv){
+				pick = this.ANCIENT_SWORDS[i];
+				pickLv = lv;
+			}
+		}
+		if (!pick){
+			for (var j = 0; j < this.ANCIENT_SWORDS.length; j++){
+				var sd = this.ANCIENT_SWORDS[j];
+				var req = this.getSwordComprehendReq(sd.key);
+				if (req && !req.maxed && req.cur === 0 && req.floorOk && req.thunderOk){
+					pick = sd;
+					break;
+				}
+			}
+		}
+		if (!pick){ return null; }
+		var before = this.computeSwordFormation();
+		st.intents[pick.key] = Math.min(this.SWORD_INTENT_MAX, this.getSwordIntent(pick.key) + 1);
+		if (!st.selected){ st.selected = pick.key; }
+		this.noteSwordFormationChange(before);
+		return {key: pick.key, level: st.intents[pick.key]};
+	},
+
+	grantPenglaiReward: function(kind, n){
+		var amt = Math.max(0, Math.floor(n || 0));
+		if (amt <= 0){ return null; }
+		var rp = this.game.resPool;
+		var pl = this.penglai;
+		if (kind === "xianyuan" || kind === "relic" || kind === "starchart" || kind === "timeCrystal"){
+			var r = rp.get(kind);
+			if (r){ r.unlocked = true; }
+			rp.addResEvent(kind, amt);
+			return {kind: kind, n: amt};
+		}
+		if (kind === "cinnabar" || kind === "paper"){
+			this.ensureTalismanWorkshop();
+			var ws = this.talismanWorkshop;
+			var had = ws[kind] || 0;
+			ws[kind] = Math.min(this.TALISMAN_STOCK_MAX, had + amt);
+			return (ws[kind] > had) ? {kind: kind, n: ws[kind] - had} : null;
+		}
+		if (kind === "orbs"){
+			var got = this.gainThunderOrbs(amt);
+			return got > 0 ? {kind: kind, n: got} : null;
+		}
+		if (kind === "qinglian" || kind === "zizhi"){
+			if (!this.herbGarden || typeof this.herbGarden !== "object"){ this.herbGarden = this.normalizeHerbGarden(this.herbGarden); }
+			if (!this.herbGarden.stock){ this.herbGarden.stock = {}; }
+			this.herbGarden.stock[kind] = Math.max(0, Math.floor(this.herbGarden.stock[kind] || 0)) + amt;
+			return {kind: kind, n: amt};
+		}
+		if (kind === "daoLaw"){
+			this.addDaoLawProgress(amt);
+			return {kind: kind, n: amt};
+		}
+		if (kind === "insight"){
+			if (!this.starGo || typeof this.starGo !== "object"){ return null; }
+			var hadIns = Math.max(0, Math.floor(this.starGo.insight || 0));
+			this.starGo.insight = Math.min(this.STAR_GO_INSIGHT_MAX, hadIns + amt);
+			return (this.starGo.insight > hadIns) ? {kind: kind, n: this.starGo.insight - hadIns} : null;
+		}
+		if (kind === "peach"){
+			var xw = this.applyXiuweiSoftCap(this.breakPayout(this.PENGLAI_PEACH_SHARE * amt));
+			rp.addResEvent("xiuwei", xw);
+			this.heartDemon = Math.max(0, (this.heartDemon || 0) - this.PENGLAI_PEACH_CALM * amt);
+			pl.peaches = (pl.peaches || 0) + amt;
+			return {kind: kind, n: amt, xiuwei: xw};
+		}
+		if (kind === "intent"){
+			var res = this.grantPenglaiSwordIntent();
+			if (res){ return {kind: kind, n: 1, sword: res.key, level: res.level}; }
+			rp.addResEvent("relic", this.PENGLAI_INTENT_FALLBACK);
+			return {kind: "relic", n: this.PENGLAI_INTENT_FALLBACK};
+		}
+		if (kind === "charge"){
+			var hadC = pl.charge || 0;
+			pl.charge = Math.min(this.PENGLAI_INTERVAL - 1, hadC + amt);
+			return {kind: kind, n: pl.charge - hadC};
+		}
+		return null;
+	},
+
+	applyPenglaiRewards: function(rw){
+		var out = [];
+		if (!rw || typeof rw !== "object"){ return out; }
+		for (var i = 0; i < this.PENGLAI_REWARD_ORDER.length; i++){
+			var kind = this.PENGLAI_REWARD_ORDER[i];
+			if (typeof rw[kind] !== "number" || !(rw[kind] > 0)){ continue; }
+			var got = this.grantPenglaiReward(kind, rw[kind]);
+			if (got){ out.push(got); }
+		}
+		return out;
+	},
+
+	formatPenglaiGain: function(g){
+		if (!g){ return ""; }
+		if (g.kind === "qinglian" || g.kind === "zizhi"){
+			return $I("cultivation.penglai.reward.herb", [$I("cultivation.herb." + g.kind + ".label"), g.n]);
+		}
+		if (g.kind === "peach"){
+			return $I("cultivation.penglai.reward.peach", [this.game.getDisplayValueExt(g.xiuwei || 0), this.PENGLAI_PEACH_CALM * g.n]);
+		}
+		if (g.kind === "intent"){
+			return $I("cultivation.penglai.reward.intent", [$I("cultivation.swordtomb.sword." + g.sword + ".label"), $I("cultivation.swordtomb.intent." + g.level)]);
+		}
+		if (g.kind === "charge"){
+			return $I("cultivation.penglai.reward.charge", [Math.round(g.n / (this.game.ticksPerSecond || 5))]);
+		}
+		return $I("cultivation.penglai.reward." + g.kind, [g.n]);
+	},
+
+	//入市择一:付出代价,掷点判定(若有),奖励入既有资源,推进或散市;rollOpt 供测试注入(0 ≤ roll < 1)
+	choosePenglaiOption: function(optKey, rollOpt){
+		if (!this.immortalAscended){ return false; }
+		this.ensurePenglai();
+		var pl = this.penglai;
+		var m = pl.mirage;
+		if (!m){ return false; }
+		var chain = this.getPenglaiChainDef(m.chain);
+		var step = chain ? chain.steps[m.step] : null;
+		var req = this.getPenglaiOptionReq(optKey);
+		if (!chain || !step || !req || !req.affordable){ return false; }
+		var opt = req.opt;
+		for (var ci = 0; ci < req.costs.length; ci++){
+			var c = req.costs[ci];
+			if (c.kind === "orbs"){
+				this.thunderPool.thunderOrbs = Math.max(0, (this.thunderPool.thunderOrbs || 0) - c.n);
+				if (this.syncThunderOrbs){ this.syncThunderOrbs(); }
+			} else if (c.kind === "paper"){
+				this.talismanWorkshop.paper = Math.max(0, (this.talismanWorkshop.paper || 0) - c.n);
+			} else {
+				this.game.resPool.addResEvent(c.kind, -c.n);
+			}
+		}
+		var ok = true;
+		var roll = null;
+		if (opt.chance){
+			roll = this.getPenglaiRoll(rollOpt);
+			ok = roll < req.chance;
+		}
+		if (!m.entered){
+			m.entered = true;
+			pl.visited = (pl.visited || 0) + 1;
+		}
+		var gains = this.applyPenglaiRewards(ok ? opt.win : opt.lose);
+		var gainTxt = [];
+		for (var gi = 0; gi < gains.length; gi++){ gainTxt.push(this.formatPenglaiGain(gains[gi])); }
+		pl.log.unshift({c: chain.key, s: m.step, o: opt.key, ok: ok});
+		if (pl.log.length > this.PENGLAI_LOG_MAX){ pl.log.length = this.PENGLAI_LOG_MAX; }
+		var sep = this.isSwordTombEn() ? ", " : "，";
+		var note = $I("cultivation.penglai.chain." + chain.key + "." + step.key + "." + opt.key + (ok ? ".win" : ".lose"));
+		if (gainTxt.length){ note += $I("cultivation.penglai.note.gain", [gainTxt.join(sep)]); }
+		var next = ok ? opt.next : ((typeof opt.loseNext === "number") ? opt.loseNext : -1);
+		var finished = false;
+		if (!(next >= 0 && next < chain.steps.length)){
+			finished = (m.step === chain.steps.length - 1);
+			if (finished){ pl.completed = (pl.completed || 0) + 1; }
+			pl.lastChain = chain.key;
+			pl.mirage = null;
+			note += $I(finished ? "cultivation.penglai.note.done" : "cultivation.penglai.note.early");
+			if (finished && classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+				classes.ui.XianxiaAudio.playBell(this.game, false);
+			}
+		} else {
+			m.step = next;
+		}
+		pl.lastNote = note;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(note, ok ? "notice" : "alert");
+		return {ok: ok, roll: roll, chance: req.chance, gains: gains, finished: finished, ended: !pl.mirage};
+	},
+
+	//离市:未入即任其散去(计入散市),已入则就此折返
+	leavePenglaiMirage: function(){
+		if (!this.immortalAscended){ return false; }
+		this.ensurePenglai();
+		var pl = this.penglai;
+		if (!pl.mirage){ return false; }
+		if (!pl.mirage.entered){ pl.faded = (pl.faded || 0) + 1; }
+		pl.lastChain = pl.mirage.chain;
+		pl.lastNote = $I("cultivation.penglai.note.leave", [$I("cultivation.penglai.chain." + pl.mirage.chain + ".title")]);
+		pl.mirage = null;
+		return true;
+	},
+
+	tickPenglai: function(ticksDelta, rollOpt){
+		var dt = (typeof ticksDelta === "number" && isFinite(ticksDelta)) ? Math.max(0, ticksDelta) : 1;
+		if (dt <= 0 || !this.immortalAscended){ return; }
+		this.ensurePenglai();
+		var pl = this.penglai;
+		if (pl.mirage){
+			if (!pl.mirage.entered){
+				pl.mirage.ticksLeft = Math.max(0, (pl.mirage.ticksLeft || 0) - dt);
+				if (pl.mirage.ticksLeft <= 0){
+					pl.faded = (pl.faded || 0) + 1;
+					pl.lastChain = pl.mirage.chain;
+					pl.lastNote = $I("cultivation.penglai.note.fade", [$I("cultivation.penglai.chain." + pl.mirage.chain + ".title")]);
+					pl.mirage = null;
+				}
+			}
+			return;
+		}
+		pl.charge = (pl.charge || 0) + dt;
+		if (pl.charge >= this.PENGLAI_INTERVAL){
+			pl.charge = Math.min(this.PENGLAI_INTERVAL - 1, Math.floor(pl.charge - this.PENGLAI_INTERVAL));
+			this.spawnPenglaiMirage(rollOpt);
+		}
+	},
+
+	//离线补偿:离线时长折算为 tick,至多一个海市周期;已浮现的海市离线期间不散
+	applyPenglaiOffline: function(elapsedMs, rollOpt){
+		if (!this.immortalAscended || typeof elapsedMs !== "number" || !isFinite(elapsedMs) || elapsedMs < this.PENGLAI_OFFLINE_MIN_MS){ return 0; }
+		this.ensurePenglai();
+		if (this.penglai.mirage){ return 0; }
+		var ticks = Math.min(this.PENGLAI_OFFLINE_CAP, Math.floor(elapsedMs / 1000 * (this.game.ticksPerSecond || 5)));
+		if (ticks <= 0){ return 0; }
+		this.tickPenglai(ticks, rollOpt);
+		return ticks;
+	},
+
+	//XX-14 秘境协同:26 层以上大秘境破关,海上蜃气渐浓
+	onPenglaiRiftVictory: function(floor){
+		if (!this.immortalAscended || !(floor >= 26)){ return 0; }
+		this.ensurePenglai();
+		var pl = this.penglai;
+		if (pl.mirage){ return 0; }
+		var had = pl.charge || 0;
+		pl.charge = Math.min(this.PENGLAI_INTERVAL - 1, had + this.PENGLAI_RIFT_CHARGE);
+		return pl.charge - had;
+	},
+
+	//飞升 / 测试洞府初始化:归一化剑冢与海市;前世剑意印赐下青萍剑意(仅此世尚未参悟时)
+	initSwordPenglaiStateOnAscend: function(){
+		this.swordTomb = this.normalizeSwordTomb(this.swordTomb);
+		this.penglai = this.normalizePenglai(this.penglai);
+		var st = this.swordTomb;
+		var free = this.getSwordSealBonus().freeIntent;
+		if (free > 0 && (st.comprehends || 0) === 0 && this.getSwordTotalIntent(st.intents) === 0){
+			st.intents.qingping = Math.min(this.SWORD_INTENT_MAX, free);
+		}
+		this.syncSwordIntentTier();
+	},
+
+	// ---------------- XX-15 周天星宿观星台与本命法宝温养 ----------------
+
+	STAR_TIER_MAX: 5,					//星图印上限 = 最高星图「周天星斗」
+	STAR_MANSION_TICKS: 300,			//每宿当值 300 tick(常速约 1 分钟);二十八宿轮转一周天 8400 tick(约 28 分钟)
+	STAR_DIVINE_COOLDOWN: 600,			//观星推演后 600 tick(常速约 2 分钟)方可再推
+	STAR_BLESS_TICKS: 1800,				//星宿加持持续 1800 tick(常速约 6 分钟)
+	STAR_RIFT_HASTE: 150,				//26 层以上大秘境破关:推演冷却 -150 tick,当前加持 +150 tick(不超过满额)
+	STAR_OFFLINE_CAP: 8400,				//离线至多折算一周天
+	STAR_OFFLINE_MIN_MS: 10000,			//离线不足 10 秒不计(防刷新抖动)
+	STAR_LOG_MAX: 5,
+	STAR_DIVINE_XY: 40,					//观星推演一次:仙元 40 + 星图 12(星图印每重 -5%)
+	STAR_DIVINE_CHART: 12,
+	STAR_GREAT_BASE: 0.12,				//大吉基础几率;剑阵每阶 +3%、雷池淬体每重 +1%、器灵每阶 +2%,封顶 45%
+	STAR_GREAT_MAX: 0.45,
+	STAR_GOOD_CHANCE: 0.40,				//吉恒为四成,其余为平
+	STAR_THUNDER_STEP: 0.04,			//XX-10 协同:星宿加持每重雷池淬体 +4%(只放大加持,不触碰神雷追击)
+	STAR_SEAT_MULT: 1.25,				//XX-14 协同:加持所属四象方位的剑位坐有得位古剑(星剑相应)×1.25
+	STAR_SYMBOL_DONE_MULT: 1.2,			//该象七宿尽亮(象成)×1.2
+	STAR_SYNC_MULT: 1.15,				//器灵共鸣期间星宿加持再 ×1.15(星器同辉)
+	STAR_MANSION_PER_SYMBOL: 7,
+
+	//四象:seat = 对应 XX-14 剑阵方位序号,mat = 当值时所喜温养灵材;dmg / crit / hp / mit = 每级加持的斗法神效
+	STAR_SYMBOLS: [
+		{key: "azure", dir: "east", seat: 1, mat: "herb", dmg: 0.002, crit: 0.004},
+		{key: "tortoise", dir: "north", seat: 4, mat: "orbs", hp: 0.006, mit: 0.0012},
+		{key: "tiger", dir: "west", seat: 3, mat: "relic", dmg: 0.004, hp: 0.003},
+		{key: "bird", dir: "south", seat: 2, mat: "cinnabar", dmg: 0.007}
+	],
+
+	//二十八宿(周天次序:东方青龙七宿 → 北方玄武七宿 → 西方白虎七宿 → 南方朱雀七宿)
+	STAR_MANSIONS: [
+		"horn", "neck", "root", "room", "heart", "tail", "basket",
+		"dipper", "ox", "girl", "void", "roof", "camp", "wall",
+		"legs", "bond", "belly", "mane", "net", "beak", "three",
+		"well", "ghost", "willow", "star", "spread", "wings", "cart"
+	],
+
+	//星图成色 = 点亮星宿数
+	STAR_MAP_GRADES: [
+		{key: "dim", min: 0},
+		{key: "glimmer", min: 4},
+		{key: "rows", min: 9},
+		{key: "quarters", min: 15},
+		{key: "canopy", min: 21},
+		{key: "zhoutian", min: 28}
+	],
+	STAR_OUTCOMES: ["plain", "good", "great"],
+
+	//器灵品阶 = 累计温养度
+	WARM_GRADES: [
+		{key: "dormant", min: 0},
+		{key: "stir", min: 40},
+		{key: "aware", min: 120},
+		{key: "form", min: 260},
+		{key: "unity", min: 480},
+		{key: "sacred", min: 800}
+	],
+	//温养灵材(皆为既有资源):cost = 一次温养的基础耗费,warmth = 基础温养度;九霄雷髓需雷池淬体 1 重
+	WARM_MATERIALS: [
+		{key: "xianyuan", cost: 60, warmth: 8},
+		{key: "relic", cost: 10, warmth: 10},
+		{key: "starchart", cost: 16, warmth: 9},
+		{key: "herb", cost: 1, warmth: 12},
+		{key: "cinnabar", cost: 3, warmth: 9},
+		{key: "orbs", cost: 4, warmth: 14, reqThunder: 1}
+	],
+	WARM_HERBS: ["qinglian", "zizhi", "xianlan"],	//灵药:每份取当下存量最多者
+	WARM_COST_STEP: 0.5,				//灵材耗费随器灵品阶每阶 +50%
+	WARM_FAVOR_MULT: 1.25,				//当值四象所喜灵材 ×1.25(星宿协同温养)
+	WARM_AFFINITY_MULT: 1.2,			//XX-4 本命仙器所喜灵材 ×1.2
+	WARM_AFFINITY: {sword: "orbs", cauldron: "herb", mirror: "starchart", pagoda: "relic"},
+	WARM_RES_TICKS: 1200,				//限时共鸣 1200 tick(常速约 4 分钟),器灵每阶再 +120
+	WARM_RES_STEP: 120,
+	WARM_RES_COOLDOWN: 3000,			//自共鸣起 3000 tick(常速约 10 分钟)方可再共鸣
+	WARM_RES_XY: 50,					//共鸣一次:仙元 50 + 星图 8(星图印每重 -5%)
+	WARM_RES_CHART: 8,
+	WARM_RES_MULT: 1.6,					//共鸣期间器灵斗法神效 ×1.6
+	WARM_RES_XY_MULT: 1.5,				//共鸣期间器灵仙元加持 ×1.5
+	WARM_SPIRIT_XY: 0.02,				//器灵每阶:仙元周天产出 +2%
+	WARM_SPIRIT_DMG: 0.004,				//器灵每阶(仅 26 层以上大秘境):增伤 +0.4% / 暴击 +0.1% / 气血 +0.4% / 减伤 +0.04%
+	WARM_SPIRIT_CRIT: 0.001,
+	WARM_SPIRIT_HP: 0.004,
+	WARM_SPIRIT_MIT: 0.0004,
+
+	isStarObsEn: function(){
+		return String($I("cultivation.starobs.panel.badge") || "").indexOf("Immortal") === 0;
+	},
+
+	getStarCycleTicks: function(){
+		return this.STAR_MANSIONS.length * this.STAR_MANSION_TICKS;
+	},
+
+	getStarSymbolDef: function(key){
+		for (var i = 0; i < this.STAR_SYMBOLS.length; i++){
+			if (this.STAR_SYMBOLS[i].key === key){ return this.STAR_SYMBOLS[i]; }
+		}
+		return null;
+	},
+
+	//第 idx 宿所属四象
+	getStarSymbolOf: function(idx){
+		var n = this.STAR_MANSIONS.length;
+		var i = ((Math.floor(idx || 0) % n) + n) % n;
+		return this.STAR_SYMBOLS[Math.floor(i / this.STAR_MANSION_PER_SYMBOL)];
+	},
+
+	getStarMapGradeDef: function(grade){
+		var g = Math.max(0, Math.min(this.STAR_MAP_GRADES.length - 1, Math.floor(grade || 0)));
+		return this.STAR_MAP_GRADES[g];
+	},
+
+	makeDefaultStarObservatory: function(){
+		var lit = [];
+		for (var i = 0; i < this.STAR_MANSIONS.length; i++){ lit.push(0); }
+		return {
+			phase: 0,
+			cycles: 0,
+			lit: lit,
+			cooldown: 0,
+			blessing: null,
+			peakGrade: 0,
+			divines: 0,
+			greats: 0,
+			log: [],
+			lastNote: ""
+		};
+	},
+
+	normalizeStarObservatory: function(raw){
+		var def = this.makeDefaultStarObservatory();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		var n = this.STAR_MANSIONS.length;
+		def.phase = num(raw.phase) % this.getStarCycleTicks();
+		def.cycles = num(raw.cycles);
+		if (raw.lit && typeof raw.lit.length === "number"){
+			for (var i = 0; i < n; i++){
+				def.lit[i] = (raw.lit[i] === 1 || raw.lit[i] === true) ? 1 : 0;
+			}
+		}
+		def.cooldown = Math.min(this.STAR_DIVINE_COOLDOWN, num(raw.cooldown));
+		var b = raw.blessing;
+		var bSym = (b && typeof b === "object") ? this.getStarSymbolDef(b.sym) : null;
+		if (bSym){
+			var left = Math.min(this.STAR_BLESS_TICKS, num(b.ticksLeft));
+			if (left > 0){
+				var bm = Math.min(n - 1, num(b.m));
+				if (this.getStarSymbolOf(bm).key !== bSym.key){
+					bm = this.STAR_SYMBOLS.indexOf(bSym) * this.STAR_MANSION_PER_SYMBOL;
+				}
+				def.blessing = {sym: bSym.key, power: Math.max(1, Math.min(3, num(b.power))), ticksLeft: left, m: bm};
+			}
+		}
+		def.peakGrade = Math.min(this.STAR_TIER_MAX, Math.max(num(raw.peakGrade), this.computeStarMap(def.lit).grade));
+		def.divines = num(raw.divines);
+		def.greats = Math.min(def.divines, num(raw.greats));
+		if (raw.log && raw.log.length){
+			for (var li = 0; li < raw.log.length && def.log.length < this.STAR_LOG_MAX; li++){
+				var e = raw.log[li];
+				if (!e || typeof e !== "object" || typeof e.m !== "number" || !isFinite(e.m) || e.m < 0 || e.m >= n){ continue; }
+				def.log.push({m: Math.floor(e.m), r: Math.min(2, num(e.r))});
+			}
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	//动作入口只在结构缺损时归一化(保持对象引用稳定;读档时已整体归一化)
+	ensureStarObservatory: function(){
+		var so = this.starObservatory;
+		if (!so || typeof so !== "object" || !so.lit || typeof so.lit.length !== "number" || !so.log || typeof so.log.length !== "number"){
+			this.starObservatory = this.normalizeStarObservatory(so);
+		}
+		return this.starObservatory;
+	},
+
+	//存档:附上存档时刻,读档时折算离线(至多一周天)
+	serializeStarObservatory: function(){
+		var out = this.normalizeStarObservatory(this.starObservatory);
+		out.savedAt = this.getStarClock();
+		return out;
+	},
+
+	//时钟来源:this.starClock(函数,测试注入) > Date.now
+	getStarClock: function(){
+		var t = (typeof this.starClock === "function") ? this.starClock() : Date.now();
+		return (typeof t === "number" && isFinite(t)) ? t : 0;
+	},
+
+	//掷点来源:显式 rollOpt(数字) > this.starRandom(函数,测试 / 调试注入) > Math.random;皆夹到 [0, 1)
+	getStarRoll: function(rollOpt){
+		var r = rollOpt;
+		if (typeof r !== "number" || !isFinite(r)){
+			r = (typeof this.starRandom === "function") ? this.starRandom() : Math.random();
+		}
+		return (typeof r === "number" && isFinite(r)) ? Math.max(0, Math.min(0.999999, r)) : 0;
+	},
+
+	//当值星宿 = 周天相位 / 每宿当值 tick(按周天轮转)
+	getStarMansionIndex: function(phaseOpt){
+		var ph = (typeof phaseOpt === "number" && isFinite(phaseOpt)) ? phaseOpt : ((this.starObservatory && this.starObservatory.phase) || 0);
+		var n = this.STAR_MANSIONS.length;
+		return ((Math.floor(Math.max(0, ph) / this.STAR_MANSION_TICKS) % n) + n) % n;
+	},
+
+	//星图推演(纯函数,确定性):逐象数点亮星宿,象成(七宿尽亮)与总数定星图成色
+	computeStarMap: function(litOpt){
+		var so = this.starObservatory;
+		var lit = litOpt || ((so && so.lit) ? so.lit : []);
+		var per = this.STAR_MANSION_PER_SYMBOL;
+		var bySym = {};
+		var count = 0;
+		var complete = 0;
+		for (var s = 0; s < this.STAR_SYMBOLS.length; s++){
+			var c = 0;
+			for (var j = 0; j < per; j++){
+				var v = lit[s * per + j];
+				if (v === 1 || v === true){ c++; }
+			}
+			bySym[this.STAR_SYMBOLS[s].key] = c;
+			count += c;
+			if (c >= per){ complete++; }
+		}
+		var grade = 0;
+		for (var g = this.STAR_MAP_GRADES.length - 1; g >= 0; g--){
+			if (count >= this.STAR_MAP_GRADES[g].min){ grade = g; break; }
+		}
+		var next = (grade < this.STAR_MAP_GRADES.length - 1) ? this.STAR_MAP_GRADES[grade + 1] : null;
+		return {lit: count, bySym: bySym, complete: complete, grade: grade, gradeKey: this.STAR_MAP_GRADES[grade].key, nextMin: next ? next.min : 0};
+	},
+
+	getStarMapSeal: function(){
+		return Math.max(0, Math.min(this.STAR_TIER_MAX, Math.floor(this.starMapTier || 0)));
+	},
+
+	//星图印 = 历世所成最高星图(跨转世保留,只增不减)
+	syncStarMapTier: function(){
+		var peak = Math.max(0, Math.floor(this.starMapTier || 0));
+		var cur = (this.starObservatory && this.starObservatory.peakGrade) ? Math.floor(this.starObservatory.peakGrade) : 0;
+		if (cur > peak){ peak = cur; }
+		this.starMapTier = Math.min(this.STAR_TIER_MAX, peak);
+		return this.starMapTier;
+	},
+
+	//跨轮回星图印:修为 +3%/重(凡身即得)、推演与共鸣耗费 -5%/重、星宿加持 +4%/重、温养所得 +5%/重、飞升即点亮角宿起 N 宿
+	getStarMapSealBonus: function(){
+		var t = this.getStarMapSeal();
+		if (t <= 0){
+			return {tier: 0, xiuweiRatio: 0, costCut: 0, blessMult: 1, warmBonus: 0, freeLit: 0};
+		}
+		return {
+			tier: t,
+			xiuweiRatio: t * 0.03,
+			costCut: t * 0.05,
+			blessMult: 1 + t * 0.04,
+			warmBonus: t * 0.05,
+			freeLit: t
+		};
+	},
+
+	getStarDivineReq: function(){
+		var cut = this.getStarMapSealBonus().costCut;
+		var xy = Math.max(1, Math.round(this.STAR_DIVINE_XY * (1 - cut)));
+		var chart = Math.max(1, Math.round(this.STAR_DIVINE_CHART * (1 - cut)));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var scObj = this.game.resPool.get("starchart");
+		var okXy = !!(xyObj && xyObj.value >= xy);
+		var okChart = !!(scObj && scObj.value >= chart);
+		var cd = (this.starObservatory && this.starObservatory.cooldown > 0) ? this.starObservatory.cooldown : 0;
+		return {
+			xianyuan: xy, starchart: chart, okXy: okXy, okChart: okChart, cooldown: cd, ready: cd <= 0,
+			affordable: !!(this.immortalAscended && okXy && okChart && cd <= 0)
+		};
+	},
+
+	//推演几率(确定性):大吉随剑阵(XX-14)/ 雷池淬体(XX-10)/ 器灵品阶递增(封顶 45%),吉恒为四成,余为平
+	getStarDivineChances: function(){
+		var sw = this.computeSwordFormation ? this.computeSwordFormation().grade : 0;
+		var th = this.getSwordThunderTier ? this.getSwordThunderTier() : 0;
+		var sp = this.getNatalSpiritGrade();
+		var great = Math.min(this.STAR_GREAT_MAX, this.STAR_GREAT_BASE + 0.03 * sw + 0.01 * th + 0.02 * sp);
+		great = Math.round(great * 1000) / 1000;
+		var good = this.STAR_GOOD_CHANCE;
+		return {great: great, good: good, plain: Math.round((1 - great - good) * 1000) / 1000, sword: sw, thunder: th, spirit: sp};
+	},
+
+	//观星推演:耗仙元 + 星图,掷点(可注入)定平 / 吉 / 大吉;吉以上点亮当值星宿(大吉若当值已亮则点亮同象下一宿),
+	//并得当值四象之加持(平 1 级 / 吉 2 级 / 大吉 3 级;原有加持更强则只续满时长);rollOpt 供测试注入(0 ≤ roll < 1)
+	divineStars: function(rollOpt){
+		if (!this.immortalAscended){ return false; }
+		this.ensureStarObservatory();
+		var req = this.getStarDivineReq();
+		if (!req.affordable){ return false; }
+		var so = this.starObservatory;
+		var ch = this.getStarDivineChances();
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("starchart", -req.starchart);
+		var roll = this.getStarRoll(rollOpt);
+		var outcome = (roll < ch.great) ? 2 : ((roll < ch.great + ch.good) ? 1 : 0);
+		var mIdx = this.getStarMansionIndex();
+		var sym = this.getStarSymbolOf(mIdx);
+		var before = this.computeStarMap();
+		var litIdx = -1;
+		if (outcome >= 1){
+			if (!so.lit[mIdx]){
+				litIdx = mIdx;
+			} else if (outcome === 2){
+				var per = this.STAR_MANSION_PER_SYMBOL;
+				var base = Math.floor(mIdx / per) * per;
+				for (var k = 1; k < per; k++){
+					var cand = base + ((mIdx - base + k) % per);
+					if (!so.lit[cand]){ litIdx = cand; break; }
+				}
+			}
+			if (litIdx >= 0){ so.lit[litIdx] = 1; }
+		}
+		var power = outcome + 1;
+		var old = so.blessing;
+		var kept = !!(old && old.power > power);
+		if (kept){
+			old.ticksLeft = this.STAR_BLESS_TICKS;
+		} else {
+			so.blessing = {sym: sym.key, power: power, ticksLeft: this.STAR_BLESS_TICKS, m: mIdx};
+		}
+		var held = so.blessing;
+		so.cooldown = this.STAR_DIVINE_COOLDOWN;
+		so.divines = (so.divines || 0) + 1;
+		if (outcome === 2){ so.greats = (so.greats || 0) + 1; }
+		so.log.unshift({m: mIdx, r: outcome});
+		if (so.log.length > this.STAR_LOG_MAX){ so.log.length = this.STAR_LOG_MAX; }
+		var after = this.computeStarMap();
+		if (after.grade > (so.peakGrade || 0)){ so.peakGrade = Math.min(this.STAR_TIER_MAX, after.grade); }
+		this.syncStarMapTier();
+		var note = $I("cultivation.starobs.note.divine", [
+			$I("cultivation.starobs.mansion." + this.STAR_MANSIONS[mIdx] + ".label"),
+			$I("cultivation.starobs.outcome." + this.STAR_OUTCOMES[outcome]),
+			$I("cultivation.starobs.sym." + held.sym + ".label"),
+			held.power
+		]);
+		if (litIdx >= 0){
+			note += $I("cultivation.starobs.note.lit", [$I("cultivation.starobs.mansion." + this.STAR_MANSIONS[litIdx] + ".label"), after.lit, this.STAR_MANSIONS.length]);
+		}
+		if (kept){ note += $I("cultivation.starobs.note.kept"); }
+		if (after.grade > before.grade){
+			note += $I("cultivation.starobs.note.grade", [$I("cultivation.starobs.grade." + after.gradeKey)]);
+		}
+		so.lastNote = note;
+		if ((outcome === 2 || after.grade > before.grade) && classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, after.grade > before.grade && after.grade >= this.STAR_TIER_MAX);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(note, "notice");
+		return {outcome: outcome, roll: roll, chances: ch, mansion: mIdx, lit: litIdx, power: held.power, kept: kept};
+	},
+
+	//星宿加持(纯读):当值四象斗法神效 × 级数 × 协同(雷池淬体 / 星剑相应 / 象成 / 星图印 / 星器同辉);不按秘境层数取舍
+	getStarBlessingEffect: function(){
+		var e = {
+			active: false, sym: "", power: 0, ticksLeft: 0,
+			thunderMult: 1, seated: false, seatMult: 1, done: false, doneMult: 1, sealMult: 1, syncMult: 1, mult: 1,
+			dmg: 0, crit: 0, hp: 0, mit: 0
+		};
+		var so = this.starObservatory;
+		var b = (so && so.blessing && typeof so.blessing === "object") ? so.blessing : null;
+		var sym = b ? this.getStarSymbolDef(b.sym) : null;
+		if (!this.immortalAscended || !sym || !(b.ticksLeft > 0)){ return e; }
+		var power = Math.max(1, Math.min(3, Math.floor(b.power || 1)));
+		var f = this.computeSwordFormation();
+		var seated = false;
+		for (var i = 0; i < f.pieces.length; i++){
+			if (f.pieces[i].pos === sym.seat && f.pieces[i].seated){ seated = true; }
+		}
+		var done = (this.computeStarMap().bySym[sym.key] || 0) >= this.STAR_MANSION_PER_SYMBOL;
+		e.active = true;
+		e.sym = sym.key;
+		e.power = power;
+		e.ticksLeft = b.ticksLeft;
+		e.thunderMult = 1 + this.STAR_THUNDER_STEP * this.getSwordThunderTier();
+		e.seated = seated;
+		e.seatMult = seated ? this.STAR_SEAT_MULT : 1;
+		e.done = done;
+		e.doneMult = done ? this.STAR_SYMBOL_DONE_MULT : 1;
+		e.sealMult = this.getStarMapSealBonus().blessMult;
+		e.syncMult = this.isNatalResonating() ? this.STAR_SYNC_MULT : 1;
+		e.mult = e.thunderMult * e.seatMult * e.doneMult * e.sealMult * e.syncMult;
+		e.dmg = (sym.dmg || 0) * power * e.mult;
+		e.crit = (sym.crit || 0) * power * e.mult;
+		e.hp = (sym.hp || 0) * power * e.mult;
+		e.mit = (sym.mit || 0) * power * e.mult;
+		return e;
+	},
+
+	tickStarObservatory: function(ticksDelta){
+		var dt = (typeof ticksDelta === "number" && isFinite(ticksDelta)) ? Math.max(0, ticksDelta) : 1;
+		if (dt <= 0 || !this.immortalAscended){ return; }
+		this.ensureStarObservatory();
+		this.ensureNatalWarming();
+		var so = this.starObservatory;
+		var cyc = this.getStarCycleTicks();
+		var ph = (so.phase || 0) + dt;
+		if (ph >= cyc){
+			so.cycles = (so.cycles || 0) + Math.floor(ph / cyc);
+			ph = ph % cyc;
+		}
+		so.phase = ph;
+		if (so.cooldown > 0){ so.cooldown = Math.max(0, so.cooldown - dt); }
+		if (so.blessing){
+			so.blessing.ticksLeft = Math.max(0, (so.blessing.ticksLeft || 0) - dt);
+			if (so.blessing.ticksLeft <= 0){
+				so.lastNote = $I("cultivation.starobs.note.fade", [$I("cultivation.starobs.sym." + so.blessing.sym + ".label")]);
+				so.blessing = null;
+			}
+		}
+		var nw = this.natalWarming;
+		if (nw.resonance > 0){
+			nw.resonance = Math.max(0, nw.resonance - dt);
+			if (nw.resonance <= 0){
+				nw.lastNote = $I("cultivation.warming.note.resEnd", [this.getNatalArtifactName()]);
+			}
+		}
+		if (nw.resCooldown > 0){ nw.resCooldown = Math.max(0, nw.resCooldown - dt); }
+	},
+
+	//离线补偿:离线时长折算为 tick(至多一周天);星宿照常轮转,加持与共鸣照常流逝
+	applyStarOffline: function(elapsedMs){
+		if (!this.immortalAscended || typeof elapsedMs !== "number" || !isFinite(elapsedMs) || elapsedMs < this.STAR_OFFLINE_MIN_MS){ return 0; }
+		var ticks = Math.min(this.STAR_OFFLINE_CAP, Math.floor(elapsedMs / 1000 * (this.game.ticksPerSecond || 5)));
+		if (ticks <= 0){ return 0; }
+		this.tickStarObservatory(ticks);
+		return ticks;
+	},
+
+	//XX-15 秘境协同:26 层以上大秘境破关,星象更明 —— 推演冷却缩短、当前加持延长(不超过满额)
+	onStarRiftVictory: function(floor){
+		var res = {cooldown: 0, blessing: 0};
+		if (!this.immortalAscended || !(floor >= 26)){ return res; }
+		this.ensureStarObservatory();
+		var so = this.starObservatory;
+		if (so.cooldown > 0){
+			res.cooldown = Math.min(so.cooldown, this.STAR_RIFT_HASTE);
+			so.cooldown -= res.cooldown;
+		}
+		if (so.blessing){
+			var had = so.blessing.ticksLeft || 0;
+			so.blessing.ticksLeft = Math.min(this.STAR_BLESS_TICKS, had + this.STAR_RIFT_HASTE);
+			res.blessing = so.blessing.ticksLeft - had;
+		}
+		return res;
+	},
+
+	// ---- 本命法宝温养 ----
+
+	getWarmMaterialDef: function(key){
+		for (var i = 0; i < this.WARM_MATERIALS.length; i++){
+			if (this.WARM_MATERIALS[i].key === key){ return this.WARM_MATERIALS[i]; }
+		}
+		return null;
+	},
+
+	getWarmGradeDef: function(grade){
+		var g = Math.max(0, Math.min(this.WARM_GRADES.length - 1, Math.floor(grade || 0)));
+		return this.WARM_GRADES[g];
+	},
+
+	getWarmthMax: function(){
+		return this.WARM_GRADES[this.WARM_GRADES.length - 1].min;
+	},
+
+	makeDefaultNatalWarming: function(){
+		var fed = {};
+		for (var i = 0; i < this.WARM_MATERIALS.length; i++){
+			fed[this.WARM_MATERIALS[i].key] = 0;
+		}
+		return {
+			warmth: 0,
+			warms: 0,
+			fed: fed,
+			resonance: 0,
+			resCooldown: 0,
+			resonances: 0,
+			lastNote: ""
+		};
+	},
+
+	normalizeNatalWarming: function(raw){
+		var def = this.makeDefaultNatalWarming();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		def.warmth = Math.min(this.getWarmthMax(), num(raw.warmth));
+		def.warms = num(raw.warms);
+		if (raw.fed && typeof raw.fed === "object"){
+			for (var i = 0; i < this.WARM_MATERIALS.length; i++){
+				var k = this.WARM_MATERIALS[i].key;
+				def.fed[k] = num(raw.fed[k]);
+			}
+		}
+		var grade = this.getNatalSpiritGrade(def.warmth);
+		def.resonance = (grade > 0) ? Math.min(this.getNatalResonanceTicks(grade), num(raw.resonance)) : 0;
+		def.resCooldown = Math.min(this.WARM_RES_COOLDOWN, num(raw.resCooldown));
+		def.resonances = num(raw.resonances);
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	ensureNatalWarming: function(){
+		var nw = this.natalWarming;
+		if (!nw || typeof nw !== "object" || !nw.fed || typeof nw.fed !== "object"){
+			this.natalWarming = this.normalizeNatalWarming(nw);
+		}
+		return this.natalWarming;
+	},
+
+	getNatalSpiritGrade: function(warmthOpt){
+		var w = (typeof warmthOpt === "number" && isFinite(warmthOpt)) ? warmthOpt : ((this.natalWarming && this.natalWarming.warmth) || 0);
+		var grade = 0;
+		for (var g = this.WARM_GRADES.length - 1; g >= 0; g--){
+			if (w >= this.WARM_GRADES[g].min){ grade = g; break; }
+		}
+		return grade;
+	},
+
+	getNatalResonanceTicks: function(gradeOpt){
+		var g = (typeof gradeOpt === "number" && isFinite(gradeOpt)) ? gradeOpt : this.getNatalSpiritGrade();
+		return this.WARM_RES_TICKS + this.WARM_RES_STEP * Math.max(0, Math.floor(g));
+	},
+
+	isNatalResonating: function(){
+		return !!(this.immortalAscended && this.natalWarming && this.natalWarming.resonance > 0);
+	},
+
+	//本命法宝之名:XX-4 本命仙器 > 凡世祭炼的本命法宝 > 泛称
+	getNatalArtifactName: function(){
+		var xq = this.xianqi;
+		if (xq && xq.boundKey && this.getImmortalArtifactDef){
+			var xqDef = this.getImmortalArtifactDef(xq.boundKey);
+			if (xqDef){ return $I(xqDef.labelKey); }
+		}
+		if (this.natalArtifact && this.getArtifact){
+			var nArt = this.getArtifact(this.natalArtifact);
+			if (nArt && nArt.researched && nArt.label){ return nArt.label; }
+		}
+		return $I("cultivation.warming.artifact.generic");
+	},
+
+	//XX-4 本命仙器所喜灵材(未绑定则无)
+	getNatalAffinityMat: function(){
+		var xq = this.xianqi;
+		var k = (xq && typeof xq.boundKey === "string") ? xq.boundKey : "";
+		return (k && this.WARM_AFFINITY.hasOwnProperty(k)) ? this.WARM_AFFINITY[k] : "";
+	},
+
+	//当值星宿所属四象所喜灵材(随周天轮转)
+	getWarmFavoredMat: function(){
+		return this.getStarSymbolOf(this.getStarMansionIndex()).mat;
+	},
+
+	getWarmMaterialHave: function(key){
+		if (key === "herb"){
+			var st = (this.herbGarden && this.herbGarden.stock) ? this.herbGarden.stock : {};
+			var sum = 0;
+			for (var i = 0; i < this.WARM_HERBS.length; i++){
+				sum += Math.max(0, Math.floor(st[this.WARM_HERBS[i]] || 0));
+			}
+			return sum;
+		}
+		if (key === "cinnabar"){
+			return (this.talismanWorkshop && typeof this.talismanWorkshop.cinnabar === "number") ? this.talismanWorkshop.cinnabar : 0;
+		}
+		if (key === "orbs"){
+			return (this.thunderPool && typeof this.thunderPool.thunderOrbs === "number") ? this.thunderPool.thunderOrbs : 0;
+		}
+		var r = this.game.resPool.get(key);
+		return r ? (r.value || 0) : 0;
+	},
+
+	getWarmMaterialReq: function(key){
+		var def = this.getWarmMaterialDef(key);
+		if (!def){ return null; }
+		var grade = this.getNatalSpiritGrade();
+		var maxed = grade >= this.WARM_GRADES.length - 1;
+		var cost = Math.max(1, Math.round(def.cost * (1 + this.WARM_COST_STEP * grade)));
+		var favored = (this.getWarmFavoredMat() === key);
+		var affinity = (this.getNatalAffinityMat() === key);
+		var seal = this.getStarMapSealBonus();
+		var warmth = Math.max(1, Math.round(def.warmth * (favored ? this.WARM_FAVOR_MULT : 1) * (affinity ? this.WARM_AFFINITY_MULT : 1) * (1 + seal.warmBonus)));
+		var needThunder = def.reqThunder || 0;
+		var thunderOk = this.getSwordThunderTier() >= needThunder;
+		var have = this.getWarmMaterialHave(key);
+		var ok = have >= cost;
+		return {
+			key: key, cost: cost, warmth: warmth, favored: favored, affinity: affinity,
+			needThunder: needThunder, thunderOk: thunderOk, have: have, ok: ok, maxed: maxed,
+			affordable: !!(this.immortalAscended && !maxed && ok && thunderOk)
+		};
+	},
+
+	spendWarmMaterial: function(key, n){
+		if (key === "herb"){
+			if (!this.herbGarden || !this.herbGarden.stock){ return; }
+			var st = this.herbGarden.stock;
+			for (var c = 0; c < n; c++){
+				var best = "";
+				var bestN = 0;
+				for (var i = 0; i < this.WARM_HERBS.length; i++){
+					var hv = Math.max(0, Math.floor(st[this.WARM_HERBS[i]] || 0));
+					if (hv > bestN){
+						best = this.WARM_HERBS[i];
+						bestN = hv;
+					}
+				}
+				if (!best){ break; }
+				st[best] = bestN - 1;
+			}
+			return;
+		}
+		if (key === "cinnabar"){
+			this.talismanWorkshop.cinnabar = Math.max(0, (this.talismanWorkshop.cinnabar || 0) - n);
+			return;
+		}
+		if (key === "orbs"){
+			this.thunderPool.thunderOrbs = Math.max(0, (this.thunderPool.thunderOrbs || 0) - n);
+			if (this.syncThunderOrbs){ this.syncThunderOrbs(); }
+			return;
+		}
+		this.game.resPool.addResEvent(key, -n);
+	},
+
+	//温养本命法宝:以既有灵材换温养度,累积晋升器灵品阶(当值四象所喜 ×1.25、本命仙器所喜 ×1.2、星图印 +5%/重)
+	warmNatalArtifact: function(key){
+		if (!this.immortalAscended){ return false; }
+		this.ensureNatalWarming();
+		var req = this.getWarmMaterialReq(key);
+		if (!req || !req.affordable){ return false; }
+		var nw = this.natalWarming;
+		var before = this.getNatalSpiritGrade();
+		this.spendWarmMaterial(key, req.cost);
+		nw.warmth = Math.min(this.getWarmthMax(), (nw.warmth || 0) + req.warmth);
+		nw.warms = (nw.warms || 0) + 1;
+		nw.fed[key] = (nw.fed[key] || 0) + 1;
+		var after = this.getNatalSpiritGrade();
+		var note = $I("cultivation.warming.note.warm", [this.getNatalArtifactName(), $I("cultivation.warming.mat." + key + ".label"), req.cost, req.warmth]);
+		if (req.favored){ note += $I("cultivation.warming.note.favored"); }
+		if (after > before){
+			note += $I("cultivation.warming.note.grade", [$I("cultivation.warming.grade." + this.WARM_GRADES[after].key)]);
+			if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+				classes.ui.XianxiaAudio.playBell(this.game, after >= this.WARM_GRADES.length - 1);
+			}
+		}
+		nw.lastNote = note;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(note, "notice");
+		return {warmth: req.warmth, cost: req.cost, grade: after, gradeUp: after > before};
+	},
+
+	getNatalResonanceReq: function(){
+		var grade = this.getNatalSpiritGrade();
+		var cut = this.getStarMapSealBonus().costCut;
+		var xy = Math.max(1, Math.round(this.WARM_RES_XY * (1 - cut)));
+		var chart = Math.max(1, Math.round(this.WARM_RES_CHART * (1 - cut)));
+		var nw = this.natalWarming;
+		var active = !!(nw && nw.resonance > 0);
+		var cd = (nw && nw.resCooldown > 0) ? nw.resCooldown : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var scObj = this.game.resPool.get("starchart");
+		var okXy = !!(xyObj && xyObj.value >= xy);
+		var okChart = !!(scObj && scObj.value >= chart);
+		return {
+			grade: grade, xianyuan: xy, starchart: chart, ticks: this.getNatalResonanceTicks(grade),
+			active: active, cooldown: cd, gradeOk: grade >= 1, okXy: okXy, okChart: okChart,
+			affordable: !!(this.immortalAscended && grade >= 1 && !active && cd <= 0 && okXy && okChart)
+		};
+	},
+
+	//限时共鸣:器灵初醒以上方可,共鸣期间器灵神效 ×1.6、仙元加持 ×1.5,并与星宿加持星器同辉
+	resonateNatalArtifact: function(){
+		if (!this.immortalAscended){ return false; }
+		this.ensureNatalWarming();
+		var req = this.getNatalResonanceReq();
+		if (!req.affordable){ return false; }
+		var nw = this.natalWarming;
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("starchart", -req.starchart);
+		nw.resonance = req.ticks;
+		nw.resCooldown = this.WARM_RES_COOLDOWN;
+		nw.resonances = (nw.resonances || 0) + 1;
+		var note = $I("cultivation.warming.note.resonate", [
+			this.getNatalArtifactName(),
+			$I("cultivation.warming.grade." + this.WARM_GRADES[req.grade].key),
+			Math.round(req.ticks / (this.game.ticksPerSecond || 5))
+		]);
+		if (this.getStarBlessingEffect().active){ note += $I("cultivation.warming.note.sync"); }
+		nw.lastNote = note;
+		if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, false);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(note, "notice");
+		return true;
+	},
+
+	//器灵神效:仙元加持(常驻)与斗法神效(未按秘境层数取舍;斗法部分经 getStarArtifactCombatBonus 合并封顶);共鸣期间放大
+	getNatalSpiritEffect: function(){
+		var e = {grade: 0, gradeKey: this.WARM_GRADES[0].key, resonating: false, resMult: 1, xianyuanRatio: 0, dmg: 0, crit: 0, hp: 0, mit: 0};
+		if (!this.immortalAscended){ return e; }
+		var g = this.getNatalSpiritGrade();
+		e.grade = g;
+		e.gradeKey = this.WARM_GRADES[g].key;
+		if (g <= 0){ return e; }
+		e.resonating = this.isNatalResonating();
+		e.resMult = e.resonating ? this.WARM_RES_MULT : 1;
+		e.xianyuanRatio = this.WARM_SPIRIT_XY * g * (e.resonating ? this.WARM_RES_XY_MULT : 1);
+		e.dmg = this.WARM_SPIRIT_DMG * g * e.resMult;
+		e.crit = this.WARM_SPIRIT_CRIT * g * e.resMult;
+		e.hp = this.WARM_SPIRIT_HP * g * e.resMult;
+		e.mit = this.WARM_SPIRIT_MIT * g * e.resMult;
+		return e;
+	},
+
+	//XX-15 斗法加成(仅 26 层以上大秘境):星宿加持 + 器灵神效并入 XX-14 剑阵四项通道,与剑阵合计后仍按 XX-14 既有上限
+	//(增伤 8% / 暴击 4% / 气血 6% / 减伤 1%)封顶 —— 只填补剑阵距上限的余量,绝不突破既有上限;一概不触碰神雷追击
+	getStarArtifactCombatBonus: function(riftFloorOpt, swordEffOpt){
+		var highRift = (typeof riftFloorOpt === "number" && riftFloorOpt >= 26);
+		var out = {
+			highRift: highRift,
+			rawDmg: 0, rawCrit: 0, rawHp: 0, rawMit: 0,
+			swordDmg: 0, swordCrit: 0, swordHp: 0, swordMit: 0,
+			riftDmg: 0, riftCrit: 0, riftHp: 0, mitigation: 0,
+			poolDmg: 0, poolCrit: 0, poolHp: 0, poolMit: 0,
+			capped: false
+		};
+		if (!this.immortalAscended){ return out; }
+		var bl = this.getStarBlessingEffect();
+		var sp = this.getNatalSpiritEffect();
+		out.rawDmg = bl.dmg + sp.dmg;
+		out.rawCrit = bl.crit + sp.crit;
+		out.rawHp = bl.hp + sp.hp;
+		out.rawMit = bl.mit + sp.mit;
+		if (!highRift){ return out; }
+		var sw = swordEffOpt || this.getSwordFormationEffect(riftFloorOpt);
+		out.swordDmg = sw.riftDmg || 0;
+		out.swordCrit = sw.riftCrit || 0;
+		out.swordHp = sw.riftHp || 0;
+		out.swordMit = sw.mitigation || 0;
+		var fill = function(cap, base, add){ return Math.max(0, Math.min(cap - base, add)); };
+		out.riftDmg = fill(this.XX14_DMG_CAP, out.swordDmg, out.rawDmg);
+		out.riftCrit = fill(this.XX14_CRIT_CAP, out.swordCrit, out.rawCrit);
+		out.riftHp = fill(this.XX14_HP_CAP, out.swordHp, out.rawHp);
+		out.mitigation = fill(this.XX14_MIT_CAP, out.swordMit, out.rawMit);
+		out.poolDmg = out.swordDmg + out.riftDmg;
+		out.poolCrit = out.swordCrit + out.riftCrit;
+		out.poolHp = out.swordHp + out.riftHp;
+		out.poolMit = out.swordMit + out.mitigation;
+		out.capped = (out.swordDmg + out.rawDmg > this.XX14_DMG_CAP || out.swordCrit + out.rawCrit > this.XX14_CRIT_CAP ||
+			out.swordHp + out.rawHp > this.XX14_HP_CAP || out.swordMit + out.rawMit > this.XX14_MIT_CAP);
+		return out;
+	},
+
+	//飞升 / 测试洞府初始化:归一化观星台与温养;前世星图印点亮角宿起 N 宿(仅此世尚未推演、星图全暗时)
+	initStarArtifactStateOnAscend: function(){
+		this.starObservatory = this.normalizeStarObservatory(this.starObservatory);
+		this.natalWarming = this.normalizeNatalWarming(this.natalWarming);
+		var so = this.starObservatory;
+		var free = this.getStarMapSealBonus().freeLit;
+		if (free > 0 && (so.divines || 0) === 0 && this.computeStarMap(so.lit).lit === 0){
+			for (var i = 0; i < free && i < so.lit.length; i++){
+				so.lit[i] = 1;
+			}
+			var fm = this.computeStarMap(so.lit);
+			if (fm.grade > (so.peakGrade || 0)){ so.peakGrade = fm.grade; }
+		}
+		this.syncStarMapTier();
+	},
+
+	// ---------------- XX-16 宗门大比擂台与心魔幻境渡劫 ----------------
+
+	SECT_TIER_MAX: 5,					//宗门印上限 = 最高名次「魁首」
+	SECT_WEEK_MS: 604800000,			//一周
+	SECT_WEEK_EPOCH_MS: 345600000,		//1970-01-05(周一)为第 0 周
+	SECT_TZ_OFFSET_MS: 28800000,		//周界 = 东八区周一 0 点(与全仓既有按周玩法同一周界)
+	SECT_WEEK_MAX_ABS: 10000000,		//存档周序号的合法范围(防坏档)
+	SECT_SEATS: 8,						//擂台八席:第 1 席魁首 … 第 8 席;未登榜记作第 9 席
+	SECT_BOUTS_PER_WEEK: 10,			//每周擂台令 10 枚(宗门印每 2 重 +1)
+	SECT_BOUT_XY: 30,					//每战耗仙元 30(宗门印每重 -5%)
+	SECT_SEAT_POWER: [68, 59, 50, 42, 34, 27, 20, 14],	//第 1..8 席守擂同门的基础擂台评分
+	SECT_POWER_JITTER: 2,				//每周按种子 ±2 浮动(相邻席位仍严格递增)
+	SECT_WIN_BASE: 0.5,					//胜率 = 50% + (我方擂台评分 - 守擂评分) × 3%,夹在 8%..92%
+	SECT_WIN_STEP: 0.03,
+	SECT_WIN_MIN: 0.08,
+	SECT_WIN_MAX: 0.92,
+	SECT_RNG_MOD: 2147483647,			//Park–Miller 模数(与星盘 / 符箓同法,ES5 双精度内无精度损失)
+	SECT_LOG_MAX: 5,
+	SECT_HONOR_DMG: 0.004,				//本周名次每阶(仅 26 层以上大秘境):增伤 +0.4% / 暴击 +0.2%
+	SECT_HONOR_CRIT: 0.002,
+	SECT_SWORD_CROWN_XY: 0.05,			//剑冠同门:剑阵练满「万剑归宗」时仙元周天产出 +5%(不占斗法上限)
+
+	//擂台评分 = 10 + 剑阵成色 ×4 + 雷池淬体 ×2 + 星图成色 ×2 + 器灵品阶 ×3 + 大秘境(26 层起每层 +1,至多 10) + 已渡心魔劫 ×1 + 宗门印;本周擂题所重之项 ×2
+	SECT_RATING_BASE: 10,
+	SECT_RATING_PARTS: [
+		{key: "sword", step: 4},
+		{key: "thunder", step: 2},
+		{key: "star", step: 2},
+		{key: "spirit", step: 3},
+		{key: "rift", step: 1},
+		{key: "heart", step: 1}
+	],
+	//五种擂题按周轮换(周序号对 5 取模),part = 本周加倍计分之项
+	SECT_THEMES: [
+		{key: "sword", part: "sword"},
+		{key: "thunder", part: "thunder"},
+		{key: "star", part: "star"},
+		{key: "artifact", part: "spirit"},
+		{key: "rift", part: "rift"}
+	],
+	//十二位同门:每周按周序号种子择八位守擂;style 只定其斗法路数标签
+	SECT_RIVALS: [
+		{key: "lingxu", style: "sword"},
+		{key: "qinghe", style: "pill"},
+		{key: "mobai", style: "sword"},
+		{key: "ziyan", style: "thunder"},
+		{key: "hanshuang", style: "star"},
+		{key: "yunzhi", style: "artifact"},
+		{key: "chiyang", style: "thunder"},
+		{key: "luoxia", style: "star"},
+		{key: "baizhan", style: "body"},
+		{key: "xuanji", style: "artifact"},
+		{key: "danqing", style: "pill"},
+		{key: "tingfeng", style: "body"}
+	],
+	//名次阶:0 未登榜 / 1 登榜(第 6~8 席) / 2 五强(第 4~5 席) / 3 探花 / 4 榜眼 / 5 魁首
+	SECT_RANKS: ["none", "listed", "top5", "tanhua", "bangyan", "kuishou"],
+	//周界结算的名次奖励(皆为既有资源:仙元 / 古宝 / 周天星图 / 九霄雷髓)
+	SECT_RANK_REWARDS: [
+		null,
+		{xianyuan: 120, relic: 4, starchart: 0, orbs: 0},
+		{xianyuan: 240, relic: 8, starchart: 12, orbs: 0},
+		{xianyuan: 400, relic: 14, starchart: 20, orbs: 1},
+		{xianyuan: 600, relic: 20, starchart: 30, orbs: 2},
+		{xianyuan: 900, relic: 30, starchart: 42, orbs: 4}
+	],
+
+	//心魔幻境六劫:power = 心魔劫力,weak = 此劫心魔所惧之项(该项抗性 ×1.5)
+	HEART_TRIB_STAGES: [
+		{key: "greed", power: 14, weak: "spirit"},
+		{key: "wrath", power: 20, weak: "thunder"},
+		{key: "delusion", power: 27, weak: "star"},
+		{key: "pride", power: 35, weak: "spirit"},
+		{key: "doubt", power: 44, weak: "star"},
+		{key: "tianmo", power: 54, weak: "thunder"}
+	],
+	HEART_RESIST_BASE: 8,				//道心本底抗性
+	HEART_THUNDER_STEP: 3,				//每重雷池淬体 +3
+	HEART_SPIRIT_STEP: 4,				//本命器灵每阶 +4;器灵共鸣期间再 +4
+	HEART_RES_BONUS: 4,
+	HEART_STAR_STEP: 3,					//当前星宿加持每级 +3;北方玄武加持(镇心)再 +3
+	HEART_TORTOISE_BONUS: 3,
+	HEART_WEAK_MULT: 1.5,				//本劫心魔所惧之项 ×1.5
+	HEART_INSIGHT_STEP: 3,				//照心积蕴:每次失败 +3 抗性,至多 5 层,渡劫即散
+	HEART_INSIGHT_MAX: 5,
+	HEART_CHANCE_BASE: 0.5,				//渡劫几率 = 50% + (心魔抗性 - 心魔劫力) × 2.5%,夹在 5%..95%
+	HEART_CHANCE_STEP: 0.025,
+	HEART_CHANCE_MIN: 0.05,
+	HEART_CHANCE_MAX: 0.95,
+	HEART_TRIB_XY: 50,					//入幻一次:仙元 50 + 周天星图 6(宗门印每重 -5%)
+	HEART_TRIB_CHART: 6,
+	HEART_TRIB_COOLDOWN: 600,			//渡过一劫后 600 tick(常速约 2 分钟)方可再入幻
+	HEART_TRIB_BACKLASH: 900,			//心魔反噬后 900 tick(常速约 3 分钟);仅此而已,境界与修为分毫不掉
+	HEART_RIFT_HASTE: 150,				//26 层以上大秘境破关:心魔劫冷却 -150 tick
+	HEART_LOG_MAX: 5,
+	HEART_STAGE_HP: 0.005,				//每渡一劫(仅 26 层以上大秘境):气血 +0.5% / 减伤 +0.08% / 增伤 +0.2%
+	HEART_STAGE_MIT: 0.0008,
+	HEART_STAGE_DMG: 0.002,
+	HEART_REWARD_XY: 80,				//渡第 N 劫:仙元 80N + 古宝 3N + 九霄雷髓 ⌈N/2⌉
+	HEART_REWARD_RELIC: 3,
+
+	isSectArenaEn: function(){
+		return String($I("cultivation.sectarena.panel.badge") || "").indexOf("Immortal") === 0;
+	},
+
+	//时钟来源:this.sectClock(函数,测试注入) > Date.now
+	getSectClock: function(){
+		var t = (typeof this.sectClock === "function") ? this.sectClock() : Date.now();
+		return (typeof t === "number" && isFinite(t)) ? t : 0;
+	},
+
+	//掷点来源:显式 rollOpt(数字) > this.sectRandom(函数,测试 / 调试注入) > Math.random;皆夹到 [0, 1)
+	getSectRoll: function(rollOpt){
+		var r = rollOpt;
+		if (typeof r !== "number" || !isFinite(r)){
+			r = (typeof this.sectRandom === "function") ? this.sectRandom() : Math.random();
+		}
+		return (typeof r === "number" && isFinite(r)) ? Math.max(0, Math.min(0.999999, r)) : 0;
+	},
+
+	//周序号:东八区周一 0 点翻篇,1970-01-05(周一)为第 0 周
+	getSectWeekIndex: function(nowOpt){
+		var ms = (typeof nowOpt === "number" && isFinite(nowOpt)) ? nowOpt : this.getSectClock();
+		return Math.floor((ms + this.SECT_TZ_OFFSET_MS - this.SECT_WEEK_EPOCH_MS) / this.SECT_WEEK_MS);
+	},
+
+	//周键 = 该周周一(东八区)的日期 YYYY-MM-DD
+	getSectWeekKey: function(weekIdx){
+		var w = Math.max(-this.SECT_WEEK_MAX_ABS, Math.min(this.SECT_WEEK_MAX_ABS, Math.floor(weekIdx || 0)));
+		return new Date(this.SECT_WEEK_EPOCH_MS + w * this.SECT_WEEK_MS).toISOString().slice(0, 10);
+	},
+
+	//该周结束(下周一东八区 0 点)的 UTC 毫秒
+	getSectWeekEndsAt: function(weekIdx){
+		return this.SECT_WEEK_EPOCH_MS + (Math.floor(weekIdx || 0) + 1) * this.SECT_WEEK_MS - this.SECT_TZ_OFFSET_MS;
+	},
+
+	//擂台当前所在周:已入擂则取存档周,否则取时钟所在周
+	getSectCurrentWeek: function(){
+		var sa = this.sectArena;
+		return (sa && typeof sa.week === "number" && isFinite(sa.week)) ? sa.week : this.getSectWeekIndex();
+	},
+
+	getSectThemeDef: function(weekIdx){
+		var n = this.SECT_THEMES.length;
+		var w = Math.floor(weekIdx || 0);
+		return this.SECT_THEMES[((w % n) + n) % n];
+	},
+
+	getSectRivalDef: function(key){
+		for (var i = 0; i < this.SECT_RIVALS.length; i++){
+			if (this.SECT_RIVALS[i].key === key){ return this.SECT_RIVALS[i]; }
+		}
+		return null;
+	},
+
+	sectNextSeed: function(seed){
+		return (seed * 16807) % this.SECT_RNG_MOD;
+	},
+
+	//本周守擂名册(纯函数,确定性):周序号定种子 → 十二同门洗牌取八 → 第 1..8 席,守擂评分 = 席位基础 ±2
+	getSectRoster: function(weekIdx){
+		var w = Math.floor(weekIdx || 0);
+		var m = this.SECT_RNG_MOD - 1;
+		var seed = ((((w * 7919 + 104729) % m) + m) % m) + 1;
+		var order = [];
+		for (var i = 0; i < this.SECT_RIVALS.length; i++){ order.push(i); }
+		for (var j = order.length - 1; j > 0; j--){
+			seed = this.sectNextSeed(seed);
+			var k = seed % (j + 1);
+			var tmp = order[j];
+			order[j] = order[k];
+			order[k] = tmp;
+		}
+		var span = this.SECT_POWER_JITTER * 2 + 1;
+		var roster = [];
+		for (var s = 0; s < this.SECT_SEATS; s++){
+			seed = this.sectNextSeed(seed);
+			var rv = this.SECT_RIVALS[order[s]];
+			roster.push({seat: s + 1, key: rv.key, style: rv.style, power: this.SECT_SEAT_POWER[s] + (seed % span) - this.SECT_POWER_JITTER});
+		}
+		return roster;
+	},
+
+	//名次阶(第 1 席魁首 5 / 第 2 席榜眼 4 / 第 3 席探花 3 / 第 4~5 席五强 2 / 第 6~8 席登榜 1 / 未登榜 0)
+	getSectRankTier: function(seat){
+		var s = Math.floor(seat || 0);
+		if (s < 1 || s > this.SECT_SEATS){ return 0; }
+		if (s <= 3){ return 6 - s; }
+		return (s <= 5) ? 2 : 1;
+	},
+
+	makeDefaultSectArena: function(){
+		return {
+			week: null,
+			seat: this.SECT_SEATS + 1,
+			bouts: 0,
+			wins: 0,
+			losses: 0,
+			peakTier: 0,
+			totalWins: 0,
+			settles: 0,
+			lastSettle: null,
+			log: [],
+			lastNote: ""
+		};
+	},
+
+	normalizeSectArena: function(raw){
+		var def = this.makeDefaultSectArena();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		var unranked = this.SECT_SEATS + 1;
+		var boutsCap = this.SECT_BOUTS_PER_WEEK + Math.floor(this.SECT_TIER_MAX / 2);
+		if (typeof raw.week === "number" && isFinite(raw.week) && Math.abs(raw.week) <= this.SECT_WEEK_MAX_ABS){
+			def.week = Math.floor(raw.week);
+			var seat = (typeof raw.seat === "number" && isFinite(raw.seat)) ? Math.floor(raw.seat) : unranked;
+			def.seat = Math.max(1, Math.min(unranked, seat));
+			//每胜一场恰升一席:本周胜场由席位推定,败场受擂台令上限约束
+			def.wins = unranked - def.seat;
+			def.losses = Math.min(Math.max(0, boutsCap - def.wins), num(raw.losses));
+			def.bouts = def.wins + def.losses;
+		}
+		def.peakTier = Math.min(this.SECT_TIER_MAX, Math.max(num(raw.peakTier), this.getSectRankTier(def.seat)));
+		def.totalWins = Math.max(def.wins, num(raw.totalWins));
+		def.settles = num(raw.settles);
+		var ls = raw.lastSettle;
+		if (ls && typeof ls === "object" && typeof ls.week === "number" && isFinite(ls.week) && Math.abs(ls.week) <= this.SECT_WEEK_MAX_ABS &&
+			typeof ls.seat === "number" && isFinite(ls.seat)){
+			def.lastSettle = {week: Math.floor(ls.week), seat: Math.max(1, Math.min(unranked, Math.floor(ls.seat)))};
+		}
+		if (raw.log && raw.log.length){
+			for (var li = 0; li < raw.log.length && def.log.length < this.SECT_LOG_MAX; li++){
+				var e = raw.log[li];
+				if (!e || typeof e !== "object" || typeof e.seat !== "number" || !isFinite(e.seat) || e.seat < 1 || e.seat > this.SECT_SEATS || !this.getSectRivalDef(e.rival)){ continue; }
+				def.log.push({seat: Math.floor(e.seat), win: e.win ? 1 : 0, rival: e.rival});
+			}
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	//动作入口只在结构缺损时归一化(保持对象引用稳定;读档时已整体归一化)
+	ensureSectArena: function(){
+		var sa = this.sectArena;
+		if (!sa || typeof sa !== "object" || !sa.log || typeof sa.log.length !== "number" || typeof sa.seat !== "number"){
+			this.sectArena = this.normalizeSectArena(sa);
+		}
+		return this.sectArena;
+	},
+
+	makeDefaultHeartTrib: function(){
+		return {
+			stage: 0,
+			insight: 0,
+			cooldown: 0,
+			attempts: 0,
+			fails: 0,
+			log: [],
+			lastNote: ""
+		};
+	},
+
+	normalizeHeartTrib: function(raw){
+		var def = this.makeDefaultHeartTrib();
+		if (!raw || typeof raw !== "object"){ return def; }
+		var num = function(v){
+			return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+		};
+		var n = this.HEART_TRIB_STAGES.length;
+		def.stage = Math.min(n, num(raw.stage));
+		def.insight = (def.stage >= n) ? 0 : Math.min(this.HEART_INSIGHT_MAX, num(raw.insight));
+		def.cooldown = Math.min(this.HEART_TRIB_BACKLASH, num(raw.cooldown));
+		def.fails = num(raw.fails);
+		def.attempts = Math.max(num(raw.attempts), def.stage + def.fails);
+		if (raw.log && raw.log.length){
+			for (var li = 0; li < raw.log.length && def.log.length < this.HEART_LOG_MAX; li++){
+				var e = raw.log[li];
+				if (!e || typeof e !== "object" || typeof e.s !== "number" || !isFinite(e.s) || e.s < 0 || e.s >= n){ continue; }
+				def.log.push({s: Math.floor(e.s), ok: e.ok ? 1 : 0});
+			}
+		}
+		if (typeof raw.lastNote === "string"){ def.lastNote = raw.lastNote; }
+		return def;
+	},
+
+	ensureHeartTrib: function(){
+		var ht = this.heartTrib;
+		if (!ht || typeof ht !== "object" || !ht.log || typeof ht.log.length !== "number" || typeof ht.stage !== "number"){
+			this.heartTrib = this.normalizeHeartTrib(ht);
+		}
+		return this.heartTrib;
+	},
+
+	getSectSeal: function(){
+		return Math.max(0, Math.min(this.SECT_TIER_MAX, Math.floor(this.sectTier || 0)));
+	},
+
+	//宗门印 = 历世所登最高擂台名次(跨转世保留,只增不减)
+	syncSectTier: function(){
+		var peak = Math.max(0, Math.floor(this.sectTier || 0));
+		var cur = (this.sectArena && this.sectArena.peakTier) ? Math.floor(this.sectArena.peakTier) : 0;
+		if (cur > peak){ peak = cur; }
+		this.sectTier = Math.min(this.SECT_TIER_MAX, peak);
+		return this.sectTier;
+	},
+
+	//跨轮回宗门印:修为 +3%/重(凡身即得)、擂台与入幻耗费 -5%/重、擂台评分 +1/重、心魔抗性 +1/重、擂台令每 2 重 +1
+	getSectSealBonus: function(){
+		var t = this.getSectSeal();
+		if (t <= 0){
+			return {tier: 0, xiuweiRatio: 0, costCut: 0, rating: 0, resist: 0, extraBouts: 0};
+		}
+		return {
+			tier: t,
+			xiuweiRatio: t * 0.03,
+			costCut: t * 0.05,
+			rating: t,
+			resist: t,
+			extraBouts: Math.floor(t / 2)
+		};
+	},
+
+	getSectBoutsMax: function(){
+		return this.SECT_BOUTS_PER_WEEK + this.getSectSealBonus().extraBouts;
+	},
+
+	//擂台评分(确定性):逐项读取真实养成 —— 太虚剑冢剑阵成色 / 雷池淬体重数 / 二十八宿星图成色 / 本命器灵品阶 / 大秘境层数 / 已渡心魔劫;本周擂题所重之项 ×2
+	getSectArenaRating: function(weekIdxOpt){
+		var w = (typeof weekIdxOpt === "number" && isFinite(weekIdxOpt)) ? weekIdxOpt : this.getSectCurrentWeek();
+		var theme = this.getSectThemeDef(w);
+		var lv = {
+			sword: this.computeSwordFormation().grade,
+			thunder: this.getSwordThunderTier(),
+			star: this.computeStarMap().grade,
+			spirit: this.getNatalSpiritGrade(),
+			rift: Math.max(0, Math.min(10, Math.floor(this.riftFloor || 0) - 25)),
+			heart: (this.heartTrib && typeof this.heartTrib.stage === "number") ? Math.max(0, Math.min(this.HEART_TRIB_STAGES.length, Math.floor(this.heartTrib.stage))) : 0
+		};
+		var seal = this.getSectSealBonus().rating;
+		var total = this.SECT_RATING_BASE + seal;
+		var parts = [];
+		for (var i = 0; i < this.SECT_RATING_PARTS.length; i++){
+			var p = this.SECT_RATING_PARTS[i];
+			var themed = (theme.part === p.key);
+			var v = lv[p.key] * p.step * (themed ? 2 : 1);
+			total += v;
+			parts.push({key: p.key, level: lv[p.key], step: p.step, themed: themed, value: v});
+		}
+		return {total: total, base: this.SECT_RATING_BASE, seal: seal, theme: theme.key, part: theme.part, parts: parts};
+	},
+
+	getSectWinChance: function(rating, power){
+		var c = this.SECT_WIN_BASE + ((rating || 0) - (power || 0)) * this.SECT_WIN_STEP;
+		c = Math.max(this.SECT_WIN_MIN, Math.min(this.SECT_WIN_MAX, c));
+		return Math.round(c * 1000) / 1000;
+	},
+
+	getSectBoutReq: function(){
+		var sa = this.sectArena || this.makeDefaultSectArena();
+		var w = this.getSectCurrentWeek();
+		var cut = this.getSectSealBonus().costCut;
+		var xy = Math.max(1, Math.round(this.SECT_BOUT_XY * (1 - cut)));
+		var boutsMax = this.getSectBoutsMax();
+		var left = Math.max(0, boutsMax - (sa.bouts || 0));
+		var seat = (typeof sa.seat === "number") ? sa.seat : this.SECT_SEATS + 1;
+		var top = seat <= 1;
+		var target = top ? 0 : seat - 1;
+		var rival = top ? null : this.getSectRoster(w)[target - 1];
+		var rating = this.getSectArenaRating(w).total;
+		var chance = rival ? this.getSectWinChance(rating, rival.power) : 0;
+		var xyObj = this.game.resPool.get("xianyuan");
+		var okXy = !!(xyObj && xyObj.value >= xy);
+		return {
+			week: w, xianyuan: xy, okXy: okXy, boutsMax: boutsMax, boutsLeft: left,
+			seat: seat, target: target, top: top, rival: rival, rating: rating, chance: chance,
+			affordable: !!(this.immortalAscended && !top && left > 0 && okXy)
+		};
+	},
+
+	//名次奖励(按名次阶查表;皆为既有资源)
+	getSectRankReward: function(tier){
+		var t = Math.max(0, Math.min(this.SECT_TIER_MAX, Math.floor(tier || 0)));
+		return this.SECT_RANK_REWARDS[t];
+	},
+
+	//发放既有资源:仙元 / 古宝 / 周天星图走资源池,九霄雷髓入雷池
+	grantSectResources: function(rw){
+		if (!rw){ return; }
+		var keys = ["xianyuan", "relic", "starchart"];
+		for (var i = 0; i < keys.length; i++){
+			if (rw[keys[i]] > 0){
+				var ro = this.game.resPool.get(keys[i]);
+				if (ro){ ro.unlocked = true; }
+				this.game.resPool.addResEvent(keys[i], rw[keys[i]]);
+			}
+		}
+		if (rw.orbs > 0 && this.thunderPool){
+			this.thunderPool.thunderOrbs = (this.thunderPool.thunderOrbs || 0) + rw.orbs;
+			this.thunderPool.totalOrbsGathered = (this.thunderPool.totalOrbsGathered || 0) + rw.orbs;
+			if (this.syncThunderOrbs){ this.syncThunderOrbs(); }
+		}
+	},
+
+	formatSectReward: function(rw){
+		if (!rw){ return ""; }
+		var parts = [];
+		var keys = ["xianyuan", "relic", "starchart", "orbs"];
+		for (var i = 0; i < keys.length; i++){
+			if (rw[keys[i]] > 0){ parts.push($I("cultivation.sectarena.reward." + keys[i], [rw[keys[i]]])); }
+		}
+		return parts.join(" · ");
+	},
+
+	//周界结算:按本周所守席位发放名次奖励(未登榜无奖),记入上周战报
+	settleSectWeek: function(){
+		var sa = this.sectArena;
+		var tier = this.getSectRankTier(sa.seat);
+		var rw = this.getSectRankReward(tier);
+		var out = {week: sa.week, seat: sa.seat, tier: tier, reward: tier > 0 ? rw : null};
+		if (tier > 0 && rw){
+			this.grantSectResources(rw);
+			sa.settles = (sa.settles || 0) + 1;
+			sa.lastSettle = {week: sa.week, seat: sa.seat};
+			sa.lastNote = $I("cultivation.sectarena.note.settle", [
+				this.getSectWeekKey(sa.week),
+				$I("cultivation.sectarena.rank." + this.SECT_RANKS[tier]),
+				sa.seat,
+				this.formatSectReward(rw)
+			]);
+			this.game.msg(sa.lastNote, "notice");
+		} else if ((sa.bouts || 0) > 0){
+			sa.lastSettle = {week: sa.week, seat: this.SECT_SEATS + 1};
+			sa.lastNote = $I("cultivation.sectarena.note.settleNone", [this.getSectWeekKey(sa.week)]);
+		}
+		return out;
+	},
+
+	//周界同步:时钟所在周晚于擂台所在周 → 先结算上一周名次,再开新一周擂台;时钟倒拨不回溯、不重复结算
+	syncSectWeek: function(){
+		if (!this.immortalAscended){ return null; }
+		this.ensureSectArena();
+		var sa = this.sectArena;
+		var cur = this.getSectWeekIndex();
+		if (sa.week === null){
+			sa.week = cur;
+			return null;
+		}
+		if (cur <= sa.week){ return null; }
+		var settled = this.settleSectWeek();
+		sa.week = cur;
+		sa.seat = this.SECT_SEATS + 1;
+		sa.bouts = 0;
+		sa.wins = 0;
+		sa.losses = 0;
+		sa.log = [];
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		return settled;
+	},
+
+	//上擂挑战:耗仙元一份与擂台令一枚,挑战上一席守擂同门;掷点(可注入)< 胜率即胜,胜则夺其席位(每胜恰升一席)
+	challengeSectArena: function(rollOpt){
+		if (!this.immortalAscended){ return false; }
+		this.ensureSectArena();
+		this.syncSectWeek();
+		var req = this.getSectBoutReq();
+		if (!req.affordable || !req.rival){ return false; }
+		var sa = this.sectArena;
+		var rv = req.rival;
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		var roll = this.getSectRoll(rollOpt);
+		var win = roll < req.chance;
+		var tierBefore = this.getSectRankTier(sa.seat);
+		var sealBefore = this.getSectSeal();
+		sa.bouts = (sa.bouts || 0) + 1;
+		if (win){
+			sa.seat = req.target;
+			sa.wins = (sa.wins || 0) + 1;
+			sa.totalWins = (sa.totalWins || 0) + 1;
+		} else {
+			sa.losses = (sa.losses || 0) + 1;
+		}
+		var tierAfter = this.getSectRankTier(sa.seat);
+		if (tierAfter > (sa.peakTier || 0)){ sa.peakTier = Math.min(this.SECT_TIER_MAX, tierAfter); }
+		this.syncSectTier();
+		sa.log.unshift({seat: req.target, win: win ? 1 : 0, rival: rv.key});
+		if (sa.log.length > this.SECT_LOG_MAX){ sa.log.length = this.SECT_LOG_MAX; }
+		var note = $I(win ? "cultivation.sectarena.note.win" : "cultivation.sectarena.note.loss", [
+			$I("cultivation.sectarena.rival." + rv.key),
+			req.target,
+			Math.round(req.chance * 100)
+		]);
+		if (tierAfter > tierBefore){
+			note += $I("cultivation.sectarena.note.rank", [$I("cultivation.sectarena.rank." + this.SECT_RANKS[tierAfter])]);
+		}
+		if (this.getSectSeal() > sealBefore){
+			note += $I("cultivation.sectarena.note.seal", [this.getSectSeal()]);
+		}
+		sa.lastNote = note;
+		if (win && tierAfter > tierBefore && tierAfter >= 3 && classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+			classes.ui.XianxiaAudio.playBell(this.game, tierAfter >= this.SECT_TIER_MAX);
+		}
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(note, "notice");
+		return {win: win, roll: roll, chance: req.chance, rating: req.rating, power: rv.power, rival: rv.key, target: req.target, seat: sa.seat, tier: tierAfter};
+	},
+
+	getHeartStageDef: function(idx){
+		var n = this.HEART_TRIB_STAGES.length;
+		return this.HEART_TRIB_STAGES[Math.max(0, Math.min(n - 1, Math.floor(idx || 0)))];
+	},
+
+	//心魔抗性(确定性):逐项读取真实养成 —— 雷池淬体重数 / 本命器灵品阶(共鸣期间另加)/ 当前星宿加持级数(玄武镇心另加)
+	//再加道心本底、照心积蕴与宗门印;本劫心魔所惧之项 ×1.5
+	getHeartTribResist: function(stageIdxOpt){
+		var ht = this.heartTrib || this.makeDefaultHeartTrib();
+		var n = this.HEART_TRIB_STAGES.length;
+		var idx = (typeof stageIdxOpt === "number" && isFinite(stageIdxOpt))
+			? Math.max(0, Math.min(n - 1, Math.floor(stageIdxOpt)))
+			: Math.max(0, Math.min(n - 1, Math.floor(ht.stage || 0)));
+		var def = this.HEART_TRIB_STAGES[idx];
+		var th = this.getSwordThunderTier();
+		var sp = this.getNatalSpiritGrade();
+		var resonating = this.isNatalResonating();
+		var bl = this.getStarBlessingEffect();
+		var src = {
+			thunder: th * this.HEART_THUNDER_STEP,
+			spirit: sp * this.HEART_SPIRIT_STEP + ((resonating && sp > 0) ? this.HEART_RES_BONUS : 0),
+			star: bl.active ? (bl.power * this.HEART_STAR_STEP + (bl.sym === "tortoise" ? this.HEART_TORTOISE_BONUS : 0)) : 0
+		};
+		var weakBonus = src[def.weak] * (this.HEART_WEAK_MULT - 1);
+		var insight = Math.max(0, Math.min(this.HEART_INSIGHT_MAX, Math.floor(ht.insight || 0))) * this.HEART_INSIGHT_STEP;
+		var seal = this.getSectSealBonus().resist;
+		var total = this.HEART_RESIST_BASE + src.thunder + src.spirit + src.star + weakBonus + insight + seal;
+		return {
+			stage: idx, key: def.key, power: def.power, weak: def.weak,
+			base: this.HEART_RESIST_BASE, thunder: src.thunder, spirit: src.spirit, star: src.star,
+			weakBonus: Math.round(weakBonus * 10) / 10, insight: insight, seal: seal,
+			thunderTier: th, spiritGrade: sp, resonating: resonating, blessSym: bl.active ? bl.sym : "", blessPower: bl.active ? bl.power : 0,
+			total: Math.round(total * 10) / 10
+		};
+	},
+
+	getHeartTribChance: function(resist, power){
+		var c = this.HEART_CHANCE_BASE + ((resist || 0) - (power || 0)) * this.HEART_CHANCE_STEP;
+		c = Math.max(this.HEART_CHANCE_MIN, Math.min(this.HEART_CHANCE_MAX, c));
+		return Math.round(c * 1000) / 1000;
+	},
+
+	getHeartTribReq: function(){
+		var ht = this.heartTrib || this.makeDefaultHeartTrib();
+		var n = this.HEART_TRIB_STAGES.length;
+		var stage = Math.max(0, Math.min(n, Math.floor(ht.stage || 0)));
+		var done = stage >= n;
+		var cut = this.getSectSealBonus().costCut;
+		var xy = Math.max(1, Math.round(this.HEART_TRIB_XY * (1 - cut)));
+		var chart = Math.max(1, Math.round(this.HEART_TRIB_CHART * (1 - cut)));
+		var xyObj = this.game.resPool.get("xianyuan");
+		var scObj = this.game.resPool.get("starchart");
+		var okXy = !!(xyObj && xyObj.value >= xy);
+		var okChart = !!(scObj && scObj.value >= chart);
+		var cd = (ht.cooldown > 0) ? ht.cooldown : 0;
+		var res = done ? null : this.getHeartTribResist(stage);
+		return {
+			stage: stage, done: done, xianyuan: xy, starchart: chart, okXy: okXy, okChart: okChart,
+			cooldown: cd, ready: cd <= 0,
+			resist: res ? res.total : 0, power: res ? res.power : 0,
+			chance: res ? this.getHeartTribChance(res.total, res.power) : 0,
+			affordable: !!(this.immortalAscended && !done && cd <= 0 && okXy && okChart)
+		};
+	},
+
+	//入幻渡劫:耗仙元 + 周天星图,掷点(可注入)< 渡劫几率即渡过此劫,得既有资源并铭一道心印;
+	//失败只受心魔反噬(冷却更长)并积一层照心(下次抗性 +3)—— 境界、修为与已渡之劫分毫不掉
+	attemptHeartTrib: function(rollOpt){
+		if (!this.immortalAscended){ return false; }
+		this.ensureHeartTrib();
+		var req = this.getHeartTribReq();
+		if (!req.affordable){ return false; }
+		var ht = this.heartTrib;
+		var idx = req.stage;
+		var def = this.HEART_TRIB_STAGES[idx];
+		this.game.resPool.addResEvent("xianyuan", -req.xianyuan);
+		this.game.resPool.addResEvent("starchart", -req.starchart);
+		var roll = this.getSectRoll(rollOpt);
+		var ok = roll < req.chance;
+		var stageLabel = $I("cultivation.hearttrib.stage." + def.key + ".label");
+		var reward = null;
+		var note;
+		ht.attempts = (ht.attempts || 0) + 1;
+		if (ok){
+			var no = idx + 1;
+			ht.stage = no;
+			ht.insight = 0;
+			ht.cooldown = this.HEART_TRIB_COOLDOWN;
+			reward = {xianyuan: this.HEART_REWARD_XY * no, relic: this.HEART_REWARD_RELIC * no, starchart: 0, orbs: Math.ceil(no / 2)};
+			this.grantSectResources(reward);
+			note = $I("cultivation.hearttrib.note.pass", [stageLabel, Math.round(req.chance * 100), this.formatSectReward(reward)]);
+			if (ht.stage >= this.HEART_TRIB_STAGES.length){ note += $I("cultivation.hearttrib.note.done"); }
+			if (classes.ui && classes.ui.XianxiaAudio && classes.ui.XianxiaAudio.playBell){
+				classes.ui.XianxiaAudio.playBell(this.game, ht.stage >= this.HEART_TRIB_STAGES.length);
+			}
+		} else {
+			ht.fails = (ht.fails || 0) + 1;
+			ht.insight = Math.min(this.HEART_INSIGHT_MAX, (ht.insight || 0) + 1);
+			ht.cooldown = this.HEART_TRIB_BACKLASH;
+			note = $I("cultivation.hearttrib.note.fail", [stageLabel, Math.round(req.chance * 100), ht.insight * this.HEART_INSIGHT_STEP]);
+		}
+		ht.log.unshift({s: idx, ok: ok ? 1 : 0});
+		if (ht.log.length > this.HEART_LOG_MAX){ ht.log.length = this.HEART_LOG_MAX; }
+		ht.lastNote = note;
+		if (this.game.updateCaches){ this.game.updateCaches(); }
+		this.game.msg(note, ok ? "notice" : "alert");
+		return {ok: ok, roll: roll, chance: req.chance, stage: idx, resist: req.resist, power: def.power, insight: ht.insight, reward: reward};
+	},
+
+	//本周擂台威名与已渡心魔劫的斗法神效原值(不按秘境层数取舍;斗法部分经 getSectTribCombatBonus 合并封顶)
+	getSectTribRawEffect: function(){
+		var e = {honorTier: 0, stages: 0, dmg: 0, crit: 0, hp: 0, mit: 0};
+		if (!this.immortalAscended){ return e; }
+		var sa = this.sectArena;
+		var ht = this.heartTrib;
+		var tier = sa ? this.getSectRankTier(sa.seat) : 0;
+		var st = (ht && typeof ht.stage === "number") ? Math.max(0, Math.min(this.HEART_TRIB_STAGES.length, Math.floor(ht.stage))) : 0;
+		e.honorTier = tier;
+		e.stages = st;
+		e.dmg = this.SECT_HONOR_DMG * tier + this.HEART_STAGE_DMG * st;
+		e.crit = this.SECT_HONOR_CRIT * tier;
+		e.hp = this.HEART_STAGE_HP * st;
+		e.mit = this.HEART_STAGE_MIT * st;
+		return e;
+	},
+
+	//XX-16 斗法加成(仅 26 层以上大秘境):擂台威名 + 心魔心印并入 XX-14 剑阵四项通道,排在剑阵与 XX-15 星宿器灵之后,
+	//三者合计仍按 XX-14 既有上限(增伤 8% / 暴击 4% / 气血 6% / 减伤 1%)封顶 —— 只填补前两者距上限的余量;一概不触碰神雷追击
+	getSectTribCombatBonus: function(riftFloorOpt, starPoolOpt){
+		var highRift = (typeof riftFloorOpt === "number" && riftFloorOpt >= 26);
+		var out = {
+			highRift: highRift,
+			rawDmg: 0, rawCrit: 0, rawHp: 0, rawMit: 0,
+			swordDmg: 0, swordCrit: 0, swordHp: 0, swordMit: 0,
+			starDmg: 0, starCrit: 0, starHp: 0, starMit: 0,
+			baseDmg: 0, baseCrit: 0, baseHp: 0, baseMit: 0,
+			riftDmg: 0, riftCrit: 0, riftHp: 0, mitigation: 0,
+			poolDmg: 0, poolCrit: 0, poolHp: 0, poolMit: 0,
+			capped: false
+		};
+		if (!this.immortalAscended){ return out; }
+		var raw = this.getSectTribRawEffect();
+		out.rawDmg = raw.dmg;
+		out.rawCrit = raw.crit;
+		out.rawHp = raw.hp;
+		out.rawMit = raw.mit;
+		if (!highRift){ return out; }
+		var sp = starPoolOpt || this.getStarArtifactCombatBonus(riftFloorOpt);
+		out.swordDmg = sp.swordDmg || 0;
+		out.swordCrit = sp.swordCrit || 0;
+		out.swordHp = sp.swordHp || 0;
+		out.swordMit = sp.swordMit || 0;
+		out.starDmg = sp.riftDmg || 0;
+		out.starCrit = sp.riftCrit || 0;
+		out.starHp = sp.riftHp || 0;
+		out.starMit = sp.mitigation || 0;
+		out.baseDmg = out.swordDmg + out.starDmg;
+		out.baseCrit = out.swordCrit + out.starCrit;
+		out.baseHp = out.swordHp + out.starHp;
+		out.baseMit = out.swordMit + out.starMit;
+		var fill = function(cap, base, add){ return Math.max(0, Math.min(cap - base, add)); };
+		out.riftDmg = fill(this.XX14_DMG_CAP, out.baseDmg, out.rawDmg);
+		out.riftCrit = fill(this.XX14_CRIT_CAP, out.baseCrit, out.rawCrit);
+		out.riftHp = fill(this.XX14_HP_CAP, out.baseHp, out.rawHp);
+		out.mitigation = fill(this.XX14_MIT_CAP, out.baseMit, out.rawMit);
+		out.poolDmg = out.baseDmg + out.riftDmg;
+		out.poolCrit = out.baseCrit + out.riftCrit;
+		out.poolHp = out.baseHp + out.riftHp;
+		out.poolMit = out.baseMit + out.mitigation;
+		out.capped = (out.baseDmg + out.rawDmg > this.XX14_DMG_CAP + 1e-12 || out.baseCrit + out.rawCrit > this.XX14_CRIT_CAP + 1e-12 ||
+			out.baseHp + out.rawHp > this.XX14_HP_CAP + 1e-12 || out.baseMit + out.rawMit > this.XX14_MIT_CAP + 1e-12);
+		return out;
+	},
+
+	//剑冠同门:此世剑阵练满「万剑归宗」者,斗法四项早已顶格 —— 改赐仙元周天产出 +5%(常驻,不占斗法上限,不按秘境层数取舍)
+	getSwordCrownBonus: function(){
+		var e = {active: false, grade: 0, xianyuanRatio: 0};
+		if (!this.immortalAscended){ return e; }
+		e.grade = this.computeSwordFormation().grade;
+		if (e.grade >= this.SWORD_TIER_MAX){
+			e.active = true;
+			e.xianyuanRatio = this.SECT_SWORD_CROWN_XY;
+		}
+		return e;
+	},
+
+	tickSectTrib: function(ticksDelta){
+		var dt = (typeof ticksDelta === "number" && isFinite(ticksDelta)) ? Math.max(0, ticksDelta) : 1;
+		if (!this.immortalAscended){ return; }
+		this.ensureSectArena();
+		this.ensureHeartTrib();
+		var ht = this.heartTrib;
+		if (dt > 0 && ht.cooldown > 0){ ht.cooldown = Math.max(0, ht.cooldown - dt); }
+		this.syncSectWeek();
+	},
+
+	//XX-16 秘境协同:26 层以上大秘境破关,心魔劫冷却缩短
+	onSectRiftVictory: function(floor){
+		var res = {cooldown: 0};
+		if (!this.immortalAscended || !(floor >= 26)){ return res; }
+		this.ensureHeartTrib();
+		var ht = this.heartTrib;
+		if (ht.cooldown > 0){
+			res.cooldown = Math.min(ht.cooldown, this.HEART_RIFT_HASTE);
+			ht.cooldown -= res.cooldown;
+		}
+		return res;
+	},
+
+	//飞升 / 读档 / 测试洞府初始化:归一化擂台与心魔劫,刷新宗门印;skipSync 时把周界结算留给首个 tick
+	initSectTribStateOnAscend: function(skipSync){
+		this.sectArena = this.normalizeSectArena(this.sectArena);
+		this.heartTrib = this.normalizeHeartTrib(this.heartTrib);
+		this.syncSectTier();
+		if (!skipSync){ this.syncSectWeek(); }
+	},
+
 	getImmortalCaveBonuses: function(riftFloorOpt){
 		var imp = Math.max(0, Math.min(10, Math.floor(this.immortalImprint || 0)));
 		var out = {
@@ -8998,6 +15611,11 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			dharmaSwordExecuteRatio: 0,
 			dharmaLotusRegenRatio: 0,
 			dharmaNirvanaRatio: 0,
+			chronoBellFreezeEvery: 0,
+			taijiReflectRatio: 0,
+			panguCleaveRatio: 0,
+			thunderStrikeRatio: 0,
+			thunderBellShockRatio: 0,
 			startShieldRatio: 0,
 			counterDmgBonus: 0,
 			counterMpGain: 0,
@@ -9523,13 +16141,229 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			}
 		}
 
-		var hasHighSanctum = !!((sa && (sa.tier || 0) > 0) || this.getHatchedBeastCount() > 0 || this.getTotalSteleComprehension() > 0 || (ss && (ss.vesselTier || 0) > 0) || this.getHongmengTotalTier() > 0 || (za && (za.tier || 0) > 0) || dharmaTotalLv > 0);
+		// XX-9 混沌岁月长河悟道台纪元推演 & 先天至宝器魂共鸣谱（共鸣器魂 1 / 2 / 4 → 一 / 二 / 三重共鸣）
+		var ca = this.chronoAltar;
+		if (ca && ((ca.tier || 0) > 0 || (ca.insight || 0) > 0)){
+			var chAura = this.getChronoAuraBonuses();
+			out.xianyuanBase += chAura.xyBase || 0;
+			out.xianyuanRatio += chAura.xyRatio || 0;
+			out.herbSpeedBonus += chAura.herbSpeed || 0;
+			out.daoLawDiscount += (ca.tier || 0) * 0.02;
+			out.combatMult *= (1 + (ca.tier || 0) * 0.05);
+		}
+
+		var itr = this.innateTreasures;
+		var innateTotalLv = this.getInnateTotalLevel();
+		var innateResTier = this.getInnateResonanceTier();
+		if (itr && itr.levels && innateTotalLv > 0){
+			var lvBell = itr.levels.chaosBell || 0;
+			if (lvBell > 0){
+				var effBell = this.getInnateTreasureEffect("chaosBell", lvBell);
+				out.combatMult *= (1 + 0.06 * lvBell);
+				out.riftHpMult *= effBell.hpMult;
+				out.riftMitigation += effBell.mitigation * arrayRiftScale;
+				out.startShieldRatio += effBell.startShield;
+				out.heartDemonDecayBonus += 0.25 * lvBell;
+				if (isHighRiftForArray){
+					out.chronoBellFreezeEvery = effBell.freezeEvery;
+				}
+			}
+			var lvTaiji = itr.levels.taijiDiagram || 0;
+			if (lvTaiji > 0){
+				var effTaiji = this.getInnateTreasureEffect("taijiDiagram", lvTaiji);
+				out.combatMult *= (1 + 0.08 * lvTaiji);
+				out.riftDefIgnore = Math.min(0.90, out.riftDefIgnore + effTaiji.defIgnore * arrayRiftScale);
+				out.counterDmgBonus += effTaiji.counterBonus;
+				out.zhenyuanRatio += 0.05 * lvTaiji;
+				out.herbYieldBonus += effTaiji.herbYield;
+				if (isHighRiftForArray){
+					out.taijiReflectRatio = effTaiji.reflect;
+				}
+			}
+			var lvPangu = itr.levels.panguBanner || 0;
+			if (lvPangu > 0){
+				var effPangu = this.getInnateTreasureEffect("panguBanner", lvPangu);
+				out.combatMult *= effPangu.combatMult;
+				out.riftDmgMult *= (1 + effPangu.riftDmg * arrayRiftScale);
+				out.riftShieldBreakBonus += 0.10 * lvPangu;
+				out.riftCritChance += effPangu.critChance;
+				if (isHighRiftForArray){
+					out.panguCleaveRatio = effPangu.cleave;
+				}
+			}
+			var lvDisc = itr.levels.creationDisc || 0;
+			if (lvDisc > 0){
+				var effDisc = this.getInnateTreasureEffect("creationDisc", lvDisc);
+				out.herbSpeedBonus += effDisc.herbSpeed;
+				out.herbYieldBonus += effDisc.herbYield;
+				out.xiuweiRatio += effDisc.xiuweiRatio;
+				out.xianyuanRatio += 0.08 * lvDisc;
+				out.pillPotencyBonus += 0.08 * lvDisc;
+				out.lifespanBonus += 700 * lvDisc;
+			}
+
+			if (innateResTier >= 1){
+				out.combatMult *= 1.18;
+				out.riftHpMult *= 1.10;
+				out.herbSpeedBonus += 0.12;
+				out.xianyuanRatio += 0.18;
+				out.riftMitigation += 0.04 * arrayRiftScale;
+			}
+			if (innateResTier >= 2){
+				out.combatMult *= 1.28;
+				out.riftHpMult *= 1.15;
+				out.herbSpeedBonus += 0.20;
+				out.herbYieldBonus += 0.10;
+				out.xiuweiRatio += 0.40;
+				out.xianyuanRatio += 0.30;
+				out.riftDefIgnore = Math.min(0.90, out.riftDefIgnore + 0.06 * arrayRiftScale);
+				out.riftMitigation += 0.05 * arrayRiftScale;
+				if (isHighRiftForArray){ out.riftBossExecuteRatio += 0.04; }
+			}
+			if (innateResTier >= 3){
+				out.combatMult *= 1.45;
+				out.riftHpMult *= 1.25;
+				out.herbSpeedBonus += 0.32;
+				out.herbYieldBonus += 0.15;
+				out.xiuweiRatio += 0.70;
+				out.xianyuanBase += 0.20;
+				out.xianyuanRatio += 0.50;
+				out.realmProductionRatio += 0.40;
+				out.riftDefIgnore = Math.min(0.90, out.riftDefIgnore + 0.08 * arrayRiftScale);
+				out.riftMitigation += 0.07 * arrayRiftScale;
+				if (isHighRiftForArray){
+					out.riftBossExecuteRatio += 0.06;
+					if (out.chronoBellFreezeEvery > 0){ out.chronoBellFreezeEvery = Math.min(out.chronoBellFreezeEvery, 2); }
+				}
+			}
+		}
+
+		// XX-10 三十三天封神榜（天威 + 七席天庭神职） & 九霄雷池淬体（0~9 重，协同盘古幡 / 混沌钟器魂共鸣）
+		var fsr = this.fengshenRoster;
+		var fsLayer = (fsr && fsr.layer) ? Math.max(0, Math.floor(fsr.layer)) : 0;
+		if (fsLayer > 0){
+			out.combatMult *= (1 + fsLayer * 0.01);
+			out.xiuweiRatio += fsLayer * 0.02;
+			var ofPatrol = this.getFengshenOfficeEffect("patrol");
+			out.xianyuanBase += ofPatrol.xyBase;
+			out.xianyuanRatio += ofPatrol.xyRatio;
+			out.realmProductionRatio += ofPatrol.prodRatio;
+			var ofHerbal = this.getFengshenOfficeEffect("herbal");
+			out.herbSpeedBonus += ofHerbal.herbSpeed;
+			out.herbYieldBonus += ofHerbal.herbYield;
+			out.pillPotencyBonus += ofHerbal.pillPot;
+			var ofGeneral = this.getFengshenOfficeEffect("thunderGeneral");
+			out.combatMult *= (1 + ofGeneral.combat);
+			out.riftDmgMult *= (1 + ofGeneral.riftDmg * arrayRiftScale);
+			out.riftCritChance += ofGeneral.crit;
+			var ofDipper = this.getFengshenOfficeEffect("dipper");
+			out.riftHpMult *= (1 + ofDipper.riftHp);
+			out.riftMitigation += ofDipper.mitigation * arrayRiftScale;
+			out.startShieldRatio += ofDipper.startShield;
+			var ofWenchang = this.getFengshenOfficeEffect("wenchang");
+			out.xiuweiRatio += ofWenchang.xiuwei;
+			var ofDaluo = this.getFengshenOfficeEffect("daluo");
+			if (ofDaluo.rank > 0){
+				out.combatMult *= (1 + ofDaluo.combat);
+				out.xianyuanRatio += ofDaluo.xyRatio;
+				out.xiuweiRatio += ofDaluo.xiuwei;
+				out.riftMitigation += ofDaluo.mitigation * arrayRiftScale;
+			}
+		}
+		var tpl = this.thunderPool;
+		var thTier = (tpl && tpl.tier) ? Math.max(0, Math.floor(tpl.tier)) : 0;
+		if (thTier > 0){
+			var thEff = this.getThunderTemperEffect(thTier);
+			out.combatMult *= thEff.combatMult;
+			out.riftHpMult *= thEff.riftHpMult;
+			out.riftDmgMult *= (1 + thEff.riftDmg * arrayRiftScale);
+			out.riftMitigation += thEff.mitigation * arrayRiftScale;
+			out.startShieldRatio += thEff.startShield;
+			if (isHighRiftForArray){
+				var thSyn = this.getThunderSynergy();
+				out.thunderStrikeRatio = this.getThunderStrikeRatio();
+				if (thSyn.panguActive && out.panguCleaveRatio > 0){
+					out.panguCleaveRatio = Math.min(0.30, out.panguCleaveRatio + thSyn.panguCleaveBonus);
+				}
+				if (thSyn.bellActive && out.chronoBellFreezeEvery > 0){
+					out.thunderBellShockRatio = thSyn.bellShockRatio;
+				}
+			}
+		}
+
+		// XX-11 六道轮回镜（择道加持 + 六道见闻） & 太虚幻境道心纹（每纹 × 天庭神职 / 雷池淬体协同;不触碰神雷追击）
+		var smPathB = this.getSamsaraPathEffect();
+		if (smPathB.key){
+			out.riftDmgMult *= (1 + smPathB.riftDmg * arrayRiftScale);
+			out.riftCritChance += smPathB.riftCrit;
+			out.riftHpMult *= smPathB.riftHpMult;
+			out.riftMitigation += smPathB.mitigation * arrayRiftScale;
+			out.herbSpeedBonus += smPathB.herbSpeed;
+			out.herbYieldBonus += smPathB.herbYield;
+			out.bountySpeedBonus += smPathB.bountySpeed;
+			out.heartDemonDecayBonus += smPathB.demonDecay;
+		}
+		out.xiuweiRatio += this.getSamsaraClarityRatio();
+		var dpLayer = this.getIllusionLayer();
+		if (dpLayer > 0){
+			var dpEff = this.getDaoPatternEffect(dpLayer);
+			out.xiuweiRatio += dpEff.xiuweiRatio + dpEff.officeXiuwei;
+			out.xianyuanRatio += dpEff.officeXianyuan;
+			out.heartDemonDecayBonus += dpEff.demonDecay;
+			out.riftMitigation += dpEff.mitigation * arrayRiftScale;
+			out.riftHpMult *= (1 + dpEff.thunderRiftHp);
+		}
+
+		// XX-12 周天星辰弈局星位神通 & 诸天万界灵宝（秘境增伤 / 气血各自合计封顶 +8%、减伤 +1%;不触碰神雷追击）
+		var sgPasB = this.getStarGoPassiveEffect();
+		var atTrB = this.getAuctionTreasureEffect();
+		out.realmProductionRatio += sgPasB.realmProductionRatio + atTrB.realmProductionRatio;
+		out.xiuweiRatio += sgPasB.xiuweiRatio;
+		out.xianyuanRatio += sgPasB.xianyuanRatio + atTrB.xianyuanRatio;
+		out.herbSpeedBonus += sgPasB.herbSpeed;
+		out.herbYieldBonus += atTrB.herbYield;
+		out.pillPotencyBonus += atTrB.pillPotency;
+		out.bountySpeedBonus += sgPasB.bountySpeed;
+		out.heartDemonDecayBonus += atTrB.demonDecay;
+		var x12Cb = this.getStarAuctionCombatBonus();
+		out.riftDmgMult *= (1 + x12Cb.riftDmg * arrayRiftScale);
+		out.riftHpMult *= (1 + x12Cb.riftHp);
+		out.riftMitigation += x12Cb.mitigation * arrayRiftScale;
+
+		// XX-13 灵脉风水堪舆格局(药园产出) & 符箓画坊(聚灵符药园;破邪 / 金光 / 搬运仅 26 层以上大秘境,各自封顶;不触碰神雷追击)
+		var fsEffB = this.getFengshuiEffect();
+		out.herbYieldBonus += fsEffB.herb;
+		out.herbSpeedBonus += fsEffB.herb;
+		var tlEffB = this.getTalismanEffect(riftFloorOpt);
+		out.herbYieldBonus += tlEffB.herbYield;
+		out.herbSpeedBonus += tlEffB.herbSpeed;
+		out.riftXyBonus += tlEffB.riftXy;
+		out.riftDmgMult *= (1 + tlEffB.riftDmg);
+		out.riftHpMult *= (1 + tlEffB.riftHp);
+		out.riftMitigation += tlEffB.mitigation;
+
+		// XX-14 太虚剑冢剑阵(增伤 / 暴击 / 气血 / 减伤仅 26 层以上大秘境,各自封顶;不触碰神雷追击)
+		// XX-15 周天星宿加持 + 本命器灵(并入剑阵四项,与剑阵合计后仍按 XX-14 既有上限封顶;器灵仙元加持常驻;不触碰神雷追击)
+		// XX-16 擂台威名 + 心魔心印(排在剑阵与星宿器灵之后并入同四项,三者合计仍按 XX-14 既有上限封顶;不触碰神雷追击)
+		//       剑冠同门:剑阵练满者改得仙元周天产出 +5%(常驻,不占斗法上限)
+		var swEffB = this.getSwordFormationEffect(riftFloorOpt);
+		var x15EffB = this.getStarArtifactCombatBonus(riftFloorOpt, swEffB);
+		var x16EffB = this.getSectTribCombatBonus(riftFloorOpt, x15EffB);
+		out.riftDmgMult *= (1 + swEffB.riftDmg + x15EffB.riftDmg + x16EffB.riftDmg);
+		out.riftCritChance += swEffB.riftCrit + x15EffB.riftCrit + x16EffB.riftCrit;
+		out.riftHpMult *= (1 + swEffB.riftHp + x15EffB.riftHp + x16EffB.riftHp);
+		out.riftMitigation += swEffB.mitigation + x15EffB.mitigation + x16EffB.mitigation;
+		out.xianyuanRatio += this.getNatalSpiritEffect().xianyuanRatio;
+		out.xianyuanRatio += this.getSwordCrownBonus().xianyuanRatio;
+
+		var hasHighSanctum = !!((sa && (sa.tier || 0) > 0) || this.getHatchedBeastCount() > 0 || this.getTotalSteleComprehension() > 0 || (ss && (ss.vesselTier || 0) > 0) || this.getHongmengTotalTier() > 0 || (za && (za.tier || 0) > 0) || dharmaTotalLv > 0 || (ca && (ca.tier || 0) > 0) || innateTotalLv > 0 || fsLayer > 0 || thTier > 0 || dpLayer > 0);
 		var hasHongmengApex = (this.getHongmengResonanceTier() > 0);
 		var hasDharmaApex = (dharmaTotalLv > 0);
+		var hasChronoApex = (innateTotalLv > 0);
 		out.toxReduction = Math.min(hasDharmaApex ? 0.88 : (hasHongmengApex ? 0.85 : (hasHighSanctum ? 0.80 : 0.60)), out.toxReduction);
-		out.riftMitigation = Math.min(hasDharmaApex ? 0.84 : (hasHongmengApex ? 0.78 : (hasHighSanctum ? 0.70 : 0.45)), out.riftMitigation);
+		out.riftMitigation = Math.min(thTier > 0 ? 0.88 : (hasChronoApex ? 0.86 : (hasDharmaApex ? 0.84 : (hasHongmengApex ? 0.78 : (hasHighSanctum ? 0.70 : 0.45)))), out.riftMitigation);
 		out.daoLawDiscount = Math.min(hasDharmaApex ? 0.80 : (hasHongmengApex ? 0.75 : (hasHighSanctum ? 0.72 : 0.55)), out.daoLawDiscount);
-		out.riftBossExecuteRatio = Math.min(hasDharmaApex ? 0.48 : 0.32, out.riftBossExecuteRatio);
+		out.riftBossExecuteRatio = Math.min(hasChronoApex ? 0.52 : (hasDharmaApex ? 0.48 : 0.32), out.riftBossExecuteRatio);
 		return out;
 	},
 
@@ -9586,12 +16420,37 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			hongmengAltar: this.hongmengAltar ? this.normalizeHongmengAltar(this.hongmengAltar) : undefined,
 			zixiaoAltar: this.zixiaoAltar ? this.normalizeZixiaoAltar(this.zixiaoAltar) : undefined,
 			dharmaIdols: this.dharmaIdols ? this.normalizeDharmaIdols(this.dharmaIdols) : undefined,
+			chronoAltar: this.chronoAltar ? this.normalizeChronoAltar(this.chronoAltar) : undefined,
+			innateTreasures: this.innateTreasures ? this.normalizeInnateTreasures(this.innateTreasures) : undefined,
+			fengshenRoster: this.fengshenRoster ? this.normalizeFengshenRoster(this.fengshenRoster) : undefined,
+			thunderPool: this.thunderPool ? this.normalizeThunderPool(this.thunderPool) : undefined,
+			samsaraMirror: this.samsaraMirror ? this.normalizeSamsaraMirror(this.samsaraMirror) : undefined,
+			illusionTrial: this.illusionTrial ? this.normalizeIllusionTrial(this.illusionTrial) : undefined,
+			starGo: this.starGo ? this.normalizeStarGo(this.starGo) : undefined,
+			auctionHouse: this.auctionHouse ? this.normalizeAuctionHouse(this.auctionHouse) : undefined,
+			fengshui: this.fengshui ? this.normalizeFengshui(this.fengshui) : undefined,
+			talismanWorkshop: this.talismanWorkshop ? this.normalizeTalismanWorkshop(this.talismanWorkshop) : undefined,
+			swordTomb: this.swordTomb ? this.normalizeSwordTomb(this.swordTomb) : undefined,
+			penglai: this.penglai ? this.serializePenglai() : undefined,
+			starObservatory: this.starObservatory ? this.serializeStarObservatory() : undefined,
+			natalWarming: this.natalWarming ? this.normalizeNatalWarming(this.natalWarming) : undefined,
+			sectArena: this.sectArena ? this.normalizeSectArena(this.sectArena) : undefined,
+			heartTrib: this.heartTrib ? this.normalizeHeartTrib(this.heartTrib) : undefined,
 			immortalImprint: this.immortalImprint || 0,
 			xianqiImprintKey: this.xianqiImprintKey || undefined,
 			starImprintTier: this.starImprintTier || 0,
 			beastImprintTier: this.beastImprintTier || 0,
 			hongmengImprintTier: this.hongmengImprintTier || 0,
 			dharmaImprintTier: this.dharmaImprintTier || 0,
+			chronoImprintTier: this.chronoImprintTier || 0,
+			thunderTemperTier: this.thunderTemperTier || 0,
+			daoHeartTier: this.daoHeartTier || 0,
+			samsaraLegacyPath: this.samsaraLegacyPath || undefined,
+			starGoTier: this.starGoTier || 0,
+			fengshuiTier: this.fengshuiTier || 0,
+			swordIntentTier: this.swordIntentTier || 0,
+			starMapTier: this.starMapTier || 0,
+			sectTier: this.sectTier || 0,
 			soundMuted: !!this.soundMuted,
 			demonWarned: this.demonWarned,
 			sihuaCount: this.sihuaCount,
@@ -9661,7 +16520,8 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		if (typeof c.riftKeys == "number"){ this.riftKeys = Math.max(0, c.riftKeys); }
 		if (typeof c.riftFloor == "number"){ this.riftFloor = Math.max(0, c.riftFloor); }
 		if (c.tale){ this.tale = c.tale; }
-		this.mingge = (c.mingge && c.mingge.length) ? this.normalizeMinggeList(c.mingge, 3) : [];
+		this.samsaraLegacyPath = (typeof c.samsaraLegacyPath === "string" && this.getSamsaraPathDef(c.samsaraLegacyPath)) ? c.samsaraLegacyPath : null;
+		this.mingge = (c.mingge && c.mingge.length) ? this.filterSealedMingge(this.normalizeMinggeList(c.mingge, 3), this.samsaraLegacyPath) : [];
 		this.pendingMingge = (c.pendingMingge && c.pendingMingge.length) ? this.normalizeMinggeList(c.pendingMingge, 3) : [];
 		if (c.identity){ this.identity = c.identity; }
 		this.applyOrigin();
@@ -9740,6 +16600,22 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.hongmengAltar = this.normalizeHongmengAltar(c.hongmengAltar);
 		this.zixiaoAltar = this.normalizeZixiaoAltar(c.zixiaoAltar);
 		this.dharmaIdols = this.normalizeDharmaIdols(c.dharmaIdols);
+		this.chronoAltar = this.normalizeChronoAltar(c.chronoAltar);
+		this.innateTreasures = this.normalizeInnateTreasures(c.innateTreasures);
+		this.fengshenRoster = this.normalizeFengshenRoster(c.fengshenRoster);
+		this.thunderPool = this.normalizeThunderPool(c.thunderPool);
+		this.samsaraMirror = this.normalizeSamsaraMirror(c.samsaraMirror);
+		this.illusionTrial = this.normalizeIllusionTrial(c.illusionTrial);
+		this.starGo = this.normalizeStarGo(c.starGo);
+		this.auctionHouse = this.normalizeAuctionHouse(c.auctionHouse);
+		this.fengshui = this.normalizeFengshui(c.fengshui);
+		this.talismanWorkshop = this.normalizeTalismanWorkshop(c.talismanWorkshop);
+		this.swordTomb = this.normalizeSwordTomb(c.swordTomb);
+		this.penglai = this.normalizePenglai(c.penglai);
+		this.starObservatory = this.normalizeStarObservatory(c.starObservatory);
+		this.natalWarming = this.normalizeNatalWarming(c.natalWarming);
+		this.sectArena = this.normalizeSectArena(c.sectArena);
+		this.heartTrib = this.normalizeHeartTrib(c.heartTrib);
 		this.immortalImprint = (typeof c.immortalImprint === "number" && isFinite(c.immortalImprint))
 			? Math.min(10, Math.max(0, Math.floor(c.immortalImprint)))
 			: 0;
@@ -9758,6 +16634,30 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.dharmaImprintTier = (typeof c.dharmaImprintTier === "number" && isFinite(c.dharmaImprintTier))
 			? Math.min(6, Math.max(0, Math.floor(c.dharmaImprintTier)))
 			: 0;
+		this.chronoImprintTier = (typeof c.chronoImprintTier === "number" && isFinite(c.chronoImprintTier))
+			? Math.min(6, Math.max(0, Math.floor(c.chronoImprintTier)))
+			: 0;
+		this.thunderTemperTier = (typeof c.thunderTemperTier === "number" && isFinite(c.thunderTemperTier))
+			? Math.min(9, Math.max(0, Math.floor(c.thunderTemperTier)))
+			: 0;
+		this.daoHeartTier = (typeof c.daoHeartTier === "number" && isFinite(c.daoHeartTier))
+			? Math.min(9, Math.max(0, Math.floor(c.daoHeartTier)))
+			: 0;
+		this.starGoTier = (typeof c.starGoTier === "number" && isFinite(c.starGoTier))
+			? Math.min(this.STAR_GO_TIER_MAX, Math.max(0, Math.floor(c.starGoTier)))
+			: 0;
+		this.fengshuiTier = (typeof c.fengshuiTier === "number" && isFinite(c.fengshuiTier))
+			? Math.min(this.FENGSHUI_TIER_MAX, Math.max(0, Math.floor(c.fengshuiTier)))
+			: 0;
+		this.swordIntentTier = (typeof c.swordIntentTier === "number" && isFinite(c.swordIntentTier))
+			? Math.min(this.SWORD_TIER_MAX, Math.max(0, Math.floor(c.swordIntentTier)))
+			: 0;
+		this.starMapTier = (typeof c.starMapTier === "number" && isFinite(c.starMapTier))
+			? Math.min(this.STAR_TIER_MAX, Math.max(0, Math.floor(c.starMapTier)))
+			: 0;
+		this.sectTier = (typeof c.sectTier === "number" && isFinite(c.sectTier))
+			? Math.min(this.SECT_TIER_MAX, Math.max(0, Math.floor(c.sectTier)))
+			: 0;
 		if (!c.starship && this.hongmengImprintTier > 0 && (this.starship.totalQiHarvested || 0) === 0 && (this.starship.hongmengQi || 0) === 0){
 			var loadStartQi = this.getHongmengStartingQi();
 			this.starship.hongmengQi = loadStartQi;
@@ -9769,6 +16669,60 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.zixiaoAltar.totalSutrasCondensed = loadStartSutras;
 		}
 		this.syncDaoSutras();
+		if (!c.chronoAltar && this.chronoImprintTier > 0 && (this.chronoAltar.totalSandGathered || 0) === 0 && (this.chronoAltar.chronoSand || 0) === 0){
+			var loadStartSand = this.getChronoStartingSand();
+			this.chronoAltar.chronoSand = loadStartSand;
+			this.chronoAltar.totalSandGathered = loadStartSand;
+		}
+		this.syncChronoSand();
+		if (!c.thunderPool && this.thunderTemperTier > 0 && (this.thunderPool.totalOrbsGathered || 0) === 0 && (this.thunderPool.thunderOrbs || 0) === 0){
+			var loadStartOrbs = this.getThunderStartingOrbs();
+			this.thunderPool.thunderOrbs = loadStartOrbs;
+			this.thunderPool.totalOrbsGathered = loadStartOrbs;
+		}
+		this.syncThunderOrbs();
+		this.syncDivineMerit();
+		if (this.immortalAscended){
+			this.initSamsaraStateOnAscend();
+		} else {
+			this.syncDaoPatterns();
+		}
+		if (this.immortalAscended){
+			this.initStarGoStateOnAscend();
+		} else {
+			this.syncStarGoTier();
+		}
+		if (this.immortalAscended){
+			this.initFengshuiStateOnAscend();
+		} else {
+			this.syncFengshuiTier();
+		}
+		if (this.immortalAscended){
+			this.initSwordPenglaiStateOnAscend();
+			//XX-14 离线折算:以存档时刻推算离线时长,至多一个海市周期
+			var pgSavedAt = (c.penglai && typeof c.penglai === "object") ? c.penglai.savedAt : null;
+			if (typeof pgSavedAt === "number" && isFinite(pgSavedAt) && pgSavedAt > 0){
+				this.applyPenglaiOffline(this.getPenglaiClock() - pgSavedAt);
+			}
+		} else {
+			this.syncSwordIntentTier();
+		}
+		if (this.immortalAscended){
+			this.initStarArtifactStateOnAscend();
+			//XX-15 离线折算:以存档时刻推算离线时长,至多一周天(星宿照常轮转,加持与共鸣照常流逝)
+			var soSavedAt = (c.starObservatory && typeof c.starObservatory === "object") ? c.starObservatory.savedAt : null;
+			if (typeof soSavedAt === "number" && isFinite(soSavedAt) && soSavedAt > 0){
+				this.applyStarOffline(this.getStarClock() - soSavedAt);
+			}
+		} else {
+			this.syncStarMapTier();
+		}
+		if (this.immortalAscended){
+			//XX-16 读档:归一化擂台与心魔劫(跨过周界的结算留待首个 tick,免得资源池读档覆盖名次奖励)
+			this.initSectTribStateOnAscend(true);
+		} else {
+			this.syncSectTier();
+		}
 		if (typeof c.soundMuted == "boolean"){ this.soundMuted = c.soundMuted; }
 		if (typeof c.demonWarned == "boolean"){ this.demonWarned = c.demonWarned; }
 		if (typeof c.sihuaCount == "number"){ this.sihuaCount = Math.max(0, c.sihuaCount); }
@@ -9842,7 +16796,7 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			var lamp = this.getArtifact("yanghun");
 			if (lamp && lamp.researched){ decay += 0.02 * lamp.rank; }
 			var caveDemon = this.getImmortalCaveBonuses ? this.getImmortalCaveBonuses(0) : null;
-			var demonCalmMult = (1 + ((caveDemon && caveDemon.heartDemonDecayBonus) || 0)) * (1 + Math.max(0, Math.floor(this.dharmaImprintTier || 0)) * 0.08);
+			var demonCalmMult = Math.max(0.2, 1 + ((caveDemon && caveDemon.heartDemonDecayBonus) || 0)) * (1 + Math.max(0, Math.floor(this.dharmaImprintTier || 0)) * 0.08) * (1 + this.getDaoHeartSeal() * 0.06);
 			this.heartDemon = Math.max(0, this.heartDemon - decay * csDecayMult * demonCalmMult);
 		}
 		if (this.pillToxicity > 0){
@@ -9859,6 +16813,14 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			this.tickSpiritNursery(immortalStep);
 			this.tickStarship(immortalStep);
 			this.tickZixiaoAltar(immortalStep);
+			this.tickChronoAltar(immortalStep);
+			this.tickThunderPool(immortalStep);
+			this.tickSamsaraIllusion(immortalStep);
+			this.tickStarGoAuction(immortalStep);
+			this.tickFengshuiTalisman(immortalStep);
+			this.tickPenglai(immortalStep);
+			this.tickStarObservatory(immortalStep);
+			this.tickSectTrib(immortalStep);
 		}
 		//fates fire once when their stage is reached (and any cond passes);
 		//every beat shows as a story card — an open card anywhere in the
@@ -10021,6 +16983,48 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 			add("xiuweiRatio", dmDaoEff.xiuweiRatio);
 			add("zhenyuanRatio", dmDaoEff.zhenyuanRatio);
 		}
+		var chDaoEff = this.getChronoDaoBonus ? this.getChronoDaoBonus() : null;
+		if (chDaoEff && chDaoEff.tier > 0){
+			add("xiuweiPerTickBase", chDaoEff.xiuweiBase);
+			add("xiuweiRatio", chDaoEff.xiuweiRatio);
+			add("realmProductionRatio", chDaoEff.realmProductionRatio);
+		}
+		var thBoneEff = this.getThunderBoneBonus ? this.getThunderBoneBonus() : null;
+		if (thBoneEff && thBoneEff.tier > 0){
+			add("xiuweiPerTickBase", thBoneEff.xiuweiBase);
+			add("xiuweiRatio", thBoneEff.xiuweiRatio);
+			add("zhenyuanRatio", thBoneEff.zhenyuanRatio);
+		}
+		var smPathEff = this.getSamsaraPathEffect ? this.getSamsaraPathEffect() : null;
+		if (smPathEff && smPathEff.key){
+			if (smPathEff.xiuweiRatio){ add("xiuweiRatio", smPathEff.xiuweiRatio); }	//XX-11 择道加持(可为负)
+			if (smPathEff.xianyuanRatio){ add("xianyuanRatio", smPathEff.xianyuanRatio); }
+			if (smPathEff.realmProductionRatio){ add("realmProductionRatio", smPathEff.realmProductionRatio); }
+		}
+		var dhSealEff = this.getDaoHeartSealBonus ? this.getDaoHeartSealBonus() : null;
+		if (dhSealEff && dhSealEff.tier > 0){
+			add("xiuweiRatio", dhSealEff.xiuweiRatio);	//XX-11 前世道心印
+		}
+		var sgSealEff = this.getStarGoSealBonus ? this.getStarGoSealBonus() : null;
+		if (sgSealEff && sgSealEff.tier > 0){
+			add("xiuweiRatio", sgSealEff.xiuweiRatio);	//XX-12 前世弈道印
+		}
+		var fsSealEff = this.getFengshuiSealBonus ? this.getFengshuiSealBonus() : null;
+		if (fsSealEff && fsSealEff.tier > 0){
+			add("xiuweiRatio", fsSealEff.xiuweiRatio);	//XX-13 前世堪舆印
+		}
+		var swSealEff = this.getSwordSealBonus ? this.getSwordSealBonus() : null;
+		if (swSealEff && swSealEff.tier > 0){
+			add("xiuweiRatio", swSealEff.xiuweiRatio);	//XX-14 前世剑意印
+		}
+		var smSealEff = this.getStarMapSealBonus ? this.getStarMapSealBonus() : null;
+		if (smSealEff && smSealEff.tier > 0){
+			add("xiuweiRatio", smSealEff.xiuweiRatio);	//XX-15 前世星图印
+		}
+		var sctSealEff = this.getSectSealBonus ? this.getSectSealBonus() : null;
+		if (sctSealEff && sctSealEff.tier > 0){
+			add("xiuweiRatio", sctSealEff.xiuweiRatio);	//XX-16 前世宗门印
+		}
 		if (this.immortalAscended){
 			add("xiuweiRatio", 0.50);
 			add("realmProductionRatio", 0.30);
@@ -10122,6 +17126,22 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.hongmengAltar = this.makeDefaultHongmengAltar();
 		this.zixiaoAltar = this.makeDefaultZixiaoAltar();
 		this.dharmaIdols = this.makeDefaultDharmaIdols();
+		this.chronoAltar = this.makeDefaultChronoAltar();
+		this.innateTreasures = this.makeDefaultInnateTreasures();
+		this.fengshenRoster = this.makeDefaultFengshenRoster();
+		this.thunderPool = this.makeDefaultThunderPool();
+		this.samsaraMirror = this.makeDefaultSamsaraMirror();
+		this.illusionTrial = this.makeDefaultIllusionTrial();
+		this.starGo = this.makeDefaultStarGo();
+		this.auctionHouse = this.makeDefaultAuctionHouse();
+		this.fengshui = this.makeDefaultFengshui();
+		this.talismanWorkshop = this.makeDefaultTalismanWorkshop();
+		this.swordTomb = this.makeDefaultSwordTomb();
+		this.penglai = this.makeDefaultPenglai();
+		this.starObservatory = this.makeDefaultStarObservatory();
+		this.natalWarming = this.makeDefaultNatalWarming();
+		this.sectArena = this.makeDefaultSectArena();
+		this.heartTrib = this.makeDefaultHeartTrib();
 		this.immortalImprint = 0;
 		this.xianqiImprintKey = null;
 		this.starImprintTier = 0;
@@ -10129,6 +17149,19 @@ dojo.declare("classes.managers.CultivationManager", com.nuclearunicorn.core.TabM
 		this.hongmengImprintTier = 0;
 		this.dharmaImprintTier = 0;
 		this.daoSutras = 0;
+		this.chronoImprintTier = 0;
+		this.chronoSand = 0;
+		this.thunderTemperTier = 0;
+		this.divineMerit = 0;
+		this.thunderOrbs = 0;
+		this.daoHeartTier = 0;
+		this.daoPatterns = 0;
+		this.samsaraLegacyPath = null;
+		this.starGoTier = 0;
+		this.fengshuiTier = 0;
+		this.swordIntentTier = 0;
+		this.starMapTier = 0;
+		this.sectTier = 0;
 		this.mingge = [];
 		this.pendingMingge = [];
 		this.applyOrigin();
@@ -10909,6 +17942,14 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						changed = cult.refineImmortalArtifact();
 					}
 					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
 						self._dharmaSig = "";
 						self._cosmosSig = "";
 						self._menagerieSig = "";
@@ -10971,6 +18012,14 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						changed = cult.exchangeAllianceMerit(arg);
 					}
 					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
 						self._dharmaSig = "";
 						self._cosmosSig = "";
 						self._sanctumSig = "";
@@ -11027,6 +18076,14 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						changed = cult.comprehendDaoStele(arg);
 					}
 					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
 						self._dharmaSig = "";
 						self._cosmosSig = "";
 						self._menagerieSig = "";
@@ -11071,6 +18128,14 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						changed = cult.forgeHongmengTreasure(arg);
 					}
 					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
 						self._dharmaSig = "";
 						self._cosmosSig = "";
 						self._menagerieSig = "";
@@ -11119,6 +18184,445 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 						changed = cult.equipDharmaIdol(arg, "support");
 					}
 					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑮ XX-9 混沌岁月长河悟道台与先天至宝器魂共鸣谱
+		this.immortalChronoEl = dojo.create("div", {
+			className: "xxCaveArena xxChronoArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._chronoSig = "";
+		dojo.connect(this.immortalChronoEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalChronoEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-chrono");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (tgt.className && String(tgt.className).indexOf("is-disabled") >= 0){
+						break;
+					}
+					if (act === "upgradeAltar"){
+						changed = cult.upgradeChronoAltar();
+					} else if (act === "autoTrace"){
+						cult.toggleChronoAutoTrace();
+						changed = true;
+					} else if (act === "traceEra"){
+						changed = cult.traceChronoEra(arg || null);
+					} else if (act === "selectEra"){
+						changed = cult.selectChronoEra(arg);
+					} else if (act === "refineTreasure"){
+						changed = cult.refineInnateTreasure(arg);
+					}
+					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑯ XX-10 三十三天封神榜与九霄雷池淬体
+		this.immortalFengshenEl = dojo.create("div", {
+			className: "xxCaveArena xxFengshenArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._fengshenSig = "";
+		dojo.connect(this.immortalFengshenEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalFengshenEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-fengshen");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var changed = false;
+					if (tgt.className && String(tgt.className).indexOf("is-disabled") >= 0){
+						break;
+					}
+					if (act === "ascendHeaven"){
+						changed = cult.ascendFengshenHeaven();
+					} else if (act === "summonThunder"){
+						changed = cult.summonNineHeavenThunder();
+					} else if (act === "temperThunder"){
+						changed = cult.temperThunderBody();
+					} else if (act === "autoCondense"){
+						cult.toggleThunderAutoCondense();
+						changed = true;
+					}
+					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑰ XX-11 六道轮回镜与太虚幻境心魔试炼
+		this.immortalSamsaraEl = dojo.create("div", {
+			className: "xxCaveArena xxSamsaraArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._samsaraSig = "";
+		dojo.connect(this.immortalSamsaraEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalSamsaraEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-samsara");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (tgt.className && String(tgt.className).indexOf("is-disabled") >= 0){
+						break;
+					}
+					if (act === "reveal"){
+						changed = cult.revealSamsaraPath(arg);
+					} else if (act === "choose"){
+						changed = cult.chooseSamsaraPath(arg);
+					} else if (act === "enter"){
+						changed = cult.enterIllusion();
+					} else if (act === "calm" || act === "sever"){
+						changed = cult.illusionStep(act);
+					} else if (act === "lamp"){
+						changed = cult.useDreamLotusLamp();
+					} else if (act === "leave"){
+						changed = cult.leaveIllusion();
+					}
+					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑱ XX-12 周天星辰弈局与诸天万界灵宝拍卖行
+		this.immortalStarGoEl = dojo.create("div", {
+			className: "xxCaveArena xxStarGoArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._starGoSig = "";
+		dojo.connect(this.immortalStarGoEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalStarGoEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-stargo");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (tgt.className && String(tgt.className).indexOf("is-disabled") >= 0){
+						break;
+					}
+					if (act === "start"){
+						changed = cult.startStarGo(arg);
+					} else if (act === "move"){
+						changed = cult.starGoMove(parseInt(arg, 10));
+					} else if (act === "resign"){
+						changed = cult.resignStarGo();
+					} else if (act === "bid"){
+						changed = cult.placeAuctionBid(parseInt(arg, 10) || 1);
+					} else if (act === "hammer"){
+						changed = cult.hammerAuctionLot();
+					}
+					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑲ XX-13 灵脉风水堪舆与符箓画坊
+		this.immortalFengshuiEl = dojo.create("div", {
+			className: "xxCaveArena xxFengshuiArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._fengshuiSig = "";
+		dojo.connect(this.immortalFengshuiEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalFengshuiEl){
+				var act = tgt.getAttribute && tgt.getAttribute("data-xx-fengshui");
+				if (act){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (tgt.className && String(tgt.className).indexOf("is-disabled") >= 0){
+						break;
+					}
+					if (act === "brush"){
+						changed = cult.setFengshuiBrush(arg);
+					} else if (act === "place"){
+						changed = cult.applyFengshuiBrush(parseInt(arg, 10));
+					} else if (act === "clear"){
+						changed = cult.clearFengshui();
+					} else if (act === "survey"){
+						changed = cult.upgradeFengshuiSurvey();
+					} else if (act === "draw"){
+						changed = cult.drawTalisman(arg);
+					} else if (act === "dismiss"){
+						changed = cult.dismissTalisman(arg);
+					} else if (act === "mat"){
+						changed = cult.prepareTalismanMaterial(arg);
+					}
+					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//⑳ XX-14 太虚剑冢万剑归宗与蓬莱海市奇遇
+		this.immortalSwordEl = dojo.create("div", {
+			className: "xxCaveArena xxSwordTombArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._swordSig = "";
+		dojo.connect(this.immortalSwordEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalSwordEl){
+				var swAct = tgt.getAttribute ? tgt.getAttribute("data-xx-sword") : null;
+				var plAct = tgt.getAttribute ? tgt.getAttribute("data-xx-penglai") : null;
+				if (swAct || plAct){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (tgt.className && String(tgt.className).indexOf("is-disabled") >= 0){
+						break;
+					}
+					if (swAct === "select"){
+						changed = cult.selectSwordManual(arg);
+					} else if (swAct === "place"){
+						changed = cult.applySwordManual(parseInt(arg, 10));
+					} else if (swAct === "clear"){
+						changed = cult.clearSwordFormation();
+					} else if (swAct === "comprehend"){
+						changed = cult.comprehendAncientSword(arg);
+					} else if (plAct === "choose"){
+						changed = !!cult.choosePenglaiOption(arg);
+					} else if (plAct === "leave"){
+						changed = cult.leavePenglaiMirage();
+					}
+					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//㉑ XX-15 周天星宿观星台与本命法宝温养
+		this.immortalStarEl = dojo.create("div", {
+			className: "xxCaveArena xxStarObsArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._starSig = "";
+		dojo.connect(this.immortalStarEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalStarEl){
+				var soAct = tgt.getAttribute ? tgt.getAttribute("data-xx-star") : null;
+				var nwAct = tgt.getAttribute ? tgt.getAttribute("data-xx-warm") : null;
+				if (soAct || nwAct){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var arg = tgt.getAttribute("data-xx-arg") || "";
+					var changed = false;
+					if (tgt.className && String(tgt.className).indexOf("is-disabled") >= 0){
+						break;
+					}
+					if (soAct === "divine"){
+						changed = !!cult.divineStars();
+					} else if (nwAct === "feed"){
+						changed = !!cult.warmNatalArtifact(arg);
+					} else if (nwAct === "resonate"){
+						changed = cult.resonateNatalArtifact();
+					}
+					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
+						self._dharmaSig = "";
+						self._cosmosSig = "";
+						self._menagerieSig = "";
+						self._sanctumSig = "";
+						self._caveSig = "";
+						self._immortalSig = "";
+						self._alcSig = null;
+						self._hdrHtml = null;
+						if (self.game.render){ self.game.render(); }
+						self.update();
+					}
+					break;
+				}
+				tgt = tgt.parentNode;
+			}
+		});
+
+		//㉒ XX-16 宗门大比擂台与心魔幻境渡劫
+		this.immortalSectEl = dojo.create("div", {
+			className: "xxCaveArena xxSectArena",
+			style: { display: "none" }
+		}, tabContainer);
+		this._sectSig = "";
+		dojo.connect(this.immortalSectEl, "onclick", function(ev){
+			var tgt = ev && ev.target;
+			while (tgt && tgt !== self.immortalSectEl){
+				var saAct = tgt.getAttribute ? tgt.getAttribute("data-xx-sect") : null;
+				var htAct = tgt.getAttribute ? tgt.getAttribute("data-xx-heart") : null;
+				if (saAct || htAct){
+					if (ev && ev.preventDefault){ ev.preventDefault(); }
+					var changed = false;
+					if (tgt.className && String(tgt.className).indexOf("is-disabled") >= 0){
+						break;
+					}
+					if (saAct === "challenge"){
+						changed = !!cult.challengeSectArena();
+					} else if (htAct === "attempt"){
+						changed = !!cult.attemptHeartTrib();
+					}
+					if (changed){
+						self._sectSig = "";
+						self._starSig = "";
+						self._swordSig = "";
+						self._fengshuiSig = "";
+						self._starGoSig = "";
+						self._samsaraSig = "";
+						self._fengshenSig = "";
+						self._chronoSig = "";
 						self._dharmaSig = "";
 						self._cosmosSig = "";
 						self._menagerieSig = "";
@@ -12208,7 +19712,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				if (this._caveSig !== caveSig){
 					this._caveSig = caveSig;
 					var fmtCave = this.game.getDisplayValueExt.bind(this.game);
-					var artV = cult.ART_VER || "77";
+					var artV = cult.ART_VER || "85";
 					var isEn = String($I("cultivation.cave.badge") || "").indexOf("Immortal") === 0;
 					var caveBns = cult.getImmortalCaveBonuses(26);
 					var impBadgeHtml = (cult.immortalImprint > 0)
@@ -12512,7 +20016,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				if (this._sanctumSig !== sanctumSig){
 					this._sanctumSig = sanctumSig;
 					var fmtSanctum = this.game.getDisplayValueExt.bind(this.game);
-					var artV2 = cult.ART_VER || "77";
+					var artV2 = cult.ART_VER || "85";
 					var caveB2 = cult.getImmortalCaveBonuses(28);
 					var wardPow = cult.getStarArrayDefensePower();
 					var threatPow = cult.getNextDemonRaidPower();
@@ -12867,7 +20371,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				if (this._menagerieSig !== menagerieSig){
 					this._menagerieSig = menagerieSig;
 					var fmtMenag = this.game.getDisplayValueExt.bind(this.game);
-					var artV3 = cult.ART_VER || "77";
+					var artV3 = cult.ART_VER || "85";
 					var caveB3 = cult.getImmortalCaveBonuses(30);
 					var hatchedCnt = cult.getHatchedBeastCount();
 					var maxBeastStg = cult.getMaxBeastStage();
@@ -13173,7 +20677,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				if (this._cosmosSig !== cosmosSig){
 					this._cosmosSig = cosmosSig;
 					var fmtCosmos = this.game.getDisplayValueExt.bind(this.game);
-					var artV4 = cult.ART_VER || "77";
+					var artV4 = cult.ART_VER || "85";
 					var caveB4 = cult.getImmortalCaveBonuses(30);
 					var vTierNow = ssUI.vesselTier || 0;
 					var vCfgNow = cult.getVesselTierDef(vTierNow);
@@ -13430,7 +20934,7 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 				if (this._dharmaSig !== dharmaSig){
 					this._dharmaSig = dharmaSig;
 					var fmtDharma = this.game.getDisplayValueExt.bind(this.game);
-					var artV5 = cult.ART_VER || "77";
+					var artV5 = cult.ART_VER || "85";
 					var caveB5 = cult.getImmortalCaveBonuses(30);
 					var zxTierNow = zaUI.tier || 0;
 					var zxCfgNow = cult.getZixiaoAltarTierDef(zxTierNow);
@@ -13667,6 +21171,3349 @@ dojo.declare("classes.tab.CultivationTab", com.nuclearunicorn.game.ui.tab, {
 
 						this.immortalDharmaEl.innerHTML = dharmaTopHtml +
 							"<div class=\"xxCaveColumns\">" + zixiaoColHtml + dharmaColHtml + "</div>";
+					}
+				}
+			}
+		}
+
+		if (this.immortalChronoEl){
+			var dujieChrono = cult.getStage("dujie_0");
+			var showChrono = !!(cult.immortalAscended || (dujieChrono && dujieChrono.researched) || (cult.immortalImprint || 0) > 0 || (cult.dharmaImprintTier || 0) > 0 || (cult.chronoImprintTier || 0) > 0);
+			this.immortalChronoEl.style.display = showChrono ? "block" : "none";
+			if (showChrono){
+				dojo.toggleClass(this.immortalChronoEl, "is-locked", !cult.immortalAscended);
+				var caUI = cult.chronoAltar || cult.makeDefaultChronoAltar();
+				var itUI = cult.innateTreasures || cult.makeDefaultInnateTreasures();
+				var zaRef = cult.zixiaoAltar || cult.makeDefaultZixiaoAltar();
+				var xyCh = this.game.resPool.get("xianyuan");
+				var tcCh = this.game.resPool.get("timeCrystal");
+				var rlCh = this.game.resPool.get("relic");
+				var uoCh = this.game.resPool.get("unobtainium");
+				var xyHaveCh = xyCh ? Math.floor(xyCh.value) : 0;
+				var tcHaveCh = tcCh ? Math.floor(tcCh.value) : 0;
+				var rlHaveCh = rlCh ? Math.floor(rlCh.value) : 0;
+				var uoHaveCh = uoCh ? Math.floor(uoCh.value) : 0;
+
+				var itLvParts = [];
+				for (var iti = 0; iti < cult.INNATE_TREASURES.length; iti++){
+					var itk = cult.INNATE_TREASURES[iti].key;
+					itLvParts.push(itk + ":" + ((itUI.levels && itUI.levels[itk]) || 0));
+				}
+				var eraMastParts = [];
+				for (var emi = 0; emi < cult.CHRONO_ERAS.length; emi++){
+					var emk = cult.CHRONO_ERAS[emi].key;
+					eraMastParts.push(emk + ":" + ((caUI.eraMastery && caUI.eraMastery[emk]) || 0));
+				}
+
+				var chronoSig = [
+					cult.immortalAscended ? 1 : 0,
+					cult.daoyun || 0,
+					cult.chronoImprintTier || 0,
+					caUI.tier || 0,
+					caUI.chronoSand || 0,
+					caUI.insight || 0,
+					Math.floor(caUI.flowProgress || 0),
+					caUI.traceCount || 0,
+					caUI.passiveTraceCount || 0,
+					caUI.autoTrace ? 1 : 0,
+					caUI.selectedEra || "",
+					eraMastParts.join(","),
+					itLvParts.join(","),
+					zaRef.daoSutras || 0,
+					xyHaveCh,
+					tcHaveCh,
+					rlHaveCh,
+					uoHaveCh,
+					caUI.lastNote || "",
+					itUI.lastNote || ""
+				].join("|");
+
+				if (this._chronoSig !== chronoSig){
+					this._chronoSig = chronoSig;
+					var fmtChrono = this.game.getDisplayValueExt.bind(this.game);
+					var artV6 = cult.ART_VER || "85";
+					var caveB6 = cult.getImmortalCaveBonuses(30);
+					var chTierNow = caUI.tier || 0;
+					var chCfgNow = cult.getChronoAltarTierDef(chTierNow);
+					var chAuraNow = cult.getChronoAuraBonuses();
+					var epochRankNow = cult.getChronoEpochRank();
+					var itTotalLv = cult.getInnateTotalLevel();
+					var itResTier = cult.getInnateResonanceTier();
+					var itResCnt = cult.getInnateResonantCount();
+					var sermonMultNow = cult.getChronoSermonMult();
+					var resTitle = function(name){
+						var ro = this.game.resPool.get(name);
+						return (ro && ro.title) || name;
+					}.bind(this);
+					var sandIcoHtml = "<img src=\"res/art/sand_chrono_origin.webp?v=" + artV6 + "\" class=\"xxMiniSandIco\" alt=\"\"/>";
+					var chronoSealBadge = (cult.chronoImprintTier > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.chrono.panel.imprint", [cult.chronoImprintTier]) + "</span>"
+						: "";
+
+					var chronoTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxChronoHdrIco\"><img src=\"res/art/altar_chrono_river.webp?v=" + artV6 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.chrono.panel.badge") + "</span>" +
+										chronoSealBadge +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.chrono.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.chrono.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.chrono.panel.chip.altar", [chTierNow, (caUI.traceCount || 0) + (caUI.passiveTraceCount || 0)]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + sandIcoHtml + $I("cultivation.chrono.panel.chip.sand", [caUI.chronoSand || 0, caUI.insight || 0]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.chrono.panel.chip.innate", [itTotalLv, itResTier]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						this.immortalChronoEl.innerHTML = chronoTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.chrono.panel.locked") + "</div>";
+					} else {
+						// 左栏: 混沌岁月长河悟道台
+						var chUpReq = cult.getChronoUpgradeReq();
+						var chUpParts = [];
+						if (chUpReq){
+							chUpParts.push(fmtChrono(chUpReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+							chUpParts.push(fmtChrono(chUpReq.timeCrystal) + " " + resTitle("timeCrystal"));
+							if (chUpReq.auxRes && chUpReq.auxVal > 0){
+								chUpParts.push(fmtChrono(chUpReq.auxVal) + " " + resTitle(chUpReq.auxRes));
+							}
+							if (chUpReq.daoSutras > 0){
+								chUpParts.push($I("cultivation.chrono.req.sutra", [chUpReq.daoSutras]));
+							}
+							if (chUpReq.reqDaoyun > 0){
+								chUpParts.push($I("cultivation.beast.req.dao", [chUpReq.reqDaoyun]));
+							}
+						}
+						var chUpBtnHtml = "";
+						if (chUpReq){
+							var chUpLabel = (chTierNow === 0)
+								? $I("cultivation.chrono.build.btn", [chUpParts.join(" · ")])
+								: $I("cultivation.chrono.upgrade.btn", [$I(chUpReq.titleKey), chUpParts.join(" · ")]);
+							chUpBtnHtml = "<div class=\"xxCaveMiniBtn gold" + (chUpReq.affordable ? "" : " is-disabled") + "\" data-xx-chrono=\"upgradeAltar\">" + chUpLabel + "</div>";
+						} else {
+							chUpBtnHtml = "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.chrono.upgrade.max") + "</div>";
+						}
+
+						var curEraDef = cult.getChronoEraDef(caUI.selectedEra || "shanghuang") || cult.CHRONO_ERAS[0];
+						var curTrace = cult.getChronoTracePreview(curEraDef.key);
+						var flowPct = (chTierNow > 0) ? Math.min(100, Math.round(((caUI.flowProgress || 0) / Math.max(1, caUI.flowMax || 100)) * 100)) : 0;
+						var traceCostTxt = function(prev){
+							var t = fmtChrono(prev.xianyuan) + " " + $I("resources.xianyuan.title");
+							if (prev.timeCrystal > 0){ t += " · " + fmtChrono(prev.timeCrystal) + " " + resTitle("timeCrystal"); }
+							return t;
+						};
+						var traceBtnHtml = (chTierNow > 0 && curTrace.unlocked)
+							? "<div class=\"xxCaveMiniBtn gold" + (curTrace.affordable ? "" : " is-disabled") + "\" data-xx-chrono=\"traceEra\" data-xx-arg=\"" + curEraDef.key + "\">" +
+								$I("cultivation.chrono.trace.btn", [$I(curEraDef.labelKey), traceCostTxt(curTrace), curTrace.sandGain, curTrace.insightGain]) +
+							  "</div>"
+							: "";	//未筑台时仅保留筑台按钮,提示见上方状态行
+
+						var qiPctCh = Math.round((chAuraNow.xyRatio || 0) * 100);
+						var herbPctCh = Math.round((chAuraNow.herbSpeed || 0) * 100);
+						var sermonPctCh = Math.round((sermonMultNow - 1) * 100);
+
+						var chronoConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxChronoConsole\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + $I(chCfgNow.titleKey) + "</b>" +
+									"<div class=\"xxCaveMiniBtn" + (caUI.autoTrace ? " is-active" : "") + "\" data-xx-chrono=\"autoTrace\">" +
+										$I(caUI.autoTrace ? "cultivation.chrono.auto.on" : "cultivation.chrono.auto.off") +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip is-gold\">" + sandIcoHtml + $I("cultivation.chrono.chip.sand", [caUI.chronoSand || 0]) + "</span>" +
+									"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.chrono.chip.insight", [caUI.insight || 0, epochRankNow]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.chrono.chip.qi", [qiPctCh]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.chrono.chip.herb", [herbPctCh]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.chrono.chip.sermon", [sermonPctCh]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotBar xxChronoBar\"><i style=\"width:" + flowPct + "%\"></i></div>" +
+								"<div class=\"xxPlotState\" style=\"margin:4px 0 6px;\">" +
+									((chTierNow > 0)
+										? $I("cultivation.chrono.flow.state", [flowPct, $I(curEraDef.labelKey), curTrace.sandGain, curTrace.insightGain, curTrace.passiveSand])
+										: $I("cultivation.chrono.trace.need")) +
+								"</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									traceBtnHtml +
+									chUpBtnHtml +
+								"</div>" +
+							"</div>";
+
+						var eraGridHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.chrono.era.title") + "</div><div class=\"xxChronoEraGrid\">";
+						for (var eri = 0; eri < cult.CHRONO_ERAS.length; eri++){
+							var erDef = cult.CHRONO_ERAS[eri];
+							var erUnlocked = chTierNow >= erDef.reqTier;
+							var erActive = erUnlocked && ((caUI.selectedEra || "shanghuang") === erDef.key);
+							var erPrev = cult.getChronoTracePreview(erDef.key);
+							var erBtnHtml = "";
+							if (!erUnlocked){
+								erBtnHtml = "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.chrono.era.locked", [erDef.reqTier]) + "</div>";
+							} else if (erActive){
+								erBtnHtml = "<div class=\"xxCaveMiniBtn is-active\" data-xx-chrono=\"selectEra\" data-xx-arg=\"" + erDef.key + "\">" + $I("cultivation.chrono.era.active") + "</div>";
+							} else {
+								erBtnHtml = "<div class=\"xxCaveMiniBtn\" data-xx-chrono=\"selectEra\" data-xx-arg=\"" + erDef.key + "\">" + $I("cultivation.chrono.era.select") + "</div>";
+							}
+							eraGridHtml +=
+								"<div class=\"xxChronoEraCard" + (erActive ? " is-active" : "") + (erUnlocked ? "" : " is-locked") + "\"" +
+									(erUnlocked ? (" data-xx-chrono=\"selectEra\" data-xx-arg=\"" + erDef.key + "\"") : "") + ">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<span>" + $I(erDef.labelKey) + "</span>" +
+										"<span class=\"xxSeedStock\">" + $I("cultivation.chrono.era.mastery", [erPrev.mastery]) + "</span>" +
+									"</div>" +
+									"<div class=\"xxBeastStageLine\">" + sandIcoHtml + $I("cultivation.chrono.era.drop", [erPrev.sandGain, erPrev.insightGain]) + "</div>" +
+									"<div class=\"xxBountyDesc\">" + $I(erDef.descKey) + "</div>" +
+									erBtnHtml +
+								"</div>";
+						}
+						eraGridHtml += "</div>";
+
+						var chronoAuraHtml =
+							"<div class=\"xxChronoAuraBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" +
+									sandIcoHtml +
+									$I("cultivation.chrono.aura.title", [caUI.traceCount || 0, caUI.passiveTraceCount || 0]) +
+								"</div>" +
+								"<div class=\"xxBountyDesc\">" +
+									$I("cultivation.chrono.aura.desc", [
+										(chAuraNow.xyBase || 0).toFixed(2),
+										qiPctCh,
+										herbPctCh,
+										sermonMultNow.toFixed(2)
+									]) +
+								"</div>" +
+							"</div>";
+
+						var chronoColHtml =
+							"<div class=\"xxCaveSection xxChronoColAltar\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/altar_chrono_river.webp?v=" + artV6 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.chrono.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.chrono.meta", [qiPctCh, herbPctCh, sermonMultNow.toFixed(2)]) + "</span>" +
+								"</div>" +
+								chronoConsoleHtml +
+								eraGridHtml +
+								chronoAuraHtml +
+								(caUI.lastNote ? "<div class=\"xxCaveNote\">" + caUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 先天至宝器魂共鸣谱
+						var itPct = Math.min(100, Math.round((itTotalLv / 24) * 100));
+						var itExecPct = Math.round((caveB6.riftBossExecuteRatio || 0) * 100);
+						var innateBannerHtml =
+							"<div class=\"xxXianqiStageBox xxInnateResBox\">" +
+								"<div class=\"xxHarmonyBanner" + (itResTier > 0 ? " is-active" : "") + "\">" +
+									$I("cultivation.innate.res." + itResTier, [itResCnt]) +
+								"</div>" +
+								"<div class=\"xxPlotBar xxInnateBar\" style=\"margin-top:6px;\"><i style=\"width:" + itPct + "%\"></i></div>" +
+								"<div class=\"xxPlotState\" style=\"margin-top:5px;\">" + $I("cultivation.innate.res.progress", [itResCnt]) + "</div>" +
+							"</div>";
+
+						var innateGridHtml = "<div class=\"xxInnateGrid\">";
+						for (var tri2 = 0; tri2 < cult.INNATE_TREASURES.length; tri2++){
+							var tDef = cult.INNATE_TREASURES[tri2];
+							var tLv = (itUI.levels && itUI.levels[tDef.key]) || 0;
+							var tResonant = tLv >= cult.INNATE_RESONANT_LEVEL;
+							var tStateKey = (tLv <= 0)
+								? "cultivation.innate.state.dormant"
+								: (tResonant ? "cultivation.innate.state.resonant" : "cultivation.innate.state.awake");
+							var tStateCls = (tLv <= 0) ? "" : (tResonant ? " is-resonant" : " is-awake");
+							var tEff = cult.getInnateTreasureEffect(tDef.key, Math.max(1, tLv));
+							var tEffArgs = [];
+							if (tDef.key === "chaosBell"){
+								tEffArgs = [Math.round(tEff.mitigation * 100), Math.round(tEff.startShield * 100), tEff.freezeEvery];
+							} else if (tDef.key === "taijiDiagram"){
+								tEffArgs = [Math.round(tEff.defIgnore * 100), Math.round(tEff.counterBonus * 100), Math.round(tEff.reflect * 100)];
+							} else if (tDef.key === "panguBanner"){
+								tEffArgs = [tEff.combatMult.toFixed(2), Math.round(tEff.riftDmg * 100), Math.round(tEff.cleave * 100)];
+							} else {
+								tEffArgs = [Math.round(tEff.herbSpeed * 100), Math.round(tEff.xiuweiRatio * 100), Math.round(tEff.sermon * 100)];
+							}
+							var tEffHtml = "<div class=\"xxInnateEffect\">" +
+								(tLv <= 0 ? ("<b>" + $I("cultivation.innate.effect.preview") + "</b>") : "") +
+								$I("cultivation.innate.effect." + tDef.key, tEffArgs) +
+								"</div>";
+							var tReq = cult.getInnateRefineReq(tDef.key);
+							var tParts = [];
+							if (tReq){
+								tParts.push($I("cultivation.chrono.req.sand", [tReq.chronoSand]));
+								tParts.push(fmtChrono(tReq.xianyuan) + " " + $I("resources.xianyuan.title"));
+								if (tReq.daoSutras > 0){
+									tParts.push($I("cultivation.chrono.req.sutra", [tReq.daoSutras]));
+								}
+								if (tReq.reqDaoyun > 0){
+									tParts.push($I("cultivation.beast.req.dao", [tReq.reqDaoyun]));
+								}
+								if (!tReq.altarOk){
+									tParts.push($I("cultivation.chrono.req.tier", [tReq.reqAltarTier]));
+								}
+							}
+							var tBtnHtml = "";
+							if (tReq){
+								var tBtnText = (tLv === 0)
+									? $I("cultivation.innate.awaken.btn", [tParts.join(" · ")])
+									: $I("cultivation.innate.refine.btn", [tReq.nextLv, tParts.join(" · ")]);
+								tBtnHtml = "<div class=\"xxCaveMiniBtn gold" + (tReq.affordable ? "" : " is-disabled") + "\" data-xx-chrono=\"refineTreasure\" data-xx-arg=\"" + tDef.key + "\">" + tBtnText + "</div>";
+							} else {
+								tBtnHtml = "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.innate.refine.max") + "</div>";
+							}
+							var tCardCls = "xxInnateCard" +
+								(tLv > 0 ? " is-awakened" : "") +
+								(tResonant ? " is-resonant" : "") +
+								(tLv >= 6 ? " is-maxed" : "");
+							innateGridHtml +=
+								"<div class=\"" + tCardCls + "\">" +
+									"<div class=\"xxStarCoreTop xxInnateCardTop\">" +
+										"<div class=\"xxHerbIco xxInnateIco\"><img src=\"" + tDef.art + "?v=" + artV6 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxSeedBody\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<span>" + $I(tDef.labelKey) + "</span>" +
+												"<span class=\"xxSeedStock\">" + $I("cultivation.innate.lv", [tLv]) + "</span>" +
+											"</div>" +
+											"<div class=\"xxInnateStateRow\"><span class=\"xxInnateStateTag" + tStateCls + "\">" + $I(tStateKey) + "</span></div>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxSeedSub xxInnateCardDesc\">" + $I(tDef.descKey) + "</div>" +
+									tEffHtml +
+									tBtnHtml +
+								"</div>";
+						}
+						innateGridHtml += "</div>";
+
+						var innateColHtml =
+							"<div class=\"xxCaveSection xxChronoColInnate\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/treasure_chaos_bell.webp?v=" + artV6 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.innate.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.innate.meta", [itTotalLv, itResCnt, itExecPct]) + "</span>" +
+								"</div>" +
+								innateBannerHtml +
+								innateGridHtml +
+								(itUI.lastNote ? "<div class=\"xxCaveNote\">" + itUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						this.immortalChronoEl.innerHTML = chronoTopHtml +
+							"<div class=\"xxCaveColumns\">" + chronoColHtml + innateColHtml + "</div>";
+					}
+				}
+			}
+		}
+
+		if (this.immortalFengshenEl){
+			var dujieFs = cult.getStage("dujie_0");
+			var showFs = !!(cult.immortalAscended || (dujieFs && dujieFs.researched) || (cult.immortalImprint || 0) > 0 || (cult.chronoImprintTier || 0) > 0 || (cult.thunderTemperTier || 0) > 0);
+			this.immortalFengshenEl.style.display = showFs ? "block" : "none";
+			if (showFs){
+				dojo.toggleClass(this.immortalFengshenEl, "is-locked", !cult.immortalAscended);
+				var frUI = cult.fengshenRoster || cult.makeDefaultFengshenRoster();
+				var tpUI = cult.thunderPool || cult.makeDefaultThunderPool();
+				var itRefFs = cult.innateTreasures || cult.makeDefaultInnateTreasures();
+				var xyFs = this.game.resPool.get("xianyuan");
+				var tcFs = this.game.resPool.get("timeCrystal");
+				var xyHaveFs = xyFs ? Math.floor(xyFs.value) : 0;
+				var tcHaveFs = tcFs ? Math.floor(tcFs.value) : 0;
+
+				var fengshenSig = [
+					cult.immortalAscended ? 1 : 0,
+					cult.daoyun || 0,
+					cult.riftFloor || 0,
+					cult.immortalImprint || 0,
+					cult.thunderTemperTier || 0,
+					frUI.layer || 0,
+					frUI.merit || 0,
+					frUI.totalMerit || 0,
+					frUI.meritFromRift || 0,
+					frUI.meritFromSermon || 0,
+					frUI.meritFromChrono || 0,
+					frUI.riftWins || 0,
+					tpUI.tier || 0,
+					tpUI.thunderOrbs || 0,
+					Math.floor(tpUI.charge || 0),
+					tpUI.autoCondense ? 1 : 0,
+					tpUI.failStacks || 0,
+					tpUI.attempts || 0,
+					(itRefFs.levels && itRefFs.levels.chaosBell) || 0,
+					(itRefFs.levels && itRefFs.levels.panguBanner) || 0,
+					cult.getInnateResonanceTier(),
+					xyHaveFs,
+					tcHaveFs,
+					frUI.lastNote || "",
+					tpUI.lastNote || ""
+				].join("|");
+
+				if (this._fengshenSig !== fengshenSig){
+					this._fengshenSig = fengshenSig;
+					var fmtFs = this.game.getDisplayValueExt.bind(this.game);
+					var artV7 = cult.ART_VER || "85";
+					var pctFs = function(v){ return Math.round((v || 0) * 100); };
+					var pct1Fs = function(v){ return Math.round((v || 0) * 1000) / 10; };
+					var resTitleFs = function(name){
+						var ro = this.game.resPool.get(name);
+						return (ro && ro.title) || name;
+					}.bind(this);
+					var fsLayerNow = frUI.layer || 0;
+					var fsDomNow = cult.getFengshenDomainForLayer(fsLayerNow);
+					var fsOfficeCnt = cult.getFengshenOfficeCount();
+					var fsMeritMult = cult.getFengshenMeritMult();
+					var thTierNow = tpUI.tier || 0;
+					var thCfgNow = cult.getThunderTierDef(thTierNow);
+					var meritIcoHtml = "<img src=\"res/art/merit_token.webp?v=" + artV7 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var orbIcoHtml = "<img src=\"res/art/thunder_orb.webp?v=" + artV7 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var boneBadgeHtml = (cult.thunderTemperTier > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.fengshen.panel.imprint", [cult.thunderTemperTier]) + "</span>"
+						: "";
+
+					var fengshenTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxFengshenHdrIco\"><img src=\"res/art/fengshen_roster.webp?v=" + artV7 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.fengshen.panel.badge") + "</span>" +
+										boneBadgeHtml +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.fengshen.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.fengshen.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.fengshen.panel.chip.layer", [fsLayerNow, fsOfficeCnt]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + meritIcoHtml + $I("cultivation.fengshen.panel.chip.merit", [frUI.merit || 0, frUI.totalMerit || 0]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + orbIcoHtml + $I("cultivation.fengshen.panel.chip.thunder", [thTierNow, tpUI.thunderOrbs || 0]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						this.immortalFengshenEl.innerHTML = fengshenTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.fengshen.panel.locked") + "</div>";
+					} else {
+						// 左栏: 三十三天封神榜
+						var fsReq = cult.getFengshenAscendReq();
+						var fsBtnHtml = "";
+						if (fsReq){
+							var fsParts = [
+								$I("cultivation.fengshen.req.merit", [fsReq.merit]),
+								fmtFs(fsReq.xianyuan) + " " + $I("resources.xianyuan.title")
+							];
+							if (!fsReq.riftOk){
+								fsParts.push($I("cultivation.fengshen.req.rift", [fsReq.reqRiftFloor]));
+							}
+							if (!fsReq.lawOk){
+								fsParts.push($I("cultivation.beast.req.dao", [fsReq.reqDaoyun]));
+							}
+							fsBtnHtml = "<div class=\"xxCaveMiniBtn gold" + (fsReq.affordable ? "" : " is-disabled") + "\" data-xx-fengshen=\"ascendHeaven\">" +
+								$I("cultivation.fengshen.ascend.btn", [fsReq.nextLayer, fsParts.join(" · ")]) +
+								"</div>";
+						} else {
+							fsBtnHtml = "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.fengshen.ascend.max") + "</div>";
+						}
+						var fsNextDom = fsReq ? cult.getFengshenDomainDef(fsReq.domainKey) : null;
+						var fsStateHtml = fsReq
+							? ((fsReq.reqDaoyun > 0)
+								? $I("cultivation.fengshen.next.state", [fsLayerNow, $I(fsNextDom.labelKey), fsReq.reqRiftFloor, fsReq.reqDaoyun])
+								: $I("cultivation.fengshen.next.state.rift", [fsLayerNow, $I(fsNextDom.labelKey), fsReq.reqRiftFloor]))
+							: $I("cultivation.fengshen.next.max");
+						var fsLayerPct = Math.min(100, Math.round((fsLayerNow / cult.FENGSHEN_MAX_LAYER) * 100));
+						var fsCurTitle = (fsLayerNow > 0 && fsDomNow)
+							? $I("cultivation.fengshen.layer.cur", [fsLayerNow, $I(fsDomNow.labelKey)])
+							: $I("cultivation.fengshen.layer.none");
+						var fsWeiCombatPct = fsLayerNow;	// 天威:每重战力 +1%
+						var fsWeiXwPct = fsLayerNow * 2;	// 天威:每重修为 +2%
+
+						var fsConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxFengshenConsole\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + fsCurTitle + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.fengshen.chip.offices", [fsOfficeCnt]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip is-gold\">" + meritIcoHtml + $I("cultivation.fengshen.chip.merit", [frUI.merit || 0]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.fengshen.chip.mult", [fsMeritMult.toFixed(2)]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotBar xxFengshenBar\"><i style=\"width:" + fsLayerPct + "%\"></i></div>" +
+								"<div class=\"xxPlotState\" style=\"margin:4px 0 6px;\">" + fsStateHtml + "</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" + fsBtnHtml + "</div>" +
+							"</div>";
+
+						var fsNextRiftMerit = cult.getFengshenRiftMerit(Math.max(26, (cult.riftFloor || 0) + 1));
+						var fsSourceHtml =
+							"<div class=\"xxFengshenSourceBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + meritIcoHtml + $I("cultivation.fengshen.source.title", [frUI.totalMerit || 0]) + "</div>" +
+								"<div class=\"xxFengshenSourceRow\">" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.fengshen.source.rift", [frUI.meritFromRift || 0, frUI.riftWins || 0, fsNextRiftMerit]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.fengshen.source.sermon", [frUI.meritFromSermon || 0]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.fengshen.source.chrono", [frUI.meritFromChrono || 0]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxBountyDesc\">" + $I("cultivation.fengshen.source.desc") + "</div>" +
+							"</div>";
+
+						var fsDomainHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.fengshen.domain.title") + "</div><div class=\"xxFengshenDomainGrid\">";
+						for (var fdi = 0; fdi < cult.FENGSHEN_DOMAINS.length; fdi++){
+							var fdDef = cult.FENGSHEN_DOMAINS[fdi];
+							var fdSize = fdDef.to - fdDef.from + 1;
+							var fdRank = cult.getFengshenOfficeRank(fdDef.office);
+							var fdCurrent = !!(fsDomNow && fsDomNow.key === fdDef.key);
+							var fdGateOk = (cult.riftFloor || 0) >= fdDef.reqRiftFloor && (cult.daoyun || 0) >= fdDef.reqDaoyun;
+							var fdEff = cult.getFengshenOfficeEffect(fdDef.office, Math.max(1, fdRank));
+							var fdArgs = [];
+							if (fdDef.office === "patrol"){
+								fdArgs = [pctFs(fdEff.xyRatio), pctFs(fdEff.prodRatio), (fdEff.xyBase || 0).toFixed(2)];
+							} else if (fdDef.office === "herbal"){
+								fdArgs = [pctFs(fdEff.herbSpeed), pctFs(fdEff.herbYield), pctFs(fdEff.pillPot)];
+							} else if (fdDef.office === "thunderGeneral"){
+								fdArgs = [pctFs(fdEff.combat), pctFs(fdEff.riftDmg), pct1Fs(fdEff.crit)];
+							} else if (fdDef.office === "dipper"){
+								fdArgs = [pctFs(fdEff.riftHp), pctFs(fdEff.mitigation), pctFs(fdEff.startShield)];
+							} else if (fdDef.office === "wenchang"){
+								fdArgs = [pctFs(fdEff.sermon), pctFs(fdEff.xiuwei), pctFs(fdEff.merit)];
+							} else if (fdDef.office === "thunderLord"){
+								fdArgs = [pctFs(fdEff.temperChance), pctFs(fdEff.orbGain), pctFs(fdEff.strike)];
+							} else {
+								fdArgs = [(1 + (fdEff.combat || 0)).toFixed(2), pctFs(fdEff.xyRatio), pctFs(fdEff.xiuwei)];
+							}
+							var fdStateTxt = (fdRank <= 0)
+								? $I("cultivation.fengshen.office.state.vacant")
+								: ((fdRank >= fdSize) ? $I("cultivation.fengshen.office.state.full") : $I("cultivation.fengshen.office.state.rank", [fdRank, fdSize]));
+							var fdStateCls = (fdRank <= 0) ? "" : ((fdRank >= fdSize) ? " is-resonant" : " is-awake");
+							var fdCardCls = "xxFengshenDomainCard" +
+								(fdCurrent ? " is-current" : "") +
+								(fdRank > 0 ? " is-granted" : "") +
+								(fdRank >= fdSize ? " is-full" : "") +
+								((fdRank <= 0 && !fdGateOk) ? " is-locked" : "") +
+								(fdDef.key === "daluo" ? " is-apex" : "");
+							fsDomainHtml +=
+								"<div class=\"" + fdCardCls + "\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<span>" + $I(fdDef.labelKey) + "</span>" +
+										"<span class=\"xxSeedStock\">" + ((fdDef.from === fdDef.to)
+											? $I("cultivation.fengshen.domain.single", [fdDef.from])
+											: $I("cultivation.fengshen.domain.range", [fdDef.from, fdDef.to])) + "</span>" +
+									"</div>" +
+									"<div class=\"xxFengshenOfficeRow\">" +
+										"<span class=\"xxFengshenOfficeName\">" + $I(fdDef.officeKey) + "</span>" +
+										"<span class=\"xxInnateStateTag" + fdStateCls + "\">" + fdStateTxt + "</span>" +
+									"</div>" +
+									"<div class=\"xxInnateEffect\">" +
+										(fdRank <= 0 ? ("<b>" + $I("cultivation.fengshen.effect.preview") + "</b>") : "") +
+										$I(fdDef.effectKey, fdArgs) +
+									"</div>" +
+									(fdRank <= 0
+										? ("<div class=\"xxFengshenGate" + (fdGateOk ? " is-met" : "") + "\">" + ((fdDef.reqDaoyun > 0)
+											? $I("cultivation.fengshen.domain.gate", [fdDef.reqRiftFloor, fdDef.reqDaoyun])
+											: $I("cultivation.fengshen.domain.gate.rift", [fdDef.reqRiftFloor])) + "</div>")
+										: "") +
+								"</div>";
+						}
+						fsDomainHtml += "</div>";
+
+						var fsColHtml =
+							"<div class=\"xxCaveSection xxFengshenColRoster\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/heaven_gate.webp?v=" + artV7 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.fengshen.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.fengshen.meta", [fsWeiCombatPct, fsWeiXwPct, fsMeritMult.toFixed(2)]) + "</span>" +
+								"</div>" +
+								fsConsoleHtml +
+								fsSourceHtml +
+								fsDomainHtml +
+								(frUI.lastNote ? "<div class=\"xxCaveNote\">" + frUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 九霄雷池淬体
+						var thReq = cult.getThunderTemperReq();
+						var thSum = cult.getThunderSummonPreview();
+						var thSyn = cult.getThunderSynergy();
+						var thStrikeNow = cult.getThunderStrikeRatio();
+						var thChargePct = Math.min(100, Math.round(((tpUI.charge || 0) / Math.max(1, tpUI.chargeMax || 100)) * 100));
+						var thRiftOrbs = cult.getThunderRiftOrbs(Math.max(26, (cult.riftFloor || 0) + 1));
+						var thSummonCost = fmtFs(thSum.xianyuan) + " " + $I("resources.xianyuan.title") + " · " + fmtFs(thSum.timeCrystal) + " " + resTitleFs("timeCrystal");
+						var thSummonBtnHtml = "<div class=\"xxCaveMiniBtn" + (thSum.affordable ? "" : " is-disabled") + "\" data-xx-fengshen=\"summonThunder\">" +
+							$I("cultivation.thunder.summon.btn", [thSummonCost, thSum.orbGain]) +
+							"</div>";
+						var thTemperBtnHtml = "";
+						if (thReq){
+							var thParts = [
+								$I("cultivation.thunder.req.orbs", [thReq.thunderOrbs]),
+								fmtFs(thReq.xianyuan) + " " + $I("resources.xianyuan.title")
+							];
+							if (!thReq.layerOk){
+								thParts.push($I("cultivation.thunder.req.layer", [thReq.reqLayer]));
+							}
+							thTemperBtnHtml = "<div class=\"xxCaveMiniBtn gold" + (thReq.affordable ? "" : " is-disabled") + "\" data-xx-fengshen=\"temperThunder\">" +
+								$I("cultivation.thunder.temper.btn", [thReq.nextTier, thParts.join(" · "), pctFs(thReq.chance)]) +
+								"</div>";
+						} else {
+							thTemperBtnHtml = "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.thunder.temper.max") + "</div>";
+						}
+
+						var thConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxThunderConsole\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + $I(thCfgNow.titleKey) + "</b>" +
+									"<div class=\"xxCaveMiniBtn" + (tpUI.autoCondense ? " is-active" : "") + "\" data-xx-fengshen=\"autoCondense\">" +
+										$I(tpUI.autoCondense ? "cultivation.thunder.auto.on" : "cultivation.thunder.auto.off") +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip is-gold\">" + orbIcoHtml + $I("cultivation.thunder.chip.orbs", [tpUI.thunderOrbs || 0]) + "</span>" +
+									(thReq ? ("<span class=\"xxVesselChip\">" + $I("cultivation.thunder.chip.chance", [pctFs(thReq.chance)]) + "</span>") : "") +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.thunder.chip.stacks", [tpUI.failStacks || 0]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotBar xxThunderBar\"><i style=\"width:" + thChargePct + "%\"></i></div>" +
+								"<div class=\"xxPlotState\" style=\"margin:4px 0 6px;\">" + $I("cultivation.thunder.charge.state", [thChargePct, thSum.passiveOrbs, thRiftOrbs]) + "</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" + thSummonBtnHtml + thTemperBtnHtml + "</div>" +
+							"</div>";
+
+						var thLadderHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.thunder.ladder.title") + "</div><div class=\"xxThunderLadder\">";
+						for (var tli = 1; tli <= cult.THUNDER_MAX_TIER; tli++){
+							var tlDef = cult.getThunderTierDef(tli);
+							var tlCls = (tli <= thTierNow) ? " is-done" : ((tli === thTierNow + 1) ? " is-next" : "");
+							thLadderHtml +=
+								"<div class=\"xxThunderStep" + tlCls + "\">" +
+									"<span class=\"xxThunderStepNo\">" + $I("cultivation.thunder.step", [tli]) + "</span>" +
+									"<span class=\"xxThunderStepName\">" + $I(tlDef.shortKey) + "</span>" +
+								"</div>";
+						}
+						thLadderHtml += "</div>";
+
+						var thEffShow = cult.getThunderTemperEffect(Math.max(1, thTierNow));
+						var thStrikeShow = (thTierNow > 0) ? thStrikeNow : thEffShow.strike;
+						var thEffectHtml =
+							"<div class=\"xxChronoAuraBox xxThunderEffectBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + orbIcoHtml + $I("cultivation.thunder.effect.title", [thTierNow]) + "</div>" +
+								"<div class=\"xxBountyDesc\">" +
+									(thTierNow <= 0 ? ("<b class=\"xxThunderPreviewTag\">" + $I("cultivation.thunder.effect.preview") + "</b>") : "") +
+									$I("cultivation.thunder.effect.desc", [
+										thEffShow.combatMult.toFixed(2),
+										thEffShow.riftHpMult.toFixed(2),
+										pctFs(thEffShow.riftDmg),
+										pctFs(thEffShow.mitigation),
+										pctFs(thEffShow.startShield),
+										pctFs(thStrikeShow)
+									]) +
+								"</div>" +
+							"</div>";
+
+						var synTier = Math.max(1, thTierNow);
+						var synRow = function(on, text){
+							return "<div class=\"xxThunderSynRow" + (on ? " is-active" : "") + "\">" +
+								"<span class=\"xxInnateStateTag" + (on ? " is-resonant" : "") + "\">" + $I(on ? "cultivation.thunder.synergy.on" : "cultivation.thunder.synergy.off") + "</span>" +
+								"<span class=\"xxThunderSynText\">" + text + "</span>" +
+								"</div>";
+						};
+						var thSynergyHtml =
+							"<div class=\"xxThunderSynergyBox\">" +
+								"<div class=\"xxChronoAuraTitle\"><img src=\"res/art/treasure_pangu_banner.webp?v=" + artV7 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>" + $I("cultivation.thunder.synergy.title") + "</div>" +
+								synRow(thSyn.panguActive, $I("cultivation.thunder.synergy.pangu", [pct1Fs(0.008 * synTier)])) +
+								synRow(thSyn.bellActive, $I("cultivation.thunder.synergy.bell", [pct1Fs(0.004 * synTier)])) +
+								synRow(thSyn.unityActive, $I("cultivation.thunder.synergy.unity")) +
+							"</div>";
+
+						var boneNow = cult.getThunderBoneBonus();
+						var thBoneHtml =
+							"<div class=\"xxThunderBoneBox\">" +
+								"<div class=\"xxThunderBoneIco\"><img src=\"res/art/thunder_bone_seal.webp?v=" + artV7 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxBountyDesc\">" +
+									((boneNow.tier > 0)
+										? $I("cultivation.thunder.bone.desc", [
+											boneNow.tier,
+											Math.round((1 - cult.getThunderBoneCostMult()) * 100),
+											pctFs(boneNow.temperChance),
+											cult.getThunderStartingOrbs(),
+											pctFs(boneNow.combatPct)
+										])
+										: $I("cultivation.thunder.bone.none")) +
+								"</div>" +
+							"</div>";
+
+						var thEffMeta = cult.getThunderTemperEffect(thTierNow);
+						var thColHtml =
+							"<div class=\"xxCaveSection xxFengshenColThunder\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/thunder_pool.webp?v=" + artV7 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.thunder.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.thunder.meta", [thEffMeta.riftHpMult.toFixed(2), pctFs(thEffMeta.riftDmg), pctFs(thStrikeNow)]) + "</span>" +
+								"</div>" +
+								thConsoleHtml +
+								thLadderHtml +
+								thEffectHtml +
+								thSynergyHtml +
+								thBoneHtml +
+								(tpUI.lastNote ? "<div class=\"xxCaveNote\">" + tpUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						this.immortalFengshenEl.innerHTML = fengshenTopHtml +
+							"<div class=\"xxCaveColumns\">" + fsColHtml + thColHtml + "</div>";
+					}
+				}
+			}
+		}
+
+		if (this.immortalSamsaraEl){
+			var dujieSm = cult.getStage("dujie_0");
+			var showSm = !!(cult.immortalAscended || (dujieSm && dujieSm.researched) || (cult.immortalImprint || 0) > 0 || (cult.daoHeartTier || 0) > 0 || cult.samsaraLegacyPath);
+			this.immortalSamsaraEl.style.display = showSm ? "block" : "none";
+			if (showSm){
+				dojo.toggleClass(this.immortalSamsaraEl, "is-locked", !cult.immortalAscended);
+				var smUI = cult.samsaraMirror || cult.makeDefaultSamsaraMirror();
+				var itUI = cult.illusionTrial || cult.makeDefaultIllusionTrial();
+				var runUI = itUI.run || null;
+				var tpsSm = this.game.ticksPerSecond || 5;
+				var xySm = this.game.resPool.get("xianyuan");
+				var tcSm = this.game.resPool.get("timeCrystal");
+				var xyHaveSm = xySm ? Math.floor(xySm.value) : 0;
+				var tcHaveSm = tcSm ? Math.floor(tcSm.value) : 0;
+				var revealSigSm = [];
+				for (var rsi = 0; rsi < cult.SAMSARA_PATHS.length; rsi++){
+					revealSigSm.push((smUI.revealed && smUI.revealed[cult.SAMSARA_PATHS[rsi].key]) ? 1 : 0);
+				}
+				var samsaraSig = [
+					cult.immortalAscended ? 1 : 0,
+					revealSigSm.join(""),
+					smUI.activePath || "",
+					Math.ceil((smUI.switchCooldown || 0) / tpsSm),
+					smUI.switchCount || 0,
+					itUI.layer || 0,
+					itUI.insight || 0,
+					Math.ceil((itUI.cooldown || 0) / tpsSm),
+					itUI.clears || 0,
+					itUI.backlashes || 0,
+					runUI ? [runUI.depth, runUI.demon, runUI.progress, runUI.lamps].join(",") : "-",
+					cult.daoHeartTier || 0,
+					cult.samsaraLegacyPath || "",
+					(cult.mingge || []).join(","),
+					(cult.pendingMingge || []).join(","),
+					cult.immortalImprint || 0,
+					Math.round(cult.heartDemon || 0),
+					cult.getFengshenOfficeCount ? cult.getFengshenOfficeCount() : 0,
+					(cult.thunderPool && cult.thunderPool.tier) || 0,
+					xyHaveSm,
+					tcHaveSm,
+					smUI.lastNote || "",
+					itUI.lastNote || ""
+				].join("|");
+
+				if (this._samsaraSig !== samsaraSig){
+					this._samsaraSig = samsaraSig;
+					var fmtSm = this.game.getDisplayValueExt.bind(this.game);
+					var artV8 = cult.ART_VER || "85";
+					var pctSm = function(v){ return Math.round((v || 0) * 100); };
+					var pct1Sm = function(v){ return Math.round((v || 0) * 1000) / 10; };
+					var resTitleSm = function(name){
+						var ro = this.game.resPool.get(name);
+						return (ro && ro.title) || name;
+					}.bind(this);
+					var smActiveKey = cult.getSamsaraActivePath();
+					var smActiveDef = smActiveKey ? cult.getSamsaraPathDef(smActiveKey) : null;
+					var smRevealedCnt = cult.getSamsaraRevealedCount();
+					var ilLayerNow = itUI.layer || 0;
+					var dhSeal = cult.getDaoHeartSeal();
+					var legDef = cult.getSamsaraPathDef(cult.samsaraLegacyPath);
+					var lampIcoHtml = "<img src=\"res/art/dream_lotus_lamp.webp?v=" + artV8 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var maskIcoHtml = "<img src=\"res/art/heart_demon_mask.webp?v=" + artV8 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var wheelIcoHtml = "<img src=\"res/art/six_paths_wheel.webp?v=" + artV8 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var sealBadgeHtml = (dhSeal > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.samsara.panel.imprint", [dhSeal]) + "</span>"
+						: "";
+					var legBadgeHtml = legDef
+						? "<span class=\"xxCaveImprintTag xxSamsaraLegacyTag\">" + $I("cultivation.samsara.panel.legacy", [$I(legDef.labelKey)]) + "</span>"
+						: "";
+
+					var samsaraTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxSamsaraHdrIco\"><img src=\"res/art/six_paths_wheel.webp?v=" + artV8 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.samsara.panel.badge") + "</span>" +
+										sealBadgeHtml +
+										legBadgeHtml +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.samsara.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.samsara.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + wheelIcoHtml + $I("cultivation.samsara.panel.chip.mirror", [smRevealedCnt, smActiveDef ? $I(smActiveDef.labelKey) : $I("cultivation.samsara.path.none")]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + maskIcoHtml + $I("cultivation.samsara.panel.chip.illusion", [ilLayerNow, cult.daoPatterns || ilLayerNow]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + $I("cultivation.samsara.panel.chip.seal", [dhSeal]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						var legLockHint = cult.getSamsaraMinggeHintHtml(false);
+						this.immortalSamsaraEl.innerHTML = samsaraTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.samsara.panel.locked") +
+							(legLockHint ? "<div class=\"xxSamsaraLockLegacy\">" + legLockHint + "</div>" : "") +
+							"</div>";
+					} else {
+						// 左栏: 六道轮回镜
+						var pathArgs = function(key){
+							var pe = cult.getSamsaraPathEffect(key);
+							if (key === "deva"){
+								return {up: [pctSm(pe.xiuweiRatio), pctSm(pe.xianyuanRatio), pctSm(pe.realmProductionRatio)], down: [pe.combatMult.toFixed(2)]};
+							} else if (key === "human"){
+								return {up: [pctSm(pe.xiuweiRatio), pctSm(pe.xianyuanRatio), pctSm(pe.herbSpeed), pe.combatMult.toFixed(2)], down: []};
+							} else if (key === "asura"){
+								return {up: [pe.combatMult.toFixed(2), pctSm(pe.riftDmg), pctSm(pe.riftCrit)], down: [pctSm(-pe.herbSpeed), pctSm(-pe.herbYield)]};
+							} else if (key === "beast"){
+								return {up: [pe.riftHpMult.toFixed(2), pctSm(pe.nurseryMult - 1), pctSm(pe.bountySpeed)], down: [pctSm(-pe.xiuweiRatio)]};
+							} else if (key === "preta"){
+								return {up: [pctSm(pe.xianyuanRatio), pctSm(pe.herbYield), pctSm(pe.realmProductionRatio)], down: [pe.demonGainMult.toFixed(2), pctSm(-pe.demonDecay)]};
+							}
+							return {up: [pctSm(pe.mitigation), pe.riftHpMult.toFixed(2), pe.demonGainMult.toFixed(2), pctSm(pe.demonDecay)], down: [pctSm(-pe.xianyuanRatio), pctSm(-pe.xiuweiRatio)]};
+						};
+						var resoArgs = function(def){
+							if (def.key === "asura"){ return [pctSm(def.resonanceCombat)]; }
+							if (def.key === "naraka"){ return [pctSm(def.resonance.faithRatio), pctSm(def.resonance.xiuweiRatio)]; }
+							var first = 0;
+							for (var rk in def.resonance){
+								if (def.resonance.hasOwnProperty(rk)){ first = def.resonance[rk]; break; }
+							}
+							return [pctSm(first)];
+						};
+						var cdSecSm = Math.ceil((smUI.switchCooldown || 0) / tpsSm);
+						var nextSwitchBase = Math.min(240, 40 + 25 * (smUI.switchCount || 0));
+						var nextSwitchCost = Math.max(10, cult.roundNice(nextSwitchBase * cult.getSamsaraCostMult()));
+
+						var smCurTitle = smActiveDef
+							? $I("cultivation.samsara.cur.path", [$I(smActiveDef.labelKey), $I(smActiveDef.blessKey)])
+							: $I("cultivation.samsara.cur.none");
+						var smCurEffect = "";
+						if (smActiveDef){
+							var curArgs = pathArgs(smActiveDef.key);
+							smCurEffect = "<div class=\"xxSamsaraEffLine\"><span class=\"xxSamsaraUp\">" + $I("cultivation.samsara.tag.up") + "</span>" + $I(smActiveDef.upKey, curArgs.up) + "</div>" +
+								"<div class=\"xxSamsaraEffLine\"><span class=\"xxSamsaraDown\">" + $I("cultivation.samsara.tag.down") + "</span>" + $I(smActiveDef.downKey, curArgs.down) + "</div>";
+						} else {
+							smCurEffect = "<div class=\"xxPlotState\">" + $I("cultivation.samsara.cur.hint") + "</div>";
+						}
+						var smConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxSamsaraConsole" + (smActiveDef ? " is-path-" + smActiveDef.key : "") + "\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + smCurTitle + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.samsara.chip.revealed", [smRevealedCnt]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									(smActiveDef
+										? ((cdSecSm > 0)
+											? ("<span class=\"xxVesselChip\">" + $I("cultivation.samsara.chip.cooldown", [cdSecSm]) + "</span>")
+											: ("<span class=\"xxVesselChip is-gold\">" + $I("cultivation.samsara.chip.ready") + "</span>"))
+										: ("<span class=\"xxVesselChip is-gold\">" + $I("cultivation.samsara.chip.firstFree") + "</span>")) +
+									(smActiveDef ? ("<span class=\"xxVesselChip\">" + $I("cultivation.samsara.chip.switchCost", [fmtSm(nextSwitchCost)]) + "</span>") : "") +
+								"</div>" +
+								smCurEffect +
+							"</div>";
+
+						var smGridHtml = "<div class=\"xxSamsaraPathGrid\">";
+						for (var spi = 0; spi < cult.SAMSARA_PATHS.length; spi++){
+							var spDef = cult.SAMSARA_PATHS[spi];
+							var spRevealed = !!(smUI.revealed && smUI.revealed[spDef.key]);
+							var spActive = (smActiveKey === spDef.key);
+							var spArgs = pathArgs(spDef.key);
+							var spStateTxt = spActive ? $I("cultivation.samsara.state.active") : (spRevealed ? $I("cultivation.samsara.state.revealed") : $I("cultivation.samsara.state.hidden"));
+							var spStateCls = spActive ? " is-resonant" : (spRevealed ? " is-awake" : "");
+							var spMgNames = [];
+							for (var smi = 0; smi < spDef.mingge.length; smi++){
+								spMgNames.push("【" + cult.getSamsaraMinggeName(spDef.mingge[smi]) + "】");
+							}
+							var spSealTxt = spDef.seal ? ("【" + cult.getSamsaraMinggeName(spDef.seal) + "】") : $I("cultivation.samsara.mingge.noseal");
+							var spBtnHtml = "";
+							if (!spRevealed){
+								var rvReq = cult.getSamsaraRevealReq(spDef.key);
+								if (rvReq){
+									var rvCost = fmtSm(rvReq.xianyuan) + " " + $I("resources.xianyuan.title") + " · " + fmtSm(rvReq.timeCrystal) + " " + resTitleSm("timeCrystal");
+									spBtnHtml = "<div class=\"xxCaveMiniBtn" + (rvReq.affordable ? "" : " is-disabled") + "\" data-xx-samsara=\"reveal\" data-xx-arg=\"" + spDef.key + "\">" +
+										$I("cultivation.samsara.reveal.btn", [rvCost]) + "</div>";
+								}
+							} else if (spActive){
+								spBtnHtml = "<div class=\"xxCaveMiniBtn gold is-active is-disabled\">" + $I("cultivation.samsara.choose.active") + "</div>";
+							} else {
+								var swReq = cult.getSamsaraSwitchReq(spDef.key);
+								var swLabel = swReq.first
+									? $I("cultivation.samsara.choose.first")
+									: ((swReq.cooldown > 0)
+										? $I("cultivation.samsara.choose.cd", [Math.ceil(swReq.cooldown / tpsSm)])
+										: $I("cultivation.samsara.choose.btn", [fmtSm(swReq.xianyuan)]));
+								spBtnHtml = "<div class=\"xxCaveMiniBtn gold" + (swReq.affordable ? "" : " is-disabled") + "\" data-xx-samsara=\"choose\" data-xx-arg=\"" + spDef.key + "\">" + swLabel + "</div>";
+							}
+							var spCardCls = "xxSamsaraPathCard is-path-" + spDef.key +
+								(spActive ? " is-active" : "") +
+								(spRevealed ? " is-revealed" : " is-hidden") +
+								((!spRevealed && cult.getIllusionLayer() < spDef.reqLayer) ? " is-locked" : "");
+							smGridHtml +=
+								"<div class=\"" + spCardCls + "\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<span class=\"xxSamsaraPathName\">" + $I(spDef.labelKey) + "</span>" +
+										"<span class=\"xxInnateStateTag" + spStateCls + "\">" + spStateTxt + "</span>" +
+									"</div>" +
+									"<div class=\"xxSamsaraBless\">" + $I(spDef.blessKey) + "</div>" +
+									"<div class=\"xxSamsaraEffLine\"><span class=\"xxSamsaraUp\">" + $I("cultivation.samsara.tag.up") + "</span>" + $I(spDef.upKey, spArgs.up) + "</div>" +
+									"<div class=\"xxSamsaraEffLine\"><span class=\"xxSamsaraDown\">" + $I("cultivation.samsara.tag.down") + "</span>" + $I(spDef.downKey, spArgs.down) + "</div>" +
+									"<div class=\"xxSamsaraMgLine\">" + $I("cultivation.samsara.path.mingge", [spMgNames.join(""), spSealTxt]) + "</div>" +
+									(spRevealed
+										? "<div class=\"xxSamsaraPast\">" + $I(spDef.pastKey) + "</div>"
+										: ((spDef.reqLayer > 0)
+											? "<div class=\"xxFengshenGate" + (cult.getIllusionLayer() >= spDef.reqLayer ? " is-met" : "") + "\">" + $I("cultivation.samsara.path.gate", [spDef.reqLayer]) + "</div>"
+											: "")) +
+									spBtnHtml +
+								"</div>";
+						}
+						smGridHtml += "</div>";
+
+						var nextHint = cult.getSamsaraMinggeHintHtml(true);
+						var legHint = cult.getSamsaraMinggeHintHtml(false);
+						var legRes = cult.getSamsaraLegacyResonance();
+						var smNextHtml =
+							"<div class=\"xxSamsaraNextBox\">" +
+								"<div class=\"xxChronoAuraTitle\"><img src=\"res/art/samsara_mirror.webp?v=" + artV8 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>" + $I("cultivation.samsara.next.title") + "</div>" +
+								"<div class=\"xxBountyDesc\">" + (nextHint || $I("cultivation.samsara.next.none")) + "</div>" +
+								(legDef
+									? ("<div class=\"xxBountyDesc xxSamsaraLegacyLine\">" + legHint + "<br/>" +
+										$I("cultivation.samsara.legacy.count", [legRes.count]) + " · " + $I(legDef.resonanceKey, resoArgs(legDef)) + "</div>")
+									: "") +
+							"</div>";
+
+						var smColHtml =
+							"<div class=\"xxCaveSection xxSamsaraColMirror\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/samsara_mirror.webp?v=" + artV8 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.samsara.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.samsara.meta", [pctSm(cult.getSamsaraClarityRatio()), smUI.switchCount || 0]) + "</span>" +
+								"</div>" +
+								smConsoleHtml +
+								smNextHtml +
+								(smUI.lastNote ? "<div class=\"xxCaveNote\">" + smUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 太虚幻境心魔试炼
+						var ilEnter = cult.getIllusionEnterReq();
+						var ilBtnHtml = "";
+						var ilTitle = "";
+						var ilStateTxt = "";
+						var ilDemonNow = runUI ? (runUI.demon || 0) : 0;
+						var ilProgNow = runUI ? (runUI.progress || 0) : 0;
+						if (runUI){
+							var ilDefRun = cult.getIllusionLayerDef(runUI.depth);
+							ilTitle = $I("cultivation.illusion.cur.run", [runUI.depth, $I(ilDefRun.titleKey)]);
+							var pvCalm = cult.getIllusionStepPreview("calm");
+							var pvSever = cult.getIllusionStepPreview("sever");
+							ilBtnHtml =
+								"<div class=\"xxCaveMiniBtn\" data-xx-samsara=\"calm\">" + $I("cultivation.illusion.calm.btn", [pvCalm.progress, pvCalm.demonMin, pvCalm.demonMax]) + "</div>" +
+								"<div class=\"xxCaveMiniBtn gold\" data-xx-samsara=\"sever\">" + $I("cultivation.illusion.sever.btn", [pvSever.progress, pvSever.demonMin, pvSever.demonMax]) + "</div>" +
+								"<div class=\"xxCaveMiniBtn" + ((runUI.lamps > 0 && ilDemonNow > 0) ? "" : " is-disabled") + "\" data-xx-samsara=\"lamp\">" + lampIcoHtml + $I("cultivation.illusion.lamp.btn", [cult.ILLUSION_LAMP_RELIEF, runUI.lamps || 0]) + "</div>" +
+								"<div class=\"xxCaveMiniBtn\" data-xx-samsara=\"leave\">" + $I("cultivation.illusion.leave.btn") + "</div>";
+							ilStateTxt = $I("cultivation.illusion.state.run", [ilDefRun.pressure, cult.ILLUSION_CLEAR_RELIEF]);
+						} else if (ilEnter){
+							var ilDefNext = cult.getIllusionLayerDef(ilEnter.nextLayer);
+							ilTitle = $I("cultivation.illusion.cur.idle", [ilEnter.nextLayer, $I(ilDefNext.titleKey)]);
+							ilBtnHtml = (ilEnter.cooldown > 0)
+								? "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.illusion.enter.cd", [Math.ceil(ilEnter.cooldown / tpsSm)]) + "</div>"
+								: "<div class=\"xxCaveMiniBtn gold" + (ilEnter.affordable ? "" : " is-disabled") + "\" data-xx-samsara=\"enter\">" + $I("cultivation.illusion.enter.btn", [ilEnter.nextLayer, fmtSm(ilEnter.xianyuan)]) + "</div>";
+							ilStateTxt = $I("cultivation.illusion.state.idle", [ilEnter.startDemon, ilEnter.startProgress, ilEnter.lamps]);
+						} else {
+							ilTitle = $I("cultivation.illusion.cur.done");
+							ilBtnHtml = "<div class=\"xxCaveMiniBtn gold is-disabled\">" + $I("cultivation.illusion.enter.done") + "</div>";
+							ilStateTxt = $I("cultivation.illusion.state.done");
+						}
+						var ilDemonPct = Math.min(100, Math.max(0, Math.round(ilDemonNow)));
+						var ilProgPct = Math.min(100, Math.max(0, Math.round(ilProgNow)));
+						var ilConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxIllusionConsole" + (runUI ? " is-running" : "") + "\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + ilTitle + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.illusion.chip.patterns", [ilLayerNow]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxIllusionMeter\">" +
+									"<div class=\"xxIllusionMeterHd\">" + maskIcoHtml + "<span>" + $I("cultivation.illusion.demon.label", [ilDemonPct]) + "</span></div>" +
+									"<div class=\"xxPlotBar xxIllusionDemonBar" + (ilDemonPct >= 70 ? " is-danger" : "") + "\"><i style=\"width:" + ilDemonPct + "%\"></i></div>" +
+									"<div class=\"xxIllusionMeterHd\"><span>" + $I("cultivation.illusion.progress.label", [ilProgPct]) + "</span></div>" +
+									"<div class=\"xxPlotBar xxIllusionProgBar\"><i style=\"width:" + ilProgPct + "%\"></i></div>" +
+								"</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip\">" + lampIcoHtml + $I("cultivation.illusion.chip.lamps", [runUI ? (runUI.lamps || 0) : cult.getIllusionLampCharges()]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.illusion.chip.insight", [itUI.insight || 0]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.illusion.chip.demonMult", [cult.getIllusionDemonMult().toFixed(2)]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState\" style=\"margin:4px 0 6px;\">" + ilStateTxt + "</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" + ilBtnHtml + "</div>" +
+							"</div>";
+
+						var ilLadderHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.illusion.ladder.title") + "</div><div class=\"xxIllusionLadder\">";
+						for (var ili = 1; ili <= cult.ILLUSION_MAX_LAYER; ili++){
+							var ilStepDef = cult.getIllusionLayerDef(ili);
+							var ilStepCls = (ili <= ilLayerNow) ? " is-done" : ((runUI && ili === runUI.depth) ? " is-current" : ((ili === ilLayerNow + 1) ? " is-next" : ""));
+							ilLadderHtml +=
+								"<div class=\"xxIllusionStep" + ilStepCls + "\">" +
+									"<span class=\"xxThunderStepNo\">" + $I("cultivation.illusion.step", [ili]) + "</span>" +
+									"<span class=\"xxThunderStepName\">" + $I(ilStepDef.shortKey) + "</span>" +
+								"</div>";
+						}
+						ilLadderHtml += "</div>";
+
+						var dpNow = cult.getDaoPatternEffect();
+						var dpShow = cult.getDaoPatternEffect(Math.max(1, ilLayerNow));
+						var ilPatternHtml =
+							"<div class=\"xxChronoAuraBox xxIllusionPatternBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + maskIcoHtml + $I("cultivation.illusion.pattern.title", [ilLayerNow]) + "</div>" +
+								"<div class=\"xxBountyDesc\">" +
+									(ilLayerNow <= 0 ? ("<b class=\"xxThunderPreviewTag\">" + $I("cultivation.illusion.pattern.preview") + "</b>") : "") +
+									$I("cultivation.illusion.pattern.desc", [pctSm(dpShow.xiuweiRatio), pctSm(dpShow.demonDecay), pct1Sm(dpShow.mitigation)]) +
+								"</div>" +
+							"</div>";
+
+						var synRowSm = function(on, text){
+							return "<div class=\"xxThunderSynRow" + (on ? " is-active" : "") + "\">" +
+								"<span class=\"xxInnateStateTag" + (on ? " is-resonant" : "") + "\">" + $I(on ? "cultivation.illusion.synergy.on" : "cultivation.illusion.synergy.off") + "</span>" +
+								"<span class=\"xxThunderSynText\">" + text + "</span>" +
+								"</div>";
+						};
+						var ilSynergyHtml =
+							"<div class=\"xxThunderSynergyBox xxIllusionSynergyBox\">" +
+								"<div class=\"xxChronoAuraTitle\"><img src=\"res/art/fengshen_roster.webp?v=" + artV8 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>" + $I("cultivation.illusion.synergy.title") + "</div>" +
+								synRowSm(dpNow.officeActive, $I("cultivation.illusion.synergy.office", [dpNow.patterns, dpNow.offices, pct1Sm(dpNow.officeXiuwei), dpNow.offices * 3])) +
+								synRowSm(dpNow.thunderActive, $I("cultivation.illusion.synergy.thunder", [dpNow.patterns, dpNow.tier, pct1Sm(dpNow.thunderRiftHp), dpNow.tier * 3])) +
+							"</div>";
+
+						var dhNow = cult.getDaoHeartSealBonus();
+						var ilSealHtml =
+							"<div class=\"xxThunderBoneBox xxIllusionSealBox\">" +
+								"<div class=\"xxThunderBoneIco\"><img src=\"res/art/dao_heart_seal.webp?v=" + artV8 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxBountyDesc\">" +
+									((dhNow.tier > 0)
+										? $I("cultivation.illusion.seal.desc", [
+											dhNow.tier,
+											pctSm(dhNow.xiuweiRatio),
+											pctSm(dhNow.demonDecay),
+											pctSm(dhNow.demonGainCut),
+											dhNow.startProgress,
+											dhNow.lampBonus,
+											Math.round((1 - cult.getSamsaraCostMult()) * 100)
+										])
+										: $I("cultivation.illusion.seal.none")) +
+								"</div>" +
+							"</div>";
+
+						var ilColHtml =
+							"<div class=\"xxCaveSection xxSamsaraColIllusion\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/illusion_gate.webp?v=" + artV8 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.illusion.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.illusion.meta", [ilLayerNow, itUI.clears || 0, itUI.backlashes || 0]) + "</span>" +
+								"</div>" +
+								ilConsoleHtml +
+								ilLadderHtml +
+								ilPatternHtml +
+								ilSynergyHtml +
+								ilSealHtml +
+								(itUI.lastNote ? "<div class=\"xxCaveNote\">" + itUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 通栏: 六道前尘画廊(照见 / 择道 / 转道)
+						var smPathsSecHtml =
+							"<div class=\"xxCaveSection xxSamsaraPathsSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/six_paths_wheel.webp?v=" + artV8 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.samsara.paths.head") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.samsara.chip.revealed", [smRevealedCnt]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxChronoEraHd\">" + $I("cultivation.samsara.paths.title") + "</div>" +
+								smGridHtml +
+							"</div>";
+
+						this.immortalSamsaraEl.innerHTML = samsaraTopHtml +
+							"<div class=\"xxCaveColumns\">" + smColHtml + ilColHtml + "</div>" +
+							smPathsSecHtml;
+					}
+				}
+			}
+		}
+
+		if (this.immortalStarGoEl){
+			var dujieSg = cult.getStage("dujie_0");
+			var showSg = !!(cult.immortalAscended || (dujieSg && dujieSg.researched) || (cult.immortalImprint || 0) > 0 || (cult.starGoTier || 0) > 0);
+			this.immortalStarGoEl.style.display = showSg ? "block" : "none";
+			if (showSg){
+				dojo.toggleClass(this.immortalStarGoEl, "is-locked", !cult.immortalAscended);
+				var sgUI = cult.starGo || cult.makeDefaultStarGo();
+				var ahUI = cult.auctionHouse || cult.makeDefaultAuctionHouse();
+				var mUI = sgUI.match || null;
+				var lrUI = sgUI.lastResult || null;
+				var lotUI = ahUI.lot || null;
+				var tpsSg = this.game.ticksPerSecond || 5;
+				var xySg = this.game.resPool.get("xianyuan");
+				var tcSg = this.game.resPool.get("timeCrystal");
+				var xyHaveSg = xySg ? Math.floor(xySg.value) : 0;
+				var tcHaveSg = tcSg ? Math.floor(tcSg.value) : 0;
+				var beatenSigSg = [];
+				for (var bsi = 0; bsi < cult.STAR_GO_LORDS.length; bsi++){
+					beatenSigSg.push((sgUI.beaten && sgUI.beaten[cult.STAR_GO_LORDS[bsi].key]) || 0);
+				}
+				var ownedSigSg = [];
+				for (var osk in ahUI.owned){
+					if (ahUI.owned.hasOwnProperty(osk)){ ownedSigSg.push(ahUI.owned[osk] ? 1 : 0); }
+				}
+				var histSigSg = [];
+				for (var hsi = 0; hsi < (ahUI.history || []).length; hsi++){
+					var hsE = ahUI.history[hsi];
+					histSigSg.push(hsE.key + ":" + (hsE.winner || "") + ":" + hsE.price);
+				}
+				var starGoSig = [
+					cult.immortalAscended ? 1 : 0,
+					sgUI.glow || 0,
+					beatenSigSg.join(","),
+					sgUI.games || 0,
+					sgUI.losses || 0,
+					sgUI.draws || 0,
+					sgUI.captures || 0,
+					sgUI.insight || 0,
+					Math.ceil((sgUI.cooldown || 0) / tpsSg),
+					mUI ? [mUI.lord, mUI.own.join(""), mUI.lastPlayer, mUI.lastLord, mUI.flipped.join("")].join(",") : "-",
+					lrUI ? [lrUI.lord, lrUI.result, lrUI.own.join("")].join(",") : "-",
+					cult.starGoTier || 0,
+					cult.getTalismanGoBonus ? cult.getTalismanGoBonus() : 0,
+					cult.getFengshenOfficeCount ? cult.getFengshenOfficeCount() : 0,
+					cult.getSamsaraActivePath ? (cult.getSamsaraActivePath() || "") : "",
+					cult.getSamsaraRevealedCount ? cult.getSamsaraRevealedCount() : 0,
+					lotUI ? [lotUI.key, lotUI.price, lotUI.leader || "", lotUI.playerBid, Math.ceil((lotUI.ticksLeft || 0) / tpsSg)].join(",") : "-",
+					ownedSigSg.join(""),
+					ahUI.won || 0,
+					ahUI.lostToRivals || 0,
+					ahUI.unsold || 0,
+					histSigSg.join(";"),
+					xyHaveSg,
+					tcHaveSg,
+					sgUI.lastNote || "",
+					ahUI.lastNote || ""
+				].join("|");
+
+				if (this._starGoSig !== starGoSig){
+					this._starGoSig = starGoSig;
+					var fmtSg = this.game.getDisplayValueExt.bind(this.game);
+					var artV9 = cult.ART_VER || "85";
+					var pctSg = function(v){ return Math.round((v || 0) * 100); };
+					var pct1Sg = function(v){ return Math.round((v || 0) * 1000) / 10; };
+					var curTitleSg = function(cur){ return cult.getAuctionCurName(cur); };
+					var sgBeatenCnt = cult.getStarGoBeatenCount();
+					var sgLitCnt = cult.getStarGoLitCount();
+					var sgSeal = cult.getStarGoSeal();
+					var atOwnedCnt = cult.getAuctionOwnedCount();
+					var atTotal = cult.getAuctionTreasureCount();
+					var lordIcoHtml = "<img src=\"res/art/star_lord_seal.webp?v=" + artV9 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var jarIcoHtml = "<img src=\"res/art/star_stone_jar.webp?v=" + artV9 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var gongIcoHtml = "<img src=\"res/art/auction_gong.webp?v=" + artV9 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var lotIcoHtml = "<img src=\"res/art/treasure_lot.webp?v=" + artV9 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var sgSealBadgeHtml = (sgSeal > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.stargo.panel.imprint", [sgSeal]) + "</span>"
+						: "";
+
+					var starGoTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxStarGoHdrIco\"><img src=\"res/art/star_go_board.webp?v=" + artV9 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.stargo.panel.badge") + "</span>" +
+										sgSealBadgeHtml +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.stargo.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.stargo.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + jarIcoHtml + $I("cultivation.stargo.panel.chip.glow", [cult.getStarGoGlow(), sgLitCnt]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + lordIcoHtml + $I("cultivation.stargo.panel.chip.lords", [sgBeatenCnt]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + lotIcoHtml + $I("cultivation.stargo.panel.chip.auction", [atOwnedCnt, atTotal, ahUI.won || 0]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					if (!cult.immortalAscended){
+						var sgLockSeal = (sgSeal > 0)
+							? "<div class=\"xxSamsaraLockLegacy\">" + $I("cultivation.stargo.seal.desc", [sgSeal, pctSg(cult.getStarGoSealBonus().xiuweiRatio), cult.getStarGoSealBonus().bonus, pctSg(cult.getStarGoSealBonus().feeCut), cult.getStarGoSealBonus().startGlow]) + "</div>"
+							: "";
+						this.immortalStarGoEl.innerHTML = starGoTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.stargo.panel.locked") + sgLockSeal + "</div>";
+					} else {
+						// 左栏: 周天星辰弈局
+						var resultText = function(res){
+							return $I("cultivation.stargo.result." + res);
+						};
+						var boardSrc = mUI || lrUI;
+						var boardHtml = "<div class=\"xxStarGoBoard" + (mUI ? " is-live" : (lrUI ? " is-final is-" + lrUI.result : " is-blank")) + "\">";
+						for (var bci = 0; bci < 9; bci++){
+							var bRow = Math.floor(bci / 3);
+							var bCol = bci % 3;
+							var bOwn = boardSrc ? boardSrc.own[bci] : 0;
+							var bVal = boardSrc ? boardSrc.vals[bci] : 0;
+							var bCls = "xxStarGoCell r" + bRow + " c" + bCol + (bci === 4 ? " is-tengen" : "") +
+								(bOwn === 1 ? " is-player" : (bOwn === 2 ? " is-lord" : " is-empty"));
+							var bAttr = "";
+							if (mUI){
+								if (bci === mUI.lastPlayer){ bCls += " is-last-player"; }
+								if (bci === mUI.lastLord){ bCls += " is-last-lord"; }
+								for (var bfi = 0; bfi < mUI.flipped.length; bfi++){
+									if (mUI.flipped[bfi] === bci){ bCls += " is-flipped"; break; }
+								}
+								if (!bOwn){
+									bCls += " is-playable";
+									bAttr = " data-xx-stargo=\"move\" data-xx-arg=\"" + bci + "\"";
+								}
+							}
+							var pipHtml = "";
+							for (var bpi = 0; bpi < bVal; bpi++){ pipHtml += "<i></i>"; }
+							boardHtml +=
+								"<div class=\"" + bCls + "\"" + bAttr + ">" +
+									(bOwn ? "<span class=\"xxStarGoStone " + (bOwn === 1 ? "is-player" : "is-lord") + "\"></span>" : "") +
+									(bVal ? "<span class=\"xxStarGoVal\"><span class=\"xxStarGoPips\">" + pipHtml + "</span><b>" + bVal + "</b></span>" : "") +
+								"</div>";
+						}
+						boardHtml += "</div>";
+
+						var sgTitle = "";
+						var sgRules = null;
+						var sgScore = null;
+						if (mUI){
+							sgRules = cult.getStarGoMatchRules(mUI.lord);
+							sgScore = cult.getStarGoMatchScore(mUI, sgRules);
+							sgTitle = $I("cultivation.stargo.cur.match", [$I("cultivation.stargo.lord." + mUI.lord + ".label")]);
+						} else if (lrUI){
+							sgTitle = $I("cultivation.stargo.cur.last", [$I("cultivation.stargo.lord." + lrUI.lord + ".label"), resultText(lrUI.result)]);
+						} else {
+							sgTitle = $I("cultivation.stargo.cur.idle");
+						}
+						var scorePlayer = sgScore ? sgScore.player : (lrUI ? lrUI.player : 0);
+						var scoreLord = sgScore ? sgScore.lord : (lrUI ? lrUI.lordScore : 0);
+						var scoreRowHtml =
+							"<div class=\"xxStarGoScoreRow\">" +
+								"<span class=\"xxStarGoSide is-player\"><span class=\"xxStarGoStone is-player is-mini\"></span>" + $I("cultivation.stargo.side.player") + "<b>" + scorePlayer + "</b></span>" +
+								"<span class=\"xxStarGoVs\">:</span>" +
+								"<span class=\"xxStarGoSide is-lord\"><b>" + scoreLord + "</b>" + $I("cultivation.stargo.side.lord") + "<span class=\"xxStarGoStone is-lord is-mini\"></span></span>" +
+							"</div>";
+						var nextLordKey = null;
+						for (var nli = 0; nli < cult.STAR_GO_LORDS.length; nli++){
+							if (cult.isStarGoLordUnlocked(cult.STAR_GO_LORDS[nli].key)){ nextLordKey = cult.STAR_GO_LORDS[nli].key; }
+						}
+						var chipRules = sgRules || cult.getStarGoMatchRules(mUI ? mUI.lord : (nextLordKey || cult.STAR_GO_LORDS[0].key));
+						var sgChipsHtml =
+							"<div class=\"xxVesselStatRow\">" +
+								"<span class=\"xxVesselChip\">" + $I("cultivation.stargo.chip.komi", [chipRules.komi]) + "</span>" +
+								"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.stargo.chip.bonus", [chipRules.bonus]) + "</span>" +
+								"<span class=\"xxVesselChip\">" + $I("cultivation.stargo.chip.line", [chipRules.lineP]) + "</span>" +
+								(chipRules.capture > 0 ? "<span class=\"xxVesselChip\">" + $I("cultivation.stargo.chip.capture", [chipRules.capture]) + "</span>" : "") +
+								"<span class=\"xxVesselChip\">" + $I("cultivation.stargo.chip.insight", [sgUI.insight || 0]) + "</span>" +
+								(((sgUI.cooldown || 0) > 0) ? "<span class=\"xxVesselChip\">" + $I("cultivation.stargo.chip.cooldown", [Math.ceil(sgUI.cooldown / tpsSg)]) + "</span>" : "") +
+							"</div>";
+						var sgStateTxt = mUI
+							? $I("cultivation.stargo.state.match")
+							: (lrUI ? $I("cultivation.stargo.state.result", [lrUI.player, lrUI.lordScore, lrUI.glow, lrUI.purse]) : $I("cultivation.stargo.state.idle"));
+						var sgBtnHtml = mUI
+							? "<div class=\"xxCaveMiniBtnRow\"><div class=\"xxCaveMiniBtn\" data-xx-stargo=\"resign\">" + $I("cultivation.stargo.resign.btn") + "</div></div>"
+							: "";
+						var sgConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxStarGoConsole" + (mUI ? " is-running" : "") + "\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + sgTitle + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.stargo.chip.glowWin", [chipRules.glow]) + "</span>" +
+								"</div>" +
+								scoreRowHtml +
+								"<div class=\"xxStarGoBoardWrap\">" + boardHtml + "</div>" +
+								sgChipsHtml +
+								"<div class=\"xxPlotState\" style=\"margin:4px 0 6px;\">" + sgStateTxt + "</div>" +
+								sgBtnHtml +
+							"</div>";
+
+						var lordGridHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.stargo.lords.title") + "</div><div class=\"xxStarGoLordGrid\">";
+						for (var lgi = 0; lgi < cult.STAR_GO_LORDS.length; lgi++){
+							var lgDef = cult.STAR_GO_LORDS[lgi];
+							var lgReq = cult.getStarGoEnterReq(lgDef.key);
+							var lgWins = (sgUI.beaten && sgUI.beaten[lgDef.key]) || 0;
+							var lgPlaying = !!(mUI && mUI.lord === lgDef.key);
+							var lgStateTxt = lgPlaying ? $I("cultivation.stargo.lord.state.playing")
+								: (lgWins > 0 ? $I("cultivation.stargo.lord.state.beaten", [lgWins])
+									: (lgReq.unlocked ? $I("cultivation.stargo.lord.state.open") : $I("cultivation.stargo.lord.state.locked")));
+							var lgStateCls = lgPlaying ? " is-resonant" : (lgWins > 0 ? " is-awake" : "");
+							var lgBtnLabel = "";
+							if (!lgReq.unlocked){
+								lgBtnLabel = $I("cultivation.stargo.lord.btn.locked", [$I("cultivation.stargo.lord." + cult.STAR_GO_LORDS[lgi - 1].key + ".label")]);
+							} else if (lgReq.active){
+								lgBtnLabel = $I("cultivation.stargo.lord.btn.busy");
+							} else if (lgReq.cooldown > 0){
+								lgBtnLabel = $I("cultivation.stargo.lord.btn.cd", [Math.ceil(lgReq.cooldown / tpsSg)]);
+							} else {
+								lgBtnLabel = $I("cultivation.stargo.lord.btn", [fmtSg(lgReq.fee)]);
+							}
+							lordGridHtml +=
+								"<div class=\"xxStarGoLordCard" + (lgPlaying ? " is-active" : "") + (lgWins > 0 ? " is-beaten" : "") + (lgReq.unlocked ? "" : " is-locked") + "\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<span class=\"xxStarGoLordName\">" + $I("cultivation.stargo.lord." + lgDef.key + ".label") + "</span>" +
+										"<span class=\"xxInnateStateTag" + lgStateCls + "\">" + lgStateTxt + "</span>" +
+									"</div>" +
+									"<div class=\"xxStarGoLordStyle\">" + $I("cultivation.stargo.lord." + lgDef.key + ".style") + "</div>" +
+									"<div class=\"xxStarGoLordStats\">" + $I("cultivation.stargo.lord.stats", [lgReq.rules.komi, lgReq.rules.glow * (lgReq.firstWin ? 2 : 1), fmtSg(lgReq.purse)]) + "</div>" +
+									"<div class=\"xxCaveMiniBtn gold" + (lgReq.affordable ? "" : " is-disabled") + "\"" + (lgReq.affordable ? " data-xx-stargo=\"start\" data-xx-arg=\"" + lgDef.key + "\"" : "") + ">" + lgBtnLabel + "</div>" +
+								"</div>";
+						}
+						lordGridHtml += "</div>";
+
+						// 通栏: 北斗七星君弈谱
+						var sgLordsSecHtml =
+							"<div class=\"xxCaveSection xxStarGoLordsSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/star_lord_seal.webp?v=" + artV9 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.stargo.lords.head") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.stargo.panel.chip.lords", [sgBeatenCnt]) + "</span>" +
+								"</div>" +
+								lordGridHtml +
+							"</div>";
+
+						var sgColHtml =
+							"<div class=\"xxCaveSection xxStarGoColBoard\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/star_go_board.webp?v=" + artV9 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.stargo.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.stargo.meta", [sgUI.wins || 0, sgUI.draws || 0, sgUI.losses || 0, sgUI.captures || 0]) + "</span>" +
+								"</div>" +
+								sgConsoleHtml +
+								(sgUI.lastNote ? "<div class=\"xxCaveNote\">" + sgUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 诸天万界灵宝拍卖行
+						var itemArgs = function(key){
+							if (key === "luobaoCoin"){ return [5]; }
+							if (key === "dinghaiPearl"){ return [6]; }
+							if (key === "hongHulu"){ return [8, 5]; }
+							if (key === "qiankunRing"){ return [4]; }
+							if (key === "zishouRobe"){ return [5, 1]; }
+							if (key === "linglongPagoda"){ return [10]; }
+							if (key === "zhoutianBoard"){ return [1, 2]; }
+							var md = cult.getAuctionItemDef(key);
+							return [md ? md.amount : 0];
+						};
+						var leaderName = function(lot){
+							if (!lot.leader){ return $I("cultivation.auction.leader.none"); }
+							if (lot.leader === "player"){ return $I("cultivation.auction.leader.player"); }
+							return $I("cultivation.auction.rival." + lot.leader + ".label");
+						};
+						var atConsoleHtml = "";
+						if (lotUI){
+							var lotSec = Math.ceil((lotUI.ticksLeft || 0) / tpsSg);
+							var lotPct = Math.max(0, Math.min(100, Math.round((lotUI.ticksLeft || 0) / cult.AUCTION_LOT_TICKS * 100)));
+							var lotCur = curTitleSg(lotUI.cur);
+							var rivalsHtml = "<div class=\"xxAuctionRivals\">";
+							for (var rvi = 0; rvi < lotUI.rivals.length; rvi++){
+								var rvE = lotUI.rivals[rvi];
+								var rvMood = "out";
+								if (lotUI.leader === rvE.key){
+									rvMood = "lead";
+								} else if (rvE.ceiling >= lotUI.price + lotUI.inc * 3){
+									rvMood = "calm";
+								} else if (rvE.ceiling >= lotUI.price + lotUI.inc){
+									rvMood = "waver";
+								}
+								rivalsHtml +=
+									"<div class=\"xxAuctionRival is-" + rvMood + "\">" +
+										"<span class=\"xxAuctionRivalName\">" + $I("cultivation.auction.rival." + rvE.key + ".label") + "<small>" + $I("cultivation.auction.rival." + rvE.key + ".taste") + "</small></span>" +
+										"<span class=\"xxInnateStateTag" + (rvMood === "lead" ? " is-resonant" : (rvMood === "calm" ? " is-awake" : "")) + "\">" + $I("cultivation.auction.mood." + rvMood) + "</span>" +
+									"</div>";
+							}
+							rivalsHtml += "</div>";
+							var leadingNow = (lotUI.leader === "player");
+							var bid1 = cult.getAuctionBidReq(1);
+							var bid4 = cult.getAuctionBidReq(4);
+							var atBtnHtml = leadingNow
+								? ("<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.auction.bid.leading") + "</div>" +
+									"<div class=\"xxCaveMiniBtn gold\" data-xx-stargo=\"hammer\">" + gongIcoHtml + $I("cultivation.auction.hammer.btn") + "</div>")
+								: ("<div class=\"xxCaveMiniBtn" + (bid1.affordable ? "" : " is-disabled") + "\" data-xx-stargo=\"bid\" data-xx-arg=\"1\">" + $I("cultivation.auction.bid.btn", [fmtSg(bid1.amount), lotCur]) + "</div>" +
+									"<div class=\"xxCaveMiniBtn gold" + (bid4.affordable ? "" : " is-disabled") + "\" data-xx-stargo=\"bid\" data-xx-arg=\"4\">" + $I("cultivation.auction.bid4.btn", [fmtSg(bid4.amount), lotCur]) + "</div>");
+							atConsoleHtml =
+								"<div class=\"xxXianqiStageBox xxAuctionConsole" + (leadingNow ? " is-leading" : "") + "\">" +
+									"<div class=\"xxAuctionLotHead\">" +
+										"<div class=\"xxAuctionLotIco\"><img src=\"res/art/treasure_lot.webp?v=" + artV9 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxAuctionLotInfo\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<b>" + $I("cultivation.auction.item." + lotUI.key + ".label") + "</b>" +
+												"<span class=\"xxInnateStateTag" + (lotUI.kind === "treasure" ? " is-resonant" : "") + "\">" + $I("cultivation.auction.kind." + lotUI.kind) + "</span>" +
+											"</div>" +
+											"<div class=\"xxAuctionLotDesc\">" + $I("cultivation.auction.item." + lotUI.key + ".desc", itemArgs(lotUI.key)) + "</div>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxVesselStatRow\">" +
+										"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.auction.chip.price", [fmtSg(lotUI.price), lotCur]) + "</span>" +
+										"<span class=\"xxVesselChip\">" + $I("cultivation.auction.chip.leader", [leaderName(lotUI)]) + "</span>" +
+										"<span class=\"xxVesselChip\">" + $I("cultivation.auction.chip.start", [fmtSg(lotUI.start), fmtSg(lotUI.inc)]) + "</span>" +
+									"</div>" +
+									"<div class=\"xxIllusionMeterHd\">" + gongIcoHtml + "<span>" + $I("cultivation.auction.chip.timer", [lotSec]) + "</span></div>" +
+									"<div class=\"xxPlotBar xxAuctionTimeBar\"><i style=\"width:" + lotPct + "%\"></i></div>" +
+									"<div class=\"xxChronoEraHd xxAuctionRivalsHd\">" + $I("cultivation.auction.rivals.title") + "</div>" +
+									rivalsHtml +
+									"<div class=\"xxPlotState\" style=\"margin:4px 0 6px;\">" + $I(leadingNow ? "cultivation.auction.state.lead" : "cultivation.auction.state.open") + "</div>" +
+									"<div class=\"xxCaveMiniBtnRow\">" + atBtnHtml + "</div>" +
+								"</div>";
+						} else {
+							atConsoleHtml = "<div class=\"xxXianqiStageBox xxAuctionConsole\"><div class=\"xxPlotState\">" + $I("cultivation.auction.none") + "</div></div>";
+						}
+
+						var histHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.auction.history.title") + "</div><div class=\"xxAuctionHistory\">";
+						if (!ahUI.history || !ahUI.history.length){
+							histHtml += "<div class=\"xxAuctionHistRow is-empty\">" + $I("cultivation.auction.history.empty") + "</div>";
+						} else {
+							for (var hri = 0; hri < ahUI.history.length; hri++){
+								var hrE = ahUI.history[hri];
+								var hrTxt = "";
+								if (hrE.winner === "player"){
+									hrTxt = $I("cultivation.auction.history.player", [fmtSg(hrE.price), curTitleSg(hrE.cur)]);
+								} else if (hrE.winner){
+									hrTxt = $I("cultivation.auction.history.rival", [$I("cultivation.auction.rival." + hrE.winner + ".label"), fmtSg(hrE.price), curTitleSg(hrE.cur)]);
+								} else {
+									hrTxt = $I("cultivation.auction.history.unsold");
+								}
+								histHtml +=
+									"<div class=\"xxAuctionHistRow" + (hrE.winner === "player" ? " is-mine" : "") + "\">" +
+										"<b>" + $I("cultivation.auction.item." + hrE.key + ".label") + "</b>" +
+										"<span>" + hrTxt + "</span>" +
+									"</div>";
+							}
+						}
+						histHtml += "</div>";
+
+						var atColHtml =
+							"<div class=\"xxCaveSection xxAuctionCol\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/auction_hall.webp?v=" + artV9 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.auction.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.auction.meta", [ahUI.won || 0, ahUI.lostToRivals || 0, ahUI.unsold || 0]) + "</span>" +
+								"</div>" +
+								atConsoleHtml +
+								(ahUI.lastNote ? "<div class=\"xxCaveNote\">" + ahUI.lastNote + "</div>" : "") +
+								histHtml +
+							"</div>";
+
+						// 通栏: 星位神通 · 协同 · 弈道印 · 灵宝图录
+						var pasNow = cult.getStarGoPassiveEffect();
+						var cbNow = cult.getStarAuctionCombatBonus();
+						var pasArgs = function(key){
+							if (key === "sansan"){ return [6]; }
+							if (key === "komoku"){ return [8]; }
+							if (key === "hoshi"){ return [4, 1, pasNow.offices]; }
+							if (key === "takamoku"){ return [5, 5, pctSg(cult.XX12_COMBAT_CAP)]; }
+							if (key === "mokuhazushi"){ return [8, 8, 1]; }
+							return [2, pasNow.revealed, 1];
+						};
+						var pasHtml =
+							"<div class=\"xxChronoAuraBox xxStarGoPassiveBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + jarIcoHtml + $I("cultivation.stargo.passive.title", [cult.getStarGoGlow()]) + "</div>" +
+								"<div class=\"xxStarGoPassiveList\">";
+						for (var psi = 0; psi < cult.STAR_GO_PASSIVES.length; psi++){
+							var psDef = cult.STAR_GO_PASSIVES[psi];
+							var psLit = cult.isStarGoPassiveLit(psDef.key);
+							var psPct = Math.max(0, Math.min(100, Math.round(cult.getStarGoGlow() / psDef.need * 100)));
+							pasHtml +=
+								"<div class=\"xxStarGoPassive" + (psLit ? " is-lit" : "") + "\">" +
+									"<div class=\"xxStarGoPassiveHd\">" +
+										"<span class=\"xxStarGoPassiveName\">" + $I("cultivation.stargo.passive." + psDef.key + ".label") + "</span>" +
+										"<span class=\"xxInnateStateTag" + (psLit ? " is-resonant" : "") + "\">" + (psLit ? $I("cultivation.stargo.passive.lit") : $I("cultivation.stargo.passive.need", [psDef.need])) + "</span>" +
+									"</div>" +
+									"<div class=\"xxStarGoPassiveDesc\">" + $I("cultivation.stargo.passive." + psDef.key + ".desc", pasArgs(psDef.key)) + "</div>" +
+									(psLit ? "" : "<div class=\"xxPlotBar xxStarGoGlowBar\"><i style=\"width:" + psPct + "%\"></i></div>") +
+								"</div>";
+						}
+						pasHtml += "</div></div>";
+
+						var synRowSg = function(on, text){
+							return "<div class=\"xxThunderSynRow" + (on ? " is-active" : "") + "\">" +
+								"<span class=\"xxInnateStateTag" + (on ? " is-resonant" : "") + "\">" + $I(on ? "cultivation.stargo.synergy.on" : "cultivation.stargo.synergy.off") + "</span>" +
+								"<span class=\"xxThunderSynText\">" + text + "</span>" +
+								"</div>";
+						};
+						var perkNow = cult.getStarGoPathPerk();
+						var perkText = "";
+						if (perkNow.path){
+							var perkArg = 0;
+							if (perkNow.path === "deva"){ perkArg = perkNow.bonus; }
+							else if (perkNow.path === "human"){ perkArg = pctSg(perkNow.glowMult); }
+							else if (perkNow.path === "asura"){ perkArg = perkNow.capture; }
+							else if (perkNow.path === "beast"){ perkArg = perkNow.line; }
+							else if (perkNow.path === "preta"){ perkArg = pctSg(perkNow.purseMult); }
+							else { perkArg = perkNow.komiCut; }
+							perkText = $I("cultivation.stargo.synergy.path", [$I("cultivation.samsara.path." + perkNow.path + ".label"), $I("cultivation.stargo.perk." + perkNow.path, [perkArg])]);
+						} else {
+							perkText = $I("cultivation.stargo.synergy.path.none");
+						}
+						var offNow = pasNow.offices;
+						var sgSynHtml =
+							"<div class=\"xxThunderSynergyBox xxStarGoSynergyBox\">" +
+								"<div class=\"xxChronoAuraTitle\"><img src=\"res/art/fengshen_roster.webp?v=" + artV9 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>" + $I("cultivation.stargo.synergy.title") + "</div>" +
+								synRowSg(offNow > 0, $I("cultivation.stargo.synergy.office", [offNow, offNow * 5, pct1Sg(cult.getAuctionPrestige())])) +
+								synRowSg(!!perkNow.path, perkText) +
+								synRowSg(cbNow.riftDmg > 0 || cbNow.riftHp > 0, $I("cultivation.stargo.synergy.combat", [pct1Sg(cbNow.riftDmg), pct1Sg(cbNow.riftHp), pct1Sg(cbNow.mitigation), pctSg(cult.XX12_COMBAT_CAP)])) +
+							"</div>";
+						var sgSealNow = cult.getStarGoSealBonus();
+						var sgSealHtml =
+							"<div class=\"xxThunderBoneBox xxStarGoSealBox\">" +
+								"<div class=\"xxThunderBoneIco\"><img src=\"res/art/star_stone_jar.webp?v=" + artV9 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxBountyDesc\">" +
+									((sgSealNow.tier > 0)
+										? $I("cultivation.stargo.seal.desc", [sgSealNow.tier, pctSg(sgSealNow.xiuweiRatio), sgSealNow.bonus, pctSg(sgSealNow.feeCut), sgSealNow.startGlow])
+										: $I("cultivation.stargo.seal.none")) +
+								"</div>" +
+							"</div>";
+
+						var catHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.auction.catalog.title") + "</div><div class=\"xxAuctionCatalog\">";
+						for (var cti = 0; cti < cult.AUCTION_ITEMS.length; cti++){
+							var ctDef = cult.AUCTION_ITEMS[cti];
+							var ctOwned = (ctDef.kind === "treasure" && ahUI.owned[ctDef.key] === true);
+							var ctOnStage = !!(lotUI && lotUI.key === ctDef.key);
+							var ctTag = ctOwned ? $I("cultivation.auction.catalog.owned")
+								: (ctOnStage ? $I("cultivation.auction.catalog.onStage")
+									: (ctDef.kind === "material" ? $I("cultivation.auction.catalog.material") : $I("cultivation.auction.catalog.waiting")));
+							catHtml +=
+								"<div class=\"xxAuctionCatCard is-" + ctDef.kind + (ctOwned ? " is-owned" : "") + (ctOnStage ? " is-onstage" : "") + "\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<span class=\"xxAuctionCatName\">" + $I("cultivation.auction.item." + ctDef.key + ".label") + "</span>" +
+										"<span class=\"xxInnateStateTag" + (ctOwned ? " is-resonant" : (ctOnStage ? " is-awake" : "")) + "\">" + ctTag + "</span>" +
+									"</div>" +
+									"<div class=\"xxAuctionCatDesc\">" + $I("cultivation.auction.item." + ctDef.key + ".desc", itemArgs(ctDef.key)) + "</div>" +
+									"<div class=\"xxAuctionCatMeta\">" + $I("cultivation.auction.chip.start", [fmtSg(ctDef.start), fmtSg(ctDef.inc)]) + " · " + curTitleSg(ctDef.cur) + "</div>" +
+								"</div>";
+						}
+						catHtml += "</div>";
+
+						var sgLowerHtml =
+							"<div class=\"xxCaveSection xxStarGoLowerSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/star_stone_jar.webp?v=" + artV9 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.stargo.lower.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.stargo.lower.meta", [sgLitCnt, atOwnedCnt, atTotal]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxStarGoLowerGrid\">" +
+									pasHtml +
+									"<div class=\"xxStarGoLowerSide\">" + sgSynHtml + sgSealHtml + "</div>" +
+								"</div>" +
+								catHtml +
+							"</div>";
+
+						this.immortalStarGoEl.innerHTML = starGoTopHtml +
+							"<div class=\"xxCaveColumns\">" + sgColHtml + atColHtml + "</div>" +
+							sgLordsSecHtml +
+							sgLowerHtml;
+					}
+				}
+			}
+		}
+
+		if (this.immortalFengshuiEl){
+			var dujieFs = cult.getStage("dujie_0");
+			var showFs = !!(cult.immortalAscended || (dujieFs && dujieFs.researched) || (cult.immortalImprint || 0) > 0 || (cult.fengshuiTier || 0) > 0);
+			this.immortalFengshuiEl.style.display = showFs ? "block" : "none";
+			if (showFs){
+				dojo.toggleClass(this.immortalFengshuiEl, "is-locked", !cult.immortalAscended);
+				var fsUI = cult.fengshui || cult.makeDefaultFengshui();
+				var wsUI = cult.talismanWorkshop || cult.makeDefaultTalismanWorkshop();
+				var tpsFs = this.game.ticksPerSecond || 5;
+				var actListFs = wsUI.active || [];
+				var actSigFs = [];
+				for (var asi = 0; asi < actListFs.length; asi++){
+					actSigFs.push(actListFs[asi].key + ":" + actListFs[asi].quality + ":" + Math.ceil((actListFs[asi].ticksLeft || 0) / tpsFs));
+				}
+				var ldFs = wsUI.lastDraw || null;
+				var surveyReqFs = cult.getFengshuiSurveyReq();
+				var grindReqFs = cult.getTalismanMatReq("cinnabar");
+				var cutReqFs = cult.getTalismanMatReq("paper");
+				var drawSigFs = [];
+				for (var dsi = 0; dsi < cult.TALISMANS.length; dsi++){
+					drawSigFs.push(cult.getTalismanDrawReq(cult.TALISMANS[dsi].key).affordable ? 1 : 0);
+				}
+				var fengshuiSig = [
+					cult.immortalAscended ? 1 : 0,
+					fsUI.level || 1,
+					(fsUI.nodes || []).join(","),
+					fsUI.brush || "",
+					fsUI.peakGrade || 0,
+					cult.fengshuiTier || 0,
+					wsUI.cinnabar || 0,
+					wsUI.paper || 0,
+					Math.floor((wsUI.trickle || 0) / cult.TALISMAN_TRICKLE_TICKS * 20),
+					wsUI.insight || 0,
+					actSigFs.join(";"),
+					ldFs ? [ldFs.key, ldFs.quality, ldFs.total, ldFs.strokes.join(",")].join(",") : "-",
+					wsUI.drawn || 0,
+					wsUI.failed || 0,
+					wsUI.divine || 0,
+					surveyReqFs ? (surveyReqFs.affordable ? 1 : 0) : "max",
+					grindReqFs.affordable ? 1 : 0,
+					cutReqFs.affordable ? 1 : 0,
+					drawSigFs.join(""),
+					cult.riftFloor || 0,
+					(cult.starGo && cult.starGo.match) ? (cult.starGo.match.charm || 0) : "-",
+					fsUI.lastNote || "",
+					wsUI.lastNote || ""
+				].join("|");
+
+				if (this._fengshuiSig !== fengshuiSig){
+					this._fengshuiSig = fengshuiSig;
+					var fmtFs2 = this.game.getDisplayValueExt.bind(this.game);
+					var artV10 = cult.ART_VER || "85";
+					var pctF = function(v){ return Math.round((v || 0) * 100); };
+					var pct1F = function(v){ return Math.round((v || 0) * 1000) / 10; };
+					var elName = function(k){ return $I("cultivation.fengshui.el." + k); };
+					var palName = function(i){ return $I("cultivation.fengshui.palace." + cult.FENGSHUI_PALACES[i].key + ".label"); };
+					var palDir = function(i){ return $I("cultivation.fengshui.palace." + cult.FENGSHUI_PALACES[i].key + ".dir"); };
+					var tlName = function(k){ return $I("cultivation.talisman.item." + k + ".label"); };
+					var qName = function(k){ return $I("cultivation.talisman.quality." + k); };
+					var patNow = cult.computeFengshuiPattern(fsUI.nodes);
+					var gradeName = $I("cultivation.fengshui.grade." + patNow.gradeKey);
+					var slotsNow = cult.getFengshuiSlots();
+					var fsSeal = cult.getFengshuiSeal();
+					var compassIcoHtml = "<img src=\"res/art/fengshui_compass.webp?v=" + artV10 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var nodeIcoHtml = "<img src=\"res/art/spirit_vein_node.webp?v=" + artV10 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var discIcoHtml = "<img src=\"res/art/five_elements_disc.webp?v=" + artV10 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var talIcoHtml = "<img src=\"res/art/vermilion_talisman.webp?v=" + artV10 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var jarIcoHtml = "<img src=\"res/art/cinnabar_jar.webp?v=" + artV10 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var fsSealBadgeHtml = (fsSeal > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.fengshui.panel.imprint", [fsSeal]) + "</span>"
+						: "";
+
+					var fengshuiTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxFengshuiHdrIco\"><img src=\"res/art/fengshui_compass.webp?v=" + artV10 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.fengshui.panel.badge") + "</span>" +
+										fsSealBadgeHtml +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.fengshui.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.fengshui.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + discIcoHtml + $I("cultivation.fengshui.panel.chip.grade", [gradeName, patNow.qi]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + nodeIcoHtml + $I("cultivation.fengshui.panel.chip.nodes", [patNow.placed, slotsNow]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + talIcoHtml + $I("cultivation.fengshui.panel.chip.pouch", [actListFs.length, cult.TALISMAN_SLOTS]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + jarIcoHtml + $I("cultivation.fengshui.panel.chip.mats", [wsUI.cinnabar || 0, wsUI.paper || 0]) + "</span>" +
+							"</div>" +
+						"</div>";
+
+					var fsSealNow = cult.getFengshuiSealBonus();
+					var fsSealDesc = (fsSealNow.tier > 0)
+						? $I("cultivation.fengshui.seal.desc", [fsSealNow.tier, pctF(fsSealNow.xiuweiRatio), fsSealNow.startLevel, pctF(fsSealNow.patternMult - 1), fsSealNow.stroke])
+						: $I("cultivation.fengshui.seal.none");
+
+					if (!cult.immortalAscended){
+						var fsLockSeal = (fsSealNow.tier > 0) ? "<div class=\"xxSamsaraLockLegacy\">" + fsSealDesc + "</div>" : "";
+						this.immortalFengshuiEl.innerHTML = fengshuiTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.fengshui.panel.locked") + fsLockSeal + "</div>";
+					} else {
+						// 左栏: 灵脉风水堪舆
+						var brushNow = fsUI.brush || "wood";
+						var paletteHtml = "<div class=\"xxFsPalette\"><span class=\"xxFsPaletteHd\">" + discIcoHtml + $I("cultivation.fengshui.brush.title") + "</span><div class=\"xxFsBrushRow\">";
+						for (var pei = 0; pei < cult.FENGSHUI_ELEMENTS.length; pei++){
+							var peKey = cult.FENGSHUI_ELEMENTS[pei].key;
+							paletteHtml += "<span class=\"xxFsBrush is-" + peKey + (brushNow === peKey ? " is-active" : "") + "\" data-xx-fengshui=\"brush\" data-xx-arg=\"" + peKey + "\"><i></i>" + elName(peKey) + "</span>";
+						}
+						paletteHtml += "<span class=\"xxFsBrush is-erase" + (brushNow === "erase" ? " is-active" : "") + "\" data-xx-fengshui=\"brush\" data-xx-arg=\"erase\">" + $I("cultivation.fengshui.brush.erase") + "</span>";
+						paletteHtml += "</div></div>";
+
+						var edgeRel = {};
+						for (var eri = 0; eri < patNow.edges.length; eri++){
+							edgeRel[patNow.edges[eri].a + "-" + patNow.edges[eri].b] = patNow.edges[eri].rel;
+						}
+						var linkHtml = function(dir, rel){
+							return "<div class=\"xxFsLink is-" + dir + " " + (rel ? "is-" + rel : "is-none") + "\">" +
+								(rel ? "<span>" + $I("cultivation.fengshui.rel." + rel) + "</span>" : "") +
+								"</div>";
+						};
+						var boardFull = (patNow.placed >= slotsNow);
+						var fsBoardHtml = "<div class=\"xxFsBoard" + (cult.isFengshuiEn() ? " is-en" : "") + "\">";
+						for (var fr = 0; fr < 5; fr++){
+							for (var fc = 0; fc < 5; fc++){
+								if (fr % 2 === 0 && fc % 2 === 0){
+									var pIdx = (fr / 2) * 3 + (fc / 2);
+									var pDef = cult.FENGSHUI_PALACES[pIdx];
+									var pNode = fsUI.nodes[pIdx] || "";
+									var pSeated = !!(pNode && pNode === pDef.el);
+									var pBlocked = (!pNode && boardFull && brushNow !== "erase");
+									var pCls = "xxFsPalace" + (pIdx === 4 ? " is-center" : "") + (pNode ? " has-node is-" + pNode : " is-empty") +
+										(pSeated ? " is-seated" : "") + (pBlocked ? " is-disabled" : "");
+									fsBoardHtml +=
+										"<div class=\"" + pCls + "\" data-xx-fengshui=\"place\" data-xx-arg=\"" + pIdx + "\">" +
+											"<span class=\"xxFsPalaceName\">" + palName(pIdx) + "<small>" + palDir(pIdx) + "</small></span>" +
+											"<span class=\"xxFsPalaceEl is-" + pDef.el + "\" title=\"" + elName(pDef.el) + "\"><i></i>" + elName(pDef.el) + "</span>" +
+											(pNode
+												? "<span class=\"xxFsNode is-" + pNode + "\"><img src=\"res/art/spirit_vein_node.webp?v=" + artV10 + "\" alt=\"\"/></span><b class=\"xxFsNodeEl is-" + pNode + "\">" + elName(pNode) + "</b>"
+												: "<span class=\"xxFsEmpty\">" + $I(pBlocked ? "cultivation.fengshui.palace.full" : "cultivation.fengshui.palace.empty") + "</span>") +
+											(pSeated ? "<span class=\"xxFsSeated\" title=\"" + $I("cultivation.fengshui.seated") + "\">" + $I("cultivation.fengshui.seated") + "</span>" : "") +
+										"</div>";
+								} else if (fr % 2 === 0){
+									var hA = (fr / 2) * 3 + (fc - 1) / 2;
+									fsBoardHtml += linkHtml("h", edgeRel[hA + "-" + (hA + 1)]);
+								} else if (fc % 2 === 0){
+									var vA = ((fr - 1) / 2) * 3 + fc / 2;
+									fsBoardHtml += linkHtml("v", edgeRel[vA + "-" + (vA + 3)]);
+								} else {
+									fsBoardHtml += "<div class=\"xxFsKnot\"></div>";
+								}
+							}
+						}
+						fsBoardHtml += "</div>";
+
+						var oppHtml = "<div class=\"xxFsOppList\">";
+						for (var opi = 0; opi < patNow.opposites.length; opi++){
+							var opE = patNow.opposites[opi];
+							oppHtml +=
+								"<div class=\"xxFsOpp" + (opE.rel ? " is-" + opE.rel : " is-none") + "\">" +
+									"<span class=\"xxFsOppPair\">" + palName(opE.a) + "<i></i>" + palName(opE.b) + "</span>" +
+									"<span class=\"xxInnateStateTag" + (opE.rel === "sheng" ? " is-resonant" : (opE.rel === "bihe" ? " is-awake" : "")) + "\">" + $I("cultivation.fengshui.opp." + (opE.rel || "none")) + "</span>" +
+								"</div>";
+						}
+						oppHtml += "</div>";
+
+						var nextGradeDef = (patNow.grade < cult.FENGSHUI_GRADES.length - 1) ? cult.FENGSHUI_GRADES[patNow.grade + 1] : null;
+						var fsStateTxt = nextGradeDef
+							? $I("cultivation.fengshui.state.next", [$I("cultivation.fengshui.grade." + nextGradeDef.key), nextGradeDef.min, patNow.qi])
+							: $I("cultivation.fengshui.state.max");
+						var surveyBtnHtml = surveyReqFs
+							? "<div class=\"xxCaveMiniBtn gold" + (surveyReqFs.affordable ? "" : " is-disabled") + "\" data-xx-fengshui=\"survey\">" + nodeIcoHtml + $I("cultivation.fengshui.survey.btn", [surveyReqFs.level, surveyReqFs.slots, fmtFs2(surveyReqFs.xianyuan), fmtFs2(surveyReqFs.starchart)]) + "</div>"
+							: "<div class=\"xxCaveMiniBtn is-disabled\">" + $I("cultivation.fengshui.survey.max") + "</div>";
+						var clearBtnHtml = "<div class=\"xxCaveMiniBtn" + (patNow.placed > 0 ? "" : " is-disabled") + "\" data-xx-fengshui=\"clear\">" + $I("cultivation.fengshui.clear.btn") + "</div>";
+
+						var fsConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxFsConsole is-grade-" + patNow.grade + "\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + $I("cultivation.fengshui.cur.grade", [gradeName]) + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.fengshui.cur.factor", [pctF(patNow.factor)]) + "</span>" +
+								"</div>" +
+								paletteHtml +
+								"<div class=\"xxFsBoardWrap\">" + fsBoardHtml + "</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.fengshui.chip.qi", [patNow.qi]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.fengshui.chip.sheng", [patNow.harmony]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.fengshui.chip.ke", [patNow.clash]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.fengshui.chip.seated", [patNow.seated]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.fengshui.chip.bihe", [patNow.bihe]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxChronoEraHd\">" + $I("cultivation.fengshui.opp.title") + "</div>" +
+								oppHtml +
+								"<div class=\"xxPlotState\" style=\"margin:6px 0;\">" + fsStateTxt + "</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" + surveyBtnHtml + clearBtnHtml + "</div>" +
+							"</div>";
+
+						var fsColHtml =
+							"<div class=\"xxCaveSection xxFengshuiColBoard\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/fengshui_compass.webp?v=" + artV10 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.fengshui.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.fengshui.meta", [fsUI.level || 1, patNow.placed, slotsNow]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState xxFsHint\">" + $I("cultivation.fengshui.state.hint") + "</div>" +
+								fsConsoleHtml +
+								(fsUI.lastNote ? "<div class=\"xxCaveNote\">" + fsUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 符箓画坊
+						var tricklePct = Math.max(0, Math.min(100, Math.round((wsUI.trickle || 0) / cult.TALISMAN_TRICKLE_TICKS * 100)));
+						var matBtnHtml =
+							"<div class=\"xxCaveMiniBtn" + (grindReqFs.affordable ? "" : " is-disabled") + "\" data-xx-fengshui=\"mat\" data-xx-arg=\"cinnabar\">" + $I("cultivation.talisman.mat.grind.btn", [grindReqFs.gain, fmtFs2(grindReqFs.cost)]) + "</div>" +
+							"<div class=\"xxCaveMiniBtn" + (cutReqFs.affordable ? "" : " is-disabled") + "\" data-xx-fengshui=\"mat\" data-xx-arg=\"paper\">" + $I("cultivation.talisman.mat.cut.btn", [cutReqFs.gain, fmtFs2(cutReqFs.cost)]) + "</div>";
+						var matsHtml =
+							"<div class=\"xxXianqiStageBox xxTalismanMats\">" +
+								"<div class=\"xxTalismanMatRow\">" +
+									"<div class=\"xxTalismanMatIco\"><img src=\"res/art/cinnabar_jar.webp?v=" + artV10 + "\" alt=\"\"/></div>" +
+									"<div class=\"xxTalismanMatInfo\">" +
+										"<div class=\"xxTalismanMatLine is-cinnabar\"><span>" + $I("cultivation.talisman.mat.cinnabar") + "</span><b>" + (wsUI.cinnabar || 0) + "<small>/" + cult.TALISMAN_STOCK_MAX + "</small></b></div>" +
+										"<div class=\"xxTalismanMatLine is-paper\"><span>" + $I("cultivation.talisman.mat.paper") + "</span><b>" + (wsUI.paper || 0) + "<small>/" + cult.TALISMAN_STOCK_MAX + "</small></b></div>" +
+										"<div class=\"xxPlotState\">" + $I("cultivation.talisman.mat.trickle", [Math.round(cult.TALISMAN_TRICKLE_TICKS / tpsFs)]) + "</div>" +
+										"<div class=\"xxPlotBar xxTalismanTrickleBar\"><i style=\"width:" + tricklePct + "%\"></i></div>" +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" + matBtnHtml + "</div>" +
+							"</div>";
+
+						var bonusNow = cult.getTalismanStrokeBonus();
+						var strokeKeys = ["head", "heart", "foot"];
+						var judgeHtml =
+							"<div class=\"xxXianqiStageBox xxTalismanJudge" + (ldFs ? " is-" + ldFs.quality : " is-blank") + "\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + (ldFs ? $I("cultivation.talisman.judge.last", [tlName(ldFs.key), qName(ldFs.quality)]) : $I("cultivation.talisman.judge.idle")) + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.talisman.judge.total", [ldFs ? ldFs.total : 0]) + "</span>" +
+								"</div>";
+						for (var ski = 0; ski < 3; ski++){
+							var skVal = ldFs ? ldFs.strokes[ski] : 0;
+							judgeHtml +=
+								"<div class=\"xxTalismanStroke\">" +
+									"<span class=\"xxTalismanStrokeName\">" + $I("cultivation.talisman.stroke." + strokeKeys[ski]) + "</span>" +
+									"<div class=\"xxPlotBar xxTalismanStrokeBar\"><i style=\"width:" + Math.round(skVal / 35 * 100) + "%\"></i></div>" +
+									"<b>" + skVal + "</b>" +
+								"</div>";
+						}
+						judgeHtml += "<div class=\"xxTalismanLadder\">";
+						for (var qli = 0; qli < cult.TALISMAN_QUALITIES.length; qli++){
+							var qlDef = cult.TALISMAN_QUALITIES[qli];
+							var qlNext = cult.TALISMAN_QUALITIES[qli + 1];
+							var qlRange = qlNext ? (qlDef.min + "-" + (qlNext.min - 1)) : (qlDef.min + "+");
+							if (qli === 0){ qlRange = "&lt;" + qlNext.min; }
+							judgeHtml += "<span class=\"xxTalismanRung is-" + qlDef.key + (ldFs && ldFs.quality === qlDef.key ? " is-hit" : "") + "\">" + qName(qlDef.key) + "<small>" + qlRange + "</small></span>";
+						}
+						judgeHtml += "</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.talisman.chip.bonus", [bonusNow.total]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.talisman.chip.insight", [wsUI.insight || 0, cult.TALISMAN_INSIGHT_MAX, bonusNow.insight]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.talisman.chip.earth", [bonusNow.fengshui]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.talisman.chip.seal", [bonusNow.seal]) + "</span>" +
+								"</div>" +
+							"</div>";
+
+						var effArgs = function(key, pot){
+							var p = pot || 1;
+							if (key === "poxie"){ return [pct1F(Math.min(cult.XX13_COMBAT_CAP, 0.04 * p))]; }
+							if (key === "jinguang"){ return [pct1F(Math.min(cult.XX13_COMBAT_CAP, 0.04 * p)), pct1F(Math.min(cult.XX13_MITIGATION_CAP, 0.008 * p))]; }
+							if (key === "banyun"){ return [pctF(Math.min(cult.XX13_RIFT_XY_CAP, 0.20 * p))]; }
+							if (key === "beidou"){ return [1]; }
+							return [pct1F(Math.min(cult.XX13_HERB_CAP, 0.06 * p)), pct1F(Math.min(cult.XX13_HERB_CAP, 0.06 * p))];
+						};
+						var pouchHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.talisman.pouch.title", [actListFs.length, cult.TALISMAN_SLOTS]) + "</div><div class=\"xxTalismanPouch\">";
+						for (var psi2 = 0; psi2 < cult.TALISMAN_SLOTS; psi2++){
+							var paE = actListFs[psi2];
+							if (paE){
+								var paQ = cult.getTalismanQualityDef(paE.quality);
+								var paSec = Math.ceil((paE.ticksLeft || 0) / tpsFs);
+								var paPct = Math.max(0, Math.min(100, Math.round((paE.ticksLeft || 0) / Math.max(1, paE.maxTicks || 1) * 100)));
+								pouchHtml +=
+									"<div class=\"xxTalismanSlot is-" + paE.quality + "\">" +
+										"<div class=\"xxTalismanSlotIco\"><img src=\"res/art/vermilion_talisman.webp?v=" + artV10 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxTalismanSlotInfo\">" +
+											"<div class=\"xxSeedNameRow\">" +
+												"<b>" + tlName(paE.key) + "</b>" +
+												"<span class=\"xxInnateStateTag" + (paE.quality === "divine" || paE.quality === "upper" ? " is-resonant" : " is-awake") + "\">" + qName(paE.quality) + "</span>" +
+											"</div>" +
+											"<div class=\"xxTalismanSlotEff\">" + $I("cultivation.talisman.item." + paE.key + ".eff", effArgs(paE.key, paQ ? paQ.pot : 1)) + "</div>" +
+											"<div class=\"xxPlotBar xxTalismanTimeBar\"><i style=\"width:" + paPct + "%\"></i></div>" +
+											"<div class=\"xxTalismanSlotFoot\">" +
+												"<span>" + $I("cultivation.talisman.pouch.left", [paSec]) + "</span>" +
+												"<span class=\"xxTalismanDismiss\" data-xx-fengshui=\"dismiss\" data-xx-arg=\"" + paE.key + "\">" + $I("cultivation.talisman.dismiss.btn") + "</span>" +
+											"</div>" +
+										"</div>" +
+									"</div>";
+							} else {
+								pouchHtml += "<div class=\"xxTalismanSlot is-empty\"><span>" + $I("cultivation.talisman.pouch.empty") + "</span></div>";
+							}
+						}
+						pouchHtml += "</div>";
+
+						var tlColHtml =
+							"<div class=\"xxCaveSection xxTalismanCol\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/talisman_desk.webp?v=" + artV10 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.talisman.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.talisman.meta", [wsUI.drawn || 0, wsUI.divine || 0, wsUI.failed || 0]) + "</span>" +
+								"</div>" +
+								matsHtml +
+								judgeHtml +
+								pouchHtml +
+								(wsUI.lastNote ? "<div class=\"xxCaveNote\">" + wsUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 通栏: 符箓谱 · 五道真符
+						var descArgs = function(key){
+							if (key === "poxie"){ return [4, pctF(cult.XX13_COMBAT_CAP)]; }
+							if (key === "jinguang"){ return [4, 0.8, pctF(cult.XX13_COMBAT_CAP), pctF(cult.XX13_MITIGATION_CAP)]; }
+							if (key === "banyun"){ return [20, pctF(cult.XX13_RIFT_XY_CAP)]; }
+							if (key === "beidou"){ return [1]; }
+							return [6, pct1F(cult.XX13_HERB_CAP)];
+						};
+						var scopeOf = function(key){
+							if (key === "beidou"){ return "go"; }
+							if (key === "juling"){ return "herb"; }
+							return "rift";
+						};
+						var catTlHtml = "<div class=\"xxTalismanCatalog\">";
+						for (var tci = 0; tci < cult.TALISMANS.length; tci++){
+							var tcDef = cult.TALISMANS[tci];
+							var tcReq = cult.getTalismanDrawReq(tcDef.key);
+							var tcAct = cult.getActiveTalisman(tcDef.key);
+							var tcBtn = "";
+							if (!tcReq.slotOk){
+								tcBtn = $I("cultivation.talisman.draw.full");
+							} else if (!tcReq.okCinnabar || !tcReq.okPaper){
+								tcBtn = $I("cultivation.talisman.draw.short");
+							} else if (tcReq.replacing){
+								tcBtn = $I("cultivation.talisman.draw.redraw");
+							} else {
+								tcBtn = $I("cultivation.talisman.draw.btn");
+							}
+							catTlHtml +=
+								"<div class=\"xxTalismanCard is-" + scopeOf(tcDef.key) + (tcAct ? " is-active" : "") + "\">" +
+									"<div class=\"xxTalismanCardHd\">" +
+										"<div class=\"xxTalismanCardIco\"><img src=\"res/art/vermilion_talisman.webp?v=" + artV10 + "\" alt=\"\"/></div>" +
+										"<span class=\"xxTalismanCardName\">" + tlName(tcDef.key) + "</span>" +
+									"</div>" +
+									"<div class=\"xxTalismanCardTags\">" +
+										"<span class=\"xxInnateStateTag" + (tcAct ? " is-resonant" : "") + "\">" + (tcAct ? $I("cultivation.talisman.card.active", [qName(tcAct.quality)]) : $I("cultivation.talisman.card.scope." + scopeOf(tcDef.key))) + "</span>" +
+									"</div>" +
+									"<div class=\"xxTalismanCardDesc\">" + $I("cultivation.talisman.item." + tcDef.key + ".desc", descArgs(tcDef.key)) + "</div>" +
+									"<div class=\"xxTalismanCardCost" + ((tcReq.okCinnabar && tcReq.okPaper) ? "" : " is-short") + "\">" + $I("cultivation.talisman.card.cost", [tcDef.cinnabar, tcDef.paper]) + "</div>" +
+									"<div class=\"xxCaveMiniBtn gold" + (tcReq.affordable ? "" : " is-disabled") + "\"" + (tcReq.affordable ? " data-xx-fengshui=\"draw\" data-xx-arg=\"" + tcDef.key + "\"" : "") + ">" + tcBtn + "</div>" +
+								"</div>";
+						}
+						catTlHtml += "</div>";
+						var catSecHtml =
+							"<div class=\"xxCaveSection xxTalismanCatSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/vermilion_talisman.webp?v=" + artV10 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.talisman.catalog.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.talisman.catalog.meta", [pctF(cult.XX13_COMBAT_CAP), pctF(cult.XX13_MITIGATION_CAP)]) + "</span>" +
+								"</div>" +
+								catTlHtml +
+							"</div>";
+
+						// 通栏: 格局神效 · 协同 · 堪舆印
+						var fsEffNow = cult.getFengshuiEffect();
+						var targetsHtml =
+							"<div class=\"xxChronoAuraBox xxFsTargetBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + discIcoHtml + $I("cultivation.fengshui.targets.title", [gradeName, pctF(patNow.factor), pctF(fsEffNow.sealMult - 1)]) + "</div>" +
+								"<div class=\"xxFsTargetList\">";
+						for (var tgi = 0; tgi < cult.FENGSHUI_TARGETS.length; tgi++){
+							var tgDef = cult.FENGSHUI_TARGETS[tgi];
+							var tgVal = fsEffNow[tgDef.key] || 0;
+							var tgTxt = (tgDef.key === "stroke") ? ("+" + tgVal) : ("+" + pct1F(tgVal) + "%");
+							var tgPct = Math.max(0, Math.min(100, Math.round(tgVal / tgDef.cap * 100)));
+							targetsHtml +=
+								"<div class=\"xxFsTarget is-" + tgDef.main + (tgVal > 0 ? " is-on" : "") + "\">" +
+									"<div class=\"xxFsTargetHd\">" +
+										"<span class=\"xxFsTargetName\"><i class=\"xxFsDot is-" + tgDef.main + "\"></i>" + $I("cultivation.fengshui.target." + tgDef.key + ".label") + "</span>" +
+										"<b>" + tgTxt + "</b>" +
+									"</div>" +
+									"<div class=\"xxFsTargetDesc\">" + $I("cultivation.fengshui.target." + tgDef.key + ".desc", [elName(tgDef.main), elName(tgDef.sup), fsEffNow.weights[tgDef.key] || 0]) + "</div>" +
+									"<div class=\"xxPlotBar xxFsTargetBar\"><i style=\"width:" + tgPct + "%\"></i></div>" +
+								"</div>";
+						}
+						targetsHtml += "</div>" +
+								"<div class=\"xxPlotState xxFsCapNote" + (fsEffNow.capped ? " is-capped" : "") + "\">" + $I("cultivation.fengshui.targets.cap", [pctF(cult.FENGSHUI_ECON_CAP), pct1F(fsEffNow.herb + fsEffNow.sermon + fsEffNow.chrono)]) + "</div>" +
+							"</div>";
+
+						var synRowFs = function(on, text){
+							return "<div class=\"xxThunderSynRow" + (on ? " is-active" : "") + "\">" +
+								"<span class=\"xxInnateStateTag" + (on ? " is-resonant" : "") + "\">" + $I(on ? "cultivation.fengshui.synergy.on" : "cultivation.fengshui.synergy.off") + "</span>" +
+								"<span class=\"xxThunderSynText\">" + text + "</span>" +
+								"</div>";
+						};
+						var tlHigh = cult.getTalismanEffect(26);
+						var goCharmNow = (cult.starGo && cult.starGo.match && cult.starGo.match.charm) ? cult.starGo.match.charm : 0;
+						var riftBestFs = cult.riftFloor || 0;
+						var fsSynHtml =
+							"<div class=\"xxThunderSynergyBox xxFsSynergyBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + talIcoHtml + $I("cultivation.fengshui.synergy.title") + "</div>" +
+								synRowFs(fsEffNow.sermon > 0, $I("cultivation.fengshui.synergy.sermon", [pct1F(fsEffNow.sermon)])) +
+								synRowFs(fsEffNow.chrono > 0, $I("cultivation.fengshui.synergy.chrono", [pct1F(fsEffNow.chrono)])) +
+								synRowFs(tlHigh.riftDmg > 0 || tlHigh.riftHp > 0 || tlHigh.riftXy > 0, $I("cultivation.fengshui.synergy.rift", [pct1F(tlHigh.riftDmg), pct1F(tlHigh.riftHp), pct1F(tlHigh.mitigation), pctF(tlHigh.riftXy), riftBestFs])) +
+								synRowFs(riftBestFs >= 25, $I("cultivation.fengshui.synergy.paper")) +
+								synRowFs(cult.getTalismanGoBonus() > 0 || goCharmNow > 0, $I(goCharmNow > 0 ? "cultivation.fengshui.synergy.go.live" : "cultivation.fengshui.synergy.go", [1])) +
+							"</div>";
+						var fsSealHtml =
+							"<div class=\"xxThunderBoneBox xxFsSealBox\">" +
+								"<div class=\"xxThunderBoneIco\"><img src=\"res/art/five_elements_disc.webp?v=" + artV10 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxBountyDesc\">" + fsSealDesc + "</div>" +
+							"</div>";
+
+						var fsLowerHtml =
+							"<div class=\"xxCaveSection xxFsLowerSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/five_elements_disc.webp?v=" + artV10 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.fengshui.lower.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.fengshui.lower.meta", [$I("cultivation.fengshui.grade." + cult.getFengshuiGradeDef(fsUI.peakGrade || 0).key), fsSeal]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxFsLowerGrid\">" +
+									targetsHtml +
+									"<div class=\"xxFsLowerSide\">" + fsSynHtml + fsSealHtml + "</div>" +
+								"</div>" +
+							"</div>";
+
+						this.immortalFengshuiEl.innerHTML = fengshuiTopHtml +
+							"<div class=\"xxCaveColumns\">" + fsColHtml + tlColHtml + "</div>" +
+							catSecHtml +
+							fsLowerHtml;
+					}
+				}
+			}
+		}
+
+		if (this.immortalSwordEl){
+			var dujieSw = cult.getStage("dujie_0");
+			var showSw = !!(cult.immortalAscended || (dujieSw && dujieSw.researched) || (cult.immortalImprint || 0) > 0 || (cult.swordIntentTier || 0) > 0);
+			this.immortalSwordEl.style.display = showSw ? "block" : "none";
+			if (showSw){
+				dojo.toggleClass(this.immortalSwordEl, "is-locked", !cult.immortalAscended);
+				var stUI = cult.swordTomb || cult.makeDefaultSwordTomb();
+				var plUI = cult.penglai || cult.makeDefaultPenglai();
+				var tpsSw = this.game.ticksPerSecond || 5;
+				var intentSigSw = [];
+				var compSigSw = [];
+				for (var csi = 0; csi < cult.ANCIENT_SWORDS.length; csi++){
+					var csKey = cult.ANCIENT_SWORDS[csi].key;
+					var csReq = cult.getSwordComprehendReq(csKey);
+					intentSigSw.push(cult.getSwordIntent(csKey));
+					compSigSw.push(csReq.maxed ? "m" : (csReq.affordable ? 1 : (csReq.floorOk ? (csReq.thunderOk ? 0 : "t") : "f")));
+				}
+				var mgUI = plUI.mirage || null;
+				var mgChainUI = mgUI ? cult.getPenglaiChainDef(mgUI.chain) : null;
+				var mgStepUI = (mgChainUI && mgChainUI.steps[mgUI.step]) ? mgChainUI.steps[mgUI.step] : null;
+				var optSigSw = [];
+				if (mgStepUI){
+					for (var osi = 0; osi < mgStepUI.opts.length; osi++){
+						var osReq = cult.getPenglaiOptionReq(mgStepUI.opts[osi].key);
+						optSigSw.push((osReq && osReq.affordable ? 1 : 0) + ":" + (osReq ? osReq.chance : 0));
+					}
+				}
+				var logSigSw = [];
+				for (var lsi = 0; lsi < (plUI.log || []).length; lsi++){
+					logSigSw.push(plUI.log[lsi].c + plUI.log[lsi].s + plUI.log[lsi].o + (plUI.log[lsi].ok ? 1 : 0));
+				}
+				var swordSig = [
+					cult.immortalAscended ? 1 : 0,
+					intentSigSw.join(""),
+					(stUI.slots || []).join(","),
+					stUI.selected || "",
+					stUI.peakGrade || 0,
+					cult.swordIntentTier || 0,
+					cult.getSwordThunderTier(),
+					cult.riftFloor || 0,
+					compSigSw.join(""),
+					Math.floor((plUI.charge || 0) / cult.PENGLAI_INTERVAL * 50),
+					mgUI ? [mgUI.chain, mgUI.step, mgUI.entered ? 1 : 0, mgUI.entered ? 0 : Math.ceil((mgUI.ticksLeft || 0) / tpsSw)].join(",") : "-",
+					optSigSw.join(";"),
+					[plUI.visited || 0, plUI.completed || 0, plUI.faded || 0, plUI.peaches || 0].join(","),
+					logSigSw.join(";"),
+					cult.computeFengshuiPattern ? cult.computeFengshuiPattern().grade : 0,
+					stUI.lastNote || "",
+					plUI.lastNote || ""
+				].join("|");
+
+				if (this._swordSig !== swordSig){
+					this._swordSig = swordSig;
+					var fmtSw = this.game.getDisplayValueExt.bind(this.game);
+					var artV11 = cult.ART_VER || "85";
+					var pctW = function(v){ return Math.round((v || 0) * 100); };
+					var pct2W = function(v){ return Math.round((v || 0) * 10000) / 100; };
+					var swName = function(k){ return $I("cultivation.swordtomb.sword." + k + ".label"); };
+					var swShort = function(k){ return $I("cultivation.swordtomb.sword." + k + ".short"); };
+					var posName = function(i){ return $I("cultivation.swordtomb.pos." + cult.SWORD_POSITIONS[i].key + ".label"); };
+					var posDir = function(i){ return $I("cultivation.swordtomb.pos." + cult.SWORD_POSITIONS[i].key + ".dir"); };
+					var intentName = function(lv){ return $I("cultivation.swordtomb.intent." + Math.max(0, Math.min(3, lv || 0))); };
+					var pipsHtml = function(lv){
+						var h = "<span class=\"xxSwPips\">";
+						for (var pp = 1; pp <= cult.SWORD_INTENT_MAX; pp++){
+							h += "<i class=\"" + (pp <= lv ? "is-on" : "") + "\"></i>";
+						}
+						return h + "</span>";
+					};
+					var fNow = cult.computeSwordFormation();
+					var gradeNameSw = $I("cultivation.swordtomb.grade." + fNow.gradeKey);
+					var learnedSw = cult.getSwordLearnedCount();
+					var totalIntentSw = cult.getSwordTotalIntent();
+					var swSeal = cult.getSwordSeal();
+					var thunderSw = cult.getSwordThunderTier();
+					var tombIcoHtml = "<img src=\"res/art/sword_tomb.webp?v=" + artV11 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var bladeIcoHtml = "<img src=\"res/art/ancient_sword.webp?v=" + artV11 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var manualIcoHtml = "<img src=\"res/art/sword_manual.webp?v=" + artV11 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var isleIcoHtml = "<img src=\"res/art/penglai_isle.webp?v=" + artV11 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var shellIcoHtml = "<img src=\"res/art/mirage_shell.webp?v=" + artV11 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var peachIcoHtml = "<img src=\"res/art/immortal_peach.webp?v=" + artV11 + "\" class=\"xxMiniMeritIco\" alt=\"\"/>";
+					var chainTitle = function(k){ return $I("cultivation.penglai.chain." + k + ".title"); };
+					var chargePctSw = Math.max(0, Math.min(100, Math.round((plUI.charge || 0) / cult.PENGLAI_INTERVAL * 100)));
+					var chargeMinSw = Math.max(1, Math.ceil((cult.PENGLAI_INTERVAL - (plUI.charge || 0)) / tpsSw / 60));
+					var swSealBadgeHtml = (swSeal > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.swordtomb.panel.imprint", [swSeal]) + "</span>"
+						: "";
+
+					var swordTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxSwordHdrIco\"><img src=\"res/art/sword_tomb.webp?v=" + artV11 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.swordtomb.panel.badge") + "</span>" +
+										swSealBadgeHtml +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.swordtomb.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.swordtomb.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + tombIcoHtml + $I("cultivation.swordtomb.panel.chip.grade", [gradeNameSw, fNow.score]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + manualIcoHtml + $I("cultivation.swordtomb.panel.chip.slots", [fNow.placed, fNow.open]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + bladeIcoHtml + $I("cultivation.swordtomb.panel.chip.learned", [learnedSw, cult.ANCIENT_SWORDS.length]) + "</span>" +
+								"<span class=\"xxCaveSumChip" + (mgUI ? " is-mirage" : "") + "\">" + shellIcoHtml +
+									(mgUI ? $I("cultivation.swordtomb.panel.chip.mirage", [chainTitle(mgUI.chain)]) : $I("cultivation.swordtomb.panel.chip.calm", [chargePctSw])) +
+								"</span>" +
+							"</div>" +
+						"</div>";
+
+					var swSealNow = cult.getSwordSealBonus();
+					var swSealDesc = (swSealNow.tier > 0)
+						? $I("cultivation.swordtomb.seal.desc", [swSealNow.tier, pctW(swSealNow.xiuweiRatio), pctW(swSealNow.costCut), pctW(swSealNow.formationMult - 1), swSealNow.freeIntent])
+						: $I("cultivation.swordtomb.seal.none");
+
+					if (!cult.immortalAscended){
+						var swLockSeal = (swSealNow.tier > 0) ? "<div class=\"xxSamsaraLockLegacy\">" + swSealDesc + "</div>" : "";
+						this.immortalSwordEl.innerHTML = swordTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.swordtomb.panel.locked") + swLockSeal + "</div>";
+					} else {
+						// 左栏: 太虚剑冢 · 剑阵
+						var selSw = stUI.selected || "";
+						var paletteSwHtml = "<div class=\"xxSwPalette\"><span class=\"xxFsPaletteHd\">" + manualIcoHtml + $I("cultivation.swordtomb.palette.title") + "</span><div class=\"xxSwManualRow\">";
+						var anyManual = false;
+						for (var mi = 0; mi < cult.ANCIENT_SWORDS.length; mi++){
+							var mDef = cult.ANCIENT_SWORDS[mi];
+							var mLv = cult.getSwordIntent(mDef.key);
+							if (mLv <= 0){ continue; }
+							anyManual = true;
+							var mPlaced = ((stUI.slots || []).indexOf(mDef.key) >= 0);
+							paletteSwHtml +=
+								"<span class=\"xxSwManual is-" + mDef.dir + (selSw === mDef.key ? " is-active" : "") + (mPlaced ? " is-placed" : "") + "\" data-xx-sword=\"select\" data-xx-arg=\"" + mDef.key + "\">" +
+									"<img src=\"res/art/sword_manual.webp?v=" + artV11 + "\" alt=\"\"/>" + swShort(mDef.key) +
+									"<small>" + mLv + "</small>" +
+								"</span>";
+						}
+						if (!anyManual){
+							paletteSwHtml += "<span class=\"xxSwManualEmpty\">" + $I("cultivation.swordtomb.palette.empty") + "</span>";
+						}
+						paletteSwHtml += "</div></div>";
+
+						var linkLabel = function(lk){
+							if (!lk || lk.state === "none"){ return ""; }
+							return "<span>" + $I("cultivation.swordtomb.link." + lk.state) + (lk.thunder ? $I("cultivation.swordtomb.link.thunderMark") : "") + "</span>";
+						};
+						var cornerHtml = function(lk){
+							return "<div class=\"xxSwLink is-" + (lk ? lk.state : "none") + (lk && lk.thunder ? " is-thunder" : "") + "\">" + linkLabel(lk) + "</div>";
+						};
+						var spokeOf = {};
+						for (var spi = 0; spi < 4; spi++){
+							spokeOf[fNow.links[spi].b] = fNow.links[spi];
+						}
+						var pieceAt = {};
+						for (var pci = 0; pci < fNow.pieces.length; pci++){
+							pieceAt[fNow.pieces[pci].pos] = fNow.pieces[pci];
+						}
+						var slotHtml = function(p){
+							var locked = (p >= fNow.open);
+							var pc = pieceAt[p] || null;
+							var pDef = pc ? cult.getAncientSwordDef(pc.key) : null;
+							var sp = spokeOf[p];
+							var cls = "xxSwSlot pos-" + cult.SWORD_POSITIONS[p].key + (locked ? " is-locked is-disabled" : "") +
+								(pc ? " has-sword is-" + pDef.dir : " is-empty") + (pc && pc.seated ? " is-seated" : "") +
+								(sp && sp.state !== "none" ? " spoke-" + sp.state : "") + (sp && sp.thunder ? " spoke-thunder" : "") +
+								(!locked && selSw && (!pc || pc.key !== selSw) ? " is-target" : "");
+							var inner = "<span class=\"xxSwSlotName\">" + posName(p) + "<small>" + posDir(p) + "</small></span>";
+							if (locked){
+								var needIntent = Math.max(1, (p - 1) * cult.SWORD_SLOT_PER_INTENT - totalIntentSw);
+								inner += "<span class=\"xxSwEmpty\">" + $I("cultivation.swordtomb.slot.locked", [needIntent]) + "</span>";
+							} else if (pc){
+								inner +=
+									"<span class=\"xxSwBlade\"><img src=\"res/art/ancient_sword.webp?v=" + artV11 + "\" alt=\"\"/></span>" +
+									"<b class=\"xxSwBladeName\">" + swShort(pc.key) + "</b>" +
+									pipsHtml(pc.level) +
+									(pc.seated ? "<span class=\"xxSwSeated\">" + $I("cultivation.swordtomb.seated") + "</span>" : "");
+							} else {
+								inner += "<span class=\"xxSwEmpty\">" + $I(selSw ? "cultivation.swordtomb.slot.drop" : "cultivation.swordtomb.slot.empty") + "</span>";
+							}
+							return "<div class=\"" + cls + "\"" + (locked ? "" : " data-xx-sword=\"place\" data-xx-arg=\"" + p + "\"") + ">" + inner + "</div>";
+						};
+						var swBoardHtml =
+							"<div class=\"xxSwBoard" + (cult.isSwordTombEn() ? " is-en" : "") + "\">" +
+								cornerHtml(fNow.links[6]) + slotHtml(4) + cornerHtml(fNow.links[7]) +
+								slotHtml(3) + slotHtml(0) + slotHtml(1) +
+								cornerHtml(fNow.links[5]) + slotHtml(2) + cornerHtml(fNow.links[4]) +
+							"</div>";
+
+						var nextGradeSw = (fNow.grade < cult.SWORD_GRADES.length - 1) ? cult.SWORD_GRADES[fNow.grade + 1] : null;
+						var swStateTxt = nextGradeSw
+							? $I("cultivation.swordtomb.state.next", [$I("cultivation.swordtomb.grade." + nextGradeSw.key), nextGradeSw.min, fNow.score])
+							: $I("cultivation.swordtomb.state.max");
+						var anySlotSw = false;
+						for (var asi2 = 0; asi2 < (stUI.slots || []).length; asi2++){
+							if (stUI.slots[asi2]){ anySlotSw = true; }
+						}
+						var swClearBtn = "<div class=\"xxCaveMiniBtn" + (anySlotSw ? "" : " is-disabled") + "\"" + (anySlotSw ? " data-xx-sword=\"clear\"" : "") + ">" + $I("cultivation.swordtomb.clear.btn") + "</div>";
+
+						var swConsoleHtml =
+							"<div class=\"xxXianqiStageBox xxSwConsole is-grade-" + fNow.grade + "\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + $I("cultivation.swordtomb.cur.grade", [gradeNameSw]) + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.swordtomb.cur.factor", [pctW(fNow.factor)]) + "</span>" +
+								"</div>" +
+								paletteSwHtml +
+								"<div class=\"xxSwBoardWrap\">" + swBoardHtml + "</div>" +
+								"<div class=\"xxVesselStatRow\">" +
+									"<span class=\"xxVesselChip is-gold\">" + $I("cultivation.swordtomb.chip.score", [fNow.score]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.swordtomb.chip.seated", [fNow.seated]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.swordtomb.chip.resonant", [fNow.resonant]) + "</span>" +
+									"<span class=\"xxVesselChip\">" + $I("cultivation.swordtomb.chip.thunder", [fNow.thunderLinks]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState\" style=\"margin:6px 0;\">" + swStateTxt + "</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" + swClearBtn + "</div>" +
+							"</div>";
+
+						var swColHtml =
+							"<div class=\"xxCaveSection xxSwFormationCol\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/sword_tomb.webp?v=" + artV11 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.swordtomb.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.swordtomb.meta", [fNow.placed, fNow.open, totalIntentSw]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState xxFsHint\">" + $I("cultivation.swordtomb.state.hint") + "</div>" +
+								swConsoleHtml +
+								(stUI.lastNote ? "<div class=\"xxCaveNote\">" + stUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 古剑参悟
+						var effArgsSw = function(d){
+							if (d.key === "qingping"){ return [pct2W(d.crit)]; }
+							if (d.key === "chixiao"){ return [pct2W(d.dmg)]; }
+							if (d.key === "zidian"){ return [pct2W(d.dmg), pct2W(d.crit), pctW(cult.SWORD_THUNDER_STEP), cult.SWORD_THUNDER_SEAT]; }
+							if (d.key === "taie"){ return [pct2W(d.dmg), pct2W(d.hp)]; }
+							if (d.key === "zhanlu"){ return [pct2W(d.hp), pct2W(d.mit)]; }
+							return [pct2W(d.dmg), pct2W(d.crit), pct2W(d.hp), pct2W(d.mit)];
+						};
+						var swListHtml = "<div class=\"xxSwSwordList\">";
+						for (var sli = 0; sli < cult.ANCIENT_SWORDS.length; sli++){
+							var sDef = cult.ANCIENT_SWORDS[sli];
+							var sReq = cult.getSwordComprehendReq(sDef.key);
+							var sLv = sReq.cur;
+							var sBtn;
+							if (sReq.maxed){
+								sBtn = $I("cultivation.swordtomb.comprehend.max");
+							} else if (!sReq.floorOk){
+								sBtn = $I("cultivation.swordtomb.comprehend.sealed");
+							} else if (!sReq.thunderOk){
+								sBtn = $I("cultivation.swordtomb.comprehend.thunder");
+							} else if (!sReq.affordable){
+								sBtn = $I("cultivation.swordtomb.comprehend.short");
+							} else {
+								sBtn = $I("cultivation.swordtomb.comprehend.btn", [intentName(sReq.level)]);
+							}
+							var sGate = "";
+							if (!sReq.maxed && !sReq.floorOk){
+								sGate = $I("cultivation.swordtomb.req.floor", [sReq.reqFloor, cult.riftFloor || 0]);
+							} else if (!sReq.maxed && !sReq.thunderOk){
+								sGate = $I("cultivation.swordtomb.req.thunder", [sReq.needThunder, thunderSw]);
+							}
+							var sCost = sReq.maxed
+								? $I("cultivation.swordtomb.cost.max")
+								: (sReq.orbs > 0
+									? $I("cultivation.swordtomb.cost.orbs", [fmtSw(sReq.xianyuan), fmtSw(sReq.relic), sReq.orbs])
+									: $I("cultivation.swordtomb.cost.base", [fmtSw(sReq.xianyuan), fmtSw(sReq.relic)]));
+							swListHtml +=
+								"<div class=\"xxSwSword is-" + sDef.dir + (sLv > 0 ? " is-learned" : "") + (sReq.maxed ? " is-max" : "") + (sReq.floorOk ? "" : " is-sealed") + "\">" +
+									"<div class=\"xxSwSwordIco\"><img src=\"res/art/ancient_sword.webp?v=" + artV11 + "\" alt=\"\"/></div>" +
+									"<div class=\"xxSwSwordInfo\">" +
+										"<div class=\"xxSeedNameRow\">" +
+											"<b>" + swName(sDef.key) + "</b>" +
+											"<span class=\"xxInnateStateTag" + (sLv > 0 ? " is-resonant" : "") + "\">" + $I("cultivation.swordtomb.dir." + sDef.dir) + "</span>" +
+										"</div>" +
+										"<div class=\"xxSwIntentRow\">" + pipsHtml(sLv) + "<span>" + intentName(sLv) + "</span></div>" +
+										"<div class=\"xxSwSwordEff\">" + $I("cultivation.swordtomb.sword." + sDef.key + ".desc", effArgsSw(sDef)) + "</div>" +
+										(sGate ? "<div class=\"xxSwSwordGate\">" + sGate + "</div>" : "") +
+										"<div class=\"xxSwSwordCost" + ((sReq.maxed || (sReq.okXy && sReq.okRelic && sReq.okOrbs)) ? "" : " is-short") + "\">" + sCost + "</div>" +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtn gold" + (sReq.affordable ? "" : " is-disabled") + "\"" + (sReq.affordable ? " data-xx-sword=\"comprehend\" data-xx-arg=\"" + sDef.key + "\"" : "") + ">" + sBtn + "</div>" +
+								"</div>";
+						}
+						swListHtml += "</div>";
+						var swTombColHtml =
+							"<div class=\"xxCaveSection xxSwTombCol\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/ancient_sword.webp?v=" + artV11 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.swordtomb.tomb.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.swordtomb.tomb.meta", [learnedSw, cult.ANCIENT_SWORDS.length, totalIntentSw, cult.riftFloor || 0]) + "</span>" +
+								"</div>" +
+								swListHtml +
+							"</div>";
+
+						// 通栏: 蓬莱海市奇遇
+						var rnameList = function(rw){
+							var parts = [];
+							if (!rw){ return parts; }
+							for (var ri = 0; ri < cult.PENGLAI_REWARD_ORDER.length; ri++){
+								var rk = cult.PENGLAI_REWARD_ORDER[ri];
+								if (typeof rw[rk] === "number" && rw[rk] > 0){
+									parts.push($I("cultivation.penglai.rname." + rk));
+								}
+							}
+							return parts;
+						};
+						var sepW = cult.isSwordTombEn() ? ", " : "、";
+						var sceneHtml;
+						if (mgUI && mgChainUI && mgStepUI){
+							var dotsHtml = "<div class=\"xxPenglaiDots\">";
+							for (var dti = 0; dti < mgChainUI.steps.length; dti++){
+								dotsHtml += "<i class=\"" + (dti < mgUI.step ? "is-done" : (dti === mgUI.step ? "is-now" : "")) + "\"></i>";
+							}
+							dotsHtml += "</div>";
+							var optsHtml = "<div class=\"xxPenglaiOpts\">";
+							for (var opi = 0; opi < mgStepUI.opts.length; opi++){
+								var oDef = mgStepUI.opts[opi];
+								var oReq = cult.getPenglaiOptionReq(oDef.key);
+								var oMeta = oDef.chance
+									? $I("cultivation.penglai.opt.chance", [pctW(oReq.chance), $I("cultivation.penglai.kind." + oDef.chance)])
+									: $I("cultivation.penglai.opt.sure");
+								for (var oci = 0; oci < oReq.costs.length; oci++){
+									oMeta += " · <span class=\"" + (oReq.costs[oci].ok ? "" : "is-short") + "\">" + $I("cultivation.penglai.cost." + oReq.costs[oci].kind, [oReq.costs[oci].n]) + "</span>";
+								}
+								if (oReq.needThunder > 0){
+									oMeta += " · <span class=\"" + (oReq.okReq ? "" : "is-short") + "\">" + $I("cultivation.penglai.req.thunder", [oReq.needThunder]) + "</span>";
+								}
+								var oWin = rnameList(oDef.win);
+								var oNext = (oDef.next >= 0) ? $I("cultivation.penglai.opt.next") : $I("cultivation.penglai.opt.end");
+								var oHint = (oWin.length ? $I("cultivation.penglai.opt.win", [oWin.join(sepW)]) : $I("cultivation.penglai.opt.pass")) + " · " + oNext;
+								optsHtml +=
+									"<div class=\"xxPenglaiOpt" + (oDef.chance ? " is-roll" : " is-sure") + (oReq.affordable ? "" : " is-disabled") + "\"" + (oReq.affordable ? " data-xx-penglai=\"choose\" data-xx-arg=\"" + oDef.key + "\"" : "") + ">" +
+										"<b>" + $I("cultivation.penglai.chain." + mgChainUI.key + "." + mgStepUI.key + "." + oDef.key) + "</b>" +
+										"<span class=\"xxPenglaiOptMeta\">" + oMeta + "</span>" +
+										"<span class=\"xxPenglaiOptHint\">" + oHint + "</span>" +
+									"</div>";
+							}
+							optsHtml += "</div>";
+							var lifePct = Math.max(0, Math.min(100, Math.round((mgUI.ticksLeft || 0) / cult.PENGLAI_LIFETIME * 100)));
+							var lifeHtml = mgUI.entered
+								? "<div class=\"xxPlotState\">" + $I("cultivation.penglai.scene.entered") + "</div>"
+								: "<div class=\"xxPlotState\">" + $I("cultivation.penglai.scene.left", [Math.ceil((mgUI.ticksLeft || 0) / tpsSw)]) + "</div>" +
+									"<div class=\"xxPlotBar xxPenglaiLifeBar\"><i style=\"width:" + lifePct + "%\"></i></div>";
+							sceneHtml =
+								"<div class=\"xxXianqiStageBox xxPenglaiScene is-" + mgChainUI.key + (mgUI.entered ? " is-entered" : "") + "\">" +
+									"<div class=\"xxPenglaiSceneHd\">" +
+										"<div class=\"xxPenglaiSceneIco\"><img src=\"res/art/penglai_isle.webp?v=" + artV11 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxPenglaiSceneTitle\">" +
+											"<b>" + chainTitle(mgChainUI.key) + "</b>" +
+											"<span>" + $I("cultivation.penglai.scene.step", [mgUI.step + 1, mgChainUI.steps.length, $I("cultivation.penglai.chain." + mgChainUI.key + "." + mgStepUI.key + ".title")]) + "</span>" +
+										"</div>" +
+										dotsHtml +
+									"</div>" +
+									"<div class=\"xxPenglaiStepDesc\">" + $I("cultivation.penglai.chain." + mgChainUI.key + "." + mgStepUI.key + ".desc") + "</div>" +
+									optsHtml +
+									lifeHtml +
+									"<div class=\"xxCaveMiniBtnRow\"><div class=\"xxCaveMiniBtn\" data-xx-penglai=\"leave\">" + $I(mgUI.entered ? "cultivation.penglai.leave.entered" : "cultivation.penglai.leave.btn") + "</div></div>" +
+								"</div>";
+						} else {
+							sceneHtml =
+								"<div class=\"xxXianqiStageBox xxPenglaiScene is-calm\">" +
+									"<div class=\"xxPenglaiSceneHd\">" +
+										"<div class=\"xxPenglaiSceneIco\"><img src=\"res/art/penglai_isle.webp?v=" + artV11 + "\" alt=\"\"/></div>" +
+										"<div class=\"xxPenglaiSceneTitle\">" +
+											"<b>" + $I("cultivation.penglai.calm.title") + "</b>" +
+											"<span>" + $I("cultivation.penglai.calm.eta", [chargePctSw, chargeMinSw]) + "</span>" +
+										"</div>" +
+									"</div>" +
+									"<div class=\"xxPlotBar xxPenglaiChargeBar\"><i style=\"width:" + chargePctSw + "%\"></i></div>" +
+									"<div class=\"xxPenglaiStepDesc\">" + $I("cultivation.penglai.calm.desc", [Math.round(cult.PENGLAI_INTERVAL / tpsSw / 60), Math.round(cult.PENGLAI_LIFETIME / tpsSw / 60), Math.round(cult.PENGLAI_RIFT_CHARGE / tpsSw)]) + "</div>" +
+								"</div>";
+						}
+
+						var logHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.penglai.log.title") + "</div><div class=\"xxPenglaiLogList\">";
+						if (!plUI.log || !plUI.log.length){
+							logHtml += "<div class=\"xxPenglaiLog is-empty\">" + $I("cultivation.penglai.log.empty") + "</div>";
+						} else {
+							for (var lgi = 0; lgi < plUI.log.length; lgi++){
+								var lg = plUI.log[lgi];
+								var lgChain = cult.getPenglaiChainDef(lg.c);
+								var lgStep = lgChain ? lgChain.steps[lg.s] : null;
+								if (!lgStep){ continue; }
+								logHtml +=
+									"<div class=\"xxPenglaiLog " + (lg.ok ? "is-ok" : "is-miss") + "\">" +
+										"<img src=\"res/art/mirage_shell.webp?v=" + artV11 + "\" alt=\"\"/>" +
+										"<span>" + chainTitle(lg.c) + " · " + $I("cultivation.penglai.chain." + lg.c + "." + lgStep.key + "." + lg.o) + "</span>" +
+										"<b>" + $I(lg.ok ? "cultivation.penglai.log.ok" : "cultivation.penglai.log.miss") + "</b>" +
+									"</div>";
+							}
+						}
+						logHtml += "</div>";
+						var atlasHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.penglai.atlas.title") + "</div><div class=\"xxPenglaiAtlas\">";
+						for (var ati = 0; ati < cult.PENGLAI_CHAINS.length; ati++){
+							var atKey = cult.PENGLAI_CHAINS[ati].key;
+							atlasHtml +=
+								"<div class=\"xxPenglaiAtlasRow" + (mgUI && mgUI.chain === atKey ? " is-now" : "") + "\">" +
+									"<b>" + chainTitle(atKey) + "</b>" +
+									"<span>" + $I("cultivation.penglai.chain." + atKey + ".blurb") + "</span>" +
+								"</div>";
+						}
+						atlasHtml += "</div>";
+						var plStatsHtml =
+							"<div class=\"xxVesselStatRow xxPenglaiStats\">" +
+								"<span class=\"xxVesselChip is-gold\">" + shellIcoHtml + $I("cultivation.penglai.stat.visited", [plUI.visited || 0]) + "</span>" +
+								"<span class=\"xxVesselChip\">" + $I("cultivation.penglai.stat.completed", [plUI.completed || 0]) + "</span>" +
+								"<span class=\"xxVesselChip\">" + $I("cultivation.penglai.stat.faded", [plUI.faded || 0]) + "</span>" +
+								"<span class=\"xxVesselChip\">" + peachIcoHtml + $I("cultivation.penglai.stat.peaches", [plUI.peaches || 0]) + "</span>" +
+							"</div>";
+						var plSecHtml =
+							"<div class=\"xxCaveSection xxPenglaiSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/penglai_isle.webp?v=" + artV11 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.penglai.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.penglai.meta", [Math.round(cult.PENGLAI_OFFLINE_CAP / tpsSw / 60)]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPenglaiGrid\">" +
+									"<div class=\"xxPenglaiMain\">" + sceneHtml + (plUI.lastNote ? "<div class=\"xxCaveNote\">" + plUI.lastNote + "</div>" : "") + "</div>" +
+									"<div class=\"xxPenglaiSide\">" + plStatsHtml + logHtml + atlasHtml + "</div>" +
+								"</div>" +
+							"</div>";
+
+						// 通栏: 剑阵神效 · 协同 · 剑意印
+						var swEffNow = cult.getSwordFormationEffect(26);
+						var chanDefs = [
+							{key: "dmg", raw: swEffNow.rawDmg, val: swEffNow.riftDmg, cap: cult.XX14_DMG_CAP},
+							{key: "crit", raw: swEffNow.rawCrit, val: swEffNow.riftCrit, cap: cult.XX14_CRIT_CAP},
+							{key: "hp", raw: swEffNow.rawHp, val: swEffNow.riftHp, cap: cult.XX14_HP_CAP},
+							{key: "mit", raw: swEffNow.rawMit, val: swEffNow.mitigation, cap: cult.XX14_MIT_CAP}
+						];
+						var chanHtml =
+							"<div class=\"xxChronoAuraBox xxSwChanBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + bladeIcoHtml + $I("cultivation.swordtomb.chan.title", [gradeNameSw, pctW(fNow.factor), pctW(swEffNow.sealMult - 1)]) + "</div>" +
+								"<div class=\"xxSwChanList\">";
+						for (var chi = 0; chi < chanDefs.length; chi++){
+							var chD = chanDefs[chi];
+							var chPct = Math.max(0, Math.min(100, Math.round(chD.val / chD.cap * 100)));
+							chanHtml +=
+								"<div class=\"xxSwChan is-" + chD.key + (chD.val > 0 ? " is-on" : "") + (chD.raw > chD.cap ? " is-capped" : "") + "\">" +
+									"<div class=\"xxSwChanHd\">" +
+										"<span>" + $I("cultivation.swordtomb.chan." + chD.key) + "</span>" +
+										"<b>+" + pct2W(chD.val) + "%<small>/" + pct2W(chD.cap) + "%</small></b>" +
+									"</div>" +
+									"<div class=\"xxPlotBar xxSwChanBar\"><i style=\"width:" + chPct + "%\"></i></div>" +
+								"</div>";
+						}
+						chanHtml += "</div>" +
+								"<div class=\"xxPlotState xxFsCapNote" + (swEffNow.capped ? " is-capped" : "") + "\">" + $I("cultivation.swordtomb.chan.cap") + "</div>" +
+							"</div>";
+
+						var synRowSw = function(on, text){
+							return "<div class=\"xxThunderSynRow" + (on ? " is-active" : "") + "\">" +
+								"<span class=\"xxInnateStateTag" + (on ? " is-resonant" : "") + "\">" + $I(on ? "cultivation.swordtomb.synergy.on" : "cultivation.swordtomb.synergy.off") + "</span>" +
+								"<span class=\"xxThunderSynText\">" + text + "</span>" +
+								"</div>";
+						};
+						var riftBestSw = cult.riftFloor || 0;
+						var swSynHtml =
+							"<div class=\"xxThunderSynergyBox xxSwSynergyBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + manualIcoHtml + $I("cultivation.swordtomb.synergy.title") + "</div>" +
+								synRowSw(riftBestSw >= 26, $I("cultivation.swordtomb.synergy.rift", [riftBestSw])) +
+								synRowSw(thunderSw >= 1, $I("cultivation.swordtomb.synergy.thunder", [thunderSw, pctW(cult.SWORD_THUNDER_STEP * thunderSw)])) +
+								synRowSw(thunderSw >= cult.SWORD_THUNDER_SEAT, $I("cultivation.swordtomb.synergy.seat", [cult.SWORD_THUNDER_SEAT])) +
+								synRowSw(fNow.grade > 0, $I("cultivation.swordtomb.synergy.penglai", [pctW(cult.getPenglaiChance("sword"))])) +
+							"</div>";
+						var swSealHtml =
+							"<div class=\"xxThunderBoneBox xxSwSealBox\">" +
+								"<div class=\"xxThunderBoneIco\"><img src=\"res/art/sword_manual.webp?v=" + artV11 + "\" alt=\"\"/></div>" +
+								"<div class=\"xxBountyDesc\">" + swSealDesc + "</div>" +
+							"</div>";
+						var swLowerHtml =
+							"<div class=\"xxCaveSection xxSwLowerSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/sword_manual.webp?v=" + artV11 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.swordtomb.lower.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.swordtomb.lower.meta", [$I("cultivation.swordtomb.grade." + cult.getSwordGradeDef(stUI.peakGrade || 0).key), swSeal]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxSwLowerGrid\">" +
+									chanHtml +
+									"<div class=\"xxSwLowerSide\">" + swSynHtml + swSealHtml + "</div>" +
+								"</div>" +
+							"</div>";
+
+						this.immortalSwordEl.innerHTML = swordTopHtml +
+							"<div class=\"xxCaveColumns\">" + swColHtml + swTombColHtml + "</div>" +
+							plSecHtml +
+							swLowerHtml;
+					}
+				}
+			}
+		}
+
+		if (this.immortalStarEl){
+			var dujieSo = cult.getStage("dujie_0");
+			var showSo = !!(cult.immortalAscended || (dujieSo && dujieSo.researched) || (cult.immortalImprint || 0) > 0 || (cult.starMapTier || 0) > 0);
+			this.immortalStarEl.style.display = showSo ? "block" : "none";
+			if (showSo){
+				dojo.toggleClass(this.immortalStarEl, "is-locked", !cult.immortalAscended);
+				var soUI = cult.starObservatory || cult.makeDefaultStarObservatory();
+				var nwUI = cult.natalWarming || cult.makeDefaultNatalWarming();
+				var tpsSo = this.game.ticksPerSecond || 5;
+				var mIdxSo = cult.getStarMansionIndex();
+				var mapSo = cult.computeStarMap();
+				var chSo = cult.getStarDivineChances();
+				var dReqSo = cult.getStarDivineReq();
+				var blSo = cult.getStarBlessingEffect();
+				var spSo = cult.getNatalSpiritEffect();
+				var spGradeSo = cult.getNatalSpiritGrade();
+				var rReqSo = cult.getNatalResonanceReq();
+				var poolSo = cult.getStarArtifactCombatBonus(26);
+				var matReqsSo = [];
+				var matSigSo = [];
+				for (var msi = 0; msi < cult.WARM_MATERIALS.length; msi++){
+					var msReq = cult.getWarmMaterialReq(cult.WARM_MATERIALS[msi].key);
+					matReqsSo.push(msReq);
+					matSigSo.push([msReq.affordable ? 1 : 0, msReq.ok ? 1 : 0, msReq.cost, msReq.warmth, msReq.favored ? 1 : 0, msReq.affinity ? 1 : 0, msReq.thunderOk ? 1 : 0].join(":"));
+				}
+				var logSigSo = [];
+				for (var lso = 0; lso < (soUI.log || []).length; lso++){
+					logSigSo.push(soUI.log[lso].m + "-" + soUI.log[lso].r);
+				}
+				var starSig = [
+					cult.immortalAscended ? 1 : 0,
+					mIdxSo,
+					Math.floor(((soUI.phase || 0) % cult.STAR_MANSION_TICKS) / cult.STAR_MANSION_TICKS * 20),
+					(soUI.lit || []).join(""),
+					soUI.cycles || 0,
+					Math.ceil((soUI.cooldown || 0) / tpsSo),
+					soUI.blessing ? [soUI.blessing.sym, soUI.blessing.power, soUI.blessing.m, Math.ceil((soUI.blessing.ticksLeft || 0) / tpsSo)].join(",") : "-",
+					[chSo.great, chSo.good, chSo.sword, chSo.thunder, chSo.spirit].join(","),
+					[dReqSo.affordable ? 1 : 0, dReqSo.xianyuan, dReqSo.starchart, dReqSo.okXy ? 1 : 0, dReqSo.okChart ? 1 : 0].join(","),
+					[nwUI.warmth || 0, nwUI.warms || 0, nwUI.resonances || 0].join(","),
+					Math.ceil((nwUI.resonance || 0) / tpsSo),
+					Math.ceil((nwUI.resCooldown || 0) / tpsSo),
+					[rReqSo.affordable ? 1 : 0, rReqSo.okXy ? 1 : 0, rReqSo.okChart ? 1 : 0, rReqSo.xianyuan, rReqSo.starchart].join(","),
+					matSigSo.join(";"),
+					cult.starMapTier || 0,
+					soUI.peakGrade || 0,
+					cult.getSwordThunderTier(),
+					cult.riftFloor || 0,
+					blSo.seated ? 1 : 0,
+					cult.getNatalArtifactName(),
+					[poolSo.swordDmg, poolSo.swordCrit, poolSo.swordHp, poolSo.swordMit, poolSo.riftDmg, poolSo.riftCrit, poolSo.riftHp, poolSo.mitigation, poolSo.rawDmg, poolSo.rawCrit, poolSo.rawHp, poolSo.rawMit].map(function(v){ return Math.round(v * 100000); }).join(","),
+					logSigSo.join(";"),
+					soUI.lastNote || "",
+					nwUI.lastNote || ""
+				].join("|");
+
+				if (this._starSig !== starSig){
+					this._starSig = starSig;
+					var artV12 = cult.ART_VER || "85";
+					var pctSo = function(v){ return Math.round((v || 0) * 100); };
+					var pct2So = function(v){ return Math.round((v || 0) * 10000) / 100; };
+					var mulSo = function(v){ return Math.round((v || 1) * 100) / 100; };
+					var clampPctSo = function(v){ return Math.max(0, Math.min(100, Math.round(v))); };
+					var mLabelSo = function(i){ return $I("cultivation.starobs.mansion." + cult.STAR_MANSIONS[i] + ".label"); };
+					var mShortSo = function(i){ return $I("cultivation.starobs.mansion." + cult.STAR_MANSIONS[i] + ".short"); };
+					var symLabelSo = function(k){ return $I("cultivation.starobs.sym." + k + ".label"); };
+					var artImgSo = function(name, cls){
+						return "<img src=\"res/art/" + name + ".webp?v=" + artV12 + "\"" + (cls ? " class=\"" + cls + "\"" : "") + " alt=\"\"/>";
+					};
+					var obsIcoSo = artImgSo("star_observatory", "xxMiniMeritIco");
+					var discIcoSo = artImgSo("constellation_disc", "xxMiniMeritIco");
+					var scrollIcoSo = artImgSo("star_map_scroll", "xxMiniMeritIco");
+					var natalIcoSo = artImgSo("natal_artifact", "xxMiniMeritIco");
+					var spiritIcoSo = artImgSo("artifact_spirit", "xxMiniMeritIco");
+					var cauldronIcoSo = artImgSo("warming_cauldron", "xxMiniMeritIco");
+					var symNowSo = cult.getStarSymbolOf(mIdxSo);
+					var mapGradeNameSo = $I("cultivation.starobs.grade." + mapSo.gradeKey);
+					var spGradeNameSo = $I("cultivation.warming.grade." + cult.getWarmGradeDef(spGradeSo).key);
+					var soSeal = cult.getStarMapSeal();
+					var soSealBadgeHtml = (soSeal > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.starobs.panel.imprint", [soSeal]) + "</span>"
+						: "";
+
+					var soTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxStarHdrIco\">" + artImgSo("star_observatory") + "</div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.starobs.panel.badge") + "</span>" +
+										soSealBadgeHtml +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.starobs.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.starobs.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + discIcoSo + $I("cultivation.starobs.panel.chip.mansion", [mLabelSo(mIdxSo)]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + scrollIcoSo + $I("cultivation.starobs.panel.chip.map", [mapGradeNameSo, mapSo.lit, cult.STAR_MANSIONS.length]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + spiritIcoSo + $I("cultivation.starobs.panel.chip.spirit", [spGradeNameSo]) + "</span>" +
+								"<span class=\"xxCaveSumChip" + (blSo.active ? " is-blessed" : "") + "\">" + cauldronIcoSo +
+									(blSo.active ? $I("cultivation.starobs.panel.chip.bless", [symLabelSo(blSo.sym), blSo.power]) : $I("cultivation.starobs.panel.chip.calm")) +
+								"</span>" +
+							"</div>" +
+						"</div>";
+
+					var soSealNow = cult.getStarMapSealBonus();
+					var soSealDesc = (soSealNow.tier > 0)
+						? $I("cultivation.starobs.seal.desc", [soSealNow.tier, pctSo(soSealNow.xiuweiRatio), pctSo(soSealNow.costCut), pctSo(soSealNow.blessMult - 1), pctSo(soSealNow.warmBonus), soSealNow.freeLit])
+						: $I("cultivation.starobs.seal.none");
+
+					if (!cult.immortalAscended){
+						var soLockSeal = (soSealNow.tier > 0) ? "<div class=\"xxSamsaraLockLegacy\">" + soSealDesc + "</div>" : "";
+						this.immortalStarEl.innerHTML = soTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.starobs.panel.locked") + soLockSeal + "</div>";
+					} else {
+						// 左栏: 周天星宿观星台
+						var cycSo = cult.getStarCycleTicks();
+						var discDegSo = Math.round(((soUI.phase || 0) % cycSo) / cycSo * 360);
+						var mPctSo = clampPctSo(((soUI.phase || 0) % cult.STAR_MANSION_TICKS) / cult.STAR_MANSION_TICKS * 100);
+						var nextIdxSo = (mIdxSo + 1) % cult.STAR_MANSIONS.length;
+						var nowHtmlSo =
+							"<div class=\"xxXianqiStageBox xxStarNow is-" + symNowSo.key + "\">" +
+								"<div class=\"xxStarDisc\"><img src=\"res/art/constellation_disc.webp?v=" + artV12 + "\" alt=\"\" style=\"transform:rotate(" + discDegSo + "deg)\"/></div>" +
+								"<div class=\"xxStarNowInfo\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<b>" + $I("cultivation.starobs.now.title", [mLabelSo(mIdxSo)]) + "</b>" +
+										"<span class=\"xxInnateStateTag is-resonant\">" + symLabelSo(symNowSo.key) + "</span>" +
+									"</div>" +
+									"<div class=\"xxStarNowDesc\">" + $I("cultivation.starobs.sym." + symNowSo.key + ".desc") + "</div>" +
+									"<div class=\"xxPlotBar xxStarTurnBar\"><i style=\"width:" + mPctSo + "%\"></i></div>" +
+									"<div class=\"xxPlotState\">" + $I("cultivation.starobs.now.next", [mLabelSo(nextIdxSo), Math.round(cult.STAR_MANSION_TICKS / tpsSo), soUI.cycles || 0]) + "</div>" +
+								"</div>" +
+							"</div>";
+
+						var beastArtSo = {azure: "beast_azure_dragon", tortoise: "beast_black_tortoise", tiger: "beast_white_tiger", bird: "beast_vermilion_bird"};
+						var gridHtmlSo = "<div class=\"xxStarGrid" + (cult.isStarObsEn() ? " is-en" : "") + "\">";
+						for (var gsi = 0; gsi < cult.STAR_SYMBOLS.length; gsi++){
+							var gSym = cult.STAR_SYMBOLS[gsi];
+							var gCnt = mapSo.bySym[gSym.key] || 0;
+							gridHtmlSo +=
+								"<div class=\"xxStarRow is-" + gSym.key + (gCnt >= cult.STAR_MANSION_PER_SYMBOL ? " is-done" : "") + (symNowSo.key === gSym.key ? " is-now" : "") + "\">" +
+									"<div class=\"xxStarRowHd\">" + artImgSo(beastArtSo[gSym.key]) +
+										"<span>" + $I("cultivation.starobs.sym." + gSym.key + ".short") + "<small>" + gCnt + "/" + cult.STAR_MANSION_PER_SYMBOL + "</small></span>" +
+									"</div>" +
+									"<div class=\"xxStarCells\">";
+							for (var gci = 0; gci < cult.STAR_MANSION_PER_SYMBOL; gci++){
+								var gIdx = gsi * cult.STAR_MANSION_PER_SYMBOL + gci;
+								var gLit = !!(soUI.lit && soUI.lit[gIdx]);
+								gridHtmlSo +=
+									"<span class=\"xxStarCell" + (gLit ? " is-lit" : "") + (gIdx === mIdxSo ? " is-now" : "") + (soUI.blessing && soUI.blessing.m === gIdx ? " is-blessed" : "") + "\" title=\"" + mLabelSo(gIdx) + "\">" +
+										mShortSo(gIdx) +
+									"</span>";
+							}
+							gridHtmlSo += "</div></div>";
+						}
+						gridHtmlSo += "</div>";
+
+						var dBtnSo;
+						if (!dReqSo.ready){
+							dBtnSo = $I("cultivation.starobs.divine.cooling", [Math.ceil(dReqSo.cooldown / tpsSo)]);
+						} else if (!dReqSo.affordable){
+							dBtnSo = $I("cultivation.starobs.divine.short");
+						} else {
+							dBtnSo = $I("cultivation.starobs.divine.btn");
+						}
+						var cdPctSo = clampPctSo((1 - (dReqSo.cooldown || 0) / cult.STAR_DIVINE_COOLDOWN) * 100);
+						var divineHtmlSo =
+							"<div class=\"xxXianqiStageBox xxStarDivine\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + obsIcoSo + $I("cultivation.starobs.divine.title") + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.starobs.divine.count", [soUI.divines || 0, soUI.greats || 0]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxStarOdds\">" +
+									"<span class=\"xxStarOdd is-great\"><b>" + pctSo(chSo.great) + "%</b>" + $I("cultivation.starobs.outcome.great") + "</span>" +
+									"<span class=\"xxStarOdd is-good\"><b>" + pctSo(chSo.good) + "%</b>" + $I("cultivation.starobs.outcome.good") + "</span>" +
+									"<span class=\"xxStarOdd is-plain\"><b>" + pctSo(chSo.plain) + "%</b>" + $I("cultivation.starobs.outcome.plain") + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState\">" + $I("cultivation.starobs.divine.rule", [chSo.sword, chSo.thunder, chSo.spirit, pctSo(cult.STAR_GREAT_MAX)]) + "</div>" +
+								"<div class=\"xxStarCost" + ((dReqSo.okXy && dReqSo.okChart) ? "" : " is-short") + "\">" + $I("cultivation.starobs.divine.cost", [dReqSo.xianyuan, dReqSo.starchart]) + "</div>" +
+								"<div class=\"xxPlotBar xxStarCdBar\"><i style=\"width:" + cdPctSo + "%\"></i></div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									"<div class=\"xxCaveMiniBtn gold" + (dReqSo.affordable ? "" : " is-disabled") + "\"" + (dReqSo.affordable ? " data-xx-star=\"divine\"" : "") + ">" + dBtnSo + "</div>" +
+								"</div>" +
+							"</div>";
+
+						var blessHtmlSo;
+						var blSymSo = blSo.active ? cult.getStarSymbolDef(blSo.sym) : symNowSo;
+						if (blSo.active){
+							var blMulsSo = [
+								{on: blSo.thunderMult > 1, txt: $I("cultivation.starobs.bless.mul.thunder", [mulSo(blSo.thunderMult)])},
+								{on: blSo.seated, txt: $I("cultivation.starobs.bless.mul.seat", [mulSo(cult.STAR_SEAT_MULT)])},
+								{on: blSo.done, txt: $I("cultivation.starobs.bless.mul.done", [mulSo(cult.STAR_SYMBOL_DONE_MULT)])},
+								{on: blSo.sealMult > 1, txt: $I("cultivation.starobs.bless.mul.seal", [mulSo(blSo.sealMult)])},
+								{on: blSo.syncMult > 1, txt: $I("cultivation.starobs.bless.mul.sync", [mulSo(cult.STAR_SYNC_MULT)])}
+							];
+							var blChipsSo = "";
+							for (var bmi = 0; bmi < blMulsSo.length; bmi++){
+								blChipsSo += "<span class=\"xxVesselChip" + (blMulsSo[bmi].on ? " is-gold" : " is-off") + "\">" + blMulsSo[bmi].txt + "</span>";
+							}
+							var blLeftPctSo = clampPctSo(blSo.ticksLeft / cult.STAR_BLESS_TICKS * 100);
+							var blChanSo = [["dmg", blSo.dmg], ["crit", blSo.crit], ["hp", blSo.hp], ["mit", blSo.mit]];
+							var blPartsSo = [];
+							for (var bci = 0; bci < blChanSo.length; bci++){
+								if (blChanSo[bci][1] > 0){
+									blPartsSo.push($I("cultivation.starobs.chan." + blChanSo[bci][0], [pct2So(blChanSo[bci][1])]));
+								}
+							}
+							blessHtmlSo =
+								"<div class=\"xxXianqiStageBox xxStarBless is-" + blSo.sym + "\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<b>" + discIcoSo + $I("cultivation.starobs.bless.title", [symLabelSo(blSo.sym), blSo.power]) + "</b>" +
+										"<span class=\"xxSeedStock\">" + $I("cultivation.starobs.bless.left", [Math.ceil(blSo.ticksLeft / tpsSo)]) + "</span>" +
+									"</div>" +
+									"<div class=\"xxPlotBar xxStarBlessBar\"><i style=\"width:" + blLeftPctSo + "%\"></i></div>" +
+									"<div class=\"xxStarBlessEff\">" + $I("cultivation.starobs.bless.eff", [blPartsSo.join(" · "), mulSo(blSo.mult)]) + "</div>" +
+									"<div class=\"xxVesselStatRow xxStarMulRow\">" + blChipsSo + "</div>" +
+								"</div>";
+						} else {
+							blessHtmlSo =
+								"<div class=\"xxXianqiStageBox xxStarBless is-none\">" +
+									"<div class=\"xxPlotState\">" + $I("cultivation.starobs.bless.none", [Math.round(cult.STAR_BLESS_TICKS / tpsSo / 60)]) + "</div>" +
+								"</div>";
+						}
+
+						var soLogHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.starobs.log.title") + "</div><div class=\"xxStarLogList\">";
+						if (!soUI.log || !soUI.log.length){
+							soLogHtml += "<div class=\"xxStarLog is-empty\">" + $I("cultivation.starobs.log.empty") + "</div>";
+						} else {
+							for (var sli2 = 0; sli2 < soUI.log.length; sli2++){
+								var slg = soUI.log[sli2];
+								var slgOut = cult.STAR_OUTCOMES[Math.max(0, Math.min(2, slg.r || 0))];
+								soLogHtml +=
+									"<div class=\"xxStarLog is-" + slgOut + "\">" +
+										artImgSo("star_map_scroll") +
+										"<span>" + mLabelSo(slg.m) + " · " + symLabelSo(cult.getStarSymbolOf(slg.m).key) + "</span>" +
+										"<b>" + $I("cultivation.starobs.outcome." + slgOut) + "</b>" +
+									"</div>";
+							}
+						}
+						soLogHtml += "</div>";
+
+						var soColHtml =
+							"<div class=\"xxCaveSection xxStarObsCol\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/star_observatory.webp?v=" + artV12 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.starobs.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.starobs.meta", [mapSo.lit, cult.STAR_MANSIONS.length, mapGradeNameSo]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState xxFsHint\">" + $I("cultivation.starobs.hint", [Math.round(cult.STAR_MANSION_TICKS / tpsSo), Math.round(cycSo / tpsSo / 60)]) + "</div>" +
+								nowHtmlSo +
+								gridHtmlSo +
+								divineHtmlSo +
+								blessHtmlSo +
+								soLogHtml +
+								(soUI.lastNote ? "<div class=\"xxCaveNote\">" + soUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 本命法宝温养
+						var spDefSo = cult.getWarmGradeDef(spGradeSo);
+						var spNextSo = (spGradeSo < cult.WARM_GRADES.length - 1) ? cult.WARM_GRADES[spGradeSo + 1] : null;
+						var wPctSo = spNextSo ? clampPctSo(((nwUI.warmth || 0) - spDefSo.min) / (spNextSo.min - spDefSo.min) * 100) : 100;
+						var affMatSo = cult.getNatalAffinityMat();
+						var favMatSo = cult.getWarmFavoredMat();
+						var cardHtmlSo =
+							"<div class=\"xxXianqiStageBox xxWarmCard is-grade-" + spGradeSo + (spSo.resonating ? " is-resonating" : "") + "\">" +
+								"<div class=\"xxWarmArt\">" +
+									artImgSo("natal_artifact") +
+									"<span class=\"xxWarmSpirit\">" + artImgSo("artifact_spirit") + "</span>" +
+								"</div>" +
+								"<div class=\"xxWarmInfo\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<b>" + cult.getNatalArtifactName() + "</b>" +
+										"<span class=\"xxInnateStateTag" + (spGradeSo > 0 ? " is-resonant" : "") + "\">" + spGradeNameSo + "</span>" +
+									"</div>" +
+									"<div class=\"xxPlotBar xxWarmBar\"><i style=\"width:" + wPctSo + "%\"></i></div>" +
+									"<div class=\"xxPlotState\">" + (spNextSo
+										? $I("cultivation.warming.progress", [nwUI.warmth || 0, spNextSo.min, $I("cultivation.warming.grade." + spNextSo.key)])
+										: $I("cultivation.warming.progress.max", [nwUI.warmth || 0])) + "</div>" +
+									"<div class=\"xxWarmEff\">" + (spGradeSo > 0
+										? $I("cultivation.warming.eff", [pctSo(spSo.xianyuanRatio), pct2So(spSo.dmg), pct2So(spSo.crit), pct2So(spSo.hp), pct2So(spSo.mit)])
+										: $I("cultivation.warming.eff.none", [$I("cultivation.warming.grade." + cult.WARM_GRADES[1].key), cult.WARM_GRADES[1].min])) + "</div>" +
+									"<div class=\"xxPlotState xxWarmHint\">" +
+										$I("cultivation.warming.favor", [$I("cultivation.warming.mat." + favMatSo + ".label"), symLabelSo(symNowSo.key)]) +
+										(affMatSo ? $I("cultivation.warming.affinity", [$I("cultivation.warming.mat." + affMatSo + ".label")]) : "") +
+									"</div>" +
+								"</div>" +
+							"</div>";
+
+						var matArtSo = {xianyuan: "spirit_vein_node", relic: "treasure_lot", starchart: "star_map_scroll", herb: "herb_qinglian", cinnabar: "cinnabar_jar", orbs: "thunder_orb"};
+						var matHtmlSo = "<div class=\"xxWarmMatList\">";
+						for (var wmi = 0; wmi < matReqsSo.length; wmi++){
+							var wmR = matReqsSo[wmi];
+							var wmBtn;
+							if (wmR.maxed){
+								wmBtn = $I("cultivation.warming.feed.max");
+							} else if (!wmR.thunderOk){
+								wmBtn = $I("cultivation.warming.feed.thunder", [wmR.needThunder]);
+							} else if (!wmR.ok){
+								wmBtn = $I("cultivation.warming.feed.short");
+							} else {
+								wmBtn = $I("cultivation.warming.feed.btn");
+							}
+							var wmTags = (wmR.favored ? "<span class=\"xxWarmTag is-favored\">" + $I("cultivation.warming.tag.favored") + "</span>" : "") +
+								(wmR.affinity ? "<span class=\"xxWarmTag is-affinity\">" + $I("cultivation.warming.tag.affinity") + "</span>" : "");
+							matHtmlSo +=
+								"<div class=\"xxWarmMat" + (wmR.favored ? " is-favored" : "") + (wmR.affordable ? "" : " is-short") + "\">" +
+									"<div class=\"xxWarmMatIco\">" + artImgSo(matArtSo[wmR.key]) + "</div>" +
+									"<div class=\"xxWarmMatInfo\">" +
+										"<div class=\"xxWarmMatName\"><b>" + $I("cultivation.warming.mat." + wmR.key + ".label") + "</b>" + wmTags + "</div>" +
+										"<div class=\"xxWarmMatCost" + ((wmR.ok && wmR.thunderOk) || wmR.maxed ? "" : " is-short") + "\">" + $I("cultivation.warming.mat." + wmR.key + ".cost", [wmR.cost]) + " · " + $I("cultivation.warming.gain", [wmR.warmth]) + "</div>" +
+									"</div>" +
+									"<div class=\"xxCaveMiniBtn" + (wmR.affordable ? " gold" : " is-disabled") + "\"" + (wmR.affordable ? " data-xx-warm=\"feed\" data-xx-arg=\"" + wmR.key + "\"" : "") + ">" + wmBtn + "</div>" +
+								"</div>";
+						}
+						matHtmlSo += "</div>";
+
+						var resBtnSo;
+						if (!rReqSo.gradeOk){
+							resBtnSo = $I("cultivation.warming.res.locked");
+						} else if (rReqSo.active){
+							resBtnSo = $I("cultivation.warming.res.active", [Math.ceil((nwUI.resonance || 0) / tpsSo)]);
+						} else if (rReqSo.cooldown > 0){
+							resBtnSo = $I("cultivation.warming.res.cooling", [Math.ceil(rReqSo.cooldown / tpsSo)]);
+						} else if (!rReqSo.affordable){
+							resBtnSo = $I("cultivation.warming.res.short");
+						} else {
+							resBtnSo = $I("cultivation.warming.res.btn");
+						}
+						var resPctSo = !rReqSo.gradeOk ? 0 : (rReqSo.active
+							? clampPctSo((nwUI.resonance || 0) / rReqSo.ticks * 100)
+							: (rReqSo.cooldown > 0 ? clampPctSo((1 - rReqSo.cooldown / cult.WARM_RES_COOLDOWN) * 100) : 100));
+						var resHtmlSo =
+							"<div class=\"xxXianqiStageBox xxWarmRes" + (rReqSo.active ? " is-active" : "") + "\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + spiritIcoSo + $I("cultivation.warming.res.title") + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.warming.res.count", [nwUI.resonances || 0]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState xxWarmResDesc\">" + $I("cultivation.warming.res.desc", [pctSo(cult.WARM_RES_MULT - 1), pctSo(cult.WARM_RES_XY_MULT - 1), Math.round(rReqSo.ticks / tpsSo), Math.round(cult.WARM_RES_COOLDOWN / tpsSo / 60), pctSo(cult.STAR_SYNC_MULT - 1)]) + "</div>" +
+								"<div class=\"xxPlotBar xxWarmResBar\"><i style=\"width:" + resPctSo + "%\"></i></div>" +
+								"<div class=\"xxStarCost" + ((rReqSo.okXy && rReqSo.okChart) ? "" : " is-short") + "\">" + $I("cultivation.warming.res.cost", [rReqSo.xianyuan, rReqSo.starchart]) + "</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									"<div class=\"xxCaveMiniBtn gold" + (rReqSo.affordable ? "" : " is-disabled") + "\"" + (rReqSo.affordable ? " data-xx-warm=\"resonate\"" : "") + ">" + resBtnSo + "</div>" +
+								"</div>" +
+							"</div>";
+
+						var wmColHtml =
+							"<div class=\"xxCaveSection xxWarmCol\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/natal_artifact.webp?v=" + artV12 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.warming.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.warming.meta", [nwUI.warms || 0, nwUI.resonances || 0]) + "</span>" +
+								"</div>" +
+								cardHtmlSo +
+								"<div class=\"xxChronoEraHd\">" + cauldronIcoSo + $I("cultivation.warming.mat.title") + "</div>" +
+								matHtmlSo +
+								resHtmlSo +
+								(nwUI.lastNote ? "<div class=\"xxCaveNote\">" + nwUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 通栏: 斗法合计(剑阵 + 星宿 + 器灵,合并封顶) · 协同 · 星图印
+						var chanDefsSo = [
+							{key: "dmg", sw: poolSo.swordDmg, add: poolSo.riftDmg, raw: poolSo.rawDmg, cap: cult.XX14_DMG_CAP},
+							{key: "crit", sw: poolSo.swordCrit, add: poolSo.riftCrit, raw: poolSo.rawCrit, cap: cult.XX14_CRIT_CAP},
+							{key: "hp", sw: poolSo.swordHp, add: poolSo.riftHp, raw: poolSo.rawHp, cap: cult.XX14_HP_CAP},
+							{key: "mit", sw: poolSo.swordMit, add: poolSo.mitigation, raw: poolSo.rawMit, cap: cult.XX14_MIT_CAP}
+						];
+						var poolHtmlSo =
+							"<div class=\"xxChronoAuraBox xxStarPoolBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + natalIcoSo + $I("cultivation.starobs.pool.title") + "</div>" +
+								"<div class=\"xxStarPoolList\">";
+						for (var pdi = 0; pdi < chanDefsSo.length; pdi++){
+							var pdS = chanDefsSo[pdi];
+							var swPctS = clampPctSo(pdS.sw / pdS.cap * 100);
+							var addPctS = Math.max(0, Math.min(100 - swPctS, Math.round(pdS.add / pdS.cap * 100)));
+							poolHtmlSo +=
+								"<div class=\"xxStarPool is-" + pdS.key + (pdS.add > 0 ? " is-on" : "") + (pdS.sw + pdS.raw > pdS.cap + 1e-9 ? " is-capped" : "") + "\">" +
+									"<div class=\"xxSwChanHd\">" +
+										"<span>" + $I("cultivation.starobs.pool." + pdS.key) + "</span>" +
+										"<b>+" + pct2So(pdS.sw + pdS.add) + "%<small>/" + pct2So(pdS.cap) + "%</small></b>" +
+									"</div>" +
+									"<div class=\"xxStarPoolBar\"><i class=\"is-sword\" style=\"width:" + swPctS + "%\"></i><i class=\"is-star\" style=\"width:" + addPctS + "%\"></i></div>" +
+									"<div class=\"xxStarPoolSplit\">" + $I("cultivation.starobs.pool.split", [pct2So(pdS.sw), pct2So(pdS.add), pct2So(pdS.raw)]) + "</div>" +
+								"</div>";
+						}
+						poolHtmlSo += "</div>" +
+								"<div class=\"xxPlotState xxFsCapNote" + (poolSo.capped ? " is-capped" : "") + "\">" + $I("cultivation.starobs.pool.cap") + "</div>" +
+							"</div>";
+
+						var synRowSo = function(on, text){
+							return "<div class=\"xxThunderSynRow" + (on ? " is-active" : "") + "\">" +
+								"<span class=\"xxInnateStateTag" + (on ? " is-resonant" : "") + "\">" + $I(on ? "cultivation.starobs.synergy.on" : "cultivation.starobs.synergy.off") + "</span>" +
+								"<span class=\"xxThunderSynText\">" + text + "</span>" +
+								"</div>";
+						};
+						var riftBestSo = cult.riftFloor || 0;
+						var thSo = cult.getSwordThunderTier();
+						var seatNameSo = $I("cultivation.swordtomb.pos." + cult.SWORD_POSITIONS[blSymSo.seat].key + ".label");
+						var soSynHtml =
+							"<div class=\"xxThunderSynergyBox xxStarSynergyBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + scrollIcoSo + $I("cultivation.starobs.synergy.title") + "</div>" +
+								synRowSo(riftBestSo >= 26, $I("cultivation.starobs.synergy.rift", [riftBestSo, Math.round(cult.STAR_RIFT_HASTE / tpsSo), Math.round(cult.STAR_RIFT_HASTE / tpsSo)])) +
+								synRowSo(thSo >= 1, $I("cultivation.starobs.synergy.thunder", [thSo, pctSo(cult.STAR_THUNDER_STEP * thSo)])) +
+								synRowSo(blSo.seated, $I("cultivation.starobs.synergy.sword", [symLabelSo(blSymSo.key), seatNameSo, pctSo(cult.STAR_SEAT_MULT - 1)])) +
+								synRowSo(!!(spSo.resonating && blSo.active), $I("cultivation.starobs.synergy.sync", [pctSo(cult.STAR_SYNC_MULT - 1)])) +
+							"</div>";
+						var soSealHtml =
+							"<div class=\"xxThunderBoneBox xxStarSealBox\">" +
+								"<div class=\"xxThunderBoneIco\">" + artImgSo("star_map_scroll") + "</div>" +
+								"<div class=\"xxBountyDesc\">" + soSealDesc + "</div>" +
+							"</div>";
+						var soLowerHtml =
+							"<div class=\"xxCaveSection xxStarLowerSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/constellation_disc.webp?v=" + artV12 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.starobs.lower.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.starobs.lower.meta", [$I("cultivation.starobs.grade." + cult.getStarMapGradeDef(soUI.peakGrade || 0).key), soSeal]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxStarLowerGrid\">" +
+									poolHtmlSo +
+									"<div class=\"xxStarLowerSide\">" + soSynHtml + soSealHtml + "</div>" +
+								"</div>" +
+							"</div>";
+
+						this.immortalStarEl.innerHTML = soTopHtml +
+							"<div class=\"xxCaveColumns\">" + soColHtml + wmColHtml + "</div>" +
+							soLowerHtml;
+					}
+				}
+			}
+		}
+
+		if (this.immortalSectEl){
+			var dujieSx = cult.getStage("dujie_0");
+			var showSx = !!(cult.immortalAscended || (dujieSx && dujieSx.researched) || (cult.immortalImprint || 0) > 0 || (cult.sectTier || 0) > 0);
+			this.immortalSectEl.style.display = showSx ? "block" : "none";
+			if (showSx){
+				dojo.toggleClass(this.immortalSectEl, "is-locked", !cult.immortalAscended);
+				var saUI = cult.sectArena || cult.makeDefaultSectArena();
+				var htUI = cult.heartTrib || cult.makeDefaultHeartTrib();
+				var tpsSx = this.game.ticksPerSecond || 5;
+				var nowSx = cult.getSectClock();
+				var weekSx = cult.getSectCurrentWeek();
+				var themeSx = cult.getSectThemeDef(weekSx);
+				var rosterSx = cult.getSectRoster(weekSx);
+				var ratingSx = cult.getSectArenaRating(weekSx);
+				var bReqSx = cult.getSectBoutReq();
+				var hReqSx = cult.getHeartTribReq();
+				var nStagesSx = cult.HEART_TRIB_STAGES.length;
+				var curStageIdxSx = Math.min(nStagesSx - 1, hReqSx.stage);
+				var resSx = cult.getHeartTribResist(curStageIdxSx);
+				var crownSx = cult.getSwordCrownBonus();
+				var poolSx = cult.getSectTribCombatBonus(26);
+				var leftMinSx = Math.max(0, Math.ceil((cult.getSectWeekEndsAt(weekSx) - nowSx) / 60000));
+				var seatSx = (typeof saUI.seat === "number") ? saUI.seat : cult.SECT_SEATS + 1;
+				var tierSx = cult.getSectRankTier(seatSx);
+				var htStageSx = Math.max(0, Math.min(nStagesSx, Math.floor(htUI.stage || 0)));
+				var logSigSx = [];
+				for (var lsx = 0; lsx < (saUI.log || []).length; lsx++){
+					logSigSx.push(saUI.log[lsx].seat + "-" + saUI.log[lsx].win + "-" + saUI.log[lsx].rival);
+				}
+				var hLogSigSx = [];
+				for (var lhx = 0; lhx < (htUI.log || []).length; lhx++){
+					hLogSigSx.push(htUI.log[lhx].s + "-" + htUI.log[lhx].ok);
+				}
+				var sectSig = [
+					cult.immortalAscended ? 1 : 0,
+					weekSx,
+					seatSx,
+					saUI.bouts || 0,
+					saUI.losses || 0,
+					saUI.peakTier || 0,
+					saUI.totalWins || 0,
+					saUI.settles || 0,
+					saUI.lastSettle ? saUI.lastSettle.week + ":" + saUI.lastSettle.seat : "-",
+					leftMinSx,
+					ratingSx.total,
+					ratingSx.parts.map(function(p){ return p.level + ":" + p.value; }).join(","),
+					[bReqSx.affordable ? 1 : 0, bReqSx.okXy ? 1 : 0, bReqSx.xianyuan, bReqSx.boutsLeft, bReqSx.boutsMax, bReqSx.chance].join(","),
+					[htStageSx, htUI.insight || 0, htUI.attempts || 0, htUI.fails || 0, Math.ceil((htUI.cooldown || 0) / tpsSx)].join(","),
+					[hReqSx.affordable ? 1 : 0, hReqSx.okXy ? 1 : 0, hReqSx.okChart ? 1 : 0, hReqSx.xianyuan, hReqSx.starchart, hReqSx.chance].join(","),
+					[resSx.total, resSx.thunder, resSx.spirit, resSx.star, resSx.insight, resSx.seal, resSx.blessSym, resSx.resonating ? 1 : 0].join(","),
+					crownSx.active ? 1 : 0,
+					crownSx.grade,
+					cult.sectTier || 0,
+					cult.riftFloor || 0,
+					[poolSx.swordDmg, poolSx.swordCrit, poolSx.swordHp, poolSx.swordMit, poolSx.starDmg, poolSx.starCrit, poolSx.starHp, poolSx.starMit,
+						poolSx.riftDmg, poolSx.riftCrit, poolSx.riftHp, poolSx.mitigation, poolSx.rawDmg, poolSx.rawCrit, poolSx.rawHp, poolSx.rawMit].map(function(v){ return Math.round(v * 100000); }).join(","),
+					logSigSx.join(";"),
+					hLogSigSx.join(";"),
+					saUI.lastNote || "",
+					htUI.lastNote || ""
+				].join("|");
+
+				if (this._sectSig !== sectSig){
+					this._sectSig = sectSig;
+					var artV13 = cult.ART_VER || "85";
+					var pctSx = function(v){ return Math.round((v || 0) * 100); };
+					var pct2Sx = function(v){ return Math.round((v || 0) * 10000) / 100; };
+					var clampPctSx = function(v){ return Math.max(0, Math.min(100, Math.round(v))); };
+					var artImgSx = function(name, cls){
+						return "<img src=\"res/art/" + name + ".webp?v=" + artV13 + "\"" + (cls ? " class=\"" + cls + "\"" : "") + " alt=\"\"/>";
+					};
+					var rivalNameSx = function(k){ return $I("cultivation.sectarena.rival." + k); };
+					var styleNameSx = function(k){ return $I("cultivation.sectarena.style." + k); };
+					var rankNameSx = function(t){ return $I("cultivation.sectarena.rank." + cult.SECT_RANKS[Math.max(0, Math.min(cult.SECT_TIER_MAX, t || 0))]); };
+					var stageNameSx = function(i){ return $I("cultivation.hearttrib.stage." + cult.getHeartStageDef(i).key + ".label"); };
+					var arenaIcoSx = artImgSx("sect_arena", "xxMiniMeritIco");
+					var rankIcoSx = artImgSx("sect_ranking", "xxMiniMeritIco");
+					var tokenIcoSx = artImgSx("sect_token", "xxMiniMeritIco");
+					var realmIcoSx = artImgSx("heart_demon_realm", "xxMiniMeritIco");
+					var demonIcoSx = artImgSx("heart_demon", "xxMiniMeritIco");
+					var mirrorIcoSx = artImgSx("tribulation_mirror", "xxMiniMeritIco");
+					var themeNameSx = $I("cultivation.sectarena.theme." + themeSx.key + ".label");
+					var sxSeal = cult.getSectSeal();
+					var sxSealBadgeHtml = (sxSeal > 0)
+						? "<span class=\"xxCaveImprintTag\">" + $I("cultivation.sectarena.panel.imprint", [sxSeal]) + "</span>"
+						: "";
+
+					var sxTopHtml =
+						"<div class=\"xxCaveHeader\">" +
+							"<div class=\"xxCaveHeaderLeft\">" +
+								"<div class=\"xxCaveHeaderIcon xxSectHdrIco\">" + artImgSx("sect_arena") + "</div>" +
+								"<div class=\"xxCaveTitleWrap\">" +
+									"<div class=\"xxCaveBadgeRow\">" +
+										"<span class=\"xxCaveBadge\">" + $I("cultivation.sectarena.panel.badge") + "</span>" +
+										sxSealBadgeHtml +
+									"</div>" +
+									"<div class=\"xxCaveTitle\">" + $I("cultivation.sectarena.panel.title") + "</div>" +
+									"<div class=\"xxCaveDesc\">" + $I("cultivation.sectarena.panel.desc") + "</div>" +
+								"</div>" +
+							"</div>" +
+							"<div class=\"xxCaveSummaryChips\">" +
+								"<span class=\"xxCaveSumChip\">" + arenaIcoSx + $I("cultivation.sectarena.panel.chip.theme", [themeNameSx]) + "</span>" +
+								"<span class=\"xxCaveSumChip" + (tierSx > 0 ? " is-ranked" : "") + "\">" + rankIcoSx + $I("cultivation.sectarena.panel.chip.rank", [rankNameSx(tierSx)]) + "</span>" +
+								"<span class=\"xxCaveSumChip\">" + demonIcoSx + $I("cultivation.sectarena.panel.chip.heart", [htStageSx, nStagesSx]) + "</span>" +
+								"<span class=\"xxCaveSumChip" + (crownSx.active ? " is-crown" : "") + "\">" + tokenIcoSx +
+									(crownSx.active ? $I("cultivation.sectarena.panel.chip.crown", [pctSx(crownSx.xianyuanRatio)]) : $I("cultivation.sectarena.panel.chip.nocrown")) +
+								"</span>" +
+							"</div>" +
+						"</div>";
+
+					var sxSealNow = cult.getSectSealBonus();
+					var sxSealDesc = (sxSealNow.tier > 0)
+						? $I("cultivation.sectarena.seal.desc", [sxSealNow.tier, pctSx(sxSealNow.xiuweiRatio), pctSx(sxSealNow.costCut), sxSealNow.rating, sxSealNow.resist, sxSealNow.extraBouts])
+						: $I("cultivation.sectarena.seal.none");
+
+					if (!cult.immortalAscended){
+						var sxLockSeal = (sxSealNow.tier > 0) ? "<div class=\"xxSamsaraLockLegacy\">" + sxSealDesc + "</div>" : "";
+						this.immortalSectEl.innerHTML = sxTopHtml +
+							"<div class=\"xxCaveLockedNotice\">" + $I("cultivation.sectarena.panel.locked") + sxLockSeal + "</div>";
+					} else {
+						// 左栏: 宗门大比擂台
+						var dLeftSx = Math.floor(leftMinSx / 1440);
+						var hLeftSx = Math.floor((leftMinSx % 1440) / 60);
+						var mLeftSx = leftMinSx % 60;
+						var weekHtmlSx =
+							"<div class=\"xxXianqiStageBox xxSectWeek is-" + themeSx.key + "\">" +
+								"<div class=\"xxSectWeekArt\">" + artImgSx("sect_arena") + "</div>" +
+								"<div class=\"xxSectWeekInfo\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<b>" + $I("cultivation.sectarena.week.title", [themeNameSx]) + "</b>" +
+										"<span class=\"xxInnateStateTag is-resonant\">" + $I("cultivation.sectarena.week.key", [cult.getSectWeekKey(weekSx)]) + "</span>" +
+									"</div>" +
+									"<div class=\"xxSectWeekDesc\">" + $I("cultivation.sectarena.theme." + themeSx.key + ".desc") + "</div>" +
+									"<div class=\"xxPlotState\">" + $I("cultivation.sectarena.week.left", [dLeftSx, hLeftSx, mLeftSx]) + "</div>" +
+								"</div>" +
+							"</div>";
+
+						var ratingChipsSx = "<span class=\"xxVesselChip is-gold\">" + $I("cultivation.sectarena.rating.base", [ratingSx.base]) + "</span>";
+						for (var rpi = 0; rpi < ratingSx.parts.length; rpi++){
+							var rpSx = ratingSx.parts[rpi];
+							ratingChipsSx += "<span class=\"xxVesselChip" + (rpSx.themed ? " is-gold is-themed" : (rpSx.value > 0 ? "" : " is-off")) + "\">" +
+								$I("cultivation.sectarena.part." + rpSx.key, [rpSx.key === "rift" ? (cult.riftFloor || 0) : rpSx.level, rpSx.value]) +
+								"</span>";
+						}
+						if (ratingSx.seal > 0){
+							ratingChipsSx += "<span class=\"xxVesselChip is-gold\">" + $I("cultivation.sectarena.rating.seal", [ratingSx.seal]) + "</span>";
+						}
+						var ratingHtmlSx =
+							"<div class=\"xxXianqiStageBox xxSectRating\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + rankIcoSx + $I("cultivation.sectarena.rating.title") + "</b>" +
+									"<span class=\"xxSectRatingVal\">" + ratingSx.total + "</span>" +
+								"</div>" +
+								"<div class=\"xxVesselStatRow xxSectRatingRow\">" + ratingChipsSx + "</div>" +
+								"<div class=\"xxPlotState\">" + $I("cultivation.sectarena.rating.rule", [themeNameSx]) + "</div>" +
+							"</div>";
+
+						var meRowSx =
+							"<div class=\"xxSectSeat is-me" + (seatSx === 1 ? " is-champion" : "") + "\">" +
+								"<span class=\"xxSectSeatNo\">" + (seatSx <= cult.SECT_SEATS ? seatSx : "-") + "</span>" +
+								"<span class=\"xxSectSeatName\"><b>" + $I("cultivation.sectarena.ladder.me") + "</b><small>" + rankNameSx(tierSx) + "</small></span>" +
+								"<span class=\"xxSectSeatPow\">" + ratingSx.total + "</span>" +
+								"<span class=\"xxSectSeatOdds\">" + $I("cultivation.sectarena.ladder.you") + "</span>" +
+							"</div>";
+						var ladderHtmlSx =
+							"<div class=\"xxChronoEraHd\">" + rankIcoSx + $I("cultivation.sectarena.ladder.title") + "</div>" +
+							"<div class=\"xxSectLadder" + (cult.isSectArenaEn() ? " is-en" : "") + "\">" +
+								"<div class=\"xxSectSeat is-head-row\">" +
+									"<span class=\"xxSectSeatNo\">" + $I("cultivation.sectarena.ladder.col.seat") + "</span>" +
+									"<span class=\"xxSectSeatName\">" + $I("cultivation.sectarena.ladder.col.name") + "</span>" +
+									"<span class=\"xxSectSeatPow\">" + $I("cultivation.sectarena.ladder.col.power") + "</span>" +
+									"<span class=\"xxSectSeatOdds\">" + $I("cultivation.sectarena.ladder.col.odds") + "</span>" +
+								"</div>";
+						for (var rsi = 0; rsi < rosterSx.length; rsi++){
+							var rsSx = rosterSx[rsi];
+							if (rsSx.seat === seatSx){ ladderHtmlSx += meRowSx; }
+							var beatenSx = rsSx.seat >= seatSx;
+							var targetSx = (rsSx.seat === seatSx - 1);
+							ladderHtmlSx +=
+								"<div class=\"xxSectSeat is-" + rsSx.style + (beatenSx ? " is-beaten" : "") + (targetSx ? " is-target" : "") + (rsSx.seat === 1 && !beatenSx ? " is-champion" : "") + "\">" +
+									"<span class=\"xxSectSeatNo\">" + rsSx.seat + "</span>" +
+									"<span class=\"xxSectSeatName\"><b>" + rivalNameSx(rsSx.key) + "</b><small>" + styleNameSx(rsSx.style) + "</small></span>" +
+									"<span class=\"xxSectSeatPow\">" + rsSx.power + "</span>" +
+									"<span class=\"xxSectSeatOdds\">" + (beatenSx ? $I("cultivation.sectarena.ladder.beaten") : pctSx(cult.getSectWinChance(ratingSx.total, rsSx.power)) + "%") + "</span>" +
+								"</div>";
+						}
+						if (seatSx > cult.SECT_SEATS){ ladderHtmlSx += meRowSx; }
+						ladderHtmlSx += "</div>";
+
+						var cBtnSx;
+						if (bReqSx.top){
+							cBtnSx = $I("cultivation.sectarena.challenge.top");
+						} else if (bReqSx.boutsLeft <= 0){
+							cBtnSx = $I("cultivation.sectarena.challenge.out");
+						} else if (!bReqSx.okXy){
+							cBtnSx = $I("cultivation.sectarena.challenge.short");
+						} else {
+							cBtnSx = $I("cultivation.sectarena.challenge.btn");
+						}
+						var tokPctSx = clampPctSx(bReqSx.boutsLeft / Math.max(1, bReqSx.boutsMax) * 100);
+						var challengeHtmlSx =
+							"<div class=\"xxXianqiStageBox xxSectChallenge\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + tokenIcoSx + $I("cultivation.sectarena.challenge.title") + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.sectarena.challenge.tokens", [bReqSx.boutsLeft, bReqSx.boutsMax]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotBar xxSectTokenBar\"><i style=\"width:" + tokPctSx + "%\"></i></div>" +
+								"<div class=\"xxPlotState xxSectTarget\">" + (bReqSx.rival
+									? $I("cultivation.sectarena.challenge.next", [bReqSx.target, rivalNameSx(bReqSx.rival.key), bReqSx.rival.power, pctSx(bReqSx.chance)])
+									: $I("cultivation.sectarena.challenge.crowned")) + "</div>" +
+								"<div class=\"xxStarCost" + (bReqSx.okXy ? "" : " is-short") + "\">" + $I("cultivation.sectarena.challenge.cost", [bReqSx.xianyuan]) + "</div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									"<div class=\"xxCaveMiniBtn gold" + (bReqSx.affordable ? "" : " is-disabled") + "\"" + (bReqSx.affordable ? " data-xx-sect=\"challenge\"" : "") + ">" + cBtnSx + "</div>" +
+								"</div>" +
+							"</div>";
+
+						var rewardRowsSx = "";
+						for (var rti = cult.SECT_TIER_MAX; rti >= 1; rti--){
+							rewardRowsSx +=
+								"<div class=\"xxSectReward" + (rti === tierSx ? " is-now" : "") + (rti < tierSx ? " is-passed" : "") + "\">" +
+									"<b>" + rankNameSx(rti) + "</b>" +
+									"<span>" + cult.formatSectReward(cult.getSectRankReward(rti)) + "</span>" +
+								"</div>";
+						}
+						var lastSettleSx = saUI.lastSettle;
+						var lastSettleTxtSx = lastSettleSx
+							? (lastSettleSx.seat <= cult.SECT_SEATS
+								? $I("cultivation.sectarena.reward.last", [cult.getSectWeekKey(lastSettleSx.week), rankNameSx(cult.getSectRankTier(lastSettleSx.seat)), lastSettleSx.seat])
+								: $I("cultivation.sectarena.reward.lastNone", [cult.getSectWeekKey(lastSettleSx.week)]))
+							: $I("cultivation.sectarena.reward.never");
+						var rewardHtmlSx =
+							"<div class=\"xxXianqiStageBox xxSectRewards\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + rankIcoSx + $I("cultivation.sectarena.reward.title") + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.sectarena.reward.count", [saUI.settles || 0]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState\">" + (tierSx > 0
+									? $I("cultivation.sectarena.reward.now", [rankNameSx(tierSx), cult.formatSectReward(cult.getSectRankReward(tierSx))])
+									: $I("cultivation.sectarena.reward.none")) + "</div>" +
+								"<div class=\"xxSectRewardList\">" + rewardRowsSx + "</div>" +
+								"<div class=\"xxPlotState xxSectLast\">" + lastSettleTxtSx + "</div>" +
+							"</div>";
+
+						var saLogHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.sectarena.log.title") + "</div><div class=\"xxStarLogList\">";
+						if (!saUI.log || !saUI.log.length){
+							saLogHtml += "<div class=\"xxStarLog is-empty\">" + $I("cultivation.sectarena.log.empty") + "</div>";
+						} else {
+							for (var sgl = 0; sgl < saUI.log.length; sgl++){
+								var sgLog = saUI.log[sgl];
+								saLogHtml +=
+									"<div class=\"xxStarLog xxSectLog is-" + (sgLog.win ? "win" : "loss") + "\">" +
+										artImgSx("sect_token") +
+										"<span>" + $I("cultivation.sectarena.log.entry", [sgLog.seat, rivalNameSx(sgLog.rival)]) + "</span>" +
+										"<b>" + $I(sgLog.win ? "cultivation.sectarena.log.win" : "cultivation.sectarena.log.loss") + "</b>" +
+									"</div>";
+							}
+						}
+						saLogHtml += "</div>";
+
+						var saColHtml =
+							"<div class=\"xxCaveSection xxSectArenaCol\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/sect_arena.webp?v=" + artV13 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.sectarena.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.sectarena.meta", [rankNameSx(tierSx), saUI.totalWins || 0]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState xxFsHint\">" + $I("cultivation.sectarena.hint", [cult.SECT_SEATS, bReqSx.boutsMax]) + "</div>" +
+								weekHtmlSx +
+								ratingHtmlSx +
+								ladderHtmlSx +
+								challengeHtmlSx +
+								rewardHtmlSx +
+								saLogHtml +
+								(saUI.lastNote ? "<div class=\"xxCaveNote\">" + saUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 右栏: 心魔幻境渡劫
+						var curDefSx = cult.getHeartStageDef(curStageIdxSx);
+						var weakNameSx = $I("cultivation.hearttrib.res." + resSx.weak);
+						var demonHtmlSx =
+							"<div class=\"xxXianqiStageBox xxHeartNow is-weak-" + resSx.weak + (hReqSx.done ? " is-done" : "") + "\">" +
+								"<div class=\"xxHeartArt\">" +
+									artImgSx("heart_demon_realm") +
+									"<span class=\"xxHeartDemon\">" + artImgSx("heart_demon") + "</span>" +
+								"</div>" +
+								"<div class=\"xxHeartInfo\">" +
+									"<div class=\"xxSeedNameRow\">" +
+										"<b>" + (hReqSx.done ? $I("cultivation.hearttrib.now.done") : $I("cultivation.hearttrib.now.title", [curStageIdxSx + 1, stageNameSx(curStageIdxSx)])) + "</b>" +
+										"<span class=\"xxInnateStateTag" + (hReqSx.done ? " is-resonant" : "") + "\">" + (hReqSx.done ? $I("cultivation.hearttrib.meta", [htStageSx, nStagesSx]) : $I("cultivation.hearttrib.now.power", [curDefSx.power])) + "</span>" +
+									"</div>" +
+									"<div class=\"xxHeartDesc\">" + $I(hReqSx.done ? "cultivation.hearttrib.now.doneDesc" : "cultivation.hearttrib.stage." + curDefSx.key + ".desc") + "</div>" +
+									(hReqSx.done ? "" : "<div class=\"xxPlotState\">" + $I("cultivation.hearttrib.now.weak", [weakNameSx, pctSx(cult.HEART_WEAK_MULT - 1)]) + "</div>") +
+								"</div>" +
+							"</div>";
+
+						var trackHtmlSx = "<div class=\"xxHeartTrack" + (cult.isSectArenaEn() ? " is-en" : "") + "\">";
+						for (var hsi = 0; hsi < nStagesSx; hsi++){
+							var hsDefSx = cult.HEART_TRIB_STAGES[hsi];
+							var hsStateSx = (hsi < htStageSx) ? "is-cleared" : (hsi === htStageSx ? "is-now" : "is-locked");
+							trackHtmlSx +=
+								"<div class=\"xxHeartStep " + hsStateSx + "\" title=\"" + stageNameSx(hsi) + "\">" +
+									"<b>" + (hsi + 1) + "</b>" +
+									"<span>" + $I("cultivation.hearttrib.stage." + hsDefSx.key + ".short") + "</span>" +
+									"<small>" + hsDefSx.power + "</small>" +
+								"</div>";
+						}
+						trackHtmlSx += "</div>";
+
+						var spGradeNameSx = $I("cultivation.warming.grade." + cult.getWarmGradeDef(resSx.spiritGrade).key);
+						var mirRowsSx = [
+							{key: "base", val: resSx.base, txt: $I("cultivation.hearttrib.mirror.base")},
+							{key: "thunder", val: resSx.thunder, txt: $I("cultivation.hearttrib.mirror.thunder", [resSx.thunderTier])},
+							{key: "spirit", val: resSx.spirit, txt: $I("cultivation.hearttrib.mirror.spirit", [spGradeNameSx]) + (resSx.resonating && resSx.spiritGrade > 0 ? $I("cultivation.hearttrib.mirror.res") : "")},
+							{key: "star", val: resSx.star, txt: resSx.blessPower > 0
+								? $I("cultivation.hearttrib.mirror.star", [$I("cultivation.starobs.sym." + resSx.blessSym + ".label"), resSx.blessPower])
+								: $I("cultivation.hearttrib.mirror.starNone")},
+							{key: "dread", val: resSx.weakBonus, txt: $I("cultivation.hearttrib.mirror.weak", [weakNameSx])},
+							{key: "insight", val: resSx.insight, txt: $I("cultivation.hearttrib.mirror.insight", [htUI.insight || 0, cult.HEART_INSIGHT_MAX])},
+							{key: "seal", val: resSx.seal, txt: $I("cultivation.hearttrib.mirror.seal", [sxSeal])}
+						];
+						var mirListSx = "";
+						for (var mri = 0; mri < mirRowsSx.length; mri++){
+							var mrSx = mirRowsSx[mri];
+							mirListSx +=
+								"<div class=\"xxHeartRes is-" + mrSx.key + (mrSx.val > 0 ? " is-on" : "") + (mrSx.key === resSx.weak ? " is-weak" : "") + "\">" +
+									"<span>" + mrSx.txt + "</span>" +
+									"<b>+" + (Math.round(mrSx.val * 10) / 10) + "</b>" +
+								"</div>";
+						}
+						var chanceBarSx = hReqSx.done ? 100 : clampPctSx(hReqSx.chance * 100);
+						var mirrorHtmlSx =
+							"<div class=\"xxXianqiStageBox xxHeartMirror\">" +
+								"<div class=\"xxHeartMirrorHd\">" +
+									"<div class=\"xxHeartMirrorArt\">" + artImgSx("tribulation_mirror") + "</div>" +
+									"<div class=\"xxHeartMirrorSum\">" +
+										"<b>" + $I("cultivation.hearttrib.mirror.title") + "</b>" +
+										"<span>" + $I("cultivation.hearttrib.mirror.total", [resSx.total, curDefSx.power]) + "</span>" +
+										"<span class=\"xxHeartOdds\">" + (hReqSx.done ? $I("cultivation.hearttrib.mirror.clear") : $I("cultivation.hearttrib.mirror.chance", [pctSx(hReqSx.chance)])) + "</span>" +
+									"</div>" +
+								"</div>" +
+								"<div class=\"xxPlotBar xxHeartChanceBar\"><i style=\"width:" + chanceBarSx + "%\"></i></div>" +
+								"<div class=\"xxHeartResList\">" + mirListSx + "</div>" +
+							"</div>";
+
+						var hBtnSx;
+						if (hReqSx.done){
+							hBtnSx = $I("cultivation.hearttrib.btn.done");
+						} else if (!hReqSx.ready){
+							hBtnSx = $I("cultivation.hearttrib.btn.cooling", [Math.ceil(hReqSx.cooldown / tpsSx)]);
+						} else if (!hReqSx.affordable){
+							hBtnSx = $I("cultivation.hearttrib.btn.short");
+						} else {
+							hBtnSx = $I("cultivation.hearttrib.btn.go");
+						}
+						var hCdPctSx = hReqSx.done ? 100 : clampPctSx((1 - (hReqSx.cooldown || 0) / cult.HEART_TRIB_BACKLASH) * 100);
+						var attemptHtmlSx =
+							"<div class=\"xxXianqiStageBox xxHeartAttempt\">" +
+								"<div class=\"xxSeedNameRow\">" +
+									"<b>" + realmIcoSx + $I("cultivation.hearttrib.attempt.title") + "</b>" +
+									"<span class=\"xxSeedStock\">" + $I("cultivation.hearttrib.attempt.count", [htUI.attempts || 0, htUI.fails || 0]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState xxHeartRule\">" + $I("cultivation.hearttrib.attempt.rule", [cult.HEART_INSIGHT_STEP, cult.HEART_INSIGHT_MAX, Math.round(cult.HEART_TRIB_BACKLASH / tpsSx / 60)]) + "</div>" +
+								"<div class=\"xxStarCost" + ((hReqSx.okXy && hReqSx.okChart) || hReqSx.done ? "" : " is-short") + "\">" + $I("cultivation.hearttrib.attempt.cost", [hReqSx.xianyuan, hReqSx.starchart]) + "</div>" +
+								"<div class=\"xxPlotBar xxHeartCdBar\"><i style=\"width:" + hCdPctSx + "%\"></i></div>" +
+								"<div class=\"xxCaveMiniBtnRow\">" +
+									"<div class=\"xxCaveMiniBtn gold" + (hReqSx.affordable ? "" : " is-disabled") + "\"" + (hReqSx.affordable ? " data-xx-heart=\"attempt\"" : "") + ">" + hBtnSx + "</div>" +
+								"</div>" +
+							"</div>";
+
+						var htLogHtml = "<div class=\"xxChronoEraHd\">" + $I("cultivation.hearttrib.log.title") + "</div><div class=\"xxStarLogList\">";
+						if (!htUI.log || !htUI.log.length){
+							htLogHtml += "<div class=\"xxStarLog is-empty\">" + $I("cultivation.hearttrib.log.empty") + "</div>";
+						} else {
+							for (var hgl = 0; hgl < htUI.log.length; hgl++){
+								var hgLog = htUI.log[hgl];
+								htLogHtml +=
+									"<div class=\"xxStarLog xxHeartLog is-" + (hgLog.ok ? "pass" : "fail") + "\">" +
+										artImgSx("heart_demon") +
+										"<span>" + $I("cultivation.hearttrib.log.entry", [hgLog.s + 1, stageNameSx(hgLog.s)]) + "</span>" +
+										"<b>" + $I(hgLog.ok ? "cultivation.hearttrib.log.pass" : "cultivation.hearttrib.log.fail") + "</b>" +
+									"</div>";
+							}
+						}
+						htLogHtml += "</div>";
+
+						var htColHtml =
+							"<div class=\"xxCaveSection xxHeartTribCol\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle\"><img src=\"res/art/heart_demon_realm.webp?v=" + artV13 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.hearttrib.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.hearttrib.meta", [htStageSx, nStagesSx]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxPlotState xxFsHint\">" + $I("cultivation.hearttrib.hint") + "</div>" +
+								demonHtmlSx +
+								trackHtmlSx +
+								mirrorHtmlSx +
+								attemptHtmlSx +
+								htLogHtml +
+								(htUI.lastNote ? "<div class=\"xxCaveNote\">" + htUI.lastNote + "</div>" : "") +
+							"</div>";
+
+						// 通栏: 斗法合计(剑阵 + 星宿器灵 + 擂台心印,合并封顶) · 剑冠同门 · 斗法来源 · 宗门印
+						var chanDefsSx = [
+							{key: "dmg", sw: poolSx.swordDmg, st: poolSx.starDmg, add: poolSx.riftDmg, raw: poolSx.rawDmg, cap: cult.XX14_DMG_CAP},
+							{key: "crit", sw: poolSx.swordCrit, st: poolSx.starCrit, add: poolSx.riftCrit, raw: poolSx.rawCrit, cap: cult.XX14_CRIT_CAP},
+							{key: "hp", sw: poolSx.swordHp, st: poolSx.starHp, add: poolSx.riftHp, raw: poolSx.rawHp, cap: cult.XX14_HP_CAP},
+							{key: "mit", sw: poolSx.swordMit, st: poolSx.starMit, add: poolSx.mitigation, raw: poolSx.rawMit, cap: cult.XX14_MIT_CAP}
+						];
+						var poolHtmlSx =
+							"<div class=\"xxChronoAuraBox xxStarPoolBox xxSectPoolBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + mirrorIcoSx + $I("cultivation.sectarena.pool.title") + "</div>" +
+								"<div class=\"xxStarPoolList\">";
+						for (var pdx = 0; pdx < chanDefsSx.length; pdx++){
+							var pdSx = chanDefsSx[pdx];
+							var swPctSx = clampPctSx(pdSx.sw / pdSx.cap * 100);
+							var stPctSx = Math.max(0, Math.min(100 - swPctSx, Math.round(pdSx.st / pdSx.cap * 100)));
+							var adPctSx = Math.max(0, Math.min(100 - swPctSx - stPctSx, Math.round(pdSx.add / pdSx.cap * 100)));
+							poolHtmlSx +=
+								"<div class=\"xxStarPool is-" + pdSx.key + (pdSx.add > 0 ? " is-on" : "") + (pdSx.sw + pdSx.st + pdSx.raw > pdSx.cap + 1e-9 ? " is-capped" : "") + "\">" +
+									"<div class=\"xxSwChanHd\">" +
+										"<span>" + $I("cultivation.starobs.pool." + pdSx.key) + "</span>" +
+										"<b>+" + pct2Sx(pdSx.sw + pdSx.st + pdSx.add) + "%<small>/" + pct2Sx(pdSx.cap) + "%</small></b>" +
+									"</div>" +
+									"<div class=\"xxStarPoolBar\"><i class=\"is-sword\" style=\"width:" + swPctSx + "%\"></i><i class=\"is-star\" style=\"width:" + stPctSx + "%\"></i><i class=\"is-sect\" style=\"width:" + adPctSx + "%\"></i></div>" +
+									"<div class=\"xxStarPoolSplit\">" + $I("cultivation.sectarena.pool.split", [pct2Sx(pdSx.sw), pct2Sx(pdSx.st), pct2Sx(pdSx.add), pct2Sx(pdSx.raw)]) + "</div>" +
+								"</div>";
+						}
+						poolHtmlSx += "</div>" +
+								"<div class=\"xxPlotState xxFsCapNote" + (poolSx.capped ? " is-capped" : "") + "\">" + $I("cultivation.sectarena.pool.cap") + "</div>" +
+							"</div>";
+
+						var crownHtmlSx =
+							"<div class=\"xxThunderBoneBox xxSectCrownBox" + (crownSx.active ? " is-active" : "") + "\">" +
+								"<div class=\"xxThunderBoneIco\">" + artImgSx("ancient_sword") + "</div>" +
+								"<div class=\"xxBountyDesc\">" + (crownSx.active
+									? $I("cultivation.sectarena.crown.on", [pctSx(crownSx.xianyuanRatio)])
+									: $I("cultivation.sectarena.crown.off", [
+										$I("cultivation.swordtomb.grade." + cult.getSwordGradeDef(crownSx.grade).key),
+										$I("cultivation.swordtomb.grade." + cult.getSwordGradeDef(cult.SWORD_TIER_MAX).key),
+										pctSx(cult.SECT_SWORD_CROWN_XY)
+									])) + "</div>" +
+							"</div>";
+
+						var srcRowSx = function(on, text){
+							return "<div class=\"xxThunderSynRow" + (on ? " is-active" : "") + "\">" +
+								"<span class=\"xxInnateStateTag" + (on ? " is-resonant" : "") + "\">" + $I(on ? "cultivation.starobs.synergy.on" : "cultivation.starobs.synergy.off") + "</span>" +
+								"<span class=\"xxThunderSynText\">" + text + "</span>" +
+								"</div>";
+						};
+						var srcHtmlSx =
+							"<div class=\"xxThunderSynergyBox xxSectSrcBox\">" +
+								"<div class=\"xxChronoAuraTitle\">" + rankIcoSx + $I("cultivation.sectarena.src.title") + "</div>" +
+								srcRowSx(tierSx > 0, $I("cultivation.sectarena.src.honor", [rankNameSx(tierSx), pct2Sx(cult.SECT_HONOR_DMG * tierSx), pct2Sx(cult.SECT_HONOR_CRIT * tierSx)])) +
+								srcRowSx(htStageSx > 0, $I("cultivation.sectarena.src.heart", [htStageSx, pct2Sx(cult.HEART_STAGE_HP * htStageSx), pct2Sx(cult.HEART_STAGE_MIT * htStageSx), pct2Sx(cult.HEART_STAGE_DMG * htStageSx)])) +
+								srcRowSx((cult.riftFloor || 0) >= 26, $I("cultivation.sectarena.src.rift", [cult.riftFloor || 0, Math.round(cult.HEART_RIFT_HASTE / tpsSx)])) +
+							"</div>";
+						var sxSealHtml =
+							"<div class=\"xxThunderBoneBox xxSectSealBox\">" +
+								"<div class=\"xxThunderBoneIco\">" + artImgSx("sect_token") + "</div>" +
+								"<div class=\"xxBountyDesc\">" + sxSealDesc + "</div>" +
+							"</div>";
+						var sxLowerHtml =
+							"<div class=\"xxCaveSection xxStarLowerSection xxSectLowerSection\">" +
+								"<div class=\"xxCaveSecHd\">" +
+									"<span class=\"xxCaveSecTitle gold\"><img src=\"res/art/sect_ranking.webp?v=" + artV13 + "\" class=\"xxInlineSanctumIco\" alt=\"\"/>" + $I("cultivation.sectarena.lower.title") + "</span>" +
+									"<span class=\"xxCaveSecMeta\">" + $I("cultivation.sectarena.lower.meta", [rankNameSx(saUI.peakTier || 0), sxSeal]) + "</span>" +
+								"</div>" +
+								"<div class=\"xxStarLowerGrid\">" +
+									poolHtmlSx +
+									"<div class=\"xxStarLowerSide\">" + crownHtmlSx + srcHtmlSx + sxSealHtml + "</div>" +
+								"</div>" +
+							"</div>";
+
+						this.immortalSectEl.innerHTML = sxTopHtml +
+							"<div class=\"xxCaveColumns\">" + saColHtml + htColHtml + "</div>" +
+							sxLowerHtml;
 					}
 				}
 			}
@@ -14065,17 +24912,17 @@ classes.ui.XianxiaArt = {
 
 	herbIcon: function(key){
 		var href = this.HERB_ART[key] || this.HERB_ART.xianlan;
-		return "<img src=\"" + href + "?v=77\" class=\"xx-herb-img\" alt=\"\"/>";
+		return "<img src=\"" + href + "?v=85\" class=\"xx-herb-img\" alt=\"\"/>";
 	},
 
 	xianqiIcon: function(key){
 		var href = this.XIANQI_ART[key] || this.XIANQI_ART.sword;
-		return "<img src=\"" + href + "?v=77\" class=\"xx-xianqi-img\" alt=\"\"/>";
+		return "<img src=\"" + href + "?v=85\" class=\"xx-xianqi-img\" alt=\"\"/>";
 	},
 
 	starCoreIcon: function(key){
 		var href = this.STARCORE_ART[key] || this.STARCORE_ART.ziwei;
-		return "<img src=\"" + href + "?v=77\" class=\"xx-starcore-img\" alt=\"\"/>";
+		return "<img src=\"" + href + "?v=85\" class=\"xx-starcore-img\" alt=\"\"/>";
 	},
 
 	actionArt: function(glyph){
