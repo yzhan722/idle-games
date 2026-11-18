@@ -1,11 +1,19 @@
 import {
   generateAirshipEscortLevel,
+  generateCandyTrainRaidLevel,
   generateCandyVaultBonusLevel,
   generateClockworkColossusRaidLevel,
   generateDynamicLevel,
   generateEndlessDefenseLevel,
   generateGearTournamentLevel,
+  generateGlacierSledLevel,
+  generateLavaJumpLevel,
+  generateAsteroidDashLevel,
+  generatePumpkinNightLevel,
+  generatePyramidRunLevel,
+  generateJungleSwingLevel,
   generatePayloadEscortLevel,
+  generateSubmarineRescueLevel,
 } from './levels/LevelData';
 import {
   ALL_SKILL_NODES,
@@ -17,10 +25,44 @@ import {
   CANNON_CORE_MOD_MAX_LEVEL,
   CANNON_CORE_MOD_ORDER,
   CannonCoreModId,
+  GACHA_COLLECTION_GOLD_CAP,
+  GACHA_COLLECTION_GOLD_PER_SKIN,
+  GACHA_PITY_SR,
+  GACHA_PITY_SSR,
+  GACHA_RARITIES,
+  GACHA_RARITY_ORDER,
+  GACHA_SKINS,
+  GACHA_SKIN_ORDER,
+  DECOR_COMFORT_GOLD_CAP,
+  DECOR_COMFORT_GOLD_PER_POINT,
+  DECOR_CURRENCY_LABEL,
+  DECOR_PROPS,
+  DECOR_PROP_ORDER,
+  DECOR_SLOT_COUNT,
+  DECOR_SLOT_NAMES,
+  DECOR_THEMES,
+  DECOR_THEME_ORDER,
+  DecorCurrency,
+  DecorPropId,
+  DecorThemeId,
+  GachaRollResult,
+  GachaSkinId,
   GameState,
+  HALL_TROPHIES,
+  HALL_TROPHY_ORDER,
+  HALL_TROPHY_TIER_NAMES,
+  HallTrophyId,
   META_UPGRADES,
   MetaUpgradeId,
+  PET_COMPANIONS,
+  PET_COMPANION_MAX_LEVEL,
+  PET_COMPANION_ORDER,
+  PetCompanionId,
+  RELIC_BANNERS,
+  RELIC_BANNER_MAX_LEVEL,
+  RELIC_BANNER_ORDER,
   RENAME_GOLD_COST,
+  RelicBannerId,
   RewardOption,
   SKILL_TREE_BRANCHES,
   SKINS_CATALOG,
@@ -28,6 +70,22 @@ import {
   SkillNodeId,
   SkinId,
   SquadFinishId,
+  TROPHY_HALL_SLOT_COUNT,
+  TACTIC_CARDS,
+  TACTIC_CAMPAIGN_EFFECT_MULT,
+  TACTIC_CARD_ORDER,
+  TACTIC_CATEGORY_LABEL,
+  TACTIC_CROWD_CAP,
+  TACTIC_CURRENCY_LABEL,
+  TACTIC_DECK_SIZE,
+  TACTIC_RUSH_CAP,
+  TACTIC_RUSH_MAX_SEC,
+  TACTIC_SHIELD_CAP,
+  TACTIC_TRIGGER_LABEL,
+  TacticCardId,
+  TacticCurrency,
+  TacticTrigger,
+  scaleTacticValue,
   TACTICAL_SUBWEAPON_MAX_LEVEL,
   TACTICAL_SUBWEAPON_ORDER,
   TACTICAL_SUBWEAPONS,
@@ -37,6 +95,10 @@ import {
   BOBO_TECH_ART,
   CANNON_MOD_ART,
   CANNON_MOD_INLINE_ART,
+  PET_COMPANION_ART,
+  PET_COMPANION_INLINE_ART,
+  RELIC_BANNER_ART,
+  RELIC_BANNER_INLINE_ART,
   SKIN_CARD_ART,
   SKILL_NODE_SVGS,
   SQUAD_FINISH_ART,
@@ -80,6 +142,28 @@ const airshipHudDropEl = document.getElementById('airship-hud-drop') as HTMLElem
 const airshipHudDropTextEl = document.getElementById('airship-hud-drop-text') as HTMLElement | null;
 const airshipHudAaEl = document.getElementById('airship-hud-aa') as HTMLElement | null;
 const airshipHudAaTextEl = document.getElementById('airship-hud-aa-text') as HTMLElement | null;
+const candyTrainHudEl = document.getElementById('candy-train-hud') as HTMLElement | null;
+const trainHudCarsEl = document.getElementById('train-hud-cars') as HTMLElement | null;
+const trainHudCarsTextEl = document.getElementById('train-hud-cars-text') as HTMLElement | null;
+const trainHudLootEl = document.getElementById('train-hud-loot') as HTMLElement | null;
+const trainHudLootTextEl = document.getElementById('train-hud-loot-text') as HTMLElement | null;
+const trainHudEscapeEl = document.getElementById('train-hud-escape') as HTMLElement | null;
+const trainHudEscapeTextEl = document.getElementById('train-hud-escape-text') as HTMLElement | null;
+const underwaterOverlayEl = document.getElementById('underwater-overlay') as HTMLElement | null;
+const submarineRescueHudEl = document.getElementById('submarine-rescue-hud') as HTMLElement | null;
+const subHudHullEl = document.getElementById('sub-hud-hull') as HTMLElement | null;
+const subHudHullTextEl = document.getElementById('sub-hud-hull-text') as HTMLElement | null;
+const subHudRescueEl = document.getElementById('sub-hud-rescue') as HTMLElement | null;
+const subHudRescueTextEl = document.getElementById('sub-hud-rescue-text') as HTMLElement | null;
+const subHudThreatEl = document.getElementById('sub-hud-threat') as HTMLElement | null;
+const subHudThreatTextEl = document.getElementById('sub-hud-threat-text') as HTMLElement | null;
+const glacierSledHudEl = document.getElementById('glacier-sled-hud') as HTMLElement | null;
+const sledHudTimeEl = document.getElementById('sled-hud-time') as HTMLElement | null;
+const sledHudTimeTextEl = document.getElementById('sled-hud-time-text') as HTMLElement | null;
+const sledHudRidersEl = document.getElementById('sled-hud-riders') as HTMLElement | null;
+const sledHudRidersTextEl = document.getElementById('sled-hud-riders-text') as HTMLElement | null;
+const sledHudCourseEl = document.getElementById('sled-hud-course') as HTMLElement | null;
+const sledHudCourseTextEl = document.getElementById('sled-hud-course-text') as HTMLElement | null;
 const cannonModHudBadgeEl = document.getElementById('cannon-mod-hud-badge') as HTMLElement | null;
 const cannonModHudIconEl = document.getElementById('cannon-mod-hud-icon') as HTMLImageElement | null;
 const cannonModHudTextEl = document.getElementById('cannon-mod-hud-text') as HTMLElement | null;
@@ -92,9 +176,9 @@ function syncCannonModHudBadge(): void {
   if (key === lastCannonModHudKey) return;
   lastCannonModHudKey = key;
   const iconMap: Record<CannonCoreModId, string> = {
-    overdrive_breech: '/assets/icons/mod_overdrive_breech.png?v=25',
-    prism_splitter: '/assets/icons/mod_prism_splitter.png?v=25',
-    heavy_mortar: '/assets/icons/mod_heavy_mortar.png?v=25',
+    overdrive_breech: '/assets/icons/mod_overdrive_breech.png?v=33',
+    prism_splitter: '/assets/icons/mod_prism_splitter.png?v=33',
+    heavy_mortar: '/assets/icons/mod_heavy_mortar.png?v=33',
   };
   if (cannonModHudIconEl) {
     cannonModHudIconEl.src = iconMap[activeModSpec.id];
@@ -178,6 +262,14 @@ const cannonModGrid = document.getElementById('cannon-mod-grid') as HTMLElement 
 const cannonModActivePill = document.getElementById('cannon-mod-active-pill') as HTMLElement | null;
 const cannonModResources = document.getElementById('cannon-mod-resources') as HTMLElement | null;
 const cannonModMilestoneBanner = document.getElementById('cannon-mod-milestone-banner') as HTMLElement | null;
+const petCompanionGrid = document.getElementById('pet-companion-grid') as HTMLElement | null;
+const petCompanionActivePill = document.getElementById('pet-companion-active-pill') as HTMLElement | null;
+const petCompanionResources = document.getElementById('pet-companion-resources') as HTMLElement | null;
+const petCompanionMilestoneBanner = document.getElementById('pet-companion-milestone-banner') as HTMLElement | null;
+const relicBannerGrid = document.getElementById('relic-banner-grid') as HTMLElement | null;
+const relicBannerActivePill = document.getElementById('relic-banner-active-pill') as HTMLElement | null;
+const relicBannerResources = document.getElementById('relic-banner-resources') as HTMLElement | null;
+const relicBannerMilestoneBanner = document.getElementById('relic-banner-milestone-banner') as HTMLElement | null;
 const skinsShopGrid = document.getElementById('skins-shop-grid') as HTMLElement;
 const squadFinishGrid = document.getElementById('squad-finish-grid') as HTMLElement | null;
 const squadLiveryActivePill = document.getElementById('squad-livery-active-pill') as HTMLElement | null;
@@ -187,6 +279,118 @@ const btnStartAirshipEscort = document.getElementById('btn-start-airship-escort'
 const airshipEscortMedalTextEl = document.getElementById('airship-escort-medal-text') as HTMLElement | null;
 const airshipEscortSubEl = document.getElementById('airship-escort-sub') as HTMLElement | null;
 const airshipEscortBadgeEl = document.getElementById('airship-escort-badge') as HTMLElement | null;
+const btnStartSubmarineRescue = document.getElementById('btn-start-submarine-rescue') as HTMLButtonElement | null;
+const submarinePearlTextEl = document.getElementById('submarine-pearl-text') as HTMLElement | null;
+const submarineRescueSubEl = document.getElementById('submarine-rescue-sub') as HTMLElement | null;
+const submarinePearlBadgeEl = document.getElementById('submarine-pearl-badge') as HTMLElement | null;
+const btnStartGlacierSled = document.getElementById('btn-start-glacier-sled') as HTMLButtonElement | null;
+const glacierIceMedalTextEl = document.getElementById('glacier-ice-medal-text') as HTMLElement | null;
+const glacierSledSubEl = document.getElementById('glacier-sled-sub') as HTMLElement | null;
+const glacierSledBadgeEl = document.getElementById('glacier-sled-badge') as HTMLElement | null;
+const trophyHallSlotsEl = document.getElementById('trophy-hall-slots') as HTMLElement | null;
+const trophyHallGrid = document.getElementById('trophy-hall-grid') as HTMLElement | null;
+const trophyHallActivePill = document.getElementById('trophy-hall-active-pill') as HTMLElement | null;
+const trophyHallResources = document.getElementById('trophy-hall-resources') as HTMLElement | null;
+const trophyHallMilestoneBanner = document.getElementById('trophy-hall-milestone-banner') as HTMLElement | null;
+const btnTrophyAutoArrange = document.getElementById('btn-trophy-auto-arrange') as HTMLButtonElement | null;
+const lobbyTrophyPedestalBtn = document.getElementById('lobby-trophy-pedestal') as HTMLButtonElement | null;
+const lobbyTrophyCanvas = document.getElementById('trophy-pedestal-canvas') as HTMLCanvasElement | null;
+const lobbyTrophyCaptionTextEl = document.getElementById('lobby-trophy-caption-text') as HTMLElement | null;
+// MC-13: Volcano Lava Jump Breakout (lobby card + HUD) & Bobo Squad Skin Gacha Machine (workshop)
+const btnStartLavaJump = document.getElementById('btn-start-lava-jump') as HTMLButtonElement | null;
+const lavaCoreTextEl = document.getElementById('lava-core-text') as HTMLElement | null;
+const lavaJumpSubEl = document.getElementById('lava-jump-sub') as HTMLElement | null;
+const lavaJumpBadgeEl = document.getElementById('lava-jump-badge') as HTMLElement | null;
+const lavaJumpHudEl = document.getElementById('lava-jump-hud') as HTMLElement | null;
+const lavaHudTimeEl = document.getElementById('lava-hud-time') as HTMLElement | null;
+const lavaHudTimeTextEl = document.getElementById('lava-hud-time-text') as HTMLElement | null;
+const lavaHudBobosEl = document.getElementById('lava-hud-bobos') as HTMLElement | null;
+const lavaHudBobosTextEl = document.getElementById('lava-hud-bobos-text') as HTMLElement | null;
+const lavaHudCourseEl = document.getElementById('lava-hud-course') as HTMLElement | null;
+const lavaHudCourseTextEl = document.getElementById('lava-hud-course-text') as HTMLElement | null;
+const gachaActivePill = document.getElementById('gacha-active-pill') as HTMLElement | null;
+const gachaResourcesEl = document.getElementById('gacha-resources') as HTMLElement | null;
+const gachaOddsBanner = document.getElementById('gacha-odds-banner') as HTMLElement | null;
+const gachaPityFillEl = document.getElementById('gacha-pity-fill') as HTMLElement | null;
+const gachaPityTextEl = document.getElementById('gacha-pity-text') as HTMLElement | null;
+const gachaResultTray = document.getElementById('gacha-result-tray') as HTMLElement | null;
+const gachaCollectionGrid = document.getElementById('gacha-collection-grid') as HTMLElement | null;
+const gachaMachineArtEl = document.getElementById('gacha-machine-art') as HTMLElement | null;
+const btnGachaUnequip = document.getElementById('btn-gacha-unequip') as HTMLButtonElement | null;
+const gachaRollButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-gacha-count]'));
+let lastGachaResults: GachaRollResult[] = [];
+let gachaRevealSerial = 0;
+// MC-14: Asteroid Belt Shield Breakout (lobby card + HUD) & Themed Lobby Decoration Hall (workshop)
+const btnStartAsteroidDash = document.getElementById('btn-start-asteroid-dash') as HTMLButtonElement | null;
+const stardustBadgeTextEl = document.getElementById('stardust-badge-text') as HTMLElement | null;
+const asteroidDashSubEl = document.getElementById('asteroid-dash-sub') as HTMLElement | null;
+const asteroidDashBadgeEl = document.getElementById('asteroid-dash-badge') as HTMLElement | null;
+const asteroidDashHudEl = document.getElementById('asteroid-dash-hud') as HTMLElement | null;
+const astHudTimeEl = document.getElementById('ast-hud-time') as HTMLElement | null;
+const astHudTimeTextEl = document.getElementById('ast-hud-time-text') as HTMLElement | null;
+const astHudBobosEl = document.getElementById('ast-hud-bobos') as HTMLElement | null;
+const astHudBobosTextEl = document.getElementById('ast-hud-bobos-text') as HTMLElement | null;
+const astHudCourseEl = document.getElementById('ast-hud-course') as HTMLElement | null;
+const astHudCourseTextEl = document.getElementById('ast-hud-course-text') as HTMLElement | null;
+const decorActivePill = document.getElementById('decor-active-pill') as HTMLElement | null;
+const decorResourcesEl = document.getElementById('decor-resources') as HTMLElement | null;
+const decorBonusBanner = document.getElementById('decor-bonus-banner') as HTMLElement | null;
+const decorThemeGrid = document.getElementById('decor-theme-grid') as HTMLElement | null;
+const decorSlotRow = document.getElementById('decor-slot-row') as HTMLElement | null;
+const decorPropGrid = document.getElementById('decor-prop-grid') as HTMLElement | null;
+const btnDecorViewLobby = document.getElementById('btn-decor-view-lobby') as HTMLButtonElement | null;
+// MC-15: Haunted Castle Pumpkin Night (lobby card + HUD) & Bobo Squad Tactic Deck (workshop + lobby strip + battle HUD)
+// MC-16: Desert Pyramid Trap Run (lobby card + HUD) & tactic deck balance row (campaign coefficient / switch)
+// MC-17: Jungle Temple Vine Swing (lobby card + HUD)
+const btnStartJungleSwing = document.getElementById('btn-start-jungle-swing') as HTMLButtonElement | null;
+const emeraldIdolTextEl = document.getElementById('emerald-idol-text') as HTMLElement | null;
+const jungleSwingSubEl = document.getElementById('jungle-swing-sub') as HTMLElement | null;
+const jungleSwingBadgeEl = document.getElementById('jungle-swing-badge') as HTMLElement | null;
+const jungleSwingHudEl = document.getElementById('jungle-swing-hud') as HTMLElement | null;
+const jgHudTimeEl = document.getElementById('jg-hud-time') as HTMLElement | null;
+const jgHudTimeTextEl = document.getElementById('jg-hud-time-text') as HTMLElement | null;
+const jgHudSquadEl = document.getElementById('jg-hud-squad') as HTMLElement | null;
+const jgHudSquadTextEl = document.getElementById('jg-hud-squad-text') as HTMLElement | null;
+const jgHudCourseEl = document.getElementById('jg-hud-course') as HTMLElement | null;
+const jgHudCourseTextEl = document.getElementById('jg-hud-course-text') as HTMLElement | null;
+const btnStartPyramidRun = document.getElementById('btn-start-pyramid-run') as HTMLButtonElement | null;
+const scarabBadgeTextEl = document.getElementById('scarab-badge-text') as HTMLElement | null;
+const pyramidRunSubEl = document.getElementById('pyramid-run-sub') as HTMLElement | null;
+const pyramidRunBadgeEl = document.getElementById('pyramid-run-badge') as HTMLElement | null;
+const pyramidRunHudEl = document.getElementById('pyramid-run-hud') as HTMLElement | null;
+const pyHudTimeEl = document.getElementById('py-hud-time') as HTMLElement | null;
+const pyHudTimeTextEl = document.getElementById('py-hud-time-text') as HTMLElement | null;
+const pyHudSandEl = document.getElementById('py-hud-sand') as HTMLElement | null;
+const pyHudSandTextEl = document.getElementById('py-hud-sand-text') as HTMLElement | null;
+const pyHudCourseEl = document.getElementById('py-hud-course') as HTMLElement | null;
+const pyHudCourseTextEl = document.getElementById('py-hud-course-text') as HTMLElement | null;
+const tacticBalanceTitleEl = document.getElementById('tactic-balance-title') as HTMLElement | null;
+const tacticBalanceTextEl = document.getElementById('tactic-balance-text') as HTMLElement | null;
+const btnTacticCampaignToggle = document.getElementById('btn-tactic-campaign-toggle') as HTMLButtonElement | null;
+const btnStartPumpkinNight = document.getElementById('btn-start-pumpkin-night') as HTMLButtonElement | null;
+const pumpkinBadgeTextEl = document.getElementById('pumpkin-badge-text') as HTMLElement | null;
+const pumpkinNightSubEl = document.getElementById('pumpkin-night-sub') as HTMLElement | null;
+const pumpkinNightBadgeEl = document.getElementById('pumpkin-night-badge') as HTMLElement | null;
+const pumpkinNightHudEl = document.getElementById('pumpkin-night-hud') as HTMLElement | null;
+const pkHudTimeEl = document.getElementById('pk-hud-time') as HTMLElement | null;
+const pkHudTimeTextEl = document.getElementById('pk-hud-time-text') as HTMLElement | null;
+const pkHudLightEl = document.getElementById('pk-hud-light') as HTMLElement | null;
+const pkHudLightTextEl = document.getElementById('pk-hud-light-text') as HTMLElement | null;
+const pkHudCourseEl = document.getElementById('pk-hud-course') as HTMLElement | null;
+const pkHudCourseTextEl = document.getElementById('pk-hud-course-text') as HTMLElement | null;
+const tacticDeckHudEl = document.getElementById('tactic-deck-hud') as HTMLElement | null;
+const lobbyTacticSlotsEl = document.getElementById('lobby-tactic-slots') as HTMLElement | null;
+const lobbyTacticSubEl = document.getElementById('lobby-tactic-sub') as HTMLElement | null;
+const btnLobbyTacticEdit = document.getElementById('btn-lobby-tactic-edit') as HTMLButtonElement | null;
+const tacticActivePill = document.getElementById('tactic-active-pill') as HTMLElement | null;
+const tacticResourcesEl = document.getElementById('tactic-resources') as HTMLElement | null;
+const tacticRuleBanner = document.getElementById('tactic-rule-banner') as HTMLElement | null;
+const tacticDeckSlotsEl = document.getElementById('tactic-deck-slots') as HTMLElement | null;
+const tacticCardGrid = document.getElementById('tactic-card-grid') as HTMLElement | null;
+const btnStartCandyTrainRaid = document.getElementById('btn-start-candy-train-raid') as HTMLButtonElement | null;
+const candyTrainMedalTextEl = document.getElementById('candy-train-medal-text') as HTMLElement | null;
+const candyTrainSubEl = document.getElementById('candy-train-sub') as HTMLElement | null;
+const candyTrainBadgeEl = document.getElementById('candy-train-badge') as HTMLElement | null;
 const btnStartColossusRaid = document.getElementById('btn-start-colossus-raid') as HTMLButtonElement | null;
 const colossusRaidTextEl = document.getElementById('colossus-raid-text') as HTMLElement | null;
 const colossusRaidSubEl = document.getElementById('colossus-raid-sub') as HTMLElement | null;
@@ -401,6 +605,9 @@ const globalToastEl = document.getElementById('global-toast') as HTMLElement | n
 
 const world = new World3D(canvas, labelsContainer, state);
 (window as unknown as Record<string, unknown>).__mc3dWorld = world;
+if (lobbyTrophyCanvas) {
+  world.mountTrophyPedestal(lobbyTrophyCanvas);
+}
 
 let toastTimeout: number | undefined;
 function showGlobalToast(text: string): void {
@@ -632,7 +839,7 @@ function renderMainMenu(): void {
   const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
   if (brandCrestImgEl) {
-    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=25`;
+    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=33`;
   }
   if (commanderRankTagEl) {
     commanderRankTagEl.textContent = getCommanderRankTitle(state.bestStageCleared);
@@ -761,6 +968,154 @@ function renderMainMenu(): void {
   if (airshipEscortBadgeEl) {
     airshipEscortBadgeEl.style.borderColor = airshipMilestone.accentColor;
   }
+
+  // MC-12: Update Glacier Sled Race Lobby Card, 冰晶奖章 Counter & the lobby 3D trophy pedestal
+  const sledLobbySpec = state.getGlacierSledSpec();
+  const iceMilestone = state.getIceMedalMilestoneBonus();
+  if (glacierIceMedalTextEl) {
+    glacierIceMedalTextEl.textContent = `冰晶奖章 ${state.iceMedals} · 第 ${sledLobbySpec.sledTier} 阶`;
+  }
+  if (glacierSledSubEl) {
+    glacierSledSubEl.textContent =
+      state.glacierSledClears > 0
+        ? `${iceMilestone.summaryText} · 最快 ${state.bestSledFinishSec.toFixed(1)}s`
+        : '操控玩具雪橇冲下冰川 · 躲雪崩浪与冰锥 · 穿加人门限时冲线';
+  }
+  if (glacierSledBadgeEl) {
+    glacierSledBadgeEl.style.borderColor = iceMilestone.accentColor;
+  }
+  // MC-13: Update Volcano Lava Jump Lobby Card & 熔岩晶核 Counter
+  const lavaLobbySpec = state.getLavaJumpSpec();
+  const lavaMs = state.getLavaCoreMilestoneBonus();
+  if (lavaCoreTextEl) {
+    lavaCoreTextEl.textContent = `熔岩晶核 ${state.lavaCores} · 第 ${lavaLobbySpec.lavaTier} 阶`;
+  }
+  if (lavaJumpSubEl) {
+    lavaJumpSubEl.textContent =
+      state.lavaJumpClears > 0
+        ? `${lavaMs.summaryText} · 最快 ${state.bestLavaFinishSec.toFixed(1)}s`
+        : '操控波波团连跳熔岩浮石 · 躲喷发与落石 · 抢冷却岩冲出火山口';
+  }
+  if (lavaJumpBadgeEl) {
+    lavaJumpBadgeEl.style.borderColor = lavaMs.accentColor;
+  }
+  const lobbyHall = state.getTrophyHallBonus();
+  if (lobbyTrophyCaptionTextEl) {
+    lobbyTrophyCaptionTextEl.textContent =
+      lobbyHall.displayedCount > 0
+        ? `荣誉陈列 ${lobbyHall.displayedCount}/${TROPHY_HALL_SLOT_COUNT}`
+        : '荣誉陈列馆';
+  }
+  if (lobbyTrophyPedestalBtn) {
+    lobbyTrophyPedestalBtn.style.setProperty('--hall-accent', lobbyHall.accentColor);
+    lobbyTrophyPedestalBtn.dataset.displayed = `${lobbyHall.displayedCount}`;
+    // MC-14: the active decor theme tints the pedestal frame (and the 3D room inside it)
+    const lobbyTheme = state.getActiveDecorThemeSpec();
+    lobbyTrophyPedestalBtn.dataset.decorTheme = lobbyTheme.id;
+    lobbyTrophyPedestalBtn.style.setProperty('--decor-wall', lobbyTheme.cssWall);
+    lobbyTrophyPedestalBtn.style.setProperty('--decor-floor', lobbyTheme.cssFloor);
+    lobbyTrophyPedestalBtn.style.setProperty('--decor-accent', lobbyTheme.cssAccent);
+    lobbyTrophyPedestalBtn.title = `${lobbyTheme.name} · 波波战队荣誉奖杯陈列馆：点击前往工坊布置陈列与装修`;
+  }
+  world.syncTrophyPedestal3D();
+  world.syncLobbyDecor3D();
+
+  // MC-14: Update Asteroid Belt Shield Breakout Lobby Card & 星尘徽章 Counter
+  const astLobbySpec = state.getAsteroidDashSpec();
+  const starMs = state.getStardustMilestoneBonus();
+  if (stardustBadgeTextEl) {
+    stardustBadgeTextEl.textContent = `星尘徽章 ${state.stardustBadges} · 第 ${astLobbySpec.asteroidTier} 阶`;
+  }
+  if (asteroidDashSubEl) {
+    asteroidDashSubEl.textContent =
+      state.asteroidDashClears > 0
+        ? `${starMs.summaryText} · 最快 ${state.bestAsteroidFinishSec.toFixed(1)}s`
+        : '低重力星轨漂浮突进 · 躲陨石落点与陨石带 · 穿护盾门冲进跃迁门';
+  }
+  if (asteroidDashBadgeEl) {
+    asteroidDashBadgeEl.style.borderColor = starMs.accentColor;
+  }
+
+  // MC-17: Update Jungle Temple Vine Swing Lobby Card & 翡翠神像徽章 Counter
+  const jgLobbySpec = state.getJungleSwingSpec();
+  const jgMs = state.getEmeraldIdolMilestoneBonus();
+  if (emeraldIdolTextEl) {
+    emeraldIdolTextEl.textContent = `翡翠神像徽章 ${state.emeraldIdolBadges} · 第 ${jgLobbySpec.jungleTier} 阶`;
+  }
+  if (jungleSwingSubEl) {
+    jungleSwingSubEl.textContent =
+      state.jungleSwingClears > 0
+        ? `${jgMs.summaryText} · 最快 ${state.bestJungleFinishSec.toFixed(1)}s`
+        : '丛林神庙赛道 · 对准摆动藤蔓荡过断崖 · 闪开滚石 · 限时冲出神庙';
+  }
+  if (jungleSwingBadgeEl) {
+    jungleSwingBadgeEl.style.borderColor = jgMs.accentColor;
+  }
+
+  // MC-16: Update Desert Pyramid Trap Run Lobby Card & 圣甲虫徽章 Counter
+  const pyLobbySpec = state.getPyramidRunSpec();
+  const pyMs = state.getScarabMilestoneBonus();
+  if (scarabBadgeTextEl) {
+    scarabBadgeTextEl.textContent = `圣甲虫徽章 ${state.scarabBadges} · 第 ${pyLobbySpec.pyramidTier} 阶`;
+  }
+  if (pyramidRunSubEl) {
+    pyramidRunSubEl.textContent =
+      state.pyramidRunClears > 0
+        ? `${pyMs.summaryText} · 最快 ${state.bestPyramidFinishSec.toFixed(1)}s`
+        : '金字塔墓道赛道 · 踩石板路过流沙 · 躲开翻转石板 · 限时冲出墓道';
+  }
+  if (pyramidRunBadgeEl) {
+    pyramidRunBadgeEl.style.borderColor = pyMs.accentColor;
+  }
+
+  // MC-15: Update Haunted Castle Pumpkin Night Lobby Card & 南瓜灯徽章 Counter, plus the lobby tactic-deck strip
+  const pkLobbySpec = state.getPumpkinNightSpec();
+  const pkMs = state.getPumpkinMilestoneBonus();
+  if (pumpkinBadgeTextEl) {
+    pumpkinBadgeTextEl.textContent = `南瓜灯徽章 ${state.pumpkinBadges} · 第 ${pkLobbySpec.pumpkinTier} 阶`;
+  }
+  if (pumpkinNightSubEl) {
+    pumpkinNightSubEl.textContent =
+      state.pumpkinNightClears > 0
+        ? `${pkMs.summaryText} · 最快 ${state.bestPumpkinFinishSec.toFixed(1)}s`
+        : '夜色古堡赛道 · 踩南瓜灯照明区补光 · 驱散穿墙幽灵 · 限时冲出城门';
+  }
+  if (pumpkinNightBadgeEl) {
+    pumpkinNightBadgeEl.style.borderColor = pkMs.accentColor;
+  }
+  renderLobbyTacticStrip();
+
+  // MC-11: Update Deep-Sea Submarine Bubble Rescue Lobby Card & 深海珍珠 Counter
+  const subRescueSpec = state.getSubmarineRescueSpec();
+  const pearlMilestone = state.getDeepPearlMilestoneBonus();
+  if (submarinePearlTextEl) {
+    submarinePearlTextEl.textContent = `深海珍珠 ${state.deepPearls} · 第 ${subRescueSpec.rescueTier} 阶`;
+  }
+  if (submarineRescueSubEl) {
+    submarineRescueSubEl.textContent =
+      state.submarineRescueClears > 0
+        ? `${pearlMilestone.summaryText} · 已营救 ${state.submarineRescueClears} 次`
+        : '驾驶玩具潜艇破开珊瑚封锁 · 戳破营救泡泡收编被困波波';
+  }
+  if (submarinePearlBadgeEl) {
+    submarinePearlBadgeEl.style.borderColor = pearlMilestone.accentColor;
+  }
+
+  // MC-10: Update Rainbow Candy Train Raid Lobby Card & 列车金章 Counter
+  const trainRaidSpec = state.getCandyTrainRaidSpec();
+  const trainMilestone = state.getTrainMedalMilestoneBonus();
+  if (candyTrainMedalTextEl) {
+    candyTrainMedalTextEl.textContent = `列车金章 ${state.trainGoldMedals} · 第 ${trainRaidSpec.raidTier} 阶`;
+  }
+  if (candyTrainSubEl) {
+    candyTrainSubEl.textContent =
+      state.candyTrainRaidClears > 0
+        ? `${trainMilestone.summaryText} · 已劫车 ${state.candyTrainRaidClears} 次`
+        : '拦截环线装甲糖果货运列车 · 击破车厢夺取列车金章';
+  }
+  if (candyTrainBadgeEl) {
+    candyTrainBadgeEl.style.borderColor = trainMilestone.accentColor;
+  }
   refreshSubWeaponHUD();
 
   if (menuActiveKeystonePill) {
@@ -785,6 +1140,216 @@ function renderMainMenu(): void {
     const lPct = Math.round((state.getLootMultiplier() - 1) * 100);
     menuStatBounty.textContent = `+${lPct}%`;
   }
+
+  // Render MC-10 Bobo Squad Relic Banner Stand (#relic-banner-stand)
+  const activeRelicSpec = state.getRelicBannerSpec(state.activeRelicBanner);
+  const activeRelicLvl = Math.max(1, state.getRelicBannerLevel(state.activeRelicBanner));
+  const trainBonusInfo = state.getTrainMedalMilestoneBonus();
+  if (relicBannerActivePill) {
+    relicBannerActivePill.innerHTML = `${activeRelicSpec.inlineIcon} 出战战旗：${activeRelicSpec.name} Lv.${activeRelicLvl}`;
+  }
+  if (relicBannerResources) {
+    relicBannerResources.innerHTML = `${UI_ART.trainGoldMedal} 列车金章 ${state.trainGoldMedals} · 劫车成功 ${state.candyTrainRaidClears} 次 · 累计击破 ${state.totalTrainCarsBroken} 节车厢`;
+  }
+  if (relicBannerMilestoneBanner) {
+    const nextTxt =
+      trainBonusInfo.nextThreshold > 0
+        ? `距下一金章里程碑还差 ${Math.max(0, trainBonusInfo.nextThreshold - trainBonusInfo.effectiveMedals)} 枚`
+        : '已达最高金章里程碑';
+    relicBannerMilestoneBanner.innerHTML = `<span>${UI_ART.trainGoldMedal} 金章里程碑：${trainBonusInfo.summaryText}</span><span>${nextTxt}</span>`;
+    relicBannerMilestoneBanner.style.borderColor = trainBonusInfo.accentColor;
+  }
+  if (relicBannerGrid) {
+    relicBannerGrid.innerHTML = '';
+    const bannerBgMap: Record<RelicBannerId, string> = {
+      gale_charge: 'radial-gradient(circle, #99f6e4 0%, #0f766e 100%)',
+      holy_shield: 'radial-gradient(circle, #bfdbfe 0%, #1d4ed8 100%)',
+      star_carnival: 'radial-gradient(circle, #f5d0fe 0%, #a21caf 100%)',
+    };
+    RELIC_BANNER_ORDER.forEach((bannerId) => {
+      const spec = RELIC_BANNERS[bannerId];
+      const lvl = state.getRelicBannerLevel(bannerId);
+      const isUnlocked = lvl >= 1;
+      const isEquipped = state.activeRelicBanner === bannerId && isUnlocked;
+      const costInfo = state.getRelicBannerUpgradeCost(bannerId);
+      const pipsHtml = Array.from({ length: RELIC_BANNER_MAX_LEVEL })
+        .map((_, idx) => `<span class="bobo-tech-pip ${idx < lvl ? 'is-filled' : ''}"></span>`)
+        .join('');
+
+      const card = document.createElement('div');
+      card.className = `finish-card mecha-mod-card bobo-tech-card cannon-mod-card relic-banner-card ${isUnlocked ? 'owned' : 'is-locked-mod'} ${isEquipped ? 'equipped is-equipped-mod is-equipped-banner' : ''}`;
+      card.dataset.relicBanner = bannerId;
+      card.style.setProperty('--banner-accent', spec.accentColor);
+      card.innerHTML = `
+        <div class="finish-card-top">
+          <div class="finish-swatch relic-banner-swatch" style="background: ${bannerBgMap[bannerId]}">${RELIC_BANNER_ART[bannerId]}</div>
+          <div class="finish-meta">
+            <span class="finish-name">${spec.name} ${isUnlocked ? `Lv.${lvl}/${RELIC_BANNER_MAX_LEVEL}` : '未解锁 (Lv.0)'}</span>
+            <span class="finish-tag" style="color: ${spec.accentColor}">${spec.subtitle}</span>
+            <div class="bobo-tech-pips" aria-hidden="true">${pipsHtml}</div>
+          </div>
+        </div>
+        <div class="finish-bonus">${spec.statText(lvl)}</div>
+        <div class="finish-hint">${spec.desc}</div>
+        <div class="bobo-tech-actions cannon-mod-actions relic-banner-actions">
+          <button type="button" class="finish-action-btn bobo-tech-doctrine-btn relic-banner-equip-btn ${isEquipped ? 'btn-equipped' : 'btn-equip'}" data-relic-banner-equip="${bannerId}" ${!isUnlocked ? 'disabled' : ''}>
+            ${isEquipped ? `${UI_ART.check} 战旗已出战` : isUnlocked ? '插上出战战旗' : `${UI_ART.lock} 解锁后可出战`}
+          </button>
+          <button type="button" class="finish-action-btn relic-banner-medal-btn ${costInfo.isMaxed ? 'btn-equipped' : 'btn-buy'}" data-relic-banner-medal="${bannerId}" ${!costInfo.canAffordMedal ? 'disabled' : ''}>
+            ${costInfo.isMaxed ? `${UI_ART.check} MAX` : `${UI_ART.trainGoldMedal} ${costInfo.medalCost}金章 ${isUnlocked ? '升阶' : '解锁'}`}
+          </button>
+          <button type="button" class="finish-action-btn relic-banner-gold-btn ${costInfo.isMaxed ? 'btn-equipped' : 'btn-buy'}" data-relic-banner-gold="${bannerId}" ${!costInfo.canAffordGold ? 'disabled' : ''}>
+            ${costInfo.isMaxed ? `${UI_ART.check} MAX` : `${UI_ART.coin} ${costInfo.goldCost} ${isUnlocked ? '升阶' : '解锁'}`}
+          </button>
+        </div>
+      `;
+
+      const afterBannerChange = (anchor: HTMLElement, label: string): void => {
+        world.syncRelicBanner3D(true);
+        sound.playTechUpgradeChime();
+        spawnMenuUpgradeBurst(anchor, label, spec.accentColor);
+        refreshUpgradeUI();
+        renderMainMenu();
+        renderActiveBuffsBar();
+      };
+
+      const equipBtn = card.querySelector('.relic-banner-equip-btn') as HTMLButtonElement;
+      equipBtn.addEventListener('click', () => {
+        if (state.equipRelicBanner(bannerId)) {
+          afterBannerChange(equipBtn, `出战【${spec.name}】!`);
+        }
+      });
+
+      const medalBtn = card.querySelector('.relic-banner-medal-btn') as HTMLButtonElement;
+      medalBtn.addEventListener('click', () => {
+        const res = state.upgradeRelicBanner(bannerId, 'medal');
+        if (res.upgraded) {
+          afterBannerChange(medalBtn, `${spec.name} ${res.wasUnlock ? '已解锁' : `Lv.${res.newLevel}`}!`);
+        }
+      });
+
+      const goldBtn = card.querySelector('.relic-banner-gold-btn') as HTMLButtonElement;
+      goldBtn.addEventListener('click', () => {
+        const res = state.upgradeRelicBanner(bannerId, 'gold');
+        if (res.upgraded) {
+          afterBannerChange(goldBtn, `${spec.name} ${res.wasUnlock ? '已解锁' : `Lv.${res.newLevel}`}!`);
+        }
+      });
+
+      relicBannerGrid.appendChild(card);
+    });
+  }
+
+  // Render MC-11 Bobo Squad Pet Companion Dock (#pet-companion-dock)
+  const activePetSpec = state.getPetCompanionSpec(state.activePet);
+  const activePetLvl = state.getPetCompanionLevel(state.activePet);
+  const pearlBonusInfo = state.getDeepPearlMilestoneBonus();
+  if (petCompanionActivePill) {
+    petCompanionActivePill.innerHTML = `${activePetSpec.inlineIcon} 随军萌宠：${activePetSpec.name} Lv.${Math.max(1, activePetLvl)}`;
+  }
+  if (petCompanionResources) {
+    petCompanionResources.innerHTML = `${UI_ART.deepPearl} 深海珍珠 ${state.deepPearls} · 营救成功 ${state.submarineRescueClears} 次 · 累计戳破 ${state.totalBubblesPopped} 个营救泡泡`;
+  }
+  if (petCompanionMilestoneBanner) {
+    const nextPearlTxt =
+      pearlBonusInfo.nextThreshold > 0
+        ? `距下一珍珠里程碑还差 ${Math.max(0, pearlBonusInfo.nextThreshold - pearlBonusInfo.effectivePearls)} 枚`
+        : '已达最高珍珠里程碑';
+    petCompanionMilestoneBanner.innerHTML = `<span>${UI_ART.deepPearl} 珍珠里程碑：${pearlBonusInfo.summaryText}</span><span>单宠出战位 · 同时仅 1 只萌宠随军 · ${nextPearlTxt}</span>`;
+    petCompanionMilestoneBanner.style.borderColor = pearlBonusInfo.accentColor;
+  }
+  if (petCompanionGrid) {
+    petCompanionGrid.innerHTML = '';
+    const petBgMap: Record<PetCompanionId, string> = {
+      jelly_puff: 'radial-gradient(circle, #fce7f3 0%, #db2777 100%)',
+      shell_turtle: 'radial-gradient(circle, #ccfbf1 0%, #0f766e 100%)',
+      spark_seahorse: 'radial-gradient(circle, #ffedd5 0%, #c2410c 100%)',
+    };
+    PET_COMPANION_ORDER.forEach((petId) => {
+      const spec = PET_COMPANIONS[petId];
+      const lvl = state.getPetCompanionLevel(petId);
+      const isAdopted = lvl >= 1;
+      const isEquipped = state.activePet === petId && isAdopted;
+      const costInfo = state.getPetUpgradeCost(petId);
+      const pipsHtml = Array.from({ length: PET_COMPANION_MAX_LEVEL })
+        .map((_, idx) => `<span class="bobo-tech-pip ${idx < lvl ? 'is-filled' : ''}"></span>`)
+        .join('');
+
+      const card = document.createElement('div');
+      card.className = `finish-card mecha-mod-card bobo-tech-card cannon-mod-card pet-companion-card ${isAdopted ? 'owned' : 'is-locked-mod'} ${isEquipped ? 'equipped is-equipped-mod is-equipped-pet' : ''}`;
+      card.dataset.petCompanion = petId;
+      card.style.setProperty('--pet-accent', spec.accentColor);
+      card.innerHTML = `
+        <div class="finish-card-top">
+          <div class="finish-swatch pet-companion-swatch" style="background: ${petBgMap[petId]}">${PET_COMPANION_ART[petId]}</div>
+          <div class="finish-meta">
+            <span class="finish-name">${spec.name} ${isAdopted ? `Lv.${lvl}/${PET_COMPANION_MAX_LEVEL}` : '待领养 (Lv.0)'}</span>
+            <span class="finish-tag" style="color: ${spec.accentColor}">${spec.role} · ${spec.subtitle}</span>
+            <div class="bobo-tech-pips" aria-hidden="true">${pipsHtml}</div>
+          </div>
+        </div>
+        <div class="finish-bonus">${spec.statText(lvl)}</div>
+        <div class="finish-hint">${spec.desc}</div>
+        <div class="bobo-tech-actions cannon-mod-actions pet-companion-actions">
+          <button type="button" class="finish-action-btn bobo-tech-doctrine-btn pet-companion-equip-btn ${isEquipped ? 'btn-equipped' : 'btn-equip'}" data-pet-equip="${petId}" ${!isAdopted ? 'disabled' : ''}>
+            ${isEquipped ? `${UI_ART.check} 随军出战中` : isAdopted ? '带它随军出战' : `${UI_ART.lock} 领养后可出战`}
+          </button>
+          <button type="button" class="finish-action-btn pet-companion-pearl-btn ${costInfo.isMaxed ? 'btn-equipped' : 'btn-buy'}" data-pet-pearl="${petId}" ${!costInfo.canAffordPearl ? 'disabled' : ''}>
+            ${costInfo.isMaxed ? `${UI_ART.check} MAX` : `${UI_ART.deepPearl} ${costInfo.pearlCost}珍珠 ${isAdopted ? '升阶' : '领养'}`}
+          </button>
+          <button type="button" class="finish-action-btn pet-companion-gold-btn ${costInfo.isMaxed ? 'btn-equipped' : 'btn-buy'}" data-pet-gold="${petId}" ${!costInfo.canAffordGold ? 'disabled' : ''}>
+            ${costInfo.isMaxed ? `${UI_ART.check} MAX` : `${UI_ART.coin} ${costInfo.goldCost} ${isAdopted ? '升阶' : '领养'}`}
+          </button>
+        </div>
+      `;
+
+      const afterPetChange = (anchor: HTMLElement, label: string): void => {
+        world.syncPetCompanion3D(true);
+        sound.playTechUpgradeChime();
+        spawnMenuUpgradeBurst(anchor, label, spec.accentColor);
+        refreshUpgradeUI();
+        renderMainMenu();
+        renderActiveBuffsBar();
+      };
+
+      const equipBtn = card.querySelector('.pet-companion-equip-btn') as HTMLButtonElement;
+      equipBtn.addEventListener('click', () => {
+        if (state.equipPetCompanion(petId)) {
+          afterPetChange(equipBtn, `${spec.name}随军出战!`);
+        }
+      });
+
+      const pearlBtn = card.querySelector('.pet-companion-pearl-btn') as HTMLButtonElement;
+      pearlBtn.addEventListener('click', () => {
+        const res = state.upgradePetCompanion(petId, 'pearl');
+        if (res.upgraded) {
+          afterPetChange(pearlBtn, `${spec.name} ${res.wasAdopt ? '领养成功' : `Lv.${res.newLevel}`}!`);
+        }
+      });
+
+      const goldBtn = card.querySelector('.pet-companion-gold-btn') as HTMLButtonElement;
+      goldBtn.addEventListener('click', () => {
+        const res = state.upgradePetCompanion(petId, 'gold');
+        if (res.upgraded) {
+          afterPetChange(goldBtn, `${spec.name} ${res.wasAdopt ? '领养成功' : `Lv.${res.newLevel}`}!`);
+        }
+      });
+
+      petCompanionGrid.appendChild(card);
+    });
+  }
+
+  // Render MC-12 Bobo Squad Honor Trophy Hall (#trophy-hall)
+  renderTrophyHall();
+
+  // Render MC-13 Bobo Squad Skin Gacha Machine (#gacha-machine)
+  renderGachaMachine();
+
+  // Render MC-14 Themed Lobby Decoration Hall (#decor-hall)
+  renderDecorHall();
+
+  // Render MC-15 Bobo Squad Tactic Deck (#tactic-deck)
+  renderTacticDeck();
 
   // Render MC-9 Steam Cannon Core Module Workbench (#cannon-mod-workbench)
   const activeCannonModSpec = state.getCannonModSpec(state.activeCannonMod);
@@ -1451,7 +2016,7 @@ function renderMainMenu(): void {
       row.style.setProperty('--stagger-i', `${idx}`);
       const lbRaceOrder = ['swarm', 'titan', 'gate', 'plasma', 'orbital', 'bastion', 'tycoon'];
       const avatarRace = lbRaceOrder[idx % lbRaceOrder.length];
-      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=25" alt="" draggable="false" /></div>`;
+      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=33" alt="" draggable="false" /></div>`;
       if (isActiveMode) {
         const timeStr = state.formatPlayTime(entry.playTimeSeconds);
         row.innerHTML = `
@@ -2093,7 +2658,1117 @@ function launchAirshipEscort(): void {
 (window as unknown as Record<string, unknown>).__mc3dLaunchEscort = () => launchPayloadEscort();
 (window as unknown as Record<string, unknown>).__mc3dLaunchTournament = () => launchGearTournament();
 (window as unknown as Record<string, unknown>).__mc3dLaunchColossusRaid = () => launchColossusRaid();
+function launchCandyTrainRaid(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const trainSpec = state.getCandyTrainRaidSpec();
+  const lvl = generateCandyTrainRaidLevel(trainSpec.raidTier);
+  world.loadLevel(lvl);
+  lastTrainHudKey = '';
+  if (stageBadge) {
+    stageBadge.textContent = `糖果列车 · 车厢 ${lvl.candyTrainCars?.length || 6}/${lvl.candyTrainCars?.length || 6}`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.candyTrainRaid} 糖果列车耐久`;
+  candyTrainHudEl?.classList.remove('hidden');
+  const relicSpec = state.getRelicBannerSpec();
+  showBanner(
+    `${UI_ART.candyTrainRaid} 彩虹糖果列车突袭战 · 第 ${trainSpec.raidTier} 阶`,
+    `${RELIC_BANNER_INLINE_ART[relicSpec.id]} ${relicSpec.name}已插上 · 先打火车头令全车停摆，击破宝箱货厢夺取列车金章！`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
 (window as unknown as Record<string, unknown>).__mc3dLaunchAirshipEscort = () => launchAirshipEscort();
+(window as unknown as Record<string, unknown>).__mc3dLaunchCandyTrainRaid = () => launchCandyTrainRaid();
+
+// ============================================================================
+// MC-12: Bobo Squad Honor Trophy Hall (workshop) & Glacier Sled Race (lobby mode)
+// ============================================================================
+
+function TROPHY_CUP_IMG(tier: number, extraCls = ''): string {
+  return `<img class="art-icon-img trophy-cup-img tier-${tier} ${extraCls}" src="/assets/icons/trophy_gold_cup.png?v=33" alt="" draggable="false" />`;
+}
+
+function displayPedestalImg(): string {
+  return `<img class="art-icon-img trophy-pedestal-img" src="/assets/icons/display_pedestal.png?v=33" alt="" draggable="false" />`;
+}
+
+function afterTrophyHallChange(anchor: HTMLElement | null, label: string, accent: string): void {
+  world.syncTrophyPedestal3D(true);
+  sound.playTechUpgradeChime();
+  spawnMenuUpgradeBurst(anchor, label, accent);
+  refreshUpgradeUI();
+  renderMainMenu();
+  renderActiveBuffsBar();
+}
+
+function renderTrophyHall(): void {
+  const hall = state.getTrophyHallBonus();
+  const slots = state.getUnlockedTrophySlots();
+  const unlockCost = state.getTrophySlotUnlockCost();
+  if (trophyHallActivePill) {
+    trophyHallActivePill.innerHTML = `${UI_ART.trophyGoldCup} 陈列 ${hall.displayedCount}/${slots} 展位 · ${hall.rankTitle}`;
+  }
+  if (trophyHallResources) {
+    trophyHallResources.innerHTML = `${UI_ART.iceMedal} 冰晶奖章 ${state.iceMedals} · 已获奖杯 ${hall.earnedCount}/${HALL_TROPHY_ORDER.length}`;
+  }
+  if (btnTrophyAutoArrange) {
+    btnTrophyAutoArrange.disabled = hall.earnedCount === 0;
+  }
+  if (trophyHallMilestoneBanner) {
+    const buffParts = HALL_TROPHY_ORDER.filter((id) => state.getHallTrophyInfo(id).displaySlot >= 0).map((id) => {
+      const info = state.getHallTrophyInfo(id);
+      return `${info.spec.buffLabel}+${Math.round(info.buffValue * 100)}%`;
+    });
+    const nextTxt =
+      hall.nextThreshold > 0
+        ? `再陈列 ${Math.max(0, hall.nextThreshold - hall.displayedCount)} 座奖杯晋升下一档`
+        : '已达最高陈列里程碑';
+    trophyHallMilestoneBanner.innerHTML = `<span>${UI_ART.trophyHall} 陈列馆里程碑：${hall.summaryText}</span><span>${buffParts.length > 0 ? `陈列加成：${buffParts.join(' · ')} · ` : ''}${nextTxt}</span>`;
+    trophyHallMilestoneBanner.style.borderColor = hall.accentColor;
+  }
+
+  if (trophyHallSlotsEl) {
+    trophyHallSlotsEl.innerHTML = '';
+    for (let i = 0; i < TROPHY_HALL_SLOT_COUNT; i++) {
+      const unlocked = i < slots;
+      const tid = unlocked ? state.trophyDisplay[i] : null;
+      const slotEl = document.createElement('div');
+      slotEl.dataset.trophySlot = `${i}`;
+      if (tid) {
+        const info = state.getHallTrophyInfo(tid);
+        slotEl.className = `trophy-slot is-filled tier-${info.tier}`;
+        slotEl.style.setProperty('--trophy-accent', info.spec.accentColor);
+        slotEl.innerHTML = `
+          <div class="trophy-slot-stage">${displayPedestalImg()}${TROPHY_CUP_IMG(info.tier)}<span class="trophy-slot-emblem">${info.spec.inlineIcon}</span></div>
+          <span class="trophy-slot-name">${info.spec.name}</span>
+          <span class="trophy-slot-tier">${info.tierName} · ${info.spec.buffLabel}+${Math.round(info.buffValue * 100)}%</span>
+          <button type="button" class="finish-action-btn btn-equip trophy-slot-remove-btn" data-trophy-remove="${i}">撤下</button>
+        `;
+        const rmBtn = slotEl.querySelector('.trophy-slot-remove-btn') as HTMLButtonElement;
+        rmBtn.addEventListener('click', () => {
+          if (state.placeTrophy(i, null)) afterTrophyHallChange(rmBtn, `${info.spec.name}已撤下`, '#94a3b8');
+        });
+      } else if (unlocked) {
+        slotEl.className = 'trophy-slot is-empty';
+        slotEl.innerHTML = `
+          <div class="trophy-slot-stage">${displayPedestalImg()}</div>
+          <span class="trophy-slot-name">展位 #${i + 1} · 空</span>
+          <span class="trophy-slot-tier">从下方奖杯柜陈列</span>
+        `;
+      } else {
+        const isNext = i === slots && !unlockCost.isMaxed;
+        slotEl.className = `trophy-slot is-locked ${isNext ? 'is-next' : ''}`;
+        slotEl.innerHTML = `
+          <div class="trophy-slot-stage">${displayPedestalImg()}<span class="trophy-slot-lock">${UI_ART.lock}</span></div>
+          <span class="trophy-slot-name">展位 #${i + 1} · 未解锁</span>
+          ${
+            isNext
+              ? `<div class="trophy-slot-unlock">
+                  <button type="button" class="finish-action-btn btn-buy trophy-unlock-medal-btn" data-trophy-unlock="medal" ${unlockCost.canAffordMedal ? '' : 'disabled'}>${UI_ART.iceMedal} ${unlockCost.medalCost} 解锁</button>
+                  <button type="button" class="finish-action-btn btn-buy trophy-unlock-gold-btn" data-trophy-unlock="gold" ${unlockCost.canAffordGold ? '' : 'disabled'}>${UI_ART.coin} ${unlockCost.goldCost} 解锁</button>
+                </div>`
+              : '<span class="trophy-slot-tier">先解锁前一展位</span>'
+          }
+        `;
+        if (isNext) {
+          slotEl.querySelectorAll<HTMLButtonElement>('[data-trophy-unlock]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const res = state.unlockTrophySlot(btn.dataset.trophyUnlock === 'medal' ? 'medal' : 'gold');
+              if (res.unlocked) afterTrophyHallChange(btn, `展位 #${res.slotIndex + 1} 已解锁!`, '#7dd3fc');
+            });
+          });
+        }
+      }
+      trophyHallSlotsEl.appendChild(slotEl);
+    }
+  }
+
+  if (trophyHallGrid) {
+    trophyHallGrid.innerHTML = '';
+    const firstEmpty = state.trophyDisplay.findIndex((t, idx) => idx < slots && !t);
+    HALL_TROPHY_ORDER.forEach((tid: HallTrophyId) => {
+      const info = state.getHallTrophyInfo(tid);
+      const spec = HALL_TROPHIES[tid];
+      const earned = info.tier >= 1;
+      const displayed = info.displaySlot >= 0;
+      const pipsHtml = [1, 2, 3]
+        .map((p) => `<span class="bobo-tech-pip ${p <= info.tier ? 'is-filled' : ''}"></span>`)
+        .join('');
+      const card = document.createElement('div');
+      card.className = `finish-card mecha-mod-card bobo-tech-card cannon-mod-card trophy-cabinet-card tier-${info.tier} ${earned ? 'owned' : 'is-locked-mod'} ${displayed ? 'equipped is-displayed-trophy' : ''}`;
+      card.dataset.hallTrophy = tid;
+      card.style.setProperty('--trophy-accent', spec.accentColor);
+      card.innerHTML = `
+        <div class="finish-card-top">
+          <div class="finish-swatch trophy-cabinet-swatch">
+            ${TROPHY_CUP_IMG(info.tier, 'trophy-cabinet-cup')}
+            <img class="art-icon-img trophy-cabinet-source" src="${spec.iconUrl}" alt="" draggable="false" />
+          </div>
+          <div class="finish-meta">
+            <span class="finish-name">${spec.name} · ${HALL_TROPHY_TIER_NAMES[info.tier]}</span>
+            <span class="finish-tag" style="color: ${spec.accentColor}">${spec.sourceLabel}</span>
+            <div class="bobo-tech-pips" aria-hidden="true">${pipsHtml}</div>
+          </div>
+        </div>
+        <div class="finish-bonus">${
+          earned
+            ? `陈列加成：${spec.buffLabel} +${Math.round(info.buffValue * 100)}%${displayed ? `（展位 #${info.displaySlot + 1}）` : ''}`
+            : `未获得 · ${spec.metricLabel}达到 ${spec.thresholds[0]}${spec.unit} 解锁青铜奖杯`
+        }</div>
+        <div class="finish-hint">${info.progressText}</div>
+        <div class="bobo-tech-actions cannon-mod-actions trophy-cabinet-actions">
+          ${
+            displayed
+              ? `<button type="button" class="finish-action-btn btn-equipped trophy-unplace-btn" data-trophy-unplace="${tid}">${UI_ART.check} 陈列中 · 撤下</button>`
+              : `<button type="button" class="finish-action-btn btn-equip trophy-place-btn" data-trophy-place="${tid}" ${earned && firstEmpty >= 0 ? '' : 'disabled'}>${
+                  !earned ? `${UI_ART.lock} 尚未获得` : firstEmpty >= 0 ? `${UI_ART.trophyGoldCup} 陈列到展位 #${firstEmpty + 1}` : '展位已满'
+                }</button>`
+          }
+        </div>
+      `;
+      const placeBtn = card.querySelector('.trophy-place-btn') as HTMLButtonElement | null;
+      placeBtn?.addEventListener('click', () => {
+        if (firstEmpty >= 0 && state.placeTrophy(firstEmpty, tid)) {
+          afterTrophyHallChange(placeBtn, `${spec.name}上架!`, spec.accentColor);
+        }
+      });
+      const unplaceBtn = card.querySelector('.trophy-unplace-btn') as HTMLButtonElement | null;
+      unplaceBtn?.addEventListener('click', () => {
+        if (state.placeTrophy(info.displaySlot, null)) {
+          afterTrophyHallChange(unplaceBtn, `${spec.name}已撤下`, '#94a3b8');
+        }
+      });
+      trophyHallGrid.appendChild(card);
+    });
+  }
+}
+
+if (btnTrophyAutoArrange) {
+  btnTrophyAutoArrange.addEventListener('click', () => {
+    const n = state.autoArrangeTrophies();
+    afterTrophyHallChange(btnTrophyAutoArrange, `一键陈列 ${n} 座奖杯!`, '#facc15');
+  });
+}
+
+if (lobbyTrophyPedestalBtn) {
+  lobbyTrophyPedestalBtn.addEventListener('click', () => {
+    sound.playUpgrade();
+    document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+    document.getElementById('trophy-hall')?.scrollIntoView({ block: 'start' });
+  });
+}
+
+let lastSledHudKey = '';
+let lastSledPillKey = '';
+let lastSledModeOn = false;
+
+function launchGlacierSled(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const sledSpec = state.getGlacierSledSpec();
+  const lvl = generateGlacierSledLevel(sledSpec.sledTier);
+  world.loadLevel(lvl);
+  lastSledHudKey = '';
+  lastSledPillKey = '';
+  if (stageBadge) {
+    stageBadge.textContent = '冰川雪橇 · 滑行 0%';
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.glacierSled} 冲线进度`;
+  glacierSledHudEl?.classList.remove('hidden');
+  const iceMs = state.getIceMedalMilestoneBonus();
+  showBanner(
+    `${UI_ART.glacierSled} 冰川雪橇竞速冲关 · 第 ${sledSpec.sledTier} 阶`,
+    `左右拖动操控雪橇 · 躲开雪崩浪与坠落冰锥、穿过加人门 · 限时 ${lvl.sledCourse?.timeLimitSec ?? 40}s 冲线！${
+      iceMs.sledBonusRiders > 0 ? ` 冰晶加成：起步波波 +${iceMs.sledBonusRiders}` : ''
+    }`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchGlacierSled = () => launchGlacierSled();
+
+// ============================================================================
+// MC-13: Volcano Lava Jump Breakout (lobby mode) & Bobo Squad Skin Gacha Machine (workshop)
+// ============================================================================
+
+let lastLavaHudKey = '';
+let lastLavaPillKey = '';
+let lastLavaModeOn = false;
+
+// ============================================================================
+// MC-14: Asteroid Belt Shield Breakout (lobby mode) & Themed Lobby Decoration Hall (workshop)
+// ============================================================================
+
+let lastAstHudKey = '';
+let lastAstPillKey = '';
+let lastAstModeOn = false;
+
+function launchAsteroidDash(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const astSpec = state.getAsteroidDashSpec();
+  const lvl = generateAsteroidDashLevel(astSpec.asteroidTier);
+  world.loadLevel(lvl);
+  lastAstHudKey = '';
+  lastAstPillKey = '';
+  if (stageBadge) {
+    stageBadge.textContent = '陨石带突围 · 前进 0%';
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.asteroidDash} 突围进度`;
+  asteroidDashHudEl?.classList.remove('hidden');
+  const starMs = state.getStardustMilestoneBonus();
+  showBanner(
+    `${UI_ART.asteroidDash} 星际陨石带护盾突围 · 第 ${astSpec.asteroidTier} 阶`,
+    `左右拖动操控漂浮的波波团 · 躲开红色陨石落点圈、从陨石带的绿色缺口穿过 · 青色护盾门可挡下撞击 · 限时 ${lvl.asteroidCourse?.timeLimitSec ?? 40}s 冲进跃迁门！${
+      starMs.asteroidBonusBobos > 0 ? ` 徽章加成：起步波波 +${starMs.asteroidBonusBobos}` : ''
+    }`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchAsteroidDash = () => launchAsteroidDash();
+
+function decorCurrencyArt(cur: DecorCurrency): string {
+  return cur === 'stardust' ? UI_ART.stardustBadge : cur === 'lava' ? UI_ART.lavaCore : cur === 'ice' ? UI_ART.iceMedal : UI_ART.coin;
+}
+
+function decorThemeArtImg(id: DecorThemeId, extraCls = ''): string {
+  const spec = DECOR_THEMES[id];
+  const filter = spec.iconHue
+    ? ` style="filter: hue-rotate(${spec.iconHue}deg) saturate(1.1) drop-shadow(0 3px 5px rgba(0,0,0,0.45))"`
+    : '';
+  return `<img class="art-icon-img decor-theme-art ${extraCls}" src="${spec.iconUrl}" alt="" draggable="false"${filter} />`;
+}
+
+function decorPropArtImg(id: DecorPropId, extraCls = ''): string {
+  return `<img class="art-icon-img decor-prop-art ${extraCls}" src="${DECOR_PROPS[id].iconUrl}" alt="" draggable="false" />`;
+}
+
+function afterDecorChange(anchor: HTMLElement | null, label: string, accent: string): void {
+  world.syncLobbyDecor3D(true);
+  sound.playTechUpgradeChime();
+  if (anchor) spawnMenuUpgradeBurst(anchor, label, accent);
+  refreshUpgradeUI();
+  renderMainMenu();
+  renderActiveBuffsBar();
+}
+
+function renderDecorHall(): void {
+  const sum = state.getDecorHallSummary();
+  if (decorActivePill) {
+    decorActivePill.innerHTML = `${decorThemeArtImg(sum.theme.id, 'decor-pill-art')} 当前主题：${sum.theme.name} · 舒适度 ${sum.comfort}`;
+  }
+  if (decorResourcesEl) {
+    decorResourcesEl.innerHTML = [
+      `${UI_ART.coin} ${state.gold.toLocaleString()}`,
+      `${UI_ART.stardustBadge} 星尘徽章 ${state.stardustBadges}`,
+      `${UI_ART.lavaCore} 熔岩晶核 ${state.lavaCores}`,
+      `${UI_ART.iceMedal} 冰晶奖章 ${state.iceMedals}`,
+    ]
+      .map((chip) => `<span class="decor-res-chip">${chip}</span>`)
+      .join('');
+  }
+  if (decorBonusBanner) {
+    decorBonusBanner.innerHTML = `<span>${UI_ART.lobbyTheme} 装修以外观为主：主题给大厅墙纸 / 地板与奖杯展台换色，摆件摆进大厅四角的 3D 场景</span><span>舒适度每点金币收益 +${(DECOR_COMFORT_GOLD_PER_POINT * 100).toFixed(1)}%（上限 +${Math.round(DECOR_COMFORT_GOLD_CAP * 100)}%）· 当前舒适度 ${sum.comfort} → 金币 +${sum.bonusPct}%</span>`;
+  }
+  if (decorThemeGrid) {
+    decorThemeGrid.innerHTML = '';
+    DECOR_THEME_ORDER.forEach((tid) => {
+      const spec = DECOR_THEMES[tid];
+      const owned = state.ownedDecorThemes.includes(tid);
+      const active = sum.theme.id === tid;
+      const canAfford = state.getDecorCurrencyAmount(spec.currency) >= spec.cost;
+      const card = document.createElement('div');
+      card.className = `decor-theme-card ${owned ? 'is-owned' : 'is-locked'} ${active ? 'is-active' : ''}`;
+      card.dataset.decorTheme = tid;
+      card.style.setProperty('--decor-wall', spec.cssWall);
+      card.style.setProperty('--decor-floor', spec.cssFloor);
+      card.style.setProperty('--decor-accent', spec.cssAccent);
+      const action = active
+        ? `<button type="button" class="finish-action-btn btn-equipped decor-theme-btn" disabled>${UI_ART.check} 使用中</button>`
+        : owned
+          ? `<button type="button" class="finish-action-btn btn-equip decor-theme-btn" data-decor-theme-apply="${tid}">换上</button>`
+          : `<button type="button" class="finish-action-btn btn-buy decor-theme-btn" data-decor-theme-buy="${tid}" ${canAfford ? '' : 'disabled'}>${decorCurrencyArt(spec.currency)} ${spec.cost.toLocaleString()}</button>`;
+      card.innerHTML = `
+        <div class="decor-theme-swatch"><span class="decor-swatch-floor"></span>${decorThemeArtImg(tid, 'decor-card-art')}</div>
+        <div class="decor-card-meta">
+          <span class="decor-card-name">${spec.name}</span>
+          <span class="decor-card-desc">${spec.desc}</span>
+          <span class="decor-card-comfort">舒适度 +${spec.comfort}</span>
+        </div>
+        ${action}
+      `;
+      card.querySelector<HTMLButtonElement>('[data-decor-theme-apply]')?.addEventListener('click', (ev) => {
+        if (state.applyDecorTheme(tid)) afterDecorChange(ev.currentTarget as HTMLElement, `换上${spec.name}!`, spec.cssAccent);
+      });
+      card.querySelector<HTMLButtonElement>('[data-decor-theme-buy]')?.addEventListener('click', (ev) => {
+        const res = state.buyDecorTheme(tid);
+        if (!res.ok) {
+          showGlobalToast(`${res.reason}，无法购买${spec.name}`);
+          return;
+        }
+        afterDecorChange(ev.currentTarget as HTMLElement, `${spec.name}装修完成!`, spec.cssAccent);
+      });
+      decorThemeGrid.appendChild(card);
+    });
+  }
+  if (decorSlotRow) {
+    decorSlotRow.innerHTML = '';
+    for (let i = 0; i < DECOR_SLOT_COUNT; i++) {
+      const pid = state.decorSlots[i];
+      const slot = document.createElement('div');
+      slot.className = `decor-slot ${pid ? 'is-filled' : 'is-empty'}`;
+      slot.dataset.decorSlot = `${i}`;
+      slot.innerHTML = pid
+        ? `<span class="decor-slot-name">${DECOR_SLOT_NAMES[i]}</span>${decorPropArtImg(pid, 'decor-slot-art')}<span class="decor-slot-prop">${DECOR_PROPS[pid].name}</span><button type="button" class="finish-action-btn btn-equip decor-slot-btn" data-decor-slot-clear="${i}">收起</button>`
+        : `<span class="decor-slot-name">${DECOR_SLOT_NAMES[i]}</span><span class="decor-slot-empty">空位</span><span class="decor-slot-prop">从下方摆件摆放</span>`;
+      slot.querySelector<HTMLButtonElement>('[data-decor-slot-clear]')?.addEventListener('click', (ev) => {
+        if (state.placeDecorProp(i, null)) afterDecorChange(ev.currentTarget as HTMLElement, '摆件已收起', '#94a3b8');
+      });
+      decorSlotRow.appendChild(slot);
+    }
+  }
+  if (decorPropGrid) {
+    decorPropGrid.innerHTML = '';
+    const freeSlot = state.decorSlots.findIndex((p) => p === null);
+    DECOR_PROP_ORDER.forEach((pid) => {
+      const spec = DECOR_PROPS[pid];
+      const owned = state.ownedDecorProps.includes(pid);
+      const slotIdx = state.getDecorPropSlot(pid);
+      const canAfford = state.getDecorCurrencyAmount(spec.currency) >= spec.cost;
+      const card = document.createElement('div');
+      card.className = `decor-prop-card ${owned ? 'is-owned' : 'is-locked'} ${slotIdx >= 0 ? 'is-placed' : ''}`;
+      card.dataset.decorProp = pid;
+      const action = !owned
+        ? `<button type="button" class="finish-action-btn btn-buy decor-prop-btn" data-decor-prop-buy="${pid}" ${canAfford ? '' : 'disabled'}>${decorCurrencyArt(spec.currency)} ${spec.cost.toLocaleString()}</button>`
+        : slotIdx >= 0
+          ? `<button type="button" class="finish-action-btn btn-equipped decor-prop-btn" data-decor-prop-remove="${pid}">${UI_ART.check} ${DECOR_SLOT_NAMES[slotIdx]} · 收起</button>`
+          : `<button type="button" class="finish-action-btn btn-equip decor-prop-btn" data-decor-prop-place="${pid}" ${freeSlot >= 0 ? '' : 'disabled'}>${freeSlot >= 0 ? '摆放' : '四角已满'}</button>`;
+      card.innerHTML = `
+        <div class="decor-prop-swatch">${decorPropArtImg(pid, 'decor-card-art')}</div>
+        <div class="decor-card-meta">
+          <span class="decor-card-name">${spec.name}</span>
+          <span class="decor-card-desc">${spec.desc}</span>
+          <span class="decor-card-comfort">舒适度 +${spec.comfort} · ${DECOR_CURRENCY_LABEL[spec.currency]}</span>
+        </div>
+        ${action}
+      `;
+      card.querySelector<HTMLButtonElement>('[data-decor-prop-buy]')?.addEventListener('click', (ev) => {
+        const res = state.buyDecorProp(pid);
+        if (!res.ok) {
+          showGlobalToast(`${res.reason}，无法购买${spec.name}`);
+          return;
+        }
+        afterDecorChange(
+          ev.currentTarget as HTMLElement,
+          res.placedSlot >= 0 ? `${spec.name}摆进${DECOR_SLOT_NAMES[res.placedSlot]}!` : `${spec.name}已入库`,
+          '#fde68a'
+        );
+      });
+      card.querySelector<HTMLButtonElement>('[data-decor-prop-place]')?.addEventListener('click', (ev) => {
+        const free = state.decorSlots.findIndex((p) => p === null);
+        if (free >= 0 && state.placeDecorProp(free, pid)) {
+          afterDecorChange(ev.currentTarget as HTMLElement, `${spec.name}摆进${DECOR_SLOT_NAMES[free]}!`, '#fde68a');
+        }
+      });
+      card.querySelector<HTMLButtonElement>('[data-decor-prop-remove]')?.addEventListener('click', (ev) => {
+        const idx = state.getDecorPropSlot(pid);
+        if (idx >= 0 && state.placeDecorProp(idx, null)) afterDecorChange(ev.currentTarget as HTMLElement, `${spec.name}已收起`, '#94a3b8');
+      });
+      decorPropGrid.appendChild(card);
+    });
+  }
+}
+
+if (btnDecorViewLobby) {
+  btnDecorViewLobby.addEventListener('click', () => {
+    sound.playUpgrade();
+    document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="launch"]')?.click();
+    lobbyTrophyPedestalBtn?.scrollIntoView({ block: 'center' });
+  });
+}
+
+// ============================================================================
+// MC-15: Haunted Castle Pumpkin Night (lobby mode) & Bobo Squad Tactic Deck (workshop + lobby strip + battle HUD)
+// ============================================================================
+
+let lastPkHudKey = '';
+let lastPkPillKey = '';
+let lastPkModeOn = false;
+let lastTacticHudKey = '';
+const tacticFlashUntil: Partial<Record<TacticCardId, number>> = {};
+
+const TACTIC_TRIGGER_SHORT: Record<TacticTrigger, string> = {
+  start: '开局',
+  half: '过半',
+  final: '终局',
+  crisis: '危急',
+};
+
+function tacticCurrencyArt(cur: TacticCurrency): string {
+  switch (cur) {
+    case 'train':
+      return UI_ART.trainGoldMedal;
+    case 'pearl':
+      return UI_ART.deepPearl;
+    case 'ice':
+      return UI_ART.iceMedal;
+    case 'lava':
+      return UI_ART.lavaCore;
+    case 'stardust':
+      return UI_ART.stardustBadge;
+    case 'pumpkin':
+      return UI_ART.pumpkinBadge;
+    default:
+      return UI_ART.coin;
+  }
+}
+
+function tacticCardImg(id: TacticCardId, extraCls = ''): string {
+  return `<img class="art-icon-img tactic-card-art ${extraCls}" src="${TACTIC_CARDS[id].iconUrl}" alt="" draggable="false" />`;
+}
+
+function launchPumpkinNight(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const pkSpec = state.getPumpkinNightSpec();
+  const lvl = generatePumpkinNightLevel(pkSpec.pumpkinTier);
+  world.loadLevel(lvl);
+  lastPkHudKey = '';
+  lastPkPillKey = '';
+  lastTacticHudKey = '';
+  if (stageBadge) {
+    stageBadge.textContent = '古堡南瓜夜 · 前进 0%';
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.pumpkinNight} 冲出古堡`;
+  pumpkinNightHudEl?.classList.remove('hidden');
+  const pkMs = state.getPumpkinMilestoneBonus();
+  const deck = state.getTacticDeckSummary();
+  showBanner(
+    `${UI_ART.pumpkinNight} 幽灵古堡南瓜夜 · 第 ${pkSpec.pumpkinTier} 阶`,
+    `左右拖动带波波团夜闯古堡 · 南瓜灯照明区补满灯光、幽灵在光里会被驱散 · 灯光够亮时碰到幽灵也能驱散 · 钻城墙拱门 · 限时 ${lvl.pumpkinCourse?.timeLimitSec ?? 41}s 冲出城门！${
+      pkMs.startBonusBobos > 0 ? ` 徽章加成：起步波波 +${pkMs.startBonusBobos} · 灯光上限 +${pkMs.lightBonus}` : ''
+    }${deck.equipped > 0 ? ` · 战术卡 ${deck.equipped} 张待命` : ''}`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+  renderTacticHud(true);
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchPumpkinNight = () => launchPumpkinNight();
+
+// ============================================================================
+// MC-17: Jungle Temple Vine Swing (lobby mode)
+// ============================================================================
+
+let lastJgHudKey = '';
+let lastJgPillKey = '';
+let lastJgModeOn = false;
+
+function launchJungleSwing(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const jgSpec = state.getJungleSwingSpec();
+  const lvl = generateJungleSwingLevel(jgSpec.jungleTier);
+  world.loadLevel(lvl);
+  lastJgHudKey = '';
+  lastJgPillKey = '';
+  lastTacticHudKey = '';
+  if (stageBadge) {
+    stageBadge.textContent = '丛林神庙 · 前进 0%';
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.jungleSwing} 冲出神庙`;
+  jungleSwingHudEl?.classList.remove('hidden');
+  const jgMs = state.getEmeraldIdolMilestoneBonus();
+  const deck = state.getTacticDeckSummary();
+  showBanner(
+    `${UI_ART.jungleSwing} 丛林神庙藤蔓秋千 · 第 ${jgSpec.jungleTier} 阶`,
+    `左右拖动带波波团闯神庙 · 断崖前对准左右摆动的藤蔓，队伍抓住藤蔓才能荡过去，没对准的波波会坠崖 · 地上亮起橙色滚道就是滚石要来了，快闪到旁边 · 限时 ${
+      world.jungleRun?.timeLimit ?? lvl.jungleCourse?.timeLimitSec ?? 41
+    }s 冲出神庙！${jgMs.startBonusBobos > 0 ? ` 徽章加成：起步波波 +${jgMs.startBonusBobos} · 限时 +${jgMs.timeBonusSec}s` : ''}${
+      deck.equipped > 0 ? ` · 战术卡 ${deck.equipped} 张待命（大厅模式 ×1.0）` : ''
+    }`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+  renderTacticHud(true);
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchJungleSwing = () => launchJungleSwing();
+
+// ============================================================================
+// MC-16: Desert Pyramid Trap Run (lobby mode) & tactic deck balance (main-campaign coefficient / switch)
+// ============================================================================
+
+let lastPyHudKey = '';
+let lastPyPillKey = '';
+let lastPyModeOn = false;
+
+function launchPyramidRun(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const pySpec = state.getPyramidRunSpec();
+  const lvl = generatePyramidRunLevel(pySpec.pyramidTier);
+  world.loadLevel(lvl);
+  lastPyHudKey = '';
+  lastPyPillKey = '';
+  lastTacticHudKey = '';
+  if (stageBadge) {
+    stageBadge.textContent = '金字塔墓道 · 前进 0%';
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.pyramidRun} 冲出墓道`;
+  pyramidRunHudEl?.classList.remove('hidden');
+  const pyMs = state.getScarabMilestoneBonus();
+  const deck = state.getTacticDeckSummary();
+  showBanner(
+    `${UI_ART.pyramidRun} 沙漠金字塔机关跑酷 · 第 ${pySpec.pyramidTier} 阶`,
+    `左右拖动带波波团闯墓道 · 流沙会拖慢脚步、站久了会被吞没，踩金边石板路才稳 · 翻转石板发红抖动后会翻起掀飞波波 · 限时 ${
+      world.pyramidRun?.timeLimit ?? lvl.pyramidCourse?.timeLimitSec ?? 41
+    }s 冲出墓道！${pyMs.startBonusBobos > 0 ? ` 徽章加成：起步波波 +${pyMs.startBonusBobos} · 限时 +${pyMs.timeBonusSec}s` : ''}${
+      deck.equipped > 0 ? ` · 战术卡 ${deck.equipped} 张待命（大厅模式 ×1.0）` : ''
+    }`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+  renderTacticHud(true);
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchPyramidRun = () => launchPyramidRun();
+
+/** Short campaign value of a card at the main-campaign coefficient (shown on its workshop card). */
+function tacticCampaignValueText(id: TacticCardId): string {
+  const spec = TACTIC_CARDS[id];
+  if (!state.tacticCampaignEnabled) return '主线关闭';
+  if (spec.category === 'rush') return `主线 +${Math.round(scaleTacticValue(spec.value, TACTIC_CAMPAIGN_EFFECT_MULT, false) * 100)}%`;
+  const v = scaleTacticValue(spec.value, TACTIC_CAMPAIGN_EFFECT_MULT, true);
+  return spec.category === 'shield' ? `主线 ${v} 盾` : `主线 +${v}`;
+}
+
+/** Workshop balance row: the main-campaign coefficient, its scaled caps and the on / off switch. */
+function renderTacticBalanceRow(): void {
+  const camp = state.getTacticEffectProfile(true);
+  const on = state.tacticCampaignEnabled;
+  if (tacticBalanceTitleEl) {
+    tacticBalanceTitleEl.textContent = on ? `主线战役平衡系数 ×${camp.mult.toFixed(1)}` : '主线战役：战术卡已关闭';
+  }
+  if (tacticBalanceTextEl) {
+    tacticBalanceTextEl.textContent = on
+      ? `主线每局：护盾 ≤${camp.shieldCap} · 援军 ≤${camp.crowdCap} · 冲锋 ≤+${Math.round(camp.rushCap * 100)}%（单卡数值同乘 ×${camp.mult.toFixed(1)}）· 大厅模式 ×1.0`
+      : `主线战役不发动战术卡，难度回到原版 · 大厅模式照常 ×1.0 生效`;
+  }
+  if (btnTacticCampaignToggle) {
+    btnTacticCampaignToggle.textContent = on ? '主线生效中 · 点击关闭' : '主线已关闭 · 点击开启';
+    btnTacticCampaignToggle.classList.toggle('is-off', !on);
+    btnTacticCampaignToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+}
+
+if (btnTacticCampaignToggle) {
+  btnTacticCampaignToggle.addEventListener('click', (ev) => {
+    const next = !state.tacticCampaignEnabled;
+    if (!state.setTacticCampaignEnabled(next)) return;
+    afterTacticChange(ev.currentTarget as HTMLElement, next ? '主线战术卡 ×0.6 生效' : '主线战术卡已关闭', next ? '#fde68a' : '#94a3b8');
+    showGlobalToast(next ? `主线战役战术卡已开启（效果 ×${TACTIC_CAMPAIGN_EFFECT_MULT.toFixed(1)}）` : '主线战役战术卡已关闭（大厅模式不受影响）');
+  });
+}
+
+function afterTacticChange(anchor: HTMLElement | null, label: string, accent: string): void {
+  sound.playTechUpgradeChime();
+  if (anchor) spawnMenuUpgradeBurst(anchor, label, accent);
+  refreshUpgradeUI();
+  renderMainMenu();
+  renderActiveBuffsBar();
+}
+
+function openTacticDeckPanel(): void {
+  document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+  document.getElementById('tactic-deck')?.scrollIntoView({ block: 'start' });
+}
+
+/** Lobby (launch tab): the 3 cards taken into the next match + a jump into the workshop deck editor. */
+function renderLobbyTacticStrip(): void {
+  const cards = state.getEquippedTacticCards();
+  if (lobbyTacticSlotsEl) {
+    const chips: string[] = [];
+    for (let i = 0; i < TACTIC_DECK_SIZE; i++) {
+      const c = cards[i];
+      chips.push(
+        c
+          ? `<span class="lobby-tactic-slot is-filled is-${c.category}" data-lobby-tactic="${c.id}" title="${c.name}：${c.desc}">${tacticCardImg(c.id, 'lobby-tactic-art')}<span class="lobby-tactic-trigger">${TACTIC_TRIGGER_SHORT[c.trigger]}</span></span>`
+          : `<span class="lobby-tactic-slot is-empty" title="空卡槽：前往工坊编入战术卡">+</span>`
+      );
+    }
+    lobbyTacticSlotsEl.innerHTML = chips.join('');
+  }
+  if (lobbyTacticSubEl) {
+    const campTag = state.tacticCampaignEnabled ? `主线×${TACTIC_CAMPAIGN_EFFECT_MULT.toFixed(1)}` : '主线关闭';
+    lobbyTacticSubEl.textContent =
+      cards.length > 0
+        ? `${cards.length}/${TACTIC_DECK_SIZE} · ${campTag} · ${cards.map((c) => c.name).join(' · ')}`
+        : `0/${TACTIC_DECK_SIZE} · ${campTag} · 出战前编入 3 张战术卡`;
+  }
+}
+
+function renderTacticDeck(): void {
+  const cards = state.getEquippedTacticCards();
+  const full = cards.length >= TACTIC_DECK_SIZE;
+  if (tacticActivePill) {
+    tacticActivePill.innerHTML = `${UI_ART.tacticDeck} 出战卡组 ${cards.length}/${TACTIC_DECK_SIZE} · 已解锁 ${state.ownedTacticCards.length}/${TACTIC_CARD_ORDER.length}`;
+  }
+  if (tacticResourcesEl) {
+    const cur: TacticCurrency[] = ['gold', 'train', 'pearl', 'ice', 'lava', 'stardust', 'pumpkin'];
+    tacticResourcesEl.innerHTML = cur
+      .map((c) => {
+        const amt = state.getTacticCurrencyAmount(c);
+        return `<span class="decor-res-chip tactic-res-chip" data-tactic-cur="${c}" title="${TACTIC_CURRENCY_LABEL[c]}">${tacticCurrencyArt(c)} ${c === 'gold' ? amt.toLocaleString() : amt}</span>`;
+      })
+      .join('');
+  }
+  if (tacticRuleBanner) {
+    tacticRuleBanner.innerHTML = `<span>${UI_ART.tacticDeck} 出战前编入 ${TACTIC_DECK_SIZE} 张卡：局内条件满足自动触发，每张每局 1 次（各大厅模式全效，主线战役按下方系数，深海营救除外）</span><span>大厅模式封顶：护盾每局 ≤${TACTIC_SHIELD_CAP} 只 · 援军每局 ≤${TACTIC_CROWD_CAP} 只 · 冲锋不叠加 ≤+${Math.round(TACTIC_RUSH_CAP * 100)}% 且 ≤${TACTIC_RUSH_MAX_SEC}s</span>`;
+  }
+  renderTacticBalanceRow();
+  if (tacticDeckSlotsEl) {
+    tacticDeckSlotsEl.innerHTML = '';
+    for (let i = 0; i < TACTIC_DECK_SIZE; i++) {
+      const id = state.tacticDeck[i];
+      const spec = id && state.ownedTacticCards.includes(id) ? TACTIC_CARDS[id] : null;
+      const slot = document.createElement('div');
+      slot.className = `tactic-slot ${spec ? `is-filled is-${spec.category}` : 'is-empty'}`;
+      slot.dataset.tacticSlot = `${i}`;
+      slot.innerHTML = spec
+        ? `<span class="tactic-slot-no">卡槽 ${i + 1}</span>${tacticCardImg(spec.id, 'tactic-slot-art')}<span class="tactic-slot-name">${spec.name}</span><span class="tactic-slot-trigger">${TACTIC_TRIGGER_SHORT[spec.trigger]}触发</span><button type="button" class="finish-action-btn btn-equip tactic-slot-btn" data-tactic-slot-clear="${i}">卸下</button>`
+        : `<span class="tactic-slot-no">卡槽 ${i + 1}</span><span class="tactic-slot-empty">空槽</span><span class="tactic-slot-trigger">从下方编入</span>`;
+      slot.querySelector<HTMLButtonElement>('[data-tactic-slot-clear]')?.addEventListener('click', (ev) => {
+        if (state.equipTacticCard(i, null)) afterTacticChange(ev.currentTarget as HTMLElement, '卡牌已卸下', '#94a3b8');
+      });
+      tacticDeckSlotsEl.appendChild(slot);
+    }
+  }
+  if (tacticCardGrid) {
+    tacticCardGrid.innerHTML = '';
+    TACTIC_CARD_ORDER.forEach((cid) => {
+      const spec = TACTIC_CARDS[cid];
+      const owned = state.ownedTacticCards.includes(cid);
+      const slotIdx = state.tacticDeck.indexOf(cid);
+      const canAfford = state.getTacticCurrencyAmount(spec.currency) >= spec.cost;
+      const card = document.createElement('div');
+      card.className = `tactic-card is-${spec.category} ${owned ? 'is-owned' : 'is-locked'} ${slotIdx >= 0 ? 'is-equipped' : ''}`;
+      card.dataset.tacticCard = cid;
+      const action = !owned
+        ? `<button type="button" class="finish-action-btn btn-buy tactic-card-btn" data-tactic-buy="${cid}" ${canAfford ? '' : 'disabled'}>${tacticCurrencyArt(spec.currency)} ${spec.cost.toLocaleString()}</button>`
+        : slotIdx >= 0
+          ? `<button type="button" class="finish-action-btn btn-equipped tactic-card-btn" data-tactic-unequip="${cid}">${UI_ART.check} 卡槽 ${slotIdx + 1} · 卸下</button>`
+          : `<button type="button" class="finish-action-btn btn-equip tactic-card-btn" data-tactic-equip="${cid}" ${full ? 'disabled' : ''}>${full ? '卡组已满' : '编入卡组'}</button>`;
+      card.innerHTML = `
+        <div class="tactic-card-head">
+          ${tacticCardImg(cid, 'tactic-card-icon')}
+          <div class="tactic-card-titles">
+            <span class="tactic-card-name">${spec.name}</span>
+            <span class="tactic-card-tag">${TACTIC_CATEGORY_LABEL[spec.category]} · ${TACTIC_TRIGGER_SHORT[spec.trigger]}</span>
+            <span class="tactic-card-camp" title="主线战役平衡系数下的效果">${UI_ART.tacticBalance}${tacticCampaignValueText(cid)}</span>
+          </div>
+        </div>
+        <span class="tactic-card-desc">${spec.desc}</span>
+        <span class="tactic-card-cond" title="${TACTIC_TRIGGER_LABEL[spec.trigger]}">触发：${TACTIC_TRIGGER_LABEL[spec.trigger]}</span>
+        ${action}
+      `;
+      card.querySelector<HTMLButtonElement>('[data-tactic-buy]')?.addEventListener('click', (ev) => {
+        const res = state.buyTacticCard(cid);
+        if (!res.ok) {
+          showGlobalToast(`${res.reason}，无法解锁${spec.name}`);
+          return;
+        }
+        afterTacticChange(
+          ev.currentTarget as HTMLElement,
+          res.equippedSlot >= 0 ? `${spec.name}编入卡槽 ${res.equippedSlot + 1}!` : `${spec.name}已解锁`,
+          '#fde68a'
+        );
+      });
+      card.querySelector<HTMLButtonElement>('[data-tactic-equip]')?.addEventListener('click', (ev) => {
+        const res = state.toggleTacticCard(cid);
+        if (!res.ok) {
+          showGlobalToast(`${res.reason}，先卸下一张卡`);
+          return;
+        }
+        afterTacticChange(ev.currentTarget as HTMLElement, `${spec.name}编入卡槽 ${res.slot + 1}!`, '#fde68a');
+      });
+      card.querySelector<HTMLButtonElement>('[data-tactic-unequip]')?.addEventListener('click', (ev) => {
+        const idx = state.tacticDeck.indexOf(cid);
+        if (idx >= 0 && state.equipTacticCard(idx, null)) afterTacticChange(ev.currentTarget as HTMLElement, `${spec.name}已卸下`, '#94a3b8');
+      });
+      tacticCardGrid.appendChild(card);
+    });
+  }
+}
+
+/** Battle HUD: one chip per equipped card (ready -> its trigger; fired -> what it delivered). */
+function renderTacticHud(force = false): void {
+  if (!tacticDeckHudEl) return;
+  const hud = world.getTacticHudState();
+  const now = performance.now();
+  if (!hud || hud.cards.length === 0) {
+    if (lastTacticHudKey !== 'none' || force) {
+      lastTacticHudKey = 'none';
+      tacticDeckHudEl.classList.add('hidden');
+      tacticDeckHudEl.innerHTML = '';
+    }
+    return;
+  }
+  const flashKey = hud.cards.map((c) => ((tacticFlashUntil[c.id] || 0) > now ? 1 : 0)).join('');
+  const key = `${hud.cards.map((c) => `${c.id}:${c.fired ? 1 : 0}:${c.resultText}`).join('|')}_${hud.rushLeft > 0 ? Math.ceil(hud.rushLeft) : 0}_${flashKey}`;
+  if (!force && key === lastTacticHudKey) return;
+  lastTacticHudKey = key;
+  tacticDeckHudEl.classList.remove('hidden');
+  const scaleTag = hud.isCampaign
+    ? `<span class="tactic-hud-scale" title="主线战役平衡系数：单卡效果与每局封顶 ×${hud.effectMult.toFixed(1)}">${UI_ART.tacticBalance}<span>×${hud.effectMult.toFixed(1)}</span></span>`
+    : '';
+  tacticDeckHudEl.innerHTML = scaleTag + hud.cards
+    .map((c) => {
+      const spec = TACTIC_CARDS[c.id];
+      const flash = (tacticFlashUntil[c.id] || 0) > now ? ' is-flash' : '';
+      const rushTag = c.fired && spec.category === 'rush' && hud.rushLeft > 0 ? ` · ${Math.ceil(hud.rushLeft)}s` : '';
+      const stateTxt = c.fired ? `${c.resultText || '已触发'}${rushTag}` : `${TACTIC_TRIGGER_SHORT[spec.trigger]}触发`;
+      return `<span class="tactic-hud-chip is-${spec.category} ${c.fired ? 'is-fired' : 'is-ready'}${flash}" data-tactic-hud="${c.id}" title="${spec.name}：${spec.desc}">${tacticCardImg(c.id, 'tactic-hud-art')}<span class="tactic-hud-copy"><span class="tactic-hud-name">${spec.name}</span><span class="tactic-hud-state">${stateTxt}</span></span></span>`;
+    })
+    .join('');
+}
+
+world.onTacticTrigger = (cardId: TacticCardId) => {
+  tacticFlashUntil[cardId] = performance.now() + 1400;
+  renderTacticHud(true);
+  // MC-16: keep the "战术卡 n/3 已触发" buff pill in step with the chips
+  renderActiveBuffsBar();
+};
+
+if (btnLobbyTacticEdit) {
+  btnLobbyTacticEdit.addEventListener('click', () => {
+    sound.playUpgrade();
+    openTacticDeckPanel();
+  });
+}
+
+function launchLavaJump(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const lavaSpec = state.getLavaJumpSpec();
+  const lvl = generateLavaJumpLevel(lavaSpec.lavaTier);
+  world.loadLevel(lvl);
+  lastLavaHudKey = '';
+  lastLavaPillKey = '';
+  if (stageBadge) {
+    stageBadge.textContent = '熔岩跳台 · 前进 0%';
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.lavaJump} 突围进度`;
+  lavaJumpHudEl?.classList.remove('hidden');
+  const lavaMs = state.getLavaCoreMilestoneBonus();
+  showBanner(
+    `${UI_ART.lavaJump} 火山熔岩跳台突围战 · 第 ${lavaSpec.lavaTier} 阶`,
+    `左右拖动操控波波团在浮石间连跳 · 落点圈变绿再起跳，躲开喷发预警圈与落石阴影 · 限时 ${lvl.lavaCourse?.timeLimitSec ?? 40}s 冲出火山口！${
+      lavaMs.lavaBonusBobos > 0 ? ` 晶核加成：起步波波 +${lavaMs.lavaBonusBobos}` : ''
+    }`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchLavaJump = () => launchLavaJump();
+
+function gachaSkinArtImg(id: GachaSkinId, extraCls = ''): string {
+  const spec = GACHA_SKINS[id];
+  const hue = spec.id === 'royal_crown' ? '' : ` style="filter: hue-rotate(${spec.capsuleHue}deg) saturate(1.15) drop-shadow(0 3px 5px rgba(0,0,0,0.45))"`;
+  return `<img class="art-icon-img gacha-skin-art ${extraCls}" src="${spec.iconUrl}" alt="" draggable="false"${hue} />`;
+}
+
+function renderGachaResultTray(): void {
+  if (!gachaResultTray) return;
+  if (lastGachaResults.length === 0) {
+    gachaResultTray.className = 'gacha-result-tray is-empty';
+    gachaResultTray.innerHTML = `<span class="gacha-result-empty">${UI_ART.skinCapsule} 投入熔岩晶核或金币，扭出波波装扮！</span>`;
+    return;
+  }
+  const single = lastGachaResults.length === 1;
+  gachaResultTray.className = `gacha-result-tray ${single ? 'is-single' : 'is-multi'}`;
+  gachaResultTray.dataset.serial = `${gachaRevealSerial}`;
+  gachaResultTray.innerHTML = lastGachaResults
+    .map((r, idx) => {
+      const spec = GACHA_SKINS[r.id];
+      const rar = GACHA_RARITIES[r.rarity];
+      const note = r.isNew
+        ? '<span class="gacha-chip-new">NEW</span>'
+        : `<span class="gacha-chip-dup">${UI_ART.coin}+${r.dupCoins}</span>`;
+      return `<div class="gacha-result-chip rarity-${r.rarity}" style="--rarity-color: ${rar.color}; --reveal-i: ${idx}" data-gacha-result="${r.id}">
+          <div class="gacha-chip-swatch" style="background: ${spec.swatch}">${gachaSkinArtImg(r.id, 'gacha-chip-art')}</div>
+          <span class="gacha-chip-rarity">${rar.name}${r.pity ? ' · 保底' : ''}</span>
+          <span class="gacha-chip-name">${spec.name}</span>
+          ${note}
+        </div>`;
+    })
+    .join('');
+}
+
+function renderGachaMachine(): void {
+  const equipped = state.getEquippedGachaSkinSpec();
+  const owned = state.ownedGachaSkins.length;
+  const pity = state.getGachaPityInfo();
+  const collectPct = Math.round((state.getGachaCollectionGoldMult() - 1) * 1000) / 10;
+  if (gachaActivePill) {
+    gachaActivePill.innerHTML = equipped
+      ? `${gachaSkinArtImg(equipped.id, 'gacha-pill-art')} 当前装扮：${equipped.name}`
+      : `${UI_ART.skinCapsule} 当前装扮：原味波波`;
+  }
+  if (gachaResourcesEl) {
+    gachaResourcesEl.innerHTML = `${UI_ART.lavaCore} 熔岩晶核 ${state.lavaCores} · ${UI_ART.coin} ${state.gold.toLocaleString()} · 图鉴 ${owned}/${GACHA_SKIN_ORDER.length}`;
+  }
+  if (gachaOddsBanner) {
+    const odds = [...GACHA_RARITY_ORDER]
+      .reverse()
+      .map((rid) => `<b style="color: ${GACHA_RARITIES[rid].color}">${GACHA_RARITIES[rid].name} ${GACHA_RARITIES[rid].weight}%</b>`)
+      .join(' · ');
+    gachaOddsBanner.innerHTML = `<span>${UI_ART.gachaMachine} 概率：${odds}</span><span>每 ${GACHA_PITY_SR} 抽必出史诗+ · ${GACHA_PITY_SSR} 抽必出传说 · 重复装扮自动折算金币 · 装扮纯外观，图鉴收藏金币 +${(GACHA_COLLECTION_GOLD_PER_SKIN * 100).toFixed(1)}%/款（上限 ${Math.round(GACHA_COLLECTION_GOLD_CAP * 100)}%，当前 +${collectPct}%）</span>`;
+  }
+  if (gachaPityFillEl) {
+    gachaPityFillEl.style.width = `${Math.round(pity.srProgress * 100)}%`;
+  }
+  if (gachaPityTextEl) {
+    gachaPityTextEl.textContent =
+      pity.srLeft <= 1 ? '下一抽必出史诗+！' : `史诗保底还差 ${pity.srLeft} 抽 · 传说保底 ${pity.ssrLeft} 抽`;
+  }
+  for (const btn of gachaRollButtons) {
+    const count = btn.dataset.gachaCount === '10' ? 10 : 1;
+    const pay = btn.dataset.gachaPay === 'gold' ? 'gold' : 'core';
+    const cost = state.getGachaRollCost(count);
+    const can = pay === 'core' ? cost.canAffordCores : cost.canAffordGold;
+    btn.disabled = !can;
+    btn.innerHTML = `<span class="gacha-roll-label">${count === 10 ? '十连扭' : '单抽'}</span><span class="gacha-roll-cost">${
+      pay === 'core' ? `${UI_ART.lavaCore} ${cost.cores}` : `${UI_ART.coin} ${cost.gold.toLocaleString()}`
+    }</span>`;
+  }
+  if (btnGachaUnequip) {
+    btnGachaUnequip.disabled = !equipped;
+  }
+  renderGachaResultTray();
+  if (gachaCollectionGrid) {
+    gachaCollectionGrid.innerHTML = '';
+    GACHA_SKIN_ORDER.forEach((sid) => {
+      const spec = GACHA_SKINS[sid];
+      const rar = GACHA_RARITIES[spec.rarity];
+      const isOwned = state.ownedGachaSkins.includes(sid);
+      const isEquipped = equipped?.id === sid;
+      const card = document.createElement('div');
+      card.className = `gacha-skin-card rarity-${spec.rarity} ${isOwned ? 'is-owned' : 'is-locked'} ${isEquipped ? 'is-equipped' : ''}`;
+      card.dataset.gachaSkin = sid;
+      card.style.setProperty('--rarity-color', rar.color);
+      card.innerHTML = `
+        <div class="gacha-skin-swatch" style="background: ${spec.swatch}">${gachaSkinArtImg(sid, 'gacha-card-art')}</div>
+        <div class="gacha-skin-meta">
+          <span class="gacha-skin-rarity">${rar.name}</span>
+          <span class="gacha-skin-name">${spec.name}</span>
+          <span class="gacha-skin-desc">${isOwned ? spec.desc : `未获得 · ${spec.accessoryLabel}`}</span>
+        </div>
+        <button type="button" class="finish-action-btn ${isEquipped ? 'btn-equipped' : 'btn-equip'} gacha-equip-btn" data-gacha-equip="${sid}" ${isOwned && !isEquipped ? '' : 'disabled'}>${
+          isEquipped ? `${UI_ART.check} 装扮中` : isOwned ? '装扮' : `${UI_ART.lock} 扭蛋获得`
+        }</button>
+      `;
+      const eqBtn = card.querySelector('.gacha-equip-btn') as HTMLButtonElement;
+      eqBtn.addEventListener('click', () => {
+        if (state.equipGachaSkin(sid)) {
+          world.syncGachaSkin3D();
+          sound.playTechUpgradeChime();
+          spawnMenuUpgradeBurst(eqBtn, `${spec.name}已装扮!`, rar.color);
+          renderGachaMachine();
+          renderActiveBuffsBar();
+        }
+      });
+      gachaCollectionGrid.appendChild(card);
+    });
+  }
+}
+
+function rollGachaFromUI(btn: HTMLButtonElement): void {
+  const count = btn.dataset.gachaCount === '10' ? 10 : 1;
+  const pay = btn.dataset.gachaPay === 'gold' ? 'gold' : 'core';
+  const res = state.rollGacha(count, pay);
+  if (!res.ok) {
+    showGlobalToast(`${res.reason}，无法扭蛋`);
+    return;
+  }
+  lastGachaResults = res.results;
+  gachaRevealSerial++;
+  const best = res.results.reduce(
+    (acc, r) => (GACHA_RARITY_ORDER.indexOf(r.rarity) > GACHA_RARITY_ORDER.indexOf(acc.rarity) ? r : acc),
+    res.results[0]
+  );
+  const bestRar = GACHA_RARITIES[best.rarity];
+  sound.playTechUpgradeChime();
+  if (gachaMachineArtEl) {
+    gachaMachineArtEl.classList.remove('is-shaking');
+    void gachaMachineArtEl.offsetWidth;
+    gachaMachineArtEl.classList.add('is-shaking');
+  }
+  spawnMenuUpgradeBurst(
+    btn,
+    `${bestRar.name}·${GACHA_SKINS[best.id].name}${res.newCount > 0 ? ` (+${res.newCount} 新装扮)` : ''}`,
+    bestRar.color
+  );
+  refreshUpgradeUI();
+  renderMainMenu();
+}
+
+for (const btn of gachaRollButtons) {
+  btn.addEventListener('click', () => rollGachaFromUI(btn));
+}
+
+if (btnGachaUnequip) {
+  btnGachaUnequip.addEventListener('click', () => {
+    if (state.equipGachaSkin(null)) {
+      world.syncGachaSkin3D();
+      sound.playUpgrade();
+      spawnMenuUpgradeBurst(btnGachaUnequip, '换回原味波波', '#94a3b8');
+      renderGachaMachine();
+      renderActiveBuffsBar();
+    }
+  });
+}
+
+function launchSubmarineRescue(): void {
+  topToolsDrawer?.classList.add('hidden');
+  pendingBonusHeistStage = 0;
+  state.resetRunProgression();
+  mainMenu.classList.add('hidden');
+  resultModal.classList.add('hidden');
+  if (hudTop) hudTop.style.display = 'flex';
+  if (hudBottom) hudBottom.style.display = 'flex';
+  labelsContainer.style.display = 'block';
+  world.isPaused = false;
+
+  const subSpec = state.getSubmarineRescueSpec();
+  const lvl = generateSubmarineRescueLevel(subSpec.rescueTier);
+  world.loadLevel(lvl);
+  lastSubHudKey = '';
+  if (stageBadge) {
+    stageBadge.textContent = `深海营救 · 潜航 0%`;
+  }
+  const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
+  if (stagePlaqueSubEl) {
+    stagePlaqueSubEl.textContent = lvl.subtitle;
+  }
+  bossNameEl.innerHTML = `${UI_ART.submarineRescue} 潜航进度`;
+  submarineRescueHudEl?.classList.remove('hidden');
+  const petSpec = state.getPetCompanionSpec();
+  showBanner(
+    `${UI_ART.submarineRescue} 深海潜艇泡泡营救战 · 第 ${subSpec.rescueTier} 阶`,
+    `${PET_COMPANION_INLINE_ART[petSpec.id]} ${petSpec.name}随艇出征 · 左右拖动操控潜艇，戳破营救泡泡、破开珊瑚封锁、提防水母阵！`
+  );
+  refreshMechaUI();
+  refreshSubWeaponHUD();
+  refreshUpgradeUI();
+  renderActiveBuffsBar();
+}
+
+(window as unknown as Record<string, unknown>).__mc3dLaunchSubmarineRescue = () => launchSubmarineRescue();
 (window as unknown as Record<string, unknown>).__mc3dStartBonusHeist = (stage = 5) =>
   startBonusHeist(stage, stage);
 
@@ -2107,8 +3782,102 @@ function renderActiveBuffsBar(): void {
   pills.push(
     `<span class="buff-pill rarity-legendary" title="蒸汽母炮核心模组：${activeModSpec.statText(activeModLvl)}">${CANNON_MOD_INLINE_ART[activeModSpec.id]} ${activeModSpec.name} Lv.${activeModLvl}</span>`
   );
+  const activeBannerSpec = state.getRelicBannerSpec(state.activeRelicBanner);
+  const activeBannerLvl = Math.max(1, state.getRelicBannerLevel(state.activeRelicBanner));
+  const surgeTag = world.relicSurgeTimer > 0 ? ' · 冲锋中' : '';
+  pills.push(
+    `<span class="buff-pill rarity-epic relic-banner-pill" data-relic-banner="${activeBannerSpec.id}" title="波波战队圣物战旗：${activeBannerSpec.statText(activeBannerLvl)}">${RELIC_BANNER_INLINE_ART[activeBannerSpec.id]} ${activeBannerSpec.name} Lv.${activeBannerLvl}${surgeTag}</span>`
+  );
+  const activePetSpecBar = state.getPetCompanionSpec(state.activePet);
+  const activePetLvlBar = state.getPetCompanionLevel(state.activePet);
+  if (activePetLvlBar >= 1) {
+    pills.push(
+      `<span class="buff-pill rarity-epic pet-companion-pill" data-pet-companion="${activePetSpecBar.id}" title="波波战队随军萌宠（${activePetSpecBar.role}）：${activePetSpecBar.statText(activePetLvlBar)}">${PET_COMPANION_INLINE_ART[activePetSpecBar.id]} ${activePetSpecBar.shortName} Lv.${activePetLvlBar}</span>`
+    );
+  }
 
-  if (world.currentLevel.isAirshipEscort && world.airshipMothership) {
+  const hallBar = state.getTrophyHallBonus();
+  if (hallBar.displayedCount > 0) {
+    pills.push(
+      `<span class="buff-pill rarity-epic trophy-hall-pill" title="波波战队荣誉奖杯陈列馆：${hallBar.summaryText}">${UI_ART.trophyGoldCup} 荣誉陈列 ${hallBar.displayedCount} 座 · ${hallBar.rankTitle}</span>`
+    );
+  }
+
+  const gachaSkinPill = state.getEquippedGachaSkinSpec();
+  if (gachaSkinPill) {
+    pills.push(
+      `<span class="buff-pill rarity-epic gacha-skin-pill" title="波波战队皮肤扭蛋机：${gachaSkinPill.desc}（纯外观）">${UI_ART.skinCapsule} 装扮 ${gachaSkinPill.name}</span>`
+    );
+  }
+
+  const decorSum = state.getDecorHallSummary();
+  if (decorSum.comfort > 0) {
+    pills.push(
+      `<span class="buff-pill rarity-rare decor-hall-pill" title="波波战队主题装修大厅：${decorSum.theme.name}（装修以外观为主，舒适度每点金币 +${(DECOR_COMFORT_GOLD_PER_POINT * 100).toFixed(1)}%，上限 +${Math.round(DECOR_COMFORT_GOLD_CAP * 100)}%）">${UI_ART.lobbyTheme} 装修舒适 ${decorSum.comfort} · 金币+${decorSum.bonusPct}%</span>`
+    );
+  }
+
+  const tacticHud = world.getTacticHudState();
+  if (tacticHud) {
+    const firedN = tacticHud.cards.filter((c) => c.fired).length;
+    pills.push(
+      `<span class="buff-pill rarity-epic tactic-deck-pill" title="波波战队战术卡组（每张每局触发 1 次，效果封顶${
+        tacticHud.isCampaign ? `；主线战役系数 ×${tacticHud.effectMult.toFixed(1)}` : ''
+      }）">${UI_ART.tacticDeck} 战术卡 ${firedN}/${tacticHud.cards.length} 已触发${
+        tacticHud.isCampaign ? ` · 主线×${tacticHud.effectMult.toFixed(1)}` : ''
+      }</span>`
+    );
+  }
+
+  if (world.currentLevel.isJungleSwing && world.jungleRun) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary jungle-swing-pill">${UI_ART.jungleSwing} 神庙 ${world.getJungleProgressPct()}% · ${world.getJungleStateLabel()} · 波波 ${world.jungleBoboCount}</span>`
+    );
+  }
+
+  if (world.currentLevel.isPyramidRun && world.pyramidRun) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary pyramid-run-pill">${UI_ART.pyramidRun} 墓道 ${world.getPyramidProgressPct()}% · ${world.getPyramidStateLabel()} · 波波 ${world.pyramidBoboCount}</span>`
+    );
+  }
+
+  if (world.currentLevel.isPumpkinNight && world.pumpkinRun) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary pumpkin-night-pill">${UI_ART.pumpkinNight} 古堡 ${world.getPumpkinProgressPct()}% · ${world.getPumpkinStateLabel()} · 灯光 ${world.getPumpkinLightPct()}% · 波波 ${world.pumpkinBoboCount}</span>`
+    );
+  }
+
+  if (world.currentLevel.isAsteroidDash && world.asteroidRun) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary asteroid-dash-pill">${UI_ART.asteroidDash} 星轨 ${world.getAsteroidProgressPct()}% · ${world.getAsteroidStateLabel()} · 波波 ${world.asteroidBoboCount}</span>`
+    );
+  }
+
+  if (world.currentLevel.isLavaJump && world.lavaRun) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary lava-jump-pill">${UI_ART.lavaJump} 熔岩 ${world.getLavaProgressPct()}% · ${world.getLavaStateLabel()} · 波波 ${world.lavaBoboCount}</span>`
+    );
+  }
+
+  if (world.currentLevel.isGlacierSled && world.glacierSled) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary glacier-sled-pill">${UI_ART.glacierSled} 雪橇 ${world.getSledProgressPct()}% · ${world.getSledStateLabel()} · 波波 ${world.sledRiderCount}</span>`
+    );
+  }
+
+  if (world.currentLevel.isSubmarineRescue && world.submarine) {
+    pills.push(
+      `<span class="buff-pill rarity-legendary submarine-rescue-pill">${UI_ART.submarineRescue} 潜航 ${world.getSubmarineProgressPct()}% · ${world.getSubmarineStateLabel()} · 营救 ${world.subBobosRescued} 波波</span>`
+    );
+  }
+
+  if (world.currentLevel.isCandyTrainRaid && world.candyTrain) {
+    const train = world.candyTrain;
+    const alive = world.getAliveCandyTrainCarCount();
+    pills.push(
+      `<span class="buff-pill rarity-legendary">${UI_ART.candyTrainRaid} 糖果列车 ${alive}/${train.cars.length} 节 · ${world.getCandyTrainStateLabel()} · ${UI_ART.trainGoldMedal} 已夺 ${world.candyTrainMedalsLooted}</span>`
+    );
+  } else if (world.currentLevel.isAirshipEscort && world.airshipMothership) {
     const ship = world.airshipMothership;
     const pct = world.getAirshipProgressPct();
     const dropPct = Math.round(ship.dropCharge);
@@ -2424,8 +4193,422 @@ world.onStageEnd = (victory: boolean) => {
   // Reset modal button defaults before branching by mode
   tournamentChestSection?.classList.add('hidden');
   btnModalReplay.style.display = 'inline-block';
-  btnModalReplay.innerHTML = `<img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=25" alt="" draggable="false" /><span>重玩</span><kbd class="kbd-hint">P</kbd>`;
+  btnModalReplay.innerHTML = `<img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=33" alt="" draggable="false" /><span>重玩</span><kbd class="kbd-hint">P</kbd>`;
   btnModalNext.classList.remove('btn-bonus-heist-cta');
+
+  if (world.currentLevel?.isJungleSwing) {
+    const jgRun = world.jungleRun;
+    const limit = jgRun?.timeLimit || world.currentLevel.jungleCourse?.timeLimitSec || 41;
+    const finishSec = victory ? Math.max(1, world.jungleFinishSec || world.stageCombatTime) : limit;
+    const survivors = world.getLavaBoboCount();
+    const progressPct = world.getJungleProgressPct();
+    const rec = state.recordJungleSwingResult(
+      victory,
+      finishSec,
+      limit,
+      survivors,
+      world.jungleBobosLost,
+      world.jungleTrapsDodged,
+      progressPct
+    );
+    const nextJgSpec = state.getJungleSwingSpec();
+    const jgMs = state.getEmeraldIdolMilestoneBonus();
+    const tacticHud = world.getTacticHudState();
+    const tacticTxt = tacticHud ? ` · 战术卡触发 ${tacticHud.cards.filter((c) => c.fired).length}/${tacticHud.cards.length}` : '';
+    const milestoneTxt = rec.milestoneReached
+      ? ` · 徽章里程碑晋升【${rec.milestoneRankTitle}】额外 +${rec.milestoneBonusCoins} ${UI_ART.coin}`
+      : '';
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#10b981', 0.7);
+      const baseBadges = rec.badgesAwarded - rec.timeBonusBadges - rec.survivorBonusBadges - rec.trapBonusBadges;
+      modalBadge.innerHTML = `${UI_ART.jungleSwing} JUNGLE SWING · 第 ${rec.jungleTierCleared} 阶冲出神庙`;
+      modalTitle.innerHTML = `${UI_ART.emeraldIdol} 波波团冲出丛林神庙！`;
+      modalDesc.innerHTML = `用时 ${finishSec.toFixed(1)}s / 限时 ${limit}s${rec.isNewSpeedRecord ? '（新纪录）' : ''} · 幸存波波 ${survivors} 只 · 损失 ${world.jungleBobosLost}（坠崖 ${world.jungleChasmFell} · 滚石 ${world.jungleBoulderFlattened}） · 荡藤蔓 ${world.jungleVineSwings} 次 · 机关全身而过 ${world.jungleTrapsDodged} 处 · 加人门 ${world.jungleGatesPassed}${tacticTxt} · 翡翠神像徽章 +${rec.badgesAwarded} ${UI_ART.emeraldIdol}（基础 ${baseBadges} + 时速 ${rec.timeBonusBadges} + 幸存 ${rec.survivorBonusBadges} + 机关 ${rec.trapBonusBadges}） · 金币 +${rec.coinsAwarded} ${UI_ART.coin}（${jgMs.rankTitle}）${milestoneTxt}`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${UI_ART.trophyHall} <span>奖杯馆</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.jungleSwing} 挑战第 ${nextJgSpec.jungleTier} 阶<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      const reason = jgRun?.state === 'wiped' ? '波波全被机关困住' : '超时困在神庙里';
+      modalBadge.innerHTML = `${UI_ART.jungleSwing} JUNGLE SWING · 闯神庙失败`;
+      modalTitle.innerHTML = `${UI_ART.warning} ${reason} · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.badgesAwarded > 0 || rec.coinsAwarded > 0
+          ? `本局前进 ${progressPct}% · 幸存波波 ${survivors} 只，保留战利品：翡翠神像徽章 +${rec.badgesAwarded} ${UI_ART.emeraldIdol} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}！断崖前提前对准藤蔓，看到橙色滚道就往旁边闪！`
+          : `前进 ${progressPct}% · 零金币扣罚！断崖前提前对准藤蔓，看到橙色滚道就往旁边闪！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.jungleSwing} <span>再闯神庙</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isPyramidRun) {
+    const pyRun = world.pyramidRun;
+    const limit = pyRun?.timeLimit || world.currentLevel.pyramidCourse?.timeLimitSec || 41;
+    const finishSec = victory ? Math.max(1, world.pyramidFinishSec || world.stageCombatTime) : limit;
+    const survivors = world.getLavaBoboCount();
+    const progressPct = world.getPyramidProgressPct();
+    const rec = state.recordPyramidRunResult(
+      victory,
+      finishSec,
+      limit,
+      survivors,
+      world.pyramidBobosLost,
+      world.pyramidTrapsDodged,
+      progressPct
+    );
+    const nextPySpec = state.getPyramidRunSpec();
+    const pyMs = state.getScarabMilestoneBonus();
+    const tacticHud = world.getTacticHudState();
+    const tacticTxt = tacticHud ? ` · 战术卡触发 ${tacticHud.cards.filter((c) => c.fired).length}/${tacticHud.cards.length}` : '';
+    const milestoneTxt = rec.milestoneReached
+      ? ` · 徽章里程碑晋升【${rec.milestoneRankTitle}】额外 +${rec.milestoneBonusCoins} ${UI_ART.coin}`
+      : '';
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#eab308', 0.7);
+      const baseBadges = rec.badgesAwarded - rec.timeBonusBadges - rec.survivorBonusBadges - rec.trapBonusBadges;
+      modalBadge.innerHTML = `${UI_ART.pyramidRun} PYRAMID RUN · 第 ${rec.pyramidTierCleared} 阶冲出墓道`;
+      modalTitle.innerHTML = `${UI_ART.scarabBadge} 波波团冲出金字塔墓道！`;
+      modalDesc.innerHTML = `用时 ${finishSec.toFixed(1)}s / 限时 ${limit}s${rec.isNewSpeedRecord ? '（新纪录）' : ''} · 幸存波波 ${survivors} 只 · 损失 ${world.pyramidBobosLost}（流沙 ${world.pyramidSandSwallowed} · 翻板 ${world.pyramidSlabFlung}） · 机关全身而过 ${world.pyramidTrapsDodged} 处 · 加人门 ${world.pyramidGatesPassed}${tacticTxt} · 圣甲虫徽章 +${rec.badgesAwarded} ${UI_ART.scarabBadge}（基础 ${baseBadges} + 时速 ${rec.timeBonusBadges} + 幸存 ${rec.survivorBonusBadges} + 机关 ${rec.trapBonusBadges}） · 金币 +${rec.coinsAwarded} ${UI_ART.coin}（${pyMs.rankTitle}）${milestoneTxt}`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${UI_ART.trophyHall} <span>奖杯馆</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.pyramidRun} 挑战第 ${nextPySpec.pyramidTier} 阶<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      const reason = pyRun?.state === 'wiped' ? '波波全被机关吞没' : '超时困在墓道里';
+      modalBadge.innerHTML = `${UI_ART.pyramidRun} PYRAMID RUN · 闯墓道失败`;
+      modalTitle.innerHTML = `${UI_ART.warning} ${reason} · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.badgesAwarded > 0 || rec.coinsAwarded > 0
+          ? `本局前进 ${progressPct}% · 幸存波波 ${survivors} 只，保留战利品：圣甲虫徽章 +${rec.badgesAwarded} ${UI_ART.scarabBadge} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}！流沙里别停留、踩金边石板路，石板发红抖动时换一块走！`
+          : `前进 ${progressPct}% · 零金币扣罚！流沙里别停留、踩金边石板路，石板发红抖动时换一块走！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.pyramidRun} <span>再闯墓道</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isPumpkinNight) {
+    const pkRun = world.pumpkinRun;
+    const limit = pkRun?.timeLimit || world.currentLevel.pumpkinCourse?.timeLimitSec || 41;
+    const finishSec = victory ? Math.max(1, world.pumpkinFinishSec || world.stageCombatTime) : limit;
+    const survivors = world.getLavaBoboCount();
+    const progressPct = world.getPumpkinProgressPct();
+    const rec = state.recordPumpkinNightResult(
+      victory,
+      finishSec,
+      limit,
+      survivors,
+      world.pumpkinBobosLost,
+      world.pumpkinGhostsDispelled,
+      progressPct
+    );
+    const nextPkSpec = state.getPumpkinNightSpec();
+    const pkMs = state.getPumpkinMilestoneBonus();
+    const tacticHud = world.getTacticHudState();
+    const tacticTxt = tacticHud ? ` · 战术卡触发 ${tacticHud.cards.filter((c) => c.fired).length}/${tacticHud.cards.length}` : '';
+    const milestoneTxt = rec.milestoneReached
+      ? ` · 徽章里程碑晋升【${rec.milestoneRankTitle}】额外 +${rec.milestoneBonusCoins} ${UI_ART.coin}`
+      : '';
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#fb923c', 0.7);
+      const baseBadges = rec.badgesAwarded - rec.timeBonusBadges - rec.survivorBonusBadges - rec.dispelBonusBadges;
+      modalBadge.innerHTML = `${UI_ART.pumpkinNight} PUMPKIN NIGHT · 第 ${rec.pumpkinTierCleared} 阶冲出古堡`;
+      modalTitle.innerHTML = `${UI_ART.pumpkinBadge} 波波团冲出古堡城门！`;
+      modalDesc.innerHTML = `用时 ${finishSec.toFixed(1)}s / 限时 ${limit}s${rec.isNewSpeedRecord ? '（新纪录）' : ''} · 幸存波波 ${survivors} 只 · 损失 ${world.pumpkinBobosLost} · 驱散幽灵 ${world.pumpkinGhostsDispelled} 只（照明区 ${world.pumpkinLampDispels}） · 南瓜灯补光 ${world.pumpkinLampsLit} 处 · 加人门 ${world.pumpkinGatesPassed}${tacticTxt} · 南瓜灯徽章 +${rec.badgesAwarded} ${UI_ART.pumpkinBadge}（基础 ${baseBadges} + 时速 ${rec.timeBonusBadges} + 幸存 ${rec.survivorBonusBadges} + 驱鬼 ${rec.dispelBonusBadges}） · 金币 +${rec.coinsAwarded} ${UI_ART.coin}（${pkMs.rankTitle}）${milestoneTxt}`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${UI_ART.tacticDeck} <span>战术卡组</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.pumpkinNight} 挑战第 ${nextPkSpec.pumpkinTier} 阶<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      const reason = pkRun?.state === 'wiped' ? '波波全被幽灵吓跑' : '超时被困在古堡里';
+      modalBadge.innerHTML = `${UI_ART.pumpkinNight} PUMPKIN NIGHT · 闯堡失败`;
+      modalTitle.innerHTML = `${UI_ART.warning} ${reason} · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.badgesAwarded > 0 || rec.coinsAwarded > 0
+          ? `本局前进 ${progressPct}% · 幸存波波 ${survivors} 只，保留战利品：南瓜灯徽章 +${rec.badgesAwarded} ${UI_ART.pumpkinBadge} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}！多踩南瓜灯照明区补光，灯光够亮才能驱散幽灵，钻城墙拱门！`
+          : `前进 ${progressPct}% · 零金币扣罚！多踩南瓜灯照明区补光，灯光够亮才能驱散幽灵，钻城墙拱门！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.pumpkinNight} <span>再闯古堡</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isAsteroidDash) {
+    const astRun = world.asteroidRun;
+    const limit = astRun?.timeLimit || world.currentLevel.asteroidCourse?.timeLimitSec || 40;
+    const finishSec = victory ? Math.max(1, world.asteroidFinishSec || world.stageCombatTime) : limit;
+    const survivors = world.getLavaBoboCount();
+    const progressPct = world.getAsteroidProgressPct();
+    const rec = state.recordAsteroidDashResult(
+      victory,
+      finishSec,
+      limit,
+      survivors,
+      world.asteroidBobosLost,
+      world.asteroidShieldBlocks,
+      progressPct
+    );
+    const nextAstSpec = state.getAsteroidDashSpec();
+    const starMs = state.getStardustMilestoneBonus();
+    const milestoneTxt = rec.milestoneReached
+      ? ` · 徽章里程碑晋升【${rec.milestoneRankTitle}】额外 +${rec.milestoneBonusCoins} ${UI_ART.coin}`
+      : '';
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#a78bfa', 0.7);
+      const baseBadges = rec.badgesAwarded - rec.timeBonusBadges - rec.survivorBonusBadges;
+      modalBadge.innerHTML = `${UI_ART.asteroidDash} ASTEROID DASH · 第 ${rec.asteroidTierCleared} 阶突围成功`;
+      modalTitle.innerHTML = `${UI_ART.stardustBadge} 波波团冲进跃迁门！`;
+      modalDesc.innerHTML = `用时 ${finishSec.toFixed(1)}s / 限时 ${limit}s${rec.isNewSpeedRecord ? '（新纪录）' : ''} · 幸存波波 ${survivors} 只 · 损失 ${world.asteroidBobosLost} · 护盾挡下 ${world.asteroidShieldBlocks} 次 · 加人门 ${world.asteroidGatesPassed} · 星尘徽章 +${rec.badgesAwarded} ${UI_ART.stardustBadge}（基础 ${baseBadges} + 时速 ${rec.timeBonusBadges} + 幸存 ${rec.survivorBonusBadges}） · 金币 +${rec.coinsAwarded} ${UI_ART.coin}（${starMs.rankTitle}）${milestoneTxt}`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${UI_ART.lobbyTheme} <span>主题装修大厅</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.asteroidDash} 挑战第 ${nextAstSpec.asteroidTier} 阶<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      const reason = astRun?.state === 'wiped' ? '波波全部被陨石冲散' : '超时迷失在陨石带';
+      modalBadge.innerHTML = `${UI_ART.asteroidDash} ASTEROID DASH · 突围失败`;
+      modalTitle.innerHTML = `${UI_ART.warning} ${reason} · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.badgesAwarded > 0 || rec.coinsAwarded > 0
+          ? `本局前进 ${progressPct}% · 幸存波波 ${survivors} 只，保留战利品：星尘徽章 +${rec.badgesAwarded} ${UI_ART.stardustBadge} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}！躲开红色落点圈，从陨石带绿色缺口穿过，先拿青色护盾门！`
+          : `前进 ${progressPct}% · 零金币扣罚！躲开红色落点圈，从陨石带绿色缺口穿过，先拿青色护盾门！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.asteroidDash} <span>重新突围</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isLavaJump) {
+    const lavaRun = world.lavaRun;
+    const limit = lavaRun?.timeLimit || world.currentLevel.lavaCourse?.timeLimitSec || 40;
+    const finishSec = victory ? Math.max(1, world.lavaFinishSec || world.stageCombatTime) : limit;
+    const survivors = world.getLavaBoboCount();
+    const progressPct = world.getLavaProgressPct();
+    const rec = state.recordLavaJumpResult(
+      victory,
+      finishSec,
+      limit,
+      survivors,
+      world.lavaBobosLost,
+      world.lavaHops,
+      progressPct
+    );
+    const nextLavaSpec = state.getLavaJumpSpec();
+    const lavaMs = state.getLavaCoreMilestoneBonus();
+    const milestoneTxt = rec.milestoneReached
+      ? ` · 晶核里程碑晋升【${rec.milestoneRankTitle}】额外 +${rec.milestoneBonusCoins} ${UI_ART.coin}`
+      : '';
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#fb923c', 0.7);
+      const baseCores = rec.coresAwarded - rec.timeBonusCores - rec.survivorBonusCores;
+      modalBadge.innerHTML = `${UI_ART.lavaJump} LAVA JUMP · 第 ${rec.lavaTierCleared} 阶突围成功`;
+      modalTitle.innerHTML = `${UI_ART.lavaCore} 波波团冲出火山口！`;
+      modalDesc.innerHTML = `用时 ${finishSec.toFixed(1)}s / 限时 ${limit}s${rec.isNewSpeedRecord ? '（新纪录）' : ''} · 幸存波波 ${survivors} 只 · 损失 ${world.lavaBobosLost} · 跳台 ${world.lavaHops} · 加人门 ${world.lavaGatesPassed} · 熔岩晶核 +${rec.coresAwarded} ${UI_ART.lavaCore}（基础 ${baseCores} + 时速 ${rec.timeBonusCores} + 幸存 ${rec.survivorBonusCores}） · 金币 +${rec.coinsAwarded} ${UI_ART.coin}（${lavaMs.rankTitle}）${milestoneTxt}`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${UI_ART.gachaMachine} <span>皮肤扭蛋机</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.lavaJump} 挑战第 ${nextLavaSpec.lavaTier} 阶<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      const reason = lavaRun?.state === 'wiped' ? '波波全部坠入熔岩' : '超时被困火山口';
+      modalBadge.innerHTML = `${UI_ART.lavaJump} LAVA JUMP · 突围失败`;
+      modalTitle.innerHTML = `${UI_ART.warning} ${reason} · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.coresAwarded > 0 || rec.coinsAwarded > 0
+          ? `本局前进 ${progressPct}% · 幸存波波 ${survivors} 只，保留战利品：熔岩晶核 +${rec.coresAwarded} ${UI_ART.lavaCore} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}！落点圈变绿再起跳，避开红色喷发预警圈！`
+          : `前进 ${progressPct}% · 零金币扣罚！落点圈变绿再起跳，避开红色喷发预警圈与落石阴影！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.lavaJump} <span>重新突围</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isGlacierSled) {
+    const sledRun = world.glacierSled;
+    const limit = sledRun?.timeLimit || world.currentLevel.sledCourse?.timeLimitSec || 41;
+    const finishSec = victory ? Math.max(1, world.sledFinishSec || world.stageCombatTime) : limit;
+    const survivors = world.getSledRiderCount();
+    const progressPct = world.getSledProgressPct();
+    const rec = state.recordGlacierSledResult(
+      victory,
+      finishSec,
+      limit,
+      survivors,
+      world.sledRidersLost,
+      world.sledGatesPassed,
+      progressPct
+    );
+    const nextSledSpec = state.getGlacierSledSpec();
+    const iceMs = state.getIceMedalMilestoneBonus();
+    const milestoneTxt = rec.milestoneReached
+      ? ` · 冰晶里程碑晋升【${rec.milestoneRankTitle}】额外 +${rec.milestoneBonusCoins} ${UI_ART.coin}`
+      : '';
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#7dd3fc', 0.7);
+      const baseMedals = rec.medalsAwarded - rec.timeBonusMedals - rec.survivorBonusMedals;
+      modalBadge.innerHTML = `${UI_ART.glacierSled} GLACIER SLED · 第 ${rec.sledTierCleared} 阶冲线成功`;
+      modalTitle.innerHTML = `${UI_ART.iceMedal} 雪橇冲过冰川终点线！`;
+      modalDesc.innerHTML = `用时 ${finishSec.toFixed(1)}s / 限时 ${limit}s${rec.isNewSpeedRecord ? '（新纪录）' : ''} · 幸存波波 ${survivors} 只 · 甩落 ${world.sledRidersLost} · 穿门 ${world.sledGatesPassed} · 冰晶奖章 +${rec.medalsAwarded} ${UI_ART.iceMedal}（基础 ${baseMedals} + 时速 ${rec.timeBonusMedals} + 幸存 ${rec.survivorBonusMedals}） · 金币 +${rec.coinsAwarded} ${UI_ART.coin}（${iceMs.rankTitle}）${milestoneTxt}`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${UI_ART.trophyHall} <span>荣誉陈列馆</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.glacierSled} 挑战第 ${nextSledSpec.sledTier} 阶<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      const reason = sledRun?.state === 'wiped' ? '波波全部被甩下雪橇' : '超时未冲过终点线';
+      modalBadge.innerHTML = `${UI_ART.glacierSled} GLACIER SLED · 冲关失败`;
+      modalTitle.innerHTML = `${UI_ART.warning} ${reason} · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.medalsAwarded > 0 || rec.coinsAwarded > 0
+          ? `本局滑行 ${progressPct}% · 幸存波波 ${survivors} 只，保留战利品：冰晶奖章 +${rec.medalsAwarded} ${UI_ART.iceMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}！多穿加人门、提前对准雪崩浪的蓝旗缺口再出发！`
+          : `滑行 ${progressPct}% · 零金币扣罚！冰锥阴影出现时立刻变道，提前对准雪崩浪的蓝旗缺口！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.glacierSled} <span>重新出发</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isSubmarineRescue) {
+    const clearSec = Math.max(1.0, world.stageCombatTime);
+    const totalBubbles = world.rescueBubbles.length || world.currentLevel.rescueBubbles?.length || 7;
+    const totalCorals = world.coralBarriers.length || world.currentLevel.coralBarriers?.length || 3;
+    const rec = state.recordSubmarineRescueResult(
+      victory,
+      world.subBubblesPopped,
+      totalBubbles,
+      world.subBobosRescued,
+      world.subCoralsBroken,
+      world.subJellyKills,
+      clearSec
+    );
+    const nextSubSpec = state.getSubmarineRescueSpec();
+    const pearlMs = state.getDeepPearlMilestoneBonus();
+    const milestoneTxt = rec.milestoneReached
+      ? ` · 珍珠里程碑晋升【${rec.milestoneRankTitle}】额外 +${rec.milestoneBonusCoins} ${UI_ART.coin}`
+      : '';
+    const subState = world.submarine?.state || 'cruising';
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#38bdf8', 0.7);
+      modalBadge.innerHTML = `${UI_ART.submarineRescue} SUBMARINE RESCUE · 第 ${rec.rescueTierCleared} 阶营救成功`;
+      modalTitle.innerHTML = `${UI_ART.deepPearl} 潜艇抵达深海营救站！`;
+      modalDesc.innerHTML = `营救波波 ${world.subBobosRescued} 只 · 戳破泡泡 ${world.subBubblesPopped}/${totalBubbles} · 破开珊瑚 ${world.subCoralsBroken}/${totalCorals} · 击散水母 ${world.subJellyKills} · 用时 ${clearSec.toFixed(1)}s${rec.isNewSpeedRecord ? '（新纪录）' : ''} · 荣获深海珍珠 +${rec.pearlsAwarded} ${UI_ART.deepPearl} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}（${pearlMs.rankTitle}）${milestoneTxt}`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${PET_COMPANION_INLINE_ART[state.activePet]} <span>前往萌宠伙伴坞</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.submarineRescue} 营救第 ${nextSubSpec.rescueTier} 阶<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      const reason = subState === 'suffocated' ? '潜艇氧气耗尽' : '潜艇被水母阵蜇穿船壳';
+      modalBadge.innerHTML = `${UI_ART.submarineRescue} SUBMARINE RESCUE · 营救中断`;
+      modalTitle.innerHTML = `${UI_ART.warning} ${reason} · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.pearlsAwarded > 0 || rec.coinsAwarded > 0
+          ? `本局营救波波 ${world.subBobosRescued} 只、破开珊瑚 ${world.subCoralsBroken}/${totalCorals}，保留战利品：深海珍珠 +${rec.pearlsAwarded} ${UI_ART.deepPearl} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}！左右操控潜艇躲开水母、让波波护航再出发！`
+          : `营救波波 0 只 · 零金币扣罚！先戳破近处营救泡泡壮大波波，再集火珊瑚封锁，记得把潜艇拖离水母阵！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.submarineRescue} <span>重新下潜</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
+
+  if (world.currentLevel?.isCandyTrainRaid) {
+    const clearSec = Math.max(1.0, world.stageCombatTime);
+    const totalCars = world.candyTrain?.cars.length || world.currentLevel.candyTrainCars?.length || 6;
+    const rec = state.recordCandyTrainRaidResult(
+      victory,
+      world.candyTrainCarsBroken,
+      totalCars,
+      world.candyTrainTreasureLooted,
+      world.candyTrainMedalsLooted,
+      clearSec
+    );
+    const nextTrainSpec = state.getCandyTrainRaidSpec();
+    const milestone = state.getTrainMedalMilestoneBonus();
+    const milestoneTxt = rec.milestoneReached
+      ? ` · 金章里程碑晋升【${rec.milestoneRankTitle}】额外 +${rec.milestoneBonusCoins} ${UI_ART.coin}`
+      : '';
+    resultModal.classList.toggle('victory-mode', victory);
+    rewardSection.classList.add('hidden');
+    penaltySection.classList.add('hidden');
+    if (victory) {
+      world.triggerScreenFlash('#f472b6', 0.7);
+      modalBadge.innerHTML = `${UI_ART.candyTrainRaid} CANDY TRAIN RAID · 第 ${rec.raidTierCleared} 阶劫车大捷`;
+      modalTitle.innerHTML = `${UI_ART.trainGoldMedal} 彩虹糖果列车全数击破！`;
+      modalDesc.innerHTML = `击破车厢 ${world.candyTrainCarsBroken}/${totalCars} · 宝箱货厢 ${world.candyTrainTreasureLooted} 节 · 用时 ${clearSec.toFixed(1)}s${rec.isNewSpeedRecord ? '（新纪录）' : ''} · 荣获列车金章 +${rec.medalsAwarded} ${UI_ART.trainGoldMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}（${milestone.rankTitle}）${milestoneTxt}`;
+      btnModalReplay.style.display = 'inline-block';
+      btnModalReplay.innerHTML = `${RELIC_BANNER_INLINE_ART[state.activeRelicBanner]} <span>前往圣物战旗台</span><kbd class="kbd-hint">P</kbd>`;
+      btnModalNext.disabled = false;
+      btnModalNext.style.display = 'inline-block';
+      btnModalNext.innerHTML = `${UI_ART.candyTrainRaid} 劫车第 ${nextTrainSpec.raidTier} 阶<kbd class="kbd-hint">Space</kbd>`;
+    } else {
+      modalBadge.innerHTML = `${UI_ART.candyTrainRaid} CANDY TRAIN RAID · 列车驶离`;
+      modalTitle.innerHTML = `${UI_ART.warning} 糖果列车冲出环线 · 零战败扣罚`;
+      modalDesc.innerHTML =
+        rec.medalsAwarded > 0 || rec.coinsAwarded > 0
+          ? `本局击破车厢 ${world.candyTrainCarsBroken}/${totalCars}，保留战利品：列车金章 +${rec.medalsAwarded} ${UI_ART.trainGoldMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}！先集火火车头可令全车停摆！`
+          : `击破车厢 0/${totalCars} · 零金币扣罚！先集火火车头可冻结逃离倒计时，再逐节拆解宝箱货厢！`;
+      btnModalNext.style.display = 'none';
+      btnModalReplay.innerHTML = `${UI_ART.candyTrainRaid} <span>重新劫车</span><kbd class="kbd-hint">P</kbd>`;
+    }
+    if (btnModalShare) btnModalShare.style.display = 'inline-block';
+    refreshUpgradeUI();
+    renderMainMenu();
+    renderActiveBuffsBar();
+    return;
+  }
 
   if (world.currentLevel?.isAirshipEscort) {
     const clearSec = Math.max(1.0, world.stageCombatTime);
@@ -2820,6 +5003,8 @@ let lastEndlessWaveHud = -1;
 let lastEscortHudKey = '';
 let lastColossusHudKey = '';
 let lastAirshipHudKey = '';
+let lastTrainHudKey = '';
+let lastSubHudKey = '';
 
 function updateLiveHUD(): void {
   if (world.activeBlueCount !== lastHudBlue) {
@@ -2846,6 +5031,72 @@ function updateLiveHUD(): void {
   const isAirshipEscortActive = Boolean(world.currentLevel?.isAirshipEscort && world.airshipMothership?.active);
   if (airshipEscortHudEl) {
     airshipEscortHudEl.classList.toggle('hidden', !isAirshipEscortActive);
+  }
+  const isCandyTrainActive = Boolean(world.currentLevel?.isCandyTrainRaid && world.candyTrain?.active);
+  if (candyTrainHudEl) {
+    candyTrainHudEl.classList.toggle('hidden', !isCandyTrainActive);
+  }
+  const isSubRescueActive = Boolean(world.currentLevel?.isSubmarineRescue && world.submarine?.active);
+  if (submarineRescueHudEl) {
+    submarineRescueHudEl.classList.toggle('hidden', !isSubRescueActive);
+  }
+  if (underwaterOverlayEl) {
+    underwaterOverlayEl.classList.toggle('hidden', !world.currentLevel?.isSubmarineRescue);
+  }
+  const isJgActive = Boolean(world.currentLevel?.isJungleSwing && world.jungleRun?.active);
+  if (jungleSwingHudEl) {
+    jungleSwingHudEl.classList.toggle('hidden', !isJgActive);
+  }
+  const jgModeOn = Boolean(world.currentLevel?.isJungleSwing);
+  if (jgModeOn !== lastJgModeOn) {
+    lastJgModeOn = jgModeOn;
+    document.body.classList.toggle('jungle-mode-active', jgModeOn);
+  }
+  const isPyActive = Boolean(world.currentLevel?.isPyramidRun && world.pyramidRun?.active);
+  if (pyramidRunHudEl) {
+    pyramidRunHudEl.classList.toggle('hidden', !isPyActive);
+  }
+  const pyModeOn = Boolean(world.currentLevel?.isPyramidRun);
+  if (pyModeOn !== lastPyModeOn) {
+    lastPyModeOn = pyModeOn;
+    document.body.classList.toggle('pyramid-mode-active', pyModeOn);
+  }
+  const isPkActive = Boolean(world.currentLevel?.isPumpkinNight && world.pumpkinRun?.active);
+  if (pumpkinNightHudEl) {
+    pumpkinNightHudEl.classList.toggle('hidden', !isPkActive);
+  }
+  const pkModeOn = Boolean(world.currentLevel?.isPumpkinNight);
+  if (pkModeOn !== lastPkModeOn) {
+    lastPkModeOn = pkModeOn;
+    document.body.classList.toggle('pumpkin-mode-active', pkModeOn);
+  }
+  renderTacticHud();
+  const isAstActive = Boolean(world.currentLevel?.isAsteroidDash && world.asteroidRun?.active);
+  if (asteroidDashHudEl) {
+    asteroidDashHudEl.classList.toggle('hidden', !isAstActive);
+  }
+  const astModeOn = Boolean(world.currentLevel?.isAsteroidDash);
+  if (astModeOn !== lastAstModeOn) {
+    lastAstModeOn = astModeOn;
+    document.body.classList.toggle('asteroid-mode-active', astModeOn);
+  }
+  const isLavaActive = Boolean(world.currentLevel?.isLavaJump && world.lavaRun?.active);
+  if (lavaJumpHudEl) {
+    lavaJumpHudEl.classList.toggle('hidden', !isLavaActive);
+  }
+  const lavaModeOn = Boolean(world.currentLevel?.isLavaJump);
+  if (lavaModeOn !== lastLavaModeOn) {
+    lastLavaModeOn = lavaModeOn;
+    document.body.classList.toggle('lava-mode-active', lavaModeOn);
+  }
+  const isSledActive = Boolean(world.currentLevel?.isGlacierSled && world.glacierSled?.active);
+  if (glacierSledHudEl) {
+    glacierSledHudEl.classList.toggle('hidden', !isSledActive);
+  }
+  const sledModeOn = Boolean(world.currentLevel?.isGlacierSled);
+  if (sledModeOn !== lastSledModeOn) {
+    lastSledModeOn = sledModeOn;
+    document.body.classList.toggle('sled-mode-active', sledModeOn);
   }
   syncCannonModHudBadge();
 
@@ -2919,6 +5170,275 @@ function updateLiveHUD(): void {
           : cb.leftShieldAlive || cb.rightCannonAlive
             ? '拆解左右弱点臂触发 6.0s 瘫痪 2.5x 暴击'
             : '双翼护臂全破 · 核心暴露 1.15x';
+      }
+      renderActiveBuffsBar();
+    }
+  } else if (world.currentLevel?.isJungleSwing && world.jungleRun) {
+    const jg = world.jungleRun;
+    const pct = world.getJungleProgressPct();
+    const tLeft = Math.max(0, jg.timeLeft);
+    const bobos = world.jungleBoboCount;
+    const stLbl = world.getJungleStateLabel();
+    const gp = world.getJungleGateProgress();
+    const tp = world.getJungleTrapProgress();
+    const jgKey = `${pct}_${Math.ceil(tLeft * 10)}_${bobos}_${world.jungleBobosLost}_${world.jungleTrapsDodged}_${stLbl}_${gp.reached}_${tp.passed}`;
+    if (jgKey !== lastJgHudKey) {
+      lastJgHudKey = jgKey;
+      if (stageBadge) {
+        stageBadge.textContent = `丛林神庙 · 前进 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${pct}%`;
+      if (jgHudTimeEl && jgHudTimeTextEl) {
+        jgHudTimeEl.classList.toggle('is-urgent', tLeft <= 8);
+        jgHudTimeTextEl.textContent = `剩余 ${tLeft.toFixed(1)}s · 门 ${gp.reached}/${gp.total}`;
+      }
+      if (jgHudSquadEl && jgHudSquadTextEl) {
+        jgHudSquadEl.classList.toggle('is-swinging', jg.state === 'swinging');
+        jgHudSquadTextEl.textContent = `波波 ${bobos} · ${jg.state === 'swinging' ? '荡藤蔓中' : `损失 ${world.jungleBobosLost}`}`;
+      }
+      if (jgHudCourseEl && jgHudCourseTextEl) {
+        jgHudCourseEl.classList.toggle('is-stumbled', jg.state === 'stumbled');
+        jgHudCourseTextEl.textContent = `出口 ${Math.round(jg.distance)}/${jg.courseLength}m · 机关 ${tp.passed}/${tp.total}`;
+      }
+      const pillKey = `${pct}_${bobos}_${stLbl}`;
+      if (pillKey !== lastJgPillKey) {
+        lastJgPillKey = pillKey;
+        renderActiveBuffsBar();
+      }
+    }
+  } else if (world.currentLevel?.isPyramidRun && world.pyramidRun) {
+    const py = world.pyramidRun;
+    const pct = world.getPyramidProgressPct();
+    const tLeft = Math.max(0, py.timeLeft);
+    const bobos = world.pyramidBoboCount;
+    const stLbl = world.getPyramidStateLabel();
+    const gp = world.getPyramidGateProgress();
+    const tp = world.getPyramidTrapProgress();
+    const sandPct = world.getPyramidSandPct();
+    const pyKey = `${pct}_${Math.ceil(tLeft * 10)}_${bobos}_${world.pyramidBobosLost}_${world.pyramidTrapsDodged}_${stLbl}_${gp.reached}_${tp.passed}_${sandPct}`;
+    if (pyKey !== lastPyHudKey) {
+      lastPyHudKey = pyKey;
+      if (stageBadge) {
+        stageBadge.textContent = `金字塔墓道 · 前进 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${pct}%`;
+      if (pyHudTimeEl && pyHudTimeTextEl) {
+        pyHudTimeEl.classList.toggle('is-urgent', tLeft <= 8);
+        pyHudTimeTextEl.textContent = `剩余 ${tLeft.toFixed(1)}s · 门 ${gp.reached}/${gp.total}`;
+      }
+      if (pyHudSandEl && pyHudSandTextEl) {
+        pyHudSandEl.classList.toggle('is-sand', py.state === 'quicksand');
+        pyHudSandTextEl.textContent = `波波 ${bobos} · ${py.state === 'quicksand' ? `陷沙 ${sandPct}%` : `损失 ${world.pyramidBobosLost}`}`;
+      }
+      if (pyHudCourseEl && pyHudCourseTextEl) {
+        pyHudCourseEl.classList.toggle('is-stumbled', py.state === 'stumbled');
+        pyHudCourseTextEl.textContent = `出口 ${Math.round(py.distance)}/${py.courseLength}m · 机关 ${tp.passed}/${tp.total}`;
+      }
+      const pillKey = `${pct}_${bobos}_${stLbl}`;
+      if (pillKey !== lastPyPillKey) {
+        lastPyPillKey = pillKey;
+        renderActiveBuffsBar();
+      }
+    }
+  } else if (world.currentLevel?.isPumpkinNight && world.pumpkinRun) {
+    const pk = world.pumpkinRun;
+    const pct = world.getPumpkinProgressPct();
+    const tLeft = Math.max(0, pk.timeLeft);
+    const bobos = world.pumpkinBoboCount;
+    const stLbl = world.getPumpkinStateLabel();
+    const gp = world.getPumpkinGateProgress();
+    const ghp = world.getPumpkinGhostProgress();
+    const lightPct = world.getPumpkinLightPct();
+    const pkKey = `${pct}_${Math.ceil(tLeft * 10)}_${bobos}_${world.pumpkinBobosLost}_${world.pumpkinGhostsDispelled}_${stLbl}_${gp.reached}_${ghp.resolved}_${lightPct}`;
+    if (pkKey !== lastPkHudKey) {
+      lastPkHudKey = pkKey;
+      if (stageBadge) {
+        stageBadge.textContent = `古堡南瓜夜 · 前进 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${pct}%`;
+      if (pkHudTimeEl && pkHudTimeTextEl) {
+        pkHudTimeEl.classList.toggle('is-urgent', tLeft <= 8);
+        pkHudTimeTextEl.textContent = `剩余 ${tLeft.toFixed(1)}s · 门 ${gp.reached}/${gp.total}`;
+      }
+      if (pkHudLightEl && pkHudLightTextEl) {
+        pkHudLightEl.classList.toggle('is-lit', pk.state === 'lit');
+        pkHudLightEl.classList.toggle('is-dark', pk.light <= 0);
+        pkHudLightEl.style.setProperty('--pk-light', `${lightPct}%`);
+        pkHudLightTextEl.textContent = `波波 ${bobos} · 灯光 ${lightPct}%${pk.state === 'lit' ? ' 补光中' : pk.light <= 0 ? ' 摸黑' : ''}`;
+      }
+      if (pkHudCourseEl && pkHudCourseTextEl) {
+        pkHudCourseEl.classList.toggle('is-stumbled', pk.state === 'stumbled');
+        pkHudCourseTextEl.textContent = `城门 ${Math.round(pk.distance)}/${pk.courseLength}m · 驱鬼 ${world.pumpkinGhostsDispelled}/${ghp.total}`;
+      }
+      const pillKey = `${pct}_${bobos}_${stLbl}`;
+      if (pillKey !== lastPkPillKey) {
+        lastPkPillKey = pillKey;
+        renderActiveBuffsBar();
+      }
+    }
+  } else if (world.currentLevel?.isAsteroidDash && world.asteroidRun) {
+    const ast = world.asteroidRun;
+    const pct = world.getAsteroidProgressPct();
+    const tLeft = Math.max(0, ast.timeLeft);
+    const bobos = world.asteroidBoboCount;
+    const stLbl = world.getAsteroidStateLabel();
+    const gp = world.getAsteroidGateProgress();
+    const shieldOn = ast.shieldTimer > 0 && ast.shieldCharges > 0;
+    const astKey = `${pct}_${Math.ceil(tLeft * 10)}_${bobos}_${world.asteroidBobosLost}_${world.asteroidHazardsDodged}_${stLbl}_${gp.reached}_${shieldOn ? Math.ceil(ast.shieldTimer) : 0}`;
+    if (astKey !== lastAstHudKey) {
+      lastAstHudKey = astKey;
+      if (stageBadge) {
+        stageBadge.textContent = `陨石带突围 · 前进 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${pct}%`;
+      if (astHudTimeEl && astHudTimeTextEl) {
+        astHudTimeEl.classList.toggle('is-urgent', tLeft <= 8);
+        astHudTimeTextEl.textContent = `剩余 ${tLeft.toFixed(1)}s · 门 ${gp.reached}/${gp.total}`;
+      }
+      if (astHudBobosEl && astHudBobosTextEl) {
+        astHudBobosEl.classList.toggle('is-shielded', shieldOn);
+        astHudBobosTextEl.textContent = shieldOn
+          ? `波波 ${bobos} · 护盾×${ast.shieldCharges} ${ast.shieldTimer.toFixed(1)}s`
+          : `波波 ${bobos} · 损失 ${world.asteroidBobosLost}`;
+      }
+      if (astHudCourseEl && astHudCourseTextEl) {
+        astHudCourseEl.classList.toggle('is-stumbled', ast.state === 'stumbled');
+        astHudCourseTextEl.textContent = `跃迁门 ${Math.round(ast.distance)}/${ast.courseLength}m · 闪避 ${world.asteroidHazardsDodged}`;
+      }
+      const pillKey = `${pct}_${bobos}_${stLbl}`;
+      if (pillKey !== lastAstPillKey) {
+        lastAstPillKey = pillKey;
+        renderActiveBuffsBar();
+      }
+    }
+  } else if (world.currentLevel?.isLavaJump && world.lavaRun) {
+    const lava = world.lavaRun;
+    const pct = world.getLavaProgressPct();
+    const tLeft = Math.max(0, lava.timeLeft);
+    const bobos = world.lavaBoboCount;
+    const stLbl = world.getLavaStateLabel();
+    const rp = world.getLavaRowProgress();
+    const lavaKey = `${pct}_${Math.ceil(tLeft * 10)}_${bobos}_${world.lavaBobosLost}_${world.lavaGatesPassed}_${stLbl}_${rp.reached}`;
+    if (lavaKey !== lastLavaHudKey) {
+      lastLavaHudKey = lavaKey;
+      if (stageBadge) {
+        stageBadge.textContent = `熔岩跳台 · 前进 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${pct}%`;
+      if (lavaHudTimeEl && lavaHudTimeTextEl) {
+        lavaHudTimeEl.classList.toggle('is-urgent', tLeft <= 8);
+        lavaHudTimeTextEl.textContent = `剩余 ${tLeft.toFixed(1)}s · 跳台 ${rp.reached}/${rp.total}`;
+      }
+      if (lavaHudBobosEl && lavaHudBobosTextEl) {
+        lavaHudBobosEl.classList.toggle('is-shielded', lava.state === 'shielded');
+        lavaHudBobosTextEl.textContent = `波波 ${bobos} · 落岩 ${world.lavaBobosLost}`;
+      }
+      if (lavaHudCourseEl && lavaHudCourseTextEl) {
+        lavaHudCourseEl.classList.toggle('is-stumbled', lava.state === 'stumbled');
+        lavaHudCourseTextEl.textContent = `火山口 ${Math.round(lava.distance)}/${lava.courseLength}m · 门 ${world.lavaGatesPassed}`;
+      }
+      const pillKey = `${pct}_${bobos}_${stLbl}`;
+      if (pillKey !== lastLavaPillKey) {
+        lastLavaPillKey = pillKey;
+        renderActiveBuffsBar();
+      }
+    }
+  } else if (world.currentLevel?.isGlacierSled && world.glacierSled) {
+    const sled = world.glacierSled;
+    const pct = world.getSledProgressPct();
+    const tLeft = Math.max(0, sled.timeLeft);
+    const riders = world.sledRiderCount;
+    const stLbl = world.getSledStateLabel();
+    const sledKey = `${pct}_${Math.ceil(tLeft * 10)}_${riders}_${world.sledRidersLost}_${world.sledGatesPassed}_${stLbl}_${Math.round(sled.speed * 10)}`;
+    if (sledKey !== lastSledHudKey) {
+      lastSledHudKey = sledKey;
+      if (stageBadge) {
+        stageBadge.textContent = `冰川雪橇 · 滑行 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${pct}%`;
+      if (sledHudTimeEl && sledHudTimeTextEl) {
+        sledHudTimeEl.classList.toggle('is-urgent', tLeft <= 8);
+        sledHudTimeTextEl.textContent = `剩余 ${tLeft.toFixed(1)}s · ${sled.speed.toFixed(1)}m/s`;
+      }
+      if (sledHudRidersEl && sledHudRidersTextEl) {
+        sledHudRidersEl.classList.toggle('is-dropping', sled.state === 'boosting');
+        sledHudRidersTextEl.textContent = `波波 ${riders} · 甩落 ${world.sledRidersLost}`;
+      }
+      if (sledHudCourseEl && sledHudCourseTextEl) {
+        sledHudCourseEl.classList.toggle('is-frozen', sled.state === 'stumbled');
+        sledHudCourseTextEl.textContent = `赛道 ${Math.round(sled.distance)}/${sled.courseLength}m · 门 ${world.sledGatesPassed}`;
+      }
+      const pillKey = `${pct}_${riders}_${stLbl}`;
+      if (pillKey !== lastSledPillKey) {
+        lastSledPillKey = pillKey;
+        renderActiveBuffsBar();
+      }
+    }
+  } else if (world.currentLevel?.isSubmarineRescue && world.submarine) {
+    const sub = world.submarine;
+    const pct = world.getSubmarineProgressPct();
+    const hullPct = Math.max(0, Math.ceil((sub.hp / Math.max(1, sub.maxHp)) * 100));
+    const o2 = Math.ceil(sub.oxygen);
+    const coralsLeft = world.getAliveCoralCount();
+    const jellies = world.getAliveJellyfishCount();
+    const stLbl = world.getSubmarineStateLabel();
+    const subKey = `${pct}_${hullPct}_${o2}_${coralsLeft}_${jellies}_${world.subBobosRescued}_${world.subBubblesPopped}_${stLbl}_${state.activePet}`;
+    if (subKey !== lastSubHudKey) {
+      lastSubHudKey = subKey;
+      if (stageBadge) {
+        stageBadge.textContent = `深海营救 · 潜航 ${pct}%`;
+      }
+      bossHpTextEl.textContent = `${pct}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${pct}%`;
+      if (subHudHullEl && subHudHullTextEl) {
+        subHudHullEl.classList.toggle('is-urgent', hullPct <= 35 || o2 <= 20);
+        subHudHullTextEl.textContent = `潜艇 ${hullPct}% · 氧气 ${o2}s`;
+      }
+      if (subHudRescueEl && subHudRescueTextEl) {
+        subHudRescueEl.classList.toggle('is-dropping', world.subBobosRescued > 0);
+        subHudRescueTextEl.textContent = `营救 +${world.subBobosRescued} · 泡泡 ${world.subBubblesPopped}/${world.rescueBubbles.length}`;
+      }
+      if (subHudThreatEl && subHudThreatTextEl) {
+        subHudThreatEl.classList.toggle('is-frozen', sub.state === 'blocked');
+        subHudThreatTextEl.textContent = `珊瑚 ${coralsLeft}/${world.coralBarriers.length} · 水母 ${jellies}`;
+      }
+      renderActiveBuffsBar();
+    }
+  } else if (world.currentLevel?.isCandyTrainRaid && world.candyTrain) {
+    const train = world.candyTrain;
+    const integrity = world.getCandyTrainIntegrityPct();
+    const alive = world.getAliveCandyTrainCarCount();
+    const total = train.cars.length;
+    const escapeSec = Math.ceil(train.escapeTimeLeft);
+    const stLbl = world.getCandyTrainStateLabel();
+    const trainKey = `${integrity}_${alive}_${escapeSec}_${train.stalled ? 1 : 0}_${world.candyTrainMedalsLooted}_${stLbl}_${state.activeRelicBanner}_${world.relicSurgeTimer > 0 ? 1 : 0}`;
+    if (trainKey !== lastTrainHudKey) {
+      lastTrainHudKey = trainKey;
+      if (stageBadge) {
+        stageBadge.textContent = `糖果列车 · 车厢 ${alive}/${total}`;
+      }
+      bossHpTextEl.textContent = `${integrity}% · ${stLbl}`;
+      bossBarFillEl.style.width = `${integrity}%`;
+      if (trainHudCarsEl && trainHudCarsTextEl) {
+        trainHudCarsEl.classList.toggle('is-broken', train.stalled);
+        trainHudCarsTextEl.textContent = train.stalled
+          ? `车头瘫痪 · 车厢 ${alive}/${total}`
+          : `车厢 ${alive}/${total} · 耐久 ${integrity}%`;
+      }
+      if (trainHudLootEl && trainHudLootTextEl) {
+        trainHudLootEl.classList.toggle('is-dropping', world.candyTrainMedalsLooted > 0);
+        trainHudLootTextEl.textContent = `金章 +${world.candyTrainMedalsLooted} · 宝箱 ${world.candyTrainTreasureLooted}/2`;
+      }
+      if (trainHudEscapeEl && trainHudEscapeTextEl) {
+        trainHudEscapeEl.classList.toggle('is-frozen', train.stalled);
+        trainHudEscapeEl.classList.toggle('is-urgent', !train.stalled && escapeSec <= 15);
+        trainHudEscapeTextEl.textContent = train.stalled ? `倒计时冻结 ${escapeSec}s` : `驶离 ${escapeSec}s`;
       }
       renderActiveBuffsBar();
     }
@@ -3073,6 +5593,62 @@ if (btnStartTournament) {
   btnStartTournament.addEventListener('click', () => {
     sound.playUpgrade();
     launchGearTournament();
+  });
+}
+
+if (btnStartJungleSwing) {
+  btnStartJungleSwing.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchJungleSwing();
+  });
+}
+
+if (btnStartPyramidRun) {
+  btnStartPyramidRun.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchPyramidRun();
+  });
+}
+
+if (btnStartPumpkinNight) {
+  btnStartPumpkinNight.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchPumpkinNight();
+  });
+}
+
+if (btnStartAsteroidDash) {
+  btnStartAsteroidDash.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchAsteroidDash();
+  });
+}
+
+if (btnStartLavaJump) {
+  btnStartLavaJump.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchLavaJump();
+  });
+}
+
+if (btnStartGlacierSled) {
+  btnStartGlacierSled.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchGlacierSled();
+  });
+}
+
+if (btnStartSubmarineRescue) {
+  btnStartSubmarineRescue.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchSubmarineRescue();
+  });
+}
+
+if (btnStartCandyTrainRaid) {
+  btnStartCandyTrainRaid.addEventListener('click', () => {
+    sound.playUpgrade();
+    launchCandyTrainRaid();
   });
 }
 
@@ -3508,6 +6084,93 @@ if (btnModalHome) {
 }
 
 btnModalReplay.addEventListener('click', () => {
+  if (world.currentLevel?.isJungleSwing) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+      document.getElementById('trophy-hall')?.scrollIntoView({ block: 'start' });
+    } else {
+      launchJungleSwing();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isPyramidRun) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+      document.getElementById('trophy-hall')?.scrollIntoView({ block: 'start' });
+    } else {
+      launchPyramidRun();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isPumpkinNight) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      openTacticDeckPanel();
+    } else {
+      launchPumpkinNight();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isAsteroidDash) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+      document.getElementById('decor-hall')?.scrollIntoView({ block: 'start' });
+    } else {
+      launchAsteroidDash();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isLavaJump) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+      document.getElementById('gacha-machine')?.scrollIntoView({ block: 'start' });
+    } else {
+      launchLavaJump();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isGlacierSled) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+      document.getElementById('trophy-hall')?.scrollIntoView({ block: 'start' });
+    } else {
+      launchGlacierSled();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isSubmarineRescue) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+      document.getElementById('pet-companion-dock')?.scrollIntoView({ block: 'start' });
+    } else {
+      launchSubmarineRescue();
+    }
+    return;
+  }
+
+  if (world.currentLevel?.isCandyTrainRaid) {
+    if (resultModal.classList.contains('victory-mode')) {
+      openMainMenu();
+      document.querySelector<HTMLButtonElement>('.menu-tab[data-tab="meta"]')?.click();
+      document.getElementById('relic-banner-stand')?.scrollIntoView({ block: 'start' });
+    } else {
+      launchCandyTrainRaid();
+    }
+    return;
+  }
+
   if (world.currentLevel?.isAirshipEscort) {
     if (resultModal.classList.contains('victory-mode')) {
       openMainMenu();
@@ -3553,6 +6216,46 @@ btnModalReplay.addEventListener('click', () => {
 });
 
 btnModalNext.addEventListener('click', () => {
+  if (world.currentLevel?.isJungleSwing) {
+    launchJungleSwing();
+    return;
+  }
+
+  if (world.currentLevel?.isPyramidRun) {
+    launchPyramidRun();
+    return;
+  }
+
+  if (world.currentLevel?.isPumpkinNight) {
+    launchPumpkinNight();
+    return;
+  }
+
+  if (world.currentLevel?.isAsteroidDash) {
+    launchAsteroidDash();
+    return;
+  }
+
+  if (world.currentLevel?.isLavaJump) {
+    launchLavaJump();
+    return;
+  }
+
+  if (world.currentLevel?.isGlacierSled) {
+    launchGlacierSled();
+    return;
+  }
+
+  if (world.currentLevel?.isSubmarineRescue) {
+    launchSubmarineRescue();
+    return;
+  }
+
+  if (world.currentLevel?.isCandyTrainRaid) {
+    launchCandyTrainRaid();
+    return;
+  }
+
   if (world.currentLevel?.isAirshipEscort) {
     launchAirshipEscort();
     return;
