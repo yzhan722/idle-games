@@ -61,6 +61,9 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       shinyStarSand: "星辉配饰流彩造型屋与冠军联盟殿堂赛凝结的璀璨星砂，用于制作/升阶星辉配饰与调染极光流彩光晕",
       ancientGeneAmber: "远古琥珀基因复苏所与双系星轨回廊凝结的远古基因琥珀，用于苏醒/升阶四大太古血脉印记与淬炼伙伴个体潜能",
       corridorStarMedals: "双系星轨回廊无尽试炼荣誉勋章，可在挑战页星轨回廊兑换远古基因琥珀、闪光祈愿星砂与心性调律薄荷",
+      driftBottle: "星海漂流瓶心愿码头拾回的漂流瓶，在功能页拆开可读到心愿回信，并拾得海洋奇珍与未来币",
+      fireflyLantern: "月光夜行生态观察站记录夜行萌灵时拾得的萤火灯笼，可唤醒伙伴的夜行限定形态，或在杂技舞台点亮萤火舞台灯（得分 +10%）",
+      mapFragment: "心愿码头归港、月光观察站记录出没与远征完成时拾得的藏宝图残片，在功能页每 6 片拼合 1 张藏宝图，开启寻宝地图远航",
     };
 
     if (!elItems.dataset.itemsInited) {
@@ -353,6 +356,9 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       { rid: "shinyStarSand", category: "培养" },
       { rid: "ancientGeneAmber", category: "培养" },
       { rid: "corridorStarMedals", category: "培养" },
+      { rid: "driftBottle", category: "培养" },
+      { rid: "fireflyLantern", category: "培养" },
+      { rid: "mapFragment", category: "培养" },
       { rid: "bigBerry", category: "消耗品" },
       { rid: "hugeBerry", category: "消耗品" },
       { rid: "shinyCharm", category: "特殊" },

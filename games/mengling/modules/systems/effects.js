@@ -14,9 +14,28 @@ import {
   computeElementalBondResonance,
   computeShinyShowcaseAura,
   computeStarBoutiqueAura,
+  computeNightObservatoryAura,
+  computeSkyIslandAura,
   computeStarCampAura,
+  computeTreasureVoyageAura,
+  computeWishDockAura,
+  computeHotSpringAura,
+  computeDreamLibraryAura,
+  computeBakeryAura,
+  computeCloudParkAura,
 } from "./collection_fun.js";
-import { computeChampionLeagueBonus, computeStarCorridorBonus } from "./pve_tower.js";
+import {
+  computeAcrobatTrophyBonus,
+  computeBandTourBonus,
+  computePostOfficeBonus,
+  computeFishingClubBonus,
+  computeBalloonTravelBonus,
+  computeStargazeCampBonus,
+  computeChampionLeagueBonus,
+  computeEcoTriCrestBonus,
+  computeSeasonMigrationBonus,
+  computeStarCorridorBonus,
+} from "./pve_tower.js";
 import { natureDexBonusMul } from "./gameplay_fun.js";
 import { serverBuffPct, serverBuffResearchTimeMul as _serverBuffResearchTimeMul } from "./server_buffs.js";
 
@@ -137,11 +156,58 @@ export function computeTechEffects(state, defs, ui) {
   const leagueBonus = computeChampionLeagueBonus(state);
   const amberAura = computeAmberRevivalAura(state);
   const corridorBonus = computeStarCorridorBonus(state);
+  const wishDockAura = computeWishDockAura(state);
+  const ecoTriCrest = computeEcoTriCrestBonus(state);
+  const nightObsAura = computeNightObservatoryAura(state);
+  const acrobatTrophy = computeAcrobatTrophyBonus(state);
+  const skyIslandAura = computeSkyIslandAura(state);
+  const migrationBonus = computeSeasonMigrationBonus(state);
+  const treasureAura = computeTreasureVoyageAura(state);
+  const bandTour = computeBandTourBonus(state);
+  const hotSpringAura = computeHotSpringAura(state);
+  const postBonus = computePostOfficeBonus(state);
+  const dreamAura = computeDreamLibraryAura(state);
+  const fishingBonus = computeFishingClubBonus(state);
+  const bakeryAura = computeBakeryAura(state);
+  const balloonBonus = computeBalloonTravelBonus(state);
+  const parkAura = computeCloudParkAura(state);
+  const stargazeBonus = computeStargazeCampBonus(state);
   eff.catchChanceAdd += boutiqueAura.catchAdd;
   eff.catchChanceAdd += leagueBonus.catchAdd;
   eff.catchChanceAdd += amberAura.catchAdd;
   eff.catchChanceAdd += corridorBonus.catchAdd;
-  eff.shinyChanceMul *= boutiqueAura.shinyChanceMul * amberAura.shinyChanceMul * corridorBonus.shinyChanceMul;
+  eff.catchChanceAdd += ecoTriCrest.catchAdd;
+  eff.catchChanceAdd += acrobatTrophy.catchAdd;
+  eff.catchChanceAdd += skyIslandAura.catchAdd;
+  eff.catchChanceAdd += migrationBonus.catchAdd;
+  eff.catchChanceAdd += treasureAura.catchAdd;
+  eff.catchChanceAdd += bandTour.catchAdd;
+  eff.catchChanceAdd += hotSpringAura.catchAdd;
+  eff.catchChanceAdd += postBonus.catchAdd;
+  eff.catchChanceAdd += dreamAura.catchAdd;
+  eff.catchChanceAdd += fishingBonus.catchAdd;
+  eff.catchChanceAdd += bakeryAura.catchAdd;
+  eff.catchChanceAdd += balloonBonus.catchAdd;
+  eff.catchChanceAdd += parkAura.catchAdd;
+  eff.catchChanceAdd += stargazeBonus.catchAdd;
+  eff.shinyChanceMul *=
+    boutiqueAura.shinyChanceMul *
+    amberAura.shinyChanceMul *
+    corridorBonus.shinyChanceMul *
+    wishDockAura.shinyChanceMul *
+    ecoTriCrest.shinyChanceMul *
+    nightObsAura.shinyChanceMul *
+    acrobatTrophy.shinyChanceMul *
+    migrationBonus.shinyChanceMul *
+    treasureAura.shinyChanceMul *
+    bandTour.shinyChanceMul *
+    hotSpringAura.shinyChanceMul *
+    dreamAura.shinyChanceMul *
+    fishingBonus.shinyChanceMul *
+    bakeryAura.shinyChanceMul *
+    balloonBonus.shinyChanceMul *
+    parkAura.shinyChanceMul *
+    stargazeBonus.shinyChanceMul;
 
   // 限时捕获率提升（未来币商店）
   const captureBoostRem =

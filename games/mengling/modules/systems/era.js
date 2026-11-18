@@ -4,6 +4,20 @@ export const DISTORTION_OPENER_BLURB =
   "时空已扭曲：遭遇更不可预测，图鉴与永久加成是你的锚点。完成时代主线可再次扭曲，每层扭曲保留图鉴与永久科技。";
 import { dexCaughtCount } from "./effects.js";
 import {
+  recallBalloonTravelForRebirth,
+  recallFishingClubForRebirth,
+  recallPostOfficeForRebirth,
+  recallStargazeCampForRebirth,
+  resetSeasonMigrationFriendsForRebirth,
+} from "./pve_tower.js";
+import {
+  recallBakeryForRebirth,
+  recallCloudParkForRebirth,
+  recallDreamLibraryForRebirth,
+  recallHotSpringForRebirth,
+  recallTreasureVoyageForRebirth,
+} from "./collection_fun.js";
+import {
   cloneMonForNatalRebirth,
   computeEssence,
   ensureLegacy,
@@ -217,9 +231,13 @@ export function confirmPrestige(state, { addLog, getCaptureAreas, starterMonFact
     for (const k of Object.keys(state.tech)) state.tech[k] = false;
   }
   let natalCarriedMon = null;
+  let natalPrevMonId = null;
   if (perkLevel(state, "natalBond") > 0) {
     const cand = resolveNatalBondCandidate(state);
-    if (cand) natalCarriedMon = cloneMonForNatalRebirth(cand, 1);
+    if (cand) {
+      natalCarriedMon = cloneMonForNatalRebirth(cand, 1);
+      natalPrevMonId = cand.id;
+    }
   }
   if (state.mons && Array.isArray(state.mons.list)) state.mons.list.length = 0;
   if (state.auto && typeof state.auto === "object") {
@@ -299,6 +317,62 @@ export function confirmPrestige(state, { addLog, getCaptureAreas, starterMonFact
   if (state?.pve?.starCorridor && typeof state.pve.starCorridor === "object") {
     state.pve.starCorridor.squadIds = [];
   }
+  if (state?.pve?.ecoTriHall && typeof state.pve.ecoTriHall === "object") {
+    state.pve.ecoTriHall.squadIds = [];
+  }
+  // ML-9：转生时召回所有出海船员（漂流瓶 / 海洋奇珍 / 纪念章 / 心愿信笺永久保留）
+  if (state?.meta?.wishDock?.routes && typeof state.meta.wishDock.routes === "object") {
+    for (const r of Object.values(state.meta.wishDock.routes)) {
+      if (!r || typeof r !== "object") continue;
+      r.active = false;
+      r.completed = false;
+      r.crewIds = [];
+      r.stagedIds = [];
+      r.elapsedSec = 0;
+      r.bottles = 0;
+    }
+  }
+  // ML-10：转生时撤回月光观察站全部派驻伙伴（观察日记 / 萤火灯笼永久保留）；伙伴编号重置，
+  // 观测计数与夜行形态随旧伙伴清空，仅本命随行伙伴保留其夜行形态。
+  if (state?.meta?.nightObservatory && typeof state.meta.nightObservatory === "object") {
+    const obs = state.meta.nightObservatory;
+    const carriedForm =
+      natalPrevMonId != null && obs.forms && typeof obs.forms === "object" ? obs.forms[String(natalPrevMonId)] : null;
+    obs.stationedIds = [];
+    obs.observeCarrySec = 0;
+    obs.tally = {};
+    obs.forms = {};
+    if (carriedForm && natalCarriedMon) obs.forms[String(natalCarriedMon.id)] = { ...carriedForm };
+  }
+  // ML-10：杂技舞台节目单清空（舞台星光奖杯与各主题最佳评级永久保留）
+  if (state?.pve?.acrobatShow && typeof state.pve.acrobatShow === "object") {
+    state.pve.acrobatShow.routine = [];
+  }
+  // ML-11：转生时召回云顶浮空岛全部建造伙伴（设施等级永久保留，未竣工工程保留进度、待重新派工）；伙伴编号重置，出工记录清空。
+  if (state?.meta?.skyIsland && typeof state.meta.skyIsland === "object") {
+    state.meta.skyIsland.crewIds = [];
+    state.meta.skyIsland.crewWork = {};
+  }
+  // ML-11：季节迁徙纪念章 / 迁徙图鉴 / 驻留候鸟永久保留，仅结伴记录里的旧伙伴编号失效。
+  resetSeasonMigrationFriendsForRebirth(state);
+  // ML-12：转生时召回寻宝船队（航行中退回藏宝图，登岛探索中提前结束、无归航奖励）；藏宝图 / 残片 / 寻宝纪念品永久保留。
+  recallTreasureVoyageForRebirth(state);
+  // ML-12：乐队声部清空（伙伴编号重置）；节奏型、巡演进度与巡演奖杯永久保留。
+  if (state?.meta?.bandConcert?.lineup && typeof state.meta.bandConcert.lineup === "object") {
+    for (const k of Object.keys(state.meta.bandConcert.lineup)) state.meta.bandConcert.lineup[k] = 0;
+  }
+  // ML-13：转生时泡汤伙伴全部出浴（限时状态 / 疗愈轮数 / 汤池解锁保留）；外出信使全部召回、信件退回邮筒（邮戳与送信记录永久保留）。
+  recallHotSpringForRebirth(state);
+  recallPostOfficeForRebirth(state);
+  // ML-14：转生时入梦伙伴全部醒来（插页 / 章节进度永久保留）；钓手全部收竿（鱼篓里的鱼保留但不再记经验，图鉴与奖杯永久保留）。
+  recallDreamLibraryForRebirth(state);
+  recallFishingClubForRebirth(state);
+  // ML-15：转生时烘焙坊伙伴全部下班（食谱图鉴 / 甜点柜 / 限时增益保留）；飞行中的气球掉头返航，已降落的气球纪念品保留待收取（图鉴与旅行章永久保留）。
+  recallBakeryForRebirth(state);
+  recallBalloonTravelForRebirth(state);
+  // ML-16：转生时游乐园操作员全部换班（满意度 / 门票 / 星级 / 限时增益保留）；夜营中的营地撤营，已归营的观测记录保留待收取（图鉴与营火徽章永久保留）。
+  recallCloudParkForRebirth(state);
+  recallStargazeCampForRebirth(state);
 
   if (typeof addLog === "function") {
     const natalSuffix = natalCarriedMon ? ` · 本命随行「${natalCarriedMon.name || natalCarriedMon.pid}」` : "";

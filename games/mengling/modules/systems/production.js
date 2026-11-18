@@ -10,9 +10,28 @@ import {
   computeElementalBondResonance,
   computeShinyShowcaseAura,
   computeStarBoutiqueAura,
+  computeNightObservatoryAura,
+  computeSkyIslandAura,
   computeStarCampAura,
+  computeTreasureVoyageAura,
+  computeWishDockAura,
+  computeHotSpringAura,
+  computeDreamLibraryAura,
+  computeBakeryAura,
+  computeCloudParkAura,
 } from "./collection_fun.js";
-import { computeChampionLeagueBonus, computeStarCorridorBonus } from "./pve_tower.js";
+import {
+  computeAcrobatTrophyBonus,
+  computeBandTourBonus,
+  computePostOfficeBonus,
+  computeFishingClubBonus,
+  computeBalloonTravelBonus,
+  computeStargazeCampBonus,
+  computeChampionLeagueBonus,
+  computeEcoTriCrestBonus,
+  computeSeasonMigrationBonus,
+  computeStarCorridorBonus,
+} from "./pve_tower.js";
 
 /**
  * 建筑 effects 汇总为产量/上限/解锁字段
@@ -139,6 +158,9 @@ export function computeStaticItemCaps(defs) {
     shinyStarSand: cap("shinyStarSand", 9999),
     ancientGeneAmber: cap("ancientGeneAmber", 9999),
     corridorStarMedals: cap("corridorStarMedals", 9999),
+    driftBottle: cap("driftBottle", 999),
+    fireflyLantern: cap("fireflyLantern", 999),
+    mapFragment: cap("mapFragment", 99),
   };
 }
 
@@ -146,7 +168,7 @@ export function computeStaticItemCaps(defs) {
 const CORE_ALWAYS = new Set([
   "rareCandy", "futurecoin", "evolutionEnergy", "evolutionStone", "linkRope",
   "bigBerry", "hugeBerry", "megaStone", "masterball", "seasonMark", "tuningMint", "shinyStarSand",
-  "ancientGeneAmber", "corridorStarMedals",
+  "ancientGeneAmber", "corridorStarMedals", "driftBottle", "fireflyLantern", "mapFragment",
   "hpPotion", "atkPotion", "defPotion", "spaPotion", "spdPotion", "spePotion",
 ]);
 
@@ -262,6 +284,22 @@ export function finalizeProductionRates(eff, state, serverProdMul) {
   const leagueProdMul = computeChampionLeagueBonus(state).prodMul;
   const amberProdMul = computeAmberRevivalAura(state).prodMul;
   const corridorProdMul = computeStarCorridorBonus(state).prodMul;
+  const wishDockProdMul = computeWishDockAura(state).prodMul;
+  const ecoTriProdMul = computeEcoTriCrestBonus(state).prodMul;
+  const nightObsProdMul = computeNightObservatoryAura(state).prodMul;
+  const acrobatProdMul = computeAcrobatTrophyBonus(state).prodMul;
+  const skyIslandProdMul = computeSkyIslandAura(state).prodMul;
+  const migrationProdMul = computeSeasonMigrationBonus(state).prodMul;
+  const treasureProdMul = computeTreasureVoyageAura(state).prodMul;
+  const bandTourProdMul = computeBandTourBonus(state).prodMul;
+  const hotSpringProdMul = computeHotSpringAura(state).prodMul;
+  const postOfficeProdMul = computePostOfficeBonus(state).prodMul;
+  const dreamLibraryProdMul = computeDreamLibraryAura(state).prodMul;
+  const fishingClubProdMul = computeFishingClubBonus(state).prodMul;
+  const bakeryProdMul = computeBakeryAura(state).prodMul;
+  const balloonProdMul = computeBalloonTravelBonus(state).prodMul;
+  const parkProdMul = computeCloudParkAura(state).prodMul;
+  const stargazeProdMul = computeStargazeCampBonus(state).prodMul;
   const permProdMul =
     permanentBoostMul(state?.permanentBoosts?.production) *
     legacyProdMul(state) *
@@ -272,7 +310,23 @@ export function finalizeProductionRates(eff, state, serverProdMul) {
     boutiqueProdMul *
     leagueProdMul *
     amberProdMul *
-    corridorProdMul;
+    corridorProdMul *
+    wishDockProdMul *
+    ecoTriProdMul *
+    nightObsProdMul *
+    acrobatProdMul *
+    skyIslandProdMul *
+    migrationProdMul *
+    treasureProdMul *
+    bandTourProdMul *
+    hotSpringProdMul *
+    postOfficeProdMul *
+    dreamLibraryProdMul *
+    fishingClubProdMul *
+    bakeryProdMul *
+    balloonProdMul *
+    parkProdMul *
+    stargazeProdMul;
   if (permProdMul > 1) {
     eff.catnipPerSec *= permProdMul;
     eff.woodPerSec *= permProdMul;

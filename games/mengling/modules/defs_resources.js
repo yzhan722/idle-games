@@ -171,4 +171,16 @@ export const RESOURCE_DEFS = {
     name: "星轨回廊勋章",
     baseCap: 9999,
   },
+  driftBottle: {
+    name: "星海漂流瓶",
+    baseCap: 999,
+  },
+  fireflyLantern: {
+    name: "萤火灯笼",
+    baseCap: 999,
+  },
+  mapFragment: {
+    name: "藏宝图残片",
+    baseCap: 99,
+  },
 };

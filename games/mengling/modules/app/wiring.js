@@ -480,6 +480,8 @@ export function initGameUi(ctx) {
     addRes,
     render,
     getState,
+    getSpeciesByPid,
+    createMonInstance,
   });
 
   initLeaderboardTab({

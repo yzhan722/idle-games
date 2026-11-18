@@ -20,18 +20,46 @@ import {
 import {
   advanceAmberIvTraining,
   advanceEcoSandbox,
+  advanceNightObservatory,
+  advanceSkyIsland,
   advanceStarCamp,
+  advanceTreasureVoyage,
+  advanceHotSpring,
+  advanceDreamLibrary,
+  advanceBakery,
+  getBakeryBuffDef,
+  getBakeryRecipeDef,
+  advanceCloudPark,
+  getAwayReturnedUnits,
+  getParkEventDef,
+  getParkRideDef,
+  getParkTitle,
+  advanceWishDock,
   computeAmberRevivalAura,
   computeEcoRelicAura,
   computeElementalBondResonance,
   computeShinyShowcaseAura,
+  computeSkyIslandAura,
   computeStarBoutiqueAura,
   computeStarCampAura,
   getMonBoutiqueBonus,
+  getTreasureExpeditionFragments,
+  grantTreasureMapFragments,
   noteSeasonRelic,
   rollSeasonRelic,
 } from "./systems/collection_fun.js";
-import { computeStarCorridorBonus } from "./systems/pve_tower.js";
+import {
+  advanceBalloonTravel,
+  advanceStargazeCamp,
+  getStargazeShowerDef,
+  getStargazeSiteDef,
+  advanceFishingClub,
+  advancePostOffice,
+  advanceSeasonMigration,
+  computeStarCorridorBonus,
+  getBalloonIsleDef,
+  getFishingFishDef,
+} from "./systems/pve_tower.js";
 import { legacyBreedTimeMul } from "./systems/rebirth.js";
 import { hatchEgg as hatchEggCore } from "./systems/breeding.js";
 import { computeTechEffects } from "./systems/effects.js";
@@ -864,7 +892,9 @@ export function createTick(ctx) {
       ensureEggTimer(state, mons, monById);
       const rem0 = typeof state.breeding.eggRemainingSec === "number" && Number.isFinite(state.breeding.eggRemainingSec) ? state.breeding.eggRemainingSec : 0;
       if (rem0 > 0) {
-        const rem1 = Math.max(0, rem0 - dtSec);
+        // ML-11 暖云孵化巢 / 天穹圣岛共鸣：灵蛋孵化速度光环（倒计时按 ×hatchSpeedMul 推进）
+        const hatchSpeedMul = state.meta?.skyIsland ? computeSkyIslandAura(state).hatchSpeedMul : 1;
+        const rem1 = Math.max(0, rem0 - dtSec * hatchSpeedMul);
         state.breeding.eggRemainingSec = rem1;
         if (rem1 <= 0) {
           hatchEgg(state, mons, monById);
@@ -949,6 +979,10 @@ export function createTick(ctx) {
           }
         }
 
+        // ML-12 寻宝地图远航：远征完成带回藏宝图残片（初 / 中级 ×1 · 高级 / 超级 ×2 · 大师及以上 ×3）
+        const mapFragment = grantTreasureMapFragments(state, "expedition", getTreasureExpeditionFragments(lvlKey), { addRes });
+        if (mapFragment > 0) addLog(`远征战利品：藏宝图残片 +${mapFragment}（可在功能页拼合藏宝图）`);
+
         const wasQuick = Boolean(state.expedition.quick);
         state.expedition.on = false;
         state.expedition.activeIds = [];
@@ -983,6 +1017,7 @@ export function createTick(ctx) {
             masterball: masterballAdd,
             eventCard,
             seasonRelic,
+            mapFragment,
             quick: wasQuick,
           };
           ui.functionsDirty = true;
@@ -1016,6 +1051,165 @@ export function createTick(ctx) {
     const ecoStep = advanceEcoSandbox(state, dtSec);
     if (ecoStep.newlyCompleted.length > 0) {
       addLog(`秘境生态沙盘：${ecoStep.newlyCompleted.length} 处生态区勘探圆满，可前往育灵中枢收取心性调律薄荷与遗物！`, true);
+      if (ui) ui.functionsDirty = true;
+    }
+
+    const dockStep = advanceWishDock(state, dtSec);
+    if (dockStep.newlyCompleted.length > 0) {
+      addLog(`星海漂流瓶心愿码头：${dockStep.newlyCompleted.length} 条拾贝航线满载归港，快去功能页收取漂流瓶、拆读心愿回信！`, true);
+      if (ui) ui.functionsDirty = true;
+    }
+
+    // ML-10 月光夜行生态观察站：按本地时段（夜观 / 暮光微光）记录夜行萌灵出没
+    const nightStep = advanceNightObservatory(state, dtSec);
+    if (nightStep.newDiscoveries.length > 0) {
+      addLog(
+        `月光夜行生态观察站：观察日记新增 ${nightStep.newDiscoveries.map((s) => `「${s.creatureName}」`).join("、")}，快去功能页翻阅夜行萌灵记录！`,
+        true,
+      );
+    }
+    if (nightStep.sightings.length > 0 || nightStep.phaseChanged) {
+      if (ui) ui.functionsDirty = true;
+    }
+    if (nightStep.mapFragments > 0) addLog(`月光夜行生态观察站：观察员在草丛里拾到藏宝图残片 +${nightStep.mapFragments}`);
+
+    // ML-11 云顶浮空岛建造：建造伙伴按工期推进开放中的工地（无人派工则停工；进度条由功能页局部刷新）
+    const islandStep = advanceSkyIsland(state, dtSec);
+    if (islandStep.completed) {
+      addLog(`云顶浮空岛：${islandStep.completed.logLine.replace(/^【云顶浮岛】/, "")}`, true);
+      if (ui) {
+        ui.functionsDirty = true;
+        ui.monsDirty = true;
+      }
+    }
+
+    // ML-12 寻宝地图远航：寻宝船队按航程推进，抵达后切换为登岛探索（进度条由功能页局部刷新）
+    const voyageStep = advanceTreasureVoyage(state, dtSec);
+    if (voyageStep.arrived) {
+      addLog(`寻宝地图远航：船队抵达「${voyageStep.islandName}」，快去功能页一格一格探索宝岛！`, true);
+      if (ui) ui.functionsDirty = true;
+    }
+
+    // ML-13 温泉疗愈乡：每座有人泡汤的汤池每 30 分钟完成一轮疗愈（续上限时状态 + 亲密成长），限时状态随时间流逝（离线补算 ≤12h）
+    const springStep = advanceHotSpring(state, dtSec);
+    if (springStep.rounds > 0 || springStep.expiredStates.length > 0 || springStep.unlockedPools.length > 0) {
+      if (springStep.unlockedPools.length > 0) addLog(`温泉疗愈乡：累计疗愈轮数达标，新汤池开放泡汤了！`, true);
+      if (ui) ui.functionsDirty = true;
+      if (springStep.affectionGained > 0 && ui?.activeTab === "mons") markMonsDirty();
+    }
+
+    // ML-13 萌灵邮局信使网络：邮筒每 20 分钟收到 1 封待寄信件，外出信使沿邮路往返（进度条由功能页局部刷新）
+    const postStep = advancePostOffice(state, dtSec);
+    if (postStep.arrived.length > 0) {
+      addLog(`萌灵邮局：${postStep.arrived.map((a) => `${a.monName}（${a.regionName}）`).join("、")} 带着回信回来了，快去功能页拆信、盖邮戳！`, true);
+      if (ui) ui.functionsDirty = true;
+    }
+    if (postStep.lettersAdded > 0 && ui) ui.functionsDirty = true;
+
+    // ML-14 梦境绘本馆：入梦伙伴按灵感速度写绘本，攒满一章收进一张插页（灵感条由功能页局部刷新，离线补算 ≤12h）
+    const dreamStep = advanceDreamLibrary(state, dtSec, { addRes, addExpToMon });
+    if (dreamStep.chapters.length > 0) {
+      const newPages = dreamStep.chapters.filter((c) => c.newPage).length;
+      const doneBooks = dreamStep.chapters.filter((c) => c.bookComplete).map((c) => c.bookId);
+      addLog(
+        `梦境绘本馆：伙伴们在梦里写完 ${dreamStep.chapters.length} 章童话${newPages ? `，收进 ${newPages} 张绘本插页` : ""}${doneBooks.length ? "，有一本绘本全部写完了！" : ""}`,
+        true,
+      );
+      if (ui) ui.functionsDirty = true;
+      if (ui?.activeTab === "mons") markMonsDirty();
+    }
+
+    // ML-14 溪畔钓鱼会：每 15 分钟钓手们按当时开放的溪段各抛一竿，钓获进鱼篓并登记图鉴（离线补算 ≤12h）
+    const fishingStep = advanceFishingClub(state, dtSec, { randFloat });
+    if (fishingStep.caught.length > 0 || fishingStep.casts > 0) {
+      if (fishingStep.newSpecies.length > 0) {
+        addLog(`溪畔钓鱼会：钓获图鉴新登记 ${fishingStep.newSpecies.map((id) => `「${getFishingFishDef(id)?.name || id}」`).join("、")}！`, true);
+      }
+      if (fishingStep.newTier > 0) addLog("溪畔钓鱼会：钓鱼会奖杯升级了，快去功能页看看！", true);
+      if (ui) ui.functionsDirty = true;
+    }
+
+    // ML-15 云朵甜点烘焙坊：揉面 → 烘烤 → 装饰三道工序按工位速度推进，出炉进甜点柜；限时增益按真实流逝倒数（离线补算 ≤12h）
+    const bakeryStep = advanceBakery(state, dtSec, { addRes, addExpToMon, nowMs: Date.now() });
+    if (bakeryStep.batches.length > 0) {
+      const newRecipes = bakeryStep.batches.filter((b) => b.newRecipe).map((b) => `「${getBakeryRecipeDef(b.recipeId)?.name || b.recipeId}」`);
+      addLog(
+        `云朵甜点烘焙坊：${bakeryStep.batches.length} 炉甜点出炉放进了甜点柜${newRecipes.length ? `，食谱图鉴新收录 ${newRecipes.join("、")}` : ""}${bakeryStep.caseFull ? "（甜点柜满了，记得享用或装盒）" : ""}`,
+        newRecipes.length > 0,
+      );
+      if (ui) ui.functionsDirty = true;
+      if (ui?.activeTab === "mons") markMonsDirty();
+    }
+    if (bakeryStep.expiredBuffs.length > 0) {
+      addLog(`云朵甜点烘焙坊：${bakeryStep.expiredBuffs.map((id) => `「${getBakeryBuffDef(id)?.name || id}」`).join("、")}增益结束了，再享用一份甜点就能续上`);
+      if (ui) ui.functionsDirty = true;
+    }
+
+    // ML-15 彩虹气球旅行：飞行中的气球按航程推进，降落后带回纪念品等待收取（目的地起飞时锁定，离线补算 ≤12h）
+    const balloonStep = advanceBalloonTravel(state, dtSec, { randFloat });
+    if (balloonStep.landed.length > 0) {
+      addLog(
+        `彩虹气球旅行：${balloonStep.landed.map((l) => `${l.idx + 1} 号气球从「${getBalloonIsleDef(l.isleId)?.name || l.isleId}」带回 ${l.haul.length} 件纪念品`).join("；")}，去功能页收取吧！`,
+        true,
+      );
+      if (ui) ui.functionsDirty = true;
+    }
+    if (balloonStep.cancelled > 0 && ui) ui.functionsDirty = true;
+
+    // ML-16 云端游乐园：有人值班的设施按操作员速度一轮接一轮地转，游客换门票、满意度在两轮之间连续回落；限时增益按真实流逝倒数（离线补算 ≤12h）
+    const parkStep = advanceCloudPark(state, dtSec, { addRes, addExpToMon, nowMs: Date.now() });
+    if (parkStep.rounds.length > 0) {
+      if (offline || parkStep.rounds.length >= 6) {
+        addLog(`云端游乐园：设施们转了 ${parkStep.rounds.length} 轮，接待游客 ${parkStep.visitors} 位，门票 +${parkStep.ticketsAdded}${parkStep.ticketsLost ? `（售票亭满了，流失 ${parkStep.ticketsLost} 张）` : ""}`);
+      }
+      if (parkStep.newStars > 0) addLog(`云端游乐园：累计游客达标，游乐园升为 ${"★".repeat(parkStep.newStars)}「${getParkTitle(parkStep.newStars)}」！`, true);
+      for (const rid of parkStep.unlockedRides) addLog(`云端游乐园：「${getParkRideDef(rid)?.name || rid}」建好了，快去功能页请伙伴来值班！`, true);
+      if (parkStep.ticketsFull) addLog("云端游乐园：售票亭的门票攒满了，办一场游园活动或兑换礼包吧");
+      if (ui) ui.functionsDirty = true;
+      if (ui?.activeTab === "mons") markMonsDirty();
+    }
+    if (parkStep.expiredBuffs.length > 0) {
+      addLog(`云端游乐园：${parkStep.expiredBuffs.map((id) => `「${getParkEventDef(id)?.name || id}」`).join("、")}散场了，再办一场游园活动就能续上`);
+      if (ui) ui.functionsDirty = true;
+    }
+
+    // ML-16 星空露营观测：夜营中的营地按时长推进，天亮归营后带回观测记录等待收取（星空与流星雨在出发时锁定，离线补算 ≤12h）
+    const stargazeStep = advanceStargazeCamp(state, dtSec, { randFloat });
+    if (stargazeStep.returned.length > 0) {
+      addLog(
+        `星空露营观测：${stargazeStep.returned
+          .map((r) => `「${getStargazeSiteDef(r.siteId)?.name || r.siteId}」记下 ${r.haul.length} 条观测记录${r.meteors ? `（含 ${getStargazeShowerDef(state.meta?.stargazeCamp?.sites?.[r.idx]?.trip?.showerId)?.name || "流星"}）` : ""}`)
+          .join("；")}，去功能页收取吧！`,
+        true,
+      );
+      if (ui) ui.functionsDirty = true;
+    }
+    if (stargazeStep.cancelled > 0 && ui) ui.functionsDirty = true;
+
+    // ML-16「一键收取已归来伙伴」提示：已归来 / 已降落 / 已完成但还没收取的外出单位变多时提醒一次（读统一外出登记表）
+    const returnedNow = getAwayReturnedUnits(state).length;
+    if (ui) {
+      const prevReturned = typeof ui.awayReturnedCount === "number" ? ui.awayReturnedCount : 0;
+      if (returnedNow > prevReturned) {
+        addLog(`外出归来：有 ${returnedNow} 处外出的伙伴已归来待收取，去功能页点「一键收取已归来伙伴」吧`, true);
+        ui.functionsDirty = true;
+      } else if (returnedNow !== prevReturned) {
+        ui.functionsDirty = true;
+      }
+      ui.awayReturnedCount = returnedNow;
+    }
+
+    // ML-11 季节迁徙候鸟萌灵：驻留候鸟按本地季节写观察记录 / 迁徙纪念章 / 偶尔结伴入队
+    const migrationStep = advanceSeasonMigration(state, dtSec, { createMonInstance, getSpeciesByPid, randFloat });
+    if (migrationStep.befriended.length > 0) {
+      addLog(`季节迁徙：${migrationStep.befriended.map((b) => `「${b.name}」`).join("、")} 决定结伴留在浮岛，已加入伙伴队伍！`, true);
+      if (ui) ui.dexDirty = true;
+      markMonsDirty();
+    }
+    if (migrationStep.medals.length > 0) {
+      addLog(`季节迁徙：本季观察记录达标，迁徙纪念章升至「${["", "铜羽", "银羽", "金羽"][Math.max(...migrationStep.medals)] || "铜羽"}」！`, true);
+    }
+    if (migrationStep.records.length > 0 || migrationStep.rolledOver) {
       if (ui) ui.functionsDirty = true;
     }
 

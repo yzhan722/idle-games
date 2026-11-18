@@ -52,8 +52,21 @@ import {
   simulateStarCorridorTrial,
   canExchangeCorridorMedals,
   exchangeCorridorMedals,
+  ECO_TRI_CREST_MAX_TIER,
+  ECO_TRI_RUNGS,
+  ECO_TRI_SQUAD_SIZE,
+  autofillEcoTriSquad,
+  computeEcoTriCrestBonus,
+  ensureEcoTriHallState,
+  estimateEcoTriRungPower,
+  evaluateEcoTriSquadSynergy,
+  getEcoTriRotation,
+  getEcoTriRungDef,
+  restartEcoTriLadder,
+  simulateEcoTriTournament,
+  toggleEcoTriSquadMon,
 } from "../systems/pve_tower.js";
-import { getMonBoutiqueBonus, getMonPrimalImprintBonus } from "../systems/collection_fun.js";
+import { getAwayActivityMap, getMonBoutiqueBonus, getMonPrimalImprintBonus } from "../systems/collection_fun.js";
 import { normalizeMintTuning } from "../mons.js";
 import { renderPveStageHtml, setHtmlPreservingStage } from "../render/tab_stages.js";
 import { renderResSvg, renderUiIcon } from "../render/rpg_svg_icons.js";
@@ -206,6 +219,201 @@ export function createRenderPve({
       }),
     );
 
+    // ML-9 「三系生态大师锦标殿」 (Tri-Element Ecology Master Championship Hall)
+    let ecoTriPickerModalHtml = "";
+    {
+      const hall = ensureEcoTriHallState(state);
+      if (hall.squadIds.length === 0 && list.length > 0) {
+        autofillEcoTriSquad(state, getMonTypes, monPower);
+      }
+      const rotation = getEcoTriRotation();
+      const crest = computeEcoTriCrestBonus(state);
+      // ML-14 统一忙碌排除：外出 / 驻场中的伙伴（码头 / 观察站 / 浮岛 / 远航 / 温泉 / 邮局 / 绘本馆 / 钓鱼会）本场不参赛
+      const triAway = getAwayActivityMap(state);
+      const triSquadMons = hall.squadIds.map((id) => list.find((m) => m && m.id === id) || null).filter(Boolean);
+      const triReadyMons = triSquadMons.filter((m) => !triAway.has(m.id));
+      const triSyn = evaluateEcoTriSquadSynergy(state, triReadyMons, rotation, { getMonTypes, getBeastDataByDex });
+      const ladderDone = hall.rungIdx >= ECO_TRI_RUNGS.length;
+      const curRungNo = Math.min(ECO_TRI_RUNGS.length, hall.rungIdx + 1);
+      const remMin = Math.max(0, Math.floor(rotation.msUntilNext / 60000));
+      const rotateInTxt = `${Math.floor(remMin / 60)} 小时 ${remMin % 60} 分后轮换为「${rotation.next.shortName}」`;
+      const featuredSet = new Set(rotation.elements);
+      const elemBadges = rotation.elements
+        .map((t) => `<span class="badge type type-${escapeHtml(t)}">${escapeHtml(typeMap[t] || t)}</span>`)
+        .join("");
+      const coveredZh = triSyn.coveredElements.map((t) => typeMap[t] || t).join("/") || "无";
+
+      const triRoles = ["先锋", "中坚", "大将"];
+      const triBenchHtml = [0, 1, 2]
+        .map((slotIdx) => {
+          const m = triSquadMons[slotIdx] || null;
+          if (!m) {
+            return `
+              <div class="league-squad-slot is-empty">
+                <div class="row__title row__titleLine"><span class="tag">${triRoles[slotIdx]}</span><span>待选派伙伴</span></div>
+                <div class="row__desc" style="margin-top:4px">点击「编排三灵」或「一键优选三灵」上阵</div>
+              </div>`;
+          }
+          const mTypes = getMonTypes(m);
+          const tBadges = mTypes
+            .map((t) => `<span class="badge type type-${escapeHtml(t)}">${escapeHtml(typeMap[t] || t)}</span>`)
+            .join("");
+          const homeTypes = mTypes.filter((t) => featuredSet.has(t));
+          const awayAct = triAway.get(m.id) || null;
+          return `
+            <div class="league-squad-slot ${homeTypes.length ? "is-home" : ""} ${awayAct ? "is-at-sea" : ""}">
+              <div class="row__title row__titleLine">
+                <span class="tag">${triRoles[slotIdx]}</span>
+                ${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}
+                <span>${escapeHtml(m.name)}</span>
+                <span class="tag">Lv.${m.lvl || 1}</span>
+                ${homeTypes.length ? `<span class="tag tag--tri-home">主场 ${escapeHtml(homeTypes.map((t) => typeMap[t] || t).join("/"))}</span>` : ""}
+                ${awayAct ? `<span class="tag tag--dock-bottle">${escapeHtml(awayAct.label)} · 本场不参赛</span>` : ""}
+              </div>
+              <div class="row__desc" style="margin-top:4px">${tBadges} 战力 ${Math.floor(monPower(m))}</div>
+            </div>`;
+        })
+        .join("");
+
+      const triRungsHtml = ECO_TRI_RUNGS.map((_, rIdx) => {
+        const rDef = getEcoTriRungDef(rotation, rIdx);
+        const cInfo = hall.clearedToday[String(rIdx)] || null;
+        const isCurrent = !ladderDone && rIdx === hall.rungIdx;
+        const rw = cInfo ? rDef.repeatRewards : rDef.firstRewards;
+        const rwBits = [`未来币 +${rw.futurecoin}`];
+        if (rw.driftBottle) rwBits.push(`漂流瓶 +${rw.driftBottle}`);
+        if (rw.shinyStarSand) rwBits.push(`星砂 +${rw.shinyStarSand}`);
+        if (rw.corridorStarMedals) rwBits.push(`勋章 +${rw.corridorStarMedals}`);
+        const enemyIcons = rDef.enemies.map((e) => renderBeastIcon(e.dex, e.name, false)).join("");
+        return `
+          <div class="tri-rung-node ${isCurrent ? "is-active" : ""} ${cInfo ? "is-cleared" : ""} ${rDef.isFinal ? "is-final" : ""}">
+            <div class="row__title row__titleLine">
+              ${renderUiIcon(rDef.isFinal ? "ecoTriCrest" : "ecoChampionHall", 16)}
+              <span>第 ${rDef.rungNo} 轮 · ${escapeHtml(rDef.name)}</span>
+            </div>
+            <div class="row__desc tri-rung-node__field">场地 <span class="badge type type-${escapeHtml(rDef.stageType)}">${escapeHtml(typeMap[rDef.stageType] || rDef.stageType)}</span> · 推荐战力 ${estimateEcoTriRungPower(rDef)}</div>
+            <div class="league-stage-node__icons">${enemyIcons}</div>
+            <div class="row__desc">${cInfo ? "复赛" : "首胜"}：${escapeHtml(rwBits.join(" · "))}</div>
+            <div>${
+              cInfo
+                ? `<span class="badge badge--ok">已晋级 · ${cInfo.stars}星</span>`
+                : isCurrent
+                  ? `<span class="tag tag--tri-current">当前轮次</span>`
+                  : `<span class="tag">待挑战</span>`
+            }</div>
+          </div>`;
+      }).join("");
+
+      const latestTriRec = hall.records[0] || null;
+      const triWallText = latestTriRec
+        ? `最新冠军战报：${latestTriRec.dayKey}「${latestTriRec.rotationName}」夺冠（徽章 Tier ${latestTriRec.crestTier}） · 出战：${latestTriRec.squadNames.join(" · ")}`
+        : `今日由「${rotation.master}」坐镇：${rotation.rule}。每天 0 点轮换法则，三种法则都夺冠才能把三系冠军徽章升到 Tier ${ECO_TRI_CREST_MAX_TIER}。`;
+
+      const canFight = triReadyMons.length > 0 && !ladderDone;
+      rows.push(`
+        <div class="row eco-tri-card">
+          <div class="row__left" style="width:100%">
+            <div class="dual-sanctum-head">
+              <div class="row__title row__titleLine">
+                ${renderUiIcon("ecoChampionHall", 20)}
+                <span>三系生态大师锦标殿 · 轮换法则锦标赛</span>
+                <span class="tag tag--tri-crest">${renderUiIcon("ecoTriCrest", 14)}<span>三系冠军徽章 Tier ${crest.crestTier}/${ECO_TRI_CREST_MAX_TIER}</span></span>
+                <span class="tag">${ladderDone ? (hall.championToday ? "今日已夺冠" : "今日阶梯已完成") : `第 ${curRungNo}/${ECO_TRI_RUNGS.length} 轮`}</span>
+              </div>
+              <div class="corridor-header__btns">
+                <button type="button" class="btn btn--small" data-pve-tri-auto="1" ${list.length > 0 ? "" : "disabled"}>一键优选三灵</button>
+                <button type="button" class="btn btn--small" data-pve-tri-open-modal="1" ${list.length > 0 ? "" : "disabled"}>编排三灵 (${triSquadMons.length}/${ECO_TRI_SQUAD_SIZE})</button>
+                ${
+                  ladderDone
+                    ? `<button type="button" class="btn btn--small btn--primary" data-pve-tri-restart="1">重赛今日锦标（复赛奖励）</button>`
+                    : `<button type="button" class="btn btn--small" data-pve-tri-fight="single" ${canFight ? "" : "disabled"}>单轮挑战（第 ${curRungNo} 轮）</button>
+                <button type="button" class="btn btn--primary btn--small" data-pve-tri-fight="climb" ${canFight ? "" : "disabled"}>连战冲冠（第 ${curRungNo}~${ECO_TRI_RUNGS.length} 轮）</button>`
+                }
+              </div>
+            </div>
+
+            <div class="tri-rule-strip">
+              <span class="tri-rule-strip__label">今日法则</span>
+              <strong>${escapeHtml(rotation.name)}</strong>
+              ${elemBadges}
+              <span class="tri-rule-strip__muted">${escapeHtml(rotateInTxt)}</span>
+            </div>
+            <div class="row__desc" style="margin-top:4px">主场法则：战队每覆盖 1 种主场属性增伤 +7%，集齐三系触发「三系生态循环」再 +14%、受伤 -6%；对战场地每回合按 ${escapeHtml(rotation.elements.map((t) => typeMap[t] || t).join("→"))} 轮转，被场地克制的伙伴会承受额外压制。</div>
+
+            <div class="eco-aura-strip" style="margin-top:6px">
+              <span class="shiny-aura-pill ${triSyn.coveredElements.length > 0 ? "is-on" : ""}">三系覆盖 ${triSyn.coveredElements.length}/3（${escapeHtml(coveredZh)}）${triSyn.triCycleActive ? " · 三系生态循环" : ""} +${Math.round(triSyn.triOutAdd * 100)}%</span>
+              <span class="shiny-aura-pill ${triSyn.totalOutAdd > 0 ? "is-on" : ""}">战队总增伤 +${Math.round(triSyn.totalOutAdd * 100)}%（主场 +${Math.round(triSyn.homeOutAdd * 100)}% / 羁绊 +${Math.round(triSyn.bondOutAdd * 100)}% / 调律 +${Math.round(triSyn.tuningOutAdd * 100)}% / 盛宴 +${Math.round(triSyn.campOutAdd * 100)}% / 配饰 +${Math.round(triSyn.boutiqueOutAdd * 100)}% / 太古印记 +${Math.round(triSyn.amberOutAdd * 100)}%）</span>
+              <span class="shiny-aura-pill ${triSyn.incomingDamageMul < 1 ? "is-on" : ""}">受伤 -${Math.round((1 - triSyn.incomingDamageMul) * 100)}%${triSyn.dockBadgeCount > 0 ? `（含海风助威 ×${triSyn.dockBadgeCount}）` : ""}</span>
+              <span class="shiny-aura-pill ${crest.crestTier > 0 ? "is-on" : ""}">徽章全局：全产 +${Math.round(crest.prodAdd * 100)}% · 捕获 +${Math.round(crest.catchAdd * 1000) / 10}% · 闪光 +${Math.round(crest.shinyAdd * 100)}% · PvE 增伤 +${Math.round(crest.pveOutAdd * 100)}%</span>
+            </div>
+            ${crest.nextTierHint ? `<div class="row__desc tri-next-hint">${escapeHtml(crest.nextTierHint)}（已夺冠 ${crest.totalChampionships} 次 · 制霸法则 ${crest.distinctTriads}/3）</div>` : `<div class="row__desc tri-next-hint">三系大师：三种生态法则全部制霸，徽章已达满阶！</div>`}
+
+            <div class="tri-squad-bench">${triBenchHtml}</div>
+            <div class="tri-ladder-track">${triRungsHtml}</div>
+            <div class="league-hof-wall">${escapeHtml(triWallText)}</div>
+          </div>
+        </div>
+      `);
+
+      if (ui.pveTriModalOpen) {
+        const sortedMons = list
+          .filter(Boolean)
+          .slice()
+          .sort((a, b) => {
+            const aIn = hall.squadIds.includes(a.id) ? 1 : 0;
+            const bIn = hall.squadIds.includes(b.id) ? 1 : 0;
+            if (aIn !== bIn) return bIn - aIn;
+            return monPower(b) - monPower(a);
+          });
+        const modalRowsHtml = sortedMons
+          .map((m) => {
+            const checked = hall.squadIds.includes(m.id);
+            const awayAct = triAway.get(m.id) || null;
+            const disabled = !checked && (hall.squadIds.length >= ECO_TRI_SQUAD_SIZE || Boolean(awayAct));
+            const mTypes = getMonTypes(m);
+            const homeTypes = mTypes.filter((t) => featuredSet.has(t));
+            return `
+              <div class="row func-mon-row ${checked ? "is-active" : ""}">
+                <div class="row__left">
+                  <div class="row__title row__titleLine">
+                    ${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}
+                    <span>${escapeHtml(m.name)}</span>
+                    <span class="tag">Lv.${m.lvl || 1}</span>
+                    ${homeTypes.length ? `<span class="tag tag--tri-home">主场 ${escapeHtml(homeTypes.map((t) => typeMap[t] || t).join("/"))}</span>` : ""}
+                    ${awayAct ? `<span class="tag tag--dock-bottle">${escapeHtml(awayAct.label)}</span>` : ""}
+                  </div>
+                  <div class="row__desc">${escapeHtml(mTypes.map((t) => typeMap[t] || t).join("/") || "-")} · 战力 ${Math.floor(monPower(m))}</div>
+                </div>
+                <div class="row__right">
+                  <input class="chk" type="checkbox" data-pve-tri-check="${m.id}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""} />
+                </div>
+              </div>`;
+          })
+          .join("");
+        ecoTriPickerModalHtml = `
+          <div class="modalOverlay" data-pve-tri-modal-overlay="1">
+            <div class="modal">
+              <div class="modal__header">
+                <div class="modal__title">
+                  ${renderUiIcon("ecoChampionHall", 20)}
+                  <span>编排锦标赛三灵战队</span>
+                  <span class="tag">已选 ${hall.squadIds.length}/${ECO_TRI_SQUAD_SIZE}</span>
+                </div>
+                <div class="modal__right">
+                  <button type="button" class="btn btn--small" data-pve-tri-auto="1">一键优选</button>
+                  <button type="button" class="btn btn--small" data-pve-tri-modal-close="1">关闭</button>
+                </div>
+              </div>
+              <div class="modal__desc">今日主场：${escapeHtml(rotation.elements.map((t) => typeMap[t] || t).join(" / "))}。凑齐三种主场属性可触发「三系生态循环」。</div>
+              <div class="modal__body">${modalRowsHtml || '<div class="badge badge--muted">暂无可选伙伴</div>'}</div>
+              <div class="actions">
+                <button type="button" class="btn btn--primary" data-pve-tri-modal-close="1">完成战队编排</button>
+              </div>
+            </div>
+          </div>`;
+      }
+    }
+
     // ML-8 「双系星轨回廊无尽试炼」 (Dual-Element Star-Rail Corridor Endless Trial)
     let corridorPickerModalHtml = "";
     {
@@ -218,7 +426,10 @@ export function createRenderPve({
       const corridorSquadMons = sc.squadIds
         .map((id) => list.find((m) => m && m.id === id) || null)
         .filter(Boolean);
-      const corridorSynergy = evaluateCorridorSquadSynergy(state, corridorSquadMons, curCorridorFloorDef, {
+      // ML-15 统一忙碌排除：已在回廊小队里的外出 / 驻场伙伴本场不出战（读外出登记表），手动编入也会被拒绝
+      const corridorAway = getAwayActivityMap(state);
+      const corridorReadyMons = corridorSquadMons.filter((m) => !corridorAway.has(m.id));
+      const corridorSynergy = evaluateCorridorSquadSynergy(state, corridorReadyMons, curCorridorFloorDef, {
         getMonTypes,
         getBeastDataByDex,
       });
@@ -242,10 +453,12 @@ export function createRenderPve({
           const bq = getMonBoutiqueBonus(state, m.id);
           const imp = getMonPrimalImprintBonus(state, m.id);
           const ribbons = Math.max(0, Math.floor(Number(m.hallOfFameRibbons) || 0));
+          const corAwayAct = corridorAway.get(m.id) || null;
           return `
-            <div class="league-squad-slot">
+            <div class="league-squad-slot ${corAwayAct ? "is-at-sea" : ""}" data-pve-corridor-slot="${m.id}">
               <div class="row__title row__titleLine">
                 <span class="tag">${corridorRoles[slotIdx]}</span>
+                ${corAwayAct ? `<span class="tag tag--dock-bottle">${escapeHtml(corAwayAct.label)} · 本场不出战</span>` : ""}
                 ${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}
                 <span>${escapeHtml(m.name)}</span>
                 <span class="tag">Lv.${m.lvl || 1}</span>
@@ -320,8 +533,8 @@ export function createRenderPve({
                 <button type="button" class="btn btn--small" data-pve-corridor-auto="1" ${list.length > 0 ? "" : "disabled"}>一键优选四灵</button>
                 <button type="button" class="btn btn--small" data-pve-corridor-open-modal="1" ${list.length > 0 ? "" : "disabled"}>编排四灵 (${corridorSquadMons.length}/${STAR_CORRIDOR_SQUAD_SIZE})</button>
                 <button type="button" class="btn btn--small btn--ghost" data-pve-corridor-rotate="1" title="轮换双系星轨相位并调整克制窗口">轮转双系星轨</button>
-                <button type="button" class="btn btn--small" data-pve-corridor-fight="single" ${corridorSquadMons.length > 0 ? "" : "disabled"}>逐重挑战（第 ${sc.currentFloor} 重）</button>
-                <button type="button" class="btn btn--primary btn--small" data-pve-corridor-fight="surge" ${corridorSquadMons.length > 0 ? "" : "disabled"}>五重连战冲层（第 ${sc.currentFloor}~${sc.currentFloor + STAR_CORRIDOR_SURGE_STEPS - 1} 重）</button>
+                <button type="button" class="btn btn--small" data-pve-corridor-fight="single" ${corridorReadyMons.length > 0 ? "" : "disabled"}>逐重挑战（第 ${sc.currentFloor} 重）</button>
+                <button type="button" class="btn btn--primary btn--small" data-pve-corridor-fight="surge" ${corridorReadyMons.length > 0 ? "" : "disabled"}>五重连战冲层（第 ${sc.currentFloor}~${sc.currentFloor + STAR_CORRIDOR_SURGE_STEPS - 1} 重）</button>
               </div>
             </div>
 
@@ -354,7 +567,8 @@ export function createRenderPve({
         const modalRowsHtml = sortedMons
           .map((m) => {
             const checked = sc.squadIds.includes(m.id);
-            const disabled = !checked && sc.squadIds.length >= STAR_CORRIDOR_SQUAD_SIZE;
+            const corAway = corridorAway.get(m.id) || null;
+            const disabled = !checked && (sc.squadIds.length >= STAR_CORRIDOR_SQUAD_SIZE || Boolean(corAway));
             const tStr = getMonTypes(m).map((t) => typeMap[t] || t).join("/") || "-";
             const bq = getMonBoutiqueBonus(state, m.id);
             const imp = getMonPrimalImprintBonus(state, m.id);
@@ -366,6 +580,7 @@ export function createRenderPve({
                     <span>${escapeHtml(m.name)}</span>
                     <span class="tag">Lv.${m.lvl || 1}</span>
                     ${imp.imprinted ? `<span class="tag tag--amber-stock">${escapeHtml(imp.imprintName)} Lv.${imp.imprintLevel}</span>` : ""}
+                    ${corAway ? `<span class="tag tag--dock-bottle">${escapeHtml(corAway.label)}${checked ? " · 本场不出战" : ""}</span>` : ""}
                   </div>
                   <div class="row__desc">${escapeHtml(tStr)} · 战力 ${Math.floor(monPower(m))}${imp.imprinted ? ` · 太古印记 +${Math.round(imp.combatAdd * 100)}%` : ""}${bq.styled ? ` · 配饰 +${Math.round(bq.combatAdd * 100)}%` : ""}</div>
                 </div>
@@ -390,6 +605,7 @@ export function createRenderPve({
                   <button type="button" class="btn btn--small" data-pve-corridor-modal-close="1">关闭</button>
                 </div>
               </div>
+              <div class="modal__desc">外出中的伙伴（烘焙、气球旅行、垂钓、入梦、泡汤、送信等）不能编入；已在队中的外出伙伴本场不出战，回家后自动归队。</div>
               <div class="modal__body">${modalRowsHtml || '<div class="badge badge--muted">暂无可选伙伴</div>'}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-pve-corridor-modal-close="1">完成回廊编队</button>
@@ -702,7 +918,10 @@ export function createRenderPve({
       const squadMons = cl.squadIds
         .map((id) => list.find((m) => m && m.id === id) || null)
         .filter(Boolean);
-      const leagueSynergy = evaluateLeagueSquadSynergy(state, squadMons, {
+      // ML-15 统一忙碌排除：已在冠军小队里的外出 / 驻场伙伴本场不出战（读外出登记表），手动编入也会被拒绝
+      const leagueAway = getAwayActivityMap(state);
+      const leagueReadyMons = squadMons.filter((m) => !leagueAway.has(m.id));
+      const leagueSynergy = evaluateLeagueSquadSynergy(state, leagueReadyMons, {
         getMonTypes,
         getBeastDataByDex,
       });
@@ -724,10 +943,12 @@ export function createRenderPve({
             .join("");
           const bq = getMonBoutiqueBonus(state, m.id);
           const ribbons = Math.max(0, Math.floor(Number(m.hallOfFameRibbons) || 0));
+          const lgAwayAct = leagueAway.get(m.id) || null;
           return `
-            <div class="league-squad-slot">
+            <div class="league-squad-slot ${lgAwayAct ? "is-at-sea" : ""}" data-pve-league-slot="${m.id}">
               <div class="row__title row__titleLine">
                 <span class="tag">${roleTitles[slotIdx]}</span>
+                ${lgAwayAct ? `<span class="tag tag--dock-bottle">${escapeHtml(lgAwayAct.label)} · 本场不出战</span>` : ""}
                 ${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}
                 <span>${escapeHtml(m.name)}</span>
                 <span class="tag">Lv.${m.lvl || 1}</span>
@@ -789,8 +1010,8 @@ export function createRenderPve({
                 <button type="button" class="btn btn--small" data-pve-league-auto="1" ${list.length > 0 ? "" : "disabled"}>一键优选三灵</button>
                 <button type="button" class="btn btn--small" data-pve-league-open-modal="1" ${list.length > 0 ? "" : "disabled"}>编排三灵 (${squadMons.length}/${CHAMPION_LEAGUE_SQUAD_SIZE})</button>
                 ${cl.activeStageIdx > 0 ? `<button type="button" class="btn btn--small btn--ghost" data-pve-league-reset="1">重置进度</button>` : ""}
-                <button type="button" class="btn btn--small" data-pve-league-fight="single" ${squadMons.length > 0 ? "" : "disabled"}>逐殿挑战（第 ${cl.activeStageIdx + 1} 殿）</button>
-                <button type="button" class="btn btn--primary btn--small" data-pve-league-fight="full" ${squadMons.length > 0 ? "" : "disabled"}>五连战冲击总冠军</button>
+                <button type="button" class="btn btn--small" data-pve-league-fight="single" ${leagueReadyMons.length > 0 ? "" : "disabled"}>逐殿挑战（第 ${cl.activeStageIdx + 1} 殿）</button>
+                <button type="button" class="btn btn--primary btn--small" data-pve-league-fight="full" ${leagueReadyMons.length > 0 ? "" : "disabled"}>五连战冲击总冠军</button>
               </div>
             </div>
 
@@ -819,7 +1040,8 @@ export function createRenderPve({
         const modalRowsHtml = sortedMons
           .map((m) => {
             const checked = cl.squadIds.includes(m.id);
-            const disabled = !checked && cl.squadIds.length >= CHAMPION_LEAGUE_SQUAD_SIZE;
+            const lgAway = leagueAway.get(m.id) || null;
+            const disabled = !checked && (cl.squadIds.length >= CHAMPION_LEAGUE_SQUAD_SIZE || Boolean(lgAway));
             const tStr = getMonTypes(m).map((t) => typeMap[t] || t).join("/") || "-";
             const bq = getMonBoutiqueBonus(state, m.id);
             const ribbons = Math.max(0, Math.floor(Number(m.hallOfFameRibbons) || 0));
@@ -831,6 +1053,7 @@ export function createRenderPve({
                     <span>${escapeHtml(m.name)}</span>
                     <span class="tag">Lv.${m.lvl || 1}</span>
                     ${ribbons > 0 ? `<span class="tag tag--hof-ribbon">殿堂绶带×${ribbons}</span>` : ""}
+                    ${lgAway ? `<span class="tag tag--dock-bottle">${escapeHtml(lgAway.label)}${checked ? " · 本场不出战" : ""}</span>` : ""}
                   </div>
                   <div class="row__desc">${escapeHtml(tStr)} · 战力 ${Math.floor(monPower(m))}${bq.styled ? ` · 星辉配饰 +${Math.round(bq.combatAdd * 100)}%` : ""}</div>
                 </div>
@@ -855,6 +1078,7 @@ export function createRenderPve({
                   <button type="button" class="btn btn--small" data-pve-league-modal-close="1">关闭</button>
                 </div>
               </div>
+              <div class="modal__desc">外出中的伙伴（烘焙、气球旅行、垂钓、入梦、泡汤、送信等）不能编入；已在队中的外出伙伴本场不出战，回家后自动归队。</div>
               <div class="modal__body">${modalRowsHtml || '<div class="badge badge--muted">暂无可选伙伴</div>'}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-pve-league-modal-close="1">完成冠军编队</button>
@@ -1203,7 +1427,13 @@ export function createRenderPve({
 
     setHtmlPreservingStage(
       elPveList,
-      rows.join("") + teamModalHtml + dualPickerModalHtml + leaguePickerModalHtml + corridorPickerModalHtml + resultModalHtml,
+      rows.join("") +
+        teamModalHtml +
+        dualPickerModalHtml +
+        leaguePickerModalHtml +
+        corridorPickerModalHtml +
+        ecoTriPickerModalHtml +
+        resultModalHtml,
     );
     bindEvents(elPveList, state);
   };
@@ -1558,7 +1788,16 @@ export function createRenderPve({
       addRes,
       addExpToMon,
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      // ML-15：整队外出（squad_away）或空队时给出明确提示，而不是静默无反应
+      if (typeof addLog === "function") addLog(res.log?.[0] || "冠军联盟暂不可挑战");
+      ui.pveDirty = true;
+      if (typeof render === "function") render();
+      return;
+    }
+    if (res.benchedAway?.length && typeof addLog === "function") {
+      addLog(`冠军联盟：${res.benchedAway.map((b) => `${b.name}（${b.awayLabel}）`).join("、")}本场不出战`);
+    }
 
     const rw = res.rewardsEarned || {};
     const parts = [];
@@ -1614,6 +1853,67 @@ export function createRenderPve({
     if (typeof render === "function") render();
   }
 
+  function doEcoTriFight(state, mode = "climb") {
+    ensurePveState(state);
+    ensureEcoTriHallState(state);
+    const res = simulateEcoTriTournament(state, {
+      mode: mode === "single" ? "single" : "climb",
+      getMonTypes,
+      getMonCurrentStats,
+      getBeastDataByDex,
+      monPower,
+      addRes,
+      addExpToMon,
+    });
+    if (!res.ok) {
+      if (typeof addLog === "function") addLog(res.log?.[0] || "三系生态大师锦标赛暂不可挑战");
+      ui.pveDirty = true;
+      if (typeof render === "function") render();
+      return;
+    }
+
+    const rw = res.rewardsEarned || {};
+    const parts = [];
+    const lastRung = res.rungResults[res.rungResults.length - 1] || null;
+    parts.push(`三系锦标赛晋级 ${res.roundsCleared} 轮（今日法则「${res.rotationName}」）`);
+    if (res.crowned) parts.push(`夺冠加冕！三系冠军徽章 Tier ${res.crestTier}/${ECO_TRI_CREST_MAX_TIER}`);
+    if (rw.driftBottle) parts.push(`星海漂流瓶 +${rw.driftBottle}`);
+    if (rw.shinyStarSand) parts.push(`闪光祈愿星砂 +${rw.shinyStarSand}`);
+    if (rw.corridorStarMedals) parts.push(`星轨回廊勋章 +${rw.corridorStarMedals}`);
+    if (rw.futurecoin) parts.push(`未来币 +${rw.futurecoin}`);
+    if (rw.exp) parts.push(`经验 +${rw.exp}（参战伙伴）`);
+
+    if (res.win) {
+      bumpSessionPveWin(state);
+      if (typeof onPveWin === "function") onPveWin();
+      if (typeof addLog === "function") addLog(`三系生态大师锦标赛：${parts.join("、")}`, true);
+    } else if (typeof addLog === "function") {
+      addLog(`三系生态大师锦标赛：止步于【${res.stoppedTitle || "锦标赛"}】`);
+    }
+
+    ui.pveBattleResult = {
+      win: res.win,
+      stars: res.win ? Math.max(1, lastRung?.win ? lastRung.stars : 1) : 0,
+      rounds: res.totalRounds || 1,
+      teamHpPct: lastRung ? lastRung.teamHpPct : 0,
+      endReason: res.win ? "ko" : "wipe",
+      superEffectiveHits: 1,
+      stageType: lastRung?.stageType || res.featuredElements[0],
+      stageElements: res.featuredElements,
+      stageName: res.mode === "climb" ? `三系生态大师锦标赛（连战冲冠）` : lastRung?.title || "三系生态大师锦标赛",
+      recTypes: res.featuredElements,
+      rewardText: parts.join("、"),
+      practice: false,
+      practiceHalf: false,
+      ecoTriCrowned: res.crowned,
+      ecoTriCrestTier: res.crestTier,
+      roundsCleared: res.roundsCleared,
+      log: res.log,
+    };
+    ui.pveDirty = true;
+    if (typeof render === "function") render();
+  }
+
   function doStarCorridorFight(state, mode = "surge") {
     ensurePveState(state);
     ensureStarCorridorState(state);
@@ -1626,7 +1926,16 @@ export function createRenderPve({
       addRes,
       addExpToMon,
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      // ML-15：整队外出（squad_away）或空队时给出明确提示，而不是静默无反应
+      if (typeof addLog === "function") addLog(res.log?.[0] || "双系星轨回廊暂不可挑战");
+      ui.pveDirty = true;
+      if (typeof render === "function") render();
+      return;
+    }
+    if (res.benchedAway?.length && typeof addLog === "function") {
+      addLog(`星轨回廊：${res.benchedAway.map((b) => `${b.name}（${b.awayLabel}）`).join("、")}本场不出战`);
+    }
 
     const rw = res.rewardsEarned || {};
     const parts = [];
@@ -1714,12 +2023,25 @@ export function createRenderPve({
         return;
       }
 
+      const triChk = target.closest("[data-pve-tri-check]");
+      if (triChk) {
+        const id = Number(triChk.getAttribute("data-pve-tri-check"));
+        if (Number.isFinite(id) && id > 0) {
+          const res = toggleEcoTriSquadMon(state, id);
+          if (!res.ok) triChk.checked = false;
+          ui.pveDirty = true;
+          if (typeof render === "function") render();
+        }
+        return;
+      }
+
       const corridorChk = target.closest("[data-pve-corridor-check]");
       if (corridorChk) {
         const id = Number(corridorChk.getAttribute("data-pve-corridor-check"));
         if (Number.isFinite(id) && id > 0) {
           const res = toggleStarCorridorSquadMon(state, id);
           if (!res.ok) corridorChk.checked = false;
+          if (!res.ok && res.reason === "mon_away" && typeof addLog === "function") addLog(`这只伙伴正在${res.awayLabel || "外出"}，不能编入星轨回廊小队`);
           ui.pveDirty = true;
           if (typeof render === "function") render();
         }
@@ -1732,6 +2054,7 @@ export function createRenderPve({
         if (Number.isFinite(id) && id > 0) {
           const res = toggleChampionLeagueSquadMon(state, id);
           if (!res.ok) leagueChk.checked = false;
+          if (!res.ok && res.reason === "mon_away" && typeof addLog === "function") addLog(`这只伙伴正在${res.awayLabel || "外出"}，不能编入冠军联盟小队`);
           ui.pveDirty = true;
           if (typeof render === "function") render();
         }
@@ -1774,6 +2097,12 @@ export function createRenderPve({
         if (typeof render === "function") render();
         return;
       }
+      if (target.hasAttribute?.("data-pve-tri-modal-overlay")) {
+        ui.pveTriModalOpen = false;
+        ui.pveDirty = true;
+        if (typeof render === "function") render();
+        return;
+      }
       if (target.hasAttribute?.("data-pve-corridor-modal-overlay")) {
         ui.pveCorridorModalOpen = false;
         ui.pveDirty = true;
@@ -1790,6 +2119,49 @@ export function createRenderPve({
         ui.pveBattleResult = null;
         ui.pveDirty = true;
         if (typeof render === "function") render();
+        return;
+      }
+
+      const triAutoBtn = target.closest("[data-pve-tri-auto]");
+      if (triAutoBtn && !triAutoBtn.disabled) {
+        const res = autofillEcoTriSquad(state, getMonTypes, monPower);
+        if (res.ok && typeof addLog === "function") {
+          addLog(`三系生态大师锦标殿：已优选 ${res.squadIds.length} 只伙伴组成三灵战队（覆盖主场 ${res.coveredElements.length}/3 系）`, true);
+        }
+        ui.pveDirty = true;
+        if (typeof render === "function") render();
+        return;
+      }
+
+      const triOpenModalBtn = target.closest("[data-pve-tri-open-modal]");
+      if (triOpenModalBtn && !triOpenModalBtn.disabled) {
+        ui.pveTriModalOpen = true;
+        ui.pveDirty = true;
+        if (typeof render === "function") render();
+        return;
+      }
+
+      const triCloseModalBtn = target.closest("[data-pve-tri-modal-close]");
+      if (triCloseModalBtn) {
+        ui.pveTriModalOpen = false;
+        ui.pveDirty = true;
+        if (typeof render === "function") render();
+        return;
+      }
+
+      const triRestartBtn = target.closest("[data-pve-tri-restart]");
+      if (triRestartBtn && !triRestartBtn.disabled) {
+        restartEcoTriLadder(state);
+        if (typeof addLog === "function") addLog("三系生态大师锦标殿：今日锦标赛重新开赛（复赛奖励）", true);
+        ui.pveDirty = true;
+        if (typeof render === "function") render();
+        return;
+      }
+
+      const triFightBtn = target.closest("[data-pve-tri-fight]");
+      if (triFightBtn && !triFightBtn.disabled) {
+        const mode = triFightBtn.getAttribute("data-pve-tri-fight") || "climb";
+        doEcoTriFight(state, mode);
         return;
       }
 
