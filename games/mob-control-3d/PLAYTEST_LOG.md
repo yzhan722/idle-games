@@ -1,4 +1,4 @@
-# 波波应援团 (Mob Control 3D) 自主试玩巡检日志
+# 波波应援团 3D 自主试玩巡检日志
 
 > 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。
 

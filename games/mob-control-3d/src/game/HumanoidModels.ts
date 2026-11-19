@@ -522,7 +522,7 @@ export function createAnimatedHumanoidMaterial(options: {
         }
       }
 
-      // 3. Iconic Supercell Vinyl-Toy Dual Specular Catchlights on Jelly Slimes (vTintMask > 0.5)
+      // 3. Iconic Vinyl-Toy Dual Specular Catchlights on Jelly Slimes (vTintMask > 0.5)
       if (vTintMask > 0.5 && viewN2D.z > 0.12) {
         vec2 catchUV = (viewN2D.xy - vec2(-0.31, 0.36)) * vec2(0.95, 1.32);
         float catchLen = length(catchUV);
@@ -542,7 +542,7 @@ export function createAnimatedHumanoidMaterial(options: {
         toonCol += vec3(hardSpec);
       }
 
-      // 4. Derivative-Antialiased Supercell Vinyl-Toy Dark-Espresso Cartoon Silhouette Outline (#1e110a)
+      // 4. Derivative-Antialiased Vinyl-Toy Dark-Espresso Cartoon Silhouette Outline (#1e110a)
       float inkEdge = 1.0 - smoothstep(0.27 - fwNdv, 0.35 + fwNdv, ndv2D);
       toonCol = mix(toonCol, vec3(0.118, 0.067, 0.039), inkEdge * 0.90);
 
@@ -733,7 +733,7 @@ export function buildBlueMarineGeometry(
   const parts: PartSpec[] = [];
 
   if (raceId === 'swarm') {
-    // Iconic Supercell Crimson Victory Headband (0xef4444) on Waterdrop Bobo!
+    // Iconic Crimson Victory Headband (0xef4444) on Waterdrop Bobo!
     addBaseBubbleSlimeAnatomy(parts, 1.0, true, true, 0xef4444);
     // Dual Glowing Neon Pink & Sunny-Gold Idol Lightsticks
     addIdolLightstick(parts, -1, 2, 0xff6ac6, 1.0);
@@ -762,7 +762,7 @@ export function buildBlueMarineGeometry(
     caramelCap.translate(0, 0.54, 0);
     parts.push(createColoredPart(caramelCap, 0x6b2d12, 1, 0.12, 0));
 
-    // Golden 3D Royal Crown + Front Ruby Gem (Matches Supercell Vinyl-Toy Asset Sheet!)
+    // Golden 3D Royal Crown + Front Ruby Gem (Matches the Vinyl-Toy Asset Sheet!)
     const crownBase = new THREE.CylinderGeometry(0.155, 0.135, 0.095, 10);
     crownBase.translate(0, 0.74, 0);
     parts.push(createColoredPart(crownBase, 0xfacc15, 1, 0.45, 0));

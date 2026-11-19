@@ -25,6 +25,7 @@ import {
   generatePumpkinNightLevel,
   generatePyramidRunLevel,
   generateJungleSwingLevel,
+  generatePirateBoardingLevel,
   JungleVineConfig,
   PyramidSlabConfig,
   PyramidSlabRowConfig,
@@ -263,13 +264,16 @@ const JG_VINE_LEN = 7.3;
 /** MC-17: Misty jungle sky behind the temple (also asserted by the self-check). */
 const JG_JUNGLE_SKY = 0x8fd3b6;
 /** MC-16 / MC-17: Tint of the far valley floor (dune sea / jungle valley below the viaduct) per dedicated scene. */
-type DedicatedSceneKind = 'none' | 'night_castle' | 'desert' | 'jungle';
+type DedicatedSceneKind = 'none' | 'night_castle' | 'desert' | 'jungle' | 'pirate';
 const DEDICATED_ABYSS_TINT: Record<DedicatedSceneKind, number> = {
   none: 0xffffff,
   night_castle: 0x2a2152,
   desert: 0xf1c27d,
   jungle: 0x3f8f63,
+  pirate: 0x2a86c8,
 };
+/** MC-18: Sunny open-sea sky behind the pirate fleet (also asserted by the self-check). */
+const PR_SEA_SKY = 0x7cc8f2;
 /** MC-14: lobby room decor corners (x, z, rotY) around the trophy turntable. */
 const DECOR_SLOT_POS: Array<[number, number, number]> = [
   [-2.45, -1.6, 0.55],
@@ -478,7 +482,7 @@ export class World3D {
   private combatLights: CombatLightRuntime[] = [];
   private starfieldPoints?: THREE.Points;
   private godRayMats: THREE.MeshBasicMaterial[] = [];
-  private cameraMode: 0 | 1 | 2 = 0; // 0: Classic Mob Control 3D, 1: Low Action, 2: High Tactical
+  private cameraMode: 0 | 1 | 2 = 0; // 0: Classic Default View, 1: Low Action, 2: High Tactical
   private baseCameraPos = new THREE.Vector3(0, 31.5, 29.5);
   private cameraShake = 0;
   private quakeTimer = 0;
@@ -1053,7 +1057,7 @@ export class World3D {
     this.scene.background = new THREE.Color(0x2563eb);
     this.scene.fog = new THREE.FogExp2(0x60a5fa, 0.0016);
 
-    // Rich 3D Supercell Studio Environment Map for glossy vinyl slimes & polished brass/gold cannon
+    // Rich 3D Studio Environment Map for glossy vinyl slimes & polished brass/gold cannon
     const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
     const envScene = new RoomEnvironment();
@@ -1081,7 +1085,7 @@ export class World3D {
     );
     const outputPass = new OutputPass();
 
-    // Supercell 3D Glossy Toy-Box Post-Processing ShaderPass (Directional FXAA 3.11 + Vibrant Studio Color Grading)
+    // 3D Glossy Toy-Box Post-Processing ShaderPass (Directional FXAA 3.11 + Vibrant Studio Color Grading)
     this.cinemaPass = createCinemaPostProcessingPass(
       window.innerWidth * effectiveDpr,
       window.innerHeight * effectiveDpr
@@ -1711,7 +1715,7 @@ export class World3D {
   }
 
   private buildTurret(): void {
-    // Supercell 3D Glossy Steampunk Candy Cannon (Bronze-Iron Barrel + Polished Gold Bands + 3 Candy Gears + Peppermint Wheels)
+    // 3D Glossy Steampunk Candy Cannon (Bronze-Iron Barrel + Polished Gold Bands + 3 Candy Gears + Peppermint Wheels)
     this.turretGroup.position.set(this.turretX, 0.14, PLAYER_Z - 0.5);
     this.turretGroup.scale.setScalar(1.25);
 
@@ -1766,7 +1770,7 @@ export class World3D {
     laserSight.position.set(0, 0.06, -13.5);
     this.turretGroup.add(laserSight);
 
-    // Supercell Style 2: Red-and-White Peppermint Swirl Candy Wheels + Chocolate-Wood & Brass Carriage!
+    // Style 2: Red-and-White Peppermint Swirl Candy Wheels + Chocolate-Wood & Brass Carriage!
     const peppermintWheelMat = stylizeMaterialAs2DIllustration(
       new THREE.MeshStandardMaterial({
         map: createPeppermintWheelTexture(),
@@ -4198,7 +4202,15 @@ export class World3D {
     // MC-15 / MC-16 / MC-17: one switch for every dedicated backdrop, so night castle <-> desert <-> jungle <-> daytime
     // never fight
     this.applyDedicatedSceneDecor(
-      level.isPumpkinNight ? 'night_castle' : level.isPyramidRun ? 'desert' : level.isJungleSwing ? 'jungle' : 'none'
+      level.isPirateBoarding
+        ? 'pirate'
+        : level.isPumpkinNight
+          ? 'night_castle'
+          : level.isPyramidRun
+            ? 'desert'
+            : level.isJungleSwing
+              ? 'jungle'
+              : 'none'
     );
     const crowdRun = Boolean(
       level.isGlacierSled ||
@@ -4956,7 +4968,7 @@ export class World3D {
         group.add(hookRing);
       }
 
-      // Supercell Style 2: 3D Glowing Rounded Top Arch Beam + Golden Crown Crest Finial!
+      // Style 2: 3D Glowing Rounded Top Arch Beam + Golden Crown Crest Finial!
       const archCrossbar = new THREE.Mesh(
         new THREE.CylinderGeometry(0.14, 0.14, g.width + 0.16, 14),
         pillarMat
@@ -5722,7 +5734,9 @@ export class World3D {
       this.buildPyramidRun3D(level);
     }
     if (level.isJungleSwing) {
-      this.buildJungleSwing3D(level);
+      // MC-18: the pirate plank run shares the squad-run engine but builds its own fleet scene
+      if (level.isPirateBoarding) this.buildPirateBoarding3D(level);
+      else this.buildJungleSwing3D(level);
     }
 
     // 4b. Build Steampunk Firework Powder Kegs (Shootable/Touchable Chain-Reaction Barrels!)
@@ -29329,10 +29343,664 @@ export class World3D {
     this.updateJungleVines(0);
   }
 
+  // ============================================================================
+  // MC-18: Pirate Plank Breakout (ship decks, open sea crossed on swaying planks, deck cannons, flagship ramp).
+  // Runs on the MC-17 squad-run engine (jungleRun / jungleChasms / jungleBoulders); only the scene differs here.
+  // ============================================================================
+
+  /** Sunny open-sea tint on top of the emerald base theme (re-applied every load; applyTheme restores other modes). */
+  private applyPirateAmbience(): void {
+    this.scene.background = new THREE.Color(PR_SEA_SKY);
+    this.scene.fog = new THREE.FogExp2(0xbde8fb, 0.0036);
+    if (this.abyssShaderMat?.uniforms) {
+      this.abyssShaderMat.uniforms.uBaseColor.value.set('#1f74b0');
+      this.abyssShaderMat.uniforms.uVeinColor.value.set('#0c4a6e');
+      this.abyssShaderMat.uniforms.uAccentColor.value.set('#bae6fd');
+    }
+    this.hemiLight.color.setHex(0xf0f9ff);
+    this.hemiLight.groundColor.setHex(0x1e5f8a);
+    this.dirLight.color.setHex(0xfff1d0);
+    this.rimLight.color.setHex(0xfbbf24);
+  }
+
+  /** Procedural (non-canvas) ship deck: long staggered planks with dark seams and nail dots, a red runner, rope curbs. */
+  private createPirateDeckTexture(): THREE.DataTexture {
+    const size = 64;
+    const data = new Uint8Array(size * size * 4);
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const i = (y * size + x) * 4;
+        const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+        const noise = hash - Math.floor(hash);
+        const plank = Math.floor(x / 6);
+        const endY = (plank * 23) % 32;
+        const toneHash = Math.sin(plank * 7.31 + Math.floor((y + endY) / 32) * 3.77) * 9631.7;
+        const tone = (toneHash - Math.floor(toneHash)) * 22;
+        const grain = Math.sin(y * 0.9 + plank * 2.1) * 6;
+        let r = 176 + tone + grain + noise * 8;
+        let g = 120 + tone * 0.8 + grain * 0.7 + noise * 6;
+        let b = 70 + tone * 0.5 + noise * 5;
+        if (x % 6 === 0 || (y + endY) % 32 === 0) {
+          r = 92;
+          g = 58;
+          b = 32;
+        } else if ((x % 6 === 2 || x % 6 === 4) && ((y + endY) % 32 === 2 || (y + endY) % 32 === 29)) {
+          r = 70;
+          g = 64;
+          b = 60;
+        }
+        if (x >= 26 && x <= 37) {
+          r = 168 + noise * 12;
+          g = 38 + noise * 8;
+          b = 44 + noise * 8;
+          if (x === 26 || x === 37) {
+            r = 246;
+            g = 200;
+            b = 84;
+          }
+        }
+        if (x <= 1 || x >= size - 2) {
+          r = 214;
+          g = 186;
+          b = 128;
+        }
+        data[i] = Math.max(0, Math.min(255, Math.round(r)));
+        data[i + 1] = Math.max(0, Math.min(255, Math.round(g)));
+        data[i + 2] = Math.max(0, Math.min(255, Math.round(b)));
+        data[i + 3] = 255;
+      }
+    }
+    const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(1, JG_FLOOR_REPEAT_V);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  /**
+   * Procedural sea gap (looking down between two decks): the near half is deep blue water with foam crests, the far half
+   * the next ship's hull planking with a gold trim line, so a gap reads as open water at a glance.
+   */
+  private createPirateSeaTexture(): THREE.DataTexture {
+    const size = 64;
+    const data = new Uint8Array(size * size * 4);
+    for (let y = 0; y < size; y++) {
+      const v = (y + 0.5) / size;
+      for (let x = 0; x < size; x++) {
+        const i = (y * size + x) * 4;
+        const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+        const noise = hash - Math.floor(hash);
+        let r: number;
+        let g: number;
+        let b: number;
+        if (v < 0.58) {
+          const wave = Math.sin(x * 0.42 + y * 0.9) + Math.sin(x * 0.17 - y * 1.3) * 0.6;
+          r = 18 + noise * 10 + wave * 5;
+          g = 92 + noise * 14 + wave * 10;
+          b = 158 + noise * 14 + wave * 10;
+          if (wave > 1.18) {
+            r = 214;
+            g = 240;
+            b = 252;
+          }
+        } else {
+          const lift = (v - 0.58) / 0.42;
+          const board = y % 5 === 0;
+          r = board ? 74 : 120 + lift * 40 + noise * 10;
+          g = board ? 44 : 76 + lift * 28 + noise * 8;
+          b = board ? 24 : 42 + lift * 14 + noise * 6;
+          if (v > 0.9) {
+            r = 240;
+            g = 192;
+            b = 76;
+          }
+        }
+        data[i] = Math.max(0, Math.min(255, Math.round(r)));
+        data[i + 1] = Math.max(0, Math.min(255, Math.round(g)));
+        data[i + 2] = Math.max(0, Math.min(255, Math.round(b)));
+        data[i + 3] = 255;
+      }
+    }
+    const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.repeat.set(4, 1);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  /** A toy galleon (hull, gold trim, two masts with cream sails and a black flag) facing +z, for the far fleet. */
+  private buildPirateGalleonModel(
+    mats: { hullMat: THREE.Material; trimMat: THREE.Material; sailMat: THREE.Material; flagMat: THREE.Material; mastMat: THREE.Material },
+    scale: number
+  ): THREE.Group {
+    const g = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.2, 14), mats.hullMat);
+    hull.position.y = 1.1;
+    g.add(hull);
+    const bow = new THREE.Mesh(new THREE.ConeGeometry(2.6, 4.2, 4), mats.hullMat);
+    bow.rotation.x = Math.PI / 2;
+    bow.rotation.y = Math.PI / 4;
+    bow.scale.set(1, 1, 0.6);
+    bow.position.set(0, 1.4, 8.6);
+    g.add(bow);
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.32, 14.2), mats.trimMat);
+    trim.position.y = 2.3;
+    g.add(trim);
+    for (const [mz, mh] of [
+      [-2.6, 9.5],
+      [3.0, 11],
+    ] as const) {
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, mh, 7), mats.mastMat);
+      mast.position.set(0, 2.2 + mh / 2, mz);
+      g.add(mast);
+      const sail = new THREE.Mesh(new THREE.BoxGeometry(4.6, mh * 0.46, 0.18), mats.sailMat);
+      sail.position.set(0, 2.2 + mh * 0.56, mz + 0.2);
+      g.add(sail);
+      const flag = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.9, 0.06), mats.flagMat);
+      flag.position.set(0.8, 2.2 + mh + 0.4, mz);
+      g.add(flag);
+    }
+    g.scale.setScalar(scale);
+    return g;
+  }
+
+  private buildPirateBoarding3D(level: LevelConfig): void {
+    const course = level.jungleCourse || {
+      length: 226,
+      baseSpeed: 8.0,
+      timeLimitSec: 40,
+      startBobos: 16,
+      maxBobos: 90,
+      maxSteerX: 6.2,
+      swingHeight: 1.7,
+      hitSlowMult: 0.55,
+      hitSlowSec: 0.8,
+    };
+    this.applyPirateAmbience();
+    const L = course.length;
+
+    // 1. Ship deck (planks + red runner) across the track; its texture scrolls toward the camera
+    const floorTex = this.createPirateDeckTexture();
+    const floorMat = new THREE.MeshStandardMaterial({
+      map: floorTex,
+      emissiveMap: floorTex,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.18,
+      roughness: 0.85,
+      metalness: 0.02,
+    });
+    const floorPlane = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_HALF_W * 2 + 0.6, SLED_SNOW_PLANE_LEN), floorMat);
+    floorPlane.rotation.x = -Math.PI / 2;
+    floorPlane.position.set(0, 0.03, 0.5);
+    floorPlane.receiveShadow = true;
+    this.levelGroup.add(floorPlane);
+
+    const hullMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({ color: 0x8b5a2b, emissive: 0x2a160a, emissiveIntensity: 0.22, roughness: 0.82 }),
+      0.84
+    );
+    const darkWoodMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({ color: 0x5b3a1e, emissive: 0x1c1008, emissiveIntensity: 0.2, roughness: 0.85 }),
+      0.84
+    );
+    const goldMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({ color: 0xf6c443, emissive: 0x6b4106, emissiveIntensity: 0.32, roughness: 0.3, metalness: 0.65 }),
+      0.82
+    );
+    const redMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({ color: 0xdc2626, emissive: 0x450a0a, emissiveIntensity: 0.25, roughness: 0.6 }),
+      0.84
+    );
+    const ironMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({ color: 0x334155, emissive: 0x0b1220, emissiveIntensity: 0.25, roughness: 0.45, metalness: 0.55 }),
+      0.84
+    );
+    const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd6b37a, emissive: 0x3b2a10, emissiveIntensity: 0.25, roughness: 0.8 });
+    const sailMat = new THREE.MeshStandardMaterial({ color: 0xfff7e6, emissive: 0x3a3020, emissiveIntensity: 0.2, roughness: 0.9 });
+    const flagMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.8 });
+    const boneMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, emissive: 0x854d0e, emissiveIntensity: 0.45, roughness: 0.35, metalness: 0.5 });
+
+    // 2. Open-sea backdrop: far galleons, a rocky palm island and white gull / spray specks drifting by
+    const fleetKit = { hullMat, trimMat: goldMat, sailMat, flagMat, mastMat: darkWoodMat };
+    for (const [gx, gz, gs, gr] of [
+      [-36, -72, 1.25, 0.5],
+      [40, -92, 1.4, -0.4],
+      [-8, -128, 1.7, 0.15],
+      [64, -60, 1.0, -0.9],
+    ] as const) {
+      const ship = this.buildPirateGalleonModel(fleetKit, gs);
+      ship.position.set(gx, -3.4, gz);
+      ship.rotation.y = gr;
+      this.levelGroup.add(ship);
+    }
+    const sandMat = new THREE.MeshLambertMaterial({ color: 0xf1d79b });
+    const rockMat = new THREE.MeshLambertMaterial({ color: 0x7c8b8f, flatShading: true });
+    const island = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), sandMat);
+    island.scale.set(16, 4, 10);
+    island.position.set(-48, -4.2, -104);
+    this.levelGroup.add(island);
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(6, 0), rockMat);
+    rock.position.set(-54, -0.5, -108);
+    this.levelGroup.add(rock);
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x22a35a, emissive: 0x0b3d1f, emissiveIntensity: 0.25, roughness: 0.65 });
+    for (const [px, pz, ps] of [
+      [-44, -100, 1.6],
+      [-40, -106, 1.3],
+    ] as const) {
+      const palm = this.buildPalmModel(darkWoodMat, leafMat, ps);
+      palm.position.set(px, -0.6, pz);
+      this.levelGroup.add(palm);
+    }
+    const flyPos: number[] = [];
+    const flyCol: number[] = [];
+    const tint = new THREE.Color();
+    for (let c = 0; c < 6; c++) {
+      for (let i = 0; i < JG_FIREFLIES_PER_CELL; i++) {
+        const h1 = Math.sin((i + 1) * 71.3 + c * 5.1) * 43758.5453;
+        const h2 = Math.sin((i + 1) * 37.9 + 1.7 + c) * 24634.6345;
+        const h3 = Math.sin((i + 1) * 17.7 + 4.3) * 15731.743;
+        const f1 = h1 - Math.floor(h1);
+        const f2 = h2 - Math.floor(h2);
+        const f3 = h3 - Math.floor(h3);
+        const side = f1 < 0.5 ? -1 : 1;
+        flyPos.push(side * (12.8 + f3 * 20), 0.4 + f2 * 6.0, -150 + c * JG_FIREFLY_CELL + ((f1 * 2) % 1) * JG_FIREFLY_CELL);
+        tint.setHSL(0.55 + f2 * 0.05, 0.6, 0.86 + f3 * 0.1);
+        flyCol.push(tint.r, tint.g, tint.b);
+      }
+    }
+    const flyGeo = new THREE.BufferGeometry();
+    flyGeo.setAttribute('position', new THREE.Float32BufferAttribute(flyPos, 3));
+    flyGeo.setAttribute('color', new THREE.Float32BufferAttribute(flyCol, 3));
+    const sprays = new THREE.Points(
+      flyGeo,
+      new THREE.PointsMaterial({ size: 0.3, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false, sizeAttenuation: true })
+    );
+    sprays.frustumCulled = false;
+    this.levelGroup.add(sprays);
+
+    // 3. Course group: every course item sits at local z = -d; the group slides toward +z by the distance covered
+    const courseGroup = new THREE.Group();
+    courseGroup.position.z = SLED_Z;
+    this.levelGroup.add(courseGroup);
+
+    // 4. Scrolling ship sides (instanced treadmill shared with the sled course): hull rails with a red stripe and a gold
+    //    cap, masts with furled cream sails, and barrels at the foot of the rails
+    this.sledScenery = [];
+    const addScenery = (inst: THREE.InstancedMesh, rows: number[][]): void => {
+      const data = new Float32Array(rows.length * 6);
+      rows.forEach((r, i) => data.set(r, i * 6));
+      inst.count = rows.length;
+      inst.frustumCulled = false;
+      this.levelGroup.add(inst);
+      this.sledScenery.push({ inst, data });
+    };
+    const wallX = TRACK_HALF_W + 0.8;
+    const wallRows: number[][] = [];
+    const bandRows: number[][] = [];
+    const capRows: number[][] = [];
+    for (let z0 = 0; z0 < SLED_SCENERY_SPAN - 0.01; z0 += 4) {
+      for (const side of [-1, 1]) {
+        wallRows.push([side * wallX, 0.8, z0, 1.0, 1.6, 4.02]);
+        bandRows.push([side * (wallX - 0.52), 0.95, z0, 0.06, 0.32, 3.4]);
+        capRows.push([side * wallX, 1.68, z0, 1.24, 0.2, 4.02]);
+      }
+    }
+    addScenery(new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), hullMat, wallRows.length), wallRows);
+    addScenery(new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), redMat, bandRows.length), bandRows);
+    addScenery(new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), goldMat, capRows.length), capRows);
+    const mastRows: number[][] = [];
+    const sailRows: number[][] = [];
+    for (let z0 = 3; z0 < SLED_SCENERY_SPAN - 0.01; z0 += 11) {
+      for (const side of [-1, 1]) {
+        mastRows.push([side * (TRACK_HALF_W + 2.3), 4.0, z0 + side * 2.6, 1.0, 1.0, 1.0]);
+        sailRows.push([side * (TRACK_HALF_W + 2.3), 5.4, z0 + side * 2.6, 0.22, 3.0, 2.8]);
+      }
+    }
+    addScenery(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.26, 0.34, 8.0, 8), darkWoodMat, mastRows.length), mastRows);
+    addScenery(new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), sailMat, sailRows.length), sailRows);
+    const barrelRows: number[][] = [];
+    for (let z0 = 1.6; z0 < SLED_SCENERY_SPAN - 0.01; z0 += 5.5) {
+      for (const side of [-1, 1]) barrelRows.push([side * (wallX - 0.95), 0.45, z0 + side * 1.4, 1.0, 1.0, 1.0]);
+    }
+    addScenery(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.42, 0.9, 10), hullMat, barrelRows.length), barrelRows);
+    this.updateSledScenery(0);
+
+    // 5. Flagship (exit) at the finish line: a tall hull across the deck with gun ports, a boarding ramp, two masts with
+    //    sails, the gold skull emblem on the bow and the badge cup above it
+    const exit = new THREE.Group();
+    exit.position.set(0, 0, -(L + 1.5));
+    exit.userData.jgExitD = L + 1.5;
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(24, 6.4, 8), hullMat);
+    hull.position.set(0, 3.2, -6);
+    hull.castShadow = true;
+    exit.add(hull);
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(24.2, 0.5, 8.1), goldMat);
+    stripe.position.set(0, 6.2, -6);
+    exit.add(stripe);
+    const redBand = new THREE.Mesh(new THREE.BoxGeometry(24.2, 0.7, 8.1), redMat);
+    redBand.position.set(0, 2.2, -6);
+    exit.add(redBand);
+    for (const px of [-9, -5.4, 5.4, 9]) {
+      const port = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.9, 0.2), flagMat);
+      port.position.set(px, 3.9, -1.95);
+      exit.add(port);
+      const gun = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.2, 8), ironMat);
+      gun.rotation.x = Math.PI / 2;
+      gun.position.set(px, 3.9, -1.5);
+      exit.add(gun);
+    }
+    const ramp = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.4, 7.4), darkWoodMat);
+    ramp.position.set(0, 3.0, -0.2);
+    ramp.rotation.x = 0.82;
+    exit.add(ramp);
+    for (const side of [-1, 1]) {
+      const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 7.6, 6), ropeMat);
+      rail.rotation.x = 0.82 + Math.PI / 2;
+      rail.position.set(side * 3.9, 3.9, -0.2);
+      exit.add(rail);
+    }
+    for (const [mx, mh] of [
+      [-6, 14],
+      [6, 12],
+    ] as const) {
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, mh, 8), darkWoodMat);
+      mast.position.set(mx, 6.4 + mh / 2, -6);
+      exit.add(mast);
+      const sail = new THREE.Mesh(new THREE.BoxGeometry(8, mh * 0.5, 0.2), sailMat);
+      sail.position.set(mx, 6.4 + mh * 0.58, -5.6);
+      exit.add(sail);
+      const flag = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.6, 0.08), flagMat);
+      flag.position.set(mx + 1.4, 6.4 + mh + 0.7, -6);
+      exit.add(flag);
+    }
+    // Gold skull emblem (bobs): a dome skull with dark eye sockets over two crossed bones
+    const skull = new THREE.Group();
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(1.1, 16, 12), boneMat);
+    dome.scale.set(1, 0.95, 0.9);
+    skull.add(dome);
+    const jaw = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.5, 0.8), boneMat);
+    jaw.position.set(0, -0.85, 0.15);
+    skull.add(jaw);
+    for (const ex of [-0.38, 0.38]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), flagMat);
+      eye.position.set(ex, 0.02, 0.86);
+      skull.add(eye);
+    }
+    for (const rz of [0.75, -0.75]) {
+      const bone = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 3.4, 8), boneMat);
+      bone.rotation.z = rz;
+      bone.position.set(0, -0.3, -0.35);
+      skull.add(bone);
+    }
+    skull.position.set(0, 8.1, -1.6);
+    skull.userData.jgBob = true;
+    exit.add(skull);
+    const cup = this.buildHallTrophyCupModel(3, 0xfacc15);
+    cup.scale.setScalar(1.05);
+    cup.position.set(0, 12.6, -2.4);
+    exit.add(cup);
+    const finishLine = new THREE.Mesh(
+      new THREE.PlaneGeometry(18.6, 0.9),
+      new THREE.MeshBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0.9, depthWrite: false })
+    );
+    finishLine.rotation.x = -Math.PI / 2;
+    finishLine.position.set(0, 0.06, 1.5);
+    exit.add(finishLine);
+    courseGroup.add(exit);
+    this.jungleExitGroup = exit;
+
+    // 6. Unit gates (+N / ×N): stacked barrel posts with a gold skull knob and a rope bar
+    this.jungleGates = [];
+    const gateH = 2.8;
+    const barrelGeo = new THREE.CylinderGeometry(0.34, 0.34, gateH, 10);
+    const knobGeo = new THREE.SphereGeometry(0.3, 10, 8);
+    for (const cfg of level.jungleGates || []) {
+      const group = new THREE.Group();
+      group.position.set(cfg.x, 0, -cfg.d);
+      for (const side of [-1, 1]) {
+        const px = side * (cfg.width * 0.5 - 0.12);
+        const post = new THREE.Mesh(barrelGeo, hullMat);
+        post.position.set(px, gateH * 0.5, 0);
+        group.add(post);
+        const knob = new THREE.Mesh(knobGeo, boneMat);
+        knob.position.set(px, gateH + 0.22, 0);
+        group.add(knob);
+      }
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, cfg.width - 0.2, 8), ropeMat);
+      bar.rotation.z = Math.PI / 2;
+      bar.position.set(0, gateH + 0.02, 0);
+      group.add(bar);
+      const label = cfg.op === 'mul' ? `×${cfg.value}` : `+${cfg.value}`;
+      const shieldMat = new THREE.MeshBasicMaterial({
+        map: this.getGateBannerTexture(cfg.style, label),
+        transparent: true,
+        opacity: 0.96,
+        alphaTest: 0.05,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      const shield = new THREE.Mesh(new THREE.PlaneGeometry(cfg.width - 0.5, gateH - 0.1), shieldMat);
+      shield.position.set(0, gateH * 0.5 + 0.05, 0);
+      group.add(shield);
+      courseGroup.add(group);
+      this.jungleGates.push({ cfg, group, shieldMat, resolved: false, triggered: false });
+    }
+
+    // 7. Sea gaps: open water between two decks with deck lips on both edges, a yardarm between two masts and two
+    //    swaying planks hung on ropes (a held plank glows gold)
+    this.jungleChasms = [];
+    const chasmTex = this.createPirateSeaTexture();
+    const pitMat = new THREE.MeshBasicMaterial({ map: chasmTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const ropeGeo = new THREE.CylinderGeometry(0.05, 0.05, JG_VINE_LEN, 6);
+    ropeGeo.translate(0, -JG_VINE_LEN / 2, 0);
+    const plankGeo = new THREE.BoxGeometry(1.9, 0.18, 1.0);
+    const glow = this.getPumpkinGlowTexture();
+    for (const cfg of level.jungleChasms || []) {
+      const group = new THREE.Group();
+      group.position.set(0, 0, -(cfg.d + cfg.gap / 2));
+      const pit = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_HALF_W * 2 + 0.6, cfg.gap), pitMat);
+      pit.rotation.x = -Math.PI / 2;
+      pit.position.y = 0.06;
+      pit.renderOrder = 1;
+      group.add(pit);
+      for (const edge of [-1, 1]) {
+        const lip = new THREE.Mesh(new THREE.BoxGeometry(TRACK_HALF_W * 2 + 0.4, 0.3, 0.55), darkWoodMat);
+        lip.position.set(0, 0.12, -edge * (cfg.gap / 2 + 0.2));
+        group.add(lip);
+        const trim = new THREE.Mesh(new THREE.BoxGeometry(TRACK_HALF_W * 2 + 0.5, 0.1, 0.24), goldMat);
+        trim.position.set(0, 0.3, -edge * (cfg.gap / 2 + 0.24));
+        group.add(trim);
+      }
+      const mistMat = new THREE.MeshBasicMaterial({
+        map: glow,
+        color: 0xe0f2fe,
+        transparent: true,
+        opacity: 0.3,
+        depthWrite: false,
+      });
+      for (const mx of [-7.2, -2.4, 2.4, 7.2]) {
+        const foam = new THREE.Mesh(new THREE.PlaneGeometry(4.6, cfg.gap * 0.9), mistMat);
+        foam.rotation.x = -Math.PI / 2;
+        foam.position.set(mx, 0.09, 0);
+        foam.renderOrder = 2;
+        group.add(foam);
+      }
+      for (const side of [-1, 1]) {
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.5, JG_BEAM_Y + 1.6, 8), darkWoodMat);
+        mast.position.set(side * (TRACK_HALF_W + 1.0), (JG_BEAM_Y + 1.6) / 2, 0);
+        group.add(mast);
+      }
+      const yard = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, (TRACK_HALF_W + 1.0) * 2, 10), darkWoodMat);
+      yard.rotation.z = Math.PI / 2;
+      yard.position.set(0, JG_BEAM_Y, 0);
+      group.add(yard);
+      const vines: JungleChasmRuntime['vines'] = [];
+      for (const vc of cfg.vines) {
+        const pivot = new THREE.Group();
+        pivot.position.set(vc.x, JG_BEAM_Y, 0);
+        for (const rx of [-0.8, 0.8]) {
+          const rope = new THREE.Mesh(ropeGeo, ropeMat);
+          rope.position.x = rx;
+          pivot.add(rope);
+        }
+        const handleMat = new THREE.MeshStandardMaterial({
+          color: 0xc08a4a,
+          emissive: 0xf59e0b,
+          emissiveIntensity: 0.6,
+          roughness: 0.6,
+          metalness: 0.1,
+        });
+        const plank = new THREE.Mesh(plankGeo, handleMat);
+        plank.position.set(0, -JG_VINE_LEN - 0.1, 0);
+        pivot.add(plank);
+        group.add(pivot);
+        vines.push({ cfg: vc, pivot, handleMat });
+      }
+      courseGroup.add(group);
+      this.jungleChasms.push({
+        cfg,
+        group,
+        vines,
+        mistMat,
+        locked: false,
+        lockVine: -1,
+        lockX: 0,
+        lockClock: 0,
+        leadGrabbed: false,
+        resolved: new Set<number>(),
+        riders: new Set<number>(),
+        fell: 0,
+        floated: 0,
+        hitCounted: false,
+        passed: false,
+      });
+    }
+
+    // 8. Deck cannons: a carriage with an iron barrel aimed down its lane and a black cannonball (lit fuse) in front of it
+    this.jungleBoulders = [];
+    const ballMat = stylizeMaterialAs2DIllustration(
+      new THREE.MeshStandardMaterial({ color: 0x1f2937, emissive: 0x0b0f17, emissiveIntensity: 0.3, roughness: 0.35, metalness: 0.6 }),
+      0.84
+    );
+    const fuseMat = new THREE.MeshBasicMaterial({ color: 0xfb923c });
+    for (const cfg of level.jungleBoulders || []) {
+      const cannon = new THREE.Group();
+      cannon.position.set(cfg.x, 0, -(cfg.d + cfg.radius + 0.9));
+      const carriage = new THREE.Mesh(new THREE.BoxGeometry(cfg.radius * 2.2, 0.7, 2.0), darkWoodMat);
+      carriage.position.set(0, 0.35, 0);
+      cannon.add(carriage);
+      for (const side of [-1, 1]) {
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.22, 12), hullMat);
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(side * (cfg.radius * 1.1 + 0.1), 0.42, 0.5);
+        cannon.add(wheel);
+      }
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(cfg.radius * 0.62, cfg.radius * 0.78, 2.6, 14), ironMat);
+      barrel.rotation.x = Math.PI / 2 - 0.12;
+      barrel.position.set(0, 0.9 + cfg.radius * 0.4, 0.2);
+      cannon.add(barrel);
+      const muzzle = new THREE.Mesh(new THREE.TorusGeometry(cfg.radius * 0.66, 0.1, 6, 16), goldMat);
+      muzzle.position.set(0, 0.95 + cfg.radius * 0.4, 1.45);
+      cannon.add(muzzle);
+      courseGroup.add(cannon);
+      const ballGroup = new THREE.Group();
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(cfg.radius, 18, 14), ballMat);
+      ball.castShadow = true;
+      ballGroup.add(ball);
+      const band = new THREE.Mesh(new THREE.TorusGeometry(cfg.radius * 1.002, cfg.radius * 0.05, 6, 24), goldMat);
+      band.rotation.y = Math.PI / 2;
+      ballGroup.add(band);
+      const fuse = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.12, cfg.radius * 0.16), 8, 6), fuseMat);
+      fuse.position.set(0, cfg.radius * 1.02, 0);
+      ballGroup.add(fuse);
+      ballGroup.position.set(cfg.x, cfg.radius, -cfg.d);
+      courseGroup.add(ballGroup);
+      const laneMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.0, depthWrite: false });
+      const lane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), laneMat);
+      lane.rotation.x = -Math.PI / 2;
+      lane.position.set(cfg.x, 0.075, 0);
+      lane.scale.set(cfg.radius * 2 + 0.5, 1, 1);
+      lane.renderOrder = 2;
+      lane.visible = false;
+      this.levelGroup.add(lane);
+      this.jungleBoulders.push({
+        cfg,
+        ramp: cannon,
+        rock: ballGroup,
+        lane,
+        laneMat,
+        state: 'resting',
+        du: cfg.d,
+        fallY: 0,
+        spin: 0,
+        knocked: 0,
+        touched: new Set<number>(),
+        hitCounted: false,
+        warned: false,
+        passed: false,
+      });
+    }
+
+    const label = document.createElement('div');
+    label.className = 'subtower-label jungle-swing-label pirate-boarding-label';
+    label.style.display = 'none';
+    this.labelsContainer.appendChild(label);
+
+    const ms = this.state.getGoldSkullMilestoneBonus();
+    const timeLimit = course.timeLimitSec + ms.timeBonusSec;
+    this.jungleRun = {
+      active: true,
+      tier: level.pirateTier || level.jungleTier || 1,
+      courseGroup,
+      floorTex,
+      floorMat,
+      chasmTex,
+      fireflies: sprays,
+      x: 0,
+      distance: 0,
+      courseLength: L,
+      baseSpeed: course.baseSpeed,
+      speed: 0,
+      timeLeft: timeLimit,
+      timeLimit,
+      maxSteerX: course.maxSteerX,
+      maxBobos: course.maxBobos,
+      swingHeight: course.swingHeight,
+      hitSlowMult: course.hitSlowMult,
+      hitSlowSec: course.hitSlowSec,
+      slowTimer: 0,
+      clock: 0,
+      swingFrac: 0,
+      hitFlash: 0,
+      sparkTimer: 0,
+      state: 'running',
+      labelEl: label,
+      hist: new Float32Array(LAVA_HIST_LEN),
+      histDist: 0,
+      crowdX: 0,
+      crowdHalfW: 0,
+      crowdDepth: 0,
+    };
+    this.bossHp = 100;
+    this.updateJungleVines(0);
+  }
+
   /** Spawns the starting Bobo squad at the temple steps (start Bobos + 翡翠神像徽章 milestone bonus). */
   private spawnStartingJungleBobos(level: LevelConfig): number {
     const course = level.jungleCourse;
-    const bonus = this.state.getEmeraldIdolMilestoneBonus().startBonusBobos;
+    const bonus = level.isPirateBoarding
+      ? this.state.getGoldSkullMilestoneBonus().startBonusBobos
+      : this.state.getEmeraldIdolMilestoneBonus().startBonusBobos;
     const n = Math.max(1, Math.min(course?.maxBobos ?? 90, (course?.startBobos ?? 16) + bonus));
     let spawned = 0;
     for (let k = 0; k < n; k++) {
@@ -29379,6 +30047,22 @@ export class World3D {
   public getJungleStateLabel(): string {
     const s = this.jungleRun;
     if (!s) return '尚未出发';
+    if (this.currentLevel?.isPirateBoarding) {
+      switch (s.state) {
+        case 'stumbled':
+          return '炮弹轰中';
+        case 'swinging':
+          return '踩跳板过海';
+        case 'finished':
+          return '冲上旗舰';
+        case 'timeout':
+          return '超时困在船上';
+        case 'wiped':
+          return '波波全部落水';
+        default:
+          return '甲板疾行中';
+      }
+    }
     switch (s.state) {
       case 'stumbled':
         return '滚石踉跄';
@@ -29547,11 +30231,24 @@ export class World3D {
     c.leadGrabbed = bestDx <= c.cfg.reach;
     if (c.leadGrabbed) this.jungleVineSwings += 1;
     if (!silent) {
+      const pirate = Boolean(this.currentLevel?.isPirateBoarding);
       if (c.leadGrabbed) {
-        this.spawnShockwave(bestX, SLED_Z - 1.0, 0x4ade80, 3.4, 0.32);
-        this.spawnFloatingPopup(THREE.MathUtils.clamp(bestX, -2.5, 2.5), 3.6, SLED_Z - 1.2, '抓住藤蔓! 荡过断崖', '#bbf7d0');
+        this.spawnShockwave(bestX, SLED_Z - 1.0, pirate ? 0xfacc15 : 0x4ade80, 3.4, 0.32);
+        this.spawnFloatingPopup(
+          THREE.MathUtils.clamp(bestX, -2.5, 2.5),
+          3.6,
+          SLED_Z - 1.2,
+          pirate ? '踩上跳板! 荡过海面' : '抓住藤蔓! 荡过断崖',
+          pirate ? '#fef08a' : '#bbf7d0'
+        );
       } else {
-        this.spawnFloatingPopup(THREE.MathUtils.clamp(s.x, -2.5, 2.5), 3.6, SLED_Z - 1.2, '没对准藤蔓! 要坠崖了', '#fecaca');
+        this.spawnFloatingPopup(
+          THREE.MathUtils.clamp(s.x, -2.5, 2.5),
+          3.6,
+          SLED_Z - 1.2,
+          pirate ? '没对准跳板! 要落水了' : '没对准藤蔓! 要坠崖了',
+          '#fecaca'
+        );
       }
     }
   }
@@ -29689,6 +30386,7 @@ export class World3D {
     const level = this.currentLevel;
     if (!s || !s.active || !level) return;
     const t = this.elapsedTime;
+    const pirate = Boolean(level.isPirateBoarding);
 
     // 1. Steering (the squad follows the cannon's lateral aim) & pace
     s.clock += dt;
@@ -29724,7 +30422,7 @@ export class World3D {
         side * (TRACK_HALF_W + 0.9),
         2.6 + Math.random() * 0.6,
         SLED_Z - 16 + Math.random() * 26,
-        Math.random() < 0.5 ? 0x4ade80 : 0xbef264,
+        pirate ? (Math.random() < 0.5 ? 0xe0f2fe : 0x7dd3fc) : Math.random() < 0.5 ? 0x4ade80 : 0xbef264,
         1
       );
     }
@@ -29850,7 +30548,7 @@ export class World3D {
       if (c.locked && farZ > trailEndZ + 0.6) {
         c.passed = true;
         if (c.fell === 0) this.jungleTrapsDodged += 1;
-        else this.spawnFloatingPopup(c.lockX, 2.4, Math.min(16, SLED_Z + 4), `坠崖 -${c.fell} 波波`, '#fecaca');
+        else this.spawnFloatingPopup(c.lockX, 2.4, Math.min(16, SLED_Z + 4), `${pirate ? '落水' : '坠崖'} -${c.fell} 波波`, '#fecaca');
       }
     }
 
@@ -29870,9 +30568,10 @@ export class World3D {
             THREE.MathUtils.clamp(b.cfg.x, -2.5, 2.5),
             3.2,
             Math.max(-SLED_DECK_HALF + 2, courseZ - b.du + 2),
-            '滚石来袭! 快闪开',
+            pirate ? '炮弹来袭! 快闪开' : '滚石来袭! 快闪开',
             '#fed7aa'
           );
+          if (pirate) this.spawnBurstParticles(b.cfg.x, 1.4, Math.max(-SLED_DECK_HALF + 2, courseZ - b.du), 0xfdba74, 10);
         }
       }
       if (b.state === 'rolling') {
@@ -29935,12 +30634,19 @@ export class World3D {
         if (b.knocked > 0 && !b.hitCounted) {
           b.hitCounted = true;
           this.jungleBoulderHits += 1;
-          this.jungleStumble('滚石压扁波波!');
+          this.jungleStumble(pirate ? '炮弹轰飞波波!' : '滚石压扁波波!');
         }
         if (b.du < tailDu - b.cfg.radius - 0.5) {
           b.passed = true;
           if (b.knocked === 0) this.jungleTrapsDodged += 1;
-          else this.spawnFloatingPopup(THREE.MathUtils.clamp(b.cfg.x, -2.5, 2.5), 2.4, Math.min(16, SLED_Z + 4), `滚石压扁 -${b.knocked} 波波`, '#fecaca');
+          else
+            this.spawnFloatingPopup(
+              THREE.MathUtils.clamp(b.cfg.x, -2.5, 2.5),
+              2.4,
+              Math.min(16, SLED_Z + 4),
+              `${pirate ? '炮弹轰飞' : '滚石压扁'} -${b.knocked} 波波`,
+              '#fecaca'
+            );
         }
       }
       if (b.state === 'rolling' && b.passed && wz > SLED_DECK_HALF + 6) {
@@ -29960,12 +30666,12 @@ export class World3D {
       for (const b of this.jungleBoulders) b.lane.visible = false;
       this.jungleFinishSec = Number((s.timeLimit - s.timeLeft).toFixed(2));
       this.bossHp = 0;
-      this.spawnSkyPillar(s.x, SLED_Z - 2, 0x10b981, 3.6, 0.7);
-      this.spawnShockwave(s.x, SLED_Z, 0xa7f3d0, 11.0, 0.7);
-      this.spawnBurstParticles(s.x, 2.2, SLED_Z - 1, 0x4ade80, 60);
+      this.spawnSkyPillar(s.x, SLED_Z - 2, pirate ? 0xfacc15 : 0x10b981, 3.6, 0.7);
+      this.spawnShockwave(s.x, SLED_Z, pirate ? 0xfef08a : 0xa7f3d0, 11.0, 0.7);
+      this.spawnBurstParticles(s.x, 2.2, SLED_Z - 1, pirate ? 0xfacc15 : 0x4ade80, 60);
       this.finishStage(true);
       this.onBanner?.(
-        `${UI_ART.jungleSwing} 波波团冲出丛林神庙！`,
+        pirate ? `${UI_ART.pirateBoarding} 波波团冲上海盗旗舰！` : `${UI_ART.jungleSwing} 波波团冲出丛林神庙！`,
         `用时 ${this.jungleFinishSec.toFixed(1)}s / 限时 ${s.timeLimit}s · 幸存波波 ${aliveNow} 只 · 机关全身而过 ${this.jungleTrapsDodged} 处`
       );
       return;
@@ -29976,9 +30682,17 @@ export class World3D {
       s.labelEl.style.display = 'none';
       for (const b of this.jungleBoulders) b.lane.visible = false;
       this.jungleFinishSec = Number((s.timeLimit - s.timeLeft).toFixed(2));
-      this.spawnBurstParticles(s.x, 1.4, SLED_Z, 0x4ade80, 40);
+      this.spawnBurstParticles(s.x, 1.4, SLED_Z, pirate ? 0x7dd3fc : 0x4ade80, 40);
       this.onBanner?.(
-        `${UI_ART.warning} ${s.state === 'wiped' ? '波波全被机关困住' : '超时困在神庙里'}！`,
+        `${UI_ART.warning} ${
+          pirate
+            ? s.state === 'wiped'
+              ? '波波全部落水'
+              : '超时没冲上旗舰'
+            : s.state === 'wiped'
+              ? '波波全被机关困住'
+              : '超时困在神庙里'
+        }！`,
         `前进 ${Math.round(s.distance)}/${s.courseLength}m · 已损失 ${this.jungleBobosLost} 只波波`
       );
       this.finishStage(false);
@@ -32996,6 +33710,438 @@ export class World3D {
     };
   }
 
+  /**
+   * MC-18 self-check: 海盗船跳板突围 (pirate plank breakout) on the shared squad-run engine. Pure simulation on the live
+   * world with every save field it touches snapshotted and restored (no tactic cards, no milestone bonuses, so the
+   * numbers never depend on Math.random).
+   */
+  public runMc18SelfCheck(): {
+    ok: boolean;
+    pirateSpawnedOnDeck: boolean;
+    pirateDecorRestoresAcrossModes: boolean;
+    plankCarriesSquadAcrossSea: boolean;
+    missedPlankDropsBobosInSea: boolean;
+    cannonballFiresDownItsLane: boolean;
+    cannonballKnocksBobosInLane: boolean;
+    flagshipRampWinsStage: boolean;
+    timeoutLosesStage: boolean;
+    autopilotClearsTier1: boolean;
+    tiersScale: boolean;
+    skullBadgesScaleAndPersist: boolean;
+    jungleRecordsUntouched: boolean;
+    pirateTextsOnLabelAndBanner: boolean;
+    stats: Record<string, number>;
+  } {
+    const st = this.state;
+    const prevPaused = this.isPaused;
+    const prevLevel = this.currentLevel;
+    const prevOnStageEnd = this.onStageEnd;
+    const prevOnBanner = this.onBanner;
+    const prevOnTactic = this.onTacticTrigger;
+    const prevTurretX = this.turretX;
+    const prevTurretTargetX = this.turretTargetX;
+    const snap = {
+      gold: st.gold,
+      goldSkullBadges: st.goldSkullBadges,
+      lifetimeGoldSkullBadges: st.lifetimeGoldSkullBadges,
+      pirateBoardingClears: st.pirateBoardingClears,
+      bestPirateFinishSec: st.bestPirateFinishSec,
+      bestPirateSurvivors: st.bestPirateSurvivors,
+      totalPirateTrapsDodged: st.totalPirateTrapsDodged,
+      totalPirateBobosLost: st.totalPirateBobosLost,
+      emeraldIdolBadges: st.emeraldIdolBadges,
+      lifetimeEmeraldIdolBadges: st.lifetimeEmeraldIdolBadges,
+      jungleSwingClears: st.jungleSwingClears,
+      tacticDeck: [...st.tacticDeck],
+      tacticCampaignEnabled: st.tacticCampaignEnabled,
+      boboTechLevels: { ...st.boboTechLevels },
+      activeBoboTechDoctrine: st.activeBoboTechDoctrine,
+    };
+    const stats: Record<string, number> = {};
+    const banners: string[] = [];
+    this.isPaused = true;
+    this.onStageEnd = undefined;
+    this.onBanner = (title: string) => banners.push(title);
+    this.onTacticTrigger = undefined;
+    this.tacticProfileOverride = null;
+    st.tacticDeck = [null, null, null];
+    st.tacticCampaignEnabled = true;
+    st.boboTechLevels = { vanguard_charge: 0, heavy_siege: 0, candy_bombard: 0 };
+    st.activeBoboTechDoctrine = 'vanguard_charge';
+    st.goldSkullBadges = 0;
+    st.lifetimeGoldSkullBadges = 0;
+    const bobos = (): number => this.getLavaBoboCount();
+    const clearShields = (): void => {
+      for (const u of this.units) {
+        if (u.active) {
+          u.frostShield = false;
+          u.petShellGranted = false;
+        }
+      }
+    };
+    const loadPr = (tier = 1): JungleSwingRuntime | null => {
+      this.loadLevel(generatePirateBoardingLevel(tier));
+      for (const u of this.units) if (u.active && u.team === 'red') u.active = false;
+      clearShields();
+      this.snapJungleBobosToSlots();
+      return this.jungleRun;
+    };
+    const skipBehind = (dist: number): void => {
+      for (const g of this.jungleGates) if (g.cfg.d < dist + JG_FRONT_OFFSET + 0.5) g.resolved = true;
+      for (const c of this.jungleChasms) {
+        if (c.cfg.d + c.cfg.gap < dist - 1) {
+          c.locked = true;
+          c.passed = true;
+        }
+      }
+      for (const b of this.jungleBoulders) {
+        if (b.cfg.d < dist - 1) {
+          b.passed = true;
+          b.state = 'gone';
+        }
+      }
+    };
+    const parkAt = (s: JungleSwingRuntime, frontDu: number, x: number): void => {
+      skipBehind(frontDu - 4);
+      s.x = x;
+      this.turretX = x;
+      this.turretTargetX = x;
+      s.baseSpeed = 0.0001;
+      s.speed = 0;
+      s.distance = frontDu - JG_FRONT_OFFSET;
+      this.snapJungleBobosToSlots();
+      clearShields();
+    };
+
+    let ok = false;
+    let pirateSpawnedOnDeck = false;
+    let pirateDecorRestoresAcrossModes = false;
+    let plankCarriesSquadAcrossSea = false;
+    let missedPlankDropsBobosInSea = false;
+    let cannonballFiresDownItsLane = false;
+    let cannonballKnocksBobosInLane = false;
+    let flagshipRampWinsStage = false;
+    let timeoutLosesStage = false;
+    let autopilotClearsTier1 = false;
+    let tiersScale = false;
+    let skullBadgesScaleAndPersist = false;
+    let jungleRecordsUntouched = false;
+    let pirateTextsOnLabelAndBanner = false;
+    try {
+      // 1. Pirate deck scene: own sky / sea tint, no daytime landmarks, gates + sea gaps (2 planks) + cannons + flagship
+      const lvl = generatePirateBoardingLevel(1);
+      const s0 = loadPr();
+      const course = lvl.jungleCourse;
+      const scene0 = this.getDedicatedSceneSnapshot();
+      const start = bobos();
+      pirateSpawnedOnDeck = Boolean(
+        lvl.isPirateBoarding &&
+          lvl.isJungleSwing &&
+          lvl.mode === 'pirate_plank' &&
+          s0 &&
+          s0.active &&
+          scene0.kind === 'pirate' &&
+          scene0.skyHex === PR_SEA_SKY &&
+          scene0.abyssHex === DEDICATED_ABYSS_TINT.pirate &&
+          !scene0.landmarks &&
+          !this.turretGroup.visible &&
+          this.jungleGates.length >= 6 &&
+          this.jungleChasms.length >= 3 &&
+          this.jungleChasms.every((c) => c.vines.length === 2) &&
+          this.jungleBoulders.length >= 3 &&
+          this.jungleExitGroup !== null &&
+          course !== undefined &&
+          start === course.startBobos &&
+          s0.timeLimit === course.timeLimitSec &&
+          course.timeLimitSec > course.length / course.baseSpeed &&
+          course.length / course.baseSpeed >= 24 &&
+          course.length / course.baseSpeed <= 34 &&
+          !this.isMainCampaignLevel(lvl)
+      );
+      stats.startBobos = start;
+      stats.courseLength = course?.length ?? 0;
+      stats.timeLimit = course?.timeLimitSec ?? 0;
+      stats.gates = this.jungleGates.length;
+      stats.seaGaps = this.jungleChasms.length;
+      stats.cannons = this.jungleBoulders.length;
+
+      // 2. Scene switch: pirate -> jungle -> daytime campaign -> pirate (one switch, never two backdrops)
+      this.loadLevel(generateJungleSwingLevel(1));
+      const sJg = this.getDedicatedSceneSnapshot();
+      this.loadLevel(generateDynamicLevel(1));
+      const sDay = this.getDedicatedSceneSnapshot();
+      loadPr();
+      const sPr = this.getDedicatedSceneSnapshot();
+      pirateDecorRestoresAcrossModes =
+        sJg.kind === 'jungle' &&
+        sJg.skyHex === JG_JUNGLE_SKY &&
+        sDay.kind === 'none' &&
+        sDay.landmarks &&
+        sDay.abyssHex === 0xffffff &&
+        sPr.kind === 'pirate' &&
+        sPr.skyHex === PR_SEA_SKY &&
+        !sPr.landmarks;
+
+      // 3. Lined up under a plank as the front reaches the edge: the whole squad rides across (nobody falls)
+      const crossGap = (mode: 'aligned' | 'missed'): { lost: number; c: JungleChasmRuntime | null; maxRide: number; label: string } => {
+        const s = loadPr();
+        const c = this.jungleChasms[0];
+        if (!s || !c) return { lost: -1, c: null, maxRide: 0, label: '' };
+        const v0 = c.vines[0].cfg;
+        let clock = ((((v0.period / 4 - v0.offset) % v0.period) + v0.period) % v0.period) + v0.period * 3;
+        let x = this.getJungleVineX(v0, clock);
+        if (mode === 'missed') {
+          let best = -Infinity;
+          for (let tc = 0; tc < v0.period * 2; tc += 0.05) {
+            const vx = c.vines.map((vv) => this.getJungleVineX(vv.cfg, tc + 4 * v0.period));
+            for (let xx = -s.maxSteerX; xx <= s.maxSteerX + 0.01; xx += 0.1) {
+              const dmin = Math.min(...vx.map((q) => Math.abs(q - xx)));
+              if (dmin > best) {
+                best = dmin;
+                clock = tc + 4 * v0.period;
+                x = xx;
+              }
+            }
+          }
+        }
+        parkAt(s, c.cfg.d - 0.2, x);
+        s.clock = clock;
+        const before = bobos();
+        let maxRide = 0;
+        let label = '';
+        for (let i = 0; i < 600 && s.active && !c.passed; i++) {
+          s.distance += 0.12;
+          this.updateJungleSwing(0.016);
+          if (s.state === 'swinging' && !label) label = this.getJungleStateLabel();
+          for (const u of this.units) if (u.active && u.team === 'blue') maxRide = Math.max(maxRide, u.rideY || 0);
+        }
+        return { lost: before - bobos(), c, maxRide, label };
+      };
+      const aligned = crossGap('aligned');
+      plankCarriesSquadAcrossSea = Boolean(
+        aligned.c && aligned.c.leadGrabbed && aligned.c.passed && aligned.lost === 0 && aligned.maxRide > 1.0 && this.jungleTrapsDodged === 1
+      );
+      const missed = crossGap('missed');
+      missedPlankDropsBobosInSea = Boolean(
+        missed.c &&
+          !missed.c.leadGrabbed &&
+          missed.c.passed &&
+          missed.lost >= 1 &&
+          missed.lost <= missed.c.cfg.knockCap &&
+          this.jungleChasmFell === missed.lost
+      );
+      stats.seaFell = missed.lost;
+
+      // 4. Cannons fire when the squad front comes within wakeD: the ball rolls down its lane (warning stripe) and
+      //    knocks the Bobos in it (capped); the squad stumbles
+      const s4 = loadPr();
+      const b4 = this.jungleBoulders[0];
+      if (s4 && b4) {
+        parkAt(s4, b4.cfg.d - b4.cfg.wakeD - 2, b4.cfg.x > 0 ? b4.cfg.x - 6 : b4.cfg.x + 6);
+        for (let i = 0; i < 10; i++) this.updateJungleSwing(0.016);
+        const rested = b4.state === 'resting';
+        s4.distance += 2.5;
+        this.updateJungleSwing(0.016);
+        const du1 = b4.du;
+        for (let i = 0; i < 10; i++) this.updateJungleSwing(0.016);
+        cannonballFiresDownItsLane = rested && b4.state === 'rolling' && b4.du < du1 && b4.lane.visible;
+      }
+      const s5 = loadPr();
+      const b5 = this.jungleBoulders[0];
+      if (s5 && b5) {
+        let front = b5.cfg.d - 9;
+        for (const c of this.jungleChasms) if (c.cfg.d < b5.cfg.d) front = Math.max(front, c.cfg.d + c.cfg.gap + 3);
+        parkAt(s5, front, THREE.MathUtils.clamp(b5.cfg.x, -s5.maxSteerX, s5.maxSteerX));
+        const before = bobos();
+        let stumbled = false;
+        let label = '';
+        for (let i = 0; i < 900 && s5.active && !b5.passed; i++) {
+          this.updateJungleSwing(0.016);
+          if (s5.slowTimer > 0) stumbled = true;
+          if (s5.state === 'stumbled' && !label) label = this.getJungleStateLabel();
+        }
+        const lost = before - bobos();
+        cannonballKnocksBobosInLane = b5.passed && lost >= 1 && lost <= b5.cfg.knockCap && stumbled && label === '炮弹轰中';
+        stats.cannonKnocked = lost;
+      }
+
+      // 5. Reaching the flagship ramp wins; the countdown running out loses
+      banners.length = 0;
+      const sC = loadPr();
+      if (sC) {
+        skipBehind(sC.courseLength);
+        sC.distance = sC.courseLength - 0.05;
+        sC.speed = sC.baseSpeed;
+        this.updateJungleSwing(0.05);
+        flagshipRampWinsStage = this.isStageEnded && this.lastStageVictory && sC.state === 'finished';
+      }
+      const winBanner = banners.join(' ');
+      const sD = loadPr();
+      if (sD) {
+        sD.timeLeft = 0.01;
+        this.updateJungleSwing(0.05);
+        timeoutLosesStage = this.isStageEnded && !this.lastStageVictory && sD.state === 'timeout';
+      }
+      pirateTextsOnLabelAndBanner =
+        aligned.label === '踩跳板过海' && winBanner.includes('海盗旗舰') && !winBanner.includes('神庙');
+
+      // 6. Tier 1 is clearable in ~29 s by the autopilot through the real update + simulateUnits loop
+      const sF = loadPr();
+      if (sF) {
+        let steps = 0;
+        while (sF.active && steps < 1200) {
+          this.turretX = this.getJungleAutopilotX();
+          this.turretTargetX = this.turretX;
+          this.updateJungleSwing(0.05);
+          this.simulateUnits(0.05);
+          steps++;
+        }
+        autopilotClearsTier1 =
+          sF.state === 'finished' &&
+          this.lastStageVictory &&
+          this.jungleFinishSec >= 22 &&
+          this.jungleFinishSec <= 36 &&
+          this.jungleBoboCount >= start &&
+          this.jungleGatesPassed >= 3 &&
+          this.jungleVineSwings >= this.jungleChasms.length - 1 &&
+          this.jungleTrapsDodged >= 3;
+        stats.autoFinishSec = this.jungleFinishSec;
+        stats.autoSurvivors = this.jungleBoboCount;
+        stats.autoDodged = this.jungleTrapsDodged;
+        stats.autoLost = this.jungleBobosLost;
+      }
+      this.turretX = 0;
+      this.turretTargetX = 0;
+
+      // 7. Tiers scale (faster pace, longer course, wider gaps, shorter plank reach, faster balls, twin balls from 5)
+      const t1 = generatePirateBoardingLevel(1);
+      const t5 = generatePirateBoardingLevel(5);
+      const c1 = t1.jungleCourse;
+      const c5 = t5.jungleCourse;
+      const g1 = t1.jungleChasms?.[0];
+      const g5 = t5.jungleChasms?.[0];
+      const b1 = t1.jungleBoulders?.[0];
+      const bb5 = t5.jungleBoulders?.[0];
+      tiersScale = Boolean(
+        c1 &&
+          c5 &&
+          g1 &&
+          g5 &&
+          b1 &&
+          bb5 &&
+          c5.baseSpeed > c1.baseSpeed &&
+          c5.length > c1.length &&
+          g5.gap > g1.gap &&
+          g5.reach < g1.reach &&
+          bb5.speed > b1.speed &&
+          (t5.jungleBoulders?.length ?? 0) > (t1.jungleBoulders?.length ?? 99) &&
+          st.getPirateBoardingSpec(0).pirateTier === 1 &&
+          st.getPirateBoardingSpec(3).pirateTier === 4 &&
+          st.getPirateBoardingSpec(99).pirateTier === 8
+      );
+
+      // 8. Settlement: 金骷髅徽章 scale with time + survivors + traps, persist, and lift the milestone (start Bobos / time)
+      const jgBefore = `${st.emeraldIdolBadges}_${st.lifetimeEmeraldIdolBadges}_${st.jungleSwingClears}`;
+      st.goldSkullBadges = 0;
+      st.lifetimeGoldSkullBadges = 0;
+      st.pirateBoardingClears = 0;
+      st.bestPirateFinishSec = 0;
+      const slowRec = st.recordPirateBoardingResult(true, 38, 40, 10, 8, 0, 100);
+      st.goldSkullBadges = 0;
+      st.lifetimeGoldSkullBadges = 0;
+      st.pirateBoardingClears = 0;
+      st.bestPirateFinishSec = 0;
+      const baseMs = st.getGoldSkullMilestoneBonus(0);
+      const fastRec = st.recordPirateBoardingResult(true, 26, 40, 48, 6, 6, 100);
+      const lossRec = st.recordPirateBoardingResult(false, 40, 40, 12, 20, 1, 55);
+      const saved = JSON.parse(localStorage.getItem('swarm_control_3d_save_v3') || '{}') as {
+        goldSkullBadges?: number;
+        pirateBoardingClears?: number;
+        bestPirateFinishSec?: number;
+      };
+      const boostedMs = st.getGoldSkullMilestoneBonus();
+      const sBoost = loadPr();
+      skullBadgesScaleAndPersist = Boolean(
+        fastRec.badgesAwarded > slowRec.badgesAwarded &&
+          fastRec.timeBonusBadges === 2 &&
+          fastRec.survivorBonusBadges === 3 &&
+          fastRec.trapBonusBadges === 2 &&
+          lossRec.badgesAwarded === 1 &&
+          !lossRec.victory &&
+          fastRec.milestoneReached &&
+          saved.goldSkullBadges === st.goldSkullBadges &&
+          saved.pirateBoardingClears === 1 &&
+          saved.bestPirateFinishSec === 26 &&
+          boostedMs.startBonusBobos > baseMs.startBonusBobos &&
+          boostedMs.startBonusBobos <= 8 &&
+          boostedMs.timeBonusSec > baseMs.timeBonusSec &&
+          boostedMs.timeBonusSec <= 6 &&
+          sBoost &&
+          sBoost.timeLimit === (course?.timeLimitSec ?? 0) + boostedMs.timeBonusSec &&
+          bobos() === start + boostedMs.startBonusBobos
+      );
+      jungleRecordsUntouched = jgBefore === `${st.emeraldIdolBadges}_${st.lifetimeEmeraldIdolBadges}_${st.jungleSwingClears}`;
+      stats.fastBadges = fastRec.badgesAwarded;
+      stats.slowBadges = slowRec.badgesAwarded;
+    } finally {
+      st.gold = snap.gold;
+      st.goldSkullBadges = snap.goldSkullBadges;
+      st.lifetimeGoldSkullBadges = snap.lifetimeGoldSkullBadges;
+      st.pirateBoardingClears = snap.pirateBoardingClears;
+      st.bestPirateFinishSec = snap.bestPirateFinishSec;
+      st.bestPirateSurvivors = snap.bestPirateSurvivors;
+      st.totalPirateTrapsDodged = snap.totalPirateTrapsDodged;
+      st.totalPirateBobosLost = snap.totalPirateBobosLost;
+      st.emeraldIdolBadges = snap.emeraldIdolBadges;
+      st.lifetimeEmeraldIdolBadges = snap.lifetimeEmeraldIdolBadges;
+      st.jungleSwingClears = snap.jungleSwingClears;
+      st.tacticDeck = snap.tacticDeck;
+      st.tacticCampaignEnabled = snap.tacticCampaignEnabled;
+      st.boboTechLevels = snap.boboTechLevels;
+      st.activeBoboTechDoctrine = snap.activeBoboTechDoctrine;
+      st.save();
+      this.turretX = prevTurretX;
+      this.turretTargetX = prevTurretTargetX;
+      this.onStageEnd = prevOnStageEnd;
+      this.onBanner = prevOnBanner;
+      this.onTacticTrigger = prevOnTactic;
+      this.tacticProfileOverride = null;
+      if (prevLevel) this.loadLevel(prevLevel);
+      this.isPaused = prevPaused;
+    }
+    ok =
+      pirateSpawnedOnDeck &&
+      pirateDecorRestoresAcrossModes &&
+      plankCarriesSquadAcrossSea &&
+      missedPlankDropsBobosInSea &&
+      cannonballFiresDownItsLane &&
+      cannonballKnocksBobosInLane &&
+      flagshipRampWinsStage &&
+      timeoutLosesStage &&
+      autopilotClearsTier1 &&
+      tiersScale &&
+      skullBadgesScaleAndPersist &&
+      jungleRecordsUntouched &&
+      pirateTextsOnLabelAndBanner;
+    return {
+      ok,
+      pirateSpawnedOnDeck,
+      pirateDecorRestoresAcrossModes,
+      plankCarriesSquadAcrossSea,
+      missedPlankDropsBobosInSea,
+      cannonballFiresDownItsLane,
+      cannonballKnocksBobosInLane,
+      flagshipRampWinsStage,
+      timeoutLosesStage,
+      autopilotClearsTier1,
+      tiersScale,
+      skullBadgesScaleAndPersist,
+      jungleRecordsUntouched,
+      pirateTextsOnLabelAndBanner,
+      stats,
+    };
+  }
+
   private applyGateEffect(u: Unit, g: GateRuntime): void {
     const { op, value } = g.cfg;
     const gateRank1 = this.state.getSkillNodeRank('gate_t1');
@@ -33997,8 +35143,9 @@ export class World3D {
             jg.labelEl.dataset.key = jKey;
             jg.labelEl.classList.toggle('is-stumbled', jg.state === 'stumbled');
             jg.labelEl.classList.toggle('is-swinging', jg.state === 'swinging');
-            jg.labelEl.innerHTML = `${UI_ART.vineSwing}<span>波波 ${this.jungleBoboCount}${
-              jg.state === 'swinging' ? ' · 荡藤蔓' : jg.state === 'stumbled' ? ' · 踉跄' : ''
+            const prLabel = Boolean(this.currentLevel?.isPirateBoarding);
+            jg.labelEl.innerHTML = `${prLabel ? UI_ART.swingPlank : UI_ART.vineSwing}<span>波波 ${this.jungleBoboCount}${
+              jg.state === 'swinging' ? (prLabel ? ' · 踩跳板' : ' · 荡藤蔓') : jg.state === 'stumbled' ? ' · 踉跄' : ''
             }</span>`;
           }
         }

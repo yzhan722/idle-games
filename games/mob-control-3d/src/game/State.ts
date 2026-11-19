@@ -2894,6 +2894,13 @@ export interface SaveState {
   bestJungleSurvivors?: number;
   totalJungleTrapsDodged?: number;
   totalJungleBobosLost?: number;
+  goldSkullBadges?: number;
+  lifetimeGoldSkullBadges?: number;
+  pirateBoardingClears?: number;
+  bestPirateFinishSec?: number;
+  bestPirateSurvivors?: number;
+  totalPirateTrapsDodged?: number;
+  totalPirateBobosLost?: number;
   totalMatchesPlayed?: number;
   lifetimeKills?: number;
   playTimeSeconds?: number;
@@ -3153,6 +3160,14 @@ export class GameState {
   public bestJungleSurvivors = 0;
   public totalJungleTrapsDodged = 0;
   public totalJungleBobosLost = 0;
+  // MC-18: Pirate Plank Breakout (金骷髅徽章)
+  public goldSkullBadges = 0;
+  public lifetimeGoldSkullBadges = 0;
+  public pirateBoardingClears = 0;
+  public bestPirateFinishSec = 0;
+  public bestPirateSurvivors = 0;
+  public totalPirateTrapsDodged = 0;
+  public totalPirateBobosLost = 0;
 
   public totalMatchesPlayed = 0;
   public lifetimeKills = 0;
@@ -3636,6 +3651,23 @@ export class GameState {
       this.totalJungleTrapsDodged = jgDodgedRaw !== null ? Math.min(9999999, jgDodgedRaw) : 0;
       const jgLostRaw = readCount(parsed.totalJungleBobosLost);
       this.totalJungleBobosLost = jgLostRaw !== null ? Math.min(9999999, jgLostRaw) : 0;
+      // MC-18: 金骷髅徽章 / pirate records (old saves fall back to defaults; dirty values clamped)
+      const skullRaw = readCount(parsed.goldSkullBadges);
+      this.goldSkullBadges = skullRaw !== null ? Math.min(99999, skullRaw) : 0;
+      const lifeSkullRaw = readCount(parsed.lifetimeGoldSkullBadges);
+      this.lifetimeGoldSkullBadges = Math.max(this.goldSkullBadges, Math.min(99999, lifeSkullRaw ?? 0));
+      const prClearsRaw = readCount(parsed.pirateBoardingClears);
+      this.pirateBoardingClears = prClearsRaw !== null ? Math.min(99999, prClearsRaw) : 0;
+      this.bestPirateFinishSec = 0;
+      if (typeof parsed.bestPirateFinishSec === 'number' && Number.isFinite(parsed.bestPirateFinishSec)) {
+        this.bestPirateFinishSec = Math.max(0, Math.min(3600, Number(parsed.bestPirateFinishSec.toFixed(1))));
+      }
+      const bestPrSurvRaw = readCount(parsed.bestPirateSurvivors);
+      this.bestPirateSurvivors = bestPrSurvRaw !== null ? Math.min(600, bestPrSurvRaw) : 0;
+      const prDodgedRaw = readCount(parsed.totalPirateTrapsDodged);
+      this.totalPirateTrapsDodged = prDodgedRaw !== null ? Math.min(9999999, prDodgedRaw) : 0;
+      const prLostRaw = readCount(parsed.totalPirateBobosLost);
+      this.totalPirateBobosLost = prLostRaw !== null ? Math.min(9999999, prLostRaw) : 0;
       // MC-12: Ice medals, sled records & trophy hall (old saves fall back to defaults; dirty values clamped)
       const iceRaw = readCount(parsed.iceMedals);
       if (iceRaw !== null) this.iceMedals = Math.min(99999, iceRaw);
@@ -3894,6 +3926,16 @@ export class GameState {
         bestJungleSurvivors: Math.max(0, Math.floor(this.bestJungleSurvivors)),
         totalJungleTrapsDodged: Math.max(0, Math.floor(this.totalJungleTrapsDodged)),
         totalJungleBobosLost: Math.max(0, Math.floor(this.totalJungleBobosLost)),
+        goldSkullBadges: Math.max(0, Math.floor(this.goldSkullBadges)),
+        lifetimeGoldSkullBadges: Math.max(
+          Math.max(0, Math.floor(this.goldSkullBadges)),
+          Math.floor(this.lifetimeGoldSkullBadges)
+        ),
+        pirateBoardingClears: Math.max(0, Math.floor(this.pirateBoardingClears)),
+        bestPirateFinishSec: this.bestPirateFinishSec,
+        bestPirateSurvivors: Math.max(0, Math.floor(this.bestPirateSurvivors)),
+        totalPirateTrapsDodged: Math.max(0, Math.floor(this.totalPirateTrapsDodged)),
+        totalPirateBobosLost: Math.max(0, Math.floor(this.totalPirateBobosLost)),
         totalMatchesPlayed: this.totalMatchesPlayed,
         lifetimeKills: this.lifetimeKills,
         playTimeSeconds: Math.floor(this.playTimeSeconds),
@@ -8993,6 +9035,173 @@ export class GameState {
       milestoneRankTitle: milestoneAfter.rankTitle,
       totalClears: this.jungleSwingClears,
       totalBadges: this.emeraldIdolBadges,
+      isNewSpeedRecord,
+    };
+  }
+
+  // ============================================================================
+  // MC-18: Pirate Plank Breakout (金骷髅徽章)
+  // ============================================================================
+
+  /** 金骷髅徽章 milestone ladder (lifetime count): start Bobos (max +8) + extra seconds on the countdown (max +6 s). */
+  public getGoldSkullMilestoneBonus(badgesOverride?: number): {
+    effectiveBadges: number;
+    tier: number;
+    rankTitle: string;
+    accentColor: string;
+    startBonusBobos: number;
+    timeBonusSec: number;
+    nextThreshold: number;
+    summaryText: string;
+  } {
+    const rawBadges =
+      typeof badgesOverride === 'number'
+        ? Math.max(0, Math.floor(badgesOverride))
+        : Math.max(0, Math.floor(Math.max(this.goldSkullBadges, this.lifetimeGoldSkullBadges)));
+    const capped = Math.min(24, rawBadges);
+    const startBonusBobos = Math.floor(capped / 3);
+    let tier = 0;
+    let rankTitle = '见习甲板水手';
+    let accentColor = '#fde68a';
+    let nextThreshold = 3;
+    if (rawBadges >= 16) {
+      tier = 3;
+      rankTitle = '金骷髅舰队船长';
+      accentColor = '#facc15';
+      nextThreshold = 0;
+    } else if (rawBadges >= 8) {
+      tier = 2;
+      rankTitle = '白银跳板大副';
+      accentColor = '#e2e8f0';
+      nextThreshold = 16;
+    } else if (rawBadges >= 3) {
+      tier = 1;
+      rankTitle = '青铜炮手';
+      accentColor = '#d97706';
+      nextThreshold = 8;
+    }
+    const timeBonusSec = tier * 2;
+    return {
+      effectiveBadges: rawBadges,
+      tier,
+      rankTitle,
+      accentColor,
+      startBonusBobos,
+      timeBonusSec,
+      nextThreshold,
+      summaryText:
+        rawBadges > 0
+          ? `${rankTitle} · 起步波波+${startBonusBobos} · 限时+${timeBonusSec}s`
+          : `${rankTitle} · 收集金骷髅徽章解锁起步波波 / 限时加成`,
+    };
+  }
+
+  public getPirateBoardingSpec(clearsOverride?: number): {
+    pirateTier: number;
+    title: string;
+    badgeRewardBase: number;
+    coinsRewardBase: number;
+  } {
+    const clears = Math.max(0, Math.floor(clearsOverride ?? this.pirateBoardingClears));
+    const pirateTier = Math.min(8, 1 + clears);
+    return {
+      pirateTier,
+      title: `海盗船跳板突围 · 第 ${pirateTier} 阶`,
+      badgeRewardBase: 2 + Math.min(3, Math.floor((pirateTier + 1) / 2)),
+      coinsRewardBase: 480 + (pirateTier - 1) * 90,
+    };
+  }
+
+  /**
+   * Settles one pirate plank run. Victory badges = tier base + finish-time bonus (>=30% / >=15% of the limit left ->
+   * +2 / +1) + survivor bonus (+1 per 15 Bobos, max +3) + trap bonus (+1 per 3 sea gaps / cannonballs crossed without a
+   * loss, max +2). Defeats keep a consolation badge per 45% of the course (max 2) and never cost gold.
+   */
+  public recordPirateBoardingResult(
+    victory: boolean,
+    finishSec: number,
+    timeLimitSec: number,
+    survivors: number,
+    bobosLost: number,
+    trapsDodged: number,
+    progressPct: number
+  ): {
+    victory: boolean;
+    pirateTierCleared: number;
+    badgesAwarded: number;
+    timeBonusBadges: number;
+    survivorBonusBadges: number;
+    trapBonusBadges: number;
+    coinsAwarded: number;
+    milestoneBonusCoins: number;
+    milestoneReached: boolean;
+    milestoneRankTitle: string;
+    totalClears: number;
+    totalBadges: number;
+    isNewSpeedRecord: boolean;
+  } {
+    const safeLimit = Math.max(1, Number.isFinite(timeLimitSec) ? timeLimitSec : 1);
+    const safeFinish = Math.max(0, Math.min(3600, Number.isFinite(finishSec) ? finishSec : safeLimit));
+    const safeSurv = Math.max(0, Math.min(600, Math.floor(Number.isFinite(survivors) ? survivors : 0)));
+    const safeLost = Math.max(0, Math.min(9999, Math.floor(Number.isFinite(bobosLost) ? bobosLost : 0)));
+    const safeDodged = Math.max(0, Math.min(999, Math.floor(Number.isFinite(trapsDodged) ? trapsDodged : 0)));
+    const safePct = Math.max(0, Math.min(100, Number.isFinite(progressPct) ? progressPct : 0));
+    const spec = this.getPirateBoardingSpec();
+    const tierBefore = this.getGoldSkullMilestoneBonus().tier;
+
+    this.totalPirateTrapsDodged = Math.min(9999999, this.totalPirateTrapsDodged + safeDodged);
+    this.totalPirateBobosLost = Math.min(9999999, this.totalPirateBobosLost + safeLost);
+
+    let badgesAwarded: number;
+    let coinsAwarded: number;
+    let timeBonusBadges = 0;
+    let survivorBonusBadges = 0;
+    let trapBonusBadges = 0;
+    let isNewSpeedRecord = false;
+    if (victory) {
+      const timeLeftRatio = Math.max(0, Math.min(1, (safeLimit - safeFinish) / safeLimit));
+      timeBonusBadges = timeLeftRatio >= 0.3 ? 2 : timeLeftRatio >= 0.15 ? 1 : 0;
+      survivorBonusBadges = Math.min(3, Math.floor(safeSurv / 15));
+      trapBonusBadges = Math.min(2, Math.floor(safeDodged / 3));
+      badgesAwarded = spec.badgeRewardBase + timeBonusBadges + survivorBonusBadges + trapBonusBadges;
+      coinsAwarded = Math.round(
+        spec.coinsRewardBase + safeSurv * 4 + Math.max(0, safeLimit - safeFinish) * 10 + safeDodged * 12
+      );
+      this.pirateBoardingClears = Math.min(99999, this.pirateBoardingClears + 1);
+      this.bestPirateSurvivors = Math.max(this.bestPirateSurvivors, safeSurv);
+      if (safeFinish > 0 && (this.bestPirateFinishSec <= 0 || safeFinish < this.bestPirateFinishSec)) {
+        this.bestPirateFinishSec = Number(safeFinish.toFixed(1));
+        isNewSpeedRecord = true;
+      }
+    } else {
+      badgesAwarded = Math.min(2, Math.floor(safePct / 45));
+      coinsAwarded = Math.round(safePct * 3 + safeSurv * 2);
+    }
+
+    this.goldSkullBadges = Math.min(99999, this.goldSkullBadges + badgesAwarded);
+    this.lifetimeGoldSkullBadges = Math.min(
+      99999,
+      Math.max(this.lifetimeGoldSkullBadges + badgesAwarded, this.goldSkullBadges)
+    );
+    const milestoneAfter = this.getGoldSkullMilestoneBonus();
+    const milestoneReached = milestoneAfter.tier > tierBefore;
+    const milestoneBonusCoins = milestoneReached ? 250 * milestoneAfter.tier : 0;
+    this.gold += coinsAwarded + milestoneBonusCoins;
+    this.save();
+
+    return {
+      victory,
+      pirateTierCleared: spec.pirateTier,
+      badgesAwarded,
+      timeBonusBadges,
+      survivorBonusBadges,
+      trapBonusBadges,
+      coinsAwarded,
+      milestoneBonusCoins,
+      milestoneReached,
+      milestoneRankTitle: milestoneAfter.rankTitle,
+      totalClears: this.pirateBoardingClears,
+      totalBadges: this.goldSkullBadges,
       isNewSpeedRecord,
     };
   }

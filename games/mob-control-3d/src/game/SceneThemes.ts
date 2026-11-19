@@ -830,7 +830,7 @@ export function createGateForcefieldTexture(
   const W = 512;
   const H = 256;
 
-  // Supercell Neon Portal Forcefield Palette (Matches Style 2 3D Asset Sheet!)
+  // Neon Portal Forcefield Palette (Matches Style 2 3D Asset Sheet!)
   let topCol = '#47f3ff';
   let midCol = '#0ea5e9';
   let botCol = '#0369a1';
@@ -884,7 +884,7 @@ export function createGateForcefieldTexture(
   tracePortalArchPath();
   ctx.clip();
 
-  // 1. Vibrant Supercell Glowing Neon Energy Field Gradient
+  // 1. Vibrant Glowing Neon Energy Field Gradient
   const grad = ctx.createLinearGradient(0, 6, 0, H - 6);
   grad.addColorStop(0, topCol);
   grad.addColorStop(0.48, midCol);
@@ -900,7 +900,7 @@ export function createGateForcefieldTexture(
   ctx.fillStyle = coreGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // 3. Bold Diagonal Supercell Glossy Light Streaks
+  // 3. Bold Diagonal Glossy Light Streaks
   ctx.fillStyle = 'rgba(255, 255, 255, 0.26)';
   ctx.beginPath();
   ctx.moveTo(58, 0);
@@ -948,7 +948,7 @@ export function createGateForcefieldTexture(
     }
   }
 
-  // 6. Baked 3D Extruded Supercell Number Typography (+4, ×3, -6, 巨化×2, 糖霜盾)
+  // 6. Baked 3D Extruded Number Typography (+4, ×3, -6, 巨化×2, 糖霜盾)
   if (labelText) {
     ctx.save();
     const hasCjk = /[\u4e00-\u9fa5]/.test(labelText);
@@ -992,7 +992,7 @@ export function createGateForcefieldTexture(
 
   ctx.restore();
 
-  // 7. Bold Supercell Dark-Navy Ink Outline around the Portal Field
+  // 7. Bold Dark-Navy Ink Outline around the Portal Field
   ctx.save();
   tracePortalArchPath();
   ctx.strokeStyle = '#0f172a';
@@ -1470,7 +1470,7 @@ export function createConveyorBeltTexture(): THREE.CanvasTexture {
 }
 
 /**
- * Supercell 3D Glossy Toy-Box Post-Processing ShaderPass (Directional FXAA 3.11 + Vibrant Studio Color Grading)
+ * 3D Glossy Toy-Box Post-Processing ShaderPass (Directional FXAA 3.11 + Vibrant Studio Color Grading)
  */
 export function createCinemaPostProcessingPass(width: number, height: number): ShaderPass {
   return new ShaderPass({
