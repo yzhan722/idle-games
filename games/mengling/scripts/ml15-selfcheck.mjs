@@ -17,8 +17,8 @@ import { ERA_DEFS } from "../modules/defs_eras.js";
 import { monPower } from "../modules/mons.js";
 import { WEBP_UI_ICONS, renderResSvg, renderUiIcon } from "../modules/render/rpg_svg_icons.js";
 
-// ML-16 起全仓版本号升到 0.7.56：VERSION 校验当前构建的版本同步 / 图标缓存号，ML15_VERSION 校验 ML-15 自己的帮助块与样式块标签
-const VERSION = "0.7.56";
+// ML-16 起全仓版本号升到 0.7.56（界面文案审视后为 0.7.57，ML-17 起为 0.7.58）：VERSION 校验当前构建的版本同步 / 图标缓存号，ML15_VERSION 校验 ML-15 自己的帮助块与样式块标签
+const VERSION = "0.7.58";
 const ML15_VERSION = "0.7.55";
 const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const src = (...p) => readFileSync(path.join(rootDir, ...p), "utf8");

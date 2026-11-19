@@ -624,8 +624,8 @@ import * as PT from "../modules/systems/pve_tower.js";
     const uiTag = renderUiIcon(iconKey, 24);
     const resTag = renderResSvg(iconKey, 20);
     assert.ok(
-      uiTag.includes(`${iconKey}.webp?v=0.7.56`) && resTag.includes(`${iconKey}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.56`,
+      uiTag.includes(`${iconKey}.webp?v=0.7.58`) && resTag.includes(`${iconKey}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
     );
   }
 
@@ -813,13 +813,13 @@ import * as PT from "../modules/systems/pve_tower.js";
     const uiTag = renderUiIcon(iconKey, 24);
     const resTag = renderResSvg(iconKey, 20);
     assert.ok(
-      uiTag.includes(`${iconKey}.webp?v=0.7.56`) && resTag.includes(`${iconKey}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.56`,
+      uiTag.includes(`${iconKey}.webp?v=0.7.58`) && resTag.includes(`${iconKey}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
     );
   }
   assert.ok(
-    renderResSvg("shinyStarSand", 16).includes("boutiqueMirrorStar.webp?v=0.7.56"),
-    "shinyStarSand resource icon resolves to boutiqueMirrorStar.webp?v=0.7.56",
+    renderResSvg("shinyStarSand", 16).includes("boutiqueMirrorStar.webp?v=0.7.58"),
+    "shinyStarSand resource icon resolves to boutiqueMirrorStar.webp?v=0.7.58",
   );
 
   const st = defaultState();
@@ -982,17 +982,17 @@ import * as PT from "../modules/systems/pve_tower.js";
     const uiTag = renderUiIcon(iconKey, 24);
     const resTag = renderResSvg(iconKey, 20);
     assert.ok(
-      uiTag.includes(`${iconKey}.webp?v=0.7.56`) && resTag.includes(`${iconKey}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.56`,
+      uiTag.includes(`${iconKey}.webp?v=0.7.58`) && resTag.includes(`${iconKey}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
     );
   }
   assert.ok(
-    renderResSvg("ancientGeneAmber", 16).includes("amberFossilGem.webp?v=0.7.56"),
-    "ancientGeneAmber resource icon resolves to amberFossilGem.webp?v=0.7.56",
+    renderResSvg("ancientGeneAmber", 16).includes("amberFossilGem.webp?v=0.7.58"),
+    "ancientGeneAmber resource icon resolves to amberFossilGem.webp?v=0.7.58",
   );
   assert.ok(
-    renderResSvg("corridorStarMedals", 16).includes("corridorStarCrest.webp?v=0.7.56"),
-    "corridorStarMedals resource icon resolves to corridorStarCrest.webp?v=0.7.56",
+    renderResSvg("corridorStarMedals", 16).includes("corridorStarCrest.webp?v=0.7.58"),
+    "corridorStarMedals resource icon resolves to corridorStarCrest.webp?v=0.7.58",
   );
 
   const st = defaultState();
@@ -1147,11 +1147,11 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-9 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.56`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.56`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
     );
   }
-  assert.ok(renderResSvg("driftBottle", 16).includes("driftBottle.webp?v=0.7.56"), "driftBottle resource icon resolves to driftBottle.webp");
+  assert.ok(renderResSvg("driftBottle", 16).includes("driftBottle.webp?v=0.7.58"), "driftBottle resource icon resolves to driftBottle.webp");
   const dockSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");
   assert.ok(!/<svg/i.test(dockSrc.slice(dockSrc.indexOf("ML-9 Section"), dockSrc.indexOf("ML-8 Section"))), "ML-9 dock UI uses webp icons only (no inline svg)");
 
@@ -1320,11 +1320,11 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-10 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.56`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.56`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
     );
   }
-  assert.ok(renderResSvg("fireflyLantern", 16).includes("fireflyLantern.webp?v=0.7.56"), "fireflyLantern resource icon resolves to fireflyLantern.webp");
+  assert.ok(renderResSvg("fireflyLantern", 16).includes("fireflyLantern.webp?v=0.7.58"), "fireflyLantern resource icon resolves to fireflyLantern.webp");
   const ftSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");
   const ml10Ui = ftSrc.slice(ftSrc.indexOf("ML-10 Section: 萌灵「月光夜行"), ftSrc.indexOf("ML-9 Section"));
   assert.ok(ml10Ui.length > 1000 && !/<svg/i.test(ml10Ui) && !/<canvas/i.test(ml10Ui), "ML-10 UI uses webp icons only (no inline svg / canvas)");
@@ -1523,8 +1523,8 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-11 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.56`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.56`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
     );
   }
   const ftSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");
@@ -1709,11 +1709,11 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-12 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.56`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.56`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
     );
   }
-  assert.ok(renderResSvg("mapFragment", 16).includes("mapFragment.webp?v=0.7.56"), "mapFragment resource icon resolves to mapFragment.webp");
+  assert.ok(renderResSvg("mapFragment", 16).includes("mapFragment.webp?v=0.7.58"), "mapFragment resource icon resolves to mapFragment.webp");
   const ftSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");
   const ml12Ui = ftSrc.slice(ftSrc.indexOf("ML-12 Section: 萌灵「寻宝地图远航」"), ftSrc.indexOf("ML-11 Section: 萌灵「云顶浮空岛建造」"));
   assert.ok(ml12Ui.length > 4000 && ml12Ui.includes("ML-12 Section: 萌灵「乐队合奏音乐会」"), "ML-12 treasure + band UI sections exist ahead of ML-11");
@@ -1986,8 +1986,8 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-13 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.56`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.56`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
     );
   }
   const ftSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");

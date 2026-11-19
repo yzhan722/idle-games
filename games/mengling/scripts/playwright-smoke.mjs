@@ -77,7 +77,7 @@ try {
     console.error("playwright-smoke: FAIL unexpected title:", title);
     process.exit(1);
   }
-  if (!status.includes("v0.7.56")) {
+  if (!status.includes("v0.7.58")) {
     console.error("playwright-smoke: FAIL unexpected topbar:", status);
     process.exit(1);
   }
@@ -812,6 +812,48 @@ try {
   );
   if (campUnlocks !== 0) {
     console.error("playwright-smoke: FAIL campers stay locked after collecting / packing up");
+    process.exit(1);
+  }
+  await gotoTab("functions");
+
+  // Interactive ML-17 Crystal Ice Rink + Flower-Field Bee Workshop: one-click arrange / tend (release lock via the unified away registry) → leave / recall → unlocked
+  const ml17Txt = await page.locator("#panel-functions").innerText();
+  if (!ml17Txt.includes("冰晶溜冰场") || !ml17Txt.includes("花田蜜蜂工坊") || !ml17Txt.includes("节目单") || !ml17Txt.includes("今天开的花")) {
+    console.error("playwright-smoke: FAIL functions tab missing the ML-17 Ice Rink / Bee Workshop panels");
+    process.exit(1);
+  }
+  await page.locator('button[data-rink-arrange="snowWaltz"]').click({ timeout: 10000 });
+  if ((await page.evaluate(() => document.querySelector("[data-rink-phase]")?.getAttribute("data-rink-phase"))) !== "rehearsing") {
+    console.error("playwright-smoke: FAIL 一键编排开演 did not put anyone on the ice");
+    process.exit(1);
+  }
+  await page.locator('button[data-bee-autodispatch="1"]').click({ timeout: 10000 });
+  const tendingN = await page.evaluate(() => document.querySelectorAll('[data-bee-phase="tending"]').length);
+  if (tendingN < 1) {
+    console.error("playwright-smoke: FAIL 一键照料 sent nobody to the hives");
+    process.exit(1);
+  }
+  await gotoTab("mons");
+  const ml17Locks = await page.evaluate(() => {
+    const titles = [...document.querySelectorAll("button[data-mon-release]")].filter((b) => b.disabled).map((b) => b.getAttribute("title") || "");
+    return { rink: titles.filter((t) => t.includes("冰晶溜冰场")).length, bee: titles.filter((t) => t.includes("花田蜜蜂工坊")).length };
+  });
+  if (ml17Locks.rink < 1 || ml17Locks.bee < 1) {
+    console.error(`playwright-smoke: FAIL skaters / keepers are releasable (${JSON.stringify(ml17Locks)})`);
+    process.exit(1);
+  }
+  await gotoTab("functions");
+  await page.locator("button[data-rink-leave]").first().click({ timeout: 10000 });
+  for (let i = 0; i < 3; i += 1) {
+    const recall = page.locator("button[data-bee-recall]").first();
+    if (await recall.count()) await recall.click({ timeout: 10000 });
+  }
+  await gotoTab("mons");
+  const ml17Unlocks = await page.evaluate(() =>
+    [...document.querySelectorAll("button[data-mon-release]")].filter((b) => b.disabled && /冰晶溜冰场|花田蜜蜂工坊/.test(b.getAttribute("title") || "")).length,
+  );
+  if (ml17Unlocks !== 0) {
+    console.error("playwright-smoke: FAIL skaters / keepers stay locked after leaving / recalling");
     process.exit(1);
   }
   await gotoTab("functions");

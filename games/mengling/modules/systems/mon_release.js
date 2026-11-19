@@ -20,6 +20,8 @@ import {
   detachBalloonPassenger,
   detachBandMember,
   detachStargazeCamper,
+  detachIceRinkSkater,
+  detachBeeKeeper,
   detachFishingAngler,
   detachPostMessenger,
   getBandLineupMonIds,
@@ -181,6 +183,8 @@ export function releaseMonIds(state, ids, ctx = {}) {
     detachBalloonPassenger(state, m.id);
     detachCloudParkOperator(state, m.id);
     detachStargazeCamper(state, m.id);
+    detachIceRinkSkater(state, m.id);
+    detachBeeKeeper(state, m.id);
     candy += releaseCandyRefund(monPower(m));
     if (sampleNames.length < 3) sampleNames.push(m.name || "未知萌灵");
     removed += 1;

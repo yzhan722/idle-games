@@ -38,6 +38,8 @@ import {
   getBalloonTravelerMonIds,
   getCloudParkRideOfMon,
   getStargazeCamperMonIds,
+  getIceRinkSkaterMonIds,
+  getBeeKeeperMonIds,
 } from "../systems/collection_fun.js";
 import {
   BAND_PARTS,
@@ -47,6 +49,8 @@ import {
   getMigrantFriendMonIds,
   getPostRouteDef,
   getStargazeSiteDef,
+  getIceRinkProgramDef,
+  getBeeHiveDef,
 } from "../systems/pve_tower.js";
 import { renderMonsStageHtml, setHtmlPreservingStage } from "./tab_stages.js";
 import { renderResSvg, renderUiIcon } from "./rpg_svg_icons.js";
@@ -347,7 +351,7 @@ export function createRenderMons({
           return `<button class="btn btn--small type type-${escapeHtml(t)}${isReady ? ' btn--ready' : ''}" data-mon-batch-skill="${escapeHtml(t)}" title="${escapeHtml(TYPE_SKILL_DESC[t] || "")}" ${isReady ? '' : 'disabled'}>${label}</button>`;
         }).join("");
         rows.push(`
-          <div class="row row--full">
+          <div class="row row--full mon-batch-skills">
             <div class="row__left">
               <div class="row__title row__titleLine">${renderResSvg("energyDrink", 18)}<span>批量技能</span><span class="tag">冷却完毕一键释放</span></div>
             </div>
@@ -372,7 +376,7 @@ export function createRenderMons({
         const emptyHint =
           searchQ || region !== "all" || typeFilter !== "all"
             ? "当前筛选无结果，试试放宽地区/属性或清空搜索。"
-            : "去“捕捉”页抓一只吧。";
+            : "去「捕捉」页抓一只吧。";
         rows.push(`
           <div class="row row--full is-locked">
             <div class="row__left">
@@ -718,6 +722,16 @@ export function createRenderMons({
               const campTrip = (state.meta?.stargazeCamp?.sites || []).map((x) => x?.trip).find((t) => t && Array.isArray(t.camperIds) && t.camperIds.includes(selected.id));
               const campSite = campTrip ? getStargazeSiteDef(campTrip.siteId)?.name || "星空营地" : "星空营地";
               parts.push(`<span class="tag tag--stargaze-camper">${renderUiIcon("starCamp", 13)}<span>${campTrip?.phase === "returned" ? "夜营已归来" : "夜营观星中"} · ${escapeHtml(campSite)}</span></span>`);
+            }
+            if (getIceRinkSkaterMonIds(state).has(selected.id)) {
+              const rinkShow = state.meta?.iceRink?.show;
+              const rinkProgram = getIceRinkProgramDef(rinkShow?.programId)?.name || "花样滑冰";
+              parts.push(`<span class="tag tag--rink-skater">${renderUiIcon("iceRink", 13)}<span>${rinkShow?.phase === "finished" ? "演出已结束" : "溜冰排练中"} · ${escapeHtml(rinkProgram)}</span></span>`);
+            }
+            if (getBeeKeeperMonIds(state).has(selected.id)) {
+              const beeTrip = (state.meta?.beeWorkshop?.hives || []).map((x) => x?.trip).find((t) => t && Array.isArray(t.keeperIds) && t.keeperIds.includes(selected.id));
+              const beeHive = beeTrip ? getBeeHiveDef(beeTrip.hiveId)?.name || "花田蜂箱" : "花田蜂箱";
+              parts.push(`<span class="tag tag--bee-keeper">${renderUiIcon("beeHive", 13)}<span>${beeTrip?.phase === "done" ? "蜂蜜已酿好" : "照料花田中"} · ${escapeHtml(beeHive)}</span></span>`);
             }
             const bandLineup = state.meta?.bandConcert?.lineup;
             const bandPart = bandLineup && typeof bandLineup === "object" ? BAND_PARTS.find((p) => Number(bandLineup[p.id]) === selected.id) : null;

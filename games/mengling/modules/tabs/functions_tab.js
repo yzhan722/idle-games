@@ -59,6 +59,8 @@ import {
   exchangeParkTickets,
   getIdleParkCandidates,
   getIdleStargazeCandidates,
+  getIdleIceRinkCandidates,
+  getIdleBeeCandidates,
   getParkEventDef,
   getParkRideDef,
   getParkRideSpeeds,
@@ -353,6 +355,40 @@ import {
   STARGAZE_SITE_COUNT,
   STARGAZE_SITES,
   useStargazeCampfire,
+  autoArrangeIceRink,
+  claimIceRinkShow,
+  computeIceRinkBuffs,
+  ensureIceRinkState,
+  getIceRinkBuffFor,
+  getIceRinkProgramDef,
+  leaveIceRinkShow,
+  previewIceRinkArrangement,
+  evaluateIceRinkSkater,
+  startIceRinkShow,
+  scoreIceRinkArrangement,
+  ICE_RINK_BUFF_KINDS,
+  ICE_RINK_BUFF_ZH,
+  ICE_RINK_GRADES,
+  ICE_RINK_PROGRAMS,
+  ICE_RINK_RES_ZH,
+  autoDispatchBeeHives,
+  claimAllBeeHives,
+  claimBeeHive,
+  computeBeeWorkshopBonus,
+  dispatchBeeHive,
+  ensureBeeWorkshopState,
+  evaluateBeeKeeper,
+  getBeeBloomRotation,
+  getBeeFlowerDef,
+  getBeeHiveDef,
+  recallBeeHive,
+  BEE_BADGE_TIERS,
+  BEE_FLOWERS,
+  BEE_HIVE_COUNT,
+  BEE_HIVE_MATCH_CHANCE,
+  BEE_HIVES,
+  BEE_RES_ZH,
+  BEE_SEATS,
   autoPickFishingAnglers,
   claimFishingCreel,
   computeFishingClubBonus,
@@ -709,6 +745,76 @@ export function createRenderFunctions({
     });
   }
 
+  function ml17RinkView(show) {
+    const dur = Math.max(1, Number(show?.durationSec) || 1);
+    const el = Math.max(0, Math.min(dur, Number(show?.elapsedSec) || 0));
+    const pct = Math.max(2, Math.min(99, Math.floor((el / dur) * 100)));
+    return { pct, text: `排练 ${pct}% · 约 ${fmtDuration(Math.max(1, Math.ceil(dur - el)))} 后登台演出` };
+  }
+
+  function ml17HiveView(trip) {
+    const dur = Math.max(1, Number(trip?.durationSec) || 1);
+    const el = Math.max(0, Math.min(dur, Number(trip?.elapsedSec) || 0));
+    const pct = Math.max(2, Math.min(99, Math.floor((el / dur) * 100)));
+    return { pct, text: `照料 ${pct}% · 约 ${fmtDuration(Math.max(1, Math.ceil(dur - el)))} 后蜂蜜酿好` };
+  }
+
+  /** ML-17: live patch of the rehearsal bar and the buff countdowns (0px scroll drift). */
+  function patchIceRinkLiveDom(state) {
+    const rk = state?.meta?.iceRink;
+    if (!elFunctionsTraining || !rk) return;
+    const card = elFunctionsTraining.querySelector("[data-rink-stage]");
+    const phase = rk.show ? rk.show.phase : "idle";
+    if (card && card.getAttribute("data-rink-phase") !== phase) {
+      ui.functionsDirty = true;
+      return;
+    }
+    if (phase === "rehearsing") {
+      const v = ml17RinkView(rk.show);
+      const fill = elFunctionsTraining.querySelector("[data-rink-fill]");
+      if (fill instanceof HTMLElement) fill.style.width = `${v.pct}%`;
+      const txt = elFunctionsTraining.querySelector("[data-rink-txt]");
+      if (txt && txt.textContent !== v.text) txt.textContent = v.text;
+    }
+    for (const kind of ICE_RINK_BUFF_KINDS) {
+      const pill = elFunctionsTraining.querySelector(`[data-rink-buff="${kind}"]`);
+      const el = elFunctionsTraining.querySelector(`[data-rink-buff-rem="${kind}"]`);
+      if (!pill || !el) continue;
+      const rem = Math.max(0, Number(rk.buffs?.[kind]?.leftSec) || 0);
+      if (pill.classList.contains("is-on") !== rem > 0) {
+        ui.functionsDirty = true;
+        return;
+      }
+      const t = rem > 0 ? `剩 ${fmtDuration(Math.max(1, Math.ceil(rem)))}` : "未生效";
+      if (el.textContent !== t) el.textContent = t;
+    }
+  }
+
+  /** ML-17: live patch of the hive bars; a new local day (new blooms) or a phase change re-renders. */
+  function patchBeeLiveDom(state) {
+    const bw = state?.meta?.beeWorkshop;
+    if (!elFunctionsTraining || !bw || !Array.isArray(bw.hives)) return;
+    const dayEl = elFunctionsTraining.querySelector("[data-bee-day]");
+    if (dayEl && Number(dayEl.getAttribute("data-bee-day")) !== getBeeBloomRotation().dayIdx) {
+      ui.functionsDirty = true;
+      return;
+    }
+    bw.hives.forEach((x, i) => {
+      const card = elFunctionsTraining.querySelector(`[data-bee-hive="${i}"]`);
+      const phase = x?.trip ? x.trip.phase : "idle";
+      if (card && card.getAttribute("data-bee-phase") !== phase) {
+        ui.functionsDirty = true;
+        return;
+      }
+      if (phase !== "tending") return;
+      const v = ml17HiveView(x.trip);
+      const fill = elFunctionsTraining.querySelector(`[data-bee-fill="${i}"]`);
+      if (fill instanceof HTMLElement) fill.style.width = `${v.pct}%`;
+      const txt = elFunctionsTraining.querySelector(`[data-bee-txt="${i}"]`);
+      if (txt && txt.textContent !== v.text) txt.textContent = v.text;
+    });
+  }
+
   function ml15StageView(state, bk) {
     const recipe = getBakeryRecipeDef(bk?.recipeId) || BAKERY_RECIPE_DEFS[0];
     const stageIdx = Math.max(0, Math.min(BAKERY_STATIONS.length - 1, Math.floor(Number(bk?.batch?.stageIdx) || 0)));
@@ -907,7 +1013,7 @@ export function createRenderFunctions({
     const need = Math.max(1, Number(b.needSec) || 1);
     const prog = Math.max(0, Number(b.progressSec) || 0);
     const pct = Math.max(1, Math.min(99, Math.floor((prog / need) * 100)));
-    if (!crewEval?.crewCount) return { pct, text: `工期 ${pct}% · 工地停工中：派 1~3 只伙伴上岛出工才会推进` };
+    if (!crewEval?.crewCount) return { pct, text: `工期 ${pct}% · 工地停工中：派 1~3 位伙伴上岛出工才会推进` };
     const remSec = Math.max(1, Math.ceil((need - prog) / Math.max(0.01, crewEval.speedMul)));
     return { pct, text: `工期 ${pct}% · 约 ${fmtDuration(remSec)} 后竣工（出工速度 ×${crewEval.speedMul.toFixed(2)}）` };
   }
@@ -970,7 +1076,7 @@ export function createRenderFunctions({
   }
 
   function ml10NightProgress(obs, observerEval, phase) {
-    if (!observerEval?.observerCount) return { pct: 0, text: "派驻 1~3 只伙伴后开始记录夜行萌灵出没" };
+    if (!observerEval?.observerCount) return { pct: 0, text: "派驻 1~3 位伙伴后开始记录夜行萌灵出没" };
     const carry = Math.max(0, Number(obs?.observeCarrySec) || 0);
     const pct = Math.max(2, Math.min(99, Math.round((carry / NIGHT_OBS_CYCLE_SEC) * 100)));
     const rate = phase.sightingMul * observerEval.speedMul;
@@ -1076,7 +1182,7 @@ export function createRenderFunctions({
       txtEl.textContent =
         campAura.stationedCount > 0
           ? `营火伴游采集 ${foragePct}% · 约 ${fmtDuration(forageRemSec)} 后收获野餐香草与星露灵果（加速 x${(campAura.campSpeedMul || 1).toFixed(2)}）`
-          : "邀请 1~4 只萌灵入驻营地，即可持续累积亲密度并自动寻获野餐香草与星露灵果";
+          : "邀请 1~4 位萌灵入驻营地，即可持续累积亲密度并自动寻获野餐香草与星露灵果";
     }
     for (const f of campAura.activeFeasts) {
       const remEl = elFunctionsTraining.querySelector(`[data-camp-feast-rem="${f.recipeId}"]`);
@@ -1111,6 +1217,8 @@ export function createRenderFunctions({
         patchBalloonTravelLiveDom(stLive);
         patchCloudParkLiveDom(stLive);
         patchStargazeLiveDom(stLive);
+        patchIceRinkLiveDom(stLive);
+        patchBeeLiveDom(stLive);
       }
       return;
     }
@@ -1234,6 +1342,16 @@ export function createRenderFunctions({
     if (state.meta?.stargazeCamp && (sgStatusBonus.campers > 0 || sgStatusBonus.returned > 0 || sgStatusBonus.totalNights > 0)) {
       statusBits.push(`星空露营 夜营 ${sgStatusBonus.camping}/${STARGAZE_SITE_COUNT}${sgStatusBonus.returned ? ` · 待收取 ${sgStatusBonus.returned}` : ""} · 图鉴 ${sgStatusBonus.entries}/${sgStatusBonus.totalEntries} · ${sgStatusBonus.badgeName}`);
     }
+    const rinkStatus = computeIceRinkBuffs(state);
+    if (state.meta?.iceRink && (rinkStatus.skaters > 0 || rinkStatus.finished || rinkStatus.totalShows > 0 || rinkStatus.active.length > 0)) {
+      statusBits.push(
+        `冰晶溜冰场 ${rinkStatus.finished ? "评分待领取" : rinkStatus.rehearsing ? `排练中 ${rinkStatus.skaters} 位` : "冰面空闲"}${rinkStatus.active.length ? ` · 增益 ${rinkStatus.active.map((b) => ICE_RINK_BUFF_ZH[b.kind]).join("/")}` : ""}`,
+      );
+    }
+    const beeStatus = computeBeeWorkshopBonus(state);
+    if (state.meta?.beeWorkshop && (beeStatus.keepers > 0 || beeStatus.done > 0 || beeStatus.totalTrips > 0)) {
+      statusBits.push(`蜜蜂工坊 照料 ${beeStatus.tending}/${BEE_HIVE_COUNT}${beeStatus.done ? ` · 待收取 ${beeStatus.done}` : ""} · 图鉴 ${beeStatus.honeys}/${beeStatus.totalHoneys} · ${beeStatus.badgeName}`);
+    }
     const bakeryStatusAura = computeBakeryAura(state);
     if (state.meta?.cloudBakery && (bakeryStatusAura.workers > 0 || bakeryStatusAura.totalBatches > 0 || bakeryStatusAura.activeBuffs.length > 0)) {
       statusBits.push(
@@ -1324,12 +1442,12 @@ export function createRenderFunctions({
       statusBits.push(`冠军殿堂 Tier ${leagueBonus.hallOfFameTier}/${CHAMPION_LEAGUE_MAX_TIER}`);
     }
     if (starCampAura.stationedCount > 0) {
-      statusBits.push(`星界露营 ${starCampAura.stationedCount}/4 只（Lv.${starCamp.level}）`);
+      statusBits.push(`星界露营 ${starCampAura.stationedCount}/4 位（Lv.${starCamp.level}）`);
     }
     if (starCampAura.activeFeasts.length > 0) {
       statusBits.push(`营地盛宴 ×${starCampAura.activeFeasts.length} 生效中`);
     }
-    if (trainN > 0) statusBits.push(`训练中 ${trainN} 只`);
+    if (trainN > 0) statusBits.push(`训练中 ${trainN} 位`);
     if (activeEcoZonesCount > 0) statusBits.push(`生态沙盘探索 ${activeEcoZonesCount}/4 区${readyEcoZonesCount > 0 ? `（可领 ${readyEcoZonesCount}）` : ""}`);
     if (mintOwnedCount > 0) statusBits.push(`心性调律薄荷 ×${mintOwnedCount}`);
     if (statusExpOn) statusBits.push(`远征剩余 ${fmtDuration(statusExpRem)}`);
@@ -1361,6 +1479,7 @@ export function createRenderFunctions({
           <div class="row__title row__titleLine">${renderUiIcon("tab_functions", 18)}<span>功能摘要</span><span class="tag">${expDaily.claimed ? "今日已领" : "每日 +10 币"}</span></div>
           <div class="row__desc">${statusBits.length ? escapeHtml(statusBits.join(" · ")) : "派遣训练或远征后，回来这里看进度与收获。"}</div>
           <div class="row__desc">${escapeHtml(expDailyDesc)}</div>
+          <div class="row__desc muted">各玩法完整规则见「设置」页的帮助文档。</div>
         </div>
         <div class="row__right">
           <button type="button" class="btn btn--primary btn--small" data-func-exp-daily-claim ${expDaily.canClaim ? "" : "disabled"}>${expDaily.claimed ? "已领" : "领取 +10"}</button>
@@ -1373,7 +1492,7 @@ export function createRenderFunctions({
     const ml16Returned = getReturnedPartnersSummary(state);
     const ml16AwayMap = getAwayActivityMap(state);
     const ml16AwayCounts = AWAY_ACTIVITY_DEFS.map((a) => ({ a, n: [...ml16AwayMap.values()].filter((x) => x.id === a.id).length })).filter((x) => x.n > 0);
-    const ml16ReturnIcon = { stargazeCamp: "starCamp", balloonTravel: "rainbowBalloon", postOffice: "messengerBag", treasureVoyage: "treasureMap", wishDock: "driftBottle" };
+    const ml16ReturnIcon = { iceRink: "iceRink", beeWorkshop: "beeHive", stargazeCamp: "starCamp", balloonTravel: "rainbowBalloon", postOffice: "messengerBag", treasureVoyage: "treasureMap", wishDock: "driftBottle" };
     const ml16MonChip = (id) => {
       const m = list.find((x) => x && x.id === id);
       return m ? `<span class="away-return__mon">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span></span>` : "";
@@ -1400,14 +1519,14 @@ export function createRenderFunctions({
           </div>
           <div class="row__desc">${
             ml16Returned.count
-              ? "这些伙伴已经降落 / 归营 / 带着回信回来了，但收取之前仍算外出、被防放生锁住。一键收取会逐个调用各玩法自己的收取，奖励、图鉴与经验照常发放，伙伴立刻回家。"
-              : "已降落的气球、夜营归来的营地、带着回信回来的信使、满载归港的码头船员、体力耗尽的寻宝船队会在这里提示，一键就能全部收取、让伙伴回家。"
+              ? "收取前伙伴仍算外出、受防放生锁定；一键收取后奖励照常发放，伙伴立刻回家。"
+              : "演出结束、蜂蜜酿好、气球降落、夜营归营等外出归来后会在这里提示，一键全部收取。"
           }</div>
           ${ml16UnitsHtml ? `<div class="away-return__list">${ml16UnitsHtml}</div>` : ""}
           <div class="away-return__overview">${
             ml16AwayCounts.length
               ? `外出中 ${ml16AwayMap.size} 位：${ml16AwayCounts.map((x) => `${escapeHtml(x.a.title)} ${x.n}`).join(" · ")}`
-              : "当前没有伙伴外出，所有伙伴都在家。"
+              : "当前没有伙伴外出。"
           }</div>
         </div>
         <div class="row__right away-return__btns">
@@ -1415,6 +1534,421 @@ export function createRenderFunctions({
         </div>
       </div>
     `);
+
+    // ========== ML-17 Section: 萌灵「冰晶溜冰场」(Crystal Ice Rink) ==========
+    const hideRink = Boolean(ui.functionsHideIceRink);
+    const rink = ensureIceRinkState(state);
+    const rinkBuffs = computeIceRinkBuffs(state);
+    // 与 tick 结算用同一套属性解析（mon.types → 图鉴属性），保证编排预览的契合 / 评分与实际结算一致
+    const ml17Opts = { getBeastDataByDex };
+    const ml17Pct = (n) => `${Math.round((Number(n) || 0) * 10000) / 100}%`;
+    const ml17TypeBadges = (types) =>
+      (types || []).map((t) => `<span class="badge type type-${escapeHtml(t)}">${escapeHtml(TYPE_ZH?.[t] ?? t)}</span>`).join("");
+    const ml17Mon = (id) => (id > 0 ? list.find((x) => x && x.id === id) || null : null);
+    const ml17MonChip = (m, extra = "") =>
+      m ? `<span class="ml17-mon" data-ml17-mon="${m.id}">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${extra}</span>` : `<span class="ml17-mon is-empty">空位</span>`;
+    const rinkShow = rink.show;
+    const rinkIdle = getIdleIceRinkCandidates(state);
+    const rinkBuffTxt = (programId, grade) => {
+      const b = getIceRinkBuffFor(programId, grade);
+      return b ? `${ICE_RINK_BUFF_ZH[b.kind]} +${ml17Pct(b.add)} · ${Math.round(b.sec / 60)} 分钟` : "";
+    };
+
+    rows.push(`
+      <div class="row rink-header ${rinkShow ? "is-busy" : ""}" data-ice-rink="1">
+        <div class="row__left">
+          <div class="row__title row__titleLine">
+            ${renderUiIcon("iceRink", 20)}
+            <span>冰晶溜冰场</span>
+            <span class="tag tag--rink-title">${escapeHtml(rinkBuffs.title)}</span>
+            <span class="tag tag--rink-count">${renderUiIcon("skateScore", 14)}<span>演出 ${rinkBuffs.totalShows} 场</span></span>
+            <span class="tag tag--rink-count">${renderUiIcon("rinkBuff", 14)}<span>增益 ${rinkBuffs.active.length}/${ICE_RINK_BUFF_KINDS.length}</span></span>
+          </div>
+          <div class="row__desc">按动作属性编排伙伴上冰，评分越高限时增益越强。</div>
+        </div>
+        <div class="row__right rink-header__btns">
+          <button type="button" class="btn btn--small${rinkShow?.phase === "finished" ? " btn--primary" : ""}" data-rink-claim="1" ${rinkShow?.phase === "finished" ? "" : "disabled"}>领取评分</button>
+          <button type="button" class="btn btn--small btn--ghost" data-func-toggle="iceRink">${hideRink ? "展开" : "收起"}</button>
+        </div>
+      </div>
+    `);
+
+    if (!hideRink) {
+      let stageHtml = "";
+      if (!rinkShow) {
+        stageHtml = `
+          <div class="rink-stage is-idle" data-rink-stage="1" data-rink-phase="idle">
+            ${renderUiIcon("iceRink", 44)}
+            <div class="rink-stage__body">
+              <div class="rink-stage__name">冰面空着</div>
+              <div class="rink-stage__meta">挑一个节目点「一键编排开演」，或先点动作旁的「换人」手动编排。</div>
+            </div>
+          </div>`;
+      } else {
+        const prog = getIceRinkProgramDef(rinkShow.programId) || ICE_RINK_PROGRAMS[0];
+        const live = scoreIceRinkArrangement(state, prog.id, rinkShow.skaterIds, ml17Opts);
+        const finished = rinkShow.phase === "finished";
+        const movesHtml = prog.moves
+          .map((mv, i) => {
+            const m = ml17Mon(rinkShow.skaterIds[i]);
+            const slot = live.slots[i];
+            const pts = finished ? Math.max(0, Math.floor(Number(rinkShow.slotScores?.[i]) || 0)) : slot.score;
+            return `<div class="rink-move${slot.match ? " is-match" : ""}"><b>${i + 1}. ${escapeHtml(mv.name)}</b>${ml17TypeBadges(mv.elements)}${ml17MonChip(m, slot.match ? `<span class="tag tag--rink-match">契合</span>` : "")}<span class="rink-move__pts">${pts} 分</span></div>`;
+          })
+          .join("");
+        const dur = Math.max(1, Number(rinkShow.durationSec) || 1);
+        const pct = Math.max(2, Math.min(99, Math.floor(((Number(rinkShow.elapsedSec) || 0) / dur) * 100)));
+        stageHtml = finished
+          ? `
+          <div class="rink-stage is-finished" data-rink-stage="1" data-rink-phase="finished">
+            ${renderUiIcon("skateScore", 44)}
+            <div class="rink-stage__body">
+              <div class="rink-stage__name">「${escapeHtml(prog.name)}」演出结束</div>
+              <div class="rink-stage__score"><b>${rinkShow.score}</b><span>分</span><span class="rink-grade grade-${escapeHtml(rinkShow.grade)}">${escapeHtml(rinkShow.grade)}</span><span class="rink-stage__meta">领取后：${escapeHtml(rinkBuffTxt(prog.id, rinkShow.grade))}</span></div>
+              <div class="rink-moves">${movesHtml}</div>
+              <div class="rink-stage__actions"><button type="button" class="btn btn--small btn--primary" data-rink-claim="1">领取评分</button></div>
+            </div>
+          </div>`
+          : `
+          <div class="rink-stage is-rehearsing" data-rink-stage="1" data-rink-phase="rehearsing">
+            ${renderUiIcon("iceRink", 44)}
+            <div class="rink-stage__body">
+              <div class="rink-stage__name">「${escapeHtml(prog.name)}」排练中 · 预计 ${live.score} 分（${escapeHtml(live.grade)} 级）</div>
+              <div class="rink-moves">${movesHtml}</div>
+              <div class="dock-progress rink-progress">
+                <div class="dock-progress__bar"><i data-rink-fill="1" style="width:${pct}%"></i></div>
+                <span class="dock-progress__txt" data-rink-txt="1">${escapeHtml(ml17RinkView(rinkShow).text)}</span>
+              </div>
+              <div class="rink-stage__actions"><button type="button" class="btn btn--small btn--ghost" data-rink-leave="1">提前退场</button></div>
+            </div>
+          </div>`;
+      }
+
+      // 手动编排草稿：只保留仍然空闲、且不重复的伙伴；没有草稿时显示「一键编排」的推荐阵容
+      const rinkIdleIds = new Set(rinkIdle.map((m) => m.id));
+      const rinkDraftRaw = ui.rinkDraft && typeof ui.rinkDraft === "object" && !rinkShow ? ui.rinkDraft : null;
+      if (rinkDraftRaw) {
+        const seen = new Set();
+        rinkDraftRaw.ids = [0, 1, 2].map((i) => {
+          const id = Math.floor(Number(rinkDraftRaw.ids?.[i]) || 0);
+          if (id > 0 && rinkIdleIds.has(id) && !seen.has(id)) {
+            seen.add(id);
+            return id;
+          }
+          return 0;
+        });
+      }
+      const programsHtml = ICE_RINK_PROGRAMS.map((p) => {
+        const draftIds = rinkDraftRaw && rinkDraftRaw.programId === p.id ? rinkDraftRaw.ids : null;
+        const pre = draftIds ? { skaterIds: draftIds.slice(), ...scoreIceRinkArrangement(state, p.id, draftIds, ml17Opts) } : previewIceRinkArrangement(state, p.id, ml17Opts);
+        const active = rinkShow?.programId === p.id;
+        const canGo = !rinkShow && (draftIds ? draftIds.some((x) => x > 0) : rinkIdle.length > 0);
+        const best = rink.best[p.id] || 0;
+        const movesHtml = p.moves
+          .map((mv, i) => {
+            const slot = pre?.slots?.[i];
+            const m = !rinkShow && slot ? ml17Mon(slot.monId) : null;
+            const swapBtn = rinkShow ? "" : `<button type="button" class="btn btn--small btn--ghost rink-move__swap" data-rink-slot="${escapeHtml(p.id)}:${i}" ${rinkIdle.length ? "" : "disabled"}>换人</button>`;
+            return `<div class="rink-move${!rinkShow && slot?.match ? " is-match" : ""}"><b>${i + 1}. ${escapeHtml(mv.name)}</b>${ml17TypeBadges(mv.elements)}${rinkShow ? "" : ml17MonChip(m, slot?.match ? `<span class="tag tag--rink-match">契合</span>` : "")}${swapBtn}</div>`;
+          })
+          .join("");
+        return `
+          <div class="rink-program${active ? " is-active" : ""}" data-rink-program="${escapeHtml(p.id)}">
+            <div class="rink-program__head">
+              <div class="rink-program__name">${escapeHtml(p.name)}</div>
+              <div class="rink-program__meta">排练 ${p.rehearseMin} 分钟 · ${escapeHtml(ICE_RINK_BUFF_ZH[p.buffKind])}增益 · 最高 ${best ? `${best} 分` : "暂无"}</div>
+            </div>
+            <div class="rink-moves">${movesHtml}</div>
+            <div class="rink-program__foot">
+              <span>${rinkShow ? (active ? "正在冰上" : "冰面占用中") : pre && pre.skaterIds.some((x) => x > 0) ? `预计 ${pre.score} 分 · ${escapeHtml(pre.grade)} 级（${escapeHtml(rinkBuffTxt(p.id, pre.grade))}）` : "暂无空闲伙伴"}</span>
+              ${
+                draftIds
+                  ? `<span class="rink-program__btns"><button type="button" class="btn btn--small btn--ghost" data-rink-reset="1">重新推荐</button><button type="button" class="btn btn--small${canGo ? " btn--primary" : ""}" data-rink-start="${escapeHtml(p.id)}" ${canGo ? "" : "disabled"}>按此编排开演</button></span>`
+                  : `<button type="button" class="btn btn--small${canGo ? " btn--primary" : ""}" data-rink-arrange="${escapeHtml(p.id)}" ${canGo ? "" : "disabled"}>一键编排开演</button>`
+              }
+            </div>
+          </div>`;
+      }).join("");
+
+      const buffsHtml = ICE_RINK_BUFF_KINDS.map((kind) => {
+        const b = rinkBuffs.active.find((x) => x.kind === kind);
+        return `<span class="shiny-aura-pill rink-buff ${b ? "is-on" : ""}" data-rink-buff="${kind}">${escapeHtml(ICE_RINK_BUFF_ZH[kind])} +${ml17Pct(b ? b.add : 0)}<small data-rink-buff-rem="${kind}">${b ? `剩 ${fmtDuration(Math.max(1, Math.ceil(b.leftSec)))}` : "未生效"}</small></span>`;
+      }).join("");
+      const gradeLegend = ICE_RINK_GRADES.map((g) => `${g.grade}${g.minScore ? ` ≥${g.minScore}` : ""}：+${ml17Pct(g.buffAdd)} ${g.buffMin} 分钟`).join(" · ");
+      const lc = rink.lastClaim;
+      const claimHtml = lc
+        ? `<div class="ml17-last">${renderUiIcon("skateScore", 18)}<span>上次领取「${escapeHtml(getIceRinkProgramDef(lc.programId)?.name || "节目")}」${lc.score} 分（${escapeHtml(lc.grade)} 级）${lc.newBest ? " · 刷新最高分" : ""}：${escapeHtml(Object.entries(lc.rewards || {}).map(([rid, n]) => `${ICE_RINK_RES_ZH[rid] || rid} +${n}`).join(" · "))}</span></div>`
+        : "";
+      const rinkLogsHtml = (rink.recentLogs || [])
+        .filter((ln) => !(lc && ln.startsWith("【领取评分】")) && !(rinkShow?.phase !== "finished" && ln.startsWith("【演出结束】")))
+        .slice(0, 2)
+        .map((ln) => `<div class="camp-log-line">${escapeHtml(ln)}</div>`)
+        .join("");
+
+      rows.push(`
+        <div class="row rink-body">
+          <div class="row__left" style="width:100%">
+            ${stageHtml}
+            <div class="voyage-panel-title rink-panel-title">${renderUiIcon("skateScore", 18)}<span>节目单</span><span class="tag">每个动作：上场 50 + 属性契合 30 + 等级分（≤20）</span></div>
+            <div class="rink-programs">${programsHtml}</div>
+            <div class="rink-bottom">
+              <div class="voyage-panel-title rink-panel-title">${renderUiIcon("rinkBuff", 18)}<span>限时增益</span><span class="tag">${escapeHtml(gradeLegend)}</span></div>
+              <div class="eco-aura-strip rink-buffs">${buffsHtml}</div>
+              ${claimHtml}
+              ${rinkLogsHtml ? `<div class="star-camp-logs" style="margin-top:6px">${rinkLogsHtml}</div>` : !claimHtml ? `<div class="voyage-last is-empty">还没有演出记录：挑一个节目让伙伴们上冰吧。</div>` : ""}
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    let rinkModalHtml = "";
+    const rinkSlotModal = ui.rinkSlotModal && typeof ui.rinkSlotModal === "object" ? ui.rinkSlotModal : null;
+    const rinkModalProg = rinkSlotModal ? getIceRinkProgramDef(rinkSlotModal.programId) : null;
+    const rinkModalSlot = rinkSlotModal ? Math.floor(Number(rinkSlotModal.slot)) : -1;
+    if (!hideRink && !rinkShow && rinkModalProg && rinkModalSlot >= 0 && rinkModalSlot < 3) {
+      const mv = rinkModalProg.moves[rinkModalSlot];
+      const draftNow = ui.rinkDraft?.programId === rinkModalProg.id && Array.isArray(ui.rinkDraft.ids) ? ui.rinkDraft.ids : [0, 0, 0];
+      const curId = Math.floor(Number(draftNow[rinkModalSlot]) || 0);
+      const rows2 = rinkIdle
+        .map((m) => ({ m, ev: evaluateIceRinkSkater(m, rinkModalProg.id, rinkModalSlot, ml17Opts) }))
+        .filter((x) => x.ev)
+        .sort((a, b) => b.ev.score - a.ev.score || (a.m.id || 0) - (b.m.id || 0))
+        .map(({ m, ev }) => {
+          const other = draftNow.findIndex((x, j) => j !== rinkModalSlot && Math.floor(Number(x) || 0) === m.id);
+          return `
+            <div class="row func-mon-row ${m.id === curId ? "is-active" : ""}">
+              <div class="row__left">
+                <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span><span class="tag">Lv.${m.lvl || 1}</span>${ev.match ? `<span class="tag tag--rink-match">契合</span>` : ""}</div>
+                <div class="row__desc">${ml17TypeBadges(ev.types) || "-"} · 这个动作 ${ev.score} 分（上场 50${ev.match ? " + 契合 30" : ""} + 等级 ${ev.lvlScore}）${other >= 0 ? ` · 正在第 ${other + 1} 个动作，选中会对调` : ""}</div>
+              </div>
+              <div class="row__right">
+                <button type="button" class="btn btn--small${m.id === curId ? " btn--primary" : ""}" data-rink-slot-pick="${m.id}">${m.id === curId ? "已选" : "选择"}</button>
+              </div>
+            </div>`;
+        })
+        .join("");
+      rinkModalHtml = `
+        <div class="modalOverlay" data-rink-modal-overlay="1">
+          <div class="modal">
+            <div class="modal__header">
+              <div class="modal__title">${renderUiIcon("skateScore", 20)}<span>「${escapeHtml(rinkModalProg.name)}」第 ${rinkModalSlot + 1} 个动作 · ${escapeHtml(mv.name)}</span></div>
+              <div class="modal__right">
+                <button type="button" class="btn btn--small" data-rink-modal-close="1">关闭</button>
+              </div>
+            </div>
+            <div class="modal__desc">${escapeHtml(mv.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与这个动作契合 +30 分；仅展示空闲伙伴，按这个动作的得分排序。</div>
+            <div class="modal__body">${rows2 || `<div class="muted" style="padding:12px">当前暂无空闲伙伴可以上冰。</div>`}</div>
+            <div class="actions">
+              <button type="button" class="btn btn--small" data-rink-slot-pick="0">空着这个动作</button>
+              <button type="button" class="btn btn--primary" data-rink-modal-close="1">完成</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ========== ML-17 Section: 萌灵「花田蜜蜂工坊」(Flower-Field Bee Workshop) ==========
+    const hideBee = Boolean(ui.functionsHideBeeWorkshop);
+    const bee = ensureBeeWorkshopState(state);
+    const beeBonus = computeBeeWorkshopBonus(state);
+    const beeBloom = getBeeBloomRotation();
+    const beeIdle = getIdleBeeCandidates(state);
+    const beeFree = bee.hives.filter((x) => !x.trip).length;
+    const canBeeDispatch = beeFree > 0 && beeIdle.length > 0;
+    let beeModalHtml = "";
+
+    rows.push(`
+      <div class="row bee-header ${beeBonus.tending ? "is-busy" : ""}" data-bee-workshop="1">
+        <div class="row__left">
+          <div class="row__title row__titleLine">
+            ${renderUiIcon("beeWorkshop", 20)}
+            <span>花田蜜蜂工坊</span>
+            <span class="tag tag--bee-title">${escapeHtml(beeBonus.title)}</span>
+            <span class="tag tag--bee-count">${renderUiIcon("beeHive", 14)}<span>照料 ${beeBonus.tending}/${BEE_HIVE_COUNT}${beeBonus.done ? ` · 待收取 ${beeBonus.done}` : ""}</span></span>
+            <span class="tag tag--bee-count">${renderUiIcon("honeyJar", 14)}<span>图鉴 ${beeBonus.honeys}/${beeBonus.totalHoneys}</span></span>
+            <span class="tag tag--bee-count">${renderUiIcon("hiveBadge", 14)}<span>${escapeHtml(beeBonus.badgeName)}</span></span>
+          </div>
+          <div class="row__desc">派伙伴照料花田与蜂箱，花种每天轮换，酿出的蜂蜜登记图鉴。</div>
+        </div>
+        <div class="row__right bee-header__btns">
+          <button type="button" class="btn btn--small${canBeeDispatch ? " btn--primary" : ""}" data-bee-autodispatch="1" ${canBeeDispatch ? "" : "disabled"}>一键照料</button>
+          <button type="button" class="btn btn--small${beeBonus.done ? " btn--primary" : ""}" data-bee-claim-all="1" ${beeBonus.done ? "" : "disabled"}>收取蜂蜜${beeBonus.done ? `（${beeBonus.done}）` : ""}</button>
+          <button type="button" class="btn btn--small btn--ghost" data-func-toggle="beeWorkshop">${hideBee ? "展开" : "收起"}</button>
+        </div>
+      </div>
+    `);
+
+    if (!hideBee) {
+      const bloomChips = (flowers) =>
+        flowers
+          .map((f, i) => {
+            const got = (bee.codex[f.id]?.count || 0) > 0;
+            return `<span class="bee-bloom${got ? " is-got" : ""}" title="${escapeHtml(f.desc)}"><small>${escapeHtml(BEE_HIVES[i]?.name || "")}</small><b>${escapeHtml(f.name)}</b>${ml17TypeBadges([f.element])}</span>`;
+          })
+          .join("");
+      const hivesHtml = bee.hives
+        .map((x, i) => {
+          const hive = BEE_HIVES[i];
+          const trip = x.trip;
+          const flower = getBeeFlowerDef(trip ? trip.flowerId : beeBloom.bloomIds[i]) || BEE_FLOWERS[0];
+          const headHtml = `
+            <div class="bee-hive__head">
+              ${renderUiIcon("beeHive", 30)}
+              <div class="bee-hive__titleBox">
+                <div class="bee-hive__name">${escapeHtml(hive.name)}${trip ? (trip.phase === "done" ? " · 蜂蜜酿好了" : " · 照料中") : ""}</div>
+                <div class="bee-hive__meta">${ml17TypeBadges(hive.elements)}<span>照料 ${hive.tendMin} 分钟 · ${trip ? "花种" : "今日"}「${escapeHtml(flower.name)}」</span>${ml17TypeBadges([flower.element])}</div>
+              </div>
+            </div>`;
+          if (!trip) {
+            return `
+              <div class="bee-hive is-idle" data-bee-hive="${i}" data-bee-phase="idle">
+                ${headHtml}
+                <div class="bee-hive__desc">${escapeHtml(hive.desc)}</div>
+                <div class="bee-hive__actions"><button type="button" class="btn btn--small" data-bee-open="${i}" ${beeIdle.length > 0 ? "" : "disabled"}>挑选伙伴照料</button></div>
+              </div>`;
+          }
+          const keepers = trip.keeperIds.map((id) => ml17Mon(id)).filter(Boolean);
+          const keeperHtml = keepers.length
+            ? keepers
+                .map((m) => {
+                  const ev = evaluateBeeKeeper(m, hive.id, flower.id, ml17Opts);
+                  return ml17MonChip(m, ev?.flowerMatch ? `<span class="tag tag--rink-match">花种契合</span>` : ev?.hiveMatch ? `<span class="tag tag--rink-match">蜂箱契合</span>` : "");
+                })
+                .join("")
+            : `<span class="bee-hive__meta">伙伴已经先回家了</span>`;
+          if (trip.phase === "done") {
+            const isNew = !((bee.codex[flower.id]?.count || 0) > 0);
+            return `
+              <div class="bee-hive is-done" data-bee-hive="${i}" data-bee-phase="done">
+                ${headHtml}
+                <div class="bee-hive__keepers">${keeperHtml}</div>
+                <div class="bee-hive__haul">${renderUiIcon("honeyJar", 22)}<span>${trip.haul.length} 罐${escapeHtml(flower.honey)}</span>${isNew ? `<span class="tag tag--bee-new">新</span>` : ""}</div>
+                <div class="bee-hive__actions"><button type="button" class="btn btn--small btn--primary" data-bee-claim="${i}">收取蜂蜜</button></div>
+              </div>`;
+          }
+          const v = ml17HiveView(trip);
+          return `
+            <div class="bee-hive is-tending" data-bee-hive="${i}" data-bee-phase="tending">
+              ${headHtml}
+              <div class="bee-hive__keepers">${keeperHtml}</div>
+              <div class="dock-progress bee-progress">
+                <div class="dock-progress__bar"><i data-bee-fill="${i}" style="width:${v.pct}%"></i></div>
+                <span class="dock-progress__txt" data-bee-txt="${i}">${escapeHtml(v.text)}</span>
+              </div>
+              <div class="bee-hive__actions"><button type="button" class="btn btn--small btn--ghost" data-bee-recall="${i}">召回</button></div>
+            </div>`;
+        })
+        .join("");
+      const badgesHtml = BEE_BADGE_TIERS.map(
+        (t) => `<span class="bee-badge tier-${t.tier}${beeBonus.badgeTier >= t.tier ? " is-on" : ""}">${renderUiIcon("hiveBadge", 26)}<span>${escapeHtml(t.name)}</span><small>${t.minHoneys} 种</small></span>`,
+      ).join("");
+      const codexHtml = BEE_FLOWERS.map((f) => {
+        const cnt = bee.codex[f.id]?.count || 0;
+        const today = beeBloom.bloomIds.includes(f.id);
+        return `
+          <div class="bee-codex__cell${cnt > 0 ? " is-got" : " is-unknown"}${today ? " is-today" : ""}" data-bee-honey="${escapeHtml(f.id)}" title="${escapeHtml(f.desc)}">
+            ${renderUiIcon("honeyJar", 30)}
+            <div class="bee-codex__info">
+              <div class="bee-codex__name">${escapeHtml(f.honey)}</div>
+              <div class="bee-codex__meta">${ml17TypeBadges([f.element])}<span>${cnt > 0 ? `×${cnt}` : today ? "今日开花" : "未登记"}</span></div>
+            </div>
+          </div>`;
+      }).join("");
+      const blc = bee.lastClaim;
+      const beeClaimHtml = blc
+        ? `<div class="ml17-last">${renderUiIcon("honeyJar", 18)}<span>上次收取「${escapeHtml(getBeeHiveDef(blc.hiveId)?.name || "蜂箱")}」${blc.jars} 罐${escapeHtml(getBeeFlowerDef(blc.flowerId)?.honey || "蜂蜜")}${blc.newHoney ? "（新登记）" : ""}：${escapeHtml(Object.entries(blc.rewards || {}).map(([rid, n]) => `${BEE_RES_ZH[rid] || rid} +${n}`).join(" · "))}</span></div>`
+        : "";
+      const beeLogsHtml = (bee.recentLogs || [])
+        .filter((ln) => !(blc && ln.startsWith("【收取蜂蜜】")))
+        .slice(0, 2)
+        .map((ln) => `<div class="camp-log-line">${escapeHtml(ln)}</div>`)
+        .join("");
+      const changeMin = Math.max(0, Math.floor(beeBloom.msUntilChange / 60000));
+
+      rows.push(`
+        <div class="row bee-body">
+          <div class="row__left" style="width:100%">
+            <div class="bee-blooms" data-bee-day="${beeBloom.dayIdx}">
+              <div class="voyage-panel-title bee-panel-title">${renderUiIcon("beeWorkshop", 18)}<span>今天开的花</span><span class="tag" data-bee-change-txt="1">约 ${Math.floor(changeMin / 60)} 小时 ${changeMin % 60} 分后换花</span></div>
+              <div class="bee-blooms__row">${bloomChips(beeBloom.blooms)}</div>
+              <div class="bee-blooms__next">明天：${beeBloom.nextBlooms.map((f) => `「${escapeHtml(f.name)}」`).join("")}</div>
+            </div>
+            <div class="voyage-panel-title bee-panel-title">${renderUiIcon("beeHive", 18)}<span>蜂箱</span><span class="tag">每个最多 ${BEE_SEATS} 位 · 花种契合 +1 罐 · 蜂箱契合 ${Math.round(BEE_HIVE_MATCH_CHANCE * 100)}% 再 +1 罐</span></div>
+            <div class="bee-hives">${hivesHtml}</div>
+            <div class="bee-codex">
+              <div class="voyage-panel-title bee-panel-title">${renderUiIcon("hiveBadge", 18)}<span>蜂蜜图鉴与蜂巢徽章</span><span class="tag">${beeBonus.honeys}/${beeBonus.totalHoneys} 种${beeBonus.nextTier ? ` · 再登记 ${beeBonus.nextTier.minHoneys - beeBonus.honeys} 种升${escapeHtml(beeBonus.nextTier.name)}` : " · 蜂巢徽章已满级"}</span></div>
+              <div class="bee-badges">${badgesHtml}</div>
+              <div class="bee-codex__grid">${codexHtml}</div>
+            </div>
+            <div class="rink-bottom">
+              <div class="eco-aura-strip">
+                <span class="shiny-aura-pill ${beeBonus.prodAdd > 0 ? "is-on" : ""}">全产 +${ml17Pct(beeBonus.prodAdd)}</span>
+                <span class="shiny-aura-pill ${beeBonus.catchAdd > 0 ? "is-on" : ""}">捕获 +${ml17Pct(beeBonus.catchAdd)}</span>
+                <span class="shiny-aura-pill ${beeBonus.shinyAdd > 0 ? "is-on" : ""}">闪光 +${ml17Pct(beeBonus.shinyAdd)}</span>
+                <span class="shiny-aura-pill">累计 ${beeBonus.totalJars} 罐</span>
+              </div>
+              ${beeClaimHtml}
+              ${beeLogsHtml ? `<div class="star-camp-logs" style="margin-top:6px">${beeLogsHtml}</div>` : !beeClaimHtml ? `<div class="voyage-last is-empty">还没有酿蜜记录：点「一键照料」请伙伴们去花田吧。</div>` : ""}
+            </div>
+          </div>
+        </div>
+      `);
+
+      const draft = ui.beeModal && typeof ui.beeModal === "object" ? ui.beeModal : null;
+      const draftIdx = draft ? Math.floor(Number(draft.idx)) : -1;
+      if (draft && draftIdx >= 0 && draftIdx < BEE_HIVE_COUNT && !bee.hives[draftIdx].trip) {
+        const hive = BEE_HIVES[draftIdx];
+        const flower = beeBloom.blooms[draftIdx];
+        const idleIdSet = new Set(beeIdle.map((m) => m.id));
+        draft.ids = (Array.isArray(draft.ids) ? draft.ids : []).filter((id) => idleIdSet.has(id)).slice(0, BEE_SEATS);
+        const modalMons = beeIdle
+          .map((m) => ({ m, ev: evaluateBeeKeeper(m, hive.id, flower.id, ml17Opts) }))
+          .filter((x) => x.ev)
+          .sort(
+            (a, b) =>
+              Number(b.ev.flowerMatch) - Number(a.ev.flowerMatch) ||
+              Number(b.ev.hiveMatch) - Number(a.ev.hiveMatch) ||
+              Math.floor(Number(b.m.lvl) || 1) - Math.floor(Number(a.m.lvl) || 1) ||
+              (a.m.id || 0) - (b.m.id || 0),
+          );
+        const skipped = list.filter(Boolean).length - modalMons.length;
+        const seatsFull = draft.ids.length >= BEE_SEATS;
+        const modalRowsHtml = modalMons.length
+          ? modalMons
+              .map(({ m, ev }) => {
+                const picked = draft.ids.includes(m.id);
+                return `
+                  <div class="row func-mon-row ${picked ? "is-active" : ""}">
+                    <div class="row__left">
+                      <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span><span class="tag">Lv.${m.lvl || 1}</span>${ev.flowerMatch ? `<span class="tag tag--rink-match">花种契合</span>` : ""}${ev.hiveMatch ? `<span class="tag tag--rink-match">蜂箱契合</span>` : ""}</div>
+                      <div class="row__desc">${ml17TypeBadges(ev.types) || "-"} · 预计 ${ev.baseJars} 罐${ev.extraChance ? `，${Math.round(ev.extraChance * 100)}% 再 +1 罐` : ""}</div>
+                    </div>
+                    <div class="row__right">
+                      <button type="button" class="btn btn--small${picked ? " btn--primary" : ""}" data-bee-modal-pick="${m.id}" ${picked || !seatsFull ? "" : "disabled"}>${picked ? "已选" : "选择"}</button>
+                    </div>
+                  </div>`;
+              })
+              .join("")
+          : `<div class="muted" style="padding:12px">当前暂无空闲伙伴可以照料花田（外出、训练、远征、出战、孵育中的伙伴已被安全过滤）。</div>`;
+        beeModalHtml = `
+          <div class="modalOverlay" data-bee-modal-overlay="1">
+            <div class="modal">
+              <div class="modal__header">
+                <div class="modal__title">${renderUiIcon("beeHive", 20)}<span>去「${escapeHtml(hive.name)}」照料${escapeHtml(flower.name)}</span><span class="tag">已选 ${draft.ids.length}/${BEE_SEATS}</span></div>
+                <div class="modal__right">
+                  <button type="button" class="btn btn--small" data-bee-modal-close="1">关闭</button>
+                </div>
+              </div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。${escapeHtml(TYPE_ZH?.[flower.element] ?? flower.element)}系伙伴与今天的「${escapeHtml(flower.name)}」花种契合多酿 1 罐；约 ${hive.tendMin} 分钟后蜂蜜酿好。</div>
+              <div class="modal__body">${modalRowsHtml}</div>
+              <div class="actions">
+                <button type="button" class="btn btn--small" data-bee-modal-close="1">取消</button>
+                <button type="button" class="btn btn--primary" data-bee-modal-go="1" ${draft.ids.length ? "" : "disabled"}>出发照料（${draft.ids.length}/${BEE_SEATS}）</button>
+              </div>
+            </div>
+          </div>`;
+      }
+    }
 
     // ========== ML-16 Section: 萌灵「云端游乐园」(Cloud Amusement Park) ==========
     const hidePark = Boolean(ui.functionsHideCloudPark);
@@ -1453,7 +1987,7 @@ export function createRenderFunctions({
             <span class="tag tag--park-count">${renderUiIcon("parkTicket", 14)}<span data-park-tickets="1">门票 ${park.tickets}/${PARK_TICKET_CAP}</span></span>
             <span class="tag tag--park-count"><span data-park-sat-tag="1">满意度 ${Math.floor(park.satisfaction)}</span></span>
           </div>
-          <div class="row__desc">请空闲伙伴按属性到游乐设施值班：星光旋转木马（草 / 水 / 幻）、云朵摩天轮（风 / 光 / 暗）、彩虹过山车（火 / 电 / 岩）。属性契合的操作员转得快 1.5 倍、每轮让游客满意度多涨一些；满意度越高每轮游客越多、全产越高，办「游园活动」点亮的限时增益也更持久。值班中的伙伴自动享防放生保护，换班即可解除。</div>
+          <div class="row__desc">请空闲伙伴按属性到设施值班赚门票；满意度越高，游客越多、全产越高。</div>
         </div>
         <div class="row__right park-header__btns">
           <button type="button" class="btn btn--small${canParkStaff ? " btn--primary" : ""}" data-park-autostaff="1" ${canParkStaff ? "" : "disabled"}>一键排班</button>
@@ -1633,7 +2167,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-park-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 只忙碌中的伙伴）。${escapeHtml(modalRide.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与「${escapeHtml(modalRide.name)}」契合：转得快 1.5 倍，每轮满意度 +3；亲密度每 10 点再快 5%。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。${escapeHtml(modalRide.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与「${escapeHtml(modalRide.name)}」契合：转得快 1.5 倍，每轮满意度 +3；亲密度每 10 点再快 5%。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-park-modal-close="1">完成</button>
@@ -1672,7 +2206,7 @@ export function createRenderFunctions({
             <span class="tag tag--stargaze-count">${renderUiIcon("meteorSighting", 14)}<span>图鉴 ${sgBonus.entries}/${sgBonus.totalEntries}</span></span>
             <span class="tag tag--stargaze-count">${renderUiIcon("campfireBadge", 14)}<span>${escapeHtml(sgBonus.badgeName)}</span></span>
           </div>
-          <div class="row__desc">派伙伴背上帐篷去营地夜营观星：星空按本地时间每 6 小时轮换（同时可见 3 个星座），流星雨每天换一种，19:00~05:00 出发是夜观时段、流星更容易出现。天亮归营后每位伙伴带回观测记录，登记进观测图鉴，集齐 4 / 8 / 12 / 18 条升为铜 / 银 / 金 / 星辉营火徽章。夜营中（含归营待收取）的伙伴自动享防放生保护。</div>
+          <div class="row__desc">派伙伴夜营观星，天亮带回观测记录登记图鉴；19:00~05:00 出发为夜观时段。</div>
         </div>
         <div class="row__right stargaze-header__btns">
           <button type="button" class="btn btn--small${canSgDispatch ? " btn--primary" : ""}" data-stargaze-autodispatch="1" ${canSgDispatch ? "" : "disabled"}>一键夜营</button>
@@ -1898,7 +2432,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-stargaze-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 只忙碌中的伙伴）。${escapeHtml(site.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与「${escapeHtml(site.name)}」契合：${Math.round(STARGAZE_MATCH_EXTRA_CHANCE * 100)}% 概率多记一个星座，流星概率 +10%。出发时锁定此刻的星空${sgSky.isNight ? "（夜观时段，流星 ×1.5）" : ""}，约 ${site.campMin} 分钟后天亮归营。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。${escapeHtml(site.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与「${escapeHtml(site.name)}」契合：${Math.round(STARGAZE_MATCH_EXTRA_CHANCE * 100)}% 概率多记一个星座，流星概率 +10%。出发时锁定此刻的星空${sgSky.isNight ? "（夜观时段，流星 ×1.5）" : ""}，约 ${site.campMin} 分钟后天亮归营。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--small" data-stargaze-modal-close="1">取消</button>
@@ -1945,7 +2479,7 @@ export function createRenderFunctions({
             <span class="tag tag--bakery-count">${renderUiIcon("cloudCake", 14)}<span>甜点柜 ${bakeryCaseN}/${BAKERY_CASE_CAP}</span></span>
             <span class="tag tag--bakery-count">${renderUiIcon("recipeCard", 14)}<span>食谱 ${bakeryAura.recipesCollected}/${bakeryAura.totalRecipes}</span></span>
           </div>
-          <div class="row__desc">请空闲伙伴按属性分工上岗：揉面台（水 / 草 / 岩）→ 云朵烤炉（火 / 电 / 光）→ 装饰台（风 / 暗 / 幻），一炉甜点依次走完三道工序就出炉进甜点柜。工位属性契合的伙伴做得快 1.5 倍，契合的工位越多品质越高（★3 完美）。「享用」甜点点亮限时增益，第一次出炉的甜点收进食谱图鉴并永久提升全产。上岗中的伙伴自动享防放生保护，下班即可解除。</div>
+          <div class="row__desc">伙伴按属性分工揉面 → 烘烤 → 装饰，契合的工位越多，甜点品质越高。</div>
         </div>
         <div class="row__right bakery-header__btns">
           <button type="button" class="btn btn--small${canBakeryStaff ? " btn--primary" : ""}" data-bakery-autostaff="1" ${canBakeryStaff ? "" : "disabled"}>一键排班</button>
@@ -2137,7 +2671,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-bakery-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 只忙碌中的伙伴）。${escapeHtml(modalStation.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与${escapeHtml(modalStation.name)}契合：速度 ×1.5；亲密度每 10 点再快 5%。三个工位都契合时这一炉是 ★3 完美品质。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。${escapeHtml(modalStation.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与${escapeHtml(modalStation.name)}契合：速度 ×1.5；亲密度每 10 点再快 5%。三个工位都契合时这一炉是 ★3 完美品质。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-bakery-modal-close="1">完成</button>
@@ -2175,7 +2709,7 @@ export function createRenderFunctions({
             <span class="tag tag--balloon-count">${renderUiIcon("travelSouvenir", 14)}<span>纪念品 ${balloonBonus.species}/${balloonBonus.totalSpecies}</span></span>
             <span class="tag tag--balloon-count">${renderUiIcon("balloonIsles", 14)}<span>${escapeHtml(balloonBonus.badgeName)}</span></span>
           </div>
-          <div class="row__desc">派伙伴乘彩虹气球前往轮换开放的空中群岛（每 8 小时轮换，同时开放 2 座），每位乘客带回 1 件纪念品；与群岛属性契合的乘客更容易多带一件、带回稀有或珍藏。纪念品登记进旅行纪念品图鉴，集齐 5 / 10 / 15 / 20 种升为铜 / 银 / 金 / 彩虹旅行章，永久提升全产、捕获、闪光与 PvE 伤害。旅行中（含降落待收取）的伙伴自动享防放生保护。</div>
+          <div class="row__desc">派伙伴乘气球去轮换开放的群岛，每位乘客带回 1 件纪念品登记图鉴。</div>
         </div>
         <div class="row__right balloon-header__btns">
           <button type="button" class="btn btn--small${canBalloonDispatch ? " btn--primary" : ""}" data-balloon-autodispatch="1" ${canBalloonDispatch ? "" : "disabled"}>一键派遣</button>
@@ -2389,7 +2923,7 @@ export function createRenderFunctions({
                 </div>
               </div>
               <div class="balloon-modal__isles">${isleBtns}</div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 只忙碌中的伙伴）。${escapeHtml(draftIsle.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与「${escapeHtml(draftIsle.name)}」契合：${Math.round(BALLOON_MATCH_EXTRA_CHANCE * 100)}% 概率多带一件纪念品，稀有 / 珍藏权重 ×2。航程约 ${draftIsle.tripMin} 分钟。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。${escapeHtml(draftIsle.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与「${escapeHtml(draftIsle.name)}」契合：${Math.round(BALLOON_MATCH_EXTRA_CHANCE * 100)}% 概率多带一件纪念品，稀有 / 珍藏权重 ×2。航程约 ${draftIsle.tripMin} 分钟。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--small" data-balloon-modal-close="1">取消</button>
@@ -2431,7 +2965,7 @@ export function createRenderFunctions({
             <span class="tag tag--dream-count">${renderUiIcon("dreamPage", 14)}<span>插页 ${dreamAura.pageCount}/${dreamAura.totalPages}</span></span>
             <span class="tag">绘本 ${dreamAura.completeBooks}/${dreamAura.totalBooks}</span>
           </div>
-          <div class="row__desc">请空闲伙伴枕着梦枕入梦，一起编写童话绘本：入梦伙伴持续产出灵感（题材契合 ×1.5，亲密越高写得越快），攒满一章就写成一章童话、收进一张绘本插页。每张插页永久全产 +0.2%，集齐一本的 4 张插页点亮这本绘本的专属光环。入梦中的伙伴自动享防放生保护，唤醒即可解除。</div>
+          <div class="row__desc">伙伴入梦产出灵感，攒满一章写成一张绘本插页（每张永久全产 +0.2%）。</div>
         </div>
         <div class="row__right dream-header__btns">
           <button type="button" class="btn btn--small${dreamers.length < DREAM_PILLOW_COUNT && dreamIdle.length > 0 ? " btn--primary" : ""}" data-dream-autofill="1" ${dreamers.length < DREAM_PILLOW_COUNT && dreamIdle.length > 0 ? "" : "disabled"}>一键入梦</button>
@@ -2592,7 +3126,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-dream-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 只忙碌中的伙伴）。${escapeHtml(dreamBook.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与这本绘本题材契合：灵感 ×1.5；亲密度每 10 点再快 5%。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。${escapeHtml(dreamBook.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与这本绘本题材契合：灵感 ×1.5；亲密度每 10 点再快 5%。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-dream-modal-close="1">完成</button>
@@ -2630,7 +3164,7 @@ export function createRenderFunctions({
             <span class="tag tag--fish-count">${renderUiIcon("creekFish", 14)}<span>鱼篓 ${creelN}/${FISHING_CREEL_CAP}</span></span>
             <span class="tag tag--fish-count">${renderUiIcon("fishingTrophy", 14)}<span>${escapeHtml(fishBonus.trophyName)} · 图鉴 ${fishBonus.species}/${fishBonus.totalSpecies}</span></span>
           </div>
-          <div class="row__desc">溪流分 4 段，每 6 小时轮换一次开放溪段，每段 4 种鱼。按属性挑选钓手：与溪段属性契合的钓手咬钩率 +20%、更容易钓到溪王，与鱼同属性的钓手更容易钓到那种鱼。钓手每 15 分钟抛一竿，钓获先放进鱼篓（最多 ${FISHING_CREEL_CAP} 条）并登记钓获图鉴；图鉴登记 4 / 8 / 12 / 16 种升为铜 / 银 / 金 / 彩虹鱼杯，永久提升全产、捕获、闪光与 PvE 伤害。垂钓中的伙伴自动享防放生保护。</div>
+          <div class="row__desc">按溪段属性挑钓手，每 15 分钟抛一竿；鱼篓满 ${FISHING_CREEL_CAP} 条会停竿。</div>
         </div>
         <div class="row__right fish-header__btns">
           <button type="button" class="btn btn--small${anglers.length < FISHING_ANGLER_MAX && fishIdle.length > 0 ? " btn--primary" : ""}" data-fish-autopick="1" ${anglers.length < FISHING_ANGLER_MAX && fishIdle.length > 0 ? "" : "disabled"}>一键选钓手</button>
@@ -2818,7 +3352,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-fish-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 只忙碌中的伙伴）。${escapeHtml(fishSection.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与这段溪流契合：咬钩率 +20%、溪王权重 ×1.6；与鱼同属性的钓手钓到那种鱼的权重 ×2.5。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。${escapeHtml(fishSection.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与这段溪流契合：咬钩率 +20%、溪王权重 ×1.6；与鱼同属性的钓手钓到那种鱼的权重 ×2.5。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-fish-modal-close="1">完成</button>
@@ -2861,7 +3395,7 @@ export function createRenderFunctions({
             <span class="tag tag--spring-count">${renderUiIcon("relaxTowel", 14)}<span>舒缓状态 ${springAura.activeCount}/${HOT_SPRING_STATE_DEFS.length}</span></span>
             <span class="tag">累计疗愈 ${springAura.totalRounds} 轮</span>
           </div>
-          <div class="row__desc">请空闲伙伴到属性汤池里泡汤放松：每满 30 分钟完成一轮疗愈，每位泡汤伙伴为这座汤池的舒缓状态续上 20 分钟（属性契合 30 分钟、最多存 6 小时），亲密度 +3（契合 +5）。舒缓状态生效期间提供全局加成；泡汤中的伙伴自动享防放生保护，出浴即可解除。</div>
+          <div class="row__desc">伙伴泡汤每 30 分钟完成一轮疗愈，为该汤池的舒缓状态续时（出浴后仍生效）。</div>
         </div>
         <div class="row__right spring-header__btns">
           <button type="button" class="btn btn--small${springFreeSeats > 0 && springIdle.length > 0 ? " btn--primary" : ""}" data-spring-autofill="1" ${springFreeSeats > 0 && springIdle.length > 0 ? "" : "disabled"}>一键入池</button>
@@ -3013,7 +3547,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-spring-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 只忙碌中的伙伴）。${escapeHtml(modalPool.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与这座汤池契合：舒缓状态多续 10 分钟、亲密多 +2。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。${escapeHtml(modalPool.elements.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}系伙伴与这座汤池契合：舒缓状态多续 10 分钟、亲密多 +2。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-spring-modal-close="1">完成</button>
@@ -3054,7 +3588,7 @@ export function createRenderFunctions({
             <span class="tag tag--post-count">信件 ${postOffice.letters}/${POST_LETTER_CAP}</span>
             <span class="tag tag--post-count">${renderUiIcon("postmarkStamp", 14)}<span>邮戳 ${postBonus.collected}/${postBonus.totalRegions}</span></span>
           </div>
-          <div class="row__desc">萌灵邮局设在芽芽草甸路口，9 条邮路沿各捕捉生态区一站站延伸（生态区解锁后邮路随之开通）。邮筒每 20 分钟收到 1 封信，派空闲伙伴带信出发、往返后拆开回信：未来币、当地特产与概率附赠的小礼物；送往伙伴故乡生态区的「同乡信使」奖励 ×1.5，风 / 电系「疾行信使」更快。每次送达都会在该生态区的邮戳上再盖一次（1 / 5 / 15 次升为铜 / 银 / 金戳），邮戳永久提升全产与捕获。送信中的伙伴自动享防放生保护。</div>
+          <div class="row__desc">派伙伴沿邮路送信，回来拆开回信领奖；每次送达为当地邮戳盖一次章。</div>
         </div>
         <div class="row__right post-header__btns">
           <button type="button" class="btn btn--small${canPostDispatch ? " btn--primary" : ""}" data-post-autodispatch="1" ${canPostDispatch ? "" : "disabled"}>一键派信</button>
@@ -3212,7 +3746,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-post-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 只忙碌中的伙伴）。故乡在「${escapeHtml(modalRoute.name)}」的伙伴是同乡信使（奖励 ×1.5、小礼物概率 +15%），风 / 电系是疾行信使（往返 −20%），等级越高跑得越快。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${Math.max(0, skipped)} 位忙碌中的伙伴）。故乡在「${escapeHtml(modalRoute.name)}」的伙伴是同乡信使（奖励 ×1.5、小礼物概率 +15%），风 / 电系是疾行信使（往返 −20%），等级越高跑得越快。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-post-modal-close="1">关闭</button>
@@ -3271,7 +3805,7 @@ export function createRenderFunctions({
             <span class="tag">纪念品 ${treasureAura.keepsakeCount}/${treasureAura.totalKeepsakes}</span>
             <span class="tag tag--treasure-status ${voyage ? "is-busy" : ""}">${escapeHtml(voyStatusTxt)}</span>
           </div>
-          <div class="row__desc">从心愿码头归港、月光观察站记录出没和远征完成中收集藏宝图残片，6 片拼合一张藏宝图；挑 1~3 只空闲伙伴组成寻宝船队扬帆，登岛后在 5×5 宝岛网格上一格一格探索（每步耗 1 体力，流沙多耗 1，清泉回 3），挖出金沙、灵果、灵木、晶石、沉船宝箱、遗迹纪念品与红圈里的宝藏 X。远航中的船员自动享防放生保护。</div>
+          <div class="row__desc">集齐 6 片残片拼成藏宝图，派 1~3 位伙伴组船队登岛，逐格探索挖宝。</div>
         </div>
         <div class="row__right treasure-header__btns">
           <button type="button" class="btn btn--small${canAssemble ? " btn--primary" : ""}" data-treasure-assemble="1" ${canAssemble ? "" : "disabled"}>拼合藏宝图（${TREASURE_MAP_FRAGMENTS_PER_MAP} 片）</button>
@@ -3530,7 +4064,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-treasure-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${skipped} 只忙碌中的伙伴）。水 / 风系「领航」缩短航程，岩 / 草系「探路」多 1 点体力，光 / 幻 / 暗系「寻宝直觉」宝物 +10%。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${skipped} 位忙碌中的伙伴）。水 / 风系「领航」缩短航程，岩 / 草系「探路」多 1 点体力，光 / 幻 / 暗系「寻宝直觉」宝物 +10%。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-treasure-modal-close="1">组好船队</button>
@@ -3573,7 +4107,7 @@ export function createRenderFunctions({
             <span class="tag">场次 ${band.performedToday}/${BAND_DAILY_MAX_CONCERTS}</span>
             <span class="tag tag--band-trophy">${renderUiIcon("tourTrophy", 14)}<span>${escapeHtml(bandTrophy.trophyName)} ★${bandTrophy.trophyStars}/${bandTrophy.maxStars}</span></span>
           </div>
-          <div class="row__desc">给灵鼓 / 竖琴 / 风笛 / 星铃 4 个声部各编入 1 只伙伴，谱写 8 拍节奏型，沿 5 站巡演路线登台合奏：伙伴属性契合声部、贴合站点偏爱，相邻声部的属性还能结成和弦；节奏型踩中这一站的曲风、伙伴越亲密，得分越高。每站最佳评级点亮「巡演奖杯」，永久提升全产、捕获、闪光与 PvE 伤害。出海 / 观测 / 建造 / 寻宝远航 / 泡汤 / 送信中的伙伴不登台。</div>
+          <div class="row__desc">给 4 个声部编入伙伴、谱写 8 拍节奏，沿 5 站巡演登台合奏拿评级。</div>
         </div>
         <div class="row__right band-header__btns">
           <button type="button" class="btn btn--small" data-band-autofill="1" ${bandAvail.length > 0 ? "" : "disabled"}>一键组队</button>
@@ -3774,7 +4308,7 @@ export function createRenderFunctions({
                 <div class="modal__title">${renderUiIcon("instrumentSet", 20)}<span>为「${escapeHtml(modalPart.name)}」挑选乐手</span><span class="tag">${escapeHtml(modalPart.role)}</span></div>
                 <div class="modal__right"><button type="button" class="btn btn--small" data-band-modal-close="1">关闭</button></div>
               </div>
-              <div class="modal__desc">声部偏爱 ${escapeHtml(modalPart.elements.map((x) => TYPE_ZH?.[x] ?? x).join(" / "))} 属性；本站「${escapeHtml(bandStop.name)}」偏爱 ${escapeHtml(bandStop.favElements.map((x) => TYPE_ZH?.[x] ?? x).join(" / "))}。已过滤 ${skipped} 只外出中的伙伴。</div>
+              <div class="modal__desc">声部偏爱 ${escapeHtml(modalPart.elements.map((x) => TYPE_ZH?.[x] ?? x).join(" / "))} 属性；本站「${escapeHtml(bandStop.name)}」偏爱 ${escapeHtml(bandStop.favElements.map((x) => TYPE_ZH?.[x] ?? x).join(" / "))}。已过滤 ${skipped} 位外出中的伙伴。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions"><button type="button" class="btn btn--primary" data-band-modal-close="1">完成</button></div>
             </div>
@@ -3810,7 +4344,7 @@ export function createRenderFunctions({
             <span class="tag">建造伙伴 ${skyCrewMons.length}/${SKY_ISLAND_MAX_CREW}</span>
             <span class="tag tag--sky-site ${skyBuild ? "is-busy" : ""}">${skyBuild ? `施工中「${escapeHtml(skyBuildDef?.name || "")}」→ Lv.${skyBuild.targetLevel}` : "工地空闲"}</span>
           </div>
-          <div class="row__desc">用灵果、灵木、灵晶碎片与未来币在云端浮岛开工建造 5 座设施（Lv.0~5），再派 1~3 只空闲伙伴上岛出工推进工期（岩 / 火 / 电 / 风系「建造契合」更快，没人出工时工地停工）。设施光环直接作用于全产、捕获、灵蛋孵化速度、育灵闪光与候鸟栖枝；派工中的伙伴自动享防放生保护。</div>
+          <div class="row__desc">用材料开工建造浮岛设施，派 1~3 位伙伴出工推进工期，没人出工就停工。</div>
         </div>
         <div class="row__right sky-island-header__btns">
           <button type="button" class="btn btn--small${canSkyRally && skyRallyFree > 0 ? " btn--primary" : ""}" data-island-rally="1" ${canSkyRally ? "" : "disabled"}>${skyRallyFree > 0 ? "齐心夯土（今日免费）" : `齐心夯土（${SKY_ISLAND_RALLY_COIN_COST} 币）`}</button>
@@ -3927,7 +4461,7 @@ export function createRenderFunctions({
             ${siteHtml}
             <div class="sky-crew-grid">${crewSlotsHtml}</div>
             <div class="eco-aura-strip sky-aura-strip">
-              <span class="shiny-aura-pill ${skyCrewEval.speedMul > 0 ? "is-on" : ""}">出工速度 ×${(skyCrewEval.speedMul || 0).toFixed(2)}（契合 ${skyCrewEval.affineCount} 只 · 工坊 +${Math.round(skyCrewEval.workshopAdd * 100)}%）</span>
+              <span class="shiny-aura-pill ${skyCrewEval.speedMul > 0 ? "is-on" : ""}">出工速度 ×${(skyCrewEval.speedMul || 0).toFixed(2)}（契合 ${skyCrewEval.affineCount} 位 · 工坊 +${Math.round(skyCrewEval.workshopAdd * 100)}%）</span>
               <span class="shiny-aura-pill ${skyAura.prodAdd > 0 ? "is-on" : ""}">全产 +${ml11Pct(skyAura.prodAdd)}</span>
               <span class="shiny-aura-pill ${skyAura.catchAdd > 0 ? "is-on" : ""}">捕获 +${ml11Pct(skyAura.catchAdd)}</span>
               <span class="shiny-aura-pill ${skyAura.hatchSpeedAdd > 0 ? "is-on" : ""}">${renderUiIcon("hatchAura", 14)}<span>灵蛋孵化 ×${skyAura.hatchSpeedMul.toFixed(2)}</span></span>
@@ -3975,7 +4509,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-island-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${skipped} 只忙碌中的伙伴）。岩 / 火 / 电 / 风系伙伴「建造契合」，每只出工速度 +0.12；伙伴等级越高出工越快。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${skipped} 位忙碌中的伙伴）。岩 / 火 / 电 / 风系伙伴「建造契合」，每位出工速度 +0.12；伙伴等级越高出工越快。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-island-modal-close="1">完成派工</button>
@@ -4011,7 +4545,7 @@ export function createRenderFunctions({
             <span class="tag">本季记录 ${migration.seasonRecords} · ${escapeHtml(migSeasonTierName)}</span>
             <span class="tag tag--migration-medal">${renderUiIcon("migrationMedal", 14)}<span>纪念章 ${migBonus.medalPoints}/${migBonus.maxPoints}</span></span>
           </div>
-          <div class="row__desc">按本机月份轮换四季（3~5 春 / 6~8 夏 / 9~11 秋 / 12~次年 2 月冬），每季 3 种候鸟萌灵限时到访，季末启程。把它们迎上「候鸟云巢栖枝」驻留观察：每驻留满 30 分钟写下一条观察记录，本季记录满 8 / 20 / 40 条分别获得铜羽 / 银羽 / 金羽迁徙纪念章（每季保留最佳成色，永久小幅加成，转生保留）；每条记录还有小概率让候鸟决定结伴留下、加入伙伴队伍。候鸟不占用伙伴。</div>
+          <div class="row__desc">每季 3 种候鸟限时到访，迎上栖枝驻留每 30 分钟记一条记录（不占用伙伴）。</div>
         </div>
         <div class="row__right migration-header__btns">
           <button type="button" class="btn btn--small${canMigFeed && migFeedFree > 0 ? " btn--primary" : ""}" data-migration-feed="1" ${canMigFeed ? "" : "disabled"}>${migFeedFree > 0 ? "撒谷迎候（今日免费）" : `撒谷迎候（${MIGRATION_FEED_COIN_COST} 币）`}</button>
@@ -4047,7 +4581,7 @@ export function createRenderFunctions({
                   ? `<div class="dock-progress migrant-progress"><div class="dock-progress__bar"><i data-migration-fill="${escapeHtml(def.id)}" style="width:${prog.pct}%"></i></div><span class="dock-progress__txt" data-migration-txt="${escapeHtml(def.id)}">${escapeHtml(prog.text)}</span></div>`
                   : `<div class="migrant-card__idle">${canHost ? "正在栖枝外盘旋，等你迎它落脚驻留" : "栖枝已满：升级「候鸟云巢栖枝」可多迎一位"}</div>`
               }
-              ${friend ? `<div class="migrant-card__friend">${renderUiIcon("migratingBird", 14)}<span>本季已有一只结伴入队</span></div>` : ""}
+              ${friend ? `<div class="migrant-card__friend">${renderUiIcon("migratingBird", 14)}<span>本季已有一位结伴入队</span></div>` : ""}
               <div class="migrant-card__foot">
                 <button type="button" class="btn btn--small${hosted ? " btn--ghost" : " btn--primary"}" data-migration-host="${escapeHtml(def.id)}" ${canHost ? "" : "disabled"}>${hosted ? "送别（停止驻留）" : "迎上栖枝"}</button>
               </div>
@@ -4176,7 +4710,7 @@ export function createRenderFunctions({
             <span class="tag">观察日记 ${nightAura.discovered}/${nightAura.totalCreatures}</span>
             <span class="tag tag--lantern">${renderResSvg("fireflyLantern", 14)}<span data-night-lantern-stock="1">萤火灯笼 ×${nightLanterns}</span></span>
           </div>
-          <div class="row__desc">派驻空闲伙伴值守观察站，记录夜行萌灵的出没写进观察日记、拾得萤火灯笼，并唤醒伙伴的夜行限定形态。每天 ${escapeHtml(nightPhase.windowText)} 为夜观时段（全效观测 · 夜间产出光环全开）；其余时段是暮光微光模式（观测效率 40%，最稀有的 5 种夜行萌灵不会现身）。派驻中的伙伴自动享防放生保护。</div>
+          <div class="row__desc">派驻伙伴记录夜行萌灵出没；${escapeHtml(nightPhase.windowText)} 为夜观时段，其余时段效率 40%。</div>
         </div>
         <div class="row__right night-obs-header__btns">
           <button type="button" class="btn btn--small${canNightPatrol && nightPatrolFree > 0 ? " btn--primary" : ""}" data-night-patrol="1" ${canNightPatrol ? "" : "disabled"}>${nightPatrolFree > 0 ? "提灯夜巡（今日免费）" : `提灯夜巡（${NIGHT_OBS_PATROL_COIN_COST} 币）`}</button>
@@ -4239,7 +4773,7 @@ export function createRenderFunctions({
               return `<div class="night-journal-line"><span class="night-journal-line__time">${hm}</span><span>「${escapeHtml(c?.name || "夜行萌灵")}」由 ${escapeHtml(e.observer)} 记录 · ${e.phase === "night" ? "夜观" : "暮光"}</span>${e.isNew ? `<span class="tag tag--night-new">新页</span>` : ""}</div>`;
             })
             .join("")
-        : `<div class="night-journal-line is-empty">观察日记还是空白的：先派驻 1~3 只伙伴，或用今天的免费「提灯夜巡」立即记录 3 次出没。</div>`;
+        : `<div class="night-journal-line is-empty">观察日记还是空白的：先派驻 1~3 位伙伴，或用今天的免费「提灯夜巡」立即记录 3 次出没。</div>`;
       const latestNoteCreature = latestEntries.length ? getNocturnalCreatureDef(latestEntries[0].creatureId) : null;
       const noteHtml = latestNoteCreature
         ? `<div class="night-journal-note">${renderUiIcon("moonlitJournal", 16)}<span>日记摘录 ·「${escapeHtml(latestNoteCreature.name)}」：${escapeHtml(latestNoteCreature.note)}</span></div>`
@@ -4282,8 +4816,8 @@ export function createRenderFunctions({
             <div class="eco-aura-strip night-aura-strip">
               <span class="shiny-aura-pill ${nightAura.nightProdAdd > 0 ? "is-on" : ""}">夜间产出光环 +${Math.round(nightAura.nightProdAdd * 1000) / 10}%（基础 +${Math.round(nightAura.nightAuraBaseAdd * 1000) / 10}% × ${Math.round(nightAura.auraMul * 100)}%）</span>
               <span class="shiny-aura-pill ${nightAura.journalProdAdd > 0 ? "is-on" : ""}">观察日记永久：全产 +${Math.round(nightAura.journalProdAdd * 1000) / 10}% · 闪光 +${Math.round(nightAura.shinyAdd * 1000) / 10}%</span>
-              <span class="shiny-aura-pill ${nightObserverEval.speedMul > 1 ? "is-on" : ""}">观测效率 ×${(nightObserverEval.speedMul || 0).toFixed(2)}（夜视契合 ${nightObserverEval.affineCount} 只）</span>
-              <span class="shiny-aura-pill ${nightAura.formsAwakened > 0 ? "is-on" : ""}">夜行形态 ${nightAura.formsAwakened} 只</span>
+              <span class="shiny-aura-pill ${nightObserverEval.speedMul > 1 ? "is-on" : ""}">观测效率 ×${(nightObserverEval.speedMul || 0).toFixed(2)}（夜视契合 ${nightObserverEval.affineCount} 位）</span>
+              <span class="shiny-aura-pill ${nightAura.formsAwakened > 0 ? "is-on" : ""}">夜行形态 ${nightAura.formsAwakened} 位</span>
             </div>
 
             <div class="night-journal-row">
@@ -4333,7 +4867,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-night-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${skipped} 只忙碌中的伙伴）。暗 / 光 / 幻 / 风系伙伴夜视契合，观测效率更高；与对应夜行萌灵属性相同的伙伴更容易引来它们。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${skipped} 位忙碌中的伙伴）。暗 / 光 / 幻 / 风系伙伴夜视契合，观测效率更高；与对应夜行萌灵属性相同的伙伴更容易引来它们。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-night-modal-close="1">完成派驻</button>
@@ -4380,7 +4914,7 @@ export function createRenderFunctions({
             <span class="tag">场次 ${acrobatShow.performedToday}/${ACROBAT_DAILY_MAX_SHOWS}</span>
             <span class="tag tag--show-trophy">${renderUiIcon("showStarTrophy", 14)}<span>${escapeHtml(showTrophy.trophyName)} ★${showTrophy.trophyStars}/${showTrophy.maxStars}</span></span>
           </div>
-          <div class="row__desc">编排 3 只伙伴、每只 1 个杂技招式的连段节目登台表演：招式风格越多样、属性越贴合主题、相邻招式能结成连携、拍子踩准评审节拍、伙伴越亲密，得分越高。每个主题的最佳评级会点亮「舞台星光奖杯」，永久提升全产、捕获、闪光与 PvE 伤害。出海中或派驻观察站的伙伴不会登台。</div>
+          <div class="row__desc">编排 3 位伙伴各出 1 个招式登台：招式多样、贴合主题、踩准节拍得分高。</div>
         </div>
         <div class="row__right acrobat-show-header__btns">
           <button type="button" class="btn btn--small" data-show-autofill="1" ${showAvailMons.length > 0 ? "" : "disabled"}>一键编排节目</button>
@@ -4641,7 +5175,7 @@ export function createRenderFunctions({
             <span class="tag">纪念章 ${dockAura.badgeCount}/${OCEAN_BADGE_DEFS.length}</span>
             <span class="tag">心愿信笺 ${dockAura.lettersCollected}/${dockAura.lettersTotal}</span>
           </div>
-          <div class="row__desc">派遣空闲伙伴结伴去海边拾贝，带回漂流瓶；拆开漂流瓶能读到远方寄来的心愿回信，并拾得海洋奇珍。集齐奇珍可铸造「海洋奇珍纪念章」，永久提升全资源产出与闪光奇遇率。出海中的伙伴自动享防放生保护。</div>
+          <div class="row__desc">派伙伴出海拾贝带回漂流瓶，拆开可得心愿回信与海洋奇珍。</div>
         </div>
         <div class="row__right wish-dock-header__btns">
           <button type="button" class="btn btn--small${canDailyBottles ? " btn--primary" : ""}" data-dock-claim-daily="1" ${canDailyBottles ? "" : "disabled"}>${canDailyBottles ? `潮汐馈赠 +${WISH_DOCK_DAILY_FREE_BOTTLES} 漂流瓶` : "今日馈赠已领"}</button>
@@ -4808,7 +5342,7 @@ export function createRenderFunctions({
       const dockLogsHtml =
         wishDock.recentLogs.length > 0
           ? wishDock.recentLogs.slice(0, 2).map((ln) => `<div class="camp-log-line">${escapeHtml(ln)}</div>`).join("")
-          : `<div class="camp-log-line">码头的海风正好：先领取「潮汐馈赠」，再派 1~3 只空闲伙伴去海边拾贝吧！</div>`;
+          : `<div class="camp-log-line">码头的海风正好：先领取「潮汐馈赠」，再派 1~3 位空闲伙伴去海边拾贝吧！</div>`;
 
       rows.push(`
         <div class="row wish-dock-body">
@@ -4818,7 +5352,7 @@ export function createRenderFunctions({
                 ${renderUiIcon("oceanPearlBadge", 18)}
                 <strong>海洋奇珍光环</strong>
                 <span class="tag">${dockAura.fullTide ? "满潮共鸣生效中" : dockAura.setResonance ? "四海奇珍共鸣生效中" : `铸齐 4 枚纪念章激活四海奇珍共鸣（${dockAura.badgeCount}/4）`}</span>
-                <span class="tag">出海中受保护伙伴 ${getWishDockAwayMonIds(state).size} 只</span>
+                <span class="tag">出海中受保护伙伴 ${getWishDockAwayMonIds(state).size} 位</span>
               </div>
               <div class="eco-aura-strip">
                 <span class="shiny-aura-pill ${dockAura.prodAdd > 0 ? "is-on" : ""}">全资源产出 +${Math.round(dockAura.prodAdd * 1000) / 10}%</span>
@@ -4897,7 +5431,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-dock-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${skipped} 只忙碌中的伙伴）。偏好属性：${escapeHtml(mDef.preferredTypes.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}，闪光伙伴更容易捞到稀有奇珍。</div>
+              <div class="modal__desc">仅展示空闲伙伴（已过滤 ${skipped} 位忙碌中的伙伴）。偏好属性：${escapeHtml(mDef.preferredTypes.map((t) => TYPE_ZH?.[t] ?? t).join(" / "))}，闪光伙伴更容易捞到稀有奇珍。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--ghost" data-dock-modal-close="1">完成编排</button>
@@ -4924,7 +5458,7 @@ export function createRenderFunctions({
             <span class="tag">共鸣刻印 ${amberAura.equippedCount}/${PRIMAL_IMPRINT_DEFS.length}</span>
             <span class="tag tag--amber-stock">${renderResSvg("ancientGeneAmber", 14)}<span data-amber-stock="1">远古基因琥珀 ×${amberOwnedCount}</span></span>
           </div>
-          <div class="row__desc">勘探地脉或凝炼秘境生态沙盘、冠军联盟殿堂特产获取「远古基因琥珀」，鉴定并升阶四大太古血脉印记（Lv.1~3）刻印至心仪伙伴；承载太古印记的伙伴自动享防放生保护，集齐四印更可唤醒「四太古血脉苏醒共鸣」，全面增幅全资源产出、个体潜能训练、捕获率、闪光奇遇率与回廊战力！</div>
+          <div class="row__desc">用远古基因琥珀鉴定、升阶四大太古血脉印记，并刻印给伙伴。</div>
         </div>
         <div class="row__right amber-revival-header__btns">
           <button type="button" class="btn btn--small${canClaimDailyAmber ? " btn--primary" : ""}" data-amber-claim-daily="1" ${canClaimDailyAmber ? "" : "disabled"}>${canClaimDailyAmber ? `每日地脉掘珀 +${AMBER_REVIVAL_DAILY_GRANT}` : "今日琥珀已掘"}</button>
@@ -5037,7 +5571,7 @@ export function createRenderFunctions({
                 ${renderUiIcon("amberFossilGem", 18)}
                 <strong>四太古血脉苏醒共鸣与基因潜能光环</strong>
                 <span class="tag">${amberAura.quadResonanceActive ? "四太古血脉苏醒共鸣生效中" : `苏醒满 4 枚印记激活四太古血脉苏醒共鸣（${amberAura.awakenedCount}/4）`}</span>
-                <span class="tag">受保护太古印记伙伴 ${amberAura.imprintedMonCount} 只</span>
+                <span class="tag">受保护太古印记伙伴 ${amberAura.imprintedMonCount} 位</span>
               </div>
               <div class="eco-aura-strip">
                 <span class="shiny-aura-pill ${amberAura.prodAdd > 0 ? "is-on" : ""}">全资源产出 +${Math.round(amberAura.prodAdd * 1000) / 10}%</span>
@@ -5094,7 +5628,7 @@ export function createRenderFunctions({
             <span class="tag">极光流彩 ${boutiqueAura.unlockedSheenCount}/${BOUTIQUE_SHEEN_STYLES.length}</span>
             <span class="tag tag--sand-stock">${renderResSvg("shinyStarSand", 14)}<span data-bq-sand-stock="1">闪光祈愿星砂 ×${sandOwnedCount}</span></span>
           </div>
-          <div class="row__desc">使用「闪光祈愿星砂」、野餐香草、星露灵果或未来币，为心爱伙伴裁制升阶三大星辉信物配饰（Lv.1~3）并调染极光流彩光晕；穿戴或染色中的伙伴自动纳入防放生保护，持续赋予亲密升温、全资源产出、训练经验、闪光祈愿与殿堂战力加成！</div>
+          <div class="row__desc">用闪光祈愿星砂等材料为伙伴裁制、升阶星辉配饰，并调染流彩光晕。</div>
         </div>
         <div class="row__right star-boutique-header__btns">
           <button type="button" class="btn btn--small${canClaimDailySand ? " btn--primary" : ""}" data-bq-claim-daily="1" ${canClaimDailySand ? "" : "disabled"}>${canClaimDailySand ? `每日星辉凝砂 +${STAR_BOUTIQUE_DAILY_SAND_GRANT}` : "今日星砂已领"}</button>
@@ -5256,7 +5790,7 @@ export function createRenderFunctions({
                 ${renderUiIcon("boutiqueMirrorStar", 18)}
                 <strong>星辉梳妆台全局辉光</strong>
                 <span class="tag">${boutiqueAura.trioSetActive ? "三星辉套装共鸣生效中" : `穿戴满 3 件激活三星辉套装共鸣（${boutiqueAura.equippedCount}/3）`}</span>
-                <span class="tag">受保护造型伙伴 ${boutiqueAura.styledMonCount} 只</span>
+                <span class="tag">受保护造型伙伴 ${boutiqueAura.styledMonCount} 位</span>
               </div>
               <div class="eco-aura-strip">
                 <span class="shiny-aura-pill ${boutiqueAura.prodAdd > 0 ? "is-on" : ""}">全资源产出 +${Math.round(boutiqueAura.prodAdd * 1000) / 10}%</span>
@@ -5294,7 +5828,7 @@ export function createRenderFunctions({
               <div class="row__title row__titleLine">
                 ${renderUiIcon("boutiqueMirrorStar", 18)}
                 <span>极光流彩染色光晕坊</span>
-                <span class="tag">最多同时为 3 只伙伴调染流彩光晕</span>
+                <span class="tag">最多同时为 3 位伙伴调染流彩光晕</span>
               </div>
               <div class="boutique-sheen-grid">${sheenCardsHtml}</div>
             </div>
@@ -5334,7 +5868,7 @@ export function createRenderFunctions({
             <span class="tag">累计登顶 ${leagueBonus.championClears} 次</span>
             <span class="tag">当前驻殿 ${champLeague.activeStageIdx + 1}/${CHAMPION_LEAGUE_STAGES.length}</span>
           </div>
-          <div class="row__desc">选派 3 只精锐伙伴组成冠军小队，连续迎战「炎狱天王 → 沧溟天王 → 翠岚天王 → 星穹天王 → 圣殿总冠军」五重巅峰试炼！全面汇聚【元素双灵羁绊 + 薄荷性格调律 + 星营料理盛宴 + 星辉造型配饰】四维共鸣，赢取「闪光祈愿星砂」、参战伙伴永久「冠军殿堂绶带」与全局殿堂阶位加成！</div>
+          <div class="row__desc">派 3 位伙伴组成冠军小队，连续挑战四天王与圣殿总冠军。</div>
         </div>
         <div class="row__right league-header__btns">
           <button type="button" class="btn btn--small" data-func-league-auto="1" ${list.length > 0 ? "" : "disabled"}>一键优选三灵</button>
@@ -5502,7 +6036,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-func-league-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">选派最多 3 只伙伴出征四天王殿堂赛（出征席位自动受防放生保护；搭配元素双灵共鸣、薄荷调律与星辉配饰可获巨额连战增幅）。外出中的伙伴（烘焙、气球旅行、垂钓、入梦、泡汤、送信等）不能编入，已在队中的外出伙伴本场不出战。</div>
+              <div class="modal__desc">选派最多 3 位伙伴出征四天王殿堂赛（出征席位自动受防放生保护；搭配元素双灵共鸣、薄荷调律与星辉配饰可获巨额连战增幅）。外出中的伙伴（烘焙、气球旅行、垂钓、入梦、泡汤、送信等）不能编入，已在队中的外出伙伴本场不出战。</div>
               <div class="modal__body">${modalRows || '<div class="muted" style="padding:12px">暂无可编入伙伴。</div>'}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-func-league-modal-close="1">完成冠军编队</button>
@@ -5534,7 +6068,7 @@ export function createRenderFunctions({
             <span class="tag tag--camp-pantry">${renderResSvg("starBerry", 13)}<span>星露灵果 ×${starCamp.pantry.starBerry}</span></span>
             <span class="tag tag--camp-pantry">${renderResSvg("campToken", 13)}<span>星营徽章 ×${starCamp.pantry.campToken}</span></span>
           </div>
-          <div class="row__desc">邀请 1~4 只伙伴围坐星光篝火（自动纳入防放生保护且支持随时换班），持续累积亲密度、营地经验与野餐食材；每日开启「营火合奏互动」并在铜锅工坊烹制六大风味料理，为全营赋予强力盛宴增益！</div>
+          <div class="row__desc">邀请 1~4 位伙伴围坐篝火积累亲密与食材，烹制料理点亮全营盛宴增益。</div>
         </div>
         <div class="row__right star-camp-header__btns">
           <button type="button" class="btn btn--small btn--primary" data-camp-autofill="1" ${canAutoFillCamp ? "" : "disabled"}>一键温馨入驻</button>
@@ -5728,7 +6262,7 @@ export function createRenderFunctions({
                 <span class="eco-zone-progress__txt" data-camp-forage-txt="1">${
                   stationedMons.length > 0
                     ? `营火伴游采集 ${campForagePct}% · 约 ${escapeHtml(fmtDuration(campForageRemSec))} 后收获野餐香草与星露灵果（加速 x${(starCampAura.campSpeedMul || 1).toFixed(2)}）`
-                    : "邀请 1~4 只萌灵入驻营地，即可持续累积亲密度并自动寻获野餐香草与星露灵果"
+                    : "邀请 1~4 位萌灵入驻营地，即可持续累积亲密度并自动寻获野餐香草与星露灵果"
                 }</span>
               </div>
               <div class="star-camp-logs">${campLogsHtml}</div>
@@ -5799,7 +6333,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-camp-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">驻营伙伴自动获得放生保护（已跳过 ${awaySet.size} 只正在外出远征/沙盘勘探/孵育的伙伴），凑齐多系或同系伙伴可激活【星营伙伴共鸣】。</div>
+              <div class="modal__desc">驻营伙伴自动获得放生保护（已跳过 ${awaySet.size} 位正在外出远征/沙盘勘探/孵育的伙伴），凑齐多系或同系伙伴可激活【星营伙伴共鸣】。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-camp-modal-close="1">完成驻营编排</button>
@@ -5829,7 +6363,7 @@ export function createRenderFunctions({
             <span class="tag tag--mint-stock">${renderResSvg("tuningMint", 13)}<span>心性调律薄荷 ×${mintOwnedCount}</span></span>
             <span class="tag">今日免费速勘 ${freeSurveysLeft}/2</span>
           </div>
-          <div class="row__desc">派遣空闲萌灵编队深入四大元素生态秘境（自动避开出战、受训、远征、孵育与本命锁），按属性与特性亲和带回心性调律薄荷、灵晶石、觉醒石与秘境古遗物。</div>
+          <div class="row__desc">派空闲萌灵编队探索四大元素秘境，带回调律薄荷、灵晶石、觉醒石与古遗物。</div>
         </div>
         <div class="row__right eco-sandbox-header__btns">
           <button type="button" class="btn btn--small btn--primary" data-eco-auto-dispatch-all="1" ${canAutoDispatchAll ? "" : "disabled"}>全生态一键优选派遣</button>
@@ -6051,7 +6585,7 @@ export function createRenderFunctions({
                   <button type="button" class="btn btn--small" data-eco-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">仅展示空闲萌灵（已自动保护 ${busyCountSkipped} 只处于主力阵容/训练/远征/孵育/本命契约中的伙伴）。</div>
+              <div class="modal__desc">仅展示空闲萌灵（已自动保护 ${busyCountSkipped} 位处于主力阵容/训练/远征/孵育/本命契约中的伙伴）。</div>
               <div class="modal__body">${modalRowsHtml}</div>
               <div class="actions">
                 <button type="button" class="btn btn--ghost" data-eco-modal-close="1">完成编队</button>
@@ -6076,7 +6610,7 @@ export function createRenderFunctions({
             <span class="tag tag--mint-stock">${renderResSvg("tuningMint", 13)}<span>库存 ×${mintOwnedCount}</span></span>
             <span class="tag">累计调律 ${totalTuningsApplied} 次</span>
           </div>
-          <div class="row__desc">消耗「心性调律薄荷」定向重塑任意萌灵的六维成长倍率（+10% / -10% 或归元均衡），永久保留初始纪念性格标签，实时同步战力、星穹试炼与双圣殿对决。</div>
+          <div class="row__desc">用心性调律薄荷重塑萌灵的六维成长倍率（±10% 或归元均衡）。</div>
         </div>
         <div class="row__right">
           <button type="button" class="btn btn--small btn--ghost" data-func-toggle="mintWorkshop">${hideMintWorkshop ? "展开" : "收起"}</button>
@@ -6096,7 +6630,7 @@ export function createRenderFunctions({
         rows.push(`
           <div class="row mint-workshop-body">
             <div class="row__left">
-              <div class="row__desc muted">尚未拥有可调律的萌灵。前往「九域猎场」捕捉第一只伙伴后，即可在此使用心性调律薄荷定制六维偏向。</div>
+              <div class="row__desc muted">尚未拥有可调律的萌灵。前往「捕捉」页捕捉第一位伙伴后，即可在此使用心性调律薄荷定制六维偏向。</div>
             </div>
           </div>
         `);
@@ -6249,7 +6783,7 @@ export function createRenderFunctions({
           <div class="row__desc">训练中的萌灵：持续获取 10 倍实战经验，加速突破等级瓶颈。</div>
         </div>
         <div class="row__right">
-          <button class="btn btn--small btn--ghost" data-func-toggle="training">${hideTraining ? "▸" : "▾"}</button>
+          <button class="btn btn--small btn--ghost" data-func-toggle="training">${hideTraining ? "展开" : "收起"}</button>
         </div>
       </div>
     `);
@@ -6260,7 +6794,7 @@ export function createRenderFunctions({
           <div class="row is-locked">
             <div class="row__left">
               <div class="row__title">未解锁</div>
-              <div class="row__desc">建造“训练场”（功能建筑）后可用。</div>
+              <div class="row__desc">建造「训练场」（功能建筑）后可用。</div>
             </div>
           </div>
         `);
@@ -6269,7 +6803,7 @@ export function createRenderFunctions({
           <div class="row is-locked">
             <div class="row__left">
               <div class="row__title">暂无萌灵</div>
-              <div class="row__desc">先去捕捉一只吧。</div>
+              <div class="row__desc">先去捕捉一位吧。</div>
             </div>
           </div>
         `);
@@ -6331,7 +6865,7 @@ export function createRenderFunctions({
           <div class="row__desc">饲养中的萌灵：双亲配对温养灵蛋（经验获取 ×50，消耗灵果 10/秒）。</div>
         </div>
         <div class="row__right">
-          <button class="btn btn--small btn--ghost" data-func-toggle="breeding">${hideBreeding ? "▸" : "▾"}</button>
+          <button class="btn btn--small btn--ghost" data-func-toggle="breeding">${hideBreeding ? "展开" : "收起"}</button>
         </div>
       </div>
     `);
@@ -6371,7 +6905,7 @@ export function createRenderFunctions({
       let geneticsLine = "配对同进化链双亲（或与幻彩星泥配对）后，自动开启高个体潜力与星级成长底子优生继承。";
       if (prev.hasPair) {
         if (!prev.eligible) {
-          geneticsLine = "当前两只萌灵不属于同一进化链且不含幻彩星泥，仅享受经验×50温养，不会产蛋。";
+          geneticsLine = "当前两位萌灵不属于同一进化链且不含幻彩星泥，仅享受经验×50温养，不会产蛋。";
         } else {
           const spName = prev.offspringSpecies?.name ? escapeHtml(prev.offspringSpecies.name) : escapeHtml(prev.basePid || "子代萌灵");
           const starPart =
@@ -6412,7 +6946,7 @@ export function createRenderFunctions({
           <div class="row is-locked">
             <div class="row__left">
               <div class="row__title">未解锁</div>
-              <div class="row__desc">建造“育灵屋”（功能建筑）后可用。</div>
+              <div class="row__desc">建造「育灵屋」（功能建筑）后可用。</div>
             </div>
           </div>
         `);
@@ -6421,7 +6955,7 @@ export function createRenderFunctions({
           <div class="row is-locked">
             <div class="row__left">
               <div class="row__title">萌灵不足</div>
-              <div class="row__desc">至少需要 2 只萌灵才能开始饲养。</div>
+              <div class="row__desc">至少需要 2 位萌灵才能开始饲养。</div>
             </div>
           </div>
         `);
@@ -6431,7 +6965,7 @@ export function createRenderFunctions({
             <div class="row">
               <div class="row__left">
                 <div class="row__title row__titleLine">${renderResSvg("luckyEgg", 18)}<span>选择饲养萌灵</span><span class="tag">双亲优生配对</span></div>
-                <div class="row__desc">选择两只萌灵开始饲养（同进化链或幻彩星泥会自动温养产蛋，高概率承袭双亲高潜力与指定特性）。</div>
+                <div class="row__desc">选择两位萌灵开始饲养（同进化链或幻彩星泥会自动温养产蛋，高概率承袭双亲高潜力与指定特性）。</div>
               </div>
               <div class="row__right">
                 <button class="btn btn--primary" data-breed-open>选择饲养萌灵</button>
@@ -6649,7 +7183,7 @@ export function createRenderFunctions({
         .join("");
 
       const title = `训练：选择萌灵（剩余槽位 ${capLeft}）`;
-      const sub = `支持筛选/排序与多选，点击“开始训练”后会直接加入训练。${trainAwaySkipped > 0 ? `已过滤 ${trainAwaySkipped} 只外出中的伙伴（码头、观察站、浮岛、远航、泡汤、送信、入梦、垂钓、烘焙、气球旅行、游乐园值班、夜营观星）。` : ""}`;
+      const sub = `支持筛选/排序与多选，点击「开始训练」后会直接加入训练。${trainAwaySkipped > 0 ? `已过滤 ${trainAwaySkipped} 位外出中的伙伴（码头、观察站、浮岛、远航、泡汤、送信、入梦、垂钓、烘焙、气球旅行、游乐园值班、夜营观星）。` : ""}`;
       const empty = sorted.length === 0 ? `<div class="row"><div class="row__left"><div class="row__desc muted">暂无可选萌灵</div></div></div>` : "";
       const statusHint = capLeft <= 0 ? " · 训练槽位已满" : "";
       const canConfirm = capLeft > 0 && sel.length > 0;
@@ -6791,8 +7325,8 @@ export function createRenderFunctions({
         })
         .join("");
 
-      const title = `饲养：选择萌灵（需要 2 只）`;
-      const sub = `支持按潜力/战力筛选排序（最多选 2 只），勾选双亲可实时预览优生子代潜力、闪光概率并锁定遗传特性。`;
+      const title = `饲养：选择萌灵（需要 2 位）`;
+      const sub = `支持按潜力/战力筛选排序（最多选 2 位），勾选双亲可实时预览优生子代潜力、闪光概率并锁定遗传特性。`;
       const empty = sorted.length === 0 ? `<div class="row"><div class="row__left"><div class="row__desc muted">暂无可选萌灵</div></div></div>` : "";
       const canConfirm = sel.length === 2;
 
@@ -6800,7 +7334,7 @@ export function createRenderFunctions({
         <div class="modalOverlay" data-breed-modal-overlay="1">
           <div class="modal">
             <div class="modal__header">
-              <div class="modal__title">${renderBuildingSvg("breedingHouse", 20)}<span>饲养：选择萌灵</span><span class="tag">需要 2 只</span></div>
+              <div class="modal__title">${renderBuildingSvg("breedingHouse", 20)}<span>饲养：选择萌灵</span><span class="tag">需要 2 位</span></div>
               <div class="modal__right">
                 <button class="btn btn--small" data-breed-modal-clear="1">清空</button>
                 <button class="btn btn--small" data-breed-modal-close="1">关闭</button>
@@ -6849,11 +7383,11 @@ export function createRenderFunctions({
       <div class="row">
         <div class="row__left">
           <div class="row__title row__titleLine">${renderBuildingSvg("expeditionPost", 18)}<span>远征所</span><span class="tag">${escapeHtml(expeditionSeasonLabel)}</span></div>
-          <div class="row__desc">${escapeHtml(expeditionSeasonBlurb)}。派遣萌灵下副本：完成后获得经验与未来币，并概率掉落药剂。属性克制可提高远征收益。</div>
+          <div class="row__desc">${escapeHtml(expeditionSeasonBlurb)}。</div>
           <div class="row__desc">${escapeHtml(relicDesc)}</div>
         </div>
         <div class="row__right">
-          <button class="btn btn--small btn--ghost" data-func-toggle="expedition">${hideExpedition ? "▸" : "▾"}</button>
+          <button class="btn btn--small btn--ghost" data-func-toggle="expedition">${hideExpedition ? "展开" : "收起"}</button>
         </div>
       </div>
     `);
@@ -7098,7 +7632,7 @@ export function createRenderFunctions({
                 <button class="btn btn--small" data-exp-team-close="1">关闭</button>
               </div>
             </div>
-            <div class="modal__desc">多选请直接勾选（最多 20 只，技能冷却、饲养中以及外出中的萌灵不会出现在列表中${expAwayCount > 0 ? `，已过滤外出伙伴 ${expAwayCount} 只` : ""}）。</div>
+            <div class="modal__desc">多选请直接勾选（最多 20 位，技能冷却、饲养中以及外出中的萌灵不会出现在列表中${expAwayCount > 0 ? `，已过滤外出伙伴 ${expAwayCount} 位` : ""}）。</div>
             <div class="modal__body">${candidateRows}</div>
             <div class="actions">
               <button class="btn btn--primary" data-exp-team-close="1">完成编队</button>
@@ -7114,7 +7648,7 @@ export function createRenderFunctions({
         <div class="row">
           <div class="row__left">
             <div class="row__title row__titleLine">${renderResSvg("futurecoin", 18)}<span>开始远征</span><span class="tag">+${rewardCoin} 未来币</span></div>
-            <div class="row__desc">奖励：经验 +${rewardExp}（每只参与萌灵）· 未来币 +${rewardCoin} · 药剂掉落总数 ${lvlDef.pot} · 属性相性 x${rewardMul.toFixed(2)}</div>
+            <div class="row__desc">奖励：经验 +${rewardExp}（每位参与萌灵）· 未来币 +${rewardCoin} · 药剂掉落总数 ${lvlDef.pot} · 属性相性 x${rewardMul.toFixed(2)}</div>
             <div class="row__desc muted">急行：时长约 ×0.3，奖励约 ×0.7</div>
           </div>
           <div class="row__right">
@@ -7160,6 +7694,8 @@ export function createRenderFunctions({
     if (balloonModalHtml) rows.push(balloonModalHtml);
     if (parkModalHtml) rows.push(parkModalHtml);
     if (stargazeModalHtml) rows.push(stargazeModalHtml);
+    if (rinkModalHtml) rows.push(rinkModalHtml);
+    if (beeModalHtml) rows.push(beeModalHtml);
     if (springModalHtml) rows.push(springModalHtml);
     if (postModalHtml) rows.push(postModalHtml);
     if (treasureModalHtml) rows.push(treasureModalHtml);
@@ -7507,6 +8043,8 @@ export function initFunctionsTab({
       if (key === "balloonTravel") ui.functionsHideBalloonTravel = !Boolean(ui.functionsHideBalloonTravel);
       if (key === "cloudPark") ui.functionsHideCloudPark = !Boolean(ui.functionsHideCloudPark);
       if (key === "stargazeCamp") ui.functionsHideStargaze = !Boolean(ui.functionsHideStargaze);
+      if (key === "iceRink") ui.functionsHideIceRink = !Boolean(ui.functionsHideIceRink);
+      if (key === "beeWorkshop") ui.functionsHideBeeWorkshop = !Boolean(ui.functionsHideBeeWorkshop);
       if (key === "hotSpring") ui.functionsHideHotSpring = !Boolean(ui.functionsHideHotSpring);
       if (key === "postOffice") ui.functionsHidePostOffice = !Boolean(ui.functionsHidePostOffice);
       if (key === "treasure") ui.functionsHideTreasure = !Boolean(ui.functionsHideTreasure);
@@ -7517,6 +8055,232 @@ export function initFunctionsTab({
       if (key === "acrobatShow") ui.functionsHideAcrobatShow = !Boolean(ui.functionsHideAcrobatShow);
       if (key === "starBoutique") ui.functionsHideStarBoutique = !Boolean(ui.functionsHideStarBoutique);
       if (key === "championLeague") ui.functionsHideChampionLeague = !Boolean(ui.functionsHideChampionLeague);
+      markFunctionsDirty();
+      render();
+      return;
+    }
+
+    // --- ML-17 Crystal Ice Rink & Flower-Field Bee Workshop Actions ---
+    const ml17KeepY = () => (typeof window !== "undefined" ? window.scrollY : 0);
+    const ml17Rerender = (keepY, monsChanged = false) => {
+      if (monsChanged) {
+        markMonListDirty?.(false);
+        markMonsDirty?.();
+      }
+      markFunctionsDirty();
+      render();
+      if (typeof window !== "undefined" && Math.abs(window.scrollY - keepY) > 0) window.scrollTo(window.scrollX || 0, keepY);
+    };
+    // 与 tick 结算用同一套属性解析（不传 getMonTypes），保证编排 / 照料时的契合判断与实际结算一致
+    const ml17Opts = { addRes, addExpToMon, getBeastDataByDex };
+
+    const rinkArrangeBtn = ev.target?.closest?.("button[data-rink-arrange]");
+    if (rinkArrangeBtn && elFunctionsTraining.contains(rinkArrangeBtn)) {
+      if (rinkArrangeBtn.disabled) return;
+      const keepY = ml17KeepY();
+      const res = autoArrangeIceRink(state, rinkArrangeBtn.getAttribute("data-rink-arrange") || "", ml17Opts);
+      if (res.ok) {
+        ui.rinkDraft = null;
+        addLog(`冰晶溜冰场：${res.skaterIds.filter((x) => x > 0).length} 位伙伴上冰排练「${getIceRinkProgramDef(res.programId)?.name || ""}」（约 ${Math.round(res.durationSec / 60)} 分钟 · 预计 ${res.expectScore} 分 ${res.expectGrade} 级，排练期间防放生保护生效）`);
+      } else {
+        addLog(res.reason === "rink_busy" ? "冰面上已经有节目了，先领取评分或提前退场" : "暂无可上冰的空闲伙伴");
+      }
+      ml17Rerender(keepY, res.ok);
+      return;
+    }
+
+    const rinkSlotBtn = ev.target?.closest?.("button[data-rink-slot]");
+    if (rinkSlotBtn && elFunctionsTraining.contains(rinkSlotBtn)) {
+      if (rinkSlotBtn.disabled) return;
+      const [programId, slotRaw] = String(rinkSlotBtn.getAttribute("data-rink-slot") || "").split(":");
+      if (!(ui.rinkDraft && ui.rinkDraft.programId === programId)) {
+        const pre = previewIceRinkArrangement(state, programId, ml17Opts);
+        ui.rinkDraft = { programId, ids: pre ? pre.skaterIds.slice() : [0, 0, 0] };
+      }
+      ui.rinkSlotModal = { programId, slot: Number(slotRaw) || 0 };
+      markFunctionsDirty();
+      render();
+      return;
+    }
+
+    const rinkSlotPick = ev.target?.closest?.("button[data-rink-slot-pick]");
+    if (rinkSlotPick && elFunctionsTraining.contains(rinkSlotPick)) {
+      const modal = ui.rinkSlotModal && typeof ui.rinkSlotModal === "object" ? ui.rinkSlotModal : null;
+      if (modal && ui.rinkDraft && ui.rinkDraft.programId === modal.programId) {
+        const id = Number(rinkSlotPick.getAttribute("data-rink-slot-pick")) || 0;
+        const ids = [0, 1, 2].map((i) => Math.floor(Number(ui.rinkDraft.ids?.[i]) || 0));
+        const slot = Math.max(0, Math.min(2, Math.floor(Number(modal.slot) || 0)));
+        const other = id > 0 ? ids.findIndex((x, j) => j !== slot && x === id) : -1;
+        if (other >= 0) ids[other] = ids[slot];
+        ids[slot] = id;
+        ui.rinkDraft.ids = ids;
+      }
+      ui.rinkSlotModal = null;
+      markFunctionsDirty();
+      render();
+      return;
+    }
+
+    const rinkModalClose = ev.target?.closest?.("button[data-rink-modal-close]");
+    const rinkOverlay = ev.target?.closest?.("div[data-rink-modal-overlay]");
+    if ((rinkModalClose && elFunctionsTraining.contains(rinkModalClose)) || (rinkOverlay && elFunctionsTraining.contains(rinkOverlay) && ev.target === rinkOverlay)) {
+      ui.rinkSlotModal = null;
+      markFunctionsDirty();
+      render();
+      return;
+    }
+
+    const rinkResetBtn = ev.target?.closest?.("button[data-rink-reset]");
+    if (rinkResetBtn && elFunctionsTraining.contains(rinkResetBtn)) {
+      ui.rinkDraft = null;
+      markFunctionsDirty();
+      render();
+      return;
+    }
+
+    const rinkStartBtn = ev.target?.closest?.("button[data-rink-start]");
+    if (rinkStartBtn && elFunctionsTraining.contains(rinkStartBtn)) {
+      if (rinkStartBtn.disabled) return;
+      const keepY = ml17KeepY();
+      const programId = rinkStartBtn.getAttribute("data-rink-start") || "";
+      const ids = ui.rinkDraft && ui.rinkDraft.programId === programId ? ui.rinkDraft.ids : [];
+      const res = startIceRinkShow(state, programId, ids, ml17Opts);
+      if (res.ok) {
+        ui.rinkDraft = null;
+        addLog(`冰晶溜冰场：${res.skaterIds.filter((x) => x > 0).length} 位伙伴按你的编排上冰排练「${getIceRinkProgramDef(res.programId)?.name || ""}」（约 ${Math.round(res.durationSec / 60)} 分钟 · 预计 ${res.expectScore} 分 ${res.expectGrade} 级，排练期间防放生保护生效）`);
+      } else {
+        addLog(res.reason === "rink_busy" ? "冰面上已经有节目了，先领取评分或提前退场" : res.reason === "mon_busy" ? "有伙伴正在忙，换一位再开演吧" : "先给至少一个动作安排伙伴");
+      }
+      ml17Rerender(keepY, res.ok);
+      return;
+    }
+
+    const rinkClaimBtn = ev.target?.closest?.("button[data-rink-claim]");
+    if (rinkClaimBtn && elFunctionsTraining.contains(rinkClaimBtn)) {
+      if (rinkClaimBtn.disabled) return;
+      const keepY = ml17KeepY();
+      const res = claimIceRinkShow(state, ml17Opts);
+      if (res.ok) {
+        addLog(`冰晶溜冰场：${res.logLine}`, true);
+        ui.itemsDirty = true;
+      }
+      ml17Rerender(keepY, res.ok);
+      return;
+    }
+
+    const rinkLeaveBtn = ev.target?.closest?.("button[data-rink-leave]");
+    if (rinkLeaveBtn && elFunctionsTraining.contains(rinkLeaveBtn)) {
+      const keepY = ml17KeepY();
+      const res = leaveIceRinkShow(state);
+      if (res.ok) addLog(`冰晶溜冰场：${res.left} 位伙伴提前退场（这次没有评分）`);
+      ml17Rerender(keepY, res.ok);
+      return;
+    }
+
+    const beeAutoBtn = ev.target?.closest?.("button[data-bee-autodispatch]");
+    if (beeAutoBtn && elFunctionsTraining.contains(beeAutoBtn)) {
+      if (beeAutoBtn.disabled) return;
+      const keepY = ml17KeepY();
+      const res = autoDispatchBeeHives(state, ml17Opts);
+      addLog(
+        res.ok
+          ? `花田蜜蜂工坊：${res.dispatched.map((d) => `「${getBeeHiveDef(d.hiveId)?.name || ""}」${d.keeperIds.length} 位`).join("、")}去照料花田（照料期间防放生保护生效）`
+          : "暂无可照料花田的空闲伙伴，或蜂箱都有人了",
+      );
+      ml17Rerender(keepY, res.ok);
+      return;
+    }
+
+    const beeClaimAllBtn = ev.target?.closest?.("button[data-bee-claim-all]");
+    if (beeClaimAllBtn && elFunctionsTraining.contains(beeClaimAllBtn)) {
+      if (beeClaimAllBtn.disabled) return;
+      const keepY = ml17KeepY();
+      const res = claimAllBeeHives(state, ml17Opts);
+      if (res.ok) {
+        for (const r of res.results) addLog(`花田蜜蜂工坊：${r.logLine}`, true);
+        if (res.newTier > 0) addLog("花田蜜蜂工坊：蜂巢徽章升级了！", true);
+        ui.itemsDirty = true;
+      }
+      ml17Rerender(keepY, res.ok);
+      return;
+    }
+
+    const beeClaimBtn = ev.target?.closest?.("button[data-bee-claim]");
+    if (beeClaimBtn && elFunctionsTraining.contains(beeClaimBtn)) {
+      const keepY = ml17KeepY();
+      const res = claimBeeHive(state, Number(beeClaimBtn.getAttribute("data-bee-claim")), ml17Opts);
+      if (res.ok) {
+        addLog(`花田蜜蜂工坊：${res.logLine}`, true);
+        if (res.newTier > 0) addLog("花田蜜蜂工坊：蜂巢徽章升级了！", true);
+        ui.itemsDirty = true;
+      }
+      ml17Rerender(keepY, res.ok);
+      return;
+    }
+
+    const beeRecallBtn = ev.target?.closest?.("button[data-bee-recall]");
+    if (beeRecallBtn && elFunctionsTraining.contains(beeRecallBtn)) {
+      const keepY = ml17KeepY();
+      const res = recallBeeHive(state, Number(beeRecallBtn.getAttribute("data-bee-recall")));
+      if (res.ok) addLog(`花田蜜蜂工坊：「${BEE_HIVES[res.idx]?.name || ""}」的伙伴提前回家了（这一趟没带回蜂蜜）`);
+      ml17Rerender(keepY, res.ok);
+      return;
+    }
+
+    const beeOpenBtn = ev.target?.closest?.("button[data-bee-open]");
+    if (beeOpenBtn && elFunctionsTraining.contains(beeOpenBtn)) {
+      if (beeOpenBtn.disabled) return;
+      ui.beeModal = { idx: Number(beeOpenBtn.getAttribute("data-bee-open")), ids: [] };
+      markFunctionsDirty();
+      render();
+      return;
+    }
+
+    const beePickBtn = ev.target?.closest?.("button[data-bee-modal-pick]");
+    if (beePickBtn && elFunctionsTraining.contains(beePickBtn)) {
+      if (beePickBtn.disabled) return;
+      const draft = ui.beeModal && typeof ui.beeModal === "object" ? ui.beeModal : null;
+      if (draft) {
+        const id = Number(beePickBtn.getAttribute("data-bee-modal-pick"));
+        const ids = Array.isArray(draft.ids) ? draft.ids.slice() : [];
+        draft.ids = ids.includes(id) ? ids.filter((x) => x !== id) : ids.length < BEE_SEATS ? [...ids, id] : ids;
+      }
+      markFunctionsDirty();
+      render();
+      return;
+    }
+
+    const beeGoBtn = ev.target?.closest?.("button[data-bee-modal-go]");
+    if (beeGoBtn && elFunctionsTraining.contains(beeGoBtn)) {
+      if (beeGoBtn.disabled) return;
+      const draft = ui.beeModal && typeof ui.beeModal === "object" ? ui.beeModal : null;
+      const keepY = ml17KeepY();
+      if (draft) {
+        const res = dispatchBeeHive(state, draft.idx, draft.ids, ml17Opts);
+        if (res.ok) {
+          ui.beeModal = null;
+          addLog(`花田蜜蜂工坊：伙伴们去「${getBeeHiveDef(res.hiveId)?.name || ""}」照料${getBeeFlowerDef(res.flowerId)?.name || ""}花田（约 ${Math.round(res.durationSec / 60)} 分钟，照料期间防放生保护生效）`);
+        } else {
+          addLog(res.reason === "mon_busy" ? "有伙伴正在忙，暂时不能照料花田" : res.reason === "hive_busy" ? "这个蜂箱已经有人了" : "暂时无法出发");
+        }
+        ml17Rerender(keepY, res.ok);
+        return;
+      }
+      ml17Rerender(keepY);
+      return;
+    }
+
+    const beeCloseBtn = ev.target?.closest?.("button[data-bee-modal-close]");
+    if (beeCloseBtn && elFunctionsTraining.contains(beeCloseBtn)) {
+      ui.beeModal = null;
+      markFunctionsDirty();
+      render();
+      return;
+    }
+
+    const beeOverlay = ev.target?.closest?.("div[data-bee-modal-overlay]");
+    if (beeOverlay && elFunctionsTraining.contains(beeOverlay) && ev.target === beeOverlay) {
+      ui.beeModal = null;
       markFunctionsDirty();
       render();
       return;
@@ -7639,7 +8403,7 @@ export function initFunctionsTab({
         ui.parkModalRide = "";
         addLog(`云端游乐园：伙伴握住了「${getParkRideDef(res.rideId)?.name || "游乐设施"}」的操作杆${res.match ? "（属性契合）" : ""}`);
       } else {
-        addLog(res.reason === "ride_full" ? "这座设施已经有人值班了" : res.reason === "mon_busy" ? "这只伙伴正在忙，暂时不能值班" : res.reason === "ride_locked" ? "这座设施还没建好" : "暂时无法值班");
+        addLog(res.reason === "ride_full" ? "这座设施已经有人值班了" : res.reason === "mon_busy" ? "这位伙伴正在忙，暂时不能值班" : res.reason === "ride_locked" ? "这座设施还没建好" : "暂时无法值班");
       }
       markMonListDirty?.(false);
       markMonsDirty?.();
@@ -7899,7 +8663,7 @@ export function initFunctionsTab({
         ui.bakeryModalStation = "";
         addLog(`云朵甜点烘焙坊：伙伴系上围裙站到了${getBakeryStationDef(res.stationId)?.name || "工位"}${res.match ? "（属性契合）" : ""}`);
       } else {
-        addLog(res.reason === "station_full" ? "这个工位已经有人了" : res.reason === "mon_busy" ? "这只伙伴正在忙，暂时不能上岗" : "暂时无法上岗");
+        addLog(res.reason === "station_full" ? "这个工位已经有人了" : res.reason === "mon_busy" ? "这位伙伴正在忙，暂时不能上岗" : "暂时无法上岗");
       }
       markMonListDirty?.(false);
       markMonsDirty?.();
@@ -8086,7 +8850,7 @@ export function initFunctionsTab({
       if (dreamAutoBtn.disabled) return;
       const keepY = ml14KeepY();
       const res = autoFillDreamers(state, ml14Opts);
-      addLog(res.ok ? `梦境绘本馆：${res.added.length} 只伙伴枕着梦枕入梦了（入梦期间防放生保护生效）` : "暂无可入梦的空闲伙伴，或梦枕已满");
+      addLog(res.ok ? `梦境绘本馆：${res.added.length} 位伙伴枕着梦枕入梦了（入梦期间防放生保护生效）` : "暂无可入梦的空闲伙伴，或梦枕已满");
       ml14Rerender(keepY, res.ok);
       return;
     }
@@ -8107,7 +8871,7 @@ export function initFunctionsTab({
       if (dreamWakeAllBtn.disabled) return;
       const keepY = ml14KeepY();
       const res = wakeAllDreamers(state);
-      if (res.ok) addLog(`梦境绘本馆：${res.woken} 只伙伴醒了过来（灵感留在书页上）`);
+      if (res.ok) addLog(`梦境绘本馆：${res.woken} 位伙伴醒了过来（灵感留在书页上）`);
       ml14Rerender(keepY, res.ok);
       return;
     }
@@ -8146,7 +8910,7 @@ export function initFunctionsTab({
       if (res.ok) {
         if ((state.meta?.dreamLibrary?.dreamerIds?.length || 0) >= DREAM_PILLOW_COUNT) ui.dreamModalOpen = false;
       } else {
-        addLog(res.reason === "pillows_full" ? "梦枕已经睡满了" : res.reason === "mon_busy" ? "这只伙伴正在忙，暂时不能入梦" : "暂时无法入梦");
+        addLog(res.reason === "pillows_full" ? "梦枕已经睡满了" : res.reason === "mon_busy" ? "这位伙伴正在忙，暂时不能入梦" : "暂时无法入梦");
       }
       markMonListDirty?.(false);
       markMonsDirty?.();
@@ -8247,7 +9011,7 @@ export function initFunctionsTab({
       if (res.ok) {
         if ((state.meta?.fishingClub?.anglerIds?.length || 0) >= FISHING_ANGLER_MAX) ui.fishModalOpen = false;
       } else {
-        addLog(res.reason === "spots_full" ? "钓位已经满了" : res.reason === "mon_busy" ? "这只伙伴正在忙，暂时不能垂钓" : "暂时无法下竿");
+        addLog(res.reason === "spots_full" ? "钓位已经满了" : res.reason === "mon_busy" ? "这位伙伴正在忙，暂时不能垂钓" : "暂时无法下竿");
       }
       markMonListDirty?.(false);
       markMonsDirty?.();
@@ -8290,7 +9054,7 @@ export function initFunctionsTab({
       if (springAutoBtn.disabled) return;
       const keepY = ml13KeepY();
       const res = autoFillHotSpring(state, ml13Opts);
-      addLog(res.ok ? `温泉疗愈乡：${res.added.length} 只伙伴泡进了温泉（泡汤期间防放生保护生效）` : "暂无可泡汤的空闲伙伴，或汤池已满");
+      addLog(res.ok ? `温泉疗愈乡：${res.added.length} 位伙伴泡进了温泉（泡汤期间防放生保护生效）` : "暂无可泡汤的空闲伙伴，或汤池已满");
       ml13Rerender(keepY, res.ok);
       return;
     }
@@ -8311,7 +9075,7 @@ export function initFunctionsTab({
       if (springRecallBtn.disabled) return;
       const keepY = ml13KeepY();
       const res = recallHotSpring(state);
-      if (res.ok) addLog(`温泉疗愈乡：${res.recalled} 只伙伴出浴（舒缓状态继续生效）`);
+      if (res.ok) addLog(`温泉疗愈乡：${res.recalled} 位伙伴出浴（舒缓状态继续生效）`);
       ml13Rerender(keepY, res.ok);
       return;
     }
@@ -8342,7 +9106,7 @@ export function initFunctionsTab({
         const left = HOT_SPRING_SEATS_PER_POOL - (state.meta?.hotSpring?.pools?.[ui.springModalPool]?.seatIds?.length || 0);
         if (left <= 0) ui.springModalPool = "";
       } else {
-        addLog(res.reason === "pool_full" ? "这座汤池已经坐满了" : res.reason === "mon_busy" ? "这只伙伴正在忙，暂时不能泡汤" : "暂时无法入池");
+        addLog(res.reason === "pool_full" ? "这座汤池已经坐满了" : res.reason === "mon_busy" ? "这位伙伴正在忙，暂时不能泡汤" : "暂时无法入池");
       }
       markMonListDirty?.(false);
       markMonsDirty?.();
@@ -8451,7 +9215,7 @@ export function initFunctionsTab({
           no_letters: "邮筒里暂时没有待寄的信",
           bags_full: `最多 ${POST_MAX_MESSENGERS} 位信使同时在外`,
           route_busy: "这条邮路已经有信使在送信了",
-          mon_busy: "这只伙伴正在忙，暂时不能送信",
+          mon_busy: "这位伙伴正在忙，暂时不能送信",
           locked: "这条邮路还没有开通",
         };
         addLog(`萌灵邮局：${why[res.reason] || "暂时无法派遣"}`);
@@ -8526,7 +9290,7 @@ export function initFunctionsTab({
       if (treasureAutoCrewBtn.disabled) return;
       const keepY = ml12KeepY();
       const res = autoPickTreasureVoyageCrew(state, { getBeastDataByDex });
-      if (res.ok) addLog(`寻宝地图远航：${res.added.length} 只伙伴登上了寻宝船（扬帆后防放生保护生效）`, true);
+      if (res.ok) addLog(`寻宝地图远航：${res.added.length} 位伙伴登上了寻宝船（扬帆后防放生保护生效）`, true);
       else addLog("暂无可登船的空闲伙伴，或船员席位已满");
       ml12Rerender(keepY);
       return;
@@ -8575,7 +9339,7 @@ export function initFunctionsTab({
         const why = {
           locked: `完成 ${res.needVoyages || 0} 次远航后才能找到这座宝岛`,
           no_map: "需要先拼合一张藏宝图",
-          no_crew: "先挑选 1~3 只空闲伙伴登船",
+          no_crew: "先挑选 1~3 位空闲伙伴登船",
           voyage_active: "已经有一支寻宝船队在海上了",
         };
         addLog(`寻宝地图远航：${why[res.reason] || "暂时无法出航"}`);
@@ -8685,7 +9449,7 @@ export function initFunctionsTab({
       if (bandPickBtn.disabled) return;
       const res = setBandPartMember(state, ui.bandModalPart || "", Number(bandPickBtn.getAttribute("data-band-modal-pick")));
       if (res.ok) ui.bandModalPart = "";
-      else addLog(res.reason === "mon_away" ? "这只伙伴正在外出，本场不能登台" : "暂时无法编入这个声部");
+      else addLog(res.reason === "mon_away" ? "这位伙伴正在外出，本场不能登台" : "暂时无法编入这个声部");
       markMonListDirty?.(false);
       markMonsDirty?.();
       markFunctionsDirty();
@@ -8759,7 +9523,7 @@ export function initFunctionsTab({
       } else {
         addLog(
           res.reason === "no_crew"
-            ? "齐心夯土需要先派至少 1 只伙伴上岛出工"
+            ? "齐心夯土需要先派至少 1 位伙伴上岛出工"
             : res.reason === "no_build"
               ? "工地空闲，先选一座浮岛设施开工吧"
               : `今日免费夯土已用完，再赶工需未来币 ×${SKY_ISLAND_RALLY_COIN_COST}`,
@@ -8774,7 +9538,7 @@ export function initFunctionsTab({
       if (islandAutoBtn.disabled) return;
       const keepY = ml11KeepY();
       const res = autoFillSkyIslandCrew(state, { getBeastDataByDex });
-      if (res.ok) addLog(`云顶浮空岛：已派 ${res.added.length} 只伙伴上岛出工（派工期间防放生保护生效）`, true);
+      if (res.ok) addLog(`云顶浮空岛：已派 ${res.added.length} 位伙伴上岛出工（派工期间防放生保护生效）`, true);
       else addLog("浮岛暂无可派工的空闲伙伴，或出工席位已满");
       ml11Rerender(keepY, res.ok);
       return;
@@ -8912,7 +9676,7 @@ export function initFunctionsTab({
         addLog(res.logLine, true);
         ui.itemsDirty = true;
       } else {
-        addLog(res.reason === "no_observers" ? "提灯夜巡需要先派驻至少 1 只伙伴" : `今日免费夜巡已用完，再巡需未来币 ×${NIGHT_OBS_PATROL_COIN_COST}`);
+        addLog(res.reason === "no_observers" ? "提灯夜巡需要先派驻至少 1 位伙伴" : `今日免费夜巡已用完，再巡需未来币 ×${NIGHT_OBS_PATROL_COIN_COST}`);
       }
       ml10Rerender(keepY);
       return;
@@ -8923,7 +9687,7 @@ export function initFunctionsTab({
       if (nightAutoBtn.disabled) return;
       const keepY = ml10KeepY();
       const res = autoFillNightObservatory(state, { getBeastDataByDex });
-      if (res.ok) addLog(`月光夜行生态观察站：已派驻 ${res.added.length} 只伙伴值守观测（派驻期间防放生保护生效）`, true);
+      if (res.ok) addLog(`月光夜行生态观察站：已派驻 ${res.added.length} 位伙伴值守观测（派驻期间防放生保护生效）`, true);
       else addLog("观察站暂无可派驻的空闲伙伴，或席位已满");
       ml10Rerender(keepY, res.ok);
       return;
@@ -9510,7 +10274,7 @@ export function initFunctionsTab({
         Array.isArray(m?.types) && m.types.length ? m.types : getBeastDataByDex?.(m?.dex)?.types || ["wind"];
       const res = autofillChampionLeagueSquad(state, resolveTypes, monPower);
       if (res.ok) {
-        addLog(`冠军联盟：已优选 ${res.squadIds.length} 只精锐伙伴组建殿堂挑战小队`, true);
+        addLog(`冠军联盟：已优选 ${res.squadIds.length} 位精锐伙伴组建殿堂挑战小队`, true);
         markMonListDirty?.(false);
       }
       markFunctionsDirty();
@@ -9594,7 +10358,7 @@ export function initFunctionsTab({
       if (campAutoFillBtn.disabled) return;
       const res = autoFillStarCampSquad(state, { getBeastDataByDex });
       if (res.ok) {
-        addLog(`星界露营野餐屋：已邀请 ${res.stationedIds.length} 只伙伴温馨入驻（激活【${res.harmony?.name || "星营共鸣"}】）`, true);
+        addLog(`星界露营野餐屋：已邀请 ${res.stationedIds.length} 位伙伴温馨入驻（激活【${res.harmony?.name || "星营共鸣"}】）`, true);
         markMonListDirty?.(false);
       } else {
         addLog("星界露营野餐屋：暂无空闲可入驻伙伴");
@@ -9660,7 +10424,7 @@ export function initFunctionsTab({
       } else if (res.reason === "daily_limit_reached") {
         addLog("星界露营：今日营火合奏次数已用完，明日再来围炉欢聚吧！");
       } else {
-        addLog("星界露营：请先邀请至少 1 只萌灵入驻营地再开启营火合奏");
+        addLog("星界露营：请先邀请至少 1 位萌灵入驻营地再开启营火合奏");
       }
       markFunctionsDirty();
       render();
@@ -9788,7 +10552,7 @@ export function initFunctionsTab({
       if (res.ok) {
         const zDef = getEcoZoneDef(zoneId);
         ui.ecoModalZoneId = null;
-        addLog(`秘境沙盘派遣：${zDef?.name || zoneId}（编队 ${res.squadIds.length} 只 · 契合度 x${res.affinityMul.toFixed(2)}）`, true);
+        addLog(`秘境沙盘派遣：${zDef?.name || zoneId}（编队 ${res.squadIds.length} 位 · 契合度 x${res.affinityMul.toFixed(2)}）`, true);
         markMonListDirty?.(false);
       }
       markFunctionsDirty();
@@ -10400,7 +11164,7 @@ export function initFunctionsTab({
       if (st && Number.isFinite(monId) && monId > 0) {
         const res = toggleChampionLeagueSquadMon(st, monId);
         if (!res.ok) funcLeagueChk.checked = false;
-        if (!res.ok && res.reason === "mon_away") addLog(`这只伙伴正在${res.awayLabel || "外出"}，不能编入冠军联盟小队`);
+        if (!res.ok && res.reason === "mon_away") addLog(`这位伙伴正在${res.awayLabel || "外出"}，不能编入冠军联盟小队`);
         markMonListDirty?.(false);
         markFunctionsDirty();
         render();

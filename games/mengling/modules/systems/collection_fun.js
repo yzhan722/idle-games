@@ -7414,7 +7414,7 @@ export function computeHotSpringAura(state) {
 // ML-14 统一忙碌排除（单一登记表）
 // 所有「人不在家」的外出 / 驻场类玩法都在 AWAY_ACTIVITY_REGISTRY 登记一次：心愿码头出海、月光观察站派驻、浮空岛建造、
 // 寻宝远航、温泉泡汤、邮局送信、梦境绘本馆入梦、溪畔钓鱼会垂钓，ML-15 的云朵甜点烘焙坊上岗、彩虹气球旅行，
-// 以及 ML-16 的云端游乐园值班、星空露营观测夜营。
+// 以及 ML-16 的云端游乐园值班、星空露营观测夜营，ML-17 的冰晶溜冰场排练、花田蜜蜂工坊照料。
 // getAwayMonIds() 是唯一来源：放生锁 busyMonIds、其他玩法的空闲候选（getNonSandboxBusyIds）、星营 / 杂技 / 乐队不可用名单、
 // 升星材料过滤、放生拦截文案，以及三系冠军赛 / 冠军联盟 / 星轨回廊的自动编队 / 手动编入 / 参赛、训练选人、远征选人都只读这一份名单。
 // 以后新增外出玩法只需在这里加一行，不必再到各处各写各的。
@@ -7423,6 +7423,24 @@ export function computeHotSpringAura(state) {
 // ============================================================================
 
 const AWAY_ACTIVITY_REGISTRY = Object.freeze([
+  {
+    id: "iceRink",
+    title: "冰晶溜冰场",
+    label: "溜冰排练中",
+    releaseHint: "正在冰晶溜冰场排练花样滑冰，领取评分或提前退场后方可放生",
+    blockLog: "该萌灵正在冰晶溜冰场排练花样滑冰，请先领取评分或提前退场后再放生",
+    read: (s) => getIceRinkSkaterMonIds(s),
+    returned: (s) => listIceRinkReturnedUnits(s),
+  },
+  {
+    id: "beeWorkshop",
+    title: "花田蜜蜂工坊",
+    label: "照料花田中",
+    releaseHint: "正在花田蜜蜂工坊照料花田与蜂箱，收取蜂蜜或召回后方可放生",
+    blockLog: "该萌灵正在花田蜜蜂工坊照料花田与蜂箱，请先收取蜂蜜或召回后再放生",
+    read: (s) => getBeeKeeperMonIds(s),
+    returned: (s) => listBeeReturnedUnits(s),
+  },
   {
     id: "stargazeCamp",
     title: "星空露营观测",
@@ -7637,20 +7655,30 @@ function listPostReturnedUnits(state) {
   return out;
 }
 
-/** 寻宝远航：登岛后体力已耗尽或整座岛都探索完、船员却还挂在岛上（旧存档 / 异常中断）的航程——收取即满载归航。 */
+/**
+ * 寻宝远航：船队已抵达宝岛（登岛探索阶段）就算「已归来」——
+ * 体力耗尽 / 整座岛都探索完时收取即满载归航；还有体力时收取等同手动「收队归航」，会提前结束本次探索（面板文字会写明剩余体力）。
+ * 仍在海上航行的航程不算。
+ */
 function listTreasureVoyageReturnedUnits(state) {
   const v = state?.meta?.treasureVoyage?.voyage;
   if (!v || typeof v !== "object" || v.phase !== "exploring" || !Array.isArray(v.crewIds)) return [];
-  const exhausted = !(Math.floor(Number(v.stamina) || 0) > 0);
+  const stamina = Math.max(0, Math.floor(Number(v.stamina) || 0));
+  const exhausted = !(stamina > 0);
   const cleared = !exhausted && getTreasureFrontier(v).length === 0;
-  if (!exhausted && !cleared) return [];
   const island = getTreasureIslandDef(v.islandId);
+  const name = island?.name || "宝岛";
+  const text = exhausted
+    ? `「${name}」体力耗尽，船队等你收队归航`
+    : cleared
+      ? `「${name}」整座岛都探索完了，船队等你收队归航`
+      : `船队已抵达「${name}」（还剩体力 ${stamina}），收取会提前结束探索、按已探索 ${Math.max(0, Math.floor(Number(v.steps) || 0))} 格归航`;
   return [
     {
       key: "treasureVoyage:voyage",
-      ref: { reason: exhausted ? "exhausted" : "cleared" },
+      ref: { reason: exhausted ? "exhausted" : cleared ? "cleared" : "return" },
       monIds: awayAliveIds(v.crewIds, awayAliveIdSet(state), TREASURE_VOYAGE_MAX_CREW),
-      text: `「${island?.name || "宝岛"}」${exhausted ? "体力耗尽" : "整座岛都探索完了"}，船队等你收队归航`,
+      text,
     },
   ];
 }
@@ -7682,6 +7710,38 @@ function listStargazeReturnedUnits(state) {
     const haulN = Array.isArray(trip.haul) ? trip.haul.length : 0;
     const name = STARGAZE_SITE_NAMES[idx] || `${idx + 1} 号营地`;
     out.push({ key: `stargazeCamp:${idx}`, ref: { idx }, monIds: awayAliveIds(trip.camperIds, validSet, STARGAZE_SEATS), text: `「${name}」夜营归来，${haulN} 条观测记录待收取` });
+  });
+  return out;
+}
+
+/** ML-17 冰晶溜冰场：演出结束、评分还没领取的节目。 */
+function listIceRinkReturnedUnits(state) {
+  const show = state?.meta?.iceRink?.show;
+  if (!show || typeof show !== "object" || show.phase !== "finished") return [];
+  const name = ICE_RINK_PROGRAM_NAMES[show.programId] || "花样滑冰";
+  const grade = typeof show.grade === "string" && show.grade ? ` · ${show.grade} 级` : "";
+  return [
+    {
+      key: "iceRink:show",
+      ref: {},
+      monIds: awayAliveIds(show.skaterIds, awayAliveIdSet(state), ICE_RINK_SLOTS),
+      text: `「${name}」演出结束（${Math.max(0, Math.floor(Number(show.score) || 0))} 分${grade}），评分与限时增益待领取`,
+    },
+  ];
+}
+
+/** ML-17 花田蜜蜂工坊：照料完成、蜂蜜还没收取的蜂箱。 */
+function listBeeReturnedUnits(state) {
+  const hives = state?.meta?.beeWorkshop?.hives;
+  if (!Array.isArray(hives)) return [];
+  const validSet = awayAliveIdSet(state);
+  const out = [];
+  hives.slice(0, BEE_HIVE_COUNT).forEach((hive, idx) => {
+    const trip = hive?.trip;
+    if (!trip || typeof trip !== "object" || trip.phase !== "done") return;
+    const jars = Array.isArray(trip.haul) ? trip.haul.length : 0;
+    const name = BEE_HIVE_NAMES[idx] || `${idx + 1} 号蜂箱`;
+    out.push({ key: `beeWorkshop:${idx}`, ref: { idx }, monIds: awayAliveIds(trip.keeperIds, validSet, BEE_SEATS), text: `「${name}」照料完成，${jars} 罐蜂蜜待收取` });
   });
   return out;
 }
@@ -9634,5 +9694,57 @@ export function getStargazeCamperMonIds(state) {
 
 /** Idle partners that may go on a night camp (shared with every other outing). */
 export function getIdleStargazeCandidates(state) {
+  return listIdleOutingMons(state);
+}
+
+/**
+ * ML-17 冰晶溜冰场 / 花田蜜蜂工坊 live in pve_tower.js; like the night camp, their partners join the shared away registry above
+ * (collection_fun.js cannot import pve_tower.js without a cycle), so the non-mutating readers and the tables they need sit here.
+ */
+export const ICE_RINK_SLOTS = 3;
+/** Program names by id (the full table lives in pve_tower.js ICE_RINK_PROGRAMS; kept in sync by ml17-selfcheck). */
+export const ICE_RINK_PROGRAM_NAMES = Object.freeze({ snowWaltz: "雪花圆舞曲", auroraDuet: "极光双人滑", crystalTango: "冰晶探戈" });
+export const BEE_HIVE_COUNT = 3;
+export const BEE_SEATS = 2;
+export const BEE_MAX_KEEPERS = BEE_HIVE_COUNT * BEE_SEATS;
+/** Hive names by index (the full table lives in pve_tower.js BEE_HIVES; kept in sync by ml17-selfcheck). */
+export const BEE_HIVE_NAMES = Object.freeze(["向阳蜂箱", "溪畔蜂箱", "林间蜂箱"]);
+
+/** Non-mutating read: partners skating a program (rehearsing, or finished with an unclaimed score) — protected via the away registry. */
+export function getIceRinkSkaterMonIds(state) {
+  const ids = new Set();
+  const raw = state?.meta?.iceRink?.show?.skaterIds;
+  if (!Array.isArray(raw)) return ids;
+  const validSet = awayAliveIdSet(state);
+  for (const v of raw.slice(0, ICE_RINK_SLOTS)) {
+    const id = Math.floor(Number(v) || 0);
+    if (id > 0 && (!validSet || validSet.has(id))) ids.add(id);
+  }
+  return ids;
+}
+
+/** Non-mutating read: partners tending a hive (tending, or done with unclaimed honey) — protected via the away registry. */
+export function getBeeKeeperMonIds(state) {
+  const ids = new Set();
+  const hives = state?.meta?.beeWorkshop?.hives;
+  if (!Array.isArray(hives)) return ids;
+  const validSet = awayAliveIdSet(state);
+  for (const hive of hives.slice(0, BEE_HIVE_COUNT)) {
+    const raw = hive?.trip?.keeperIds;
+    if (!Array.isArray(raw)) continue;
+    for (const v of raw.slice(0, BEE_SEATS)) {
+      const id = Math.floor(Number(v) || 0);
+      if (id > 0 && (!validSet || validSet.has(id))) ids.add(id);
+    }
+  }
+  return ids;
+}
+
+/** Idle partners that may skate or tend hives (shared with every other outing). */
+export function getIdleIceRinkCandidates(state) {
+  return listIdleOutingMons(state);
+}
+
+export function getIdleBeeCandidates(state) {
   return listIdleOutingMons(state);
 }

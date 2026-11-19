@@ -390,7 +390,7 @@ try {
     const trainIds = await modalIds("data-train-modal-check");
     const trainDesc = await page.locator('[data-train-modal-overlay="1"] .modal__desc').innerText();
     if (!trainIds.length || trainIds.some((id) => AWAY_IDS.includes(id))) fail(vp.tag, `training picker lists away partners (${trainIds.join()})`);
-    if (!trainDesc.includes("已过滤 6 只外出中的伙伴")) fail(vp.tag, `training picker hint missing the away count: ${trainDesc}`);
+    if (!trainDesc.includes("已过滤 6 位外出中的伙伴")) fail(vp.tag, `training picker hint missing the away count: ${trainDesc}`);
     await page.locator("button[data-train-modal-close]").first().click({ timeout: 10000 });
 
     // ---- unified exclusion: expedition picker (+ persisted team sanitized, 一键选择) ----

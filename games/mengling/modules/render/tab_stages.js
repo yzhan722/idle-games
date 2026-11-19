@@ -413,7 +413,7 @@ export function renderCaptureStageHtml({
               <div class="tab-stage__title">${escapeHtml(area.name)}</div>
             </div>
           </div>
-          <div class="tab-stage__desc">点击左侧 <strong>草丛 / 浅滩 / 晶洞</strong> 可直接潜行奇袭（先手捕获率 +8%），或使用下方寻踪按钮搜索灵兽。</div>
+          <div class="tab-stage__desc">点击上方 <strong>草丛 / 浅滩 / 晶洞</strong> 可直接潜行奇袭（先手捕获率 +8%），或使用下方寻踪按钮搜索灵兽。</div>
           <div class="tab-stage__ctaRow">
             <button type="button" class="btn btn--primary btn--small" data-stage-act="field-hunt" ${encOk ? "" : "disabled"}>${renderUiIcon("tab_capture", 14)} 潜行寻踪 (${encCharges}/100)</button>
             <button type="button" class="btn btn--small" data-stage-act="field-hunt-plus" ${advOk ? "" : "disabled"}>${renderResSvg("megaStone", 14)} 灵脉高阶寻踪 (${advCharges}/${advMaxCharges})</button>

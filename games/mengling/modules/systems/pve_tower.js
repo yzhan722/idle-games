@@ -51,6 +51,14 @@ import {
   STARGAZE_SEATS,
   STARGAZE_SITE_COUNT,
   STARGAZE_SITE_NAMES,
+  BEE_HIVE_COUNT,
+  BEE_HIVE_NAMES,
+  BEE_MAX_KEEPERS,
+  BEE_SEATS,
+  getIdleBeeCandidates,
+  getIdleIceRinkCandidates,
+  ICE_RINK_PROGRAM_NAMES,
+  ICE_RINK_SLOTS,
 } from "./collection_fun.js";
 import { CAPTURE_AREAS } from "../config.js";
 import { beastZone, ZONE_IDS, ZONE_LABELS } from "../beast_defs.js";
@@ -913,6 +921,7 @@ export function computeDualSanctumBadgeBonus(state) {
   const balloonOutAdd = state ? computeBalloonTravelBonus(state).pveOutAdd || 0 : 0;
   const parkOutAdd = state ? computeCloudParkAura(state).pveOutAdd || 0 : 0;
   const stargazeOutAdd = state ? computeStargazeCampBonus(state).pveOutAdd || 0 : 0;
+  const iceRinkOutAdd = state ? computeIceRinkBuffs(state).pveOutAdd || 0 : 0;
   const pveOutAdd = Number(
     (
       badgeOutAdd +
@@ -931,7 +940,8 @@ export function computeDualSanctumBadgeBonus(state) {
       bakeryOutAdd +
       balloonOutAdd +
       parkOutAdd +
-      stargazeOutAdd
+      stargazeOutAdd +
+      iceRinkOutAdd
     ).toFixed(4),
   );
   return {
@@ -954,6 +964,7 @@ export function computeDualSanctumBadgeBonus(state) {
     balloonOutAdd,
     parkOutAdd,
     stargazeOutAdd,
+    iceRinkOutAdd,
     pveOutAdd,
     pveOutMul: Number((1 + pveOutAdd).toFixed(4)),
   };
@@ -7871,15 +7882,952 @@ export function computeStargazeCampBonus(state) {
 }
 
 // ============================================================================
+// ML-17 「冰晶溜冰场」(Crystal Ice Rink)
+// 一块溜冰场一次排一个节目：3 个节目各有 3 个动作，每个动作对应 2 种属性；按动作顺序编排最多 3 位伙伴上冰排练。
+// 每个动作的得分 = 有人上场 50 分 + 伙伴属性与动作契合 30 分 + 等级分（每 5 级 1 分，最多 20 分），节目评分 = 三个动作得分的平均（0~100）。
+// 评分 ≥90 / 75 / 60 为 S / A / B 级，其余 C 级；排练时长：雪花圆舞曲 30 分钟 · 极光双人滑 45 分钟 · 冰晶探戈 60 分钟。
+// 演出结束后等你「领取评分」（已完成未收取：接入一键收取）：灵晶碎片 30 + 未来币（S 12 / A 8 / B 5 / C 3），刷新节目最高分另 +5 未来币；
+// 上场伙伴经验 +40、亲密 +2；同时点亮该节目的限时增益：雪花圆舞曲 全产、极光双人滑 捕获（×0.25）、冰晶探戈 PvE 增伤，
+// S +8% 60 分钟 / A +5% 45 分钟 / B +3% 30 分钟 / C +1.5% 20 分钟；同类增益取较高加成与较长剩余时间，每类封顶 60 分钟。
+// 排练中可「提前退场」（不评分）。上冰伙伴经由 collection_fun.js 统一外出登记表接入防放生锁 / 训练 / 远征 / 冠军赛排除；
+// 离线补算 ≤12h（限时增益按真实秒数倒数）；强制放生只让该伙伴离场，转生时排练中的节目散场、已结束的评分保留待领取。
+// ============================================================================
+
+export const ICE_RINK_BASE_SCORE = 50;
+export const ICE_RINK_MATCH_SCORE = 30;
+export const ICE_RINK_LEVEL_PER_POINT = 5;
+export const ICE_RINK_LEVEL_SCORE_CAP = 20;
+export const ICE_RINK_EXP = 40;
+export const ICE_RINK_AFFECTION = 2;
+export const ICE_RINK_BASE_MINERALS = 30;
+export const ICE_RINK_BEST_COIN = 5;
+export const ICE_RINK_BUFF_MAX_SEC = 60 * 60;
+export const ICE_RINK_BUFF_MAX_ADD = 0.08;
+export const ICE_RINK_MAX_CATCHUP_SEC = 12 * 3600;
+export const ICE_RINK_LOG_KEEP = 6;
+export { ICE_RINK_SLOTS };
+
+export const ICE_RINK_PROGRAMS = Object.freeze(
+  [
+    {
+      id: "snowWaltz",
+      name: ICE_RINK_PROGRAM_NAMES.snowWaltz,
+      rehearseMin: 30,
+      buffKind: "prod",
+      buffScale: 1,
+      moves: [
+        { name: "雪花旋转", elements: ["water", "wind"] },
+        { name: "冰面滑步", elements: ["grass", "light"] },
+        { name: "落雪定格", elements: ["stone", "mystic"] },
+      ],
+      desc: "轻快的三拍子圆舞曲，适合刚学会滑冰的伙伴。",
+    },
+    {
+      id: "auroraDuet",
+      name: ICE_RINK_PROGRAM_NAMES.auroraDuet,
+      rehearseMin: 45,
+      buffKind: "catch",
+      buffScale: 0.25,
+      moves: [
+        { name: "极光托举", elements: ["light", "electric"] },
+        { name: "双人螺旋", elements: ["wind", "mystic"] },
+        { name: "星光跳跃", elements: ["fire", "water"] },
+      ],
+      desc: "伙伴们在极光下托举、旋转，观众看得目不转睛。",
+    },
+    {
+      id: "crystalTango",
+      name: ICE_RINK_PROGRAM_NAMES.crystalTango,
+      rehearseMin: 60,
+      buffKind: "pveOut",
+      buffScale: 1,
+      moves: [
+        { name: "冰刃疾滑", elements: ["fire", "electric"] },
+        { name: "暗影交错", elements: ["dark", "stone"] },
+        { name: "冰晶终章", elements: ["water", "dark"] },
+      ],
+      desc: "节奏最快的探戈，冰刀划出一道道冰晶火花。",
+    },
+  ].map((p) => Object.freeze({ ...p, moves: Object.freeze(p.moves.map((m) => Object.freeze({ ...m, elements: Object.freeze(m.elements.slice()) }))) })),
+);
+
+export const ICE_RINK_GRADES = Object.freeze([
+  Object.freeze({ grade: "S", minScore: 90, buffAdd: 0.08, buffMin: 60, coin: 12 }),
+  Object.freeze({ grade: "A", minScore: 75, buffAdd: 0.05, buffMin: 45, coin: 8 }),
+  Object.freeze({ grade: "B", minScore: 60, buffAdd: 0.03, buffMin: 30, coin: 5 }),
+  Object.freeze({ grade: "C", minScore: 0, buffAdd: 0.015, buffMin: 20, coin: 3 }),
+]);
+
+export const ICE_RINK_BUFF_KINDS = Object.freeze(["prod", "catch", "pveOut"]);
+export const ICE_RINK_BUFF_ZH = Object.freeze({ prod: "全产", catch: "捕获", pveOut: "PvE 增伤" });
+export const ICE_RINK_RES_ZH = Object.freeze({ futurecoin: "未来币", minerals: "灵晶碎片" });
+
+const ICE_RINK_TITLES = Object.freeze([
+  { minShows: 40, name: "冰上明星" },
+  { minShows: 15, name: "花滑编舞师" },
+  { minShows: 3, name: "冰场常客" },
+  { minShows: 0, name: "初次上冰" },
+]);
+
+export function getIceRinkProgramDef(id) {
+  return ICE_RINK_PROGRAMS.find((p) => p.id === id) || null;
+}
+
+export function getIceRinkGrade(score = 0) {
+  const s = Math.max(0, Math.min(100, Math.floor(Number(score) || 0)));
+  return ICE_RINK_GRADES.find((g) => s >= g.minScore) || ICE_RINK_GRADES[ICE_RINK_GRADES.length - 1];
+}
+
+export function getIceRinkTitle(totalShows = 0) {
+  const n = Math.max(0, Math.floor(Number(totalShows) || 0));
+  return (ICE_RINK_TITLES.find((t) => n >= t.minShows) || ICE_RINK_TITLES[ICE_RINK_TITLES.length - 1]).name;
+}
+
+/** Timed buff a program grants at a grade: { kind, add, sec }. */
+export function getIceRinkBuffFor(programId, grade) {
+  const p = getIceRinkProgramDef(programId);
+  const g = ICE_RINK_GRADES.find((x) => x.grade === grade) || null;
+  if (!p || !g) return null;
+  return { kind: p.buffKind, add: Math.round(g.buffAdd * p.buffScale * 10000) / 10000, sec: Math.min(ICE_RINK_BUFF_MAX_SEC, g.buffMin * 60) };
+}
+
+/** One skater on one move: 上场 50 + 契合 30 + 等级分（每 5 级 1 分，≤20）. */
+export function evaluateIceRinkSkater(mon, programId, slot, opts = {}) {
+  const p = getIceRinkProgramDef(programId);
+  const i = Math.floor(Number(slot));
+  const move = p?.moves?.[i];
+  if (!mon || !move) return null;
+  const types = acrobatTypesOf(mon, opts);
+  const match = types.some((t) => move.elements.includes(t));
+  const lvlScore = Math.min(ICE_RINK_LEVEL_SCORE_CAP, Math.floor(Math.max(1, Math.floor(Number(mon.lvl) || 1)) / ICE_RINK_LEVEL_PER_POINT));
+  return { slot: i, move: move.name, types, match, lvlScore, score: ICE_RINK_BASE_SCORE + (match ? ICE_RINK_MATCH_SCORE : 0) + lvlScore };
+}
+
+function iceMonsById(state) {
+  const map = new Map();
+  for (const m of Array.isArray(state?.mons?.list) ? state.mons.list : []) if (m && typeof m.id === "number") map.set(m.id, m);
+  return map;
+}
+
+/** Score of an arrangement (array aligned to the 3 moves; 0 = empty move). */
+export function scoreIceRinkArrangement(state, programId, skaterIds, opts = {}) {
+  const byId = iceMonsById(state);
+  const slots = [];
+  for (let i = 0; i < ICE_RINK_SLOTS; i += 1) {
+    const id = Math.floor(Number(skaterIds?.[i]) || 0);
+    const mon = id > 0 ? byId.get(id) || null : null;
+    const ev = mon ? evaluateIceRinkSkater(mon, programId, i, opts) : null;
+    slots.push({ slot: i, monId: mon ? mon.id : 0, match: Boolean(ev?.match), score: ev ? ev.score : 0 });
+  }
+  const score = Math.round(slots.reduce((s, x) => s + x.score, 0) / ICE_RINK_SLOTS);
+  return { slots, score, grade: getIceRinkGrade(score).grade, matchCount: slots.filter((x) => x.match).length };
+}
+
+/** 「一键编排」preview: for each move in order, the idle partner that scores best on it (non-mutating). */
+export function previewIceRinkArrangement(state, programId, opts = {}) {
+  const p = getIceRinkProgramDef(programId);
+  if (!p) return null;
+  const idle = getIdleIceRinkCandidates(state).slice();
+  const picks = [];
+  for (let i = 0; i < ICE_RINK_SLOTS; i += 1) {
+    let best = null;
+    let bestScore = -1;
+    for (const m of idle) {
+      if (picks.includes(m.id)) continue;
+      const ev = evaluateIceRinkSkater(m, p.id, i, opts);
+      const s = ev ? ev.score * 1000 - Math.min(999, m.id || 0) : -1;
+      if (s > bestScore) {
+        bestScore = s;
+        best = m;
+      }
+    }
+    picks.push(best ? best.id : 0);
+  }
+  return { programId: p.id, skaterIds: picks, ...scoreIceRinkArrangement(state, p.id, picks, opts) };
+}
+
+function ml17AliveSetOf(state) {
+  const monList = Array.isArray(state?.mons?.list) ? state.mons.list : null;
+  return monList
+    ? new Set(
+        monList
+          .map((m) => (m && typeof m.id === "number" && Number.isFinite(m.id) ? Math.floor(m.id) : null))
+          .filter((x) => x !== null && x > 0),
+      )
+    : null;
+}
+
+function normalizeIceRinkShow(raw, aliveSet) {
+  if (!raw || typeof raw !== "object") return null;
+  const p = getIceRinkProgramDef(raw.programId);
+  if (!p) return null;
+  const skaterIds = [];
+  for (let i = 0; i < ICE_RINK_SLOTS; i += 1) {
+    const id = Math.floor(Number(Array.isArray(raw.skaterIds) ? raw.skaterIds[i] : 0) || 0);
+    skaterIds.push(id > 0 && !skaterIds.includes(id) && (!aliveSet || aliveSet.has(id)) ? id : 0);
+  }
+  const phase = raw.phase === "finished" ? "finished" : "rehearsing";
+  if (phase === "rehearsing" && !skaterIds.some((x) => x > 0)) return null;
+  const durationSec = p.rehearseMin * 60;
+  const elapsed = Number(raw.elapsedSec);
+  const score = Math.max(0, Math.min(100, Math.floor(Number(raw.score) || 0)));
+  return {
+    programId: p.id,
+    skaterIds,
+    phase,
+    durationSec,
+    elapsedSec: phase === "finished" ? durationSec : Number.isFinite(elapsed) && elapsed > 0 ? Math.min(durationSec, elapsed) : 0,
+    score: phase === "finished" ? score : 0,
+    grade: phase === "finished" ? getIceRinkGrade(score).grade : "",
+    slotScores: phase === "finished" && Array.isArray(raw.slotScores) ? raw.slotScores.slice(0, ICE_RINK_SLOTS).map((v) => Math.max(0, Math.min(100, Math.floor(Number(v) || 0)))) : [],
+    startedAt: typeof raw.startedAt === "number" && Number.isFinite(raw.startedAt) ? raw.startedAt : 0,
+  };
+}
+
+export function ensureIceRinkState(state) {
+  if (!state || typeof state !== "object") return null;
+  if (!state.meta || typeof state.meta !== "object") state.meta = {};
+  const raw = state.meta.iceRink && typeof state.meta.iceRink === "object" ? state.meta.iceRink : {};
+  const aliveSet = ml17AliveSetOf(state);
+  const rawBuffs = raw.buffs && typeof raw.buffs === "object" ? raw.buffs : {};
+  const buffs = {};
+  for (const kind of ICE_RINK_BUFF_KINDS) {
+    const b = rawBuffs[kind];
+    const add = Math.max(0, Math.min(ICE_RINK_BUFF_MAX_ADD, Number(b?.add) || 0));
+    const leftSec = Math.max(0, Math.min(ICE_RINK_BUFF_MAX_SEC, Number(b?.leftSec) || 0));
+    if (add > 0 && leftSec > 0) buffs[kind] = { add: Math.round(add * 10000) / 10000, leftSec };
+  }
+  const rawBest = raw.best && typeof raw.best === "object" ? raw.best : {};
+  const best = {};
+  for (const p of ICE_RINK_PROGRAMS) {
+    const v = Math.max(0, Math.min(100, Math.floor(Number(rawBest[p.id]) || 0)));
+    if (v > 0) best[p.id] = v;
+  }
+  const rawGrades = raw.gradeCounts && typeof raw.gradeCounts === "object" ? raw.gradeCounts : {};
+  const gradeCounts = {};
+  for (const g of ICE_RINK_GRADES) {
+    const v = Math.max(0, Math.floor(Number(rawGrades[g.grade]) || 0));
+    if (v > 0) gradeCounts[g.grade] = v;
+  }
+  const lc = raw.lastClaim && typeof raw.lastClaim === "object" ? raw.lastClaim : null;
+  const lcProgram = lc ? getIceRinkProgramDef(lc.programId) : null;
+  const lastClaim = lcProgram
+    ? {
+        programId: lcProgram.id,
+        score: Math.max(0, Math.min(100, Math.floor(Number(lc.score) || 0))),
+        grade: getIceRinkGrade(lc.score).grade,
+        rewards: (() => {
+          const out = {};
+          for (const [rid, v] of Object.entries(lc.rewards && typeof lc.rewards === "object" ? lc.rewards : {})) {
+            const n = Math.max(0, Math.min(99999, Math.floor(Number(v) || 0)));
+            if (ICE_RINK_RES_ZH[rid] && n > 0) out[rid] = n;
+          }
+          return out;
+        })(),
+        newBest: Boolean(lc.newBest),
+        at: typeof lc.at === "number" && Number.isFinite(lc.at) ? lc.at : 0,
+      }
+    : null;
+  const clean = {
+    initialized: true,
+    show: normalizeIceRinkShow(raw.show, aliveSet),
+    buffs,
+    best,
+    gradeCounts,
+    totalShows: Math.max(0, Math.floor(Number(raw.totalShows) || 0)),
+    lastClaim,
+    recentLogs: Array.isArray(raw.recentLogs) ? raw.recentLogs.filter((s) => typeof s === "string" && s.trim().length > 0).slice(0, ICE_RINK_LOG_KEEP) : [],
+  };
+  if (state.meta.iceRink && typeof state.meta.iceRink === "object") {
+    Object.assign(state.meta.iceRink, clean);
+    return state.meta.iceRink;
+  }
+  state.meta.iceRink = clean;
+  return clean;
+}
+
+function icePushLog(rink, line) {
+  rink.recentLogs = [line, ...(rink.recentLogs || [])].slice(0, ICE_RINK_LOG_KEEP);
+}
+
+function finishIceRinkShow(state, rink, opts) {
+  const show = rink.show;
+  if (!show || show.phase !== "rehearsing") return null;
+  const p = getIceRinkProgramDef(show.programId) || ICE_RINK_PROGRAMS[0];
+  const res = scoreIceRinkArrangement(state, p.id, show.skaterIds, opts);
+  show.phase = "finished";
+  show.elapsedSec = show.durationSec;
+  show.score = res.score;
+  show.grade = res.grade;
+  show.slotScores = res.slots.map((x) => x.score);
+  icePushLog(rink, `【演出结束】「${p.name}」谢幕，评委打出 ${res.score} 分（${res.grade} 级），快去领取评分与限时增益`);
+  return { programId: p.id, score: res.score, grade: res.grade };
+}
+
+/** Live tick + offline catch-up (≤12h): the rehearsal advances; timed buffs count down in real seconds. */
+export function advanceIceRink(state, dtSec, opts = {}) {
+  const rink = state?.meta?.iceRink;
+  const empty = { finished: null, cancelled: false, expiredBuffs: [] };
+  if (!rink || typeof rink !== "object") return empty;
+  const step = typeof dtSec === "number" && Number.isFinite(dtSec) && dtSec > 0 ? Math.min(ICE_RINK_MAX_CATCHUP_SEC, dtSec) : 0;
+  if (step <= 0) return empty;
+  const expiredBuffs = [];
+  if (!rink.buffs || typeof rink.buffs !== "object") rink.buffs = {};
+  for (const kind of ICE_RINK_BUFF_KINDS) {
+    const b = rink.buffs[kind];
+    if (!b) continue;
+    b.leftSec = Math.max(0, (Number(b.leftSec) || 0) - step);
+    if (!(b.leftSec > 0)) {
+      delete rink.buffs[kind];
+      expiredBuffs.push(kind);
+    }
+  }
+  let finished = null;
+  let cancelled = false;
+  const show = rink.show;
+  if (show && show.phase === "rehearsing") {
+    const byId = iceMonsById(state);
+    if (!(show.skaterIds || []).some((id) => id > 0 && byId.has(id))) {
+      rink.show = null;
+      cancelled = true;
+    } else {
+      show.elapsedSec = Math.min(show.durationSec, (Number(show.elapsedSec) || 0) + step);
+      if (show.elapsedSec >= show.durationSec - 1e-9) finished = finishIceRinkShow(state, rink, opts);
+    }
+  }
+  return { finished, cancelled, expiredBuffs };
+}
+
+/** Starts a program with up to 3 idle skaters aligned to its moves (0 = empty move). */
+export function startIceRinkShow(state, programId, skaterIds, opts = {}) {
+  const rink = ensureIceRinkState(state);
+  if (!rink) return { ok: false, reason: "invalid_state" };
+  const p = getIceRinkProgramDef(programId);
+  if (!p) return { ok: false, reason: "unknown_program" };
+  if (rink.show) return { ok: false, reason: "rink_busy" };
+  const ids = [];
+  for (let i = 0; i < ICE_RINK_SLOTS; i += 1) {
+    const id = Math.floor(Number(Array.isArray(skaterIds) ? skaterIds[i] : 0) || 0);
+    ids.push(id > 0 && !ids.includes(id) ? id : 0);
+  }
+  if (!ids.some((x) => x > 0)) return { ok: false, reason: "no_skaters" };
+  const idle = new Set(getIdleIceRinkCandidates(state).map((m) => m.id));
+  if (ids.some((id) => id > 0 && !idle.has(id))) return { ok: false, reason: "mon_busy" };
+  const nowMs = typeof opts.nowMs === "number" && Number.isFinite(opts.nowMs) ? opts.nowMs : Date.now();
+  rink.show = { programId: p.id, skaterIds: ids, phase: "rehearsing", durationSec: p.rehearseMin * 60, elapsedSec: 0, score: 0, grade: "", slotScores: [], startedAt: nowMs };
+  const preview = scoreIceRinkArrangement(state, p.id, ids, opts);
+  icePushLog(rink, `【上冰排练】${ids.filter((x) => x > 0).length} 位伙伴开始排练「${p.name}」（约 ${p.rehearseMin} 分钟 · 预计 ${preview.score} 分），排练期间防放生保护生效`);
+  return { ok: true, programId: p.id, skaterIds: ids.slice(), durationSec: p.rehearseMin * 60, expectScore: preview.score, expectGrade: preview.grade, matchCount: preview.matchCount };
+}
+
+/** 「一键编排」: arranges the best idle skaters for the program and starts the rehearsal. */
+export function autoArrangeIceRink(state, programId, opts = {}) {
+  const rink = ensureIceRinkState(state);
+  if (!rink) return { ok: false, reason: "invalid_state" };
+  if (rink.show) return { ok: false, reason: "rink_busy" };
+  const pre = previewIceRinkArrangement(state, programId, opts);
+  if (!pre) return { ok: false, reason: "unknown_program" };
+  if (!pre.skaterIds.some((x) => x > 0)) return { ok: false, reason: "no_idle_mons" };
+  return startIceRinkShow(state, programId, pre.skaterIds, opts);
+}
+
+/** 「提前退场」: a rehearsing program ends at once (no score). */
+export function leaveIceRinkShow(state) {
+  const rink = ensureIceRinkState(state);
+  if (!rink) return { ok: false, reason: "invalid_state" };
+  const show = rink.show;
+  if (!show) return { ok: false, reason: "no_show" };
+  if (show.phase !== "rehearsing") return { ok: false, reason: "already_finished" };
+  rink.show = null;
+  icePushLog(rink, `【提前退场】「${getIceRinkProgramDef(show.programId)?.name || "节目"}」的排练提前结束，这次没有评分`);
+  return { ok: true, left: show.skaterIds.filter((x) => x > 0).length };
+}
+
+/** 「领取评分」: rewards + the program's timed buff (same kind: higher add, longer time, ≤60 min); skaters +40 exp / +2 affection and come home. */
+export function claimIceRinkShow(state, opts = {}) {
+  const rink = ensureIceRinkState(state);
+  if (!rink) return { ok: false, reason: "invalid_state" };
+  const show = rink.show;
+  if (!show || show.phase !== "finished") return { ok: false, reason: "not_finished" };
+  const p = getIceRinkProgramDef(show.programId) || ICE_RINK_PROGRAMS[0];
+  const g = getIceRinkGrade(show.score);
+  const rewards = { minerals: ICE_RINK_BASE_MINERALS, futurecoin: g.coin };
+  const newBest = show.score > (rink.best[p.id] || 0);
+  if (newBest) {
+    rink.best[p.id] = show.score;
+    rewards.futurecoin += ICE_RINK_BEST_COIN;
+  }
+  applyRewardGrant(state, rewards, { addRes: opts.addRes, addExpToMon: opts.addExpToMon, squadMons: [] });
+  const byId = iceMonsById(state);
+  const skaters = show.skaterIds.map((id) => byId.get(id)).filter(Boolean);
+  for (const m of skaters) {
+    if (typeof opts.addExpToMon === "function") opts.addExpToMon(m, ICE_RINK_EXP);
+    else m.exp = Math.max(0, Math.floor((Number(m.exp) || 0) + ICE_RINK_EXP));
+    const aff0 = typeof m.affection === "number" && Number.isFinite(m.affection) ? m.affection : 0;
+    m.affection = Math.min(100, Math.max(0, aff0 + ICE_RINK_AFFECTION));
+  }
+  const buff = getIceRinkBuffFor(p.id, g.grade);
+  const prev = rink.buffs[buff.kind];
+  rink.buffs[buff.kind] = {
+    add: Math.min(ICE_RINK_BUFF_MAX_ADD, Math.max(prev?.add || 0, buff.add)),
+    leftSec: Math.min(ICE_RINK_BUFF_MAX_SEC, Math.max(prev?.leftSec || 0, buff.sec)),
+  };
+  rink.show = null;
+  rink.totalShows = (rink.totalShows || 0) + 1;
+  rink.gradeCounts[g.grade] = (rink.gradeCounts[g.grade] || 0) + 1;
+  const nowMs = typeof opts.nowMs === "number" && Number.isFinite(opts.nowMs) ? opts.nowMs : Date.now();
+  rink.lastClaim = { programId: p.id, score: show.score, grade: g.grade, rewards: { ...rewards }, newBest, at: nowMs };
+  const rewardTxt = Object.entries(rewards)
+    .map(([rid, n]) => `${ICE_RINK_RES_ZH[rid] || rid} +${n}`)
+    .join("、");
+  const logLine = `【领取评分】「${p.name}」${show.score} 分（${g.grade} 级）${newBest ? "，刷新最高分" : ""}，换来 ${rewardTxt}；${ICE_RINK_BUFF_ZH[buff.kind]} +${Math.round(buff.add * 1000) / 10}% 持续 ${Math.round(buff.sec / 60)} 分钟`;
+  icePushLog(rink, logLine);
+  return { ok: true, programId: p.id, score: show.score, grade: g.grade, rewards, newBest, buff: { ...buff }, skaters: skaters.map((m) => m.id), logLine };
+}
+
+/** Forced release / star-up material: the skater leaves the ice; an emptied rehearsal ends. */
+export function detachIceRinkSkater(state, monId) {
+  const rink = state?.meta?.iceRink;
+  const id = Math.floor(Number(monId) || 0);
+  const show = rink?.show;
+  if (!show || !Array.isArray(show.skaterIds) || id <= 0) return { ok: false, detached: false };
+  const before = show.skaterIds.filter((x) => x > 0).length;
+  show.skaterIds = show.skaterIds.map((x) => (Math.floor(Number(x) || 0) === id ? 0 : x));
+  const detached = show.skaterIds.filter((x) => x > 0).length !== before;
+  if (show.phase === "rehearsing" && !show.skaterIds.some((x) => x > 0)) rink.show = null;
+  return { ok: true, detached };
+}
+
+/** Rebirth: a rehearsing program ends; a finished score stays claimable (skaters already home). Buffs and records are kept. */
+export function recallIceRinkForRebirth(state) {
+  const rink = state?.meta?.iceRink;
+  const show = rink?.show;
+  if (!show) return { ok: false, recalled: 0 };
+  const recalled = Array.isArray(show.skaterIds) ? show.skaterIds.filter((x) => x > 0).length : 0;
+  if (show.phase !== "finished") rink.show = null;
+  else show.skaterIds = [0, 0, 0];
+  return { ok: true, recalled };
+}
+
+/** Pure aggregator of the active timed buffs (wired into production / effects / PvE damage). */
+export function computeIceRinkBuffs(state) {
+  const raw = state?.meta?.iceRink;
+  const has = Boolean(raw && typeof raw === "object");
+  const buffs = has && raw.buffs && typeof raw.buffs === "object" ? raw.buffs : {};
+  const round4 = (n) => Math.round(n * 10000) / 10000;
+  const addOf = (kind) => {
+    const b = buffs[kind];
+    return b && (Number(b.leftSec) || 0) > 0 ? Math.max(0, Math.min(ICE_RINK_BUFF_MAX_ADD, Number(b.add) || 0)) : 0;
+  };
+  const prodAdd = round4(addOf("prod"));
+  const catchAdd = round4(addOf("catch"));
+  const pveOutAdd = round4(addOf("pveOut"));
+  const active = ICE_RINK_BUFF_KINDS.filter((k) => addOf(k) > 0).map((k) => ({ kind: k, add: addOf(k), leftSec: Math.floor(Number(buffs[k].leftSec) || 0) }));
+  const totalShows = has ? Math.max(0, Math.floor(Number(raw.totalShows) || 0)) : 0;
+  const show = has && raw.show && typeof raw.show === "object" ? raw.show : null;
+  return {
+    active,
+    totalShows,
+    title: getIceRinkTitle(totalShows),
+    rehearsing: show?.phase === "rehearsing",
+    finished: show?.phase === "finished",
+    skaters: show && Array.isArray(show.skaterIds) ? show.skaterIds.filter((x) => x > 0).length : 0,
+    prodAdd,
+    prodMul: round4(1 + prodAdd),
+    catchAdd,
+    pveOutAdd,
+    pveOutMul: round4(1 + pveOutAdd),
+  };
+}
+
+// ============================================================================
+// ML-17 「花田蜜蜂工坊」(Flower-Field Bee Workshop)
+// 3 个蜂箱（向阳蜂箱 40 分钟 · 溪畔蜂箱 60 分钟 · 林间蜂箱 90 分钟），每个最多 2 位伙伴照料花田与蜂箱。
+// 花种按本地日期轮换：8 种花每天开 3 种（3 个蜂箱各对着一种），约 3 天开遍；出发时锁定当天的花种。
+// 照料完成时每位伙伴酿出 1 罐该花的蜂蜜：伙伴属性与花种相同另 +1 罐，与蜂箱属性契合再有 50% 概率 +1 罐（每位最多 3 罐）。
+// 完成的蜂箱等你「收取蜂蜜」（已完成未收取：接入一键收取）：每罐 灵果 40 + 灵木 20，第一次登记进蜂蜜图鉴的蜂蜜另 +6 未来币；
+// 照料伙伴经验 +40、亲密 +2。蜂蜜图鉴 8 种，登记 2 / 4 / 6 / 8 种升为铜 / 银 / 金 / 琥珀蜂巢徽章：
+// 每种蜂蜜 全产 +0.25%（封顶 2%），蜂巢徽章每级 捕获 +0.25%、闪光 +1%（封顶 1% / 4%）。
+// 照料中可「召回」（不带回蜂蜜）。照料伙伴经由统一外出登记表接入防放生锁 / 训练 / 远征 / 冠军赛排除；
+// 离线补算 ≤12h（多个蜂箱按完成先后结算）；强制放生 / 转生召回照料中的蜂箱，图鉴与徽章永久保留。
+// ============================================================================
+
+export const BEE_BLOOMS_PER_DAY = 3;
+export const BEE_FLOWER_MATCH_JARS = 1;
+export const BEE_HIVE_MATCH_CHANCE = 0.5;
+export const BEE_MAX_JARS_PER_KEEPER = 3;
+export const BEE_EXP = 40;
+export const BEE_AFFECTION = 2;
+export const BEE_NEW_HONEY_COIN = 6;
+export const BEE_MAX_CATCHUP_SEC = 12 * 3600;
+export const BEE_LOG_KEEP = 6;
+export { BEE_HIVE_COUNT, BEE_MAX_KEEPERS, BEE_SEATS };
+
+export const BEE_HIVES = Object.freeze(
+  [
+    { id: "sunnyHive", name: BEE_HIVE_NAMES[0], elements: ["grass", "light", "fire"], tendMin: 40, desc: "朝南的山坡，蜜蜂一早就嗡嗡地出门采蜜。" },
+    { id: "brookHive", name: BEE_HIVE_NAMES[1], elements: ["water", "wind", "electric"], tendMin: 60, desc: "小溪边的花田，风一吹满是花香。" },
+    { id: "groveHive", name: BEE_HIVE_NAMES[2], elements: ["stone", "dark", "mystic"], tendMin: 90, desc: "林子深处的老蜂箱，酿出的蜜又浓又香。" },
+  ].map((h) => Object.freeze({ ...h, elements: Object.freeze(h.elements.slice()) })),
+);
+
+export const BEE_FLOWERS = Object.freeze(
+  [
+    { id: "sunflower", name: "向日葵", honey: "向日葵蜜", element: "light", desc: "金灿灿的蜜，带着阳光的味道。" },
+    { id: "lavender", name: "薰衣草", honey: "薰衣草蜜", element: "mystic", desc: "淡紫色的蜜，闻一闻就想睡个好觉。" },
+    { id: "rapeseed", name: "油菜花", honey: "油菜花蜜", element: "grass", desc: "春天最常见的蜜，清甜不腻。" },
+    { id: "lotus", name: "荷花", honey: "荷花蜜", element: "water", desc: "清清爽爽的蜜，像夏天池塘的风。" },
+    { id: "wildRose", name: "野玫瑰", honey: "玫瑰蜜", element: "fire", desc: "粉红色的蜜，甜里带一点点花瓣香。" },
+    { id: "lilyValley", name: "铃兰", honey: "铃兰蜜", element: "wind", desc: "一串串小白铃铛酿出的蜜，轻盈透亮。" },
+    { id: "edelweiss", name: "雪绒花", honey: "雪绒花蜜", element: "stone", desc: "高山岩缝里的花，蜜少而珍贵。" },
+    { id: "nightJasmine", name: "夜来香", honey: "夜来香蜜", element: "dark", desc: "只在夜里开放，蜜香会悄悄飘满屋子。" },
+  ].map((f) => Object.freeze(f)),
+);
+
+export const BEE_REWARDS_PER_JAR = Object.freeze({ catnip: 40, wood: 20 });
+
+export const BEE_BADGE_TIERS = Object.freeze([
+  Object.freeze({ tier: 1, name: "铜蜂巢徽章", minHoneys: 2 }),
+  Object.freeze({ tier: 2, name: "银蜂巢徽章", minHoneys: 4 }),
+  Object.freeze({ tier: 3, name: "金蜂巢徽章", minHoneys: 6 }),
+  Object.freeze({ tier: 4, name: "琥珀蜂巢徽章", minHoneys: 8 }),
+]);
+export const BEE_BADGE_MAX_TIER = BEE_BADGE_TIERS.length;
+
+export const BEE_RES_ZH = Object.freeze({ futurecoin: "未来币", catnip: "灵果", wood: "灵木" });
+
+const BEE_TITLES = Object.freeze([
+  { minTrips: 50, name: "花田养蜂大师" },
+  { minTrips: 15, name: "熟练养蜂人" },
+  { minTrips: 3, name: "花田帮手" },
+  { minTrips: 0, name: "养蜂学徒" },
+]);
+
+export function getBeeHiveDef(id) {
+  return BEE_HIVES.find((h) => h.id === id) || null;
+}
+
+export function getBeeFlowerDef(id) {
+  return BEE_FLOWERS.find((f) => f.id === id) || null;
+}
+
+export function getBeeTitle(totalTrips = 0) {
+  const n = Math.max(0, Math.floor(Number(totalTrips) || 0));
+  return (BEE_TITLES.find((t) => n >= t.minTrips) || BEE_TITLES[BEE_TITLES.length - 1]).name;
+}
+
+export function getBeeBadgeTier(honeys = 0) {
+  const n = Math.max(0, Math.floor(Number(honeys) || 0));
+  let tier = 0;
+  for (const t of BEE_BADGE_TIERS) if (n >= t.minHoneys) tier = t.tier;
+  return tier;
+}
+
+export function getBeeBadgeName(tier) {
+  return BEE_BADGE_TIERS.find((t) => t.tier === tier)?.name || "未获蜂巢徽章";
+}
+
+/** Today's blooms by local date: 3 consecutive flowers starting at (day × 3) mod 8, hive i faces bloom i; changes at local midnight. */
+export function getBeeBloomRotation(nowMs = Date.now()) {
+  const d = new Date(nowMs);
+  const dayIdx = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  const n = BEE_FLOWERS.length;
+  const at = (day) => {
+    const k = (((day * BEE_BLOOMS_PER_DAY) % n) + n) % n;
+    return Array.from({ length: BEE_BLOOMS_PER_DAY }, (_, i) => BEE_FLOWERS[(k + i) % n]);
+  };
+  const blooms = at(dayIdx);
+  const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+  return {
+    dayIdx,
+    blooms,
+    bloomIds: blooms.map((f) => f.id),
+    nextBlooms: at(dayIdx + 1),
+    msUntilChange: Math.max(0, tomorrow - nowMs),
+  };
+}
+
+/** Keeper preview at a hive for a flower: 花种契合 (+1 jar), 蜂箱契合 (50% +1 jar). */
+export function evaluateBeeKeeper(mon, hiveId, flowerId, opts = {}) {
+  const hive = getBeeHiveDef(hiveId);
+  const flower = getBeeFlowerDef(flowerId);
+  if (!mon || !hive || !flower) return null;
+  const types = acrobatTypesOf(mon, opts);
+  const flowerMatch = types.includes(flower.element);
+  const hiveMatch = types.some((t) => hive.elements.includes(t));
+  return { hiveId: hive.id, flowerId: flower.id, types, flowerMatch, hiveMatch, baseJars: 1 + (flowerMatch ? BEE_FLOWER_MATCH_JARS : 0), extraChance: hiveMatch ? BEE_HIVE_MATCH_CHANCE : 0 };
+}
+
+function normalizeBeeTrip(raw, hiveDef, hiveIdx, aliveSet, usedIds) {
+  if (!raw || typeof raw !== "object" || !hiveDef) return null;
+  const keeperIds = [];
+  for (const v of Array.isArray(raw.keeperIds) ? raw.keeperIds : []) {
+    const id = Math.floor(Number(v) || 0);
+    if (id <= 0 || keeperIds.includes(id) || usedIds.has(id) || (aliveSet && !aliveSet.has(id))) continue;
+    keeperIds.push(id);
+    if (keeperIds.length >= BEE_SEATS) break;
+  }
+  const phase = raw.phase === "done" ? "done" : "tending";
+  if (phase === "tending" && !keeperIds.length) return null;
+  for (const id of keeperIds) usedIds.add(id);
+  const durationSec = hiveDef.tendMin * 60;
+  const elapsed = Number(raw.elapsedSec);
+  const departedAt = typeof raw.departedAt === "number" && Number.isFinite(raw.departedAt) && raw.departedAt > 0 ? raw.departedAt : 0;
+  const flowerId = getBeeFlowerDef(raw.flowerId)?.id || getBeeBloomRotation(departedAt || Date.now()).bloomIds[hiveIdx] || BEE_FLOWERS[0].id;
+  const haul =
+    phase === "done"
+      ? (Array.isArray(raw.haul) ? raw.haul : [])
+          .map((h) => {
+            const f = h && typeof h === "object" ? getBeeFlowerDef(h.flowerId) : null;
+            if (!f) return null;
+            const monId = Math.max(0, Math.floor(Number(h.monId) || 0));
+            return { flowerId: f.id, monId: keeperIds.includes(monId) ? monId : 0 };
+          })
+          .filter(Boolean)
+          .slice(0, BEE_SEATS * BEE_MAX_JARS_PER_KEEPER)
+      : [];
+  return {
+    hiveId: hiveDef.id,
+    keeperIds,
+    phase,
+    durationSec,
+    elapsedSec: phase === "done" ? durationSec : Number.isFinite(elapsed) && elapsed > 0 ? Math.min(durationSec, elapsed) : 0,
+    flowerId,
+    haul,
+    departedAt,
+  };
+}
+
+export function ensureBeeWorkshopState(state) {
+  if (!state || typeof state !== "object") return null;
+  if (!state.meta || typeof state.meta !== "object") state.meta = {};
+  const raw = state.meta.beeWorkshop && typeof state.meta.beeWorkshop === "object" ? state.meta.beeWorkshop : {};
+  const aliveSet = ml17AliveSetOf(state);
+  const rawHives = Array.isArray(raw.hives) ? raw.hives : [];
+  const usedIds = new Set();
+  const hives = BEE_HIVES.map((def, i) => ({ trip: normalizeBeeTrip(rawHives[i]?.trip, def, i, aliveSet, usedIds) }));
+  const rawCodex = raw.codex && typeof raw.codex === "object" ? raw.codex : {};
+  const codex = {};
+  for (const f of BEE_FLOWERS) {
+    const count = Math.max(0, Math.min(999999, Math.floor(Number(rawCodex[f.id]?.count) || 0)));
+    if (count > 0) codex[f.id] = { count };
+  }
+  const lc = raw.lastClaim && typeof raw.lastClaim === "object" ? raw.lastClaim : null;
+  const lastClaim = lc
+    ? {
+        jars: Math.max(0, Math.min(99, Math.floor(Number(lc.jars) || 0))),
+        hiveId: getBeeHiveDef(lc.hiveId)?.id || "",
+        flowerId: getBeeFlowerDef(lc.flowerId)?.id || "",
+        rewards: (() => {
+          const out = {};
+          for (const [rid, v] of Object.entries(lc.rewards && typeof lc.rewards === "object" ? lc.rewards : {})) {
+            const n = Math.max(0, Math.min(99999, Math.floor(Number(v) || 0)));
+            if (BEE_RES_ZH[rid] && n > 0) out[rid] = n;
+          }
+          return out;
+        })(),
+        newHoney: Boolean(lc.newHoney),
+        at: typeof lc.at === "number" && Number.isFinite(lc.at) ? lc.at : 0,
+      }
+    : null;
+  const clean = {
+    initialized: true,
+    hives,
+    codex,
+    totalTrips: Math.max(0, Math.floor(Number(raw.totalTrips) || 0)),
+    totalJars: Math.max(0, Math.floor(Number(raw.totalJars) || 0)),
+    lastClaim,
+    recentLogs: Array.isArray(raw.recentLogs) ? raw.recentLogs.filter((s) => typeof s === "string" && s.trim().length > 0).slice(0, BEE_LOG_KEEP) : [],
+  };
+  if (state.meta.beeWorkshop && typeof state.meta.beeWorkshop === "object") {
+    Object.assign(state.meta.beeWorkshop, clean);
+    return state.meta.beeWorkshop;
+  }
+  state.meta.beeWorkshop = clean;
+  return clean;
+}
+
+function beePushLog(bw, line) {
+  bw.recentLogs = [line, ...(bw.recentLogs || [])].slice(0, BEE_LOG_KEEP);
+}
+
+function beeMonsOf(state, ids) {
+  const list = Array.isArray(state?.mons?.list) ? state.mons.list : [];
+  return (Array.isArray(ids) ? ids : []).map((id) => list.find((m) => m && m.id === id)).filter(Boolean);
+}
+
+/** Tending done: every keeper fills 1 jar (+1 flower-matched, +1 at 50% hive-matched, ≤3). */
+function finishBeeHive(state, bw, idx, opts, rng) {
+  const trip = bw.hives[idx]?.trip;
+  if (!trip || trip.phase !== "tending") return null;
+  const hive = getBeeHiveDef(trip.hiveId) || BEE_HIVES[idx];
+  const flower = getBeeFlowerDef(trip.flowerId) || BEE_FLOWERS[0];
+  const haul = [];
+  for (const mon of beeMonsOf(state, trip.keeperIds)) {
+    const ev = evaluateBeeKeeper(mon, hive.id, flower.id, opts);
+    let jars = ev ? ev.baseJars : 1;
+    if (ev?.hiveMatch && (Number(rng()) || 0) < BEE_HIVE_MATCH_CHANCE) jars += 1;
+    jars = Math.min(BEE_MAX_JARS_PER_KEEPER, jars);
+    for (let k = 0; k < jars; k += 1) haul.push({ flowerId: flower.id, monId: mon.id });
+  }
+  trip.phase = "done";
+  trip.elapsedSec = trip.durationSec;
+  trip.haul = haul;
+  beePushLog(bw, `【照料完成】「${hive.name}」的伙伴们酿好了 ${haul.length} 罐${flower.honey}，快去收取蜂蜜`);
+  return { idx, hiveId: hive.id, flowerId: flower.id, jars: haul.length };
+}
+
+/** Live tick + offline catch-up (≤12h): every tending hive advances; hives finish in order of their remaining time. */
+export function advanceBeeWorkshop(state, dtSec, opts = {}) {
+  const bw = state?.meta?.beeWorkshop;
+  const empty = { done: [], cancelled: 0 };
+  if (!bw || typeof bw !== "object" || !Array.isArray(bw.hives)) return empty;
+  const step = typeof dtSec === "number" && Number.isFinite(dtSec) && dtSec > 0 ? Math.min(BEE_MAX_CATCHUP_SEC, dtSec) : 0;
+  if (step <= 0) return empty;
+  const rng = typeof opts.randFloat === "function" ? opts.randFloat : Math.random;
+  let cancelled = 0;
+  const tending = [];
+  bw.hives.forEach((hive, idx) => {
+    const trip = hive?.trip;
+    if (!trip || trip.phase !== "tending") return;
+    if (!beeMonsOf(state, trip.keeperIds).length) {
+      hive.trip = null;
+      cancelled += 1;
+      return;
+    }
+    tending.push({ idx, left: Math.max(0, (Number(trip.durationSec) || 0) - (Number(trip.elapsedSec) || 0)) });
+  });
+  tending.sort((a, b) => a.left - b.left || a.idx - b.idx);
+  const done = [];
+  for (const t of tending) {
+    const trip = bw.hives[t.idx].trip;
+    trip.elapsedSec = Math.min(trip.durationSec, (Number(trip.elapsedSec) || 0) + step);
+    if (trip.elapsedSec >= trip.durationSec - 1e-9) {
+      const r = finishBeeHive(state, bw, t.idx, opts, rng);
+      if (r) done.push(r);
+    }
+  }
+  return { done, cancelled };
+}
+
+/** Sends 1~2 idle partners to tend hive `idx`; today's flower for that hive is locked now. */
+export function dispatchBeeHive(state, idx, monIds, opts = {}) {
+  const bw = ensureBeeWorkshopState(state);
+  if (!bw) return { ok: false, reason: "invalid_state" };
+  const i = Math.floor(Number(idx));
+  if (!(i >= 0 && i < BEE_HIVE_COUNT)) return { ok: false, reason: "unknown_hive" };
+  if (bw.hives[i].trip) return { ok: false, reason: "hive_busy" };
+  const hive = BEE_HIVES[i];
+  const ids = [];
+  for (const v of Array.isArray(monIds) ? monIds : []) {
+    const id = Math.floor(Number(v) || 0);
+    if (id > 0 && !ids.includes(id)) ids.push(id);
+  }
+  if (!ids.length) return { ok: false, reason: "no_keepers" };
+  if (ids.length > BEE_SEATS) return { ok: false, reason: "too_many_keepers" };
+  const idle = getIdleBeeCandidates(state);
+  const mons = ids.map((id) => idle.find((m) => m.id === id) || null);
+  if (mons.some((m) => !m)) return { ok: false, reason: "mon_busy" };
+  const nowMs = typeof opts.nowMs === "number" && Number.isFinite(opts.nowMs) ? opts.nowMs : Date.now();
+  const flower = getBeeBloomRotation(nowMs).blooms[i];
+  bw.hives[i].trip = { hiveId: hive.id, keeperIds: ids, phase: "tending", durationSec: hive.tendMin * 60, elapsedSec: 0, flowerId: flower.id, haul: [], departedAt: nowMs };
+  const flowerMatch = mons.filter((m) => evaluateBeeKeeper(m, hive.id, flower.id, opts)?.flowerMatch).length;
+  beePushLog(bw, `【照料花田】${mons.map((m) => m.name || "伙伴").join("、")} 去「${hive.name}」照料${flower.name}花田（约 ${hive.tendMin} 分钟${flowerMatch ? ` · 花种契合 ${flowerMatch} 位` : ""}），照料期间防放生保护生效`);
+  return { ok: true, idx: i, hiveId: hive.id, flowerId: flower.id, keeperIds: ids.slice(), durationSec: hive.tendMin * 60, flowerMatch };
+}
+
+function scoreBeeKeeper(mon, hiveId, flowerId, opts) {
+  const ev = evaluateBeeKeeper(mon, hiveId, flowerId, opts);
+  if (!ev) return -1;
+  return (ev.flowerMatch ? 2000 : 0) + (ev.hiveMatch ? 1000 : 0) + Math.max(1, Math.floor(Number(mon.lvl) || 1));
+}
+
+/** 「一键照料」: every empty hive takes its 2 best idle keepers (flower-matched first, then hive-matched, then level). */
+export function autoDispatchBeeHives(state, opts = {}) {
+  const bw = ensureBeeWorkshopState(state);
+  if (!bw) return { ok: false, dispatched: [] };
+  const nowMs = typeof opts.nowMs === "number" && Number.isFinite(opts.nowMs) ? opts.nowMs : Date.now();
+  const blooms = getBeeBloomRotation(nowMs).blooms;
+  const dispatched = [];
+  for (let i = 0; i < BEE_HIVE_COUNT; i += 1) {
+    if (bw.hives[i].trip) continue;
+    const idle = getIdleBeeCandidates(state);
+    if (!idle.length) break;
+    const hive = BEE_HIVES[i];
+    const picks = idle
+      .slice()
+      .sort((a, b) => scoreBeeKeeper(b, hive.id, blooms[i].id, opts) - scoreBeeKeeper(a, hive.id, blooms[i].id, opts) || (a.id || 0) - (b.id || 0))
+      .slice(0, BEE_SEATS);
+    const res = dispatchBeeHive(state, i, picks.map((m) => m.id), { ...opts, nowMs });
+    if (res.ok) dispatched.push({ idx: i, hiveId: res.hiveId, flowerId: res.flowerId, keeperIds: res.keeperIds, flowerMatch: res.flowerMatch });
+  }
+  const anyFree = bw.hives.some((x) => !x.trip);
+  return { ok: dispatched.length > 0, reason: dispatched.length ? "" : anyFree ? "no_idle_mons" : "hives_busy", dispatched };
+}
+
+/** 「召回」: a tending hive stops at once (no honey). */
+export function recallBeeHive(state, idx) {
+  const bw = ensureBeeWorkshopState(state);
+  if (!bw) return { ok: false, reason: "invalid_state" };
+  const i = Math.floor(Number(idx));
+  const trip = bw.hives[i]?.trip;
+  if (!trip) return { ok: false, reason: "no_trip" };
+  if (trip.phase !== "tending") return { ok: false, reason: "already_done" };
+  bw.hives[i].trip = null;
+  beePushLog(bw, `【召回】「${BEE_HIVES[i].name}」的伙伴们提前回家了，这一趟没带回蜂蜜`);
+  return { ok: true, idx: i, recalled: trip.keeperIds.length };
+}
+
+/** 「收取蜂蜜」for one done hive: jars → codex + rewards (new honey +6 coin); keepers +40 exp / +2 affection and come home. */
+export function claimBeeHive(state, idx, opts = {}) {
+  const bw = ensureBeeWorkshopState(state);
+  if (!bw) return { ok: false, reason: "invalid_state" };
+  const i = Math.floor(Number(idx));
+  const trip = bw.hives[i]?.trip;
+  if (!trip || trip.phase !== "done") return { ok: false, reason: "not_done" };
+  const hive = getBeeHiveDef(trip.hiveId) || BEE_HIVES[i];
+  const tierBefore = getBeeBadgeTier(Object.keys(bw.codex).length);
+  const rewards = {};
+  let newHoney = false;
+  for (const h of trip.haul) {
+    const f = getBeeFlowerDef(h.flowerId);
+    if (!f) continue;
+    for (const [rid, n] of Object.entries(BEE_REWARDS_PER_JAR)) rewards[rid] = (rewards[rid] || 0) + n;
+    const prev = bw.codex[f.id];
+    if (!prev || !(prev.count > 0)) {
+      newHoney = true;
+      rewards.futurecoin = (rewards.futurecoin || 0) + BEE_NEW_HONEY_COIN;
+    }
+    bw.codex[f.id] = { count: (prev?.count || 0) + 1 };
+  }
+  applyRewardGrant(state, rewards, { addRes: opts.addRes, addExpToMon: opts.addExpToMon, squadMons: [] });
+  const keepers = beeMonsOf(state, trip.keeperIds);
+  for (const m of keepers) {
+    if (typeof opts.addExpToMon === "function") opts.addExpToMon(m, BEE_EXP);
+    else m.exp = Math.max(0, Math.floor((Number(m.exp) || 0) + BEE_EXP));
+    const aff0 = typeof m.affection === "number" && Number.isFinite(m.affection) ? m.affection : 0;
+    m.affection = Math.min(100, Math.max(0, aff0 + BEE_AFFECTION));
+  }
+  const jars = trip.haul.length;
+  const flower = getBeeFlowerDef(trip.flowerId) || BEE_FLOWERS[0];
+  bw.hives[i].trip = null;
+  bw.totalTrips = (bw.totalTrips || 0) + 1;
+  bw.totalJars = (bw.totalJars || 0) + jars;
+  const nowMs = typeof opts.nowMs === "number" && Number.isFinite(opts.nowMs) ? opts.nowMs : Date.now();
+  bw.lastClaim = { jars, hiveId: hive.id, flowerId: flower.id, rewards: { ...rewards }, newHoney, at: nowMs };
+  const tierAfter = getBeeBadgeTier(Object.keys(bw.codex).length);
+  const rewardTxt = Object.entries(rewards)
+    .map(([rid, n]) => `${BEE_RES_ZH[rid] || rid} +${n}`)
+    .join("、");
+  const logLine = `【收取蜂蜜】「${hive.name}」收下 ${jars} 罐${flower.honey}${newHoney ? "（蜂蜜图鉴新登记）" : ""}，换来 ${rewardTxt || "满屋花香"}`;
+  beePushLog(bw, logLine);
+  if (tierAfter > tierBefore) beePushLog(bw, `【蜂巢徽章】蜂蜜图鉴登记 ${Object.keys(bw.codex).length} 种，徽章升为「${getBeeBadgeName(tierAfter)}」`);
+  return { ok: true, idx: i, hiveId: hive.id, flowerId: flower.id, jars, rewards, newHoney, newTier: tierAfter > tierBefore ? tierAfter : 0, keepers: keepers.map((m) => m.id), logLine };
+}
+
+/** 「收取蜂蜜」for every done hive at once. */
+export function claimAllBeeHives(state, opts = {}) {
+  const bw = ensureBeeWorkshopState(state);
+  if (!bw) return { ok: false, reason: "invalid_state" };
+  const results = [];
+  for (let i = 0; i < BEE_HIVE_COUNT; i += 1) {
+    if (bw.hives[i]?.trip?.phase === "done") results.push(claimBeeHive(state, i, opts));
+  }
+  if (!results.length) return { ok: false, reason: "nothing_done" };
+  const rewards = {};
+  for (const r of results) for (const [rid, n] of Object.entries(r.rewards || {})) rewards[rid] = (rewards[rid] || 0) + n;
+  return { ok: true, claimed: results.length, jars: results.reduce((s, r) => s + (r.jars || 0), 0), rewards, newTier: Math.max(0, ...results.map((r) => r.newTier || 0)), results };
+}
+
+/** Forced release / star-up material: the keeper leaves the hive; an emptied tending hive stops. */
+export function detachBeeKeeper(state, monId) {
+  const bw = state?.meta?.beeWorkshop;
+  const id = Math.floor(Number(monId) || 0);
+  if (!bw || typeof bw !== "object" || !Array.isArray(bw.hives) || id <= 0) return { ok: false, detached: false };
+  let detached = false;
+  for (const hive of bw.hives) {
+    const trip = hive?.trip;
+    if (!trip || !Array.isArray(trip.keeperIds)) continue;
+    const before = trip.keeperIds.length;
+    trip.keeperIds = trip.keeperIds.filter((x) => Math.floor(Number(x) || 0) !== id);
+    if (trip.keeperIds.length !== before) detached = true;
+    if (Array.isArray(trip.haul)) for (const h of trip.haul) if (h && Math.floor(Number(h.monId) || 0) === id) h.monId = 0;
+    if (trip.phase === "tending" && !trip.keeperIds.length) hive.trip = null;
+  }
+  return { ok: true, detached };
+}
+
+/** Rebirth: tending hives stop; done hives keep their honey (claimable later, no exp owner). Codex and badge are permanent. */
+export function recallBeeWorkshopForRebirth(state) {
+  const bw = state?.meta?.beeWorkshop;
+  if (!bw || typeof bw !== "object" || !Array.isArray(bw.hives)) return { ok: false, recalled: 0 };
+  let recalled = 0;
+  for (const hive of bw.hives) {
+    const trip = hive?.trip;
+    if (!trip) continue;
+    recalled += Array.isArray(trip.keeperIds) ? trip.keeperIds.length : 0;
+    if (trip.phase === "tending") {
+      hive.trip = null;
+      continue;
+    }
+    trip.keeperIds = [];
+    if (Array.isArray(trip.haul)) for (const h of trip.haul) if (h) h.monId = 0;
+  }
+  return { ok: true, recalled };
+}
+
+/**
+ * Pure non-mutating aggregator of the honey codex & hive badge (wired into production / effects / breeding):
+ * 每种已登记蜂蜜 全产 +0.25%（8 种 = 2%）· 蜂巢徽章每级 捕获 +0.25%、闪光 +1%（4 级 = 1% / 4%）。
+ */
+export function computeBeeWorkshopBonus(state) {
+  const raw = state?.meta?.beeWorkshop;
+  const has = Boolean(raw && typeof raw === "object");
+  const codex = has && raw.codex && typeof raw.codex === "object" ? raw.codex : {};
+  const honeys = BEE_FLOWERS.filter((f) => (Number(codex[f.id]?.count) || 0) > 0).length;
+  const tier = getBeeBadgeTier(honeys);
+  const round4 = (n) => Math.round(n * 10000) / 10000;
+  const prodAdd = round4(honeys * 0.0025);
+  const catchAdd = round4(tier * 0.0025);
+  const shinyAdd = round4(tier * 0.01);
+  const hives = has && Array.isArray(raw.hives) ? raw.hives : [];
+  const totalTrips = has ? Math.max(0, Math.floor(Number(raw.totalTrips) || 0)) : 0;
+  let keepers = 0;
+  for (const hive of hives.slice(0, BEE_HIVE_COUNT)) keepers += Array.isArray(hive?.trip?.keeperIds) ? hive.trip.keeperIds.length : 0;
+  return {
+    honeys,
+    totalHoneys: BEE_FLOWERS.length,
+    badgeTier: tier,
+    maxTier: BEE_BADGE_MAX_TIER,
+    badgeName: getBeeBadgeName(tier),
+    nextTier: BEE_BADGE_TIERS.find((t) => t.tier === tier + 1) || null,
+    totalTrips,
+    totalJars: has ? Math.max(0, Math.floor(Number(raw.totalJars) || 0)) : 0,
+    title: getBeeTitle(totalTrips),
+    keepers,
+    tending: hives.filter((x) => x?.trip?.phase === "tending").length,
+    done: hives.filter((x) => x?.trip?.phase === "done").length,
+    prodAdd,
+    prodMul: round4(1 + prodAdd),
+    catchAdd,
+    shinyAdd,
+    shinyChanceMul: round4(1 + shinyAdd),
+  };
+}
+
+// ============================================================================
 // ML-16 「一键收取已归来伙伴」(Collect every returned partner)
 // 读 collection_fun.js 的统一外出登记表（getAwayReturnedUnits）：覆盖所有带「已归来 / 已降落 / 已完成但还没收取」状态的外出玩法——
-// 星空露营归营、彩虹气球已降落、邮局信使带着回信回来、寻宝远航体力耗尽 / 整岛探索完、心愿码头满载归港。
+// 星空露营归营、彩虹气球已降落、邮局信使带着回信回来、寻宝远航体力耗尽 / 整岛探索完、心愿码头满载归港，
+// 以及 ML-17 的冰晶溜冰场演出结束（评分待领取）、花田蜜蜂工坊照料完成（蜂蜜待收取）。
 // 每个单位都交给该玩法自己的收取函数（claimStargazeSite / claimBalloon / claimPostTrip / returnFromTreasureVoyage / claimWishDockRoute），
 // 奖励、图鉴、徽章、经验与亲密照常发放，伙伴随即回家（不再被外出锁住）。登记表里新增带 returned 读取器的玩法时，必须在下表补上收取函数，
 // ml16-selfcheck 会核对两边一一对应。
 // ============================================================================
 
 const AWAY_RETURN_COLLECTORS = Object.freeze({
+  iceRink: (state, unit, opts) => claimIceRinkShow(state, opts),
+  beeWorkshop: (state, unit, opts) => claimBeeHive(state, unit.ref.idx, opts),
   stargazeCamp: (state, unit, opts) => claimStargazeSite(state, unit.ref.idx, opts),
   balloonTravel: (state, unit, opts) => claimBalloon(state, unit.ref.idx, opts),
   postOffice: (state, unit, opts) => claimPostTrip(state, unit.ref.routeId, opts),

@@ -145,7 +145,7 @@ export function createRenderBuildings({ elBuildings, defs, canAfford, getBuildin
         <div class="row is-locked bcard-autobuild">
           <div class="row__left">
             <div class="row__title row__titleLine">${renderBuildingSvg("commandCenter", 18)}<span>自动建造鲁班枢机</span><span class="tag">未来币商店解锁</span></div>
-            <div class="row__desc">在“未来币商店”解锁后可用，自动托管营地扩建。</div>
+            <div class="row__desc">解锁后自动托管营地扩建。</div>
           </div>
           <div class="row__right">
             <div class="badge badge--muted">未解锁</div>
