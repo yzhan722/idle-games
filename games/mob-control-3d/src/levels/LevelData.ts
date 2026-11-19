@@ -675,7 +675,8 @@ export interface LevelConfig {
     | 'asteroid_dash'
     | 'pumpkin_night'
     | 'pyramid_run'
-    | 'jungle_swing';
+    | 'jungle_swing'
+    | 'pirate_plank';
   isColossusRaid?: boolean;
   colossusRaidTier?: number;
   colossusLeftShieldHp?: number;
@@ -735,6 +736,13 @@ export interface LevelConfig {
   jungleGates?: JungleGateConfig[];
   jungleChasms?: JungleChasmConfig[];
   jungleBoulders?: JungleBoulderConfig[];
+  /**
+   * MC-18: 海盗船跳板突围. A pirate level also sets `isJungleSwing` and fills the jungle* course fields: it runs on the
+   * same squad-run engine (chasm = open sea between two decks crossed on a swaying plank, boulder = cannonball fired
+   * down a deck lane, exit = the flagship's boarding ramp) with its own scene, tiers, numbers and 金骷髅徽章 rewards.
+   */
+  isPirateBoarding?: boolean;
+  pirateTier?: number;
   weatherAffix?: WeatherAffixConfig;
   name: string;
   subtitle: string;
@@ -2547,7 +2555,7 @@ export function generateCandyVaultBonusLevel(milestoneStage: number): LevelConfi
     candyVaults,
     weatherAffix: WEATHER_AFFIX_CATALOG.sugar_snow_updraft,
     name: `糖果金库大劫案（第 ${safeMilestone} 关奖励）`,
-    subtitle: '25 秒零红军暴爽狂欢！穿过高倍门轰碎糖果金库塔，狂爆金币与时装碎片！',
+    subtitle: '零红军 · 穿倍增门轰碎金库塔',
     bossName: '至尊糖果总金库',
     bossMaxHp: 720 + tier * 240,
     enemySpawnInterval: 999,
@@ -2589,7 +2597,7 @@ export function generateEndlessDefenseLevel(): LevelConfig {
     isEndlessDefense: true,
     weatherAffix: WEATHER_AFFIX_CATALOG.ion_emp_storm,
     name: '无尽工坊保卫战',
-    subtitle: '死守底部泡泡站防线！抵御红军狂潮与突变巨汉无尽波次，刷新个人最佳勋章！',
+    subtitle: '死守泡泡站 · 波次递增 · 零战败损耗',
     bossName: '深渊突变裂隙',
     bossMaxHp: 999999,
     enemySpawnInterval: 2.0,
@@ -2684,7 +2692,7 @@ export function generatePayloadEscortLevel(tier = 1): LevelConfig {
     escortBarricades,
     weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier - 1) % WEATHER_AFFIX_ORDER.length]],
     name: '蒸汽装甲战车护送',
-    subtitle: '派遣波波团环绕充能蒸汽装甲战车，沿中路冲撞碾碎 4 道敌方路障直捣黑铁终极据点！',
+    subtitle: '波波围车充能 · 撞碎 4 道路障',
     bossName: '黑铁终极据点',
     bossMaxHp: Math.round(680 * hpMult),
     enemySpawnInterval: 2.15,
@@ -2746,7 +2754,7 @@ export function generateGearTournamentLevel(stage: 1 | 2 | 3, cupTier = 1): Leve
       tournamentStreakMult: 1.5,
       weatherAffix: WEATHER_AFFIX_CATALOG.gale_tailwind,
       name: '齿轮巅峰锦标赛 · 铜齿预赛',
-      subtitle: '连胜阶梯 1.5x 预赛：突破双铜齿绞盘与顺风带，夺取首胜开启阶梯倍率宝箱！',
+      subtitle: '突破双铜齿绞盘 · 夺首胜开宝箱',
       bossName: '铜齿发条前哨塔',
       bossMaxHp: Math.round(520 * cupScale),
       enemySpawnInterval: 2.25,
@@ -2799,7 +2807,7 @@ export function generateGearTournamentLevel(stage: 1 | 2 | 3, cupTier = 1): Leve
       tournamentStreakMult: 2.2,
       weatherAffix: WEATHER_AFFIX_CATALOG.ion_emp_storm,
       name: '齿轮巅峰锦标赛 · 银齿半决赛',
-      subtitle: '连胜阶梯 2.2x 半决赛：善用电磁网弹或糖浆泡瓦解双银齿副塔与离子脉冲阵！',
+      subtitle: '用副武器瓦解银齿副塔与脉冲阵',
       bossName: '银齿电磁中枢堡',
       bossMaxHp: Math.round(740 * cupScale),
       enemySpawnInterval: 1.95,
@@ -2859,7 +2867,7 @@ export function generateGearTournamentLevel(stage: 1 | 2 | 3, cupTier = 1): Leve
     tournamentStreakMult: 3.5,
     weatherAffix: WEATHER_AFFIX_CATALOG.sugar_snow_updraft,
     name: '齿轮巅峰锦标赛 · 金齿巅峰决战',
-    subtitle: '连胜阶梯 3.5x 巅峰决战：击穿霓虹金齿皇冠主堡与精英重卫，赢取巅峰奖杯与 3.5x 满贯宝箱！',
+    subtitle: '击穿金齿皇冠主堡 · 赢满贯宝箱',
     bossName: '霓虹金齿皇冠总堡',
     bossMaxHp: Math.round(980 * cupScale),
     enemySpawnInterval: 1.75,
@@ -2936,7 +2944,7 @@ export function generateClockworkColossusRaidLevel(raidTier = 1): LevelConfig {
     isMegaBoss: false,
     weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier - 1) % WEATHER_AFFIX_ORDER.length]],
     name: `巨型发条首领攻坚战 · 第 ${safeTier} 阶`,
-    subtitle: '分兵击破左翼发条重盾与右翼糖衣重炮，触发 6 秒 2.5x 瘫痪高倍暴击窗口夺取发条核心！',
+    subtitle: '破左盾右炮 · 6s 瘫痪 2.5x 暴击',
     bossName: '巨型发条胡桃夹子统领',
     bossMaxHp: Math.round(880 * tierScale),
     enemySpawnInterval: 2.1,
@@ -3056,7 +3064,7 @@ export function generateAirshipEscortLevel(escortTier = 1): LevelConfig {
     isMegaBoss: false,
     weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier + 1) % WEATHER_AFFIX_ORDER.length]],
     name: `云端飞艇母舰护航战 · 第 ${safeTier} 阶`,
-    subtitle: '分兵拔除沿途防空副塔并护卫飞艇母舰充能，投送超级波波空投舱轰破敌方终极要塞！',
+    subtitle: '拔防空塔 · 充能空投 · 轰破要塞',
     bossName: '苍穹黑铁防空要塞',
     bossMaxHp: Math.round(760 * tierScale),
     enemySpawnInterval: 2.15,
@@ -3206,7 +3214,7 @@ export function generateCandyTrainRaidLevel(raidTier = 1): LevelConfig {
     isMegaBoss: false,
     weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier + 2) % WEATHER_AFFIX_ORDER.length]],
     name: `彩虹糖果列车突袭战 · 第 ${safeTier} 阶`,
-    subtitle: '拦截环线上的多节装甲糖果货运列车，击破车厢夺取列车金章！先打火车头可令全车停摆！',
+    subtitle: '先打车头令全车停摆 · 夺金章',
     bossName: '彩虹糖果装甲货运列车',
     bossMaxHp: candyTrainCars.reduce((sum, car) => sum + car.hp, 0),
     enemySpawnInterval: 2.6,
@@ -3319,7 +3327,7 @@ export function generateSubmarineRescueLevel(rescueTier = 1): LevelConfig {
     isMiniBoss: false,
     isMegaBoss: false,
     name: `深海潜艇泡泡营救战 · 第 ${safeTier} 阶`,
-    subtitle: '驾驶玩具潜艇破开珊瑚封锁、戳破营救泡泡，抵达深海营救站！',
+    subtitle: '破珊瑚 · 戳泡泡救波波 · 抵达营救站',
     bossName: '深海营救站',
     bossMaxHp: 100,
     enemySpawnInterval: 999,
@@ -3478,7 +3486,7 @@ export function generateGlacierSledLevel(sledTier = 1): LevelConfig {
     isMiniBoss: false,
     isMegaBoss: false,
     name: `冰川雪橇竞速冲关 · 第 ${safeTier} 阶`,
-    subtitle: '左右操控玩具雪橇冲下冰川赛道：躲开雪崩浪与坠落冰锥、穿过加人门，限时冲线！',
+    subtitle: '躲雪崩与冰锥 · 穿加人门冲线',
     bossName: '冰川终点线',
     bossMaxHp: 100,
     enemySpawnInterval: 999,
@@ -3683,7 +3691,7 @@ export function generateLavaJumpLevel(lavaTier = 1): LevelConfig {
     isMiniBoss: false,
     isMegaBoss: false,
     name: `火山熔岩跳台突围战 · 第 ${safeTier} 阶`,
-    subtitle: '左右操控波波团在熔岩浮石间连跳：躲开喷发与落石、抢占冷却岩、穿过加人门，限时冲出火山口！',
+    subtitle: '连跳浮石 · 躲喷发落石 · 冲出火山口',
     bossName: '火山出口',
     bossMaxHp: 100,
     enemySpawnInterval: 999,
@@ -3855,7 +3863,7 @@ export function generateAsteroidDashLevel(asteroidTier = 1): LevelConfig {
     isMiniBoss: false,
     isMegaBoss: false,
     name: `星际陨石带护盾突围 · 第 ${safeTier} 阶`,
-    subtitle: '左右操控波波团在低重力星轨漂浮突进：躲陨石落点与陨石带、穿护盾门挡撞击、冲进跃迁门！',
+    subtitle: '躲陨石 · 穿护盾门 · 冲进跃迁门',
     bossName: '跃迁门',
     bossMaxHp: 100,
     enemySpawnInterval: 999,
@@ -4026,7 +4034,7 @@ export function generatePumpkinNightLevel(pumpkinTier = 1): LevelConfig {
     isMiniBoss: false,
     isMegaBoss: false,
     name: `幽灵古堡南瓜夜 · 第 ${safeTier} 阶`,
-    subtitle: '左右操控波波团夜闯古堡：踩南瓜灯补光、驱散穿墙幽灵、钻拱门冲出城门！',
+    subtitle: '踩灯补光 · 驱散幽灵 · 冲出城门',
     bossName: '古堡城门',
     bossMaxHp: 100,
     enemySpawnInterval: 999,
@@ -4201,7 +4209,7 @@ export function generatePyramidRunLevel(pyramidTier = 1): LevelConfig {
     isMiniBoss: false,
     isMegaBoss: false,
     name: `沙漠金字塔机关跑酷 · 第 ${safeTier} 阶`,
-    subtitle: '左右操控波波团闯金字塔墓道：踩石板路过流沙、躲开翻转石板、限时冲出墓道！',
+    subtitle: '踩石板过流沙 · 躲翻板 · 冲出墓道',
     bossName: '墓道出口',
     bossMaxHp: 100,
     enemySpawnInterval: 999,
@@ -4376,7 +4384,7 @@ export function generateJungleSwingLevel(jungleTier = 1): LevelConfig {
     isMiniBoss: false,
     isMegaBoss: false,
     name: `丛林神庙藤蔓秋千 · 第 ${safeTier} 阶`,
-    subtitle: '左右操控波波团闯丛林神庙：对准摆动的藤蔓荡过断崖、闪开滚石、限时冲出神庙！',
+    subtitle: '荡藤蔓过断崖 · 闪滚石 · 冲出神庙',
     bossName: '神庙出口',
     bossMaxHp: 100,
     enemySpawnInterval: 999,
@@ -4384,6 +4392,178 @@ export function generateJungleSwingLevel(jungleTier = 1): LevelConfig {
     initialRedPrewarm: 0,
     bruteSpawnInterval: 0,
     rewardGold: Math.round(450 * (1 + (safeTier - 1) * 0.12)),
+    gates: [],
+    walls: [],
+    gears: [],
+    nests: [],
+    barrels: [],
+    zones: [],
+    bumpers: [],
+    bossSubTowers: [],
+  };
+}
+
+/**
+ * Generates the dedicated MC-18「海盗船跳板突围」(Pirate Plank Breakout) stage on the MC-17 squad-run engine:
+ * - Its own pirate-fleet scene (sunny sea sky, open water, distant galleons and a rocky island) instead of the
+ *   carnival / gear-town backdrop; the ship decks scroll toward the camera while the Bobo squad runs forward.
+ * - Course rows: unit gate pairs (+N / ×N, barrel posts), open sea between two decks that can only be crossed on a
+ *   swaying plank hung from a yardarm (Bobos out of its reach fall into the sea, capped per gap), and deck cannons that
+ *   fire a cannonball down their lane toward the squad once it comes close (capped per ball; a candy shield absorbs it).
+ * - Win: run up the flagship's boarding ramp before the countdown ends. Lose: time runs out or every Bobo is lost.
+ * - Regular red waves are disabled. Pace / course length / sea gap / plank reach, sway and speed / cannonball size,
+ *   speed and count scale with `pirateTier` (1-8); tier 1 is tuned to finish in ~29 s with a ~40 s limit.
+ */
+export function generatePirateBoardingLevel(pirateTier = 1): LevelConfig {
+  const safeTier = Math.max(1, Math.min(8, Math.floor(pirateTier)));
+  const rng = new SeededRNG(98100 + safeTier * 97);
+  const baseSpeed = Number((8.0 + (safeTier - 1) * 0.26).toFixed(2));
+  const addBonus = Math.floor((safeTier - 1) / 2) * 2;
+  const targetLength = 222 + (safeTier - 1) * 20;
+  const gap = Number(Math.min(7.0, 4.8 + (safeTier - 1) * 0.3).toFixed(2));
+  const reach = Number(Math.max(1.8, 2.65 - (safeTier - 1) * 0.12).toFixed(2));
+  const amp = Number(Math.min(3.8, 1.9 + (safeTier - 1) * 0.27).toFixed(2));
+  const plankPeriod = Number(Math.max(2.4, 3.4 - (safeTier - 1) * 0.15).toFixed(2));
+  const ballR = Number(Math.min(1.35, 1.0 + (safeTier - 1) * 0.05).toFixed(2));
+  const ballSpeed = Number(Math.min(10, 6.2 + (safeTier - 1) * 0.45).toFixed(2));
+  const twinBalls = safeTier >= 5;
+  const halfLane = 3.75;
+  const laneW = 6.7;
+
+  const gates: JungleGateConfig[] = [];
+  const gaps: JungleChasmConfig[] = [];
+  const balls: JungleBoulderConfig[] = [];
+  const gatePairs: Array<[{ op: 'add' | 'mul'; value: number }, { op: 'add' | 'mul'; value: number }]> = [
+    [{ op: 'add', value: 6 + addBonus }, { op: 'add', value: 9 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 10 + addBonus }],
+    [{ op: 'add', value: 8 + addBonus }, { op: 'add', value: 12 + addBonus }],
+    [{ op: 'mul', value: 2 }, { op: 'add', value: 14 + addBonus }],
+  ];
+  const pattern: Array<'gates' | 'chasm' | 'boulder'> = [
+    'gates',
+    'boulder',
+    'chasm',
+    'gates',
+    'chasm',
+    'boulder',
+    'gates',
+    'boulder',
+    'chasm',
+    'gates',
+    'chasm',
+    'boulder',
+    'gates',
+    'chasm',
+  ];
+  const shrink = Math.min(1.6, (safeTier - 1) * 0.2);
+  const plankLo = Math.min(4.0 - amp, 1.0 + amp * 0.5);
+  const plankHi = Math.max(plankLo, 4.0 - amp);
+  let d = 17;
+  let k = 0;
+  let gateIdx = 0;
+  let lastLane = 0;
+  while (d < targetLength - 10) {
+    const kind = pattern[k % pattern.length];
+    const dd = Number(d.toFixed(2));
+    let extra = 0;
+    if (kind === 'gates') {
+      const pair = gatePairs[gateIdx % gatePairs.length];
+      const swap = rng.chance(0.5);
+      const left = swap ? pair[1] : pair[0];
+      const right = swap ? pair[0] : pair[1];
+      for (const [side, g] of [
+        [-1, left],
+        [1, right],
+      ] as const) {
+        gates.push({
+          id: `pr_g${k}_${side < 0 ? 'l' : 'r'}`,
+          d: dd,
+          x: side * halfLane,
+          width: laneW,
+          op: g.op,
+          value: g.value,
+          style: g.op === 'mul' ? 'gold' : g.value >= 10 ? 'mega' : 'blue',
+        });
+      }
+      gateIdx++;
+    } else if (kind === 'chasm') {
+      // One plank sways over each half of the gap, out of step with the other one
+      const planks: JungleVineConfig[] = [];
+      const phase = rng.range(0, plankPeriod);
+      for (const side of [-1, 1]) {
+        planks.push({
+          x: Number((side * rng.range(plankLo, plankHi)).toFixed(2)),
+          amp,
+          period: Number((plankPeriod * (side < 0 ? 1 : 1.1)).toFixed(2)),
+          offset: Number(((phase + (side < 0 ? 0 : plankPeriod * 0.5)) % plankPeriod).toFixed(3)),
+        });
+      }
+      gaps.push({ id: `pr_c${k}`, d: dd, gap, reach, knockCap: 6 + safeTier, vines: planks });
+      extra = gap;
+    } else {
+      // A cannon never fires down the lane of the previous one
+      let x = Number(rng.range(-5.0, 5.0).toFixed(2));
+      if (Math.abs(x - lastLane) < 2.6) x = Number((x > 0 ? x - 4.6 : x + 4.6).toFixed(2));
+      lastLane = x;
+      balls.push({ id: `pr_b${k}`, d: dd, x, radius: ballR, speed: ballSpeed, wakeD: 32, knockCap: 6 + safeTier });
+      if (twinBalls) {
+        const x2 = Number((x > 0 ? x - (ballR * 2 + 4.4 + rng.range(0, 1.2)) : x + (ballR * 2 + 4.4 + rng.range(0, 1.2))).toFixed(2));
+        balls.push({
+          id: `pr_b${k}b`,
+          d: Number((dd + 2.4).toFixed(2)),
+          x: Math.max(-5.6, Math.min(5.6, x2)),
+          radius: ballR,
+          speed: ballSpeed,
+          wakeD: 32,
+          knockCap: 6 + safeTier,
+        });
+      }
+    }
+    d += extra + 14.8 + rng.range(0, 1.6) - shrink;
+    k++;
+  }
+
+  const length = Math.round(d + 4);
+  const timeLimitSec = Math.round((length / baseSpeed) * Math.max(1.24, 1.38 - (safeTier - 1) * 0.02));
+  const course: JungleSwingCourseConfig = {
+    length,
+    baseSpeed,
+    timeLimitSec,
+    startBobos: 16 + Math.floor((safeTier - 1) / 2),
+    maxBobos: 90,
+    maxSteerX: 6.2,
+    swingHeight: 1.7,
+    hitSlowMult: 0.55,
+    hitSlowSec: 0.8,
+  };
+
+  return {
+    id: 4 + safeTier * 2,
+    seed: 98100 + safeTier * 97,
+    mode: 'pirate_plank',
+    isJungleSwing: true,
+    isPirateBoarding: true,
+    pirateTier: safeTier,
+    jungleTier: safeTier,
+    jungleCourse: course,
+    jungleGates: gates,
+    jungleChasms: gaps,
+    jungleBoulders: balls,
+    themeId: 'emerald',
+    archetype: 'trilane_siege',
+    archetypeName: `海盗船跳板突围 · 第 ${safeTier} 阶`,
+    isMilestoneBoss: false,
+    isMiniBoss: false,
+    isMegaBoss: false,
+    name: `海盗船跳板突围 · 第 ${safeTier} 阶`,
+    subtitle: '踩跳板过海 · 躲炮弹 · 冲上旗舰',
+    bossName: '海盗旗舰',
+    bossMaxHp: 100,
+    enemySpawnInterval: 999,
+    enemyBurstCount: 0,
+    initialRedPrewarm: 0,
+    bruteSpawnInterval: 0,
+    rewardGold: Math.round(460 * (1 + (safeTier - 1) * 0.12)),
     gates: [],
     walls: [],
     gears: [],

@@ -1810,8 +1810,7 @@ body.screen-quake-active #app {
 .main-menu-card::-webkit-scrollbar,
 .menu-panel::-webkit-scrollbar,
 .leaderboard-list::-webkit-scrollbar,
-.skill-tree-viewport::-webkit-scrollbar,
-.update-notice-body::-webkit-scrollbar {
+.skill-tree-viewport::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
@@ -1819,8 +1818,7 @@ body.screen-quake-active #app {
 .main-menu-card::-webkit-scrollbar-track,
 .menu-panel::-webkit-scrollbar-track,
 .leaderboard-list::-webkit-scrollbar-track,
-.skill-tree-viewport::-webkit-scrollbar-track,
-.update-notice-body::-webkit-scrollbar-track {
+.skill-tree-viewport::-webkit-scrollbar-track {
   background: rgba(166, 118, 60, 0.16);
   border-radius: 999px;
 }
@@ -1828,8 +1826,7 @@ body.screen-quake-active #app {
 .main-menu-card::-webkit-scrollbar-thumb,
 .menu-panel::-webkit-scrollbar-thumb,
 .leaderboard-list::-webkit-scrollbar-thumb,
-.skill-tree-viewport::-webkit-scrollbar-thumb,
-.update-notice-body::-webkit-scrollbar-thumb {
+.skill-tree-viewport::-webkit-scrollbar-thumb {
   background: rgba(166, 118, 60, 0.52);
   border-radius: 999px;
 }
@@ -1840,13 +1837,6 @@ body.screen-quake-active #app {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-}
-
-.menu-brand .menu-tag {
-  font-size: 10.5px;
-  font-weight: 900;
-  letter-spacing: 1.4px;
-  color: #b86b1b;
 }
 
 .menu-brand h1 {
@@ -1934,15 +1924,7 @@ body.screen-quake-active #app {
   overflow: hidden;
 }
 
-.panel-subtitle {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--ink-mid);
-  text-align: center;
-  flex-shrink: 0;
-}
-
-/* Tab 1 Left Column: Launch Hero + Glossy Green Start Button + Update Notice */
+/* Tab 1 Left Column: Launch Hero + Glossy Green Start Button */
 .launch-left-col {
   display: flex;
   flex-direction: column;
@@ -2083,145 +2065,6 @@ body.screen-quake-active #app {
 .btn-launch-battle:active {
   transform: translateY(2.5px);
   box-shadow: 0 2px 0 var(--green-lip);
-}
-
-/* Update Notice Card */
-.update-notice-card {
-  background: #fffaf0;
-  border: 2px solid #cca065;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  box-shadow: 0 2.5px 0 #a87b42, inset 0 1px 0 #ffffff;
-}
-
-.update-notice-header {
-  width: 100%;
-  background: linear-gradient(90deg, #f5dec0 0%, #faecd6 100%);
-  border: none;
-  border-bottom: 1.5px solid #d5ad76;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  cursor: pointer;
-  color: var(--ink-dark);
-  text-align: left;
-  flex-shrink: 0;
-}
-
-.un-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-}
-
-.un-badge {
-  background: linear-gradient(135deg, #f59e0b, #d95b16);
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 900;
-  padding: 1.5px 7px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-.un-title {
-  font-size: 12.5px;
-  font-weight: 900;
-  color: var(--ink-dark);
-  white-space: nowrap;
-}
-
-.un-chevron {
-  font-size: 12px;
-  color: var(--ink-mid);
-  transition: transform 0.18s ease;
-}
-
-.update-notice-card.is-collapsed {
-  flex: 0 0 auto;
-}
-
-.update-notice-card.is-collapsed .update-notice-header {
-  border-bottom-color: transparent;
-}
-
-.update-notice-card.is-collapsed .un-chevron {
-  transform: rotate(-90deg);
-}
-
-.update-notice-card.is-collapsed .update-notice-body {
-  display: none;
-}
-
-.update-notice-body {
-  padding: 9px 11px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  min-height: 0;
-}
-
-.un-entry {
-  background: #fdf3e1;
-  border: 1.5px solid #dfc094;
-  border-left: 3.5px solid #d98829;
-  border-radius: 10px;
-  padding: 7px 9px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.un-entry-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  font-size: 11.5px;
-  color: #8c480a;
-}
-
-.un-tag {
-  font-size: 9.5px;
-  font-weight: 900;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: #fde08d;
-  border: 1px solid #d6941e;
-  color: #693705;
-}
-
-.un-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 3.5px;
-  font-size: 11px;
-  line-height: 1.38;
-  color: var(--ink-mid);
-}
-
-.un-list strong {
-  color: var(--ink-dark);
-}
-
-.un-list kbd {
-  font-size: 9.5px;
-  padding: 0 4px;
-  border-radius: 4px;
-  background: #efe0c6;
-  border: 1px solid #c79e67;
-  color: var(--ink-dark);
-  font-family: ui-monospace, 'Cascadia Code', monospace;
 }
 
 /* Home Screen Dual Leaderboard */
@@ -2466,7 +2309,7 @@ body.screen-quake-active #app {
 }
 
 /* ==========================================================================
-   Tab 2: Kingdom-Rush Style 7x4 Skill Matrix Board + Parchment Detail Sheet
+   Tab 2: Tower-Defense Style 7x4 Skill Matrix Board + Parchment Detail Sheet
    ========================================================================== */
 .main-menu-card.wide-tree-mode {
   width: min(95vw, 1020px);
@@ -2684,7 +2527,7 @@ body.screen-quake-active #app {
   filter: grayscale(0.15);
 }
 
-/* Chunky Square Beveled Icon Tile (Kingdom Rush Style) */
+/* Chunky Square Beveled Icon Tile (Tower-Defense Style) */
 .tree-node-medallion {
   position: relative;
   width: 56px;
@@ -2714,7 +2557,7 @@ body.screen-quake-active #app {
   filter: drop-shadow(0 1.5px 2px rgba(42, 20, 6, 0.45));
 }
 
-/* Locked Tile: Cool Desaturated Slate-Stone Frame (like unresearched tiles in Kingdom Rush) */
+/* Locked Tile: Cool Desaturated Slate-Stone Frame (like unresearched tiles on a classic upgrade board) */
 .tree-node.locked .tree-node-medallion {
   background: linear-gradient(180deg, #6e6a64 0%, #4a4642 100%);
   border-color: #8c857b;
@@ -2740,7 +2583,7 @@ body.screen-quake-active #app {
     inset 0 1.5px 0 #ffffff;
 }
 
-/* Selected Tile: Crisp Lime-Green Selection Ring (matches Kingdom Rush bottom-left selected tile!) */
+/* Selected Tile: Crisp Lime-Green Selection Ring */
 .tree-node.selected .tree-node-medallion {
   outline: 3px solid #84cc16;
   outline-offset: 2px;
@@ -2772,7 +2615,7 @@ body.screen-quake-active #app {
   color: #ffffff;
 }
 
-/* Bottom Row: 7 Race Shield Pedestals (like the 6 class shields at bottom of Kingdom Rush!) */
+/* Bottom Row: 7 Race Shield Pedestals */
 .kr-branch-pedestal {
   position: relative;
   z-index: 2;
@@ -2818,7 +2661,7 @@ body.screen-quake-active #app {
   line-height: 1;
 }
 
-/* Right / Bottom Parchment Inspector Sheet (Kingdom Rush Parchment Scroll Style) */
+/* Right / Bottom Parchment Inspector Sheet (Parchment Scroll Style) */
 .skill-inspector-bar {
   flex: 1;
   display: flex;
@@ -3384,10 +3227,6 @@ body.screen-quake-active #app {
     gap: 8px;
   }
 
-  .update-notice-card:not(.is-collapsed) {
-    max-height: 132px;
-    flex: 0 0 auto;
-  }
 }
 
 @media (max-width: 768px) {
@@ -3733,10 +3572,6 @@ body.screen-quake-active #app {
     border-radius: 20px;
   }
 
-  .menu-brand .menu-tag {
-    display: none;
-  }
-
   .menu-brand h1 {
     font-size: 16px;
   }
@@ -3749,10 +3584,6 @@ body.screen-quake-active #app {
   .menu-tab {
     font-size: 12.5px;
     padding: 6px 3px;
-  }
-
-  .panel-subtitle {
-    display: none;
   }
 
   .launch-hero {
@@ -3863,7 +3694,7 @@ body.screen-quake-active #app {
     padding: 5.5px 4px;
   }
 
-  /* Mobile Adaptation for Kingdom-Rush Style 7x4 Skill Matrix Board + Parchment Sheet */
+  /* Mobile Adaptation for Tower-Defense Style 7x4 Skill Matrix Board + Parchment Sheet */
   .kr-skill-layout {
     display: flex;
     flex-direction: column;
@@ -4671,7 +4502,6 @@ body.screen-quake-active #app {
 .kbd-hint,
 .commander-rank-tag,
 .launch-btn-sub,
-.panel-subtitle,
 .menu-brand {
   display: none !important;
 }
@@ -5346,7 +5176,7 @@ body.screen-quake-active #app {
       rgba(15, 23, 42, 0.0) 76%,
       rgba(15, 23, 42, 0.55) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=33') center center / cover no-repeat;
+    url('/assets/icons/title_splash_bg.jpg?v=35') center center / cover no-repeat;
   image-rendering: auto;
   animation: none !important;
   transform: none !important;
@@ -5774,11 +5604,11 @@ body.screen-quake-active #app {
 }
 
 /* ==========================================================================
-   STYLE 2 OVERHAUL: SUPERCELL (CLASH ROYALE / SQUAD BUSTERS / BRAWL STARS)
+   STYLE 2 OVERHAUL: ROYAL-BLUE GLOSSY TOY-BOX UI
    1:1 CONCEPT-BOARD FIDELITY (LOBBY + BATTLE HUD + SKILL TREE + VICTORY DRAFT)
    ========================================================================== */
 
-/* 0. Title Screen (#title-screen) Supercell 3D Royal-Blue, Gold & Emerald Plaques */
+/* 0. Title Screen (#title-screen) 3D Royal-Blue, Gold & Emerald Plaques */
 .title-version-pill {
   background: linear-gradient(180deg, #2563eb 0%, #173885 55%, #0d2154 100%) !important;
   border: 2.5px solid #facc15 !important;
@@ -5836,7 +5666,7 @@ body.screen-quake-active #app {
     inset 0 3px 0 rgba(255, 255, 255, 0.75) !important;
 }
 
-/* 1. Fullscreen Supercell Royal-Blue Main Lobby (Matches bobo_lobby_leaderboard_supercell_ui_1793627158885.jpg 1:1) */
+/* 1. Fullscreen Royal-Blue Main Lobby (Matches the lobby concept sheet 1:1) */
 #main-menu.main-menu-backdrop {
   padding: 0 !important;
   background:
@@ -5928,10 +5758,6 @@ body.screen-quake-active #app {
     0 12px 24px rgba(0, 0, 0, 0.55),
     inset 0 2px 0 rgba(254, 240, 138, 0.45) !important;
   z-index: 5 !important;
-}
-
-.menu-brand .menu-tag {
-  display: none !important;
 }
 
 .menu-brand h1 {
@@ -6033,9 +5859,8 @@ body.screen-quake-active #app {
   height: 100% !important;
 }
 
-/* Hide cluttered 4-stat box & update notice on Main Lobby so Left Column is Pure Hero Stage + Giant Battle Button! */
-.launch-left-col > .launch-hero,
-.launch-left-col > .update-notice-card {
+/* Hide cluttered 4-stat box on Main Lobby so Left Column is Pure Hero Stage + Giant Battle Button! */
+.launch-left-col > .launch-hero {
   display: none !important;
 }
 
@@ -6254,7 +6079,7 @@ body.screen-quake-active #app {
   text-shadow: 0 1.5px 0 #052e16 !important;
 }
 
-/* 3. Right Column: Supercell Trophy Leaderboard with Folder Tabs & Square Slime Avatars */
+/* 3. Right Column: Trophy Leaderboard with Folder Tabs & Square Slime Avatars */
 .leaderboard-box {
   background: linear-gradient(180deg, #1e469e 0%, #102a66 100%) !important;
   border: 3.5px solid #60a5fa !important;
@@ -6469,7 +6294,7 @@ body.screen-quake-active #app {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
 }
 
-/* 4. 7-Race Skill Tree Matrix & Supercell Hero Inspector Panel (Matches Concept 2!) */
+/* 4. 7-Race Skill Tree Matrix & Hero Inspector Panel (Matches Concept 2!) */
 .skill-tree-viewport {
   background:
     radial-gradient(circle at 50% 84%, rgba(56, 189, 248, 0.32), transparent 62%),
@@ -6718,12 +6543,7 @@ body.screen-quake-active #app {
   text-shadow: 0 2px 0 #052e16 !important;
 }
 
-/* 5. Clash Royale 3x2 Vertical Collectible Cards for Workshop (.meta-card) & Skins (.skin-card) */
-.panel-subtitle {
-  color: #bae6fd !important;
-  text-shadow: 0 1.5px 0 #071330 !important;
-}
-
+/* 5. 3x2 Vertical Collectible Cards for Workshop (.meta-card) & Skins (.skin-card) */
 .meta-card,
 .skin-card {
   background: linear-gradient(180deg, #2456bd 0%, #153782 58%, #0d2357 100%) !important;
@@ -6970,8 +6790,8 @@ body.screen-quake-active #app {
 }
 
 /* ==========================================================================
-   6. IN-GAME SUPERCELL 1-ROW TOP HUD & 4-CARD BATTLE DOCK
-   (Matches supercell_3d_battle_hud_gameplay_1793627191206.jpg 1:1!)
+   6. IN-GAME 1-ROW TOP HUD & 4-CARD BATTLE DOCK
+   (Matches the battle HUD concept sheet 1:1!)
    ========================================================================== */
 .hud-top {
   width: min(98vw, 1180px) !important;
@@ -6986,7 +6806,7 @@ body.screen-quake-active #app {
   width: 100% !important;
 }
 
-/* Hide row-3 buffs clutter so Top HUD stays a crisp 1-row Supercell bar! */
+/* Hide row-3 buffs clutter so Top HUD stays a crisp 1-row bar! */
 .active-buffs-bar {
   display: none !important;
 }
@@ -7057,7 +6877,7 @@ body.screen-quake-active #app {
   text-shadow: 0 2.5px 0 #331907 !important;
 }
 
-/* Top-Center Dual Thick 3D Supercell Health Bars with Pentagon Shield Emblems */
+/* Top-Center Dual Thick 3D Health Bars with Pentagon Shield Emblems */
 .dual-base-bars {
   flex: 0 1 450px !important;
   max-width: 450px !important;
@@ -7205,7 +7025,7 @@ body.screen-quake-active #app {
   text-shadow: 0 2px 0 #291d16 !important;
 }
 
-/* Clean commercial Supercell UI: hide developer keycap boxes & title crest boxes */
+/* Clean commercial UI: hide developer keycap boxes & title crest boxes */
 .kbd-hint,
 .title-crest-trio,
 #btn-mecha-mode,
@@ -7326,7 +7146,7 @@ body.screen-quake-active #app {
   text-shadow: 0 2px 0 #1f2937 !important;
 }
 
-/* Bottom HUD Row 2: 3D Carved Stone-and-Wood 4-Card Clash Royale Battle Tray */
+/* Bottom HUD Row 2: 3D Carved Stone-and-Wood 4-Card Battle Tray */
 .upgrade-dock {
   position: relative !important;
   background: linear-gradient(180deg, #735744 0%, #523b2c 55%, #3d2a1e 100%) !important;
@@ -7631,7 +7451,7 @@ img,
 }
 
 /* ==========================================================================
-   OUT-OF-GAME ("游戏外") 1:1 PIXAR 3D & CARVED STONE-WOOD-GOLD TEXTURE OVERHAUL
+   OUT-OF-GAME ("游戏外") 1:1 STUDIO 3D & CARVED STONE-WOOD-GOLD TEXTURE OVERHAUL
    Matches media_1793684356477_929af962.jpg (Honey-Oak Plaques, Stone Bumpers,
    Brushed Gold Trim, Sky-Blue Collectible Cards, Glowing Golden Action Bars)
    ========================================================================== */
@@ -7646,7 +7466,7 @@ img,
       rgba(15, 28, 64, 0.05) 70%,
       rgba(20, 12, 6, 0.62) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=33') center center / cover no-repeat !important;
+    url('/assets/icons/title_splash_bg.jpg?v=35') center center / cover no-repeat !important;
 }
 
 .title-center-emblem {
@@ -7705,7 +7525,7 @@ img,
   text-shadow: 0 1.5px 0 #451a03 !important;
 }
 
-/* 2. Main Lobby (#main-menu) Royal-Blue Pixar Studio Sky & Carved Stone-Wood-Gold Panels */
+/* 2. Main Lobby (#main-menu) Royal-Blue Studio Sky & Carved Stone-Wood-Gold Panels */
 #main-menu.main-menu-backdrop,
 .main-menu-card {
   background:
@@ -7791,7 +7611,7 @@ img,
 }
 
 /* Left Column Hero Showcase Stage: Theme-Reactive 3D Studio Turntable Showcase inside Carved Stone-and-Wood Frame
-   (Zero static battle-bridge screenshot! Matches bobo_lobby_leaderboard_supercell_ui_1793627158885.jpg!) */
+   (Zero static battle-bridge screenshot! Matches the lobby concept sheet!) */
 .home-hero-stage {
   --studio-sky-top: #1a3b8b;
   --studio-sky-mid: #2859bd;
@@ -8073,20 +7893,6 @@ img,
   overflow: hidden !important;
 }
 
-.panel-subtitle {
-  background: linear-gradient(180deg, #a66535 0%, #864c22 54%, #6a3917 100%) !important;
-  border: 2.5px solid #e2a439 !important;
-  outline: 2px solid #2b180a !important;
-  border-radius: 999px !important;
-  padding: 4px 20px !important;
-  align-self: center !important;
-  color: #fef08a !important;
-  font-weight: 900 !important;
-  text-shadow: 0 1.5px 0 #2b180a !important;
-  box-shadow: 0 3px 0 #2b180a !important;
-  margin: 0 !important;
-}
-
 .meta-upgrades-grid,
 .skins-shop-grid {
   flex: 1 1 auto !important;
@@ -8305,14 +8111,14 @@ img,
 }
 
 /* ==========================================================================
-   Full-Density Card & Panel Fill Rules + Authentic Clash Royale Main Lobby UI
+   Full-Density Card & Panel Fill Rules + Royal-Blue Main Lobby UI
    ========================================================================== */
 .base-emblem {
   border-radius: 0 !important;
   overflow: visible !important;
 }
 
-/* 1. Clash Royale Royal-Blue 3D Hexagon Arena Backdrop */
+/* 1. Royal-Blue 3D Hexagon Arena Backdrop */
 #main-menu.main-menu-backdrop,
 .main-menu-card {
   background:
@@ -8335,7 +8141,7 @@ img,
     linear-gradient(180deg, #1b459e 0%, #133278 52%, #0a1c4a 100%) !important;
 }
 
-/* 2. Clash Royale Top Bar: Shield Player Banner + Top-Docked Crest + Dark-Navy Currency Capsules */
+/* 2. Top Bar: Shield Player Banner + Top-Docked Crest + Dark-Navy Currency Capsules */
 .main-menu-card > .menu-header {
   padding: 2px 4px 6px !important;
   margin-bottom: 2px !important;
@@ -8482,7 +8288,7 @@ img,
   box-shadow: 0 2.5px 0 #052e16 !important;
 }
 
-/* 3. Left Column: Clash Royale Open Spotlight Hero Arena + Double-Tiered Gold Pedestal + Compact 3D Battle Button */
+/* 3. Left Column: Open Spotlight Hero Arena + Double-Tiered Gold Pedestal + Compact 3D Battle Button */
 #menu-panel-launch.menu-panel.active {
   grid-template-columns: 1.02fr 0.98fr !important;
   gap: 20px !important;
@@ -8651,7 +8457,7 @@ img,
     inset 0 2px 0 rgba(254, 240, 138, 0.5) !important;
 }
 
-/* Iconic Clash Royale Compact 3D Gold-Framed Emerald-Green Battle Button (Matches Concept 1 1:1!) */
+/* Iconic Compact 3D Gold-Framed Emerald-Green Battle Button (Matches Concept 1 1:1!) */
 .btn-launch-battle {
   width: min(80%, 380px) !important;
   align-self: center !important;
@@ -8696,7 +8502,7 @@ img,
   text-shadow: 0 1.5px 0 #052e16 !important;
 }
 
-/* 4. Right Column: Clash Royale Royal-Blue Slate Leaderboard Panel + Top Folder Tabs + Bottom Pinned Self Bar */
+/* 4. Right Column: Royal-Blue Slate Leaderboard Panel + Top Folder Tabs + Bottom Pinned Self Bar */
 .leaderboard-box {
   background: linear-gradient(180deg, #2557c4 0%, #173885 55%, #0e2459 100%) !important;
   border: 3.5px solid #60a5fa !important;
@@ -8843,7 +8649,7 @@ img,
   color: #7c2d12 !important;
 }
 
-/* 5. Bottom-Right 4-Tab Dock: Clash Royale Vertical Square Icon Tiles + Glowing Cyan Active Tile */
+/* 5. Bottom-Right 4-Tab Dock: Vertical Square Icon Tiles + Glowing Cyan Active Tile */
 .main-menu-card > .menu-tabs {
   background: linear-gradient(180deg, #5c371e 0%, #381f0e 100%) !important;
   border: 3.5px solid #f59e0b !important;
@@ -8935,7 +8741,6 @@ img,
 .kbd-hint,
 .commander-rank-tag,
 .launch-btn-sub,
-.panel-subtitle,
 .menu-brand {
   display: none !important;
 }
@@ -14875,5 +14680,201 @@ body.jungle-mode-active #cannon-mod-hud-badge {
   .jungle-swing-label .inline-art-img {
     width: 13px;
     height: 13px;
+  }
+}
+
+/* ============================================================================
+   MC-18: Pirate Plank Breakout (lobby card, HUD pill tints, squad label); layout reuses the jungle rules
+   ============================================================================ */
+
+.btn-pirate-boarding {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 2px solid #fcd34d;
+  background:
+    radial-gradient(circle at 86% 24%, rgba(254, 249, 195, 0.85) 0 6px, rgba(252, 211, 77, 0.38) 7px, transparent 15px),
+    radial-gradient(circle at 10% 86%, rgba(224, 242, 254, 0.42) 0 4px, transparent 12px),
+    linear-gradient(120deg, #0c4a6e 0%, #075985 36%, #0369a1 64%, #b45309 100%);
+  box-shadow:
+    0 4px 0 #082f49,
+    0 8px 18px rgba(3, 105, 161, 0.38),
+    inset 0 1px 0 rgba(224, 242, 254, 0.55);
+  color: #f0f9ff;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.btn-pirate-boarding:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-pirate-boarding:active {
+  transform: translateY(2px);
+}
+
+.pirate-boarding-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+
+.pirate-boarding-btn-title {
+  color: #fefce8 !important;
+  text-shadow: 0 2px 4px rgba(8, 47, 73, 0.9);
+}
+
+.btn-pirate-boarding .endless-btn-desc {
+  color: #e0f2fe !important;
+  text-shadow: 0 1px 2px rgba(8, 47, 73, 0.85);
+}
+
+.pirate-boarding-badge {
+  background: rgba(8, 47, 73, 0.84) !important;
+  border: 1.5px solid #fcd34d !important;
+  color: #fef9c3 !important;
+  flex-shrink: 0;
+}
+
+.pirate-boarding-hud .colossus-hud-pill.is-left {
+  border-color: #7dd3fc;
+  color: #f0f9ff;
+}
+
+.pirate-boarding-hud .colossus-hud-pill.is-core {
+  border-color: #fcd34d;
+  color: #fefce8;
+  background: linear-gradient(90deg, rgba(7, 89, 133, 0.92), rgba(8, 47, 73, 0.9));
+}
+
+.pirate-boarding-hud .colossus-hud-pill.is-core.is-swinging {
+  border-color: #fde047;
+  background: linear-gradient(90deg, rgba(180, 83, 9, 0.94), rgba(7, 89, 133, 0.92));
+  box-shadow: 0 0 12px rgba(253, 224, 71, 0.65);
+}
+
+.pirate-boarding-label {
+  border-color: #fcd34d !important;
+  background: rgba(7, 89, 133, 0.92) !important;
+  color: #fefce8 !important;
+}
+
+.pirate-boarding-label.is-swinging {
+  border-color: #fde047 !important;
+  background: rgba(180, 83, 9, 0.94) !important;
+}
+
+@media (max-width: 600px) {
+  .btn-pirate-boarding {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .pirate-boarding-badge {
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.25 !important;
+  }
+}
+/* ===== UI audit (copy & controls pass) ===== */
+
+/* Desktop: the hero stage used to shrink below its content in the left column, pushing the race ribbon over 开始战斗 (1440x900) */
+@media (min-width: 861px) {
+  .launch-left-col > .home-hero-stage {
+    flex-shrink: 0 !important;
+  }
+}
+
+/* Phone / narrow: the leaderboard box sat in a scrolling flex column with flex-basis 0 and collapsed to a ~16px strip */
+@media (max-width: 860px) {
+  #menu-panel-launch .leaderboard-box {
+    flex: 0 0 auto !important;
+  }
+
+  #menu-panel-launch #leaderboard-list {
+    flex: 0 0 auto !important;
+  }
+}
+
+/* Tactic deck: one-line gist + collapsible full rules (scope, campaign coefficient, per-match caps) */
+.tactic-rule-banner .tactic-rule-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tactic-rule-more {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tactic-rule-more[open] {
+  flex: 1 1 100%;
+}
+
+.tactic-rule-more > summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(253, 224, 71, 0.55);
+  color: #fde68a;
+  white-space: nowrap;
+}
+
+.tactic-rule-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tactic-rule-more > summary::after {
+  content: '+';
+  font-weight: 900;
+}
+
+.tactic-rule-more[open] > summary::after {
+  content: '-';
+}
+
+.tactic-rule-more > span {
+  display: block;
+  margin-top: 4px;
+  color: #fef9c3;
+  line-height: 1.4;
+}
+
+/* Phone: bonus values in the paint workshop wrap instead of being cut off; the campaign plaque gets a second line
+   so the weather affix after the theme perk stays readable */
+@media (max-width: 768px) {
+  #menu-panel-skins .skin-bonus,
+  #menu-panel-skins .finish-bonus {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  #stage-plaque-sub {
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.2 !important;
   }
 }

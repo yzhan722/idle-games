@@ -1,4 +1,4 @@
-"""Mob Control 3D autonomous playtest (serves dist/, drives it with Playwright at 2560x1278, 1440x900 and 390x844).
+"""波波应援团 3D (games/mob-control-3d) autonomous playtest (serves dist/, drives it with Playwright at 2560x1278, 1440x900 and 390x844).
 
 Run from games/mob-control-3d after `npm run build`:
   python scripts/auto_playtest.py                               full run (every milestone + CORE)
@@ -13,7 +13,7 @@ import json
 import datetime
 import threading
 import http.server
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(BASE_DIR, "dist")
@@ -58,11 +58,11 @@ def _norm_tag(tok):
     return f"MC-{int(m.group(1))}" if m else t
 
 
-KNOWN_TAGS = {"CORE"} | {f"MC-{i}" for i in range(1, 18)}
+KNOWN_TAGS = {"CORE"} | {f"MC-{i}" for i in range(1, 19)}
 PLAYTEST_ONLY = {t for t in (_norm_tag(x) for x in os.environ.get("PLAYTEST_ONLY", "").split(",")) if t}
 _unknown_tags = PLAYTEST_ONLY - KNOWN_TAGS
 if _unknown_tags:
-    print(f"PLAYTEST_ONLY: unknown tag(s) {sorted(_unknown_tags)}; use CORE or MC-1 .. MC-17", flush=True)
+    print(f"PLAYTEST_ONLY: unknown tag(s) {sorted(_unknown_tags)}; use CORE or MC-1 .. MC-18", flush=True)
     sys.exit(2)
 FILTERED = bool(PLAYTEST_ONLY)
 if FILTERED:
@@ -103,6 +103,30 @@ def random_init_script():
         )
     print(f"PLAYTEST_RANDOM: expected lo | hi | seed:N, got {PLAYTEST_RANDOM!r}", flush=True)
     sys.exit(2)
+
+
+# Page.reload / Page.goto: 30 s timeout plus ONE retry on a navigation timeout only. A busy machine can stall a load
+# past the old hard-coded 10 s and abort the whole run; a second timeout in a row is a real failure and propagates.
+NAV_TIMEOUT_MS = 30000
+nav_retries = []
+
+
+def _nav_with_retry(action, what):
+    try:
+        return action()
+    except PlaywrightTimeoutError as err:
+        first_line = (str(err).splitlines() or [""])[0][:160]
+        nav_retries.append(f"{what}: {first_line}")
+        print(f"NAV-RETRY {what} timed out once ({first_line}); retrying", flush=True)
+        return action()
+
+
+def page_reload(pg):
+    return _nav_with_retry(lambda: pg.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS), "reload")
+
+
+def page_goto(pg, url):
+    return _nav_with_retry(lambda: pg.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS), "goto")
 
 
 def new_page_context(viewport, scale=1):
@@ -182,6 +206,22 @@ ART_PAIR_JS = """() => {
         clashes: pairs.filter(([a, b]) => shown.has(a) && shown.has(b)).map((p) => p.join('+')),
         copies: pairs.filter(([a]) => shown.has(a)).map((p) => p[0]),
         originals: pairs.filter(([, b]) => shown.has(b)).map((p) => p[1]),
+    };
+}"""
+# MC-18 page helpers: the pirate plank breakout runs on the jungle squad-run engine (JUNGLE_WALK_JS drives it too); its
+# HUD / squad label / reused-art pairs are its own. RESULT_STATS_JS reads the three result stat boxes.
+PIRATE_INFO_JS = JUNGLE_INFO_JS.replace("'jungle-swing-hud'", "'pirate-boarding-hud'").replace("'.jungle-swing-label'", "'.pirate-boarding-label'")
+PIRATE_ART_PAIR_JS = ART_PAIR_JS.replace(
+    "[['ui_jungle_temple', 'decor_plant'], ['ui_emerald_idol_badge', 'skin_emerald'], ['vine_swing', 'env_tailwind_belt'], ['rolling_boulder', 'ui_barrel']]",
+    "[['ui_pirate_ship', 'mod_heavy_mortar'], ['ui_gold_skull_badge', 'ghost'], ['swing_plank', 'flip_slab'], ['cannonball', 'hero_cannon_pedestal']]",
+)
+assert PIRATE_INFO_JS != JUNGLE_INFO_JS and PIRATE_ART_PAIR_JS != ART_PAIR_JS
+RESULT_STATS_JS = """() => {
+    const box = document.getElementById('stat-box-gold');
+    return {
+        labels: ['stat-label-spawned', 'stat-label-kills', 'stat-label-gold'].map((id) => (document.getElementById(id)?.textContent || '').trim()),
+        values: ['stat-total-spawned', 'stat-total-kills', 'stat-stage-gold'].map((id) => (document.getElementById(id)?.textContent || '').trim()),
+        goldBox: Boolean(box && box.classList.contains('gold-box')),
     };
 }"""
 # Screenshots land in BRAIN_DIR/scratch unless SCREENSHOT_DIR is set (an explicit SCREENSHOT_DIR is never auto-cleaned).
@@ -296,7 +336,7 @@ try:
         # Section results default to "not run" so the cross-section overflow sweeps work on a filtered run too
         max_desk_overflow = 0
         mc5_check = mc6_check = mc7_check = mc8_check = mc9_check = mc10_check = {}
-        mc11_check = mc12_check = mc13_check = mc14_check = mc15_check = mc16_check = mc17_check = {}
+        mc11_check = mc12_check = mc13_check = mc14_check = mc15_check = mc16_check = mc17_check = mc18_check = {}
         desk1440_lobby_ov = desk1440_meta_ov = desk1440_escort_ov = desk1440_train_ov = desk1440_pet_ov = 0
         desk1440_sub_ov = desk1440_hall_ov = desk1440_mc12_lobby_ov = desk1440_sled_ov = desk1440_gacha_ov = 0
         desk1440_mc13_lobby_ov = desk1440_lava_ov = desk1440_skin_battle_ov = desk1440_decor_ov = 0
@@ -304,12 +344,12 @@ try:
         desk1440_battle_tactic_ov = desk1440_pk_ov = desk1440_result_ov = desk1440_mc16_meta_ov = 0
         desk1440_mc16_lobby_ov = desk1440_mc16_camp_ov = desk1440_mc16_result_ov = desk1440_mc17_max_ov = 0
         desk1440_py_sand = desk1440_py_slab = desk1440_py_exit = desk1440_lava_info = {}
-        RUN_1440 = want("CORE", "MC-9", "MC-10", "MC-11", "MC-12", "MC-13", "MC-14", "MC-15", "MC-16", "MC-17")
-        RUN_390 = want("CORE", "MC-7", "MC-9", "MC-10", "MC-11", "MC-12", "MC-13", "MC-14", "MC-15", "MC-16", "MC-17")
+        RUN_1440 = want("CORE", "MC-9", "MC-10", "MC-11", "MC-12", "MC-13", "MC-14", "MC-15", "MC-16", "MC-17", "MC-18")
+        RUN_390 = want("CORE", "MC-7", "MC-9", "MC-10", "MC-11", "MC-12", "MC-13", "MC-14", "MC-15", "MC-16", "MC-17", "MC-18")
         _ran_tags.clear()
 
         # 1. Load Title Screen
-        page.goto(f"http://127.0.0.1:{port}/", wait_until="domcontentloaded", timeout=10000)
+        page_goto(page, f"http://127.0.0.1:{port}/")
         page.wait_for_timeout(120)
 
         if want("CORE"):
@@ -350,7 +390,7 @@ try:
                     const title = document.getElementById('home-race-title')?.textContent?.trim() || '';
                     const img = document.querySelector('#home-mascot-art img');
                     const src = img ? img.getAttribute('src') || '' : '';
-                    list.push({ title, hasHq2d: src.includes('/assets/icons/race_') && src.includes('?v=33') });
+                    list.push({ title, hasHq2d: src.includes('/assets/icons/race_') && src.includes('?v=35') });
                     document.getElementById('btn-home-next-race')?.click();
                 }
                 return list;
@@ -376,7 +416,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(parsed));
             }"""
             )
-            page.reload(wait_until="domcontentloaded")
+            page_reload(page)
             page.wait_for_timeout(120)
             page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             page.wait_for_timeout(100)
@@ -503,7 +543,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(parsed));
             }"""
             )
-            page.reload(wait_until="domcontentloaded")
+            page_reload(page)
             page.wait_for_timeout(120)
             page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             page.wait_for_timeout(100)
@@ -656,19 +696,19 @@ try:
                 btn.click();
                 labels.push(label.textContent.trim());
                 const scatterImg = btn.querySelector('img');
-                const scatterLoaded = Boolean(scatterImg && scatterImg.src.includes('icon_weapon_scatter.png?v=33'));
+                const scatterLoaded = Boolean(scatterImg && scatterImg.src.includes('icon_weapon_scatter.png?v=35'));
                 btn.click();
                 labels.push(label.textContent.trim());
                 const rainbowImg = btn.querySelector('img');
-                const rainbowLoaded = Boolean(rainbowImg && rainbowImg.src.includes('icon_weapon_rainbow.png?v=33'));
+                const rainbowLoaded = Boolean(rainbowImg && rainbowImg.src.includes('icon_weapon_rainbow.png?v=35'));
                 const hasInlineSvg = Boolean(btn.querySelector('svg'));
                 // Cycle back to default gatling
                 btn.click(); btn.click(); btn.click();
                 // Probe all 3 MC-4 RGBA PNGs
                 const urls = [
-                    '/assets/icon_weapon_scatter.png?v=33',
-                    '/assets/icon_weapon_rainbow.png?v=33',
-                    '/assets/icon_tactical_airdrop.png?v=33',
+                    '/assets/icon_weapon_scatter.png?v=35',
+                    '/assets/icon_weapon_rainbow.png?v=35',
+                    '/assets/icon_tactical_airdrop.png?v=35',
                 ];
                 const imgChecks = await Promise.all(urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -677,7 +717,38 @@ try:
                     img.src = u;
                 })));
                 const w = window.__mc3dWorld;
-                const sim = w && typeof w.runMc4SelfCheck === 'function' ? w.runMc4SelfCheck() : { ok: false };
+                let sim = { ok: false };
+                if (w && typeof w.runMc4SelfCheck === 'function') {
+                    // MC-4 deflake: the self-check's timer drop lands on a Math.random spot. When that spot is in the
+                    // auto-firing cannon lane or the marching Bobo column, shots / Bobos pop the crate mid-fall (with a
+                    // random buff) before the check collects it, so "collect" and "dual volley" failed ~1% of runs. Run
+                    // the check on a seeded Math.random and park the timer drop on the left curb, clear of both: the drop
+                    // still comes from the airdrop timer and really falls, lands and is collected; forced drops keep
+                    // their own coordinates. The game's own random drop placement is untouched outside this call.
+                    const realRandom = Math.random;
+                    const ownSpawn = Object.getOwnPropertyDescriptor(w, 'spawnTacticalAirdrop');
+                    const realSpawn = w.spawnTacticalAirdrop;
+                    let seedC = 4040;
+                    Math.random = () => {
+                        seedC = (seedC + 0x6d2b79f5) >>> 0;
+                        let t = seedC;
+                        t = Math.imul(t ^ (t >>> 15), t | 1);
+                        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                    };
+                    w.spawnTacticalAirdrop = function (forceX, forceZ) {
+                        return typeof forceX === 'number'
+                            ? realSpawn.call(this, forceX, forceZ)
+                            : realSpawn.call(this, -5.8, -2.0);
+                    };
+                    try {
+                        sim = w.runMc4SelfCheck();
+                    } finally {
+                        Math.random = realRandom;
+                        if (ownSpawn) Object.defineProperty(w, 'spawnTacticalAirdrop', ownSpawn);
+                        else delete w.spawnTacticalAirdrop;
+                    }
+                }
                 return { labels, scatterLoaded, rainbowLoaded, hasInlineSvg, imgChecks, sim };
             }"""
             )
@@ -743,12 +814,12 @@ try:
 
                 // Verify 6x MC-5 256x256 RGBA PNG icons load cleanly & have transparent corner alpha (a === 0)
                 const mc5Urls = [
-                    '/assets/icons/ui_escort_cart.png?v=33',
-                    '/assets/icons/ui_barricade.png?v=33',
-                    '/assets/icons/finish_candy_gloss.png?v=33',
-                    '/assets/icons/finish_brass_steam.png?v=33',
-                    '/assets/icons/finish_crystal_jelly.png?v=33',
-                    '/assets/icons/finish_starlight_prism.png?v=33',
+                    '/assets/icons/ui_escort_cart.png?v=35',
+                    '/assets/icons/ui_barricade.png?v=35',
+                    '/assets/icons/finish_candy_gloss.png?v=35',
+                    '/assets/icons/finish_brass_steam.png?v=35',
+                    '/assets/icons/finish_crystal_jelly.png?v=35',
+                    '/assets/icons/finish_starlight_prism.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc5Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -912,13 +983,13 @@ try:
                 }
                 const sim = w.runMc6SelfCheck();
 
-                // Verify 5x MC-6 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-6 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
                 const mc6Urls = [
-                    '/assets/icons/ui_mecha_overlord.png?v=33',
-                    '/assets/icons/meta_mecha_core.png?v=33',
-                    '/assets/icons/env_tailwind_belt.png?v=33',
-                    '/assets/icons/env_emp_zone.png?v=33',
-                    '/assets/icons/env_frosting_pad.png?v=33',
+                    '/assets/icons/ui_mecha_overlord.png?v=35',
+                    '/assets/icons/meta_mecha_core.png?v=35',
+                    '/assets/icons/env_tailwind_belt.png?v=35',
+                    '/assets/icons/env_emp_zone.png?v=35',
+                    '/assets/icons/env_frosting_pad.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc6Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -996,7 +1067,7 @@ try:
 
             mc6_sim = mc6_check.get("sim") or {}
             add_check(
-                "MC-6 5x 256px True-Alpha RGBA Icons (?v=33) & Zero Inline SVG in Hangar/HUD",
+                "MC-6 5x 256px True-Alpha RGBA Icons (?v=35) & Zero Inline SVG in Hangar/HUD",
                 all(mc6_check.get("rgbaChecks", [False]))
                 and len(mc6_check.get("rgbaChecks", [])) == 5
                 and not bool(mc6_check.get("metaHasSvg"))
@@ -1088,13 +1159,13 @@ try:
                 }
                 const sim = w.runMc7SelfCheck();
 
-                // Verify 5x MC-7 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-7 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
                 const mc7Urls = [
-                    '/assets/icons/ui_gear_tournament.png?v=33',
-                    '/assets/icons/ui_tournament_chest.png?v=33',
-                    '/assets/icons/subwpn_electro_net.png?v=33',
-                    '/assets/icons/subwpn_syrup_bubble.png?v=33',
-                    '/assets/icons/subwpn_rally_horn.png?v=33',
+                    '/assets/icons/ui_gear_tournament.png?v=35',
+                    '/assets/icons/ui_tournament_chest.png?v=35',
+                    '/assets/icons/subwpn_electro_net.png?v=35',
+                    '/assets/icons/subwpn_syrup_bubble.png?v=35',
+                    '/assets/icons/subwpn_rally_horn.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc7Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -1209,7 +1280,7 @@ try:
 
             mc7_sim = mc7_check.get("sim") or {}
             add_check(
-                "MC-7 5x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-7 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc7_check.get("rgbaChecks", [False]))
                 and len(mc7_check.get("rgbaChecks", [])) == 5
                 and int(mc7_check.get("totalSvgCount", 1)) == 0
@@ -1294,13 +1365,13 @@ try:
                 }
                 const sim = w.runMc8SelfCheck();
 
-                // Verify 5x MC-8 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-8 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
                 const mc8Urls = [
-                    '/assets/icons/ui_clockwork_colossus.png?v=33',
-                    '/assets/icons/ui_clockwork_core.png?v=33',
-                    '/assets/icons/tech_vanguard_charge.png?v=33',
-                    '/assets/icons/tech_heavy_siege.png?v=33',
-                    '/assets/icons/tech_candy_bombard.png?v=33',
+                    '/assets/icons/ui_clockwork_colossus.png?v=35',
+                    '/assets/icons/ui_clockwork_core.png?v=35',
+                    '/assets/icons/tech_vanguard_charge.png?v=35',
+                    '/assets/icons/tech_heavy_siege.png?v=35',
+                    '/assets/icons/tech_candy_bombard.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc8Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -1403,7 +1474,7 @@ try:
 
             mc8_sim = mc8_check.get("sim") or {}
             add_check(
-                "MC-8 5x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-8 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc8_check.get("rgbaChecks", [False]))
                 and len(mc8_check.get("rgbaChecks", [])) == 5
                 and int(mc8_check.get("totalSvgCount", 1)) == 0
@@ -1484,13 +1555,13 @@ try:
                 }
                 const sim = w.runMc9SelfCheck();
 
-                // Verify 5x MC-9 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-9 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
                 const mc9Urls = [
-                    '/assets/icons/ui_airship_escort.png?v=33',
-                    '/assets/icons/ui_airship_wing_medal.png?v=33',
-                    '/assets/icons/mod_overdrive_breech.png?v=33',
-                    '/assets/icons/mod_prism_splitter.png?v=33',
-                    '/assets/icons/mod_heavy_mortar.png?v=33',
+                    '/assets/icons/ui_airship_escort.png?v=35',
+                    '/assets/icons/ui_airship_wing_medal.png?v=35',
+                    '/assets/icons/mod_overdrive_breech.png?v=35',
+                    '/assets/icons/mod_prism_splitter.png?v=35',
+                    '/assets/icons/mod_heavy_mortar.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc9Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -1644,7 +1715,7 @@ try:
 
             mc9_sim = mc9_check.get("sim") or {}
             add_check(
-                "MC-9 5x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-9 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc9_check.get("rgbaChecks", [False]))
                 and len(mc9_check.get("rgbaChecks", [])) == 5
                 and bool(mc9_check.get("escortBtnImgOk"))
@@ -1727,13 +1798,13 @@ try:
                 }
                 const sim = w.runMc10SelfCheck();
 
-                // Verify 5x MC-10 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-10 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
                 const mc10Urls = [
-                    '/assets/icons/ui_candy_train_raid.png?v=33',
-                    '/assets/icons/ui_train_gold_medal.png?v=33',
-                    '/assets/icons/banner_gale_charge.png?v=33',
-                    '/assets/icons/banner_holy_shield.png?v=33',
-                    '/assets/icons/banner_star_carnival.png?v=33',
+                    '/assets/icons/ui_candy_train_raid.png?v=35',
+                    '/assets/icons/ui_train_gold_medal.png?v=35',
+                    '/assets/icons/banner_gale_charge.png?v=35',
+                    '/assets/icons/banner_holy_shield.png?v=35',
+                    '/assets/icons/banner_star_carnival.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc10Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -1761,7 +1832,7 @@ try:
                 const trainBtn = document.getElementById('btn-start-candy-train-raid');
                 const hasTrainBtn = Boolean(trainBtn);
                 const trainBtnImg = trainBtn?.querySelector('img');
-                const trainBtnImgOk = Boolean(trainBtnImg && trainBtnImg.complete && trainBtnImg.naturalWidth > 0 && trainBtnImg.src.includes('ui_candy_train_raid.png?v=33'));
+                const trainBtnImgOk = Boolean(trainBtnImg && trainBtnImg.complete && trainBtnImg.naturalWidth > 0 && trainBtnImg.src.includes('ui_candy_train_raid.png?v=35'));
                 const trainMedalTxt = document.getElementById('candy-train-medal-text')?.textContent?.trim() || '';
 
                 // Open Workshop (#menu-panel-meta) -> #relic-banner-stand: unlock / upgrade / equip all 3 banners via real UI buttons
@@ -1867,7 +1938,7 @@ try:
                 const bannerBuffPillOk = Boolean(
                     bannerBuffPill &&
                     bannerBuffPill.textContent?.includes('圣盾守护旗') &&
-                    bannerBuffPill.querySelector('img')?.src.includes('banner_holy_shield.png?v=33')
+                    bannerBuffPill.querySelector('img')?.src.includes('banner_holy_shield.png?v=35')
                 );
                 const carLabelsShown = Array.from(document.querySelectorAll('.candy-train-car-label')).filter(
                     (el) => el.style.display !== 'none'
@@ -1930,7 +2001,7 @@ try:
 
             mc10_sim = mc10_check.get("sim") or {}
             add_check(
-                "MC-10 5x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-10 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc10_check.get("rgbaChecks", [False]))
                 and len(mc10_check.get("rgbaChecks", [])) == 5
                 and bool(mc10_check.get("trainBtnImgOk"))
@@ -2031,13 +2102,13 @@ try:
                 }
                 const sim = w.runMc11SelfCheck();
 
-                // Verify 5x MC-11 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with all 4 corners transparent
+                // Verify 5x MC-11 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
                 const mc11Urls = [
-                    '/assets/icons/ui_submarine_rescue.png?v=33',
-                    '/assets/icons/ui_deep_pearl.png?v=33',
-                    '/assets/icons/pet_jelly_puff.png?v=33',
-                    '/assets/icons/pet_shell_turtle.png?v=33',
-                    '/assets/icons/pet_spark_seahorse.png?v=33',
+                    '/assets/icons/ui_submarine_rescue.png?v=35',
+                    '/assets/icons/ui_deep_pearl.png?v=35',
+                    '/assets/icons/pet_jelly_puff.png?v=35',
+                    '/assets/icons/pet_shell_turtle.png?v=35',
+                    '/assets/icons/pet_spark_seahorse.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc11Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -2065,7 +2136,7 @@ try:
                 const subBtn = document.getElementById('btn-start-submarine-rescue');
                 const hasSubBtn = Boolean(subBtn);
                 const subBtnImg = subBtn?.querySelector('img');
-                const subBtnImgOk = Boolean(subBtnImg && subBtnImg.complete && subBtnImg.naturalWidth > 0 && subBtnImg.src.includes('ui_submarine_rescue.png?v=33'));
+                const subBtnImgOk = Boolean(subBtnImg && subBtnImg.complete && subBtnImg.naturalWidth > 0 && subBtnImg.src.includes('ui_submarine_rescue.png?v=35'));
                 const pearlTxt = document.getElementById('submarine-pearl-text')?.textContent?.trim() || '';
 
                 // Open Workshop (#menu-panel-meta) -> #pet-companion-dock: adopt / upgrade / equip all 3 pets via real UI buttons
@@ -2219,7 +2290,7 @@ try:
                 const petBuffPillOk = Boolean(
                     petBuffPill &&
                     petBuffPill.textContent?.includes('小海马') &&
-                    petBuffPill.querySelector('img')?.src.includes('pet_spark_seahorse.png?v=33')
+                    petBuffPill.querySelector('img')?.src.includes('pet_spark_seahorse.png?v=35')
                 );
                 const worldLabelsShown = Array.from(
                     document.querySelectorAll('.coral-barrier-label, .rescue-bubble-label, .submarine-hull-label')
@@ -2294,7 +2365,7 @@ try:
 
             mc11_sim = mc11_check.get("sim") or {}
             add_check(
-                "MC-11 5x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-11 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc11_check.get("rgbaChecks", [False]))
                 and len(mc11_check.get("rgbaChecks", [])) == 5
                 and bool(mc11_check.get("subBtnImgOk"))
@@ -2410,13 +2481,13 @@ try:
                 }
                 const sim = w.runMc12SelfCheck();
 
-                // Verify 5x MC-12 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with all 4 corners transparent
+                // Verify 5x MC-12 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
                 const mc12Urls = [
-                    '/assets/icons/ui_glacier_sled.png?v=33',
-                    '/assets/icons/ui_ice_medal.png?v=33',
-                    '/assets/icons/trophy_hall.png?v=33',
-                    '/assets/icons/trophy_gold_cup.png?v=33',
-                    '/assets/icons/display_pedestal.png?v=33',
+                    '/assets/icons/ui_glacier_sled.png?v=35',
+                    '/assets/icons/ui_ice_medal.png?v=35',
+                    '/assets/icons/trophy_hall.png?v=35',
+                    '/assets/icons/trophy_gold_cup.png?v=35',
+                    '/assets/icons/display_pedestal.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc12Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -2458,7 +2529,7 @@ try:
                 const sledBtn = document.getElementById('btn-start-glacier-sled');
                 const hasSledBtn = Boolean(sledBtn);
                 const sledBtnImg = sledBtn?.querySelector('img');
-                const sledBtnImgOk = Boolean(sledBtnImg && sledBtnImg.complete && sledBtnImg.naturalWidth > 0 && sledBtnImg.src.includes('ui_glacier_sled.png?v=33'));
+                const sledBtnImgOk = Boolean(sledBtnImg && sledBtnImg.complete && sledBtnImg.naturalWidth > 0 && sledBtnImg.src.includes('ui_glacier_sled.png?v=35'));
                 const iceTxt = document.getElementById('glacier-ice-medal-text')?.textContent?.trim() || '';
                 const sledBtnBeforeSub = Boolean(
                     sledBtn && document.getElementById('btn-start-submarine-rescue') &&
@@ -2606,7 +2677,7 @@ try:
                 const hallPill = document.querySelector('#active-buffs-bar .trophy-hall-pill');
                 const hallPillOk = Boolean(
                     hallPill && hallPill.textContent?.includes('荣誉陈列') &&
-                    hallPill.querySelector('img')?.src.includes('trophy_gold_cup.png?v=33')
+                    hallPill.querySelector('img')?.src.includes('trophy_gold_cup.png?v=35')
                 );
                 const sledPill = document.querySelector('#active-buffs-bar .glacier-sled-pill');
                 const sledLabelShown = Array.from(document.querySelectorAll('.glacier-sled-label')).filter(
@@ -2697,7 +2768,7 @@ try:
 
             mc12_sim = mc12_check.get("sim") or {}
             add_check(
-                "MC-12 5x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-12 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc12_check.get("rgbaChecks", [False]))
                 and len(mc12_check.get("rgbaChecks", [])) == 5
                 and bool(mc12_check.get("sledBtnImgOk"))
@@ -2829,13 +2900,13 @@ try:
                 const sim = w.runMc13SelfCheck();
                 const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-                // Verify 5x MC-13 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with all 4 corners transparent
+                // Verify 5x MC-13 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
                 const mc13Urls = [
-                    '/assets/icons/ui_lava_jump.png?v=33',
-                    '/assets/icons/ui_lava_core.png?v=33',
-                    '/assets/icons/gacha_machine.png?v=33',
-                    '/assets/icons/skin_capsule.png?v=33',
-                    '/assets/icons/skin_crown.png?v=33',
+                    '/assets/icons/ui_lava_jump.png?v=35',
+                    '/assets/icons/ui_lava_core.png?v=35',
+                    '/assets/icons/gacha_machine.png?v=35',
+                    '/assets/icons/skin_capsule.png?v=35',
+                    '/assets/icons/skin_crown.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc13Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -2874,7 +2945,7 @@ try:
                 const lavaBtn = document.getElementById('btn-start-lava-jump');
                 const sledBtn = document.getElementById('btn-start-glacier-sled');
                 const lavaBtnImg = lavaBtn?.querySelector('img');
-                const lavaBtnImgOk = Boolean(lavaBtnImg && lavaBtnImg.complete && lavaBtnImg.naturalWidth > 0 && lavaBtnImg.src.includes('ui_lava_jump.png?v=33'));
+                const lavaBtnImgOk = Boolean(lavaBtnImg && lavaBtnImg.complete && lavaBtnImg.naturalWidth > 0 && lavaBtnImg.src.includes('ui_lava_jump.png?v=35'));
                 const coreTxt = document.getElementById('lava-core-text')?.textContent?.trim() || '';
                 const lavaBtnBeforeSled = Boolean(
                     lavaBtn && sledBtn && (lavaBtn.compareDocumentPosition(sledBtn) & Node.DOCUMENT_POSITION_FOLLOWING)
@@ -3081,7 +3152,7 @@ try:
 
             mc13_sim = mc13_check.get("sim") or {}
             add_check(
-                "MC-13 5x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-13 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc13_check.get("rgbaChecks", [False]))
                 and len(mc13_check.get("rgbaChecks", [])) == 5
                 and bool(mc13_check.get("lavaBtnImgOk"))
@@ -3255,13 +3326,13 @@ try:
                 const sim = w.runMc14SelfCheck();
                 const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-                // Verify 5x MC-14 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with all 4 corners transparent
+                // Verify 5x MC-14 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
                 const mc14Urls = [
-                    '/assets/icons/ui_asteroid_dash.png?v=33',
-                    '/assets/icons/ui_stardust_badge.png?v=33',
-                    '/assets/icons/lobby_theme.png?v=33',
-                    '/assets/icons/decor_lamp.png?v=33',
-                    '/assets/icons/decor_plant.png?v=33',
+                    '/assets/icons/ui_asteroid_dash.png?v=35',
+                    '/assets/icons/ui_stardust_badge.png?v=35',
+                    '/assets/icons/lobby_theme.png?v=35',
+                    '/assets/icons/decor_lamp.png?v=35',
+                    '/assets/icons/decor_plant.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc14Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -3302,7 +3373,7 @@ try:
                 const astBtn = document.getElementById('btn-start-asteroid-dash');
                 const lavaBtn = document.getElementById('btn-start-lava-jump');
                 const astBtnImg = astBtn?.querySelector('img');
-                const astBtnImgOk = Boolean(astBtnImg && astBtnImg.complete && astBtnImg.naturalWidth > 0 && astBtnImg.src.includes('ui_asteroid_dash.png?v=33'));
+                const astBtnImgOk = Boolean(astBtnImg && astBtnImg.complete && astBtnImg.naturalWidth > 0 && astBtnImg.src.includes('ui_asteroid_dash.png?v=35'));
                 const badgeTxt = document.getElementById('stardust-badge-text')?.textContent?.trim() || '';
                 const astBtnBeforeLava = Boolean(
                     astBtn && lavaBtn && (astBtn.compareDocumentPosition(lavaBtn) & Node.DOCUMENT_POSITION_FOLLOWING)
@@ -3499,7 +3570,7 @@ try:
 
             mc14_sim = mc14_check.get("sim") or {}
             add_check(
-                "MC-14 5x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-14 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc14_check.get("rgbaChecks", [False]))
                 and len(mc14_check.get("rgbaChecks", [])) == 5
                 and bool(mc14_check.get("astBtnImgOk"))
@@ -3661,15 +3732,15 @@ try:
                 const sim = w.runMc15SelfCheck();
                 const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-                // Verify 7x MC-15 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with all 4 corners transparent
+                // Verify 7x MC-15 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
                 const mc15Urls = [
-                    '/assets/icons/ui_pumpkin_night.png?v=33',
-                    '/assets/icons/ui_pumpkin_badge.png?v=33',
-                    '/assets/icons/ghost.png?v=33',
-                    '/assets/icons/ui_tactic_deck.png?v=33',
-                    '/assets/icons/card_shield.png?v=33',
-                    '/assets/icons/card_rush.png?v=33',
-                    '/assets/icons/card_crowd.png?v=33',
+                    '/assets/icons/ui_pumpkin_night.png?v=35',
+                    '/assets/icons/ui_pumpkin_badge.png?v=35',
+                    '/assets/icons/ghost.png?v=35',
+                    '/assets/icons/ui_tactic_deck.png?v=35',
+                    '/assets/icons/card_shield.png?v=35',
+                    '/assets/icons/card_rush.png?v=35',
+                    '/assets/icons/card_crowd.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc15Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -3710,7 +3781,7 @@ try:
                 const pkBtn = document.getElementById('btn-start-pumpkin-night');
                 const astBtn = document.getElementById('btn-start-asteroid-dash');
                 const pkBtnImg = pkBtn?.querySelector('img');
-                const pkBtnImgOk = Boolean(pkBtnImg && pkBtnImg.complete && pkBtnImg.naturalWidth > 0 && pkBtnImg.src.includes('ui_pumpkin_night.png?v=33'));
+                const pkBtnImgOk = Boolean(pkBtnImg && pkBtnImg.complete && pkBtnImg.naturalWidth > 0 && pkBtnImg.src.includes('ui_pumpkin_night.png?v=35'));
                 const pkBadgeTxt = document.getElementById('pumpkin-badge-text')?.textContent?.trim() || '';
                 const pkBtnBeforeAst = Boolean(pkBtn && astBtn && (pkBtn.compareDocumentPosition(astBtn) & Node.DOCUMENT_POSITION_FOLLOWING));
                 const battleBtn = document.getElementById('btn-start-battle');
@@ -3931,7 +4002,7 @@ try:
 
             mc15_sim = mc15_check.get("sim") or {}
             add_check(
-                "MC-15 7x 256px True-Alpha RGBA Icons (?v=33), Zero Inline SVG & Zero Raw Emoji",
+                "MC-15 7x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
                 all(mc15_check.get("rgbaChecks", [False]))
                 and len(mc15_check.get("rgbaChecks", [])) == 7
                 and bool(mc15_check.get("pkBtnImgOk"))
@@ -4088,13 +4159,13 @@ try:
                 const sim = w.runMc16SelfCheck();
                 const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-                // Verify 5x MC-16 256x256 true-alpha RGBA PNG icons (?v=33) load cleanly with all 4 corners transparent
+                // Verify 5x MC-16 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
                 const mc16Urls = [
-                    '/assets/icons/ui_pyramid_run.png?v=33',
-                    '/assets/icons/ui_scarab_badge.png?v=33',
-                    '/assets/icons/quicksand_trap.png?v=33',
-                    '/assets/icons/flip_slab.png?v=33',
-                    '/assets/icons/tactic_balance.png?v=33',
+                    '/assets/icons/ui_pyramid_run.png?v=35',
+                    '/assets/icons/ui_scarab_badge.png?v=35',
+                    '/assets/icons/quicksand_trap.png?v=35',
+                    '/assets/icons/flip_slab.png?v=35',
+                    '/assets/icons/tactic_balance.png?v=35',
                 ];
                 const rgbaChecks = await Promise.all(mc16Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -4132,9 +4203,9 @@ try:
                 const pyBtn = document.getElementById('btn-start-pyramid-run');
                 const pkBtn = document.getElementById('btn-start-pumpkin-night');
                 const pyBtnImg = pyBtn?.querySelector('img');
-                const pyBtnImgOk = Boolean(pyBtnImg && pyBtnImg.complete && pyBtnImg.naturalWidth > 0 && pyBtnImg.src.includes('ui_pyramid_run.png?v=33'));
+                const pyBtnImgOk = Boolean(pyBtnImg && pyBtnImg.complete && pyBtnImg.naturalWidth > 0 && pyBtnImg.src.includes('ui_pyramid_run.png?v=35'));
                 const pyBadgeImg = document.querySelector('#pyramid-run-badge img');
-                const pyBadgeImgOk = Boolean(pyBadgeImg && pyBadgeImg.complete && pyBadgeImg.naturalWidth > 0 && pyBadgeImg.src.includes('ui_scarab_badge.png?v=33'));
+                const pyBadgeImgOk = Boolean(pyBadgeImg && pyBadgeImg.complete && pyBadgeImg.naturalWidth > 0 && pyBadgeImg.src.includes('ui_scarab_badge.png?v=35'));
                 const pyBadgeTxt = document.getElementById('scarab-badge-text')?.textContent?.trim() || '';
                 const pyBtnBeforePk = Boolean(pyBtn && pkBtn && (pyBtn.compareDocumentPosition(pkBtn) & Node.DOCUMENT_POSITION_FOLLOWING));
                 const lobbySubOn = document.getElementById('lobby-tactic-sub')?.textContent || '';
@@ -4146,7 +4217,7 @@ try:
                 const deckEl = document.getElementById('tactic-deck');
                 const balInDeck = Boolean(balRow && deckEl && deckEl.contains(balRow));
                 const balImg = balRow?.querySelector('img');
-                const balImgOk = Boolean(balImg && balImg.complete && balImg.naturalWidth > 0 && balImg.src.includes('tactic_balance.png?v=33'));
+                const balImgOk = Boolean(balImg && balImg.complete && balImg.naturalWidth > 0 && balImg.src.includes('tactic_balance.png?v=35'));
                 const balTitleOn = document.getElementById('tactic-balance-title')?.textContent || '';
                 const balTextOn = document.getElementById('tactic-balance-text')?.textContent || '';
                 const cardCampTags = Array.from(document.querySelectorAll('#tactic-card-grid .tactic-card-camp')).map((e) => e.textContent || '');
@@ -4324,7 +4395,7 @@ try:
 
             mc16_sim = mc16_check.get("sim") or {}
             add_check(
-                "MC-16 5x 256px True-Alpha RGBA Icons (?v=33) on Lobby Card / Badge / HUD / Balance Row, Zero Inline SVG & Zero Raw Emoji",
+                "MC-16 5x 256px True-Alpha RGBA Icons (?v=35) on Lobby Card / Badge / HUD / Balance Row, Zero Inline SVG & Zero Raw Emoji",
                 all(mc16_check.get("rgbaChecks", [False]))
                 and len(mc16_check.get("rgbaChecks", [])) == 5
                 and bool(mc16_check.get("pyBtnImgOk"))
@@ -4486,12 +4557,12 @@ try:
                 + JUNGLE_INFO_JS
                 + """;
 
-                // The 4 MC-17 icons (?v=33) reuse existing art (art debt) normalised to 256x256 true-alpha RGBA with all 4 corners transparent
+                // The 4 MC-17 icons (?v=35) reuse existing art (art debt) normalised to 256x256 true-alpha RGBA with all 4 corners transparent
                 const mc17Urls = [
-                    '/assets/icons/ui_jungle_temple.png?v=33',
-                    '/assets/icons/ui_emerald_idol_badge.png?v=33',
-                    '/assets/icons/vine_swing.png?v=33',
-                    '/assets/icons/rolling_boulder.png?v=33',
+                    '/assets/icons/ui_jungle_temple.png?v=35',
+                    '/assets/icons/ui_emerald_idol_badge.png?v=35',
+                    '/assets/icons/vine_swing.png?v=35',
+                    '/assets/icons/rolling_boulder.png?v=35',
                 ];
                 const iconInfo = await Promise.all(mc17Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -4527,9 +4598,9 @@ try:
                 const jgBtn = document.getElementById('btn-start-jungle-swing');
                 const pyBtn = document.getElementById('btn-start-pyramid-run');
                 const jgBtnImg = jgBtn?.querySelector('img');
-                const jgBtnImgOk = Boolean(jgBtnImg && jgBtnImg.complete && jgBtnImg.naturalWidth > 0 && jgBtnImg.src.includes('ui_jungle_temple.png?v=33'));
+                const jgBtnImgOk = Boolean(jgBtnImg && jgBtnImg.complete && jgBtnImg.naturalWidth > 0 && jgBtnImg.src.includes('ui_jungle_temple.png?v=35'));
                 const jgBadgeImg = document.querySelector('#jungle-swing-badge img');
-                const jgBadgeImgOk = Boolean(jgBadgeImg && jgBadgeImg.complete && jgBadgeImg.naturalWidth > 0 && jgBadgeImg.src.includes('ui_emerald_idol_badge.png?v=33'));
+                const jgBadgeImgOk = Boolean(jgBadgeImg && jgBadgeImg.complete && jgBadgeImg.naturalWidth > 0 && jgBadgeImg.src.includes('ui_emerald_idol_badge.png?v=35'));
                 const jgBadgeTxt = document.getElementById('emerald-idol-text')?.textContent?.trim() || '';
                 const jgBtnBeforePy = Boolean(jgBtn && pyBtn && (jgBtn.compareDocumentPosition(pyBtn) & Node.DOCUMENT_POSITION_FOLLOWING));
                 const pairsLaunch = artPairs();
@@ -4622,7 +4693,7 @@ try:
             mc17_sim = mc17_check.get("sim") or {}
             mc17_live = mc17_check.get("live") or {}
             add_check(
-                "MC-17 4x Square Alpha PNG Icons (?v=33; Stand-in Copies of Existing Art, 2 of Them Not 256px) on Lobby Card / Badge / HUD, Never on One Screen with Their Originals, Zero Inline SVG & Zero Raw Emoji",
+                "MC-17 4x Square Alpha PNG Icons (?v=35; Stand-in Copies of Existing Art, 2 of Them Not 256px) on Lobby Card / Badge / HUD, Never on One Screen with Their Originals, Zero Inline SVG & Zero Raw Emoji",
                 all(bool(i.get("ok")) for i in (mc17_check.get("iconInfo") or [{}]))
                 and len(mc17_check.get("iconInfo") or []) == 4
                 and bool(mc17_check.get("jgBtnImgOk"))
@@ -4739,6 +4810,275 @@ try:
                 ),
             )
 
+        if want("MC-18"):
+            # MC-18 Verification: Pirate Plank Breakout (own pirate-deck scene on the squad-run engine) and the result stat
+            # boxes of every squad-run mode (time or progress / survivors / the mode's own obstacle count, never a 0 kills box)
+            mc18_check = page.evaluate(
+                """async () => {
+                const w = window.__mc3dWorld;
+                if (!w || typeof w.runMc18SelfCheck !== 'function') {
+                    return { ok: false, reason: 'missing __mc3dWorld.runMc18SelfCheck' };
+                }
+                const sim = w.runMc18SelfCheck();
+                const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+                const artPairs = """
+                + PIRATE_ART_PAIR_JS
+                + """;
+                const pirateInfo = """
+                + PIRATE_INFO_JS
+                + """;
+                const resultStats = """
+                + RESULT_STATS_JS
+                + """;
+
+                // The 4 MC-18 icons (?v=35) reuse existing art (art debt) normalised to 256x256 true-alpha RGBA with all 4 corners transparent
+                const mc18Urls = [
+                    '/assets/icons/ui_pirate_ship.png?v=35',
+                    '/assets/icons/ui_gold_skull_badge.png?v=35',
+                    '/assets/icons/swing_plank.png?v=35',
+                    '/assets/icons/cannonball.png?v=35',
+                ];
+                const iconInfo = await Promise.all(mc18Urls.map((u) => new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        const W = img.naturalWidth;
+                        const H = img.naturalHeight;
+                        const cv = document.createElement('canvas');
+                        cv.width = W; cv.height = H;
+                        const ctx2d = cv.getContext('2d');
+                        ctx2d.drawImage(img, 0, 0);
+                        const corners = [[0, 0], [W - 1, 0], [0, H - 1], [W - 1, H - 1]].map(([cx, cy]) => ctx2d.getImageData(cx, cy, 1, 1).data[3]);
+                        resolve({ w: W, h: H, cornerAlpha: corners, ok: W === 256 && H === 256 && corners.every((a) => a === 0) });
+                    };
+                    img.onerror = () => resolve({ w: 0, h: 0, ok: false });
+                    img.src = u;
+                })));
+
+                const s = w.state;
+                s.gold = Math.max(s.gold, 60000);
+                for (const cid of ['shield_open', 'rush_open', 'crowd_open']) if (!s.ownedTacticCards.includes(cid)) s.ownedTacticCards.push(cid);
+                s.tacticDeck = ['shield_open', 'rush_open', 'crowd_open'];
+                s.save();
+                const jungleBefore = [s.emeraldIdolBadges, s.jungleSwingClears].join('_');
+
+                // Lobby: #btn-start-pirate-boarding above the jungle card, with the 金骷髅徽章 counter
+                document.getElementById('btn-top-menu')?.click();
+                document.getElementById('btn-home')?.click();
+                document.querySelector('.menu-tab[data-tab="launch"]')?.click();
+                await raf2();
+                const prBtn = document.getElementById('btn-start-pirate-boarding');
+                const jgBtn = document.getElementById('btn-start-jungle-swing');
+                const prBtnImg = prBtn?.querySelector('img');
+                const prBtnImgOk = Boolean(prBtnImg && prBtnImg.complete && prBtnImg.naturalWidth > 0 && prBtnImg.src.includes('ui_pirate_ship.png?v=35'));
+                const prBadgeImg = document.querySelector('#pirate-boarding-badge img');
+                const prBadgeImgOk = Boolean(prBadgeImg && prBadgeImg.complete && prBadgeImg.naturalWidth > 0 && prBadgeImg.src.includes('ui_gold_skull_badge.png?v=35'));
+                const prBadgeTxt = document.getElementById('gold-skull-text')?.textContent?.trim() || '';
+                const prBtnBeforeJg = Boolean(prBtn && jgBtn && (prBtn.compareDocumentPosition(jgBtn) & Node.DOCUMENT_POSITION_FOLLOWING));
+                const pairsLaunch = artPairs();
+                document.querySelector('.menu-tab[data-tab="meta"]')?.click();
+                await raf2();
+                const pairsMeta = artPairs();
+                const metaOv = document.documentElement.scrollWidth - window.innerWidth;
+                document.querySelector('.menu-tab[data-tab="skins"]')?.click();
+                await raf2();
+                const pairsSkins = artPairs();
+                document.querySelector('.menu-tab[data-tab="launch"]')?.click();
+
+                // Launch the pirate plank breakout via #btn-start-pirate-boarding
+                const badgesBeforeRun = s.goldSkullBadges;
+                document.getElementById('btn-start-pirate-boarding')?.click();
+                await raf2();
+                const pr = w.jungleRun;
+                const inPr = Boolean(
+                    w.currentLevel && w.currentLevel.isPirateBoarding && w.currentLevel.isJungleSwing && pr && pr.active &&
+                    w.jungleGates.length >= 6 && w.jungleChasms.length >= 3 && w.jungleBoulders.length >= 3
+                );
+                const prHud = document.getElementById('pirate-boarding-hud');
+                const jgHud = document.getElementById('jungle-swing-hud');
+                const prHudVisible = Boolean(prHud && !prHud.classList.contains('hidden')) && Boolean(jgHud && jgHud.classList.contains('hidden'));
+                const sceneSnap = w.getDedicatedSceneSnapshot();
+                const pirateScene = sceneSnap.kind === 'pirate' && sceneSnap.skyHex === 0x7cc8f2 && !sceneSnap.landmarks && !w.turretGroup.visible;
+                const hudBottom = document.querySelector('.hud-bottom');
+                const bottomHidden = Boolean(hudBottom && getComputedStyle(hudBottom).display === 'none');
+                const plaqueSub = (document.getElementById('stage-plaque-sub')?.textContent || '').trim();
+                const lobbyFullStrength = Boolean(w.tacticRun && !w.tacticRun.isCampaign && w.tacticRun.effectMult === 1);
+                const startBobos = w.getLavaBoboCount();
+                let plankHeldSeen = false;
+                let swingSeen = false;
+                let ballSeen = false;
+                let laneSeen = false;
+                for (let step = 0; step < 240 && pr && pr.active; step++) {
+                    w.turretTargetX = w.getJungleAutopilotX();
+                    w.update(0.05);
+                    if (w.jungleChasms.some((c) => c.locked && c.leadGrabbed)) plankHeldSeen = true;
+                    if (pr.state === 'swinging') swingSeen = true;
+                    if (w.jungleBoulders.some((b) => b.state === 'rolling' && b.rock.visible)) ballSeen = true;
+                    if (w.jungleBoulders.some((b) => b.lane.visible)) laneSeen = true;
+                }
+                await raf2();
+                const live = pirateInfo();
+                const prHudImgsOk = Array.from(prHud ? prHud.querySelectorAll('img') : []).every((im) => im.complete && im.naturalWidth > 0);
+                const prPill = document.querySelector('#active-buffs-bar .pirate-boarding-pill');
+                const pairsRun = artPairs();
+                const battleOv = document.documentElement.scrollWidth - window.innerWidth;
+
+                // Settle the run via the real stage-end callback: the stat boxes read time / survivors / traps crossed
+                const survivorsAtEnd = w.getLavaBoboCount();
+                const trapsAtEnd = w.getJungleTrapProgress();
+                if (w.onStageEnd) {
+                    w.jungleFinishSec = 29.6;
+                    w.isPaused = true;
+                    w.onStageEnd(true);
+                }
+                const badgesAfter = s.goldSkullBadges;
+                const savedAfter = JSON.parse(localStorage.getItem('swarm_control_3d_save_v3') || '{}');
+                const modalTxt = document.getElementById('modal-title')?.textContent || '';
+                const modalDescTxt = document.getElementById('modal-desc')?.textContent || '';
+                const nextTxt = document.getElementById('btn-modal-next')?.textContent || '';
+                const prStats = resultStats();
+                const prStatsOk =
+                    prStats.labels.join('|') === '用时|幸存波波|过机关' && prStats.values[0] === '29.6s' &&
+                    prStats.values[1] === String(survivorsAtEnd) && prStats.values[2] === `${trapsAtEnd.passed}/${trapsAtEnd.total}` && !prStats.goldBox;
+                const pairsModal = artPairs();
+                const jungleAfterPirate = [s.emeraldIdolBadges, s.jungleSwingClears].join('_');
+
+                // Every other squad-run mode (lost run): progress / survivors / its own obstacle count, never 击退抓捕队
+                const runModes = [
+                    ['__mc3dLaunchJungleSwing', '过机关', true],
+                    ['__mc3dLaunchPyramidRun', '过机关', true],
+                    ['__mc3dLaunchPumpkinNight', '驱散幽灵', true],
+                    ['__mc3dLaunchAsteroidDash', '躲过陨石', false],
+                    ['__mc3dLaunchLavaJump', '过跳台', true],
+                    ['__mc3dLaunchGlacierSled', '躲过险情', false],
+                ];
+                const runStats = {};
+                let runStatsOk = true;
+                for (const [fn, wantLabel, hasTotal] of runModes) {
+                    const launch = window[fn];
+                    if (typeof launch !== 'function') { runStatsOk = false; continue; }
+                    launch();
+                    await raf2();
+                    w.isPaused = true;
+                    w.onStageEnd(false);
+                    const r = resultStats();
+                    const metricOk = hasTotal ? /^\\d+\\/[1-9]\\d*$/.test(r.values[2]) : /^\\d+$/.test(r.values[2]);
+                    const ok = r.labels.join('|') === `前进|幸存波波|${wantLabel}` && /^\\d+%$/.test(r.values[0]) && /^\\d+$/.test(r.values[1]) &&
+                        metricOk && !r.goldBox && !r.labels.includes('击退抓捕队');
+                    if (!ok) runStatsOk = false;
+                    runStats[fn] = { ...r, ok };
+                }
+                // A battle mode keeps 波波兵力 / 击退抓捕队 / 本局赏金 (gold box)
+                window.__mc3dLaunchEndless?.();
+                await raf2();
+                w.isPaused = true;
+                w.onStageEnd(false);
+                const battleStats = resultStats();
+                const battleStatsOk = battleStats.labels.join('|') === '波波兵力|击退抓捕队|本局赏金' && battleStats.goldBox && battleStats.values[2].startsWith('+');
+                document.getElementById('btn-modal-home')?.click();
+                await raf2();
+
+                const totalSvgCount = document.querySelectorAll('svg').length;
+                const emojiRe = /[\\u{1F300}-\\u{1FAFF}\\u{2600}-\\u{27BF}]/u;
+                const textSample = [prBtn?.textContent || '', prHud?.textContent || '', prPill?.textContent || '', modalTxt, modalDescTxt].join(' ');
+                const hasRawEmoji = emojiRe.test(textSample);
+                const clashes = [...pairsLaunch.clashes, ...pairsMeta.clashes, ...pairsSkins.clashes, ...pairsRun.clashes, ...pairsModal.clashes];
+
+                return {
+                    sim, iconInfo, prBtnImgOk, prBadgeImgOk, prBadgeTxt, prBtnBeforeJg,
+                    pairs: { launch: pairsLaunch, meta: pairsMeta, skins: pairsSkins, run: pairsRun, modal: pairsModal }, clashes,
+                    inPr, prHudVisible, pirateScene, bottomHidden, plaqueSub, lobbyFullStrength, startBobos,
+                    plankHeldSeen, swingSeen, ballSeen, laneSeen, live, prHudImgsOk,
+                    prPillOk: Boolean(prPill && prPill.textContent?.includes('海盗船')),
+                    badgesAwardedOnVictory: badgesAfter > badgesBeforeRun && savedAfter.goldSkullBadges === badgesAfter && (savedAfter.pirateBoardingClears || 0) >= 1,
+                    jungleUntouchedByPirate: jungleBefore === jungleAfterPirate,
+                    modalTxt, nextTxt, prStats, prStatsOk, runStats, runStatsOk, battleStats, battleStatsOk,
+                    totalSvgCount, hasRawEmoji, metaOv, battleOv,
+                };
+            }"""
+            )
+            mc18_sim = mc18_check.get("sim") or {}
+            mc18_live = mc18_check.get("live") or {}
+            add_check(
+                "MC-18 4x 256px Alpha PNG Icons (?v=35; Stand-in Copies of Existing Art) on Lobby Card / Badge / HUD, Never on One Screen with Their Originals, Zero Inline SVG & Zero Raw Emoji",
+                all(bool(i.get("ok")) for i in (mc18_check.get("iconInfo") or [{}]))
+                and len(mc18_check.get("iconInfo") or []) == 4
+                and bool(mc18_check.get("prBtnImgOk"))
+                and bool(mc18_check.get("prBadgeImgOk"))
+                and bool(mc18_check.get("prHudImgsOk"))
+                and isinstance(mc18_check.get("clashes"), list)
+                and len(mc18_check.get("clashes")) == 0
+                and int(mc18_check.get("totalSvgCount", 1)) == 0
+                and not bool(mc18_check.get("hasRawEmoji")),
+                json.dumps(
+                    {
+                        "icons": mc18_check.get("iconInfo"),
+                        "btnImg": mc18_check.get("prBtnImgOk"),
+                        "badgeImg": mc18_check.get("prBadgeImgOk"),
+                        "hudImgs": mc18_check.get("prHudImgsOk"),
+                        "artOnScreen": mc18_check.get("pairs"),
+                        "svgCount": mc18_check.get("totalSvgCount"),
+                        "rawEmoji": mc18_check.get("hasRawEmoji"),
+                        "reason": mc18_check.get("reason"),
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+            add_check(
+                "MC-18 Pirate Plank Breakout (Lobby Entry above the Jungle Card, Own Pirate-Deck Scene via applyDedicatedSceneDecor Restored Cleanly vs Jungle / Daytime, Planks Carry the Squad over the Sea / Miss -> Fall (Capped), Deck Cannons Fire down a Warned Lane (Capped Knock + Stumble), Flagship-Ramp Win / Timeout Loss, Tier-1 Autopilot Clear, Tier Scaling, 金骷髅徽章 by Time + Survivors + Traps + Milestone (Caps +8 Bobos / +6 s), Jungle Records Untouched, Lobby-Strength Tactic Cards)",
+                bool(mc18_check.get("prBtnBeforeJg"))
+                and ("金骷髅徽章" in str(mc18_check.get("prBadgeTxt", "")))
+                and bool(mc18_check.get("inPr"))
+                and bool(mc18_check.get("prHudVisible"))
+                and bool(mc18_check.get("pirateScene"))
+                and bool(mc18_check.get("bottomHidden"))
+                and len(str(mc18_check.get("plaqueSub", "")).replace(" ", "")) <= 17
+                and "旗舰" in str(mc18_check.get("plaqueSub", ""))
+                and bool(mc18_check.get("lobbyFullStrength"))
+                and float(mc18_live.get("dist", 0)) > 60
+                and bool(mc18_check.get("plankHeldSeen"))
+                and bool(mc18_check.get("swingSeen"))
+                and bool(mc18_check.get("ballSeen"))
+                and bool(mc18_check.get("laneSeen"))
+                and int(mc18_live.get("bobos", 0)) >= int(mc18_check.get("startBobos", 99))
+                and bool(mc18_live.get("labelShown"))
+                and bool(mc18_live.get("hudFit"))
+                and ("剩余" in " ".join(mc18_live.get("hudTxt") or []))
+                and ("旗舰" in " ".join(mc18_live.get("hudTxt") or []))
+                and bool(mc18_check.get("prPillOk"))
+                and ("海盗旗舰" in str(mc18_check.get("modalTxt", "")))
+                and ("第 2 阶" in str(mc18_check.get("nextTxt", "")))
+                and bool(mc18_check.get("badgesAwardedOnVictory"))
+                and bool(mc18_check.get("jungleUntouchedByPirate"))
+                and bool(mc18_sim.get("ok")),
+                json.dumps(
+                    {
+                        "lobbyBtn": mc18_check.get("prBtnBeforeJg"),
+                        "badge": mc18_check.get("prBadgeTxt"),
+                        "inPr": mc18_check.get("inPr"),
+                        "hud": mc18_check.get("prHudVisible"),
+                        "scene": mc18_check.get("pirateScene"),
+                        "bottomHidden": mc18_check.get("bottomHidden"),
+                        "plaqueSub": mc18_check.get("plaqueSub"),
+                        "lobbyStrength": mc18_check.get("lobbyFullStrength"),
+                        "seen": [mc18_check.get("plankHeldSeen"), mc18_check.get("swingSeen"), mc18_check.get("ballSeen"), mc18_check.get("laneSeen")],
+                        "live": mc18_live,
+                        "modal": [mc18_check.get("modalTxt"), mc18_check.get("nextTxt")],
+                        "victoryBadges": mc18_check.get("badgesAwardedOnVictory"),
+                        "sim": mc18_sim,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+            add_check(
+                "MC-18 Squad-Run Result Stat Boxes (Pirate Win: 用时 29.6s / 幸存波波 / 过机关 a/b; Jungle / Pyramid / Pumpkin / Asteroid / Lava / Sled Loss: 前进 % / 幸存波波 / Own Obstacle Count, Never 击退抓捕队; Battle Mode Keeps 波波兵力 / 击退抓捕队 / 本局赏金)",
+                bool(mc18_check.get("prStatsOk")) and bool(mc18_check.get("runStatsOk")) and bool(mc18_check.get("battleStatsOk")),
+                json.dumps(
+                    {"pirate": mc18_check.get("prStats"), "runs": mc18_check.get("runStats"), "battle": mc18_check.get("battleStats")},
+                    ensure_ascii=False,
+                ),
+            )
+
         if want("CORE"):
             max_desk_overflow = max(
                 max_desk_overflow,
@@ -4768,6 +5108,8 @@ try:
                 int(mc16_check.get("battleTacticOv", 0)),
                 int(mc17_check.get("metaOv", 0)),
                 int(mc17_check.get("battleOv", 0)),
+                int(mc18_check.get("metaOv", 0)),
+                int(mc18_check.get("battleOv", 0)),
             )
             add_check(
                 "Desktop 2560x1278 Zero Horizontal Overflow (Lobby, Workshop & Escort)",
@@ -4781,10 +5123,23 @@ try:
             desk1440_ctx = new_page_context({"width": 1440, "height": 900}, 1)
             desk1440_page = desk1440_ctx.new_page()
             desk1440_page.on("pageerror", lambda err: aux_page_errors.append(f"[1440] {err}"))
-            desk1440_page.goto(f"http://127.0.0.1:{port}/", wait_until="domcontentloaded", timeout=10000)
+            page_goto(desk1440_page, f"http://127.0.0.1:{port}/")
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
+        if RUN_1440 and want("CORE"):
+            # The race ribbon under the hero must sit inside the hero stage, never over 开始战斗 (it used to cover it at 1440x900)
+            d1440_cta = desk1440_page.evaluate(
+                """() => {
+                const rb = document.querySelector('.hero-stage-ribbon')?.getBoundingClientRect();
+                const btn = document.getElementById('btn-start-battle');
+                const st = btn ? btn.getBoundingClientRect() : null;
+                if (!rb || !st) return { ok: false };
+                const hit = document.elementFromPoint(st.left + st.width / 2, st.top + st.height / 2);
+                return { ok: rb.bottom <= st.top + 1 && Boolean(hit && btn.contains(hit)), ribbonBottom: Math.round(rb.bottom), startTop: Math.round(st.top) };
+            }"""
+            )
+            add_check("Desktop 1440x900 Lobby Start Button Not Covered By Race Ribbon", bool(d1440_cta.get("ok")), json.dumps(d1440_cta))
         if want("CORE", "MC-9", "MC-10", "MC-11", "MC-12"):
             desk1440_lobby_ov = desk1440_page.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             desk1440_page.screenshot(
@@ -4901,7 +5256,7 @@ try:
                 };
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -4997,7 +5352,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             old_save_snap = desk1440_page.evaluate(
                 """() => {
@@ -5018,7 +5373,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             dirty_save_snap = desk1440_page.evaluate(
                 """() => {
@@ -5031,7 +5386,7 @@ try:
             desk1440_page.evaluate(
                 "(raw) => { if (raw) localStorage.setItem('swarm_control_3d_save_v3', raw); }", saved_raw
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -5084,7 +5439,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc12_old_snap = desk1440_page.evaluate(
                 """() => {
@@ -5106,7 +5461,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc12_dirty_snap = desk1440_page.evaluate(
                 """() => {
@@ -5118,7 +5473,7 @@ try:
             desk1440_page.evaluate(
                 "(raw) => { if (raw) localStorage.setItem('swarm_control_3d_save_v3', raw); }", mc12_saved_raw
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -5309,7 +5664,7 @@ try:
                     pity: s.gachaPity, ssrPity: s.gachaSsrPity, rolls: s.totalGachaRolls };
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(150)
             mc13_post_reload = desk1440_page.evaluate(
                 """() => {
@@ -5350,7 +5705,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc13_old_snap = desk1440_page.evaluate(
                 """() => {
@@ -5379,7 +5734,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc13_dirty_snap = desk1440_page.evaluate(
                 """() => {
@@ -5392,7 +5747,7 @@ try:
             desk1440_page.evaluate(
                 "(raw) => { if (raw) localStorage.setItem('swarm_control_3d_save_v3', raw); }", mc13_saved_raw
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -5533,7 +5888,7 @@ try:
                     props: [...s.ownedDecorProps], slots: [...s.decorSlots], shown: s.getDisplayedTrophyIds() };
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(150)
             mc14_post_reload = desk1440_page.evaluate(
                 """() => {
@@ -5576,7 +5931,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc14_old_snap = desk1440_page.evaluate(
                 """() => {
@@ -5606,7 +5961,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc14_dirty_snap = desk1440_page.evaluate(
                 """() => {
@@ -5620,7 +5975,7 @@ try:
             desk1440_page.evaluate(
                 "(raw) => { if (raw) localStorage.setItem('swarm_control_3d_save_v3', raw); }", mc14_saved_raw
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -5790,7 +6145,7 @@ try:
                     shown: s.getDisplayedTrophyIds() };
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(150)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -5827,7 +6182,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc15_old_snap = desk1440_page.evaluate(
                 """() => {
@@ -5855,7 +6210,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc15_dirty_snap = desk1440_page.evaluate(
                 """() => {
@@ -5868,7 +6223,7 @@ try:
             desk1440_page.evaluate(
                 "(raw) => { if (raw) localStorage.setItem('swarm_control_3d_save_v3', raw); }", mc15_saved_raw
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -6115,7 +6470,7 @@ try:
                     deck: [...s.tacticDeck], shown: s.getDisplayedTrophyIds() };
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(150)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -6154,7 +6509,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc16_old_snap = desk1440_page.evaluate(
                 """() => {
@@ -6180,7 +6535,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc16_dirty_snap = desk1440_page.evaluate(
                 """() => {
@@ -6193,7 +6548,7 @@ try:
             desk1440_page.evaluate(
                 "(raw) => { if (raw) localStorage.setItem('swarm_control_3d_save_v3', raw); }", mc16_saved_raw
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate(
                 """() => {
@@ -6442,7 +6797,7 @@ try:
                 const img = card ? card.querySelector('img.trophy-cabinet-source') : null;
                 return { ov: document.documentElement.scrollWidth - window.innerWidth, cardFit: fit(card),
                     shown: card ? card.classList.contains('is-displayed-trophy') : false,
-                    img: Boolean(img && img.complete && img.naturalWidth > 0 && img.src.includes('ui_emerald_idol_badge.png?v=33')),
+                    img: Boolean(img && img.complete && img.naturalWidth > 0 && img.src.includes('ui_emerald_idol_badge.png?v=35')),
                     name: card?.querySelector('.finish-name')?.textContent || '', cards: document.querySelectorAll('#trophy-hall-grid .trophy-cabinet-card').length,
                     art: (""" + ART_PAIR_JS + """)() };
             }"""
@@ -6459,7 +6814,7 @@ try:
                     tier: s.getJungleSwingSpec().jungleTier, shown: s.getDisplayedTrophyIds() };
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(150)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -6496,7 +6851,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc17_old_snap = desk1440_page.evaluate(
                 """() => {
@@ -6520,7 +6875,7 @@ try:
                 localStorage.setItem('swarm_control_3d_save_v3', JSON.stringify(s));
             }"""
             )
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             mc17_dirty_snap = desk1440_page.evaluate(
                 """() => {
@@ -6530,7 +6885,7 @@ try:
             }"""
             )
             desk1440_page.evaluate("(raw) => { if (raw) localStorage.setItem('swarm_control_3d_save_v3', raw); }", mc17_saved_raw)
-            desk1440_page.reload(wait_until="domcontentloaded", timeout=10000)
+            page_reload(desk1440_page)
             desk1440_page.wait_for_timeout(120)
             desk1440_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             desk1440_page.wait_for_timeout(80)
@@ -6683,6 +7038,118 @@ try:
                     ensure_ascii=False,
                 ),
             )
+        if want("MC-18"):
+            # MC-18 (Desktop 1440x900): lobby pirate card, the pirate run on a swaying plank / at a cannonball lane / at the flagship,
+            # and the victory modal with the squad-run stat boxes
+            desk1440_page.evaluate(
+                """() => {
+                document.getElementById('btn-modal-home')?.click();
+                const w = window.__mc3dWorld;
+                if (w) {
+                    const s = w.state;
+                    s.gold = Math.max(s.gold, 30000);
+                    for (const cid of ['shield_open', 'rush_open', 'crowd_open']) if (!s.ownedTacticCards.includes(cid)) s.ownedTacticCards.push(cid);
+                    s.tacticDeck = ['shield_open', 'rush_open', 'crowd_open'];
+                    s.save();
+                }
+                document.getElementById('btn-top-menu')?.click();
+                document.getElementById('btn-home')?.click();
+                document.querySelector('.menu-tab[data-tab="launch"]')?.click();
+                window.scrollTo(0, 0);
+                document.getElementById('btn-start-pirate-boarding')?.scrollIntoView({ block: 'center' });
+            }"""
+            )
+            desk1440_page.wait_for_timeout(500)
+            desk1440_mc18_lobby = desk1440_page.evaluate(
+                """() => {
+                const fit = (el, minW) => {
+                    if (!el) return false;
+                    const r = el.getBoundingClientRect();
+                    return r.left >= 0 && r.right <= window.innerWidth && r.width > minW;
+                };
+                const title = document.querySelector('#btn-start-pirate-boarding .pirate-boarding-btn-title');
+                return { ov: document.documentElement.scrollWidth - window.innerWidth,
+                    prFit: fit(document.getElementById('btn-start-pirate-boarding'), 200),
+                    badgeFit: fit(document.getElementById('pirate-boarding-badge'), 60), titleFit: fit(title, 40),
+                    badge: document.getElementById('gold-skull-text')?.textContent?.trim() || '',
+                    art: (""" + PIRATE_ART_PAIR_JS + """)() };
+            }"""
+            )
+            desk1440_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_desktop_1440_lobby.jpg"), type="jpeg", quality=90)
+            desk1440_page.evaluate(
+                """() => {
+                document.getElementById('btn-top-menu')?.click();
+                document.getElementById('btn-home')?.click();
+                document.getElementById('btn-start-pirate-boarding')?.click();
+            }"""
+            )
+            desk1440_page.evaluate(JUNGLE_WALK_JS, {"kind": "chasm", "index": 0, "into": 1.4})
+            desk1440_page.wait_for_timeout(260)
+            desk1440_page.evaluate("document.getElementById('center-banner')?.classList.add('hidden')")
+            desk1440_page.wait_for_timeout(60)
+            desk1440_pr_plank = desk1440_page.evaluate(PIRATE_INFO_JS)
+            desk1440_pr_plank["art"] = desk1440_page.evaluate(PIRATE_ART_PAIR_JS)
+            desk1440_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_desktop_1440_plank.jpg"), type="jpeg", quality=90)
+            desk1440_page.evaluate(JUNGLE_WALK_JS, {"kind": "boulder", "wz": -2})
+            desk1440_page.wait_for_timeout(200)
+            desk1440_pr_ball = desk1440_page.evaluate(PIRATE_INFO_JS)
+            desk1440_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_desktop_1440_cannonball.jpg"), type="jpeg", quality=90)
+            desk1440_page.evaluate(JUNGLE_WALK_JS, {"kind": "exit", "before": 18})
+            desk1440_page.wait_for_timeout(200)
+            desk1440_pr_exit = desk1440_page.evaluate(PIRATE_INFO_JS)
+            desk1440_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_desktop_1440_flagship.jpg"), type="jpeg", quality=90)
+            desk1440_page.evaluate(JUNGLE_WALK_JS, {"kind": "end"})
+            desk1440_page.wait_for_timeout(2600)
+            desk1440_mc18_result = desk1440_page.evaluate(
+                """() => {
+                const m = document.getElementById('result-modal');
+                const box = m ? m.querySelector('.modal-content, .modal-card, .result-card') || m : null;
+                const r = box ? box.getBoundingClientRect() : null;
+                const stats = Array.from(document.querySelectorAll('#result-modal .modal-stats .stat-box'));
+                const statsFit = stats.length === 3 && stats.every((el) => { const q = el.getBoundingClientRect(); return q.left >= 0 && q.right <= window.innerWidth && q.width > 20; });
+                return { ov: document.documentElement.scrollWidth - window.innerWidth, shown: Boolean(m && !m.classList.contains('hidden')),
+                    title: document.getElementById('modal-title')?.textContent || '', fit: Boolean(r && r.left >= 0 && r.right <= window.innerWidth),
+                    statsFit, stats: (""" + RESULT_STATS_JS + """)(), art: (""" + PIRATE_ART_PAIR_JS + """)() };
+            }"""
+            )
+            desk1440_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_desktop_1440_result.jpg"), type="jpeg", quality=90)
+            desk1440_mc18_clashes = (
+                list((desk1440_mc18_lobby.get("art") or {}).get("clashes", ["?"]))
+                + list((desk1440_pr_plank.get("art") or {}).get("clashes", ["?"]))
+                + list((desk1440_mc18_result.get("art") or {}).get("clashes", ["?"]))
+            )
+            desk1440_mc18_labels = "|".join(((desk1440_mc18_result.get("stats") or {}).get("labels") or []))
+            add_check(
+                "MC-18 Desktop 1440x900 (Lobby Pirate Card Title / Badge Fit, Pirate Run HUD + Tactic Chips Fit on a Plank / at a Cannonball Lane / at the Flagship, Victory Modal + 3 Stat Boxes Fit, No Reused-Art Clash, Zero Overflow)",
+                bool(desk1440_mc18_lobby.get("prFit"))
+                and bool(desk1440_mc18_lobby.get("badgeFit"))
+                and bool(desk1440_mc18_lobby.get("titleFit"))
+                and bool(desk1440_pr_plank.get("active"))
+                and bool(desk1440_pr_plank.get("hudFit"))
+                and bool(desk1440_pr_plank.get("tacticFit"))
+                and bool(desk1440_pr_plank.get("chasmVisible"))
+                and bool(desk1440_pr_ball.get("boulderRolling"))
+                and bool(desk1440_pr_ball.get("hudFit"))
+                and bool(desk1440_pr_exit.get("exitVisible"))
+                and bool(desk1440_mc18_result.get("shown"))
+                and bool(desk1440_mc18_result.get("fit"))
+                and bool(desk1440_mc18_result.get("statsFit"))
+                and ("海盗旗舰" in str(desk1440_mc18_result.get("title", "")))
+                and desk1440_mc18_labels == "用时|幸存波波|过机关"
+                and len(desk1440_mc18_clashes) == 0
+                and max(
+                    int(desk1440_mc18_lobby.get("ov", 0)),
+                    int(desk1440_pr_plank.get("ov", 0)),
+                    int(desk1440_pr_ball.get("ov", 0)),
+                    int(desk1440_pr_exit.get("ov", 0)),
+                    int(desk1440_mc18_result.get("ov", 0)),
+                )
+                <= 0,
+                json.dumps(
+                    {"lobby": desk1440_mc18_lobby, "plank": desk1440_pr_plank, "cannonball": desk1440_pr_ball, "flagship": desk1440_pr_exit, "result": desk1440_mc18_result},
+                    ensure_ascii=False,
+                ),
+            )
         if RUN_1440:
             desk1440_ctx.close()
         if want("CORE"):
@@ -6729,10 +7196,24 @@ try:
             mob_ctx = new_page_context({"width": 390, "height": 844}, 2)
             mob_page = mob_ctx.new_page()
             mob_page.on("pageerror", lambda err: aux_page_errors.append(f"[390] {err}"))
-            mob_page.goto(f"http://127.0.0.1:{port}/", wait_until="domcontentloaded", timeout=10000)
+            page_goto(mob_page, f"http://127.0.0.1:{port}/")
             mob_page.wait_for_timeout(120)
             mob_page.evaluate("document.getElementById('btn-enter-workshop')?.click()")
             mob_page.wait_for_timeout(100)
+        if RUN_390 and want("CORE"):
+            # The lobby leaderboard sits at the bottom of the scrolling launch column; it used to collapse to a ~16px strip
+            mob_lb = mob_page.evaluate(
+                """() => {
+                const l = document.getElementById('leaderboard-list');
+                const r = l ? l.getBoundingClientRect() : null;
+                return { h: r ? Math.round(r.height) : 0, rows: l ? l.children.length : 0 };
+            }"""
+            )
+            add_check(
+                "Mobile 390x844 Lobby Leaderboard List Not Collapsed",
+                int(mob_lb.get("h", 0)) >= 120 and int(mob_lb.get("rows", 0)) >= 3,
+                json.dumps(mob_lb),
+            )
         if want("CORE", "MC-7", "MC-9", "MC-10", "MC-11", "MC-12"):
             mob_lobby_ov = mob_page.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             mob_page.evaluate(
@@ -7714,6 +8195,118 @@ try:
                     ensure_ascii=False,
                 ),
             )
+        if want("MC-18"):
+            # MC-18 (Mobile 390x844): lobby pirate card, the pirate run on a swaying plank / at a cannonball lane / at the flagship,
+            # and the victory modal with the squad-run stat boxes
+            mob_page.evaluate(
+                """() => {
+                document.getElementById('btn-modal-home')?.click();
+                const w = window.__mc3dWorld;
+                if (w) {
+                    const s = w.state;
+                    s.gold = Math.max(s.gold, 30000);
+                    for (const cid of ['shield_open', 'rush_open', 'crowd_open']) if (!s.ownedTacticCards.includes(cid)) s.ownedTacticCards.push(cid);
+                    s.tacticDeck = ['shield_open', 'rush_open', 'crowd_open'];
+                    s.save();
+                }
+                document.getElementById('btn-top-menu')?.click();
+                document.getElementById('btn-home')?.click();
+                document.querySelector('.menu-tab[data-tab="launch"]')?.click();
+                window.scrollTo(0, 0);
+                document.getElementById('btn-start-pirate-boarding')?.scrollIntoView({ block: 'center' });
+            }"""
+            )
+            mob_page.wait_for_timeout(500)
+            mob_mc18_lobby = mob_page.evaluate(
+                """() => {
+                const fit = (el, minW) => {
+                    if (!el) return false;
+                    const r = el.getBoundingClientRect();
+                    return r.left >= 0 && r.right <= window.innerWidth && r.width > minW;
+                };
+                const title = document.querySelector('#btn-start-pirate-boarding .pirate-boarding-btn-title');
+                return { ov: document.documentElement.scrollWidth - window.innerWidth,
+                    prFit: fit(document.getElementById('btn-start-pirate-boarding'), 200),
+                    badgeFit: fit(document.getElementById('pirate-boarding-badge'), 60), titleFit: fit(title, 40),
+                    badge: document.getElementById('gold-skull-text')?.textContent?.trim() || '',
+                    art: (""" + PIRATE_ART_PAIR_JS + """)() };
+            }"""
+            )
+            mob_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_mobile_390_lobby.jpg"), type="jpeg", quality=90)
+            mob_page.evaluate(
+                """() => {
+                document.getElementById('btn-top-menu')?.click();
+                document.getElementById('btn-home')?.click();
+                document.getElementById('btn-start-pirate-boarding')?.click();
+            }"""
+            )
+            mob_page.evaluate(JUNGLE_WALK_JS, {"kind": "chasm", "index": 0, "into": 1.4})
+            mob_page.wait_for_timeout(260)
+            mob_page.evaluate("document.getElementById('center-banner')?.classList.add('hidden')")
+            mob_page.wait_for_timeout(60)
+            mob_pr_plank = mob_page.evaluate(PIRATE_INFO_JS)
+            mob_pr_plank["art"] = mob_page.evaluate(PIRATE_ART_PAIR_JS)
+            mob_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_mobile_390_plank.jpg"), type="jpeg", quality=90)
+            mob_page.evaluate(JUNGLE_WALK_JS, {"kind": "boulder", "wz": -2})
+            mob_page.wait_for_timeout(200)
+            mob_pr_ball = mob_page.evaluate(PIRATE_INFO_JS)
+            mob_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_mobile_390_cannonball.jpg"), type="jpeg", quality=90)
+            mob_page.evaluate(JUNGLE_WALK_JS, {"kind": "exit", "before": 18})
+            mob_page.wait_for_timeout(200)
+            mob_pr_exit = mob_page.evaluate(PIRATE_INFO_JS)
+            mob_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_mobile_390_flagship.jpg"), type="jpeg", quality=90)
+            mob_page.evaluate(JUNGLE_WALK_JS, {"kind": "end"})
+            mob_page.wait_for_timeout(2600)
+            mob_mc18_result = mob_page.evaluate(
+                """() => {
+                const m = document.getElementById('result-modal');
+                const box = m ? m.querySelector('.modal-content, .modal-card, .result-card') || m : null;
+                const r = box ? box.getBoundingClientRect() : null;
+                const stats = Array.from(document.querySelectorAll('#result-modal .modal-stats .stat-box'));
+                const statsFit = stats.length === 3 && stats.every((el) => { const q = el.getBoundingClientRect(); return q.left >= 0 && q.right <= window.innerWidth && q.width > 20; });
+                return { ov: document.documentElement.scrollWidth - window.innerWidth, shown: Boolean(m && !m.classList.contains('hidden')),
+                    title: document.getElementById('modal-title')?.textContent || '', fit: Boolean(r && r.left >= 0 && r.right <= window.innerWidth),
+                    statsFit, stats: (""" + RESULT_STATS_JS + """)(), art: (""" + PIRATE_ART_PAIR_JS + """)() };
+            }"""
+            )
+            mob_page.screenshot(path=os.path.join(SHOT_DIR, "mc18_mobile_390_result.jpg"), type="jpeg", quality=90)
+            mob_mc18_clashes = (
+                list((mob_mc18_lobby.get("art") or {}).get("clashes", ["?"]))
+                + list((mob_pr_plank.get("art") or {}).get("clashes", ["?"]))
+                + list((mob_mc18_result.get("art") or {}).get("clashes", ["?"]))
+            )
+            mob_mc18_labels = "|".join(((mob_mc18_result.get("stats") or {}).get("labels") or []))
+            add_check(
+                "MC-18 Mobile 390x844 (Lobby Pirate Card Title / Badge Fit, Pirate Run HUD + Tactic Chips Fit on a Plank / at a Cannonball Lane / at the Flagship, Victory Modal + 3 Stat Boxes Fit, No Reused-Art Clash, Zero Overflow)",
+                bool(mob_mc18_lobby.get("prFit"))
+                and bool(mob_mc18_lobby.get("badgeFit"))
+                and bool(mob_mc18_lobby.get("titleFit"))
+                and bool(mob_pr_plank.get("active"))
+                and bool(mob_pr_plank.get("hudFit"))
+                and bool(mob_pr_plank.get("tacticFit"))
+                and bool(mob_pr_plank.get("chasmVisible"))
+                and bool(mob_pr_ball.get("boulderRolling"))
+                and bool(mob_pr_ball.get("hudFit"))
+                and bool(mob_pr_exit.get("exitVisible"))
+                and bool(mob_mc18_result.get("shown"))
+                and bool(mob_mc18_result.get("fit"))
+                and bool(mob_mc18_result.get("statsFit"))
+                and ("海盗旗舰" in str(mob_mc18_result.get("title", "")))
+                and mob_mc18_labels == "用时|幸存波波|过机关"
+                and len(mob_mc18_clashes) == 0
+                and max(
+                    int(mob_mc18_lobby.get("ov", 0)),
+                    int(mob_pr_plank.get("ov", 0)),
+                    int(mob_pr_ball.get("ov", 0)),
+                    int(mob_pr_exit.get("ov", 0)),
+                    int(mob_mc18_result.get("ov", 0)),
+                )
+                <= 0,
+                json.dumps(
+                    {"lobby": mob_mc18_lobby, "plank": mob_pr_plank, "cannonball": mob_pr_ball, "flagship": mob_pr_exit, "result": mob_mc18_result},
+                    ensure_ascii=False,
+                ),
+            )
         if want("CORE"):
             mob_overflow = max(
                 mob_lobby_ov,
@@ -7751,6 +8344,7 @@ try:
     report["filter"] = sorted(PLAYTEST_ONLY) if FILTERED else "FULL"
     report["random"] = PLAYTEST_RANDOM or "native"
     report["elapsed_sec"] = round((datetime.datetime.now() - _T0).total_seconds(), 1)
+    report["nav_retries"] = nav_retries
     os.makedirs(os.path.dirname(REPORT_JSON), exist_ok=True)
     with open(REPORT_JSON, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
@@ -7783,13 +8377,13 @@ try:
             chunk = f"# [games/mob-control-3d/PLAYTEST_LOG.md] Archived {len(overflow)} entries at {report['timestamp']}\n\n" + "\n\n".join(overflow) + "\n"
             with gzip.open(gz_path, "wt", encoding="utf-8", compresslevel=9) as gf:
                 gf.write((old_gz.rstrip() + "\n\n" if old_gz.strip() else "") + chunk)
-        header = "# 波波应援团 (Mob Control 3D) 自主试玩巡检日志\n\n> 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。\n\n"
+        header = "# 波波应援团 3D 自主试玩巡检日志\n\n> 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。\n\n"
         with open(LOG_MD_REPO, "w", encoding="utf-8") as f:
             f.write(header + "\n\n".join(blocks) + "\n")
 
     print(
         f"PLAYTEST_STATUS={report['status']} checks={len(report['checks'])} issues={len(report['issues_found'])} "
-        f"filter={','.join(sorted(PLAYTEST_ONLY)) if FILTERED else 'FULL'} random={PLAYTEST_RANDOM or 'native'} elapsed={report['elapsed_sec']}s",
+        f"filter={','.join(sorted(PLAYTEST_ONLY)) if FILTERED else 'FULL'} random={PLAYTEST_RANDOM or 'native'} elapsed={report['elapsed_sec']}s nav_retries={len(nav_retries)}",
         flush=True,
     )
     if report["issues_found"]:
