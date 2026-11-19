@@ -1,4 +1,4 @@
-/* global test, expect, game, describe, beforeEach, classes */
+/* global test, expect, game, describe, beforeEach, afterEach, classes, useRealI18n, restoreI18n */
 
 var fs = require("fs");
 var path = require("path");
@@ -92,7 +92,12 @@ describe("XX-8 Primordial Zixiao Dao Lecture Altar & 3,000 Great Daos Dharma Ido
 		expect(boostedVoyage.speedPerTick).toBeGreaterThan(baseVoyage.speedPerTick);
 	});
 
+	afterEach(function(){
+		restoreI18n();
+	});
+
 	test("4 Supreme Dharma Idols (Lv.0-6), Primary/Support slots, Four-Idol Hunyuan Resonance (4/12/24), 26F-35F Combat & Nirvana Ward, and dharmaImprintTier rebirth", function(){
+		useRealI18n("zh");	// battle logs go through $I; assert the zh wording
 		var cult = game.cultivation;
 		cult.setIdentity("叶清玄", "f", "orphan");
 		cult.prepareImmortalCaveForTest(true);

@@ -994,7 +994,9 @@ describe("XX-16 Sect Tournament Arena & Heart-Demon Illusion Trials", function()
 			tab._sectSig = "";
 			tab.update();
 			expect(el.querySelector(".xxSectCrownBox.is-active")).not.toBe(null);
-			expect(el.querySelector(".xxCaveSumChip.is-crown")).not.toBe(null);
+			// the crown's Essence bonus is shown in the crown box (the header chip that repeated it is gone)
+			expect(el.querySelector(".xxSectCrownBox.is-active").textContent).toContain("+" + Math.round(cult.getSwordCrownBonus().xianyuanRatio * 100) + "%");
+			expect(el.querySelectorAll(".xxCaveSumChip").length).toBe(0);
 			checkImgs(10, ["ancient_sword", "sect_token"]);
 			expect(el.innerHTML).not.toMatch(rawRe);
 

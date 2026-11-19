@@ -1,4 +1,4 @@
-/* global test, expect, game, describe, beforeEach, classes */
+/* global test, expect, game, describe, beforeEach, afterEach, classes, useRealI18n, restoreI18n */
 
 var fs = require("fs");
 var path = require("path");
@@ -241,7 +241,12 @@ describe("XX-9 Primordial Chrono River Altar & Innate Treasure Spirit Codex", fu
 		expect(cult.getCombatPower()).toBeGreaterThan(baseCp * 3);
 	});
 
+	afterEach(function(){
+		restoreI18n();
+	});
+
 	test("26F-35F Yaoxian Rift hooks: Pangu Heaven-Cleave, Chaos Bell time-seal, Taiji reflection — low floors untouched", function(){
+		useRealI18n("zh");	// battle logs go through $I; assert the zh wording
 		var cult = game.cultivation;
 		cult.setIdentity("韩青冥", "m", "hunter");
 		cult.prepareImmortalCaveForTest(true);

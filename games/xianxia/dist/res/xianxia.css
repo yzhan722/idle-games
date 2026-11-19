@@ -358,7 +358,8 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	font-weight: 500;
 	letter-spacing: .5px;
 	white-space: nowrap !important;
-	flex: 0 0 auto;
+	flex: 0 1 auto;
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
@@ -415,7 +416,7 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 #leftColumn .res-figure.resLimitWarn .res-val { color: var(--xx-gold); }
 #leftColumn .res-figure.resLimitNotice .res-val { color: #f3b95f; }
 #leftColumn .res-figure.resLimitNotice::after {
-	content: "满";
+	content: attr(data-full);
 	display: inline-block;
 	margin-left: 3px;
 	padding: 0 4px;
@@ -639,7 +640,7 @@ a:hover, .link:hover { color: var(--xx-gold-hi); text-shadow: 0 0 8px rgba(212,1
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	flex-wrap: nowrap;
+	flex-wrap: wrap;
 	gap: 4px;
 	padding: 7px 14px;
 	margin-top: 0;
@@ -3111,8 +3112,10 @@ input, select, textarea, button { font-family: inherit; }
 		gap: 6px;
 		margin-bottom: 2px;
 		font-size: 11.5px;
+		letter-spacing: 1px;
 		cursor: pointer;
 	}
+	#game .xx-guide-toggle { white-space: nowrap; }	/* default.css: #game * { white-space: normal } */
 	.xx-guide-toggle {
 		display: inline-block;
 		padding: 1px 6px;
@@ -3422,7 +3425,7 @@ input, select, textarea, button { font-family: inherit; }
 	}
 	.tabsContainer::-webkit-scrollbar { display: none; }
 	#game .tabsContainer .tab {
-		flex: 1 1 0;
+		flex: 1 0 auto;
 		min-width: 0;
 		display: inline-flex;
 		align-items: center;
@@ -4281,6 +4284,7 @@ input, select, textarea, button { font-family: inherit; }
 .xxRiftColTitle small {
 	font-size: 11px;
 	color: var(--xx-mute);
+	white-space: nowrap !important;	/* default.css: #game * { white-space: normal } */
 }
 
 /* 4节点探幽地图轨道 */
@@ -5502,6 +5506,7 @@ input, select, textarea, button { font-family: inherit; }
 	letter-spacing: .5px;
 	vertical-align: middle;
 }
+#game .xxRealmGateBadge { white-space: nowrap; }	/* beats default.css #game * { white-space: normal } */
 .xxRealmGateBadge.ok {
 	background: rgba(79, 209, 165, .13);
 	border: 1px solid rgba(79, 209, 165, .34);
@@ -6225,6 +6230,8 @@ input, select, textarea, button { font-family: inherit; }
 	border-radius: 4px;
 	font-size: 10px;
 	font-weight: 600;
+	white-space: nowrap !important;
+	flex: 0 0 auto;
 }
 .xxSkillCost.gain {
 	background: rgba(79, 209, 165, .16);
@@ -6283,6 +6290,7 @@ input, select, textarea, button { font-family: inherit; }
 	color: var(--xx-jade);
 	font-size: 10.5px;
 	font-weight: 600;
+	white-space: nowrap !important;
 }
 .xxWaveMiniArt {
 	width: 30px;
@@ -9933,10 +9941,6 @@ input, select, textarea, button { font-family: inherit; }
 	border-color: rgba(170, 206, 246, 0.78);
 	box-shadow: 0 0 16px rgba(130, 180, 255, 0.28);
 }
-.xxCaveSumChip.is-mirage {
-	border-color: rgba(120, 230, 230, 0.62);
-	box-shadow: 0 0 10px rgba(120, 230, 230, 0.20);
-}
 .xxSwConsole {
 	margin-bottom: 9px;
 	border-color: rgba(160, 196, 240, 0.34);
@@ -10670,10 +10674,6 @@ input, select, textarea, button { font-family: inherit; }
 	border-color: rgba(196, 180, 255, 0.78);
 	box-shadow: 0 0 16px rgba(160, 140, 255, 0.30);
 }
-.xxCaveSumChip.is-blessed {
-	border-color: rgba(246, 213, 122, 0.62);
-	box-shadow: 0 0 10px rgba(246, 213, 122, 0.18);
-}
 .xxStarObsCol,
 .xxWarmCol {
 	border-color: rgba(176, 160, 240, 0.26);
@@ -11330,11 +11330,6 @@ input, select, textarea, button { font-family: inherit; }
 	border-color: rgba(246, 213, 122, 0.78);
 	box-shadow: 0 0 16px rgba(246, 213, 122, 0.26);
 }
-.xxCaveSumChip.is-ranked,
-.xxCaveSumChip.is-crown {
-	border-color: rgba(246, 213, 122, 0.62);
-	box-shadow: 0 0 10px rgba(246, 213, 122, 0.18);
-}
 .xxSectArenaCol {
 	border-color: rgba(214, 190, 120, 0.28);
 }
@@ -11912,5 +11907,427 @@ input, select, textarea, button { font-family: inherit; }
 	.xxSectReward {
 		grid-template-columns: 64px minmax(0, 1fr);
 		gap: 5px;
+	}
+}
+
+/* ============================================================
+   XX-17 瑶池蟠桃仙宴与九幽冥河摆渡 (.xxBanquetArena)
+   ============================================================ */
+.xxBanquetArena {
+	border-color: rgba(240, 180, 190, 0.48);
+	background:
+		radial-gradient(circle at 6% 8%, rgba(246, 170, 190, 0.14), transparent 44%),
+		radial-gradient(circle at 94% 90%, rgba(90, 150, 170, 0.16), transparent 54%),
+		linear-gradient(145deg, rgba(16, 16, 24, 0.97), rgba(12, 18, 26, 0.98));
+}
+.xxBanquetArena .xxCaveHeaderLeft {
+	flex-basis: 100%;
+}
+.xxBanquetHdrIco {
+	border-color: rgba(246, 190, 200, 0.78);
+	box-shadow: 0 0 16px rgba(246, 190, 200, 0.26);
+}
+.xxBanquetCol {
+	border-color: rgba(240, 180, 190, 0.30);
+}
+.xxFerryCol {
+	border-color: rgba(110, 170, 190, 0.32);
+}
+.xxBanquetWeek,
+.xxFerryRiver {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	border-color: rgba(240, 180, 190, 0.40);
+	background:
+		radial-gradient(circle at 0% 50%, rgba(246, 170, 190, 0.12), transparent 62%),
+		rgba(18, 18, 26, 0.90);
+}
+.xxBanquetWeek.is-attended {
+	border-color: rgba(246, 213, 122, 0.62);
+}
+.xxFerryRiver {
+	border-color: rgba(110, 170, 190, 0.44);
+	background:
+		radial-gradient(circle at 0% 50%, rgba(90, 150, 170, 0.16), transparent 62%),
+		rgba(12, 18, 24, 0.92);
+}
+.xxFerryRiver.is-flood {
+	border-color: rgba(120, 200, 230, 0.70);
+	box-shadow: 0 0 12px rgba(120, 200, 230, 0.14);
+}
+.xxBanquetWeekArt,
+.xxFerryRiverArt {
+	flex: 0 0 72px;
+	width: 72px;
+	height: 72px;
+	border-radius: 12px;
+	border: 1px solid rgba(246, 190, 200, 0.50);
+	background: radial-gradient(circle, rgba(44, 34, 38, 0.92), rgba(12, 12, 18, 0.95));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+.xxFerryRiverArt {
+	border-color: rgba(110, 170, 190, 0.55);
+	background: radial-gradient(circle, rgba(24, 40, 48, 0.92), rgba(10, 12, 18, 0.95));
+}
+.xxBanquetWeekArt img,
+.xxFerryRiverArt img {
+	width: 66px;
+	height: 66px;
+	object-fit: contain;
+}
+.xxBanquetWeekInfo,
+.xxFerryRiverInfo {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.xxBanquetArena .xxSeedNameRow {
+	flex-wrap: wrap;
+	gap: 4px 8px;
+}
+.xxBanquetArena .xxSeedNameRow > b {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.xxFerryRiverDesc {
+	font-size: 11px;
+	line-height: 1.45;
+	color: #d4dde0;
+	overflow-wrap: anywhere;
+}
+.xxBanquetGiftGrid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px;
+	margin-top: 6px;
+}
+.xxBanquetGift {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+	padding: 5px 6px;
+	border-radius: 7px;
+	border: 1px solid rgba(240, 180, 190, 0.18);
+	background: rgba(16, 14, 22, 0.86);
+	font-size: 10.5px;
+	color: #d8d0c4;
+}
+.xxBanquetGift.is-given {
+	border-color: rgba(246, 190, 200, 0.55);
+	background: rgba(36, 22, 30, 0.88);
+}
+.xxBanquetGiftHd {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0 4px;
+	min-width: 0;
+}
+.xxBanquetGiftHd b {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	color: #f6d0d8;
+	font-size: 11px;
+}
+.xxBanquetGiftHd span {
+	flex: 0 0 auto;
+	color: #a8a090;
+	font-size: 10px;
+}
+.xxBanquetGiftPts {
+	color: #ffe39e;
+	font-size: 10.5px;
+}
+.xxBanquetGift .xxStarCost {
+	font-size: 10px;
+	margin: 0;
+}
+.xxBanquetGift .xxCaveMiniBtn {
+	flex: 0 0 auto;
+	padding: 3px 4px;
+	font-size: 10.5px;
+	text-align: center;
+}
+.xxBanquetScore,
+.xxBanquetAttend {
+	border-color: rgba(214, 190, 120, 0.32);
+	background: rgba(18, 18, 24, 0.90);
+}
+.xxBanquetScoreVal {
+	font-family: var(--xx-serif);
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1;
+	color: #ffe39e;
+	text-shadow: 0 0 8px rgba(246, 213, 122, 0.45);
+}
+.xxBanquetScoreRow,
+.xxBanquetPeachRow {
+	gap: 5px;
+}
+.xxBanquetScoreRow .xxVesselChip,
+.xxBanquetPeachRow .xxVesselChip {
+	font-size: 10.5px;
+	padding: 1px 7px;
+	white-space: nowrap;
+}
+.xxBanquetScoreRow .xxVesselChip.is-off {
+	opacity: 0.5;
+}
+.xxBanquetPeachChip.is-got {
+	box-shadow: 0 0 8px rgba(246, 213, 122, 0.35);
+}
+.xxBanquetSeatList {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	margin-top: 6px;
+}
+.xxBanquetSeat {
+	display: grid;
+	grid-template-columns: 96px 64px minmax(0, 1fr);
+	align-items: baseline;
+	gap: 6px;
+	padding: 3px 7px;
+	border-radius: 6px;
+	background: rgba(12, 12, 16, 0.80);
+	border: 1px solid transparent;
+	font-size: 10.5px;
+	color: #b8b2a0;
+}
+.xxBanquetSeat b {
+	color: #f2d6dc;
+	font-size: 11px;
+	overflow-wrap: anywhere;
+}
+.xxBanquetSeat small {
+	color: #9d9788;
+	font-size: 10px;
+}
+.xxBanquetSeat span {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.xxBanquetSeat.is-now {
+	border-color: rgba(246, 213, 122, 0.62);
+	background: rgba(44, 36, 18, 0.88);
+	color: #f4e6c4;
+}
+.xxBanquetSeat.is-passed {
+	opacity: 0.62;
+}
+.xxBanquetLog.is-p2 {
+	border-color: rgba(246, 213, 122, 0.55);
+}
+.xxBanquetLog.is-p2 b {
+	color: #ffe39e;
+}
+.xxBanquetLog.is-p1 b {
+	color: #f6c0cc;
+}
+.xxFerryTrack {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 5px;
+	margin: 6px 0 8px;
+}
+.xxFerryStep {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1px;
+	min-width: 0;
+	padding: 4px 2px;
+	border-radius: 7px;
+	border: 1px dashed rgba(110, 170, 190, 0.32);
+	background: rgba(10, 16, 22, 0.86);
+	color: #8aa0a8;
+	font-size: 10.5px;
+}
+.xxFerryStep b {
+	font-size: 11px;
+	white-space: nowrap;
+}
+.xxFerryStep small {
+	font-size: 10px;
+	color: #7d9098;
+}
+.xxFerryStep.is-now {
+	border-style: solid;
+	border-color: rgba(120, 200, 230, 0.78);
+	background: rgba(18, 40, 52, 0.92);
+	color: #d6f2fa;
+	box-shadow: 0 0 10px rgba(120, 200, 230, 0.20);
+}
+.xxFerryStep.is-now small {
+	color: #ffe39e;
+}
+.xxFerryGo,
+.xxFerryBoons {
+	border-color: rgba(110, 170, 190, 0.30);
+	background: rgba(12, 16, 22, 0.90);
+}
+.xxFerrySoulList {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	margin: 6px 0 4px;
+}
+.xxFerrySoul {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 44px 76px;
+	align-items: baseline;
+	gap: 6px;
+	padding: 3px 7px;
+	border-radius: 6px;
+	border: 1px solid rgba(110, 170, 190, 0.16);
+	border-left: 3px solid var(--fy-c, rgba(110, 170, 190, 0.5));
+	background: rgba(10, 14, 20, 0.84);
+	font-size: 10.5px;
+	color: #c8d6da;
+}
+.xxFerrySoul.is-kind { --fy-c: #9fe08a; }
+.xxFerrySoul.is-lost { --fy-c: #a8c4f0; }
+.xxFerrySoul.is-grudge { --fy-c: #c9a8ff; }
+.xxFerrySoul small {
+	color: #8fa6ae;
+	text-align: right;
+}
+.xxFerrySoul b {
+	color: #ffe39e;
+	text-align: right;
+	white-space: nowrap;
+}
+.xxFerryHeart.is-on {
+	color: #d6c4ff;
+}
+.xxFerryCdBar > i {
+	background: linear-gradient(90deg, #3f8ea8, #9fd8e8);
+}
+.xxFerryBoonList {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	margin-top: 6px;
+}
+.xxFerryBoon {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-areas: "hd btn" "desc btn";
+	align-items: center;
+	gap: 2px 8px;
+	padding: 5px 7px;
+	border-radius: 7px;
+	border: 1px solid rgba(110, 170, 190, 0.18);
+	background: rgba(10, 14, 20, 0.84);
+	font-size: 10.5px;
+	color: #c8d6da;
+}
+.xxFerryBoon.is-on {
+	border-color: rgba(120, 200, 230, 0.48);
+}
+.xxFerryBoon.is-max {
+	border-color: rgba(246, 213, 122, 0.55);
+}
+.xxFerryBoonHd {
+	grid-area: hd;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+}
+.xxFerryBoonHd b {
+	color: #d6f2fa;
+	font-size: 11px;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.xxFerryBoonHd span {
+	color: #ffe39e;
+	font-size: 10px;
+	white-space: nowrap;
+}
+.xxFerryBoonDesc {
+	grid-area: desc;
+	min-width: 0;
+	overflow-wrap: anywhere;
+	color: #a8bcc2;
+}
+.xxFerryBoon .xxCaveMiniBtn {
+	grid-area: btn;
+	flex: 0 0 auto;
+	padding: 4px 8px;
+	font-size: 10.5px;
+	white-space: nowrap;
+}
+.xxFerryLog.is-grudge b {
+	color: #d6c4ff;
+}
+.xxFerryLog.is-kind b {
+	color: #b8f0a8;
+}
+.xxStarPoolBar > i.is-prev {
+	background: linear-gradient(90deg, #6d8fd8, #c9a8ff);
+}
+.xxStarPoolBar > i.is-banquet {
+	background: linear-gradient(90deg, #e890a8, #ffe39e);
+}
+.xxBanquetPoolBox {
+	border-color: rgba(240, 180, 190, 0.32);
+}
+.xxFerryBoonSum.is-active {
+	border-color: rgba(120, 200, 230, 0.62);
+	box-shadow: 0 0 12px rgba(120, 200, 230, 0.14);
+}
+.xxFerryBoonSum .xxBountyDesc,
+.xxBanquetSealBox .xxBountyDesc {
+	color: #e4dcc6;
+	line-height: 1.5;
+}
+.xxBanquetSealBox {
+	margin-top: 8px;
+}
+@media (max-width: 720px) {
+	.xxBanquetAttend .xxCaveMiniBtnRow > .xxCaveMiniBtn,
+	.xxFerryGo .xxCaveMiniBtnRow > .xxCaveMiniBtn {
+		flex: 1 1 100%;
+	}
+}
+@media (max-width: 560px) {
+	.xxBanquetGiftGrid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.xxBanquetSeat {
+		grid-template-columns: 78px minmax(0, 1fr);
+		gap: 2px 6px;
+	}
+	.xxBanquetSeat span {
+		grid-column: 1 / -1;
+	}
+	.xxBanquetWeekArt,
+	.xxFerryRiverArt {
+		flex-basis: 60px;
+		width: 60px;
+		height: 60px;
+	}
+	.xxBanquetWeekArt img,
+	.xxFerryRiverArt img {
+		width: 56px;
+		height: 56px;
+	}
+	.xxFerrySoul {
+		grid-template-columns: minmax(0, 1fr) 38px 70px;
+	}
+	.xxFerryBoon {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas: "hd" "desc" "btn";
 	}
 }

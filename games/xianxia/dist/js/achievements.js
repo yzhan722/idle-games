@@ -657,7 +657,7 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 			innerHTML : ach.title
 		}, container);
 		span.setAttribute("data-desc", descText);
-		span.setAttribute("data-state", ach.unlocked ? "✦ 已证道" : "待证道");
+		span.setAttribute("data-state", $I(ach.unlocked ? "achievements.state.done" : "achievements.state.todo"));
 
 		this.achievementsMap[ach.name] = span;
 		if (ach.starCondition) {
@@ -698,7 +698,7 @@ dojo.declare("classes.ui.AchievementsPanel", com.nuclearunicorn.game.ui.Panel, {
 		if (span.getAttribute("data-desc") !== desiredTitle) {
 			span.setAttribute("data-desc", desiredTitle);
 		}
-		var desiredState = ach.unlocked ? "✦ 已证道" : "待证道";
+		var desiredState = $I(ach.unlocked ? "achievements.state.done" : "achievements.state.todo");
 		if (span.getAttribute("data-state") !== desiredState) {
 			span.setAttribute("data-state", desiredState);
 		}

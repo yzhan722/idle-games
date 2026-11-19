@@ -5490,6 +5490,21 @@ var GamePage = dojo.declare("com.nuclearunicorn.game.ui.GamePage", null, {
 			if (Math.max(prevSectSeal, curSectRank) > 0){
 				soulObj.sectTier = Math.min(5, Math.max(prevSectSeal, curSectRank));
 			}
+			//XX-17 仙宴印:历世所入最高瑶池席位随魂转世(本周备礼、蟠桃、阴德与往生灯 / 引魂幡皆归尘土)
+			var prevBanquet = (prevCult.peachBanquet && typeof prevCult.peachBanquet === "object") ? prevCult.peachBanquet : null;
+			var curBanquetSeat = 0;
+			if (prevBanquet){
+				if (typeof prevBanquet.peakSeat === "number" && isFinite(prevBanquet.peakSeat)){
+					curBanquetSeat = Math.max(0, Math.min(5, Math.floor(prevBanquet.peakSeat)));
+				}
+				if (prevBanquet.attended && typeof prevBanquet.seat === "number" && isFinite(prevBanquet.seat)){
+					curBanquetSeat = Math.max(curBanquetSeat, Math.max(0, Math.min(5, Math.floor(prevBanquet.seat))));
+				}
+			}
+			var prevBanquetSeal = (typeof prevCult.banquetTier === "number" && isFinite(prevCult.banquetTier)) ? Math.max(0, Math.floor(prevCult.banquetTier)) : 0;
+			if (Math.max(prevBanquetSeal, curBanquetSeat) > 0){
+				soulObj.banquetTier = Math.min(5, Math.max(prevBanquetSeal, curBanquetSeat));
+			}
 			//XX-11 此世所择之道随魂入来世:来世道缘命格共鸣,业障封印的命格不得携入
 			var legacyPathDef = (prevSamsara && typeof prevSamsara.activePath === "string" && this.cultivation && this.cultivation.getSamsaraPathDef)
 				? this.cultivation.getSamsaraPathDef(prevSamsara.activePath)
