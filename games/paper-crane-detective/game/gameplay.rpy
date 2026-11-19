@@ -131,7 +131,7 @@ screen evidence_book():
                     text _("证据") style "hud_chip_text"
                     text "[len(evidence)]" style "hud_chip_num"
                     if uninspected_evidence_count() > 0:
-                        text "✦" size 16 color "#f4ce78" bold True yalign 0.5
+                        text "◆" size 16 color "#f4ce78" bold True yalign 0.5
             button:
                 style "hud_chip_button"
                 at hud_chip_fx
@@ -212,7 +212,7 @@ screen clue_toast(name, kicker=_("线索入手")):
             add "gui/icon_evidence.png" yalign 0.5
             vbox:
                 spacing 2
-                text ("✦ " + kicker) style "clue_toast_kicker"
+                text ("◆ " + kicker) style "clue_toast_kicker"
                 text name style "clue_toast_text"
     timer 3.4 action Hide("clue_toast")
 
@@ -243,7 +243,7 @@ transform favor_float:
 
 screen favor_pop(amount):
     zorder 150
-    text ("✦ 羁绊 +%d" % amount if amount > 0 else "羁绊 %d" % amount):
+    text ("◆ 羁绊 +%d" % amount if amount > 0 else "羁绊 %d" % amount):
         style "favor_pop_text"
         color ("#f5d0ff" if amount > 0 else "#9aa6c8")
         at favor_float
@@ -633,7 +633,7 @@ screen evidence_list():
                     hbox:
                         xfill True
                         text _("轻点任意证物卡片即可「翻面查验」墨墨与陈默记录的现场勘验批注。") size 15 color "#b9a6d4" yalign 0.5
-                        textbutton _("✦ 开启双线索拼合"):
+                        textbutton _("◆ 开启双线索拼合"):
                             style "pill_button"
                             xalign 1.0
                             ysize 32
@@ -672,7 +672,7 @@ screen evidence_list():
                                                 if _is_expanded:
                                                     text _("▲ 收起背面") size 13 color "#f4ce78" bold True
                                                 elif _is_inspected:
-                                                    text _("✦ 已查验") size 13 color "#86efac" bold True
+                                                    text _("◆ 已查验") size 13 color "#86efac" bold True
                                                 else:
                                                     text _("● 翻面查验") size 13 color "#f4ce78" bold True
                                         if _is_expanded:
@@ -682,7 +682,7 @@ screen evidence_list():
                                                     spacing 4
                                                     hbox:
                                                         xfill True
-                                                        text ("✎ " + _obs) size 14 color "#6b4c2a" bold True
+                                                        text ("※ " + _obs) size 14 color "#6b4c2a" bold True
                                                         text _("REVERSE INSPECTION · 物证背面细节") size 12 color "#8c6d46" xalign 1.0 yalign 0.5
                                                     add Solid("#a6845855") xfill True ysize 1
                                                     text _detail size 16 color "#2b1d12" line_spacing 4
@@ -701,7 +701,7 @@ screen evidence_list():
                 hbox:
                     xfill True
                     text _("将两条存在隐藏因果或物理呼应的证物碰撞拼合，推导案件关键破局结论。") size 15 color "#b9a6d4" yalign 0.5
-                    textbutton _("✦ 进入拼合推导台"):
+                    textbutton _("◆ 进入拼合推导台"):
                         style "pill_button"
                         xalign 1.0
                         ysize 34
@@ -730,7 +730,7 @@ screen evidence_list():
                                             style "bond_stage_pill"
                                             xalign 1.0
                                             if _p_done:
-                                                text _("✦ 已破局") size 13 color "#86efac" bold True
+                                                text _("◆ 已破局") size 13 color "#86efac" bold True
                                             else:
                                                 text _("待拼合") size 13 color "#94a3b8"
                                     if _p_done:
@@ -763,7 +763,7 @@ screen evidence_list():
                                                 text frag_src style "bond_meta" yalign 0.5
                                                 frame:
                                                     style "bond_stage_pill"
-                                                    text _("✦ 已拼合") size 13 color "#86efac" bold True
+                                                    text _("◆ 已拼合") size 13 color "#86efac" bold True
                                         else:
                                             text ("碎片 %d · ？？？" % frag_idx) style "bond_name" size 20 color "#6a5c80"
                                             hbox:
@@ -896,7 +896,7 @@ screen deduction_combine(clues_pool=None, target_pair=None, conclusion_title=Non
                 vbox:
                     spacing 6
                     yalign 0.5
-                    textbutton _("✦ 碰撞推导"):
+                    textbutton _("◆ 碰撞推导"):
                         style "pill_button"
                         xminimum 138
                         ysize 40
@@ -980,7 +980,7 @@ screen deduction_combine(clues_pool=None, target_pair=None, conclusion_title=Non
                         vbox:
                             spacing 4
                             yalign 0.5
-                            text ("✦ " + combine_solved_title) size 18 color "#86efac" bold True
+                            text ("◆ " + combine_solved_title) size 18 color "#86efac" bold True
                             text combine_feedback size 15 color "#f2ecf8" xmaximum (550 if not allow_close else 710) line_spacing 3
                         if not allow_close:
                             textbutton _("锁定结论 ▶"):
@@ -995,7 +995,7 @@ screen deduction_combine(clues_pool=None, target_pair=None, conclusion_title=Non
                         spacing 14
                         yalign 0.5
                         add "gui/icon_evidence.png" yalign 0.5
-                        text _("操作指引：依次点击两条有逻辑咬合关系的线索装入上方槽位，点击「✦ 碰撞推导」即可检验你的推理。") size 16 color "#b4a2cc" yalign 0.5
+                        text _("操作指引：依次点击两条有逻辑咬合关系的线索装入上方槽位，点击「◆ 碰撞推导」即可检验你的推理。") size 16 color "#b4a2cc" yalign 0.5
 
 style combine_slot_frame is default:
     xsize 322

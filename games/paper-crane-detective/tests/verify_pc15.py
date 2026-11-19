@@ -36,6 +36,7 @@ import verify_pc11 as pc11  # noqa: E402
 import verify_pc12 as pc12  # noqa: E402
 import verify_pc13 as pc13  # noqa: E402
 import verify_pc14 as pc14  # noqa: E402
+import verify_glyphs as glyphs  # noqa: E402
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -113,7 +114,7 @@ LOG_REPORT = {}
 # grid (the full-width casebook card goes away), deletes PC-13's four-tab casebook page (unused since PC-15) and adds
 # achievements 37-38. Those exact counts / widths are verified by their own milestone (verify_pc16); here the PC-15
 # contract is kept: its tab, case, casebook pages, spoiler gates, main-menu re-flow and module order.
-LATER_MODULES = ["zwembad_locker_casebook.rpy"]
+LATER_MODULES = ["zwembad_locker_casebook.rpy", "zymase_bakeoff_casebook.rpy"]
 PC16_SALON_GROUPS = [
     ("salon", ("teaparty", "lexicon")),
     ("bookstreet", ("restoration", "letterbox", "origami")),
@@ -121,6 +122,8 @@ PC16_SALON_GROUPS = [
     ("closedlib", ("library", "theater", "atelier", "sportsday", "haunted", "pool")),
     ("keepsake", ("album", "capsule", "wall", "notebook")),
 ]
+# PC-17 adds the baking-contest tab to the two-tab "salon" group (verify_pc17)
+PC17_SALON_GROUPS = [("salon", ("teaparty", "lexicon", "bake"))] + PC16_SALON_GROUPS[1:]
 
 
 def _later_present():
@@ -129,6 +132,12 @@ def _later_present():
 
 def _pc16_present():
     return (GAME_DIR / "zwembad_locker_casebook.rpy").is_file()
+
+
+def _pc17_present():
+    """PC-17 appends an 8th short case (the baking-contest tab joins the "salon" group), expands the casebook to eight
+    pages, puts the eight cases + the casebook into a 2 x 5 folio grid and adds achievements 39-40 (verify_pc17)."""
+    return (GAME_DIR / "zymase_bakeoff_casebook.rpy").is_file()
 
 
 def _fonts():
@@ -300,7 +309,7 @@ def check_layout_and_pixel_bounds():
     #     Group 4 now holds 6 tabs: one leading icon + six 48px sext pills. With PC-14's 56px quint pills that state would
     #     overflow (measured below: the reason for the new style).
     sb = pc10.measure_salon_subbar()
-    expected_groups = PC16_SALON_GROUPS if _pc16_present() else SALON_GROUPS_EXPECTED
+    expected_groups = PC17_SALON_GROUPS if _pc17_present() else PC16_SALON_GROUPS if _pc16_present() else SALON_GROUPS_EXPECTED
     assert [(g[0], tuple(g[3])) for g in sb["groups"]] == expected_groups, sb["groups"]
     assert len(sb["keys"]) == len(set(sb["keys"])) == 18 + len(_later_present())
     assert sb["inner"] == 702
@@ -537,7 +546,8 @@ def check_layout_and_pixel_bounds():
     panel_inner = panel_w - 2 * panel_pad[0]
     if _pc16_present():
         # (PC-16: the seven cases + the casebook share one 2 x 4 grid of 350px cards; the wide card is gone -- verify_pc16)
-        assert panel_inner == 2 * fcard_w + 12 == 712 and "grid 2 4:" in folio and "xspacing 12" in folio
+        # (PC-17: the eight cases + the casebook share one 2 x 5 grid with one blank cell -- verify_pc17)
+        assert panel_inner == 2 * fcard_w + 12 == 712 and ("grid 2 5:" if _pc17_present() else "grid 2 4:") in folio and "xspacing 12" in folio
         assert "folio_wide_card" not in scr_src and "wide=True" not in folio
     else:
         wide_w = int(_style_prop(scr_src, "folio_wide_card", "xsize"))
@@ -572,12 +582,14 @@ def check_layout_and_pixel_bounds():
     sec_h = round(12 * CJK_LINE)
     head_h = max(44, round(22 * CJK_LINE) + 2 + round(12 * CJK_LINE))
     if _pc16_present():  # (2 x 4 grid, no wide card: the same height as PC-15's 2 x 3 grid + wide card)
-        f_h = (2 * panel_pad[1] + head_h + 8 + 1 + 8 + sec_h + 8 + fcard_h + 8 + sec_h + 8 + (4 * fcard_h + 3 * 8) + 8 + 34)
+        g_rows = 5 if _pc17_present() else 4  # (PC-17: one more grid row, still <= 672px -- verify_pc17)
+        f_h = (2 * panel_pad[1] + head_h + 8 + 1 + 8 + sec_h + 8 + fcard_h + 8 + sec_h + 8
+               + (g_rows * fcard_h + (g_rows - 1) * 8) + 8 + 34)
     else:
         f_h = (2 * panel_pad[1] + head_h + 8 + 1 + 8 + sec_h + 8 + fcard_h + 8 + sec_h + 8 + (3 * fcard_h + 2 * 8) + 8
                + fcard_h + 8 + 34)
     assert f_h <= 720 - 2 * 24, f"Folio modal taller than the window: {f_h}px"
-    f_head = (44 + 12 + max(_w(sf[22], "番外卷宗"), _w(f[12], "番外短篇 · 可重玩短案 · 复盘本——主菜单的番外入口都收在这一夹里"))
+    f_head = (44 + 12 + max(_w(sf[22], "番外卷宗"), _w(f[12], pc14.folio_header_sub(folio)))
               + 10 + max(96, _w(f[12], "已完成 9/9") + 20) + 6 + max(96, _w(f[12], "火漆 · 已通关解封") + 20))
     assert f_head <= panel_inner
     report["FolioCardTitle"] = widest_title
@@ -638,7 +650,7 @@ def check_layout_and_pixel_bounds():
 
     # ---------------- achievements ----------------
     ach_src = _read("game/achievements.rpy")
-    grid_txt = ("2×19 = 38", "2×19 共 38 枚") if _pc16_present() else ("2×18 = 36", "2×18 共 36 枚")  # (PC-16: 2x19, verify_pc16)
+    grid_txt = ("2×20 = 40", "2×20 共 40 枚") if _pc17_present() else ("2×19 = 38", "2×19 共 38 枚") if _pc16_present() else ("2×18 = 36", "2×18 共 36 枚")  # (PC-16: 2x19, verify_pc16)
     assert "grid 2 ach_grid_rows():" in ach_src and grid_txt[0] in ach_src and grid_txt[1] in ach_src
     ach_text_w = 352 - 24 - 56 - 14
     for aid in ("ach_astro_telescope", "ach_first_magnitude"):
@@ -1052,7 +1064,7 @@ def check_pc15_runtime():
     extra_src = _read("game/extra.rpy")
     folio = pc14._folio_block(scr_src)
     mm = pc14.measure_main_menu(env)
-    assert mm["folio_tabs"] == FOLIO_CASE_TABS[:-1] + (["pool"] if _pc16_present() else []) + FOLIO_CASE_TABS[-1:], mm["folio_tabs"]
+    assert mm["folio_tabs"] == FOLIO_CASE_TABS[:-1] + (["pool"] if _pc16_present() else []) + (["bake"] if _pc17_present() else []) + FOLIO_CASE_TABS[-1:], mm["folio_tabs"]
     assert re.search(r'astro_best_short\(\), astro_case_solved_count\(\) > 0, SetField\(persistent, "extras_tab", "astro"\), from_extras\)', folio)
     card = scr_src.split("screen extras_folio_case_card(", 1)[1].split("\nscreen ", 1)[0]
     assert 'action ([Hide("extras_folio_modal"), tab_action] + ([] if from_extras else [ShowMenu("extras")]))' in card
@@ -1111,7 +1123,11 @@ def check_pc15_runtime():
 ################################################################################
 
 def check_zero_intrusion_and_icons():
-    older = list(OLDER_EXTRAS_MODULES)
+    # a protected UI module may differ from HEAD only by the approved tofu-symbol swap (verify_glyphs.GLYPH_SWAP,
+    # byte-exact, every occurrence, nothing else); main-story files never qualify
+    swapped = glyphs.glyph_swap_only_files()
+    assert not swapped & set(MAIN_STORY_FILES)
+    older = [m for m in OLDER_EXTRAS_MODULES if m not in swapped]
     if _pc16_present():
         # PC-16 deletes PC-13's four-tab casebook page (unused since PC-15) from zephyr_relay_casebook.rpy: that one older
         # module may differ from HEAD only by removed lines and added `##` comment lines (line-exact check: verify_pc16)
@@ -1129,7 +1145,7 @@ def check_zero_intrusion_and_icons():
     assert diff.stdout.strip() == "", "Main story / older module files have a diff"
     # whole-project guard: among *tracked* files only the PC-15 targets and the forward-compatible verifier edits may
     # differ from HEAD (untracked new files are not flagged; on a clean committed checkout nothing differs at all)
-    allowed = set(PC15_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc15.py"])
+    allowed = set(PC15_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc15.py"]) | swapped
     if _pc16_present():
         allowed.update({"game/zephyr_relay_casebook.rpy", "tests/verify_pc16.py"})  # PC-16 cleanup + its own verifier
     st = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no", "--", "."],

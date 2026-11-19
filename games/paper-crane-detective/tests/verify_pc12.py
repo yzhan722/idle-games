@@ -91,7 +91,7 @@ LOG_REPORT = {}
 # PC-16 appends a 7th short case (folio only), moves the meteor-night tab into "starlit", expands the casebook to seven
 # pages and adds achievements 37-38 (verified by verify_pc16).
 LATER_MODULES = ["zephyr_relay_casebook.rpy", "zoetrope_shadow_folio.rpy", "zubenelgenubi_meteor_casebook.rpy",
-                 "zwembad_locker_casebook.rpy"]
+                 "zwembad_locker_casebook.rpy", "zymase_bakeoff_casebook.rpy"]
 
 
 def _later_present():

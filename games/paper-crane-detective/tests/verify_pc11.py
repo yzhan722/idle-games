@@ -76,7 +76,8 @@ LOG_REPORT = {}
 LATER_MODULES = ["yearbook_atelier_wall.rpy", "zephyr_relay_casebook.rpy",  # PC-12, PC-13 (each adds one chip row)
                  "zoetrope_shadow_folio.rpy",  # PC-14 (merges the extra-story chips into one folio entry)
                  "zubenelgenubi_meteor_casebook.rpy",  # PC-15 (re-flows the 4 chip rows clear of the navigation column)
-                 "zwembad_locker_casebook.rpy"]  # PC-16 (7th short case, folio only; no chip row, no chip added)
+                 "zwembad_locker_casebook.rpy",  # PC-16 (7th short case, folio only; no chip row, no chip added)
+                 "zymase_bakeoff_casebook.rpy"]  # PC-17 (8th short case, folio only; no chip row, no chip added)
 
 
 def _later_present():
