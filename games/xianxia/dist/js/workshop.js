@@ -2127,13 +2127,17 @@ dojo.declare("com.nuclearunicorn.game.ui.UpgradeButtonController", com.nuclearun
 			var cult = this.game.cultivation;
 			var gate = cult.getItemRealmGate("upgrade", meta.name);
 			if (gate && !cult.isItemRealmUnlocked("upgrade", meta.name)){
-				name += " <span class=\"xxRealmGateBadge locked\">◈ " + gate.title + "</span>";
+				name += " <span class=\"xxRealmGateBadge locked\">◈ " + cult.getRealmGateTitle(gate) + "</span>";
 			}
 		}
 		if (meta && meta.description && !meta.researched){
 			var brief = String(meta.description).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().replace(/。$/, "");
 			if (brief.indexOf("——") >= 0){
 				brief = brief.split("——").pop().trim();
+			} else if (brief.indexOf(" — ") >= 0){
+				//英文说明同样是「描述 — 效果」,按钮只露效果
+				brief = brief.split(" — ").pop().trim().replace(/\.$/, "");
+				brief = brief.charAt(0).toUpperCase() + brief.slice(1);
 			}
 			if (brief){
 				name += "<span class=\"xxTechHint\">" + brief + "</span>";
@@ -2239,7 +2243,7 @@ dojo.declare("com.nuclearunicorn.game.ui.CraftButtonController", com.nuclearunic
 			var cult = this.game.cultivation;
 			var gate = cult.getItemRealmGate("craft", craft.name);
 			if (gate && !cult.isItemRealmUnlocked("craft", craft.name)){
-				baseName += " <span class=\"xxRealmGateBadge locked\">◈ " + gate.title + "</span>";
+				baseName += " <span class=\"xxRealmGateBadge locked\">◈ " + cult.getRealmGateTitle(gate) + "</span>";
 			}
 		}
 		return baseName;

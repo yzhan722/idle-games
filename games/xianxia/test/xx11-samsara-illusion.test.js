@@ -811,7 +811,9 @@ describe("XX-11 Six-Paths Samsara Mirror & Taixu Illusion Heart-Demon Trial", fu
 			}
 		}
 		for (var m = 0; m < cult.MINGGE_DEFS.length; m++){
-			expect(zh["cultivation.samsara.mingge." + cult.MINGGE_DEFS[m].key]).toBe(cult.MINGGE_DEFS[m].label);
+			// mingge card labels are read from this very key now, so the Samsara names and the card labels cannot drift apart
+			expect(cult.MINGGE_DEFS[m].label).toBe($I("cultivation.samsara.mingge." + cult.MINGGE_DEFS[m].key));
+			expect(zh["cultivation.samsara.mingge." + cult.MINGGE_DEFS[m].key]).toMatch(/[一-鿿]/);
 			expect(en["cultivation.samsara.mingge." + cult.MINGGE_DEFS[m].key]).toBeTruthy();
 		}
 		for (var l = 1; l <= 9; l++){

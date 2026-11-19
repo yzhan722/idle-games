@@ -449,6 +449,17 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
             }
         }
 
+        //the mobile bottom dock scrolls sideways when the labels are long (English):
+        //the tab bar is rebuilt on every render, so bring the active tab back into view
+        for (var at = 0; at < visibleTabs.length; at++){
+            var activeLink = visibleTabs[at].domNode;
+            if (visibleTabs[at].tabId == this.activeTabId && activeLink && tabNavigationDiv.scrollWidth > tabNavigationDiv.clientWidth + 1){
+                var navBox = tabNavigationDiv.getBoundingClientRect();
+                var tabBox = activeLink.getBoundingClientRect();
+                tabNavigationDiv.scrollLeft += (tabBox.left - navBox.left) - (navBox.width - tabBox.width) / 2;
+            }
+        }
+
         var staleTooltip = dojo.byId("tooltip");
         if (staleTooltip) {
             dojo.style(staleTooltip, "display", "none");
@@ -1038,6 +1049,8 @@ dojo.declare("classes.ui.DesktopUI", classes.ui.UISystem, {
         $("#appText").text($I("ui.option.app.text"));
         $("#appAndroid").text($I("ui.option.app.android"));
         $("#appIOS").text($I("ui.option.app.ios"));
+        $("#creditsDiv .xxCreditsTitle").text($I("credits.title"));
+        $("#creditsDiv .xxCreditsBody").html($I("credits.body", ["Kittens Game"]));
         this.renderHelp();
     },
 

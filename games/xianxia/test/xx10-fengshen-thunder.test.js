@@ -1,4 +1,4 @@
-/* global test, expect, game, describe, beforeEach, afterEach, jest, classes */
+/* global test, expect, game, describe, beforeEach, afterEach, jest, classes, useRealI18n, restoreI18n */
 
 var fs = require("fs");
 var path = require("path");
@@ -38,9 +38,11 @@ describe("XX-10 Roster of the Thirty-Three Heavens & Nine-Heaven Thunder Pool Te
 
 	afterEach(function(){
 		jest.restoreAllMocks();
+		restoreI18n();
 	});
 
 	test("Divine Merit flows in from 26F+ Rift wins (interactive & quick), Zixiao lectures and Chrono River traces", function(){
+		useRealI18n("zh");	// battle logs go through $I; assert the zh wording
 		var cult = game.cultivation;
 		cult.setIdentity("杨天佑", "m", "scholar");
 
@@ -386,6 +388,7 @@ describe("XX-10 Roster of the Thirty-Three Heavens & Nine-Heaven Thunder Pool Te
 	});
 
 	test("Synergy with XX-9 Innate Treasures: Pangu thunder cleave, Chaos Bell thunder shock, Resonance III strike ×1.5 — 26F~35F only", function(){
+		useRealI18n("zh");	// battle logs go through $I; assert the zh wording
 		var cult = game.cultivation;
 		cult.setIdentity("雷震子", "m", "orphan");
 		cult.prepareImmortalCaveForTest(true);

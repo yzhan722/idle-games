@@ -21,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
     jest.clearAllMocks();
+    restoreI18n();
 });
 
 //--------------------------------
@@ -1571,6 +1572,7 @@ test("Commercial minimalist UI: no mode toggles, no synergy banners, automatic h
 });
 
 test("Turn-Based Combat System: Lesser Rift 3-wave gauntlet, Greater Rift Boss battles, 4 tactical skills, and monster mechanical traits", () => {
+    useRealI18n("zh");	// battle logs go through $I; assert the zh wording
     const cult = game.cultivation;
     cult.getStage("zhuji_0").researched = true;
     cult.actionCd = 0;

@@ -94,6 +94,21 @@ try {
     global.$I = function(key, args) {
         return "$" + key + "$";
     };
+    var mockI18n = global.$I;
+    //Battle logs, alchemy notes and rift messages are composed through $I. Tests that assert their
+    //Chinese wording switch to the real zh table for that test; restoreI18n() puts the mock back.
+    global.useRealI18n = function(lang) {
+        var dict = JSON.parse(require("fs").readFileSync(require("path").join(__dirname, "../res/i18n/" + (lang || "zh") + ".json"), "utf8"));
+        global.$I = function(key, args) {
+            var v = dict[key];
+            if (typeof v !== "string") { return "$" + key + "$"; }
+            for (var i = 0; args && i < args.length; i++) { v = v.replace("{" + i + "}", args[i]); }
+            return v;
+        };
+    };
+    global.restoreI18n = function() {
+        global.$I = mockI18n;
+    };
 
     require("../core");
 

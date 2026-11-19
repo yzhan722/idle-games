@@ -140,8 +140,8 @@ WResourceRow = React.createClass({
                             href: "#!",
                             className: "xx-res-act",
                             onClick: this.refineWoodQuick,
-                            title: "点击凝练 " + stepAmt + " 灵木 · Shift+点击全部凝练 (" + canRefineWood + ")"
-                        }, "凝木")
+                            title: $I("left.refine.tip", [stepAmt, canRefineWood])
+                        }, $I("left.refine.btn"))
                     ]);
                 }
             } else if (res.name == "faith" && res.value >= 1) {
@@ -151,7 +151,7 @@ WResourceRow = React.createClass({
                         className: "xx-res-act",
                         onClick: this.praiseFaith,
                         title: $I("left.praise")
-                    }, "礼敬")
+                    }, $I("left.praise.btn"))
                 ]);
             }
         }
@@ -189,7 +189,7 @@ WResourceRow = React.createClass({
                 }, weatherModValue),
                 inlineActions
             ]),
-            $r("div", {className:"res-cell res-figure " + resAmtClassName, role: "gridcell"}, [
+            $r("div", {className:"res-cell res-figure " + resAmtClassName, role: "gridcell", "data-full": $I("left.res.full")}, [
                 $r("span", {className:"res-val"}, game.getDisplayValueExt(res.value)),
                 res.maxValue ? $r("span", {className:"maxRes"},
                     "/" + game.getDisplayValueExt(Math.floor(res.maxValue), false, false, res.maxValue >= 1000 ? 1 : 0)) : null
@@ -322,7 +322,7 @@ WCraftShortcut = React.createClass({
                 }
                 // Primary button stays visible in a clean muted state so hovering always reveals the recipe cost
                 cssClasses += "craft-disabled";
-                elem = $r("div", {className: cssClasses}, "配方");
+                elem = $r("div", {className: cssClasses}, $I("left.craft.recipe"));
             } else {
                 cssClasses += "craft-" + (craftPercent * 100) + "pc";
                 var label = game.opts.usePercentageConsumptionValues
@@ -645,7 +645,7 @@ WResourceTable = React.createClass({
             $r("div", {className: "xx-treasury-hd"}, [
                 $r("div", {className: "xx-treasury-title", onClick: this.toggleCollapsed}, [
                     $r("span", {className: "xx-treasury-seal"}, "库"),
-                    $r("span", null, "洞府灵库"),
+                    $r("span", null, $I("left.treasury.title")),
                     $r("span", {className: "xx-res-sec-caret"}, this.state.isCollapsed ? "▸" : "▾")
                 ])
             ]),
@@ -719,14 +719,14 @@ WCraftTable = React.createClass({
 
         return $r("div", {className: "xx-res-sec xx-res-sec-craft sidebar-section", ariaLabel:"Craftable resources"}, [
             $r("div", {className: "xx-res-sec-hd", onClick: this.toggleCollapsed}, [
-                $r("span", {className: "xx-res-sec-title"}, "百艺炼制"),
+                $r("span", {className: "xx-res-sec-title"}, $I("left.craft.title")),
                 (!game.isReadOnly() && game.bld.get("workshop").on > 0 && canCraftBasic) ?
                     $r("a", {
                         href: "#!",
                         className: "xx-craft-batch",
                         onClick: this.craftAllBasics,
-                        title: "一键全炼基础阵材"
-                    }, "一键全炼") : null,
+                        title: $I("left.craft.batch.tip")
+                    }, $I("left.craft.batch")) : null,
                 $r("span", {className: "xx-res-sec-caret"}, this.state.isCollapsed ? "▸" : "▾")
             ]),
             this.state.isCollapsed ? null :
