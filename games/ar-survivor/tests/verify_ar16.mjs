@@ -148,9 +148,9 @@ function runStaticChecks() {
   const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
   const audioContent = fs.readFileSync(path.join(PUBLIC_DIR, 'audio.js'), 'utf8');
 
-  // 缓存号：style.css / 全部贴图 ?v=hd31，game.js?v=hd55，没有任何 hd23..hd30 / game.js?v=hd50..hd54 残留
-  assert(/\.\/style\.css\?v=hd31\b/.test(htmlContent), 'index.html must reference ./style.css?v=hd31');
-  assert(/\.\/game\.js\?v=hd55\b/.test(htmlContent), 'index.html must reference ./game.js?v=hd55');
+  // 缓存号：全部贴图 ?v=hd31，style.css / sprites.js 不低于 hd31、game.js 不低于 hd55（之后的界面改动只往上递增），没有任何 hd23..hd30 / game.js?v=hd50..hd54 残留
+  assert(/\.\/style\.css\?v=hd(?:3[1-9]|[4-9]\d)\b/.test(htmlContent), 'index.html must reference ./style.css?v=hd31+');
+  assert(/\.\/game\.js\?v=hd(?:5[5-9]|[6-9]\d)\b/.test(htmlContent), 'index.html must reference ./game.js?v=hd55+');
   let htmlAr16Refs = 0;
   for (const reqAsset of REQUIRED_AR16_ASSETS) {
     if (new RegExp(`\\./assets/${reqAsset.replace('.', '\\.')}\\?v=hd31\\b`).test(htmlContent)) htmlAr16Refs += 1;
@@ -168,7 +168,7 @@ function runStaticChecks() {
   }
   assert(!/game\.js\?v=hd5[0-4]\b/.test(htmlContent), 'Stale game.js?v=hd50..hd54 left in index.html');
   assert(/\?v=hd31\b/.test(cssContent), 'style.css must use ?v=hd31 asset cache-busters');
-  assert(/\.\/sprites\.js\?v=hd31\b/.test(gameContent), 'game.js must import ./sprites.js?v=hd31');
+  assert(/\.\/sprites\.js\?v=hd(?:3[1-9]|[4-9]\d)\b/.test(gameContent), 'game.js must import ./sprites.js?v=hd31+');
   assert(/\.\/audio\.js\?v=hd31\b/.test(gameContent), 'game.js must import ./audio.js?v=hd31');
   assert(/\.\/vision\.js\?v=hd31\b/.test(gameContent), 'game.js must import ./vision.js?v=hd31');
   for (const fn of ['getAr16WallLayout', 'drawAr16WallHoop', 'getAr16FloorLayout', 'drawAr16FloorHearth', 'drawEmbroideryProp', 'drawHearthSnackProp']) {
@@ -242,7 +242,7 @@ function runStaticChecks() {
   assert(!/transparent/.test(ar16Css), 'AR-16 CSS gradients must fade to cream/white, not to black-transparent');
 
   console.log(
-    `[STATIC PASS] ${jsFiles.length} JS modules syntax-checked, ${assetRefs.size} assets verified on disk (including all 6 AR-16 images), ?v=hd31/hd55 synced with 0 stale hd23-hd30, still ${CARE_BTN_COUNT} dock keys (no embroidery / hearth key), hoop on the wall above the pottery shelf + heater on the floor (not the desk / sill), 0 inline <svg>, 0 Emoji, 0 vector shapes / canvas icons, 0 network / sensor calls in AR-16 code, ${rgbCount} cream tints, 0 dark/neon colors in AR-16 CSS.`
+    `[STATIC PASS] ${jsFiles.length} JS modules syntax-checked, ${assetRefs.size} assets verified on disk (including all 6 AR-16 images), ?v=hd31+/hd55+ synced with 0 stale hd23-hd30, still ${CARE_BTN_COUNT} dock keys (no embroidery / hearth key), hoop on the wall above the pottery shelf + heater on the floor (not the desk / sill), 0 inline <svg>, 0 Emoji, 0 vector shapes / canvas icons, 0 network / sensor calls in AR-16 code, ${rgbCount} cream tints, 0 dark/neon colors in AR-16 CSS.`
   );
 }
 

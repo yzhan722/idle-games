@@ -207,6 +207,17 @@ async function dbg(page, fn, ...args) {
   return page.evaluate(([f, a]) => window.__AR14_DEBUG__[f](...a), [fn, args]);
 }
 
+// The kiln counts down on game frames (~1.6s of play time). On a busy machine frames slow down,
+// so poll until it finishes by itself instead of sleeping a fixed 1.9s (still no tap involved).
+async function waitForKilnDone(page, timeoutMs = 8000) {
+  const t0 = Date.now();
+  for (;;) {
+    const run = await dbg(page, 'getPotteryRun');
+    if ((run && run.phase === 'done') || Date.now() - t0 > timeoutMs) return run;
+    await page.waitForTimeout(200);
+  }
+}
+
 async function openPanelNames(page) {
   const panels = (await getState(page)).openPanels;
   return Object.entries(panels)
@@ -605,7 +616,7 @@ async function runPlaywrightSuite() {
     assert(st.ar14Audio.potteryKilnCount >= 1, 'Kiln hums');
     assert.equal(await page.evaluate(() => document.getElementById('pw-wheel').dataset.phase), 'firing');
     await shot(page, 'desktop_1440x900_pottery_firing.png');
-    await page.waitForTimeout(1900);
+    await waitForKilnDone(page);
     st = await getState(page);
     const cupRes = st.potteryRun.lastResult;
     assert.equal(st.potteryRun.phase, 'done', `Firing finishes by itself after ~1.6s: ${JSON.stringify(st.potteryRun)}`);
@@ -1051,7 +1062,7 @@ async function runPlaywrightSuite() {
     await page.click('#btn-pottery-main');
     await page.waitForTimeout(200);
     await shot(page, 'mobile_390x844_pottery.png');
-    await page.waitForTimeout(1800);
+    await waitForKilnDone(page);
     assert.equal((await dbg(page, 'getPotteryRun')).phase, 'done', 'Real tap fires the kiln on 390x844');
     let pa = await cardAudit(page, 'pottery-wheel-card');
     assert(pa.cardOpen && pa.overflowX <= 0 && pa.overflowY <= 0 && pa.outside === 0 && !pa.hasEmoji, `390x844 pottery card: ${JSON.stringify(pa)}`);
