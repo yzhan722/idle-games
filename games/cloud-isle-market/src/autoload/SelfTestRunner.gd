@@ -96,6 +96,9 @@ func _ready() -> void:
 		# CI-15: keep the cloud-sea weather neutral (x1.0, no calendar refresh) through the 60s simulation and assertions 0..27,
 		# so their exact numbers never depend on the wall clock; assertion 28 un-freezes it for its own checks
 		GameManager.sky_weather_paused = true
+		# CI-16: no friendship point / food-week refresh through the 60s simulation and assertions 0..28 (assertion 30
+		# un-freezes them for its own checks)
+		GameManager.food_friend_paused = true
 
 	if EventBus != null:
 		EventBus.item_produced.connect(_on_item_produced)
@@ -113,6 +116,8 @@ func _on_customer_paid(_recipe_id: String, _qty: int, _total_gold: int, _world_p
 
 func _fail_and_quit(assertion_tag: String, reason: String) -> void:
 	var msg := "%s FAILED: %s" % [assertion_tag, reason]
+	# stdout copy on one line: a multi-line reason survives shells that keep only the first stderr line
+	print("[FAIL] " + msg.replace("\n", " | "))
 	push_error(msg)
 	printerr(msg)
 	get_tree().quit(1)
@@ -5858,27 +5863,20 @@ func _run_all_four_assertions_and_export() -> void:
 		if cards2_15.size() != 20 or not hud15._is_two_row_layout(cards2_15.size()) or hud15.lbl_card_titles.size() < 20 or String(cards2_15[18]["type"]) != "sky_weather" or String(cards2_15[19]["type"]) != "birthday":
 			_fail_and_quit(tag15, "HUD tab 2 must hold 20 cards with weather #19 / birthday #20: %d cards" % cards2_15.size())
 			return
-		# cards #19 / #20 fit their 2-row card; no older card that fitted at 18 cards (9 per row) is clipped at 20 (10 per row)
-		var regress15: Array[String] = []
-		var pre_clipped15 := 0
+		# UI audit: EVERY one of the 20 cards (old ones included) fits its 2-row card at the label's real clip width
+		# (card - 3px pad - 2px - icon reserve, see HUD._sync_label_nodes) -> no card text is cut off any more
+		var clipped15: Array[String] = []
 		for nc15 in range(cards2_15.size()):
-			var cw15 := hud15._get_card_rect(nc15, cards2_15.size()).size.x - 3.0 - hud15._two_row_icon_reserve(cards2_15.size())
-			var cw18_15 := hud15._get_card_rect(mini(nc15, 17), 18).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE
+			var cw15 := hud15._get_card_rect(nc15, cards2_15.size()).size.x - 5.0 - hud15._two_row_icon_reserve(cards2_15.size())
 			for lset15 in [hud15.lbl_card_titles, hud15.lbl_card_subs, hud15.lbl_card_costs]:
 				var lc15: Label = lset15[nc15]
 				if not lc15.visible or absf(lc15.scale.x - lc15.scale.y) > 0.001 or lc15.scale.x < 0.5 - 0.001:
 					_fail_and_quit(tag15, "Tab 2 card %d label hidden / distorted: `%s` (%.2fx)" % [nc15 + 1, lc15.text, lc15.scale.x])
 					return
-				if nc15 >= 18:
-					if not _label_text_fits(lc15, cw15):
-						_fail_and_quit(tag15, "Tab 2 card %d text clipped: `%s` (room %.1fpx)" % [nc15 + 1, lc15.text, cw15])
-						return
-				elif not _label_text_fits(lc15, cw18_15):
-					pre_clipped15 += 1
-				elif not _label_text_fits(lc15, cw15):
-					regress15.append("#%d `%s`" % [nc15 + 1, lc15.text])
-		if not regress15.is_empty():
-			_fail_and_quit(tag15, "Cards that fitted at 18 cards are clipped at 20: %s" % ", ".join(regress15))
+				if not _label_text_fits(lc15, cw15):
+					clipped15.append("#%d `%s` %.1f>%.1fpx" % [nc15 + 1, lc15.text, _label_text_width(lc15), cw15])
+		if not clipped15.is_empty():
+			_fail_and_quit(tag15, "Tab 2 card text clipped: %s" % ", ".join(clipped15))
 			return
 		if hud15.lbl_card_titles[18].label_settings == hud15.lbl_card_titles[17].label_settings or hud15.lbl_card_costs[19].label_settings == hud15.lbl_card_costs[18].label_settings or hud15.lbl_card_subs[19].label_settings == hud15.lbl_card_subs[18].label_settings:
 			_fail_and_quit(tag15, "HUD cards 19/20 share LabelSettings with neighbours (colour leak risk)!")
@@ -5968,27 +5966,22 @@ func _run_all_four_assertions_and_export() -> void:
 		hud15._sync_label_nodes()
 		var cards3_15: Array[Dictionary] = hud15._get_current_tab_cards()
 		var codex_title15 := "★云海天气(%d/%d)" % [GameManager.get_seen_sky_weather_count(), EconomyConfig.SKY_WEATHER_ORDER.size()]
-		if cards3_15.size() != 17 or String(cards3_15[16]["type"]) != "ci15_codex" or hud15.lbl_card_titles[16].text != codex_title15:
+		if cards3_15.size() < 17 or String(cards3_15[16]["type"]) != "ci15_codex" or hud15.lbl_card_titles[16].text != codex_title15:
 			_fail_and_quit(tag15, "HUD codex card 17 invalid: `%s` (expected `%s`, %d cards)" % [hud15.lbl_card_titles[16].text, codex_title15, cards3_15.size()])
 			return
-		# codex card 17 fits; no older codex card that fitted at 16 cards (8 per row) is clipped at 17 (9 per row, 1 icon)
-		var regress3_15: Array[String] = []
+		# UI audit: EVERY one of the 17 codex cards fits its 2-row card at the label's real clip width (no text cut off)
+		var clipped3_15: Array[String] = []
 		for nc3_15 in range(cards3_15.size()):
-			var cw3_15 := hud15._get_card_rect(nc3_15, cards3_15.size()).size.x - 3.0 - hud15._two_row_icon_reserve(cards3_15.size())
-			var cw16_15 := hud15._get_card_rect(mini(nc3_15, 15), 16).size.x - 3.0 - hud15._two_row_icon_reserve(16)
+			var cw3_15 := hud15._get_card_rect(nc3_15, cards3_15.size()).size.x - 5.0 - hud15._two_row_icon_reserve(cards3_15.size())
 			for lset3_15 in [hud15.lbl_card_titles, hud15.lbl_card_subs, hud15.lbl_card_costs]:
 				var lc3_15: Label = lset3_15[nc3_15]
 				if not lc3_15.visible:
 					_fail_and_quit(tag15, "Codex card %d label hidden!" % (nc3_15 + 1))
 					return
-				if nc3_15 >= 16:
-					if not _label_text_fits(lc3_15, cw3_15):
-						_fail_and_quit(tag15, "Codex card %d text clipped: `%s` (room %.1fpx)" % [nc3_15 + 1, lc3_15.text, cw3_15])
-						return
-				elif _label_text_fits(lc3_15, cw16_15) and not _label_text_fits(lc3_15, cw3_15):
-					regress3_15.append("#%d `%s`" % [nc3_15 + 1, lc3_15.text])
-		if not regress3_15.is_empty():
-			_fail_and_quit(tag15, "Codex cards that fitted at 16 cards are clipped at 17: %s" % ", ".join(regress3_15))
+				if not _label_text_fits(lc3_15, cw3_15):
+					clipped3_15.append("#%d `%s` %.1f>%.1fpx" % [nc3_15 + 1, lc3_15.text, _label_text_width(lc3_15), cw3_15])
+		if not clipped3_15.is_empty():
+			_fail_and_quit(tag15, "Codex card text clipped: %s" % ", ".join(clipped3_15))
 			return
 		var cx15: Label = hud15.lbl_drawer_title
 		cx15.size = Vector2.ZERO
@@ -6056,9 +6049,56 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag15, "Showcase clock %s did not give a rainbow birthday!" % str(show_clk15))
 		return
 
-	print("[PASS] %s 通过: 不新增建筑(三岛19建筑 7+6+6 最小净间距 %.2fpx、重叠 %.1fpx²、最小缩放 %.3f 不变)；岛历 20 分钟一格、跨日/月/年连续，4 季 x 21 天 x 2 次扫描完全一致(彩虹 %d 格全部紧跟雨后、夏季晴最多/冬季雾最多/春雨多于冬雨)、注入时钟驱动+换天信号仅 1 次、暂停隔离；倍率 %s，叠乘上限(微雨+云雨≤x1.50、节庆客流+彩虹≤x2.20、风筝风+彩虹售价≤x1.30、减益全额)与真实售卖 x%.3f 校验通过；天空层 4 个天气区(左上天空/右上天空/2·3号岛下云海)与 %d 个保留区(全部世界标签含隐藏、飞艇停靠+离港、缆桩、热气球、风筝航道与徽标、运动会徽标、烟花/灯笼带、HUD 横幅/底栏/胶囊/抽屉/蛋糕角标、岛屿贴图与木桥、建筑、造景、赛旗、水灯/画舫/花车航道、夜间影院、四季摆件、打卡木牌与拍照动作)保持 >=2px(最近 %.1fpx: %s)，4 天气 x 昼夜 x 16 时刻共 %d 个图元与 %d 次徽记全部落在区内、无其他世界精灵入区；生日会: 6 位岛民 3/8/13/18/23/28 日、注入日期生日只播报 1 次、跨月/跨年/2 月 28 日下一位查询、无生日/金币不足/普通/称心/重复备礼、6 位庆生得生日全家福(声望+%d 图鉴券+%d)；HUD 开拓 20 卡两行全部文字完整(第19卡云海天气/第20卡生日会)、生日会面板 4 卡 最小字号 %.2fx、面板内备礼、开拓按钮蛋糕角标、山海图鉴第17卡「★云海天气」(卡数 %s)；存档往返 PASS；展示: 本月 %d 日 %02d:%02d 彩虹%s PASS!" % [
+	print("[PASS] %s 通过: 不新增建筑(三岛19建筑 7+6+6 最小净间距 %.2fpx、重叠 %.1fpx²、最小缩放 %.3f 不变)；岛历 20 分钟一格、跨日/月/年连续，4 季 x 21 天 x 2 次扫描完全一致(彩虹 %d 格全部紧跟雨后、夏季晴最多/冬季雾最多/春雨多于冬雨)、注入时钟驱动+换天信号仅 1 次、暂停隔离；倍率 %s，叠乘上限(微雨+云雨≤x1.50、节庆客流+彩虹≤x2.20、风筝风+彩虹售价≤x1.30、减益全额)与真实售卖 x%.3f 校验通过；天空层 4 个天气区(左上天空/右上天空/2·3号岛下云海)与 %d 个保留区(全部世界标签含隐藏、飞艇停靠+离港、缆桩、热气球、风筝航道与徽标、运动会徽标、烟花/灯笼带、HUD 横幅/底栏/胶囊/抽屉/蛋糕角标、岛屿贴图与木桥、建筑、造景、赛旗、水灯/画舫/花车航道、夜间影院、四季摆件、打卡木牌与拍照动作)保持 >=2px(最近 %.1fpx: %s)，4 天气 x 昼夜 x 16 时刻共 %d 个图元与 %d 次徽记全部落在区内、无其他世界精灵入区；生日会: 6 位岛民 3/8/13/18/23/28 日、注入日期生日只播报 1 次、跨月/跨年/2 月 28 日下一位查询、无生日/金币不足/普通/称心/重复备礼、6 位庆生得生日全家福(声望+%d 图鉴券+%d)；HUD 开拓 20 卡与图鉴 17 卡两行全部文字完整无截断(第19卡云海天气/第20卡生日会)、生日会面板 4 卡 最小字号 %.2fx、面板内备礼、开拓按钮蛋糕角标、山海图鉴第17卡「★云海天气」(卡数 %s)；存档往返 PASS；展示: 本月 %d 日 %02d:%02d 彩虹%s PASS!" % [
 		tag15, min_gap15, overlap15, min_scale15, n_rainbow15, " / ".join(mult_rows15), float(pay_on15) / float(pay_off15), n_res15, min_clear15, min_clear_name15, n_prims15, n_emb15, gift_rep15, gift_v15, panel_min_sc15, hud15_cards,
 		int(show_clk15["day"]), int(show_clk15["hour"]), int(show_clk15["minute"]), ("·" + EconomyConfig.get_islander_name(GameManager.birthday_today_islander) + "生日待备礼") if GameManager.is_birthday_today() else ""
+	])
+
+	# ------------------------------------------------------------------
+	# [断言30-CI-16云岛美食评鉴周与岛民友谊羁绊] (NO new building, nothing on the ground or in the sky; runs before the
+	# i18n audit so assertion 29 also measures the two new panels in en / ja):
+	#   1) 4 copied 64x64 icons imported with transparent corners; 2) 18 entry dishes = existing crafted / cooked goods,
+	#      raw goods refused, each taste owned by 2 of the 6 judges; 3) score (base + taste +20 + bond +2/Lv, cap 100),
+	#      medal tiers 70/82/92, friendship level table 30/80/150/240/360; 4) island-calendar week (Monday..Sunday) from
+	#      the injected clock: 12 weeks over month ends -> judges in islander order, 2 weeks each, 11 announcements, a week
+	#      across the year end; 5) pause isolation; 6) an otter (savory) week: best dish first, repeat / raw / no stock /
+	#      4th entry refused, gold medal once, bond level-up; 7) next week resets entries, keeps medals, bronze -> silver
+	#      upgrade counted once; 8) bonds from a real wish fulfilment and a favourite birthday gift, Lv.5 cap, price bonus
+	#      +0.3%/Lv capped at +9%; 9) save round trip (same week keeps entries, a later week drops them); 10) HUD: Workers
+	#      tab 8 cards (#7 Food Week, #8 Bonds) with every line fitting, both panels (fit, unsqueezed, headline, entry from
+	#      the panel, banners, back), tab switch closes them, Expansion still 20 cards, codex card 18 + all 18 fit.
+	# ------------------------------------------------------------------
+	var tag30 := "[断言30-CI-16云岛美食评鉴周与岛民友谊羁绊]"
+	var r30: Dictionary = await _ci16_audit(world)
+	if r30.has("error"):
+		_fail_and_quit(tag30, String(r30["error"]))
+		return
+	print("[PASS] %s 通过: 不新增建筑、不占地面与天空层(只在 HUD)；4 枚复用图标 64x64 去底已导入；18 道既有菜品(甜香/鲜香/清香各由 6 位评委中 2 位偏爱)、生料/非食物拒收；评分=底分+对味 20+羁绊 2/级(封顶 100)、铜 70/银 82/金 92；岛历周一~周日由注入时钟驱动，12 周跨月评委按岛民顺序各轮 2 次、换周播报 11 次、跨年同周；暂停隔离；水獭周 3 道(最佳优先、重复/生料/缺货/第 4 道拒收)金奖 1 次(声望+%d 券+2)、羁绊升级 1 次；换周清空、奖章保留、铜→银只计 1 枚；心愿圆梦+12、称心生日礼+45、Lv.5 封顶、售价 +0.3%%/级 封顶 +%.1f%%；存档往返(同周保留/隔周清空)；HUD 动物编制 8 卡(第7卡美食评鉴周/第8卡岛民羁绊)全部放得下、评鉴周面板 4 卡与羁绊面板 7 卡 最小字号 %.2fx 等比、面板内参赛、切页关闭、开拓仍 20 卡、山海图鉴第18卡「★美食评鉴」与 18 卡全部放得下；当前奖章 %d 枚、羁绊总等级 %d PASS!" % [
+		tag30, int(r30["gold_rep"]), float(r30["price_cap"]) * 100.0, float(r30["panel_min_sc"]), int(r30["medals"]), int(r30["levels"])
+	])
+
+	# ------------------------------------------------------------------
+	# [断言29-三语本地化(zh/en/ja)无混排与放得下]:
+	#   1) Tables: zh_CN / en_US / ja_JP hold the same keys with the same placeholders; every data name has en + ja; no en
+	#      text carries a CJK glyph and no ja text a simplified-only glyph (not in Shift-JIS);
+	#   2) In en_US and in ja_JP: every HUD view (4 tabs in the late-game / early-game / festivals-running states, the wish
+	#      board panel, the birthday panel with and without a birthday, capsule + stealth capsule) fits: every card line
+	#      inside its card at the real clip width, every headline clear of the language button and not over-squeezed,
+	#      the 7 top-right toggles / bottom-bar pills / tab captions / capsule inside their art; every event banner (real
+	#      args, all items / islanders / weathers / terms), every info-card banner and every banner template fits the 620px
+	#      pill unsqueezed; every visible HUD / world label has no other-language glyph and no raw placeholder;
+	#   3) Every world label (badges, Lv. tags, captions, hidden ones included) stays inside its zh footprint, so the zh
+	#      fit / zero-overlap / clearance assertions above hold unchanged in all 3 languages; review shots per language;
+	#   4) Ends back in zh_CN with the game state restored.
+	# ------------------------------------------------------------------
+	var tag16 := "[断言29-三语本地化(zh/en/ja)无混排与放得下]"
+	var i18n16: Dictionary = await _i18n_audit(world)
+	if i18n16.has("error"):
+		_fail_and_quit(tag16, String(i18n16["error"]))
+		return
+	print("[PASS] %s 通过: 文本表 %d 键 x 3 语键位/占位符一致、数据名 %d 条 en/ja 齐全，en 零汉字/假名、ja 零简体专用字形(%d 个)；en/ja 各校验 HUD 视图 %d 个(4 页签 x 后期/前期/节庆进行中 + 心愿板 + 生日会有/无生日 + 胶囊/老板键)共 %d 个标签放得下(卡片最小余量 %.1fpx(%s)，标题最小横向缩放 %s，顶栏/底栏最小压缩比 %.2f)、横幅 %d 条(真实参数事件横幅 + 信息卡横幅 + 全部模板)最宽 %.1fpx <= 620px 不压缩、可见标签 %d 次零混排零漏占位符；世界标签 %d 个 x 2 语全部落在中文占位内 + 全状态世界标签文案 %d 条 x 2 语不宽于中文(最大宽度比 %.2f) -> 世界标签放得下/零重叠/避让断言三语成立；审图 %s；已切回 zh_CN PASS!" % [
+		tag16, int(i18n16["keys"]), int(i18n16["names"]), I18N_SIMPLIFIED_ONLY_GLYPHS.length(), int(i18n16["views"]), int(i18n16["labels"]), float(i18n16["min_card_slack"]), String(i18n16["min_card_at"]), String(i18n16["head_sx"]), float(i18n16["min_chrome_ratio"]),
+		int(i18n16["banners"]), float(i18n16["max_banner_w"]), int(i18n16["scanned"]), int(i18n16["world_labels"]), int(i18n16["world_texts"]), float(i18n16["max_world_ratio"]), String(i18n16["shots"])
 	])
 
 	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
@@ -6339,11 +6379,14 @@ func _find_sprite_overlapping_rects(world: MainWorld, rects: Array) -> String:
 
 ## True when the label's full text (its own font size, outline included) fits `avail_w` px at its current scale.
 func _label_text_fits(lbl: Label, avail_w: float) -> bool:
+	return _label_text_width(lbl) <= avail_w + 0.5
+
+## On-screen width of the label's full text (its own font size, outline included) at its current scale.
+func _label_text_width(lbl: Label) -> float:
 	var fnt: Font = lbl.label_settings.font if (lbl.label_settings != null and lbl.label_settings.font != null) else lbl.get_theme_font("font")
 	var fsz := lbl.label_settings.font_size if lbl.label_settings != null else 14
 	var outline := float(lbl.label_settings.outline_size) if lbl.label_settings != null else 0.0
-	var w := (fnt.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x + outline) * lbl.scale.x
-	return w <= avail_w + 0.5
+	return (fnt.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x + outline) * lbl.scale.x
 
 func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float, bunny_dist: float, all_dist: float, h_closed: String, h_open: String) -> void:
 	var log_path := "res://playtest_audit_log.md"
@@ -6394,3 +6437,1217 @@ func _find_deprecated_font_node(node: Node) -> String:
 		if found != "":
 			return found
 	return ""
+
+## i18n audit (assertion 29) ---------------------------------------------------------------------------------------------
+## Glyphs that exist only in simplified Chinese (not encodable in Shift-JIS), taken from every zh text the game ships; a
+## ja_JP text must never contain one (regenerated together with the text tables).
+const I18N_SIMPLIFIED_ONLY_GLYPHS := "专业丛东丝两丰临为乌乐习产仅仓份众优传你侣值兑兰关军农净减凤击创剧办务动劲勋华单卖卡历压发变叠启员咔啦喂嚓囊团园图圆圣场块坯埚处备复头奖奶实宠审宽宾导尝层屉屿岛币师带帧帮庆库应废开异张归录态总悬惊战执扩扫抚抢护报拟挡挤损换摄摆摊时显晚暂朵杀杂杨极枫柜查标栈栏树样桌桥桩检樱欢步每汉汤沏测渔渲滚满滩灵炼烘烤烧热爱獭玫环现电疗盏码碰离秆种积秸窑窨笼签简篮类糕紧红约级纹线组细经结绝统续缆缓编缘缩罄罗职联胶艺节荣荧药获萝萤营蛰蜕衔见观规视计订让记许论访证评词试询语误请读调谢谱负财账货质购贴贵费赏赚赛赞赢趟跃车轨转轮软载输边达过运还进远连选邮鉴针钟钮钵铃银铺链销锁锅锚锦键镇长闪闭间阈队阶隐雾页顶项顺顾颁颂预领颗题额风飘飞饮饰饲馆马驱驻验鱼鲜鲤鲸鸟鸣鸥鹅齐龙"
+const I18N_TARGET_LANGS: Array[String] = ["en_US", "ja_JP"]
+const I18N_BANNER_W := 620.0
+
+var _i18n_spec_re: RegEx = null
+var _i18n_left_re: RegEx = null
+
+func _i18n_specs(t: String) -> PackedStringArray:
+	if _i18n_spec_re == null:
+		_i18n_spec_re = RegEx.create_from_string("%(%|[-+ 0#]*[0-9]*(\\.[0-9]+)?[sdfxXc])")
+	var out := PackedStringArray()
+	for m in _i18n_spec_re.search_all(t):
+		out.append(m.get_string())
+	return out
+
+## "" when `txt` has no glyph of another language for `lang` (en: no CJK / kana / full-width form; ja: no simplified-only glyph)
+func _i18n_glyph_problem(lang: String, txt: String) -> String:
+	for i in range(txt.length()):
+		var c := txt.unicode_at(i)
+		if lang == "en_US":
+			if (c >= 0x2E80 and c <= 0x9FFF) or (c >= 0xF900 and c <= 0xFAFF) or (c >= 0xFF00 and c <= 0xFFEF) or (c >= 0xAC00 and c <= 0xD7AF):
+				return "CJK glyph `%s`" % txt.substr(i, 1)
+		elif lang == "ja_JP":
+			if c >= 0x3400 and I18N_SIMPLIFIED_ONLY_GLYPHS.find(txt.substr(i, 1)) != -1:
+				return "simplified-only glyph `%s`" % txt.substr(i, 1)
+	return ""
+
+## A rendered text: other-language glyphs or a placeholder left unformatted (`%d`, `%s`, `%.2f` not followed by a letter)
+func _i18n_text_problem(lang: String, txt: String) -> String:
+	if _i18n_left_re == null:
+		_i18n_left_re = RegEx.create_from_string("%(\\.[0-9]+)?[sdf](?![A-Za-z])")
+	if _i18n_left_re.search(txt) != null:
+		return "raw placeholder"
+	return _i18n_glyph_problem(lang, txt)
+
+## Table integrity: same keys + placeholders in the 3 languages, every data name in en + ja, clean glyphs
+func _i18n_table_problems() -> Array[String]:
+	var out: Array[String] = []
+	var zh: Dictionary = EconomyConfig.I18N_DICT["zh_CN"]
+	for lang in I18N_TARGET_LANGS:
+		var tbl: Dictionary = EconomyConfig.I18N_DICT[lang]
+		for k in zh.keys():
+			if not tbl.has(k):
+				out.append("%s misses key `%s`" % [lang, k])
+				continue
+			if str(_i18n_specs(String(tbl[k]))) != str(_i18n_specs(String(zh[k]))):
+				out.append("%s `%s` placeholders %s != zh %s" % [lang, k, str(_i18n_specs(String(tbl[k]))), str(_i18n_specs(String(zh[k])))])
+			var gp := _i18n_glyph_problem(lang, String(tbl[k]))
+			if gp != "":
+				out.append("%s `%s`: %s" % [lang, k, gp])
+		for k2 in tbl.keys():
+			if not zh.has(k2):
+				out.append("%s has a key zh lacks: `%s`" % [lang, k2])
+	var names_en: Dictionary = EconomyConfig.NAME_I18N["en_US"]
+	var names_ja: Dictionary = EconomyConfig.NAME_I18N["ja_JP"]
+	for zk in names_en.keys():
+		if not names_ja.has(zk):
+			out.append("data name `%s` has en but no ja" % zk)
+	for zk2 in names_ja.keys():
+		if not names_en.has(zk2):
+			out.append("data name `%s` has ja but no en" % zk2)
+	for lang2 in I18N_TARGET_LANGS:
+		var nt: Dictionary = EconomyConfig.NAME_I18N[lang2]
+		for zk3 in nt.keys():
+			var gp2 := _i18n_glyph_problem(lang2, String(nt[zk3]))
+			if gp2 != "":
+				out.append("%s data name `%s` -> `%s`: %s" % [lang2, zk3, String(nt[zk3]), gp2])
+	return out
+
+## Every item id the HUD / banners can name
+func _i18n_item_ids() -> Array:
+	var ids: Array = []
+	ids.append_array(EconomyConfig.CROPS.keys())
+	ids.append_array(EconomyConfig.DELICACIES.keys())
+	for arr in [EconomyConfig.SOLAR_DISH_ORDER, EconomyConfig.HYBRID_FLORA_ORDER, EconomyConfig.SOUVENIR_BOX_ORDER, EconomyConfig.HOTSPRING_BATH_ORDER, EconomyConfig.BAKERY_CODEX_ORDER, EconomyConfig.TEA_CODEX_ORDER, EconomyConfig.TASTING_DISH_ORDER, EconomyConfig.AUCTION_LOT_ORDER, EconomyConfig.DAIRY_CODEX_ORDER, EconomyConfig.CINEMA_FILM_ORDER, EconomyConfig.POTTERY_CODEX_ORDER, EconomyConfig.SPORTS_EVENT_ORDER, EconomyConfig.KITE_ORDER, EconomyConfig.SEASON_ORDER, EconomyConfig.get_photo_entry_order()]:
+		ids.append_array(arr)
+	ids.append(EconomyConfig.SEAFOOD_ITEM_ID)
+	return ids
+
+## Card lines (real clip width), headline and worker cards of the HUD view on screen; returns the number of labels checked
+func _i18n_check_hud_view(hud: HUD, ctx: String, out: Array[String], st: Dictionary) -> int:
+	hud._sync_label_nodes()
+	var checked := 0
+	var cards: Array[Dictionary] = hud._get_current_tab_cards()
+	var n := cards.size()
+	var two_row := hud._is_two_row_layout(n)
+	for i in range(n):
+		var cr := hud._get_card_rect(i, n)
+		var ctype := String(cards[i].get("type", ""))
+		var avail := cr.size.x - 8.0
+		if two_row:
+			avail = cr.size.x - 5.0 - hud._two_row_icon_reserve(n)
+		elif ctype.begins_with("wish_") or ctype.begins_with("bday_") or ctype.begins_with("fw_") or ctype.begins_with("fr_"):
+			avail = cr.size.x - 6.0 - 34.0
+		for lset in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
+			var lc: Label = lset[i]
+			checked += 1
+			if not lc.visible:
+				out.append("%s card %d label hidden" % [ctx, i + 1])
+				continue
+			var w := _label_text_width(lc)
+			if avail - w < float(st["min_card_slack"]):
+				st["min_card_slack"] = avail - w
+				st["min_card_at"] = "%s #%d `%s`" % [ctx, i + 1, lc.text]
+			if w > avail + 0.5:
+				out.append("%s card %d `%s` %.1f>%.1fpx" % [ctx, i + 1, lc.text, w, avail])
+	var tl: Label = hud.lbl_drawer_title
+	tl.size = Vector2.ZERO
+	var tsz := tl.get_combined_minimum_size() * tl.scale
+	var head_kind := "codex" if hud.active_tab == 3 else ("panel" if (hud.wish_board_view or hud.birthday_view or hud.is_ci16_panel_open()) else "tab")
+	var min_sx := 0.45 if head_kind == "codex" else (0.70 if head_kind == "panel" else 0.60)
+	var hk := "head_" + head_kind
+	st[hk] = minf(float(st.get(hk, 9.0)), tl.scale.x)
+	checked += 1
+	if tl.position.x + tsz.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 + 0.5 or tl.scale.x < min_sx - 0.001:
+		out.append("%s headline `%s` %.1fpx wide at %.2fx (min %.2fx)" % [ctx, tl.text, tsz.x, tl.scale.x, min_sx])
+	if head_kind == "codex" and n > 0 and tl.position.y + tsz.y > hud._get_card_rect(0, n).position.y + 1.0:
+		out.append("%s codex headline runs into the cards: `%s`" % [ctx, tl.text])
+	if hud.active_tab == 3 and not hud.wish_board_view and not hud.birthday_view:
+		for e in range(EconomyConfig.ANIMAL_ORDER.size()):
+			var er := hud._get_emp_card_rect(e)
+			for pair in [[hud.lbl_emp_names[e], er.end.x - 23.0], [hud.lbl_emp_titles[e], er.end.x - 2.0], [hud.lbl_emp_progress[e], er.end.x - 2.0]]:
+				var el: Label = pair[0]
+				var right := el.position.x + _label_text_width(el)
+				checked += 1
+				if right > float(pair[1]) + 0.5:
+					out.append("%s worker card %d `%s` ends at %.1f > %.1f" % [ctx, e + 1, el.text, right, float(pair[1])])
+	return checked
+
+## Top-right toggles, bottom-bar pills, tab captions (or the capsule) stay inside their art; returns the number checked
+func _i18n_check_chrome(hud: HUD, ctx: String, out: Array[String], st: Dictionary) -> int:
+	hud._sync_label_nodes()
+	var boxes: Array = []
+	if hud.is_collapsed_capsule:
+		boxes.append([hud.lbl_capsule_info, HUD.CAPSULE_MUTE_RECT.position.x])
+		boxes.append([hud.lbl_capsule_mute, HUD.CAPSULE_MUTE_RECT.end.x])
+	else:
+		boxes.append([hud.lbl_bar_gold, 620.0])
+		boxes.append([hud.lbl_bar_pipeline, 798.0])
+		boxes.append([hud.lbl_bar_stall, 948.0])
+		boxes.append([hud.lbl_bar_pomodoro, HUD.POMODORO_RECT.end.x])
+		for ti in range(HUD.TAB_COUNT):
+			boxes.append([hud.lbl_tabs[ti], hud.lbl_tabs[ti].position.x + 73.5])
+		if hud.drawer_expanded:
+			boxes.append([hud.lbl_drawer_lang, HUD.TOP_RIGHT_LANG_RECT.end.x])
+			boxes.append([hud.lbl_drawer_noise, HUD.TOP_RIGHT_NOISE_RECT.end.x])
+			boxes.append([hud.lbl_drawer_fps, HUD.TOP_RIGHT_FPS_RECT.end.x])
+			boxes.append([hud.lbl_drawer_opacity, HUD.TOP_RIGHT_OPACITY_RECT.end.x])
+			boxes.append([hud.lbl_drawer_dock, HUD.TOP_RIGHT_DOCK_RECT.end.x])
+			boxes.append([hud.lbl_drawer_weather, HUD.TOP_RIGHT_WEATHER_RECT.end.x])
+			boxes.append([hud.lbl_drawer_mute, HUD.TOP_RIGHT_MUTE_RECT.end.x])
+	var checked := 0
+	for b in boxes:
+		var lb: Label = b[0]
+		if not lb.visible:
+			continue
+		checked += 1
+		lb.size = Vector2.ZERO
+		var right := lb.position.x + lb.get_combined_minimum_size().x * lb.scale.x
+		var ratio := lb.scale.x / maxf(0.01, lb.scale.y)
+		st["min_chrome_ratio"] = minf(float(st["min_chrome_ratio"]), ratio)
+		if right > float(b[1]) + 0.5 or ratio < 0.70:
+			out.append("%s `%s` ends at %.1f > %.1f (x/y %.2f)" % [ctx, lb.text, right, float(b[1]), ratio])
+	return checked
+
+## The banner on screen fits the 620px pill without being squeezed and is clean for the current language
+func _i18n_check_banner(hud: HUD, ctx: String, out: Array[String], st: Dictionary) -> void:
+	hud.offline_banner_timer = 3.0
+	hud._sync_label_nodes()
+	var lb: Label = hud.lbl_offline
+	var raw := _label_text_width(lb) / maxf(0.01, lb.scale.x)
+	st["banners"] = int(st["banners"]) + 1
+	st["max_banner_w"] = maxf(float(st["max_banner_w"]), raw)
+	if raw > I18N_BANNER_W + 0.5:
+		out.append("%s banner %.1f>%.0fpx `%s`" % [ctx, raw, I18N_BANNER_W, lb.text])
+	var pr := _i18n_text_problem(EconomyConfig.current_lang, lb.text)
+	if pr != "":
+		out.append("%s banner %s `%s`" % [ctx, pr, lb.text])
+
+## Every visible Label under `root`: no other-language glyph, no raw placeholder; returns the number scanned
+func _i18n_scan_visible(root: Node, ctx: String, out: Array[String]) -> int:
+	var n := 0
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var nd: Node = stack.pop_back()
+		for ch in nd.get_children():
+			stack.append(ch)
+		if nd is Label and (nd as Label).is_visible_in_tree() and (nd as Label).text.strip_edges() != "":
+			n += 1
+			var pr := _i18n_text_problem(EconomyConfig.current_lang, (nd as Label).text)
+			if pr != "":
+				out.append("%s %s: %s `%s`" % [ctx, String(nd.name), pr, (nd as Label).text])
+	return n
+
+## Footprint of every world label (hidden ones included; units / floating text excluded) keyed by node path
+func _i18n_world_label_boxes(world: MainWorld) -> Dictionary:
+	var boxes := {}
+	var stack: Array = [world.world_root]
+	while not stack.is_empty():
+		var nd: Node = stack.pop_back()
+		for ch in nd.get_children():
+			stack.append(ch)
+		if nd is Label and not _is_inside_unit_or_fx(nd, world) and (nd as Label).text.strip_edges() != "":
+			var lb := nd as Label
+			lb.size = Vector2.ZERO
+			boxes[str(lb.get_path())] = {"rect": _rect_in_world_local(world, lb, Rect2(Vector2.ZERO, lb.size)), "text": lb.text, "visible": lb.is_visible_in_tree()}
+	return boxes
+
+## Every world-label text of every state (idle / festival / built / unbuilt / auction / cinema / sports ...), composed the
+## way the game composes it from the same zh source names, keyed by a stable id -> [text, the label's fixed min width]
+func _i18n_world_texts() -> Dictionary:
+	var t := {}
+	t["gift_bag"] = [EconomyConfig.tr_key("wl_gift_bag"), 76.0]
+	t["airship"] = [EconomyConfig.tr_key("wl_airship"), 112.0]
+	t["airship_on"] = [EconomyConfig.tr_key("wl_airship_on") % [12, 12, 9, 2], 112.0]
+	t["parade"] = [EconomyConfig.tr_key("wl_parade"), 114.0]
+	t["parade_on"] = [EconomyConfig.tr_key("wl_parade_on") % 88, 114.0]
+	t["moontea"] = [EconomyConfig.tr_key("wl_moontea"), 120.0]
+	t["moontea_on"] = [EconomyConfig.tr_key("wl_moontea_on") % 88, 120.0]
+	t["lantern"] = [EconomyConfig.tr_key("wl_lantern"), 0.0]
+	t["lantern_on"] = [EconomyConfig.tr_key("wl_lantern_on") % 88, 0.0]
+	t["sports"] = [EconomyConfig.tr_key("wl_sports"), 0.0]
+	t["sports_idle"] = [EconomyConfig.tr_key("wl_sports_idle"), 0.0]
+	t["sports_gather"] = [EconomyConfig.tr_key("wl_sports_gather") % 6, 0.0]
+	for tk in EconomyConfig.SPORTS_TEAM_NAMES.keys():
+		t["sports_award_" + String(tk)] = [EconomyConfig.tr_key("wl_sports_award") % EconomyConfig.tr_name(String(EconomyConfig.SPORTS_TEAM_NAMES[tk])), 0.0]
+	for ev in EconomyConfig.SPORTS_EVENT_ORDER:
+		t["sports_event_" + String(ev)] = [EconomyConfig.tr_key("wl_sports_event") % [EconomyConfig.tr_name(String(EconomyConfig.SPORTS_EVENTS[ev]["short_name"])), 2, 3], 0.0]
+	t["kite"] = [EconomyConfig.tr_key("wl_kite"), 0.0]
+	for wl in range(3):
+		t["kite_on_%d" % wl] = [EconomyConfig.tr_key("wl_kite_on") % [EconomyConfig.tr_name(String(EconomyConfig.get_kite_wind_level_info(wl).get("name", ""))), 1.18, 45, 6, 6], 0.0]
+	# buildings: unbuilt / cost / built badge of every recipe
+	for pair in [["cp", EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD], ["gh", EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD], ["hs", EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD], ["tp", EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD], ["wm", EconomyConfig.WINDMILL_UNLOCK_COST_GOLD], ["dw", EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD], ["pk", EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD]]:
+		t[String(pair[0]) + "_unbuilt"] = [EconomyConfig.tr_key("wl_%s_unbuilt" % String(pair[0])), 0.0]
+		t[String(pair[0]) + "_cost"] = [EconomyConfig.tr_fmt("wl_%s_cost" % String(pair[0]), [int(pair[1])]), 0.0]
+		t[String(pair[0]) + "_init"] = [EconomyConfig.tr_key("wl_%s_init" % String(pair[0])), 0.0]
+	for d_id in EconomyConfig.TASTING_DISH_ORDER:
+		var dn := EconomyConfig.tr_name(String(EconomyConfig.TASTING_DISHES[d_id]["short_name"]))
+		t["cp_medal_" + String(d_id)] = [EconomyConfig.tr_fmt("wl_badge", [dn, EconomyConfig.tr_fmt("wl_seg_medal", [9])]), 0.0]
+		t["cp_tasted_" + String(d_id)] = [EconomyConfig.tr_fmt("wl_badge", [dn, EconomyConfig.tr_fmt("wl_seg_tasted", [2])]), 0.0]
+	for f_id in EconomyConfig.HYBRID_FLORA_ORDER:
+		var fz := EconomyConfig.get_item_raw_name(String(f_id))
+		if fz.length() > 4:
+			fz = fz.substr(fz.length() - 4, 4)
+		t["gh_" + String(f_id)] = [EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(fz), EconomyConfig.tr_fmt("wl_seg_box", [9])]), 0.0]
+	for h_id in EconomyConfig.HOTSPRING_BATH_ORDER:
+		t["hs_" + String(h_id)] = [EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(String(EconomyConfig.HOTSPRING_BATH_BLENDS[h_id]["short_name"])), EconomyConfig.tr_fmt("wl_seg_bath", [9])]), 0.0]
+	for tea_id in EconomyConfig.TEA_CODEX_ORDER:
+		var tn := EconomyConfig.tr_name(String(EconomyConfig.TEA_ITEMS[tea_id]["short_name"]))
+		t["tp_tea_" + String(tea_id)] = [EconomyConfig.tr_fmt("wl_badge", [tn, EconomyConfig.tr_fmt("wl_seg_tea", [9])]), 0.0]
+		t["tp_leaf_" + String(tea_id)] = [EconomyConfig.tr_fmt("wl_badge", [tn, EconomyConfig.tr_fmt("wl_seg_leaf", [9])]), 0.0]
+	for b_id in EconomyConfig.BAKERY_CODEX_ORDER:
+		var bn := EconomyConfig.tr_name(String(EconomyConfig.BAKERY_ITEMS[b_id]["short_name"]))
+		t["wm_bread_" + String(b_id)] = [EconomyConfig.tr_fmt("wl_badge", [bn, EconomyConfig.tr_fmt("wl_seg_bread", [9])]), 0.0]
+		t["wm_flour_" + String(b_id)] = [EconomyConfig.tr_fmt("wl_badge", [bn, EconomyConfig.tr_fmt("wl_seg_flour", [9])]), 0.0]
+	for dy_id in EconomyConfig.DAIRY_CODEX_ORDER:
+		t["dw_" + String(dy_id)] = [EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(String(EconomyConfig.DAIRY_ITEMS[dy_id]["short_name"])), EconomyConfig.tr_fmt("wl_seg_milk", [9])]), 0.0]
+	for p_id in EconomyConfig.POTTERY_CODEX_ORDER:
+		var pn := EconomyConfig.tr_name(String(EconomyConfig.POTTERY_ITEMS[p_id]["short_name"]))
+		t["pk_clay_" + String(p_id)] = [EconomyConfig.tr_fmt("wl_badge", [pn, EconomyConfig.tr_fmt("wl_seg_clay", [9])]), 0.0]
+		t["pk_dry_" + String(p_id)] = [EconomyConfig.tr_fmt("wl_badge", [pn, EconomyConfig.tr_key("wl_seg_nofuel")]), 0.0]
+	# lighthouse harbor + auction
+	t["lh_init"] = [EconomyConfig.tr_key("wl_lh_init"), 0.0]
+	t["au_init"] = [EconomyConfig.tr_key("wl_au_init"), 0.0]
+	t["lh_cost"] = [EconomyConfig.tr_fmt("wl_lh_cost", [EconomyConfig.LIGHTHOUSE_HARBOR_UNLOCK_COST_GOLD]), 0.0]
+	t["lh_lv"] = [EconomyConfig.tr_fmt("wl_lh_lv", [25, 9]), 0.0]
+	for cur_k in ["gold", "amber"]:
+		var cur := "G" if cur_k == "gold" else EconomyConfig.tr_key("ui_cur_amber")
+		t["au_open_" + cur_k] = [EconomyConfig.tr_fmt("wl_au_open", [999, cur]), 0.0]
+		t["au_now_you_" + cur_k] = [EconomyConfig.tr_fmt("wl_au_now", [999, cur, EconomyConfig.tr_key("wl_au_you")]), 0.0]
+		for b in EconomyConfig.AUCTION_BIDDERS:
+			var lead := EconomyConfig.get_auction_bidder_name(String(b["id"])) if EconomyConfig.is_zh() else EconomyConfig.get_auction_bidder_short_name(String(b["id"]))
+			t["au_now_%s_%s" % [String(b["id"]), cur_k]] = [EconomyConfig.tr_fmt("wl_au_now", [999, cur, lead]), 0.0]
+	for lot in EconomyConfig.AUCTION_LOT_ORDER:
+		t["au_on_" + String(lot)] = [EconomyConfig.tr_key("wl_au_on") % [3, 3, EconomyConfig.tr_name(String(EconomyConfig.AUCTION_LOTS[lot]["short_name"])), 10], 0.0]
+	# open-air cinema marquee
+	t["cin_init"] = [EconomyConfig.tr_key("wl_cin_init"), 0.0]
+	t["cin_cost"] = [EconomyConfig.tr_fmt("wl_cin_cost", [EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD]), 0.0]
+	for film in EconomyConfig.CINEMA_FILM_ORDER:
+		t["cin_on_" + String(film)] = [EconomyConfig.tr_key("wl_cin_on") % [3, 3, EconomyConfig.tr_name(String(EconomyConfig.CINEMA_FILMS[film]["short_name"])), 12], 0.0]
+	t["cin_break"] = [EconomyConfig.tr_key("wl_cin_break") % 2, 0.0]
+	t["cin_done"] = [EconomyConfig.tr_key("wl_cin_done") % 3, 0.0]
+	return t
+
+## Real-arg event banners + every banner template (sample args) in the current language
+func _i18n_check_all_banners(hud: HUD, lang: String, out: Array[String], st: Dictionary, longest_item: String) -> void:
+	var c := lang + " banner"
+	hud._on_kite_festival_started(0)
+	_i18n_check_banner(hud, c + " kite_start", out, st)
+	hud._on_kite_festival_ended(6, true)
+	_i18n_check_banner(hud, c + " kite_swept", out, st)
+	hud._on_kite_festival_ended(3, false)
+	_i18n_check_banner(hud, c + " kite_end", out, st)
+	for s_id in EconomyConfig.SEASON_ORDER:
+		hud._on_season_changed(s_id)
+		_i18n_check_banner(hud, c + " season " + s_id, out, st)
+	for w_id in EconomyConfig.SKY_WEATHER_ORDER:
+		hud._on_sky_weather_changed(w_id, "sunny")
+		_i18n_check_banner(hud, c + " weather " + w_id, out, st)
+	for isl in EconomyConfig.WISH_ISLANDERS:
+		hud._on_birthday_started(isl, "2031-01-01")
+		_i18n_check_banner(hud, c + " bday " + isl, out, st)
+		hud._on_birthday_gift_given(isl, {"rep": 999, "vouchers": 99, "favourite": longest_item, "medal": true})
+		_i18n_check_banner(hud, c + " gift " + isl, out, st)
+	# CI-16: food-week scores (longest dish name of this language, every judge, medal + vouchers) and bond level-ups
+	var longest_dish := ""
+	var longest_dw := -1.0
+	var dfont: Font = hud.lbl_offline.get_theme_font("font")
+	for did16 in EconomyConfig.FOOD_WEEK_DISHES.keys():
+		var dw16 := dfont.get_string_size(EconomyConfig.get_item_display_name(String(did16)), HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+		if dw16 > longest_dw:
+			longest_dw = dw16
+			longest_dish = String(did16)
+	for isl16 in EconomyConfig.WISH_ISLANDERS:
+		hud._on_food_week_scored({"judge": isl16, "dish": longest_dish, "score": 100, "rep": 999, "vouchers": 9, "medal_up": true, "tier": 3})
+		_i18n_check_banner(hud, c + " food_week " + isl16, out, st)
+		hud._on_friendship_level_up(isl16, 5, "wish")
+		_i18n_check_banner(hud, c + " bond_up " + isl16, out, st)
+	hud._on_photo_tour_started(0, 3)
+	_i18n_check_banner(hud, c + " photo_start", out, st)
+	for pid in EconomyConfig.get_photo_entry_order():
+		hud._on_photo_taken("", pid, 999, true)
+		_i18n_check_banner(hud, c + " photo " + pid, out, st)
+		hud._on_photo_taken("", pid, 999, false)
+		_i18n_check_banner(hud, c + " photo2 " + pid, out, st)
+	hud._on_photo_tour_ended(9, true)
+	_i18n_check_banner(hud, c + " photo_end_stamp", out, st)
+	hud._on_photo_tour_ended(9, false)
+	_i18n_check_banner(hud, c + " photo_end", out, st)
+	for isl2 in EconomyConfig.WISH_ISLANDERS:
+		for wt in EconomyConfig.WISH_TYPES.keys():
+			hud._on_wish_fulfilled(0, {"islander": isl2, "type": wt})
+			_i18n_check_banner(hud, c + " wish %s/%s" % [isl2, wt], out, st)
+	hud._on_pottery_kiln_unlocked_changed(true)
+	_i18n_check_banner(hud, c + " kiln", out, st)
+	hud._on_sports_day_started(4)
+	_i18n_check_banner(hud, c + " sports_start", out, st)
+	for ev in EconomyConfig.SPORTS_EVENT_ORDER:
+		hud._on_sports_event_settled(ev, ["bunny", "otter", "fox", "shiba"], 999)
+		_i18n_check_banner(hud, c + " sports " + ev, out, st)
+	for tk in EconomyConfig.SPORTS_TEAM_NAMES.keys():
+		hud._on_sports_day_ended(tk, 9)
+		_i18n_check_banner(hud, c + " sports_end " + tk, out, st)
+	hud._on_dairy_workshop_unlocked_changed(true)
+	_i18n_check_banner(hud, c + " dairy", out, st)
+	hud._on_open_air_cinema_unlocked_changed(true)
+	_i18n_check_banner(hud, c + " cinema", out, st)
+	for f_id in EconomyConfig.CINEMA_FILM_ORDER:
+		hud._on_cinema_screening_settled(f_id, 99, 999, 999)
+		_i18n_check_banner(hud, c + " film " + f_id, out, st)
+	hud._on_cinema_medal_awarded(9)
+	_i18n_check_banner(hud, c + " cinema_medal", out, st)
+	hud._on_lighthouse_harbor_unlocked_changed(true)
+	_i18n_check_banner(hud, c + " harbor", out, st)
+	hud._on_island_auction_started(3)
+	_i18n_check_banner(hud, c + " auction_start", out, st)
+	for lot in EconomyConfig.AUCTION_LOT_ORDER:
+		hud._on_auction_lot_resolved(lot, "player", 999, "amber", true)
+		_i18n_check_banner(hud, c + " lot_won " + lot, out, st)
+		for b in EconomyConfig.AUCTION_BIDDERS:
+			hud._on_auction_lot_resolved(lot, String(b["id"]), 999, "gold", false)
+			_i18n_check_banner(hud, c + " lot_lost " + lot, out, st)
+		hud._on_auction_lot_resolved(lot, "", 0, "gold", false)
+		_i18n_check_banner(hud, c + " lot_pass " + lot, out, st)
+	hud._on_island_auction_ended(3, true)
+	_i18n_check_banner(hud, c + " auction_end", out, st)
+	hud._on_island_auction_ended(1, false)
+	_i18n_check_banner(hud, c + " auction_end2", out, st)
+	hud._on_wish_lantern_festival_started(60.0)
+	_i18n_check_banner(hud, c + " lantern_start", out, st)
+	hud._on_wish_lantern_claimed(0, 999, 9, 9, GameManager.WISH_LANTERN_WISH_BONUS_EVERY * 3)
+	_i18n_check_banner(hud, c + " lantern_claim", out, st)
+	for d_id in EconomyConfig.TASTING_DISH_ORDER:
+		hud._on_tasting_dish_unlocked(d_id)
+		_i18n_check_banner(hud, c + " dish " + d_id, out, st)
+		hud._on_tasting_challenge_judged(d_id, 99, true, 999, 9, 9)
+		_i18n_check_banner(hud, c + " tasting " + d_id, out, st)
+		hud._on_tasting_challenge_judged(d_id, 40, false, 0, 0, 0)
+		_i18n_check_banner(hud, c + " tasting_fail " + d_id, out, st)
+	hud._on_chef_medal_awarded(9)
+	_i18n_check_banner(hud, c + " chef_medal", out, st)
+	hud._on_moon_tea_gathering_started(60.0)
+	_i18n_check_banner(hud, c + " moontea", out, st)
+	for t_id in EconomyConfig.TEA_CODEX_ORDER:
+		hud._on_tea_recipe_unlocked(t_id)
+		_i18n_check_banner(hud, c + " tea " + t_id, out, st)
+		hud._on_moon_tea_gathering_settled(t_id, 1, 999, 9, 9, 99)
+		_i18n_check_banner(hud, c + " moontea " + t_id, out, st)
+	hud._on_gourmet_parade_started(60.0)
+	_i18n_check_banner(hud, c + " parade", out, st)
+	for b_id in EconomyConfig.BAKERY_CODEX_ORDER:
+		hud._on_bakery_recipe_unlocked(b_id)
+		_i18n_check_banner(hud, c + " bakery " + b_id, out, st)
+		hud._on_gourmet_parade_settled(b_id, 1, 999, 9, 9, 99)
+		_i18n_check_banner(hud, c + " parade " + b_id, out, st)
+	for h_id in EconomyConfig.HOTSPRING_BATH_ORDER:
+		hud._on_hotspring_recipe_unlocked(h_id)
+		_i18n_check_banner(hud, c + " spa " + h_id, out, st)
+		hud._on_hotspring_vip_settled(h_id, 1, 999, 9, 9, 99)
+		_i18n_check_banner(hud, c + " vip " + h_id, out, st)
+	for fl_id in EconomyConfig.HYBRID_FLORA_ORDER:
+		hud._on_hybrid_flora_crossbred(fl_id)
+		_i18n_check_banner(hud, c + " flora " + fl_id, out, st)
+	for sb_id in EconomyConfig.SOUVENIR_BOX_ORDER:
+		hud._on_souvenir_box_sold(sb_id, 1, 999, 9, 99)
+		_i18n_check_banner(hud, c + " souvenir " + sb_id, out, st)
+	hud._on_airship_bulk_order_completed({"reward_gold": 9999, "reward_amber": 9, "reward_vouchers": 9})
+	_i18n_check_banner(hud, c + " airship", out, st)
+	for term in EconomyConfig.SOLAR_TERMS:
+		hud._on_solar_term_changed(int(term["idx"]), String(term["name"]), String(term["dish_id"]))
+		_i18n_check_banner(hud, c + " term " + String(term["id"]), out, st)
+	hud._on_gourmet_acclaim_started(36.0)
+	_i18n_check_banner(hud, c + " acclaim", out, st)
+	hud._on_lantern_festival_started(60.0)
+	_i18n_check_banner(hud, c + " fireworks", out, st)
+	hud._on_pomodoro_completed(999, 30.0)
+	_i18n_check_banner(hud, c + " pomodoro", out, st)
+	hud._show_offline_welcome_banner(3 * 3600 + 59 * 60, 99999)
+	_i18n_check_banner(hud, c + " offline", out, st)
+	# every banner template (HUD + world) with sample args: %d -> 999, %s -> a 10-letter / 5-glyph word, floats -> 1.88;
+	# the `_seg` / suffix keys are pieces appended to another banner and are measured inside it above
+	var sample_s := "Abcdefghij" if lang == "en_US" else "あいうえお"
+	var font: Font = hud.lbl_offline.get_theme_font("font")
+	if hud.lbl_offline.label_settings != null and hud.lbl_offline.label_settings.font != null:
+		font = hud.lbl_offline.label_settings.font
+	var tbl: Dictionary = EconomyConfig.I18N_DICT[lang]
+	var piece_suffixes := ["_fav", "_medal", "_gavel", "_next", "_granted", "_first_amber", "_first_voucher", "_special", "_click", "_nofuel", "_hint"]
+	for k in tbl.keys():
+		var ks := String(k)
+		if not ks.begins_with("bn_") or ks.begins_with("bn_seg_"):
+			continue
+		var is_piece := false
+		for suf in piece_suffixes:
+			if ks.ends_with(suf):
+				is_piece = true
+		if is_piece:
+			continue
+		var tpl := String(tbl[k])
+		var args: Array = []
+		for sp in _i18n_specs(tpl):
+			if sp == "%%":
+				continue
+			args.append(999 if sp.ends_with("d") else (sample_s if sp.ends_with("s") else 1.88))
+		var sample := (tpl % args) if not args.is_empty() else tpl.replace("%%", "%")
+		var sw := font.get_string_size(sample, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 2.0
+		st["banners"] = int(st["banners"]) + 1
+		st["max_banner_w"] = maxf(float(st["max_banner_w"]), sw)
+		if sw > I18N_BANNER_W + 0.5:
+			out.append("%s template `%s` %.1f>%.0fpx `%s`" % [c, ks, sw, I18N_BANNER_W, sample])
+
+## The whole assertion 29; returns stats or {"error": ...}
+func _i18n_audit(world: MainWorld) -> Dictionary:
+	var problems := _i18n_table_problems()
+	if not problems.is_empty():
+		return {"error": "text tables: " + " | ".join(problems.slice(0, 25))}
+	var hud: HUD = world.hud
+	if hud == null:
+		return {"error": "no HUD"}
+	var st := {"min_card_slack": 999.0, "min_chrome_ratio": 9.0, "banners": 0, "max_banner_w": 0.0}
+	var out: Array[String] = []
+	var views := 0
+	var labels := 0
+	var scanned := 0
+	var keep_ts := Engine.time_scale
+	var keep_clock: Callable = GameManager.season_clock
+	var keep_islands: Dictionary = GameManager.unlocked_islands.duplicate()
+	var keep_route: Array[String] = []
+	keep_route.assign(GameManager.photo_tour_route)
+	var flag_names := ["greenhouse_unlocked", "hotspring_unlocked", "windmill_unlocked", "tea_pavilion_unlocked", "chef_pavilion_unlocked", "lighthouse_harbor_unlocked", "dairy_workshop_unlocked", "pottery_kiln_unlocked", "open_air_cinema_unlocked", "airship_docked", "parade_festival_timer", "moon_tea_gathering_timer", "wish_lantern_festival_timer", "lantern_festival_timer", "gourmet_acclaim_timer", "kite_festival_active", "kite_festival_clock", "island_auction_active", "auction_high_bidder", "sports_day_active", "sports_day_clock", "photo_tour_active", "photo_tour_stop_idx", "current_weather", "cinema_night_on", "cinema_night_clock", "gold"]
+	var keep_flags := {}
+	for fn in flag_names:
+		keep_flags[fn] = GameManager.get(fn)
+	var ids := _i18n_item_ids()
+	# every item has its own name in both target languages
+	for lang0 in I18N_TARGET_LANGS:
+		EconomyConfig.set_language(lang0)
+		for iid in ids:
+			var nm := EconomyConfig.get_item_display_name(String(iid))
+			if nm == EconomyConfig.get_item_raw_name(String(iid)) and lang0 == "en_US":
+				out.append("%s item `%s` has no translated name (`%s`)" % [lang0, String(iid), nm])
+			var gp := _i18n_glyph_problem(lang0, nm)
+			if gp != "":
+				out.append("%s item `%s` -> `%s`: %s" % [lang0, String(iid), nm, gp])
+	EconomyConfig.set_language("zh_CN")
+	# world labels: zh footprints first, time frozen so nothing moves between the language snapshots
+	Engine.time_scale = 0.0
+	if world.floating_text != null and world.floating_text.has_method("clear_all"):
+		world.floating_text.clear_all()
+	world._on_language_changed()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var zh_boxes := _i18n_world_label_boxes(world)
+	var max_ratio := 0.0
+	var wfont: Font = hud.lbl_offline.get_theme_font("font")
+	var zh_wtexts := _i18n_world_texts()
+	var world_texts_checked := 0
+	var shots: Array[String] = []
+	# zh review shots of the same views (side-by-side comparison with en / ja)
+	hud.open_drawer(2)
+	hud._on_kite_festival_started(0)
+	await _ci15_capture("user://i18n_zh_CN_tab2_1920x360.png")
+	hud.open_drawer(3)
+	hud.offline_banner_timer = 0.0
+	await _ci15_capture("user://i18n_zh_CN_tab3_1920x360.png")
+	hud.open_drawer(2)
+	hud.wish_board_view = true
+	await _ci15_capture("user://i18n_zh_CN_wish_board_1920x360.png")
+	var zclk := {"year": 2031, "month": 3, "day": 23, "hour": 10, "minute": 0}
+	GameManager.set_season_clock(func() -> Dictionary: return zclk.duplicate())
+	GameManager.refresh_island_calendar()
+	hud.open_drawer(2)
+	hud.birthday_view = true
+	hud.offline_banner_timer = 0.0
+	await _ci15_capture("user://i18n_zh_CN_birthday_1920x360.png")
+	GameManager.set_season_clock(keep_clock)
+	GameManager.refresh_island_calendar()
+	shots.append_array(["i18n_zh_CN_tab2", "i18n_zh_CN_tab3", "i18n_zh_CN_wish_board", "i18n_zh_CN_birthday"])
+	# CI-16: the Workers tab + the food week / bonds panels (zh reference shots)
+	var keep_stall16: Dictionary = GameManager.stall_inventory.duplicate(true)
+	hud.open_drawer(1)
+	hud.offline_banner_timer = 0.0
+	await _ci15_capture("user://i18n_zh_CN_tab1_1920x360.png")
+	hud.food_week_view = true
+	await _ci15_capture("user://i18n_zh_CN_food_week_1920x360.png")
+	hud.open_drawer(1)
+	hud.friendship_view = true
+	await _ci15_capture("user://i18n_zh_CN_friendship_1920x360.png")
+	shots.append_array(["i18n_zh_CN_tab1", "i18n_zh_CN_food_week", "i18n_zh_CN_friendship"])
+	for lang in I18N_TARGET_LANGS:
+		EconomyConfig.set_language(lang)
+		hud.close_drawer(false)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		# 3) world labels inside their zh footprint + clean text
+		var l_boxes := _i18n_world_label_boxes(world)
+		for path in l_boxes.keys():
+			var lb_info: Dictionary = l_boxes[path]
+			if bool(lb_info["visible"]):
+				var wp := _i18n_text_problem(lang, String(lb_info["text"]))
+				if wp != "":
+					out.append("%s world label %s: %s `%s`" % [lang, String(path).get_file(), wp, String(lb_info["text"])])
+			if not zh_boxes.has(path):
+				continue
+			var zr: Rect2 = zh_boxes[path]["rect"]
+			var lr: Rect2 = lb_info["rect"]
+			max_ratio = maxf(max_ratio, lr.size.x / maxf(1.0, zr.size.x))
+			if not zr.grow(0.75).encloses(lr):
+				out.append("%s world label %s `%s` %s leaves its zh footprint %s (`%s`)" % [lang, String(path).get_file(), String(lb_info["text"]), str(lr), str(zr), String(zh_boxes[path]["text"])])
+		scanned += _i18n_scan_visible(get_tree().root, lang + " world+bar", out)
+		# 3b) every world-label text of every state, measured with the world label font (13px): never wider than zh
+		var l_wtexts := _i18n_world_texts()
+		for wid in zh_wtexts.keys():
+			var zt := String(zh_wtexts[wid][0])
+			var lt := String(l_wtexts[wid][0])
+			var zw := maxf(float(zh_wtexts[wid][1]), wfont.get_string_size(zt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x)
+			var lw := wfont.get_string_size(lt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+			world_texts_checked += 1
+			max_ratio = maxf(max_ratio, lw / maxf(1.0, zw))
+			if lw > zw + 0.75:
+				out.append("%s world text %s `%s` %.1fpx > zh `%s` %.1fpx" % [lang, String(wid), lt, lw, zt, zw])
+			var wtp := _i18n_text_problem(lang, lt)
+			if wtp != "":
+				out.append("%s world text %s: %s `%s`" % [lang, String(wid), wtp, lt])
+		# 2) HUD views. State A = the late-game state left by the assertions above (+ its info-card banners)
+		for t in range(4):
+			hud.open_drawer(t)
+			labels += _i18n_check_hud_view(hud, "%s A tab%d" % [lang, t], out, st)
+			labels += _i18n_check_chrome(hud, "%s A tab%d" % [lang, t], out, st)
+			scanned += _i18n_scan_visible(get_tree().root, "%s A tab%d" % [lang, t], out)
+			views += 1
+			var cards_a: Array[Dictionary] = hud._get_current_tab_cards()
+			for ci in range(cards_a.size()):
+				var ct := String(cards_a[ci].get("type", ""))
+				if ct in ["codex", "career", "ci10_codex", "ci11_codex", "ci12_codex", "ci13_codex", "ci14_codex", "ci15_codex", "ci16_codex", "sky_weather", "season_dress"]:
+					hud._activate_card(ci)
+					_i18n_check_banner(hud, "%s info card %s" % [lang, ct], out, st)
+		# wish board panel (+ every note's banner)
+		hud.open_drawer(2)
+		hud.wish_board_view = true
+		labels += _i18n_check_hud_view(hud, lang + " wish board", out, st)
+		scanned += _i18n_scan_visible(get_tree().root, lang + " wish board", out)
+		views += 1
+		var wcards: Array[Dictionary] = hud._get_current_tab_cards()
+		for wi in range(wcards.size()):
+			if String(wcards[wi]["type"]) == "wish_note":
+				hud._activate_card(wi)
+				hud.wish_board_view = true
+				_i18n_check_banner(hud, lang + " wish note", out, st)
+		hud.offline_banner_timer = 0.0
+		await _ci15_capture("user://i18n_%s_wish_board_1920x360.png" % lang)
+		shots.append("i18n_%s_wish_board" % lang)
+		# birthday panel: a birthday with the gift still pending (a far-future year, no gift given yet) and a plain day
+		for bd_day in [23, 24]:
+			var bclk := {"year": 2031, "month": 3, "day": bd_day, "hour": 10, "minute": 0}
+			GameManager.set_season_clock(func() -> Dictionary: return bclk.duplicate())
+			GameManager.refresh_island_calendar()
+			hud.open_drawer(2)
+			hud.birthday_view = true
+			labels += _i18n_check_hud_view(hud, "%s birthday d%d" % [lang, bd_day], out, st)
+			scanned += _i18n_scan_visible(get_tree().root, "%s birthday d%d" % [lang, bd_day], out)
+			views += 1
+			var bcards: Array[Dictionary] = hud._get_current_tab_cards()
+			for bi in range(bcards.size()):
+				var bt := String(bcards[bi]["type"])
+				if bt == "bday_today" or bt == "bday_next":
+					hud._activate_card(bi)
+					hud.birthday_view = true
+					_i18n_check_banner(hud, "%s birthday card %s" % [lang, bt], out, st)
+			if bd_day == 23:
+				hud.offline_banner_timer = 0.0
+				await _ci15_capture("user://i18n_%s_birthday_1920x360.png" % lang)
+				shots.append("i18n_%s_birthday" % lang)
+		GameManager.set_season_clock(keep_clock)
+		GameManager.refresh_island_calendar()
+		# CI-16: the food week panel (a dish waiting on the shelf / every entry used) + the bonds panel
+		for fw_state in ["open", "full"]:
+			var keep_entries16: Array[String] = []
+			keep_entries16.assign(GameManager.food_week_entries)
+			if fw_state == "full":
+				var full16: Array[String] = ["delicacy_0", "delicacy_1", "delicacy_2"]
+				GameManager.food_week_entries.assign(full16)
+			else:
+				GameManager.food_week_entries.clear()
+				GameManager.stall_inventory["dish_starlight_fish"] = maxi(1, int(GameManager.stall_inventory.get("dish_starlight_fish", 0)))
+			hud.open_drawer(1)
+			hud.food_week_view = true
+			labels += _i18n_check_hud_view(hud, "%s food week %s" % [lang, fw_state], out, st)
+			scanned += _i18n_scan_visible(get_tree().root, "%s food week %s" % [lang, fw_state], out)
+			views += 1
+			var fcards: Array[Dictionary] = hud._get_current_tab_cards()
+			for fi in range(fcards.size()):
+				var ft16 := String(fcards[fi]["type"])
+				if ft16 == "fw_judge" or ft16 == "fw_score" or (ft16 == "fw_entry" and fw_state == "full"):
+					hud._activate_card(fi)
+					hud.food_week_view = true
+					_i18n_check_banner(hud, "%s food week card %s" % [lang, ft16], out, st)
+			if fw_state == "open":
+				hud.offline_banner_timer = 0.0
+				await _ci15_capture("user://i18n_%s_food_week_1920x360.png" % lang)
+				shots.append("i18n_%s_food_week" % lang)
+			GameManager.food_week_entries.assign(keep_entries16)
+		hud.open_drawer(1)
+		hud.friendship_view = true
+		labels += _i18n_check_hud_view(hud, lang + " bonds", out, st)
+		scanned += _i18n_scan_visible(get_tree().root, lang + " bonds", out)
+		views += 1
+		var rcards: Array[Dictionary] = hud._get_current_tab_cards()
+		for ri in range(rcards.size()):
+			if String(rcards[ri]["type"]) == "fr_islander":
+				hud._activate_card(ri)
+				hud.friendship_view = true
+				_i18n_check_banner(hud, lang + " bond card", out, st)
+		hud.offline_banner_timer = 0.0
+		await _ci15_capture("user://i18n_%s_friendship_1920x360.png" % lang)
+		shots.append("i18n_%s_friendship" % lang)
+		hud.open_drawer(1)
+		hud.offline_banner_timer = 0.0
+		# State B = early game: islands 2/3 closed, every special building unbuilt, the caravan at sea, no gold
+		GameManager.unlocked_islands = {1: true, 2: false, 3: false}
+		for fb in ["greenhouse_unlocked", "hotspring_unlocked", "windmill_unlocked", "tea_pavilion_unlocked", "chef_pavilion_unlocked", "lighthouse_harbor_unlocked", "dairy_workshop_unlocked", "pottery_kiln_unlocked", "open_air_cinema_unlocked", "airship_docked"]:
+			GameManager.set(fb, false)
+		GameManager.gold = 10
+		for tb in range(4):
+			hud.open_drawer(tb)
+			labels += _i18n_check_hud_view(hud, "%s B tab%d" % [lang, tb], out, st)
+			labels += _i18n_check_chrome(hud, "%s B tab%d" % [lang, tb], out, st)
+			scanned += _i18n_scan_visible(hud, "%s B tab%d" % [lang, tb], out)
+			views += 1
+		GameManager.unlocked_islands = keep_islands.duplicate()
+		for fb2 in flag_names:
+			GameManager.set(fb2, keep_flags[fb2])
+		# State C = every festival running at once (flags only; no game frame runs while they are set)
+		GameManager.parade_festival_timer = 33.0
+		GameManager.moon_tea_gathering_timer = 33.0
+		GameManager.wish_lantern_festival_timer = 33.0
+		GameManager.lantern_festival_timer = 33.0
+		GameManager.gourmet_acclaim_timer = 33.0
+		GameManager.kite_festival_active = true
+		GameManager.lighthouse_harbor_unlocked = true
+		GameManager.island_auction_active = true
+		GameManager.auction_high_bidder = "coconut_trader"
+		GameManager.sports_day_active = true
+		GameManager.sports_day_clock = EconomyConfig.SPORTS_GATHER_SEC + 1.0
+		GameManager.photo_tour_active = true
+		var route_c: Array[String] = ["kite_terrace", "pond_bank", "cape_lawn"]
+		GameManager.photo_tour_route = route_c
+		GameManager.photo_tour_stop_idx = 1
+		GameManager.open_air_cinema_unlocked = true
+		GameManager.current_weather = GameManager.WeatherState.NIGHT
+		GameManager.cinema_night_on = true
+		GameManager.cinema_night_clock = 1.0
+		GameManager.airship_docked = not bool(keep_flags["airship_docked"])
+		for tc in [2, 3]:
+			hud.open_drawer(tc)
+			labels += _i18n_check_hud_view(hud, "%s C tab%d" % [lang, tc], out, st)
+			labels += _i18n_check_chrome(hud, "%s C tab%d" % [lang, tc], out, st)
+			scanned += _i18n_scan_visible(hud, "%s C tab%d" % [lang, tc], out)
+			views += 1
+		# State D = mid-game counters (2-digit guests / stocks / medals) on top of the running festivals
+		var counter_names := ["hotspring_guests_served", "parade_tourists_served", "tea_connoisseurs_served", "souvenirs_sold_count", "wish_lanterns_collected", "cinema_screenings_total", "cinema_medals", "auction_gavel_medals", "kite_medals", "photo_stamps", "wish_medals", "birthday_parties_total", "chef_medals", "sports_medals", "tastings_held", "photos_taken_total", "kite_collected_total", "sports_events_held_total", "seafood_landed_total", "wishes_fulfilled_total", "wish_vouchers_total", "food_week_entries_total"]
+		var keep_counters := {}
+		for cn in counter_names:
+			keep_counters[cn] = GameManager.get(cn)
+			GameManager.set(cn, 99)
+		for td in [2, 3]:
+			hud.open_drawer(td)
+			labels += _i18n_check_hud_view(hud, "%s D tab%d" % [lang, td], out, st)
+			views += 1
+		for cn2 in counter_names:
+			GameManager.set(cn2, keep_counters[cn2])
+		GameManager.auction_high_bidder = "player"
+		hud.open_drawer(2)
+		for stop_i in [0, 2]:
+			GameManager.photo_tour_stop_idx = stop_i
+			labels += _i18n_check_hud_view(hud, "%s C stop%d tab2" % [lang, stop_i], out, st)
+		labels += _i18n_check_hud_view(hud, "%s C2 tab2" % lang, out, st)
+		GameManager.sports_day_clock = 0.0
+		GameManager.photo_tour_stop_idx = 9
+		labels += _i18n_check_hud_view(hud, "%s C3 tab2" % lang, out, st)
+		views += 2
+		for fb3 in flag_names:
+			GameManager.set(fb3, keep_flags[fb3])
+		GameManager.photo_tour_route.assign(keep_route)
+		# capsule + stealth capsule
+		hud.close_drawer(true)
+		labels += _i18n_check_chrome(hud, lang + " capsule", out, st)
+		scanned += _i18n_scan_visible(hud, lang + " capsule", out)
+		hud.set_boss_stealth(true)
+		labels += _i18n_check_chrome(hud, lang + " stealth", out, st)
+		scanned += _i18n_scan_visible(hud, lang + " stealth", out)
+		hud.set_boss_stealth(false)
+		views += 2
+		# banners: the longest item name of this language feeds the item-carrying ones
+		var longest_item := ""
+		var longest_w := -1.0
+		var bfont: Font = hud.lbl_offline.get_theme_font("font")
+		for iid2 in ids:
+			var w2 := bfont.get_string_size(EconomyConfig.get_item_display_name(String(iid2)), HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+			if w2 > longest_w:
+				longest_w = w2
+				longest_item = String(iid2)
+		hud.open_drawer(2)
+		_i18n_check_all_banners(hud, lang, out, st, longest_item)
+		# review shots: tab 2 with a banner, the codex tab, the collapsed bar
+		hud.open_drawer(2)
+		hud._on_kite_festival_started(0)
+		await _ci15_capture("user://i18n_%s_tab2_1920x360.png" % lang)
+		hud.open_drawer(3)
+		hud.offline_banner_timer = 0.0
+		await _ci15_capture("user://i18n_%s_tab3_1920x360.png" % lang)
+		shots.append("i18n_%s_tab2" % lang)
+		shots.append("i18n_%s_tab3" % lang)
+		# the Buildings / Workers tabs too, so every card line of the 4 tabs can be read in each language
+		for tx in [0, 1]:
+			hud.open_drawer(tx)
+			hud.offline_banner_timer = 0.0
+			await _ci15_capture("user://i18n_%s_tab%d_1920x360.png" % [lang, tx])
+			shots.append("i18n_%s_tab%d" % [lang, tx])
+	# 4) back to zh_CN, state as it was
+	GameManager.stall_inventory = keep_stall16
+	EconomyConfig.set_language("zh_CN")
+	GameManager.set_season_clock(keep_clock)
+	GameManager.refresh_island_calendar()
+	GameManager.unlocked_islands = keep_islands
+	for fr in flag_names:
+		GameManager.set(fr, keep_flags[fr])
+	GameManager.photo_tour_route.assign(keep_route)
+	hud.close_drawer(false)
+	hud.offline_banner_timer = 0.0
+	hud._sync_label_nodes()
+	Engine.time_scale = keep_ts
+	await get_tree().process_frame
+	if EconomyConfig.current_lang != "zh_CN":
+		out.append("did not switch back to zh_CN")
+	if not out.is_empty():
+		var shown: Array[String] = []
+		for oi in range(mini(60, out.size())):
+			shown.append(out[oi])
+		return {"error": "%d problem(s):\n  %s" % [out.size(), "\n  ".join(shown)]}
+	var head_parts: Array[String] = []
+	for hk in ["head_tab", "head_codex", "head_panel"]:
+		if st.has(hk):
+			head_parts.append("%s %.2f" % [String(hk).substr(5), float(st[hk])])
+	return {"keys": EconomyConfig.I18N_DICT["zh_CN"].size(), "names": EconomyConfig.NAME_I18N["en_US"].size(), "views": views, "labels": labels,
+		"min_card_slack": float(st["min_card_slack"]), "min_card_at": String(st.get("min_card_at", "")), "head_sx": "/".join(head_parts), "min_chrome_ratio": float(st["min_chrome_ratio"]),
+		"banners": int(st["banners"]), "max_banner_w": float(st["max_banner_w"]), "scanned": scanned, "world_labels": zh_boxes.size(), "world_texts": world_texts_checked,
+		"max_world_ratio": max_ratio, "shots": "user://{" + ",".join(shots) + "}_1920x360.png"}
+
+## CI-16 (assertion 30) -------------------------------------------------------------------------------------------------
+## Cloud-Isle Food Critics' Week + Islander Friendship Bonds: textures, island-calendar weeks / judges / tastes, pause
+## isolation, dish data, scores / medals / entries, friendship from real events (wish, birthday, food week), level table,
+## price bonus + cap, save round trip, HUD (Workers cards 7 / 8, both panels, codex card 18, tab 2 unchanged). Returns
+## {"error": ...} or stats.
+func _ci16_fail(msg: String) -> Dictionary:
+	return {"error": msg}
+
+func _ci16_label_fits_all(hud: HUD, n: int, avail_fn: Callable, ctx: String) -> String:
+	for i in range(n):
+		var cr := hud._get_card_rect(i, n)
+		var avail: float = avail_fn.call(cr)
+		for lset in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
+			var lc: Label = lset[i]
+			if not lc.visible or lc.label_settings == null:
+				return "%s card %d label hidden" % [ctx, i + 1]
+			if not _label_text_fits(lc, avail):
+				return "%s card %d `%s` %.1f>%.1fpx" % [ctx, i + 1, lc.text, _label_text_width(lc), avail]
+			if cr.position.x < HUD.DRAWER_RECT.position.x + 4.0 or cr.end.x > HUD.DRAWER_RECT.end.x - 4.0 or lc.position.y + 12.0 > cr.end.y:
+				return "%s card %d leaves the drawer / card: %s" % [ctx, i + 1, str(cr)]
+	return ""
+
+## Review capture without the floating texts the checks above spawned (time is frozen, so they would never fade)
+func _ci16_capture(world: MainWorld, path: String) -> void:
+	if world.floating_text != null and world.floating_text.has_method("clear_all"):
+		world.floating_text.clear_all()
+	await _ci15_capture(path)
+
+func _ci16_set_clock_day(clk: Dictionary, unix_noon: int) -> void:
+	var d := Time.get_datetime_dict_from_unix_time(unix_noon)
+	clk["year"] = int(d["year"])
+	clk["month"] = int(d["month"])
+	clk["day"] = int(d["day"])
+	clk["hour"] = 10
+	clk["minute"] = 0
+
+func _ci16_audit(world: MainWorld) -> Dictionary:
+	var hud: HUD = world.hud
+	if hud == null:
+		return _ci16_fail("no HUD")
+	var keep_clock: Callable = GameManager.season_clock
+	var keep_gold := GameManager.gold
+	var keep_vouchers := GameManager.rare_codex_vouchers
+	var keep_stall: Dictionary = GameManager.stall_inventory.duplicate(true)
+	var keep_pw := GameManager.photo_wish_paused
+	var keep_board: Array = GameManager.wish_board.duplicate(true)
+	var wish_names := ["wishes_fulfilled_total", "wish_fulfilled_counts", "wish_reputation_bonus", "wish_vouchers_total", "wish_medals", "wish_last_result", "birthday_last_gift_key", "birthday_counts", "birthday_parties_total", "birthday_reputation_bonus", "birthday_vouchers_total", "birthday_favourite_gifts", "birthday_medals", "birthday_last_result"]
+	var keep_w := {}
+	for wn in wish_names:
+		var v = GameManager.get(wn)
+		keep_w[wn] = v.duplicate(true) if (v is Dictionary or v is Array) else v
+	var keep_career: Dictionary = GameManager.career_stats.duplicate(true)
+	# time frozen: the review captures below must not run the island (no production / sales / career counters move)
+	var keep_ts := Engine.time_scale
+	Engine.time_scale = 0.0
+	GameManager.sky_weather_paused = false
+	GameManager.photo_wish_paused = true
+	GameManager._reset_food_week_and_friendship_state()
+	var stats := {}
+
+	# 1) Textures: 4 copied icons, imported, 64x64, transparent corners
+	for tp in [EconomyConfig.FOOD_WEEK_JUDGE_TEX, EconomyConfig.FOOD_WEEK_PLATE_TEX, EconomyConfig.FOOD_WEEK_MEDAL_TEX, EconomyConfig.ICON_FRIENDSHIP_TEX]:
+		if not ResourceLoader.exists(String(tp)):
+			return _ci16_fail("texture `%s` is not imported by Godot" % String(tp))
+		var tex := EconomyConfig.load_pixel_texture(String(tp))
+		var img: Image = tex.get_image() if tex != null else null
+		if img == null or img.get_width() != 64 or img.get_height() != 64:
+			return _ci16_fail("texture `%s` is not a 64x64 image" % String(tp))
+		for cpt in [Vector2i(0, 0), Vector2i(63, 0), Vector2i(0, 63), Vector2i(63, 63)]:
+			if img.get_pixelv(cpt).a > 0.05:
+				return _ci16_fail("texture `%s` corner %s is not transparent" % [String(tp), str(cpt)])
+
+	# 2) Dish data + judge tastes
+	if EconomyConfig.FOOD_WEEK_DISHES.size() != 18:
+		return _ci16_fail("expected 18 entry dishes, got %d" % EconomyConfig.FOOD_WEEK_DISHES.size())
+	for did in EconomyConfig.FOOD_WEEK_DISHES.keys():
+		var dcfg: Dictionary = EconomyConfig.FOOD_WEEK_DISHES[did]
+		if EconomyConfig.get_item_raw_name(String(did)) == String(did) or not EconomyConfig.FOOD_TASTES.has(String(dcfg["taste"])) or int(dcfg["base"]) < 50 or int(dcfg["base"]) > 80:
+			return _ci16_fail("dish `%s` is not an existing dish with a valid taste / base" % String(did))
+	for raw in ["crop_0", "crop_3", "clay_lump", "flour_golden_wheat", "seafood_catch", "flora_cloud_rose"]:
+		if EconomyConfig.is_food_week_dish(raw):
+			return _ci16_fail("`%s` must not be an entry dish" % raw)
+	var taste_cnt := {}
+	for isl in EconomyConfig.WISH_ISLANDERS:
+		var tz := EconomyConfig.get_food_judge_taste(isl)
+		taste_cnt[tz] = int(taste_cnt.get(tz, 0)) + 1
+	for tk in EconomyConfig.FOOD_TASTE_ORDER:
+		if int(taste_cnt.get(tk, 0)) != 2:
+			return _ci16_fail("taste `%s` should belong to 2 judges: %s" % [tk, str(taste_cnt)])
+
+	# 3) Score + medal math
+	var score_cases := [["dish_mountain_sea_hotpot", "savory", 5, 100], ["dish_mountain_sea_hotpot", "savory", 0, 98], ["delicacy_0", "savory", 0, 58], ["delicacy_0", "sweet", 3, 84], ["tea_osmanthus_oolong", "fresh", 2, 92], ["crop_0", "sweet", 5, 0]]
+	for sc in score_cases:
+		var got := EconomyConfig.calc_food_week_score(String(sc[0]), String(sc[1]), int(sc[2]))
+		if got != int(sc[3]):
+			return _ci16_fail("score %s/%s/Lv%d = %d, expected %d" % [String(sc[0]), String(sc[1]), int(sc[2]), got, int(sc[3])])
+	for tc in [[69, 0], [70, 1], [81, 1], [82, 2], [91, 2], [92, 3], [100, 3]]:
+		if EconomyConfig.calc_food_week_tier(int(tc[0])) != int(tc[1]):
+			return _ci16_fail("tier of %d should be %d" % [int(tc[0]), int(tc[1])])
+	for lc in [[0, 0], [29, 0], [30, 1], [79, 1], [80, 2], [149, 2], [150, 3], [240, 4], [359, 4], [360, 5], [9999, 5]]:
+		if EconomyConfig.calc_friend_level(int(lc[0])) != int(lc[1]):
+			return _ci16_fail("friend level of %d points should be %d" % [int(lc[0]), int(lc[1])])
+
+	# 4) Island-calendar weeks: 12 weeks from a Monday (crossing month ends), judges in islander order, 7 days per week
+	var clk := {"year": 2031, "month": 3, "day": 1, "hour": 10, "minute": 0}
+	GameManager.set_season_clock(func() -> Dictionary: return clk.duplicate())
+	var started := [0]
+	var lvl_ups: Array = []
+	var on_start := func(_j: String, _w: int) -> void: started[0] = int(started[0]) + 1
+	var on_lv := func(isl_l: String, lv_l: int, src_l: String) -> void: lvl_ups.append([isl_l, lv_l, src_l])
+	EventBus.food_week_started.connect(on_start)
+	EventBus.friendship_level_up.connect(on_lv)
+	var base_noon := Time.get_unix_time_from_datetime_dict({"year": 2031, "month": 3, "day": 1, "hour": 12, "minute": 0, "second": 0})
+	var monday_noon := base_noon
+	for d0 in range(7):
+		if EconomyConfig.calc_food_week_days_left(Time.get_datetime_dict_from_unix_time(base_noon + d0 * 86400)) == 7:
+			monday_noon = base_noon + d0 * 86400
+			break
+	_ci16_set_clock_day(clk, monday_noon)
+	GameManager.refresh_island_calendar()
+	var w0 := GameManager.food_week_index
+	started[0] = 0
+	var judge_cnt := {}
+	var prev_judge := ""
+	for day in range(84):
+		_ci16_set_clock_day(clk, monday_noon + day * 86400)
+		GameManager.refresh_island_calendar()
+		var wk := int(day / 7)
+		if GameManager.food_week_index != w0 + wk or GameManager.get_food_week_days_left() != 7 - (day % 7):
+			return _ci16_fail("day %d: week %d (expected %d), days left %d" % [day, GameManager.food_week_index, w0 + wk, GameManager.get_food_week_days_left()])
+		if day % 7 == 0:
+			var jg := GameManager.food_week_judge
+			if prev_judge != "" and EconomyConfig.WISH_ISLANDERS.find(jg) != (EconomyConfig.WISH_ISLANDERS.find(prev_judge) + 1) % 6:
+				return _ci16_fail("judge did not rotate in islander order: %s -> %s" % [prev_judge, jg])
+			prev_judge = jg
+			judge_cnt[jg] = int(judge_cnt.get(jg, 0)) + 1
+		elif GameManager.food_week_judge != prev_judge:
+			return _ci16_fail("judge changed mid-week on day %d" % day)
+	if int(started[0]) != 11 or judge_cnt.size() != 6:
+		return _ci16_fail("12 weeks gave %d week announcements (expected 11) / %d judges" % [int(started[0]), judge_cnt.size()])
+	for jk in judge_cnt.keys():
+		if int(judge_cnt[jk]) != 2:
+			return _ci16_fail("judge %s served %d of 12 weeks" % [String(jk), int(judge_cnt[jk])])
+	# a week spans the year end too (Mon..Sun around 2031-12-31 share one index)
+	var ye_noon := Time.get_unix_time_from_datetime_dict({"year": 2031, "month": 12, "day": 31, "hour": 12, "minute": 0, "second": 0})
+	var ye_mon := ye_noon - (7 - EconomyConfig.calc_food_week_days_left(Time.get_datetime_dict_from_unix_time(ye_noon))) * 86400
+	var ye_idx := EconomyConfig.calc_food_week_index(Time.get_datetime_dict_from_unix_time(ye_mon))
+	for yd in range(7):
+		if EconomyConfig.calc_food_week_index(Time.get_datetime_dict_from_unix_time(ye_mon + yd * 86400)) != ye_idx:
+			return _ci16_fail("the week around the year end splits")
+	if EconomyConfig.calc_food_week_index(Time.get_datetime_dict_from_unix_time(ye_mon + 7 * 86400)) != ye_idx + 1:
+		return _ci16_fail("the week after the year end is not the next index")
+
+	# 5) Pause isolation: no week refresh and no friendship while paused
+	GameManager.food_friend_paused = true
+	var idx_p := GameManager.food_week_index
+	_ci16_set_clock_day(clk, monday_noon + 100 * 86400)
+	GameManager.refresh_island_calendar()
+	if GameManager.food_week_index != idx_p or GameManager.add_friendship_points("bunny", 50, "test") != 0 or GameManager.get_friendship_points("bunny") != 0:
+		return _ci16_fail("pause isolation broken")
+	GameManager.food_friend_paused = false
+
+	# 6) Entries in an otter week (savory): best dish first, repeats / raw goods / missing stock refused, 3 per week, gold medal
+	GameManager._reset_food_week_and_friendship_state()
+	var otter_noon := monday_noon
+	for wk2 in range(6):
+		if EconomyConfig.get_food_week_judge(EconomyConfig.calc_food_week_index(Time.get_datetime_dict_from_unix_time(monday_noon + wk2 * 7 * 86400))) == "otter":
+			otter_noon = monday_noon + wk2 * 7 * 86400
+			break
+	_ci16_set_clock_day(clk, otter_noon + 2 * 86400)
+	GameManager.refresh_island_calendar()
+	if GameManager.food_week_judge != "otter" or GameManager.get_food_week_taste() != "savory":
+		return _ci16_fail("otter week not found (judge %s)" % GameManager.food_week_judge)
+	lvl_ups.clear()
+	GameManager.stall_inventory = {"dish_mountain_sea_hotpot": 1, "dish_cloud_dumplings": 1, "delicacy_0": 2, "crop_0": 5}
+	var v0 := GameManager.rare_codex_vouchers
+	if GameManager.find_food_week_best_dish() != "dish_mountain_sea_hotpot" or GameManager.get_food_week_score_preview("dish_mountain_sea_hotpot") != 98:
+		return _ci16_fail("best dish pick wrong: %s" % GameManager.find_food_week_best_dish())
+	var r1 := GameManager.enter_food_week_dish()
+	if not bool(r1.get("entered", false)) or int(r1["score"]) != 98 or int(r1["tier"]) != 3 or not bool(r1["medal_up"]) or int(r1["rep"]) != 24 + 80 or int(r1["vouchers"]) != 2 or not bool(r1["match"]) or int(r1["friend"]) != 16 or int(GameManager.stall_inventory.get("dish_mountain_sea_hotpot", 0)) != 0:
+		return _ci16_fail("first entry wrong: %s" % str(r1))
+	var refusals := [[GameManager.enter_food_week_dish("dish_mountain_sea_hotpot"), "repeat"], [GameManager.enter_food_week_dish("crop_0"), "not_dish"], [GameManager.enter_food_week_dish("dish_starlight_fish"), "stock"]]
+	for rf in refusals:
+		if bool((rf[0] as Dictionary).get("entered", true)) or String((rf[0] as Dictionary).get("reason", "")) != String(rf[1]):
+			return _ci16_fail("refusal `%s` expected, got %s" % [String(rf[1]), str(rf[0])])
+	var r2 := GameManager.enter_food_week_dish()
+	if String(r2.get("dish", "")) != "dish_cloud_dumplings" or int(r2["score"]) != 90 or bool(r2["medal_up"]) or int(r2["rep"]) != 22 or int(r2["vouchers"]) != 0:
+		return _ci16_fail("second entry wrong: %s" % str(r2))
+	# 32 points -> Lv.1 with the judge -> +2 on the third (non-matching) dish
+	var r3 := GameManager.enter_food_week_dish()
+	if String(r3.get("dish", "")) != "delicacy_0" or int(r3["score"]) != 60 or int(r3["rep"]) != 15 or bool(r3["match"]) or int(r3["left"]) != 0:
+		return _ci16_fail("third entry wrong: %s" % str(r3))
+	var r4 := GameManager.enter_food_week_dish()
+	if bool(r4.get("entered", true)) or String(r4.get("reason", "")) != "full":
+		return _ci16_fail("a 4th entry was accepted: %s" % str(r4))
+	if GameManager.food_week_best != 98 or GameManager.food_week_tier != 3 or int(GameManager.food_week_medals["gold"]) != 1 or GameManager.rare_codex_vouchers - v0 != 2 or GameManager.food_week_reputation_bonus != 104 + 22 + 15 or GameManager.get_friendship_points("otter") != 40 or GameManager.get_friendship_level("otter") != 1 or lvl_ups.size() != 1 or String(lvl_ups[0][2]) != "food_week" or GameManager.get_food_week_dishes_judged() != 3 or int(GameManager.stall_inventory.get("delicacy_0", 0)) != 1:
+		return _ci16_fail("week totals wrong: best %d tier %d medals %s vouchers +%d rep %d otter %d pts, level-ups %s" % [GameManager.food_week_best, GameManager.food_week_tier, str(GameManager.food_week_medals), GameManager.rare_codex_vouchers - v0, GameManager.food_week_reputation_bonus, GameManager.get_friendship_points("otter"), str(lvl_ups)])
+	stats["gold_rep"] = int(r1["rep"])
+	# 7) Next week (fox, sweet): entries cleared, medals kept; bronze then silver in the same week (tier upgrade, no double count)
+	_ci16_set_clock_day(clk, otter_noon + 7 * 86400)
+	GameManager.refresh_island_calendar()
+	if GameManager.food_week_judge != "fox" or not GameManager.food_week_entries.is_empty() or GameManager.food_week_best != 0 or GameManager.food_week_tier != 0 or int(GameManager.food_week_medals["gold"]) != 1:
+		return _ci16_fail("new week did not reset entries / keep medals: judge %s, %d entries" % [GameManager.food_week_judge, GameManager.food_week_entries.size()])
+	GameManager.stall_inventory = {"delicacy_0": 1, "solar_dish_winter": 1}
+	var v1 := GameManager.rare_codex_vouchers
+	var e1 := GameManager.enter_food_week_dish("delicacy_0")
+	var e2 := GameManager.enter_food_week_dish("solar_dish_winter")
+	var e3 := GameManager.enter_food_week_dish()
+	if int(e1.get("score", 0)) != 78 or int(e1["tier"]) != 1 or int(e1["rep"]) != 19 + 20 or int(e2.get("score", 0)) != 90 or int(e2["tier"]) != 2 or int(e2["vouchers"]) != 1 or String(e3.get("reason", "")) != "no_dish":
+		return _ci16_fail("bronze -> silver week wrong: %s / %s / %s" % [str(e1), str(e2), str(e3)])
+	if int(GameManager.food_week_medals["bronze"]) != 0 or int(GameManager.food_week_medals["silver"]) != 1 or GameManager.get_food_week_medal_total() != 2 or GameManager.rare_codex_vouchers - v1 != 1:
+		return _ci16_fail("medal upgrade counted twice: %s" % str(GameManager.food_week_medals))
+
+	# 8) Friendship from real events: a fulfilled wish (+12), a favourite birthday gift (+45); cap; price bonus + cap
+	var wb0: Dictionary = GameManager.wish_board[0]
+	wb0["islander"] = "penguin"
+	wb0["state"] = "open"
+	GameManager._fulfil_wish(0)
+	if GameManager.get_friendship_points("penguin") != EconomyConfig.FRIEND_WISH_POINTS:
+		return _ci16_fail("a fulfilled wish gave penguin %d points" % GameManager.get_friendship_points("penguin"))
+	var bday_noon := Time.get_unix_time_from_datetime_dict({"year": 2032, "month": 5, "day": EconomyConfig.get_islander_birthday_day("bunny"), "hour": 12, "minute": 0, "second": 0})
+	_ci16_set_clock_day(clk, bday_noon)
+	GameManager.refresh_island_calendar()
+	GameManager.gold = 10000000
+	GameManager.stall_inventory["crop_0"] = 1
+	var g16 := GameManager.prepare_birthday_gift()
+	if not bool(g16.get("given", false)) or String(g16.get("favourite", "")) != "crop_0" or GameManager.get_friendship_points("bunny") != EconomyConfig.FRIEND_BIRTHDAY_POINTS + EconomyConfig.FRIEND_BIRTHDAY_FAV_POINTS or GameManager.get_friendship_level("bunny") != 1:
+		return _ci16_fail("birthday gift friendship wrong: %s, bunny %d pts" % [str(g16), GameManager.get_friendship_points("bunny")])
+	if GameManager.add_friendship_points("ghost", 10, "test") != 0:
+		return _ci16_fail("unknown islander got points")
+	GameManager.add_friendship_points("shiba", 99999, "test")
+	if GameManager.get_friendship_points("shiba") != 360 or GameManager.get_friendship_level("shiba") != 5:
+		return _ci16_fail("points did not stop at the Lv.5 threshold: %d" % GameManager.get_friendship_points("shiba"))
+	for isl0 in EconomyConfig.WISH_ISLANDERS:
+		GameManager.friendship_points[isl0] = 0
+	var m0 := GameManager.get_codex_price_multiplier()
+	GameManager.friendship_points["bunny"] = 80
+	var m2 := GameManager.get_codex_price_multiplier()
+	for isl1 in EconomyConfig.WISH_ISLANDERS:
+		GameManager.friendship_points[isl1] = 360
+	var m30 := GameManager.get_codex_price_multiplier()
+	if absf((m2 - m0) - 0.006) > 0.00001 or absf((m30 - m0) - EconomyConfig.FRIEND_PRICE_CAP) > 0.00001 or GameManager.get_friendship_total_levels() != 30 or GameManager.get_max_friend_count() != 6:
+		return _ci16_fail("price bonus wrong: Lv2 +%.4f, Lv30 +%.4f" % [m2 - m0, m30 - m0])
+	stats["price_cap"] = m30 - m0
+	if GameManager.get_food_week_score_preview("delicacy_0") != EconomyConfig.calc_food_week_score("delicacy_0", GameManager.get_food_week_taste(), 5):
+		return _ci16_fail("score preview ignores the judge's bond level")
+	# a mixed late-game state for the save + HUD checks
+	GameManager.friendship_points = {"bunny": 80, "otter": 150, "fox": 240, "shiba": 360, "penguin": 30, "toucan": 0}
+	var fp_save: Dictionary = GameManager.friendship_points.duplicate()
+
+	# 9) Save / load round trip (same week keeps its entries, another week drops them)
+	_ci16_set_clock_day(clk, otter_noon + 7 * 86400)
+	GameManager.refresh_island_calendar()
+	GameManager.stall_inventory = {"dish_starlight_fish": 2, "delicacy_1": 1}
+	var es := GameManager.enter_food_week_dish("delicacy_1")
+	if not bool(es.get("entered", false)):
+		return _ci16_fail("could not enter delicacy_1 before saving: %s" % str(es))
+	fp_save = GameManager.friendship_points.duplicate()
+	GameManager.save_game()
+	var entries_saved := GameManager.food_week_entries.size()
+	var medals_saved: Dictionary = GameManager.food_week_medals.duplicate()
+	GameManager.friendship_points = {}
+	GameManager.food_week_medals = {"bronze": 0, "silver": 0, "gold": 0}
+	GameManager.food_week_entries.clear()
+	GameManager.load_game()
+	for isl2 in EconomyConfig.WISH_ISLANDERS:
+		if GameManager.get_friendship_points(isl2) != int(fp_save[isl2]):
+			return _ci16_fail("save round trip lost %s's bond (%d != %d)" % [isl2, GameManager.get_friendship_points(isl2), int(fp_save[isl2])])
+	if str(GameManager.food_week_medals) != str(medals_saved) or GameManager.food_week_entries.size() != entries_saved or entries_saved != 1:
+		return _ci16_fail("save round trip lost the week: medals %s entries %d/%d" % [str(GameManager.food_week_medals), GameManager.food_week_entries.size(), entries_saved])
+	_ci16_set_clock_day(clk, otter_noon + 14 * 86400)
+	GameManager.load_game()
+	if not GameManager.food_week_entries.is_empty():
+		return _ci16_fail("a save from last week kept its entries")
+	_ci16_set_clock_day(clk, otter_noon + 7 * 86400)
+	GameManager.load_game()
+
+	# 10) HUD: Workers tab = 6 workers + #7 Food Week + #8 Bonds (single row, every line fits), both panels, codex card 18
+	hud.open_drawer(1)
+	hud._sync_label_nodes()
+	var c1: Array[Dictionary] = hud._get_current_tab_cards()
+	if c1.size() != 8 or hud._is_two_row_layout(c1.size()) or String(c1[6]["type"]) != "food_week" or String(c1[7]["type"]) != "friendship" or String(c1[0]["type"]) != "animal":
+		return _ci16_fail("Workers tab should hold 6 workers + food week + bonds, got %d cards" % c1.size())
+	var fit1 := _ci16_label_fits_all(hud, c1.size(), func(cr: Rect2) -> float: return cr.size.x - 8.0, "tab1")
+	if fit1 != "":
+		return _ci16_fail(fit1)
+	for ci7 in [6, 7]:
+		var cr7 := hud._get_card_rect(ci7, c1.size())
+		var t7: Label = hud.lbl_card_titles[ci7]
+		if t7.position.x + _label_text_width(t7) > cr7.end.x - 19.0 - 0.5:
+			return _ci16_fail("card %d title runs under its icon: `%s`" % [ci7 + 1, t7.text])
+	if hud.lbl_card_titles[6].text != "★美食评鉴周" or hud.lbl_card_subs[6].text.find("小狐狸") == -1:
+		return _ci16_fail("food week card text wrong: `%s` / `%s`" % [hud.lbl_card_titles[6].text, hud.lbl_card_subs[6].text])
+	await _ci16_capture(world, "user://ci16_review_tab1_1920x360.png")
+	# the captured frames ran the island (workshops keep stocking the shelf) -> pin the shelf again (no frame runs below)
+	GameManager.stall_inventory = {"dish_starlight_fish": 2}
+	var panel_min_sc := 9.0
+	# food week panel
+	hud._activate_card(6)
+	hud._sync_label_nodes()
+	var pf: Array[Dictionary] = hud._get_current_tab_cards()
+	if not hud.food_week_view or pf.size() != 4 or String(pf[0]["type"]) != "fw_judge" or String(pf[1]["type"]) != "fw_entry" or String(pf[2]["type"]) != "fw_score" or String(pf[3]["type"]) != "fw_back":
+		return _ci16_fail("food week panel did not open: %s" % str(pf))
+	var fitf := _ci16_label_fits_all(hud, pf.size(), func(cr: Rect2) -> float: return cr.size.x - 6.0 - 34.0, "food week panel")
+	if fitf != "":
+		return _ci16_fail(fitf)
+	for pl in range(pf.size()):
+		for lset in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
+			var plc: Label = lset[pl]
+			panel_min_sc = minf(panel_min_sc, plc.scale.x)
+			if absf(plc.scale.x - plc.scale.y) > 0.001 or plc.scale.x < 0.85 - 0.001:
+				return _ci16_fail("food week panel text squeezed `%s` %.2fx" % [plc.text, plc.scale.x])
+	var tlf: Label = hud.lbl_drawer_title
+	tlf.size = Vector2.ZERO
+	if tlf.text.find("美食评鉴周") == -1 or tlf.position.x + tlf.get_combined_minimum_size().x * tlf.scale.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 or tlf.scale.x < 0.70 - 0.001:
+		return _ci16_fail("food week headline `%s` missing / overflowing (%.2fx)" % [tlf.text, tlf.scale.x])
+	if String(pf[1]["cost_state"]) != "affordable" or hud.lbl_card_subs[1].text != EconomyConfig.get_item_display_name("dish_starlight_fish"):
+		return _ci16_fail("entry card should offer the starlight koi: `%s`" % hud.lbl_card_subs[1].text)
+	hud._activate_card(1)
+	hud._sync_label_nodes()
+	if GameManager.food_week_entries.size() != 2 or hud.offline_banner_text.find("小狐狸") == -1 or hud.lbl_card_subs[1].text != "摊位暂无可参赛菜品" or String(hud._get_current_tab_cards()[1]["cost_state"]) != "locked":
+		return _ci16_fail("entry from the panel failed: %d entries, banner `%s`, card `%s`" % [GameManager.food_week_entries.size(), hud.offline_banner_text, hud.lbl_card_subs[1].text])
+	hud._activate_card(1)
+	if hud.offline_banner_text.find("摊位上暂无") == -1:
+		return _ci16_fail("no-dish banner missing: `%s`" % hud.offline_banner_text)
+	GameManager.stall_inventory["dish_cloud_dumplings"] = 1
+	hud._activate_card(1)
+	hud._sync_label_nodes()
+	if GameManager.food_week_entries.size() != 3 or hud.lbl_card_titles[1].text != "★本周已交满":
+		return _ci16_fail("third entry from the panel failed: %d entries, card `%s`" % [GameManager.food_week_entries.size(), hud.lbl_card_titles[1].text])
+	hud._activate_card(0)
+	if hud.offline_banner_text.find("偏爱") == -1:
+		return _ci16_fail("judge card banner missing: `%s`" % hud.offline_banner_text)
+	hud._activate_card(2)
+	if hud.offline_banner_text.find("每周最多") == -1:
+		return _ci16_fail("score card banner missing: `%s`" % hud.offline_banner_text)
+	hud._activate_card(1)
+	if hud.offline_banner_text.find("交满") == -1:
+		return _ci16_fail("full entry card banner missing: `%s`" % hud.offline_banner_text)
+	hud.offline_banner_timer = 0.0
+	await _ci16_capture(world, "user://ci16_review_food_week_1920x360.png")
+	hud._activate_card(3)
+	if hud.food_week_view or hud._get_current_tab_cards().size() != 8:
+		return _ci16_fail("back card did not return to the 8 Workers cards")
+	# friendship panel
+	hud._activate_card(7)
+	hud._sync_label_nodes()
+	var pr: Array[Dictionary] = hud._get_current_tab_cards()
+	if not hud.friendship_view or pr.size() != 7 or String(pr[0]["type"]) != "fr_islander" or String(pr[6]["type"]) != "fr_back":
+		return _ci16_fail("bonds panel did not open: %d cards" % pr.size())
+	var fitr := _ci16_label_fits_all(hud, pr.size(), func(cr: Rect2) -> float: return cr.size.x - 6.0 - 34.0, "bonds panel")
+	if fitr != "":
+		return _ci16_fail(fitr)
+	for pl2 in range(pr.size()):
+		for lset2 in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
+			var plc2: Label = lset2[pl2]
+			panel_min_sc = minf(panel_min_sc, plc2.scale.x)
+			if absf(plc2.scale.x - plc2.scale.y) > 0.001 or plc2.scale.x < 0.66 - 0.001:
+				return _ci16_fail("bonds panel text squeezed `%s` %.2fx" % [plc2.text, plc2.scale.x])
+	if hud.lbl_card_titles[3].text != "柴犬 Lv.5" or hud.lbl_card_subs[3].text != "羁绊已满" or hud.lbl_card_titles[1].text != "水獭 Lv.3":
+		return _ci16_fail("bonds panel levels wrong: `%s` / `%s` / `%s`" % [hud.lbl_card_titles[3].text, hud.lbl_card_subs[3].text, hud.lbl_card_titles[1].text])
+	var tlr: Label = hud.lbl_drawer_title
+	tlr.size = Vector2.ZERO
+	if tlr.text.find("岛民羁绊") == -1 or tlr.position.x + tlr.get_combined_minimum_size().x * tlr.scale.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 or tlr.scale.x < 0.70 - 0.001:
+		return _ci16_fail("bonds headline `%s` missing / overflowing (%.2fx)" % [tlr.text, tlr.scale.x])
+	hud._activate_card(2)
+	if hud.offline_banner_text.find("小狐狸") == -1:
+		return _ci16_fail("islander card banner missing: `%s`" % hud.offline_banner_text)
+	hud.offline_banner_timer = 0.0
+	await _ci16_capture(world, "user://ci16_review_friendship_1920x360.png")
+	hud._activate_card(6)
+	if hud.friendship_view or hud._get_current_tab_cards().size() != 8:
+		return _ci16_fail("bonds back card did not return to the Workers cards")
+	# a tab switch closes the panels
+	hud._activate_card(6)
+	hud.open_drawer(2)
+	if hud.food_week_view or hud.friendship_view:
+		return _ci16_fail("panel survived a tab switch")
+	var c2: Array[Dictionary] = hud._get_current_tab_cards()
+	if c2.size() != 20 or String(c2[19]["type"]) != "birthday":
+		return _ci16_fail("Expansion tab changed: %d cards" % c2.size())
+	# codex card 18 + every codex card still fits at the real clip width
+	hud.open_drawer(3)
+	hud._sync_label_nodes()
+	var c3: Array[Dictionary] = hud._get_current_tab_cards()
+	var cx_title := "★美食评鉴(%d/%d)" % [GameManager.get_food_week_dishes_judged(), EconomyConfig.FOOD_WEEK_DISHES.size()]
+	if c3.size() != 18 or String(c3[17]["type"]) != "ci16_codex" or hud.lbl_card_titles[17].text != cx_title or hud._get_two_row_per_row(c3.size()) != 9:
+		return _ci16_fail("codex card 18 invalid: `%s` (expected `%s`, %d cards)" % [hud.lbl_card_titles[17].text, cx_title, c3.size()])
+	var fit3 := ""
+	for n3 in range(c3.size()):
+		var cw3 := hud._get_card_rect(n3, c3.size()).size.x - 5.0 - hud._two_row_icon_reserve(c3.size())
+		for lset3 in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
+			var lc3: Label = lset3[n3]
+			if not lc3.visible or not _label_text_fits(lc3, cw3):
+				fit3 += " #%d `%s` %.1f>%.1f" % [n3 + 1, lc3.text, _label_text_width(lc3), cw3]
+	if fit3 != "":
+		return _ci16_fail("codex text clipped:" + fit3)
+	hud._activate_card(17)
+	if hud.offline_banner_text.find("美食评鉴") == -1:
+		return _ci16_fail("codex card 18 banner missing: `%s`" % hud.offline_banner_text)
+	hud.offline_banner_timer = 0.0
+	await _ci16_capture(world, "user://ci16_review_codex_1920x360.png")
+	hud.close_drawer(false)
+	stats["panel_min_sc"] = panel_min_sc
+	stats["medals"] = GameManager.get_food_week_medal_total()
+	stats["levels"] = GameManager.get_friendship_total_levels()
+
+	# 11) Restore everything the checks touched (the bonds + medals stay as a late-game state for the i18n audit)
+	EventBus.food_week_started.disconnect(on_start)
+	EventBus.friendship_level_up.disconnect(on_lv)
+	GameManager.set_season_clock(keep_clock)
+	GameManager.gold = keep_gold
+	GameManager.rare_codex_vouchers = keep_vouchers
+	GameManager.stall_inventory = keep_stall
+	GameManager.wish_board.assign(keep_board)
+	for wn2 in wish_names:
+		GameManager.set(wn2, keep_w[wn2])
+	GameManager.photo_wish_paused = keep_pw
+	GameManager.career_stats = keep_career
+	GameManager.refresh_island_calendar()
+	Engine.time_scale = keep_ts
+	return stats

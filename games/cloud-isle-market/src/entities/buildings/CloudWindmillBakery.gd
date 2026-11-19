@@ -58,7 +58,7 @@ func _ready() -> void:
 	level_label.custom_minimum_size = Vector2(68.0, 20.0)
 	add_child(level_label)
 
-	status_badge_label = EconomyConfig.create_pixel_label("★面坊·舒芙蕾包", 13, Color("#FFE066"), true)
+	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_wm_init"), 13, Color("#FFE066"), true)
 	status_badge_label.name = "WindmillBadgeLabel"
 	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
 	status_badge_label.scale = Vector2(0.76, 0.76)
@@ -154,21 +154,21 @@ func _sync_labels_and_tint() -> void:
 	var built := is_windmill_built()
 	var cur_lv := get_windmill_level()
 	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else "待建面坊"
+		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_wm_unbuilt")
 		if level_label.label_settings != null:
 			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
 	if status_badge_label != null:
 		if built:
 			var bid := GameManager.active_windmill_bread_id
 			var bcfg: Dictionary = EconomyConfig.BAKERY_ITEMS.get(bid, {})
-			var sname := String(bcfg.get("short_name", "舒芙蕾包"))
+			var sname := EconomyConfig.tr_name(String(bcfg.get("short_name", "舒芙蕾包")))
 			var bread_cnt := GameManager.get_total_bread_stock_count()
 			var flour_cnt := GameManager.get_flour_stock_count()
-			status_badge_label.text = "★" + sname + ("·包" + str(bread_cnt) if bread_cnt > 0 else ("·粉" + str(flour_cnt)))
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [sname, EconomyConfig.tr_fmt("wl_seg_bread", [bread_cnt]) if bread_cnt > 0 else EconomyConfig.tr_fmt("wl_seg_flour", [flour_cnt])])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#FFE066") if bread_cnt > 0 else Color("#FFD8A8")
 		else:
-			status_badge_label.text = "★面坊(" + str(EconomyConfig.WINDMILL_UNLOCK_COST_GOLD) + "G)"
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_wm_cost", [EconomyConfig.WINDMILL_UNLOCK_COST_GOLD])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#CBD5E1")
 	if body_sprite != null:

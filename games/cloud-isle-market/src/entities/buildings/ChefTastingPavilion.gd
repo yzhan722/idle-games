@@ -61,7 +61,7 @@ func _ready() -> void:
 	level_label.custom_minimum_size = Vector2(68.0, 20.0)
 	add_child(level_label)
 
-	status_badge_label = EconomyConfig.create_pixel_label("★食神·灌汤小笼", 13, Color("#FFD8A8"), true)
+	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_cp_init"), 13, Color("#FFD8A8"), true)
 	status_badge_label.name = "ChefPavilionBadgeLabel"
 	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
 	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
@@ -158,20 +158,20 @@ func _sync_labels_and_tint() -> void:
 	var built := is_chef_pavilion_built()
 	var cur_lv := get_chef_pavilion_level()
 	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else "待建食神席"
+		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_cp_unbuilt")
 		if level_label.label_settings != null:
 			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
 	if status_badge_label != null:
 		if built:
 			var dcfg: Dictionary = EconomyConfig.TASTING_DISHES.get(GameManager.active_tasting_dish_id, {})
-			var sname := String(dcfg.get("short_name", "灌汤小笼"))
+			var sname := EconomyConfig.tr_name(String(dcfg.get("short_name", "灌汤小笼")))
 			var passed_cnt := GameManager.get_passed_tasting_challenge_count()
-			var medal_seg := ("·勋" + str(GameManager.chef_medals)) if GameManager.chef_medals > 0 else ("·鉴" + str(passed_cnt) + "/3")
-			status_badge_label.text = "★" + sname + medal_seg
+			var medal_seg := EconomyConfig.tr_fmt("wl_seg_medal", [GameManager.chef_medals]) if GameManager.chef_medals > 0 else EconomyConfig.tr_fmt("wl_seg_tasted", [passed_cnt])
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [sname, medal_seg])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#FFE066") if GameManager.chef_medals > 0 else Color("#FFD8A8")
 		else:
-			status_badge_label.text = "★食神席(" + str(EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD) + "G)"
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_cp_cost", [EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#CBD5E1")
 	if body_sprite != null:

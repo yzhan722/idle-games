@@ -287,10 +287,10 @@ func _process(delta: float) -> void:
 						var t_deal := GameManager.try_tea_connoisseur_checkout(desired_item_id, desired_qty, position)
 						if int(t_deal.get("bought", 0)) > 0:
 							purchased_ok = true
-							var tv_seg := (" +" + str(int(t_deal["vouchers"])) + "图鉴券") if int(t_deal.get("vouchers", 0)) > 0 else ""
+							var tv_seg := EconomyConfig.tr_fmt("bn_seg_voucher", [int(t_deal["vouchers"])]) if int(t_deal.get("vouchers", 0)) > 0 else ""
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								"★雅集茶客品茗! +%dG +%d琥珀%s!" % [int(t_deal["gold"]), int(t_deal["amber"]), tv_seg],
+								EconomyConfig.tr_key("ft_tea_guest") % [int(t_deal["gold"]), int(t_deal["amber"]), tv_seg],
 								Color("#88FFD0")
 							)
 							_begin_leave()
@@ -299,7 +299,7 @@ func _process(delta: float) -> void:
 					if wait_timer >= 12.0:
 						disappointed = true
 						EventBus.customer_left_unhappy.emit(position)
-						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...待云端香茗出汤", Color("#FFF4D6"))
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), EconomyConfig.tr_key("ft_wait_tea"), Color("#FFF4D6"))
 						_begin_leave()
 			elif visitor_role == VisitorRole.PARADE_GOURMET_TOURIST:
 				var has_bread := GameManager != null and GameManager.has_bread_for_parade_tourist()
@@ -311,10 +311,10 @@ func _process(delta: float) -> void:
 						var p_deal := GameManager.try_parade_tourist_purchase_bakery(desired_item_id, desired_qty, position)
 						if int(p_deal.get("bought", 0)) > 0:
 							purchased_ok = true
-							var pv_seg := (" +" + str(int(p_deal["vouchers"])) + "图鉴券") if int(p_deal.get("vouchers", 0)) > 0 else ""
+							var pv_seg := EconomyConfig.tr_fmt("bn_seg_voucher", [int(p_deal["vouchers"])]) if int(p_deal.get("vouchers", 0)) > 0 else ""
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								"★花车食客抢购! +%dG +%d琥珀%s!" % [int(p_deal["gold"]), int(p_deal["amber"]), pv_seg],
+								EconomyConfig.tr_key("ft_parade_guest") % [int(p_deal["gold"]), int(p_deal["amber"]), pv_seg],
 								Color("#FFE066")
 							)
 							_begin_leave()
@@ -323,7 +323,7 @@ func _process(delta: float) -> void:
 					if wait_timer >= 12.0:
 						disappointed = true
 						EventBus.customer_left_unhappy.emit(position)
-						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...待烘焙欧包出炉", Color("#FFF4D6"))
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), EconomyConfig.tr_key("ft_wait_bread"), Color("#FFF4D6"))
 						_begin_leave()
 			elif visitor_role == VisitorRole.HOTSPRING_VIP_GUEST:
 				var has_bath := GameManager != null and GameManager.has_bath_for_vip_guest()
@@ -335,10 +335,10 @@ func _process(delta: float) -> void:
 						var spa_deal := GameManager.try_vip_hotspring_guest_checkout(desired_item_id, desired_qty, position)
 						if int(spa_deal.get("bought", 0)) > 0:
 							purchased_ok = true
-							var sv_seg := (" +" + str(int(spa_deal["vouchers"])) + "图鉴券") if int(spa_deal.get("vouchers", 0)) > 0 else ""
+							var sv_seg := EconomyConfig.tr_fmt("bn_seg_voucher", [int(spa_deal["vouchers"])]) if int(spa_deal.get("vouchers", 0)) > 0 else ""
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								"★贵宾汤客疗愈! +%dG +%d琥珀%s!" % [int(spa_deal["gold"]), int(spa_deal["amber"]), sv_seg],
+								EconomyConfig.tr_key("ft_spa_guest") % [int(spa_deal["gold"]), int(spa_deal["amber"]), sv_seg],
 								Color("#FFE066")
 							)
 							_begin_leave()
@@ -347,7 +347,7 @@ func _process(delta: float) -> void:
 					if wait_timer >= 12.0:
 						disappointed = true
 						EventBus.customer_left_unhappy.emit(position)
-						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...待温泉浴汤调配", Color("#FFF4D6"))
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), EconomyConfig.tr_key("ft_wait_bath"), Color("#FFF4D6"))
 						_begin_leave()
 			elif visitor_role == VisitorRole.COLLECTOR_TOURIST:
 				var has_souvenir := GameManager != null and (GameManager.has_souvenir_box_for_collector() or GameManager.get_total_flora_count() > 0)
@@ -359,10 +359,10 @@ func _process(delta: float) -> void:
 						var deal := GameManager.try_collector_purchase_souvenir(desired_item_id, desired_qty, position)
 						if int(deal.get("bought", 0)) > 0:
 							purchased_ok = true
-							var v_seg := (" +" + str(int(deal["vouchers"])) + "图鉴券") if int(deal.get("vouchers", 0)) > 0 else ""
+							var v_seg := EconomyConfig.tr_fmt("bn_seg_voucher", [int(deal["vouchers"])]) if int(deal.get("vouchers", 0)) > 0 else ""
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								"★收藏家珍藏礼盒! +%dG +%d琥珀%s!" % [int(deal["gold"]), int(deal["amber"]), v_seg],
+								EconomyConfig.tr_key("ft_collector") % [int(deal["gold"]), int(deal["amber"]), v_seg],
 								Color("#FFE066")
 							)
 							_begin_leave()
@@ -371,7 +371,7 @@ func _process(delta: float) -> void:
 					if wait_timer >= 12.0:
 						disappointed = true
 						EventBus.customer_left_unhappy.emit(position)
-						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...待名物礼盒上架", Color("#FFF4D6"))
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), EconomyConfig.tr_key("ft_wait_box"), Color("#FFF4D6"))
 						_begin_leave()
 			elif visitor_role == VisitorRole.CARAVAN_MERCHANT:
 				var has_crops := GameManager != null and GameManager.has_surplus_crops_for_merchant()
@@ -385,7 +385,7 @@ func _process(delta: float) -> void:
 							purchased_ok = true
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -76),
-								"★行商收购x%d +%d琥珀 +%dG!" % [int(barter["taken"]), int(barter["amber"]), int(barter["gold"])],
+								EconomyConfig.tr_key("ft_trader") % [int(barter["taken"]), int(barter["amber"]), int(barter["gold"])],
 								Color("#FFD43B")
 							)
 							_begin_leave()
@@ -394,7 +394,7 @@ func _process(delta: float) -> void:
 					if wait_timer >= 12.0:
 						disappointed = true
 						EventBus.customer_left_unhappy.emit(position)
-						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...暂无富余作物", Color("#FFF4D6"))
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), EconomyConfig.tr_key("ft_no_surplus"), Color("#FFF4D6"))
 						_begin_leave()
 			elif visitor_role == VisitorRole.GOURMET_CRITIC:
 				var has_tasting_stock := GameManager != null and GameManager.has_delicacy_or_stall_stock_for_critic()
@@ -408,7 +408,7 @@ func _process(delta: float) -> void:
 							purchased_ok = true
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								"★美食家盛赞！金牌口碑售价&小费UP!",
+								EconomyConfig.tr_key("ft_critic"),
 								Color("#FFE066")
 							)
 							_begin_leave()
@@ -417,7 +417,7 @@ func _process(delta: float) -> void:
 					if wait_timer >= 12.0:
 						disappointed = true
 						EventBus.customer_left_unhappy.emit(position)
-						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...待料理出炉", Color("#FFF4D6"))
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), EconomyConfig.tr_key("ft_wait_dish"), Color("#FFF4D6"))
 						_begin_leave()
 			else:
 				var has_stock := stall_ref.has_available_stock() if stall_ref != null else (GameManager.get_total_stall_count() > 0)
@@ -430,14 +430,14 @@ func _process(delta: float) -> void:
 						if earned > 0:
 							purchased_ok = true
 							if is_vip:
-								EventBus.spawn_floating_text.emit(position + Vector2(0, -76), "★富豪2x小费!", Color("#FFE066"))
+								EventBus.spawn_floating_text.emit(position + Vector2(0, -76), EconomyConfig.tr_key("ft_vip_tip"), Color("#FFE066"))
 							_begin_leave()
 				else:
 					wait_timer += delta
 					if wait_timer >= 12.0:
 						disappointed = true
 						EventBus.customer_left_unhappy.emit(position)
-						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), "...缺货离开", Color("#FFF4D6"))
+						EventBus.spawn_floating_text.emit(position + Vector2(0, -54), EconomyConfig.tr_key("ft_sold_out_leave"), Color("#FFF4D6"))
 						_begin_leave()
 
 		State.LEAVE:

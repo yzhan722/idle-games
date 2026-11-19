@@ -62,7 +62,7 @@ func _ready() -> void:
 	level_label.custom_minimum_size = Vector2(68.0, 20.0)
 	add_child(level_label)
 
-	status_badge_label = EconomyConfig.create_pixel_label("★茶坊·龙井茗茶", 13, Color("#FFE066"), true)
+	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_tp_init"), 13, Color("#FFE066"), true)
 	status_badge_label.name = "TeaPavilionBadgeLabel"
 	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
 	status_badge_label.scale = Vector2(0.74, 0.74)
@@ -158,21 +158,21 @@ func _sync_labels_and_tint() -> void:
 	var built := is_tea_pavilion_built()
 	var cur_lv := get_tea_pavilion_level()
 	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else "待建茶坊"
+		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_tp_unbuilt")
 		if level_label.label_settings != null:
 			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
 	if status_badge_label != null:
 		if built:
 			var tid := GameManager.active_tea_recipe_id
 			var tcfg: Dictionary = EconomyConfig.TEA_ITEMS.get(tid, {})
-			var sname := String(tcfg.get("short_name", "龙井茗茶"))
+			var sname := EconomyConfig.tr_name(String(tcfg.get("short_name", "龙井茗茶")))
 			var tea_cnt := GameManager.get_total_brewed_tea_stock_count()
 			var leaf_cnt := GameManager.get_tea_leaves_stock_count()
-			status_badge_label.text = "★" + sname + ("·茗" + str(tea_cnt) if tea_cnt > 0 else ("·芽" + str(leaf_cnt)))
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [sname, EconomyConfig.tr_fmt("wl_seg_tea", [tea_cnt]) if tea_cnt > 0 else EconomyConfig.tr_fmt("wl_seg_leaf", [leaf_cnt])])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#FFE066") if tea_cnt > 0 else Color("#B2F2BB")
 		else:
-			status_badge_label.text = "★茶坊(" + str(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD) + "G)"
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_tp_cost", [EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#CBD5E1")
 	if status_badge_label != null:

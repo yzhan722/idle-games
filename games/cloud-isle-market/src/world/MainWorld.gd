@@ -290,7 +290,7 @@ func _ready() -> void:
 	cloud_gift_sprite.z_as_relative = false
 	world_root.add_child(cloud_gift_sprite)
 
-	cloud_gift_label = EconomyConfig.create_pixel_label("★许愿礼袋", 13, Color("#FFE066"), false)
+	cloud_gift_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_gift_bag"), 13, Color("#FFE066"), false)
 	cloud_gift_label.custom_minimum_size = Vector2(76.0, 18.0)
 	cloud_gift_label.position = Vector2(30.0, -9.0)
 	cloud_gift_sprite.add_child(cloud_gift_label)
@@ -308,7 +308,7 @@ func _ready() -> void:
 	world_root.add_child(airship_sprite)
 	_apply_airship_texture()
 
-	airship_badge_label = EconomyConfig.create_pixel_label("★远洋商队", 13, Color("#FFE066"), true)
+	airship_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_airship"), 13, Color("#FFE066"), true)
 	airship_badge_label.name = "AirshipBadgeLabel"
 	airship_badge_label.custom_minimum_size = Vector2(112.0, 18.0)
 	airship_badge_label.scale = Vector2(0.82, 0.82)
@@ -331,7 +331,7 @@ func _ready() -> void:
 	ysort_layer.add_child(parade_float_sprite)
 	_apply_parade_float_texture()
 
-	parade_float_label = EconomyConfig.create_pixel_label("★美食花车巡游", 13, Color("#FFE066"), true)
+	parade_float_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_parade"), 13, Color("#FFE066"), true)
 	parade_float_label.name = "ParadeFloatBadgeLabel"
 	parade_float_label.custom_minimum_size = Vector2(114.0, 18.0)
 	parade_float_label.scale = Vector2(0.76, 0.76)
@@ -355,7 +355,7 @@ func _ready() -> void:
 	ysort_layer.add_child(moon_tea_boat_sprite)
 	_apply_moon_tea_boat_texture()
 
-	moon_tea_boat_label = EconomyConfig.create_pixel_label("★月色画舫雅集", 13, Color("#FFE066"), true)
+	moon_tea_boat_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_moontea"), 13, Color("#FFE066"), true)
 	moon_tea_boat_label.name = "MoonTeaBoatBadgeLabel"
 	moon_tea_boat_label.custom_minimum_size = Vector2(120.0, 18.0)
 	moon_tea_boat_label.scale = Vector2(0.75, 0.75)
@@ -389,6 +389,7 @@ func _ready() -> void:
 	_build_sky_weather_layer()
 
 	EventBus.toggle_desktop_mode.connect(_on_toggle_desktop_mode)
+	EventBus.language_changed.connect(_on_language_changed)
 	EventBus.gourmet_parade_started.connect(_on_gourmet_parade_started)
 	EventBus.moon_tea_gathering_started.connect(_on_moon_tea_gathering_started)
 	EventBus.wish_lantern_festival_started.connect(_on_wish_lantern_festival_started)
@@ -420,6 +421,31 @@ func _make_grounded_prop(tex: Texture2D, slot_x: float, frame_h: int, sc: float)
 
 func _on_toggle_desktop_mode(enabled: bool) -> void:
 	_apply_desktop_mode(enabled)
+
+## i18n: the UI language changed -> every idle world caption (hidden badges included, they keep their last text) and the
+## building badges re-read their text at once; the live badges are rewritten every frame by their own update code anyway;
+## the few-second floating texts were composed in the old language, so they are dropped
+func _on_language_changed() -> void:
+	if floating_text != null and floating_text.has_method("clear_all"):
+		floating_text.clear_all()
+	if cloud_gift_label != null:
+		cloud_gift_label.text = EconomyConfig.tr_key("wl_gift_bag")
+	if airship_badge_label != null and not airship_badge_label.visible:
+		airship_badge_label.text = EconomyConfig.tr_key("wl_airship")
+	if parade_float_label != null and not parade_float_label.visible:
+		parade_float_label.text = EconomyConfig.tr_key("wl_parade")
+	if moon_tea_boat_label != null and not moon_tea_boat_label.visible:
+		moon_tea_boat_label.text = EconomyConfig.tr_key("wl_moontea")
+	if wish_lantern_label != null and not wish_lantern_label.visible:
+		wish_lantern_label.text = EconomyConfig.tr_key("wl_lantern")
+	if sports_badge_label != null and not sports_badge_label.visible:
+		sports_badge_label.text = EconomyConfig.tr_key("wl_sports")
+	if kite_badge_label != null and not kite_badge_label.visible:
+		kite_badge_label.text = EconomyConfig.tr_key("wl_kite")
+	if world_root != null:
+		world_root.propagate_call("_sync_labels_and_tint")
+	if hud != null:
+		hud._sync_label_nodes()
 
 func _apply_desktop_mode(enabled: bool) -> void:
 	if enabled:
@@ -780,7 +806,7 @@ func claim_sky_balloon() -> Dictionary:
 		SoundManager.play_milestone_sfx()
 	EventBus.spawn_floating_text.emit(
 		Vector2(cloud_gift_pos.x, maxf(18.0, cloud_gift_pos.y + 20.0)),
-		"★许愿礼袋+" + str(bonus_gold) + "G +" + str(bonus_amber) + "琥珀 · 狂欢15s!",
+		EconomyConfig.tr_fmt("ft_gift_bag", [bonus_gold, bonus_amber]),
 		Color("#FFE066")
 	)
 	return {"claimed": true, "gold": bonus_gold, "amber": bonus_amber}
@@ -845,7 +871,7 @@ func interact_with_greenhouse() -> Dictionary:
 		var ok := GameManager.unlock_greenhouse(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "建造【云端温室培育房】需 " + str(EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_gh_cost", [EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	var b_res := GameManager.bundle_souvenir_gift_box("", false)
@@ -853,7 +879,7 @@ func interact_with_greenhouse() -> Dictionary:
 		var b_name := EconomyConfig.get_item_display_name(String(b_res.get("box_id", "")))
 		EventBus.spawn_floating_text.emit(
 			Vector2(CloudGreenhouse.SLOT_X, GROUND_Y - 64.0),
-			"★打包【" + b_name + "】x1 (库存" + str(int(b_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_packed", [b_name, int(b_res.get("stock", 1))]),
 			Color("#FFE066")
 		)
 		return {"ok": true, "action": "bundle", "box_id": String(b_res.get("box_id", ""))}
@@ -861,7 +887,7 @@ func interact_with_greenhouse() -> Dictionary:
 	var f_name := EconomyConfig.get_item_display_name(next_f)
 	EventBus.spawn_floating_text.emit(
 		Vector2(CloudGreenhouse.SLOT_X, GROUND_Y - 64.0),
-		"★温室切换培育【" + f_name + "】",
+		EconomyConfig.tr_fmt("ft_w_gh_cycle", [f_name]),
 		Color("#8CE99A")
 	)
 	return {"ok": true, "action": "cycle_flora", "flora_id": next_f}
@@ -941,7 +967,7 @@ func interact_with_parade_float() -> Dictionary:
 	var b_res := GameManager.bake_windmill_bread("", true)
 	EventBus.spawn_floating_text.emit(
 		Vector2(parade_float_pos.x, GROUND_Y - 62.0),
-		"★美食花车巡游庆典！鲜烤欧包可颂溢价 1.75x~1.90x 热卖中!",
+		EconomyConfig.tr_key("ft_w_parade"),
 		Color("#FFE066")
 	)
 	return {"ok": true, "baked": bool(b_res.get("baked", false))}
@@ -955,7 +981,7 @@ func interact_with_windmill_bakery() -> Dictionary:
 		var ok := GameManager.unlock_windmill_bakery(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "建造【云端风车烘焙面坊】需 " + str(EconomyConfig.WINDMILL_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_wm_cost", [EconomyConfig.WINDMILL_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	var bake_res := GameManager.bake_windmill_bread("", true)
@@ -963,7 +989,7 @@ func interact_with_windmill_bakery() -> Dictionary:
 		var b_name := EconomyConfig.get_item_display_name(String(bake_res.get("bread_id", "")))
 		EventBus.spawn_floating_text.emit(
 			Vector2(CloudWindmillBakery.SLOT_X, GROUND_Y - 64.0),
-			"★出炉【" + b_name + "】x" + str(int(bake_res.get("qty", 1))) + " (包存" + str(int(bake_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_baked", [b_name, int(bake_res.get("qty", 1)), int(bake_res.get("stock", 1))]),
 			Color("#FFE066")
 		)
 		if not GameManager.is_gourmet_parade_active() and GameManager.get_total_bread_stock_count() >= 2:
@@ -973,7 +999,7 @@ func interact_with_windmill_bakery() -> Dictionary:
 	if bool(mill_res.get("milled", false)):
 		EventBus.spawn_floating_text.emit(
 			Vector2(CloudWindmillBakery.SLOT_X, GROUND_Y - 64.0),
-			"★研磨【金麦云朵面粉】+" + str(int(mill_res.get("qty", 1))) + " (粉存" + str(int(mill_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_milled", [int(mill_res.get("qty", 1)), int(mill_res.get("stock", 1))]),
 			Color("#FFD8A8")
 		)
 		return {"ok": true, "action": "mill"}
@@ -981,7 +1007,7 @@ func interact_with_windmill_bakery() -> Dictionary:
 	var nb_name := EconomyConfig.get_item_display_name(next_b)
 	EventBus.spawn_floating_text.emit(
 		Vector2(CloudWindmillBakery.SLOT_X, GROUND_Y - 64.0),
-		"★面坊切换烘焙【" + nb_name + "】",
+		EconomyConfig.tr_fmt("ft_w_wm_cycle", [nb_name]),
 		Color("#8CE99A")
 	)
 	return {"ok": true, "action": "cycle_bread", "bread_id": next_b}
@@ -1086,7 +1112,7 @@ func interact_with_tea_pavilion() -> Dictionary:
 		var ok := GameManager.unlock_tea_pavilion(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "建造【云端茗香制茶坊】需 " + str(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_tp_cost", [EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	var brew_res := GameManager.brew_artisan_tea("", true)
@@ -1094,7 +1120,7 @@ func interact_with_tea_pavilion() -> Dictionary:
 		var t_name := EconomyConfig.get_item_display_name(String(brew_res.get("tea_id", "")))
 		EventBus.spawn_floating_text.emit(
 			Vector2(CloudTeaPavilion.SLOT_X, GROUND_Y - 58.0),
-			"★沏泡【" + t_name + "】x" + str(int(brew_res.get("qty", 1))) + " (茗存" + str(int(brew_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_brewed_tea", [t_name, int(brew_res.get("qty", 1)), int(brew_res.get("stock", 1))]),
 			Color("#88FFD0")
 		)
 		if not GameManager.is_moon_tea_gathering_active() and GameManager.get_total_brewed_tea_stock_count() >= 2:
@@ -1104,7 +1130,7 @@ func interact_with_tea_pavilion() -> Dictionary:
 	if bool(roast_res.get("roasted", false)):
 		EventBus.spawn_floating_text.emit(
 			Vector2(CloudTeaPavilion.SLOT_X, GROUND_Y - 58.0),
-			"★杀青【云雾春芽】+" + str(int(roast_res.get("qty", 1))) + " (芽存" + str(int(roast_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_roasted", [int(roast_res.get("qty", 1)), int(roast_res.get("stock", 1))]),
 			Color("#B2F2BB")
 		)
 		return {"ok": true, "action": "roast"}
@@ -1112,7 +1138,7 @@ func interact_with_tea_pavilion() -> Dictionary:
 	var nt_name := EconomyConfig.get_item_display_name(next_t)
 	EventBus.spawn_floating_text.emit(
 		Vector2(CloudTeaPavilion.SLOT_X, GROUND_Y - 58.0),
-		"★茶坊切换沏制【" + nt_name + "】",
+		EconomyConfig.tr_fmt("ft_w_tp_cycle", [nt_name]),
 		Color("#8CE99A")
 	)
 	return {"ok": true, "action": "cycle_tea", "tea_id": next_t}
@@ -1144,7 +1170,7 @@ func _build_wish_lanterns() -> void:
 		wish_lanterns.append({"lane": i, "x": start_x, "age": 1.2, "respawn": 0.0, "phase": float(i) * 1.7, "sprite": sp})
 	_apply_wish_lantern_textures()
 
-	wish_lantern_label = EconomyConfig.create_pixel_label("★星灯祈愿水灯节", 13, Color("#FFD8A8"), true)
+	wish_lantern_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_lantern"), 13, Color("#FFD8A8"), true)
 	wish_lantern_label.label_settings = wish_lantern_label.label_settings.duplicate() as LabelSettings
 	wish_lantern_label.name = "WishLanternFestivalBadgeLabel"
 	wish_lantern_label.custom_minimum_size = Vector2(120.0, 18.0)
@@ -1238,7 +1264,7 @@ func _update_wish_lanterns(delta: float, fest_active: bool, isl3_on: bool) -> vo
 	if wish_lantern_label != null:
 		wish_lantern_label.visible = fest_active
 		if fest_active and GameManager != null:
-			wish_lantern_label.text = "★星灯祈愿水灯节(%ds)" % maxi(1, int(ceili(GameManager.wish_lantern_festival_timer)))
+			wish_lantern_label.text = EconomyConfig.tr_key("wl_lantern_on") % maxi(1, int(ceili(GameManager.wish_lantern_festival_timer)))
 
 func _on_wish_lantern_festival_started(_duration: float) -> void:
 	_apply_wish_lantern_textures()
@@ -1372,7 +1398,7 @@ func interact_with_chef_pavilion() -> Dictionary:
 		var ok := GameManager.unlock_chef_pavilion(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "建造【山海食神品鉴席】需 " + str(EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_cp_cost", [EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	# 1) A cooked dish is waiting -> invite the jury for a tasting challenge (pending challenge, or an encore during the lantern festival)
@@ -1386,7 +1412,7 @@ func interact_with_chef_pavilion() -> Dictionary:
 	if bool(c_res.get("cooked", false)):
 		EventBus.spawn_floating_text.emit(
 			Vector2(ChefTastingPavilion.SLOT_X, GROUND_Y - 58.0),
-			"★烹制【" + EconomyConfig.get_item_display_name(String(c_res.get("dish_id", ""))) + "】(肴存" + str(int(c_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_cooked", [EconomyConfig.get_item_display_name(String(c_res.get("dish_id", ""))), int(c_res.get("stock", 1))]),
 			Color("#FFD8A8")
 		)
 		return {"ok": true, "action": "cook", "dish_id": String(c_res.get("dish_id", ""))}
@@ -1394,7 +1420,7 @@ func interact_with_chef_pavilion() -> Dictionary:
 	var next_d := GameManager.cycle_tasting_dish()
 	EventBus.spawn_floating_text.emit(
 		Vector2(ChefTastingPavilion.SLOT_X, GROUND_Y - 58.0),
-		"★品鉴席切换名菜【" + EconomyConfig.get_item_display_name(next_d) + "】",
+		EconomyConfig.tr_fmt("ft_w_cp_cycle", [EconomyConfig.get_item_display_name(next_d)]),
 		Color("#FFE066")
 	)
 	return {"ok": true, "action": "cycle_dish", "dish_id": next_d}
@@ -1421,7 +1447,7 @@ func interact_with_hotspring_inn() -> Dictionary:
 		var ok := GameManager.unlock_hotspring_inn(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "建造【云海温泉汤屋】需 " + str(EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_hs_cost", [EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	var brew_res := GameManager.brew_hotspring_bath("", false)
@@ -1429,7 +1455,7 @@ func interact_with_hotspring_inn() -> Dictionary:
 		var b_name := EconomyConfig.get_item_display_name(String(brew_res.get("bath_id", "")))
 		EventBus.spawn_floating_text.emit(
 			Vector2(CloudHotspringInn.SLOT_X, GROUND_Y - 64.0),
-			"★熬制【" + b_name + "】x1 (汤存" + str(int(brew_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_bath", [b_name, int(brew_res.get("stock", 1))]),
 			Color("#FFE066")
 		)
 		return {"ok": true, "action": "brew", "bath_id": String(brew_res.get("bath_id", ""))}
@@ -1437,7 +1463,7 @@ func interact_with_hotspring_inn() -> Dictionary:
 	var nb_name := EconomyConfig.get_item_display_name(next_b)
 	EventBus.spawn_floating_text.emit(
 		Vector2(CloudHotspringInn.SLOT_X, GROUND_Y - 64.0),
-		"★汤屋切换药浴【" + nb_name + "】",
+		EconomyConfig.tr_fmt("ft_w_hs_cycle", [nb_name]),
 		Color("#8CE99A")
 	)
 	return {"ok": true, "action": "cycle_bath", "bath_id": next_b}
@@ -1581,7 +1607,7 @@ func interact_with_lighthouse_harbor() -> Dictionary:
 		var ok := GameManager.unlock_lighthouse_harbor(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "建造【云海灯塔渔港】需 " + str(EconomyConfig.LIGHTHOUSE_HARBOR_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_lh_cost", [EconomyConfig.LIGHTHOUSE_HARBOR_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	if GameManager.island_auction_active:
@@ -1589,9 +1615,9 @@ func interact_with_lighthouse_harbor() -> Dictionary:
 		if not bool(bid.get("ok", false)) and hud != null:
 			hud.offline_banner_timer = 3.5
 			if String(bid.get("reason", "")) == "leading":
-				hud.offline_banner_text = "★你正以 " + str(int(bid.get("amount", 0))) + GameManager.get_auction_currency_tag() + " 领先，静候落槌!"
+				hud.offline_banner_text = EconomyConfig.tr_fmt("bn_au_leading", [int(bid.get("amount", 0)), GameManager.get_auction_currency_tag()])
 			else:
-				hud.offline_banner_text = "★出价需 " + str(int(bid.get("amount", 0))) + GameManager.get_auction_currency_tag() + "，当前余额不足!"
+				hud.offline_banner_text = EconomyConfig.tr_fmt("bn_au_poor", [int(bid.get("amount", 0)), GameManager.get_auction_currency_tag()])
 			hud._sync_label_nodes()
 		return {"ok": bool(bid.get("ok", false)), "action": "bid", "result": bid}
 	if GameManager.auction_cooldown_timer <= 0.0:
@@ -1601,13 +1627,13 @@ func interact_with_lighthouse_harbor() -> Dictionary:
 	if shipped > 0:
 		EventBus.spawn_floating_text.emit(
 			Vector2(LighthouseHarbor.SLOT_X, GROUND_Y - 70.0),
-			"★鲜货上摊 +" + str(shipped) + " 云海鲜渔获",
+			EconomyConfig.tr_fmt("ft_w_fish_shipped", [shipped]),
 			Color("#88D8FF")
 		)
 		return {"ok": true, "action": "ship", "qty": shipped}
 	if hud != null:
 		hud.offline_banner_timer = 3.8
-		hud.offline_banner_text = "★灯塔渔港: 渔船轮班出海中 · 存鲜" + str(GameManager.get_harbor_seafood_stock()) + " · 名物拍卖会 " + str(int(ceili(GameManager.auction_cooldown_timer))) + "s 后开槌!"
+		hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_lh_info", [GameManager.get_harbor_seafood_stock(), int(ceili(GameManager.auction_cooldown_timer))])
 		hud._sync_label_nodes()
 	return {"ok": true, "action": "status"}
 
@@ -1661,7 +1687,7 @@ func interact_with_dairy_workshop() -> Dictionary:
 		var ok := GameManager.unlock_dairy_workshop(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "建造【云端牧场乳品工坊】需 " + str(EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_dw_cost", [EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	var c_res := GameManager.craft_dairy_product("")
@@ -1673,7 +1699,7 @@ func interact_with_dairy_workshop() -> Dictionary:
 	if bool(c_res.get("crafted", false)):
 		EventBus.spawn_floating_text.emit(
 			Vector2(DairyWorkshop.SLOT_X, GROUND_Y - 58.0),
-			"★制成【" + EconomyConfig.get_item_display_name(String(c_res.get("item_id", ""))) + "】(存" + str(int(c_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_dairy_made", [EconomyConfig.get_item_display_name(String(c_res.get("item_id", ""))), int(c_res.get("stock", 1))]),
 			Color("#FFF4D6")
 		)
 		return {"ok": true, "action": "craft", "item_id": String(c_res.get("item_id", ""))}
@@ -1681,7 +1707,7 @@ func interact_with_dairy_workshop() -> Dictionary:
 	if bool(m_res.get("milked", false)):
 		EventBus.spawn_floating_text.emit(
 			Vector2(DairyWorkshop.SLOT_X, GROUND_Y - 58.0),
-			"★挤奶 +" + str(int(m_res.get("qty", 0))) + " 云朵鲜奶 (饲" + EconomyConfig.get_item_display_name(String(m_res.get("feed", ""))) + ")",
+			EconomyConfig.tr_fmt("ft_w_milked", [int(m_res.get("qty", 0)), EconomyConfig.get_item_display_name(String(m_res.get("feed", "")))]),
 			Color("#FFF4D6")
 		)
 		return {"ok": true, "action": "milk", "qty": int(m_res.get("qty", 0))}
@@ -1690,7 +1716,7 @@ func interact_with_dairy_workshop() -> Dictionary:
 		return {"ok": true, "action": "ship", "qty": shipped}
 	if hud != null:
 		hud.offline_banner_timer = 3.8
-		hud.offline_banner_text = "★乳品工坊: 农田篮里没有鲜草作物可喂云朵奶牛 · 等月兔收获后再来挤奶!"
+		hud.offline_banner_text = EconomyConfig.tr_key("bn_w_dw_nofeed")
 		hud._sync_label_nodes()
 	return {"ok": true, "action": "status"}
 
@@ -1704,21 +1730,21 @@ func interact_with_open_air_cinema() -> Dictionary:
 		var ok := GameManager.unlock_open_air_cinema(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "搭建【星空夜市露天电影院】需 " + str(EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_cin_cost", [EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	var snack := GameManager.sell_cinema_snacks(1)
 	if int(snack.get("sold", 0)) > 0:
 		EventBus.spawn_floating_text.emit(
 			Vector2(OpenAirCinema.SLOT_X, GROUND_Y - 52.0),
-			"★影院零食 +" + str(int(snack.get("gold", 0))) + "G",
+			EconomyConfig.tr_fmt("ft_w_snack", [int(snack.get("gold", 0))]),
 			Color("#FFE066")
 		)
 		return {"ok": true, "action": "snack", "gold": int(snack.get("gold", 0))}
 	if hud != null:
 		var sm := GameManager.get_cinema_status_summary()
 		hud.offline_banner_timer = 3.8
-		hud.offline_banner_text = "★露天影院: 今夜已映 " + str(int(sm["tonight"])) + "/3 场 · 每场观众 " + str(int(sm["audience"])) + " 位 × 影票 " + str(int(sm["ticket_price"])) + "G · 乳品工坊的云朵布丁/鲜奶可作影院零食!"
+		hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_cin_info", [int(sm["tonight"]), int(sm["audience"]), int(sm["ticket_price"])])
 		hud._sync_label_nodes()
 	return {"ok": true, "action": "status"}
 
@@ -1784,7 +1810,7 @@ func _build_sports_day_props() -> void:
 	sports_medal_sprite.visible = false
 	world_root.add_child(sports_medal_sprite)
 
-	sports_badge_label = EconomyConfig.create_pixel_label("★岛民秋季运动会", 13, Color("#FFE066"), true)
+	sports_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_sports"), 13, Color("#FFE066"), true)
 	sports_badge_label.name = "SportsDayBadgeLabel"
 	# Own LabelSettings copy: the badge recolours per phase and must never leak into other shared 13px labels
 	sports_badge_label.label_settings = sports_badge_label.label_settings.duplicate() as LabelSettings
@@ -1824,7 +1850,7 @@ func interact_with_pottery_kiln() -> Dictionary:
 		var ok := GameManager.unlock_pottery_kiln(false)
 		if not ok and hud != null:
 			hud.offline_banner_timer = 3.5
-			hud.offline_banner_text = "建造【云端陶艺窑坊】需 " + str(EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD) + "G 金币!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_pk_cost", [EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD])
 			hud._sync_label_nodes()
 		return {"ok": ok, "action": "unlock"}
 	var f_res := GameManager.fire_pottery("")
@@ -1836,7 +1862,7 @@ func interact_with_pottery_kiln() -> Dictionary:
 	if bool(f_res.get("fired", false)):
 		EventBus.spawn_floating_text.emit(
 			Vector2(PotteryKiln.SLOT_X, GROUND_Y - 58.0),
-			"★出窑【" + EconomyConfig.get_item_display_name(String(f_res.get("item_id", ""))) + "】(存" + str(int(f_res.get("stock", 1))) + ")",
+			EconomyConfig.tr_fmt("ft_w_fired", [EconomyConfig.get_item_display_name(String(f_res.get("item_id", ""))), int(f_res.get("stock", 1))]),
 			Color("#FFD8A8")
 		)
 		return {"ok": true, "action": "fire", "item_id": String(f_res.get("item_id", ""))}
@@ -1846,7 +1872,7 @@ func interact_with_pottery_kiln() -> Dictionary:
 	if hud != null:
 		hud.offline_banner_timer = 3.8
 		var st := GameManager.get_pottery_kiln_status()
-		hud.offline_banner_text = "★陶艺窑坊: 土仓 " + str(GameManager.get_pottery_stock(EconomyConfig.POTTERY_CLAY_ID)) + " 份" + (" · 缺秸秆柴 (农田篮里没有收获作物)" if st == "fuel" else " · 月兔收获时会翻出陶土，茶碗 1 份土 / 陶花瓶 2 份土")
+		hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_pk_info", [GameManager.get_pottery_stock(EconomyConfig.POTTERY_CLAY_ID), EconomyConfig.tr_key("bn_w_pk_nofuel") if st == "fuel" else EconomyConfig.tr_key("bn_w_pk_hint")])
 		hud._sync_label_nodes()
 	return {"ok": true, "action": "status"}
 
@@ -1953,13 +1979,13 @@ func _update_sports_day(_delta: float) -> void:
 	var sm := GameManager.get_sports_status_summary()
 	if sports_badge_label != null and sports_badge_label.label_settings != null:
 		var phase := String(sm["phase"])
-		var txt := "★秋季运动会"
+		var txt := EconomyConfig.tr_key("wl_sports_idle")
 		if phase == "gather":
-			txt = "★秋季运动会·入场(%ds)" % maxi(1, int(ceili(EconomyConfig.SPORTS_GATHER_SEC - GameManager.sports_day_clock)))
+			txt = EconomyConfig.tr_key("wl_sports_gather") % maxi(1, int(ceili(EconomyConfig.SPORTS_GATHER_SEC - GameManager.sports_day_clock)))
 		elif phase == "award":
-			txt = "★金丝带颁奖·" + String(EconomyConfig.SPORTS_TEAM_NAMES.get(GameManager.sports_last_champion, ""))
+			txt = EconomyConfig.tr_key("wl_sports_award") % EconomyConfig.tr_name(String(EconomyConfig.SPORTS_TEAM_NAMES.get(GameManager.sports_last_champion, "")))
 		else:
-			txt = "★运动会·%s %d/%d" % [String(sm["event_short"]), int(sm["event_idx"]) + 1, int(sm["event_count"])]
+			txt = EconomyConfig.tr_key("wl_sports_event") % [String(sm["event_short"]), int(sm["event_idx"]) + 1, int(sm["event_count"])]
 		sports_badge_label.text = txt
 		sports_badge_label.label_settings.font_color = Color("#FFE066") if phase != "award" else Color("#FFD43B")
 		sports_badge_label.visible = true
@@ -2083,7 +2109,7 @@ func _build_kite_and_season_props() -> void:
 		world_root.add_child(ks)
 		kite_sprites.append(ks)
 
-	kite_badge_label = EconomyConfig.create_pixel_label("★云海风筝节", 13, Color("#9BE7FF"), false)
+	kite_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_kite"), 13, Color("#9BE7FF"), false)
 	kite_badge_label.name = "KiteFestivalBadgeLabel"
 	# Own LabelSettings copy: the badge recolours per gust and must never leak into other shared 13px labels
 	kite_badge_label.label_settings = kite_badge_label.label_settings.duplicate() as LabelSettings
@@ -2248,9 +2274,9 @@ func interact_with_kite(slot_idx: int) -> Dictionary:
 		var k_name := EconomyConfig.get_item_display_name(String(res.get("kite_id", "")))
 		hud.offline_banner_timer = 3.5
 		if bool(res.get("swept", false)):
-			hud.offline_banner_text = "★风筝满天！收下全部 %d 只风筝 · 风筝满天勋章 x%d · +%d琥珀 +%d图鉴券!" % [EconomyConfig.KITE_SLOTS.size(), GameManager.kite_medals, int(res.get("amber", 0)), int(res.get("vouchers", 0))]
+			hud.offline_banner_text = EconomyConfig.tr_key("bn_w_kite_sweep") % [EconomyConfig.KITE_SLOTS.size(), GameManager.kite_medals, int(res.get("amber", 0)), int(res.get("vouchers", 0))]
 		else:
-			hud.offline_banner_text = "★收下【%s】+%dG%s · 风力%s 产销加成中 · 余 %d 只" % [k_name, int(res.get("gold", 0)), (" +%d琥珀" % int(res.get("amber", 0))) if int(res.get("amber", 0)) > 0 else "", GameManager.get_kite_wind_name(), GameManager.get_kite_remaining_count()]
+			hud.offline_banner_text = EconomyConfig.tr_key("bn_w_kite_got") % [k_name, int(res.get("gold", 0)), (EconomyConfig.tr_key("bn_seg_amber") % int(res.get("amber", 0))) if int(res.get("amber", 0)) > 0 else "", GameManager.get_kite_wind_name(), GameManager.get_kite_remaining_count()]
 		hud._sync_label_nodes()
 	return res
 
@@ -2260,7 +2286,7 @@ func _on_kite_collected(slot_idx: int, kite_id: String, gold: int) -> void:
 	kite_sprites[slot_idx].visible = false
 	EventBus.spawn_floating_text.emit(
 		kite_sprites[slot_idx].position + Vector2(0.0, 26.0),
-		"+%dG %s" % [gold, String(EconomyConfig.KITE_TYPES.get(kite_id, {}).get("short_name", "风筝"))],
+		"+%dG %s" % [gold, EconomyConfig.tr_name(String(EconomyConfig.KITE_TYPES.get(kite_id, {}).get("short_name", "风筝")))],
 		Color("#9BE7FF")
 	)
 	if kite_fx_layer != null:
@@ -2281,7 +2307,7 @@ func _update_kite_festival(_delta: float) -> void:
 		kite_badge_label.visible = active
 		if active:
 			var sm := GameManager.get_kite_status_summary()
-			kite_badge_label.text = "★风筝节·%s 售x%.2f 余%ds 筝%d/%d" % [String(sm["wind_name"]), float(sm["sale_mult"]), maxi(1, int(ceili(float(sm["seconds_left"])))), int(sm["remaining"]), EconomyConfig.KITE_SLOTS.size()]
+			kite_badge_label.text = EconomyConfig.tr_key("wl_kite_on") % [String(sm["wind_name"]), float(sm["sale_mult"]), maxi(1, int(ceili(float(sm["seconds_left"])))), int(sm["remaining"]), EconomyConfig.KITE_SLOTS.size()]
 			var w_lvl := EconomyConfig.calc_kite_wind_level_idx(GameManager.kite_festival_idx, GameManager.kite_festival_clock)
 			kite_badge_label.label_settings.font_color = KITE_BADGE_WIND_COLORS[clampi(w_lvl, 0, KITE_BADGE_WIND_COLORS.size() - 1)]
 			kite_badge_label.size = Vector2.ZERO
@@ -2695,12 +2721,12 @@ func interact_with_docked_airship() -> Dictionary:
 		if loaded_cnt > 0:
 			EventBus.spawn_floating_text.emit(
 				Vector2(airship_pos.x, airship_pos.y + 18.0),
-				"★远洋装船 +" + str(loaded_cnt) + "件 (" + str(sum["delivered"]) + "/" + str(sum["required"]) + ")",
+				EconomyConfig.tr_fmt("ft_w_air_load", [loaded_cnt, str(sum["delivered"]), str(sum["required"])]),
 				Color("#8CE99A")
 			)
 		elif hud != null:
 			hud.offline_banner_timer = 4.0
-			hud.offline_banner_text = "★远洋飞艇大订单需求: " + String(sum["brief"]) + " · 集齐奖励 +" + str(sum["reward_amber"]) + "琥珀 +" + str(sum["reward_vouchers"]) + "稀有图鉴券!"
+			hud.offline_banner_text = EconomyConfig.tr_fmt("bn_w_air_need", [String(sum["brief"]), str(sum["reward_amber"]), str(sum["reward_vouchers"])])
 			hud._sync_label_nodes()
 	return res
 
@@ -2783,7 +2809,7 @@ func _process(delta: float) -> void:
 			airship_badge_label.visible = GameManager.airship_docked and airship_visual_alpha > 0.45
 			if airship_badge_label.visible:
 				var asum := GameManager.get_airship_order_progress_summary()
-				airship_badge_label.text = "★商队%d/%d(+%d珀+%d券)" % [
+				airship_badge_label.text = EconomyConfig.tr_key("wl_airship_on") % [
 					int(asum["delivered"]),
 					int(asum["required"]),
 					int(asum["reward_amber"]),
@@ -2875,11 +2901,11 @@ func _process(delta: float) -> void:
 		if moon_tea_boat_label != null:
 			moon_tea_boat_label.visible = true
 			if moon_tea_active:
-				moon_tea_boat_label.text = "★月色画舫雅集(%ds)" % maxi(1, int(ceili(GameManager.moon_tea_gathering_timer)))
+				moon_tea_boat_label.text = EconomyConfig.tr_key("wl_moontea_on") % maxi(1, int(ceili(GameManager.moon_tea_gathering_timer)))
 				if moon_tea_boat_label.label_settings != null:
 					moon_tea_boat_label.label_settings.font_color = Color("#FFE066")
 			else:
-				moon_tea_boat_label.text = "★月色画舫雅集"
+				moon_tea_boat_label.text = EconomyConfig.tr_key("wl_moontea")
 				if moon_tea_boat_label.label_settings != null:
 					moon_tea_boat_label.label_settings.font_color = Color("#88FFD0")
 				# CI-12: the pond is the sports-day stadium -> the idle boat caption gives way to the athletes' heads
@@ -2909,7 +2935,7 @@ func _process(delta: float) -> void:
 			parade_float_sprite.flip_h = parade_float_dir < 0.0
 		if parade_float_label != null:
 			parade_float_label.visible = true
-			parade_float_label.text = "★美食花车巡游(%ds)" % maxi(1, int(ceili(GameManager.parade_festival_timer)))
+			parade_float_label.text = EconomyConfig.tr_key("wl_parade_on") % maxi(1, int(ceili(GameManager.parade_festival_timer)))
 			parade_float_label.position = parade_float_pos + Vector2(-43.0, -64.0)
 	else:
 		if parade_float_sprite != null:

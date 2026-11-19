@@ -475,6 +475,29 @@ var birthday_last_result: Dictionary = {}
 ## the birthday calendar refreshes, so the earlier assertions keep their exact numbers. Gameplay never sets it.
 var sky_weather_paused: bool = false
 
+## CI-16: Cloud-Isle Food Critics' Week (`云岛美食评鉴周`) & Islander Friendship Bonds (`岛民友谊羁绊`) — no new building
+## The week, its judge and the judge's taste follow the island calendar (`season_clock`); never randomised.
+var food_week_index: int = -1
+var food_week_judge: String = ""
+var food_week_announced_index: int = -1
+## Dishes entered this week (ids, in order), their scores, the week's best score and medal tier (0 none .. 3 gold)
+var food_week_entries: Array[String] = []
+var food_week_scores: Array[int] = []
+var food_week_best: int = 0
+var food_week_tier: int = 0
+var food_week_entries_total: int = 0
+var food_week_medals: Dictionary = {"bronze": 0, "silver": 0, "gold": 0}
+var food_week_reputation_bonus: int = 0
+var food_week_vouchers_total: int = 0
+## Best score ever per dish id (the codex card counts the dishes judged)
+var food_week_dish_best: Dictionary = {}
+var food_week_last_result: Dictionary = {}
+var friendship_points: Dictionary = {}
+var friendship_last_levelup: Dictionary = {}
+## Self-test isolation only (never saved): while true the week does not refresh and no friendship point is earned, so the
+## earlier assertions keep their exact numbers. Gameplay never sets it.
+var food_friend_paused: bool = false
+
 ## v2.5-2: Island Landscape Decorations & Passive Buffs
 var unlocked_landscapes: Dictionary = {
 	"bee_hive": false,
@@ -523,6 +546,8 @@ func _ready() -> void:
 	for isl_b in EconomyConfig.WISH_ISLANDERS:
 		if not birthday_counts.has(isl_b):
 			birthday_counts[isl_b] = 0
+		if not friendship_points.has(isl_b):
+			friendship_points[isl_b] = 0
 	refresh_island_calendar()
 
 func reset_for_playtest_state() -> void:
@@ -661,6 +686,7 @@ func reset_for_playtest_state() -> void:
 	_reset_kite_and_season_state()
 	_reset_photo_and_wish_state()
 	_reset_sky_weather_and_birthday_state()
+	_reset_food_week_and_friendship_state()
 	unlocked_landscapes = {
 		"bee_hive": false,
 		"wind_chime": false,
@@ -1060,7 +1086,7 @@ func get_unlocked_codex_count() -> int:
 	return cnt
 
 func get_codex_price_multiplier() -> float:
-	var mult := 1.0 + 0.10 * float(get_unlocked_codex_count()) + 0.08 * float(get_unlocked_solar_dish_count()) + 0.08 * float(get_unlocked_flora_count()) + 0.10 * float(get_unlocked_souvenir_count()) + 0.08 * float(get_unlocked_bath_count()) + 0.08 * float(get_unlocked_bakery_count()) + 0.08 * float(get_unlocked_tea_count()) + 0.08 * float(get_passed_tasting_challenge_count()) + 0.08 * float(get_unlocked_auction_lot_count()) + 0.04 * float(get_unlocked_dairy_count()) + 0.04 * float(get_unlocked_film_count()) + 0.04 * float(get_unlocked_pottery_count()) + 0.04 * float(get_unlocked_sports_event_count()) + 0.04 * float(get_unlocked_kite_count()) + 0.02 * float(get_seen_season_count()) + EconomyConfig.PHOTO_CODEX_PRICE_PER_ENTRY * float(get_unlocked_photo_count()) + EconomyConfig.SKY_WEATHER_CODEX_PRICE_PER_TYPE * float(get_seen_sky_weather_count()) + EconomyConfig.BIRTHDAY_CODEX_PRICE_PER_ISLANDER * float(get_celebrated_islander_count())
+	var mult := 1.0 + 0.10 * float(get_unlocked_codex_count()) + 0.08 * float(get_unlocked_solar_dish_count()) + 0.08 * float(get_unlocked_flora_count()) + 0.10 * float(get_unlocked_souvenir_count()) + 0.08 * float(get_unlocked_bath_count()) + 0.08 * float(get_unlocked_bakery_count()) + 0.08 * float(get_unlocked_tea_count()) + 0.08 * float(get_passed_tasting_challenge_count()) + 0.08 * float(get_unlocked_auction_lot_count()) + 0.04 * float(get_unlocked_dairy_count()) + 0.04 * float(get_unlocked_film_count()) + 0.04 * float(get_unlocked_pottery_count()) + 0.04 * float(get_unlocked_sports_event_count()) + 0.04 * float(get_unlocked_kite_count()) + 0.02 * float(get_seen_season_count()) + EconomyConfig.PHOTO_CODEX_PRICE_PER_ENTRY * float(get_unlocked_photo_count()) + EconomyConfig.SKY_WEATHER_CODEX_PRICE_PER_TYPE * float(get_seen_sky_weather_count()) + EconomyConfig.BIRTHDAY_CODEX_PRICE_PER_ISLANDER * float(get_celebrated_islander_count()) + get_friendship_price_bonus()
 	var s_term := get_current_solar_term()
 	if String(s_term.get("buff_type", "")) == "price_bonus":
 		mult *= (1.0 + float(s_term.get("buff_val", 0.15)))
@@ -1213,7 +1239,7 @@ func complete_active_contract() -> Dictionary:
 	EventBus.contract_completed.emit(completed)
 	EventBus.spawn_floating_text.emit(
 		Vector2(1022.7, EconomyConfig.GROUND_Y - 40.0),
-		"★皇家契约完成! +" + str(rew_gold) + "G +" + str(rew_amber) + "琥珀",
+		EconomyConfig.tr_fmt("ft_contract_done", [rew_gold, rew_amber]),
 		Color("#FFE066")
 	)
 	generate_next_contract()
@@ -1258,7 +1284,7 @@ func redeem_rare_voucher_for_codex() -> Dictionary:
 			var d_name := EconomyConfig.get_item_display_name(dk)
 			EventBus.spawn_floating_text.emit(
 				Vector2(1022.7, EconomyConfig.GROUND_Y - 48.0),
-				"★图鉴券点亮节气食谱【" + d_name + "】+1份上架!",
+				EconomyConfig.tr_fmt("ft_voucher_recipe", [d_name]),
 				Color("#8CE99A")
 			)
 			save_game()
@@ -1272,7 +1298,7 @@ func redeem_rare_voucher_for_codex() -> Dictionary:
 	add_to_stall(cur_sd, 2)
 	EventBus.spawn_floating_text.emit(
 		Vector2(1022.7, EconomyConfig.GROUND_Y - 48.0),
-		"★四时全席礼遇 +" + str(div_amber) + "琥珀 +" + str(div_gold) + "G!",
+		EconomyConfig.tr_fmt("ft_four_seasons_perk", [div_amber, div_gold]),
 		Color("#FFE066")
 	)
 	save_game()
@@ -1317,19 +1343,19 @@ func generate_next_airship_order() -> Dictionary:
 	var combo_items: Array[Dictionary] = [
 		{
 			"item_id": pick_crop,
-			"name": EconomyConfig.get_item_display_name(pick_crop),
+			"name": EconomyConfig.get_item_raw_name(pick_crop),
 			"required": req_crop,
 			"delivered": 0
 		},
 		{
 			"item_id": pick_del,
-			"name": EconomyConfig.get_item_display_name(pick_del),
+			"name": EconomyConfig.get_item_raw_name(pick_del),
 			"required": req_del,
 			"delivered": 0
 		},
 		{
 			"item_id": pick_solar,
-			"name": EconomyConfig.get_item_display_name(pick_solar),
+			"name": EconomyConfig.get_item_raw_name(pick_solar),
 			"required": req_solar,
 			"delivered": 0
 		}
@@ -1368,7 +1394,9 @@ func get_airship_order_progress_summary() -> Dictionary:
 			sum_del += mini(d, r)
 			sum_req += r
 			var nm := String(entry.get("name", ""))
-			if nm.length() > 3:
+			if not EconomyConfig.is_zh() and String(entry.get("item_id", "")) != "":
+				nm = EconomyConfig.get_item_short_label(String(entry.get("item_id", "")))
+			elif nm.length() > 3:
 				nm = nm.substr(nm.length() - 2, 2) if nm.begins_with("春分") or nm.begins_with("夏至") or nm.begins_with("秋分") or nm.begins_with("冬至") else nm.substr(0, 3)
 			parts.append("%s%d/%d" % [nm, mini(d, r), r])
 	return {
@@ -1507,7 +1535,7 @@ func complete_airship_bulk_order() -> Dictionary:
 	EventBus.airship_bulk_order_completed.emit(completed)
 	EventBus.spawn_floating_text.emit(
 		Vector2(1320.0, 56.0),
-		"★远洋大订单达成! +" + str(rew_gold) + "G +" + str(rew_amber) + "琥珀 +" + str(rew_vouchers) + "图鉴券!",
+		EconomyConfig.tr_fmt("ft_airship_done", [rew_gold, rew_amber, rew_vouchers]),
 		Color("#FFE066")
 	)
 	generate_next_airship_order()
@@ -1533,7 +1561,7 @@ func unlock_landscape(landscape_id: String) -> bool:
 	EventBus.landscape_unlocked.emit(isl, landscape_id)
 	EventBus.spawn_floating_text.emit(
 		Vector2(float(cfg.get("x_pos", 619.8)), EconomyConfig.GROUND_Y - 30.0),
-		"★解锁造景【" + String(cfg.get("name", landscape_id)) + "】!",
+		EconomyConfig.tr_fmt("ft_landscape", [EconomyConfig.tr_name(String(cfg.get("name", landscape_id)))]),
 		Color("#FFE066")
 	)
 	return true
@@ -1718,7 +1746,7 @@ func unlock_greenhouse(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(438.0, EconomyConfig.GROUND_Y - 58.0),
-		"★云端温室培育房启用！开始培育【星露铃兰】!",
+		EconomyConfig.tr_key("ft_gh_open"),
 		Color("#8CE99A")
 	)
 	evaluate_achievements()
@@ -1833,7 +1861,7 @@ func harvest_greenhouse_flora() -> Dictionary:
 				EventBus.hybrid_flora_crossbred.emit(cand_id)
 				EventBus.spawn_floating_text.emit(
 					Vector2(438.0, EconomyConfig.GROUND_Y - 58.0),
-					"★奇花杂交突破！培育出【" + EconomyConfig.get_item_display_name(cand_id) + "】!",
+					EconomyConfig.tr_fmt("ft_flora_bred", [EconomyConfig.get_item_display_name(cand_id)]),
 					Color("#FFE066")
 				)
 				break
@@ -2039,7 +2067,7 @@ func unlock_hotspring_inn(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(CloudHotspringInn.SLOT_X, EconomyConfig.GROUND_Y - 62.0),
-		"★云海温泉汤屋开汤！熬制【艾草暖身汤】恢复全员精力!",
+		EconomyConfig.tr_key("ft_hs_open"),
 		Color("#FFE066")
 	)
 	evaluate_achievements()
@@ -2103,7 +2131,7 @@ func _check_hotspring_recipe_progression(brewed_id: String) -> String:
 				active_hotspring_bath_id = cand_id
 				EventBus.spawn_floating_text.emit(
 					Vector2(CloudHotspringInn.SLOT_X, EconomyConfig.GROUND_Y - 62.0),
-					"★灵泉秘方突破！调配出【" + EconomyConfig.get_item_display_name(cand_id) + "】!",
+					EconomyConfig.tr_fmt("ft_bath_recipe", [EconomyConfig.get_item_display_name(cand_id)]),
 					Color("#FFE066")
 				)
 				break
@@ -2354,7 +2382,7 @@ func unlock_windmill_bakery(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(397.9, EconomyConfig.GROUND_Y - 52.0),
-		"★云端风车烘焙面坊落成！麦香烘焙光环激活 (摊位&工坊提速1.22x+)!",
+		EconomyConfig.tr_key("ft_wm_open"),
 		Color("#FFE066")
 	)
 	evaluate_achievements()
@@ -2435,7 +2463,7 @@ func _check_bakery_recipe_progression(crafted_id: String) -> String:
 					active_windmill_bread_id = cand_id
 				EventBus.spawn_floating_text.emit(
 					Vector2(397.9, EconomyConfig.GROUND_Y - 52.0),
-					"★烘焙秘方突破！解锁【" + EconomyConfig.get_item_display_name(cand_id) + "】!",
+					EconomyConfig.tr_fmt("ft_bake_recipe", [EconomyConfig.get_item_display_name(cand_id)]),
 					Color("#FFE066")
 				)
 				break
@@ -2663,7 +2691,7 @@ func unlock_tea_pavilion(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(950.7, EconomyConfig.GROUND_Y - 58.0),
-		"★云端茗香制茶坊落成！茗香清心光环激活 (员工效率&小费UP)!",
+		EconomyConfig.tr_key("ft_tp_open"),
 		Color("#88FFD0")
 	)
 	evaluate_achievements()
@@ -2763,7 +2791,7 @@ func _check_tea_recipe_progression(crafted_id: String) -> String:
 					active_tea_recipe_id = cand_id
 				EventBus.spawn_floating_text.emit(
 					Vector2(950.7, EconomyConfig.GROUND_Y - 58.0),
-					"★茶道秘谱点亮！解锁【" + EconomyConfig.get_item_display_name(cand_id) + "】!",
+					EconomyConfig.tr_fmt("ft_tea_recipe", [EconomyConfig.get_item_display_name(cand_id)]),
 					Color("#88FFD0")
 				)
 				break
@@ -2900,7 +2928,7 @@ func start_moon_tea_gathering(duration: float = MOON_TEA_GATHERING_DURATION) -> 
 	EventBus.moon_tea_gathering_started.emit(moon_tea_gathering_timer)
 	EventBus.spawn_floating_text.emit(
 		Vector2(1192.0, 74.0),
-		"★荷塘月色画舫品茗雅集开幕！茗茶与佳肴售价 1.38x!",
+		EconomyConfig.tr_key("ft_moontea_open"),
 		Color("#88FFD0")
 	)
 	return true
@@ -2922,7 +2950,7 @@ func claim_moon_tea_boat_reward(world_pos: Vector2 = Vector2(1192.0, 96.0)) -> D
 		else:
 			EventBus.spawn_floating_text.emit(
 				world_pos + Vector2(0.0, -28.0),
-				"需先建造【云端茗香制茶坊】(" + str(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD) + "G) 开启画舫雅集!",
+				EconomyConfig.tr_fmt("ft_moontea_need", [EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD]),
 				Color("#FFF4D6")
 			)
 			return {"claimed": false, "amber": 0, "vouchers": 0, "rep_gained": 0, "buff_mult": 1.0}
@@ -2940,7 +2968,7 @@ func claim_moon_tea_boat_reward(world_pos: Vector2 = Vector2(1192.0, 96.0)) -> D
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		world_pos + Vector2(0.0, -32.0),
-		"★画舫品茗雅赏! +%d琥珀 +%d图鉴券 +%d声望 (茶肴1.38x)!" % [amber_gain, voucher_gain, rep_gain],
+		EconomyConfig.tr_key("ft_moontea_reward") % [amber_gain, voucher_gain, rep_gain],
 		Color("#FFE066")
 	)
 	save_game()
@@ -3034,7 +3062,7 @@ func start_wish_lantern_festival(duration: float = WISH_LANTERN_FESTIVAL_DURATIO
 	EventBus.wish_lantern_festival_started.emit(wish_lantern_festival_timer)
 	EventBus.spawn_floating_text.emit(
 		Vector2(1150.0, 70.0),
-		"★云海星灯祈愿水灯节开幕！荷塘与海岸漂来祈愿水灯 · 全集市售价 1.30x!",
+		EconomyConfig.tr_key("ft_lantern_open"),
 		Color("#FFD8A8")
 	)
 	return true
@@ -3075,7 +3103,7 @@ func claim_wish_lantern(lantern_idx: int, world_pos: Vector2) -> Dictionary:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		world_pos + Vector2(0.0, -26.0),
-		("★祈愿成真! " if wish_granted else "★星灯祈愿! ") + "+%dG +%d琥珀 +%d图鉴券" % [gold_gain, amber_gain, voucher_gain],
+		(EconomyConfig.tr_key("ft_wish_granted") if wish_granted else EconomyConfig.tr_key("ft_lantern_wish")) + EconomyConfig.tr_key("ft_lantern_reward") % [gold_gain, amber_gain, voucher_gain],
 		Color("#FFE066") if wish_granted else Color("#FFD8A8")
 	)
 	save_game()
@@ -3109,7 +3137,7 @@ func unlock_chef_pavilion(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.CHEF_PAVILION_SLOT_X, EconomyConfig.GROUND_Y - 56.0),
-		"★山海食神品鉴席落成！三岛食材组合烹制特级名菜!",
+		EconomyConfig.tr_key("ft_cp_open"),
 		Color("#FFD8A8")
 	)
 	evaluate_achievements()
@@ -3375,7 +3403,7 @@ func run_tasting_challenge(preferred_dish_id: String = "") -> Dictionary:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.CHEF_PAVILION_SLOT_X, EconomyConfig.GROUND_Y - 60.0),
-		("★品鉴通过【%s】%d分!" % [EconomyConfig.get_item_display_name(dish_id), score]) if passed else ("品鉴未达标【%s】%d/%d分" % [EconomyConfig.get_item_display_name(dish_id), score, EconomyConfig.TASTING_PASS_SCORE]),
+		(EconomyConfig.tr_key("ft_tasting_pass") % [EconomyConfig.get_item_display_name(dish_id), score]) if passed else (EconomyConfig.tr_key("ft_tasting_fail") % [EconomyConfig.get_item_display_name(dish_id), score, EconomyConfig.TASTING_PASS_SCORE]),
 		Color("#FFE066") if passed else Color("#FFF4D6")
 	)
 	save_game()
@@ -3469,7 +3497,7 @@ func unlock_lighthouse_harbor(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.LIGHTHOUSE_HARBOR_SLOT_X, EconomyConfig.GROUND_Y - 72.0),
-		"★云海灯塔渔港点灯！双渔船轮班出海捕鲜货!",
+		EconomyConfig.tr_key("ft_lh_open"),
 		Color("#88D8FF")
 	)
 	evaluate_achievements()
@@ -3579,7 +3607,7 @@ func _land_harbor_catch(boat_idx: int, trips: int) -> int:
 	EventBus.seafood_catch_landed.emit(boat_idx, qty, get_harbor_seafood_stock())
 	EventBus.spawn_floating_text.emit(
 		Vector2(float(EconomyConfig.HARBOR_BOAT_LANE["berth_x"]), EconomyConfig.GROUND_Y - 30.0),
-		"★渔船归港 +%d 云海鲜渔获" % qty,
+		EconomyConfig.tr_key("ft_boat_back") % qty,
 		Color("#88D8FF")
 	)
 	evaluate_achievements()
@@ -3607,7 +3635,7 @@ func get_auction_currency() -> String:
 
 func get_auction_currency_tag(cur: String = "") -> String:
 	var c := cur if cur != "" else get_auction_currency()
-	return "珀" if c == "amber" else "G"
+	return EconomyConfig.tr_key("ui_cur_amber") if c == "amber" else "G"
 
 func get_unlocked_auction_lot_count() -> int:
 	var cnt := 0
@@ -3641,7 +3669,7 @@ func start_island_auction(force: bool = false) -> bool:
 	EventBus.island_auction_started.emit(EconomyConfig.AUCTION_LOT_ORDER.size())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.LIGHTHOUSE_HARBOR_SLOT_X, EconomyConfig.GROUND_Y - 96.0),
-		"★岛民名物集市拍卖会开槌！",
+		EconomyConfig.tr_key("ft_auction_open"),
 		Color("#FFD8A8")
 	)
 	return true
@@ -3762,7 +3790,7 @@ func _resolve_auction_lot() -> Dictionary:
 		"lot_id": lot_id,
 		"lot_index": auction_lot_index,
 		"winner_id": winner,
-		"winner_name": EconomyConfig.get_auction_bidder_name(winner) if winner != "" else "流拍",
+		"winner_name": EconomyConfig.get_auction_bidder_name(winner) if winner != "" else EconomyConfig.tr_key("ui_unsold"),
 		"price": price,
 		"currency": cur,
 		"player_won": player_won,
@@ -3781,7 +3809,7 @@ func _resolve_auction_lot() -> Dictionary:
 	EventBus.auction_lot_resolved.emit(lot_id, winner, price, cur, player_won)
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.LIGHTHOUSE_HARBOR_SLOT_X, EconomyConfig.GROUND_Y - 96.0),
-		("★落槌！拍得【%s】%d%s" % [EconomyConfig.get_item_display_name(lot_id), price, get_auction_currency_tag(cur)]) if player_won else ("落槌:【%s】归%s" % [EconomyConfig.get_item_display_name(lot_id), String(res["winner_name"])]),
+		(EconomyConfig.tr_key("ft_au_won") % [EconomyConfig.get_item_display_name(lot_id), price, get_auction_currency_tag(cur)]) if player_won else (EconomyConfig.tr_key("ft_au_lost") % [EconomyConfig.get_item_display_name(lot_id), String(res["winner_name"])]),
 		Color("#FFE066") if player_won else Color("#FFF4D6")
 	)
 	if auction_lot_index + 1 < EconomyConfig.AUCTION_LOT_ORDER.size():
@@ -3841,7 +3869,7 @@ func get_auction_status_summary() -> Dictionary:
 		"lot_index": auction_lot_index,
 		"lot_count": EconomyConfig.AUCTION_LOT_ORDER.size(),
 		"lot_id": get_auction_lot_id(),
-		"lot_short": String(cfg.get("short_name", "名物")),
+		"lot_short": EconomyConfig.tr_name(String(cfg.get("short_name", "名物"))),
 		"timer": maxf(0.0, auction_lot_timer),
 		"high_bid": auction_high_bid,
 		"high_bidder": auction_high_bidder,
@@ -3900,7 +3928,7 @@ func unlock_dairy_workshop(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.DAIRY_WORKSHOP_SLOT_X, EconomyConfig.GROUND_Y - 54.0),
-		"★云端牧场乳品工坊落成！鲜草饲喂云朵奶牛挤鲜奶!",
+		EconomyConfig.tr_key("ft_dw_open"),
 		Color("#FFF4D6")
 	)
 	evaluate_achievements()
@@ -4082,7 +4110,7 @@ func unlock_open_air_cinema(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.OPEN_AIR_CINEMA_SLOT_X, EconomyConfig.GROUND_Y - 58.0),
-		"★星空夜市露天电影院搭好银幕！夜幕降临即开映!",
+		EconomyConfig.tr_key("ft_cin_open"),
 		Color("#FFD8A8")
 	)
 	evaluate_achievements()
@@ -4195,7 +4223,7 @@ func advance_cinema(delta: float) -> int:
 		EventBus.cinema_screening_started.emit(k_now, f_now)
 		EventBus.spawn_floating_text.emit(
 			Vector2(EconomyConfig.OPEN_AIR_CINEMA_SLOT_X, EconomyConfig.GROUND_Y - 62.0),
-			"★露天电影开映 %s" % EconomyConfig.get_item_display_name(f_now),
+			EconomyConfig.tr_key("ft_film_start") % EconomyConfig.get_item_display_name(f_now),
 			Color("#FFD8A8")
 		)
 	return settled
@@ -4291,7 +4319,7 @@ func _settle_cinema_screening(k: int) -> Dictionary:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.OPEN_AIR_CINEMA_SLOT_X, EconomyConfig.GROUND_Y - 52.0),
-		("★影迷勋章! " if medal else "★散场 ") + "观众%d · 影票+%dG" % [audience, ticket_gold] + ((" · 零食+%dG" % int(snack["gold"])) if int(snack["gold"]) > 0 else ""),
+		(EconomyConfig.tr_key("ft_cin_medal") if medal else EconomyConfig.tr_key("ft_cin_end")) + EconomyConfig.tr_key("ft_cin_audience") % [audience, ticket_gold] + ((EconomyConfig.tr_key("ft_cin_snack") % int(snack["gold"])) if int(snack["gold"]) > 0 else ""),
 		Color("#FFE066") if medal else Color("#FFD8A8")
 	)
 	return res
@@ -4307,7 +4335,7 @@ func get_cinema_status_summary() -> Dictionary:
 		"slot": k,
 		"slot_count": EconomyConfig.CINEMA_FILM_ORDER.size(),
 		"film_id": film_id,
-		"film_short": String(fcfg.get("short_name", "")),
+		"film_short": EconomyConfig.tr_name(String(fcfg.get("short_name", ""))),
 		"remaining": get_cinema_screening_remaining(),
 		"intermission_left": maxf(0.0, (float(k + 1) * EconomyConfig.CINEMA_SLOT_SEC - cinema_night_clock)) if (k >= 0 and not is_cinema_screening_active()) else 0.0,
 		"audience": get_cinema_audience(),
@@ -4366,7 +4394,7 @@ func unlock_pottery_kiln(free_for_test: bool = false) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.POTTERY_KILN_SLOT_X, EconomyConfig.GROUND_Y - 56.0),
-		"★云端陶艺窑坊点火！收获陶土+秸秆柴烧制茶碗与陶花瓶!",
+		EconomyConfig.tr_key("ft_pk_open"),
 		Color("#FFD8A8")
 	)
 	evaluate_achievements()
@@ -4574,7 +4602,7 @@ func start_sports_day() -> bool:
 	EventBus.sports_day_started.emit(teams.size())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.SPORTS_TRACK_CENTER_X, EconomyConfig.GROUND_Y - 58.0),
-		"★岛民秋季运动会开幕！%d 支队伍入场 · 观赛人潮售价 %.2fx!" % [teams.size(), EconomyConfig.SPORTS_SPECTATOR_SALE_MULT],
+		EconomyConfig.tr_key("ft_sp_open") % [teams.size(), EconomyConfig.SPORTS_SPECTATOR_SALE_MULT],
 		Color("#FFE066")
 	)
 	return true
@@ -4724,7 +4752,7 @@ func advance_sports_day(delta: float) -> int:
 		EventBus.sports_event_started.emit(k_now, e_now)
 		EventBus.spawn_floating_text.emit(
 			Vector2(EconomyConfig.SPORTS_TRACK_CENTER_X, EconomyConfig.GROUND_Y - 60.0),
-			"★运动会 %s 开赛!" % String(EconomyConfig.SPORTS_EVENTS[e_now].get("name", e_now)),
+			EconomyConfig.tr_key("ft_sp_event_start") % EconomyConfig.tr_name(String(EconomyConfig.SPORTS_EVENTS[e_now].get("name", e_now))),
 			Color("#FFE066")
 		)
 	if sports_day_active and sports_day_clock >= EconomyConfig.get_sports_day_total_sec():
@@ -4793,7 +4821,7 @@ func _settle_sports_event(k: int) -> Dictionary:
 	EventBus.sports_event_settled.emit(event_id, ranking, prize)
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.SPORTS_TRACK_CENTER_X, EconomyConfig.GROUND_Y - 52.0),
-		"★%s 冠军 %s · 奖金+%dG" % [String(ecfg.get("short_name", event_id)), String(EconomyConfig.SPORTS_TEAM_NAMES.get(ranking[0], ranking[0])), prize],
+		EconomyConfig.tr_key("ft_sp_event_win") % [EconomyConfig.tr_name(String(ecfg.get("short_name", event_id))), EconomyConfig.tr_name(String(EconomyConfig.SPORTS_TEAM_NAMES.get(ranking[0], ranking[0]))), prize],
 		Color("#FFE066")
 	)
 	if bool(res["medal_awarded"]):
@@ -4819,7 +4847,7 @@ func get_sports_status_summary() -> Dictionary:
 		"event_idx": k,
 		"event_count": EconomyConfig.SPORTS_EVENT_ORDER.size(),
 		"event_id": e_id,
-		"event_short": String(ecfg.get("short_name", "")),
+		"event_short": EconomyConfig.tr_name(String(ecfg.get("short_name", ""))),
 		"seconds_left": get_sports_seconds_left(),
 		"teams": sports_teams.size() if sports_day_active else get_sports_eligible_teams().size(),
 		"cooldown": maxf(0.0, sports_cooldown_timer),
@@ -4929,7 +4957,7 @@ func start_kite_festival() -> bool:
 	EventBus.kite_festival_started.emit(kite_festival_idx)
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.KITE_BADGE_POS.x + 70.0, EconomyConfig.GROUND_Y - 62.0),
-		"★云海风筝节开幕！%d 只像素风筝乘%s升空 · 风力加成产销!" % [EconomyConfig.KITE_SLOTS.size(), get_kite_wind_name()],
+		EconomyConfig.tr_key("ft_kite_open") % [EconomyConfig.KITE_SLOTS.size(), get_kite_wind_name()],
 		Color("#9BE7FF")
 	)
 	return true
@@ -4958,7 +4986,7 @@ func get_kite_wind_vector() -> float:
 
 func get_kite_wind_name() -> String:
 	var lvl := EconomyConfig.calc_kite_wind_level_idx(kite_festival_idx, kite_festival_clock)
-	return String(EconomyConfig.get_kite_wind_level_info(lvl).get("name", "和风"))
+	return EconomyConfig.tr_name(String(EconomyConfig.get_kite_wind_level_info(lvl).get("name", "和风")))
 
 ## Temporary wind buff while the kites fly: crop growth + workshop speed x(1 + 0.25 w)
 func get_kite_wind_production_multiplier() -> float:
@@ -5197,7 +5225,7 @@ func start_photo_tour() -> bool:
 	EventBus.photo_tour_started.emit(photo_tour_idx, route.size())
 	EventBus.spawn_floating_text.emit(
 		Vector2(float(first["pose_x"]), EconomyConfig.GROUND_Y - 58.0),
-		"★观光摄影团出发! %d 处景点打卡" % route.size(),
+		EconomyConfig.tr_key("ft_pt_start") % route.size(),
 		Color("#FFD8A8")
 	)
 	return true
@@ -5329,7 +5357,7 @@ func _take_tour_photo(spot_id: String) -> Dictionary:
 	EventBus.photo_taken.emit(spot_id, pid, gold_gain, special)
 	EventBus.spawn_floating_text.emit(
 		Vector2(float(sp["pose_x"]), EconomyConfig.GROUND_Y - 52.0),
-		"咔嚓!【%s】+%dG%s" % [EconomyConfig.get_item_display_name(pid), gold_gain, " ★绝景" if special else ""],
+		EconomyConfig.tr_key("ft_photo") % [EconomyConfig.get_item_display_name(pid), gold_gain, EconomyConfig.tr_key("ft_photo_special") if special else ""],
 		Color("#FFE8CC") if not special else Color("#FFD43B")
 	)
 	evaluate_achievements()
@@ -5472,6 +5500,8 @@ func _fulfil_wish(slot_idx: int) -> Dictionary:
 	wish_reputation_bonus += rep_gain
 	wish_vouchers_total += voucher_gain
 	add_rare_voucher(voucher_gain)
+	# CI-16: a fulfilled wish deepens the bond with that islander
+	add_friendship_points(isl_k, EconomyConfig.FRIEND_WISH_POINTS, "wish")
 	var res := {"slot": slot_idx, "serial": int(w["serial"]), "islander": isl_k, "type": String(w["type"]), "rep": rep_gain, "vouchers": voucher_gain, "medal": medal}
 	wish_last_result = res
 	if SoundManager != null:
@@ -5483,7 +5513,7 @@ func _fulfil_wish(slot_idx: int) -> Dictionary:
 		EventBus.wish_fulfilled.emit(slot_idx, w.duplicate())
 		EventBus.spawn_floating_text.emit(
 			Vector2(MarketStall.SLOT_X, EconomyConfig.GROUND_Y - 56.0),
-			"★%s心愿圆梦! 声望+%d 图鉴券+%d%s" % [String(EconomyConfig.WISH_ISLANDER_NAMES.get(isl_k, isl_k)), rep_gain, voucher_gain, " ★心愿勋章" if medal else ""],
+			EconomyConfig.tr_key("ft_wish_done") % [EconomyConfig.tr_name(String(EconomyConfig.WISH_ISLANDER_NAMES.get(isl_k, isl_k))), rep_gain, voucher_gain, EconomyConfig.tr_key("ft_wish_medal") if medal else ""],
 			Color("#FFC9E3")
 		)
 	evaluate_achievements()
@@ -5519,23 +5549,23 @@ func get_wish_display(slot_idx: int) -> Dictionary:
 		return {}
 	var w: Dictionary = wish_board[slot_idx]
 	var cfg: Dictionary = EconomyConfig.WISH_TYPES[String(w["type"])]
-	var who := String(EconomyConfig.WISH_ISLANDER_NAMES.get(String(w["islander"]), "岛民"))
+	var who := EconomyConfig.tr_name(String(EconomyConfig.WISH_ISLANDER_NAMES.get(String(w["islander"]), "岛民")))
 	var st := String(w["state"])
-	var prog := "%d/%d%s" % [int(w["progress"]), int(w["target"]), String(cfg["unit"])]
+	var prog := "%d/%d%s" % [int(w["progress"]), int(w["target"]), EconomyConfig.tr_name(String(cfg["unit"]))]
 	if String(w["type"]) == "earn":
 		prog = "%s/%sG" % [_short_num(int(w["progress"])), _short_num(int(w["target"]))]
-	var reward := "声望+%d 券+%d" % [int(w["rep"]), int(w["vouchers"])]
-	var title := "★" + who + "·" + String(cfg["name"])
-	var sub := String(cfg["verb"]) + " " + prog
-	var cost := reward + " 余" + str(maxi(0, int(ceili(float(w["time_left"]))))) + "s"
+	var reward := EconomyConfig.tr_key("gm_wish_reward") % [int(w["rep"]), int(w["vouchers"])]
+	var title := "★" + who + "·" + EconomyConfig.tr_name(String(cfg["name"]))
+	var sub := EconomyConfig.tr_name(String(cfg["verb"])) + " " + prog
+	var cost := reward + EconomyConfig.tr_key("gm_wish_left") % maxi(0, int(ceili(float(w["time_left"]))))
 	if st == "done":
-		title = "★" + who + "圆梦啦!"
-		cost = reward + " 已领取"
+		title = EconomyConfig.tr_key("gm_wish_done_title") % who
+		cost = reward + EconomyConfig.tr_key("gm_wish_claimed")
 	elif st == "expired":
-		title = "★" + who + "的便签过期"
-		sub = "新便签 " + str(maxi(1, int(ceili(float(w["linger"]))))) + "s 后轮换"
-		cost = reward + " 已失效"
-	return {"title": title, "sub": sub, "cost": cost, "state": st, "kind": String(cfg["kind"]), "islander": String(w["islander"]), "type": String(w["type"]), "name": String(cfg["name"]), "who": who}
+		title = EconomyConfig.tr_key("gm_wish_expired_title") % who
+		sub = EconomyConfig.tr_key("gm_wish_new_in") % maxi(1, int(ceili(float(w["linger"]))))
+		cost = reward + EconomyConfig.tr_key("gm_wish_void")
+	return {"title": title, "sub": sub, "cost": cost, "state": st, "kind": EconomyConfig.tr_name(String(cfg["kind"])), "islander": String(w["islander"]), "type": String(w["type"]), "name": EconomyConfig.tr_name(String(cfg["name"])), "who": who}
 
 func _short_num(v: int) -> String:
 	if v >= 100000:
@@ -5589,6 +5619,7 @@ func refresh_island_calendar() -> void:
 	refresh_season()
 	refresh_sky_weather()
 	refresh_birthday()
+	refresh_food_week()
 
 ## ---------------- Cloud-sea weather ----------------
 func refresh_sky_weather() -> String:
@@ -5656,9 +5687,9 @@ func get_sky_weather_status_summary() -> Dictionary:
 	var fc := get_sky_weather_forecast(1)
 	return {
 		"id": get_sky_weather_id(),
-		"name": String(info["name"]),
-		"full_name": String(info["full_name"]),
-		"desc": String(info["desc"]),
+		"name": EconomyConfig.tr_name(String(info["name"])),
+		"full_name": EconomyConfig.tr_name(String(info["full_name"])),
+		"desc": EconomyConfig.tr_name(String(info["desc"])),
 		"visitor": float(info["visitor"]),
 		"crop": float(info["crop"]),
 		"workshop": float(info["workshop"]),
@@ -5744,6 +5775,8 @@ func prepare_birthday_gift() -> Dictionary:
 	birthday_reputation_bonus += rep_gain
 	birthday_vouchers_total += voucher_gain
 	add_rare_voucher(voucher_gain)
+	# CI-16: a birthday gift (a favourite one even more) deepens the bond with the birthday islander
+	add_friendship_points(isl, EconomyConfig.FRIEND_BIRTHDAY_POINTS + (EconomyConfig.FRIEND_BIRTHDAY_FAV_POINTS if fav != "" else 0), "birthday")
 	var res := {"given": true, "islander": isl, "date": birthday_today_key, "cost": cost, "favourite": fav, "rep": rep_gain, "vouchers": voucher_gain, "medal": medal, "count": int(birthday_counts[isl])}
 	birthday_last_result = res
 	if SoundManager != null:
@@ -5755,7 +5788,7 @@ func prepare_birthday_gift() -> Dictionary:
 		EventBus.birthday_gift_given.emit(isl, res.duplicate())
 		EventBus.spawn_floating_text.emit(
 			Vector2(MarketStall.SLOT_X, EconomyConfig.GROUND_Y - 56.0),
-			"★%s生日快乐! 声望+%d 图鉴券+%d%s" % [EconomyConfig.get_islander_name(isl), rep_gain, voucher_gain, " ★生日全家福" if medal else ""],
+			EconomyConfig.tr_key("ft_bday") % [EconomyConfig.get_islander_name(isl), rep_gain, voucher_gain, EconomyConfig.tr_key("ft_bday_medal") if medal else ""],
 			Color("#FFC9E3")
 		)
 	evaluate_achievements()
@@ -5815,6 +5848,255 @@ func get_birthday_status_summary() -> Dictionary:
 	}
 
 ## ==================================================================
+## CI-16: Cloud-Isle Food Critics' Week (`云岛美食评鉴周`) & Islander Friendship Bonds (`岛民友谊羁绊`) — no new building
+## ==================================================================
+func _reset_food_week_and_friendship_state() -> void:
+	food_week_index = -1
+	food_week_judge = ""
+	food_week_announced_index = -1
+	food_week_entries.clear()
+	food_week_scores.clear()
+	food_week_best = 0
+	food_week_tier = 0
+	food_week_entries_total = 0
+	food_week_medals = {"bronze": 0, "silver": 0, "gold": 0}
+	food_week_reputation_bonus = 0
+	food_week_vouchers_total = 0
+	food_week_dish_best.clear()
+	food_week_last_result = {}
+	friendship_points.clear()
+	for isl_k in EconomyConfig.WISH_ISLANDERS:
+		friendship_points[isl_k] = 0
+	friendship_last_levelup = {}
+	food_friend_paused = false
+	refresh_food_week()
+
+## ---------------- Food Critics' Week ----------------
+## Re-reads the island-calendar week: a new week brings the next judge and clears last week's entries (medals are kept)
+func refresh_food_week() -> int:
+	if food_friend_paused and food_week_index >= 0:
+		return food_week_index
+	var dt := get_local_datetime()
+	var w_idx := EconomyConfig.calc_food_week_index(dt)
+	if w_idx != food_week_index:
+		food_week_index = w_idx
+		food_week_entries.clear()
+		food_week_scores.clear()
+		food_week_best = 0
+		food_week_tier = 0
+		food_week_last_result = {}
+	food_week_judge = EconomyConfig.get_food_week_judge(w_idx)
+	if food_week_announced_index != w_idx:
+		food_week_announced_index = w_idx
+		if EventBus != null:
+			EventBus.food_week_started.emit(food_week_judge, w_idx)
+	return w_idx
+
+func get_food_week_taste() -> String:
+	return EconomyConfig.get_food_judge_taste(food_week_judge)
+
+func get_food_week_days_left() -> int:
+	return EconomyConfig.calc_food_week_days_left(get_local_datetime())
+
+func get_food_week_entries_left() -> int:
+	return maxi(0, EconomyConfig.FOOD_WEEK_ENTRIES - food_week_entries.size())
+
+## Score this week's judge would give `item_id` right now
+func get_food_week_score_preview(item_id: String) -> int:
+	return EconomyConfig.calc_food_week_score(item_id, get_food_week_taste(), get_friendship_level(food_week_judge))
+
+## Best entry on the market shelf that has not been entered this week yet (highest score, ties by id); "" when none
+func find_food_week_best_dish() -> String:
+	var best := ""
+	var best_s := -1
+	var keys := stall_inventory.keys()
+	keys.sort()
+	for k in keys:
+		var id := String(k)
+		if int(stall_inventory.get(id, 0)) <= 0 or not EconomyConfig.is_food_week_dish(id) or food_week_entries.has(id):
+			continue
+		var s := get_food_week_score_preview(id)
+		if s > best_s:
+			best = id
+			best_s = s
+	return best
+
+func can_enter_food_week() -> bool:
+	return get_food_week_entries_left() > 0 and find_food_week_best_dish() != ""
+
+## Enter one existing dish (1 piece from the market shelf) for the week's judge. Default = the best dish on the shelf.
+## Reward: reputation = score / 4, friendship with the judge (+ taste match), and the week's medal tier once per tier.
+func enter_food_week_dish(item_id: String = "") -> Dictionary:
+	if food_week_index < 0:
+		refresh_food_week()
+	if get_food_week_entries_left() <= 0:
+		return {"entered": false, "reason": "full"}
+	var dish := item_id if item_id != "" else find_food_week_best_dish()
+	if dish == "":
+		return {"entered": false, "reason": "no_dish"}
+	if not EconomyConfig.is_food_week_dish(dish):
+		return {"entered": false, "reason": "not_dish", "dish": dish}
+	if food_week_entries.has(dish):
+		return {"entered": false, "reason": "repeat", "dish": dish}
+	if int(stall_inventory.get(dish, 0)) <= 0:
+		return {"entered": false, "reason": "stock", "dish": dish}
+	stall_inventory[dish] = int(stall_inventory.get(dish, 0)) - 1
+	if EventBus != null:
+		EventBus.inventory_changed.emit()
+	var judge := food_week_judge
+	var taste := get_food_week_taste()
+	var taste_match := EconomyConfig.get_food_dish_taste(dish) == taste
+	var score := get_food_week_score_preview(dish)
+	food_week_entries.append(dish)
+	food_week_scores.append(score)
+	food_week_entries_total += 1
+	food_week_dish_best[dish] = maxi(int(food_week_dish_best.get(dish, 0)), score)
+	var rep_gain := int(score / EconomyConfig.FOOD_WEEK_REP_DIV)
+	var voucher_gain := 0
+	var new_tier := EconomyConfig.calc_food_week_tier(score)
+	var medal_up := new_tier > food_week_tier
+	if medal_up:
+		var md: Dictionary = EconomyConfig.FOOD_WEEK_MEDALS[EconomyConfig.FOOD_WEEK_MEDAL_ORDER[new_tier - 1]]
+		rep_gain += int(md["rep"])
+		voucher_gain += int(md["vouchers"])
+		if food_week_tier > 0:
+			var old_k := EconomyConfig.FOOD_WEEK_MEDAL_ORDER[food_week_tier - 1]
+			food_week_medals[old_k] = maxi(0, int(food_week_medals.get(old_k, 0)) - 1)
+		var new_k := EconomyConfig.FOOD_WEEK_MEDAL_ORDER[new_tier - 1]
+		food_week_medals[new_k] = int(food_week_medals.get(new_k, 0)) + 1
+		food_week_tier = new_tier
+	food_week_best = maxi(food_week_best, score)
+	food_week_reputation_bonus += rep_gain
+	food_week_vouchers_total += voucher_gain
+	if voucher_gain > 0:
+		add_rare_voucher(voucher_gain)
+	var fr_gain := EconomyConfig.FRIEND_FOOD_POINTS + (EconomyConfig.FRIEND_FOOD_MATCH_POINTS if taste_match else 0)
+	var lv_before := get_friendship_level(judge)
+	add_friendship_points(judge, fr_gain, "food_week")
+	var res := {"entered": true, "dish": dish, "judge": judge, "taste": taste, "match": taste_match, "score": score, "rep": rep_gain, "vouchers": voucher_gain,
+		"medal_up": medal_up, "tier": food_week_tier, "friend": fr_gain, "friend_lv": get_friendship_level(judge), "friend_up": get_friendship_level(judge) > lv_before,
+		"left": get_food_week_entries_left()}
+	food_week_last_result = res
+	if SoundManager != null:
+		if medal_up:
+			SoundManager.play_milestone_sfx()
+		else:
+			SoundManager.play_coin_sfx()
+	if EventBus != null:
+		EventBus.food_week_scored.emit(res.duplicate())
+		EventBus.spawn_floating_text.emit(
+			Vector2(MarketStall.SLOT_X, EconomyConfig.GROUND_Y - 56.0),
+			EconomyConfig.tr_key("ft_food_week") % [EconomyConfig.get_islander_name(judge), score, rep_gain, (" " + EconomyConfig.get_food_medal_name(food_week_tier)) if medal_up else ""],
+			Color("#FFD8A8")
+		)
+	evaluate_achievements()
+	if EventBus != null:
+		EventBus.prosperity_changed.emit(get_prosperity_score())
+	return res
+
+func get_food_week_medal_total() -> int:
+	return int(food_week_medals.get("bronze", 0)) + int(food_week_medals.get("silver", 0)) + int(food_week_medals.get("gold", 0))
+
+func get_food_week_dishes_judged() -> int:
+	return food_week_dish_best.size()
+
+func get_food_week_status_summary() -> Dictionary:
+	var best_dish := find_food_week_best_dish()
+	return {
+		"week": food_week_index,
+		"judge": food_week_judge,
+		"taste": get_food_week_taste(),
+		"days_left": get_food_week_days_left(),
+		"entries": food_week_entries.size(),
+		"entries_left": get_food_week_entries_left(),
+		"best": food_week_best,
+		"tier": food_week_tier,
+		"next_dish": best_dish,
+		"next_score": get_food_week_score_preview(best_dish) if best_dish != "" else 0,
+		"medals": get_food_week_medal_total(),
+		"gold": int(food_week_medals.get("gold", 0)),
+		"dishes": get_food_week_dishes_judged(),
+		"total": food_week_entries_total,
+		"rep": food_week_reputation_bonus,
+		"vouchers": food_week_vouchers_total
+	}
+
+## ---------------- Friendship bonds ----------------
+## Only real events call this (wish fulfilled, birthday gift, food-week entry). No-op while paused (self-test isolation).
+func add_friendship_points(isl: String, pts: int, source: String) -> int:
+	if food_friend_paused or pts <= 0 or not EconomyConfig.WISH_ISLANDERS.has(isl):
+		return 0
+	var cap_pts: int = EconomyConfig.FRIEND_LEVEL_POINTS[EconomyConfig.FRIEND_MAX_LEVEL]
+	var before := int(friendship_points.get(isl, 0))
+	var after := mini(cap_pts, before + pts)
+	friendship_points[isl] = after
+	var lv_b := EconomyConfig.calc_friend_level(before)
+	var lv_a := EconomyConfig.calc_friend_level(after)
+	if lv_a > lv_b:
+		friendship_last_levelup = {"islander": isl, "level": lv_a, "source": source}
+		if EventBus != null:
+			EventBus.friendship_level_up.emit(isl, lv_a, source)
+	return after - before
+
+func get_friendship_points(isl: String) -> int:
+	return int(friendship_points.get(isl, 0))
+
+func get_friendship_level(isl: String) -> int:
+	return EconomyConfig.calc_friend_level(get_friendship_points(isl))
+
+func get_friendship_total_levels() -> int:
+	var total := 0
+	for isl_k in EconomyConfig.WISH_ISLANDERS:
+		total += get_friendship_level(isl_k)
+	return total
+
+## Permanent market-price bonus from all bonds (+0.3% per level, capped at +9%)
+func get_friendship_price_bonus() -> float:
+	return EconomyConfig.calc_friend_price_bonus(get_friendship_total_levels())
+
+func get_max_friend_count() -> int:
+	var cnt := 0
+	for isl_k in EconomyConfig.WISH_ISLANDERS:
+		if get_friendship_level(isl_k) >= EconomyConfig.FRIEND_MAX_LEVEL:
+			cnt += 1
+	return cnt
+
+func _load_food_week_and_friendship_state(parsed: Dictionary) -> void:
+	var src_fp: Dictionary = parsed["friendship_points"] if (parsed.has("friendship_points") and parsed["friendship_points"] is Dictionary) else {}
+	var cap_pts: int = EconomyConfig.FRIEND_LEVEL_POINTS[EconomyConfig.FRIEND_MAX_LEVEL]
+	for isl_k in EconomyConfig.WISH_ISLANDERS:
+		friendship_points[isl_k] = clampi(int(src_fp.get(isl_k, 0)), 0, cap_pts)
+	var src_md: Dictionary = parsed["food_week_medals"] if (parsed.has("food_week_medals") and parsed["food_week_medals"] is Dictionary) else {}
+	for mk in EconomyConfig.FOOD_WEEK_MEDAL_ORDER:
+		food_week_medals[mk] = maxi(0, int(src_md.get(mk, 0)))
+	food_week_entries_total = maxi(0, int(parsed.get("food_week_entries_total", 0)))
+	food_week_reputation_bonus = maxi(0, int(parsed.get("food_week_reputation_bonus", 0)))
+	food_week_vouchers_total = maxi(0, int(parsed.get("food_week_vouchers_total", 0)))
+	food_week_dish_best.clear()
+	var src_db: Dictionary = parsed["food_week_dish_best"] if (parsed.has("food_week_dish_best") and parsed["food_week_dish_best"] is Dictionary) else {}
+	for dk in src_db.keys():
+		if EconomyConfig.is_food_week_dish(String(dk)):
+			food_week_dish_best[String(dk)] = clampi(int(src_db[dk]), 0, EconomyConfig.FOOD_WEEK_SCORE_CAP)
+	# this week's entries only survive when the save is from the same island-calendar week
+	food_week_index = int(parsed.get("food_week_index", -1))
+	food_week_announced_index = food_week_index
+	food_week_entries.clear()
+	food_week_scores.clear()
+	var src_en: Array = parsed["food_week_entries"] if (parsed.has("food_week_entries") and parsed["food_week_entries"] is Array) else []
+	var src_sc: Array = parsed["food_week_scores"] if (parsed.has("food_week_scores") and parsed["food_week_scores"] is Array) else []
+	for ei in range(mini(src_en.size(), EconomyConfig.FOOD_WEEK_ENTRIES)):
+		var eid := String(src_en[ei])
+		if EconomyConfig.is_food_week_dish(eid) and not food_week_entries.has(eid):
+			food_week_entries.append(eid)
+			food_week_scores.append(clampi(int(src_sc[ei]) if ei < src_sc.size() else 0, 0, EconomyConfig.FOOD_WEEK_SCORE_CAP))
+	food_week_best = 0
+	for sc in food_week_scores:
+		food_week_best = maxi(food_week_best, sc)
+	food_week_tier = clampi(int(parsed.get("food_week_tier", 0)), 0, EconomyConfig.FOOD_WEEK_MEDAL_ORDER.size())
+	food_week_last_result = {}
+	refresh_food_week()
+
+## ==================================================================
 ## v2.7-1 & v2.7-3: In-App Steam Achievements, Career Stats & 1~5 Star Reputation
 ## ==================================================================
 func get_star_reputation() -> int:
@@ -5846,7 +6128,7 @@ func get_star_reputation() -> int:
 	return 1
 
 func get_career_summary_text() -> String:
-	return "★%d星 · 收%d · 制%d · 客%d · 契%d" % [
+	return EconomyConfig.tr_key("gm_career") % [
 		get_star_reputation(),
 		int(career_stats.get("harvests", 0)),
 		int(career_stats.get("crafts", 0)),
@@ -5865,7 +6147,7 @@ func unlock_achievement(ach_id: String) -> bool:
 	var cfg: Dictionary = EconomyConfig.ACHIEVEMENTS[ach_id]
 	EventBus.spawn_floating_text.emit(
 		Vector2(884.7, EconomyConfig.GROUND_Y - 46.0),
-		"★成就解锁【" + String(cfg.get("name", ach_id)) + "】!",
+		EconomyConfig.tr_key("ft_achievement") % EconomyConfig.tr_name(String(cfg.get("name", ach_id))),
 		Color("#FFE066")
 	)
 	return true
@@ -6015,6 +6297,7 @@ func get_prosperity_score() -> int:
 	score += kite_medals * 50 + get_seen_season_count() * 20
 	score += photo_stamps * 40 + wish_medals * 50
 	score += birthday_medals * 50 + get_seen_sky_weather_count() * 10
+	score += int(food_week_medals.get("gold", 0)) * 50 + int(food_week_medals.get("silver", 0)) * 30 + int(food_week_medals.get("bronze", 0)) * 15 + get_friendship_total_levels() * 10
 	return score
 
 ## Pure Numeric Buffer Capacities (default cap = 10, +5 per building level above 1)
@@ -6558,7 +6841,17 @@ func save_game() -> void:
 		"birthday_reputation_bonus": birthday_reputation_bonus,
 		"birthday_vouchers_total": birthday_vouchers_total,
 		"birthday_favourite_gifts": birthday_favourite_gifts,
-		"birthday_medals": birthday_medals
+		"birthday_medals": birthday_medals,
+		"food_week_index": food_week_index,
+		"food_week_entries": food_week_entries,
+		"food_week_scores": food_week_scores,
+		"food_week_tier": food_week_tier,
+		"food_week_entries_total": food_week_entries_total,
+		"food_week_medals": food_week_medals,
+		"food_week_reputation_bonus": food_week_reputation_bonus,
+		"food_week_vouchers_total": food_week_vouchers_total,
+		"food_week_dish_best": food_week_dish_best,
+		"friendship_points": friendship_points
 	}
 	var json_str := JSON.stringify(data, "\t")
 	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
@@ -6953,6 +7246,8 @@ func load_game() -> void:
 
 	# CI-15: Cloud-Sea Weather & Birthday Party (the weather itself is derived from the island calendar, never stored)
 	_load_sky_weather_and_birthday_state(parsed)
+	# CI-16: Food Critics' Week (this week's entries only when the save is from the same week) & Friendship Bonds
+	_load_food_week_and_friendship_state(parsed)
 
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())

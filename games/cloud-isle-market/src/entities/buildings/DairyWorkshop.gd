@@ -61,7 +61,7 @@ func _ready() -> void:
 	level_label.custom_minimum_size = Vector2(60.0, 20.0)
 	add_child(level_label)
 
-	status_badge_label = EconomyConfig.create_pixel_label("★乳品工坊", 13, Color("#FFF4D6"), true)
+	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_dw_init"), 13, Color("#FFF4D6"), true)
 	status_badge_label.name = "DairyWorkshopBadgeLabel"
 	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
 	status_badge_label.scale = Vector2(0.74, 0.74)
@@ -154,17 +154,17 @@ func _sync_labels_and_tint() -> void:
 		return
 	var built := is_dairy_built()
 	if level_label != null and level_label.label_settings != null:
-		level_label.text = ("Lv." + str(get_dairy_level())) if built else "待建乳坊"
+		level_label.text = ("Lv." + str(get_dairy_level())) if built else EconomyConfig.tr_key("wl_dw_unbuilt")
 		level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
 	if status_badge_label != null and status_badge_label.label_settings != null:
 		if built:
 			var rid := GameManager.active_dairy_recipe_id
 			var rcfg: Dictionary = EconomyConfig.DAIRY_ITEMS.get(rid, {})
 			var milk_cnt := GameManager.get_dairy_stock(EconomyConfig.DAIRY_MILK_ID)
-			status_badge_label.text = "★" + String(rcfg.get("short_name", "奶酪")) + "·奶" + str(milk_cnt)
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(String(rcfg.get("short_name", "奶酪"))), EconomyConfig.tr_fmt("wl_seg_milk", [milk_cnt])])
 			status_badge_label.label_settings.font_color = Color("#FFF4D6") if milk_cnt > 0 else Color("#FFE8A3")
 		else:
-			status_badge_label.text = "★乳坊(" + str(EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD) + "G)"
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_dw_cost", [EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD])
 			status_badge_label.label_settings.font_color = Color("#CBD5E1")
 	_center_badge()
 	if body_sprite != null:
