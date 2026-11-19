@@ -8,6 +8,12 @@
   const engine = new TimelineEngine(REGIONS, EMPIRES, TIMELINE);
   const audio = new AudioSynthesizer();
 
+  // Map theme: "night" (default) or "paper" (light parchment). Set before the renderer builds its palette.
+  let theme = "night";
+  try { if (localStorage.getItem("atlas.theme") === "paper") theme = "paper"; } catch (e) { /* storage blocked */ }
+  document.body.classList.toggle("theme-paper", theme === "paper");
+  if (window.HistoryAtlas.setPaletteMode) window.HistoryAtlas.setPaletteMode(theme);
+
   let currentYear = -3000;
   let yearFloat = -3000;
   let isPlaying = true;
@@ -36,7 +42,6 @@
     TRADE_ROUTES,
     EMPIRES,
     (regionId, unitId) => {
-      audio.playClickPop();
       selectedRegionId = regionId;
       selectedUnitId = unitId || null;
       renderer.setHighlightEmpire(null);
@@ -44,7 +49,6 @@
       updateView();
     },
     (routeId, hub) => {
-      audio.playClickPop();
       selectedRouteId = routeId;
       if (hub && hub.regionId) {
         selectedRegionId = hub.regionId;
@@ -194,7 +198,6 @@
       btn.id = "th-" + th.id;
       btn.textContent = th.name;
       btn.onclick = () => {
-        audio.playClickPop();
         activateTheater(th.id);
       };
       container.appendChild(btn);
@@ -353,9 +356,9 @@
 
   function updateView() {
     const state = engine.getStateAtYear(currentYear);
+    audio.setYear(currentYear);
 
     if (lastKeyframeYear !== null && state.keyframeYear !== lastKeyframeYear) {
-      audio.playEraChime();
       // Gentle dwell pause on new historical keyframe in relaxed idle modes
       if (speed <= 1) {
         dwellTicks = 22;
@@ -752,7 +755,6 @@
       if (paceEl) paceEl.textContent = formatPaceLabel(currentYear, speed);
     },
     jumpToYear(y) {
-      audio.playClickPop();
       currentYear = y;
       yearFloat = y;
       dwellTicks = 0;
@@ -766,7 +768,6 @@
       updateView();
     },
     toggleIdleDrift() {
-      audio.playClickPop();
       idleDrift = !idleDrift;
       const btn = document.getElementById("btn-drift");
       if (btn) btn.classList.toggle("active", idleDrift);
@@ -780,27 +781,23 @@
       }
     },
     toggleCampaigns() {
-      audio.playClickPop();
       const on = renderer.toggleCampaigns();
       const btn = document.getElementById("btn-campaigns");
       if (btn) btn.classList.toggle("active", on);
       updateView();
     },
     toggleRoutes() {
-      audio.playClickPop();
       const on = renderer.toggleRoutes();
       const btn = document.getElementById("btn-routes");
       if (btn) btn.classList.toggle("active", on);
       updateView();
     },
     selectRoute(routeId) {
-      audio.playClickPop();
       selectedRouteId = selectedRouteId === routeId ? null : routeId;
       renderer.setFocusedRoute(selectedRouteId);
       updateView();
     },
     focusRouteHub(routeId, hubIndex) {
-      audio.playClickPop();
       const rt = TRADE_ROUTES[routeId];
       const hub = rt && rt.hubs ? rt.hubs[hubIndex] : null;
       selectedRouteId = routeId;
@@ -813,11 +810,9 @@
       updateView();
     },
     focusTheater(thId) {
-      audio.playClickPop();
       activateTheater(thId);
     },
     resetCamera() {
-      audio.playClickPop();
       activeTheaterId = "world";
       document.querySelectorAll(".theater-pill").forEach(el => el.classList.toggle("active", el.id === "th-world"));
       if (window.innerWidth <= 900 && window.innerHeight > window.innerWidth) {
@@ -826,9 +821,18 @@
         renderer.resetView();
       }
     },
-    toggleMute() {
-      const muted = audio.toggleMute();
-      document.getElementById("btn-mute").textContent = muted ? "× 音效：关" : "♪ 音效：开";
+    toggleTheme() {
+      theme = theme === "paper" ? "night" : "paper";
+      try { localStorage.setItem("atlas.theme", theme); } catch (e) { /* storage blocked */ }
+      document.body.classList.toggle("theme-paper", theme === "paper");
+      window.HistoryAtlas.setPaletteMode(theme);
+      renderer.refreshPalette();
+      syncThemeButton();
+    },
+    toggleMusic() {
+      audio.setYear(currentYear);
+      audio.toggleMusic();
+      syncMusicButton();
     },
     onSearchInput(val) {
       const dd = document.getElementById("search-dropdown");
@@ -850,7 +854,6 @@
           <span class="s-badge">${h.type}</span>
         `;
         item.onclick = () => {
-          audio.playClickPop();
           dd.style.display = "none";
           if (h.personId) {
             if (personView) personView.open(h.personId);
@@ -882,7 +885,6 @@
       dd.style.display = "block";
     },
     openCompareModal(empA, empB, empC) {
-      audio.playClickPop();
       initCompareSelectors(
         empA || "大汉帝国",
         empB || "罗马帝国",
@@ -892,7 +894,6 @@
       this.renderComparison();
     },
     applyComparePreset(empA, empB, empC = "") {
-      audio.playClickPop();
       initCompareSelectors(empA, empB, empC);
       this.renderComparison();
     },
@@ -1078,7 +1079,6 @@
       updateView();
     },
     openChronicleModal() {
-      audio.playClickPop();
       const modal = document.getElementById("chronicle-modal");
       if (!modal) return;
       modal.style.display = "flex";
@@ -1138,7 +1138,6 @@
       }).join("");
     },
     jumpToChronicleEvent(yr, regId, x, y) {
-      audio.playClickPop();
       this.closeChronicleModal();
       engine.pinnedChronicleYear = yr;
       currentYear = yr;
@@ -1222,7 +1221,6 @@
 
   Object.assign(window.AtlasApp, {
     stepYear(delta) {
-      audio.playClickPop();
       if (isPlaying) this.togglePlay();
       if (exactOneYearPerSec) {
         exactOneYearPerSec = false;
@@ -1240,7 +1238,6 @@
       updateView();
     },
     togglePrecisionPace() {
-      audio.playClickPop();
       exactOneYearPerSec = !exactOneYearPerSec;
       precisionTickAcc = 0;
       dwellTicks = 0;
@@ -1262,11 +1259,9 @@
       syncChinaAnnalsView();
     },
     openPersonPicker() {
-      audio.playClickPop();
       if (personView) personView.openPicker();
     },
     toggleChinaAnnals(forceOpen) {
-      audio.playClickPop();
       if (!chinaAnnals) return;
       const next = typeof forceOpen === "boolean" ? forceOpen : !chinaAnnals.isOpen();
       chinaAnnals.setOpen(next);
@@ -1275,7 +1270,6 @@
       if (!regionId) return;
       const reg = REGIONS.find(r => r.id === regionId);
       if (!reg) return;
-      audio.playClickPop();
       selectedRegionId = regionId;
       renderer.setHighlightEmpire(null);
       if (typeof reg.cx === "number" && typeof reg.cy === "number") {
@@ -1327,25 +1321,83 @@
     });
   }
 
+  // Keyboard: ←/→ one year (Shift: ten), Space play/pause, / search, 1-4 speed, P people, M music, ? help, Esc close
+  const SHORTCUTS = [
+    ["空格", "播放 / 暂停"], ["← →", "前后一年（按住 Shift 十年）"], ["/", "搜索"], ["1 2 3 4", "播放速度 0.5x / 1x / 2x / 5x"],
+    ["P", "人物视角"], ["M", "背景配乐开关"], ["T", "切换夜色 / 纸本底图"], ["Esc", "关闭弹窗或面板"], ["?", "显示或隐藏本列表"]
+  ];
+  function toggleShortcutHelp(force) {
+    let el = document.getElementById("shortcut-help");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "shortcut-help";
+      el.className = "shortcut-help is-hidden";
+      el.innerHTML = `<div class="sh-title">键盘快捷键</div>${SHORTCUTS.map(([k, d]) => `<div class="sh-row"><kbd>${k}</kbd><span>${d}</span></div>`).join("")}`;
+      el.addEventListener("click", () => el.classList.add("is-hidden"));
+      document.body.appendChild(el);
+    }
+    const show = force === undefined ? el.classList.contains("is-hidden") : force;
+    el.classList.toggle("is-hidden", !show);
+    return show;
+  }
+  // Esc closes the topmost thing that is open; returns true if it closed something
+  function closeTopmost() {
+    const help = document.getElementById("shortcut-help");
+    if (help && !help.classList.contains("is-hidden")) { help.classList.add("is-hidden"); return true; }
+    const shown = id => { const el = document.getElementById(id); return el && el.style.display === "flex"; };
+    if (shown("compare-modal")) { window.AtlasApp.closeCompareModal(); return true; }
+    if (shown("chronicle-modal")) { window.AtlasApp.closeChronicleModal(); return true; }
+    const picker = document.getElementById("person-picker");
+    if (picker && !picker.classList.contains("is-hidden")) { picker.classList.add("is-hidden"); return true; }
+    const menu = document.getElementById("mobile-menu");
+    if (menu && !menu.classList.contains("is-hidden")) { menu.classList.add("is-hidden"); return true; }
+    const dd = document.getElementById("search-dropdown");
+    if (dd && dd.style.display === "block") { dd.style.display = "none"; return true; }
+    return false;
+  }
   window.addEventListener("keydown", (e) => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const t = e.target;
-    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) {
+    const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+    if (e.key === "Escape") {
+      if (typing) t.blur();
+      if (closeTopmost()) e.preventDefault();
       return;
     }
+    if (typing) return;
     const cmpModal = document.getElementById("compare-modal");
     const chrModal = document.getElementById("chronicle-modal");
     if ((cmpModal && cmpModal.style.display === "flex") || (chrModal && chrModal.style.display === "flex")) {
       return;
     }
+    const app = window.AtlasApp;
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      window.AtlasApp.stepYear(e.shiftKey ? -10 : -1);
+      app.stepYear(e.shiftKey ? -10 : -1);
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
-      window.AtlasApp.stepYear(e.shiftKey ? 10 : 1);
+      app.stepYear(e.shiftKey ? 10 : 1);
+    } else if (e.key === " " || e.code === "Space") {
+      // a focused button would also "click" on Space; the shortcut wins
+      e.preventDefault();
+      if (t && t.blur && t !== document.body) t.blur();
+      app.togglePlay();
+    } else if (e.key === "/") {
+      const input = document.getElementById("search-input");
+      if (input && input.offsetParent !== null) { e.preventDefault(); input.focus(); input.select(); }
+    } else if (["1", "2", "3", "4"].includes(e.key)) {
+      app.setSpeed([0.5, 1, 2, 5][+e.key - 1]);
+    } else if (e.key === "p" || e.key === "P") {
+      app.openPersonPicker();
+    } else if (e.key === "m" || e.key === "M") {
+      app.toggleMusic();
+    } else if (e.key === "t" || e.key === "T") {
+      app.toggleTheme();
+    } else if (e.key === "?") {
+      toggleShortcutHelp();
     }
   });
+  window.AtlasApp.toggleShortcutHelp = toggleShortcutHelp;
 
   // Non-Linear Idle-Game Evolution Loop (Fast in early antiquity -> Progressively slower toward modernity)
   setInterval(() => {
@@ -1399,6 +1451,28 @@
   }, 100);
 
   updateView();
+
+  // Era music: off by default; if the visitor left it on last time, start on their first tap (browsers need a gesture)
+  function syncThemeButton() {
+    const b = document.getElementById("btn-theme");
+    if (b) b.textContent = theme === "paper" ? "◑ 夜色底图" : "◐ 纸本底图";
+  }
+  syncThemeButton();
+  function syncMusicButton() {
+    const b = document.getElementById("btn-music");
+    if (!b) return;
+    b.classList.toggle("active", audio.enabled);
+    b.textContent = audio.enabled ? "♫ 配乐：" + audio.styleLabel : "♫ 配乐：关";
+  }
+  audio.onStyle = syncMusicButton;
+  if (audio.wantsMusic) {
+    const startOnGesture = e => {
+      if (e.target.closest && e.target.closest('#btn-music, [data-toggle="toggleMusic"]')) return; // that tap toggles it itself
+      document.removeEventListener("pointerdown", startOnGesture, true);
+      if (!audio.enabled && audio.wantsMusic) { audio.setYear(currentYear); audio.setEnabled(true); syncMusicButton(); }
+    };
+    document.addEventListener("pointerdown", startOnGesture, true);
+  }
 
   // Phones: the world map is a thin strip at full width, so open on Afro-Eurasia at a readable zoom
   if (window.innerWidth <= 900) {

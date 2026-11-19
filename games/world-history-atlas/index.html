@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="data:," />
   <title>世界历史疆域演化沙盒 (World History Evolution Atlas)</title>
-  <link rel="stylesheet" href="src/styles/main.css?v=31" />
+  <link rel="stylesheet" href="src/styles/main.css?v=47" />
 </head>
 <body class="era-ancient">
 
@@ -132,7 +132,7 @@
 
   <!-- 底部：播放控制与全历史时间轴滑块 -->
   <div id="bottom-controls">
-    <button class="ctrl-btn active" id="btn-play" onclick="AtlasApp.togglePlay()">II 暂停演化</button>
+    <button class="ctrl-btn active" id="btn-play" onclick="AtlasApp.togglePlay()" title="播放 / 暂停（空格）">II 暂停演化</button>
     <button class="ctrl-btn" id="btn-0.5x" onclick="AtlasApp.setSpeed(0.5)">0.5x 静谧</button>
     <button class="ctrl-btn active" id="btn-1x" onclick="AtlasApp.setSpeed(1)">1x 悠闲</button>
     <button class="ctrl-btn" id="btn-2x" onclick="AtlasApp.setSpeed(2)">2x 漫步</button>
@@ -142,7 +142,9 @@
     <button class="ctrl-btn active" id="btn-routes" onclick="AtlasApp.toggleRoutes()">⇌ 商路脉络</button>
     <button class="ctrl-btn active" id="btn-campaigns" onclick="AtlasApp.toggleCampaigns()">⇄ 进军线</button>
     <button class="ctrl-btn" onclick="AtlasApp.resetCamera()">⊕ 复位视野</button>
-    <button class="ctrl-btn" id="btn-mute" onclick="AtlasApp.toggleMute()">♪ 音效：开</button>
+    <button class="ctrl-btn" id="btn-music" onclick="AtlasApp.toggleMusic()" title="随时代变化的背景配乐">♫ 配乐：关</button>
+    <button class="ctrl-btn" id="btn-theme" onclick="AtlasApp.toggleTheme()" title="切换夜色 / 纸本底图（快捷键 T）">◐ 纸本底图</button>
+    <button class="ctrl-btn" id="btn-keys" onclick="AtlasApp.toggleShortcutHelp()" title="键盘快捷键（?）">⌨</button>
   </div>
 
   <!-- 朝代/帝国国祚与疆域兴衰对比图志模态窗 (Dynasty Trajectory & Comparison Modal) -->
@@ -222,25 +224,27 @@
   <div id="china-annals-root"></div>
 
   <!-- 模块化脚本按序加载（兼容本地直接双击 file:// 与 HTTP 服务器） -->
-  <script src="src/data/regions_geo.js?v=31"></script>
-  <script src="src/data/empires_db.js?v=31"></script>
-  <script src="src/data/timeline_keyframes.js?v=31"></script>
-  <script src="src/data/stateless_cultures.js?v=31"></script>
-  <script src="src/data/confidence.js?v=31"></script>
-  <script src="src/data/city_states.js?v=31"></script>
-  <script src="src/data/chronicle_annals_db.js?v=31"></script>
-  <script src="src/data/china_reign_eras.js?v=31"></script>
+  <script src="src/data/regions_geo.js?v=47"></script>
+  <script src="src/data/empires_db.js?v=47"></script>
+  <script src="src/data/timeline_keyframes.js?v=47"></script>
+  <script src="src/data/stateless_cultures.js?v=47"></script>
+  <script src="src/data/confidence.js?v=47"></script>
+  <script src="src/data/city_states.js?v=47"></script>
+  <script src="src/data/chronicle_annals_db.js?v=47"></script>
+  <script src="src/data/china_reign_eras.js?v=47"></script>
   <!-- china_annals_v1..v6 are loaded on demand by src/ui/ChinaAnnals.js (ensureVolumes) -->
-  <script src="src/data/map_units.js?v=31"></script>
-  <script src="src/data/map_layers.js?v=31"></script>
-  <script src="src/core/UnitMap.js?v=31"></script>
-  <script src="src/data/persons_index.js?v=31"></script>
-  <script src="src/core/TimelineEngine.js?v=31"></script>
-  <script src="src/ui/AudioSynthesizer.js?v=31"></script>
-  <script src="src/ui/MapRenderer.js?v=31"></script>
-  <script src="src/ui/ChinaAnnals.js?v=31"></script>
-  <script src="src/ui/PersonView.js?v=31"></script>
-  <script src="src/ui/MobileMenu.js?v=31"></script>
-  <script src="src/main.js?v=31"></script>
+  <script src="src/data/map_units.js?v=47"></script>
+  <script src="src/data/map_layers.js?v=47"></script>
+  <script src="src/core/UnitMap.js?v=47"></script>
+  <script src="src/data/persons_index.js?v=47"></script>
+  <script src="src/data/persons_links.js?v=47"></script>
+  <script src="src/data/capitals.js?v=47"></script>
+  <script src="src/core/TimelineEngine.js?v=47"></script>
+  <script src="src/ui/AudioSynthesizer.js?v=47"></script>
+  <script src="src/ui/MapRenderer.js?v=47"></script>
+  <script src="src/ui/ChinaAnnals.js?v=47"></script>
+  <script src="src/ui/PersonView.js?v=47"></script>
+  <script src="src/ui/MobileMenu.js?v=47"></script>
+  <script src="src/main.js?v=47"></script>
 </body>
 </html>

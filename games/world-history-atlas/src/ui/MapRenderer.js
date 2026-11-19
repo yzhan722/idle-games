@@ -46,6 +46,52 @@ class MapRenderer {
   }
 
   // Blend hex color with warm antique pigment (#dfd2bc) for rich museum-atlas tones
+  // Capitals of the states on the map this year. Nodes are reused; only what changed touches the DOM.
+  // Major states' capitals show at world view, the rest (and every name) once the map is zoomed in.
+  _syncCapitals(year, owners, majorNames) {
+    const CAP = window.HistoryAtlas.CAPITALS;
+    if (!CAP || !this.capitalsLayer) return;
+    const want = {};
+    for (const emp of owners) {
+      const rows = CAP[emp];
+      if (!rows) continue;
+      const row = rows.find(r => year >= r[0] && year < r[1]);
+      if (!row) continue;
+      const key = `${row[2]}@${row[3]},${row[4]}`;
+      // two states sharing one capital (e.g. a successor in the same year) draw it once
+      if (!want[key] || majorNames.has(emp)) want[key] = { emp, name: row[2], x: row[3], y: row[4], major: majorNames.has(emp) };
+    }
+    for (const key of Object.keys(this._capitalNodes)) {
+      if (!want[key]) { this._capitalNodes[key].remove(); delete this._capitalNodes[key]; }
+    }
+    const NS = "http://www.w3.org/2000/svg";
+    for (const [key, c] of Object.entries(want)) {
+      let g = this._capitalNodes[key];
+      if (!g) {
+        g = document.createElementNS(NS, "g");
+        g.setAttribute("transform", `translate(${c.x}, ${c.y})`);
+        g.innerHTML = `<circle class="capital-ring" r="1.9"/><circle class="capital-core" r="0.8"/><text class="capital-label" x="2.8" y="1.1"></text><title></title>`;
+        this.capitalsLayer.appendChild(g);
+        this._capitalNodes[key] = g;
+      }
+      const cls = `capital${c.major ? " is-major" : ""}`;
+      if (g.getAttribute("class") !== cls) g.setAttribute("class", cls);
+      const t = g.querySelector("text");
+      if (t.textContent !== c.name) { t.textContent = c.name; g.querySelector("title").textContent = `${c.name} · ${c.emp}都城`; }
+    }
+  }
+
+  // Theme switch (night / paper): recompute every state's colours and repaint all units once
+  refreshPalette() {
+    const HA = window.HistoryAtlas;
+    if (!HA.empirePalette) return;
+    for (const [empName, empObj] of Object.entries(this.empires)) {
+      if (this._empireGradMap[empName]) Object.assign(this._empireGradMap[empName], HA.empirePalette(empName, empObj.color));
+    }
+    this._paintSig = {};
+    if (this._lastState) this.renderState(this._lastState, this._lastSelectedId);
+  }
+
   _harmonizeColor(hex) {
     const clean = (hex || "#8899aa").replace("#", "");
     const num = parseInt(clean.length === 3 ? clean.split("").map(c => c + c).join("") : clean, 16) || 0x8899aa;
@@ -280,7 +326,7 @@ class MapRenderer {
     const resolveDisplayHex = window.HistoryAtlas.getEmpireDisplayColor || ((_, hex) => hex);
     for (const [empName, empObj] of Object.entries(this.empires)) {
       const gid = `emp-grad-${idx++}`;
-      const pal = this._harmonizeColor(resolveDisplayHex(empName, empObj.color));
+      const pal = window.HistoryAtlas.empirePalette ? window.HistoryAtlas.empirePalette(empName, empObj.color) : this._harmonizeColor(resolveDisplayHex(empName, empObj.color));
       this._empireGradMap[empName] = { id: gid, ...pal };
       gradHtml += `
         <radialGradient id="${gid}" cx="42%" cy="36%" r="72%">
@@ -333,6 +379,16 @@ class MapRenderer {
     // 2. Regions Layer
     this.regionsLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
     this.viewport.appendChild(this.regionsLayer);
+    // Stateless hatch lies once under all units: a stateless unit is simply transparent, so a state appearing or
+    // collapsing is a fade of fill and opacity instead of a hard swap between a pattern and a colour.
+    const MUl = window.HistoryAtlas.MAP_UNITS;
+    if (MUl && MUl.land) {
+      const hatch = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hatch.setAttribute("d", MUl.land);
+      hatch.setAttribute("class", "land-hatch");
+      hatch.setAttribute("fill", "url(#stateless-hatch)");
+      this.regionsLayer.appendChild(hatch);
+    }
 
     // 2.2 Inland Lakes & Continental Outer Coastlines Layer
     this.seasLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -514,6 +570,11 @@ class MapRenderer {
     this.landmarksLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
     this.ambientLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
     this.viewport.appendChild(this.labelsLayer);
+    // capitals (src/data/capitals.js): a dot for every state on the map, the name only when zoomed in
+    this.capitalsLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    this.capitalsLayer.setAttribute("class", "capitals-layer");
+    this._capitalNodes = {};
+    this.viewport.appendChild(this.capitalsLayer);
     this.viewport.appendChild(this.empireBannersLayer);
     this.viewport.appendChild(this.cityStatesLayer);
     this.viewport.appendChild(this.landmarksLayer);
@@ -549,6 +610,26 @@ class MapRenderer {
       });
       this.regionsLayer.appendChild(path);
     });
+
+    // Faint terrain (Natural Earth shaded relief, tools/relief/build_relief.py): shadows and highlights with alpha over
+    // the fills, under borders and names. ~0.5 MB, so it is fetched only once the browser is idle after the first paint.
+    const MUr = window.HistoryAtlas.MAP_UNITS;
+    if (MUr && MUr.viewBox) {
+      const relief = document.createElementNS("http://www.w3.org/2000/svg", "image");
+      relief.setAttribute("class", "terrain-relief");
+      relief.setAttribute("x", "0");
+      relief.setAttribute("y", "0");
+      relief.setAttribute("width", String(MUr.viewBox[2]));
+      relief.setAttribute("height", String(MUr.viewBox[3]));
+      relief.setAttribute("preserveAspectRatio", "none");
+      this.regionsLayer.appendChild(relief);
+      const ver = ((document.querySelector('script[src*="MapRenderer.js"]') || {}).src || "").match(/[?&]v=([^&]+)/);
+      const load = () => {
+        relief.addEventListener("load", () => relief.classList.add("is-loaded"), { once: true });
+        relief.setAttribute("href", `src/assets/relief.webp${ver ? "?v=" + ver[1] : ""}`);
+      };
+      (window.requestIdleCallback || (cb => setTimeout(cb, 1500)))(load, { timeout: 4000 });
+    }
 
     // Modern country and province borders sit above the fills
     const MUb = window.HistoryAtlas.MAP_UNITS;
@@ -844,6 +925,25 @@ class MapRenderer {
 
     if (!this._paintSig) this._paintSig = {};
     if (!this._pathEl) this._pathEl = {};
+    // Year-by-year playback fades each change slowly. The first paint is instant, and a big jump (search, chronicle,
+    // dragging the timeline) that changes many units at once uses a short fade so hundreds of transitions never pile up.
+    {
+      let changes = 0;
+      const firstPaint = !this._paintedOnce;
+      if (!firstPaint) for (const r of this._drawItems()) {
+        const o = ownerOf[r.id];
+        const sel = (r.region || r.id) === selectedRegionId || Boolean(this.highlightedEmpire && o === this.highlightedEmpire);
+        if (this._paintSig[r.id] !== `${o || ""}|${sel ? 1 : 0}`) changes++;
+      }
+      // the class must still be there when the browser next computes styles (a second paint in the same frame with
+      // no changes must not remove it), so it is only ever removed two frames later
+      const mark = cls => {
+        this.svg.classList.add(cls);
+        requestAnimationFrame(() => requestAnimationFrame(() => this.svg.classList.remove(cls)));
+      };
+      if (firstPaint) { this._paintedOnce = true; mark("paint-instant"); }
+      else if (changes > 120) mark("paint-bulk");
+    }
     this._drawItems().forEach(r => {
       const owner = ownerOf[r.id];
       const el = this._pathEl[r.id] || (this._pathEl[r.id] = document.getElementById("reg-" + r.id));
@@ -860,6 +960,7 @@ class MapRenderer {
         const fallbackColor = resolveDisplayHex(owner, this.empires[owner].color);
         if (dirty) {
           el.style.fill = gInfo ? gInfo.mid : fallbackColor;
+          el.style.fillOpacity = "1";
           el.style.stroke = gInfo ? gInfo.deep : "rgba(20, 28, 36, 0.45)";
           el.classList.add("owned");
         }
@@ -871,7 +972,9 @@ class MapRenderer {
         empireClusters[owner].count += 1;
         empireClusters[owner].weight += rWeight;
       } else if (dirty) {
-        el.style.fill = "url(#stateless-hatch)";
+        // with the land hatch underneath; without units (old map) keep the pattern on the path itself
+        if (this.units) { el.style.fill = "var(--land-empty)"; el.style.fillOpacity = "0"; }
+        else el.style.fill = "url(#stateless-hatch)";
         el.style.stroke = "rgba(18, 25, 34, 0.42)";
         el.classList.remove("owned");
       }
@@ -898,9 +1001,12 @@ class MapRenderer {
 
     for (const existingKey of Object.keys(this._bannerNodes)) {
       if (!activeEmpKeys.has(existingKey)) {
+        // a state that ended fades its name out instead of vanishing
         const oldNode = this._bannerNodes[existingKey];
-        if (oldNode && oldNode.g && oldNode.g.parentNode) {
-          oldNode.g.parentNode.removeChild(oldNode.g);
+        if (oldNode && oldNode.g) {
+          const g = oldNode.g;
+          g.classList.add("is-leaving");
+          setTimeout(() => { if (g.parentNode) g.parentNode.removeChild(g); }, 900);
         }
         delete this._bannerNodes[existingKey];
       }
@@ -1016,8 +1122,10 @@ class MapRenderer {
       let record = this._bannerNodes[empName];
       if (!record) {
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        g.setAttribute("class", "empire-banner-group");
+        // a new state's name starts transparent and fades in on the next frame
+        g.setAttribute("class", "empire-banner-group is-entering");
         g.setAttribute("transform", `translate(${cx}, ${cy})`);
+        requestAnimationFrame(() => requestAnimationFrame(() => g.classList.remove("is-entering")));
 
         const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         bg.setAttribute("rx", "3.5");
@@ -1058,6 +1166,8 @@ class MapRenderer {
         record.sig = sig;
       }
     }
+
+    this._syncCapitals(state.year, Object.keys(empireClusters), majorNames);
 
     this._applyHoverState();
 
