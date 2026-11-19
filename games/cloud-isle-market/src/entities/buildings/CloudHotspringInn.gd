@@ -60,7 +60,7 @@ func _ready() -> void:
 	level_label.custom_minimum_size = Vector2(68.0, 20.0)
 	add_child(level_label)
 
-	status_badge_label = EconomyConfig.create_pixel_label("★汤屋·艾草暖汤", 13, Color("#FFE066"), true)
+	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_hs_init"), 13, Color("#FFE066"), true)
 	status_badge_label.name = "HotspringBadgeLabel"
 	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
 	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
@@ -152,20 +152,20 @@ func _sync_labels_and_tint() -> void:
 	var built := is_hotspring_built()
 	var cur_lv := get_hotspring_level()
 	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else "待建汤屋"
+		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_hs_unbuilt")
 		if level_label.label_settings != null:
 			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
 	if status_badge_label != null:
 		if built:
 			var bid := GameManager.active_hotspring_bath_id
 			var bcfg: Dictionary = EconomyConfig.HOTSPRING_BATH_BLENDS.get(bid, {})
-			var sname := String(bcfg.get("short_name", "艾草汤"))
+			var sname := EconomyConfig.tr_name(String(bcfg.get("short_name", "艾草汤")))
 			var stock_cnt := GameManager.get_total_bath_stock_count()
-			status_badge_label.text = "★" + sname + ("·汤" + str(stock_cnt) if stock_cnt > 0 else "")
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [sname, EconomyConfig.tr_fmt("wl_seg_bath", [stock_cnt]) if stock_cnt > 0 else ""])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#FFE066") if stock_cnt > 0 else Color("#FFA8A8")
 		else:
-			status_badge_label.text = "★汤屋(" + str(EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD) + "G)"
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_hs_cost", [EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#CBD5E1")
 	if body_sprite != null:

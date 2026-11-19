@@ -59,7 +59,7 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "lighthouse_harbor", get_harbor_level())
 
-	status_badge_label = EconomyConfig.create_pixel_label("★灯塔渔港", 13, Color("#88D8FF"), true)
+	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_lh_init"), 13, Color("#88D8FF"), true)
 	status_badge_label.name = "LighthouseHarborBadgeLabel"
 	# Own LabelSettings copy: tinting this badge must never recolour other shared 13px labels
 	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
@@ -70,7 +70,7 @@ func _ready() -> void:
 	status_badge_label.z_as_relative = false
 	add_child(status_badge_label)
 
-	auction_badge_label = EconomyConfig.create_pixel_label("★名物拍卖会", 13, Color("#FFD8A8"), true)
+	auction_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_au_init"), 13, Color("#FFD8A8"), true)
 	auction_badge_label.name = "SpecialtyAuctionBadgeLabel"
 	auction_badge_label.label_settings = auction_badge_label.label_settings.duplicate() as LabelSettings
 	auction_badge_label.custom_minimum_size = Vector2(136.0, 18.0)
@@ -173,24 +173,26 @@ func _sync_labels_and_tint() -> void:
 	var auction_on := built and GameManager.island_auction_active
 	if status_badge_label != null and status_badge_label.label_settings != null:
 		if not built:
-			status_badge_label.text = "★灯塔渔港(" + str(EconomyConfig.LIGHTHOUSE_HARBOR_UNLOCK_COST_GOLD) + "G)"
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_lh_cost", [EconomyConfig.LIGHTHOUSE_HARBOR_UNLOCK_COST_GOLD])
 			status_badge_label.label_settings.font_color = Color("#CBD5E1")
 		elif auction_on:
 			var sm := GameManager.get_auction_status_summary()
 			if String(sm["high_bidder"]) == "":
-				status_badge_label.text = "起拍" + str(int(sm["next_bid"])) + String(sm["cur_tag"]) + "·待出价"
+				status_badge_label.text = EconomyConfig.tr_fmt("wl_au_open", [int(sm["next_bid"]), String(sm["cur_tag"])])
 				status_badge_label.label_settings.font_color = Color("#FFF4D6")
 			else:
-				status_badge_label.text = "现价" + str(int(sm["high_bid"])) + String(sm["cur_tag"]) + "·" + ("你领先" if bool(sm["player_leading"]) else String(sm["leader_name"]))
+				# zh keeps the full bidder name; en / ja use the short one so the badge stays inside its zh footprint
+				var lead_txt := EconomyConfig.tr_key("wl_au_you") if bool(sm["player_leading"]) else (String(sm["leader_name"]) if EconomyConfig.is_zh() else EconomyConfig.get_auction_bidder_short_name(String(sm["high_bidder"])))
+				status_badge_label.text = EconomyConfig.tr_fmt("wl_au_now", [int(sm["high_bid"]), String(sm["cur_tag"]), lead_txt])
 				status_badge_label.label_settings.font_color = Color("#8CE99A") if bool(sm["player_leading"]) else Color("#FFA8A8")
 		else:
-			status_badge_label.text = "★渔港Lv." + str(get_harbor_level()) + "·鲜" + str(GameManager.get_harbor_seafood_stock())
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_lh_lv", [get_harbor_level(), GameManager.get_harbor_seafood_stock()])
 			status_badge_label.label_settings.font_color = Color("#88D8FF")
 	if auction_badge_label != null:
 		auction_badge_label.visible = auction_on
 		if auction_on:
 			var sm2 := GameManager.get_auction_status_summary()
-			auction_badge_label.text = "★名物拍卖%d/%d·%s(%ds)" % [int(sm2["lot_index"]) + 1, int(sm2["lot_count"]), String(sm2["lot_short"]), maxi(1, int(ceili(float(sm2["timer"]))))]
+			auction_badge_label.text = EconomyConfig.tr_key("wl_au_on") % [int(sm2["lot_index"]) + 1, int(sm2["lot_count"]), String(sm2["lot_short"]), maxi(1, int(ceili(float(sm2["timer"]))))]
 	_center_badge(status_badge_label, -TARGET_VISUAL_H - 27.0)
 	_center_badge(auction_badge_label, -TARGET_VISUAL_H - 44.0)
 	if body_sprite != null:

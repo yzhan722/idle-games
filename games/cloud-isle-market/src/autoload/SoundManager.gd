@@ -330,9 +330,9 @@ func is_white_noise_active() -> bool:
 
 func get_white_noise_status_label() -> String:
 	if not white_noise_enabled or is_muted:
-		return "[白噪:关]"
+		return EconomyConfig.tr_key("ui_noise_off")
 	var prof := get_white_noise_profile()
-	return "[白噪:" + String(WHITE_NOISE_CN_LABELS.get(prof, "微风")) + "]"
+	return EconomyConfig.tr_key("ui_noise_on") % EconomyConfig.tr_name(String(WHITE_NOISE_CN_LABELS.get(prof, "微风")))
 
 func _pump_procedural_white_noise(delta: float) -> void:
 	if not white_noise_enabled or is_muted or _noise_player == null:

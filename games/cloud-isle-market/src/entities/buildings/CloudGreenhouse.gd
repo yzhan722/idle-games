@@ -58,7 +58,7 @@ func _ready() -> void:
 	level_label.custom_minimum_size = Vector2(68.0, 20.0)
 	add_child(level_label)
 
-	status_badge_label = EconomyConfig.create_pixel_label("★温室·星露铃兰", 13, Color("#8CE99A"), true)
+	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_gh_init"), 13, Color("#8CE99A"), true)
 	status_badge_label.name = "GreenhouseBadgeLabel"
 	status_badge_label.custom_minimum_size = Vector2(116.0, 18.0)
 	status_badge_label.scale = Vector2(0.78, 0.78)
@@ -153,21 +153,23 @@ func _sync_labels_and_tint() -> void:
 	var built := is_greenhouse_built()
 	var cur_lv := get_greenhouse_level()
 	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else "待建温室"
+		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_gh_unbuilt")
 		if level_label.label_settings != null:
 			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
 	if status_badge_label != null:
 		if built:
 			var fid := GameManager.active_greenhouse_flora_id
-			var fname := EconomyConfig.get_item_display_name(fid)
+			# the zh rule (last 4 glyphs) runs on the zh source name, then the result is shown in the current language
+			var fname := EconomyConfig.get_item_raw_name(fid)
 			if fname.length() > 4:
 				fname = fname.substr(fname.length() - 4, 4)
+			fname = EconomyConfig.tr_name(fname)
 			var box_cnt := GameManager.get_total_souvenir_box_count()
-			status_badge_label.text = ("★" + fname + ("·礼" + str(box_cnt) if box_cnt > 0 else ""))
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [fname, EconomyConfig.tr_fmt("wl_seg_box", [box_cnt]) if box_cnt > 0 else ""])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#FFE066") if box_cnt > 0 else Color("#8CE99A")
 		else:
-			status_badge_label.text = "★温室(" + str(EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD) + "G)"
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_gh_cost", [EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD])
 			if status_badge_label.label_settings != null:
 				status_badge_label.label_settings.font_color = Color("#CBD5E1")
 	if body_sprite != null:

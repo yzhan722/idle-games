@@ -191,7 +191,7 @@ func trigger_pet_boost() -> bool:
 	pet_jump_timer = PET_JUMP_DURATION
 	if SoundManager != null:
 		SoundManager.play_pop_sfx()
-	EventBus.spawn_floating_text.emit(position + Vector2(0.0, -64.0), "★干劲满满 加速8s!", Color("#FFE066"))
+	EventBus.spawn_floating_text.emit(position + Vector2(0.0, -64.0), EconomyConfig.tr_key("ft_pet_boost"), Color("#FFE066"))
 	return true
 
 func setup_worker(p_role: RoleType, p_island: int, p_slot: int, p_pos: Vector2, p_graph: WaypointGraph, p_world: Node2D) -> void:
@@ -740,7 +740,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 			elif worker_step == 2:
 				facing_left = false
 				if state_timer >= 0.45:
-					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "鲜果直售+", Color("#FFE066")):
+					if _try_deposit_to_stall(carrying_item_id, carrying_qty, EconomyConfig.tr_key("ft_tag_fresh"), Color("#FFE066")):
 						_assign_next_task()
 
 		RoleType.OTTER_LOGISTICS:
@@ -792,7 +792,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 			elif worker_step == 2:
 				facing_left = false
 				if state_timer >= 0.45:
-					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "分流直售+", Color("#FFF4D6")):
+					if _try_deposit_to_stall(carrying_item_id, carrying_qty, EconomyConfig.tr_key("ft_tag_divert"), Color("#FFF4D6")):
 						_assign_next_task()
 
 			elif worker_step == 10:
@@ -812,7 +812,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 			elif worker_step == 11:
 				facing_left = false
 				if state_timer >= 0.45:
-					if _try_deposit_to_stall(carrying_item_id, carrying_qty, "3.5x美食+", Color("#FFE066")):
+					if _try_deposit_to_stall(carrying_item_id, carrying_qty, EconomyConfig.tr_key("ft_tag_mortar"), Color("#FFE066")):
 						_assign_next_task()
 
 		RoleType.TOUCAN_TRADER:
@@ -855,9 +855,9 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 				facing_left = false
 				if state_timer >= 0.45:
 					var did := carrying_item_id if carrying_item_id != "" else "delicacy_2"
-					var tag := "跨岛鲜果+"
+					var tag := EconomyConfig.tr_key("ft_tag_cross")
 					if did.begins_with("delicacy_"):
-						tag = "52x盛宴+" if home_island == 3 else "12x甘露+"
+						tag = EconomyConfig.tr_key("ft_tag_feast") if home_island == 3 else EconomyConfig.tr_key("ft_tag_nectar")
 					if _try_deposit_to_stall(did, carrying_qty, tag, Color("#FFE066")):
 						_assign_next_task()
 

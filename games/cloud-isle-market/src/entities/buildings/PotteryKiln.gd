@@ -66,7 +66,7 @@ func _ready() -> void:
 	level_label.custom_minimum_size = Vector2(60.0, 20.0)
 	add_child(level_label)
 
-	status_badge_label = EconomyConfig.create_pixel_label("★陶窑", 13, Color("#FFD8A8"), true)
+	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_pk_init"), 13, Color("#FFD8A8"), true)
 	status_badge_label.name = "PotteryKilnBadgeLabel"
 	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
 	status_badge_label.scale = Vector2(0.74, 0.74)
@@ -167,7 +167,7 @@ func _sync_labels_and_tint() -> void:
 		return
 	var built := is_kiln_built()
 	if level_label != null and level_label.label_settings != null:
-		level_label.text = ("Lv." + str(get_kiln_level())) if built else "待建陶窑"
+		level_label.text = ("Lv." + str(get_kiln_level())) if built else EconomyConfig.tr_key("wl_pk_unbuilt")
 		level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
 	if status_badge_label != null and status_badge_label.label_settings != null:
 		if built:
@@ -175,13 +175,13 @@ func _sync_labels_and_tint() -> void:
 			var rcfg: Dictionary = EconomyConfig.POTTERY_ITEMS.get(rid, {})
 			var clay_cnt := GameManager.get_pottery_stock(EconomyConfig.POTTERY_CLAY_ID)
 			var st := GameManager.get_pottery_kiln_status()
-			var tail := "·土" + str(clay_cnt)
+			var tail := EconomyConfig.tr_fmt("wl_seg_clay", [clay_cnt])
 			if st == "fuel":
-				tail = "·缺柴"
-			status_badge_label.text = "★" + String(rcfg.get("short_name", "茶碗")) + tail
+				tail = EconomyConfig.tr_key("wl_seg_nofuel")
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(String(rcfg.get("short_name", "茶碗"))), tail])
 			status_badge_label.label_settings.font_color = Color("#FFD8A8") if st == "ok" else Color("#FFE8A3")
 		else:
-			status_badge_label.text = "★陶窑(" + str(EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD) + "G)"
+			status_badge_label.text = EconomyConfig.tr_fmt("wl_pk_cost", [EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD])
 			status_badge_label.label_settings.font_color = Color("#CBD5E1")
 	_center_badge()
 	if body_sprite != null:

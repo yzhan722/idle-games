@@ -63,7 +63,7 @@ func _ready() -> void:
 	add_child(screen_light_layer)
 	screen_light_layer.draw.connect(_draw_screen_light)
 
-	marquee_label = EconomyConfig.create_pixel_label("★星空露天影院", 13, Color("#FFD8A8"), true)
+	marquee_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_cin_init"), 13, Color("#FFD8A8"), true)
 	marquee_label.name = "OpenAirCinemaMarqueeLabel"
 	# Own LabelSettings copy: recolouring the marquee must never leak into other shared 13px labels
 	marquee_label.label_settings = marquee_label.label_settings.duplicate() as LabelSettings
@@ -169,21 +169,21 @@ func _sync_labels_and_tint() -> void:
 		return
 	var built := is_cinema_built()
 	if not built:
-		marquee_label.text = "★露天影院(" + str(EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD) + "G)"
+		marquee_label.text = EconomyConfig.tr_fmt("wl_cin_cost", [EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD])
 		marquee_label.label_settings.font_color = Color("#CBD5E1")
 	else:
 		var sm := GameManager.get_cinema_status_summary()
 		if bool(sm["screening"]):
-			marquee_label.text = "★放映%d/%d·%s %ds" % [int(sm["slot"]) + 1, int(sm["slot_count"]), String(sm["film_short"]), maxi(1, int(ceili(float(sm["remaining"]))))]
+			marquee_label.text = EconomyConfig.tr_key("wl_cin_on") % [int(sm["slot"]) + 1, int(sm["slot_count"]), String(sm["film_short"]), maxi(1, int(ceili(float(sm["remaining"]))))]
 			marquee_label.label_settings.font_color = Color("#FFE066")
 		elif int(sm["slot"]) >= 0:
-			marquee_label.text = "★幕间零食·%ds" % maxi(1, int(ceili(float(sm["intermission_left"]))))
+			marquee_label.text = EconomyConfig.tr_key("wl_cin_break") % maxi(1, int(ceili(float(sm["intermission_left"]))))
 			marquee_label.label_settings.font_color = Color("#FFD8A8")
 		elif bool(sm["open"]):
-			marquee_label.text = "★今夜散场·影票%d" % int(GameManager.cinema_screenings_tonight)
+			marquee_label.text = EconomyConfig.tr_key("wl_cin_done") % int(GameManager.cinema_screenings_tonight)
 			marquee_label.label_settings.font_color = Color("#FFF4D6")
 		else:
-			marquee_label.text = "★星空露天影院"
+			marquee_label.text = EconomyConfig.tr_key("wl_cin_init")
 			marquee_label.label_settings.font_color = Color("#FFD8A8")
 	marquee_label.size = Vector2.ZERO
 	marquee_label.position = Vector2(-marquee_label.size.x * marquee_label.scale.x * 0.5 + 4.0, BADGE_Y)

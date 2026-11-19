@@ -64,6 +64,13 @@ var tex_birthday_cake: Texture2D
 var tex_birthday_gift: Texture2D
 var tex_icon_birthday: Texture2D
 var birthday_view: bool = false
+## CI-16: Workers tab card #7 Food Critics' Week (-> the week panel) + card #8 Friendship Bonds (-> the bonds panel), codex card 18
+var tex_food_week_judge: Texture2D
+var tex_food_week_plate: Texture2D
+var tex_food_week_medal: Texture2D
+var tex_friendship: Texture2D
+var food_week_view: bool = false
+var friendship_view: bool = false
 
 var active_tab: int = 0
 var hovered_tab: int = -1
@@ -164,6 +171,7 @@ func _ready() -> void:
 	reload_ci13_textures()
 	reload_ci14_textures()
 	reload_ci15_textures()
+	reload_ci16_textures()
 
 	displayed_gold = float(GameManager.gold)
 	if GameManager.pending_offline_gold > 0:
@@ -172,7 +180,7 @@ func _ready() -> void:
 		# CI-15: today's birthday was announced before the HUD existed -> show its banner once at start-up (labels are built
 		# below, so only the banner state is set here)
 		offline_banner_timer = 6.0
-		offline_banner_text = "★今天是" + EconomyConfig.get_islander_name(GameManager.birthday_today_islander) + "的生日! 开拓造景「岛民生日会」备礼 · 得声望与图鉴券"
+		offline_banner_text = _birthday_today_banner(GameManager.birthday_today_islander)
 	if EventBus != null:
 		EventBus.offline_earnings_ready.connect(_show_offline_welcome_banner)
 		EventBus.pomodoro_completed.connect(_on_pomodoro_completed)
@@ -217,8 +225,36 @@ func _ready() -> void:
 		EventBus.sky_weather_changed.connect(_on_sky_weather_changed)
 		EventBus.birthday_started.connect(_on_birthday_started)
 		EventBus.birthday_gift_given.connect(_on_birthday_gift_given)
+		EventBus.food_week_scored.connect(_on_food_week_scored)
+		EventBus.friendship_level_up.connect(_on_friendship_level_up)
+		EventBus.language_changed.connect(_on_language_changed)
 
 	_build_native_labels()
+
+## i18n: `_t(key)` = text of `key` in the current UI language, `_tf(key, args)` = the same `%`-formatted,
+## `_n(zh)` = a data name / tag (zh source text from EconomyConfig) in the current language
+func _t(key: String) -> String:
+	return EconomyConfig.tr_key(key)
+
+func _tf(key: String, args: Array) -> String:
+	return EconomyConfig.tr_fmt(key, args)
+
+func _n(zh_name: String) -> String:
+	return EconomyConfig.tr_name(zh_name)
+
+## i18n: shrinks a label horizontally (never below `min_sx`, never above its base scale) so its text stays inside `avail_w`
+## on-screen px; a text that already fits keeps the base scale untouched
+func _fit_label_x(lbl: Label, base_scale: Vector2, avail_w: float, min_sx: float = 0.6) -> void:
+	lbl.size = Vector2.ZERO
+	var raw := maxf(1.0, lbl.get_combined_minimum_size().x)
+	lbl.scale = Vector2(clampf(avail_w / raw, minf(min_sx, base_scale.x), base_scale.x), base_scale.y)
+
+## i18n: a banner is composed once in the language of its moment -> a language switch drops the one on screen instead of
+## leaving it half in the old language; every other HUD text is rebuilt on the next sync
+func _on_language_changed() -> void:
+	offline_banner_timer = 0.0
+	if lbl_offline != null:
+		_sync_label_nodes()
 
 func reload_ci4_textures() -> void:
 	tex_rare_voucher = EconomyConfig.load_pixel_texture(EconomyConfig.ICON_RARE_VOUCHER_TEX)
@@ -312,20 +348,20 @@ func reload_ci13_textures() -> void:
 
 func _on_kite_festival_started(_festival_idx: int) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★云海风筝节开幕！" + str(EconomyConfig.KITE_SLOTS.size()) + " 只像素风筝飞上西岛/东岛上空 · 点击收风筝 · " + GameManager.get_kite_wind_name() + "助力产销!"
+	offline_banner_text = _tf("bn_kite_start", [EconomyConfig.KITE_SLOTS.size(), GameManager.get_kite_wind_name()])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_kite_festival_ended(collected: int, swept: bool) -> void:
 	offline_banner_timer = 4.5
-	offline_banner_text = ("★风筝满天！本届收下全部 " + str(collected) + " 只风筝 · 勋章 x" + str(GameManager.kite_medals)) if swept else ("★云海风筝节落幕 · 本届收下 " + str(collected) + "/" + str(EconomyConfig.KITE_SLOTS.size()) + " 只风筝 · 下届 " + str(int(EconomyConfig.KITE_COOLDOWN_SEC)) + "s 后")
+	offline_banner_text = _tf("bn_kite_swept", [collected, GameManager.kite_medals]) if swept else _tf("bn_kite_end", [collected, EconomyConfig.KITE_SLOTS.size(), int(EconomyConfig.KITE_COOLDOWN_SEC)])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_season_changed(season_id: String) -> void:
 	var info: Dictionary = EconomyConfig.SEASONS.get(season_id, {})
 	offline_banner_timer = 4.0
-	offline_banner_text = "★岛屿换上" + String(info.get("full_name", season_id)) + "装扮【" + String(info.get("deco_name", "")) + "】· " + String(info.get("bonus_desc", "")) + " +" + str(int(round(EconomyConfig.SEASON_DECO_BONUS_PER_PROP * 100.0 * float(GameManager.get_active_season_deco_count())))) + "%"
+	offline_banner_text = _tf("bn_season", [_n(String(info.get("full_name", season_id))), _n(String(info.get("deco_name", ""))), _n(String(info.get("bonus_desc", ""))), int(round(EconomyConfig.SEASON_DECO_BONUS_PER_PROP * 100.0 * float(GameManager.get_active_season_deco_count())))])
 	_sync_label_nodes()
 	queue_redraw()
 
@@ -340,27 +376,58 @@ func reload_ci15_textures() -> void:
 		reload_ci14_textures()
 
 func _weather_mult_text(sw: Dictionary) -> String:
-	return "客流x%.2f 农田x%.2f 工坊x%.2f 售价x%.2f" % [float(sw["visitor"]), float(sw["crop"]), float(sw["workshop"]), float(sw["sale"])]
+	return _t("ui_weather_mult") % [float(sw["visitor"]), float(sw["crop"]), float(sw["workshop"]), float(sw["sale"])]
 
 func _on_sky_weather_changed(weather_id: String, prev_id: String) -> void:
 	if prev_id == "":
 		return
 	var info := EconomyConfig.get_sky_weather_info(weather_id)
 	offline_banner_timer = 4.5
-	offline_banner_text = "★云海天气转为【" + String(info["full_name"]) + "】" + String(info["desc"]) + " · 每 " + str(EconomyConfig.SKY_WEATHER_SLOT_MINUTES) + " 分钟一轮"
+	offline_banner_text = _tf("bn_sky_weather", [_n(String(info["full_name"])), _n(String(info["desc"])), EconomyConfig.SKY_WEATHER_SLOT_MINUTES])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_birthday_started(islander: String, _date_key: String) -> void:
 	offline_banner_timer = 6.0
-	offline_banner_text = "★今天是" + EconomyConfig.get_islander_name(islander) + "的生日! 开拓造景「岛民生日会」备礼 · 得声望与图鉴券"
+	offline_banner_text = _birthday_today_banner(islander)
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_birthday_gift_given(islander: String, result: Dictionary) -> void:
 	var fav := String(result.get("favourite", ""))
 	offline_banner_timer = 4.5
-	offline_banner_text = "★" + EconomyConfig.get_islander_name(islander) + "收到生日礼物! 声望+" + str(int(result.get("rep", 0))) + " 图鉴券+" + str(int(result.get("vouchers", 0))) + (" · 称心礼物【" + EconomyConfig.get_item_display_name(fav) + "】" if fav != "" else "") + (" ★生日全家福!" if bool(result.get("medal", false)) else "")
+	offline_banner_text = _tf("bn_bday_gift", [EconomyConfig.get_islander_name(islander), int(result.get("rep", 0)), int(result.get("vouchers", 0)), _tf("bn_bday_gift_fav", [EconomyConfig.get_item_display_name(fav)]) if fav != "" else "", _t("bn_bday_gift_medal") if bool(result.get("medal", false)) else ""])
+	_sync_label_nodes()
+	queue_redraw()
+
+## ---------------- CI-16: Food Critics' Week & Friendship Bonds ----------------
+func reload_ci16_textures() -> void:
+	tex_food_week_judge = EconomyConfig.load_pixel_texture(EconomyConfig.FOOD_WEEK_JUDGE_TEX)
+	tex_food_week_plate = EconomyConfig.load_pixel_texture(EconomyConfig.FOOD_WEEK_PLATE_TEX)
+	tex_food_week_medal = EconomyConfig.load_pixel_texture(EconomyConfig.FOOD_WEEK_MEDAL_TEX)
+	tex_friendship = EconomyConfig.load_pixel_texture(EconomyConfig.ICON_FRIENDSHIP_TEX)
+
+func is_ci16_panel_open() -> bool:
+	return active_tab == 1 and (food_week_view or friendship_view)
+
+## A price bonus fraction as the float a `%.1f%%` template expects (0.006 -> 0.6)
+func _pct1(v: float) -> float:
+	return v * 100.0
+
+func _on_food_week_scored(res: Dictionary) -> void:
+	var extra := ""
+	if int(res.get("vouchers", 0)) > 0:
+		extra += _tf("bn_fw_scored_voucher", [int(res.get("vouchers", 0))])
+	if bool(res.get("medal_up", false)):
+		extra += _tf("bn_fw_scored_medal", [EconomyConfig.get_food_medal_name(int(res.get("tier", 0)))])
+	offline_banner_timer = 4.5
+	offline_banner_text = _tf("bn_fw_scored", [EconomyConfig.get_islander_name(String(res.get("judge", ""))), EconomyConfig.get_item_display_name(String(res.get("dish", ""))), int(res.get("score", 0)), int(res.get("rep", 0)), extra])
+	_sync_label_nodes()
+	queue_redraw()
+
+func _on_friendship_level_up(islander: String, level: int, _source: String) -> void:
+	offline_banner_timer = 4.5
+	offline_banner_text = _tf("bn_fr_level_up", [EconomyConfig.get_islander_name(islander), level, _pct1(EconomyConfig.FRIEND_PRICE_PER_LEVEL)])
 	_sync_label_nodes()
 	queue_redraw()
 
@@ -377,12 +444,12 @@ func reload_ci14_textures() -> void:
 func _photo_route_text(route: Array) -> String:
 	var parts: Array[String] = []
 	for s_id in route:
-		parts.append(String(EconomyConfig.PHOTO_SPOTS[String(s_id)]["short_name"]))
+		parts.append(_n(String(EconomyConfig.PHOTO_SPOTS[String(s_id)]["short_name"])))
 	return "-".join(parts)
 
 func _on_photo_tour_started(_tour_idx: int, stops: int) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★观光摄影团出发! " + str(stops) + " 处打卡: " + _photo_route_text(GameManager.photo_tour_route) + " · 客流x" + str(EconomyConfig.PHOTO_TOUR_VISITOR_SPAWN_MULT)
+	offline_banner_text = _tf("bn_photo_start", [stops, _photo_route_text(GameManager.photo_tour_route), str(EconomyConfig.PHOTO_TOUR_VISITOR_SPAWN_MULT)])
 	_sync_label_nodes()
 	queue_redraw()
 
@@ -390,130 +457,130 @@ func _on_photo_taken(_spot_id: String, photo_id: String, gold: int, special: boo
 	var lr: Dictionary = GameManager.photo_last_result
 	var extra := ""
 	if int(lr.get("amber", 0)) > 0:
-		extra = " · 首拍+" + str(int(lr["amber"])) + "琥珀"
+		extra = _tf("bn_photo_first_amber", [int(lr["amber"])])
 	elif int(lr.get("vouchers", 0)) > 0:
-		extra = " · 绝景首拍+" + str(int(lr["vouchers"])) + "图鉴券"
+		extra = _tf("bn_photo_first_voucher", [int(lr["vouchers"])])
 	offline_banner_timer = 3.5
-	offline_banner_text = ("★绝景! " if special else "咔嚓! ") + "【" + EconomyConfig.get_item_display_name(photo_id) + "】收入摄影图鉴 +" + str(gold) + "G" + extra
+	offline_banner_text = _tf("bn_photo_taken", [_t("bn_photo_special") if special else _t("bn_photo_click"), EconomyConfig.get_item_display_name(photo_id), gold, extra])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_photo_tour_ended(photos: int, stamped: bool) -> void:
 	offline_banner_timer = 4.5
 	if stamped:
-		offline_banner_text = "★观光团满载而归! 拍下 " + str(photos) + " 张 · 打卡集章 x" + str(GameManager.photo_stamps) + " +" + str(EconomyConfig.PHOTO_STAMP_VOUCHERS) + "图鉴券"
+		offline_banner_text = _tf("bn_photo_end_stamp", [photos, GameManager.photo_stamps, EconomyConfig.PHOTO_STAMP_VOUCHERS])
 	else:
-		offline_banner_text = "★观光团返程 · 拍下 " + str(photos) + " 张 (一趟拍满 " + str(EconomyConfig.PHOTO_STAMP_MIN_PHOTOS) + " 张可集章)"
+		offline_banner_text = _tf("bn_photo_end", [photos, EconomyConfig.PHOTO_STAMP_MIN_PHOTOS])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_wish_fulfilled(_slot_idx: int, wish: Dictionary) -> void:
 	var lr: Dictionary = GameManager.wish_last_result
-	var who := String(EconomyConfig.WISH_ISLANDER_NAMES.get(String(wish.get("islander", "")), "岛民"))
+	var who := _n(String(EconomyConfig.WISH_ISLANDER_NAMES.get(String(wish.get("islander", "")), "岛民")))
 	var w_cfg: Dictionary = EconomyConfig.WISH_TYPES.get(String(wish.get("type", "harvest")), {})
 	offline_banner_timer = 4.5
-	offline_banner_text = "★" + who + "的" + String(w_cfg.get("name", "心愿")) + "圆梦! 声望+" + str(int(lr.get("rep", 0))) + " 图鉴券+" + str(int(lr.get("vouchers", 0))) + (" ★心愿勋章!" if bool(lr.get("medal", false)) else "")
+	offline_banner_text = _tf("bn_wish_done", [who, _n(String(w_cfg.get("name", "心愿"))), int(lr.get("rep", 0)), int(lr.get("vouchers", 0)), _t("bn_wish_medal") if bool(lr.get("medal", false)) else ""])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_pottery_kiln_unlocked_changed(_unlocked: bool) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★云端陶艺窑坊点火！月兔收获翻出的陶土 + 秸秆柴烧制云纹茶碗/青釉陶花瓶 · 供应集市与伴手礼盒!"
+	offline_banner_text = _t("bn_kiln_open")
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_sports_day_started(team_count: int) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★岛民秋季运动会开幕！" + str(team_count) + " 支队伍登上荷塘栈桥赛道 · 接力/拔河/搬运三项比赛 · 观赛人潮售价 " + str(EconomyConfig.SPORTS_SPECTATOR_SALE_MULT) + "x!"
+	offline_banner_text = _tf("bn_sports_start", [team_count, str(EconomyConfig.SPORTS_SPECTATOR_SALE_MULT)])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_sports_event_settled(event_id: String, ranking: Array, prize_gold: int) -> void:
 	var names: Array[String] = []
 	for ri in range(mini(3, ranking.size())):
-		names.append(str(ri + 1) + "." + String(EconomyConfig.SPORTS_TEAM_NAMES.get(String(ranking[ri]), String(ranking[ri]))))
+		names.append(str(ri + 1) + "." + _n(String(EconomyConfig.SPORTS_TEAM_NAMES.get(String(ranking[ri]), String(ranking[ri])))))
 	offline_banner_timer = 4.5
-	offline_banner_text = "★运动会" + EconomyConfig.get_item_display_name(event_id) + "名次: " + " ".join(names) + " · 奖金 +" + str(prize_gold) + "G · 运动会鉴 " + str(GameManager.get_unlocked_sports_event_count()) + "/3"
+	offline_banner_text = _tf("bn_sports_event", [EconomyConfig.get_item_display_name(event_id), " ".join(names), prize_gold, GameManager.get_unlocked_sports_event_count()])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_sports_day_ended(champion_key: String, medal_total: int) -> void:
 	offline_banner_timer = 5.5
-	offline_banner_text = "★秋季运动会闭幕！总冠军【" + String(EconomyConfig.SPORTS_TEAM_NAMES.get(champion_key, champion_key)) + "】荣获金丝带奖牌 x" + str(medal_total) + " · 冠军干劲加速 · +琥珀 +图鉴券!"
+	offline_banner_text = _tf("bn_sports_end", [_n(String(EconomyConfig.SPORTS_TEAM_NAMES.get(champion_key, champion_key))), medal_total])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_dairy_workshop_unlocked_changed(_unlocked: bool) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★云端牧场乳品工坊落成！农田收获的鲜草喂云朵奶牛挤鲜奶 · 熟成奶酪与云朵布丁供应集市与食神品鉴席!"
+	offline_banner_text = _t("bn_dairy_open")
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_open_air_cinema_unlocked_changed(_unlocked: bool) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★星空夜市露天电影院搭好银幕！每到夜市连映 3 部电影 · 售影票与影院零食 · 夜市售价 " + str(EconomyConfig.CINEMA_NIGHT_SALE_MULT) + "x!"
+	offline_banner_text = _tf("bn_cinema_open", [str(EconomyConfig.CINEMA_NIGHT_SALE_MULT)])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_cinema_screening_settled(film_id: String, audience: int, ticket_gold: int, snack_gold: int) -> void:
 	offline_banner_timer = 4.5
-	offline_banner_text = "★露天电影" + EconomyConfig.get_item_display_name(film_id) + "散场 · 观众 " + str(audience) + " 位 · 影票 +" + str(ticket_gold) + "G" + ((" · 零食 +" + str(snack_gold) + "G") if snack_gold > 0 else "") + " · 星空影院鉴 " + str(GameManager.get_unlocked_film_count()) + "/3"
+	offline_banner_text = _tf("bn_cinema_film", [EconomyConfig.get_item_display_name(film_id), audience, ticket_gold, _tf("bn_seg_snack", [snack_gold]) if snack_gold > 0 else "", GameManager.get_unlocked_film_count()])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_cinema_medal_awarded(total_medals: int) -> void:
 	offline_banner_timer = 5.5
-	offline_banner_text = "★一夜连映 3 部露天电影！荣获【星空影迷勋章】x" + str(total_medals) + " · +琥珀 +图鉴券!"
+	offline_banner_text = _tf("bn_cinema_medal", [total_medals])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_lighthouse_harbor_unlocked_changed(_unlocked: bool) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★云海灯塔渔港点灯！两艘渔船轮班出海 · 鲜渔获供应集市与食神品鉴席 · 名物拍卖会即将开槌!"
+	offline_banner_text = _t("bn_harbor_open")
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_island_auction_started(lot_count: int) -> void:
 	var sm := GameManager.get_auction_status_summary()
 	offline_banner_timer = 5.5
-	offline_banner_text = "★岛民名物集市拍卖会开槌 (" + str(lot_count) + "件)！首拍【" + EconomyConfig.get_item_display_name(String(sm["lot_id"])) + "】起拍 " + str(int(sm["next_bid"])) + String(sm["cur_tag"]) + " · 点灯塔或拍卖卡出价!"
+	offline_banner_text = _tf("bn_auction_start", [lot_count, EconomyConfig.get_item_display_name(String(sm["lot_id"])), int(sm["next_bid"]), String(sm["cur_tag"])])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_auction_lot_resolved(lot_id: String, winner_id: String, price: int, currency: String, player_won: bool) -> void:
 	offline_banner_timer = 4.8
 	var lot_nm := EconomyConfig.get_item_display_name(lot_id)
-	var tag := "珀" if currency == "amber" else "G"
+	var tag := _t("ui_cur_amber") if currency == "amber" else "G"
 	if player_won:
-		offline_banner_text = "★落槌！你以 " + str(price) + tag + " 拍下【" + lot_nm + "】· 名物热卖 " + str(EconomyConfig.AUCTION_BUFF_SALE_MULT) + "x · 名物拍卖鉴 " + str(GameManager.get_unlocked_auction_lot_count()) + "/3"
+		offline_banner_text = _tf("bn_auction_won", [price, tag, lot_nm, str(EconomyConfig.AUCTION_BUFF_SALE_MULT), GameManager.get_unlocked_auction_lot_count()])
 	elif winner_id != "":
-		offline_banner_text = "落槌:【" + lot_nm + "】被" + EconomyConfig.get_auction_bidder_name(winner_id) + "以 " + str(price) + tag + " 拍走 · 下一件马上开拍!"
+		offline_banner_text = _tf("bn_auction_lost", [lot_nm, EconomyConfig.get_auction_bidder_name(winner_id), price, tag])
 	else:
-		offline_banner_text = "【" + lot_nm + "】流拍"
+		offline_banner_text = _tf("bn_auction_pass", [lot_nm])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_island_auction_ended(player_wins: int, gavel_awarded: bool) -> void:
 	offline_banner_timer = 5.5
-	offline_banner_text = "★名物拍卖会落幕：拍得 " + str(player_wins) + "/3 件名物" + (" · 荣获【名物金槌勋章】!" if gavel_awarded else " · 下一场 " + str(int(EconomyConfig.AUCTION_COOLDOWN_SEC)) + "s 后开槌")
+	offline_banner_text = _tf("bn_auction_end", [player_wins, _t("bn_auction_end_gavel") if gavel_awarded else _tf("bn_auction_end_next", [int(EconomyConfig.AUCTION_COOLDOWN_SEC)])])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_wish_lantern_festival_started(duration: float) -> void:
 	offline_banner_timer = 5.5
-	offline_banner_text = "★云海星灯祈愿水灯节开幕 (" + str(int(round(duration))) + "s)！荷塘与海岸漂来祈愿水灯 · 点击拾灯许愿得琥珀与图鉴券 · 售价 1.30x!"
+	offline_banner_text = _tf("bn_lantern_start", [int(round(duration))])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_wish_lantern_claimed(_lantern_idx: int, gold_earned: int, amber_earned: int, vouchers_earned: int, wish_total: int) -> void:
 	offline_banner_timer = 4.2
-	offline_banner_text = "★星灯祈愿 #" + str(wish_total) + ": +" + str(gold_earned) + "G +" + str(amber_earned) + "琥珀 +" + str(vouchers_earned) + "图鉴券" + (" · 祈愿成真! 水灯节延长6s" if wish_total % GameManager.WISH_LANTERN_WISH_BONUS_EVERY == 0 else "")
+	offline_banner_text = _tf("bn_lantern_claim", [wish_total, gold_earned, amber_earned, vouchers_earned, _t("bn_lantern_granted") if wish_total % GameManager.WISH_LANTERN_WISH_BONUS_EVERY == 0 else ""])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_tasting_dish_unlocked(dish_id: String) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★山海食神品鉴席新菜谱【" + EconomyConfig.get_item_display_name(dish_id) + "】解锁 · 组合三岛食材烹制特级名菜!"
+	offline_banner_text = _tf("bn_tasting_unlock", [EconomyConfig.get_item_display_name(dish_id)])
 	_sync_label_nodes()
 	queue_redraw()
 
@@ -521,87 +588,87 @@ func _on_tasting_challenge_judged(dish_id: String, score: int, passed: bool, gol
 	offline_banner_timer = 4.8
 	var dname := EconomyConfig.get_item_display_name(dish_id)
 	if passed:
-		offline_banner_text = "★品鉴通过【" + dname + "】" + str(score) + "分: +" + str(gold_earned) + "G +" + str(amber_earned) + "琥珀" + ((" +" + str(vouchers_earned) + "图鉴券") if vouchers_earned > 0 else "") + " · 食神鉴 " + str(GameManager.get_passed_tasting_challenge_count()) + "/3"
+		offline_banner_text = _tf("bn_tasting_pass", [dname, score, gold_earned, amber_earned, _tf("bn_seg_voucher", [vouchers_earned]) if vouchers_earned > 0 else "", GameManager.get_passed_tasting_challenge_count()])
 	else:
-		offline_banner_text = "品鉴未达标【" + dname + "】" + str(score) + "/" + str(EconomyConfig.TASTING_PASS_SCORE) + "分 · 升级品鉴席或在星灯水灯节期间品鉴可加分!"
+		offline_banner_text = _tf("bn_tasting_fail", [dname, score, EconomyConfig.TASTING_PASS_SCORE])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_chef_medal_awarded(total_medals: int) -> void:
 	offline_banner_timer = 6.0
-	offline_banner_text = "★三道山海特级名菜全部品鉴通过！荣获【山海食神勋章】x" + str(total_medals) + " · 山海图鉴第11卡点亮!"
+	offline_banner_text = _tf("bn_chef_medal", [total_medals])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_tea_recipe_unlocked(item_id: String) -> void:
 	offline_banner_timer = 5.0
 	var tname := EconomyConfig.get_item_display_name(item_id)
-	offline_banner_text = "★云端茗香茶坊秘谱点亮！解锁【" + tname + "】· 茗香清心光环与山海图鉴售价提升!"
+	offline_banner_text = _tf("bn_tea_unlock", [tname])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_moon_tea_gathering_started(duration: float) -> void:
 	offline_banner_timer = 5.5
-	offline_banner_text = "★荷塘月色画舫品茗雅集开幕 (" + str(int(round(duration))) + "s)！茗茶与佳肴售价 1.38x · 点击荷塘画舫领雅赏!"
+	offline_banner_text = _tf("bn_moontea_start", [int(round(duration))])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_moon_tea_gathering_settled(tea_id: String, _qty: int, gold_earned: int, amber_earned: int, vouchers_earned: int, rep_gained: int) -> void:
 	offline_banner_timer = 4.8
 	var tname := EconomyConfig.get_item_display_name(tea_id)
-	var v_seg := (" +" + str(vouchers_earned) + "图鉴券") if vouchers_earned > 0 else ""
+	var v_seg := _tf("bn_seg_voucher", [vouchers_earned]) if vouchers_earned > 0 else ""
 	var g_seg := ("+" + str(gold_earned) + "G ") if gold_earned > 0 else ""
-	offline_banner_text = "★月色画舫品茗【" + tname + "】: " + g_seg + "+" + str(amber_earned) + "琥珀" + v_seg + " · 声望+" + str(rep_gained) + "!"
+	offline_banner_text = _tf("bn_moontea_settle", [tname, g_seg, amber_earned, v_seg, rep_gained])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_bakery_recipe_unlocked(item_id: String) -> void:
 	offline_banner_timer = 5.0
 	var bname := EconomyConfig.get_item_display_name(item_id)
-	offline_banner_text = "★云端风车面坊秘方突破！点亮【" + bname + "】· 麦香烘焙光环与山海图鉴售价提升!"
+	offline_banner_text = _tf("bn_bakery_unlock", [bname])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_gourmet_parade_started(duration: float) -> void:
 	offline_banner_timer = 5.5
-	offline_banner_text = "★云海美食花车巡游节盛大开启 (" + str(int(round(duration))) + "s)！巡游食客高溢价(1.75x~1.90x)抢购鲜烤欧包可颂!"
+	offline_banner_text = _tf("bn_parade_start", [int(round(duration))])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_gourmet_parade_settled(bread_id: String, _qty: int, gold_earned: int, amber_earned: int, vouchers_earned: int, rep_gained: int) -> void:
 	offline_banner_timer = 4.8
 	var bname := EconomyConfig.get_item_display_name(bread_id)
-	var v_seg := (" +" + str(vouchers_earned) + "图鉴券") if vouchers_earned > 0 else ""
-	offline_banner_text = "★巡游食客品享鲜烤【" + bname + "】: +" + str(gold_earned) + "G +" + str(amber_earned) + "琥珀" + v_seg + " · 声望+" + str(rep_gained) + "!"
+	var v_seg := _tf("bn_seg_voucher", [vouchers_earned]) if vouchers_earned > 0 else ""
+	offline_banner_text = _tf("bn_parade_settle", [bname, gold_earned, amber_earned, v_seg, rep_gained])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_hotspring_recipe_unlocked(bath_id: String) -> void:
 	offline_banner_timer = 5.0
 	var bname := EconomyConfig.get_item_display_name(bath_id)
-	offline_banner_text = "★云海温泉汤屋秘方突破！解锁疗愈浴汤【" + bname + "】· 全员精力光环与图鉴加成提升!"
+	offline_banner_text = _tf("bn_spa_unlock", [bname])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_hotspring_vip_settled(bath_id: String, _qty: int, gold_earned: int, amber_earned: int, vouchers_earned: int, rep_gained: int) -> void:
 	offline_banner_timer = 4.8
 	var bname := EconomyConfig.get_item_display_name(bath_id)
-	var v_seg := (" +" + str(vouchers_earned) + "图鉴券") if vouchers_earned > 0 else ""
-	offline_banner_text = "★贵宾汤客泡享【" + bname + "】满意结算: +" + str(gold_earned) + "G +" + str(amber_earned) + "琥珀" + v_seg + " · 声望+" + str(rep_gained) + "!"
+	var v_seg := _tf("bn_seg_voucher", [vouchers_earned]) if vouchers_earned > 0 else ""
+	offline_banner_text = _tf("bn_spa_settle", [bname, gold_earned, amber_earned, v_seg, rep_gained])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_hybrid_flora_crossbred(flora_id: String) -> void:
 	offline_banner_timer = 5.0
 	var fname := EconomyConfig.get_item_display_name(flora_id)
-	offline_banner_text = "★云端温室杂交突破！成功培育珍稀奇花【" + fname + "】· 岛屿光环与图鉴售价提升!"
+	offline_banner_text = _tf("bn_flora_unlock", [fname])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_souvenir_box_sold(box_id: String, _qty: int, gold_earned: int, amber_earned: int, rep_gained: int) -> void:
 	offline_banner_timer = 4.8
 	var bname := EconomyConfig.get_item_display_name(box_id)
-	offline_banner_text = "★收藏家旅客选购【" + bname + "】！收获 +" + str(gold_earned) + "G · +" + str(amber_earned) + "琥珀 · 声望+" + str(rep_gained) + "!"
+	offline_banner_text = _tf("bn_souvenir_sold", [bname, gold_earned, amber_earned, rep_gained])
 	_sync_label_nodes()
 	queue_redraw()
 
@@ -610,33 +677,33 @@ func _on_airship_bulk_order_completed(order_dict: Dictionary) -> void:
 	var r_g := int(order_dict.get("reward_gold", 445))
 	var r_a := int(order_dict.get("reward_amber", 4))
 	var r_v := int(order_dict.get("reward_vouchers", 1))
-	offline_banner_text = "★远洋飞艇商队大订单结清！收获 +" + str(r_g) + "G · +" + str(r_a) + "晨露琥珀 · +" + str(r_v) + "稀有图鉴券!"
+	offline_banner_text = _tf("bn_airship_done", [r_g, r_a, r_v])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_solar_term_changed(_term_idx: int, term_name: String, specialty_dish_id: String) -> void:
 	var d_name := EconomyConfig.get_item_display_name(specialty_dish_id)
-	var b_tag := String(GameManager.get_current_solar_term().get("buff_tag", ""))
+	var b_tag := _n(String(GameManager.get_current_solar_term().get("buff_tag", "")))
 	offline_banner_timer = 4.2
-	offline_banner_text = "★节气流转至【" + term_name + "】· 当季限定【" + d_name + "】售价1.45x · " + b_tag
+	offline_banner_text = _tf("bn_solar_term", [_n(term_name), d_name, b_tag])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_gourmet_acclaim_started(duration: float) -> void:
 	offline_banner_timer = 5.0
-	offline_banner_text = "★美食评论家盛赞！「金牌口碑」激活 " + str(int(round(duration))) + "s: 全岛商品售价+25% & 小费+20%!"
+	offline_banner_text = _tf("bn_acclaim", [int(round(duration))])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_lantern_festival_started(duration: float) -> void:
 	offline_banner_timer = 5.5
-	offline_banner_text = "★云端花火灯会开启 (" + str(int(round(duration))) + "s)！彩灯高悬、客流涌动，富豪与特殊行商到访率大幅提升!"
+	offline_banner_text = _tf("bn_fireworks", [int(round(duration))])
 	_sync_label_nodes()
 	queue_redraw()
 
 func _on_pomodoro_completed(gold_reward: int, frenzy_sec: float) -> void:
 	offline_banner_timer = 6.0
-	offline_banner_text = "★专注达成！开启「★专注晨露礼盒」: 获得 +" + str(gold_reward) + "G & 全岛2.0x狂欢加速 " + str(int(round(frenzy_sec))) + "s!"
+	offline_banner_text = _tf("bn_pomodoro", [gold_reward, int(round(frenzy_sec))])
 	if SoundManager != null:
 		SoundManager.play_click_sfx()
 	_sync_label_nodes()
@@ -644,16 +711,16 @@ func _on_pomodoro_completed(gold_reward: int, frenzy_sec: float) -> void:
 
 func _format_duration_cn(seconds: int) -> String:
 	if seconds >= 3600:
-		return str(seconds / 3600) + "小时" + str((seconds % 3600) / 60) + "分"
+		return _tf("ui_dur_hm", [seconds / 3600, (seconds % 3600) / 60])
 	elif seconds >= 60:
-		return str(seconds / 60) + "分" + str(seconds % 60) + "秒"
-	return str(seconds) + "秒"
+		return _tf("ui_dur_ms", [seconds / 60, seconds % 60])
+	return _tf("ui_dur_s", [seconds])
 
 func _show_offline_welcome_banner(seconds_away: int, gold_earned: int) -> void:
 	offline_banner_timer = 8.0
 	var codex_pct := (GameManager.get_unlocked_codex_count()) * 10
 	var items_cnt := int(GameManager.last_offline_report.get("items", maxi(1, seconds_away / 12)))
-	offline_banner_text = "★欢迎归来！离线 " + _format_duration_cn(seconds_away) + " · 收获 " + str(items_cnt) + " 件 · 自动创收 +" + str(gold_earned) + "G (图鉴+" + str(codex_pct) + "%)"
+	offline_banner_text = _tf("bn_offline", [_format_duration_cn(seconds_away), items_cnt, gold_earned, codex_pct])
 	_sync_label_nodes()
 	queue_redraw()
 
@@ -675,6 +742,8 @@ func open_drawer(tab_idx: int = 0) -> void:
 	active_tab = clampi(tab_idx, 0, 3)
 	wish_board_view = false
 	birthday_view = false
+	food_week_view = false
+	friendship_view = false
 	boss_stealth_mode = false
 	force_pin_open = true
 	mouse_outside_timer = 0.0
@@ -711,7 +780,7 @@ func _build_native_labels() -> void:
 	lbl_capsule_info.position = Vector2(CAPSULE_RECT.position.x + 112.0, CAPSULE_RECT.position.y + 10.0)
 	add_child(lbl_capsule_info)
 
-	lbl_capsule_mute = EconomyConfig.create_pixel_label("[静音]", 14, Color("#FFE066"), false)
+	lbl_capsule_mute = EconomyConfig.create_pixel_label(_t("ui_mute"), 14, Color("#FFE066"), false)
 	lbl_capsule_mute.position = Vector2(CAPSULE_MUTE_RECT.position.x + 2.0, CAPSULE_MUTE_RECT.position.y + 6.0)
 	add_child(lbl_capsule_mute)
 
@@ -732,7 +801,7 @@ func _build_native_labels() -> void:
 	lbl_bar_stall.scale = Vector2(0.84, 0.84)
 	add_child(lbl_bar_stall)
 
-	lbl_bar_pomodoro = EconomyConfig.create_pixel_label("[番茄专注]", 14, Color("#FFE066"), false)
+	lbl_bar_pomodoro = EconomyConfig.create_pixel_label(_t("ui_focus25"), 14, Color("#FFE066"), false)
 	lbl_bar_pomodoro.position = Vector2(POMODORO_RECT.position.x + 24.0, POMODORO_RECT.position.y + 9.0)
 	lbl_bar_pomodoro.scale = Vector2(0.84, 0.84)
 	add_child(lbl_bar_pomodoro)
@@ -750,12 +819,12 @@ func _build_native_labels() -> void:
 	lbl_drawer_title.scale = Vector2(0.88, 0.88)
 	add_child(lbl_drawer_title)
 
-	lbl_drawer_lang = EconomyConfig.create_pixel_label("[简中]", 14, Color("#FFE066"), false)
+	lbl_drawer_lang = EconomyConfig.create_pixel_label(_t("lang_badge"), 14, Color("#FFE066"), false)
 	lbl_drawer_lang.position = Vector2(TOP_RIGHT_LANG_RECT.position.x + 6.0, TOP_RIGHT_LANG_RECT.position.y + 2.0)
 	lbl_drawer_lang.scale = Vector2(0.84, 0.84)
 	add_child(lbl_drawer_lang)
 
-	lbl_drawer_noise = EconomyConfig.create_pixel_label("[白噪:关]", 14, Color("#FFE066"), false)
+	lbl_drawer_noise = EconomyConfig.create_pixel_label(_t("ui_noise_off"), 14, Color("#FFE066"), false)
 	lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0)
 	lbl_drawer_noise.scale = Vector2(0.84, 0.84)
 	add_child(lbl_drawer_noise)
@@ -765,22 +834,22 @@ func _build_native_labels() -> void:
 	lbl_drawer_fps.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_fps)
 
-	lbl_drawer_opacity = EconomyConfig.create_pixel_label("[100%透]", 14, Color("#FFE066"), false)
+	lbl_drawer_opacity = EconomyConfig.create_pixel_label(_tf("ui_opacity", [100]), 14, Color("#FFE066"), false)
 	lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0)
 	lbl_drawer_opacity.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_opacity)
 
-	lbl_drawer_dock = EconomyConfig.create_pixel_label("[贴合任务栏]", 14, Color("#FFE066"), false)
+	lbl_drawer_dock = EconomyConfig.create_pixel_label(_t("ui_dock"), 14, Color("#FFE066"), false)
 	lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0)
 	lbl_drawer_dock.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_dock)
 
-	lbl_drawer_weather = EconomyConfig.create_pixel_label("[天气:晴昼]", 14, Color("#FFE066"), false)
+	lbl_drawer_weather = EconomyConfig.create_pixel_label("", 14, Color("#FFE066"), false)
 	lbl_drawer_weather.position = Vector2(TOP_RIGHT_WEATHER_RECT.position.x + 4.0, TOP_RIGHT_WEATHER_RECT.position.y + 2.0)
 	lbl_drawer_weather.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_weather)
 
-	lbl_drawer_mute = EconomyConfig.create_pixel_label("[静音]", 14, Color("#FFF4D6"), false)
+	lbl_drawer_mute = EconomyConfig.create_pixel_label(_t("ui_mute"), 14, Color("#FFF4D6"), false)
 	lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0)
 	lbl_drawer_mute.scale = Vector2(0.86, 0.86)
 	add_child(lbl_drawer_mute)
@@ -906,35 +975,38 @@ func _sync_label_nodes() -> void:
 	var star_rep := GameManager.get_star_reputation() if GameManager != null else 1
 	var g_val := int(round(displayed_gold))
 	var g_txt := ("%.1fkG" % (float(g_val) / 1000.0)) if g_val >= 10000 else (str(g_val) + "G")
-	var v_seg := ("券" + str(voucher_cnt)) if voucher_cnt > 0 else ""
-	var gold_str := g_txt + "·珀" + str(amber_cnt) + v_seg + "·★" + str(star_rep)
+	var v_seg := _tf("ui_bar_voucher", [voucher_cnt]) if voucher_cnt > 0 else ""
+	var gold_str := g_txt + _tf("ui_bar_amber", [amber_cnt]) + v_seg + "·★" + str(star_rep)
 	lbl_bar_gold.scale = Vector2(0.76, 0.82) if voucher_cnt > 0 else Vector2(0.84, 0.86)
-	var mute_lbl := "[静音]" if (SoundManager != null and SoundManager.is_muted) else "[音效]"
-	var weather_names := ["晴昼", "黄昏", "夜市", "微雨"]
+	var mute_lbl := _t("ui_mute") if (SoundManager != null and SoundManager.is_muted) else _t("ui_sound")
+	var weather_names := [_t("ui_w_day"), _t("ui_w_dusk"), _t("ui_w_night"), _t("ui_w_rain")]
 	var cur_w_name: String = weather_names[clampi(GameManager.current_weather, 0, 3)]
 	if GameManager != null and GameManager.is_wish_lantern_festival_active():
-		cur_w_name = "星灯节"
+		cur_w_name = _t("ui_w_lantern")
 	elif GameManager != null and GameManager.is_moon_tea_gathering_active():
-		cur_w_name = "画舫茶"
+		cur_w_name = _t("ui_w_moontea")
 	elif GameManager != null and GameManager.is_gourmet_parade_active():
-		cur_w_name = "花车节"
+		cur_w_name = _t("ui_w_parade")
 	elif GameManager != null and GameManager.is_cinema_screening_active():
-		cur_w_name = "影院夜"
+		cur_w_name = _t("ui_w_cinema")
 	elif GameManager != null and GameManager.is_lantern_festival_active():
-		cur_w_name = "花火夜"
+		cur_w_name = _t("ui_w_fireworks")
 	elif GameManager != null and GameManager.is_gourmet_acclaim_active():
-		cur_w_name = "口碑" + cur_w_name
+		cur_w_name = _tf("ui_w_acclaim", [cur_w_name])
 	var solar_info: Dictionary = GameManager.get_current_solar_term() if GameManager != null else {"name": "春分", "buff_tag": "春生·农田+15%"}
-	var solar_name := String(solar_info.get("name", "春分"))
+	var solar_name := _n(String(solar_info.get("name", "春分")))
 
 	var contract: Dictionary = GameManager.get_active_contract() if GameManager != null else {}
-	var c_target: String = String(contract.get("target_name", "作物"))
+	var c_item := String(contract.get("target_item", ""))
+	var c_target: String = EconomyConfig.get_item_display_name(c_item) if c_item != "" else _n(String(contract.get("target_name", "作物")))
 	var c_cur: int = int(contract.get("current_count", 0))
 	var c_req: int = int(contract.get("required_count", 5))
 	var c_amb: int = int(contract.get("reward_amber", 2))
 
 	lbl_offline.visible = (offline_banner_timer > 0.0 and not boss_stealth_mode)
 	lbl_offline.text = offline_banner_text
+	# i18n: the banner stays inside its 620px pill (650..1270) in every language
+	_fit_label_x(lbl_offline, Vector2.ONE, 620.0, 0.8)
 
 	lbl_capsule_gold.visible = is_collapsed_capsule
 	lbl_capsule_info.visible = is_collapsed_capsule
@@ -942,12 +1014,14 @@ func _sync_label_nodes() -> void:
 	if is_collapsed_capsule:
 		lbl_capsule_gold.text = gold_str
 		if boss_stealth_mode:
-			lbl_capsule_info.text = "后台挂机产金中 · 按F9或点击恢复"
-			lbl_capsule_mute.text = "[恢复]"
+			lbl_capsule_info.text = _t("ui_cap_stealth")
+			lbl_capsule_mute.text = _t("ui_cap_restore")
 		else:
-			var p_prefix := ("专注" + GameManager.get_pomodoro_formatted_time() + " · ") if (GameManager != null and GameManager.pomodoro_active) else ""
-			lbl_capsule_info.text = p_prefix + "契约:" + c_target + str(c_cur) + "/" + str(c_req) + " · 悬停展开"
+			var p_prefix := _tf("ui_cap_focus", [GameManager.get_pomodoro_formatted_time()]) if (GameManager != null and GameManager.pomodoro_active) else ""
+			lbl_capsule_info.text = p_prefix + _tf("ui_cap_contract", [c_target, c_cur, c_req])
 			lbl_capsule_mute.text = mute_lbl
+		# i18n: the info line stays left of the capsule's mute button in every language
+		_fit_label_x(lbl_capsule_info, Vector2.ONE, CAPSULE_MUTE_RECT.position.x - lbl_capsule_info.position.x - 2.0)
 
 	var show_bar := not is_collapsed_capsule
 	lbl_bar_gold.visible = show_bar
@@ -955,19 +1029,24 @@ func _sync_label_nodes() -> void:
 	lbl_bar_stall.visible = show_bar
 	lbl_bar_pomodoro.visible = show_bar
 	lbl_bar_gold.text = gold_str
-	lbl_bar_pipeline.text = "契约:" + c_target + " " + str(c_cur) + "/" + str(c_req) + "(+" + str(c_amb) + "珀)"
+	# i18n: every bottom-bar text stays inside its pill (486..620 / 624..798 / 802..948) whatever the language
+	_fit_label_x(lbl_bar_gold, lbl_bar_gold.scale, 620.0 - 3.0 - lbl_bar_gold.position.x)
+	lbl_bar_pipeline.text = _tf("ui_bar_contract", [c_target, c_cur, c_req, c_amb])
+	_fit_label_x(lbl_bar_pipeline, Vector2(0.84, 0.84), 798.0 - 2.0 - lbl_bar_pipeline.position.x)
 	if lbl_bar_pipeline.label_settings != null:
 		lbl_bar_pipeline.label_settings.font_color = Color("#FFE066") if (c_req > 0 and c_cur * 5 >= c_req * 4) else Color("#FFF4D6")
 	var codex_pct := GameManager.get_unlocked_codex_count() * 10
-	lbl_bar_stall.text = "存" + str(GameManager.get_island_basket_total(1)) + " · 摊" + str(GameManager.get_total_stall_count()) + "/" + str(GameManager.get_stall_max_capacity()) + " · 图鉴+" + str(codex_pct) + "%"
+	lbl_bar_stall.text = _tf("ui_bar_stall", [GameManager.get_island_basket_total(1), GameManager.get_total_stall_count(), GameManager.get_stall_max_capacity(), codex_pct])
+	_fit_label_x(lbl_bar_stall, Vector2(0.84, 0.84), 948.0 - 2.0 - lbl_bar_stall.position.x)
 	if GameManager != null and GameManager.pomodoro_active:
 		lbl_bar_pomodoro.text = GameManager.get_pomodoro_formatted_time()
 		if lbl_bar_pomodoro.label_settings != null:
 			lbl_bar_pomodoro.label_settings.font_color = Color("#8CE99A")
 	else:
-		lbl_bar_pomodoro.text = "[专注25m]"
+		lbl_bar_pomodoro.text = _t("ui_focus25")
 		if lbl_bar_pomodoro.label_settings != null:
 			lbl_bar_pomodoro.label_settings.font_color = Color("#FFE066")
+	_fit_label_x(lbl_bar_pomodoro, Vector2(0.84, 0.84), POMODORO_RECT.end.x - 2.0 - lbl_bar_pomodoro.position.x)
 
 	var show_drawer := show_bar and drawer_expanded
 	var tab_names := [
@@ -981,7 +1060,8 @@ func _sync_label_nodes() -> void:
 		var is_cur_tab := show_drawer and i == active_tab
 		lbl_tabs[i].visible = show_bar
 		lbl_tabs[i].text = ("★" + tab_names[i]) if is_cur_tab else tab_names[i]
-		lbl_tabs[i].scale = Vector2(0.96, 0.96) if is_cur_tab else Vector2(0.92, 0.92)
+		# i18n: a tab caption never runs into the next tab button (74px pitch)
+		_fit_label_x(lbl_tabs[i], Vector2(0.96, 0.96) if is_cur_tab else Vector2(0.92, 0.92), 73.0)
 		if lbl_tabs[i].label_settings != null:
 			lbl_tabs[i].label_settings.font_color = Color("#FFF9DB") if is_cur_tab else Color("#FFE066")
 
@@ -1019,10 +1099,15 @@ func _sync_label_nodes() -> void:
 		lbl_drawer_title.text = titles[clampi(active_tab, 0, 3)]
 		# CI-14: the Wish Board panel replaces the tab 2 headline while it is open
 		if active_tab == 2 and wish_board_view:
-			lbl_drawer_title.text = EconomyConfig.tr_key("drawer_wish_board") % GameManager.wishes_fulfilled_total
+			lbl_drawer_title.text = EconomyConfig.tr_key("drawer_wish_board") % EconomyConfig.WISH_MEDAL_EVERY
 		# CI-15: the Birthday Party panel replaces the tab 2 headline while it is open
 		if active_tab == 2 and birthday_view:
-			lbl_drawer_title.text = EconomyConfig.tr_key("drawer_birthday") % GameManager.birthday_parties_total
+			lbl_drawer_title.text = EconomyConfig.tr_key("drawer_birthday")
+		# CI-16: the Food Critics' Week / Friendship Bonds panels replace the Workers headline while open
+		if active_tab == 1 and food_week_view:
+			lbl_drawer_title.text = EconomyConfig.tr_key("drawer_food_week")
+		if active_tab == 1 and friendship_view:
+			lbl_drawer_title.text = EconomyConfig.tr_key("drawer_friendship")
 		# CI-13: the codex title wraps onto 2 lines at an undistorted 0.6x (it used to be squeezed to 0.44x on one line);
 		# every title is shrunk horizontally only if it would otherwise run into the language button
 		lbl_drawer_title.size = Vector2.ZERO
@@ -1039,20 +1124,20 @@ func _sync_label_nodes() -> void:
 		var cur_op: float = WindowController.get_window_opacity() if WindowController != null else 1.0
 		lbl_drawer_lang.text = EconomyConfig.tr_key("lang_badge")
 		lbl_drawer_lang.position = Vector2(TOP_RIGHT_LANG_RECT.position.x + 6.0, TOP_RIGHT_LANG_RECT.position.y + 2.0 + top_dy)
-		var noise_txt := SoundManager.get_white_noise_status_label() if SoundManager != null else "[白噪:关]"
+		var noise_txt := SoundManager.get_white_noise_status_label() if SoundManager != null else _t("ui_noise_off")
 		lbl_drawer_noise.text = noise_txt
 		lbl_drawer_noise.position = Vector2(TOP_RIGHT_NOISE_RECT.position.x + 4.0, TOP_RIGHT_NOISE_RECT.position.y + 2.0 + top_dy)
 		if lbl_drawer_noise.label_settings != null:
-			lbl_drawer_noise.label_settings.font_color = Color("#8CE99A") if not noise_txt.contains("关") else Color("#FFE066")
+			lbl_drawer_noise.label_settings.font_color = Color("#8CE99A") if noise_txt != _t("ui_noise_off") else Color("#FFE066")
 		lbl_drawer_fps.text = "[" + str(cur_fps) + "FPS]"
 		lbl_drawer_fps.position = Vector2(TOP_RIGHT_FPS_RECT.position.x + 4.0, TOP_RIGHT_FPS_RECT.position.y + 2.0 + top_dy)
 		if lbl_drawer_fps.label_settings != null:
 			lbl_drawer_fps.label_settings.font_color = Color("#8CE99A") if cur_fps <= 30 else Color("#FFE066")
-		lbl_drawer_opacity.text = "[" + str(int(round(cur_op * 100.0))) + "%透]"
+		lbl_drawer_opacity.text = _tf("ui_opacity", [int(round(cur_op * 100.0))])
 		lbl_drawer_opacity.position = Vector2(TOP_RIGHT_OPACITY_RECT.position.x + 4.0, TOP_RIGHT_OPACITY_RECT.position.y + 2.0 + top_dy)
 		if lbl_drawer_opacity.label_settings != null:
 			lbl_drawer_opacity.label_settings.font_color = Color("#8CE99A") if cur_op < 0.99 else Color("#FFE066")
-		lbl_drawer_dock.text = "[贴合任务栏]"
+		lbl_drawer_dock.text = _t("ui_dock")
 		lbl_drawer_dock.position = Vector2(TOP_RIGHT_DOCK_RECT.position.x + 4.0, TOP_RIGHT_DOCK_RECT.position.y + 2.0 + top_dy)
 
 		lbl_drawer_weather.text = "[" + solar_name + "·" + cur_w_name + "]"
@@ -1061,6 +1146,14 @@ func _sync_label_nodes() -> void:
 		lbl_drawer_mute.position = Vector2(TOP_RIGHT_MUTE_RECT.position.x + 4.0, TOP_RIGHT_MUTE_RECT.position.y + 2.0 + top_dy)
 		if lbl_drawer_mute.label_settings != null:
 			lbl_drawer_mute.label_settings.font_color = Color("#FFA8A8") if (SoundManager != null and SoundManager.is_muted) else Color("#FFF4D6")
+		# i18n: every top-right toggle text stays inside its pill whatever the language
+		_fit_label_x(lbl_drawer_lang, Vector2(0.84, 0.84), TOP_RIGHT_LANG_RECT.size.x - 8.0)
+		_fit_label_x(lbl_drawer_noise, Vector2(0.84, 0.84), TOP_RIGHT_NOISE_RECT.size.x - 6.0)
+		_fit_label_x(lbl_drawer_fps, Vector2(0.86, 0.86), TOP_RIGHT_FPS_RECT.size.x - 6.0)
+		_fit_label_x(lbl_drawer_opacity, Vector2(0.86, 0.86), TOP_RIGHT_OPACITY_RECT.size.x - 6.0)
+		_fit_label_x(lbl_drawer_dock, Vector2(0.86, 0.86), TOP_RIGHT_DOCK_RECT.size.x - 6.0)
+		_fit_label_x(lbl_drawer_weather, Vector2(0.86, 0.86), TOP_RIGHT_WEATHER_RECT.size.x - 6.0)
+		_fit_label_x(lbl_drawer_mute, Vector2(0.86, 0.86), TOP_RIGHT_MUTE_RECT.size.x - 6.0)
 
 	var cards: Array[Dictionary] = []
 	if show_drawer:
@@ -1137,6 +1230,11 @@ func _sync_label_nodes() -> void:
 				title_sc = Vector2(0.88, 0.88)
 				sub_sc = Vector2(0.78, 0.78)
 				cost_sc = Vector2(0.82, 0.82)
+			# CI-16: the bonds panel (6 islanders + back = 7 cards) keeps undistorted text instead of the 7-card squeeze
+			if active_tab == 1 and friendship_view:
+				title_sc = Vector2(0.70, 0.70)
+				sub_sc = Vector2(0.66, 0.66)
+				cost_sc = Vector2(0.68, 0.68)
 			lbl_card_titles[i].scale = title_sc
 			lbl_card_subs[i].scale = sub_sc
 			lbl_card_costs[i].scale = cost_sc
@@ -1195,7 +1293,7 @@ func _sync_label_nodes() -> void:
 			var tier := int(info["tier"])
 			var erect := _get_emp_card_rect(i)
 			erect.position.y += slide_y
-			lbl_emp_names[i].text = String(info["short_name"]) + (" Lv." + str(lv) if lv > 0 else " (未招募)")
+			lbl_emp_names[i].text = String(info["short_name"]) + (" Lv." + str(lv) if lv > 0 else _t("ui_emp_none"))
 			lbl_emp_names[i].position = erect.position + Vector2(6.0, 3.0)
 			if lbl_emp_names[i].label_settings != null:
 				lbl_emp_names[i].label_settings.font_color = Color("#FFE066") if lv > 0 else Color("#CBD5E1")
@@ -1352,6 +1450,8 @@ func _gui_input(event: InputEvent) -> void:
 					if active_tab != hovered_tab:
 						wish_board_view = false
 						birthday_view = false
+						food_week_view = false
+						friendship_view = false
 					active_tab = hovered_tab
 					drawer_expanded = true
 					mouse_outside_timer = 0.0
@@ -1373,7 +1473,7 @@ func _gui_input(event: InputEvent) -> void:
 				var lv := int(GameManager.animal_levels.get(ak, 0))
 				var info := EconomyConfig.get_animal_promotion_info(ak, lv)
 				offline_banner_timer = 4.2
-				offline_banner_text = "%s (%s) · 特质【%s】%s · 勋章 %d/3 (Lv.10/25/50晋升)" % [
+				offline_banner_text = _t("bn_emp_info") % [
 					String(info["short_name"]),
 					String(info["tier_title"]),
 					String(info["trait_name"]),
@@ -1502,6 +1602,11 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 	# CI-15: the Birthday Party panel (tab 2) = today / gift / next birthday + the way back
 	if active_tab == 2 and birthday_view:
 		return _get_birthday_cards()
+	# CI-16: the Food Critics' Week panel / Friendship Bonds panel (Workers tab)
+	if active_tab == 1 and food_week_view:
+		return _get_food_week_cards()
+	if active_tab == 1 and friendship_view:
+		return _get_friendship_cards()
 	match active_tab:
 		0:
 			for b_key in ["soil_1", "mortar", "stall", "cauldron", "soil_2", "soil_3"]:
@@ -1514,9 +1619,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "building",
 					"key": b_key,
-					"title": String(cfg["name"]) + (" Lv." + str(lv) if isl_on else " (未解锁)"),
-					"sub": ("下个2x蜕变: Lv." + str(next_ms)) if isl_on else ("需先开拓木桥解锁岛" + str(req_isl)),
-					"cost": ("升级 " + str(cost) + "G") if isl_on else "待解锁岛屿",
+					"title": _n(String(cfg["name"])) + (" Lv." + str(lv) if isl_on else _t("cd_suffix_locked")),
+					"sub": _tf("cd_b_next_ms", [next_ms]) if isl_on else _tf("cd_b_need_isle", [req_isl]),
+					"cost": _tf("cd_upgrade", [cost]) if isl_on else _t("cd_isle_locked"),
 					"cost_state": ("affordable" if GameManager.gold >= cost else "short") if isl_on else "locked"
 				})
 			var isl2_gh_on := bool(GameManager.unlocked_islands.get(2, false))
@@ -1524,9 +1629,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "greenhouse_building",
 					"key": "greenhouse",
-					"title": "云端温室 (锁岛2)",
-					"sub": "需先开拓木桥1解锁岛2",
-					"cost": "待解锁岛屿",
+					"title": _t("cd_gh_locked"),
+					"sub": _t("cd_need_bridge1"),
+					"cost": _t("cd_isle_locked"),
 					"cost_state": "locked"
 				})
 			elif not GameManager.greenhouse_unlocked:
@@ -1534,21 +1639,21 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "greenhouse_building",
 					"key": "greenhouse",
-					"title": "云端温室 (待建)",
-					"sub": "杂交奇花+全岛增益光环",
-					"cost": "建造 " + str(gh_unlock_c) + "G",
+					"title": _t("cd_gh_new"),
+					"sub": _t("cd_gh_sub"),
+					"cost": _tf("cd_build", [gh_unlock_c]),
 					"cost_state": "affordable" if GameManager.gold >= gh_unlock_c else "short"
 				})
 			else:
 				var gh_lv := int(GameManager.building_levels.get("greenhouse", 1))
 				var gh_cost := EconomyConfig.calc_upgrade_cost(int(EconomyConfig.BUILDINGS["greenhouse"]["base_cost"]), gh_lv)
-				var f_short := "铃兰" if GameManager.active_greenhouse_flora_id == "flora_stardew_lily" else "玫瑰"
+				var f_short := _n("铃兰") if GameManager.active_greenhouse_flora_id == "flora_stardew_lily" else _n("玫瑰")
 				list.append({
 					"type": "greenhouse_building",
 					"key": "greenhouse",
-					"title": "云端温室 Lv." + str(gh_lv),
-					"sub": "育" + f_short + " · 奇花存" + str(GameManager.get_total_flora_count()),
-					"cost": "升级 " + str(gh_cost) + "G",
+					"title": _tf("cd_gh_lv", [gh_lv]),
+					"sub": _tf("cd_gh_sub_lv", [f_short, GameManager.get_total_flora_count()]),
+					"cost": _tf("cd_upgrade", [gh_cost]),
 					"cost_state": "affordable" if GameManager.gold >= gh_cost else "short"
 				})
 			var isl3_hs_on := bool(GameManager.unlocked_islands.get(3, false))
@@ -1556,9 +1661,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "hotspring_building",
 					"key": "hotspring",
-					"title": "云海汤屋 (锁岛3)",
-					"sub": "需开拓木桥2解锁岛3",
-					"cost": "待解锁岛屿",
+					"title": _t("cd_hs_locked"),
+					"sub": _t("cd_need_bridge2"),
+					"cost": _t("cd_isle_locked"),
 					"cost_state": "locked"
 				})
 			elif not GameManager.hotspring_unlocked:
@@ -1566,31 +1671,31 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "hotspring_building",
 					"key": "hotspring",
-					"title": "云海汤屋 (待建)",
-					"sub": "熬汤回精力+引汤客",
-					"cost": "建造 " + str(hs_unlock_c) + "G",
+					"title": _t("cd_hs_new"),
+					"sub": _t("cd_hs_sub"),
+					"cost": _tf("cd_build", [hs_unlock_c]),
 					"cost_state": "affordable" if GameManager.gold >= hs_unlock_c else "short"
 				})
 			else:
 				var hs_lv := int(GameManager.building_levels.get("hotspring", 1))
 				var hs_cost := EconomyConfig.calc_upgrade_cost(int(EconomyConfig.BUILDINGS["hotspring"]["base_cost"]), hs_lv)
 				var b_cfg_0: Dictionary = EconomyConfig.HOTSPRING_BATH_BLENDS.get(GameManager.active_hotspring_bath_id, {})
-				var b_short_0 := String(b_cfg_0.get("short_name", "艾草汤"))
+				var b_short_0 := _n(String(b_cfg_0.get("short_name", "艾草汤")))
 				list.append({
 					"type": "hotspring_building",
 					"key": "hotspring",
-					"title": "云海汤屋 Lv." + str(hs_lv),
-					"sub": "熬" + b_short_0 + "·汤存" + str(GameManager.get_total_bath_stock_count()),
-					"cost": "升级 " + str(hs_cost) + "G",
+					"title": _tf("cd_hs_lv", [hs_lv]),
+					"sub": _tf("cd_hs_sub_lv", [b_short_0, GameManager.get_total_bath_stock_count()]),
+					"cost": _tf("cd_upgrade", [hs_cost]),
 					"cost_state": "affordable" if GameManager.gold >= hs_cost else "short"
 				})
 			if not isl2_gh_on:
 				list.append({
 					"type": "windmill_building",
 					"key": "windmill",
-					"title": "风车面坊 (锁岛2)",
-					"sub": "需开拓木桥1解锁岛2",
-					"cost": "待解锁岛屿",
+					"title": _t("cd_wm_locked"),
+					"sub": _t("cd_need_bridge1b"),
+					"cost": _t("cd_isle_locked"),
 					"cost_state": "locked"
 				})
 			elif not GameManager.windmill_unlocked:
@@ -1598,22 +1703,22 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "windmill_building",
 					"key": "windmill",
-					"title": "风车面坊 (待建)",
-					"sub": "磨麦烤包+烘焙光环",
-					"cost": "建造 " + str(wm_unlock_c) + "G",
+					"title": _t("cd_wm_new"),
+					"sub": _t("cd_wm_sub"),
+					"cost": _tf("cd_build", [wm_unlock_c]),
 					"cost_state": "affordable" if GameManager.gold >= wm_unlock_c else "short"
 				})
 			else:
 				var wm_lv := int(GameManager.building_levels.get("windmill", 1))
 				var wm_cost := EconomyConfig.calc_upgrade_cost(int(EconomyConfig.BUILDINGS["windmill"]["base_cost"]), wm_lv)
 				var wb_cfg_0: Dictionary = EconomyConfig.BAKERY_ITEMS.get(GameManager.active_windmill_bread_id, {})
-				var wb_short_0 := String(wb_cfg_0.get("short_name", "舒芙蕾包"))
+				var wb_short_0 := _n(String(wb_cfg_0.get("short_name", "舒芙蕾包")))
 				list.append({
 					"type": "windmill_building",
 					"key": "windmill",
-					"title": "风车面坊 Lv." + str(wm_lv),
-					"sub": "烤" + wb_short_0 + "·包" + str(GameManager.get_total_bread_stock_count()),
-					"cost": "升级 " + str(wm_cost) + "G",
+					"title": _tf("cd_wm_lv", [wm_lv]),
+					"sub": _tf("cd_wm_sub_lv", [wb_short_0, GameManager.get_total_bread_stock_count()]),
+					"cost": _tf("cd_upgrade", [wm_cost]),
 					"cost_state": "affordable" if GameManager.gold >= wm_cost else "short"
 				})
 			if not GameManager.tea_pavilion_unlocked:
@@ -1621,31 +1726,31 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "tea_pavilion_building",
 					"key": "tea_pavilion",
-					"title": "茗香茶坊 (待建)",
-					"sub": "制芽泡茗+清心光环",
-					"cost": "建造 " + str(tp_unlock_c) + "G",
+					"title": _t("cd_tp_new"),
+					"sub": _t("cd_tp_sub"),
+					"cost": _tf("cd_build", [tp_unlock_c]),
 					"cost_state": "affordable" if GameManager.gold >= tp_unlock_c else "short"
 				})
 			else:
 				var tp_lv := int(GameManager.building_levels.get("tea_pavilion", 1))
 				var tp_cost := EconomyConfig.calc_upgrade_cost(int(EconomyConfig.BUILDINGS["tea_pavilion"]["base_cost"]), tp_lv)
 				var tp_cfg_0: Dictionary = EconomyConfig.TEA_ITEMS.get(GameManager.active_tea_recipe_id, {})
-				var tp_short_0 := String(tp_cfg_0.get("short_name", "龙井茗茶"))
+				var tp_short_0 := _n(String(tp_cfg_0.get("short_name", "龙井茗茶")))
 				list.append({
 					"type": "tea_pavilion_building",
 					"key": "tea_pavilion",
-					"title": "茗香茶坊 Lv." + str(tp_lv),
-					"sub": "沏" + tp_short_0 + "·茗" + str(GameManager.get_total_brewed_tea_stock_count()),
-					"cost": "升级 " + str(tp_cost) + "G",
+					"title": _tf("cd_tp_lv", [tp_lv]),
+					"sub": _tf("cd_tp_sub_lv", [tp_short_0, GameManager.get_total_brewed_tea_stock_count()]),
+					"cost": _tf("cd_upgrade", [tp_cost]),
 					"cost_state": "affordable" if GameManager.gold >= tp_cost else "short"
 				})
 			if not isl2_gh_on:
 				list.append({
 					"type": "chef_pavilion_building",
 					"key": "chef_pavilion",
-					"title": "食神品鉴席(锁岛2)",
-					"sub": "需开拓木桥1解锁岛2",
-					"cost": "待解锁岛屿",
+					"title": _t("cd_cp_locked"),
+					"sub": _t("cd_need_bridge1b"),
+					"cost": _t("cd_isle_locked"),
 					"cost_state": "locked"
 				})
 			elif not GameManager.chef_pavilion_unlocked:
@@ -1653,9 +1758,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "chef_pavilion_building",
 					"key": "chef_pavilion",
-					"title": "食神品鉴席(待建)",
-					"sub": "三岛食材烹特级名菜",
-					"cost": "建造 " + str(cp_unlock_c) + "G",
+					"title": _t("cd_cp_new"),
+					"sub": _t("cd_cp_sub"),
+					"cost": _tf("cd_build", [cp_unlock_c]),
 					"cost_state": "affordable" if GameManager.gold >= cp_unlock_c else "short"
 				})
 			else:
@@ -1665,9 +1770,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "chef_pavilion_building",
 					"key": "chef_pavilion",
-					"title": "食神品鉴席 Lv." + str(cp_lv),
-					"sub": "烹" + String(cp_cfg_0.get("short_name", "灌汤小笼")) + "·肴" + str(GameManager.get_total_tasting_dish_stock_count()),
-					"cost": "升级 " + str(cp_cost) + "G",
+					"title": _tf("cd_cp_lv", [cp_lv]),
+					"sub": _tf("cd_cp_sub_lv", [_n(String(cp_cfg_0.get("short_name", "灌汤小笼"))), GameManager.get_total_tasting_dish_stock_count()]),
+					"cost": _tf("cd_upgrade", [cp_cost]),
 					"cost_state": "affordable" if GameManager.gold >= cp_cost else "short"
 				})
 			# CI-10: card 12 -> Cloud-Sea Lighthouse Fishing Harbor (Island 3)
@@ -1675,9 +1780,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "lighthouse_harbor_building",
 					"key": "lighthouse_harbor",
-					"title": "灯塔渔港(锁岛3)",
-					"sub": "需开拓木桥2解锁岛3",
-					"cost": "待解锁岛屿",
+					"title": _t("cd_lh_locked"),
+					"sub": _t("cd_need_bridge2"),
+					"cost": _t("cd_isle_locked"),
 					"cost_state": "locked"
 				})
 			elif not GameManager.lighthouse_harbor_unlocked:
@@ -1685,9 +1790,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "lighthouse_harbor_building",
 					"key": "lighthouse_harbor",
-					"title": "灯塔渔港(待建)",
-					"sub": "双渔船出海捕鲜货",
-					"cost": "建造 " + str(lh_unlock_c) + "G",
+					"title": _t("cd_lh_new"),
+					"sub": _t("cd_lh_sub"),
+					"cost": _tf("cd_build", [lh_unlock_c]),
 					"cost_state": "affordable" if GameManager.gold >= lh_unlock_c else "short"
 				})
 			else:
@@ -1696,9 +1801,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "lighthouse_harbor_building",
 					"key": "lighthouse_harbor",
-					"title": "灯塔渔港 Lv." + str(lh_lv),
-					"sub": "鲜" + str(GameManager.get_harbor_seafood_stock()) + "·捕" + str(GameManager.seafood_landed_total),
-					"cost": "升级 " + str(lh_cost) + "G",
+					"title": _tf("cd_lh_lv", [lh_lv]),
+					"sub": _tf("cd_lh_sub_lv", [GameManager.get_harbor_seafood_stock(), GameManager.seafood_landed_total]),
+					"cost": _tf("cd_upgrade", [lh_cost]),
 					"cost_state": "affordable" if GameManager.gold >= lh_cost else "short"
 				})
 			# CI-11: card 13 -> Cloud Ranch Dairy Workshop (Island 1)
@@ -1707,9 +1812,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "dairy_workshop_building",
 					"key": "dairy_workshop",
-					"title": "乳品工坊(待建)",
-					"sub": "鲜奶·奶酪·布丁",
-					"cost": "建造 " + str(dw_unlock_c) + "G",
+					"title": _t("cd_dw_new"),
+					"sub": _t("cd_dw_sub"),
+					"cost": _tf("cd_build", [dw_unlock_c]),
 					"cost_state": "affordable" if GameManager.gold >= dw_unlock_c else "short"
 				})
 			else:
@@ -1718,9 +1823,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "dairy_workshop_building",
 					"key": "dairy_workshop",
-					"title": "乳品工坊 Lv." + str(dw_lv),
-					"sub": "奶" + str(GameManager.get_dairy_stock("dairy_milk")) + "·酪" + str(GameManager.get_dairy_stock("dairy_cheese")) + "·布" + str(GameManager.get_dairy_stock("dairy_cloud_pudding")),
-					"cost": "升级 " + str(dw_cost) + "G",
+					"title": _tf("cd_dw_lv", [dw_lv]),
+					"sub": _tf("cd_dw_sub_lv", [GameManager.get_dairy_stock("dairy_milk"), GameManager.get_dairy_stock("dairy_cheese"), GameManager.get_dairy_stock("dairy_cloud_pudding")]),
+					"cost": _tf("cd_upgrade", [dw_cost]),
 					"cost_state": "affordable" if GameManager.gold >= dw_cost else "short"
 				})
 			# CI-12: card 14 -> Cloud Pottery Kiln Workshop (Island 3 slot 1)
@@ -1730,9 +1835,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "pottery_kiln_building",
 					"key": "pottery_kiln",
-					"title": "陶艺窑坊(待建)",
-					"sub": "茶碗·陶花瓶" if isl3_open else "需开拓岛3",
-					"cost": ("建造 " + str(pk_unlock_c) + "G") if isl3_open else "岛3未开",
+					"title": _t("cd_pk_new"),
+					"sub": _t("cd_pk_sub") if isl3_open else _t("cd_pk_need_isle3"),
+					"cost": _tf("cd_build", [pk_unlock_c]) if isl3_open else _t("cd_pk_isle3_closed"),
 					"cost_state": ("affordable" if GameManager.gold >= pk_unlock_c else "short") if isl3_open else "locked"
 				})
 			else:
@@ -1741,9 +1846,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "pottery_kiln_building",
 					"key": "pottery_kiln",
-					"title": "陶艺窑坊 Lv." + str(pk_lv),
-					"sub": "土" + str(GameManager.get_pottery_stock("clay_lump")) + "·碗" + str(GameManager.get_pottery_stock("pottery_tea_bowl")) + "·瓶" + str(GameManager.get_pottery_stock("pottery_vase")),
-					"cost": "升级 " + str(pk_cost) + "G",
+					"title": _tf("cd_pk_lv", [pk_lv]),
+					"sub": _tf("cd_pk_sub_lv", [GameManager.get_pottery_stock("clay_lump"), GameManager.get_pottery_stock("pottery_tea_bowl"), GameManager.get_pottery_stock("pottery_vase")]),
+					"cost": _tf("cd_upgrade", [pk_cost]),
 					"cost_state": "affordable" if GameManager.gold >= pk_cost else "short"
 				})
 		1:
@@ -1756,21 +1861,21 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				var cost_step := cur_rec + lv
 				var cost := EconomyConfig.calc_upgrade_cost(int(cfg["base_cost"]), cost_step)
 
-				var title_str := String(cfg["name"]).split(" · ")[0]
+				var title_str := _n(String(cfg["name"])).split(" · ")[0]
 				var trait_tag := EconomyConfig.get_animal_trait_tag(a_key, lv)
 				var sub_str := ""
 				var act_str := ""
 				var c_state := "locked"
 				if max_cap <= 0:
-					sub_str = "需先解锁新岛屿"
-					act_str = "待解锁岛屿"
+					sub_str = _t("cd_a_need_isle")
+					act_str = _t("cd_isle_locked")
 				elif next_isl > 0:
-					sub_str = "编制 " + str(cur_rec) + "/" + str(max_cap) + " · " + trait_tag
-					act_str = "招募 " + str(cost) + "G"
+					sub_str = _tf("cd_a_crew", [cur_rec, max_cap, trait_tag])
+					act_str = _tf("cd_a_hire", [cost])
 					c_state = "affordable" if GameManager.gold >= cost else "short"
 				else:
 					sub_str = "Lv." + str(lv) + " · " + trait_tag
-					act_str = "全队进修 Lv.+1 (" + str(cost) + "G)"
+					act_str = _tf("cd_a_train", [cost])
 					c_state = "affordable" if GameManager.gold >= cost else "short"
 
 				list.append({
@@ -1781,23 +1886,44 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 					"cost": act_str,
 					"cost_state": c_state
 				})
+			# CI-16: card 7 -> Food Critics' Week (this week's islander judge + taste; opens the week panel)
+			var fw_sm := GameManager.get_food_week_status_summary()
+			var fw_open := int(fw_sm["entries_left"]) > 0 and String(fw_sm["next_dish"]) != ""
+			list.append({
+				"type": "food_week",
+				"key": "food_week",
+				"title": _t("cd_fw_title"),
+				"sub": _tf("cd_fw_sub", [EconomyConfig.get_islander_name(String(fw_sm["judge"])), EconomyConfig.get_food_taste_name(String(fw_sm["taste"]))]),
+				"cost": _t("cd_fw_go") if fw_open else _tf("cd_fw_cost", [int(fw_sm["entries"]), EconomyConfig.FOOD_WEEK_ENTRIES, int(fw_sm["best"])]),
+				"cost_state": "affordable" if fw_open else ("unlocked" if int(fw_sm["tier"]) > 0 else "normal")
+			})
+			# CI-16: card 8 -> Friendship Bonds (6 islanders' bond levels; opens the bonds panel)
+			list.append({
+				"type": "friendship",
+				"key": "friendship",
+				"title": _t("cd_fr_title"),
+				"sub": _tf("cd_fr_sub", [GameManager.get_friendship_total_levels(), EconomyConfig.WISH_ISLANDERS.size() * EconomyConfig.FRIEND_MAX_LEVEL]),
+				"cost": _tf("cd_fr_cost", [_pct1(GameManager.get_friendship_price_bonus())]),
+				"cost_state": "unlocked" if GameManager.get_friendship_total_levels() > 0 else "normal"
+			})
 		2:
 			var isl2_unlocked := bool(GameManager.unlocked_islands.get(2, false))
 			var isl3_unlocked := bool(GameManager.unlocked_islands.get(3, false))
+			# UI audit: 20 cards share 2 rows (~65px of text per card) -> short titles; the state lives on the cost line only
 			list.append({
 				"type": "unlock_island",
 				"key": "2",
-				"title": "木桥1 · 魔法密林" + (" (已通)" if isl2_unlocked else ""),
-				"sub": "2x农田+12x坩埚+企鹅",
-				"cost": "已解锁" if isl2_unlocked else "180G 解锁",
+				"title": _t("cd_e_bridge1"),
+				"sub": _t("cd_e_bridge1_sub"),
+				"cost": _t("cd_unlocked") if isl2_unlocked else _tf("cd_unlock_g", [180]),
 				"cost_state": "unlocked" if isl2_unlocked else ("affordable" if GameManager.gold >= 180 else "short")
 			})
 			list.append({
 				"type": "unlock_island",
 				"key": "3",
-				"title": "木桥2 · 天空海岸" + (" (已通)" if isl3_unlocked else ""),
-				"sub": "双工坊52x+★2x富豪",
-				"cost": "已解锁" if isl3_unlocked else "480G 解锁",
+				"title": _t("cd_e_bridge2"),
+				"sub": _t("cd_e_bridge2_sub"),
+				"cost": _t("cd_unlocked") if isl3_unlocked else _tf("cd_unlock_g", [480]),
 				"cost_state": "unlocked" if isl3_unlocked else ("affordable" if GameManager.gold >= 480 else "short")
 			})
 			for lk in ["bee_hive", "wind_chime", "tiki_torch"]:
@@ -1809,29 +1935,30 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "landscape",
 					"key": lk,
-					"title": String(cfg.get("name", lk)) + (" (已点亮)" if is_unlocked else " (未建造)"),
-					"sub": String(cfg.get("desc", "")) if isl_open else ("需先解锁岛屿" + str(isl)),
-					"cost": "已点亮生效" if is_unlocked else (str(cost_amb) + " 琥珀 解锁" if isl_open else "待解锁岛屿"),
+					"title": _n(String(cfg.get("name", lk))),
+					"sub": _landscape_buff_text(cfg) if isl_open else _tf("cd_need_isle_n", [isl]),
+					"cost": _t("cd_lit_active") if is_unlocked else (_tf("cd_amber_unlock", [cost_amb]) if isl_open else _t("cd_isle_locked")),
 					"cost_state": "unlocked" if is_unlocked else (("affordable" if GameManager.get_amber() >= cost_amb else "short") if isl_open else "locked")
 				})
 			var asum := GameManager.get_airship_order_progress_summary()
 			var ord_idx := int(GameManager.get_active_airship_order().get("order_index", 1))
 			if GameManager.airship_docked:
+				# the per-item breakdown (`asum.brief`) is in the banner when the card / airship is clicked
 				list.append({
 					"type": "airship_order",
 					"key": "bulk_order",
-					"title": "★远洋大订单 #" + str(ord_idx),
-					"sub": String(asum["brief"]),
-					"cost": "装船 +" + str(asum["reward_amber"]) + "珀+" + str(asum["reward_vouchers"]) + "图鉴券",
+					"title": _tf("cd_air_title", [ord_idx]),
+					"sub": _tf("cd_air_sub", [int(asum["delivered"]), int(asum["required"])]),
+					"cost": _tf("cd_air_cost", [str(asum["reward_amber"]), str(asum["reward_vouchers"])]),
 					"cost_state": "affordable"
 				})
 			else:
 				list.append({
 					"type": "airship_order",
 					"key": "bulk_order",
-					"title": "★远洋商队航行中",
-					"sub": "备齐四时料理待抵港",
-					"cost": "约 " + str(int(ceili(GameManager.airship_timer))) + "s 后抵港",
+					"title": _t("cd_air_away"),
+					"sub": _t("cd_air_away_sub"),
+					"cost": _tf("cd_air_eta", [int(ceili(GameManager.airship_timer))]),
 					"cost_state": "locked"
 				})
 			var box_stock_cnt := GameManager.get_total_souvenir_box_count()
@@ -1840,18 +1967,18 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "souvenir_workshop",
 					"key": "souvenir_box",
-					"title": "★名物伴手礼坊",
-					"sub": "奇花+名菜引收藏家",
-					"cost": (str(EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD) + "G 建温室") if isl2_unlocked else "需先解锁岛2",
+					"title": _t("cd_sv_title"),
+					"sub": _t("cd_sv_sub"),
+					"cost": _tf("cd_sv_build", [EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD]) if isl2_unlocked else _t("cd_need_isle2"),
 					"cost_state": ("affordable" if GameManager.gold >= EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD else "short") if isl2_unlocked else "locked"
 				})
 			else:
 				list.append({
 					"type": "souvenir_workshop",
 					"key": "souvenir_box",
-					"title": "★名物礼盒(存" + str(box_stock_cnt) + ")",
-					"sub": "奇花x" + str(flo_stock_cnt) + "·已售" + str(GameManager.souvenirs_sold_count) + "盒",
-					"cost": "打包礼盒(+珀+声望)",
+					"title": _tf("cd_sv_title_lv", [box_stock_cnt]),
+					"sub": _tf("cd_sv_sub_lv", [flo_stock_cnt, GameManager.souvenirs_sold_count]),
+					"cost": _t("cd_sv_cost"),
 					"cost_state": "affordable" if flo_stock_cnt > 0 else ("unlocked" if box_stock_cnt > 0 else "normal")
 				})
 			var bath_stock_cnt := GameManager.get_total_bath_stock_count()
@@ -1860,18 +1987,18 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "hotspring_brew",
 					"key": "hotspring_bath",
-					"title": "★云海温泉汤屋",
-					"sub": "草本花汤·引贵宾汤客",
-					"cost": (str(EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD) + "G 建汤屋") if isl3_unlocked else "需先解锁岛3",
+					"title": _t("cd_hb_title"),
+					"sub": _t("cd_hb_sub"),
+					"cost": _tf("cd_hb_build", [EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD]) if isl3_unlocked else _t("cd_need_isle3"),
 					"cost_state": ("affordable" if GameManager.gold >= EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD else "short") if isl3_unlocked else "locked"
 				})
 			else:
 				list.append({
 					"type": "hotspring_brew",
 					"key": "hotspring_bath",
-					"title": "★温泉汤屋(汤" + str(bath_stock_cnt) + ")",
-					"sub": "精力+" + str(eff_pct_2) + "%·客" + str(GameManager.hotspring_guests_served),
-					"cost": "调制浴汤(+珀+小费)",
+					"title": _tf("cd_hb_title_lv", [bath_stock_cnt]),
+					"sub": _tf("cd_hb_sub_lv", [eff_pct_2, GameManager.hotspring_guests_served]),
+					"cost": _t("cd_hb_cost"),
 					"cost_state": "affordable" if bath_stock_cnt <= 2 else "unlocked"
 				})
 			var bread_stock_cnt := GameManager.get_total_bread_stock_count()
@@ -1880,27 +2007,27 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "windmill_parade",
 					"key": "gourmet_parade",
-					"title": "★风车烘焙面坊",
-					"sub": "磨粉烤包·花车巡游",
-					"cost": (str(EconomyConfig.WINDMILL_UNLOCK_COST_GOLD) + "G 建面坊") if isl2_unlocked else "需先解锁岛2",
+					"title": _t("cd_wp_title"),
+					"sub": _t("cd_wp_sub"),
+					"cost": _tf("cd_wp_build", [EconomyConfig.WINDMILL_UNLOCK_COST_GOLD]) if isl2_unlocked else _t("cd_need_isle2"),
 					"cost_state": ("affordable" if GameManager.gold >= EconomyConfig.WINDMILL_UNLOCK_COST_GOLD else "short") if isl2_unlocked else "locked"
 				})
 			elif GameManager.is_gourmet_parade_active():
 				list.append({
 					"type": "windmill_parade",
 					"key": "gourmet_parade",
-					"title": "★花车巡游(" + str(int(ceili(GameManager.parade_festival_timer))) + "s)",
-					"sub": "包x" + str(bread_stock_cnt) + "·溢价1.88x",
-					"cost": "出炉烤包(+珀+券)",
+					"title": _tf("cd_wp_title_on", [int(ceili(GameManager.parade_festival_timer))]),
+					"sub": _tf("cd_wp_sub_on", [bread_stock_cnt]),
+					"cost": _t("cd_wp_cost_on"),
 					"cost_state": "unlocked"
 				})
 			else:
 				list.append({
 					"type": "windmill_parade",
 					"key": "gourmet_parade",
-					"title": "★烘焙面坊(包" + str(bread_stock_cnt) + ")",
-					"sub": "光环+" + str(aura_pct_2) + "%·客" + str(GameManager.parade_tourists_served),
-					"cost": "开启花车巡游节!",
+					"title": _tf("cd_wp_title_lv", [bread_stock_cnt]),
+					"sub": _tf("cd_wp_sub_lv", [aura_pct_2, GameManager.parade_tourists_served]),
+					"cost": _t("cd_wp_cost_lv"),
 					"cost_state": "affordable"
 				})
 			var tea_stock_cnt := GameManager.get_total_brewed_tea_stock_count()
@@ -1909,45 +2036,45 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "tea_moon_gathering",
 					"key": "moon_tea_gathering",
-					"title": "★茗香画舫茶会",
-					"sub": "龙井乌龙·荷塘画舫",
-					"cost": str(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD) + "G 建茶坊",
+					"title": _t("cd_tm_title"),
+					"sub": _t("cd_tm_sub"),
+					"cost": _tf("cd_tm_build", [EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD]),
 					"cost_state": "affordable" if GameManager.gold >= EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD else "short"
 				})
 			elif GameManager.is_moon_tea_gathering_active():
 				list.append({
 					"type": "tea_moon_gathering",
 					"key": "moon_tea_gathering",
-					"title": "★画舫雅集(" + str(int(ceili(GameManager.moon_tea_gathering_timer))) + "s)",
-					"sub": "茗x" + str(tea_stock_cnt) + "·茶肴1.38x",
-					"cost": "沏茶领赏(+珀+券)",
+					"title": _tf("cd_tm_title_on", [int(ceili(GameManager.moon_tea_gathering_timer))]),
+					"sub": _tf("cd_tm_sub_on", [tea_stock_cnt]),
+					"cost": _t("cd_tm_cost_on"),
 					"cost_state": "unlocked"
 				})
 			else:
 				list.append({
 					"type": "tea_moon_gathering",
 					"key": "moon_tea_gathering",
-					"title": "★茗香茶坊(茗" + str(tea_stock_cnt) + ")",
-					"sub": "清心+" + str(tea_eff_pct_2) + "%·客" + str(GameManager.tea_connoisseurs_served),
-					"cost": "开启月色画舫雅集!",
+					"title": _tf("cd_tm_title_lv", [tea_stock_cnt]),
+					"sub": _tf("cd_tm_sub_lv", [tea_eff_pct_2, GameManager.tea_connoisseurs_served]),
+					"cost": _t("cd_tm_cost_lv"),
 					"cost_state": "affordable"
 				})
 			if GameManager.is_wish_lantern_festival_active():
 				list.append({
 					"type": "wish_lantern_festival",
 					"key": "wish_lantern_festival",
-					"title": "★星灯水灯节(" + str(int(ceili(GameManager.wish_lantern_festival_timer))) + "s)",
-					"sub": "拾灯" + str(GameManager.wish_lanterns_collected) + "·售价1.30x",
-					"cost": "点水灯得珀+券",
+					"title": _tf("cd_wl_title_on", [int(ceili(GameManager.wish_lantern_festival_timer))]),
+					"sub": _tf("cd_wl_sub_on", [GameManager.wish_lanterns_collected]),
+					"cost": _t("cd_wl_cost_on"),
 					"cost_state": "unlocked"
 				})
 			else:
 				list.append({
 					"type": "wish_lantern_festival",
 					"key": "wish_lantern_festival",
-					"title": "★云海星灯水灯节",
-					"sub": "荷塘海岸放水灯·拾" + str(GameManager.wish_lanterns_collected),
-					"cost": "开启星灯水灯节!",
+					"title": _t("cd_wl_title"),
+					"sub": _tf("cd_wl_sub", [GameManager.wish_lanterns_collected]),
+					"cost": _t("cd_wl_cost"),
 					"cost_state": "affordable"
 				})
 			# CI-10: card 12 -> Islander Specialty Market Auction (needs the Lighthouse Harbor)
@@ -1955,33 +2082,34 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "specialty_auction",
 					"key": "specialty_auction",
-					"title": "★名物拍卖会",
-					"sub": "建灯塔渔港开槌",
-					"cost": "需灯塔渔港" if isl3_unlocked else "需先解锁岛3",
+					"title": _t("cd_au_title"),
+					"sub": _t("cd_au_sub_locked"),
+					"cost": _t("cd_au_need_harbor") if isl3_unlocked else _t("cd_need_isle3"),
 					"cost_state": "locked"
 				})
 			elif GameManager.island_auction_active:
 				var au_sm := GameManager.get_auction_status_summary()
-				var au_lead := "待出价"
+				var au_lead := _t("cd_au_open")
 				if bool(au_sm["player_leading"]):
-					au_lead = "你领先"
+					au_lead = _t("cd_au_you_lead")
 				elif String(au_sm["high_bidder"]) != "":
-					au_lead = String(au_sm["leader_name"]) + "领先"
+					# bidder names are 4 glyphs (`椰子商人`); the first 2 keep the card line inside its 2-row card
+					au_lead = _tf("cd_au_lead", [EconomyConfig.get_auction_bidder_short_name(String(au_sm["high_bidder"]))])
 				list.append({
 					"type": "specialty_auction",
 					"key": "specialty_auction",
-					"title": "★拍卖%d/%d(%ds)" % [int(au_sm["lot_index"]) + 1, int(au_sm["lot_count"]), maxi(1, int(ceili(float(au_sm["timer"]))))],
+					"title": _t("cd_au_title_on") % [int(au_sm["lot_index"]) + 1, int(au_sm["lot_count"]), maxi(1, int(ceili(float(au_sm["timer"]))))],
 					"sub": String(au_sm["lot_short"]) + "·" + au_lead,
-					"cost": "领先中" if bool(au_sm["player_leading"]) else ("出价 " + str(int(au_sm["next_bid"])) + String(au_sm["cur_tag"])),
+					"cost": _t("cd_au_leading") if bool(au_sm["player_leading"]) else _tf("cd_au_bid", [int(au_sm["next_bid"]), String(au_sm["cur_tag"])]),
 					"cost_state": "unlocked" if bool(au_sm["player_leading"]) else ("affordable" if bool(au_sm["can_afford"]) else "short")
 				})
 			else:
 				list.append({
 					"type": "specialty_auction",
 					"key": "specialty_auction",
-					"title": "★岛民名物拍卖会",
-					"sub": "藏品" + str(GameManager.get_total_auction_collectibles()) + "·金槌" + str(GameManager.auction_gavel_medals),
-					"cost": "开槌拍卖!",
+					"title": _t("cd_au_title"),
+					"sub": _tf("cd_au_sub_idle", [GameManager.get_total_auction_collectibles(), GameManager.auction_gavel_medals]),
+					"cost": _t("cd_au_cost_idle"),
 					"cost_state": "affordable"
 				})
 			# CI-11: card 13 -> Starry Night-Market Open-Air Cinema (night-only event on the Island 1 east headland)
@@ -1990,71 +2118,71 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "open_air_cinema",
 					"key": "open_air_cinema",
-					"title": "★星空露天影院",
-					"sub": "夜场放映·引夜市客",
-					"cost": str(EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD) + "G 搭银幕",
+					"title": _t("cd_cin_title"),
+					"sub": _t("cd_cin_sub"),
+					"cost": _tf("cd_cin_build", [EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD]),
 					"cost_state": "affordable" if GameManager.gold >= EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD else "short"
 				})
 			elif bool(cin_sm["screening"]):
 				list.append({
 					"type": "open_air_cinema",
 					"key": "open_air_cinema",
-					"title": "★放映%d/%d(%ds)" % [int(cin_sm["slot"]) + 1, int(cin_sm["slot_count"]), maxi(1, int(ceili(float(cin_sm["remaining"]))))],
-					"sub": String(cin_sm["film_short"]) + "·客" + str(int(cin_sm["audience"])),
-					"cost": "票" + str(int(cin_sm["ticket_price"])) + "G·售价" + str(EconomyConfig.CINEMA_NIGHT_SALE_MULT) + "x",
+					"title": _t("cd_cin_title_on") % [int(cin_sm["slot"]) + 1, int(cin_sm["slot_count"]), maxi(1, int(ceili(float(cin_sm["remaining"]))))],
+					"sub": _tf("cd_cin_sub_on", [String(cin_sm["film_short"]), int(cin_sm["audience"])]),
+					"cost": _tf("cd_cin_cost_on", [int(cin_sm["ticket_price"]), str(EconomyConfig.CINEMA_NIGHT_SALE_MULT)]),
 					"cost_state": "unlocked"
 				})
 			elif bool(cin_sm["open"]):
 				list.append({
 					"type": "open_air_cinema",
 					"key": "open_air_cinema",
-					"title": "★露天影院(夜市)",
-					"sub": "今夜已映" + str(int(cin_sm["tonight"])) + "/3",
-					"cost": "叫卖影院零食",
+					"title": _t("cd_cin_title_open"),
+					"sub": _tf("cd_cin_sub_open", [int(cin_sm["tonight"])]),
+					"cost": _t("cd_cin_cost_open"),
 					"cost_state": "affordable"
 				})
 			else:
 				list.append({
 					"type": "open_air_cinema",
 					"key": "open_air_cinema",
-					"title": "★露天影院(待夜)",
-					"sub": "影票" + str(GameManager.cinema_screenings_total) + "·勋" + str(GameManager.cinema_medals),
-					"cost": str(int(ceili(float(cin_sm["until_night"])))) + "s 后入夜开映",
+					"title": _t("cd_cin_title_idle"),
+					"sub": _tf("cd_cin_sub_idle", [GameManager.cinema_screenings_total, GameManager.cinema_medals]),
+					"cost": _tf("cd_cin_cost_idle", [int(ceili(float(cin_sm["until_night"])))]),
 					"cost_state": "normal"
 				})
 			# CI-12: card 14 -> Islander Autumn Sports Day (timed event on the Lotus Pond bridge track)
 			var sp_sm := GameManager.get_sports_status_summary()
 			if bool(sp_sm["active"]):
 				var sp_phase := String(sp_sm["phase"])
-				var sp_title := "★运动会·入场"
+				var sp_title := _t("cd_sp_gather")
 				if sp_phase == "award":
-					sp_title = "★金丝带颁奖"
+					sp_title = _t("cd_sp_award")
 				elif sp_phase != "gather":
 					sp_title = "★%s %d/%d" % [String(sp_sm["event_short"]), int(sp_sm["event_idx"]) + 1, int(sp_sm["event_count"])]
 				list.append({
 					"type": "sports_day",
 					"key": "sports_day",
 					"title": sp_title,
-					"sub": str(int(sp_sm["teams"])) + "队·余" + str(maxi(1, int(ceili(float(sp_sm["seconds_left"]))))) + "s",
-					"cost": "观赛售价" + str(EconomyConfig.SPORTS_SPECTATOR_SALE_MULT) + "x",
+					"sub": _tf("cd_sp_sub_on", [int(sp_sm["teams"]), maxi(1, int(ceili(float(sp_sm["seconds_left"]))))]),
+					"cost": _tf("cd_sp_cost_on", [str(EconomyConfig.SPORTS_SPECTATOR_SALE_MULT)]),
 					"cost_state": "unlocked"
 				})
 			elif int(sp_sm["teams"]) < EconomyConfig.SPORTS_MIN_TEAMS:
 				list.append({
 					"type": "sports_day",
 					"key": "sports_day",
-					"title": "★秋季运动会",
-					"sub": "岛1需2种员工",
-					"cost": "现有" + str(int(sp_sm["teams"])) + "队",
+					"title": _t("cd_sp_title"),
+					"sub": _t("cd_sp_sub_need"),
+					"cost": _tf("cd_sp_cost_need", [int(sp_sm["teams"])]),
 					"cost_state": "locked"
 				})
 			else:
 				list.append({
 					"type": "sports_day",
 					"key": "sports_day",
-					"title": "★秋季运动会",
-					"sub": str(int(sp_sm["teams"])) + "队·金丝带" + str(int(sp_sm["medals"])),
-					"cost": "立即开幕!",
+					"title": _t("cd_sp_title"),
+					"sub": _tf("cd_sp_sub_idle", [int(sp_sm["teams"]), int(sp_sm["medals"])]),
+					"cost": _t("cd_sp_cost_idle"),
 					"cost_state": "affordable"
 				})
 			# CI-13: card 15 -> Cloud-Sea Kite Festival (timed sky event, kites in the lanes above Island 2 / Island 3)
@@ -2063,18 +2191,18 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "kite_festival",
 					"key": "kite_festival",
-					"title": "★风筝节·" + String(kt_sm["wind_name"]),
-					"sub": "筝" + str(int(kt_sm["remaining"])) + "/" + str(EconomyConfig.KITE_SLOTS.size()) + "·余" + str(maxi(1, int(ceili(float(kt_sm["seconds_left"]))))) + "s",
-					"cost": "产x%.2f 售x%.2f" % [float(kt_sm["prod_mult"]), float(kt_sm["sale_mult"])],
+					"title": _tf("cd_kt_title_on", [String(kt_sm["wind_name"])]),
+					"sub": _tf("cd_kt_sub_on", [int(kt_sm["remaining"]), EconomyConfig.KITE_SLOTS.size(), maxi(1, int(ceili(float(kt_sm["seconds_left"]))))]),
+					"cost": _t("cd_kt_cost_on") % [float(kt_sm["prod_mult"]), float(kt_sm["sale_mult"])],
 					"cost_state": "unlocked"
 				})
 			else:
 				list.append({
 					"type": "kite_festival",
 					"key": "kite_festival",
-					"title": "★云海风筝节",
-					"sub": "满天勋" + str(int(kt_sm["medals"])) + "·" + str(int(ceili(float(kt_sm["cooldown"])))) + "s后",
-					"cost": "立即放飞!",
+					"title": _t("cd_kt_title"),
+					"sub": _tf("cd_kt_sub", [int(kt_sm["medals"]), int(ceili(float(kt_sm["cooldown"])))]),
+					"cost": _t("cd_kt_cost"),
 					"cost_state": "affordable"
 				})
 			# CI-13: card 16 -> Island Four-Season dress-up (local calendar month, northern-hemisphere seasons)
@@ -2082,9 +2210,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "season_dress",
 				"key": "season_dress",
-				"title": "★" + String(ss_info.get("full_name", "四季")) + "装扮",
-				"sub": String(ss_info.get("deco_name", "")) + "x" + str(GameManager.get_active_season_deco_count()),
-				"cost": String(ss_info.get("bonus_desc", "")) + "+" + str(int(round(EconomyConfig.SEASON_DECO_BONUS_PER_PROP * 100.0 * float(GameManager.get_active_season_deco_count())))) + "%",
+				"title": _tf("cd_ss_title", [_n(String(ss_info.get("full_name", "四季")))]),
+				"sub": _n(String(ss_info.get("deco_name", ""))) + "x" + str(GameManager.get_active_season_deco_count()),
+				"cost": _n(String(ss_info.get("bonus_desc", ""))) + "+" + str(int(round(EconomyConfig.SEASON_DECO_BONUS_PER_PROP * 100.0 * float(GameManager.get_active_season_deco_count())))) + "%",
 				"cost_state": "unlocked"
 			})
 			# CI-14: card 17 -> Cloud-Isle Photo Tour (the sightseer walks the 3 photo spots, west -> east)
@@ -2094,18 +2222,18 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "photo_tour",
 					"key": "photo_tour",
-					"title": "★观光团" + str(mini(int(pt_sm["stop"]) + 1, int(pt_sm["stops"]))) + "/" + str(int(pt_sm["stops"])),
-					"sub": "照" + str(int(pt_sm["photos"])) + "·" + (String(EconomyConfig.PHOTO_SPOTS[pt_spot]["short_name"]) if pt_spot != "" else "返程"),
-					"cost": "客流x" + str(EconomyConfig.PHOTO_TOUR_VISITOR_SPAWN_MULT),
+					"title": _tf("cd_pt_title_on", [mini(int(pt_sm["stop"]) + 1, int(pt_sm["stops"])), int(pt_sm["stops"])]),
+					"sub": _tf("cd_pt_sub_on", [int(pt_sm["photos"]), _n(String(EconomyConfig.PHOTO_SPOTS[pt_spot]["short_name"])) if pt_spot != "" else _t("cd_pt_return")]),
+					"cost": _tf("cd_pt_cost_on", [str(EconomyConfig.PHOTO_TOUR_VISITOR_SPAWN_MULT)]),
 					"cost_state": "unlocked"
 				})
 			else:
 				list.append({
 					"type": "photo_tour",
 					"key": "photo_tour",
-					"title": "★观光摄影团",
-					"sub": "章" + str(int(pt_sm["stamps"])) + "·" + str(int(ceili(float(pt_sm["cooldown"])))) + "s后",
-					"cost": "立即出发!",
+					"title": _t("cd_pt_title"),
+					"sub": _tf("cd_pt_sub", [int(pt_sm["stamps"]), int(ceili(float(pt_sm["cooldown"])))]),
+					"cost": _t("cd_pt_cost"),
 					"cost_state": "affordable"
 				})
 			# CI-14: card 18 -> Islander Wish Board (opens the board panel with the 3 notes)
@@ -2113,9 +2241,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "wish_board",
 				"key": "wish_board",
-				"title": "★心愿告示板",
-				"sub": "便签" + str(int(wb_sm["open"])) + "/" + str(EconomyConfig.WISH_SLOT_COUNT) + "·圆" + str(int(wb_sm["fulfilled"])),
-				"cost": "声望" + str(int(wb_sm["rep"])) + "·券" + str(int(wb_sm["vouchers"])),
+				"title": _t("cd_wb_title"),
+				"sub": _tf("cd_wb_sub", [int(wb_sm["open"]), EconomyConfig.WISH_SLOT_COUNT, int(wb_sm["fulfilled"])]),
+				"cost": _tf("cd_wb_cost", [int(wb_sm["rep"]), int(wb_sm["vouchers"])]),
 				"cost_state": "affordable" if int(wb_sm["open"]) > 0 else "unlocked"
 			})
 			# CI-15: card 19 -> Cloud-Sea Weather (the 20-minute island-calendar slot: weather, headline effect, next change)
@@ -2123,9 +2251,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "sky_weather",
 				"key": "sky_weather",
-				"title": "★云海" + String(sw_sm["name"]),
-				"sub": String(EconomyConfig.get_sky_weather_info(String(sw_sm["id"])).get("tag", "")),
-				"cost": str(int(sw_sm["minutes_left"])) + "分后换天",
+				"title": _tf("cd_sw_title", [String(sw_sm["name"])]),
+				"sub": _n(String(EconomyConfig.get_sky_weather_info(String(sw_sm["id"])).get("tag", ""))),
+				"cost": _tf("cd_sw_cost", [int(sw_sm["minutes_left"])]),
 				"cost_state": "unlocked"
 			})
 			# CI-15: card 20 -> Islander Birthday Party (opens the party panel)
@@ -2134,32 +2262,32 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			if bd_today != "":
 				var bd_name := EconomyConfig.get_islander_name(bd_today)
 				if bool(bd_sm["gift_given"]):
-					list.append({"type": "birthday", "key": "birthday", "title": "★" + bd_name + "生日", "sub": "已备礼·谢谢!", "cost": "庆生" + str(int(bd_sm["parties"])) + "次", "cost_state": "unlocked"})
+					list.append({"type": "birthday", "key": "birthday", "title": _tf("cd_bd_title", [bd_name]), "sub": _t("cd_bd_given"), "cost": _tf("cd_bd_parties", [int(bd_sm["parties"])]), "cost_state": "unlocked"})
 				else:
-					list.append({"type": "birthday", "key": "birthday", "title": "★" + bd_name + "生日", "sub": "备礼" + str(int(bd_sm["cost"])) + "G", "cost": "去庆生!", "cost_state": "affordable" if GameManager.gold >= int(bd_sm["cost"]) else "short"})
+					list.append({"type": "birthday", "key": "birthday", "title": _tf("cd_bd_title", [bd_name]), "sub": _tf("cd_bd_gift_cost", [int(bd_sm["cost"])]), "cost": _t("cd_bd_go"), "cost_state": "affordable" if GameManager.gold >= int(bd_sm["cost"]) else "short"})
 			else:
 				var bd_next: Dictionary = bd_sm["next"]
 				list.append({
 					"type": "birthday",
 					"key": "birthday",
-					"title": "★岛民生日会",
-					"sub": "下位" + EconomyConfig.get_islander_name(String(bd_next.get("islander", ""))),
-					"cost": str(int(bd_next.get("days", 0))) + "天后",
+					"title": _t("cd_bd_card_title"),
+					"sub": _tf("cd_bd_next", [EconomyConfig.get_islander_name(String(bd_next.get("islander", "")))]),
+					"cost": _tf("cd_bd_days", [int(bd_next.get("days", 0))]),
 					"cost_state": "normal"
 				})
 		3:
 			# Direction 4: Mountain & Sea Collection Codex (4 Tiers pairing Crop + Delicacy)
 			var codex_pairs := [
-				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": "一阶·晨露田园", "c_hint": "???(初始解锁)", "d_hint": "???(研钵工坊)"},
-				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": "二阶·果香烘焙", "c_hint": "???(农田Lv.25)", "d_hint": "???(研钵Lv.25)"},
-				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": "三阶·密林星露", "c_hint": "???(解锁岛2)", "d_hint": "???(岛2坩埚)"},
-				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": "四阶·云海盛宴", "c_hint": "???(解锁岛3)", "d_hint": "???(岛3双工坊)"}
+				{"idx": 0, "crop": "crop_0", "del": "delicacy_0", "tier_name": _t("cx_tier1")},
+				{"idx": 1, "crop": "crop_1", "del": "delicacy_1", "tier_name": _t("cx_tier2")},
+				{"idx": 2, "crop": "crop_2", "del": "delicacy_2", "tier_name": _t("cx_tier3")},
+				{"idx": 3, "crop": "crop_3", "del": "delicacy_3", "tier_name": _t("cx_tier4")}
 			]
 			for cp in codex_pairs:
 				var cid := String(cp["crop"])
 				var did := String(cp["del"])
-				var c_name := String(EconomyConfig.CROPS[cid]["name"]).replace("晴滩", "")
-				var d_name := String(EconomyConfig.DELICACIES[did]["name"]).replace("星露荧光", "星露").replace("皇家凤梨", "凤梨")
+				var c_name := _n(String(EconomyConfig.CROPS[cid]["name"]).replace("晴滩", ""))
+				var d_name := _n(String(EconomyConfig.DELICACIES[did]["name"]).replace("星露荧光", "星露").replace("皇家凤梨", "凤梨"))
 				var c_on := bool(GameManager.unlocked_codex.get(cid, false))
 				var d_on := bool(GameManager.unlocked_codex.get(did, false))
 				var bonus_pct := (10 if c_on else 0) + (10 if d_on else 0)
@@ -2167,9 +2295,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 				list.append({
 					"type": "codex",
 					"key": str(cp["idx"]),
-					"title": String(cp["tier_name"]) + "(+" + str(bonus_pct) + "%)",
-					"sub": (c_name if c_on else "???(待锁)") + "·" + (d_name if d_on else "???(待研)"),
-					"cost": "点亮" + str((1 if c_on else 0) + (1 if d_on else 0)) + "/2·+" + str(bonus_pct) + "%",
+					"title": String(cp["tier_name"]),
+					"sub": (c_name if c_on else _t("cx_unk_crop")) + "·" + (d_name if d_on else _t("cx_unk_dish")),
+					"cost": _tf("cx_pair_cost", [(1 if c_on else 0) + (1 if d_on else 0), bonus_pct]),
 					"cost_state": codex_state
 				})
 			var ach_done := GameManager.get_unlocked_achievement_count()
@@ -2177,83 +2305,85 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "career",
 				"key": "achievements",
-				"title": "★成就看板(" + str(ach_done) + "/" + str(ach_tot) + ")",
-				"sub": GameManager.get_career_summary_text().replace(" · ", "·"),
-				"cost": "岛屿声望 ★" + str(GameManager.get_star_reputation()) + "星",
+				"title": _tf("cx_ach_title", [ach_done, ach_tot]),
+				# the star rating is already on the cost line -> the sub keeps only the career counters; it has its own compact
+				# text (en `Hv·Mk·Cu·Od`), while the banner of this card spells the counters out (`gm_career`)
+				"sub": _tf("cx_career_sub", [int(GameManager.career_stats.get("harvests", 0)), int(GameManager.career_stats.get("crafts", 0)), int(GameManager.career_stats.get("customers", 0)), int(GameManager.career_stats.get("contracts", 0))]),
+				"cost": _tf("cx_ach_cost", [GameManager.get_star_reputation()]),
 				"cost_state": "unlocked" if ach_done > 0 else "affordable"
 			})
 			var s_info := GameManager.get_current_solar_term()
-			var s_name := String(s_info.get("name", "春分"))
+			var s_name := _n(String(s_info.get("name", "春分")))
 			var s_dish_id := GameManager.get_current_solar_dish_id()
 			var s_dish_name := EconomyConfig.get_item_display_name(s_dish_id)
 			var s_cnt := GameManager.get_unlocked_solar_dish_count()
 			var v_cnt := GameManager.get_rare_vouchers()
-			var s_cost_txt := ("兑食谱·券x" + str(v_cnt)) if (v_cnt > 0 and s_cnt < 4) else (("兑礼遇·券x" + str(v_cnt)) if v_cnt > 0 else ("节气 " + str(s_cnt) + "/4"))
+			var s_cost_txt := _tf("cx_solar_recipe", [v_cnt]) if (v_cnt > 0 and s_cnt < 4) else (_tf("cx_solar_perk", [v_cnt]) if v_cnt > 0 else _tf("cx_solar_cnt", [s_cnt]))
 			list.append({
 				"type": "solar_codex",
 				"key": s_dish_id,
-				"title": "★节气:" + s_name + "(" + str(s_cnt) + "/4)",
-				"sub": s_dish_name + "·" + String(s_info.get("buff_tag", "")).replace("·", ""),
+				"title": _tf("cx_solar_title", [s_name, s_cnt]),
+				"sub": s_dish_name + "·" + String(Array(_n(String(s_info.get("buff_tag", ""))).split("·")).back()),
 				"cost": s_cost_txt,
 				"cost_state": "affordable" if v_cnt > 0 else ("unlocked" if s_cnt >= 4 else "normal")
 			})
 			var f_unl := GameManager.get_unlocked_flora_count()
 			var b_unl := GameManager.get_unlocked_souvenir_count()
-			var f_short := "铃兰" if GameManager.active_greenhouse_flora_id == "flora_stardew_lily" else "玫瑰"
+			var f_short := _n("铃兰") if GameManager.active_greenhouse_flora_id == "flora_stardew_lily" else _n("玫瑰")
 			var b_stock := GameManager.get_total_souvenir_box_count()
 			list.append({
 				"type": "ci5_codex",
 				"key": "flora_souvenir",
-				"title": "★奇花礼盒(" + str(f_unl) + "/2·" + str(b_unl) + "/2)",
-				"sub": ("育" + f_short + "·礼存" + str(b_stock) + "盒") if GameManager.greenhouse_unlocked else "建岛2温室育奇花",
-				"cost": "售价+" + str(f_unl * 8 + b_unl * 10) + "%",
+				"title": _tf("cx_flora_title", [f_unl, b_unl]),
+				"sub": _tf("cx_flora_sub", [f_short, b_stock]) if GameManager.greenhouse_unlocked else _t("cx_flora_locked"),
+				"cost": _tf("cx_flora_cost", [f_unl * 8 + b_unl * 10]),
 				"cost_state": "unlocked" if (f_unl >= 2 and b_unl >= 2) else ("affordable" if GameManager.greenhouse_unlocked else "locked")
 			})
 			var bath_unl := GameManager.get_unlocked_bath_count()
 			var b_cfg_3: Dictionary = EconomyConfig.HOTSPRING_BATH_BLENDS.get(GameManager.active_hotspring_bath_id, {})
-			var b_short_3 := String(b_cfg_3.get("short_name", "艾草汤"))
+			var b_short_3 := _n(String(b_cfg_3.get("short_name", "艾草汤")))
 			var eff_pct_3 := maxi(0, int(round((GameManager.get_worker_hotspring_move_multiplier() - 1.0) * 100.0)))
 			list.append({
 				"type": "ci6_codex",
 				"key": "hotspring_codex",
-				"title": "★灵泉汤鉴(" + str(bath_unl) + "/3)",
-				"sub": ("汤:" + b_short_3 + "·客" + str(GameManager.hotspring_guests_served)) if GameManager.hotspring_unlocked else "建岛3汤屋调药浴",
-				"cost": "+" + str(bath_unl * 8) + "%价·+" + str(eff_pct_3) + "%效",
+				"title": _tf("cx_spa_title", [bath_unl]),
+				"sub": _tf("cx_spa_sub", [b_short_3, GameManager.hotspring_guests_served]) if GameManager.hotspring_unlocked else _t("cx_spa_locked"),
+				"cost": _tf("cx_cost_price_eff", [bath_unl * 8, eff_pct_3]),
 				"cost_state": "unlocked" if bath_unl >= 3 else ("affordable" if GameManager.hotspring_unlocked else "locked")
 			})
 			var bakery_unl := GameManager.get_unlocked_bakery_count()
 			var wb_cfg_3: Dictionary = EconomyConfig.BAKERY_ITEMS.get(GameManager.active_windmill_bread_id, {})
-			var wb_short_3 := String(wb_cfg_3.get("short_name", "舒芙蕾包"))
+			var wb_short_3 := _n(String(wb_cfg_3.get("short_name", "舒芙蕾包")))
 			var aura_pct_3 := maxi(0, int(round((GameManager.get_bakery_aura_speed_multiplier() - 1.0) * 100.0)))
 			list.append({
 				"type": "ci7_codex",
 				"key": "bakery_codex",
-				"title": "★云端烘焙鉴(" + str(bakery_unl) + "/3)",
-				"sub": ("烤:" + wb_short_3 + "·客" + str(GameManager.parade_tourists_served)) if GameManager.windmill_unlocked else "建岛2面坊烤欧包",
-				"cost": "+" + str(bakery_unl * 8) + "%价·+" + str(aura_pct_3) + "%速",
+				"title": _tf("cx_bak_title", [bakery_unl]),
+				"sub": _tf("cx_bak_sub", [wb_short_3, GameManager.parade_tourists_served]) if GameManager.windmill_unlocked else _t("cx_bak_locked"),
+				"cost": _tf("cx_cost_price_spd", [bakery_unl * 8, aura_pct_3]),
 				"cost_state": "unlocked" if bakery_unl >= 3 else ("affordable" if GameManager.windmill_unlocked else "locked")
 			})
 			var tea_unl := GameManager.get_unlocked_tea_count()
 			var tp_cfg_3: Dictionary = EconomyConfig.TEA_ITEMS.get(GameManager.active_tea_recipe_id, {})
-			var tp_short_3 := String(tp_cfg_3.get("short_name", "龙井茗茶"))
+			var tp_short_3 := _n(String(tp_cfg_3.get("short_name", "龙井茗茶")))
 			var tea_eff_3 := maxi(0, int(round((GameManager.get_tea_aura_worker_move_multiplier() - 1.0) * 100.0)))
 			list.append({
 				"type": "ci8_codex",
 				"key": "tea_codex",
-				"title": "★茗香茶韵鉴(" + str(tea_unl) + "/3)",
-				"sub": ("沏:" + tp_short_3 + "·客" + str(GameManager.tea_connoisseurs_served)) if GameManager.tea_pavilion_unlocked else "建岛1茶坊沏香茗",
-				"cost": "+" + str(tea_unl * 8) + "%价·+" + str(tea_eff_3) + "%效",
+				"title": _tf("cx_tea_title", [tea_unl]),
+				"sub": _tf("cx_tea_sub", [tp_short_3, GameManager.tea_connoisseurs_served]) if GameManager.tea_pavilion_unlocked else _t("cx_tea_locked"),
+				"cost": _tf("cx_cost_price_eff", [tea_unl * 8, tea_eff_3]),
 				"cost_state": "unlocked" if tea_unl >= 3 else ("affordable" if GameManager.tea_pavilion_unlocked else "locked")
 			})
 			var feast_pass := GameManager.get_passed_tasting_challenge_count()
 			var cp_cfg_3: Dictionary = EconomyConfig.TASTING_DISHES.get(GameManager.active_tasting_dish_id, {})
-			var cp_short_3 := String(cp_cfg_3.get("short_name", "灌汤小笼"))
+			var cp_short_3 := _n(String(cp_cfg_3.get("short_name", "灌汤小笼")))
 			list.append({
 				"type": "ci9_codex",
 				"key": "chef_tasting_codex",
-				"title": "★山海食神鉴(" + str(feast_pass) + "/3)",
-				"sub": ("宴:" + cp_short_3 + "·鉴" + str(GameManager.tastings_held)) if GameManager.chef_pavilion_unlocked else "建岛2食神席烹名菜",
-				"cost": "+" + str(feast_pass * 8) + "%价·勋" + str(GameManager.chef_medals),
+				"title": _tf("cx_chef_title", [feast_pass]),
+				"sub": _tf("cx_chef_sub", [cp_short_3, GameManager.tastings_held]) if GameManager.chef_pavilion_unlocked else _t("cx_chef_locked"),
+				"cost": _tf("cx_cost_price_medal", [feast_pass * 8, GameManager.chef_medals]),
 				"cost_state": "unlocked" if GameManager.chef_medals > 0 else ("affordable" if GameManager.chef_pavilion_unlocked else "locked")
 			})
 			# CI-10: Shanhai Codex card 12 -> `★名物拍卖鉴(n/3)` (unique specialty lots won at the Islander Auction)
@@ -2261,9 +2391,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "ci10_codex",
 				"key": "auction_codex",
-				"title": "★名物拍卖鉴(" + str(auc_won) + "/3)",
-				"sub": ("藏" + str(GameManager.get_total_auction_collectibles()) + "·鲜" + str(GameManager.get_harbor_seafood_stock())) if GameManager.lighthouse_harbor_unlocked else "建岛3灯塔渔港",
-				"cost": "+" + str(auc_won * 8) + "%价·槌" + str(GameManager.auction_gavel_medals),
+				"title": _tf("cx_auc_title", [auc_won]),
+				"sub": _tf("cx_auc_sub", [GameManager.get_total_auction_collectibles(), GameManager.get_harbor_seafood_stock()]) if GameManager.lighthouse_harbor_unlocked else _t("cx_auc_locked"),
+				"cost": _tf("cx_cost_price_gavel", [auc_won * 8, GameManager.auction_gavel_medals]),
 				"cost_state": "unlocked" if GameManager.auction_gavel_medals > 0 else ("affordable" if GameManager.lighthouse_harbor_unlocked else "locked")
 			})
 			# CI-11: Shanhai Codex card 13 -> `★星空影院鉴(n/3)` (films screened) + the 3 dairy products
@@ -2272,9 +2402,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "ci11_codex",
 				"key": "cinema_codex",
-				"title": "★星空影院鉴(" + str(film_unl) + "/3)",
-				"sub": ("乳" + str(dairy_unl) + "/3·票" + str(GameManager.cinema_screenings_total)) if (GameManager.open_air_cinema_unlocked or GameManager.dairy_workshop_unlocked) else "建乳坊与露天影院",
-				"cost": "+" + str((film_unl + dairy_unl) * 4) + "%价·勋" + str(GameManager.cinema_medals),
+				"title": _tf("cx_cin_title", [film_unl]),
+				"sub": _tf("cx_cin_sub", [dairy_unl, GameManager.cinema_screenings_total]) if (GameManager.open_air_cinema_unlocked or GameManager.dairy_workshop_unlocked) else _t("cx_cin_locked"),
+				"cost": _tf("cx_cost_price_medal", [(film_unl + dairy_unl) * 4, GameManager.cinema_medals]),
 				"cost_state": "unlocked" if GameManager.cinema_medals > 0 else ("affordable" if GameManager.open_air_cinema_unlocked else "locked")
 			})
 			# CI-12: Shanhai Codex card 14 -> `★秋季运动会鉴(n/3)` (events held) + the 3 pottery entries
@@ -2283,9 +2413,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "ci12_codex",
 				"key": "sports_codex",
-				"title": "★秋季运动会鉴(" + str(sport_unl) + "/3)",
-				"sub": ("陶" + str(pot_unl) + "/3·赛" + str(GameManager.sports_events_held_total)) if (GameManager.pottery_kiln_unlocked or GameManager.sports_events_held_total > 0) else "建陶窑办运动会",
-				"cost": "+" + str((sport_unl + pot_unl) * 4) + "%价·带" + str(GameManager.sports_medals),
+				"title": _tf("cx_sp_title", [sport_unl]),
+				"sub": _tf("cx_sp_sub", [pot_unl, GameManager.sports_events_held_total]) if (GameManager.pottery_kiln_unlocked or GameManager.sports_events_held_total > 0) else _t("cx_sp_locked"),
+				"cost": _tf("cx_cost_price_ribbon", [(sport_unl + pot_unl) * 4, GameManager.sports_medals]),
 				"cost_state": "unlocked" if GameManager.sports_medals > 0 else ("affordable" if GameManager.can_start_sports_day() or GameManager.pottery_kiln_unlocked else "locked")
 			})
 			# CI-13: Shanhai Codex card 15 -> `★云海风筝鉴(n/3)` (kite kinds reeled in) + the 4 seasons witnessed
@@ -2294,9 +2424,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "ci13_codex",
 				"key": "kite_codex",
-				"title": "★云海风筝鉴(" + str(kite_unl) + "/3)",
-				"sub": "季" + str(season_unl) + "/4·收筝" + str(GameManager.kite_collected_total),
-				"cost": "+" + str(kite_unl * 4 + season_unl * 2) + "%价·满" + str(GameManager.kite_medals),
+				"title": _tf("cx_kt_title", [kite_unl]),
+				"sub": _tf("cx_kt_sub", [season_unl, GameManager.kite_collected_total]),
+				"cost": _tf("cx_cost_price_full", [kite_unl * 4 + season_unl * 2, GameManager.kite_medals]),
 				"cost_state": "unlocked" if GameManager.kite_medals > 0 else ("affordable" if GameManager.is_kite_festival_active() else "locked")
 			})
 			# CI-14: Shanhai Codex card 16 -> `★观光摄影鉴(n/6)` (3 photo spots x normal / special shot) + stamps + wish medals
@@ -2304,9 +2434,9 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "ci14_codex",
 				"key": "photo_codex",
-				"title": "★观光摄影鉴(" + str(photo_unl) + "/" + str(EconomyConfig.get_photo_entry_order().size()) + ")",
-				"sub": "章" + str(GameManager.photo_stamps) + "·拍" + str(GameManager.photos_taken_total) + "张",
-				"cost": "+" + str(int(round(EconomyConfig.PHOTO_CODEX_PRICE_PER_ENTRY * 100.0 * float(photo_unl)))) + "%价·愿" + str(GameManager.wish_medals),
+				"title": _tf("cx_pt_title", [photo_unl, EconomyConfig.get_photo_entry_order().size()]),
+				"sub": _tf("cx_pt_sub", [GameManager.photo_stamps, GameManager.photos_taken_total]),
+				"cost": _tf("cx_cost_price_wish", [int(round(EconomyConfig.PHOTO_CODEX_PRICE_PER_ENTRY * 100.0 * float(photo_unl))), GameManager.wish_medals]),
 				"cost_state": "unlocked" if GameManager.photo_stamps > 0 else ("affordable" if photo_unl > 0 or GameManager.is_photo_tour_active() else "locked")
 			})
 			# CI-15: Shanhai Codex card 17 -> `★云海天气(n/4)` (weathers witnessed) + islanders celebrated + family medals
@@ -2315,16 +2445,34 @@ func _get_current_tab_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "ci15_codex",
 				"key": "weather_codex",
-				"title": "★云海天气(" + str(sky_unl) + "/" + str(EconomyConfig.SKY_WEATHER_ORDER.size()) + ")",
-				"sub": "寿" + str(bday_unl) + "/" + str(EconomyConfig.WISH_ISLANDERS.size()) + "·庆" + str(GameManager.birthday_parties_total),
-				"cost": "+" + str(int(round(EconomyConfig.SKY_WEATHER_CODEX_PRICE_PER_TYPE * 100.0 * float(sky_unl) + EconomyConfig.BIRTHDAY_CODEX_PRICE_PER_ISLANDER * 100.0 * float(bday_unl)))) + "%价·福" + str(GameManager.birthday_medals),
+				"title": _tf("cx_sw_title", [sky_unl, EconomyConfig.SKY_WEATHER_ORDER.size()]),
+				"sub": _tf("cx_sw_sub", [bday_unl, EconomyConfig.WISH_ISLANDERS.size(), GameManager.birthday_parties_total]),
+				"cost": _tf("cx_cost_price_family", [int(round(EconomyConfig.SKY_WEATHER_CODEX_PRICE_PER_TYPE * 100.0 * float(sky_unl) + EconomyConfig.BIRTHDAY_CODEX_PRICE_PER_ISLANDER * 100.0 * float(bday_unl))), GameManager.birthday_medals]),
 				"cost_state": "unlocked" if GameManager.birthday_medals > 0 else ("affordable" if sky_unl > 0 else "locked")
+			})
+			# CI-16: Shanhai Codex card 18 -> `★美食评鉴(n/18)` (dishes judged) + bond levels + food-week medals
+			var fw_dishes := GameManager.get_food_week_dishes_judged()
+			list.append({
+				"type": "ci16_codex",
+				"key": "food_week_codex",
+				"title": _tf("cx_fw_title", [fw_dishes, EconomyConfig.FOOD_WEEK_DISHES.size()]),
+				"sub": _tf("cx_fw_sub", [GameManager.get_friendship_total_levels(), GameManager.get_max_friend_count()]),
+				"cost": _tf("cx_fw_cost", [_pct1(GameManager.get_friendship_price_bonus()), GameManager.get_food_week_medal_total()]),
+				"cost_state": "unlocked" if GameManager.get_food_week_medal_total() > 0 else ("affordable" if fw_dishes > 0 or GameManager.get_friendship_total_levels() > 0 else "locked")
 			})
 	return list
 
+## UI audit: short landscape buff line for the 2-row Expansion card (the long `desc` no longer fits ~65px)
+func _landscape_buff_text(cfg: Dictionary) -> String:
+	var names := {"crop_growth": _t("ui_lb_crop"), "workshop_speed": _t("ui_lb_workshop"), "tip_bonus": _t("ui_lb_tip")}
+	return String(names.get(String(cfg.get("buff_type", "")), _t("ui_lb_buff"))) + "+" + str(int(round(float(cfg.get("buff_val", 0.0)) * 100.0))) + "%"
+
+func _birthday_today_banner(islander: String) -> String:
+	return _tf("bn_bday_today", [EconomyConfig.get_islander_name(islander)])
+
 ## CI-15: the Birthday Party panel (single row, full-size readable cards): today / prepare gift / next birthday / back
 func _bday_date_text(month: int, day: int) -> String:
-	return str(month) + "月" + str(day) + "日"
+	return _tf("ui_date_md", [month, day])
 
 func _get_birthday_cards() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
@@ -2339,9 +2487,9 @@ func _get_birthday_cards() -> Array[Dictionary]:
 		list.append({
 			"type": "bday_today",
 			"key": today,
-			"title": "★今天是" + who + "的生日!",
-			"sub": "最爱: " + String(EconomyConfig.BIRTHDAY_FAVOURITES[today]["name"]) + ("(摊位有货)" if fav != "" else "(摊位暂无)"),
-			"cost": "岛历 " + _bday_date_text(int(dt["month"]), int(dt["day"])),
+			"title": _tf("bp_today_title", [who]),
+			"sub": _tf("bp_fav", [_n(String(EconomyConfig.BIRTHDAY_FAVOURITES[today]["name"])), _t("bp_in_stock") if fav != "" else _t("bp_no_stock")]),
+			"cost": _tf("bp_isle_date", [_bday_date_text(int(dt["month"]), int(dt["day"]))]),
 			"cost_state": "unlocked" if bool(bd["gift_given"]) else "affordable"
 		})
 		if bool(bd["gift_given"]):
@@ -2350,9 +2498,9 @@ func _get_birthday_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "bday_gift",
 				"key": "gift",
-				"title": "★礼物已送达",
-				"sub": ("称心礼物: " + EconomyConfig.get_item_display_name(lr_fav)) if lr_fav != "" else "金币礼盒",
-				"cost": "声望+" + str(int(lr.get("rep", 0))) + " 券+" + str(int(lr.get("vouchers", 0))) + " 已领取",
+				"title": _t("bp_gift_done"),
+				"sub": _tf("bp_gift_fav", [EconomyConfig.get_item_display_name(lr_fav)]) if lr_fav != "" else _t("bp_gift_gold"),
+				"cost": _tf("bp_gift_claimed", [int(lr.get("rep", 0)), int(lr.get("vouchers", 0))]),
 				"cost_state": "unlocked"
 			})
 		else:
@@ -2363,42 +2511,113 @@ func _get_birthday_cards() -> Array[Dictionary]:
 			list.append({
 				"type": "bday_gift",
 				"key": "gift",
-				"title": "★为" + who + "备礼",
-				"sub": "礼盒" + str(g_cost) + "G" + (" +称心礼物" if fav != "" else ""),
-				"cost": ("声望+" + str(rep_now) + " 券+" + str(v_now) + " 立即备礼!") if enough else ("金币不足 需" + str(g_cost) + "G"),
+				"title": _tf("bp_gift_for", [who]),
+				"sub": _tf("bp_gift_box", [g_cost, _t("bp_gift_plus_fav") if fav != "" else ""]),
+				"cost": _tf("bp_gift_go", [rep_now, v_now]) if enough else _tf("bp_gift_short", [g_cost]),
 				"cost_state": "affordable" if enough else "short"
 			})
 	else:
 		list.append({
 			"type": "bday_today",
 			"key": "",
-			"title": "★今天没有岛民生日",
-			"sub": "岛历 " + _bday_date_text(int(dt["month"]), int(dt["day"])),
-			"cost": "每月3/8/13/18/23/28日",
+			"title": _t("bp_none_title"),
+			"sub": _tf("bp_isle_date", [_bday_date_text(int(dt["month"]), int(dt["day"]))]),
+			"cost": _t("bp_days"),
 			"cost_state": "locked"
 		})
 		list.append({
 			"type": "bday_gift",
 			"key": "gift",
-			"title": "★备礼",
-			"sub": "生日当天才能备礼",
-			"cost": "下一位: " + EconomyConfig.get_islander_name(nx_isl),
+			"title": _t("bp_gift_title"),
+			"sub": _t("bp_gift_only"),
+			"cost": _tf("bp_next_cost", [EconomyConfig.get_islander_name(nx_isl)]),
 			"cost_state": "locked"
 		})
 	list.append({
 		"type": "bday_next",
 		"key": nx_isl,
-		"title": "★下一位: " + EconomyConfig.get_islander_name(nx_isl),
-		"sub": _bday_date_text(int(nx.get("month", 1)), int(nx.get("day", 1))) + " (" + str(int(nx.get("days", 0))) + "天后)",
-		"cost": "最爱: " + String(EconomyConfig.BIRTHDAY_FAVOURITES.get(nx_isl, {}).get("name", "")),
+		"title": _tf("bp_next_title", [EconomyConfig.get_islander_name(nx_isl)]),
+		"sub": _tf("bp_next_sub", [_bday_date_text(int(nx.get("month", 1)), int(nx.get("day", 1))), int(nx.get("days", 0))]),
+		"cost": _tf("bp_fav_cost", [_n(String(EconomyConfig.BIRTHDAY_FAVOURITES.get(nx_isl, {}).get("name", "")))]),
 		"cost_state": "normal"
 	})
 	list.append({
 		"type": "bday_back",
 		"key": "bday_back",
-		"title": "★岛民生日会",
-		"sub": "庆生" + str(int(bd["parties"])) + "次·全家福" + str(int(bd["medals"])),
-		"cost": "返回开拓列表",
+		"title": _t("cd_bd_card_title"),
+		"sub": _tf("bp_back_sub", [int(bd["parties"]), int(bd["medals"])]),
+		"cost": _t("cd_back_list"),
+		"cost_state": "normal"
+	})
+	return list
+
+## CI-16: the Food Critics' Week panel (single row, full-size readable cards): judge / entry / best score + medal / back
+func _get_food_week_cards() -> Array[Dictionary]:
+	var list: Array[Dictionary] = []
+	var fw := GameManager.get_food_week_status_summary()
+	var judge := EconomyConfig.get_islander_name(String(fw["judge"]))
+	list.append({
+		"type": "fw_judge",
+		"key": String(fw["judge"]),
+		"title": _tf("fw_judge_title", [judge]),
+		"sub": _tf("fw_judge_sub", [EconomyConfig.get_food_taste_name(String(fw["taste"])), GameManager.get_friendship_level(String(fw["judge"]))]),
+		"cost": _tf("fw_judge_cost", [int(fw["days_left"])]),
+		"cost_state": "normal"
+	})
+	var nxt := String(fw["next_dish"])
+	if int(fw["entries_left"]) <= 0:
+		list.append({"type": "fw_entry", "key": "", "title": _t("fw_entry_full"), "sub": _tf("fw_entry_full_sub", [EconomyConfig.FOOD_WEEK_ENTRIES]), "cost": _t("fw_entry_next_week"), "cost_state": "unlocked"})
+	elif nxt == "":
+		list.append({"type": "fw_entry", "key": "", "title": _t("fw_entry_title"), "sub": _t("fw_entry_none"), "cost": _t("fw_entry_none_cost"), "cost_state": "locked"})
+	else:
+		var match_mark := _t("fw_entry_match") if EconomyConfig.get_food_dish_taste(nxt) == String(fw["taste"]) else ""
+		list.append({
+			"type": "fw_entry",
+			"key": nxt,
+			"title": _t("fw_entry_title"),
+			"sub": EconomyConfig.get_item_display_name(nxt) + match_mark,
+			"cost": _tf("fw_entry_cost", [int(fw["next_score"]), int(fw["entries_left"])]),
+			"cost_state": "affordable"
+		})
+	var tier := int(fw["tier"])
+	list.append({
+		"type": "fw_score",
+		"key": str(tier),
+		"title": _tf("fw_score_title", [int(fw["best"])]) if int(fw["entries"]) > 0 else _t("fw_score_none"),
+		"sub": _tf("fw_score_medal", [EconomyConfig.get_food_medal_name(tier)]) if tier > 0 else _t("fw_score_no_medal"),
+		"cost": _tf("fw_score_cost", [int(EconomyConfig.FOOD_WEEK_MEDALS["bronze"]["min"]), int(EconomyConfig.FOOD_WEEK_MEDALS["silver"]["min"]), int(EconomyConfig.FOOD_WEEK_MEDALS["gold"]["min"])]),
+		"cost_state": "unlocked" if tier > 0 else "normal"
+	})
+	list.append({
+		"type": "fw_back",
+		"key": "fw_back",
+		"title": _t("cd_fw_title"),
+		"sub": _tf("fw_back_sub", [int(fw["total"]), int(fw["medals"])]),
+		"cost": _t("cd_back_staff"),
+		"cost_state": "normal"
+	})
+	return list
+
+## CI-16: the Friendship Bonds panel: one card per islander (level, points to the next level, its share of the price bonus) + back
+func _get_friendship_cards() -> Array[Dictionary]:
+	var list: Array[Dictionary] = []
+	for isl in EconomyConfig.WISH_ISLANDERS:
+		var lv := GameManager.get_friendship_level(isl)
+		var nx := EconomyConfig.get_friend_next_points(lv)
+		list.append({
+			"type": "fr_islander",
+			"key": isl,
+			"title": _tf("fr_isl_title", [EconomyConfig.get_islander_name(isl), lv]),
+			"sub": _tf("fr_isl_sub", [GameManager.get_friendship_points(isl), nx]) if nx > 0 else _t("fr_isl_max"),
+			"cost": _tf("fr_isl_cost", [_pct1(EconomyConfig.FRIEND_PRICE_PER_LEVEL * float(lv))]),
+			"cost_state": "unlocked" if lv >= EconomyConfig.FRIEND_MAX_LEVEL else ("affordable" if lv > 0 else "normal")
+		})
+	list.append({
+		"type": "fr_back",
+		"key": "fr_back",
+		"title": _t("cd_fr_title"),
+		"sub": _tf("fr_back_sub", [GameManager.get_friendship_total_levels()]),
+		"cost": _t("cd_back_staff"),
 		"cost_state": "normal"
 	})
 	return list
@@ -2423,9 +2642,9 @@ func _get_wish_board_cards() -> Array[Dictionary]:
 	list.append({
 		"type": "wish_back",
 		"key": "wish_back",
-		"title": "★心愿告示板",
-		"sub": "已圆梦" + str(int(wb_sm["fulfilled"])) + "张·勋" + str(int(wb_sm["medals"])),
-		"cost": "返回开拓列表",
+		"title": _t("cd_wb_title"),
+		"sub": _tf("wb_back_sub", [int(wb_sm["fulfilled"]), int(wb_sm["medals"])]),
+		"cost": _t("cd_back_list"),
 		"cost_state": "normal"
 	})
 	return list
@@ -2446,119 +2665,119 @@ func _activate_card(idx: int) -> void:
 		GameManager.unlock_island(int(k))
 	elif t == "career":
 		offline_banner_timer = 4.5
-		offline_banner_text = "★岛屿生涯荣誉: 已达成 " + str(GameManager.get_unlocked_achievement_count()) + "/" + str(EconomyConfig.ACHIEVEMENTS.size()) + " 项成就 · " + GameManager.get_career_summary_text()
+		offline_banner_text = _tf("bn_career", [GameManager.get_unlocked_achievement_count(), EconomyConfig.ACHIEVEMENTS.size(), GameManager.get_career_summary_text()])
 	elif t == "codex":
 		var codex_pct := GameManager.get_unlocked_codex_count() * 10
 		offline_banner_timer = 4.0
-		offline_banner_text = "★山海图鉴总加成: 全岛商品售价永久 +" + str(codex_pct) + "% (每解锁1种农作物或工坊美食 +10%)"
+		offline_banner_text = _tf("bn_codex", [codex_pct])
 	elif t == "landscape":
 		if not GameManager.unlock_landscape(k):
 			var req_cost := int(EconomyConfig.ISLAND_LANDSCAPES.get(k, {}).get("cost_amber", 3))
 			offline_banner_timer = 3.5
-			offline_banner_text = "晨露琥珀不足 (需 " + str(req_cost) + " 琥珀)，请完成飞艇皇家订单获取!"
+			offline_banner_text = _tf("bn_amber_short", [req_cost])
 	elif t == "airship_order":
 		if GameManager.airship_docked:
 			var f_res := GameManager.fulfill_airship_bulk_order_from_stock()
 			if not bool(f_res.get("completed", false)):
 				var asum := GameManager.get_airship_order_progress_summary()
 				offline_banner_timer = 4.2
-				offline_banner_text = "★远洋飞艇装船 +" + str(int(f_res.get("loaded", 0))) + "件 · 当前进度: " + String(asum["brief"]) + " (满额领琥珀&稀有图鉴券!)"
+				offline_banner_text = _tf("bn_air_load", [int(f_res.get("loaded", 0)), String(asum["brief"])])
 		else:
 			offline_banner_timer = 3.5
-			offline_banner_text = "★浮空飞艇远洋商队正在返航途中，预计 " + str(int(ceili(GameManager.airship_timer))) + "s 后停靠东港码头!"
+			offline_banner_text = _tf("bn_air_away", [int(ceili(GameManager.airship_timer))])
 	elif t == "solar_codex":
 		if GameManager.get_rare_vouchers() > 0:
 			var r_res := GameManager.redeem_rare_voucher_for_codex()
 			if bool(r_res.get("redeemed", false)):
 				var u_dish := EconomyConfig.get_item_display_name(String(r_res.get("unlocked_dish", "")))
 				offline_banner_timer = 4.5
-				offline_banner_text = "★使用1张稀有图鉴券点亮节气限定美食【" + u_dish + "】！全岛图鉴售价永久提升!"
+				offline_banner_text = _tf("bn_voucher_redeem", [u_dish])
 		else:
 			var s_term := GameManager.advance_solar_term()
 			offline_banner_timer = 4.0
-			offline_banner_text = "★二十四节气流转至【" + String(s_term.get("name", "春分")) + "】· 当季限定【" + EconomyConfig.get_item_display_name(String(s_term.get("dish_id", ""))) + "】售价1.45x!"
+			offline_banner_text = _tf("bn_solar_advance", [_n(String(s_term.get("name", "春分"))), EconomyConfig.get_item_display_name(String(s_term.get("dish_id", "")))])
 	elif t == "greenhouse_building":
 		if not bool(GameManager.unlocked_islands.get(2, false)):
 			offline_banner_timer = 3.5
-			offline_banner_text = "请先在【开拓造景】修复木桥1解锁 2 号岛【魔法密林】，即可建造云端温室!"
+			offline_banner_text = _t("bn_gh_need_isle")
 		elif not GameManager.greenhouse_unlocked:
 			if not GameManager.unlock_greenhouse(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "建造【云端温室培育房】需要 " + str(EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_gh_cost", [EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD])
 		else:
 			GameManager.upgrade_building("greenhouse")
 	elif t == "souvenir_workshop":
 		if not GameManager.greenhouse_unlocked:
 			if not GameManager.unlock_greenhouse(false):
 				offline_banner_timer = 3.8
-				offline_banner_text = "请先解锁2号岛并花费 " + str(EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD) + "G 建造【云端温室培育房】培育奇花异草!"
+				offline_banner_text = _tf("bn_sv_need", [EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD])
 		else:
 			var b_res := GameManager.bundle_souvenir_gift_box("", true)
 			if bool(b_res.get("bundled", false)):
 				var b_nm := EconomyConfig.get_item_display_name(String(b_res.get("box_id", "")))
 				offline_banner_timer = 4.5
-				offline_banner_text = "★打包成功！制成【" + b_nm + "】x1 (库存" + str(int(b_res.get("stock", 1))) + ") · 收藏家旅客正慕名登岛选购!"
+				offline_banner_text = _tf("bn_sv_packed", [b_nm, int(b_res.get("stock", 1))])
 			else:
 				offline_banner_timer = 4.2
-				offline_banner_text = "★伴手礼打包需: 1株温室奇花 + 1份工坊/节气美食 (当前奇花x" + str(GameManager.get_total_flora_count()) + " · 礼盒库存x" + str(GameManager.get_total_souvenir_box_count()) + ")!"
+				offline_banner_text = _tf("bn_sv_need_items", [GameManager.get_total_flora_count(), GameManager.get_total_souvenir_box_count()])
 	elif t == "ci5_codex":
 		if GameManager.greenhouse_unlocked:
 			var nf := GameManager.cycle_greenhouse_flora()
 			var fcfg: Dictionary = EconomyConfig.HYBRID_FLORA.get(nf, {})
 			offline_banner_timer = 4.5
-			offline_banner_text = "★云端温室切换培育【" + EconomyConfig.get_item_display_name(nf) + "】(" + String(fcfg.get("aura_tag", "")) + ") · 累计售出礼盒 " + str(GameManager.souvenirs_sold_count) + " 份!"
+			offline_banner_text = _tf("bn_gh_cycle", [EconomyConfig.get_item_display_name(nf), _n(String(fcfg.get("aura_tag", ""))), GameManager.souvenirs_sold_count])
 		else:
 			offline_banner_timer = 4.0
-			offline_banner_text = "★云端温室奇花与名物伴手礼图鉴: 解锁2号岛建造温室可杂交培育奇花异草，打包名物礼盒吸引收藏家旅客!"
+			offline_banner_text = _t("bn_cx5_locked")
 	elif t == "hotspring_building":
 		if not bool(GameManager.unlocked_islands.get(3, false)):
 			offline_banner_timer = 3.5
-			offline_banner_text = "请先在【开拓造景】修复木桥2解锁 3 号岛【天空海岸】，即可建造云海温泉汤屋!"
+			offline_banner_text = _t("bn_hs_need_isle")
 		elif not GameManager.hotspring_unlocked:
 			if not GameManager.unlock_hotspring_inn(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "建造【云海温泉汤屋】需要 " + str(EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_hs_cost", [EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD])
 		else:
 			GameManager.upgrade_building("hotspring")
 	elif t == "hotspring_brew":
 		if not GameManager.hotspring_unlocked:
 			if not GameManager.unlock_hotspring_inn(false):
 				offline_banner_timer = 3.8
-				offline_banner_text = "请先解锁3号岛并花费 " + str(EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD) + "G 建造【云海温泉汤屋】熬制疗愈浴汤!"
+				offline_banner_text = _tf("bn_hb_need", [EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD])
 		else:
 			var brew_res := GameManager.brew_hotspring_bath("", false)
 			if bool(brew_res.get("brewed", false)):
 				var b_nm := EconomyConfig.get_item_display_name(String(brew_res.get("bath_id", "")))
 				offline_banner_timer = 4.5
-				offline_banner_text = "★浴汤熬制成功！调成【" + b_nm + "】x1 (库存" + str(int(brew_res.get("stock", 1))) + ") · 全员精力恢复且贵宾汤客正慕名登岛!"
+				offline_banner_text = _tf("bn_hb_brewed", [b_nm, int(brew_res.get("stock", 1))])
 			else:
 				var nb := GameManager.cycle_hotspring_bath()
 				offline_banner_timer = 4.2
-				offline_banner_text = "★汤屋切换慢熬【" + EconomyConfig.get_item_display_name(nb) + "】· 投入岛屿鲜草与温室奇花可即时加快调制!"
+				offline_banner_text = _tf("bn_hb_cycle", [EconomyConfig.get_item_display_name(nb)])
 	elif t == "ci6_codex":
 		if GameManager.hotspring_unlocked:
 			var nb3 := GameManager.cycle_hotspring_bath()
 			var bcfg3: Dictionary = EconomyConfig.HOTSPRING_BATH_BLENDS.get(nb3, {})
 			offline_banner_timer = 4.5
-			offline_banner_text = "★云海温泉汤屋切换浴汤【" + EconomyConfig.get_item_display_name(nb3) + "】(" + String(bcfg3.get("aura_tag", "")) + ") · 已接待贵宾汤客 " + str(GameManager.hotspring_guests_served) + " 位!"
+			offline_banner_text = _tf("bn_cx6_cycle", [EconomyConfig.get_item_display_name(nb3), _n(String(bcfg3.get("aura_tag", ""))), GameManager.hotspring_guests_served])
 		else:
 			offline_banner_timer = 4.0
-			offline_banner_text = "★云海温泉汤屋与灵泉汤鉴: 解锁3号岛建造温泉汤屋，调制草本/花瓣浴汤恢复员工精力并接待贵宾萌宠汤客!"
+			offline_banner_text = _t("bn_cx6_locked")
 	elif t == "windmill_building":
 		if not bool(GameManager.unlocked_islands.get(2, false)):
 			offline_banner_timer = 3.5
-			offline_banner_text = "请先在【开拓造景】修复木桥1解锁 2 号岛【魔法密林】，即可建造云端风车烘焙面坊!"
+			offline_banner_text = _t("bn_wm_need_isle")
 		elif not GameManager.windmill_unlocked:
 			if not GameManager.unlock_windmill_bakery(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "建造【云端风车烘焙面坊】需要 " + str(EconomyConfig.WINDMILL_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_wm_cost", [EconomyConfig.WINDMILL_UNLOCK_COST_GOLD])
 		else:
 			GameManager.upgrade_building("windmill")
 	elif t == "windmill_parade":
 		if not GameManager.windmill_unlocked:
 			if not GameManager.unlock_windmill_bakery(false):
 				offline_banner_timer = 3.8
-				offline_banner_text = "请先解锁2号岛并花费 " + str(EconomyConfig.WINDMILL_UNLOCK_COST_GOLD) + "G 建造【云端风车烘焙面坊】!"
+				offline_banner_text = _tf("bn_wp_need", [EconomyConfig.WINDMILL_UNLOCK_COST_GOLD])
 		else:
 			var bake_res := GameManager.bake_windmill_bread("", true)
 			if not GameManager.is_gourmet_parade_active():
@@ -2566,28 +2785,28 @@ func _activate_card(idx: int) -> void:
 			elif bool(bake_res.get("baked", false)):
 				var b_nm := EconomyConfig.get_item_display_name(String(bake_res.get("bread_id", "")))
 				offline_banner_timer = 4.5
-				offline_banner_text = "★鲜烤出炉【" + b_nm + "】x1 (包存" + str(int(bake_res.get("stock", 1))) + ") · 美食花车巡游节热卖中!"
+				offline_banner_text = _tf("bn_wp_baked", [b_nm, int(bake_res.get("stock", 1))])
 	elif t == "ci7_codex":
 		if GameManager.windmill_unlocked:
 			var nb7 := GameManager.cycle_windmill_bread()
 			var bcfg7: Dictionary = EconomyConfig.BAKERY_ITEMS.get(nb7, {})
 			offline_banner_timer = 4.5
-			offline_banner_text = "★风车烘焙面坊切换烤制【" + EconomyConfig.get_item_display_name(nb7) + "】(" + String(bcfg7.get("aura_tag", "")) + ") · 已招待巡游食客 " + str(GameManager.parade_tourists_served) + " 位!"
+			offline_banner_text = _tf("bn_cx7_cycle", [EconomyConfig.get_item_display_name(nb7), _n(String(bcfg7.get("aura_tag", ""))), GameManager.parade_tourists_served])
 		else:
 			offline_banner_timer = 4.0
-			offline_banner_text = "★云端烘焙鉴: 解锁2号岛建造风车烘焙面坊，磨金麦粉烤舒芙蕾欧包与琥珀可颂，开启美食花车巡游节!"
+			offline_banner_text = _t("bn_cx7_locked")
 	elif t == "tea_pavilion_building":
 		if not GameManager.tea_pavilion_unlocked:
 			if not GameManager.unlock_tea_pavilion(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "建造【云端茗香制茶坊】需要 " + str(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_tp_cost", [EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD])
 		else:
 			GameManager.upgrade_building("tea_pavilion")
 	elif t == "tea_moon_gathering":
 		if not GameManager.tea_pavilion_unlocked:
 			if not GameManager.unlock_tea_pavilion(false):
 				offline_banner_timer = 3.8
-				offline_banner_text = "请先花费 " + str(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD) + "G 在1号岛建造【云端茗香制茶坊】!"
+				offline_banner_text = _tf("bn_tm_need", [EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD])
 		else:
 			var brew_res := GameManager.brew_artisan_tea("", true)
 			if not GameManager.is_moon_tea_gathering_active():
@@ -2595,15 +2814,15 @@ func _activate_card(idx: int) -> void:
 			elif bool(brew_res.get("brewed", false)):
 				var t_nm := EconomyConfig.get_item_display_name(String(brew_res.get("tea_id", "")))
 				offline_banner_timer = 4.5
-				offline_banner_text = "★新茶出汤【" + t_nm + "】x1 (茗存" + str(int(brew_res.get("stock", 1))) + ") · 荷塘月色画舫茶会 1.38x 热卖中!"
+				offline_banner_text = _tf("bn_tm_brewed", [t_nm, int(brew_res.get("stock", 1))])
 	elif t == "chef_pavilion_building":
 		if not bool(GameManager.unlocked_islands.get(2, false)):
 			offline_banner_timer = 3.5
-			offline_banner_text = "请先开拓木桥1解锁2号岛，再建造【山海食神品鉴席】!"
+			offline_banner_text = _t("bn_cp_need_isle")
 		elif not GameManager.chef_pavilion_unlocked:
 			if not GameManager.unlock_chef_pavilion(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "建造【山海食神品鉴席】需要 " + str(EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_cp_cost", [EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD])
 		else:
 			GameManager.upgrade_building("chef_pavilion")
 	elif t == "wish_lantern_festival":
@@ -2611,30 +2830,30 @@ func _activate_card(idx: int) -> void:
 			GameManager.start_wish_lantern_festival()
 		else:
 			offline_banner_timer = 4.2
-			offline_banner_text = "★星灯水灯节进行中 (" + str(int(ceili(GameManager.wish_lantern_festival_timer))) + "s) · 点击荷塘与海岸漂流的祈愿水灯拾灯许愿!"
+			offline_banner_text = _tf("bn_wl_on", [int(ceili(GameManager.wish_lantern_festival_timer))])
 	elif t == "ci9_codex":
 		if GameManager.chef_pavilion_unlocked:
 			var nd9 := GameManager.cycle_tasting_dish()
 			var dcfg9: Dictionary = EconomyConfig.TASTING_DISHES.get(nd9, {})
 			offline_banner_timer = 4.5
-			offline_banner_text = "★山海食神品鉴席主推【" + EconomyConfig.get_item_display_name(nd9) + "】(" + String(dcfg9.get("recipe_desc", "")) + ") · 品鉴 " + str(GameManager.tastings_held) + " 场!"
+			offline_banner_text = _tf("bn_cx9_cycle", [EconomyConfig.get_item_display_name(nd9), _n(String(dcfg9.get("recipe_desc", ""))), GameManager.tastings_held])
 		else:
 			offline_banner_timer = 4.0
-			offline_banner_text = "★山海食神鉴: 在2号岛建造山海食神品鉴席，组合三岛食材烹制灌汤小笼/星光锦鲤/山海火锅，三道品鉴全过赢食神勋章!"
+			offline_banner_text = _t("bn_cx9_locked")
 	elif t == "lighthouse_harbor_building":
 		if not bool(GameManager.unlocked_islands.get(3, false)):
 			offline_banner_timer = 3.5
-			offline_banner_text = "请先开拓木桥2解锁3号岛，再建造【云海灯塔渔港】!"
+			offline_banner_text = _t("bn_lh_need_isle")
 		elif not GameManager.lighthouse_harbor_unlocked:
 			if not GameManager.unlock_lighthouse_harbor(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "建造【云海灯塔渔港】需要 " + str(EconomyConfig.LIGHTHOUSE_HARBOR_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_lh_cost", [EconomyConfig.LIGHTHOUSE_HARBOR_UNLOCK_COST_GOLD])
 		else:
 			GameManager.upgrade_building("lighthouse_harbor")
 	elif t == "specialty_auction":
 		if not GameManager.lighthouse_harbor_unlocked:
 			offline_banner_timer = 3.8
-			offline_banner_text = "★岛民名物集市拍卖会在3号岛【云海灯塔渔港】开槌，请先建造灯塔渔港!"
+			offline_banner_text = _t("bn_au_need_harbor")
 		elif not GameManager.island_auction_active:
 			GameManager.start_island_auction()
 		else:
@@ -2642,79 +2861,80 @@ func _activate_card(idx: int) -> void:
 			if not bool(bid_res.get("ok", false)):
 				offline_banner_timer = 3.5
 				if String(bid_res.get("reason", "")) == "leading":
-					offline_banner_text = "★你正以 " + str(int(bid_res.get("amount", 0))) + GameManager.get_auction_currency_tag() + " 领先，静候落槌!"
+					offline_banner_text = _tf("bn_au_leading", [int(bid_res.get("amount", 0)), GameManager.get_auction_currency_tag()])
 				else:
-					offline_banner_text = "★出价需 " + str(int(bid_res.get("amount", 0))) + GameManager.get_auction_currency_tag() + "，当前余额不足!"
+					offline_banner_text = _tf("bn_au_poor", [int(bid_res.get("amount", 0)), GameManager.get_auction_currency_tag()])
 	elif t == "dairy_workshop_building":
 		if not GameManager.dairy_workshop_unlocked:
 			if not GameManager.unlock_dairy_workshop(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "建造【云端牧场乳品工坊】需要 " + str(EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_dw_cost", [EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD])
 		else:
 			GameManager.upgrade_building("dairy_workshop")
 	elif t == "open_air_cinema":
 		if not GameManager.open_air_cinema_unlocked:
 			if not GameManager.unlock_open_air_cinema(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "搭建【星空夜市露天电影院】需要 " + str(EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_cin_cost", [EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD])
 		elif GameManager.is_cinema_open():
 			var sn := GameManager.sell_cinema_snacks(1)
 			offline_banner_timer = 4.0
 			if int(sn.get("sold", 0)) > 0:
-				offline_banner_text = "★影院零食热卖 +" + str(int(sn.get("gold", 0))) + "G (" + EconomyConfig.get_item_display_name(String((sn.get("items", []) as Array)[0])) + ")"
+				offline_banner_text = _tf("bn_cin_snack", [int(sn.get("gold", 0)), EconomyConfig.get_item_display_name(String((sn.get("items", []) as Array)[0]))])
 			else:
-				offline_banner_text = "★影院零食售罄 · 乳品工坊的云朵布丁/云朵鲜奶可供夜场零食!"
+				offline_banner_text = _t("bn_cin_soldout")
 		else:
 			offline_banner_timer = 4.0
-			offline_banner_text = "★露天影院只在夜市开映 · " + str(int(ceili(GameManager.get_seconds_until_night()))) + "s 后入夜连映 3 部电影!"
+			offline_banner_text = _tf("bn_cin_night_only", [int(ceili(GameManager.get_seconds_until_night()))])
 	elif t == "pottery_kiln_building":
 		if not GameManager.pottery_kiln_unlocked:
 			if not bool(GameManager.unlocked_islands.get(3, false)):
 				offline_banner_timer = 3.5
-				offline_banner_text = "【云端陶艺窑坊】建在 3 号岛木桥登岸处，请先开拓岛3!"
+				offline_banner_text = _t("bn_pk_need_isle")
 			elif not GameManager.unlock_pottery_kiln(false):
 				offline_banner_timer = 3.5
-				offline_banner_text = "建造【云端陶艺窑坊】需要 " + str(EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD) + "G 金币!"
+				offline_banner_text = _tf("bn_pk_cost", [EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD])
 		else:
 			GameManager.upgrade_building("pottery_kiln")
 	elif t == "sports_day":
 		offline_banner_timer = 4.0
 		if GameManager.is_sports_day_active():
 			var sp_cur := GameManager.get_sports_status_summary()
-			offline_banner_text = "★秋季运动会进行中 · " + String(sp_cur["event_short"]) + " · 观赛人潮售价 " + str(EconomyConfig.SPORTS_SPECTATOR_SALE_MULT) + "x · 余 " + str(maxi(1, int(ceili(float(sp_cur["seconds_left"]))))) + "s"
+			offline_banner_text = _tf("bn_sp_on", [String(sp_cur["event_short"]), str(EconomyConfig.SPORTS_SPECTATOR_SALE_MULT), maxi(1, int(ceili(float(sp_cur["seconds_left"]))))])
 		elif not GameManager.start_sports_day():
-			offline_banner_text = "★秋季运动会需要 1 号岛至少 2 种员工组队 (月兔/水獭/狐狸/柴犬)!"
+			offline_banner_text = _t("bn_sp_need")
 	elif t == "kite_festival":
 		offline_banner_timer = 4.0
 		if GameManager.is_kite_festival_active():
 			var kt_cur := GameManager.get_kite_status_summary()
-			offline_banner_text = "★云海风筝节进行中 · " + String(kt_cur["wind_name"]) + " 产销 x%.2f/x%.2f · 还有 %d 只风筝在西岛/东岛上空 · 余 %ds" % [float(kt_cur["prod_mult"]), float(kt_cur["sale_mult"]), int(kt_cur["remaining"]), maxi(1, int(ceili(float(kt_cur["seconds_left"]))))]
+			offline_banner_text = _tf("bn_kt_on", [String(kt_cur["wind_name"]), float(kt_cur["prod_mult"]), float(kt_cur["sale_mult"]), int(kt_cur["remaining"]), maxi(1, int(ceili(float(kt_cur["seconds_left"]))))])
 		else:
 			GameManager.start_kite_festival()
 	elif t == "season_dress":
 		var sd_info := GameManager.get_current_season_info()
 		var sd_dt := GameManager.get_local_datetime()
 		offline_banner_timer = 4.5
-		offline_banner_text = "★岛屿四季装扮: 本地 " + str(int(sd_dt.get("month", 1))) + " 月 = " + String(sd_info.get("full_name", "")) + " (北半球月份) · " + str(GameManager.get_active_season_deco_count()) + " 处【" + String(sd_info.get("deco_name", "")) + "】· " + String(sd_info.get("bonus_desc", "")) + " +" + str(int(round(EconomyConfig.SEASON_DECO_BONUS_PER_PROP * 100.0 * float(GameManager.get_active_season_deco_count())))) + "%"
+		offline_banner_text = _tf("bn_season_info", [int(sd_dt.get("month", 1)), _n(String(sd_info.get("full_name", ""))), GameManager.get_active_season_deco_count(), _n(String(sd_info.get("deco_name", ""))), _n(String(sd_info.get("bonus_desc", ""))), int(round(EconomyConfig.SEASON_DECO_BONUS_PER_PROP * 100.0 * float(GameManager.get_active_season_deco_count())))])
 	elif t == "photo_tour":
 		offline_banner_timer = 4.0
 		if GameManager.is_photo_tour_active():
 			var pt_cur := GameManager.get_photo_tour_status_summary()
-			offline_banner_text = "★观光摄影团进行中 · 第 " + str(mini(int(pt_cur["stop"]) + 1, int(pt_cur["stops"]))) + "/" + str(int(pt_cur["stops"])) + " 站 · 已拍 " + str(int(pt_cur["photos"])) + " 张 · " + _photo_route_text(GameManager.photo_tour_route)
+			offline_banner_text = _tf("bn_pt_on", [mini(int(pt_cur["stop"]) + 1, int(pt_cur["stops"])), int(pt_cur["stops"]), int(pt_cur["photos"]), _photo_route_text(GameManager.photo_tour_route)])
 		elif not GameManager.start_photo_tour():
-			offline_banner_text = "★观光摄影团暂无可打卡的景点!"
+			offline_banner_text = _t("bn_pt_none")
 	elif t == "sky_weather":
 		var sw_c := GameManager.get_sky_weather_status_summary()
 		var fc := GameManager.get_sky_weather_forecast(3)
 		var fc_names: Array[String] = []
 		for f_id in fc:
-			fc_names.append(String(EconomyConfig.get_sky_weather_info(String(f_id))["name"]))
+			fc_names.append(_n(String(EconomyConfig.get_sky_weather_info(String(f_id))["name"])))
 		offline_banner_timer = 5.0
-		offline_banner_text = "★云海天气【" + String(sw_c["full_name"]) + "】" + _weather_mult_text(sw_c) + " · " + str(int(sw_c["minutes_left"])) + "分后换天 · 预报 " + "→".join(fc_names)
+		offline_banner_text = _tf("bn_sw_info", [String(sw_c["full_name"]), _weather_mult_text(sw_c), int(sw_c["minutes_left"]), "→".join(fc_names)])
 	elif t == "birthday":
 		birthday_view = true
 		offline_banner_timer = 3.5
-		offline_banner_text = "★岛民生日会: 岛历每月 3/8/13/18/23/28 日 · 备礼得声望与图鉴券 · 6 位都庆生一轮得生日全家福"
+		# the dates stay in the panel headline; the banner only adds the rewards
+		offline_banner_text = _tf("bn_bd_info", [EconomyConfig.WISH_ISLANDERS.size()])
 	elif t == "bday_back":
 		birthday_view = false
 	elif t == "bday_gift":
@@ -2723,60 +2943,93 @@ func _activate_card(idx: int) -> void:
 			offline_banner_timer = 3.5
 			match String(g_res.get("reason", "")):
 				"gold":
-					offline_banner_text = "★备礼需要 " + str(int(g_res.get("cost", 0))) + "G，金币不足!"
+					offline_banner_text = _tf("bn_bd_gold", [int(g_res.get("cost", 0))])
 				"already":
-					offline_banner_text = "★今天的生日礼物已经送达啦!"
+					offline_banner_text = _t("bn_bd_already")
 				_:
 					var nx_g: Dictionary = GameManager.get_next_birthday_info()
-					offline_banner_text = "★生日当天才能备礼 · 下一位: " + EconomyConfig.get_islander_name(String(nx_g.get("islander", ""))) + " (" + str(int(nx_g.get("days", 0))) + " 天后)"
+					offline_banner_text = _tf("bn_bd_not_today", [EconomyConfig.get_islander_name(String(nx_g.get("islander", ""))), int(nx_g.get("days", 0))])
 	elif t == "bday_today" or t == "bday_next":
 		var bk_isl := k
 		offline_banner_timer = 4.5
 		if bk_isl == "":
-			offline_banner_text = "★岛历: 现实 1 个月 = 云岛 1 年 · 月兔3日 水獭8日 小狐狸13日 柴犬18日 企鹅23日 巨嘴鸟28日"
+			offline_banner_text = _t("bn_bd_calendar")
 		else:
-			offline_banner_text = "★" + EconomyConfig.get_islander_name(bk_isl) + "的生日在每月 " + str(EconomyConfig.get_islander_birthday_day(bk_isl)) + " 日 · 最爱" + String(EconomyConfig.BIRTHDAY_FAVOURITES[bk_isl]["name"]) + " (摊位有货时包进礼盒 = 称心礼物 声望+" + str(EconomyConfig.BIRTHDAY_FAV_REP) + " 券+" + str(EconomyConfig.BIRTHDAY_FAV_VOUCHERS) + ")"
+			offline_banner_text = _tf("bn_bd_islander", [EconomyConfig.get_islander_name(bk_isl), EconomyConfig.get_islander_birthday_day(bk_isl), _n(String(EconomyConfig.BIRTHDAY_FAVOURITES[bk_isl]["name"])), EconomyConfig.BIRTHDAY_FAV_REP, EconomyConfig.BIRTHDAY_FAV_VOUCHERS])
 	elif t == "ci15_codex":
 		offline_banner_timer = 4.5
-		offline_banner_text = "★云海天气鉴: 天气 " + str(GameManager.get_seen_sky_weather_count()) + "/" + str(EconomyConfig.SKY_WEATHER_ORDER.size()) + " · 已庆生岛民 " + str(GameManager.get_celebrated_islander_count()) + "/" + str(EconomyConfig.WISH_ISLANDERS.size()) + " · 生日会 " + str(GameManager.birthday_parties_total) + " 场 · 生日全家福 " + str(GameManager.birthday_medals) + " 枚"
+		offline_banner_text = _tf("bn_cx15", [GameManager.get_seen_sky_weather_count(), EconomyConfig.SKY_WEATHER_ORDER.size(), GameManager.get_celebrated_islander_count(), EconomyConfig.WISH_ISLANDERS.size(), GameManager.birthday_parties_total, GameManager.birthday_medals])
+	elif t == "food_week":
+		food_week_view = true
+		friendship_view = false
+	elif t == "friendship":
+		friendship_view = true
+		food_week_view = false
+	elif t == "fw_back":
+		food_week_view = false
+	elif t == "fr_back":
+		friendship_view = false
+	elif t == "fw_entry":
+		var fw_res := GameManager.enter_food_week_dish()
+		if not bool(fw_res.get("entered", false)):
+			offline_banner_timer = 4.5
+			if String(fw_res.get("reason", "")) == "full":
+				offline_banner_text = _tf("bn_fw_full", [EconomyConfig.FOOD_WEEK_ENTRIES, GameManager.get_food_week_days_left()])
+			else:
+				offline_banner_text = _t("bn_fw_no_dish")
+	elif t == "fw_judge":
+		var fj := GameManager.food_week_judge
+		offline_banner_timer = 5.0
+		offline_banner_text = _tf("bn_fw_judge", [EconomyConfig.get_islander_name(fj), EconomyConfig.get_food_taste_name(EconomyConfig.get_food_judge_taste(fj)), EconomyConfig.FOOD_WEEK_TASTE_BONUS, EconomyConfig.FOOD_WEEK_FRIEND_BONUS_PER_LEVEL])
+	elif t == "fw_score":
+		offline_banner_timer = 5.0
+		offline_banner_text = _tf("bn_fw_rules", [EconomyConfig.FOOD_WEEK_ENTRIES, int(EconomyConfig.FOOD_WEEK_MEDALS["silver"]["vouchers"]), int(EconomyConfig.FOOD_WEEK_MEDALS["gold"]["vouchers"])])
+	elif t == "fr_islander":
+		var fr_lv := GameManager.get_friendship_level(k)
+		offline_banner_timer = 5.0
+		offline_banner_text = _tf("bn_fr_islander", [EconomyConfig.get_islander_name(k), fr_lv, EconomyConfig.FRIEND_WISH_POINTS, EconomyConfig.FRIEND_BIRTHDAY_POINTS, EconomyConfig.FRIEND_FOOD_POINTS, _pct1(EconomyConfig.FRIEND_PRICE_PER_LEVEL)])
+	elif t == "ci16_codex":
+		offline_banner_timer = 5.0
+		offline_banner_text = _tf("bn_cx16", [GameManager.get_food_week_dishes_judged(), EconomyConfig.FOOD_WEEK_DISHES.size(), int(GameManager.food_week_medals.get("gold", 0)), GameManager.get_food_week_medal_total(), GameManager.get_friendship_total_levels(), _pct1(GameManager.get_friendship_price_bonus())])
 	elif t == "wish_board":
 		wish_board_view = true
 		offline_banner_timer = 3.5
-		offline_banner_text = "★岛民心愿委托告示板: 交付/经营目标委托 · 完成得声望与图鉴券 · 每圆梦 " + str(EconomyConfig.WISH_MEDAL_EVERY) + " 张得心愿勋章"
+		# the medal rule stays in the panel headline; each note shows its own reward
+		offline_banner_text = _t("bn_wb_info")
 	elif t == "wish_back":
 		wish_board_view = false
 	elif t == "wish_note":
 		var wn := GameManager.get_wish_display(int(k))
 		if not wn.is_empty():
 			offline_banner_timer = 4.5
-			offline_banner_text = String(wn["who"]) + "的" + String(wn["name"]) + "(" + String(wn["kind"]) + "): " + String(wn["sub"]) + " · " + String(wn["cost"])
+			offline_banner_text = _tf("bn_wish_note", [String(wn["who"]), String(wn["name"]), String(wn["kind"]), String(wn["sub"]), String(wn["cost"])])
 	elif t == "ci14_codex":
 		offline_banner_timer = 4.5
-		offline_banner_text = "★观光摄影鉴: 照片 " + str(GameManager.get_unlocked_photo_count()) + "/" + str(EconomyConfig.get_photo_entry_order().size()) + " 张(" + str(EconomyConfig.PHOTO_SPOT_ORDER.size()) + " 处景点 x 常规/绝景) · 打卡集章 " + str(GameManager.photo_stamps) + " · 心愿勋章 " + str(GameManager.wish_medals)
+		offline_banner_text = _tf("bn_cx14", [GameManager.get_unlocked_photo_count(), EconomyConfig.get_photo_entry_order().size(), EconomyConfig.PHOTO_SPOT_ORDER.size(), GameManager.photo_stamps, GameManager.wish_medals])
 	elif t == "ci13_codex":
 		offline_banner_timer = 4.5
-		offline_banner_text = "★云海风筝鉴: 风筝 " + str(GameManager.get_unlocked_kite_count()) + "/3 种 · 四季 " + str(GameManager.get_seen_season_count()) + "/4 · 累计收筝 " + str(GameManager.kite_collected_total) + " 只 · 风筝满天勋章 " + str(GameManager.kite_medals) + " 枚"
+		offline_banner_text = _tf("bn_cx13", [GameManager.get_unlocked_kite_count(), GameManager.get_seen_season_count(), GameManager.kite_collected_total, GameManager.kite_medals])
 	elif t == "ci12_codex":
 		offline_banner_timer = 4.5
-		offline_banner_text = "★秋季运动会鉴: 已办 " + str(GameManager.get_unlocked_sports_event_count()) + "/3 项比赛 · 陶艺 " + str(GameManager.get_unlocked_pottery_count()) + "/3 · 累计赛事 " + str(GameManager.sports_events_held_total) + " 场 · 金丝带奖牌 " + str(GameManager.sports_medals) + " 枚"
+		offline_banner_text = _tf("bn_cx12", [GameManager.get_unlocked_sports_event_count(), GameManager.get_unlocked_pottery_count(), GameManager.sports_events_held_total, GameManager.sports_medals])
 	elif t == "ci11_codex":
 		offline_banner_timer = 4.5
-		offline_banner_text = "★星空影院鉴: 已映 " + str(GameManager.get_unlocked_film_count()) + "/3 部电影 · 乳品 " + str(GameManager.get_unlocked_dairy_count()) + "/3 · 累计影票 " + str(GameManager.cinema_screenings_total) + " 场 · 星空影迷勋章 " + str(GameManager.cinema_medals) + " 枚"
+		offline_banner_text = _tf("bn_cx11", [GameManager.get_unlocked_film_count(), GameManager.get_unlocked_dairy_count(), GameManager.cinema_screenings_total, GameManager.cinema_medals])
 	elif t == "ci10_codex":
 		offline_banner_timer = 4.5
 		if GameManager.lighthouse_harbor_unlocked:
-			offline_banner_text = "★名物拍卖鉴: 已拍得 " + str(GameManager.get_unlocked_auction_lot_count()) + "/3 种名物 · 藏品 " + str(GameManager.get_total_auction_collectibles()) + " 件 · 金槌勋章 " + str(GameManager.auction_gavel_medals) + " 枚 · 渔港存鲜 " + str(GameManager.get_harbor_seafood_stock())
+			offline_banner_text = _tf("bn_cx10", [GameManager.get_unlocked_auction_lot_count(), GameManager.get_total_auction_collectibles(), GameManager.auction_gavel_medals, GameManager.get_harbor_seafood_stock()])
 		else:
-			offline_banner_text = "★名物拍卖鉴: 在3号岛建造云海灯塔渔港，渔船出海捕鲜货，并在岛民名物集市拍卖会上拍下明珠匣/鲜味篮/伴手礼!"
+			offline_banner_text = _t("bn_cx10_locked")
 	elif t == "ci8_codex":
 		if GameManager.tea_pavilion_unlocked:
 			var nt8 := GameManager.cycle_tea_pavilion_recipe()
 			var tcfg8: Dictionary = EconomyConfig.TEA_ITEMS.get(nt8, {})
 			offline_banner_timer = 4.5
-			offline_banner_text = "★云端茗香茶坊切换沏制【" + EconomyConfig.get_item_display_name(nt8) + "】(" + String(tcfg8.get("aura_tag", "")) + ") · 已招待雅集茶客 " + str(GameManager.tea_connoisseurs_served) + " 位!"
+			offline_banner_text = _tf("bn_cx8_cycle", [EconomyConfig.get_item_display_name(nt8), _n(String(tcfg8.get("aura_tag", ""))), GameManager.tea_connoisseurs_served])
 		else:
 			offline_banner_timer = 4.0
-			offline_banner_text = "★茗香茶韵鉴: 在1号岛建造云端茗香制茶坊，杀青云雾春芽、沏泡云雾龙井与桂花乌龙，开启荷塘月色画舫雅集!"
+			offline_banner_text = _t("bn_cx8_locked")
 
 func _draw() -> void:
 	if offline_banner_timer > 0.0 and not boss_stealth_mode and tex_pill != null:
@@ -2915,6 +3168,45 @@ func _draw() -> void:
 					draw_texture_rect(tex_reputation_star, Rect2(crect.end.x - 32.0, crect.position.y + 33.0, 12.0, 12.0), false)
 				if tex_rare_voucher != null:
 					draw_texture_rect(tex_rare_voucher, Rect2(crect.end.x - 19.0, crect.position.y + 33.0, 12.0, 12.0), false)
+			elif c_type == "food_week" or c_type == "friendship":
+				# CI-16: Workers tab cards 7 / 8 -> one icon at the top-right corner (the title is short, the cost line stays clear)
+				if tex_food_week_plate == null or tex_friendship == null:
+					reload_ci16_textures()
+				var t16: Texture2D = tex_food_week_plate if c_type == "food_week" else tex_friendship
+				var m16 := Color.WHITE if String(cards[i].get("cost_state", "")) != "normal" else Color(1.0, 1.0, 1.0, 0.70)
+				if t16 != null:
+					draw_texture_rect(t16, Rect2(crect.end.x - 19.0, crect.position.y + 4.0, 15.0, 15.0), false, m16)
+			elif c_type.begins_with("fw_") or c_type.begins_with("fr_"):
+				# CI-16 panels: the icon top-right inside the card's 34px icon column (like the wish / birthday panels)
+				if tex_food_week_judge == null or tex_friendship == null:
+					reload_ci16_textures()
+				var p16: Texture2D = tex_friendship
+				if c_type == "fw_judge" or c_type == "fw_back":
+					p16 = tex_food_week_judge
+				elif c_type == "fw_entry":
+					p16 = tex_food_week_plate
+				elif c_type == "fw_score":
+					p16 = tex_food_week_medal
+				var ps16 := String(cards[i].get("cost_state", "normal"))
+				var pm16 := Color(0.45, 0.42, 0.40, 0.60) if ps16 == "locked" else Color.WHITE
+				if c_type == "fr_islander" and GameManager.get_friendship_level(String(cards[i].get("key", ""))) <= 0:
+					pm16 = Color(0.55, 0.50, 0.50, 0.55)
+				if c_type == "fw_score" and ps16 != "unlocked":
+					pm16 = Color(0.45, 0.42, 0.40, 0.60)
+				if p16 != null:
+					draw_texture_rect(p16, Rect2(crect.end.x - 31.0, crect.position.y + 6.0, 22.0, 22.0), false, pm16)
+				if c_type == "fr_islander":
+					# friendship level pips (5) under the heart
+					var fl16 := GameManager.get_friendship_level(String(cards[i].get("key", "")))
+					for pip in range(EconomyConfig.FRIEND_MAX_LEVEL):
+						var pr16 := Rect2(crect.end.x - 32.0 + float(pip) * 5.0, crect.position.y + 34.0, 4.0, 4.0)
+						draw_rect(pr16, Color("#FF8FB1") if pip < fl16 else Color(0.35, 0.30, 0.28, 0.55), true)
+			elif c_type == "ci16_codex":
+				if tex_friendship == null:
+					reload_ci16_textures()
+				if tex_friendship != null:
+					var h16 := Color.WHITE if GameManager.get_friendship_total_levels() > 0 or GameManager.get_food_week_medal_total() > 0 else Color(0.30, 0.26, 0.22, 0.45)
+					draw_texture_rect(tex_friendship, Rect2(ic_x2, _card_icon_y(crect, 37.0, ic_sz), ic_sz, ic_sz), false, h16)
 			elif c_type == "wish_note":
 				if tex_wish_note == null:
 					reload_ci14_textures()

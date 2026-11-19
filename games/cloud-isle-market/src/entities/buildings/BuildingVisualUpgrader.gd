@@ -208,7 +208,7 @@ func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
 
 			var gpos := target_parent.position
 			if current_tier > old_tier or (new_level % 25 == 0):
-				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -54), "★里程碑突破 Lv." + str(new_level) + "!", Color("#FFE066"))
+				EventBus.spawn_floating_text.emit(gpos + Vector2(0, -54), EconomyConfig.tr_fmt("ft_milestone", [new_level]), Color("#FFE066"))
 				if SoundManager != null:
 					SoundManager.play_milestone_sfx()
 			else:
