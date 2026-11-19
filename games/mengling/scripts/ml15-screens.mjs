@@ -430,7 +430,7 @@ try {
     const trainIds = await attrIds("data-train-modal-check");
     const trainDesc = await textOf('[data-train-modal-overlay="1"] .modal__desc');
     if (!trainIds.length || trainIds.some((id) => AWAY_FINAL.includes(id))) fail(vp.tag, `training picker lists away partners (${trainIds.join()})`);
-    if (!trainDesc.includes(`已过滤 ${AWAY_FINAL.length} 只外出中的伙伴`) || !trainDesc.includes("烘焙、气球旅行")) fail(vp.tag, `training picker hint: ${trainDesc}`);
+    if (!trainDesc.includes(`已过滤 ${AWAY_FINAL.length} 位外出中的伙伴`) || !trainDesc.includes("烘焙、气球旅行")) fail(vp.tag, `training picker hint: ${trainDesc}`);
     await shot("08-training-modal");
     await page.locator("button[data-train-modal-close]").first().click({ timeout: 10000 });
 

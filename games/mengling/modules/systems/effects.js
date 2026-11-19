@@ -31,6 +31,8 @@ import {
   computeFishingClubBonus,
   computeBalloonTravelBonus,
   computeStargazeCampBonus,
+  computeIceRinkBuffs,
+  computeBeeWorkshopBonus,
   computeChampionLeagueBonus,
   computeEcoTriCrestBonus,
   computeSeasonMigrationBonus,
@@ -172,6 +174,8 @@ export function computeTechEffects(state, defs, ui) {
   const balloonBonus = computeBalloonTravelBonus(state);
   const parkAura = computeCloudParkAura(state);
   const stargazeBonus = computeStargazeCampBonus(state);
+  const iceRinkBuffs = computeIceRinkBuffs(state);
+  const beeBonus = computeBeeWorkshopBonus(state);
   eff.catchChanceAdd += boutiqueAura.catchAdd;
   eff.catchChanceAdd += leagueBonus.catchAdd;
   eff.catchChanceAdd += amberAura.catchAdd;
@@ -190,6 +194,8 @@ export function computeTechEffects(state, defs, ui) {
   eff.catchChanceAdd += balloonBonus.catchAdd;
   eff.catchChanceAdd += parkAura.catchAdd;
   eff.catchChanceAdd += stargazeBonus.catchAdd;
+  eff.catchChanceAdd += iceRinkBuffs.catchAdd;
+  eff.catchChanceAdd += beeBonus.catchAdd;
   eff.shinyChanceMul *=
     boutiqueAura.shinyChanceMul *
     amberAura.shinyChanceMul *
@@ -207,7 +213,8 @@ export function computeTechEffects(state, defs, ui) {
     bakeryAura.shinyChanceMul *
     balloonBonus.shinyChanceMul *
     parkAura.shinyChanceMul *
-    stargazeBonus.shinyChanceMul;
+    stargazeBonus.shinyChanceMul *
+    beeBonus.shinyChanceMul;
 
   // 限时捕获率提升（未来币商店）
   const captureBoostRem =

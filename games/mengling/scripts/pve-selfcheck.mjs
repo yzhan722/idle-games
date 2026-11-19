@@ -1826,10 +1826,10 @@ try {
     assert(eraSrcPost.includes("recallHotSpringForRebirth(state)") && eraSrcPost.includes("recallPostOfficeForRebirth(state)"), "confirmPrestige recalls soakers and messengers");
   }
 
-  // Mandatory v0.7.56 version sync verification across all 8 versioned files + icon cache-busting
+  // Mandatory v0.7.58 version sync verification across all 8 versioned files + icon cache-busting
   const projRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-  assert(GAME_CONFIG.VERSION === "0.7.56", "modules/config.js VERSION is 0.7.56");
-  assert(GAME_STATE_SYNC_VERSION === "0.7.56", "modules/app/game_state.js GAME_STATE_SYNC_VERSION is 0.7.56");
+  assert(GAME_CONFIG.VERSION === "0.7.58", "modules/config.js VERSION is 0.7.58");
+  assert(GAME_STATE_SYNC_VERSION === "0.7.58", "modules/app/game_state.js GAME_STATE_SYNC_VERSION is 0.7.58");
   const htmlTxt = readFileSync(join(projRoot, "index.html"), "utf8");
   const mainTxt = readFileSync(join(projRoot, "main.js"), "utf8");
   const appTxt = readFileSync(join(projRoot, "app.js"), "utf8");
@@ -1838,14 +1838,14 @@ try {
   const gameStateTxt = readFileSync(join(projRoot, "modules/app/game_state.js"), "utf8");
   const helpTxt = readFileSync(join(projRoot, "modules/tabs/help_tab.js"), "utf8");
   const iconsTxt = readFileSync(join(projRoot, "modules/render/rpg_svg_icons.js"), "utf8");
-  assert(htmlTxt.includes("0.7.56") && !htmlTxt.includes("0.7.55"), "index.html synced to 0.7.56");
-  assert(mainTxt.includes('CURRENT_VERSION = "0.7.56"') && !mainTxt.includes("0.7.55"), "main.js synced to 0.7.56");
-  assert(appTxt.includes("0.7.56") && !appTxt.includes("0.7.55"), "app.js synced to 0.7.56");
-  assert(swTxt.includes("mengling-v0.7.56") && !swTxt.includes("0.7.55"), "sw.js synced to 0.7.56");
-  assert(healthTxt.includes("0.7.56") && !healthTxt.includes("0.7.55"), "functions/api/health.js synced to 0.7.56");
-  assert(gameStateTxt.includes("0.7.56") && !gameStateTxt.includes("0.7.55"), "modules/app/game_state.js synced to 0.7.56");
-  assert(helpTxt.includes("版本 v0.7.56") && helpTxt.includes("v0.7.56 新增") && helpTxt.includes("v0.7.55 新增"), "modules/tabs/help_tab.js synced to 0.7.56 (+ ML-16 help block, ML-15 block kept)");
-  assert(iconsTxt.includes(".webp?v=0.7.56") && !iconsTxt.includes("0.7.55"), "rpg_svg_icons.js synced to 0.7.56");
+  assert(htmlTxt.includes("0.7.58") && !htmlTxt.includes("0.7.56"), "index.html synced to 0.7.58");
+  assert(mainTxt.includes('CURRENT_VERSION = "0.7.58"') && !mainTxt.includes("0.7.56"), "main.js synced to 0.7.58");
+  assert(appTxt.includes("0.7.58") && !appTxt.includes("0.7.56"), "app.js synced to 0.7.58");
+  assert(swTxt.includes("mengling-v0.7.58") && !swTxt.includes("0.7.56"), "sw.js synced to 0.7.58");
+  assert(healthTxt.includes("0.7.58") && !healthTxt.includes("0.7.56"), "functions/api/health.js synced to 0.7.58");
+  assert(gameStateTxt.includes("0.7.58") && !gameStateTxt.includes("0.7.56"), "modules/app/game_state.js synced to 0.7.58");
+  assert(helpTxt.includes("版本 v0.7.58") && helpTxt.includes("v0.7.56 新增") && helpTxt.includes("v0.7.55 新增"), "modules/tabs/help_tab.js synced to 0.7.58 (ML-16 / ML-15 help blocks kept)");
+  assert(iconsTxt.includes(".webp?v=0.7.58") && !iconsTxt.includes("0.7.56"), "rpg_svg_icons.js synced to 0.7.58");
 } finally {
   Math.random = realRandom;
 }

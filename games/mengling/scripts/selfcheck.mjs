@@ -612,6 +612,8 @@ const ml15 = spawnSync(process.execPath, [path.join(__dirname, "ml15-selfcheck.m
 if (ml15.status !== 0) failed += 1;
 const ml16 = spawnSync(process.execPath, [path.join(__dirname, "ml16-selfcheck.mjs")], { stdio: "inherit" });
 if (ml16.status !== 0) failed += 1;
+const ml17 = spawnSync(process.execPath, [path.join(__dirname, "ml17-selfcheck.mjs")], { stdio: "inherit" });
+if (ml17.status !== 0) failed += 1;
 const branding = spawnSync(process.execPath, [path.join(__dirname, "branding-selfcheck.mjs")], { stdio: "inherit" });
 if (branding.status !== 0) failed += 1;
 

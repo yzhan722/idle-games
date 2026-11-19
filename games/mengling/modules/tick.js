@@ -53,6 +53,12 @@ import {
   advanceStargazeCamp,
   getStargazeShowerDef,
   getStargazeSiteDef,
+  advanceIceRink,
+  advanceBeeWorkshop,
+  getIceRinkProgramDef,
+  getBeeHiveDef,
+  getBeeFlowerDef,
+  ICE_RINK_BUFF_ZH,
   advanceFishingClub,
   advancePostOffice,
   advanceSeasonMigration,
@@ -1185,6 +1191,29 @@ export function createTick(ctx) {
       if (ui) ui.functionsDirty = true;
     }
     if (stargazeStep.cancelled > 0 && ui) ui.functionsDirty = true;
+
+    // ML-17 冰晶溜冰场：排练按时长推进，演出结束后评分待领取；限时增益按真实秒数倒数（dtSec 为秒，离线补算 ≤12h）
+    const rinkStep = advanceIceRink(state, dtSec, {});
+    if (rinkStep.finished) {
+      addLog(`冰晶溜冰场：「${getIceRinkProgramDef(rinkStep.finished.programId)?.name || "节目"}」演出结束，评分 ${rinkStep.finished.score} 分（${rinkStep.finished.grade} 级），去功能页领取评分吧！`, true);
+      if (ui) ui.functionsDirty = true;
+    }
+    if (rinkStep.expiredBuffs.length > 0) {
+      addLog(`冰晶溜冰场：${rinkStep.expiredBuffs.map((k) => ICE_RINK_BUFF_ZH[k] || k).join("、")}限时增益结束了，再排一场节目就能续上`);
+      if (ui) ui.functionsDirty = true;
+    }
+    if (rinkStep.cancelled && ui) ui.functionsDirty = true;
+
+    // ML-17 花田蜜蜂工坊：照料中的蜂箱按时长推进，完成后蜂蜜等待收取（花种在出发时锁定，离线补算 ≤12h）
+    const beeStep = advanceBeeWorkshop(state, dtSec, { randFloat });
+    if (beeStep.done.length > 0) {
+      addLog(
+        `花田蜜蜂工坊：${beeStep.done.map((r) => `「${getBeeHiveDef(r.hiveId)?.name || r.hiveId}」酿好 ${r.jars} 罐${getBeeFlowerDef(r.flowerId)?.honey || "蜂蜜"}`).join("；")}，去功能页收取吧！`,
+        true,
+      );
+      if (ui) ui.functionsDirty = true;
+    }
+    if (beeStep.cancelled > 0 && ui) ui.functionsDirty = true;
 
     // ML-16「一键收取已归来伙伴」提示：已归来 / 已降落 / 已完成但还没收取的外出单位变多时提醒一次（读统一外出登记表）
     const returnedNow = getAwayReturnedUnits(state).length;

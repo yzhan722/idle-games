@@ -156,6 +156,13 @@ const RES_ICON_MAP = {
   starcamp: "starCamp",
   campfirebadge: "campfireBadge",
   meteorsighting: "meteorSighting",
+  icerink: "iceRink",
+  skatescore: "skateScore",
+  rinkbuff: "rinkBuff",
+  beeworkshop: "beeWorkshop",
+  beehive: "beeHive",
+  honeyjar: "honeyJar",
+  hivebadge: "hiveBadge",
 };
 
 const BUILDING_ICON_MAP = {
@@ -191,7 +198,7 @@ const TECH_ICON_MAP = {
 function renderIconImg(iconFileKey, size = 24, extraClass = "") {
   const s = Number(size) || 24;
   const cls = ["rpg-ai-icon", extraClass].filter(Boolean).join(" ");
-  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.56" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
+  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.58" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
 }
 
 export function renderOrbSvg(ballId = "pokeball", size = 24) {
@@ -322,6 +329,13 @@ const UI_ICON_MAP = {
   starCamp: "starCamp",
   campfireBadge: "campfireBadge",
   meteorSighting: "meteorSighting",
+  iceRink: "iceRink",
+  skateScore: "skateScore",
+  rinkBuff: "rinkBuff",
+  beeWorkshop: "beeWorkshop",
+  beeHive: "beeHive",
+  honeyJar: "honeyJar",
+  hiveBadge: "hiveBadge",
 };
 
 export const WEBP_UI_ICONS = Object.freeze({ ...UI_ICON_MAP });

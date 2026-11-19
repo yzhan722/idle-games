@@ -32,6 +32,8 @@ import {
   ensureFishingClubState,
   ensureBalloonTravelState,
   ensureStargazeCampState,
+  ensureIceRinkState,
+  ensureBeeWorkshopState,
   ensureEcoTriHallState,
   ensureSeasonMigrationState,
   ensureStarCorridorState,
@@ -1620,6 +1622,13 @@ export function loadFromRaw(raw) {
   }
   if (s.meta?.stargazeCamp) {
     ensureStargazeCampState(s);
+  }
+  // ML-17：冰晶溜冰场（排练中 / 演出结束待领取的节目、限时增益、最高分）与花田蜜蜂工坊（蜂箱照料 / 蜂蜜图鉴）——旧存档无此字段时保持中性默认
+  if (s.meta?.iceRink) {
+    ensureIceRinkState(s);
+  }
+  if (s.meta?.beeWorkshop) {
+    ensureBeeWorkshopState(s);
   }
 
 

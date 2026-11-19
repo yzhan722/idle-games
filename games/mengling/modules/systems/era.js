@@ -8,6 +8,8 @@ import {
   recallFishingClubForRebirth,
   recallPostOfficeForRebirth,
   recallStargazeCampForRebirth,
+  recallIceRinkForRebirth,
+  recallBeeWorkshopForRebirth,
   resetSeasonMigrationFriendsForRebirth,
 } from "./pve_tower.js";
 import {
@@ -373,6 +375,9 @@ export function confirmPrestige(state, { addLog, getCaptureAreas, starterMonFact
   // ML-16：转生时游乐园操作员全部换班（满意度 / 门票 / 星级 / 限时增益保留）；夜营中的营地撤营，已归营的观测记录保留待收取（图鉴与营火徽章永久保留）。
   recallCloudParkForRebirth(state);
   recallStargazeCampForRebirth(state);
+  // ML-17：转生时排练中的节目散场、照料中的蜂箱召回；已结束的评分与已酿好的蜂蜜保留待领取（最高分、限时增益、蜂蜜图鉴与蜂巢徽章保留）。
+  recallIceRinkForRebirth(state);
+  recallBeeWorkshopForRebirth(state);
 
   if (typeof addLog === "function") {
     const natalSuffix = natalCarriedMon ? ` · 本命随行「${natalCarriedMon.name || natalCarriedMon.pid}」` : "";

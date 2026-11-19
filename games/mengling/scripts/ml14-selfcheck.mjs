@@ -67,8 +67,8 @@ const rng = () => {
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${key}.webp`)), `ML-14 icon asset exists: ${key}.webp`);
     assert.equal(WEBP_UI_ICONS[key], key, `WEBP_UI_ICONS registers ${key}`);
     assert.ok(
-      renderUiIcon(key, 24).includes(`${key}.webp?v=0.7.56`) && renderResSvg(key, 20).includes(`${key}.webp?v=0.7.56`),
-      `rpg_svg_icons wires ${key}.webp?v=0.7.56`,
+      renderUiIcon(key, 24).includes(`${key}.webp?v=0.7.58`) && renderResSvg(key, 20).includes(`${key}.webp?v=0.7.58`),
+      `rpg_svg_icons wires ${key}.webp?v=0.7.58`,
     );
     const buf = readFileSync(path.join(rootDir, "assets", "ui_icons", `${key}.webp`));
     assert.ok(buf.slice(0, 4).toString() === "RIFF" && buf.slice(8, 12).toString() === "WEBP", `${key}.webp is a real WebP file`);

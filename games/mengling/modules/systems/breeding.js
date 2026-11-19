@@ -21,6 +21,7 @@ import {
   computeFishingClubBonus,
   computeBalloonTravelBonus,
   computeStargazeCampBonus,
+  computeBeeWorkshopBonus,
   computeSeasonMigrationBonus,
   computeStarCorridorBonus,
 } from "./pve_tower.js";
@@ -192,6 +193,7 @@ export function computeBreedingShinyInfo(state, parentA = null, parentB = null, 
   const balloonShinyMul = state?.meta?.balloonTravel ? computeBalloonTravelBonus(state).shinyChanceMul : 1;
   const parkShinyMul = state?.meta?.cloudPark ? computeCloudParkAura(state).shinyChanceMul : 1;
   const stargazeShinyMul = state?.meta?.stargazeCamp ? computeStargazeCampBonus(state).shinyChanceMul : 1;
+  const beeShinyMul = state?.meta?.beeWorkshop ? computeBeeWorkshopBonus(state).shinyChanceMul : 1;
   const baseShinyMul =
     typeof opts.shinyChanceMul === "number" && Number.isFinite(opts.shinyChanceMul)
       ? Math.max(0, opts.shinyChanceMul)
@@ -211,7 +213,8 @@ export function computeBreedingShinyInfo(state, parentA = null, parentB = null, 
         bakeryShinyMul *
         balloonShinyMul *
         parkShinyMul *
-        stargazeShinyMul;
+        stargazeShinyMul *
+        beeShinyMul;
   // ML-11 虹泉育灵池：仅作用于孵化（育灵）的闪光率，叠加在全局闪光倍率之上（含 opts 覆盖时）
   const islandBreedShinyMul = state?.meta?.skyIsland ? computeSkyIslandAura(state).breedShinyMul : 1;
   const shinyChanceMul = baseShinyMul * islandBreedShinyMul;

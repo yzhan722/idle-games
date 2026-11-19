@@ -17,8 +17,12 @@ import { ERA_DEFS } from "../modules/defs_eras.js";
 import { monPower } from "../modules/mons.js";
 import { WEBP_UI_ICONS, renderResSvg, renderUiIcon } from "../modules/render/rpg_svg_icons.js";
 
-const VERSION = "0.7.56";
-const PREV_VERSION = "0.7.55";
+// 界面文案审视后全仓版本号升到 0.7.57，ML-17 起为 0.7.58：VERSION 校验当前构建的版本同步 / 图标缓存号（PREV_VERSION 为不得残留的旧号），
+// ML16_VERSION / ML15_VERSION 校验 ML-16、ML-15 自己的帮助块与样式块标签
+const VERSION = "0.7.58";
+const PREV_VERSION = "0.7.57";
+const ML16_VERSION = "0.7.56";
+const ML15_VERSION = "0.7.55";
 const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const src = (...p) => readFileSync(path.join(rootDir, ...p), "utf8");
 const ML16_ICONS = ["cloudPark", "carouselRide", "parkTicket", "starCamp", "campfireBadge", "meteorSighting"];
@@ -174,11 +178,11 @@ function returnedFixture() {
   );
   assert.ok(!src("modules", "render", "rpg_svg_icons.js").includes(PREV_VERSION), "rpg_svg_icons.js has no stale version");
   const help = src("modules", "tabs", "help_tab.js");
-  assert.ok(help.includes(`版本 v${VERSION}`) && help.includes(`v${VERSION} 新增`) && help.includes("云端游乐园与星空露营观测") && help.includes(`v${PREV_VERSION} 新增`), "help tab version + ML-16 block (ML-15 block kept)");
+  assert.ok(help.includes(`版本 v${VERSION}`) && help.includes(`v${ML16_VERSION} 新增`) && help.includes("云端游乐园与星空露营观测") && help.includes(`v${ML15_VERSION} 新增`), "help tab version + ML-16 block (ML-15 block kept)");
   const helpBlock = help.slice(help.indexOf('rows.push(block("云端游乐园与星空露营观测"'), help.indexOf('rows.push(block("云朵甜点烘焙坊与彩虹气球旅行"'));
   assert.ok(helpBlock.includes("一键收取已归来伙伴") && helpBlock.includes('renderUiIcon("carouselRide"'), "help block documents one-click collect, uses the carouselRide icon");
   assert.ok(!/renderUiIcon\("(skyIsland|bandStage|mapFragment|campTentStar|nocturnalCrest|nightObservatory)"/.test(helpBlock), "help block shows no original of a reused icon");
-  assert.ok(src("styles.css").includes(`ML-16 「云端游乐园」&「星空露营观测」&「一键收取已归来伙伴」 (v${VERSION})`), "styles.css ML-16 block");
+  assert.ok(src("styles.css").includes(`ML-16 「云端游乐园」&「星空露营观测」&「一键收取已归来伙伴」 (v${ML16_VERSION})`), "styles.css ML-16 block");
 
   const ft = src("modules", "tabs", "functions_tab.js");
   const iA = ft.indexOf("ML-16 Section: 外出归来「一键收取已归来伙伴」");
@@ -225,14 +229,15 @@ function returnedFixture() {
 // 1) Unified away registry: the two outings are ONE row each; the returned readers are the one-click collect's only source
 // ============================================================================
 {
-  const ids = CF.AWAY_ACTIVITY_DEFS.map((a) => a.id);
+  // ML-17 起登记表前面又加了冰晶溜冰场 / 花田蜜蜂工坊两行（ml17-selfcheck 校验），这里只核对 ML-9 ~ ML-16 的 12 行
+  const ids = CF.AWAY_ACTIVITY_DEFS.map((a) => a.id).slice(-12);
   assert.deepEqual(
     ids,
     ["stargazeCamp", "cloudPark", "balloonTravel", "cloudBakery", "fishingClub", "dreamLibrary", "hotSpring", "postOffice", "treasureVoyage", "skyIsland", "nightObservatory", "wishDock"],
     "away registry: 12 away activities (ML-9 ~ ML-16), the two ML-16 outings registered first",
   );
   for (const a of CF.AWAY_ACTIVITY_DEFS) assert.ok(a.title && a.label && a.releaseHint && a.blockLog, `away activity ${a.id} has title / label / release hint / block log`);
-  assert.deepEqual(CF.AWAY_RETURNABLE_ACTIVITY_IDS, ["stargazeCamp", "balloonTravel", "postOffice", "treasureVoyage", "wishDock"], "returnable activities: every outing with a returned-but-uncollected state");
+  assert.deepEqual(CF.AWAY_RETURNABLE_ACTIVITY_IDS.slice(-5), ["stargazeCamp", "balloonTravel", "postOffice", "treasureVoyage", "wishDock"], "returnable activities: every outing with a returned-but-uncollected state");
   assert.deepEqual([...PT.AWAY_RETURN_COLLECTOR_IDS].sort(), [...CF.AWAY_RETURNABLE_ACTIVITY_IDS].sort(), "every returnable registry row has exactly one collector (and vice versa)");
 
   // Source guard: the raw readers are only used by the registry itself, their own systems and the mon-detail tag
@@ -780,10 +785,27 @@ function returnedFixture() {
   assert.equal(PT.collectAllReturnedPartners(st).reason, "nothing_returned", "nothing left to collect");
   assert.equal(CF.getAwayReturnedUnits(st).length, 0, "no returned units afterwards");
 
-  // A voyage still exploring with stamina left is NOT a returned unit (the player is mid-exploration)
+  // A voyage that has reached the island counts as returned even with stamina left (user decision 2026-11-19):
+  // collecting it is the same as a manual "return" and ends the exploration early, and the panel text says so.
   const exploring = returnedFixture();
   exploring.meta.treasureVoyage.voyage.stamina = 4;
-  assert.ok(!CF.getAwayReturnedUnits(exploring).some((u) => u.activityId === "treasureVoyage"), "an island still being explored is not collected");
+  const arrivedUnit = CF.getAwayReturnedUnits(exploring).find((u) => u.activityId === "treasureVoyage");
+  assert.ok(arrivedUnit, "an island being explored (stamina left) is collectable");
+  assert.equal(arrivedUnit.ref.reason, "return", "arrived voyage settles as a normal return");
+  assert.ok(/还剩体力 4/.test(arrivedUnit.text) && /提前结束探索/.test(arrivedUnit.text), "panel text warns that collecting ends the exploration early");
+  const arrivedTwin = returnedFixture();
+  arrivedTwin.meta.treasureVoyage.voyage.stamina = 4;
+  const arrivedRes = PT.collectAllReturnedPartners(exploring, { randFloat: seeded(5) });
+  assert.ok(arrivedRes.ok && arrivedRes.collected.some((c) => c.key === "treasureVoyage:voyage"), "one-tap collect settles the arrived voyage");
+  CF.returnFromTreasureVoyage(arrivedTwin, { reason: "return" });
+  assert.equal(exploring.meta.treasureVoyage.voyage, null, "voyage ended after collecting");
+  assert.equal(exploring.meta.treasureVoyage.totalVoyages, arrivedTwin.meta.treasureVoyage.totalVoyages, "arrived voyage counted like a manual return");
+  assert.ok(!CF.getAwayMonIds(exploring).has(8), "voyage crew #8 is no longer away after collecting");
+  // A voyage still at sea is NOT a returned unit
+  const sailing = returnedFixture();
+  sailing.meta.treasureVoyage.voyage.phase = "sailing";
+  sailing.meta.treasureVoyage.voyage.sailSec = 0;
+  assert.ok(!CF.getAwayReturnedUnits(sailing).some((u) => u.activityId === "treasureVoyage"), "a voyage still sailing is not collected");
   // Rebirth: a landed balloon / returned camp without passengers still shows up (souvenirs / records only)
   const reb = returnedFixture();
   PT.recallBalloonTravelForRebirth(reb);

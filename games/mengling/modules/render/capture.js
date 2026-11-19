@@ -435,7 +435,7 @@ export function createRenderCapture({
             <div class="row is-locked">
               <div class="row__left">
                 <div class="row__title row__titleLine">${renderBuildingSvg("ballFactory", 18)}<span>自动搓球</span><span class="tag">未来币商店解锁</span></div>
-                <div class="row__desc">在“未来币商店”解锁后可用。</div>
+                <div class="row__desc">解锁后灵木满时自动制作灵球。</div>
               </div>
               <div class="row__right">
                 <div class="badge badge--muted">未解锁</div>
@@ -716,7 +716,7 @@ export function createRenderCapture({
         <div class="row is-locked">
           <div class="row__left">
             <div class="row__title">捕捉</div>
-            <div class="row__desc">研究“灵球基础”后解锁。</div>
+            <div class="row__desc">研究「灵球基础」后解锁。</div>
           </div>
           <div class="row__right">
             <div class="badge badge--muted">未解锁</div>

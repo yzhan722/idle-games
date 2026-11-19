@@ -16505,3 +16505,588 @@ button.shiny-pedestal-slot.tier-rare {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* UI 文案审视：萌灵页「批量技能」标题不被右侧技能按钮挤成竖排 */
+#monList .row.mon-batch-skills > .row__left {
+  flex: 0 0 auto;
+}
+
+/* ============================================================================
+   ML-17 「冰晶溜冰场」&「花田蜜蜂工坊」 (v0.7.58)
+   ============================================================================ */
+.rink-header {
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, rgba(12, 74, 110, 0.94), rgba(56, 189, 248, 0.55));
+  border: 1px solid rgba(186, 230, 253, 0.45);
+}
+.rink-header.is-busy {
+  border-color: rgba(125, 211, 252, 0.85);
+}
+.bee-header {
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, rgba(113, 63, 18, 0.94), rgba(202, 138, 4, 0.62));
+  border: 1px solid rgba(253, 230, 138, 0.45);
+}
+.bee-header.is-busy {
+  border-color: rgba(250, 204, 21, 0.8);
+}
+.rink-header > .row__left,
+.bee-header > .row__left {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.rink-header .row__titleLine,
+.bee-header .row__titleLine {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.rink-header .row__titleLine > span,
+.bee-header .row__titleLine > span {
+  white-space: normal;
+  word-break: break-word;
+}
+.rink-header__btns,
+.bee-header__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.tag--rink-count,
+.tag--bee-count,
+.tag--rink-skater,
+.tag--bee-keeper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: normal;
+}
+.tag--rink-title,
+.tag--rink-skater {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(186, 230, 253, 0.6);
+  color: #f0f9ff;
+}
+.tag--bee-title,
+.tag--bee-keeper {
+  background: rgba(250, 204, 21, 0.2);
+  border-color: rgba(253, 230, 138, 0.65);
+  color: #fefce8;
+}
+.tag--rink-match {
+  font-size: 10px;
+  background: rgba(52, 211, 153, 0.16);
+  border-color: rgba(110, 231, 183, 0.5);
+  color: #d1fae5;
+}
+.tag--bee-new {
+  font-size: 10px;
+  background: rgba(250, 204, 21, 0.2);
+  border-color: rgba(253, 224, 71, 0.7);
+  color: #fef9c3;
+}
+.rink-body {
+  background: rgba(8, 30, 52, 0.86);
+  border: 1px solid rgba(186, 230, 253, 0.24);
+}
+.bee-body {
+  background: rgba(45, 30, 8, 0.86);
+  border: 1px solid rgba(253, 230, 138, 0.24);
+}
+.rink-panel-title {
+  margin-top: 10px;
+  color: #e0f2fe;
+}
+.bee-panel-title {
+  margin-top: 10px;
+  color: #fef3c7;
+}
+.rink-panel-title .tag,
+.bee-panel-title .tag {
+  white-space: normal;
+  max-width: 100%;
+}
+.ml17-mon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 2px 6px 2px 2px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+.ml17-mon .beast-icon,
+.ml17-mon > img {
+  flex-shrink: 0;
+  max-width: 24px;
+  max-height: 24px;
+}
+.ml17-mon > span:not(.tag) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ml17-mon .tag {
+  flex-shrink: 0;
+}
+.ml17-mon.is-empty {
+  padding: 2px 8px;
+  color: #94a3b8;
+  border-style: dashed;
+}
+/* ---------- 冰晶溜冰场 ---------- */
+.rink-stage {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  min-width: 0;
+  background: radial-gradient(circle at 90% 10%, rgba(224, 242, 254, 0.18), transparent 55%),
+    linear-gradient(160deg, rgba(14, 116, 144, 0.5), rgba(15, 23, 42, 0.92));
+  border: 1px solid rgba(186, 230, 253, 0.35);
+}
+.rink-stage > img {
+  flex-shrink: 0;
+}
+.rink-stage.is-idle {
+  border-style: dashed;
+}
+.rink-stage.is-finished {
+  border-color: rgba(253, 224, 71, 0.75);
+}
+.rink-stage__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rink-stage__name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f0f9ff;
+  word-break: break-word;
+}
+.rink-stage__meta {
+  font-size: 11px;
+  color: #bae6fd;
+  word-break: break-word;
+}
+.rink-stage__score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  color: #e0f2fe;
+}
+.rink-stage__score b {
+  font-size: 26px;
+  line-height: 1;
+  color: #fef9c3;
+}
+.rink-grade {
+  display: inline-block;
+  min-width: 26px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+  color: #0f172a;
+  background: #94a3b8;
+}
+.rink-grade.grade-S {
+  background: linear-gradient(135deg, #fde68a, #f59e0b);
+}
+.rink-grade.grade-A {
+  background: linear-gradient(135deg, #bae6fd, #38bdf8);
+}
+.rink-grade.grade-B {
+  background: linear-gradient(135deg, #bbf7d0, #34d399);
+}
+.rink-stage__actions,
+.bee-hive__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rink-moves {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.rink-move {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #e0f2fe;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+.rink-move.is-match {
+  border-color: rgba(110, 231, 183, 0.5);
+}
+.rink-move > b {
+  font-weight: 800;
+  color: #f8fafc;
+}
+.rink-move .badge {
+  font-size: 9px;
+}
+.rink-move__swap {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.rink-program__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rink-move__pts {
+  margin-left: auto;
+  font-weight: 800;
+  color: #fef9c3;
+}
+.rink-progress .dock-progress__bar > i {
+  background: linear-gradient(90deg, #7dd3fc, #e0f2fe, #a5b4fc);
+}
+.rink-programs {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.rink-program {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  min-width: 0;
+  background: linear-gradient(170deg, rgba(12, 74, 110, 0.45), rgba(15, 23, 42, 0.9));
+  border: 1px solid rgba(186, 230, 253, 0.25);
+}
+.rink-program.is-active {
+  border-color: rgba(125, 211, 252, 0.85);
+}
+.rink-program__name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f0f9ff;
+}
+.rink-program__meta {
+  font-size: 10px;
+  color: #bae6fd;
+  word-break: break-word;
+}
+.rink-program__foot {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+  color: #e0f2fe;
+}
+.rink-program__foot > span {
+  min-width: 0;
+  word-break: break-word;
+}
+.rink-bottom {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  min-width: 0;
+  background: rgba(15, 23, 42, 0.62);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.rink-bottom > .rink-panel-title:first-child {
+  margin-top: 0;
+}
+.rink-buffs {
+  margin-top: 6px;
+}
+.rink-buff small {
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.85;
+}
+.ml17-last {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+.ml17-last > img {
+  flex-shrink: 0;
+}
+/* ---------- 花田蜜蜂工坊 ---------- */
+.bee-blooms {
+  padding: 8px 12px 10px;
+  border-radius: 12px;
+  min-width: 0;
+  background: radial-gradient(circle at 12% 0%, rgba(253, 230, 138, 0.18), transparent 55%),
+    linear-gradient(160deg, rgba(101, 163, 13, 0.32), rgba(41, 37, 36, 0.9));
+  border: 1px solid rgba(253, 230, 138, 0.3);
+}
+.bee-blooms > .bee-panel-title {
+  margin-top: 0;
+}
+.bee-blooms__row {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.bee-bloom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #fefce8;
+  background: rgba(41, 37, 36, 0.6);
+  border: 1px dashed rgba(253, 230, 138, 0.4);
+}
+.bee-bloom.is-got {
+  border-style: solid;
+}
+.bee-bloom small {
+  width: 100%;
+  font-size: 10px;
+  color: #fde68a;
+}
+.bee-bloom .badge {
+  font-size: 9px;
+}
+.bee-blooms__next {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #fde68a;
+  word-break: break-word;
+}
+.bee-hives {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.bee-hive {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  min-width: 0;
+  background: rgba(41, 37, 36, 0.66);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+.bee-hive.is-idle {
+  border-style: dashed;
+}
+.bee-hive.is-tending {
+  border-color: rgba(250, 204, 21, 0.55);
+}
+.bee-hive.is-done {
+  border-color: rgba(253, 224, 71, 0.85);
+  background: rgba(113, 63, 18, 0.45);
+}
+.bee-hive__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.bee-hive__head > img {
+  flex-shrink: 0;
+}
+.bee-hive.is-idle .bee-hive__head > img {
+  filter: grayscale(0.5) brightness(0.88);
+}
+.bee-hive__titleBox {
+  min-width: 0;
+}
+.bee-hive__name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #fefce8;
+  word-break: break-word;
+}
+.bee-hive__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #fde68a;
+}
+.bee-hive__meta .badge {
+  font-size: 9px;
+}
+.bee-hive__desc {
+  font-size: 11px;
+  color: #e7e5e4;
+  word-break: break-word;
+}
+.bee-hive__keepers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.bee-hive__haul {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fef3c7;
+}
+.bee-progress .dock-progress__bar > i {
+  background: linear-gradient(90deg, #facc15, #fb923c, #a3e635);
+}
+.bee-codex {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  min-width: 0;
+  background: rgba(41, 37, 36, 0.62);
+  border: 1px solid rgba(253, 230, 138, 0.18);
+}
+.bee-codex > .bee-panel-title {
+  margin-top: 0;
+}
+.bee-badges {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.bee-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  color: #a8a29e;
+  background: rgba(41, 37, 36, 0.7);
+  border: 1px dashed rgba(168, 162, 158, 0.35);
+}
+.bee-badge > img {
+  filter: grayscale(0.9) brightness(0.75);
+  opacity: 0.8;
+}
+.bee-badge small {
+  font-size: 10px;
+  font-weight: 500;
+}
+.bee-badge.is-on {
+  border-style: solid;
+  color: #fef3c7;
+  border-color: rgba(250, 204, 21, 0.75);
+  background: rgba(113, 63, 18, 0.4);
+}
+.bee-badge.is-on > img {
+  filter: none;
+  opacity: 1;
+}
+.bee-codex__grid {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.bee-codex__cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(41, 37, 36, 0.6);
+  border: 1px solid rgba(168, 162, 158, 0.2);
+}
+.bee-codex__cell > img {
+  flex-shrink: 0;
+}
+.bee-codex__cell.is-unknown > img {
+  filter: grayscale(1) brightness(0.55);
+  opacity: 0.7;
+}
+.bee-codex__cell.is-today {
+  border-color: rgba(250, 204, 21, 0.6);
+}
+.bee-codex__info {
+  flex: 1;
+  min-width: 0;
+}
+.bee-codex__name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fefce8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bee-codex__cell.is-unknown .bee-codex__name {
+  color: #a8a29e;
+}
+.bee-codex__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #fde68a;
+}
+.bee-codex__meta .badge {
+  font-size: 9px;
+}
+.bee-codex__meta > span {
+  white-space: nowrap;
+}
+@media (max-width: 1160px) {
+  .rink-programs,
+  .bee-hives {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 680px) {
+  .rink-header__btns,
+  .bee-header__btns {
+    width: 100%;
+  }
+  .bee-badges,
+  .bee-codex__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rink-stage > img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}

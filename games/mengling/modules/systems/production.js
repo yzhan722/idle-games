@@ -27,6 +27,8 @@ import {
   computeFishingClubBonus,
   computeBalloonTravelBonus,
   computeStargazeCampBonus,
+  computeIceRinkBuffs,
+  computeBeeWorkshopBonus,
   computeChampionLeagueBonus,
   computeEcoTriCrestBonus,
   computeSeasonMigrationBonus,
@@ -300,6 +302,8 @@ export function finalizeProductionRates(eff, state, serverProdMul) {
   const balloonProdMul = computeBalloonTravelBonus(state).prodMul;
   const parkProdMul = computeCloudParkAura(state).prodMul;
   const stargazeProdMul = computeStargazeCampBonus(state).prodMul;
+  const iceRinkProdMul = computeIceRinkBuffs(state).prodMul;
+  const beeProdMul = computeBeeWorkshopBonus(state).prodMul;
   const permProdMul =
     permanentBoostMul(state?.permanentBoosts?.production) *
     legacyProdMul(state) *
@@ -326,7 +330,9 @@ export function finalizeProductionRates(eff, state, serverProdMul) {
     bakeryProdMul *
     balloonProdMul *
     parkProdMul *
-    stargazeProdMul;
+    stargazeProdMul *
+    iceRinkProdMul *
+    beeProdMul;
   if (permProdMul > 1) {
     eff.catnipPerSec *= permProdMul;
     eff.woodPerSec *= permProdMul;
