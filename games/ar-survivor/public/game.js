@@ -52,10 +52,12 @@ import {
   drawAr16FloorHearth,
   drawEmbroideryProp,
   drawHearthSnackProp,
+  drawWardrobeSeasonSparkles,
+  drawStorybookProp,
   drawInteractionVfx,
   images,
   isReady
-} from './sprites.js?v=hd31';
+} from './sprites.js?v=hd33';
 import { petAudio } from './audio.js?v=hd31';
 
 const stageEl = document.getElementById('game-stage');
@@ -250,6 +252,8 @@ function savePetState() {
         rainCorner: player.rainCorner,
         embroideryHoop: player.embroideryHoop,
         hearthCorner: player.hearthCorner,
+        seasonWardrobe: player.seasonWardrobe,
+        bedtimeStorybook: player.bedtimeStorybook,
         musicTrack: petAudio.getTrackInfo().index,
         weapons: player.weapons,
         bestShiftRecord: player.bestShiftRecord,
@@ -398,6 +402,11 @@ const player = {
   embroideryCheerTimer: 0,
   hearthCheerTimer: 0,
   ar16FloorBottom: 0,
+  // AR-17 换装外观：look = 换装时她头上画的配饰组合（只影响画面，结算仍只读 player.equipped）；读故事时身旁捧着绘本
+  wardrobeVisual: { outfitId: '', look: null, seasonKey: '', rgb: '', cardOpen: false, cheer: 0, preview: '' },
+  storyVisual: { cardOpen: false, reading: false, storyId: '', rgb: '', page: 0, pages: 0, cheer: 0, glow: false },
+  wardrobeCheerTimer: 0,
+  storyCheerTimer: 0,
   windowAmbience: (() => {
     const clockAmb = deriveClockWindowAmbience();
     const rawAmb = savedPet.windowAmbience || {};
@@ -521,6 +530,8 @@ const player = {
           rains: Math.max(0, Math.min(99, Math.round(Number(d.rains) || 0))),
           embroideries: Math.max(0, Math.min(99, Math.round(Number(d.embroideries) || 0))),
           snacks: Math.max(0, Math.min(99, Math.round(Number(d.snacks) || 0))),
+          outfits: Math.max(0, Math.min(99, Math.round(Number(d.outfits) || 0))),
+          stories: Math.max(0, Math.min(99, Math.round(Number(d.stories) || 0))),
           stamped: Boolean(d.stamped),
           moodId: validMoods.includes(d.moodId) ? d.moodId : 'bliss'
         };
@@ -645,6 +656,14 @@ const player = {
         totalSnacks: Math.max(
           0,
           Math.min(999999, Math.round(Number(rawCum.totalSnacks) || Number(savedPet.hearthCorner?.totalSnacks) || 0))
+        ),
+        totalOutfitChanges: Math.max(
+          0,
+          Math.min(999999, Math.round(Number(rawCum.totalOutfitChanges) || Number(savedPet.seasonWardrobe?.totalChanges) || 0))
+        ),
+        totalStories: Math.max(
+          0,
+          Math.min(999999, Math.round(Number(rawCum.totalStories) || Number(savedPet.bedtimeStorybook?.totalStories) || 0))
         )
       },
       claimedBoxesByWeek: cleanClaimed
@@ -1613,6 +1632,80 @@ const player = {
       kindle: timed(rawHc.kindle, false),
       lastSnackId: snackIds.includes(rawHc.lastSnackId) ? rawHc.lastSnackId : '',
       lastLevelId: levelIds.includes(rawHc.lastLevelId) ? rawHc.lastLevelId : ''
+    };
+  })(),
+  seasonWardrobe: (() => {
+    // AR-17 季节换装衣橱：旧存档回落为空衣橱、没在换装（换装只换她身上的配饰组合 + 季节小特效，不改已穿戴饰品与它们的加成）
+    const rawWd =
+      savedPet.seasonWardrobe && typeof savedPet.seasonWardrobe === 'object' && !Array.isArray(savedPet.seasonWardrobe)
+        ? savedPet.seasonWardrobe
+        : {};
+    const outfitIds = ['sakura_bow', 'spring_wreath', 'seaside_shell', 'summer_starlight', 'maple_crown', 'autumn_reader', 'snow_crown', 'first_snow'];
+    const validDate = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
+    const clampInt = (v, max) => Math.max(0, Math.min(max, Math.round(Number(v) || 0)));
+    const outfits = {};
+    if (rawWd.outfits && typeof rawWd.outfits === 'object' && !Array.isArray(rawWd.outfits)) {
+      for (const id of outfitIds) {
+        const o = rawWd.outfits[id];
+        if (!o || typeof o !== 'object' || Array.isArray(o)) continue;
+        const cnt = clampInt(o.count, 99999);
+        if (cnt > 0) outfits[id] = { count: cnt, first: validDate(o.first) };
+      }
+    }
+    // 正在穿的套组一定算换过（脏数据里穿着却没记录时补一条）
+    const wearing = outfitIds.includes(rawWd.wearing) ? rawWd.wearing : '';
+    if (wearing && !outfits[wearing]) outfits[wearing] = { count: 1, first: '' };
+    const changesFound = Object.values(outfits).reduce((acc, o) => acc + o.count, 0);
+    const rewardDate = validDate(rawWd.rewardDate);
+    return {
+      outfits,
+      wearing,
+      rewardDate,
+      // 每日计数不超过当天上限（每天 2 次换装奖励）
+      rewardCount: rewardDate ? clampInt(rawWd.rewardCount, 2) : 0,
+      totalChanges: Math.max(changesFound, clampInt(rawWd.totalChanges, 999999)),
+      lastOutfitId: outfitIds.includes(rawWd.lastOutfitId) ? rawWd.lastOutfitId : ''
+    };
+  })(),
+  bedtimeStorybook: (() => {
+    // AR-17 睡前故事书：旧存档回落为空书签夹、没有晚安余温（翻到第几页是运行时状态，不入存档）
+    const rawSb =
+      savedPet.bedtimeStorybook && typeof savedPet.bedtimeStorybook === 'object' && !Array.isArray(savedPet.bedtimeStorybook)
+        ? savedPet.bedtimeStorybook
+        : {};
+    const storyIds = ['whale_lullaby', 'moon_bakery', 'star_postman', 'cloud_pillow', 'snow_lantern', 'teacup_kitten'];
+    const validDate = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
+    const clampInt = (v, max) => Math.max(0, Math.min(max, Math.round(Number(v) || 0)));
+    const bookmarks = {};
+    if (rawSb.bookmarks && typeof rawSb.bookmarks === 'object' && !Array.isArray(rawSb.bookmarks)) {
+      for (const id of storyIds) {
+        const b = rawSb.bookmarks[id];
+        if (!b || typeof b !== 'object' || Array.isArray(b)) continue;
+        const cnt = clampInt(b.count, 99999);
+        if (cnt > 0) bookmarks[id] = { count: cnt, first: validDate(b.first), starlit: Boolean(b.starlit) };
+      }
+    }
+    // 晚安余温：只认起止时间合理（不超过 90 分钟）、故事合法的记录；是否已散由运行时按可注入时钟判断
+    let glow = null;
+    const g = rawSb.glow;
+    if (g && typeof g === 'object' && !Array.isArray(g) && storyIds.includes(g.storyId)) {
+      const startMs = Number(g.startMs);
+      const endMs = Number(g.endMs);
+      if (Number.isFinite(startMs) && Number.isFinite(endMs) && startMs > 0 && endMs > startMs && endMs - startMs <= 90 * 60000) {
+        glow = { startMs: Math.round(startMs), endMs: Math.round(endMs), storyId: g.storyId };
+      }
+    }
+    const storiesFound = Object.values(bookmarks).reduce((acc, b) => acc + b.count, 0);
+    const rewardDate = validDate(rawSb.rewardDate);
+    return {
+      bookmarks,
+      rewardDate,
+      rewardCount: rewardDate ? clampInt(rawSb.rewardCount, 2) : 0,
+      totalStories: Math.max(storiesFound, clampInt(rawSb.totalStories, 999999)),
+      glow,
+      goodnightDate: validDate(rawSb.goodnightDate),
+      totalGoodnights: clampInt(rawSb.totalGoodnights, 999999),
+      lastStoryId: storyIds.includes(rawSb.lastStoryId) ? rawSb.lastStoryId : ''
     };
   })(),
   weapons: savedPet.weapons || {
@@ -3613,6 +3706,8 @@ const DIARY_RULES = {
 
 // 日记行：AR-9 ~ AR-13 的新互动排在前面，其余周报计数随后；每页最多写 4 行，多出的记在页角
 const DIARY_LINE_SPECS = [
+  { key: 'stories', ico: './assets/story_bookmark.webp?v=hd33' },
+  { key: 'outfits', ico: './assets/ui_btn_wardrobe.webp?v=hd33' },
   { key: 'embroideries', ico: './assets/embroidery_patch.webp?v=hd31' },
   { key: 'snacks', ico: './assets/roasted_snack.webp?v=hd31' },
   { key: 'stars', ico: './assets/constellation_card.webp?v=hd31' },
@@ -4662,6 +4757,220 @@ function getHearthCuddleMult() {
   if (gameMode !== 'pet') return 1;
   const c = getHearthCuddle();
   return c ? 1 + c.bonus : 1;
+}
+
+// AR-17 季节换装衣橱 & 睡前故事书：规格常量、可注入时钟、运行时状态与统计同样放在卡片 UI 区段之前声明，
+// 周报 / 日记 / 晚安八音盒结算在模块初始化期间调用时不会触发 TDZ
+const ar17Clock = {
+  fixedMs: null,
+  offsetMs: 0,
+  now() {
+    return this.fixedMs !== null ? this.fixedMs : Date.now() + this.offsetMs;
+  },
+  date() {
+    return new Date(this.now());
+  }
+};
+
+// 8 套季节套组：每季 2 套（按本地日期取当季可换的两套，换过的套组任何季节都能再换）；
+// items 只用她已有的配饰贴图（item_*），再配一圈当季小特效（vfx_season_*）——不新造立绘、不改人物主体贴图
+const WARDROBE_OUTFITS = [
+  { id: 'sakura_bow', name: '樱花蝴蝶结', short: '樱结', season: 'spring', items: ['bow'], rgb: '255, 230, 238', line: '樱粉蝴蝶结配一阵花瓣，春天跟着我转圈圈~' },
+  { id: 'spring_wreath', name: '春日花环', short: '春环', season: 'spring', items: ['star_wreath', 'shell_clip'], rgb: '250, 244, 226', line: '花环戴好、贝壳夹别上，去春游也不怕~' },
+  { id: 'seaside_shell', name: '海边贝壳', short: '贝壳', season: 'summer', items: ['shell_clip'], rgb: '226, 240, 250', line: '一枚贝壳发卡就是一整片夏天的海~' },
+  { id: 'summer_starlight', name: '夏夜星光', short: '夏星', season: 'summer', items: ['shell_clip', 'aura'], rgb: '232, 236, 252', line: '脚下一圈星光，夏夜散步就靠它照路啦~' },
+  { id: 'maple_crown', name: '枫叶小皇冠', short: '枫冠', season: 'autumn', items: ['crown'], rgb: '255, 232, 214', line: '小皇冠配落叶，今天是秋天的小公主~' },
+  { id: 'autumn_reader', name: '秋日书香', short: '书香', season: 'autumn', items: ['bow', 'star_wreath'], rgb: '252, 240, 210', line: '花环加蝴蝶结，适合抱本书窝在窗边~' },
+  { id: 'snow_crown', name: '雪夜小皇冠', short: '雪冠', season: 'winter', items: ['crown', 'aura'], rgb: '236, 242, 252', line: '雪花落在小皇冠上，一闪一闪的~' },
+  { id: 'first_snow', name: '初雪花环', short: '初雪', season: 'winter', items: ['star_wreath', 'bow'], rgb: '240, 246, 250', line: '初雪那天就要戴花环，许个暖暖的愿~' }
+];
+const WARDROBE_OUTFIT_BY_ID = Object.fromEntries(WARDROBE_OUTFITS.map((o) => [o.id, o]));
+const WARDROBE_SEASON_NAMES = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' };
+// 套组里可能出现的头饰 / 足底光阵：换装时只替换这几样的画面，软垫等其它装扮照旧
+const WARDROBE_LOOK_KEYS = ['bow', 'crown', 'aura', 'shell_clip', 'star_wreath'];
+const WARDROBE_ITEM_ART = {
+  bow: { name: '蝴蝶结', img: './assets/item_bow.webp?v=hd6' },
+  crown: { name: '小皇冠', img: './assets/item_crown.webp?v=hd6' },
+  aura: { name: '星光光环', img: './assets/item_aura.webp?v=hd6' },
+  shell_clip: { name: '贝壳发卡', img: './assets/item_shell_clip.webp?v=hd31' },
+  star_wreath: { name: '星梦花环', img: './assets/item_star_wreath.webp?v=hd31' }
+};
+const WARDROBE_SEASON_ART = {
+  spring: './assets/vfx_season_spring.webp?v=hd31',
+  summer: './assets/vfx_season_summer.webp?v=hd31',
+  autumn: './assets/vfx_season_autumn.webp?v=hd31',
+  winter: './assets/vfx_season_winter.webp?v=hd31'
+};
+const WARDROBE_RULES = {
+  dailyRewards: 2,
+  coinReward: 6,
+  xpReward: 5,
+  newOutfitCoins: 10,
+  totalOutfits: WARDROBE_OUTFITS.length
+};
+
+// 运行时状态：衣橱里正在看的套组（预览，不入存档）
+const wardrobeRun = {
+  previewId: '',
+  helperSeq: 0,
+  lastAction: '',
+  lastResult: null
+};
+
+function getWardrobeSeasonOutfits(seasonId = getAromaSeasonId(ar17Clock.date())) {
+  return WARDROBE_OUTFITS.filter((o) => o.season === seasonId);
+}
+
+function getWardrobeStats(refDate = ar17Clock.date()) {
+  const wd = player.seasonWardrobe || {};
+  const todayKey = formatLocalDateKey(refDate);
+  const outfits = wd.outfits || {};
+  const seasonId = getAromaSeasonId(refDate);
+  const collectedIds = WARDROBE_OUTFITS.filter((o) => Number(outfits[o.id] && outfits[o.id].count) > 0).map((o) => o.id);
+  return {
+    todayKey,
+    seasonId,
+    seasonOutfits: getWardrobeSeasonOutfits(seasonId).map((o) => o.id),
+    collected: collectedIds.length,
+    collectedIds,
+    totalOutfits: WARDROBE_RULES.totalOutfits,
+    wearing: WARDROBE_OUTFIT_BY_ID[wd.wearing] ? wd.wearing : '',
+    totalChanges: Math.max(0, Number(wd.totalChanges) || 0),
+    rewardsToday: wd.rewardDate === todayKey ? Math.max(0, Number(wd.rewardCount) || 0) : 0,
+    dailyRewards: WARDROBE_RULES.dailyRewards
+  };
+}
+
+// 换装画面：穿着套组时，头饰 / 足底光阵只画套组里的那几样（软垫等其它装扮由 sprites 照旧按已穿戴画）；没在换装就照常画已穿戴的饰品（加成永远只看 player.equipped）
+function getWardrobeLook(wearingId = player.seasonWardrobe && player.seasonWardrobe.wearing) {
+  const of = WARDROBE_OUTFIT_BY_ID[wearingId];
+  if (!of) return null;
+  const look = {};
+  for (const k of WARDROBE_LOOK_KEYS) look[k] = of.items.includes(k);
+  return look;
+}
+
+// 6 篇睡前小故事：每篇 3 页（你翻一页、她读一页），读完夹上这篇的书签；rgb 只用浅奶油色
+const BEDTIME_STORIES = [
+  {
+    id: 'whale_lullaby',
+    name: '小蓝鲸的摇篮曲',
+    short: '蓝鲸',
+    rgb: '228, 238, 250',
+    pages: ['海底最深的地方，住着一只睡不着的小蓝鲸。', '月亮把光放进海里，替它轻轻哼起摇篮曲。', '小蓝鲸吐了一串泡泡，泡泡里全是好梦。']
+  },
+  {
+    id: 'moon_bakery',
+    name: '月亮面包店',
+    short: '面包',
+    rgb: '255, 240, 214',
+    pages: ['夜里十点，月亮面包店的烤箱亮起来了。', '店长把星星屑撒在奶油面包上，香香甜甜。', '天亮前，每家窗台都多了一个暖乎乎的面包。']
+  },
+  {
+    id: 'star_postman',
+    name: '星星邮差',
+    short: '邮差',
+    rgb: '250, 244, 222',
+    pages: ['星星邮差背着小邮包，挨家挨户送晚安信。', '有一封信写着：今天辛苦啦，早点睡哦。', '收到信的人，梦里都会看见一颗流星。']
+  },
+  {
+    id: 'cloud_pillow',
+    name: '云朵枕头',
+    short: '云朵',
+    rgb: '240, 244, 252',
+    pages: ['一朵小云飘累了，落在窗边变成了枕头。', '枕上去软软的，还带着太阳晒过的味道。', '睡醒的时候，小云又飘回天上去玩啦。']
+  },
+  {
+    id: 'snow_lantern',
+    name: '雪夜小灯笼',
+    short: '灯笼',
+    rgb: '255, 236, 226',
+    pages: ['下雪的晚上，小狐狸提着一盏小灯笼回家。', '灯笼照亮了雪地上一串小小的脚印。', '原来是好朋友一路送它，到家门口才回去。']
+  },
+  {
+    id: 'teacup_kitten',
+    name: '茶杯里的小猫',
+    short: '小猫',
+    rgb: '252, 236, 240',
+    pages: ['一只小猫钻进了暖暖的茶杯里打盹。', '它梦见自己泡进牛奶海，喝了一大口。', '醒来时，主人正笑着摸它的小脑袋。']
+  }
+];
+const BEDTIME_STORY_BY_ID = Object.fromEntries(BEDTIME_STORIES.map((s) => [s.id, s]));
+
+// 睡前（本地 20:00 ~ 次日 05:00）读完故事会留下 90 分钟晚安余温：这期间完成晚安八音盒伴眠，另外 +12 金币 +8 亲密，每天最多 1 次
+// （独立加成，不改好梦章 / 星空投影原有的结算数值）
+const STORY_RULES = {
+  dailyRewards: 2,
+  coinReward: 6,
+  xpReward: 6,
+  newBookmarkCoins: 10,
+  bedStartHour: 20,
+  bedEndHour: 5,
+  glowMin: 90,
+  goodnightCoins: 12,
+  goodnightXp: 8,
+  goodnightDaily: 1,
+  totalStories: BEDTIME_STORIES.length
+};
+
+// 运行时状态：当前挑的故事 / 翻到第几页（pick → read → done），不入存档
+const storyRun = {
+  storyId: '',
+  page: 0,
+  phase: 'pick',
+  flip: 0,
+  helperSeq: 0,
+  tickAcc: 0,
+  dayKey: '',
+  wasGlow: false,
+  lastAction: '',
+  lastResult: null
+};
+
+function isStoryBedtime(d = ar17Clock.date()) {
+  const h = d.getHours();
+  return h >= STORY_RULES.bedStartHour || h < STORY_RULES.bedEndHour;
+}
+
+// 今晚推荐的故事：按本地日期轮换（不联网，同一天同一篇）
+function getTonightStory(d = ar17Clock.date()) {
+  const dayIdx = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 86400000);
+  return BEDTIME_STORIES[((dayIdx % BEDTIME_STORIES.length) + BEDTIME_STORIES.length) % BEDTIME_STORIES.length];
+}
+
+function getStoryGlow(nowMs = ar17Clock.now()) {
+  const g = player.bedtimeStorybook && player.bedtimeStorybook.glow;
+  if (!g || !(Number(g.endMs) > nowMs) || !(Number(g.startMs) <= nowMs)) return null;
+  const so = BEDTIME_STORY_BY_ID[g.storyId];
+  if (!so) return null;
+  const leftMs = Math.min(STORY_RULES.glowMin * 60000, Number(g.endMs) - nowMs);
+  return { storyId: so.id, name: so.name, short: so.short, rgb: so.rgb, startMs: g.startMs, endMs: g.endMs, leftMs, minsLeft: Math.max(1, Math.ceil(leftMs / 60000)) };
+}
+
+function getStorybookStats(refDate = ar17Clock.date()) {
+  const sb = player.bedtimeStorybook || {};
+  const todayKey = formatLocalDateKey(refDate);
+  const bookmarks = sb.bookmarks || {};
+  const collectedIds = BEDTIME_STORIES.filter((s) => Number(bookmarks[s.id] && bookmarks[s.id].count) > 0).map((s) => s.id);
+  const so = BEDTIME_STORY_BY_ID[storyRun.storyId];
+  return {
+    todayKey,
+    bedtime: isStoryBedtime(refDate),
+    tonightId: getTonightStory(refDate).id,
+    collected: collectedIds.length,
+    collectedIds,
+    totalStories: STORY_RULES.totalStories,
+    starlit: BEDTIME_STORIES.filter((s) => bookmarks[s.id] && bookmarks[s.id].starlit).length,
+    totalRead: Math.max(0, Number(sb.totalStories) || 0),
+    totalGoodnights: Math.max(0, Number(sb.totalGoodnights) || 0),
+    rewardsToday: sb.rewardDate === todayKey ? Math.max(0, Number(sb.rewardCount) || 0) : 0,
+    dailyRewards: STORY_RULES.dailyRewards,
+    goodnightToday: sb.goodnightDate === todayKey ? 1 : 0,
+    glow: getStoryGlow(refDate.getTime()),
+    reading: Boolean(so && storyRun.phase === 'read' && storyRun.page > 0),
+    page: storyRun.page,
+    pages: so ? so.pages.length : 0
+  };
 }
 
 function resetSurvivorRun() {
@@ -6367,7 +6676,7 @@ function dismissPolaroid() {
   document.getElementById('polaroid-card')?.classList.add('hidden');
 }
 
-function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame(); dismissPolaroid(); dismissTopicCard(); dismissWindowAmbienceCard(); foldOrHidePomodoroCard(); dismissTeatimeCard(); dismissWeeklyJournalCard(); dismissTerrariumCard(); foldOrHideGoodnightCard(); dismissCollageCard(); foldOrHideCozyRadioCard(); dismissCrochetCard(); dismissHotCocoaCard(); dismissPressedFlowerCard(); dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); player.wanderTargetX = null; if (player.y < H * 0.68 - 26) { player.y = H * 0.68 - 25; player.vy = 0; player.onGround = true; player.standingPlat = null; }
+function openDrawer(tab) { cancelRpsGame(); cancelPalmCatchGame(); dismissPolaroid(); dismissTopicCard(); dismissWindowAmbienceCard(); foldOrHidePomodoroCard(); dismissTeatimeCard(); dismissWeeklyJournalCard(); dismissTerrariumCard(); foldOrHideGoodnightCard(); dismissCollageCard(); foldOrHideCozyRadioCard(); dismissCrochetCard(); dismissHotCocoaCard(); dismissPressedFlowerCard(); dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards(); player.wanderTargetX = null; if (player.y < H * 0.68 - 26) { player.y = H * 0.68 - 25; player.vy = 0; player.onGround = true; player.standingPlat = null; }
   activeDrawerTab = tab;
   drawerEl.classList.remove('hidden'); document.getElementById('hud-wish-pill')?.classList.add('hidden');
   document.querySelectorAll('.drawer-tab').forEach((t) => {
@@ -6706,6 +7015,44 @@ function renderDrawerItems() {
       openHearthCard();
     });
     drawerItemsEl.appendChild(ar16CozyBanner);
+
+    // AR-17 场景已满、船坞仍是 25 键：季节换装衣橱 / 睡前故事书同样并入「家具与装扮」抽屉（紧跟刺绣暖炉块，不新增场景物件）
+    const ar17CozyBanner = document.createElement('div');
+    ar17CozyBanner.className = 'drawer-section-block ar17-drawer-block';
+    const curWd = getWardrobeStats();
+    const curSb = getStorybookStats();
+    const curOutfit = WARDROBE_OUTFIT_BY_ID[curWd.wearing];
+    ar17CozyBanner.innerHTML = `
+      <div class="drawer-section-head">
+        <span class="drawer-section-title">季节衣橱与睡前故事书</span>
+        <span class="drawer-section-hint">按本地季节换套组 · 睡前一起读故事收书签</span>
+      </div>
+      <div class="room-theme-grid">
+        <button type="button" class="room-theme-card active" data-ar17-shortcut="wardrobe">
+          <img src="./assets/ui_btn_wardrobe.webp?v=hd33" alt="" class="room-theme-thumb" />
+          <div class="room-theme-meta">
+            <span class="room-theme-name">季节换装衣橱</span>
+            <span class="room-theme-sub">${curOutfit ? `穿着「${curOutfit.name}」 · 衣橱 ${curWd.collected}/${curWd.totalOutfits}` : `衣橱 ${curWd.collected}/${curWd.totalOutfits} · ${WARDROBE_SEASON_NAMES[curWd.seasonId]}季套组`}</span>
+          </div>
+          <span class="room-theme-state">换装</span>
+        </button>
+        <button type="button" class="room-theme-card" data-ar17-shortcut="storybook">
+          <img src="./assets/ui_btn_storybook.webp?v=hd33" alt="" class="room-theme-thumb" />
+          <div class="room-theme-meta">
+            <span class="room-theme-name">睡前故事书</span>
+            <span class="room-theme-sub">${curSb.glow ? `晚安余温 · 还剩 ${curSb.glow.minsLeft} 分` : `书签 ${curSb.collected}/${curSb.totalStories} · 今晚《${BEDTIME_STORY_BY_ID[curSb.tonightId].name}》`}</span>
+          </div>
+          <span class="room-theme-state">读故事</span>
+        </button>
+      </div>
+    `;
+    bindCardTap(ar17CozyBanner.querySelector('[data-ar17-shortcut="wardrobe"]'), () => {
+      openWardrobeCard();
+    });
+    bindCardTap(ar17CozyBanner.querySelector('[data-ar17-shortcut="storybook"]'), () => {
+      openStorybookCard();
+    });
+    drawerItemsEl.appendChild(ar17CozyBanner);
 
     const ar6CozyBanner = document.createElement('div');
     ar6CozyBanner.className = 'drawer-section-block';
@@ -7259,7 +7606,7 @@ function switchMode(newMode) {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   if (newMode !== 'pet' && pomodoroRun.status === 'running') {
     pomodoroRun.status = 'paused';
   }
@@ -7333,6 +7680,8 @@ function switchMode(newMode) {
     syncRainCornerUI();
     syncEmbroideryHoopUI();
     syncHearthCornerUI();
+    syncWardrobeUI();
+    syncStorybookUI();
     syncSurvivorHud();
     syncParkourHud();
     setPlayerEmote('回到日常桌面养成模式~', 1.8);
@@ -7371,6 +7720,8 @@ function switchMode(newMode) {
     syncRainCornerUI();
     syncEmbroideryHoopUI();
     syncHearthCornerUI();
+    syncWardrobeUI();
+    syncStorybookUI();
     syncSurvivorHud();
     syncParkourHud();
     placeStarOnBestTarget();
@@ -7430,6 +7781,8 @@ function switchMode(newMode) {
     syncRainCornerUI();
     syncEmbroideryHoopUI();
     syncHearthCornerUI();
+    syncWardrobeUI();
+    syncStorybookUI();
     enemySpawnTimer = 0.15;
     spawnEnemy(false);
     spawnEnemy(false);
@@ -7609,7 +7962,7 @@ function toggleWindowAmbienceCard() {
     dismissCrochetCard();
     dismissHotCocoaCard();
     dismissPressedFlowerCard();
-    dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+    dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
     syncWindowAmbienceUI();
     windowAmbienceCardEl.classList.remove('hidden');
     playSfx('pat');
@@ -7840,7 +8193,7 @@ function openPomodoroCard() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   pomodoroCardEl.classList.remove('hidden');
   syncPomodoroUI();
@@ -7902,7 +8255,7 @@ function startPomodoroSession() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   player.teaPlatterTimer = 0;
   if (player.y < H * 0.68 - 26) {
     player.y = H * 0.68 - 25;
@@ -8420,6 +8773,8 @@ function ensureJournalDayEntry(dateKey) {
       rains: 0,
       embroideries: 0,
       snacks: 0,
+      outfits: 0,
+      stories: 0,
       stamped: false,
       moodId: player.weeklyJournal.selectedMood || 'bliss'
     };
@@ -8444,6 +8799,9 @@ function deriveAutoMoodForType(type) {
   // AR-16 刺绣是安安静静的「茶歇」时光；围炉分松饼是甜甜的「甜心」
   if (type === 'embroideries') return 'cozy';
   if (type === 'snacks') return 'bliss';
+  // AR-17 换上季节套组是甜甜的「甜心」；睡前一起读故事记成「好梦」，其余时候是「茶歇」
+  if (type === 'outfits') return 'bliss';
+  if (type === 'stories') return isStoryBedtime(ar17Clock.date()) ? 'goodnight' : 'cozy';
   if (type === 'focusMins') return 'focus';
   if (
     type === 'rains' ||
@@ -8496,7 +8854,9 @@ function recordJournalActivity(type, amount = 1, refDate = new Date()) {
     type === 'stars' ||
     type === 'rains' ||
     type === 'embroideries' ||
-    type === 'snacks'
+    type === 'snacks' ||
+    type === 'outfits' ||
+    type === 'stories'
   ) {
     entry[type] = (entry[type] || 0) + val;
   }
@@ -8604,6 +8964,10 @@ function recordJournalActivity(type, amount = 1, refDate = new Date()) {
     cum.totalEmbroideries = Math.max((cum.totalEmbroideries || 0) + val, player.embroideryHoop?.totalPieces || 0);
   } else if (type === 'snacks') {
     cum.totalSnacks = Math.max((cum.totalSnacks || 0) + val, player.hearthCorner?.totalSnacks || 0);
+  } else if (type === 'outfits') {
+    cum.totalOutfitChanges = Math.max((cum.totalOutfitChanges || 0) + val, player.seasonWardrobe?.totalChanges || 0);
+  } else if (type === 'stories') {
+    cum.totalStories = Math.max((cum.totalStories || 0) + val, player.bedtimeStorybook?.totalStories || 0);
   }
   savePetState();
   syncWeeklyJournalUI(refDate);
@@ -8670,6 +9034,8 @@ function computeWeeklyJournalSummary(refDate = new Date()) {
   let rains7d = 0;
   let embroideries7d = 0;
   let snacks7d = 0;
+  let outfits7d = 0;
+  let stories7d = 0;
 
   const daysList = dateKeys.map((k) => {
     const raw = player.weeklyJournal.days[k] || {};
@@ -8705,6 +9071,8 @@ function computeWeeklyJournalSummary(refDate = new Date()) {
     rains7d += Number(raw.rains) || 0;
     embroideries7d += Number(raw.embroideries) || 0;
     snacks7d += Number(raw.snacks) || 0;
+    outfits7d += Number(raw.outfits) || 0;
+    stories7d += Number(raw.stories) || 0;
     return {
       dateKey: k,
       shortDate: k === todayKey ? '今日' : k.slice(5).replace('-', '/'),
@@ -8735,6 +9103,8 @@ function computeWeeklyJournalSummary(refDate = new Date()) {
   const rainStats = getRainStats(refDate);
   const embroideryStats = getEmbroideryStats(refDate);
   const hearthStats = getHearthStats(refDate);
+  const wardrobeStats = getWardrobeStats(refDate);
+  const storyStats = getStorybookStats(refDate);
   const weeklyScore =
     feeds7d +
     chats7d * 2 +
@@ -8764,6 +9134,8 @@ function computeWeeklyJournalSummary(refDate = new Date()) {
     rains7d +
     embroideries7d * 2 +
     snacks7d +
+    outfits7d +
+    stories7d * 2 +
     plantCares7d +
     recipesDiscovered +
     cocoaBlendsDiscovered +
@@ -8897,7 +9269,14 @@ function computeWeeklyJournalSummary(refDate = new Date()) {
     embroideryWall: embroideryStats.wallCount,
     totalSnacks: Math.max(snacks7d, cum.totalSnacks || 0, hearthStats.totalSnacks),
     snackEntries: hearthStats.entries,
-    totalSnackEntries: hearthStats.totalEntries
+    totalSnackEntries: hearthStats.totalEntries,
+    totalOutfitChanges: Math.max(outfits7d, cum.totalOutfitChanges || 0, wardrobeStats.totalChanges),
+    wardrobeOutfits: wardrobeStats.collected,
+    totalWardrobeOutfits: wardrobeStats.totalOutfits,
+    totalStories: Math.max(stories7d, cum.totalStories || 0, storyStats.totalRead),
+    storyBookmarks: storyStats.collected,
+    totalStoryBookmarks: storyStats.totalStories,
+    storyGoodnights: storyStats.totalGoodnights
   };
 
   const giftStates = WEEKLY_GIFT_TIERS.map((tier) => {
@@ -8945,6 +9324,8 @@ function computeWeeklyJournalSummary(refDate = new Date()) {
     rains7d,
     embroideries7d,
     snacks7d,
+    outfits7d,
+    stories7d,
     daysList,
     cumulative,
     giftStates,
@@ -8953,6 +9334,9 @@ function computeWeeklyJournalSummary(refDate = new Date()) {
 }
 
 function buildJournalCompanionQuote(summary) {
+  if (summary.outfits7d >= 1 || summary.stories7d >= 1) {
+    return `近7日换上了 ${summary.outfits7d} 次季节套组（衣橱 ${summary.cumulative.wardrobeOutfits}/${summary.cumulative.totalWardrobeOutfits}），睡前还一起读完 ${summary.stories7d} 本小故事（书签 ${summary.cumulative.storyBookmarks}/${summary.cumulative.totalStoryBookmarks}）~`;
+  }
   if (summary.embroideries7d >= 1 || summary.snacks7d >= 1) {
     return `近7日和我一起绣了 ${summary.embroideries7d} 幅小刺绣挂上墙（绣样 ${summary.cumulative.embroideryPatterns}/${summary.cumulative.totalEmbroideryPatterns}），还在小暖炉边分着吃了 ${summary.snacks7d} 块烤松饼~`;
   }
@@ -9087,7 +9471,7 @@ function syncWeeklyJournalUI(refDate = new Date()) {
         ico: './assets/ui_btn_telescope.webp?v=hd31',
         title: '星夜观星与伴眠',
         val: `观星 ${summary.stargazes7d} 次`,
-        sub: `星图 ${summary.cumulative.constellationsCollected}/${summary.cumulative.totalConstellations} · 好梦章 ${summary.cumulative.totalGoodnightStamps}枚 · 星座卡 ${summary.cumulative.starCards}/${summary.cumulative.totalStarCards} · 听雨 ${summary.rains7d}则`
+        sub: `睡前故事 ${summary.stories7d}本 · 书签 ${summary.cumulative.storyBookmarks}/${summary.cumulative.totalStoryBookmarks} · 星图 ${summary.cumulative.constellationsCollected}/${summary.cumulative.totalConstellations} · 好梦章 ${summary.cumulative.totalGoodnightStamps}枚 · 星座卡 ${summary.cumulative.starCards}/${summary.cumulative.totalStarCards} · 听雨 ${summary.rains7d}则`
       },
       {
         ico: './assets/ui_btn_bento_kitchen.webp?v=hd31',
@@ -9099,7 +9483,7 @@ function syncWeeklyJournalUI(refDate = new Date()) {
         ico: './assets/ui_btn_picnic_basket.webp?v=hd31',
         title: '周末野餐与日记',
         val: `野餐 ${summary.picnics7d} 次`,
-        sub: `刺绣 ${summary.embroideries7d}幅 · 绣样 ${summary.cumulative.embroideryPatterns}/${summary.cumulative.totalEmbroideryPatterns} · 炉边点心 ${summary.snacks7d}份 · 装篮 ${summary.picnicPreps7d}次 · 地点 ${summary.cumulative.picnicSpots}/${summary.cumulative.totalPicnicSpots} · 日记 ${summary.cumulative.diaryPages}页 · 贴纸 ${summary.diaries7d}次 · 热可可 ${summary.cocoas7d}杯 · 可可 ${summary.cumulative.cocoaBlendsDiscovered}/6 · 茶谱 ${summary.cumulative.recipesDiscovered}/9`
+        sub: `换装 ${summary.outfits7d}次 · 衣橱 ${summary.cumulative.wardrobeOutfits}/${summary.cumulative.totalWardrobeOutfits} · 刺绣 ${summary.embroideries7d}幅 · 绣样 ${summary.cumulative.embroideryPatterns}/${summary.cumulative.totalEmbroideryPatterns} · 炉边点心 ${summary.snacks7d}份 · 装篮 ${summary.picnicPreps7d}次 · 地点 ${summary.cumulative.picnicSpots}/${summary.cumulative.totalPicnicSpots} · 日记 ${summary.cumulative.diaryPages}页 · 贴纸 ${summary.diaries7d}次 · 热可可 ${summary.cocoas7d}杯 · 可可 ${summary.cumulative.cocoaBlendsDiscovered}/6 · 茶谱 ${summary.cumulative.recipesDiscovered}/9`
       },
       {
         ico: './assets/ui_btn_pottery_wheel.webp?v=hd31',
@@ -9172,7 +9556,7 @@ function openWeeklyJournalCard() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   syncWeeklyJournalUI();
@@ -9424,7 +9808,7 @@ function openTeatimeCard() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   teatimeCardEl.classList.remove('hidden');
@@ -9892,7 +10276,7 @@ function openTerrariumCard() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   terrariumCardEl.classList.remove('hidden');
@@ -9955,7 +10339,7 @@ function syncGoodnightUI() {
     );
   }
   if (btnMusicboxLabelEl) {
-    btnMusicboxLabelEl.textContent = isActive ? clockStr : '晚安盒';
+    btnMusicboxLabelEl.textContent = isActive ? clockStr : '晚安';
   }
 
   const cardHidden = !goodnightCardEl || goodnightCardEl.classList.contains('hidden');
@@ -10103,7 +10487,7 @@ function startGoodnightSession() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   if (cozyRadioRun.playing) {
     pauseCozyRadioForModeSwitch();
   }
@@ -10197,6 +10581,9 @@ function settleGoodnightSession(fromEarlyWake = false, refDate = new Date()) {
   );
 
   const starDream = starDreamActive ? awardStarDream(starDreamActive) : null;
+  // AR-17 晚安联动：睡前故事的晚安余温里完成伴眠，另外 +12 金币 +8 亲密（独立加成、每天最多 1 次，不改上面好梦章的数值）
+  const storyNight = awardStoryGoodnight();
+  if (storyNight) goodnightRun.lastRewardSummary += ` 睡前故事书签 +${storyNight.coins} 金币~`;
 
   savePetState();
   syncGoodnightUI();
@@ -10208,7 +10595,8 @@ function settleGoodnightSession(fromEarlyWake = false, refDate = new Date()) {
     baseCoinReward,
     coinReward,
     xpReward,
-    starDream
+    starDream,
+    storyNight
   };
 }
 
@@ -10284,7 +10672,7 @@ function openGoodnightCard() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   goodnightCardEl.classList.remove('hidden');
@@ -10604,6 +10992,8 @@ window.__AR5_DEBUG__ = {
         rainCorner: isAr15CardOpen('rain'),
         embroideryHoop: isAr16CardOpen('embroidery'),
         hearthCorner: isAr16CardOpen('hearth'),
+        seasonWardrobe: isAr17CardOpen('wardrobe'),
+        bedtimeStorybook: isAr17CardOpen('storybook'),
         topic: Boolean(topicCardEl && !topicCardEl.classList.contains('hidden')),
         polaroid: Boolean(polaroidCardEl && !polaroidCardEl.classList.contains('hidden'))
       }
@@ -11006,7 +11396,7 @@ function openCollageCard(customPhotoId = '') {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   if (customPhotoId) {
@@ -11273,7 +11663,7 @@ function openCozyRadioCard() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   cozyRadioCardEl.classList.remove('hidden');
@@ -11799,7 +12189,7 @@ function openCrochetCard() {
   foldOrHideCozyRadioCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   crochetCardEl.classList.remove('hidden');
@@ -12068,7 +12458,7 @@ function openHotCocoaCard() {
   foldOrHideCozyRadioCard();
   dismissCrochetCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   hotCocoaCardEl.classList.remove('hidden');
@@ -12593,7 +12983,7 @@ function openPressedFlowerCard() {
   foldOrHideCozyRadioCard();
   dismissCrochetCard();
   dismissHotCocoaCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   pressedFlowerCardEl.classList.remove('hidden');
@@ -12963,7 +13353,7 @@ function openTelescopeCard() {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   telescopeCardEl.classList.remove('hidden');
@@ -12976,7 +13366,7 @@ function toggleTelescopeCard() {
     openTelescopeCard();
     playSfx('telescope_focus');
   } else {
-    dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+    dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   }
 }
 
@@ -13025,7 +13415,7 @@ bindHudTap(btnTelescopeDockEl, () => {
   toggleTelescopeCard();
 });
 bindHudTap(document.getElementById('btn-telescope-close'), () => {
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
 });
 bindHudTap(starChartPillEl, () => {
   openTelescopeCard();
@@ -13046,7 +13436,7 @@ bindHudTap(starChartGridEl, (e) => {
   if (slotEl) startStargazeSession(slotEl.dataset.chartId);
 });
 bindHudTap(btnTelescopeGoShiftEl, () => {
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   switchMode('survivor');
 });
 
@@ -14218,7 +14608,7 @@ function openWatercolorCard() {
   dismissPressedFlowerCard();
   dismissTelescopeCard();
   dismissMailboxCard();
-  dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   watercolorCardEl.classList.remove('hidden');
@@ -14254,7 +14644,7 @@ function openMailboxCard(opts = {}) {
   dismissPressedFlowerCard();
   dismissTelescopeCard();
   dismissWatercolorCard();
-  dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   mailboxCardEl.classList.remove('hidden');
@@ -14551,6 +14941,13 @@ const btnBentoGoShiftEl = document.getElementById('btn-bento-go-shift');
 const bentoCodexSubEl = document.getElementById('bento-codex-sub');
 const bentoCodexGridEl = document.getElementById('bento-codex-grid');
 const bentoTotalWardEl = document.getElementById('bento-total-ward');
+
+// 卡片底部规则条：面板里只留一行要点（窄屏不再被省略号截断），完整规则放进 title 悬停提示
+function setRuleLine(el, short, full = '') {
+  if (!el) return;
+  el.textContent = short;
+  el.title = full || short;
+}
 
 const puzzleCardEl = document.getElementById('memory-puzzle-card');
 const btnPuzzleDockEl = document.getElementById('btn-memory-puzzle');
@@ -15016,9 +15413,19 @@ function syncBentoKitchenUI() {
   }
   if (bentoTotalWardEl) {
     const next = stats.nextLunch;
-    bentoTotalWardEl.textContent = next
-      ? `下个班次带『${next.name}』：体力回复 +${next.regen.toFixed(1)}/秒 · 低血饭团救急 ${Math.round(next.rescuePct * 100)}% ×${next.rescueCharges}（袋 ${stats.bagCount}/${stats.bagMax}）`
-      : '便当续航：打包的便当在下一个幸存者班次打开，每份守护 1 个班次（持续回血 + 低血饭团救急）';
+    if (next) {
+      setRuleLine(
+        bentoTotalWardEl,
+        `下个班次带『${next.name}』：回血 +${next.regen.toFixed(1)}/秒 · 低血救急 ${Math.round(next.rescuePct * 100)}% ×${next.rescueCharges}（袋 ${stats.bagCount}/${stats.bagMax}）`,
+        `下个班次带『${next.name}』：体力回复 +${next.regen.toFixed(1)}/秒 · 低血饭团救急 ${Math.round(next.rescuePct * 100)}% ×${next.rescueCharges}（袋 ${stats.bagCount}/${stats.bagMax}）`
+      );
+    } else {
+      setRuleLine(
+        bentoTotalWardEl,
+        '便当续航：打包后下个打工班次打开，每份护 1 班（回血 + 低血救急）',
+        '便当续航：打包的便当在下一个幸存者班次打开，每份守护 1 个班次（持续回血 + 低血饭团救急）'
+      );
+    }
   }
 
   if (btnBentoDockEl) {
@@ -15731,7 +16138,7 @@ function openAr11Card(cardEl) {
   dismissPressedFlowerCard();
   dismissTelescopeCard();
   dismissAr10Cards();
-  dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   cardEl.classList.remove('hidden');
@@ -16588,9 +16995,16 @@ function syncKittenCornerUI() {
     kcCodexSubEl.textContent = `小猫图鉴 ${stats.met}/${stats.totalKittens} · 来访 ${stats.totalVisits} 次 · 猫粮 ${stats.totalFeeds} 碗 · 摸摸 ${stats.totalPets} 次`;
   }
   if (kcWardLineEl) {
-    kcWardLineEl.textContent = ward.active
-      ? `猫咪幸运佑护生效中：幸运掉宝 +${(ward.luckyDropBonus * 100).toFixed(1)}% · ${ward.saveCharges > 0 ? `九命护身 ×${ward.saveCharges}` : '好感合计 40 解锁九命护身'}（好感 ${ward.totalAffection}/${ward.maxAffection}）`
-      : '猫咪幸运佑护：好感合计 ≥10 生效，最高幸运掉宝 +10%；≥40 每班次九命护身 1 次，≥140 两次';
+    const kcWardFull = '猫咪幸运佑护：好感合计 ≥10 生效，最高幸运掉宝 +10%；≥40 每班次九命护身 1 次，≥140 两次';
+    if (ward.active) {
+      setRuleLine(
+        kcWardLineEl,
+        `猫咪佑护中：掉宝 +${(ward.luckyDropBonus * 100).toFixed(1)}% · ${ward.saveCharges > 0 ? `九命 ×${ward.saveCharges}` : '好感 40 解锁九命'}（好感 ${ward.totalAffection}/${ward.maxAffection}）`,
+        `猫咪幸运佑护生效中：幸运掉宝 +${(ward.luckyDropBonus * 100).toFixed(1)}% · ${ward.saveCharges > 0 ? `九命护身 ×${ward.saveCharges}` : '好感合计 40 解锁九命护身'}（好感 ${ward.totalAffection}/${ward.maxAffection}）\n${kcWardFull}`
+      );
+    } else {
+      setRuleLine(kcWardLineEl, '猫咪佑护：好感 ≥10 掉宝最高 +10%；≥40 / ≥140 每班九命 1 / 2 次', kcWardFull);
+    }
   }
   if (btnKittenDockEl) {
     btnKittenDockEl.classList.toggle('active', cardOpen);
@@ -17072,7 +17486,7 @@ function openAr12Card(cardEl) {
   dismissTelescopeCard();
   dismissAr10Cards();
   dismissAr11Cards();
-  dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   cardEl.classList.remove('hidden');
@@ -18030,10 +18444,15 @@ function syncPicnicBasketUI() {
   }
   if (pcWardLineEl) {
     const wardSpot = PICNIC_SPOT_BY_ID[stats.wardSpotId];
-    pcWardLineEl.textContent =
-      stats.wardCharges > 0 && wardSpot
-        ? `野餐好心情『${wardSpot.wardName}』：接下来 ${stats.wardCharges} 个打工班次 ${describePicnicWard(wardSpot.id, stats.wardAnticipation)}`
-        : `野餐好心情：周末完成一次野餐，接下来 ${PICNIC_RULES.wardShiftsPerPicnic} 个幸存者打工班次获得地点佑护（期待章每枚 +5%）`;
+    if (stats.wardCharges > 0 && wardSpot) {
+      setRuleLine(pcWardLineEl, `野餐好心情『${wardSpot.wardName}』：接下来 ${stats.wardCharges} 个打工班次 ${describePicnicWard(wardSpot.id, stats.wardAnticipation)}`);
+    } else {
+      setRuleLine(
+        pcWardLineEl,
+        `野餐好心情：周末野餐后护 ${PICNIC_RULES.wardShiftsPerPicnic} 个打工班次，期待章每枚 +5%`,
+        `野餐好心情：周末完成一次野餐，接下来 ${PICNIC_RULES.wardShiftsPerPicnic} 个幸存者打工班次获得地点佑护（期待章每枚 +5%）`
+      );
+    }
   }
 
   if (btnPicnicDockEl) {
@@ -18073,6 +18492,17 @@ function describeDiaryLine(key, n, dateKey) {
       : `和主人去野餐了 ${n} 次，风好舒服~`;
   }
   if (key === 'picnicPreps') return '一起把周末野餐篮装好了，好期待周末~';
+  // AR-17 季节换装 / 睡前故事：写进当天日记
+  if (key === 'outfits') {
+    const wd = player.seasonWardrobe || {};
+    const of = WARDROBE_OUTFIT_BY_ID[wd.lastOutfitId];
+    return of ? `换上了「${of.name}」套组转了一圈，主人说好看~` : `和主人一起换了 ${n} 次季节套组~`;
+  }
+  if (key === 'stories') {
+    const sb = player.bedtimeStorybook || {};
+    const so = BEDTIME_STORY_BY_ID[sb.lastStoryId];
+    return so ? `睡前和主人读完《${so.name}》，夹上了一枚小书签~` : `和主人一起读了 ${n} 本睡前小故事~`;
+  }
   if (key === 'embroideries') {
     const w = ((player.embroideryHoop && player.embroideryHoop.wall) || []).find((x) => x.date === dateKey);
     const pt = w ? EMBROIDERY_PATTERN_BY_ID[w.patternId] : null;
@@ -18436,7 +18866,11 @@ function syncDiaryBookUI() {
   if (btnDiaryTodayEl) btnDiaryTodayEl.disabled = page.isToday;
   if (btnDiaryHelperEl) btnDiaryHelperEl.disabled = !page.hasContent || page.stickers.length >= DIARY_RULES.stickerMax;
   if (dyFooterLineEl) {
-    dyFooterLineEl.textContent = `日记心意：每天前 ${DIARY_RULES.dailyRewards} 次给新的一页贴贴纸 +${DIARY_RULES.coinReward} 金币与亲密 · 已写 ${stats.written} 页 · 贴纸 ${stats.totalStickers} 枚，都记进七日心情周报`;
+    setRuleLine(
+      dyFooterLineEl,
+      `日记心意：每天前 ${DIARY_RULES.dailyRewards} 次给新页贴贴纸 +${DIARY_RULES.coinReward} 金币与亲密`,
+      `日记心意：每天前 ${DIARY_RULES.dailyRewards} 次给新的一页贴贴纸 +${DIARY_RULES.coinReward} 金币与亲密 · 已写 ${stats.written} 页 · 贴纸 ${stats.totalStickers} 枚，都记进七日心情周报`
+    );
   }
 
   player.isWritingDiary = Boolean(cardOpen || player.diaryCheerTimer > 0);
@@ -18547,7 +18981,7 @@ function openAr13Card(cardEl) {
   dismissAr10Cards();
   dismissAr11Cards();
   dismissAr12Cards();
-  dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   cardEl.classList.remove('hidden');
@@ -19406,10 +19840,15 @@ function syncPotteryWheelUI() {
   }
   if (pwWardLineEl) {
     const wg = POTTERY_GLAZE_BY_ID[stats.wardGlazeId];
-    pwWardLineEl.textContent =
-      stats.wardCharges > 0 && wg
-        ? `陶艺佑护『${wg.wardName}』：接下来 ${stats.wardCharges} 个打工班次 ${describePotteryWard(wg.id, stats.wardShapeId)}`
-        : `陶艺佑护：茶杯护 2 个打工班次、花瓶护 1 个（效果 ×1.5）；奶白减伤 / 樱粉金币 / 青瓷磁吸，图鉴每收 1 款再 +${Math.round(POTTERY_RULES.comboStep * 100)}%`;
+    if (stats.wardCharges > 0 && wg) {
+      setRuleLine(pwWardLineEl, `陶艺佑护『${wg.wardName}』：接下来 ${stats.wardCharges} 个打工班次 ${describePotteryWard(wg.id, stats.wardShapeId)}`);
+    } else {
+      setRuleLine(
+        pwWardLineEl,
+        `陶艺佑护：茶杯护 2 班、花瓶护 1 班（×1.5），图鉴每款再 +${Math.round(POTTERY_RULES.comboStep * 100)}%`,
+        `陶艺佑护：茶杯护 2 个打工班次、花瓶护 1 个（效果 ×1.5）；奶白减伤 / 樱粉金币 / 青瓷磁吸，图鉴每收 1 款再 +${Math.round(POTTERY_RULES.comboStep * 100)}%`
+      );
+    }
   }
 
   const pv = player.potteryVisual;
@@ -19690,9 +20129,13 @@ function syncAromaTableUI() {
     });
   }
   if (amRecipeLineEl) {
+    // 收录状态放最前，单行放不下时被省略的只会是色温，完整一句放进 title
     amRecipeLineEl.textContent = recipe
-      ? `「${recipe.name}」 · ${recipe.tone}色温约 ${recipe.kelvin}K${Number(disc[recipe.id]) > 0 ? ' · 已收录' : ' · 新香氛'}`
+      ? `${Number(disc[recipe.id]) > 0 ? '已收录' : '新香氛'}「${recipe.name}」 · 色温 ${recipe.kelvin}K`
       : '香调 = 当季基调 + 心情心调 + 她的小心意';
+    amRecipeLineEl.title = recipe
+      ? `「${recipe.name}」 · ${recipe.tone}色温约 ${recipe.kelvin}K${Number(disc[recipe.id]) > 0 ? ' · 已收录' : ' · 新香氛'}`
+      : amRecipeLineEl.textContent;
   }
 
   const mainState = getAromaMainState();
@@ -19723,9 +20166,22 @@ function syncAromaTableUI() {
     amCodexSubEl.textContent = `香氛图鉴 ${stats.discovered}/${stats.totalRecipes} · 当季「${season.note}」${stats.seasonFound}/${AROMA_MOODS.length} · 今日奖励 ${stats.rewardsToday}/${stats.dailyRewards}`;
   }
   if (amFooterLineEl) {
-    amFooterLineEl.textContent = active
-      ? `香氛舒心「${active.name}」：房间${active.tone}色温约 ${active.kelvin}K，还剩 ${active.minsLeft} 分钟，日常亲密 +${Math.round(AROMA_RULES.affectionBonus * 100)}%`
-      : `香氛舒心：滴满 3 滴点香后 ${AROMA_RULES.durationMin} 分钟，房间换上心情色温、日常亲密 +${Math.round(AROMA_RULES.affectionBonus * 100)}%；每天前 ${AROMA_RULES.dailyRewards} 次调香 +${AROMA_RULES.coinReward} 金币，新香氛再 +${AROMA_RULES.newRecipeCoins}`;
+    // 点香中：香名 / 色温 / 剩余时间上方季节行与香薰机标签已经写了，这里只留加成
+    const amAffection = Math.round(AROMA_RULES.affectionBonus * 100);
+    const amFull = `香氛舒心：滴满 3 滴点香后 ${AROMA_RULES.durationMin} 分钟，房间换上心情色温、日常亲密 +${amAffection}%；每天前 ${AROMA_RULES.dailyRewards} 次调香 +${AROMA_RULES.coinReward} 金币，新香氛再 +${AROMA_RULES.newRecipeCoins}`;
+    if (active) {
+      setRuleLine(
+        amFooterLineEl,
+        `香氛舒心中：日常亲密 +${amAffection}%`,
+        `香氛舒心「${active.name}」：房间${active.tone}色温约 ${active.kelvin}K，还剩 ${active.minsLeft} 分钟，日常亲密 +${amAffection}%`
+      );
+    } else {
+      setRuleLine(
+        amFooterLineEl,
+        `点香 ${AROMA_RULES.durationMin} 分钟：亲密 +${amAffection}%；每天前 ${AROMA_RULES.dailyRewards} 次 +${AROMA_RULES.coinReward} 金币，新香氛 +${AROMA_RULES.newRecipeCoins}`,
+        amFull
+      );
+    }
   }
 
   syncAromaAmbientOverlay(active);
@@ -19820,7 +20276,7 @@ function openAr14Card(cardEl) {
   dismissAr11Cards();
   dismissAr12Cards();
   dismissAr13Cards();
-  dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   cardEl.classList.remove('hidden');
@@ -20600,6 +21056,7 @@ function syncStarProjectorUI() {
         : card
           ? `「${card.name}」：${card.starNames.slice(0, Math.max(1, starRun.taps)).join(' · ')}${starRun.taps < card.taps ? ' …' : ''}`
           : `${seasonName}夜可投「${getStarSeasonCards(stats.seasonId).map((c) => c.name).join('」「')}」，已收集的卡随时能再投`;
+    spStoryLineEl.title = spStoryLineEl.textContent;
   }
 
   const mainState = getStarMainState();
@@ -20639,9 +21096,21 @@ function syncStarProjectorUI() {
     spAlbumSubEl.textContent = `星座卡册 ${stats.collected}/${stats.totalCards} · 好梦章 ${stats.totalDreams} · 今日奖励 ${stats.rewardsToday}/${stats.dailyRewards}`;
   }
   if (spFooterLineEl) {
-    spFooterLineEl.textContent = active
-      ? `星光陪伴「${active.name}」还剩 ${active.minsLeft} 分：这时一起晚安，好梦章金币 +${Math.round(STAR_RULES.goodnightBonus * 100)}%，星座卡盖好梦章（每天第 1 枚 +${STAR_RULES.dreamCoins} 金币）`
-      : `点亮一次投影 ${STAR_RULES.durationMin} 分钟；每天前 ${STAR_RULES.dailyRewards} 次 +${STAR_RULES.coinReward} 金币，新星座卡再 +${STAR_RULES.newCardCoins}，睡前 ×${STAR_RULES.bedtimeMult}`;
+    // 投影中：卡名与剩余时间上方夜空行已经写了，这里只留「一起晚安」的收益
+    const spGoodnight = Math.round(STAR_RULES.goodnightBonus * 100);
+    if (active) {
+      setRuleLine(
+        spFooterLineEl,
+        `亮着时一起晚安：盖好梦章，金币 +${spGoodnight}%（每天首枚 +${STAR_RULES.dreamCoins}）`,
+        `星光陪伴「${active.name}」还剩 ${active.minsLeft} 分：这时一起晚安，好梦章金币 +${spGoodnight}%，星座卡盖好梦章（每天第 1 枚 +${STAR_RULES.dreamCoins} 金币）`
+      );
+    } else {
+      setRuleLine(
+        spFooterLineEl,
+        `投影 ${STAR_RULES.durationMin} 分钟；每天前 ${STAR_RULES.dailyRewards} 次 +${STAR_RULES.coinReward} 金币，新卡 +${STAR_RULES.newCardCoins}，睡前 ×${STAR_RULES.bedtimeMult}`,
+        `点亮一次投影 ${STAR_RULES.durationMin} 分钟；每天前 ${STAR_RULES.dailyRewards} 次 +${STAR_RULES.coinReward} 金币，新星座卡再 +${STAR_RULES.newCardCoins}，睡前 ×${STAR_RULES.bedtimeMult}`
+      );
+    }
   }
 
   syncAr15Overlays(active);
@@ -20906,9 +21375,20 @@ function syncRainCornerUI() {
     rcCodexSubEl.textContent = `听雨手帐 ${stats.entries}/${stats.totalEntries} · ${weather.segName} ${stats.segFound}/${RAIN_WEATHERS.length} · 今日小记 ${stats.rewardsToday}/${stats.dailyNotes}`;
   }
   if (rcFooterLineEl) {
-    rcFooterLineEl.textContent = listening
-      ? `听雨安神：一边听雨日常亲密 +${Math.round(RAIN_RULES.calmBonus * 100)}%，每听满 ${RAIN_RULES.noteMin} 分钟记一则小记（单次最多 ${RAIN_RULES.maxSessionMin} 分钟）`
-      : `每听满 ${RAIN_RULES.noteMin} 分钟记一则听雨小记：每天前 ${RAIN_RULES.dailyNotes} 则 +${RAIN_RULES.coinReward} 金币，手帐新收录再 +${RAIN_RULES.newEntryCoins}；听雨时亲密 +${Math.round(RAIN_RULES.calmBonus * 100)}%`;
+    const rcCalm = Math.round(RAIN_RULES.calmBonus * 100);
+    if (listening) {
+      setRuleLine(
+        rcFooterLineEl,
+        `听雨安神：亲密 +${rcCalm}%，每满 ${RAIN_RULES.noteMin} 分钟记一则（单次至多 ${RAIN_RULES.maxSessionMin} 分）`,
+        `听雨安神：一边听雨日常亲密 +${rcCalm}%，每听满 ${RAIN_RULES.noteMin} 分钟记一则小记（单次最多 ${RAIN_RULES.maxSessionMin} 分钟）`
+      );
+    } else {
+      setRuleLine(
+        rcFooterLineEl,
+        `听雨亲密 +${rcCalm}%；每满 ${RAIN_RULES.noteMin} 分钟记一则，每天前 ${RAIN_RULES.dailyNotes} 则 +${RAIN_RULES.coinReward} 金币，新收录 +${RAIN_RULES.newEntryCoins}`,
+        `每听满 ${RAIN_RULES.noteMin} 分钟记一则听雨小记：每天前 ${RAIN_RULES.dailyNotes} 则 +${RAIN_RULES.coinReward} 金币，手帐新收录再 +${RAIN_RULES.newEntryCoins}；听雨时亲密 +${rcCalm}%`
+      );
+    }
   }
 
   syncAr15Overlays(undefined, weather);
@@ -21076,7 +21556,7 @@ function openAr15Card(cardEl) {
   dismissAr12Cards();
   dismissAr13Cards();
   dismissAr14Cards();
-  dismissAr15Cards(); dismissAr16Cards();
+  dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   cardEl.classList.remove('hidden');
@@ -21987,6 +22467,7 @@ function syncEmbroideryHoopUI() {
         : pt
           ? `「${pt.name}」最搭「${EMBROIDERY_THREAD_BY_ID[pt.bestThread].name}」，用它收针再 +${EMBROIDERY_RULES.bestThreadCoins} 金币`
           : `${seasonName}天可绣「${getEmbroiderySeasonPatterns(stats.seasonId).map((p) => p.name).join('」「')}」，绣过的绣样随时能再绣`;
+    ebStoryLineEl.title = ebStoryLineEl.textContent;
   }
 
   const mainState = getEmbroideryMainState();
@@ -22022,7 +22503,11 @@ function syncEmbroideryHoopUI() {
     ebAlbumSubEl.textContent = `绣样册 ${stats.collected}/${stats.totalPatterns} · 墙上 ${stats.wallCount}/${EMBROIDERY_RULES.wallMax} 幅 · 今日奖励 ${stats.rewardsToday}/${stats.dailyRewards}`;
   }
   if (ebFooterLineEl) {
-    ebFooterLineEl.textContent = `收针挂墙：每天前 ${EMBROIDERY_RULES.dailyRewards} 幅 +${EMBROIDERY_RULES.coinReward} 金币，新绣样再 +${EMBROIDERY_RULES.newPatternCoins}，最搭绣线 +${EMBROIDERY_RULES.bestThreadCoins}；当天日记多一枚刺绣布贴`;
+    setRuleLine(
+      ebFooterLineEl,
+      `收针挂墙：每天前 ${EMBROIDERY_RULES.dailyRewards} 幅 +${EMBROIDERY_RULES.coinReward} 金币，新绣样 +${EMBROIDERY_RULES.newPatternCoins}，最搭绣线 +${EMBROIDERY_RULES.bestThreadCoins}`,
+      `收针挂墙：每天前 ${EMBROIDERY_RULES.dailyRewards} 幅 +${EMBROIDERY_RULES.coinReward} 金币，新绣样再 +${EMBROIDERY_RULES.newPatternCoins}，最搭绣线 +${EMBROIDERY_RULES.bestThreadCoins}；当天日记多一枚刺绣布贴`
+    );
   }
 
   const ev = player.embroideryVisual;
@@ -22145,6 +22630,7 @@ function syncHearthCornerUI() {
           : sn
             ? `「${sn.name}」用${lv.name}烤，翻 ${lv.flips} 次面就是${lv.texture}的口感`
             : `现在是${lv.name}：翻 ${lv.flips} 次面烤出${lv.texture}口感，火越旺越快`;
+    hcStoryLineEl.title = hcStoryLineEl.textContent;
   }
 
   const mainState = getHearthMainState();
@@ -22173,9 +22659,21 @@ function syncHearthCornerUI() {
     hcCodexSubEl.textContent = `炉边点心手帐 ${stats.entries}/${stats.totalEntries} · ${shownLv.name} ${stats.levelFound}/${HEARTH_SNACKS.length} · 今日 ${stats.rewardsToday}/${stats.dailyRewards}`;
   }
   if (hcFooterLineEl) {
-    hcFooterLineEl.textContent = cuddle
-      ? `围炉依偎中：日常亲密 +${Math.round(cuddle.bonus * 100)}%（${cuddle.levelName}），还剩 ${cuddle.minsLeft} 分；再分一块就重新计时`
-      : `分着吃：每天前 ${HEARTH_RULES.dailyRewards} 块 +${HEARTH_RULES.coinReward} 金币，手帐新收录再 +${HEARTH_RULES.newEntryCoins}；之后围炉依偎 ${HEARTH_RULES.cuddleMin} 分钟，小火 / 暖火 / 旺火亲密 +4% / +6% / +8%`;
+    // 依偎中：剩余时间与亲密加成上方火力行已经写了，这里只留「再分一块重新计时」
+    const hcLvPct = HEARTH_LEVELS.filter((l) => l.bonus > 0).map((l) => Math.round(l.bonus * 100));
+    if (cuddle) {
+      setRuleLine(
+        hcFooterLineEl,
+        '围炉依偎中：再分一块就重新计时',
+        `围炉依偎中：日常亲密 +${Math.round(cuddle.bonus * 100)}%（${cuddle.levelName}），还剩 ${cuddle.minsLeft} 分；再分一块就重新计时`
+      );
+    } else {
+      setRuleLine(
+        hcFooterLineEl,
+        `分着吃：每天前 ${HEARTH_RULES.dailyRewards} 块 +${HEARTH_RULES.coinReward} 金币（新收录 +${HEARTH_RULES.newEntryCoins}），再依偎 ${HEARTH_RULES.cuddleMin} 分钟亲密 +${hcLvPct[0]}~${hcLvPct[hcLvPct.length - 1]}%`,
+        `分着吃：每天前 ${HEARTH_RULES.dailyRewards} 块 +${HEARTH_RULES.coinReward} 金币，手帐新收录再 +${HEARTH_RULES.newEntryCoins}；之后围炉依偎 ${HEARTH_RULES.cuddleMin} 分钟，小火 / 暖火 / 旺火亲密 +${hcLvPct.join('% / +')}%`
+      );
+    }
   }
 
   syncAr16Overlay(st, cuddle);
@@ -22279,6 +22777,13 @@ function syncStitchHearthPill(esIn = null, hsIn = null) {
 // 与 AR-11 ~ AR-15 同一条规则：窄屏胶囊行已排满时不为 AR-16 胶囊新开一行（offsetTop 不受旋转舞台变换影响），
 // 两段都放不下先只留优先的一段，仍放不下才整颗收起；只读 DOM，任何区段初始化时调用都不会触发 TDZ
 function fitStitchHearthPill() {
+  const fitted = fitStitchHearthPillOnly();
+  // AR-17 合并胶囊排在其后：AR-16 胶囊显隐 / 收起变化后立刻复核 AR-17 胶囊是否还放得下
+  fitWardrobeStoryPill();
+  return fitted;
+}
+
+function fitStitchHearthPillOnly() {
   const pill = document.getElementById('stitch-hearth-pill');
   if (!pill) return false;
   pill.classList.remove('sh-no-room', 'sh-solo');
@@ -22326,7 +22831,7 @@ function openAr16Card(cardEl) {
   dismissAr13Cards();
   dismissAr14Cards();
   dismissAr15Cards();
-  dismissAr16Cards();
+  dismissAr16Cards(); dismissAr17Cards();
   dismissPolaroid();
   closeAlbumLightbox();
   // AR-15 卡刚收起时她手里可能还举着星座卡 / 风铃：换成刺绣 / 松饼前先放下
@@ -22711,6 +23216,988 @@ window.__AR16_DEBUG__ = {
   }
 };
 
+// ================= AR-17 季节换装衣橱 & 睡前故事书 =================
+// 场景已满、船坞仍是 25 键：两张卡不加新键、不加场景物件，入口 = 「家具与装扮」抽屉快捷卡 + 合并胶囊
+// 换装只换她身上的配饰组合（已有 item_* 贴图）+ 当季小特效；结算仍只读 player.equipped，不改任何既有数值
+const wardrobeCardEl = document.getElementById('wardrobe-card');
+const wdSummaryPillEl = document.getElementById('wd-summary-pill');
+const wdSeasonRowEl = document.getElementById('wd-season-row');
+const wdSeasonNameEl = document.getElementById('wd-season-name');
+const wdSeasonSubEl = document.getElementById('wd-season-sub');
+const wdMirrorEl = document.getElementById('wd-mirror');
+const wdMirrorItemsEl = document.getElementById('wd-mirror-items');
+const wdMirrorPetalsEl = document.getElementById('wd-mirror-petals');
+const wdMirrorTagEl = document.getElementById('wd-mirror-tag');
+const wdOutfitRowEl = document.getElementById('wd-outfit-row');
+const wdStoryLineEl = document.getElementById('wd-story-line');
+const btnWardrobeHelperEl = document.getElementById('btn-wardrobe-helper');
+const btnWardrobeMainEl = document.getElementById('btn-wardrobe-main');
+const wdAlbumSubEl = document.getElementById('wd-album-sub');
+const wdAlbumGridEl = document.getElementById('wd-album-grid');
+const wdFooterLineEl = document.getElementById('wd-footer-line');
+
+const storybookCardEl = document.getElementById('storybook-card');
+const sbSummaryPillEl = document.getElementById('sb-summary-pill');
+const sbNightRowEl = document.getElementById('sb-night-row');
+const sbNightNameEl = document.getElementById('sb-night-name');
+const sbNightSubEl = document.getElementById('sb-night-sub');
+const sbBookEl = document.getElementById('sb-book');
+const sbPageTextEl = document.getElementById('sb-page-text');
+const sbBookTagEl = document.getElementById('sb-book-tag');
+const sbStoryRowEl = document.getElementById('sb-story-row');
+const sbStoryLineEl = document.getElementById('sb-story-line');
+const btnStorybookHelperEl = document.getElementById('btn-storybook-helper');
+const btnStorybookMainEl = document.getElementById('btn-storybook-main');
+const sbShelfSubEl = document.getElementById('sb-shelf-sub');
+const sbShelfGridEl = document.getElementById('sb-shelf-grid');
+const sbFooterLineEl = document.getElementById('sb-footer-line');
+
+const wsPillEl = document.getElementById('wardrobe-story-pill');
+const wsSegStoryEl = document.getElementById('ws-seg-story');
+const wsSegWardrobeEl = document.getElementById('ws-seg-wardrobe');
+const wsPillStoryEl = document.getElementById('ws-pill-story');
+const wsPillWardrobeEl = document.getElementById('ws-pill-wardrobe');
+
+function isAr17CardOpen(which = '') {
+  const wd = document.getElementById('wardrobe-card');
+  const sb = document.getElementById('storybook-card');
+  const wdOpen = Boolean(wd && !wd.classList.contains('hidden'));
+  const sbOpen = Boolean(sb && !sb.classList.contains('hidden'));
+  if (which === 'wardrobe') return wdOpen;
+  if (which === 'storybook') return sbOpen;
+  return wdOpen || sbOpen;
+}
+
+function dismissWardrobeCard() {
+  document.getElementById('wardrobe-card')?.classList.add('hidden');
+}
+
+function dismissStorybookCard() {
+  document.getElementById('storybook-card')?.classList.add('hidden');
+}
+
+// 只碰 DOM：其它卡片在模块初始化期间调用也不会触发 TDZ
+function dismissAr17Cards() {
+  dismissWardrobeCard();
+  dismissStorybookCard();
+}
+
+// ---------------- 季节换装衣橱：挑一套当季套组 → 换上（她转一圈，配饰组合 + 当季小特效跟着她）→ 记进周报与当天日记 ----------------
+function isOutfitUnlocked(outfitId, d = ar17Clock.date()) {
+  const of = WARDROBE_OUTFIT_BY_ID[outfitId];
+  if (!of) return false;
+  const rec = player.seasonWardrobe.outfits[outfitId];
+  return Boolean(rec && rec.count > 0) || of.season === getAromaSeasonId(d);
+}
+
+function pickWardrobeOutfit(outfitId) {
+  const of = WARDROBE_OUTFIT_BY_ID[outfitId];
+  if (!of) return { ok: false, reason: 'invalid_outfit' };
+  const d = ar17Clock.date();
+  if (!isOutfitUnlocked(outfitId, d)) {
+    wardrobeRun.lastAction = 'locked';
+    playSfx('pat');
+    setPlayerEmote(`「${of.name}」要等到${WARDROBE_SEASON_NAMES[of.season]}天才能换哦，先试试当季的套组吧~`, 2.2, 'happy', false);
+    syncWardrobeUI();
+    return { ok: false, reason: 'out_of_season', season: of.season };
+  }
+  wardrobeRun.previewId = outfitId;
+  wardrobeRun.lastAction = 'pick';
+  player.idleTime = 0;
+  playSfx('pat');
+  const wearing = player.seasonWardrobe.wearing === outfitId;
+  setPlayerEmote(
+    wearing ? `现在穿的就是「${of.name}」哦~` : `「${of.name}」：${of.items.map((k) => WARDROBE_ITEM_ART[k].name).join(' + ')}，要换上看看吗~`,
+    2.2,
+    'happy',
+    false
+  );
+  syncWardrobeUI();
+  return { ok: true, outfitId, wearing, inSeason: of.season === getAromaSeasonId(d) };
+}
+
+function wearWardrobeOutfit(outfitId = wardrobeRun.previewId, nowMs = ar17Clock.now()) {
+  const of = WARDROBE_OUTFIT_BY_ID[outfitId];
+  if (!of) return { ok: false, reason: 'no_outfit' };
+  const d = new Date(nowMs);
+  if (!isOutfitUnlocked(outfitId, d)) return { ok: false, reason: 'out_of_season', season: of.season };
+  const wd = player.seasonWardrobe;
+  if (wd.wearing === outfitId) return { ok: false, reason: 'already' };
+  const todayKey = formatLocalDateKey(d);
+  const prev = wd.outfits[of.id];
+  const isNew = !(prev && prev.count > 0);
+  wd.outfits[of.id] = { count: (prev ? prev.count : 0) + 1, first: prev && prev.first ? prev.first : todayKey };
+  wd.wearing = of.id;
+  wd.totalChanges = (wd.totalChanges || 0) + 1;
+  wd.lastOutfitId = of.id;
+  if (wd.rewardDate !== todayKey) {
+    wd.rewardDate = todayKey;
+    wd.rewardCount = 0;
+  }
+  let reward = null;
+  if (wd.rewardCount < WARDROBE_RULES.dailyRewards) {
+    wd.rewardCount += 1;
+    reward = { coins: WARDROBE_RULES.coinReward + (isNew ? WARDROBE_RULES.newOutfitCoins : 0), xp: WARDROBE_RULES.xpReward };
+  }
+  wardrobeRun.previewId = of.id;
+  wardrobeRun.lastAction = 'wear';
+  player.idleTime = 0;
+  player.happyTimer = 2;
+  player.wardrobeCheerTimer = 2.6;
+  petAudio.playCardSnip(WARDROBE_OUTFITS.indexOf(of));
+  petAudio.haptic('tap');
+  spawnInteractVfx(player.x, player.y - 30, 'sparkle', 8);
+  recordJournalActivity('outfits', 1, d);
+  if (reward) {
+    addCoins(reward.coins, player.x + 24, player.y - 44, '换装 ');
+    addAffectionXp(reward.xp, '换上季节套组转一圈');
+  }
+  setPlayerEmote(`${isNew ? '新套组！' : ''}换上「${of.name}」啦~ ${of.line} 周报和今天的日记都记下了~`, 3.0, 'cheer', true);
+  wardrobeRun.lastResult = {
+    outfitId: of.id,
+    name: of.name,
+    isNew,
+    reward,
+    count: wd.outfits[of.id].count,
+    collected: getWardrobeStats(d).collected
+  };
+  savePetState();
+  syncWardrobeUI();
+  syncDiaryBookUI();
+  return { ok: true, ...wardrobeRun.lastResult };
+}
+
+function takeOffWardrobe() {
+  const wd = player.seasonWardrobe;
+  const of = WARDROBE_OUTFIT_BY_ID[wd.wearing];
+  if (!of) return { ok: false, reason: 'not_wearing' };
+  wd.wearing = '';
+  wardrobeRun.lastAction = 'off';
+  player.idleTime = 0;
+  playSfx('pat');
+  setPlayerEmote(`「${of.name}」收进衣橱啦，换回平时的样子~`, 1.8, 'happy', false);
+  savePetState();
+  syncWardrobeUI();
+  return { ok: true, outfitId: of.id };
+}
+
+function getWardrobeMainState() {
+  const wd = player.seasonWardrobe;
+  const of = WARDROBE_OUTFIT_BY_ID[wardrobeRun.previewId];
+  if (!of) {
+    return WARDROBE_OUTFIT_BY_ID[wd.wearing]
+      ? { mode: 'off', disabled: false, label: '换回原样' }
+      : { mode: 'pick', disabled: true, label: '先挑套组' };
+  }
+  if (wd.wearing === of.id) return { mode: 'off', disabled: false, label: '换回原样' };
+  return { mode: 'wear', disabled: false, label: `换上「${of.short}」` };
+}
+
+function handleWardrobeMainAction() {
+  const st = getWardrobeMainState();
+  if (st.disabled) return { ok: false, reason: st.mode };
+  if (st.mode === 'wear') return wearWardrobeOutfit();
+  return takeOffWardrobe();
+}
+
+// 她来挑：先挑当季还没换过的那套（都换过就按日期轮换，尽量不重复身上这套），直接换上
+function wardrobeHelper() {
+  wardrobeRun.helperSeq += 1;
+  const d = ar17Clock.date();
+  const season = getWardrobeSeasonOutfits(getAromaSeasonId(d));
+  const wd = player.seasonWardrobe;
+  const fresh = season.find((o) => !(wd.outfits[o.id] && wd.outfits[o.id].count > 0));
+  let pick = fresh || season[(d.getDate() + wardrobeRun.helperSeq) % season.length];
+  if (pick.id === wd.wearing) pick = season.find((o) => o.id !== wd.wearing) || pick;
+  pickWardrobeOutfit(pick.id);
+  return { ...wearWardrobeOutfit(pick.id), step: 'helper' };
+}
+
+// ---------------- 睡前故事书：挑一篇 → 你翻一页她读一页 → 夹上书签；睡前读完留下晚安余温，与晚安八音盒联动 ----------------
+function pickStory(storyId) {
+  const so = BEDTIME_STORY_BY_ID[storyId];
+  if (!so) return { ok: false, reason: 'invalid_story' };
+  const same = storyRun.storyId === storyId && storyRun.phase === 'read';
+  storyRun.storyId = storyId;
+  if (!same) {
+    storyRun.page = 0;
+    storyRun.phase = 'read';
+  }
+  storyRun.lastAction = 'pick';
+  player.bedtimeStorybook.lastStoryId = storyId;
+  player.idleTime = 0;
+  playSfx('pat');
+  setPlayerEmote(`读《${so.name}》吧，一共 ${so.pages.length} 页，你翻页、我来读~`, 2.2, 'happy', false);
+  syncStorybookUI();
+  return { ok: true, storyId, same };
+}
+
+function turnStoryPage() {
+  const so = BEDTIME_STORY_BY_ID[storyRun.storyId];
+  if (!so) {
+    setPlayerEmote('先挑一篇故事吧~', 1.6, 'happy', false);
+    return { ok: false, reason: 'no_story' };
+  }
+  if (storyRun.phase === 'done') return { ok: false, reason: 'done' };
+  if (storyRun.page >= so.pages.length) return { ok: false, reason: 'full' };
+  storyRun.phase = 'read';
+  storyRun.page += 1;
+  storyRun.flip = 0.6;
+  storyRun.lastAction = 'turn';
+  player.idleTime = 0;
+  player.happyTimer = 0.6;
+  petAudio.playDiaryFlip();
+  petAudio.haptic('tap');
+  setPlayerEmote(so.pages[storyRun.page - 1], 2.6, 'happy', false);
+  syncStorybookUI();
+  return { ok: true, page: storyRun.page, pages: so.pages.length, text: so.pages[storyRun.page - 1] };
+}
+
+function finishStory(nowMs = ar17Clock.now()) {
+  const so = BEDTIME_STORY_BY_ID[storyRun.storyId];
+  if (!so) return { ok: false, reason: 'no_story' };
+  if (storyRun.phase === 'done') return { ok: false, reason: 'done' };
+  if (storyRun.page < so.pages.length) return { ok: false, reason: 'pages', page: storyRun.page };
+  const sb = player.bedtimeStorybook;
+  const d = new Date(nowMs);
+  const todayKey = formatLocalDateKey(d);
+  const bedtime = isStoryBedtime(d);
+  // AR-15 星空投影点亮时睡前读完：这枚书签记成「星光书签」（只是纪念，不加数值）
+  const starlit = bedtime && Boolean(getActiveProjection());
+  const prev = sb.bookmarks[so.id];
+  const isNew = !(prev && prev.count > 0);
+  sb.bookmarks[so.id] = {
+    count: (prev ? prev.count : 0) + 1,
+    first: prev && prev.first ? prev.first : todayKey,
+    starlit: Boolean(prev && prev.starlit) || starlit
+  };
+  sb.totalStories = (sb.totalStories || 0) + 1;
+  sb.lastStoryId = so.id;
+  if (sb.rewardDate !== todayKey) {
+    sb.rewardDate = todayKey;
+    sb.rewardCount = 0;
+  }
+  let reward = null;
+  if (sb.rewardCount < STORY_RULES.dailyRewards) {
+    sb.rewardCount += 1;
+    reward = { coins: STORY_RULES.coinReward + (isNew ? STORY_RULES.newBookmarkCoins : 0), xp: STORY_RULES.xpReward };
+  }
+  // 睡前读完：留下 90 分钟晚安余温（再读一篇就重新计时）
+  if (bedtime) sb.glow = { startMs: Math.round(nowMs), endMs: Math.round(nowMs + STORY_RULES.glowMin * 60000), storyId: so.id };
+  storyRun.phase = 'done';
+  storyRun.wasGlow = Boolean(getStoryGlow(nowMs));
+  storyRun.lastAction = 'finish';
+  player.idleTime = 0;
+  player.happyTimer = 2;
+  player.storyCheerTimer = 3;
+  if (bedtime) petAudio.playStarDream();
+  else petAudio.playDiarySticker(BEDTIME_STORIES.indexOf(so));
+  petAudio.haptic('headpat');
+  spawnInteractVfx(player.x, player.y - 28, 'love', 7);
+  recordJournalActivity('stories', 1, d);
+  if (reward) {
+    addCoins(reward.coins, player.x + 24, player.y - 44, '书签 ');
+    addAffectionXp(reward.xp, '睡前一起读完一本小故事');
+  }
+  setPlayerEmote(
+    `${isNew ? '新书签！' : ''}《${so.name}》读完啦，${starlit ? '星光下' : ''}夹上书签~ ${bedtime ? '待会儿开晚安八音盒，会更好睡哦' : '睡前再来读会更有晚安的感觉'}`,
+    3.0,
+    'cheer',
+    true
+  );
+  storyRun.lastResult = {
+    storyId: so.id,
+    name: so.name,
+    isNew,
+    reward,
+    bedtime,
+    starlit,
+    glowEndMs: bedtime ? sb.glow.endMs : 0,
+    collected: getStorybookStats(d).collected
+  };
+  savePetState();
+  syncStorybookUI();
+  syncDiaryBookUI();
+  return { ok: true, ...storyRun.lastResult };
+}
+
+function getStoryMainState() {
+  const so = BEDTIME_STORY_BY_ID[storyRun.storyId];
+  if (storyRun.phase === 'done') return { mode: 'again', disabled: false, label: '再读一本' };
+  if (!so) return { mode: 'pick', disabled: true, label: '先挑故事' };
+  if (storyRun.page < so.pages.length) return { mode: 'turn', disabled: false, label: `翻一页 ${storyRun.page}/${so.pages.length}` };
+  return { mode: 'finish', disabled: false, label: '夹上书签' };
+}
+
+function handleStoryMainAction() {
+  const st = getStoryMainState();
+  if (st.disabled) return { ok: false, reason: st.mode };
+  if (st.mode === 'turn') return turnStoryPage();
+  if (st.mode === 'finish') return finishStory();
+  storyRun.storyId = '';
+  storyRun.page = 0;
+  storyRun.phase = 'pick';
+  storyRun.lastAction = 'again';
+  playSfx('pat');
+  setPlayerEmote('再挑一本吧~', 1.4, 'happy', false);
+  syncStorybookUI();
+  return { ok: true, phase: storyRun.phase };
+}
+
+// 她来读：没挑故事时先读今晚推荐（夹过书签就挑还没读过的，都读过按日期轮换），一口气读完并夹上书签
+function storyHelper() {
+  storyRun.helperSeq += 1;
+  const d = ar17Clock.date();
+  if (storyRun.phase === 'done' || !BEDTIME_STORY_BY_ID[storyRun.storyId]) {
+    const sb = player.bedtimeStorybook;
+    const tonight = getTonightStory(d);
+    const unread = (s) => !(sb.bookmarks[s.id] && sb.bookmarks[s.id].count > 0);
+    const pick = unread(tonight)
+      ? tonight
+      : BEDTIME_STORIES.find(unread) || BEDTIME_STORIES[(d.getDate() + storyRun.helperSeq) % BEDTIME_STORIES.length];
+    storyRun.storyId = '';
+    storyRun.phase = 'pick';
+    pickStory(pick.id);
+  }
+  const so = BEDTIME_STORY_BY_ID[storyRun.storyId];
+  let guard = 0;
+  while (so && storyRun.page < so.pages.length && guard < 6) {
+    turnStoryPage();
+    guard += 1;
+  }
+  return { ...finishStory(), step: 'helper' };
+}
+
+// 晚安八音盒结算时调用：晚安余温里完成伴眠，另外 +12 金币 +8 亲密；每天最多 1 次，余温随之用掉
+function awardStoryGoodnight(nowMs = ar17Clock.now()) {
+  const sb = player.bedtimeStorybook;
+  if (!sb) return null;
+  const glow = getStoryGlow(nowMs);
+  if (!glow) return null;
+  const todayKey = formatLocalDateKey(new Date(nowMs));
+  if (sb.goodnightDate === todayKey) return null;
+  sb.goodnightDate = todayKey;
+  sb.totalGoodnights = (sb.totalGoodnights || 0) + 1;
+  sb.glow = null;
+  storyRun.wasGlow = false;
+  addCoins(STORY_RULES.goodnightCoins, player.x - 24, player.y - 52, '故事晚安 ');
+  addAffectionXp(STORY_RULES.goodnightXp, `睡前故事晚安 +${STORY_RULES.goodnightXp} 亲密`);
+  syncStorybookUI();
+  return { coins: STORY_RULES.goodnightCoins, xp: STORY_RULES.goodnightXp, storyId: glow.storyId };
+}
+
+let wdOutfitKey = null;
+let wdAlbumKey = null;
+let wdItemsKey = null;
+let sbStoryKey = null;
+let sbShelfKey = null;
+
+function syncWardrobeUI() {
+  const wd = player.seasonWardrobe;
+  if (!wd) return;
+  const d = ar17Clock.date();
+  const stats = getWardrobeStats(d);
+  const cardOpen = isAr17CardOpen('wardrobe');
+  const preview = WARDROBE_OUTFIT_BY_ID[wardrobeRun.previewId] || null;
+  const wearing = WARDROBE_OUTFIT_BY_ID[wd.wearing] || null;
+  const shown = preview || wearing;
+  const seasonName = WARDROBE_SEASON_NAMES[stats.seasonId];
+
+  if (wdSummaryPillEl) wdSummaryPillEl.textContent = `衣橱 ${stats.collected}/${stats.totalOutfits}`;
+  if (wdSeasonRowEl) wdSeasonRowEl.dataset.season = stats.seasonId;
+  const wdSeasonIco = document.getElementById('wd-season-ico');
+  if (wdSeasonIco && wdSeasonIco.getAttribute('src') !== WARDROBE_SEASON_ART[stats.seasonId]) wdSeasonIco.setAttribute('src', WARDROBE_SEASON_ART[stats.seasonId]);
+  if (wdSeasonNameEl) wdSeasonNameEl.textContent = `本季 · ${seasonName}季套组`;
+  if (wdSeasonSubEl) {
+    wdSeasonSubEl.textContent = `${d.getMonth() + 1}月${d.getDate()}日 · 按本地季节解锁 · 今日奖励 ${stats.rewardsToday}/${stats.dailyRewards}`;
+  }
+  if (wdMirrorEl) {
+    wdMirrorEl.dataset.season = shown ? shown.season : stats.seasonId;
+    wdMirrorEl.dataset.wearing = wearing && shown && wearing.id === shown.id ? '1' : '0';
+    wdMirrorEl.style.setProperty('--wd-rgb', shown ? shown.rgb : '255, 244, 236');
+    wdMirrorEl.classList.toggle('is-cheer', (player.wardrobeCheerTimer || 0) > 0);
+  }
+  if (wdMirrorItemsEl) {
+    const key = `${shown ? shown.id : ''}|${stats.seasonId}`;
+    if (key !== wdItemsKey) {
+      wdItemsKey = key;
+      wdMirrorItemsEl.innerHTML = shown
+        ? shown.items.map((k) => `<img src="${WARDROBE_ITEM_ART[k].img}" alt="" class="wd-item-ico" title="${WARDROBE_ITEM_ART[k].name}" />`).join('')
+        : '';
+      if (wdMirrorPetalsEl) {
+        const art = WARDROBE_SEASON_ART[shown ? shown.season : stats.seasonId];
+        wdMirrorPetalsEl.innerHTML = [0, 1, 2]
+          .map((i) => `<img src="${art}" alt="" class="wd-petal" style="left:${14 + i * 30}%;animation-delay:${(i * 0.7).toFixed(1)}s" />`)
+          .join('');
+      }
+    }
+  }
+  if (wdMirrorTagEl) {
+    wdMirrorTagEl.textContent = shown ? `${shown.short} · ${wearing && wearing.id === shown.id ? '穿着中' : '试穿看看'}` : '先挑套组';
+  }
+
+  if (wdOutfitRowEl) {
+    const season = getWardrobeSeasonOutfits(stats.seasonId);
+    const rKey = season.map((o) => o.id).join(',');
+    if (rKey !== wdOutfitKey) {
+      wdOutfitKey = rKey;
+      wdOutfitRowEl.innerHTML = season
+        .map(
+          (o) => `<button type="button" class="wd-outfit-chip" data-outfit-id="${o.id}" style="--wd-rgb:${o.rgb}">
+            <img src="${WARDROBE_ITEM_ART[o.items[0]].img}" alt="" class="wd-outfit-ico" />
+            <span class="wd-outfit-meta">
+              <span class="wd-outfit-name">${o.name}</span>
+              <em class="wd-outfit-sub"></em>
+            </span>
+          </button>`
+        )
+        .join('');
+    }
+    wdOutfitRowEl.querySelectorAll('.wd-outfit-chip').forEach((chip) => {
+      const oid = chip.dataset.outfitId;
+      const rec = wd.outfits[oid];
+      chip.classList.toggle('active', Boolean(shown && shown.id === oid));
+      chip.classList.toggle('is-found', Boolean(rec && rec.count > 0));
+      chip.classList.toggle('is-wearing', wd.wearing === oid);
+      const sub = chip.querySelector('.wd-outfit-sub');
+      if (sub) sub.textContent = wd.wearing === oid ? '穿着中' : rec && rec.count > 0 ? `换过${rec.count}次` : '新套组';
+      chip.title = `${WARDROBE_OUTFIT_BY_ID[oid].name} · ${WARDROBE_OUTFIT_BY_ID[oid].items.map((k) => WARDROBE_ITEM_ART[k].name).join(' + ')}`;
+    });
+  }
+  if (wdStoryLineEl) {
+    wdStoryLineEl.textContent = shown
+      ? `${shown.items.map((k) => WARDROBE_ITEM_ART[k].name).join(' + ')} · ${shown.season === stats.seasonId ? '当季' : `${WARDROBE_SEASON_NAMES[shown.season]}季`}小特效`
+      : `${seasonName}季可换「${getWardrobeSeasonOutfits(stats.seasonId).map((o) => o.name).join('」「')}」，换过的随时能再穿`;
+    wdStoryLineEl.title = shown ? shown.line : wdStoryLineEl.textContent;
+  }
+  const mainState = getWardrobeMainState();
+  if (btnWardrobeMainEl) {
+    btnWardrobeMainEl.disabled = mainState.disabled;
+    btnWardrobeMainEl.textContent = mainState.label;
+    btnWardrobeMainEl.dataset.mode = mainState.mode;
+    btnWardrobeMainEl.classList.toggle('is-ready', !mainState.disabled && mainState.mode === 'wear');
+  }
+  if (btnWardrobeHelperEl) btnWardrobeHelperEl.textContent = '她来挑';
+
+  if (wdAlbumGridEl) {
+    const aKey = `${stats.seasonId}|${WARDROBE_OUTFITS.map((o) => (wd.outfits[o.id] ? wd.outfits[o.id].count : 0)).join(',')}|${wd.wearing}|${shown ? shown.id : ''}`;
+    if (aKey !== wdAlbumKey) {
+      wdAlbumKey = aKey;
+      wdAlbumGridEl.innerHTML = WARDROBE_OUTFITS.map((o) => {
+        const rec = wd.outfits[o.id];
+        const found = Boolean(rec && rec.count > 0);
+        const inSeason = o.season === stats.seasonId;
+        const tag = found ? o.short : `${WARDROBE_SEASON_NAMES[o.season]}季`;
+        return `<button type="button" class="wd-album-chip${found ? ' is-found' : ''}${inSeason ? ' is-season' : ''}${wd.wearing === o.id ? ' is-wearing' : ''}${shown && shown.id === o.id ? ' is-current' : ''}" data-outfit-id="${o.id}" style="--wd-rgb:${o.rgb}" title="${o.name}${found ? ` · 换过 ${rec.count} 次` : inSeason ? ' · 当季可换' : ` · ${WARDROBE_SEASON_NAMES[o.season]}季可换`}">
+            <img src="${WARDROBE_SEASON_ART[o.season]}" alt="" class="wd-album-ico" />
+            <em class="wd-album-tag">${tag}</em>
+          </button>`;
+      }).join('');
+    }
+  }
+  if (wdAlbumSubEl) wdAlbumSubEl.textContent = `每季 2 套 · 共换装 ${stats.totalChanges} 次`;
+  if (wdFooterLineEl) {
+    setRuleLine(
+      wdFooterLineEl,
+      `换装：每天前 ${WARDROBE_RULES.dailyRewards} 次 +${WARDROBE_RULES.coinReward} 金币，新套组 +${WARDROBE_RULES.newOutfitCoins}`,
+      `换装：每天前 ${WARDROBE_RULES.dailyRewards} 次 +${WARDROBE_RULES.coinReward} 金币 +${WARDROBE_RULES.xpReward} 亲密，第一次换上的套组再 +${WARDROBE_RULES.newOutfitCoins}；只换造型，已穿戴饰品的加成不变；记进周报和当天日记`
+    );
+  }
+
+  const wv = player.wardrobeVisual;
+  wv.outfitId = wearing ? wearing.id : '';
+  wv.look = getWardrobeLook(wv.outfitId);
+  wv.seasonKey = wearing ? wearing.season : '';
+  wv.rgb = wearing ? wearing.rgb : '';
+  wv.cardOpen = cardOpen;
+  wv.preview = preview ? preview.id : '';
+  wv.cheer = player.wardrobeCheerTimer || 0;
+  syncWardrobeStoryPill(stats, null);
+}
+
+function syncStorybookUI() {
+  const sb = player.bedtimeStorybook;
+  if (!sb) return;
+  const d = ar17Clock.date();
+  const stats = getStorybookStats(d);
+  const cardOpen = isAr17CardOpen('storybook');
+  const so = BEDTIME_STORY_BY_ID[storyRun.storyId] || null;
+  const tonight = BEDTIME_STORY_BY_ID[stats.tonightId];
+  const glow = stats.glow;
+
+  if (sbSummaryPillEl) sbSummaryPillEl.textContent = `书签 ${stats.collected}/${stats.totalStories}`;
+  if (sbNightRowEl) {
+    sbNightRowEl.dataset.bedtime = stats.bedtime ? '1' : '0';
+    sbNightRowEl.dataset.glow = glow ? '1' : '0';
+  }
+  if (sbNightNameEl) sbNightNameEl.textContent = `${stats.bedtime ? '睡前' : '白天'} · 今晚《${tonight.name}》`;
+  if (sbNightSubEl) {
+    sbNightSubEl.textContent = glow
+      ? `晚安余温还剩 ${glow.minsLeft} 分`
+      : stats.bedtime
+        ? `${d.getMonth() + 1}月${d.getDate()}日 · 睡前读完留下晚安余温 · 今日奖励 ${stats.rewardsToday}/${stats.dailyRewards}`
+        : `${d.getMonth() + 1}月${d.getDate()}日 · 20:00 后是睡前时间 · 今日奖励 ${stats.rewardsToday}/${stats.dailyRewards}`;
+  }
+  if (sbBookEl) {
+    sbBookEl.dataset.phase = storyRun.phase;
+    sbBookEl.dataset.glow = glow ? '1' : '0';
+    sbBookEl.style.setProperty('--sb-rgb', so ? so.rgb : tonight.rgb);
+    sbBookEl.classList.toggle('is-flipping', storyRun.flip > 0);
+  }
+  if (sbPageTextEl) {
+    sbPageTextEl.textContent =
+      storyRun.phase === 'done' && storyRun.lastResult
+        ? `《${storyRun.lastResult.name}》书签夹好啦`
+        : so
+          ? storyRun.page > 0
+            ? so.pages[storyRun.page - 1]
+            : `《${so.name}》`
+          : '挑一篇故事';
+  }
+  if (sbBookTagEl) {
+    sbBookTagEl.textContent =
+      storyRun.phase === 'done' && storyRun.lastResult
+        ? `${BEDTIME_STORY_BY_ID[storyRun.lastResult.storyId].short} · 已夹书签`
+        : so
+          ? `${so.short} · ${storyRun.page}/${so.pages.length} 页`
+          : '先挑故事';
+  }
+
+  if (sbStoryRowEl) {
+    const rKey = BEDTIME_STORIES.map((s) => s.id).join(',');
+    if (rKey !== sbStoryKey) {
+      sbStoryKey = rKey;
+      sbStoryRowEl.innerHTML = BEDTIME_STORIES.map(
+        (s) => `<button type="button" class="sb-story-chip" data-story-id="${s.id}" style="--sb-rgb:${s.rgb}">
+            <span class="sb-story-name">${s.name}</span>
+          </button>`
+      ).join('');
+    }
+    sbStoryRowEl.querySelectorAll('.sb-story-chip').forEach((chip) => {
+      const sid = chip.dataset.storyId;
+      const rec = sb.bookmarks[sid];
+      chip.classList.toggle('active', Boolean(so && so.id === sid));
+      chip.classList.toggle('is-found', Boolean(rec && rec.count > 0));
+      chip.classList.toggle('is-tonight', sid === stats.tonightId);
+      chip.title = `${BEDTIME_STORY_BY_ID[sid].name}${sid === stats.tonightId ? ' · 今晚推荐' : ''}${rec && rec.count > 0 ? ` · 读过 ${rec.count} 次` : ' · 还没读过'}`;
+    });
+  }
+  if (sbStoryLineEl) {
+    sbStoryLineEl.textContent =
+      storyRun.phase === 'done' && storyRun.lastResult
+        ? storyRun.lastResult.bedtime
+          ? '再挑一本，或者去开晚安八音盒~'
+          : '睡前读完才会留下晚安余温'
+        : so
+          ? `《${so.name}》共 ${so.pages.length} 页：你翻页，她来读`
+          : `今晚推荐《${tonight.name}》，6 篇故事随时能读`;
+    sbStoryLineEl.title = sbStoryLineEl.textContent;
+  }
+  const mainState = getStoryMainState();
+  if (btnStorybookMainEl) {
+    btnStorybookMainEl.disabled = mainState.disabled;
+    btnStorybookMainEl.textContent = mainState.label;
+    btnStorybookMainEl.dataset.mode = mainState.mode;
+    btnStorybookMainEl.classList.toggle('is-ready', !mainState.disabled && mainState.mode === 'finish');
+  }
+  if (btnStorybookHelperEl) btnStorybookHelperEl.textContent = '她来读';
+
+  if (sbShelfGridEl) {
+    const cKey = `${BEDTIME_STORIES.map((s) => (sb.bookmarks[s.id] ? `${sb.bookmarks[s.id].count}${sb.bookmarks[s.id].starlit ? 's' : ''}` : '0')).join(',')}|${so ? so.id : ''}`;
+    if (cKey !== sbShelfKey) {
+      sbShelfKey = cKey;
+      sbShelfGridEl.innerHTML = BEDTIME_STORIES.map((s) => {
+        const rec = sb.bookmarks[s.id];
+        const found = Boolean(rec && rec.count > 0);
+        return `<span class="sb-shelf-chip${found ? ' is-found' : ''}${rec && rec.starlit ? ' is-starlit' : ''}${so && so.id === s.id ? ' is-now' : ''}" data-story-id="${s.id}" style="--sb-rgb:${s.rgb}" title="${s.name}${found ? ` · 书签 ×${rec.count}${rec.starlit ? ' · 星光书签' : ''}` : ' · 还没夹书签'}">
+            <img src="./assets/story_bookmark.webp?v=hd33" alt="" class="sb-shelf-ico" />
+            <em class="sb-shelf-tag">${found ? `${s.short}${rec.starlit ? '·星光' : ''}` : '待收集'}</em>
+          </span>`;
+      }).join('');
+    }
+  }
+  if (sbShelfSubEl) {
+    sbShelfSubEl.textContent = `星光书签 ${stats.starlit} · 故事晚安 ${stats.totalGoodnights} 次 · 共读 ${stats.totalRead} 本`;
+  }
+  if (sbFooterLineEl) {
+    if (glow) {
+      setRuleLine(
+        sbFooterLineEl,
+        `晚安余温中：完成晚安伴眠另 +${STORY_RULES.goodnightCoins} 金币`,
+        `晚安余温还剩 ${glow.minsLeft} 分：这期间完成晚安八音盒伴眠，另外 +${STORY_RULES.goodnightCoins} 金币 +${STORY_RULES.goodnightXp} 亲密（每天最多 ${STORY_RULES.goodnightDaily} 次，不改好梦章原有数值）`
+      );
+    } else {
+      setRuleLine(
+        sbFooterLineEl,
+        `读完：每天前 ${STORY_RULES.dailyRewards} 本 +${STORY_RULES.coinReward} 金币，新书签 +${STORY_RULES.newBookmarkCoins}`,
+        `读完夹书签：每天前 ${STORY_RULES.dailyRewards} 本 +${STORY_RULES.coinReward} 金币 +${STORY_RULES.xpReward} 亲密，新书签再 +${STORY_RULES.newBookmarkCoins}；睡前（20:00 ~ 05:00）读完留下 ${STORY_RULES.glowMin} 分钟晚安余温，期间完成晚安伴眠另 +${STORY_RULES.goodnightCoins} 金币 +${STORY_RULES.goodnightXp} 亲密（每天 ${STORY_RULES.goodnightDaily} 次）`
+      );
+    }
+  }
+
+  const sv = player.storyVisual;
+  sv.cardOpen = cardOpen;
+  sv.reading = Boolean(so && storyRun.phase === 'read');
+  sv.storyId = so ? so.id : '';
+  sv.rgb = so ? so.rgb : tonight.rgb;
+  sv.page = storyRun.page;
+  sv.pages = so ? so.pages.length : 0;
+  sv.cheer = player.storyCheerTimer || 0;
+  sv.glow = Boolean(glow);
+  syncWardrobeStoryPill(null, stats);
+}
+
+// 每秒复核一次：晚安余温到点散去；跨日刷新当季套组 / 今晚推荐
+function refreshAr17Clock() {
+  const nowMs = ar17Clock.now();
+  const d = new Date(nowMs);
+  const glow = getStoryGlow(nowMs);
+  let storyChanged = false;
+  if (storyRun.wasGlow && !glow) {
+    storyRun.wasGlow = false;
+    storyChanged = true;
+  } else {
+    storyRun.wasGlow = Boolean(glow);
+  }
+  const sb = player.bedtimeStorybook;
+  if (!glow && sb.glow && Number(sb.glow.endMs) <= nowMs) {
+    sb.glow = null;
+    savePetState();
+    storyChanged = true;
+  }
+  const dayKey = formatLocalDateKey(d);
+  let wardrobeChanged = false;
+  if (dayKey !== storyRun.dayKey) {
+    storyRun.dayKey = dayKey;
+    storyChanged = true;
+    wardrobeChanged = true;
+  }
+  if (wardrobeChanged || isAr17CardOpen('wardrobe')) syncWardrobeUI();
+  if (storyChanged || glow || isAr17CardOpen('storybook')) syncStorybookUI();
+}
+
+// ---------------- AR-17 合并紧凑胶囊：晚安余温 / 读到第几页 + 正在穿的季节套组，窄屏放不下就收起 ----------------
+function syncWardrobeStoryPill(wsIn = null, ssIn = null) {
+  if (!wsPillEl) return;
+  const ws = wsIn || getWardrobeStats();
+  const ss = ssIn || getStorybookStats();
+  const outfit = WARDROBE_OUTFIT_BY_ID[ws.wearing];
+  const showStory = Boolean(ss.glow || ss.reading);
+  const showWardrobe = Boolean(outfit);
+  wsPillEl.classList.toggle('hidden', !(gameMode === 'pet' && (showStory || showWardrobe)));
+  wsPillEl.classList.toggle('has-glow', Boolean(ss.glow));
+  wsSegStoryEl?.classList.toggle('hidden', !showStory);
+  wsSegWardrobeEl?.classList.toggle('hidden', !showWardrobe);
+  // 晚安余温更有时效：两段都在时优先留故事段
+  wsSegStoryEl?.classList.toggle('is-priority', showStory);
+  wsSegWardrobeEl?.classList.toggle('is-priority', !showStory);
+  if (wsPillStoryEl) wsPillStoryEl.textContent = ss.glow ? `余温${ss.glow.minsLeft}分` : ss.reading ? `${ss.page}/${ss.pages}页` : '';
+  if (wsPillWardrobeEl) wsPillWardrobeEl.textContent = outfit ? outfit.short : '';
+  if (outfit) wsPillEl.style.setProperty('--wd-rgb', outfit.rgb);
+  wsPillEl.title = `${ss.glow ? `睡前故事晚安余温还剩 ${ss.glow.minsLeft} 分钟` : ss.reading ? `睡前故事读到第 ${ss.page}/${ss.pages} 页` : '睡前故事书'} · ${outfit ? `穿着「${outfit.name}」套组` : '季节换装衣橱'}`;
+  fitWardrobeStoryPill();
+}
+
+// 与 AR-11 ~ AR-16 同一条规则：窄屏胶囊行已排满时不为 AR-17 胶囊新开一行（offsetTop 不受旋转舞台变换影响），
+// 两段都放不下先只留优先的一段，仍放不下才整颗收起；只读 DOM，任何区段初始化时调用都不会触发 TDZ
+function fitWardrobeStoryPill() {
+  const pill = document.getElementById('wardrobe-story-pill');
+  if (!pill) return false;
+  pill.classList.remove('ws-no-room', 'ws-solo');
+  if (pill.classList.contains('hidden') || pill.offsetParent === null) return false;
+  const compact = window.matchMedia ? window.matchMedia('(max-width: 920px), (max-height: 430px)') : null;
+  if (!compact || !compact.matches) return true;
+  const row = pill.parentElement;
+  const others = row
+    ? Array.from(row.children).filter((b) => b !== pill && !b.classList.contains('hidden') && b.offsetParent !== null)
+    : [];
+  if (!others.length) return true;
+  const mid = (b) => b.offsetTop + b.offsetHeight / 2;
+  const lastRowMid = Math.max(...others.map(mid));
+  if (mid(pill) <= lastRowMid + 6) return true;
+  const shownSegs = Array.from(pill.querySelectorAll('.ws-seg')).filter((s) => !s.classList.contains('hidden'));
+  if (shownSegs.length > 1) {
+    pill.classList.add('ws-solo');
+    if (mid(pill) <= lastRowMid + 6) return true;
+    pill.classList.remove('ws-solo');
+  }
+  pill.classList.add('ws-no-room');
+  return false;
+}
+
+function openAr17Card(cardEl) {
+  if (!cardEl) return;
+  if (gameMode !== 'pet') switchMode('pet');
+  closeDrawer();
+  dismissTopicCard();
+  dismissWindowAmbienceCard();
+  foldOrHidePomodoroCard();
+  dismissTeatimeCard();
+  dismissWeeklyJournalCard();
+  dismissTerrariumCard();
+  foldOrHideGoodnightCard();
+  dismissCollageCard();
+  foldOrHideCozyRadioCard();
+  dismissCrochetCard();
+  dismissHotCocoaCard();
+  dismissPressedFlowerCard();
+  dismissTelescopeCard();
+  dismissAr10Cards();
+  dismissAr11Cards();
+  dismissAr12Cards();
+  dismissAr13Cards();
+  dismissAr14Cards();
+  dismissAr15Cards();
+  dismissAr16Cards();
+  dismissAr17Cards();
+  dismissPolaroid();
+  closeAlbumLightbox();
+  // 刚收起的 AR-15 / AR-16 卡片：她手里可能还举着星座卡 / 风铃 / 绷架 / 松饼，换成衣橱 / 绘本前先放下
+  player.starCheerTimer = 0;
+  player.rainCheerTimer = 0;
+  player.embroideryCheerTimer = 0;
+  player.hearthCheerTimer = 0;
+  cardEl.classList.remove('hidden');
+}
+
+function openWardrobeCard() {
+  if (!wardrobeCardEl) return { ok: false };
+  openAr17Card(wardrobeCardEl);
+  player.storyCheerTimer = 0;
+  if (!WARDROBE_OUTFIT_BY_ID[wardrobeRun.previewId]) wardrobeRun.previewId = player.seasonWardrobe.wearing || '';
+  syncWardrobeUI();
+  syncStorybookUI();
+  playSfx('pat');
+  return { ok: true };
+}
+
+function openStorybookCard() {
+  if (!storybookCardEl) return { ok: false };
+  openAr17Card(storybookCardEl);
+  player.wardrobeCheerTimer = 0;
+  syncStorybookUI();
+  syncWardrobeUI();
+  petAudio.playDiaryFlip();
+  return { ok: true };
+}
+
+let wsPillFitTimer = 0;
+function updateAr17Companions(dt) {
+  if (player.wardrobeCheerTimer > 0) {
+    player.wardrobeCheerTimer = Math.max(0, player.wardrobeCheerTimer - dt);
+    if (player.wardrobeCheerTimer <= 0) wdMirrorEl?.classList.remove('is-cheer');
+  }
+  if (player.storyCheerTimer > 0) player.storyCheerTimer = Math.max(0, player.storyCheerTimer - dt);
+  if (storyRun.flip > 0) {
+    storyRun.flip = Math.max(0, storyRun.flip - dt);
+    if (storyRun.flip <= 0) sbBookEl?.classList.remove('is-flipping');
+  }
+  storyRun.tickAcc -= dt;
+  if (storyRun.tickAcc <= 0) {
+    storyRun.tickAcc = 1;
+    refreshAr17Clock();
+  }
+  wsPillFitTimer -= dt;
+  if (wsPillFitTimer <= 0) {
+    wsPillFitTimer = 0.5;
+    fitWardrobeStoryPill();
+  }
+  const wv = player.wardrobeVisual;
+  wv.cardOpen = isAr17CardOpen('wardrobe');
+  wv.cheer = player.wardrobeCheerTimer || 0;
+  const sv = player.storyVisual;
+  sv.cardOpen = isAr17CardOpen('storybook');
+  sv.cheer = player.storyCheerTimer || 0;
+  sv.flip = storyRun.flip;
+}
+
+if (wardrobeCardEl) {
+  wardrobeCardEl.addEventListener('pointerdown', (e) => e.stopPropagation());
+}
+if (storybookCardEl) {
+  storybookCardEl.addEventListener('pointerdown', (e) => e.stopPropagation());
+}
+
+bindHudTap(document.getElementById('btn-wardrobe-close'), () => {
+  dismissWardrobeCard();
+  syncWardrobeUI();
+});
+bindHudTap(wdOutfitRowEl, (e) => {
+  const chip = e.target && e.target.closest ? e.target.closest('.wd-outfit-chip') : null;
+  if (chip) pickWardrobeOutfit(chip.dataset.outfitId);
+});
+bindHudTap(wdAlbumGridEl, (e) => {
+  const chip = e.target && e.target.closest ? e.target.closest('.wd-album-chip') : null;
+  if (chip) pickWardrobeOutfit(chip.dataset.outfitId);
+});
+// 点试衣镜本身也能换上 / 换回（和主按钮同一个动作）
+bindHudTap(wdMirrorEl, () => {
+  const st = getWardrobeMainState();
+  if (!st.disabled) handleWardrobeMainAction();
+});
+bindHudTap(btnWardrobeHelperEl, () => {
+  wardrobeHelper();
+});
+bindHudTap(btnWardrobeMainEl, () => {
+  if (btnWardrobeMainEl.disabled) return;
+  handleWardrobeMainAction();
+});
+
+bindHudTap(document.getElementById('btn-storybook-close'), () => {
+  dismissStorybookCard();
+  syncStorybookUI();
+});
+bindHudTap(sbStoryRowEl, (e) => {
+  const chip = e.target && e.target.closest ? e.target.closest('.sb-story-chip') : null;
+  if (chip) pickStory(chip.dataset.storyId);
+});
+// 点绘本本身也能翻页 / 夹书签（和主按钮同一个动作）
+bindHudTap(sbBookEl, () => {
+  const st = getStoryMainState();
+  if (!st.disabled && (st.mode === 'turn' || st.mode === 'finish')) handleStoryMainAction();
+});
+bindHudTap(btnStorybookHelperEl, () => {
+  storyHelper();
+});
+bindHudTap(btnStorybookMainEl, () => {
+  if (btnStorybookMainEl.disabled) return;
+  handleStoryMainAction();
+});
+bindHudTap(wsPillEl, (e) => {
+  const segEl = e.target && e.target.closest ? e.target.closest('[data-ws-seg]') : null;
+  const ss = getStorybookStats();
+  const seg = segEl ? segEl.dataset.wsSeg : ss.glow || ss.reading ? 'story' : 'wardrobe';
+  if (seg === 'wardrobe') openWardrobeCard();
+  else openStorybookCard();
+});
+
+window.addEventListener('resize', () => {
+  requestAnimationFrame(() => fitWardrobeStoryPill());
+});
+
+storyRun.dayKey = formatLocalDateKey(ar17Clock.date());
+storyRun.wasGlow = Boolean(getStoryGlow());
+syncWardrobeUI();
+syncStorybookUI();
+
+window.__AR17_DEBUG__ = {
+  getSpecs() {
+    return JSON.parse(
+      JSON.stringify({
+        outfits: WARDROBE_OUTFITS,
+        wardrobeRules: WARDROBE_RULES,
+        stories: BEDTIME_STORIES,
+        storyRules: STORY_RULES
+      })
+    );
+  },
+  // 可注入时钟：传毫秒或本地时间字符串固定“现在”（当季套组 / 睡前时间 / 晚安余温 / 每日奖励都跟着走）
+  setClock(value) {
+    const ms = typeof value === 'number' ? value : new Date(value).getTime();
+    if (!Number.isFinite(ms)) return { ok: false, reason: 'invalid_clock' };
+    ar17Clock.fixedMs = ms;
+    ar17Clock.offsetMs = 0;
+    refreshAr17Clock();
+    syncWardrobeUI();
+    syncStorybookUI();
+    return { ok: true, now: ms, seasonId: getAromaSeasonId(new Date(ms)), bedtime: isStoryBedtime(new Date(ms)) };
+  },
+  advanceClock(ms) {
+    const step = Math.max(0, Number(ms) || 0);
+    if (ar17Clock.fixedMs !== null) ar17Clock.fixedMs += step;
+    else ar17Clock.offsetMs += step;
+    refreshAr17Clock();
+    syncWardrobeUI();
+    syncStorybookUI();
+    return { ok: true, now: ar17Clock.now(), glow: getStoryGlow() };
+  },
+  useRealClock() {
+    ar17Clock.fixedMs = null;
+    ar17Clock.offsetMs = 0;
+    refreshAr17Clock();
+    syncWardrobeUI();
+    syncStorybookUI();
+    return { ok: true, now: ar17Clock.now() };
+  },
+  openWardrobe() {
+    return openWardrobeCard();
+  },
+  openStorybook() {
+    return openStorybookCard();
+  },
+  pickOutfit(id) {
+    return pickWardrobeOutfit(id);
+  },
+  wear(id) {
+    return wearWardrobeOutfit(id);
+  },
+  takeOff() {
+    return takeOffWardrobe();
+  },
+  wardrobeMain() {
+    return handleWardrobeMainAction();
+  },
+  wardrobeHelper() {
+    return wardrobeHelper();
+  },
+  pickStory(id) {
+    return pickStory(id);
+  },
+  turnPage() {
+    return turnStoryPage();
+  },
+  finishStory() {
+    return finishStory();
+  },
+  storyMain() {
+    return handleStoryMainAction();
+  },
+  storyHelper() {
+    return storyHelper();
+  },
+  // 测试用：按可注入时钟直接走一遍“晚安伴眠结算时的故事联动”（不经过八音盒，不改好梦章数值）
+  awardGoodnight() {
+    return awardStoryGoodnight();
+  },
+  resetRunsForTest() {
+    wardrobeRun.previewId = '';
+    wardrobeRun.lastResult = null;
+    storyRun.storyId = '';
+    storyRun.page = 0;
+    storyRun.phase = 'pick';
+    storyRun.lastResult = null;
+    syncWardrobeUI();
+    syncStorybookUI();
+    return { ok: true };
+  },
+  getState(customDateIso = '') {
+    const now = ar17Clock.now();
+    const refDate = customDateIso ? new Date(customDateIso) : new Date(now);
+    return {
+      gameMode,
+      now,
+      clockFixed: ar17Clock.fixedMs !== null,
+      coins: player.coins,
+      level: player.level,
+      xp: player.xp,
+      emote: player.emote,
+      equipped: JSON.parse(JSON.stringify(player.equipped || {})),
+      seasonWardrobe: JSON.parse(JSON.stringify(player.seasonWardrobe)),
+      wardrobeStats: getWardrobeStats(new Date(now)),
+      wardrobeRun: JSON.parse(JSON.stringify(wardrobeRun)),
+      wardrobeVisual: JSON.parse(JSON.stringify(player.wardrobeVisual)),
+      wardrobeMain: getWardrobeMainState(),
+      bedtimeStorybook: JSON.parse(JSON.stringify(player.bedtimeStorybook)),
+      storyStats: getStorybookStats(new Date(now)),
+      storyRun: JSON.parse(JSON.stringify(storyRun)),
+      storyVisual: JSON.parse(JSON.stringify(player.storyVisual)),
+      storyMain: getStoryMainState(),
+      journalSummary: computeWeeklyJournalSummary(refDate),
+      openPanels: window.__AR5_DEBUG__.getState(customDateIso).openPanels
+    };
+  }
+};
+
 // ================= AR 拍立得纪念合影系统（比耶手势或右上角相机键触发） =================
 const shutterFlashEl = document.getElementById('shutter-flash');
 const polaroidCardEl = document.getElementById('polaroid-card');
@@ -22739,7 +24226,7 @@ function triggerPolaroidSequence(fromGesture = false) {
   dismissCrochetCard();
   dismissHotCocoaCard();
   dismissPressedFlowerCard();
-  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+  dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   setNapping(false);
   cancelRpsGame();
   cancelPalmCatchGame();
@@ -23553,7 +25040,7 @@ function openPetTopicPrompt(fromAuto = false) {
     dismissCrochetCard();
     dismissHotCocoaCard();
     dismissPressedFlowerCard();
-    dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+    dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
     setNapping(false);
   } else if (
     player.isNapping ||
@@ -23572,7 +25059,7 @@ function openPetTopicPrompt(fromAuto = false) {
     !hotCocoaCardEl?.classList.contains('hidden') ||
     !pressedFlowerCardEl?.classList.contains('hidden') ||
     !telescopeCardEl?.classList.contains('hidden') ||
-    (isAr10CardOpen() || isAr11CardOpen() || isAr12CardOpen() || isAr13CardOpen() || isAr14CardOpen() || isAr15CardOpen() || isAr16CardOpen())
+    (isAr10CardOpen() || isAr11CardOpen() || isAr12CardOpen() || isAr13CardOpen() || isAr14CardOpen() || isAr15CardOpen() || isAr16CardOpen() || isAr17CardOpen())
   ) {
     return;
   }
@@ -23634,7 +25121,7 @@ function updatePetTopicAuto(dt) {
     !hotCocoaCardEl?.classList.contains('hidden') ||
     !pressedFlowerCardEl?.classList.contains('hidden') ||
     !telescopeCardEl?.classList.contains('hidden') ||
-    (isAr10CardOpen() || isAr11CardOpen() || isAr12CardOpen() || isAr13CardOpen() || isAr14CardOpen() || isAr15CardOpen() || isAr16CardOpen()) ||
+    (isAr10CardOpen() || isAr11CardOpen() || isAr12CardOpen() || isAr13CardOpen() || isAr14CardOpen() || isAr15CardOpen() || isAr16CardOpen() || isAr17CardOpen()) ||
     rpsGame.active ||
     palmCatchGame.active ||
     player.isNapping ||
@@ -23706,7 +25193,7 @@ function cancelRpsGame() {
   document.getElementById('btn-rps')?.classList.remove('active');
 }
 
-function startRpsGame(fromGesture = false) { dismissPolaroid(); dismissTopicCard(); dismissTeatimeCard(); dismissWeeklyJournalCard(); dismissTerrariumCard(); foldOrHideGoodnightCard(); dismissCollageCard(); foldOrHideCozyRadioCard(); dismissCrochetCard(); dismissHotCocoaCard(); dismissPressedFlowerCard(); dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); if (palmCatchGame.active) cancelPalmCatchGame(); if (rpsChoicesEl) rpsChoicesEl.style.display = 'flex';
+function startRpsGame(fromGesture = false) { dismissPolaroid(); dismissTopicCard(); dismissTeatimeCard(); dismissWeeklyJournalCard(); dismissTerrariumCard(); foldOrHideGoodnightCard(); dismissCollageCard(); foldOrHideCozyRadioCard(); dismissCrochetCard(); dismissHotCocoaCard(); dismissPressedFlowerCard(); dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards(); if (palmCatchGame.active) cancelPalmCatchGame(); if (rpsChoicesEl) rpsChoicesEl.style.display = 'flex';
   if (rpsGame.active) {
     cancelRpsGame();
     return;
@@ -23852,7 +25339,7 @@ function cancelPalmCatchGame() {
   document.getElementById('btn-palm-catch')?.classList.remove('active');
 }
 
-function startPalmCatchGame() { dismissPolaroid(); dismissTopicCard(); dismissTeatimeCard(); dismissWeeklyJournalCard(); dismissTerrariumCard(); foldOrHideGoodnightCard(); dismissCollageCard(); foldOrHideCozyRadioCard(); dismissCrochetCard(); dismissHotCocoaCard(); dismissPressedFlowerCard(); dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards();
+function startPalmCatchGame() { dismissPolaroid(); dismissTopicCard(); dismissTeatimeCard(); dismissWeeklyJournalCard(); dismissTerrariumCard(); foldOrHideGoodnightCard(); dismissCollageCard(); foldOrHideCozyRadioCard(); dismissCrochetCard(); dismissHotCocoaCard(); dismissPressedFlowerCard(); dismissTelescopeCard(); dismissAr10Cards(); dismissAr11Cards(); dismissAr12Cards(); dismissAr13Cards(); dismissAr14Cards(); dismissAr15Cards(); dismissAr16Cards(); dismissAr17Cards();
   if (palmCatchGame.active) {
     cancelPalmCatchGame();
     return;
@@ -26042,6 +27529,7 @@ function updateGameplay(dt, flow) {
   updateAr14Companions(dt);
   updateAr15Companions(dt);
   updateAr16Companions(dt);
+  updateAr17Companions(dt);
   updateTerrarium(dt);
   updateGoodnightCompanion(dt);
   updateCozyRadioCompanion(dt);
@@ -26191,6 +27679,9 @@ function renderEntities(now) {
     drawRainListenProp(ctx, player, now);
     drawEmbroideryProp(ctx, player, now);
     drawHearthSnackProp(ctx, player, now);
+    // AR-17 不加场景物件：只在她身边画当季套组的小特效、读故事时捧着的绘本
+    drawWardrobeSeasonSparkles(ctx, player, now);
+    drawStorybookProp(ctx, player, now);
   }
 
   player.rpsHudOpen = Boolean(rpsHudEl && !rpsHudEl.classList.contains('hidden')); player.drawerOpen = Boolean(drawerEl && !drawerEl.classList.contains('hidden'));

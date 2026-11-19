@@ -136,6 +136,11 @@ const SPRITE_FILES = {
   embroideryPatch: './assets/embroidery_patch.webp?v=hd31',
   floorHeater: './assets/floor_heater.webp?v=hd31',
   roastedSnack: './assets/roasted_snack.webp?v=hd31',
+  // AR-17 季节换装衣橱 & 睡前故事书（奶油手账风去底贴图）
+  uiBtnWardrobe: './assets/ui_btn_wardrobe.webp?v=hd33',
+  uiBtnStorybook: './assets/ui_btn_storybook.webp?v=hd33',
+  storybookPage: './assets/storybook_page.webp?v=hd33',
+  storyBookmark: './assets/story_bookmark.webp?v=hd33',
   itemBow: './assets/item_bow.webp?v=hd6',
   itemCrown: './assets/item_crown.webp?v=hd6',
   itemAura: './assets/item_aura.webp?v=hd6',
@@ -264,7 +269,9 @@ export function drawHeroSprite(ctx, p, now) {
   ctx.save();
   ctx.translate(p.x, p.y);
 
-  const eq = p.equipped || {};
+  // AR-17 换装：穿着季节套组时，头饰 / 足底光阵只画套组里的那几样（只换画面，加成仍按 p.equipped 结算）
+  const look = p.wardrobeVisual && p.wardrobeVisual.look;
+  const eq = look ? { ...(p.equipped || {}), ...look } : p.equipped || {};
 
   if (eq.aura && p.climbState !== 'hang') {
     ctx.save();
@@ -945,6 +952,29 @@ function drawVectorSparkle(ctx, x, y, size, rot) {
   ctx.restore();
 }
 
+// 气泡长句折成两行：单行超过 maxW 时在中点附近断开（优先断在标点 / 空格之后，不拆开数字与百分号）
+const EMOTE_BREAK_AFTER = '，。！？~、；：,.!?;:）」』 ';
+const EMOTE_KEEP_TOGETHER = /[0-9A-Za-z+%.×]/;
+function splitEmoteLines(ctx, text, maxW = 300) {
+  const s = String(text || '');
+  const chars = Array.from(s);
+  if (chars.length < 12 || ctx.measureText(s).width <= maxW) return [s];
+  const mid = chars.length / 2;
+  let best = Math.round(mid);
+  let bestScore = Infinity;
+  for (let i = 4; i <= chars.length - 4; i++) {
+    const prev = chars[i - 1];
+    const next = chars[i];
+    if (EMOTE_KEEP_TOGETHER.test(prev) && EMOTE_KEEP_TOGETHER.test(next)) continue;
+    const score = Math.abs(i - mid) + (EMOTE_BREAK_AFTER.includes(prev) ? 0 : 5);
+    if (score < bestScore) {
+      bestScore = score;
+      best = i;
+    }
+  }
+  return [chars.slice(0, best).join('').trim(), chars.slice(best).join('').trim()];
+}
+
 function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py = 240, rpsHudOpen = false) {
   ctx.save();
   const isTsundere = mood === 'tsundere';
@@ -952,24 +982,30 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py
   const isEat = mood === 'eat';
   const isSleep = mood === 'sleep';
 
+  ctx.font = '900 12.5px "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif';
+  const lines = splitEmoteLines(ctx, text);
+  const lineH = 16;
+  const extraH = (lines.length - 1) * lineH;
+
   const popScale = Math.min(1, timer * 5.4) * (1 + Math.sin(now * 0.013) * 0.038);
   const jitterX = isTsundere && timer > 1.85 ? Math.sin(now * 0.09) * 2.5 : 0;
   const rawBy = (rpsHudOpen ? -64 : -108) + Math.sin(now * (isSleep ? 0.0045 : 0.0085)) * 3.4;
-  const by = Math.max(78 - py, rawBy);
+  // 两行气泡向上长高，贴顶夹紧时同样多留出这一行，顶边位置与单行时一致
+  const by = Math.max(78 + extraH - py, rawBy);
   ctx.translate(jitterX, by);
   ctx.scale(popScale, popScale);
 
-  ctx.font = '900 12.5px "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif';
-  const tw = ctx.measureText(text).width + 26;
-  const th = 29;
+  const tw = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 26;
+  const th = 29 + extraH;
   const ceilingDodge = by > rawBy + 18 ? (px > 480 ? -(tw * 0.5 + 52) : tw * 0.5 + 52) : 0;
   const shiftX = rpsHudOpen
     ? Math.min(182, Math.max(126, tw * 0.5 + 68))
-    : py + by < 126 && px - tw * 0.5 < 246
+    : py + by - extraH < 126 && px - tw * 0.5 < 246
       ? Math.max(0, 246 - (px - tw * 0.5))
       : 0;
   const rx = -tw * 0.5 + (ceilingDodge || shiftX);
-  const ry = -th * 0.5;
+  // 底边（小尾巴）位置不变：单行时与原来完全相同，多出的行往上长
+  const ry = 14.5 - th;
 
   ctx.fillStyle = 'rgba(10, 24, 52, 0.24)';
   roundRect(ctx, rx, ry + 3, tw, th, 14.5);
@@ -1031,7 +1067,7 @@ function drawPetEmoteBubble(ctx, text, timer, now, mood = 'normal', px = 420, py
   ctx.fillStyle = '#12284c';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, rx + tw * 0.5, 0.5);
+  lines.forEach((line, i) => ctx.fillText(line, rx + tw * 0.5, ry + 15 + i * lineH));
   ctx.restore();
 }
 
@@ -3405,6 +3441,84 @@ export function drawHearthSnackProp(ctx, p, now) {
       const t = (now * 0.0007 + i / n) % 1;
       ctx.globalAlpha = Math.max(0, 0.75 * Math.sin(t * Math.PI));
       ctx.drawImage(images.vfxSparkle, -10 + i * 6, -sz * 0.95 - t * 22, 8, 8);
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+// ================= AR-17 季节换装衣橱 & 睡前故事书（不加场景物件：只在她身边画套组小特效与读故事时的绘本） =================
+const AR17_SEASON_SPRITES = {
+  spring: 'vfxSeasonSpring',
+  summer: 'vfxSeasonSummer',
+  autumn: 'vfxSeasonAutumn',
+  winter: 'vfxSeasonWinter'
+};
+
+// 穿着季节套组：三片当季小特效（樱花 / 风铃 / 枫叶 / 雪花）绕着她慢慢飘；刚换上时转得快一点、多一片
+export function drawWardrobeSeasonSparkles(ctx, p, now) {
+  const wv = p && p.wardrobeVisual;
+  if (!wv || !wv.seasonKey || p.isGoodnightSleeping || p.isPickedUp) return;
+  const img = images[AR17_SEASON_SPRITES[wv.seasonKey]];
+  if (!isReady(img)) return;
+  const cheer = Math.max(0, Math.min(1, (Number(wv.cheer) || 0) / 2.6));
+  const n = cheer > 0 ? 4 : 3;
+  const speed = 0.0009 + cheer * 0.004;
+  ctx.save();
+  for (let i = 0; i < n; i++) {
+    const a = now * speed + (i / n) * Math.PI * 2;
+    const rx = 40 + cheer * 10;
+    const x = p.x + Math.cos(a) * rx;
+    const y = p.y - 46 + Math.sin(a) * 16 + Math.sin(now * 0.002 + i) * 4;
+    const sz = 13 + cheer * 4;
+    ctx.globalAlpha = 0.5 + 0.3 * Math.sin(now * 0.003 + i * 1.7) + cheer * 0.2;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(now * 0.0016 + i) * 0.5);
+    ctx.drawImage(img, -sz / 2, -sz / 2, sz, sz);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// 读故事：打开故事书时她身旁捧着一本摊开的绘本，翻页时轻轻一跳；晚安余温里冒出暖暖的星点
+export function drawStorybookProp(ctx, p, now) {
+  const sv = p && p.storyVisual;
+  if (
+    !sv ||
+    !(sv.cardOpen || sv.cheer > 0) ||
+    isAr16PropBlocked(p) ||
+    (p.embroideryVisual && p.embroideryVisual.cardOpen) ||
+    (p.hearthVisual && p.hearthVisual.cardOpen) ||
+    !isReady(images.storybookPage)
+  ) {
+    return;
+  }
+  const side = p.facing || 1;
+  const propX = p.x - side * 58;
+  const propY = p.y + 20;
+  const sz = 46;
+  ctx.save();
+  ctx.translate(propX, propY);
+  const glowRgb = sv.rgb || '255, 244, 228';
+  const glow = ctx.createRadialGradient(0, -22, 4, 0, -22, 50);
+  glow.addColorStop(0, `rgba(${glowRgb}, ${sv.glow ? 0.7 : 0.55})`);
+  glow.addColorStop(1, `rgba(${glowRgb}, 0)`);
+  ctx.fillStyle = glow;
+  ctx.fillRect(-52, -74, 104, 86);
+  const flip = Math.max(0, Math.min(1, (Number(sv.flip) || 0) / 0.6));
+  ctx.save();
+  ctx.translate(0, -Math.abs(Math.sin(now * 0.02)) * 5 * flip);
+  ctx.rotate(Math.sin(now * 0.002) * 0.04 - 0.08 * flip);
+  ctx.drawImage(images.storybookPage, -sz * 0.5, -sz * 0.92, sz, sz);
+  ctx.restore();
+  if (isReady(images.vfxSparkle)) {
+    const n = sv.glow || sv.cheer > 0 ? 3 : sv.reading ? Math.max(1, Math.min(3, Math.round(Number(sv.page) || 0))) : 1;
+    for (let i = 0; i < n; i++) {
+      const t = (now * 0.0006 + i / n) % 1;
+      ctx.globalAlpha = Math.max(0, 0.75 * Math.sin(t * Math.PI));
+      ctx.drawImage(images.vfxSparkle, -12 + i * 9, -sz * 0.98 - t * 20, 8, 8);
     }
     ctx.globalAlpha = 1;
   }

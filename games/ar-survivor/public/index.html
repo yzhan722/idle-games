@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>AR DeepSeek娘 · 实景桌宠养成</title>
   <link rel="icon" type="image/webp" href="./assets/hero_idle2.webp?v=hd5" />
-  <link rel="stylesheet" href="./style.css?v=hd31" />
+  <link rel="stylesheet" href="./style.css?v=hd33" />
 </head>
 <body>
   <!-- 底层全屏实景摄像头 -->
@@ -83,7 +83,7 @@
           </button>
           <button type="button" id="btn-weekly-journal" class="weekly-journal-pill" title="打开陪伴心情手账周报与周度礼盒">
             <img src="./assets/ui_btn_weekly_journal.webp?v=hd31" alt="" class="ambience-pill-ico" />
-            <span id="hud-journal-label">心情周报</span>
+            <span id="hud-journal-label">周报</span>
             <em id="hud-journal-badge" class="journal-pill-tag">0/7章</em>
           </button>
           <button type="button" id="pomodoro-mini-pill" class="pomodoro-mini-pill hidden" title="展开奶油手账番茄钟">
@@ -212,6 +212,19 @@
               <img src="./assets/ui_btn_embroidery.webp?v=hd31" alt="" class="sh-seg-ico" />
               <span class="sh-seg-label">刺绣</span>
               <em id="sh-pill-stitch" class="sh-mini-tag">2/4</em>
+            </span>
+          </button>
+          <!-- AR-17 晚安余温 / 读故事 + 季节套组 合并紧凑胶囊（排在 AR-16 胶囊之后；窄屏放不下先只留优先的一段，仍放不下就自动收起，绝不新开一行） -->
+          <button type="button" id="wardrobe-story-pill" class="wardrobe-story-pill hidden" title="查看睡前故事书与季节换装衣橱">
+            <span class="ws-seg hidden" id="ws-seg-story" data-ws-seg="story">
+              <img src="./assets/ui_btn_storybook.webp?v=hd33" alt="" class="ws-seg-ico" />
+              <span class="ws-seg-label">故事</span>
+              <em id="ws-pill-story" class="ws-mini-tag">余温90分</em>
+            </span>
+            <span class="ws-seg hidden" id="ws-seg-wardrobe" data-ws-seg="wardrobe">
+              <img src="./assets/ui_btn_wardrobe.webp?v=hd33" alt="" class="ws-seg-ico" />
+              <span class="ws-seg-label">换装</span>
+              <em id="ws-pill-wardrobe" class="ws-mini-tag">雪冠</em>
             </span>
           </button>
         </div>
@@ -1383,7 +1396,7 @@
       </div>
 
       <div class="bento-footer-bar" id="bento-total-ward">
-        便当续航：打包的便当在下一个幸存者班次打开，每份守护 1 个班次（持续回血 + 低血饭团救急）
+        便当续航：打包后下个打工班次打开，每份护 1 班（回血 + 低血救急）
       </div>
     </aside>
 
@@ -1478,7 +1491,7 @@
       </div>
 
       <div class="kc-footer-bar" id="kc-ward-line">
-        猫咪幸运佑护：两只小猫的好感合计越高，幸存者班次幸运掉宝越多，还能在体力见底时护身一次
+        猫咪佑护：好感 ≥10 掉宝最高 +10%；≥40 / ≥140 每班九命 1 / 2 次
       </div>
     </aside>
 
@@ -1596,7 +1609,7 @@
       </div>
 
       <div class="pc-footer-bar" id="pc-ward-line">
-        野餐好心情：周末完成一次野餐，接下来 2 个幸存者打工班次获得地点佑护（期待章每枚 +5%）
+        野餐好心情：周末野餐后护 2 个打工班次，期待章每枚 +5%
       </div>
     </aside>
 
@@ -1644,7 +1657,7 @@
       </div>
 
       <div class="dy-footer-bar" id="dy-footer-line">
-        日记心意：每天第一次给有内容的日记页贴贴纸，+6 金币与亲密（每天 3 页）；装饰次数计入七日心情周报
+        日记心意：每天前 3 次给新页贴贴纸 +6 金币与亲密
       </div>
     </aside>
 
@@ -1697,7 +1710,7 @@
       </div>
 
       <div class="pw-footer-bar" id="pw-ward-line">
-        陶艺佑护：茶杯护 2 个打工班次、花瓶护 1 个（效果 ×1.5）；奶白减伤 / 樱粉金币 / 青瓷磁吸
+        陶艺佑护：茶杯护 2 班、花瓶护 1 班（×1.5），图鉴每款再 +4%
       </div>
     </aside>
 
@@ -1749,7 +1762,7 @@
       </div>
 
       <div class="am-footer-bar" id="am-footer-line">
-        香氛舒心：滴满 3 滴点香后 30 分钟，房间换上心情色温、日常亲密 +10%
+        点香 30 分钟：亲密 +10%；每天前 3 次 +6 金币，新香氛 +10
       </div>
     </aside>
 
@@ -1800,7 +1813,7 @@
       </div>
 
       <div class="sp-footer-bar" id="sp-footer-line">
-        点亮一次投影 20 分钟；投影亮着时一起晚安，星座卡会盖上好梦章
+        投影 20 分钟；每天前 2 次 +8 金币，新卡 +12，睡前 ×1.5
       </div>
     </aside>
 
@@ -1856,7 +1869,7 @@
       </div>
 
       <div class="rc-footer-bar" id="rc-footer-line">
-        每听满 5 分钟记一则听雨小记；听雨时日常亲密 +5%
+        听雨亲密 +5%；每满 5 分钟记一则，每天前 4 则 +5 金币，新收录 +8
       </div>
     </aside>
 
@@ -1908,7 +1921,7 @@
       </div>
 
       <div class="eb-footer-bar" id="eb-footer-line">
-        收针后绣品挂上墙面，当天的手写日记会多一枚刺绣布贴
+        收针挂墙：每天前 2 幅 +8 金币，新绣样 +10，最搭绣线 +4
       </div>
     </aside>
 
@@ -1959,7 +1972,108 @@
       </div>
 
       <div class="hc-footer-bar" id="hc-footer-line">
-        分着吃完一起围炉依偎 20 分钟：火力越旺，日常亲密加成越高
+        分着吃：每天前 3 块 +6 金币（新收录 +8），再依偎 20 分钟亲密 +4~8%
+      </div>
+    </aside>
+
+    <!-- AR-17 季节换装衣橱（按本地季节解锁的套组：只换她已有的配饰组合 + 当季小特效，不改已穿戴饰品的加成；船坞不加键、不加场景物件，入口在「家具与装扮」抽屉 / 合并胶囊） -->
+    <aside id="wardrobe-card" class="wardrobe-card hidden" aria-label="季节换装衣橱">
+      <div class="wd-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_wardrobe.webp?v=hd33" alt="" class="pomo-head-ico" />
+          <span class="wd-kicker">季节换装衣橱</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="wd-summary-pill" id="wd-summary-pill">衣橱 0/8</span>
+          <button type="button" id="btn-wardrobe-close" class="topic-close-btn" aria-label="关闭季节换装衣橱">×</button>
+        </div>
+      </div>
+
+      <div class="wd-season-row" id="wd-season-row" data-season="autumn">
+        <img src="./assets/vfx_season_autumn.webp?v=hd31" alt="" class="wd-season-ico" id="wd-season-ico" />
+        <strong class="wd-season-name" id="wd-season-name">本季 · 秋季套组</strong>
+        <span class="wd-season-sub" id="wd-season-sub">按本地季节解锁</span>
+      </div>
+
+      <div class="wd-stage">
+        <div class="wd-mirror" id="wd-mirror" data-season="autumn" data-wearing="0">
+          <img src="./assets/hero_pose_cheer.webp?v=hd5" alt="试衣镜里的她" class="wd-mirror-hero" />
+          <span class="wd-mirror-petals" id="wd-mirror-petals"></span>
+          <span class="wd-mirror-items" id="wd-mirror-items"></span>
+          <span class="wd-mirror-tag" id="wd-mirror-tag">先挑套组</span>
+        </div>
+        <div class="wd-pickers">
+          <div class="wd-step-label">本季套组</div>
+          <div class="wd-outfit-row" id="wd-outfit-row"></div>
+          <div class="wd-story-line" id="wd-story-line">挑一套当季套组，换上转一圈~</div>
+        </div>
+      </div>
+
+      <div class="wd-actions-row">
+        <button type="button" id="btn-wardrobe-helper" class="pomo-btn wd-btn-helper">她来挑</button>
+        <button type="button" id="btn-wardrobe-main" class="pomo-btn wd-btn-main" disabled>先挑套组</button>
+      </div>
+
+      <div class="wd-album-box">
+        <div class="wd-album-head">
+          <img src="./assets/ui_btn_wardrobe.webp?v=hd33" alt="" class="wd-album-head-ico" />
+          <span class="wd-album-sub" id="wd-album-sub">每季 2 套</span>
+        </div>
+        <div class="wd-album-grid" id="wd-album-grid" title="8 套季节套组（每季 2 套）"></div>
+      </div>
+
+      <div class="wd-footer-bar" id="wd-footer-line">
+        换装：每天前 2 次 +6 金币，新套组 +10
+      </div>
+    </aside>
+
+    <!-- AR-17 睡前故事书（挑一篇 → 你翻页她来读 → 夹上书签；睡前读完留下晚安余温，与晚安八音盒联动；不联网、不读传感器） -->
+    <aside id="storybook-card" class="storybook-card hidden" aria-label="睡前故事书">
+      <div class="sb-card-head">
+        <div class="teatime-title-wrap">
+          <img src="./assets/ui_btn_storybook.webp?v=hd33" alt="" class="pomo-head-ico" />
+          <span class="sb-kicker">睡前故事书</span>
+        </div>
+        <div class="teatime-head-actions">
+          <span class="sb-summary-pill" id="sb-summary-pill">书签 0/6</span>
+          <button type="button" id="btn-storybook-close" class="topic-close-btn" aria-label="关闭睡前故事书">×</button>
+        </div>
+      </div>
+
+      <div class="sb-night-row" id="sb-night-row" data-bedtime="0" data-glow="0">
+        <img src="./assets/story_bookmark.webp?v=hd33" alt="" class="sb-night-ico" />
+        <strong class="sb-night-name" id="sb-night-name">睡前 · 今晚推荐</strong>
+        <span class="sb-night-sub" id="sb-night-sub">20:00 后是睡前时间</span>
+      </div>
+
+      <div class="sb-stage">
+        <div class="sb-book" id="sb-book" data-phase="pick" data-glow="0">
+          <img src="./assets/storybook_page.webp?v=hd33" alt="摊开的绘本" class="sb-book-art" />
+          <span class="sb-page-text" id="sb-page-text">挑一篇故事</span>
+          <span class="sb-book-tag" id="sb-book-tag">先挑故事</span>
+        </div>
+        <div class="sb-pickers">
+          <div class="sb-step-label">6 篇睡前小故事</div>
+          <div class="sb-story-row" id="sb-story-row"></div>
+          <div class="sb-story-line" id="sb-story-line">你翻页、她来读，读完夹上书签~</div>
+        </div>
+      </div>
+
+      <div class="sb-actions-row">
+        <button type="button" id="btn-storybook-helper" class="pomo-btn sb-btn-helper">她来读</button>
+        <button type="button" id="btn-storybook-main" class="pomo-btn sb-btn-main" disabled>先挑故事</button>
+      </div>
+
+      <div class="sb-shelf-box">
+        <div class="sb-shelf-head">
+          <img src="./assets/story_bookmark.webp?v=hd33" alt="" class="sb-shelf-head-ico" />
+          <span class="sb-shelf-sub" id="sb-shelf-sub">星光书签 0</span>
+        </div>
+        <div class="sb-shelf-grid" id="sb-shelf-grid" title="6 篇故事的书签"></div>
+      </div>
+
+      <div class="sb-footer-bar" id="sb-footer-line">
+        读完：每天前 2 本 +6 金币，新书签 +10
       </div>
     </aside>
 
@@ -2061,7 +2175,7 @@
         </button>
         <button id="btn-chat-topic" class="care-btn care-btn-chat" aria-label="轻对话话题互动">
           <img src="./assets/ui_btn_chat.webp?v=hd17" alt="" class="care-thumb" />
-          <span class="care-label">聊聊天</span>
+          <span class="care-label">聊天</span>
         </button>
         <button id="btn-nap" class="care-btn" aria-label="摸鱼小憩">
           <img src="./assets/prop_cushion.webp?v=hd2" alt="" class="care-thumb" />
@@ -2073,7 +2187,7 @@
         </button>
         <button id="btn-teatime" class="care-btn care-btn-teatime" aria-label="治愈下午茶甜点手作台">
           <img src="./assets/ui_btn_teatime.webp?v=hd31" alt="" class="care-thumb" />
-          <span class="care-label" id="btn-teatime-label">下午茶</span>
+          <span class="care-label" id="btn-teatime-label">茶点</span>
         </button>
         <button id="btn-terrarium" class="care-btn care-btn-terrarium" aria-label="治愈桌面微缩绿植花房">
           <img src="./assets/ui_btn_terrarium.webp?v=hd31" alt="" class="care-thumb" />
@@ -2081,31 +2195,31 @@
         </button>
         <button id="btn-musicbox" class="care-btn care-btn-musicbox" aria-label="晚安助眠星空八音盒">
           <img src="./assets/ui_btn_musicbox.webp?v=hd31" alt="" class="care-thumb" />
-          <span class="care-label" id="btn-musicbox-label">晚安盒</span>
+          <span class="care-label" id="btn-musicbox-label">晚安</span>
         </button>
         <button id="btn-collage-frame" class="care-btn care-btn-collage" aria-label="奶油手账贴纸拼贴纪念画框">
           <img src="./assets/ui_btn_collage_frame.webp?v=hd31" alt="" class="care-thumb" />
-          <span class="care-label" id="btn-collage-label">拼贴框</span>
+          <span class="care-label" id="btn-collage-label">拼贴</span>
         </button>
         <button id="btn-cozy-radio" class="care-btn care-btn-radio" aria-label="窗畔温暖轻电台">
           <img src="./assets/ui_btn_cozy_radio.webp?v=hd31" alt="" class="care-thumb" />
-          <span class="care-label" id="btn-radio-label">轻电台</span>
+          <span class="care-label" id="btn-radio-label">电台</span>
         </button>
         <button id="btn-crochet-basket" class="care-btn care-btn-crochet" aria-label="毛线钩针温暖手作篮">
           <img src="./assets/ui_btn_crochet_basket.webp?v=hd31" alt="" class="care-thumb" />
-          <span class="care-label" id="btn-crochet-label">手作篮</span>
+          <span class="care-label" id="btn-crochet-label">毛线</span>
         </button>
         <button id="btn-hot-cocoa" class="care-btn care-btn-cocoa" aria-label="暖冬棉花糖热可可吧台">
           <img src="./assets/ui_btn_cocoa_bar.webp?v=hd31" alt="" class="care-thumb" />
-          <span class="care-label" id="btn-cocoa-label">热可可</span>
+          <span class="care-label" id="btn-cocoa-label">可可</span>
         </button>
         <button id="btn-pressed-flowers" class="care-btn care-btn-pressed" aria-label="干花标本温馨压花册">
           <img src="./assets/ui_btn_pressed_flowers.webp?v=hd31" alt="" class="care-thumb" />
-          <span class="care-label" id="btn-pressed-label">压花册</span>
+          <span class="care-label" id="btn-pressed-label">压花</span>
         </button>
         <button id="btn-telescope" class="care-btn care-btn-telescope" aria-label="窗畔星夜天文望远镜">
           <img src="./assets/ui_btn_telescope.webp?v=hd31" alt="" class="care-thumb" />
-          <span class="care-label" id="btn-telescope-label">望远镜</span>
+          <span class="care-label" id="btn-telescope-label">观星</span>
         </button>
         <button id="btn-watercolor-easel" class="care-btn care-btn-watercolor" aria-label="窗畔雨天水彩写生画架">
           <img src="./assets/ui_btn_watercolor_easel.webp?v=hd31" alt="" class="care-thumb" />
@@ -2164,6 +2278,6 @@
     </div>
   </div>
 
-  <script type="module" src="./game.js?v=hd55"></script>
+  <script type="module" src="./game.js?v=hd57"></script>
 </body>
 </html>

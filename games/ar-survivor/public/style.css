@@ -15656,3 +15656,957 @@ html, body {
     text-overflow: ellipsis;
   }
 }
+
+/* ===== UI 审视：宽屏 HUD 胶囊行 + 船坞标签字号（只调尺寸，不加任何颜色）=====
+   宽屏（>= 1240px 宽且不是矮屏）：胶囊行可越过铭牌宽度向右延展到 460px（模式切换坞下方本来就空着），
+   左栏仍按 318px 参与顶部三栏排布，模式切换坞位置不变；常见的 5 行胶囊收成 3 行。
+   921~1239px 与窄屏 / 旋转舞台保持原来的 318px / 不新开行规则。 */
+@media (min-width: 1240px) and (min-height: 431px) {
+  .hud-left-stack {
+    max-width: 318px;
+  }
+  .hud-ambience-row {
+    width: max-content;
+    max-width: 460px;
+  }
+}
+
+/* 船坞 25 键：多数键名收成两字后，两排船坞的标签字号放大（窄屏 7.2px -> 9px、921~1239px 8.6px -> 9.6px），
+   键宽 / 键高 / 排数都不变 */
+@media (max-width: 920px), (max-height: 430px) {
+  .care-label {
+    font-size: 9px;
+    line-height: 1.1;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 921px) and (max-width: 1239px) and (min-height: 431px) {
+  .care-label {
+    font-size: 9.6px;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+}
+
+/* ================= AR-17 季节换装衣橱 & 睡前故事书（#FFFDF8 奶油手账暖色调，零暗黑赛博 / 零荧光色；不加场景物件，只加两张卡与一颗合并胶囊） ================= */
+.wardrobe-story-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(145deg, rgba(255, 253, 248, 0.96) 0%, rgba(250, 242, 248, 0.94) 100%);
+  border: 2px solid #ffffff;
+  outline: 1.5px solid rgba(226, 204, 222, 0.72);
+  border-radius: 99px;
+  padding: 2.5px 7px 2.5px 4px;
+  color: #6a4e60;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow:
+    0 4px 12px rgba(180, 150, 170, 0.15),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.96);
+  white-space: nowrap;
+}
+
+.wardrobe-story-pill.has-glow {
+  outline: 2px solid rgba(240, 226, 196, 0.95);
+  box-shadow:
+    0 0 0 3px rgba(255, 244, 220, 0.55),
+    0 4px 12px rgba(190, 160, 120, 0.16);
+}
+
+.wardrobe-story-pill.hidden,
+.ws-seg.hidden,
+.wardrobe-story-pill.ws-no-room,
+.wardrobe-story-pill.ws-solo .ws-seg:not(.is-priority) {
+  display: none;
+}
+
+.wardrobe-story-pill.ws-solo .ws-seg + .ws-seg {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.ws-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ws-seg + .ws-seg {
+  padding-left: 4px;
+  border-left: 1px dashed rgba(222, 200, 214, 0.75);
+}
+
+.ws-seg-ico {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.ws-mini-tag {
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: rgba(255, 242, 220, 0.95);
+  color: #74563a;
+  font-variant-numeric: tabular-nums;
+}
+
+#ws-seg-wardrobe .ws-mini-tag {
+  background: rgba(var(--wd-rgb, 250, 236, 244), 0.95);
+  color: #74506a;
+}
+
+/* 两张卡片的共同骨架（与 AR-13 ~ AR-16 同尺寸，右上角浮层） */
+.wardrobe-card,
+.storybook-card {
+  position: absolute;
+  right: 14px;
+  top: 58px;
+  z-index: 29;
+  width: min(378px, calc(100% - 28px));
+  max-height: calc(100% - 134px);
+  overflow-y: auto;
+  background: linear-gradient(165deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 242, 248, 0.97) 100%);
+  border: 2.5px solid #ffffff;
+  outline: 2px solid rgba(222, 200, 220, 0.8);
+  border-radius: 22px;
+  padding: 10px 12px 11px;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 12px 28px rgba(170, 140, 160, 0.2),
+    inset 0 2px 0 rgba(255, 255, 255, 0.96);
+  pointer-events: auto;
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.storybook-card {
+  background: linear-gradient(165deg, rgba(255, 253, 248, 0.98) 0%, rgba(252, 246, 230, 0.97) 100%);
+  outline-color: rgba(230, 210, 170, 0.8);
+  box-shadow:
+    0 12px 28px rgba(180, 150, 110, 0.2),
+    inset 0 2px 0 rgba(255, 255, 255, 0.96);
+}
+
+.wardrobe-card.hidden,
+.storybook-card.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-10px) scale(0.95);
+}
+
+.wd-card-head,
+.sb-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.wd-kicker,
+.sb-kicker {
+  font-size: 11px;
+  font-weight: 900;
+  color: #74506a;
+  background: rgba(248, 234, 244, 0.92);
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid #ffffff;
+  white-space: nowrap;
+}
+
+.sb-kicker {
+  color: #74583a;
+  background: rgba(252, 240, 216, 0.92);
+}
+
+.wd-summary-pill,
+.sb-summary-pill {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #74506a;
+  background: rgba(250, 240, 246, 0.95);
+  border: 1px solid #ffffff;
+  outline: 1px solid rgba(222, 200, 220, 0.62);
+  border-radius: 99px;
+  padding: 2px 7px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sb-summary-pill {
+  color: #74583a;
+  background: rgba(254, 244, 224, 0.95);
+  outline-color: rgba(230, 210, 170, 0.62);
+}
+
+/* 衣橱：本季套组行；故事书：睡前 / 白天 + 今晚推荐行 */
+.wd-season-row,
+.sb-night-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgba(248, 236, 244, 0.96) 0%, rgba(255, 252, 246, 0.95) 100%);
+  border: 1px dashed rgba(222, 200, 220, 0.8);
+}
+
+.sb-night-row {
+  background: linear-gradient(90deg, rgba(250, 242, 222, 0.96) 0%, rgba(255, 252, 246, 0.95) 100%);
+  border-color: rgba(230, 210, 170, 0.8);
+}
+
+.sb-night-row[data-glow="1"] {
+  border-style: solid;
+  background: linear-gradient(90deg, rgba(255, 240, 208, 0.98) 0%, rgba(255, 252, 244, 0.95) 100%);
+}
+
+.wd-season-ico,
+.sb-night-ico {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.wd-season-name,
+.sb-night-name {
+  font-size: 10px;
+  font-weight: 900;
+  color: #74506a;
+  white-space: nowrap;
+}
+
+.sb-night-name {
+  color: #74583a;
+}
+
+.wd-season-sub,
+.sb-night-sub {
+  flex: 1;
+  min-width: 0;
+  font-size: 8.6px;
+  font-weight: 900;
+  color: #967488;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sb-night-sub {
+  color: #94785a;
+}
+
+/* 舞台：试衣镜（她已有的立绘 + 套组配饰贴图 + 当季小特效）/ 绘本（摊开的绘本贴图 + 当前这一页的文字） */
+.wd-stage,
+.sb-stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(145deg, rgba(255, 253, 248, 0.96) 0%, rgba(250, 240, 246, 0.94) 100%);
+  border: 1.5px solid #ffffff;
+  outline: 1px dashed rgba(222, 200, 220, 0.75);
+  border-radius: 15px;
+  padding: 6px 7px;
+  margin-bottom: 6px;
+}
+
+.sb-stage {
+  background: linear-gradient(145deg, rgba(255, 253, 248, 0.96) 0%, rgba(252, 244, 226, 0.94) 100%);
+  outline-color: rgba(230, 210, 170, 0.75);
+}
+
+.wd-mirror,
+.sb-book {
+  position: relative;
+  width: 136px;
+  height: 108px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 2px rgba(222, 200, 220, 0.4),
+    0 3px 8px rgba(170, 140, 160, 0.16);
+}
+
+.wd-mirror {
+  background:
+    radial-gradient(ellipse 60% 70% at 50% 52%, rgba(var(--wd-rgb, 255, 244, 236), 0.95) 0%, rgba(255, 253, 248, 0) 70%),
+    linear-gradient(180deg, #fbf3f7 0%, #f6ecf2 100%);
+}
+
+.wd-mirror[data-wearing="1"] {
+  animation: wdMirrorGlow 2.8s ease-in-out infinite;
+}
+
+@keyframes wdMirrorGlow {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(var(--wd-rgb, 250, 236, 244), 0.75), 0 3px 8px rgba(170, 140, 160, 0.16); }
+  50% { box-shadow: inset 0 0 0 2px rgba(var(--wd-rgb, 250, 236, 244), 1), 0 0 12px 3px rgba(var(--wd-rgb, 250, 236, 244), 0.75); }
+}
+
+.wd-mirror-hero {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  width: 78px;
+  height: 78px;
+  margin-left: -46px;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 4px rgba(170, 140, 160, 0.22));
+}
+
+.wd-mirror.is-cheer .wd-mirror-hero {
+  animation: wdHeroTwirl 0.9s ease-in-out 2;
+}
+
+@keyframes wdHeroTwirl {
+  0%, 100% { transform: translateY(0) scaleX(1); }
+  30% { transform: translateY(-5px) scaleX(-1); }
+  60% { transform: translateY(-2px) scaleX(1); }
+}
+
+.wd-mirror-petals {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.wd-petal {
+  position: absolute;
+  top: 6px;
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  opacity: 0;
+  animation: wdPetalFall 3.2s ease-in-out infinite;
+}
+
+@keyframes wdPetalFall {
+  0% { opacity: 0; transform: translateY(0) rotate(0); }
+  20% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(70px) rotate(70deg); }
+}
+
+.wd-mirror-items {
+  position: absolute;
+  right: 5px;
+  top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+}
+
+.wd-item-ico {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.92);
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(222, 200, 220, 0.6);
+}
+
+.sb-book {
+  background:
+    radial-gradient(circle at 50% 46%, rgba(var(--sb-rgb, 255, 244, 228), 0.95) 0%, rgba(255, 253, 248, 0) 68%),
+    linear-gradient(180deg, #fcf6ea 0%, #f8eedc 100%);
+}
+
+.sb-book[data-glow="1"] {
+  animation: sbBookGlow 2.6s ease-in-out infinite;
+}
+
+@keyframes sbBookGlow {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(255, 236, 200, 0.75), 0 3px 8px rgba(180, 150, 110, 0.16); }
+  50% { box-shadow: inset 0 0 0 2px rgba(255, 236, 200, 1), 0 0 14px 3px rgba(255, 238, 206, 0.8); }
+}
+
+.sb-book-art {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 92px;
+  height: 92px;
+  margin-left: -46px;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 0.92;
+  filter: drop-shadow(0 3px 4px rgba(180, 150, 110, 0.22));
+}
+
+.sb-book.is-flipping .sb-book-art {
+  animation: sbPageFlip 0.6s ease-in-out;
+}
+
+@keyframes sbPageFlip {
+  0% { transform: scaleX(1); }
+  45% { transform: scaleX(0.82) translateY(-3px); }
+  100% { transform: scaleX(1); }
+}
+
+.sb-page-text {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 30px;
+  font-size: 8.6px;
+  font-weight: 900;
+  line-height: 1.35;
+  color: #6c5236;
+  text-align: center;
+  pointer-events: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 0 3px rgba(255, 253, 248, 0.95);
+}
+
+.wd-mirror-tag,
+.sb-book-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  transform: translateX(-50%);
+  font-size: 8.4px;
+  font-weight: 900;
+  color: #74506a;
+  background: rgba(255, 253, 248, 0.95);
+  border: 1px solid #ffffff;
+  outline: 1px solid rgba(222, 200, 220, 0.7);
+  border-radius: 99px;
+  padding: 0.5px 7px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.sb-book-tag {
+  color: #74583a;
+  outline-color: rgba(230, 210, 170, 0.7);
+}
+
+.wd-pickers,
+.sb-pickers {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wd-step-label,
+.sb-step-label {
+  font-size: 8.4px;
+  font-weight: 900;
+  color: #865e78;
+  white-space: nowrap;
+}
+
+.sb-step-label {
+  color: #86684a;
+}
+
+.wd-outfit-row,
+.sb-story-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.wd-outfit-chip,
+.sb-story-chip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 2px 3px;
+  border-radius: 9px;
+  background: radial-gradient(circle at 30% 40%, rgba(var(--wd-rgb, 250, 236, 244), 0.75) 0%, rgba(255, 255, 255, 0.94) 72%);
+  border: 1.5px solid #ffffff;
+  outline: 1px solid rgba(222, 200, 220, 0.6);
+  color: #74506a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sb-story-chip {
+  justify-content: center;
+  padding: 3px 3px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 40%, rgba(var(--sb-rgb, 255, 244, 228), 0.85) 0%, rgba(255, 255, 255, 0.94) 76%);
+  outline-color: rgba(230, 210, 170, 0.6);
+  color: #74583a;
+}
+
+.wd-outfit-ico {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.wd-outfit-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.wd-outfit-name,
+.sb-story-name {
+  font-size: 8.4px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  max-width: 100%;
+}
+
+.wd-outfit-sub {
+  font-style: normal;
+  font-size: 7px;
+  font-weight: 900;
+  color: #9a7a8e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.wd-outfit-chip.active,
+.sb-story-chip.active {
+  outline: 2px solid rgba(214, 170, 200, 0.92);
+  background: radial-gradient(circle at 30% 40%, rgba(var(--wd-rgb, 250, 236, 244), 1) 0%, #fffdf8 80%);
+  color: #6a4460;
+}
+
+.sb-story-chip.active {
+  outline-color: rgba(222, 186, 128, 0.92);
+  background: radial-gradient(circle at 50% 40%, rgba(var(--sb-rgb, 255, 244, 228), 1) 0%, #fffdf8 82%);
+  color: #6a4c30;
+}
+
+.wd-outfit-chip.is-found,
+.sb-story-chip.is-found {
+  box-shadow: inset 0 -2px 0 rgba(236, 210, 170, 0.95);
+}
+
+.wd-outfit-chip.is-wearing {
+  box-shadow: inset 0 -2px 0 rgba(222, 180, 206, 1);
+}
+
+.sb-story-chip.is-tonight {
+  outline-style: dashed;
+}
+
+.wd-story-line,
+.sb-story-line {
+  font-size: 8px;
+  font-weight: 900;
+  color: #926c84;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sb-story-line {
+  color: #8e6e50;
+}
+
+.wd-actions-row,
+.sb-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wd-btn-helper,
+.wd-btn-main,
+.sb-btn-helper,
+.sb-btn-main {
+  white-space: nowrap;
+  border: 2px solid #ffffff;
+}
+
+.wd-btn-helper {
+  flex: 0.85;
+  background: linear-gradient(180deg, #fdf6fa 0%, #f2e0ec 100%);
+  color: #6a4460;
+}
+
+.wd-btn-main {
+  flex: 1.5;
+  color: #ffffff;
+  background: linear-gradient(180deg, #e8c6dc 0%, #d2a4c2 100%);
+  box-shadow: 0 4px 12px rgba(196, 146, 176, 0.22);
+}
+
+.wd-btn-main.is-ready {
+  background: linear-gradient(180deg, #f2d4b4 0%, #dcae84 100%);
+  box-shadow: 0 4px 12px rgba(214, 160, 110, 0.26);
+}
+
+.sb-btn-helper {
+  flex: 0.85;
+  background: linear-gradient(180deg, #fffaee 0%, #f4e6c8 100%);
+  color: #6a4c30;
+}
+
+.sb-btn-main {
+  flex: 1.5;
+  color: #ffffff;
+  background: linear-gradient(180deg, #ecd0a2 0%, #d8ac74 100%);
+  box-shadow: 0 4px 12px rgba(210, 166, 110, 0.24);
+}
+
+.sb-btn-main.is-ready {
+  background: linear-gradient(180deg, #f4cfa6 0%, #e2a878 100%);
+  box-shadow: 0 4px 14px rgba(220, 160, 104, 0.32);
+}
+
+.wd-btn-main:disabled,
+.wd-btn-helper:disabled,
+.sb-btn-main:disabled,
+.sb-btn-helper:disabled {
+  opacity: 0.66;
+  cursor: default;
+  background: linear-gradient(180deg, #f1ecdc 0%, #e4dcc6 100%);
+  color: #8a7a62;
+  box-shadow: none;
+}
+
+/* 季节衣橱：8 套（每季 2 套）；书签夹：6 篇故事的书签 */
+.wd-album-box,
+.sb-shelf-box {
+  margin-top: 6px;
+  background: linear-gradient(145deg, rgba(255, 253, 248, 0.96) 0%, rgba(250, 240, 246, 0.94) 100%);
+  border: 1.5px solid #ffffff;
+  outline: 1px dashed rgba(222, 200, 220, 0.72);
+  border-radius: 14px;
+  padding: 5px 7px 6px;
+}
+
+.sb-shelf-box {
+  background: linear-gradient(145deg, rgba(255, 253, 248, 0.96) 0%, rgba(252, 244, 226, 0.94) 100%);
+  outline-color: rgba(230, 210, 170, 0.72);
+}
+
+.wd-album-head,
+.sb-shelf-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.wd-album-head-ico,
+.sb-shelf-head-ico {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.wd-album-sub,
+.sb-shelf-sub {
+  font-size: 8.8px;
+  font-weight: 900;
+  color: #6a4660;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sb-shelf-sub {
+  color: #6a4c30;
+}
+
+.wd-album-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.sb-shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.wd-album-chip,
+.sb-shelf-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 2px 1px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1.5px solid #ffffff;
+  outline: 1px solid rgba(222, 200, 220, 0.5);
+  color: #967488;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.sb-shelf-chip {
+  cursor: default;
+  outline-color: rgba(230, 210, 170, 0.5);
+  color: #94785a;
+}
+
+.wd-album-chip.is-season {
+  opacity: 0.85;
+  outline-style: dashed;
+}
+
+.wd-album-chip.is-found,
+.sb-shelf-chip.is-found {
+  opacity: 1;
+  background: radial-gradient(circle at 50% 30%, rgba(var(--wd-rgb, 250, 236, 244), 1) 0%, rgba(255, 255, 255, 0.94) 74%);
+  color: #6a4460;
+}
+
+.sb-shelf-chip.is-found {
+  background: radial-gradient(circle at 50% 30%, rgba(var(--sb-rgb, 255, 244, 228), 1) 0%, rgba(255, 255, 255, 0.94) 74%);
+  color: #6a4c30;
+}
+
+.sb-shelf-chip.is-starlit {
+  box-shadow: inset 0 -2px 0 rgba(240, 222, 170, 1);
+}
+
+.wd-album-chip.is-wearing {
+  box-shadow: inset 0 -2px 0 rgba(222, 180, 206, 1);
+}
+
+.wd-album-chip.is-current,
+.sb-shelf-chip.is-now {
+  outline: 2px solid rgba(214, 170, 200, 0.9);
+}
+
+.sb-shelf-chip.is-now {
+  outline-color: rgba(222, 186, 128, 0.9);
+}
+
+.wd-album-ico,
+.sb-shelf-ico {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.wd-album-tag,
+.sb-shelf-tag {
+  font-style: normal;
+  font-size: 6.8px;
+  font-weight: 900;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.wd-footer-bar,
+.sb-footer-bar {
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(222, 200, 220, 0.7);
+  font-size: 8.6px;
+  font-weight: 900;
+  color: #80587a;
+  line-height: 1.3;
+}
+
+.sb-footer-bar {
+  border-top-color: rgba(230, 210, 170, 0.7);
+  color: #80603e;
+}
+
+/* ===== AR-17 窄屏 / 旋转舞台：与 AR-13 ~ AR-16 卡片同一套压缩尺寸，844×390 下不出内部滚动、不压船坞 ===== */
+@media (max-width: 920px), (max-height: 430px) {
+  .wardrobe-story-pill {
+    padding: 2px 5px 2px 3px;
+    gap: 3px;
+    font-size: 10px;
+  }
+  .ws-seg-label {
+    display: none;
+  }
+  .ws-seg-ico {
+    width: 15px;
+    height: 15px;
+  }
+  .ws-mini-tag {
+    font-size: 8.5px;
+    padding: 0.5px 4px;
+  }
+
+  .wardrobe-card,
+  .storybook-card {
+    right: 10px;
+    top: 44px;
+    width: min(338px, calc(100% - 24px));
+    max-height: calc(100% - 140px);
+    padding: 5px 8px 5px;
+    border-radius: 17px;
+  }
+  .wd-card-head,
+  .sb-card-head {
+    margin-bottom: 3px;
+  }
+  .wd-season-row,
+  .sb-night-row {
+    margin-bottom: 3px;
+    padding: 1px 6px;
+    gap: 3px;
+  }
+  .wd-season-sub,
+  .sb-night-sub {
+    font-size: 7.4px;
+  }
+  .wd-season-name,
+  .sb-night-name {
+    font-size: 8.8px;
+  }
+  .wd-season-ico,
+  .sb-night-ico {
+    width: 13px;
+    height: 13px;
+  }
+  .wd-stage,
+  .sb-stage {
+    padding: 4px 6px;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .wd-mirror,
+  .sb-book {
+    width: 98px;
+    height: 72px;
+    border-radius: 11px;
+  }
+  .wd-mirror-hero {
+    width: 54px;
+    height: 54px;
+    margin-left: -34px;
+    bottom: 9px;
+  }
+  .wd-item-ico {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+  }
+  .wd-mirror-items {
+    gap: 2px;
+    top: 3px;
+    right: 3px;
+  }
+  .wd-petal {
+    width: 11px;
+    height: 11px;
+  }
+  .sb-book-art {
+    width: 62px;
+    height: 62px;
+    margin-left: -31px;
+    top: 1px;
+  }
+  .sb-page-text {
+    left: 8px;
+    right: 8px;
+    top: 16px;
+    font-size: 7.2px;
+    line-height: 1.25;
+  }
+  .wd-mirror-tag,
+  .sb-book-tag {
+    font-size: 7.2px;
+    padding: 0 5px;
+    bottom: 1px;
+  }
+  .wd-pickers,
+  .sb-pickers {
+    gap: 2px;
+  }
+  .wd-step-label,
+  .sb-step-label {
+    display: none;
+  }
+  .wd-outfit-chip,
+  .sb-story-chip {
+    padding: 1px 2px;
+    border-radius: 7px;
+  }
+  .wd-outfit-ico {
+    width: 18px;
+    height: 18px;
+  }
+  .wd-outfit-name,
+  .sb-story-name {
+    font-size: 7.2px;
+  }
+  .wd-outfit-sub {
+    font-size: 6.2px;
+  }
+  .wd-story-line,
+  .sb-story-line {
+    font-size: 7px;
+  }
+  .wd-actions-row .pomo-btn,
+  .sb-actions-row .pomo-btn {
+    padding: 4px 7px;
+    font-size: 9.2px;
+  }
+  .wd-album-box,
+  .sb-shelf-box {
+    margin-top: 4px;
+    padding: 3px 5px 4px;
+  }
+  .wd-album-head,
+  .sb-shelf-head {
+    display: none;
+  }
+  .wd-album-chip,
+  .sb-shelf-chip {
+    flex-direction: row;
+    gap: 2px;
+    padding: 1px 2px;
+    border-radius: 7px;
+  }
+  .wd-album-ico,
+  .sb-shelf-ico {
+    width: 13px;
+    height: 13px;
+  }
+  .wd-album-tag,
+  .sb-shelf-tag {
+    font-size: 6.4px;
+  }
+  .wd-footer-bar,
+  .sb-footer-bar {
+    margin-top: 3px;
+    padding-top: 2px;
+    font-size: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
