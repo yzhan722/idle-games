@@ -2202,3 +2202,265 @@ body.person-mode #macro-panel { display: none; }
     padding: 9px 6px; font-size: 13px; text-align: center; }
   .mm-grid button.is-on { background: rgba(216,179,101,0.2); color: var(--gold); border-color: rgba(216,179,101,0.5); }
 }
+
+/* person view: compare and related people */
+.pv-compare { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; flex-shrink: 0; }
+.pv-add-cmp { width: 100%; font-size: 11.5px; padding: 4px 6px; }
+.pv-cmp { display: flex; align-items: center; gap: 6px; font-size: 11.5px; min-width: 0; }
+.pv-cmp i { width: 10px; height: 3px; border-radius: 2px; flex-shrink: 0; background: currentColor; }
+.pv-cmp-name { font-weight: bold; white-space: nowrap; }
+.pv-cmp-where { color: #c9c0ae; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.pv-mini { background: rgba(255,255,255,0.05); border: 1px solid rgba(216,179,101,0.22); color: #d9d0bd; border-radius: 5px; padding: 1px 6px; font-size: 11px; cursor: pointer; flex-shrink: 0; }
+.pv-c1 { color: #7fc8f8; }
+.pv-c2 { color: #f4978e; }
+.pv-cmp-route { fill: none; stroke: currentColor; stroke-opacity: 0.35; stroke-width: 1px; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; }
+.pv-cmp-past { fill: none; stroke: currentColor; stroke-opacity: 0.9; stroke-width: 1.4px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.pv-cmp-dot { fill: currentColor; stroke: #10151c; stroke-width: 1.2px; vector-effect: non-scaling-stroke; }
+.pv-cmp-label { fill: currentColor; }
+.pv-links { flex-shrink: 0; margin-bottom: 8px; font-size: 11.5px; max-height: 32vh; overflow-y: auto; }
+.pv-links summary { cursor: pointer; color: var(--gold); padding: 2px 0; }
+.pv-links summary span { color: #9aa5b1; font-size: 10.5px; }
+.pv-link { padding: 4px 0 5px; border-bottom: 1px solid rgba(216,179,101,0.1); }
+.pv-link-head { display: flex; align-items: center; gap: 6px; }
+.pv-link-name { color: #e8e0cf; font-weight: bold; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-link-note { color: #cfc5b2; line-height: 1.5; margin-top: 2px; }
+@media (max-width: 900px) {
+  .person-panel.is-folded .pv-compare .pv-add-cmp, .person-panel.is-folded .pv-links { display: none; }
+  .pv-links { max-height: 22vh; }
+}
+
+/* Gentle change (2026-11-20): states appear, change hands and collapse as slow fades, not hard swaps.
+   Units fade fill colour and opacity over the stateless hatch drawn once beneath them. */
+.land-hatch { pointer-events: none; }
+.region {
+  transition: fill 1.1s ease-in-out, fill-opacity 1.1s ease-in-out, stroke 1.1s ease-in-out;
+}
+.empire-banner-group,
+.empire-banner-group.is-minor {
+  transition: opacity 0.85s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.empire-banner-group.is-entering,
+.empire-banner-group.is-leaving { opacity: 0 !important; }
+.campaign-arrow { animation: campaignFadeIn 1.2s ease-out; }
+@keyframes campaignFadeIn { from { opacity: 0; } to { opacity: 0.76; } }
+@media (prefers-reduced-motion: reduce) {
+  .region { transition-duration: 0.3s; }
+  .empire-banner-group, .empire-banner-group.is-minor { transition-duration: 0.3s; }
+  .campaign-arrow { animation: none; }
+}
+svg.paint-bulk .region { transition-duration: 0.35s; }
+svg.paint-instant .region { transition: none; }
+
+/* ==========================================================================
+   Refined theme (2026-11-20): one quiet system for every panel and control.
+   Hairline borders instead of gold frames, gold kept for the active state and the year,
+   tinted (not solid) active buttons, plain lettering for state names, a soft ocean vignette.
+   ========================================================================== */
+:root {
+  --panel: rgba(15, 18, 23, 0.80);
+  --panel-solid: #12161c;
+  --line: rgba(236, 226, 206, 0.08);
+  --line-strong: rgba(236, 226, 206, 0.16);
+  --ink: #ece4d3;
+  --ink-2: #b9b09f;
+  --ink-3: #857e72;
+  --accent-tint: rgba(214, 182, 118, 0.14);
+  --accent-line: rgba(214, 182, 118, 0.42);
+  --radius: 12px;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.34);
+}
+body {
+  font-family: "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  background: radial-gradient(ellipse 120% 90% at 50% 42%, color-mix(in srgb, var(--bg-ocean) 88%, #ffffff 4%) 0%, var(--bg-ocean) 55%, color-mix(in srgb, var(--bg-ocean) 70%, #000 30%) 100%);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* panels */
+.year-box, #info-card, #info-card:hover, #theater-bar, #bottom-controls, #search-dropdown,
+.person-panel, .pp-box, .mm-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px) saturate(1.1);
+}
+#info-card:hover, #search-dropdown, .pp-box, .mm-box { background: rgba(15, 18, 23, 0.94); }
+#theater-bar { border-radius: 999px; }
+.year-box { padding: 9px 16px 10px; }
+#year-text { font-weight: 600; letter-spacing: 1px; }
+#era-text { color: var(--ink-2); }
+.pace-badge { border-color: var(--line-strong); color: var(--ink-3); background: transparent; }
+#info-card h3 { letter-spacing: 0.5px; }
+#info-card .sub { border-bottom-color: var(--line); color: var(--ink-3); }
+
+/* controls: quiet by default, tinted when active */
+.era-btn, .ctrl-btn, .theater-pill, .pp-tabs button, .pv-btn, .pv-mini, .compare-trigger-btn {
+  background: rgba(255, 255, 255, 0.025) !important;
+  border: 1px solid var(--line-strong) !important;
+  color: var(--ink-2) !important;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.theater-pill { border-radius: 999px; }
+.era-btn:hover, .ctrl-btn:hover, .theater-pill:hover, .pp-tabs button:hover, .pv-btn:hover, .pv-mini:hover, .compare-trigger-btn:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--ink) !important;
+  border-color: var(--line-strong) !important;
+  transform: none;
+}
+.ctrl-btn.active, .theater-pill.active, .pp-tabs button.is-active {
+  background: var(--accent-tint) !important;
+  color: var(--gold) !important;
+  border-color: var(--accent-line) !important;
+  font-weight: 600;
+}
+#search-input {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink);
+}
+#search-input::placeholder { color: var(--ink-3); }
+#search-input:focus { border-color: var(--accent-line); background: rgba(255, 255, 255, 0.06); }
+.s-item { border-bottom-color: var(--line); }
+.s-item:hover { background: rgba(255, 255, 255, 0.05); }
+.s-badge { background: transparent; border-color: var(--line-strong); color: var(--ink-3); }
+#event-banner { border-color: var(--line); background: rgba(15, 18, 23, 0.5); }
+#timeline-slider { accent-color: var(--gold); }
+
+/* map: state names as plain atlas lettering; boxes only when a state is focused */
+.empire-macro-label {
+  font-weight: 500;
+  letter-spacing: 2px;
+  fill: rgba(244, 237, 222, 0.94);
+  text-shadow: 0 0 3px rgba(8, 11, 15, 0.95), 0 0 9px rgba(8, 11, 15, 0.7);
+}
+.empire-banner-group.is-major .empire-cartouche-bg,
+svg.map-zoomed .empire-banner-group.is-minor .empire-cartouche-bg { opacity: 0; }
+.empire-banner-group.is-focused .empire-cartouche-bg { opacity: 0.85; stroke: var(--line-strong) !important; }
+#world-map.units-modern .unit-border-country { stroke: rgba(8, 11, 15, 0.55); }
+.campaign-arrow { stroke: rgba(240, 226, 196, 0.85); }
+
+/* Refined theme, pass 2 */
+/* a state reads as one mass: its own unit outlines whisper; zoom in to see provinces */
+.region.owned { stroke-opacity: 0.32; stroke-width: 0.45; }
+svg.map-zoomed .region.owned { stroke-opacity: 0.5; }
+.unit-border-province { stroke: rgba(8, 12, 18, 0.1); }
+#world-map.units-modern .unit-border-province { stroke: rgba(8, 12, 18, 0.18); }
+/* the era quick-jumps crowd the top bar and run off its edge; the timeline and search cover them */
+.era-bookmarks { display: none !important; }
+/* the macro panel folds to its title line and opens on hover */
+#macro-panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); backdrop-filter: blur(12px);
+  max-height: 38px; overflow: hidden; opacity: 0.85;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+}
+#macro-panel:hover { max-height: 320px; opacity: 1; background: rgba(15, 18, 23, 0.94); border-color: var(--line-strong); }
+#macro-panel .panel-title { color: var(--ink-2); }
+.macro-tech-box { border-left-color: var(--accent-line); }
+
+/* Terrain relief (src/assets/relief.webp): fades in once loaded */
+.terrain-relief { pointer-events: none; opacity: 0; transition: opacity 1.4s ease; }
+.terrain-relief.is-loaded { opacity: 0.9; }
+
+/* Keyboard shortcut list */
+.shortcut-help {
+  position: fixed; right: 24px; bottom: 84px; z-index: 90; min-width: 250px;
+  background: rgba(15, 18, 23, 0.95); border: 1px solid var(--line-strong); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 12px 14px; cursor: pointer; backdrop-filter: blur(12px);
+}
+.shortcut-help.is-hidden { display: none; }
+.sh-title { color: var(--gold); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.sh-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-2); padding: 3px 0; }
+.sh-row kbd {
+  min-width: 58px; text-align: center; font-family: inherit; font-size: 11px; color: var(--ink);
+  border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: rgba(255,255,255,0.04);
+}
+@media (max-width: 900px) { #btn-keys, .shortcut-help { display: none !important; } }
+
+/* ==========================================================================
+   Paper theme: a light parchment map. Panels keep their dark glass (display cards over the map),
+   the map itself switches to sea-green paper, cream land, light state tones and brown ink.
+   ========================================================================== */
+body.theme-paper[class] {
+  --bg-ocean: #c4cec9;
+  --land-empty: #e8dfca;
+  --paper-ink: #3d3124;
+  --paper-halo: rgba(248, 243, 231, 0.95);
+}
+body.theme-paper { background: #c4cec9; }
+body.theme-paper #map-container { background: radial-gradient(ellipse 120% 95% at 50% 42%, #d6ddd8 0%, #c4cec9 55%, #aebab5 100%); }
+body.theme-paper .map-grid line { stroke: rgba(60, 72, 70, 0.08); }
+body.theme-paper .inland-sea { stroke: rgba(70, 108, 124, 0.38); }
+body.theme-paper .bathymetry-deep { stroke: rgba(70, 104, 112, 0.06); }
+body.theme-paper .bathymetry-mid { stroke: rgba(70, 112, 124, 0.09); }
+body.theme-paper .bathymetry-shore { fill: rgba(255, 255, 255, 0.16); stroke: rgba(84, 118, 130, 0.28); }
+body.theme-paper .world-coastline { stroke: #6e6350; stroke-width: 0.8; }
+body.theme-paper .sea-label { fill: rgba(56, 86, 100, 0.55); }
+body.theme-paper .mountain-ridge { stroke: rgba(112, 90, 58, 0.32); }
+body.theme-paper .river-path { stroke: rgba(66, 124, 152, 0.6); }
+body.theme-paper .river-label { fill: rgba(46, 96, 120, 0.7); text-shadow: none; }
+body.theme-paper #stateless-hatch line { stroke: rgba(118, 96, 66, 0.11); }
+body.theme-paper .terrain-relief.is-loaded { opacity: 1; }
+
+body.theme-paper .empire-macro-label {
+  fill: var(--paper-ink);
+  text-shadow: 0 0 3px var(--paper-halo), 0 0 8px rgba(248, 243, 231, 0.75);
+}
+body.theme-paper .empire-banner-group.is-focused .empire-cartouche-bg { fill: rgba(248, 243, 231, 0.9); }
+body.theme-paper .region-sublabel { fill: rgba(70, 56, 38, 0.78); text-shadow: 0 0 3px var(--paper-halo); }
+body.theme-paper .region-sublabel.is-stateless { fill: rgba(96, 76, 50, 0.85); }
+body.theme-paper .unit-label { fill: rgba(52, 42, 30, 0.88); stroke: rgba(248, 243, 231, 0.85); }
+body.theme-paper .unit-border-country { stroke: rgba(84, 66, 44, 0.38); }
+body.theme-paper .unit-border-province { stroke: rgba(84, 66, 44, 0.14); }
+body.theme-paper #world-map.units-modern .unit-border-country { stroke: rgba(84, 66, 44, 0.55); }
+body.theme-paper #world-map.units-modern .unit-border-province { stroke: rgba(84, 66, 44, 0.22); }
+
+body.theme-paper .trade-route-casing { stroke: rgba(255, 252, 244, 0.45); }
+body.theme-paper .route-hub-ring { fill: rgba(250, 246, 236, 0.92); }
+body.theme-paper .route-hub-core { fill: #5d4a32; }
+body.theme-paper .route-hub-label { fill: var(--paper-ink); text-shadow: 0 0 3px var(--paper-halo), 0 0 6px var(--paper-halo); }
+body.theme-paper .city-state-ring { fill: rgba(250, 246, 236, 0.9); stroke: rgba(120, 90, 52, 0.85); }
+body.theme-paper .city-state-dot { fill: #6b4f2c; }
+body.theme-paper .city-state-label { fill: var(--paper-ink); stroke: var(--paper-halo); }
+body.theme-paper .landmark-dot { fill: #fffaf0; stroke: #8a6a34; }
+body.theme-paper .landmark-label { fill: var(--paper-ink); text-shadow: 0 0 3px var(--paper-halo), 0 0 6px var(--paper-halo); }
+body.theme-paper .campaign-arrow { stroke: rgba(98, 66, 32, 0.8); }
+body.theme-paper #campaign-arrowhead polygon { fill: #6b4a26; }
+
+body.theme-paper .pv-route-past { stroke: #8a5a14; }
+body.theme-paper .pv-route-future { stroke: rgba(138, 90, 20, 0.5); }
+body.theme-paper .pv-dot { fill: rgba(250, 246, 236, 0.95); stroke: rgba(138, 90, 20, 0.7); }
+body.theme-paper .pv-dot.is-past, body.theme-paper .pv-dot.is-current { fill: #8a5a14; stroke: #fff8e8; }
+body.theme-paper .pv-label { fill: #5a3b10; stroke: var(--paper-halo); }
+body.theme-paper .pv-c1 { color: #2f78ad; }
+body.theme-paper .pv-c2 { color: #b9534d; }
+body.theme-paper .pv-cmp-dot { stroke: #fff8e8; }
+
+/* Capitals: a small ringed dot; major states at world view, all states and their names when zoomed */
+.capitals-layer { pointer-events: none; }
+.capital { opacity: 0; transition: opacity 0.8s ease; animation: capitalIn 0.9s ease-out; }
+.capital.is-major, svg.map-zoomed .capital { opacity: 1; }
+@keyframes capitalIn { from { opacity: 0; } }
+.capital-ring { fill: rgba(12, 16, 22, 0.85); stroke: rgba(240, 230, 208, 0.9); stroke-width: 0.6; }
+.capital-core { fill: #f1e6cf; }
+.capital-label {
+  display: none; font-size: 5.2px; letter-spacing: 0.3px; fill: rgba(240, 232, 214, 0.92);
+  paint-order: stroke; stroke: rgba(10, 13, 18, 0.85); stroke-width: 1.4px; stroke-linejoin: round;
+}
+svg.map-zoomed .capital-label { display: inline; }
+body.theme-paper .capital-ring { fill: #fbf6ea; stroke: #5a4630; }
+body.theme-paper .capital-core { fill: #5a4630; }
+body.theme-paper .capital-label { fill: var(--paper-ink); stroke: var(--paper-halo); }
+/* paper theme: controls floating straight on the map need their own dark glass to stay legible */
+body.theme-paper .search-wrap .era-btn,
+body.theme-paper #search-input,
+body.theme-paper #btn-mobile-menu {
+  background: rgba(15, 18, 23, 0.82) !important;
+  border-color: rgba(15, 18, 23, 0.4) !important;
+  color: var(--ink) !important;
+  backdrop-filter: blur(10px);
+}
+body.theme-paper #search-input::placeholder { color: var(--ink-3); }

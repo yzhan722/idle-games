@@ -1,0 +1,170 @@
+{
+  "id": "rabindranath-tagore",
+  "name": "罗宾德拉纳特·泰戈尔",
+  "name_alt": "Rabindranath Tagore；孟加拉语 Rabindranath Thakur",
+  "group": "世界",
+  "born": 1861,
+  "born_approx": false,
+  "died": 1941,
+  "died_approx": false,
+  "role": "印度孟加拉诗人、作家、教育家",
+  "polity": "",
+  "summary": "泰戈尔生于加尔各答，出身孟加拉望族，以诗歌、小说、戏剧与歌曲创作闻名。1901年在圣蒂尼克坦创办学校，后发展为国际大学。1913年以《吉檀迦利》成为首位获诺贝尔文学奖的亚洲人，1919年因阿姆利则惨案放弃英国授予的爵士称号。曾多次出访欧美与亚洲，1924年访问中国。",
+  "confidence": "史料确证",
+  "sources": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)；Prabhatkumar Mukhopadhyay《泰戈尔传》（Rabindrajibani）",
+  "stops": [
+    {
+      "year": 1861,
+      "lon": 88.4,
+      "lat": 22.6,
+      "place": "加尔各答乔拉桑戈（今印度西孟加拉邦）",
+      "event": "5月7日生于加尔各答泰戈尔家族宅邸。",
+      "kind": "出生",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1873,
+      "lon": 76,
+      "lat": 32.5,
+      "place": "达尔豪西（今印度喜马偕尔邦）",
+      "event": "随父经圣蒂尼克坦、阿姆利则游历至喜马拉雅山区。",
+      "kind": "旅行",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1878,
+      "to": 1880,
+      "lon": -0.1,
+      "lat": 51.5,
+      "place": "伦敦（今英国）",
+      "event": "赴英国，曾在伦敦大学学院听课，未取得学位即回国。",
+      "kind": "求学",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1891,
+      "to": 1901,
+      "lon": 89.2,
+      "lat": 23.9,
+      "place": "西莱达（今孟加拉国库什蒂亚）",
+      "event": "管理家族田庄，创作大量短篇小说与诗歌。",
+      "kind": "著述",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1901,
+      "to": 1904,
+      "lon": 87.7,
+      "lat": 23.7,
+      "place": "圣蒂尼克坦（今印度西孟加拉邦）",
+      "event": "12月创办梵学书院。",
+      "kind": "其他",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1905,
+      "lon": 88.4,
+      "lat": 22.6,
+      "place": "加尔各答（今印度西孟加拉邦）",
+      "event": "参与反对孟加拉分治运动，创作爱国歌曲。",
+      "kind": "其他",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1912,
+      "lon": -0.1,
+      "lat": 51.5,
+      "place": "伦敦（今英国）",
+      "event": "《吉檀迦利》英译本由印度学会出版。",
+      "kind": "著述",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1913,
+      "lon": 87.7,
+      "lat": 23.7,
+      "place": "圣蒂尼克坦（今印度西孟加拉邦）",
+      "event": "获诺贝尔文学奖。",
+      "kind": "著述",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1916,
+      "lon": 139.7,
+      "lat": 35.7,
+      "place": "东京（今日本）",
+      "event": "访问日本，随后赴美国巡回演讲。",
+      "kind": "旅行",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1919,
+      "lon": 88.4,
+      "lat": 22.6,
+      "place": "加尔各答（今印度西孟加拉邦）",
+      "event": "阿姆利则惨案后致信总督，放弃爵士称号。",
+      "kind": "其他",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1921,
+      "lon": 87.7,
+      "lat": 23.7,
+      "place": "圣蒂尼克坦（今印度西孟加拉邦）",
+      "event": "国际大学正式成立。",
+      "kind": "其他",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1924,
+      "lon": 116.4,
+      "lat": 39.9,
+      "place": "北京",
+      "event": "4月至5月访问中国，在上海、杭州、南京、北京等地演讲。",
+      "kind": "旅行",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1930,
+      "lon": 37.6,
+      "lat": 55.8,
+      "place": "莫斯科（今俄罗斯）",
+      "event": "访欧期间在柏林会晤爱因斯坦，9月访问苏联。",
+      "kind": "旅行",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1932,
+      "lon": 51.4,
+      "lat": 35.7,
+      "place": "德黑兰（今伊朗）",
+      "event": "应邀访问波斯与伊拉克。",
+      "kind": "旅行",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    },
+    {
+      "year": 1941,
+      "lon": 88.4,
+      "lat": 22.6,
+      "place": "加尔各答乔拉桑戈（今印度西孟加拉邦）",
+      "event": "8月7日逝于加尔各答家族宅邸。",
+      "kind": "去世",
+      "confidence": "史料确证",
+      "source": "Krishna Dutta & Andrew Robinson, Rabindranath Tagore: The Myriad-Minded Man (1995)"
+    }
+  ]
+}

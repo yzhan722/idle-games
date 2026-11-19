@@ -1,0 +1,1026 @@
+[
+  {
+    "a": "sun-wu",
+    "b": "wu-zixu",
+    "year": -512,
+    "note": "吴王阖庐与伍子胥、孙武伐楚拔舒，孙武以民劳谏止入郢。",
+    "confidence": "史料确证",
+    "source": "《史记·伍子胥列传》"
+  },
+  {
+    "a": "darius-i",
+    "b": "xerxes-i",
+    "year": -498,
+    "note": "大流士一世立其子薛西斯为王储。",
+    "confidence": "史料确证",
+    "source": "希罗多德《历史》卷七"
+  },
+  {
+    "a": "socrates",
+    "b": "plato",
+    "year": -407,
+    "note": "柏拉图约二十岁起追随苏格拉底学习哲学，此后长期从游。",
+    "confidence": "史料确证",
+    "source": "柏拉图《申辩篇》；第欧根尼·拉尔修《名哲言行录》卷三"
+  },
+  {
+    "a": "socrates",
+    "b": "plato",
+    "year": -399,
+    "note": "苏格拉底受审时柏拉图在场，并表示愿为其担保罚金。",
+    "confidence": "史料确证",
+    "source": "柏拉图《申辩篇》"
+  },
+  {
+    "a": "plato",
+    "b": "aristotle",
+    "year": -367,
+    "note": "亚里士多德十七岁入柏拉图学园，师从柏拉图约二十年。",
+    "confidence": "史料确证",
+    "source": "第欧根尼·拉尔修《名哲言行录》卷五"
+  },
+  {
+    "a": "aristotle",
+    "b": "alexander-the-great",
+    "year": -343,
+    "note": "亚里士多德应腓力二世之聘，在米埃扎教导少年亚历山大。",
+    "confidence": "史料确证",
+    "source": "普鲁塔克《亚历山大传》"
+  },
+  {
+    "a": "hannibal",
+    "b": "scipio-africanus",
+    "year": -218,
+    "note": "提契努斯河之战中，少年西庇阿随父迎战汉尼拔，冲阵救出负伤的父亲。",
+    "confidence": "史料确证",
+    "source": "波利比乌斯《历史》卷十；李维《建城以来史》卷二十一"
+  },
+  {
+    "a": "xiang-yu",
+    "b": "han-xin",
+    "year": -208,
+    "note": "项梁死后韩信属项羽为郎中，数以策干项羽，不用。",
+    "confidence": "史料确证",
+    "source": "《史记·淮阴侯列传》"
+  },
+  {
+    "a": "liu-bang",
+    "b": "xiang-yu",
+    "year": -206,
+    "note": "项羽率诸侯军入关，在鸿门宴会刘邦。",
+    "confidence": "史料确证",
+    "source": "《史记·项羽本纪》"
+  },
+  {
+    "a": "liu-bang",
+    "b": "han-xin",
+    "year": -206,
+    "note": "韩信经萧何力荐，被刘邦拜为大将。",
+    "confidence": "史料确证",
+    "source": "《史记·淮阴侯列传》"
+  },
+  {
+    "a": "liu-bang",
+    "b": "xiang-yu",
+    "year": -203,
+    "note": "刘邦与项羽临广武涧对话，数项羽十罪，为弩所中。",
+    "confidence": "史料确证",
+    "source": "《史记·项羽本纪》《史记·高祖本纪》"
+  },
+  {
+    "a": "hannibal",
+    "b": "scipio-africanus",
+    "year": -202,
+    "note": "扎马会战前两人当面会谈，随后西庇阿击败汉尼拔。",
+    "confidence": "史料确证",
+    "source": "波利比乌斯《历史》卷十五；李维《建城以来史》卷三十"
+  },
+  {
+    "a": "liu-bang",
+    "b": "xiang-yu",
+    "year": -202,
+    "note": "刘邦会诸侯军围项羽于垓下，项羽败亡。",
+    "confidence": "史料确证",
+    "source": "《史记·项羽本纪》"
+  },
+  {
+    "a": "han-xin",
+    "b": "xiang-yu",
+    "year": -202,
+    "note": "韩信率齐兵会汉王于垓下，围攻项羽。",
+    "confidence": "史料确证",
+    "source": "《史记·淮阴侯列传》"
+  },
+  {
+    "a": "liu-bang",
+    "b": "han-xin",
+    "year": -201,
+    "note": "刘邦伪游云梦，会诸侯于陈，执楚王韩信。",
+    "confidence": "史料确证",
+    "source": "《史记·高祖本纪》《史记·淮阴侯列传》"
+  },
+  {
+    "a": "wei-qing",
+    "b": "huo-qu-bing",
+    "year": -123,
+    "note": "霍去病为票姚校尉随舅父卫青出定襄击匈奴，封冠军侯。",
+    "confidence": "史料确证",
+    "source": "《史记·卫将军骠骑列传》"
+  },
+  {
+    "a": "wei-qing",
+    "b": "zhang-qian",
+    "year": -123,
+    "note": "张骞以校尉从大将军卫青击匈奴，因知水草处，军得以不乏，封博望侯。",
+    "confidence": "史料确证",
+    "source": "《史记·卫将军骠骑列传》"
+  },
+  {
+    "a": "li-guang",
+    "b": "zhang-qian",
+    "year": -121,
+    "note": "李广与张骞分道出右北平，李广被围，张骞军后期而至解围。",
+    "confidence": "史料确证",
+    "source": "《史记·李将军列传》"
+  },
+  {
+    "a": "wei-qing",
+    "b": "li-guang",
+    "year": -119,
+    "note": "漠北之战李广为前将军从卫青出塞，迷道失期，归幕府后自刭。",
+    "confidence": "史料确证",
+    "source": "《史记·李将军列传》"
+  },
+  {
+    "a": "julius-caesar",
+    "b": "cleopatra-vii",
+    "year": -48,
+    "note": "克娄巴特拉潜入亚历山大里亚王宫面见恺撒，恺撒扶立其复位。",
+    "confidence": "史料确证",
+    "source": "普鲁塔克《恺撒传》；恺撒《内战记》"
+  },
+  {
+    "a": "julius-caesar",
+    "b": "augustus",
+    "year": -45,
+    "note": "屋大维赴西班牙追随恺撒军中，随后被恺撒在遗嘱中收为养子。",
+    "confidence": "史料确证",
+    "source": "苏埃托尼乌斯《罗马十二帝王传·奥古斯都传》；尼古拉斯《奥古斯都传》"
+  },
+  {
+    "a": "augustus",
+    "b": "cleopatra-vii",
+    "year": -31,
+    "note": "亚克兴海战中屋大维击败安东尼与克娄巴特拉的联军。",
+    "confidence": "史料确证",
+    "source": "普鲁塔克《安东尼传》；狄奥《罗马史》卷五十"
+  },
+  {
+    "a": "augustus",
+    "b": "cleopatra-vii",
+    "year": -30,
+    "note": "屋大维攻入亚历山大里亚后与克娄巴特拉会面，其后她自杀。",
+    "confidence": "史料确证",
+    "source": "普鲁塔克《安东尼传》；狄奥《罗马史》卷五十一"
+  },
+  {
+    "a": "trajan",
+    "b": "hadrian",
+    "year": 86,
+    "note": "哈德良十岁丧父，由同乡亲族图拉真等任监护人。",
+    "confidence": "史料确证",
+    "source": "《罗马君王传·哈德良传》"
+  },
+  {
+    "a": "trajan",
+    "b": "hadrian",
+    "year": 117,
+    "note": "图拉真临终前收哈德良为养子，其真实性古人已有疑议。",
+    "confidence": "学界推测",
+    "source": "《罗马君王传·哈德良传》；狄奥《罗马史》卷六十九"
+  },
+  {
+    "a": "hadrian",
+    "b": "marcus-aurelius",
+    "year": 138,
+    "note": "哈德良立安敦宁为嗣时，令其同时收少年马可为养子。",
+    "confidence": "史料确证",
+    "source": "《罗马君王传·马可·奥勒留传》"
+  },
+  {
+    "a": "liu-bei",
+    "b": "guan-yu",
+    "year": 184,
+    "note": "刘备于乡里合徒众，关羽与张飞为之御侮，恩若兄弟。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·关羽传》"
+  },
+  {
+    "a": "cao-cao",
+    "b": "liu-bei",
+    "year": 198,
+    "note": "刘备失徐州后归曹操，随还许都，曹操谓天下英雄唯刘备与己。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·先主传》"
+  },
+  {
+    "a": "cao-cao",
+    "b": "guan-yu",
+    "year": 200,
+    "note": "曹操东征擒关羽，拜偏将军，关羽斩颜良报效后告辞奔刘备。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·关羽传》"
+  },
+  {
+    "a": "liu-bei",
+    "b": "zhuge-liang",
+    "year": 207,
+    "note": "刘备三顾诸葛亮于隆中，诸葛亮陈三分天下之策，遂出山辅佐。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·诸葛亮传》"
+  },
+  {
+    "a": "cao-cao",
+    "b": "liu-bei",
+    "year": 208,
+    "note": "曹操以精骑追及刘备于当阳长坂，后在赤壁为孙刘联军所败。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·先主传》"
+  },
+  {
+    "a": "cao-cao",
+    "b": "sun-quan",
+    "year": 208,
+    "note": "曹操致书孙权相威胁，孙权遣周瑜等与刘备并力，赤壁大破曹军。",
+    "confidence": "史料确证",
+    "source": "《三国志·吴书·吴主传》；裴注引《江表传》"
+  },
+  {
+    "a": "cao-cao",
+    "b": "sima-yi",
+    "year": 208,
+    "note": "曹操为丞相，辟司马懿为文学掾，使与太子游处。",
+    "confidence": "史料确证",
+    "source": "《晋书·宣帝纪》"
+  },
+  {
+    "a": "zhuge-liang",
+    "b": "sun-quan",
+    "year": 208,
+    "note": "诸葛亮出使柴桑，说孙权与刘备联合抗曹。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·诸葛亮传》"
+  },
+  {
+    "a": "liu-bei",
+    "b": "sun-quan",
+    "year": 210,
+    "note": "刘备至京口见孙权，求都督荆州。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·先主传》《三国志·吴书·吴主传》"
+  },
+  {
+    "a": "cao-cao",
+    "b": "sun-quan",
+    "year": 213,
+    "note": "曹操攻濡须，孙权亲自相拒月余，曹操望见吴军齐肃乃退。",
+    "confidence": "史料确证",
+    "source": "《三国志·吴书·吴主传》"
+  },
+  {
+    "a": "guan-yu",
+    "b": "zhuge-liang",
+    "year": 214,
+    "note": "关羽闻马超来降，致书诸葛亮问其人才，诸葛亮复书称其不如关羽。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·关羽传》"
+  },
+  {
+    "a": "cao-cao",
+    "b": "liu-bei",
+    "year": 219,
+    "note": "刘备据定军山斩夏侯渊，曹操亲至汉中争夺，不得而还。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·先主传》"
+  },
+  {
+    "a": "guan-yu",
+    "b": "sun-quan",
+    "year": 219,
+    "note": "孙权遣吕蒙袭取荆州，关羽败走麦城，被孙权部将擒杀。",
+    "confidence": "史料确证",
+    "source": "《三国志·吴书·吴主传》《三国志·蜀书·关羽传》"
+  },
+  {
+    "a": "liu-bei",
+    "b": "zhuge-liang",
+    "year": 223,
+    "note": "刘备病笃于永安，托孤于丞相诸葛亮。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·诸葛亮传》"
+  },
+  {
+    "a": "zhuge-liang",
+    "b": "sima-yi",
+    "year": 231,
+    "note": "诸葛亮攻祁山，司马懿都督雍凉诸军拒之于上邽、卤城一带。",
+    "confidence": "史料确证",
+    "source": "《晋书·宣帝纪》；《三国志·蜀书·诸葛亮传》"
+  },
+  {
+    "a": "zhuge-liang",
+    "b": "sima-yi",
+    "year": 234,
+    "note": "诸葛亮出斜谷屯五丈原，与司马懿对峙百余日，病卒军中。",
+    "confidence": "史料确证",
+    "source": "《三国志·蜀书·诸葛亮传》；《晋书·宣帝纪》"
+  },
+  {
+    "a": "diocletian",
+    "b": "constantine-the-great",
+    "year": 301,
+    "note": "君士坦丁青年时留居戴克里先宫廷，随皇帝巡行东方。",
+    "confidence": "史料确证",
+    "source": "优西比乌《君士坦丁传》；拉克坦提乌斯《迫害者之死》"
+  },
+  {
+    "a": "wang-xizhi",
+    "b": "xie-an",
+    "year": 353,
+    "note": "永和九年三月三日，王羲之与谢安等四十一人修禊于兰亭。",
+    "confidence": "史料确证",
+    "source": "王羲之《兰亭集序》；《晋书·王羲之传》"
+  },
+  {
+    "a": "liu-yu",
+    "b": "tao-yuanming",
+    "year": 404,
+    "note": "陶渊明出为镇军参军，镇军将军一说即刘裕。",
+    "confidence": "学界推测",
+    "source": "陶渊明《始作镇军参军经曲阿》；《宋书·陶潜传》"
+  },
+  {
+    "a": "bei-wei-xiaowendi",
+    "b": "li-daoyuan",
+    "year": 494,
+    "note": "郦道元以尚书郎从孝文帝北巡阴山一带。",
+    "confidence": "史料确证",
+    "source": "郦道元《水经注》卷三"
+  },
+  {
+    "a": "justinian-i",
+    "b": "belisarius",
+    "year": 527,
+    "note": "贝利撒留以查士丁尼近卫身份受命统率达拉要塞驻军。",
+    "confidence": "史料确证",
+    "source": "普罗科匹厄斯《战史》卷一"
+  },
+  {
+    "a": "justinian-i",
+    "b": "belisarius",
+    "year": 532,
+    "note": "尼卡暴动中贝利撒留奉查士丁尼之命在竞技场镇压暴动。",
+    "confidence": "史料确证",
+    "source": "普罗科匹厄斯《战史》卷一"
+  },
+  {
+    "a": "tang-taizong",
+    "b": "li-jing",
+    "year": 617,
+    "note": "李靖被李渊所执，经李世民请求获释，此后从李世民征战。",
+    "confidence": "史料确证",
+    "source": "《旧唐书·李靖传》"
+  },
+  {
+    "a": "tang-taizong",
+    "b": "li-jing",
+    "year": 630,
+    "note": "李靖受唐太宗之命北伐，大破东突厥，擒颉利可汗。",
+    "confidence": "史料确证",
+    "source": "《旧唐书·李靖传》《旧唐书·太宗本纪》"
+  },
+  {
+    "a": "tang-taizong",
+    "b": "wu-zetian",
+    "year": 637,
+    "note": "武则天入宫为唐太宗才人。",
+    "confidence": "史料确证",
+    "source": "《旧唐书·则天皇后本纪》"
+  },
+  {
+    "a": "tang-taizong",
+    "b": "xuan-zang",
+    "year": 645,
+    "note": "玄奘西行归来，在洛阳宫谒见唐太宗，太宗劝其还俗辅政，玄奘辞之。",
+    "confidence": "史料确证",
+    "source": "慧立、彦悰《大慈恩寺三藏法师传》"
+  },
+  {
+    "a": "wu-zetian",
+    "b": "xuan-zang",
+    "year": 656,
+    "note": "武后临产，遣使请玄奘祈福，所生皇子李显号佛光王，度为玄奘弟子。",
+    "confidence": "史料确证",
+    "source": "慧立、彦悰《大慈恩寺三藏法师传》卷九"
+  },
+  {
+    "a": "li-bai",
+    "b": "du-fu",
+    "year": 744,
+    "note": "李白赐金放还后与杜甫相识于洛阳，同游梁宋，次年又同游东鲁。",
+    "confidence": "史料确证",
+    "source": "杜甫《赠李白》；李白《沙丘城下寄杜甫》"
+  },
+  {
+    "a": "charlemagne",
+    "b": "harun-al-rashid",
+    "year": 801,
+    "note": "哈伦·拉希德的使节在意大利觐见查理曼，双方互通使节并赠送礼物。",
+    "confidence": "史料确证",
+    "source": "《法兰克王国编年史》；艾因哈德《查理大帝传》"
+  },
+  {
+    "a": "han-yu",
+    "b": "liu-zongyuan",
+    "year": 803,
+    "note": "韩愈与柳宗元同任监察御史，此后交谊终身。",
+    "confidence": "史料确证",
+    "source": "韩愈《柳子厚墓志铭》"
+  },
+  {
+    "a": "han-yu",
+    "b": "bai-ju-yi",
+    "year": 822,
+    "note": "韩愈作诗寄白居易约游曲江，白居易作诗相酬。",
+    "confidence": "史料确证",
+    "source": "韩愈《同水部张员外籍曲江春游寄白二十二舍人》；白居易《酬韩侍郎张博士雨后游曲江见寄》"
+  },
+  {
+    "a": "wang-anshi",
+    "b": "sima-guang",
+    "year": 1070,
+    "note": "司马光致书王安石论新法之弊，王安石作《答司马谏议书》回复。",
+    "confidence": "史料确证",
+    "source": "司马光《与王介甫书》；王安石《答司马谏议书》"
+  },
+  {
+    "a": "wang-anshi",
+    "b": "shen-kuo",
+    "year": 1073,
+    "note": "沈括受王安石信用参与推行新法，奉命察访两浙农田水利。",
+    "confidence": "史料确证",
+    "source": "《宋史·沈括传》；李焘《续资治通鉴长编》"
+  },
+  {
+    "a": "wang-anshi",
+    "b": "su-shi",
+    "year": 1084,
+    "note": "苏轼自黄州移汝州途中过江宁，访退居钟山的王安石，同游唱和。",
+    "confidence": "史料确证",
+    "source": "《宋史·苏轼传》；苏轼《次荆公韵四绝》"
+  },
+  {
+    "a": "sima-guang",
+    "b": "su-shi",
+    "year": 1086,
+    "note": "司马光入相后召苏轼还朝，两人就免役法当面争论。",
+    "confidence": "史料确证",
+    "source": "《宋史·苏轼传》"
+  },
+  {
+    "a": "lu-you",
+    "b": "zhu-xi",
+    "year": 1182,
+    "note": "朱熹提举浙东常平救荒，陆游作诗相寄，两人有书信往来。",
+    "confidence": "学界推测",
+    "source": "陆游《寄朱元晦提举》"
+  },
+  {
+    "a": "richard-i",
+    "b": "saladin",
+    "year": 1191,
+    "note": "理查一世在阿苏夫之战中击败萨拉丁亲率的军队。",
+    "confidence": "史料确证",
+    "source": "巴哈丁《萨拉丁传》；《理查国王行纪》"
+  },
+  {
+    "a": "richard-i",
+    "b": "saladin",
+    "year": 1192,
+    "note": "雅法之战后双方经使节谈判订立停战协定。",
+    "confidence": "史料确证",
+    "source": "巴哈丁《萨拉丁传》；《理查国王行纪》"
+  },
+  {
+    "a": "zhu-xi",
+    "b": "xin-qiji",
+    "year": 1192,
+    "note": "辛弃疾任福建提点刑狱期间往访朱熹，朱熹为其题写斋名。",
+    "confidence": "学界推测",
+    "source": "《宋史·辛弃疾传》；朱熹文集"
+  },
+  {
+    "a": "lu-you",
+    "b": "xin-qiji",
+    "year": 1203,
+    "note": "辛弃疾知绍兴府时与闲居山阴的陆游交往，次年陆游作诗送其入朝。",
+    "confidence": "史料确证",
+    "source": "陆游《送辛幼安殿撰造朝》"
+  },
+  {
+    "a": "genghis-khan",
+    "b": "yelu-chucai",
+    "year": 1218,
+    "note": "成吉思汗征召耶律楚材北上入见，留侍左右。",
+    "confidence": "史料确证",
+    "source": "《元史·耶律楚材传》"
+  },
+  {
+    "a": "qiu-chuji",
+    "b": "yelu-chucai",
+    "year": 1221,
+    "note": "丘处机西行抵撒马尔罕，与随成吉思汗西征的耶律楚材相识唱和。",
+    "confidence": "史料确证",
+    "source": "李志常《长春真人西游记》；耶律楚材《西游录》"
+  },
+  {
+    "a": "genghis-khan",
+    "b": "qiu-chuji",
+    "year": 1222,
+    "note": "成吉思汗在兴都库什山行营接见丘处机，问长生之道。",
+    "confidence": "史料确证",
+    "source": "李志常《长春真人西游记》；《元史·丘处机传》"
+  },
+  {
+    "a": "genghis-khan",
+    "b": "kublai",
+    "year": 1224,
+    "note": "成吉思汗西征归来，年幼的忽必烈与旭烈兀迎于叶密立河畔，行狩猎拭指之礼。",
+    "confidence": "史料确证",
+    "source": "拉施特《史集》"
+  },
+  {
+    "a": "kublai",
+    "b": "marco-polo",
+    "year": 1275,
+    "note": "马可·波罗随父叔抵上都觐见忽必烈，此事仅见于其本人游记。",
+    "confidence": "学界推测",
+    "source": "《马可·波罗游记》"
+  },
+  {
+    "a": "kublai",
+    "b": "wen-tianxiang",
+    "year": 1282,
+    "note": "忽必烈召见被囚的文天祥，劝其出仕，文天祥不从，旋就义。",
+    "confidence": "史料确证",
+    "source": "《宋史·文天祥传》"
+  },
+  {
+    "a": "timur",
+    "b": "ibn-khaldun",
+    "year": 1401,
+    "note": "大马士革被围期间，伊本·赫勒敦缒城而出，在帖木儿营中与其多次会谈。",
+    "confidence": "史料确证",
+    "source": "伊本·赫勒敦《自传》"
+  },
+  {
+    "a": "isabella-i-of-castile",
+    "b": "christopher-columbus",
+    "year": 1486,
+    "note": "哥伦布首次觐见伊莎贝拉一世与斐迪南二世，陈述西航计划。",
+    "confidence": "史料确证",
+    "source": "费尔南多·哥伦布《海军上将传》；拉斯·卡萨斯《印度群岛史》"
+  },
+  {
+    "a": "isabella-i-of-castile",
+    "b": "christopher-columbus",
+    "year": 1493,
+    "note": "伊莎贝拉一世在巴塞罗那接见首航归来的哥伦布，批准第二次远航。",
+    "confidence": "史料确证",
+    "source": "费尔南多·哥伦布《海军上将传》"
+  },
+  {
+    "a": "charles-v",
+    "b": "ferdinand-magellan",
+    "year": 1518,
+    "note": "麦哲伦在巴利亚多利德觐见查理五世，订立航往香料群岛的协议。",
+    "confidence": "史料确证",
+    "source": "皮加费塔《首次环球航行记》；《巴利亚多利德协定》"
+  },
+  {
+    "a": "charles-v",
+    "b": "martin-luther",
+    "year": 1521,
+    "note": "路德在沃尔姆斯帝国议会上当着查理五世拒绝撤回其著作。",
+    "confidence": "史料确证",
+    "source": "《沃尔姆斯帝国议会文献》"
+  },
+  {
+    "a": "charles-v",
+    "b": "hernan-cortes",
+    "year": 1528,
+    "note": "科尔特斯回西班牙觐见查理五世，次年受封瓦哈卡谷侯爵。",
+    "confidence": "史料确证",
+    "source": "戈马拉《征服墨西哥史》"
+  },
+  {
+    "a": "charles-v",
+    "b": "francisco-pizarro",
+    "year": 1528,
+    "note": "皮萨罗在托莱多觐见查理五世，次年获颁征服秘鲁的协定。",
+    "confidence": "史料确证",
+    "source": "《托莱多协定》；谢萨·德·莱昂《秘鲁纪事》"
+  },
+  {
+    "a": "hernan-cortes",
+    "b": "francisco-pizarro",
+    "year": 1528,
+    "note": "科尔特斯与皮萨罗同在西班牙，据记载曾相见。",
+    "confidence": "学界推测",
+    "source": "戈马拉《西印度通史》"
+  },
+  {
+    "a": "oda-nobunaga",
+    "b": "tokugawa-ieyasu",
+    "year": 1562,
+    "note": "德川家康与织田信长结成清洲同盟。",
+    "confidence": "史料确证",
+    "source": "《信长公记》；《三河物语》"
+  },
+  {
+    "a": "qi-jiguang",
+    "b": "zhang-juzheng",
+    "year": 1568,
+    "note": "张居正主政时调戚继光北上镇守蓟镇，并长期书信支持其练兵。",
+    "confidence": "史料确证",
+    "source": "《明史·戚继光传》；张居正《张太岳集》书牍"
+  },
+  {
+    "a": "elizabeth-i",
+    "b": "ivan-iv",
+    "year": 1570,
+    "note": "伊凡四世致信伊丽莎白一世，责其未缔结同盟，两人此前已有书信往来。",
+    "confidence": "史料确证",
+    "source": "伊凡四世致伊丽莎白一世书（1570年）"
+  },
+  {
+    "a": "oda-nobunaga",
+    "b": "toyotomi-hideyoshi",
+    "year": 1573,
+    "note": "秀吉早年仕于织田信长，1573年因攻灭浅井氏之功受封北近江长浜。",
+    "confidence": "史料确证",
+    "source": "《信长公记》"
+  },
+  {
+    "a": "oda-nobunaga",
+    "b": "tokugawa-ieyasu",
+    "year": 1575,
+    "note": "织田信长与德川家康联军在长篠之战中大败武田胜赖。",
+    "confidence": "史料确证",
+    "source": "《信长公记》"
+  },
+  {
+    "a": "tokugawa-ieyasu",
+    "b": "toyotomi-hideyoshi",
+    "year": 1584,
+    "note": "德川家康与秀吉在小牧·长久手对阵，后议和并臣从秀吉。",
+    "confidence": "史料确证",
+    "source": "《三河物语》；《当代记》"
+  },
+  {
+    "a": "nurhaci",
+    "b": "yuan-chonghuan",
+    "year": 1626,
+    "note": "宁远之战中袁崇焕凭坚城与西洋大炮击退努尔哈赤亲率的后金军。",
+    "confidence": "史料确证",
+    "source": "《明史·袁崇焕传》；《清太祖实录》"
+  },
+  {
+    "a": "kangxi",
+    "b": "qianlong",
+    "year": 1722,
+    "note": "康熙帝在圆明园牡丹台初见皇孙弘历，随后命其入宫养育。",
+    "confidence": "史料确证",
+    "source": "《清高宗实录》；乾隆《御制诗》自注"
+  },
+  {
+    "a": "benjamin-franklin",
+    "b": "george-washington",
+    "year": 1775,
+    "note": "富兰克林作为大陆会议委员赴坎布里奇大陆军营，与华盛顿商议军务。",
+    "confidence": "史料确证",
+    "source": "华盛顿书信；大陆会议记录"
+  },
+  {
+    "a": "alexander-von-humboldt",
+    "b": "johann-wolfgang-von-goethe",
+    "year": 1794,
+    "note": "洪堡在耶拿与歌德交往，共同讨论解剖学与自然研究。",
+    "confidence": "史料确证",
+    "source": "歌德日记与书信；洪堡书信"
+  },
+  {
+    "a": "napoleon-bonaparte",
+    "b": "toussaint-louverture",
+    "year": 1801,
+    "note": "卢维杜尔将圣多明各宪法呈交拿破仑，拿破仑复信并遣勒克莱尔率军前往。",
+    "confidence": "史料确证",
+    "source": "拿破仑致卢维杜尔书（1801年11月）"
+  },
+  {
+    "a": "alexander-von-humboldt",
+    "b": "simon-bolivar",
+    "year": 1804,
+    "note": "玻利瓦尔在巴黎结识刚从美洲归来的洪堡。",
+    "confidence": "学界推测",
+    "source": "玻利瓦尔书信；洪堡书信"
+  },
+  {
+    "a": "horatio-nelson",
+    "b": "duke-of-wellington",
+    "year": 1805,
+    "note": "纳尔逊与威灵顿在伦敦殖民地部候见室中唯一一次相遇交谈。",
+    "confidence": "史料确证",
+    "source": "克罗克《克罗克文书》所录威灵顿回忆"
+  },
+  {
+    "a": "napoleon-bonaparte",
+    "b": "johann-wolfgang-von-goethe",
+    "year": 1808,
+    "note": "埃尔福特会议期间拿破仑接见歌德并谈论《少年维特之烦恼》。",
+    "confidence": "史料确证",
+    "source": "歌德《与拿破仑的会见》"
+  },
+  {
+    "a": "napoleon-bonaparte",
+    "b": "duke-of-wellington",
+    "year": 1815,
+    "note": "滑铁卢战役中威灵顿与布吕歇尔联军击败拿破仑亲率的法军。",
+    "confidence": "史料确证",
+    "source": "威灵顿滑铁卢战报（1815年6月19日）"
+  },
+  {
+    "a": "jose-de-san-martin",
+    "b": "simon-bolivar",
+    "year": 1822,
+    "note": "圣马丁与玻利瓦尔在瓜亚基尔闭门会晤。",
+    "confidence": "史料确证",
+    "source": "圣马丁与玻利瓦尔往来书信"
+  },
+  {
+    "a": "lin-zexu",
+    "b": "wei-yuan",
+    "year": 1841,
+    "note": "林则徐遣戍途经京口，与魏源相晤，以所辑《四洲志》等资料托其编撰《海国图志》。",
+    "confidence": "史料确证",
+    "source": "魏源《海国图志·叙》"
+  },
+  {
+    "a": "alexander-von-humboldt",
+    "b": "charles-darwin",
+    "year": 1842,
+    "note": "达尔文在伦敦默奇森家中与洪堡会面。",
+    "confidence": "史料确证",
+    "source": "达尔文《自传》"
+  },
+  {
+    "a": "lin-zexu",
+    "b": "zuo-zongtang",
+    "year": 1849,
+    "note": "林则徐归乡途经长沙，邀左宗棠至湘江舟中彻夜长谈。",
+    "confidence": "史料确证",
+    "source": "《左宗棠年谱》；左宗棠书信"
+  },
+  {
+    "a": "queen-victoria",
+    "b": "florence-nightingale",
+    "year": 1856,
+    "note": "维多利亚女王在巴尔莫勒尔接见南丁格尔，听取军队卫生改革意见。",
+    "confidence": "史料确证",
+    "source": "维多利亚女王日记"
+  },
+  {
+    "a": "queen-victoria",
+    "b": "david-livingstone",
+    "year": 1857,
+    "note": "利文斯通首次归国期间获维多利亚女王接见。",
+    "confidence": "学界推测",
+    "source": "布莱基《利文斯通传》"
+  },
+  {
+    "a": "zeng-guofan",
+    "b": "zuo-zongtang",
+    "year": 1860,
+    "note": "左宗棠以四品京堂襄办曾国藩军务，募练楚军。",
+    "confidence": "史料确证",
+    "source": "《清史稿·左宗棠传》"
+  },
+  {
+    "a": "zeng-guofan",
+    "b": "li-hongzhang",
+    "year": 1859,
+    "note": "李鸿章入曾国藩幕府襄办营务，后于1861年受命回籍招募淮军。",
+    "confidence": "史料确证",
+    "source": "《清史稿·李鸿章传》"
+  },
+  {
+    "a": "david-livingstone",
+    "b": "henry-morton-stanley",
+    "year": 1871,
+    "note": "斯坦利在坦噶尼喀湖畔乌吉吉找到利文斯通，随后同行考察。",
+    "confidence": "史料确证",
+    "source": "斯坦利《我如何找到利文斯通》；利文斯通日记"
+  },
+  {
+    "a": "queen-victoria",
+    "b": "henry-morton-stanley",
+    "year": 1872,
+    "note": "维多利亚女王在邓罗宾城堡接见找到利文斯通归来的斯坦利。",
+    "confidence": "史料确证",
+    "source": "维多利亚女王日记"
+  },
+  {
+    "a": "li-hongzhang",
+    "b": "yan-fu",
+    "year": 1880,
+    "note": "李鸿章创办北洋水师学堂，延严复任总教习。",
+    "confidence": "史料确证",
+    "source": "王栻《严复传》；《清史稿·严复传》"
+  },
+  {
+    "a": "ito-hirobumi",
+    "b": "li-hongzhang",
+    "year": 1885,
+    "note": "伊藤博文赴天津与李鸿章谈判朝鲜问题，签订《天津会议专条》。",
+    "confidence": "史料确证",
+    "source": "《天津会议专条》；《李文忠公全集》"
+  },
+  {
+    "a": "emperor-meiji",
+    "b": "ito-hirobumi",
+    "year": 1885,
+    "note": "明治天皇任命伊藤博文为首任内阁总理大臣。",
+    "confidence": "史料确证",
+    "source": "《明治天皇纪》"
+  },
+  {
+    "a": "queen-victoria",
+    "b": "otto-von-bismarck",
+    "year": 1888,
+    "note": "维多利亚女王访问柏林期间在夏洛滕堡宫与俾斯麦会谈。",
+    "confidence": "史料确证",
+    "source": "维多利亚女王日记"
+  },
+  {
+    "a": "kang-youwei",
+    "b": "liang-qichao",
+    "year": 1890,
+    "note": "梁启超拜康有为为师，就读万木草堂。",
+    "confidence": "史料确证",
+    "source": "梁启超《三十自述》"
+  },
+  {
+    "a": "ito-hirobumi",
+    "b": "li-hongzhang",
+    "year": 1895,
+    "note": "李鸿章赴马关与伊藤博文议和，签订《马关条约》。",
+    "confidence": "史料确证",
+    "source": "《马关议和中日谈话录》"
+  },
+  {
+    "a": "kang-youwei",
+    "b": "zhang-zhidong",
+    "year": 1895,
+    "note": "康有为赴江宁谒见署两江总督张之洞，张之洞资助上海强学会。",
+    "confidence": "史料确证",
+    "source": "康有为《康南海自编年谱》"
+  },
+  {
+    "a": "queen-victoria",
+    "b": "li-hongzhang",
+    "year": 1896,
+    "note": "李鸿章出访英国期间在奥斯本宫觐见维多利亚女王。",
+    "confidence": "史料确证",
+    "source": "《李鸿章历聘欧美记》；维多利亚女王日记"
+  },
+  {
+    "a": "otto-von-bismarck",
+    "b": "li-hongzhang",
+    "year": 1896,
+    "note": "李鸿章出访德国，赴弗里德里希斯鲁拜访已退休的俾斯麦。",
+    "confidence": "史料确证",
+    "source": "《李鸿章历聘欧美记》"
+  },
+  {
+    "a": "liang-qichao",
+    "b": "tan-sitong",
+    "year": 1896,
+    "note": "梁启超与谭嗣同在北京相识，此后共同从事维新活动。",
+    "confidence": "史料确证",
+    "source": "梁启超《谭嗣同传》"
+  },
+  {
+    "a": "liang-qichao",
+    "b": "yan-fu",
+    "year": 1897,
+    "note": "严复致书梁启超讨论《时务报》文章与变法，两人书信往来。",
+    "confidence": "史料确证",
+    "source": "严复《与梁启超书》"
+  },
+  {
+    "a": "liang-qichao",
+    "b": "cai-e",
+    "year": 1897,
+    "note": "蔡锷考入长沙时务学堂，师从梁启超。",
+    "confidence": "史料确证",
+    "source": "梁启超《蔡松坡遗事》"
+  },
+  {
+    "a": "kang-youwei",
+    "b": "tan-sitong",
+    "year": 1898,
+    "note": "百日维新期间谭嗣同与康有为在北京共同参与新政，事败后谭嗣同就义。",
+    "confidence": "史料确证",
+    "source": "梁启超《谭嗣同传》；康有为《康南海自编年谱》"
+  },
+  {
+    "a": "kang-youwei",
+    "b": "ito-hirobumi",
+    "year": 1898,
+    "note": "伊藤博文访华期间，康有为往访请其进言光绪帝。",
+    "confidence": "学界推测",
+    "source": "康有为《康南海自编年谱》"
+  },
+  {
+    "a": "sun-yat-sen",
+    "b": "liang-qichao",
+    "year": 1899,
+    "note": "孙中山与梁启超在日本多次会谈，商议两派合作。",
+    "confidence": "史料确证",
+    "source": "冯自由《革命逸史》；梁启超书信"
+  },
+  {
+    "a": "sun-yat-sen",
+    "b": "yan-fu",
+    "year": 1905,
+    "note": "严复赴英处理开平矿务讼案，在伦敦与孙中山晤谈。",
+    "confidence": "史料确证",
+    "source": "王蘧常《严几道年谱》"
+  },
+  {
+    "a": "sun-yat-sen",
+    "b": "huang-xing",
+    "year": 1905,
+    "note": "孙中山与黄兴等在东京组建中国同盟会。",
+    "confidence": "史料确证",
+    "source": "冯自由《革命逸史》；《黄兴年谱》"
+  },
+  {
+    "a": "fridtjof-nansen",
+    "b": "roald-amundsen",
+    "year": 1907,
+    "note": "阿蒙森请求借用南森的“前进”号，南森放弃自己的极地计划而同意。",
+    "confidence": "史料确证",
+    "source": "阿蒙森《南极》；亨特福德《南森传》"
+  },
+  {
+    "a": "sun-yat-sen",
+    "b": "cai-yuanpei",
+    "year": 1912,
+    "note": "孙中山就任临时大总统，任命蔡元培为教育总长。",
+    "confidence": "史料确证",
+    "source": "《临时政府公报》"
+  },
+  {
+    "a": "cai-yuanpei",
+    "b": "lu-xun",
+    "year": 1912,
+    "note": "鲁迅应蔡元培之邀任南京临时政府教育部部员。",
+    "confidence": "史料确证",
+    "source": "许寿裳《亡友鲁迅印象记》；《鲁迅年谱》"
+  },
+  {
+    "a": "mahatma-gandhi",
+    "b": "rabindranath-tagore",
+    "year": 1915,
+    "note": "甘地回印度后到圣蒂尼克坦拜访泰戈尔。",
+    "confidence": "史料确证",
+    "source": "甘地《自传》；泰戈尔书信"
+  },
+  {
+    "a": "liang-qichao",
+    "b": "cai-e",
+    "year": 1915,
+    "note": "蔡锷与梁启超在天津密商讨袁，随后潜赴云南发动护国战争。",
+    "confidence": "史料确证",
+    "source": "梁启超《护国之役回顾谈》"
+  },
+  {
+    "a": "liang-qichao",
+    "b": "rabindranath-tagore",
+    "year": 1924,
+    "note": "泰戈尔访华期间，梁启超主持讲学社接待并在北京致欢迎辞。",
+    "confidence": "史料确证",
+    "source": "梁启超《印度与中国文化之亲属的关系》"
+  }
+]

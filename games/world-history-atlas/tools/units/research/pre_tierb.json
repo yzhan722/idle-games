@@ -1,0 +1,667 @@
+{
+ "rows": {
+  "NG-SO": [
+   [
+    1516,
+    1700,
+    "凯比王国"
+   ],
+   [
+    1762,
+    1804,
+    "戈比尔王国"
+   ]
+  ],
+  "NG-KE": [
+   [
+    1516,
+    1804,
+    "凯比王国"
+   ]
+  ],
+  "NG-ZA": [
+   [
+    1600,
+    1762,
+    "赞法拉王国"
+   ]
+  ],
+  "NG-KT": [
+   [
+    1450,
+    1804,
+    "卡齐纳王国"
+   ]
+  ],
+  "NG-KN": [
+   [
+    1350,
+    1804,
+    "卡诺王国"
+   ]
+  ],
+  "NG-KD": [
+   [
+    1500,
+    1804,
+    "扎里亚王国"
+   ]
+  ],
+  "NG-BO": [
+   [
+    1250,
+    1380,
+    "加涅姆帝国"
+   ],
+   [
+    1380,
+    1886,
+    "博尔努帝国"
+   ]
+  ],
+  "NG-YO": [
+   [
+    1250,
+    1380,
+    "加涅姆帝国"
+   ],
+   [
+    1380,
+    1886,
+    "博尔努帝国"
+   ]
+  ],
+  "NG-NI": [
+   [
+    1531,
+    1833,
+    "努佩王国"
+   ]
+  ],
+  "NG-KW": [
+   [
+    1804,
+    1823,
+    "#none"
+   ]
+  ],
+  "NG-OY": [
+   [
+    1400,
+    1836,
+    "奥约帝国"
+   ],
+   [
+    1836,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-OS": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-OG": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-LA": [
+   [
+    1804,
+    1861,
+    "#none"
+   ],
+   [
+    1861,
+    1886,
+    "大英帝国"
+   ]
+  ],
+  "NG-ON": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-EK": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-ED": [
+   [
+    1440,
+    1886,
+    "贝宁王国"
+   ]
+  ],
+  "NG-DE": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-BY": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-RI": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-AK": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-CR": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-AB": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-IM": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-AN": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-EN": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-EB": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-KO": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-BE": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-PL": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "NG-FC": [
+   [
+    1804,
+    1886,
+    "#none"
+   ]
+  ],
+  "CD-BC": [
+   [
+    300,
+    1400,
+    "#none"
+   ],
+   [
+    1400,
+    1665,
+    "刚果王国"
+   ],
+   [
+    1665,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-KN": [
+   [
+    300,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-BN": [
+   [
+    300,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-EQ": [
+   [
+    300,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-KW": [
+   [
+    300,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-KE": [
+   [
+    300,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-MA": [
+   [
+    300,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-SK": [
+   [
+    300,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-KA": [
+   [
+    300,
+    1780,
+    "#none"
+   ],
+   [
+    1780,
+    1870,
+    "卢巴王国"
+   ],
+   [
+    1870,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-OR": [
+   [
+    100,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "CD-NK": [
+   [
+    100,
+    1885,
+    "#none"
+   ],
+   [
+    1885,
+    1886,
+    "刚果自由邦"
+   ]
+  ],
+  "ET-OR": [
+   [
+    100,
+    943,
+    "#none"
+   ],
+   [
+    1137,
+    1330,
+    "#none"
+   ],
+   [
+    1560,
+    1886,
+    "#none"
+   ]
+  ],
+  "ET-SN": [
+   [
+    100,
+    1886,
+    "#none"
+   ]
+  ],
+  "ET-SO": [
+   [
+    100,
+    1886,
+    "#none"
+   ]
+  ],
+  "ET-AF": [
+   [
+    100,
+    1886,
+    "#none"
+   ]
+  ],
+  "ET-BE": [
+   [
+    100,
+    1886,
+    "#none"
+   ]
+  ],
+  "ET-GA": [
+   [
+    100,
+    1886,
+    "#none"
+   ]
+  ],
+  "ET-DD": [
+   [
+    100,
+    1415,
+    "#none"
+   ],
+   [
+    1415,
+    1577,
+    "阿达尔苏丹国"
+   ],
+   [
+    1577,
+    1875,
+    "#none"
+   ],
+   [
+    1875,
+    1885,
+    "穆罕默德·阿里王朝"
+   ],
+   [
+    1885,
+    1886,
+    "#none"
+   ]
+  ]
+ },
+ "new_polities": {
+  "卡诺王国": {
+   "color": "#e9c46a",
+   "capital": "卡诺",
+   "era_span": "999 - 1807",
+   "peak_area": "不详（以卡诺平原为中心，约今卡诺州及吉加瓦州西部）",
+   "regime": "豪萨城邦君主制（萨尔基）",
+   "desc": "豪萨七邦之一，据《卡诺编年史》由巴加乌达于约999年建立；14世纪亚吉一世时伊斯兰教传入，15世纪末穆罕默德·伦法在位时扩建城墙并推行伊斯兰化行政，成为跨撒哈拉贸易与纺织、染布中心，其间曾向博尔努纳贡；1807年被富拉尼圣战军攻占，改为索科托哈里发国下属的卡诺酋长国。",
+   "capital_evol": "卡诺（达拉丘丘冈与城墙城区，历代沿用）",
+   "institutions": "萨尔基（国王）统治，宫廷设加拉迪马等官职并有议事会辅政；15世纪末起引入伊斯兰法官与宫廷官僚制度",
+   "fiscal_tax": "市场与商队过境税、农业与手工业（纺织、染布、皮革）贡赋，并向周边小邦征收贡物",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "亚吉一世时伊斯兰教传入(14世纪中叶) · 穆罕默德·伦法即位(1463) · 夸拉拉法人攻掠卡诺(1653) · 富拉尼圣战军攻占卡诺(1807)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "王表与年代主要据19世纪末成书的阿拉伯文《卡诺编年史》推算；15世纪末马吉利致伦法书信等可作旁证。"
+   }
+  },
+  "卡齐纳王国": {
+   "color": "#f4a261",
+   "capital": "卡齐纳",
+   "era_span": "1445 - 1807",
+   "peak_area": "不详（约今卡齐纳州及尼日尔马拉迪一带）",
+   "regime": "豪萨城邦君主制（萨尔基）",
+   "desc": "豪萨七邦之一，以卡齐纳城为都；约15世纪中叶穆罕默德·科劳建立科劳王朝并信奉伊斯兰教，16—18世纪为跨撒哈拉商路南端的商业与伊斯兰学术中心，曾向桑海、博尔努纳贡；1807年被富拉尼圣战军攻占，改为索科托哈里发国下属的卡齐纳酋长国，旧王族退至马拉迪（今尼日尔）另立政权。",
+   "capital_evol": "卡齐纳（历代沿用）；旧王族1807年后迁马拉迪",
+   "institutions": "萨尔基（国王）统治，宫廷官职分掌军务与城邦行政，伊斯兰学者参与司法与教育",
+   "fiscal_tax": "跨撒哈拉贸易与市场税、农业贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "穆罕默德·科劳建立科劳王朝(约1445) · 桑海阿斯基亚·穆罕默德出兵卡齐纳(1513) · 富拉尼圣战军攻占卡齐纳(1807)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "王表据卡齐纳传统与阿拉伯文史料推算，15世纪以前年代不确；桑海出兵见《苏丹史》等廷巴克图编年史。"
+   }
+  },
+  "扎里亚王国": {
+   "color": "#e76f51",
+   "capital": "扎里亚",
+   "era_span": "1000 - 1808",
+   "peak_area": "不详（约今卡杜纳州北部，南方各族纳贡）",
+   "regime": "豪萨城邦君主制（萨尔基）",
+   "desc": "豪萨七邦之一，又称扎造（Zazzau）；16世纪巴克瓦·图伦库建扎里亚城为都，其女阿米娜女王向南扩张，扎里亚以向南方各族征取贡赋与贸易著称；1808年被富拉尼圣战军攻占，改为索科托哈里发国下属的扎里亚酋长国，旧王族南迁另建阿布贾（今苏莱贾）。",
+   "capital_evol": "图伦库等早期都邑 → 扎里亚（16世纪起）；旧王族1808年后迁阿布贾（今苏莱贾）",
+   "institutions": "萨尔基（国王）统治，设加拉迪马、马达瓦基等宫廷官职",
+   "fiscal_tax": "向南方各族征收贡赋（含奴隶），商路与市场税",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "巴克瓦·图伦库建扎里亚城(约1536) · 阿米娜女王对外扩张(16世纪) · 富拉尼圣战军攻占扎里亚(1808)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "早期年代据扎里亚王表推算；阿米娜女王的在位年代学界说法不一。"
+   }
+  },
+  "赞法拉王国": {
+   "color": "#c8b6ff",
+   "capital": "比尔宁赞法拉 / 安卡",
+   "era_span": "1500 - 1804",
+   "peak_area": "不详（约今赞法拉州）",
+   "regime": "豪萨城邦君主制",
+   "desc": "豪萨西部的城邦王国（班扎七邦之一），以比尔宁赞法拉为都，17—18世纪一度称雄豪萨西部；约1762年都城被戈比尔攻毁，王室退至安卡，19世纪初在富拉尼圣战中并入索科托哈里发国。",
+   "capital_evol": "比尔宁赞法拉 → 安卡（约1762年后）",
+   "institutions": "国王统治，下辖城镇首领",
+   "fiscal_tax": "农业贡赋与市场税",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "戈比尔攻毁比尔宁赞法拉(约1762) · 富拉尼圣战中并入索科托哈里发国(1804年后)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "建国年代不详，16世纪以后的历史据豪萨传统与19世纪富拉尼阿拉伯文著作；都城陷落年份有1756至1764年诸说。"
+   }
+  },
+  "戈比尔王国": {
+   "color": "#b8e986",
+   "capital": "阿尔卡拉瓦",
+   "era_span": "1500 - 1808",
+   "peak_area": "不详（18世纪末约今索科托州东北部、赞法拉州一部及尼日尔南部）",
+   "regime": "豪萨城邦君主制（萨尔基）",
+   "desc": "豪萨七邦之一，原居阿伊尔山地以南，17—18世纪南迁至里马河流域，18世纪中叶建都阿尔卡拉瓦，约1762年攻毁赞法拉都城后成为豪萨西部最强国；国王云法与学者奥斯曼·丹·福迪奥交恶，引发1804年富拉尼圣战，1808年阿尔卡拉瓦陷落、云法战死；残余王族后在今尼日尔的齐比里延续。",
+   "capital_evol": "北部早期都邑 → 阿尔卡拉瓦（18世纪中叶） → 齐比里（1808年后，今尼日尔）",
+   "institutions": "萨尔基（国王）统治，宫廷官职分掌军务",
+   "fiscal_tax": "农业贡赋、市场税与对牧民的征课（征课富拉尼牧民是圣战起因之一）",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "攻毁比尔宁赞法拉(约1762) · 奥斯曼·丹·福迪奥迁居古杜并发动圣战(1804) · 塔巴金·夸托之战戈比尔军败北(1804) · 阿尔卡拉瓦陷落、云法战死(1808)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "早期迁徙与年代据豪萨传统；1804—1808年战事见奥斯曼·丹·福迪奥、穆罕默德·贝洛等人的阿拉伯文著作。"
+   }
+  },
+  "凯比王国": {
+   "color": "#8ecae6",
+   "capital": "苏拉梅 / 比尔宁凯比 / 阿贡古",
+   "era_span": "1516 - 1902",
+   "peak_area": "不详（16世纪控制里马河流域并称霸豪萨西部）",
+   "regime": "君主制（坎塔）",
+   "desc": "凯比首领穆罕默德·坎塔随桑海出征阿加德兹后于1516年前后脱离桑海，在里马河流域建立王国，都苏拉梅，16世纪称霸豪萨西部诸邦；17世纪后渐衰；1805年比尔宁凯比被富拉尼圣战军攻占，余部以阿贡古为中心坚持抵抗，1866年与关杜议和，维持独立至英国占领。",
+   "capital_evol": "苏拉梅（坎塔时期） → 比尔宁凯比 → 阿贡古（19世纪）",
+   "institutions": "坎塔（国王）统治，修筑苏拉梅、比尔宁凯比等城防",
+   "fiscal_tax": "属邦贡赋与农业贡赋",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "坎塔脱离桑海自立(1516) · 比尔宁凯比被圣战军攻占(1805) · 与关杜议和(1866) · 英军占领阿贡古(1902)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "坎塔自立见廷巴克图编年史及豪萨传统，年代为约数；19世纪事件见富拉尼阿拉伯文史料与英国殖民档案。"
+   }
+  },
+  "努佩王国": {
+   "color": "#90be6d",
+   "capital": "努佩科 / 加巴拉 / 拉巴",
+   "era_span": "1531 - 1857",
+   "peak_area": "不详（18世纪控制尼日尔河与卡杜纳河汇流地带）",
+   "regime": "君主制（埃祖）",
+   "desc": "尼日尔河中游努佩人的王国，传说由措埃德于16世纪建立，都城先后在努佩科、加巴拉；16世纪曾攻破奥约都城，18世纪称雄尼日尔河中游；19世纪初王族内战中富拉尼学者马拉姆·登多乘势掌权，其子孙以拉巴、比达为中心建立隶属关杜的努佩酋长国，1857年马萨巴定都比达，富拉尼统治确立。",
+   "capital_evol": "努佩科 → 加巴拉 → 拉巴（富拉尼时期） → 比达（1857年后为努佩酋长国都城）",
+   "institutions": "埃祖（国王）统治，王族各支轮流继位，地方首领纳贡",
+   "fiscal_tax": "农业与手工业（玻璃、铜器、纺织）贡赋，尼日尔河商路税",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "措埃德建国(约1531) · 攻破奥约都城(16世纪) · 马拉姆·登多介入王位内战(19世纪初) · 马萨巴定都比达(1857)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "建国年代据努佩口述传统推算；19世纪事件见富拉尼史料与欧洲探险者记录。"
+   }
+  },
+  "奥约帝国": {
+   "color": "#f28482",
+   "capital": "奥约-伊莱（旧奥约）",
+   "era_span": "1400 - 1836",
+   "peak_area": "约 15 万 km²（18世纪鼎盛期估计，含今尼日利亚西南部与贝宁东部）",
+   "regime": "君主制（阿拉芬），奥约梅西议事会制衡",
+   "desc": "约鲁巴人建立的西非热带草原帝国，以奥约-伊莱为都；16世纪遭努佩攻破，王室流亡伊格博霍，17世纪初复归后凭借骑兵扩张，1730年迫使达荷美称臣纳贡，控制通往沿海的商路；1817年驻伊洛林将领阿方贾叛变，19世纪30年代伊洛林富拉尼势力攻破奥约-伊莱，帝国瓦解，阿拉芬南迁新奥约，约鲁巴地区陷入长期混战。",
+   "capital_evol": "奥约-伊莱 → 伊格博霍（16世纪流亡） → 奥约-伊莱（17世纪初复归） → 新奥约（1830年代末）",
+   "institutions": "阿拉芬为君主，奥约梅西七大臣议事会（首领巴索伦）可迫令阿拉芬自尽，奥格博尼会社居间制衡；卡坎福统领军队；属地派驻阿杰勒监临",
+   "fiscal_tax": "属邦与行省贡赋、市场与过境商路税，18世纪经沿海港口的奴隶贸易收入",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "努佩攻破奥约-伊莱、王室流亡伊格博霍(16世纪) · 达荷美称臣纳贡(1730) · 巴索伦加哈被诛(1774) · 阿方贾在伊洛林叛变(1817) · 奥约-伊莱被弃(约1836)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "建国与早期年代据约鲁巴口述传统；17世纪后有达荷美及欧洲商人记录相互印证，旧都陷落年份有1835、1836年等说。"
+   }
+  },
+  "贝宁王国": {
+   "color": "#e5989b",
+   "capital": "贝宁城",
+   "era_span": "1180 - 1897",
+   "peak_area": "不详（16—17世纪势力东抵尼日尔河、西及拉各斯）",
+   "regime": "神圣君主制（奥巴）",
+   "desc": "埃多人在今尼日利亚南部建立的王国（与今贝宁共和国无关），奥巴王朝传统上始于12世纪末；15世纪中叶奥巴埃瓦雷改建贝宁城并对外扩张，16—17世纪势力东抵尼日尔河、西及拉各斯，与葡萄牙、荷兰等开展胡椒、象牙与布匹贸易，以青铜与象牙雕刻著称；1897年英国远征军攻占贝宁城，奥巴奥文拉米被流放。",
+   "capital_evol": "贝宁城（埃多，历代沿用）",
+   "institutions": "奥巴为神圣君主，乌扎玛世袭酋长、宫廷酋长与城镇酋长分掌政务；属邦由当地首领治理并纳贡",
+   "fiscal_tax": "属邦贡赋，王室垄断象牙、胡椒等对欧贸易，17—18世纪亦参与奴隶贸易",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "奥巴埃瓦雷即位并改建贝宁城(约1440) · 葡萄牙人阿丰索·德阿韦罗抵达(约1486) · 奥巴埃西吉击败伊加拉(1516) · 英国远征军攻占贝宁城(1897)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "15世纪末起有葡萄牙、荷兰商人与传教士记录；奥巴王朝早期年代据宫廷口述传统推算。"
+   }
+  },
+  "卢巴王国": {
+   "color": "#4cc9f0",
+   "capital": "王都随每位国王迁建（卢阿拉巴河与洛马米河之间）",
+   "era_span": "1585 - 1889",
+   "peak_area": "不详（19世纪中叶西起洛马米河、东至坦噶尼喀湖西岸）",
+   "regime": "神圣君主制（穆洛普韦）",
+   "desc": "中非卢巴人建立的王国，传说由孔戈洛与卡拉拉·伊隆加于16世纪在乌彭巴洼地一带建立；18世纪末至19世纪中叶伊隆加·松古、昆维姆巴·恩戈姆贝、伊隆加·卡巴莱诸王在位时扩张至坦噶尼喀湖西岸，以神圣王权与姆布迪耶记忆会社维系属邦；1870年后陷入王位内战，又受耶凯人姆西里与斯瓦希里-阿拉伯商队冲击，19世纪末瓦解。",
+   "capital_evol": "每位新王另建王都（基滕塔），前王旧都保留为祭祀中心",
+   "institutions": "国王（穆洛普韦）为神圣君主，姆布迪耶会社掌管王统记忆与礼仪；属邦首领经授予王权标志而入附并纳贡",
+   "fiscal_tax": "属邦贡赋（盐、铁、铜、象牙、粮食）",
+   "peak_demography": "人口无可靠统计",
+   "treaties_campaigns": "卡拉拉·伊隆加建立王朝(16世纪) · 伊隆加·松古东扩(约1780) · 昆维姆巴·恩戈姆贝扩张至坦噶尼喀湖(19世纪上半叶) · 伊隆加·卡巴莱去世后王位内战(1870)",
+   "confidence": {
+    "level": "学界推测",
+    "note": "历史主要据卢巴口述传统与王表推算，19世纪后有斯瓦希里-阿拉伯商人与欧洲探险者记录。"
+   }
+  },
+  "刚果自由邦": {
+   "color": "#7fb7e8",
+   "capital": "博马",
+   "era_span": "1885 - 1908",
+   "peak_area": "约 234 万 km²",
+   "regime": "比利时国王利奥波德二世以个人名义统治的君主国",
+   "desc": "1885年柏林会议期间获各国承认、由比利时国王利奥波德二世以个人名义统治的中非国家；以象牙与野生橡胶为主要财源，推行强迫劳动与橡胶配额制度，造成大量人口损失；1892—1894年击败斯瓦希里-阿拉伯势力，1908年在国际舆论压力下由比利时接管为比属刚果。",
+   "capital_evol": "维维（1885年） → 博马（1886年起）",
+   "institutions": "国王独揽主权，布鲁塞尔中央政府与博马总督执行；设公安军；特许公司在租让区征收橡胶",
+   "fiscal_tax": "国家领地专营象牙与橡胶，以橡胶配额形式征收劳役，特许公司分成",
+   "peak_demography": "人口无可靠统计；这一时期人口损失的估计从数百万到约一千万不等，学界争议很大",
+   "treaties_campaigns": "柏林会议承认(1885) · 刚果—阿拉伯战争(1892) · 凯斯门特报告(1904) · 比利时接管为比属刚果(1908)",
+   "confidence": {
+    "level": "史料确证",
+    "note": "1885年《柏林会议总议定书》、自由邦官方文件、1904年凯斯门特报告及1908年比利时接管法案直接证实。"
+   }
+  }
+ },
+ "notes": "How this file works: NGA keeps its rows from pre_africa.json (#none 715-1594, the region's 1804-1884 Sokoto, Sokoto 1885), and ETH keeps pre_mideast/pre_africa (Aksum 100-, Zagwe 1137-1270, Ethiopian Empire 1270-, Adal 1531-1543). My rows only replace the stretches that are wrong for a given state or region. The COD~south_africa and COD~east_africa rows in pre_africa.json no longer match anything, so every CD unit is written out in full here. CD-OR and CD-NK are keyed by admin code so the rows cover both their east_africa and south_africa pieces.\n\nNigeria. Sokoto from 1804 is kept only where the caliphate's emirates held most of the state: SO, KE (Gwandu), ZA, KT, KN, JI, KD (Zaria emirate), BA, GO, AD, TA (Muri and Adamawa sub-emirates), NA (Keffi, Nasarawa, Lafia), NI (from 1833) and KW (from 1823, Ilorin plus Lafiagi and Pategi). It is replaced in these places:\n- BO and YO are Bornu 1380-1886. Al-Kanemi's Bornu was never part of the caliphate. Before that they are Kanem 1250-1380 (Bornu was Kanem's western province from the 13th century).\n- OY is Oyo 1400-1836, then #none. After Oyo-Ile fell, Ibadan, Ijaye, New Oyo and Ilorin shared the area.\n- ED is Benin 1440-1886.\n- LA is #none until 1861, then 大英帝国 (Lagos Colony).\n- These are #none 1804-1886: OS, OG, ON, EK (Ibadan, Ijebu, Egba, Ekiti, Ijesha and Ife, none holding a majority), the Delta and coast (DE, BY, RI, AK, CR), the Igbo states (AB, IM, AN, EN, EB), KO (Igala less than half), BE (Tiv and Idoma), PL (the plateau peoples stayed outside Bauchi) and FC (Gbagyi).\n- Before 1804: Kano 1350, Katsina 1450, Zaria (Zazzau) 1500, Zamfara 1600-1762, Kebbi 1516 (KE to 1804, SO to 1700), Gobir on SO 1762-1804, and Nupe on NI 1531-1833.\n\nDR Congo. The region's Dutch Republic (1689-1806) and British Empire (1807-1885) are removed everywhere, and so are Aksum and the Ethiopian Empire on the east_africa pieces of CD-OR and CD-NK. The new rows:\n- BC: Kongo 1400-1665 (Nsundi, Mpangu and Mbata lay in Bas-Congo), then #none after Mbwila.\n- KA: Luba 1780-1870.\n- Everything else is #none until 1885.\n- All 11 provinces are 刚果自由邦 for 1885.\n\nEthiopia.\n- TI and AM are unchanged (Aksum, Zagwe, the Solomonic empire, Adal 1531-1543, then the empire).\n- OR: #none in place of Aksum and Zagwe. 1270-1330 is #none: the Solomonic state held only northern Shewa, while Damot, Hadiya and Ifat held the rest. The empire runs 1330-1531 (Amda Seyon's conquests), Adal 1531-1543, and the empire again 1543-1560. From 1560 to 1886 it is #none, for the Oromo migrations.\n- SN, SO, AF, BE and GA are #none from 100 to 1886. The highland state reached none of them before Menelik's conquests of 1886-1900.\n- DD: Adal 1415-1577, #none 1577-1875, Egyptian Harar 1875-1885 (穆罕默德·阿里王朝), then #none.\n\nLeast certain:\n(1) CD-KA, Luba 1780-1870. Katanga was split between Luba (north, about 35-40% at its peak), Lunda (the Musumba core in the west, plus Kazembe's hold on the copper belt) and, from 1856, Msiri's Yeke/Garanganze kingdom in the south-east (about a quarter to a third). None held a clear majority. Luba was the largest at its peak, so it is drawn on the same \"leading state\" basis that pre_africa used for Chad. Strictly by the brief, #none is defensible. Msiri, Lunda and Kuba (about 10% of Kasai-Occidental) are not drawn because none held most of any unit. I did not add polity entries for them.\n(2) NG-NI, Nupe 1531-1833. Nupe held the south and dominated the Gwari, but Borgu (west) and the Kambari lands (north) lay outside it, so it is the leading state rather than a clear majority holder. The same applies to Sokoto on NI after 1833: Borgu and the Habe emirate of Abuja (Suleja) stayed independent. NG-SO before 1804 (Kebbi to 1700, a gap, then Gobir from 1762) and NG-ZA (Zamfara 1600-1762) rest on Hausa traditions with approximate dates.\n(3) Oyo is drawn only on NG-OY. In Osun, Oyo held its northern and western towns (about half). In Ogun, it held Egbado directly but Egba only as tributaries, and Ijebu was independent. So OS and OG are #none. Kwararafa/Jukun (Taraba, Benue) and Igala (about 45% of Kogi) are not drawn, and Kogi is #none.\n(4) Zemene Mesafint (1769-1855): ET-TI and ET-AM keep 埃塞俄比亚帝国. The emperors at Gondar were puppets and the regional lords governed, but no other state replaced the empire. For ET-OR, Menelik's Shewa governed Shewa and Arsi directly by 1886, while Jimma and Wollega governed themselves as tributaries (from 1882). That is not a majority, so OR is #none to 1886. Kaffa (ET-SN) and Jimma (ET-OR) were real kingdoms, but each held only a small part of its unit.\n(5) The D'mt kingdom (about -800 to -400) in Tigray/Eritrea is not added: its extent and how far it was a state are debated. 1885 is 刚果自由邦 although the Free State actually held only the river stations. 1885 on the Niger Delta is #none, although the Oil Rivers Protectorate was proclaimed in 1884-85: British rule there was consular only.\n\nProblems seen but not fixed (outside my files):\n- polity_map.mjs maps gw:211 on COD units from 1886 to 比利时王国. For 1886-1907 it should be 刚果自由邦 (Leopold's personal state); Belgium took over only in 1908. As things stand, 1885 shows the Free State and 1886 switches to Belgium.\n- modern_raw.json has null from 1886 for many units: NG-KN 1886-1899 (and probably other northern NG units), and ET-SO and ET-DD 1886-1897 (and probably ET-SN, OR, BE and GA). These fall back to the historic region. If that means the region holder, the units would show Sokoto in all of Nigeria and the Ethiopian Empire in the Somali region from 1886, which is wrong for the same reasons as above. The Nigerian 1886-1899 values should follow these rows (Bornu in BO and YO, #none in the south and Middle Belt).\n- Era spans of the new polities follow the usual traditional dates. Kano's 999 and Zaria's 1000 come from the king lists."
+}

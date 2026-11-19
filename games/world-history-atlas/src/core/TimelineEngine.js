@@ -141,25 +141,80 @@ window.HistoryAtlas.getEmpireDisplayColor = function (empName, fallbackHex) {
   return fallbackHex || "#8899aa";
 };
 
+// One palette for every state, computed in OKLCH (perceptually even): each state keeps its own hue, but lightness
+// sits in one calm band and chroma is held low, so the map reads as a restrained atlas rather than a patchwork.
+// { mid: fill, light: highlight, deep: outline, ink: text on the dark UI }
+(function () {
+  const HA = window.HistoryAtlas;
+  const cache = {};
+  const toLin = c => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const toSrgb = c => (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+  function hexToOklch(hex) {
+    const clean = String(hex || "#8899aa").replace("#", "");
+    const full = clean.length === 3 ? clean.split("").map(c => c + c).join("") : clean;
+    const n = parseInt(full, 16);
+    const v = Number.isNaN(n) ? 0x8899aa : n;
+    const r = toLin(((v >> 16) & 255) / 255), g = toLin(((v >> 8) & 255) / 255), b = toLin((v & 255) / 255);
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    const L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+    const A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+    const B = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+    return [L, Math.hypot(A, B), Math.atan2(B, A)];
+  }
+  function oklchToHex(L, C, h) {
+    // reduce chroma until the colour fits in sRGB
+    for (let k = 0; k < 12; k++, C *= 0.85) {
+      const A = C * Math.cos(h), B = C * Math.sin(h);
+      const l = Math.pow(L + 0.3963377774 * A + 0.2158037573 * B, 3);
+      const m = Math.pow(L - 0.1055613458 * A - 0.0638541728 * B, 3);
+      const s = Math.pow(L - 0.0894841775 * A - 1.2914855480 * B, 3);
+      const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+        -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s].map(toSrgb);
+      if (rgb.every(c => c >= -0.001 && c <= 1.001) || k === 11) {
+        return "#" + rgb.map(c => Math.round(Math.max(0, Math.min(1, c)) * 255).toString(16).padStart(2, "0")).join("");
+      }
+    }
+    return "#8899aa";
+  }
+  // "night" (dark map) or "paper" (light parchment map): the paper fills sit high and light, outlines darker
+  let mode = "night";
+  HA.setPaletteMode = function (m) {
+    mode = m === "paper" ? "paper" : "night";
+    for (const k of Object.keys(cache)) delete cache[k];
+  };
+  HA.empirePalette = function (empName, rawHex) {
+    const key = (empName || "") + "|" + (rawHex || "");
+    if (cache[key]) return cache[key];
+    if (mode === "paper") {
+      const [P0, Q0, ph] = hexToOklch(HA.getEmpireDisplayColor(empName, rawHex));
+      const PL = 0.73 + (Math.max(0.25, Math.min(0.9, P0)) - 0.25) / 0.65 * 0.11;
+      const PC = Math.min(0.07, 0.024 + Q0 * 0.38);
+      return (cache[key] = {
+        mid: oklchToHex(PL, PC, ph),
+        light: oklchToHex(PL + 0.03, PC * 0.9, ph),
+        deep: oklchToHex(PL - 0.24, PC * 1.1, ph),
+        ink: oklchToHex(0.82, Math.min(0.09, PC * 1.3), ph) // the panels stay dark in both themes
+      });
+    }
+    const [L0, C0, h] = hexToOklch(HA.getEmpireDisplayColor(empName, rawHex));
+    // lightness 0.25..0.9 -> 0.47..0.63 (deep, ink-like tones rather than pastels),
+    // chroma compressed to a muted 0.022..0.075, hue untouched
+    const L = 0.47 + (Math.max(0.25, Math.min(0.9, L0)) - 0.25) / 0.65 * 0.16;
+    const C = Math.min(0.075, 0.022 + C0 * 0.4);
+    return (cache[key] = {
+      mid: oklchToHex(L, C, h),
+      light: oklchToHex(L + 0.045, C * 0.92, h),
+      deep: oklchToHex(L - 0.17, C * 0.85, h),
+      ink: oklchToHex(0.82, Math.min(0.09, C * 1.15), h)
+    });
+  };
+})();
+
 window.HistoryAtlas.getReadableInkColor = function (rawHex, empName) {
-  const hex = window.HistoryAtlas.getEmpireDisplayColor(empName, rawHex);
-  if (!hex || typeof hex !== "string" || !hex.startsWith("#")) return "#d8c7a8";
-  const clean = hex.slice(1);
-  const full = clean.length === 3 ? clean.split("").map(c => c + c).join("") : clean;
-  const num = parseInt(full, 16);
-  if (Number.isNaN(num)) return "#d8c7a8";
-  let r = (num >> 16) & 255;
-  let g = (num >> 8) & 255;
-  let b = num & 255;
-  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-  if (lum >= 108) return hex;
-  // Smoothly lift low-luminance colors toward warm parchment (#efe3c8) while keeping hue identity
-  const t = Math.min(0.68, Math.max(0.28, (118 - lum) / 115));
-  r = Math.round(r * (1 - t) + 239 * t);
-  g = Math.round(g * (1 - t) + 227 * t);
-  b = Math.round(b * (1 - t) + 200 * t);
-  const toHex = (n) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  return window.HistoryAtlas.empirePalette(empName, rawHex).ink;
 };
 
 // Direct constitutional / dynastic regime successions for bridging inter-keyframe years

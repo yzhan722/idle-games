@@ -101,9 +101,35 @@ for (const r of H.REGIONS) {
 const CONT_OLD_WW2 = new Set(["欧洲", "东亚", "东南亚", "北亚"]);
 const regionCont = Object.fromEntries(H.REGIONS.map(r => [r.id, r.continent]));
 const modern = {};
+const endYear = n => { const m = /-\s*(前?)(\d+|至今)\s*$/.exec((EMP[n] && EMP[n].era_span) || ""); return !m ? -Infinity : m[2] === "至今" ? Infinity : (m[1] ? -1 : 1) * +m[2]; };
+const DEP_NAME = { COD: ["比利时王国", 1908, "刚果自由邦"] }; // Congo Free State: King Leopold's personal state until 1908
 const missing = new Set();
 for (const u of units) {
+  // earlier holders for coarse regions: hand table (pre1886.mjs) + researched rows (research/pre_*.json).
+  // Rows are layered year by year by key specificity — "@region" < country code < admin code < unit id —
+  // and, within one level, later files over earlier ones.
+  const layers = [];
+  const skipHere = PRE1886_SKIP_REGIONS[u.iso] && PRE1886_SKIP_REGIONS[u.iso].has(u.region);
+  for (const R of RESEARCH) if (R["@" + u.region]) layers.push(R["@" + u.region]);
+  if (!skipHere && PRE1886[u.iso]) layers.push(PRE1886[u.iso]);
+  for (const R of RESEARCH) if (R[u.iso]) layers.push(R[u.iso]);
+  if (u.adm !== u.iso) {
+    if (!skipHere && PRE1886[u.adm]) layers.push(PRE1886[u.adm]);
+    for (const R of RESEARCH) if (R[u.adm]) layers.push(R[u.adm]);
+  }
+  if (u.id !== u.adm) for (const R of RESEARCH) if (R[u.id]) layers.push(R[u.id]);
+  const early = new Map();
+  for (const rows of layers) for (const [a, b2, n] of rows) {
+    if (n !== "#none" && !EMP[n]) { missing.add(`polity:${n}`); continue; }
+    for (let y = a; y < Math.min(b2, 1886); y++) if (y !== 0) early.set(y, n);
+  }
+  // where CShapes has no state yet after 1886 (pre-colonial interiors), the researched 1885 holder carries on while it lasts
+  const carry = early.get(1885);
   const raw = modernRaw[u.id] || [];
+  const fbAll = FALLBACK_UNIT[u.id] || FALLBACK_GW[u.iso];
+  // carry only until CShapes first covers the unit; a unit CShapes never covers (tiny islands) keeps the old behaviour
+  const covered = raw.filter(s => s[2]).map(s => s[0]).concat(fbAll ? fbAll.map(r => r[0]) : []);
+  const carryUntil = covered.length ? Math.min(...covered) : 1886;
   const perYear = [];
   for (let y = 1886; y <= 2026; y++) {
     const seg = raw.find(s => y >= s[0] && y < s[1]);
@@ -116,25 +142,17 @@ for (const u of units) {
       if (p && p.name) val = p.name;
       else if (!p) missing.add(`gw:${gw}@${y}`);
     }
+    // only where CShapes has nothing here; a code mapped to null on purpose (Tibet, Taiwan) keeps the hand data
+    if (gw === null && carry && y < carryUntil && (carry === "#none" || endYear(carry) >= y)) val = carry;
+    const dep = DEP_NAME[u.iso]; // a dependency CShapes files under its owner but that was a state of its own
+    if (dep && y < dep[1] && val === dep[0]) val = dep[2];
     if (u.iso === "TWN") val = "#old";
     if (y >= 1939 && y <= 1945 && CONT_OLD_WW2.has(regionCont[u.region])) val = "#old";
-    if (val !== "#old" && !EMP[val]) missing.add(`polity:${val}`);
+    if (val !== "#old" && val !== "#none" && !EMP[val]) missing.add(`polity:${val}`);
     perYear.push(val);
   }
   const seq = [];
   perYear.forEach((v, i) => { const y = 1886 + i; const last = seq[seq.length - 1]; if (last && last[2] === v) last[1] = y + 1; else seq.push([y, y + 1, v]); });
-  // earlier holders for coarse regions: hand table (pre1886.mjs) + researched rows (out/r3/pre_*.json).
-  // Rows are layered year by year: country code < admin code < unit id, later sources over earlier ones.
-  const layers = [];
-  const skipHere = PRE1886_SKIP_REGIONS[u.iso] && PRE1886_SKIP_REGIONS[u.iso].has(u.region);
-  if (!skipHere) { if (PRE1886[u.iso]) layers.push(PRE1886[u.iso]); if (PRE1886[u.adm] && u.adm !== u.iso) layers.push(PRE1886[u.adm]); }
-  for (const R of RESEARCH) { if (R[u.iso]) layers.push(R[u.iso]); if (u.adm !== u.iso && R[u.adm]) layers.push(R[u.adm]); }
-  for (const R of RESEARCH) if (R[u.id] && u.id !== u.adm) layers.push(R[u.id]);
-  const early = new Map();
-  for (const rows of layers) for (const [a, b2, n] of rows) {
-    if (n !== "#none" && !EMP[n]) { missing.add(`polity:${n}`); continue; }
-    for (let y = a; y < Math.min(b2, 1886); y++) if (y !== 0) early.set(y, n);
-  }
   const pre = [];
   for (const y of [...early.keys()].sort((a, b2) => a - b2)) {
     const v = early.get(y), last = pre[pre.length - 1];

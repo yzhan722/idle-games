@@ -40,10 +40,12 @@ the figures in your list. Write one JSON file per person in
   legendary material (e.g. later romances, hagiography) either 传说 or left out. Do not use novels, films or games
   (三国演义, 说岳 etc.).
 - Simplified Chinese throughout (standard transliterations), neutral tone, no emoji, no HTML.
-- `polity` must be an exact name from `C:\Project\idle-games\games\world-history-atlas\tools\units\out\r3\polities.tsv`
+- `polity` must be an exact name from `C:\Project\idle-games\games\world-history-atlas\tools\units\out\r5\polities.tsv`
   (first column); use "" if none fits.
 - Check each file parses: `node -e "JSON.parse(require('fs').readFileSync('<path>','utf8'))"`, and that stops lie within
   born..died.
+- No stop may be later than 1949 (the atlas does not show contemporary figures); a life may end later, but stop the stops at 1949.
+- Before writing, list `tools\persons\data\` and never overwrite an existing file or reuse an existing id.
 - Do not run any command that reads hardware or sensor data.
 
 Reply in one or two lines: files written, total stops, main uncertainties.

@@ -1,6 +1,6 @@
 /**
  * MobileMenu — 手机端精简：顶栏只留年份与搜索，底部只留播放与时间轴，
- * 其余功能（人物视角、纪年志、编年史、对比图志、战区镜头、速度、图层开关、复位、音效）收进一个菜单。
+ * 其余功能（人物视角、纪年志、编年史、对比图志、战区镜头、速度、图层开关、复位、配乐）收进一个菜单。
  * 菜单项直接调用 window.AtlasApp 上已有的方法；开关状态读取桌面版按钮的 active 状态，二者始终一致。
  */
 (function () {
@@ -31,7 +31,8 @@
           <button type="button" data-toggle="toggleCampaigns" data-state="btn-campaigns">⇄ 进军线</button>
           <button type="button" data-toggle="toggleIdleDrift" data-state="btn-drift">✧ 挂机漫游</button>
           <button type="button" data-fn="resetCamera">⊕ 复位视野</button>
-          <button type="button" data-fn="toggleMute">♪ 音效开关</button>
+          <button type="button" data-toggle="toggleMusic" data-state="btn-music">♫ 背景配乐</button>
+          <button type="button" data-fn="toggleTheme">◐ 纸本 / 夜色</button>
         </div></div>
       </div>`;
     document.body.appendChild(sheet);
