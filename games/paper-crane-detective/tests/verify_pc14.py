@@ -35,6 +35,7 @@ import verify_pc10 as pc10  # noqa: E402
 import verify_pc11 as pc11  # noqa: E402
 import verify_pc12 as pc12  # noqa: E402
 import verify_pc13 as pc13  # noqa: E402
+import verify_glyphs as glyphs  # noqa: E402
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -129,7 +130,7 @@ LOG_REPORT = {}
 # PC-16 appends a 7th short case (folio only: the seven cases and the seven-page casebook share one 2 x 4 grid, the
 # full-width card goes away), moves the meteor-night tab into "starlit", deletes PC-13's unused four-tab casebook page and
 # adds achievements 37-38 (verified by verify_pc16).
-LATER_MODULES = ["zubenelgenubi_meteor_casebook.rpy", "zwembad_locker_casebook.rpy"]
+LATER_MODULES = ["zubenelgenubi_meteor_casebook.rpy", "zwembad_locker_casebook.rpy", "zymase_bakeoff_casebook.rpy"]
 PC15_MAIN_MENU_ROWS = [
     ["mailbox", "teaparty", "lexicon", "music"],
     ["restoration", "letterbox", "origami"],
@@ -148,6 +149,12 @@ def _pc15_present():
 
 def _pc16_present():
     return (GAME_DIR / "zwembad_locker_casebook.rpy").is_file()
+
+
+def _pc17_present():
+    """PC-17 appends an 8th short case (the baking-contest tab joins the "salon" group), expands the casebook to eight
+    pages, puts the eight cases + the casebook into a 2 x 5 folio grid and adds achievements 39-40 (verify_pc17)."""
+    return (GAME_DIR / "zymase_bakeoff_casebook.rpy").is_file()
 
 
 def _fonts():
@@ -175,6 +182,21 @@ def _sandbox_env():
 
 def _folio_block(scr_src):
     return scr_src.split("screen extras_folio_modal(", 1)[1].split("\nscreen ", 1)[0]
+
+
+def folio_header_sub(folio):
+    """The folio's one-line header subtitle (12px, under the 22px serif title), parsed from the screen -- never assumed
+    (shared with verify_pc15 / verify_pc16, so a copy edit is measured as written)."""
+    m = re.search(r'text _\("番外卷宗"\) font gui\.name_text_font size 22 color "#fff1d6"\n +text _\("([^"]+)"\) size 12 ', folio)
+    assert m, "Folio header subtitle not found"
+    return m.group(1)
+
+
+def folio_footer_hint(folio):
+    """The folio's footer hint left of the 「合上卷宗」 pill (must still name the Esc key), parsed from the screen."""
+    m = re.search(r'text _\("([^"]+)"\) size 12 color "#b39d7a" yalign 0\.5\n +textbutton _\("合上卷宗"\):', folio)
+    assert m and "Esc" in m.group(1), "Folio footer hint (Esc key) not found"
+    return m.group(1)
 
 
 def measure_main_menu(env=None):
@@ -546,7 +568,7 @@ def check_layout_and_pixel_bounds():
     panel_inner = panel_w - 2 * panel_pad[0]
     # (PC-16 puts the seven cases and the casebook into one 2 x 4 grid; PC-14 / PC-15 use a 2 x 3 grid)
     grid_rows = int(re.search(r"^            grid 2 (\d+):$", folio, re.M).group(1))
-    assert panel_inner == 2 * fcard_w + 12 == 712 and grid_rows == (4 if _pc16_present() else 3) and "xspacing 12" in folio
+    assert panel_inner == 2 * fcard_w + 12 == 712 and grid_rows == (5 if _pc17_present() else 4 if _pc16_present() else 3) and "xspacing 12" in folio
     assert fcard_w - 2 * fcard_pad[0] >= 34 + 10 + 278, "Folio card content wider than the card"
     text_w = 278
     assert round(15 * CJK_LINE) + 2 + round(11 * CJK_LINE) <= fcard_h - 2 * fcard_pad[1], "Folio card content too tall"
@@ -590,12 +612,14 @@ def check_layout_and_pixel_bounds():
     report["FolioCardTitle"] = max(widest_card_title, widest_dlc)
     report["FolioCardLine"] = widest_line
     seal_w = max(max(96, _w(f[12], s) + 20) for s in ("火漆 · 已通关解封", "火漆 · 手动解封", "火漆 · 封存中"))
-    f_head = (44 + 12 + max(_w(sf[22], "番外卷宗"), _w(f[12], "番外短篇 · 可重玩短案 · 复盘本——主菜单的番外入口都收在这一夹里"))
+    f_head = (44 + 12 + max(_w(sf[22], "番外卷宗"), _w(f[12], folio_header_sub(folio)))
               + 10 + max(96, _w(f[12], "已完成 8/8") + 20) + 6 + seal_w)
     assert f_head <= panel_inner, f"Folio header overflows: {f_head}px"
-    for s in re.findall(r'^            text _\("([^"]+)"\) size 12 color "#e8c88a" bold True$', folio, re.M):
+    sections = re.findall(r'^            text _\("([^"]+)"\) size 12 color "#e8c88a" bold True$', folio, re.M)
+    assert len(sections) == 2, sections
+    for s in sections:
         assert _wb(f[12], s) <= panel_inner, s
-    f_foot = (_w(f[12], "按 Esc 或点击右侧按钮合上卷宗 · 卷宗只负责翻到对应分页，不改动任何进度") + 10
+    f_foot = (_w(f[12], folio_footer_hint(folio)) + 10
               + max(128, _w(f[14], "合上卷宗") + 36))
     assert f_foot <= panel_inner, f"Folio footer overflows: {f_foot}px"
     head_h = max(44, round(22 * CJK_LINE) + 2 + round(12 * CJK_LINE))
@@ -1015,7 +1039,7 @@ def check_pc14_runtime():
     mm = measure_main_menu(env)
     assert mm["folio_dlc"] == [d[0] for d in dlcs], mm["folio_dlc"]
     expected_tabs = (FOLIO_CASE_TABS[:-1] + (["astro"] if _pc15_present() else []) + (["pool"] if _pc16_present() else [])
-                     + FOLIO_CASE_TABS[-1:])
+                     + (["bake"] if _pc17_present() else []) + FOLIO_CASE_TABS[-1:])
     assert mm["folio_tabs"] == expected_tabs, mm["folio_tabs"]
     for t in mm["folio_tabs"]:
         assert f'elif cur == "{t}":' in extra_src, f"extras() does not route folio tab `{t}`"
@@ -1066,7 +1090,11 @@ def check_pc14_runtime():
 ################################################################################
 
 def check_zero_intrusion_and_icons():
-    older = list(OLDER_EXTRAS_MODULES)
+    # a protected UI module may differ from HEAD only by the approved tofu-symbol swap (verify_glyphs.GLYPH_SWAP,
+    # byte-exact, every occurrence, nothing else); main-story files never qualify
+    swapped = glyphs.glyph_swap_only_files()
+    assert not swapped & set(MAIN_STORY_FILES)
+    older = [m for m in OLDER_EXTRAS_MODULES if m not in swapped]
     if _pc16_present():
         # PC-16 deletes PC-13's four-tab casebook page (unused since PC-15) from zephyr_relay_casebook.rpy: that one older
         # module may differ from HEAD only by removed lines and added `##` comment lines (line-exact check: verify_pc16)
@@ -1084,7 +1112,7 @@ def check_zero_intrusion_and_icons():
     assert diff.stdout.strip() == "", "Main story / older module files have a diff"
     # whole-project guard: among *tracked* files only the PC-14 targets and the forward-compatible verifier edits may
     # differ from HEAD (untracked new files are not flagged; on a clean committed checkout nothing differs at all)
-    allowed = set(PC14_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc14.py"])
+    allowed = set(PC14_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc14.py"]) | swapped
     if _pc15_present():
         allowed.add("tests/verify_pc15.py")  # PC-15's own verifier (tracked once PC-15 is committed)
     if _pc16_present():

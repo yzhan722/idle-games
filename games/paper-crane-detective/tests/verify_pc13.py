@@ -32,6 +32,7 @@ import verify_pc9 as pc9  # noqa: E402
 import verify_pc10 as pc10  # noqa: E402
 import verify_pc11 as pc11  # noqa: E402
 import verify_pc12 as pc12  # noqa: E402
+import verify_glyphs as glyphs  # noqa: E402
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -112,7 +113,8 @@ LOG_REPORT = {}
 # PC-16 appends a 7th short case (folio only), expands the casebook to seven pages and deletes PC-13's four-tab casebook page
 # (no longer used by anything since PC-15; PC-13's read-only renderers, page modal and notebook_* styles stay and are still
 # used by the expanded casebook) and adds achievements 37-38 (verified by verify_pc16).
-LATER_MODULES = ["zoetrope_shadow_folio.rpy", "zubenelgenubi_meteor_casebook.rpy", "zwembad_locker_casebook.rpy"]
+LATER_MODULES = ["zoetrope_shadow_folio.rpy", "zubenelgenubi_meteor_casebook.rpy", "zwembad_locker_casebook.rpy",
+                 "zymase_bakeoff_casebook.rpy"]
 
 
 def _later_present():
@@ -127,6 +129,12 @@ def _rows_reflowed():
 def _pc16_present():
     """PC-16 expands the casebook to seven pages and deletes PC-13's unused four-tab casebook page (verify_pc16)."""
     return (GAME_DIR / "zwembad_locker_casebook.rpy").is_file()
+
+
+def _pc17_present():
+    """PC-17 appends an 8th short case (the baking-contest tab joins the "salon" group), expands the casebook to eight
+    pages, puts the eight cases + the casebook into a 2 x 5 folio grid and adds achievements 39-40 (verify_pc17)."""
+    return (GAME_DIR / "zymase_bakeoff_casebook.rpy").is_file()
 
 
 def _folio_merged():
@@ -300,7 +308,7 @@ def check_layout_and_pixel_bounds():
         assert f'elif cur == "{k}":' in extra_src, f"extras() viewport does not route `{k}`"
     # (PC-15 expands the notebook to six pages: haunted house + meteor night appended after the four PC-13 pages)
     # (PC-16 appends the pool-locker page: seven pages)
-    assert sb["totals"]["sportsday"] == 1 and sb["totals"]["notebook"] == (7 if _pc16_present() else 6 if _rows_reflowed() else 4)
+    assert sb["totals"]["sportsday"] == 1 and sb["totals"]["notebook"] == (8 if _pc17_present() else 7 if _pc16_present() else 6 if _rows_reflowed() else 4)
     pill66 = lambda t: max(66, _w(f[11], t) + 12)  # noqa: E731
     pill60 = lambda t: max(60, _w(f[11], t) + 8)  # noqa: E731
     legacy = {}
@@ -806,7 +814,8 @@ def check_pc13_runtime():
             txt = env["salon_tab_pill_text"](t)
             assert re.fullmatch(r"\S+ \d+/\d+", txt), f"pill text `{txt}`"
     assert env["salon_open_group"]("sportsday") == "closedlib" and env["salon_open_group"]("notebook") == "keepsake"
-    assert env["salon_tab_pill_text"]("sportsday") == "操场 1/1" and env["salon_tab_pill_text"]("notebook") == "复盘 0/4"
+    # UI audit: the lost-and-found pill reads 「失物」 (was 「操场」) to match its folio card / icon (same 2-char width)
+    assert env["salon_tab_pill_text"]("sportsday") == "失物 1/1" and env["salon_tab_pill_text"]("notebook") == "复盘 0/4"
     assert env["salon_tab_icon"]("sportsday").endswith("icon_lost_found_box.png")
     assert env["salon_tab_icon"]("notebook").endswith("icon_case_notebook.png")
     saved_fn = env.pop("notebook_stamped_count")
@@ -1050,19 +1059,26 @@ def check_pc13_runtime():
 ################################################################################
 
 def check_zero_intrusion_and_icons():
-    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES, *OLDER_EXTRAS_MODULES],
+    # a protected UI module may differ from HEAD only by the approved tofu-symbol swap (verify_glyphs.GLYPH_SWAP,
+    # byte-exact, every occurrence, nothing else); main-story files never qualify
+    swapped = glyphs.glyph_swap_only_files()
+    assert not swapped & set(MAIN_STORY_FILES)
+    older = [m for m in OLDER_EXTRAS_MODULES if m not in swapped]
+    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES, *older],
                          cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert res.stdout.strip() == "", f"Main story / definitions / autoplay / older extras modules were modified!\n{res.stdout}"
-    diff = subprocess.run(["git", "diff", "--numstat", "--", *MAIN_STORY_FILES, *OLDER_EXTRAS_MODULES],
+    diff = subprocess.run(["git", "diff", "--numstat", "--", *MAIN_STORY_FILES, *older],
                           cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert diff.stdout.strip() == "", "Main story / older module files have a diff"
     # whole-project guard: among *tracked* files only the PC-13 targets and the forward-compatible verifier edits may
     # differ from HEAD (new untracked files — the PC-13 module, its icons, later milestones' modules — are not flagged)
-    allowed = set(PC13_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc13.py"])
+    allowed = set(PC13_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc13.py"]) | swapped
     if _folio_merged():
         allowed.add("tests/verify_pc14.py")  # PC-14's own verifier (tracked once PC-14 is committed)
     if _rows_reflowed():
         allowed.add("tests/verify_pc15.py")  # PC-15's own verifier (tracked once PC-15 is committed)
+    if (GAME_DIR / "zwembad_locker_casebook.rpy").is_file():
+        allowed.add("tests/verify_pc16.py")  # PC-16's own verifier (tracked once PC-16 is committed)
     st = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no", "--", "."],
                         cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", check=True)
     stray = []

@@ -207,7 +207,7 @@ screen splash_card():
                 spacing 8
                 text "剧本" style "splash_credit_role"
                 text "高泽坤" style "splash_credit_name"
-            text "✦" style "splash_credit_sep"
+            text "◆" style "splash_credit_sep"
             hbox:
                 spacing 8
                 text "AI制作" style "splash_credit_role"

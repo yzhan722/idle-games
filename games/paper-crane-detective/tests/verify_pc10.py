@@ -62,7 +62,7 @@ CJK_LINE = 1.45  # Noto Sans/Serif SC line box ~= 1.45 x size
 # runtime sandbox, so the 26-achievement / PC-10 behaviour checks below keep their original meaning).
 LATER_SALON_MODULES = ["game/wings_theater_capsule.rpy", "game/yearbook_atelier_wall.rpy", "game/zephyr_relay_casebook.rpy",
                        "game/zoetrope_shadow_folio.rpy", "game/zubenelgenubi_meteor_casebook.rpy",
-                       "game/zwembad_locker_casebook.rpy"]
+                       "game/zwembad_locker_casebook.rpy", "game/zymase_bakeoff_casebook.rpy"]
 
 
 def _later_salon_present():
@@ -96,6 +96,12 @@ def _pc16_present():
     expands the casebook to seven pages, removes PC-13's unused four-tab casebook page and adds achievements 37-38
     (verified by verify_pc16)."""
     return (ROOT / "game/zwembad_locker_casebook.rpy").is_file()
+
+
+def _pc17_present():
+    """PC-17 appends an 8th short case (the baking-contest tab joins the "salon" group), expands the casebook to eight
+    pages, puts the eight cases + the casebook into a 2 x 5 folio grid and adds achievements 39-40 (verify_pc17)."""
+    return (ROOT / "game/zymase_bakeoff_casebook.rpy").is_file()
 
 
 def _fonts():
@@ -520,7 +526,7 @@ def check_layout_and_pixel_bounds():
     ach_src = _read("game/achievements.rpy")
     # PC-11 extends the symmetric grid to 2x14 = 28 (verified by verify_pc11), PC-12 to 2x15 = 30 (verify_pc12),
     # PC-13 to 2x16 = 32 (verify_pc13), PC-14 to 2x17 = 34 (verify_pc14); PC-10's 26 must be the state before them
-    expected_grid = ("2×19 = 38" if _pc16_present() else "2×18 = 36" if _pc15_present() else "2×17 = 34" if _pc14_present() else ("2×16 = 32" if _pc13_present() else
+    expected_grid = ("2×20 = 40" if _pc17_present() else "2×19 = 38" if _pc16_present() else "2×18 = 36" if _pc15_present() else "2×17 = 34" if _pc14_present() else ("2×16 = 32" if _pc13_present() else
                      ("2×15 = 30" if _pc12_present() else ("2×14 = 28" if _later_salon_present() else "2×13 = 26"))))
     assert "grid 2 ach_grid_rows():" in ach_src and expected_grid in ach_src
     ach_text_w = 352 - 24 - 56 - 14

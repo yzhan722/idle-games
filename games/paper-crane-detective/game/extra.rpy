@@ -107,6 +107,10 @@ init python:
         "pool_locker_case": "游泳馆更衣柜 · SW-01 错位的二十三号钥匙",
     }
 
+    _BAKE_CASE_LABELS = {
+        "bake_cake_case": "家政课烘焙赛 · BK-01 第六组的第二块蛋糕",
+    }
+
     # 结局 label -> 成就 id
     _ENDING_TO_ACH = {
         "ending_te":     "ach_te",
@@ -117,7 +121,7 @@ init python:
     }
 
     def _progress_label_callback(name, abnormal):
-        # 进入任何主线/番外/结局/委托卷宗/茶话会/四季信笺/旧广播电台/钟楼星象馆/闭馆图书馆/雨夜剧场/美术室/运动会失物箱/文化祭鬼屋/天文社流星夜/游泳馆更衣柜等剧场时，确保鉴赏室留声机白噪音与音量倍率归零复位，绝不污染剧情音频
+        # 进入任何主线/番外/结局/委托卷宗/茶话会/四季信笺/旧广播电台/钟楼星象馆/闭馆图书馆/雨夜剧场/美术室/运动会失物箱/文化祭鬼屋/天文社流星夜/游泳馆更衣柜/家政课烘焙赛等剧场时，确保鉴赏室留声机白噪音与音量倍率归零复位，绝不污染剧情音频
         if (name == "start" or name in _LABEL_TO_CHAPTER or name in _LABEL_TO_ENDING
                 or name in _DLC_LABELS or name in _MAILBOX_LABELS
                 or name in _TEA_PARTY_LABELS or name in _SEASON_LETTER_LABELS
@@ -128,14 +132,15 @@ init python:
                 or name in _SPORTS_CASE_LABELS
                 or name in _HAUNTED_CASE_LABELS
                 or name in _ASTRO_CASE_LABELS
-                or name in _POOL_CASE_LABELS):
+                or name in _POOL_CASE_LABELS
+                or name in _BAKE_CASE_LABELS):
             if "stop_all_gramophone_ambience" in globals():
                 stop_all_gramophone_ambience(reset_music_vol=True)
         # 从标题"开始游戏"进来的完整周目（章节选择 / 重温结局不会经过 start）
         if name == "start":
             store.full_run = True
             store.current_chapter_label = "prologue"
-        # 记录当前所在章节/番外/结局/委托信箱/茶话会/四季信笺/旧广播电台/钟楼星象馆/闭馆图书馆/雨夜剧场/美术室/运动会失物箱/文化祭鬼屋/天文社流星夜/游泳馆更衣柜入口 label，供折纸书签跳转定位
+        # 记录当前所在章节/番外/结局/委托信箱/茶话会/四季信笺/旧广播电台/钟楼星象馆/闭馆图书馆/雨夜剧场/美术室/运动会失物箱/文化祭鬼屋/天文社流星夜/游泳馆更衣柜/家政课烘焙赛入口 label，供折纸书签跳转定位
         if (name in _LABEL_TO_CHAPTER or name in _LABEL_TO_ENDING
                 or name in _DLC_LABELS or name in _MAILBOX_LABELS
                 or name in _TEA_PARTY_LABELS or name in _SEASON_LETTER_LABELS
@@ -146,7 +151,8 @@ init python:
                 or name in _SPORTS_CASE_LABELS
                 or name in _HAUNTED_CASE_LABELS
                 or name in _ASTRO_CASE_LABELS
-                or name in _POOL_CASE_LABELS):
+                or name in _POOL_CASE_LABELS
+                or name in _BAKE_CASE_LABELS):
             store.current_chapter_label = name
         # 记录已到达的最高章节
         if name in _LABEL_TO_CHAPTER:
@@ -293,7 +299,7 @@ screen chapter_select():
             hbox:
                 spacing 10
                 yalign 0.5
-                text _("✦ 番外短篇（DLC）") style "extras_section_text" color "#f4d98a" yalign 0.5
+                text _("◆ 番外短篇（DLC）") style "extras_section_text" color "#f4d98a" yalign 0.5
                 text _("独立短篇剧本 · 不影响主线存档与好感") size 14 color "#a892c2" yalign 0.5
 
             for dlc_lbl, dlc_badge, dlc_name, dlc_blurb, dlc_thumb, dlc_done_key, dlc_need_te in DLC_LIST:
@@ -334,7 +340,7 @@ screen chapter_select():
                             text dlc_blurb style "chapter_blurb_text"
 
             null height 8
-            text _("✦ 本篇章节回溯") style "extras_section_text"
+            text _("◆ 本篇章节回溯") style "extras_section_text"
 
             for idx, (lbl, title, need) in enumerate(CHAPTER_LIST):
                 $ parts = title.split(" · ", 1)
@@ -512,6 +518,8 @@ default persistent.astro_telescope_record = {}
 default persistent.astro_selected_spot = "s1"
 default persistent.pool_locker_record = {}
 default persistent.pool_selected_spot = "s1"
+default persistent.bake_cake_record = {}
+default persistent.bake_selected_spot = "s1"
 
 init python:
     EXTRAS_TABS = [
@@ -578,6 +586,10 @@ init python:
         ("pool", "游泳池更衣柜"),
     ]
 
+    EXTRAS_BAKE_TABS = [
+        ("bake", "家政课烘焙赛"),
+    ]
+
     ## PC-10：「侦探社沙龙」子栏改为分组手风琴——当前分页所在的组展开成「图标 + 等宽短签」，
     ## 其余组各收拢为一枚组签（点击即展开并直达该组第一项）。十项玩法分四组，与铜章手账册的分行一致。
     ## PC-11：雨夜剧场（可重玩短案）与时间胶囊（纪念收藏）并入第四组，组名改为「雨夜与纪念」——
@@ -600,8 +612,11 @@ init python:
     ## 而七枚短签的文字本身就有 40px，再压短签只能删字。因此改分组：天文社流星夜移入「电波与星空」
     ## （与钟楼星象馆、铜章手账册同属星空主题，四签组按 PC-13 的规则用每签一枚图标 + 60px 紧凑短签），
     ## 游泳池更衣柜接入「放学后短案」（仍为六签组）。五组十九项各出现一次，五种展开状态由 verify_pc16 逐一实测均 <= 702px。
+    ## PC-17：家政课烘焙赛（第八桩可重玩短案）若接入「放学后短案」会成七签组（PC-16 已实测 > 702px），
+    ## 因此接入只有两项的「侦探社沙龙」（与茶话会、批注辞典同属下午茶主题；三签组沿用每签一枚图标 + 66px 短签）。
+    ## 五组二十项各出现一次，五种展开状态由 verify_pc17 逐一实测均 <= 702px。
     EXTRAS_SALON_GROUPS = [
-        ("salon",      "侦探社沙龙",   "images/ui/icon_tea_party_cup.png",          ("teaparty", "lexicon")),
+        ("salon",      "侦探社沙龙",   "images/ui/icon_tea_party_cup.png",          ("teaparty", "lexicon", "bake")),
         ("bookstreet", "旧书街与四季", "images/ui/icon_book_restoration.png",       ("restoration", "letterbox", "origami")),
         ("starlit",    "电波与星空",   "images/ui/icon_clocktower_planetarium.png", ("radio", "planetarium", "badges", "astro")),
         ("closedlib",  "放学后短案",   "images/ui/icon_closed_library.png",         ("library", "theater", "atelier", "sportsday", "haunted", "pool")),
@@ -628,6 +643,7 @@ init python:
         "haunted":     "images/ui/icon_haunted_house.png",
         "astro":       "images/ui/icon_astro_club.png",
         "pool":        "images/ui/icon_pool_locker.png",
+        "bake":        "images/ui/icon_bake_contest.png",
     }
 
     # 短签：key -> (短名, 计数函数名, 总数来源列表名或整数)；运行期按名取函数，模块加载顺序互不依赖
@@ -646,11 +662,12 @@ init python:
         "capsule":     ("胶囊",   "capsule_placed_count",        "CAPSULE_ITEMS"),
         "atelier":     ("画室",   "atelier_case_solved_count",   1),
         "wall":        ("寄语",   "wall_pinned_count",           "WALL_CARDS"),
-        "sportsday":   ("操场",   "sports_case_solved_count",    1),
+        "sportsday":   ("失物",   "sports_case_solved_count",    1),
         "notebook":    ("复盘",   "notebook_stamped_count",      "NOTEBOOK_CASES"),
         "haunted":     ("鬼屋",   "haunted_case_solved_count",   1),
         "astro":       ("天文",   "astro_case_solved_count",     1),
         "pool":        ("泳池",   "pool_case_solved_count",      1),
+        "bake":        ("烘焙",   "bake_case_solved_count",      1),
     }
 
     def salon_tab_icon(tab_key):
@@ -683,7 +700,7 @@ init python:
         return EXTRAS_SALON_GROUPS[0][0]
 
     ## PC-14：主菜单「番外卷宗」分组入口（screens.rpy 的 extras_folio_modal）用到的只读视图函数。
-    ## 卷宗里列出两篇番外短篇、五桩可重玩短案与推理笔记复盘本（PC-15 起六桩短案，PC-16 起七桩）；本组函数从不写任何 persistent 字段。
+    ## 卷宗里列出两篇番外短篇、五桩可重玩短案与推理笔记复盘本（PC-15 起六桩短案，PC-16 起七桩，PC-17 起八桩）；本组函数从不写任何 persistent 字段。
     ## 番外短篇沿用原入口的解锁条件（只从「章节选择」开启，导航列同一条件：chapter_reached >= 1）与原提示条件
     ## （后日谈在未通关 TRUE END 时建议先通关）；后日谈标题另受 truth_spoiler_unlocked() 防剧透火漆封存。
     FOLIO_DLC_MASKED_TITLE = "后日谈 · 标题已封存"
@@ -691,10 +708,11 @@ init python:
         "dlc_alice_ledger":  "images/ui/icon_dossier_stamp.png",
         "dlc_mo_bookstreet": "images/ui/icon_crane_bookmark.png",
     }
-    # 卷宗里七桩可重玩短案的结案计数函数（运行期按名取，模块加载顺序互不依赖；PC-15 追加天文社流星夜，PC-16 追加游泳池更衣柜）
+    # 卷宗里八桩可重玩短案的结案计数函数（运行期按名取，模块加载顺序互不依赖；PC-15 追加天文社流星夜，PC-16 追加游泳池更衣柜，
+    # PC-17 追加家政课烘焙赛）
     FOLIO_CASE_COUNTERS = ("library_case_solved_count", "theater_case_solved_count", "atelier_case_solved_count",
                            "sports_case_solved_count", "haunted_case_solved_count", "astro_case_solved_count",
-                           "pool_case_solved_count")
+                           "pool_case_solved_count", "bake_case_solved_count")
 
     def folio_chapter_select_open():
         """与导航列「章节选择」按钮完全相同的解锁条件：番外短篇只从章节选择开启，序章之后开放。"""
@@ -778,7 +796,7 @@ init python:
         return "(%d/%d)" % (got, total)
 
     def reset_all_progress():
-        """一键清空全部存档、已解锁 CG、结局、章节、成就、书签、委托信箱、茶话会、批注辞典、古籍修复台、四季信笺匣、旧广播电台、千纸鹤陈列柜、钟楼星象馆、铜章手账册、闭馆图书馆、合照相册、雨夜剧场、时间胶囊、美术室油画、寄语墙、运动会失物箱、推理笔记复盘本、文化祭鬼屋、天文社流星夜与游泳池更衣柜"""
+        """一键清空全部存档、已解锁 CG、结局、章节、成就、书签、委托信箱、茶话会、批注辞典、古籍修复台、四季信笺匣、旧广播电台、千纸鹤陈列柜、钟楼星象馆、铜章手账册、闭馆图书馆、合照相册、雨夜剧场、时间胶囊、美术室油画、寄语墙、运动会失物箱、推理笔记复盘本、文化祭鬼屋、天文社流星夜、游泳池更衣柜与家政课烘焙赛"""
         persistent.chapter_reached = 0
         persistent.te_cleared = False
         persistent.truth_spoiler_confirmed = False
@@ -829,6 +847,8 @@ init python:
         persistent.astro_selected_spot = "s1"
         persistent.pool_locker_record = {}
         persistent.pool_selected_spot = "s1"
+        persistent.bake_cake_record = {}
+        persistent.bake_selected_spot = "s1"
         if "restoration_reset_workbench_session" in globals():
             restoration_reset_workbench_session()
         if "origami_reset_session" in globals():
@@ -872,7 +892,8 @@ screen extras():
     on "replaced" action [Function(gramophone_on_leave_extras), Play("music", config.main_menu_music, fadein=1.0, if_changed=True)]
 
     ## 副标题收敛为一行（≤776px 可用宽度）：沙龙各玩法统一由下方「侦探社沙龙」子栏承载
-    use game_menu(_("鉴赏"), subtitle=_("结局 · 画廊 · 留声机 · 成就 · 侦探社沙龙 · 真相 · 书签 · 白板 · 剧场")):
+    ## 界面审视：副标题不再逐个复述正下方的九枚分页签，只点明第二行子栏里收着什么
+    use game_menu(_("鉴赏"), subtitle=_("结局、收藏与侦探社沙龙")):
 
         vbox:
             spacing 7
@@ -889,7 +910,8 @@ screen extras():
             ## 五种展开状态经 verify_pc13 逐一实测 <= 702px 内宽；PC-14 起十七项玩法分五组，装进五项的组展开时只放一枚当前分页图标 + 五枚 56px 短签，
             ## 五种展开状态经 verify_pc14 逐一实测 <= 702px 内宽；PC-15 起十八项玩法分五组，装进六项的组展开时仍只放一枚当前分页图标，
             ## 短签改用 48px 紧凑等宽签（salon_sext_pill），五种展开状态经 verify_pc15 逐一实测 <= 702px 内宽；PC-16 起十九项玩法分五组，
-            ## 天文社流星夜移入「电波与星空」、游泳池更衣柜接入「放学后短案」，五种展开状态经 verify_pc16 逐一实测 <= 702px 内宽
+            ## 天文社流星夜移入「电波与星空」、游泳池更衣柜接入「放学后短案」，五种展开状态经 verify_pc16 逐一实测 <= 702px 内宽；
+            ## PC-17 起二十项玩法分五组，家政课烘焙赛接入「侦探社沙龙」，五种展开状态经 verify_pc17 逐一实测 <= 702px 内宽
             $ _salon_open = salon_open_group(cur)
             frame:
                 style "salon_subbar_frame"
@@ -969,7 +991,7 @@ screen extras():
                     elif cur == "sportsday":
                         use extras_sports_lostfound
                     elif cur == "notebook":
-                        ## PC-15：复盘本扩容为六页（鬼屋 + 流星夜），改由 3 列索引签的扩容页面承载；PC-16 再加游泳池更衣柜一页（七页），PC-13 的四签旧页面已删除
+                        ## PC-15：复盘本扩容为六页（鬼屋 + 流星夜），改由 3 列索引签的扩容页面承载；PC-16 再加游泳池更衣柜一页（七页），PC-17 再加家政课烘焙赛一页（八页），PC-13 的四签旧页面已删除
                         use extras_casebook_expanded
                     elif cur == "haunted":
                         use extras_haunted_house
@@ -977,6 +999,8 @@ screen extras():
                         use extras_astro_telescope
                     elif cur == "pool":
                         use extras_pool_locker
+                    elif cur == "bake":
+                        use extras_bake_contest
                     elif cur == "truth":
                         use extras_truth
                     elif cur == "bookmarks":
@@ -1727,7 +1751,7 @@ screen extras_music():
             yalign 0.5
             text ("黑胶曲目单  ·  已开放 %d / %d 首" % (bgm_unlocked_count(), len(BGM_LIST))) style "extras_section_text" yalign 0.5
             if bgm_unlocked_count() < len(BGM_LIST):
-                textbutton _("开放全13曲试听"):
+                textbutton _("全部开放试听"):
                     style "gramophone_mini_pill"
                     xalign 1.0
                     yalign 0.5
@@ -1773,7 +1797,7 @@ screen extras_music():
                             spacing 1
                             yalign 0.5
                             text ("%02d · ？？？" % (idx + 1)) style "music_title_locked"
-                            text _("在剧情中听到后自动收录（或点击上方「开放全13曲试听」）") style "music_src_locked"
+                            text _("在剧情中听到后自动收录") style "music_src_locked"
 
 style gramophone_console_card is default:
     xfill True
@@ -1920,14 +1944,14 @@ screen extras_truth():
                     spacing 3
                     xsize 520
                     if persistent.te_cleared:
-                        text _("✦ TRUE END 已通关 · 双轨真相档案全解锁") style "truth_banner_title" color "#f4d98a"
-                        text _("四年前「小雪侦探」旧案与云溪高中五桩校园事件的因果链条已完整解密。") style "truth_banner_sub"
+                        text _("◆ TRUE END 已通关 · 双轨真相档案全解锁") style "truth_banner_title" color "#f4d98a"
+                        text _("四年前旧案与五桩校园事件的因果链已完整解密。") style "truth_banner_sub"
                     elif persistent.truth_spoiler_confirmed:
                         text _("⚠ 已手动开启剧透档案（尚未通关 TRUE END）") style "truth_banner_title" color "#f0a4b8"
                         text _("当前展示完整剧透时间轴；建议体验 TRUE END 后再回味细节。") style "truth_banner_sub"
                     else:
-                        text _("✦ 防剧透保护已开启 · 仅展示公开案件脉络") style "truth_banner_title" color "#cbb0e6"
-                        text _("涉及核心真凶与四年前八分钟真相的深层推论已自动加密遮罩，通关 TRUE END 后自动解锁。") style "truth_banner_sub"
+                        text _("◆ 防剧透保护已开启 · 仅展示公开案件脉络") style "truth_banner_title" color "#cbb0e6"
+                        text _("核心真凶与深层推论已遮罩，通关 TRUE END 后自动解锁。") style "truth_banner_sub"
                 if not persistent.te_cleared:
                     if persistent.truth_spoiler_confirmed:
                         textbutton _("恢复遮罩"):
@@ -1976,7 +2000,7 @@ screen extras_truth():
                                     text old_deep style "truth_deep_text"
                                 else:
                                     add Solid("#6a5c8044") xfill True ysize 1
-                                    text _("██ 核心内幕已加密（通关 TRUE END 后揭示）") style "truth_masked_text"
+                                    text _("██ 核心内幕已加密") style "truth_masked_text"
                         frame:
                             style "truth_track_new"
                             vbox:
@@ -1988,16 +2012,16 @@ screen extras_truth():
                                     text new_deep style "truth_deep_text"
                                 else:
                                     add Solid("#6a5c8044") xfill True ysize 1
-                                    text _("██ 幕后关联已加密（通关 TRUE END 后揭示）") style "truth_masked_text"
+                                    text _("██ 幕后关联已加密") style "truth_masked_text"
 
                     if _unlocked:
                         frame:
                             style "truth_link_box"
-                            text ("✦ 伏笔闭环 · " + link_txt) style "truth_link_text"
+                            text ("伏笔闭环 · " + link_txt) style "truth_link_text"
                     else:
                         frame:
                             style "truth_lock_box"
-                            text _("✦ 伏笔闭环 · 【防剧透遮罩中：请达成 TRUE END 或点击右上角解锁查看】") style "truth_masked_text"
+                            text _("伏笔闭环 · 防剧透遮罩中") style "truth_masked_text"
 
 style truth_banner_card is default:
     xfill True
@@ -2229,7 +2253,7 @@ screen extras_bookmarks():
                     vbox:
                         spacing 2
                         text ("已收藏 %d 条折纸书签" % len(_bms)) style "truth_banner_title" color "#e8def5"
-                        text _("对话时点击底部快捷栏「书签」纸鹤按钮，即可把心动瞬间折页留存。") style "truth_banner_sub"
+                        text _("对话时点底部快捷栏的「书签」，即可收藏当前台词。") style "truth_banner_sub"
                 if _bms:
                     textbutton _("清空书签"):
                         style "pill_button"
@@ -2252,7 +2276,7 @@ screen extras_bookmarks():
                     spacing 10
                     add "images/ui/icon_crane_bookmark.png" xysize (56, 56) xalign 0.5 alpha 0.85
                     text _("还没有收藏任何折纸书签") style "bookmark_empty_title" xalign 0.5
-                    text _("在剧情对话中随时点击底部快捷栏的「书签」，即可记录说话人、章节出处与台词。") style "bookmark_empty_sub" xalign 0.5
+                    text _("收藏的台词会连同说话人与章节出处列在这里。") style "bookmark_empty_sub" xalign 0.5
         else:
             for bm in _bms:
                 frame:
@@ -2668,13 +2692,13 @@ screen extras_dossier():
                         spacing 2
                         if persistent.te_cleared:
                             text _("人物关系复盘白板 · 真结局全卷宗已解密") style "truth_banner_title" color "#f4d98a"
-                            text _("点击软木板角色立牌或红线标签，复盘各章好感轨迹、不在场证明与深层伏笔。") style "truth_banner_sub"
+                            text _("点选角色立牌或红线标签，复盘好感、行踪与伏笔。") style "truth_banner_sub"
                         elif persistent.truth_spoiler_confirmed:
                             text _("人物关系复盘白板 · 已手动开启剧透批注") style "truth_banner_title" color "#f0a4b8"
-                            text _("当前显示深层动机与四年前红线闭环；可随时恢复防剧透遮罩。") style "truth_banner_sub"
+                            text _("深层动机与红线闭环已显示，可随时恢复遮罩。") style "truth_banner_sub"
                         else:
                             text _("人物关系复盘白板 · 防剧透保护开启中") style "truth_banner_title" color "#cbb0e6"
-                            text _("核心幕后红线与深层动机已加盖保密火漆，通关 TRUE END 后自动完整揭示。") style "truth_banner_sub"
+                            text _("核心红线与深层动机已封存，通关 TRUE END 后揭示。") style "truth_banner_sub"
                 hbox:
                     xalign 1.0
                     yalign 0.5
@@ -2841,7 +2865,7 @@ screen extras_dossier():
                         add "images/ui/icon_red_thread_knot.png" xysize (18, 18) yalign 0.5
                         text _("当前卷宗红线连接（点击人物可顺藤摸瓜跳转）") style "dossier_sec_title" color "#f2a6b6"
                     if not _char_links:
-                        text _("该角色在当前筛选案件下无直接红线记录，可切换至「全卷宗总览」查看完整关系网。") size 14 color "#8a7aa0"
+                        text _("当前案件下没有该角色的红线，可切到「全卷宗总览」查看。") size 14 color "#8a7aa0"
                     else:
                         vbox:
                             spacing 5
@@ -2921,7 +2945,7 @@ screen extras_dossier():
                                 style "truth_link_text"
                                 substitute False
                         else:
-                            text _("核心动机与跨章伏笔闭环已加盖保密印章（通关 TRUE END 或点击右上角「解锁剧透」后揭示）。"):
+                            text _("核心动机与伏笔已封存（通关 TRUE END 或「解锁剧透」后揭示）。"):
                                 style "truth_masked_text"
 
 
@@ -3120,7 +3144,7 @@ screen dossier_fullboard():
                         text ("核心动机：" + _sel_char["deep_motive"]) style "truth_deep_text" substitute False
                         text ("伏笔回收：" + _sel_char["foreshadowing"]) style "truth_link_text" substitute False
                     else:
-                        text _("核心动机与跨章伏笔已加密遮罩，通关 TRUE END 或开启剧透开关后可完整阅览。") style "truth_masked_text"
+                        text _("核心动机与伏笔已封存（通关 TRUE END 或「解锁剧透」后揭示）。") style "truth_masked_text"
 
 
 style dossier_filter_pill is pill_button:
@@ -3514,9 +3538,11 @@ screen extras_studio():
                     vbox:
                         spacing 2
                         text _("自由剧场 · 立绘差分与场景色温摄影棚") style "truth_banner_title" color "#f4d98a"
-                        text ("当前舞台：%s · %s（支持 18 角色 × 8 表情差分 × 7 档光效）" % (studio_bg_title(_bg_key), studio_light_title(_light_key))):
+                        text ("当前舞台：%s · %s" % (studio_bg_title(_bg_key), studio_light_title(_light_key))):
                             style "truth_banner_sub"
                             substitute False
+                ## 界面审视：横幅上原有的「进入全屏剧场」与右侧导演控制板的「全屏剧场预览」动作完全相同、同屏并列，
+                ## 这里只留「重置舞台」；全屏剧场仍可从导演控制板的按钮或点击监视器画面进入
                 hbox:
                     xalign 1.0
                     yalign 0.5
@@ -3528,13 +3554,6 @@ screen extras_studio():
                         padding (12, 0)
                         text_size 14
                         action Function(reset_studio_defaults)
-                    textbutton _("进入全屏剧场"):
-                        style "pill_button"
-                        xminimum 124
-                        ysize 32
-                        padding (14, 0)
-                        text_size 14
-                        action [SetField(persistent, "studio_hide_hud", False), Show("free_theater_stage")]
 
         ## 实时微缩舞台监视器（464×261 16:9 画面）+ 右侧快捷导演操作板
         hbox:
@@ -3587,7 +3606,7 @@ screen extras_studio():
                             ypos 6
                             padding (8, 3)
                             background "#0e081acc"
-                            text _("点击画面展开 1280×720 剧场") size 11 color "#e8def5"
+                            text _("点击画面进入全屏") size 11 color "#e8def5"
 
             frame:
                 style "studio_side_ops_card"
@@ -3645,7 +3664,7 @@ screen extras_studio():
                     spacing 8
                     yalign 0.5
                     add "images/ui/icon_lighting_lamp.png" xysize (20, 20) yalign 0.5
-                    text _("环境色温预设（联动 lighting.rpy 立绘受光矩阵）") style "dossier_sec_title" color "#f4d98a"
+                    text _("环境色温预设") style "dossier_sec_title" color "#f4d98a"
                 hbox:
                     spacing 6
                     for l_key, l_title, _l_desc in STUDIO_LIGHT_PRESETS:
@@ -3659,7 +3678,7 @@ screen extras_studio():
             style "studio_group_card"
             vbox:
                 spacing 8
-                text _("舞台场景选择（已解锁 / 可用背景）") style "dossier_sec_title" color "#cbb0e6"
+                text _("舞台场景选择") style "dossier_sec_title" color "#cbb0e6"
                 grid 4 4:
                     spacing 6
                     for b_key, b_title, _b_sub, _req_c in STUDIO_BG_LIST:
@@ -3679,7 +3698,7 @@ screen extras_studio():
             style "studio_group_card"
             vbox:
                 spacing 8
-                text _("一号位角色（左 / 单人居中）· 角色与表情/装扮差分") style "dossier_sec_title" color "#cfa6f0"
+                text _("一号位角色（左侧 / 单人时居中）") style "dossier_sec_title" color "#cfa6f0"
                 grid 6 3:
                     spacing 5
                     for c_key, c_name, _c_col in STUDIO_CHARA_LIST:
@@ -3714,8 +3733,8 @@ screen extras_studio():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text _("二号位搭档（右侧站位 · 可选单人或双人同台）") style "dossier_sec_title" color "#8cc0e6"
-                    textbutton _("设为单人舞台（隐藏二号位）"):
+                    text _("二号位搭档（右侧）") style "dossier_sec_title" color "#8cc0e6"
+                    textbutton _("设为单人舞台"):
                         style "studio_opt_pill"
                         xalign 1.0
                         selected (_s2_char == "none")
@@ -3948,7 +3967,7 @@ screen studio_line_input_modal():
                 yalign 0.5
                 add "images/ui/icon_theater_clapper.png" xysize (26, 26) yalign 0.5
                 text _("编辑自由剧场预览台词") font gui.name_text_font size 22 color "#f2e6ff"
-            text _("可直接键盘输入台词文本，或点击下方经典句式一键填入：") size 14 color "#a892c2"
+            text _("输入台词，或点选下方经典句式：") size 14 color "#a892c2"
             frame:
                 xfill True
                 ysize 58
@@ -4191,7 +4210,7 @@ screen extras_mailbox():
                         spacing 2
                         yalign 0.5
                         text _("校园推理社 · 委托信箱") font gui.name_text_font size 20 color "#f6e7c0"
-                        text _("可随时重玩的轻量推理短卷 · 独立沙盒，绝不覆盖主线存档与好感") size 12 color "#b9a6d4" xmaximum 410
+                        text _("可重玩的推理短卷 · 不影响主线存档与好感") size 12 color "#b9a6d4" xmaximum 410
                 hbox:
                     xalign 1.0
                     yalign 0.5
@@ -4290,7 +4309,7 @@ screen extras_mailbox():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("累计查案总次数：%d 次  ·  三案全破可解锁纪念成就「信箱里的回音」" % _replays_n) size 12 color "#9a86b8" yalign 0.5
+                    text ("累计查案 %d 次 · 三案全破解锁成就「信箱里的回音」" % _replays_n) size 12 color "#9a86b8" yalign 0.5
                     textbutton (_("重温卷宗") if _sel_rec["solved"] else _("拆封查案")):
                         style "pill_button"
                         xalign 1.0

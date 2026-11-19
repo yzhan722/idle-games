@@ -675,7 +675,7 @@ testsuite uiaudit:
         $ persistent.notebook_selected_case = "astro"
         run SetField(persistent, "extras_tab", "notebook")
         pause 0.5
-        assert eval (len(NOTEBOOK_CASES) == 7 and notebook_render_page("astro")["solved"] and notebook_render_page("astro")["display_secret"] == "" and notebook_render_page("haunted")["status"] == "ready")
+        assert eval (len(NOTEBOOK_CASES) == 8 and notebook_render_page("astro")["solved"] and notebook_render_page("astro")["display_secret"] == "" and notebook_render_page("haunted")["status"] == "ready")
         screenshot "ui_15g_casebook_expanded_masked.png"
         $ persistent.te_cleared = True
         pause 0.5
@@ -687,7 +687,7 @@ testsuite uiaudit:
         run Hide("notebook_page_modal")
         run Show("extras_folio_modal", from_extras=True)
         pause 0.5
-        assert eval (folio_total_count() == 10 and astro_case_solved_count() == 1)
+        assert eval (folio_total_count() == 11 and astro_case_solved_count() == 1)
         screenshot "ui_15j_folio_six_cases.png"
         run Hide("extras_folio_modal")
         $ persistent.astro_telescope_record = _saved_mn_rec
@@ -742,7 +742,7 @@ testsuite uiaudit:
         $ persistent.notebook_selected_case = "pool"
         run SetField(persistent, "extras_tab", "notebook")
         pause 0.5
-        assert eval (len(NOTEBOOK_CASES) == 7 and casebook_index_rows() == 3 and notebook_render_page("pool")["solved"] and notebook_render_page("pool")["display_secret"] == "" and not renpy.has_screen("extras_case_notebook"))
+        assert eval (len(NOTEBOOK_CASES) == 8 and casebook_index_rows() == 3 and notebook_render_page("pool")["solved"] and notebook_render_page("pool")["display_secret"] == "" and not renpy.has_screen("extras_case_notebook"))
         screenshot "ui_16h_casebook_seven_pages.png"
         run Show("notebook_page_modal", case_key="pool")
         pause 0.5
@@ -750,7 +750,7 @@ testsuite uiaudit:
         run Hide("notebook_page_modal")
         run Show("extras_folio_modal", from_extras=True)
         pause 0.5
-        assert eval (folio_total_count() == 10 and pool_case_solved_count() == 1)
+        assert eval (folio_total_count() == 11 and pool_case_solved_count() == 1)
         screenshot "ui_16j_folio_seven_cases.png"
         run Hide("extras_folio_modal")
         $ persistent.pool_locker_record = _saved_sw_rec
@@ -760,6 +760,68 @@ testsuite uiaudit:
         $ persistent.extras_salon_group = _saved_pc16_grp
         $ persistent.te_cleared = _saved_pc16_te
         $ persistent.truth_spoiler_confirmed = _saved_pc16_conf
+        $ _saved_bc_rec = dict(persistent.bake_cake_record or {})
+        $ _saved_bc_sel = persistent.bake_selected_spot
+        $ _saved_pc17_nb = dict(persistent.case_notebook_record or {})
+        $ _saved_pc17_nbsel = persistent.notebook_selected_case
+        $ _saved_pc17_grp = persistent.extras_salon_group
+        $ _saved_pc17_te = persistent.te_cleared
+        $ _saved_pc17_conf = persistent.truth_spoiler_confirmed
+        $ persistent.bake_cake_record = {}
+        $ persistent.bake_selected_spot = "s1"
+        $ persistent.te_cleared = False
+        $ persistent.truth_spoiler_confirmed = False
+        run SetField(persistent, "extras_tab", "bake")
+        pause 0.5
+        assert eval (bake_case_solved_count() == 0 and salon_open_group("bake") == "salon" and bake_render_view()["display_masked_notice"] != "")
+        screenshot "ui_17a_bake_unsolved.png"
+        $ persistent.bake_cake_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["s1", "s2", "s3", "s4", "s5", "s6"]}
+        pause 0.5
+        assert eval (bake_render_view()["solved"] and bake_best_short() == "金烤盘" and bake_render_view()["display_secret"] == "")
+        screenshot "ui_17b_bake_gold_masked.png"
+        $ persistent.te_cleared = True
+        pause 0.5
+        assert eval (bake_render_view()["unlocked"] and bake_render_view()["display_secret"] != "")
+        screenshot "ui_17c_bake_unmasked.png"
+        run Show("bake_report_modal")
+        pause 0.5
+        screenshot "ui_17d_bake_report.png"
+        run Hide("bake_report_modal")
+        run Show("bake_layer_banner", layers_done=2, prompt_line="奶油层 · 来历：没有红戳的蛋壳、空的赤藓糖醇袋、只看不尝的评委——它是给谁烤的？")
+        pause 0.5
+        screenshot "ui_17e_bake_layer_banner.png"
+        run Hide("bake_layer_banner")
+        run Show("bake_result_card", cur_tier="silver", best_tier="gold", mistakes=1, best_mistakes=0, replays=2, new_record=False, is_first=False)
+        pause 0.5
+        screenshot "ui_17f_bake_result_card.png"
+        run Hide("bake_result_card")
+        run SetField(persistent, "extras_tab", "teaparty")
+        pause 0.5
+        assert eval (salon_open_group("teaparty") == "salon" and salon_open_group("bake") == "salon" and salon_open_group("pool") == "closedlib")
+        screenshot "ui_17g_subbar_salon_bake.png"
+        $ persistent.te_cleared = False
+        $ persistent.case_notebook_record = {"stamped": ["library"], "read": []}
+        $ persistent.notebook_selected_case = "bake"
+        run SetField(persistent, "extras_tab", "notebook")
+        pause 0.5
+        assert eval (len(NOTEBOOK_CASES) == 8 and casebook_index_rows() == 3 and notebook_render_page("bake")["solved"] and notebook_render_page("bake")["display_secret"] == "")
+        screenshot "ui_17h_casebook_eight_pages.png"
+        run Show("notebook_page_modal", case_key="bake")
+        pause 0.5
+        screenshot "ui_17i_casebook_bake_page.png"
+        run Hide("notebook_page_modal")
+        run Show("extras_folio_modal", from_extras=True)
+        pause 0.5
+        assert eval (folio_total_count() == 11 and bake_case_solved_count() == 1)
+        screenshot "ui_17j_folio_eight_cases.png"
+        run Hide("extras_folio_modal")
+        $ persistent.bake_cake_record = _saved_bc_rec
+        $ persistent.bake_selected_spot = _saved_bc_sel
+        $ persistent.case_notebook_record = _saved_pc17_nb
+        $ persistent.notebook_selected_case = _saved_pc17_nbsel
+        $ persistent.extras_salon_group = _saved_pc17_grp
+        $ persistent.te_cleared = _saved_pc17_te
+        $ persistent.truth_spoiler_confirmed = _saved_pc17_conf
         run SetField(persistent, "extras_tab", "endings")
         run Return()
         pause until screen "main_menu"
@@ -784,10 +846,12 @@ testsuite uiaudit:
         $ persistent.chapter_reached = 6
         $ persistent.te_cleared = True
         pause 0.8
-        assert eval (folio_chapter_select_open() and folio_total_count() == 10)
+        assert eval (folio_chapter_select_open() and folio_total_count() == 11)
         screenshot "ui_15k_main_menu_reflowed.png"
-        assert eval (folio_total_count() == 10 and folio_chapter_select_open())
+        assert eval (folio_total_count() == 11 and folio_chapter_select_open())
         screenshot "ui_16k_main_menu_no_new_chip.png"
+        assert eval (folio_total_count() == 11 and bake_case_solved_count() >= 0)
+        screenshot "ui_17k_main_menu_no_new_chip.png"
         $ persistent.chapter_reached = _saved_pc15_chap
         $ persistent.te_cleared = _saved_pc15_te
         $ persistent.truth_spoiler_confirmed = _saved_pc15_conf
